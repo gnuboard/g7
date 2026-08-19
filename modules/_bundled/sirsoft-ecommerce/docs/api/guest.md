@@ -261,7 +261,8 @@ _단건 응답: `data` 객체의 필드 (`GuestOrderResource` — 취소 후 갱
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 404 | Not Found | `X-Guest-Order-Token` 누락·만료·주문번호 불일치 (토큰이 지목한 주문 외에는 접근 불가) |
-| 422 | Unprocessable Entity | 요청 파라미터 검증 위반 (`error.errors` 에 필드별 메시지), 또는 취소 처리 실패 (`주문 취소에 실패했습니다.`) |
+| 422 | Unprocessable Entity | 요청 파라미터 검증 위반 (`error.errors` 에 필드별 메시지), 또는 취소 도메인 규칙 위반 (`주문 취소 처리에 실패했습니다.`) |
+| 500 | Internal Server Error | 서버 내부 오류 (`작업 처리 중 오류가 발생했습니다.`) |
 
 <!-- @generated:end -->
 
@@ -560,7 +561,7 @@ _단건 응답: `data` 객체의 필드 (`AdjustmentResult::toPreviewArray()` �
 | --- | --- | --- |
 | 404 | Not Found | `X-Guest-Order-Token` 누락·만료·주문번호 불일치 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
-| 500 | Internal Server Error | 환불 예상금액 계산 실패 (`환불 예상금액 조회에 실패했습니다.`) |
+| 500 | Internal Server Error | 환불 예상금액 계산 실패 (`환불 예상금액 계산에 실패했습니다.`) |
 
 <!-- @generated:end -->
 
@@ -634,11 +635,11 @@ _단건 응답: `data` 객체의 필드 (`GuestOrderResource` — 구매확정 �
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 404 | Not Found | `X-Guest-Order-Token` 누락·만료·주문번호 불일치, 또는 `optionId` 가 해당 주문에 속하지 않는 경우 |
-| 422 | Unprocessable Entity | 구매확정 불가 상태 (배송 미완료 등 — `현재 상태에서는 구매확정할 수 없습니다.`) |
+| 500 | Internal Server Error | 구매확정 처리 실패 (`작업 처리 중 오류가 발생했습니다.`) |
 
 <!-- @generated:end -->
 
-**설명** 비회원이 배송 완료된 주문의 개별 옵션(`optionId`)을 구매확정합니다. 조회 토큰(`X-Guest-Order-Token`)으로 주문 소유권이 검증되며, `OrderController@confirmOption`이 토큰으로 검증된 주문에 실제 속한 옵션인지 다시 확인한 뒤 `OrderService::confirmOption()`을 호출합니다. 주문에 속하지 않은 옵션 ID면 404, 확정 불가 상태(배송 미완료 등)면 422를 반환합니다. 구매확정 시 적립 포인트 확정 등 후속 처리가 서비스 계층에서 이어집니다.
+**설명** 비회원이 배송 완료된 주문의 개별 옵션(`optionId`)을 구매확정합니다. 조회 토큰(`X-Guest-Order-Token`)으로 주문 소유권이 검증되며, `OrderController@confirmOption`이 토큰으로 검증된 주문에 실제 속한 옵션인지 다시 확인한 뒤 `OrderService::confirmOption()`을 호출합니다. 주문에 속하지 않은 옵션 ID면 404를 반환합니다. `OrderService::confirmOption()` 은 도메인 예외를 던지지 않으므로 그 밖의 실패는 모두 서버 내부 오류(500)로 구분됩니다. 구매확정 시 적립 포인트 확정 등 후속 처리가 서비스 계층에서 이어집니다.
 
 
 ### PUT /api/modules/sirsoft-ecommerce/guest/orders/{orderNumber}/shipping-address
@@ -741,9 +742,21 @@ _단건 응답: `data` 객체의 필드 (`GuestOrderResource` — 배송지 수�
 | --- | --- | --- |
 | 404 | Not Found | `X-Guest-Order-Token` 누락·만료·주문번호 불일치 |
 | 422 | Unprocessable Entity | 요청 파라미터 검증 위반 (`error.errors` 에 필드별 메시지), 또는 배송이 이미 시작되어 수정 불가 (`배송 전 상태에서만 배송지를 변경할 수 있습니다.`) |
+| 500 | Internal Server Error | 서버 내부 오류 (`배송지 변경 처리 중 오류가 발생했습니다.`) |
 
 <!-- @generated:end -->
 
-**설명** 비회원이 배송 전 상태의 주문 배송지를 수정합니다. 조회 토큰(`X-Guest-Order-Token`)으로 주문 소유권이 검증되며, 비회원은 저장된 회원 주소(`address_id`)를 쓸 수 없으므로 수취인·연락처·주소 필드를 직접 입력받아 `OrderController@updateShippingAddress`가 회원과 동일한 `OrderService::updateShippingAddress()`로 처리합니다. 국내(`zipcode`/`address`)와 해외(`address_line_1`·`intl_city` 등) 주소 필드를 함께 지원합니다. 이미 배송이 시작된 주문 등 수정 불가 상태면 422를 반환합니다.
+**설명** 비회원이 배송 전 상태의 주문 배송지를 수정합니다. 조회 토큰(`X-Guest-Order-Token`)으로 주문 소유권이 검증되며, 비회원은 저장된 회원 주소(`address_id`)를 쓸 수 없으므로 수취인·연락처·주소 필드를 직접 입력받아 `OrderController@updateShippingAddress`가 회원과 동일한 `OrderService::updateShippingAddress()`로 처리합니다.
+
+**국내/해외 주소 조합** `country_code` 가 국내/해외를 가르는 기준축입니다.
+
+| `country_code` | 필수 필드 | 비활성 측 처리 |
+| --- | --- | --- |
+| 미전송 또는 `KR` | `zipcode`, `address` | 해외 컬럼(`address_line_1`·`intl_*`)을 `null` 로 초기화 |
+| 그 외 (예: `US`) | `address_line_1`, `intl_city`, `intl_postal_code` | 국내 컬럼(`zipcode`·`address`)을 빈 문자열로 초기화 |
+
+필수 필드가 비면 422 검증 오류를 반환합니다. 국내↔해외를 전환하면 반대편 컬럼이 초기화되므로 구 주소가 남지 않습니다.
+
+**상태코드 구분** 배송 전 상태가 아닌 등 도메인 규칙 위반은 422, 그 밖의 서버 내부 오류는 500 입니다. 500 응답에는 예외 원문이 실리지 않습니다.
 
 

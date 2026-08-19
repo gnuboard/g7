@@ -12,6 +12,7 @@ use App\Exceptions\CircularReferenceException;
 use App\Exceptions\ConcurrentModificationException;
 use App\Exceptions\LayoutIncludeException;
 use App\Extension\HookManager;
+use App\Extension\Traits\ClearsTemplateCaches;
 use App\Helpers\PermissionHelper;
 use App\Models\TemplateLayout;
 use App\Models\User;
@@ -21,6 +22,8 @@ use Illuminate\Support\Facades\Log;
 
 class LayoutService
 {
+    use ClearsTemplateCaches;
+
     /**
      * LayoutRepository, LayoutVersionRepository, TemplateRepository, LayoutResolverService 및 LayoutExtensionService 주입
      */
@@ -1470,7 +1473,9 @@ class LayoutService
         // 프론트엔드 브라우저 캐시 무효화를 위해 ext.cache_version 증가
         // PublicLayoutController가 ?v={version} 기반 HTTP 캐시를 사용하므로
         // 버전 변경 시 브라우저가 새 URL로 인식하여 캐시를 우회합니다.
-        $this->cache->put('ext.cache_version', time());
+        // 쓰기는 트레이트 단일 지점(고정 CoreCacheDriver + 메모이즈 스토어) 경유 —
+        // 주입 CacheInterface 직접 put 은 재바인딩/스토어 상이 시 read 와 어긋난다.
+        $this->incrementExtensionCacheVersion();
 
         // After 훅 - 레이아웃 업데이트 후
         HookManager::doAction('core.layout.after_update', $layout, $templateId, $name, $data);
@@ -1579,8 +1584,8 @@ class LayoutService
         // 캐시 무효화
         $this->clearDependentLayoutsCache($templateId, $name);
 
-        // 프론트엔드 브라우저 캐시 무효화
-        $this->cache->put('ext.cache_version', time());
+        // 프론트엔드 브라우저 캐시 무효화 (트레이트 단일 지점 경유)
+        $this->incrementExtensionCacheVersion();
 
         // After 훅 - 버전 복원 후
         HookManager::doAction('core.layout.after_version_restore', $newVersion, $templateId, $name, $versionId);

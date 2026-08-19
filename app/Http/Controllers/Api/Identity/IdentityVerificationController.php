@@ -366,7 +366,9 @@ class IdentityVerificationController extends PublicBaseController
             'scope' => $policy->scope,
             'target' => $policy->target,
             'purpose' => $policy->purpose,
-            'provider_id' => $policy->provider_id,
+            // 저장값을 그대로 내보내지 않는다 — 제거된 플러그인의 provider ID 가 공개 응답에
+            // 남지 않도록, 428 강제 경로와 같은 게터로 레지스트리 대조·폴백을 거친다 (A6a).
+            'provider_id' => $this->policyService->resolveProviderId($policy),
             'grace_minutes' => $policy->grace_minutes,
             'applies_to' => $policy->applies_to,
             'fail_mode' => $policy->fail_mode,

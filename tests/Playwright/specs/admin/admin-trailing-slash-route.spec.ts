@@ -10,8 +10,8 @@
  * 단위 테스트(Router.test.ts)가 매칭 로직을 잠그지만, 실제 브라우저에서
  * 재현한 증상이므로(단위 green + 브라우저 깨짐 방지) 브라우저 레벨로도 잠근다.
  *
- * @scenario admin_trailing_slash_unauthenticated + admin_no_trailing_slash_unauthenticated
- * @effects redirect_to_login_not_404
+ * 축 요약(마커 아님 — 평문): admin_trailing_slash_unauthenticated, admin_no_trailing_slash_unauthenticated.
+ * 효과 요약(마커 아님 — 평문): redirect_to_login_not_404.
  */
 import { test, expect } from '../../fixtures/auth';
 

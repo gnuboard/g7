@@ -19,6 +19,7 @@ use Modules\Sirsoft\Ecommerce\Listeners\AssignDefaultCurrencyOnRegisterListener;
 use Modules\Sirsoft\Ecommerce\Listeners\AssignDefaultShippingCountryOnRegisterListener;
 use Modules\Sirsoft\Ecommerce\Listeners\CategoryActivityLogListener;
 use Modules\Sirsoft\Ecommerce\Listeners\CategoryTreeCacheListener;
+use Modules\Sirsoft\Ecommerce\Listeners\Ckeditor5ReferenceSourcesListener;
 use Modules\Sirsoft\Ecommerce\Listeners\CouponActivityLogListener;
 use Modules\Sirsoft\Ecommerce\Listeners\CouponRestoreListener;
 use Modules\Sirsoft\Ecommerce\Listeners\CouponUseListener;
@@ -39,6 +40,7 @@ use Modules\Sirsoft\Ecommerce\Listeners\SeoCategoryCacheListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SeoProductCacheListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SeoSettingsCacheListener;
 use Modules\Sirsoft\Ecommerce\Listeners\ShippingPolicyActivityLogListener;
+use Modules\Sirsoft\Ecommerce\Listeners\ShippingPolicyCacheListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SyncOptionGroupsListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SyncProductFromOptionListener;
 use Modules\Sirsoft\Ecommerce\Listeners\UserCurrencyInfoListener;
@@ -1054,6 +1056,43 @@ class Module extends AbstractModule
         return [
             'sirsoft-ecommerce' => $this->getModulePath().'/config/ecommerce.php',
         ];
+    }
+
+    /**
+     * 완전 공개 자산 스토리지 카테고리 목록
+     *
+     * 이 카테고리들만 공개 자산 디스크 설정을 따른다. 권한 검사가 걸린 자산
+     * (회원 전용/비밀 자료 등)은 직접 URL 이 권한을 우회하므로 포함하지 않는다.
+     * 새 공개 자산 카테고리가 생기면 여기에만 추가하면 된다.
+     *
+     * @var list<string>
+     */
+    private const PUBLIC_ASSET_CATEGORIES = ['images'];
+
+    /**
+     * 카테고리별 스토리지 디스크 이름 반환
+     *
+     * 완전 공개 자산 카테고리만 공개 자산 디스크(모듈 설정 basic_info.public_asset_disk >
+     * 코어 전역 core.storage.public_asset_disk)를 따르고, 설정/캐시 등 나머지
+     * 카테고리는 기본 디스크를 유지합니다. 미설정/고아 디스크는 기본 디스크로
+     * 폴백해 기존 스트리밍 동작을 보존합니다.
+     *
+     * 모듈 설정 조회는 공개 자산 카테고리에서만 수행합니다 — 'settings' 카테고리에서
+     * 조회하면 설정 로드와 재귀 고리가 생깁니다 (AbstractModule 주석 참조).
+     *
+     * @param  string  $category  카테고리
+     * @return string 디스크 이름
+     */
+    public function getStorageDiskFor(string $category): string
+    {
+        if (! in_array($category, self::PUBLIC_ASSET_CATEGORIES, true)) {
+            return $this->getStorageDisk();
+        }
+
+        $override = module_setting('sirsoft-ecommerce', 'basic_info.public_asset_disk', '');
+
+        return $this->resolvePublicAssetDisk(is_string($override) ? $override : '')
+            ?? $this->getStorageDisk();
     }
 
     /**
@@ -2092,6 +2131,7 @@ class Module extends AbstractModule
             SeoCategoryCacheListener::class,
             CategoryTreeCacheListener::class,
             SeoSettingsCacheListener::class,
+            ShippingPolicyCacheListener::class,
             MileageTransactionListener::class,
             UserMileageInfoListener::class,
             UserCurrencyInfoListener::class,
@@ -2104,6 +2144,7 @@ class Module extends AbstractModule
             InjectAppConfigDeviceListener::class,
             IssueCashReceiptOnDepositListener::class,
             PurgeCashReceiptIdentifierListener::class,
+            Ckeditor5ReferenceSourcesListener::class,
         ];
     }
 
@@ -2137,6 +2178,21 @@ class Module extends AbstractModule
                 'schedule' => 'daily',
                 'description' => '보관기간 만료 장바구니 자동 삭제',
                 // cart_expiry_days < 1 시 커맨드 내부 self-guard 로 비활성 (별도 토글 없음)
+                'enabled_config' => null,
+            ],
+            [
+                'command' => 'sirsoft-ecommerce:prune-temp-product-images',
+                'schedule' => 'daily',
+                'description' => '미연결 임시 상품 이미지 자동 삭제',
+                // temp_key 가 남아 있으면 끝내 연결되지 않은 폼 세션 부산물이라 오탐 여지가 없다.
+                // 운영 데이터가 아니므로 별도 토글 없이 상시 동작한다 (보존기간은 커맨드 옵션).
+                'enabled_config' => null,
+            ],
+            [
+                'command' => 'sirsoft-ecommerce:prune-temp-orders',
+                'schedule' => 'hourly',
+                'description' => '만료 임시 주문 자동 삭제',
+                // 만료 판정은 임시 주문 자체의 TTL 이 정하므로 별도 토글 없음
                 'enabled_config' => null,
             ],
             [

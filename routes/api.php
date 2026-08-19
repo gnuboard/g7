@@ -358,8 +358,10 @@ Route::get('attachment/{hash}', [PublicAttachmentController::class, 'download'])
     ->where('hash', '[a-zA-Z0-9]{12}')
     ->name('api.attachment.download');
 
-// 통합 검색 API (공개)
-Route::get('search', [PublicSearchController::class, 'search'])->name('api.search');
+// 통합 검색 API (공개 — Bearer 토큰이 있으면 회원으로 해석해 게시판별 열람 권한을
+// 검색 결과·available_boards 에 반영한다. 미들웨어가 없으면 $request->user() 가
+// 항상 null 이라 인증 회원도 guest 수준으로 필터된다.)
+Route::get('search', [PublicSearchController::class, 'search'])->middleware('optional.sanctum')->name('api.search');
 
 // 관리자 API (인증 + 관리자 권한 필요, 속도 제한 적용)
 Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin', 'throttle:'.config('auth.throttle.admin')])->group(function () {

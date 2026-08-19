@@ -6,6 +6,7 @@ use App\Contracts\Extension\HookListenerInterface;
 use App\Enums\TotalRelation;
 use App\Helpers\PermissionHelper;
 use App\Search\SearchCategoryPayload;
+use App\Search\SearchHighlighter;
 use App\Support\Query\BoundedCount;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
@@ -171,10 +172,14 @@ class SearchProductsListener implements HookListenerInterface
 
             $results['products'] = SearchCategoryPayload::fromBounded($searchPage, $format($searchPage->items()));
         } catch (\Exception $e) {
+            // 실패를 카테고리 키 미설정으로 삼키면 화면이 "검색 결과 없음" 을 그린다 —
+            // failed 페이로드로 표면화하고, 원인 추적을 위해 스택을 함께 남긴다 (#103).
             Log::error('Search products error', [
                 'message' => $e->getMessage(),
                 'q' => $q,
+                'exception' => $e,
             ]);
+            $results['products'] = SearchCategoryPayload::failed();
         }
 
         return $results;
@@ -287,13 +292,7 @@ class SearchProductsListener implements HookListenerInterface
      */
     private function highlightKeyword(?string $text, string $keyword): string
     {
-        if (empty($text) || empty($keyword)) {
-            return $text ?? '';
-        }
-
-        $escapedKeyword = preg_quote($keyword, '/');
-
-        return preg_replace('/('.$escapedKeyword.')/iu', '<mark>$1</mark>', $text);
+        return SearchHighlighter::highlight($text, $keyword);
     }
 
     /**
@@ -310,7 +309,7 @@ class SearchProductsListener implements HookListenerInterface
             return '';
         }
 
-        $plainText = trim(preg_replace('/\s+/', ' ', html_entity_decode(strip_tags($content))));
+        $plainText = SearchHighlighter::toPlainText($content);
         $position = mb_stripos($plainText, $keyword);
 
         if ($position !== false) {

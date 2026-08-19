@@ -8,6 +8,7 @@ use App\Models\LanguagePack;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\LanguagePackService;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -888,5 +889,64 @@ class LanguagePackControllerTest extends TestCase
                 'url' => 'https://example.com/pack.zip',
             ]],
         ];
+    }
+
+    /**
+     * 실패 응답에 예외 원문이 실리지 않는다.
+     *
+     * 종전에는 `$e->getMessage()` 를 응답 errors/messageParams 로 그대로 넘겨,
+     * 검증 실패 메시지에 내부 예외 문자열(경로·드라이버 오류 등)이 노출됐다.
+     * 디버그 노출은 ResponseHelper 가 app.debug 에서만 Throwable 을 펼치는
+     * 기존 메커니즘에 위임한다.
+     *
+     * @scenario endpoint=manifest_preview
+     *
+     * @effects language_pack_manifest_preview_failure_omits_exception_text
+     */
+    public function test_manifest_preview_failure_does_not_leak_exception_message(): void
+    {
+        config(['app.debug' => false]);
+
+        Sanctum::actingAs($this->manager);
+
+        // ZIP 이 아닌 파일 → previewManifest 내부에서 예외 발생
+        $response = $this->postJson('/api/admin/language-packs/manifest-preview', [
+            'file' => UploadedFile::fake()->createWithContent('broken.zip', 'not-a-zip-archive'),
+        ]);
+
+        $response->assertStatus(422);
+
+        $body = $response->getContent();
+        foreach (['ZipArchive', 'SQLSTATE', '.php', 'vendor/', 'Exception'] as $needle) {
+            $this->assertStringNotContainsString(
+                $needle,
+                $body,
+                "실패 응답에 내부 예외 흔적('{$needle}')이 포함되어 있습니다: {$body}"
+            );
+        }
+    }
+
+    /**
+     * 캐시 갱신 실패 응답에도 예외 원문이 실리지 않는다 (500 축).
+     *
+     * @scenario endpoint=refresh_cache
+     *
+     * @effects language_pack_refresh_cache_failure_omits_exception_text
+     */
+    public function test_refresh_cache_failure_does_not_leak_exception_message(): void
+    {
+        config(['app.debug' => false]);
+
+        $this->mock(LanguagePackService::class, function ($mock) {
+            $mock->shouldReceive('refreshCache')
+                ->andThrow(new \RuntimeException('SQLSTATE[HY000]: internal detail'));
+        });
+
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->postJson('/api/admin/language-packs/refresh-cache');
+
+        $response->assertStatus(500);
+        $this->assertStringNotContainsString('SQLSTATE', $response->getContent());
     }
 }

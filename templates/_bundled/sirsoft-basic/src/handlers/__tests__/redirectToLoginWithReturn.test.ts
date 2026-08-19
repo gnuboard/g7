@@ -6,8 +6,10 @@
  * G7Core.dispatch 로 navigate 를 발화한다. errorHandling context 에 route/query 가 없는
  * 제약을 우회하는 핵심 동작이므로 실제 호출 인자를 단언한다(거짓 통과 방지).
  *
- * @scenario has_query:with_query,without_query
- * @effects redirect_preserves_pathname,redirect_preserves_query_string
+ * 이 핸들러는 세 진입점이 공유하므로 특정 entry_point 축에 매이지 않는다 —
+ * query 유무(with/without) 양쪽을 여기서 한 번 실측하고 effects 로만 마킹한다.
+ *
+ * @effects redirect_preserves_pathname, redirect_preserves_query_string
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';

@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\Contracts\Repositories\AttachmentRepositoryInterface;
 use App\Models\Attachment;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -21,6 +22,17 @@ class AttachmentRepository implements AttachmentRepositoryInterface
     public function findById(int $id): ?Attachment
     {
         return Attachment::find($id);
+    }
+
+    /**
+     * 소프트삭제된 행까지 포함해 ID로 첨부파일 조회
+     *
+     * @param  int  $id  첨부파일 ID
+     * @return Attachment|null 첨부파일 또는 null
+     */
+    public function findByIdWithTrashed(int $id): ?Attachment
+    {
+        return Attachment::withTrashed()->find($id);
     }
 
     /**
@@ -282,5 +294,33 @@ class AttachmentRepository implements AttachmentRepositoryInterface
                 $order++;
             }
         });
+    }
+
+    /**
+     * 소유자 없이 방치된 고아 첨부 후보를 오래된 순으로 조회합니다.
+     *
+     * @param  Carbon  $threshold  기준 시각
+     * @param  int  $limit  최대 조회 건수
+     * @param  array<int, int>  $protectedIds  보호할 첨부 ID 목록
+     * @return Collection 고아 첨부 후보
+     */
+    public function findOrphanCandidates(Carbon $threshold, int $limit, array $protectedIds = []): Collection
+    {
+        $query = Attachment::withTrashed()
+            ->whereNull('attachmentable_type')
+            ->whereNull('attachmentable_id')
+            // 확장이 소유한 첨부는 그 확장의 라이프사이클 소관이므로 코어 GC 대상이 아니다.
+            ->whereNull('source_identifier')
+            ->where('created_at', '<', $threshold);
+
+        if ($protectedIds !== []) {
+            $query->whereNotIn('id', $protectedIds);
+        }
+
+        return $query
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->limit($limit)
+            ->get(['id', 'disk', 'path', 'collection', 'created_at']);
     }
 }

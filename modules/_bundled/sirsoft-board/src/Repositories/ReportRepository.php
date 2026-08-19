@@ -668,8 +668,15 @@ class ReportRepository implements ReportRepositoryInterface
      */
     public function getPendingAcrossBoards(int $limit): Collection
     {
-        return Report::query()
+        $query = Report::query()
             ->whereIn('status', [ReportStatus::Pending, ReportStatus::Review])
+            // 비활성 게시판의 신고는 대시보드 집계에서 제외한다(활성 게시판 스코프).
+            ->whereHas('board', fn ($q) => $q->where('is_active', true));
+
+        // 신고 조회 권한 스코프 필터링 (목록 엔드포인트와 동일 게이트)
+        PermissionHelper::applyPermissionScope($query, 'sirsoft-board.reports.view');
+
+        return $query
             ->with(['board', 'author'])
             ->orderByDesc('last_reported_at')
             ->limit($limit)
@@ -683,8 +690,13 @@ class ReportRepository implements ReportRepositoryInterface
      */
     public function countPendingAcrossBoards(): int
     {
-        return Report::query()
+        $query = Report::query()
             ->whereIn('status', [ReportStatus::Pending, ReportStatus::Review])
-            ->count();
+            // 목록(getPendingAcrossBoards)과 동일 스코프여야 배지 건수와 목록 건수가 일치한다.
+            ->whereHas('board', fn ($q) => $q->where('is_active', true));
+
+        PermissionHelper::applyPermissionScope($query, 'sirsoft-board.reports.view');
+
+        return $query->count();
     }
 }

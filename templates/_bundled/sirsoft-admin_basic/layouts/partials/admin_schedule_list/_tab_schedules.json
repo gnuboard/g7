@@ -1647,6 +1647,7 @@
         "alwaysShowPagination": true,
         "idField": "id",
         "selectable": true,
+        "selectionScope": "page",
         "showColumnSelector": true,
         "responsiveBreakpoint": 768,
         "rowActions": [
@@ -1752,7 +1753,14 @@
                   "params": {
                     "target": "global",
                     "selectedSchedule": "{{$args[1]}}",
-                    "isEditMode": true
+                    "isEditMode": true,
+                    "scheduleForm": {
+                      "type": "{{$args[1].type ?? 'artisan'}}",
+                      "frequency": "{{$args[1].frequency ?? 'daily'}}",
+                      "without_overlapping": "{{!!$args[1].without_overlapping}}",
+                      "run_in_maintenance": "{{!!$args[1].run_in_maintenance}}",
+                      "is_active": "{{!!$args[1].is_active}}"
+                    }
                   }
                 },
                 {

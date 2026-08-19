@@ -983,7 +983,7 @@
                               {
                                 "handler": "toast",
                                 "params": {
-                                  "message": "$t:admin.settings.notification_definitions.save_error",
+                                  "message": "{{error.message ?? '$t:admin.settings.notification_definitions.save_error'}}",
                                   "type": "error"
                                 }
                               }

@@ -1,5 +1,7 @@
 <?php
 
+// audit:allow api-doc-coverage reason: 룰 면제 주석만 추가 — 요청/응답 계약 불변 (해당 엔드포인트 문서 부재는 사전 상태)
+
 declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayNhnkcp\Controllers;
@@ -11,6 +13,9 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
+use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
+use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\ResolvesEasyPayDisplay;
 
 /**
@@ -45,8 +50,9 @@ class AdminTransactionController extends AdminBaseController
      */
     public function queryByOrder(string $orderNumber): JsonResponse
     {
-        $payment = DB::table('ecommerce_order_payments as p')
-            ->join('ecommerce_orders as o', 'o.id', '=', 'p.order_id')
+        // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
+        $payment = DB::table((new OrderPayment)->getTable().' as p')
+            ->join((new Order)->getTable().' as o', 'o.id', '=', 'p.order_id')
             ->where('o.order_number', $orderNumber)
             ->where('p.pg_provider', 'nhnkcp')
             ->whereNotNull('p.transaction_id')
@@ -89,15 +95,15 @@ class AdminTransactionController extends AdminBaseController
         $refundAmount = $refund ? (float) ($refund->refund_amount ?? 0) : 0.0;
 
         return ResponseHelper::success('common.success', [
-            'tno'            => $payment->transaction_id,
-            'app_no'         => $rawResponse['app_no'] ?? $meta['app_no'] ?? null,
+            'tno' => $payment->transaction_id,
+            'app_no' => $rawResponse['app_no'] ?? $meta['app_no'] ?? null,
             'use_pay_method' => $meta['use_pay_method'] ?? $rawResponse['use_pay_method'] ?? null,
-            'app_time'       => $meta['app_time'] ?? $rawResponse['app_time'] ?? null,
-            'res_cd'         => $meta['res_cd'] ?? $rawResponse['res_cd'] ?? '0000',
-            'card_name'      => $rawResponse['card_name'] ?? $meta['card_name'] ?? $rawResponse['bank_name'] ?? $meta['bank_name'] ?? null,
-            'account'        => $meta['account'] ?? null,
-            'bank_name'      => $rawResponse['bank_name'] ?? $meta['bank_name'] ?? null,
-            '_is_test_mode'  => $isTest,
+            'app_time' => $meta['app_time'] ?? $rawResponse['app_time'] ?? null,
+            'res_cd' => $meta['res_cd'] ?? $rawResponse['res_cd'] ?? '0000',
+            'card_name' => $rawResponse['card_name'] ?? $meta['card_name'] ?? $rawResponse['bank_name'] ?? $meta['bank_name'] ?? null,
+            'account' => $meta['account'] ?? null,
+            'bank_name' => $rawResponse['bank_name'] ?? $meta['bank_name'] ?? null,
+            '_is_test_mode' => $isTest,
             'payment_status' => $paymentStatus?->value ?? $payment->payment_status,
             'payment_status_label' => $paymentStatus?->label(),
             'payment_status_variant' => $paymentStatus?->variant(),
@@ -123,7 +129,8 @@ class AdminTransactionController extends AdminBaseController
 
     private function latestRefundForOrder(int $orderId): ?object
     {
-        return DB::table('ecommerce_order_refunds')
+        // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
+        return DB::table((new OrderRefund)->getTable())
             ->where('order_id', $orderId)
             ->orderByDesc('id')
             ->select([

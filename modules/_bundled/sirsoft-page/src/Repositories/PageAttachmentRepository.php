@@ -3,6 +3,8 @@
 namespace Modules\Sirsoft\Page\Repositories;
 
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Page\Models\PageAttachment;
 use Modules\Sirsoft\Page\Repositories\Contracts\PageAttachmentRepositoryInterface;
@@ -97,7 +99,7 @@ class PageAttachmentRepository implements PageAttachmentRepositoryInterface
      * @param  int  $id  첨부파일 ID
      * @return PageAttachment 첨부파일 모델
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function findOrFail(int $id): PageAttachment
     {
@@ -113,6 +115,21 @@ class PageAttachmentRepository implements PageAttachmentRepositoryInterface
     public function delete(PageAttachment $attachment): bool
     {
         return (bool) $attachment->delete();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function findStaleTempAttachments(Carbon $threshold, int $limit): Collection
+    {
+        return PageAttachment::query()
+            ->whereNotNull('temp_key')
+            ->whereNull('page_id')
+            ->where('created_at', '<', $threshold)
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->limit($limit)
+            ->get(['id', 'temp_key', 'disk', 'path', 'created_at']);
     }
 
     /**

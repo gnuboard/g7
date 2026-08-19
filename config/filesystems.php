@@ -99,8 +99,11 @@ return [
             'secret' => env('AWS_SECRET_ACCESS_KEY'),
             'region' => env('AWS_DEFAULT_REGION'),
             'bucket' => env('AWS_BUCKET'),
-            'url' => env('AWS_URL'),
-            'endpoint' => env('AWS_ENDPOINT'),
+            // 빈 값(`AWS_URL=`/`AWS_ENDPOINT=`)은 미설정으로 정규화 — env() 는 키가
+            // 존재하면 빈 문자열을 돌려주므로, '' 가 endpoint 로 주입되면 S3 클라이언트
+            // 구성이 깨진다 (cp .env.example 설치 절차 방어).
+            'url' => env('AWS_URL') ?: null,
+            'endpoint' => env('AWS_ENDPOINT') ?: null,
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
             'throw' => true,
             'report' => false,

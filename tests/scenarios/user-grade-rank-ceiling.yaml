@@ -1,0 +1,95 @@
+feature: 사용자 등급 상한 + 권한 부여 상한 (KVE-2026-1919)
+
+description: |
+  슈퍼 관리자 보호와 권한 상승 상한을 삭제/탈퇴 경로뿐 아니라 수정·상태변경·권한부여·역할부여
+  전 경로에 대칭 적용한다.
+
+  - UserGradeGuard: 비-슈퍼 액터는 슈퍼 관리자 계정을 수정/상태변경/unlock 할 수 없다.
+  - PermissionEscalationGuard: 액터는 자신이 보유하지 않았거나 더 넓은 범위의 권한을 부여할 수
+    없고, 그 권한을 담은 역할을 사용자에게 통째로 배정(role_ids)할 수도 없다. 역할 조작 상한은
+    추가·제거 양방향에 대칭 적용된다 — 상한 밖 역할은 붙이지도 떼지도 못한다(하향 조작 차단).
+  - 코어 admin 역할의 update/toggle-status 는 차단된다. 이 보호는 syncPermissions 를 직접
+    호출하는 경로에도 적용된다(형제 public 메서드가 우회로가 되지 않도록).
+  - bulk-status 는 정적 라우트라 스코프 미들웨어가 통째로 우회된다(라우트 모델이 없으면
+    "목록 엔드포인트" 로 보고 스킵). 따라서 서비스 계층이 **등급 축과 스코프 축을 모두**
+    재적용한다 — 한 축만 막으면 나머지가 우회로다. 스코프 판정은 상세 경로와 동일한
+    SSoT(PermissionHelper::checkScopeAccess)에 위임한다.
+  - 상한 위반으로 거부된 역할 생성/수정은 부분 상태를 남기지 않는다(가드 → 쓰기 순서).
+  - 슈퍼 관리자 액터는 동일 작업을 정상 수행한다(회귀 없음).
+
+axes:
+  actor: [sub_admin, super_admin]
+  operation: [modify, status, unlock, grant_permission, assign_role, remove_role, update_role, toggle_role]
+  outcome: [blocked, allowed]
+
+exclusions:
+  - { actor: super_admin, outcome: blocked, reason: "슈퍼 관리자 액터는 상한 우회 — 차단 케이스 없음" }
+
+effects:
+  - super_admin_write_paths_share_rank_ceiling
+  - sub_admin_cannot_modify_super_admin
+  - sub_admin_cannot_grant_unheld_or_broader_permission
+  - sub_admin_cannot_assign_role_it_cannot_fully_grant
+  - sub_admin_cannot_remove_role_above_its_ceiling
+  - sub_admin_cannot_toggle_or_update_core_admin_role
+  - bulk_status_excludes_super_admin_for_sub_admin
+  - super_admin_actor_performs_same_operations
+  - rejected_target_state_and_tokens_unchanged
+  - sub_admin_can_assign_baseline_default_user_role
+  - role_assignment_does_not_require_permissions_update
+  # 과차단 회귀 축 — 가드가 정상 조작까지 막지 않는지. 차단 축만 고정하면 가드가
+  # 과차단으로 회귀해도 스위트가 green 이다(C-4b baseline 역할 회귀가 그 형태였다).
+  - sub_admin_retains_normal_operations_on_non_super_targets
+  - sub_admin_retains_normal_operations_on_unprotected_roles
+  # 스코프 축 — 등급 축(슈퍼 보호)과 별개다. 상세 경로가 403 으로 막는 대상을 정적
+  # bulk 라우트로는 바꿀 수 있으면 그 경로가 우회로다.
+  - bulk_status_reapplies_scope_gate_for_scoped_actor
+  - bulk_status_allows_scoped_actor_within_own_scope
+  - detail_route_enforces_scope_gate
+  # 거부의 원자성 — 403 만 단언하면 부분 쓰기(고아 역할 행 / 반영된 속성 변경)를 놓친다.
+  - rejected_role_write_leaves_no_partial_state
+  - sub_admin_cannot_modify_protected_role
+  # 프론트 게이트 노출값 — 키 존재만 단언하면 다른 리소스 권한으로 되돌아가도 green 이다.
+  - can_assign_roles_gate_follows_users_update
+
+sub_flows:
+  - id: reorder_scope_reapply
+    description: |
+      정적 순서변경 라우트(`PATCH admin/attachments/reorder` · `PUT admin/menus/order`)의
+      스코프 축 재적용. bulk-status 와 같은 형태다 — 라우트 모델이 없어 PermissionMiddleware
+      의 스코프 검사가 스킵되는데, 배포 기본 역할 `manager` 는 그 권한을 self 스코프로
+      보유한다. 서비스가 PermissionHelper::filterByScope 로 같은 판정을 재적용한다.
+
+      사용자 일괄 상태변경과 달리 "제외" 가 아니라 **전량 거부** 다 — 순서는 집합 전체에
+      대한 하나의 배열이라 일부만 반영하면 나머지와 어긋난 순서가 저장된다.
+
+      actor(등급) 축과 교차하지 않는 별개 관심사라 축이 아니라 sub_flow 로 둔다. 축으로
+      올리면 operation 이 10값이 되어 super_admin × reorder 조합까지 요구되는데, 슈퍼
+      관리자는 글로벌 스코프라 그 칸이 검증하는 것이 없다(sub_flow `listener_ip_boundary`
+      와 같은 판단).
+    effects:
+      - attachment_reorder_reapplies_scope_gate
+      - attachment_reorder_allows_in_scope_targets
+      - menu_order_reapplies_scope_gate
+      - menu_order_allows_in_scope_targets
+      # 형제 public 메서드 패리티 — HTTP 경로만 막으면 서비스를 주입한 확장이 우회한다.
+      - menu_order_service_method_guard_parity
+      # 과차단 회귀 축 — 이동 항목의 새 부모까지 검사하면 공용 상위 메뉴 아래에 자기 메뉴를
+      # 다는 정상 사용이 막힌다(착수했다가 철회한 범위를 코드 주석이 아니라 테스트로 고정).
+      - menu_order_move_under_others_parent_allowed
+
+  - id: security_exception_renderer
+    description: |
+      등급 상한 예외 3종의 전역 렌더러(`bootstrap/app.php`) 계약. 심층 방어라 actor·operation
+      축과 교차하지 않는 별개 관심사이므로 sub_flow 로 둔다.
+
+      현재 호출부(UserController · RoleController)는 전부 로컬 catch 로 403 을 만들기 때문에,
+      렌더러 블록을 통째로 지워도 나머지 스위트는 전건 green 이 된다 — "새 호출부가 로컬 catch
+      없이 던져도 조용한 500 대신 403" 이라는 렌더러의 존재 이유는 그 경로를 직접 거는
+      테스트만이 잠근다.
+    effects:
+      - ceiling_exceptions_render_as_403_without_local_catch
+
+test_files:
+  - tests/Feature/Security/RankCeilingGuardTest.php
+  - tests/Feature/Security/SecurityExceptionRendererTest.php

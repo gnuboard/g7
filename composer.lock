@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "675518b422a5d9dc29590b1f22a49c25",
+    "content-hash": "f34469561e87f11296bf77ecc5db9fbf",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -2548,6 +2548,61 @@
             "time": "2026-06-25T06:52:23+00:00"
         },
         {
+            "name": "league/flysystem-aws-s3-v3",
+            "version": "3.35.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/thephpleague/flysystem-aws-s3-v3.git",
+                "reference": "8475ef9adfc6498b85469e2abec6fe3118cd08c4"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/thephpleague/flysystem-aws-s3-v3/zipball/8475ef9adfc6498b85469e2abec6fe3118cd08c4",
+                "reference": "8475ef9adfc6498b85469e2abec6fe3118cd08c4",
+                "shasum": ""
+            },
+            "require": {
+                "aws/aws-sdk-php": "^3.371.5",
+                "league/flysystem": "^3.10.0",
+                "league/mime-type-detection": "^1.0.0",
+                "php": "^8.0.2"
+            },
+            "conflict": {
+                "guzzlehttp/guzzle": "<7.0",
+                "guzzlehttp/ringphp": "<1.1.1"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "League\\Flysystem\\AwsS3V3\\": ""
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Frank de Jonge",
+                    "email": "info@frankdejonge.nl"
+                }
+            ],
+            "description": "AWS S3 filesystem adapter for Flysystem.",
+            "keywords": [
+                "Flysystem",
+                "aws",
+                "file",
+                "files",
+                "filesystem",
+                "s3",
+                "storage"
+            ],
+            "support": {
+                "source": "https://github.com/thephpleague/flysystem-aws-s3-v3/tree/3.35.2"
+            },
+            "time": "2026-07-01T23:25:49+00:00"
+        },
+        {
             "name": "league/flysystem-local",
             "version": "3.31.0",
             "source": {
@@ -3600,6 +3655,68 @@
                 }
             ],
             "time": "2025-12-27T19:41:33+00:00"
+        },
+        {
+            "name": "predis/predis",
+            "version": "v2.4.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/predis/predis.git",
+                "reference": "07105e050622ed80bd60808367ced9e379f31530"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/predis/predis/zipball/07105e050622ed80bd60808367ced9e379f31530",
+                "reference": "07105e050622ed80bd60808367ced9e379f31530",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^7.2 || ^8.0"
+            },
+            "require-dev": {
+                "friendsofphp/php-cs-fixer": "^3.3",
+                "phpstan/phpstan": "^1.9",
+                "phpunit/phpcov": "^6.0 || ^8.0",
+                "phpunit/phpunit": "^8.0 || ^9.4"
+            },
+            "suggest": {
+                "ext-relay": "Faster connection with in-memory caching (>=0.6.2)"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Predis\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Till Krüss",
+                    "homepage": "https://till.im",
+                    "role": "Maintainer"
+                }
+            ],
+            "description": "A flexible and feature-complete Redis/Valkey client for PHP.",
+            "homepage": "http://github.com/predis/predis",
+            "keywords": [
+                "nosql",
+                "predis",
+                "redis"
+            ],
+            "support": {
+                "issues": "https://github.com/predis/predis/issues",
+                "source": "https://github.com/predis/predis/tree/v2.4.1"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/sponsors/tillkruss",
+                    "type": "github"
+                }
+            ],
+            "time": "2025-11-12T18:00:11+00:00"
         },
         {
             "name": "psr/clock",
@@ -10573,5 +10690,5 @@
         "php": "^8.2"
     },
     "platform-dev": {},
-    "plugin-api-version": "2.6.0"
+    "plugin-api-version": "2.9.0"
 }

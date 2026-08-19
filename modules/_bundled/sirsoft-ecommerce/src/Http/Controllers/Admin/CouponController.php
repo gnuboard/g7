@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Http\Controllers\Admin;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Http\JsonResponse;
+use Modules\Sirsoft\Ecommerce\Exceptions\CouponOperationException;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\BulkUpdateCouponStatusRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\CouponIssuesListRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\CouponListRequest;
@@ -16,6 +17,7 @@ use Modules\Sirsoft\Ecommerce\Http\Resources\CouponIssueCollection;
 use Modules\Sirsoft\Ecommerce\Http\Resources\CouponIssueResource;
 use Modules\Sirsoft\Ecommerce\Http\Resources\CouponResource;
 use Modules\Sirsoft\Ecommerce\Services\CouponService;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * 쿠폰 관리 컨트롤러
@@ -106,11 +108,21 @@ class CouponController extends AdminBaseController
                 'messages.coupons.updated',
                 new CouponResource($coupon)
             );
-        } catch (\Exception $e) {
+        } catch (CouponOperationException $e) {
+            // 도메인 규칙 위반 — 운영자에게 안내 가능한 상황이므로 기존 400 유지
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'exceptions.operation_failed',
                 400
+            );
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
+        } catch (\Exception $e) {
+            // 서버 결함/인프라 장애 — 4xx 로 뭉개면 장애가 입력 오류로 위장된다
+            return ResponseHelper::moduleError(
+                'sirsoft-ecommerce',
+                'exceptions.operation_failed',
+                500
             );
         }
     }
@@ -131,11 +143,21 @@ class CouponController extends AdminBaseController
                 'messages.coupons.deleted',
                 $result
             );
-        } catch (\Exception $e) {
+        } catch (CouponOperationException $e) {
+            // 도메인 규칙 위반 — 운영자에게 안내 가능한 상황이므로 기존 400 유지
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'exceptions.operation_failed',
                 400
+            );
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
+        } catch (\Exception $e) {
+            // 서버 결함/인프라 장애 — 4xx 로 뭉개면 장애가 입력 오류로 위장된다
+            return ResponseHelper::moduleError(
+                'sirsoft-ecommerce',
+                'exceptions.operation_failed',
+                500
             );
         }
     }
@@ -188,11 +210,21 @@ class CouponController extends AdminBaseController
                 200,
                 ['issued' => $result['issued'], 'skipped' => count($result['skipped'])]
             );
-        } catch (\Exception $e) {
+        } catch (CouponOperationException $e) {
+            // 도메인 규칙 위반 — 운영자에게 안내 가능한 상황이므로 기존 400 유지
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'exceptions.operation_failed',
                 400
+            );
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
+        } catch (\Exception $e) {
+            // 서버 결함/인프라 장애 — 4xx 로 뭉개면 장애가 입력 오류로 위장된다
+            return ResponseHelper::moduleError(
+                'sirsoft-ecommerce',
+                'exceptions.operation_failed',
+                500
             );
         }
     }
@@ -214,13 +246,25 @@ class CouponController extends AdminBaseController
                 'messages.coupons.issue_cancelled',
                 new CouponIssueResource($issue)
             );
+        } catch (CouponOperationException $e) {
+            // 취소 불가 사유(미존재/미사용 아님)를 전용 키로 안내 — 예외 메시지 원문 대신
+            // 키로 응답을 구성한다.
+            $messageKey = $e->getMessageKey();
+
+            return ResponseHelper::error(
+                $messageKey,
+                400,
+                null,
+                $e->getMessageParams()
+            );
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (\Exception $e) {
-            // 취소 불가 사유(미사용 아님 등)를 관리자에게 그대로 노출
+            // 서버 결함/인프라 장애 — 4xx 로 뭉개면 장애가 입력 오류로 위장된다
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'exceptions.operation_failed',
-                400,
-                ['detail' => $e->getMessage()]
+                500
             );
         }
     }
@@ -249,11 +293,24 @@ class CouponController extends AdminBaseController
                 'messages.coupons.issues_retrieved',
                 new CouponIssueCollection($issues)
             );
+        } catch (CouponOperationException $e) {
+            // 쿠폰 미존재 등 도메인 사유 — 운영자에게 안내 가능하므로 기존 400 유지
+            $messageKey = $e->getMessageKey();
+
+            return ResponseHelper::error(
+                $messageKey,
+                400,
+                null,
+                $e->getMessageParams()
+            );
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (\Exception $e) {
+            // 서버 결함/인프라 장애 — 4xx 로 뭉개면 장애가 입력 오류로 위장된다
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'exceptions.operation_failed',
-                400
+                500
             );
         }
     }

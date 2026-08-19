@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\URL;
 use Modules\Sirsoft\Page\Database\Factories\PageAttachmentFactory;
 
 class PageAttachment extends Model
@@ -152,20 +153,51 @@ class PageAttachment extends Model
      */
     public function downloadUrl(): string
     {
-        return '/api/modules/sirsoft-page/pages/attachment/'.$this->hash;
+        return route(
+            'api.modules.sirsoft-page.pages.attachment.download',
+            ['hash' => $this->hash],
+            absolute: false
+        );
     }
 
     /**
      * 이미지 미리보기 URL을 반환합니다 (공개 hash 라우트).
      *
+     * 브라우저 <img src> 는 Authorization 헤더를 실을 수 없으므로, 미발행 페이지의
+     * 첨부를 권한자 화면(관리자 상세 등)에 표시할 때는 한시 서명 URL 을 발급한다.
+     * 서명 URL 은 게이트를 통과한 응답 직렬화 시점에만 발급되고(PageResource),
+     * 서빙 엔드포인트가 유효 서명을 무인증 허용한다 — 무서명 게이트는 종전과 동일.
+     *
+     * @param  bool  $signed  한시 서명 URL 발급 여부 (미발행 첨부의 <img> 렌더용)
      * @return string|null 미리보기 URL (이미지가 아니면 null)
      */
-    public function previewUrl(): ?string
+    public function previewUrl(bool $signed = false): ?string
     {
         if (! $this->isImage()) {
             return null;
         }
 
-        return '/api/modules/sirsoft-page/pages/attachment/'.$this->hash.'/preview';
+        if ($signed) {
+            return URL::temporarySignedRoute(
+                'api.modules.sirsoft-page.pages.attachment.preview',
+                now()->addMinutes(self::SIGNED_PREVIEW_TTL_MINUTES),
+                ['hash' => $this->hash],
+                absolute: false
+            );
+        }
+
+        return route(
+            'api.modules.sirsoft-page.pages.attachment.preview',
+            ['hash' => $this->hash],
+            absolute: false
+        );
     }
+
+    /**
+     * 서명 preview URL 의 유효 시간(분).
+     *
+     * 관리자 상세 화면이 열려 있는 동안 썸네일이 유지될 만큼 길고,
+     * URL 유출 시 노출 창을 좁힐 만큼 짧은 값.
+     */
+    public const SIGNED_PREVIEW_TTL_MINUTES = 30;
 }

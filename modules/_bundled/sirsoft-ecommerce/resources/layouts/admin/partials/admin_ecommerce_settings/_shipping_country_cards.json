@@ -8,7 +8,7 @@
   "name": "Div",
   "children": [
     {
-      "id": "country_card",
+      "id": "country_card_{{countryIndex}}",
       "type": "basic",
       "name": "Div",
       "iteration": {
@@ -76,7 +76,7 @@
               },
               "children": [
                 {
-                  "type": "basic",
+                  "type": "composite",
                   "name": "Toggle",
                   "props": {
                     "checked": "{{country.is_active ?? false}}",

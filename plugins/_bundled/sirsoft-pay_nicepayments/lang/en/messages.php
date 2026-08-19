@@ -8,7 +8,6 @@ return [
         'order_not_found' => 'Order not found.',
         'invalid_request' => 'Invalid request.',
         'invalid_amount' => 'The requested amount is invalid.',
-        'vbank_refund_required_fields' => 'Please provide all required fields: TID, order number, cancel amount, and refund account information (account number, bank code, account holder).',
         'vbank_refund_order_not_found' => 'The order to refund could not be found.',
         'vbank_refund_invalid_payment' => 'This is not a refundable completed NicePayments virtual-account payment.',
         'vbank_refund_amount_mismatch' => 'The requested refund amount does not match the cancellable amount in the database.',
@@ -22,5 +21,14 @@ return [
     ],
     'defaults' => [
         'vbank_refund_msg' => 'Virtual account refund',
+    ],
+    'fields' => [
+        'tid' => 'transaction ID (TID)',
+        'moid' => 'order number',
+        'cancel_amt' => 'cancel amount',
+        'cancel_msg' => 'cancel reason',
+        'refund_acct_no' => 'refund account number',
+        'refund_bank_cd' => 'refund bank code',
+        'refund_acct_nm' => 'refund account holder',
     ],
 ];

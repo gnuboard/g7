@@ -1056,6 +1056,89 @@
       ]
     },
     {
+      "id": "public_asset_storage_card",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "admin-card"
+      },
+      "children": [
+        {
+          "id": "public_asset_storage_title",
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "card-title"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.public_asset_storage.title"
+        },
+        {
+          "id": "public_asset_storage_description",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "card-description"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.public_asset_storage.description"
+        },
+        {
+          "id": "field_public_asset_disk",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "form-group"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "className": "form-label"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.public_asset_storage.disk"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "w-full md:w-64"
+              },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Select",
+                  "props": {
+                    "name": "basic_info.public_asset_disk",
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "className": "w-full",
+                    "error": "{{_local.errors?.['basic_info.public_asset_disk']?.[0] ?? ''}}",
+                    "options": "{{[{value: '', label: $t('sirsoft-ecommerce.admin.settings.basic_info.public_asset_storage.follow_core')}].concat((_local.form?.available_public_asset_disks ?? []).map(d => ({value: d.id, label: $localized(d.label)})))}}"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_local.errors?.['basic_info.public_asset_disk']}}",
+                  "props": {
+                    "className": "form-error"
+                  },
+                  "text": "{{_local.errors?.['basic_info.public_asset_disk']?.[0] ?? ''}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "text-sm text-gray-500 dark:text-gray-400 mt-2"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.public_asset_storage.help"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
       "id": "inquiry_settings_card",
       "type": "basic",
       "name": "Div",

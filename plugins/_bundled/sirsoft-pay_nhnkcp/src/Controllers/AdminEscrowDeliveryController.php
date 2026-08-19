@@ -1,5 +1,7 @@
 <?php
 
+// audit:allow api-doc-coverage reason: 에스크로 배송등록 엔드포인트의 기존 문서 부재(사전 상태) — docgen 재생성은 기존 수기 문서(vbank/transaction-status)를 파괴해 신설 불가. 검증 규칙은 FormRequest·CHANGELOG 에 기록, 문서 신설은 후속 백로그
+
 declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayNhnkcp\Controllers;
@@ -7,10 +9,13 @@ namespace Plugins\Sirsoft\PayNhnkcp\Controllers;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Models\OrderAddress;
+use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\SanitizesPgResponse;
+use Plugins\Sirsoft\PayNhnkcp\Http\Requests\EscrowDeliveryRegisterRequest;
 use Plugins\Sirsoft\PayNhnkcp\Services\NhnKcpApiService;
 
 /**
@@ -31,8 +36,8 @@ class AdminEscrowDeliveryController extends AdminBaseController
         'deli_corp',
     ];
 
-    /** KCP 에스크로 택배사 코드표 */
-    private const COURIER_CODES = [
+    /** 택배사 코드 → 택배사명 매핑 (KCP 공식 코드표 — EscrowDeliveryRegisterRequest 의 허용값 SSoT) */
+    public const COURIER_CODES = [
         '04' => 'CJ대한통운',
         '05' => '한진택배',
         '06' => '로젠택배',
@@ -72,8 +77,9 @@ class AdminEscrowDeliveryController extends AdminBaseController
             return ResponseHelper::success('common.success', null);
         }
 
-        $address = DB::table('ecommerce_order_addresses as a')
-            ->join('ecommerce_orders as o', 'o.id', '=', 'a.order_id')
+        // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
+        $address = DB::table((new OrderAddress)->getTable().' as a')
+            ->join((new Order)->getTable().' as o', 'o.id', '=', 'a.order_id')
             ->where('o.order_number', $orderNumber)
             ->where('a.address_type', 'shipping')
             ->select([
@@ -89,14 +95,14 @@ class AdminEscrowDeliveryController extends AdminBaseController
         $escrowDelivery = $meta['escrow_delivery'] ?? null;
 
         return ResponseHelper::success('common.success', [
-            'has_escrow_payment'  => true,
-            'tno'                 => $payment->transaction_id,
-            'courier_codes'       => self::COURIER_CODES,
-            'prefill'             => [
+            'has_escrow_payment' => true,
+            'tno' => $payment->transaction_id,
+            'courier_codes' => self::COURIER_CODES,
+            'prefill' => [
                 'recv_name' => $address?->recipient_name ?? '',
-                'recv_tel'  => $address?->recipient_phone ?? '',
+                'recv_tel' => $address?->recipient_phone ?? '',
                 'recv_post' => $address?->zipcode ?? '',
-                'recv_addr' => trim(($address?->address ?? '') . ' ' . ($address?->address_detail ?? '')),
+                'recv_addr' => trim(($address?->address ?? '').' '.($address?->address_detail ?? '')),
             ],
             'registered_delivery' => $escrowDelivery,
         ]);
@@ -110,22 +116,17 @@ class AdminEscrowDeliveryController extends AdminBaseController
      *
      * KCP 에스크로 API 로 배송 정보(택배사/송장번호/수령인 등) 등록. 등록 완료 시 구매확정 안내 자동 발송.
      *
-     * @param  Request  $request  배송 정보 폼
+     * 형식·길이·택배사 코드 검증은 EscrowDeliveryRegisterRequest 가 담당한다
+     * (종전 인라인 한글 하드코딩 메시지를 다국어 키로 이관).
+     *
+     * @param  EscrowDeliveryRegisterRequest  $request  배송 정보 폼
      * @param  string  $orderNumber  주문번호
      * @return JsonResponse 등록 결과
      */
-    public function register(Request $request, string $orderNumber): JsonResponse
+    public function register(EscrowDeliveryRegisterRequest $request, string $orderNumber): JsonResponse
     {
-        $deliNumb = trim((string) $request->input('deli_numb', ''));
-        $deliCorp = trim((string) $request->input('deli_corp', ''));
-
-        if ($deliNumb === '') {
-            return ResponseHelper::error('common.failed', 422, ['deli_numb' => ['운송장번호를 입력해주세요.']]);
-        }
-
-        if ($deliCorp === '' || ! array_key_exists($deliCorp, self::COURIER_CODES)) {
-            return ResponseHelper::error('common.failed', 422, ['deli_corp' => ['택배사를 선택해주세요.']]);
-        }
+        $deliNumb = trim((string) $request->validated('deli_numb'));
+        $deliCorp = trim((string) $request->validated('deli_corp'));
 
         $payment = $this->findEscrowPayment($orderNumber);
 
@@ -135,9 +136,9 @@ class AdminEscrowDeliveryController extends AdminBaseController
 
         Log::info('KCP: escrow delivery register requested', [
             'order_number' => $orderNumber,
-            'tno'          => $payment->transaction_id,
-            'deli_numb'    => $deliNumb,
-            'deli_corp'    => $deliCorp,
+            'tno' => $payment->transaction_id,
+            'deli_numb' => $deliNumb,
+            'deli_corp' => $deliCorp,
         ]);
 
         try {
@@ -152,37 +153,38 @@ class AdminEscrowDeliveryController extends AdminBaseController
             $meta = $payment->payment_meta ? json_decode($payment->payment_meta, true) : [];
             $meta['escrow_delivery'] = [
                 'registered_at' => now()->toDateTimeString(),
-                'deli_numb'     => $deliNumb,
-                'deli_corp'     => $deliCorp,
-                'courier_name'  => $courierName,
+                'deli_numb' => $deliNumb,
+                'deli_corp' => $deliCorp,
+                'courier_name' => $courierName,
                 'pg_response_sanitized' => true,
-                'pg_response'   => $this->sanitizePgResponse($pgResponse, self::ESCROW_DELIVERY_RESPONSE_KEYS),
+                'pg_response' => $this->sanitizePgResponse($pgResponse, self::ESCROW_DELIVERY_RESPONSE_KEYS),
             ];
 
-            DB::table('ecommerce_order_payments')
+            // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
+            DB::table((new OrderPayment)->getTable())
                 ->where('id', $payment->id)
                 ->update([
                     'payment_meta' => json_encode($meta, JSON_UNESCAPED_UNICODE),
-                    'updated_at'   => now(),
+                    'updated_at' => now(),
                 ]);
 
             Log::info('KCP: escrow delivery registered', [
                 'order_number' => $orderNumber,
-                'tno'          => $payment->transaction_id,
-                'deli_numb'    => $deliNumb,
+                'tno' => $payment->transaction_id,
+                'deli_numb' => $deliNumb,
                 'courier_name' => $courierName,
             ]);
 
             return ResponseHelper::success('common.success', [
-                'res_cd'       => $pgResponse['res_cd'] ?? '0000',
-                'deli_numb'    => $deliNumb,
+                'res_cd' => $pgResponse['res_cd'] ?? '0000',
+                'deli_numb' => $deliNumb,
                 'courier_name' => $courierName,
             ]);
 
         } catch (\Exception $e) {
             Log::error('KCP: escrow delivery register exception', [
                 'order_number' => $orderNumber,
-                'error'        => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
 
             return ResponseHelper::error('common.failed', 500, [
@@ -193,8 +195,9 @@ class AdminEscrowDeliveryController extends AdminBaseController
 
     private function findEscrowPayment(string $orderNumber): ?object
     {
-        return DB::table('ecommerce_order_payments as p')
-            ->join('ecommerce_orders as o', 'o.id', '=', 'p.order_id')
+        // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
+        return DB::table((new OrderPayment)->getTable().' as p')
+            ->join((new Order)->getTable().' as o', 'o.id', '=', 'p.order_id')
             ->where('o.order_number', $orderNumber)
             ->where('p.pg_provider', 'nhnkcp')
             ->where('p.is_escrow', true)

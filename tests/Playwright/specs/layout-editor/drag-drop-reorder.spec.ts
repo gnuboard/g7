@@ -22,7 +22,7 @@
  * 슬롯 레벨 한정(자기 자손·래퍼 밖 break-out 슬롯 부재).
  *
  * @scenario drag_drop reorder
- * @effects drag_handle_present_for_draggable + explicit_drop_slots_render + drop_slots_scoped_to_relevant_levels + editor_attrs_passthrough_marks_nesting_nodes + drop_slots_span_all_accepting_containers + handle_zindex_depth_ordered + selection_based_drag_substitution + child_reselect_under_selected_parent + inner_child_nests_into_sibling_filled_card + nav_destination_unreachable_affordance_hidden + data_bound_node_draggable_and_selectable + iteration_instance_not_individually_draggable + iteration_virtual_group_select_move_ghost
+ * 효과 요약(마커 아님 — 평문): drag_handle_present_for_draggable, explicit_drop_slots_render, drop_slots_scoped_to_relevant_levels, editor_attrs_passthrough_marks_nesting_nodes, drop_slots_span_all_accepting_containers, handle_zindex_depth_ordered, selection_based_drag_substitution, child_reselect_under_selected_parent, inner_child_nests_into_sibling_filled_card, nav_destination_unreachable_affordance_hidden, data_bound_node_draggable_and_selectable, iteration_instance_not_individually_draggable, iteration_virtual_group_select_move_ghost.
  */
 import type { Page } from '@playwright/test';
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
@@ -104,6 +104,7 @@ test.describe('@layout-editor drag-drop reorder', () => {
     }).catch(() => { /* 페이지 닫힘 등 무시 */ });
   });
 
+  /** @effects drag_handle_present_for_draggable */
   test('드래그 핸들이 draggable 노드에만 렌더된다', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -126,6 +127,7 @@ test.describe('@layout-editor drag-drop reorder', () => {
     expect(mapped, '모든 일반 드래그 핸들이 실제 editor-path 노드에 매핑되어야 함').toBe(true);
   });
 
+  /** @effects explicit_drop_slots_render */
   test('드래그 중 고스트가 body 포털 + 실제 컴포넌트 복제 + 커서 정합, 드롭 슬롯 표시', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -184,6 +186,7 @@ test.describe('@layout-editor drag-drop reorder', () => {
     expect(slotsAfter, '드롭 후 슬롯은 사라져야 함').toBe(0);
   });
 
+  /** @effects drop_slots_scoped_to_relevant_levels */
   test('드롭 슬롯이 드래그 노드의 관련 레벨로 한정 — 자기 자손/래퍼 밖 break-out 슬롯 없음', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -252,6 +255,7 @@ test.describe('@layout-editor drag-drop reorder', () => {
    * 본 테스트는 stat 카드(composite StatCard)와 그 조상 컨테이너(layout)가 모두
    * [data-editor-path] 로 잡히는지 확인 — editorAttrs 가 composite/layout 루트에 도달했다는 증거.
    */
+  /** @effects editor_attrs_passthrough_marks_nesting_nodes */
   test('composite/layout nesting 노드가 editorAttrs spread 로 [data-editor-path] 표식을 보유', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -299,6 +303,7 @@ test.describe('@layout-editor drag-drop reorder', () => {
    * 드래그 시작하면 그 노드의 **부모가 아닌 다른 컨테이너**에도 드롭 슬롯이 생성된다.
    * (이전: 부모/직접 형제만 슬롯 → 다른 컨테이너로 못 넣음.)
    */
+  /** @effects drop_slots_span_all_accepting_containers */
   test('드롭 슬롯이 드래그 노드의 부모 외 다른 컨테이너에도 생성 (결함 1: 컨테이너 간 이동)', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -344,6 +349,7 @@ test.describe('@layout-editor drag-drop reorder', () => {
    * z 를 낮추면 부모 핸들이 자식 영역을 덮어 "부모 선택 상태에서 자식 재선택 불가" 결함이
    * 났다. 검증: 부모-자식 핸들 쌍에서 자식 z > 부모 z.
    */
+  /** @effects handle_zindex_depth_ordered */
   test('드래그 핸들 z-index 가 트리 깊이순 — 자식이 부모보다 위 (결함 2: 클릭 우선순위)', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -384,6 +390,7 @@ test.describe('@layout-editor drag-drop reorder', () => {
    * 노드로 치환), (b) 자식을 단순 클릭하면 자식이 재선택된다. 검증: 부모 선택 후 자식 영역에서
    * 드래그 시작 시 부모 자기/자손 컨테이너 슬롯이 제외됨(=부모가 드래그 대상으로 치환된 증거).
    */
+  /** @effects selection_based_drag_substitution, child_reselect_under_selected_parent */
   test('부모 선택 후 자식 영역 드래그 → 선택 부모가 끌림 + 자식 클릭 시 재선택 (결함 2: 선택 기준 드래그)', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -481,6 +488,7 @@ test.describe('@layout-editor drag-drop reorder', () => {
    * 으로 확장했다. 검증: 카드 내부 자식을 드래그 시작하면 **형제 카드(또는 그 자손)에 드롭 슬롯**
    * 이 생성된다(아이콘을 다른 카드로 옮길 수 있음).
    */
+  /** @effects inner_child_nests_into_sibling_filled_card */
   test('카드 내부 자식을 드래그하면 형제(채워진) 카드에 드롭 슬롯 생성', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -536,6 +544,7 @@ test.describe('@layout-editor drag-drop reorder', () => {
    * 선택해도 "편집기에서 이동할 수 없습니다" 안내(destination_unreachable)는 표시되지
    * 않는다. 어차피 편집기에서 미작동하므로 어포던스 자체를 제거(드래그 재배치 오해 방지).
    */
+  /** @effects nav_destination_unreachable_affordance_hidden */
   test('네비 어포던스 미표시 — destination_unreachable 어포던스가 DOM 에 없음', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -560,6 +569,7 @@ test.describe('@layout-editor drag-drop reorder', () => {
    * sirsoft-basic home 에는 data_bound composite 가 적을 수 있어, "핸들이 달린
    * data_bound 노드가 1개 이상 존재"로 확인(없으면 skip 처리하지 않고 핸들↔노드 매핑만).
    */
+  /** @effects data_bound_node_draggable_and_selectable */
   test('data_bound 요소도 드래그 핸들을 가져 선택/이동 가능', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -580,6 +590,7 @@ test.describe('@layout-editor drag-drop reorder', () => {
    * iteration 펼침 인스턴스(`...iteration.N`)와 그 내부 노드는 **개별** 드래그 핸들을
    * 갖지 않는다 — 개별 인스턴스를 직접 옮기면 안 되기 때문(묶음은 아래 가상 묶음으로).
    */
+  /** @effects iteration_instance_not_individually_draggable */
   test('반복 인스턴스/내부 노드는 개별 드래그 핸들 미생성', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -613,6 +624,7 @@ test.describe('@layout-editor drag-drop reorder', () => {
    * iteration 원본 path 로 1개, box 는 인스턴스 union. 클릭 시 묶음 union 이 선택되고,
    * 드래그 시작 시 원본 노드가 드래그 대상(자기/자손 슬롯 제외) + 고스트 표시.
    */
+  /** @effects iteration_virtual_group_select_move_ghost */
   test('이터레이션 가상 묶음 — 묶음 핸들 생성 + union 선택 + 원본 노드 드래그 + 고스트', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);

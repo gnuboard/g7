@@ -65,6 +65,7 @@ return [
     'order_option_already_cancelled' => '이미 취소된 주문 옵션입니다.',
     'order_option_already_confirmed' => '이미 구매확정된 주문 옵션입니다.',
     'order_option_cannot_confirm' => '현재 상태에서는 구매확정할 수 없습니다.',
+    'order_option_not_confirmable' => '현재 상태에서는 구매확정할 수 없는 주문 옵션입니다.',
     'cancel_quantity_exceeds' => '취소 수량이 현재 수량(:max개)을 초과합니다.',
 
     // 주문 결제 관련
@@ -85,6 +86,7 @@ return [
     'order_cancel_failed' => '주문 취소 처리에 실패했습니다.',
     'order_estimate_refund_failed' => '환불 예상금액 계산에 실패했습니다.',
     'order_create_failed' => '주문 생성에 실패했습니다.',
+    'order_shipping_address_update_failed' => '배송지 변경 처리 중 오류가 발생했습니다.',
 
     // 통화 관련
     'unknown_currency' => '지원하지 않는 통화입니다: :currency',

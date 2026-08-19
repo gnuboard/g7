@@ -90,6 +90,7 @@ return [
         'use_comment' => 'Use Comments',
         'use_reply' => 'Use Replies',
         'max_reply_depth' => 'Max Reply Depth',
+        'reply_delete_policy' => 'Reply Delete Policy',
         'use_report' => 'Use Reports',
         'use_file_upload' => 'Use File Upload',
         'max_file_size' => 'Max File Size',

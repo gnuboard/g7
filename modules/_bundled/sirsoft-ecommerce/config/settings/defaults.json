@@ -23,7 +23,8 @@
       "privacy_officer": "",
       "privacy_officer_email": "",
       "mail_order_number": "",
-      "telecom_number": ""
+      "telecom_number": "",
+      "public_asset_disk": ""
     },
     "language_currency": {
       "default_currency": "KRW",
@@ -339,7 +340,8 @@
         "privacy_officer": { "expose": false },
         "privacy_officer_email": { "expose": false },
         "mail_order_number": { "expose": false },
-        "telecom_number": { "expose": false }
+        "telecom_number": { "expose": false },
+        "public_asset_disk": { "expose": false }
       }
     },
     "language_currency": {

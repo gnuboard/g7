@@ -22,11 +22,12 @@
  *    태그로 찾지 말고 `data-testid` (`pg-select-{id}` / `pg-locked-badge-{id}` / `pg-not-required-{id}`)
  *    로 분기 결과를 조회한다 — 컴포넌트 내부 구현이 바뀌어도 이 spec 은 유지된다.
  *
- * @scenario extension_payment_method method_kind=extension × capability_declared=declared × capability=pg_locked
- * @effects admin_shows_pg_locked_badge,
- *          admin_hides_pg_select_for_locked,
- *          admin_shows_pg_select_for_unlocked,
- *          saved_null_pg_provider_self_healed
+ * 축 요약(마커 아님 — 평문): method_kind=extension, capability_declared=declared,
+ * capability=pg_locked. 요약을 시나리오 축 마커로 적으면 마커 파서가
+ * 쉼표로만 축을 분리하므로 `×` 표기는 첫 축만, 그것도 오염된 형태로 집계된다 — 실재하지 않는
+ * 조합이 커버된 것처럼 쌓이는 방향이라 요약은 평문으로 둔다. 실제 커버는 각 test 의 라인 마커가 담당한다.
+ *
+ * 효과 요약(마커 아님 — 평문): admin_shows_pg_locked_badge, admin_hides_pg_select_for_locked, admin_shows_pg_select_for_unlocked, saved_null_pg_provider_self_healed.
  */
 import { test, expect, authenticatePage } from '../../fixtures/ecommerce-auth';
 import type { Page } from '@playwright/test';

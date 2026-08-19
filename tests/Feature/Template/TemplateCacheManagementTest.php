@@ -285,6 +285,196 @@ class TemplateCacheManagementTest extends TestCase
     }
 
     /**
+     * template:cache-clear 커맨드가 공개 config 캐시를 삭제하는지 테스트 (#588, 공개 #119)
+     *
+     * `template.config.{identifier}` 는 버전 접미사 없는 고정 키라 캐시 버전 bump 로
+     * 무효화되지 않는다 — 커맨드가 능동 forget 하지 않으면 TTL(1시간) 동안
+     * 이전 manifest 가 계속 서빙된다.
+     *
+     * @scenario cache_state=warm_stale,lifecycle_trigger=cache_clear_command_single,template_type=admin
+     *
+     * @effects cache_clear_command_forgets_template_config_key
+     */
+    public function test_template_cache_clear_command_forgets_public_config_cache(): void
+    {
+        // Arrange
+        $this->templateManager->installTemplate('sirsoft-admin_basic');
+
+        $this->coreCache()->put('template.config.sirsoft-admin_basic', [
+            'success' => true,
+            'data' => ['version' => '0.0.1-stale'],
+        ], 3600);
+
+        // Act
+        $this->artisan('template:cache-clear', ['identifier' => 'sirsoft-admin_basic'])
+            ->assertExitCode(0);
+
+        // Assert
+        $this->assertNull(
+            $this->coreCache()->get('template.config.sirsoft-admin_basic'),
+            'template:cache-clear 후 공개 config 캐시(template.config.{identifier})가 삭제되어야 합니다.'
+        );
+    }
+
+    /**
+     * template:cache-clear 전체 모드가 공개 config 캐시를 삭제하는지 테스트 (#588, 공개 #119)
+     *
+     * @scenario cache_state=warm_stale,lifecycle_trigger=cache_clear_command_all,template_type=admin
+     *
+     * @effects cache_clear_command_forgets_template_config_key
+     */
+    public function test_template_cache_clear_all_forgets_public_config_cache(): void
+    {
+        // Arrange
+        $this->templateManager->installTemplate('sirsoft-admin_basic');
+
+        $this->coreCache()->put('template.config.sirsoft-admin_basic', [
+            'success' => true,
+            'data' => ['version' => '0.0.1-stale'],
+        ], 3600);
+
+        // Act (무인자 = 전체 모드)
+        $this->artisan('template:cache-clear')
+            ->assertExitCode(0);
+
+        // Assert
+        $this->assertNull(
+            $this->coreCache()->get('template.config.sirsoft-admin_basic'),
+            'template:cache-clear 전체 모드 후 공개 config 캐시가 삭제되어야 합니다.'
+        );
+    }
+
+    /**
+     * clearTemplateCache() 가 config + components_manifest 고정 키를 삭제하는지 테스트 (#588)
+     *
+     * components_manifest 는 숫자 id / identifier 두 변종 키가 실재한다
+     * (ComponentExists 는 int|string 을 수용). 템플릿 업데이트로 components.json 이
+     * 변해도 이 키가 남으면 최대 1시간 구 매니페스트로 레이아웃을 검증한다.
+     *
+     * @scenario cache_state=warm_stale,lifecycle_trigger=template_update,template_type=admin
+     *
+     * @effects template_update_invalidates_public_config_cache,clear_template_cache_forgets_components_manifest_variants
+     */
+    public function test_clear_template_cache_forgets_config_and_components_manifest(): void
+    {
+        // Arrange
+        $this->templateManager->installTemplate('sirsoft-admin_basic');
+        $template = Template::where('identifier', 'sirsoft-admin_basic')->first();
+
+        $this->coreCache()->put('template.config.sirsoft-admin_basic', [
+            'success' => true,
+            'data' => ['version' => '0.0.1-stale'],
+        ], 3600);
+        $this->coreCache()->put("template.{$template->id}.components_manifest", ['components' => []], 3600);
+        $this->coreCache()->put('template.sirsoft-admin_basic.components_manifest', ['components' => []], 3600);
+
+        // Act — 라이프사이클(update/deactivate/uninstall/cache-clear)이 공유하는 무효화 단일 지점
+        $this->templateManager->clearTemplateCache('sirsoft-admin_basic');
+
+        // Assert
+        $this->assertNull(
+            $this->coreCache()->get('template.config.sirsoft-admin_basic'),
+            'clearTemplateCache() 후 공개 config 캐시가 삭제되어야 합니다.'
+        );
+        $this->assertNull(
+            $this->coreCache()->get("template.{$template->id}.components_manifest"),
+            'clearTemplateCache() 후 숫자 id 변종 components_manifest 캐시가 삭제되어야 합니다.'
+        );
+        $this->assertNull(
+            $this->coreCache()->get('template.sirsoft-admin_basic.components_manifest'),
+            'clearTemplateCache() 후 identifier 변종 components_manifest 캐시가 삭제되어야 합니다.'
+        );
+    }
+
+    /**
+     * 비활성화/삭제 라이프사이클이 공개 config 캐시를 삭제하는지 테스트 (#588, 공개 #119)
+     *
+     * 활성 시절 warm 된 config 캐시가 남으면 비활성/삭제된 템플릿의 manifest 를
+     * 최대 1시간 200 으로 계속 서빙한다 (캐시 히트가 상태 검사보다 먼저).
+     *
+     * @scenario cache_state=warm_stale,lifecycle_trigger=deactivate,template_type=admin
+     *
+     * @effects deactivate_uninstall_invalidate_public_config_cache
+     */
+    public function test_template_deactivate_and_uninstall_invalidate_public_config_cache(): void
+    {
+        // Arrange
+        $this->templateManager->installTemplate('sirsoft-admin_basic');
+        $this->templateManager->activateTemplate('sirsoft-admin_basic');
+
+        $warmConfig = function (): void {
+            $this->coreCache()->put('template.config.sirsoft-admin_basic', [
+                'success' => true,
+                'data' => ['version' => '0.0.1-stale'],
+            ], 3600);
+        };
+
+        // Act & Assert — 비활성화 경로
+        $warmConfig();
+        $this->templateManager->deactivateTemplate('sirsoft-admin_basic');
+        $this->assertNull(
+            $this->coreCache()->get('template.config.sirsoft-admin_basic'),
+            '비활성화 후 공개 config 캐시가 삭제되어야 합니다.'
+        );
+
+        // Act & Assert — 삭제 경로
+        $warmConfig();
+        $this->templateManager->uninstallTemplate('sirsoft-admin_basic');
+        $this->assertNull(
+            $this->coreCache()->get('template.config.sirsoft-admin_basic'),
+            '삭제 후 공개 config 캐시가 삭제되어야 합니다.'
+        );
+    }
+
+    /**
+     * 비활성화 시 편집기용 `.with_source_meta` 변종 레이아웃 캐시도 삭제되는지 테스트 (#588)
+     *
+     * LayoutService 는 편집기 병합 응답을 `.with_source_meta` 접미사 키로 별도 캐싱한다.
+     * 라이프사이클 무효화(forgetLayoutCacheKeys)가 접미사 없는 키만 지우면
+     * activate/deactivate/uninstall/refresh 후에도 편집기용 병합 캐시가 잔존한다.
+     *
+     * @scenario cache_state=warm_stale,lifecycle_trigger=uninstall,template_type=admin
+     *
+     * @effects with_source_meta_layout_cache_variants_forgotten
+     */
+    public function test_deactivate_template_clears_with_source_meta_layout_caches(): void
+    {
+        // Arrange
+        $this->templateManager->installTemplate('sirsoft-admin_basic');
+        $this->templateManager->activateTemplate('sirsoft-admin_basic');
+
+        $template = Template::where('identifier', 'sirsoft-admin_basic')->first();
+        $layouts = TemplateLayout::where('template_id', $template->id)->get();
+        $this->assertGreaterThan(0, $layouts->count());
+
+        $warmedKeys = [];
+        foreach ($layouts as $layout) {
+            $key = "template.{$template->id}.layout.{$layout->name}.with_source_meta";
+            $this->coreCache()->put($key, ['test' => 'meta'], 3600);
+            $warmedKeys[] = $key;
+
+            // 소스 해시 변종 (LayoutService::getMergedLayoutCacheKey 와 동형 — 접미사는 해시 뒤)
+            if ($layout->source_type && $layout->source_identifier) {
+                $sourceHash = md5($layout->source_type->value.$layout->source_identifier);
+                $hashKey = "template.{$template->id}.layout.{$layout->name}.{$sourceHash}.with_source_meta";
+                $this->coreCache()->put($hashKey, ['test' => 'meta'], 3600);
+                $warmedKeys[] = $hashKey;
+            }
+        }
+
+        // Act
+        $this->templateManager->deactivateTemplate('sirsoft-admin_basic');
+
+        // Assert
+        foreach ($warmedKeys as $key) {
+            $this->assertNull(
+                $this->coreCache()->get($key),
+                "비활성화 후 편집기용 병합 캐시({$key})가 삭제되어야 합니다."
+            );
+        }
+    }
+
+    /**
      * 테스트용 레이아웃 JSON 파일 생성
      */
     protected function createTestLayoutFiles(): void

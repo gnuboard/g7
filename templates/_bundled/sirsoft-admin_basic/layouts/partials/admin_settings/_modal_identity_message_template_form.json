@@ -317,7 +317,7 @@
                         {
                           "handler": "toast",
                           "params": {
-                            "message": "$t:admin.settings.identity.messages.modal.preview_failed",
+                            "message": "{{error.message ?? '$t:admin.settings.identity.messages.modal.preview_failed'}}",
                             "type": "error"
                           }
                         }
@@ -376,7 +376,7 @@
                         {
                           "handler": "toast",
                           "params": {
-                            "message": "$t:admin.settings.identity.messages.modal.reset_failed",
+                            "message": "{{error.message ?? '$t:admin.settings.identity.messages.modal.reset_failed'}}",
                             "type": "error"
                           }
                         }
@@ -490,7 +490,7 @@
                               {
                                 "handler": "toast",
                                 "params": {
-                                  "message": "$t:admin.settings.identity.messages.modal.save_failed",
+                                  "message": "{{error.message ?? '$t:admin.settings.identity.messages.modal.save_failed'}}",
                                   "type": "error"
                                 }
                               }

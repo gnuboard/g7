@@ -28,8 +28,8 @@
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | search | query | string | 아니오 | max 255 | 검색어 (지정한 검색 대상 필드에서 부분 일치) |
-| active_only | query | boolean | 아니오 | — | <!-- TODO: 용도 --> |
-| default_only | query | boolean | 아니오 | — | <!-- TODO: 용도 --> |
+| active_only | query | boolean | 아니오 | `true`, `false` | 활성 공통정보만 조회 (true 일 때만 필터 적용, false·미전달은 전체). 쿼리 문자열 `"true"`/`"false"` 도 인식 |
+| default_only | query | boolean | 아니오 | `true`, `false` | 기본 공통정보만 조회 (true 일 때만 필터 적용). 쿼리 문자열 `"true"`/`"false"` 도 인식 |
 | per_page | query | string | 아니오 | — | 페이지당 항목 수 |
 
 **요청 예시**
@@ -270,6 +270,7 @@ HTTP/1.1 201
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.product-common-infos.create`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
 
@@ -299,11 +300,29 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: 삭제 결과 요약 (`data` 객체)._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| common_info_id | integer | `5` | 삭제된 공통정보의 기본 키 |
+| products_count | integer | `2` | 이 공통정보를 참조하던 상품 수 (삭제 시 해당 상품의 연결이 해제됨) |
 
 **응답 예시**
 
-<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "공통정보가 삭제되었습니다.",
+    "data": {
+        "common_info_id": 5,
+        "products_count": 2
+    }
+}
+```
 
 **에러 응답**
 
@@ -312,6 +331,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.product-common-infos.delete`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
 
@@ -341,11 +361,46 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: `data` 객체의 필드 (`ProductCommonInfoResource`). 필드 구성은 이 문서의 **PUT /api/modules/sirsoft-ecommerce/admin/product-common-infos/{id} (공통정보 수정)** 응답 필드 표와 동일합니다._
 
 **응답 예시**
 
-<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "공통정보 목록을 불러왔습니다.",
+    "data": {
+        "id": 1,
+        "name": {
+            "ko": "API 문서 샘플 공통정보(수정)",
+            "en": "API Doc Sample Common Info (updated)"
+        },
+        "localized_name": "API 문서 샘플 공통정보(수정)",
+        "content": {
+            "ko": "배송은 결제 후 1~3일 이내 출고됩니다."
+        },
+        "localized_content": "배송은 결제 후 1~3일 이내 출고됩니다.",
+        "content_mode": "text",
+        "is_default": false,
+        "is_active": true,
+        "sort_order": 0,
+        "icon": "info-circle",
+        "created_at": "2026-07-08 10:44:49",
+        "updated_at": "2026-07-08 15:00:26",
+        "products_count": 0,
+        "language_count": 1,
+        "abilities": {
+            "can_create": true,
+            "can_update": true,
+            "can_delete": true
+        }
+    }
+}
+```
 
 **에러 응답**
 
@@ -472,6 +527,7 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.product-common-infos.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
 
@@ -501,11 +557,46 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: `data` 객체의 필드 (`ProductCommonInfoResource`). 필드 구성은 이 문서의 **PUT /api/modules/sirsoft-ecommerce/admin/product-common-infos/{id} (공통정보 수정)** 응답 필드 표와 동일합니다._ 비활성으로 전환하면 `공통정보가 비활성화되었습니다.` 가 반환됩니다.
 
 **응답 예시**
 
-<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "공통정보가 활성화되었습니다.",
+    "data": {
+        "id": 1,
+        "name": {
+            "ko": "API 문서 샘플 공통정보(수정)",
+            "en": "API Doc Sample Common Info (updated)"
+        },
+        "localized_name": "API 문서 샘플 공통정보(수정)",
+        "content": {
+            "ko": "배송은 결제 후 1~3일 이내 출고됩니다."
+        },
+        "localized_content": "배송은 결제 후 1~3일 이내 출고됩니다.",
+        "content_mode": "text",
+        "is_default": false,
+        "is_active": true,
+        "sort_order": 0,
+        "icon": "info-circle",
+        "created_at": "2026-07-08 10:44:49",
+        "updated_at": "2026-07-08 15:00:26",
+        "products_count": 0,
+        "language_count": 1,
+        "abilities": {
+            "can_create": true,
+            "can_update": true,
+            "can_delete": true
+        }
+    }
+}
+```
 
 **에러 응답**
 
@@ -514,6 +605,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.product-common-infos.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
 

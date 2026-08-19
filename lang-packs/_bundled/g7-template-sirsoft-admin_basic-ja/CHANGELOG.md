@@ -4,6 +4,26 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.5] - 2026-08-19
+
+### Added
+
+- 환경설정 > 드라이버 > 파일 스토리지의 S3 신설 항목 일본어 번역 추가 (`settings.drivers.storage.s3_endpoint*`, `s3_use_path_style*`, `s3_region_desc`) — 엔드포인트 URL·Path-style 토글·리전 입력 도움말이 일본어 로케일에서 자연스럽게 표시됩니다. (#99 @lyg-kaban 님께서 제보해주셨습니다.)
+- 환경설정 드라이버 탭의 "공개 자산 스토리지" 카드 문구 일본어 번역을 추가했습니다. (#100 @lyg-kaban 님께서 건의해주셨습니다.)
+- 회원 정보 수정 화면의 탈퇴 확인 창 문구 일본어 번역 추가 (`admin.users.modals.withdraw_confirm_*`) — 되돌릴 수 없는 처리라는 안내와 함께 처리되는 항목 목록이 일본어 로케일에서 표시됩니다. (#112 @Tuwasduliebst 님께서 제보해주셨습니다.)
+
+- 드라이버 선택란에 저장된 값이 현재 사용할 수 없는 값일 때 표시되는 안내 문구 일본어 번역을 추가했습니다.
+- 환경설정 > 업로드 탭의 「고아 첨부 정리」 카드 문구 일본어 번역을 추가했습니다 (`settings.upload.orphan_cleanup*`, `orphan_retention_days*`) — 자동 정리 토글과 보존기간 입력의 라벨·도움말이 일본어 로케일에서 표시됩니다.
+
+### Changed
+
+- S3 URL 항목의 이름·설명을 공개 URL(CDN) 용도로 명확히 한 문구 개정을 반영했습니다.
+
+### Removed
+
+- 리전 목록 선택 라벨(`settings.drivers.storage.regions.*`) 5종 제거 — 리전이 자유 입력으로 바뀌어 더 이상 사용되지 않습니다.
+- 검색엔진 선택 옵션 라벨(`settings.drivers.search_engine.options.*`) 제거 — 검색엔진 목록이 서버 제공 목록으로 바뀌어 더 이상 사용되지 않습니다.
+
 ## [1.0.4] - 2026-08-10
 
 ### Added

@@ -1,5 +1,7 @@
 <?php
 
+// audit:allow api-doc-coverage reason: 룰 면제 주석만 추가 — 요청/응답 계약 불변 (해당 엔드포인트 문서 부재는 사전 상태)
+
 declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayNhnkcp\Controllers;
@@ -36,6 +38,7 @@ class UserVbankMockDepositController
      * @param  string  $orderNumber  주문번호
      * @return JsonResponse 가상계좌 폼 데이터 또는 404
      */
+    // audit:allow controller-base-request-injection reason: 본문 입력을 읽지 않음 — user() 만 참조 (검증 대상 필드 없음)
     public function show(Request $request, string $orderNumber): JsonResponse
     {
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];

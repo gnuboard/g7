@@ -1,5 +1,7 @@
 <?php
 
+// audit:allow api-doc-coverage reason: 룰 면제 주석만 추가 — 요청/응답 계약 불변 (해당 엔드포인트 문서 부재는 사전 상태)
+
 declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayNhnkcp\Controllers;
@@ -8,6 +10,8 @@ use App\Services\PluginSettingsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\IssuesReceiptCookie;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\ResolvesEasyPayDisplay;
@@ -49,11 +53,13 @@ class UserReceiptController
      * @param  string  $orderNumber  주문번호
      * @return JsonResponse receipt_url / cash_receipt_url 또는 404
      */
+    // audit:allow controller-base-request-injection reason: 본문 입력을 읽지 않음 — user()/비회원 영수증 쿠키만 참조 (검증 대상 필드 없음)
     public function show(Request $request, string $orderNumber): JsonResponse
     {
         $user = $request->user();
-        $query = DB::table('ecommerce_order_payments as p')
-            ->join('ecommerce_orders as o', 'o.id', '=', 'p.order_id')
+        // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
+        $query = DB::table((new OrderPayment)->getTable().' as p')
+            ->join((new Order)->getTable().' as o', 'o.id', '=', 'p.order_id')
             ->where('o.order_number', $orderNumber)
             ->where('p.pg_provider', 'nhnkcp')
             ->whereNotNull('p.transaction_id');
@@ -68,7 +74,7 @@ class UserReceiptController
             } elseif ($this->verifyReceiptCookie($request->cookie(self::RECEIPT_COOKIE_NAME), $orderNumber)) {
                 $query->whereNull('o.user_id')
                     ->where('o.id', function ($sub) use ($orderNumber) {
-                        $sub->select('id')->from('ecommerce_orders')->where('order_number', $orderNumber);
+                        $sub->select('id')->from((new Order)->getTable())->where('order_number', $orderNumber);
                     });
             } else {
                 return response()->json(['error' => 'Not found'], 404);
@@ -111,10 +117,10 @@ class UserReceiptController
 
         // 휴대폰결제 → mcash_bill, 그 외 (card / bank / vbank) → card_bill
         $billCmd = $isPhonePayment ? 'mcash_bill' : 'card_bill';
-        $receiptUrl = $billBaseUrl . $billCmd
-            . '&tno=' . urlencode($tno)
-            . '&order_no=' . urlencode($orderNo)
-            . '&trade_mony=' . $tradeMony;
+        $receiptUrl = $billBaseUrl.$billCmd
+            .'&tno='.urlencode($tno)
+            .'&order_no='.urlencode($orderNo)
+            .'&trade_mony='.$tradeMony;
 
         // 현금영수증 URL (계좌이체 · 가상계좌만 해당)
         $cashReceiptUrl = null;
@@ -124,16 +130,16 @@ class UserReceiptController
             $authNo = $pgRaw['app_no'] ?? $pgRaw['receipt_no'] ?? $tno;
             $siteCd = $this->apiService->getSiteCd();
 
-            $cashReceiptUrl = $cashBaseUrl . $siteCd
-                . '&orderid=' . urlencode($orderNo)
-                . '&bill_yn=Y'
-                . '&authno=' . urlencode((string) $authNo);
+            $cashReceiptUrl = $cashBaseUrl.$siteCd
+                .'&orderid='.urlencode($orderNo)
+                .'&bill_yn=Y'
+                .'&authno='.urlencode((string) $authNo);
         }
 
         return response()->json([
-            'receipt_url'      => $receiptUrl,
+            'receipt_url' => $receiptUrl,
             'cash_receipt_url' => $cashReceiptUrl,
-            'is_test_mode'     => $isTest,
+            'is_test_mode' => $isTest,
             'payment_method_label' => $display['payment_method_label'],
             'payment_method_display_label' => $display['payment_method_display_label'],
             'selected_payment_method' => $display['selected_payment_method'],

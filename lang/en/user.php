@@ -21,11 +21,11 @@ return [
     'fetch_success' => 'User information retrieved successfully.',
     'fetch_failed' => 'Failed to retrieve user information.',
     'create_success' => 'User created successfully.',
-    'create_failed' => 'Failed to create user: :error',
+    'create_failed' => 'Failed to create user. Please try again later.',
     'update_success' => 'User information updated successfully.',
-    'update_failed' => 'Failed to update user information: :error',
+    'update_failed' => 'Failed to update user information. Please try again later.',
     'delete_success' => 'User deleted successfully.',
-    'delete_failed' => 'Failed to delete user: :error',
+    'delete_failed' => 'Failed to delete user. Please try again later.',
     'statistics_success' => 'User statistics retrieved successfully.',
     'statistics_failed' => 'Failed to retrieve user statistics.',
     'search_success' => 'User search completed successfully.',
@@ -69,8 +69,9 @@ return [
 
     // Withdraw messages
     'withdraw_success' => 'Account withdrawal completed successfully.',
-    'withdraw_failed' => 'Failed to withdraw account: :error',
+    'withdraw_failed' => 'Failed to withdraw account. Please try again later.',
     'withdraw_admin_forbidden' => 'Administrator account cannot be withdrawn.',
+    'withdraw_failed_unknown' => 'Withdrawal failed due to an unknown error.',
 
     // Validation messages
     'validation' => [

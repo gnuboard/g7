@@ -147,7 +147,14 @@
                         "params": {
                           "target": "global",
                           "selectedSchedule": null,
-                          "isEditMode": false
+                          "isEditMode": false,
+                          "scheduleForm": {
+                            "type": "artisan",
+                            "frequency": "daily",
+                            "without_overlapping": true,
+                            "run_in_maintenance": false,
+                            "is_active": true
+                          }
                         }
                       },
                       {

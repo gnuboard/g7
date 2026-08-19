@@ -2099,6 +2099,7 @@
               "serverTotalPages": "{{reports?.data?.pagination?.last_page ?? null}}",
               "serverHasMorePages": "{{reports?.data?.pagination?.has_more_pages ?? false}}",
               "selectable": true,
+              "selectionScope": "page",
               "selectedIds": "{{_global.selectedIds || []}}",
               "idField": "id",
               "showColumnSelector": false,

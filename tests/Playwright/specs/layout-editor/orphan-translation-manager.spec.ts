@@ -8,8 +8,8 @@
  *      저장 시점에 백엔드가 그 키를 orphaned 로 전이하고, 관리 모달에 "미사용" 배지로 노출된다.
  *  T4. 정리 — orphaned 키를 일괄 삭제하면 목록에서 사라진다.
  *
- * @scenario toolbar_translations_button_opens_manager + manager_lists_and_filters + orphan_created_on_save_shows_badge + orphan_bulk_delete
- * @effects toolbar_translations_button_opens_manager_modal + manager_filters_by_status_all_active_orphaned + manager_shows_orphaned_badge + save_marks_unreferenced_custom_key_as_orphaned + manager_purges_all_orphaned_keys + manager_lists_custom_keys_for_layout_with_bearer_header
+ * 축 요약(마커 아님 — 평문): toolbar_translations_button_opens_manager, manager_lists_and_filters, orphan_created_on_save_shows_badge, orphan_bulk_delete.
+ * 효과 요약(마커 아님 — 평문): toolbar_translations_button_opens_manager_modal, manager_filters_by_status_all_active_orphaned, manager_shows_orphaned_badge, save_marks_unreferenced_custom_key_as_orphaned, manager_purges_all_orphaned_keys, manager_lists_custom_keys_for_layout_with_bearer_header.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 import type { Page } from '@playwright/test';
@@ -34,6 +34,7 @@ async function openManager(page: Page): Promise<void> {
 }
 
 test.describe('@layout-editor 커스텀 다국어 관리 모달 (S8-2 후속)', () => {
+  /** @effects toolbar_translations_button_opens_manager_modal */
   test('T1. 🌐 버튼 → 관리 모달 진입', async ({ page }) => {
     await openEditorLogin(page);
     await openManager(page);
@@ -43,6 +44,7 @@ test.describe('@layout-editor 커스텀 다국어 관리 모달 (S8-2 후속)', 
     await expect(page.getByTestId('g7le-translation-manager')).toHaveCount(0);
   });
 
+  /** @effects manager_filters_by_status_all_active_orphaned */
   test('T2. 목록/필터 동작 (비어 있으면 empty, 있으면 필터 탭)', async ({ page }) => {
     await openEditorLogin(page);
     await openManager(page);
@@ -59,6 +61,7 @@ test.describe('@layout-editor 커스텀 다국어 관리 모달 (S8-2 후속)', 
     }
   });
 
+  /** @effects manager_lists_custom_keys_for_layout_with_bearer_header */
   test('T3+T4. 모달 fetch 가 Bearer 토큰을 첨부하고 응답을 렌더한다', async ({ page }) => {
     await openEditorLogin(page);
     // 관리 모달 fetch 요청의 Authorization 헤더를 가로채 검증.

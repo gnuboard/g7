@@ -26,10 +26,10 @@
       ]
     },
     {
-      "comment": "게시글 탭 - 결과 없을 때",
+      "comment": "게시글 탭 - 결과 없을 때 (검색 실패는 결과 없음이 아니다 — categories_failed 로 구분, 키 부재(구버전 코어)는 종전 렌더 유지)",
       "type": "basic",
       "name": "Div",
-      "if": "{{query?.type === 'posts' && (searchResults?.data?.posts_count ?? 0) === 0}}",
+      "if": "{{query?.type === 'posts' && (searchResults?.data?.posts_count ?? 0) === 0 && !(searchResults?.data?.categories_failed?.posts ?? false)}}",
       "props": { "className": "py-16 text-center" },
       "children": [
         {
@@ -42,6 +42,25 @@
         },
         { "type": "basic", "name": "H3", "props": { "className": "text-lg font-medium text-gray-900 dark:text-white mb-2" }, "text": "$t:search.empty.posts" },
         { "type": "basic", "name": "P", "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }, "text": "$t:search.empty.suggestion" }
+      ]
+    },
+    {
+      "comment": "게시글 탭 - 검색 실패",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{query?.type === 'posts' && (searchResults?.data?.categories_failed?.posts ?? false)}}",
+      "props": { "className": "py-16 text-center" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "mb-5 text-red-300 dark:text-red-500/60" },
+          "children": [
+            { "type": "basic", "name": "Icon", "props": { "name": "triangle-exclamation", "size": "4x" } }
+          ]
+        },
+        { "type": "basic", "name": "H3", "props": { "className": "text-lg font-medium text-gray-900 dark:text-white mb-2" }, "text": "$t:search.failed.title" },
+        { "type": "basic", "name": "P", "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }, "text": "$t:search.failed.suggestion" }
       ]
     },
     {
@@ -62,10 +81,10 @@
       ]
     },
     {
-      "comment": "상품 탭 - 결과 없을 때",
+      "comment": "상품 탭 - 결과 없을 때 (검색 실패는 결과 없음이 아니다 — categories_failed 로 구분, 키 부재(구버전 코어)는 종전 렌더 유지)",
       "type": "basic",
       "name": "Div",
-      "if": "{{query?.type === 'products' && (searchResults?.data?.products_count ?? 0) === 0}}",
+      "if": "{{query?.type === 'products' && (searchResults?.data?.products_count ?? 0) === 0 && !(searchResults?.data?.categories_failed?.products ?? false)}}",
       "props": { "className": "py-16 text-center" },
       "children": [
         {
@@ -81,6 +100,25 @@
       ]
     },
     {
+      "comment": "상품 탭 - 검색 실패",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{query?.type === 'products' && (searchResults?.data?.categories_failed?.products ?? false)}}",
+      "props": { "className": "py-16 text-center" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "mb-5 text-red-300 dark:text-red-500/60" },
+          "children": [
+            { "type": "basic", "name": "Icon", "props": { "name": "triangle-exclamation", "size": "4x" } }
+          ]
+        },
+        { "type": "basic", "name": "H3", "props": { "className": "text-lg font-medium text-gray-900 dark:text-white mb-2" }, "text": "$t:search.failed.title" },
+        { "type": "basic", "name": "P", "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }, "text": "$t:search.failed.suggestion" }
+      ]
+    },
+    {
       "comment": "페이지 탭 - 결과 있을 때",
       "type": "basic",
       "name": "Div",
@@ -90,10 +128,10 @@
       ]
     },
     {
-      "comment": "페이지 탭 - 결과 없을 때",
+      "comment": "페이지 탭 - 결과 없을 때 (검색 실패는 결과 없음이 아니다 — categories_failed 로 구분, 키 부재(구버전 코어)는 종전 렌더 유지)",
       "type": "basic",
       "name": "Div",
-      "if": "{{query?.type === 'pages' && (searchResults?.data?.pages_count ?? 0) === 0}}",
+      "if": "{{query?.type === 'pages' && (searchResults?.data?.pages_count ?? 0) === 0 && !(searchResults?.data?.categories_failed?.pages ?? false)}}",
       "props": { "className": "py-16 text-center" },
       "children": [
         {
@@ -106,6 +144,25 @@
         },
         { "type": "basic", "name": "H3", "props": { "className": "text-lg font-medium text-gray-900 dark:text-white mb-2" }, "text": "$t:search.empty.pages" },
         { "type": "basic", "name": "P", "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }, "text": "$t:search.empty.suggestion" }
+      ]
+    },
+    {
+      "comment": "페이지 탭 - 검색 실패",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{query?.type === 'pages' && (searchResults?.data?.categories_failed?.pages ?? false)}}",
+      "props": { "className": "py-16 text-center" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "mb-5 text-red-300 dark:text-red-500/60" },
+          "children": [
+            { "type": "basic", "name": "Icon", "props": { "name": "triangle-exclamation", "size": "4x" } }
+          ]
+        },
+        { "type": "basic", "name": "H3", "props": { "className": "text-lg font-medium text-gray-900 dark:text-white mb-2" }, "text": "$t:search.failed.title" },
+        { "type": "basic", "name": "P", "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }, "text": "$t:search.failed.suggestion" }
       ]
     }
   ]

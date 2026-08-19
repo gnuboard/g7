@@ -36,8 +36,12 @@ class TemplateService
         private PluginManagerInterface $pluginManager,
         private LayoutVersionRepositoryInterface $layoutVersionRepository
     ) {
-        // TemplateManager 초기화 (템플릿 스캔)
-        $this->templateManager->loadTemplates();
+        // TemplateManager 초기화 — 아직 로드되지 않았을 때만 스캔한다.
+        // 무조건 loadTemplates() 를 부르면 공유 싱글톤의 템플릿 맵을 리셋한 뒤 디렉토리를
+        // 통째로 재스캔하므로, 이 서비스가 주입될 때마다 풀스캔과 상태 변형이 반복된다.
+        // (웹/serve/test 는 CoreServiceProvider::boot 가 로드를 보장하지만, 그 외 콘솔 경로는
+        //  로딩을 건너뛰므로 이 초기화 자체를 없앨 수는 없다)
+        $this->templateManager->ensureLoaded();
     }
 
     /**
@@ -1213,6 +1217,11 @@ class TemplateService
      */
     public function getEditorRoutesDataWithModules(string $identifier): array
     {
+        // 열화 판정은 이 호출의 병합 결과만 가리켜야 한다. 이 서비스는 공유 인스턴스라
+        // 리셋하지 않으면 직전 호출(업데이트 스왑 창)의 판정이 인스턴스에 눌어붙어,
+        // 모듈 디렉토리가 복구된 뒤의 병합까지 열화로 보고된다.
+        $this->routeMergeDegraded = false;
+
         // 1. routes.json 경로 — 활성 디렉토리 우선, _bundled 폴백 (활성/비활성 무관).
         $candidates = [
             base_path("templates/{$identifier}/routes.json"),

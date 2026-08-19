@@ -4,7 +4,7 @@ namespace App\Listeners\LayoutEditor;
 
 use App\Contracts\Extension\HookListenerInterface;
 use App\Contracts\Repositories\TemplateCustomTranslationRepositoryInterface;
-use App\Extension\Cache\CoreCacheDriver;
+use App\Extension\Traits\ClearsTemplateCaches;
 use App\Services\LanguagePack\CustomTranslationUsageScanner;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
@@ -30,6 +30,8 @@ use Throwable;
  */
 class MarkOrphanedCustomTranslations implements HookListenerInterface
 {
+    use ClearsTemplateCaches;
+
     /**
      * @param  TemplateCustomTranslationRepositoryInterface  $repository  커스텀 키 리포지토리
      * @param  CustomTranslationUsageScanner  $scanner  키 사용 스캐너 (순수)
@@ -124,12 +126,11 @@ class MarkOrphanedCustomTranslations implements HookListenerInterface
     /**
      * 다국어 캐시 버전을 무효화합니다.
      *
-     * `ext.cache_version` 은 코어 소유 키이므로 컨테이너 바인딩에 의존하지 않고
-     * 항상 CoreCacheDriver(`g7:core:` 네임스페이스)를 직접 생성합니다
-     * (ClearsTemplateCaches 트레이트와 동일 SSoT).
+     * `ext.cache_version` 쓰기는 ClearsTemplateCaches 트레이트 단일 지점 경유 —
+     * 트레이트가 고정 CoreCacheDriver + 메모이즈 스토어로 write/read 일관성을 보장한다.
      */
     private function invalidateLanguageCache(): void
     {
-        (new CoreCacheDriver(config('cache.default', 'array')))->put('ext.cache_version', time());
+        $this->incrementExtensionCacheVersion();
     }
 }

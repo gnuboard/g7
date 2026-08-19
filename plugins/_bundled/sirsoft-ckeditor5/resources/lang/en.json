@@ -1,7 +1,54 @@
 {
     "editor": {
         "data_source": {
-            "settings": "Editor Settings"
+            "settings": "Editor Settings",
+            "ckeditor5Uploads": "Uploaded Image List"
+        }
+    },
+    "admin": {
+        "uploads": {
+            "title": "Editor Uploads",
+            "description": "Review images uploaded through the editor and clean up the ones that are no longer used.",
+            "refresh": "Refresh",
+            "open_settings": "Open cleanup settings",
+            "reference_notice": "Reference status is determined by scanning registered content such as posts, pages, and product descriptions. An image used only by an external extension that has not registered a reference source may appear as \"Unreferenced\", so verify before deleting.",
+            "scan_limited_notice": "The reference status filter evaluates the most recent {{count}} uploads. Older images are not shown in this list.",
+            "empty": "No uploaded images.",
+            "col": {
+                "thumbnail": "Preview",
+                "original_name": "Original name",
+                "file_size": "Size",
+                "uploader": "Uploaded by",
+                "created_at": "Uploaded at",
+                "referenced": "Reference"
+            },
+            "badge": {
+                "referenced": "In use",
+                "unreferenced": "Unused"
+            },
+            "filter": {
+                "search_placeholder": "Search by original name or hash",
+                "search_button": "Search",
+                "referenced_all": "All statuses",
+                "referenced_only": "In use only",
+                "unreferenced_only": "Unused only",
+                "date_from": "From",
+                "date_to": "To",
+                "clear": "Clear filters"
+            },
+            "delete": {
+                "button": "Delete",
+                "confirm_title": "Delete this image?",
+                "confirm_message": "The image file and its record will both be deleted. This cannot be undone.",
+                "success": "The image has been deleted.",
+                "failed": "Failed to delete the image."
+            },
+            "bulk_delete": {
+                "button": "Delete selected",
+                "selected": "{{count}} selected",
+                "confirm_title": "Delete the selected images?",
+                "confirm_message": "The files and records of the {{count}} selected images will both be deleted. This cannot be undone."
+            }
         }
     },
     "settings": {
@@ -10,8 +57,17 @@
         "notice": "CKEditor5 is loaded via CDN. An internet connection is required. It is free to use without a separate license.",
         "section_toolbar": "Editor Settings",
         "section_image": "Image Settings",
+        "section_cleanup": "Unused Image Cleanup",
         "section_preview": "Editor Test",
         "section_preview_hint": "Preview CKEditor5 with the current settings applied.",
+        "cleanup": {
+            "toggle_label": "Auto cleanup unused images",
+            "toggle_hint": "Off by default — the operator must turn it on. When on, files and records of unused images past the retention period are deleted once a day.",
+            "retention_label": "Retention period (days)",
+            "retention_hint": "Only unused images older than this period are eligible for cleanup. (1 ~ 3650 days)",
+            "manual_hint": "To see what would be removed first, run this command on the server: php artisan sirsoft-ckeditor5:prune-unused-images --dry-run",
+            "open_uploads": "Open editor uploads"
+        },
         "preview_placeholder": "Type here to test the editor.",
         "fields": {
             "toolbar": {
@@ -29,6 +85,11 @@
                 "label": "Max Image Size (MB)",
                 "hint": "Maximum allowed size for uploaded images. (1 ~ 10 MB)"
             },
+      "public_asset_disk": {
+        "label": "Public Asset Disk",
+        "hint": "Select to use a different disk for this plugin only. Leave empty to follow the core public asset disk setting.",
+        "follow_core": "Follow core setting"
+      },
             "editor_height": {
                 "label": "Editor Height (px)",
                 "hint": "Set the minimum height of the editor in pixels. (200 ~ 2000 px)"

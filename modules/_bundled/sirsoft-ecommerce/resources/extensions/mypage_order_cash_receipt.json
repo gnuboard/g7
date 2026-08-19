@@ -253,10 +253,10 @@
   "components": [
     {
       "id": "ext_mypage_cash_receipt_card",
-      "comment": "상태 ① — 무통장이 아니거나 프로바이더 미설정이면 카드 자체를 렌더하지 않는다",
+      "comment": "상태 ① — 무통장이 아니면 카드 자체를 렌더하지 않는다. 프로바이더가 미설정(또는 제공 확장 제거)이어도 이미 발급/시도된 이력이 있으면 계속 표시한다 — 영수증 URL 에 도달할 방법이 사라지면 안 된다(A3)",
       "type": "basic",
       "name": "Div",
-      "if": "{{order.data.payment?.payment_method === 'dbank' && !!order.data.payment?.cash_receipt_provider}}",
+      "if": "{{order.data.payment?.payment_method === 'dbank' && (!!order.data.payment?.cash_receipt_provider || !!order.data.cash_receipt || (order.data.cash_receipts ?? []).length > 0)}}",
       "props": { "className": "mt-4 pt-4 border-t border-gray-200 dark:border-gray-700" },
       "responsive": {
         "portable": { "props": { "className": "mt-3 pt-3 border-t border-gray-200 dark:border-gray-700" } }
@@ -305,10 +305,10 @@
         },
         {
           "id": "ext_mypage_cash_receipt_issuable",
-          "comment": "상태 ③ 입금완료 + 미발급 — 발급 버튼. 재발급 실패 이력이 있으면 상태 ⑤(경고)가 담당하므로 여기서 제외한다(두 상태는 배타적이어야 한다).",
+          "comment": "상태 ③ 입금완료 + 미발급 — 발급 버튼. 재발급 실패 이력이 있으면 상태 ⑤(경고)가 담당하므로 여기서 제외한다(두 상태는 배타적이어야 한다). 발급 프로바이더가 해석되지 않으면(제공 확장 제거 등) 버튼을 내리지 않는다 — 눌러도 구독자 없는 훅을 호출해 실패로만 기록된다(A3).",
           "type": "basic",
           "name": "Div",
-          "if": "{{order.data.payment?.payment_status === 'paid' && !order.data.cash_receipt && String((order.data.cash_receipts ?? [])[0]?.issue_status ?? '').toLowerCase() !== 'failed'}}",
+          "if": "{{!!order.data.payment?.cash_receipt_provider && order.data.payment?.payment_status === 'paid' && !order.data.cash_receipt && String((order.data.cash_receipts ?? [])[0]?.issue_status ?? '').toLowerCase() !== 'failed'}}",
           "props": { "className": "flex flex-row items-center justify-between gap-2" },
           "responsive": {
             "portable": { "props": { "className": "flex flex-col items-start gap-2 w-full" } }

@@ -90,7 +90,7 @@
                   "if": "{{!_local.isSaving}}",
                   "props": {
                     "name": "save",
-                    "className": "w-4 h-4"
+                    "className": "text-base"
                   }
                 },
                 {
@@ -141,7 +141,7 @@
               "name": "Icon",
               "props": {
                 "name": "triangle-exclamation",
-                "className": "w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
+                "className": "text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
               }
             },
             {
@@ -567,7 +567,7 @@
                           "handler": "setState",
                           "params": {
                             "target": "local",
-                            "form.images": "{{(_local.form?.images ?? []).filter(img => img.id !== $args[0])}}"
+                            "form.images": "{{(_local.form?.images ?? []).filter(img => (img.hash || img.id) !== $args[0])}}"
                           }
                         }
                       ]
@@ -627,7 +627,7 @@
                       "props": {
                         "name": "parent_id",
                         "placeholder": "$t:sirsoft-ecommerce.admin.category.form.parent_category_placeholder",
-                        "options": "{{(() => { const result = []; const flatten = (items, path = [], depth = 0) => { if (!items || !Array.isArray(items) || items.length === 0) return; for (const item of items) { if (!item || !item.id) continue; const currentPath = [...path, $localized(item.name)]; result.push({ value: item.id, label: currentPath.join(' > '), id: item.id }); if (item.children && Array.isArray(item.children) && item.children.length > 0 && depth < 2) { flatten(item.children, currentPath, depth + 1); } } }; flatten(categories?.data?.data); const filtered = result.filter(c => c && c.id && (_global.panelMode === 'create' || c.id !== _global.selectedCategoryId)); return [{ value: '', label: $t('sirsoft-ecommerce.admin.category.form.parent_top_level') }, ...filtered]; })()}}",
+                        "options": "{{(() => { const result = []; const flatten = (items, path = [], depth = 0) => { if (!items || !Array.isArray(items) || items.length === 0) return; for (const item of items) { if (!item || !item.id) continue; const currentPath = [...path, $localized(item.name)]; result.push({ value: item.id, label: currentPath.join(' > '), id: item.id }); if (item.children && Array.isArray(item.children) && item.children.length > 0 && depth < 2) { flatten(item.children, currentPath, depth + 1); } } }; flatten(categories?.data?.data); const filtered = result.filter(c => c && c.id && (_global.panelMode === 'create' || c.id !== _global.selectedCategoryId)); return [{ value: '', label: $t('sirsoft-ecommerce.admin.category.form.parent_top_level') }, ...filtered]; })() ?? []}}",
                         "isMulti": false,
                         "isClearable": false,
                         "isSearchable": true,

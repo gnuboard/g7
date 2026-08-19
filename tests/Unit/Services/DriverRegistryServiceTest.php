@@ -24,7 +24,7 @@ class DriverRegistryServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new DriverRegistryService();
+        $this->service = new DriverRegistryService;
     }
 
     protected function tearDown(): void
@@ -35,16 +35,23 @@ class DriverRegistryServiceTest extends TestCase
     }
 
     /**
-     * 코어 드라이버가 7개 카테고리를 모두 포함하는지 검증합니다.
+     * 코어 드라이버가 9개 카테고리를 모두 포함하는지 검증합니다.
+     *
+     * search 는 폴백 가드 편입(A5b)으로 추가되었다 — 이 목록에서 빠지면 검색엔진 플러그인
+     * 제거 시 죽은 `scout.driver` 가 그대로 남아 공개 검색이 500 이 된다.
+     *
+     * @scenario engine_source=core
+     *
+     * @effects search_category_registered_in_driver_registry
      */
     #[Test]
-    public function it_returns_all_seven_categories(): void
+    public function it_returns_all_nine_categories(): void
     {
         $categories = $this->service->getCategories();
 
-        $this->assertCount(7, $categories);
+        $this->assertCount(9, $categories);
         $this->assertEquals(
-            ['storage', 'cache', 'session', 'queue', 'log', 'websocket', 'mail'],
+            ['storage', 'public_asset', 'cache', 'session', 'queue', 'log', 'websocket', 'mail', 'search'],
             $categories
         );
     }
@@ -77,6 +84,40 @@ class DriverRegistryServiceTest extends TestCase
     }
 
     /**
+     * 공개 자산 카테고리 코어 드라이버를 검증합니다.
+     *
+     * 화면 Select 가 그대로 그리는 목록이므로 순서까지 고정합니다
+     * ('none' 이 선두가 아니면 기본 선택값이 바뀐다).
+     *
+     * @effects settings_catalog_includes_plugin_registered_disks
+     */
+    #[Test]
+    public function it_returns_public_asset_core_drivers_in_order(): void
+    {
+        $drivers = $this->service->getAvailableDrivers('public_asset');
+
+        $this->assertSame(['none', 'public', 's3'], array_column($drivers, 'id'));
+    }
+
+    /**
+     * 공개 자산 디스크의 사용 가능 여부 판별을 검증합니다.
+     *
+     * SaveSettingsRequest 의 closure rule 이 이 판정에 의존하므로,
+     * 미등록 값이 true 로 새면 422 게이트가 통째로 무력화됩니다.
+     *
+     * @effects invalid_disk_rejected_with_422
+     */
+    #[Test]
+    public function it_reports_public_asset_driver_availability(): void
+    {
+        $this->assertTrue($this->service->isDriverAvailable('public_asset', 'none'));
+        $this->assertTrue($this->service->isDriverAvailable('public_asset', 'public'));
+        $this->assertTrue($this->service->isDriverAvailable('public_asset', 's3'));
+
+        $this->assertFalse($this->service->isDriverAvailable('public_asset', 'nonexistent_disk'));
+    }
+
+    /**
      * 모든 카테고리의 드라이버를 한 번에 반환하는지 검증합니다.
      */
     #[Test]
@@ -85,13 +126,15 @@ class DriverRegistryServiceTest extends TestCase
         $all = $this->service->getAllAvailableDrivers();
 
         $this->assertArrayHasKey('storage', $all);
+        $this->assertArrayHasKey('public_asset', $all);
         $this->assertArrayHasKey('cache', $all);
         $this->assertArrayHasKey('session', $all);
         $this->assertArrayHasKey('queue', $all);
         $this->assertArrayHasKey('log', $all);
         $this->assertArrayHasKey('websocket', $all);
         $this->assertArrayHasKey('mail', $all);
-        $this->assertCount(7, $all);
+        $this->assertArrayHasKey('search', $all);
+        $this->assertCount(9, $all);
     }
 
     /**
@@ -137,6 +180,7 @@ class DriverRegistryServiceTest extends TestCase
     public function it_returns_correct_default_drivers(): void
     {
         $this->assertEquals('local', $this->service->getDefaultDriver('storage'));
+        $this->assertEquals('none', $this->service->getDefaultDriver('public_asset'));
         $this->assertEquals('file', $this->service->getDefaultDriver('cache'));
         $this->assertEquals('database', $this->service->getDefaultDriver('session'));
         $this->assertEquals('database', $this->service->getDefaultDriver('queue'));

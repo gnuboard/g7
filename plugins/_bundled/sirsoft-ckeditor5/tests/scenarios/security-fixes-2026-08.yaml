@@ -1,0 +1,20 @@
+feature: 에디터 이미지 업로드 인가 고정 (2026-08 보안 수정)
+
+description: |
+  2026-08 비공개 보안 제보(⑫/⑬) 대응 — 업로드 엔드포인트가 클라이언트 쿼리스트링
+  (?permission=)으로 인가 판정 대상 권한명을 받던 죽은 분기를 제거. 인가는 서버 라우트
+  게이트(auth:sanctum + admin, AdminBaseController)가 전담하고, 클라이언트가 보내는
+  권한 파라미터는 어떤 값이든 판정에 영향을 주지 않는다. 프론트(initEditor.ts /
+  html-editor.json)의 uploadPermission 전달·조립 코드도 제거(dist 재빌드 동반).
+
+axes:
+  case: [guest_upload, non_admin_upload, admin_upload, permission_param_ignored]
+
+exclusions: []
+
+effects:
+  - upload_requires_admin
+  - client_permission_param_has_no_effect
+
+test_files:
+  - plugins/_bundled/sirsoft-ckeditor5/tests/Feature/Http/Controllers/ImageUploadAuthTest.php

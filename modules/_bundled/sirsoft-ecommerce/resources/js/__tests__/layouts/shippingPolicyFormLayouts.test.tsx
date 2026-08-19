@@ -563,8 +563,10 @@ describe('shippingPolicyFormLayouts', () => {
             expect(rangesField.if).toBe('{{_local.showRanges}}');
 
             // tier 행 iteration
-            const tierRow = findById(chargeSettingsPartial, 'range_tier_row');
-            expect(tierRow).toBeDefined();
+            // id 는 반복 인덱스를 포함한 템플릿 형태다 — 접두어만으로 찾으면 null 이 돌아오고,
+            // toBeDefined() 는 null 도 통과시키므로 존재 확인은 not.toBeNull() 로 한다.
+            const tierRow = findById(chargeSettingsPartial, 'range_tier_row_{{tierIdx}}');
+            expect(tierRow).not.toBeNull();
             expect(tierRow.iteration).toBeDefined();
             expect(tierRow.iteration.source).toBe('{{_computed.activeCountrySetting?.ranges?.tiers ?? []}}');
             expect(tierRow.iteration.item_var).toBe('tier');

@@ -13,6 +13,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 /**
@@ -764,6 +765,51 @@ class LanguagePackServiceTest extends TestCase
             );
         } finally {
             File::deleteDirectory($bundledDir);
+            File::deleteDirectory(base_path('lang-packs/'.$identifier));
+        }
+    }
+
+    /**
+     * URL 설치가 성공해도 다운로드 임시 디렉토리(storage/app/temp/{uuid})가 남지 않는다.
+     *
+     * 임시 디렉토리 삭제가 catch 경로에만 있으면 실패 시에는 정리되고 성공 시에는
+     * 100% 잔존한다 — 예외도 로그도 없이 설치할 때마다 ZIP 사본이 쌓이는 누수다.
+     * 성공 경로를 실제로 통과시켜 잔존물이 0건임을 고정한다.
+     *
+     * @scenario vector=install_from_url, actor_permission=cli_system
+     *
+     * @effects successful_install_leaves_no_temp_directory
+     */
+    public function test_install_from_url_success_leaves_no_temp_directory(): void
+    {
+        $identifier = 'tmpleak-core-ja';
+        $zipPath = tempnam(sys_get_temp_dir(), 'lp_zip');
+        $zip = new \ZipArchive;
+        $zip->open($zipPath, \ZipArchive::OVERWRITE);
+        $zip->addFromString(
+            'language-pack.json',
+            (string) json_encode($this->coreJaManifest($identifier, 'tmpleak', '1.0.0'), JSON_UNESCAPED_UNICODE)
+        );
+        $zip->close();
+
+        Http::fake(['https://packs.example.com/*' => Http::response((string) file_get_contents($zipPath), 200)]);
+
+        $tempRoot = storage_path('app/temp');
+        $before = File::isDirectory($tempRoot) ? File::directories($tempRoot) : [];
+
+        try {
+            $pack = $this->service->installFromUrl('https://packs.example.com/pack.zip', null);
+
+            $this->assertSame($identifier, $pack->identifier);
+
+            $after = File::isDirectory($tempRoot) ? File::directories($tempRoot) : [];
+            $this->assertSame(
+                [],
+                array_values(array_diff($after, $before)),
+                '설치가 성공했는데 storage/app/temp 에 다운로드 임시 디렉토리가 남았다'
+            );
+        } finally {
+            @unlink($zipPath);
             File::deleteDirectory(base_path('lang-packs/'.$identifier));
         }
     }

@@ -5,7 +5,7 @@
         "ko": "NHN KCP 휴대폰 본인확인",
         "en": "NHN KCP Mobile Identity Verification"
     },
-    "version": "1.0.0",
+    "version": "1.0.1",
     "license": "MIT",
     "description": {
         "ko": "NHN KCP 휴대폰 본인확인(V2 REST)을 G7 코어 IDV 인프라에 Provider 로 등록하는 플러그인",

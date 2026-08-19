@@ -53,6 +53,7 @@ describe('isRenderedAsFlex — computed style 기반(className 토큰 아님)', 
 });
 
 describe('isNodeFlexEnabled — 노드 파생(enable 컨트롤 역해석)', () => {
+  /** @effects flex_auto_detection_works_across_tailwind_bootstrap_native_css */
   it('className 에 flex 토큰 있으면 true', () => {
     expect(isNodeFlexEnabled({ props: { className: 'w-full flex gap-2' } }, ENABLE_CONTROL)).toBe(true);
   });
@@ -93,9 +94,11 @@ describe('isNodeFlexEnabled — 노드 파생(enable 컨트롤 역해석)', () =
 });
 
 describe('resolveFlexContainerMode', () => {
+  /** @effects flex_container_classToken_emits_per_spec_apply_type */
   it('container → 항상 컨테이너 컨트롤(해제 버튼 없음)', () => {
     expect(resolveFlexContainerMode('container', null)).toEqual({ showContainer: true, showEnableButton: false, showDisableButton: false });
   });
+  /** @effects flex_item_align_self_emits_correct_recipe, flex_item_order_property_set */
   it('item → 컨테이너 컨트롤 비노출', () => {
     expect(resolveFlexContainerMode('item', null)).toEqual({ showContainer: false, showEnableButton: false, showDisableButton: false });
   });
@@ -108,6 +111,7 @@ describe('resolveFlexContainerMode', () => {
       showDisableButton: true,
     });
   });
+  /** @effects flex_make_box_button_when_not_rendered_as_flex */
   it('auto + 노드 파생 비flex(enable 컨트롤 있음) → "정렬 박스로 만들기" 버튼만', () => {
     // el 이 flex 로 보여도(패치 직후 stale 가능) 노드 파생이 우선이므로 enable 버튼.
     vi.spyOn(window, 'getComputedStyle').mockReturnValue({ display: 'flex' } as CSSStyleDeclaration);
@@ -117,6 +121,7 @@ describe('resolveFlexContainerMode', () => {
       showDisableButton: false,
     });
   });
+  /** @effects flex_auto_detection_uses_computed_style_not_classname */
   it('auto + enable 컨트롤 없음 → computed style 폴백(flex)', () => {
     vi.spyOn(window, 'getComputedStyle').mockReturnValue({ display: 'flex' } as CSSStyleDeclaration);
     expect(resolveFlexContainerMode('auto', document.createElement('div'), false, false)).toEqual({

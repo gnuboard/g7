@@ -2,8 +2,8 @@
  * editorClipboardAndShortcuts.test.tsx — 클립보드 버퍼 + 단축키 디스패처 + 단축키 맵 모달
  *
  *
- * @scenario shortcut_clipboard + shortcut_dispatch + shortcut_help_modal
- * @effects clipboard_session_roundtrip_strips_internal_meta, clipboard_read_returns_fresh_copy, shortcut_dispatch_guards_input_and_modal, shortcut_escape_branches_deselect_vs_exit_by_selection, shortcut_requires_selection_guard, shortcut_help_modal_lists_all_groups_from_ssot, paste_across_layouts_via_session_storage
+ * 축 요약(마커 아님 — 평문): shortcut_clipboard, shortcut_dispatch, shortcut_help_modal.
+ * 효과 요약(마커 아님 — 평문): clipboard_session_roundtrip_strips_internal_meta, clipboard_read_returns_fresh_copy, shortcut_dispatch_guards_input_and_modal, shortcut_escape_branches_deselect_vs_exit_by_selection, shortcut_requires_selection_guard, shortcut_help_modal_lists_all_groups_from_ssot, paste_across_layouts_via_session_storage.
  * @since engine-v1.50.0
  */
 
@@ -21,6 +21,7 @@ afterEach(() => { cleanup(); clearClipboard(); });
 beforeEach(() => clearClipboard());
 
 describe('editorClipboard — sessionStorage round-trip', () => {
+  /** @effects clipboard_session_roundtrip_strips_internal_meta */
   it('write→read 복원 + 내부 메타(__source) 제거', () => {
     const node: EditorNode = { type: 'basic', name: 'Div', __source: { kind: 'extension' } as never, children: [{ type: 'basic', name: 'Span', text: 'x', __source: {} as never }] };
     expect(writeClipboard(node)).toBe(true);
@@ -32,6 +33,7 @@ describe('editorClipboard — sessionStorage round-trip', () => {
     expect((out.children as EditorNode[])[0].text).toBe('x');
   });
 
+  /** @effects clipboard_read_returns_fresh_copy */
   it('read 는 매번 새 복제본(연속 붙여넣기 안전)', () => {
     writeClipboard({ type: 'basic', name: 'Div' });
     const a = readClipboard();
@@ -45,6 +47,7 @@ describe('editorClipboard — sessionStorage round-trip', () => {
     expect(hasClipboard()).toBe(false);
   });
 
+  /** @effects paste_across_layouts_via_session_storage */
   it('다른 레이아웃 시뮬레이션 — write 후 (네비게이션 가정) read 가능', () => {
     writeClipboard({ type: 'basic', name: 'Button', text: '버튼' });
     // sessionStorage 는 네비게이션/리렌더에 무관하게 유지 → read 성공.
@@ -70,6 +73,7 @@ describe('useEditorShortcuts — 디스패치/가드', () => {
     expect(copy).toHaveBeenCalledTimes(1);
   });
 
+  /** @effects shortcut_dispatch_guards_input_and_modal */
   it('입력칸 포커스 시 가로채지 않음', () => {
     const copy = vi.fn();
     setup({ copy }, true);
@@ -80,6 +84,7 @@ describe('useEditorShortcuts — 디스패치/가드', () => {
     input.remove();
   });
 
+  /** @effects shortcut_dispatch_guards_input_and_modal */
   it('모달 열림 시 가로채지 않음', () => {
     const copy = vi.fn();
     setup({ copy }, true);
@@ -91,6 +96,7 @@ describe('useEditorShortcuts — 디스패치/가드', () => {
     backdrop.remove();
   });
 
+  /** @effects shortcut_requires_selection_guard */
   it('requiresSelection: 선택 없으면 copy 무시', () => {
     const copy = vi.fn();
     setup({ copy }, false);
@@ -98,6 +104,7 @@ describe('useEditorShortcuts — 디스패치/가드', () => {
     expect(copy).not.toHaveBeenCalled();
   });
 
+  /** @effects shortcut_escape_branches_deselect_vs_exit_by_selection */
   it('Escape: 선택 있으면 deselect, 없으면 exit', () => {
     const deselect = vi.fn();
     const { unmount } = setup({ deselect }, true);
@@ -119,6 +126,7 @@ describe('useEditorShortcuts — 디스패치/가드', () => {
 });
 
 describe('ShortcutHelpModal — SSoT 기반 렌더', () => {
+  /** @effects shortcut_help_modal_lists_all_groups_from_ssot */
   it('모든 그룹 + 대표 액션 행 렌더(키맵 SSoT)', () => {
     render(<ShortcutHelpModal t={t} onClose={vi.fn()} isMac={false} />);
     expect(screen.getByTestId('g7le-shortcut-group-clipboard')).toBeTruthy();

@@ -32,11 +32,14 @@
               },
               "children": [
                 {
+                  "comment": "boolean 필드는 자동바인딩 금지 — e.target.value 문자열이 그대로 저장되어 서버 boolean 규칙에서 422 (공개 #97). 표시는 String() 변환, 쓰기는 change 액션의 === 'true' 캐스팅",
                   "type": "composite",
                   "name": "RadioGroup",
                   "props": {
                     "name": "is_combinable",
                     "inline": true,
+                    "autoBinding": false,
+                    "value": "{{String(_local.form?.is_combinable ?? true)}}",
                     "options": [
                       {
                         "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.combinable_yes",
@@ -48,6 +51,16 @@
                       }
                     ]
                   },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "form.is_combinable": "{{$event.target.value === 'true'}}"
+                      }
+                    }
+                  ],
                   "responsive": {
                     "mobile": {
                       "props": {
@@ -369,6 +382,7 @@
                               }
                             ],
                             "selectable": true,
+                            "selectionScope": "free",
                             "selectedIds": "{{_local.productSearchSelected ?? []}}",
                             "emptyMessage": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.no_results"
                           },
@@ -519,6 +533,7 @@
                           }
                         ],
                         "selectable": true,
+                        "selectionScope": "free",
                         "selectedIds": "{{_local.selectedProductIds ?? []}}",
                         "emptyMessage": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.no_selected"
                       },
@@ -778,6 +793,7 @@
                           }
                         ],
                         "selectable": true,
+                        "selectionScope": "free",
                         "selectedIds": "{{_local.selectedCategoryIds ?? []}}",
                         "emptyMessage": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.no_selected"
                       },

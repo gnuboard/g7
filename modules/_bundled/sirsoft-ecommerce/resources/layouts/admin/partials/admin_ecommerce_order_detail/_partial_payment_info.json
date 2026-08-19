@@ -743,10 +743,10 @@
             },
             {
               "id": "payment_cash_receipt_card_{{payIdx}}",
-              "comment": "현금영수증 카드 (W-3 / #454). 무통장이 아니거나 프로바이더 미설정이면 카드 자체를 렌더하지 않는다. 카드 바깥의 기존 결제정보 본문은 .grid-2col-responsive 등 CSS 유틸을 쓰지만, 신설 카드는 responsive.portable 로 작성한다(액션 버튼의 마크업 구조가 바뀌므로 Tailwind breakpoint 로 처리 불가 — 편집기 디바이스 미리보기가 overrideWidth 를 무시한다).",
+              "comment": "현금영수증 카드 (W-3 / #454). 무통장이 아니면 카드 자체를 렌더하지 않는다. 카드 바깥의 기존 결제정보 본문은 .grid-2col-responsive 등 CSS 유틸을 쓰지만, 신설 카드는 responsive.portable 로 작성한다(액션 버튼의 마크업 구조가 바뀌므로 Tailwind breakpoint 로 처리 불가 — 편집기 디바이스 미리보기가 overrideWidth 를 무시한다). 프로바이더 미설정이어도 이미 발급/시도된 이력이 있으면 계속 표시한다 — 제공 확장이 사라졌다고 과거 발급 내역까지 화면에서 사라지면 안 된다(A3).",
               "type": "basic",
               "name": "Div",
-              "if": "{{payment?.payment_method === 'dbank' && !!payment?.cash_receipt_provider}}",
+              "if": "{{payment?.payment_method === 'dbank' && (!!payment?.cash_receipt_provider || !!order.data?.cash_receipt || (order.data?.cash_receipts ?? []).length > 0)}}",
               "props": {
                 "className": "mt-4 pt-4 border-t border-gray-200 dark:border-gray-700"
               },
@@ -1077,13 +1077,13 @@
                       "if": "{{payment?.payment_status === 'paid' && !order.data?.cash_receipt && String((order.data?.cash_receipts ?? [])[0]?.issue_status ?? '').toLowerCase() !== 'failed'}}",
                       "props": {
                         "type": "button",
-                        "className": "px-3 py-1.5 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 text-white"
+                        "className": "px-3 py-1.5 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white"
                       },
                       "responsive": {
                         "portable": {
                           "props": {
                             "type": "button",
-                            "className": "w-full px-3 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 text-white"
+                            "className": "w-full px-3 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white"
                           }
                         }
                       },
@@ -1118,13 +1118,13 @@
                       "if": "{{!order.data?.cash_receipt && (order.data?.cash_receipts ?? []).length > 0 && String((order.data?.cash_receipts ?? [])[0]?.issue_status ?? '').toLowerCase() === 'failed'}}",
                       "props": {
                         "type": "button",
-                        "className": "px-3 py-1.5 text-sm rounded-lg bg-amber-600 hover:bg-amber-700 text-white"
+                        "className": "px-3 py-1.5 text-sm rounded-lg bg-amber-600 hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600 text-white"
                       },
                       "responsive": {
                         "portable": {
                           "props": {
                             "type": "button",
-                            "className": "w-full px-3 py-2 text-sm rounded-lg bg-amber-600 hover:bg-amber-700 text-white"
+                            "className": "w-full px-3 py-2 text-sm rounded-lg bg-amber-600 hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600 text-white"
                           }
                         }
                       },

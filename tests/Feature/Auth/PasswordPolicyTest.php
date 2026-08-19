@@ -64,6 +64,8 @@ class PasswordPolicyTest extends TestCase
 
     /**
      * @test
+     *
+     * @effects password_shorter_than_setting_is_rejected
      */
     public function 설정한_최소_길이가_회원가입에_적용된다(): void
     {
@@ -77,6 +79,8 @@ class PasswordPolicyTest extends TestCase
 
     /**
      * @test
+     *
+     * @effects password_meeting_setting_is_accepted
      */
     public function 설정한_최소_길이를_만족하면_통과한다(): void
     {
@@ -89,6 +93,8 @@ class PasswordPolicyTest extends TestCase
 
     /**
      * @test
+     *
+     * @effects special_char_requirement_is_enforced_when_enabled
      */
     public function 특수문자_필수_설정이_적용된다(): void
     {
@@ -104,6 +110,8 @@ class PasswordPolicyTest extends TestCase
 
     /**
      * @test
+     *
+     * @effects login_request_has_no_length_rule
      */
     public function 로그인_규칙에는_길이_제한이_없다(): void
     {
@@ -117,6 +125,8 @@ class PasswordPolicyTest extends TestCase
 
     /**
      * @test
+     *
+     * @effects policy_rule_reads_min_length_from_settings, policy_rule_reads_special_requirement_from_settings
      */
     public function 정책_규칙이_설정값을_읽는다(): void
     {
@@ -131,6 +141,8 @@ class PasswordPolicyTest extends TestCase
 
     /**
      * @test
+     *
+     * @effects empty_security_settings_fall_back_to_defaults
      */
     public function 설정이_비어도_기본값으로_동작한다(): void
     {
@@ -144,6 +156,8 @@ class PasswordPolicyTest extends TestCase
 
     /**
      * @test
+     *
+     * @effects all_password_setting_paths_share_one_rule
      */
     public function 비로그인_비밀번호_요청은_모두_정책을_사용한다(): void
     {
@@ -180,6 +194,8 @@ class PasswordPolicyTest extends TestCase
 
     /**
      * @test
+     *
+     * @effects saved_security_settings_are_visible_on_reload
      */
     public function 두_보안_설정_키가_저장_후_재조회에_반영된다(): void
     {

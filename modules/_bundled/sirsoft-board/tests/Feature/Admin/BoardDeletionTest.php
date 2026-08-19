@@ -6,6 +6,7 @@ namespace Modules\Sirsoft\Board\Tests\Feature\Admin;
 require_once __DIR__.'/../../ModuleTestCase.php';
 
 use App\Contracts\Extension\StorageInterface;
+use App\Extension\HookManager;
 use App\Extension\Storage\ModuleStorageDriver;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -61,6 +62,7 @@ class BoardDeletionTest extends ModuleTestCase
      * 현행(soft delete) 코드에서는 withTrashed count 가 0 이 아니어서 fail (red).
      *
      * @scenario child_type=post
+     *
      * @effects post_records_force_deleted,comment_records_force_deleted,attachment_records_force_deleted,board_itself_force_deleted
      */
     public function test_deleting_board_force_deletes_child_records(): void
@@ -117,6 +119,7 @@ class BoardDeletionTest extends ModuleTestCase
      * 남아 fail (red), slug 기반 삭제로 수정하면 green.
      *
      * @scenario child_type=attachment
+     *
      * @effects attachment_physical_files_removed
      */
     public function test_deleting_board_removes_attachment_physical_files(): void
@@ -146,6 +149,7 @@ class BoardDeletionTest extends ModuleTestCase
      * 게시판이 사라져도 신고 레코드는 보존되고 board_id 만 NULL 이 된다.
      *
      * @scenario child_type=report
+     *
      * @effects reports_preserved_with_null_board_id
      */
     public function test_deleting_board_preserves_reports(): void
@@ -173,6 +177,7 @@ class BoardDeletionTest extends ModuleTestCase
      *  댓글·첨부 등 하위 데이터가 영향받지 않음을 board 격리 관점에서 함께 보장)
      *
      * @scenario child_type=comment
+     *
      * @effects other_board_files_not_affected
      */
     public function test_deleting_board_does_not_affect_other_board_files(): void
@@ -195,6 +200,66 @@ class BoardDeletionTest extends ModuleTestCase
 
         // 정리
         $this->boardService->deleteBoard($boardB->id);
+    }
+
+    /**
+     * 게시판 삭제 시 posts.before_force_delete 훅이 게시판 인스턴스와 함께
+     * 전체 글 ID(soft-deleted 포함)를 페이로드로 발화하는지 검증합니다.
+     *
+     * BoardService::deleteBoard 는 posts forceDelete 직전에 withTrashed 전체를
+     * 1,000건 chunk 당 1회 발화합니다 — 수집된 ID 합집합이 전체 글 ID 와 일치해야
+     * 연동 확장(이커머스 문의 피벗 정리 등)이 누락 없이 통지받습니다.
+     */
+    public function test_fires_posts_before_force_delete_hook_with_all_ids(): void
+    {
+        $board = $this->createTestBoard('del-test-5');
+
+        // 일반 글 + soft-deleted 글 (둘 다 물리 삭제 대상이므로 훅 페이로드에 포함되어야 함)
+        $alivePost = Post::create([
+            'board_id' => $board->id,
+            'title' => '살아있는 게시글',
+            'content' => '본문',
+            'status' => PostStatus::Published,
+            'ip_address' => '127.0.0.1',
+        ]);
+
+        $trashedPost = Post::create([
+            'board_id' => $board->id,
+            'title' => '소프트 삭제된 게시글',
+            'content' => '본문',
+            'status' => PostStatus::Deleted,
+            'ip_address' => '127.0.0.1',
+        ]);
+        $trashedPost->delete();
+
+        $receivedIds = [];
+        $receivedBoardIds = [];
+
+        // 훅 스파이 — ModuleTestCase 가 setUp/tearDown 에서 HookManager 상태를
+        // 스냅샷/복원하므로 별도 정리는 불필요
+        HookManager::addAction(
+            'sirsoft-board.board.posts.before_force_delete',
+            function ($hookBoard, $postIds) use (&$receivedIds, &$receivedBoardIds) {
+                $receivedIds = array_merge($receivedIds, $postIds);
+                $receivedBoardIds[] = $hookBoard->id;
+            }
+        );
+
+        $this->boardService->deleteBoard($board->id);
+
+        // 수집된 ID 합집합 = 전체 글 ID (중복 발화 가능성 대비 unique 후 비교)
+        $union = array_values(array_unique($receivedIds));
+        sort($union);
+        $expected = [$alivePost->id, $trashedPost->id];
+        sort($expected);
+
+        $this->assertSame($expected, $union, '훅 페이로드 ID 합집합이 soft-deleted 포함 전체 글 ID 와 일치해야 합니다.');
+
+        // board 인자 전달 검증
+        $this->assertNotEmpty($receivedBoardIds, '훅이 최소 1회 발화되어야 합니다.');
+        foreach (array_unique($receivedBoardIds) as $receivedBoardId) {
+            $this->assertSame($board->id, $receivedBoardId, '훅의 첫 인자는 삭제 대상 게시판이어야 합니다.');
+        }
     }
 
     /**

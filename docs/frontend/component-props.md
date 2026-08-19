@@ -367,6 +367,7 @@ export interface DataGridProps {
   rowKey?: string;                  // 행 고유 키 필드 (기본: 'id')
   selectable?: boolean;             // 행 선택 기능
   selectedRows?: any[];             // 선택된 행 배열
+  selectionScope?: 'page' | 'free'; // 선택의 유효 범위 (아래 "선택의 유효 범위" 참조)
   loading?: boolean;                // 로딩 상태
   className?: string;               // CSS 클래스
 
@@ -394,8 +395,42 @@ export interface DataGridProps {
 | `rowKey` | `string` | ❌ | `'id'` | 행 고유 키로 사용할 필드명 |
 | `selectable` | `boolean` | ❌ | `false` | 체크박스 선택 기능 활성화 |
 | `selectedRows` | `any[]` | ❌ | `[]` | 선택된 행 배열 (ID 배열) |
+| `selectionScope` | `'page' \| 'free'` | ❌ | `'free'` | 선택의 유효 범위 (아래 참조) |
 | `loading` | `boolean` | ❌ | `false` | 로딩 상태 표시 |
 | `className` | `string` | ❌ | - | CSS 클래스 |
+
+### 선택의 유효 범위 (selectionScope)
+
+체크박스 선택은 컴포넌트 밖(전역/로컬 상태)에 저장된다. 그래서 검색·필터·페이지 이동으로 행이 목록에서 빠져도 그 행의 선택은 남는다. 그 상태에서 일괄 처리를 실행하면 사용자가 보고 있지도, 체크하지도 않은 행이 대상이 된다 — 확인 모달은 건수만 말하므로 실행 전에 알아챌 방법이 없고, 처리는 정상 성공하므로 오류도 남지 않는다.
+
+`onSelectionChange` 를 배선하는 DataGrid 는 둘 중 하나를 반드시 명시한다 (기본값에 기대지 않는다).
+
+| 값 | 동작 | 쓰는 곳 |
+|----|------|--------|
+| `"page"` | 지금 그려진 행에 없는 선택을 버린다. 대상은 언제나 "보이고 체크된 행" | 일괄 처리 버튼이 달린 목록 화면 |
+| `"free"` | 선택을 컴포넌트가 건드리지 않는다 | 선택 자체가 저장 대상인 폼(적용 대상 고르기 등) — 여러 페이지에 걸쳐 고르는 선택기 포함 |
+
+```json
+{
+  "type": "composite",
+  "name": "DataGrid",
+  "props": {
+    "selectable": true,
+    "selectionScope": "page",
+    "selectedIds": "{{_global.selectedIds_admin_users || []}}"
+  },
+  "actions": [
+    {
+      "event": "onSelectionChange",
+      "type": "change",
+      "handler": "setState",
+      "params": { "target": "global", "selectedIds_admin_users": "{{$args[0]}}" }
+    }
+  ]
+}
+```
+
+값은 리터럴로 고정한다. 표현식으로 분기하면 분기마다 보존 여부가 갈려 한쪽이 조용히 대상 밖 행을 싣는다. `selectable` 이 꺼진 화면이라고 안전한 것도 아니다 — 체크박스가 없으면 남은 선택이 더 안 보이므로, 범위 판정은 `selectable` 과 무관하게 적용된다.
 
 ### SubRow Props (engine-v1.6.0+)
 

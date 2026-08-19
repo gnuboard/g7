@@ -98,11 +98,14 @@ class UserPublicPostsApiTest extends BoardTestCase
     }
 
     /**
-     * 비밀글도 사용자 프로필 게시글 목록에 포함된다 (is_secret 배지로 구분).
+     * 타인 프로필에서도 비밀글은 목록에 나오되 본문은 나가지 않는다.
      *
-     * getUserPublicPosts는 모든 게시글을 표시하며 비밀글/블라인드는 배지로 구분합니다.
+     * 이 목록은 본문 일부(content_plain)를 함께 싣는데 라우트가 optional.sanctum 이라
+     * **미인증 요청에 타인의 비밀글 본문이 그대로 나갔다**(KVE-2026-1914 형제).
+     * 행·제목은 게시판 목록에서 이미 같은 수준으로 보이므로(PostResource 의 목록 규칙)
+     * 행은 남기고 본문만 비운다 — UI 의 비밀글 배지도 그대로 동작한다.
      */
-    public function test_secret_posts_are_included_with_badge(): void
+    public function test_secret_posts_are_listed_without_content_for_other_viewers(): void
     {
         // Given: 공개글과 비밀글을 작성
         $this->createPost($this->board->slug, [
@@ -122,19 +125,27 @@ class UserPublicPostsApiTest extends BoardTestCase
         // When: 사용자 게시글을 조회하면
         $response = $this->getJson("/api/modules/sirsoft-board/users/{$this->targetUser->uuid}/posts");
 
-        // Then: 모든 게시글이 반환되며 is_secret 배지로 구분
+        // Then: 두 건 모두 나오되 비밀글의 본문만 비어 있다
         $response->assertOk();
 
         $data = $response->json('data.data');
         $this->assertCount(2, $data);
+
+        $secret = collect($data)->firstWhere('is_secret', true);
+        $public = collect($data)->firstWhere('is_secret', false);
+
+        $this->assertNotNull($secret, '비밀글도 목록에는 나와야 합니다(배지로 구분)');
+        $this->assertSame('', $secret['content_plain'], '비밀글 본문은 나가면 안 됩니다');
+        $this->assertNotSame('', $public['content_plain'], '공개글 본문은 그대로여야 합니다');
     }
 
     /**
-     * 블라인드 처리된 게시글도 사용자 프로필 게시글 목록에 포함된다 (status 배지로 구분).
+     * 타인 프로필에서도 블라인드 게시글은 목록에 나오되 본문은 나가지 않는다.
      *
-     * getUserPublicPosts는 모든 게시글을 표시하며 비밀글/블라인드는 배지로 구분합니다.
+     * 블라인드 글의 본문은 이 모듈의 다른 목록에서도 비워진다
+     * (PostResource::getMaskedContentPreviewForList) — 같은 규칙을 적용한다.
      */
-    public function test_blinded_posts_are_included_with_badge(): void
+    public function test_blinded_posts_are_listed_without_content_for_other_viewers(): void
     {
         // Given: 공개된 게시글과 블라인드 처리된 게시글
         $this->createPost($this->board->slug, [
@@ -152,11 +163,15 @@ class UserPublicPostsApiTest extends BoardTestCase
         // When: 사용자 게시글을 조회하면
         $response = $this->getJson("/api/modules/sirsoft-board/users/{$this->targetUser->uuid}/posts");
 
-        // Then: 모든 게시글이 반환되며 status 배지로 구분
+        // Then: 두 건 모두 나오되 블라인드 글의 본문만 비어 있다
         $response->assertOk();
 
         $data = $response->json('data.data');
         $this->assertCount(2, $data);
+
+        $blinded = collect($data)->firstWhere('status', 'blinded');
+        $this->assertNotNull($blinded, '블라인드 글도 목록에는 나와야 합니다(배지로 구분)');
+        $this->assertSame('', $blinded['content_plain'], '블라인드 글 본문은 나가면 안 됩니다');
     }
 
     /**

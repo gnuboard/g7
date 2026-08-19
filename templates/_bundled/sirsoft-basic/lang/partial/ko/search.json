@@ -39,6 +39,10 @@
     "pages_in_all": "페이지 검색 결과가 없습니다",
     "suggestion": "다른 검색어로 시도해 보세요"
   },
+  "failed": {
+    "title": "검색 중 오류가 발생했습니다",
+    "suggestion": "잠시 후 다시 시도해 주세요"
+  },
   "page_published_at": "발행일: {{date}}",
   "view_more": "더보기",
   "view_all": "전체보기",

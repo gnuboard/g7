@@ -11,8 +11,8 @@
  * 이라, 본 spec 은 탭 노출/빌더 렌더/조작 결과의 가시 상태만 확인하고 합성 로직 정합성은
  * 단위/RTL(actionRecipeEngine/conditionRecipeEngine/s7-property-controls)이 잠근다.
  *
- * @scenario property_modal_action_tab + property_modal_visibility_tab + flex_editor_section
- * @effects action_tab_visible_when_events + visibility_builder_renders + flex_section_for_container
+ * 축 요약(마커 아님 — 평문): property_modal_action_tab, property_modal_visibility_tab, flex_editor_section.
+ * 효과 요약(마커 아님 — 평문): action_tab_visible_when_events, visibility_builder_renders, flex_section_for_container.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 
@@ -64,6 +64,7 @@ async function selectNode(page: PwPage, editorPath: string): Promise<boolean> {
 }
 
 test.describe('@layout-editor 동작/표시조건/정렬박스 (S7)', () => {
+  /** @effects visibility_builder_renders */
   test('요소 선택 → 속성 모달에 표시조건 탭 + 조건 빌더 렌더', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -128,7 +129,7 @@ test.describe('@layout-editor 동작/표시조건/정렬박스 (S7)', () => {
 
   // ── D-D 회귀 — 컴포넌트 [동작] 탭 ──
   // @scenario property_modal_action_tab
-  // @effects nested_onsuccess_picker_not_empty + action_card_drag_handle_draggable
+  // @effects nested_onsuccess_picker_not_empty, action_card_drag_handle_draggable
 
   /** [동작] 탭을 가진(events capability) 노드를 찾아 동작 탭을 연다. 못 찾으면 null.
    *  Button 등 onClick capability 보유 가능성이 높은 노드를 우선 시도한다(앞쪽 컨테이너는
@@ -163,6 +164,7 @@ test.describe('@layout-editor 동작/표시조건/정렬박스 (S7)', () => {
     return false;
   }
 
+  /** @effects action_tab_visible_when_events */
   test('동작 탭 — apiCall 의 성공 시 동작(중첩) add picker 가 코어 핸들러를 노출(빈 상태 금지)', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);

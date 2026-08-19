@@ -81,6 +81,33 @@ final class SearchCategoryPayload
     }
 
     /**
+     * 카테고리 검색이 예외로 실패했을 때의 페이로드를 만듭니다.
+     *
+     * 실패한 0건을 "정확한 0건" 으로 말하지 않는다 — `total_is_exact=false` 로 내보내
+     * 배지가 정확한 값처럼 그려지는 것을 막고, `failed` 플래그로 화면이 "결과 없음" 과
+     * 구분되는 오류 안내를 그릴 수 있게 한다. 키 집합은 다른 팩토리와 동일하게 유지해
+     * 화면이 분기 없이 읽게 한다.
+     *
+     * @param  array<string, mixed>  $extra  도메인 고유 필드 (available_boards 등)
+     * @return array<string, mixed> 카테고리 페이로드
+     */
+    public static function failed(array $extra = []): array
+    {
+        return array_merge([
+            'failed' => true,
+            'total' => 0,
+            'total_relation' => TotalRelation::AtLeast->value,
+            'total_is_exact' => false,
+            'result_cap' => null,
+            'last_page' => null,
+            'has_more_pages' => false,
+            'next_cursor' => null,
+            'prev_cursor' => null,
+            'items' => [],
+        ], $extra);
+    }
+
+    /**
      * 목록 없이 건수만 필요한 자리(비활성 탭 배지)의 페이로드를 만듭니다.
      *
      * @param  BoundedCount  $count  총 건수 집계

@@ -58,6 +58,13 @@
       "telecom_number_placeholder": "付加通信事業者番号",
       "postcode_plugin_required": "Daum郵便番号プラグインがインストールされていないか無効化されています。管理者＞プラグインで有効化してください。"
     },
+    "public_asset_storage": {
+      "title": "公開アセットストレージ",
+      "description": "商品・カテゴリ・レビュー画像など、このモジュールの完全公開アセットの保存ディスクを設定します。",
+      "disk": "公開アセットディスク",
+      "follow_core": "コア設定に従う",
+      "help": "このモジュールだけ別のディスクを使う場合に選択します。空にするとコア環境設定の公開アセットストレージ設定に従います。"
+    },
     "inquiry_settings": {
       "title": "お問い合わせ掲示板設定",
       "description": "商品お問い合わせ機能を設定します。",
@@ -144,6 +151,7 @@
       "min_order_amount": "最小注文金額",
       "is_active": "使用有無",
       "orphaned_badge": "プラグイン未インストール",
+      "orphaned_pg_badge": "指定PG削除済み",
       "remove_orphaned": "削除",
       "pg_provider": "PG社",
       "pg_use_default": "デフォルトPG",

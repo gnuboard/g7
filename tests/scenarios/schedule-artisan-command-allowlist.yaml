@@ -59,6 +59,7 @@ effects:
   - denylist_is_evaluated_before_the_allowlist
   - make_prefix_blocks_all_code_generating_commands
   - extension_owned_commands_are_allowed_by_namespace
+  - extension_owned_commands_resolved_without_console_registration
   - extension_gate_can_be_turned_off
   - extension_commands_only_accept_their_own_options
   # 사용법 제한

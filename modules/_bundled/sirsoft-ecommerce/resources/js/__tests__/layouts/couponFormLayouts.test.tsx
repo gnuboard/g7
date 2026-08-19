@@ -564,6 +564,27 @@ describe('couponFormLayouts', () => {
             expect(radioGroup.props.options[1].value).toBe('false');
         });
 
+        it('쿠폰 중복 사용 RadioGroup: 쓰기 경로 boolean 캐스팅 (공개 #97)', () => {
+            const field = findById(usageConditionsPartial, 'field_is_combinable');
+            const radioGroup = findByName(field, 'RadioGroup');
+
+            // 자동바인딩 value 경로는 e.target.value 문자열을 그대로 저장하므로 차단
+            expect(radioGroup.props.autoBinding).toBe(false);
+
+            // 표시 바인딩: 저장된 boolean 을 문자열로 변환해 옵션 값과 비교
+            expect(radioGroup.props.value).toContain('String(');
+            expect(radioGroup.props.value).toContain('is_combinable');
+
+            // 쓰기 경로: change 액션이 === 'true' 캐스팅으로 boolean 저장
+            const changeAction = (radioGroup.actions ?? []).find(
+                (a: any) => a.type === 'change' && a.handler === 'setState'
+            );
+            expect(changeAction).toBeDefined();
+            expect(changeAction.params['form.is_combinable']).toBe(
+                "{{$event.target.value === 'true'}}"
+            );
+        });
+
         it('적용 대상 RadioGroup: all/products/categories', () => {
             const field = findById(usageConditionsPartial, 'field_target_scope');
             expect(field).toBeDefined();

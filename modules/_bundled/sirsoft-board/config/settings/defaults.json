@@ -2,7 +2,7 @@
   "_meta": {
     "version": "1.0.0",
     "description": "게시판 모듈 환경설정",
-    "categories": ["basic_defaults", "report_policy", "spam_security", "display", "seo", "notifications"]
+    "categories": ["basic_defaults", "report_policy", "spam_security", "display", "seo", "notifications", "attachment_settings"]
   },
   "defaults": {
     "basic_defaults": {
@@ -15,6 +15,7 @@
       "use_comment": true,
       "use_reply": true,
       "max_reply_depth": 5,
+      "reply_delete_policy": "cascade",
       "max_comment_depth": 10,
       "comment_order": "ASC",
       "show_view_count": true,
@@ -100,6 +101,10 @@
         { "id": "mail", "is_active": true, "sort_order": 0 },
         { "id": "database", "is_active": true, "sort_order": 1 }
       ]
+    },
+    "attachment_settings": {
+      "purge_enabled": false,
+      "purge_retention_days": 30
     }
   },
   "frontend_schema": {
@@ -117,6 +122,9 @@
       "expose": false
     },
     "seo": {
+      "expose": false
+    },
+    "attachment_settings": {
       "expose": false
     }
   }

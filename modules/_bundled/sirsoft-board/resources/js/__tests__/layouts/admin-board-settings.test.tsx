@@ -727,12 +727,41 @@ describe('_tab_board_settings_reply.json - 답변글 하위 탭', () => {
         const fields = findFormFields(tabBoardSettingsReply);
         expect(fields).toContain('basic_defaults.use_reply');
         expect(fields).toContain('basic_defaults.max_reply_depth');
+        expect(fields).toContain('basic_defaults.reply_delete_policy');
     });
 
     it('답변글 깊이 필드가 항상 표시된다 (if 조건 없음)', () => {
         const maxReplyDepth = findById(tabBoardSettingsReply, 'field_max_reply_depth');
         expect(maxReplyDepth).toBeDefined();
         expect(maxReplyDepth.if).toBeUndefined();
+    });
+
+    it('답글 삭제 정책 Select 가 block/cascade 옵션으로 렌더된다 (#573)', () => {
+        const policyField = findById(tabBoardSettingsReply, 'field_reply_delete_policy');
+        expect(policyField).toBeDefined();
+        expect(policyField.if).toBeUndefined();
+
+        const collect: any[] = [];
+        const walk = (node: any) => {
+            if (!node || typeof node !== 'object') return;
+            if (node.name === 'Select') collect.push(node);
+            for (const child of node.children ?? []) walk(child);
+        };
+        walk(policyField);
+
+        expect(collect).toHaveLength(1);
+        expect(collect[0].props.name).toBe('basic_defaults.reply_delete_policy');
+        const values = (collect[0].props.options as Array<{ value: string }>).map((o) => o.value).sort();
+        expect(values).toEqual(['block', 'cascade']);
+    });
+
+    it('답글 삭제 정책 ko 다국어 키(라벨/설명/옵션/일괄적용)가 실재한다 (#573)', () => {
+        const lang = koSettingsLang as any;
+        expect(lang.fields?.reply_delete_policy).toBeTruthy();
+        expect(lang.fields?.descriptions?.reply_delete_policy).toBeTruthy();
+        expect(lang.options?.reply_delete_policy?.block).toBeTruthy();
+        expect(lang.options?.reply_delete_policy?.cascade).toBeTruthy();
+        expect(lang.bulk_apply?.field_labels?.reply_delete_policy).toBeTruthy();
     });
 });
 
@@ -1611,10 +1640,12 @@ describe('기본 설정 탭 (general) - 날짜 표시 방식', () => {
         expect(option).not.toBeNull();
 
         // click 액션으로 date_display_format: "standard" 설정
+        // 키는 점 경로다 — 중첩 객체로 넘기면 spread 누적이 생겨 저장 payload 가 어긋난다.
         const clickAction = option.actions?.find((a: any) => a.type === 'click');
         expect(clickAction).toBeDefined();
         expect(clickAction.handler).toBe('setState');
-        expect(clickAction.params?.form?.display?.date_display_format).toBe('standard');
+        expect(clickAction.params?.['form.display.date_display_format']).toBe('standard');
+        expect(clickAction.params?.form).toBeUndefined();
     });
 
     it('relative 옵션 라디오 버튼이 존재한다', () => {
@@ -1622,10 +1653,12 @@ describe('기본 설정 탭 (general) - 날짜 표시 방식', () => {
         expect(option).not.toBeNull();
 
         // click 액션으로 date_display_format: "relative" 설정
+        // 키는 점 경로다 — 중첩 객체로 넘기면 spread 누적이 생겨 저장 payload 가 어긋난다.
         const clickAction = option.actions?.find((a: any) => a.type === 'click');
         expect(clickAction).toBeDefined();
         expect(clickAction.handler).toBe('setState');
-        expect(clickAction.params?.form?.display?.date_display_format).toBe('relative');
+        expect(clickAction.params?.['form.display.date_display_format']).toBe('relative');
+        expect(clickAction.params?.form).toBeUndefined();
     });
 
     it('라디오 버튼 name이 display.date_display_format이다', () => {

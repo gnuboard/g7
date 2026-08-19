@@ -5,6 +5,110 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.60.5] - 2026-08-19
+
+### Fixed
+
+#### 화살표/함수 파라미터 배열 구조분해 미지원 회귀 (장바구니/바로구매 불능·권한 computed 공백)
+
+- engine-v1.60.0 의 SafeExpressionEvaluator 교체가 구 평가기(`new Function`)가 허용하던 **화살표·함수 파라미터의 배열 구조분해**(`([k, v]) =>`, `([, vid]) =>`)를 수용하지 않아, 해당 문법을 쓰는 표현식이 전부 `Expected ")" but found "=>"` 로 파싱 실패했다. 액션 params 는 미평가 원문 문자열 그대로 서버에 전송되어 422 가 되고(스토어프론트 장바구니 담기·바로 구매가 전 상품에서 불능), 게시판 환경설정의 권한 기본값 computed 4종이 계산되지 않아 권한 섹션이 비었으며, 플러그인 설정·이커머스 폼의 검증 오류 표시(`([field, messages]) => …`)도 발화 시점에 같은 실패에 걸리는 상태였다. 저장소 레이아웃 54개 파일 104곳이 이 문법을 사용 중이었다.
+- `tryParseParamList` 에 배열 패턴(식별자 + 홀/elision, 파라미터 기본값 조합 포함)을 추가하고 `bindParams` 가 JS iterator 시맨틱(비-iterable 은 TypeError)으로 분해 바인딩하도록 했다. 중첩 패턴·rest·객체 패턴은 배포 레이아웃 사용 0건이라 지원하지 않는다(발견 시 arrow 아님으로 안전 되돌림).
+- 회귀 잠금: 사용 형태 전수(단일/쌍/홀/기본값/function 선언 파라미터/실전 `_purchase_card.json` 본문·게시판 권한 computed·검증 오류 표시) 단위 테스트 + 배포 번들 E2E(`destructuring_param`) 추가.
+
+## [engine-v1.60.4] - 2026-08-14
+
+### Security
+
+#### legacy 접근자를 통한 프로토타입 도달 차단
+
+- `Object` facade 에서 `getPrototypeOf`/`setPrototypeOf`/`defineProperty` 를 제거했지만, 같은 능력을 **모든 객체가 상속으로 제공하는** `__lookupGetter__`/`__lookupSetter__`/`__defineGetter__`/`__defineSetter__` 로 되찾을 수 있었다. 이 4종은 프로퍼티를 **키가 아니라 문자열 인자**로 지목하므로 키 정규화(`normalizeKey`)를 원리상 거치지 않는다. 네 이름을 금지 프로퍼티에 추가해 dot·computed·문자열 조립 형태를 한꺼번에 막았다.
+- 임의 코드 실행(RCE)으로는 이어지지 않았다 — `Function`/`eval` 도달은 여전히 `constructor` 키를 요구하고 그 경로는 이미 차단되어 있었다. 막은 것은 **페이지 전역 프로토타입 오염과 빌트인 메서드 변조/삭제로 인한 전역 장애**다.
+- `Object.assign` 이 source 의 `__proto__` 키로 대상의 프로토타입을 바꾸던 경로도 닫았다. 네이티브 `assign` 은 대입(`[[Set]]`) 이라 `JSON.parse('{"__proto__":…}')` 결과를 합칠 때 setter 가 깨어났다 — 이제 항상 own 데이터 프로퍼티로 정의하며, 금지 키는 복사하지 않고 거부한다.
+- 저장측 검증과 정적 검사에도 같은 패턴을 넣어 세 계층을 맞췄다. 배포 레이아웃 전수에서 이 4개 이름 사용은 0건이라 정상 표현식이 막히는 회귀는 없다(`toLocaleString`·`Object.assign`·`Object.create` 정당 사용은 그대로 동작).
+
+## [engine-v1.60.3] - 2026-08-14
+
+### Security
+
+#### 선행 슬래시 런도 authority 로 접어 판정 (engine-v1.60.2 후속)
+
+- v1.60.2 의 정규화는 백슬래시를 슬래시로 바꾸기만 해서, `/\/host/x.js` 가 정규화 후 슬래시 3개(`///host/x.js`)가 됐다. 브라우저는 선행 슬래시가 몇 개든 authority 시작으로 접으므로(`///host` ≡ `//host`, `https:///host` ≡ `https://host`) 이 형태도 외부 호스트에서 로드된다. 정규화에 **선행 슬래시 런 접기**를 추가해 런타임·저장측·정적 검사 세 계층이 같은 호스트를 보도록 맞췄다.
+- 경로 중간의 연속 슬래시(`/js//a.js`)는 브라우저도 경로로 두므로 건드리지 않는다(과차단 없음).
+- 이 형태의 실질 영향은 저장측이었다 — 런타임은 `new URL` 로 호스트를 뽑아 이미 올바르게 판정하고 있었고, 저장측 신뢰 호스트 추출만 갈려 있었다(코어 `TrustedScriptHosts` 수정분 참조).
+
+## [engine-v1.60.2] - 2026-08-14
+
+### Security
+
+#### `scripts[].src` same-origin 판정의 authority 우회 차단 (KVE-2026-1915 B-2 후속)
+
+- 원격 스크립트 차단이 `//` 접두·scheme 존재·`/` 시작이라는 **문자열 접두 검사**로만 same-origin 을 판정했다. 그런데 브라우저 URL 파서는 (a) 파싱 전에 ASCII tab·개행을 제거하고 (b) http/https 에서 백슬래시를 슬래시와 동등하게 처리하므로, `/\/evil.com/x.js` · `/\evil.com/x.js` · `/{tab}/evil.com/x.js` 같은 형태가 검사를 통과한 뒤 실제로는 `https://evil.com/x.js` 로 해석되어 **선언되지 않은 외부 스크립트가 그대로 로드**됐다(실측: `new URL` 로 6형태 전부 외부 origin 해석).
+- 판정 전에 브라우저와 동일하게 정규화(tab·LF·CR 제거 → 백슬래시를 슬래시로)한 뒤 접두 검사를 적용하도록 고쳤다. 경로 중간의 백슬래시·탭(`/js/a\b.js`)은 authority 를 만들지 않으므로 종전대로 same-origin 으로 통과한다(과차단 없음).
+- 저장측(`SafeLayoutExpressions`·`NoExternalUrls`)과 정적 검사(`layout-scripts-src-same-origin`)도 동일 정규화를 공유한다 — 세 계층이 같은 판정 로직을 쓰고 있었으므로 한 형태로 셋이 함께 뚫려 있었다.
+
+#### 화이트리스트 전역의 `Object.assign`/`freeze` 변조 차단
+
+- `delete` 는 화이트리스트 전역(`Math`/`JSON`/`Date` 등)을 identity 로 차단하는데, facade 에 남긴 `assign`/`freeze` 는 대상을 검사하지 않아 `Object.assign(Math, { floor: … })` 로 **공유 전역을 영구 변조**할 수 있었다. 화이트리스트 전역은 실제 전역 참조를 노출하므로 그 변조는 페이지 전체(엔진·모듈·플러그인)에 지속된다. 두 메서드에도 `delete` 와 동일한 대상 검사를 적용했다. 일반 객체 대상 `assign`/`freeze` 는 그대로 동작한다.
+
+## [engine-v1.60.1] - 2026-08-14
+
+### Security
+
+#### 화이트리스트 평가기의 비-문자열 computed 키 · Object 리플렉션 static 을 통한 샌드박스 탈출 차단 (KVE-2026-1915)
+
+- `SafeExpressionEvaluator` 의 프로퍼티 접근 하드닝이 **문자열 키만** 검사해, 배열/객체 키가 `''[['constructor']][['constructor']]('code')()` 처럼 JS ToPropertyKey 강제변환으로 `constructor` 에 도달하던 탈출을 막지 못했다. 키를 접근 전에 **1회 정규화**(심볼 외 `String()` 강제변환)한 뒤 금지 프로퍼티(`constructor`/`__proto__`/`prototype`)를 차단하고 그 정규화된 원시 키로만 접근하도록 고쳤다 — 배열·중첩 배열·객체 `toString` 강제변환·문자열 조립 등 모든 우회 형태가 접근 시점에 거부되며 재변환(TOCTOU) 여지도 없다. `evalMember`/`evalCall`/`delete` 세 경로 모두 적용.
+- 화이트리스트 전역 `Object` 를 네이티브 그대로 노출해 `Object.getOwnPropertyDescriptor(Object.getPrototypeOf(String), 'constructor').value` 로 Function 에 도달하거나 `Object.setPrototypeOf`/`defineProperty` 로 프로토타입을 오염시킬 수 있었다. 이 static 들은 프로퍼티 키가 아니라 **문자열 인자**로 프로퍼티를 지목하므로 키 정규화로는 잡히지 않는다. 리플렉션·프로토타입·디스크립터 계열 static 을 제거하고 순수 데이터 계열(`keys`/`values`/`entries`/`assign`/`fromEntries`/`create`/`freeze`/`isFrozen`)만 노출하는 facade 로 교체했다. `create` 는 프로토타입/디스크립터를 읽지도 쓰지도 않아(신규 객체 생성만) 탈출 벡터가 아니며, 레이아웃이 `Object.assign(Object.create(null), …)` 로 정당하게 사용한다.
+- 저장측(`app/Rules/SafeLayoutExpressions.php`)·정적 검사(`layout-expression-dangerous-token`)도 동형으로 넓혔다: 금지 프로퍼티 이름의 따옴표 문자열을 위치 무관 차단(computed 키 `['constructor']`·중첩 배열 키 `[['constructor']]`·리플렉션 문자열 인자 `…, 'constructor')` 포함), Object 리플렉션 static 이름 차단. 문자열 조립 난독화(`['const' + 'ructor']`)는 정적 토큰 매칭이 불가능하므로 런타임 인터프리터가 최종 게이트다.
+
+## [engine-v1.60.0] - 2026-08-14
+
+### Fixed
+
+#### 표현식 평가기가 statement 본문(IIFE)을 거부해 저장이 원문 문자열로 전송되던 회귀 (KVE-2026-1915 후속)
+
+- engine-v1.59.0 에서 `new Function` → `SafeExpressionEvaluator`(AST 인터프리터)로 교체하며, 기존 30개 레이아웃이 쓰던 `(function() { const …; if (…) return {…}; })()` / `(() => { … })()` 형태의 **statement 본문 IIFE** 를 파싱 단계에서 거부하게 됐다. `DataBindingEngine.resolveBindings` 는 평가 실패 시 원본 문자열을 그대로 돌려주므로, 이 식을 body 로 쓰던 저장 액션은 미해석 `{{…}}` 문자열을 서버로 전송했고 서버는 아무것도 저장하지 못한 채 성공(200)을 반환했다. 발현: 이커머스 설정에서 문의 게시판을 지정해도 저장되지 않고, 게시판/관리자 설정 저장, 카테고리 부모 선택 옵션, 배송비 단위 표기 등 동일 형태를 쓰던 화면이 조용히 동작하지 않았다(예외·경고 없음).
+- `SafeExpressionEvaluator` 에 함수/화살표 **블록 본문 해석**을 추가했다: 함수 표현식(`function (…) { … }`, 명명 함수 재귀 포함)·화살표 블록 본문·`const`/`let` 선언·`if`/`else`·`for…of`(+`break`/`continue`)·`return`·`try`/`catch`/`finally`·`delete`·기본 파라미터. 모두 인터프리터가 트리워킹으로 실행하며 코드 문자열 컴파일(`eval`/`new Function`)은 여전히 쓰지 않는다.
+- 보안 경계는 그대로다 — KVE-2026-1915 의 탈출 벡터는 "function 키워드" 자체가 아니라 `''.constructor.constructor('code')()` 같은 **프로퍼티 체인을 통한 Function 생성자 접근**이었고, 그 차단(`constructor`/`__proto__`/`prototype` 접근, `Function`/`eval`/`Reflect` 등 위험 전역, 비화이트리스트 `new`)은 statement 본문 안에서도 동일하게 적용된다. 함수 표현식은 네이티브 컴파일이 아니라 해석기 클로저로만 실행되므로 새 탈출 경로가 생기지 않는다. 추가로 `delete` 는 화이트리스트 전역 객체(`Math`/`JSON`/`Array` 등)의 프로퍼티를 지우지 못하도록 identity 로 차단한다. 대입(`=`)·증감(`++`/`--`)·복합대입·sequence(`,`)·비트/시프트/거듭제곱 연산자는 계속 거부한다.
+
+## [engine-v1.59.0] - 2026-08-13
+
+### Security
+
+#### 레이아웃 표현식 평가를 화이트리스트 AST 인터프리터로 교체 (KVE-2026-1915)
+
+- 신규 `SafeExpressionEvaluator.ts` — 표현식 문자열을 토크나이저 → Pratt 파서 → AST 트리워킹 인터프리터로 해석한다. `eval` / `new Function` / `with(ctx)` 를 일절 쓰지 않으므로 `''.constructor.constructor('code')()` 형태의 샌드박스 탈출(CWE-184/CWE-94)이 원천 차단된다.
+- 위험 지점 3곳을 이 평가기로 통일했다: `DataBindingEngine.evaluateExpression`(주 평가 경로, `TranslationEngine` 의 `$t:` 파라미터 평가 포함 200여 소비처), `TemplateApp.evaluateComputedExpression`(computed), `TemplateApp.evaluateScriptCondition`(scripts[].if). 종전 `evaluateComputedExpression`/`evaluateScriptCondition` 은 `with(ctx)` 로 필터조차 거치지 않아 더 위험했다.
+- 차단: `constructor`/`__proto__`/`prototype` 프로퍼티 접근(dot·문자열 리터럴 computed·런타임 해석된 computed 키 모두), `Function`/`eval`/`globalThis`/`window`/`Reflect`/`Proxy` 등 위험 전역, 함수 생성(`function` 키워드), 할당·증감, 비트/시프트/거듭제곱 연산자.
+- 호환 유지: 화살표 함수(인터프리터 클로저로 실행), 스프레드(배열/객체/호출인자), optional chaining, 템플릿 리터럴(`${}` 은 같은 인터프리터로 해석), 화이트리스트 생성자의 `new`(`new Date(...)`·`Array.from(new Set(...))` 등 — `Date`/`Set`/`Map`/`WeakSet`/`WeakMap`/`Array` 등만 허용, `new Function` 은 차단), 화이트리스트 전역(`Math`/`JSON`/`Date`/`Array`/`Object`/`Number`/`String`/`Boolean`/`parseInt`/`parseFloat`/`isNaN`/`isFinite`) 및 인스턴스 메서드 호출.
+- 컨텍스트 값이 항상 전역보다 우선한다. 미존재 식별자는 `with(ctx)` 시맨틱대로 `undefined` 를 반환한다(예외 없음).
+
+#### `scripts[].src` 원격 스크립트 차단 + 신뢰 출처 허용목록 (KVE-2026-1915 B-2)
+
+- `TemplateApp.loadLayoutScripts` — 레이아웃 스크립트 `src` 는 same-origin path-only(`/` 시작)만 로드한다. `//`(protocol-relative)·scheme 포함 절대 URL(외부 origin)은 skip + 경고로 원격 코드 로드를 차단한다.
+- 예외: 확장이 manifest(`trusted_script_hosts`)로 선언해 코어가 `window.G7Config.trustedScriptHosts` 로 노출한 신뢰 호스트의 외부 스크립트는 허용한다(`isAllowedScriptSrc`). CKEditor5(cdn.ckeditor.com)·Daum 우편번호(t1.daumcdn.net) 등 번들 확장의 CDN 스크립트가 정상 로드되도록 하되, 편집기 저장분에 임의 원격 스크립트를 넣는 경로는 여전히 차단한다. (신뢰 경계: 미선언 외부 origin 은 항상 skip)
+
+## [engine-v1.58.4] - 2026-08-14
+
+### Fixed
+
+#### 레이아웃 렌더링 테스트 하네스가 `named_actions` 를 등록하지 않던 문제
+
+- `__tests__/utils/layoutTestUtils.ts::createLayoutTest` — 레이아웃 최상위 `named_actions` 를 `ActionDispatcher.setNamedActions()` 로 등록한다. 기존에는 등록 단계가 없어 `actionRef` 참조가 해석되지 않았고, 그 액션은 **경고만 남기고 아무 일도 하지 않은 채** 테스트가 통과했다.
+- 하네스 자신이 검사 대상의 일부라, 이 누락은 `named_actions` 를 쓰는 레이아웃의 테스트를 통째로 무력화한다 — 액션이 붙지 않았는데도 렌더 단언은 전부 초록이므로 결함이 드러날 통로가 없다.
+- `setNamedActions` 는 선택 호출(`?.`)이다 — 이 API 가 없는 디스패처 스텁으로 만든 기존 테스트가 깨지지 않게 한다.
+## [engine-v1.58.3] - 2026-08-14
+
+### Fixed
+
+#### 교차 출처(공개 자산 CDN) 요청에 세션 토큰이 실리고 이미지가 통째로 실패하던 문제
+
+- `api/ApiClient.ts::setupInterceptors` — 요청 인터셉터가 `Authorization` 을 **동일 출처 요청에만** 첨부한다. 판정은 신설 `isCrossOriginRequest()` 가 담당하며, 상대 경로는 항상 동일 출처, 절대 URL(`https://…`)과 프로토콜 상대 URL(`//host/…`)만 `window.location.origin` 과 비교한다(파싱 실패·SSR 은 동일 출처로 간주해 기존 동작 유지).
+- 공개 자산 디스크(S3/CDN) 옵트인이 켜지면 첨부·이미지의 `download_url` 이 외부 origin 절대 URL 이 된다. 종전 인터셉터는 URL 출처를 보지 않고 토큰을 붙였으므로 두 가지가 동시에 발생했다.
+  1. **토큰 노출** — 관리자 세션 토큰이 제3자 CDN origin 으로 전송된다. CDN 이 `Access-Control-Allow-Origin` 을 허용하는 흔한 구성에서는 요청이 성공하므로 그 origin 의 접근 로그에 토큰이 남는다.
+  2. **이미지 전면 실패** — `Authorization` 은 CORS 안전목록 밖이라 preflight 가 발생한다. 버킷/배포에 CORS 규칙이 없으면(AWS S3 기본값) preflight 가 거절되어 그 이미지가 전부 깨진다.
+- 실측(AWS S3 실 버킷, 관리자 상품 이미지 탭): 요청 헤더에 `authorization: Bearer …` 가 실린 채 `net::ERR_FAILED` + 콘솔 CORS 오류 15건. 같은 이미지를 `<img>` 로 여는 상점 화면은 CORS 대상이 아니라 정상이어서, **관리자 화면에서만** 증상이 나타난다.
+- 로컬 `public` 디스크(동일 출처)나 CORS 를 허용하는 개발용 오브젝트 스토리지에서는 재현되지 않는다 — 두 조건(외부 origin + CORS 미허용)이 겹쳐야 드러난다.
+
 ## [engine-v1.58.2] - 2026-08-10
 
 ### Fixed

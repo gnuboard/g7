@@ -1,15 +1,15 @@
 {
     "schema_version": "1.0",
-    "generated_at": "2026-07-10T21:33:36+00:00",
+    "generated_at": "2026-08-12T08:04:04+00:00",
     "generator": "g7 vendor-bundle:build",
     "target": "core",
-    "composer_json_sha256": "76294945639dbbe4b6d054c0aea4b78377a55bcdffcd1c9136beb294bc7cfc90",
-    "composer_lock_sha256": "b4d173c40088a78c9fe42b3ca6d23436bee6cc850a17bb653cbc1aca59ca3a81",
-    "zip_sha256": "d5d21fdd930350332d2d58e5ab386ba9203795f72f7767eb3c214d4702152245",
-    "zip_size": 14750349,
-    "package_count": 104,
+    "composer_json_sha256": "3c7e6e17966f09f12a0282b12b18eba46c5c4f06d63c2355a514a3160af1d77a",
+    "composer_lock_sha256": "49bd7586c511e420bb76418579b8ca94676870d4940fdaf6bb6e0c769dc54ce0",
+    "zip_sha256": "f193db3da359dfa2ce8f1da9ab1c4d9c090b22f4e607ae63bc1955c7c2317db2",
+    "zip_size": 15212477,
+    "package_count": 106,
     "php_requirement": "^8.2",
-    "g7_version": "7.0.3",
+    "g7_version": "7.0.7",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -172,6 +172,11 @@
             "type": "library"
         },
         {
+            "name": "league/flysystem-aws-s3-v3",
+            "version": "3.35.2",
+            "type": "library"
+        },
+        {
             "name": "league/flysystem-local",
             "version": "3.31.0",
             "type": "library"
@@ -239,6 +244,11 @@
         {
             "name": "phpoption/phpoption",
             "version": "1.9.5",
+            "type": "library"
+        },
+        {
+            "name": "predis/predis",
+            "version": "v2.4.1",
             "type": "library"
         },
         {

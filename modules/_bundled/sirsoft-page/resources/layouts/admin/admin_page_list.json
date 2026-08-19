@@ -769,6 +769,7 @@
               "serverTotalPages": "{{pages?.data?.meta?.last_page ?? null}}",
               "serverHasMorePages": "{{pages?.data?.meta?.has_more_pages ?? false}}",
               "selectable": true,
+              "selectionScope": "page",
               "selectedCountText": "",
               "selectedIds": "{{_global.selectedIds_admin_pages || []}}",
               "idField": "id",

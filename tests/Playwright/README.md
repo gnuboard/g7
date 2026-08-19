@@ -8,15 +8,25 @@ G7 코어의 Playwright (TypeScript) 기반 결정론적 E2E 인프라.
 # PowerShell (개발 환경)
 $env:PLAYWRIGHT_BASE_URL='https://g7.dev'
 npm run test:e2e            # 전체 spec
-npm run test:e2e:smoke      # @smoke 태그 (homepage / login / admin-dashboard 3건)
-npm run test:e2e:wysiwyg    # 위지윅 매트릭스 90건 (Phase M)
+npm run test:e2e:smoke      # @smoke 태그 (--grep @smoke)
 npm run test:e2e:ui         # Playwright UI 모드 (디버깅)
+
+# 특정 spec / 디렉토리만
+npx playwright test tests/Playwright/specs/smoke/admin-base.spec.ts
+npx playwright test tests/Playwright/specs/layout-editor --workers=2
 ```
 
 ```bash
 # Bash (CI/Linux)
 PLAYWRIGHT_BASE_URL=https://g7.dev npx playwright test
 ```
+
+루트 `package.json` 이 제공하는 E2E 스크립트는 `test:e2e` · `test:e2e:smoke` · `test:e2e:ui`
+3개다. 그 밖의 범위 지정은 `npx playwright test` 에 경로나 `--grep` 을 직접 준다.
+
+브라우저는 Chromium 전용이다 (`playwright.config.ts` 의 `projects` 에 chromium 하나).
+Firefox/WebKit 도입 조건은 [docs/testing/e2e-testing.md](../../docs/testing/e2e-testing.md)
+§3 "브라우저 범위" 참조.
 
 ## Base URL 해석 우선순위 (하드코딩 회피)
 
@@ -30,23 +40,29 @@ PLAYWRIGHT_BASE_URL=https://g7.dev npx playwright test
 
 ## 디렉토리 구조
 
-```
+```text
 tests/Playwright/
 ├── fixtures/
-│   └── auth.ts                        (Sanctum 토큰 발급 + addInitScript 주입)
+│   ├── auth.ts                        (Sanctum 토큰 발급 + addInitScript 주입)
+│   ├── ecommerce-auth.ts              (구매자 세션 fixture)
+│   ├── layout-editor.ts               (편집기 진입/저장 헬퍼)
+│   ├── seed-layout.ts                 (시드 화면 준비/정리)
+│   └── seed-layouts/                  (시드 화면 원본 JSON)
+├── global-setup.ts                    (시드 화면 설치)
+├── global-teardown.ts                 (시드 화면 제거)
 ├── specs/
-│   ├── smoke/                         (Phase 1 — 3건)
-│   │   ├── homepage.spec.ts
-│   │   ├── login.spec.ts
-│   │   └── admin-dashboard.spec.ts
-│   └── wysiwyg/                       (Phase 2 — 90건, 위지윅 편집기 Phase M)
-│       ├── auth-guard.spec.ts                (12: access_outcome × user_permission)
-│       ├── handler-suppression.spec.ts       (6:  suppressed_handler 축)
-│       ├── anchor-intercept.spec.ts          (45: anchor_kind × modifier_key)
-│       └── url-template-param.spec.ts        (27: url_template_param × anchor_kind)
+│   ├── smoke/                         (핵심 화면 — 14 파일)
+│   ├── admin/                         (관리자 화면 — 17 파일)
+│   ├── layout-editor/                 (레이아웃 편집기 — 46 파일)
+│   ├── pagination/                    (목록 페이지네이션 — 4 파일)
+│   ├── search/                        (검색 — 1 파일)
+│   └── *.spec.ts                      (엔진/렌더링 회귀 — 14 파일)
 ├── .auth/                             (gitignore — storageState 캐시)
 └── README.md                          (본 문서)
 ```
+
+`@smoke` 표기는 70곳(25개 파일)이며, 그중 1곳은 `test.describe` 단위라 `--grep @smoke` 로
+선택되는 테스트 수는 표기 수보다 많다. 파일·건수는 변하므로 판단이 필요할 때 직접 센다.
 
 ## 코어/확장 분리 원칙
 
@@ -98,19 +114,20 @@ E2E spec 이 "특정 유저 + 특정 역할 + 특정 도메인 상황" 에서 �
 | 플러그인 도메인 데이터 (결제 키 등) | 플러그인 | `plugins/_bundled/{id}/src/Console/Commands/PlaywrightSeed{id}.php` |
 | 외부 의존 (토스 결제창 응답 등) | spec 안 mock | `page.route('https://api.tosspayments.com/**', ...)` |
 
-**핵심 원칙**: 코어는 모듈 도메인을 모른다. 모듈 도메인 시드 커맨드를 코어에 두면 코어↔모듈 의존이 뒤집힘 (audit 룰 위반).
+**핵심 원칙**: 코어는 모듈 도메인을 모른다. 모듈 도메인 시드 커맨드를 코어에 두면 코어↔모듈 의존이 뒤집힘 (정적 검사 위반).
 
 ## 시나리오 매니페스트 ↔ spec 매핑
 
-| YAML axis | spec 파일 | 케이스 |
-|---|---|---|
-| `tests/scenarios/wysiwyg-editor-access-guard.yaml` `cross_product[0]` (access_outcome × user_permission) | `specs/wysiwyg/auth-guard.spec.ts` | 12 |
-| 동일 yaml `cross_product[1]` (anchor_kind × modifier_key) | `specs/wysiwyg/anchor-intercept.spec.ts` | 45 |
-| 동일 yaml `cross_product[2]` (suppressed_handler) | `specs/wysiwyg/handler-suppression.spec.ts` | 6 |
-| 동일 yaml `cross_product[3]` (url_template_param × anchor_kind) | `specs/wysiwyg/url-template-param.spec.ts` | 27 |
+시나리오 매니페스트(`tests/scenarios/*.yaml`)의 축과 spec 은 파일명으로 대응시킨다 —
+`layout-editor-table-editor.yaml` ↔ `specs/layout-editor/table-editor.spec.ts` 처럼
+매니페스트 이름에서 도메인 접두어를 뗀 형태가 spec 파일명이 된다.
 
-각 spec 은 `test.describe.parallel(axisName)` 으로 묶고 matrix 배열로 매개변수화.
-케이스 docblock 에 `// @scenario k1=v1, k2=v2` / `// @effects e1, e2` 마킹.
+각 spec 은 `test.describe.parallel(axisName)` 으로 묶고 matrix 배열로 매개변수화한다.
+케이스 docblock 에 `// @scenario k1=v1, k2=v2` / `// @effects e1, e2` 를 마킹하면
+매니페스트의 `cross_product` · `effects` 와 자동으로 대조된다.
+
+`@scenario` 의 축 구분자는 **쉼표뿐이다.** `k1=v1 × k2=v2` 처럼 곱셈 기호로 적으면
+첫 축만 인식되고 나머지는 조용히 누락된다.
 
 ## 외부 의존 시나리오 — mock-first 패턴 (결제 등)
 
@@ -156,7 +173,7 @@ await page.route('https://api.tosspayments.com/v1/payments/confirm', route => ro
 $env:PLAYWRIGHT_BASE_URL='https://g7.dev'; npm run test:e2e:ui
 
 # 특정 spec 만 실행
-PLAYWRIGHT_BASE_URL=https://g7.dev npx playwright test tests/Playwright/specs/wysiwyg/auth-guard.spec.ts
+PLAYWRIGHT_BASE_URL=https://g7.dev npx playwright test tests/Playwright/specs/layout-editor/auth-guard-and-locales.spec.ts
 
 # trace 열기
 npx playwright show-trace test-results/<...>/trace.zip
@@ -167,6 +184,6 @@ Playwright 가 회귀를 발견하면 → Claude `chrome-devtools-mcp` 로 라�
 ## 참고
 
 - 가이드: `docs/testing/e2e-testing.md`
-- 시나리오 매니페스트: `tests/scenarios/wysiwyg-editor-access-guard.yaml`
-- 단위 시뮬레이션 (Vitest): `resources/js/core/template-engine/wysiwyg/__tests__/previewNavigation.test.ts` 등
+- 시나리오 매니페스트: `tests/scenarios/` (레이아웃 편집기 축은 `layout-editor-*.yaml`)
+- 단위 시뮬레이션 (Vitest): `resources/js/core/template-engine/__tests__/`
 - 모듈 sample skeleton: `modules/_bundled/sirsoft-ecommerce/tests/Playwright/README.md`

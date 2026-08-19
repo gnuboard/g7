@@ -6,15 +6,18 @@ use App\Enums\TotalRelation;
 use App\Search\Contracts\FulltextSearchable;
 use App\Search\Contracts\KeywordPredicateProvider;
 use App\Search\DTO\KeywordSearchContext;
+use App\Search\FulltextIndexInspector;
 use App\Search\KeywordSearch;
 use App\Support\Query\BoundedPaginator;
 use App\Support\Query\PaginationLimits;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\LazyCollection;
 use Laravel\Scout\Builder;
 use Laravel\Scout\Engines\Engine;
+use Throwable;
 
 /**
  * MySQL FULLTEXT + ngram 커스텀 Scout 엔진
@@ -30,6 +33,27 @@ class DatabaseFulltextEngine extends Engine implements KeywordPredicateProvider
      * MariaDB 감지 결과 캐시 (프로세스 수명 동안 유지)
      */
     private static ?bool $isMariaDbCache = null;
+
+    /**
+     * FULLTEXT 인덱스 카탈로그 캐시 (프로세스 수명 동안 유지, lazy 적재)
+     *
+     * 프리픽스 제거·소문자 테이블명 => 인덱스별 컬럼 집합(소문자·정렬) 목록.
+     * null 은 미적재. 적재 실패(Throwable)는 캐시하지 않는다 — 일시 장애가
+     * 워커 수명 내내 LIKE 강등으로 굳는 것을 막기 위함이다.
+     *
+     * FPM 워커의 static 캐시이므로 배포로 인덱스가 추가돼도 반영은 워커 재시작
+     * (또는 `addFulltextIndex()` 경유 생성) 시점이다.
+     *
+     * @var array<string, array<int, array<int, string>>>|null
+     */
+    private static ?array $fulltextIndexCatalog = null;
+
+    /**
+     * 인덱스 부재 폴백 경고를 조합당 한 번만 남기기 위한 기록
+     *
+     * @var array<string, true>
+     */
+    private static array $warnedMissingIndexes = [];
 
     /**
      * 모델을 검색 인덱스에 업데이트합니다.
@@ -293,12 +317,190 @@ class DatabaseFulltextEngine extends Engine implements KeywordPredicateProvider
                 $version = DB::selectOne('SELECT VERSION() as version');
 
                 return static::$isMariaDbCache = $version && str_contains(strtolower($version->version), 'mariadb');
-            } catch (\Throwable) {
+            } catch (Throwable) {
                 return static::$isMariaDbCache = false;
             }
         }
 
         return static::$isMariaDbCache = false;
+    }
+
+    /**
+     * 대상 테이블·컬럼 조합을 커버하는 FULLTEXT 인덱스가 있는지 판정합니다.
+     *
+     * MySQL 의 `MATCH(a, b)` 는 어떤 FULLTEXT 인덱스의 컬럼 **집합과 정확히 일치**
+     * (순서 무관)해야 실행됩니다. 복합 (title,content) 인덱스는 `MATCH(title)` 단독을
+     * 커버하지 못합니다. 판정은 한정자 제거·소문자·정렬 정규화 후 집합 동등 비교입니다.
+     *
+     * @param  string  $table  테이블명 (프리픽스 포함/미포함 모두 허용)
+     * @param  array<int, string>  $columns  MATCH 대상 컬럼명
+     * @return bool 커버하는 인덱스가 있으면 true
+     */
+    public static function fulltextIndexCoversColumns(string $table, array $columns): bool
+    {
+        if (! static::supportsFulltext()) {
+            // sqlite/pgsql 등에서는 INFORMATION_SCHEMA 접근 자체를 하지 않는다.
+            return false;
+        }
+
+        $catalog = static::fulltextIndexCatalog();
+
+        if ($catalog === null) {
+            return false;
+        }
+
+        $wanted = self::normalizeColumnSet($columns);
+
+        if ($wanted === []) {
+            return false;
+        }
+
+        foreach (self::tableLookupKeys($table) as $key) {
+            foreach ($catalog[$key] ?? [] as $indexed) {
+                if ($indexed === $wanted) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 카탈로그를 lazy 적재해 반환합니다.
+     *
+     * @return array<string, array<int, array<int, string>>>|null 적재 실패 시 null (미캐시)
+     */
+    private static function fulltextIndexCatalog(): ?array
+    {
+        if (static::$fulltextIndexCatalog !== null) {
+            return static::$fulltextIndexCatalog;
+        }
+
+        try {
+            $sets = (new FulltextIndexInspector)->indexedColumnSets();
+        } catch (Throwable $e) {
+            // 실패는 캐시하지 않는다 — 다음 요청에서 다시 시도한다.
+            if (! isset(static::$warnedMissingIndexes['__catalog_load__'])) {
+                static::$warnedMissingIndexes['__catalog_load__'] = true;
+                Log::warning('FULLTEXT 인덱스 카탈로그 적재에 실패해 이번 요청은 부분일치(LIKE)로 검색합니다.', [
+                    'exception' => $e,
+                ]);
+            }
+
+            return null;
+        }
+
+        $normalized = [];
+        foreach ($sets as $table => $columnSets) {
+            $normalized[strtolower((string) $table)] = array_map(
+                static fn (array $set): array => self::normalizeColumnSet($set),
+                $columnSets
+            );
+        }
+
+        return static::$fulltextIndexCatalog = $normalized;
+    }
+
+    /**
+     * 컬럼 집합을 비교 가능한 형태로 정규화합니다 (한정자 제거·소문자·정렬·중복 제거).
+     *
+     * @param  array<int, string>  $columns  컬럼명 목록 (`posts.title` 형태 허용)
+     * @return array<int, string> 정규화된 컬럼 집합
+     */
+    private static function normalizeColumnSet(array $columns): array
+    {
+        $normalized = array_values(array_unique(array_map(
+            static function (string $column): string {
+                $pos = strrpos($column, '.');
+
+                return strtolower($pos === false ? $column : substr($column, $pos + 1));
+            },
+            $columns
+        )));
+
+        sort($normalized);
+
+        return $normalized;
+    }
+
+    /**
+     * 테이블명 조회 키 후보를 만듭니다 (프리픽스 유/무 양쪽).
+     *
+     * 카탈로그 키는 프리픽스 제거 형태다. 호출자가 프리픽스 포함 이름을 넘겨도 판정이
+     * 되도록 제거 후보를 함께 만든다. 프리픽스가 빈 문자열인 설치에서도 동작한다.
+     *
+     * @param  string  $table  테이블명
+     * @return array<int, string> 소문자 조회 키 후보
+     */
+    private static function tableLookupKeys(string $table): array
+    {
+        $keys = [strtolower($table)];
+
+        $prefix = DB::getTablePrefix();
+        if ($prefix !== '' && str_starts_with($table, $prefix)) {
+            $keys[] = strtolower(substr($table, strlen($prefix)));
+        }
+
+        return array_values(array_unique($keys));
+    }
+
+    /**
+     * 카탈로그를 테스트용으로 시드합니다.
+     *
+     * @param  array<string, array<int, array<int, string>>>  $catalog  테이블명 => 컬럼 집합 목록
+     */
+    public static function primeFulltextIndexCatalog(array $catalog): void
+    {
+        $normalized = [];
+        foreach ($catalog as $table => $columnSets) {
+            $normalized[strtolower((string) $table)] = array_map(
+                static fn (array $set): array => self::normalizeColumnSet($set),
+                $columnSets
+            );
+        }
+
+        static::$fulltextIndexCatalog = $normalized;
+    }
+
+    /**
+     * 카탈로그 캐시와 경고 기록을 함께 초기화합니다 (인덱스 생성 직후·테스트).
+     */
+    public static function forgetFulltextIndexCatalog(): void
+    {
+        static::$fulltextIndexCatalog = null;
+        static::$warnedMissingIndexes = [];
+    }
+
+    /**
+     * 인덱스 부재 폴백 사실을 테이블+컬럼 조합당 한 번 기록합니다.
+     *
+     * 드라이버 미지원 폴백(정상 경로)과 달리, 드라이버는 지원하는데 인덱스가 없어
+     * 내려가는 폴백은 설치 결함의 신호이므로 기록을 남긴다. 기록하지 않으면
+     * "검색이 느리고 관련도가 없다" 는 증상만 남고 원인을 찾을 단서가 없다.
+     *
+     * @param  string  $table  테이블명
+     * @param  array<int, string>  $columns  MATCH 대상 컬럼명
+     */
+    protected static function warnMissingFulltextIndexOnce(string $table, array $columns): void
+    {
+        $normalized = self::normalizeColumnSet($columns);
+        $key = strtolower($table).':'.implode(',', $normalized);
+
+        if (isset(static::$warnedMissingIndexes[$key])) {
+            return;
+        }
+
+        static::$warnedMissingIndexes[$key] = true;
+
+        Log::warning('대상 컬럼 조합의 FULLTEXT 인덱스가 없어 부분일치(LIKE)로 검색합니다. 관련도 정렬이 적용되지 않고 전체 스캔이 발생합니다.', [
+            'table' => $table,
+            'columns' => $normalized,
+            // search:index 는 **이미 존재하는** 인덱스만 열거해 상태를 보므로, 인덱스가
+            // 아예 없는 이 상황은 그 목록에 나타나지도 재생성 대상이 되지도 않는다.
+            // 안내가 그 커맨드를 가리키면 운영자는 "이상 없음" 을 보고 추적이 끊긴다.
+            'hint' => '해당 테이블의 FULLTEXT 인덱스를 만드는 마이그레이션이 적용되지 않았습니다. 그 확장의 마이그레이션을 다시 실행해 인덱스를 생성하세요.',
+        ]);
     }
 
     /**
@@ -414,6 +616,19 @@ class DatabaseFulltextEngine extends Engine implements KeywordPredicateProvider
             return;
         }
 
+        $table = $query->getModel()->getTable();
+
+        if (! static::fulltextIndexCoversColumns($table, $columns)) {
+            // 드라이버는 지원하는데 이 컬럼 조합을 커버하는 인덱스가 없다 — MATCH 를
+            // 조립하면 실행 시 1191(Can't find FULLTEXT index) 이 되고, 그 오류는
+            // 소비처의 catch 에 삼켜져 "검색 결과 0건" 으로 위장된다. LIKE 로 내려가고
+            // 설치 결함의 신호로 조합당 1회 기록한다.
+            static::warnMissingFulltextIndexOnce($table, $columns);
+            KeywordSearch::applyLikeMatch($query, $columns, $keyword, $boolean);
+
+            return;
+        }
+
         $ftKeyword = static::sanitizeBooleanModeKeyword($keyword);
 
         if ($ftKeyword === '') {
@@ -478,6 +693,9 @@ class DatabaseFulltextEngine extends Engine implements KeywordPredicateProvider
             "ALTER TABLE `{$prefix}{$table}` "
             ."ADD FULLTEXT INDEX `{$indexName}` (`{$columnList}`){$parserClause}"
         );
+
+        // 방금 만든 인덱스가 이 프로세스의 커버 판정에 바로 반영되도록 카탈로그를 비운다.
+        static::forgetFulltextIndexCatalog();
     }
 
     /**
@@ -523,6 +741,21 @@ class DatabaseFulltextEngine extends Engine implements KeywordPredicateProvider
 
         $useFulltext = static::supportsFulltext();
 
+        if ($useFulltext) {
+            // 이 경로는 컬럼마다 단일 MATCH(col) 를 조립하므로, 각 컬럼이 **개별**
+            // FULLTEXT 인덱스로 커버될 때만 MATCH 를 쓴다. 복합 인덱스만 있는 테이블은
+            // 실행 시 1191 이 되므로 LIKE 분기로 내려간다.
+            $uncovered = array_values(array_filter(
+                $columns,
+                static fn (string $column): bool => ! static::fulltextIndexCoversColumns($model->getTable(), [$column])
+            ));
+
+            if ($uncovered !== []) {
+                static::warnMissingFulltextIndexOnce($model->getTable(), $uncovered);
+                $useFulltext = false;
+            }
+        }
+
         // prefix 포함 테이블명 (selectRaw에서 사용)
         $prefix = DB::getTablePrefix();
         $qualifiedTable = $prefix.$model->getTable();
@@ -555,12 +788,11 @@ class DatabaseFulltextEngine extends Engine implements KeywordPredicateProvider
             $scoreRaw = '('.implode(' + ', $scoreExpressions).') as _ft_score';
             $this->applySelect($query, $model, $qualifiedTable, $scoreRaw, $scoreBindings, $keysOnly);
         } else {
-            // LIKE fallback (PostgreSQL, SQLite 등)
-            $query->where(function ($q) use ($columns, $keyword) {
-                foreach ($columns as $column) {
-                    $q->orWhere($column, 'LIKE', "%{$keyword}%");
-                }
-            });
+            // LIKE fallback (FULLTEXT 미지원 드라이버 + 개별 인덱스 미커버)
+            // 폴백 술어 조립은 KeywordSearch 단일 지점에 맡긴다 — 와일드카드(% _ \)
+            // escape 와 드라이버별 대소문자 무시 연산자가 그쪽에만 있어, 여기서 손으로
+            // 조립하면 같은 "부분일치" 인데 검색어에 % 가 섞였을 때 결과가 갈린다.
+            KeywordSearch::applyLikeMatch($query, $columns, $keyword);
 
             // 스코어 고정 0 (관련성 순위 불가)
             $this->applySelect($query, $model, $qualifiedTable, '0 as _ft_score', [], $keysOnly);

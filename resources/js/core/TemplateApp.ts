@@ -11,6 +11,7 @@ import type { Route } from './routing/Router';
 import { LayoutLoader, LayoutLoaderError } from './template-engine/LayoutLoader';
 import type { InitActionDefinition, LayoutScript, ComputedSwitchDefinition } from './template-engine/LayoutLoader';
 import { DataBindingEngine } from './template-engine/DataBindingEngine';
+import { evaluateSafeExpression } from './template-engine/SafeExpressionEvaluator';
 import { extractSingleBinding } from './template-engine/BindingShape';
 import { hasPipes } from './template-engine/PipeRegistry';
 import { evaluateRenderCondition } from './template-engine/helpers/RenderHelpers';
@@ -2039,6 +2040,17 @@ export class TemplateApp {
                 continue;
             }
 
+            // 원격 스크립트 차단 (KVE-2026-1915 B-2 + 신뢰 출처 허용목록): src 는 same-origin
+            // path-only 이거나, 확장이 manifest 로 선언한 신뢰 호스트(G7Config.trustedScriptHosts)에
+            // 속한 외부 스크립트만 허용한다. 미선언 외부 origin(`//`·scheme 포함)은 원격 코드
+            // 로드 경로이므로 skip + 경고. (AuthManager.updateConfig loginPath same-origin 정책과 동형)
+            if (!this.isAllowedScriptSrc(script.src)) {
+                logger.warn(
+                    `Blocked untrusted external script src (same-origin path or declared trusted host required): ${script.id} (${script.src})`
+                );
+                continue;
+            }
+
             // 스크립트 동적 로드 (Promise로 래핑)
             const loadPromise = new Promise<void>((resolve, reject) => {
                 const scriptEl = document.createElement('script');
@@ -2071,6 +2083,118 @@ export class TemplateApp {
     }
 
     /**
+     * 레이아웃 스크립트 src 가 로드 허용 대상인지 판정합니다
+     * (KVE-2026-1915 B-2 + 신뢰 출처 허용목록).
+     *
+     * 허용:
+     *  1. `/` 로 시작하는 same-origin 절대 경로.
+     *  2. 확장이 manifest(`trusted_script_hosts`)로 선언한 신뢰 호스트에 속한 외부 스크립트
+     *     — 코어가 집계해 `window.G7Config.trustedScriptHosts` 로 노출한다. 예: CKEditor5
+     *     (cdn.ckeditor.com), Daum 우편번호(t1.daumcdn.net).
+     * 차단: 그 외 `//`(protocol-relative)·scheme 포함 외부 origin(미선언 원격 코드 로드).
+     *
+     * @param src 스크립트 src 문자열
+     * @returns 로드 허용이면 true
+     */
+    private isAllowedScriptSrc(src: string): boolean {
+        if (typeof src !== 'string') {
+            return false;
+        }
+
+        const trimmed = src.trim();
+
+        if (trimmed === '') {
+            return false;
+        }
+
+        // 접두 검사 전에 브라우저 URL 파서와 동일하게 정규화한다 (아래 메서드 주석 참조)
+        const normalized = TemplateApp.normalizeScriptSrcForOriginCheck(trimmed);
+
+        const isProtocolRelative = normalized.startsWith('//');
+        const hasScheme = /^[a-z][a-z0-9+.-]*:/i.test(normalized);
+
+        // same-origin path-only 절대 경로 (`/api/...`) — 항상 허용
+        if (!isProtocolRelative && !hasScheme && normalized.startsWith('/')) {
+            return true;
+        }
+
+        // 외부 origin — 확장이 선언한 신뢰 호스트만 허용
+        const host = this.extractScriptHost(normalized);
+
+        return host !== null && this.getTrustedScriptHosts().includes(host);
+    }
+
+    /**
+     * origin 판정 전에 스크립트 src 를 브라우저 URL 파서와 동일하게 정규화합니다.
+     *
+     * 문자열 접두 검사만으로는 authority 우회를 막지 못합니다. 브라우저(WHATWG URL)는
+     * 파싱 전에 ASCII tab·개행을 제거하고, special scheme(http/https)에서 백슬래시를
+     * 슬래시와 동등하게 처리하기 때문입니다. 그래서 `/\/evil.com/x.js` ·
+     * `/{tab}/evil.com/x.js` 는 `//` 로 시작하지 않고 scheme 도 없는데 실제로는
+     * `https://evil.com/x.js` 로 해석되어 원격 스크립트가 로드됩니다.
+     *
+     * 정규화 후 판정하면 경로 중간의 백슬래시·탭(`/js/a\b.js`)은 authority 를 만들지
+     * 않으므로 그대로 same-origin 으로 통과합니다(과차단 없음).
+     *
+     * 저장측 `SafeLayoutExpressions::normalizeForOriginCheck` · 정적 검사
+     * `layout-scripts-src-same-origin` 과 3층 동형이어야 합니다.
+     *
+     * @since engine-v1.60.2
+     * @param src 원본 src 문자열
+     * @returns 정규화된 src
+     */
+    private static normalizeScriptSrcForOriginCheck(src: string): string {
+        // ASCII tab / LF / CR 제거 (브라우저 파서가 파싱 전에 제거하는 문자)
+        // → 백슬래시를 슬래시로 (special scheme 에서 등가)
+        const slashed = src.replace(/[\t\n\r]/g, '').replace(/\\/g, '/');
+
+        // 선행 슬래시가 3개 이상이어도 브라우저는 authority 시작으로 접는다
+        // (`///host/x` ≡ `//host/x`, `https:///host/x` ≡ `https://host/x`).
+        // 경로 중간의 연속 슬래시(`/js//a.js`)는 브라우저도 경로로 두므로 건드리지 않는다.
+        // @since engine-v1.60.3
+        return slashed.replace(/^([a-z][a-z0-9+.\-]*:)?\/{2,}/i, '$1//');
+    }
+
+    /**
+     * 스크립트 src 에서 http(s) 호스트명을 추출합니다.
+     *
+     * `//host/...`(protocol-relative)·`https://host/...` 를 처리하며, http/https 가 아닌
+     * scheme(`javascript:`·`data:` 등)은 null 을 반환해 신뢰 호스트 판정 대상에서 제외합니다.
+     *
+     * @param src 스크립트 src 문자열
+     * @returns 소문자 호스트명 (판정 불가 시 null)
+     */
+    private extractScriptHost(src: string): string | null {
+        try {
+            const normalized = src.startsWith('//')
+                ? `${window.location.protocol}${src}`
+                : src;
+            const url = new URL(normalized, window.location.origin);
+
+            if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+                return null;
+            }
+
+            return url.hostname.toLowerCase();
+        } catch {
+            return null;
+        }
+    }
+
+    /**
+     * 코어가 집계해 노출한 신뢰 외부 스크립트 호스트 목록을 반환합니다.
+     *
+     * @returns 소문자 호스트명 배열 (window.G7Config.trustedScriptHosts)
+     */
+    private getTrustedScriptHosts(): string[] {
+        const hosts = (window as any).G7Config?.trustedScriptHosts;
+
+        return Array.isArray(hosts)
+            ? hosts.map((host: unknown) => String(host).toLowerCase())
+            : [];
+    }
+
+    /**
      * 스크립트 조건 평가
      *
      * {{...}} 형태의 표현식을 평가합니다.
@@ -2085,20 +2209,9 @@ export class TemplateApp {
             if (condition.startsWith('{{') && condition.endsWith('}}')) {
                 const expression = condition.slice(2, -2).trim();
 
-                // 간단한 표현식 평가 (점 표기법, 옵셔널 체이닝, 메서드 호출)
-                // Function 생성자를 사용하여 안전하게 평가
-                // eslint-disable-next-line @typescript-eslint/no-implied-eval
-                const fn = new Function('ctx', `
-                    with(ctx) {
-                        try {
-                            return Boolean(${expression});
-                        } catch (e) {
-                            return false;
-                        }
-                    }
-                `);
-
-                return fn(context);
+                // 화이트리스트 AST 평가기로 안전하게 평가(KVE-2026-1915).
+                // 종전의 `new Function('ctx','with(ctx){return Boolean(...)}')` 폐기.
+                return Boolean(evaluateSafeExpression(expression, context));
             }
 
             // {{}} 형태가 아니면 truthy 체크
@@ -4060,19 +4173,10 @@ export class TemplateApp {
      */
     private evaluateComputedExpression(expression: string, context: Record<string, any>): any {
         try {
-            // 안전한 표현식 평가를 위해 with 문과 Function 생성자 사용
-            // eslint-disable-next-line @typescript-eslint/no-implied-eval
-            const fn = new Function('ctx', `
-                with(ctx) {
-                    try {
-                        return ${expression};
-                    } catch (e) {
-                        return undefined;
-                    }
-                }
-            `);
-
-            return fn(context);
+            // 화이트리스트 AST 평가기로 안전하게 평가한다(KVE-2026-1915).
+            // 종전의 `new Function('ctx', 'with(ctx){return ...}')` 는 필터조차 거치지 않아
+            // `''.constructor.constructor(...)` 샌드박스 탈출이 가능했으므로 폐기한다.
+            return evaluateSafeExpression(expression, context);
         } catch (error) {
             logger.warn(`Expression evaluation failed: ${expression}`, error);
             return undefined;

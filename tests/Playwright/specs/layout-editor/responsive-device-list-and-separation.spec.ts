@@ -11,7 +11,7 @@
  * `search_row`(portable **children** 교체)를 함께 가져, 두 판정 분기를 한 화면에서 검증한다.
  *
  * @scenario responsive_branch_edit device_list style_scope_tab branch_separation
- * @effects device_toggle_has_portable + style_tab_has_portable + separation_mode_by_children
+ * 효과 요약(마커 아님 — 평문): device_toggle_has_portable, style_tab_has_portable, separation_mode_by_children.
  */
 import type { Page } from '@playwright/test';
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
@@ -82,6 +82,7 @@ async function selectNodeById(page: Page, id: string): Promise<void> {
 }
 
 test.describe('@layout-editor responsive 디바이스 목록 + 분리 판정', () => {
+  /** @effects device_toggle_has_portable */
   test('디바이스 토글에 portable(모바일+태블릿) 버튼이 노출된다 ', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -94,6 +95,7 @@ test.describe('@layout-editor responsive 디바이스 목록 + 분리 판정', (
     }
   });
 
+  /** @effects style_tab_has_portable */
   test('스타일 탭 디바이스 세부탭에 portable 세부탭이 노출된다 ', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -126,6 +128,7 @@ test.describe('@layout-editor responsive 디바이스 목록 + 분리 판정', (
     await expect(page.locator('[data-testid="g7le-style-bp-portable"]')).toBeAttached();
   });
 
+  /** @effects separation_mode_by_children */
   test('분리 판정은 children 유무 기준 — props-only=생성 / children=해제 ', async ({
     page,
   }) => {

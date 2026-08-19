@@ -787,6 +787,7 @@ return [
         ],
     ],
     'order' => [
+        'payment_method_unavailable' => '現在ご利用いただけない決済手段です。他の決済手段を選択してください。',
         'ids' => [
             'required' => '変更する注文を選択してください。',
             'array' => '注文IDは配列形式である必要があります。',
@@ -935,6 +936,14 @@ return [
             'tier_min_non_negative' => '区間開始値は0以上である必要があります。',
             'tier_max_non_negative' => '区間終了値は0以上である必要があります。',
             'unit_value_min' => '区間単位値は0より大きくする必要があります。',
+            'tiers_required' => '区間別送料ポリシーは区間を1つ以上登録する必要があります。',
+            'middle_max_required' => '最後の区間を除く区間には終了値を入力する必要があります。',
+            'tier_value_integer' => '数量区間の開始値と終了値は整数である必要があります。',
+            'unit_value_required' => '単位当たり送料ポリシーは単位値を入力する必要があります。',
+        ],
+        'free_threshold_required' => '条件付き送料無料ポリシーは送料無料基準金額を入力する必要があります。',
+        'extra_fee' => [
+            'zipcode_format' => '郵便番号は「63000」「63000-63999」「63*」のいずれかの形式である必要があります。',
         ],
         'country_settings' => [
             'country_code' => [
@@ -1200,7 +1209,13 @@ return [
             'min' => '注文金額は 0 以上である必要があります。',
         ],
     ],
+    // 公開アセットディスク (コアカタログ照会による検証)
+    'public_asset_disk_invalid' => '有効な公開アセットディスクを選択してください。',
+
     'attributes' => [
+        // 公開アセットストレージ
+        'basic_info.public_asset_disk' => '公開アセットディスク',
+
         'basic_info' => '基本情報',
         'basic_info.shop_name' => 'ショップ名',
         'basic_info.route_path' => 'ルートパス',

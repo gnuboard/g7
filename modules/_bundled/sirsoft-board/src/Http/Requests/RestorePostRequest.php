@@ -45,4 +45,16 @@ class RestorePostRequest extends FormRequest
             'reason.max' => __('sirsoft-board::validation.restore.reason.max'),
         ];
     }
+
+    /**
+     * 검증 오류 메시지에 쓰일 필드 표시명을 반환합니다 (RestoreCommentRequest 와 대칭).
+     *
+     * @return array<string, string> 필드별 표시명
+     */
+    public function attributes(): array
+    {
+        return [
+            'reason' => __('sirsoft-board::validation.attributes.restore.reason'),
+        ];
+    }
 }

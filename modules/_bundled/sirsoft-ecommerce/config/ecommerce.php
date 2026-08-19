@@ -66,16 +66,6 @@ return [
         'guest_cart_lifetime' => 7 * 24 * 60, // 7일 (분 단위)
     ],
 
-    // 카테고리 설정
-    'category' => [
-        'image_disk' => 'local',
-    ],
-
-    // 브랜드 설정
-    'brand' => [
-        'image_disk' => 'local',
-    ],
-
     // 리뷰 설정
     'review' => [
         'write_deadline_days' => 90,   // 구매확정 후 리뷰 작성 가능 기간 (일)

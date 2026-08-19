@@ -4,13 +4,12 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Feature\Seo;
 
 use App\Jobs\GenerateSitemapJob;
 use App\Models\SitemapUrl;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Config;
 use Modules\Sirsoft\Ecommerce\Enums\ProductDisplayStatus;
 use Modules\Sirsoft\Ecommerce\Listeners\SeoCategoryCacheListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SeoProductCacheListener;
-use Tests\TestCase;
+use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
  * Ecommerce 리스너 사이트맵 증분 색인 테스트 (S4 ⑲)
@@ -20,10 +19,8 @@ use Tests\TestCase;
  * - 활성 카테고리 변경 → 색인, 비활성/삭제 → 색인 제거
  * - 리스너가 사이트맵 재생성 잡을 디스패치
  */
-class EcommerceSitemapIndexTest extends TestCase
+class EcommerceSitemapIndexTest extends ModuleTestCase
 {
-    use RefreshDatabase;
-
     protected function setUp(): void
     {
         parent::setUp();

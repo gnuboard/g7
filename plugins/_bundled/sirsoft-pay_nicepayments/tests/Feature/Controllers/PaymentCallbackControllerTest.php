@@ -428,6 +428,40 @@ class PaymentCallbackControllerTest extends PluginTestCase
             ->assertJsonPath('error', __('sirsoft-pay_nicepayments::messages.errors.invalid_request'));
     }
 
+    /**
+     * Moid 상한(64자) 초과는 SignDataRequest 가 표준 422 로 차단해야 한다.
+     * (계약 변경: 종전 수동 검사 400 → FormRequest 표준 422 — 클라이언트는 `.ok` 만 검사)
+     */
+    public function test_sign_data_rejects_overlong_moid(): void
+    {
+        $this->mockPluginSettings();
+
+        $response = $this->postJson('/plugins/sirsoft-pay_nicepayments/payment/sign-data', [
+            'amt' => 50000,
+            'moid' => str_repeat('A', 65),
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['moid']);
+    }
+
+    /**
+     * 비정수 amt('abc')는 SignDataRequest 의 integer 규칙이 표준 422 로 차단해야 한다.
+     * (계약 변경: 종전 수동 검사 400 → FormRequest 표준 422)
+     */
+    public function test_sign_data_rejects_non_integer_amt(): void
+    {
+        $this->mockPluginSettings();
+
+        $response = $this->postJson('/plugins/sirsoft-pay_nicepayments/payment/sign-data', [
+            'amt' => 'abc',
+            'moid' => 'ORD-TEST-AMT-TYPE',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['amt']);
+    }
+
     public function test_sign_data_rejects_unknown_order(): void
     {
         $this->mockPluginSettings();

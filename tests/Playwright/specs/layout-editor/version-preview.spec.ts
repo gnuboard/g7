@@ -10,8 +10,8 @@
  * 버전 목록·복원의 응답 정합/권한 가드는 LayoutControllerTest.php 가 커버 — 본 spec 은
  * 위지윅 chrome 의 버튼 활성/모달 노출/새 창 열림 책임만.
  *
- * @scenario toolbar_button + edit_mode + layout_name_present + versions_state + preview_result
- * @effects preview_button_enabled_when_layout_selected + preview_creates_temp_record_and_opens_window_with_token + version_button_disabled_when_no_layout_name + version_modal_lists_saved_versions_with_change_summary + version_modal_empty_state_when_no_versions
+ * 축 요약(마커 아님 — 평문): toolbar_button, edit_mode, layout_name_present, versions_state, preview_result.
+ * 효과 요약(마커 아님 — 평문): preview_button_enabled_when_layout_selected, preview_creates_temp_record_and_opens_window_with_token, version_button_disabled_when_no_layout_name, version_modal_lists_saved_versions_with_change_summary, version_modal_empty_state_when_no_versions.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 
@@ -30,6 +30,7 @@ async function enterEditor(
 }
 
 test.describe('@layout-editor version history + preview', () => {
+  /** @effects version_modal_lists_saved_versions_with_change_summary, version_modal_empty_state_when_no_versions */
   test('🕘 버전 기록 버튼 클릭 시 모달 열림 + 목록 또는 빈 상태 노출', async ({ page }) => {
     await enterEditor(page, EDITOR_URL_HOME);
     await page.waitForSelector('[data-testid="g7le-preview-frame"]', { timeout: 30_000 });
@@ -57,6 +58,7 @@ test.describe('@layout-editor version history + preview', () => {
     await expect(page.getByTestId('g7le-version-history')).toHaveCount(0);
   });
 
+  /** @effects preview_button_enabled_when_layout_selected, preview_creates_temp_record_and_opens_window_with_token */
   test('👁 미리보기 버튼 클릭 시 /preview/{token} 새 창 열림', async ({ page, context }) => {
     await enterEditor(page, EDITOR_URL_HOME);
     await page.waitForSelector('[data-testid="g7le-preview-frame"]', { timeout: 30_000 });
@@ -77,6 +79,7 @@ test.describe('@layout-editor version history + preview', () => {
     await popup.close();
   });
 
+  /** @effects version_button_disabled_when_no_layout_name */
   test('라우트 미선택 시 버전/미리보기 버튼 비활성', async ({ page }) => {
     await enterEditor(page, EDITOR_URL_NO_ROUTE);
     // 라우트 미선택 상태(layoutName 없음) — 두 버튼 모두 disabled

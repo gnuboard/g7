@@ -13,7 +13,7 @@
  * ⓘ 메뉴 오픈·드래그 시작 보존을 검증한다.
  *
  * @scenario context_plus_button selected_node_state=basic_selected
- * @effects overlay_affordance_above_drag_handle_zindex + overlay_affordance_click_not_intercepted_by_drag_handle + drag_handle_depth_clamped_below_affordance_band + drag_initiation_preserved_on_element_body_after_affordance_zindex_fix
+ * 효과 요약(마커 아님 — 평문): overlay_affordance_above_drag_handle_zindex, overlay_affordance_click_not_intercepted_by_drag_handle, drag_handle_depth_clamped_below_affordance_band, drag_initiation_preserved_on_element_body_after_affordance_zindex_fix.
  */
 import type { Page } from '@playwright/test';
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
@@ -85,6 +85,7 @@ test.describe('@layout-editor overlay affordance z-index', () => {
       });
   });
 
+  /** @effects overlay_affordance_above_drag_handle_zindex */
   test('선택 시 +/ⓘ 버튼이 어포던스 밴드 z-index(120)로 렌더', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -116,6 +117,7 @@ test.describe('@layout-editor overlay affordance z-index', () => {
     }
   });
 
+  /** @effects overlay_affordance_click_not_intercepted_by_drag_handle */
   test('+/ⓘ 버튼 정중앙의 topmost 요소가 버튼 자신 — 드래그 핸들에 가로채이지 않음', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -225,6 +227,7 @@ test.describe('@layout-editor overlay affordance z-index', () => {
     await expect(page.getByTestId('g7le-context-menu-delete')).toBeVisible();
   });
 
+  /** @effects drag_handle_depth_clamped_below_affordance_band */
   test('드래그 핸들 z-index 가 어포던스 밴드(120) 아래로 클램프 — 어떤 깊이에서도', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -252,6 +255,7 @@ test.describe('@layout-editor overlay affordance z-index', () => {
     expect(result.monotonic, '드래그 핸들 z-index 는 base(20) 이상 깊이순 유지').toBe(true);
   });
 
+  /** @effects drag_initiation_preserved_on_element_body_after_affordance_zindex_fix */
   test('드래그 시작은 보존 — 요소 본문 잡고 끌면 고스트 + 드롭 슬롯 생성 (DnD 무회귀)', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);

@@ -5,9 +5,11 @@ namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 use App\Helpers\PermissionHelper;
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\MissingValue;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Concerns\LocalizesCountryName;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\SummarizesAdditionalOptions;
+use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 
 /**
  * 사용자 주문 목록 리소스
@@ -31,6 +33,9 @@ class UserOrderListResource extends BaseApiResource
     {
         // 주문 시점 기준 통화 — 과거 주문의 *_formatted 는 설정 변경과 무관하게 이 통화로 고정 표기한다.
         $orderCurrency = $this->resolveOrderBaseCurrencyCode($this->resource);
+        // 주문 시점 통화 스냅샷 — 소수 자릿수를 현재 설정이 아닌 주문 시점 값으로 고정 (공개 #91 후속).
+        $currencySnapshot = $this->resource->currency_snapshot ?? null;
+        $this->withCurrencySnapshot($currencySnapshot);
 
         // 컬렉션(UserOrderCollection)이 이 배열을 그대로 응답에 실어 Laravel 의 MissingValue
         // 제거 단계를 거치지 않는다 — 미충족 조건부 필드를 직접 걸러낸다. 걸러내지 않으면
@@ -98,7 +103,7 @@ class UserOrderListResource extends BaseApiResource
      * 주문" 이라는 사실 아닌 단언이 된다.
      *
      * @param  string|null  $orderCurrency  주문 시점 기준 통화
-     * @return array<int, array<string, mixed>>|\Illuminate\Http\Resources\MissingValue 아이템 배열
+     * @return array<int, array<string, mixed>>|MissingValue 아이템 배열
      */
     private function resolveItems(?string $orderCurrency)
     {
@@ -117,13 +122,13 @@ class UserOrderListResource extends BaseApiResource
                 : [];
         }
 
-        return new \Illuminate\Http\Resources\MissingValue;
+        return new MissingValue;
     }
 
     /**
      * 주문 아이템 1건을 표시용 배열로 변환합니다.
      *
-     * @param  \Modules\Sirsoft\Ecommerce\Models\OrderOption  $option  주문 옵션
+     * @param  OrderOption  $option  주문 옵션
      * @param  string|null  $orderCurrency  주문 시점 기준 통화
      * @return array<string, mixed> 표시용 아이템 배열
      */
@@ -157,7 +162,7 @@ class UserOrderListResource extends BaseApiResource
      * 유무는 값이 아니라 속성 키로 판정한다 — 0건의 `0` 과 "집계 안 함" 은 값으로 구분되지
      * 않는다.
      *
-     * @return int|\Illuminate\Http\Resources\MissingValue 아이템 수
+     * @return int|MissingValue 아이템 수
      */
     private function resolveItemCount()
     {
@@ -169,7 +174,7 @@ class UserOrderListResource extends BaseApiResource
             return $this->resource->options->count();
         }
 
-        return new \Illuminate\Http\Resources\MissingValue;
+        return new MissingValue;
     }
 
     /**

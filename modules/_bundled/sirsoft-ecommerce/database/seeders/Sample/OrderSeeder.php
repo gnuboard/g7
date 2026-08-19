@@ -932,15 +932,18 @@ class OrderSeeder extends Seeder
     {
         $subtotal = (int) $orderOption->subtotal_price;
         $quantity = (int) $orderOption->quantity;
-        $weight = (float) ($orderOption->subtotal_weight ?? $quantity * 0.5);
-        $volume = (float) ($orderOption->subtotal_volume ?? $quantity * 1000);
-        $baseFee = (int) $countrySetting->base_fee;
+        // 주문 옵션의 무게/부피는 g / cm³ 로 저장된다 (미입력 시 1개당 500g / 1,000cm³ 로 가정)
+        $weightGram = (float) ($orderOption->subtotal_weight ?? $quantity * 500);
+        $volumeCubicCm = (float) ($orderOption->subtotal_volume ?? $quantity * 1000);
+        $baseFee = (int) round((float) $countrySetting->base_fee);
         $ranges = $countrySetting->ranges;
 
-        // 부피무게 계산
+        // 배송정책의 구간·단위값은 kg / L 이므로 여기서 환산한다 (엔진과 동일 규칙)
         $volumeWeightDivisor = $ranges['volume_weight_divisor'] ?? 6000;
-        $volumeWeight = $volumeWeightDivisor > 0 ? $volume / $volumeWeightDivisor : 0.0;
-        $chargeableWeight = max($weight, $volumeWeight);
+        $weightKg = $weightGram / 1000;
+        $volumeLiter = $volumeCubicCm / 1000;
+        $volumetricWeightKg = $volumeWeightDivisor > 0 ? $volumeCubicCm / $volumeWeightDivisor : 0.0;
+        $chargeableWeightKg = max($weightKg, $volumetricWeightKg);
 
         return match ($countrySetting->charge_policy) {
             ChargePolicyEnum::FREE => 0,
@@ -948,38 +951,55 @@ class OrderSeeder extends Seeder
             ChargePolicyEnum::CONDITIONAL_FREE => $subtotal >= (int) $countrySetting->free_threshold ? 0 : $baseFee,
             ChargePolicyEnum::RANGE_AMOUNT => $this->calculateSeederRangeFee($ranges, $subtotal),
             ChargePolicyEnum::RANGE_QUANTITY => $this->calculateSeederRangeFee($ranges, $quantity),
-            ChargePolicyEnum::RANGE_WEIGHT => $this->calculateSeederRangeFee($ranges, (int) ($weight * 1000)),
-            ChargePolicyEnum::RANGE_VOLUME => $this->calculateSeederRangeFee($ranges, (int) $volume),
-            ChargePolicyEnum::RANGE_VOLUME_WEIGHT => $this->calculateSeederRangeFee($ranges, (int) ($chargeableWeight * 1000)),
-            ChargePolicyEnum::PER_QUANTITY => (int) (ceil($quantity / max($ranges['unit_value'] ?? 1, 1)) * $baseFee),
-            ChargePolicyEnum::PER_WEIGHT => (int) (ceil($weight / max($ranges['unit_value'] ?? 0.5, 0.01)) * $baseFee),
-            ChargePolicyEnum::PER_VOLUME => (int) (ceil($volume / max($ranges['unit_value'] ?? 1000, 1)) * $baseFee),
-            ChargePolicyEnum::PER_VOLUME_WEIGHT => (int) (ceil($chargeableWeight / max($ranges['unit_value'] ?? 0.5, 0.01)) * $baseFee),
-            ChargePolicyEnum::PER_AMOUNT => (int) (ceil($subtotal / max($ranges['unit_value'] ?? 10000, 1)) * $baseFee),
+            ChargePolicyEnum::RANGE_WEIGHT => $this->calculateSeederRangeFee($ranges, $weightKg),
+            ChargePolicyEnum::RANGE_VOLUME => $this->calculateSeederRangeFee($ranges, $volumeLiter),
+            ChargePolicyEnum::RANGE_VOLUME_WEIGHT => $this->calculateSeederRangeFee($ranges, $chargeableWeightKg),
+            ChargePolicyEnum::PER_QUANTITY => (int) round(ceil($quantity / max($ranges['unit_value'] ?? 1, 1)) * $baseFee),
+            ChargePolicyEnum::PER_WEIGHT => (int) round(ceil($weightKg / max($ranges['unit_value'] ?? 0.5, 0.01)) * $baseFee),
+            ChargePolicyEnum::PER_VOLUME => (int) round(ceil($volumeLiter / max($ranges['unit_value'] ?? 1, 0.01)) * $baseFee),
+            ChargePolicyEnum::PER_VOLUME_WEIGHT => (int) round(ceil($chargeableWeightKg / max($ranges['unit_value'] ?? 0.5, 0.01)) * $baseFee),
+            ChargePolicyEnum::PER_AMOUNT => (int) round(ceil($subtotal / max($ranges['unit_value'] ?? 10000, 1)) * $baseFee),
             ChargePolicyEnum::API => $baseFee, // API는 시더에서 base_fee 사용
             default => $baseFee,
         };
     }
 
     /**
-     * 구간별 배송비 계산 (시더용)
+     * 구간별 배송비 계산 (시더용 — 상한 포함 사다리 매칭)
+     *
+     * 구간을 상한 오름차순(무제한이 마지막)으로 정렬한 뒤, 값이 상한 이하인 첫 구간의
+     * 배송비를 반환합니다. 시작값은 표시용이라 매칭에 쓰지 않습니다
+     * (OrderCalculationService::calculateRangeFee 와 동일 규칙).
      *
      * @param  array|null  $ranges  구간 설정
-     * @param  int  $value  비교 값
+     * @param  int|float  $value  비교 값 (금액·수량·kg·L)
      * @return int 배송비
      */
-    private function calculateSeederRangeFee(?array $ranges, int $value): int
+    private function calculateSeederRangeFee(?array $ranges, int|float $value): int
     {
-        if (empty($ranges) || empty($ranges['tiers'])) {
+        $tiers = is_array($ranges) ? ($ranges['tiers'] ?? []) : [];
+
+        if (! is_array($tiers) || count($tiers) === 0) {
             return 0;
         }
 
-        foreach ($ranges['tiers'] as $tier) {
-            $min = $tier['min'] ?? 0;
-            $max = $tier['max'] ?? PHP_INT_MAX;
+        $sortedTiers = array_values($tiers);
+        usort($sortedTiers, function ($a, $b) {
+            $aMax = ($a['max'] ?? null) === null || ($a['max'] ?? null) === '' ? null : (float) $a['max'];
+            $bMax = ($b['max'] ?? null) === null || ($b['max'] ?? null) === '' ? null : (float) $b['max'];
 
-            if ($value >= $min && ($max === null || $value < $max)) {
-                return (int) ($tier['fee'] ?? 0);
+            if ($aMax === null && $bMax === null) {
+                return 0;
+            }
+
+            return $aMax === null ? 1 : ($bMax === null ? -1 : $aMax <=> $bMax);
+        });
+
+        foreach ($sortedTiers as $tier) {
+            $max = ($tier['max'] ?? null) === null || ($tier['max'] ?? null) === '' ? null : (float) $tier['max'];
+
+            if ($max === null || (float) $value <= $max) {
+                return (int) round((float) ($tier['fee'] ?? 0));
             }
         }
 

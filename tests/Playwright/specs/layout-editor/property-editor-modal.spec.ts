@@ -10,8 +10,8 @@
  *  - guest_only 레이아웃: 템플릿이 currentUser 를 시드해도 비로그인 페이지에서 제외 →
  *    "이미 로그인되어 있습니다" 토스트 미발화
  *
- * @scenario property_modal_open + style_control_patch + sample_global_from_template + guest_only_no_currentUser
- * @effects modal_visible + canvas_live_patch + site_name_seeded + guest_only_no_redirect_toast
+ * 축 요약(마커 아님 — 평문): property_modal_open, style_control_patch, sample_global_from_template, guest_only_no_currentUser.
+ * 효과 요약(마커 아님 — 평문): modal_visible, canvas_live_patch, site_name_seeded, guest_only_no_redirect_toast.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 
@@ -56,6 +56,7 @@ async function selectNodeWithInfoButton(page: import('@playwright/test').Page): 
 }
 
 test.describe('@layout-editor 속성 편집 모달 (S6-2)', () => {
+  /** @effects modal_visible, canvas_live_patch */
   test('요소 선택 → ⓘ → 속성 설정 → 스타일 탭 컨트롤 렌더 + 패치', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -93,6 +94,7 @@ test.describe('@layout-editor 속성 편집 모달 (S6-2)', () => {
     expect(hasStyleTab + hasNoEditable).toBeGreaterThan(0);
   });
 
+  /** @effects site_name_seeded */
   test('sampleGlobal: 번들 템플릿 시드로 _global.currentUser / settings 가 채워진다 (코어 시드 폐기 후)', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -116,6 +118,7 @@ test.describe('@layout-editor 속성 편집 모달 (S6-2)', () => {
     );
   });
 
+  /** @effects guest_only_no_redirect_toast */
   test('guest_only 레이아웃: 템플릿 currentUser 시드 제외 → "이미 로그인" 토스트 미발화', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);

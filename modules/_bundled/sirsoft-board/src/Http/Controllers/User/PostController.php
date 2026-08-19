@@ -17,7 +17,9 @@ use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Enums\SecretMode;
 use Modules\Sirsoft\Board\Exceptions\AttachmentLimitExceededException;
 use Modules\Sirsoft\Board\Exceptions\BoardNotFoundException;
+use Modules\Sirsoft\Board\Exceptions\PostHasRepliesException;
 use Modules\Sirsoft\Board\Exceptions\PostNotFoundException;
+use Modules\Sirsoft\Board\Http\Requests\User\DestroyPostRequest;
 use Modules\Sirsoft\Board\Http\Requests\User\StorePostRequest;
 use Modules\Sirsoft\Board\Http\Requests\User\UpdatePostRequest;
 use Modules\Sirsoft\Board\Http\Requests\User\VerifyGuestPasswordRequest;
@@ -400,7 +402,12 @@ class PostController extends PublicBaseController
             );
         } catch (AttachmentLimitExceededException $e) {
             // 게시판 첨부 개수 상한 초과 — generic 500 이 아닌 422 명시 차단
-            return $this->error($e->getMessage(), 422, ['code' => 'attachment_limit_exceeded']);
+            return $this->error(
+                $e->getMessageKey(),
+                422,
+                ['code' => 'attachment_limit_exceeded'],
+                $e->getMessageParams()
+            );
         } catch (BoardNotFoundException $e) {
             throw $e;
         } catch (\Exception $e) {
@@ -455,7 +462,12 @@ class PostController extends PublicBaseController
             );
         } catch (AttachmentLimitExceededException $e) {
             // 게시판 첨부 개수 상한 초과 — generic 500 이 아닌 422 명시 차단
-            return $this->error($e->getMessage(), 422, ['code' => 'attachment_limit_exceeded']);
+            return $this->error(
+                $e->getMessageKey(),
+                422,
+                ['code' => 'attachment_limit_exceeded'],
+                $e->getMessageParams()
+            );
         } catch (AccessDeniedHttpException $e) {
             return $this->error('auth.scope_denied', 403);
         } catch (ModelNotFoundException $e) {
@@ -470,13 +482,15 @@ class PostController extends PublicBaseController
     /**
      * 게시글을 삭제합니다.
      *
-     * @param  Request  $request  HTTP 요청
+     * 비회원 소유권 확인용 password/verification_token 형식 검증은 DestroyPostRequest 가
+     * 담당한다 (배열 주입 422 차단). 소유권 판정 자체는 canModifyPost 가 수행한다.
+     *
+     * @param  DestroyPostRequest  $request  게시글 삭제 요청
      * @param  string  $slug  게시판 슬러그
      * @param  string|int  $id  게시글 ID
      * @return JsonResponse 삭제 결과 응답
      */
-    // audit:allow controller-base-request-injection reason: DELETE 단건 삭제. force_delete 불리언 플래그만 input()으로 읽음 (검증 불필요)
-    public function destroy(Request $request, string $slug, string|int $id): JsonResponse
+    public function destroy(DestroyPostRequest $request, string $slug, string|int $id): JsonResponse
     {
         $id = (int) $id;
 
@@ -499,6 +513,9 @@ class PostController extends PublicBaseController
             $this->postService->deletePost($slug, $id, 'user');
 
             return $this->success('sirsoft-board::messages.posts.delete_success');
+        } catch (PostHasRepliesException $e) {
+            // 답글 삭제 정책(block): 살아있는 답글이 있어 삭제 거부 — 입력(대상 선택) 문제이므로 422
+            return $this->error($e->getMessageKey(), 422);
         } catch (AccessDeniedHttpException $e) {
             return $this->error('auth.scope_denied', 403);
         } catch (ModelNotFoundException $e) {

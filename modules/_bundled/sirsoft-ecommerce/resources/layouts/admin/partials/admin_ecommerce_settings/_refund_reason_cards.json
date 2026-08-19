@@ -10,7 +10,7 @@
   },
   "children": [
     {
-      "id": "refund_reason_card",
+      "id": "refund_reason_card_{{rIdx}}",
       "type": "basic",
       "name": "Div",
       "iteration": {
@@ -63,7 +63,7 @@
               },
               "children": [
                 {
-                  "type": "basic",
+                  "type": "composite",
                   "name": "Toggle",
                   "props": {
                     "checked": "{{reason.is_active ?? false}}",

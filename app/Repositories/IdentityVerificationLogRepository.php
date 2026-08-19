@@ -7,6 +7,7 @@ use App\Enums\IdentityVerificationStatus;
 use App\Helpers\TimezoneHelper;
 use App\Models\IdentityPolicy;
 use App\Models\IdentityVerificationLog;
+use App\Repositories\Concerns\DeletesInBatches;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Support\Query\PaginationLimits;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -19,6 +20,7 @@ use Illuminate\Support\Carbon;
  */
 class IdentityVerificationLogRepository implements IdentityVerificationLogRepositoryInterface
 {
+    use DeletesInBatches;
     use PaginatesWithDeferredJoin;
 
     /**
@@ -127,9 +129,10 @@ class IdentityVerificationLogRepository implements IdentityVerificationLogReposi
      */
     public function purgeOlderThan(int $days): int
     {
-        return IdentityVerificationLog::query()
-            ->where('created_at', '<', Carbon::now()->subDays(max(1, $days)))
-            ->delete();
+        return $this->deleteInBatches(
+            IdentityVerificationLog::query()
+                ->where('created_at', '<', Carbon::now()->subDays(max(1, $days)))
+        );
     }
 
     /**

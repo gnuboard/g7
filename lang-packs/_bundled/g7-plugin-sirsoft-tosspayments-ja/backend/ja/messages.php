@@ -16,4 +16,7 @@ return [
         'invalid_order_id' => '現金領収書発行識別子がToss Payments形式（英数字·ハイフン·アンダースコア 6～64文字）に一致していません。',
         'cancel_reason' => '注文金額変更に伴う再発行',
     ],
+    'errors' => [
+        'payment_failed' => '決済処理に失敗しました。しばらく後に再度お試しください。',
+    ],
 ];

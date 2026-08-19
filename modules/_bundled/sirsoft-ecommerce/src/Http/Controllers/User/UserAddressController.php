@@ -34,7 +34,7 @@ class UserAddressController extends AuthBaseController
     public function index(): JsonResponse
     {
         try {
-            
+
             $userId = Auth::id();
             $addresses = $this->userAddressService->getUserAddresses($userId);
 
@@ -58,13 +58,13 @@ class UserAddressController extends AuthBaseController
     /**
      * 사용자 배송지 상세 조회
      *
-     * @param int $id 배송지 ID
+     * @param  int  $id  배송지 ID
      * @return JsonResponse 배송지 정보를 포함한 JSON 응답
      */
     public function show(int $id): JsonResponse
     {
         try {
-            
+
             $userId = Auth::id();
             $address = $this->userAddressService->getAddress($userId, $id);
 
@@ -97,13 +97,13 @@ class UserAddressController extends AuthBaseController
     /**
      * 사용자 배송지 등록
      *
-     * @param StoreUserAddressRequest $request 검증된 요청 데이터
+     * @param  StoreUserAddressRequest  $request  검증된 요청 데이터
      * @return JsonResponse 생성된 배송지 정보를 포함한 JSON 응답
      */
     public function store(StoreUserAddressRequest $request): JsonResponse
     {
         try {
-            
+
             $userId = Auth::id();
             $data = $request->validated();
             $data['user_id'] = $userId;
@@ -126,15 +126,9 @@ class UserAddressController extends AuthBaseController
                 'user_id' => Auth::id(),
             ]);
 
-            // 최대 배송지 개수 초과 예외 처리
-            if (str_contains($e->getMessage(), 'max_addresses_exceeded')) {
-                return ResponseHelper::moduleError(
-                    'sirsoft-ecommerce',
-                    'exceptions.max_addresses_exceeded',
-                    422
-                );
-            }
-
+            // 종전에는 예외 메시지 문자열을 검사해 422 로 분기했으나, 그 문자열을 던지는
+            // 지점도 대응 다국어 키도 존재하지 않아 도달 불가능한 분기였다. 개수 상한이
+            // 도입되면 전용 예외 타입으로 분기한다.
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.address.create_failed',
@@ -146,14 +140,14 @@ class UserAddressController extends AuthBaseController
     /**
      * 사용자 배송지 수정
      *
-     * @param UpdateUserAddressRequest $request 검증된 요청 데이터
-     * @param int $id 배송지 ID
+     * @param  UpdateUserAddressRequest  $request  검증된 요청 데이터
+     * @param  int  $id  배송지 ID
      * @return JsonResponse 수정된 배송지 정보를 포함한 JSON 응답
      */
     public function update(UpdateUserAddressRequest $request, int $id): JsonResponse
     {
         try {
-            
+
             $userId = Auth::id();
             $data = $request->validated();
 
@@ -188,13 +182,13 @@ class UserAddressController extends AuthBaseController
     /**
      * 사용자 배송지 삭제
      *
-     * @param int $id 배송지 ID
+     * @param  int  $id  배송지 ID
      * @return JsonResponse 삭제 결과를 포함한 JSON 응답
      */
     public function destroy(int $id): JsonResponse
     {
         try {
-            
+
             $userId = Auth::id();
             $deleted = $this->userAddressService->deleteAddress($userId, $id);
 
@@ -225,13 +219,13 @@ class UserAddressController extends AuthBaseController
     /**
      * 기본 배송지 설정
      *
-     * @param int $id 배송지 ID
+     * @param  int  $id  배송지 ID
      * @return JsonResponse 설정 결과를 포함한 JSON 응답
      */
     public function setDefault(int $id): JsonResponse
     {
         try {
-            
+
             $userId = Auth::id();
             $result = $this->userAddressService->setDefaultAddress($userId, $id);
 

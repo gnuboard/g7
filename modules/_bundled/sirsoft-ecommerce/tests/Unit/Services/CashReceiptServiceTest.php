@@ -19,6 +19,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderCashReceiptRepositoryI
 use Modules\Sirsoft\Ecommerce\Services\CashReceiptService;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\OrderService;
+use Modules\Sirsoft\Ecommerce\Tests\Concerns\RegistersTestCashReceiptProvider;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -30,6 +31,8 @@ use PHPUnit\Framework\Attributes\Test;
  */
 class CashReceiptServiceTest extends ModuleTestCase
 {
+    use RegistersTestCashReceiptProvider;
+
     private const PROVIDER = 'tosspayments';
 
     private const IDENTIFIER = '01012345678';
@@ -54,6 +57,7 @@ class CashReceiptServiceTest extends ModuleTestCase
         $this->receiptSequence = 0;
         $this->issueShouldFail = false;
 
+        $this->registerCashReceiptProvider(self::PROVIDER);
         app(EcommerceSettingsService::class)->setSetting('order_settings.cash_receipt_provider', self::PROVIDER);
     }
 
@@ -714,6 +718,70 @@ class CashReceiptServiceTest extends ModuleTestCase
 
         $this->service()->issue($order->fresh(), CashReceiptType::INCOME, self::IDENTIFIER);
         $this->assertSame(2, $this->issueCalls[1]['payload']['issue_sequence']);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 발급사 플러그인 제거 후 동작 (A3)
+    // ─────────────────────────────────────────────────────────────
+
+    /**
+     * 발급사 플러그인이 제거되면 신규 발급이 차단된다. (비회귀 pin)
+     *
+     * 저장값은 남아 있어도 그 발급사를 제공하는 확장이 없으면 발급 요청이 어디에도
+     * 도달하지 못한다. 그 상태에서 발급을 허용하면 구매자에게는 성공처럼 보이고
+     * 실제로는 실패 이력만 쌓인다.
+     *
+     * @scenario provider_state=dead
+     *
+     * @effects issue_blocked_when_provider_unregistered
+     */
+    #[Test]
+    public function 발급사_플러그인이_제거되면_신규_발급이_차단된다(): void
+    {
+        $this->registerProvider();
+        $order = $this->makeOrder(11000, 11000, 0);
+
+        // 레지스트리에 없는 발급사로 저장값만 바꾼다 (= 플러그인 제거 상태)
+        app(EcommerceSettingsService::class)->setSetting('order_settings.cash_receipt_provider', 'ghost_provider');
+
+        $receipt = $this->service()->issue($order, CashReceiptType::INCOME, self::IDENTIFIER);
+
+        $this->assertSame(CashReceiptIssueStatus::FAILED, $receipt->issue_status);
+        $this->assertSame('PROVIDER_NOT_CONFIGURED', $receipt->error_code);
+        $this->assertSame([], $this->issueCalls, '발급사가 없는데 발급 훅이 호출되었습니다.');
+    }
+
+    /**
+     * 이미 발급된 영수증의 취소는 영수증에 박제된 발급사로 수행된다. (비회귀 pin)
+     *
+     * 취소를 현재 설정값으로 판정하면, 발급사 플러그인을 제거한 뒤에는 과거 영수증을
+     * 취소할 수 없게 된다. 구매자는 환불받았는데 현금영수증만 살아 있는 상태가 남는다.
+     *
+     * @scenario provider_state=dead
+     *
+     * @effects cancel_uses_receipt_snapshot_provider
+     */
+    #[Test]
+    public function 발급사_플러그인이_제거돼도_기존_영수증_취소는_스냅샷_발급사로_수행된다(): void
+    {
+        $this->registerProvider();
+        $order = $this->makeOrder(11000, 11000, 0);
+        $this->service()->issue($order, CashReceiptType::INCOME, self::IDENTIFIER);
+
+        $this->assertNotNull($this->activeReceipt($order->fresh()), '취소 대상 영수증이 없습니다.');
+
+        app(EcommerceSettingsService::class)->setSetting('order_settings.cash_receipt_provider', 'ghost_provider');
+
+        $result = $this->service()->cancelAll($order->fresh(), '전액취소');
+
+        $this->assertTrue($result, '발급사 제거 후 기존 영수증 취소가 실패했습니다.');
+        $this->assertNotSame([], $this->cancelCalls, '취소 훅이 호출되지 않았습니다.');
+        $this->assertSame(
+            self::PROVIDER,
+            $this->cancelCalls[0]['provider'],
+            '취소가 영수증 스냅샷이 아닌 현재 설정값을 사용했습니다.'
+        );
+        $this->assertNull($this->activeReceipt($order->fresh()), '취소 후에도 활성 영수증이 남았습니다.');
     }
 
     #[Test]

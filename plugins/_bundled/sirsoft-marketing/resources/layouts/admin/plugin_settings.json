@@ -78,7 +78,7 @@
                                     "text": "$t:sirsoft-marketing.settings.channel_modal.enabled"
                                 },
                                 {
-                                    "type": "basic",
+                                    "type": "composite",
                                     "name": "Toggle",
                                     "props": {
                                         "checked": "{{_global.editingChannel.enabled}}",
@@ -549,7 +549,7 @@
                                                 },
                                                 "children": [
                                                     {
-                                                        "type": "basic",
+                                                        "type": "composite",
                                                         "name": "Toggle",
                                                         "props": {
                                                             "name": "marketing_consent_enabled"
@@ -641,7 +641,7 @@
                                                         "name": "Button",
                                                         "props": {
                                                             "type": "button",
-                                                            "className": "flex-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors text-sm"
+                                                            "className": "flex-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 font-medium transition-colors text-sm"
                                                         },
                                                         "actions": [
                                                             {
@@ -747,7 +747,7 @@
                                                         ]
                                                     },
                                                     {
-                                                        "id": "channels_table_rows",
+                                                        "id": "channels_table_rows_{{channelIdx}}",
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
@@ -843,7 +843,7 @@
                                                                         },
                                                                         "children": [
                                                                             {
-                                                                                "type": "basic",
+                                                                                "type": "composite",
                                                                                 "name": "Toggle",
                                                                                 "props": {
                                                                                     "checked": "{{channel.enabled}}",
@@ -1049,7 +1049,7 @@
                                                 },
                                                 "children": [
                                                     {
-                                                        "type": "basic",
+                                                        "type": "composite",
                                                         "name": "Toggle",
                                                         "props": {
                                                             "name": "third_party_consent_enabled"
@@ -1154,7 +1154,7 @@
                                                 },
                                                 "children": [
                                                     {
-                                                        "type": "basic",
+                                                        "type": "composite",
                                                         "name": "Toggle",
                                                         "props": {
                                                             "name": "info_disclosure_enabled"
@@ -1330,7 +1330,7 @@
                                                                 "handler": "toast",
                                                                 "params": {
                                                                     "type": "error",
-                                                                    "message": "$t:admin.plugins.settings.save_error"
+                                                                    "message": "{{error.message ?? '$t:admin.plugins.settings.save_error'}}"
                                                                 }
                                                             }
                                                         ]

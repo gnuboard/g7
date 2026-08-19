@@ -1,0 +1,50 @@
+feature: 죽은 PG 를 지정한 결제수단 차단 (A2)
+
+description: |
+  고아 판정(`_orphaned`)은 결제수단 ID 에만 계산된다. 그래서 builtin 수단(카드 등)에 특정 PG 를
+  지정한 뒤 그 PG 플러그인을 제거하면, 수단 자체는 카탈로그에 남아 있어 고아 필터를 그대로
+  통과한다. 체크아웃에 선택 가능한 결제수단으로 노출되고, 주문하면 PG 라우팅이 매칭에 실패해
+  **결제창 없이 주문완료로 넘어간다**.
+
+  판정식은 런타임 폴백(`OrderProcessingService::determinePgProvider()`)과 일치시킨다.
+  수단의 지정값이 **null 일 때만** 기본 PG 로 내려가므로, 지정값이 죽은 문자열이면 기본 PG 가
+  살아 있어도 폴백하지 않는다 — 그 경우도 차단 대상이다. 레지스트리를 인식하는 폴백으로
+  바꾸는 것은 결제 라우팅 계약 변경이라 하지 않는다.
+
+  관리자 응답은 필터하지 않고 `_orphaned_pg` 플래그를 그대로 실어 운영자가 고칠 수 있게 한다.
+  `_orphaned` 와 달리 행 편집 컨트롤(PG 선택)도 막지 않는다 — 살아 있는 PG 로 바꾸는 복구
+  경로가 남아야 한다.
+
+axes:
+  # 유효 PG 의 상태. surface(관리자/공개/주문제출)는 축이 아니라 effects 로 구분한다 —
+  # 세 표면이 같은 판정을 공유하는 것이 이 기능의 요구사항이기 때문이다.
+  pg_provider_state: [live, dead_own, dead_default, none]
+
+effects:
+  - dead_pg_method_flagged_for_admin      # 관리자 응답·화면에 _orphaned_pg 플래그와 배지
+  - dead_pg_method_hidden_from_checkout   # 공개 응답에서 제거 — 결제창 없는 주문완료 차단
+  - dead_pg_method_keeps_recovery_control # 행 편집(PG 선택)은 막지 않음 — 복구 경로 유지
+  - dead_default_pg_normalized_in_public  # 죽은 기본 PG 는 공개 응답에서 null 로 정규화
+  - dead_pg_order_submission_rejected_422 # 프론트 우회 직접 제출도 검증에서 거부
+  - orphaned_method_order_submission_rejected_422 # 고아 수단 제출도 함께 차단 (공개 #111 서버 대칭)
+  - unconfigured_pg_keeps_legacy_contract # 양쪽 미설정은 기존 계약(non-PG 강하) 유지
+  - live_pg_method_remains_visible        # 살아있는 PG 지정은 그대로 노출 (거짓 양성 차단)
+  - live_pg_order_submission_accepted     # 정상 수단 제출은 통과
+  - non_pg_method_unaffected_by_registry  # PG 불필요 수단은 레지스트리와 무관
+  - unknown_method_id_keeps_legacy_contract # 카탈로그 밖 ID 판정은 종전대로 통과
+  - runtime_only_flag_not_persisted       # _orphaned_pg 는 저장 파일에 박제되지 않음
+  - boot_time_read_not_cached             # 부팅 중(훅 등록 전) 판정이 요청 전체에 남지 않음
+  - extension_method_survives_dead_pg_guard # 플러그인 등록 수단이 가드에 휩쓸리지 않음 (#475 계약 보존)
+  - pg_locked_method_has_no_dead_pg_exemption # pg_locked 는 저장값 고정일 뿐 PG 사멸 면제가 아님
+  - merge_quadrant_pinned                 # 카탈로그 등재 × 저장값 존재 4분면 — 고아 판정의 토대
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/PaymentSettingsOrphanedPgProviderTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Requests/CreateOrderDeadPgGuardTest.php
+  # 확장 결제수단 1급화(#475) 스위트에 심은 죽은-PG 비회귀 pin — 그 스위트만 돌려도 걸리도록
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Payment/ExtensionPaymentMethodRegressionTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/SettingsCacheBootOrderTest.php
+  # 카탈로그 × 저장값 4분면 (고아 판정이 딛는 병합 규칙)
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/EcommerceSettingsOrderSettingsTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminEcommerceSettingsOrder.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/payment-method-orphaned-pg-badge.spec.ts

@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\ExtensionSettingsMirror;
 use Illuminate\Support\Facades\Config;
 
 if (! function_exists('g7_settings')) {
@@ -16,15 +17,12 @@ if (! function_exists('g7_settings')) {
      * @example
      * // 코어 메일 설정 조회
      * $mailHost = g7_settings('core.mail.host');
-     *
      * @example
      * // 모듈 설정 조회
      * $shopName = g7_settings('modules.sirsoft-ecommerce.basic_info.shop_name');
-     *
      * @example
      * // 플러그인 설정 조회
      * $displayMode = g7_settings('plugins.sirsoft-daum_postcode.display_mode');
-     *
      * @example
      * // 전체 설정 조회
      * $allSettings = g7_settings();
@@ -50,7 +48,6 @@ if (! function_exists('g7_core_settings')) {
      * @example
      * // 메일 호스트 조회
      * $mailHost = g7_core_settings('mail.host');
-     *
      * @example
      * // 사이트명 조회
      * $siteName = g7_core_settings('general.site_name');
@@ -77,7 +74,6 @@ if (! function_exists('g7_module_settings')) {
      * @example
      * // 이커머스 모듈의 쇼핑몰명 조회
      * $shopName = g7_module_settings('sirsoft-ecommerce', 'basic_info.shop_name');
-     *
      * @example
      * // 모듈 전체 설정 조회
      * $allSettings = g7_module_settings('sirsoft-ecommerce');
@@ -89,6 +85,23 @@ if (! function_exists('g7_module_settings')) {
         }
 
         return Config::get("g7_settings.modules.{$identifier}.{$key}", $default);
+    }
+}
+
+if (! function_exists('g7_refresh_module_settings_config')) {
+    /**
+     * 모듈 환경설정 config 미러를 다시 채웁니다.
+     *
+     * 모듈 설정 저장에는 코어 공통 지점이 없어 각 모듈의 SettingsService 가 직접 저장합니다.
+     * 그 서비스가 자기 캐시를 비우는 자리에서 이 헬퍼를 호출하면, 상주 프로세스에서도
+     * `g7_module_settings()` 가 저장 직후의 값을 읽습니다 (공개이슈 #109).
+     *
+     * @param  string  $identifier  모듈 식별자 (예: sirsoft-ecommerce)
+     * @return void
+     */
+    function g7_refresh_module_settings_config(string $identifier): void
+    {
+        app(ExtensionSettingsMirror::class)->refreshModule($identifier);
     }
 }
 
@@ -104,7 +117,6 @@ if (! function_exists('g7_plugin_settings')) {
      * @example
      * // 다음 우편번호 플러그인의 표시 모드 조회
      * $displayMode = g7_plugin_settings('sirsoft-daum_postcode', 'display_mode');
-     *
      * @example
      * // 플러그인 전체 설정 조회
      * $allSettings = g7_plugin_settings('sirsoft-daum_postcode');

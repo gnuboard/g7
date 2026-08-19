@@ -2049,4 +2049,98 @@ MD;
         $cells = preg_split('/(?<!\\\\)\|/', trim($line, '| '));
         $this->assertCount(3, $cells, "403 행은 3열(상태코드/의미/발생 조건)이어야 한다: {$line}");
     }
+
+    /**
+     * 403 행의 권한 식별자는 사람 서술이 아니라 라우트에서 파생된 사실이므로, 라우트의 요구
+     * 권한이 바뀌면 재생성이 그 식별자를 갱신해야 한다.
+     *
+     * 배경: 에러 표 병합은 같은 상태코드에서 기존 행을 이기게 둔다(409·429 같은 도메인 특이
+     * 조건을 사람이 보강해 두기 때문). 그 규칙이 403 에도 그대로 걸리면 라우트 권한을 바꿔도
+     * 옛 식별자가 영구히 남아, 문서가 조용히 틀린 권한을 안내한다.
+     */
+    #[Test]
+    public function 라우트_권한이_바뀌면_403_행의_권한_식별자가_갱신된다(): void
+    {
+        $scaffolder = new ApiDocScaffolder;
+
+        $makeRoute = fn (string $permission): array => [
+            'method' => 'GET',
+            'uri' => '/api/admin/widgets',
+            'name' => 'api.admin.widgets.index',
+            'controller' => 'WidgetController',
+            'controller_method' => 'index',
+            'permission' => $permission,
+            'middleware' => ['api', 'auth:sanctum', 'permission:admin,'.$permission],
+            'path_params' => [],
+        ];
+        $request = ['request_class' => null, 'params' => [], 'hook_filters' => []];
+        $schema = ['envelope' => ['data'], 'shape' => 'collection', 'fields' => [], 'pagination' => false];
+        $probe = ['status' => 200, 'skipped_reason' => null];
+        $header = "# W\n";
+        $keys = ['api.admin.widgets.index'];
+
+        $before = $scaffolder->endpointSection($makeRoute('core.widgets.read'), $request, $schema, $probe);
+        $doc = $scaffolder->mergeDocument(null, $header, [$before], $keys);
+        $this->assertStringContainsString('요구 권한(`core.widgets.read`)이 없는 경우', $doc);
+
+        // 라우트의 요구 권한이 바뀐 뒤 재생성한다.
+        $after = $scaffolder->endpointSection($makeRoute('core.widgets.manage'), $request, $schema, $probe);
+        $regenerated = $scaffolder->mergeDocument($doc, $header, [$after], $keys);
+
+        $this->assertStringContainsString(
+            '요구 권한(`core.widgets.manage`)이 없는 경우',
+            $regenerated,
+            '라우트 권한이 바뀌면 403 행의 식별자가 갱신되어야 한다'
+        );
+        $this->assertStringNotContainsString(
+            'core.widgets.read',
+            $regenerated,
+            '낡은 권한 식별자가 남으면 문서가 틀린 권한을 안내한다'
+        );
+    }
+
+    /**
+     * 식별자 갱신이 사람이 보강한 문구까지 덮어써서는 안 된다 — 갱신 대상은 백틱 식별자뿐이다.
+     */
+    #[Test]
+    public function forbidden_행_식별자_갱신은_사람이_보강한_조건_문구를_보존한다(): void
+    {
+        $scaffolder = new ApiDocScaffolder;
+
+        $makeRoute = fn (string $permission): array => [
+            'method' => 'DELETE',
+            'uri' => '/api/admin/widgets/{widget}',
+            'name' => 'api.admin.widgets.destroy',
+            'controller' => 'WidgetController',
+            'controller_method' => 'destroy',
+            'permission' => $permission,
+            'middleware' => ['api', 'auth:sanctum', 'permission:admin,'.$permission],
+            'path_params' => ['widget'],
+        ];
+        $request = ['request_class' => null, 'params' => [], 'hook_filters' => []];
+        $schema = ['envelope' => ['data'], 'shape' => 'object', 'fields' => [], 'pagination' => false];
+        $probe = ['status' => 200, 'skipped_reason' => null];
+        $header = "# W\n";
+        $keys = ['api.admin.widgets.destroy'];
+
+        $before = $scaffolder->endpointSection($makeRoute('core.widgets.delete'), $request, $schema, $probe);
+        $doc = $scaffolder->mergeDocument(null, $header, [$before], $keys);
+
+        // 사람이 403 행에 도메인 조건을 덧붙인다.
+        $withHuman = str_replace(
+            '| 403 | Forbidden | 요구 권한(`core.widgets.delete`)이 없는 경우 |',
+            '| 403 | Forbidden | 요구 권한(`core.widgets.delete`)이 없거나, 시스템 위젯을 삭제하려는 경우 |',
+            $doc
+        );
+        $this->assertStringContainsString('시스템 위젯을 삭제하려는 경우', $withHuman);
+
+        $after = $scaffolder->endpointSection($makeRoute('core.widgets.manage'), $request, $schema, $probe);
+        $regenerated = $scaffolder->mergeDocument($withHuman, $header, [$after], $keys);
+
+        $this->assertStringContainsString(
+            '요구 권한(`core.widgets.manage`)이 없거나, 시스템 위젯을 삭제하려는 경우',
+            $regenerated,
+            '식별자만 갱신되고 사람이 보강한 조건은 그대로 남아야 한다'
+        );
+    }
 }

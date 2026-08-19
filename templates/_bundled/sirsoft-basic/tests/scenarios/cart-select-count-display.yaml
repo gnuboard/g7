@@ -1,0 +1,53 @@
+feature: 장바구니 전체 선택 개수 표시 (선택 상태 파생 카운터)
+
+description: |
+  장바구니 상단 "전체 선택" 옆 개수는 선택 상태의 SSoT 인 `_local.selectedItems` 에서 파생해
+  `(선택/전체)` 로 표시한다. 어떤 마운트 경로(최초 진입 / 새로고침 / SPA 복귀)에서도, 어떤 선택
+  상태(전체 / 부분 / 미선택)에서도 값이 비지 않고 체크박스·주문 요약과 일치해야 한다.
+
+  수정 이력 (공개 이슈 #92):
+    - 표시식이 `{{_local.selectedCount}}` 였다. `selectedCount` 는 체크박스 change 핸들러에서만
+      기록되므로 최초 마운트 구간에서는 undefined 이고, 엔진이 undefined 를 빈 문자열로 서식해
+      `(/27)` 로 보였다. 예외·콘솔 에러가 없어 표시로만 드러나는 결함이었다.
+    - 표시식을 `{{_local.selectedItems?.length ?? 0}}/{{cartItems.data.item_count ?? 0}}` 로 교체.
+      같은 화면 주문 요약(`_cart_summary.json`)이 쓰던 표현식과 동일 형태여서 두 카운터의
+      계산 방식 비대칭도 함께 해소했다.
+    - 핸들러(`cartHandlers.ts`)의 `selectedCount` 기록은 소비처가 사라져 제거했다.
+
+  같은 결함 클래스(초기값 없는 키를 옵셔널 없이 하위 접근)의 방어 수정도 이 시나리오가 함께 고정한다:
+    - 장바구니 옵션변경 모달 재고 안내(`matchedOption`)
+    - 마이페이지 프로필 오류 메시지(`profileErrors` — 가드와 표시식의 옵셔널 엇갈림)
+    - 마이페이지 알림 수신 체크박스 4종 — 값의 타입(boolean)을 화면이 전제하지 않도록
+      자동바인딩 대신 `autoBinding:false` + `checked` + `change` 명시 바인딩으로 전환
+
+axes:
+  mount_path: [initial_load, reload, spa_return]   # 진입 / 새로고침 / SPA 이동 후 복귀
+  selection: [all, partial, none]                  # 선택 상태 3종
+
+effects:
+  - counter_matches_checked_state       # 카운터 선택 수 = 실제 체크된 항목 수 (빈 문자열 금지)
+  - counter_matches_summary_panel       # 카운터 = 주문 요약 "선택 상품 N / M개" 와 동일 값
+  - modal_stock_display_guarded         # 옵션변경 모달 재고 표기가 값 부재 구간에서 공백/NaN 이 아님
+  - profile_error_display_guarded       # 프로필 오류 메시지 표시식이 가드 소실 시에도 안전
+  - profile_notification_checkbox_explicit_binding   # 알림 수신 체크박스가 저장값 타입에 무관하게 checked 를 확정 (자동바인딩 미의존)
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/cart-select-count-initial.test.tsx
+  - templates/_bundled/sirsoft-basic/src/handlers/__tests__/cartHandlers.test.ts
+
+validation:
+  audit_rule: frontend-change-requires-e2e
+  browser_check: Chrome MCP   # sirsoft-basic Playwright E2E 인프라 미구축 — Chrome MCP 정밀 점검으로 대체
+  note: |
+    test-scenario-coverage 는 axes cross product(3×3=9)와 effects 를 테스트 docblock
+    `@scenario k=v, k=v` / `@effects e1, e2` 마킹으로 커버하길 요구한다. Playwright spec 이
+    없으므로 레이아웃 렌더링 테스트의 docblock 으로 9개 조합을 전수 마킹했다.
+
+    마운트 경로 축의 한계: jsdom 렌더링 테스트에서 initial_load / reload / spa_return 은 모두
+    "초기 _local 시드 상태로부터의 새 마운트" 라는 같은 코드 경로다. 세 경로가 실제로 갈라지는
+    지점(브라우저 새로고침, SPA 라우팅 복귀 시 데이터소스 재조회)의 구분은 Chrome MCP 정밀 점검
+    매트릭스 T1/T6/T7 이 실측으로 담당한다. 단위 계층은 "어느 마운트에서도 카운터가 비지 않는다"
+    를 고정하는 역할이다.
+
+    counter_matches_summary_panel 은 두 카운터가 동일 표현식(selectedItems 파생 + item_count 분모)
+    을 쓰는지로 판정한다 — 표현식이 같으면 값이 갈릴 수 없다.

@@ -25,10 +25,19 @@ description: |
 axes:
   actor: [member, guest]
   change_mode: [saved, manual]
+  address_region: [domestic, intl, intl_without_country_code]
   e2e_browser: [chromium]
 
 exclusions:
   - { actor: guest, change_mode: saved, reason: "비회원은 주소록이 없어 saved(저장된 배송지 선택) 모드 미지원 — 직접입력만" }
+  - { change_mode: saved, address_region: intl_without_country_code, reason: "저장된 주소의 country_code 가 그대로 승계되므로 '국가 코드 미전송' 조합이 성립하지 않음" }
+
+# saved × intl 은 종전에 "저장된 주소를 그대로 승계하므로 조합이 성립하지 않는다" 는 사유로
+# 제외돼 있었다. 그 사유가 사실이 아니었다 — address_id 분기가 국내 6필드만 재구성해
+# 해외 주소를 고르면 주소가 통째로 사라졌고, 제외된 칸이 정확히 결함이 살던 자리였다.
+
+# 실패 원인 구분(도메인 422 / 검증 422 / 인프라 500)은 입력 axis 가 아니라 결과 축이므로
+# effects 로 검증한다. 인프라 500 은 서비스 mock 으로만 유발 가능해 PHPUnit 이 SSoT 다.
 
 effects:
   # 모달 컨텍스트 — _global 전달 (회원/비회원 공통)
@@ -55,6 +64,21 @@ effects:
   - guest_update_shipping_address_succeeds_with_valid_token
   - guest_update_shipping_address_blocked_404_without_or_invalid_token
   - guest_update_shipping_address_validation_422_when_recipient_fields_missing
+  # 예외 → 상태코드 분리 (공개 #104) — 회원/비회원 공통
+  - update_shipping_address_domain_exception_returns_422_with_cannot_modify_address
+  - update_shipping_address_infrastructure_exception_returns_500_not_422
+  - update_shipping_address_500_response_excludes_exception_message
+  # 국내/해외 주소 조합 정합성 (부수 발견 F3)
+  - shipping_address_country_code_is_the_axis_for_domestic_vs_intl_validation
+  - shipping_address_intl_combination_without_country_code_returns_422_validation_errors
+  - shipping_address_domestic_country_code_requires_zipcode_and_address
+  - shipping_address_foreign_country_code_requires_address_line_1_intl_city_intl_postal_code
+  - shipping_address_switching_to_intl_clears_domestic_columns_with_empty_string
+  - shipping_address_switching_to_domestic_clears_intl_columns_with_null
+  - shipping_address_manual_domestic_input_on_intl_order_is_saved_not_discarded
+  # 저장된 배송지(address_id) 승계 정합성
+  - shipping_address_saved_intl_address_preserves_intl_columns
+  - shipping_address_saved_mode_preserves_delivery_memo_from_request
 
 scenarios:
   - id: member_change_address_saved_e2e
@@ -82,9 +106,51 @@ scenarios:
     effects:
       - guest_update_shipping_address_blocked_404_without_or_invalid_token
 
+  - id: change_address_error_class_separation
+    description: |
+      배송지 변경 실패를 원인별로 구분한다 (공개 #104). 도메인 규칙 위반(배송 전 상태 아님)은
+      422 + 기존 안내, 그 외 예외(인프라/코드 결함)는 500. 종전에는 모두 422 로 뭉개져
+      인프라 장애가 "배송 전에만 변경 가능" 이라는 엉뚱한 입력 오류로 위장됐다.
+      500 축은 서비스 mock 이 필요해 PHPUnit 이 SSoT 이고, 브라우저는 200/422 축만 담당한다.
+    effects:
+      - update_shipping_address_domain_exception_returns_422_with_cannot_modify_address
+      - update_shipping_address_infrastructure_exception_returns_500_not_422
+      - update_shipping_address_500_response_excludes_exception_message
+
+  - id: change_address_domestic_intl_combination
+    description: |
+      country_code 를 국내/해외 판정의 기준축으로 삼는다 (부수 발견 F3). 종전에는 zipcode/address 를
+      address_line_1 유무로만 강제해, 해외 필드만 채우고 country_code 를 생략하면 검증을 통과한 뒤
+      서비스가 국내 분기로 떨어져 NOT NULL 컬럼에 null 을 쓰다 SQL 무결성 위반이 났다.
+      전환 시 반대편 컬럼을 초기화해 구 주소 잔존(2차 결함)도 함께 막는다.
+    effects:
+      - shipping_address_country_code_is_the_axis_for_domestic_vs_intl_validation
+      - shipping_address_intl_combination_without_country_code_returns_422_validation_errors
+      - shipping_address_domestic_country_code_requires_zipcode_and_address
+      - shipping_address_foreign_country_code_requires_address_line_1_intl_city_intl_postal_code
+      - shipping_address_switching_to_intl_clears_domestic_columns_with_empty_string
+      - shipping_address_switching_to_domestic_clears_intl_columns_with_null
+      - shipping_address_manual_domestic_input_on_intl_order_is_saved_not_discarded
+
+  - id: change_address_saved_address_carry_over
+    description: |
+      저장된 배송지(address_id) 선택 시 그 주소를 손실 없이 승계한다. 국내 6필드만
+      재구성하던 종전 형태에서는 해외 배송지를 고르면 해외 컬럼이 전부 null 로 덮이고
+      국내 컬럼도 빈 문자열이라 주소가 통째로 사라졌으며, 함께 보낸 배송 메모도 버려졌다.
+      응답은 200 이고 오류도 남지 않아 저장 시점에는 드러나지 않는다.
+    effects:
+      - shipping_address_saved_intl_address_preserves_intl_columns
+      - shipping_address_saved_mode_preserves_delivery_memo_from_request
+
 test_files:
-  # 백엔드 (비회원 endpoint — 성공/토큰가드 404/검증 422)
+  # 백엔드 (비회원 endpoint — 성공/토큰가드 404/검증 422/국내·해외 조합)
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Public/OrderControllerTest.php
+  # 백엔드 (회원 endpoint — 예외→상태코드 분리, 국내/해외 조합, 왕복 전환 초기화)
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/OrderShippingAddressTest.php
+  # 주문 도메인의 다른 액션(취소·구매확정·재주문·입금확인·쿠폰 다운로드) 페어는
+  # 배송지 변경의 축이 아니다 → modules/_bundled/sirsoft-ecommerce/tests/scenarios/order-action-exception-status.yaml
+  # 백엔드 (generic catch 상태코드 전수 계약 — 코어 + 전 번들 확장 컨트롤러)
+  - tests/Feature/Http/GenericCatchStatusCodeContractTest.php
   # 프론트엔드 핸들러 단위 (endpoint/body/토큰 분기)
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/userChangeShippingAddressHandlers.test.ts
   # 프론트엔드 모달 구조 (Vitest — _global 바인딩, 회원/비회원 분기, 핸들러 호출, 스피너)

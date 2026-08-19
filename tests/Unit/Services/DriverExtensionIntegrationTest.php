@@ -27,7 +27,7 @@ class DriverExtensionIntegrationTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->driverRegistry = new DriverRegistryService();
+        $this->driverRegistry = new DriverRegistryService;
 
         // 테스트용 디렉토리 정리
         Storage::disk('modules')->deleteDirectory('test-driver-module');
@@ -51,12 +51,14 @@ class DriverExtensionIntegrationTest extends TestCase
     // ========================================================================
 
     /**
-     * 7개 카테고리 모두에 플러그인 드라이버를 등록하면 available 목록에 포함되는지 검증합니다.
+     * 8개 카테고리 모두에 플러그인 드라이버를 등록하면 available 목록에 포함되는지 검증합니다.
+     *
+     * @effects settings_catalog_includes_plugin_registered_disks
      */
     #[Test]
     public function plugin_can_register_drivers_for_all_categories(): void
     {
-        $categories = ['storage', 'cache', 'session', 'queue', 'log', 'websocket', 'mail'];
+        $categories = ['storage', 'public_asset', 'cache', 'session', 'queue', 'log', 'websocket', 'mail'];
 
         foreach ($categories as $category) {
             HookManager::addFilter(
@@ -568,6 +570,7 @@ class DriverExtensionIntegrationTest extends TestCase
     {
         $expectedDefaults = [
             'storage' => ['local', 'filesystems.default'],
+            'public_asset' => ['none', 'core.storage.public_asset_disk'],
             'cache' => ['file', 'cache.default'],
             'session' => ['database', 'session.driver'],
             'queue' => ['database', 'queue.default'],

@@ -644,6 +644,79 @@ class OrderProcessingServiceTest extends ModuleTestCase
         $this->assertStringContainsString('"items":[', json_encode($snapshot));
     }
 
+    /**
+     * 주문의 총 무게/부피는 주문 옵션 소계의 합으로 기록된다 (공개 #94 / N7).
+     *
+     * 기존에는 0 으로 고정 기록되어, 배송사 연동·운임 정산이 이 값을 읽으면
+     * 무게 없는 주문으로 취급됐다. 값의 단위는 상품 옵션과 같은 g / cm³ 다.
+     */
+    public function test_create_from_temp_order_records_total_weight_and_volume(): void
+    {
+        $user = User::factory()->create();
+
+        $product = Product::factory()->create();
+        $productOption = ProductOption::factory()->create([
+            'product_id' => $product->id,
+            'weight' => 500,
+            'volume' => 1200,
+        ]);
+
+        $tempOrder = TempOrderFactory::new()
+            ->forUser($user)
+            ->withItems([
+                [
+                    'cart_id' => 1,
+                    'product_id' => $product->id,
+                    'product_option_id' => $productOption->id,
+                    'quantity' => 3,
+                ],
+            ])
+            ->withCalculationResult([
+                'summary' => ['final_amount' => 103000],
+                'items' => [],
+                'promotions' => [
+                    'product_promotions' => ['coupons' => [], 'discount_codes' => [], 'events' => []],
+                    'order_promotions' => ['coupons' => [], 'discount_codes' => [], 'events' => []],
+                ],
+                'validation_errors' => [],
+            ])
+            ->create();
+
+        $item = new ItemCalculation(
+            productId: $product->id,
+            productOptionId: $productOption->id,
+            quantity: 3,
+            unitPrice: 100000,
+            subtotal: 300000,
+            finalAmount: 300000,
+        );
+
+        $this->mockCalculationService($this->makeCalculationResult(103000, [
+            'items' => [$item],
+        ]));
+
+        $order = $this->service->createFromTempOrder(
+            $tempOrder,
+            ['name' => 'Test', 'phone' => '010-0000-0000', 'email' => 'test@test.com'],
+            ['recipient_name' => 'Test', 'recipient_phone' => '010-0000-0000', 'zipcode' => '00000', 'address' => 'Test', 'address_detail' => 'Test'],
+            'card',
+            103000
+        );
+
+        $order->refresh();
+
+        // 단위 무게는 상품 옵션의 g 값을 그대로 복사한다 (kg 환산은 배송비 계산 시점에만)
+        $orderOption = $order->options()->first();
+        $this->assertEquals(500.0, (float) $orderOption->unit_weight);
+        $this->assertEquals(1200.0, (float) $orderOption->unit_volume);
+        $this->assertEquals(1500.0, (float) $orderOption->subtotal_weight);
+        $this->assertEquals(3600.0, (float) $orderOption->subtotal_volume);
+
+        // 주문 합계는 옵션 소계의 합
+        $this->assertEquals(1500.0, (float) $order->total_weight);
+        $this->assertEquals(3600.0, (float) $order->total_volume);
+    }
+
     public function test_create_from_temp_order_saves_order_meta_with_calculation_input(): void
     {
         $this->allowAnyMileageUsage();

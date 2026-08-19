@@ -1219,6 +1219,8 @@ describe('DataGrid', () => {
    * `renderCellChildren` 으로 넘기고 `cell.text` 는 원문 그대로 출력해 왔다.
    * 그 결과 `{{order.data?.total_quantity ?? 0}}개` 같은 값이 화면에 **원본 문자열로 노출**된다.
    * (브라우저 실측: `/admin/ecommerce/orders/:orderNumber` 합계 행 3셀)
+   *
+   * @effects datagrid_footer_cell_text_binding_resolved
    */
   describe('푸터 행 text 바인딩 해석', () => {
     const footerColumns: DataGridColumn[] = [
@@ -1318,6 +1320,294 @@ describe('DataGrid', () => {
       expect(seen.length).toBeGreaterThan(0);
       // 레지스트리에 등록된 컴포넌트는 반복 경로에서도 조회 가능해야 한다
       expect(Object.keys(seen[0])).toContain('Pre');
+    });
+  });
+
+  describe('선택 건수 문구', () => {
+    /**
+     * G7 파라미터 표준은 `{{count}}` 다. 컴포넌트가 자체 치환을 두고 단일 중괄호만
+     * 처리하면 표준 표기가 `{1}개 선택됨` 처럼 바깥 중괄호를 남긴 채 렌더된다 —
+     * 예외도 경고도 없이 화면에만 드러난다 (실제 제보 경로).
+     */
+    it('표준 표기의 번역 문구가 그대로 렌더되지 않고 치환된다', async () => {
+      (window as any).G7Core = {
+        ...(window as any).G7Core,
+        t: (key: string, params?: Record<string, string | number>) => {
+          if (key !== 'common.selected_count') return key;
+
+          // 런타임 TranslationEngine 과 같은 순서: 이중 먼저, 단일 다음
+          let text = '{{count}}개 선택됨';
+          for (const [k, v] of Object.entries(params ?? {})) {
+            text = text
+              .replace(new RegExp(`\\{\\{${k}\\}\\}`, 'g'), String(v))
+              .replace(new RegExp(`\\{${k}\\}`, 'g'), String(v));
+          }
+
+          return text;
+        },
+      };
+
+      render(
+        <DataGrid
+          columns={[{ field: 'name', header: '이름' }]}
+          data={[{ id: 1, name: 'A' }]}
+          selectable
+          selectedIds={[1]}
+          idField="id"
+        />
+      );
+
+      expect(await screen.findByText('1개 선택됨')).toBeInTheDocument();
+      expect(screen.queryByText('{1}개 선택됨')).not.toBeInTheDocument();
+    });
+
+    /**
+     * prop 으로 직접 넘긴 문구는 번역 엔진을 거치지 않는다 — 두 표기 모두 채워야 한다.
+     */
+    it.each([
+      ['{{count}}개 선택', '2개 선택'],
+      ['{count}개 선택', '2개 선택'],
+    ])('prop 문구 %s 를 %s 로 채운다', async (template, expected) => {
+      render(
+        <DataGrid
+          columns={[{ field: 'name', header: '이름' }]}
+          data={[
+            { id: 1, name: 'A' },
+            { id: 2, name: 'B' },
+          ]}
+          selectable
+          selectedIds={[1, 2]}
+          idField="id"
+          selectedCountText={template}
+        />
+      );
+
+      expect(await screen.findByText(expected)).toBeInTheDocument();
+    });
+  });
+
+  describe('선택의 유효 범위 (selectionScope)', () => {
+    const columns: DataGridColumn[] = [{ field: 'name', header: '이름' }];
+
+    /**
+     * 선택 상태는 목록 화면 밖(전역/로컬 상태)에 있어서 검색·필터·페이지 이동으로
+     * 행이 화면에서 빠져도 남는다. 그 상태로 일괄 처리를 누르면 운영자가 보지도,
+     * 체크하지도 않은 행이 대상이 된다 — 확인 모달은 건수만 말하므로 실행 전에
+     * 알아챌 방법이 없다.
+     *
+     * @scenario scope=page, transition=search_filter_change
+     * @effects hidden_row_selection_dropped
+     */
+    it('page 범위에서 검색으로 사라진 행의 선택을 버린다', async () => {
+      const onSelectionChange = vi.fn();
+
+      const { rerender } = render(
+        <DataGrid
+          columns={columns}
+          data={[
+            { id: 'a', name: '관리자C' },
+            { id: 'b', name: '임영철' },
+          ]}
+          selectable
+          selectedIds={['a']}
+          onSelectionChange={onSelectionChange}
+          idField="id"
+          selectionScope="page"
+        />
+      );
+
+      expect(onSelectionChange).not.toHaveBeenCalled();
+
+      // 검색 결과: 임영철만 남는다 (관리자C 는 화면에서 사라짐)
+      rerender(
+        <DataGrid
+          columns={columns}
+          data={[{ id: 'b', name: '임영철' }]}
+          selectable
+          selectedIds={['a']}
+          onSelectionChange={onSelectionChange}
+          idField="id"
+          selectionScope="page"
+        />
+      );
+
+      await waitFor(() => expect(onSelectionChange).toHaveBeenCalledWith([]));
+    });
+
+    /**
+     * @scenario scope=page, transition=search_filter_change
+     * @effects visible_row_selection_survives
+     */
+    it('page 범위에서 화면에 남은 선택은 유지한다', async () => {
+      const onSelectionChange = vi.fn();
+
+      const { rerender } = render(
+        <DataGrid
+          columns={columns}
+          data={[
+            { id: 'a', name: '관리자C' },
+            { id: 'b', name: '임영철' },
+          ]}
+          selectable
+          selectedIds={['a', 'b']}
+          onSelectionChange={onSelectionChange}
+          idField="id"
+          selectionScope="page"
+        />
+      );
+
+      rerender(
+        <DataGrid
+          columns={columns}
+          data={[{ id: 'b', name: '임영철' }]}
+          selectable
+          selectedIds={['a', 'b']}
+          onSelectionChange={onSelectionChange}
+          idField="id"
+          selectionScope="page"
+        />
+      );
+
+      await waitFor(() => expect(onSelectionChange).toHaveBeenCalledWith(['b']));
+    });
+
+    /**
+     * 서버 페이지네이션 목록은 페이지를 넘기면 data 가 그 페이지 행으로 통째로 바뀐다 —
+     * 앞 페이지에서 고른 행은 화면에 없으므로 대상에서 빠져야 한다.
+     *
+     * @scenario scope=page, transition=page_change
+     * @effects hidden_row_selection_dropped
+     */
+    it('page 범위에서 페이지를 넘기면 앞 페이지 선택을 버린다', async () => {
+      const onSelectionChange = vi.fn();
+      const pageOne = [
+        { id: 'p1a', name: '1페이지 A' },
+        { id: 'p1b', name: '1페이지 B' },
+      ];
+      const pageTwo = [
+        { id: 'p2a', name: '2페이지 A' },
+        { id: 'p2b', name: '2페이지 B' },
+      ];
+
+      const { rerender } = render(
+        <DataGrid
+          columns={columns}
+          data={pageOne}
+          selectable
+          selectedIds={['p1a', 'p1b']}
+          onSelectionChange={onSelectionChange}
+          idField="id"
+          selectionScope="page"
+          serverSidePagination
+        />
+      );
+
+      expect(onSelectionChange).not.toHaveBeenCalled();
+
+      rerender(
+        <DataGrid
+          columns={columns}
+          data={pageTwo}
+          selectable
+          selectedIds={['p1a', 'p1b']}
+          onSelectionChange={onSelectionChange}
+          idField="id"
+          selectionScope="page"
+          serverSidePagination
+        />
+      );
+
+      await waitFor(() => expect(onSelectionChange).toHaveBeenCalledWith([]));
+    });
+
+    /**
+     * 체크박스가 꺼진 화면(권한 없음)에 남은 선택은 아예 눈에 띄지 않는다 —
+     * `selectable` 로 가르면 그 상태가 그대로 통과한다.
+     *
+     * @scenario scope=page, transition=initial_mount
+     * @effects selection_cleaned_even_when_selectable_off
+     */
+    it('page 범위에서는 selectable 이 꺼져 있어도 정리한다', async () => {
+      const onSelectionChange = vi.fn();
+
+      render(
+        <DataGrid
+          columns={columns}
+          data={[{ id: 'b', name: '임영철' }]}
+          selectable={false}
+          selectedIds={['a']}
+          onSelectionChange={onSelectionChange}
+          idField="id"
+          selectionScope="page"
+        />
+      );
+
+      await waitFor(() => expect(onSelectionChange).toHaveBeenCalledWith([]));
+    });
+
+    /**
+     * 선택 자체가 저장 대상인 폼(쿠폰 적용 대상 고르기 등)은 목록에 안 보이는 항목도
+     * 선택으로 남아야 한다 — 기본값이 그 화면들을 건드리면 안 된다.
+     *
+     * @scenario scope=free, transition=search_filter_change
+     * @effects free_scope_leaves_selection_untouched
+     */
+    it('기본값(free)에서는 선택을 건드리지 않는다', async () => {
+      const onSelectionChange = vi.fn();
+
+      const { rerender } = render(
+        <DataGrid
+          columns={columns}
+          data={[{ id: 'a', name: '상품A' }]}
+          selectable
+          selectedIds={['a']}
+          onSelectionChange={onSelectionChange}
+          idField="id"
+        />
+      );
+
+      rerender(
+        <DataGrid
+          columns={columns}
+          data={[{ id: 'z', name: '상품Z' }]}
+          selectable
+          selectedIds={['a']}
+          onSelectionChange={onSelectionChange}
+          idField="id"
+        />
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      expect(onSelectionChange).not.toHaveBeenCalled();
+    });
+
+    /**
+     * 정리할 것이 없는데도 콜백이 나가면 상위가 setState → 리렌더 → 다시 콜백으로
+     * 무한 루프가 된다.
+     *
+     * @scenario scope=page, transition=initial_mount
+     * @effects no_callback_when_nothing_to_drop
+     */
+    it('버릴 선택이 없으면 콜백을 부르지 않는다', async () => {
+      const onSelectionChange = vi.fn();
+
+      render(
+        <DataGrid
+          columns={columns}
+          data={[
+            { id: 'a', name: 'A' },
+            { id: 'b', name: 'B' },
+          ]}
+          selectable
+          selectedIds={['a', 'b']}
+          onSelectionChange={onSelectionChange}
+          idField="id"
+          selectionScope="page"
+        />
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      expect(onSelectionChange).not.toHaveBeenCalled();
     });
   });
 });

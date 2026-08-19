@@ -39,6 +39,9 @@ class GuestOrderResource extends BaseApiResource
     {
         // 주문 시점 기준 통화 — 과거 주문의 *_formatted 는 설정 변경과 무관하게 이 통화로 고정 표기한다.
         $orderCurrency = $this->resolveOrderBaseCurrencyCode($this->resource);
+        // 주문 시점 통화 스냅샷 — 소수 자릿수를 현재 설정이 아닌 주문 시점 값으로 고정 (공개 #91 후속).
+        $currencySnapshot = $this->resource->currency_snapshot ?? null;
+        $this->withCurrencySnapshot($currencySnapshot);
 
         // 결제 통화(order_currency) — 현금영수증 금액 표기 기준(구매자가 실제 낸 통화).
         $paymentCurrency = $this->currency
@@ -118,14 +121,14 @@ class GuestOrderResource extends BaseApiResource
 
             // 주문 옵션 (품목) — 주문 시점 통화를 자식에 전파
             'options' => $this->whenLoaded('options', fn () => OrderOptionResource::collection($this->options)->each(
-                fn ($r) => $r->withOrderCurrency($orderCurrency)
+                fn ($r) => $r->withOrderCurrency($orderCurrency)->withCurrencySnapshot($currencySnapshot)
             )),
 
             // 배송지/결제/배송 정보
             'shipping_address' => new OrderAddressResource($this->whenLoaded('shippingAddress')),
-            'payment' => $this->whenLoaded('payment', fn () => (new OrderPaymentResource($this->payment))->withOrderCurrency($orderCurrency)),
+            'payment' => $this->whenLoaded('payment', fn () => (new OrderPaymentResource($this->payment))->withOrderCurrency($orderCurrency)->withCurrencySnapshot($currencySnapshot)),
             'shippings' => $this->whenLoaded('shippings', fn () => OrderShippingResource::collection($this->shippings)->each(
-                fn ($r) => $r->withOrderCurrency($orderCurrency)
+                fn ($r) => $r->withOrderCurrency($orderCurrency)->withCurrencySnapshot($currencySnapshot)
             )),
 
             // 취소 이력 (취소 사유·상세 사유·취소일시 표시용) — 최근 취소가 먼저 오도록 정렬
@@ -137,17 +140,20 @@ class GuestOrderResource extends BaseApiResource
             // "미발급" 으로 남고 영수증 URL 에 도달할 방법이 사라진다(오류·경고 없음).
             // CashReceiptResource 는 식별번호를 마스킹 값으로만 내보내고 프로바이더 원응답을
             // 노출하지 않으므로 비회원에게 내려도 안전하다.
-            'cash_receipt' => $this->whenLoaded('cashReceipts', function () use ($orderCurrency, $paymentCurrency) {
+            // 통화 스냅샷은 명시 캡처가 필요하다 — 형제 항목들이 쓰는 화살표 함수와 달리
+            // 이 클로저는 자동 캡처가 없어, use 목록에서 빠지면 undefined 로 떨어져 주문 시점
+            // 통화(자릿수·절사 규칙)가 전파되지 않는다.
+            'cash_receipt' => $this->whenLoaded('cashReceipts', function () use ($orderCurrency, $paymentCurrency, $currencySnapshot) {
                 $active = OrderCashReceipt::filterActive($this->cashReceipts)[0] ?? null;
 
                 return $active
-                    ? (new CashReceiptResource($active))->withOrderCurrency($orderCurrency)->withReceiptCurrency($paymentCurrency)
+                    ? (new CashReceiptResource($active))->withOrderCurrency($orderCurrency)->withCurrencySnapshot($currencySnapshot)->withReceiptCurrency($paymentCurrency)
                     : null;
             }),
             // 발급/취소 전체 이력 — 카드의 "직전 발급이 실패했는가" 분기가 cash_receipts[0] 를 본다.
             'cash_receipts' => $this->whenLoaded('cashReceipts', fn () => CashReceiptResource::collection(
                 $this->cashReceipts->sortByDesc('id')->values()
-            )->each(fn ($r) => $r->withOrderCurrency($orderCurrency)->withReceiptCurrency($paymentCurrency))),
+            )->each(fn ($r) => $r->withOrderCurrency($orderCurrency)->withCurrencySnapshot($currencySnapshot)->withReceiptCurrency($paymentCurrency))),
 
             // 배송정책 — **표시용 필드만**. 비회원 주문 상세 화면은 회원 마이페이지와 같은
             // partial 을 써서 상품별 정책명·개별 배송비를 그리는데, 이 필드를 통째로 빼면

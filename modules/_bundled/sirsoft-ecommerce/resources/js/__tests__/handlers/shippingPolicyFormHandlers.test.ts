@@ -25,6 +25,7 @@ import {
     addCountrySettingHandler,
     removeCountrySettingHandler,
     switchCountryTabHandler,
+    updateCountryFieldHandler,
     onChargePolicyChangeHandler,
     addRangeTierHandler,
     removeRangeTierHandler,
@@ -36,6 +37,7 @@ import {
     toggleApiRequestFieldHandler,
     updateApiConfigFieldHandler,
     updateApiFieldMapHandler,
+    updateUnitValueHandler,
 } from '../../handlers/shippingPolicyFormHandlers';
 
 // ===== 헬퍼: 중첩 경로에 값 설정 =====
@@ -498,7 +500,7 @@ describe('shippingPolicyFormHandlers', () => {
             expect(updates.showBaseFee).toBe(false);
             expect(updates['form.country_settings'][0].ranges).toEqual({
                 type: 'weight',
-                tiers: [{ min: 0, max: null, fee: 0 }],
+                tiers: [{ min: 0, max: null, fee: null }],
             });
         });
 
@@ -606,12 +608,13 @@ describe('shippingPolicyFormHandlers', () => {
     // ===== addRangeTierHandler =====
 
     describe('addRangeTierHandler', () => {
-        it('country_settings[index].ranges.tiers에 추가', () => {
+        it('country_settings[index].ranges.tiers에 추가 (연속형: 시작값 = 직전 종료값)', () => {
             mockLocalState = {
                 form: {
                     country_settings: [
                         {
                             ...createDefaultCountrySetting('KR'),
+                            charge_policy: 'range_amount',
                             ranges: {
                                 type: 'amount',
                                 tiers: [{ min: 0, max: 10000, fee: 3000 }],
@@ -630,17 +633,19 @@ describe('shippingPolicyFormHandlers', () => {
             const updates = mockContext.setLocalState.mock.calls[0][0];
             const ranges = updates['form.country_settings'][0].ranges;
             expect(ranges.tiers).toHaveLength(2);
-            expect(ranges.tiers[1]).toEqual({ min: 10001, max: null, fee: 0 });
+            // 배송비는 빈 값으로 시작해 미입력이 required 검증에 걸리게 한다
+            expect(ranges.tiers[1]).toEqual({ min: 10000, max: null, fee: null });
         });
 
-        it('새 tier의 min = 이전 tier의 max + 1 (포함 범위)', () => {
+        it('이산형(수량) 구간의 새 시작값 = 직전 종료값 + 1', () => {
             mockLocalState = {
                 form: {
                     country_settings: [
                         {
                             ...createDefaultCountrySetting('KR'),
+                            charge_policy: 'range_quantity',
                             ranges: {
-                                type: 'weight',
+                                type: 'quantity',
                                 tiers: [
                                     { min: 0, max: 5, fee: 3000 },
                                     { min: 6, max: 20, fee: 5000 },
@@ -661,6 +666,37 @@ describe('shippingPolicyFormHandlers', () => {
             const ranges = updates['form.country_settings'][0].ranges;
             expect(ranges.tiers).toHaveLength(3);
             expect(ranges.tiers[2].min).toBe(21);
+        });
+
+        it('연속형(무게) 구간의 새 시작값 = 직전 종료값', () => {
+            mockLocalState = {
+                form: {
+                    country_settings: [
+                        {
+                            ...createDefaultCountrySetting('KR'),
+                            charge_policy: 'range_weight',
+                            ranges: {
+                                type: 'weight',
+                                tiers: [
+                                    { min: 0, max: 5, fee: 3000 },
+                                    { min: 5, max: 20, fee: 5000 },
+                                ],
+                            },
+                        },
+                    ],
+                },
+                rangeErrors: {},
+            };
+
+            addRangeTierHandler(
+                createAction({ index: 0 }),
+                mockContext
+            );
+
+            const updates = mockContext.setLocalState.mock.calls[0][0];
+            const ranges = updates['form.country_settings'][0].ranges;
+            expect(ranges.tiers).toHaveLength(3);
+            expect(ranges.tiers[2].min).toBe(20);
         });
 
         it('빈 tiers에 첫 추가', () => {
@@ -684,7 +720,42 @@ describe('shippingPolicyFormHandlers', () => {
             const updates = mockContext.setLocalState.mock.calls[0][0];
             const ranges = updates['form.country_settings'][0].ranges;
             expect(ranges.tiers).toHaveLength(1);
-            expect(ranges.tiers[0]).toEqual({ min: 0, max: null, fee: 0 });
+            expect(ranges.tiers[0]).toEqual({ min: 0, max: null, fee: null });
+        });
+
+        it('직전 구간 종료값이 비어 있으면 새 시작값은 비고 종료값 누락 오류가 뜬다', () => {
+            // 마지막 구간(무제한)은 종료값이 비어 있다 — 그 뒤에 구간을 추가하면 직전 구간이
+            // 중간 구간이 되므로 종료값을 입력해야 하고, 시작값은 파생할 근거가 없어 빈 값이 된다
+            mockLocalState = {
+                form: {
+                    country_settings: [
+                        {
+                            ...createDefaultCountrySetting('KR'),
+                            charge_policy: 'range_weight',
+                            ranges: {
+                                type: 'weight',
+                                tiers: [{ min: 0, max: null, fee: 3000 }],
+                            },
+                        },
+                    ],
+                },
+                rangeErrors: {},
+            };
+
+            addRangeTierHandler(
+                createAction({ index: 0 }),
+                mockContext
+            );
+
+            const updates = mockContext.setLocalState.mock.calls[0][0];
+            const ranges = updates['form.country_settings'][0].ranges;
+            expect(ranges.tiers).toHaveLength(2);
+            expect(ranges.tiers[1].min).toBeNull();
+
+            const rangeErrors = mockLocalState.rangeErrors;
+            expect(rangeErrors.KR[0].max).toBe(
+                'sirsoft-ecommerce.admin.shipping_policy.form.range_error_middle_max'
+            );
         });
     });
 
@@ -933,11 +1004,12 @@ describe('shippingPolicyFormHandlers', () => {
                     country_settings: [
                         {
                             ...createDefaultCountrySetting('KR'),
+                            charge_policy: 'range_amount',
                             ranges: {
                                 type: 'amount',
                                 tiers: [
-                                    { min: 0, max: 9999, fee: 3000 },
-                                    { min: 10000, max: 29999, fee: 2000 },
+                                    { min: 0, max: 10000, fee: 3000 },
+                                    { min: 10000, max: 30000, fee: 2000 },
                                     { min: 30000, max: null, fee: 0 },
                                 ],
                             },
@@ -1441,6 +1513,421 @@ describe('shippingPolicyFormHandlers', () => {
 
             const updates = mockContext.setLocalState.mock.calls[0][0];
             expect(updates['form.country_settings'][0].api_config.field_map).toBeNull();
+        });
+    });
+
+    // ===== 구간 경계·필수값 계약 (공개 #94) =====
+
+    describe('구간 경계·필수값 계약 (#94)', () => {
+        /**
+         * 구간 정책의 국가별 설정을 만듭니다.
+         *
+         * @param chargePolicy 부과정책
+         * @param tiers 구간 배열
+         */
+        function stateWithTiers(chargePolicy: string, tiers: any[]) {
+            return {
+                form: {
+                    country_settings: [
+                        {
+                            ...createDefaultCountrySetting('KR'),
+                            charge_policy: chargePolicy,
+                            ranges: { type: chargePolicy.replace('range_', ''), tiers },
+                        },
+                    ],
+                },
+                activeCountryTab: 0,
+                rangeErrors: {},
+            };
+        }
+
+        /**
+         * 마지막 setLocalState 호출의 rangeErrors 를 반환합니다.
+         */
+        function lastRangeErrors(): any[] {
+            const calls = mockContext.setLocalState.mock.calls;
+            const last = calls[calls.length - 1][0];
+
+            return last.rangeErrors.KR;
+        }
+
+        it('종료값 입력 시 다음 구간의 시작값이 자동 파생된다 (연속형)', () => {
+            mockLocalState = stateWithTiers('range_weight', [
+                { min: 0, max: null, fee: 3000 },
+                { min: null, max: null, fee: 5000 },
+            ]);
+
+            updateRangeTierFieldHandler(
+                createAction({ countryIndex: 0, tierIndex: 0, field: 'max', value: '2.5' }),
+                mockContext
+            );
+
+            const updates = mockContext.setLocalState.mock.calls[0][0];
+            const tiers = updates['form.country_settings'][0].ranges.tiers;
+            expect(tiers[0].max).toBe(2.5);
+            expect(tiers[1].min).toBe(2.5);
+        });
+
+        it('종료값 입력 시 다음 구간의 시작값이 자동 파생된다 (이산형)', () => {
+            mockLocalState = stateWithTiers('range_quantity', [
+                { min: 0, max: null, fee: 3000 },
+                { min: null, max: null, fee: 5000 },
+            ]);
+
+            updateRangeTierFieldHandler(
+                createAction({ countryIndex: 0, tierIndex: 0, field: 'max', value: '5' }),
+                mockContext
+            );
+
+            const updates = mockContext.setLocalState.mock.calls[0][0];
+            const tiers = updates['form.country_settings'][0].ranges.tiers;
+            expect(tiers[1].min).toBe(6);
+        });
+
+        it('종료값을 비우면 다음 구간의 시작값도 비워진다', () => {
+            mockLocalState = stateWithTiers('range_weight', [
+                { min: 0, max: 2, fee: 3000 },
+                { min: 2, max: null, fee: 5000 },
+            ]);
+
+            updateRangeTierFieldHandler(
+                createAction({ countryIndex: 0, tierIndex: 0, field: 'max', value: '' }),
+                mockContext
+            );
+
+            const updates = mockContext.setLocalState.mock.calls[0][0];
+            const tiers = updates['form.country_settings'][0].ranges.tiers;
+            expect(tiers[0].max).toBeNull();
+            expect(tiers[1].min).toBeNull();
+        });
+
+        it('구간이 하나도 없으면 오류를 표시한다', () => {
+            mockLocalState = stateWithTiers('range_quantity', []);
+
+            validateRangeTiersHandler(createAction({ countryIndex: 0 }), mockContext);
+
+            const errors = lastRangeErrors();
+            expect(errors).toHaveLength(1);
+            expect(errors[0].max).toContain('range_error_min_one');
+        });
+
+        it('배송비 미입력은 오류다 (0 으로 강제하지 않는다)', () => {
+            mockLocalState = stateWithTiers('range_weight', [
+                { min: 0, max: 2, fee: null },
+                { min: 2, max: null, fee: 5000 },
+            ]);
+
+            validateRangeTiersHandler(createAction({ countryIndex: 0 }), mockContext);
+
+            const errors = lastRangeErrors();
+            expect(errors[0].fee).toContain('range_error_fee_required');
+        });
+
+        it('중간 구간의 종료값 누락은 오류다', () => {
+            mockLocalState = stateWithTiers('range_weight', [
+                { min: 0, max: null, fee: 3000 },
+                { min: 2, max: null, fee: 5000 },
+            ]);
+
+            validateRangeTiersHandler(createAction({ countryIndex: 0 }), mockContext);
+
+            const errors = lastRangeErrors();
+            expect(errors[0].max).toContain('range_error_middle_max');
+        });
+
+        it('연속형은 다음 시작값이 직전 종료값이어야 한다', () => {
+            mockLocalState = stateWithTiers('range_weight', [
+                { min: 0, max: 2, fee: 3000 },
+                { min: 3, max: null, fee: 5000 },
+            ]);
+
+            validateRangeTiersHandler(createAction({ countryIndex: 0 }), mockContext);
+
+            expect(lastRangeErrors()[0].max).toContain('range_error_continuity');
+        });
+
+        it('연속형은 소수 경계를 허용한다', () => {
+            mockLocalState = stateWithTiers('range_weight', [
+                { min: 0, max: 2.5, fee: 3000 },
+                { min: 2.5, max: null, fee: 5000 },
+            ]);
+
+            validateRangeTiersHandler(createAction({ countryIndex: 0 }), mockContext);
+
+            expect(lastRangeErrors()).toEqual([]);
+        });
+
+        it('이산형은 다음 시작값이 직전 종료값 + 1 이어야 한다', () => {
+            mockLocalState = stateWithTiers('range_quantity', [
+                { min: 0, max: 5, fee: 3000 },
+                { min: 6, max: null, fee: 5000 },
+            ]);
+
+            validateRangeTiersHandler(createAction({ countryIndex: 0 }), mockContext);
+
+            expect(lastRangeErrors()).toEqual([]);
+        });
+
+        it('이산형의 소수 경계는 오류다', () => {
+            mockLocalState = stateWithTiers('range_quantity', [
+                { min: 0, max: 5.5, fee: 3000 },
+                { min: 6.5, max: null, fee: 5000 },
+            ]);
+
+            validateRangeTiersHandler(createAction({ countryIndex: 0 }), mockContext);
+
+            expect(lastRangeErrors()[0].max).toContain('range_error_integer');
+        });
+
+        it('수정 모드 진입 시 저장된 구간의 시작값을 재파생한다', () => {
+            // 기존 데이터는 "1~5개 / 6개~" 처럼 첫 시작값이 1 인 형태로 저장돼 있다.
+            // 시작값이 읽기전용이 된 이상 화면이 정규화하지 않으면 운영자가 고칠 방법이 없고,
+            // 그대로 저장하면 "첫 구간의 시작값은 0이어야 합니다" 로 422 가 된다.
+            mockLocalState = { form: { country_settings: [] } };
+
+            initShippingPolicyFormHandler(
+                createAction({
+                    isEdit: true,
+                    policy: {
+                        country_settings: [
+                            {
+                                ...createDefaultCountrySetting('KR'),
+                                charge_policy: 'range_quantity',
+                                ranges: {
+                                    type: 'quantity',
+                                    tiers: [
+                                        { min: 1, max: 5, fee: 3000 },
+                                        { min: 6, max: null, fee: 5000 },
+                                    ],
+                                },
+                            },
+                        ],
+                    },
+                }),
+                mockContext
+            );
+
+            const updates = mockContext.setLocalState.mock.calls[0][0];
+            const tiers = updates['form.country_settings'][0].ranges.tiers;
+            expect(tiers[0].min).toBe(0);
+            expect(tiers[1].min).toBe(6);
+            // 종료값·배송비는 손대지 않는다
+            expect(tiers[0].max).toBe(5);
+            expect(tiers[1].fee).toBe(5000);
+        });
+
+        it('수정 모드 진입 시 연속형 구간의 시작값도 재파생한다', () => {
+            mockLocalState = { form: { country_settings: [] } };
+
+            initShippingPolicyFormHandler(
+                createAction({
+                    isEdit: true,
+                    policy: {
+                        country_settings: [
+                            {
+                                ...createDefaultCountrySetting('KR'),
+                                charge_policy: 'range_weight',
+                                ranges: {
+                                    type: 'weight',
+                                    tiers: [
+                                        { min: 0, max: 2, fee: 3000 },
+                                        { min: 3, max: null, fee: 5000 },
+                                    ],
+                                },
+                            },
+                        ],
+                    },
+                }),
+                mockContext
+            );
+
+            const updates = mockContext.setLocalState.mock.calls[0][0];
+            const tiers = updates['form.country_settings'][0].ranges.tiers;
+            expect(tiers[1].min).toBe(2);
+        });
+
+        it('단위값을 비우면 null 로 보존한다 (1 로 강제하지 않는다)', () => {
+            mockLocalState = {
+                form: {
+                    country_settings: [
+                        {
+                            ...createDefaultCountrySetting('KR'),
+                            charge_policy: 'per_weight',
+                            ranges: { type: 'per_weight', unit_value: 2 },
+                        },
+                    ],
+                },
+                activeCountryTab: 0,
+            };
+
+            updateUnitValueHandler(createAction({ value: '' }), mockContext);
+
+            const updates = mockContext.setLocalState.mock.calls[0][0];
+            expect(updates['form.country_settings'][0].ranges.unit_value).toBeNull();
+        });
+    });
+
+    // ===== 폼 레벨 필수값 선제 검증 (단위값 / 무료배송 기준금액) =====
+
+    describe('폼 레벨 필수값 선제 검증', () => {
+        const UNIT_VALUE_KEY = 'country_settings.0.ranges.unit_value';
+        const FREE_THRESHOLD_KEY = 'country_settings.0.free_threshold';
+        const UNIT_VALUE_MESSAGE =
+            'sirsoft-ecommerce.admin.shipping_policy.form.range_error_unit_value_required';
+        const FREE_THRESHOLD_MESSAGE =
+            'sirsoft-ecommerce.admin.shipping_policy.form.range_error_free_threshold_required';
+
+        function seedPerUnitPolicy(unitValue: number | null) {
+            mockLocalState = {
+                form: {
+                    country_settings: [
+                        {
+                            ...createDefaultCountrySetting('KR'),
+                            charge_policy: 'per_weight',
+                            ranges: { type: 'per_weight', unit_value: unitValue },
+                        },
+                    ],
+                },
+                activeCountryTab: 0,
+                errors: null,
+            };
+        }
+
+        it('단위값을 비우면 저장 전에 오류가 표시된다', () => {
+            seedPerUnitPolicy(2);
+
+            updateUnitValueHandler(createAction({ value: '' }), mockContext);
+
+            expect(mockLocalState.errors[UNIT_VALUE_KEY]).toEqual([UNIT_VALUE_MESSAGE]);
+        });
+
+        it('단위값이 0 이하이면 오류가 표시된다', () => {
+            seedPerUnitPolicy(2);
+
+            updateUnitValueHandler(createAction({ value: '0' }), mockContext);
+
+            expect(mockLocalState.errors[UNIT_VALUE_KEY]).toEqual([UNIT_VALUE_MESSAGE]);
+        });
+
+        it('단위값을 다시 채우면 오류가 해제된다', () => {
+            seedPerUnitPolicy(null);
+            mockLocalState.errors = { [UNIT_VALUE_KEY]: [UNIT_VALUE_MESSAGE] };
+
+            updateUnitValueHandler(createAction({ value: '0.5' }), mockContext);
+
+            expect(mockLocalState.errors[UNIT_VALUE_KEY]).toBeNull();
+        });
+
+        it('단위값을 요구하지 않는 정책에서는 오류가 없다', () => {
+            mockLocalState = {
+                form: {
+                    country_settings: [
+                        {
+                            ...createDefaultCountrySetting('KR'),
+                            charge_policy: 'fixed',
+                            ranges: { type: 'fixed', unit_value: null },
+                        },
+                    ],
+                },
+                activeCountryTab: 0,
+                errors: null,
+            };
+
+            updateUnitValueHandler(createAction({ value: '' }), mockContext);
+
+            expect(mockLocalState.errors[UNIT_VALUE_KEY]).toBeNull();
+        });
+
+        it('조건부 무료배송에서 기준금액을 비우면 저장 전에 오류가 표시된다', () => {
+            mockLocalState = {
+                form: {
+                    country_settings: [
+                        {
+                            ...createDefaultCountrySetting('KR'),
+                            charge_policy: 'conditional_free',
+                            free_threshold: 50000,
+                        },
+                    ],
+                },
+                activeCountryTab: 0,
+                errors: null,
+            };
+
+            updateCountryFieldHandler(
+                createAction({ field: 'free_threshold', value: null }),
+                mockContext
+            );
+
+            expect(mockLocalState.errors[FREE_THRESHOLD_KEY]).toEqual([FREE_THRESHOLD_MESSAGE]);
+        });
+
+        it('기준금액을 다시 채우면 오류가 해제된다', () => {
+            mockLocalState = {
+                form: {
+                    country_settings: [
+                        {
+                            ...createDefaultCountrySetting('KR'),
+                            charge_policy: 'conditional_free',
+                            free_threshold: null,
+                        },
+                    ],
+                },
+                activeCountryTab: 0,
+                errors: { [FREE_THRESHOLD_KEY]: [FREE_THRESHOLD_MESSAGE] },
+            };
+
+            updateCountryFieldHandler(
+                createAction({ field: 'free_threshold', value: 30000 }),
+                mockContext
+            );
+
+            expect(mockLocalState.errors[FREE_THRESHOLD_KEY]).toBeNull();
+        });
+
+        it('정책을 바꾸면 직전 정책에서 남은 필수값 오류가 사라진다', () => {
+            mockLocalState = {
+                form: {
+                    country_settings: [
+                        {
+                            ...createDefaultCountrySetting('KR'),
+                            charge_policy: 'per_weight',
+                            ranges: { type: 'per_weight', unit_value: null },
+                        },
+                    ],
+                },
+                activeCountryTab: 0,
+                errors: { [UNIT_VALUE_KEY]: [UNIT_VALUE_MESSAGE] },
+            };
+
+            onChargePolicyChangeHandler(
+                createAction({ value: 'fixed', index: 0 }),
+                mockContext
+            );
+
+            expect(mockLocalState.errors[UNIT_VALUE_KEY]).toBeNull();
+        });
+
+        it('조건부 무료배송으로 바꾸면 비어 있는 기준금액이 즉시 오류로 드러난다', () => {
+            mockLocalState = {
+                form: {
+                    country_settings: [
+                        {
+                            ...createDefaultCountrySetting('KR'),
+                            charge_policy: 'fixed',
+                            free_threshold: null,
+                        },
+                    ],
+                },
+                activeCountryTab: 0,
+                errors: null,
+            };
+
+            onChargePolicyChangeHandler(
+                createAction({ value: 'conditional_free', index: 0 }),
+                mockContext
+            );
+
+            expect(mockLocalState.errors[FREE_THRESHOLD_KEY]).toEqual([FREE_THRESHOLD_MESSAGE]);
         });
     });
 });

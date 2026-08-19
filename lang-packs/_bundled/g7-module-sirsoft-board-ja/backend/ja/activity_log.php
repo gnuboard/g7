@@ -71,6 +71,7 @@ return [
         'use_comment' => 'コメント使用',
         'use_reply' => '返信使用',
         'max_reply_depth' => '最大返信深度',
+        'reply_delete_policy' => '返信の削除方式',
         'use_report' => '通報使用',
         'use_file_upload' => 'ファイルアップロード使用',
         'max_file_size' => '最大ファイルサイズ',

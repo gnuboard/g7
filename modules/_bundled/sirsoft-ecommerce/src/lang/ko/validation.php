@@ -862,6 +862,7 @@ return [
 
     // 주문 검증 메시지 (하위 호환성 - order.* 형식)
     'order' => [
+        'payment_method_unavailable' => '현재 사용할 수 없는 결제수단입니다. 다른 결제수단을 선택해주세요.',
         'ids' => [
             'required' => '변경할 주문을 선택해주세요.',
             'array' => '주문 ID는 배열 형태여야 합니다.',
@@ -1033,6 +1034,14 @@ return [
             'tier_min_non_negative' => '구간 시작값은 0 이상이어야 합니다.',
             'tier_max_non_negative' => '구간 종료값은 0 이상이어야 합니다.',
             'unit_value_min' => '구간 단위값은 0보다 커야 합니다.',
+            'tiers_required' => '구간별 배송비 정책은 구간을 1개 이상 등록해야 합니다.',
+            'middle_max_required' => '마지막 구간을 제외한 구간에는 종료값을 입력해야 합니다.',
+            'tier_value_integer' => '수량 구간의 시작값과 종료값은 정수여야 합니다.',
+            'unit_value_required' => '단위당 배송비 정책은 단위값을 입력해야 합니다.',
+        ],
+        'free_threshold_required' => '조건부 무료배송 정책은 무료배송 기준금액을 입력해야 합니다.',
+        'extra_fee' => [
+            'zipcode_format' => '우편번호는 "63000", "63000-63999", "63*" 형식 중 하나여야 합니다.',
         ],
         'country_settings' => [
             'required' => '국가별 배송 설정을 1개 이상 추가해주세요.',
@@ -1319,8 +1328,14 @@ return [
         ],
     ],
 
+    // 공개 자산 디스크 (코어 카탈로그 조회 검증)
+    'public_asset_disk_invalid' => '올바른 공개 자산 디스크를 선택해주세요.',
+
     // 필드명 한국어 변환 (Laravel 표준)
     'attributes' => [
+        // 공개 자산 스토리지
+        'basic_info.public_asset_disk' => '공개 자산 디스크',
+
         // 배송정책 국가별 설정
         'country_settings' => '국가별 설정',
         'country_settings.*.country_code' => '국가',

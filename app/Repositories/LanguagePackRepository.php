@@ -125,16 +125,34 @@ class LanguagePackRepository implements LanguagePackRepositoryInterface
     }
 
     /**
-     * 페이지네이션 + 필터링된 언어팩 목록을 조회합니다.
+     * 페이지네이션 + 필터링된 언어팩 목록을 조회합니다 (관리자 목록 전용).
      *
      * @param  array<string, mixed>  $filters  필터 (scope, target_identifier, locale, status, vendor)
      * @param  int  $perPage  페이지당 건수
+     * @param  int|null  $page  페이지 번호 (null 이면 요청 파라미터에서 해석)
      * @return LengthAwarePaginator 페이지네이션 결과
      */
-    public function paginate(array $filters = [], int $perPage = 20): LengthAwarePaginator
+    public function paginate(array $filters = [], int $perPage = 20, ?int $page = null): LengthAwarePaginator
     {
         // audit:allow repository-paginate-column-pruning reason: 언어팩 정의 테이블 — 설치된 팩 수만큼만 존재하고 넓은 컬럼이 없다
-        return $this->buildFilteredQuery($filters)->paginate($perPage);
+        return $this->buildFilteredQuery($filters)->paginate($perPage, ['*'], 'page', $page);
+    }
+
+    /**
+     * 업데이트 확인용 전체 언어팩 컬렉션을 조회합니다.
+     *
+     * 전량 순회 의도를 `paginate(큰 값)` 으로 흉내 내면 page 인자 암묵 해석 때문에
+     * HTTP `?page=2` 가 순회 범위를 비워 버린다 (공개 이슈 #102 동형). 순회는 이
+     * 메서드로만 한다.
+     *
+     * @return Collection<int, LanguagePack> 설치된 전체 언어팩
+     */
+    public function allForUpdateCheck(): Collection
+    {
+        // audit:allow query-unbounded-get reason: 언어팩은 운영자가 설치한 팩 수만큼만 존재하는
+        // 설정성 테이블이다 (사용량과 무관) — 대용량 목록 페이지네이션 규정의 설정성
+        // 테이블 예외 조항 (docs/backend/pagination.md)
+        return LanguagePack::query()->orderBy('identifier')->get();
     }
 
     /**

@@ -50,11 +50,13 @@ describe('buildClauseExpr — {paramKey} 치환', () => {
     expect(buildClauseExpr({ operator: 'isLoggedIn', params: {} }, ops)).toBe('_global?.currentUser?.uuid');
   });
 
+  /** @effects condition_recipe_array_length_uses_length_nullish_zero_fallback */
   it('{src} 치환 — 옵셔널 체이닝 + 배열 길이 ?? 0 형태 보존', () => {
     const e = buildClauseExpr({ operator: 'dsHasData', params: { src: 'posts' } }, ops);
     expect(e).toBe('(posts?.data?.length ?? 0) > 0');
   });
 
+  /** @effects condition_recipe_substitutes_params_into_expr_template */
   it('{field}/{value} 치환', () => {
     const e = buildClauseExpr({ operator: 'fieldEquals', params: { field: 'status', value: 'open' } }, ops);
     expect(e).toBe("status === 'open'");
@@ -71,6 +73,7 @@ describe('combineConditions — 단일 {{ }} 합성 (코어 if 규칙)', () => {
     expect(r).toBe('{{ _global?.currentUser?.uuid }}');
   });
 
+  /** @effects condition_recipe_wraps_entire_combined_expression_in_single_braces */
   it('AND 결합 — 각 절 괄호 + && + 전체 한 쌍 {{ }}', () => {
     const r = combineConditions(
       [{ operator: 'isLoggedIn', params: {} }, { operator: 'dsHasData', params: { src: 'posts' } }],
@@ -89,6 +92,7 @@ describe('combineConditions — 단일 {{ }} 합성 (코어 if 규칙)', () => {
     expect(r).toBe('{{ (_global?.currentUser?.uuid) || (!_global?.currentUser?.uuid) }}');
   });
 
+  /** @effects condition_builder_does_not_emit_nested_interpolation_braces */
   it('중첩 보간 {{ {{x}} }} 를 만들지 않는다', () => {
     const r = combineConditions(
       [{ operator: 'fieldEquals', params: { field: 'a', value: 'b' } }, { operator: 'isLoggedIn', params: {} }],
@@ -104,6 +108,7 @@ describe('combineConditions — 단일 {{ }} 합성 (코어 if 규칙)', () => {
     expect(combineConditions([], 'and', ops)).toBe('');
   });
 
+  /** @effects condition_recipe_uses_optional_chaining_for_null_safety */
   it('fieldHasError — 옵셔널 체이닝 인덱스 접근 보존', () => {
     const r = combineConditions([{ operator: 'fieldHasError', params: { field: 'email' } }], 'and', ops);
     expect(r).toBe("{{ !!_local?.errors?.['email'] }}");
@@ -111,6 +116,7 @@ describe('combineConditions — 단일 {{ }} 합성 (코어 if 규칙)', () => {
 });
 
 describe('matchSinglePreset — 역해석', () => {
+  /** @effects condition_builder_reverse_matches_single_preset */
   it('파라미터 없는 단일 프리셋 식 → operator 복원', () => {
     expect(matchSinglePreset('{{ _global?.currentUser?.uuid }}', ops)).toBe('isLoggedIn');
     expect(matchSinglePreset('{{_global?.currentUser?.uuid}}', ops)).toBe('isLoggedIn');
@@ -163,6 +169,7 @@ describe('parseConditionExpr — 라운드트립 역해석 (modal remount 무상
     expect(r).toEqual({ clauses, combinator: 'or' });
   });
 
+  /** @effects condition_builder_preserves_advanced_handwritten_expr */
   it('손작성 임의 식 → null (고급 취급)', () => {
     expect(parseConditionExpr('{{ custom.weird && thing }}', ops)).toBeNull();
     expect(parseConditionExpr('', ops)).toBeNull();

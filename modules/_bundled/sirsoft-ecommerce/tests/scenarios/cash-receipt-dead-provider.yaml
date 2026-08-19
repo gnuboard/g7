@@ -1,0 +1,40 @@
+feature: 죽은 현금영수증 발급사 차단 (A3)
+
+description: |
+  발급사(`order_settings.cash_receipt_provider`)는 플러그인이 훅으로 등록한 카탈로그에서 고른다.
+  운영자가 고른 뒤 그 플러그인을 제거하면 저장값만 남는다 — 카탈로그에는 없는 문자열이다.
+
+  그 상태에서 발급을 허용하면 요청이 어디에도 도달하지 못한다. 구매자 화면에는 신청 폼이
+  그대로 뜨고, 발급을 눌러도 실패 이력만 쌓인다. 예외는 나지 않는다.
+
+  판정은 하나다 — 저장값이 현재 레지스트리에 없으면 **미설정과 동일하게** 취급한다.
+  단, 저장값 자체는 지우지 않는다. 관리자 응답에는 남겨 운영자가 무엇을 골랐었는지 보고
+  고칠 수 있게 하고, 공개 응답·리소스에서만 null 로 정규화한다.
+
+  이미 발급된 영수증은 별개다. 취소는 현재 설정값이 아니라 **영수증에 박제된 발급사**로
+  수행한다 — 그러지 않으면 플러그인을 제거한 뒤 과거 영수증을 취소할 수 없게 되어,
+  구매자는 환불받았는데 현금영수증만 살아 있는 상태가 남는다.
+
+axis_notes:
+  provider_state: |
+    surface(관리자 설정 / 공개 응답 / 주문 리소스 / 발급 서비스)는 축이 아니라 effects 로
+    구분한다 — 네 표면이 같은 판정을 공유하는 것이 이 기능의 요구사항이기 때문이다.
+    죽은 PG 를 다루는 형제 매니페스트(payment-method-dead-pg.yaml)와 같은 구조다.
+
+axes:
+  provider_state: [live, dead]
+
+effects:
+  - live_cash_receipt_provider_resolved              # 등록된 발급사는 그대로 해석 (거짓 양성 차단)
+  - dead_cash_receipt_provider_treated_as_unset      # 해석 결과가 null (저장값은 관리자 확인용으로 보존)
+  - dead_cash_receipt_provider_normalized_in_public  # 공개 응답에서 null → 체크아웃 신청 폼 미렌더
+  - dead_provider_nulled_in_resource                 # 주문 리소스의 발급사 필드도 null → 발급 버튼 미노출
+  - existing_receipt_history_survives_dead_provider  # 이미 발급/시도된 이력은 계속 표시 (영수증 URL 도달 경로 보존)
+  - issue_blocked_when_provider_unregistered         # 신규 발급은 훅 호출 없이 차단 (실패 이력만 쌓이는 것 방지)
+  - cancel_uses_receipt_snapshot_provider            # 취소는 영수증에 박제된 발급사로 수행
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/EcommerceSettingsCashReceiptTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Resources/CashReceiptResourceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/CashReceiptServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/cash-receipt-lifecycle.spec.ts

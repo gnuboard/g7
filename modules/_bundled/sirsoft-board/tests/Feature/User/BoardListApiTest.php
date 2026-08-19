@@ -5,6 +5,9 @@ namespace Modules\Sirsoft\Board\Tests\Feature\User;
 // ModuleTestCase를 수동으로 require (autoload 전에 로드 필요)
 require_once __DIR__.'/../../ModuleTestCase.php';
 
+use App\Http\Middleware\PermissionMiddleware;
+use App\Models\Permission;
+use App\Models\Role;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
@@ -13,10 +16,12 @@ use Modules\Sirsoft\Board\Tests\ModuleTestCase;
  * 전체 게시판 목록 API 테스트
  *
  * 전체 게시판 목록 페이지용 경량 API의 동작을 검증합니다.
+ * 디렉토리는 호출자 열람 권한(sirsoft-board.{slug}.posts.read) 필터를 적용하므로,
+ * 게스트 시점 검증용 게시판에는 setUp 에서 guest 읽기 권한을 부여한다
+ * (최근글·인기글 가시성 테스트와 동일 관례 — PublicRecentPostsVisibilityTest).
  */
 class BoardListApiTest extends ModuleTestCase
 {
-
     /**
      * 테스트 환경 설정
      */
@@ -27,6 +32,31 @@ class BoardListApiTest extends ModuleTestCase
         DB::table('boards')->update(['is_active' => false]);
         // 이 테스트 클래스에서 사용하는 슬러그 정리 (커밋된 경우 대비)
         DB::table('boards')->whereIn('slug', ['free', 'inactive', 'old', 'new'])->delete();
+
+        // 디렉토리 열람 권한 필터 대응 — 이 클래스가 쓰는 슬러그에 guest 읽기 권한 부여
+        foreach (['free', 'inactive', 'old', 'new'] as $slug) {
+            $this->grantGuestRead($slug);
+        }
+        PermissionMiddleware::clearGuestRoleCache();
+    }
+
+    /**
+     * guest 역할에 게시판 읽기 권한을 부여합니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     */
+    private function grantGuestRead(string $slug): void
+    {
+        $role = Role::where('identifier', 'guest')->first();
+        if (! $role) {
+            return;
+        }
+
+        $perm = Permission::firstOrCreate(
+            ['identifier' => "sirsoft-board.{$slug}.posts.read"],
+            ['name' => ['ko' => 'read', 'en' => 'read'], 'type' => 'user']
+        );
+        $role->permissions()->syncWithoutDetaching([$perm->id]);
     }
 
     /**

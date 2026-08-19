@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="#"><img src="https://img.shields.io/badge/version-7.0.6-blue" alt="Version"></a>
+  <a href="#"><img src="https://img.shields.io/badge/version-7.0.7-blue" alt="Version"></a>
   <a href="#"><img src="https://img.shields.io/badge/PHP-8.2%2B-777BB4?logo=php&logoColor=white" alt="PHP"></a>
   <a href="#"><img src="https://img.shields.io/badge/Laravel-12.x-FF2D20?logo=laravel&logoColor=white" alt="Laravel"></a>
   <a href="#"><img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" alt="React"></a>
@@ -75,7 +75,7 @@ Everything a modern web platform needs, built in.
 
 | Layer | Technology |
 |-------|------------|
-| **Backend** | PHP 8.2+, Laravel 12.x, MySQL 8.0+, Redis 6.0+ |
+| **Backend** | PHP 8.2+, Laravel 12.x, MySQL 8.0+ / MariaDB 10.3+, Redis 6.0+ |
 | **Frontend** | React 19, Vite, Tailwind CSS 4 (dark mode supported) |
 | **Authentication** | Laravel Sanctum (Bearer tokens) |
 | **Testing** | PHPUnit 11.x, Vitest |
@@ -359,7 +359,7 @@ Every verification point — signup, password reset, sensitive operations, the m
 
 ### System requirements
 
-- PHP 8.2+ with the required extensions (30 in total), including `bcmath`, `ctype`, `curl`, `dom`, `fileinfo`, `gd`, `intl`, `mbstring`, `openssl`, `pdo_mysql`, `tokenizer`, `xml`, and `zip`
+- PHP 8.2+ with the required extensions (16 in total), including `ctype`, `curl`, `dom`, `fileinfo`, `json`, `mbstring`, `openssl`, `pdo_mysql`, `tokenizer`, `xml`, and `zip`. Additional extensions (`gd`/`imagick`, `intl`, `redis`, `bcmath`, and others) are optional and only needed for the features that use them — see [docs/requirements.md](docs/requirements.md)
 - MySQL 8.0+ or MariaDB 10.3+ (utf8mb4)
 - Composer 2.x
 - Node.js 20+ (only needed when building frontend assets)
@@ -528,15 +528,17 @@ Thanks to everyone who reported an issue or suggested a feature that shipped —
 <!-- community-contributors:start -->
 <p>
   <a href="https://github.com/jiwonpapa" title="jiwonpapa"><img src="https://github.com/jiwonpapa.png" width="48" alt="jiwonpapa"></a>
+  <a href="https://github.com/Tuwasduliebst" title="Tuwasduliebst"><img src="https://github.com/Tuwasduliebst.png" width="48" alt="Tuwasduliebst"></a>
   <a href="https://github.com/glitter-gim" title="glitter-gim"><img src="https://github.com/glitter-gim.png" width="48" alt="glitter-gim"></a>
   <a href="https://github.com/jordy-bitree" title="jordy-bitree"><img src="https://github.com/jordy-bitree.png" width="48" alt="jordy-bitree"></a>
   <a href="https://github.com/laelbe" title="laelbe"><img src="https://github.com/laelbe.png" width="48" alt="laelbe"></a>
+  <a href="https://github.com/lyg-kaban" title="lyg-kaban"><img src="https://github.com/lyg-kaban.png" width="48" alt="lyg-kaban"></a>
   <a href="https://github.com/bigmsg" title="bigmsg"><img src="https://github.com/bigmsg.png" width="48" alt="bigmsg"></a>
   <a href="https://github.com/hwaryeon1234" title="hwaryeon1234"><img src="https://github.com/hwaryeon1234.png" width="48" alt="hwaryeon1234"></a>
+  <a href="https://github.com/koojunho" title="koojunho"><img src="https://github.com/koojunho.png" width="48" alt="koojunho"></a>
   <a href="https://github.com/abc101" title="abc101"><img src="https://github.com/abc101.png" width="48" alt="abc101"></a>
   <a href="https://github.com/yks118" title="yks118"><img src="https://github.com/yks118.png" width="48" alt="yks118"></a>
   <a href="https://github.com/kitrio" title="kitrio"><img src="https://github.com/kitrio.png" width="48" alt="kitrio"></a>
-  <a href="https://github.com/koojunho" title="koojunho"><img src="https://github.com/koojunho.png" width="48" alt="koojunho"></a>
   <a href="https://github.com/movielee2020" title="movielee2020"><img src="https://github.com/movielee2020.png" width="48" alt="movielee2020"></a>
   <a href="https://github.com/ChoDongHyeon" title="ChoDongHyeon"><img src="https://github.com/ChoDongHyeon.png" width="48" alt="ChoDongHyeon"></a>
   <a href="https://github.com/comtylove-netizen" title="comtylove-netizen"><img src="https://github.com/comtylove-netizen.png" width="48" alt="comtylove-netizen"></a>

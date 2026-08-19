@@ -60,9 +60,15 @@
     "report_notification": "Report Notification",
     "report_notification_description": "Configure which administrators receive notifications and how notifications are sent when a report is submitted.",
     "report_permissions": "Report Management Permissions",
-    "report_permissions_description": "Assign roles that can view the report list and process reports (approve, reject, or blind). Admin notifications for new reports are sent based on the 'Process Reports Permission' role."
+    "report_permissions_description": "Assign roles that can view the report list and process reports (approve, reject, or blind). Admin notifications for new reports are sent based on the 'Process Reports Permission' role.",
+    "attachment_cleanup": "Attachment Cleanup",
+    "attachment_cleanup_description": "Decide when the files of deleted attachments are destroyed. Temporary attachments uploaded while writing but never saved are cleaned up daily regardless of this setting."
   },
   "fields": {
+    "attachment_purge_enabled": "Purge deleted attachments",
+    "attachment_purge_enabled_hint": "Off by default — the operator must turn it on for the daily automatic cleanup to run. When on, files and records of attachments deleted longer ago than the retention period are permanently removed. Cleanup commands run directly on the server are not affected by this setting.",
+    "attachment_purge_retention_days": "Deleted attachment retention (days)",
+    "attachment_purge_retention_days_hint": "Restoring a post from the trash also restores attachments within this period. Keep it aligned with your trash retention window. (1 ~ 3650 days)",
     "type": "Board Type",
     "secret_mode": "Secret Mode",
     "per_page": "Posts per Page (PC)",
@@ -78,6 +84,7 @@
     "max_content_length": "Maximum Content Length",
     "use_reply": "Enable Reply Posts",
     "max_reply_depth": "Max Reply Depth",
+    "reply_delete_policy": "Reply Delete Policy",
     "use_comment": "Enable Comments",
     "comment_order": "Comment Sort Order",
     "min_comment_length": "Min Comment Length",
@@ -103,7 +110,7 @@
     "daily_report_limit_hint": "Max reports per user per day across all boards. 0 = no limit. (0\u2013100)",
     "rejection_limit_count": "Rejection Limit (count)",
     "rejection_limit_days": "Rejection Limit Period (days)",
-    "rejection_limit_hint": "Reporting will be blocked when rejections exceed the limit within this period. 0 count = no limit. (Count: 0\u201350, Period: 1\u2013365 days)",
+    "rejection_limit_hint": "Reporting is blocked once rejections within this period reach the limit. 0 count = no limit. (Count: 0\u201350, Period: 1\u2013365 days)",
     "report_cooldown_seconds": "Report Cooldown (sec)",
     "report_cooldown_seconds_hint": "Minimum interval between consecutive reports. 0 = no limit. (0\u20133600 sec)",
     "notify_author_on_report_action": "Report Action Notification",
@@ -166,6 +173,7 @@
       "max_content_length": "Set the maximum character count for post content ({{min}}–{{max}})",
       "use_reply": "Must be ON to apply reply post feature to new boards.",
       "max_reply_depth": "Set the maximum nesting depth for replies ({{min}}–{{max}})",
+      "reply_delete_policy": "Set what happens when deleting a post that has replies",
       "blocked_keywords": "Posts or comments containing registered keywords will be blocked",
       "use_comment": "Must be ON to apply comment feature to new boards. Comment detail settings below will also apply.",
       "comment_order": "Set the default sort direction for comments",
@@ -196,6 +204,10 @@
       "disabled": "Disabled",
       "enabled": "Optional",
       "always": "Always Secret"
+    },
+    "reply_delete_policy": {
+      "block": "Block deletion",
+      "cascade": "Delete together"
     },
     "order_by": {
       "created_at": "Latest",
@@ -281,6 +293,7 @@
       "use_comment": "Enable Comments",
       "use_reply": "Enable Replies",
       "max_reply_depth": "Max Reply Depth",
+      "reply_delete_policy": "Reply Delete Policy",
       "max_comment_depth": "Max Comment Depth",
       "comment_order": "Comment Sort Order",
       "show_view_count": "Show View Count",

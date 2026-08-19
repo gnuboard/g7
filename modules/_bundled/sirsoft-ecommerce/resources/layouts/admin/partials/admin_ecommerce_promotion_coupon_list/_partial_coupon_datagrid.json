@@ -237,6 +237,7 @@
         "pageSize": "{{+(query.per_page || 10)}}",
         "alwaysShowPagination": true,
         "selectable": true,
+        "selectionScope": "page",
         "selectedIds": "{{_local.selectedItems || []}}",
         "visibleColumns": "{{_local.visibleColumns}}",
         "selectedCountText": "",

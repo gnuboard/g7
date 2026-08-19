@@ -6,6 +6,9 @@
  * - _tab_shipping.json (배송설정 기본 + 배송가능국가 + 도서산간)
  * - _shipping_country_table.json (국가 테이블)
  */
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
 
 // 레이아웃 JSON 임포트
@@ -16,6 +19,40 @@ import countryCards from '../../../layouts/admin/partials/admin_ecommerce_settin
 import disableIntlModal from '../../../layouts/admin/partials/admin_ecommerce_settings/_disable_international_shipping_modal.json';
 
 // ── 헬퍼 함수 ──────────────────────────────────────────
+
+/**
+ * 이 화면을 렌더하는 admin 템플릿의 매니페스트가 선언한 컴포넌트 종류를 읽는다.
+ *
+ * 레이아웃 노드의 `type` 은 렌더러가 props 전달 범위를 고르는 기준이라
+ * 매니페스트 선언과 어긋나면 `editorAttrs` 가 제거돼 레이아웃 편집기에서 표식을 잃는다.
+ * 바인딩 방식(자동/수동)과는 무관한 값이다.
+ *
+ * @param name 컴포넌트 이름
+ * @returns 매니페스트가 선언한 type
+ */
+function manifestType(name: string): string {
+    let current = path.dirname(fileURLToPath(import.meta.url));
+
+    for (let depth = 0; depth < 10; depth++) {
+        if (fs.existsSync(path.join(current, 'artisan'))) break;
+        current = path.dirname(current);
+    }
+
+    const manifest = JSON.parse(
+        fs.readFileSync(
+            path.join(current, 'templates/_bundled/sirsoft-admin_basic/components.json'),
+            'utf-8',
+        ),
+    );
+
+    for (const [kind, entries] of Object.entries<any>(manifest.components ?? {})) {
+        if ((entries as any[]).some((entry) => entry.name === name)) {
+            return kind;
+        }
+    }
+
+    throw new Error(`매니페스트에 ${name} 선언이 없습니다.`);
+}
 function flattenAll(node: any): any[] {
     const result: any[] = [];
     if (!node) return result;
@@ -123,14 +160,15 @@ describe('배송설정 탭 콘텐츠 (_tab_shipping.json)', () => {
             expect(select.props?.options).toContain('is_active');
         });
 
-        it('해외배송 Toggle이 수동 바인딩(basic + checked + actions)으로 구성되어 있다', () => {
+        it('해외배송 Toggle이 수동 바인딩(checked + actions)으로 구성되어 있다', () => {
             const intlField = findById(allNodes, 'international_shipping_field');
             expect(intlField).toBeDefined();
             const toggles = flattenAll(intlField).filter((n: any) => n.name === 'Toggle');
             expect(toggles.length).toBeGreaterThan(0);
             const toggle = toggles[0];
-            // 수동 바인딩: type=basic, checked prop, actions 있음
-            expect(toggle.type).toBe('basic');
+            // 수동 바인딩의 실체는 checked prop + actions 다. 노드 type 은 바인딩 방식과 무관하며
+            // 매니페스트 선언을 따라야 한다(어긋나면 레이아웃 편집기에서 표식을 잃는다).
+            expect(toggle.type).toBe(manifestType('Toggle'));
             expect(toggle.props?.checked).toContain('international_shipping_enabled');
             expect(toggle.actions).toBeDefined();
             expect(toggle.actions.length).toBeGreaterThanOrEqual(2);
@@ -359,7 +397,7 @@ describe('배송가능국가 테이블 (_shipping_country_table.json)', () => {
         });
 
         it('Tbody에 iteration이 있다', () => {
-            const iterNode = findById(allNodes, 'country_row');
+            const iterNode = findById(allNodes, 'country_row_{{countryIndex}}');
             expect(iterNode).toBeDefined();
             expect(iterNode.iteration).toBeDefined();
             expect(iterNode.iteration.source).toContain('available_countries');
@@ -496,7 +534,7 @@ describe('바인딩 패턴 일관성 검증', () => {
         it('해외배송 Toggle이 수동 바인딩이며 ON/OFF 모두 hasChanges를 설정한다', () => {
             const intlField = findById(allNodes, 'international_shipping_field');
             const toggle = flattenAll(intlField).find((n: any) => n.name === 'Toggle');
-            expect(toggle.type).toBe('basic');
+            expect(toggle.type).toBe(manifestType('Toggle'));
             expect(toggle.props?.checked).toContain('international_shipping_enabled');
             expect(toggle.actions).toBeDefined();
             // ON action에 hasChanges: true
@@ -758,7 +796,7 @@ describe('배송가능국가 모바일 카드 — 루트 구조', () => {
 
     it('카드가 excel-card 클래스로 반복 렌더링된다', () => {
         const allNodes = flattenAll(countryCards);
-        const card = findById(allNodes, 'country_card');
+        const card = findById(allNodes, 'country_card_{{countryIndex}}');
         expect(card).toBeDefined();
         expect(card.props?.className).toContain('excel-card');
         expect(card.iteration).toBeDefined();
@@ -769,7 +807,7 @@ describe('배송가능국가 모바일 카드 — 루트 구조', () => {
 
     it('iteration source에 _idx 인덱스 주입이 포함된다', () => {
         const allNodes = flattenAll(countryCards);
-        const card = findById(allNodes, 'country_card');
+        const card = findById(allNodes, 'country_card_{{countryIndex}}');
         expect(card.iteration.source).toContain('_idx');
         expect(card.iteration.source).toContain('.map(');
     });

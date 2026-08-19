@@ -15,6 +15,7 @@ import imageCompression from 'browser-image-compression';
 
 import type { Attachment, PendingFile, FileUploaderProps, ApiEndpoints } from './types';
 import { formatFileSize, extractErrorMessage, t } from './utils';
+import { isCrossOriginAssetUrl } from '../assetOrigin';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const G7Core = (window as any).G7Core;
@@ -703,6 +704,14 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
         if (cancelled) break;
         // ref 기반 has 체크 (stale closure 방지)
         if (authenticatedImageUrlsRef.current.has(file.id)) continue;
+
+        // 공개 자산 디스크(S3/CDN)의 교차 출처 URL 은 공개 자산이므로 XHR 없이 직접 사용한다.
+        // (CORS 미설정 CDN 에서의 실패 방지 + 제3자 origin 으로의 토큰 노출 차단)
+        if (isCrossOriginAssetUrl(file.download_url)) {
+          authenticatedImageUrlsRef.current.set(file.id, file.download_url);
+          setAuthenticatedImageUrls(new Map(authenticatedImageUrlsRef.current));
+          continue;
+        }
 
         try {
           const blob = await G7Core.api.get(file.download_url, {

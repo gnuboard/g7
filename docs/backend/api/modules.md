@@ -176,7 +176,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.modules.read \| core.menus.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.modules.read\|core.menus.read`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
@@ -266,7 +266,7 @@ _단건 응답: `data` 객체의 필드 (`data.module` 은 목록과 동일한 `
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.modules.read \| core.menus.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.modules.activate`)이 없는 경우 |
 | 409 | Conflict | `force` 없이 호출했고 필요한 의존 확장이 미충족인 경우 (`error` 에 `warning`, `missing_modules`, `missing_plugins` 포함) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 활성화 처리 중 예외 발생 (`module.activate_failed`) |
@@ -333,7 +333,7 @@ _단건 응답: `data` 객체의 필드._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.modules.read \| core.menus.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.modules.install`)이 없는 경우 |
 | 422 | Unprocessable Entity | 업데이트 확인 처리가 실패한 경우 (`modules.check_updates_failed`) |
 | 500 | Internal Server Error | 업데이트 확인 중 예외 발생 |
 
@@ -439,7 +439,7 @@ _단건 응답: `data` 는 비활성화된 모듈의 `ModuleResource` 객체 (�
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.modules.read \| core.menus.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.modules.activate`)이 없는 경우 |
 | 409 | Conflict | `force` 없이 호출했고 이 모듈에 의존하는 활성 확장이 있는 경우 (`error` 에 `warning`, `dependent_templates`, `dependent_modules`, `dependent_plugins` 포함) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 비활성화 처리 중 예외 발생 (`module.deactivate_failed`) |
@@ -560,7 +560,7 @@ HTTP/1.1 201
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.modules.read \| core.menus.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.modules.install`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터 검증 실패, 또는 설치 파이프라인이 던진 검증 오류 (의존 확장 cascade 설치 실패·이미 설치됨 등 — `error.errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 설치 처리 중 예외 발생 (`modules.installation_failed`) |
 
@@ -671,7 +671,7 @@ HTTP/1.1 201
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.modules.read \| core.menus.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.modules.install`)이 없는 경우 |
 | 422 | Unprocessable Entity | 파일 검증 실패(ZIP 아님·50MB 초과), 또는 ZIP 처리 오류 (module.json 미존재/형식 오류·식별자 누락·이미 설치됨) |
 | 500 | Internal Server Error | 설치 처리 중 예외 발생 (`module.install_failed`) |
 
@@ -779,7 +779,7 @@ HTTP/1.1 201
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.modules.read \| core.menus.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.modules.install`)이 없는 경우 |
 | 422 | Unprocessable Entity | URL 형식 검증 실패, 또는 GitHub 처리 오류 (저장소 미존재·다운로드 실패·module.json 형식 오류·이미 설치됨) |
 | 500 | Internal Server Error | 설치 처리 중 예외 발생 (`module.install_failed`) |
 
@@ -1001,7 +1001,7 @@ _단건 응답: `data` 객체의 필드._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.modules.read \| core.menus.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.modules.install`)이 없는 경우 |
 | 422 | Unprocessable Entity | 파일 검증 실패(ZIP 아님·50MB 초과), 또는 미리보기 처리 실패 (`module.preview_failed` — `error.error` 에 사유) |
 
 <!-- @generated:end -->
@@ -1104,7 +1104,7 @@ _단건 응답: `data` 는 갱신된 모듈의 `ModuleResource` 객체 (목록 �
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.modules.read \| core.menus.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.modules.activate`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터 검증 실패, 또는 레이아웃 갱신 실패 (모듈 미존재·비활성 상태 — `modules.refresh_layouts_failed`) |
 | 500 | Internal Server Error | 갱신 처리 중 예외 발생 (`module.refresh_layouts_failed`) |
 
@@ -1155,7 +1155,7 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지�
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.modules.read \| core.menus.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.modules.uninstall`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 제거 처리 중 예외 발생 (`module.uninstall_failed`) |
 
@@ -1242,7 +1242,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.modules.read \| core.menus.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.modules.read`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
@@ -1300,7 +1300,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.modules.read \| core.menus.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.modules.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
@@ -1374,7 +1374,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.modules.read \| core.menus.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.modules.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
@@ -1433,7 +1433,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.modules.read \| core.menus.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.modules.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
@@ -1550,7 +1550,7 @@ _단건 응답: `data` 객체의 필드 (`ModuleResource::toDetailArray()` + 주
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.modules.read \| core.menus.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.modules.read`)이 없는 경우 |
 | 404 | Not Found | 해당 식별자의 모듈이 활성/_pending/_bundled 어디에도 없는 경우 (`module.not_found`) |
 | 500 | Internal Server Error | 조회 중 예외 발생 (`module.fetch_failed`) |
 
@@ -1620,7 +1620,7 @@ _단건 응답: `data` 객체의 필드._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.modules.read \| core.menus.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.modules.read`)이 없는 경우 |
 | 404 | Not Found | 해당 식별자의 모듈이 활성/_pending/_bundled 어디에도 없는 경우 (`module.not_found`) |
 | 422 | Unprocessable Entity | 수정 레이아웃 확인 실패 (`modules.check_modified_layouts_failed` — `error.errors.module_name`) |
 | 500 | Internal Server Error | 확인 처리 중 예외 발생 |
@@ -1728,7 +1728,7 @@ _단건 응답: `data` 객체의 필드 (`target` + `dependencies[]` + `language
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.modules.read \| core.menus.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.modules.install`)이 없는 경우 |
 | 404 | Not Found | 해당 식별자의 모듈이 활성/_pending/_bundled 어디에도 없는 경우 (`module.not_found`) |
 | 500 | Internal Server Error | 대상 확장을 찾을 수 없거나 프리뷰 빌드 중 예외 발생 (`module.fetch_failed`) |
 
@@ -1821,7 +1821,7 @@ _단건 응답: `data` 객체의 필드._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.modules.read \| core.menus.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.modules.uninstall`)이 없는 경우 |
 | 404 | Not Found | 해당 식별자의 모듈을 찾을 수 없는 경우 (`module.not_found`) |
 | 500 | Internal Server Error | 삭제 정보 조회 중 예외 발생 (`module.uninstall_info_failed`) |
 
@@ -1932,7 +1932,7 @@ _단건 응답: `data` 는 업데이트된 모듈의 `ModuleResource` 객체 (�
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.modules.read \| core.menus.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.modules.install`)이 없는 경우 |
 | 404 | Not Found | 해당 식별자의 모듈을 찾을 수 없는 경우 (`module.not_found`) |
 | 422 | Unprocessable Entity | 요청 파라미터 검증 실패, 또는 업데이트 실패 (업데이트 소스 없음·다운그레이드 차단·코어 버전 비호환 — `error.errors.module_name` 에 사유) |
 | 500 | Internal Server Error | 업데이트 처리 중 예외 발생 (`modules.errors.update_failed`) |
@@ -1965,11 +1965,26 @@ Accept: application/json
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: http-422 — 응답 필드는 사람이 작성하세요. -->
+_이 엔드포인트는 표준 JSON 봉투가 아니라 **모듈 에셋 파일 본문** 을 그대로 반환한다 — `data` 구조가 없다._
+
+| 항목 | 값 | 설명 |
+| --- | --- | --- |
+| Content-Type | `파일 확장자에 따른 MIME (예: text/javascript, image/png)` | 서빙 대상의 MIME 타입 |
+| Cache-Control | `public, max-age=31536000, immutable` (프로덕션) / `no-cache` (그 외) | 환경에 따라 갈린다 |
+| ETag | `{md5(mtime+size)}` | `If-None-Match` 가 일치하면 본문 없이 `304` |
 
 **응답 예시**
 
-<!-- 실측 제외: http-422 — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+Content-Type: text/javascript
+Cache-Control: public, max-age=31536000, immutable
+ETag: "9f2c…"
+
+(function(){ /* 모듈 에셋 본문 */ })();
+```
+
+> 같은 ETag 로 재요청하면 본문 없이 `304 Not Modified` 가 반환된다.
 
 **에러 응답**
 
@@ -2137,15 +2152,35 @@ Accept: application/json
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: http-200 — 응답 필드는 사람이 작성하세요. -->
+_이 엔드포인트는 표준 JSON 봉투가 아니라 **활성 모듈 CSS 를 병합한 번들 본문** 을 그대로 반환한다 — `data` 구조가 없다._
+
+| 항목 | 값 | 설명 |
+| --- | --- | --- |
+| Content-Type | `text/css` | 서빙 대상의 MIME 타입 |
+| Cache-Control | `public, max-age=31536000, immutable` (프로덕션) / `no-cache` (그 외) | 환경에 따라 갈린다 |
+| ETag | `{md5(mtime+size)}` | `If-None-Match` 가 일치하면 본문 없이 `304` |
 
 **응답 예시**
 
-<!-- 실측 제외: http-200 — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+Content-Type: text/css
+Cache-Control: public, max-age=31536000, immutable
+ETag: "9f2c…"
+
+/* module-a */ .a{}
+/* module-b */ .b{}
+```
+
+> 같은 ETag 로 재요청하면 본문 없이 `304 Not Modified` 가 반환된다.
 
 **에러 응답**
 
-_대표 에러 없음 (공개 조회). <!-- TODO: 도메인 특이 에러가 있으면 보강 -->_
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 200 | OK (빈 본문) | 활성 확장이 없거나 병합할 에셋이 없는 경우 — 오류가 아니라 빈 번들이다 |
+
+> 개별 확장의 병합이 실패하면 그 확장만 건너뛰고 나머지는 그대로 병합된다(실패 격리). 건너뛴 사실은 서버 로그(warning)에 남는다.
 
 <!-- @generated:end -->
 
@@ -2172,15 +2207,36 @@ Accept: application/json
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: http-200 — 응답 필드는 사람이 작성하세요. -->
+_이 엔드포인트는 표준 JSON 봉투가 아니라 **활성 모듈 JS(IIFE)를 병합한 번들 본문** 을 그대로 반환한다 — `data` 구조가 없다._
+
+| 항목 | 값 | 설명 |
+| --- | --- | --- |
+| Content-Type | `text/javascript` | 서빙 대상의 MIME 타입 |
+| Cache-Control | `public, max-age=31536000, immutable` (프로덕션) / `no-cache` (그 외) | 환경에 따라 갈린다 |
+| ETag | `{md5(mtime+size)}` | `If-None-Match` 가 일치하면 본문 없이 `304` |
 
 **응답 예시**
 
-<!-- 실측 제외: http-200 — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+Content-Type: text/javascript
+Cache-Control: public, max-age=31536000, immutable
+ETag: "9f2c…"
+
+(function(){/* module-a */})()
+;
+(function(){/* module-b */})()
+```
+
+> 같은 ETag 로 재요청하면 본문 없이 `304 Not Modified` 가 반환된다.
 
 **에러 응답**
 
-_대표 에러 없음 (공개 조회). <!-- TODO: 도메인 특이 에러가 있으면 보강 -->_
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 200 | OK (빈 본문) | 활성 확장이 없거나 병합할 에셋이 없는 경우 — 오류가 아니라 빈 번들이다 |
+
+> 개별 확장의 병합이 실패하면 그 확장만 건너뛰고 나머지는 그대로 병합된다(실패 격리). 건너뛴 사실은 서버 로그(warning)에 남는다.
 
 <!-- @generated:end -->
 
@@ -2211,7 +2267,13 @@ Accept: application/json
 
 
 
-<!-- 실측 응답에 필드 없음(빈 목록 등) — 데이터가 있는 상태로 재실측하거나 사람이 작성. -->
+_`data` 는 모듈 의 `components.json` 내용을 그대로 담은 **컴포넌트 맵**이다 (고정 필드 집합이 아니라 컴포넌트명 → 정의 매핑)._
+
+| 필드 | 타입 | 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| (컴포넌트명) | object | `{"type":"composite","props":{…}}` | 컴포넌트 정의. 키는 레이아웃 JSON 의 `name` 과 일치한다 |
+
+> 파일이 없거나 비어 있으면 `data` 는 빈 객체(`{}`)다 — 오류가 아니다.
 
 **응답 예시**
 
@@ -2281,7 +2343,24 @@ _이 엔드포인트는 표준 `success/message/data` 봉투를 사용하지 않
 
 **응답 예시**
 
-<!-- 실측 제외: http-404 — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "설정을 조회했습니다.",
+    "data": {
+        "ProductCard": {
+            "type": "composite",
+            "props": {
+                "product": "object"
+            }
+        }
+    }
+}
+```
 
 **에러 응답**
 

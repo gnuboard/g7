@@ -246,6 +246,15 @@ class PageService
                 // 존재하지 않는 페이지가 섞이면 예외 → 트랜잭션 전체 롤백 (all-or-nothing)
                 $page = $this->pageRepository->findOrFail((int) $id);
 
+                // 일괄 라우트(`PATCH admin/pages/bulk-publish`)에는 `{page}` 파라미터가 없어
+                // PermissionMiddleware 의 스코프 검사가 통째로 스킵된다. 단건 경로
+                // (updatePage/deletePage 등)는 전부 이 검사를 하는데 일괄만 비어 있으면
+                // 그 경로가 우회로다 — 같은 판정을 여기서 재적용한다.
+                // 예외는 위 findOrFail 과 같은 all-or-nothing 롤백을 탄다.
+                if (! PermissionHelper::checkScopeAccess($page, 'sirsoft-page.pages.update')) {
+                    throw new AccessDeniedHttpException(__('auth.scope_denied'));
+                }
+
                 HookManager::doAction('sirsoft-page.page.before_publish', $page, $published);
 
                 $updateData = [

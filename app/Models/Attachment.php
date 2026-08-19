@@ -111,6 +111,7 @@ class Attachment extends Model
      */
     public function getFullPathAttribute(): string
     {
+        // audit:allow no-storage-disk-direct reason: 행 disk 의 파일시스템 절대경로 해석 — 코어 첨부 path 는 카테고리 없는 원 경로라 StorageInterface(카테고리/경로) 계약과 형태가 다르고, 모델 accessor 는 DI 지점이 없다 (기존 동작 유지)
         return Storage::disk($this->disk)->path($this->path);
     }
 
@@ -121,7 +122,21 @@ class Attachment extends Model
      */
     public function getDownloadUrlAttribute(): string
     {
-        return '/api/attachment/'.$this->hash;
+        return self::urlForHash($this->hash);
+    }
+
+    /**
+     * 해시 기반 다운로드 URL 조립 단일 지점.
+     *
+     * 조인 결과 행처럼 모델 hydration 없이 hash 만 손에 있는 호출측
+     * (예: 게시판 인기 게시물 목록의 아바타 URL)이 사용합니다.
+     *
+     * @param  string  $hash  첨부파일 해시
+     * @return string 다운로드 URL
+     */
+    public static function urlForHash(string $hash): string
+    {
+        return '/api/attachment/'.$hash;
     }
 
     /**

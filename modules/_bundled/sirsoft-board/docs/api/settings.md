@@ -42,7 +42,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| basic_defaults | object | `{"type":"basic","per_page":20,"per_page_mobile":15,"order…` | 게시판 생성 시 적용되는 기본 설정 카테고리. 게시판 타입, 페이지당 글 수(PC/모바일), 정렬 기준/방향, 댓글·답글 사용 여부와 깊이, 제목·내용·댓글 길이 제한, 파일 업로드 허용/용량/개수/확장자, 새 글 표시 시간, 게시판 기본 권한(default_board_permissions) 등을 포함합니다. |
+| basic_defaults | object | `{"type":"basic","per_page":20,"per_page_mobile":15,"order…` | 게시판 생성 시 적용되는 기본 설정 카테고리. 게시판 타입, 페이지당 글 수(PC/모바일), 정렬 기준/방향, 댓글·답글 사용 여부와 깊이, 답글 삭제 방식(reply_delete_policy: block/cascade), 제목·내용·댓글 길이 제한, 파일 업로드 허용/용량/개수/확장자, 새 글 표시 시간, 게시판 기본 권한(default_board_permissions) 등을 포함합니다. |
 | report_policy | object | `{"auto_hide_threshold":5,"auto_hide_target":"both","daily…` | 신고 정책 카테고리. 자동 숨김 임계치(auto_hide_threshold)와 대상(auto_hide_target: post/comment/both), 사용자별 일일 신고 한도, 신고 거부 누적 제한(횟수/기간), 관리자·작성자 신고 알림 발송 여부와 채널을 포함합니다. |
 | spam_security | object | `{"post_cooldown_seconds":0,"comment_cooldown_seconds":0,"…` | 스팸·보안 카테고리. 글·댓글·신고 작성 사이의 도배 방지 쿨다운 시간(초)과 조회수 캐시 TTL을 포함합니다. |
 | display | object | `{"date_display_format":"standard"}` | 표시 설정 카테고리. 날짜 표시 형식(date_display_format: standard 절대 표기 / relative 상대 표기)을 포함합니다. |
@@ -73,6 +73,7 @@ HTTP/1.1 200
             "use_comment": true,
             "use_reply": true,
             "max_reply_depth": 5,
+            "reply_delete_policy": "cascade",
             "max_comment_depth": 10,
             "comment_order": "ASC",
             "show_view_count": true,
@@ -362,6 +363,7 @@ HTTP/1.1 200
 | _tab | body | string | 아니오 | `basic_defaults`, `report_policy`, `spam_security`, `general`, `seo`, `notifications`, `notification_definitions` | 현재 편집 중인 탭을 나타내는 메타 값. 탭 단위 부분 저장의 컨텍스트를 식별하는 용도이며 설정값으로는 저장되지 않습니다. |
 | notifications | body | array | 아니오 | — | 알림 채널 설정. `channels` 배열의 각 항목에 채널 식별자(id), 활성화 여부(is_active), 정렬 순서(sort_order)를 담아 저장합니다. |
 | basic_defaults | body | array | 아니오 | — | 기본 설정 카테고리 값. 게시판 타입·페이지당 글 수·정렬·댓글/답글·길이 제한·파일 업로드·기본 권한 등 basic_defaults 하위 키를 저장합니다. `basic_defaults.allowed_extensions` 는 `basic_defaults.use_file_upload` 가 `true` 일 때만 최소 1개가 필수이며, `false`/`null` 이면 검증에서 제외되어 빈 배열도 허용됩니다. `min_title_length`·`min_comment_length`·`new_display_hours` 의 하한은 `config('sirsoft-board.limits')` 선언을 따르며 `0` 을 허용합니다. |
+| basic_defaults.reply_delete_policy | body | string | 아니오 | `block`, `cascade` | 게시판 생성 시 적용될 답글 삭제 정책 기본값 (block 답글이 살아 있으면 원글 삭제 차단 / cascade 원글 삭제 시 답글도 함께 소프트 삭제). 허용값 밖이면 422 |
 | report_policy | body | array | 아니오 | — | 신고 정책 카테고리 값. 자동 숨김 임계치/대상, 일일 신고 한도, 거부 누적 제한, 관리자·작성자 신고 알림 설정을 저장합니다. |
 | report_policy.auto_hide_threshold | body | integer | 아니오 | min 0, max 100 | 자동 숨김 신고 수 (이 횟수 이상 신고되면 자동 숨김 처리) |
 | report_policy.auto_hide_target | body | string | 아니오 | `post`, `comment`, `both` | 자동 숨김 대상 (게시글 / 댓글 / 둘 다) |
@@ -393,6 +395,9 @@ HTTP/1.1 200
 | seo.seo_boards | body | boolean | 아니오 | — | 게시판 목록 페이지의 SEO 페이지 생성 활성화 여부 |
 | seo.seo_board | body | boolean | 아니오 | — | 개별 게시판 페이지의 SEO 페이지 생성 활성화 여부 |
 | seo.seo_post_detail | body | boolean | 아니오 | — | 게시글 상세 페이지의 SEO 페이지 생성 활성화 여부 |
+| attachment_settings | body | array | 아니오 | — | 첨부 정리 정책 카테고리 값. 삭제된 첨부의 물리 파일을 언제 파기할지 정합니다. |
+| attachment_settings.purge_enabled | body | boolean | 아니오 | — | 삭제 첨부 영구 정리 활성화 여부. **기본 false** — 사용자 파일을 실제로 파기하므로 운영자가 직접 켜야 동작합니다. 예약 작업(`sirsoft-board:prune-attachments --scheduled`)이 이 값을 false 폴백으로 재확인합니다. |
+| attachment_settings.purge_retention_days | body | integer | 아니오 | min 1, max 3650 | 삭제 첨부 보존기간(일, 기본 30). 게시글을 휴지통에서 복원하면 이 기간 안의 첨부는 함께 복원되므로, 휴지통 복원 가능 기간과 같게 유지해야 합니다. 하한·상한은 `config('sirsoft-board.limits')` 가 정하며 화면 입력도 같은 값을 읽습니다. |
 
 **요청 예시**
 
@@ -423,6 +428,7 @@ Content-Type: application/json
     "basic_defaults.use_comment": true,
     "basic_defaults.use_reply": true,
     "basic_defaults.max_reply_depth": 1,
+    "basic_defaults.reply_delete_policy": "cascade",
     "basic_defaults.max_comment_depth": 1,
     "basic_defaults.comment_order": "ASC",
     "basic_defaults.show_view_count": true,
@@ -506,7 +512,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| basic_defaults | object | `{"type":"basic","per_page":20,"per_page_mobile":15,"order…` | 저장 후 갱신된 기본 설정 카테고리. 게시판 타입, 페이지당 글 수(PC/모바일), 정렬 기준/방향, 댓글·답글 사용 여부와 깊이, 제목·내용·댓글 길이 제한, 파일 업로드 허용/용량/개수/확장자, 새 글 표시 시간, 게시판 기본 권한(default_board_permissions) 등을 포함합니다. |
+| basic_defaults | object | `{"type":"basic","per_page":20,"per_page_mobile":15,"order…` | 저장 후 갱신된 기본 설정 카테고리. 게시판 타입, 페이지당 글 수(PC/모바일), 정렬 기준/방향, 댓글·답글 사용 여부와 깊이, 답글 삭제 방식(reply_delete_policy: block/cascade), 제목·내용·댓글 길이 제한, 파일 업로드 허용/용량/개수/확장자, 새 글 표시 시간, 게시판 기본 권한(default_board_permissions) 등을 포함합니다. |
 | report_policy | object | `{"auto_hide_threshold":5,"auto_hide_target":"both","daily…` | 저장 후 갱신된 신고 정책 카테고리. 자동 숨김 임계치(auto_hide_threshold)와 대상(auto_hide_target: post/comment/both), 사용자별 일일 신고 한도, 신고 거부 누적 제한(횟수/기간), 관리자·작성자 신고 알림 발송 여부와 채널을 포함합니다. |
 | spam_security | object | `{"post_cooldown_seconds":0,"comment_cooldown_seconds":0,"…` | 저장 후 갱신된 스팸·보안 카테고리. 글·댓글·신고 작성 사이의 도배 방지 쿨다운 시간(초)과 조회수 캐시 TTL을 포함합니다. |
 | display | object | `{"date_display_format":"standard"}` | 저장 후 갱신된 표시 설정 카테고리. 날짜 표시 형식(date_display_format: standard 절대 표기 / relative 상대 표기)을 포함합니다. |
@@ -535,6 +541,7 @@ HTTP/1.1 200
             "use_comment": true,
             "use_reply": true,
             "max_reply_depth": 5,
+            "reply_delete_policy": "cascade",
             "max_comment_depth": 10,
             "comment_order": "ASC",
             "show_view_count": true,
@@ -775,6 +782,8 @@ HTTP/1.1 200
 
 **설명** 게시판 모듈의 환경설정을 저장합니다. `auth:sanctum` 인증과 `sirsoft-board.settings.update` 권한이 필요합니다. `_tab`으로 지정한 탭 단위로 검증된 설정을 저장하며, `report_permissions`가 포함된 경우 신고 권한 역할도 함께 동기화합니다. 저장 성공 시 갱신된 전체 설정과 신고 권한 역할을 반환합니다.
 
+저장이 성공하면 코어 모듈 설정 저장 훅(`core.module_settings.after_save`)이 `('sirsoft-board', 저장한 카테고리 배열, true)` 페이로드로 발화합니다. 이 훅을 구독하는 리스너가 게시판 SEO 미리 생성 캐시를 무효화하고 설정 변경을 활동 로그에 남기므로, 확장도 같은 훅으로 저장 완료 시점에 개입할 수 있습니다. 검증 실패(422)나 저장 실패 시에는 발화하지 않습니다.
+
 
 ### POST /api/modules/sirsoft-board/admin/settings/bulk-apply
 <!-- @generated:start:api.modules.sirsoft-board.admin.settings.bulk-apply -->
@@ -789,7 +798,8 @@ HTTP/1.1 200
 | fields | body | array | 예 | min 1 | 대상 게시판에 일괄 적용할 필드 목록(최소 1개). boards 테이블 컬럼(type, per_page, use_comment, allowed_extensions 등)이나 권한 필드(default_board_permissions, manager), 점(.)을 포함한 개별 권한 키(예: `posts.read`)를 허용합니다. |
 | apply_all | body | boolean | 예 | — | 전체 게시판 적용 여부. true면 모든 게시판에 적용하고, false면 `board_ids`로 지정한 게시판에만 적용합니다(false 시 board_ids 필수). |
 | board_ids | body | array | 아니오 | — | board 식별자 배열 |
-| override_values | body | array | 아니오 | — | 환경설정 기본값 대신 사용할 재정의 값 맵. 지정한 필드에 대해 기본값이 아닌 임의의 값으로 일괄 적용할 때 사용합니다. |
+| override_values | body | array | 아니오 | — | 환경설정 기본값 대신 사용할 재정의 값 맵. 지정한 필드에 대해 기본값이 아닌 임의의 값으로 일괄 적용할 때 사용합니다. 각 키는 게시판 생성/수정과 동일한 제한값으로 검증됩니다 (범위 밖 값은 422). |
+| override_values.reply_delete_policy | body | string | 아니오 | `block`, `cascade` | 답글 삭제 정책을 일괄 적용할 때의 재정의 값 (block 답글이 살아 있으면 원글 삭제 차단 / cascade 원글 삭제 시 답글도 함께 소프트 삭제). `fields` 에 `reply_delete_policy` 를 포함해 함께 사용하며, 허용값 밖이면 422 |
 
 **요청 예시**
 

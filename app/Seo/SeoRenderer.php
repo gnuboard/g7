@@ -491,7 +491,9 @@ class SeoRenderer implements SeoRendererInterface
         $viewData = [
             'locale' => $locale,
             'title' => $meta['title'],
-            'titleSuffix' => $meta['titleSuffix'],
+            // filter 훅이 title 을 바꿨을 수 있으므로 최종 title 기준으로 접미사를 정규화한다
+            // (TrimStrings 로 선행 공백이 제거된 접미사 복원 + 빈 제목의 매달린 구분자 제거)
+            'titleSuffix' => SeoMetaResolver::composeTitleSuffix((string) ($meta['title'] ?? ''), (string) ($meta['titleSuffix'] ?? '')),
             'description' => $meta['description'],
             'keywords' => $meta['keywords'],
             'canonicalUrl' => $canonicalUrl,

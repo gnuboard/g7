@@ -14,6 +14,7 @@ use Modules\Sirsoft\Board\Casts\AsAllowedExtensions;
 use Modules\Sirsoft\Board\Database\Factories\BoardFactory;
 use Modules\Sirsoft\Board\Enums\BoardOrderBy;
 use Modules\Sirsoft\Board\Enums\OrderDirection;
+use Modules\Sirsoft\Board\Enums\ReplyDeletePolicy;
 use Modules\Sirsoft\Board\Enums\SecretMode;
 
 class Board extends Model
@@ -33,6 +34,7 @@ class Board extends Model
         'use_comment' => ['label_key' => 'sirsoft-board::activity_log.fields.use_comment', 'type' => 'boolean'],
         'use_reply' => ['label_key' => 'sirsoft-board::activity_log.fields.use_reply', 'type' => 'boolean'],
         'max_reply_depth' => ['label_key' => 'sirsoft-board::activity_log.fields.max_reply_depth', 'type' => 'number'],
+        'reply_delete_policy' => ['label_key' => 'sirsoft-board::activity_log.fields.reply_delete_policy', 'type' => 'enum', 'enum' => ReplyDeletePolicy::class],
         'use_report' => ['label_key' => 'sirsoft-board::activity_log.fields.use_report', 'type' => 'boolean'],
         'use_file_upload' => ['label_key' => 'sirsoft-board::activity_log.fields.use_file_upload', 'type' => 'boolean'],
         'max_file_size' => ['label_key' => 'sirsoft-board::activity_log.fields.max_file_size', 'type' => 'number'],
@@ -126,6 +128,7 @@ class Board extends Model
         'use_comment',
         'use_reply',
         'max_reply_depth',
+        'reply_delete_policy',
         'use_report',
         'new_display_hours',
 
@@ -180,6 +183,7 @@ class Board extends Model
             'use_comment' => 'boolean',
             'use_reply' => 'boolean',
             'max_reply_depth' => 'integer',
+            'reply_delete_policy' => ReplyDeletePolicy::class,
             // Post::isNew() 가 Carbon 시간 연산에 넘기는 값 — 조회 시점과 무관하게 정수를 보장한다.
             'new_display_hours' => 'integer',
             'use_report' => 'boolean',

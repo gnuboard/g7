@@ -43,7 +43,7 @@ _단건 응답: `data` 객체의 필드._
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | basic_info | object | `{"shop_name":"","route_path":"shop","no_route":false,"com…` | 쇼핑몰 기본 정보 (쇼핑몰명·라우트 경로·상호·사업자번호·주소·연락처·이메일 등) |
-| language_currency | object | `{"default_currency":"KRW","currencies":[{"code":"KRW","na…` | 통화 설정 (기본 통화 + 등록 통화 목록: 코드·다국어명·환율·기호·국기·반올림 규칙) |
+| language_currency | object | `{"default_currency":"KRW","currencies":[{"code":"KRW","na…` | 통화 설정 (기본 통화 + 등록 통화 목록: 코드·다국어명·환율·기호·국기·반올림 규칙). `removed_default_currencies` 는 관리자가 삭제한 기본 제공 통화 코드 목록으로, 서버가 저장 시점에 도출해 기록한다 (관리자 응답 전용 — 공개 설정에는 노출되지 않음) |
 | order_settings | object | `{"default_pg_provider":null,"cash_receipt_provider":"toss…` | 주문/결제 설정 (기본 PG·병합된 결제수단·은행/무통장 계좌·자동취소·장바구니 만료·현금영수증 발급 제공자·자진발급·배송비 과세 방식 등) |
 | shipping | object | `{"default_country":"KR","available_countries":[{"code":"K…` | 배송 설정 (기본 국가·배송 가능 국가·무료배송·DB 관리 배송사(carriers)·배송유형(types)·계산 API 후보 필드 포함) |
 | seo | object | `{"meta_category_title":"{commerce_name} - {category_name}…` | SEO 메타 설정 (카테고리·검색·상품·쇼핑몰 인덱스별 메타 타이틀/설명 및 SEO 활성 토글) |
@@ -54,6 +54,7 @@ _단건 응답: `data` 객체의 필드._
 | claim | object | `{"refund_reasons":[{"id":1,"type":"refund","code":"order_…` | 클레임 설정 (DB 관리 대상인 환불 사유 목록: 코드·다국어명·귀책 유형·노출/활성 여부) |
 | available_pg_providers | array | `[{"id":"kginicis","name_key":"sirsoft-pay_kginicis::provi…` | 설치된 PG 플러그인이 훅으로 등록한 PG 제공자 목록 (id·name_key·지원 결제수단) |
 | available_cash_receipt_providers | array | `[]` | 설치된 플러그인이 훅으로 등록한 현금영수증 발급 제공자 목록 (id·name_key — 미등록 시 빈 배열이며 신청 폼이 노출되지 않음) |
+| available_public_asset_disks | array | `[{"id":"none","label":{"ko":"사용 안 함 (스트리밍)","en":"Disabl…` | 공개 자산 직접 URL 서빙 디스크 선택지 (코어 DriverRegistryService 카탈로그 — none/public/s3 + 플러그인 훅 등록분). 기본정보 탭의 공개 자산 디스크 Select 옵션 소스 |
 | abilities | object | `{"can_update":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 | _meta | object | `{"limits":{"auto_cancel_days_min":1,"auto_cancel_days_max…` | 설정 화면 전용 메타. `limits` 는 숫자 입력의 경계값 맵(`config('sirsoft-ecommerce.limits')`)으로, 저장 규칙(FormRequest)과 같은 출처다 — 화면이 리터럴 경계를 들면 규칙 변경을 따라가지 못해 "화면은 받는데 저장은 422" 가 되므로 입력 min/max 는 이 값을 바인딩한다 |
 
@@ -449,9 +450,11 @@ HTTP/1.1 200
 | basic_info.privacy_officer_email | body | email | 아니오 | max 255 | 개인정보 보호책임자 E-mail |
 | basic_info.mail_order_number | body | string | 아니오 | max 100 | 통신판매업 신고번호 |
 | basic_info.telecom_number | body | string | 아니오 | max 100 | 부가통신 사업자번호 |
+| basic_info.public_asset_disk | body | string | 아니오 | max 100 | 공개 자산 디스크 오버라이드 (빈값=코어 설정 따름, none=강제 스트리밍, 그 외=카탈로그 디스크 id — 존재하지 않는 디스크는 스트리밍으로 안전 폴백) |
 | language_currency | body | array | 아니오 | — | 통화 설정 섹션 (기본 통화·통화 목록: 코드·다국어명·환율·반올림 규칙·통화별 로케일) |
 | language_currency.default_currency | body | string | 아니오 | max 10 | 쇼핑몰 기본(base) 통화 코드. 상품/주문이 1건이라도 생성된 뒤에는 변경 불가 |
 | language_currency.currencies | body | array | 아니오 | — | 등록 통화 목록. 항목별 `code`(ISO 4217 3자리 대문자, 필수)·`name`(다국어 배열, 필수)·`symbol`·`exchange_rate`·`base_unit`·`rounding_unit`·`rounding_method`(`floor`\|`round`\|`ceil`)·`decimal_places`·`is_default`·`locales` |
+| language_currency.removed_default_currencies | body | array | — | — | 서버 관리 필드. 요청에 실어 보내도 무시되며, 제출된 `currencies` 와 기본 제공 통화 목록의 차집합으로 서버가 재계산한다. `currencies` 를 보내지 않은 저장은 기존 값을 그대로 이월한다 |
 | seo | body | array | 아니오 | — | SEO 메타 설정 섹션 (페이지 유형별 메타 타이틀/설명·SEO 활성 토글) |
 | seo.meta_category_title | body | string | 아니오 | max 500 | 카테고리 페이지 메타 Title (`{commerce_name}`·`{category_name}` 등 변수 사용 가능) |
 | seo.meta_category_description | body | string | 아니오 | max 1000 | 카테고리 페이지 메타 Description |
@@ -655,7 +658,7 @@ _단건 응답: `data` 객체의 필드._
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | basic_info | object | `{"shop_name":"","route_path":"shop","no_route":false,"com…` | 쇼핑몰 기본 정보 (쇼핑몰명·라우트 경로·상호·사업자번호·주소·연락처·이메일 등) |
-| language_currency | object | `{"default_currency":"KRW","currencies":[{"code":"KRW","na…` | 통화 설정 (기본 통화 + 등록 통화 목록: 코드·다국어명·환율·기호·국기·반올림 규칙) |
+| language_currency | object | `{"default_currency":"KRW","currencies":[{"code":"KRW","na…` | 통화 설정 (기본 통화 + 등록 통화 목록: 코드·다국어명·환율·기호·국기·반올림 규칙). `removed_default_currencies` 는 관리자가 삭제한 기본 제공 통화 코드 목록으로, 서버가 저장 시점에 도출해 기록한다 (관리자 응답 전용 — 공개 설정에는 노출되지 않음) |
 | order_settings | object | `{"default_pg_provider":null,"cash_receipt_provider":"toss…` | 주문/결제 설정 (기본 PG·병합된 결제수단·은행/무통장 계좌·자동취소·장바구니 만료·현금영수증 발급 제공자·자진발급·배송비 과세 방식 등) |
 | shipping | object | `{"default_country":"KR","available_countries":[{"code":"K…` | 배송 설정 (기본 국가·배송 가능 국가·무료배송·DB 관리 배송사(carriers)·배송유형(types)·계산 API 후보 필드 포함) |
 | seo | object | `{"meta_category_title":"{commerce_name} - {category_name}…` | SEO 메타 설정 (카테고리·검색·상품·쇼핑몰 인덱스별 메타 타이틀/설명 및 SEO 활성 토글) |
@@ -666,6 +669,7 @@ _단건 응답: `data` 객체의 필드._
 | claim | object | `{"refund_reasons":[{"id":1,"type":"refund","code":"order_…` | 클레임 설정 (DB 관리 대상인 환불 사유 목록: 코드·다국어명·귀책 유형·노출/활성 여부) |
 | available_pg_providers | array | `[{"id":"kginicis","name_key":"sirsoft-pay_kginicis::provi…` | 설치된 PG 플러그인이 훅으로 등록한 PG 제공자 목록 (id·name_key·지원 결제수단) |
 | available_cash_receipt_providers | array | `[]` | 설치된 플러그인이 훅으로 등록한 현금영수증 발급 제공자 목록 (id·name_key — 미등록 시 빈 배열이며 신청 폼이 노출되지 않음) |
+| available_public_asset_disks | array | `[{"id":"none","label":{"ko":"사용 안 함 (스트리밍)","en":"Disabl…` | 공개 자산 직접 URL 서빙 디스크 선택지 (코어 DriverRegistryService 카탈로그 — none/public/s3 + 플러그인 훅 등록분). 기본정보 탭의 공개 자산 디스크 Select 옵션 소스 |
 
 **응답 예시**
 
@@ -1009,11 +1013,15 @@ HTTP/1.1 200
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
+| 400 | Bad Request | 설정 저장은 통과했으나 DB 동기화가 도메인 규칙에 걸린 경우 — 주문에서 사용 중인 배송유형·배송사를 payload 에서 빼 삭제하려 한 경우가 이에 해당하며, `message` 에 대상 이름과 사용 건수가 담긴다 |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.settings.update`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
+
+**삭제 차단 사유의 구분** `shipping.types`·`shipping.carriers` 는 payload 에서 항목을 빼는 방식으로 삭제합니다. 그 항목이 주문에서 사용 중이면 삭제가 거부되는데, 이때는 **400** 과 함께 사유(대상 이름·사용 건수)가 `message` 로 전달됩니다. 저장 자체가 서버 결함으로 실패한 경우의 500(일반 저장 오류 문구)과 구분되므로, 운영자는 화면 문구만으로 "내가 고칠 수 있는 일인지"를 판별할 수 있습니다.
 
 **설명** 관리자가 이커머스 환경설정을 저장합니다. `permission:sirsoft-ecommerce.settings.update` 권한이 필요하며, `_tab` 으로 저장할 카테고리를 지정하고 각 섹션(`basic_info`·`shipping`·`claim` 등)을 배열로 전달합니다. `EcommerceSettingsService::saveSettings()`가 JSON 설정을 저장하되, DB 관리 대상인 `shipping.carriers`·`shipping.types`·`claim.refund_reasons` 는 분리해 각 Service 의 sync 메서드로 동기화합니다. 저장 성공 시 `sirsoft-ecommerce.settings.after_save` 훅을 발화하고, 관리자 UI 상태 갱신을 위해 병합된 전체 설정을 다시 반환합니다.
 
@@ -1071,7 +1079,7 @@ _단건 응답: `data` 객체의 필드._
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | basic_info | object | `{"shop_name":"","route_path":"shop","no_route":false,"com…` | 쇼핑몰 기본 정보 (쇼핑몰명·라우트 경로·상호·사업자번호·주소·연락처·이메일 등) |
-| language_currency | object | `{"default_currency":"KRW","currencies":[{"code":"KRW","na…` | 통화 설정 (기본 통화 + 등록 통화 목록: 코드·다국어명·환율·기호·국기·반올림 규칙) |
+| language_currency | object | `{"default_currency":"KRW","currencies":[{"code":"KRW","na…` | 통화 설정 (기본 통화 + 등록 통화 목록: 코드·다국어명·환율·기호·국기·반올림 규칙). `removed_default_currencies` 는 관리자가 삭제한 기본 제공 통화 코드 목록으로, 서버가 저장 시점에 도출해 기록한다 (관리자 응답 전용 — 공개 설정에는 노출되지 않음) |
 | order_settings | object | `{"default_pg_provider":null,"cash_receipt_provider":"toss…` | 주문/결제 설정 (기본 PG·병합된 결제수단·은행/무통장 계좌·자동취소·장바구니 만료·현금영수증 발급 제공자·자진발급·배송비 과세 방식 등) |
 | shipping | object | `{"default_country":"KR","available_countries":[{"code":"K…` | 배송 설정 (기본 국가·배송 가능 국가·무료배송·DB 관리 배송사(carriers)·배송유형(types)·계산 API 후보 필드 포함) |
 | seo | object | `{"meta_category_title":"{commerce_name} - {category_name}…` | SEO 메타 설정 (카테고리·검색·상품·쇼핑몰 인덱스별 메타 타이틀/설명 및 SEO 활성 토글) |
@@ -1652,7 +1660,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| order_settings | object | `{"default_pg_provider":null,"cash_receipt_provider":"toss…` | 공개 가능한 결제 설정 (활성 결제수단·무통장 은행명 매핑 포함, 민감 정보 제외). `payment_methods` 는 현재 제공 가능한 결제수단만 포함하며, 공급 확장이 더 이상 제공하지 않는 결제수단(관리자 화면의 고아 항목)은 `is_active` 가 참이어도 제외된다 |
+| order_settings | object | `{"default_pg_provider":null,"cash_receipt_provider":"toss…` | 공개 가능한 결제 설정 (활성 결제수단·무통장 은행명 매핑 포함, 민감 정보 제외). `payment_methods` 는 현재 제공 가능한 결제수단만 포함하며, 공급 확장이 더 이상 제공하지 않는 결제수단(관리자 화면의 고아 항목)은 `is_active` 가 참이어도 제외된다. **지정된 PG 사가 현재 등록되어 있지 않은 결제수단도 같은 이유로 제외된다** — 수단 자체는 카탈로그에 남아 있지만 주문 시 PG 라우팅이 매칭에 실패해 결제창 없이 주문이 완료되기 때문이다. 유효 PG 판정은 결제수단의 `pg_provider` 가 비어 있을 때만 `default_pg_provider` 로 폴백하며(런타임 라우팅과 동일), 양쪽 모두 미설정이면 PG 비경유 수단으로 종전대로 노출된다. `default_pg_provider` 와 `cash_receipt_provider` 도 등록되지 않은 값이면 `null` 로 정규화된다. 관리자 응답(`GET admin/settings`)은 이 필터를 적용하지 않고 `_orphaned` / `_orphaned_pg` 플래그를 그대로 실어 운영자가 확인·수정할 수 있게 한다 |
 
 **응답 예시**
 

@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Services;
 use App\Models\User;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Database\Factories\ProductFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\ProductOptionFactory;
 use Modules\Sirsoft\Ecommerce\DTO\CalculationInput;
@@ -744,8 +745,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
      *
      * @param  int  $price  상품 가격
      * @param  ShippingPolicy  $shippingPolicy  배송정책
-     * @param  float  $weight  무게 (kg)
-     * @param  float  $volume  부피 (cm³)
+     * @param  float  $weight  무게 (g — 상품 옵션의 저장 단위)
+     * @param  float  $volume  부피 (cm³ — 상품 옵션의 저장 단위)
      * @return array [Product, ProductOption]
      */
     protected function createProductWithDimensions(
@@ -1018,19 +1019,19 @@ class OrderCalculationServiceTest extends ModuleTestCase
      */
     public function test_it_calculates_range_weight_shipping_policy(): void
     {
-        // Given: RANGE_WEIGHT 정책 (g 단위로 설정)
+        // Given: RANGE_WEIGHT 정책 (배송정책 구간은 kg 단위)
         $shippingPolicy = $this->createShippingPolicy(
             chargePolicy: ChargePolicyEnum::RANGE_WEIGHT,
             ranges: [
                 'tiers' => [
-                    ['min' => 0, 'max' => 1000, 'fee' => 3000],      // ~1kg
-                    ['min' => 1000, 'max' => 3000, 'fee' => 5000],   // ~3kg
-                    ['min' => 3000, 'max' => null, 'fee' => 8000],   // 3kg~
+                    ['min' => 0, 'max' => 1, 'fee' => 3000],      // ~1kg
+                    ['min' => 1, 'max' => 3, 'fee' => 5000],      // ~3kg
+                    ['min' => 3, 'max' => null, 'fee' => 8000],   // 3kg~
                 ],
             ]
         );
-        // 2.5kg = 2500g → ~3000g 구간 → 5000원
-        [$product, $option] = $this->createProductWithDimensions(20000, $shippingPolicy, 2.5, 1000);
+        // 상품 옵션 무게는 g 저장 → 2,500g = 2.5kg → ~3kg 구간 → 5,000원
+        [$product, $option] = $this->createProductWithDimensions(20000, $shippingPolicy, 2500, 1000);
 
         $input = new CalculationInput(
             items: [
@@ -1052,23 +1053,23 @@ class OrderCalculationServiceTest extends ModuleTestCase
     /**
      * 테스트 17: RANGE_VOLUME 정책 - 부피 구간별 배송비
      *
-     * 입력: RANGE_VOLUME, tiers: [~5000cm³:3천, ~10000cm³:5천, ~∞:8천], 부피 7000cm³
+     * 입력: RANGE_VOLUME, tiers: [~5L:3천, ~10L:5천, ~∞:8천], 부피 7000cm³(=7L)
      * 기대: 배송비 5,000원
      */
     public function test_it_calculates_range_volume_shipping_policy(): void
     {
-        // Given: RANGE_VOLUME 정책
+        // Given: RANGE_VOLUME 정책 (배송정책 구간은 L 단위)
         $shippingPolicy = $this->createShippingPolicy(
             chargePolicy: ChargePolicyEnum::RANGE_VOLUME,
             ranges: [
                 'tiers' => [
-                    ['min' => 0, 'max' => 5000, 'fee' => 3000],
-                    ['min' => 5000, 'max' => 10000, 'fee' => 5000],
-                    ['min' => 10000, 'max' => null, 'fee' => 8000],
+                    ['min' => 0, 'max' => 5, 'fee' => 3000],
+                    ['min' => 5, 'max' => 10, 'fee' => 5000],
+                    ['min' => 10, 'max' => null, 'fee' => 8000],
                 ],
             ]
         );
-        [$product, $option] = $this->createProductWithDimensions(20000, $shippingPolicy, 1.0, 7000);
+        [$product, $option] = $this->createProductWithDimensions(20000, $shippingPolicy, 1000, 7000);
 
         $input = new CalculationInput(
             items: [
@@ -1083,7 +1084,7 @@ class OrderCalculationServiceTest extends ModuleTestCase
         // When
         $result = $this->service->calculate($input);
 
-        // Then: 7000cm³ → ~10000cm³ 구간 → 5,000원
+        // Then: 7000cm³ = 7L → ~10L 구간 → 5,000원
         $this->assertEquals(5000, $result->summary->totalShipping);
     }
 
@@ -1096,20 +1097,20 @@ class OrderCalculationServiceTest extends ModuleTestCase
      */
     public function test_it_calculates_range_volume_weight_shipping_policy(): void
     {
-        // Given: RANGE_VOLUME_WEIGHT 정책 (g 단위로 설정)
+        // Given: RANGE_VOLUME_WEIGHT 정책 (배송정책 구간은 kg 단위)
         $shippingPolicy = $this->createShippingPolicy(
             chargePolicy: ChargePolicyEnum::RANGE_VOLUME_WEIGHT,
             ranges: [
                 'volume_weight_divisor' => 6000,
                 'tiers' => [
-                    ['min' => 0, 'max' => 2000, 'fee' => 3000],      // ~2kg
-                    ['min' => 2000, 'max' => 5000, 'fee' => 5000],   // ~5kg
-                    ['min' => 5000, 'max' => null, 'fee' => 8000],   // 5kg~
+                    ['min' => 0, 'max' => 2, 'fee' => 3000],      // ~2kg
+                    ['min' => 2, 'max' => 5, 'fee' => 5000],      // ~5kg
+                    ['min' => 5, 'max' => null, 'fee' => 8000],   // 5kg~
                 ],
             ]
         );
-        // 부피 18000cm³ / 6000 = 부피무게 3kg = 3000g → ~5000g 구간 → 5000원
-        [$product, $option] = $this->createProductWithDimensions(20000, $shippingPolicy, 1.0, 18000);
+        // 실무게 1,000g(=1kg) vs 부피무게 18000cm³ / 6000 = 3kg → 3kg 채택 → ~5kg 구간 → 5,000원
+        [$product, $option] = $this->createProductWithDimensions(20000, $shippingPolicy, 1000, 18000);
 
         $input = new CalculationInput(
             items: [
@@ -1142,7 +1143,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
             baseFee: 1000,
             ranges: ['unit_value' => 0.5]
         );
-        [$product, $option] = $this->createProductWithDimensions(20000, $shippingPolicy, 2.0, 1000);
+        // 2,000g = 2kg
+        [$product, $option] = $this->createProductWithDimensions(20000, $shippingPolicy, 2000, 1000);
 
         $input = new CalculationInput(
             items: [
@@ -1164,18 +1166,18 @@ class OrderCalculationServiceTest extends ModuleTestCase
     /**
      * 테스트 21: PER_VOLUME 정책 - 부피당 배송비
      *
-     * 입력: PER_VOLUME, base_fee: 500원, unit_value: 1000cm³, 부피 3500cm³
-     * 기대: ceil(3500/1000) × 500 = 4 × 500 = 2,000원
+     * 입력: PER_VOLUME, base_fee: 500원, unit_value: 1L, 부피 3500cm³(=3.5L)
+     * 기대: ceil(3.5/1) × 500 = 4 × 500 = 2,000원
      */
     public function test_it_calculates_per_volume_shipping_policy(): void
     {
-        // Given: PER_VOLUME (1000cm³당 500원)
+        // Given: PER_VOLUME (1L당 500원 — 배송정책 단위값은 L)
         $shippingPolicy = $this->createShippingPolicy(
             chargePolicy: ChargePolicyEnum::PER_VOLUME,
             baseFee: 500,
-            ranges: ['unit_value' => 1000]
+            ranges: ['unit_value' => 1]
         );
-        [$product, $option] = $this->createProductWithDimensions(20000, $shippingPolicy, 1.0, 3500);
+        [$product, $option] = $this->createProductWithDimensions(20000, $shippingPolicy, 1000, 3500);
 
         $input = new CalculationInput(
             items: [
@@ -1190,7 +1192,7 @@ class OrderCalculationServiceTest extends ModuleTestCase
         // When
         $result = $this->service->calculate($input);
 
-        // Then: ceil(3500/1000) × 500 = 4 × 500 = 2,000원
+        // Then: ceil(3.5/1) × 500 = 4 × 500 = 2,000원
         $this->assertEquals(2000, $result->summary->totalShipping);
     }
 
@@ -1209,8 +1211,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
             baseFee: 2000,
             ranges: ['volume_weight_divisor' => 5000, 'unit_value' => 1]
         );
-        // 부피 12000cm³ / 5000 = 부피무게 2.4kg
-        [$product, $option] = $this->createProductWithDimensions(20000, $shippingPolicy, 1.0, 12000);
+        // 실무게 1,000g(=1kg) vs 부피 12000cm³ / 5000 = 부피무게 2.4kg → 2.4kg 채택
+        [$product, $option] = $this->createProductWithDimensions(20000, $shippingPolicy, 1000, 12000);
 
         $input = new CalculationInput(
             items: [
@@ -2681,7 +2683,7 @@ class OrderCalculationServiceTest extends ModuleTestCase
     /**
      * 테스트 36-11e: RANGE_WEIGHT 정책 + 도서산간
      *
-     * 무게 2.5kg(2500g) → 구간 매칭 → 기본 5,000원 + 추가 3,000원
+     * 무게 2,500g(=2.5kg) → 구간 매칭 → 기본 5,000원 + 추가 3,000원
      */
     public function test_it_applies_extra_fee_with_range_weight(): void
     {
@@ -2690,9 +2692,9 @@ class OrderCalculationServiceTest extends ModuleTestCase
             ranges: [
                 'type' => 'weight',
                 'tiers' => [
-                    ['min' => 0, 'max' => 1000, 'fee' => 3000],
-                    ['min' => 1001, 'max' => 3000, 'fee' => 5000],
-                    ['min' => 3001, 'max' => null, 'fee' => 8000],
+                    ['min' => 0, 'max' => 1, 'fee' => 3000],
+                    ['min' => 1, 'max' => 3, 'fee' => 5000],
+                    ['min' => 3, 'max' => null, 'fee' => 8000],
                 ],
             ],
             extraFeeEnabled: true,
@@ -2700,7 +2702,7 @@ class OrderCalculationServiceTest extends ModuleTestCase
                 ['zipcode' => '63000-63644', 'fee' => 3000],
             ]
         );
-        [$product, $option] = $this->createProductWithDimensions(10000, $policy, weight: 2.5, volume: 0);
+        [$product, $option] = $this->createProductWithDimensions(10000, $policy, weight: 2500, volume: 0);
 
         $shippingAddress = new ShippingAddress(zipcode: '63100');
 
@@ -2717,7 +2719,7 @@ class OrderCalculationServiceTest extends ModuleTestCase
 
         $result = $this->service->calculate($input);
 
-        // Then: 기본 5,000원 (1001~3000g 구간) + 추가 3,000원 = 8,000원
+        // Then: 기본 5,000원 (1~3kg 구간) + 추가 3,000원 = 8,000원
         $this->assertEquals(8000, $result->summary->totalShipping);
         $this->assertEquals(5000, $result->items[0]->appliedShippingPolicy->shippingAmount);
         $this->assertEquals(3000, $result->items[0]->appliedShippingPolicy->extraShippingAmount);
@@ -2726,7 +2728,7 @@ class OrderCalculationServiceTest extends ModuleTestCase
     /**
      * 테스트 36-11f: RANGE_VOLUME 정책 + 도서산간 (이번 버그 시나리오)
      *
-     * 부피 30cm³ → 구간 매칭 → 기본 5,000원 + 추가 3,000원
+     * 부피 30,000cm³ × 2개 = 60L → 구간 매칭 → 기본 10,000원 + 추가 3,000원
      */
     public function test_it_applies_extra_fee_with_range_volume(): void
     {
@@ -2736,8 +2738,8 @@ class OrderCalculationServiceTest extends ModuleTestCase
                 'type' => 'volume',
                 'tiers' => [
                     ['min' => 0, 'max' => 50, 'fee' => 5000],
-                    ['min' => 51, 'max' => 100, 'fee' => 10000],
-                    ['min' => 101, 'max' => null, 'fee' => 20000],
+                    ['min' => 50, 'max' => 100, 'fee' => 10000],
+                    ['min' => 100, 'max' => null, 'fee' => 20000],
                 ],
             ],
             extraFeeEnabled: true,
@@ -2745,7 +2747,7 @@ class OrderCalculationServiceTest extends ModuleTestCase
                 ['zipcode' => '63000-63644', 'fee' => 3000],
             ]
         );
-        [$product, $option] = $this->createProductWithDimensions(27000, $policy, weight: 0.5, volume: 30);
+        [$product, $option] = $this->createProductWithDimensions(27000, $policy, weight: 500, volume: 30000);
 
         $shippingAddress = new ShippingAddress(zipcode: '63100');
 
@@ -2762,7 +2764,7 @@ class OrderCalculationServiceTest extends ModuleTestCase
 
         $result = $this->service->calculate($input);
 
-        // Then: 부피 60cm³(30×2) → 51~100 구간 → 기본 10,000원 + 추가 3,000원 = 13,000원
+        // Then: 부피 60,000cm³(30,000×2) = 60L → ~100L 구간 → 기본 10,000원 + 추가 3,000원 = 13,000원
         $this->assertEquals(13000, $result->summary->totalShipping);
         $this->assertEquals(10000, $result->items[0]->appliedShippingPolicy->shippingAmount);
         $this->assertEquals(3000, $result->items[0]->appliedShippingPolicy->extraShippingAmount);
@@ -2771,9 +2773,9 @@ class OrderCalculationServiceTest extends ModuleTestCase
     /**
      * 테스트 36-11g: PER_WEIGHT 정책 + 도서산간 + multiply=true
      *
-     * 무게 1.5kg, 수량 4개, 단위 2개당 2,000원
-     * 기본: ceil(4/2)×2,000=4,000원
-     * 추가: multiply는 total_quantity/unit_value 기준 → ceil(4/2)×3,000=6,000원
+     * 무게 1,500g(=1.5kg) × 4개 = 6kg, 단위 2kg당 2,000원
+     * 기본: ceil(6/2)×2,000=6,000원
+     * 추가: multiply 는 기본 배송비와 같은 배송 단위 수(3) 기준 → 3×3,000=9,000원
      */
     public function test_it_applies_extra_fee_with_per_weight_multiply(): void
     {
@@ -2787,7 +2789,7 @@ class OrderCalculationServiceTest extends ModuleTestCase
             ],
             extraFeeMultiply: true
         );
-        [$product, $option] = $this->createProductWithDimensions(10000, $policy, weight: 1.5, volume: 0);
+        [$product, $option] = $this->createProductWithDimensions(10000, $policy, weight: 1500, volume: 0);
 
         $shippingAddress = new ShippingAddress(zipcode: '63200');
 
@@ -2804,16 +2806,16 @@ class OrderCalculationServiceTest extends ModuleTestCase
 
         $result = $this->service->calculate($input);
 
-        // Then: 기본 ceil(6kg/2)×2,000=6,000원 + 추가 ceil(4/2)×3,000=6,000원 = 12,000원
-        $this->assertEquals(12000, $result->summary->totalShipping);
+        // Then: 기본 ceil(6kg/2kg)=3단위 × 2,000 = 6,000원 + 추가 3단위 × 3,000 = 9,000원 = 15,000원
+        $this->assertEquals(15000, $result->summary->totalShipping);
         $this->assertEquals(6000, $result->items[0]->appliedShippingPolicy->shippingAmount);
-        $this->assertEquals(6000, $result->items[0]->appliedShippingPolicy->extraShippingAmount);
+        $this->assertEquals(9000, $result->items[0]->appliedShippingPolicy->extraShippingAmount);
     }
 
     /**
      * 테스트 36-11h: PER_VOLUME 정책 + 도서산간
      *
-     * 부피 50cm³, 단위 20cm³당 1,500원, 추가배송비 3,000원(1회)
+     * 부피 50,000cm³(=50L), 단위 20L당 1,500원, 추가배송비 3,000원(1회)
      */
     public function test_it_applies_extra_fee_with_per_volume(): void
     {
@@ -2826,7 +2828,7 @@ class OrderCalculationServiceTest extends ModuleTestCase
                 ['zipcode' => '63000-63644', 'fee' => 3000],
             ]
         );
-        [$product, $option] = $this->createProductWithDimensions(10000, $policy, weight: 0, volume: 50);
+        [$product, $option] = $this->createProductWithDimensions(10000, $policy, weight: 0, volume: 50000);
 
         $shippingAddress = new ShippingAddress(zipcode: '63500');
 
@@ -2843,7 +2845,7 @@ class OrderCalculationServiceTest extends ModuleTestCase
 
         $result = $this->service->calculate($input);
 
-        // Then: 기본 ceil(50/20)×1,500=4,500원 + 추가 3,000원(1회) = 7,500원
+        // Then: 기본 ceil(50L/20L)×1,500=4,500원 + 추가 3,000원(1회) = 7,500원
         $this->assertEquals(7500, $result->summary->totalShipping);
         $this->assertEquals(4500, $result->items[0]->appliedShippingPolicy->shippingAmount);
         $this->assertEquals(3000, $result->items[0]->appliedShippingPolicy->extraShippingAmount);
@@ -5112,10 +5114,10 @@ class OrderCalculationServiceTest extends ModuleTestCase
         // Then
         $this->assertEquals(35000, $result->summary->subtotal);
         $this->assertEquals(5000, $result->summary->productCouponDiscount);
-        // 배송비 구간: 35000원 → 30001-50000 구간 → 3000원
-        $this->assertEquals(3000, $result->summary->totalShipping);
-        // finalAmount = 35000 - 5000 + 3000 = 33000
-        $this->assertEquals(33000, $result->summary->finalAmount);
+        // 배송비는 쿠폰 할인 후 금액 기준: 35,000 - 5,000 = 30,000원 → "~30,000원" 구간(상한 포함) → 5,000원
+        $this->assertEquals(5000, $result->summary->totalShipping);
+        // finalAmount = 35000 - 5000 + 5000 = 35000
+        $this->assertEquals(35000, $result->summary->finalAmount);
     }
 
     /**
@@ -7896,5 +7898,487 @@ class OrderCalculationServiceTest extends ModuleTestCase
         // Then: 배송비 0원, 상품 금액은 정상
         $this->assertEquals(0, $result->summary->totalShipping);
         $this->assertEquals(30000, $result->summary->subtotal);
+    }
+
+    // ========================================
+    // Section 7.15: 구간 경계 · 단위 환산 회귀 (공개 #94)
+    //
+    // 계약 ① 구간 매칭 = 상한 포함 + 사다리(ladder). min 은 표시 전용이며 매칭에 쓰지 않는다.
+    // 계약 ② 단위 = 상품 옵션은 g/cm³ 저장, 배송정책 입력은 kg/L, 환산은 엔진 한 곳에서.
+    // 계약 ③ 무음 0원 금지 = 잔여 미매칭 경로는 0원을 유지하되 경고 로그를 남긴다.
+    // ========================================
+
+    /**
+     * 수량 구간의 상한은 포함이다 (공개 #94 본문 재현).
+     *
+     * 관리자 화면·요약 문자열이 "1~5개: 3,000 / 6개~: 5,000" 으로 약속한 대로
+     * 경계값 5 가 첫 구간에 매칭되어야 한다. 기존 반개(半開) 매칭에서는 5 가
+     * 어느 구간에도 걸리지 않아 무음 0원(무료배송)이 되었다.
+     */
+    public function test_it_matches_quantity_range_with_inclusive_upper_bound(): void
+    {
+        $shippingPolicy = $this->createShippingPolicy(
+            chargePolicy: ChargePolicyEnum::RANGE_QUANTITY,
+            ranges: [
+                'tiers' => [
+                    ['min' => 1, 'max' => 5, 'fee' => 3000],
+                    ['min' => 6, 'max' => null, 'fee' => 5000],
+                ],
+            ]
+        );
+        [$product, $option] = $this->createProductWithShippingPolicy(10000, $shippingPolicy);
+
+        $expectations = [1 => 3000, 4 => 3000, 5 => 3000, 6 => 5000, 100 => 5000];
+
+        foreach ($expectations as $quantity => $expectedFee) {
+            $result = $this->service->calculate(new CalculationInput(
+                items: [
+                    new CalculationItem(
+                        productId: $product->id,
+                        productOptionId: $option->id,
+                        quantity: $quantity
+                    ),
+                ]
+            ));
+
+            $this->assertEquals(
+                $expectedFee,
+                $result->summary->totalShipping,
+                "수량 {$quantity} 의 배송비가 기대와 다릅니다."
+            );
+        }
+    }
+
+    /**
+     * 반개(半開) 형태로 저장된 기존 데이터에서도 사다리 매칭이 정확해야 한다.
+     *
+     * 다음 구간의 min 이 현재 구간의 max 와 같은 형태(0~2 / 2~5 / 5~)에서
+     * 경계값 2.0kg 은 "~2kg" 구간에 속한다 (상한 포함).
+     */
+    public function test_it_matches_half_open_legacy_tiers_by_upper_bound(): void
+    {
+        $shippingPolicy = $this->createShippingPolicy(
+            chargePolicy: ChargePolicyEnum::RANGE_WEIGHT,
+            ranges: [
+                'tiers' => [
+                    ['min' => 0, 'max' => 2, 'fee' => 3000],
+                    ['min' => 2, 'max' => 5, 'fee' => 5000],
+                    ['min' => 5, 'max' => null, 'fee' => 8000],
+                ],
+            ]
+        );
+        // 2,000g = 2.0kg (경계값)
+        [$product, $option] = $this->createProductWithDimensions(20000, $shippingPolicy, 2000, 0);
+
+        $result = $this->service->calculate(new CalculationInput(
+            items: [
+                new CalculationItem(productId: $product->id, productOptionId: $option->id, quantity: 1),
+            ]
+        ));
+
+        $this->assertEquals(3000, $result->summary->totalShipping);
+    }
+
+    /**
+     * 소수 경계(2.5kg)를 가진 연속형 구간도 정확히 매칭되어야 한다.
+     */
+    public function test_it_matches_decimal_tier_boundary(): void
+    {
+        $shippingPolicy = $this->createShippingPolicy(
+            chargePolicy: ChargePolicyEnum::RANGE_WEIGHT,
+            ranges: [
+                'tiers' => [
+                    ['min' => 0, 'max' => 2.5, 'fee' => 3000],
+                    ['min' => 2.5, 'max' => null, 'fee' => 5000],
+                ],
+            ]
+        );
+        // 2,500g = 2.5kg (소수 경계값)
+        [$product, $option] = $this->createProductWithDimensions(20000, $shippingPolicy, 2500, 0);
+
+        $result = $this->service->calculate(new CalculationInput(
+            items: [
+                new CalculationItem(productId: $product->id, productOptionId: $option->id, quantity: 1),
+            ]
+        ));
+
+        $this->assertEquals(3000, $result->summary->totalShipping);
+    }
+
+    /**
+     * tiers 가 비어 있으면 0원을 유지하되 경고 로그를 남긴다 (계약 ③).
+     */
+    public function test_it_logs_warning_when_range_tiers_are_empty(): void
+    {
+        Log::spy();
+
+        $shippingPolicy = $this->createShippingPolicy(
+            chargePolicy: ChargePolicyEnum::RANGE_QUANTITY,
+            ranges: ['tiers' => []]
+        );
+        [$product, $option] = $this->createProductWithShippingPolicy(10000, $shippingPolicy);
+
+        $result = $this->service->calculate(new CalculationInput(
+            items: [
+                new CalculationItem(productId: $product->id, productOptionId: $option->id, quantity: 1),
+            ]
+        ));
+
+        $this->assertEquals(0, $result->summary->totalShipping);
+        Log::shouldHaveReceived('warning')
+            ->withArgs(fn ($message) => str_contains((string) $message, '구간별 배송비'))
+            ->atLeast()->once();
+    }
+
+    /**
+     * 배송정책이 삭제된 경우 0원을 유지하되 경고 로그를 남긴다 (계약 ③).
+     */
+    public function test_it_logs_warning_when_shipping_policy_is_missing(): void
+    {
+        $shippingPolicy = $this->createShippingPolicy(
+            chargePolicy: ChargePolicyEnum::FIXED,
+            baseFee: 3000
+        );
+        [$product, $option] = $this->createProductWithShippingPolicy(30000, $shippingPolicy);
+
+        $shippingPolicy->countrySettings()->delete();
+        $shippingPolicy->delete();
+
+        Log::spy();
+
+        $result = $this->service->calculate(new CalculationInput(
+            items: [
+                new CalculationItem(productId: $product->id, productOptionId: $option->id, quantity: 1),
+            ]
+        ));
+
+        $this->assertEquals(0, $result->summary->totalShipping);
+        Log::shouldHaveReceived('warning')
+            ->withArgs(fn ($message) => str_contains((string) $message, '배송정책'))
+            ->atLeast()->once();
+    }
+
+    /**
+     * 수신자 국가의 설정이 없으면 0원을 유지하되 경고 로그를 남긴다 (계약 ③).
+     */
+    public function test_it_logs_warning_when_country_setting_is_missing(): void
+    {
+        $shippingPolicy = $this->createShippingPolicy(
+            chargePolicy: ChargePolicyEnum::FIXED,
+            baseFee: 3000,
+            countryCode: 'KR'
+        );
+        [$product, $option] = $this->createProductWithShippingPolicy(30000, $shippingPolicy);
+
+        Log::spy();
+
+        $result = $this->service->calculate(new CalculationInput(
+            items: [
+                new CalculationItem(productId: $product->id, productOptionId: $option->id, quantity: 1),
+            ],
+            shippingAddress: new ShippingAddress(countryCode: 'US')
+        ));
+
+        $this->assertEquals(0, $result->summary->totalShipping);
+        Log::shouldHaveReceived('warning')
+            ->withArgs(fn ($message) => str_contains((string) $message, '국가별 배송 설정'))
+            ->atLeast()->once();
+    }
+
+    /**
+     * 무게 구간 정책은 상품의 g 값을 kg 으로 환산해 비교한다 (계약 ②).
+     *
+     * 500g 상품 → 0.5kg → "~2kg" 구간. 기존 코드는 ×1000 이중 변환으로
+     * 500,000 이 되어 최상위 구간에 오적중했다.
+     */
+    public function test_it_converts_grams_to_kilograms_for_range_weight(): void
+    {
+        $shippingPolicy = $this->createShippingPolicy(
+            chargePolicy: ChargePolicyEnum::RANGE_WEIGHT,
+            ranges: [
+                'tiers' => [
+                    ['min' => 0, 'max' => 2, 'fee' => 3000],
+                    ['min' => 2, 'max' => null, 'fee' => 7000],
+                ],
+            ]
+        );
+        [$product, $option] = $this->createProductWithDimensions(20000, $shippingPolicy, 500, 0);
+
+        $result = $this->service->calculate(new CalculationInput(
+            items: [
+                new CalculationItem(productId: $product->id, productOptionId: $option->id, quantity: 1),
+            ]
+        ));
+
+        $this->assertEquals(3000, $result->summary->totalShipping);
+    }
+
+    /**
+     * 부피 구간 정책은 상품의 cm³ 값을 L 로 환산해 비교한다 (계약 ②).
+     *
+     * 1,000cm³ = 1L → "~50L" 구간.
+     */
+    public function test_it_converts_cubic_centimeters_to_liters_for_range_volume(): void
+    {
+        $shippingPolicy = $this->createShippingPolicy(
+            chargePolicy: ChargePolicyEnum::RANGE_VOLUME,
+            ranges: [
+                'tiers' => [
+                    ['min' => 0, 'max' => 50, 'fee' => 5000],
+                    ['min' => 50, 'max' => null, 'fee' => 9000],
+                ],
+            ]
+        );
+        [$product, $option] = $this->createProductWithDimensions(20000, $shippingPolicy, 0, 1000);
+
+        $result = $this->service->calculate(new CalculationInput(
+            items: [
+                new CalculationItem(productId: $product->id, productOptionId: $option->id, quantity: 1),
+            ]
+        ));
+
+        $this->assertEquals(5000, $result->summary->totalShipping);
+    }
+
+    /**
+     * 무게당 정책은 kg 단위로 계산한다 (계약 ②).
+     *
+     * 500g = 0.5kg, 1kg당 1,000원 → ceil(0.5/1) × 1,000 = 1,000원.
+     * 기존 코드는 500 ÷ 1 = 500단위 → 500,000원이었다 (공개 #94 재현값).
+     */
+    public function test_it_charges_per_kilogram_for_per_weight_policy(): void
+    {
+        $shippingPolicy = $this->createShippingPolicy(
+            chargePolicy: ChargePolicyEnum::PER_WEIGHT,
+            baseFee: 1000,
+            ranges: ['unit_value' => 1]
+        );
+        [$product, $option] = $this->createProductWithDimensions(20000, $shippingPolicy, 500, 0);
+
+        $result = $this->service->calculate(new CalculationInput(
+            items: [
+                new CalculationItem(productId: $product->id, productOptionId: $option->id, quantity: 1),
+            ]
+        ));
+
+        $this->assertEquals(1000, $result->summary->totalShipping);
+    }
+
+    /**
+     * 부피당 정책은 L 단위로 계산한다 (계약 ②).
+     *
+     * 1,000cm³ = 1L, 10L당 2,000원 → ceil(1/10) × 2,000 = 2,000원.
+     */
+    public function test_it_charges_per_liter_for_per_volume_policy(): void
+    {
+        $shippingPolicy = $this->createShippingPolicy(
+            chargePolicy: ChargePolicyEnum::PER_VOLUME,
+            baseFee: 2000,
+            ranges: ['unit_value' => 10]
+        );
+        [$product, $option] = $this->createProductWithDimensions(20000, $shippingPolicy, 0, 1000);
+
+        $result = $this->service->calculate(new CalculationInput(
+            items: [
+                new CalculationItem(productId: $product->id, productOptionId: $option->id, quantity: 1),
+            ]
+        ));
+
+        $this->assertEquals(2000, $result->summary->totalShipping);
+    }
+
+    /**
+     * 부피무게 구간은 실무게(kg)와 부피무게(kg)를 같은 단위로 비교한다 (계약 ②).
+     *
+     * 500g(0.5kg) + 6,000cm³ ÷ 6,000 = 1kg → 부피무게 1kg 채택 → "~5kg" 구간.
+     */
+    public function test_it_compares_actual_and_volumetric_weight_in_kilograms(): void
+    {
+        $shippingPolicy = $this->createShippingPolicy(
+            chargePolicy: ChargePolicyEnum::RANGE_VOLUME_WEIGHT,
+            ranges: [
+                'volume_weight_divisor' => 6000,
+                'tiers' => [
+                    ['min' => 0, 'max' => 5, 'fee' => 3500],
+                    ['min' => 5, 'max' => null, 'fee' => 9000],
+                ],
+            ]
+        );
+        [$product, $option] = $this->createProductWithDimensions(20000, $shippingPolicy, 500, 6000);
+
+        $result = $this->service->calculate(new CalculationInput(
+            items: [
+                new CalculationItem(productId: $product->id, productOptionId: $option->id, quantity: 1),
+            ]
+        ));
+
+        $this->assertEquals(3500, $result->summary->totalShipping);
+    }
+
+    /**
+     * 소수 기본배송비는 절삭이 아니라 반올림한다 (검토 메모 12).
+     *
+     * base_fee 999.50 × 1단위 → 1,000원 (기존 (int) 절삭은 999원).
+     */
+    public function test_it_rounds_decimal_base_fee_instead_of_truncating(): void
+    {
+        $shippingPolicy = $this->createShippingPolicy(
+            chargePolicy: ChargePolicyEnum::PER_QUANTITY,
+            baseFee: 1000,
+            ranges: ['unit_value' => 1]
+        );
+        $shippingPolicy->countrySettings()->first()->update(['base_fee' => 999.5]);
+        [$product, $option] = $this->createProductWithShippingPolicy(10000, $shippingPolicy);
+
+        $result = $this->service->calculate(new CalculationInput(
+            items: [
+                new CalculationItem(productId: $product->id, productOptionId: $option->id, quantity: 1),
+            ]
+        ));
+
+        $this->assertEquals(1000, $result->summary->totalShipping);
+    }
+
+    /**
+     * 도서산간 중복 부과는 수량이 아니라 배송 단위 수를 기준으로 한다 (검토 메모 14).
+     *
+     * PER_WEIGHT 1kg당 2,000원, 500g 상품 3개 → 1.5kg → 단위 수 2 (수량 3이 아님).
+     * 기본 2 × 2,000 = 4,000원, 도서산간 2 × 3,000 = 6,000원.
+     */
+    public function test_it_multiplies_extra_fee_by_charge_units_not_quantity(): void
+    {
+        $shippingPolicy = $this->createShippingPolicy(
+            chargePolicy: ChargePolicyEnum::PER_WEIGHT,
+            baseFee: 2000,
+            ranges: ['unit_value' => 1],
+            extraFeeEnabled: true,
+            extraFeeSettings: [
+                ['zipcode' => '63*', 'fee' => 3000],
+            ],
+            extraFeeMultiply: true
+        );
+        [$product, $option] = $this->createProductWithDimensions(10000, $shippingPolicy, 500, 0);
+
+        $result = $this->service->calculate(new CalculationInput(
+            items: [
+                new CalculationItem(productId: $product->id, productOptionId: $option->id, quantity: 3),
+            ],
+            shippingAddress: new ShippingAddress(zipcode: '63123')
+        ));
+
+        $this->assertEquals(4000, $result->items[0]->appliedShippingPolicy->shippingAmount);
+        $this->assertEquals(6000, $result->items[0]->appliedShippingPolicy->extraShippingAmount);
+        $this->assertEquals(10000, $result->summary->totalShipping);
+    }
+
+    /**
+     * 저장된 단위값이 0 이어도 0 으로 나누지 않고 1 단위로 계산한다.
+     *
+     * 신규 저장은 FormRequest 의 min:0.01 이 막지만, 그 규칙이 생기기 전에 저장된 정책과
+     * 시더·업그레이드처럼 FormRequest 를 거치지 않는 경로는 0 을 그대로 들고 있을 수 있다.
+     * 이 값이 나눗셈에 닿으면 계산 전체가 DivisionByZeroError 로 죽는다.
+     *
+     * PER_WEIGHT base 2,000원 · unit_value 0 → 1 로 클램프 → 1.5kg → ceil(1.5/1)=2 → 4,000원.
+     */
+    public function test_it_clamps_zero_unit_value_instead_of_dividing_by_zero(): void
+    {
+        $shippingPolicy = $this->createShippingPolicy(
+            chargePolicy: ChargePolicyEnum::PER_WEIGHT,
+            baseFee: 2000,
+            ranges: ['unit_value' => 0]
+        );
+        [$product, $option] = $this->createProductWithDimensions(10000, $shippingPolicy, 1500, 0);
+
+        $result = $this->service->calculate(new CalculationInput(
+            items: [
+                new CalculationItem(productId: $product->id, productOptionId: $option->id, quantity: 1),
+            ]
+        ));
+
+        $this->assertEquals(4000, $result->summary->totalShipping);
+    }
+
+    /**
+     * 저장된 단위값이 음수여도 1 단위로 클램프한다.
+     *
+     * 음수는 나눗셈이 성립해 예외가 나지 않는 대신 단위 수가 음수가 되어, 배송비가 음수이거나
+     * 0 원으로 뒤집힌다 — 예외 없이 금액만 틀리는 무음 결함이라 0 과 함께 고정한다.
+     */
+    public function test_it_clamps_negative_unit_value_instead_of_inverting_the_fee(): void
+    {
+        $shippingPolicy = $this->createShippingPolicy(
+            chargePolicy: ChargePolicyEnum::PER_WEIGHT,
+            baseFee: 2000,
+            ranges: ['unit_value' => -1]
+        );
+        [$product, $option] = $this->createProductWithDimensions(10000, $shippingPolicy, 1500, 0);
+
+        $result = $this->service->calculate(new CalculationInput(
+            items: [
+                new CalculationItem(productId: $product->id, productOptionId: $option->id, quantity: 1),
+            ]
+        ));
+
+        $this->assertEquals(4000, $result->summary->totalShipping);
+    }
+
+    /**
+     * 도서산간 곱의 단위 수 계산도 같은 클램프를 적용한다.
+     *
+     * 단위 수는 기본 배송비와 도서산간 곱 두 곳에서 각각 나눗셈을 수행하므로, 한쪽만 막으면
+     * 도서산간을 켠 정책에서만 계산이 죽는다.
+     */
+    public function test_it_clamps_zero_unit_value_in_extra_fee_charge_units(): void
+    {
+        $shippingPolicy = $this->createShippingPolicy(
+            chargePolicy: ChargePolicyEnum::PER_WEIGHT,
+            baseFee: 2000,
+            ranges: ['unit_value' => 0],
+            extraFeeEnabled: true,
+            extraFeeSettings: [
+                ['zipcode' => '63*', 'fee' => 3000],
+            ],
+            extraFeeMultiply: true
+        );
+        [$product, $option] = $this->createProductWithDimensions(10000, $shippingPolicy, 1500, 0);
+
+        $result = $this->service->calculate(new CalculationInput(
+            items: [
+                new CalculationItem(productId: $product->id, productOptionId: $option->id, quantity: 1),
+            ],
+            shippingAddress: new ShippingAddress(zipcode: '63123')
+        ));
+
+        $this->assertEquals(4000, $result->items[0]->appliedShippingPolicy->shippingAmount);
+        $this->assertEquals(6000, $result->items[0]->appliedShippingPolicy->extraShippingAmount);
+    }
+
+    /**
+     * 외부 API 가 음수 배송비를 반환하면 기본 배송비로 폴백하고 경고를 남긴다 (검토 메모 11).
+     */
+    public function test_it_falls_back_to_base_fee_when_api_returns_negative_fee(): void
+    {
+        Http::fake([
+            'https://shipping-api.example.com/calculate' => Http::response(['shipping_fee' => -500], 200),
+        ]);
+        Log::spy();
+
+        $shippingPolicy = $this->createShippingPolicy(
+            chargePolicy: ChargePolicyEnum::API,
+            baseFee: 3000,
+            apiEndpoint: 'https://shipping-api.example.com/calculate'
+        );
+        [$product, $option] = $this->createProductWithShippingPolicy(30000, $shippingPolicy);
+
+        $result = $this->service->calculate(new CalculationInput(
+            items: [
+                new CalculationItem(productId: $product->id, productOptionId: $option->id, quantity: 1),
+            ]
+        ));
+
+        $this->assertEquals(3000, $result->summary->totalShipping);
+        Log::shouldHaveReceived('warning')
+            ->withArgs(fn ($message) => str_contains((string) $message, '음수'))
+            ->atLeast()->once();
     }
 }

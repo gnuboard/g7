@@ -4,6 +4,7 @@ namespace Tests\Feature\Api\Identity;
 
 use App\Enums\IdentityVerificationStatus;
 use App\Models\IdentityVerificationLog;
+use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
@@ -44,6 +45,11 @@ class PermissionGuardTest extends TestCase
         $response->assertStatus(200);
     }
 
+    /**
+     * @scenario actor_role=guest, challenge_owner=none, endpoint=request
+     *
+     * @effects guest_can_request_challenge
+     */
     public function test_challenge_request_works_for_unauthenticated_guests(): void
     {
         // IDV 의 핵심 설계: 가입 전 Mode B 에서도 challenge 발급 가능해야 하므로 optional.sanctum
@@ -124,6 +130,11 @@ class PermissionGuardTest extends TestCase
         $this->getJson('/api/admin/identity/providers')->assertStatus(401);
     }
 
+    /**
+     * @scenario actor_role=guest, challenge_owner=other, endpoint=verify
+     *
+     * @effects guest_can_verify_any_challenge, missing_challenge_returns_404_after_guard_pass
+     */
     public function test_guest_can_verify_challenge(): void
     {
         // guest 역할에 core.identity.verify 권한 부여됨 — Mode B 가입 흐름
@@ -135,6 +146,11 @@ class PermissionGuardTest extends TestCase
         $response->assertStatus(404); // 401(권한 거부) 아닌 404(모델 미존재) — 가드는 통과
     }
 
+    /**
+     * @scenario actor_role=guest, challenge_owner=other, endpoint=cancel
+     *
+     * @effects guest_can_cancel_any_challenge, permission_middleware_resolves_challenge_via_route_model_binding
+     */
     public function test_guest_can_cancel_challenge(): void
     {
         // guest 의 cancel 도 동일 — 권한 가드 통과 + 모델 미존재로 404
@@ -143,6 +159,11 @@ class PermissionGuardTest extends TestCase
         $response->assertStatus(404);
     }
 
+    /**
+     * @scenario actor_role=user_with_perm, challenge_owner=self, endpoint=cancel
+     *
+     * @effects user_with_perm_can_cancel_own_challenge
+     */
     public function test_user_can_cancel_own_challenge(): void
     {
         $user = $this->createUserWithUserRole();
@@ -155,6 +176,11 @@ class PermissionGuardTest extends TestCase
         $response->assertStatus(200);
     }
 
+    /**
+     * @scenario actor_role=user_with_perm, challenge_owner=other, endpoint=cancel
+     *
+     * @effects user_with_perm_cannot_cancel_others_challenge_403
+     */
     public function test_user_cannot_cancel_others_challenge(): void
     {
         $owner = $this->createUserWithUserRole();
@@ -169,6 +195,11 @@ class PermissionGuardTest extends TestCase
         $response->assertStatus(403);
     }
 
+    /**
+     * @scenario actor_role=admin, challenge_owner=other, endpoint=cancel
+     *
+     * @effects admin_can_cancel_any_challenge_via_scope_null
+     */
     public function test_admin_can_cancel_any_challenge(): void
     {
         $owner = $this->createUserWithUserRole();
@@ -183,6 +214,11 @@ class PermissionGuardTest extends TestCase
         $response->assertStatus(200);
     }
 
+    /**
+     * @scenario actor_role=user_without_perm, challenge_owner=self, endpoint=cancel
+     *
+     * @effects user_without_perm_gets_403_on_cancel
+     */
     public function test_user_without_identity_permission_gets_403_on_cancel(): void
     {
         $user = $this->createUserWithUserRole();
@@ -191,13 +227,244 @@ class PermissionGuardTest extends TestCase
 
         // user 역할에서 IDV cancel 권한만 제거 → 가드 차단
         $userRole = Role::where('identifier', 'user')->first();
-        $cancelPerm = \App\Models\Permission::where('identifier', 'core.identity.cancel')->first();
+        $cancelPerm = Permission::where('identifier', 'core.identity.cancel')->first();
         $userRole->permissions()->detach($cancelPerm->id);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson("/api/identity/challenges/{$challenge->id}/cancel");
 
         $response->assertStatus(403);
+    }
+
+    /**
+     * @scenario actor_role=user_with_perm, challenge_owner=none, endpoint=request
+     *
+     * @effects user_with_perm_can_request_challenge
+     */
+    public function test_user_with_permission_can_request_challenge(): void
+    {
+        $user = $this->createUserWithUserRole();
+        $token = $user->createToken('test')->plainTextToken;
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->postJson('/api/identity/challenges', [
+                'purpose' => 'sensitive_action',
+                'target' => ['email' => $user->email],
+            ]);
+
+        $response->assertStatus(201);
+    }
+
+    /**
+     * @scenario actor_role=user_with_perm, challenge_owner=self, endpoint=verify
+     *
+     * @effects user_with_perm_can_verify_own_challenge
+     */
+    public function test_user_can_verify_own_challenge(): void
+    {
+        $user = $this->createUserWithUserRole();
+        $token = $user->createToken('test')->plainTextToken;
+        $challenge = $this->createChallengeFor($user);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->postJson("/api/identity/challenges/{$challenge->id}/verify", [
+                'code' => '123456',
+            ]);
+
+        // scope=self 가드 통과 — 권한 거부(403)가 아니어야 한다
+        $this->assertNotSame(403, $response->getStatusCode());
+    }
+
+    /**
+     * @scenario actor_role=user_with_perm, challenge_owner=other, endpoint=verify
+     *
+     * @effects user_with_perm_cannot_verify_others_challenge_403
+     */
+    public function test_user_cannot_verify_others_challenge(): void
+    {
+        $owner = $this->createUserWithUserRole();
+        $intruder = $this->createUserWithUserRole();
+        $token = $intruder->createToken('test')->plainTextToken;
+        $challenge = $this->createChallengeFor($owner);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->postJson("/api/identity/challenges/{$challenge->id}/verify", [
+                'code' => '123456',
+            ]);
+
+        // 남의 challenge 는 코드가 맞아도 scope=self 가드에서 먼저 차단된다
+        $response->assertStatus(403);
+    }
+
+    /**
+     * @scenario actor_role=user_without_perm, challenge_owner=none, endpoint=request
+     *
+     * @effects user_without_perm_gets_403_on_request
+     */
+    public function test_user_without_permission_gets_403_on_request(): void
+    {
+        $user = $this->createUserWithUserRole();
+        $token = $user->createToken('test')->plainTextToken;
+
+        $this->detachIdentityPermission('core.identity.request');
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->postJson('/api/identity/challenges', [
+                'purpose' => 'sensitive_action',
+                'target' => ['email' => $user->email],
+            ]);
+
+        $response->assertStatus(403);
+    }
+
+    /**
+     * @scenario actor_role=user_without_perm, challenge_owner=self, endpoint=verify
+     *
+     * @effects user_without_perm_gets_403_on_verify
+     */
+    public function test_user_without_permission_gets_403_on_verify_own(): void
+    {
+        $user = $this->createUserWithUserRole();
+        $token = $user->createToken('test')->plainTextToken;
+        $challenge = $this->createChallengeFor($user);
+
+        $this->detachIdentityPermission('core.identity.verify');
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->postJson("/api/identity/challenges/{$challenge->id}/verify", [
+                'code' => '123456',
+            ]);
+
+        // 본인 challenge 여도 권한 자체가 없으면 403
+        $response->assertStatus(403);
+    }
+
+    /**
+     * @scenario actor_role=user_without_perm, challenge_owner=other, endpoint=verify
+     *
+     * @effects user_without_perm_gets_403_on_verify
+     */
+    public function test_user_without_permission_gets_403_on_verify_others(): void
+    {
+        $owner = $this->createUserWithUserRole();
+        $intruder = $this->createUserWithUserRole();
+        $token = $intruder->createToken('test')->plainTextToken;
+        $challenge = $this->createChallengeFor($owner);
+
+        $this->detachIdentityPermission('core.identity.verify');
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->postJson("/api/identity/challenges/{$challenge->id}/verify", [
+                'code' => '123456',
+            ]);
+
+        $response->assertStatus(403);
+    }
+
+    /**
+     * @scenario actor_role=user_without_perm, challenge_owner=other, endpoint=cancel
+     *
+     * @effects user_without_perm_gets_403_on_cancel
+     */
+    public function test_user_without_permission_gets_403_on_cancel_others(): void
+    {
+        $owner = $this->createUserWithUserRole();
+        $intruder = $this->createUserWithUserRole();
+        $token = $intruder->createToken('test')->plainTextToken;
+        $challenge = $this->createChallengeFor($owner);
+
+        $this->detachIdentityPermission('core.identity.cancel');
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->postJson("/api/identity/challenges/{$challenge->id}/cancel");
+
+        $response->assertStatus(403);
+    }
+
+    /**
+     * @scenario actor_role=admin, challenge_owner=none, endpoint=request
+     *
+     * @effects user_with_perm_can_request_challenge
+     */
+    public function test_admin_can_request_challenge(): void
+    {
+        $admin = $this->createAdmin();
+        $token = $admin->createToken('test')->plainTextToken;
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->postJson('/api/identity/challenges', [
+                'purpose' => 'sensitive_action',
+                'target' => ['email' => $admin->email],
+            ]);
+
+        $response->assertStatus(201);
+    }
+
+    /**
+     * @scenario actor_role=admin, challenge_owner=self, endpoint=verify
+     *
+     * @effects admin_can_verify_any_challenge_via_scope_null
+     */
+    public function test_admin_can_verify_own_challenge(): void
+    {
+        $admin = $this->createAdmin();
+        $token = $admin->createToken('test')->plainTextToken;
+        $challenge = $this->createChallengeFor($admin);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->postJson("/api/identity/challenges/{$challenge->id}/verify", [
+                'code' => '123456',
+            ]);
+
+        $this->assertNotSame(403, $response->getStatusCode());
+    }
+
+    /**
+     * @scenario actor_role=admin, challenge_owner=other, endpoint=verify
+     *
+     * @effects admin_can_verify_any_challenge_via_scope_null
+     */
+    public function test_admin_can_verify_any_challenge(): void
+    {
+        $owner = $this->createUserWithUserRole();
+        $admin = $this->createAdmin();
+        $token = $admin->createToken('test')->plainTextToken;
+        $challenge = $this->createChallengeFor($owner);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->postJson("/api/identity/challenges/{$challenge->id}/verify", [
+                'code' => '123456',
+            ]);
+
+        // admin 은 scope=null 이라 남의 challenge 도 가드를 통과한다
+        $this->assertNotSame(403, $response->getStatusCode());
+    }
+
+    /**
+     * @scenario actor_role=admin, challenge_owner=self, endpoint=cancel
+     *
+     * @effects admin_can_cancel_any_challenge_via_scope_null
+     */
+    public function test_admin_can_cancel_own_challenge(): void
+    {
+        $admin = $this->createAdmin();
+        $token = $admin->createToken('test')->plainTextToken;
+        $challenge = $this->createChallengeFor($admin);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->postJson("/api/identity/challenges/{$challenge->id}/cancel");
+
+        $response->assertStatus(200);
+    }
+
+    /**
+     * user 역할에서 지정 IDV 권한을 떼어냅니다 (권한 미보유 상태 재현).
+     */
+    private function detachIdentityPermission(string $identifier): void
+    {
+        $userRole = Role::where('identifier', 'user')->first();
+        $permission = Permission::where('identifier', $identifier)->first();
+        $userRole->permissions()->detach($permission->id);
     }
 
     /**

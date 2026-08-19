@@ -80,7 +80,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "triangle-exclamation",
-                                            "className": "w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
+                                            "className": "text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
                                         }
                                     },
                                     {
@@ -201,7 +201,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "triangle-exclamation",
-                                            "className": "w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"
+                                            "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"
                                         }
                                     },
                                     {
@@ -430,7 +430,7 @@
                                                                         "if": "{{!_local._show_live_sign_key}}",
                                                                         "props": {
                                                                             "name": "eye",
-                                                                            "className": "w-4 h-4"
+                                                                            "className": "text-base"
                                                                         }
                                                                     },
                                                                     {
@@ -439,7 +439,7 @@
                                                                         "if": "{{_local._show_live_sign_key}}",
                                                                         "props": {
                                                                             "name": "eye-slash",
-                                                                            "className": "w-4 h-4"
+                                                                            "className": "text-base"
                                                                         }
                                                                     }
                                                                 ]
@@ -531,7 +531,7 @@
                                                                         "if": "{{!_local._show_live_iniapi_key}}",
                                                                         "props": {
                                                                             "name": "eye",
-                                                                            "className": "w-4 h-4"
+                                                                            "className": "text-base"
                                                                         }
                                                                     },
                                                                     {
@@ -540,7 +540,7 @@
                                                                         "if": "{{_local._show_live_iniapi_key}}",
                                                                         "props": {
                                                                             "name": "eye-slash",
-                                                                            "className": "w-4 h-4"
+                                                                            "className": "text-base"
                                                                         }
                                                                     }
                                                                 ]
@@ -632,7 +632,7 @@
                                                                         "if": "{{!_local._show_live_iniapi_iv}}",
                                                                         "props": {
                                                                             "name": "eye",
-                                                                            "className": "w-4 h-4"
+                                                                            "className": "text-base"
                                                                         }
                                                                     },
                                                                     {
@@ -641,7 +641,7 @@
                                                                         "if": "{{_local._show_live_iniapi_iv}}",
                                                                         "props": {
                                                                             "name": "eye-slash",
-                                                                            "className": "w-4 h-4"
+                                                                            "className": "text-base"
                                                                         }
                                                                     }
                                                                 ]
@@ -733,7 +733,7 @@
                                                                         "if": "{{!_local._show_live_mobile_hash_key}}",
                                                                         "props": {
                                                                             "name": "eye",
-                                                                            "className": "w-4 h-4"
+                                                                            "className": "text-base"
                                                                         }
                                                                     },
                                                                     {
@@ -742,7 +742,7 @@
                                                                         "if": "{{_local._show_live_mobile_hash_key}}",
                                                                         "props": {
                                                                             "name": "eye-slash",
-                                                                            "className": "w-4 h-4"
+                                                                            "className": "text-base"
                                                                         }
                                                                     }
                                                                 ]
@@ -1205,7 +1205,7 @@
                                                                 "name": "Icon",
                                                                 "props": {
                                                                     "name": "flask-conical",
-                                                                    "className": "w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"
+                                                                    "className": "text-xl text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"
                                                                 }
                                                             },
                                                             {
@@ -1299,7 +1299,7 @@
                                                                         "if": "{{_local.cbtTestProductCreating}}",
                                                                         "props": {
                                                                             "name": "spinner",
-                                                                            "className": "w-3 h-3 animate-spin"
+                                                                            "className": "text-xs animate-spin"
                                                                         }
                                                                     },
                                                                     {
@@ -1308,7 +1308,7 @@
                                                                         "if": "{{!_local.cbtTestProductCreating}}",
                                                                         "props": {
                                                                             "name": "plus",
-                                                                            "className": "w-3 h-3"
+                                                                            "className": "text-xs"
                                                                         }
                                                                     },
                                                                     {
@@ -1333,7 +1333,7 @@
                                                                         "name": "Icon",
                                                                         "props": {
                                                                             "name": "external-link-alt",
-                                                                            "className": "w-3 h-3"
+                                                                            "className": "text-xs"
                                                                         }
                                                                     },
                                                                     {
@@ -1426,7 +1426,7 @@
                                                                 "name": "Icon",
                                                                 "props": {
                                                                     "name": "shield-alt",
-                                                                    "className": "w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"
+                                                                    "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"
                                                                 }
                                                             },
                                                             {
@@ -1520,7 +1520,7 @@
                                                                         "if": "{{_local.cbtConnCheckRunning}}",
                                                                         "props": {
                                                                             "name": "spinner",
-                                                                            "className": "w-3 h-3 animate-spin"
+                                                                            "className": "text-xs animate-spin"
                                                                         }
                                                                     },
                                                                     {
@@ -1529,7 +1529,7 @@
                                                                         "if": "{{!_local.cbtConnCheckRunning}}",
                                                                         "props": {
                                                                             "name": "satellite-dish",
-                                                                            "className": "w-3 h-3"
+                                                                            "className": "text-xs"
                                                                         }
                                                                     },
                                                                     {
@@ -1862,7 +1862,7 @@
                                                                                         "name": "Span",
                                                                                         "if": "{{!host.tcp_443_reachable}}",
                                                                                         "props": {
-                                                                                            "className": "px-1.5 py-0.5 rounded bg-red-100 dark:bg-red-900/40text-danger-soft font-medium"
+                                                                                            "className": "px-1.5 py-0.5 rounded bg-red-100 dark:bg-red-900/40 text-danger-soft font-medium"
                                                                                         },
                                                                                         "text": "✗ {{host.tcp_443_error ?? '$t:sirsoft-pay_kginicis.settings.cbt_connectivity_unreachable'}}"
                                                                                     }
@@ -2494,7 +2494,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "bell",
-                                                    "className": "w-4 h-4 text-blue-600 dark:text-blue-400"
+                                                    "className": "text-base text-blue-600 dark:text-blue-400"
                                                 }
                                             },
                                             {
@@ -2578,7 +2578,7 @@
                                                                 "name": "Icon",
                                                                 "props": {
                                                                     "name": "copy",
-                                                                    "className": "w-4 h-4"
+                                                                    "className": "text-base"
                                                                 }
                                                             },
                                                             {
@@ -2709,7 +2709,7 @@
                                                         "handler": "toast",
                                                         "params": {
                                                             "type": "error",
-                                                            "message": "$t:admin.plugins.settings.save_error"
+                                                            "message": "{{error.message ?? '$t:admin.plugins.settings.save_error'}}"
                                                         }
                                                     }
                                                 ]

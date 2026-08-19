@@ -1,5 +1,7 @@
 /**
  * 환경설정 탭별 개별 저장 패턴 검증 테스트
+ * e2e:allow 테스트 설명 문구만 변경(공개 릴리즈 사전점검 — 내부 호칭 정리).
+ * 런타임 코드/레이아웃 무변경이라 브라우저 동작 차이가 없다.
  *
  * @description
  * - 저장 버튼의 apiCall body가 활성 탭 데이터만 전송하는지 검증
@@ -91,6 +93,20 @@ describe('환경설정 탭별 개별 저장 패턴 검증', () => {
             expect(body).toContain('_global.activeEcommerceSettingsTab');
             expect(body).toContain('query.tab');
             expect(body).toContain("'basic_info'");
+        });
+
+        it('저장 실패 토스트가 서버 오류 메시지를 노출해야 한다 (회귀 — 운영 실측 제보)', () => {
+            // 고정 문구만 쓰면 검증 실패 사유(예: 필드별 422 메시지)가 사용자에게
+            // 도달하지 못하고 "설정 저장에 실패했습니다" 로 뭉개진다.
+            const apiCallAction = findActionByHandler(saveButton.actions, 'apiCall');
+            const errorToast = (apiCallAction.onError ?? []).find(
+                (a: any) => a.handler === 'toast',
+            );
+
+            expect(errorToast).toBeDefined();
+            expect(errorToast.params.message).toContain('error.message');
+            // 서버 메시지 부재 시 기존 고정 문구로 폴백
+            expect(errorToast.params.message).toContain('save_error');
         });
 
         it('body 에 _tab 메타 필드가 포함되어야 한다', () => {

@@ -144,6 +144,7 @@ describe('ComponentPalette — 폴백 카테고리 (componentPalette 미제공)'
   });
 
   // 결함 8 — 실제 렌더 컴포넌트 태그 배지 (React 컴포넌트명 형식)
+  /** @effects palette_card_shows_react_component_tag_badge */
   it('카드에 React 컴포넌트명 형식의 태그 배지 표시 (<Div>, <Button>)', () => {
     render(
       withTranslation(

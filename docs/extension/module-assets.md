@@ -123,6 +123,28 @@
 | `dependencies` | `object` | 선택 | 모듈/플러그인 의존성 |
 | `github_url` | `string\|null` | 선택 | GitHub 저장소 URL (업데이트 감지용) |
 | `github_changelog_url` | `string\|null` | 선택 | GitHub 변경 이력 URL |
+| `trusted_script_hosts` | `string[]` | 선택 | 레이아웃이 로드할 수 있는 외부 스크립트 신뢰 호스트 목록 (아래 참조) |
+
+#### `trusted_script_hosts` — 외부 스크립트 신뢰 호스트
+
+레이아웃 보안 정책은 `scripts[].src`·`data_sources[].endpoint` 를 기본적으로 same-origin
+경로(`/` 로 시작)만 허용하고, 외부 origin·protocol-relative(`//host`)·scheme 포함 URL 은
+저장 시점과 렌더 시점 양쪽에서 차단합니다. 확장이 정당하게 외부 CDN 스크립트를 써야 하면
+그 호스트를 이 배열에 선언합니다. 활성 확장이 선언한 호스트만 집계되며(편집자는 추가 불가 —
+manifest 는 배포물), 코어가 활성 확장 전체의 선언을 모아 allowlist 를 구성합니다.
+
+```jsonc
+{
+  "trusted_script_hosts": ["cdn.ckeditor.com"]
+}
+```
+
+- 값은 호스트명만(스킴/경로 없이). 예: `"cdn.ckeditor.com"`, `"t1.daumcdn.net"`.
+- 이 기능은 코어 7.0.7 에서 도입되었습니다. 선언하는 확장은 `g7_version` 을 `>=7.0.7` 로 두는
+  것이 계약상 정확합니다(하위 코어에서는 필드가 무시되어 무해).
+- 관련 보안 정책 상세: [frontend/security.md](../frontend/security.md).
+
+플러그인(`plugin.json`)·템플릿(`template.json`)도 동일 필드를 지원합니다.
 
 #### 에셋 필드
 
@@ -149,7 +171,7 @@ modules/_bundled/sirsoft-ecommerce/
 ├── package.json             ← npm 패키지 정의
 ├── vite.config.ts           ← Vite 빌드 설정
 ├── tsconfig.json            ← TypeScript 설정
-├── dist/                    ← 빌드 출력 (git ignore)
+├── dist/                    ← 빌드 출력 (_bundled 은 Git 추적 — 배포 산출물, `*.map` 만 ignore)
 │   ├── js/module.iife.js
 │   ├── css/module.css
 │   └── assets/

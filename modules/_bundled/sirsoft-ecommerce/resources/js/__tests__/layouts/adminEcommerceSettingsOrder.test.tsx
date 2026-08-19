@@ -9,8 +9,12 @@
  * - 폼 바인딩 및 핸들러 검증
  * - 다국어 키 검증
  *
- * @scenario extension_payment_method method_kind=extension × capability_declared=declared × capability=pg_locked
- * @effects admin_shows_pg_locked_badge, admin_hides_pg_select_for_locked, admin_shows_pg_select_for_unlocked
+ * 축 요약(마커 아님 — 평문): extension_payment_method 의 method_kind=extension,
+ * capability_declared=declared, capability=pg_locked. 요약을 시나리오 축 마커로 적을 때
+ * 구분자를 `×` 로 쓰면 파서가 쉼표로만 축을 분리하므로 세 축이 한 문자열로 뭉쳐
+ * 실재하지 않는 조합 1건이 되어 어떤 칸도 커버하지 못한다 — 요약은 평문으로 둔다.
+ *
+ * 효과 요약(마커 아님 — 평문): admin_shows_pg_locked_badge, admin_hides_pg_select_for_locked, admin_shows_pg_select_for_unlocked.
  *
  * @vitest-environment node
  */
@@ -382,6 +386,59 @@ describe('결제수단 Sortable 리스트 구조 검증 (_payment_methods_list.j
             );
         });
 
+        // 지정 PG 가 레지스트리에서 사라진 상태(A2). 수단 자체는 카탈로그에 남아 있어
+        // _orphaned 로는 잡히지 않으므로 별도 배지가 필요하다.
+        it('죽은 PG 배지가 _orphaned_pg 조건에서만 표시되어야 한다', () => {
+            const badge = findFirst(tpl, (n: any) =>
+                typeof n?.props?.['data-testid'] === 'string'
+                    && n.props['data-testid'].includes('orphaned-pg-badge-'),
+            );
+            expect(badge).not.toBeNull();
+            expect(badge.if).toBe('{{$method._orphaned_pg}}');
+            expect(badge.text).toBe(
+                '$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.orphaned_pg_badge',
+            );
+        });
+
+        // 브라우저 실측에서 드러난 결함(A2 매트릭스 T1): 배지가 줄바꿈 가능·축소 가능이라
+        // 좁은 폭에서 글자 단위로 접히고, 그 압력이 이름 열까지 밀어 이름도 세로로 무너졌다.
+        it('상태 배지는 줄바꿈·축소되지 않아야 한다 (이름 열 붕괴 차단)', () => {
+            const badges = [
+                findFirst(tpl, (n: any) => n?.if === '{{$method._orphaned}}' && n?.name === 'Span'),
+                findFirst(tpl, (n: any) => n?.if === '{{$method._orphaned_pg}}' && n?.name === 'Span'),
+            ];
+            for (const badge of badges) {
+                expect(badge).not.toBeNull();
+                expect(badge.props.className).toContain('whitespace-nowrap');
+                expect(badge.props.className).toContain('shrink-0');
+            }
+        });
+
+        it('이름 줄은 축소 가능해야 하고 이름은 말줄임 처리되어야 한다', () => {
+            const nameSpan = findFirst(tpl, (n: any) =>
+                typeof n?.text === 'string' && n.text.includes('_cached_name') && n?.name === 'Span',
+            );
+            expect(nameSpan).not.toBeNull();
+            // truncate 가 없으면 좁은 폭에서 글자 단위 줄바꿈으로 무너진다
+            expect(nameSpan.props.className).toContain('truncate');
+
+            const nameRow = findFirst(tpl, (n: any) =>
+                Array.isArray(n?.children) && n.children.includes(nameSpan),
+            );
+            // flex 항목 기본 min-width:auto 때문에 min-w-0 없이는 축소 자체가 안 된다
+            expect(nameRow.props.className).toContain('min-w-0');
+        });
+
+        // _orphaned 와 달리 행 편집 컨트롤은 막지 않는다 — 살아있는 PG 로 바꿔 복구해야 하므로
+        it('죽은 PG 상태는 PG 선택 셀렉트를 감추지 않아야 한다', () => {
+            const select = findFirst(tpl, (n: any) =>
+                typeof n?.props?.['data-testid'] === 'string'
+                    && n.props['data-testid'].includes('pg-select-'),
+            );
+            expect(select).not.toBeNull();
+            expect(select.if).not.toContain('_orphaned_pg');
+        });
+
         it('재고차감시점 Select가 3개 옵션(order_placed/payment_complete/none)을 가져야 한다', () => {
             // 2개 옵션 → 3개 (none 추가: 차감 안함)
             const select = findFirst(tpl, (n: any) =>
@@ -527,6 +584,8 @@ describe('결제수단 Sortable 리스트 구조 검증 (_payment_methods_list.j
                     && n.props['data-testid'].includes(needle),
             );
 
+        /** @effects admin_shows_pg_locked_badge */
+        /** @effects admin_shows_pg_locked_badge */
         it('PG 고정 배지가 $method.pg_locked 조건으로 렌더된다', () => {
             const badge = findByTestidExpr('pg-locked-badge-');
             expect(badge).not.toBeNull();
@@ -537,6 +596,7 @@ describe('결제수단 Sortable 리스트 구조 검증 (_payment_methods_list.j
             expect(badge.text).toContain('pg_provider');
         });
 
+        /** @effects admin_hides_pg_select_for_locked, admin_shows_pg_select_for_unlocked */
         it('PG 선택 셀렉트가 !pg_locked && needs_pg && 제공자>0 조건으로만 렌더된다', () => {
             const select = findByTestidExpr('pg-select-');
             expect(select).not.toBeNull();
@@ -611,6 +671,7 @@ describe('결제수단 모바일 카드 구조 검증 (_payment_methods_cards.js
             expect(badge.if).toBe('{{$method.pg_locked}}');
         });
 
+        /** @effects admin_hides_pg_select_for_locked, admin_shows_pg_select_for_unlocked */
         it('PG 선택 셀렉트가 !pg_locked && needs_pg 조건으로만 렌더된다', () => {
             const select = findByTestidExpr('pg-select-');
             expect(select).not.toBeNull();
@@ -629,6 +690,16 @@ describe('결제수단 모바일 카드 구조 검증 (_payment_methods_cards.js
             for (const needle of ['pg-locked-badge-', 'pg-select-', 'pg-not-required-']) {
                 expect(findByTestidExpr(needle)).not.toBeNull();
             }
+        });
+
+        // A2 — 죽은 PG 배지는 PC/모바일 양쪽에 같은 조건·같은 키로 있어야 한다
+        it('죽은 PG 배지가 _orphaned_pg 조건에서만 표시되어야 한다', () => {
+            const badge = findByTestidExpr('orphaned-pg-badge-');
+            expect(badge).not.toBeNull();
+            expect(badge.if).toBe('{{$method._orphaned_pg}}');
+            expect(badge.text).toBe(
+                '$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.orphaned_pg_badge',
+            );
         });
     });
 });

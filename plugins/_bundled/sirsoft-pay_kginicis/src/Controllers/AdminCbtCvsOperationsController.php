@@ -45,6 +45,7 @@ class AdminCbtCvsOperationsController extends AdminBaseController
      * @param  string  $orderNumber  주문번호
      * @return JsonResponse 응답
      */
+    // audit:allow controller-base-request-injection reason: 본문 입력을 읽지 않음 — 감사 로그용 ip() 만 참조 (검증 대상 필드 없음)
     public function simulateNotify(Request $request, string $orderNumber): JsonResponse
     {
         $result = $this->operationsService->simulatePaidNotify($orderNumber, $request->ip());

@@ -984,6 +984,7 @@
                             "serverTotalPages": "{{users?.data?.pagination?.last_page ?? null}}",
                             "serverHasMorePages": "{{users?.data?.pagination?.has_more_pages ?? false}}",
                             "selectable": "{{users?.data?.abilities?.can_update === true}}",
+                            "selectionScope": "page",
                             "selectedIds": "{{_global.selectedIds_admin_users || []}}",
                             "idField": "uuid",
                             "showColumnSelector": false,
@@ -1887,10 +1888,11 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "탈퇴 불가 대상(관리자 계정 등)은 200 응답 안에서 건별로 실패한다 — failed_count 를 읽지 않으면 아무 일도 없었는데 성공으로 안내된다.",
                                                     "handler": "toast",
                                                     "params": {
-                                                        "type": "success",
-                                                        "message": "$t:admin.users.modals.bulk_withdraw_success"
+                                                        "type": "{{(response.data?.failed_count ?? 0) === 0 ? 'success' : ((response.data?.updated_count ?? 0) === 0 ? 'error' : 'warning')}}",
+                                                        "message": "{{(response.data?.failed_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_withdraw_success' : ((response.data?.updated_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_withdraw_all_failed|reason=' + (response.data?.failed_reasons ?? []).join(' / ') : '$t:admin.users.modals.bulk_withdraw_partial|updated=' + (response.data?.updated_count ?? 0) + '|failed=' + (response.data?.failed_count ?? 0) + '|reason=' + (response.data?.failed_reasons ?? []).join(' / '))}}"
                                                     }
                                                 }
                                             ],

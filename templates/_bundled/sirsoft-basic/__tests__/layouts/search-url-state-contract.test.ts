@@ -84,6 +84,18 @@ describe('통합검색 — 화면 상태의 SSoT 는 URL 쿼리', () => {
     expect(source.endpoint, '엔드포인트에 남은 전역 상태').not.toMatch(/_global\.search/);
   });
 
+  it('검색 데이터소스는 로그인 회원의 토큰을 실어 보낸다 (auth_mode=optional)', () => {
+    // 검색 라우트는 optional.sanctum 으로 로그인 회원의 열람 범위(회원 전용 게시판 포함)를
+    // 해석한다. 데이터소스 auth_mode 기본값은 'none' 이라 미선언이면 토큰이 실리지 않아,
+    // 로그인 회원도 비회원 범위로 검색되고 서버측 권한 해석이 통째로 무력화된다
+    // (7.0.7 사전점검 브라우저 실측 발견 — 서버는 Bearer 를 해석하도록 고쳐졌지만
+    //  화면이 보내지 않아 계약의 반대편 끝이 끊겨 있었다).
+    const layout = JSON.parse(read(indexPath));
+    const source = layout.data_sources?.find((ds: any) => ds.id === 'searchResults');
+
+    expect(source?.auth_mode, 'searchResults auth_mode').toBe('optional');
+  });
+
   it('검색 화면 어디에도 전역 검색 상태가 남아 있지 않다', () => {
     const leftovers = searchFiles.filter((path) =>
       /_global\??\.search(ActiveTab|SortBy|BoardFilter|Page|Cursor)|"search(ActiveTab|SortBy|BoardFilter|Page|Cursor)"/.test(read(path))

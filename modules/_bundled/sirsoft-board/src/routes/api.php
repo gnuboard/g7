@@ -126,20 +126,24 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         ->middleware('permission:admin,sirsoft-board.settings.read')
         ->name('admin.settings.show');
 
-    // 대시보드 - 오늘 새 글/댓글 현황 (진입 가드는 코어 core.dashboard.read + admin)
+    // 대시보드 - 오늘 새 글/댓글 현황 (형제 settings 라우트와 동일하게 명시적 permission 가드)
     Route::get('dashboard/overview', [DashboardController::class, 'overview'])
+        ->middleware('permission:admin,sirsoft-board.dashboard.view')
         ->name('admin.dashboard.overview');
 
     // 대시보드 - 7일 추세 그래프 (막대 + 합계 + 변화율)
     Route::get('dashboard/post-graph', [DashboardController::class, 'postGraph'])
+        ->middleware('permission:admin,sirsoft-board.dashboard.view')
         ->name('admin.dashboard.post-graph');
 
     // 대시보드 - 최신 게시글
     Route::get('dashboard/recent-posts', [DashboardController::class, 'recentPosts'])
+        ->middleware('permission:admin,sirsoft-board.dashboard.view')
         ->name('admin.dashboard.recent-posts');
 
     // 대시보드 - 미처리 신고
     Route::get('dashboard/pending-reports', [DashboardController::class, 'pendingReports'])
+        ->middleware('permission:admin,sirsoft-board.dashboard.view')
         ->name('admin.dashboard.pending-reports');
 
 });
@@ -504,8 +508,8 @@ Route::post('boards/{slug}/comments/{commentId}/verify-password', [UserCommentCo
 | 로그인한 회원의 게시글 활동(작성, 댓글, 신고)을 조회하는 API입니다.
 | - 회원만 접근 가능하므로 auth:sanctum 미들웨어 필요
 |
-| 최종 URL 예시: /api/me/board-activities
-| 최종 Name 예시: api.me.board-activities.index
+| 최종 URL 예시: /api/modules/sirsoft-board/me/board-activities
+| 최종 Name 예시: api.modules.sirsoft-board.me.board-activities.index
 |
 */
 Route::get('/me/board-activities', [UserActivityController::class, 'index'])

@@ -926,7 +926,7 @@
       "daily_report_limit_hint": "Max reports per user per day across all boards. 0 = no limit. (0–100)",
       "rejection_limit_count": "Rejection Limit (count)",
       "rejection_limit_days": "Rejection Limit Period (days)",
-      "rejection_limit_hint": "Reporting will be blocked when rejections exceed the limit within this period. 0 count = no limit. (Count: 0–50, Period: 1–365 days)",
+      "rejection_limit_hint": "Reporting is blocked once rejections within this period reach the limit. 0 count = no limit. (Count: 0–50, Period: 1–365 days)",
       "report_cooldown_seconds": "Report Cooldown (sec)",
       "report_cooldown_seconds_hint": "Minimum interval between consecutive reports. 0 = no limit. (0–3600 sec)",
       "notify_author_on_report_action": "Report Action Notification",

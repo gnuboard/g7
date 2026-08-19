@@ -15,7 +15,7 @@
  * EditorCanvasOverlay)로 커버한다.
  *
  * @scenario lock_kind selected_node_state=extension_originated
- * @effects extension_node_context_menu_blocked + extension_node_blackbox_selection_normalized + editor_canvas_single_window_scroll + fullscreen_layout_expanded_in_editor
+ * 효과 요약(마커 아님 — 평문): extension_node_context_menu_blocked, extension_node_blackbox_selection_normalized, editor_canvas_single_window_scroll, fullscreen_layout_expanded_in_editor.
  */
 import type { Page } from '@playwright/test';
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
@@ -49,6 +49,7 @@ async function openAdminUserForm(page: Page): Promise<void> {
 }
 
 test.describe('@layout-editor 스크롤 + 확장 잠금 후속', () => {
+  /** @effects extension_node_context_menu_blocked, extension_node_blackbox_selection_normalized */
   test('확장 주입 조각 내부 자식 클릭 → 진입점 통짜 선택 + ⓘ 메뉴 차단 + 확장 편집 어포던스', async ({ page }) => {
     await openAdminUserForm(page);
 
@@ -92,6 +93,7 @@ test.describe('@layout-editor 스크롤 + 확장 잠금 후속', () => {
     expect(result.editExtension).toBe(true);
   });
 
+  /** @effects editor_canvas_single_window_scroll */
   test('일반(min-h-screen) 페이지 — 캔버스 별도 스크롤 없음 + 브라우저 단일 스크롤 + 헤더/트리 고정', async ({ page }) => {
     await openBasicEditor(page);
 
@@ -125,6 +127,7 @@ test.describe('@layout-editor 스크롤 + 확장 잠금 후속', () => {
     expect(metrics.treeStaysFixed).toBe(true);
   });
 
+  /** @effects fullscreen_layout_expanded_in_editor */
   test('admin 풀스크린(h-screen) 레이아웃 — 편집 캔버스에서 콘텐츠 자연 높이로 펼침(내부 스크롤 없음)', async ({ page }) => {
     await openAdminUserForm(page);
 

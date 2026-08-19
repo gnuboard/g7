@@ -7,8 +7,8 @@
  *  C. (A 로 해소) 수평 컨테이너(정렬 박스)에서 좌/우 삽입 어포던스 활성 — block 은 상/하만.
  *  D. 표(Table) 추가 → 머리글/본문 행이 실제로 렌더(빈 table 회귀 차단).
  *
- * @scenario flex_toggle_node_derived + spacing_per_side_independent + insertion_dir_by_flow + table_renders_rows
- * @effects flex_container_controls_and_disable + pt_pl_coexist + left_right_enabled_in_flex + table_tr_td_rendered
+ * 축 요약(마커 아님 — 평문): flex_toggle_node_derived, spacing_per_side_independent, insertion_dir_by_flow, table_renders_rows.
+ * 효과 요약(마커 아님 — 평문): flex_container_controls_and_disable, pt_pl_coexist, left_right_enabled_in_flex, table_tr_td_rendered.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 import { editorPath as resolveEditorPath } from '../../fixtures/layout-editor';
@@ -52,6 +52,7 @@ async function openPropsFor(page: import('@playwright/test').Page, editorPath: s
 }
 
 test.describe('@layout-editor S7 후속 회귀', () => {
+  /** @effects flex_container_controls_and_disable */
   test('A. 정렬 박스 만들기 → 컨테이너 컨트롤 + 해제 토글로 원복 (노드 파생 판정)', async ({ page }) => {
     await openEditorLogin(page);
     await openPropsFor(page, CARD);
@@ -82,6 +83,7 @@ test.describe('@layout-editor S7 후속 회귀', () => {
     await expect(page.getByTestId('g7le-flex-enable')).toBeAttached();
   });
 
+  /** @effects pt_pl_coexist */
   test('B. 여백 개별 모드 — 상/좌를 다른 값으로 → pt-/pl- 토큰 공존', async ({ page }) => {
     await openEditorLogin(page);
     await openPropsFor(page, CARD);
@@ -106,6 +108,7 @@ test.describe('@layout-editor S7 후속 회귀', () => {
     ).toBe(true);
   });
 
+  /** @effects left_right_enabled_in_flex */
   test('C. 흐름별 삽입 방향 — flex-row 자식은 좌/우 활성, block 자식은 상/하만', async ({ page }) => {
     await openEditorLogin(page);
 
@@ -132,6 +135,7 @@ test.describe('@layout-editor S7 후속 회귀', () => {
     expect(await page.getByTestId('g7le-insertion-below').getAttribute('data-disabled')).toBe('false');
   });
 
+  /** @effects table_tr_td_rendered */
   test('D. 표 추가 → 머리글/본문 행이 실제 렌더(빈 table 회귀 차단)', async ({ page }) => {
     await openEditorLogin(page);
 

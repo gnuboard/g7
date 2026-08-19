@@ -79,7 +79,7 @@ php artisan template:activate [vendor-template]
 **기능**:
 - `templates.is_active` 플래그 설정
 - 동일 타입의 기존 활성 템플릿 비활성화
-- 캐시 무효화 (`templates.active.{type}`)
+- 상태 캐시 무효화 (`ext.templates.active_identifiers*` / `ext.templates.installed_identifiers`)
 
 ---
 

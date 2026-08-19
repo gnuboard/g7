@@ -9,6 +9,7 @@ use App\Extension\HookManager;
 use App\Http\Resources\AttachmentResource;
 use App\Seo\Contracts\SeoCacheManagerInterface;
 use App\Support\ConfigCacheHelper;
+use App\Support\ExtensionSettingsMirror;
 use App\Support\OpcacheStatus;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
@@ -28,7 +29,8 @@ class SettingsService
     public function __construct(
         private ConfigRepositoryInterface $configRepository,
         private AttachmentRepositoryInterface $attachmentRepository,
-        private CacheInterface $cache
+        private CacheInterface $cache,
+        private AttachmentService $attachmentService
     ) {}
 
     /**
@@ -43,6 +45,31 @@ class SettingsService
     {
         $this->cache->forget('settings.system');
         ConfigCacheHelper::rebuild();
+
+        // 같은 프로세스의 in-memory 미러도 즉시 다시 채운다 (공개이슈 #109).
+        // 이 호출이 없으면 상주 프로세스(큐 워커·schedule:work·Reverb)는 저장 후에도
+        // 부팅 시점의 옛 값을 영원히 읽는다 — FPM 에서만 드러나지 않는 결함이다.
+        app(ExtensionSettingsMirror::class)->refreshCore();
+    }
+
+    /**
+     * 큐 워커에 정상 종료 후 재시작 신호를 보냅니다.
+     *
+     * drivers 카테고리(queue/broadcasting/cache 등)는 long-running worker 에 영향을 준다.
+     * SettingsServiceProvider 는 worker boot 시점에 한 번만 config 를 적용하므로, 재시작
+     * 신호가 없으면 워커가 부팅 시점의 옛 드라이버로 계속 동작한다.
+     *
+     * 신호 전송 실패가 설정 저장을 되돌리지는 않는다 (경고 로깅 후 계속).
+     */
+    private function restartQueueWorkers(): void
+    {
+        try {
+            Artisan::call('queue:restart');
+        } catch (\Throwable $e) {
+            Log::warning('queue:restart 실행 실패', [
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -489,9 +516,18 @@ class SettingsService
                 return $result;
             }
 
-            // general 탭인 경우 site_logo 첨부파일 연결
-            if ($tab === 'general') {
-                $tabSettings['site_logo'] = $this->collectSiteLogoIds();
+            // general 탭인 경우 site_logo 첨부파일 연결.
+            // site_logo 를 제출하지 않은 저장(다른 필드만 변경)은 기존 저장값을 그대로 둔다 —
+            // 이때 컬렉션을 다시 훑으면 미참조 첨부가 설정으로 딸려 들어온다.
+            $removedSiteLogoIds = [];
+
+            if ($tab === 'general' && is_array($tabSettings['site_logo'] ?? null)) {
+                // 파기 대상 판정은 저장 **전에** 한다 — 저장 후에는 직전 저장값을 알 수 없다.
+                // 실제 파기는 저장이 성공한 뒤에 수행한다: 저장이 실패했는데 파일만 사라지면
+                // 설정에는 이미 없는 첨부 id 가 남아 로고가 깨진다.
+                $removedSiteLogoIds = $this->resolveRemovedSiteLogoIds($tabSettings['site_logo']);
+
+                $tabSettings['site_logo'] = $this->resolveSiteLogoIds($tabSettings['site_logo']);
             }
 
             // 기존 설정과 병합 (탭별로 일부 필드만 전송되어도 기존 설정 유지)
@@ -510,6 +546,9 @@ class SettingsService
             if ($result) {
                 $this->invalidateSettingsCache();
 
+                // 저장이 확정된 뒤에야 파일을 파기한다 (위 판정 시점 주석 참조).
+                $this->purgeSiteLogoAttachments($removedSiteLogoIds);
+
                 // SEO 프리렌더 캐시에는 생성 시점의 자산 URL 이 그대로 구워져 있다.
                 // 모드가 바뀌면 그 URL 들이 전부 어긋나는데, 봇은 JavaScript 를 실행하지
                 // 않아 브라우저 자가 복구가 닿지 않는다 → 캐시를 비워 재생성시킨다.
@@ -522,13 +561,7 @@ class SettingsService
                 // SettingsServiceProvider는 worker boot 시점에 한 번만 config 적용하므로
                 // 워커가 정상 종료 후 재시작되도록 신호 전송 (cache 기반, 즉시 종료 X)
                 if ($tab === 'drivers') {
-                    try {
-                        Artisan::call('queue:restart');
-                    } catch (\Throwable $e) {
-                        Log::warning('queue:restart 실행 실패', [
-                            'error' => $e->getMessage(),
-                        ]);
-                    }
+                    $this->restartQueueWorkers();
                 }
             }
 
@@ -664,15 +697,120 @@ class SettingsService
     }
 
     /**
-     * site_logo 컬렉션의 첨부파일 ID 목록을 수집합니다.
+     * 저장할 사이트 로고 첨부 ID 목록을 결정합니다.
      *
-     * @return array<int> 첨부파일 ID 배열
+     * 기준은 **이번 저장 요청이 제출한 목록**입니다. 컬렉션 전체를 다시 훑으면, 저장에 실패했거나
+     * 작성 중 이탈해 남은 미참조 첨부까지 설정에 다시 편입되어(운영자가 올린 적 없는 로고가
+     * 되살아나는) 누적이 발생합니다.
+     *
+     * 제출값에 있더라도 실제로 존재하지 않는 첨부(다른 경로로 이미 삭제된 id)는 걸러냅니다.
+     *
+     * @param  array<int, mixed>  $submitted  제출된 site_logo 값 (첨부 객체 배열 또는 ID 배열)
+     * @return array<int, int> 저장할 첨부파일 ID 배열
      */
-    private function collectSiteLogoIds(): array
+    private function resolveSiteLogoIds(array $submitted): array
     {
-        $attachments = $this->attachmentRepository->getByCollection('site_logo');
+        $submittedIds = $this->extractAttachmentIds($submitted);
 
-        return $attachments->pluck('id')->toArray();
+        if ($submittedIds === []) {
+            return [];
+        }
+
+        $existingIds = $this->attachmentRepository->getByCollection('site_logo')
+            ->pluck('id')
+            ->all();
+
+        return array_values(array_intersect($submittedIds, $existingIds));
+    }
+
+    /**
+     * 저장 요청에서 빠진(= 운영자가 화면에서 제거한) 사이트 로고 첨부 ID 를 가려냅니다.
+     *
+     * 판정 기준은 **직전 저장값**입니다. 직전에 저장돼 있었는데 이번 제출에서 빠진 id 만
+     * 운영자가 명시적으로 뺀 것이고, 직전 저장값에도 없던 id 는 이번에 새로 올라온 첨부입니다.
+     * 그래서 이 판정은 저장으로 값이 덮이기 **전에** 수행해야 합니다.
+     *
+     * 저장할 목록 자체는 제출값이 정합니다(resolveSiteLogoIds) — 컬렉션 전체를 훑으면 저장에
+     * 실패했거나 이탈로 남은 미참조 첨부가 설정에 되살아납니다.
+     *
+     * @param  mixed  $submitted  제출된 site_logo 값 (첨부 객체 배열 또는 ID 배열, 미제출이면 null)
+     * @return array<int, int> 파기 대상 첨부 ID 목록
+     */
+    private function resolveRemovedSiteLogoIds(mixed $submitted): array
+    {
+        // site_logo 를 아예 제출하지 않은 저장(다른 필드만 변경)은 판정 대상이 아니다.
+        if (! is_array($submitted)) {
+            return [];
+        }
+
+        $previousIds = $this->extractAttachmentIds(
+            $this->configRepository->getCategory('general')['site_logo'] ?? []
+        );
+
+        if ($previousIds === []) {
+            return [];
+        }
+
+        $keptIds = $this->extractAttachmentIds($submitted);
+
+        return array_values(array_diff($previousIds, $keptIds));
+    }
+
+    /**
+     * 제거가 확정된 사이트 로고 첨부를 파일까지 파기합니다.
+     *
+     * 설정 저장이 성공한 뒤에만 호출합니다 — 저장이 실패했는데 파일이 먼저 사라지면 설정에는
+     * 이미 없는 첨부 id 가 남아 로고가 깨집니다.
+     *
+     * @param  array<int, int>  $removedIds  파기 대상 첨부 ID 목록
+     */
+    private function purgeSiteLogoAttachments(array $removedIds): void
+    {
+        if ($removedIds === []) {
+            return;
+        }
+
+        foreach ($removedIds as $removedId) {
+            // 설정 저장은 이미 확정된 뒤다 — 파기 실패가 저장 실패(422)로 위장되면
+            // 운영자는 성공한 저장을 실패로 오인한다. 실패 파일은 로그로만 남긴다.
+            try {
+                $this->attachmentService->delete($removedId);
+            } catch (\Exception $e) {
+                Log::warning('사이트 로고 첨부 파기 실패 — 저장은 확정됨', [
+                    'attachment_id' => $removedId,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        Log::info('사이트 로고 첨부 제거', ['attachment_ids' => $removedIds]);
+    }
+
+    /**
+     * 첨부 목록 값에서 첨부 ID 만 추출합니다.
+     *
+     * 저장값은 ID 배열이지만 화면 제출값은 첨부 객체 배열이라 두 형태를 모두 받습니다.
+     *
+     * @param  mixed  $value  첨부 목록 값
+     * @return array<int, int> 첨부 ID 목록
+     */
+    private function extractAttachmentIds(mixed $value): array
+    {
+        if (! is_array($value)) {
+            return [];
+        }
+
+        $ids = [];
+
+        foreach ($value as $item) {
+            $id = is_array($item) ? ($item['id'] ?? null) : $item;
+
+            if (is_numeric($id)) {
+                $ids[] = (int) $id;
+            }
+        }
+
+        return array_values(array_unique($ids));
     }
 
     /**
@@ -690,6 +828,18 @@ class SettingsService
     /**
      * 단일 설정 값을 저장합니다.
      *
+     * 벌크 저장(saveSettings)이 수행하는 부수효과 중 저장 키에 해당하는 것을 함께 수행한다
+     * (공개 #114 동종). 예전에는 값만 쓰고 SEO 프리렌더 캐시 삭제·큐 워커 재시작 신호를
+     * 건너뛰어, 같은 값을 어느 경로로 바꾸느냐에 따라 시스템 상태가 달라졌다.
+     *
+     * 키는 **원본 저장소 키**로 받는다 — 벌크 저장의 `reverseFrontendKeys()`(화면 키 → 저장소
+     * 키 역변환)를 적용하지 않는다. 이 경로의 프로그램 호출자(본인인증 플러그인 설치/삭제의
+     * `identity.purpose_providers.*`)가 저장소 키를 직접 넘기고 있어, 역변환을 끼우면 그
+     * 호출들이 엉뚱한 키에 저장된다.
+     *
+     * 벌크 위임도 하지 않는다 — 벌크의 shallow `array_merge` 로는 깊은 키를 저장할 때
+     * 형제 매핑이 통째로 소실된다.
+     *
      * @param  string  $key  설정 키 (예: 'general.site_name')
      * @param  mixed  $value  저장할 값
      * @return bool 저장 성공 여부
@@ -700,10 +850,25 @@ class SettingsService
         HookManager::doAction('core.settings.before_set', $key, $value);
 
         try {
+            // 자산 URL 방식이 바뀌는지 저장 **전에** 판정한다 (이슈 #486 동형).
+            // 저장 후에는 이전 값을 알 수 없어 변경 여부를 판별할 수 없다.
+            $assetUrlModeChanged = $key === 'general.asset_url_mode'
+                && $this->configRepository->get($key) !== $value;
+
             $result = $this->configRepository->set($key, $value);
 
             if ($result) {
-                $this->cache->forget('settings.system');
+                // 인라인 무효화 대신 공통 경로를 탄다 — saveSettings/saveAdvancedSettings 와
+                // 같은 처리를 받아야 미러 재채움·디스크 config 캐시 재생성이 빠지지 않는다.
+                $this->invalidateSettingsCache();
+
+                if ($assetUrlModeChanged) {
+                    $this->clearSeoCacheForAssetUrlMode();
+                }
+
+                if (str_starts_with($key, 'drivers.') || $key === 'drivers') {
+                    $this->restartQueueWorkers();
+                }
             }
 
             // After 훅
@@ -738,7 +903,9 @@ class SettingsService
         $result = $this->configRepository->restore($backupPath);
 
         if ($result) {
-            $this->cache->forget('settings.system');
+            // 복원도 설정 전체를 갈아엎는 쓰기다 — 캐시만 비우고 미러를 두면
+            // 같은 프로세스가 복원 전 값을 계속 읽는다 (저장 경로와 동일 결함, 공개이슈 #109).
+            $this->invalidateSettingsCache();
         }
 
         return $result;

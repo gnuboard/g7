@@ -178,6 +178,21 @@ location ~* \.(js|css|json)$ { expires max; access_log off; }
 성공 판정은 상태코드가 아니라 **본문의 매직 토큰과 Content-Type** 으로 합니다. 상태코드만 보면
 "404 대신 200 + 에러 HTML" 이나 catch-all 200 페이지를 반환하는 설정에서 영원히 오판합니다.
 
+### 보안 게이트 (KVE-2026 대응)
+
+일부 관리 엔드포인트에는 표준 응답 외에 다음 보안 게이트가 적용됩니다(각 엔드포인트 표에는 별도 표기가 없어도 공통 적용).
+
+- **등급 상한 (KVE-2026-1919)** — 사용자·역할 쓰기 경로:
+  - `PUT /api/admin/users/{user}`, `POST /api/admin/users/{user}/unlock`: 비-슈퍼관리자 액터가 슈퍼 관리자 계정을 수정·잠금해제하려 하면 `403` (`exceptions.cannot_modify_super_admin`).
+  - `PATCH /api/admin/users/bulk-status`: 비-슈퍼관리자 액터가 포함시킨 슈퍼 관리자 대상은 일괄 처리에서 제외(요청은 `200`, 슈퍼 관리자 상태 불변).
+  - `POST /api/admin/roles`, `PUT /api/admin/roles/{role}`: 비-슈퍼관리자 액터가 자신이 보유하지 않았거나 자신의 범위(scope)보다 넓은 권한을 부여하려 하면 `403` (`exceptions.cannot_grant_unheld_permission`).
+  - `PUT /api/admin/roles/{role}`, `PATCH /api/admin/roles/{role}/toggle-status`: 비-슈퍼관리자 액터가 코어/확장 소유 역할(예: `admin`)을 수정·토글하려 하면 `403` (`exceptions.cannot_modify_protected_role`).
+  - 슈퍼 관리자 액터의 동일 작업은 정상 수행됩니다.
+- **레이아웃 저장 표현식/URL 검증 (KVE-2026-1915)** — 레이아웃 생성·수정(`POST/PUT /api/admin/layouts*`)의 `content` 검증:
+  - `{{...}}`·`computed`·`init_actions`/`actions` 문자열 값에 위험 토큰이 있으면 `422` (`validation.layout.dangerous_expression`). 차단 토큰은 프로토타입 체인 접근(`.constructor`/`.__proto__`/`.prototype`, `['constructor']`, 원시 `__proto__`)·`Function(`·`eval(`·`import(` 입니다.
+  - `scripts[].src`·`data_sources[].endpoint` 가 same-origin path-only(`/` 시작)가 아니면 `422` (`validation.layout.external_resource_url`). 단, 활성 확장(모듈·플러그인·템플릿)이 자기 manifest 의 `trusted_script_hosts` 로 선언한 호스트는 예외로 허용됩니다 — 이 목록은 확장 배포물이 정하며 요청으로 바꿀 수 없습니다.
+  - 정상 표현식(조건·계산·목록 가공·화살표 함수·템플릿 리터럴·경로 조립)은 통과합니다.
+
 ## 코어 API 레퍼런스
 
 <!-- @generated:start:api-readme-index -->

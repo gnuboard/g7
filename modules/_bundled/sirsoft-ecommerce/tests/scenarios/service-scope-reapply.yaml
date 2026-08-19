@@ -1,0 +1,38 @@
+feature: 서비스 계층 스코프 게이트 재적용 (KVE-2026-1919 형제)
+
+description: |
+  `PermissionMiddleware` 는 라우트 파라미터가 Model 로 resolve 될 때만 스코프를 검사하고,
+  아니면 "목록 엔드포인트" 로 보아 건너뛴다. 이 모듈에는 그 스킵이 성립하는 두 형태가
+  모두 있었고, 조사 시점 모듈 전체의 `checkScopeAccess`/`filterByScope` 호출은 0건이었다 —
+  미들웨어가 스킵되면 어떤 2차 방어도 없었다는 뜻이다.
+
+  축은 그 **우회 메커니즘**이다. 두 형태는 노출 범위가 다르므로 한쪽만 검증하면 나머지가
+  무보호로 남는다:
+
+  - static_bulk — `bulk-*` 처럼 리소스 파라미터 자체가 없는 정적 경로. 일괄 경로만 뚫린다.
+  - param_name_mismatch — 권한의 `resource_route_key` 는 `shippingPolicy`/`coupon` 인데
+    라우트는 `{id}` 라 바인딩이 일어나지 않는다. 이쪽은 **상세 경로까지** 무가드다.
+
+  공용 trait `ReappliesPermissionScope` 가 두 형태 모두에서 코어 SSoT
+  (`PermissionHelper::checkScopeAccess` / `filterByScope`)에 판정을 위임한다. 대표 경로
+  (상세 1 + 일괄 1)를 고정하며, 나머지 서비스도 같은 trait 을 쓴다.
+
+  각 형태마다 **차단 축과 과차단 회귀 축을 짝으로** 둔다 — 차단만 단언하면 가드가 정상
+  대상까지 막는 회귀가 green 으로 통과한다.
+
+axes:
+  route_shape: [static_bulk, param_name_mismatch]
+
+effects:
+  # param_name_mismatch — 상세 경로
+  - detail_route_reapplies_scope_gate_when_binding_absent
+  - detail_route_allows_in_scope_target
+  # static_bulk — 일괄 경로
+  - static_bulk_route_reapplies_scope_gate
+  - static_bulk_route_allows_global_scoped_actor
+  # HTTP 표면 — 컨트롤러 typed catch (거부가 500 으로 위장되지 않는다)
+  - scope_denial_surfaces_as_403_over_http
+  - missing_target_keeps_not_found_contract
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Security/ServiceScopeReapplyTest.php

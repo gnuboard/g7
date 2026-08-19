@@ -19,11 +19,11 @@
  *    폴백)만 골라 보면 통과해 버린다. **ko 값과 다른 국가가 하나라도 있는지** 먼저 확인한
  *    뒤, 그 국가에서 화면값 === en 값을 단언한다.
  *
- * @scenario shipping_country_i18n locale=en|ja × surface=settings_list|add_form
- * @effects country_names_localized_by_active_locale,
- *          country_names_not_pinned_to_ko,
- *          add_form_inputs_follow_installed_locales,
- *          add_button_enabled_by_any_locale_name
+ * 축 요약(마커 아님 — 평문): locale=en|ja, surface=settings_list|add_form. 요약을 시나리오 축 마커
+ * 로 적으면 파서가 쉼표로만 축을 분리하므로 `×` 표기는 첫 축만, 그것도 나머지 전부를 값으로
+ * 삼킨 형태로 집계된다. 실제 커버는 각 test 의 라인 마커가 담당한다.
+ *
+ * 효과 요약(마커 아님 — 평문): country_names_localized_by_active_locale, country_names_not_pinned_to_ko, add_form_inputs_follow_installed_locales, add_button_enabled_by_any_locale_name.
  */
 import { test, expect, authenticatePage } from '../../fixtures/ecommerce-auth';
 import type { Page } from '@playwright/test';

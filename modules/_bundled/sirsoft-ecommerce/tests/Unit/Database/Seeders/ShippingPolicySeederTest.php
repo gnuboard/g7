@@ -2,8 +2,12 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Database\Seeders;
 
+use Illuminate\Routing\Redirector;
+use Illuminate\Validation\ValidationException;
 use Modules\Sirsoft\Ecommerce\Database\Seeders\Sample\ShippingPolicySeeder;
+use Modules\Sirsoft\Ecommerce\Database\Seeders\ShippingTypeSeeder;
 use Modules\Sirsoft\Ecommerce\Enums\ChargePolicyEnum;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\StoreShippingPolicyRequest;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicyCountrySetting;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
@@ -142,8 +146,81 @@ class ShippingPolicySeederTest extends ModuleTestCase
 
         $this->assertArrayHasKey('min', $tier);
         $this->assertArrayHasKey('max', $tier);
-        $this->assertArrayHasKey('unit', $tier);
         $this->assertArrayHasKey('fee', $tier);
+    }
+
+    /**
+     * 시더가 만든 모든 정책이 관리자 저장 검증(StoreShippingPolicyRequest)을 통과해야 한다.
+     *
+     * 시더는 Model::create 로 검증을 우회하므로, 키 존재만 확인하면 화면에서는 저장조차
+     * 불가한 설정이 샘플 데이터로 배포된다 (구간 연속성·필수값 규칙 위반).
+     */
+    public function test_seeded_policies_pass_admin_store_validation(): void
+    {
+        $this->seed(ShippingTypeSeeder::class);
+        $this->runSeeder();
+
+        $policies = ShippingPolicy::with('countrySettings')->get();
+        $this->assertTrue($policies->isNotEmpty());
+
+        foreach ($policies as $policy) {
+            $payload = [
+                'name' => $policy->name,
+                'is_active' => $policy->is_active,
+                'is_default' => $policy->is_default,
+                'sort_order' => $policy->sort_order,
+                'country_settings' => $policy->countrySettings
+                    ->map(fn (ShippingPolicyCountrySetting $cs) => [
+                        'country_code' => $cs->country_code,
+                        'shipping_method' => $cs->shipping_method,
+                        'custom_shipping_name' => $cs->custom_shipping_name,
+                        'currency_code' => $cs->currency_code,
+                        'charge_policy' => $cs->charge_policy->value,
+                        'base_fee' => (float) $cs->base_fee,
+                        'free_threshold' => $cs->free_threshold !== null ? (float) $cs->free_threshold : null,
+                        'ranges' => $cs->ranges,
+                        'api_endpoint' => $cs->api_endpoint,
+                        'api_request_fields' => $cs->api_request_fields,
+                        'api_response_fee_field' => $cs->api_response_fee_field,
+                        'api_config' => $cs->api_config,
+                        'extra_fee_enabled' => (bool) $cs->extra_fee_enabled,
+                        'extra_fee_settings' => $cs->extra_fee_settings,
+                        'extra_fee_multiply' => (bool) $cs->extra_fee_multiply,
+                        'is_active' => (bool) $cs->is_active,
+                    ])
+                    ->values()
+                    ->all(),
+            ];
+
+            $errors = $this->collectStoreValidationErrors($payload);
+
+            $this->assertSame(
+                [],
+                $errors,
+                "정책 '{$policy->getLocalizedName()}' 이 관리자 저장 검증을 통과하지 못했습니다: "
+                    .json_encode($errors, JSON_UNESCAPED_UNICODE)
+            );
+        }
+    }
+
+    /**
+     * 배송정책 저장 요청 검증을 수행하고 에러 메시지 배열을 반환합니다.
+     *
+     * @param  array  $payload  저장 요청 페이로드
+     * @return array<string, array<int, string>> 필드별 에러 메시지 (통과 시 빈 배열)
+     */
+    private function collectStoreValidationErrors(array $payload): array
+    {
+        $request = StoreShippingPolicyRequest::create('/', 'POST', $payload);
+        $request->setContainer(app())->setRedirector(app(Redirector::class));
+
+        try {
+            $request->validateResolved();
+        } catch (ValidationException $e) {
+            return $e->errors();
+        }
+
+        return [];
     }
 
     // ========================================

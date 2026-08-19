@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Board\Http\Requests\Admin;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Modules\Sirsoft\Board\Enums\ReplyDeletePolicy;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ReadsBoardLimits;
 use Modules\Sirsoft\Board\Models\Board;
 
@@ -30,6 +31,7 @@ class BulkApplySettingsRequest extends FormRequest
         'use_comment',
         'use_reply',
         'max_reply_depth',
+        'reply_delete_policy',
         'max_comment_depth',
         'comment_order',
         'show_view_count',
@@ -117,6 +119,7 @@ class BulkApplySettingsRequest extends FormRequest
             'override_values.per_page' => ['nullable', 'integer', "min:{$limits['per_page_min']}", "max:{$limits['per_page_max']}"],
             'override_values.per_page_mobile' => ['nullable', 'integer', "min:{$limits['per_page_min']}", "max:{$limits['per_page_max']}"],
             'override_values.max_reply_depth' => ['nullable', 'integer', "min:{$limits['max_reply_depth_min']}", "max:{$limits['max_reply_depth_max']}"],
+            'override_values.reply_delete_policy' => ['nullable', 'string', Rule::in(ReplyDeletePolicy::values())],
             'override_values.max_comment_depth' => ['nullable', 'integer', "min:{$limits['max_comment_depth_min']}", "max:{$limits['max_comment_depth_max']}"],
             'override_values.min_title_length' => ['nullable', 'integer', "min:{$limits['min_title_length_min']}", "max:{$limits['min_title_length_max']}"],
             'override_values.max_title_length' => ['nullable', 'integer', "min:{$limits['max_title_length_min']}", "max:{$limits['max_title_length_max']}"],

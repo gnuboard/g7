@@ -68,6 +68,16 @@ class CreateOrderRequest extends FormRequest
                 'required',
                 'string',
                 Rule::in(app(PaymentMethodResolver::class)->allValidIds()),
+                // 지금 주문을 받을 수 있는 수단인지 별도 판정 (A2 / 공개 #111 서버 대칭).
+                // 공급 확장이 사라진 수단, 지정 PG 가 사라진 수단은 화이트리스트를 통과하지만
+                // 주문하면 PG 라우팅이 매칭에 실패해 결제창 없이 주문완료로 넘어간다.
+                // 화이트리스트(allValidIds) 자체는 조이지 않는다 — 과거 주문 목록 필터가
+                // 같은 목록을 쓰므로, 조이면 예전 수단으로 결제한 주문을 조회할 수 없게 된다.
+                function (string $attribute, mixed $value, callable $fail) {
+                    if (is_string($value) && ! app(PaymentMethodResolver::class)->isOrderable($value)) {
+                        $fail(__('sirsoft-ecommerce::validation.order.payment_method_unavailable'));
+                    }
+                },
             ],
             'expected_total_amount' => 'required|numeric|min:0',
 

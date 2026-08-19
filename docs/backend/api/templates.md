@@ -293,7 +293,7 @@ _단건 응답: `data` 객체의 필드._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.activate`)이 없는 경우 |
 | 409 | Conflict | 필요한 의존 모듈/플러그인이 충족되지 않은 경우 (`errors` 에 `warning`, `missing_modules`, `missing_plugins`, `message`) — `force=true` 로 우회 가능 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Server Error | 활성화 처리 실패 (이미 활성 상태·미설치·코어 버전 비호환 등) |
@@ -360,7 +360,7 @@ _단건 응답: `data` 객체의 필드._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.install`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Server Error | 업데이트 확인 처리 실패 (GitHub API 호출 실패 등) |
 
@@ -470,7 +470,7 @@ _단건 응답: `data` 객체의 필드 (TemplateResource)._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.activate`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Server Error | 비활성화 처리 실패 (템플릿 미존재 등) |
 
@@ -590,7 +590,7 @@ _단건 응답: `data` 객체의 필드 (TemplateResource + cascade 결과)._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.install`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터 검증 위반 또는 설치 실패 (이미 설치됨·manifest 오류·cascade 의존 확장 설치 실패 등 — `errors` 에 번역된 사유) |
 | 500 | Server Error | 설치 처리 중 예기치 못한 오류 |
 
@@ -703,7 +703,7 @@ _단건 응답: `data` 객체의 필드 (TemplateResource — 목록 응답 항�
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.install`)이 없는 경우 |
 | 422 | Unprocessable Entity | 파일 검증 위반 또는 ZIP 처리 실패 (template.json 누락/무효, 이미 설치된 식별자, 잘못된 디렉토리명 등) |
 | 500 | Server Error | 설치 처리 중 예기치 못한 오류 |
 
@@ -813,7 +813,7 @@ _단건 응답: `data` 객체의 필드 (TemplateResource — 목록 응답 항�
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.install`)이 없는 경우 |
 | 422 | Unprocessable Entity | URL 검증 위반 또는 설치 실패 (유효하지 않은 GitHub URL, 저장소 없음, 다운로드 실패, 이미 설치된 식별자 등) |
 | 500 | Server Error | 설치 처리 중 예기치 못한 오류 |
 
@@ -862,7 +862,7 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (`data`: `null`, �
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Server Error | 첨부 파일 삭제 실패 (스토리지/DB 삭제 실패 — `첨부 파일 삭제에 실패했습니다.`) |
@@ -944,7 +944,7 @@ _단건 응답: `data` 객체의 필드._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.install`)이 없는 경우 |
 | 422 | Unprocessable Entity | 파일 검증 위반 또는 ZIP 열기 실패 (`manifest 미리보기에 실패했습니다.` + `errors.error`) |
 
 <!-- @generated:end -->
@@ -1053,7 +1053,7 @@ _단건 응답: `data` 객체의 필드 (TemplateResource — 갱신 후 템플�
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.activate`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터 검증 위반 또는 레이아웃 갱신 실패 (레이아웃 JSON 무효, layout_name 누락 등) |
 | 500 | Server Error | 레이아웃 갱신 처리 중 예기치 못한 오류 |
 
@@ -1105,7 +1105,7 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (`data`: `null`, �
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.uninstall`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터 검증 위반 또는 제거 실패 (활성 상태·파일 삭제 실패 등 — `errors.identifier` 에 번역된 사유) |
 | 500 | Server Error | 제거 처리 중 예기치 못한 오류 |
 
@@ -1319,7 +1319,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
@@ -1426,18 +1426,41 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: http-404 — 응답 필드는 사람이 작성하세요. -->
+_`data` 객체의 필드 (`BroadcastCatalogService::collect` + 요청 식별자)._
+
+| 필드 | 타입 | 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| identifier | string | `sirsoft-admin_basic` | 요청한 템플릿 식별자 (요청값 반향) |
+| channels | array | `[{"name":"core.notifications","source":{"kind":"core"}}]` | 구독 가능한 브로드캐스트 채널 목록. `source.kind` 는 `core`/`module`/`plugin` 이며 확장 채널에는 `source.identifier` 가 붙는다 (활성 확장만 수집) |
+| events | array | `[]` | 정적 이벤트 카탈로그. 이벤트는 동적 발행이라 **항상 빈 배열**이며, 편집기는 자유 텍스트 입력으로 폴백한다 |
 
 **응답 예시**
 
-<!-- 실측 제외: http-404 — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "요청이 성공했습니다.",
+    "data": {
+        "identifier": "sirsoft-admin_basic",
+        "channels": [
+            { "name": "core.notifications", "source": { "kind": "core" } },
+            { "name": "module.sirsoft-board.posts", "source": { "kind": "module", "identifier": "sirsoft-board" } }
+        ],
+        "events": []
+    }
+}
+```
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
@@ -1517,18 +1540,31 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: http-404 — 응답 필드는 사람이 작성하세요. -->
+_이 엔드포인트는 표준 JSON 봉투가 아니라 **편집기 미리보기용 컴포넌트 CSS 본문** 을 그대로 반환한다 — `data` 구조가 없다._
+
+| 항목 | 값 | 설명 |
+| --- | --- | --- |
+| Content-Type | `text/css; charset=UTF-8` | 서빙 대상의 MIME 타입 |
+| Cache-Control | `public, max-age=31536000, immutable` (프로덕션) / `no-cache` (그 외) | 환경에 따라 갈린다 |
+| ETag | `{md5(mtime+size)}` | `If-None-Match` 가 일치하면 본문 없이 `304` |
 
 **응답 예시**
 
-<!-- 실측 제외: http-404 — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+Content-Type: text/css; charset=UTF-8
+
+.g7-card{border-radius:.5rem}
+```
+
+> CSS 가 없는 템플릿도 **빈 본문 200** 으로 응답한다 — 편집기 부팅이 실패하지 않게 하기 위한 폴백이며 404 가 아니다.
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
@@ -1626,18 +1662,36 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: http-404 — 응답 필드는 사람이 작성하세요. -->
+_`data` 는 템플릿의 `components.json` 내용을 그대로 담은 **컴포넌트 맵**이다 (고정 필드 집합이 아니라 컴포넌트명 → 정의 매핑)._
+
+| 필드 | 타입 | 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| (컴포넌트명) | object | `{"type":"basic","tag":"div"}` | 컴포넌트 정의. 키는 레이아웃 JSON 의 `name` 과 일치한다 |
+
+> 활성/`_bundled` 어디에도 `components.json` 이 없으면 `404`(`templates.layout_not_found`)다.
 
 **응답 예시**
 
-<!-- 실측 제외: http-404 — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "설정을 조회했습니다.",
+    "data": {
+        "Card": { "type": "composite", "props": { "title": "string" } }
+    }
+}
+```
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
@@ -1736,11 +1790,32 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: http-404 — 응답 필드는 사람이 작성하세요. -->
+_`data` 객체의 필드 (`EditorSpecAssembler::assemble`)._
+
+| 필드 | 타입 | 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| identifier | string | `sirsoft-admin_basic` | 요청한 템플릿 식별자 (요청값 반향) |
+| spec | object \| null | `{"palette":[…],"styleControls":{…}}` | 합본된 편집기 스펙. 분할 매니페스트(`editor-spec/` + `$include`)는 **활성 디렉토리 기준**으로 합쳐지며(`_bundled` 폴백 없음), 미분할 원본 파일은 그대로 반환된다. 스펙이 없으면 `null` (404 아님) |
 
 **응답 예시**
 
-<!-- 실측 제외: http-404 — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "편집기 스펙을 조회했습니다.",
+    "data": {
+        "identifier": "sirsoft-admin_basic",
+        "spec": {
+            "palette": [{ "name": "Card", "label": "카드" }],
+            "styleControls": {}
+        }
+    }
+}
+```
 
 **에러 응답**
 
@@ -93553,7 +93628,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
@@ -93612,7 +93687,7 @@ _단건 응답: `data` 는 템플릿 `lang/{locale}.json` 의 내용을 그대�
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
@@ -93726,18 +93801,38 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: http-404 — 응답 필드는 사람이 작성하세요. -->
+_`data` 객체의 필드._
+
+| 필드 | 타입 | 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| identifier | string | `sirsoft-admin_basic` | 요청한 템플릿 식별자 (요청값 반향) |
+| permissions | array | `[{"identifier":"core.users.read","name":"사용자 조회"}]` | 레이아웃 조건식에 쓸 수 있는 권한 후보 목록 (현재 로케일로 해석된 표시명 포함) |
 
 **응답 예시**
 
-<!-- 실측 제외: http-404 — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "설정을 조회했습니다.",
+    "data": {
+        "identifier": "sirsoft-admin_basic",
+        "permissions": [
+            { "identifier": "core.users.read", "name": "사용자 조회" }
+        ]
+    }
+}
+```
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
@@ -93929,18 +94024,45 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: http-404 — 응답 필드는 사람이 작성하세요. -->
+_`data` 는 템플릿 `routes.json` 에 모듈·플러그인 라우트를 병합하고 각 라우트에 출처를 태깅한 결과다._
+
+| 필드 | 타입 | 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| version | string | `1.0.0` | routes.json 스키마 버전 |
+| routes | array | `[{"path":"/","layout":"home","source":{"kind":"template","identifier":"sirsoft-basic"}}]` | 라우트 목록. **`source` 태깅이 필수**다 — 편집기 라우트 트리가 `source.kind` 로 그룹핑하므로 태깅이 없으면 클라이언트가 라우트 트리 렌더에서 실패한다 |
+
+> 공개 라우트 엔드포인트와 달리 **비활성 템플릿도 조회 가능**하고 `_bundled` 폴백이 적용된다 (편집 대상이 활성일 필요가 없다).
 
 **응답 예시**
 
-<!-- 실측 제외: http-404 — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "라우트를 조회했습니다.",
+    "data": {
+        "version": "1.0.0",
+        "routes": [
+            {
+                "path": "/",
+                "layout": "home",
+                "auth_required": false,
+                "source": { "kind": "template", "identifier": "sirsoft-basic" }
+            }
+        ]
+    }
+}
+```
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
@@ -94025,7 +94147,7 @@ _단건 응답: `data` 객체의 필드._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
@@ -94045,8 +94167,8 @@ _단건 응답: `data` 객체의 필드._
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | identifier | path | string | 예 | — | 대상 리소스의 식별자 |
-| extensions | query | string | 아니오 | — | <!-- TODO: 용도 --> |
-| page_type | query | string | 아니오 | — | <!-- TODO: 용도 --> |
+| extensions | query | string | 아니오 | JSON 배열 문자열 | 후보를 수집할 확장 선언. `[{"type":"module","id":"sirsoft-board"}]` 형태의 JSON 문자열이며, `type`·`id` 가 모두 문자열인 항목만 채택된다(그 외는 조용히 무시). 편집 중인 레이아웃이 아직 활성화하지 않은 확장의 후보까지 보려 할 때 쓴다 |
+| page_type | query | string | 아니오 | — | 치환 변수(`vars`) 후보를 좁힐 페이지 유형. 빈 문자열은 미지정과 같게 처리된다 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.seo_candidate.index_validation_rules`).
 
@@ -94307,18 +94429,42 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: http-404 — 응답 필드는 사람이 작성하세요. -->
+_`data` 객체의 필드 (`SeoCandidateService::collect` + 요청 식별자)._
+
+| 필드 | 타입 | 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| identifier | string | `sirsoft-admin_basic` | 요청한 템플릿 식별자 (요청값 반향) |
+| page_types | array | `[{"id":"board_list","label":"게시판 목록"}]` | 선택 가능한 페이지 유형 후보 (활성 확장 + 요청이 선언한 확장 기준) |
+| toggle_settings | array | `[{"key":"use_og","label":"오픈그래프 사용"}]` | SEO 토글 설정 후보 (현재 로케일로 해석) |
+| vars | array | `[{"name":"post.title","label":"게시글 제목"}]` | 메타 템플릿에 넣을 수 있는 치환 변수 후보 (`page_type` 을 주면 그 유형으로 좁혀진다) |
+| extensions | array | `[{"type":"module","id":"sirsoft-board","name":"게시판"}]` | 후보를 제공한 활성 확장 목록 |
 
 **응답 예시**
 
-<!-- 실측 제외: http-404 — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "요청이 성공했습니다.",
+    "data": {
+        "identifier": "sirsoft-admin_basic",
+        "page_types": [{ "id": "board_list", "label": "게시판 목록" }],
+        "toggle_settings": [{ "key": "use_og", "label": "오픈그래프 사용" }],
+        "vars": [{ "name": "post.title", "label": "게시글 제목" }],
+        "extensions": [{ "type": "module", "id": "sirsoft-board", "name": "게시판" }]
+    }
+}
+```
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
@@ -94461,7 +94607,7 @@ _단건 응답: `data` 객체의 필드._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
@@ -94531,7 +94677,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
@@ -94612,7 +94758,7 @@ _단건 응답: `data` 객체의 필드._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
 | 404 | Not Found | 대상 템플릿이 존재하지 않는 경우 (`템플릿을 찾을 수 없습니다.`) |
 | 422 | Unprocessable Entity | 파일 검증 위반 (이미지 아님, 지원하지 않는 형식 jpg/jpeg/png/gif/webp/svg 외, 크기 초과 등) |
 | 500 | Server Error | 스토리지 저장 실패 (`첨부 파일 업로드에 실패했습니다.`) |
@@ -94924,7 +95070,7 @@ _단건 응답: `data` 객체의 필드._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
 | 404 | Not Found | 대상 템플릿이 존재하지 않는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`ids` 누락 또는 빈 배열 등) |
 | 500 | Server Error | 삭제 트랜잭션 실패 |
@@ -95005,7 +95151,7 @@ _목록 응답: `data` 는 커스텀 다국어 키 배열입니다 (페이지네
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
 | 404 | Not Found | 대상 템플릿이 존재하지 않는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
@@ -95090,7 +95236,7 @@ _단건 응답: `data` 객체의 필드 (생성된 커스텀 다국어 키, HTTP
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
 | 404 | Not Found | 대상 템플릿이 존재하지 않는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Server Error | 키 생성 트랜잭션 실패 |
@@ -95141,7 +95287,7 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (`data`: `null`, �
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
 | 404 | Not Found | 대상 템플릿이 없거나, 해당 키가 없거나, 그 키가 경로의 템플릿 소속이 아닌 경우 (교차 템플릿 삭제 차단) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Server Error | 삭제 트랜잭션 실패 |
@@ -95229,7 +95375,7 @@ _단건 응답: `data` 객체의 필드 (수정된 커스텀 다국어 키)._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
 | 404 | Not Found | 대상 템플릿이 없거나, 해당 키가 없거나, 그 키가 경로의 템플릿 소속이 아닌 경우 |
 | 409 | Conflict | 낙관적 잠금 충돌 — 다른 사용자가 먼저 수정 (`errors`: `error=concurrent_modification`, `current_version`, `your_version`, `resource`) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
@@ -95336,7 +95482,7 @@ _단건 응답: `data` 객체의 필드._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.install`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Server Error | 대상 템플릿을 찾을 수 없거나 프리뷰 구성 실패 |
@@ -95667,7 +95813,7 @@ _단건 응답: `data` 객체의 필드 (수정된 LayoutExtensionResource)._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
 | 404 | Not Found | 템플릿/확장이 없거나, 확장이 경로의 템플릿 소속이 아닌 경우 |
 | 409 | Conflict | 낙관적 잠금 충돌 — 다른 사용자가 먼저 수정 (`errors`: `error=concurrent_modification`, `current_version`, `your_version`, `resource`) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
@@ -95899,7 +96045,7 @@ _단건 응답: `data` 객체의 필드 (복원 결과로 새로 기록된 버�
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
 | 404 | Not Found | 템플릿/확장/버전이 없거나, 확장이 경로의 템플릿 소속이 아닌 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Server Error | 복원 트랜잭션 실패 |
@@ -96441,7 +96587,7 @@ _단건 응답: `data` 객체의 필드 (수정된 LayoutResource)._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
 | 404 | Not Found | 대상 템플릿이 존재하지 않는 경우 |
 | 409 | Conflict | 낙관적 잠금 충돌 — 다른 사용자가 먼저 수정 (`errors`: `error=concurrent_modification`, `current_version`, `your_version`, `resource`) |
 | 422 | Unprocessable Entity | content 구조 검증 위반 (레이아웃 구조/슬롯/데이터소스 병합/엔드포인트 화이트리스트/외부 URL 차단/권한 구조 규칙) |
@@ -96678,7 +96824,7 @@ _단건 응답: `data` 객체의 필드 (복원 결과로 새로 기록된 버�
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
 | 404 | Not Found | 대상 템플릿·레이아웃·버전이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Server Error | 복원 트랜잭션 실패 |
@@ -96828,7 +96974,7 @@ _단건 응답: `data` 객체의 필드._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.uninstall`)이 없는 경우 |
 | 404 | Not Found | 해당 식별자의 템플릿이 없는 경우 (`템플릿을 찾을 수 없습니다.`) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Server Error | 삭제 정보 조회 실패 |
@@ -96944,7 +97090,7 @@ _업데이트할 내용이 없거나 템플릿 정보를 다시 읽지 못한 �
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.install`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터 검증 위반 또는 업데이트 실패 (미설치, 다운그레이드 차단, 다운로드 실패, 코어 버전 비호환 등 — `errors.template_name` 에 번역된 사유) |
 | 500 | Server Error | 업데이트 처리 중 예기치 못한 오류 |
@@ -96977,11 +97123,24 @@ Accept: application/json
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: http-422 — 응답 필드는 사람이 작성하세요. -->
+_이 엔드포인트는 표준 JSON 봉투가 아니라 **템플릿 에셋 파일 본문** 을 그대로 반환한다 — `data` 구조가 없다._
+
+| 항목 | 값 | 설명 |
+| --- | --- | --- |
+| Content-Type | `파일 확장자에 따른 MIME (예: text/javascript, text/css, image/png)` | 서빙 대상의 MIME 타입 |
+| Cache-Control | `public, max-age=31536000, immutable` (프로덕션) / `no-cache` (그 외) | 환경에 따라 갈린다 |
+| ETag | `{md5(mtime+size)}` | `If-None-Match` 가 일치하면 본문 없이 `304` |
 
 **응답 예시**
 
-<!-- 실측 제외: http-422 — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+Content-Type: text/javascript
+
+(function(){ /* 템플릿 에셋 본문 */ })();
+```
+
+> 같은 ETag 로 재요청하면 본문 없이 `304 Not Modified` 가 반환된다.
 
 **에러 응답**
 
@@ -97069,7 +97228,13 @@ Accept: application/json
 
 
 
-<!-- 실측 응답에 필드 없음(빈 목록 등) — 데이터가 있는 상태로 재실측하거나 사람이 작성. -->
+_`data` 는 템플릿의 `components.json` 내용을 그대로 담은 **컴포넌트 맵**이다 (고정 필드 집합이 아니라 컴포넌트명 → 정의 매핑)._
+
+| 필드 | 타입 | 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| (컴포넌트명) | object | `{"type":"basic","tag":"div"}` | 컴포넌트 정의. 키는 레이아웃 JSON 의 `name` 과 일치한다 |
+
+> 활성/`_bundled` 어디에도 `components.json` 이 없으면 `404`(`templates.layout_not_found`)다.
 
 **응답 예시**
 
@@ -97137,7 +97302,19 @@ _이 엔드포인트는 `success`/`message`/`data` 봉투를 사용하지 않습
 
 **응답 예시**
 
-<!-- 실측 제외: http-404 — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "설정을 조회했습니다.",
+    "data": {
+        "Card": { "type": "composite", "props": { "title": "string" } }
+    }
+}
+```
 
 **에러 응답**
 
@@ -97396,11 +97573,35 @@ Accept: application/json
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: http-404 — 응답 필드는 사람이 작성하세요. -->
+_`data` 는 템플릿의 `template.json` 매니페스트 내용이다 (고정 필드 집합이 아니라 매니페스트 그대로)._
+
+| 필드 | 타입 | 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| identifier | string | `sirsoft-basic` | 템플릿 식별자 |
+| version | string | `1.1.1` | 템플릿 버전 |
+| type | string | `user` | 템플릿 유형 (`admin`/`user`) |
+| (그 외 매니페스트 키) | mixed | — | `template.json` 이 선언한 나머지 키가 그대로 실린다 |
+
+> **활성 템플릿만** 조회된다 — 비활성이거나 매니페스트가 없으면 `404`. 응답은 1시간 캐시된다.
 
 **응답 예시**
 
-<!-- 실측 제외: http-404 — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "설정을 조회했습니다.",
+    "data": {
+        "identifier": "sirsoft-basic",
+        "name": "Sirsoft Basic",
+        "version": "1.1.1",
+        "type": "user"
+    }
+}
+```
 
 **에러 응답**
 
@@ -97413,7 +97614,7 @@ Accept: application/json
 
 <!-- @generated:end -->
 
-**설명** 활성 템플릿의 설정 파일(template.json, error_config 등 메타데이터)을 서빙하는 공개 엔드포인트입니다. 응답에 확장 캐시 버전(`cache_version`)을 포함해 프론트엔드가 후속 API 호출에 사용하게 하며, 비활성/미존재 템플릿은 404입니다. 1시간 캐시됩니다. 인증이 필요 없습니다.
+**설명** 활성 템플릿의 설정 파일(template.json, error_config 등 메타데이터)을 서빙하는 공개 엔드포인트입니다. 응답에 확장 캐시 버전(`cache_version`)을 포함해 프론트엔드가 후속 API 호출에 사용하게 하며, 비활성/미존재 템플릿은 404입니다. 1시간 캐시됩니다. 서버 캐시는 템플릿 라이프사이클(`template:update` / `template:cache-clear` / 비활성화 / 삭제) 시점에 즉시 무효화되어 최신 매니페스트가 반영됩니다. 인증이 필요 없습니다.
 
 
 ### GET /api/templates/{identifier}/editor-spec
@@ -189529,11 +189730,37 @@ Accept: application/json
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: http-404 — 응답 필드는 사람이 작성하세요. -->
+_`data` 는 템플릿 `routes.json` 에 활성 모듈·플러그인 라우트를 병합한 결과다._
+
+| 필드 | 타입 | 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| version | string | `1.0.0` | routes.json 스키마 버전 |
+| routes | array | `[{"path":"/","layout":"home","source":{"kind":"template","identifier":"sirsoft-basic"}}]` | 라우트 목록 (각 항목에 출처 `source` 태깅) |
+
+> 응답은 `?v=` 쿼리를 포함한 키로 캐시된다. 다만 확장 업데이트 중 활성 디렉토리가 비어 라우트가 빠진 **열화 스냅샷은 캐시에 남기지 않는다** — 남기면 업데이트가 끝난 뒤에도 그 확장의 화면이 캐시 만료까지 404 로 남는다.
 
 **응답 예시**
 
-<!-- 실측 제외: http-404 — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "라우트를 조회했습니다.",
+    "data": {
+        "version": "1.0.0",
+        "routes": [
+            {
+                "path": "/",
+                "layout": "home",
+                "source": { "kind": "template", "identifier": "sirsoft-basic" }
+            }
+        ]
+    }
+}
+```
 
 **에러 응답**
 

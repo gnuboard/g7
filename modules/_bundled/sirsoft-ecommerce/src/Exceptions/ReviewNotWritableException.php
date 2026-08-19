@@ -32,4 +32,21 @@ class ReviewNotWritableException extends RuntimeException
     {
         return $this->reason;
     }
+
+    /**
+     * 작성 불가 사유의 번역 라벨을 반환합니다.
+     *
+     * 사유 식별자를 그대로 :reason 치환자에 실으면 최종 사용자 화면에 원시
+     * 식별자(already_written 등)가 노출된다. 라벨 키가 없는 미지의 사유는
+     * 식별자를 그대로 반환한다 (라벨 미정의가 표시 자체를 깨면 안 된다).
+     *
+     * @return string 번역된 사유 라벨
+     */
+    public function getReasonLabel(): string
+    {
+        $key = 'sirsoft-ecommerce::messages.reviews.reasons.'.$this->reason;
+        $label = __($key);
+
+        return $label === $key ? $this->reason : $label;
+    }
 }

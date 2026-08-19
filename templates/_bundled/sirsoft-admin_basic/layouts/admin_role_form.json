@@ -336,7 +336,7 @@
                         "handler": "toast",
                         "params": {
                           "type": "error",
-                          "message": "$t:common.validation_error"
+                          "message": "{{error.message ?? '$t:common.validation_error'}}"
                         }
                       }
                     ]

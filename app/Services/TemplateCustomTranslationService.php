@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
-use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Repositories\TemplateCustomTranslationRepositoryInterface;
 use App\Exceptions\ConcurrentModificationException;
+use App\Extension\Traits\ClearsTemplateCaches;
 use App\Models\TemplateCustomTranslation;
 use App\Services\LanguagePack\CustomTranslationUsageScanner;
 use Illuminate\Database\Eloquent\Collection;
@@ -22,10 +22,12 @@ use Illuminate\Database\QueryException;
  *  - seq 충돌 시 재시도 (unique 제약 위반 → seq 증가)
  *  - 신규 키 생성 시 모든 활성 로케일에 폴백 시드
  *  - 낙관적 잠금 (`lock_version` — update 경로)
- *  - 커스텀 키 CRUD 시 다국어 캐시 무효화 
+ *  - 커스텀 키 CRUD 시 다국어 캐시 무효화
  */
 class TemplateCustomTranslationService
 {
+    use ClearsTemplateCaches;
+
     /**
      * seq 충돌 재시도 최대 횟수.
      */
@@ -33,11 +35,9 @@ class TemplateCustomTranslationService
 
     /**
      * @param  TemplateCustomTranslationRepositoryInterface  $repository  커스텀 다국어 키 리포지토리
-     * @param  CacheInterface  $cache  캐시 드라이버
      */
     public function __construct(
         private readonly TemplateCustomTranslationRepositoryInterface $repository,
-        private readonly CacheInterface $cache,
     ) {}
 
     /**
@@ -287,11 +287,12 @@ class TemplateCustomTranslationService
      *
      * `serveLanguage` 캐시 키가 `template.language.{id}.{locale}.v{cacheVersion}`
      * 형태로 `ext.cache_version` 을 포함하므로, 이 값을 갱신하면 다음
-     * `loadTranslations` 가 재fetch 합니다.
+     * `loadTranslations` 가 재fetch 합니다. 쓰기는 트레이트 단일 지점
+     * (고정 CoreCacheDriver + 메모이즈 스토어) 경유.
      */
     private function invalidateLanguageCache(): void
     {
-        $this->cache->put('ext.cache_version', time());
+        $this->incrementExtensionCacheVersion();
     }
 
     /**

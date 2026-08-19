@@ -6,6 +6,7 @@ use App\Extension\AbstractModule;
 use Illuminate\Database\Seeder;
 use Modules\Sirsoft\Page\Database\Seeders\PageSeeder;
 use Modules\Sirsoft\Page\Listeners\ActivityLogDescriptionResolver;
+use Modules\Sirsoft\Page\Listeners\Ckeditor5ReferenceSourcesListener;
 use Modules\Sirsoft\Page\Listeners\PageActivityLogListener;
 use Modules\Sirsoft\Page\Listeners\SearchPagesListener;
 use Modules\Sirsoft\Page\Listeners\SeoPageCacheListener;
@@ -132,6 +133,28 @@ class Module extends AbstractModule
             PageActivityLogListener::class,
             ActivityLogDescriptionResolver::class,
             SeoPageCacheListener::class,
+            Ckeditor5ReferenceSourcesListener::class,
+        ];
+    }
+
+    /**
+     * 모듈 스케줄 목록 반환
+     *
+     * 페이지 작성 폼에서 올린 뒤 저장되지 않은 임시 첨부를 매일 정리합니다.
+     * `temp_key` 가 남아 있으면 끝내 연결되지 않은 폼 세션 부산물이라 오탐 여지가 없어
+     * 별도 운영자 토글 없이 상시 동작합니다 (보존기간은 커맨드 옵션).
+     *
+     * @return array<int, array<string, mixed>> 스케줄 정의 목록
+     */
+    public function getSchedules(): array
+    {
+        return [
+            [
+                'command' => 'sirsoft-page:prune-temp-attachments',
+                'schedule' => 'daily',
+                'description' => '미연결 임시 페이지 첨부 자동 삭제',
+                'enabled_config' => null,
+            ],
         ];
     }
 

@@ -12,7 +12,7 @@
  *    마운트 성공이 곧 단일 React 인스턴스 + 컨텍스트/싱글톤 동일성(shim __runtime 공유)을 증명한다.
  *
  * @scenario bundle_split_lazy_editor
- * @effects editor_bundle_absent_on_normal_page + editor_bundle_loaded_and_mounted_on_editor_route
+ * 효과 요약(마커 아님 — 평문): editor_bundle_absent_on_normal_page, editor_bundle_loaded_and_mounted_on_editor_route.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 
@@ -37,6 +37,7 @@ function collectEditorBundleRequests(page: PwPage): string[] {
 }
 
 test.describe('Layout Editor — 번들 분리 (lazy 로드)', () => {
+  /** @effects editor_bundle_absent_on_normal_page */
   test('일반 admin 페이지는 layout-editor.min.js 를 요청하지 않는다', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -50,6 +51,7 @@ test.describe('Layout Editor — 번들 분리 (lazy 로드)', () => {
     expect(editorRequests, '일반 페이지에서 편집기 번들이 로드됨(회귀)').toEqual([]);
   });
 
+  /** @effects editor_bundle_loaded_and_mounted_on_editor_route */
   test('편집기 URL 진입 시 layout-editor.min.js 를 로드하고 마운트한다', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);

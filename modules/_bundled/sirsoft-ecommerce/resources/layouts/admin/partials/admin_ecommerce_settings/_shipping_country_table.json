@@ -108,7 +108,7 @@
               "name": "Tbody",
               "children": [
                 {
-                  "id": "country_row",
+                  "id": "country_row_{{countryIndex}}",
                   "type": "basic",
                   "name": "Tr",
                   "iteration": {
@@ -166,7 +166,7 @@
                       },
                       "children": [
                         {
-                          "type": "basic",
+                          "type": "composite",
                           "name": "Toggle",
                           "props": {
                             "checked": "{{country.is_active ?? false}}",

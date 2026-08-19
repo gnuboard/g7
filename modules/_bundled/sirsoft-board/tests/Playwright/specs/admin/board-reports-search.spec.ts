@@ -13,11 +13,7 @@
  *
  * @scenario board-reports-search
  * @axes field=all field=post_title field=board_name field=author_name field=reporter_name
- * @effects search_keyword_propagated_to_url_query,
- *          search_field_propagated_to_url_query,
- *          search_input_value_retained_after_navigation,
- *          reset_clears_search_keyword,
- *          mobile_search_propagates_to_url_query
+ * 효과 요약(마커 아님 — 평문): search_keyword_propagated_to_url_query, search_field_propagated_to_url_query, search_input_value_retained_after_navigation, reset_clears_search_keyword, mobile_search_propagates_to_url_query.
  *
  * 활성화 절차: PlaywrightIssueToken 발급이 가능한 환경에서 test.describe.skip → test.describe.
  */
@@ -102,6 +98,35 @@ test.describe.skip('게시판 신고현황 — 검색 기능 동작 (#413-72)', 
     await expect(searchInput).toHaveValue('');
     const url = new URL(page.url());
     expect(url.searchParams.get('filters[0][value]')).toBeFalsy();
+  });
+
+  // @scenario field=reporter_name
+  // @effects search_field_propagated_to_url_query, search_keyword_propagated_to_url_query, search_input_value_retained_after_navigation
+  test('검색 필드(신고자명) 선택 + 검색어가 URL query 에 전달되고 재진입 시 복원된다', async ({
+    page,
+    settingsToken,
+  }) => {
+    await authenticatePage(page, settingsToken);
+    await page.goto(REPORTS_URL);
+    await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
+
+    // 검색 필드 select → reporter_name (게시글 작성자가 아니라 신고한 사람 기준)
+    await page.locator('#search_field_select select, #search_field_select').first()
+      .selectOption('reporter_name');
+    await page.locator('#search_input input, #search_input').first().fill('김신고');
+    await page.locator('#search_button').click();
+    await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
+
+    const url = new URL(page.url());
+    expect(url.searchParams.get('filters[0][field]')).toBe('reporter_name');
+    expect(url.searchParams.get('filters[0][value]')).toBe('김신고');
+
+    // author_name 과 값 공간이 겹치므로, 선택한 필드가 그대로 유지되는지까지 확인한다
+    // (필드가 조용히 all/author_name 으로 되돌아가면 다른 행이 걸려 결과가 맞는 것처럼 보인다)
+    const fieldSelect = page.locator('#search_field_select select, #search_field_select').first();
+    await expect(fieldSelect).toHaveValue('reporter_name', { timeout: 5_000 });
+    const searchInput = page.locator('#search_input input, #search_input').first();
+    await expect(searchInput).toHaveValue('김신고', { timeout: 5_000 });
   });
 
   // @scenario field=post_title

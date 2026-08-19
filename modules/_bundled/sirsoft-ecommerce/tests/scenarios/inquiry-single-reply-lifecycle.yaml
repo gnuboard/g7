@@ -1,0 +1,58 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 nested axes 를 읽지 못하는
+#   한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도 audit:allow). 본 변경은
+#   ProductInquiryService/ProductInquiryBoardListener/PostService cascade 를
+#   PHPUnit Unit/Feature(양 모듈) + 업그레이드 백필 테스트가 커버하며 green.
+feature: 상품 문의 단일 답변 수명주기 (#106 · #107)
+
+description: |
+  문의 답변은 단일 정책 — 이미 답변된 문의에 재등록하면 422(reply_already_exists)로
+  거절하고(서비스 1차: 피벗 is_answered / 리스너 2차: 게시판 실데이터), 문의·상품·게시판
+  삭제 시 질문+답변 Post 와 피벗이 함께 정리된다. 피벗은 SoftDeletes 로 전환되어
+  게시판에서 질문 글을 삭제→복원하면 문의 목록에도 복원된다. 답변 글만 직접 삭제되면
+  잔여 답변 수(count_replies 훅) 기준으로 답변완료가 재계산된다. 업그레이드 스텝이
+  기설치본의 고아 답변·고아 피벗·거짓 답변완료를 백필 정리한다.
+
+axes:
+  action:
+    - create_reply
+    - delete_reply
+    - delete_inquiry
+    - delete_product
+    - board_delete_question
+    - board_delete_reply
+    - board_restore_question
+    - board_restore_reply
+    - upgrade_backfill
+  state:
+    - unanswered
+    - answered
+    - legacy_multi_reply   # 과거 결함으로 답변 다건 누적된 기설치본
+    - orphan_reply         # 부모 없는/삭제된 부모의 답변 글
+  path:
+    - user_api
+    - admin_api
+    - board_direct         # 게시판 관리 화면 직권 삭제/복원
+    - product_delete
+
+effects:
+  - duplicate_reply_rejected_422        # 서비스 1차 가드 + reply_already_exists 메시지
+  - listener_blocks_duplicate_child     # 리스너 2차 가드 — 게시판 실데이터 기준 duplicate 마커 반환 (서비스가 reply_already_exists 422 로 변환)
+  - inquiry_delete_removes_reply_posts  # 문의 삭제 시 답변 Post 까지 cascade 정리
+  - product_delete_cleans_thread        # 상품 삭제 시 질문+답변 Post 소프트 삭제 + 피벗 정리
+  - pivot_cleanup_runs_sync             # after_delete 리스너 sync 실행 (큐 워커 무관)
+  - reply_delete_recomputes_answered    # 잔여 답변 0 일 때만 답변완료 해제
+  - answered_at_preserved               # 최초 답변 시각 보존 (markAsAnswered 재마킹 포함)
+  - pivot_soft_delete_and_restore       # 질문 글 삭제→복원 시 피벗 소프트 삭제→복원
+  - orphan_replies_backfilled_idempotent # 업그레이드 스텝 04~06 정리 + 재실행 멱등
+  - board_not_configured_safe           # 게시판 미설정 시 422/안전 열화 (500 없음)
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/AdminProductInquiryControllerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/UserProductInquiryControllerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Repositories/ProductInquiryRepositoryTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/ProductInquiryBoardListenerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ProductServiceDeleteTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Upgrades/InquiryOrphanReplyBackfillTest.php
+  - modules/_bundled/sirsoft-board/tests/Unit/Listeners/EcommerceInquiryHookListenerTest.php
+  - modules/_bundled/sirsoft-board/tests/Unit/Repositories/PostRepositoryReplyLookupTest.php

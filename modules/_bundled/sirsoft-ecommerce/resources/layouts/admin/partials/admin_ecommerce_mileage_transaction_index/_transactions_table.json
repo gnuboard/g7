@@ -18,6 +18,7 @@
         "data": "{{transactions?.data?.data || []}}",
         "loading": "{{transactions?.loading}}",
         "selectable": true,
+        "selectionScope": "page",
         "selectedIds": "{{_local.selectedItems || []}}",
         "expandable": true,
         "expandedRowIds": "{{_local.expandedRows || []}}",

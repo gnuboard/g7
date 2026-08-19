@@ -47,7 +47,7 @@
           "name": "Div",
           "children": [
             {
-              "type": "basic",
+              "type": "composite",
               "name": "Toggle",
               "props": {
                 "label": "$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_enabled",
@@ -90,7 +90,7 @@
               "name": "Div",
               "children": [
                 {
-                  "type": "basic",
+                  "type": "composite",
                   "name": "Toggle",
                   "props": {
                     "label": "$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_multiply",
@@ -435,7 +435,7 @@
                 "portable": {
                   "children": [
                     {
-                      "id": "extra_fee_cards",
+                      "id": "extra_fee_cards_{{feeIdx}}",
                       "type": "basic",
                       "name": "Div",
                       "iteration": {

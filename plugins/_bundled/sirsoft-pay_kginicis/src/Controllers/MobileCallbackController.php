@@ -319,7 +319,7 @@ class MobileCallbackController
 
             return redirect($this->resolveFailUrl([
                 'error' => 'approve_failed',
-                'message' => $e->getMessage(),
+                'message' => __('sirsoft-pay_kginicis::messages.errors.payment_failed'),
                 'orderId' => $moid,
             ]));
         } finally {

@@ -1,0 +1,74 @@
+feature: 게시판 첨부 정리 (Board Attachment Cleanup)
+
+description: |
+  두 종류의 잔존 첨부를 회수한다. 공개 이슈 #115 동류 결함.
+
+  1. 임시 첨부 (상시 실행) — 글쓰기 폼에서 올린 뒤 저장 없이 이탈해 `temp_key` 만 남은 행.
+     연결 시점에 본경로로 옮겨지므로 `temp_key` 잔존 = 끝내 연결되지 않음이 확정이라
+     오탐 여지가 구조적으로 없다. 운영 데이터가 아닌 폼 세션 부산물이므로 토글이 없다.
+  2. 소프트 삭제 첨부 영구 정리 (운영자 옵트인) — 첨부 삭제는 휴지통 복원을 위해 소프트
+     삭제만 수행하므로 물리 파일이 남는다. 사용자 파일을 실제로 파기하므로 기본 꺼짐이며,
+     보존기간은 휴지통 복원 가능 기간과 같게 유지해야 한다.
+
+  삭제 순서는 파일 먼저, 기록 나중. 행마다 disk 가 다를 수 있어 그 행의 disk 를 향해 지운다.
+
+# axes 는 "한 첨부 행의 처리 여부를 가르는 입력" 만 둔다. 실행 흐름(dry-run / 보존기간 해석)은
+# 판정과 직교하므로 sub_flows 로 분리했다 — 한 축으로 묶으면 존재하지 않는 조합이 생긴다.
+axes:
+  attachment_state: [temp_unlinked, linked, soft_deleted]
+  age: [within_retention, past_retention]
+  purge_toggle: [off, on]
+
+exclusions:
+  - { attachment_state: temp_unlinked, purge_toggle: on, reason: "임시 첨부 정리는 영구 정리 토글과 무관하게 상시 실행된다" }
+  - { attachment_state: linked, purge_toggle: on, reason: "게시글에 연결된 첨부는 어느 파트의 대상도 아니다" }
+  - { attachment_state: linked, age: within_retention, reason: "연결 첨부는 나이와 무관하게 대상이 아니다 — 경과분 1건으로 충분" }
+  - { attachment_state: soft_deleted, purge_toggle: off, age: within_retention, reason: "토글이 꺼져 있으면 보존기간 판정에 도달하지 않는다" }
+
+sub_flows:
+  - id: dry_run
+    description: 판정만 수행하고 파일·기록을 건드리지 않는 미리보기 경로
+    effects:
+      - board_prune_dry_run_no_delete
+  - id: retention_guard
+    description: 보존기간 1일 미만 자기 차단 (방금 올린 임시 첨부까지 지우는 사고 방지)
+    effects:
+      - board_temp_prune_days_guard
+  - id: settings_surface
+    description: 화면 바인딩 키가 저장 카테고리·기본값·서버 검증과 일치하는지
+    effects:
+      - board_settings_purge_toggle_default_off
+      - board_settings_purge_keys_declared
+  - id: temp_directory_hygiene
+    description: |
+      파일을 지운 뒤 남는 temp 디렉토리 처리. 비워졌을 때만 지우고, 다른 글의 파일이 남아
+      있으면 그대로 둔다 (디렉토리째 지우면 아직 작성 중인 글의 첨부가 사라진다).
+    effects:
+      - board_temp_prune_removes_empty_directory
+      - board_temp_prune_keeps_directory_with_remaining_files
+  - id: batch_limit_boundary
+    description: |
+      대상이 한 회차 상한(--limit)을 넘을 때. 처리하며 행을 지우는 순회이므로, 남은 대상이
+      다음 회차에서 반드시 잡혀야 적체가 수렴한다.
+    effects:
+      - board_temp_prune_processes_all_across_runs
+  - id: reference_source_registry
+    description: 게시글 본문을 에디터 이미지 참조 소스로 등록하는 리스너
+    effects:
+      - reference_source_listener_subscribes_as_filter
+      - reference_source_listener_appends_without_dropping
+      - reference_source_listener_schema_contract
+
+effects:
+  - board_temp_prune_deletes_file_and_record
+  - board_temp_prune_keeps_within_retention
+  - board_temp_prune_skips_linked
+  - board_purge_gate_off_by_default
+  - board_purge_gate_on
+  - board_purge_keeps_restorable_window
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Console/PruneAttachmentsCommandTest.php
+  - modules/_bundled/sirsoft-board/tests/Unit/Listeners/Ckeditor5ReferenceSourcesListenerTest.php
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-attachment-cleanup-settings.test.ts
+  - modules/_bundled/sirsoft-board/tests/Playwright/specs/admin/board-settings-attachment-cleanup.spec.ts

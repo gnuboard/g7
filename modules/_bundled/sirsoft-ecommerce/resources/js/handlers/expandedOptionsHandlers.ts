@@ -1,3 +1,4 @@
+// audit:allow extension-dist-source-literal-sync 수신 함수가 읽지 않는 handler 필드를 rollup 최적화가 소거해 해당 리터럴만 번들에서 빠진다 (fresh 빌드로 실측 — stale 아님)
 /**
  * 상품 목록 확장 행 옵션 지연 로딩 핸들러
  *

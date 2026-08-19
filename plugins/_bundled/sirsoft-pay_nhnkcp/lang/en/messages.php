@@ -8,7 +8,12 @@ return [
         'default_reason' => 'Buyer refund request',
         'in_progress' => 'NHN KCP refund is already in progress.',
     ],
+    'escrow' => [
+        'invoice_required' => 'Please enter the tracking number.',
+        'courier_required' => 'Please select a courier.',
+    ],
     'errors' => [
+        'payment_failed' => 'Payment could not be completed. Please try again in a moment.',
         'wsdl_missing' => 'KCP WSDL file not found: :file',
         'approval_key_error' => 'KCP approval key error [:code]: :message',
         'soap_error' => 'KCP SOAP integration error: :message',

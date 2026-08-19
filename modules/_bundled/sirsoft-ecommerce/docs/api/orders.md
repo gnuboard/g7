@@ -841,7 +841,8 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.orders.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터 검증 실패, 또는 취소 처리 실패 — 취소 불가 상태, PG 취소 실패, 가상계좌 환불계좌 정보 누락 등 (`주문 취소에 실패했습니다.` + `errors.detail` 에 예외 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터 검증 실패, 또는 취소 도메인 규칙 위반 — 취소 불가 상태, PG 취소 실패, 가상계좌 환불계좌 정보 누락 등 (`주문 취소에 실패했습니다.`) |
+| 500 | Internal Server Error | 서버 내부 오류 (`작업 처리 중 오류가 발생했습니다.`) |
 
 <!-- @generated:end -->
 
@@ -1219,6 +1220,7 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.orders.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터 검증 실패, 입금액 불일치(`입금액이 결제예정금액과 일치하지 않습니다.` + `errors.detail`), 또는 입금확인 처리 실패 — 무통장 결제가 아닌 주문·이미 결제완료된 주문 등 (`입금확인 처리에 실패했습니다.` + `errors.detail`) |
+| 500 | Internal Server Error | 서버 내부 오류 (`작업 처리 중 오류가 발생했습니다.`) |
 
 <!-- @generated:end -->
 
@@ -1349,7 +1351,7 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.orders.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
-| 500 | Server Error | 환불 예상금액 계산 중 오류 (`환불 예상금액 조회에 실패했습니다.`) |
+| 500 | Server Error | 환불 예상금액 계산 중 오류 (`환불 예상금액 계산에 실패했습니다.`) |
 
 <!-- @generated:end -->
 
@@ -2439,7 +2441,8 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-orders.cancel`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터 검증 실패(본인 주문 아님·취소 불가 상태 포함), 또는 취소 처리 실패 (`exceptions.order_cancel_failed`) |
+| 422 | Unprocessable Entity | 요청 파라미터 검증 실패(본인 주문 아님·취소 불가 상태 포함), 또는 취소 도메인 규칙 위반 (`exceptions.order_cancel_failed`) |
+| 500 | Internal Server Error | 서버 내부 오류 (`exceptions.operation_failed`) |
 
 <!-- @generated:end -->
 
@@ -2815,7 +2818,7 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-orders.confirm`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 구매확정 불가 — 본인 주문이 아니거나 배송완료 전 등 확정 불가 상태 (`exceptions.order_option_cannot_confirm`) |
+| 500 | Internal Server Error | 구매확정 처리 실패 (`exceptions.operation_failed`) |
 
 <!-- @generated:end -->
 
@@ -2884,7 +2887,8 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 재주문 실패 — 주문이 없거나 본인 주문이 아닌 경우 (`재주문에 실패했습니다.`) |
+| 422 | Unprocessable Entity | 재주문 도메인 규칙 위반 — 장바구니 담기 불가·수량 한도 초과 등 (`재주문에 실패했습니다.`) |
+| 500 | Internal Server Error | 서버 내부 오류 (`exceptions.operation_failed`) |
 
 <!-- @generated:end -->
 
@@ -2989,6 +2993,7 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 404 | Not Found | 주문이 없거나 본인 주문이 아닌 경우 (`주문을 찾을 수 없습니다.`) |
 | 422 | Unprocessable Entity | 요청 파라미터 검증 실패, 또는 배송지 변경 불가 상태 — 이미 배송이 시작된 주문 등 (`배송 전 상태에서만 배송지를 변경할 수 있습니다.`) |
+| 500 | Internal Server Error | 서버 내부 오류 (`배송지 변경 처리 중 오류가 발생했습니다.`) |
 
 <!-- @generated:end -->
 

@@ -14,7 +14,7 @@
  * 결선돼 Playwright dispatchEvent 로 검증 가능하다(캔버스 노드 재배치의 dnd-kit 비호환과 별개).
  *
  * @scenario page_settings_init_actions_reorder
- * @effects reorder_buttons_removed + drag_handle_reorders + dropline_shows_target
+ * 효과 요약(마커 아님 — 평문): reorder_buttons_removed, drag_handle_reorders, dropline_shows_target.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 
@@ -82,6 +82,7 @@ async function cardTitles(page: PwPage): Promise<string[]> {
 }
 
 test.describe('@layout-editor 화면 동작 순서 변경 드래그 (S10-1 후속)', () => {
+  /** @effects reorder_buttons_removed */
   test('순서 변경 ▲▼ 버튼 부재 + ⠿ 드래그 핸들 존재 + 삽입선 비활성(초기)', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -98,6 +99,7 @@ test.describe('@layout-editor 화면 동작 순서 변경 드래그 (S10-1 후�
     await expect(page.locator('[data-testid="g7le-init-action-self-dropline-end"]')).toHaveAttribute('data-active', 'false');
   });
 
+  /** @effects drag_handle_reorders, dropline_shows_target */
   test('⠿ 드래그로 순서 변경 + 드롭 예정 지점 삽입선 활성', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -138,6 +140,7 @@ test.describe('@layout-editor 화면 동작 순서 변경 드래그 (S10-1 후�
     await expect(page.locator('[data-testid="g7le-init-action-self-dropline-end"]')).toHaveAttribute('data-active', 'false');
   });
 
+  /** @effects drag_handle_reorders */
   test('연속 드래그 — 누적 순서 정합(다시 원래 순서로)', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);

@@ -129,6 +129,7 @@ describe('Admin 본인인증 모달 cancel 흐름 (sirsoft-admin_basic)', () => 
     expect(onError[0].handler).toBe('suppress');
   });
 
+  /** @effects admin_basic_modal_cancel_flow_matches_basic_template */
   it('cancel sequence 가 [apiCall, resolveIdentityChallenge, closeModal] 순서', () => {
     const seq = findCancelSequence();
     const inner = (seq!.params!.actions ?? []) as Action[];

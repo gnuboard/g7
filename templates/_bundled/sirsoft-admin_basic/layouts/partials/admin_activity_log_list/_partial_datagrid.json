@@ -17,6 +17,7 @@
     "alwaysShowPagination": true,
     "idField": "id",
     "selectable": true,
+    "selectionScope": "page",
     "selectedIds": "{{_global.selectedIds_admin_activity_logs || []}}",
     "selectedCountText": "",
     "loading": "{{activityLogs?.loading}}",

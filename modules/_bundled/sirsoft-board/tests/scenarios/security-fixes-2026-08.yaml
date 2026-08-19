@@ -1,0 +1,49 @@
+feature: 게시판 보안 수정 묶음 (2026-08 — 공개 피드 가시성 / 대시보드 권한 / 댓글 검증 토큰 / 하이라이트 이스케이프)
+
+description: |
+  2026-08 비공개 보안 제보 대응으로 sirsoft-board 에 반영된 수정의 회귀 고정.
+
+  - N-3/N-4/⑱-2: 공개 최신글·인기글·대시보드 요약이 열람 권한 없는 게시판 글과
+    블라인드/비활성 게시판 글을 노출하던 문제 — SQL 안전집합(published + active)과
+    응답 시점 열람 권한 필터(캐시는 안전집합만 담아 캐시 오염 회피)의 2층 구조.
+    비밀글은 제목 공개 정책(2026-02-04)에 따라 제목을 노출한다(본문만 보호). 인기글은
+    별도 컨벤션으로 비밀글 자체를 제외한다(2026-01-16).
+  - ⑦/N-2: 통합 검색 available_boards 와 공개 인기 게시판 목록이 열람 권한(posts.read)
+    을 반영하지 않던 문제. 검색 라우트의 optional.sanctum 부재로 Bearer 회원이 guest 로
+    판정되던 결함 포함(HTTP 전 구간 회귀 테스트로 고정 — 서비스 직접 호출은 이 사각을
+    보지 못한다).
+  - ⑱-1/N-5: 관리자 대시보드 4종 라우트의 permission 게이트(sirsoft-board.dashboard.view)
+    부재 + 미처리 신고 집계의 비활성 게시판 스코프 부재.
+  - ⑮: 댓글 verification_token 이 발급만 되고 저장·검증되지 않던 죽은 코드 —
+    캐시 기반 단일 사용 토큰으로 실동작(발급→수정/삭제 소비→재사용·만료·오토큰 거부).
+  - ⑧: 검색 하이라이트가 원문을 이스케이프하지 않던 문제 — 코어 SearchHighlighter 위임.
+
+axes:
+  case: [recent_readable_filter, popular_readable_filter, popular_boards_readable, available_boards_guest, available_boards_member, available_boards_bearer_http, dashboard_permission_gate, dashboard_recent_visibility, pending_reports_scope, comment_token_lifecycle, search_highlight_escape, board_directory_readable_filter]
+
+exclusions: []
+
+effects:
+  - unreadable_board_titles_absent_for_caller
+  - popular_boards_exclude_unreadable
+  # 게시판 디렉토리(boards index + 내장 최근글) — 최근글·인기글·인기게시판에 필터가 걸린 뒤에도
+  # 이 경로가 무필터로 남아 비공개 게시판·글 제목의 우회 노출로였다 (7.0.7 사전점검 SEO 실측 발견)
+  - board_directory_excludes_unreadable_board_and_posts
+  - board_directory_includes_readable_board_for_permitted_member
+  - available_boards_match_read_permission
+  - search_route_resolves_bearer_user
+  - dashboard_requires_view_permission
+  - dashboard_summary_excludes_hidden_posts
+  - pending_reports_scoped_to_active_boards
+  - comment_verify_token_single_use_lifecycle
+  - highlighted_fields_escaped
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Board/PublicRecentPostsVisibilityTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/Search/AvailableBoardsPermissionTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/Dashboard/DashboardPermissionTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/Dashboard/RecentAcrossBoardsVisibilityTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/Comment/CommentVerifyTokenTest.php
+  - modules/_bundled/sirsoft-board/tests/Unit/Listeners/SearchPostsListenerTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/User/BoardPopularApiTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/DashboardApiTest.php

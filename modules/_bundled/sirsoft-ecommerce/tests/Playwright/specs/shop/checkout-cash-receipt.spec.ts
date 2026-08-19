@@ -255,6 +255,39 @@ test.describe('체크아웃 현금영수증 신청 폼 (무통장 슬롯 주입)
     await expect(page.locator(SLOT)).toHaveCount(0);
   });
 
+  // A3 — 저장값은 남아 있는데 그 프로바이더를 제공하는 확장이 없으면 미설정과 동일하게 다뤄야 한다.
+  // 공개 응답이 raw 값을 그대로 내보내면 신청 폼이 계속 렌더되고, 신청하면 구독자 없는 훅을
+  // 호출해 발급 실패로만 조용히 기록된다.
+  // @scenario cash-receipt-ui-and-refund-bank provider_state=dead
+  // @effects dead_cash_receipt_provider_normalized_in_public, checkout_slot_hidden_when_provider_unset
+  test('공개 결제설정의 현금영수증 프로바이더는 등록된 확장이 있을 때만 실린다', async ({ page }) => {
+    const settings = await page.evaluate(async () => {
+      const response = await fetch('/api/modules/sirsoft-ecommerce/settings/payment', {
+        headers: { Accept: 'application/json' },
+      });
+      return response.json();
+    });
+
+    const provider = settings?.data?.cash_receipt_provider ?? null;
+
+    // 화면 렌더와 공개 응답이 같은 판정을 공유해야 한다 — 한쪽만 살아 있으면 폼은 뜨는데
+    // 신청은 실패하는 상태가 된다.
+    //
+    // selectDbank() 헬퍼는 슬롯이 보이는 것을 전제하므로 여기서는 쓰지 않는다 —
+    // 이 테스트는 "슬롯이 없어야 하는 경우" 도 판정 대상이다.
+    await gotoCheckout(page);
+    await paymentMethod(page, 'dbank').click();
+
+    await expect(page.locator(SLOT)).toHaveCount(provider ? 1 : 0);
+
+    if (provider === null) {
+      test.info().annotations.push({
+        type: 'coverage-note',
+        description: '현금영수증 프로바이더 미설정 환경 — 폼 미렌더 방향만 검증',
+      });
+    }
+  });
+
   test('신청 체크 전에는 입력 필드가 없고, 체크하면 마운트된다', async ({ page }) => {
     await gotoCheckout(page);
     await selectDbank(page);

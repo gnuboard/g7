@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Page\Listeners;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Enums\TotalRelation;
 use App\Search\SearchCategoryPayload;
+use App\Search\SearchHighlighter;
 use App\Support\Query\BoundedCount;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Page\Services\PageService;
@@ -150,7 +151,10 @@ class SearchPagesListener implements HookListenerInterface
 
             $results['pages'] = SearchCategoryPayload::fromBounded($searchPage, $format($searchPage->items()));
         } catch (\Exception $e) {
-            Log::error('Search pages error', ['message' => $e->getMessage(), 'q' => $q]);
+            // 실패를 카테고리 키 미설정으로 삼키면 화면이 "검색 결과 없음" 을 그린다 —
+            // failed 페이로드로 표면화하고, 원인 추적을 위해 스택을 함께 남긴다 (#103).
+            Log::error('Search pages error', ['message' => $e->getMessage(), 'q' => $q, 'exception' => $e]);
+            $results['pages'] = SearchCategoryPayload::failed();
         }
 
         return $results;
@@ -256,13 +260,7 @@ class SearchPagesListener implements HookListenerInterface
      */
     private function highlightKeyword(?string $text, string $keyword): string
     {
-        if (empty($text) || empty($keyword)) {
-            return $text ?? '';
-        }
-
-        $escapedKeyword = preg_quote($keyword, '/');
-
-        return preg_replace('/('.$escapedKeyword.')/iu', '<mark>$1</mark>', $text);
+        return SearchHighlighter::highlight($text, $keyword);
     }
 
     /**
@@ -295,8 +293,8 @@ class SearchPagesListener implements HookListenerInterface
             return '';
         }
 
-        // HTML 태그 제거 후 공백 정규화
-        $plainText = trim(preg_replace('/\s+/', ' ', html_entity_decode(strip_tags((string) $text))));
+        // HTML 태그 제거 후 공백 정규화 (엔티티 디코드를 태그 제거보다 먼저 수행)
+        $plainText = SearchHighlighter::toPlainText((string) $text);
         $position = mb_stripos($plainText, $keyword);
 
         if ($position !== false) {

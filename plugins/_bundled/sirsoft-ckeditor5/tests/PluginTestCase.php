@@ -4,16 +4,21 @@ namespace Plugins\Sirsoft\Ckeditor5\Tests;
 
 use App\Contracts\Extension\StorageInterface;
 use App\Enums\PermissionType;
+use App\Extension\HookManager;
+use App\Extension\Storage\PluginStorageDriver;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
-use App\Extension\Storage\PluginStorageDriver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
+use Plugins\Sirsoft\Ckeditor5\Http\Controllers\Admin\ImageUploadAdminController;
 use Plugins\Sirsoft\Ckeditor5\Http\Controllers\ImageServeController;
 use Plugins\Sirsoft\Ckeditor5\Http\Controllers\ImageUploadController;
+use Plugins\Sirsoft\Ckeditor5\Repositories\Contracts\ImageReferenceSourceRepositoryInterface;
 use Plugins\Sirsoft\Ckeditor5\Repositories\Contracts\ImageUploadRepositoryInterface;
+use Plugins\Sirsoft\Ckeditor5\Repositories\ImageReferenceSourceRepository;
 use Plugins\Sirsoft\Ckeditor5\Repositories\ImageUploadRepository;
+use Plugins\Sirsoft\Ckeditor5\Services\ImageCleanupService;
 use Plugins\Sirsoft\Ckeditor5\Services\ImageServeService;
 use Plugins\Sirsoft\Ckeditor5\Services\ImageUploadService;
 use Tests\TestCase;
@@ -43,8 +48,13 @@ abstract class PluginTestCase extends TestCase
             ImageUploadRepository::class
         );
 
+        $this->app->bind(
+            ImageReferenceSourceRepositoryInterface::class,
+            ImageReferenceSourceRepository::class
+        );
+
         // StorageInterface 바인딩
-        $this->app->when([ImageUploadService::class, ImageServeService::class])
+        $this->app->when([ImageUploadService::class, ImageServeService::class, ImageCleanupService::class])
             ->needs(StorageInterface::class)
             ->give(fn () => new PluginStorageDriver('sirsoft-ckeditor5', 'plugins'));
 
@@ -60,6 +70,23 @@ abstract class PluginTestCase extends TestCase
 
                 Route::get('images/{hash}', [ImageServeController::class, 'serve'])
                     ->name('api.sirsoft-ckeditor5.images.serve');
+
+                // 업로드 관리 (관리자) — 실제 라우트 파일과 동일한 미들웨어 체인을 유지해
+                // 권한 경계(403)까지 테스트가 실제로 밟게 한다.
+                Route::prefix('admin')->name('admin.')->middleware('auth:sanctum')->group(function () {
+                    Route::get('uploads', [ImageUploadAdminController::class, 'index'])
+                        ->middleware('permission:admin,sirsoft-ckeditor5.uploads.read')
+                        ->name('uploads.index');
+
+                    Route::post('uploads/bulk-delete', [ImageUploadAdminController::class, 'bulkDestroy'])
+                        ->middleware('permission:admin,sirsoft-ckeditor5.uploads.delete')
+                        ->name('uploads.bulk-delete');
+
+                    Route::delete('uploads/{id}', [ImageUploadAdminController::class, 'destroy'])
+                        ->whereNumber('id')
+                        ->middleware('permission:admin,sirsoft-ckeditor5.uploads.delete')
+                        ->name('uploads.destroy');
+                });
             });
     }
 
@@ -85,7 +112,7 @@ abstract class PluginTestCase extends TestCase
      */
     private function snapshotHookManager(): void
     {
-        $ref = new \ReflectionClass(\App\Extension\HookManager::class);
+        $ref = new \ReflectionClass(HookManager::class);
         $this->hookSnapshot = [
             'hooks' => $ref->getProperty('hooks')->getValue(),
             'filters' => $ref->getProperty('filters')->getValue(),
@@ -102,7 +129,7 @@ abstract class PluginTestCase extends TestCase
             return;
         }
 
-        $ref = new \ReflectionClass(\App\Extension\HookManager::class);
+        $ref = new \ReflectionClass(HookManager::class);
         $ref->getProperty('hooks')->setValue(null, $this->hookSnapshot['hooks']);
         $ref->getProperty('filters')->setValue(null, $this->hookSnapshot['filters']);
         $ref->getProperty('dispatching')->setValue(null, $this->hookSnapshot['dispatching']);

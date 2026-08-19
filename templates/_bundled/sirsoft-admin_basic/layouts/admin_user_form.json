@@ -80,7 +80,7 @@
                     "handler": "toast",
                     "params": {
                         "type": "error",
-                        "message": "{{error.message}}"
+                        "message": "{{error.message ?? '$t:common.error_occurred'}}"
                     }
                 }
             },
@@ -851,31 +851,25 @@
                                                         "text": "$t:admin.users.form.fields.status"
                                                     },
                                                     {
+                                                        "comment": "커스텀 Select 는 value-제어 전용 — defaultValue 는 렌더되지 않아 create 모드 표시가 비었다. 미전송 시 서버(CreateUserRequest)가 active 로 보정하므로 표시 기본값과 서버 기본값이 일치한다.",
                                                         "type": "composite",
                                                         "name": "Select",
                                                         "props": {
                                                             "name": "status",
                                                             "className": "w-full",
-                                                            "defaultValue": "active",
-                                                            "options": [
-                                                                {
-                                                                    "label": "$t:admin.users.form.status_options.active",
-                                                                    "value": "active"
-                                                                },
-                                                                {
-                                                                    "label": "$t:admin.users.form.status_options.inactive",
-                                                                    "value": "inactive"
-                                                                },
-                                                                {
-                                                                    "label": "$t:admin.users.form.status_options.blocked",
-                                                                    "value": "blocked"
-                                                                },
-                                                                {
-                                                                    "label": "$t:admin.users.form.status_options.withdrawn",
-                                                                    "value": "withdrawn"
+                                                            "value": "{{_local.form?.status ?? 'active'}}",
+                                                            "options": "{{route?.id ? [{label: '$t:admin.users.form.status_options.active', value: 'active'}, {label: '$t:admin.users.form.status_options.inactive', value: 'inactive'}, {label: '$t:admin.users.form.status_options.blocked', value: 'blocked'}, {label: '$t:admin.users.form.status_options.withdrawn', value: 'withdrawn'}] : [{label: '$t:admin.users.form.status_options.active', value: 'active'}, {label: '$t:admin.users.form.status_options.inactive', value: 'inactive'}, {label: '$t:admin.users.form.status_options.blocked', value: 'blocked'}] ?? []}}"
+                                                        },
+                                                        "actions": [
+                                                            {
+                                                                "type": "change",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "form.status": "{{$event.target.value}}"
                                                                 }
-                                                            ]
-                                                        }
+                                                            }
+                                                        ]
                                                     }
                                                 ]
                                             }
@@ -1463,14 +1457,340 @@
                                 "type": "basic",
                                 "name": "Button",
                                 "props": {
-                                    "disabled": "{{_global.isSaving}}",
+                                    "disabled": "{{_global.isSaving || (route?.id && !_local.form?.email)}}",
                                     "className": "flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "conditions",
+                                        "conditions": [
+                                            {
+                                                "comment": "상태를 탈퇴로 바꾸는 저장은 비가역 파기라 확인을 먼저 받는다 (공개이슈 #112).",
+                                                "if": "{{route?.id && _local.form?.status === 'withdrawn' && user?.data?.status !== 'withdrawn'}}",
+                                                "then": {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "showWithdrawConfirm": true
+                                                    }
+                                                }
+                                            },
+                                            {
+                                                "then": {
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "isSaving": true
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "apiCall",
+                                                            "auth_required": true,
+                                                            "target": "{{route?.id ? '/api/admin/users/' + route?.id : '/api/admin/users'}}",
+                                                            "params": {
+                                                                "method": "{{route?.id ? 'PUT' : 'POST'}}",
+                                                                "body": "{{_local.form}}"
+                                                            },
+                                                            "errorHandling": {
+                                                                "403": {
+                                                                    "handler": "sequence",
+                                                                    "params": {
+                                                                        "actions": [
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "global",
+                                                                                    "isSaving": false
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "handler": "toast",
+                                                                                "params": {
+                                                                                    "type": "error",
+                                                                                    "message": "$t:auth.permission_denied"
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                },
+                                                                "500": {
+                                                                    "handler": "sequence",
+                                                                    "params": {
+                                                                        "actions": [
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "global",
+                                                                                    "isSaving": false
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "handler": "toast",
+                                                                                "params": {
+                                                                                    "type": "error",
+                                                                                    "message": "$t:errors.server_error"
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                }
+                                                            },
+                                                            "onSuccess": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "isSaving": false
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "comment": "회원 결제 통화 통합 저장 (D9 — 이커머스 설치 시에만. 회원정보 저장 성공 후 같은 흐름에서 통화도 영속 저장). 게이트=편집 모드 + 폼에 통화 필드가 있을 때만. 코어 users 미변경 → 모듈 엔드포인트로 별도 PATCH.",
+                                                                    "if": "{{route?.id && _local.form?.ecommerce_preferred_currency}}",
+                                                                    "handler": "apiCall",
+                                                                    "auth_required": true,
+                                                                    "target": "{{'/api/modules/sirsoft-ecommerce/admin/users/' + route?.id + '/currency'}}",
+                                                                    "params": {
+                                                                        "method": "PATCH",
+                                                                        "body": "{{ { currency: _local.form.ecommerce_preferred_currency } }}"
+                                                                    },
+                                                                    "onError": [
+                                                                        {
+                                                                            "handler": "toast",
+                                                                            "params": {
+                                                                                "type": "error",
+                                                                                "message": "{{error.message ?? '$t:common.error_occurred'}}"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "comment": "회원 배송국가 통합 저장 (D-admin — 이커머스 설치 + 해외배송 ON 시에만. 통화와 동형: 코어 users 가 미명시 모듈 키를 drop 하므로 전용 모듈 엔드포인트로 별도 PATCH). 게이트=편집 모드 + 폼에 배송국가 필드가 있을 때만.",
+                                                                    "if": "{{route?.id && _local.form?.ecommerce_preferred_shipping_country}}",
+                                                                    "handler": "apiCall",
+                                                                    "auth_required": true,
+                                                                    "target": "{{'/api/modules/sirsoft-ecommerce/admin/users/' + route?.id + '/shipping-country'}}",
+                                                                    "params": {
+                                                                        "method": "PATCH",
+                                                                        "body": "{{ { shipping_country: _local.form.ecommerce_preferred_shipping_country } }}"
+                                                                    },
+                                                                    "onError": [
+                                                                        {
+                                                                            "handler": "toast",
+                                                                            "params": {
+                                                                                "type": "error",
+                                                                                "message": "{{error.message ?? '$t:common.error_occurred'}}"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "success",
+                                                                        "message": "{{route?.id ? '$t:admin.users.form.update_success' : '$t:admin.users.form.create_success'}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "navigate",
+                                                                    "params": {
+                                                                        "path": "/admin/users",
+                                                                        "mergeQuery": true,
+                                                                        "query": {}
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "onError": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "isSaving": false
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "local",
+                                                                        "errors": "{{error.errors ?? null}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "error",
+                                                                        "message": "{{error.message ?? '$t:admin.users.form.validation_error'}}"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "if": "{{!_global.isSaving}}",
+                                        "props": {
+                                            "name": "save",
+                                            "size": "sm"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "if": "{{_global.isSaving}}",
+                                        "props": {
+                                            "name": "spinner",
+                                            "size": "sm",
+                                            "spin": true
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "{{_global.isSaving ? $t:common.saving : $t:common.save}}"
+                                    }
+                                ],
+                                "comment": "수정 모드에서는 회원 정보가 폼에 채워지기 전까지 저장을 막는다 — 시드 전에 누르면 빈 본문이 나가 화면에는 값이 보이는데 \"이름은 필수입니다\" 로 거절된다."
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "withdraw_confirm_dialog",
+                "type": "composite",
+                "name": "Modal",
+                "comment": "modals 섹션이 아닌 페이지 트리에 두는 이유: modals 는 별도 컨텍스트라 _local.form 이 해석되지 않는다.",
+                "props": {
+                    "isOpen": true,
+                    "title": "$t:admin.users.modals.withdraw_confirm_title",
+                    "width": "520px",
+                    "closeOnEscape": false,
+                    "closeOnOverlayClick": false,
+                    "showCloseButton": false
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "py-2 space-y-3"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "P",
+                                "props": {
+                                    "className": "text-gray-700 dark:text-gray-300"
+                                },
+                                "text": "$t:admin.users.modals.withdraw_confirm_lead"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "P",
+                                "props": {
+                                    "className": "text-sm font-medium text-gray-900 dark:text-gray-100"
+                                },
+                                "text": "$t:admin.users.modals.withdraw_confirm_effects_title"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Ul",
+                                "props": {
+                                    "className": "text-sm text-gray-600 dark:text-gray-400 space-y-1"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Li",
+                                        "props": {
+                                            "className": "list-disc list-inside"
+                                        },
+                                        "text": "$t:admin.users.modals.withdraw_confirm_effect_anonymize"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Li",
+                                        "props": {
+                                            "className": "list-disc list-inside"
+                                        },
+                                        "text": "$t:admin.users.modals.withdraw_confirm_effect_sessions"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Li",
+                                        "props": {
+                                            "className": "list-disc list-inside"
+                                        },
+                                        "text": "$t:admin.users.modals.withdraw_confirm_effect_linked"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "modal-footer-buttons"
+                        },
+                        "children": [
+                            {
+                                "id": "withdraw_confirm_cancel_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "type": "button",
+                                    "className": "btn btn-secondary"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "showWithdrawConfirm": false
+                                        }
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:common.cancel"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "withdraw_confirm_submit_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "type": "button",
+                                    "disabled": "{{_global.isSaving}}",
+                                    "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 },
                                 "actions": [
                                     {
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "showWithdrawConfirm": false
+                                                }
+                                            },
                                             {
                                                 "handler": "setState",
                                                 "params": {
@@ -1553,7 +1873,7 @@
                                                                 "handler": "toast",
                                                                 "params": {
                                                                     "type": "error",
-                                                                    "message": "{{error.message}}"
+                                                                    "message": "{{error.message ?? '$t:common.error_occurred'}}"
                                                                 }
                                                             }
                                                         ]
@@ -1573,7 +1893,7 @@
                                                                 "handler": "toast",
                                                                 "params": {
                                                                     "type": "error",
-                                                                    "message": "{{error.message}}"
+                                                                    "message": "{{error.message ?? '$t:common.error_occurred'}}"
                                                                 }
                                                             }
                                                         ]
@@ -1613,7 +1933,7 @@
                                                         "handler": "toast",
                                                         "params": {
                                                             "type": "error",
-                                                            "message": "$t:admin.users.form.validation_error"
+                                                            "message": "{{error.message ?? '$t:admin.users.form.validation_error'}}"
                                                         }
                                                     }
                                                 ]
@@ -1624,33 +1944,15 @@
                                 "children": [
                                     {
                                         "type": "basic",
-                                        "name": "Icon",
-                                        "if": "{{!_global.isSaving}}",
-                                        "props": {
-                                            "name": "save",
-                                            "size": "sm"
-                                        }
-                                    },
-                                    {
-                                        "type": "basic",
-                                        "name": "Icon",
-                                        "if": "{{_global.isSaving}}",
-                                        "props": {
-                                            "name": "spinner",
-                                            "size": "sm",
-                                            "spin": true
-                                        }
-                                    },
-                                    {
-                                        "type": "basic",
                                         "name": "Span",
-                                        "text": "{{_global.isSaving ? $t:common.saving : $t:common.save}}"
+                                        "text": "$t:admin.users.modals.withdraw_confirm_submit"
                                     }
                                 ]
                             }
                         ]
                     }
-                ]
+                ],
+                "if": "{{_local.showWithdrawConfirm === true}}"
             }
         ]
     }

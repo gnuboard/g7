@@ -440,6 +440,11 @@ return [
             'per_volume' => ':unitL当たり:fee',
             'per_volume_weight' => ':unitkg当たり:fee',
             'per_amount' => ':unit当たり:fee',
+            'range_unit' => [
+                'quantity' => '個',
+                'weight' => 'kg',
+                'volume' => 'L',
+            ],
         ],
         'fee_details' => [
             'base_fee' => '送料',
@@ -1039,6 +1044,14 @@ return [
         'can_write_checked' => 'レビュー作成可否を確認しました。',
         'can_write_check_failed' => 'レビュー作成可否の確認に失敗しました。',
         'cannot_write' => 'レビューを作成できません。(理由: :reason)',
+        // 作成不可理由ラベル — :reason 置換子に生の識別子ではなく翻訳文を載せる
+        'reasons' => [
+            'order_option_not_found' => '注文内容が見つかりません',
+            'not_own_order' => 'ご本人の注文ではありません',
+            'not_confirmed' => '購入確定前です',
+            'deadline_passed' => '作成期限が過ぎています',
+            'already_written' => 'すでに作成済みのレビューです',
+        ],
         'forbidden' => '権限がありません。',
         'deleted' => 'レビューが削除されました。',
         'delete_failed' => 'レビュー削除に失敗しました。',
@@ -1095,6 +1108,7 @@ return [
         'board_changed' => '掲示板設定が変更されたため、該当する投稿が見つかりません。管理者にお問い合わせください。',
         'reply_created' => '返信が登録されました。',
         'reply_failed' => '返信登録に失敗しました。',
+        'reply_already_exists' => 'すでに登録された回答があります。既存の回答を修正または削除してから再度登録してください。',
         'reply_updated' => '返信が編集されました。',
         'reply_update_failed' => '回答の編集に失敗しました。',
         'reply_deleted' => '回答が削除されました。',

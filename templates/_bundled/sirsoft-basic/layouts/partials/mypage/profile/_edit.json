@@ -524,7 +524,7 @@
                           "props": {
                             "className": "text-sm text-red-600 dark:text-red-400"
                           },
-                          "text": "{{_local.profileErrors.name[0]}}"
+                          "text": "{{_local.profileErrors?.name?.[0] ?? ''}}"
                         }
                       ]
                     },
@@ -562,7 +562,7 @@
                           "props": {
                             "className": "text-sm text-red-600 dark:text-red-400"
                           },
-                          "text": "{{_local.profileErrors.nickname[0]}}"
+                          "text": "{{_local.profileErrors?.nickname?.[0] ?? ''}}"
                         }
                       ]
                     }
@@ -651,7 +651,7 @@
                           "props": {
                             "className": "text-sm text-red-600 dark:text-red-400"
                           },
-                          "text": "{{_local.profileErrors.mobile[0]}}"
+                          "text": "{{_local.profileErrors?.mobile?.[0] ?? ''}}"
                         }
                       ]
                     },
@@ -689,7 +689,7 @@
                           "props": {
                             "className": "text-sm text-red-600 dark:text-red-400"
                           },
-                          "text": "{{_local.profileErrors.phone[0]}}"
+                          "text": "{{_local.profileErrors?.phone?.[0] ?? ''}}"
                         }
                       ]
                     },
@@ -727,7 +727,7 @@
                           "props": {
                             "className": "text-sm text-red-600 dark:text-red-400"
                           },
-                          "text": "{{_local.profileErrors.homepage[0]}}"
+                          "text": "{{_local.profileErrors?.homepage?.[0] ?? ''}}"
                         }
                       ]
                     }
@@ -799,7 +799,7 @@
                           "props": {
                             "className": "text-sm text-red-600 dark:text-red-400"
                           },
-                          "text": "{{_local.profileErrors.country[0]}}"
+                          "text": "{{_local.profileErrors?.country?.[0] ?? ''}}"
                         }
                       ]
                     },
@@ -836,7 +836,7 @@
                           "props": {
                             "className": "text-sm text-red-600 dark:text-red-400"
                           },
-                          "text": "{{_local.profileErrors.language[0]}}"
+                          "text": "{{_local.profileErrors?.language?.[0] ?? ''}}"
                         }
                       ]
                     },
@@ -875,7 +875,7 @@
                           "props": {
                             "className": "text-sm text-red-600 dark:text-red-400"
                           },
-                          "text": "{{_local.profileErrors.timezone[0]}}"
+                          "text": "{{_local.profileErrors?.timezone?.[0] ?? ''}}"
                         }
                       ]
                     },
@@ -963,7 +963,7 @@
                           "props": {
                             "className": "text-sm text-red-600 dark:text-red-400"
                           },
-                          "text": "{{_local.profileErrors?.zipcode ? _local.profileErrors.zipcode[0] : (_local.profileErrors?.address ? _local.profileErrors.address[0] : (_local.profileErrors?.address_detail ? _local.profileErrors.address_detail[0] : ''))}}"
+                          "text": "{{_local.profileErrors?.zipcode?.[0] ?? _local.profileErrors?.address?.[0] ?? _local.profileErrors?.address_detail?.[0] ?? ''}}"
                         }
                       ]
                     }
@@ -1038,7 +1038,7 @@
                       "props": {
                         "className": "text-sm text-red-600 dark:text-red-400"
                       },
-                      "text": "{{_local.profileErrors.signature[0]}}"
+                      "text": "{{_local.profileErrors?.signature?.[0] ?? ''}}"
                     },
                     {
                       "type": "basic",
@@ -1084,7 +1084,7 @@
                       "props": {
                         "className": "text-sm text-red-600 dark:text-red-400"
                       },
-                      "text": "{{_local.profileErrors.bio[0]}}"
+                      "text": "{{_local.profileErrors?.bio?.[0] ?? ''}}"
                     },
                     {
                       "type": "basic",
@@ -1182,10 +1182,23 @@
                     {
                       "type": "basic",
                       "name": "Checkbox",
+                      "comment": "저장값이 boolean 이 아닐 수 있는 구간(설정 미저장 등)에도 checked 가 확정되도록 명시 바인딩 — 자동바인딩은 boolean 일 때만 checked 로 붙는다",
                       "props": {
                         "name": "notify_post_complete",
+                        "checked": "{{!!_local.profileEditForm?.notify_post_complete}}",
+                        "autoBinding": false,
                         "className": "w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-gray-900 dark:focus:ring-white"
-                      }
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "profileEditForm.notify_post_complete": "{{$event.target.checked}}"
+                          }
+                        }
+                      ]
                     },
                     {
                       "type": "basic",
@@ -1221,10 +1234,23 @@
                     {
                       "type": "basic",
                       "name": "Checkbox",
+                      "comment": "저장값이 boolean 이 아닐 수 있는 구간(설정 미저장 등)에도 checked 가 확정되도록 명시 바인딩 — 자동바인딩은 boolean 일 때만 checked 로 붙는다",
                       "props": {
                         "name": "notify_post_reply",
+                        "checked": "{{!!_local.profileEditForm?.notify_post_reply}}",
+                        "autoBinding": false,
                         "className": "w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-gray-900 dark:focus:ring-white"
-                      }
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "profileEditForm.notify_post_reply": "{{$event.target.checked}}"
+                          }
+                        }
+                      ]
                     },
                     {
                       "type": "basic",
@@ -1260,10 +1286,23 @@
                     {
                       "type": "basic",
                       "name": "Checkbox",
+                      "comment": "저장값이 boolean 이 아닐 수 있는 구간(설정 미저장 등)에도 checked 가 확정되도록 명시 바인딩 — 자동바인딩은 boolean 일 때만 checked 로 붙는다",
                       "props": {
                         "name": "notify_comment",
+                        "checked": "{{!!_local.profileEditForm?.notify_comment}}",
+                        "autoBinding": false,
                         "className": "w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-gray-900 dark:focus:ring-white"
-                      }
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "profileEditForm.notify_comment": "{{$event.target.checked}}"
+                          }
+                        }
+                      ]
                     },
                     {
                       "type": "basic",
@@ -1299,10 +1338,23 @@
                     {
                       "type": "basic",
                       "name": "Checkbox",
+                      "comment": "저장값이 boolean 이 아닐 수 있는 구간(설정 미저장 등)에도 checked 가 확정되도록 명시 바인딩 — 자동바인딩은 boolean 일 때만 checked 로 붙는다",
                       "props": {
                         "name": "notify_reply_comment",
+                        "checked": "{{!!_local.profileEditForm?.notify_reply_comment}}",
+                        "autoBinding": false,
                         "className": "w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-gray-900 dark:focus:ring-white"
-                      }
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "profileEditForm.notify_reply_comment": "{{$event.target.checked}}"
+                          }
+                        }
+                      ]
                     },
                     {
                       "type": "basic",

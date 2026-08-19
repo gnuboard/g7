@@ -46,4 +46,27 @@ class AttachmentLimitExceededException extends Exception
     {
         return $this->attempted;
     }
+
+    /**
+     * 다국어 메시지 키를 반환합니다.
+     *
+     * 응답을 만들 때 이미 번역된 `getMessage()` 대신 이 키를 넘긴다 — 번역문을 키로
+     * 해석하려 하면 실패해 원문이 그대로 노출된다.
+     *
+     * @return string 다국어 메시지 키
+     */
+    public function getMessageKey(): string
+    {
+        return 'sirsoft-page::messages.errors.attachment_limit_exceeded';
+    }
+
+    /**
+     * 메시지 치환 파라미터를 반환합니다.
+     *
+     * @return array<string, mixed> 치환 파라미터
+     */
+    public function getMessageParams(): array
+    {
+        return ['limit' => $this->limit, 'attempted' => $this->attempted];
+    }
 }

@@ -5,7 +5,7 @@
         "ko": "토스페이먼츠",
         "en": "TossPayments"
     },
-    "version": "1.0.1",
+    "version": "1.0.2",
     "license": "MIT",
     "description": {
         "ko": "토스페이먼츠 결제 게이트웨이 (통합결제창 연동)",

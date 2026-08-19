@@ -56,6 +56,7 @@ class BoardResource extends BaseApiResource
             'use_comment' => $this->use_comment,
             'use_reply' => $this->use_reply,
             'max_reply_depth' => $this->max_reply_depth,
+            'reply_delete_policy' => $this->reply_delete_policy,
             'use_report' => $this->use_report,
             'comment_order' => $this->comment_order,
             'max_comment_depth' => $this->max_comment_depth,
@@ -192,6 +193,7 @@ class BoardResource extends BaseApiResource
                 'use_file_upload' => $this->use_file_upload,
                 'use_comment' => $this->use_comment,
                 'use_reply' => $this->use_reply,
+                'reply_delete_policy' => $this->reply_delete_policy,
                 'use_report' => $this->use_report,
                 'secret_mode' => $this->secret_mode,
                 'show_view_count' => $this->show_view_count,
@@ -224,6 +226,7 @@ class BoardResource extends BaseApiResource
                 'use_file_upload' => $this->use_file_upload,
                 'use_comment' => $this->use_comment,
                 'use_reply' => $this->use_reply,
+                'reply_delete_policy' => $this->reply_delete_policy,
                 'use_report' => $this->use_report,
                 'secret_mode' => $this->secret_mode,
                 'per_page' => $this->per_page,
@@ -401,7 +404,7 @@ class BoardResource extends BaseApiResource
         /** @var User|null $user */
         $user = Auth::user();
         $slug = $this->getValue('slug');
-        $isAdminRoute = $this->isAdminRoute($request);
+        $isAdminRoute = $this->isAdminRequest($request);
 
         // 컨텍스트에 맞는 permissionMap 구성 (PostResource.resolveAbilities()와 동일 키)
         $permissionMap = $isAdminRoute
@@ -489,24 +492,5 @@ class BoardResource extends BaseApiResource
         }
 
         return $guestRole->permissions()->where('permissions.id', $permission->id)->exists();
-    }
-
-    /**
-     * Admin 라우트 여부를 확인합니다.
-     *
-     * Controller 네임스페이스로 판단합니다.
-     *
-     * @param  Request  $request  HTTP 요청
-     * @return bool Admin 라우트 여부
-     */
-    private function isAdminRoute(Request $request): bool
-    {
-        $controller = $request->route()?->getController();
-
-        if (! $controller) {
-            return false;
-        }
-
-        return str_contains(get_class($controller), '\\Admin\\');
     }
 }

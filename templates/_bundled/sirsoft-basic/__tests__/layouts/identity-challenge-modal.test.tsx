@@ -248,6 +248,7 @@ describe('본인인증 공통 모달 (sirsoft-basic) — engine-v1.46.0', () => 
       expect(cancelChain).toBeDefined();
     });
 
+    /** @effects modal_cancel_button_calls_server_cancel_api_first, modal_cancel_apiCall_uses_global_identityChallenge_challenge_id */
     it('cancel sequence 의 첫 액션이 서버 cancel API 호출 — audit trail 정합', () => {
       const seq = findCancelSequence();
       expect(seq).toBeDefined();
@@ -262,6 +263,7 @@ describe('본인인증 공통 모달 (sirsoft-basic) — engine-v1.46.0', () => 
       expect(apiCall!.target!).toContain('_global.identityChallenge.challenge_id');
     });
 
+    /** @effects modal_cancel_apiCall_skipped_when_challenge_id_absent */
     it('cancel apiCall 이 challenge 발급된 경우에만 호출 (if 가드)', () => {
       const seq = findCancelSequence();
       const inner = (seq!.params!.actions ?? []) as Action[];
@@ -269,6 +271,7 @@ describe('본인인증 공통 모달 (sirsoft-basic) — engine-v1.46.0', () => 
       expect((apiCall as any).if).toContain('_global.identityChallenge?.challenge_id');
     });
 
+    /** @effects modal_cancel_apiCall_failure_does_not_block_modal_close */
     it('cancel apiCall 실패해도 모달 닫기는 진행 (onError suppress)', () => {
       const seq = findCancelSequence();
       const inner = (seq!.params!.actions ?? []) as Action[];
@@ -278,6 +281,7 @@ describe('본인인증 공통 모달 (sirsoft-basic) — engine-v1.46.0', () => 
       expect(onError[0].handler).toBe('suppress');
     });
 
+    /** @effects modal_cancel_sequence_order_is_apiCall_resolve_close */
     it('cancel sequence 가 [apiCall, resolveIdentityChallenge, closeModal] 순서', () => {
       const seq = findCancelSequence();
       const inner = (seq!.params!.actions ?? []) as Action[];

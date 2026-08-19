@@ -6,6 +6,7 @@ use App\Extension\HookManager;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Modules\Sirsoft\Ecommerce\Exceptions\ProductCommonInfoOperationException;
 use Modules\Sirsoft\Ecommerce\Models\ProductCommonInfo;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductCommonInfoRepositoryInterface;
 
@@ -21,7 +22,7 @@ class ProductCommonInfoService
     /**
      * 공통정보 목록 조회
      *
-     * @param array $filters 필터 조건
+     * @param  array  $filters  필터 조건
      * @return Collection
      */
     public function getAllCommonInfos(array $filters = []): Collection
@@ -46,8 +47,8 @@ class ProductCommonInfoService
     /**
      * 공통정보 목록 페이지네이션 조회
      *
-     * @param array $filters 필터 조건
-     * @param int $perPage 페이지당 항목 수
+     * @param  array  $filters  필터 조건
+     * @param  int  $perPage  페이지당 항목 수
      * @return LengthAwarePaginator
      */
     public function getPaginatedCommonInfos(array $filters = [], int $perPage = 20): LengthAwarePaginator
@@ -69,7 +70,7 @@ class ProductCommonInfoService
     /**
      * 공통정보 상세 조회
      *
-     * @param int $id 공통정보 ID
+     * @param  int  $id  공통정보 ID
      * @return ProductCommonInfo|null
      */
     public function getCommonInfo(int $id): ?ProductCommonInfo
@@ -93,7 +94,7 @@ class ProductCommonInfoService
     /**
      * 공통정보 생성
      *
-     * @param array $data 공통정보 데이터
+     * @param  array  $data  공통정보 데이터
      * @return ProductCommonInfo
      */
     public function createCommonInfo(array $data): ProductCommonInfo
@@ -129,8 +130,8 @@ class ProductCommonInfoService
     /**
      * 공통정보 수정
      *
-     * @param int $id 공통정보 ID
-     * @param array $data 수정할 데이터
+     * @param  int  $id  공통정보 ID
+     * @param  array  $data  수정할 데이터
      * @return ProductCommonInfo
      *
      * @throws \Exception
@@ -140,7 +141,7 @@ class ProductCommonInfoService
         $commonInfo = $this->repository->findById($id);
 
         if (! $commonInfo) {
-            throw new \Exception(__('sirsoft-ecommerce::exceptions.product_common_info_not_found'));
+            throw new ProductCommonInfoOperationException('sirsoft-ecommerce::exceptions.product_common_info_not_found');
         }
 
         // Before 훅
@@ -172,7 +173,7 @@ class ProductCommonInfoService
     /**
      * 공통정보 삭제
      *
-     * @param int $id 공통정보 ID
+     * @param  int  $id  공통정보 ID
      * @return array 삭제 결과 정보
      *
      * @throws \Exception
@@ -182,7 +183,7 @@ class ProductCommonInfoService
         $commonInfo = $this->repository->findById($id);
 
         if (! $commonInfo) {
-            throw new \Exception(__('sirsoft-ecommerce::exceptions.product_common_info_not_found'));
+            throw new ProductCommonInfoOperationException('sirsoft-ecommerce::exceptions.product_common_info_not_found');
         }
 
         // 연결된 상품 수 확인
@@ -211,7 +212,7 @@ class ProductCommonInfoService
     /**
      * 사용 여부 토글
      *
-     * @param int $id 공통정보 ID
+     * @param  int  $id  공통정보 ID
      * @return ProductCommonInfo
      *
      * @throws \Exception
@@ -221,7 +222,7 @@ class ProductCommonInfoService
         $commonInfo = $this->repository->findById($id);
 
         if (! $commonInfo) {
-            throw new \Exception(__('sirsoft-ecommerce::exceptions.product_common_info_not_found'));
+            throw new ProductCommonInfoOperationException('sirsoft-ecommerce::exceptions.product_common_info_not_found');
         }
 
         return $this->updateCommonInfo($id, [

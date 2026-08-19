@@ -172,7 +172,7 @@
                           "handler": "toast",
                           "params": {
                             "type": "error",
-                            "message": "$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.clear_cache_failed"
+                            "message": "{{error.message ?? $t('sirsoft-ecommerce.admin.settings.seo.seo_friendly.clear_cache_failed')}}"
                           }
                         }
                       ]

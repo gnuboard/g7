@@ -41,11 +41,73 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: http-403 — 응답 필드는 사람이 작성하세요. -->
+_목록 응답: `data.data` 가 항목 배열, `data.meta` 가 페이지 정보, `data.abilities` 가 컬렉션 레벨 권한 (`MemoCollection`)._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| data | array | `[{...}]` | 메모 항목 배열 (각 항목은 `MemoResource` — 아래 표) |
+| meta.current_page | integer | `1` | 현재 페이지 번호 |
+| meta.last_page | integer | `3` | 마지막 페이지 번호 |
+| meta.per_page | integer | `10` | 페이지당 항목 수 (미지정 시 기본 `10`) |
+| meta.total | integer | `27` | 전체 항목 수 |
+| abilities.can_create | boolean | `true` | 요청자의 `gnuboard7-hello_module.memos.create` 보유 여부 |
+| abilities.can_update | boolean | `true` | 요청자의 `gnuboard7-hello_module.memos.update` 보유 여부 |
+| abilities.can_delete | boolean | `true` | 요청자의 `gnuboard7-hello_module.memos.delete` 보유 여부 |
+
+`data.data[]` 항목 (`MemoResource`):
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| id | integer | `1` | 메모 기본키 |
+| uuid | string(uuid) | `9f2c1b0e-…` | 외부 노출용 식별자 |
+| title | string | `첫 번째 메모` | 제목 |
+| content | string | `메모 본문입니다.` | 본문 내용 |
+| created_at | string | `2026-08-16 01:30:00` | 생성 일시 (요청자 타임존으로 포맷) |
+| updated_at | string | `2026-08-16 01:30:00` | 수정 일시 (요청자 타임존으로 포맷) |
+| abilities | object | `{"can_create":true, …}` | 항목 레벨 권한 (컬렉션 `abilities` 와 같은 3종) |
 
 **응답 예시**
 
-<!-- 실측 제외: http-403 — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "메모 목록을 조회했습니다.",
+    "data": {
+        "data": [
+            {
+                "id": 1,
+                "uuid": "9f2c1b0e-4d7a-4f10-9c33-1a5b6e8d2f04",
+                "title": "첫 번째 메모",
+                "content": "메모 본문입니다.",
+                "created_at": "2026-08-16 01:30:00",
+                "updated_at": "2026-08-16 01:30:00",
+                "abilities": {
+                    "can_create": true,
+                    "can_update": true,
+                    "can_delete": true
+                }
+            }
+        ],
+        "meta": {
+            "current_page": 1,
+            "last_page": 3,
+            "per_page": 10,
+            "total": 27
+        },
+        "abilities": {
+            "can_create": true,
+            "can_update": true,
+            "can_delete": true
+        }
+    }
+}
+```
+
+> 위 문서의 실측이 `403` 으로 관측된 것은 프로브 계정에 `gnuboard7-hello_module.memos.read` 권한이 없었기 때문이다. 권한을 갖춘 요청은 `200` 과 위 페이로드를 받는다.
 
 **에러 응답**
 
@@ -53,11 +115,16 @@ Authorization: Bearer {YOUR_TOKEN}
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`gnuboard7-hello_module.memos.read`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지 — `page` 최소 1, `per_page` 1~100) |
+| 500 | Internal Server Error | 조회 중 예외 발생 (`gnuboard7-hello_module::messages.memo.fetch_failed`, `errors.error` 에 예외 메시지) |
 
 <!-- @generated:end -->
 
-**설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
+**설명**
+
+메모 목록을 페이지 단위로 조회한다. 학습용 샘플 모듈의 표준 목록 엔드포인트로, 코어의 `AdminBaseController` + `BaseApiCollection` 조합을 그대로 따른다.
+
+`per_page` 를 지정하지 않으면 기본값 `10` 이 적용된다. 상·하한(1~100)은 `MemoListRequest` 가 검증하므로 Service 는 검증 없이 값을 그대로 쓴다 — 검증은 FormRequest 책임이라는 규칙의 예시다.
 
 
 ### POST /api/modules/gnuboard7-hello_module/admin/memos
@@ -90,11 +157,45 @@ Content-Type: application/json
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: http-403 — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: `data` 가 생성된 메모 하나 (`MemoResource`)._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| id | integer | `28` | 생성된 메모의 기본키 |
+| uuid | string(uuid) | `3b7e5a12-…` | 외부 노출용 식별자 (생성 시 자동 부여) |
+| title | string | `예시 제목` | 제목 |
+| content | string | `예시 내용입니다.` | 본문 내용 |
+| created_at | string | `2026-08-16 01:30:00` | 생성 일시 (요청자 타임존으로 포맷) |
+| updated_at | string | `2026-08-16 01:30:00` | 수정 일시 (생성 직후에는 `created_at` 과 같다) |
+| abilities | object | `{"can_create":true,"can_update":true,"can_delete":true}` | 요청자의 메모 권한 3종 |
 
 **응답 예시**
 
-<!-- 실측 제외: http-403 — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 201
+```
+
+```json
+{
+    "success": true,
+    "message": "메모가 생성되었습니다.",
+    "data": {
+        "id": 28,
+        "uuid": "3b7e5a12-8c04-4d61-9b2f-7e0a1c4d5f88",
+        "title": "예시 제목",
+        "content": "예시 내용입니다.",
+        "created_at": "2026-08-16 01:30:00",
+        "updated_at": "2026-08-16 01:30:00",
+        "abilities": {
+            "can_create": true,
+            "can_update": true,
+            "can_delete": true
+        }
+    }
+}
+```
+
+> 성공 상태코드는 `200` 이 아니라 **`201 Created`** 다. 위 문서의 실측이 `403` 으로 관측된 것은 프로브 계정에 `gnuboard7-hello_module.memos.create` 권한이 없었기 때문이다.
 
 **에러 응답**
 
@@ -102,11 +203,16 @@ Content-Type: application/json
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`gnuboard7-hello_module.memos.create`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지 — `title` 필수·255자 이하, `content` 필수) |
+| 500 | Internal Server Error | 생성 중 예외 발생 (`gnuboard7-hello_module::messages.memo.create_failed`, `errors.error` 에 예외 메시지) |
 
 <!-- @generated:end -->
 
-**설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
+**설명**
+
+메모를 생성한다. 검증은 `StoreMemoRequest` 가 전담하고 Service 는 검증된 배열만 받는다 — Service 에 검증 로직을 두지 않는다는 규칙의 예시다.
+
+컨트롤러가 `$request->validated()` 를 넘기므로 FormRequest 에 정의되지 않은 필드는 모델에 도달하지 않는다. `$request->all()` / `except()` 를 쓰면 `$fillable` 을 통해 미정의 필드가 새므로 쓰지 않는다.
 
 
 ### DELETE /api/modules/gnuboard7-hello_module/admin/memos/{id}
@@ -132,11 +238,25 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
+_삭제 응답에는 페이로드가 없다. 컨트롤러가 `success(메시지)` 만 호출하므로 `data` 는 `null` 이다._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| (없음) | null | `null` | 삭제 성공 시 `data` 는 항상 `null`. 결과 판정은 `success` 와 상태코드로 한다 |
 
 **응답 예시**
 
-<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "메모가 삭제되었습니다.",
+    "data": null
+}
+```
 
 **에러 응답**
 
@@ -144,11 +264,16 @@ Authorization: Bearer {YOUR_TOKEN}
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`gnuboard7-hello_module.memos.delete`)이 없는 경우 |
-| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 404 | Not Found | 해당 `id` 의 메모가 없는 경우 (`gnuboard7-hello_module::messages.memo.not_found`) |
+| 500 | Internal Server Error | 삭제 중 예외 발생 (`gnuboard7-hello_module::messages.memo.delete_failed`, `errors.error` 에 예외 메시지) |
 
 <!-- @generated:end -->
 
-**설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
+**설명**
+
+메모를 삭제한다. 컨트롤러가 먼저 `getMemo($id)` 로 대상을 조회하므로, 존재하지 않는 `id` 는 삭제 시도 전에 `404` 로 걸러진다.
+
+삭제는 DB CASCADE 에 의존하지 않고 Service 가 명시적으로 수행한다 — 훅 발화·파일 정리·로깅을 보장하기 위해서다.
 
 
 ### GET /api/modules/gnuboard7-hello_module/admin/memos/{id}
@@ -174,11 +299,43 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: `data` 가 메모 하나 (`MemoResource`)._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| id | integer | `2` | 기본 키 (내부 식별자) |
+| uuid | string(uuid) | `4473e9ee-ecdf-4ad0-afb3-78ada47265af` | 외부 노출용 UUID |
+| title | string | `두 번째 메모` | 제목 |
+| content | string | `Memo 엔티티의 CRUD 동작을 확인할 수 있는 추가 샘플입니다.` | 본문 내용 |
+| created_at | string | `2026-07-31 22:09:15` | 생성 일시 (요청자 타임존으로 포맷) |
+| updated_at | string | `2026-07-31 22:09:15` | 수정 일시 (요청자 타임존으로 포맷) |
+| abilities | object | `{"can_create":true,"can_update":true,"can_delete":true}` | 요청자의 메모 권한 3종 |
 
 **응답 예시**
 
-<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "메모를 조회했습니다.",
+    "data": {
+        "id": 2,
+        "uuid": "4473e9ee-ecdf-4ad0-afb3-78ada47265af",
+        "title": "두 번째 메모",
+        "content": "Memo 엔티티의 CRUD 동작을 확인할 수 있는 추가 샘플입니다.",
+        "created_at": "2026-07-31 22:09:15",
+        "updated_at": "2026-07-31 22:09:15",
+        "abilities": {
+            "can_create": true,
+            "can_update": true,
+            "can_delete": true
+        }
+    }
+}
+```
 
 **에러 응답**
 
@@ -186,11 +343,16 @@ Authorization: Bearer {YOUR_TOKEN}
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`gnuboard7-hello_module.memos.read`)이 없는 경우 |
-| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 404 | Not Found | 해당 `id` 의 메모가 없는 경우 (`gnuboard7-hello_module::messages.memo.not_found`) |
+| 500 | Internal Server Error | 조회 중 예외 발생 (`gnuboard7-hello_module::messages.memo.fetch_failed`, `errors.error` 에 예외 메시지) |
 
 <!-- @generated:end -->
 
-**설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
+**설명**
+
+메모 단건을 조회하는 관리자 엔드포인트다. path 파라미터는 `int` 타입힌트를 받는 **기본키 `id`** 이며, 응답에 함께 실리는 `uuid` 가 아니다.
+
+같은 리소스의 공개 조회는 `GET /api/modules/gnuboard7-hello_module/memos/{id}` 로 별도 제공된다. 관리자 경로는 `permission:gnuboard7-hello_module.memos.read` 를 요구하는 반면 공개 경로는 `optional.sanctum` 이라 비회원도 접근한다.
 
 
 ### PUT /api/modules/gnuboard7-hello_module/admin/memos/{id}
@@ -224,11 +386,43 @@ Content-Type: application/json
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: `data` 가 수정된 메모 하나 (`MemoResource`)._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| id | integer | `2` | 기본 키 (수정으로 바뀌지 않는다) |
+| uuid | string(uuid) | `4473e9ee-ecdf-4ad0-afb3-78ada47265af` | 외부 노출용 UUID (수정으로 바뀌지 않는다) |
+| title | string | `예시 제목` | 수정된 제목 |
+| content | string | `예시 내용입니다.` | 수정된 본문 내용 |
+| created_at | string | `2026-07-31 22:09:15` | 생성 일시 (불변) |
+| updated_at | string | `2026-08-16 01:30:00` | 수정 일시 (이번 요청 시각으로 갱신) |
+| abilities | object | `{"can_create":true,"can_update":true,"can_delete":true}` | 요청자의 메모 권한 3종 |
 
 **응답 예시**
 
-<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "메모가 수정되었습니다.",
+    "data": {
+        "id": 2,
+        "uuid": "4473e9ee-ecdf-4ad0-afb3-78ada47265af",
+        "title": "예시 제목",
+        "content": "예시 내용입니다.",
+        "created_at": "2026-07-31 22:09:15",
+        "updated_at": "2026-08-16 01:30:00",
+        "abilities": {
+            "can_create": true,
+            "can_update": true,
+            "can_delete": true
+        }
+    }
+}
+```
 
 **에러 응답**
 
@@ -236,12 +430,17 @@ Content-Type: application/json
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`gnuboard7-hello_module.memos.update`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
-| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 404 | Not Found | 해당 `id` 의 메모가 없는 경우 (`gnuboard7-hello_module::messages.memo.not_found`) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지 — `title` 필수·255자 이하, `content` 필수) |
+| 500 | Internal Server Error | 수정 중 예외 발생 (`gnuboard7-hello_module::messages.memo.update_failed`, `errors.error` 에 예외 메시지) |
 
 <!-- @generated:end -->
 
-**설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
+**설명**
+
+메모를 수정한다. `PUT` 이므로 `title` 과 `content` 를 **모두** 보내야 한다 (`UpdateMemoRequest` 가 둘 다 필수로 검증). 일부 필드만 보내면 `422` 다.
+
+컨트롤러는 `getMemo($id)` 로 대상을 먼저 조회하므로 존재하지 않는 `id` 는 수정 시도 전에 `404` 로 걸러지고, Service 에는 `$request->validated()` 결과만 전달되어 FormRequest 미정의 필드가 모델에 도달하지 않는다.
 
 
 ### GET /api/modules/gnuboard7-hello_module/memos

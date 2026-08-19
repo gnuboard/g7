@@ -433,41 +433,57 @@ sirsoft-ecommerce.product.after_update
 sirsoft-ecommerce.product.filter_create_data
 ```
 
-### 서비스 내부 조건부 권한 체크
+### 서비스 내부 권한 상한(ceiling) 체크
 
-미들웨어가 아닌 **서비스 내부**에서 추가적인 권한 체크가 필요한 경우 `PermissionHelper`를 사용합니다.
-대표적인 예: 역할(role) 변경처럼 데이터의 일부 필드만 별도 권한이 필요한 경우.
+데이터의 일부 필드가 **권한 상승 벡터**일 때(대표적으로 역할 부여 — 역할을 붙이면 그 역할의 전
+권한을 넘기는 것과 같다), 서비스는 미들웨어 권한과 별개로 **상한 가드**를 적용한다.
+
+핵심 원칙 세 가지:
+
+1. **게이트는 그 엔드포인트의 라우트 권한(SSoT)과 같은 리소스여야 한다.** 역할 부여는 "사용자
+   관리"(`core.users.update` — 이 경로는 라우트에서 이미 강제됨)의 일부이며, "역할 정의 수정"
+   (`core.permissions.update` — 역할에 권한을 가감하는 **타 리소스** 권한)을 요구하지 않는다. 연관/타
+   리소스 권한으로 원 리소스 조작을 게이팅하면, 원 리소스 권한을 가진 액터가 정당한 작업을 못 한다.
+2. **권한 상승 방지는 상한 가드(`PermissionEscalationGuard`)가 담당한다.** 액터가 보유하지 않았거나
+   자신의 범위보다 넓은 권한을 담은 역할은 부여할 수 없다.
+3. **위반은 명시적으로 거부(403)한다 — 조용히 무시하지 않는다.** 상한 위반 시
+   `PermissionEscalationException` 이 전파되어 컨트롤러가 403 으로 매핑한다.
 
 ```php
-use App\Helpers\PermissionHelper;
-use Illuminate\Support\Facades\Auth;
+use App\Support\PermissionEscalationGuard;
+
+public function __construct(
+    private readonly PermissionEscalationGuard $escalationGuard,
+    // ...
+) {}
 
 public function updateUser(User $user, array $data): User
 {
     $roleIds = $data['role_ids'] ?? null;
     unset($data['role_ids'], $data['roles']);
 
-    // 훅 실행 (생략)...
+    // 훅 실행 / 필드 업데이트 (생략)...
 
-    $user = $this->userRepository->update($user->id, $data);
-
-    // 역할 변경은 별도 권한으로 보호
     if ($roleIds !== null) {
         $authUser = Auth::user();
 
-        // 자기 자신의 역할은 항상 변경 불가 (보안)
-        if ($authUser && $authUser->id === $user->id) {
-            $roleIds = null;
+        // 상한 검사 대상 = 이번 변경으로 붙거나 떨어지는 역할(추가·제거 대칭 차분).
+        // 추가만 검사하면 하위 관리자가 상위 역할을 박탈하는 하향 조작이 상한 없이 뚫린다.
+        // 기존 유지 역할은 변경이 아니므로 제외한다.
+        $currentRoleIds = $user->roles->pluck('id')->all();
+        $changedRoleIds = array_values(array_unique(array_merge(
+            array_diff($roleIds, $currentRoleIds),   // 추가되는 역할
+            array_diff($currentRoleIds, $roleIds),   // 제거되는 역할
+        )));
+        if (! empty($changedRoleIds)) {
+            // 상한 위반 시 PermissionEscalationException throw → 컨트롤러가 403 매핑
+            $this->escalationGuard->assertRoleAssignmentWithinActorCeiling($changedRoleIds);
         }
 
-        // core.permissions.update 권한 없으면 역할 변경 무시
-        if ($roleIds !== null && ! PermissionHelper::check('core.permissions.update', $authUser)) {
-            $roleIds = null;
-        }
+        // 자기잠금 방지: 마지막 admin 이 자기 admin 역할을 떼는 것만 별도 차단
+        // (자기 자신 수정 자체를 막지는 않는다)
 
-        if ($roleIds !== null) {
-            $user->roles()->sync($roleIds);
-        }
+        $user->roles()->sync($roleIds);
     }
 
     return $user;
@@ -475,10 +491,15 @@ public function updateUser(User $user, array $data): User
 ```
 
 ```
-필수: 역할/권한 변경은 미들웨어 권한과 별개로 서비스에서 명시적 체크 필수
-필수: 자기 자신의 역할 변경은 항상 불가 (관리자 실수 방지)
-패턴: 민감 필드 분리 → 별도 권한 체크 → 권한 없으면 해당 필드 무시 (403이 아닌 무시)
+필수: 상승 벡터 필드의 게이트는 그 엔드포인트 라우트 권한(SSoT)과 같은 리소스 prefix 여야 함
+      (연관/타 리소스 권한이 원 리소스 조작을 침범 금지)
+필수: 권한 상승 방지는 foreign 권한 게이트가 아니라 escalation/rank-ceiling 가드로 처리
+필수: 상한 위반은 명시적 거부(403) — 조용히 무시(silent no-op/soft-block)하지 않음
+금지: `PermissionHelper::check('core.permissions.update')` 로 role_ids 를 drop 하는 silent-drop 패턴
+      (원 권한 보유자가 정당한 역할 부여를 못 하고, 200 성공을 반환하면서도 아무 변화가 없어 발견이 늦다)
 ```
+
+> 상세: [validation.md](validation.md) "계층 리소스"·"보안 게이트 대칭성"
 
 ---
 
@@ -1567,6 +1588,51 @@ public function findOrFail(string $slug, int $id, ?int $postId = null): Comment
 | 전달 누락 방지 | 컨트롤러가 라우트 파라미터를 실제로 소비하는지 정적 검사가 감시 (경고) |
 | 응답 코드 | 조회 실패이므로 404. 요청 본문 배열 항목의 스코프 위반은 422 (validation.md "배열 항목의 상위 스코프") |
 | 공통 추상화 | 도입하지 않는다 — 모듈마다 상위 키와 조회 경로가 다르고(`board_id`+`post_id` / `product_id` / `page_id` / `order_id`), 코어 표면이 늘면 확장 버전 제약 동기화가 연쇄된다 |
+
+---
+
+## 보안 게이트 대칭성 (KVE-2026-1914/1919)
+
+접근 게이트와 권한 등급 상한은 데이터를 내보내는 **한 경로에만** 있으면 다른 경로가
+조용한 우회로가 된다(예외·오류·로그 없이 원문만 새 나간다). 판정을 한 지점으로 모으고
+(SSoT), 같은 데이터를 서빙하는 모든 소비 경로가 그 지점을 경유하게 한다.
+
+### 비밀 부모 → 하위 리소스 게이트 재적용
+
+비밀/비공개 부모(게시글)에 종속된 하위 리소스(댓글·첨부·문의)는 **각자의 독립
+엔드포인트**를 가진다. 부모 상세 Resource(PostResource) 한 곳에만 마스킹을 두면, 하위
+엔드포인트가 부모의 비밀 상태를 검사하지 않고 해시/ID 만으로 원문을 반환한다.
+
+| 항목 | 규칙 |
+| --- | --- |
+| 판정 SSoT | 열람 판정은 단일 게이트(예: `SecretContentGate::canView($post)`)에 모은다 — 작성자 본인 / 비밀번호 검증 / `posts.read-secret` / manager 규칙을 한 곳에서 |
+| 재적용 지점 | 하위 리소스를 서빙하는 **모든** 경로 — 목록 컨트롤러, 상세 Resource, 이커머스 연동 훅, 첨부 다운로드/미리보기 서비스 |
+| 목록 차단 | 부모가 비밀이고 무권한이면 하위 목록은 **빈 컬렉션**을 반환해 하위 항목이 Resource 에 도달조차 하지 않게 한다(1차 방어) |
+| fail-closed | 슬러그·부모를 해석할 수 없으면 안전하게 마스킹(false)으로 실패 — 첨부 서빙은 상세와 분리된 요청이라 `password_verified` 가 없으므로 해시만으로는 비밀 첨부를 못 가져간다 |
+
+### hash 기반 file-serving 게이트
+
+hash/ID 로 파일을 서빙하는 라우트(`preview`/`download`)는 **소유권·비밀·발행 상태**를
+반드시 거친다. `preview` 가 공개 썸네일 정책상 permission 미들웨어 없이(`optional.sanctum`)
+열려 있으면, 컨트롤러/서비스의 게이트만이 미인증 공격자(해시만 쥔 게스트)를 막는 유일한
+방어선이다 — `preview` 와 `download` 가 **동일 게이트**를 공유해야 한 쪽이 우회로가 되지 않는다.
+
+| 응답 | 상황 |
+| --- | --- |
+| 403 | 인증 사용자가 비밀/삭제 게이트에 걸림(`AccessDeniedHttpException`) |
+| 401 | 게스트가 permission 미들웨어(`download`)에 걸림 |
+| 정상 서빙 | 발행 + 비밀 아님(또는 열람 권한 보유) |
+
+### User/Role 등급 상한 대칭 (rank ceiling)
+
+삭제 경로에만 있던 슈퍼 관리자·보호 역할 보호를 **수정·상태변경·권한부여** 경로까지
+대칭 적용한다. 판정은 `UserGradeGuard::mayModify($target, $actor)` 단일 게이트로 모은다
+(대상이 슈퍼면 액터도 슈퍼여야 수정 가능). 정적 라우트인 일괄(bulk) 엔드포인트는 스코프
+미들웨어가 우회되므로 **서비스 계층에서 강제**하며, 일괄 대상 목록은 `filterModifiable`
+로 수정 불가 대상을 걸러낸다(액터 등급 기준 — 액터를 무시하고 대상만 보고 제외하면
+슈퍼 actor 의 정상 수행이 조용히 막힌다).
+
+> 저장측(FormRequest) 검증 강도 대칭과 레이아웃 표현식 검증 부착은 [validation.md "보안 게이트 대칭성"](validation.md) 참조.
 
 ---
 

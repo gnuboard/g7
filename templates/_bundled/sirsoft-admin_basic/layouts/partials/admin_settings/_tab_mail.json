@@ -85,6 +85,36 @@
                         "options": "{{(_local.form?.available_drivers?.mail ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}",
                         "error": "{{_local.errors?.['mail.mailer']?.[0] ?? ''}}"
                       }
+                    },
+                    {
+                      "id": "unavailable_driver_notice_mail",
+                      "type": "basic",
+                      "name": "P",
+                      "if": "{{!!_local.form?.mail?.mailer && !(_local.form?.available_drivers?.mail ?? []).some(d => d.id === _local.form?.mail?.mailer)}}",
+                      "props": {
+                        "className": "text-warning-soft mt-2",
+                        "data-testid": "driver-unavailable-mail"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:admin.settings.drivers.common.unavailable_saved_value_prefix"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "font-mono"
+                          },
+                          "text": "{{_local.form?.mail?.mailer ?? ''}}"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:admin.settings.drivers.common.unavailable_saved_value_suffix"
+                        }
+                      ]
                     }
                   ]
                 }
@@ -813,7 +843,7 @@
               "name": "Button",
               "props": {
                 "disabled": "{{_computed.isReadOnly || _local.isSendingTest}}",
-                "className": "flex-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                "className": "flex-center justify-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white dark:text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
               },
               "actions": [
                 {
@@ -915,7 +945,7 @@
                   "if": "{{!_local.isSendingTest}}",
                   "props": {
                     "name": "paper-plane",
-                    "className": "w-4 h-4"
+                    "className": "text-base"
                   }
                 },
                 {

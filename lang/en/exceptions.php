@@ -3,6 +3,9 @@
 return [
     // User related exceptions
     'cannot_delete_super_admin' => 'Super admin cannot be deleted.',
+    'cannot_modify_super_admin' => 'You do not have permission to modify a super admin account or role.',
+    'cannot_grant_unheld_permission' => 'You cannot grant permissions you do not hold or a broader scope than your own.',
+    'cannot_modify_protected_role' => 'You do not have permission to modify a system or extension-owned role.',
 
     'circular_reference' => 'Layout circular reference detected: :trace',
     'max_depth_exceeded' => 'Layout nesting depth exceeds maximum allowed depth (:max).',

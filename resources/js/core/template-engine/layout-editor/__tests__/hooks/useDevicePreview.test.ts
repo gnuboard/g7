@@ -105,6 +105,10 @@ describe('useDevicePreview', () => {
     expect(result.current.customWidth).toBe(1024);
   });
 
+  /**
+   * @scenario preview_device=custom, custom_width_input=in_range
+   * @effects preview_custom_device_uses_clamped_input_width_as_override
+   */
   it('setCustomWidth 입력값이 custom 디바이스의 deviceWidth 로 반영', () => {
     const { result } = renderHook(() => useDevicePreview(), { wrapper: wrap() });
 
@@ -117,7 +121,11 @@ describe('useDevicePreview', () => {
     expect(result.current.customWidth).toBe(500);
   });
 
-  it('setCustomWidth 는 320~1920px 범위로 클램프', () => {
+  /**
+   * @scenario preview_device=custom, custom_width_input=below_min_320
+   * @effects preview_custom_width_clamped_320_to_1920
+   */
+  it('setCustomWidth 하한 미만(100) 은 320 으로 클램프', () => {
     const { result } = renderHook(() => useDevicePreview(), { wrapper: wrap() });
 
     act(() => {
@@ -125,13 +133,28 @@ describe('useDevicePreview', () => {
       result.current.setCustomWidth(100); // 하한 미만
     });
     expect(result.current.customWidth).toBe(320);
+    expect(result.current.deviceWidth).toBe(320);
+  });
+
+  /**
+   * @scenario preview_device=custom, custom_width_input=above_max_1920
+   * @effects preview_custom_width_clamped_320_to_1920
+   */
+  it('setCustomWidth 상한 초과(5000) 는 1920 으로 클램프', () => {
+    const { result } = renderHook(() => useDevicePreview(), { wrapper: wrap() });
 
     act(() => {
+      result.current.setDevice('custom');
       result.current.setCustomWidth(5000); // 상한 초과
     });
     expect(result.current.customWidth).toBe(1920);
+    expect(result.current.deviceWidth).toBe(1920);
   });
 
+  /**
+   * @scenario preview_device=desktop, custom_width_input=in_range
+   * @effects preview_non_custom_ignores_custom_width
+   */
   it('custom 미선택(desktop) 상태에서는 customWidth 변경이 deviceWidth 에 영향 없음', () => {
     const { result } = renderHook(() => useDevicePreview(), { wrapper: wrap() });
 
@@ -142,5 +165,37 @@ describe('useDevicePreview', () => {
     // 여전히 desktop → 1280
     expect(result.current.device).toBe('desktop');
     expect(result.current.deviceWidth).toBe(1280);
+  });
+
+  /**
+   * @scenario preview_device=tablet, custom_width_input=in_range
+   * @effects preview_non_custom_ignores_custom_width
+   */
+  it('tablet 선택 상태에서는 customWidth 변경이 deviceWidth 에 영향 없음', () => {
+    const { result } = renderHook(() => useDevicePreview(), { wrapper: wrap() });
+
+    act(() => {
+      result.current.setDevice('tablet');
+      result.current.setCustomWidth(500);
+    });
+
+    expect(result.current.device).toBe('tablet');
+    expect(result.current.deviceWidth).toBe(820);
+  });
+
+  /**
+   * @scenario preview_device=mobile, custom_width_input=in_range
+   * @effects preview_non_custom_ignores_custom_width
+   */
+  it('mobile 선택 상태에서는 customWidth 변경이 deviceWidth 에 영향 없음', () => {
+    const { result } = renderHook(() => useDevicePreview(), { wrapper: wrap() });
+
+    act(() => {
+      result.current.setDevice('mobile');
+      result.current.setCustomWidth(500);
+    });
+
+    expect(result.current.device).toBe('mobile');
+    expect(result.current.deviceWidth).toBe(390);
   });
 });

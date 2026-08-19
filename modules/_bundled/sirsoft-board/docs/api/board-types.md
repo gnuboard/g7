@@ -206,6 +206,7 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지�
 | 403 | Forbidden | 요구 권한(`sirsoft-board.boards.create`)이 없는 경우 |
 | 404 | Not Found | 해당 `id` 의 게시판 유형이 없는 경우 (`게시판 유형을 찾을 수 없습니다.`) |
 | 422 | Unprocessable Entity | 해당 유형을 사용 중인 게시판이 있는 경우 (`:count개 게시판에서 사용 중인 유형은 삭제할 수 없습니다.`) 또는 게시판 기본 유형(`basic_defaults.type`)으로 설정된 경우 (`기본값으로 설정된 유형은 삭제할 수 없습니다.`) |
+| 500 | Internal Server Error | 서버 내부 오류 (`작업 처리 중 오류가 발생했습니다.`) — 도메인 규칙 위반이 아닌 예외는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
 

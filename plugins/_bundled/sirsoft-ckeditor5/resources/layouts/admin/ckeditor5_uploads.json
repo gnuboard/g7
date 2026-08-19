@@ -1,0 +1,1068 @@
+{
+    "version": "1.0.0",
+    "layout_name": "ckeditor5_uploads",
+    "permissions": [
+        "sirsoft-ckeditor5.uploads.read"
+    ],
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:sirsoft-ckeditor5.admin.uploads.title",
+        "description": "$t:sirsoft-ckeditor5.admin.uploads.description"
+    },
+    "state": {
+        "filter": {
+            "search": "",
+            "referenced": "all",
+            "dateFrom": "",
+            "dateTo": ""
+        }
+    },
+    "transition_overlay": {
+        "wait_for": [
+            "ckeditor5Uploads"
+        ]
+    },
+    "data_sources": [
+        {
+            "id": "ckeditor5Uploads",
+            "label_key": "$t:sirsoft-ckeditor5.editor.data_source.ckeditor5Uploads",
+            "type": "api",
+            "endpoint": "/api/plugins/sirsoft-ckeditor5/admin/uploads",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "page": "{{query.page || 1}}",
+                "per_page": "{{query.per_page || 20}}",
+                "search": "{{query.search}}",
+                "referenced": "{{query.referenced}}",
+                "date_from": "{{query.date_from}}",
+                "date_to": "{{query.date_to}}",
+                "sort_by": "{{query.sort_by}}",
+                "sort_order": "{{query.sort_order}}"
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "pagination": {
+                        "current_page": 1,
+                        "last_page": 1,
+                        "per_page": 20,
+                        "total": 0,
+                        "from": null,
+                        "to": null
+                    },
+                    "meta": {
+                        "scan_limited": false,
+                        "scan_window": 500
+                    }
+                }
+            }
+        }
+    ],
+    "init_actions": [
+        {
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "filter": {
+                    "search": "{{query.search || ''}}",
+                    "referenced": "{{query.referenced || 'all'}}",
+                    "dateFrom": "{{query.date_from || ''}}",
+                    "dateTo": "{{query.date_to || ''}}"
+                }
+            }
+        }
+    ],
+    "named_actions": {
+        "searchUploads": {
+            "handler": "navigate",
+            "params": {
+                "path": "/admin/plugins/sirsoft-ckeditor5/uploads",
+                "replace": true,
+                "mergeQuery": true,
+                "query": {
+                    "page": "",
+                    "search": "{{_local.filter.search || ''}}",
+                    "referenced": "{{_local.filter.referenced || 'all'}}",
+                    "date_from": "{{_local.filter.dateFrom || ''}}",
+                    "date_to": "{{_local.filter.dateTo || ''}}"
+                },
+                "transition_overlay_target": "ckeditor5_uploads_datagrid__body"
+            }
+        },
+        "clearFilters": {
+            "handler": "sequence",
+            "params": {
+                "actions": [
+                    {
+                        "handler": "setState",
+                        "params": {
+                            "target": "local",
+                            "filter": {
+                                "search": "",
+                                "referenced": "all",
+                                "dateFrom": "",
+                                "dateTo": ""
+                            }
+                        }
+                    },
+                    {
+                        "comment": "audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 검색·참조상태·기간과 페이지를 모두 비우는 의도적 리셋이므로 병합하지 않는다",
+                        "handler": "navigate",
+                        "params": {
+                            "path": "/admin/plugins/sirsoft-ckeditor5/uploads",
+                            "replace": true,
+                            "query": {}
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    "slots": {
+        "content": [
+            {
+                "id": "ckeditor5_uploads_content",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "admin-page-content"
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex-between mb-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H1",
+                                        "props": {
+                                            "className": "page-title"
+                                        },
+                                        "text": "$t:sirsoft-ckeditor5.admin.uploads.title"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-label-subtle mt-1"
+                                        },
+                                        "text": "$t:sirsoft-ckeditor5.admin.uploads.description"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex-center gap-2"
+                                },
+                                "children": [
+                                    {
+                                        "id": "open_settings_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn btn-secondary"
+                                        },
+                                        "actions": [
+                                            {
+                                                "comment": "audit:allow layout-list-context-navigate-merge-query 플러그인 설정 화면으로 나가는 이동 — 목록 클러스터 밖이라 목록 상태를 승계하지 않는다",
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/plugins/sirsoft-ckeditor5/settings"
+                                                }
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-ckeditor5.admin.uploads.open_settings"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "refresh_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn-icon",
+                                            "title": "$t:sirsoft-ckeditor5.admin.uploads.refresh"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "ckeditor5Uploads"
+                                                }
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "fa-solid fa-arrows-rotate",
+                                                    "className": "text-xl"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "reference_notice",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "mb-6 p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "P",
+                                "props": {
+                                    "className": "text-sm text-blue-800 dark:text-blue-200"
+                                },
+                                "text": "$t:sirsoft-ckeditor5.admin.uploads.reference_notice"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "scan_limited_notice",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{ckeditor5Uploads?.data?.meta?.scan_limited === true}}",
+                        "props": {
+                            "className": "mb-6 p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "P",
+                                "props": {
+                                    "className": "text-sm text-amber-800 dark:text-amber-200"
+                                },
+                                "text": "$t:sirsoft-ckeditor5.admin.uploads.scan_limited_notice|count={{ckeditor5Uploads?.data?.meta?.scan_window ?? 500}}"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "filter_section",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "admin-card mb-6"
+                        },
+                        "children": [
+                            {
+                                "id": "search_row",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex-center flex-wrap gap-2"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "relative flex-1"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "fa-solid fa-search",
+                                                    "className": "absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm pointer-events-none"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Input",
+                                                "props": {
+                                                    "name": "search",
+                                                    "type": "text",
+                                                    "placeholder": "$t:sirsoft-ckeditor5.admin.uploads.filter.search_placeholder",
+                                                    "className": "input pl-10",
+                                                    "value": "{{_local.filter.search || ''}}"
+                                                },
+                                                "actions": [
+                                                    {
+                                                        "type": "change",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "filter.search": "{{$event.target.value}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "keydown",
+                                                        "key": "Enter",
+                                                        "actionRef": "searchUploads"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "composite",
+                                        "name": "Select",
+                                        "props": {
+                                            "name": "referenced",
+                                            "value": "{{_local.filter.referenced || 'all'}}",
+                                            "options": [
+                                                {
+                                                    "value": "all",
+                                                    "label": "$t:sirsoft-ckeditor5.admin.uploads.filter.referenced_all"
+                                                },
+                                                {
+                                                    "value": "referenced",
+                                                    "label": "$t:sirsoft-ckeditor5.admin.uploads.filter.referenced_only"
+                                                },
+                                                {
+                                                    "value": "unreferenced",
+                                                    "label": "$t:sirsoft-ckeditor5.admin.uploads.filter.unreferenced_only"
+                                                }
+                                            ]
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "change",
+                                                "handler": "sequence",
+                                                "params": {
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "filter.referenced": "{{$event.target.value}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "actionRef": "searchUploads"
+                                                        }
+                                                    ]
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Input",
+                                        "props": {
+                                            "name": "date_from",
+                                            "type": "date",
+                                            "className": "input w-40",
+                                            "title": "$t:sirsoft-ckeditor5.admin.uploads.filter.date_from",
+                                            "value": "{{_local.filter.dateFrom || ''}}"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "change",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "filter.dateFrom": "{{$event.target.value}}"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Input",
+                                        "props": {
+                                            "name": "date_to",
+                                            "type": "date",
+                                            "className": "input w-40",
+                                            "title": "$t:sirsoft-ckeditor5.admin.uploads.filter.date_to",
+                                            "value": "{{_local.filter.dateTo || ''}}"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "change",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "filter.dateTo": "{{$event.target.value}}"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn btn-primary"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "actionRef": "searchUploads"
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-ckeditor5.admin.uploads.filter.search_button"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "clear_filters_row",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{!!(query.search || query.referenced || query.date_from || query.date_to)}}",
+                                "props": {
+                                    "className": "flex justify-end mt-2"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "type": "button",
+                                            "className": "text-tertiary hover:text-gray-700 dark:hover:text-gray-200 underline"
+                                        },
+                                        "text": "$t:sirsoft-ckeditor5.admin.uploads.filter.clear",
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "actionRef": "clearFilters"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "bulk_action_bar",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{(_global.selectedIds_ckeditor5_uploads?.length ?? 0) > 0}}",
+                        "props": {
+                            "className": "flex-between mb-4 p-3 rounded-xl bg-gray-100 dark:bg-gray-800"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-body"
+                                },
+                                "text": "$t:sirsoft-ckeditor5.admin.uploads.bulk_delete.selected|count={{_global.selectedIds_ckeditor5_uploads?.length ?? 0}}"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "type": "button",
+                                    "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "openModal",
+                                        "target": "bulk_delete_confirm_modal"
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:sirsoft-ckeditor5.admin.uploads.bulk_delete.button"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "ckeditor5_uploads_datagrid",
+                        "type": "composite",
+                        "name": "DataGrid",
+                        "props": {
+                            "data": "{{ckeditor5Uploads?.data?.data ?? []}}",
+                            "pagination": true,
+                            "serverSidePagination": true,
+                            "serverCurrentPage": "{{ckeditor5Uploads?.data?.pagination?.current_page ?? 1}}",
+                            "serverTotalPages": "{{ckeditor5Uploads?.data?.pagination?.last_page ?? null}}",
+                            "pageSize": "{{+(query.per_page || 20)}}",
+                            "alwaysShowPagination": true,
+                            "sortable": true,
+                            "sortField": "{{query.sort_by || 'created_at'}}",
+                            "sortDirection": "{{query.sort_order || 'desc'}}",
+                            "idField": "id",
+                            "selectable": true,
+                            "selectionScope": "page",
+                            "selectedIds": "{{_global.selectedIds_ckeditor5_uploads || []}}",
+                            "loading": "{{ckeditor5Uploads?.loading}}",
+                            "emptyText": "$t:sirsoft-ckeditor5.admin.uploads.empty",
+                            "actionsColumnHeader": "$t:common.actions",
+                            "rowActions": [
+                                {
+                                    "id": "delete",
+                                    "label": "$t:sirsoft-ckeditor5.admin.uploads.delete.button",
+                                    "iconName": "trash",
+                                    "variant": "danger"
+                                }
+                            ],
+                            "columns": [
+                                {
+                                    "field": "thumbnail",
+                                    "header": "$t:sirsoft-ckeditor5.admin.uploads.col.thumbnail",
+                                    "width": "90px",
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Img",
+                                            "props": {
+                                                "src": "{{row.download_url}}",
+                                                "alt": "{{row.original_name ?? ''}}",
+                                                "loading": "lazy",
+                                                "className": "w-16 h-16 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "original_name",
+                                    "header": "$t:sirsoft-ckeditor5.admin.uploads.col.original_name",
+                                    "sortable": true,
+                                    "width": "260px",
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "block text-heading line-clamp-1"
+                                                    },
+                                                    "text": "{{row.original_name ?? '-'}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "block text-tertiary font-mono"
+                                                    },
+                                                    "text": "{{row.hash ?? ''}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "file_size",
+                                    "header": "$t:sirsoft-ckeditor5.admin.uploads.col.file_size",
+                                    "sortable": true,
+                                    "width": "110px",
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label whitespace-nowrap"
+                                            },
+                                            "text": "{{Math.round((row.file_size ?? 0) / 1024).toLocaleString()}} KB"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "uploader_name",
+                                    "header": "$t:sirsoft-ckeditor5.admin.uploads.col.uploader",
+                                    "width": "140px",
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-body"
+                                            },
+                                            "text": "{{row.uploader_name ?? '-'}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "created_at",
+                                    "header": "$t:sirsoft-ckeditor5.admin.uploads.col.created_at",
+                                    "sortable": true,
+                                    "width": "170px",
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label whitespace-nowrap"
+                                            },
+                                            "text": "{{row.created_at ?? '-'}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "referenced",
+                                    "header": "$t:sirsoft-ckeditor5.admin.uploads.col.referenced",
+                                    "width": "110px",
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{row.referenced === true}}",
+                                            "props": {
+                                                "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                                            },
+                                            "text": "$t:sirsoft-ckeditor5.admin.uploads.badge.referenced"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{row.referenced !== true}}",
+                                            "props": {
+                                                "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+                                            },
+                                            "text": "$t:sirsoft-ckeditor5.admin.uploads.badge.unreferenced"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        "actions": [
+                            {
+                                "event": "onPageChange",
+                                "type": "change",
+                                "handler": "navigate",
+                                "params": {
+                                    "path": "/admin/plugins/sirsoft-ckeditor5/uploads",
+                                    "replace": true,
+                                    "mergeQuery": true,
+                                    "query": {
+                                        "page": "{{$args[0]}}"
+                                    },
+                                    "transition_overlay_target": "ckeditor5_uploads_datagrid__body"
+                                }
+                            },
+                            {
+                                "event": "onSortChange",
+                                "type": "change",
+                                "handler": "navigate",
+                                "params": {
+                                    "path": "/admin/plugins/sirsoft-ckeditor5/uploads",
+                                    "replace": true,
+                                    "mergeQuery": true,
+                                    "query": {
+                                        "page": "",
+                                        "sort_by": "{{$args[0]}}",
+                                        "sort_order": "{{$args[1]}}"
+                                    },
+                                    "transition_overlay_target": "ckeditor5_uploads_datagrid__body"
+                                }
+                            },
+                            {
+                                "event": "onSelectionChange",
+                                "type": "action",
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "selectedIds_ckeditor5_uploads": "{{$args[0]}}"
+                                }
+                            },
+                            {
+                                "event": "onRowAction",
+                                "type": "action",
+                                "handler": "switch",
+                                "cases": {
+                                    "delete": {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "modal_data": "{{$args[1]}}"
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "openModal",
+                                                "target": "delete_confirm_modal"
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        {
+            "meta": {
+                "editor_label": "$t:sirsoft-ckeditor5.admin.uploads.delete.confirm_title"
+            },
+            "id": "delete_confirm_modal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:sirsoft-ckeditor5.admin.uploads.delete.confirm_title",
+                "size": "sm"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "py-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "$t:sirsoft-ckeditor5.admin.uploads.delete.confirm_message"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "modal-footer-buttons"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-secondary",
+                                "disabled": "{{_global.isDeletingUpload}}"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.cancel"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "type": "button",
+                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.isDeletingUpload}}"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "params": {
+                                        "actions": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isDeletingUpload": true
+                                                }
+                                            },
+                                            {
+                                                "handler": "apiCall",
+                                                "auth_required": true,
+                                                "target": "/api/plugins/sirsoft-ckeditor5/admin/uploads/{{_global.modal_data.id}}",
+                                                "params": {
+                                                    "method": "DELETE"
+                                                },
+                                                "onSuccess": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "isDeletingUpload": false
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "ckeditor5Uploads"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "success",
+                                                            "message": "$t:sirsoft-ckeditor5.admin.uploads.delete.success"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "closeModal"
+                                                    }
+                                                ],
+                                                "onError": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "isDeletingUpload": false
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "{{error.message ?? '$t:sirsoft-ckeditor5.admin.uploads.delete.failed'}}"
+                                                        }
+                                                    }
+                                                ],
+                                                "errorHandling": {
+                                                    "403": {
+                                                        "handler": "sequence",
+                                                        "params": {
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "isDeletingUpload": false
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "error",
+                                                                        "message": "$t:auth.permission_denied"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    }
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.delete"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "meta": {
+                "editor_label": "$t:sirsoft-ckeditor5.admin.uploads.bulk_delete.confirm_title"
+            },
+            "id": "bulk_delete_confirm_modal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:sirsoft-ckeditor5.admin.uploads.bulk_delete.confirm_title",
+                "size": "sm"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "py-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "$t:sirsoft-ckeditor5.admin.uploads.bulk_delete.confirm_message|count={{_global.selectedIds_ckeditor5_uploads?.length ?? 0}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "modal-footer-buttons"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-secondary",
+                                "disabled": "{{_global.isDeletingUpload}}"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.cancel"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "type": "button",
+                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.isDeletingUpload}}"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "params": {
+                                        "actions": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isDeletingUpload": true
+                                                }
+                                            },
+                                            {
+                                                "handler": "apiCall",
+                                                "auth_required": true,
+                                                "target": "/api/plugins/sirsoft-ckeditor5/admin/uploads/bulk-delete",
+                                                "params": {
+                                                    "method": "POST",
+                                                    "body": {
+                                                        "ids": "{{_global.selectedIds_ckeditor5_uploads ?? []}}"
+                                                    }
+                                                },
+                                                "onSuccess": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "isDeletingUpload": false,
+                                                            "selectedIds_ckeditor5_uploads": []
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "ckeditor5Uploads"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "success",
+                                                            "message": "{{response.message}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "closeModal"
+                                                    }
+                                                ],
+                                                "onError": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "isDeletingUpload": false
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "{{error.message ?? '$t:sirsoft-ckeditor5.admin.uploads.delete.failed'}}"
+                                                        }
+                                                    }
+                                                ],
+                                                "errorHandling": {
+                                                    "403": {
+                                                        "handler": "sequence",
+                                                        "params": {
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "isDeletingUpload": false
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "error",
+                                                                        "message": "$t:auth.permission_denied"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    }
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.delete"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
