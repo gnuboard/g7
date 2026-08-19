@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Board\Database\Seeders\Sample;
 
+use App\Extension\Storage\ModuleStorageDriver;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
@@ -10,7 +11,6 @@ use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Modules\Sirsoft\Board\Models\Board;
 
@@ -362,71 +362,75 @@ class PostSampleSeeder extends Seeder
     {
         $this->command->info('비정규화 카운트 컬럼 동기화 중...');
 
+        // raw SQL 은 접두사가 자동 부착되지 않는다 — 리터럴 `g7_` 을 박으면
+        // DB_PREFIX 가 다른 설치에서 1146(테이블 없음)이 된다.
+        $prefix = DB::getTablePrefix();
+
         // posts.comments_count (다른 테이블 참조 — 직접 서브쿼리 가능)
-        DB::statement('
-            UPDATE g7_board_posts p
+        DB::statement("
+            UPDATE {$prefix}board_posts p
             SET comments_count = (
-                SELECT COUNT(*) FROM g7_board_comments c
+                SELECT COUNT(*) FROM {$prefix}board_comments c
                 WHERE c.post_id = p.id AND c.deleted_at IS NULL
             )
-        ');
+        ");
 
         // posts.replies_count (자기 참조 — 파생 테이블 사용)
-        DB::statement('
-            UPDATE g7_board_posts p
+        DB::statement("
+            UPDATE {$prefix}board_posts p
             LEFT JOIN (
                 SELECT parent_id, COUNT(*) AS cnt
-                FROM g7_board_posts
+                FROM {$prefix}board_posts
                 WHERE parent_id IS NOT NULL AND deleted_at IS NULL
                 GROUP BY parent_id
             ) t ON t.parent_id = p.id
             SET p.replies_count = COALESCE(t.cnt, 0)
-        ');
+        ");
 
         // posts.attachments_count (다른 테이블 참조 — 직접 서브쿼리 가능)
-        DB::statement('
-            UPDATE g7_board_posts p
+        DB::statement("
+            UPDATE {$prefix}board_posts p
             SET attachments_count = (
-                SELECT COUNT(*) FROM g7_board_attachments a
+                SELECT COUNT(*) FROM {$prefix}board_attachments a
                 WHERE a.post_id = p.id AND a.deleted_at IS NULL
             )
-        ');
+        ");
 
         // comments.replies_count (자기 참조 — 파생 테이블 사용)
-        DB::statement('
-            UPDATE g7_board_comments c
+        DB::statement("
+            UPDATE {$prefix}board_comments c
             LEFT JOIN (
                 SELECT parent_id, COUNT(*) AS cnt
-                FROM g7_board_comments
+                FROM {$prefix}board_comments
                 WHERE parent_id IS NOT NULL AND deleted_at IS NULL
                 GROUP BY parent_id
             ) t ON t.parent_id = c.id
             SET c.replies_count = COALESCE(t.cnt, 0)
-        ');
+        ");
 
         // boards.posts_count (게시판별 미삭제 게시글 수 — 답글 포함)
-        DB::statement('
-            UPDATE g7_boards b
+        DB::statement("
+            UPDATE {$prefix}boards b
             LEFT JOIN (
                 SELECT board_id, COUNT(*) AS cnt
-                FROM g7_board_posts
+                FROM {$prefix}board_posts
                 WHERE deleted_at IS NULL
                 GROUP BY board_id
             ) t ON t.board_id = b.id
             SET b.posts_count = COALESCE(t.cnt, 0)
-        ');
+        ");
 
         // boards.comments_count (게시판별 미삭제 댓글 수)
-        DB::statement('
-            UPDATE g7_boards b
+        DB::statement("
+            UPDATE {$prefix}boards b
             LEFT JOIN (
                 SELECT board_id, COUNT(*) AS cnt
-                FROM g7_board_comments
+                FROM {$prefix}board_comments
                 WHERE deleted_at IS NULL
                 GROUP BY board_id
             ) t ON t.board_id = b.id
             SET b.comments_count = COALESCE(t.cnt, 0)
-        ');
+        ");
 
         $this->command->info('  ✅ posts.comments_count / posts.replies_count / posts.attachments_count / comments.replies_count / boards.posts_count / boards.comments_count 일괄 갱신 완료');
     }
@@ -470,6 +474,9 @@ class PostSampleSeeder extends Seeder
 
         $datePath = date('Y/m/d');
 
+        // 모듈 스토리지 드라이버 경유 — 최종 경로는 {identifier}/attachments/{path} 로 종전과 동일
+        $storage = new ModuleStorageDriver('sirsoft-board', 'modules');
+
         for ($i = 0; $i < self::SAMPLE_IMAGE_COUNT; $i++) {
             $filename = Str::uuid().'.jpg';
             $path = "samples/{$datePath}/{$filename}";
@@ -484,7 +491,7 @@ class PostSampleSeeder extends Seeder
 
             // 스토리지에 파일 저장
             $storagePath = "sirsoft-board/attachments/{$path}";
-            Storage::disk('modules')->put($storagePath, $imageContent);
+            $storage->put('attachments', $path, $imageContent);
 
             // 파일 정보 저장
             $this->sampleImages[] = [

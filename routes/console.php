@@ -29,8 +29,42 @@ Schedule::command('dashboard:broadcast-resources')
     ->withoutOverlapping(5)
     ->runInBackground();
 
+/*
+| 만료 데이터 정리 예약 (주기는 항목별, 다중 서버 1대만)
+|
+| 시각 해석 기준은 사이트 설정 시간대(`general.timezone`)다 —
+| SettingsServiceProvider 가 `app.schedule_timezone` 을 세팅하고,
+| Laravel 이 그 값을 Schedule 인스턴스 전체에 일괄 적용한다.
+| 서머타임이 있는 시간대에서는 전환일에 특정 시각이 건너뛰거나 두 번 발생할 수 있으나,
+| 아래 정리 배치는 모두 멱등이라 이중 실행이 데이터를 해치지 않고
+| 건너뛴 날은 다음 날 배치가 흡수한다.
+|
+| 아래 begin/end 표식 사이가 정리 예약의 전부다. 등록 전수 회귀 테스트가 이 구간을
+| 읽어 대상 목록을 도출하므로, 정리 예약을 추가할 때는 반드시 이 안에 둔다.
+*/
+// gc-schedules:begin
 // 만료된 레이아웃 미리보기 정리 (30분마다)
-Schedule::command('layout-previews:cleanup')->everyThirtyMinutes();
+Schedule::command('layout-previews:cleanup')->everyThirtyMinutes()->onOneServer();
+
+Schedule::command('sanctum:prune-expired', ['--hours' => 24])->dailyAt('04:00')->onOneServer();
+Schedule::command('auth:clear-resets')->dailyAt('04:05')->onOneServer();
+Schedule::command('queue:prune-failed')->dailyAt('04:10')->onOneServer();
+Schedule::command('queue:prune-batches')->dailyAt('04:15')->onOneServer();
+Schedule::command('notification:cleanup')->dailyAt('04:20')->onOneServer();
+Schedule::command('ext-bundles:cleanup')->dailyAt('04:25')->onOneServer();
+Schedule::command('seo:prune-stats')->dailyAt('04:30')->onOneServer();
+Schedule::command('schedules:prune-history')->dailyAt('04:35')->onOneServer();
+Schedule::command('identity:prune-logs')->dailyAt('04:40')->onOneServer();
+Schedule::command('activity-log:prune')->dailyAt('04:45')->onOneServer();
+Schedule::command('notification-log:prune')->dailyAt('04:50')->onOneServer();
+// 사용자 파일을 파기하므로 기본 꺼짐 — 커맨드가 `--scheduled` 에서 설정을 false 폴백으로 재확인한다.
+Schedule::command('attachments:prune-orphans --scheduled')->dailyAt('04:55')->onOneServer();
+// 중단된 업데이트·설치가 남긴 임시 산출물 + 오래된 백업본(최신 1개 보존) 정리
+Schedule::command('storage:prune-leftovers')->dailyAt('05:00')->onOneServer();
+
+// 만료 시각이 지난 본인인증 challenge 상태 전환 (비파괴 — 물리 파기는 identity:prune-logs)
+Schedule::command('identity:expire-challenges')->hourly()->onOneServer();
+// gc-schedules:end
 
 // 언어팩 업데이트 확인 (주 1회, GitHub 기반 언어팩 latest_version 갱신)
 Schedule::command('language-pack:check-updates')

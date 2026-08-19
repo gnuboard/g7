@@ -1,0 +1,45 @@
+feature: 플러그인 관리자 메뉴 동기화 (Plugin Admin Menu Sync)
+
+description: |
+  플러그인도 자기 화면을 가질 수 있으므로 `getAdminMenus()` 로 관리자 메뉴를 선언한다.
+  그 선언을 실제 메뉴 행으로 만드는 것은 코어(PluginManager)의 책임이다.
+
+  이 동기화가 특정 진입점에만 걸려 있으면 나머지 진입점에서는 메뉴가 조용히 없다 —
+  예외도 경고도 로그도 남지 않고, 선언한 화면이 주소를 직접 입력해야만 닿는 상태가 된다.
+  실제로 두 번 드러났다.
+
+    1. 활성화(activate)에만 있었을 때: 이미 활성인 사이트가 업데이트로 새 화면을 받아도
+       메뉴가 생기지 않았다 (공개 #115 검수 F1, 브라우저 실측 — 반영 후 메뉴 0건)
+    2. 선언형 산출물 동기화에만 있었을 때: 그 경로를 지나는 것은 업데이트뿐이라, 신규 설치는
+       플러그인이 activate() 를 직접 구현한 경우에만 메뉴가 생겼다. AbstractPlugin 의 기본
+       activate() 는 `return true` 뿐이므로 getAdminMenus() 만 선언한 플러그인은 설치·활성화를
+       마쳐도 메뉴가 없었다. 모듈은 installModule() 이 createModuleMenus() 를 직접 호출해
+       이 구멍이 없었다 (형제 경로 비대칭)
+
+  그래서 판정 대상은 "메뉴가 만들어지는가" 하나가 아니라 **진입점마다 만들어지는가** 다.
+  진입점은 선언 여부·재실행과 직교하므로 축이 아니라 sub_flow 로 둔다 — 축으로 묶으면
+  "선언하지 않은 플러그인의 설치 경로" 같은 판정이 필요 없는 조합이 cross product 에 생긴다.
+
+axes:
+  declaration: [declared, not_declared]
+  run: [first_run, repeated_run]
+
+exclusions:
+  - { declaration: not_declared, run: repeated_run, reason: "선언이 없으면 몇 번을 실행해도 만들 것이 없다 — 1회 실행으로 판정이 끝난다" }
+
+sub_flows:
+  - id: lifecycle_entry_points
+    description: |
+      설치·업데이트 어느 쪽으로 들어와도 같은 선언형 산출물 단계를 지나야 한다.
+      단계 목록을 검사 쪽에 손으로 적어두면 새 산출물 종류가 늘었을 때 그 사실이 반영되지
+      않으므로, 두 경로 모두 소스에서 도출해 대조한다.
+    effects:
+      - plugin_install_path_syncs_declared_menus
+
+effects:
+  - plugin_admin_menu_synced_on_declarative_sync
+  - plugin_admin_menu_sync_is_idempotent
+  - plugin_without_menu_declaration_creates_nothing
+
+test_files:
+  - tests/Unit/Extension/PluginMenuSyncTest.php

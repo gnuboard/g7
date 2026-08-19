@@ -76,7 +76,7 @@
                         "handler": "toast",
                         "params": {
                           "type": "error",
-                          "message": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.direct_issue.search_failed"
+                          "message": "{{error.message ?? '$t:sirsoft-ecommerce.admin.promotion_coupon.modal.direct_issue.search_failed'}}"
                         }
                       }
                     ]

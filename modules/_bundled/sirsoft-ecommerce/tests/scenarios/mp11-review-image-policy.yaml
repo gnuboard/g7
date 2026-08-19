@@ -41,6 +41,7 @@ effects:
   - front_props_reflect_settings        # maxFiles/maxSize 동적 바인딩
   - attribute_label_not_raw_key         # 음수 입력 시 한글/영문 라벨
   - review_settings_save_logs_activity  # 리뷰설정 저장 활동로그
+  - review_image_filter_upload_file_hook_applied # 업로드 경로 filter_upload_file 발화 (공개 #96, upload-filter-hook-parity.yaml)
   # 설정 화면 JSON ↔ 저장 규칙 경계 정합 (#493 E10)
   - non_integer_image_size_rejected_422 # step:0.5 가 오류 — 규칙은 integer
   - settings_screen_bounds_match_rules  # 화면 min/max/step 이 서버 경계와 동일

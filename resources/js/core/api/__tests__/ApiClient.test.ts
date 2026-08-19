@@ -274,4 +274,79 @@ describe('ApiClient', () => {
       );
     });
   });
+
+  // @scenario consumer=product, disk_setting=fake_cdn, e2e=drivers_tab_card, hook=unregistered, override=follow_core, row_state=new_remote_row
+  // @effects cross_origin_asset_request_omits_session_token
+  describe('교차 출처 요청의 인증 헤더 차단', () => {
+    /**
+     * 요청 인터셉터를 캡처해 임의 config 로 실행합니다.
+     *
+     * @returns 캡처된 요청 인터셉터
+     */
+    function buildClientCapturingRequest(): (config: any) => any {
+      let captured: ((config: any) => any) | null = null;
+      mockedAxios.create.mockReturnValue({
+        interceptors: {
+          request: {
+            use: vi.fn((onFulfilled: any) => {
+              captured = onFulfilled;
+              return 0;
+            }),
+          },
+          response: { use: vi.fn(() => 0) },
+        },
+        get: vi.fn(), post: vi.fn(), put: vi.fn(), patch: vi.fn(), delete: vi.fn(),
+      });
+      new ApiClient();
+      return captured!;
+    }
+
+    beforeEach(() => {
+      localStorage.setItem('auth_token', 'secret-token');
+    });
+
+    it('동일 출처 상대 경로에는 Authorization 을 첨부한다', () => {
+      const onRequest = buildClientCapturingRequest();
+
+      const config = onRequest({ url: '/api/attachments/abc', headers: {}, baseURL: '/api' });
+
+      expect(config.headers.Authorization).toBe('Bearer secret-token');
+    });
+
+    it('동일 출처 절대 URL 에는 Authorization 을 첨부한다', () => {
+      const onRequest = buildClientCapturingRequest();
+
+      const config = onRequest({
+        url: `${window.location.origin}/api/attachments/abc`,
+        headers: {},
+        baseURL: '/api',
+      });
+
+      expect(config.headers.Authorization).toBe('Bearer secret-token');
+    });
+
+    it('교차 출처 절대 URL(공개 자산 CDN)에는 Authorization 을 첨부하지 않는다', () => {
+      const onRequest = buildClientCapturingRequest();
+
+      const config = onRequest({
+        url: 'https://cdn.example.com/bucket/products/a.png',
+        headers: {},
+        baseURL: '/api',
+      });
+
+      expect(config.headers.Authorization).toBeUndefined();
+    });
+
+    it('프로토콜 상대 URL(//cdn) 도 교차 출처면 Authorization 을 첨부하지 않는다', () => {
+      const onRequest = buildClientCapturingRequest();
+
+      const config = onRequest({
+        url: '//cdn.example.com/bucket/products/a.png',
+        headers: {},
+        baseURL: '/api',
+      });
+
+      expect(config.headers.Authorization).toBeUndefined();
+    });
+  });
 });

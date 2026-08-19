@@ -47,7 +47,9 @@ class WishlistController extends PublicBaseController
                 'added' => $result['added'],
             ]);
         } catch (Exception $e) {
-            return ResponseHelper::moduleError('sirsoft-ecommerce', 'messages.wishlist.toggle_failed');
+            // 상태코드를 생략하면 ResponseHelper 기본값 400 이 되어 서버 오류가
+            // "입력 오류"로 위장된다 — 찜 토글에 도메인 예외는 없다.
+            return ResponseHelper::moduleError('sirsoft-ecommerce', 'messages.wishlist.toggle_failed', 500);
         }
     }
 
@@ -73,7 +75,9 @@ class WishlistController extends PublicBaseController
                 new WishlistCollection($wishlists)
             );
         } catch (Exception $e) {
-            return ResponseHelper::moduleError('sirsoft-ecommerce', 'messages.wishlist.retrieve_failed');
+            // 상태코드를 생략하면 ResponseHelper 기본값 400 이 되어 조회 실패가
+            // "입력 오류"로 위장된다 — 목록 조회에 도메인 예외는 없다.
+            return ResponseHelper::moduleError('sirsoft-ecommerce', 'messages.wishlist.retrieve_failed', 500);
         }
     }
 
@@ -97,7 +101,8 @@ class WishlistController extends PublicBaseController
 
             return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.wishlist.removed');
         } catch (Exception $e) {
-            return ResponseHelper::moduleError('sirsoft-ecommerce', 'messages.wishlist.delete_failed');
+            // 상태코드 생략 시 기본값 400 — 삭제 실패는 서버 오류다 (미존재는 위에서 404 로 분기)
+            return ResponseHelper::moduleError('sirsoft-ecommerce', 'messages.wishlist.delete_failed', 500);
         }
     }
 }

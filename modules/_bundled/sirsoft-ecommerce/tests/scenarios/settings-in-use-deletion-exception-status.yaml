@@ -1,0 +1,60 @@
+feature: 사용 중인 배송유형·택배사 삭제의 예외 → 상태코드 매핑 (Settings In-Use Deletion Exception Status)
+
+description: |
+  관리자 배송설정 화면은 항목을 지우는 전용 엔드포인트를 갖지 않는다 — 저장 payload
+  에서 그 항목을 빼면 서비스가 삭제 대상으로 판정한다. 그런데 그 항목이 주문에서
+  사용 중이면 서비스가 도메인 실패를 던지고, 컨트롤러가 그것을 광역 catch 로 받아
+  500 "설정 저장 중 오류" 로 뭉개면 운영자는 **왜** 못 지우는지 알 수 없다.
+
+  핵심 설계:
+    - 사용 중 사유 → **400 + 사유 문구**(사용 중인 이름·건수). 일반 저장 실패 문구로
+      대체되지 않아야 하고, 삭제는 롤백되어야 한다.
+    - 그 외 예외 → 500, 응답 본문에 예외 원문(SQLSTATE 등) 미포함.
+
+  배송유형과 택배사는 사용량 집계 호출 지점이 각각 `countByShippingType`·`countByCarrierId`
+  로 다르다. 한쪽만 단언하면 나머지 경로의 뭉개기가 그대로 남으므로 `resource` 를 축으로
+  세워 네 칸을 모두 덮는다.
+
+  인프라 500 축은 Repository mock 으로만 유발할 수 있어 PHPUnit 이 SSoT 다.
+  브라우저에서는 사용 중 사유가 먼저 걸려 재현되지 않는다.
+
+axes:
+  resource: [shipping_type, shipping_carrier]
+  error_class: [domain, infrastructure]
+
+exclusions: []
+
+effects:
+  # 도메인 사유 — 사유가 담긴 400, 롤백
+  - in_use_shipping_type_deletion_returns_400_with_reason
+  - in_use_shipping_carrier_deletion_returns_400_with_reason
+  # 인프라 예외 — 500 으로 구분, 원문 미노출
+  - settings_save_infrastructure_exception_returns_500
+  - settings_save_carrier_infrastructure_exception_returns_500
+
+scenarios:
+  - id: in_use_deletion_tells_the_operator_why
+    description: 사용 중인 항목을 지우려 하면 사용 중이라는 사유가 담긴 400 이 돌아오고, 일반 저장 실패 문구로 대체되지 않으며 삭제는 롤백된다
+    effects:
+      - in_use_shipping_type_deletion_returns_400_with_reason
+      - in_use_shipping_carrier_deletion_returns_400_with_reason
+
+  - id: settings_save_infrastructure_failure_is_not_disguised_as_input_error
+    description: 사용량 집계 중 인프라 예외가 나면 두 자원 경로 모두 500 으로 구분되고 응답 본문에 예외 원문이 실리지 않는다
+    effects:
+      - settings_save_infrastructure_exception_returns_500
+      - settings_save_carrier_infrastructure_exception_returns_500
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/EcommerceSettingsInUseDeletionTest.php
+
+notes: |
+  이 매니페스트는 5차 감사에서 신설됐다. 대상 테스트는 브랜치가 추가하면서 `@scenario`·
+  `@effects` 마커까지 붙였는데, 그 effect 이름을 선언한 매니페스트가 어디에도 없었다.
+  선언이 아예 없는 effect 는 test-scenario-coverage 의 셀 대상이 되지 않아 조용히
+  통과한다 — 3차 감사가 `OrderDomainExceptionStatusPairTest` 에서 지적한 것과 같은
+  사각이 같은 브랜치 안에 하나 더 남아 있었다.
+
+  같은 라운드에 `resource=shipping_carrier, error_class=infrastructure` 칸의 테스트도
+  함께 추가했다. 그 칸을 exclusion 으로 처리하지 않은 것은, 두 자원의 집계 호출 지점이
+  실제로 다르기 때문이다. 여기서 제외 사유를 적었다면 그 사유가 곧 거짓이 된다.

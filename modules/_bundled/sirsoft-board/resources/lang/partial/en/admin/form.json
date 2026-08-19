@@ -110,6 +110,14 @@
       "label": "Max Reply Depth",
       "hint": "Enter a value between {{min}} and {{max}}"
     },
+    "reply_delete_policy": {
+      "label": "Reply Delete Policy",
+      "hint": "Set what happens when deleting a post that has replies",
+      "options": {
+        "block": "Block deletion",
+        "cascade": "Delete together"
+      }
+    },
     "max_comment_depth": {
       "label": "Max Comment Depth",
       "hint": "Enter a value between {{min}} and {{max}}. Setting to 0 disables the nested comment feature."

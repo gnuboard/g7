@@ -2,6 +2,10 @@
 
 namespace Tests\Feature\Rules;
 
+use App\Http\Requests\Layout\StoreLayoutRequest;
+use App\Http\Requests\Layout\UpdateLayoutContentRequest;
+use App\Http\Requests\Layout\UpdateLayoutExtensionContentRequest;
+use App\Http\Requests\Layout\UpdateLayoutRequest;
 use App\Rules\NoExternalUrls;
 use Tests\TestCase;
 
@@ -340,6 +344,58 @@ class NoExternalUrlsTest extends TestCase
     }
 
     /**
+     * init_actions(로드 시 자동 실행)의 외부 navigate URL 차단 테스트
+     *
+     * init_actions 는 페이지 진입 즉시 실행되므로 외부 URL 은 자동 리다이렉트/유출 경로다.
+     * 컴포넌트 actions 와 동일 강도로 차단해야 한다.
+     *
+     * @effects init_actions_external_url_rejected
+     */
+    public function test_fails_with_external_url_in_init_actions(): void
+    {
+        $layout = [
+            'version' => '1.0.0',
+            'layout_name' => 'test',
+            'init_actions' => [
+                ['handler' => 'navigate', 'params' => ['path' => 'https://evil.com/redirect']],
+            ],
+            'components' => [],
+        ];
+
+        $failed = false;
+        $this->rule->validate('layout', $layout, function () use (&$failed) {
+            $failed = true;
+        });
+
+        $this->assertTrue($failed, 'init_actions 의 외부 URL 은 차단되어야 합니다');
+    }
+
+    /**
+     * init_actions 의 same-origin 경로는 통과 테스트 (과차단 회귀 방지)
+     *
+     * @effects same_origin_path_in_init_actions_allowed
+     */
+    public function test_passes_with_same_origin_path_in_init_actions(): void
+    {
+        $layout = [
+            'version' => '1.0.0',
+            'layout_name' => 'test',
+            'init_actions' => [
+                ['handler' => 'apiCall', 'params' => ['endpoint' => '/api/admin/bootstrap']],
+                ['handler' => 'navigate', 'params' => ['path' => '/dashboard']],
+            ],
+            'components' => [],
+        ];
+
+        $failed = false;
+        $this->rule->validate('layout', $layout, function () use (&$failed) {
+            $failed = true;
+        });
+
+        $this->assertFalse($failed, 'init_actions 의 same-origin 경로는 통과해야 합니다');
+    }
+
+    /**
      * 복잡한 중첩 구조에서 다중 외부 URL 차단 테스트
      */
     public function test_fails_with_multiple_external_urls_in_complex_structure(): void
@@ -376,5 +432,140 @@ class NoExternalUrlsTest extends TestCase
         });
 
         $this->assertTrue($failed, 'Multiple external URLs should fail validation');
+    }
+
+    // ==========================================
+    // 문자열 스칼라 값 검사 (KVE-2026-1915 후속)
+    // ==========================================
+    //
+    // 이 규칙은 배열 트리 순회용으로 설계됐으나 실제로는 문자열 endpoint 필드
+    // (`content.endpoint`·`content.data_sources.*.endpoint`)에도 부착되어 있다.
+    // 배열이 아니면 즉시 return 하던 종전 구현에서는 그 부착이 조용한 no-op 이었다.
+
+    /**
+     * 문자열 값으로 직접 부착된 경우에도 외부 URL 을 차단한다.
+     *
+     * @effects plain_string_value_is_inspected_not_skipped
+     */
+    public function test_fails_with_external_url_as_plain_string_value(): void
+    {
+        $failed = false;
+        $this->rule->validate('content.endpoint', 'https://evil.com/steal', function () use (&$failed) {
+            $failed = true;
+        });
+
+        $this->assertTrue($failed, '문자열 필드에 부착된 경우에도 외부 URL 은 차단되어야 합니다');
+    }
+
+    /**
+     * 문자열 값의 same-origin 경로는 통과 (과차단 회귀 방지).
+     *
+     * @effects same_origin_plain_string_allowed
+     */
+    public function test_passes_with_same_origin_path_as_plain_string_value(): void
+    {
+        $failed = false;
+        $this->rule->validate('content.endpoint', '/api/admin/users', function () use (&$failed) {
+            $failed = true;
+        });
+
+        $this->assertFalse($failed, '문자열 필드의 same-origin 경로는 통과해야 합니다');
+    }
+
+    /**
+     * 문자열 값의 위험 스킴(javascript:)도 차단한다.
+     *
+     * @effects plain_string_value_is_inspected_not_skipped
+     */
+    public function test_fails_with_dangerous_scheme_as_plain_string_value(): void
+    {
+        $failed = false;
+        $this->rule->validate('content.endpoint', 'javascript:alert(1)', function () use (&$failed) {
+            $failed = true;
+        });
+
+        $this->assertTrue($failed, '문자열 필드의 javascript: 스킴은 차단되어야 합니다');
+    }
+
+    // ==========================================
+    // FormRequest 결선 (규칙이 content 배열에 실제로 물려 있는지)
+    // ==========================================
+    //
+    // 편집기 저장 경로(LayoutController::update → UpdateLayoutContentRequest)의 content
+    // 트리에 이 규칙이 붙어 있지 않으면, init_actions·props·actions 의 외부 URL 차단이
+    // 그 경로에서만 조용히 발화하지 않는다.
+
+    /**
+     * FormRequest 의 content 배열 규칙에서 NoExternalUrls 인스턴스를 찾는다.
+     *
+     * @param  array<string, mixed>  $rules  FormRequest rules() 결과
+     * @return bool 부착되어 있으면 true
+     */
+    private function contentRuleHasNoExternalUrls(array $rules): bool
+    {
+        foreach ((array) ($rules['content'] ?? []) as $rule) {
+            if ($rule instanceof NoExternalUrls) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @effects rule_attached_to_every_layout_content_form_request
+     */
+    public function test_update_content_request_attaches_rule_to_content_array(): void
+    {
+        $request = UpdateLayoutContentRequest::create('/x', 'PUT', [
+            'content' => ['version' => '1.0.0', 'components' => []],
+        ]);
+        $request->setContainer($this->app);
+
+        $this->assertTrue(
+            $this->contentRuleHasNoExternalUrls($request->rules()),
+            'UpdateLayoutContentRequest 의 content 배열 규칙에 NoExternalUrls 가 부착되어야 합니다'
+        );
+    }
+
+    /**
+     * @effects rule_attached_to_every_layout_content_form_request
+     */
+    public function test_update_extension_content_request_attaches_rule_to_content_array(): void
+    {
+        $request = UpdateLayoutExtensionContentRequest::create('/x', 'PUT', [
+            'content' => ['priority' => 0],
+        ]);
+        $request->setContainer($this->app);
+
+        $this->assertTrue(
+            $this->contentRuleHasNoExternalUrls($request->rules()),
+            'UpdateLayoutExtensionContentRequest 의 content 배열 규칙에 NoExternalUrls 가 부착되어야 합니다'
+        );
+    }
+
+    /**
+     * @effects rule_attached_to_every_layout_content_form_request
+     */
+    public function test_store_and_update_requests_attach_rule_to_content_array(): void
+    {
+        $store = StoreLayoutRequest::create('/x', 'POST', [
+            'content' => ['version' => '1.0.0', 'components' => []],
+        ]);
+        $store->setContainer($this->app);
+
+        $update = UpdateLayoutRequest::create('/x', 'PUT', [
+            'content' => ['version' => '1.0.0', 'components' => []],
+        ]);
+        $update->setContainer($this->app);
+
+        $this->assertTrue(
+            $this->contentRuleHasNoExternalUrls($store->rules()),
+            'StoreLayoutRequest 의 content 배열 규칙에 NoExternalUrls 가 부착되어야 합니다'
+        );
+        $this->assertTrue(
+            $this->contentRuleHasNoExternalUrls($update->rules()),
+            'UpdateLayoutRequest 의 content 배열 규칙에 NoExternalUrls 가 부착되어야 합니다'
+        );
     }
 }

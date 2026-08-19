@@ -72,13 +72,24 @@ interface LanguagePackRepositoryInterface
     public function getActiveCoreLocales(): array;
 
     /**
-     * 페이지네이션 + 필터링된 언어팩 목록을 조회합니다.
+     * 페이지네이션 + 필터링된 언어팩 목록을 조회합니다 (관리자 목록 전용).
+     *
+     * 전량 순회 용도로는 쓰지 않는다 — page 를 생략하면 HTTP `page` 파라미터가 암묵
+     * 해석되어, 무관한 요청 파라미터가 순회 범위를 바꾼다({@see self::allForUpdateCheck()}).
      *
      * @param  array<string, mixed>  $filters  필터 (scope, target_identifier, locale, status, vendor)
      * @param  int  $perPage  페이지당 건수
+     * @param  int|null  $page  페이지 번호 (null 이면 요청 파라미터에서 해석)
      * @return LengthAwarePaginator 페이지네이션 결과
      */
-    public function paginate(array $filters = [], int $perPage = 20): LengthAwarePaginator;
+    public function paginate(array $filters = [], int $perPage = 20, ?int $page = null): LengthAwarePaginator;
+
+    /**
+     * 업데이트 확인용 전체 언어팩 컬렉션을 조회합니다.
+     *
+     * @return Collection<int, LanguagePack> 설치된 전체 언어팩
+     */
+    public function allForUpdateCheck(): Collection;
 
     /**
      * 필터링된 언어팩 컬렉션을 페이지네이션 없이 조회합니다.

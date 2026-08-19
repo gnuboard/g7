@@ -18,8 +18,32 @@ class CategoryOperationException extends RuntimeException
      * @param  string  $messageKey  다국어 메시지 키 (sirsoft-ecommerce::exceptions.*)
      * @param  array<string, mixed>  $replace  메시지 치환 파라미터
      */
-    public function __construct(string $messageKey, array $replace = [])
-    {
+    public function __construct(
+        private string $messageKey,
+        private array $replace = []
+    ) {
         parent::__construct(__($messageKey, $replace));
+    }
+
+    /**
+     * 다국어 메시지 키를 반환합니다.
+     *
+     * 컨트롤러가 예외 메시지 원문 대신 이 키로 응답을 구성하기 위한 접근자입니다.
+     *
+     * @return string 다국어 메시지 키
+     */
+    public function getMessageKey(): string
+    {
+        return $this->messageKey;
+    }
+
+    /**
+     * 메시지 치환 파라미터를 반환합니다.
+     *
+     * @return array<string, mixed> 치환 파라미터
+     */
+    public function getMessageParams(): array
+    {
+        return $this->replace;
     }
 }

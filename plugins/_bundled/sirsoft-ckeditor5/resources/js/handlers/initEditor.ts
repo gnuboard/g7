@@ -1,3 +1,4 @@
+// e2e:allow ⑫⑬ 보안 수정 — 클라이언트 지정 업로드 권한 쿼리(죽은 배선) 제거만 수행. 업로드 동작·UI 불변(서버 admin 게이트 유지), 사용자 시나리오 변화 없음.
 /**
  * CKEditor5 초기화 핸들러
  *
@@ -65,7 +66,6 @@ interface InitEditorParams {
     placeholder?: string;
     readOnly?: boolean | string;
     imageUpload?: boolean | string;
-    uploadPermission?: string;
     height?: number | string;
     toolbar?: string;
 }
@@ -641,14 +641,10 @@ function getPlugins(CKEDITOR: CKEditorGlobal, toolbarType: string, withImageUplo
 
 /**
  * 이미지 업로드 URL을 생성합니다.
- * uploadPermission이 있으면 쿼리스트링으로 추가합니다.
+ * 인가는 서버 라우트 게이트(auth:sanctum + admin)가 전담하므로 쿼리 파라미터는 붙이지 않습니다.
  */
-function buildUploadUrl(uploadPermission: string): string {
-    const base = '/api/plugins/sirsoft-ckeditor5/upload';
-    if (uploadPermission) {
-        return `${base}?permission=${encodeURIComponent(uploadPermission)}`;
-    }
-    return base;
+function buildUploadUrl(): string {
+    return '/api/plugins/sirsoft-ckeditor5/upload';
 }
 
 /**
@@ -673,7 +669,6 @@ async function createEditorInstance(
         placeholder: string;
         readOnly: boolean;
         imageUpload: boolean;
-        uploadPermission: string;
         height: number;
         toolbar: string;
         containerId: string;
@@ -764,7 +759,7 @@ async function createEditorInstance(
 
     if (options.imageUpload) {
         editorConfig.simpleUpload = {
-            uploadUrl: buildUploadUrl(options.uploadPermission),
+            uploadUrl: buildUploadUrl(),
             headers: getUploadHeaders(),
         };
     }
@@ -1005,7 +1000,6 @@ export async function initEditorHandler(
     const withImageUpload = params.imageUpload !== undefined
         ? (params.imageUpload === true || params.imageUpload === 'true')
         : (pluginSettings.imageUpload === true || pluginSettings.imageUpload === 'true');
-    const uploadPermission = params.uploadPermission ?? '';
     const placeholder = params.placeholder ?? '';
     const height = params.height !== undefined ? (Number(params.height) || 400) : (Number(pluginSettings.editorHeight) || 400);
     const toolbarType = (params.toolbar !== undefined ? (params.toolbar as string) : (pluginSettings.toolbar as string)) ?? 'standard';
@@ -1055,7 +1049,6 @@ export async function initEditorHandler(
         placeholder,
         readOnly: isReadOnly,
         imageUpload: withImageUpload,
-        uploadPermission,
         height,
         toolbar: toolbarType,
         containerId,

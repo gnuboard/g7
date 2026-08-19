@@ -561,6 +561,67 @@ class PageServiceTest extends ModuleTestCase
         $this->service->restoreVersion($page, $version->id);
     }
 
+    /**
+     * 일괄 발행 경로도 단건 경로와 같은 스코프 게이트를 적용하는지 확인
+     *
+     * `PATCH admin/pages/bulk-publish` 에는 `{page}` 파라미터가 없어 PermissionMiddleware 의
+     * 스코프 검사가 통째로 스킵된다. 위 단건 경로 5곳은 전부 검사하는데 일괄만 비어 있으면
+     * 그 경로가 우회로가 된다.
+     */
+    public function test_bulk_change_publish_status_throws_exception_for_scope_denied(): void
+    {
+        $scopeUser = $this->setupScopeUser(ScopeType::Self);
+        Auth::setUser($scopeUser);
+        $this->actingAs($scopeUser);
+
+        $mine = Page::factory()->create([
+            'slug' => 'test-svc-bulk-mine',
+            'published' => false,
+            'created_by' => $scopeUser->id,
+            'updated_by' => $scopeUser->id,
+        ]);
+
+        $theirs = Page::factory()->create([
+            'slug' => 'test-svc-bulk-theirs',
+            'published' => false,
+            'created_by' => $this->adminUser->id,
+            'updated_by' => $this->adminUser->id,
+        ]);
+
+        try {
+            $this->service->bulkChangePublishStatus([$mine->id, $theirs->id], true);
+            $this->fail('스코프 밖 페이지가 섞이면 거부되어야 합니다');
+        } catch (AccessDeniedHttpException) {
+            // 기대 경로
+        }
+
+        // all-or-nothing — 내 페이지도 발행되지 않아야 한다(트랜잭션 롤백).
+        $this->assertFalse($mine->fresh()->published, '거부된 일괄 요청은 아무것도 바꾸지 않아야 합니다');
+        $this->assertFalse($theirs->fresh()->published);
+    }
+
+    /**
+     * (과차단 회귀) 자기 소유 페이지만 넘기면 일괄 발행이 정상 동작한다
+     */
+    public function test_bulk_change_publish_status_allows_own_pages(): void
+    {
+        $scopeUser = $this->setupScopeUser(ScopeType::Self);
+        Auth::setUser($scopeUser);
+        $this->actingAs($scopeUser);
+
+        $mine = Page::factory()->create([
+            'slug' => 'test-svc-bulk-own',
+            'published' => false,
+            'created_by' => $scopeUser->id,
+            'updated_by' => $scopeUser->id,
+        ]);
+
+        $count = $this->service->bulkChangePublishStatus([$mine->id], true);
+
+        $this->assertSame(1, $count);
+        $this->assertTrue($mine->fresh()->published);
+    }
+
     // ─── 헬퍼 ────────────────────────────────────────
 
     /**

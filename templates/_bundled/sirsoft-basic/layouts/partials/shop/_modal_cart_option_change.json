@@ -345,7 +345,7 @@
               "name": "Div",
               "props": { "className": "flex justify-between items-start" },
               "children": [
-                { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-700 dark:text-gray-300" }, "text": "{{$parent._local.matchedOption.option_name_localized ?? $parent._local.matchedOption.option_name?.ko ?? ''}}" },
+                { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-700 dark:text-gray-300" }, "text": "{{$parent._local.matchedOption?.option_name_localized ?? $parent._local.matchedOption?.option_name?.ko ?? ''}}" },
                 {
                   "type": "basic",
                   "name": "Div",
@@ -355,7 +355,7 @@
                       "type": "basic",
                       "name": "Div",
                       "props": { "className": "text-sm font-bold text-gray-900 dark:text-white" },
-                      "text": "{{$parent._local.matchedOption.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? $parent._local.matchedOption.selling_price_formatted}}"
+                      "text": "{{$parent._local.matchedOption?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? $parent._local.matchedOption?.selling_price_formatted ?? ''}}"
                     },
                     {
                       "comment": "보조 통화들",
@@ -363,7 +363,7 @@
                       "name": "Div",
                       "props": { "className": "flex flex-wrap gap-x-2 justify-end" },
                       "iteration": {
-                        "source": "{{Object.entries($parent._local.matchedOption.multi_currency_selling_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}",
+                        "source": "{{Object.entries($parent._local.matchedOption?.multi_currency_selling_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}",
                         "item_var": "currency"
                       },
                       "children": [
@@ -393,16 +393,16 @@
             {
               "type": "basic",
               "name": "Div",
-              "if": "{{$parent._local.matchedOption.stock_quantity <= 10}}",
-              "props": { "className": "{{$parent._local.matchedOption.stock_quantity <= 0 ? 'text-xs text-red-500 dark:text-red-400 mt-1 font-medium' : 'text-xs text-gray-500 dark:text-gray-400 mt-1'}}" },
-              "text": "{{$parent._local.matchedOption.stock_quantity <= 0 ? '$t:shop.cart.option_modal.out_of_stock' : '$t:shop.cart.option_modal.stock_count|count=' + $parent._local.matchedOption.stock_quantity}}"
+              "if": "{{$parent._local.matchedOption?.stock_quantity <= 10}}",
+              "props": { "className": "{{$parent._local.matchedOption?.stock_quantity <= 0 ? 'text-xs text-red-500 dark:text-red-400 mt-1 font-medium' : 'text-xs text-gray-500 dark:text-gray-400 mt-1'}}" },
+              "text": "{{$parent._local.matchedOption?.stock_quantity <= 0 ? '$t:shop.cart.option_modal.out_of_stock' : '$t:shop.cart.option_modal.stock_count|count=' + ($parent._local.matchedOption?.stock_quantity ?? 0)}}"
             },
             {
               "type": "basic",
               "name": "Div",
-              "if": "{{$parent._local.matchedOption.stock_quantity > 10}}",
+              "if": "{{$parent._local.matchedOption?.stock_quantity > 10}}",
               "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mt-1" },
-              "text": "$t:shop.cart.option_modal.stock_count|count={{$parent._local.matchedOption.stock_quantity}}"
+              "text": "$t:shop.cart.option_modal.stock_count|count={{$parent._local.matchedOption?.stock_quantity ?? 0}}"
             }
           ]
         },

@@ -13,8 +13,8 @@
  * 잠근다 — 셀에 파이프를 넣은 화면이 코어 기본 레이아웃에 없으므로, 배포된
  * 번들의 `G7Core.renderItemChildren` 를 그대로 호출해 결과를 검증한다.
  *
- * @scenario cellchildren_pipe_with_args + cellchildren_pipe_without_args + cellchildren_props_pipe
- * @effects pipe_formatted_value_rendered
+ * 축 요약(마커 아님 — 평문): cellchildren_pipe_with_args, cellchildren_pipe_without_args, cellchildren_props_pipe.
+ * 효과 요약(마커 아님 — 평문): pipe_formatted_value_rendered.
  */
 import { test, expect } from '../fixtures/auth';
 

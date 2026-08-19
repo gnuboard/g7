@@ -10,6 +10,7 @@ use App\Rules\TranslatableField;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
+use Modules\Sirsoft\Board\Enums\ReplyDeletePolicy;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ReadsBoardLimits;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ValidatesLengthRange;
 use Modules\Sirsoft\Board\Rules\BoardTypeValidationRule;
@@ -54,6 +55,7 @@ class StoreBoardRequest extends FormRequest
             'use_comment' => $settings['use_comment'] ?? true,
             'use_reply' => $settings['use_reply'] ?? true,
             'max_reply_depth' => $settings['max_reply_depth'] ?? 5,
+            'reply_delete_policy' => $settings['reply_delete_policy'] ?? ReplyDeletePolicy::Cascade->value,
             'max_comment_depth' => $settings['max_comment_depth'] ?? 10,
             'use_file_upload' => $settings['use_file_upload'] ?? false,
             'comment_order' => $settings['comment_order'] ?? 'ASC',
@@ -207,6 +209,7 @@ class StoreBoardRequest extends FormRequest
 
             // 답글/대댓글 깊이 제한
             'max_reply_depth' => ['nullable', 'integer', "min:{$maxReplyDepthMin}", "max:{$maxReplyDepthMax}"],
+            'reply_delete_policy' => ['required', 'string', Rule::in(ReplyDeletePolicy::values())],
             'max_comment_depth' => ['nullable', 'integer', "min:{$maxCommentDepthMin}", "max:{$maxCommentDepthMax}"],
 
             // 알림 설정

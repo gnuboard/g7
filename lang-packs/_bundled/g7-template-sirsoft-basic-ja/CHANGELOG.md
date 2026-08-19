@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.1.1] - 2026-08-19
+
+### Added
+
+- 통합검색 실패 안내 문구(`search.failed.title`, `search.failed.suggestion`) 일본어 번역 추가 — 검색 중 오류가 발생했을 때 "검색 결과 없음" 과 구분되는 오류 안내가 일본어 로케일에서 자연스럽게 표시됩니다. (#103 @Tuwasduliebst 님께서 제보해주셨습니다.)
+
 ## [1.1.0] - 2026-08-10
 
 ### Added

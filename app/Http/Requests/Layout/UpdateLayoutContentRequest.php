@@ -5,6 +5,7 @@ namespace App\Http\Requests\Layout;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Extension\HookManager;
 use App\Rules\NoExternalUrls;
+use App\Rules\SafeLayoutExpressions;
 use App\Rules\ValidDataSourceMerge;
 use App\Rules\ValidLayoutStructure;
 use App\Rules\ValidParentLayout;
@@ -265,6 +266,14 @@ class UpdateLayoutContentRequest extends FormRequest
                 'required',
                 'array',
                 new ValidLayoutStructure,
+                // 표현식 샌드박스 우회/원격 스크립트 저장측 차단 (KVE-2026-1915).
+                // content 트리 전체를 재귀 순회해야 하므로 배열 규칙에 부착한다 — 문자열
+                // 필드(endpoint)에 부착하면 is_array 가드로 early-return 되어 무력화된다.
+                new SafeLayoutExpressions,
+                // props·actions·init_actions 의 외부 URL 차단. 편집기 저장 경로이므로
+                // Store/UpdateLayoutRequest 와 동일 강도여야 한다 — 여기 누락 시 다른
+                // 경로에서 막히는 외부 URL 이 편집기 저장으로는 통과한다.
+                new NoExternalUrls,
             ],
 
             // 버전 필드
@@ -426,6 +435,8 @@ class UpdateLayoutContentRequest extends FormRequest
             'string',
             new WhitelistedEndpoint,
             new NoExternalUrls,
+            // SafeLayoutExpressions 는 content 배열 규칙에서 트리 전체를 순회하므로 여기(문자열
+            // endpoint)에는 부착하지 않는다 — 문자열에 부착 시 is_array 가드로 no-op 이 된다.
         ];
 
         if (! $isExtending && ! $isBaseLayout) {

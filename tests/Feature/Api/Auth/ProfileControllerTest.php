@@ -3,12 +3,14 @@
 namespace Tests\Feature\Api\Auth;
 
 use App\Enums\AttachmentSourceType;
+use App\Enums\PermissionType;
 use App\Models\Attachment;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -548,7 +550,7 @@ class ProfileControllerTest extends TestCase
 
         // 새 비밀번호로 로그인 가능 확인
         $this->user->refresh();
-        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('newpassword456', $this->user->password));
+        $this->assertTrue(Hash::check('newpassword456', $this->user->password));
     }
 
     /**
@@ -676,6 +678,13 @@ class ProfileControllerTest extends TestCase
         $this->assertNotEquals($originalEmail, $this->user->email);
         $this->assertNotEquals($originalName, $this->user->name);
 
+        // 접미사 형식: 날짜 + 사용자 ID (같은 날 같은 이메일 재탈퇴 충돌 차단, 공개이슈 #112)
+        $this->assertMatchesRegularExpression(
+            '/_deleted_\d{8}_'.$this->user->id.'$/u',
+            $this->user->email,
+            '이메일 접미사에 사용자 ID 가 없으면 같은 날 재탈퇴에서 unique 충돌이 난다'
+        );
+
         // 탈퇴 상태로 변경되었는지 확인
         $this->assertEquals('withdrawn', $this->user->status);
         $this->assertNotNull($this->user->withdrawn_at);
@@ -724,6 +733,9 @@ class ProfileControllerTest extends TestCase
 
         // Attachment 레코드 삭제 확인
         $this->assertDatabaseMissing('attachments', ['id' => $attachment->id]);
+
+        // 파일 삭제는 DB 커밋이 확정된 뒤에 수행된다 (공개이슈 #112)
+        Storage::disk('attachments')->assertMissing('attachments/avatars/test-avatar.jpg');
     }
 
     /**
@@ -742,7 +754,8 @@ class ProfileControllerTest extends TestCase
             'Accept' => 'application/json',
         ])->deleteJson('/api/me');
 
-        $response->assertStatus(500); // Exception 발생
+        // 관리 anchor 보호는 잘못된 요청이지 서버 오류가 아니다 (공개이슈 #112)
+        $response->assertStatus(422);
 
         // 슈퍼 관리자는 변경되지 않음
         $superAdmin->refresh();
@@ -756,9 +769,9 @@ class ProfileControllerTest extends TestCase
     public function test_withdraw_prevents_admin(): void
     {
         // 관리자 역할 생성 및 할당
-        $role = \App\Models\Role::factory()->create(['identifier' => 'admin']);
-        $permission = \App\Models\Permission::factory()->create([
-            'type' => \App\Enums\PermissionType::Admin,
+        $role = Role::factory()->create(['identifier' => 'admin']);
+        $permission = Permission::factory()->create([
+            'type' => PermissionType::Admin,
         ]);
         $role->permissions()->attach($permission);
 
@@ -773,7 +786,8 @@ class ProfileControllerTest extends TestCase
             'Accept' => 'application/json',
         ])->deleteJson('/api/me');
 
-        $response->assertStatus(500); // ValidationException 발생
+        // 관리자 탈퇴 차단은 잘못된 요청이지 서버 오류가 아니다 (공개이슈 #112)
+        $response->assertStatus(422);
 
         // 관리자는 변경되지 않음
         $admin->refresh();
@@ -794,6 +808,25 @@ class ProfileControllerTest extends TestCase
 
         $this->user->refresh();
         $this->assertStringContainsString('_탈퇴', $this->user->nickname);
+
+        // 컬럼 상한(50자) 안에서 접미사가 붙는다 — 넘기면 저장 자체가 실패한다
+        $this->assertLessThanOrEqual(User::NICKNAME_MAX_LENGTH, mb_strlen($this->user->nickname));
+    }
+
+    /**
+     * 닉네임이 상한에 가까우면 앞을 잘라 접미사를 붙인다 (공개이슈 #112)
+     */
+    public function test_withdraw_truncates_nickname_at_column_limit(): void
+    {
+        $this->user->update(['nickname' => str_repeat('가', User::NICKNAME_MAX_LENGTH)]);
+
+        $response = $this->authRequest()->deleteJson('/api/me');
+
+        $response->assertStatus(200);
+
+        $this->user->refresh();
+        $this->assertSame(User::NICKNAME_MAX_LENGTH, mb_strlen($this->user->nickname));
+        $this->assertStringEndsWith('_탈퇴', $this->user->nickname);
     }
 
     /**

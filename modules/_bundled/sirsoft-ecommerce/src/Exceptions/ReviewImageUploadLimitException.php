@@ -15,8 +15,9 @@ class ReviewImageUploadLimitException extends RuntimeException
     /**
      * @param  int  $maxImages  허용된 최대 이미지 수
      */
-    public function __construct(int $maxImages)
-    {
+    public function __construct(
+        public readonly int $maxImages
+    ) {
         parent::__construct(
             __('sirsoft-ecommerce::review.image_upload_limit_exceeded', ['max' => $maxImages])
         );

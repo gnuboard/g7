@@ -525,7 +525,7 @@
                               "handler": "toast",
                               "params": {
                                 "type": "error",
-                                "message": "$t:sirsoft-board.admin.settings.bulk_apply_modal.error"
+                                "message": "{{error.message ?? '$t:sirsoft-board.admin.settings.bulk_apply_modal.error'}}"
                               }
                             }
                           ]

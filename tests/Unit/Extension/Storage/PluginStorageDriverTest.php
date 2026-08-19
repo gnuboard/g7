@@ -2,11 +2,14 @@
 
 namespace Tests\Unit\Extension\Storage;
 
+use App\Extension\HookManager;
 use App\Extension\Storage\PluginStorageDriver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
-use Tests\TestCase;
 use PHPUnit\Framework\Attributes\Test;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+use Tests\TestCase;
 
 /**
  * PluginStorageDriver 단위 테스트
@@ -32,6 +35,7 @@ class PluginStorageDriverTest extends TestCase
     {
         // 테스트 데이터 정리
         Storage::disk('plugins')->deleteDirectory('test-plugin');
+        HookManager::resetAll();
 
         parent::tearDown();
     }
@@ -189,6 +193,74 @@ class PluginStorageDriverTest extends TestCase
         Storage::disk('public')->deleteDirectory('test-plugin');
     }
 
+    /**
+     * url 이 설정된 디스크(S3+CDN 등)면 플러그인 드라이버도 직접 URL 을 돌려준다.
+     *
+     * @effects url_returned_for_public_and_url_configured_disk
+     */
+    #[Test]
+    public function it_returns_direct_url_for_url_configured_disk(): void
+    {
+        Config::set('filesystems.disks.fake_cdn', [
+            'driver' => 'local',
+            'root' => storage_path('framework/testing/disks/fake_cdn'),
+            'url' => 'https://cdn.test/assets',
+        ]);
+
+        $cdnDriver = new PluginStorageDriver('test-plugin', 'fake_cdn');
+
+        $this->assertSame(
+            'https://cdn.test/assets/test-plugin/images/test.jpg',
+            $cdnDriver->url('images', 'test.jpg')
+        );
+    }
+
+    /**
+     * url 값이 빈 문자열/공백이면 직접 URL 로 보지 않는다 (AWS_URL 미설정 방어).
+     *
+     * @effects blank_url_config_defended
+     */
+    #[Test]
+    public function it_returns_null_when_disk_url_is_blank(): void
+    {
+        Config::set('filesystems.disks.fake_cdn', [
+            'driver' => 'local',
+            'root' => storage_path('framework/testing/disks/fake_cdn'),
+            'url' => '   ',
+        ]);
+
+        $this->assertNull((new PluginStorageDriver('test-plugin', 'fake_cdn'))->url('images', 'test.jpg'));
+    }
+
+    /**
+     * 플러그인 드라이버의 `core.storage.filter_url` 컨텍스트는 scope=plugin +
+     * 확장 식별자를 싣는다 (코어/모듈과 구분되는 축).
+     *
+     * @effects filter_url_hook_always_fires_with_six_context_keys
+     */
+    #[Test]
+    public function it_passes_plugin_scope_and_identifier_to_url_filter_hook(): void
+    {
+        $captured = null;
+
+        HookManager::addFilter('core.storage.filter_url', function ($url, $context) use (&$captured) {
+            $captured = $context;
+
+            return $url;
+        });
+
+        (new PluginStorageDriver('test-plugin', 'plugins'))->url('images', 'sub/a.jpg');
+
+        $this->assertSame([
+            'scope' => 'plugin',
+            'identifier' => 'test-plugin',
+            'disk' => 'plugins',
+            'category' => 'images',
+            'path' => 'sub/a.jpg',
+            'full_path' => 'test-plugin/images/sub/a.jpg',
+        ], $captured);
+    }
+
     #[Test]
     public function it_uses_correct_path_pattern(): void
     {
@@ -218,7 +290,7 @@ class PluginStorageDriverTest extends TestCase
         ]);
 
         // Then: StreamedResponse 반환
-        $this->assertInstanceOf(\Symfony\Component\HttpFoundation\StreamedResponse::class, $response);
+        $this->assertInstanceOf(StreamedResponse::class, $response);
     }
 
     #[Test]

@@ -110,6 +110,14 @@
       "label": "답변글 최대 깊이",
       "hint": "{{min}}~{{max}} 사이의 값을 입력하세요"
     },
+    "reply_delete_policy": {
+      "label": "답변글 삭제 방식",
+      "hint": "답변글이 달린 글을 삭제할 때의 동작을 설정합니다",
+      "options": {
+        "block": "삭제 차단",
+        "cascade": "함께 삭제"
+      }
+    },
     "max_comment_depth": {
       "label": "대댓글 최대 깊이",
       "hint": "{{min}}~{{max}} 사이의 값을 입력하세요. 0으로 설정하면 대댓글 기능이 비활성화됩니다."

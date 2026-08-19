@@ -15,9 +15,10 @@
  * 열어 상태 토글이 화면에 나타나는지를 확인한다 — 스펙과 라우트 평가가 실제로 만나는
  * 지점은 브라우저에만 있다.
  *
- * @scenario route_setting × surface
- * @effects editor_state_switcher_visible_on_default_shop_route
- *   + editor_state_switcher_visible_after_route_path_change
+ * 축 요약(마커 아님 — 평문): route_setting, surface. 요약을 시나리오 축 마커로 적으면 파서가
+ * `=` 없는 토큰을 버려 빈 조합 `{}` 이 된다.
+ *
+ * 효과 요약(마커 아님 — 평문): editor_state_switcher_visible_on_default_shop_route, editor_state_switcher_visible_after_route_path_change.
  *
  * 활성화 절차: PLAYWRIGHT_BASE_URL 과 PlaywrightIssueToken 발급이 가능한 환경에서
  * `test.describe.skip` → `test.describe` 로 바꾼다. 상점 주소를 바꾸는 축은 이커머스
@@ -29,6 +30,7 @@ import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth'
 const PRODUCTS_ROUTE = '/shop/products';
 
 test.describe.skip('레이아웃 편집기 — 상점 화면 상태 전환 노출', () => {
+  /** @effects editor_state_switcher_visible_on_default_shop_route */
   test('기본 상점 주소에서 상태 전환 토글이 보인다', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -44,6 +46,7 @@ test.describe.skip('레이아웃 편집기 — 상점 화면 상태 전환 노�
     await expect(switcher).toBeVisible({ timeout: 20_000 });
   });
 
+  /** @effects editor_state_switcher_visible_after_route_path_change */
   test('상점 주소를 바꾼 사이트에서도 상태 전환 토글이 보인다', async ({ page }) => {
     // 이 케이스는 basic_info.route_path 가 기본값이 아닌 환경에서만 의미가 있다.
     // 검수 환경의 실제 설정값을 읽어 라우트를 만든다 — 기본값이면 위 케이스와 같아진다.

@@ -76,15 +76,16 @@
           {
             "type": "basic",
             "name": "Div",
+            "comment": "이름 + 상태 배지 줄. 배지는 shrink-0 이라 좁아지면 이름이 줄어야 하는데, min-w-0 이 없으면 flex 항목의 기본 min-width:auto 때문에 줄지 못하고 글자 단위로 접힌다.",
             "props": {
-              "className": "flex-center gap-2"
+              "className": "flex-center gap-2 min-w-0"
             },
             "children": [
               {
                 "type": "basic",
                 "name": "Span",
                 "props": {
-                  "className": "font-medium text-gray-900 dark:text-gray-100"
+                  "className": "font-medium text-gray-900 dark:text-gray-100 truncate"
                 },
                 "text": "{{$localized($method._cached_name, 'sirsoft-ecommerce::settings.payment_methods.' + ($method.id ?? '') + '.name') || $method.id}}"
               },
@@ -93,9 +94,20 @@
                 "name": "Span",
                 "if": "{{$method._orphaned}}",
                 "props": {
-                  "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                  "className": "inline-flex items-center whitespace-nowrap shrink-0 px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
                 },
                 "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.orphaned_badge"
+              },
+              {
+                "comment": "지정 PG 가 레지스트리에서 사라진 상태. _orphaned 와 달리 행 편집 컨트롤은 그대로 둔다 — 살아있는 PG 로 바꿔 복구하는 경로를 막지 않기 위함.",
+                "type": "basic",
+                "name": "Span",
+                "if": "{{$method._orphaned_pg}}",
+                "props": {
+                  "data-testid": "orphaned-pg-badge-{{$method.id}}",
+                  "className": "inline-flex items-center whitespace-nowrap shrink-0 px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
+                },
+                "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.orphaned_pg_badge"
               }
             ]
           },

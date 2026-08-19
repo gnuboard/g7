@@ -330,7 +330,7 @@
                                                 "props": { "className": "lg:col-span-2" },
                                                 "children": [
                                                     {
-                                                        "type": "basic",
+                                                        "type": "composite",
                                                         "name": "Toggle",
                                                         "props": { "name": "imageUpload" }
                                                     }
@@ -376,6 +376,205 @@
                                                             "name": "imageMaxSizeMb",
                                                             "className": "focus:border-transparent"
                                                         }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_public_asset_disk",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": { "className": "section-heading-md" },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": { "className": "lg:col-span-1" },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": { "className": "form-label" },
+                                                        "text": "$t:sirsoft-ckeditor5.settings.fields.public_asset_disk.label"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "props": { "className": "form-hint" },
+                                                        "text": "$t:sirsoft-ckeditor5.settings.fields.public_asset_disk.hint"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": { "className": "lg:col-span-2" },
+                                                "children": [
+                                                    {
+                                                        "type": "composite",
+                                                        "name": "Select",
+                                                        "props": {
+                                                            "name": "public_asset_disk",
+                                                            "className": "w-full",
+                                                            "options": "{{[{value: '', label: $t('sirsoft-ckeditor5.settings.fields.public_asset_disk.follow_core')}].concat((_local.form?.available_public_asset_disks ?? []).map(d => ({value: d.id, label: $localized(d.label)})))}}"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "section_cleanup_card",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "mt-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
+                        },
+                        "children": [
+                            {
+                                "id": "section_cleanup_header",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": { "className": "panel-header-row" },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "props": { "className": "text-error-strong" },
+                                        "text": "$t:sirsoft-ckeditor5.settings.section_cleanup"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "section_cleanup_fields",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": { "className": "p-6 space-y-6" },
+                                "children": [
+                                    {
+                                        "id": "field_unused_image_cleanup",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": { "className": "section-heading-md" },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": { "className": "lg:col-span-1" },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": { "className": "form-label" },
+                                                        "text": "$t:sirsoft-ckeditor5.settings.cleanup.toggle_label"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "props": { "className": "form-hint" },
+                                                        "text": "$t:sirsoft-ckeditor5.settings.cleanup.toggle_hint"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": { "className": "lg:col-span-2" },
+                                                "children": [
+                                                    {
+                                                        "type": "composite",
+                                                        "name": "Toggle",
+                                                        "props": { "name": "unusedImageCleanup" }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_unused_image_retention_days",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": { "className": "section-heading-md" },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": { "className": "lg:col-span-1" },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": { "className": "form-label" },
+                                                        "text": "$t:sirsoft-ckeditor5.settings.cleanup.retention_label"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "props": { "className": "form-hint" },
+                                                        "text": "$t:sirsoft-ckeditor5.settings.cleanup.retention_hint"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": { "className": "lg:col-span-2" },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Input",
+                                                        "props": {
+                                                            "type": "number",
+                                                            "name": "unusedImageRetentionDays",
+                                                            "min": 1,
+                                                            "className": "focus:border-transparent"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "cleanup_manual_hint",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "p-4 rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 space-y-3"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": { "className": "text-sm text-gray-600 dark:text-gray-300 break-all" },
+                                                "text": "$t:sirsoft-ckeditor5.settings.cleanup.manual_hint"
+                                            },
+                                            {
+                                                "id": "open_uploads_button",
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "btn btn-secondary"
+                                                },
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/plugins/sirsoft-ckeditor5/uploads"
+                                                        }
+                                                    }
+                                                ],
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:sirsoft-ckeditor5.settings.cleanup.open_uploads"
                                                     }
                                                 ]
                                             }
@@ -631,7 +830,7 @@
                                                         "handler": "toast",
                                                         "params": {
                                                             "type": "error",
-                                                            "message": "$t:admin.plugins.settings.save_error"
+                                                            "message": "{{error.message ?? '$t:admin.plugins.settings.save_error'}}"
                                                         }
                                                     }
                                                 ]

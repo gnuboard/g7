@@ -2,20 +2,23 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
+use App\Exceptions\CannotModifyProtectedRoleException;
 use App\Exceptions\ExtensionOwnedRoleDeleteException;
+use App\Exceptions\PermissionEscalationException;
 use App\Exceptions\SystemRoleDeleteException;
 use App\Helpers\PermissionHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
+use App\Http\Requests\Role\ActiveRolesRequest;
 use App\Http\Requests\Role\RoleListRequest;
 use App\Http\Requests\Role\StoreRoleRequest;
 use App\Http\Requests\Role\UpdateRoleRequest;
 use App\Http\Resources\RoleCollection;
 use App\Http\Resources\RoleResource;
 use App\Models\Role;
+use App\Models\User;
 use App\Services\RoleService;
 use Exception;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -60,13 +63,13 @@ class RoleController extends AdminBaseController
      * core.permissions.read 권한 보유 시 전체 활성 역할을 반환하고,
      * 미보유 시 현재 사용자에게 부여된 역할만 반환합니다.
      *
-     * @param  Request  $request  HTTP 요청 객체
+     * @param  ActiveRolesRequest  $request  활성 역할 조회 요청
      * @return JsonResponse 활성화된 역할 목록을 포함한 JSON 응답
      */
-    public function active(Request $request): JsonResponse
+    public function active(ActiveRolesRequest $request): JsonResponse
     {
         try {
-            /** @var \App\Models\User $user */
+            /** @var User $user */
             $user = $request->user();
 
             // 역할 관리 권한(core.permissions.read) 보유 → 전체 활성 역할 (사용자 관리용)
@@ -78,7 +81,10 @@ class RoleController extends AdminBaseController
             return $this->success('role.fetch_success', [
                 'data' => RoleResource::collection($roles),
                 'abilities' => [
-                    'can_assign_roles' => PermissionHelper::check('core.permissions.update'),
+                    // 역할 부여는 "사용자 관리"(core.users.update)의 일부다 — "역할 정의 수정"
+                    // (core.permissions.update)이 아니다. 부여 가능한 개별 역할의 범위는 서버
+                    // 상한(PermissionEscalationGuard)이 역할별로 강제한다.
+                    'can_assign_roles' => PermissionHelper::check('core.users.update'),
                 ],
             ]);
         } catch (Exception $e) {
@@ -122,6 +128,8 @@ class RoleController extends AdminBaseController
                 new RoleResource($role),
                 201
             );
+        } catch (PermissionEscalationException $e) {
+            return $this->error('exceptions.cannot_grant_unheld_permission', 403);
         } catch (ValidationException $e) {
             return $this->error('role.create_failed', 422, $e->errors());
         } catch (Exception $e) {
@@ -145,6 +153,10 @@ class RoleController extends AdminBaseController
                 'role.update_success',
                 new RoleResource($updatedRole)
             );
+        } catch (CannotModifyProtectedRoleException $e) {
+            return $this->error('exceptions.cannot_modify_protected_role', 403);
+        } catch (PermissionEscalationException $e) {
+            return $this->error('exceptions.cannot_grant_unheld_permission', 403);
         } catch (ValidationException $e) {
             return $this->error('role.update_failed', 422, $e->errors());
         } catch (Exception $e) {
@@ -174,6 +186,8 @@ class RoleController extends AdminBaseController
             } else {
                 return $this->error('role.update_failed');
             }
+        } catch (CannotModifyProtectedRoleException $e) {
+            return $this->error('exceptions.cannot_modify_protected_role', 403);
         } catch (Exception $e) {
             return $this->error('role.update_failed', 500, $e->getMessage());
         }

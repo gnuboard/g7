@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Services;
 
 use App\Contracts\Extension\StorageInterface;
+use App\Extension\HookManager;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
@@ -177,6 +178,51 @@ class ProductReviewImageServiceTest extends ModuleTestCase
         $this->assertFalse($image->is_thumbnail);
     }
 
+    #[Test]
+    public function test_upload_fires_hooks(): void
+    {
+        // Arrange
+        $beforeUploadFired = false;
+        $afterUploadFired = false;
+        $filterApplied = false;
+
+        HookManager::addAction('sirsoft-ecommerce.review-image.before_upload', function () use (&$beforeUploadFired) {
+            $beforeUploadFired = true;
+        });
+
+        HookManager::addFilter('sirsoft-ecommerce.review-image.filter_upload_file', function ($file) use (&$filterApplied) {
+            $filterApplied = true;
+
+            // 반환 파일이 실제로 소비되는지 검증하기 위해 다른 이름/확장자의 파일을 반환
+            return UploadedFile::fake()->image('filtered.webp');
+        });
+
+        HookManager::addAction('sirsoft-ecommerce.review-image.after_upload', function () use (&$afterUploadFired) {
+            $afterUploadFired = true;
+        });
+
+        $file = UploadedFile::fake()->image('original.jpg');
+
+        $this->settingsService->shouldReceive('getSetting')->andReturn(5);
+        $this->storage->shouldReceive('put')->andReturn(true);
+        $this->storage->shouldReceive('getDisk')->andReturn('local');
+
+        // Act
+        $image = $this->service->upload($file, $this->review);
+
+        // Assert
+        $this->assertTrue($beforeUploadFired, 'before_upload hook should be fired');
+        $this->assertTrue($filterApplied, 'filter_upload_file hook should be applied');
+        $this->assertTrue($afterUploadFired, 'after_upload hook should be fired');
+        // 필터가 반환한 파일이 저장 파일명의 근거가 되어야 한다 (반환값 소비 증명)
+        $this->assertStringEndsWith('.webp', $image->stored_filename, 'filter return value should be consumed');
+
+        // Cleanup hooks
+        HookManager::clearAction('sirsoft-ecommerce.review-image.before_upload');
+        HookManager::clearFilter('sirsoft-ecommerce.review-image.filter_upload_file');
+        HookManager::clearAction('sirsoft-ecommerce.review-image.after_upload');
+    }
+
     // ========================================
     // delete() 테스트
     // ========================================
@@ -188,6 +234,11 @@ class ProductReviewImageServiceTest extends ModuleTestCase
             'review_id' => $this->review->id,
             'path' => 'reviews/1/test.jpg',
         ]);
+
+        // 삭제는 행 disk 기준으로 스토리지를 해석한다 (혼재 운용, 공개#100)
+        $this->storage
+            ->shouldReceive('getDisk')
+            ->andReturn('local');
 
         $this->storage
             ->shouldReceive('exists')
@@ -214,6 +265,11 @@ class ProductReviewImageServiceTest extends ModuleTestCase
             'review_id' => $this->review->id,
             'path' => 'reviews/1/missing.jpg',
         ]);
+
+        // 삭제는 행 disk 기준으로 스토리지를 해석한다 (혼재 운용, 공개#100)
+        $this->storage
+            ->shouldReceive('getDisk')
+            ->andReturn('local');
 
         $this->storage
             ->shouldReceive('exists')
@@ -275,6 +331,11 @@ class ProductReviewImageServiceTest extends ModuleTestCase
             'mime_type' => 'image/jpeg',
             'original_filename' => 'test.jpg',
         ]);
+
+        // 서빙은 행 disk 기준으로 스토리지를 해석한다 (혼재 운용, 공개#100)
+        $this->storage
+            ->shouldReceive('getDisk')
+            ->andReturn('local');
 
         $this->storage
             ->shouldReceive('response')

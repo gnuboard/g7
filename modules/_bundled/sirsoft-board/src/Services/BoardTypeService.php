@@ -6,6 +6,7 @@ use App\Extension\HookManager;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Board\Exceptions\BoardTypeOperationException;
 use Modules\Sirsoft\Board\Models\BoardType;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardTypeRepositoryInterface;
@@ -27,7 +28,7 @@ class BoardTypeService
     }
 
     /**
-     * @param array $data
+     * @param  array  $data
      * @return BoardType
      */
     public function createBoardType(array $data): BoardType
@@ -46,8 +47,8 @@ class BoardTypeService
     }
 
     /**
-     * @param int $id
-     * @param array $data
+     * @param  int  $id
+     * @param  array  $data
      * @return BoardType
      */
     public function updateBoardType(int $id, array $data): BoardType
@@ -55,7 +56,7 @@ class BoardTypeService
         $boardType = $this->boardTypeRepository->findById($id);
 
         if (! $boardType) {
-            throw (new ModelNotFoundException())->setModel(BoardType::class, $id);
+            throw (new ModelNotFoundException)->setModel(BoardType::class, $id);
         }
 
         HookManager::doAction('sirsoft-board.board_type.before_update', $boardType, $data);
@@ -74,7 +75,7 @@ class BoardTypeService
     }
 
     /**
-     * @param int $id
+     * @param  int  $id
      * @return bool
      *
      * @throws \Exception 사용 중인 유형 삭제 시도 시
@@ -84,23 +85,19 @@ class BoardTypeService
         $boardType = $this->boardTypeRepository->findById($id);
 
         if (! $boardType) {
-            throw (new ModelNotFoundException())->setModel(BoardType::class, $id);
+            throw (new ModelNotFoundException)->setModel(BoardType::class, $id);
         }
 
         $usageCount = $this->boardRepository->countByType($boardType->slug);
         if ($usageCount > 0) {
-            throw new \Exception(
-                __('sirsoft-board::messages.board_type.delete_in_use', [
-                    'count' => $usageCount,
-                ])
-            );
+            throw new BoardTypeOperationException('sirsoft-board::messages.board_type.delete_in_use', [
+                'count' => $usageCount,
+            ]);
         }
 
         $defaultType = $this->boardSettingsService->getSetting('basic_defaults.type');
         if ($defaultType === $boardType->slug) {
-            throw new \Exception(
-                __('sirsoft-board::messages.board_type.delete_is_default')
-            );
+            throw new BoardTypeOperationException('sirsoft-board::messages.board_type.delete_is_default');
         }
 
         HookManager::doAction('sirsoft-board.board_type.before_delete', $boardType);

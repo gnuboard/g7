@@ -62,6 +62,32 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지�
 
 현재 로그인한 사용자가 자신의 계정을 탈퇴한다. 프론트의 회원 탈퇴 모달(`_modal_withdraw.json`)이 호출한다. 별도 요청 파라미터 없이 인증 토큰의 사용자를 대상으로 하며, `UserService::withdrawUser()` 가 아바타·토큰 삭제와 개인정보 익명화를 수행한다. 되돌릴 수 없는 작업이므로 호출 전 사용자 확인 절차를 두는 것을 권장한다.
 
+탈퇴는 원자적으로 처리된다 — 약관 동의 이력 삭제·토큰 삭제·익명화가 하나의 트랜잭션이며, 어느 단계에서 실패해도 전부 취소된다. 아바타 파일 삭제는 커밋이 확정된 뒤에 수행되고, 파일 삭제가 실패해도 탈퇴는 되돌리지 않는다(참조되지 않는 파일만 남는다).
+
+익명화된 이메일에는 사용자 ID 가 포함되어 구조적으로 유일하다 — 같은 이메일로 재가입한 회원이 같은 날 다시 탈퇴해도 충돌하지 않는다.
+
+탈퇴 처리 중 예기치 못한 오류(예: 데이터베이스 예외)가 발생하면 500 과 함께 고정된 안내 메시지(`user.withdraw_failed`)만 반환한다 — 예외 원문(SQL 상태코드·쿼리 등)은 응답에 싣지 않고 서버 로그에만 기록한다(회원에게 노출되는 경로이므로 내부 정보 유출을 차단한다).
+
+**추가 오류 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 422 | Validation Error | 관리자 역할 보유 계정 또는 수퍼관리자 계정의 탈퇴 시도 (`errors.general` 에 사유) |
+
+```json
+{
+    "success": false,
+    "message": "회원 탈퇴에 실패했습니다.",
+    "errors": {
+        "general": [
+            "관리자 계정은 탈퇴할 수 없습니다."
+        ]
+    }
+}
+```
+
+> 차단 응답은 종전에 500 이었으나, 잘못된 요청이지 서버 오류가 아니므로 422 로 바뀌었다. 활동 로그도 탈퇴가 성공한 경우에만 기록된다.
+
 
 ### GET /api/me
 <!-- @generated:start:api.me.show -->
@@ -345,7 +371,7 @@ _단건 응답: `data` 객체의 필드 (`UserResource::toArray()` 산물 — GE
 | created_at | string | `2026-07-08 10:41:24` | 생성 일시 (사용자 시간대 기준 문자열) |
 | updated_at | string | `2026-07-08 11:02:10` | 수정 일시 (사용자 시간대 기준 문자열) |
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
-| abilities | object | `{"can_read":false,"can_create":false,"can_update":false,"can_delete":false,"can_assign_roles":false}` | 현재 사용자의 이 리소스에 대한 권한 맵 (core.users.read/create/update/delete, core.permissions.update 기준. 슈퍼관리자 계정은 `can_delete` 가 항상 false) |
+| abilities | object | `{"can_read":false,"can_create":false,"can_update":false,"can_delete":false,"can_assign_roles":false}` | 현재 사용자의 이 리소스에 대한 권한 맵 (core.users.read/create/update/delete 기준. `can_assign_roles` 는 `core.users.update` — 역할 부여는 사용자 관리의 일부. 슈퍼관리자 계정은 `can_delete` 가 항상 false) |
 
 관계형 필드(`modules`, `plugins`, `menus`, `roles`, `permissions`, `consents`, `terms_consent`, `privacy_consent`)와 카운트 필드(`modules_count`, `plugins_count`, `menus_count`)는 해당 관계가 로드된 경우에만 응답에 포함된다 (프로필 수정 응답에서는 로드하지 않으므로 나타나지 않는다).
 

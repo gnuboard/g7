@@ -8,8 +8,8 @@
  * 잡지 못해(브라우저 렌더만이 포착), Playwright 로 실제 캔버스 DOM 의 inline
  * `background-image: url(...)` 적용을 검증한다.
  *
- * @scenario background_image_apply + background_image_mode_switch
- * @effects canvas_background_image_url + canvas_background_size_mode
+ * 축 요약(마커 아님 — 평문): background_image_apply, background_image_mode_switch.
+ * 효과 요약(마커 아님 — 평문): canvas_background_image_url, canvas_background_size_mode.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 import type { Page } from '@playwright/test';
@@ -58,6 +58,7 @@ async function openStyleTab(page: Page): Promise<void> {
 }
 
 test.describe('@layout-editor 배경 이미지 캔버스 반영', () => {
+  /** @effects canvas_background_image_url */
   test('속성 모달 image 위젯 → URL 입력 → 캔버스 노드 inline background-image url(...) 반영', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -104,6 +105,7 @@ test.describe('@layout-editor 배경 이미지 캔버스 반영', () => {
     expect(styleSnap.repeat).toBe('no-repeat');
   });
 
+  /** @effects canvas_background_size_mode */
   test('표시 모드 전환(맞춤/타일) → 캔버스 backgroundSize/Repeat 정합', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);

@@ -259,11 +259,29 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: 삭제 성공 플래그만 반환한다 (Resource 로 감싸지 않는다)._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| deleted | boolean | `true` | 삭제 성공 여부. 성공 응답에서는 항상 `true` 이며, 실패는 `500` 으로 갈린다 |
 
 **응답 예시**
 
-<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "리뷰가 삭제되었습니다.",
+    "data": {
+        "deleted": true
+    }
+}
+```
+
+> 삭제 전 컨트롤러가 `images` 관계를 로드한다 — 첨부 이미지 파일까지 함께 정리하기 위해서다. DB CASCADE 에 맡기지 않고 Service 가 명시적으로 삭제하므로 훅 발화와 파일 정리가 보장된다.
 
 **에러 응답**
 
@@ -271,7 +289,8 @@ Authorization: Bearer {YOUR_TOKEN}
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.reviews.delete`)이 없는 경우 |
-| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 404 | Not Found | 해당 `review` 의 리뷰가 없는 경우 (라우트 모델 바인딩이 해석에 실패) |
+| 500 | Internal Server Error | 삭제 처리 중 예외 발생 (`messages.reviews.delete_failed`) |
 
 <!-- @generated:end -->
 
@@ -337,7 +356,64 @@ _단건 응답: `data` 객체의 필드._
 
 **응답 예시**
 
-<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "리뷰를 조회했습니다.",
+    "data": {
+        "id": 99,
+        "product_id": 320,
+        "order_option_id": 859,
+        "user_id": "a231747f-e82e-4cf2-9ae1-a261849dce40",
+        "user": {
+            "uuid": "a231747f-e82e-4cf2-9ae1-a261849dce40",
+            "name": "API 문서 샘플 사용자",
+            "email": "apidoc-sample-user@example.com"
+        },
+        "product": {
+            "id": 320,
+            "name": "API 문서 샘플 상품",
+            "thumbnail_url": null
+        },
+        "option_snapshot": "{\"id\":104,\"option_code\":\"FWACBAVCBKCD\"}",
+        "option_snapshot_label": "",
+        "rating": 5,
+        "content": "Molestiae repellendus accusantium omnis.",
+        "content_mode": "text",
+        "status": "visible",
+        "status_label": "전시중",
+        "status_badge_color": "blue",
+        "images": [],
+        "image_count": 0,
+        "orderOption": {
+            "id": 859,
+            "order_id": 455,
+            "order_number": "ORD-20260707-000123",
+            "quantity": 1,
+            "ordered_at": "2026-07-07 14:40:00"
+        },
+        "has_reply": false,
+        "has_reply_label": "미답변",
+        "has_reply_badge_color": "gray",
+        "reply_content": null,
+        "reply_content_mode": "text",
+        "reply_admin_uuid": null,
+        "reply_admin": null,
+        "replied_at": null,
+        "reply_updated_at": null,
+        "created_at": "2026-07-07 14:47:31",
+        "updated_at": "2026-07-07 14:47:31",
+        "abilities": {
+            "can_update": true,
+            "can_delete": true
+        }
+    }
+}
+```
 
 **에러 응답**
 
@@ -345,7 +421,8 @@ _단건 응답: `data` 객체의 필드._
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.reviews.read`)이 없는 경우 |
-| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 404 | Not Found | 해당 `review` 의 리뷰가 없는 경우 (라우트 모델 바인딩이 해석에 실패) |
+| 500 | Internal Server Error | 조회 중 예외 발생 (`messages.reviews.fetch_failed`) |
 
 <!-- @generated:end -->
 
@@ -405,7 +482,50 @@ _단건 응답: `data` 객체의 필드._
 
 **응답 예시**
 
-<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "판매자 답변이 삭제되었습니다.",
+    "data": {
+        "id": 1,
+        "product_id": 1,
+        "order_option_id": 1,
+        "user_id": "a234c2b1-cde8-437f-b28b-23323be2b98d",
+        "user": {
+            "uuid": "a234c2b1-cde8-437f-b28b-23323be2b98d",
+            "name": "API 문서 샘플 사용자",
+            "email": "apidoc-sample-user@example.com"
+        },
+        "option_snapshot": "{\"id\":104,\"option_code\":\"FWACBAVCBKCD\"}",
+        "option_snapshot_label": "",
+        "rating": 5,
+        "content": "Alias quas iusto dolorem eum eveniet.",
+        "content_mode": "text",
+        "status": "visible",
+        "status_label": "전시중",
+        "status_badge_color": "blue",
+        "has_reply": false,
+        "has_reply_label": "미답변",
+        "has_reply_badge_color": "gray",
+        "reply_content": null,
+        "reply_content_mode": "text",
+        "replied_at": null,
+        "reply_updated_at": null,
+        "created_at": "2026-07-08 10:44:49",
+        "updated_at": "2026-08-16 01:30:00",
+        "abilities": {
+            "can_update": true,
+            "can_delete": true
+        }
+    }
+}
+```
+
+> 답변이 지워진 결과가 응답에 그대로 반영된다 — `has_reply` 는 `false`, `reply_content`·`replied_at`·`reply_updated_at` 은 `null` 로 비워진다. 리뷰 본문(`content`·`rating`·`status`)은 그대로 유지된다.
 
 **에러 응답**
 
@@ -413,7 +533,8 @@ _단건 응답: `data` 객체의 필드._
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.reviews.update`)이 없는 경우 |
-| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 404 | Not Found | 해당 `review` 의 리뷰가 없는 경우 (라우트 모델 바인딩이 해석에 실패) |
+| 500 | Internal Server Error | 답변 삭제 처리 중 예외 발생 (`messages.reviews.reply_delete_failed`) |
 
 <!-- @generated:end -->
 
@@ -483,7 +604,50 @@ _단건 응답: `data` 객체의 필드._
 
 **응답 예시**
 
-<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "판매자 답변이 저장되었습니다.",
+    "data": {
+        "id": 1,
+        "product_id": 1,
+        "order_option_id": 1,
+        "user_id": "a234c2b1-cde8-437f-b28b-23323be2b98d",
+        "user": {
+            "uuid": "a234c2b1-cde8-437f-b28b-23323be2b98d",
+            "name": "API 문서 샘플 사용자",
+            "email": "apidoc-sample-user@example.com"
+        },
+        "option_snapshot": "{\"id\":104,\"option_code\":\"FWACBAVCBKCD\"}",
+        "option_snapshot_label": "",
+        "rating": 5,
+        "content": "Alias quas iusto dolorem eum eveniet.",
+        "content_mode": "text",
+        "status": "visible",
+        "status_label": "전시중",
+        "status_badge_color": "blue",
+        "has_reply": true,
+        "has_reply_label": "답변완료",
+        "has_reply_badge_color": "green",
+        "reply_content": "소중한 후기 감사합니다. 앞으로도 좋은 상품으로 보답하겠습니다.",
+        "reply_content_mode": "text",
+        "replied_at": "2026-08-16 01:30:00",
+        "reply_updated_at": "2026-08-16 01:30:00",
+        "created_at": "2026-07-08 10:44:49",
+        "updated_at": "2026-08-16 01:30:00",
+        "abilities": {
+            "can_update": true,
+            "can_delete": true
+        }
+    }
+}
+```
+
+> 답변 저장 결과가 응답에 반영된다 — `has_reply` 는 `true`, `has_reply_badge_color` 는 `green` 으로 바뀌고 `replied_at`·`reply_updated_at` 이 채워진다. 이미 답변이 있던 리뷰를 다시 호출하면 내용이 **갱신**되며(중복 답변이 생기지 않는다) `reply_updated_at` 만 새로 갱신된다. 답변 작성자는 요청한 관리자(`Auth::id()`)로 기록된다.
 
 **에러 응답**
 
@@ -491,8 +655,9 @@ _단건 응답: `data` 객체의 필드._
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.reviews.update`)이 없는 경우 |
-| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 404 | Not Found | 해당 `review` 의 리뷰가 없는 경우 (라우트 모델 바인딩이 해석에 실패) |
+| 422 | Unprocessable Entity | `reply_content` 가 비었거나 1~2000자 범위를 벗어난 경우, `reply_content_mode` 가 `text`/`html` 이 아닌 경우 |
+| 500 | Internal Server Error | 답변 저장 중 예외 발생 (`messages.reviews.reply_save_failed`) |
 
 <!-- @generated:end -->
 
@@ -760,18 +925,63 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: 작성 자격 판정 결과 (`ProductReviewService::canWrite()` 가 반환한 배열 — Resource 로 감싸지 않는다)._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| can_write | boolean | `true` | 이 주문 옵션에 리뷰를 쓸 수 있는지. 화면은 이 값으로 작성 버튼 노출을 결정한다 |
+| reason | string \| null | `null` | 쓸 수 없는 사유 키. `can_write` 가 `true` 면 `null` |
+
+`reason` 이 가질 수 있는 값:
+
+| 값 | 의미 |
+| --- | --- |
+| `order_option_not_found` | 해당 주문 옵션이 존재하지 않음 |
+| `not_own_order` | 본인 주문이 아님 |
+| `not_confirmed` | 구매확정(`CONFIRMED`) 상태가 아님 |
+| `deadline_passed` | 작성 가능 기간이 지남 (판정 규칙은 `ReviewWritePolicy` 단일 SSoT) |
+| `already_written` | 이 주문 옵션으로 이미 리뷰를 작성함 |
 
 **응답 예시**
 
-<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+작성 가능한 경우:
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "리뷰 작성 가능 여부를 확인했습니다.",
+    "data": {
+        "can_write": true,
+        "reason": null
+    }
+}
+```
+
+작성 불가한 경우 (이미 작성함):
+
+```json
+{
+    "success": true,
+    "message": "리뷰 작성 가능 여부를 확인했습니다.",
+    "data": {
+        "can_write": false,
+        "reason": "already_written"
+    }
+}
+```
+
+> 작성 불가는 **에러가 아니라 정상 응답**이다. 존재하지 않는 주문 옵션이나 남의 주문도 `404`/`403` 이 아니라 `200` + `can_write: false` 로 응답하므로, 이 엔드포인트로 주문 존재 여부를 탐색할 수 없다.
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 500 | Internal Server Error | 판정 중 예외 발생 (`messages.reviews.can_write_check_failed`) |
 
 <!-- @generated:end -->
 
@@ -801,19 +1011,38 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: 삭제 성공 플래그만 반환한다 (관리자 삭제 엔드포인트와 같은 형태)._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| deleted | boolean | `true` | 삭제 성공 여부. 성공 응답에서는 항상 `true` |
 
 **응답 예시**
 
-<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "리뷰가 삭제되었습니다.",
+    "data": {
+        "deleted": true
+    }
+}
+```
+
+> 삭제 전 `images` 관계를 로드해 첨부 이미지 파일까지 함께 정리한다.
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-reviews.write`)이 없는 경우 |
-| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-reviews.write`)이 없는 경우, 또는 **본인이 작성한 리뷰가 아닌 경우** (`messages.reviews.forbidden`) |
+| 404 | Not Found | 해당 `review` 의 리뷰가 없는 경우 (라우트 모델 바인딩이 해석에 실패) |
+| 500 | Internal Server Error | 삭제 처리 중 예외 발생 (`messages.reviews.delete_failed`) |
 
 <!-- @generated:end -->
 

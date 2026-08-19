@@ -127,6 +127,21 @@ class BoardRepository implements BoardRepositoryInterface
     }
 
     /**
+     * 게시판을 영구 삭제합니다.
+     *
+     * @param  int  $id  게시판 ID
+     * @return bool 삭제 성공 여부
+     *
+     * @throws ModelNotFoundException
+     */
+    public function forceDelete(int $id): bool
+    {
+        $board = $this->findOrFail($id);
+
+        return (bool) $board->forceDelete();
+    }
+
+    /**
      * 모든 게시판을 조회합니다.
      *
      * @return Collection 게시판 컬렉션
@@ -180,6 +195,7 @@ class BoardRepository implements BoardRepositoryInterface
      */
     public function filterByType(string $type): Collection
     {
+        // audit:allow query-unbounded-get reason: boards 는 운영자 등록 설정성 테이블 — 행 수가 운영자 행위에 묶여 데이터 증가에 비례하지 않는다
         return Board::where('type', $type)->get();
     }
 
@@ -203,6 +219,7 @@ class BoardRepository implements BoardRepositoryInterface
      */
     public function getRecentPosts(int $limit): array
     {
+        // audit:allow query-unbounded-get reason: boards 는 운영자 등록 설정성 테이블 — 행 수가 운영자 행위에 묶여 데이터 증가에 비례하지 않는다
         $activeBoardIds = Board::where('is_active', true)->pluck('id');
 
         if ($activeBoardIds->isEmpty()) {
@@ -220,6 +237,8 @@ class BoardRepository implements BoardRepositoryInterface
                 ->whereNull('deleted_at')
                 ->whereNull('parent_id')
                 ->where('status', 'published')
+                // 비밀글도 제목은 공개한다(본문만 보호) — 2026-02-04 확정 정책. 목록/검색/홈과 동일.
+                // 게시판별 열람 권한은 BoardService::getCachedRecentPosts 가 응답 시점에 적용한다.
                 ->orderBy('created_at', 'desc')
                 ->limit($limit)
         );
@@ -400,6 +419,7 @@ class BoardRepository implements BoardRepositoryInterface
      */
     public function getTotalCommentsCount(): int
     {
+        // audit:allow query-unbounded-get reason: boards 는 운영자 등록 설정성 테이블 — 행 수가 운영자 행위에 묶여 데이터 증가에 비례하지 않는다
         $activeBoardIds = Board::where('is_active', true)->pluck('id');
 
         return Comment::query()
@@ -424,6 +444,7 @@ class BoardRepository implements BoardRepositoryInterface
      */
     public function getPopularPosts(string $period, int $limit): array
     {
+        // audit:allow query-unbounded-get reason: boards 는 운영자 등록 설정성 테이블 — 행 수가 운영자 행위에 묶여 데이터 증가에 비례하지 않는다
         $activeBoardIds = Board::where('is_active', true)->pluck('id');
 
         if ($activeBoardIds->isEmpty()) {
@@ -486,10 +507,10 @@ class BoardRepository implements BoardRepositoryInterface
             $viewCount = $post->view_count ?? 0;
             $commentCount = $post->comments_count ?? 0;
 
-            // Avatar URL 결정
+            // Avatar URL 결정 — 코어 첨부 URL 조립은 코어 모델 단일 지점에 위임
             $avatarUrl = null;
             if ($post->user_id && $post->attachment_hash) {
-                $avatarUrl = '/api/attachment/'.$post->attachment_hash;
+                $avatarUrl = Attachment::urlForHash($post->attachment_hash);
             }
 
             // 사용자 상태 처리 (탈퇴한 사용자는 익명화)
@@ -560,6 +581,7 @@ class BoardRepository implements BoardRepositoryInterface
      */
     public function getActiveBoardsList(): Collection
     {
+        // audit:allow query-unbounded-get reason: boards 는 운영자 등록 설정성 테이블 — 행 수가 운영자 행위에 묶여 데이터 증가에 비례하지 않는다
         return Board::where('is_active', true)
             ->orderBy('created_at', 'asc')
             ->get();
@@ -620,6 +642,7 @@ class BoardRepository implements BoardRepositoryInterface
      */
     public function getActiveBoardsOrdered(string $orderBy = 'created_at', string $orderDirection = 'desc'): Collection
     {
+        // audit:allow query-unbounded-get reason: boards 는 운영자 등록 설정성 테이블 — 행 수가 운영자 행위에 묶여 데이터 증가에 비례하지 않는다
         return Board::where('is_active', true)
             ->orderBy($orderBy, $orderDirection)
             ->get();
@@ -648,6 +671,7 @@ class BoardRepository implements BoardRepositoryInterface
      */
     public function getActiveBoardsForMenu(): Collection
     {
+        // audit:allow query-unbounded-get reason: boards 는 운영자 등록 설정성 테이블 — 행 수가 운영자 행위에 묶여 데이터 증가에 비례하지 않는다
         return Board::where('is_active', true)
             ->select(['id', 'name', 'slug'])
             ->orderBy('created_at', 'asc')

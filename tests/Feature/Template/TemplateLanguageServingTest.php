@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Template;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Enums\ExtensionStatus;
 use App\Models\Template;
 use App\Services\TemplateService;
@@ -129,9 +130,12 @@ class TemplateLanguageServingTest extends TestCase
      */
     public function test_language_file_is_cached(): void
     {
-        // PublicBaseController::cached() 는 CacheInterface + v{version} 접미사 (기본 v=0)
-        $cache = app(\App\Contracts\Extension\CacheInterface::class);
-        $cacheKey = 'template.language.sirsoft-admin_basic.ko.v0';
+        // `?v` 생략 시 현재 확장 캐시 버전으로 폴백하므로 (#588 — `.v0` 사각 키 방지)
+        // 버전을 시드해 결정적 키로 검증한다
+        Cache::put('g7:core:ext.cache_version', 1234);
+
+        $cache = app(CacheInterface::class);
+        $cacheKey = 'template.language.sirsoft-admin_basic.ko.v1234';
         $cache->forget($cacheKey);
 
         // 첫 번째 요청

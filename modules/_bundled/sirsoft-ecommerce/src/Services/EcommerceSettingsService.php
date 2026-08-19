@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\File;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingFeeTaxPolicy;
+use Modules\Sirsoft\Ecommerce\Support\CurrencySettingsCache;
 
 /**
  * 이커머스 모듈 환경설정 서비스
@@ -27,6 +28,11 @@ class EcommerceSettingsService implements ModuleSettingsInterface
      * 모듈 식별자
      */
     private const MODULE_IDENTIFIER = 'sirsoft-ecommerce';
+
+    /**
+     * 관리자가 삭제한 기본 제공 통화 코드 목록의 저장 키 (공개 #91)
+     */
+    private const REMOVED_CURRENCIES_KEY = 'removed_default_currencies';
 
     /**
      * 설정 기본값 (캐시)
@@ -67,25 +73,41 @@ class EcommerceSettingsService implements ModuleSettingsInterface
     /**
      * 설정값 저장
      *
-     * @param  string  $key  설정 키
+     * 벌크 저장(saveSettings)과 동일한 정규화 파이프라인을 경유한다 (공개 #114).
+     * 예전에는 `Arr::set` 결과를 카테고리 파일에 통째로 덮어써서 분리 입력 필드 병합·
+     * 기본 통화 동기화·defaults 스키마 정규화·결제수단 메타데이터 스냅샷·삭제 통화 기록·
+     * 통화 캐시 무효화를 전부 건너뛰었고, 저장 파일이 서로 어긋난 상태로 남았다
+     * (예: default_currency 는 USD 인데 통화 목록의 is_default 는 KRW).
+     *
+     * 위임 payload 의 기저는 **저장본**(loadCategorySettings)이다. 조회 결과
+     * (getAllSettings)를 기저로 삼으면 읽기 시점 보강분(통화 symbol/flag, 결제수단
+     * 병합 메타)이 영속화되고, 삭제 통화 기록(공개 #91)이 재계산되며 지워져 관리자가
+     * 삭제한 통화가 부활한다.
+     *
+     * @param  string  $key  설정 키 (예: 'basic_info.shop_name', 카테고리 통째 지정도 허용)
      * @param  mixed  $value  저장할 값
      * @return bool 성공 여부
      */
     public function setSetting(string $key, mixed $value): bool
     {
-        $settings = $this->getAllSettings();
-        Arr::set($settings, $key, $value);
-
-        // 카테고리 추출
         $parts = explode('.', $key);
-        $category = $parts[0];
+        $category = array_shift($parts);
 
-        $result = $this->saveCategorySettings($category, $settings[$category] ?? []);
+        if ($parts === []) {
+            // 카테고리 통째 저장 — 배열이 아니면 저장할 카테고리 데이터가 없다
+            // (기존 경로도 배열 아닌 값은 저장 대상이 되지 못했다)
+            if (! is_array($value)) {
+                return false;
+            }
 
-        // 파일 저장 후 캐시 초기화 (다음 조회 시 재계산)
-        $this->settings = null;
+            $categoryData = $value;
+        } else {
+            $categoryData = $this->loadCategorySettings($category);
+            Arr::set($categoryData, implode('.', $parts), $value);
+        }
 
-        return $result;
+        // saveSettings 는 제공된 카테고리만 저장하므로 다른 카테고리 파일은 건드리지 않는다
+        return $this->saveSettings([$category => $categoryData]);
     }
 
     /**
@@ -119,10 +141,14 @@ class EcommerceSettingsService implements ModuleSettingsInterface
         // language_currency.currencies 는 정수키 리스트라 array_merge 가 통째 교체 →
         // defaults 에 있고 저장본에 없는 통화는 code 기준으로 보충(환율은 저장본 우선 보존).
         // 관리자가 의도적으로 삭제한 게 아니라 array_merge 부작용으로 소실되던 영속성 공백 수정(U11-A).
+        // 단, 관리자가 실제로 삭제한 통화는 저장 시점에 기록되므로 보충 대상에서 뺀다(공개 #91).
         if (isset($defaultValues['language_currency']['currencies'])) {
+            $removedCodes = $settings['language_currency'][self::REMOVED_CURRENCIES_KEY] ?? [];
+
             $settings['language_currency']['currencies'] = $this->mergeCurrenciesByCode(
                 $defaultValues['language_currency']['currencies'],
-                $settings['language_currency']['currencies'] ?? []
+                $settings['language_currency']['currencies'] ?? [],
+                is_array($removedCodes) ? $removedCodes : []
             );
         }
 
@@ -135,7 +161,8 @@ class EcommerceSettingsService implements ModuleSettingsInterface
         // 결제수단 병합 (기본 + 플러그인 필터 + 사용자 저장 설정)
         if (isset($settings['order_settings'])) {
             $settings['order_settings']['payment_methods'] = $this->getMergedPaymentMethods(
-                $settings['order_settings']['payment_methods'] ?? []
+                $settings['order_settings']['payment_methods'] ?? [],
+                $settings['order_settings']['default_pg_provider'] ?? null
             );
         }
 
@@ -150,7 +177,8 @@ class EcommerceSettingsService implements ModuleSettingsInterface
                     );
                 }
                 // 셀렉터(_currency_selector.json)가 참조하는 symbol/flag 보강
-                // (settings 스키마에 없는 표시 메타 — 저장 시 normalize 가 떨궈 round-trip 오염 없음)
+                // (flag 는 저장 규칙에 없는 표시 메타 — 폼이 되돌려 보내도 FormRequest 검증에서
+                //  탈락해 round-trip 오염이 없다)
                 if (! empty($currency['code'])) {
                     $meta = $this->currencyDisplayMeta($currency['code']);
                     // 관리자가 직접 지정한 기호는 보존, 없을 때만 표준 매핑으로 보충
@@ -175,7 +203,16 @@ class EcommerceSettingsService implements ModuleSettingsInterface
             }
         }
 
-        $this->settings = $settings;
+        // 부팅이 끝나기 전 결과는 캐시하지 않는다.
+        //
+        // 이 결과에는 훅 카탈로그와 병합된 값이 섞여 있다 — 확장이 등록한 결제수단과 그 수단·PG 의
+        // 생사 판정이다. 그런데 코어는 부팅 중(CoreServiceProvider::boot)에 config 미러를 채우려고
+        // 설정을 한 번 읽고, 그 시점은 플러그인이 자기 훅을 등록하기 전이라 카탈로그가 비어 있다.
+        // 서비스가 공유 인스턴스이므로(공개 #116) 그 빈 카탈로그 기준 판정을 캐시하면 요청 내내
+        // 남아, 살아 있는 PG 를 지정한 결제수단이 주문서에서 통째로 사라진다.
+        if (app()->isBooted()) {
+            $this->settings = $settings;
+        }
 
         return $settings;
     }
@@ -201,6 +238,11 @@ class EcommerceSettingsService implements ModuleSettingsInterface
      * is_active 는 그대로 남아 있으므로 걸러내지 않으면 체크아웃이 선택 가능한
      * 결제수단으로 계속 노출한다(관리자 화면은 _orphaned 를 읽어 이미 차단).
      *
+     * 수단은 살아 있는데 그 수단이 지정한 **PG 가 사라진** 경우도 같은 결함이다(A2).
+     * 이쪽은 카탈로그에 남아 있어 `_orphaned` 로 걸리지 않지만, 주문 시 PG 라우팅이
+     * 매칭에 실패해 결제창 없이 주문완료로 넘어간다 — `_orphaned_pg` 로 함께 차단한다.
+     * 관리자 응답은 두 플래그를 그대로 유지한다(운영자가 확인하고 고쳐야 할 대상).
+     *
      * @return array 고아 항목이 제거되고 은행명이 포함된 결제 설정
      */
     public function getPublicPaymentSettings(): array
@@ -208,10 +250,25 @@ class EcommerceSettingsService implements ModuleSettingsInterface
         $orderSettings = $this->getSettings('order_settings');
 
         if (isset($orderSettings['payment_methods']) && is_array($orderSettings['payment_methods'])) {
+            // 비연속 키가 JSON 객체로 직렬화되지 않도록 array_values 로 재정렬
             $orderSettings['payment_methods'] = array_values(array_filter(
                 $orderSettings['payment_methods'],
-                fn ($method) => ! ($method['_orphaned'] ?? false)
+                fn ($method) => ! ($method['_orphaned'] ?? false) && ! ($method['_orphaned_pg'] ?? false)
             ));
+        }
+
+        // 죽은 기본 PG 는 공개 응답에서 미설정으로 정규화한다 (프론트가 그 값을 그대로 쓰지 않도록)
+        $defaultPg = $orderSettings['default_pg_provider'] ?? null;
+        if (is_string($defaultPg) && $defaultPg !== ''
+            && ! in_array($defaultPg, $this->registeredPgProviderIds(), true)) {
+            $orderSettings['default_pg_provider'] = null;
+        }
+
+        // 현금영수증 프로바이더도 같은 정규화를 거친다 (A3).
+        // 체크아웃 신청 폼은 이 카테고리 raw 값을 truthy 로 읽으므로, 여기서 정규화하지 않으면
+        // 제공 확장이 사라진 뒤에도 신청 폼이 계속 렌더된다.
+        if (array_key_exists('cash_receipt_provider', $orderSettings)) {
+            $orderSettings['cash_receipt_provider'] = $this->getCashReceiptProvider();
         }
 
         if (isset($orderSettings['bank_accounts'], $orderSettings['banks'])) {
@@ -263,6 +320,11 @@ class EcommerceSettingsService implements ModuleSettingsInterface
                 );
             }
 
+            // language_currency: 관리자가 삭제한 기본 제공 통화를 서버가 도출해 기록 (공개 #91)
+            if ($category === 'language_currency') {
+                $processedSettings = $this->applyRemovedDefaultCurrencies($processedSettings);
+            }
+
             if (! $this->saveCategorySettings($category, $processedSettings)) {
                 $success = false;
             }
@@ -271,13 +333,117 @@ class EcommerceSettingsService implements ModuleSettingsInterface
         // 캐시 초기화
         $this->settings = null;
 
+        // 상주 프로세스의 config 미러도 함께 갱신한다 (공개이슈 #109)
+        g7_refresh_module_settings_config('sirsoft-ecommerce');
+
+        // 통화 목록이 바뀌었을 수 있으므로 요청 단위 통화 캐시도 함께 비운다.
+        // (리소스 계층이 이 캐시로 다통화 금액을 만들기 때문에, 비우지 않으면 같은 요청 안에서
+        //  저장 전 통화 구성으로 금액이 계산된다)
+        CurrencySettingsCache::clear();
+
+        $this->flushResolvedCaches();
+
         return $success;
+    }
+
+    /**
+     * 이미 해석된 싱글톤 서비스들의 요청 단위 캐시를 비웁니다. (공개 #116)
+     *
+     * 싱글톤 리졸버들은 자기 캐시를 따로 들고 있어서, 설정 서비스의 캐시만 비우면 같은 요청
+     * 안에서 이미 해석된 리졸버가 저장 전 카탈로그를 계속 답한다. 저장 경로가 이 한 지점으로
+     * 모여 있으므로(단건 저장도 saveSettings 에 위임) 여기서 함께 무효화한다.
+     *
+     * 생성자 상호 주입은 순환이라 lazy 해석하며, `resolved()` 가드로 아직 필요하지 않은
+     * 서비스를 저장이 강제로 인스턴스화하지 않게 한다.
+     */
+    private function flushResolvedCaches(): void
+    {
+        if (app()->resolved(PaymentMethodResolver::class)) {
+            app(PaymentMethodResolver::class)->flushCache();
+        }
+
+        if (app()->resolved(CurrencyConversionService::class)) {
+            app(CurrencyConversionService::class)->clearCache();
+        }
+    }
+
+    /**
+     * 관리자가 삭제한 기본 제공 통화를 저장본에 기록합니다. (공개 #91)
+     *
+     * 조회 병합(mergeCurrenciesByCode)은 저장본에 없는 defaults 통화를 무조건 보충하는데,
+     * 그 보충은 "array_merge 통째 교체로 인한 의도치 않은 소실"(U11-A)을 되돌리기 위한 것이다.
+     * 관리자의 의도적 삭제와 구분할 장치가 없으면 삭제까지 되돌아가므로, 저장 시점에
+     * 삭제 의도를 도출해 남긴다.
+     *
+     * - 클라이언트가 보낸 같은 키는 신뢰하지 않고 항상 서버가 재계산한다.
+     * - `currencies` 미제출 저장(기본 통화만 변경 등)은 기존 통화 목록과 기록을 함께 이월한다.
+     *   저장이 파일 통째 교체이므로 이월하지 않으면 저장본에서 두 키가 모두 사라지고, 조회
+     *   병합이 defaults 를 그대로 들여와 삭제가 전부 부활한다.
+     * - 기본 통화 코드는 기록 대상에서 제외한다 (기본 통화는 항상 생존해야 한다).
+     *
+     * @param  array  $processed  정규화까지 끝난 language_currency 저장값
+     * @return array 삭제 기록이 반영된 저장값
+     */
+    private function applyRemovedDefaultCurrencies(array $processed): array
+    {
+        // 클라이언트 주입 방어 — 검증에서 떨어지지만 프로그램 직접 호출 경로도 막는다
+        unset($processed[self::REMOVED_CURRENCIES_KEY]);
+
+        $saved = $this->loadCategorySettings('language_currency');
+        $defaultValues = $this->getDefaults()['defaults']['language_currency'] ?? [];
+
+        // currencies 미제출 → 기존 통화 목록과 삭제 기록을 함께 이월
+        if (! isset($processed['currencies']) || ! is_array($processed['currencies'])) {
+            $carried = $saved[self::REMOVED_CURRENCIES_KEY] ?? [];
+            $processed[self::REMOVED_CURRENCIES_KEY] = array_values(array_filter(
+                is_array($carried) ? $carried : [],
+                'is_string'
+            ));
+
+            if (isset($saved['currencies']) && is_array($saved['currencies'])) {
+                $processed['currencies'] = array_values($saved['currencies']);
+                // 같은 저장에서 기본 통화가 바뀌었을 수 있으므로 is_default 를 다시 맞춘다
+                $processed = $this->syncCurrencyDefaults($processed);
+            }
+
+            return $processed;
+        }
+
+        // 제출된 통화 코드 집합
+        $submitted = [];
+        foreach ($processed['currencies'] as $currency) {
+            $code = is_array($currency) ? ($currency['code'] ?? null) : null;
+            if (is_string($code) && $code !== '') {
+                $submitted[$code] = true;
+            }
+        }
+
+        // 유효 기본 통화: 제출값 → 기존 저장본 → defaults 순
+        $baseCode = $processed['default_currency']
+            ?? ($saved['default_currency'] ?? ($defaultValues['default_currency'] ?? null));
+
+        $removed = [];
+        foreach ($defaultValues['currencies'] ?? [] as $defaultCurrency) {
+            $code = $defaultCurrency['code'] ?? null;
+            if (! is_string($code) || $code === '' || isset($submitted[$code]) || $code === $baseCode) {
+                continue;
+            }
+            $removed[] = $code;
+        }
+
+        // 비연속 키가 JSON 객체로 직렬화되지 않도록 재정렬
+        $processed[self::REMOVED_CURRENCIES_KEY] = array_values($removed);
+
+        return $processed;
     }
 
     /**
      * 은행 목록만 저장합니다.
      *
      * 기존 order_settings의 다른 설정은 유지하고 banks만 교체합니다.
+     *
+     * 저장은 벌크 저장(saveSettings)에 위임해 정규화 파이프라인을 함께 경유한다 (공개 #114) —
+     * 은행명 다국어 정규화와 결제수단 메타데이터 스냅샷이 이 경로에서도 적용된다.
      *
      * @param  array  $banks  은행 목록 배열
      * @return bool 성공 여부
@@ -287,12 +453,7 @@ class EcommerceSettingsService implements ModuleSettingsInterface
         $currentSettings = $this->loadCategorySettings('order_settings');
         $currentSettings['banks'] = $banks;
 
-        $result = $this->saveCategorySettings('order_settings', $currentSettings);
-
-        // 캐시 초기화
-        $this->settings = null;
-
-        return $result;
+        return $this->saveSettings(['order_settings' => $currentSettings]);
     }
 
     /**
@@ -725,13 +886,27 @@ class EcommerceSettingsService implements ModuleSettingsInterface
     /**
      * 현재 선택된 현금영수증 발급 프로바이더 ID를 반환합니다.
      *
-     * @return string|null 프로바이더 ID (미설정 시 null)
+     * 저장값이 남아 있어도 그 프로바이더를 제공하는 확장이 없으면 **미설정으로 해석**한다(A3).
+     * 플러그인을 제거해도 설정 문자열은 그대로 남는데, 그 값을 신뢰하면 체크아웃의 신청 폼과
+     * 마이페이지 발급 버튼이 계속 렌더되고, 신청하면 구독자 없는 훅을 호출해 발급 실패로만
+     * 조용히 기록된다.
+     *
+     * @return string|null 프로바이더 ID (미설정이거나 제공 확장 부재 시 null)
      */
     public function getCashReceiptProvider(): ?string
     {
         $provider = $this->getSetting('order_settings.cash_receipt_provider');
 
-        return is_string($provider) && $provider !== '' ? $provider : null;
+        if (! is_string($provider) || $provider === '') {
+            return null;
+        }
+
+        $registeredIds = array_map(
+            fn ($entry) => $entry['id'] ?? null,
+            $this->getRegisteredCashReceiptProviders()
+        );
+
+        return in_array($provider, $registeredIds, true) ? $provider : null;
     }
 
     /**
@@ -846,13 +1021,65 @@ class EcommerceSettingsService implements ModuleSettingsInterface
      * 기본/플러그인 정의와 사용자 저장 설정을 병합합니다.
      *
      * @param  array  $savedMethods  사용자 저장 결제수단 배열
+     * @param  string|null  $defaultPgProvider  기본 PG 제공자 (죽은 PG 판정용, 미전달 시 판정 생략)
      * @return array 병합된 결제수단 배열
      */
-    public function getMergedPaymentMethods(array $savedMethods = []): array
+    public function getMergedPaymentMethods(array $savedMethods = [], ?string $defaultPgProvider = null): array
     {
         $available = $this->getAvailablePaymentMethods();
 
-        return $this->mergePaymentMethodSettings($available, $savedMethods);
+        return $this->mergePaymentMethodSettings($available, $savedMethods, $defaultPgProvider);
+    }
+
+    /**
+     * 결제수단에 지정된 PG 가 현재 레지스트리에 없는지 판정합니다. (A2)
+     *
+     * 고아 판정(`_orphaned`)은 결제수단 ID 만 본다. builtin 수단에 특정 PG 를 지정한 뒤 그
+     * PG 플러그인을 제거하면 수단 자체는 카탈로그에 남아 있어 그 필터를 통과하고, 체크아웃에
+     * 선택 가능한 수단으로 노출된다. 주문하면 PG 라우팅이 매칭에 실패해 결제창 없이
+     * 주문완료로 넘어간다.
+     *
+     * 유효 PG 의 폴백 규칙은 런타임(`OrderProcessingService::determinePgProvider()`)과
+     * 동일하게 맞춘다 — 수단의 지정값이 **null 일 때만** 기본 PG 로 내려간다. 지정값이 죽은
+     * 문자열이면 기본 PG 가 살아 있어도 폴백하지 않으므로, 그 경우도 차단 대상이다.
+     *
+     * @param  bool  $needsPg  PG 결제창이 필요한 수단인지
+     * @param  string|null  $ownProvider  수단에 지정된 PG
+     * @param  string|null  $defaultPgProvider  기본 PG
+     * @param  array<int, string>  $registeredIds  현재 등록된 PG provider ID 목록
+     * @return bool 죽은 PG 지정 여부
+     */
+    private function hasOrphanedPgProvider(
+        bool $needsPg,
+        ?string $ownProvider,
+        ?string $defaultPgProvider,
+        array $registeredIds
+    ): bool {
+        if (! $needsPg) {
+            return false;
+        }
+
+        $effective = $ownProvider ?? $defaultPgProvider;
+
+        // 양쪽 미설정은 기존 계약('none' → non-PG 강하) — 고아가 아니다
+        if (! is_string($effective) || $effective === '') {
+            return false;
+        }
+
+        return ! in_array($effective, $registeredIds, true);
+    }
+
+    /**
+     * 현재 등록된 PG provider ID 목록을 반환합니다.
+     *
+     * @return array<int, string> provider ID 목록
+     */
+    private function registeredPgProviderIds(): array
+    {
+        return array_values(array_filter(
+            array_map(fn ($provider) => $provider['id'] ?? null, $this->getRegisteredPgProviders()),
+            fn ($id) => is_string($id) && $id !== ''
+        ));
     }
 
     /**
@@ -860,12 +1087,16 @@ class EcommerceSettingsService implements ModuleSettingsInterface
      *
      * @param  array  $available  사용 가능한 결제수단 정의 배열
      * @param  array  $saved  사용자 저장 설정 배열
+     * @param  string|null  $defaultPgProvider  기본 PG 제공자 (죽은 PG 판정용, null 이면 판정 생략)
      * @return array 병합된 결제수단 배열
      */
-    private function mergePaymentMethodSettings(array $available, array $saved): array
+    private function mergePaymentMethodSettings(array $available, array $saved, ?string $defaultPgProvider = null): array
     {
         $availableById = collect($available)->keyBy('id');
         $savedById = collect($saved)->keyBy('id');
+
+        // 레지스트리는 루프 밖에서 1회만 조회한다 (수단 수만큼 훅이 돌지 않도록)
+        $registeredPgIds = $this->registeredPgProviderIds();
 
         $merged = [];
 
@@ -937,6 +1168,12 @@ class EcommerceSettingsService implements ModuleSettingsInterface
                 $entry['core_payment_method'] = $definition['defaults']['core_payment_method'];
             }
 
+            // 지정된 PG 가 현재 레지스트리에 없으면 런타임 전용 플래그를 단다 (A2).
+            // 관리자 화면은 이 플래그로 배지를 띄우고, 공개 응답은 이 항목을 제거한다.
+            if ($this->hasOrphanedPgProvider($needsPg, $entry['pg_provider'] ?? null, $defaultPgProvider, $registeredPgIds)) {
+                $entry['_orphaned_pg'] = true;
+            }
+
             $merged[] = $entry;
         }
 
@@ -994,8 +1231,8 @@ class EcommerceSettingsService implements ModuleSettingsInterface
             }
             // 고아 항목은 기존 _cached_* 유지
 
-            // _orphaned 플래그는 저장하지 않음 (런타임 전용)
-            unset($savedMethods[$index]['_orphaned']);
+            // _orphaned / _orphaned_pg 플래그는 저장하지 않음 (런타임 전용)
+            unset($savedMethods[$index]['_orphaned'], $savedMethods[$index]['_orphaned_pg']);
         }
 
         return $savedMethods;
@@ -1068,6 +1305,9 @@ class EcommerceSettingsService implements ModuleSettingsInterface
     {
         $this->defaults = null;
         $this->settings = null;
+
+        // 상주 프로세스의 config 미러도 함께 갱신한다 (공개이슈 #109)
+        g7_refresh_module_settings_config('sirsoft-ecommerce');
     }
 
     /**
@@ -1105,12 +1345,17 @@ class EcommerceSettingsService implements ModuleSettingsInterface
      * - 저장본에 있는 통화: 저장본(환율 포함) 채택 (관리자 편집 보존)
      * - 저장본에 없는 defaults 통화: defaults 항목 보충 (소실 방지)
      * - 저장본에만 있는(관리자 신규 추가) 통화: 그대로 보존
+     * - 관리자가 삭제한 defaults 통화($removedCodes): 보충하지 않음 (공개 #91)
+     *
+     * 삭제 기록에 있어도 저장본에 그 통화가 다시 들어 있으면 저장본을 우선해 되살린다 —
+     * 재추가 저장의 결과가 즉시 반영되어야 하기 때문이다(기록은 다음 저장에서 재계산된다).
      *
      * @param  array  $defaults  defaults.json 의 통화 목록
      * @param  array  $saved  저장본 통화 목록
+     * @param  array  $removedCodes  관리자가 삭제한 기본 제공 통화 코드 목록
      * @return array code 기준으로 병합된 통화 목록
      */
-    private function mergeCurrenciesByCode(array $defaults, array $saved): array
+    private function mergeCurrenciesByCode(array $defaults, array $saved, array $removedCodes = []): array
     {
         // defaults 를 code 인덱스로 매핑 (필드 보충용)
         $defaultsByCode = [];
@@ -1139,6 +1384,14 @@ class EcommerceSettingsService implements ModuleSettingsInterface
             if ($code === null) {
                 continue;
             }
+
+            // 관리자가 삭제한 통화는 보충하지 않는다 (저장본에 있으면 재추가된 것이므로 채택)
+            if (! isset($savedByCode[$code]) && in_array($code, $removedCodes, true)) {
+                $usedCodes[$code] = true;
+
+                continue;
+            }
+
             $merged[] = $this->backfillBaseUnit($savedByCode[$code] ?? $defaultCurrency, $defaultsByCode[$code] ?? []);
             $usedCodes[$code] = true;
         }

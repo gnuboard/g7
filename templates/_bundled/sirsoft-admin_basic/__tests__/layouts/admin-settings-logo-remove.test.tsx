@@ -88,7 +88,9 @@ const settingsLogoLayout = {
           params: {
             target: 'local',
             hasChanges: true,
-            'form.general.site_logo': "{{(_local.form?.general?.site_logo ?? []).filter(item => item.id !== $args[0])}}",
+            // 프로덕션 레이아웃과 동일 — FileUploader 는 hash 를 우선 통지한다.
+            // 식 자체의 동작은 admin-settings-logo-remove-expression.test.ts 가 평가해 고정한다.
+            'form.general.site_logo': "{{(_local.form?.general?.site_logo ?? []).filter(item => (item.hash || item.id) !== $args[0])}}",
           },
         },
       ],

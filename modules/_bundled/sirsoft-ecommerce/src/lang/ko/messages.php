@@ -492,6 +492,12 @@ return [
             'per_volume' => ':unitL당 :fee',
             'per_volume_weight' => ':unitkg당 :fee',
             'per_amount' => ':unit당 :fee',
+            // 구간별 정책의 경계값 단위 (부과정책에서 파생 — 저장 데이터에 의존하지 않음)
+            'range_unit' => [
+                'quantity' => '개',
+                'weight' => 'kg',
+                'volume' => 'L',
+            ],
         ],
         'fee_details' => [
             'base_fee' => '배송비',
@@ -1140,6 +1146,14 @@ return [
         'can_write_checked' => '리뷰 작성 가능 여부를 확인했습니다.',
         'can_write_check_failed' => '리뷰 작성 가능 여부 확인에 실패했습니다.',
         'cannot_write' => '리뷰를 작성할 수 없습니다. (사유: :reason)',
+        // 작성 불가 사유 라벨 — :reason 치환자에 원시 식별자 대신 번역문을 싣는다
+        'reasons' => [
+            'order_option_not_found' => '주문 내역을 찾을 수 없음',
+            'not_own_order' => '본인 주문이 아님',
+            'not_confirmed' => '구매확정 전',
+            'deadline_passed' => '작성 기한 경과',
+            'already_written' => '이미 작성한 리뷰',
+        ],
         'forbidden' => '권한이 없습니다.',
         'deleted' => '리뷰가 삭제되었습니다.',
         'delete_failed' => '리뷰 삭제에 실패했습니다.',
@@ -1200,6 +1214,7 @@ return [
         'board_changed' => '게시판 설정이 변경되어 해당 게시글을 찾을 수 없습니다. 관리자에게 문의하세요.',
         'reply_created' => '답변이 등록되었습니다.',
         'reply_failed' => '답변 등록에 실패했습니다.',
+        'reply_already_exists' => '이미 등록된 답변이 있습니다. 기존 답변을 수정하거나 삭제한 후 다시 등록해주세요.',
         'reply_updated' => '답변이 수정되었습니다.',
         'reply_update_failed' => '답변 수정에 실패했습니다.',
         'reply_deleted' => '답변이 삭제되었습니다.',

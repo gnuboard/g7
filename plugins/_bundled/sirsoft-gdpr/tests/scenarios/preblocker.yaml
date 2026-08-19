@@ -59,10 +59,11 @@ effects:
   - restore_replaces_blocked_script_with_fresh_one_when_granted
   - restore_no_op_when_consent_still_denied
 
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/preblocker.test.ts
+
 audit:
   status: codified
-  test_files:
-    - resources/js/__tests__/preblocker.test.ts
   rules:
     - id: preblocker-prototype-intercept
       kind: prototype_setter

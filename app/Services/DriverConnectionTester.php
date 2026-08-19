@@ -8,6 +8,7 @@ use Aws\S3\S3Client;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use League\Flysystem\AwsS3V3\AwsS3V3Adapter;
 use Predis\Client;
 
 /**
@@ -101,9 +102,19 @@ class DriverConnectionTester
                 ];
             }
 
+            // Flysystem S3 어댑터 존재 선검사 — 테스트는 SDK 직접 경로지만 실제 파일 I/O 는
+            // Storage::disk('s3') → 어댑터를 경유하므로, 어댑터가 없으면 테스트가 성공해도
+            // 실경로가 즉사한다 (#99 의 결함 은폐 구조). sdk_missing 검사와 대칭.
+            if (! class_exists(AwsS3V3Adapter::class)) {
+                return [
+                    'success' => false,
+                    'message' => __('settings.s3_adapter_missing'),
+                ];
+            }
+
             $startTime = microtime(true);
 
-            $client = new S3Client([
+            $clientOptions = [
                 'version' => 'latest',
                 'region' => $region,
                 'credentials' => [
@@ -114,7 +125,18 @@ class DriverConnectionTester
                     'timeout' => 5,
                     'connect_timeout' => 3,
                 ],
-            ]);
+            ];
+
+            // S3 호환 스토리지(R2/MinIO 등) — 실경로(applyS3Config 주입)와 동일하게
+            // endpoint/path-style 을 반영해야 테스트가 실제 연결 대상과 일치한다.
+            if (! empty($config['s3_endpoint'])) {
+                $clientOptions['endpoint'] = $config['s3_endpoint'];
+            }
+            if (! empty($config['s3_use_path_style'])) {
+                $clientOptions['use_path_style_endpoint'] = true;
+            }
+
+            $client = new S3Client($clientOptions);
 
             // 버킷 존재 확인
             $client->headBucket(['Bucket' => $bucket]);
@@ -373,14 +395,52 @@ class DriverConnectionTester
      */
     public function testWebsocket(array $config): array
     {
+        $clientHost = $config['websocket_host'] ?? 'localhost';
+        $clientPort = (int) ($config['websocket_port'] ?? 8080);
+        $clientScheme = $config['websocket_scheme'] ?? 'https';
+
+        // 서버(백엔드 broadcast HTTP API) endpoint — 빈 값은 클라이언트 값으로 폴백한다
+        // (SettingsServiceProvider::applyWebsocketConfig 와 동일 규칙). 백엔드 송신은
+        // server endpoint 를 쓰므로 client 만 검사하면 "테스트 성공 + 실제 발송 실패" 가 된다.
+        $serverHost = ($config['websocket_server_host'] ?? '') !== '' ? $config['websocket_server_host'] : $clientHost;
+        $serverPort = (int) ($config['websocket_server_port'] ?? 0) > 0 ? (int) $config['websocket_server_port'] : $clientPort;
+        $serverScheme = ($config['websocket_server_scheme'] ?? '') !== '' ? $config['websocket_server_scheme'] : $clientScheme;
+
+        $clientUrl = sprintf('%s://%s:%d', $clientScheme, $clientHost, $clientPort);
+        $serverUrl = sprintf('%s://%s:%d', $serverScheme, $serverHost, $serverPort);
+
+        // 클라이언트 endpoint 검사
+        $clientResult = $this->probeWebsocketEndpoint($clientUrl);
+
+        if (! $clientResult['success']) {
+            return $clientResult;
+        }
+
+        // 서버 endpoint 검사 (클라이언트와 동일 주소면 중복 요청 생략)
+        if ($serverUrl !== $clientUrl) {
+            $serverResult = $this->probeWebsocketEndpoint($serverUrl);
+
+            if (! $serverResult['success']) {
+                return [
+                    'success' => false,
+                    'message' => __('settings.websocket_server_test_failed'),
+                    'error' => $serverResult['error'] ?? ($serverResult['message'] ?? ''),
+                ];
+            }
+        }
+
+        return $clientResult;
+    }
+
+    /**
+     * Websocket(Reverb) HTTP endpoint 하나를 probe 합니다.
+     *
+     * @param  string  $url  검사할 endpoint URL
+     * @return array 테스트 결과
+     */
+    private function probeWebsocketEndpoint(string $url): array
+    {
         try {
-            $host = $config['websocket_host'] ?? 'localhost';
-            $port = (int) ($config['websocket_port'] ?? 8080);
-            $scheme = $config['websocket_scheme'] ?? 'https';
-
-            // Reverb 서버 상태 확인 (기본 HTTP 엔드포인트)
-            $url = sprintf('%s://%s:%d', $scheme, $host, $port);
-
             // Reverb 는 통상 localhost·사내 IP 에서 동작하므로 사설 주소 자체는 정상 구성이다.
             // 다만 이 진단 요청을 임의 목적지 탐색에 전용하지 못하도록, 정상 설정에서는 나올 수
             // 없는 값(userinfo 위장, http/https 이외 scheme, 제어문자 주입)은 거부한다.
@@ -426,6 +486,7 @@ class DriverConnectionTester
             ];
         } catch (\Exception $e) {
             Log::warning('Websocket connection test failed', [
+                'url' => $url,
                 'error' => $e->getMessage(),
             ]);
 

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Template;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\Template;
@@ -203,9 +204,13 @@ class PublicLayoutControllerTest extends TestCase
 
         // 캐시 초기화 — CacheInterface 를 통해 코어 캐시 prefix 일관 사용
         // (Laravel Cache facade 의 global `CACHE_PREFIX` 와 CoreCacheDriver 의
-        // `g7:core` prefix 가 합쳐진 실제 키와 동등하게 조회/삭제하기 위함)
-        $coreCache = app(\App\Contracts\Extension\CacheInterface::class);
-        $coreCache->forget("layout.{$template->identifier}.{$layout->name}.v0");
+        // `g7:core` prefix 가 합쳐진 실제 키와 동등하게 조회/삭제하기 위함).
+        // `?v` 생략 시 현재 확장 캐시 버전으로 폴백하므로 (#588 — `.v0` 사각 키 방지)
+        // 버전을 시드해 결정적 키로 검증한다
+        Cache::put('g7:core:ext.cache_version', 1234);
+
+        $coreCache = app(CacheInterface::class);
+        $coreCache->forget("layout.{$template->identifier}.{$layout->name}.v1234");
         $coreCache->forget("template.{$template->id}.layout.{$layout->name}");
 
         // Act: 첫 번째 요청 (캐시 생성)
@@ -214,7 +219,7 @@ class PublicLayoutControllerTest extends TestCase
 
         // 캐시가 생성되었는지 CacheInterface 로 확인 (컨트롤러가 사용하는 동일 경로)
         $this->assertTrue(
-            $coreCache->has("layout.{$template->identifier}.{$layout->name}.v0"),
+            $coreCache->has("layout.{$template->identifier}.{$layout->name}.v1234"),
             '레이아웃 응답이 CoreCacheDriver(g7:core 접두사) 에 캐시되어야 함',
         );
 
@@ -252,7 +257,7 @@ class PublicLayoutControllerTest extends TestCase
             'content' => ['meta' => ['title' => 'Dashboard'], 'data_sources' => [], 'components' => []],
         ]);
 
-        $coreCache = app(\App\Contracts\Extension\CacheInterface::class);
+        $coreCache = app(CacheInterface::class);
         $version = 1781151505;
         $nonce = 7;
         // 편집 모드(.meta) — `core.templates.layouts.edit` 권한 보유 사용자로 인증.

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Extension\PluginManager;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\Admin\UpdatePluginSettingsRequest;
+use App\Services\DriverRegistryService;
 use App\Services\PluginSettingsService;
 use App\Support\SensitiveSettingMask;
 use Illuminate\Http\JsonResponse;
@@ -50,6 +51,34 @@ class PluginSettingsController extends AdminBaseController
     }
 
     /**
+     * 설정 스키마가 public_asset_disk 키를 선언한 플러그인의 응답에
+     * 공개 자산 디스크 카탈로그(available_public_asset_disks)를 부착합니다.
+     *
+     * 화면이 /api/admin/settings(core.settings.read)를 따로 조회하게 두면 이
+     * 화면의 권한(core.plugins.read)과 표면이 갈려, 커스텀 역할에서 카탈로그만
+     * 조용히 비는 비대칭이 생깁니다. 설정 응답 단일 표면에서 함께 내려 권한 축을
+     * 일치시킵니다 (ecommerce 모듈 설정 응답의 동명 키와 동형 계약).
+     * 저장 시에는 스키마 기반 검증 whitelist 가 이 키를 걸러 설정에 남지 않습니다.
+     *
+     * @param  string  $identifier  플러그인 식별자
+     * @param  array<string, mixed>  $settings  응답에 실을 설정
+     * @return array<string, mixed> 카탈로그가 부착된 설정
+     */
+    private function withPublicAssetCatalog(string $identifier, array $settings): array
+    {
+        $plugin = $this->pluginManager->getPlugin($identifier);
+
+        if ($plugin === null || ! array_key_exists('public_asset_disk', $plugin->getSettingsSchema())) {
+            return $settings;
+        }
+
+        $settings['available_public_asset_disks'] = app(DriverRegistryService::class)
+            ->getAvailableDrivers('public_asset');
+
+        return $settings;
+    }
+
+    /**
      * 플러그인 설정을 조회합니다.
      *
      * @param  string  $identifier  플러그인 식별자
@@ -63,7 +92,10 @@ class PluginSettingsController extends AdminBaseController
             return $this->notFound('plugins.not_found');
         }
 
-        return $this->success('common.success', $this->maskSensitive($identifier, $settings));
+        return $this->success(
+            'common.success',
+            $this->withPublicAssetCatalog($identifier, $this->maskSensitive($identifier, $settings))
+        );
     }
 
     /**
@@ -87,9 +119,14 @@ class PluginSettingsController extends AdminBaseController
             return $this->error('plugins.settings.update_failed', 500);
         }
 
+        // 저장 응답에도 카탈로그 재부착 — 화면 폼 상태가 응답으로 갱신되므로
+        // 누락 시 저장 직후 선택지가 비어 보인다 (ecommerce 저장 응답과 동형)
         return $this->success(
             'plugins.settings.updated',
-            $this->maskSensitive($identifier, $this->pluginSettingsService->get($identifier) ?? [])
+            $this->withPublicAssetCatalog(
+                $identifier,
+                $this->maskSensitive($identifier, $this->pluginSettingsService->get($identifier) ?? [])
+            )
         );
     }
 

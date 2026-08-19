@@ -47,6 +47,24 @@ class ScheduleCommandValidator
     /** 허용 개수를 넘는 위치 인자가 쓰임 */
     public const ARTISAN_REASON_ARGUMENT = 'argument_denied';
 
+    /** Shell — 게이트 off 또는 화이트리스트 빔 */
+    public const SHELL_REASON_DISABLED = 'shell_disabled';
+
+    /** Shell — 셸 메타문자/제어문자로 토큰화 불가 */
+    public const SHELL_REASON_METACHARACTER = 'shell_metacharacter';
+
+    /** Shell — 첫 토큰 basename 이 화이트리스트에 없음 */
+    public const SHELL_REASON_NOT_ALLOWED = 'shell_not_allowlisted';
+
+    /** Shell — 완전 거부형 인터프리터 / 인자 없는 인터프리터 / 스크립트 자리 artisan */
+    public const SHELL_REASON_INTERPRETER = 'shell_interpreter';
+
+    /** Shell — 인터프리터 뒤 스크립트 자리가 하이픈(인라인 코드 플래그) */
+    public const SHELL_REASON_INLINE_CODE = 'shell_inline_code';
+
+    /** Shell — 스크립트 경로 형태 위반(상대경로 / `..` / `#`) */
+    public const SHELL_REASON_SCRIPT_PATH = 'shell_script_path';
+
     /** 셸 해석을 유발하는 메타문자 — 하나라도 있으면 인자 배열 실행이 불가하므로 거부 */
     private const SHELL_METACHARACTERS = [
         '|', '&', ';', '$', '`', '>', '<', '(', ')', '{', '}',
@@ -56,16 +74,35 @@ class ScheduleCommandValidator
     /**
      * Shell 타입 command 를 실행해도 되는지 판정합니다.
      *
-     * 게이트가 켜져 있고, 화이트리스트가 비어있지 않으며, 메타문자가 없고,
-     * 첫 토큰의 basename 이 화이트리스트와 완전 일치할 때만 true.
+     * 판정은 전적으로 `inspectShellCommand()` 에 위임한다 — 사유가 필요 없는 호출부
+     * (실행부의 마지막 방어선 등)를 위한 bool 형태이며, 두 경로의 결과가 갈릴 여지가 없다.
      *
      * @param  string  $command  스케줄에 저장된 shell command 문자열
      * @return bool 실행을 허용하면 true
      */
     public static function isShellCommandAllowed(string $command): bool
     {
+        return self::inspectShellCommand($command)['allowed'];
+    }
+
+    /**
+     * Shell command 를 실행 가능한지 판정하고 거부 사유를 함께 돌려줍니다.
+     *
+     * 판정 순서:
+     *  1. 게이트 off 또는 화이트리스트 빔 → SHELL_REASON_DISABLED
+     *  2. 메타문자/제어문자로 토큰화 불가 → SHELL_REASON_METACHARACTER
+     *  3. 첫 토큰 basename 이 화이트리스트에 없음 → SHELL_REASON_NOT_ALLOWED
+     *  4. 첫 토큰이 완전 거부형(reject_binaries) → SHELL_REASON_INTERPRETER (화이트리스트보다 우선)
+     *  5. 첫 토큰이 스크립트 실행형 인터프리터 → 스크립트 자리 형태 규칙 적용
+     *  6. 그 외(일반 스크립트, 예 backup.sh) → 통과 (기존 계약 보존)
+     *
+     * @param  string  $command  스케줄에 저장된 shell command 문자열
+     * @return array{allowed: bool, reason: string|null}
+     */
+    public static function inspectShellCommand(string $command): array
+    {
         if (! (bool) config('schedule_security.shell.enabled', false)) {
-            return false;
+            return self::shellVerdict(false, self::SHELL_REASON_DISABLED);
         }
 
         $allowed = array_values(array_filter(array_map(
@@ -74,16 +111,160 @@ class ScheduleCommandValidator
         )));
 
         if ($allowed === []) {
-            return false;
+            return self::shellVerdict(false, self::SHELL_REASON_DISABLED);
         }
 
         $tokens = self::tokenize($command);
 
         if ($tokens === null || $tokens === []) {
+            return self::shellVerdict(false, self::SHELL_REASON_METACHARACTER);
+        }
+
+        $binary = basename($tokens[0]);
+
+        if (! in_array($binary, $allowed, true)) {
+            return self::shellVerdict(false, self::SHELL_REASON_NOT_ALLOWED);
+        }
+
+        $normalized = self::normalizeShellBinary($binary);
+
+        // 완전 거부형 — 화이트리스트에 등재돼 있어도 실행하지 않는다.
+        if (in_array($normalized, self::shellList('reject_binaries'), true)) {
+            return self::shellVerdict(false, self::SHELL_REASON_INTERPRETER);
+        }
+
+        // 스크립트 실행형 인터프리터 — 첫 인자(스크립트 자리)에 형태 규칙을 적용한다.
+        if (in_array($normalized, self::shellList('script_interpreters'), true)) {
+            return self::inspectInterpreterScript($tokens);
+        }
+
+        // 일반 스크립트(인터프리터 아님) — 기존 계약 보존.
+        return self::shellVerdict(true, null);
+    }
+
+    /**
+     * 인터프리터 뒤 스크립트 자리(첫 인자)가 허용 형태인지 판정합니다.
+     *
+     * 인스톨러 선례 `public/install/includes/binary-path-policy.php` 의
+     * `installer_binary_path_shape_ok`("하이픈 선두 토큰 거부 + `..`/`#` 차단 + 절대경로 요구")
+     * 를 스케줄 Shell 스크립트 자리에 이식한 것이다.
+     *
+     * @param  array<int, string>  $tokens  토큰 배열 (첫 원소는 인터프리터)
+     * @return array{allowed: bool, reason: string|null}
+     */
+    private static function inspectInterpreterScript(array $tokens): array
+    {
+        // 인자 0개 — 실행할 스크립트가 없다(인터프리터 REPL/셸 기동).
+        if (! isset($tokens[1]) || $tokens[1] === '') {
+            return self::shellVerdict(false, self::SHELL_REASON_INTERPRETER);
+        }
+
+        $script = $tokens[1];
+
+        // 하이픈 선두 = 인라인 코드/옵션 플래그(`-c`/`-e`/`-r`/`-m`/`-d`/`-x` 등) — 일괄 차단.
+        if ($script[0] === '-') {
+            return self::shellVerdict(false, self::SHELL_REASON_INLINE_CODE);
+        }
+
+        // 스크립트 자리 basename 이 artisan 이면 거부 — 코어 Artisan 축은 Artisan 타입으로.
+        $deniedNames = array_map(
+            static fn ($name): string => strtolower(trim((string) $name)),
+            self::shellList('denied_script_names'),
+        );
+
+        if (in_array(strtolower(basename(str_replace('\\', '/', $script))), $deniedNames, true)) {
+            return self::shellVerdict(false, self::SHELL_REASON_INTERPRETER);
+        }
+
+        // `#` 이후를 주석으로 흘려 확장자를 위장하는 트릭 차단.
+        if (str_contains($script, '#')) {
+            return self::shellVerdict(false, self::SHELL_REASON_SCRIPT_PATH);
+        }
+
+        // `..` 세그먼트 차단 (CWD 상대 이동/트래버설).
+        if (preg_match('#(^|[/\\\\])\.\.([/\\\\]|$)#', $script) === 1) {
+            return self::shellVerdict(false, self::SHELL_REASON_SCRIPT_PATH);
+        }
+
+        // 스크립트는 절대경로여야 한다 (CWD 에 의존한 실행 차단).
+        if (! self::isAbsolutePath($script)) {
+            return self::shellVerdict(false, self::SHELL_REASON_SCRIPT_PATH);
+        }
+
+        // 스크립트 뒤 인자는 스크립트 소유이므로 검사하지 않는다.
+        return self::shellVerdict(true, null);
+    }
+
+    /**
+     * 절대경로인지 판정합니다 (POSIX / Windows 드라이브 / UNC).
+     *
+     * @param  string  $token  경로 토큰
+     * @return bool 절대경로면 true
+     */
+    private static function isAbsolutePath(string $token): bool
+    {
+        if ($token === '') {
             return false;
         }
 
-        return in_array(basename($tokens[0]), $allowed, true);
+        if ($token[0] === '/') {
+            return true;
+        }
+
+        if (preg_match('#^[A-Za-z]:[\\\\/]#', $token) === 1) {
+            return true;
+        }
+
+        return str_starts_with($token, '\\\\');
+    }
+
+    /**
+     * shell 정책 배열 설정을 소문자 문자열 목록으로 정규화합니다.
+     *
+     * @param  string  $key  `schedule_security.shell` 하위 키
+     * @return array<int, string>
+     */
+    /**
+     * 인터프리터/거부형 분류용으로 바이너리 이름을 정규화합니다.
+     *
+     * 분류 목록(`script_interpreters`/`reject_binaries`)은 기본 이름만 담는다.
+     * 운영자가 Windows 관례(`python.exe`)나 버전 접미사(`python3.12`, `php8.2`)로
+     * 화이트리스트에 등재하면 정확 일치 분류가 비켜가 인터프리터가 "일반 스크립트 —
+     * 통과" 분기를 타고, `-c` 인라인 코드 차단(KVE-2026-1653)이 무력화된다.
+     * 화이트리스트 대조 자체는 운영자가 적은 원문 그대로 유지한다 — 여기서 접는
+     * 것은 위험 분류뿐이다.
+     *
+     * @param  string  $binary  첫 토큰의 basename
+     * @return string 소문자 + 실행 확장자(.exe/.bat/.cmd/.com) 제거 + 후행 버전 숫자 제거
+     */
+    private static function normalizeShellBinary(string $binary): string
+    {
+        $name = strtolower($binary);
+        $name = (string) preg_replace('/\.(exe|bat|cmd|com)$/', '', $name);
+
+        // 후행 버전 접미사(python3.12 → python, php8.2 → php)를 접는다.
+        // python3 이 python 으로 접혀도 두 이름 모두 분류 목록에 있어 판정은 동일하다.
+        return (string) preg_replace('/[0-9][0-9.]*$/', '', $name);
+    }
+
+    private static function shellList(string $key): array
+    {
+        return array_values(array_filter(array_map(
+            static fn ($value): string => strtolower(trim((string) $value)),
+            (array) config('schedule_security.shell.'.$key, []),
+        )));
+    }
+
+    /**
+     * Shell 판정 결과 배열을 만듭니다.
+     *
+     * @param  bool  $allowed  허용 여부
+     * @param  string|null  $reason  거부 사유 코드
+     * @return array{allowed: bool, reason: string|null}
+     */
+    private static function shellVerdict(bool $allowed, ?string $reason = null): array
+    {
+        return ['allowed' => $allowed, 'reason' => $reason];
     }
 
     /**
@@ -410,15 +591,88 @@ class ScheduleCommandValidator
 
         $command = self::findRegisteredCommand($name);
 
-        if ($command === null) {
+        if ($command !== null) {
+            $class = get_class($command);
+
+            foreach ($namespaces as $namespace) {
+                if (str_starts_with($class, $namespace)) {
+                    return $command->getDefinition();
+                }
+            }
+
             return null;
         }
 
-        $class = get_class($command);
+        // 레지스트리에 없으면 프로바이더 선언 폴백 — HTTP 요청에서는 확장 프로바이더가
+        // `runningInConsole()` 게이트로 커맨드 등록을 건너뛰어 `Artisan::all()` 에
+        // 확장 커맨드가 존재하지 않는다. 관리자 화면의 스케줄 저장 검증이 바로 이
+        // 문맥이므로, 등록 인스턴스가 없을 때는 활성 프로바이더의 `$commands` 선언을
+        // 같은 기준(클래스 네임스페이스 + 실제 명령명 대조)으로 해석한다.
+        return self::resolveProviderDeclaredCommandDefinition($name, $namespaces);
+    }
 
-        foreach ($namespaces as $namespace) {
-            if (str_starts_with($class, $namespace)) {
-                return $command->getDefinition();
+    /**
+     * 활성 서비스 프로바이더가 `$commands` 프로퍼티로 선언한 확장 커맨드에서
+     * 명령명을 해석해 정의를 돌려줍니다.
+     *
+     * 판정 기준은 레지스트리 경로와 동일하다 — 커맨드 **클래스**의 네임스페이스가
+     * 확장 네임스페이스여야 하고, 요청된 이름은 그 클래스를 실제 인스턴스화해 얻은
+     * 선언 명령명과 일치해야 한다(이름만으로 위조할 수 없다). 프로바이더가 커맨드
+     * 목록을 생성자에서 동적으로 만들면 기본값이 비므로 이 폴백에는 걸리지 않는다
+     * (fail-closed 유지).
+     *
+     * @param  string  $name  명령명
+     * @param  array<int, string>  $namespaces  허용 확장 네임스페이스 접두사
+     * @return InputDefinition|null 해석 불가하면 null
+     */
+    private static function resolveProviderDeclaredCommandDefinition(string $name, array $namespaces): ?InputDefinition
+    {
+        try {
+            $providers = app()->getLoadedProviders();
+        } catch (Throwable) {
+            return null;
+        }
+
+        foreach (array_keys($providers) as $providerClass) {
+            if (! class_exists($providerClass)) {
+                continue;
+            }
+
+            try {
+                $defaults = (new \ReflectionClass($providerClass))->getDefaultProperties();
+            } catch (Throwable) {
+                continue;
+            }
+
+            foreach ((array) ($defaults['commands'] ?? []) as $commandClass) {
+                if (! is_string($commandClass) || ! class_exists($commandClass)) {
+                    continue;
+                }
+
+                $owned = false;
+                foreach ($namespaces as $namespace) {
+                    if (str_starts_with($commandClass, $namespace)) {
+                        $owned = true;
+                        break;
+                    }
+                }
+
+                if (! $owned) {
+                    continue;
+                }
+
+                try {
+                    /** @var SymfonyCommand $instance */
+                    $instance = app()->make($commandClass);
+                } catch (Throwable) {
+                    continue;
+                }
+
+                if (! $instance instanceof SymfonyCommand || $instance->getName() !== $name) {
+                    continue;
+                }
+
+                return $instance->getDefinition();
             }
         }
 

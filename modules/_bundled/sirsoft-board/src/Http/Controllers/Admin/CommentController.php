@@ -114,10 +114,10 @@ class CommentController extends AdminBaseController
             return $this->notFound('sirsoft-board::messages.boards.not_found');
         } catch (CommentDepthExceededException $e) {
             // 요청 단계 검증을 우회해 Service 관문에 걸린 경우 — 사용자 입력 문제이므로 422
-            return $this->error($e->getMessage(), 422);
+            return $this->error($e->getMessageKey(), 422, null, $e->getMessageParams());
         } catch (PostNotCommentableException $e) {
             // 블라인드·삭제된 게시글 — 서버 오류가 아니라 게시글 상태 문제이므로 422 + 사유 전달
-            return $this->error($e->getMessage(), 422);
+            return $this->error($e->getMessageKey(), 422, null, $e->getMessageParams());
         } catch (\Exception $e) {
             return $this->error('sirsoft-board::messages.comment.create_failed', 500, $e->getMessage());
         }

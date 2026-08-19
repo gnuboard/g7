@@ -201,7 +201,7 @@ const cartLayoutFixture = {
           type: 'basic',
           name: 'Span',
           props: { className: 'text-gray-500', 'data-testid': 'selected-count' },
-          text: '({{_local.selectedCount ?? 0}}/{{cartItems.data.items?.length ?? 0}})',
+          text: '({{_local.selectedItems?.length ?? 0}}/{{cartItems.data.item_count ?? 0}})',
         },
       ],
     },
@@ -605,7 +605,7 @@ describe('장바구니 페이지 레이아웃 렌더링', () => {
       const testUtils = createLayoutTest(cartLayoutFixture, {
         componentRegistry: registry,
         initialState: {
-          _local: { selectedItems: [1, 2], allSelected: true, selectedCount: 2 },
+          _local: { selectedItems: [1, 2], allSelected: true },
         },
       });
 
@@ -643,7 +643,7 @@ describe('장바구니 페이지 레이아웃 렌더링', () => {
       const testUtils = createLayoutTest(cartLayoutFixture, {
         componentRegistry: registry,
         initialState: {
-          _local: { selectedItems: [1], allSelected: false, selectedCount: 1 },
+          _local: { selectedItems: [1], allSelected: false },
         },
       });
 
@@ -680,7 +680,7 @@ describe('장바구니 페이지 레이아웃 렌더링', () => {
       const testUtils = createLayoutTest(cartLayoutFixture, {
         componentRegistry: registry,
         initialState: {
-          _local: { selectedItems: [1, 2], allSelected: true, selectedCount: 2 },
+          _local: { selectedItems: [1, 2], allSelected: true },
         },
       });
 
@@ -717,7 +717,7 @@ describe('장바구니 페이지 레이아웃 렌더링', () => {
       const testUtils = createLayoutTest(cartLayoutFixture, {
         componentRegistry: registry,
         initialState: {
-          _local: { selectedItems: [], allSelected: false, selectedCount: 0 },
+          _local: { selectedItems: [], allSelected: false },
         },
       });
 

@@ -21,6 +21,7 @@ return [
     'backup_success' => '데이터베이스 백업이 성공적으로 시작되었습니다.',
     'backup_failed' => '데이터베이스 백업에 실패했습니다.',
     'backup_error' => '데이터베이스 백업 중 오류가 발생했습니다.',
+    'database_backup_unavailable' => '데이터베이스 백업 기능은 아직 제공하지 않습니다. 설정 백업은 설정 백업 기능을 이용해 주세요.',
     'backup_path_required' => '백업 경로를 입력해주세요.',
     'restore_success' => '설정이 성공적으로 복원되었습니다.',
     'restore_failed' => '설정 복원에 실패했습니다.',
@@ -41,6 +42,11 @@ return [
     'drivers' => [
         'storage' => [
             'local' => '로컬',
+            's3' => 'Amazon S3',
+        ],
+        'public_asset' => [
+            'none' => '사용 안 함 (스트리밍)',
+            'public' => 'Public 디스크',
             's3' => 'Amazon S3',
         ],
         'cache' => [
@@ -69,6 +75,9 @@ return [
             'mailgun' => 'Mailgun',
             'ses' => 'SES (Amazon)',
         ],
+        'search' => [
+            'mysql-fulltext' => 'MySQL 전문검색',
+        ],
     ],
 
     // 드라이버 연결 테스트 메시지
@@ -82,6 +91,7 @@ return [
     's3_test_failed' => 'S3 버킷 연결에 실패했습니다.',
     's3_missing_config' => 'S3 설정이 누락되었습니다. (버킷, 리전, 액세스 키, 시크릿 키)',
     's3_sdk_missing' => 'AWS SDK가 설치되어 있지 않습니다.',
+    's3_adapter_missing' => 'S3 스토리지 어댑터(league/flysystem-aws-s3-v3)가 설치되어 있지 않습니다.',
     's3_bucket_not_found' => 'S3 버킷을 찾을 수 없습니다.',
     's3_access_denied' => 'S3 버킷에 대한 접근이 거부되었습니다.',
     's3_invalid_credentials' => 'S3 인증 정보가 올바르지 않습니다.',
@@ -103,6 +113,10 @@ return [
     // Websocket 테스트 메시지
     'websocket_test_success' => 'Websocket 서버에 성공적으로 연결되었습니다.',
     'websocket_test_failed' => 'Websocket 서버 연결에 실패했습니다.',
+    'websocket_server_test_failed' => 'Websocket 서버(백엔드 발송용) endpoint 연결에 실패했습니다. 클라이언트 endpoint 는 정상입니다.',
+    'driver_unusable_s3_adapter' => 'S3 스토리지 어댑터(league/flysystem-aws-s3-v3)가 설치되어 있지 않습니다.',
+    'driver_unusable_redis_client' => 'phpredis 확장과 predis 라이브러리가 모두 없습니다.',
+    'driver_unusable_memcached_extension' => 'memcached PHP 확장이 설치되어 있지 않습니다.',
     'websocket_invalid_host' => 'Websocket 호스트 설정이 올바르지 않습니다. 호스트에는 주소만 입력하고 계정 정보(@)나 http/https 이외의 프로토콜은 사용할 수 없습니다.',
     'websocket_connection_refused' => 'Websocket 서버에 연결할 수 없습니다. 서버가 실행 중인지 확인해주세요.',
 

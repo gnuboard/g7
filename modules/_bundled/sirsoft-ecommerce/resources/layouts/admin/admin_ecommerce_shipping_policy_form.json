@@ -22,6 +22,8 @@
         "apiAuthTypeOptions": "{{ecommerce_settings?.data?.shipping?.api_auth_types ?? []}}",
         "apiResponseTypeOptions": "{{ecommerce_settings?.data?.shipping?.api_response_types ?? []}}",
         "activeCountrySetting": "{{(_local.form?.country_settings ?? [])[_local.activeCountryTab ?? 0]}}",
+        "rangeUnitLabel": "{{(() => { const p = (_local.form?.country_settings ?? [])[_local.activeCountryTab ?? 0]?.charge_policy; if (p === 'range_quantity') return $t('sirsoft-ecommerce.admin.shipping_policy.form.unit_quantity'); if (p === 'range_weight' || p === 'range_volume_weight') return $t('sirsoft-ecommerce.admin.shipping_policy.form.unit_weight'); if (p === 'range_volume') return $t('sirsoft-ecommerce.admin.shipping_policy.form.unit_volume'); if (p === 'range_amount') return ecommerce_settings?.data?.language_currency?.default_currency ?? ''; return ''; })()}}",
+        "perUnitLabel": "{{(() => { const p = (_local.form?.country_settings ?? [])[_local.activeCountryTab ?? 0]?.charge_policy; if (p === 'per_quantity') return $t('sirsoft-ecommerce.admin.shipping_policy.form.unit_quantity'); if (p === 'per_weight' || p === 'per_volume_weight') return $t('sirsoft-ecommerce.admin.shipping_policy.form.unit_weight'); if (p === 'per_volume') return $t('sirsoft-ecommerce.admin.shipping_policy.form.unit_volume'); if (p === 'per_amount') return ecommerce_settings?.data?.language_currency?.default_currency ?? ''; return ''; })()}}",
         "activeCountryCode": "{{(_local.form?.country_settings ?? [])[_local.activeCountryTab ?? 0]?.country_code ?? ''}}",
         "isReadOnly": "{{!!route.id && policy?.data?.abilities?.can_update !== true}}"
     },

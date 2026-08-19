@@ -969,7 +969,7 @@
                               {
                                 "handler": "toast",
                                 "params": {
-                                  "message": "$t:sirsoft-board.admin.settings.notification_definitions.save_error",
+                                  "message": "{{error.message ?? '$t:sirsoft-board.admin.settings.notification_definitions.save_error'}}",
                                   "type": "error"
                                 }
                               }

@@ -926,7 +926,7 @@
       "daily_report_limit_hint": "하루(자정 기준) 전체 게시판 통틀어 신고할 수 있는 최대 횟수. 0이면 제한 없음. (0~100)",
       "rejection_limit_count": "반려 누적 제한 (건수)",
       "rejection_limit_days": "반려 누적 제한 기간 (일)",
-      "rejection_limit_hint": "이 기간 내 반려 건수 초과 시 신고 기능이 차단됩니다. 건수 0이면 제한 없음. (건수: 0~50, 기간: 1~365일)",
+      "rejection_limit_hint": "이 기간 내 반려 건수가 설정값에 도달하면 신고 기능이 차단됩니다. 건수 0이면 제한 없음. (건수: 0~50, 기간: 1~365일)",
       "report_cooldown_seconds": "연속 신고 쿨타임 (초)",
       "report_cooldown_seconds_hint": "연속 신고 최소 간격. 0이면 제한 없음. (0~3600초)",
       "notify_author_on_report_action": "신고 처리 알림",

@@ -5,6 +5,9 @@ namespace Modules\Sirsoft\Board\Tests\Feature\User;
 // ModuleTestCase를 수동으로 require (autoload 전에 로드 필요)
 require_once __DIR__.'/../../ModuleTestCase.php';
 
+use App\Http\Middleware\PermissionMiddleware;
+use App\Models\Permission;
+use App\Models\Role;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Enums\PostStatus;
@@ -49,6 +52,10 @@ class BoardPopularApiTest extends ModuleTestCase
 
     /**
      * 인기 게시글 API가 올바른 구조로 응답하는지 테스트
+     *
+     * @scenario case=popular_readable_filter
+     *
+     * @effects unreadable_board_titles_absent_for_caller
      */
     public function test_popular_returns_correct_structure(): void
     {
@@ -139,6 +146,7 @@ class BoardPopularApiTest extends ModuleTestCase
     {
         // Given: view_count가 다른 게시글 생성
         $board = Board::factory()->create(['is_active' => true]);
+        $this->grantGuestRead($board);
         DB::table('board_posts')->insert([
             ['board_id' => $board->id, 'title' => 'Post 1', 'content' => 'Content 1', 'view_count' => 100, 'status' => PostStatus::Published->value, 'ip_address' => '127.0.0.1', 'created_at' => now(), 'updated_at' => now()],
             ['board_id' => $board->id, 'title' => 'Post 2', 'content' => 'Content 2', 'view_count' => 300, 'status' => PostStatus::Published->value, 'ip_address' => '127.0.0.1', 'created_at' => now(), 'updated_at' => now()],
@@ -164,6 +172,7 @@ class BoardPopularApiTest extends ModuleTestCase
     {
         // Given: 오늘과 어제 게시글 생성
         $board = Board::factory()->create(['is_active' => true]);
+        $this->grantGuestRead($board);
         DB::table('board_posts')->insert([
             ['board_id' => $board->id, 'title' => 'Today Post', 'content' => 'Content', 'view_count' => 100, 'status' => PostStatus::Published->value, 'ip_address' => '127.0.0.1', 'created_at' => now(), 'updated_at' => now()],
             ['board_id' => $board->id, 'title' => 'Yesterday Post', 'content' => 'Content', 'view_count' => 200, 'status' => PostStatus::Published->value, 'ip_address' => '127.0.0.1', 'created_at' => now()->subDay(), 'updated_at' => now()->subDay()],
@@ -187,6 +196,7 @@ class BoardPopularApiTest extends ModuleTestCase
     {
         // Given: 최근 1주일과 2주 전 게시글 생성
         $board = Board::factory()->create(['is_active' => true]);
+        $this->grantGuestRead($board);
         DB::table('board_posts')->insert([
             ['board_id' => $board->id, 'title' => 'This Week', 'content' => 'Content', 'view_count' => 100, 'status' => PostStatus::Published->value, 'ip_address' => '127.0.0.1', 'created_at' => now()->subDays(3), 'updated_at' => now()],
             ['board_id' => $board->id, 'title' => 'Two Weeks Ago', 'content' => 'Content', 'view_count' => 200, 'status' => PostStatus::Published->value, 'ip_address' => '127.0.0.1', 'created_at' => now()->subWeeks(2), 'updated_at' => now()],
@@ -211,6 +221,7 @@ class BoardPopularApiTest extends ModuleTestCase
     {
         // Given: 1년 이내/이전 게시글 생성
         $board = Board::factory()->create(['is_active' => true]);
+        $this->grantGuestRead($board);
         DB::table('board_posts')->insert([
             ['board_id' => $board->id, 'title' => 'Recent', 'content' => 'Content', 'view_count' => 100, 'status' => PostStatus::Published->value, 'ip_address' => '127.0.0.1', 'created_at' => now(), 'updated_at' => now()],
             ['board_id' => $board->id, 'title' => 'Six Months Ago', 'content' => 'Content', 'view_count' => 200, 'status' => PostStatus::Published->value, 'ip_address' => '127.0.0.1', 'created_at' => now()->subMonths(6), 'updated_at' => now()],
@@ -242,6 +253,7 @@ class BoardPopularApiTest extends ModuleTestCase
     {
         // Given: 1년 이내/이전 게시글 생성
         $board = Board::factory()->create(['is_active' => true]);
+        $this->grantGuestRead($board);
         DB::table('board_posts')->insert([
             ['board_id' => $board->id, 'title' => 'Recent', 'content' => 'Content', 'view_count' => 100, 'status' => PostStatus::Published->value, 'ip_address' => '127.0.0.1', 'created_at' => now(), 'updated_at' => now()],
             ['board_id' => $board->id, 'title' => 'Over One Year', 'content' => 'Content', 'view_count' => 300, 'status' => PostStatus::Published->value, 'ip_address' => '127.0.0.1', 'created_at' => now()->subMonths(13), 'updated_at' => now()],
@@ -313,6 +325,7 @@ class BoardPopularApiTest extends ModuleTestCase
     {
         // Given: 게시글과 댓글 생성
         $board = Board::factory()->create(['is_active' => true]);
+        $this->grantGuestRead($board);
         // comments_count 컬럼에 직접 값 설정 (캐시 컬럼 방식)
         $postId = DB::table('board_posts')->insertGetId([
             'board_id' => $board->id,
@@ -343,6 +356,7 @@ class BoardPopularApiTest extends ModuleTestCase
     {
         // Given: 게스트가 작성한 게시글
         $board = Board::factory()->create(['is_active' => true]);
+        $this->grantGuestRead($board);
         DB::table('board_posts')->insert([
             'board_id' => $board->id,
             'title' => 'Guest Post',
@@ -455,6 +469,10 @@ class BoardPopularApiTest extends ModuleTestCase
             ]);
         }
 
+        // 공개 인기글은 게시판별 열람 권한(posts.read)을 통과한 게시판만 노출한다.
+        // 프로덕션 공개 게시판과 동일하게 guest read 권한을 부여한다.
+        $this->grantGuestRead($board);
+
         for ($i = 0; $i < $postCount; $i++) {
             DB::table('board_posts')->insert([
                 'board_id' => $board->id,
@@ -470,5 +488,29 @@ class BoardPopularApiTest extends ModuleTestCase
         }
 
         return $board;
+    }
+
+    /**
+     * 게시판에 비회원(guest) 읽기 권한(posts.read)을 부여합니다.
+     *
+     * 공개 인기글 API 는 게시판별 열람 권한을 응답 시점에 적용하므로,
+     * 공개 노출을 기대하는 테스트 게시판은 프로덕션처럼 guest read 권한을 갖춰야 한다.
+     *
+     * @param  Board  $board  대상 게시판
+     */
+    private function grantGuestRead(Board $board): void
+    {
+        $guestRole = Role::where('identifier', 'guest')->first();
+        if (! $guestRole) {
+            return;
+        }
+
+        $perm = Permission::firstOrCreate(
+            ['identifier' => "sirsoft-board.{$board->slug}.posts.read"],
+            ['name' => ['ko' => 'read', 'en' => 'read'], 'type' => 'user']
+        );
+        $guestRole->permissions()->syncWithoutDetaching([$perm->id]);
+
+        PermissionMiddleware::clearGuestRoleCache();
     }
 }

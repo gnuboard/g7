@@ -2,20 +2,21 @@
 
 namespace Plugins\Sirsoft\PayKginicis\Tests\Feature\Controllers;
 
-use Mockery;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Mockery;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderPaymentFactory;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
-use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Models\OrderAddress;
+use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Plugins\Sirsoft\PayKginicis\Repositories\CbtCvsOperationsRepositoryInterface;
-use Plugins\Sirsoft\PayKginicis\Services\CbtCvsOperationsService;
 use Plugins\Sirsoft\PayKginicis\Services\CbtCheckoutTokenService;
+use Plugins\Sirsoft\PayKginicis\Services\CbtCvsOperationsService;
 use Plugins\Sirsoft\PayKginicis\Services\CbtReconciliationService;
 use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
 use Plugins\Sirsoft\PayKginicis\Tests\PluginTestCase;
@@ -64,7 +65,7 @@ class CbtPaymentControllerTest extends PluginTestCase
         $this->app->instance(KgInicisApiService::class, $apiService);
 
         $response = $this->get('/plugins/sirsoft-pay_kginicis/payment/cbt/callback?'
-            . http_build_query([
+            .http_build_query([
                 'oid' => 'JP-ORDER-001',
                 'sid' => 'SID001',
                 'resultCode' => 'OK',
@@ -107,7 +108,7 @@ class CbtPaymentControllerTest extends PluginTestCase
         $this->app->instance(KgInicisApiService::class, $apiService);
 
         $response = $this->get('/plugins/sirsoft-pay_kginicis/payment/cbt/callback?'
-            . http_build_query([
+            .http_build_query([
                 'oid' => 'JP-ORDER-CVS-001',
                 'sid' => 'SID-CVS-001',
                 'resultCode' => 'OK',
@@ -139,7 +140,7 @@ class CbtPaymentControllerTest extends PluginTestCase
         $this->app->instance(KgInicisApiService::class, $apiService);
 
         $response = $this->get('/plugins/sirsoft-pay_kginicis/payment/cbt/callback?'
-            . http_build_query([
+            .http_build_query([
                 'oid' => 'JP-ORDER-CANCEL-001',
                 'sid' => 'SID-CANCEL-001',
                 'resultCode' => 'FAIL',
@@ -168,7 +169,7 @@ class CbtPaymentControllerTest extends PluginTestCase
         $this->app->instance(KgInicisApiService::class, $apiService);
 
         $response = $this->get('/plugins/sirsoft-pay_kginicis/payment/cbt/callback?'
-            . http_build_query([
+            .http_build_query([
                 'oid' => 'JP-ORDER-PAYPAY-FAIL-001',
                 'sid' => 'SID-PAYPAY-FAIL-001',
                 'resultCode' => 'processing_failure',
@@ -653,7 +654,7 @@ class CbtPaymentControllerTest extends PluginTestCase
         $this->app->instance(KgInicisApiService::class, $apiService);
 
         $response = $this->get('/plugins/sirsoft-pay_kginicis/payment/cbt/callback?'
-            . http_build_query([
+            .http_build_query([
                 'oid' => 'JP-ORDER-003',
                 'sid' => 'SID003',
                 'resultCode' => 'OK',
@@ -712,7 +713,7 @@ class CbtPaymentControllerTest extends PluginTestCase
         $this->app->instance(KgInicisApiService::class, $apiService);
 
         $response = $this->get('/plugins/sirsoft-pay_kginicis/payment/cbt/callback?'
-            . http_build_query([
+            .http_build_query([
                 'oid' => 'JP-ORDER-CBT-POST-COMMIT',
                 'sid' => 'SID_POST_COMMIT',
                 'resultCode' => 'OK',
@@ -763,7 +764,7 @@ class CbtPaymentControllerTest extends PluginTestCase
         $this->app->instance(KgInicisApiService::class, $apiService);
 
         $response = $this->get('/plugins/sirsoft-pay_kginicis/payment/cbt/callback?'
-            . http_build_query([
+            .http_build_query([
                 'oid' => 'JP-ORDER-004',
                 'sid' => 'SID004',
                 'resultCode' => 'OK',
@@ -810,7 +811,7 @@ class CbtPaymentControllerTest extends PluginTestCase
         $this->app->instance(KgInicisApiService::class, $apiService);
 
         $response = $this->get('/plugins/sirsoft-pay_kginicis/payment/cbt/callback?'
-            . http_build_query([
+            .http_build_query([
                 'oid' => 'JP-ORDER-012',
                 'sid' => 'SID012',
                 'resultCode' => 'OK',
@@ -862,7 +863,7 @@ class CbtPaymentControllerTest extends PluginTestCase
         $this->app->instance(KgInicisApiService::class, $apiService);
 
         $response = $this->get('/plugins/sirsoft-pay_kginicis/payment/cbt/callback?'
-            . http_build_query([
+            .http_build_query([
                 'oid' => 'JP-ORDER-013',
                 'sid' => 'SID013',
                 'resultCode' => 'OK',
@@ -923,7 +924,7 @@ class CbtPaymentControllerTest extends PluginTestCase
         $this->app->instance(KgInicisApiService::class, $apiService);
 
         $response = $this->get('/plugins/sirsoft-pay_kginicis/payment/cbt/callback?'
-            . http_build_query([
+            .http_build_query([
                 'oid' => 'JP-ORDER-PAYPAY-OK',
                 'sid' => 'SID-PAYPAY-OK',
                 'resultCode' => 'OK',
@@ -955,6 +956,9 @@ class CbtPaymentControllerTest extends PluginTestCase
             'oid' => 'JP-ORDER-002',
             'price' => 99,
             'timestamp' => date('YmdHis'),
+            // 계약 변경(CbtHashDataRequest): checkout_token 이 필수로 승격되어 미전송 시 422 검증
+            // 오류가 먼저 난다. 금액 대조는 토큰 검증보다 앞 단계이므로 임의 토큰으로 충분하다.
+            'checkout_token' => 'token-not-reached',
         ]);
 
         $response->assertStatus(422)
@@ -989,6 +993,9 @@ class CbtPaymentControllerTest extends PluginTestCase
             'timestamp' => date('YmdHis'),
             'buyer_email' => 'attacker@example.jp',
             'buyer_phone' => '09012345678',
+            // 계약 변경(CbtHashDataRequest): checkout_token 필수 승격 — 구매자 대조(403)는
+            // 토큰 검증보다 앞 단계이므로 임의 토큰으로 충분하다.
+            'checkout_token' => 'token-not-reached',
         ]);
 
         $response->assertStatus(403)
@@ -1020,7 +1027,7 @@ class CbtPaymentControllerTest extends PluginTestCase
         $checkoutTokenService = Mockery::mock(CbtCheckoutTokenService::class);
         $checkoutTokenService->shouldReceive('verify')
             ->once()
-            ->with('token-ok', 'JP-ORDER-006', 100, 'BUYER@example.jp', '09012345678', Mockery::type(\Illuminate\Http\Request::class))
+            ->with('token-ok', 'JP-ORDER-006', 100, 'BUYER@example.jp', '09012345678', Mockery::type(Request::class))
             ->andReturn(true);
 
         $this->app->instance(OrderProcessingService::class, $orderService);
@@ -1107,6 +1114,66 @@ class CbtPaymentControllerTest extends PluginTestCase
         $this->assertStringContainsString('.', $response->json('data.checkout_token'));
     }
 
+    /**
+     * OID 상한(40자) 초과는 CbtCheckoutTokenRequest 가 표준 422 로 차단해야 한다
+     * (국내 SignatureRequest 와 동일 강도 — 종전 CBT 경로만 raw 입력이던 드리프트 해소).
+     */
+    public function test_cbt_checkout_token_rejects_overlong_oid(): void
+    {
+        $apiService = Mockery::mock(KgInicisApiService::class);
+        $apiService->shouldNotReceive('isJapanEnabled');
+        $this->app->instance(KgInicisApiService::class, $apiService);
+
+        $response = $this->postJson('/api/plugins/sirsoft-pay_kginicis/payment/cbt/checkout-token', [
+            'oid' => str_repeat('A', 41),
+            'price' => 100,
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['oid']);
+    }
+
+    /**
+     * checkout_token 누락은 표준 422 로 차단해야 한다.
+     * (계약 변경: 종전에는 빈 토큰이 토큰 검증 단계까지 흘러가 403 이었으나,
+     * CbtHashDataRequest 의 required 승격으로 422 가 된다 — 클라이언트는 `.ok` 만 검사)
+     */
+    public function test_cbt_hash_data_rejects_missing_checkout_token(): void
+    {
+        $apiService = Mockery::mock(KgInicisApiService::class);
+        $apiService->shouldNotReceive('generateCbtHashData');
+        $this->app->instance(KgInicisApiService::class, $apiService);
+
+        $response = $this->postJson('/api/plugins/sirsoft-pay_kginicis/payment/cbt/hash-data', [
+            'oid' => 'JP-ORDER-TOKEN-MISSING',
+            'price' => 100,
+            'timestamp' => date('YmdHis'),
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['checkout_token']);
+    }
+
+    /**
+     * 배열 주입(`oid[]=x`)은 string 규칙이 표준 422 로 차단해야 한다.
+     */
+    public function test_cbt_hash_data_rejects_array_injection(): void
+    {
+        $apiService = Mockery::mock(KgInicisApiService::class);
+        $apiService->shouldNotReceive('generateCbtHashData');
+        $this->app->instance(KgInicisApiService::class, $apiService);
+
+        $response = $this->postJson('/api/plugins/sirsoft-pay_kginicis/payment/cbt/hash-data', [
+            'oid' => ['x'],
+            'price' => 100,
+            'timestamp' => date('YmdHis'),
+            'checkout_token' => 'token-not-reached',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['oid']);
+    }
+
     public function test_cbt_callback_stores_sanitized_pg_response_only(): void
     {
         $order = $this->makePendingJpyOrder('JP-ORDER-009', 100);
@@ -1149,7 +1216,7 @@ class CbtPaymentControllerTest extends PluginTestCase
         $this->app->instance(KgInicisApiService::class, $apiService);
 
         $response = $this->get('/plugins/sirsoft-pay_kginicis/payment/cbt/callback?'
-            . http_build_query([
+            .http_build_query([
                 'oid' => 'JP-ORDER-009',
                 'sid' => 'SID009',
                 'resultCode' => 'OK',
@@ -1192,7 +1259,7 @@ class CbtPaymentControllerTest extends PluginTestCase
         $this->app->instance(KgInicisApiService::class, $apiService);
 
         $this->get('/plugins/sirsoft-pay_kginicis/payment/cbt/callback?'
-            . http_build_query([
+            .http_build_query([
                 'oid' => 'JP-ORDER-010',
                 'sid' => 'SID010',
                 'resultCode' => 'OK',
@@ -1279,7 +1346,7 @@ class CbtPaymentControllerTest extends PluginTestCase
 
     private function makePendingJpyOrder(string $orderNumber, int $amount): Order
     {
-        $order = new Order();
+        $order = new Order;
         $order->order_number = $orderNumber;
         $order->order_status = OrderStatusEnum::PENDING_ORDER;
         $order->currency = 'JPY';
@@ -1339,8 +1406,8 @@ class CbtPaymentControllerTest extends PluginTestCase
     private function createPersistedPendingCbtCvsOrder(string $orderNumber, int $amount, array $metaOverrides = []): Order
     {
         $order = $this->createPersistedPendingJpyOrder($orderNumber, $amount);
-        $sid = 'SID-' . $orderNumber;
-        $tid = 'CBT_CVS_TID_' . str_replace('-', '_', $orderNumber);
+        $sid = 'SID-'.$orderNumber;
+        $tid = 'CBT_CVS_TID_'.str_replace('-', '_', $orderNumber);
 
         $order->payment()->update([
             'payment_status' => PaymentStatusEnum::WAITING_DEPOSIT,

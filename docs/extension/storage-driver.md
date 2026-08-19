@@ -25,6 +25,7 @@
 - [마이그레이션 가이드](#마이그레이션-가이드)
 - [API 레퍼런스](#api-레퍼런스)
 - [트러블슈팅](#트러블슈팅)
+- [S3 호환 스토리지 연결](#s3-호환-스토리지-연결)
 - [FAQ](#faq)
 
 ---
@@ -866,7 +867,17 @@ public function url(string $category, string $path): ?string
 - `$path` (string): 카테고리 하위 상대 경로
 
 **반환값**:
-- `string|null`: 파일 URL (private disk인 경우 null)
+- `string|null`: 파일 URL (직접 URL 불가 디스크이고 훅 공급도 없으면 null)
+
+**직접 URL 판정**: `public` 디스크이거나 `filesystems.disks.{disk}.url` 이 비어 있지 않은
+문자열로 설정된 디스크(S3+CDN 등)면 직접 URL 을 생성합니다. url 설정이 없거나
+빈 문자열/공백이면 null 입니다 (AWS_URL 미설정 방어).
+
+**필터 훅**: 생성 결과는 디스크 종류와 무관하게 `core.storage.filter_url` 필터 훅을
+**항상** 통과합니다 (null 도 발화 대상). 확장은 URL 을 공급(서명 URL 등)/수정(도메인
+교체)/차단(빈 문자열 반환 → 호출측 스트리밍 폴백)할 수 있습니다. 컨텍스트 6키:
+`scope`(core|module|plugin) / `identifier`(확장 식별자, 코어는 null) / `disk` /
+`category` / `path` / `full_path`.
 
 **예시**:
 ```php
@@ -874,7 +885,11 @@ public function url(string $category, string $path): ?string
 $url = $this->storage->url('images', 'product/2024/01/19/uuid.jpg');
 // → http://example.com/storage/modules/sirsoft-ecommerce/images/product/2024/01/19/uuid.jpg
 
-// local (private) disk인 경우
+// url 설정 디스크(S3+CDN)인 경우
+$url = $this->storage->url('images', 'product/2024/01/19/uuid.jpg');
+// → https://cdn.example.com/modules/sirsoft-ecommerce/images/product/2024/01/19/uuid.jpg
+
+// url 미설정 디스크(local 등)인 경우
 $url = $this->storage->url('attachments', 'notice/2024/01/19/file.pdf');
 // → null (별도 API 엔드포인트 사용해야 함)
 ```
@@ -1232,16 +1247,39 @@ class BoardModule extends AbstractModule
 - `$this->storage->url()` 호출 시 항상 null이 반환됩니다.
 
 **원인**:
-- private disk (local, s3 등)를 사용 중입니다. URL 메서드는 public disk에서만 직접 URL을 반환합니다.
+- 사용 중인 디스크에 `filesystems.disks.{disk}.url` 설정이 없습니다. url() 은
+  `public` 디스크이거나 url 이 설정된 디스크에서만 직접 URL 을 반환합니다.
+  s3 디스크라도 url(AWS_URL/관리자 S3 URL 설정)이 비어 있으면 null 입니다.
 
 **해결**:
 ```php
-// public disk를 사용하거나
+// public disk 를 사용하거나
 $module->getStorageDisk(); // → 'public'
+
+// 디스크에 url 을 설정하거나 (config/filesystems.php 또는 관리자 S3 URL 설정)
+'my_cdn' => ['driver' => 's3', ..., 'url' => 'https://cdn.example.com'],
 
 // 또는 별도 API 엔드포인트를 사용
 Route::get('/api/attachments/{id}/download', [AttachmentController::class, 'download']);
 ```
+
+---
+
+## S3 호환 스토리지 연결
+
+코어 7.0.7+ 의 S3 드라이버는 AWS 뿐 아니라 S3 API 를 제공하는 호환 스토리지(Cloudflare R2, MinIO, 네이버 클라우드 등)에도 연결할 수 있다. 관리자 > 환경설정 > 드라이버 > 파일 스토리지의 두 항목이 이를 담당한다.
+
+| 항목 | 의미 | 예시 |
+| --- | --- | --- |
+| 엔드포인트 URL | SDK 가 요청을 보내는 API 주소. 비워 두면 AWS 리전 도메인을 사용 | `https://<account-id>.r2.cloudflarestorage.com`, `http://minio.internal:9000` |
+| Path-style 주소 사용 | 버킷을 호스트가 아닌 경로에 두는 주소 형식(`endpoint/bucket/...`). MinIO 등 path-style 전용 스토리지에서 켠다 | — |
+
+- 리전은 자유 입력이다 — Cloudflare R2 는 `auto`, MinIO 는 관례상 `us-east-1` 을 쓴다.
+- **S3 URL(공개 URL)** 은 파일 공개 URL 생성에 쓰는 CDN/커스텀 도메인이며 API 요청 주소가 아니다 — API 주소는 엔드포인트 URL 에만 넣는다.
+- IP 주소 엔드포인트는 SDK 가 path-style 을 자동 적용하므로 토글과 무관하게 동작한다. 호스트명 엔드포인트에서는 토글이 주소 형식을 결정한다.
+- 연결 테스트는 실제 저장 경로와 같은 설정(엔드포인트·path-style 포함)을 사용한다.
+
+`.env` 로 설정하는 경우 대응 키는 `AWS_ENDPOINT` / `AWS_USE_PATH_STYLE_ENDPOINT` 다 (아래 FAQ Q2 의 ② 경로 참조).
 
 ---
 
@@ -1270,7 +1308,19 @@ if (Storage::disk('local')->exists($oldPath)) {
 
 ### Q2: S3로 전환하려면 어떻게 하나요?
 
-**A**: 다음 3단계만 수행하면 됩니다.
+**A**: 코어 7.0.7+ 는 S3 어댑터(`league/flysystem-aws-s3-v3`)를 기본 포함하므로 별도 패키지 설치가 필요 없습니다. 전환 경로는 두 가지입니다.
+
+**① 관리자 설정 UI (권장)** — 관리자 > 환경설정 > 드라이버 > 파일 스토리지:
+
+1. 스토리지 드라이버를 `Amazon S3` 로 선택
+2. 버킷 / 리전 / Access Key / Secret Key 입력
+3. S3 호환 스토리지(Cloudflare R2, MinIO, NCP 등)는 위 [S3 호환 스토리지 연결](#s3-호환-스토리지-연결) 절의 두 항목(엔드포인트 URL·Path-style 주소)을 함께 설정
+4. 연결 테스트 성공 후 저장 — 코어 첨부 업로드 디스크가 s3 로 전환됩니다
+   (`ATTACHMENT_DISK` env 를 명시한 경우 env 가 항상 우선. 기존 파일은 저장 당시의 disk 로 계속 서빙되므로 혼재 안전)
+
+참고: **S3 URL(공개 URL)** 칸은 파일 공개 URL 생성에 쓰는 CDN/커스텀 도메인이며, API 요청 주소가 아닙니다.
+
+**② `.env` (모듈별 커스텀)**:
 
 1. `.env` 파일에 S3 설정 추가:
    ```env
@@ -1278,6 +1328,9 @@ if (Storage::disk('local')->exists($oldPath)) {
    AWS_SECRET_ACCESS_KEY=your-secret
    AWS_DEFAULT_REGION=ap-northeast-2
    AWS_BUCKET=your-bucket
+   # S3 호환 스토리지(R2/MinIO 등)만:
+   AWS_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com
+   AWS_USE_PATH_STYLE_ENDPOINT=false
    ```
 
 2. 모듈 설정 변경:
@@ -1300,11 +1353,18 @@ if (Storage::disk('local')->exists($oldPath)) {
 
 **끝!** Service 코드는 변경할 필요가 없습니다.
 
+**직접 URL(CDN) 서빙까지 원한다면**: `filesystems.disks.s3.url`(관리자 환경설정의
+S3 URL — CDN 도메인)이 반드시 설정되어야 합니다. url 이 비어 있으면 `url()` 은
+null 을 반환해 스트리밍 경로가 유지됩니다.
+
 ---
 
 ### Q3: 여러 disk를 동시에 사용할 수 있나요?
 
-**A**: 네, 카테고리별로 다른 disk를 사용할 수 있습니다.
+**A**: 네, `getStorageDiskFor(string $category)` 를 오버라이드하면 카테고리별로 다른
+disk 를 사용할 수 있습니다. `getStorageFor($category)` 가 그 결정에 따라 디스크 단위로
+memoize 된 인스턴스를 돌려주고, ServiceProvider 의 `$storageCategoryServices` 매핑이
+해당 서비스에 카테고리 디스크 스토리지를 자동 주입합니다.
 
 ```php
 <?php
@@ -1312,37 +1372,35 @@ if (Storage::disk('local')->exists($oldPath)) {
 namespace Modules\Sirsoft\Ecommerce;
 
 use App\Extension\AbstractModule;
-use App\Contracts\Extension\StorageInterface;
-use App\Extension\Storage\ModuleStorageDriver;
 
-class EcommerceModule extends AbstractModule
+class Module extends AbstractModule
 {
     /**
-     * 카테고리별 Storage 인스턴스 캐시
+     * 카테고리별 디스크 결정 — 기본 구현은 getStorageDisk() 와 동일.
+     *
+     * 주의: 'settings' 카테고리에서 모듈 설정을 조회하면 설정 로드와 재귀 고리가
+     * 생깁니다. 설정 조회는 설정 저장과 무관한 카테고리에서만 수행하세요.
      */
-    private array $storageCache = [];
-
-    /**
-     * 카테고리별로 다른 Storage를 반환합니다.
-     */
-    public function getStorage(string $category = 'default'): StorageInterface
+    public function getStorageDiskFor(string $category): string
     {
-        if (isset($this->storageCache[$category])) {
-            return $this->storageCache[$category];
+        if ($category !== 'images') {
+            return $this->getStorageDisk();
         }
 
-        // 카테고리별 disk 설정
-        $disk = match ($category) {
-            'images' => config('sirsoft-ecommerce.image_disk', 's3'),
-            'attachments' => config('sirsoft-ecommerce.attachment_disk', 'local'),
-            default => $this->getStorageDisk(),
-        };
+        // 공개 자산 디스크 해석 (확장 개별 설정 > 코어 전역 > 미설정 → 기본 디스크)
+        $override = module_setting('sirsoft-ecommerce', 'basic_info.public_asset_disk', '');
 
-        $this->storageCache[$category] = new ModuleStorageDriver($this->getIdentifier(), $disk);
-
-        return $this->storageCache[$category];
+        return $this->resolvePublicAssetDisk(is_string($override) ? $override : '')
+            ?? $this->getStorageDisk();
     }
 }
+```
+
+```php
+// ServiceProvider — 카테고리 디스크가 필요한 서비스는 $storageCategoryServices 에 매핑
+protected array $storageCategoryServices = [
+    ProductImageService::class => 'images',
+];
 ```
 
 ---
@@ -1488,6 +1546,80 @@ class AttachmentServiceTest extends TestCase
    $url = $this->storage->url('images', $image->path);
    $image->update(['cached_url' => $url]);
    ```
+
+---
+
+## 공개 자산 전용 디스크 분리 (직접 URL/CDN 서빙)
+
+완전 공개 자산(상품/카테고리/리뷰/에디터 이미지 등)을 S3+CDN 등 원격 디스크에서
+직접 URL 로 서빙하는 옵트인 기능입니다. 미설정 시 기존 PHP 스트리밍이 100% 보존됩니다.
+
+### 설정 사슬
+
+```text
+관리자 환경설정 > 드라이버 탭 > 공개 자산 스토리지 (drivers.public_asset_disk)
+  → SettingsServiceProvider 가 core.storage.public_asset_disk 로 주입
+  → 확장의 getStorageDiskFor('images') 가 resolvePublicAssetDisk() 로 해석
+     (우선순위: 확장 개별 설정 public_asset_disk > 코어 전역 > 미설정 → 기본 디스크)
+  → ServiceProvider $storageCategoryServices 매핑으로 업로드 서비스에 주입
+  → put() 이 그 디스크에 저장, 행 disk 컬럼에 기록
+  → 모델 download_url accessor 가 행 disk 로 url() 시도 → null 이면 API 경로 폴백
+```
+
+- 선택지 카탈로그는 코어 3종(`none`/`public`/`s3`) + 플러그인이
+  `core.settings.available_public_asset_drivers` 필터 훅으로 등록한 디스크입니다.
+  플러그인은 자기 ServiceProvider 에서 `Config::set('filesystems.disks.{id}', [... 'url' => CDN])`
+  로 디스크를 정의하고 훅에 `{id, label, provider}` 를 append 합니다.
+- 확장 개별 오버라이드 화면의 카탈로그는 **그 확장의 설정 조회 응답에 부착**해 내립니다
+  (`available_public_asset_disks` 키 — ecommerce 는 모듈 설정 컨트롤러가, 플러그인은 설정
+  스키마에 `public_asset_disk` 선언 시 코어 플러그인 설정 API 가 자동 부착). 화면이 코어
+  환경설정 API 를 교차 조회하면 화면 권한과 카탈로그 권한(core.settings.read)이 갈려
+  커스텀 역할에서 선택지만 조용히 비게 됩니다.
+- `none` 은 스트리밍 유지(확장 개별 설정에서는 전역이 CDN 이어도 강제 스트리밍)입니다.
+- 플러그인 비활성화로 디스크가 config 에서 사라지면(고아 디스크) 자동으로 스트리밍
+  폴백합니다 — 저장값은 보존되므로 재활성화 시 되살아납니다.
+
+### 혼재 운용
+
+디스크 전환 시 기존 파일 이동이 필요 없습니다. 행마다 기록된 disk 를 기준으로
+서빙/삭제/이동이 동작하므로, 전환 이전 로컬 행은 스트리밍으로, 이후 원격 행은
+직접 URL 로 각자 올바르게 서빙됩니다.
+
+행에 기록된 disk 가 고아가 된 경우(그 디스크를 제공하던 플러그인을 비활성화한 뒤에도
+그 disk 로 기록된 행이 남아 있는 경우)에도 서빙·삭제는 예외 없이 동작합니다. 행 disk
+기준 스토리지를 만들 때 디스크 설정 존재 여부를 먼저 확인하고, 없으면 확장의 기본
+디스크로 폴백하기 때문입니다. 파일 자체는 도달 불가이므로 그 이미지는 404 가 되지만,
+목록·상세 화면과 삭제(상품/카테고리/리뷰 삭제 포함)는 정상 동작합니다. 이 검증을
+생략하면 미등록 디스크 접근이 예외가 되어 서빙과 삭제가 모두 500 이 됩니다.
+
+### 버킷/CDN 쪽 요구사항
+
+직접 URL 서빙은 브라우저가 그 URL 을 **인증 없이** 읽는다는 전제 위에 있습니다.
+따라서 대상 버킷/배포는 다음을 만족해야 합니다.
+
+| 요구사항 | 미충족 시 증상 |
+| --- | --- |
+| 객체가 익명 읽기 가능 (버킷 정책 `s3:GetObject` 공개 또는 CDN 공개 배포) | 화면의 그 이미지들이 전부 깨짐 (S3 는 `403 AccessDenied` 를 XML 로 응답) |
+| 공개 URL base(`S3 URL`)가 그 객체를 가리킴 | `url()` 이 null → 스트리밍 폴백(기능은 정상, CDN 이점만 없음) |
+
+관리자 화면의 썸네일은 교차 출처 공개 URL 을 `<img>` 로 직접 사용하므로 CORS 설정은
+필요하지 않습니다. 다만 그 URL 을 자바스크립트로 읽는 커스텀 확장을 만든다면 그때는
+버킷/CDN 에 CORS 규칙이 필요합니다.
+
+교차 출처 URL 에는 코어 API 클라이언트가 인증 토큰을 붙이지 않습니다 — 공개 자산은
+인증이 필요 없고, 세션 토큰이 제3자 origin 으로 나가서는 안 되기 때문입니다.
+같은 이유로 첨부 썸네일·다운로드도 교차 출처 URL 이면 인증 요청 대신 URL 을 직접 씁니다.
+
+### 서명 URL 등 커스텀 URL 공급
+
+`core.storage.filter_url` 필터 훅이 디스크 무관 항상 발화하므로, 확장이 서명 URL 을
+공급하거나 생성된 URL 을 수정/차단할 수 있습니다 (url() 절 참조).
+
+### 보안 전제
+
+권한 검사가 걸린 첨부파일(비밀글/회원 전용 게시판 첨부 등)은 배선 자체가 없습니다 —
+직접 URL 은 서버 스트리밍 경로의 권한 검사를 우회하므로, 완전 공개 자산 카테고리에만
+공개 자산 디스크를 적용합니다.
 
 ---
 

@@ -9,8 +9,26 @@ return [
     | 첨부파일 저장에 사용할 디스크를 지정합니다.
     | config/filesystems.php에 정의된 디스크 이름을 사용합니다.
     |
+    | 빈 값(`ATTACHMENT_DISK=`)은 미설정으로 간주한다 — env() 는 키가 존재하면
+    | 빈 문자열을 그대로 돌려주므로(기본값 미적용), `cp .env.example .env` 설치
+    | 절차에서 빈 값이 그대로 오면 Storage::disk('') 로 업로드가 전면 실패한다.
+    |
     */
-    'disk' => env('ATTACHMENT_DISK', 'attachments'),
+    'disk' => env('ATTACHMENT_DISK') ?: 'attachments',
+
+    /*
+    |--------------------------------------------------------------------------
+    | 디스크 명시 설정 여부 (내부 판별용)
+    |--------------------------------------------------------------------------
+    |
+    | ATTACHMENT_DISK env 가 명시되었는지 판별하기 위한 키. env() 직접 호출은
+    | config:cache 환경에서 항상 null 이므로, config 캐시에 태워 두고 이 값으로
+    | 판별한다. null 이면 미명시 — 관리자 환경설정의 storage_driver(s3) 가
+    | 업로드 디스크를 전환할 수 있다 (SettingsServiceProvider::applyDriverConfig).
+    | 빈 값(`ATTACHMENT_DISK=`)도 미명시로 정규화한다 (위 disk 의 사유와 동일).
+    |
+    */
+    'disk_explicit' => env('ATTACHMENT_DISK') ?: null,
 
     /*
     |--------------------------------------------------------------------------

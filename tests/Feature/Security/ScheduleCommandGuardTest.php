@@ -517,8 +517,222 @@ class ScheduleCommandGuardTest extends TestCase
     }
 
     // ========================================================================
+    // Shell 인터프리터 정책 (KVE-2026-1653)
+    // ========================================================================
+
+    /**
+     * 게이트를 켜고 `bash` 등 인터프리터를 화이트리스트에 등록해도, 인터프리터에
+     * 인라인 명령/코드를 넘기는 저장 요청은 422 로 거부된다.
+     *
+     * KVE-2026-1653 본체: `bash` 를 화이트리스트에 등록하면 `bash -c id` 가 통과해
+     * 임의 OS 명령이 실행됐다. 이제 첫 인자가 하이픈(코드 플래그)이면 저장 시점에 거부된다.
+     *
+     * @param  string  $command  인라인 코드/명령 command
+     *
+     * @scenario command_class=inline_code, enforcement_point=store
+     *
+     * @effects inline_code_flags_rejected
+     */
+    #[DataProvider('interpreterInlineCodeProvider')]
+    public function test_store_rejects_interpreter_inline_code_even_when_allowlisted(string $command): void
+    {
+        $this->enableInterpreterShell();
+
+        $response = $this->authRequest()->postJson(route('api.admin.schedules.store'), [
+            'name' => '인라인 코드 시도',
+            'type' => ScheduleType::Shell->value,
+            'command' => $command,
+            'expression' => '* * * * *',
+            'frequency' => 'everyMinute',
+        ]);
+
+        $response->assertStatus(422, "인라인 코드가 저장됨: {$command}");
+        $response->assertJsonValidationErrors('command');
+    }
+
+    /**
+     * 인터프리터 + 절대경로 스크립트 실행은 게이트를 켜고 등록하면 201 로 허용된다
+     * (범용 크론 기능 회귀 가드).
+     *
+     * @param  string  $command  스크립트 파일 실행 command
+     *
+     * @scenario command_class=script_ok, enforcement_point=store
+     *
+     * @effects interpreter_script_files_still_run
+     */
+    #[DataProvider('interpreterScriptProvider')]
+    public function test_store_allows_interpreter_running_absolute_script(string $command): void
+    {
+        $this->enableInterpreterShell();
+
+        $response = $this->authRequest()->postJson(route('api.admin.schedules.store'), [
+            'name' => '정상 스크립트 스케줄',
+            'type' => ScheduleType::Shell->value,
+            'command' => $command,
+            'expression' => '* * * * *',
+            'frequency' => 'everyMinute',
+        ]);
+
+        $response->assertStatus(201, "정상 스크립트 실행이 거부됨: {$command}");
+    }
+
+    /**
+     * `php artisan ...` 를 shell 로 실행하려는 저장 요청은 422 로 거부된다 (Artisan 축 우회 방지).
+     *
+     * @param  string  $command  artisan 우회 command
+     *
+     * @scenario command_class=artisan_bypass, enforcement_point=store
+     *
+     * @effects artisan_via_shell_rejected
+     */
+    #[DataProvider('artisanBypassShellProvider')]
+    public function test_store_rejects_artisan_via_shell(string $command): void
+    {
+        $this->enableInterpreterShell();
+
+        $response = $this->authRequest()->postJson(route('api.admin.schedules.store'), [
+            'name' => 'artisan 우회 시도',
+            'type' => ScheduleType::Shell->value,
+            'command' => $command,
+            'expression' => '* * * * *',
+            'frequency' => 'everyMinute',
+        ]);
+
+        $response->assertStatus(422, "artisan 우회가 저장됨: {$command}");
+        $response->assertJsonValidationErrors('command');
+    }
+
+    /**
+     * 완전 거부형 실행기(env/make/xargs/sudo/busybox)는 화이트리스트에 등재돼도 422 로 거부된다.
+     *
+     * @param  string  $command  완전 거부형 command
+     *
+     * @scenario command_class=reject_binary, enforcement_point=store
+     *
+     * @effects reject_binaries_blocked_even_when_allowlisted
+     */
+    #[DataProvider('rejectBinaryShellProvider')]
+    public function test_store_rejects_reject_binaries_even_when_allowlisted(string $command): void
+    {
+        $this->enableInterpreterShell();
+
+        $response = $this->authRequest()->postJson(route('api.admin.schedules.store'), [
+            'name' => '완전 거부형 시도',
+            'type' => ScheduleType::Shell->value,
+            'command' => $command,
+            'expression' => '* * * * *',
+            'frequency' => 'everyMinute',
+        ]);
+
+        $response->assertStatus(422, "완전 거부형이 저장됨: {$command}");
+        $response->assertJsonValidationErrors('command');
+    }
+
+    /**
+     * 기존 shell 스케줄의 command 만 인라인 코드로 바꾸는 update 요청도 거부된다.
+     *
+     * @scenario command_class=inline_code, enforcement_point=update
+     *
+     * @effects update_falls_back_to_the_stored_type_when_the_request_omits_it
+     */
+    public function test_update_rejects_interpreter_inline_code_without_type_in_request(): void
+    {
+        $this->enableInterpreterShell();
+
+        $schedule = Schedule::create([
+            'name' => '기존 스크립트 스케줄',
+            'type' => ScheduleType::Shell,
+            'command' => 'bash /app/deploy.sh',
+            'expression' => '* * * * *',
+            'is_active' => true,
+        ]);
+
+        $response = $this->authRequest()->putJson(
+            route('api.admin.schedules.update', ['schedule' => $schedule->id]),
+            ['command' => 'bash -c id']
+        );
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('command');
+    }
+
+    /**
+     * 게이트를 켜고 `bash` 를 등록한 상태에서 DB 에 직접 심어진 `bash -c id` 는
+     * 실행 시점에 차단된다 (마지막 방어선 — 저장 검증 우회 값 방어).
+     *
+     * @scenario command_class=inline_code, enforcement_point=run
+     *
+     * @effects run_time_last_line_of_defense_blocks_inline_code
+     */
+    public function test_run_blocks_interpreter_inline_code_injected_directly(): void
+    {
+        $this->enableInterpreterShell();
+        Process::fake();
+
+        $schedule = Schedule::create([
+            'name' => 'DB 직접 주입 — 인라인 코드',
+            'type' => ScheduleType::Shell,
+            'command' => 'bash -c id',
+            'expression' => '* * * * *',
+            'is_active' => true,
+        ]);
+
+        $this->assertScheduleRunIsBlocked($schedule);
+        Process::assertNothingRan();
+    }
+
+    /**
+     * 슈퍼 관리자도 인터프리터 인라인 코드는 저장할 수 없다 (권한 분기 무관 동일 차단).
+     *
+     * @scenario command_class=inline_code, enforcement_point=store, caller_role=super_admin
+     *
+     * @effects inline_code_flags_rejected
+     */
+    public function test_store_rejects_interpreter_inline_code_for_super_admin(): void
+    {
+        $this->enableInterpreterShell();
+
+        // 검증 계층까지 도달하도록 스케줄 권한을 갖춘 계정에 is_super 를 부여한다 —
+        // 슈퍼 관리자도 인라인 코드는 저장 단계에서 막힘을 증명하기 위함(권한 게이트가 아니라 검증).
+        $superAdmin = $this->createScheduleOperator();
+        $superAdmin->forceFill(['is_super' => true])->save();
+        $superToken = $superAdmin->createToken('super-token')->plainTextToken;
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer '.$superToken,
+            'Accept' => 'application/json',
+        ])->postJson(route('api.admin.schedules.store'), [
+            'name' => '슈퍼 관리자 인라인 코드',
+            'type' => ScheduleType::Shell->value,
+            'command' => 'bash -c id',
+            'expression' => '* * * * *',
+            'frequency' => 'everyMinute',
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('command');
+    }
+
+    // ========================================================================
     // Helpers
     // ========================================================================
+
+    /**
+     * shell 게이트를 켜고 인터프리터·완전거부형을 화이트리스트에 등록합니다.
+     *
+     * 인터프리터를 **등재한 상태**로 검증해 "등재돼도 인라인코드/artisan/완전거부형은
+     * 차단됨" 을 증명한다 (범용 크론 용도로 인터프리터 등록은 정상 운영이다).
+     */
+    private function enableInterpreterShell(): void
+    {
+        config([
+            'schedule_security.shell.enabled' => true,
+            'schedule_security.shell.allowed_binaries' => [
+                'bash', 'sh', 'python', 'python3', 'php', 'node', 'perl', 'ruby',
+                'env', 'make', 'xargs', 'sudo', 'busybox',
+            ],
+        ]);
+    }
 
     /**
      * 파서 분기 페이로드가 실행되었을 때 생성되는 마커 파일 경로.
@@ -655,6 +869,10 @@ class ScheduleCommandGuardTest extends TestCase
             'about — 환경 정보 노출' => ['about'],
             'queue:failed' => ['queue:failed'],
             'storage:link' => ['storage:link'],
+            // KVE-2026-1897 회귀 가드: 언어팩 설치 명령은 예약 실행 허용목록 밖이므로 저장 시점에 거부된다
+            // (커밋 #527 이 denylist→allowlist 로 전환한 뒤의 기대 동작을 고정).
+            'language-pack:install — 확장 관리 명령' => ['language-pack:install g7-core-ja'],
+            'language-pack:uninstall — 확장 관리 명령' => ['language-pack:uninstall g7-core-ja'],
         ];
     }
 
@@ -730,6 +948,68 @@ class ScheduleCommandGuardTest extends TestCase
             '값 있는 옵션' => ['queue:prune-batches --hours=48'],
             '옵션 2개' => ['queue:work --stop-when-empty --max-time=300'],
             'SEO 레이아웃 지정' => ['seo:warmup --layout=home'],
+        ];
+    }
+
+    /**
+     * 인터프리터에 인라인 코드/명령을 넘기는 command 목록 (전부 차단).
+     *
+     * @return array<string, array{string}>
+     */
+    public static function interpreterInlineCodeProvider(): array
+    {
+        return [
+            'bash -c id (본체)' => ['bash -c id'],
+            'sh -c id' => ['sh -c id'],
+            'python -c 코드' => ['python -c import_os'],
+            'php -r 코드' => ['php -r phpinfo'],
+            'node -e 코드' => ['node -e process'],
+            'perl -e 코드' => ['perl -e system'],
+            'bash -x 스크립트 앞 옵션' => ['bash -x /app/x.sh'],
+        ];
+    }
+
+    /**
+     * 인터프리터 + 절대경로 스크립트 command 목록 (전부 허용).
+     *
+     * @return array<string, array{string}>
+     */
+    public static function interpreterScriptProvider(): array
+    {
+        return [
+            'python 스크립트' => ['python /app/job.py'],
+            'php 스크립트' => ['php /app/legacy.php'],
+            'node 스크립트' => ['node /app/worker.js'],
+            '스크립트 + 인자' => ['python /app/job.py --daily'],
+        ];
+    }
+
+    /**
+     * shell 로 artisan 을 실행하려는 command 목록 (전부 차단).
+     *
+     * @return array<string, array{string}>
+     */
+    public static function artisanBypassShellProvider(): array
+    {
+        return [
+            'php artisan' => ['php artisan'],
+            'php 절대경로 artisan' => ['php /var/www/html/artisan'],
+        ];
+    }
+
+    /**
+     * 완전 거부형 실행기 command 목록 (전부 차단, 메타문자 없음).
+     *
+     * @return array<string, array{string}>
+     */
+    public static function rejectBinaryShellProvider(): array
+    {
+        return [
+            'env bash' => ['env bash /app/x.sh'],
+            'make -f' => ['make -f /tmp/Makefile'],
+            'xargs' => ['xargs id'],
+            'sudo' => ['sudo id'],
+            'busybox' => ['busybox sh'],
         ];
     }
 }

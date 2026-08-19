@@ -128,6 +128,41 @@ class KcpCallbackControllerTest extends PluginTestCase
     }
 
     /**
+     * 배열 주입(`?verification_token[]=x`)은 KcpBridgeRequest 의 string 규칙이 422 로
+     * 차단해야 한다 — 종전 `(string)` 캐스팅은 배열을 "Array" 문자열로 바꿔 브리지
+     * payload 에 유입시켰다.
+     */
+    public function test_bridge_rejects_array_verification_token_with_422(): void
+    {
+        $response = $this->getJson(self::BRIDGE_URL.'?verification_token[]=x');
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['verification_token']);
+    }
+
+    /**
+     * 정상 쿼리의 identity_error / identity_error_message 는 브리지 HTML payload 에
+     * 그대로 실려야 한다 (KcpBridgeRequest 주입 후 bridgePayload() 경유 회귀 방지).
+     */
+    public function test_bridge_renders_identity_error_message_passthrough(): void
+    {
+        $response = $this->get(self::BRIDGE_URL.'?'.http_build_query([
+            'challenge_id' => 'chal-456',
+            'identity_error' => '9999',
+            'identity_error_message' => '사용자취소',
+        ]));
+
+        $response->assertStatus(200);
+        $response->assertHeader('Content-Type', 'text/html; charset=UTF-8');
+
+        $html = (string) $response->getContent();
+        $this->assertStringContainsString('identity_result', $html);
+        $this->assertStringContainsString('"identity_error":"9999"', $html);
+        $this->assertStringContainsString('사용자취소', $html);
+        $this->assertStringContainsString('"challenge_id":"chal-456"', $html);
+    }
+
+    /**
      * 결과조회 응답을 가로챈다.
      */
     private function fakeCertQuery(): void

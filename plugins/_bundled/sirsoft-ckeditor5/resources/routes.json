@@ -1,4 +1,14 @@
 {
     "version": "1.0.0",
-    "routes": []
+    "routes": [
+        {
+            "path": "*/admin/plugins/sirsoft-ckeditor5/uploads",
+            "layout": "ckeditor5_uploads",
+            "auth_required": true,
+            "meta": {
+                "title": "$t:sirsoft-ckeditor5.admin.uploads.title",
+                "permission": "sirsoft-ckeditor5.uploads.read"
+            }
+        }
+    ]
 }

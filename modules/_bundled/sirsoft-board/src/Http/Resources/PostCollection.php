@@ -339,23 +339,4 @@ class PostCollection extends BaseApiCollection
             'can_access_admin' => $this->checkBoardPermission($slug, 'admin.manage'),
         ];
     }
-
-    /**
-     * Admin 요청 여부를 확인합니다.
-     *
-     * Controller 네임스페이스로 판단합니다.
-     *
-     * @param  Request  $request  HTTP 요청
-     * @return bool Admin 요청 여부
-     */
-    private function isAdminRequest(Request $request): bool
-    {
-        $controller = $request->route()?->getController();
-
-        if (! $controller) {
-            return false;
-        }
-
-        return str_contains(get_class($controller), '\\Admin\\');
-    }
 }

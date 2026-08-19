@@ -1,0 +1,34 @@
+feature: 드라이버 셀렉트의 카탈로그 바인딩과 죽은 저장값 안내 (A5b / E4)
+
+description: |
+  환경설정의 드라이버 셀렉트는 8곳이다 — 파일 스토리지 · 공개 자산 스토리지 · 캐시 ·
+  검색엔진 · 세션 · 큐 · 로그 · 메일. 이 목록은 서버가 카탈로그(`available_drivers`)로
+  내려주는데, 검색엔진만 레이아웃에 옵션이 리터럴로 박혀 있었다. 플러그인이 엔진을 등록해도
+  화면 셀렉트에는 뜨지 않아 운영자가 고를 방법이 없었다.
+
+  두 번째 문제는 그 반대 방향이다. 운영자가 고른 드라이버를 제공하던 확장이 사라지면
+  저장값만 남는다. 셀렉트는 카탈로그에서 옵션을 만드므로 그 값에 해당하는 option 이 없고,
+  브라우저는 첫 옵션을 선택된 것처럼 그린다 — 화면은 "정상" 으로 보이고, 실제로 동작 중인
+  드라이버는 폴백된 기본값이다. 무엇을 골랐었는지도, 그것이 지금 없다는 사실도 화면에
+  나타나지 않는다.
+
+  그래서 저장값이 카탈로그에 없을 때만 셀렉트 아래에 안내를 띄우고 **저장된 값 문자열
+  자체를 드러낸다**. 값을 감추면 운영자가 무엇을 복구해야 하는지 알 수 없다.
+
+axis_notes:
+  saved_value_state: |
+    카탈로그 8곳은 축이 아니라 effects 로 판정한다 — 여덟 셀렉트가 같은 규칙을 공유하는
+    것이 이 기능의 요구사항이라, 한 곳만 검사하면 나머지 일곱은 조용히 빠질 수 있다.
+    `every_catalog_bound_select_has_dead_value_notice` 가 레이아웃 파일을 순회해 전수를 센다.
+
+axes:
+  saved_value_state: [live, dead]
+
+effects:
+  - driver_select_options_built_from_catalog       # 리터럴 옵션 금지 — 플러그인 등록분이 화면에 뜬다
+  - live_saved_value_shows_no_notice               # 카탈로그에 있는 값에는 안내를 띄우지 않는다
+  - dead_saved_value_notice_reveals_the_value      # 안내가 저장된 값 문자열을 드러낸다
+  - every_catalog_bound_select_has_dead_value_notice  # 카탈로그 바인딩 셀렉트 8곳 전수
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-drivers-catalog-binding.test.tsx

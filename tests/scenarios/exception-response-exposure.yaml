@@ -1,0 +1,46 @@
+feature: 코어 실패 응답의 예외 원문 비노출 (Exception Response Exposure)
+
+description: |
+  언어팩 관리 API 가 실패했을 때, 응답의 `message` 자리에 이미 번역된 예외 문구가
+  넘어가면 키 해석에 실패해 원문이 그대로 관리자 화면에 나간다. 원문에는 압축 라이브러리
+  오류·파일 경로·SQL 상태코드가 섞여 있다.
+
+  핵심 설계:
+    - `ResponseHelper::error()` 의 첫 인자는 **다국어 키 전용**이다. 번역문을 그 자리에
+      넘기지 않는다.
+    - 진단 정보 노출은 `ResponseHelper` 가 `app.debug` 에서만 Throwable 을 펼치는
+      기존 메커니즘에 위임한다 — 호출부가 직접 원문을 문자열로 조립하지 않는다.
+    - 상태코드는 바꾸지 않는다. manifestPreview 는 업로드 파일 해석 실패가 대부분
+      클라이언트 입력 오류라 422 를 유지하고, refreshCache 는 500 이다.
+
+  두 테스트는 `app.debug=false` 를 명시적으로 세운 뒤 응답 본문 전체에 내부 흔적
+  (`ZipArchive` `SQLSTATE` `.php` `vendor/` `Exception`)이 없음을 단언한다. 디버그를
+  끄지 않으면 헬퍼가 의도적으로 노출하는 경로와 구분되지 않는다.
+
+axes:
+  endpoint: [manifest_preview, refresh_cache]
+
+exclusions: []
+
+effects:
+  - language_pack_manifest_preview_failure_omits_exception_text
+  - language_pack_refresh_cache_failure_omits_exception_text
+
+scenarios:
+  - id: failure_responses_never_carry_exception_text_in_the_message_slot
+    description: 설치 전 검증 실패(422)와 캐시 갱신 실패(500) 모두 안내 문구만 전달하고 예외 원문을 싣지 않는다
+    effects:
+      - language_pack_manifest_preview_failure_omits_exception_text
+      - language_pack_refresh_cache_failure_omits_exception_text
+
+test_files:
+  - tests/Feature/Api/Admin/LanguagePackControllerTest.php
+
+notes: |
+  이 매니페스트는 5차 감사에서 신설됐다. 두 테스트는 브랜치가 추가했지만
+  `@scenario`/`@effects` 가 없어 어느 매니페스트에도 묶이지 않았고, 선언이 아예 없는
+  effect 는 test-scenario-coverage 의 셀 대상이 아니라 조용히 통과했다.
+
+  같은 파일이 `language-pack-php-whitelist-and-activation-boundary.yaml` 의 test_files
+  에도 등록돼 있으나 그쪽이 다루는 축은 PHP 구문 화이트리스트와 활성화 권한 경계다.
+  실패 응답의 원문 노출은 그 시나리오의 축이 아니므로 별도 매니페스트로 둔다.

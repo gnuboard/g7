@@ -41,6 +41,17 @@ abstract class AbstractExtensionServiceProvider extends ServiceProvider
     protected array $storageServices = [];
 
     /**
+     * 카테고리별 StorageInterface 가 필요한 서비스 클래스 매핑 (클래스 ⇒ 카테고리).
+     *
+     * 등록된 클래스에는 getStorageFor($category) 인스턴스가 주입되어, 확장이
+     * getStorageDiskFor() 를 오버라이드하면 해당 서비스의 put/getDisk() 가
+     * 서비스 코드 무수정으로 카테고리 디스크를 따릅니다.
+     *
+     * @var array<class-string, string>
+     */
+    protected array $storageCategoryServices = [];
+
+    /**
      * CacheInterface 가 필요한 서비스 클래스 목록.
      *
      * @var array<int, class-string>
@@ -111,13 +122,17 @@ abstract class AbstractExtensionServiceProvider extends ServiceProvider
      */
     protected function registerStorageBindings(): void
     {
-        if (empty($this->storageServices)) {
-            return;
+        if (! empty($this->storageServices)) {
+            $this->app->when($this->storageServices)
+                ->needs(StorageInterface::class)
+                ->give(fn () => $this->resolveExtension()->getStorage());
         }
 
-        $this->app->when($this->storageServices)
-            ->needs(StorageInterface::class)
-            ->give(fn () => $this->resolveExtension()->getStorage());
+        foreach ($this->storageCategoryServices as $service => $category) {
+            $this->app->when($service)
+                ->needs(StorageInterface::class)
+                ->give(fn () => $this->resolveExtension()->getStorageFor($category));
+        }
     }
 
     /**

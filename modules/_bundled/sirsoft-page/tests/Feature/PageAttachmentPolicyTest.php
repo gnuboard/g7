@@ -7,6 +7,7 @@ use Modules\Sirsoft\Page\Http\Requests\UploadPageAttachmentRequest;
 use Modules\Sirsoft\Page\Models\PageAttachment;
 use Modules\Sirsoft\Page\Module;
 use Modules\Sirsoft\Page\Services\PageAttachmentService;
+use Modules\Sirsoft\Page\Services\PageSettingsService;
 use Modules\Sirsoft\Page\Tests\ModuleTestCase;
 
 /**
@@ -22,20 +23,25 @@ use Modules\Sirsoft\Page\Tests\ModuleTestCase;
 class PageAttachmentPolicyTest extends ModuleTestCase
 {
     /**
-     * 첨부 설정을 주입합니다.
+     * 첨부 설정을 저장합니다.
      *
-     * 모듈 설정은 SettingsServiceProvider 가 `g7_settings.modules.*` config 로 올려 두고
-     * `g7_module_settings()` 로 조회한다 (board 관례).
+     * config 를 직접 주입하지 않고 **설정 서비스를 경유**한다 — 직접 주입하면
+     * 설정이 미러에 도달하는 경로가 통째로 우회되어, 서비스가 없어 미러가 영구
+     * 미존재였던 결함(공개이슈 #109)이 테스트에서 드러나지 않는다.
      *
      * @param  array  $overrides  덮어쓸 설정 값
      */
     private function writeAttachmentSettings(array $overrides = []): void
     {
-        config(['g7_settings.modules.sirsoft-page.attachment' => array_merge([
-            'max_count' => 5,
-            'max_size_mb' => 10,
-            'allowed_types' => ['image/jpeg', 'image/png', 'application/pdf'],
-        ], $overrides)]);
+        config(['g7_settings.modules.sirsoft-page' => null]);
+
+        app(PageSettingsService::class)->saveSettings([
+            'attachment' => array_merge([
+                'max_count' => 5,
+                'max_size_mb' => 10,
+                'allowed_types' => ['image/jpeg', 'image/png', 'application/pdf'],
+            ], $overrides),
+        ]);
     }
 
     /**

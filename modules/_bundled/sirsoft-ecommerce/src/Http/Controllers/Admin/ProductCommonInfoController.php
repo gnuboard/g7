@@ -6,6 +6,7 @@ use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Exception;
 use Illuminate\Http\JsonResponse;
+use Modules\Sirsoft\Ecommerce\Exceptions\ProductCommonInfoOperationException;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\IndexProductCommonInfoRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\StoreProductCommonInfoRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\UpdateProductCommonInfoRequest;
@@ -97,11 +98,19 @@ class ProductCommonInfoController extends AdminBaseController
                 new ProductCommonInfoResource($commonInfo),
                 201
             );
-        } catch (Exception $e) {
+        } catch (ProductCommonInfoOperationException $e) {
+            // 도메인 규칙 위반 — 운영자에게 안내 가능한 상황이므로 기존 400 유지
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'exceptions.operation_failed',
                 400
+            );
+        } catch (Exception $e) {
+            // 서버 결함/인프라 장애 — 4xx 로 뭉개면 장애가 입력 오류로 위장된다
+            return ResponseHelper::moduleError(
+                'sirsoft-ecommerce',
+                'exceptions.operation_failed',
+                500
             );
         }
     }
@@ -123,11 +132,19 @@ class ProductCommonInfoController extends AdminBaseController
                 'messages.common_infos.updated',
                 new ProductCommonInfoResource($commonInfo)
             );
-        } catch (Exception $e) {
+        } catch (ProductCommonInfoOperationException $e) {
+            // 도메인 규칙 위반 — 운영자에게 안내 가능한 상황이므로 기존 400 유지
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'exceptions.operation_failed',
                 400
+            );
+        } catch (Exception $e) {
+            // 서버 결함/인프라 장애 — 4xx 로 뭉개면 장애가 입력 오류로 위장된다
+            return ResponseHelper::moduleError(
+                'sirsoft-ecommerce',
+                'exceptions.operation_failed',
+                500
             );
         }
     }
@@ -148,11 +165,19 @@ class ProductCommonInfoController extends AdminBaseController
                 'messages.common_infos.deleted',
                 $result
             );
-        } catch (Exception $e) {
+        } catch (ProductCommonInfoOperationException $e) {
+            // 도메인 규칙 위반 — 운영자에게 안내 가능한 상황이므로 기존 400 유지
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'exceptions.operation_failed',
                 400
+            );
+        } catch (Exception $e) {
+            // 서버 결함/인프라 장애 — 4xx 로 뭉개면 장애가 입력 오류로 위장된다
+            return ResponseHelper::moduleError(
+                'sirsoft-ecommerce',
+                'exceptions.operation_failed',
+                500
             );
         }
     }
@@ -175,11 +200,19 @@ class ProductCommonInfoController extends AdminBaseController
                     : 'messages.common_infos.deactivated',
                 new ProductCommonInfoResource($commonInfo)
             );
-        } catch (Exception $e) {
+        } catch (ProductCommonInfoOperationException $e) {
+            // 도메인 규칙 위반 — 운영자에게 안내 가능한 상황이므로 기존 400 유지
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'exceptions.operation_failed',
                 400
+            );
+        } catch (Exception $e) {
+            // 서버 결함/인프라 장애 — 4xx 로 뭉개면 장애가 입력 오류로 위장된다
+            return ResponseHelper::moduleError(
+                'sirsoft-ecommerce',
+                'exceptions.operation_failed',
+                500
             );
         }
     }

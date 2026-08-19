@@ -576,6 +576,51 @@ class CommentService
     }
 
     /**
+     * 댓글 비밀번호 검증 토큰을 캐시에 저장하고 만료 시각을 반환합니다.
+     *
+     * 게시글(PostService::storeDeleteVerifyToken)과 동형 — 비회원이 비밀번호를
+     * 확인하면 1회용 토큰을 발급해, 이후 수정/삭제 요청에서 평문 비밀번호 재전송 대신
+     * 이 토큰으로 본인 확인을 대체한다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $commentId  댓글 ID
+     * @param  string  $token  검증 토큰
+     * @return array{token: string, expires_at: string} 토큰 및 만료 시각
+     */
+    public function storeCommentVerifyToken(string $slug, int $commentId, string $token): array
+    {
+        $ttl = (int) g7_core_settings('cache.post_verify_token_ttl', 3600);
+        $expiresAt = now()->addSeconds($ttl);
+        $this->cache->put("board_comment_verify_{$slug}_{$commentId}_{$token}", true, $ttl);
+
+        return [
+            'token' => $token,
+            'expires_at' => $expiresAt->toIso8601String(),
+        ];
+    }
+
+    /**
+     * 댓글 비밀번호 검증 토큰의 유효성을 확인하고 소비합니다.
+     *
+     * 토큰이 유효하면 즉시 삭제하여 재사용을 방지합니다(단일 사용).
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $commentId  댓글 ID
+     * @param  string  $token  검증 토큰
+     * @return bool 토큰 유효 여부
+     */
+    public function consumeCommentVerifyToken(string $slug, int $commentId, string $token): bool
+    {
+        $key = "board_comment_verify_{$slug}_{$commentId}_{$token}";
+        if (! $this->cache->has($key)) {
+            return false;
+        }
+        $this->cache->forget($key);
+
+        return true;
+    }
+
+    /**
      * 관리자 작업 이력 배열을 생성합니다.
      *
      * @param  string  $action  작업 유형 (blind, restore 등)

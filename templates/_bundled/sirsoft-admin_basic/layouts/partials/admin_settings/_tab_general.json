@@ -307,7 +307,7 @@
                       "params": {
                         "target": "local",
                         "hasChanges": true,
-                        "form.general.site_logo": "{{(_local.form?.general?.site_logo ?? []).filter(item => item.id !== $args[0])}}"
+                        "form.general.site_logo": "{{(_local.form?.general?.site_logo ?? []).filter(item => (item.hash || item.id) !== $args[0])}}"
                       }
                     },
                     {

@@ -14,8 +14,8 @@
  *  을 검증한다. 행/열/병합/해제/테두리/셀텍스트 round-trip 은 단위(tableGridModel.test.ts /
  *  TableEditor.test.tsx)가 잠그고, 본 E2E 는 구조 편집의 라이브 반영·저장을 브라우저로 확인한다.
  *
- * @scenario table_node_editor + add_row_col + merge + live_persist
- * @effects property_modal_dispatches_table_node_editor_in_props_tab_by_kind, add_row_inserts_blank_row_keeps_col_count, add_column_inserts_blank_col, shift_select_range_then_merge_sets_origin_span_removes_absorbed, live_add_row_col_merge_save_persists_to_user_page, editor_save_specs_target_sandbox_layout_not_product_layout
+ * 축 요약(마커 아님 — 평문): table_node_editor, add_row_col, merge, live_persist.
+ * 효과 요약(마커 아님 — 평문): property_modal_dispatches_table_node_editor_in_props_tab_by_kind, add_row_inserts_blank_row_keeps_col_count, add_column_inserts_blank_col, shift_select_range_then_merge_sets_origin_span_removes_absorbed, live_add_row_col_merge_save_persists_to_user_page, editor_save_specs_target_sandbox_layout_not_product_layout.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 import type { Page } from '@playwright/test';
@@ -138,6 +138,7 @@ async function addTable(page: Page, sandbox = false): Promise<string> {
 }
 
 test.describe('@layout-editor table 노드 에디터(빌트인 STRUCT-TREE)', () => {
+  /** @effects property_modal_dispatches_table_node_editor_in_props_tab_by_kind, add_row_inserts_blank_row_keeps_col_count, add_column_inserts_blank_col */
   test('Table 선택 시 table 에디터가 속성 탭에 마운트되고 행/열 추가가 grid 반영', async ({ page }) => {
     await gotoEditor(page);
     const tablePath = await addTable(page);
@@ -165,6 +166,7 @@ test.describe('@layout-editor table 노드 에디터(빌트인 STRUCT-TREE)', ()
     expect(colsAfter).toBe(colsBefore + 1);
   });
 
+  /** @effects shift_select_range_then_merge_sets_origin_span_removes_absorbed */
   test('셀 선택 + Shift 영역 선택 → 병합 버튼 활성 → 병합 반영', async ({ page }) => {
     await gotoEditor(page);
     const tablePath = await addTable(page);
@@ -187,6 +189,7 @@ test.describe('@layout-editor table 노드 에디터(빌트인 STRUCT-TREE)', ()
   // 저장(PUT)하는 테스트는 편집 결과가 그대로 영속되므로 제품 화면(home)이 아니라 E2E 전용
   // 시드 화면(e2e_sandbox)을 대상으로 한다. 제품 화면에 저장하면 실행마다 빈 표가 누적된다
   // (실측: 7개, 20,321 → 33,696 bytes). 시드 화면은 globalSetup 이 매 실행 원본으로 덮어쓴다.
+  /** @effects live_add_row_col_merge_save_persists_to_user_page, editor_save_specs_target_sandbox_layout_not_product_layout */
   test('table 편집 후 저장 → PUT 200', async ({ page }) => {
     await gotoEditor(page, sandboxRouteParam());
     const tablePath = await addTable(page, true);

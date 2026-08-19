@@ -89,9 +89,19 @@ effects:
   - refund_priority_radio_conditional            # 환불 우선순위 라디오 조건부 노출
   - pg_checkbox_conditional                       # PG 함께취소 체크박스 조건부 노출
   - resource_exposes_requires_pg_cancellation    # OrderPaymentResource requires_pg_cancellation
+  # 공개 #108 — 환불 예상(preview)은 조회만 수행한다
+  - preview_refund_issues_zero_write_queries_on_coupon_issues   # 미리보기 중 coupon_issues 대상 UPDATE 0건
+  - preview_refund_keeps_coupon_issue_updated_at_unchanged      # 왕복 UPDATE 로 인한 updated_at 오염 없음
+  - preview_refund_keeps_coupon_status_used_at_order_id_unchanged # status/used_at/order_id 불변
+  - partial_cancel_preview_reaches_recalculation_path_not_full_cancel_shortcut # 잔여 옵션이 있어야 재계산 경로 진입(전량취소 조기반환 아님)
+  - recalculation_never_reads_coupon_usage_state_in_snapshot_mode # 스냅샷 모드 재계산은 쿠폰 사용 상태를 읽지 않음
+  - coupon_restore_on_min_amount_shortfall_unchanged_after_reset_removal # 최소주문금액 미달 쿠폰 복원 동작 불변(회귀 가드)
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderCancellationServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderAdjustmentServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/OrderCancellationControllerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/OrderCancellationControllerTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/DTO/AdjustmentResultTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Models/OrderTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Repositories/OrderRepositoryTest.php

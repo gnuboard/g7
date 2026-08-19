@@ -14,8 +14,8 @@
  *  를 검증한다. 항목 텍스트 다국어(커스텀 키 생성)는 단위(ChildrenListControl.test.tsx)가
  *  CRUD round-trip 을 잠그고, 본 E2E 는 구조 편집(추가/정렬/저장)을 브라우저로 확인한다.
  *
- * @scenario children_node_editor + add_remove_move + live_persist
- * @effects property_modal_dispatches_children_node_editor_in_props_tab_by_kind_not_name, add_item_appends_childcomponent_defaultnode_to_children, move_up_down_swaps_adjacent_children_with_boundary_guard, live_add_li_edit_text_reorder_save_persists_to_user_page, keyboard_arrowup_escape_escalates_selection_to_parent, overlapping_child_selected_type_chip_escalates_to_parent, editor_save_specs_target_sandbox_layout_not_product_layout, editor_save_persists_and_survives_reload_on_sandbox
+ * 축 요약(마커 아님 — 평문): children_node_editor, add_remove_move, live_persist.
+ * 효과 요약(마커 아님 — 평문): property_modal_dispatches_children_node_editor_in_props_tab_by_kind_not_name, add_item_appends_childcomponent_defaultnode_to_children, move_up_down_swaps_adjacent_children_with_boundary_guard, live_add_li_edit_text_reorder_save_persists_to_user_page, keyboard_arrowup_escape_escalates_selection_to_parent, overlapping_child_selected_type_chip_escalates_to_parent, editor_save_specs_target_sandbox_layout_not_product_layout, editor_save_persists_and_survives_reload_on_sandbox.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 import type { Page } from '@playwright/test';
@@ -127,6 +127,7 @@ async function appendUlTo(page: Page, containerPath: string): Promise<string> {
 }
 
 test.describe('@layout-editor children 노드 에디터(목록 빌트인)', () => {
+  /** @effects property_modal_dispatches_children_node_editor_in_props_tab_by_kind_not_name, add_item_appends_childcomponent_defaultnode_to_children, move_up_down_swaps_adjacent_children_with_boundary_guard */
   test('Ul 선택 시 children 에디터가 속성 탭에 마운트되고 Li 추가/정렬이 캔버스 반영', async ({ page }) => {
     await gotoEditor(page);
     const ulPath = await addUl(page);
@@ -167,6 +168,7 @@ test.describe('@layout-editor children 노드 에디터(목록 빌트인)', () =
   // 시드 화면(e2e_sandbox)을 대상으로 한다. 이전에는 "추가한 Ul 삭제 후 재저장" 으로 원복했으나,
   // 원복 자체가 또 한 번의 저장이라 실패하면 잔여물이 남았다. 시드 화면은 globalSetup 이 매 실행
   // fixture 원본으로 덮어쓰므로 원복 절차가 필요 없다.
+  /** @effects live_add_li_edit_text_reorder_save_persists_to_user_page, editor_save_specs_target_sandbox_layout_not_product_layout, editor_save_persists_and_survives_reload_on_sandbox */
   test('children 편집 후 저장 → PUT 200 + reload 영속', async ({ page }) => {
     test.setTimeout(60_000); // 저장 + reload 합산 — 기본 30s 부족
 
@@ -213,6 +215,7 @@ test.describe('@layout-editor children 노드 에디터(목록 빌트인)', () =
   // 겹친 부모 선택 — 캔버스 클릭은 늘 가장 깊은 자식을 잡으므로(closest), 부모/자식 크기가
   // 같은 Ul>Li 같은 경우 자식만 잡힌다. 선택 박스 위 타입 칩(↑)을 클릭하거나 키보드 ↑/Esc 로
   // 한 단계씩 상위(부모)를 선택한다(상용 편집기 공통 — 부모는 별도 어포던스).
+  /** @effects keyboard_arrowup_escape_escalates_selection_to_parent, overlapping_child_selected_type_chip_escalates_to_parent */
   test('겹친 자식 선택 후 타입 칩(↑)/키보드 ↑로 부모(Ul) escalation', async ({ page }) => {
     await gotoEditor(page);
     const ulPath = await addUl(page);

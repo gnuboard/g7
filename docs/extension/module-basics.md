@@ -491,7 +491,7 @@ modules/_bundled/sirsoft-ecommerce/
 ├── vite.config.ts               # Vite 빌드 설정 (에셋 모듈만)
 ├── tsconfig.json                # TypeScript 설정 (에셋 모듈만)
 ├── vendor/                      # Composer 의존성 (자동 생성, gitignore 대상)
-├── dist/                        # 프론트엔드 빌드 출력 (에셋 모듈만, gitignore 대상)
+├── dist/                        # 프론트엔드 빌드 출력 (에셋 모듈만 — _bundled 은 Git 추적, `*.map` 만 ignore)
 │   ├── js/module.iife.js
 │   └── css/module.css
 ├── upgrades/                    # 버전 업그레이드 스텝 (AbstractUpgradeStep 상속 — g7_version >= 7.0.0-beta.5 모듈 의무)
@@ -562,7 +562,7 @@ modules/_bundled/sirsoft-ecommerce/
 | `package.json` | npm 패키지 정의 (에셋 모듈만 해당) |
 | `vite.config.ts` | Vite IIFE 빌드 설정 (에셋 모듈만 해당) |
 | `vendor/` | Composer 의존성 디렉토리 (자동 생성, gitignore 대상) |
-| `dist/` | 프론트엔드 빌드 출력 (에셋 모듈만 해당, gitignore 대상) |
+| `dist/` | 프론트엔드 빌드 출력 (에셋 모듈만 해당 — `_bundled` 소스는 Git 추적되는 배포 산출물, `*.map` 만 ignore. 소스 변경 시 `--production` 재빌드 산출물을 함께 커밋한다) |
 | `config/` | 모듈별 설정 파일 |
 | `database/factories/` | 테스트용 Factory (autoload 등록 필수) |
 | `database/migrations/` | 데이터베이스 마이그레이션 |

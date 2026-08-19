@@ -7,12 +7,18 @@
         "imageUpload": true,
         "imageMaxSizeMb": 2,
         "editorHeight": 400,
-        "toolbar": "standard"
+        "toolbar": "standard",
+        "public_asset_disk": "",
+        "unusedImageCleanup": false,
+        "unusedImageRetentionDays": 30
     },
     "frontend_schema": {
         "imageUpload":    { "expose": true },
         "imageMaxSizeMb": { "expose": true },
         "editorHeight":   { "expose": true },
-        "toolbar":        { "expose": true }
+        "toolbar":        { "expose": true },
+        "public_asset_disk":    { "expose": false },
+        "unusedImageCleanup":       { "expose": false },
+        "unusedImageRetentionDays": { "expose": false }
     }
 }

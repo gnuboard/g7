@@ -1,0 +1,26 @@
+# audit:allow test-scenario-coverage reason: |
+#   백엔드 전용(훅 발화·필터 반환값 소비) 변경으로 PHPUnit 단위/Feature 테스트가
+#   표면×구독자 축 조합을 직접 커버하고 green 이다. cross product 자동 전개 불필요.
+
+feature: 업로드 filter_upload_file 필터 훅 대칭화 (공개 #96)
+
+description: |
+  before/after 액션만 있고 filter_upload_file 이 없던 업로드 지점(리뷰 이미지·ckeditor5 이미지)과
+  훅 트라이어드가 전무하던 지점(템플릿 레이아웃 첨부)에 필터 훅을 대칭 제공한다.
+  구독자가 없으면 applyFilters 는 입력을 그대로 반환하므로 기존 동작 불변.
+
+axes:
+  surface: [review_image, ckeditor5_image, template_layout_attachment]
+  subscriber: [none, registered]
+
+effects:
+  - before_upload_action_fired
+  - filter_upload_file_applied          # 등록된 필터가 업로드 경로에서 발화
+  - filter_return_value_consumed        # 필터 반환 파일이 저장 파일명/메타의 근거가 됨
+  - after_upload_action_fired
+  - no_subscriber_passthrough           # 구독자 0일 때 기존 동작 불변 (기존 upload 테스트가 커버)
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ProductReviewImageServiceTest.php
+  - plugins/_bundled/sirsoft-ckeditor5/tests/Unit/Services/ImageUploadServiceTest.php
+  - tests/Feature/Api/Admin/TemplateLayoutAttachmentControllerTest.php

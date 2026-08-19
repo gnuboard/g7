@@ -24,8 +24,8 @@
  *  - guest_only 레이아웃은 체인 레벨에서 코어 keyspace currentUser 를 시드에서 제외(흡수).
  *    "이미 로그인되어 있습니다" 토스트 미발화 가드.
  *
- * @scenario palette_i18n + global_seed + sample_global_chain + guest_only_no_currentUser + save_success
- * @effects undo_history_reset + banner_visible + guest_only_no_redirect_toast, editor_save_specs_target_sandbox_layout_not_product_layout
+ * 축 요약(마커 아님 — 평문): palette_i18n, global_seed, sample_global_chain, guest_only_no_currentUser, save_success.
+ * 효과 요약(마커 아님 — 평문): undo_history_reset, banner_visible, guest_only_no_redirect_toast, editor_save_specs_target_sandbox_layout_not_product_layout.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 import { sandboxRouteParam } from '../../fixtures/seed-layout';
@@ -105,6 +105,7 @@ test.describe('@layout-editor palette i18n + global seed', () => {
     await expect(myPageBtn).toBeVisible();
   });
 
+  /** @effects guest_only_no_redirect_toast */
   test('guest_only 레이아웃 — sampleGlobal 체인이 currentUser 시드 제외 + 토스트 미발화', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -139,6 +140,7 @@ test.describe('@layout-editor palette i18n + global seed', () => {
   // 저장(PUT)하는 테스트는 편집 결과가 그대로 영속되므로 제품 화면(home)이 아니라 E2E 전용
   // 시드 화면(e2e_sandbox)을 대상으로 한다. 시드 화면은 globalSetup 이 매 실행 fixture 원본으로
   // 덮어쓰므로 회차 간 Div 누적이 성립하지 않는다.
+  /** @effects undo_history_reset, banner_visible, editor_save_specs_target_sandbox_layout_not_product_layout */
   test('저장 success kind → SaveFeedbackBanner 표시 + history reset (결함 E + I 회귀 가드)', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);

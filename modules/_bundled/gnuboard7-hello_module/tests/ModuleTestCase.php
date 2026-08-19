@@ -3,6 +3,7 @@
 namespace Modules\Gnuboard7\HelloModule\Tests;
 
 use App\Enums\ExtensionStatus;
+use App\Extension\HookManager;
 use App\Models\Module;
 use App\Models\Permission;
 use App\Models\Role;
@@ -10,6 +11,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
+use Modules\Gnuboard7\HelloModule\Providers\HelloModuleServiceProvider;
 use Tests\TestCase;
 
 /**
@@ -52,7 +54,7 @@ abstract class ModuleTestCase extends TestCase
 
         $this->registerModuleAutoload();
 
-        $this->app->register(\Modules\Gnuboard7\HelloModule\Providers\HelloModuleServiceProvider::class);
+        $this->app->register(HelloModuleServiceProvider::class);
 
         $this->runModuleMigrationIfNeeded();
 
@@ -80,7 +82,7 @@ abstract class ModuleTestCase extends TestCase
      */
     private function snapshotHookManager(): void
     {
-        $ref = new \ReflectionClass(\App\Extension\HookManager::class);
+        $ref = new \ReflectionClass(HookManager::class);
         $this->hookSnapshot = [
             'hooks' => $ref->getProperty('hooks')->getValue(),
             'filters' => $ref->getProperty('filters')->getValue(),
@@ -97,7 +99,7 @@ abstract class ModuleTestCase extends TestCase
             return;
         }
 
-        $ref = new \ReflectionClass(\App\Extension\HookManager::class);
+        $ref = new \ReflectionClass(HookManager::class);
         $ref->getProperty('hooks')->setValue(null, $this->hookSnapshot['hooks']);
         $ref->getProperty('filters')->setValue(null, $this->hookSnapshot['filters']);
         $ref->getProperty('dispatching')->setValue(null, $this->hookSnapshot['dispatching']);
@@ -153,8 +155,12 @@ abstract class ModuleTestCase extends TestCase
                 $file = $moduleBasePath.'/src/'.str_replace('\\', '/', $relativeClass).'.php';
             }
 
-            if (file_exists($file)) {
-                require $file;
+            if (file_exists($file)
+                && ! class_exists($class, false) && ! interface_exists($class, false)
+                && ! trait_exists($class, false) && ! enum_exists($class, false)) {
+                // 활성 디렉토리 사본이 이미 로드된 심볼을 다시 선언하면 fatal 이 된다 —
+                // 선언 여부를 자체 확인하고 require_once 로 이중 방어한다
+                require_once $file;
             }
         });
     }
@@ -221,12 +227,12 @@ abstract class ModuleTestCase extends TestCase
             'version' => '0.1.0-beta.1',
         ]);
 
-        $hookManager = app(\App\Extension\HookManager::class);
+        $hookManager = app(HookManager::class);
         foreach ($module->getHookListeners() as $listenerClass) {
             foreach ($listenerClass::getSubscribedHooks() as $hookName => $config) {
                 $method = is_array($config) ? ($config['method'] ?? 'handle') : 'handle';
                 $priority = is_array($config) ? ($config['priority'] ?? 10) : 10;
-                $hookManager->addAction($hookName, [new $listenerClass(), $method], $priority);
+                $hookManager->addAction($hookName, [new $listenerClass, $method], $priority);
             }
         }
     }

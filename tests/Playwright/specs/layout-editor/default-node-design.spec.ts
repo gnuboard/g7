@@ -14,10 +14,10 @@
  *  - sirsoft-basic: Button → rounded-lg, Input → border 패턴
  *  - sirsoft-admin_basic: Button → bg-blue-600, Input → "input" 유틸 클래스
  *
- * @scenario palette_open + default_node_source:editorSpecDefaultNode
- * @effects palette_default_node_className_replicated_into_inserted_node
- * @effects palette_default_node_className_reflects_template_design_system_tokens
- * @effects palette_default_node_button_omits_variant_size_uses_className_only
+ * 축 요약(마커 아님 — 평문): palette_open, default_node_source:editorSpecDefaultNode.
+ * 효과 요약(마커 아님 — 평문): palette_default_node_className_replicated_into_inserted_node.
+ * 효과 요약(마커 아님 — 평문): palette_default_node_className_reflects_template_design_system_tokens.
+ * 효과 요약(마커 아님 — 평문): palette_default_node_button_omits_variant_size_uses_className_only.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 
@@ -32,6 +32,7 @@ const probes: Probe[] = [
 
 test.describe('@layout-editor defaultNode 공통 디자인 반영', () => {
   for (const { template, component, token } of probes) {
+    /** @effects palette_default_node_className_replicated_into_inserted_node, palette_default_node_className_reflects_template_design_system_tokens, palette_default_node_button_omits_variant_size_uses_className_only */
     test(`${template} — ${component} 추가 시 캔버스에 "${token}" className 반영`, async ({ page }) => {
       const tokenAuth = issueToken('core.templates.layouts.edit');
       await authenticatePage(page, tokenAuth);

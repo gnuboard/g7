@@ -25,7 +25,9 @@
 
 **요청 파라미터**
 
-_요청 파라미터 없음._
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| tid | body | string | 예 | max 100 | 조회할 KG 이니시스 거래번호(TID). 누락·문자열 아님·100자 초과는 422 (`TransactionQueryRequest` 검증 — 국내 30자·해외 CBT 40자 형식을 모두 수용, 상한은 저장 컬럼 varchar(100)) |
 
 **요청 예시**
 
@@ -34,6 +36,11 @@ POST /api/plugins/sirsoft-pay_kginicis/admin/transaction/query HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "tid": "StdpayCARDSIRSOFT001202606191358556131"
+}
 ```
 
 **응답 필드** (`data` 내부)
@@ -154,13 +161,13 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.orders.read`)이 없는 경우 |
-| 422 | Unprocessable Entity | `tid` 가 비어 있는 경우 (`errors.tid` = `TID를 입력하세요.`) |
+| 422 | Unprocessable Entity | `tid` 가 검증 규칙(필수, 문자열, 최대 100자)을 위반한 경우 (`error.errors.tid` 에 표준 validation 메시지 — 배열 주입도 문자열 규칙이 차단) |
 | 502 | Bad Gateway | KG 이니시스 조회 API 호출 실패(HTTP 오류·타임아웃 등) 시 |
 
 <!-- @generated:end -->
 
 **설명**
 
-거래번호(TID)를 직접 입력받아 KG 이니시스 거래 상태를 조회하고 화면 표시용으로 보강해 반환하는 관리자 엔드포인트입니다. 로컬 결제 레코드(`ecommerce_order_payments`)에서 결제 시점 MID·테스트 모드·에스크로 여부를 해석해 해당 자격증명으로 `KgInicisApiService::queryTransaction()` 을 호출하며, 응답을 카드/가상계좌/간편결제/취소 이력 등 상세 필드로 정규화하고 은행 코드→은행명·할부 개월·날짜 포맷을 변환합니다. 일본 CBT 거래(TID `INIJPG` prefix 또는 통화 JPY)는 한국 INIAPI 조회 대상이 아니므로 저장된 로컬 승인/입금 확인 정보로 결과를 구성합니다. 관리자 인증(`auth:sanctum`)과 `sirsoft-ecommerce.orders.read` 권한이 필요하며, `tid` 미입력은 422, 토큰 누락·만료 401, 권한 부족 403, KG 이니시스 조회 실패 시 502 로 응답합니다.
+거래번호(TID)를 직접 입력받아 KG 이니시스 거래 상태를 조회하고 화면 표시용으로 보강해 반환하는 관리자 엔드포인트입니다. 로컬 결제 레코드(`ecommerce_order_payments`)에서 결제 시점 MID·테스트 모드·에스크로 여부를 해석해 해당 자격증명으로 `KgInicisApiService::queryTransaction()` 을 호출하며, 응답을 카드/가상계좌/간편결제/취소 이력 등 상세 필드로 정규화하고 은행 코드→은행명·할부 개월·날짜 포맷을 변환합니다. 일본 CBT 거래(TID `INIJPG` prefix 또는 통화 JPY)는 한국 INIAPI 조회 대상이 아니므로 저장된 로컬 승인/입금 확인 정보로 결과를 구성합니다. 관리자 인증(`auth:sanctum`)과 `sirsoft-ecommerce.orders.read` 권한이 필요하며, `tid` 는 `TransactionQueryRequest` 가 필수·문자열·최대 100자(국내 30자·해외 CBT 40자 형식 수용, 저장 컬럼 기준)로 검증해 위반 시 표준 validation 422, 토큰 누락·만료 401, 권한 부족 403, KG 이니시스 조회 실패 시 502 로 응답합니다.
 
 

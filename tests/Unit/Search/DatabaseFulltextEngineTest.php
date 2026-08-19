@@ -26,6 +26,20 @@ class DatabaseFulltextEngineTest extends TestCase
     {
         parent::setUp();
         $this->engine = new DatabaseFulltextEngine;
+
+        // 픽스처 테이블(test_table)은 실존하지 않으므로 인덱스 카탈로그를 시드해
+        // MATCH 조립 경로를 검증한다 — 시드하지 않으면 인덱스 부재 게이트(#103)가
+        // LIKE 로 내려 보내 조립 단언이 무의미해진다.
+        DatabaseFulltextEngine::primeFulltextIndexCatalog([
+            'test_table' => [['name']],
+        ]);
+    }
+
+    protected function tearDown(): void
+    {
+        DatabaseFulltextEngine::forgetFulltextIndexCatalog();
+
+        parent::tearDown();
     }
 
     /**

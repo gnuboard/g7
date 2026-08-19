@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Repositories\LayoutExtensionRepositoryInterface;
 use App\Contracts\Repositories\LayoutExtensionVersionRepositoryInterface;
 use App\Contracts\Repositories\LayoutRepositoryInterface;
@@ -15,6 +14,7 @@ use App\Extension\HookManager;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\TemplateManager;
+use App\Extension\Traits\ClearsTemplateCaches;
 use App\Extension\Traits\ComputesLayoutContentHash;
 use App\Models\LayoutExtension;
 use App\Models\TemplateLayoutExtensionVersion;
@@ -32,6 +32,7 @@ use Illuminate\Support\Facades\Log;
  */
 class LayoutExtensionService
 {
+    use ClearsTemplateCaches;
     use ComputesLayoutContentHash;
 
     /**
@@ -123,7 +124,6 @@ class LayoutExtensionService
         private LayoutExtensionRepositoryInterface $repository,
         private LayoutExtensionVersionRepositoryInterface $versionRepository,
         private LayoutRepositoryInterface $layoutRepository,
-        private CacheInterface $cache,
         private PluginRepositoryInterface $pluginRepository,
         private ModuleRepositoryInterface $moduleRepository,
     ) {}
@@ -1830,8 +1830,10 @@ class LayoutExtensionService
         }
 
         // extension_point 는 여러 레이아웃에서 사용될 수 있으므로 전역 캐시 버전 갱신
-        // overlay 도 프론트엔드 브라우저 캐시 무효화를 위해 동일하게 갱신
-        $this->cache->put('ext.cache_version', time());
+        // overlay 도 프론트엔드 브라우저 캐시 무효화를 위해 동일하게 갱신.
+        // 쓰기는 트레이트 단일 지점(고정 CoreCacheDriver + 메모이즈 스토어) 경유 —
+        // 주입 CacheInterface 직접 put 은 재바인딩/스토어 상이 시 read 와 어긋난다.
+        $this->incrementExtensionCacheVersion();
     }
 
     /**

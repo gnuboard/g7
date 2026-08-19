@@ -1,0 +1,76 @@
+feature: 예약 작업 Shell 인터프리터 인라인 코드 우회 차단
+
+description: |
+  Shell 타입 스케줄은 범용 크론탭 대체다 — 그누보드 밖의 python/node/php/bash 스크립트를
+  주기 실행할 수 있어야 한다. 그래서 인터프리터를 통째로 막지 않고 화이트리스트에 등록할 수
+  있게 둔다. 위험한 것은 인터프리터 자체가 아니라 인터프리터에게 인라인 코드/명령 문자열을
+  넘기는 것이다.
+
+  종전 `isShellCommandAllowed()` 는 첫 토큰 basename 만 화이트리스트와 대조하고 뒤 인자를
+  검증하지 않았다. 운영자가 `bash` 를 등록하면 `bash -c id` 가 통과해 임의 OS 명령이 실행됐다
+  (KVE-2026-1653). 이제 첫 토큰이 스크립트 실행형 인터프리터면 첫 인자(스크립트 자리)에
+  형태 규칙을 적용한다 — 하이픈 선두(인라인 코드 플래그) 거부, 절대경로 요구, `..`/`#` 금지,
+  basename≠artisan. 완전 거부형(env/awk/make/xargs/sudo/busybox 등)은 등재돼 있어도 거부한다.
+  인터프리터가 아닌 일반 스크립트(backup.sh 등)는 기존 계약대로 통과한다.
+
+  저장 시점(store/update Rule)과 실행 시점(runSchedule 마지막 방어선)이 같은 판정 함수
+  `inspectShellCommand()` 를 공유한다 — 한쪽만 고치면 DB 직접 수정이 우회로가 된다.
+
+axes:
+  command_class: [inline_code, script_ok, artisan_bypass, reject_binary, script_path, no_script, legit_plain_script]
+  enforcement_point: [validator_unit, store, update, run]
+
+cross_product: |
+  command_class × enforcement_point 이 핵심이다. 저장 시점과 실행 시점이 같은 판정 함수를
+  공유해야 하고(한쪽만 고치면 DB 직접 수정이 우회로가 된다), 명령 부류마다 거부 사유가 달라
+  운영자에게 보이는 메시지가 갈린다.
+
+  전 부류는 validator_unit 에서 전수 검증한다. store/update/run 은 같은 판정 함수를 호출할
+  뿐 별도 분기가 없으므로, HTTP·실행 계층에서는 대표 부류만 검증한다:
+   - store: inline_code(차단)·script_ok(허용)·artisan_bypass(차단)·reject_binary(차단)
+   - update: 저장된 타입 폴백 배선이 고유 축이므로 대표 1건(inline_code)
+   - run: 마지막 방어선의 대표 1건(inline_code) — Feature + Service 두 계층에서
+
+  caller_role(위임관리자 / 슈퍼관리자)은 별도 axis 로 두지 않는다. 판정은 권한과 무관한
+  단일 함수라 결과가 갈리지 않기 때문이다 — 슈퍼관리자도 인라인 코드를 저장할 수 없음을
+  대표 1건으로 고정한다(effects inline_code_flags_rejected).
+
+exclusions:
+  - { command_class: script_path, enforcement_point: store, reason: "경로 형태 판정은 validator 단일 지점 — HTTP 계층은 같은 Rule 을 호출할 뿐 별도 분기 없음" }
+  - { command_class: no_script, enforcement_point: store, reason: "동일 — 판정 분기 없음" }
+  - { command_class: legit_plain_script, enforcement_point: store, reason: "동일 — 정상 스크립트 허용은 script_ok(store)가 대표" }
+  - { command_class: script_ok, enforcement_point: update, reason: "update 고유 축은 '요청에 type 없을 때 저장 타입 폴백' 배선 — 판정은 store 와 같은 Rule, 대표 1건(inline_code)으로 검증" }
+  - { command_class: artisan_bypass, enforcement_point: update, reason: "동일 — 대표 1건으로 검증" }
+  - { command_class: reject_binary, enforcement_point: update, reason: "동일 — 대표 1건으로 검증" }
+  - { command_class: script_path, enforcement_point: update, reason: "동일 — 대표 1건으로 검증" }
+  - { command_class: no_script, enforcement_point: update, reason: "동일 — 대표 1건으로 검증" }
+  - { command_class: legit_plain_script, enforcement_point: update, reason: "동일 — 대표 1건으로 검증" }
+  - { command_class: script_ok, enforcement_point: run, reason: "실행 시점 방어선의 대표는 inline_code — 허용 스크립트 실행 회귀는 store(script_ok)가 대표" }
+  - { command_class: artisan_bypass, enforcement_point: run, reason: "저장 시점에 거부되어 DB 에 남지 않는다. 실행 시점 대표는 inline_code" }
+  - { command_class: reject_binary, enforcement_point: run, reason: "동일 — 실행 시점 대표는 inline_code" }
+  - { command_class: script_path, enforcement_point: run, reason: "동일 — 실행 시점 대표는 inline_code" }
+  - { command_class: no_script, enforcement_point: run, reason: "동일 — 실행 시점 대표는 inline_code" }
+  - { command_class: legit_plain_script, enforcement_point: run, reason: "정상 스크립트 실행 자체는 기존 shell 실행 테스트가 이미 고정 — 본 기능의 신규 축이 아님" }
+
+effects:
+  # 판정 — 인터프리터 정책
+  - inline_code_flags_rejected
+  - interpreter_script_files_still_run
+  - artisan_via_shell_rejected
+  - reject_binaries_blocked_even_when_allowlisted
+  - script_path_traversal_rejected
+  - interpreter_without_script_rejected
+  - plain_scripts_still_run_without_path_restrictions
+  - rejection_reason_is_reported_per_category
+  # 엔드투엔드 — 저장·실행 두 지점
+  - update_falls_back_to_the_stored_type_when_the_request_omits_it
+  - run_time_last_line_of_defense_blocks_inline_code
+
+# E2E axis 없음: 판정은 전부 서버측이고 레이아웃 JSON·컴포넌트 TSX·엔진 TS 변경이 없다.
+# 예약 작업 관리 화면은 config/core.php 에서 is_active=false 로 비노출 상태라 브라우저 경로
+# 자체가 존재하지 않는다 (frontend-change-requires-e2e 룰의 대상이 아님).
+
+test_files:
+  - tests/Unit/Support/ScheduleCommandValidatorTest.php
+  - tests/Feature/Security/ScheduleCommandGuardTest.php
+  - tests/Unit/Services/ScheduleServiceTest.php

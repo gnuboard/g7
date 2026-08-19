@@ -15,8 +15,8 @@
  * 세 번째 케이스(클리핑 차단)는 이 수정의 회귀 가드가 아니라 그 **전제**를 잠근다 — 상세는
  * 해당 테스트 주석 참조.
  *
- * @scenario editor_min_width + narrow_viewport_no_squish + horizontal_scroll
- * @effects shell_keeps_min_width_below_viewport, toolbar_items_keep_natural_width_no_wrap, narrow_window_produces_horizontal_scroll_not_compression
+ * 축 요약(마커 아님 — 평문): editor_min_width, narrow_viewport_no_squish, horizontal_scroll.
+ * 효과 요약(마커 아님 — 평문): shell_keeps_min_width_below_viewport, toolbar_items_keep_natural_width_no_wrap, narrow_window_produces_horizontal_scroll_not_compression.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 import type { Page } from '@playwright/test';
@@ -36,6 +36,7 @@ async function gotoEditor(page: Page, route = '%2F'): Promise<void> {
 }
 
 test.describe('레이아웃 편집기 — 좁은 창 압착 차단', () => {
+  /** @effects shell_keeps_min_width_below_viewport */
   test('좁은 창에서도 셸이 최소 너비를 유지한다 (압착 없음)', async ({ page }) => {
     await page.setViewportSize({ width: NARROW_WIDTH, height: 900 });
     await gotoEditor(page);
@@ -47,6 +48,7 @@ test.describe('레이아웃 편집기 — 좁은 창 압착 차단', () => {
     expect(shellWidth).toBeGreaterThanOrEqual(EDITOR_MIN_WIDTH);
   });
 
+  /** @effects toolbar_items_keep_natural_width_no_wrap */
   test('좁은 창에서 툴바 항목이 깎이거나 줄바꿈되지 않는다', async ({ page }) => {
     // 넓은 창에서 각 툴바 항목의 자연 폭·높이를 먼저 측정한다.
     await page.setViewportSize({ width: 1600, height: 900 });
@@ -69,6 +71,7 @@ test.describe('레이아웃 편집기 — 좁은 창 압착 차단', () => {
   // 이 케이스가 잠그는 것은 별개의 전제다: 넘친 폭이 `overflow-x: hidden` 으로 **잘리지 않고**
   // 스크롤로 접근 가능해야 최소 너비 설계가 성립한다. 호스트/템플릿 CSS 가 나중에 body 나
   // #app 에 overflow-x:hidden 을 걸면 편집기 우측이 영영 닿을 수 없게 되는데, 그것을 여기서 잡는다.
+  /** @effects narrow_window_produces_horizontal_scroll_not_compression */
   test('넘친 폭이 잘리지 않고 가로 스크롤로 접근 가능하다 (클리핑 차단)', async ({ page }) => {
     await page.setViewportSize({ width: NARROW_WIDTH, height: 900 });
     await gotoEditor(page);

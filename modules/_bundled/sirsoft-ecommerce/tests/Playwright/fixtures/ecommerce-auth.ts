@@ -43,6 +43,10 @@ type EcommerceAuthFixtures = {
   orderManageToken: string;
   /** 배송정책 조회+수정 권한 보유 토큰 (배송정책 목록 표시 검증용) */
   shippingPolicyToken: string;
+  /** 프로모션 쿠폰 조회+등록+수정+삭제 권한 보유 토큰 (쿠폰 폼 검증용) */
+  couponManageToken: string;
+  /** 배송정책 + 상품 + 카테고리 권한 토큰 (구간 경계 E2E 픽스처 구성용) */
+  shippingBoundaryToken: string;
   /** 일반 쇼핑 사용자 토큰 (관리자 권한 없음 — 유저 화면 검증용) */
   userToken: string;
   /** 구매 고객 토큰 (장바구니/추가옵션 등 쇼핑 플로우 검증용) */
@@ -100,6 +104,32 @@ export const test = base.extend<EcommerceAuthFixtures>({
         'sirsoft-ecommerce.shipping-policies.create',
         'sirsoft-ecommerce.shipping-policies.update',
         'sirsoft-ecommerce.shipping-policies.delete',
+      ),
+    );
+  },
+  couponManageToken: async ({}, use) => {
+    await use(
+      issueToken(
+        'sirsoft-ecommerce.promotion-coupon.read',
+        'sirsoft-ecommerce.promotion-coupon.create',
+        'sirsoft-ecommerce.promotion-coupon.update',
+        'sirsoft-ecommerce.promotion-coupon.delete',
+      ),
+    );
+  },
+  shippingBoundaryToken: async ({}, use) => {
+    // 구간 경계 검증은 정책·상품·카테고리를 한 세션에서 만들고 지우므로 권한을 함께 발급한다.
+    await use(
+      issueToken(
+        'sirsoft-ecommerce.shipping-policies.read',
+        'sirsoft-ecommerce.shipping-policies.create',
+        'sirsoft-ecommerce.shipping-policies.update',
+        'sirsoft-ecommerce.shipping-policies.delete',
+        'sirsoft-ecommerce.products.read',
+        'sirsoft-ecommerce.products.create',
+        'sirsoft-ecommerce.products.update',
+        'sirsoft-ecommerce.products.delete',
+        'sirsoft-ecommerce.categories.read',
       ),
     );
   },

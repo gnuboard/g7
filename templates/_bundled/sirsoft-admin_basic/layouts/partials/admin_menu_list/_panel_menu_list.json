@@ -133,7 +133,7 @@
                   "handler": "toast",
                   "params": {
                     "type": "error",
-                    "message": "$t:admin.menus.messages.order_update_failed"
+                    "message": "{{error.message ?? '$t:admin.menus.messages.order_update_failed'}}"
                   }
                 },
                 {

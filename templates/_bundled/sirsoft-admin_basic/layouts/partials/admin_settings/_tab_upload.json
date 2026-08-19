@@ -347,6 +347,104 @@
           ]
         }
       ]
+    },
+    {
+      "id": "card_orphan_cleanup",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "admin-card"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "card-title"
+          },
+          "text": "$t:admin.settings.upload.orphan_cleanup"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "card-description"
+          },
+          "text": "$t:admin.settings.upload.orphan_cleanup_desc"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "children": [
+            {
+              "id": "field_orphan_cleanup_enabled",
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "form-label"
+                  },
+                  "text": "$t:admin.settings.upload.orphan_cleanup_enabled"
+                },
+                {
+                  "type": "composite",
+                  "name": "Toggle",
+                  "props": {
+                    "name": "upload.orphan_cleanup_enabled",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "form-hint"
+                  },
+                  "text": "$t:admin.settings.upload.orphan_cleanup_enabled_hint"
+                }
+              ]
+            },
+            {
+              "id": "field_orphan_retention_days",
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "form-label"
+                  },
+                  "text": "$t:admin.settings.upload.orphan_retention_days"
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "number",
+                    "name": "upload.orphan_retention_days",
+                    "min": "{{_local?.form?._meta?.limits?.upload_orphan_retention_days_min ?? 1}}",
+                    "max": "{{_local?.form?._meta?.limits?.upload_orphan_retention_days_max ?? 3650}}",
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "className": "input"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "form-hint"
+                  },
+                  "text": "$t:admin.settings.upload.orphan_retention_days_hint"
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   ],
   "props": {}

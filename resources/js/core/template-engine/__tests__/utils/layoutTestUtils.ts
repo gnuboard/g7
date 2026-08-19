@@ -65,6 +65,8 @@ export interface LayoutJson {
   components?: ComponentDefinition[];
   // 모달 정의
   modals?: ComponentDefinition[];
+  // 재사용 액션 정의 (actionRef 로 참조)
+  named_actions?: Record<string, any>;
   // 데이터 소스
   data_sources?: Array<{
     id: string;
@@ -579,6 +581,13 @@ export function createLayoutTest(
     actionDispatcher.setGlobalStateUpdater?.((updates: Record<string, any>) => {
       state._global = { ...state._global, ...updates };
     });
+
+    // 레이아웃 최상위 named_actions 등록 (engine-v1.19.0+)
+    // 미등록 시 actionRef 가 해석되지 않아 named_actions 를 쓰는 레이아웃은
+    // 렌더링 테스트에서 액션이 통째로 무반응이 된다 (경고만 남고 실패하지 않는다).
+    if (layoutJson.named_actions) {
+      actionDispatcher.setNamedActions?.(layoutJson.named_actions);
+    }
 
     // 글로벌 fetch 모킹
     cleanupFetch = setupGlobalFetchMock(mockApiRegistry);

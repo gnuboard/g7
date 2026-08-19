@@ -7,6 +7,7 @@ use App\Helpers\PermissionHelper;
 use App\Helpers\TimezoneHelper;
 use App\Http\Resources\BaseApiCollection;
 use App\Models\ActivityLog;
+use App\Repositories\Concerns\DeletesInBatches;
 use App\Repositories\Concerns\HasMultipleSearchFilters;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Repositories\Concerns\ResolvesSortSpec;
@@ -23,6 +24,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class ActivityLogRepository implements ActivityLogRepositoryInterface
 {
+    use DeletesInBatches;
     use HasMultipleSearchFilters;
     use PaginatesWithDeferredJoin;
     use ResolvesSortSpec;
@@ -315,5 +317,21 @@ class ActivityLogRepository implements ActivityLogRepositoryInterface
     public function anonymizeUserId(int $userId): int
     {
         return ActivityLog::where('user_id', $userId)->update(['user_id' => null]);
+    }
+
+    /**
+     * 보존 기간이 지난 활동 로그를 삭제합니다.
+     *
+     * 보존 기간 하한(1일)은 이 계층이 소유한다 — 파기는 되돌릴 수 없으므로 호출자마다
+     * 다시 막지 않고 실제로 지우는 자리에서 한 번 막는다.
+     *
+     * @param  int  $days  보존 기간 (일)
+     * @return int 삭제된 건수
+     */
+    public function deleteOlderThan(int $days): int
+    {
+        return $this->deleteInBatches(
+            ActivityLog::where('created_at', '<', now()->subDays(max(1, $days)))
+        );
     }
 }

@@ -10,13 +10,14 @@
  *    채워져 가격(`원`) 텍스트가 나타나는지(= sampleData 가 실제 캔버스 바인딩을 채움) 검증한다.
  *    Vitest 는 JSON+격리 렌더, 본 spec 은 실제 편집기 chrome + 캔버스 통합 렌더.
  *
- * @scenario route_select:data_dependent + sample_provider_source:bundled_editor_spec
- * @effects canvas_data_dependent_screen_filled_with_sample_data
- * @effects preview_canvas_uses_merged_editor_spec_sampledata
+ * 축 요약(마커 아님 — 평문): route_select:data_dependent, sample_provider_source:bundled_editor_spec.
+ * 효과 요약(마커 아님 — 평문): canvas_data_dependent_screen_filled_with_sample_data.
+ * 효과 요약(마커 아님 — 평문): preview_canvas_uses_merged_editor_spec_sampledata.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 
 test.describe('@layout-editor 캔버스 샘플 데이터 렌더', () => {
+  /** @effects canvas_data_dependent_screen_filled_with_sample_data, preview_canvas_uses_merged_editor_spec_sampledata */
   test('sirsoft-basic — 상품 상세 라우트 선택 시 캔버스가 product 샘플로 채워진다', async ({ page }) => {
     const tokenAuth = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, tokenAuth);

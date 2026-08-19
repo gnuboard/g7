@@ -60,9 +60,15 @@
         "report_notification": "신고 알림",
         "report_notification_description": "신고 접수 시 알림을 받을 관리자와 알림 발송 방식을 설정합니다.",
         "report_permissions": "신고 관리 권한",
-        "report_permissions_description": "신고 목록 조회 및 신고 처리(승인·반려·블라인드)를 수행할 수 있는 역할을 지정합니다. 신고 접수 알림은 '신고 처리 권한'을 가진 역할 기준으로 발송됩니다."
+        "report_permissions_description": "신고 목록 조회 및 신고 처리(승인·반려·블라인드)를 수행할 수 있는 역할을 지정합니다. 신고 접수 알림은 '신고 처리 권한'을 가진 역할 기준으로 발송됩니다.",
+        "attachment_cleanup": "첨부파일 정리",
+        "attachment_cleanup_description": "삭제한 첨부파일의 물리 파일을 언제 파기할지 정합니다. 글쓰기 중 올렸다가 저장하지 않은 임시 첨부는 이 설정과 무관하게 매일 자동 정리됩니다."
     },
     "fields": {
+        "attachment_purge_enabled": "삭제 첨부 영구 정리",
+        "attachment_purge_enabled_hint": "기본 꺼짐 — 운영자가 직접 켜야 매일 자동 정리가 동작합니다. 켜면 삭제된 지 보존기간이 지난 첨부의 파일과 기록을 영구 삭제합니다. 서버에서 직접 실행하는 정리 명령은 이 설정과 무관하게 동작합니다.",
+        "attachment_purge_retention_days": "삭제 첨부 보존기간 (일)",
+        "attachment_purge_retention_days_hint": "휴지통에서 게시글을 복원하면 이 기간 안의 첨부는 함께 복원됩니다. 휴지통 복원 가능 기간과 같게 유지하십시오. (1 ~ 3650 일)",
         "type": "게시판 유형",
         "secret_mode": "비밀글 모드",
         "per_page": "페이지당 게시글 수 (PC)",
@@ -78,6 +84,7 @@
         "max_content_length": "최대 게시글 글자 수",
         "use_reply": "답변글 사용",
         "max_reply_depth": "답변글 최대 깊이",
+        "reply_delete_policy": "답변글 삭제 방식",
         "use_comment": "댓글 사용",
         "comment_order": "댓글 정렬 순서",
         "min_comment_length": "최소 댓글 글자 수",
@@ -103,7 +110,7 @@
         "daily_report_limit_hint": "하루(자정 기준) 전체 게시판 통틀어 신고할 수 있는 최대 횟수. 0이면 제한 없음. (0~100)",
         "rejection_limit_count": "반려 누적 제한 (건수)",
         "rejection_limit_days": "반려 누적 제한 기간 (일)",
-        "rejection_limit_hint": "이 기간 내 반려 건수 초과 시 신고 기능이 차단됩니다. 건수 0이면 제한 없음. (건수: 0~50, 기간: 1~365일)",
+        "rejection_limit_hint": "이 기간 내 반려 건수가 설정값에 도달하면 신고 기능이 차단됩니다. 건수 0이면 제한 없음. (건수: 0~50, 기간: 1~365일)",
         "report_cooldown_seconds": "연속 신고 쿨타임 (초)",
         "report_cooldown_seconds_hint": "연속 신고 최소 간격. 0이면 제한 없음. (0~3600초)",
         "notify_author_on_report_action": "신고 처리 알림",
@@ -166,6 +173,7 @@
             "max_content_length": "게시글 본문의 최대 글자 수를 설정합니다 ({{min}}~{{max}})",
             "use_reply": "ON으로 설정해야 새 게시판에 답변글 기능이 적용됩니다.",
             "max_reply_depth": "답변글의 최대 중첩 깊이를 설정합니다 ({{min}}~{{max}})",
+            "reply_delete_policy": "답변글이 달린 글을 삭제할 때의 동작을 설정합니다",
             "blocked_keywords": "등록된 키워드가 포함된 게시글\/댓글은 작성이 차단됩니다",
             "use_comment": "ON으로 설정해야 새 게시판에 댓글 기능이 적용됩니다. 아래 댓글 세부 설정도 함께 적용됩니다.",
             "comment_order": "댓글의 기본 정렬 방향을 설정합니다",
@@ -196,6 +204,10 @@
             "disabled": "사용 안함",
             "enabled": "선택 가능",
             "always": "항상 비밀글"
+        },
+        "reply_delete_policy": {
+            "block": "삭제 차단",
+            "cascade": "함께 삭제"
         },
         "order_by": {
             "created_at": "최신순",
@@ -281,6 +293,7 @@
             "use_comment": "댓글 사용",
             "use_reply": "답변글 사용",
             "max_reply_depth": "답변글 최대 깊이",
+            "reply_delete_policy": "답변글 삭제 방식",
             "max_comment_depth": "대댓글 최대 깊이",
             "comment_order": "댓글 정렬 순서",
             "show_view_count": "조회수 표시",

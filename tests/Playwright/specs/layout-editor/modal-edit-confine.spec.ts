@@ -5,8 +5,8 @@
  * 비어 모달을 편집할 경로가 없었고, 모달 편집 진입 시 딤(잠긴 호스트) 영역으로 드래그/드롭이
  * 가능했으며, `_user_base` 모달 저장이 extension_point 검증으로 422 였다.
  *
- * @scenario edit_mode + url_sync + dnd_confine
- * @effects modal_collection_includes_partial_modals + modal_edit_renders_dim_and_blocker + dnd_handles_confined_to_modal_subtree + modal_edit_exit_clears_dim
+ * 축 요약(마커 아님 — 평문): edit_mode, url_sync, dnd_confine.
+ * 효과 요약(마커 아님 — 평문): modal_collection_includes_partial_modals, modal_edit_renders_dim_and_blocker, dnd_handles_confined_to_modal_subtree, modal_edit_exit_clears_dim.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 
@@ -24,6 +24,7 @@ async function enterEditor(page: import('@playwright/test').Page, url: string): 
 }
 
 test.describe('@layout-editor 모달 편집 confine', () => {
+  /** @effects modal_collection_includes_partial_modals */
   test('편집기 routes 응답이 partial 모달을 수집(트리 노출 SSoT)', async ({ page }) => {
     // 백엔드 모달 수집(collectEditorBaseAndModals)이 partial 참조 + 하위 디렉토리까지 읽어
     // 모달을 반환하는지 검증 — 트리 [모달]/"이 화면의 모달" 그룹의 데이터 출처. locale 무관.
@@ -52,6 +53,7 @@ test.describe('@layout-editor 모달 편집 confine', () => {
     expect(result.hosts).toContain('_user_base');
   });
 
+  /** @effects modal_edit_renders_dim_and_blocker, dnd_handles_confined_to_modal_subtree */
   test('모달 편집 진입 시 딤 음영 + 차단 밴드 + 핸들이 모달 서브트리로 confine', async ({ page }) => {
     await enterEditor(page, MODAL_DIRECT_URL);
     // 모달 편집 모드 진입 + 딤 음영 마운트 대기.
@@ -79,6 +81,7 @@ test.describe('@layout-editor 모달 편집 confine', () => {
     expect(handleClassification.outModal).toBe(0); // 딤 호스트엔 핸들 없음
   });
 
+  /** @effects modal_edit_exit_clears_dim */
   test('모달 편집 종료 → 딤 해제 + 편집 모드 이탈', async ({ page }) => {
     await enterEditor(page, MODAL_DIRECT_URL);
     await expect(page.locator('[data-mode="modal"]')).toBeAttached({ timeout: 30_000 });

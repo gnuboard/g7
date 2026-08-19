@@ -9,8 +9,8 @@
  * 확장 편집 모드에서 목록이 줄어들던 결함, (2) 확장/모달 편집 모드에서 라우트를 클릭하면
  * "이 레이아웃에는 표시할 컴포넌트가 없습니다" 가 뜨던 결함을 가드한다.
  *
- * @scenario ext_type + host_match + conn_count + conn_group_state + enter_mode_from_child + select_route_from_mode + host_highlight
- * @effects connected_extensions_attached_statically_by_host_layouts_without_canvas_load + connected_group_collapsed_by_default + connected_group_toggles_on_header_click + connected_count_stable_when_entering_extension_edit_mode + extension_child_click_enters_extension_edit_keeping_host_route_highlight + select_route_from_separate_edit_mode_restores_route_mode_and_renders_canvas
+ * 축 요약(마커 아님 — 평문): ext_type, host_match, conn_count, conn_group_state, enter_mode_from_child, select_route_from_mode, host_highlight.
+ * 효과 요약(마커 아님 — 평문): connected_extensions_attached_statically_by_host_layouts_without_canvas_load, connected_group_collapsed_by_default, connected_group_toggles_on_header_click, connected_count_stable_when_entering_extension_edit_mode, extension_child_click_enters_extension_edit_keeping_host_route_highlight, select_route_from_separate_edit_mode_restores_route_mode_and_renders_canvas.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 import type { Page } from '@playwright/test';
@@ -46,6 +46,7 @@ async function readConnCount(page: Page): Promise<number> {
 }
 
 test.describe('@layout-editor route↔connected extensions', () => {
+  /** @effects connected_extensions_attached_statically_by_host_layouts_without_canvas_load, connected_group_collapsed_by_default */
   test('클릭 없이 host_layouts 정적 매칭으로 연결 확장이 표시 + 기본 접힘', async ({ page }) => {
     await enterEditor(page);
 
@@ -60,6 +61,7 @@ test.describe('@layout-editor route↔connected extensions', () => {
     await expect(header).toHaveAttribute('aria-expanded', 'false');
   });
 
+  /** @effects connected_group_toggles_on_header_click */
   test('연결 그룹 헤더 클릭 → 펼침 → 자식 표시', async ({ page }) => {
     await enterEditor(page);
     const header = connGroupHeader(page);
@@ -79,6 +81,7 @@ test.describe('@layout-editor route↔connected extensions', () => {
     expect(expandedCount).toBeGreaterThan(0);
   });
 
+  /** @effects connected_count_stable_when_entering_extension_edit_mode, extension_child_click_enters_extension_edit_keeping_host_route_highlight */
   test('확장 편집 모드 진입 후에도 연결 목록 count 유지 + 호스트 라우트 강조', async ({ page }) => {
     await enterEditor(page);
     const header = connGroupHeader(page);
@@ -110,6 +113,7 @@ test.describe('@layout-editor route↔connected extensions', () => {
     expect(hostHighlighted).toBe(true);
   });
 
+  /** @effects select_route_from_separate_edit_mode_restores_route_mode_and_renders_canvas */
   test('확장 편집 모드에서 라우트 클릭 → 캔버스 정상 렌더(빈 화면 회귀 가드)', async ({ page }) => {
     await enterEditor(page);
     const header = connGroupHeader(page);

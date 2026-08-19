@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayNicepayments\Controllers;
 
+// audit:allow api-doc-coverage 요청 파라미터·응답 구조 무변경 — 테이블명 리터럴을 모델 파생으로 정리한 내부 리팩토링 (#571)
+
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
 use Plugins\Sirsoft\PayNicepayments\Concerns\IssuesReceiptCookie;
 use Plugins\Sirsoft\PayNicepayments\Concerns\ResolvesEasyPayDisplay;
@@ -33,11 +37,13 @@ class UserReceiptController
      * @param  string  $orderNumber  주문번호
      * @return JsonResponse receipt_url / cash_receipt_url / is_test_mode 또는 404
      */
+    // audit:allow controller-base-request-injection reason: 본문 입력을 읽지 않음 — user()/비회원 영수증 쿠키만 참조 (검증 대상 필드 없음)
     public function show(Request $request, string $orderNumber): JsonResponse
     {
         $user = $request->user();
-        $query = DB::table('ecommerce_order_payments as p')
-            ->join('ecommerce_orders as o', 'o.id', '=', 'p.order_id')
+        // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
+        $query = DB::table((new OrderPayment)->getTable().' as p')
+            ->join((new Order)->getTable().' as o', 'o.id', '=', 'p.order_id')
             ->where('o.order_number', $orderNumber)
             ->where('p.pg_provider', 'nicepayments');
 
@@ -51,7 +57,7 @@ class UserReceiptController
             } elseif ($this->verifyReceiptCookie($request->cookie(self::RECEIPT_COOKIE_NAME), $orderNumber)) {
                 $query->whereNull('o.user_id')
                     ->where('o.id', function ($sub) use ($orderNumber) {
-                        $sub->select('id')->from('ecommerce_orders')->where('order_number', $orderNumber);
+                        $sub->select('id')->from((new Order)->getTable())->where('order_number', $orderNumber);
                     });
             } else {
                 return response()->json(['error' => 'Not found'], 404);
@@ -74,7 +80,7 @@ class UserReceiptController
 
         $receiptUrl = $payment->receipt_url;
         if (! $receiptUrl && $payment->transaction_id) {
-            $receiptUrl = self::RECEIPT_BASE_URL . '?type=0&TID=' . rawurlencode($payment->transaction_id);
+            $receiptUrl = self::RECEIPT_BASE_URL.'?type=0&TID='.rawurlencode($payment->transaction_id);
         }
 
         $cashReceiptUrl = null;
@@ -84,7 +90,7 @@ class UserReceiptController
             $meta = json_decode($payment->payment_meta, true);
             $rcptTid = $meta['rcpt_tid'] ?? ($meta['pg_raw_response']['RcptTID'] ?? null);
             if ($rcptTid) {
-                $cashReceiptUrl = self::RECEIPT_BASE_URL . '?type=1&TID=' . rawurlencode($rcptTid);
+                $cashReceiptUrl = self::RECEIPT_BASE_URL.'?type=1&TID='.rawurlencode($rcptTid);
             }
             $isTestMode = (bool) ($meta['is_test_mode'] ?? false);
         }

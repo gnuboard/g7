@@ -28,6 +28,14 @@ class SeoSettingsCacheListener implements HookListenerInterface
                 'method' => 'onSettingsSave',
                 'priority' => 20,
             ],
+            // 단건 저장(`PUT /api/admin/settings/{key}`)은 after_save 가 아니라 after_set 을
+            // 발화한다. 이 구독이 없으면 SEO 설정을 단건으로 바꿔도 캐시가 남아 있다.
+            // (after_save 를 추가 발화하는 대신 구독을 늘리는 이유: 활동로그 리스너가 두 훅을
+            //  각각 기록해 저장 1회가 로그 2건이 된다)
+            'core.settings.after_set' => [
+                'method' => 'onSettingSet',
+                'priority' => 20,
+            ],
         ];
     }
 
@@ -57,6 +65,40 @@ class SeoSettingsCacheListener implements HookListenerInterface
             return;
         }
 
+        $this->clearSeoCaches(['tab' => $tab]);
+    }
+
+    /**
+     * 코어 설정 단건 저장 시 SEO 캐시를 무효화합니다.
+     *
+     * seo 카테고리 키가 실제로 저장된 경우에만 전체 캐시를 삭제합니다.
+     *
+     * @param  mixed  ...$args  훅 인자 ($key, $value, $result)
+     */
+    public function onSettingSet(...$args): void
+    {
+        $key = $args[0] ?? null;
+        $result = $args[2] ?? false;
+
+        if (! is_string($key) || ! str_starts_with($key, 'seo.')) {
+            return;
+        }
+
+        // 저장 실패는 상태를 바꾸지 않았으므로 캐시도 그대로 둔다
+        if ($result !== true) {
+            return;
+        }
+
+        $this->clearSeoCaches(['key' => $key]);
+    }
+
+    /**
+     * SEO 전체 캐시와 sitemap 캐시를 삭제합니다.
+     *
+     * @param  array  $logContext  로그에 남길 컨텍스트
+     */
+    private function clearSeoCaches(array $logContext): void
+    {
         try {
             $cache = app(SeoCacheManagerInterface::class);
 
@@ -66,9 +108,7 @@ class SeoSettingsCacheListener implements HookListenerInterface
             // Sitemap 캐시 삭제
             app(CacheInterface::class)->forget('seo.sitemap');
 
-            Log::info('[SEO] Core SEO settings changed — all cache cleared', [
-                'tab' => $tab,
-            ]);
+            Log::info('[SEO] Core SEO settings changed — all cache cleared', $logContext);
         } catch (\Throwable $e) {
             Log::warning('[SEO] Core SEO settings cache invalidation failed', [
                 'error' => $e->getMessage(),

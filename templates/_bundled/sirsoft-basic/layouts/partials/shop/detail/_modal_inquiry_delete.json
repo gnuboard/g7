@@ -161,7 +161,7 @@
                   ],
                   "onError": [
                     { "handler": "setState", "params": { "target": "global", "qnaDeleting": false } },
-                    { "handler": "toast", "params": { "message": "$t:shop.qna.delete_failed", "type": "error" } }
+                    { "handler": "toast", "params": { "message": "{{error.message ?? '$t:shop.qna.delete_failed'}}", "type": "error" } }
                   ]
                 }
               ]

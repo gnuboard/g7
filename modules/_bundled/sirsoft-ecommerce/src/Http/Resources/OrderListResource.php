@@ -30,6 +30,9 @@ class OrderListResource extends BaseApiResource
     {
         // 주문 시점 기준 통화 — 과거 주문의 *_formatted 는 설정 변경과 무관하게 이 통화로 고정 표기한다.
         $orderCurrency = $this->resolveOrderBaseCurrencyCode($this->resource);
+        // 주문 시점 통화 스냅샷 — 소수 자릿수를 현재 설정이 아닌 주문 시점 값으로 고정 (공개 #91 후속).
+        $currencySnapshot = $this->resource->currency_snapshot ?? null;
+        $this->withCurrencySnapshot($currencySnapshot);
 
         // 결제 통화(order_currency) — 유저가 선택·결제한 통화. base 통화와 다를 때 함께 표기.
         $paymentCurrency = $this->currency

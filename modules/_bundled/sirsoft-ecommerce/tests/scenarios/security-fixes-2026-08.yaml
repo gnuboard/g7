@@ -1,0 +1,44 @@
+feature: 이커머스 보안 수정 묶음 (2026-08 — 리뷰 스코프 / 쿠폰 발급 게이트 / 비회원 요청 검증 패리티 / 구매확정 게이트 / 프리셋 권한 / 하이라이트 이스케이프)
+
+description: |
+  2026-08 비공개 보안 제보 대응으로 sirsoft-ecommerce 에 반영된 수정의 회귀 고정.
+
+  - ③: 리뷰 저장 시 클라이언트 product_id 를 신뢰하던 문제 — 주문 옵션에서 도출(SSoT).
+  - ④/⑤: 쿠폰 다운로드 실행 게이트가 목록 게이트보다 넓던 문제 —
+    issue_method=DOWNLOAD + issue_condition=MANUAL + 미만료(valid_to)를 실행 시점에 검사.
+  - ㉒/N-1: 비회원 환불예상·주문취소 FormRequest 가 회원판 per-item 검증(주문 소속 /
+    취소완료 거부 / 수량 상한)을 누락하던 문제 — ValidatesCancelItems trait 로 4개
+    Request 가 동일 검증을 공유.
+  - ㉙: 구매확정에 상태 게이트가 없어 배송 전/이중 확정이 가능하던 문제 — 서비스 내장
+    게이트(OrderOptionNotConfirmableException) + 비회원/회원 컨트롤러 typed catch 422.
+  - N-6: 관리자 검색 프리셋 라우트의 permission 게이트 부재 — products.read/update 부착.
+  - ⑧/N-8: 검색 하이라이트 이스케이프 + 프리뷰 decode→strip 순서(코어 SearchHighlighter 위임).
+
+axes:
+  case: [review_product_scope, coupon_method_gate, coupon_condition_gate, coupon_expired_gate, coupon_valid_download, guest_refund_estimate_validation, guest_cancel_validation, confirm_service_gate, confirm_guest_http, confirm_member_http, presets_permission, search_highlight_escape, preview_entity_no_resurrect]
+
+exclusions: []
+
+effects:
+  - review_product_id_derived_from_order_option
+  - non_downloadable_coupon_rejected
+  - expired_coupon_rejected
+  - valid_manual_download_coupon_succeeds
+  - guest_refund_items_validated_per_item
+  - guest_cancel_items_validated_per_item
+  - confirm_rejected_unless_confirmable_status
+  - double_confirm_rejected
+  - confirm_hook_fires_once
+  - presets_require_product_permission
+  - highlighted_fields_escaped
+  - preview_does_not_resurrect_entities
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Review/ProductReviewProductIdScopeTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Coupon/CouponDownloadGuardTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/CouponDirectIssueTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Refund/GuestRefundEstimateValidationTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Order/GuestCancelItemValidationTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Order/GuestConfirmOptionGateTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/SearchPreset/SearchPresetPermissionTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/SearchProductsListenerTest.php

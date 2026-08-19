@@ -1,0 +1,79 @@
+feature: 코어 고아 첨부 회수 (Orphan Attachment Cleanup)
+
+description: |
+  폼 저장 전에 즉시 업로드되는 첨부(FileUploader 등)는 소유자 없이 먼저 만들어지므로,
+  폼을 저장하지 않고 이탈하면 파일과 기록이 그대로 남는다. 공개 이슈 #115 동류 결함.
+
+  판정식은 네 조건의 AND 다 — 하나라도 느슨해지면 현역 첨부가 지워진다.
+    1. 소유자(attachmentable_type/id)가 없다
+    2. 업로드 후 보존기간이 지났다 (폼 작성 중 유예)
+    3. 확장 소유가 아니다 (source_identifier 없음 — 확장 라이프사이클 소관)
+    4. 현역으로 쓰이는 첨부가 아니다 (현재 사이트 로고 등 보호 목록)
+
+  사이트 로고는 소유자 없이 설정값이 직접 참조하는 첨부라 판정식만으로는 고아와 구분되지
+  않는다. 그래서 설정에 실린 ID 를 보호 목록으로 삼으며, 그 해석은 정리 서비스 자신이
+  수행한다 — 호출자가 넘기는 값으로 두면 인자를 빠뜨린 호출 하나가 운영 중인 로고를 파기한다.
+
+  함께 고친 것: 로고 교체 시 구 로고가 설정에 재편입되던 결함. 종전 저장 흐름은 컬렉션
+  전체를 다시 수집했으므로(방금 올린 로고가 제출 payload 에 아직 없어서), 운영자가 화면에서
+  뺀 로고를 실제로 파기하지 않으면 교체할 때마다 파일·기록·설정 세 곳에 누적됐다.
+  지금은 이번 요청이 제출한 목록이 저장 대상을 정한다 — sub_flow `site_logo_replacement` 참조.
+
+axes:
+  owner_state: [no_owner, has_owner]
+  source_owner: [core, extension]
+  age: [within_retention, past_retention]
+  protected: [not_protected, current_site_logo]
+
+exclusions:
+  - { owner_state: has_owner, source_owner: extension, reason: "소유자가 있으면 source 와 무관하게 대상이 아니다 — 코어 소유 1건으로 충분" }
+  - { owner_state: has_owner, age: within_retention, reason: "소유자가 있으면 나이 판정에 도달하지 않는다" }
+  - { owner_state: has_owner, protected: current_site_logo, reason: "사이트 로고는 소유자 없이 설정이 직접 참조하는 첨부라 소유자 보유와 양립하지 않는다" }
+  - { source_owner: extension, age: within_retention, reason: "확장 소유는 나이와 무관하게 코어 GC 대상이 아니다 — 경과분 1건으로 충분" }
+  - { source_owner: extension, protected: current_site_logo, reason: "사이트 로고는 코어 소유 컬렉션이라 확장 소유와 양립하지 않는다" }
+  - { protected: current_site_logo, age: within_retention, reason: "보호 목록은 보존기간 경과분에서만 판정에 관여한다 — 미경과분은 나이에서 이미 제외" }
+
+sub_flows:
+  - id: dry_run
+    description: 판정만 수행하고 파일·기록을 건드리지 않는 미리보기 경로
+    effects:
+      - core_orphan_prune_dry_run
+  - id: schedule_gate
+    description: |
+      자동 정리는 사용자 파일을 지우므로 기본 꺼짐이다. 커맨드가 `--scheduled` 에서
+      설정을 false 폴백으로 확인한 뒤에만 수행한다.
+    effects:
+      - core_orphan_prune_gate_off_by_default
+      - core_orphan_prune_gate_on
+  - id: site_logo_replacement
+    description: |
+      저장할 로고 목록은 이번 요청이 제출한 것이 정한다. 컬렉션 전체를 다시 훑으면 저장에
+      실패했거나 이탈로 남은 미참조 첨부가 설정에 되살아난다(브라우저 실측 — 신규 1건만
+      제출했는데 저장 결과가 2건).
+    effects:
+      - site_logo_replacement_drops_previous
+      - site_logo_unreferenced_collection_member_not_re_absorbed
+      - site_logo_stale_submitted_id_filtered
+      - site_logo_untouched_when_not_submitted
+      - site_logo_failed_save_keeps_removed_attachment
+  - id: settings_surface
+    description: 화면 바인딩 키가 코어 기본값·서버 검증과 일치하는지
+    effects:
+      - core_settings_orphan_toggle_default_off
+      - core_settings_orphan_keys_declared
+
+effects:
+  - core_orphan_prune_skips_owned
+  - core_orphan_prune_skips_extension_owned
+  - core_orphan_prune_protects_site_logo
+  - core_orphan_prune_collects_replaced_site_logo
+  - core_orphan_prune_keeps_within_retention
+  - core_orphan_prune_deletes_file
+  - core_orphan_prune_deletes_soft_deleted
+
+test_files:
+  - tests/Feature/Console/PruneOrphanAttachmentsCommandTest.php
+  - tests/Feature/Services/SettingsServiceSiteLogoTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-orphan-cleanup.test.ts
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-logo-remove-expression.test.ts
+  - tests/Playwright/specs/admin/settings-upload-orphan-cleanup.spec.ts

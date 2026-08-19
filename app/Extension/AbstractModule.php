@@ -928,6 +928,31 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
     }
 
     /**
+     * 신뢰하는 외부 스크립트 호스트 목록을 반환합니다.
+     *
+     * module.json 의 `trusted_script_hosts` 배열에서 읽습니다. 이 모듈이 레이아웃
+     * `scripts[].src` 로 로드하는 외부 CDN 호스트를 선언합니다. 코어는 이 목록을
+     * 집계(AbstractModule/AbstractPlugin → TrustedScriptHosts)해 런타임 스크립트 로더·
+     * 저장측 검증·정적 검사가 same-origin 이 아닌 스크립트 중 **선언된 호스트만** 허용하도록
+     * 합니다 (KVE-2026-1915 신뢰 출처 허용목록).
+     *
+     * @return array<int, string> 신뢰 호스트명 목록 (예: ['cdn.example.com'])
+     */
+    public function getTrustedScriptHosts(): array
+    {
+        $hosts = $this->loadManifest()['trusted_script_hosts'] ?? [];
+
+        if (! is_array($hosts)) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            array_map(fn ($host) => is_string($host) ? trim($host) : '', $hosts),
+            fn ($host) => $host !== ''
+        ));
+    }
+
+    /**
      * 레이아웃 확장 파일 경로 반환
      *
      * @return string extensions 디렉토리 경로
@@ -1307,6 +1332,75 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
     public function getStorageDisk(): string
     {
         return 'modules';
+    }
+
+    /**
+     * 카테고리별 스토리지 인스턴스 캐시 (디스크명 키 memoize)
+     *
+     * @var array<string, StorageInterface>
+     */
+    private array $storageByDisk = [];
+
+    /**
+     * 카테고리별 스토리지 디스크 이름 반환
+     *
+     * 기본값은 getStorageDisk() 와 동일 (현행 동작 100% 보존).
+     * 특정 카테고리(예: 'images')만 다른 디스크를 쓰려면 모듈이 오버라이드합니다.
+     *
+     * 주의: 오버라이드 구현은 'settings' 카테고리에서 모듈 설정을 조회하면 안 됩니다 —
+     * 모듈 설정 로드가 getStorage()->get('settings', ...) 를 경유하므로 재귀 고리가 생깁니다.
+     * 모듈 설정 조회는 'images' 등 설정 저장과 무관한 카테고리에서만 수행합니다.
+     *
+     * @param  string  $category  카테고리 (settings, attachments, images, cache, temp)
+     * @return string 디스크 이름
+     */
+    public function getStorageDiskFor(string $category): string
+    {
+        return $this->getStorageDisk();
+    }
+
+    /**
+     * 카테고리별 스토리지 드라이버 인스턴스 반환
+     *
+     * getStorageDiskFor() 가 결정한 디스크의 드라이버를 디스크 단위로 memoize 하여 반환합니다.
+     * 기본 디스크와 동일하면 getStorage() 인스턴스를 그대로 재사용합니다.
+     *
+     * @param  string  $category  카테고리
+     * @return StorageInterface 스토리지 드라이버 인스턴스
+     */
+    public function getStorageFor(string $category): StorageInterface
+    {
+        $disk = $this->getStorageDiskFor($category);
+
+        if (! isset($this->storageByDisk[$disk])) {
+            $base = $this->getStorage();
+            $this->storageByDisk[$disk] = ($disk === $base->getDisk()) ? $base : $base->withDisk($disk);
+        }
+
+        return $this->storageByDisk[$disk];
+    }
+
+    /**
+     * 공개 자산 디스크 설정값을 해석합니다.
+     *
+     * 우선순위: 확장 개별 설정(override) > 코어 전역 설정(core.storage.public_asset_disk).
+     * 미설정('')/'none'/config 에 존재하지 않는 디스크(고아 플러그인 디스크)는 null 로
+     * 해석되어 호출측이 기존 디스크(스트리밍)로 폴백합니다.
+     *
+     * @param  string|null  $override  확장 개별 설정값 (''/null 이면 코어 전역 설정 사용)
+     * @return string|null 사용할 디스크 이름 (스트리밍 유지면 null)
+     */
+    protected function resolvePublicAssetDisk(?string $override = null): ?string
+    {
+        $disk = ($override !== null && $override !== '')
+            ? $override
+            : (string) config('core.storage.public_asset_disk', '');
+
+        if ($disk === '' || $disk === 'none' || config("filesystems.disks.{$disk}") === null) {
+            return null;
+        }
+
+        return $disk;
     }
 
     /**

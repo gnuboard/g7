@@ -1,7 +1,8 @@
 {
   "editor": {
     "data_source": {
-      "settings": "エディター設定"
+      "settings": "エディター設定",
+      "ckeditor5Uploads": "アップロード画像一覧"
     }
   },
   "settings": {
@@ -29,6 +30,11 @@
         "label": "最大画像サイズ (MB)",
         "hint": "アップロード可能な画像の最大サイズです。(1 〜 10 MB)"
       },
+      "public_asset_disk": {
+        "label": "公開アセットディスク",
+        "hint": "このプラグインだけ別のディスクを使う場合に選択します。空にするとコアの公開アセットディスク設定に従います。",
+        "follow_core": "コア設定に従う"
+      },
       "editor_height": {
         "label": "エディター高さ (px)",
         "hint": "エディターの最小高さをピクセル単位で設定します。(200 〜 2000 px)"
@@ -41,6 +47,61 @@
       "step3": "画像アップロードを有効化するとエディターで画像を直接貼り付けたりアップロードできます。アップロードされた画像はサーバーに保存されます。",
       "step4": "設定変更後に保存すると即座にすべてのエディターに反映されます。",
       "step5": "プラグインを無効化するとエディターは基本 HtmlEditor に、コンテンツ表示は基本 HtmlContent に自動復元されます。"
+    },
+    "section_cleanup": "未使用画像の整理",
+    "cleanup": {
+      "toggle_label": "未使用画像の自動整理",
+      "toggle_hint": "デフォルトはオフです。有効にするには運営者が手動で有効にする必要があります。有効にすると、毎日1回、保存期間を過ぎた未使用画像のファイルと記録を一緒に削除します。",
+      "retention_label": "保存期間（日）",
+      "retention_hint": "アップロード後、この期間を過ぎた未使用画像のみが整理対象になります。（1～3650日）",
+      "manual_hint": "今何が削除されるか事前に確認したい場合は、サーバーで次のコマンドを実行してください：php artisan sirsoft-ckeditor5:prune-unused-images --dry-run",
+      "open_uploads": "アップロード画像管理を開く"
+    }
+  },
+  "admin": {
+    "uploads": {
+      "title": "エディターアップロード画像",
+      "description": "エディターでアップロードされた画像を確認し、使用されなくなった画像を整理します。",
+      "refresh": "更新",
+      "open_settings": "整理設定を開く",
+      "reference_notice": "参照状態は投稿・ページ・商品説明などの登録されたコンテンツを確認して判定します。参照ソースを登録していない外部拡張のコンテンツのみで使用されている画像は「未参照」と表示される場合があるため、削除前に確認してください。",
+      "scan_limited_notice": "参照状態フィルターは最近{{count}}件を基準として判定します。それより古い画像はこのリストに表示されません。",
+      "empty": "アップロードされた画像がありません。",
+      "col": {
+        "thumbnail": "プレビュー",
+        "original_name": "元のファイル名",
+        "file_size": "サイズ",
+        "uploader": "アップローダー",
+        "created_at": "アップロード日時",
+        "referenced": "参照状態"
+      },
+      "badge": {
+        "referenced": "参照済み",
+        "unreferenced": "未参照"
+      },
+      "filter": {
+        "search_placeholder": "元のファイル名またはハッシュで検索",
+        "search_button": "検索",
+        "referenced_all": "すべての状態",
+        "referenced_only": "参照済みのみ",
+        "unreferenced_only": "未参照のみ",
+        "date_from": "開始日",
+        "date_to": "終了日",
+        "clear": "フィルターをリセット"
+      },
+      "delete": {
+        "button": "削除",
+        "confirm_title": "画像を削除しますか?",
+        "confirm_message": "選択した画像のファイルと記録が一緒に削除されます。この操作は取り消せません。",
+        "success": "画像を削除しました。",
+        "failed": "画像の削除に失敗しました。"
+      },
+      "bulk_delete": {
+        "button": "選択削除",
+        "selected": "{{count}}件選択されました",
+        "confirm_title": "選択した画像を削除しますか?",
+        "confirm_message": "選択した{{count}}件のファイルと記録が一緒に削除されます。この操作は取り消せません。"
+      }
     }
   }
 }

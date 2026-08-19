@@ -10,7 +10,6 @@ use App\Console\Commands\BenchCommand;
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\ExtensionMiddlewareRegistryInterface;
 use App\Contracts\Extension\HookListenerInterface;
-use App\Contracts\Extension\ModuleSettingsInterface;
 use App\Contracts\Extension\StorageInterface;
 use App\Contracts\Extension\TemplateManagerInterface;
 use App\Contracts\Repositories\ActivityLogRepositoryInterface;
@@ -96,7 +95,9 @@ use App\Services\AttachmentService;
 use App\Services\DriverRegistryService;
 use App\Services\LayoutExtensionService;
 use App\Services\TemplateLayoutAttachmentService;
+use App\Services\TemplateService;
 use App\Services\UniqueIdService;
+use App\Support\ExtensionSettingsMirror;
 use App\Support\PrivilegedDatabaseAccounts;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -269,14 +270,14 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->when(AttachmentService::class)
             ->needs(StorageInterface::class)
             ->give(function () {
-                return new CoreStorageDriver(config('attachment.disk', 'local'));
+                return new CoreStorageDriver(config('attachment.disk', 'attachments'));
             });
 
         // TemplateLayoutAttachmentService용 CoreStorageDriver 바인딩
         $this->app->when(TemplateLayoutAttachmentService::class)
             ->needs(StorageInterface::class)
             ->give(function () {
-                return new CoreStorageDriver(config('attachment.disk', 'local'));
+                return new CoreStorageDriver(config('attachment.disk', 'attachments'));
             });
 
         // 코어 서비스용 CoreCacheDriver 바인딩
@@ -347,6 +348,12 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->singleton(TemplateManagerInterface::class, function ($app) {
             return $app->make(TemplateManager::class);
         });
+
+        // 템플릿 서비스도 공유 인스턴스로 등록한다.
+        // 미등록 상태에서는 주입 지점마다 새로 만들어지고, 그 생성자가 매번 템플릿
+        // 디렉토리를 재스캔했다. 요청 단위 상태는 라우트 병합 열화 플래그 하나뿐이며
+        // 그 플래그는 병합 진입 시 재설정되므로 공유해도 안전하다.
+        $this->app->singleton(TemplateService::class);
     }
 
     /**
@@ -739,69 +746,8 @@ class CoreServiceProvider extends ServiceProvider
      */
     protected function loadModuleSettingsToConfig(ModuleManager $moduleManager): void
     {
-        $moduleSettings = [];
-
-        foreach (array_keys($moduleManager->getActiveModules()) as $identifier) {
-            try {
-                // 모듈별 환경설정 서비스 조회
-                $settingsService = $this->resolveModuleSettingsService($identifier);
-
-                if ($settingsService instanceof ModuleSettingsInterface) {
-                    $settings = $settingsService->getAllSettings();
-                    if (! empty($settings)) {
-                        $moduleSettings[$identifier] = $settings;
-                    }
-                }
-            } catch (\Throwable $e) {
-                Log::warning("모듈 환경설정 로딩 실패: {$identifier}", [
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        }
-
-        Config::set('g7_settings.modules', $moduleSettings);
-    }
-
-    /**
-     * 모듈의 환경설정 서비스를 찾아 인스턴스화합니다.
-     *
-     * 다음 순서로 설정 서비스를 찾습니다:
-     * 1. 인터페이스 바인딩: Modules\Vendor\Module\Contracts\ModuleSettingsServiceInterface
-     * 2. 구체 클래스: Modules\Vendor\Module\Services\ModuleSettingsService
-     *
-     * @param  string  $identifier  모듈 식별자 (예: sirsoft-ecommerce)
-     * @return ModuleSettingsInterface|null 설정 서비스 인스턴스
-     */
-    protected function resolveModuleSettingsService(string $identifier): ?ModuleSettingsInterface
-    {
-        // vendor-module 형식을 네임스페이스로 변환
-        $parts = explode('-', $identifier);
-        if (count($parts) < 2) {
-            return null;
-        }
-
-        $vendor = ucfirst($parts[0]);
-        $moduleName = ucfirst($parts[1]);
-
-        // 1. 인터페이스 바인딩 확인
-        $interfaceClass = "Modules\\{$vendor}\\{$moduleName}\\Contracts\\{$moduleName}SettingsServiceInterface";
-        if ($this->app->bound($interfaceClass)) {
-            $service = $this->app->make($interfaceClass);
-            if ($service instanceof ModuleSettingsInterface) {
-                return $service;
-            }
-        }
-
-        // 2. 구체 클래스 확인
-        $concreteClass = "Modules\\{$vendor}\\{$moduleName}\\Services\\{$moduleName}SettingsService";
-        if (class_exists($concreteClass)) {
-            $service = $this->app->make($concreteClass);
-            if ($service instanceof ModuleSettingsInterface) {
-                return $service;
-            }
-        }
-
-        return null;
+        // 미러 채움 로직은 ExtensionSettingsMirror 가 단일 소유한다 (공개이슈 #109).
+        app(ExtensionSettingsMirror::class)->refreshAllModules();
     }
 
     /**
@@ -814,28 +760,9 @@ class CoreServiceProvider extends ServiceProvider
      */
     protected function loadPluginSettingsToConfig(PluginManager $pluginManager): void
     {
-        $pluginSettings = [];
-
-        foreach (array_keys($pluginManager->getActivePlugins()) as $identifier) {
-            try {
-                $settingsPath = storage_path("app/plugins/{$identifier}/settings/setting.json");
-
-                if (File::exists($settingsPath)) {
-                    $content = File::get($settingsPath);
-                    $settings = json_decode($content, true);
-
-                    if (json_last_error() === JSON_ERROR_NONE && ! empty($settings)) {
-                        $pluginSettings[$identifier] = $settings;
-                    }
-                }
-            } catch (\Throwable $e) {
-                Log::warning("플러그인 환경설정 로딩 실패: {$identifier}", [
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        }
-
-        Config::set('g7_settings.plugins', $pluginSettings);
+        // 종전에는 setting.json 을 raw 로 읽어 defaults 병합·정규화가 빠지고 암호문이 그대로
+        // 실렸다 — 값의 형태가 전용 게터와 달랐다. 이제 미러 소유자에 위임한다 (공개이슈 #109).
+        app(ExtensionSettingsMirror::class)->refreshAllPlugins();
     }
 
     /**
@@ -888,7 +815,8 @@ class CoreServiceProvider extends ServiceProvider
                     $configKey = $driverRegistry->getConfigKey($category);
 
                     if ($configKey && $defaultDriver) {
-                        Config::set($configKey, $defaultDriver);
+                        // log 카테고리의 적용 키(stack.channels)는 배열형 — 형태 변환은 레지스트리가 담당
+                        Config::set($configKey, $driverRegistry->getConfigValueForDriver($category, $defaultDriver));
                     }
 
                     Log::warning("플러그인 드라이버 '{$selectedDriver}'가 '{$category}' 카테고리에서 사용 불가능합니다. 기본 드라이버 '{$defaultDriver}'로 폴백합니다.");

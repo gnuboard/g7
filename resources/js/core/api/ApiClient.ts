@@ -155,8 +155,12 @@ class ApiClient {
           config.baseURL = '';
         }
 
+        // 인증 토큰은 동일 출처 요청에만 첨부한다. 공개 자산 디스크(S3/CDN)를 켜면
+        // 첨부 URL 이 외부 origin 절대 URL 이 되는데, 그 요청에 Authorization 을 실으면
+        // ① 세션 토큰이 제3자 origin 의 접근 로그에 남고
+        // ② 안전목록 밖 헤더라 preflight 가 발생해 CORS 미설정 CDN 에서는 이미지가 통째로 실패한다.
         const token = this.getToken();
-        if (token && config.headers) {
+        if (token && config.headers && !this.isCrossOriginRequest(config.url)) {
           config.headers.Authorization = `Bearer ${token}`;
         }
 
@@ -432,6 +436,32 @@ class ApiClient {
     } else {
       // 요청 설정 중 오류
       devTools.failRequest(requestId, error.message || 'Request error');
+    }
+  }
+
+  /**
+   * 요청 URL 이 현재 문서와 다른 출처인지 판정합니다.
+   *
+   * 상대 경로는 항상 동일 출처입니다. 절대 URL(`https://…`)과 프로토콜 상대
+   * URL(`//host/…`)만 출처를 비교하며, 파싱 불가하거나 브라우저 밖(SSR/테스트)
+   * 이면 동일 출처로 간주해 기존 동작을 유지합니다.
+   *
+   * @param  url  요청 URL (Axios config.url)
+   * @return bool 교차 출처 여부
+   */
+  private isCrossOriginRequest(url?: string): boolean {
+    if (!url || typeof window === 'undefined' || !window.location) {
+      return false;
+    }
+
+    if (!/^(https?:)?\/\//i.test(url)) {
+      return false;
+    }
+
+    try {
+      return new URL(url, window.location.href).origin !== window.location.origin;
+    } catch {
+      return false;
     }
   }
 

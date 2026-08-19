@@ -3,6 +3,9 @@
 return [
     // 사용자 관련 예외
     'cannot_delete_super_admin' => '슈퍼 관리자는 삭제할 수 없습니다.',
+    'cannot_modify_super_admin' => '슈퍼 관리자 계정 또는 역할은 수정할 권한이 없습니다.',
+    'cannot_grant_unheld_permission' => '본인이 보유하지 않았거나 더 넓은 범위의 권한은 부여할 수 없습니다.',
+    'cannot_modify_protected_role' => '시스템 또는 확장이 소유한 역할은 수정할 권한이 없습니다.',
 
     'circular_reference' => '레이아웃 순환 참조 감지: :trace',
     'max_depth_exceeded' => '레이아웃 중첩 깊이가 최대 허용 깊이(:max)를 초과했습니다.',

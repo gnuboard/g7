@@ -1,0 +1,40 @@
+feature: 레이아웃 scripts[].src 신뢰 호스트 allowlist (KVE-2026-1915 B-2)
+
+description: |
+  레이아웃이 로드하는 외부 스크립트(scripts[].src)는 same-origin 또는 manifest 가 선언한
+  신뢰 호스트(활성 확장이 등록한 CDN 등)만 허용한다. 편집자는 신뢰 호스트를 추가할 수 없고
+  (manifest 는 배포물), 그 외 외부 origin 스크립트는 로드되지 않는다.
+
+  집계 체인은 런타임·저장측·정적검사 3층이 동형이며, 저장측(SafeLayoutExpressions/NoExternalUrls)
+  이 외부 URL 저장을 422 로 차단한다. 본 E2E 는 실제 화면 로드의 모든 script 요청이 same-origin
+  또는 신뢰 호스트임을 네트워크 레벨에서 무조건 측정한다.
+
+axes:
+  case: [trusted_hosts_exposed_in_config, active_extension_host_reflected, untrusted_external_script_not_loaded]
+
+effects:
+  - trusted_script_host_allowlist_wired
+  - untrusted_external_script_blocked
+
+# 선언 주체(모듈/플러그인/템플릿)는 브라우저 관찰 축(case)과 교차하지 않는 별개 관심사다 —
+# case 는 배포 번들이 무엇을 로드하는가를, 선언 주체는 서버가 무엇을 집계하는가를 본다.
+# 축으로 올리면 9조합이 되지만 그 조합을 관측하는 지점이 없어(마커가 두 파일에 갈려 있어)
+# 어떤 조합도 커버되지 않는다. 관심사를 sub_flow 로 분리한다.
+sub_flows:
+  - id: trusted_host_declaring_subject
+    description: |
+      신뢰 호스트 집계는 활성 모듈·플러그인·템플릿 세 주체를 모두 읽는다. 템플릿은 PHP 확장
+      추상 클래스가 없어(AbstractTemplate 부재) 모듈/플러그인과 집계 경로가 다르므로 별도
+      회귀 가드가 필요하다 — 이 구분이 없던 동안 코어가 템플릿만 집계하지 않는 상태
+      (정적검사·문서는 인정, 런타임·저장측은 차단)가 드러나지 않았다.
+      한 주체의 집계가 실패해도 나머지 주체 집계는 계속되어야 한다(실패 격리).
+    effects:
+      - every_extension_type_declaration_is_collected
+      - malformed_or_absent_declaration_is_ignored
+
+test_files:
+  - tests/Playwright/specs/layout-script-src-trusted-host.spec.ts
+  - tests/Unit/Support/TrustedScriptHostsTest.php
+  # 차단 결정 함수(isAllowedScriptSrc)는 minify 된 배포 번들에서 이름으로 호출할 수 없어
+  # E2E 는 그 결과만 관찰한다. 결정 자체(신뢰 판정·authority 우회 차단)는 여기서 잠근다.
+  - resources/js/core/__tests__/TemplateApp.scriptSrc.test.ts

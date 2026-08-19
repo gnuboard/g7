@@ -4,6 +4,14 @@ All notable changes to this plugin will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.0.3] - 2026-08-19
+
+### Fixed
+
+- 빌드 산출물이 존재하지 않는 소스맵 파일을 참조해 브라우저 개발자 도구 사용 시 불필요한 404 요청이 발생하던 문제를 수정했습니다.
+- 회원 탈퇴·삭제 시 본인확인 기록 파기와 이력 익명화 중 한쪽만 처리된 채 남을 수 있던 문제를 수정했습니다 — 이제 두 처리가 함께 완료됩니다. (#112 @Tuwasduliebst 님께서 제보해주셨습니다.)
+- 플러그인 설정 저장이 실패했을 때 실패 사유 대신 일반 안내 문구만 표시되던 문제를 수정했습니다. 이제 서버가 알려준 사유가 그대로 안내됩니다.
+
 ## [1.0.2] - 2026-08-10
 
 ### Changed

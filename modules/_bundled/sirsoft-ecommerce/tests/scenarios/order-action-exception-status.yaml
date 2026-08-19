@@ -1,0 +1,78 @@
+feature: 주문 액션의 예외 → 상태코드 매핑 (Order Action Exception Status)
+
+description: |
+  주문 취소·구매확정·재주문·무통장 입금확인과 쿠폰 다운로드가 실패했을 때, 그 원인이
+  "사용자·운영자가 고칠 수 있는 도메인 사유" 인지 "서버 결함·인프라 장애" 인지를
+  응답 상태코드로 구분한다.
+
+  배경:
+    공개 #104 는 비회원 배송지 변경에서 모든 예외가 422 로 뭉개지는 것을 지적했지만,
+    같은 형태가 주문 도메인의 다른 액션에도 그대로 있었다. 인프라 장애가 "배송 전
+    상태에서만 변경 가능" 같은 도메인 안내로 위장되면 사용자는 고칠 수 없는 안내를
+    보고, 운영자는 장애를 늦게 안다.
+
+  핵심 설계:
+    - typed 도메인 예외 → **기존 상태코드 유지** (계약 변경 최소화)
+      · 취소/재주문/입금확인 = 422
+      · 쿠폰 다운로드 = 400 (원래 400이었고, 예외 승격이 사용자 계약을 함께
+        바꾸면 그것이 회귀다)
+    - 그 외 예외 → 500, 응답 본문에 예외 원문 미포함
+    - 사유는 예외가 들고 다니는 키로 조립한다. 번역문을 메시지 키 자리에 넘기면
+      해석에 실패해 원문이 그대로 노출된다.
+
+  인프라 500 축은 서비스 mock 으로만 유발할 수 있어 PHPUnit 이 SSoT 다.
+  브라우저에서는 도메인 사유가 먼저 걸려 재현되지 않는다.
+
+axes:
+  endpoint: [cancel, confirm_option, reorder, coupon_download, confirm_deposit]
+  error_class: [domain, infrastructure]
+
+exclusions:
+  - { endpoint: confirm_option, error_class: domain, reason: "OrderService::confirmOption 은 throw 지점이 0건이라 typed 도메인 예외가 존재하지 않는다. 도메인 축을 만들려면 없는 예외를 새로 만들어야 하므로 조합이 성립하지 않는다 (계획 §3 B그룹 — typed 예외가 아예 없어 4xx 에 걸리는 건 100% 인프라/코드버그)" }
+
+effects:
+  # 주문 취소
+  - order_cancel_domain_exception_returns_422
+  - order_cancel_infrastructure_exception_returns_500_not_422
+  # 구매확정 (도메인 축 없음 — exclusions 참조)
+  - order_confirm_option_infrastructure_exception_returns_500_not_422
+  # 재주문
+  - order_reorder_domain_exception_returns_422
+  - order_reorder_infrastructure_exception_returns_500_not_422
+  # 쿠폰 다운로드 — typed 라도 기존 400 을 유지한다
+  - coupon_download_domain_exception_returns_400_with_reason_key
+  - coupon_download_infrastructure_exception_returns_500_not_400
+  # 관리자 무통장 입금확인
+  - order_confirm_deposit_domain_exception_returns_422
+  - order_confirm_deposit_infrastructure_exception_returns_500_not_422
+
+scenarios:
+  - id: order_domain_failure_keeps_its_original_status
+    description: 도메인 사유로 실패하면 그 액션이 원래 쓰던 상태코드(취소·재주문·입금확인 422 / 쿠폰 다운로드 400)와 해석된 다국어 문구가 그대로 전달된다
+    effects:
+      - order_cancel_domain_exception_returns_422
+      - order_reorder_domain_exception_returns_422
+      - coupon_download_domain_exception_returns_400_with_reason_key
+      - order_confirm_deposit_domain_exception_returns_422
+
+  - id: order_infrastructure_failure_is_not_disguised_as_input_error
+    description: DB 장애 등 인프라 예외는 500 으로 구분되고 응답 본문에 예외 원문(SQLSTATE 등)이 포함되지 않는다
+    effects:
+      - order_cancel_infrastructure_exception_returns_500_not_422
+      - order_confirm_option_infrastructure_exception_returns_500_not_422
+      - order_reorder_infrastructure_exception_returns_500_not_422
+      - coupon_download_infrastructure_exception_returns_500_not_400
+      - order_confirm_deposit_infrastructure_exception_returns_500_not_422
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/OrderDomainExceptionStatusPairTest.php
+
+notes: |
+  이 매니페스트는 감사에서 뒤늦게 신설됐다. 테스트에는 `@effects` 9건이 처음부터
+  마킹돼 있었지만 어느 매니페스트에도 선언돼 있지 않았고, 그 상태로 검사를 통과했다 —
+  test-scenario-coverage 는 "선언된 effect 가 어느 테스트에든 언급되는가" 한 방향만
+  보기 때문에, 선언이 아예 없는 effect 는 셀 대상 자체가 아니었다.
+
+  파일은 `member-order-change-address.yaml` 의 test_files 에 등록돼 있었으나 그
+  매니페스트가 다루는 것은 배송지 변경이고, 취소·재주문·입금확인·쿠폰 다운로드는
+  그 시나리오의 축이 아니다. 등록을 이쪽으로 옮겼다.

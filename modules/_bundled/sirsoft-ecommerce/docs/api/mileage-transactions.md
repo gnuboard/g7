@@ -637,7 +637,65 @@ _목록 응답: `data.data[]` 배열 항목의 필드. 페이지네이션 없는
 
 **응답 예시**
 
-<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "연결 거래를 조회했습니다.",
+    "data": {
+        "data": [
+            {
+                "number": 1,
+                "id": 531,
+                "user_id": 166,
+                "currency": "KRW",
+                "type": "order_use",
+                "type_label": "주문 사용",
+                "admin_badge_group": "blue",
+                "user_display_category": "use",
+                "amount": -500,
+                "amount_formatted": "-500원",
+                "remaining_amount": 0,
+                "remaining_amount_formatted": "0원",
+                "balance_after": 500,
+                "order_id": 436,
+                "order_option_id": 824,
+                "order_cancel_id": null,
+                "source_transaction_id": 528,
+                "granted_by": null,
+                "description": "주문 마일리지 사용",
+                "memo": null,
+                "expires_at": null,
+                "expires_at_formatted": null,
+                "expires_at_date": null,
+                "expired_at": null,
+                "expired_at_formatted": null,
+                "created_at": "2026-07-07T05:47:31+00:00",
+                "created_at_formatted": "2026-07-07 14:47:31",
+                "created_at_date": "2026-07-07",
+                "is_earning": false,
+                "can_edit_expiry": false,
+                "expired_amount": 0,
+                "expired_amount_formatted": "0원",
+                "expiry_state": "active",
+                "abilities": {
+                    "can_manage": true,
+                    "can_edit": false
+                }
+            }
+        ],
+        "abilities": {
+            "can_manage": true
+        },
+        "currencies": []
+    }
+}
+```
+
+> 연결 거래가 없으면 `data.data` 가 빈 배열이다 (404 가 아니다 — 404 는 `{id}` 거래 자체가 없을 때뿐이다). 페이지네이션이 없는 컬렉션이라 `data.pagination` 키는 존재하지 않으며, `data.currencies` 는 이 엔드포인트가 주입하지 않아 항상 `[]` 다.
 
 **에러 응답**
 
@@ -645,7 +703,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드. 페이지네이션 없는
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.mileage.read`)이 없는 경우 |
-| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 404 | Not Found | `{id}` 에 해당하는 마일리지 거래가 없는 경우 |
 
 <!-- @generated:end -->
 

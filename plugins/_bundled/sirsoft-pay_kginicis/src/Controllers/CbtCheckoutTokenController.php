@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Plugins\Sirsoft\PayKginicis\Controllers;
 
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
+use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Plugins\Sirsoft\PayKginicis\Concerns\ValidatesCbtOrderContext;
+use Plugins\Sirsoft\PayKginicis\Http\Requests\CbtCheckoutTokenRequest;
 use Plugins\Sirsoft\PayKginicis\Services\CbtCheckoutTokenService;
 use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
-use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 
 class CbtCheckoutTokenController
 {
@@ -22,19 +22,20 @@ class CbtCheckoutTokenController
         private readonly CbtCheckoutTokenService $checkoutTokenService,
     ) {}
 
-    public function issue(Request $request): JsonResponse
+    /**
+     * 해외결제(CBT) 체크아웃 토큰 발급
+     *
+     * 형식·길이 검증은 CbtCheckoutTokenRequest 가 담당한다 (국내 SignatureRequest 와 동일 강도).
+     *
+     * @param  CbtCheckoutTokenRequest  $request  oid/price/buyer 정보
+     * @return JsonResponse checkout_token 또는 403/404/422
+     */
+    public function issue(CbtCheckoutTokenRequest $request): JsonResponse
     {
-        $oid = (string) $request->input('oid', '');
-        $price = (int) $request->input('price', 0);
+        $oid = (string) $request->validated('oid');
+        $price = (int) $request->validated('price');
 
-        if ($oid === '' || $price <= 0) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Missing required parameters: oid, price',
-            ], 422);
-        }
-
-        $rateLimitKey = 'sirsoft-pay_kginicis:cbt-token:' . sha1($request->ip() . '|' . $oid);
+        $rateLimitKey = 'sirsoft-pay_kginicis:cbt-token:'.sha1($request->ip().'|'.$oid);
         if (RateLimiter::tooManyAttempts($rateLimitKey, 10)) {
             return response()->json([
                 'success' => false,

@@ -1,0 +1,67 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경의 fallback YAML 파서가 nested axes 를 읽지 못해
+#   검출되지 않는다(다른 시나리오와 동일 한계). 축 조합은 PHPUnit Feature 테스트
+#   (SettingsConfigMirrorTest · PageSettingsMirrorTest · EcommerceSettingsMirrorTest)가
+#   커버하고 green 이다.
+
+feature: 설정 config 미러 재채움 (공개이슈 #109)
+
+description: |
+  `g7_settings.*` in-memory 미러를 부팅뿐 아니라 저장 시점에도 다시 채워, 상주 프로세스가
+  옛 설정을 읽지 않게 한다.
+
+  배경:
+    - 미러는 부팅 때 한 번만 채워졌다. FPM 은 요청마다 부팅해 드러나지 않지만,
+      큐 워커·schedule:work·Reverb 는 프로세스가 상주해 저장 후에도 옛 값을 영원히 읽었다.
+    - 플러그인 미러는 setting.json 을 raw 로 읽어 defaults 병합·정규화가 빠지고
+      암호문이 그대로 실렸다 — 전용 게터와 값의 형태가 달랐다.
+    - sirsoft-page 는 설정 서비스 자체가 없어 미러가 영구 미존재였고, 소비자는 항상
+      인자 기본값으로 폴백했다 (기존 테스트가 config 직접 주입으로 우회해 미검출).
+
+  적용 지점:
+    - 채움 로직 단일 소유자 신설 — 부팅 Provider 와 저장 경로가 같은 코드를 호출한다.
+    - 코어: 설정 캐시 무효화 지점 (saveSettings / saveAdvancedSettings / setSetting 공통).
+    - 플러그인: 저장 성공 후 해당 플러그인만 재채움.
+    - 모듈: 코어 헬퍼를 각 모듈 서비스의 캐시 초기화 지점에서 호출.
+    - 민감 항목(`sensitive: true`)은 미러에서 키 자체를 제거 (암호문도 싣지 않음).
+
+axes:
+  scope: [core, module, plugin]
+  trigger: [boot, save, cache_clear]
+  field_sensitivity: [normal, sensitive]
+  value_origin: [defaults_only, saved_override]
+  consumer: [mirror_helper, dedicated_getter]
+
+exclusions:
+  - { scope: core, field_sensitivity: sensitive, reason: "코어 설정 카테고리에는 sensitive 스키마 선언이 없다" }
+  - { trigger: cache_clear, scope: core, reason: "코어는 캐시 무효화 자체가 저장 경로와 동일 지점" }
+  - { field_sensitivity: sensitive, consumer: mirror_helper, value_origin: defaults_only, reason: "미러에서 제거되므로 값의 출처와 무관" }
+
+effects:
+  - core_mirror_refreshed_after_save
+  - core_mirror_refreshed_after_set_setting
+  - module_mirror_refreshed_after_save
+  - module_mirror_refreshed_after_cache_clear
+  - plugin_mirror_refreshed_after_save
+  - plugin_mirror_refreshed_after_reset
+  - core_mirror_refreshed_after_restore
+  - plugin_mirror_merges_defaults
+  - plugin_mirror_matches_dedicated_getter_shape
+  - sensitive_fields_absent_from_mirror_on_boot
+  - sensitive_fields_absent_from_mirror_on_refresh
+  - sensitive_fields_absent_from_mirror_after_save
+  - sensitive_fields_still_readable_via_dedicated_getter
+  - page_module_mirror_exists
+  - page_module_consumers_read_configured_values
+  - boot_and_save_share_one_fill_implementation
+
+test_files:
+  - tests/Feature/Settings/SettingsConfigMirrorTest.php
+  - modules/_bundled/sirsoft-page/tests/Feature/PageSettingsMirrorTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Services/EcommerceSettingsMirrorTest.php
+
+rules_layer_coverage:
+  - rule: service-provider
+    coverage: 미러 채움은 DI 조기 해석 없이 지연 해석 (register 단계 안전)
+  - rule: settings_service_testing_path_isolation
+    coverage: 신설 페이지 설정 서비스도 testing 환경 저장 경로 격리 적용

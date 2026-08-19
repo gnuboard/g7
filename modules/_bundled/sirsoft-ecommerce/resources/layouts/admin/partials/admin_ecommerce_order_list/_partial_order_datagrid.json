@@ -730,6 +730,7 @@
             "data": "{{orders?.data?.data || []}}",
             "loading": "{{orders?.loading}}",
             "selectable": true,
+            "selectionScope": "page",
             "selectedIds": "{{_local.selectedItems || []}}",
             "showColumnSelector": false,
             "selectedCountText": "",

@@ -8,10 +8,11 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
-use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
-use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
 use Modules\Sirsoft\Ecommerce\Enums\RefundPriorityEnum;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ValidatesCancelItems;
+use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
 
 /**
  * 주문 취소 요청
@@ -20,6 +21,8 @@ use Modules\Sirsoft\Ecommerce\Models\Order;
  */
 class CancelOrderRequest extends FormRequest
 {
+    use ValidatesCancelItems;
+
     protected ?Order $order = null;
 
     /**
@@ -65,14 +68,14 @@ class CancelOrderRequest extends FormRequest
     /**
      * 추가 검증 로직
      *
-     * @param Validator $validator
+     * @param  Validator  $validator
      * @return void
      */
     protected function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator) {
             $orderId = $this->route('id');
-            $this->order = Order::find($orderId);
+            $this->order = app(OrderRepositoryInterface::class)->find((int) $orderId);
 
             if (! $this->order) {
                 abort(ResponseHelper::moduleError(
@@ -109,60 +112,15 @@ class CancelOrderRequest extends FormRequest
 
             // 부분취소 items 검증
             if ($this->has('items') && is_array($this->input('items'))) {
-                $this->validateCancelItems($validator);
+                $this->validateCancelItemsAgainstOrder($validator, $this->order, $this->input('items', []));
             }
         });
     }
 
     /**
-     * 취소 아이템 목록을 검증합니다.
-     *
-     * @param  Validator  $validator
-     * @return void
-     */
-    protected function validateCancelItems(Validator $validator): void
-    {
-        $this->order->loadMissing('options');
-        $items = $this->input('items', []);
-
-        foreach ($items as $index => $item) {
-            $option = $this->order->options->firstWhere('id', $item['order_option_id']);
-
-            if (! $option) {
-                $validator->errors()->add(
-                    "items.{$index}.order_option_id",
-                    __('sirsoft-ecommerce::exceptions.order_option_not_found')
-                );
-
-                continue;
-            }
-
-            // 이미 취소된 옵션은 제외
-            if ($option->option_status === OrderStatusEnum::CANCELLED) {
-                $validator->errors()->add(
-                    "items.{$index}.order_option_id",
-                    __('sirsoft-ecommerce::exceptions.order_option_already_cancelled')
-                );
-
-                continue;
-            }
-
-            // 취소 수량이 현재 수량을 초과하는지 검증
-            if ($item['cancel_quantity'] > $option->quantity) {
-                $validator->errors()->add(
-                    "items.{$index}.cancel_quantity",
-                    __('sirsoft-ecommerce::exceptions.cancel_quantity_exceeds', [
-                        'max' => $option->quantity,
-                    ])
-                );
-            }
-        }
-    }
-
-    /**
      * 검증 실패 시 응답 커스터마이징
      *
-     * @param Validator $validator
+     * @param  Validator  $validator
      * @return void
      *
      * @throws ValidationException

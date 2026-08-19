@@ -3,6 +3,7 @@
 namespace Tests\Feature\Api\Admin;
 
 use App\Enums\ExtensionStatus;
+use App\Extension\HookManager;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\Template;
@@ -101,6 +102,46 @@ class TemplateLayoutAttachmentControllerTest extends TestCase
 
         // 스토리지에 실제 저장됐는지 (category/path)
         Storage::disk($attachment->disk)->assertExists('template-layout-attachments/'.$attachment->path);
+    }
+
+    public function test_upload_fires_hooks(): void
+    {
+        // Arrange
+        $beforeUploadFired = false;
+        $afterUploadFired = false;
+        $filterApplied = false;
+
+        HookManager::addAction('core.template_layout_attachment.before_upload', function () use (&$beforeUploadFired) {
+            $beforeUploadFired = true;
+        });
+
+        HookManager::addFilter('core.template_layout_attachment.filter_upload_file', function ($file) use (&$filterApplied) {
+            $filterApplied = true;
+
+            return $file;
+        });
+
+        HookManager::addAction('core.template_layout_attachment.after_upload', function () use (&$afterUploadFired) {
+            $afterUploadFired = true;
+        });
+
+        // Act
+        $response = $this->withHeaders($this->authHeaders())
+            ->postJson("/api/admin/templates/{$this->template->identifier}/layout-attachments", [
+                'file' => UploadedFile::fake()->image('hooked.png', 10, 10),
+                'layout_name' => 'home',
+            ]);
+
+        // Assert
+        $response->assertStatus(200)->assertJson(['success' => true]);
+        $this->assertTrue($beforeUploadFired, 'before_upload hook should be fired');
+        $this->assertTrue($filterApplied, 'filter_upload_file hook should be applied');
+        $this->assertTrue($afterUploadFired, 'after_upload hook should be fired');
+
+        // Cleanup hooks
+        HookManager::clearAction('core.template_layout_attachment.before_upload');
+        HookManager::clearFilter('core.template_layout_attachment.filter_upload_file');
+        HookManager::clearAction('core.template_layout_attachment.after_upload');
     }
 
     public function test_index_lists_template_attachments(): void

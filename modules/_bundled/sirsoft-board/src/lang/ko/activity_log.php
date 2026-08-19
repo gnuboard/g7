@@ -90,6 +90,7 @@ return [
         'use_comment' => '댓글 사용',
         'use_reply' => '답글 사용',
         'max_reply_depth' => '최대 답글 깊이',
+        'reply_delete_policy' => '답글 삭제 방식',
         'use_report' => '신고 사용',
         'use_file_upload' => '파일 업로드 사용',
         'max_file_size' => '최대 파일 크기',

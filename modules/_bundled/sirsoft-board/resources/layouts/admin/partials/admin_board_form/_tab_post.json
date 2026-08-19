@@ -490,6 +490,70 @@
           ]
         },
         {
+          "id": "reply_delete_policy_field",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_local.form.use_reply}}",
+          "props": {
+            "className": ""
+          },
+          "children": [
+            {
+              "id": "reply_delete_policy_label",
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "className": "form-label"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-board.admin.form.fields.reply_delete_policy.label"
+                }
+              ]
+            },
+            {
+              "id": "reply_delete_policy_select",
+              "type": "composite",
+              "name": "Select",
+              "props": {
+                "name": "reply_delete_policy",
+                "options": [
+                  {
+                    "value": "cascade",
+                    "label": "$t:sirsoft-board.admin.form.fields.reply_delete_policy.options.cascade"
+                  },
+                  {
+                    "value": "block",
+                    "label": "$t:sirsoft-board.admin.form.fields.reply_delete_policy.options.block"
+                  }
+                ],
+                "disabled": "{{_computed.isReadOnly}}",
+                "className": ""
+              }
+            },
+            {
+              "id": "reply_delete_policy_hint",
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "form-hint"
+              },
+              "text": "$t:sirsoft-board.admin.form.fields.reply_delete_policy.hint"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{_local.errors?.reply_delete_policy}}",
+              "props": {
+                "className": "form-error-xs mt-1"
+              },
+              "text": "{{_local.errors?.reply_delete_policy?.[0] ?? ''}}"
+            }
+          ]
+        },
+        {
           "id": "use_comment_toggle",
           "type": "basic",
           "name": "Div",

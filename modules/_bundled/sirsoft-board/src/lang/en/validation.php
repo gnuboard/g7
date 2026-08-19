@@ -263,6 +263,9 @@ return [
             'notice_not_allowed' => 'Replies cannot be created on notice posts.',
         ],
         'reply_not_allowed' => 'Reply feature is disabled for this board.',
+        'delete' => [
+            'has_replies' => 'Posts with replies cannot be deleted. Please delete the replies first.',
+        ],
         'status' => [
             'in' => 'Invalid post status.',
         ],
@@ -303,6 +306,7 @@ return [
             'basic_defaults.use_comment' => 'Use Comment',
             'basic_defaults.use_reply' => 'Use Reply',
             'basic_defaults.max_reply_depth' => 'Max Reply Depth',
+            'basic_defaults.reply_delete_policy' => 'Reply Delete Policy',
             'basic_defaults.max_comment_depth' => 'Max Comment Depth',
             'basic_defaults.comment_order' => 'Comment Order',
             'basic_defaults.show_view_count' => 'Show View Count',
@@ -391,6 +395,7 @@ return [
             'override_values.per_page' => 'Posts Per Page',
             'override_values.per_page_mobile' => 'Posts Per Page (Mobile)',
             'override_values.max_reply_depth' => 'Max Reply Depth',
+            'override_values.reply_delete_policy' => 'Reply Delete Policy',
             'override_values.max_comment_depth' => 'Max Comment Depth',
             'override_values.min_title_length' => 'Min Title Length',
             'override_values.max_title_length' => 'Max Title Length',
@@ -401,6 +406,10 @@ return [
             'override_values.max_file_size' => 'Max File Size',
             'override_values.max_file_count' => 'Max File Count',
             'override_values.new_display_hours' => 'New Display Hours',
+
+            // attachment_settings
+            'attachment_settings.purge_enabled' => 'Permanent Cleanup Of Deleted Attachments',
+            'attachment_settings.purge_retention_days' => 'Deleted Attachment Retention Period',
         ],
     ],
 

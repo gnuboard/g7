@@ -32,7 +32,8 @@ class PaymentCloseReportRequest extends FormRequest
             'buyer_email' => ['nullable', 'string', 'max:255'],
             'buyer_phone' => ['nullable', 'string', 'max:30'],
             'payment_method' => ['nullable', 'string', 'max:50'],
-            'reason' => ['nullable', 'string', 'max:80'],
+            // 내부 텔레메트리 필드 (PG 미전송 실측) — 형제 플러그인(nhnkcp/nicepayments)과 160 으로 통일
+            'reason' => ['nullable', 'string', 'max:160'],
         ];
     }
 }

@@ -1,23 +1,34 @@
 # audit:allow test-scenario-coverage reason: |
 #   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 검출되지 않는다(다른 번들 동일).
 #   환율 영속성 axis 는 PHPUnit(EcommerceSettingsServiceTest) 가 전수 커버하며 green 이다.
-feature: 통화 환율 영속성 — code 기준 병합 (U11-A)
+feature: 통화 목록 영속성 — code 기준 병합(U11-A) + 의도적 삭제 기록(공개 #91)
 
 description: |
   language_currency.currencies 는 정수키 리스트라 array_merge 가 통째 교체되어,
   관리자가 일부 통화를 빼고 저장하면 defaults 통화가 영구 소실되던 영속성 공백을 수정한다.
   getAllSettings() 에서 code 기준 병합(mergeCurrenciesByCode)으로 defaults 보충(환율은 저장본 우선).
 
+  그 보충은 "array_merge 부작용으로 인한 소실" 을 되돌리기 위한 것이었으나 관리자의 의도적
+  삭제와 구분할 장치가 없어, 기본 제공 통화를 삭제하면 저장 응답에서 이미 되살아났다(공개 #91).
+  저장 시점에 삭제 의도를 서버가 도출해 저장본에 기록하고, 조회 병합이 그 기록을 존중한다.
+  삭제가 실제로 영속되면 처음 도달 가능해지는 후속 경로(사용 중지된 통화를 표시 통화로 가진
+  구매자의 체크아웃 차단)도 같은 축에서 방어한다.
+
 axes:
   saved_currency_set:
-    - all_five           # 전 5종 저장
-    - jpy_missing        # JPY 빼고 저장
-    - usd_missing        # USD 빼고 저장
-    - new_added          # 관리자 신규 통화 추가
+    - all_five                    # 전 5종 저장
+    - jpy_missing                 # JPY 빼고 저장
+    - usd_missing                 # USD 빼고 저장
+    - new_added                   # 관리자 신규 통화 추가
+    - default_removed_by_admin    # 관리자 의도 삭제 (공개 #91)
   get_settings_result:
-    - defaults_supplemented   # 누락 통화 defaults 보충됨
+    - defaults_supplemented       # 누락 통화 defaults 보충됨
   exchange_rate_preservation:
-    - saved_value_kept   # 저장본 exchange_rate 보존
+    - saved_value_kept            # 저장본 exchange_rate 보존
+  deletion_tombstone:             # 공개 #91 — 의도적 삭제 영속화
+    - none_legacy                 # 구 저장본(키 없음) → U11-A 보충 유지
+    - has_removed_codes           # 삭제 기록 보유 → defaults 보충 스킵
+    - readded                     # 재추가 저장 → 기록 해제·부활
 
 effects:
   - missing_currency_supplemented_from_defaults  # array_merge 통째교체로 통화 소실 안 됨
@@ -25,6 +36,64 @@ effects:
   - new_added_currency_preserved                 # 저장본에만 있는 신규 통화 보존
   - default_currency_exchange_rate_null          # 기본통화 exchange_rate null 유지(syncCurrencyDefaults)
   - currency_conversion_uses_persisted_rate      # 환율 109 설정 시 JPY 정확 환산, null 시 제외
+  # 공개 #91
+  - intentionally_removed_default_currency_stays_deleted  # 삭제한 기본 제공 통화 미부활
+  - tombstone_recomputed_server_side_on_save              # 삭제 기록은 서버가 재계산(클라이언트 값 불신)
+  - base_currency_never_tombstoned                        # 기본 통화는 기록 대상 제외 → 항상 생존
+  - other_category_save_preserves_tombstone               # 타 탭/통화 미제출 저장이 삭제를 되돌리지 않음
+  - legacy_file_without_tombstone_keeps_supplement        # 구 저장본은 U11-A 보충 그대로
+  - unregistered_active_currency_falls_back_to_base       # 미등록 표시/선호 통화 → 기본 통화 폴백
+  - non_supplemented_list_settings_keep_deletion          # 보충 병합을 거치지 않는 목록 설정은 삭제 유지
+  - catalog_merged_list_settings_refill_by_design         # 카탈로그 병합 목록(결제수단)은 토글 모델이라 재충전
+  # 공개 #91 후속 — 삭제된 통화로 결제된 과거 주문
+  - deleted_currency_order_refund_uses_snapshot_rate       # 환불 재계산이 스냅샷 환율을 사용
+  - deleted_currency_display_keeps_snapshot_decimal_places # 표기 자릿수도 주문 시점 값 유지
+  - legacy_snapshot_without_decimal_places_falls_back_to_settings  # 구형 스냅샷은 현재 설정 폴백
+
+sub_flows:
+  - id: intentional_deletion_round_trip
+    description: |
+      삭제 → 저장 → 재조회 왕복. 서비스 계층뿐 아니라 저장 응답(PUT) 자체가 삭제를
+      반영해야 한다 — 제보된 증상이 "저장 응답에 이미 5종이 부활" 이었기 때문이다.
+    effects:
+      - intentionally_removed_default_currency_stays_deleted
+      - tombstone_recomputed_server_side_on_save
+      - base_currency_never_tombstoned
+  - id: deletion_side_effects
+    description: 삭제가 영속되면 처음 열리는 후속 경로(미등록 통화가 결제 통화로 채택되는 경우) 방어
+    effects:
+      - unregistered_active_currency_falls_back_to_base
+  - id: deleted_currency_existing_orders
+    description: |
+      통화를 삭제해도 그 통화로 결제된 과거 주문은 환불 재계산·표기가 불변이어야 한다.
+      금액은 스냅샷 환율·절사규칙을 쓰므로 원래 불변이었으나, 소수 자릿수만 현재 설정에서
+      조회해 삭제 시 폴백 2자리가 적용됐다(0자리 통화 표기 변화 / 3자리 이상 통화 절사).
+    effects:
+      - deleted_currency_order_refund_uses_snapshot_rate
+      - deleted_currency_display_keeps_snapshot_decimal_places
+      - legacy_snapshot_without_decimal_places_falls_back_to_settings
+  - id: list_settings_deletion_sweep
+    description: |
+      defaults 가 항목을 제공하고 화면이 삭제를 제공하는 다른 목록 설정(은행·입금계좌·배송 국가·
+      마일리지 통화 규칙)의 삭제 영속성 실측. 통화만 항목 단위 보충을 거치고 나머지는 통째
+      교체라 삭제가 유지되는데, 이 구분은 코드를 읽어야만 드러나므로 실측으로 고정한다.
+    effects:
+      - non_supplemented_list_settings_keep_deletion
+      - catalog_merged_list_settings_refill_by_design
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/EcommerceSettingsServiceCurrencyMergeTest.php
+  # 공개 #91 — 삭제 영속화 (서비스 계층)
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/EcommerceSettingsServiceCurrencyTombstoneTest.php
+  # 공개 #91 — 저장 응답 왕복 (제보된 증상 층)
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/EcommerceSettingsCurrencyDeletionTest.php
+  # 공개 #91 — 미등록 통화 폴백 (후속 경로 방어)
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderProcessingCurrencySnapshotTest.php
+  # 공개 #91 전수 조사 — 다른 목록형 설정의 삭제 영속성 실측
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/SettingsListDeletionPersistenceTest.php
+  # 공개 #91 후속 — 통화 삭제 후 기존 주문의 금액·표기 불변성
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/DeletedCurrencyOrderIntegrityTest.php
+
+notes: |
+  E2E 미해당: 변경 범위가 백엔드 전용(Service)이며 레이아웃 JSON·컴포넌트·엔진 코드 변경이 없다.
+  브라우저 검증은 Chrome MCP 매트릭스가 담당한다.

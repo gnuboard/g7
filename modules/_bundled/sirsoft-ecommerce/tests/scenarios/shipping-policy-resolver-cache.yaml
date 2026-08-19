@@ -1,0 +1,29 @@
+feature: 기본 배송정책 리졸버의 요청 내 캐시 무효화
+
+description: |
+  `ShippingPolicyResolver` 는 기본 배송정책(`is_default = true`) 행을 요청 안에서 한 번만
+  조회해 들고 있다. 그 캐시를 비우는 지점이 없으면, 같은 요청에서 기본 정책을 바꾼 뒤의
+  계산이 옛 정책으로 수행된다 — 배송비만 틀린 주문이 조용히 생긴다.
+
+  무효화 트리거는 **설정 저장이 아니라 배송정책 CRUD** 다. 이 리졸버가 캐시하는 것은 설정
+  값이 아니라 DB 행이기 때문이다. 설정 저장에 걸어 두면 정작 정책을 바꿨을 때 캐시가 남고,
+  설정만 바꿨을 때는 쓸데없이 비워진다.
+
+  무효화는 화면·서비스마다 복제하지 않고 리스너 하나가 관련 훅 전부를 구독해 수행한다.
+  구독 목록에서 훅 하나가 빠지면 그 경로에서만 옛 정책이 살아남는다.
+
+axis_notes:
+  mutation: |
+    기본 정책이 바뀔 수 있는 경로 전부. hook_subscription 은 개별 경로가 아니라
+    "리스너가 구독한 훅 집합이 정책 변경 훅 전부를 덮는가" 를 본다 — 경로마다 테스트를
+    복제하는 대신 구독 목록 자체를 고정한다.
+
+axes:
+  mutation: [none, manual_flush, set_default, update, delete, hook_subscription]
+
+effects:
+  - default_policy_cached_within_request   # 변경이 없으면 요청 내 재조회 없음
+  - resolver_cache_flushed                 # 정책이 바뀌면 다음 조회가 새 행을 본다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Services/ShippingPolicyResolverCacheTest.php

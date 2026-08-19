@@ -156,8 +156,10 @@ class BoundedPaginator
 
         // newQuery() 는 같은 커넥션의 빈 빌더를 만든다. fromSub 가 바인딩까지 옮겨 주므로
         // 서브쿼리 SQL 을 문자열로 조립하거나 mergeBindings 를 부를 필요가 없다.
+        // 별칭은 빌더가 wrapTable 로 접두사를 붙이므로 `g7_` 을 직접 쓰면 `g7_g7_...` 이
+        // 된다 (참조 0곳이라 실동작 무해였으나 명명 혼선 제거).
         $counted = (int) $bounded->newQuery()
-            ->fromSub($bounded, 'g7_bounded_total')
+            ->fromSub($bounded, 'bounded_total')
             ->count();
 
         return $counted > $resultCap

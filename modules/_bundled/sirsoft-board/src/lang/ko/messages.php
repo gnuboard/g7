@@ -44,6 +44,7 @@ return [
         'secret_password_incorrect' => '비밀글 비밀번호가 일치하지 않습니다.',
         // 비밀글 필터링 메시지
         'secret_post_content' => '비밀글입니다. 내용을 보려면 비밀번호를 입력해 주세요.',
+        'secret_post_title' => '비밀글',
         'deleted_post_title' => '삭제된 게시글',
         'deleted_post_content' => '삭제된 게시글입니다.',
         'blinded_post_content' => '관리자에 의해 블라인드 처리된 게시글입니다.',
@@ -225,6 +226,7 @@ return [
         'permission_denied' => '권한이 없습니다.',
         'validation_failed' => '입력값이 올바르지 않습니다.',
         'duplicate_report' => '이미 신고한 내역이 있습니다.',
+        'operation_failed' => '작업 처리 중 오류가 발생했습니다.',
     ],
 
     // 경고 메시지 (Warning)

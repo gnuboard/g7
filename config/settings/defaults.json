@@ -49,7 +49,9 @@
             "allowed_extensions": ["jpg", "jpeg", "png", "gif", "webp", "pdf", "doc", "docx", "xls", "xlsx", "zip"],
             "image_max_width": 2000,
             "image_max_height": 2000,
-            "image_quality": 85
+            "image_quality": 85,
+            "orphan_cleanup_enabled": false,
+            "orphan_retention_days": 30
         },
         "seo": {
             "meta_title_suffix": "",
@@ -118,11 +120,14 @@
         },
         "drivers": {
             "storage_driver": "local",
+            "public_asset_disk": "none",
             "s3_bucket": "",
             "s3_region": "ap-northeast-2",
             "s3_access_key": "",
             "s3_secret_key": "",
             "s3_url": "",
+            "s3_endpoint": "",
+            "s3_use_path_style": false,
             "cache_driver": "file",
             "redis_host": "127.0.0.1",
             "redis_port": 6379,
@@ -199,7 +204,9 @@
                 "allowed_extensions_formatted": { "type": "string", "sensitive": false, "computed": true, "source": "allowed_extensions", "transform": "format_extensions" },
                 "image_max_width": { "type": "integer", "sensitive": false },
                 "image_max_height": { "type": "integer", "sensitive": false },
-                "image_quality": { "type": "integer", "sensitive": false, "expose": false }
+                "image_quality": { "type": "integer", "sensitive": false, "expose": false },
+                "orphan_cleanup_enabled": { "type": "boolean", "sensitive": false, "expose": false },
+                "orphan_retention_days": { "type": "integer", "sensitive": false, "expose": false }
             }
         },
         "seo": {
@@ -300,11 +307,14 @@
             "_comment": "드라이버 설정 — 프론트엔드 미노출 (admin_settings에서 API 원본값 기반 비교로 변경)",
             "fields": {
                 "storage_driver": { "type": "string", "sensitive": false },
+                "public_asset_disk": { "type": "string", "sensitive": false },
                 "s3_bucket": { "type": "string", "sensitive": false },
                 "s3_region": { "type": "string", "sensitive": false },
                 "s3_access_key": { "type": "string", "sensitive": true },
                 "s3_secret_key": { "type": "string", "sensitive": true },
                 "s3_url": { "type": "string", "sensitive": false },
+                "s3_endpoint": { "type": "string", "sensitive": false },
+                "s3_use_path_style": { "type": "boolean", "sensitive": false },
                 "cache_driver": { "type": "string", "sensitive": false },
                 "redis_host": { "type": "string", "sensitive": false },
                 "redis_port": { "type": "integer", "sensitive": false },
@@ -328,7 +338,8 @@
                 "websocket_verify_ssl": { "type": "boolean", "sensitive": false },
                 "websocket_server_host": { "type": "string", "sensitive": false },
                 "websocket_server_port": { "type": "integer", "sensitive": false },
-                "websocket_server_scheme": { "type": "string", "sensitive": false }
+                "websocket_server_scheme": { "type": "string", "sensitive": false },
+                "search_engine_driver": { "type": "string", "sensitive": false }
             }
         },
         "notifications": {
@@ -341,7 +352,7 @@
             "expose": true,
             "_comment": "본인인증 인프라 provider 기술 파라미터 — signup/enabled 등 정책 분기 키는 IdentityPolicy 로 흡수됨",
             "fields": {
-                "default_provider": { "type": "string", "sensitive": false },
+                "default_provider": { "type": "string", "sensitive": false, "expose": false, "_comment": "저장값을 그대로 SSR 로 내보내면 제거된 플러그인의 provider ID 가 전 공개 페이지에 남는다. 소비처 0 이므로 미노출 — 프론트가 provider 를 알아야 하는 지점(428 응답 / 정책 프리페치)은 레지스트리 대조를 거친 값을 따로 받는다" },
                 "purpose_providers": { "type": "array", "sensitive": false, "expose": false },
                 "challenge_ttl_minutes": { "type": "integer", "sensitive": false, "expose": false },
                 "max_attempts": { "type": "integer", "sensitive": false, "expose": false }

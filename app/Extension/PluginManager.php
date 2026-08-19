@@ -21,6 +21,7 @@ use App\Exceptions\LayoutIncludeException;
 use App\Extension\Concerns\ResolvesExtensionSharedRecords;
 use App\Extension\Helpers\DependencyEnricher;
 use App\Extension\Helpers\ExtensionBackupHelper;
+use App\Extension\Helpers\ExtensionMenuSyncHelper;
 use App\Extension\Helpers\ExtensionPendingHelper;
 use App\Extension\Helpers\ExtensionRoleSyncHelper;
 use App\Extension\Helpers\ExtensionStatusGuard;
@@ -448,6 +449,9 @@ class PluginManager implements PluginManagerInterface
 
             // 권한-Role 연결
             $this->assignPermissionsToRoles($plugin);
+
+            // 관리자 메뉴 자동 생성 (모듈 installModule 과 동일 순서)
+            $this->createPluginMenus($plugin);
 
             // IDV 정책 자동 동기화 (identity_policies 테이블)
             $this->syncPluginIdentityPolicies($plugin);
@@ -2004,9 +2008,53 @@ class PluginManager implements PluginManagerInterface
     }
 
     /**
+     * 플러그인이 선언한 관리자 메뉴를 동기화합니다.
+     *
+     * 플러그인도 자기 화면을 가질 수 있으므로 `getAdminMenus()` 를 선언할 수 있습니다.
+     * 이 동기화가 설치·활성화 시점에만 일어나면, 이미 활성 상태인 사이트가 플러그인을
+     * 업데이트해 새 화면을 받아도 메뉴가 만들어지지 않아 그 화면은 주소를 직접 입력해야만
+     * 닿을 수 있습니다. 그래서 선언형 산출물 동기화(설치·업데이트 공통 경로)에 포함합니다.
+     *
+     * helper 의 upsert 패턴을 그대로 쓰므로 재호출은 무해하며(멱등) 운영자 커스터마이징
+     * (user_overrides) 도 보존됩니다.
+     *
+     * @param  PluginInterface  $plugin  메뉴를 동기화할 플러그인 인스턴스
+     */
+    protected function createPluginMenus(PluginInterface $plugin): void
+    {
+        if (! method_exists($plugin, 'getAdminMenus')) {
+            return;
+        }
+
+        $menus = $plugin->getAdminMenus();
+
+        if (empty($menus)) {
+            return;
+        }
+
+        // 활성 언어팩이 admin_menus 다국어 필드(name 등)에 추가 locale 을 주입할 수 있도록
+        // 모듈과 동일한 필터 훅 규약을 적용한다 (LanguagePackSeedInjector 가 결선).
+        $menus = HookManager::applyFilters(
+            "plugin.{$plugin->getIdentifier()}.admin_menus.translations",
+            $menus,
+        );
+
+        $helper = app(ExtensionMenuSyncHelper::class);
+
+        foreach ($menus as $menuData) {
+            $helper->syncMenuRecursive(
+                $menuData,
+                ExtensionOwnerType::Plugin,
+                $plugin->getIdentifier(),
+            );
+        }
+    }
+
+    /**
      * 플러그인 정의 기준으로 stale 권한·역할을 정리합니다 (완전 동기화 원칙).
      *
-     * 플러그인은 메뉴(getAdminMenus) 를 지원하지 않으므로 권한·역할만 대상.
+     * 메뉴 stale 정리는 비활성화·삭제 시 플러그인 자신이 `cleanupStaleMenus` 로 수행하므로
+     * 여기서는 권한·역할만 대상으로 한다.
      * user_overrides 보존 및 `users.role_id` 참조 역할 삭제 차단은 helper 가 담당.
      */
     protected function cleanupStalePluginEntries(PluginInterface $plugin): void
@@ -2065,14 +2113,15 @@ class PluginManager implements PluginManagerInterface
      * 를 정합 상태로 유지한다. 외부 진입점으로도 노출되어 코어 업그레이드 사후 보정
      * (`Upgrade_7_0_0_beta_4` 등) 이나 운영자 수동 재시드 도구가 사용 가능.
      *
-     * 동기화 대상 (플러그인은 메뉴 미지원 — getAdminMenus 부재):
+     * 동기화 대상:
      *   1. 역할 (`getRoles`)
      *   2. 권한 (`getPermissions`)
      *   3. 역할-권한 매핑 (`getRolePermissions`)
-     *   4. stale cleanup (현재 선언에 없는 기존 레코드 제거)
-     *   5. IDV 정책 (`getIdentityPolicies`)
-     *   6. IDV 메시지 정의/템플릿 (`getIdentityMessages`)
-     *   7. 알림 정의/템플릿 (`getNotificationDefinitions`)
+     *   4. 관리자 메뉴 (`getAdminMenus`)
+     *   5. stale cleanup (현재 선언에 없는 기존 레코드 제거)
+     *   6. IDV 정책 (`getIdentityPolicies`)
+     *   7. IDV 메시지 정의/템플릿 (`getIdentityMessages`)
+     *   8. 알림 정의/템플릿 (`getNotificationDefinitions`)
      *
      * 각 sync 메서드는 helper 내부의 user_overrides 보존 패턴을 따르므로 정상 환경 재호출
      * 무해 (멱등).
@@ -2084,6 +2133,7 @@ class PluginManager implements PluginManagerInterface
         $this->createPluginRoles($plugin);
         $this->createPluginPermissions($plugin);
         $this->assignPermissionsToRoles($plugin);
+        $this->createPluginMenus($plugin);
         $this->cleanupStalePluginEntries($plugin);
         $this->syncPluginIdentityPolicies($plugin);
         $this->syncPluginIdentityMessages($plugin);

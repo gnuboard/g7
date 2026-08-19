@@ -1,3 +1,4 @@
+// audit:allow extension-dist-source-literal-sync 고아 중복 구현 — handlers/index.ts 는 noticeHandlers.ts 의 동명 핸들러를 사용하며 이 파일은 어디서도 import 되지 않아 번들에 포함되지 않는다 (공유 리터럴이 있어 번들 포함 게이트로는 걸러지지 않음)
 /**
  * 고시정보 템플릿 저장 확인 핸들러
  *

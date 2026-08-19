@@ -12,8 +12,8 @@
  * 레이아웃이므로 템플릿 자체 E2E(templates/_bundled/sirsoft-admin_basic/tests/Playwright)
  * 가 커버한다 — 본 코어 spec 은 위지윅 chrome 책임만.
  *
- * @scenario preview_device + custom_width_input + toolbar_action + selected_box_size + affordance_kind + mobile_closed_drawer_clipping + route_tree_node_source_kind
- * @effects preview_custom_device_uses_clamped_input_width_as_override + toolbar_exit_navigates_to_template_list_by_type + toolbar_edit_code_opens_text_layout_editor_in_new_window_with_route + toolbar_save_shows_spinner_while_pending_then_restores + insertion_affordances_cross_layout_when_box_lt_44_no_overlap_no_clip + mobile_preview_closed_drawer_clipped_inside_frame_not_visible + route_tree_item_shows_layout_file_path_under_label_with_source_prefix
+ * 축 요약(마커 아님 — 평문): preview_device, custom_width_input, toolbar_action, selected_box_size, affordance_kind, mobile_closed_drawer_clipping, route_tree_node_source_kind.
+ * 효과 요약(마커 아님 — 평문): preview_custom_device_uses_clamped_input_width_as_override, toolbar_exit_navigates_to_template_list_by_type, toolbar_edit_code_opens_text_layout_editor_in_new_window_with_route, toolbar_save_shows_spinner_while_pending_then_restores, insertion_affordances_cross_layout_when_box_lt_44_no_overlap_no_clip, mobile_preview_closed_drawer_clipped_inside_frame_not_visible, route_tree_item_shows_layout_file_path_under_label_with_source_prefix.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 
@@ -30,6 +30,7 @@ async function enterEditor(page: import('@playwright/test').Page): Promise<void>
 }
 
 test.describe('@layout-editor chrome controls', () => {
+  /** @effects preview_custom_device_uses_clamped_input_width_as_override */
   test('결함 2 — custom 디바이스 선택 시 width 입력 노출 + 프레임 폭 반영', async ({ page }) => {
     await enterEditor(page);
 
@@ -50,6 +51,7 @@ test.describe('@layout-editor chrome controls', () => {
       .toBe(500);
   });
 
+  /** @effects toolbar_exit_navigates_to_template_list_by_type */
   test('결함 4 — 나가기 버튼 클릭 시 user 템플릿 목록(/admin/templates/user)으로 이탈', async ({ page }) => {
     // sirsoft-basic 은 user 템플릿 → 나가기 목적지는 /admin/templates/user
     await enterEditor(page);
@@ -60,6 +62,7 @@ test.describe('@layout-editor chrome controls', () => {
     expect(page.url()).toMatch(/\/admin\/templates\/user/);
   });
 
+  /** @effects toolbar_edit_code_opens_text_layout_editor_in_new_window_with_route */
   test('결함 5 — 코드편집 버튼 클릭 시 선택 route 를 ?route= 로 실어 새 창으로 연다', async ({ page, context }) => {
     // EDITOR_URL 은 ?route=%2F (홈) 선택 상태 → 코드편집기를 새 창(_blank)으로 열고
     // ?route=/ 동기화. 위지윅 편집 화면(page)은 그대로 유지된다.
@@ -95,6 +98,7 @@ test.describe('@layout-editor chrome controls', () => {
     await expect(page.getByTestId('g7le-palette-item-Button-tag')).toHaveText('<Button>');
   });
 
+  /** @effects route_tree_item_shows_layout_file_path_under_label_with_source_prefix */
   test('후속 — 좌측 트리 라우트 노드에 레이아웃 파일 경로가 라벨 하단에 노출 (출처 prefix)', async ({ page }) => {
     // sirsoft-basic 은 템플릿 소스 → 경로 표기는 "layouts/{layoutName}.json".
     // 트리의 라우트 항목마다 라벨 아래 회색 보조 줄(g7le-route-tree-layout-path)이
@@ -133,6 +137,7 @@ test.describe('@layout-editor chrome controls', () => {
     expect(result.groupHasPath).toBe(false);
   });
 
+  /** @effects insertion_affordances_cross_layout_when_box_lt_44_no_overlap_no_clip */
   test('결함 7 재조사 — 작은 요소 선택 시 삽입 어포던스가 박스 중심 십자로 비겹침·비잘림', async ({ page }) => {
     // 인라인 텍스트(Span) 추가 → 작은 박스(폭<44) 선택 → 4방향 + 버튼이 박스
     // 중심 기준 위/아래/좌/우 십자로 벌어져 서로/박스와 겹치지 않고, 캔버스에도
@@ -206,6 +211,7 @@ test.describe('@layout-editor chrome controls', () => {
     expect(geom.leftRightSameCy).toBe(true);
   });
 
+  /** @effects mobile_preview_closed_drawer_clipped_inside_frame_not_visible */
   test('회귀 — 모바일 프리뷰의 닫힌 메뉴 드로어가 frame 밖으로 노출되지 않는다', async ({ page }) => {
     // 닫힌 모바일 드로어(mobile_nav_drawer)는 `position: fixed` + `translate-x-full`
     // 로 화면 밖에 밀려 있어야 한다. frame 이 자체 transform 을 잃으면 fixed 자손의

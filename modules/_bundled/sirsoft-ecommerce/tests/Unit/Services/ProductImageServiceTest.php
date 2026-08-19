@@ -434,6 +434,11 @@ class ProductImageServiceTest extends ModuleTestCase
             ->with($sourceHash)
             ->andReturn($sourceImage);
 
+        // 복사는 원본 행 disk 기준으로 스토리지를 해석한다 (혼재 운용, 공개#100)
+        $this->storage
+            ->shouldReceive('getDisk')
+            ->andReturn('local');
+
         $this->storage
             ->shouldReceive('get')
             ->once()

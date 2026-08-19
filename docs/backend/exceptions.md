@@ -12,6 +12,8 @@
 3. 파라미터 치환: __('exceptions.key', ['param' => $value])
 4. 코어 예외: exceptions.template_engine.* 형식
 5. 모듈 예외: vendor-module::exceptions.* 형식
+6. 응답에는 `getMessage()` 가 아니라 **메시지 키**를 넘긴다 (예외는 키를 들고 다닌다)
+7. typed 예외 → 기존 4xx 유지 / generic catch → 5xx (장애를 입력 오류로 위장하지 않는다)
 ```
 
 ---
@@ -21,9 +23,10 @@
 1. [핵심 원칙](#핵심-원칙)
 2. [다국어 파일 위치 및 구조](#다국어-파일-위치-및-구조)
 3. [파라미터 치환 패턴](#파라미터-치환-패턴)
-4. [템플릿 엔진 Custom Exception 예시](#템플릿-엔진-custom-exception-예시)
-5. [Custom Exception 개발 체크리스트](#custom-exception-개발-체크리스트)
-6. [관련 문서](#관련-문서)
+4. [예외 → 응답 매핑](#예외--응답-매핑)
+5. [템플릿 엔진 Custom Exception 예시](#템플릿-엔진-custom-exception-예시)
+6. [Custom Exception 개발 체크리스트](#custom-exception-개발-체크리스트)
+7. [관련 문서](#관련-문서)
 
 ---
 
@@ -160,6 +163,92 @@ class MaxDepthExceededException extends Exception
     }
 }
 ```
+
+---
+
+## 예외 → 응답 매핑
+
+예외를 응답으로 바꾸는 자리에서 두 가지가 자주 어긋난다. 둘 다 오류도 로그도 남기지 않아 코드를 나란히 놓고 보기 전에는 드러나지 않는다.
+
+시작하기 전에 통로부터 나눈다. `ResponseHelper::error($messageKey, $statusCode, $errors, $messageParams)` 는 인자마다 노출 규칙이 다르다.
+
+| 인자 | 통로 | 노출 규칙 |
+|---|---|---|
+| `$messageKey` (1번째) | 사용자에게 보이는 안내 문구 | **다국어 키 전용.** 번역문·예외 원문을 넣으면 키 해석에 실패해 원문이 그대로 나간다 |
+| `$errors` (3번째) — Throwable | 진단 | `app.debug` 에서만 `debug` 블록으로 펼쳐진다 |
+| `$errors` (3번째) — 문자열 | 진단 | `500` 이상 + 비디버그에서 **차단**, 그 외 노출 |
+| `$errors` (3번째) — 배열 | 구조화 페이로드 | **항상 노출** (검증 오류 구조가 이 통로를 쓴다) |
+| `$messageParams` (4번째) | 문구 치환 | 응답 본문에 직접 실리지 않는다 |
+
+그래서 "예외 원문을 응답에 싣느냐" 는 하나의 규칙으로 답할 수 없다. 판단 축은 셋이다.
+
+- **누구에게** — 관리자 전용 면인가, 공개(비인증) 엔드포인트인가. 공개 면에 SQL 상태코드·경로가 나가면 정보 노출이다. 반대로 관리자에게 실패 사유를 감추면, 서버 로그 접근 권한이 없는 운영자는 "실패했습니다" 외에 아무 근거도 얻지 못한다.
+- **무엇의 원문인가** — 우리 인프라 예외인가, 외부 시스템(결제대행사·배송사 API)이 돌려준 도메인 사유인가. 후자는 우리 스택 정보가 아니고 다국어 키로 옮길 수도 없다. 감추면 조치 가능한 정보가 사라진다.
+- **어느 통로인가** — 위 표. 노출 폭은 호출부가 문자열로 조립하지 말고 헬퍼에 맡긴다.
+
+다국어 키는 유한하고 실패 사유는 무한하다. 키만 고집하면 예상 못 한 실패가 전부 "작업에 실패했습니다" 하나로 붕괴하는데, 이는 아래 2번이 막으려는 "장애가 입력 오류로 위장" 과 같은 종류의 정보 손실이다.
+
+### 1. 응답에는 메시지 키를 넘긴다
+
+`ResponseHelper::error()` 의 첫 인자는 **다국어 키**다. 이미 번역된 `$e->getMessage()` 를 그 자리에 넘기면 키 해석에 실패해 원문이 그대로 사용자 화면에 나간다 — 원문에는 SQL 상태코드·경로·클래스명이 섞여 있을 수 있다.
+
+그래서 도메인 예외는 **번역문이 아니라 키를 들고 다닌다**. 생성자에서 키와 치환 파라미터를 보관하고 `getMessageKey()` / `getMessageParams()` 로 노출한다.
+
+```php
+class BoardTypeOperationException extends Exception
+{
+    public function __construct(
+        private string $messageKey,
+        private array $replace = []
+    ) {
+        parent::__construct(__($messageKey, $replace));
+    }
+
+    public function getMessageKey(): string { return $this->messageKey; }
+
+    public function getMessageParams(): array { return $this->replace; }
+}
+```
+
+```php
+// ❌ 번역문을 키 자리에 — 해석 실패 → 원문 노출
+return $this->error($e->getMessage(), 422);
+
+// ✅ 키 + 치환 파라미터
+return $this->error($e->getMessageKey(), 422, null, $e->getMessageParams());
+```
+
+사유 식별자만 들고 다니는 예외(`getReason()`)라면 호출부가 그 식별자로 키를 조립한다 — 이때도 응답에 들어가는 것은 키다.
+
+### 2. typed 는 기존 4xx, generic 은 5xx
+
+`catch (\Exception)` / `catch (\Throwable)` 는 **도메인 예외가 아닌 것**을 잡는 자리다. 여기서 4xx 를 돌려주면 인프라 장애와 코드 결함이 "입력 오류" 로 위장되어, 사용자는 고칠 수 없는 안내를 보고 운영자는 장애를 늦게 안다.
+
+```php
+try {
+    $this->service->doSomething($order, $data);
+} catch (OrderModificationException $e) {
+    // 도메인 규칙 위반 — 사용자가 고칠 수 있다. 기존 상태코드를 그대로 유지한다.
+    return ResponseHelper::error($e->getMessageKey(), 422, null, $e->getMessageParams());
+} catch (\Exception $e) {
+    // 그 외 — 서버 결함/인프라 장애. 메시지 키 자리에는 원문을 넣지 않는다.
+    // (진단이 필요하면 $errors 인자로 Throwable 을 넘겨 헬퍼의 debug 게이트에 맡긴다)
+    Log::error('...', ['error' => $e->getMessage()]);
+
+    return ResponseHelper::error('sirsoft-ecommerce::exceptions.operation_failed', 500);
+}
+```
+
+규칙 셋:
+
+- typed 예외를 잡는 분기의 상태코드는 **바꾸지 않는다**. 예외를 도입하는 작업이 사용자에게 보이는 계약을 함께 바꾸면 회귀다.
+- 서비스가 typed 예외를 던지는데 컨트롤러에 그 typed catch 가 없으면, 도메인 사유가 generic 으로 흘러 500 이 된다. 서비스를 typed 로 승격할 때는 **호출하는 컨트롤러 메서드를 전수로** 함께 본다.
+- 상태코드 인자를 생략한 `ResponseHelper::error('key')` / `moduleError($mod, 'key')` 는 기본값 **400** 이다. generic catch 안에서는 인자를 생략하지 않는다.
+- **도메인 예외의 부모를 잡지 않는다.** 도메인 예외는 대개 `\RuntimeException` 을 상속하므로, 서비스를 typed 로 승격한 뒤에도 `catch (\RuntimeException)` 을 남겨 두면 그 자리는 도메인 예외를 잡는 것처럼 보이지만 실제로 남는 것은 인프라 예외뿐이다. 그것까지 4xx 로 나가면 승격 작업이 아무것도 고치지 못한 셈이 된다. 승격한 예외 이름으로 좁힌다.
+
+의도적으로 4xx 를 유지하는 generic catch 도 있다 — 업로드 파일 해석처럼 실패 원인이 대부분 클라이언트 입력인 경우다. 그런 지점은 사유와 함께 명시적으로 선언하고, 판정에서 조용히 빠지게 두지 않는다.
+
+`tests/Feature/Http/GenericCatchStatusCodeContractTest.php` 가 코어와 모든 번들 확장의 컨트롤러를 훑어 이 두 규칙을 고정한다. 예외 목록을 상수로 선언해 두었으므로, 새 예외를 만들려면 목록에 사유와 함께 추가해야 한다.
 
 ---
 
@@ -303,6 +392,8 @@ class LayoutService
 - [ ] `/lang/en/exceptions.php`에 영어 메시지 추가
 - [ ] Exception 생성자에서 모든 메시지는 `__()` 함수 사용
 - [ ] 동적 값은 파라미터 배열로 전달 (예: `['trace' => $stackTrace]`)
+- [ ] **메시지 키와 치환 파라미터를 보관하고 `getMessageKey()` / `getMessageParams()` 로 노출** (응답에 번역문 대신 키를 넘기기 위함)
+- [ ] **이 예외를 던지는 서비스 메서드를 호출하는 컨트롤러 메서드 전수에 typed catch 가 있는지 확인** (없으면 도메인 사유가 generic 으로 흘러 500 이 된다)
 - [ ] 두 언어 모두에서 테스트 수행
 - [ ] 예외 메시지가 사용자에게 노출될 경우 보안 정보 포함 금지
 

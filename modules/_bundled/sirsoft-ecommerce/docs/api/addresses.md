@@ -199,7 +199,7 @@ HTTP/1.1 201
 
 <!-- @generated:end -->
 
-**설명** 로그인한 회원 본인의 새 배송지를 등록합니다. `auth:sanctum` 인증이 필요하며, `UserAddressService::createAddress()`가 검증된 요청에 현재 사용자 ID를 결합해 배송지를 생성하고 성공 시 `201`로 반환합니다. 국내(우편번호/도로명·지번)·해외(intl_* 필드) 주소를 모두 지원하고 `is_default`로 기본 배송지 지정이 가능합니다. 같은 이름의 배송지가 있으면 `409`(중복 ID 포함)를, `force_overwrite`로 덮어쓰기를 허용할 수 있으며, 최대 배송지 개수를 초과하면 `422`를 반환합니다.
+**설명** 로그인한 회원 본인의 새 배송지를 등록합니다. `auth:sanctum` 인증이 필요하며, `UserAddressService::createAddress()`가 검증된 요청에 현재 사용자 ID를 결합해 배송지를 생성하고 성공 시 `201`로 반환합니다. 국내(우편번호/도로명·지번)·해외(intl_* 필드) 주소를 모두 지원하고 `is_default`로 기본 배송지 지정이 가능합니다. 같은 이름의 배송지가 있으면 `409`(중복 ID 포함)를 반환하며, `force_overwrite`로 덮어쓰기를 허용할 수 있습니다. 그 밖의 예외는 서버 결함으로 보아 `500` 으로 응답합니다 — 개수 상한은 현재 도입되어 있지 않습니다.
 
 
 ### DELETE /api/modules/sirsoft-ecommerce/user/addresses/{id}
@@ -229,7 +229,17 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지�
 
 **응답 예시**
 
-<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "배송지가 삭제되었습니다.",
+    "data": null
+}
+```
 
 **에러 응답**
 
@@ -266,11 +276,57 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| address | object | `{"id":99,"user_id":"a26219fc-94a0-4f63-9404-04c2a6ac99e4"…` | 조회한 배송지 단건 (`UserAddressResource`) |
 
 **응답 예시**
 
-<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "배송지를 조회했습니다.",
+    "data": {
+        "address": {
+            "id": 99,
+            "user_id": "a26219fc-94a0-4f63-9404-04c2a6ac99e4",
+            "name": "실측 예시값",
+            "recipient_name": "실측 예시값",
+            "recipient_phone": "실측 예시값",
+            "country_code": "KR",
+            "country_name": {
+                "ko": "한국",
+                "en": "South Korea"
+            },
+            "zipcode": "실측 예시값",
+            "address": "실측 예시값",
+            "address_detail": "실측 예시값",
+            "address_line_1": null,
+            "address_line_2": null,
+            "city": "실측 예시값",
+            "state": null,
+            "postal_code": null,
+            "is_default": true,
+            "is_domestic": true,
+            "is_international": false,
+            "full_address": "실측 예시값 실측 예시값",
+            "created_at": "2026-08-05 09:46:56",
+            "updated_at": "2026-08-05 09:46:56",
+            "abilities": {
+                "can_update": true,
+                "can_delete": false,
+                "can_set_default": false
+            }
+        }
+    }
+}
+```
 
 **에러 응답**
 
@@ -345,11 +401,57 @@ Content-Type: application/json
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| address | object | `{"id":99,"user_id":"a26219fc-94a0-4f63-9404-04c2a6ac99e4"…` | 수정된 배송지 (`UserAddressResource`) |
 
 **응답 예시**
 
-<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "배송지가 수정되었습니다.",
+    "data": {
+        "address": {
+            "id": 99,
+            "user_id": "a26219fc-94a0-4f63-9404-04c2a6ac99e4",
+            "name": "실측 예시값",
+            "recipient_name": "실측 예시값",
+            "recipient_phone": "실측 예시값",
+            "country_code": "KR",
+            "country_name": {
+                "ko": "한국",
+                "en": "South Korea"
+            },
+            "zipcode": "실측 예시값",
+            "address": "실측 예시값",
+            "address_detail": "실측 예시값",
+            "address_line_1": null,
+            "address_line_2": null,
+            "city": "실측 예시값",
+            "state": null,
+            "postal_code": null,
+            "is_default": true,
+            "is_domestic": true,
+            "is_international": false,
+            "full_address": "실측 예시값 실측 예시값",
+            "created_at": "2026-08-05 09:46:56",
+            "updated_at": "2026-08-05 09:46:56",
+            "abilities": {
+                "can_update": true,
+                "can_delete": false,
+                "can_set_default": false
+            }
+        }
+    }
+}
+```
 
 **에러 응답**
 
@@ -391,7 +493,17 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지�
 
 **응답 예시**
 
-<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "기본 배송지가 설정되었습니다.",
+    "data": null
+}
+```
 
 **에러 응답**
 

@@ -10,7 +10,7 @@
  * 회귀 차단: 버튼 액션이 (a) redirectToLoginWithReturn 핸들러이고 (b) 깨진
  *   navigate+{{_global.currentPath}} 패턴이 잔존하지 않는지 고정한다.
  *
- * @scenario entry_point:secret_post_login_button
+ * @scenario entry_point=secret_post_login_button
  * @effects secret_button_redirect_not_empty,login_returns_to_original_path
  */
 

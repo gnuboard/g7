@@ -13,6 +13,7 @@ import { TranslationEngine } from './TranslationEngine';
 import { hasPipes, splitPipes, executePipeChain } from './PipeRegistry';
 import { classifyExpression, extractSingleBinding, isComplexExpression, LITERALS, scanBindings } from './BindingShape';
 import { RAW_PREFIX, wrapRaw, wrapRawDeep } from './rawMarkers';
+import { evaluateSafeExpression } from './SafeExpressionEvaluator';
 import type { G7DevToolsInterface } from './G7CoreGlobals';
 
 const logger = createLogger('DataBindingEngine');
@@ -20,20 +21,9 @@ const logger = createLogger('DataBindingEngine');
 /**
  * 함수 파라미터 이름으로 쓸 수 있는 식별자 패턴.
  *
- * 표현식 평가는 컨텍스트 키를 `new Function` 의 파라미터로 넘긴다. 파라미터가 될 수 없는
- * 이름이 하나라도 섞이면 함수 생성이 통째로 실패하므로 미리 걸러낸다.
+ * 표현식 평가는 화이트리스트 AST 평가기(SafeExpressionEvaluator)가 담당한다 —
+ * 컨텍스트를 직접 스코프로 삼아 인터프리터로 해석하므로 `new Function` 이 필요 없다.
  */
-const VALID_IDENTIFIER_PATTERN = /^[$A-Za-z_][$A-Za-z0-9_]*$/;
-
-/** 파라미터 이름으로 쓸 수 없는 예약어 (엄격 모드 예약어 포함) */
-const RESERVED_WORDS = new Set([
-  'break', 'case', 'catch', 'class', 'const', 'continue', 'debugger', 'default',
-  'delete', 'do', 'else', 'enum', 'export', 'extends', 'false', 'finally', 'for',
-  'function', 'if', 'implements', 'import', 'in', 'instanceof', 'interface', 'let',
-  'new', 'null', 'package', 'private', 'protected', 'public', 'return', 'static',
-  'super', 'switch', 'this', 'throw', 'true', 'try', 'typeof', 'var', 'void',
-  'while', 'with', 'yield', 'arguments', 'eval',
-]);
 
 /**
  * G7Core.devTools 인터페이스 가져오기
@@ -188,15 +178,6 @@ export class DataBindingEngine {
    * key: 바인딩 경로, value: 캐시 엔트리
    */
   private cache: Map<string, CacheEntry> = new Map();
-
-  /**
-   * 표현식 함수 캐시
-   *
-   * key: 전처리된 표현식, value: 컴파일된 Function
-   * - Function 생성자 비용이 높으므로 동일 표현식 재사용 시 캐시에서 조회
-   * - 표현식 자체만 캐싱하고, 컨텍스트 값은 실행 시 전달
-   */
-  private expressionFnCache: Map<string, Function> = new Map();
 
   /**
    * 렌더 사이클 캐시
@@ -1137,11 +1118,10 @@ export class DataBindingEngine {
   /**
    * 캐시 초기화
    *
-   * 바인딩 값 캐시와 표현식 함수 캐시를 모두 초기화합니다.
+   * 바인딩 값 캐시를 초기화합니다.
    */
   public clearCache(): void {
     this.cache.clear();
-    this.expressionFnCache.clear();
   }
 
   /**
@@ -1383,45 +1363,15 @@ export class DataBindingEngine {
         return current ?? fallback;
       };
 
-      // 확장된 컨텍스트의 키를 변수로 사용할 수 있도록 준비.
-      //
-      // 함수 파라미터가 될 수 없는 키(`sales_status[]`, `data-id`, 예약어 등)는 제외한다.
-      // 하나라도 섞이면 `new Function` 생성 자체가 SyntaxError 로 실패해 **그 컨텍스트에서
-      // 평가되는 모든 표현식**이 통째로 죽는다 — 식이 그 키를 쓰지 않아도 마찬가지다.
-      // 예외도 화면 오류도 없이 값만 사라지므로(catch → 폴백) 원인 파악이 어렵다.
-      //
-      // 제외해도 잃는 것은 없다 — 그런 키는 애초에 식 안에서 맨이름으로 참조할 수 없었고
-      // (`sales_status[]` 는 식별자가 아니다), 실제 작성은 `query['sales_status[]']` 처럼
-      // 상위 객체를 거치므로 그대로 동작한다.
-      // @since engine-v1.56.2
-      const contextKeys: string[] = [];
-      const contextValues: unknown[] = [];
-      for (const [key, value] of Object.entries(extendedContext)) {
-        if (!VALID_IDENTIFIER_PATTERN.test(key) || RESERVED_WORDS.has(key)) {
-          continue;
-        }
-        contextKeys.push(key);
-        contextValues.push(value);
-      }
-
-      // 캐시 키 생성: 전처리된 표현식 + 컨텍스트 키 조합
-      // 같은 표현식이라도 컨텍스트 키가 다르면 다른 함수가 필요
-      const cacheKey = `${processedExpr}|${contextKeys.join(',')}`;
-
-      // 캐시된 함수 조회 또는 새로 생성
-      let evaluator = this.expressionFnCache.get(cacheKey);
-      const fromCache = !!evaluator;
-      if (!evaluator) {
-        // Function 생성자를 사용하여 표현식 평가
-        // 예: expr = "!_global.sidebarOpen"
-        //     contextKeys = ["_global", "user", ...]
-        //     contextValues = [{sidebarOpen: false}, {...}, ...]
-        // eslint-disable-next-line no-new-func
-        evaluator = new Function(...contextKeys, `return (${processedExpr});`);
-        this.expressionFnCache.set(cacheKey, evaluator);
-      }
-
-      const result = evaluator(...contextValues);
+      // 표현식은 화이트리스트 AST 평가기로 안전하게 실행한다(KVE-2026-1915).
+      // `new Function(...)` / `with(ctx)` 기반 평가는 `''.constructor.constructor(...)`
+      // 형태의 샌드박스 탈출을 허용했으므로 폐기하고, evaluateSafeExpression 이 컨텍스트를
+      // 직접 스코프로 삼아 식을 인터프리터로 해석한다. 컨텍스트 키를 함수 파라미터로
+      // 만들지 않으므로 `sales_status[]` 같은 비-식별자 키가 섞여도 평가가 죽지 않는다
+      // (그런 키는 `query['sales_status[]']` 로 상위 객체를 거쳐 그대로 접근된다).
+      // @since engine-v1.59.0
+      const fromCache = false;
+      const result = evaluateSafeExpression(processedExpr, extendedContext);
 
       // DevTools: 표현식 평가 추적
       if (devTools?.isEnabled()) {

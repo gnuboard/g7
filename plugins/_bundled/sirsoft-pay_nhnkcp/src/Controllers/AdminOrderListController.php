@@ -1,5 +1,7 @@
 <?php
 
+// audit:allow api-doc-coverage reason: 룰 면제 주석만 추가 — 요청/응답 계약 불변 (해당 엔드포인트 문서 부재는 사전 상태)
+
 declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayNhnkcp\Controllers;
@@ -9,6 +11,8 @@ use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Services\PluginSettingsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\ResolvesEasyPayDisplay;
 
 class AdminOrderListController extends AdminBaseController
@@ -36,8 +40,9 @@ class AdminOrderListController extends AdminBaseController
      */
     public function testModeMap(): JsonResponse
     {
-        $query = DB::table('ecommerce_orders as o')
-            ->join('ecommerce_order_payments as p', 'p.order_id', '=', 'o.id')
+        // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
+        $query = DB::table((new Order)->getTable().' as o')
+            ->join((new OrderPayment)->getTable().' as p', 'p.order_id', '=', 'o.id')
             ->where('p.pg_provider', 'nhnkcp')
             ->where('p.created_at', '>=', now()->subMonths(6));
 
@@ -72,8 +77,9 @@ class AdminOrderListController extends AdminBaseController
      */
     public function easyPayDisplayMap(): JsonResponse
     {
-        $rows = DB::table('ecommerce_orders as o')
-            ->join('ecommerce_order_payments as p', 'p.order_id', '=', 'o.id')
+        // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
+        $rows = DB::table((new Order)->getTable().' as o')
+            ->join((new OrderPayment)->getTable().' as p', 'p.order_id', '=', 'o.id')
             ->where('p.pg_provider', 'nhnkcp')
             ->where('p.created_at', '>=', now()->subMonths(6))
             ->select([

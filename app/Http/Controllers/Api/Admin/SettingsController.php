@@ -188,23 +188,21 @@ class SettingsController extends AdminBaseController
     }
 
     /**
-     * 데이터베이스를 백업합니다.
+     * 데이터베이스 백업 — 아직 제공하지 않는 기능임을 알립니다.
      *
-     * @return JsonResponse 백업 결과 JSON 응답
+     * 코어에는 DB 덤프 수단이 없어 이 엔드포인트는 구현된 적이 없다.
+     * 종전에는 존재하지 않는 `SettingsService::backupDatabase()` 를 호출했고,
+     * PHP 가 던지는 `Error` 는 `catch (\Exception)` 에 걸리지 않아 그대로 500 이 되면서
+     * 내부 메서드 이름까지 응답에 실려 나갔다 (공개 #115 부록 B3).
+     *
+     * 기능 부재는 서버 고장이 아니므로 501(Not Implemented)로 답한다.
+     * 설정 파일 백업은 `POST /api/admin/settings/backup` 이 담당한다.
+     *
+     * @return JsonResponse 미제공 안내 JSON 응답 (501)
      */
     public function backupDatabase(): JsonResponse
     {
-        try {
-            $result = $this->settingsService->backupDatabase();
-
-            if ($result) {
-                return $this->success('settings.backup_success');
-            } else {
-                return $this->error('settings.backup_failed');
-            }
-        } catch (\Exception $e) {
-            return $this->error('settings.backup_error', 500, $e->getMessage());
-        }
+        return $this->error('settings.database_backup_unavailable', 501);
     }
 
     /**

@@ -259,25 +259,52 @@
                 },
                 {
                   "type": "basic",
-                  "name": "Input",
+                  "name": "Div",
                   "props": {
-                    "type": "number",
-                    "className": "input",
-                    "value": "{{_computed.activeCountrySetting?.ranges?.unit_value ?? 1}}",
-                    "min": 0.01,
-                    "step": 0.01,
-                    "disabled": "{{_computed.isReadOnly}}"
+                    "className": "flex items-center gap-2"
                   },
-                  "actions": [
+                  "children": [
                     {
-                      "type": "change",
-                      "handler": "sirsoft-ecommerce.updateUnitValue",
-                      "debounce": 300,
-                      "params": {
-                        "value": "{{$event.target.value}}"
-                      }
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "number",
+                        "className": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.ranges.unit_value'] ? 'input input-error' : 'input'}}",
+                        "value": "{{_computed.activeCountrySetting?.ranges?.unit_value ?? ''}}",
+                        "min": 0.01,
+                        "step": 0.01,
+                        "disabled": "{{_computed.isReadOnly}}"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "sirsoft-ecommerce.updateUnitValue",
+                          "debounce": 300,
+                          "params": {
+                            "value": "{{$event.target.value}}"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{!!_computed.perUnitLabel}}",
+                      "props": {
+                        "className": "text-tertiary whitespace-nowrap"
+                      },
+                      "text": "{{_computed.perUnitLabel ?? ''}}"
                     }
                   ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.ranges.unit_value']}}",
+                  "props": {
+                    "className": "form-error-xs"
+                  },
+                  "text": "{{(_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.ranges.unit_value'] ?? [])[0] ?? ''}}"
                 },
                 {
                   "type": "basic",
@@ -374,12 +401,12 @@
                             {
                               "type": "basic",
                               "name": "Th",
-                              "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.range_min"
+                              "text": "{{$t('sirsoft-ecommerce.admin.shipping_policy.form.range_min') + (_computed.rangeUnitLabel ? ' (' + _computed.rangeUnitLabel + ')' : '')}}"
                             },
                             {
                               "type": "basic",
                               "name": "Th",
-                              "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.range_max"
+                              "text": "{{$t('sirsoft-ecommerce.admin.shipping_policy.form.range_max') + (_computed.rangeUnitLabel ? ' (' + _computed.rangeUnitLabel + ')' : '')}}"
                             },
                             {
                               "type": "basic",
@@ -420,25 +447,13 @@
                                   "name": "Input",
                                   "props": {
                                     "type": "number",
-                                    "className": "{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.min ? 'input input-error' : 'input'}}",
-                                    "value": "{{tier.min ?? 0}}",
-                                    "min": 0,
-                                    "placeholder": "0",
+                                    "className": "{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.min ? 'input input-error bg-gray-100 dark:bg-gray-700' : 'input bg-gray-100 dark:bg-gray-700'}}",
+                                    "value": "{{tier.min ?? ''}}",
+                                    "readOnly": true,
+                                    "tabIndex": -1,
+                                    "placeholder": "$t:sirsoft-ecommerce.admin.shipping_policy.form.range_min_auto",
                                     "disabled": "{{_computed.isReadOnly}}"
-                                  },
-                                  "actions": [
-                                    {
-                                      "type": "change",
-                                      "handler": "sirsoft-ecommerce.updateRangeTierField",
-                                      "debounce": 300,
-                                      "params": {
-                                        "countryIndex": "{{_local.activeCountryTab ?? 0}}",
-                                        "tierIndex": "{{tierIdx}}",
-                                        "field": "min",
-                                        "value": "{{parseFloat($event.target.value) || 0}}"
-                                      }
-                                    }
-                                  ]
+                                  }
                                 },
                                 {
                                   "type": "basic",
@@ -475,7 +490,7 @@
                                         "countryIndex": "{{_local.activeCountryTab ?? 0}}",
                                         "tierIndex": "{{tierIdx}}",
                                         "field": "max",
-                                        "value": "{{$event.target.value ? parseFloat($event.target.value) : null}}"
+                                        "value": "{{$event.target.value}}"
                                       }
                                     }
                                   ]
@@ -501,7 +516,7 @@
                                   "props": {
                                     "type": "number",
                                     "className": "{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.fee ? 'input input-error' : 'input'}}",
-                                    "value": "{{tier.fee ?? 0}}",
+                                    "value": "{{tier.fee ?? ''}}",
                                     "min": 0,
                                     "step": 100,
                                     "disabled": "{{_computed.isReadOnly}}"
@@ -515,7 +530,7 @@
                                         "countryIndex": "{{_local.activeCountryTab ?? 0}}",
                                         "tierIndex": "{{tierIdx}}",
                                         "field": "fee",
-                                        "value": "{{parseFloat($event.target.value) || 0}}"
+                                        "value": "{{$event.target.value}}"
                                       }
                                     }
                                   ]
@@ -586,6 +601,15 @@
                   "type": "basic",
                   "name": "Span",
                   "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.no_ranges"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{!!_local.rangeErrors?.[_computed.activeCountryCode]?.[0]?.max}}",
+                  "props": {
+                    "className": "form-error-xs block"
+                  },
+                  "text": "{{_local.rangeErrors?.[_computed.activeCountryCode]?.[0]?.max ?? ''}}"
                 }
               ]
             }

@@ -11,6 +11,7 @@ use App\Http\Resources\AttachmentResource;
 use App\Models\Attachment;
 use App\Services\AttachmentService;
 use Exception;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 
 /**
@@ -21,7 +22,7 @@ class AttachmentController extends AdminBaseController
     /**
      * AttachmentController 생성자
      *
-     * @param AttachmentService $attachmentService 첨부파일 서비스
+     * @param  AttachmentService  $attachmentService  첨부파일 서비스
      */
     public function __construct(
         private AttachmentService $attachmentService
@@ -32,7 +33,7 @@ class AttachmentController extends AdminBaseController
     /**
      * 단일 파일 업로드
      *
-     * @param UploadAttachmentRequest $request 업로드 요청
+     * @param  UploadAttachmentRequest  $request  업로드 요청
      * @return JsonResponse
      */
     public function upload(UploadAttachmentRequest $request): JsonResponse
@@ -64,7 +65,7 @@ class AttachmentController extends AdminBaseController
     /**
      * 여러 파일 일괄 업로드
      *
-     * @param UploadBatchAttachmentRequest $request 일괄 업로드 요청
+     * @param  UploadBatchAttachmentRequest  $request  일괄 업로드 요청
      * @return JsonResponse
      */
     public function uploadBatch(UploadBatchAttachmentRequest $request): JsonResponse
@@ -117,7 +118,7 @@ class AttachmentController extends AdminBaseController
     /**
      * 순서 변경
      *
-     * @param ReorderAttachmentsRequest $request 순서 변경 요청
+     * @param  ReorderAttachmentsRequest  $request  순서 변경 요청
      * @return JsonResponse
      */
     public function reorder(ReorderAttachmentsRequest $request): JsonResponse
@@ -126,9 +127,12 @@ class AttachmentController extends AdminBaseController
             $this->attachmentService->reorder($request->input('order'));
 
             return $this->success('attachment.reorder_success');
+        } catch (AuthorizationException $e) {
+            // 스코프 밖 첨부가 포함된 경우. 아래 제네릭 catch 보다 앞에 둬야 한다 —
+            // 뒤에 두면 인가 거부가 500 으로 뭉개져 상세 경로(403)와 응답이 갈린다.
+            return $this->error('auth.scope_denied', 403, $e->getMessage());
         } catch (Exception $e) {
             return $this->error('attachment.reorder_failed', 500, $e->getMessage());
         }
     }
-
 }

@@ -43,27 +43,41 @@ class ImageServeService
      */
     public function serve(Ckeditor5ImageUpload $image): ?StreamedResponse
     {
-        // file_path 형태: "images/2026/04/06/{uuid}.jpg"
-        // PluginStorageDriver::response(category, path) 에서 category = 'images'
-        $category = 'images';
-        $relativePath = substr($image->file_path, strlen($category) + 1);
+        // file_path 형태: "images/2026/04/06/{uuid}.jpg" (외부 생성 행은 "ckeditor5/..." 등)
+        // 첫 세그먼트 = 카테고리 일반형으로 분해 — PluginStorageDriver::response(category, path)
+        [$category, $relativePath] = array_pad(explode('/', $image->file_path, 2), 2, '');
 
-        $response = $this->storage->response(
+        if ($category === '' || $relativePath === '') {
+            return null;
+        }
+
+        // 행에 기록된 disk 기준 서빙 — 디스크 전환 이전 행도 실제 저장 위치를 향한다.
+        // 단 고아 disk(디스크를 제공하던 플러그인 비활성화로 config 에서 사라진 경우)는
+        // 미등록 disk 로 withDisk 를 만들면 response 가 InvalidArgumentException 을 던져
+        // 서빙이 500 이 되므로, 존재 검증 후 주입 스토리지로 폴백한다.
+        $rowDisk = (string) ($image->storage_disk ?? '');
+        $useRowDisk = $rowDisk !== ''
+            && $rowDisk !== $this->storage->getDisk()
+            && config("filesystems.disks.{$rowDisk}") !== null;
+
+        $storage = $useRowDisk ? $this->storage->withDisk($rowDisk) : $this->storage;
+
+        $response = $storage->response(
             $category,
             $relativePath,
             $image->original_name,
             [
-                'Content-Type'  => $image->mime_type,
+                'Content-Type' => $image->mime_type,
                 'Cache-Control' => 'public, max-age=31536000',
             ]
         );
 
         if (! $response) {
             Log::error('CKEditor5 이미지 스토리지에 없음', [
-                'image_id'  => $image->id,
-                'hash'      => $image->hash,
+                'image_id' => $image->id,
+                'hash' => $image->hash,
                 'file_path' => $image->file_path,
-                'disk'      => $image->storage_disk,
+                'disk' => $image->storage_disk,
             ]);
 
             return null;

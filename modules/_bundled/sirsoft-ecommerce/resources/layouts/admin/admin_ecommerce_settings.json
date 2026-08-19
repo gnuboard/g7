@@ -590,7 +590,7 @@
                               "handler": "toast",
                               "params": {
                                 "type": "error",
-                                "message": "$t:sirsoft-ecommerce.admin.settings.save_error"
+                                "message": "{{error.message ?? $t('sirsoft-ecommerce.admin.settings.save_error')}}"
                               }
                             }
                           ]

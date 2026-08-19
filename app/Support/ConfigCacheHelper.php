@@ -16,9 +16,13 @@ use Illuminate\Support\Facades\Log;
  * 한 번 비워진 뒤 재생성되지 않아 성능 이점이 영구히 사라진다 — 이를 단일 SSoT 로 막는다.
  *
  * 정책: 환경 무관 항상 재생성. config:cache 는 그 자체로 부팅 비용을
- * 절감하고, G7 설정은 config 캐시에 박제되지 않고 매 요청 SettingsServiceProvider /
- * CoreServiceProvider 의 런타임 Config::set() 으로 재주입되므로(설정 stale 없음),
- * 항상 켜두는 것이 이득이다. local 개발 시 config/*.php 수정이 즉시 반영되지 않는 점은
+ * 절감하고, G7 설정은 config 캐시에 박제되지 않고 부팅 때 SettingsServiceProvider /
+ * CoreServiceProvider 의 런타임 Config::set() 으로 재주입되므로 항상 켜두는 것이 이득이다.
+ *
+ * 주의: "매 요청 재주입되므로 stale 없음" 은 FPM 전제였다. 큐 워커·schedule:work·Reverb
+ * 처럼 프로세스가 상주하는 환경에서는 부팅이 한 번뿐이라 저장 후에도 옛 값이 남는다.
+ * 그래서 저장 경로가 `ExtensionSettingsMirror` 로 in-memory 미러를 직접 다시 채운다
+ * (docs/backend/admin-settings-access.md "config 미러 갱신 시점" 참조). local 개발 시 config/*.php 수정이 즉시 반영되지 않는 점은
  * 개발자가 `php artisan config:clear` 로 대응하는 개발자 책임 영역이다.
  */
 class ConfigCacheHelper

@@ -216,6 +216,18 @@ export interface DataGridProps {
   selectedIds?: (string | number)[];
   onSelectionChange?: (ids: (string | number)[]) => void;
   idField?: string;
+  /**
+   * 선택의 유효 범위.
+   *
+   * - `'page'`: 선택은 지금 그려진 행에서만 유효하다. 검색·필터·페이지 이동으로
+   *   행이 목록에서 빠지면 그 행의 선택도 함께 버린다. 일괄 처리 버튼이 달린
+   *   목록 화면은 이 값을 쓴다 — 그래야 "보이지 않는 행이 일괄 처리 대상" 이
+   *   되는 상태가 만들어지지 않는다.
+   * - `'free'`(기본): 선택을 컴포넌트가 건드리지 않는다. 선택 자체가 저장 대상인
+   *   폼(쿠폰 적용 대상 고르기 등)처럼, 목록에 안 보이는 항목도 선택으로 남아야
+   *   하는 화면용.
+   */
+  selectionScope?: 'page' | 'free';
 
   // 컬럼 표시/숨김 기능
   showColumnSelector?: boolean;
@@ -648,6 +660,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
   selectedIds = [],
   onSelectionChange,
   idField = 'id',
+  selectionScope = 'free',
   // 컬럼 표시/숨김
   showColumnSelector = false,
   visibleColumns: initialVisibleColumns,
@@ -712,6 +725,27 @@ export const DataGrid: React.FC<DataGridProps> = ({
   const resolvedActionsColumnHeader = actionsColumnHeader ?? t('common.actions');
   const resolvedRequiredText = requiredText ?? t('common.required');
   const resolvedSelectedCountText = selectedCountText ?? t('common.selected_count');
+
+  /**
+   * 선택 건수 문구의 파라미터 자리를 채웁니다.
+   *
+   * 치환은 번역 엔진에 맡깁니다 — G7 의 파라미터 표준은 `{{count}}` 이고, 엔진은
+   * `{{count}}` 를 먼저, `{count}` 를 그다음에 치환합니다. 컴포넌트가 자체 치환을
+   * 두면 표준 표기가 `{1}개 선택됨` 처럼 바깥 중괄호를 남긴 채 렌더됩니다
+   * (예외·경고 없이 화면에만 드러남).
+   *
+   * `selectedCountText` prop 으로 넘어온 문자열은 엔진을 거치지 않으므로 이때만
+   * 같은 순서로 직접 채웁니다.
+   */
+  const formatSelectedCount = (count: number): string => {
+    if (selectedCountText === undefined) {
+      return t('common.selected_count', { count });
+    }
+
+    return selectedCountText
+      .replace(/\{\{count\}\}/g, String(count))
+      .replace(/\{count\}/g, String(count));
+  };
 
   // G7Core.useControllableState 훅 참조 (Phase 2-2)
   const G7Core = (window as any).G7Core;
@@ -1008,6 +1042,28 @@ export const DataGrid: React.FC<DataGridProps> = ({
     [selectedIds, onSelectionChange]
   );
 
+  // 목록에서 빠진 행의 선택 정리
+  //
+  // 선택 상태는 목록 화면 밖(전역/로컬 상태)에 있으므로 검색·필터·페이지 이동으로
+  // 행이 화면에서 사라져도 그대로 남는다. 그 상태에서 일괄 처리를 누르면 운영자가
+  // 보고 있지도, 체크하지도 않은 행이 대상이 된다 — 확인 모달은 건수만 말하므로
+  // 실행 전에 알아챌 방법이 없다. `selectionScope: 'page'` 인 목록은 지금 그려진
+  // 행에 없는 선택을 버려서, 대상이 언제나 "화면에 보이고 체크된 행" 이 되게 한다.
+  useEffect(() => {
+    // `selectable` 여부로 가르지 않는다 — 체크박스가 꺼진 화면에 남은 선택은
+    // 아예 눈에 띄지 않으므로 오히려 더 위험하다.
+    if (selectionScope !== 'page' || !onSelectionChange) return;
+    if (selectedIds.length === 0) return;
+
+    const visibleIds = new Set((paginatedData ?? []).map((row) => row[idField]));
+    const survivors = selectedIds.filter((id) => visibleIds.has(id));
+
+    // 길이가 같으면 버릴 것이 없다 — 여기서 끊지 않으면 setState 가 매 렌더 반복된다.
+    if (survivors.length === selectedIds.length) return;
+
+    onSelectionChange(survivors);
+  }, [selectionScope, selectable, paginatedData, selectedIds, onSelectionChange, idField]);
+
   // 컬럼 표시/숨김 토글
   const handleColumnToggle = useCallback(
     (field: string) => {
@@ -1270,7 +1326,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
         {/* 선택된 항목 수 표시 */}
         {selectable && selectedIds.length > 0 && resolvedSelectedCountText && (
           <Div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-            {resolvedSelectedCountText.replace('{count}', String(selectedIds.length))}
+            {formatSelectedCount(selectedIds.length)}
           </Div>
         )}
 
@@ -1390,7 +1446,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
       {/* 선택된 항목 수 표시 */}
       {selectable && selectedIds.length > 0 && resolvedSelectedCountText && (
         <Div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-          {resolvedSelectedCountText.replace('{count}', String(selectedIds.length))}
+          {formatSelectedCount(selectedIds.length)}
         </Div>
       )}
 

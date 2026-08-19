@@ -19,6 +19,8 @@ import { issueToken, authenticatePage } from '../../../../../../tests/Playwright
 type BoardAuthFixtures = {
   /** 대시보드 진입 권한 + 게시판 조회/신고 조회 권한 토큰 */
   dashboardToken: string;
+  /** 답글 삭제 정책 E2E 용 — 게시판 CRUD + 환경설정 + 전용 게시판(e2e-reply-policy) 글 관리 토큰 */
+  replyPolicyToken: string;
   /** 환경설정 조회/수정 권한 토큰 */
   settingsToken: string;
   /** 권한 없는 일반 사용자 토큰 (영역 부재 검증용) */
@@ -44,6 +46,24 @@ export const test = base.extend<BoardAuthFixtures>({
       issueToken(
         'sirsoft-board.settings.read',
         'sirsoft-board.settings.update',
+      ),
+    );
+  },
+  replyPolicyToken: async ({}, use) => {
+    // 게시판 스코프 권한은 slug 가 식별자에 박히므로 전용 게시판 slug 로 발급.
+    // core.profile.read: 게시판 생성 필수값(board_manager_ids)에 넣을 본인 uuid 조회용.
+    await use(
+      issueToken(
+        'core.profile.read',
+        'sirsoft-board.boards.read',
+        'sirsoft-board.boards.create',
+        'sirsoft-board.boards.update',
+        'sirsoft-board.boards.delete',
+        'sirsoft-board.settings.read',
+        'sirsoft-board.settings.update',
+        'sirsoft-board.e2e-reply-policy.admin.posts.read',
+        'sirsoft-board.e2e-reply-policy.admin.posts.write',
+        'sirsoft-board.e2e-reply-policy.admin.manage',
       ),
     );
   },

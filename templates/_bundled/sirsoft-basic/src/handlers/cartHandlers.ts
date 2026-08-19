@@ -126,10 +126,11 @@ export function toggleCartItemSelectionHandler(
   const allItems = globalState.cartItems?.data?.items || [];
   const allSelected = allItems.length > 0 && newSelected.length === allItems.length;
 
+  // 선택 개수는 selectedItems 에서 파생해 표시하므로 별도 카운터를 기록하지 않는다.
+  // (카운터를 따로 두면 최초 마운트처럼 핸들러가 아직 실행되지 않은 구간에서 값이 비어 있다 — 공개 이슈 #92)
   setLocalState({
     selectedItems: newSelected,
     allSelected,
-    selectedCount: newSelected.length,
   });
 
   // 선택 변경 후 계산 결과 갱신을 위해 데이터소스 재조회
@@ -151,10 +152,10 @@ export function selectAllCartItemsHandler(
 ): void {
   const { allItemIds, isSelected } = action?.params || {};
 
+  // 선택 개수는 selectedItems 파생 (별도 카운터 미기록 — 공개 이슈 #92)
   setLocalState({
     selectedItems: isSelected ? allItemIds : [],
     allSelected: isSelected,
-    selectedCount: isSelected ? allItemIds.length : 0,
   });
 
   // 선택 변경 후 계산 결과 갱신을 위해 데이터소스 재조회

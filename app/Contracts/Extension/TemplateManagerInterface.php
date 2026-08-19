@@ -7,9 +7,17 @@ use App\Enums\DeactivationReason;
 interface TemplateManagerInterface
 {
     /**
-     * 모든 템플릿을 로드하고 초기화합니다.
+     * 모든 템플릿을 로드하고 초기화합니다. (항상 재스캔)
      */
     public function loadTemplates(): void;
+
+    /**
+     * 템플릿이 아직 로드되지 않았을 때만 로드합니다. (멱등)
+     *
+     * "맵이 채워져 있기만 하면 되는" 소비자용 진입점. 재스캔이 필요한 경우
+     * (설치/삭제/업데이트 직후)에만 `loadTemplates()` 를 직접 호출합니다.
+     */
+    public function ensureLoaded(): void;
 
     /**
      * /templates 디렉토리를 스캔하여 사용 가능한 템플릿을 발견합니다.

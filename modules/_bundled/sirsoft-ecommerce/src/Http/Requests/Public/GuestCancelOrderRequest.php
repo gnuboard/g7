@@ -7,6 +7,7 @@ use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\Sirsoft\Ecommerce\Enums\RefundPriorityEnum;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ValidatesCancelItems;
 use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 
@@ -19,6 +20,8 @@ use Modules\Sirsoft\Ecommerce\Models\Order;
  */
 class GuestCancelOrderRequest extends FormRequest
 {
+    use ValidatesCancelItems;
+
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
      *
@@ -65,6 +68,13 @@ class GuestCancelOrderRequest extends FormRequest
                     'order_status',
                     $order->getCancelDeniedReason($cancellableStatuses)
                 );
+
+                return;
+            }
+
+            // 부분취소 items 검증 (회원판 CancelOrderRequest 와 동일 강도)
+            if ($this->has('items') && is_array($this->input('items'))) {
+                $this->validateCancelItemsAgainstOrder($validator, $order, $this->input('items', []));
             }
         });
     }
@@ -102,7 +112,7 @@ class GuestCancelOrderRequest extends FormRequest
      */
     public function getCancelItems(): array
     {
-        return $this->input('items', []);
+        return $this->validated('items') ?? [];
     }
 
     /**

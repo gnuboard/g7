@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Board\Traits;
 use App\Enums\PermissionType;
 use App\Http\Middleware\PermissionMiddleware;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Modules\Sirsoft\Board\Support\BoardPermissionCacheKeys;
 
@@ -16,6 +17,26 @@ use Modules\Sirsoft\Board\Support\BoardPermissionCacheKeys;
  */
 trait ChecksBoardPermission
 {
+    /**
+     * Admin 화면 요청 여부를 컨트롤러 네임스페이스로 판정합니다.
+     *
+     * 판정 규칙의 단일 지점 — Resource/게이트마다 사설 복제본을 두면 규칙 변경 시
+     * 한 곳만 누락되어 경로별 판정이 갈린다.
+     *
+     * @param  Request  $request  HTTP 요청
+     * @return bool Admin 요청 여부
+     */
+    protected function isAdminRequest(Request $request): bool
+    {
+        $controller = $request->route()?->getController();
+
+        if (! $controller) {
+            return false;
+        }
+
+        return str_contains(get_class($controller), '\\Admin\\');
+    }
+
     /**
      * 게시판 권한을 확인합니다.
      *

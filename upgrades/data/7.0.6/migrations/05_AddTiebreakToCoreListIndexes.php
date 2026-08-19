@@ -4,6 +4,7 @@ namespace App\Upgrades\Data\V7_0_6\Migrations;
 
 use App\Extension\Upgrade\DataMigration;
 use App\Extension\UpgradeContext;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -20,20 +21,29 @@ use Illuminate\Support\Facades\Schema;
  * 대기합니다. 새 색인을 먼저 만들고 기존 색인을 나중에 지우므로, 중간에 중단되어도 조회가
  * 색인 없이 남는 구간은 없습니다.
  *
- * idempotent: 이미 교체된 대상은 건너뜁니다. V-1 안전: Facades\Schema 만 사용합니다.
+ * idempotent: 이미 교체된 대상은 건너뜁니다. V-1 안전: Facades\Schema / Facades\DB 만 사용합니다.
  */
 class AddTiebreakToCoreListIndexes implements DataMigration
 {
     /**
-     * 대상 [테이블 => [신규 색인명, 컬럼, 교체 대상 기존 색인명(없으면 null)]]
+     * 대상을 반환합니다: [테이블 => [신규 색인명, 컬럼, 교체 대상 기존 색인명(없으면 null)]]
      *
-     * @var array<string, array{0: string, 1: array<int, string>, 2: string|null}>
+     * activity_logs 의 기존 색인은 Laravel 자동 색인명(접두사 포함 테이블명에서 파생)이라
+     * 리터럴 `g7_` 을 박으면 다른 접두사 설치에서 조용한 no-op(중복 색인 잔존)이 된다 —
+     * `DB::getTablePrefix()` 로 동적 조립한다.
+     *
+     * @return array<string, array{0: string, 1: array<int, string>, 2: string|null}>
      */
-    private const TARGETS = [
-        'activity_logs' => ['idx_activity_logs_created_id', ['created_at', 'id'], 'g7_activity_logs_created_at_index'],
-        'notification_logs' => ['idx_notification_logs_created_id', ['created_at', 'id'], null],
-        'users' => ['idx_users_created_id', ['created_at', 'id'], 'idx_users_created_at'],
-    ];
+    private function targets(): array
+    {
+        $prefix = DB::getTablePrefix();
+
+        return [
+            'activity_logs' => ['idx_activity_logs_created_id', ['created_at', 'id'], $prefix.'activity_logs_created_at_index'],
+            'notification_logs' => ['idx_notification_logs_created_id', ['created_at', 'id'], null],
+            'users' => ['idx_users_created_id', ['created_at', 'id'], 'idx_users_created_at'],
+        ];
+    }
 
     /**
      * 마이그레이션 식별자를 반환합니다.
@@ -52,7 +62,7 @@ class AddTiebreakToCoreListIndexes implements DataMigration
      */
     public function run(UpgradeContext $context): void
     {
-        foreach (self::TARGETS as $table => [$newIndex, $columns, $oldIndex]) {
+        foreach ($this->targets() as $table => [$newIndex, $columns, $oldIndex]) {
             if (! Schema::hasTable($table)) {
                 $context->logger->info("[core:7.0.6] 테이블 부재 — 색인 교체 스킵: {$table}");
 

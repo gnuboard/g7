@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Enums\TriggerType;
+use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReportRepositoryInterface;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 use Modules\Sirsoft\Board\Traits\FormatsBoardDate;
@@ -31,7 +32,11 @@ class CommentResource extends BaseApiResource
      */
     public function toArray(Request $request): array
     {
-        $slug = $this->post?->board?->slug ?? $request->route('slug');
+        // 컨트롤러가 넘긴 부모 post(요청 속성)를 재사용해 slug 를 도출한다 — 목록에서 댓글당
+        // `$this->post` lazy-load(N+1)를 피한다(KVE-2026-1914 A-4b). 미주입 경로(상세/생성/
+        // admin)는 종전대로 이미 로드된 관계 또는 라우트 slug 로 폴백한다.
+        $parentPost = $this->resolveParentPost($request);
+        $slug = $parentPost?->board?->slug ?? $request->route('slug');
 
         return [
             'id' => $this->id,
@@ -170,8 +175,9 @@ class CommentResource extends BaseApiResource
         }
 
         // fallback: 개별 쿼리 (목록 등 사전 로드 미적용 경로)
+        // 부모 post 는 컨트롤러가 넘긴 인스턴스를 재사용해 댓글당 lazy-load 를 피한다.
         $user = $request->user();
-        $boardId = $this->post?->board?->id ?? null;
+        $boardId = $this->resolveParentPost($request)?->board?->id ?? null;
 
         if (! $user || ! $boardId) {
             return false;
@@ -206,7 +212,7 @@ class CommentResource extends BaseApiResource
      */
     protected function resolveAbilities(Request $request): array
     {
-        $slug = $this->post?->board?->slug ?? $request->route('slug');
+        $slug = $this->resolveParentPost($request)?->board?->slug ?? $request->route('slug');
         if (! $slug) {
             return [];
         }
@@ -228,28 +234,32 @@ class CommentResource extends BaseApiResource
             ->toArray();
     }
 
-    /**
-     * Admin 요청 여부를 확인합니다.
-     *
-     * Controller 네임스페이스로 판단합니다.
-     *
-     * @param  Request  $request  HTTP 요청
-     * @return bool Admin 요청 여부
-     */
-    private function isAdminRequest(Request $request): bool
-    {
-        $controller = $request->route()?->getController();
-
-        if (! $controller) {
-            return false;
-        }
-
-        return str_contains(get_class($controller), '\\Admin\\');
-    }
-
     // =========================================================================
     // 콘텐츠 필터링 메서드
     // =========================================================================
+
+    /**
+     * 부모 게시글(Post)을 조회 없이 해석합니다.
+     *
+     * 우선순위:
+     *  1. 컨트롤러가 요청 속성으로 넘긴 인스턴스(`sirsoft_board_parent_post`) — 목록 경로에서
+     *     댓글당 lazy-load(N+1)를 피하는 SSoT. 모든 댓글이 같은 인스턴스를 공유한다.
+     *  2. 이미 로드된 `post` 관계(상세/생성/admin 등 미주입 경로 하위호환).
+     *
+     * 둘 다 없으면 null — 추가 쿼리를 유발하지 않는다(2차 게이트는 1차 방어가 담당).
+     *
+     * @param  Request  $request  HTTP 요청
+     * @return Post|null 부모 게시글
+     */
+    private function resolveParentPost(Request $request): ?Post
+    {
+        $injected = $request->attributes->get('sirsoft_board_parent_post');
+        if ($injected instanceof Post) {
+            return $injected;
+        }
+
+        return $this->resource->relationLoaded('post') ? $this->post : null;
+    }
 
     /**
      * 권한에 따라 필터링된 댓글 내용을 반환합니다.
@@ -260,6 +270,14 @@ class CommentResource extends BaseApiResource
      */
     private function getFilteredContent(Request $request, ?string $slug): ?string
     {
+        // 부모 게시글이 비밀글이면 열람 권한 없는 요청에는 댓글 원문을 숨긴다
+        // (KVE-2026-1914 이중 방어 — 1차 차단은 CommentController::index).
+        // 컨트롤러가 넘긴 부모 post(요청 속성)를 재사용해 댓글당 lazy-load 없이 재확인한다.
+        $parentPost = $this->resolveParentPost($request);
+        if ($parentPost && $parentPost->is_secret && ! PostResource::canViewSecretForPost($parentPost, $request)) {
+            return null;
+        }
+
         // 게시글 삭제로 함께 숨겨진(cascade) 댓글은 사용자가 직접 지운 것이 아니므로
         // 마스킹하지 않고 원문을 그대로 노출한다 (글을 볼 수 있는 사람이면 누구나).
         $isCascadeDeleted = $this->deleted_at !== null

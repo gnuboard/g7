@@ -1105,6 +1105,11 @@ class OrderCalculationService
 
             // 배송정책이 삭제되었거나 조회 불가한 경우 배송비 0으로 처리
             if (! $policy) {
+                Log::warning('배송정책을 조회할 수 없어 배송비를 0원으로 처리했습니다', [
+                    'policy_id' => $policyId,
+                    'country_code' => $countryCode,
+                ]);
+
                 foreach ($groupItems as $item) {
                     $shippingResults[$item['product_option_id']] = new AppliedShippingPolicy(
                         policyId: $policyId,
@@ -1124,6 +1129,11 @@ class OrderCalculationService
 
             if (! $countrySetting) {
                 // 해당 국가 설정이 없으면 배송비 0으로 처리
+                Log::warning('국가별 배송 설정이 없어 배송비를 0원으로 처리했습니다', [
+                    'policy_id' => $policyId,
+                    'country_code' => $countryCode,
+                ]);
+
                 foreach ($groupItems as $item) {
                     $shippingResults[$item['product_option_id']] = new AppliedShippingPolicy(
                         policyId: $policyId,
@@ -1142,7 +1152,7 @@ class OrderCalculationService
             $baseShippingTotal += $shippingFee;
 
             // 추가 배송비(도서산간) 계산 - KR 전용
-            $extraShippingFee = $this->calculateExtraShippingFee($countrySetting, $countryCode, $zipcode, $group['total_quantity']);
+            $extraShippingFee = $this->calculateExtraShippingFee($countrySetting, $countryCode, $zipcode, $group);
             $extraShippingTotal += $extraShippingFee;
 
             // 배송비를 그룹 내 아이템들에게 안분
@@ -1170,7 +1180,7 @@ class OrderCalculationService
                         'custom_shipping_name' => $countrySetting->custom_shipping_name,
                         'currency_code' => $countrySetting->currency_code,
                         'charge_policy' => $countrySetting->charge_policy->value,
-                        'base_fee' => (int) $countrySetting->base_fee,
+                        'base_fee' => (int) round((float) $countrySetting->base_fee),
                         'free_threshold' => $countrySetting->free_threshold ? (int) $countrySetting->free_threshold : null,
                         'ranges' => $countrySetting->ranges,
                         'extra_fee_enabled' => $countrySetting->extra_fee_enabled,
@@ -1198,10 +1208,10 @@ class OrderCalculationService
      * @param  ShippingPolicyCountrySetting  $countrySetting  국가별 설정
      * @param  string  $countryCode  수신자 국가코드
      * @param  string|null  $zipcode  우편번호
-     * @param  int  $quantity  그룹 합계 수량
+     * @param  array  $group  그룹 정보 (total_amount, total_quantity, total_weight, total_volume)
      * @return int 추가 배송비
      */
-    protected function calculateExtraShippingFee(ShippingPolicyCountrySetting $countrySetting, string $countryCode, ?string $zipcode, int $quantity): int
+    protected function calculateExtraShippingFee(ShippingPolicyCountrySetting $countrySetting, string $countryCode, ?string $zipcode, array $group): int
     {
         // 도서산간 추가배송비는 KR 전용
         if ($countryCode !== 'KR') {
@@ -1219,15 +1229,10 @@ class OrderCalculationService
             return 0;
         }
 
-        // per_* 정책에서 extra_fee_multiply가 true면 건수만큼 중복 부과
+        // per_* 정책에서 extra_fee_multiply가 true면 배송 단위 수만큼 중복 부과
+        // (기본 배송비와 동일한 단위 수를 사용해야 "단위당" 의미가 어긋나지 않는다)
         if ($countrySetting->extra_fee_multiply && $this->isPerUnitPolicy($countrySetting)) {
-            $unitValue = $countrySetting->ranges['unit_value'] ?? 1;
-            if ($unitValue <= 0) {
-                $unitValue = 1;
-            }
-            $units = (int) ceil($quantity / $unitValue);
-
-            return $extraFee * $units;
+            return $extraFee * $this->resolveChargeUnits($countrySetting, $group);
         }
 
         // 기본: 1회만 부과
@@ -1242,13 +1247,7 @@ class OrderCalculationService
      */
     protected function isPerUnitPolicy(ShippingPolicyCountrySetting $countrySetting): bool
     {
-        return in_array($countrySetting->charge_policy, [
-            ChargePolicyEnum::PER_QUANTITY,
-            ChargePolicyEnum::PER_WEIGHT,
-            ChargePolicyEnum::PER_VOLUME,
-            ChargePolicyEnum::PER_VOLUME_WEIGHT,
-            ChargePolicyEnum::PER_AMOUNT,
-        ]);
+        return in_array($countrySetting->charge_policy, ChargePolicyEnum::perUnitPolicies(), true);
     }
 
     /**
@@ -1291,7 +1290,7 @@ class OrderCalculationService
         $baseShippingFee = $this->calculateCountryShippingFee($countrySetting, $standaloneGroup);
 
         // 추가 배송비 계산 (도서산간 - KR 전용)
-        $extraShippingFee = $this->calculateExtraShippingFee($countrySetting, $countryCode, $zipcode, $targetItem['quantity']);
+        $extraShippingFee = $this->calculateExtraShippingFee($countrySetting, $countryCode, $zipcode, $standaloneGroup);
 
         return $baseShippingFee + $extraShippingFee;
     }
@@ -2143,70 +2142,182 @@ class OrderCalculationService
         $groupWeight = $group['total_weight'] ?? 0.0;
         $groupVolume = $group['total_volume'] ?? 0.0;
 
-        // 부피무게 계산 (부피 / 부피무게 계수, 기본값 6000)
+        // 단위 환산은 이 지점 한 곳에서만 수행한다.
+        // 상품 옵션은 g / cm³ 로 저장되고, 배송정책 구간·단위값은 kg / L 로 입력받는다.
         $volumeWeightDivisor = $countrySetting->ranges['volume_weight_divisor'] ?? 6000;
-        $volumeWeight = $volumeWeightDivisor > 0 ? $groupVolume / $volumeWeightDivisor : 0.0;
-        $chargeableWeight = max($groupWeight, $volumeWeight);
+        $weightKg = $groupWeight / 1000;
+        $volumeLiter = $groupVolume / 1000;
+        // 부피무게(kg) = 부피(cm³) / 부피무게 계수 (기본 6000)
+        $volumetricWeightKg = $volumeWeightDivisor > 0 ? $groupVolume / $volumeWeightDivisor : 0.0;
+        $chargeableWeightKg = max($weightKg, $volumetricWeightKg);
 
         return match ($countrySetting->charge_policy) {
             ChargePolicyEnum::FREE => 0,
-            ChargePolicyEnum::FIXED => (int) $countrySetting->base_fee,
-            ChargePolicyEnum::CONDITIONAL_FREE => $groupTotal >= $countrySetting->free_threshold ? 0 : (int) $countrySetting->base_fee,
-            ChargePolicyEnum::RANGE_AMOUNT => $this->calculateRangeFee($countrySetting->ranges, $groupTotal),
-            ChargePolicyEnum::RANGE_QUANTITY => $this->calculateRangeFee($countrySetting->ranges, $groupQuantity),
-            ChargePolicyEnum::RANGE_WEIGHT => $this->calculateRangeFee($countrySetting->ranges, (int) ($groupWeight * 1000)), // kg → g 변환
-            ChargePolicyEnum::RANGE_VOLUME => $this->calculateRangeFee($countrySetting->ranges, (int) $groupVolume),
-            ChargePolicyEnum::RANGE_VOLUME_WEIGHT => $this->calculateRangeFee($countrySetting->ranges, (int) ($chargeableWeight * 1000)),
+            ChargePolicyEnum::FIXED => (int) round((float) $countrySetting->base_fee),
+            ChargePolicyEnum::CONDITIONAL_FREE => $groupTotal >= $countrySetting->free_threshold ? 0 : (int) round((float) $countrySetting->base_fee),
+            ChargePolicyEnum::RANGE_AMOUNT => $this->calculateRangeFee($countrySetting->ranges, $groupTotal, $countrySetting),
+            ChargePolicyEnum::RANGE_QUANTITY => $this->calculateRangeFee($countrySetting->ranges, $groupQuantity, $countrySetting),
+            ChargePolicyEnum::RANGE_WEIGHT => $this->calculateRangeFee($countrySetting->ranges, $weightKg, $countrySetting),
+            ChargePolicyEnum::RANGE_VOLUME => $this->calculateRangeFee($countrySetting->ranges, $volumeLiter, $countrySetting),
+            ChargePolicyEnum::RANGE_VOLUME_WEIGHT => $this->calculateRangeFee($countrySetting->ranges, $chargeableWeightKg, $countrySetting),
             ChargePolicyEnum::PER_QUANTITY => $this->calculatePerUnitFee($countrySetting->base_fee, $groupQuantity, $countrySetting->ranges['unit_value'] ?? 1),
-            ChargePolicyEnum::PER_WEIGHT => $this->calculatePerUnitFee($countrySetting->base_fee, $groupWeight, $countrySetting->ranges['unit_value'] ?? 0.5),
-            ChargePolicyEnum::PER_VOLUME => $this->calculatePerUnitFee($countrySetting->base_fee, $groupVolume, $countrySetting->ranges['unit_value'] ?? 1000),
-            ChargePolicyEnum::PER_VOLUME_WEIGHT => $this->calculatePerUnitFee($countrySetting->base_fee, $chargeableWeight, $countrySetting->ranges['unit_value'] ?? 0.5),
+            ChargePolicyEnum::PER_WEIGHT => $this->calculatePerUnitFee($countrySetting->base_fee, $weightKg, $countrySetting->ranges['unit_value'] ?? 0.5),
+            ChargePolicyEnum::PER_VOLUME => $this->calculatePerUnitFee($countrySetting->base_fee, $volumeLiter, $countrySetting->ranges['unit_value'] ?? 1),
+            ChargePolicyEnum::PER_VOLUME_WEIGHT => $this->calculatePerUnitFee($countrySetting->base_fee, $chargeableWeightKg, $countrySetting->ranges['unit_value'] ?? 0.5),
             ChargePolicyEnum::PER_AMOUNT => $this->calculatePerUnitFee($countrySetting->base_fee, $groupTotal, $countrySetting->ranges['unit_value'] ?? 10000),
             ChargePolicyEnum::API => $this->calculateApiShippingFee($countrySetting, $group),
-            default => (int) $countrySetting->base_fee,
+            default => (int) round((float) $countrySetting->base_fee),
         };
     }
 
     /**
-     * 구간별 배송비를 계산합니다.
+     * 구간별 배송비를 계산합니다 (상한 포함 사다리 매칭).
+     *
+     * 구간을 상한 오름차순(무제한 구간을 마지막)으로 정렬한 뒤, 값이 상한 이하인 첫 구간의
+     * 배송비를 반환합니다. 시작값(min)은 화면 표시용이며 매칭에 사용하지 않습니다. 이 방식은
+     * 상한 포함형(max+1=다음 min)과 반개형(max=다음 min) 어느 형태로 저장된 데이터에서도
+     * 간극 없이 동작합니다.
      *
      * @param  array|null  $ranges  구간 설정
-     * @param  int  $value  비교 값 (금액 또는 수량)
+     * @param  int|float  $value  비교 값 (금액·수량·kg·L)
+     * @param  ShippingPolicyCountrySetting|null  $countrySetting  로그 맥락용 국가별 설정
      * @return int 배송비
      */
-    protected function calculateRangeFee(?array $ranges, int $value): int
+    protected function calculateRangeFee(?array $ranges, int|float $value, ?ShippingPolicyCountrySetting $countrySetting = null): int
     {
-        if (empty($ranges) || empty($ranges['tiers'])) {
+        $tiers = is_array($ranges) ? ($ranges['tiers'] ?? []) : [];
+
+        if (! is_array($tiers) || count($tiers) === 0) {
+            $this->logZeroShippingFallback(
+                '구간별 배송비 구간(tiers)이 비어 있어 배송비를 0원으로 처리했습니다',
+                $countrySetting,
+                ['value' => $value]
+            );
+
             return 0;
         }
 
-        foreach ($ranges['tiers'] as $tier) {
-            $min = $tier['min'] ?? 0;
-            $max = $tier['max'] ?? PHP_INT_MAX;
+        // 상한 오름차순 정렬 (무제한 구간은 항상 마지막)
+        $sortedTiers = array_values($tiers);
+        usort($sortedTiers, function ($a, $b) {
+            $aMax = $this->resolveTierMax($a);
+            $bMax = $this->resolveTierMax($b);
 
-            if ($value >= $min && ($max === null || $value < $max)) {
-                return (int) ($tier['fee'] ?? 0);
+            if ($aMax === null && $bMax === null) {
+                return 0;
+            }
+            if ($aMax === null) {
+                return 1;
+            }
+            if ($bMax === null) {
+                return -1;
+            }
+
+            return $aMax <=> $bMax;
+        });
+
+        foreach ($sortedTiers as $tier) {
+            $max = $this->resolveTierMax($tier);
+
+            if ($max === null || (float) $value <= $max) {
+                return (int) round((float) ($tier['fee'] ?? 0));
             }
         }
+
+        // 마지막 구간의 max 가 null 이면 도달하지 않는 경로 (저장 시점 검증이 1차 방어)
+        $this->logZeroShippingFallback(
+            '구간별 배송비에서 매칭되는 구간을 찾지 못해 0원으로 처리했습니다',
+            $countrySetting,
+            ['value' => $value]
+        );
 
         return 0;
     }
 
     /**
+     * 구간의 상한값을 정규화합니다 (무제한이면 null).
+     *
+     * @param  array  $tier  구간 정의
+     * @return float|null 상한값 (무제한이면 null)
+     */
+    protected function resolveTierMax(array $tier): ?float
+    {
+        $max = $tier['max'] ?? null;
+
+        if ($max === null || $max === '') {
+            return null;
+        }
+
+        return (float) $max;
+    }
+
+    /**
+     * 배송비 0원 폴백을 경고 로그로 남깁니다.
+     *
+     * 설정 오류로 인한 무음 0원(무료배송)은 화면상 정상 주문과 구분되지 않으므로
+     * 운영자가 사후에 원인을 추적할 수 있도록 맥락을 남깁니다.
+     *
+     * @param  string  $message  로그 메시지
+     * @param  ShippingPolicyCountrySetting|null  $countrySetting  국가별 설정
+     * @param  array  $context  추가 맥락
+     */
+    protected function logZeroShippingFallback(string $message, ?ShippingPolicyCountrySetting $countrySetting, array $context = []): void
+    {
+        Log::warning($message, array_merge([
+            'policy_id' => $countrySetting?->shipping_policy_id,
+            'country_code' => $countrySetting?->country_code,
+            'charge_policy' => $countrySetting?->charge_policy?->value,
+        ], $context));
+    }
+
+    /**
      * 단위당 배송비를 계산합니다.
      *
-     * @param  int|float  $baseFee  기본 배송비
-     * @param  int|float  $value  계산 기준 값 (수량, 무게, 부피, 금액 등)
+     * @param  int|float|string  $baseFee  기본 배송비 (decimal 캐스트로 문자열이 올 수 있음)
+     * @param  int|float  $value  계산 기준 값 (수량, kg, L, 금액 등)
      * @param  int|float  $unitValue  단위 값
      * @return int 배송비
      */
-    protected function calculatePerUnitFee(int|float $baseFee, int|float $value, int|float $unitValue): int
+    protected function calculatePerUnitFee(int|float|string $baseFee, int|float $value, int|float $unitValue): int
     {
         if ($unitValue <= 0) {
             $unitValue = 1;
         }
 
-        return (int) ceil($value / $unitValue) * (int) $baseFee;
+        return (int) round(ceil($value / $unitValue) * (float) $baseFee);
+    }
+
+    /**
+     * per_* 정책에서 부과 단위 수를 계산합니다 (기본 배송비와 도서산간 곱의 공통 기준).
+     *
+     * @param  ShippingPolicyCountrySetting  $countrySetting  국가별 설정
+     * @param  array  $group  그룹 정보 (total_amount, total_quantity, total_weight, total_volume)
+     * @return int 부과 단위 수
+     */
+    protected function resolveChargeUnits(ShippingPolicyCountrySetting $countrySetting, array $group): int
+    {
+        $groupWeight = (float) ($group['total_weight'] ?? 0.0);
+        $groupVolume = (float) ($group['total_volume'] ?? 0.0);
+        $volumeWeightDivisor = $countrySetting->ranges['volume_weight_divisor'] ?? 6000;
+
+        $weightKg = $groupWeight / 1000;
+        $volumeLiter = $groupVolume / 1000;
+        $volumetricWeightKg = $volumeWeightDivisor > 0 ? $groupVolume / $volumeWeightDivisor : 0.0;
+
+        [$value, $defaultUnitValue] = match ($countrySetting->charge_policy) {
+            ChargePolicyEnum::PER_WEIGHT => [$weightKg, 0.5],
+            ChargePolicyEnum::PER_VOLUME => [$volumeLiter, 1],
+            ChargePolicyEnum::PER_VOLUME_WEIGHT => [max($weightKg, $volumetricWeightKg), 0.5],
+            ChargePolicyEnum::PER_AMOUNT => [(float) ($group['total_amount'] ?? 0), 10000],
+            default => [(float) ($group['total_quantity'] ?? 0), 1],
+        };
+
+        $unitValue = $countrySetting->ranges['unit_value'] ?? $defaultUnitValue;
+        if ($unitValue <= 0) {
+            $unitValue = 1;
+        }
+
+        return max(0, (int) ceil($value / $unitValue));
     }
 
     /**
@@ -2222,7 +2333,7 @@ class OrderCalculationService
 
         // 엔드포인트 미설정 시 기본 배송비 폴백
         if (empty($apiEndpoint)) {
-            return (int) $countrySetting->base_fee;
+            return (int) round((float) $countrySetting->base_fee);
         }
 
         try {
@@ -2232,12 +2343,12 @@ class OrderCalculationService
             $response = $this->dispatchApiRequest($apiEndpoint, $requestData, $config);
 
             if ($response === null || ! $response->successful()) {
-                return (int) $countrySetting->base_fee;
+                return (int) round((float) $countrySetting->base_fee);
             }
 
             $fee = $this->extractFeeFromApiResponse($response, $countrySetting, $config);
 
-            return $fee ?? (int) $countrySetting->base_fee;
+            return $fee ?? (int) round((float) $countrySetting->base_fee);
         } catch (\Throwable $e) {
             // 예외 발생 시 기본 배송비 반환 (토큰 등 민감값은 로그에 남기지 않음)
             Log::warning('API 배송비 계산 실패', [
@@ -2248,7 +2359,7 @@ class OrderCalculationService
                 'error' => $e->getMessage(),
             ]);
 
-            return (int) $countrySetting->base_fee;
+            return (int) round((float) $countrySetting->base_fee);
         }
     }
 
@@ -2385,7 +2496,7 @@ class OrderCalculationService
             // 텍스트 응답: 숫자/소수점/부호만 남겨 추출 ("₩3,000" → 3000)
             $cleaned = preg_replace('/[^0-9.\-]/', '', $response->body());
 
-            return is_numeric($cleaned) ? (int) $cleaned : null;
+            return is_numeric($cleaned) ? $this->normalizeApiFee((int) $cleaned, $countrySetting) : null;
         }
 
         // JSON 응답: response_path 점표기 중첩 경로 추출 (없으면 기존 api_response_fee_field 폴백)
@@ -2395,7 +2506,32 @@ class OrderCalculationService
 
         $value = data_get($response->json(), $path);
 
-        return is_numeric($value) ? (int) $value : null;
+        return is_numeric($value) ? $this->normalizeApiFee((int) $value, $countrySetting) : null;
+    }
+
+    /**
+     * 외부 API 가 돌려준 배송비를 검증합니다.
+     *
+     * 음수 배송비는 주문 총액을 깎아 금전 손실로 이어지므로 추출 실패로 처리해
+     * 기본 배송비 폴백 경로에 태웁니다.
+     *
+     * @param  int  $fee  추출된 배송비
+     * @param  ShippingPolicyCountrySetting  $countrySetting  국가별 설정
+     * @return int|null 검증을 통과한 배송비 (음수면 null)
+     */
+    protected function normalizeApiFee(int $fee, ShippingPolicyCountrySetting $countrySetting): ?int
+    {
+        if ($fee < 0) {
+            Log::warning('배송비 계산 API 가 음수 배송비를 반환해 기본 배송비로 폴백합니다', [
+                'policy_id' => $countrySetting->shipping_policy_id,
+                'country_code' => $countrySetting->country_code,
+                'fee' => $fee,
+            ]);
+
+            return null;
+        }
+
+        return $fee;
     }
 
     /**

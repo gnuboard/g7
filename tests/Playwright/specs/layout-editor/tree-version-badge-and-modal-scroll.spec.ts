@@ -14,8 +14,8 @@
  *     "버전 기록"이 활성화되어 확장 전용 버전 API 의 목록 모달이 열린다. 저장/복원 동기화는
  *     단위(useExtensionDocument/리듀서/VersionHistoryModal) + 백엔드 Feature 테스트가 커버.
  *
- * @scenario edit_mode + layout_history + scroll_lock_source
- * @effects editor_routes_response_includes_layout_versions_map + tree_version_badge_matches_versions_map + no_badge_for_layouts_without_history + modal_edit_keeps_canvas_scrollbar + extension_badge_matches_current_version + extension_mode_version_history_modal_opens
+ * 축 요약(마커 아님 — 평문): edit_mode, layout_history, scroll_lock_source.
+ * 효과 요약(마커 아님 — 평문): editor_routes_response_includes_layout_versions_map, tree_version_badge_matches_versions_map, no_badge_for_layouts_without_history, modal_edit_keeps_canvas_scrollbar, extension_badge_matches_current_version, extension_mode_version_history_modal_opens.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 
@@ -33,6 +33,7 @@ async function enterEditor(page: import('@playwright/test').Page, url: string): 
 }
 
 test.describe('@layout-editor 트리 버전 배지 + 모달 편집 스크롤 유지', () => {
+  /** @effects editor_routes_response_includes_layout_versions_map, tree_version_badge_matches_versions_map, no_badge_for_layouts_without_history */
   test('라우트 트리 버전 배지가 routes 응답 layout_versions 맵과 1:1 정합', async ({ page }) => {
     await enterEditor(page, EDITOR_URL);
     await page.waitForSelector('[data-testid="g7le-route-tree-item"]', { timeout: 30_000 });
@@ -77,6 +78,7 @@ test.describe('@layout-editor 트리 버전 배지 + 모달 편집 스크롤 유
     }
   });
 
+  /** @effects modal_edit_keeps_canvas_scrollbar */
   test('모달 편집 모드에서 body 스크롤 락이 무력화되어 캔버스 스크롤바 유지', async ({ page }) => {
     await enterEditor(page, MODAL_DIRECT_URL);
     await expect(page.locator('[data-mode="modal"]')).toBeAttached({ timeout: 30_000 });
@@ -101,6 +103,7 @@ test.describe('@layout-editor 트리 버전 배지 + 모달 편집 스크롤 유
     expect(state.inline).not.toBe('hidden');
   });
 
+  /** @effects extension_badge_matches_current_version, extension_mode_version_history_modal_opens */
   test('확장 노드 버전 배지가 layout-extensions 응답 current_version 과 정합 + 확장 편집 모드 버전 기록 모달', async ({ page }) => {
     await enterEditor(page, EDITOR_URL);
     await page.waitForSelector('[data-testid="g7le-route-tree-item"]', { timeout: 30_000 });

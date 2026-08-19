@@ -6,6 +6,10 @@ return [
         'enabled' => '選択使用',
         'always' => '必須使用',
     ],
+    'reply_delete_policy' => [
+        'block' => '削除をブロック（返信がある間は元の投稿を削除できません）',
+        'cascade' => '一緒に削除（元の投稿の削除時に返信も削除されます）',
+    ],
     'order_direction' => [
         'asc' => '昇順',
         'desc' => '降順',

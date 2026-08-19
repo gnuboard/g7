@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Support\GuestRoleResolver;
 use App\Support\Query\BoundedCount;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Listeners\SearchProductsListener;
 use Modules\Sirsoft\Ecommerce\Services\ProductService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
@@ -57,6 +58,42 @@ class SearchProductsListenerTest extends ModuleTestCase
         }
 
         GuestRoleResolver::flush();
+    }
+
+    /**
+     * 검색 실패가 "결과 0건" 으로 위장되지 않고 failed 페이로드로 표면화되는지 확인 (#103)
+     *
+     * @effects failed_flag_in_response, exception_stack_logged
+     */
+    public function test_search_failure_surfaces_failed_payload_and_logs_exception(): void
+    {
+        Log::spy();
+
+        $exception = new \RuntimeException('DB 오류 재현');
+        $this->productService
+            ->method('searchByKeywordWithCursor')
+            ->willThrowException($exception);
+
+        $context = [
+            'type' => 'products',
+            'q' => '문의',
+            'sort' => 'relevance',
+            'page' => 1,
+            'per_page' => 10,
+            'user' => null,
+            'request' => null,
+        ];
+
+        $result = $this->listener->searchProducts([], $context);
+
+        $this->assertArrayHasKey('products', $result);
+        $this->assertTrue($result['products']['failed'] ?? false, '실패 카테고리에는 failed 플래그가 실려야 합니다.');
+        $this->assertFalse($result['products']['total_is_exact'], '실패한 0건을 "정확한 0건" 으로 말하면 안 됩니다.');
+        $this->assertSame([], $result['products']['items']);
+
+        Log::shouldHaveReceived('error')
+            ->withArgs(fn (string $message, array $ctx = []) => ($ctx['exception'] ?? null) === $exception)
+            ->once();
     }
 
     /**
@@ -324,5 +361,42 @@ class SearchProductsListenerTest extends ModuleTestCase
         $this->assertEquals(10, $result['products'][0]['review_count']);
         $this->assertEquals(0.0, $result['products'][1]['rating_avg']);
         $this->assertEquals(0, $result['products'][1]['review_count']);
+    }
+
+    /**
+     * 하이라이트 필드가 원문 태그를 이스케이프하는지 확인 (⑧)
+     *
+     * @scenario case=search_highlight_escape
+     *
+     * @effects highlighted_fields_escaped
+     */
+    public function test_highlight_keyword_escapes_markup(): void
+    {
+        $method = new \ReflectionMethod($this->listener, 'highlightKeyword');
+        $method->setAccessible(true);
+
+        $result = $method->invoke($this->listener, '<img src=x onerror=alert(1)> 상품', '상품');
+
+        $this->assertStringNotContainsString('<img', $result);
+        $this->assertStringContainsString('&lt;img', $result);
+        $this->assertStringContainsString('<mark>상품</mark>', $result);
+    }
+
+    /**
+     * 본문 프리뷰가 엔티티 인코딩된 태그를 부활시키지 않는지 확인 (N-8)
+     *
+     * @scenario case=preview_entity_no_resurrect
+     *
+     * @effects preview_does_not_resurrect_entities
+     */
+    public function test_extract_content_preview_does_not_resurrect_entity_encoded_tags(): void
+    {
+        $method = new \ReflectionMethod($this->listener, 'extractContentPreview');
+        $method->setAccessible(true);
+
+        $result = $method->invoke($this->listener, '&lt;script&gt;alert(1)&lt;/script&gt; 상품 설명입니다.', '상품', 150);
+
+        $this->assertStringNotContainsString('<script>', $result);
+        $this->assertStringContainsString('상품', $result);
     }
 }

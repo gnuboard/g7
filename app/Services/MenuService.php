@@ -7,10 +7,13 @@ use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Enums\ExtensionOwnerType;
 use App\Enums\MenuPermissionType;
 use App\Extension\HookManager;
+use App\Helpers\PermissionHelper;
 use App\Models\Menu;
 use App\Models\User;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class MenuService
@@ -182,13 +185,16 @@ class MenuService
             ]);
         }
 
-        // Hook: 메뉴 삭제 전
-        HookManager::doAction('core.menu.before_delete', $menu);
+        // 역할 연결만 끊기고 메뉴는 남는 상태를 막기 위해 두 단계를 하나로 묶는다.
+        $result = DB::transaction(function () use ($menu) {
+            // Hook: 메뉴 삭제 전
+            HookManager::doAction('core.menu.before_delete', $menu);
 
-        // 역할 연결 해제 (명시적 삭제 - CASCADE 의존 금지)
-        $menu->roles()->detach();
+            // 역할 연결 해제 (명시적 삭제 - CASCADE 의존 금지)
+            $menu->roles()->detach();
 
-        $result = $this->menuRepository->delete($menu);
+            return $this->menuRepository->delete($menu);
+        });
 
         // Hook: 메뉴 삭제 후
         HookManager::doAction('core.menu.after_delete', $menu->id);
@@ -199,11 +205,19 @@ class MenuService
     /**
      * 메뉴 순서를 업데이트합니다 (드래그 앤 드롭).
      *
+     * 형제 `updateMenuOrderWithHierarchy` 와 같은 리소스를 같은 방식으로 쓰므로 스코프
+     * 가드도 대칭이어야 한다. 코어 내 호출부가 없다는 사실은 방어가 아니다 — 이 서비스는
+     * 확장이 주입받을 수 있고, 가드가 형제 경로에만 있으면 여기가 우회로가 된다.
+     *
      * @param  array  $menuOrders  메뉴 ID와 순서 매핑 배열
      * @return bool 업데이트 성공 여부
+     *
+     * @throws AuthorizationException 스코프 밖 메뉴가 하나라도 포함된 경우
      */
     public function updateMenuOrder(array $menuOrders): bool
     {
+        $this->assertMenusWithinScope(array_map('intval', array_values($menuOrders)));
+
         // 훅: 메뉴 순서 변경 전 (IDV 정책 가드 지점)
         HookManager::doAction('core.menu.before_update_order', $menuOrders);
 
@@ -223,12 +237,82 @@ class MenuService
      */
     public function updateMenuOrderWithHierarchy(array $orderData): bool
     {
+        $this->assertOrderTargetsWithinScope($orderData);
+
         $result = $this->menuRepository->updateOrderWithHierarchy($orderData);
 
         // 훅: 메뉴 계층 순서 변경 후
         HookManager::doAction('core.menu.after_update_order', $orderData);
 
         return $result;
+    }
+
+    /**
+     * 순서 변경 대상 메뉴가 액터의 스코프 안에 있는지 검사합니다.
+     *
+     * `PUT admin/menus/order` 는 라우트 모델이 없는 정적 경로라 PermissionMiddleware 의
+     * 스코프 검사가 스킵된다(`{menu}` 파라미터 부재 → "목록 엔드포인트" 로 간주). 상세
+     * 경로(`PUT menus/{menu}`)가 미들웨어로 강제하는 축이 이 경로에서만 비어 있었다.
+     * 배포 기본 역할은 `core.menus.update` 를 글로벌로 주므로 기본값 노출은 아니지만,
+     * 운영자가 역할 화면에서 스코프를 self/role 로 좁히는 순간 우회로가 된다.
+     *
+     * 첨부 순서 변경과 같은 이유로 **전량 거부**다 — 순서는 트리 전체에 대한 하나의
+     * 배열이라 일부만 반영하면 나머지와 어긋난 계층이 저장된다.
+     *
+     * @param  array  $orderData  순서 데이터 (parent_menus / child_menus / moved_items)
+     *
+     * @throws AuthorizationException 스코프 밖 메뉴가 하나라도 포함된 경우
+     */
+    private function assertOrderTargetsWithinScope(array $orderData): void
+    {
+        $ids = [];
+
+        foreach ($orderData['parent_menus'] ?? [] as $item) {
+            $ids[] = (int) ($item['id'] ?? 0);
+        }
+
+        foreach ($orderData['child_menus'] ?? [] as $children) {
+            foreach ($children as $item) {
+                $ids[] = (int) ($item['id'] ?? 0);
+            }
+        }
+
+        // 이동 항목은 **옮기는 메뉴 자신**만 확인한다. 새 부모까지 검사하면, 공용 상위 메뉴
+        // 아래에 자기 메뉴를 다는 정상 사용이 막힌다 — 결함은 "남의 메뉴 순서를 바꾼다" 였지
+        // "남의 메뉴 아래에 못 붙인다" 가 아니다.
+        foreach ($orderData['moved_items'] ?? [] as $item) {
+            $ids[] = (int) ($item['id'] ?? 0);
+        }
+
+        $this->assertMenusWithinScope($ids);
+    }
+
+    /**
+     * 주어진 메뉴 ID 집합이 전부 액터의 스코프 안에 있는지 검사합니다.
+     *
+     * 순서 변경 두 경로(`updateMenuOrder` · `updateMenuOrderWithHierarchy`)가 공유하는
+     * 판정부다. 한쪽만 검사하면 형제 경로가 우회로가 되므로 판정을 한 곳에 둔다.
+     *
+     * @param  array<int>  $ids  검사 대상 메뉴 ID 목록
+     *
+     * @throws AuthorizationException 스코프 밖 메뉴가 하나라도 포함된 경우
+     */
+    private function assertMenusWithinScope(array $ids): void
+    {
+        $ids = array_values(array_unique(array_filter($ids)));
+
+        if (empty($ids)) {
+            return;
+        }
+
+        $menus = $this->menuRepository->findByIds($ids);
+
+        // 판정은 상세 경로와 같은 SSoT 에 위임한다.
+        $permitted = PermissionHelper::filterByScope($menus, 'core.menus.update');
+
+        if (count($permitted) !== $menus->count()) {
+            throw new AuthorizationException(__('auth.scope_denied'));
+        }
     }
 
     /**

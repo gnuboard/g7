@@ -2,9 +2,9 @@
 
 namespace Tests\Unit\Providers;
 
-use App\Providers\SettingsServiceProvider;
+use App\Repositories\JsonConfigRepository;
+use App\Support\ExtensionSettingsMirror;
 use Carbon\Carbon;
-use ReflectionClass;
 use Tests\TestCase;
 
 /**
@@ -56,13 +56,48 @@ class SettingsServiceProviderTest extends TestCase
 
     /**
      * CORE_CATEGORIES에 seo 카테고리가 포함되어 봇 감지 설정이 로딩되는지 테스트합니다.
+     *
+     * 목록의 소유자는 ExtensionSettingsMirror 다 — Provider 에 사본을 두고 그 사본을
+     * 단언하면, 미러의 목록에서 카테고리가 빠져도 이 테스트가 초록으로 남는다.
      */
     public function test_seo_category_included_in_core_categories(): void
     {
-        $reflection = new ReflectionClass(SettingsServiceProvider::class);
-        $categories = $reflection->getConstant('CORE_CATEGORIES');
+        $this->assertContains(
+            'seo',
+            ExtensionSettingsMirror::CORE_CATEGORIES,
+            'CORE_CATEGORIES에 seo 카테고리가 포함되어야 합니다.'
+        );
+    }
 
-        $this->assertContains('seo', $categories, 'CORE_CATEGORIES에 seo 카테고리가 포함되어야 합니다.');
+    /**
+     * CORE_CATEGORIES 가 실제로 미러에 채워지는 목록인지 테스트합니다.
+     *
+     * 이 단언이 없으면 위/아래의 상수 포함 검사는 "상수에 문자열이 있다" 만 증명한다.
+     * 상수와 채움 동작이 실제로 이어져 있어야 그 검사에 회귀 차단 효력이 생긴다.
+     */
+    public function test_core_categories_constant_is_what_the_mirror_fills(): void
+    {
+        $probe = new class extends JsonConfigRepository
+        {
+            /**
+             * 어느 카테고리를 물어도 비어 있지 않은 값을 돌려준다 (채움 대상 판정용).
+             *
+             * @param  string  $category  카테고리명
+             * @return array<string, mixed> 탐침 값
+             */
+            public function getCategory(string $category): array
+            {
+                return ['__probe' => $category];
+            }
+        };
+
+        app(ExtensionSettingsMirror::class)->refreshCore($probe);
+
+        $this->assertSame(
+            ExtensionSettingsMirror::CORE_CATEGORIES,
+            array_keys(config('g7_settings.core')),
+            'g7_settings.core 에 채워지는 카테고리가 CORE_CATEGORIES 와 일치해야 합니다.'
+        );
     }
 
     /**
@@ -85,10 +120,11 @@ class SettingsServiceProviderTest extends TestCase
      */
     public function test_identity_category_included_in_core_categories(): void
     {
-        $reflection = new ReflectionClass(SettingsServiceProvider::class);
-        $categories = $reflection->getConstant('CORE_CATEGORIES');
-
-        $this->assertContains('identity', $categories, 'CORE_CATEGORIES 에 identity 카테고리가 포함되어야 합니다.');
+        $this->assertContains(
+            'identity',
+            ExtensionSettingsMirror::CORE_CATEGORIES,
+            'CORE_CATEGORIES 에 identity 카테고리가 포함되어야 합니다.'
+        );
     }
 
     /**

@@ -12,8 +12,8 @@
  * 실제 편집기 DOM 에서 선택→모달→패치 라운드트립과 딤/잠금 해제를 브라우저로 검증한다
  * (단위 시뮬레이션이 모사 못 하는 modal.stack 파생 + 실제 React 재렌더 경로).
  *
- * @scenario iteration_shared_edit + affordance_gap + edit_lock_dim + edit_lock_release + permission_candidate_add
- * @effects all_iteration_instances_patched + affordance_offset_30 + canvas_dim_on_modal + canvas_undim_on_close + permission_add_enabled
+ * 축 요약(마커 아님 — 평문): iteration_shared_edit, affordance_gap, edit_lock_dim, edit_lock_release, permission_candidate_add.
+ * 효과 요약(마커 아님 — 평문): all_iteration_instances_patched, affordance_offset_30, canvas_dim_on_modal, canvas_undim_on_close, permission_add_enabled.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 import type { Page } from '@playwright/test';
@@ -54,6 +54,7 @@ async function openModalStyleTab(page: Page): Promise<void> {
 }
 
 test.describe('@layout-editor 속성 편집 UX', () => {
+  /** @effects all_iteration_instances_patched */
   test('항목1 — 이터레이션 인스턴스 속성 편집이 모든 인스턴스에 함께 반영', async ({ page }) => {
     await gotoEditor(page);
 
@@ -101,6 +102,7 @@ test.describe('@layout-editor 속성 편집 UX', () => {
       .toBe(count);
   });
 
+  /** @effects affordance_offset_30 */
   test('항목2/3 — 큰(inside) 편집 가능 요소의 + 버튼·ⓘ 버튼 30px 바깥 여백', async ({ page }) => {
     await gotoEditor(page, '%2Flogin');
 
@@ -141,6 +143,7 @@ test.describe('@layout-editor 속성 편집 UX', () => {
     expect(measured.aboveTop).toBe('-30px');
   });
 
+  /** @effects canvas_dim_on_modal, canvas_undim_on_close */
   test('항목7 — 속성 편집 중 캔버스 딤/잠금 + 닫기(편집 후 포함) 시 자동 해제', async ({ page }) => {
     await gotoEditor(page);
 
@@ -205,6 +208,7 @@ test.describe('@layout-editor 속성 편집 UX', () => {
     await expect(page.locator('[data-testid="g7le-property-modal"]')).toHaveCount(0);
   });
 
+  /** @effects permission_add_enabled */
   test('표시 권한 — 고급 탭 TagInput 후보가 편집기 전용 엔드포인트에서 fetch 되어 추가 활성', async ({ page }) => {
     await gotoEditor(page);
 

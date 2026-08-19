@@ -127,7 +127,7 @@ Route::prefix('pages')->middleware(['optional.sanctum', 'throttle:600,1'])->name
         ->where('hash', '[a-zA-Z0-9]{12}')
         ->name('attachment.download');
 
-    // 첨부 이미지 미리보기 (공개 - 토큰 없는 <img> 직접 GET 을 위해 권한 체크 없이 이미지만 제공)
+    // 첨부 이미지 미리보기 (해시 기반, 발행 상태에 따라 컨트롤러에서 접근 제어 — download 와 동일 게이트)
     Route::get('/attachment/{hash}/preview', [PublicPageAttachmentController::class, 'preview'])
         ->where('hash', '[a-zA-Z0-9]{12}')
         ->name('attachment.preview');

@@ -2,11 +2,11 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\User;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 use Laravel\Sanctum\PersonalAccessToken;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -75,9 +75,9 @@ class SetLocale
      * 따라서 Bearer 토큰을 직접 파싱하여 사용자를 가져옵니다.
      *
      * @param  Request  $request  HTTP 요청
-     * @return \App\Models\User|null 사용자 또는 null
+     * @return User|null 사용자 또는 null
      */
-    private function resolveUser(Request $request): ?\App\Models\User
+    private function resolveUser(Request $request): ?User
     {
         // 이미 인증된 경우 (세션 기반 인증)
         if (Auth::check()) {
@@ -88,7 +88,14 @@ class SetLocale
         $bearerToken = $request->bearerToken();
         if ($bearerToken) {
             $token = PersonalAccessToken::findToken($bearerToken);
-            if ($token && $token->tokenable instanceof \App\Models\User) {
+
+            // 만료된 토큰은 인증되지 않은 것으로 취급 (guest 로케일 폴백).
+            // OptionalSanctumMiddleware 와 동일한 만료 검사를 적용한다.
+            if ($token && $token->expires_at && $token->expires_at->isPast()) {
+                return null;
+            }
+
+            if ($token && $token->tokenable instanceof User) {
                 return $token->tokenable;
             }
         }

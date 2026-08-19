@@ -34,6 +34,11 @@ class IdentityChallengeFlowTest extends TestCase
         $this->seed(IdentityMessageDefinitionSeeder::class);
     }
 
+    /**
+     * @scenario actor_role=guest, challenge_owner=none, endpoint=request
+     *
+     * @effects guest_can_request_challenge
+     */
     public function test_request_challenge_returns_201_and_creates_log(): void
     {
         $response = $this->postJson('/api/identity/challenges', [

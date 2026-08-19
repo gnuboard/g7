@@ -4,6 +4,7 @@ namespace App\Http\Requests\Layout;
 
 use App\Extension\HookManager;
 use App\Rules\NoExternalUrls;
+use App\Rules\SafeLayoutExpressions;
 use App\Rules\ValidDataSourceMerge;
 use App\Rules\ValidLayoutExtensionStructure;
 use App\Rules\WhitelistedEndpoint;
@@ -62,6 +63,11 @@ class UpdateLayoutExtensionContentRequest extends FormRequest
                 'required',
                 'array',
                 new ValidLayoutExtensionStructure,
+                // 표현식 샌드박스 우회/원격 스크립트 저장측 차단 (KVE-2026-1915).
+                // content 트리 전체(data_sources·scripts·표현식 문자열)를 재귀 순회한다.
+                new SafeLayoutExpressions,
+                // props·actions·init_actions 의 외부 URL 차단 (Store/UpdateLayoutRequest 와 동일 강도)
+                new NoExternalUrls,
             ],
 
             // 우선순위 (선택 — content.priority 와 별개로 직접 지정 가능)
@@ -74,6 +80,8 @@ class UpdateLayoutExtensionContentRequest extends FormRequest
             'content.data_sources' => ['nullable', 'array', new ValidDataSourceMerge],
 
             // 데이터소스 endpoint 검증
+            // SafeLayoutExpressions 는 content 배열 규칙이 트리 전체를 순회하며 data_sources[].endpoint
+            // same-origin 까지 검사하므로 여기(문자열)에는 부착하지 않는다 (문자열 부착 시 no-op).
             'content.data_sources.*.endpoint' => [
                 'nullable',
                 'string',

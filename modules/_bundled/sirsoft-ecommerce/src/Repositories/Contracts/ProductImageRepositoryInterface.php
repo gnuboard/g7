@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Repositories\Contracts;
 
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Carbon;
 use Modules\Sirsoft\Ecommerce\Models\ProductImage;
 
 /**
@@ -68,6 +69,18 @@ interface ProductImageRepositoryInterface
      * @return bool
      */
     public function delete(int $id): bool;
+
+    /**
+     * 상품에 연결되지 않은 채 방치된 임시 이미지를 오래된 순으로 조회
+     *
+     * 상품 등록 폼에서 업로드만 하고 저장 없이 이탈하면 `temp_key` 가 남은 채
+     * `product_id` 가 비어 있는 행과 그 파일이 영구 잔존합니다. 그 회수 대상을 찾습니다.
+     *
+     * @param  Carbon  $threshold  기준 시각 (이 시각 이전 업로드가 대상)
+     * @param  int  $limit  최대 조회 건수
+     * @return Collection<int, ProductImage> 임시 이미지 목록 (created_at 오름차순)
+     */
+    public function findStaleTempImages(Carbon $threshold, int $limit): Collection;
 
     /**
      * 임시 이미지를 상품에 연결

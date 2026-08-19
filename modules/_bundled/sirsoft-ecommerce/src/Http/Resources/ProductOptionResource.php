@@ -61,6 +61,11 @@ class ProductOptionResource extends BaseApiResource
             // 품절 여부 — 재고 0 이하이거나 비활성 옵션 (프론트 드롭다운 비활성/라벨용, MP07 §2-b)
             'is_sold_out' => ($this->stock_quantity ?? 0) <= 0 || ! $this->is_active,
 
+            // 배송 계산용 물성 (g / cm³ — 배송정책의 kg/L 환산은 배송비 계산 시점에 수행)
+            // 직렬화하지 않으면 관리자 수정 화면이 0 으로 표시하고, 그대로 저장하면 실측값이 덮어써진다.
+            'weight' => $this->weight !== null ? (float) $this->weight : null,
+            'volume' => $this->volume !== null ? (float) $this->volume : null,
+
             // 상태
             'is_default' => $this->is_default,
             'is_active' => $this->is_active,

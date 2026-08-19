@@ -626,7 +626,7 @@
                             {
                               "handler": "toast",
                               "params": {
-                                "message": "$t:sirsoft-ecommerce.admin.settings.mail_templates.save_error",
+                                "message": "{{error.message ?? $t('sirsoft-ecommerce.admin.settings.mail_templates.save_error')}}",
                                 "type": "error"
                               }
                             }

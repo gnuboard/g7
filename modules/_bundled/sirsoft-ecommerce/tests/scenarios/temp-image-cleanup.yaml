@@ -1,0 +1,66 @@
+feature: 상품 이미지 잔존물 회수 (Temp Product Image Cleanup + Category Delete)
+
+description: |
+  이커머스의 이미지 잔존물 두 갈래를 회수한다. 공개 이슈 #115 동류 결함.
+
+  1. 미연결 임시 상품 이미지 — 상품 등록 폼에서 올린 뒤 저장 없이 이탈해 `temp_key` 만
+     남고 `product_id` 가 비어 있는 행. 연결 시점에 본경로로 옮겨지므로 오탐 여지가 없다.
+     운영 데이터가 아닌 폼 세션 부산물이라 토글 없이 상시 실행된다.
+  2. 카테고리 삭제 시 이미지 파일 잔존 (버그) — `$category->images()->delete()` 로 DB 행만
+     지워 파일이 디스크에 영구 잔존했다. 같은 모듈의 상품 삭제는 파일까지 지우므로 두 경로가
+     비대칭이었다. 파일 → 행 순서로 정리하도록 교정했다(ProductService 선례와 동일 순서).
+
+axes:
+  image_state: [temp_unlinked, linked_to_product]
+  age: [within_retention, past_retention]
+
+exclusions:
+  - { image_state: linked_to_product, age: within_retention, reason: "연결된 이미지는 나이와 무관하게 대상이 아니다 — 경과분 1건으로 충분" }
+
+sub_flows:
+  - id: dry_run
+    description: 판정만 수행하고 파일·기록을 건드리지 않는 미리보기 경로
+    effects:
+      - ecommerce_temp_prune_dry_run
+  - id: retention_guard
+    description: 보존기간 1일 미만 자기 차단 (방금 올린 임시 이미지까지 지우는 사고 방지)
+    effects:
+      - ecommerce_temp_prune_days_guard
+  - id: temp_directory_hygiene
+    description: |
+      파일을 지운 뒤 남는 temp 디렉토리 처리. 비워졌을 때만 지우고, 다른 폼 세션의 파일이
+      남아 있으면 그대로 둔다 (디렉토리째 지우면 아직 작성 중인 상품의 이미지가 사라진다).
+    effects:
+      - ecommerce_temp_prune_removes_empty_directory
+      - ecommerce_temp_prune_keeps_directory_with_remaining_files
+  - id: category_delete
+    description: |
+      카테고리 삭제가 이미지 파일까지 지우는지 (회귀). 행마다 disk 가 다른 혼재 상태에서도
+      각 행의 실제 저장 위치를 향해 지워야 한다.
+    effects:
+      - category_delete_removes_image_files
+      - category_delete_removes_image_rows
+  - id: category_image_remove_ui
+    description: |
+      카테고리 폼에서 이미지를 뺐을 때 폼 상태에서도 빠지는지. FileUploader 는 hash 우선으로
+      식별자를 넘기므로 id 로만 걸러내면 서버에서는 지워졌는데 폼에는 남는다.
+    effects:
+      - category_image_remove_filters_by_hash
+      - category_image_remove_falls_back_to_id
+  - id: reference_source_registry
+    description: 상품 설명·공통 안내를 에디터 이미지 참조 소스로 등록하는 리스너
+    effects:
+      - reference_source_listener_subscribes_as_filter
+      - reference_source_listener_appends_without_dropping
+      - reference_source_listener_schema_contract
+
+effects:
+  - ecommerce_temp_prune_deletes_file_and_record
+  - ecommerce_temp_prune_keeps_within_retention
+  - ecommerce_temp_prune_skips_linked
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Console/PruneTempProductImagesCommandTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Services/CategoryDeleteImageFileTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/Ckeditor5ReferenceSourcesListenerTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminCategoryImageRemoveExpression.test.ts

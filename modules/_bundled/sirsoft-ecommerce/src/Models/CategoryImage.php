@@ -6,12 +6,14 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Modules\Sirsoft\Ecommerce\Models\Concerns\HasDirectAssetUrl;
 
 /**
  * 카테고리 이미지 모델
  */
 class CategoryImage extends Model
 {
+    use HasDirectAssetUrl;
     use SoftDeletes;
 
     protected $table = 'ecommerce_category_images';
@@ -108,11 +110,11 @@ class CategoryImage extends Model
     }
 
     /**
-     * `download_url` 가상 attribute — hash 기반 카테고리 이미지 서빙 API URL.
+     * hash 기반 카테고리 이미지 서빙 API URL (직접 URL 불가 시 폴백).
      *
      * @return string `/api/modules/sirsoft-ecommerce/category-image/{hash}` 형식 URL
      */
-    public function getDownloadUrlAttribute(): string
+    protected function apiDownloadUrl(): string
     {
         return '/api/modules/sirsoft-ecommerce/category-image/'.$this->hash;
     }

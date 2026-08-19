@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Board\Tests\Feature;
 
 require_once __DIR__.'/../ModuleTestCase.php';
 
+use Illuminate\Support\Facades\Hash;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 
 /**
@@ -32,6 +33,16 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  *
  * UpdatePostRequest:
  * - title 최소 길이 미만 → 422
+ * - password 배열 주입 → 422
+ *
+ * DestroyCommentRequest:
+ * - password 배열 주입 → 422
+ * - password 최소 길이(4) 미만 → 422
+ * - 회원 본인 댓글 password 없이 삭제 → 200
+ *
+ * DestroyPostRequest:
+ * - verification_token 배열 주입 → 422
+ * - 비회원 글 올바른 password 로 삭제 → 200
  *
  * @group board
  * @group feature
@@ -299,5 +310,112 @@ class FormRequestValidationTest extends BoardTestCase
             "/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}",
             ['title' => '가'] // min_title_length=2 미만
         )->assertStatus(422);
+    }
+
+    /**
+     * 게시글 수정에 password 배열 주입 → 422 (string 규칙 차단)
+     */
+    public function test_post_update_rejects_array_password(): void
+    {
+        $user = $this->createUser();
+        $postId = $this->createTestPost(['user_id' => $user->id]);
+
+        $this->actingAs($user)->putJson(
+            "/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}",
+            [
+                'title' => '정상 제목',
+                'password' => ['x'], // 배열 주입
+            ]
+        )->assertStatus(422);
+    }
+
+    // ==========================================
+    // DestroyCommentRequest
+    // ==========================================
+
+    /**
+     * 댓글 삭제에 password 배열 주입 → 422 (string 규칙 차단)
+     */
+    public function test_comment_destroy_rejects_array_password(): void
+    {
+        $postId = $this->createTestPost();
+        $commentId = $this->createTestComment($postId, [
+            'password' => Hash::make('pass1234'),
+        ]);
+
+        $this->deleteJson(
+            $this->commentUrl($postId)."/{$commentId}",
+            ['password' => ['x']] // 배열 주입
+        )->assertStatus(422);
+    }
+
+    /**
+     * 댓글 삭제에 최소 길이(4) 미만 password → 422
+     */
+    public function test_comment_destroy_rejects_too_short_password(): void
+    {
+        $postId = $this->createTestPost();
+        $commentId = $this->createTestComment($postId, [
+            'password' => Hash::make('pass1234'),
+        ]);
+
+        $this->deleteJson(
+            $this->commentUrl($postId)."/{$commentId}",
+            ['password' => '123'] // min:4 미만
+        )->assertStatus(422);
+    }
+
+    /**
+     * 회원 본인 댓글은 password 없이 삭제 가능 → 200
+     * (password 는 nullable — 비회원 소유권 확인용으로만 요구)
+     */
+    public function test_member_comment_destroy_without_password_succeeds(): void
+    {
+        $user = $this->createUser();
+        $postId = $this->createTestPost();
+        $commentId = $this->createTestComment($postId, [
+            'user_id' => $user->id,
+            'author_name' => $user->name,
+        ]);
+
+        $this->actingAs($user)
+            ->deleteJson($this->commentUrl($postId)."/{$commentId}")
+            ->assertStatus(200);
+    }
+
+    // ==========================================
+    // DestroyPostRequest
+    // ==========================================
+
+    /**
+     * 게시글 삭제에 verification_token 배열 주입 → 422 (string 규칙 차단)
+     */
+    public function test_post_destroy_rejects_array_verification_token(): void
+    {
+        $postId = $this->createTestPost([
+            'user_id' => null,
+            'password' => Hash::make('pass1234'),
+        ]);
+
+        $this->deleteJson(
+            $this->postUrl()."/{$postId}",
+            ['verification_token' => ['x']] // 배열 주입
+        )->assertStatus(422);
+    }
+
+    /**
+     * 비회원 글은 올바른 password 로 삭제 가능 → 200
+     */
+    public function test_guest_post_destroy_with_valid_password_succeeds(): void
+    {
+        $postId = $this->createTestPost([
+            'user_id' => null,
+            'password' => Hash::make('pass1234'),
+        ]);
+
+        $this->deleteJson(
+            $this->postUrl()."/{$postId}",
+            ['password' => 'pass1234']
+        )->assertStatus(200);
     }
 }

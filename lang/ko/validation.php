@@ -210,6 +210,8 @@ return [
 
         'invalid_json' => '유효하지 않은 JSON 형식입니다.',
         'must_be_array' => '레이아웃 데이터는 배열이어야 합니다.',
+        'dangerous_expression' => '허용되지 않는 표현식이 포함되어 있습니다: :snippet',
+        'external_resource_url' => '외부 리소스 URL은 허용되지 않습니다(동일 출처 경로만 허용): :url',
         'required_field_missing' => "필수 필드 ':field'가 누락되었습니다.",
         'version_must_be_string' => 'version 필드는 문자열이어야 합니다.',
         'layout_name_must_be_string' => 'layout_name 필드는 문자열이어야 합니다.',
@@ -512,6 +514,7 @@ return [
     // 서버에서 실행되는 스케줄 command(쉘·Artisan) 검증 메시지
     'schedule_command' => [
         'shell_not_allowed' => '허용되지 않은 쉘 명령입니다. 서버에 등록된 실행 파일만 사용할 수 있으며, 파이프(|)·세미콜론(;) 등 특수문자는 쓸 수 없습니다.',
+        'shell_interpreter_denied' => '인터프리터로 인라인 명령/코드를 실행하거나 안전하지 않은 경로를 지정할 수 없습니다. 인터프리터 뒤에는 절대경로 스크립트 파일만 지정하세요.',
         'artisan_denied' => '이 Artisan 명령은 보안상 스케줄로 실행할 수 없습니다.',
         'artisan_not_allowlisted' => '예약 실행이 허용된 Artisan 명령이 아닙니다. 캐시 정리·큐 처리 등 유지보수 명령만 등록할 수 있습니다.',
         'artisan_malformed' => 'Artisan 명령 형식이 올바르지 않습니다. 따옴표·역슬래시·단축 옵션(-v)은 쓸 수 없고 "명령명 --옵션[=값]" 형태만 등록할 수 있습니다.',
@@ -826,9 +829,13 @@ return [
     // 설정값 검증 메시지
     'setting' => [
         'value' => [
-            'required' => '설정 값은 필수입니다.',
-            'string' => '설정 값은 문자열이어야 합니다.',
+            'present' => '설정 값 항목(value)이 요청에 포함되어야 합니다.',
+            'boolean' => '이 설정은 사용/사용 안 함 값만 저장할 수 있습니다.',
+            'integer' => '이 설정은 정수만 저장할 수 있습니다.',
+            'numeric' => '이 설정은 숫자만 저장할 수 있습니다.',
+            'type' => '저장할 수 없는 형식의 설정 값입니다.',
             'max' => '설정 값은 :max자를 초과할 수 없습니다.',
+            'array_max' => '설정 값의 크기가 :max자를 초과할 수 없습니다.',
         ],
     ],
 
@@ -893,6 +900,10 @@ return [
         'image_quality_integer' => '이미지 품질은 정수여야 합니다.',
         'image_quality_min' => '이미지 품질은 1 이상이어야 합니다.',
         'image_quality_max' => '이미지 품질은 100을 초과할 수 없습니다.',
+        'orphan_cleanup_enabled_boolean' => '고아 첨부 자동 정리는 사용/사용 안 함 중 하나여야 합니다.',
+        'orphan_retention_days_integer' => '고아 첨부 보존기간은 정수여야 합니다.',
+        'orphan_retention_days_min' => '고아 첨부 보존기간은 1일 이상이어야 합니다.',
+        'orphan_retention_days_max' => '고아 첨부 보존기간은 3650일을 초과할 수 없습니다.',
 
         // SEO 설정
         'meta_title_suffix_max' => '타이틀 접미사는 100자를 초과할 수 없습니다.',
@@ -1006,11 +1017,16 @@ return [
         'storage_driver_required' => '스토리지 드라이버를 선택해주세요.',
         'storage_driver_invalid' => '올바른 스토리지 드라이버를 선택해주세요.',
         's3_bucket_max' => 'S3 버킷 이름은 255자를 초과할 수 없습니다.',
-        's3_region_invalid' => '올바른 S3 리전을 선택해주세요.',
+        's3_region_invalid' => 'S3 리전은 소문자 영숫자와 하이픈만 사용할 수 있습니다. (예: ap-northeast-2, Cloudflare R2 는 auto)',
+        's3_region_max' => 'S3 리전은 64자를 초과할 수 없습니다.',
         's3_access_key_max' => 'S3 Access Key는 255자를 초과할 수 없습니다.',
         's3_secret_key_max' => 'S3 Secret Key는 255자를 초과할 수 없습니다.',
         's3_url_invalid' => '올바른 S3 URL 형식이 아닙니다.',
         's3_url_max' => 'S3 URL은 500자를 초과할 수 없습니다.',
+        's3_endpoint_invalid' => '올바른 S3 엔드포인트 URL 형식이 아닙니다.',
+        's3_endpoint_max' => 'S3 엔드포인트 URL은 500자를 초과할 수 없습니다.',
+        's3_use_path_style_boolean' => 'Path-style 주소 사용 설정은 true 또는 false 값이어야 합니다.',
+        'driver_unusable' => "':driver' 드라이버를 이 서버에서 사용할 수 없습니다. :reason",
         'cache_driver_required' => '캐시 드라이버를 선택해주세요.',
         'cache_driver_invalid' => '올바른 캐시 드라이버를 선택해주세요.',
         'redis_host_max' => 'Redis 호스트는 255자를 초과할 수 없습니다.',
@@ -1061,9 +1077,11 @@ return [
         'log_days_min' => '로그 보관 일수는 1 이상이어야 합니다.',
         'log_days_max' => '로그 보관 일수는 365를 초과할 수 없습니다.',
 
+        // 공개 자산 디스크 설정
+        'public_asset_disk_invalid' => '올바른 공개 자산 디스크를 선택해주세요.',
+
         // 드라이버 조건부 필수 메시지 (선택 드라이버에 따라 필수)
         's3_bucket_required' => 'S3 버킷 이름은 필수입니다.',
-        's3_region_required' => 'S3 리전을 선택해주세요.',
         's3_access_key_required' => 'S3 Access Key는 필수입니다.',
         's3_secret_key_required' => 'S3 Secret Key는 필수입니다.',
         's3_url_url' => 'S3 URL은 유효한 URL이어야 합니다.',
@@ -1139,7 +1157,8 @@ return [
 
     // 검증 속성명 (validation.attributes)
     'attributes' => [
-        'ids' => '사용자 ID 목록',
+        'ids' => 'ID 목록',
+        'user_ids' => '사용자 ID 목록',
         'user_id' => '사용자 ID',
         'status' => '상태',
         // 일반 설정 필드
@@ -1148,7 +1167,8 @@ return [
         'site_description' => '사이트 설명',
         'admin_email' => '관리자 이메일',
         'timezone' => '시간대',
-        'language' => '기본 언어',
+        'language' => '언어',
+        'default_language' => '기본 언어',
         // 본인인증(IDV) 필드
         'identity_default_provider' => '기본 프로바이더',
         'identity_purpose_providers' => '목적별 프로바이더',
@@ -1166,10 +1186,14 @@ return [
         'identity_policy_fail_mode' => '실패 모드',
         // 메일 설정 필드
         'mailer' => '메일러',
-        'host' => 'SMTP 호스트',
-        'port' => 'SMTP 포트',
-        'username' => 'SMTP 사용자명',
-        'password' => 'SMTP 비밀번호',
+        'host' => '호스트',
+        'port' => '포트',
+        'username' => '사용자명',
+        'password' => '비밀번호',
+        'smtp_host' => 'SMTP 호스트',
+        'smtp_port' => 'SMTP 포트',
+        'smtp_username' => 'SMTP 사용자명',
+        'smtp_password' => 'SMTP 비밀번호',
         'encryption' => '암호화',
         'from_address' => '발신자 이메일',
         'from_name' => '발신자 이름',
@@ -1179,6 +1203,8 @@ return [
         'image_max_width' => '이미지 최대 너비',
         'image_max_height' => '이미지 최대 높이',
         'image_quality' => '이미지 품질',
+        'orphan_cleanup_enabled' => '고아 첨부 자동 정리',
+        'orphan_retention_days' => '고아 첨부 보존기간',
         // SEO 설정 필드
         'meta_title_suffix' => '메타 타이틀 접미사',
         'meta_description' => '메타 설명',
@@ -1196,6 +1222,8 @@ return [
         's3_access_key' => 'S3 Access Key',
         's3_secret_key' => 'S3 Secret Key',
         's3_url' => 'S3 URL',
+        's3_endpoint' => 'S3 엔드포인트 URL',
+        's3_use_path_style' => 'Path-style 주소 사용',
         'cache_driver' => '캐시 드라이버',
         'redis_host' => 'Redis 호스트',
         'redis_port' => 'Redis 포트',
@@ -1221,8 +1249,10 @@ return [
         'ses_region' => 'SES 리전',
         'mailgun_endpoint' => 'Mailgun 엔드포인트',
         // 일반 설정 (추가)
-        'channels' => '알림 채널',
-        'currency' => '기본 통화',
+        'channels' => '채널',
+        'notification_channels' => '알림 채널',
+        'currency' => '통화',
+        'default_currency' => '기본 통화',
         'maintenance_mode' => '점검 모드',
         'asset_url_mode' => '자산 주소 방식',
         'site_logo' => '사이트 로고',
@@ -1236,7 +1266,8 @@ return [
         'twitter_default_card' => '트위터 기본 카드 유형',
         'twitter_default_site' => '트위터 기본 계정',
         'seo_page_cache_enabled' => 'SEO 페이지 캐시 사용',
-        'cache_ttl' => 'SEO 페이지 캐시 유지시간',
+        'cache_ttl' => '캐시 유지시간',
+        'seo_page_cache_ttl' => 'SEO 페이지 캐시 유지시간',
         'sitemap_enabled' => '사이트맵 사용',
         'sitemap_cache_ttl' => '사이트맵 캐시 유지시간',
         'sitemap_urls_per_file' => '사이트맵 파일당 URL 수',
@@ -1287,5 +1318,6 @@ return [
         'log_driver' => '로그 드라이버',
         'log_level' => '로그 레벨',
         'log_days' => '로그 보관 일수',
+        'public_asset_disk' => '공개 자산 디스크',
     ],
 ];

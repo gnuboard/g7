@@ -369,6 +369,59 @@ interface PostRepositoryInterface
     public function findFirstReplyWithBoard(int $parentPostId): ?Post;
 
     /**
+     * 부모 게시글 ID로 살아있는 답변(자식) 게시글 수를 조회합니다.
+     *
+     * @param  int  $parentPostId  부모 게시글 ID
+     * @return int 살아있는 자식 게시글 수
+     */
+    public function countRepliesByParentId(int $parentPostId): int;
+
+    /**
+     * 게시글에 살아있는 직계 답글이 있는지 확인합니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $postId  게시글 ID
+     * @return bool 살아있는 직계 답글 존재 여부
+     */
+    public function hasAliveReplies(string $slug, int $postId): bool;
+
+    /**
+     * 게시글의 전체 자손(답글 트리) ID 를 수집합니다 (withTrashed 순회 + 방문 가드).
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $postId  루트 게시글 ID
+     * @return array<int> 자손 게시글 ID 배열 (루트 미포함)
+     */
+    public function collectDescendantIds(string $slug, int $postId): array;
+
+    /**
+     * 게시글의 살아있는 자손 답글 전체를 cascade 로 일괄 소프트 삭제합니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $postId  부모 게시글 ID
+     * @return array<int> 소프트 삭제된 자손 게시글 ID 배열
+     */
+    public function softDeleteCascadeByParentId(string $slug, int $postId): array;
+
+    /**
+     * 게시글 복원 시, cascade 로 지워진 자손 답글만 top-down 으로 선택 복원합니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $postId  복원된 부모 게시글 ID
+     * @return array<int> 복원된 자손 게시글 ID 배열
+     */
+    public function restoreCascadedByParentId(string $slug, int $postId): array;
+
+    /**
+     * 게시판의 전체 게시글 ID(withTrashed) 를 청크 단위로 순회하며 콜백에 전달합니다.
+     *
+     * @param  int  $boardId  게시판 ID
+     * @param  int  $size  청크 크기
+     * @param  callable  $callback  청크마다 호출될 콜백 (int[] $postIds)
+     */
+    public function eachIdChunkByBoardId(int $boardId, int $size, callable $callback): void;
+
+    /**
      * 게시글의 comments_count 컬럼을 활성 댓글 수로 재계산해 갱신합니다.
      *
      * Listener (PostCountSyncListener) 가 호출하는 영속 단일 진입점.

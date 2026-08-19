@@ -1581,6 +1581,8 @@ HTTP/1.1 200
 
 **설명** 플러그인의 현재 설정 값을 조회합니다. `core.plugins.read` 권한이 필요합니다. 저장된 설정이 없거나 플러그인을 찾을 수 없으면 404 를 반환합니다. 설정 페이지 진입 시 폼의 현재 값을 채우는 용도이며, 폼 스키마/UI 구성은 별도의 `settings/layout` 엔드포인트에서 조회합니다.
 
+설정 스키마(getSettingsSchema)에 `public_asset_disk` 키를 선언한 플러그인(예: `sirsoft-ckeditor5`)은 응답 `data` 에 공개 자산 디스크 카탈로그 `available_public_asset_disks` 가 함께 부착됩니다 — 각 항목은 `{id, label(로케일별 맵), provider?}` 구조입니다. 설정 화면이 코어 환경설정 API(`core.settings.read`)를 따로 조회하지 않고 이 응답 하나로 선택지를 구성하게 하기 위한 것으로, 이 키는 저장 대상이 아니며 PUT 시 검증 whitelist 에서 걸러집니다.
+
 
 ### PUT /api/admin/plugins/{identifier}/settings
 <!-- @generated:start:api.admin.plugins.settings.update -->
@@ -1641,7 +1643,7 @@ _단건 응답: `data` 는 저장 후 다시 조회한 설정 값 맵입니다. 
 
 <!-- @generated:end -->
 
-**설명** 플러그인의 설정 값을 저장합니다. `core.plugins.update` 권한이 필요합니다. 저장 대상은 검증을 통과한 값뿐이며, 검증 규칙은 해당 플러그인이 선언한 설정 스키마에서 생성됩니다. 스키마에 없는 필드를 요청에 포함해도 저장되지 않습니다. PluginManager 에 등록되지 않은 플러그인은 저장 자체가 수행되지 않아 500 을 반환합니다. 성공 시 갱신된 설정 값을 함께 반환합니다.
+**설명** 플러그인의 설정 값을 저장합니다. `core.plugins.update` 권한이 필요합니다. 저장 대상은 검증을 통과한 값뿐이며, 검증 규칙은 해당 플러그인이 선언한 설정 스키마에서 생성됩니다. 스키마에 없는 필드를 요청에 포함해도 저장되지 않습니다. PluginManager 에 등록되지 않은 플러그인은 저장 자체가 수행되지 않아 500 을 반환합니다. 성공 시 갱신된 설정 값을 함께 반환합니다. 설정 스키마에 `public_asset_disk` 키를 선언한 플러그인은 저장 응답에도 `available_public_asset_disks` 카탈로그가 재부착됩니다 (GET 응답과 동형 — 저장 직후 화면 폼 상태 갱신용).
 
 
 ### GET /api/admin/plugins/{identifier}/settings/layout
@@ -2226,11 +2228,30 @@ Accept: application/json
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: http-422 — 응답 필드는 사람이 작성하세요. -->
+_이 엔드포인트는 JSON 봉투를 반환하지 않습니다 — `?file=` 쿼리로 받은 경로의 에셋
+파일 원본 바이트를 그대로 서빙합니다 (성공 시 200 또는 304). 파일 경로 미전달
+(`file` 쿼리 부재)은 422 로 응답합니다._
+
+| 응답 헤더 | 예시값 | 용도/설명 |
+| --- | --- | --- |
+| Content-Type | `text/javascript` | 파일 확장자에서 감지한 MIME 타입 |
+| ETag | `"a1b2c3d4…"` | 파일 내용 기반 검증자 (재요청 시 304 판정) |
+| Cache-Control | `public, max-age=31536000` | 1년 캐시 (환경별로 달라짐 — 비프로덕션은 no-cache) |
 
 **응답 예시**
 
-<!-- 실측 제외: http-422 — 응답 예시는 사람이 작성하세요. -->
+```http
+GET /api/plugins/assets/sirsoft-daum_postcode?file=dist%2Fjs%2Fplugin.iife.js HTTP/1.1
+```
+
+```http
+HTTP/1.1 200
+Content-Type: text/javascript
+Cache-Control: public, max-age=31536000
+ETag: "a1b2c3d4e5f6"
+
+(function(){/* 플러그인 IIFE 번들 원본 바이트 */})();
+```
 
 **에러 응답**
 
@@ -2241,7 +2262,7 @@ Accept: application/json
 
 <!-- @generated:end -->
 
-**설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
+**설명** 플러그인 에셋 서빙(`GET /api/plugins/assets/{identifier}/{path}`)의 확장자 없는 이중 모드 변형입니다. 파일 경로를 경로 세그먼트 대신 `?file=` 쿼리로 받으며, 검증·에러·캐시 동작은 경로 세그먼트 형태와 동일합니다. `.js`·`.css` 주소를 가로채는 정적 파일 최적화 서버 설정에서 확장자 붙은 주소가 404 가 될 때 프론트가 이 형태로 자동 전환합니다 (자산 URL 이중 모드).
 
 
 ### GET /api/plugins/assets/{identifier}/{path}
@@ -2425,19 +2446,36 @@ Accept: application/json
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: http-200 — 응답 필드는 사람이 작성하세요. -->
+_이 엔드포인트는 JSON 봉투를 반환하지 않습니다 — 활성 플러그인 CSS 를 병합한
+텍스트를 그대로 서빙합니다 (성공 시 200 또는 304). `GET /api/plugins/bundle.css`
+와 동일 응답입니다._
+
+| 응답 헤더 | 예시값 | 용도/설명 |
+| --- | --- | --- |
+| Content-Type | `text/css` | 항상 CSS |
+| ETag | `"a1b2c3d4…"` | 병합 파일 내용 기반 검증자 (병합 파일이 있는 경우) |
+| Cache-Control | `public, max-age=31536000` | 1년 캐시 (환경별로 달라짐 — 비프로덕션은 매 요청 재병합) |
+
+활성 global 플러그인 에셋이 하나도 없으면 본문이 빈 200 응답(`text/css`) 입니다.
 
 **응답 예시**
 
-<!-- 실측 제외: http-200 — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+Content-Type: text/css
+Cache-Control: public, max-age=31536000
+
+/* sirsoft-gdpr */
+.g7-gdpr-banner{position:fixed;bottom:0}
+```
 
 **에러 응답**
 
-_대표 에러 없음 (공개 조회). <!-- TODO: 도메인 특이 에러가 있으면 보강 -->_
+_에러 응답 없음 — 공개 조회이며 요청 파라미터가 없고, 활성 에셋이 하나도 없는 경우에도 빈 200 을 반환합니다._
 
 <!-- @generated:end -->
 
-**설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
+**설명** 플러그인 CSS 번들(`GET /api/plugins/bundle.css`)의 확장자 없는 이중 모드 변형입니다. 동작·응답이 확장자 형태와 동일하며, `.css` 주소를 가로채는 정적 파일 최적화 서버 설정에서 프론트가 이 형태로 자동 전환합니다 (자산 URL 이중 모드).
 
 
 ### GET /api/plugins/bundle/js
@@ -2460,19 +2498,37 @@ Accept: application/json
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: http-200 — 응답 필드는 사람이 작성하세요. -->
+_이 엔드포인트는 JSON 봉투를 반환하지 않습니다 — 활성 플러그인 IIFE JS 를 병합한
+텍스트를 그대로 서빙합니다 (성공 시 200 또는 304). `GET /api/plugins/bundle.js`
+와 동일 응답입니다._
+
+| 응답 헤더 | 예시값 | 용도/설명 |
+| --- | --- | --- |
+| Content-Type | `text/javascript` | 항상 JavaScript |
+| ETag | `"a1b2c3d4…"` | 병합 파일 내용 기반 검증자 (병합 파일이 있는 경우) |
+| Cache-Control | `public, max-age=31536000` | 1년 캐시 (환경별로 달라짐 — 비프로덕션은 매 요청 재병합) |
+
+활성 global 플러그인 에셋이 하나도 없으면 본문이 빈 200 응답(`text/javascript`) 입니다. 병합 시 각 IIFE 사이는 `\n;\n` 구분자로 연결됩니다.
 
 **응답 예시**
 
-<!-- 실측 제외: http-200 — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+Content-Type: text/javascript
+Cache-Control: public, max-age=31536000
+
+(function(){/* sirsoft-gdpr plugin.iife.js */})();
+;
+(function(){/* sirsoft-ckeditor5 plugin.iife.js */})();
+```
 
 **에러 응답**
 
-_대표 에러 없음 (공개 조회). <!-- TODO: 도메인 특이 에러가 있으면 보강 -->_
+_에러 응답 없음 — 공개 조회이며 요청 파라미터가 없고, 활성 에셋이 하나도 없는 경우에도 빈 200 을 반환합니다._
 
 <!-- @generated:end -->
 
-**설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
+**설명** 플러그인 JS 번들(`GET /api/plugins/bundle.js`)의 확장자 없는 이중 모드 변형입니다. 동작·응답이 확장자 형태와 동일하며, `.js` 주소를 가로채는 정적 파일 최적화 서버 설정에서 프론트가 이 형태로 자동 전환합니다 (자산 URL 이중 모드).
 
 
 ### GET /api/plugins/{identifier}/components
@@ -2497,9 +2553,19 @@ Accept: application/json
 
 **응답 필드** (`data` 내부)
 
+_이 엔드포인트는 `success/message/data` 봉투를 사용하지 않습니다 — 플러그인의
+`components.json` 원문을 그대로 JSON body 로 반환합니다 (`Cache-Control: public,
+max-age=3600`). 파일이 없는 구버전 플러그인은 빈 객체(`{}`) 로 폴백합니다._
 
-
-<!-- 실측 응답에 필드 없음(빈 목록 등) — 데이터가 있는 상태로 재실측하거나 사람이 작성. -->
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| $schema | string | `https://json-schema.org/draft/2020-12/schema` | 매니페스트 JSON 스키마 참조 |
+| identifier | string | `sirsoft-daum_postcode` | 이 매니페스트를 소유한 플러그인 식별자 |
+| version | string | `1.0.0` | 매니페스트(플러그인) 버전 |
+| components | object | `{"basic":[],"composite":[],"layout":[]}` | 타입별 컴포넌트 정의 맵 |
+| components.basic | array | `[]` | Basic 컴포넌트 정의 목록 (HTML 래핑 계층) |
+| components.composite | array | `[]` | Composite 컴포넌트 정의 목록 (집합 컴포넌트) |
+| components.layout | array | `[]` | Layout 컴포넌트 정의 목록 |
 
 **응답 예시**
 
@@ -2528,7 +2594,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
+**설명** 플러그인 컴포넌트 매니페스트(`GET /api/plugins/{identifier}/components.json`)의 확장자 없는 이중 모드 변형입니다. 응답·캐시·폴백 동작이 확장자 형태와 동일하며, `.json` 주소를 가로채는 정적 파일 최적화 서버 설정에서 프론트가 이 형태로 자동 전환합니다 (자산 URL 이중 모드).
 
 
 ### GET /api/plugins/{identifier}/components.json

@@ -10,8 +10,8 @@
  *  - 항목7: 선택 노드(Button 포함)에 리사이즈 핸들 표시 + 드래그로 px 변화
  *  - 항목8: 툴바 ↺ 초기화 버튼(dirty 시 활성)
  *
- * @scenario property_modal_draggable + dimension_widget + image_manager_toolbar + session_cache_restore + dirty_badge + beforeunload_guard + resize_handle + reset_button
- * @effects modal_draggable + dimension_free_input + image_modal_open + edit_preserved_on_route_switch + tree_dirty_dot + unload_warning + resize_px_change + reset_reverts
+ * 축 요약(마커 아님 — 평문): property_modal_draggable, dimension_widget, image_manager_toolbar, session_cache_restore, dirty_badge, beforeunload_guard, resize_handle, reset_button.
+ * 효과 요약(마커 아님 — 평문): modal_draggable, dimension_free_input, image_modal_open, edit_preserved_on_route_switch, tree_dirty_dot, unload_warning, resize_px_change, reset_reverts.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 
@@ -83,6 +83,7 @@ async function openPropertyModal(page: import('@playwright/test').Page): Promise
 }
 
 test.describe('@layout-editor S6-2 후속', () => {
+  /** @effects modal_draggable */
   test('항목1 — 속성 편집 모달이 draggable + 백드롭 pointerEvents:none', async ({ page }) => {
     await gotoEditor(page);
     await openPropertyModal(page);
@@ -99,6 +100,7 @@ test.describe('@layout-editor S6-2 후속', () => {
     expect(pe).toBe('none');
   });
 
+  /** @effects dimension_free_input */
   test('항목2 — 스타일 탭 width 컨트롤이 dimension 위젯(자유 입력)으로 렌더', async ({ page }) => {
     await gotoEditor(page);
     await openPropertyModal(page);
@@ -124,6 +126,7 @@ test.describe('@layout-editor S6-2 후속', () => {
     }
   });
 
+  /** @effects image_modal_open */
   test('항목3 — 툴바 🖼 이미지 버튼 → 이미지 관리 모달', async ({ page }) => {
     await gotoEditor(page);
     const imagesBtn = page.getByTestId('g7le-toolbar-images');
@@ -134,6 +137,7 @@ test.describe('@layout-editor S6-2 후속', () => {
     // 툴바 진입은 onSelect 미전달 → "배경으로 사용" 버튼 없음(빈 목록이면 empty 안내)
   });
 
+  /** @effects reset_reverts, tree_dirty_dot */
   test('항목8 — ↺ 초기화 버튼은 dirty 일 때만 활성', async ({ page }) => {
     await gotoEditor(page);
     const resetBtn = page.getByTestId('g7le-toolbar-reset');
@@ -142,6 +146,7 @@ test.describe('@layout-editor S6-2 후속', () => {
     await expect(resetBtn).toBeDisabled();
   });
 
+  /** @effects resize_px_change */
   test('항목7 — 선택 노드에 리사이즈 핸들 표시', async ({ page }) => {
     await gotoEditor(page);
     // 선택 오버레이 등장 후, width/height 컨트롤 보유 노드면 리사이즈 핸들이 보인다.

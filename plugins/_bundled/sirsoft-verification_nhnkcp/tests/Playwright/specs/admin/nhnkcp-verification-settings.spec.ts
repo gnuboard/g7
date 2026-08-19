@@ -8,8 +8,11 @@
  * KCP 표준창 내부(외부 도메인)는 자동화 대상이 아니다 — 인증창이 열리는 것까지만 확인 가능하며
  * 통신사 인증 완주는 실 휴대폰이 필요해 사람이 검증한다.
  *
- * @scenario mode=test,live_credentials=complete + mode=live,live_credentials=missing_site_cd
- * @effects live_mode_requires_site_cd_and_enc_key + test_mode_saves_without_live_credentials
+ * 축 요약(마커 아님 — 평문): mode=test / live_credentials=complete 조합과
+ * mode=live / live_credentials=missing_site_cd 조합. 두 조합은 각 test 의 마커가 잠그며,
+ * 여기에 마커로 다시 적으면 파서가 항목을 쉼표로만 나누어 두 조합이 한 문자열로 뭉친다.
+ *
+ * 효과 요약(마커 아님 — 평문): live_mode_requires_site_cd_and_enc_key, test_mode_saves_without_live_credentials.
  */
 import { test, expect, authenticatePage } from '../../fixtures/nhnkcp-auth';
 

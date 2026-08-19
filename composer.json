@@ -19,6 +19,8 @@
         "laravel/sanctum": "^4.2",
         "laravel/scout": "^11.1",
         "laravel/tinker": "^2.10.1",
+        "league/flysystem-aws-s3-v3": "^3.25.1",
+        "predis/predis": "^2.0",
         "symfony/http-client": "^7.4",
         "symfony/mailgun-mailer": "^7.4"
     },

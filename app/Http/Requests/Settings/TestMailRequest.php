@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Settings;
 
 use App\Extension\HookManager;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -25,7 +26,7 @@ class TestMailRequest extends FormRequest
     /**
      * 검증 규칙을 반환합니다.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -72,13 +73,31 @@ class TestMailRequest extends FormRequest
             'to_email.max' => __('settings.invalid_email'),
             'from_address.required' => __('validation.required', ['attribute' => __('validation.attributes.from_address')]),
             'from_name.required' => __('validation.required', ['attribute' => __('validation.attributes.from_name')]),
-            'host.required' => __('validation.required', ['attribute' => __('validation.attributes.host')]),
-            'port.required' => __('validation.required', ['attribute' => __('validation.attributes.port')]),
+            'host.required' => __('validation.required', ['attribute' => __('validation.attributes.smtp_host')]),
+            'port.required' => __('validation.required', ['attribute' => __('validation.attributes.smtp_port')]),
             'mailgun_domain.required' => __('validation.required', ['attribute' => __('validation.attributes.mailgun_domain')]),
             'mailgun_secret.required' => __('validation.required', ['attribute' => __('validation.attributes.mailgun_secret')]),
             'ses_key.required' => __('validation.required', ['attribute' => __('validation.attributes.ses_key')]),
             'ses_secret.required' => __('validation.required', ['attribute' => __('validation.attributes.ses_secret')]),
             'ses_region.required' => __('validation.required', ['attribute' => __('validation.attributes.ses_region')]),
+        ];
+    }
+
+    /**
+     * 검증 속성명을 반환합니다.
+     *
+     * 범용 필드명(host/port/username/password)은 전역 라벨이 범용 문구이므로,
+     * SMTP 전용 라벨을 이 요청에서만 명시 매핑합니다.
+     *
+     * @return array<string, string>
+     */
+    public function attributes(): array
+    {
+        return [
+            'host' => __('validation.attributes.smtp_host'),
+            'port' => __('validation.attributes.smtp_port'),
+            'username' => __('validation.attributes.smtp_username'),
+            'password' => __('validation.attributes.smtp_password'),
         ];
     }
 }

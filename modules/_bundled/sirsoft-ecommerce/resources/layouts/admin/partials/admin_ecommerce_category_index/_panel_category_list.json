@@ -30,7 +30,7 @@
               "name": "Icon",
               "props": {
                 "name": "folder",
-                "className": "w-5 h-5 text-gray-700 dark:text-gray-300"
+                "className": "text-xl text-gray-700 dark:text-gray-300"
               }
             },
             {
@@ -139,7 +139,7 @@
                       "handler": "toast",
                       "params": {
                         "type": "error",
-                        "message": "$t:sirsoft-ecommerce.admin.category.messages.order_update_failed"
+                        "message": "{{error.message ?? '$t:sirsoft-ecommerce.admin.category.messages.order_update_failed'}}"
                       }
                     },
                     {
@@ -220,7 +220,7 @@
           "name": "Icon",
           "props": {
             "name": "folder",
-            "className": "w-5 h-5 text-gray-400 dark:text-gray-500"
+            "className": "text-xl text-gray-400 dark:text-gray-500"
           }
         },
         {

@@ -94,6 +94,48 @@ class FulltextIndexInspector
     }
 
     /**
+     * 현재 스키마의 FULLTEXT 인덱스 컬럼 집합을 테이블별로 수집합니다.
+     *
+     * `discover()` 와 같은 INFORMATION_SCHEMA 조회를 쓰되, 인덱스마다 `SHOW CREATE TABLE`
+     * 을 도는 파서 해석은 하지 않는 경량판입니다 — 커버 판정에는 컬럼 집합만 필요합니다.
+     *
+     * 반환 키는 프리픽스를 제거한 테이블명입니다. `Model::getTable()` 이 프리픽스 미포함
+     * 이름을 돌려주므로, 판정하는 쪽이 그 이름으로 바로 조회할 수 있게 맞춥니다.
+     *
+     * @return array<string, array<int, array<int, string>>> 테이블명 => 인덱스별 컬럼 집합 목록
+     */
+    public function indexedColumnSets(): array
+    {
+        if (! DatabaseFulltextEngine::supportsFulltext()) {
+            return [];
+        }
+
+        $rows = DB::select(
+            'SELECT TABLE_NAME AS table_name,
+                    GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX) AS columns
+             FROM INFORMATION_SCHEMA.STATISTICS
+             WHERE TABLE_SCHEMA = DATABASE() AND INDEX_TYPE = ?
+             GROUP BY TABLE_NAME, INDEX_NAME',
+            ['FULLTEXT']
+        );
+
+        $prefix = DB::getTablePrefix();
+        $sets = [];
+
+        foreach ($rows as $row) {
+            $table = (string) $row->table_name;
+
+            if ($prefix !== '' && str_starts_with($table, $prefix)) {
+                $table = substr($table, strlen($prefix));
+            }
+
+            $sets[strtolower($table)][] = explode(',', (string) $row->columns);
+        }
+
+        return $sets;
+    }
+
+    /**
      * 인덱스 하나의 건강도를 판정합니다.
      *
      * 엔진 중립 DTO 로의 변환은 호출자(`FulltextIndexMaintainer`)가 합니다 — 이 클래스는

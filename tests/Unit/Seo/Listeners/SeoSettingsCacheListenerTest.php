@@ -4,7 +4,6 @@ namespace Tests\Unit\Seo\Listeners;
 
 use App\Listeners\SeoSettingsCacheListener;
 use App\Seo\Contracts\SeoCacheManagerInterface;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Mockery;
 use Tests\TestCase;
@@ -111,6 +110,61 @@ class SeoSettingsCacheListenerTest extends TestCase
             }));
 
         $this->listener->onSettingsSave('seo', [], []);
+
+        $this->addToAssertionCount(1);
+    }
+
+    // ─── 단건 저장(after_set) ──────────────────────────────
+
+    /**
+     * 단건 저장 훅도 구독하는지 확인합니다. (실패-먼저)
+     *
+     * 단건 저장(`PUT /api/admin/settings/{key}`)은 `after_set` 을 발화하는데 리스너가
+     * `after_save` 만 구독해, SEO 설정을 단건으로 바꾸면 캐시가 무효화되지 않았다.
+     * `after_save` 를 추가 발화하지 않는 이유: 활동로그 리스너가 두 훅을 각각 기록해
+     * 저장 1회가 로그 2건이 된다.
+     */
+    public function test_get_subscribed_hooks_includes_after_set(): void
+    {
+        $hooks = SeoSettingsCacheListener::getSubscribedHooks();
+
+        $this->assertArrayHasKey('core.settings.after_set', $hooks);
+        $this->assertEquals('onSettingSet', $hooks['core.settings.after_set']['method']);
+        $this->assertEquals(20, $hooks['core.settings.after_set']['priority']);
+    }
+
+    /**
+     * seo 카테고리 단건 저장 시 전체 캐시를 삭제합니다. (실패-먼저)
+     */
+    public function test_on_setting_set_clears_cache_for_seo_key(): void
+    {
+        $this->cacheMock->shouldReceive('clearAll')->once();
+
+        $this->listener->onSettingSet('seo.title_suffix', ' | G7', true);
+
+        $this->addToAssertionCount(1);
+    }
+
+    /**
+     * 다른 카테고리의 단건 저장은 SEO 캐시를 건드리지 않습니다.
+     */
+    public function test_on_setting_set_ignores_non_seo_key(): void
+    {
+        $this->cacheMock->shouldNotReceive('clearAll');
+
+        $this->listener->onSettingSet('general.site_name', 'Test', true);
+
+        $this->addToAssertionCount(1);
+    }
+
+    /**
+     * 저장 실패(result=false)면 캐시를 비우지 않습니다.
+     */
+    public function test_on_setting_set_ignores_failed_save(): void
+    {
+        $this->cacheMock->shouldNotReceive('clearAll');
+
+        $this->listener->onSettingSet('seo.title_suffix', ' | G7', false);
 
         $this->addToAssertionCount(1);
     }

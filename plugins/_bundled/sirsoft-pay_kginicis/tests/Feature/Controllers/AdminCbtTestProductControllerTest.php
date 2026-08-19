@@ -142,4 +142,20 @@ class AdminCbtTestProductControllerTest extends PluginTestCase
 
         Http::assertNothingSent();
     }
+
+    /**
+     * tid 게이트 상한은 저장 컬럼(transaction_id varchar(100))이 SSoT (회귀 고정).
+     *
+     * 국내 TID(30자) 길이로 조이면 40자 CBT TID 조회가 422 로 깨진다 — 위 테스트가
+     * 그 회귀를 잡았다. 여기서는 반대편 경계(101자 초과 거부)를 고정한다.
+     */
+    public function test_transaction_query_rejects_tid_over_storage_column_length(): void
+    {
+        $admin = $this->createAdminUser(['sirsoft-ecommerce.orders.read']);
+        $this->actingAs($admin);
+
+        $this->postJson('/api/plugins/sirsoft-pay_kginicis/admin/transaction/query', [
+            'tid' => str_repeat('T', 101),
+        ])->assertStatus(422);
+    }
 }

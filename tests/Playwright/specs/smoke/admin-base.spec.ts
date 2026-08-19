@@ -195,7 +195,13 @@ test('@smoke #399 Phase 1.8 - admin 페이지 헤더의 refresh 버튼이 .btn-i
 
   // Phase 1.8: page_header 안의 refresh_button 이 인라인 Tailwind 5토큰에서
   // 표준 .btn-icon 시맨틱 자산으로 통합됐는지 확인.
-  await expect(page.locator('#refresh_button').first()).toHaveClass(/btn-icon/);
+  //
+  // 마운트 대기는 형제 검증(Phase 1.7 의 10s, admin-role-list-refresh.spec 의 15s)과 같은
+  // 폭으로 맞춘다 — 기본 5s 로 두면 여러 spec 이 병렬로 도는 실행에서 SPA 마운트가 5s 를
+  // 넘겨 간헐 red 가 난다(클래스 불일치가 아니라 element not found 로 나타나 오진하기 쉽다).
+  const refreshButton = page.locator('#refresh_button').first();
+  await refreshButton.waitFor({ state: 'visible', timeout: 15_000 });
+  await expect(refreshButton).toHaveClass(/btn-icon/);
 
   // Phase 1.9: page_header 의 우측 버튼 묶음 컨테이너가
   // 인라인 'flex items-center gap-2' 가 아닌 기존 시맨틱 .flex-center 를 활용한

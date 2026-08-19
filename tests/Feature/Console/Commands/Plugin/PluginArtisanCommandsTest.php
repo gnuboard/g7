@@ -4,9 +4,13 @@ namespace Tests\Feature\Console\Commands\Plugin;
 
 use App\Enums\ExtensionOwnerType;
 use App\Enums\ExtensionStatus;
+use App\Extension\Cache\CoreCacheDriver;
+use App\Extension\ExtensionMiddlewareRegistry;
 use App\Extension\PluginManager;
+use App\Extension\Traits\ClearsTemplateCaches;
 use App\Models\Permission;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Tests\Helpers\ProtectsExtensionDirectories;
 use Tests\TestCase;
@@ -183,12 +187,41 @@ class PluginArtisanCommandsTest extends TestCase
 
     /**
      * plugin:cache-clear 커맨드가 모든 캐시를 삭제하는지 테스트
+     *
+     * 실재하는 상태 키(ext.plugins.*_identifiers)가 소멸하고 캐시 버전이 bump 되는지
+     * 검증한다 (#588 — 기존 forget 대상은 writer 없는 유령 키였다).
      */
     public function test_cache_clear_command_clears_all_caches(): void
     {
+        $coreCache = new CoreCacheDriver(config('cache.default', 'array'));
+        $coreCache->put('ext.plugins.active_identifiers', ['stale-plugin'], 3600);
+        $coreCache->put('ext.plugins.installed_identifiers', ['stale-plugin'], 3600);
+        // 실제 writer(ExtensionMiddlewareRegistry::buildIndex)와 동형으로 태그 포함
+        // remember — flush() 는 taggable 스토어에서 태그 인덱스 기반으로 삭제한다
+        $coreCache->remember('extension.middleware_index', fn () => [['stale' => true]], 3600, [ExtensionMiddlewareRegistry::CACHE_TAG]);
+        Cache::put('g7:core:ext.cache_version', 1000);
+
         $this->artisan('plugin:cache-clear')
             ->expectsOutput(__('plugins.commands.cache_clear.clearing_all'))
             ->assertExitCode(0);
+
+        $this->assertNull(
+            $coreCache->get('ext.plugins.active_identifiers'),
+            'plugin:cache-clear 후 활성 플러그인 상태 캐시가 삭제되어야 합니다.'
+        );
+        $this->assertNull(
+            $coreCache->get('ext.plugins.installed_identifiers'),
+            'plugin:cache-clear 후 설치 플러그인 상태 캐시가 삭제되어야 합니다.'
+        );
+        $this->assertNull(
+            $coreCache->get('extension.middleware_index'),
+            'plugin:cache-clear 후 확장 미들웨어 인덱스 캐시(extension.middleware_index)가 삭제되어야 합니다.'
+        );
+        $this->assertGreaterThan(
+            1000,
+            ClearsTemplateCaches::getExtensionCacheVersion(),
+            'plugin:cache-clear 후 확장 캐시 버전이 bump 되어야 합니다.'
+        );
     }
 
     /**
@@ -198,9 +231,30 @@ class PluginArtisanCommandsTest extends TestCase
     {
         $identifier = 'sirsoft-daum_postcode';
 
+        $coreCache = new CoreCacheDriver(config('cache.default', 'array'));
+        $coreCache->put('ext.plugins.active_identifiers', ['stale-plugin'], 3600);
+        // 실제 writer(ExtensionMiddlewareRegistry::buildIndex)와 동형으로 태그 포함
+        // remember — flush() 는 taggable 스토어에서 태그 인덱스 기반으로 삭제한다
+        $coreCache->remember('extension.middleware_index', fn () => [['stale' => true]], 3600, [ExtensionMiddlewareRegistry::CACHE_TAG]);
+        Cache::put('g7:core:ext.cache_version', 1000);
+
         $this->artisan('plugin:cache-clear', ['identifier' => $identifier])
             ->expectsOutput(__('plugins.commands.cache_clear.clearing_single', ['plugin' => $identifier]))
             ->assertExitCode(0);
+
+        $this->assertNull(
+            $coreCache->get('ext.plugins.active_identifiers'),
+            'plugin:cache-clear(단일) 후 플러그인 상태 캐시가 삭제되어야 합니다.'
+        );
+        $this->assertNull(
+            $coreCache->get('extension.middleware_index'),
+            'plugin:cache-clear(단일) 후 확장 미들웨어 인덱스 캐시(extension.middleware_index)가 삭제되어야 합니다.'
+        );
+        $this->assertGreaterThan(
+            1000,
+            ClearsTemplateCaches::getExtensionCacheVersion(),
+            'plugin:cache-clear(단일) 후 확장 캐시 버전이 bump 되어야 합니다.'
+        );
     }
 
     /**

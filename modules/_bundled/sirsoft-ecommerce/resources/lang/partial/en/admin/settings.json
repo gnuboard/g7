@@ -59,6 +59,13 @@
       "telecom_number_placeholder": "Telecom business number",
       "postcode_plugin_required": "Daum Postcode plugin is not installed or inactive. Please activate it in Admin > Plugins."
     },
+    "public_asset_storage": {
+      "title": "Public Asset Storage",
+      "description": "Configure the storage disk for this module's fully public assets such as product, category, and review images.",
+      "disk": "Public Asset Disk",
+      "follow_core": "Follow core setting",
+      "help": "Select to use a different disk for this module only. Leave empty to follow the public asset storage setting in core system settings."
+    },
     "inquiry_settings": {
       "title": "1:1 Inquiry Board Settings",
       "description": "Configure the product 1:1 inquiry feature.",
@@ -145,6 +152,7 @@
       "min_order_amount": "Min. Order Amount",
       "is_active": "Active",
       "orphaned_badge": "Plugin Not Installed",
+      "orphaned_pg_badge": "PG removed",
       "remove_orphaned": "Remove",
       "pg_provider": "PG Provider",
       "pg_use_default": "Default PG",

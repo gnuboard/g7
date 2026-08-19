@@ -277,7 +277,7 @@ describe('배송유형 카드뷰 구조', () => {
     const allNodes = flattenAll(typeCards);
 
     it('iteration으로 _local.form.shipping.types를 순회한다', () => {
-        const card = allNodes.find((n: any) => n.id === 'shipping_type_card');
+        const card = allNodes.find((n: any) => n.id === 'shipping_type_card_{{tIdx}}');
         expect(card).toBeDefined();
         expect(card.iteration.source).toContain('_local.form?.shipping?.types');
         expect(card.iteration.item_var).toBe('type');

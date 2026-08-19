@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayKginicis\Controllers;
 
+// audit:allow api-doc-coverage 요청 파라미터·응답 구조 무변경 — 테이블명 리터럴을 모델 파생으로 정리한 내부 리팩토링 (#571)
+
 use App\Services\PluginSettingsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
 use Plugins\Sirsoft\PayKginicis\Concerns\IssuesReceiptCookie;
 use Plugins\Sirsoft\PayKginicis\Concerns\ResolvesEasyPaySelection;
@@ -39,10 +43,12 @@ class UserReceiptController
      * @param  string  $orderNumber
      * @return JsonResponse
      */
+    // audit:allow controller-base-request-injection reason: 본문 입력을 읽지 않음 — user()/비회원 영수증 쿠키만 참조 (검증 대상 필드 없음)
     public function show(Request $request, string $orderNumber): JsonResponse
     {
-        $query = DB::table('ecommerce_order_payments as p')
-            ->join('ecommerce_orders as o', 'o.id', '=', 'p.order_id')
+        // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
+        $query = DB::table((new OrderPayment)->getTable().' as p')
+            ->join((new Order)->getTable().' as o', 'o.id', '=', 'p.order_id')
             ->where('o.order_number', $orderNumber)
             ->where('p.pg_provider', 'kginicis');
 
@@ -59,7 +65,7 @@ class UserReceiptController
                 $cookieValue = $request->cookie(self::RECEIPT_COOKIE_NAME);
                 if ($this->verifyReceiptCookie($cookieValue, $orderNumber)) {
                     $query->where('o.id', function ($sub) use ($orderNumber) {
-                        $sub->select('id')->from('ecommerce_orders')->where('order_number', $orderNumber);
+                        $sub->select('id')->from((new Order)->getTable())->where('order_number', $orderNumber);
                     });
                 } else {
                     return response()->json(['error' => 'Not found'], 404);
@@ -107,43 +113,43 @@ class UserReceiptController
             $receiptLabels = $this->cbtReceiptLabels($cbtPayMethod, (string) ($payment->payment_status ?? ''));
 
             return response()->json([
-                'receipt_type'                  => 'cbt_confirmation',
-                'receipt_url'                   => null,
-                'receipt_label'                 => $receiptLabels['label'],
-                'receipt_view_label'            => $receiptLabels['view_label'],
-                'receipt_title'                 => $receiptLabels['title'],
-                'receipt_notice'                => $receiptLabels['notice'],
-                'receipt_fields'                => $this->buildCbtReceiptFields($payment, $paymentMeta),
-                'is_test_mode'                  => $isTestMode,
-                'payment_method_label'          => $cbtPaymentMethodLabel,
-                'payment_method_display_label'  => $cbtPaymentMethodLabel,
-                'cbt_pay_method'                => $cbtPayMethod,
-                'payment_status'                => (string) ($payment->payment_status ?? ''),
-                'selected_payment_method'       => $paymentMeta['selected_payment_method'] ?? null,
-                'embedded_pg_provider'          => is_string($embeddedPgProvider) ? $embeddedPgProvider : null,
-                'embedded_pg_provider_label'    => is_string($embeddedPgProviderLabel) ? $embeddedPgProviderLabel : null,
+                'receipt_type' => 'cbt_confirmation',
+                'receipt_url' => null,
+                'receipt_label' => $receiptLabels['label'],
+                'receipt_view_label' => $receiptLabels['view_label'],
+                'receipt_title' => $receiptLabels['title'],
+                'receipt_notice' => $receiptLabels['notice'],
+                'receipt_fields' => $this->buildCbtReceiptFields($payment, $paymentMeta),
+                'is_test_mode' => $isTestMode,
+                'payment_method_label' => $cbtPaymentMethodLabel,
+                'payment_method_display_label' => $cbtPaymentMethodLabel,
+                'cbt_pay_method' => $cbtPayMethod,
+                'payment_status' => (string) ($payment->payment_status ?? ''),
+                'selected_payment_method' => $paymentMeta['selected_payment_method'] ?? null,
+                'embedded_pg_provider' => is_string($embeddedPgProvider) ? $embeddedPgProvider : null,
+                'embedded_pg_provider_label' => is_string($embeddedPgProviderLabel) ? $embeddedPgProviderLabel : null,
             ]);
         }
 
-        $receiptUrl = self::RECEIPT_BASE_URL . '?' . http_build_query([
-            'noTid'    => $payment->transaction_id,
+        $receiptUrl = self::RECEIPT_BASE_URL.'?'.http_build_query([
+            'noTid' => $payment->transaction_id,
             'noMethod' => '1',
         ]);
 
         return response()->json([
-            'receipt_type'                  => 'inicis_receipt',
-            'receipt_url'                   => $receiptUrl,
-            'receipt_label'                 => '영수증',
-            'receipt_view_label'            => '영수증 조회',
-            'is_test_mode'                  => $isTestMode,
-            'payment_method_label'          => $basePaymentMethodLabel,
-            'payment_method_display_label'  => $this->paymentMethodDisplayLabel(
+            'receipt_type' => 'inicis_receipt',
+            'receipt_url' => $receiptUrl,
+            'receipt_label' => '영수증',
+            'receipt_view_label' => '영수증 조회',
+            'is_test_mode' => $isTestMode,
+            'payment_method_label' => $basePaymentMethodLabel,
+            'payment_method_display_label' => $this->paymentMethodDisplayLabel(
                 $basePaymentMethodLabel,
                 is_string($embeddedPgProviderLabel) ? $embeddedPgProviderLabel : null,
             ),
-            'selected_payment_method'       => $paymentMeta['selected_payment_method'] ?? null,
-            'embedded_pg_provider'          => is_string($embeddedPgProvider) ? $embeddedPgProvider : null,
-            'embedded_pg_provider_label'    => is_string($embeddedPgProviderLabel) ? $embeddedPgProviderLabel : null,
+            'selected_payment_method' => $paymentMeta['selected_payment_method'] ?? null,
+            'embedded_pg_provider' => is_string($embeddedPgProvider) ? $embeddedPgProvider : null,
+            'embedded_pg_provider_label' => is_string($embeddedPgProviderLabel) ? $embeddedPgProviderLabel : null,
         ]);
     }
 
@@ -282,7 +288,7 @@ class UserReceiptController
             return '';
         }
 
-        return number_format((float) $amount) . ' ' . $currency;
+        return number_format((float) $amount).' '.$currency;
     }
 
     private function formatCbtDateTime(mixed $date, mixed $time): string
@@ -324,7 +330,7 @@ class UserReceiptController
 
         $months = (int) $value;
 
-        return $months <= 0 ? '일시불' : $months . '개월';
+        return $months <= 0 ? '일시불' : $months.'개월';
     }
 
     private function decodePaymentMeta(mixed $paymentMeta): array
@@ -387,6 +393,6 @@ class UserReceiptController
             return $embeddedLabel;
         }
 
-        return $embeddedLabel . ' (' . $baseLabel . ')';
+        return $embeddedLabel.' ('.$baseLabel.')';
     }
 }

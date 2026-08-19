@@ -14,7 +14,7 @@ return new class extends Migration
     {
         Schema::create('ecommerce_orders', function (Blueprint $table) {
             $table->id()->comment('주문 ID');
-            $table->unsignedBigInteger('user_id')->nullable();
+            $table->unsignedBigInteger('user_id')->nullable()->comment('주문자 회원 ID (비회원 주문은 null)');
             $table->string('order_number', 50)->unique()->comment('주문번호');
             $table->string('order_status', 30)->comment('주문상태 (OrderStatusEnum)');
             $table->string('order_device', 20)->nullable()->comment('주문 디바이스 (pc/mobile/app)');
@@ -44,7 +44,7 @@ return new class extends Migration
             $table->decimal('total_refunded_points_amount', 12, 2)->default(0)->comment('총 환불 포인트');
             $table->decimal('total_earned_points_amount', 12, 2)->default(0)->comment('총 적립 예정 포인트');
             $table->integer('item_count')->comment('총 주문수량 (상품 수량 합계)');
-            $table->decimal('total_weight', 10, 3)->nullable()->comment('총 무게 (kg)');
+            $table->decimal('total_weight', 10, 3)->nullable()->comment('총 무게 (g)');
             $table->decimal('total_volume', 10, 3)->nullable()->comment('총 부피 (cm³)');
             $table->timestamp('ordered_at')->comment('주문일시');
             $table->timestamp('paid_at')->nullable()->comment('결제완료일시');
@@ -83,7 +83,7 @@ return new class extends Migration
         });
 
         if (DB::getDriverName() === 'mysql') {
-            DB::statement("ALTER TABLE `".DB::getTablePrefix()."ecommerce_orders` COMMENT '주문 정보'");
+            DB::statement('ALTER TABLE `'.DB::getTablePrefix()."ecommerce_orders` COMMENT '주문 정보'");
         }
 
     }

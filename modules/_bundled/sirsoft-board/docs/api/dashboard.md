@@ -21,7 +21,7 @@
 <!-- @generated:start:api.modules.sirsoft-board.admin.dashboard.overview -->
 - **라우트명**: `api.modules.sirsoft-board.admin.dashboard.overview`
 - **컨트롤러**: `Modules\Sirsoft\Board\Http\Controllers\Admin\DashboardController@overview`
-- **인증/권한**: `auth:sanctum`
+- **인증/권한**: `auth:sanctum`, `admin`, `permission:admin,sirsoft-board.dashboard.view`
 
 **요청 파라미터**
 
@@ -77,7 +77,7 @@ HTTP/1.1 200
 <!-- @generated:start:api.modules.sirsoft-board.admin.dashboard.pending-reports -->
 - **라우트명**: `api.modules.sirsoft-board.admin.dashboard.pending-reports`
 - **컨트롤러**: `Modules\Sirsoft\Board\Http\Controllers\Admin\DashboardController@pendingReports`
-- **인증/권한**: `auth:sanctum`
+- **인증/권한**: `auth:sanctum`, `admin`, `permission:admin,sirsoft-board.dashboard.view`
 
 **요청 파라미터**
 
@@ -151,7 +151,7 @@ HTTP/1.1 200
 <!-- @generated:start:api.modules.sirsoft-board.admin.dashboard.post-graph -->
 - **라우트명**: `api.modules.sirsoft-board.admin.dashboard.post-graph`
 - **컨트롤러**: `Modules\Sirsoft\Board\Http\Controllers\Admin\DashboardController@postGraph`
-- **인증/권한**: `auth:sanctum`
+- **인증/권한**: `auth:sanctum`, `admin`, `permission:admin,sirsoft-board.dashboard.view`
 
 **요청 파라미터**
 
@@ -253,7 +253,7 @@ HTTP/1.1 200
 <!-- @generated:start:api.modules.sirsoft-board.admin.dashboard.recent-posts -->
 - **라우트명**: `api.modules.sirsoft-board.admin.dashboard.recent-posts`
 - **컨트롤러**: `Modules\Sirsoft\Board\Http\Controllers\Admin\DashboardController@recentPosts`
-- **인증/권한**: `auth:sanctum`
+- **인증/권한**: `auth:sanctum`, `admin`, `permission:admin,sirsoft-board.dashboard.view`
 
 **요청 파라미터**
 

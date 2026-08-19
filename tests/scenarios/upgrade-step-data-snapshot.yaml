@@ -54,7 +54,64 @@ exclusions:
   #     포함되어 PHP compile-time fatal 회피. 정적 검증(DataSnapshotTest) + 실행 검증
   #     (ExtensionAbstractUpgradeStepFullFlowTest::test_two_extensions_..._isolated_by_namespace)
 
+effects:
+  # DataSnapshot — 스냅샷 로드/네임스페이스 격리
+  - empty_snapshot_when_manifest_absent
+  - versioned_namespace_converts_dots_and_hyphens_to_underscore
+  - versioned_namespace_branches_by_core_bundled_module_bundled_plugin_external
+  - same_step_version_different_extensions_get_distinct_namespaces
+  - manifest_kind_resolves_to_applier_class_and_instantiates
+  - applier_file_missing_or_namespace_mismatch_throws_runtime_exception
+  # AbstractUpgradeStep — 위임 규약
+  - run_delegates_in_order_data_snapshot_then_migrations_then_post_run
+  - migrations_execute_in_filename_sort_order
+  - two_digit_prefix_stripped_before_class_name_mapping
+  - data_dir_absent_silently_skips_without_fatal
+  # 코어 upgrade step 가드
+  - core_beta_5_or_later_step_without_abstract_inheritance_throws
+  - core_beta_5_or_later_step_with_inheritance_runs
+  - core_legacy_beta_4_or_earlier_step_passes_without_inheritance
+  # 확장 upgrade step 가드
+  - bundled_module_ge_beta_5_without_inheritance_throws
+  - bundled_module_with_inheritance_runs
+  - bundled_module_legacy_g7_version_bypasses_guard
+  - bundled_module_callable_closure_bypasses_guard
+  - step_version_below_extension_since_version_bypasses_guard
+  - bundled_plugin_mirrors_module_guard_branches
+  # 확장 전체 흐름
+  - extension_full_flow_preserves_applier_migration_post_run_order
+  - data_dir_resolves_to_extension_directory_via_reflection
+  - manifest_json_absent_is_graceful_silent
+  - manifest_applier_file_missing_throws_explicit_runtime_exception
+  - two_modules_same_step_version_same_migration_class_both_run_own_code
+  # IDV 권한 rename 마이그레이션
+  - permissions_applier_renames_in_place_when_new_row_absent
+  - identity_permission_pivot_merges_on_collision_path
+  - old_pivot_removed_and_new_pivot_preserved_for_dual_granted_role
+  - permission_rename_is_idempotent_across_repeated_runs
+  # beta.5 복구 핫픽스
+  - four_domain_active_directories_recovered
+  - external_extension_loss_triggers_one_shot_deactivation_with_notice
+  - pending_stub_regenerated
+  - lang_packs_bundled_fallback_applied
+  - public_storage_symlink_restored
+  # since-version 판정 헬퍼
+  - resolve_since_version_branches_null_empty_legacy_beta5_or_and_parse_failure
+  - assert_abstract_inheritance_branches_by_step_version_vs_since_version
+  - guard_exception_message_includes_extension_type_identifier_step_version_and_core_version
+
 test_files:
+  - tests/Unit/Extension/Upgrade/DataSnapshotTest.php
+  - tests/Unit/Extension/AbstractUpgradeStepTest.php
+  - tests/Unit/Extension/Helpers/ExtensionUpgradeGuardHelperTest.php
+  - tests/Feature/Upgrades/RunUpgradeStepsAbstractGuardTest.php
+  - tests/Feature/Upgrades/Upgrade_7_0_0_beta_5PermissionRenameTest.php
+  - tests/Feature/Upgrades/Upgrade_7_0_0_beta_5RecoveryTest.php
+  - tests/Feature/Upgrades/ExtensionAbstractGuardTest.php
+  - tests/Feature/Upgrades/ExtensionAbstractUpgradeStepFullFlowTest.php
+
+# 파일별 커버 범위 상세 (test_files 의 각 항목이 무엇을 보장하는지)
+test_coverage_detail:
   unit:
     - path: tests/Unit/Extension/Upgrade/DataSnapshotTest.php
       covers:

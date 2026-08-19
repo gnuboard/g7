@@ -32,6 +32,14 @@ interface PermissionRepositoryInterface
     public function findByIdentifier(string $identifier): ?Permission;
 
     /**
+     * 여러 ID로 권한을 일괄 조회합니다.
+     *
+     * @param  array<int>  $ids  권한 ID 배열
+     * @return Collection 권한 컬렉션 (ID 기준)
+     */
+    public function getByIds(array $ids): Collection;
+
+    /**
      * 새로운 권한을 생성합니다.
      *
      * @param  array  $data  권한 생성 데이터

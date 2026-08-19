@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Contracts\Extension\StorageInterface;
 use App\Contracts\Repositories\TemplateLayoutAttachmentRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
+use App\Extension\HookManager;
 use App\Models\TemplateLayoutAttachment;
 use App\Support\ImageResizer;
 use Illuminate\Database\Eloquent\Collection;
@@ -12,6 +13,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * 템플릿 레이아웃 첨부 파일 서비스
@@ -52,6 +54,12 @@ class TemplateLayoutAttachmentService
             return ['success' => false, 'attachment' => null, 'url' => null, 'error' => 'template_not_found'];
         }
 
+        // 훅: 업로드 전 (확장 지점)
+        HookManager::doAction('core.template_layout_attachment.before_upload', $file, $templateIdentifier, $layoutName);
+
+        // 필터 훅 - 파일 데이터 변형 (압축, 리사이즈 등 확장 포인트)
+        $file = HookManager::applyFilters('core.template_layout_attachment.filter_upload_file', $file);
+
         // 저장 경로 — 템플릿 식별자/날짜별 디렉토리 + UUID 파일명 (충돌 회피)
         $storedFilename = Str::uuid().'.'.$file->getClientOriginalExtension();
         $relativePath = "{$templateIdentifier}/".date('Y/m/d')."/{$storedFilename}";
@@ -86,6 +94,8 @@ class TemplateLayoutAttachmentService
             'template_id' => $template->id,
             'path' => $relativePath,
         ]);
+
+        HookManager::doAction('core.template_layout_attachment.after_upload', $attachment);
 
         return [
             'success' => true,
@@ -160,17 +170,17 @@ class TemplateLayoutAttachmentService
     }
 
     /**
-     * 서빙 가능한 첨부 파일의 절대 경로를 돌려줍니다.
+     * 서빙 가능한 첨부의 인라인 스트림 응답과 캐싱 메타를 돌려줍니다.
      *
-     * 첨부가 주어진 템플릿 소속인지 검증하고, 스토리지에 파일이 실제로 존재하면
-     * 컨트롤러가 스트림할 수 있는 절대 파일시스템 경로를 반환한다. 소속 불일치 /
-     * 파일 부재 시 null (컨트롤러가 404).
+     * 첨부가 주어진 템플릿 소속인지 검증하고, 행 disk 를 따르는 스토리지 스트림
+     * 응답을 반환한다 (S3 등 원격 디스크 행 포함 — 로컬 절대 경로 방식은 #99 에서
+     * filemtime 500). 소속 불일치 / 파일 부재 시 null (컨트롤러가 404).
      *
      * @param  string  $templateIdentifier  요청 경로의 템플릿 식별자
      * @param  TemplateLayoutAttachment  $attachment  서빙 대상 첨부
-     * @return string|null 절대 파일 경로 또는 null
+     * @return array{response: StreamedResponse, etag_source: string}|null 서빙 정보 또는 null
      */
-    public function getServableFilePath(string $templateIdentifier, TemplateLayoutAttachment $attachment): ?string
+    public function getServableResponse(string $templateIdentifier, TemplateLayoutAttachment $attachment): ?array
     {
         $template = $this->templateRepository->findByIdentifier($templateIdentifier);
         // 경로 식별자와 첨부의 소속 템플릿이 일치해야 한다 (교차 템플릿 접근 차단).
@@ -178,12 +188,31 @@ class TemplateLayoutAttachmentService
             return null;
         }
 
-        $driver = $this->storage->withDisk($attachment->disk);
-        if (! $driver->exists(self::STORAGE_CATEGORY, $attachment->path)) {
+        // 행 disk 기준 인라인 스트림 (존재 검사는 response() 내부에서 수행).
+        // 로컬 절대 경로 조립(getBasePath)은 S3 등 원격 디스크 행에서 성립하지 않는다 (#99).
+        $response = $this->storage->withDisk($attachment->disk)->response(
+            self::STORAGE_CATEGORY,
+            $attachment->path,
+            $attachment->original_name ?? basename($attachment->path),
+            [
+                'Content-Type' => $attachment->mime_type,
+                'Content-Length' => (string) $attachment->size,
+            ]
+        );
+
+        if (! $response) {
             return null;
         }
 
-        // 절대 경로 — {category base}/{relative path}. fileResponse 가 절대 경로를 요구.
-        return rtrim($driver->getBasePath(self::STORAGE_CATEGORY), '/\\').'/'.$attachment->path;
+        return [
+            'response' => $response,
+            // 파일 stat 없이 결정적인 ETag 소스 (업로드 파일은 경로당 불변)
+            'etag_source' => implode('|', [
+                $attachment->disk,
+                $attachment->path,
+                (string) $attachment->updated_at?->getTimestamp(),
+                (string) $attachment->size,
+            ]),
+        ];
     }
 }

@@ -5,6 +5,7 @@ namespace Tests\Unit\Services;
 use App\Enums\ExtensionOwnerType;
 use App\Enums\PermissionType;
 use App\Exceptions\CannotDeleteSuperAdminException;
+use App\Exceptions\PermissionEscalationException;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
@@ -506,15 +507,20 @@ class UserServiceTest extends TestCase
     }
 
     /**
-     * core.permissions.update 권한 없으면 타인의 역할 변경 불가 (무시됨)
+     * 역할 부여는 core.permissions.update(역할 정의 수정)를 요구하지 않는다 — 상한(ceiling)
+     * 이내라면 그 권한이 없어도 역할을 부여할 수 있다. (역할 부여 = 사용자 관리의 일부)
+     *
+     * 회귀 방지: 과거에는 core.permissions.update 가 없으면 role_ids 를 조용히 버려(silent
+     * no-op) 200 성공을 반환하면서도 역할이 바뀌지 않았다. 이제는 상한만 통과하면 부여된다.
      */
-    public function test_update_user_ignores_role_ids_without_permission(): void
+    public function test_update_user_assigns_role_within_ceiling_without_permissions_update(): void
     {
         $originalRole = Role::create([
             'identifier' => 'original-role',
             'name' => ['ko' => '원래 역할', 'en' => 'Original Role'],
         ]);
 
+        // 권한이 전혀 없는 역할 → 어떤 액터의 상한도 넘지 않는다.
         $newRole = Role::create([
             'identifier' => 'new-role-test',
             'name' => ['ko' => '새 역할', 'en' => 'New Role'],
@@ -523,20 +529,56 @@ class UserServiceTest extends TestCase
         $targetUser = User::factory()->create();
         $targetUser->roles()->attach($originalRole->id);
 
-        // 권한 없는 사용자로 인증
+        // core.permissions.update 가 없는 액터로 인증 (사용자 관리 권한은 라우트 단계에서
+        // 강제되며, 서비스 계층 테스트에서는 상한만 검사된다)
         $authUser = User::factory()->create();
         Auth::login($authUser);
 
-        // 타인의 역할 변경 시도
         $updatedUser = $this->userService->updateUser($targetUser, [
             'name' => 'Changed Name',
             'role_ids' => [$newRole->id],
         ]);
 
-        // 이름은 변경되지만 역할은 변경되지 않아야 함
+        // 이름과 역할 모두 변경되어야 한다 (silent no-op 아님)
         $this->assertEquals('Changed Name', $updatedUser->name);
-        $this->assertTrue($updatedUser->roles->contains('id', $originalRole->id));
-        $this->assertFalse($updatedUser->roles->contains('id', $newRole->id));
+        $this->assertTrue($updatedUser->roles->contains('id', $newRole->id));
+        $this->assertFalse($updatedUser->roles->contains('id', $originalRole->id));
+    }
+
+    /**
+     * 상한을 넘는 역할(액터가 보유하지 않은 권한을 담은 역할)은 부여 시 명시적으로 거부된다.
+     *
+     * 회귀 방지: 조용히 무시(silent no-op)하는 대신 PermissionEscalationException 을 던져
+     * 컨트롤러가 403 으로 매핑하도록 한다.
+     */
+    public function test_update_user_rejects_role_beyond_actor_ceiling(): void
+    {
+        $elevatedPermission = Permission::create([
+            'identifier' => 'core.templates.uninstall',
+            'name' => ['ko' => '템플릿 삭제', 'en' => 'Uninstall Templates'],
+            'extension_type' => ExtensionOwnerType::Core,
+            'extension_identifier' => 'core',
+            'type' => PermissionType::Admin,
+        ]);
+
+        // 액터가 보유하지 않은 권한을 담은 역할 → 상한 초과
+        $elevatedRole = Role::create([
+            'identifier' => 'elevated-role',
+            'name' => ['ko' => '상위 역할', 'en' => 'Elevated Role'],
+        ]);
+        $elevatedRole->permissions()->attach($elevatedPermission->id);
+
+        $targetUser = User::factory()->create();
+
+        // 그 권한을 보유하지 않은 액터
+        $authUser = User::factory()->create();
+        Auth::login($authUser);
+
+        $this->expectException(PermissionEscalationException::class);
+
+        $this->userService->updateUser($targetUser, [
+            'role_ids' => [$elevatedRole->id],
+        ]);
     }
 
     /**
@@ -591,11 +633,13 @@ class UserServiceTest extends TestCase
     // ========================================================================
 
     /**
-     * core.permissions.update 권한 없으면 기본 역할(user) 자동 할당
+     * 역할을 지정하지 않고 생성하면 기본 역할('user')이 자동 배정된다.
+     *
+     * 회귀 방지: 기본 역할 배정은 권한 게이트가 아니라 "요청 역할 없음" 조건에 묶인다.
+     * (과거에는 core.permissions.update 미보유 조건에 묶여 있어 지정 역할을 덮어썼다)
      */
-    public function test_create_user_assigns_default_role_without_permission(): void
+    public function test_create_user_assigns_default_role_when_none_requested(): void
     {
-        // 기본 user 역할 생성
         $userRole = Role::create([
             'identifier' => 'user',
             'name' => ['ko' => '사용자', 'en' => 'User'],
@@ -604,12 +648,41 @@ class UserServiceTest extends TestCase
             'is_active' => true,
         ]);
 
+        $authUser = User::factory()->create();
+        Auth::login($authUser);
+
+        $user = $this->userService->createUser([
+            'name' => 'Test User',
+            'email' => 'testcreate@test.com',
+            'password' => 'password123',
+        ]);
+
+        $this->assertTrue($user->roles->contains('id', $userRole->id));
+    }
+
+    /**
+     * core.permissions.update 가 없어도 상한 이내의 지정 역할은 그대로 부여된다
+     * (기본 역할로 덮어쓰지 않는다).
+     *
+     * 회귀 방지: 과거에는 core.permissions.update 미보유 시 지정 역할을 버리고 기본 역할을
+     * 강제 배정했다. 이제는 상한만 통과하면 지정 역할이 부여된다.
+     */
+    public function test_create_user_assigns_requested_role_within_ceiling_without_permissions_update(): void
+    {
+        $userRole = Role::create([
+            'identifier' => 'user',
+            'name' => ['ko' => '사용자', 'en' => 'User'],
+            'extension_type' => ExtensionOwnerType::Core,
+            'extension_identifier' => 'core',
+            'is_active' => true,
+        ]);
+
+        // 권한이 없는 역할 → 상한 이내
         $customRole = Role::create([
             'identifier' => 'custom-role',
             'name' => ['ko' => '커스텀 역할', 'en' => 'Custom Role'],
         ]);
 
-        // 권한 없는 사용자로 인증
         $authUser = User::factory()->create();
         Auth::login($authUser);
 
@@ -620,9 +693,41 @@ class UserServiceTest extends TestCase
             'role_ids' => [$customRole->id],
         ]);
 
-        // 커스텀 역할 대신 기본 역할이 할당되어야 함
-        $this->assertTrue($user->roles->contains('id', $userRole->id));
-        $this->assertFalse($user->roles->contains('id', $customRole->id));
+        // 지정 역할이 부여되고 기본 역할로 덮어쓰이지 않는다
+        $this->assertTrue($user->roles->contains('id', $customRole->id));
+        $this->assertFalse($user->roles->contains('id', $userRole->id));
+    }
+
+    /**
+     * 상한을 넘는 역할을 지정해 생성하면 명시적으로 거부된다.
+     */
+    public function test_create_user_rejects_role_beyond_actor_ceiling(): void
+    {
+        $elevatedPermission = Permission::create([
+            'identifier' => 'core.templates.uninstall',
+            'name' => ['ko' => '템플릿 삭제', 'en' => 'Uninstall Templates'],
+            'extension_type' => ExtensionOwnerType::Core,
+            'extension_identifier' => 'core',
+            'type' => PermissionType::Admin,
+        ]);
+
+        $elevatedRole = Role::create([
+            'identifier' => 'elevated-create-role',
+            'name' => ['ko' => '상위 역할', 'en' => 'Elevated Role'],
+        ]);
+        $elevatedRole->permissions()->attach($elevatedPermission->id);
+
+        $authUser = User::factory()->create();
+        Auth::login($authUser);
+
+        $this->expectException(PermissionEscalationException::class);
+
+        $this->userService->createUser([
+            'name' => 'New User',
+            'email' => 'newuser@test.com',
+            'password' => 'password123',
+            'role_ids' => [$elevatedRole->id],
+        ]);
     }
 
     /**

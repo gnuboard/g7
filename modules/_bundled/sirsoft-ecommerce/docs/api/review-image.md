@@ -73,10 +73,14 @@ Content-Disposition: attachment; filename="review.jpg"
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 404 | Not Found | 해시에 해당하는 리뷰 이미지가 없거나(`findByHash()` → null), 레코드는 있으나 스토리지에 실제 파일이 없는 경우 (`messages.reviews.image_not_found`) |
+| 404 | Not Found | 해시에 해당하는 리뷰 이미지가 없거나(`findByHash()` → null), 레코드는 있으나 스토리지에 실제 파일이 없는 경우, **또는 이미지가 속한 리뷰가 노출(VISIBLE) 상태가 아니면서 유효한 서명도 없는 경우**(숨김·블라인드·대기 리뷰의 이미지는 존재를 감추기 위해 동일하게 404) (`messages.reviews.image_not_found`) |
 
 <!-- @generated:end -->
 
-**설명** 리뷰에 첨부된 이미지를 해시(12자) 기반으로 공개 서빙합니다. 인증이 필요 없으며, `ReviewImageController@download` 가 `ProductReviewImageService::download()` 로 해시에 해당하는 이미지를 찾아 스트림(`StreamedResponse`)으로 반환합니다. 해시에 해당하는 이미지가 없으면 404 를 반환합니다. `<img src>` 등에서 리뷰 이미지 원본을 표시할 때 사용하며, 실제 파일 경로를 노출하지 않고 해시로만 접근하게 합니다.
+**설명** 리뷰에 첨부된 이미지를 해시(12자) 기반으로 서빙합니다. `ReviewImageController@download` 가 `ProductReviewImageService::download()` 로 해시에 해당하는 이미지를 찾아 스트림(`StreamedResponse`)으로 반환합니다. `<img src>` 등에서 리뷰 이미지 원본을 표시할 때 사용하며, 실제 파일 경로를 노출하지 않고 해시로만 접근하게 합니다.
+
+이미지 서빙은 **부모 리뷰가 노출(VISIBLE) 상태일 때로 한정**됩니다(KVE-2026-1914). 숨김·블라인드·대기 상태 리뷰의 이미지는 해시가 유효해도 서빙되지 않고 404 를 반환합니다 — 본문이 감춰진 리뷰의 이미지가 해시만으로 노출되는 것을 막고, 존재 자체를 드러내지 않기 위해 "이미지 없음"과 동일한 404 로 응답합니다. 노출 상태 리뷰의 이미지는 별도 인증 없이 공개 접근할 수 있습니다.
+
+브라우저 `<img src>` 는 Authorization 헤더를 실을 수 없으므로, 숨김 리뷰의 이미지를 싣는 관리자 응답(리뷰 목록·상세)의 `download_url` 에는 `expires`·`signature` 쿼리가 붙은 **한시 서명 URL** 이 직렬화되며, 이 엔드포인트는 유효한 서명을 상태 게이트와 동등한 자격으로 허용합니다. 서명이 변조·만료된 요청은 종전과 동일하게 404 로 차단됩니다. 노출(VISIBLE) 리뷰의 `download_url` 은 무서명 공개 URL(직접 URL/CDN 또는 이 API 경로)을 유지합니다.
 
 

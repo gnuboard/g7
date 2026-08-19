@@ -72,6 +72,14 @@ class UpdateCouponRequest extends FormRequest
             $merge['min_order_amount'] = 0;
         }
 
+        // 라디오가 문자열 "true"/"false" 를 보낼 수 있어 boolean 으로 정규화합니다. (해석 불가값은 유지 → boolean 규칙이 422 처리)
+        if ($this->has('is_combinable')) {
+            $normalized = filter_var($this->input('is_combinable'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            if ($normalized !== null) {
+                $merge['is_combinable'] = $normalized;
+            }
+        }
+
         if ($merge) {
             $this->merge($merge);
         }

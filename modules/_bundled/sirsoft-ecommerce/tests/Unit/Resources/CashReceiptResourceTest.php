@@ -16,6 +16,7 @@ use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Services\CashReceiptService;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
+use Modules\Sirsoft\Ecommerce\Tests\Concerns\RegistersTestCashReceiptProvider;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -28,6 +29,8 @@ use PHPUnit\Framework\Attributes\Test;
  */
 class CashReceiptResourceTest extends ModuleTestCase
 {
+    use RegistersTestCashReceiptProvider;
+
     private const PROVIDER = 'tosspayments';
 
     private const IDENTIFIER = '01012345678';
@@ -43,6 +46,7 @@ class CashReceiptResourceTest extends ModuleTestCase
         $this->issueShouldFail = false;
         $this->receiptSequence = 0;
 
+        $this->registerCashReceiptProvider(self::PROVIDER);
         app(EcommerceSettingsService::class)->setSetting('order_settings.cash_receipt_provider', self::PROVIDER);
     }
 
@@ -282,6 +286,61 @@ class CashReceiptResourceTest extends ModuleTestCase
         $this->assertSame(CashReceiptIssueStatus::FAILED->value, $failed['issue_status']);
         $this->assertNull($failed['issued_at']);
         $this->assertNotEmpty($failed['occurred_at_formatted'], '실패 이력도 발생 시각을 표시할 수 있어야 한다');
+    }
+
+    /**
+     * 발급사 플러그인이 제거되면 발급사 필드가 null 로 내려간다. (비회귀 pin)
+     *
+     * 화면은 이 필드로 신규 발급 버튼을 켠다. 죽은 발급사 ID 를 그대로 내려보내면
+     * 버튼이 살아 있고, 눌러도 실패 이력만 쌓인다.
+     *
+     * @scenario provider_state=dead
+     *
+     * @effects dead_provider_nulled_in_resource
+     */
+    #[Test]
+    public function 발급사가_제거되면_발급사_필드가_null_이_된다(): void
+    {
+        $this->registerProvider();
+        $order = $this->makeOrder();
+
+        // 살아 있는 동안은 그대로 내려간다 (존재를 먼저 확정)
+        $this->assertSame(self::PROVIDER, $this->resourceArray($order)['payment']['cash_receipt_provider'] ?? null);
+
+        app(EcommerceSettingsService::class)->setSetting('order_settings.cash_receipt_provider', 'ghost_provider');
+
+        $payment = $this->resourceArray($order->fresh())['payment'];
+
+        $this->assertArrayHasKey('cash_receipt_provider', $payment);
+        $this->assertNull($payment['cash_receipt_provider'], '레지스트리에 없는 발급사가 그대로 노출되었습니다.');
+    }
+
+    /**
+     * 발급사가 제거돼도 이미 발급한 이력은 계속 노출된다. (비회귀 pin)
+     *
+     * 발급 이력과 영수증 링크는 구매자·운영자의 증빙이다. 발급사 유무로 감추면
+     * 이미 발급된 영수증의 확인 경로가 사라진다.
+     *
+     * @scenario provider_state=dead
+     *
+     * @effects existing_receipt_history_survives_dead_provider
+     */
+    #[Test]
+    public function 발급사가_제거돼도_기존_발급_이력은_계속_노출된다(): void
+    {
+        $this->registerProvider();
+        $order = $this->makeOrder();
+        app(CashReceiptService::class)->issue(
+            $order, CashReceiptType::INCOME, self::IDENTIFIER, CashReceiptIdentifierType::PHONE,
+        );
+
+        app(EcommerceSettingsService::class)->setSetting('order_settings.cash_receipt_provider', 'ghost_provider');
+
+        $array = $this->resourceArray($order->fresh());
+
+        $this->assertNotEmpty($array['cash_receipts'], '발급사 제거로 발급 이력이 사라졌습니다.');
+        $this->assertNotNull($array['cash_receipt'], '활성 영수증이 사라졌습니다.');
+        $this->assertSame(self::PROVIDER, $array['cash_receipts'][0]['provider'], '이력의 발급사 스냅샷이 바뀌었습니다.');
     }
 
     #[Test]

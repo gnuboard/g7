@@ -73,9 +73,23 @@ class ShippingPolicyEnumsTest extends ModuleTestCase
         $this->assertTrue(ChargePolicyEnum::PER_VOLUME->requiresBaseFee());
         $this->assertTrue(ChargePolicyEnum::PER_VOLUME_WEIGHT->requiresBaseFee());
         $this->assertTrue(ChargePolicyEnum::PER_AMOUNT->requiresBaseFee());
+        // API 정책의 base_fee 는 외부 API 장애 시 폴백 배송비 — 0 이면 장애가 곧 무음 무료배송이 된다
+        $this->assertTrue(ChargePolicyEnum::API->requiresBaseFee());
         $this->assertFalse(ChargePolicyEnum::FREE->requiresBaseFee());
         $this->assertFalse(ChargePolicyEnum::RANGE_AMOUNT->requiresBaseFee());
-        $this->assertFalse(ChargePolicyEnum::API->requiresBaseFee());
+    }
+
+    public function test_charge_policy_has_discrete_range_values(): void
+    {
+        // 수량만 이산형 — "5개 다음은 6개"(max + 1)로 이어진다
+        $this->assertTrue(ChargePolicyEnum::RANGE_QUANTITY->hasDiscreteRangeValues());
+
+        // 금액·무게·부피는 연속값 — "5kg 다음은 5kg 초과"(다음 min = max)
+        $this->assertFalse(ChargePolicyEnum::RANGE_AMOUNT->hasDiscreteRangeValues());
+        $this->assertFalse(ChargePolicyEnum::RANGE_WEIGHT->hasDiscreteRangeValues());
+        $this->assertFalse(ChargePolicyEnum::RANGE_VOLUME->hasDiscreteRangeValues());
+        $this->assertFalse(ChargePolicyEnum::RANGE_VOLUME_WEIGHT->hasDiscreteRangeValues());
+        $this->assertFalse(ChargePolicyEnum::PER_QUANTITY->hasDiscreteRangeValues());
     }
 
     public function test_charge_policy_requires_free_threshold(): void

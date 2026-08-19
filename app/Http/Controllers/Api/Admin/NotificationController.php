@@ -1,5 +1,7 @@
 <?php
 
+// audit:allow api-doc-coverage reason: 본문 미사용 base Request 면제 주석·PHPDoc 만 추가 — 요청/응답 계약 불변
+
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Api\Base\AdminBaseController;
@@ -27,6 +29,9 @@ class NotificationController extends AdminBaseController
 
     /**
      * 알림 목록을 조회합니다.
+     *
+     * @param  NotificationIndexRequest  $request  알림 목록 조회 요청 (page/per_page)
+     * @return JsonResponse 알림 목록 응답
      */
     public function index(NotificationIndexRequest $request): JsonResponse
     {
@@ -51,7 +56,11 @@ class NotificationController extends AdminBaseController
 
     /**
      * 미읽음 알림 수를 반환합니다.
+     *
+     * @param  Request  $request  인증 사용자 요청
+     * @return JsonResponse 미읽음 알림 수 응답
      */
+    // audit:allow controller-base-request-injection reason: 본문 입력을 읽지 않음 — user() 만 참조 (검증 대상 필드 없음)
     public function unreadCount(Request $request): JsonResponse
     {
         try {
@@ -70,7 +79,12 @@ class NotificationController extends AdminBaseController
 
     /**
      * 알림을 읽음 처리합니다.
+     *
+     * @param  Request  $request  인증 사용자 요청
+     * @param  string  $id  알림 ID
+     * @return JsonResponse 읽음 처리 결과 응답
      */
+    // audit:allow controller-base-request-injection reason: 본문 입력을 읽지 않음 — user() 만 참조 (검증 대상 필드 없음)
     public function markAsRead(Request $request, string $id): JsonResponse
     {
         try {
@@ -93,6 +107,9 @@ class NotificationController extends AdminBaseController
 
     /**
      * 지정된 알림들을 일괄 읽음 처리합니다.
+     *
+     * @param  NotificationBatchReadRequest  $request  일괄 읽음 처리 요청
+     * @return JsonResponse 일괄 읽음 처리 결과 응답
      */
     public function markBatchAsRead(NotificationBatchReadRequest $request): JsonResponse
     {
@@ -114,7 +131,11 @@ class NotificationController extends AdminBaseController
 
     /**
      * 모든 알림을 읽음 처리합니다.
+     *
+     * @param  Request  $request  인증 사용자 요청
+     * @return JsonResponse 전체 읽음 처리 결과 응답
      */
+    // audit:allow controller-base-request-injection reason: 본문 입력을 읽지 않음 — user() 만 참조 (검증 대상 필드 없음)
     public function markAllAsRead(Request $request): JsonResponse
     {
         try {
@@ -133,7 +154,11 @@ class NotificationController extends AdminBaseController
 
     /**
      * 사용자의 모든 알림을 삭제합니다.
+     *
+     * @param  Request  $request  인증 사용자 요청
+     * @return JsonResponse 전체 삭제 결과 응답
      */
+    // audit:allow controller-base-request-injection reason: 본문 입력을 읽지 않음 — user() 만 참조 (검증 대상 필드 없음)
     public function destroyAll(Request $request): JsonResponse
     {
         try {
@@ -152,7 +177,12 @@ class NotificationController extends AdminBaseController
 
     /**
      * 알림을 삭제합니다.
+     *
+     * @param  Request  $request  인증 사용자 요청
+     * @param  string  $id  알림 ID
+     * @return JsonResponse 삭제 결과 응답
      */
+    // audit:allow controller-base-request-injection reason: 본문 입력을 읽지 않음 — user() 만 참조 (검증 대상 필드 없음)
     public function destroy(Request $request, string $id): JsonResponse
     {
         try {

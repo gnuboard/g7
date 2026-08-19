@@ -3,8 +3,8 @@
 namespace Plugins\Sirsoft\VerificationNhnkcp\Http\Controllers;
 
 use App\Http\Controllers\Api\Base\PublicBaseController;
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Plugins\Sirsoft\VerificationNhnkcp\Http\Requests\KcpBridgeRequest;
 
 /**
  * 인증 결과 전달 브리지 — 데스크톱 팝업 / 모바일 페이지 전환 분기.
@@ -26,17 +26,18 @@ class KcpBridgeController extends PublicBaseController
     /**
      * 브리지 페이지를 렌더링한다.
      *
-     * @param  Request  $request  콜백 컨트롤러가 전달한 query
+     * 배열 주입(`?verification_token[]=x`)은 KcpBridgeRequest 의 string 규칙이 422 로
+     * 차단한다 — 종전 `(string)` 캐스팅은 배열을 "Array" 문자열로 바꿔 payload 에 유입시켰다.
+     *
+     * @param  KcpBridgeRequest  $request  콜백 컨트롤러가 전달한 query
      * @return Response 부모창으로 결과를 전달하는 브리지 HTML
      */
-    public function show(Request $request): Response
+    public function show(KcpBridgeRequest $request): Response
     {
-        $payloadJson = json_encode([
-            'verification_token' => (string) $request->query('verification_token', ''),
-            'challenge_id' => (string) $request->query('challenge_id', ''),
-            'identity_error' => (string) $request->query('identity_error', ''),
-            'identity_error_message' => (string) $request->query('identity_error_message', ''),
-        ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE);
+        $payloadJson = json_encode(
+            $request->bridgePayload(),
+            JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE
+        );
 
         return $this->htmlResponse($this->renderBridgeHtml((string) $payloadJson));
     }

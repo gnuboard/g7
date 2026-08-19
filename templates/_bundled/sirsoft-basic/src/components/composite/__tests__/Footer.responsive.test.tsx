@@ -41,6 +41,7 @@ describe('Footer — G7 표준 responsive 분기', () => {
     vi.clearAllMocks();
   });
 
+  /** @scenario preview_device=desktop, custom_width_input=in_range */
   it('데스크톱(1280) — 링크 그룹 그리드 5열', () => {
     setWidth(1280);
     const { container } = render(<Footer />);
@@ -49,6 +50,7 @@ describe('Footer — G7 표준 responsive 분기', () => {
     expect(grid.style.gridTemplateColumns).toBe('repeat(5, minmax(0, 1fr))');
   });
 
+  /** @scenario preview_device=tablet, custom_width_input=in_range */
   it('태블릿(820) — 그리드 2열', () => {
     setWidth(820);
     const { container } = render(<Footer />);
@@ -56,6 +58,7 @@ describe('Footer — G7 표준 responsive 분기', () => {
     expect(grid.style.gridTemplateColumns).toBe('repeat(2, minmax(0, 1fr))');
   });
 
+  /** @scenario preview_device=mobile, custom_width_input=in_range */
   it('모바일(390) — 그리드 1열 + 저작권 영역 세로(column)', () => {
     setWidth(390);
     const { container } = render(<Footer />);

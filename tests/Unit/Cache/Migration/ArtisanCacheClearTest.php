@@ -16,7 +16,11 @@ use Tests\TestCase;
  *   새 CacheInterface 를 통해 캐시를 삭제하는지 검증.
  *
  * 실제 명령어 실행은 모듈 manager / plugin manager 의존성이 크므로,
- * 명령어가 사용하는 키 형식과 forget 동작을 키 차원에서 검증합니다.
+ * CacheInterface 의 다건 put/forget 왕복 동작을 키 차원에서 검증합니다.
+ *
+ * 주의: 아래 키 문자열은 이관 당시의 픽스처다. 현행 커맨드는 유령 키 forget 을
+ * 제거하고 상태 키 무효화 + 레이아웃 캐시 + 버전 bump 로 동작한다 (#588) —
+ * 커맨드의 실동작 검증은 {Module,Plugin,Template}ArtisanCommandsTest 가 담당한다.
  */
 class ArtisanCacheClearTest extends TestCase
 {
@@ -38,9 +42,7 @@ class ArtisanCacheClearTest extends TestCase
     }
 
     /**
-     * G-1-1: module:cache-clear 명령어 — 모듈 관련 캐시 삭제 검증.
-     *
-     * ClearModuleCacheCommand::clearModuleCache() 가 사용하는 키 패턴을 검증.
+     * G-1-1: 모듈 키 픽스처 다건 put→forget 왕복 (드라이버 동작 검증 — 커맨드 미호출).
      */
     #[Test]
     public function g_1_1_module_cache_clear_removes_per_module_keys(): void
@@ -58,7 +60,7 @@ class ArtisanCacheClearTest extends TestCase
             $this->cache->put($k, 'data');
         }
 
-        // 명령어 핸들러 시뮬레이션 — CacheInterface.forget 호출
+        // CacheInterface.forget 다건 호출 (드라이버 동작 검증)
         foreach ($keys as $k) {
             $this->cache->forget($k);
         }
@@ -69,7 +71,7 @@ class ArtisanCacheClearTest extends TestCase
     }
 
     /**
-     * G-1-2: plugin:cache-clear 명령어 — 플러그인 캐시 삭제.
+     * G-1-2: 플러그인 키 픽스처 다건 put→forget 왕복 (드라이버 동작 검증 — 커맨드 미호출).
      */
     #[Test]
     public function g_1_2_plugin_cache_clear_removes_per_plugin_keys(): void
@@ -96,7 +98,7 @@ class ArtisanCacheClearTest extends TestCase
     }
 
     /**
-     * G-1-3: template:cache-clear 명령어 — 템플릿 + 레이아웃 + routes + 다국어 캐시 삭제.
+     * G-1-3: 템플릿/레이아웃 키 픽스처 다건 put→forget 왕복 (드라이버 동작 검증 — 커맨드 미호출).
      */
     #[Test]
     public function g_1_3_template_cache_clear_removes_template_layout_routes(): void
@@ -127,7 +129,7 @@ class ArtisanCacheClearTest extends TestCase
     }
 
     /**
-     * G-1-4: 인수 없이 호출 시 모든 모듈 캐시 + 전역 키 삭제.
+     * G-1-4: 전역 + 개별 키 혼합 다건 put→forget 왕복 (드라이버 동작 검증 — 커맨드 미호출).
      */
     #[Test]
     public function g_1_4_clear_without_args_clears_all(): void
@@ -143,7 +145,7 @@ class ArtisanCacheClearTest extends TestCase
             $this->cache->put("module.info.{$id}", 'data');
         }
 
-        // 명령어 시뮬레이션 — 전역 + 개별 모두 삭제
+        // 전역 + 개별 모두 forget (드라이버 동작 검증)
         $globalKeys = ['modules.all', 'modules.active', 'modules.installed'];
         foreach ($globalKeys as $k) {
             $this->cache->forget($k);

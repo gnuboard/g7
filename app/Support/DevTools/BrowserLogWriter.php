@@ -137,9 +137,12 @@ class BrowserLogWriter
             return Log::channel('browser');
         }
 
+        // daily + 유한 보존일 — single 드라이버는 로테이션 없이 무한 append 되어
+        // browser.log 가 저장소 단일 최대 파일로 자란다 (실측 989MB).
         return Log::build([
-            'driver' => 'single',
+            'driver' => 'daily',
             'path' => storage_path('logs/browser.log'),
+            'days' => 7,
             'level' => config('logging.level', 'debug'),
         ]);
     }

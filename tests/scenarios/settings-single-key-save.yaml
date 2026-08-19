@@ -1,0 +1,70 @@
+feature: 단건 설정 저장의 값 형태 계약과 부수 효과
+
+description: |
+  `PUT /api/admin/settings/{key}` 는 키를 URL 로 받고 값 하나만 싣는다. 벌크 저장
+  (`SaveSettingsRequest`)처럼 키마다 규칙을 둘 수 없어, 종전 규칙은 전 키 공통으로
+  `required|string|max:1000` 하나였다. 그래서 둘이 깨져 있었다.
+
+    · 한 번 넣은 값을 화면에서 지울 수 없다 — `required` 가 빈 값을 422 로 막는다.
+    · 폼 전송의 boolean·정수가 문자열로 저장되어, 그 값을 읽는 쪽의 타입 비교
+      (`=== true`)가 조용히 어긋난다. 예외도 경고도 없다.
+
+  값의 타입은 `config/settings/defaults.json` 의 기본값이 SSoT 다 — 기본값의 타입이 곧
+  그 설정의 선언 타입이다. 요청 경계에서 선언 타입으로 정규화하고, 해석하지 못한 값은
+  건드리지 않은 채 규칙이 거절한다(조용히 false·null 로 캐스팅하면 오타가 정상 저장으로
+  통과한다).
+
+axis_notes:
+  value_disposition: |
+    이 엔드포인트가 값 하나에 대해 내리는 결정은 셋뿐이다 — 저장한다 / 비운다 / 거절한다.
+    "비운다" 의 저장 형태는 선언 타입이 정한다: 문자열은 `''`, 그 외는 `null`.
+    `ConvertEmptyStringsToNull` 미들웨어가 요청 시점에 이미 `''` 를 null 로 바꾸므로,
+    두 입력(빈 문자열 / null)은 검증에 도달할 때 구분되지 않는다.
+  declared_type: |
+    float 축은 두지 않는다 — `defaults.json` 에 float 선언 키가 없어 조합이 실재하지
+    않는다. 정규화 코드에는 float 분기가 있고(정수 분기와 동일 형태), 선언이 생기는
+    시점에 이 축을 넓힌다.
+
+axes:
+  declared_type: [string, boolean, integer, array]
+  value_disposition: [accepted, cleared, rejected]
+
+effects:
+  # 값 형태 계약
+  - string_setting_stored_verbatim             # 문자열은 트림·캐스트 없이 원본 그대로
+  - setting_cleared_to_empty_string            # 문자열 설정을 비우면 `''`
+  - setting_cleared_to_null                    # 비-문자열 설정을 비우면 null
+  - boolean_setting_stored_as_boolean          # "true"/"1" → true (문자열 저장 금지)
+  - integer_setting_stored_as_integer          # "25" → 25
+  - array_setting_stored_as_array
+  - uninterpretable_value_rejected_with_422    # 해석 불가 입력을 조용히 캐스팅하지 않는다
+  - missing_value_key_rejected_with_422        # "비운다" 와 "안 보냈다" 는 다르다
+  - oversized_value_rejected_with_422          # 문자열 1000자
+  - oversized_array_rejected_with_422          # 배열 JSON 5000자 — 문자열 상한만으로는 새는 축
+
+  # 저장 부수 효과 (값 형태와 직교 — sub_flow 로 분리)
+  - seo_prerender_cache_cleared_on_asset_url_mode_change
+  - seo_prerender_cache_untouched_when_value_unchanged
+  - queue_workers_restarted_on_driver_change
+  - queue_workers_not_restarted_for_other_categories
+  - side_effects_skipped_when_save_fails
+  - single_key_save_uses_storage_key_verbatim   # 화면 키 역변환 미적용 (프로그램 호출자 보호)
+
+sub_flows:
+  - id: single_key_side_effects
+    description: >
+      벌크 저장에만 있던 부수 효과(SEO 프리렌더 캐시 무효화 · 큐 워커 재시작)를 단건
+      경로에도 건다. 단건 저장은 값 하나만 바꾸므로, 바뀌지 않았을 때와 저장이 실패했을
+      때는 아무것도 하지 않아야 한다 — 그 두 음성 케이스가 이 흐름의 본체다.
+      값의 형태와는 직교하므로 cross product 축으로 두지 않는다.
+    effects:
+      - seo_prerender_cache_cleared_on_asset_url_mode_change
+      - seo_prerender_cache_untouched_when_value_unchanged
+      - queue_workers_restarted_on_driver_change
+      - queue_workers_not_restarted_for_other_categories
+      - side_effects_skipped_when_save_fails
+      - single_key_save_uses_storage_key_verbatim
+
+test_files:
+  - tests/Feature/Api/Admin/SettingsSingleValueUpdateTest.php
+  - tests/Unit/Services/SettingsServiceSetSettingSideEffectsTest.php

@@ -1212,6 +1212,41 @@ select 처럼 사용자가 URL 을 손으로 만들 일이 없는 면. 판정 �
 
 ---
 
+## 보안 게이트 대칭성 (KVE-2026-1914/1915/1919)
+
+같은 리소스를 다루는 두 엔드포인트가 서로 다른 검증 강도를 가지면, **약한 쪽이 우회로**가
+된다. 부모를 변경·서빙하는 모든 경로는 동일 강도의 검증을 거쳐야 한다.
+
+### 같은 리소스, 같은 검증 강도
+
+수정·순서변경·상태변경·권한부여처럼 같은 리소스를 바꾸는 경로가 여럿이면, 그중 하나라도
+검증이 약하면 공격자는 그 경로로 우회한다. 예: 삭제 FormRequest 만 등급 상한을 검사하고
+수정 FormRequest 는 검사하지 않으면, 수정 경로로 슈퍼 관리자를 조작할 수 있다. 판정 규칙은
+한 곳(게이트/Rule)에 두고 모든 경로가 그것을 재사용한다.
+
+### 레이아웃 표현식 검증은 표현식 트리에 부착한다
+
+`SafeLayoutExpressions` 처럼 값의 구조를 재귀 탐색하는 저장측 규칙은, **표현식이 실릴 수
+있는 배열/객체 트리 전체**(레이아웃의 `content`)에 부착해야 한다. 문자열 하위 필드
+(`content.endpoint` 등)에만 부착하면 규칙이 비-배열 값에서 조기 반환(`is_array` 가드)해
+**no-op** 이 된다 — 검증이 걸려 있는 것처럼 보이지만 실제로는 아무것도 검사하지 않는다.
+
+```php
+// ❌ 문자열 endpoint 에만 부착 — is_array 가드로 무력화(no-op)
+'content.endpoint' => ['string', new SafeLayoutExpressions],
+
+// ✅ 표현식 트리를 담는 content 배열에 부착
+'content' => ['required', 'array', new ValidLayoutStructure, new SafeLayoutExpressions],
+```
+
+부착 위치는 "어느 필드가 표현식 트리를 담는가" 라는 도메인 판정이라 정적으로 강제하기 어렵다 —
+레이아웃 저장 FormRequest(Store/Update/UpdateContent/UpdateExtensionContent) 4종의 부착을
+wiring 테스트로 회귀 고정한다.
+
+> 서비스/리포지토리 계층의 비밀 게이트 재적용·hash 서빙 게이트·등급 상한 대칭은 [service-repository.md "보안 게이트 대칭성"](service-repository.md) 참조.
+
+---
+
 ## Custom Rule 개발 체크리스트
 
 - [ ] `/lang/ko/validation.php`에 한국어 메시지 추가

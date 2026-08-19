@@ -132,6 +132,21 @@ class MenuRepository implements MenuRepositoryInterface
     }
 
     /**
+     * 여러 ID로 메뉴를 한 번에 조회합니다.
+     *
+     * @param  array<int, int>  $ids  메뉴 ID 목록
+     * @return Collection 메뉴 컬렉션
+     */
+    public function findByIds(array $ids): Collection
+    {
+        if (empty($ids)) {
+            return new Collection;
+        }
+
+        return Menu::whereIn('id', $ids)->get();
+    }
+
+    /**
      * 슬러그로 메뉴를 찾습니다.
      *
      * @param  string  $slug  메뉴 슬러그
@@ -140,6 +155,17 @@ class MenuRepository implements MenuRepositoryInterface
     public function findBySlug(string $slug): ?Menu
     {
         return Menu::where('slug', $slug)->first();
+    }
+
+    /**
+     * URL 로 메뉴를 찾습니다.
+     *
+     * @param  string  $url  메뉴 URL
+     * @return Menu|null 찾은 메뉴 모델 또는 null
+     */
+    public function findByUrl(string $url): ?Menu
+    {
+        return Menu::where('url', $url)->first();
     }
 
     /**

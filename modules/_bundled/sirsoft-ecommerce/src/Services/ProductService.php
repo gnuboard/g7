@@ -22,12 +22,15 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderOptionRepositoryInterf
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductAdditionalOptionValueRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductLabelRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Traits\ReappliesPermissionScope;
 
 /**
  * 상품 서비스
  */
 class ProductService
 {
+    use ReappliesPermissionScope;
+
     /**
      * 검색 정렬 이름 → [실제 컬럼, 방향] 선언
      *
@@ -67,7 +70,8 @@ class ProductService
         protected SequenceService $sequenceService,
         protected OrderOptionRepositoryInterface $orderOptionRepository,
         protected ProductLabelRepositoryInterface $productLabelRepository,
-        protected ProductAdditionalOptionValueRepositoryInterface $additionalOptionValueRepository
+        protected ProductAdditionalOptionValueRepositoryInterface $additionalOptionValueRepository,
+        protected ProductInquiryService $inquiryService
     ) {}
 
     /**
@@ -301,6 +305,8 @@ class ProductService
      */
     public function update(Product $product, array $data): Product
     {
+        $this->assertWithinScope($product, 'sirsoft-ecommerce.products.update');
+
         // 수정 전 훅
         HookManager::doAction('sirsoft-ecommerce.product.before_update', $product, $data);
 
@@ -405,6 +411,8 @@ class ProductService
      */
     public function delete(Product $product): bool
     {
+        $this->assertWithinScope($product, 'sirsoft-ecommerce.products.delete');
+
         // 도메인 가드: 주문 이력이 있는 상품은 삭제 불가 (컨트롤러 우회·bulk 경로 방어)
         // DB FK restrictOnDelete 가 거부하기 전에 사유가 명확한 예외로 차단한다.
         $ordersCount = $this->orderOptionRepository->countByProductId($product->id);
@@ -414,6 +422,11 @@ class ProductService
 
         // 삭제 전 훅
         HookManager::doAction('sirsoft-ecommerce.product.before_delete', $product);
+
+        // 상품 문의 스레드 정리 — 트랜잭션 진입 전 실행 (게시판 훅이 자체 트랜잭션과
+        // after_delete Action 훅을 내부에서 발행하므로 바깥 트랜잭션에 묶지 않는다).
+        // 종전에는 피벗이 FK 캐스케이드로만 소멸해 질문·답변 Post 가 공개 상태로 잔존했다.
+        $this->inquiryService->deleteInquiriesForProduct($product->id);
 
         return DB::transaction(function () use ($product) {
             // 1. 이미지 파일 물리적 삭제 (Storage)
@@ -451,9 +464,6 @@ class ProductService
             // TODO: 리뷰 삭제 (테이블: ecommerce_reviews)
             // Review::where('product_id', $product->id)->delete();
 
-            // TODO: 상품문의 삭제 (테이블: ecommerce_product_inquiries)
-            // ProductInquiry::where('product_id', $product->id)->delete();
-
             // 8. 상품 레코드 완전 삭제 (SoftDeletes 무시)
             // 모든 연관 데이터가 완전 삭제되었으므로 상품도 완전 삭제합니다.
             $result = $this->repository->forceDelete($product);
@@ -489,6 +499,8 @@ class ProductService
      */
     public function bulkUpdateStatus(array $ids, string $field, string $value): array
     {
+        $this->assertAllWithinScope($this->repository->findByIdsKeyed($ids), 'sirsoft-ecommerce.products.update');
+
         // 스냅샷 캡처 (활동 로그 변경 감지용)
         $snapshots = $this->repository->getSnapshotsByIds($ids);
 
@@ -522,6 +534,8 @@ class ProductService
      */
     public function bulkUpdatePrice(array $ids, string $method, float $value, string $unit): array
     {
+        $this->assertAllWithinScope($this->repository->findByIdsKeyed($ids), 'sirsoft-ecommerce.products.update');
+
         // 스냅샷 캡처 (활동 로그 변경 감지용)
         $snapshots = $this->repository->getSnapshotsByIds($ids);
 
@@ -554,6 +568,8 @@ class ProductService
      */
     public function bulkUpdateStock(array $ids, string $method, int $value): array
     {
+        $this->assertAllWithinScope($this->repository->findByIdsKeyed($ids), 'sirsoft-ecommerce.products.update');
+
         // 스냅샷 캡처 (활동 로그 변경 감지용)
         $snapshots = $this->repository->getSnapshotsByIds($ids);
 
@@ -584,6 +600,8 @@ class ProductService
      */
     public function bulkUpdate(array $data): array
     {
+        $this->assertAllWithinScope($this->repository->findByIdsKeyed($data['ids'] ?? []), 'sirsoft-ecommerce.products.update');
+
         // 스냅샷 캡처 (활동 로그 변경 감지용)
         $ids = $data['ids'] ?? [];
         $snapshots = $this->repository->getSnapshotsByIds($ids);
@@ -1616,7 +1634,7 @@ class ProductService
                 'hash' => $img->hash,
                 'url' => $img->url,
                 'original_filename' => $img->original_filename,
-                'download_url' => '/api/modules/sirsoft-ecommerce/product-image/'.$img->hash,
+                'download_url' => $img->download_url,
                 'file_size' => $img->file_size,
                 'size' => $img->file_size,
                 'size_formatted' => $this->formatFileSize($img->file_size),

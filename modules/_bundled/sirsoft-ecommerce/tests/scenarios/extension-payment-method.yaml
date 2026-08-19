@@ -34,6 +34,8 @@ axes:
   capability_declared: [declared, undeclared]
   # 능력별 판정 표면
   capability: [needs_pg, label, refund_method, pg_locked, brand_mark]
+  # 지정 PG 의 생사(pg_provider_state)는 능력 해석과 직교하는 별개 관심사다 —
+  # payment-method-dead-pg.yaml 이 그 축을 소유한다.
 
 exclusions:
   - method_kind: builtin

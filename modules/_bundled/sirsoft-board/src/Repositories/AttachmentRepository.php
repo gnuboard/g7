@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Board\Repositories;
 
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Enums\TriggerType;
@@ -75,6 +76,27 @@ class AttachmentRepository implements AttachmentRepositoryInterface
         }
 
         return $post->deleted_at !== null || $post->status === PostStatus::Deleted;
+    }
+
+    /**
+     * 첨부파일이 속한 게시글을 게시판 스코프로 조회합니다(비밀 게이팅용).
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $postId  게시글 ID
+     * @return Post|null 게시글 모델 또는 null
+     */
+    public function findPostForGate(string $slug, int $postId): ?Post
+    {
+        $board = Board::where('slug', $slug)->first();
+
+        if (! $board) {
+            return null;
+        }
+
+        return Post::withTrashed()
+            ->where('board_id', $board->id)
+            ->where('id', $postId)
+            ->first(['id', 'board_id', 'user_id', 'is_secret', 'status', 'deleted_at']);
     }
 
     /**
@@ -397,6 +419,60 @@ class AttachmentRepository implements AttachmentRepositoryInterface
     }
 
     /**
+     * 여러 게시글의 살아있는 첨부를 cascade 로 일괄 소프트 삭제합니다.
+     *
+     * 답글 트리 연쇄 삭제(softDeleteCascadeByParentId)로 지워지는 자손 게시글들의
+     * 첨부 정리용입니다. 단건 softDeleteByPostId 와 동일한 쿼리를 whereIn 으로 확장했습니다.
+     * 물리 파일은 보존하며 deleted_at 마킹만 수행합니다. (복원 가능성 유지)
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  array<int>  $postIds  게시글 ID 배열
+     * @return int 삭제된 첨부 수
+     */
+    public function softDeleteByPostIds(string $slug, array $postIds): int
+    {
+        if ($postIds === []) {
+            return 0;
+        }
+
+        $board = Board::where('slug', $slug)->first();
+
+        return Attachment::where('board_id', $board?->id)
+            ->whereIn('post_id', $postIds)
+            ->update([
+                'trigger_type' => TriggerType::Cascade->value,
+                'deleted_at' => now(),
+            ]);
+    }
+
+    /**
+     * 여러 게시글의 cascade 로 지워진 첨부만 일괄 복원합니다.
+     *
+     * 답글 트리 연쇄 복원(restoreCascadedByParentId)으로 되살아난 자손 게시글들의
+     * 첨부 복원용입니다. 사용자가 직접 지운 첨부(trigger_type='user')는 유지됩니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  array<int>  $postIds  게시글 ID 배열
+     * @return int 복원된 첨부 수
+     */
+    public function restoreCascadedByPostIds(string $slug, array $postIds): int
+    {
+        if ($postIds === []) {
+            return 0;
+        }
+
+        $board = Board::where('slug', $slug)->first();
+
+        return Attachment::onlyTrashed()
+            ->where('board_id', $board?->id)
+            ->whereIn('post_id', $postIds)
+            ->where('trigger_type', TriggerType::Cascade->value)
+            ->update([
+                'deleted_at' => null,
+            ]);
+    }
+
+    /**
      * 게시판 ID 기준으로 첨부파일을 일괄 영구 삭제합니다.
      *
      * 게시판 영구 삭제(deleteBoard) 시 사용합니다. 소프트 삭제와 달리
@@ -409,5 +485,52 @@ class AttachmentRepository implements AttachmentRepositoryInterface
     public function forceDeleteByBoardId(int $boardId): int
     {
         return Attachment::where('board_id', $boardId)->forceDelete();
+    }
+
+    /**
+     * 게시글에 연결되지 않은 채 방치된 임시 첨부를 오래된 순으로 조회합니다.
+     *
+     * @param  Carbon  $threshold  기준 시각
+     * @param  int  $limit  최대 조회 건수
+     * @return Collection 임시 첨부 목록
+     */
+    public function findStaleTempAttachments(Carbon $threshold, int $limit): Collection
+    {
+        return Attachment::query()
+            ->whereNotNull('temp_key')
+            ->whereNull('post_id')
+            ->where('created_at', '<', $threshold)
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->limit($limit)
+            ->get(['id', 'board_id', 'temp_key', 'disk', 'path', 'created_at']);
+    }
+
+    /**
+     * 소프트 삭제된 지 오래된 첨부를 오래된 순으로 조회합니다.
+     *
+     * @param  Carbon  $threshold  기준 시각
+     * @param  int  $limit  최대 조회 건수
+     * @return Collection 소프트 삭제 첨부 목록
+     */
+    public function findSoftDeletedOlderThan(Carbon $threshold, int $limit): Collection
+    {
+        return Attachment::onlyTrashed()
+            ->where('deleted_at', '<', $threshold)
+            ->orderBy('deleted_at')
+            ->orderBy('id')
+            ->limit($limit)
+            ->get(['id', 'board_id', 'post_id', 'disk', 'path', 'deleted_at']);
+    }
+
+    /**
+     * 첨부 레코드를 영구 삭제합니다.
+     *
+     * @param  Attachment  $attachment  첨부파일 모델
+     * @return bool 삭제 성공 여부
+     */
+    public function forceDelete(Attachment $attachment): bool
+    {
+        return (bool) $attachment->forceDelete();
     }
 }

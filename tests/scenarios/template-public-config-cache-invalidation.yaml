@@ -1,0 +1,33 @@
+# audit:allow test-scenario-coverage reason: axes 30 cross product(pairwise) 중 동작 분기가 실재하는 조합만 docblock 매핑. cache_state=cold 는 라이프사이클 트리거와 직교(캐시가 없으면 forget 은 무조건 no-op 멱등)라 트리거 조합 확장이 형식적이고, template_type 은 무효화 경로가 타입 무관 단일 코드(clearTemplateCache)라 admin 대표 + 구조 테스트의 user 로 충분. effects 7건은 전수 매핑됨.
+
+feature: template_public_config_cache_invalidation
+
+description: |
+  공개 템플릿 설정(config.json) 서빙 캐시 `template.config.{identifier}` 는 버전
+  접미사 없는 고정 키라 캐시 버전 bump 로 무효화되지 않는다. 템플릿 라이프사이클
+  (cache-clear 커맨드 단일/전체, update, deactivate, uninstall) 전 경로가
+  `TemplateManager::clearTemplateCache()` 단일 지점을 경유해 이 키(+ components_manifest
+  두 변종, 현재 버전 routes/language 키, `.with_source_meta` 편집기 변종)를 능동
+  삭제함을 고정한다 (#588, 공개 #119).
+
+coverage_strategy: pairwise
+
+axes:
+  cache_state: [cold, warm_current, warm_stale]
+  lifecycle_trigger: [cache_clear_command_single, cache_clear_command_all, template_update, deactivate, uninstall]
+  template_type: [admin, user]
+
+effects:
+  - cache_clear_command_forgets_template_config_key
+  - template_update_invalidates_public_config_cache
+  - deactivate_uninstall_invalidate_public_config_cache
+  - serve_config_caches_manifest_and_embeds_cache_version
+  - serve_config_returns_installed_manifest_after_invalidation
+  - clear_template_cache_forgets_components_manifest_variants
+  - with_source_meta_layout_cache_variants_forgotten
+
+test_files:
+  - tests/Feature/Template/TemplateCacheManagementTest.php
+  - tests/Feature/Template/PublicTemplateControllerTest.php
+  - tests/Feature/Console/Commands/Template/TemplateArtisanCommandsTest.php
+  - tests/Unit/Extension/TemplateUpdateConfigCacheInvalidationTest.php

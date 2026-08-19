@@ -2,18 +2,22 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Services;
 
+use App\Extension\HookManager;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Mockery;
+use Modules\Sirsoft\Ecommerce\Exceptions\ProductHasOrderHistoryException;
 use Modules\Sirsoft\Ecommerce\Models\Category;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Models\ProductAdditionalOption;
 use Modules\Sirsoft\Ecommerce\Models\ProductImage;
+use Modules\Sirsoft\Ecommerce\Models\ProductInquiry;
 use Modules\Sirsoft\Ecommerce\Models\ProductLabel;
 use Modules\Sirsoft\Ecommerce\Models\ProductLabelAssignment;
 use Modules\Sirsoft\Ecommerce\Models\ProductOption;
+use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\ProductService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
@@ -324,13 +328,98 @@ class ProductServiceDeleteTest extends ModuleTestCase
         OrderOption::factory()->create(['product_id' => $product->id]);
 
         // Then: 도메인 예외 throw + 상품 보존
-        $this->expectException(\Modules\Sirsoft\Ecommerce\Exceptions\ProductHasOrderHistoryException::class);
+        $this->expectException(ProductHasOrderHistoryException::class);
 
         try {
             $this->service->delete($product);
         } finally {
             $this->assertDatabaseHas('ecommerce_products', ['id' => $productId]);
         }
+    }
+
+    // ========================================
+    // delete() — 문의 스레드 정리 (#107 확대판)
+    // ========================================
+
+    /**
+     * 상품 삭제 시 문의 게시판이 설정돼 있으면 피벗 전건(소프트 삭제 포함)에 대해
+     * inquiry.delete 훅이 호출되고, 피벗은 trashed 포함 영구 삭제된다.
+     */
+    public function test_delete_fires_inquiry_delete_hook_per_pivot_including_trashed(): void
+    {
+        // Given: 문의 게시판 설정 + 상품에 딸린 피벗 (alive 2건 + trashed 1건)
+        app(EcommerceSettingsService::class)->setSetting('inquiry.board_slug', 'test-inquiry-board');
+
+        $product = Product::factory()->create();
+        $productId = $product->id;
+
+        ProductInquiry::factory()->create(['product_id' => $productId, 'inquirable_id' => 701]);
+        ProductInquiry::factory()->create(['product_id' => $productId, 'inquirable_id' => 702]);
+        $trashed = ProductInquiry::factory()->create(['product_id' => $productId, 'inquirable_id' => 703]);
+        $trashed->delete();
+
+        // And: 게시판 삭제 훅을 걷어내고 호출된 Post ID 를 수집하는 훅으로 교체
+        HookManager::clearFilter('sirsoft-ecommerce.inquiry.delete');
+        $deletedPostIds = [];
+        HookManager::addFilter(
+            'sirsoft-ecommerce.inquiry.delete',
+            function ($result, $slug, $postId) use (&$deletedPostIds) {
+                $deletedPostIds[] = (int) $postId;
+
+                return true;
+            },
+            priority: 1
+        );
+
+        // When: 상품 삭제
+        $result = $this->service->delete($product);
+
+        // Then: 피벗 수만큼(withTrashed 포함 3건) 훅 호출
+        $this->assertTrue($result);
+        $this->assertCount(3, $deletedPostIds);
+        $this->assertEqualsCanonicalizing([701, 702, 703], $deletedPostIds);
+
+        // And: 피벗은 trashed 포함 0건 (forceDelete — 행 자체 소멸)
+        $this->assertDatabaseMissing('ecommerce_product_inquiries', ['product_id' => $productId]);
+        $this->assertDatabaseMissing('ecommerce_products', ['id' => $productId]);
+    }
+
+    /**
+     * 문의 게시판 미설정이면 훅 없이 피벗만 정리되고 상품 삭제는 성공한다 (안전 열화).
+     */
+    public function test_delete_without_board_slug_skips_hook_but_purges_pivots(): void
+    {
+        // Given: 문의 게시판 미설정 (명시적 null)
+        app(EcommerceSettingsService::class)->setSetting('inquiry.board_slug', null);
+
+        $product = Product::factory()->create();
+        $productId = $product->id;
+
+        ProductInquiry::factory()->create(['product_id' => $productId, 'inquirable_id' => 801]);
+        $trashed = ProductInquiry::factory()->create(['product_id' => $productId, 'inquirable_id' => 802]);
+        $trashed->delete();
+
+        // And: 훅 호출 계수기
+        HookManager::clearFilter('sirsoft-ecommerce.inquiry.delete');
+        $hookCalls = 0;
+        HookManager::addFilter(
+            'sirsoft-ecommerce.inquiry.delete',
+            function () use (&$hookCalls) {
+                $hookCalls++;
+
+                return true;
+            },
+            priority: 1
+        );
+
+        // When: 상품 삭제
+        $result = $this->service->delete($product);
+
+        // Then: 훅 미호출 + 피벗 전건 영구 삭제 + 상품 삭제 성공
+        $this->assertTrue($result);
+        $this->assertSame(0, $hookCalls, '게시판 미설정 시 inquiry.delete 훅은 호출되지 않아야 합니다.');
+        $this->assertDatabaseMissing('ecommerce_product_inquiries', ['product_id' => $productId]);
+        $this->assertDatabaseMissing('ecommerce_products', ['id' => $productId]);
     }
 
     protected function tearDown(): void

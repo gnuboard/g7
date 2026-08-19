@@ -34,10 +34,10 @@
           ]
         },
         {
-          "comment": "상한 초과 안내 — 검색어를 좁히면 정확한 건수와 마지막 페이지를 볼 수 있다",
+          "comment": "상한 초과 안내 — 검색어를 좁히면 정확한 건수와 마지막 페이지를 볼 수 있다. 검색 실패도 total_is_exact=false 를 싣지만(실패한 0건을 '정확한 0건'으로 말하지 않기 위함) 그때는 검색어를 좁혀도 해소되지 않으므로 이 조치 안내를 그리지 않는다",
           "type": "basic",
           "name": "P",
-          "if": "{{(searchResults?.data?.total_is_exact ?? true) === false}}",
+          "if": "{{(searchResults?.data?.total_is_exact ?? true) === false && !(searchResults?.data?.search_failed ?? false)}}",
           "props": { "className": "mt-1 text-xs text-gray-500 dark:text-gray-400" },
           "text": "$t:search.refine_query_hint"
         }
@@ -115,10 +115,39 @@
       ]
     },
     {
+      "comment": "전체 탭 검색 실패 — 결과가 0건이고 실패가 있으면 '결과 없음' 대신 오류 안내 (키 부재(구버전 코어)는 종전 렌더 유지)",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{query?.q && searchResults?.data && (searchResults?.data?.total ?? 0) === 0 && (query?.type ?? 'all') === 'all' && (searchResults?.data?.search_failed ?? false)}}",
+      "props": { "className": "py-16 text-center" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "mb-5 text-red-300 dark:text-red-500/60" },
+          "children": [
+            { "type": "basic", "name": "Icon", "props": { "name": "triangle-exclamation", "size": "4x" } }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": { "className": "text-lg font-medium text-gray-900 dark:text-white mb-2" },
+          "text": "$t:search.failed.title"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
+          "text": "$t:search.failed.suggestion"
+        }
+      ]
+    },
+    {
       "comment": "검색 결과 없음 (전체 탭)",
       "type": "basic",
       "name": "Div",
-      "if": "{{query?.q && searchResults?.data && (searchResults?.data?.total ?? 0) === 0 && (query?.type ?? 'all') === 'all'}}",
+      "if": "{{query?.q && searchResults?.data && (searchResults?.data?.total ?? 0) === 0 && (query?.type ?? 'all') === 'all' && !(searchResults?.data?.search_failed ?? false)}}",
       "props": { "className": "py-16 text-center" },
       "children": [
         {

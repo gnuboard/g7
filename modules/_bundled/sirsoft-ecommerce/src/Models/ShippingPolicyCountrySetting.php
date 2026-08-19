@@ -124,27 +124,86 @@ class ShippingPolicyCountrySetting extends Model
             return '';
         }
 
-        $tiers = $this->ranges['tiers'];
-        $unit = $tiers[0]['unit'] ?? '';
         $parts = [];
 
-        foreach ($tiers as $tier) {
-            $min = $tier['min'] ?? 0;
-            $max = $tier['max'] ?? null;
+        foreach ($this->ranges['tiers'] as $tier) {
             $fee = ecommerce_format_price($tier['fee'] ?? 0);
-
-            if ($min === 0) {
-                $range = "~{$max}{$unit}";
-            } elseif ($max === null) {
-                $range = "{$min}{$unit}~";
-            } else {
-                $range = "{$min}~{$max}{$unit}";
-            }
-
-            $parts[] = "{$range}: {$fee}";
+            $parts[] = $this->formatTierRangeLabel($tier).": {$fee}";
         }
 
         return implode(' / ', $parts);
+    }
+
+    /**
+     * 구간의 범위 라벨을 포맷합니다 (예: "~5개", "6개~", "2~5kg").
+     *
+     * 단위는 부과정책에서 파생합니다. tier 의 `unit` 키는 시더만 채우던 값이라
+     * 관리자 화면에서 저장한 정책에는 존재하지 않아 단위가 사라졌습니다.
+     *
+     * @param  array  $tier  구간 정의
+     * @return string 범위 라벨
+     */
+    protected function formatTierRangeLabel(array $tier): string
+    {
+        $min = $tier['min'] ?? 0;
+        $max = $tier['max'] ?? null;
+        $isAmount = $this->charge_policy === ChargePolicyEnum::RANGE_AMOUNT;
+
+        $format = fn ($value) => $isAmount
+            ? ecommerce_format_price($value ?? 0)
+            : $this->formatRangeNumber($value).$this->resolveRangeUnitLabel();
+
+        // 첫 구간(시작 0)은 상한만, 마지막 구간(상한 없음)은 시작값만 표기
+        if ((float) $min == 0.0) {
+            return $max === null || $max === '' ? '~' : '~'.$format($max);
+        }
+
+        if ($max === null || $max === '') {
+            return $format($min).'~';
+        }
+
+        return $isAmount
+            ? $format($min).'~'.$format($max)
+            : $this->formatRangeNumber($min).'~'.$format($max);
+    }
+
+    /**
+     * 부과정책에서 구간 단위 라벨을 파생합니다.
+     *
+     * @return string 단위 라벨 (해당 없으면 빈 문자열)
+     */
+    protected function resolveRangeUnitLabel(): string
+    {
+        $key = match ($this->charge_policy) {
+            ChargePolicyEnum::RANGE_QUANTITY => 'quantity',
+            ChargePolicyEnum::RANGE_WEIGHT, ChargePolicyEnum::RANGE_VOLUME_WEIGHT => 'weight',
+            ChargePolicyEnum::RANGE_VOLUME => 'volume',
+            default => null,
+        };
+
+        return $key === null
+            ? ''
+            : __('sirsoft-ecommerce::messages.shipping_policy.fee_summary.range_unit.'.$key);
+    }
+
+    /**
+     * 구간 경계값을 소수 손실 없이 포맷합니다.
+     *
+     * number_format 은 기본 소수 0자리라 0.5kg 이 "1" 로 표시됩니다.
+     *
+     * @param  int|float|string|null  $value  경계값
+     * @return string 포맷된 숫자
+     */
+    protected function formatRangeNumber(int|float|string|null $value): string
+    {
+        $number = (float) ($value ?? 0);
+
+        if (floor($number) == $number) {
+            return number_format($number);
+        }
+
+        // 불필요한 뒤쪽 0 제거 (2.50 → 2.5)
+        return rtrim(rtrim(number_format($number, 3), '0'), '.');
     }
 
     /**
@@ -156,8 +215,13 @@ class ShippingPolicyCountrySetting extends Model
     {
         $unitValue = $this->ranges['unit_value'] ?? 1;
 
+        // 금액당 정책의 단위값은 금액이므로 통화 표기를 붙인다 (그 외는 개/kg/L 로 문구가 단위를 갖는다)
+        $unit = $this->charge_policy === ChargePolicyEnum::PER_AMOUNT
+            ? ecommerce_format_price($unitValue)
+            : $this->formatRangeNumber($unitValue);
+
         return __('sirsoft-ecommerce::messages.shipping_policy.fee_summary.'.$this->charge_policy->value, [
-            'unit' => number_format($unitValue),
+            'unit' => $unit,
             'fee' => ecommerce_format_price($this->base_fee ?? 0),
         ]);
     }
@@ -190,26 +254,12 @@ class ShippingPolicyCountrySetting extends Model
             return null;
         }
 
-        $tiers = $this->ranges['tiers'];
-        $unit = $tiers[0]['unit'] ?? '';
         $result = [];
 
-        foreach ($tiers as $tier) {
-            $min = $tier['min'] ?? 0;
-            $max = $tier['max'] ?? null;
-            $fee = $tier['fee'] ?? 0;
-
-            if ($min === 0) {
-                $range = '~'.number_format($max).$unit;
-            } elseif ($max === null) {
-                $range = number_format($min).$unit.'~';
-            } else {
-                $range = number_format($min).'~'.number_format($max).$unit;
-            }
-
+        foreach ($this->ranges['tiers'] as $tier) {
             $result[] = [
-                'range' => $range,
-                'fee' => ecommerce_format_price($fee),
+                'range' => $this->formatTierRangeLabel($tier),
+                'fee' => ecommerce_format_price($tier['fee'] ?? 0),
             ];
         }
 
@@ -219,7 +269,7 @@ class ShippingPolicyCountrySetting extends Model
     /**
      * 우편번호가 도서산간 지역인지 확인하고 추가배송비를 반환합니다.
      *
-     * @param string|null $zipcode 우편번호
+     * @param  string|null  $zipcode  우편번호
      * @return int 추가배송비 (도서산간 아닌 경우 0)
      */
     public function getExtraFeeForZipcode(?string $zipcode): int
@@ -245,10 +295,12 @@ class ShippingPolicyCountrySetting extends Model
             }
 
             // 범위 지원: "63000-63999"
+            // 자릿수가 다른 우편번호에서 문자열 비교가 오판정하므로 숫자로 비교한다.
             if (preg_match('/^(\d+)-(\d+)$/', $pattern, $matches)) {
-                $start = $matches[1];
-                $end = $matches[2];
-                if ($normalizedZipcode >= $start && $normalizedZipcode <= $end) {
+                $start = (int) $matches[1];
+                $end = (int) $matches[2];
+                $numericZipcode = (int) $normalizedZipcode;
+                if ($numericZipcode >= $start && $numericZipcode <= $end) {
                     return $fee;
                 }
 
@@ -277,7 +329,7 @@ class ShippingPolicyCountrySetting extends Model
     /**
      * 우편번호가 도서산간 지역인지 확인합니다.
      *
-     * @param string|null $zipcode 우편번호
+     * @param  string|null  $zipcode  우편번호
      * @return bool 도서산간 지역 여부
      */
     public function isRemoteArea(?string $zipcode): bool

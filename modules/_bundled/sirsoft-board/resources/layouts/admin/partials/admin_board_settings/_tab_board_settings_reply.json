@@ -212,6 +212,91 @@
                       ]
                     }
                   ]
+                },
+                {
+                  "id": "field_reply_delete_policy",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": ""
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex-center gap-4"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "flex-start gap-2 text-body font-medium flex-1 cursor-pointer"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Input",
+                              "props": {
+                                "type": "checkbox",
+                                "className": "checkbox-aligned",
+                                "checked": "{{(_local.bulkApplyFields ?? []).includes('reply_delete_policy')}}"
+                              },
+                              "actions": [
+                                {
+                                  "type": "change",
+                                  "handler": "setState",
+                                  "params": {
+                                    "target": "local",
+                                    "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('reply_delete_policy') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'reply_delete_policy') : [...(_local.bulkApplyFields ?? []), 'reply_delete_policy']}}"
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "text": "$t:sirsoft-board.admin.settings.fields.reply_delete_policy"
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "P",
+                                  "props": {
+                                    "className": "text-field-hint"
+                                  },
+                                  "text": "$t:sirsoft-board.admin.settings.fields.descriptions.reply_delete_policy"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "composite",
+                          "name": "Select",
+                          "props": {
+                            "name": "basic_defaults.reply_delete_policy",
+                            "options": [
+                              {
+                                "value": "cascade",
+                                "label": "$t:sirsoft-board.admin.settings.options.reply_delete_policy.cascade"
+                              },
+                              {
+                                "value": "block",
+                                "label": "$t:sirsoft-board.admin.settings.options.reply_delete_policy.block"
+                              }
+                            ],
+                            "className": "w-48 flex-shrink-0 text-sm",
+                            "disabled": "{{_computed.isReadOnly}}"
+                          }
+                        }
+                      ]
+                    }
+                  ]
                 }
               ]
             }

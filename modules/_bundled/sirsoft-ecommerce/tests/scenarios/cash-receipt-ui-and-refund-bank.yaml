@@ -57,7 +57,8 @@ axes:
     - free
 
   provider_state:             # 발급 프로바이더 설정 상태
-    - configured              # 슬롯/카드 렌더
+    - configured              # 설정값이 있고 그 프로바이더를 제공하는 확장도 살아 있음 → 슬롯/카드 렌더
+    - dead                    # 설정값은 남았으나 제공 확장이 사라짐 → 미설정과 동일 취급 (A3)
     - not_configured          # 슬롯/카드 전체 미렌더 (DOM 카운트 0)
 
   receipt_type:
@@ -156,6 +157,10 @@ effects:
   - checkout_refund_bank_partial_input_rejected_422
   - checkout_refund_bank_empty_allowed
   - checkout_refund_bank_name_resolved_from_code  # 은행코드 → 은행명 조회 저장
+
+  # 죽은 프로바이더(A3)의 판정·응답 계약은 cash-receipt-dead-provider.yaml 이 소유한다.
+  # 이 매니페스트는 cross product 상한 초과로 effects 검사가 면제되어 있어, 그곳에 두면
+  # 검증되지 않는다. provider_state=dead 축은 UI 렌더 조건으로서 여기 남는다.
 
   # 유저 주문상세 카드 (W-2)
   - mypage_card_hidden_when_not_dbank_or_no_provider

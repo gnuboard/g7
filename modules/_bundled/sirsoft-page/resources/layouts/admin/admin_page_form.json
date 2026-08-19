@@ -1081,7 +1081,7 @@
                                                                 "handler": "toast",
                                                                 "params": {
                                                                     "type": "error",
-                                                                    "message": "$t:sirsoft-page.admin.page.form.validation_error"
+                                                                    "message": "{{error.message ?? '$t:sirsoft-page.admin.page.form.validation_error'}}"
                                                                 }
                                                             }
                                                         ]

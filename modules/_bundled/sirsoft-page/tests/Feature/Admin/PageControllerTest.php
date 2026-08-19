@@ -421,7 +421,9 @@ class PageControllerTest extends FeatureTestCase
      *
      * 썸네일 <img>·다운로드는 토큰을 실을 수 없어 인증 라우트에 물리면 401 로 깨진다.
      * 게시판·이커머스 표준과 동일하게 공개 hash 라우트로 단일화하고, 미발행 콘텐츠
-     * 다운로드 차단은 공개 라우트 내부의 권한 게이트가 담당한다.
+     * 차단은 공개 라우트 내부의 발행상태 게이트가 담당한다(KVE-2026-1914).
+     * 미발행 페이지의 preview URL 은 게이트를 통과할 수 있도록 한시 서명이 실린다
+     * — 무인증 <img> 요청으로도 렌더 가능해야 하기 때문이다.
      */
     public function test_admin_show_returns_public_attachment_urls(): void
     {
@@ -442,10 +444,13 @@ class PageControllerTest extends FeatureTestCase
 
         $response->assertStatus(200);
         $att = $response->json('data.attachments.0');
-        $this->assertSame(
-            "/api/modules/sirsoft-page/pages/attachment/{$attachment->hash}/preview",
+        // 미발행 preview: 공개 hash 라우트 + 한시 서명 (무인증 <img> 렌더 경로)
+        $this->assertStringStartsWith(
+            "/api/modules/sirsoft-page/pages/attachment/{$attachment->hash}/preview?",
             $att['preview_url']
         );
+        $this->assertStringContainsString('signature=', $att['preview_url']);
+        // download 는 인증 fetch(blob) 경로이므로 무서명 공개 hash 라우트 유지
         $this->assertSame(
             "/api/modules/sirsoft-page/pages/attachment/{$attachment->hash}",
             $att['download_url']

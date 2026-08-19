@@ -6,6 +6,7 @@ use App\Extension\HookManager;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
+use Modules\Sirsoft\Ecommerce\Exceptions\ProductLabelOperationException;
 use Modules\Sirsoft\Ecommerce\Models\ProductLabel;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductLabelRepositoryInterface;
 
@@ -21,7 +22,7 @@ class ProductLabelService
     /**
      * 라벨 목록 조회
      *
-     * @param array $filters 필터 조건
+     * @param  array  $filters  필터 조건
      * @return Collection
      */
     public function getAllLabels(array $filters = []): Collection
@@ -46,7 +47,7 @@ class ProductLabelService
     /**
      * 라벨 상세 조회
      *
-     * @param int $id 라벨 ID
+     * @param  int  $id  라벨 ID
      * @return ProductLabel|null
      */
     public function getLabel(int $id): ?ProductLabel
@@ -80,7 +81,7 @@ class ProductLabelService
     /**
      * 라벨 생성
      *
-     * @param array $data 라벨 데이터
+     * @param  array  $data  라벨 데이터
      * @return ProductLabel
      */
     public function createLabel(array $data): ProductLabel
@@ -107,16 +108,17 @@ class ProductLabelService
     /**
      * 라벨 수정
      *
-     * @param int $id 라벨 ID
-     * @param array $data 수정할 데이터
+     * @param  int  $id  라벨 ID
+     * @param  array  $data  수정할 데이터
      * @return ProductLabel
+     *
      * @throws \Exception
      */
     public function updateLabel(int $id, array $data): ProductLabel
     {
         $label = $this->repository->findById($id);
 
-        if (!$label) {
+        if (! $label) {
             throw (new ModelNotFoundException)->setModel(ProductLabel::class, $id);
         }
 
@@ -145,15 +147,16 @@ class ProductLabelService
     /**
      * 라벨 상태 토글
      *
-     * @param int $id 라벨 ID
+     * @param  int  $id  라벨 ID
      * @return ProductLabel
+     *
      * @throws \Exception
      */
     public function toggleStatus(int $id): ProductLabel
     {
         $label = $this->repository->findById($id);
 
-        if (!$label) {
+        if (! $label) {
             throw (new ModelNotFoundException)->setModel(ProductLabel::class, $id);
         }
 
@@ -162,7 +165,7 @@ class ProductLabelService
 
         $label = DB::transaction(function () use ($label) {
             return $this->repository->update($label->id, [
-                'is_active' => !$label->is_active,
+                'is_active' => ! $label->is_active,
             ]);
         });
 
@@ -175,15 +178,16 @@ class ProductLabelService
     /**
      * 라벨 삭제
      *
-     * @param int $id 라벨 ID
+     * @param  int  $id  라벨 ID
      * @return array 삭제 결과 정보
+     *
      * @throws \Exception
      */
     public function deleteLabel(int $id): array
     {
         $label = $this->repository->findById($id);
 
-        if (!$label) {
+        if (! $label) {
             throw (new ModelNotFoundException)->setModel(ProductLabel::class, $id);
         }
 
@@ -192,9 +196,9 @@ class ProductLabelService
 
         // 연결된 상품이 있으면 삭제 차단
         if ($productsCount > 0) {
-            throw new \Exception(__('sirsoft-ecommerce::exceptions.label_has_products', [
+            throw new ProductLabelOperationException('sirsoft-ecommerce::exceptions.label_has_products', [
                 'count' => $productsCount,
-            ]));
+            ]);
         }
 
         // Before 훅

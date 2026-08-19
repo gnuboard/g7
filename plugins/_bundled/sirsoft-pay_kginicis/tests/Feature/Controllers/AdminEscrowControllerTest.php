@@ -110,6 +110,133 @@ class AdminEscrowControllerTest extends PluginTestCase
         $this->assertArrayNotHasKey('buyerTel', $storedPgResponse);
     }
 
+    /**
+     * 운송장번호 누락은 EscrowDeliveryRegisterRequest 가 표준 422 로 차단하고,
+     * 메시지는 다국어 키(escrow.invoice_required)의 ko 문구여야 한다
+     * (종전 컨트롤러 인라인 한글 하드코딩 → 다국어 키 이관 회귀 방지).
+     */
+    public function test_escrow_delivery_register_rejects_missing_invoice_with_localized_message(): void
+    {
+
+        $this->createEscrowPayment('ORD-ESCROW-VAL-001');
+
+        $mock = $this->createMock(KgInicisApiService::class);
+        $mock->expects($this->never())->method('useEscrowCredentials');
+        $mock->expects($this->never())->method('registerEscrowDelivery');
+        $this->app->instance(KgInicisApiService::class, $mock);
+
+        $response = $this->actingAs($this->adminUser)
+            ->withHeaders(['Accept-Language' => 'ko'])
+            ->postJson('/api/plugins/sirsoft-pay_kginicis/admin/orders/ORD-ESCROW-VAL-001/escrow-delivery', [
+                'ex_code' => 'hanjin',
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['invoice'])
+            ->assertJsonPath('errors.invoice.0', '운송장번호를 입력해주세요.');
+    }
+
+    /**
+     * 코드표(COURIER_CODES) 밖의 택배사 코드는 Rule::in 이 422 로 차단해야 한다.
+     */
+    public function test_escrow_delivery_register_rejects_unknown_courier_code(): void
+    {
+
+        $this->createEscrowPayment('ORD-ESCROW-VAL-002');
+
+        $mock = $this->createMock(KgInicisApiService::class);
+        $mock->expects($this->never())->method('registerEscrowDelivery');
+        $this->app->instance(KgInicisApiService::class, $mock);
+
+        $response = $this->actingAs($this->adminUser)
+            ->withHeaders(['Accept-Language' => 'ko'])
+            ->postJson('/api/plugins/sirsoft-pay_kginicis/admin/orders/ORD-ESCROW-VAL-002/escrow-delivery', [
+                'invoice' => 'INV-001',
+                'ex_code' => 'nope',
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['ex_code'])
+            ->assertJsonPath('errors.ex_code.0', '택배사를 선택해주세요.');
+    }
+
+    /**
+     * 수령인 필드 상한 초과(이름 31자 / 전화 21자 / 우편 11자 / 주소 201자)는
+     * KG 이니시스 연동 스펙 상한을 넘으므로 422 로 차단하고 PG 호출은 없어야 한다.
+     */
+    public function test_escrow_delivery_register_rejects_overlong_recv_fields(): void
+    {
+        $this->createEscrowPayment('ORD-ESCROW-VAL-003');
+
+        $mock = $this->createMock(KgInicisApiService::class);
+        $mock->expects($this->never())->method('registerEscrowDelivery');
+        $this->app->instance(KgInicisApiService::class, $mock);
+
+        $response = $this->actingAs($this->adminUser)
+            ->postJson('/api/plugins/sirsoft-pay_kginicis/admin/orders/ORD-ESCROW-VAL-003/escrow-delivery', [
+                'invoice' => 'INV-001',
+                'ex_code' => 'hanjin',
+                'recv_name' => str_repeat('가', 31),
+                'recv_tel' => str_repeat('0', 21),
+                'recv_post' => str_repeat('1', 11),
+                'recv_addr' => str_repeat('가', 201),
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors([
+                'recv_name',
+                'recv_tel',
+                'recv_post',
+                'recv_addr',
+            ]);
+    }
+
+    /**
+     * 배열 주입(`dcnf_name[]=x`)은 EscrowDenyConfirmRequest 의 string 규칙이 422 로
+     * 차단하고 PG 구매거절확인 API 는 호출되지 않아야 한다.
+     */
+    public function test_escrow_deny_confirm_rejects_array_dcnf_name(): void
+    {
+        $this->createEscrowPayment('ORD-ESCROW-DNCF-VAL-001', [
+            'escrow_confirm' => ['type' => 'deny'],
+        ]);
+
+        $mock = $this->createMock(KgInicisApiService::class);
+        $mock->expects($this->never())->method('useEscrowCredentials');
+        $mock->expects($this->never())->method('denyConfirmEscrow');
+        $this->app->instance(KgInicisApiService::class, $mock);
+
+        $response = $this->actingAs($this->adminUser)
+            ->postJson('/api/plugins/sirsoft-pay_kginicis/admin/orders/ORD-ESCROW-DNCF-VAL-001/escrow-deny-confirm', [
+                'dcnf_name' => ['x'],
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['dcnf_name']);
+    }
+
+    /**
+     * 확인자명 상한(20자) 초과는 422 로 차단해야 한다 (이니시스 확인자명 20자 스펙).
+     */
+    public function test_escrow_deny_confirm_rejects_overlong_dcnf_name(): void
+    {
+        $this->createEscrowPayment('ORD-ESCROW-DNCF-VAL-002', [
+            'escrow_confirm' => ['type' => 'deny'],
+        ]);
+
+        $mock = $this->createMock(KgInicisApiService::class);
+        $mock->expects($this->never())->method('denyConfirmEscrow');
+        $this->app->instance(KgInicisApiService::class, $mock);
+
+        $response = $this->actingAs($this->adminUser)
+            ->postJson('/api/plugins/sirsoft-pay_kginicis/admin/orders/ORD-ESCROW-DNCF-VAL-002/escrow-deny-confirm', [
+                'dcnf_name' => str_repeat('가', 21),
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['dcnf_name']);
+    }
+
     private function createEscrowPayment(string $orderNumber, array $paymentMeta = []): OrderPayment
     {
         $order = OrderFactory::new()->paid()->create([

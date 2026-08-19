@@ -6,6 +6,8 @@ use App\Extension\HookManager;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Modules\Sirsoft\Ecommerce\Enums\CouponIssueCondition;
+use Modules\Sirsoft\Ecommerce\Enums\CouponIssueMethod;
 use Modules\Sirsoft\Ecommerce\Enums\CouponIssueRecordStatus;
 use Modules\Sirsoft\Ecommerce\Enums\CouponTargetType;
 use Modules\Sirsoft\Ecommerce\Exceptions\CouponNotIssuableException;
@@ -322,6 +324,10 @@ class UserCouponService
                 throw new CouponNotIssuableException('not_downloadable');
             }
 
+            // 다운로드 경로 전용 게이트(발급 방법/조건/유효기간) — getDownloadableCoupons 목록 조건과 대칭.
+            // assertIssuable 은 관리자 직접발급(CouponService::issueDirectly)과 공유하므로 여기에 두지 않는다.
+            $this->assertDownloadable($coupon);
+
             // 발급 가능 조건 + per_user_limit 검증 (위반 시 사유별 예외)
             $this->assertIssuable($coupon);
             $this->assertWithinUserLimit($coupon, $userId);
@@ -333,6 +339,32 @@ class UserCouponService
 
             return $couponIssue;
         });
+    }
+
+    /**
+     * 쿠폰이 사용자 다운로드 경로로 발급 가능한지 검증합니다. 위반 시 사유별 예외를 던집니다.
+     *
+     * 발급 방법(다운로드)·발급 조건(수동)·유효기간(valid_to) 만료 여부를 검사하며,
+     * `CouponRepository::getDownloadableCoupons` 의 목록 조건과 대칭입니다. 이 게이트가
+     * 없으면 자동/관리자 발급 전용 쿠폰이나 만료 쿠폰의 id 를 직접 지정해 다운로드할 수 있습니다.
+     *
+     * @param  Coupon  $coupon  다운로드 대상 쿠폰
+     *
+     * @throws CouponNotIssuableException 다운로드 불가(발급 방법/조건 불일치) 또는 만료 시
+     */
+    public function assertDownloadable(Coupon $coupon): void
+    {
+        if ($coupon->issue_method !== CouponIssueMethod::DOWNLOAD) {
+            throw new CouponNotIssuableException('not_downloadable');
+        }
+
+        if ($coupon->issue_condition !== CouponIssueCondition::MANUAL) {
+            throw new CouponNotIssuableException('not_downloadable');
+        }
+
+        if ($coupon->valid_to !== null && $coupon->valid_to->isPast()) {
+            throw new CouponNotIssuableException('expired');
+        }
     }
 
     /**

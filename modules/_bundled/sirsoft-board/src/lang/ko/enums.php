@@ -14,6 +14,12 @@ return [
         'always' => '필수 사용',
     ],
 
+    // 답글 삭제 정책
+    'reply_delete_policy' => [
+        'block' => '삭제 차단 (답글이 있으면 원글 삭제 불가)',
+        'cascade' => '함께 삭제 (원글 삭제 시 답글도 함께 삭제)',
+    ],
+
     // 정렬 방향
     'order_direction' => [
         'asc' => '오름차순',

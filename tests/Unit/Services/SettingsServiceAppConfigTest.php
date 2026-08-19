@@ -109,6 +109,13 @@ class SettingsServiceAppConfigTest extends TestCase
     /**
      * getAppConfigForFrontend()가 core.frontend.filter_app_config 훅으로 확장이 주입한 값을
      * appConfig 에 반영하는지 테스트합니다. (예: 이커머스 모듈이 요청 기기 유형 isIos 를 주입)
+     *
+     * 체크아웃 브랜드 마크 시나리오의 iOS 게이팅 체인 중 "모듈이 감지한 기기 정보가 코어
+     * appConfig 를 거쳐 프론트로 전달되는" 구간을 이 테스트가 떠받친다.
+     *
+     * @scenario requires_ios=true, device=ios
+     *
+     * @effects is_ios_flows_to_global_appconfig
      */
     public function test_get_app_config_applies_frontend_filter_hook(): void
     {

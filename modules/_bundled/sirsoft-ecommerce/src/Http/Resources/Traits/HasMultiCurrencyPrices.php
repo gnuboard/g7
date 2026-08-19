@@ -21,6 +21,14 @@ trait HasMultiCurrencyPrices
     protected ?string $orderCurrencyCode = null;
 
     /**
+     * 부모 주문 리소스가 주입한 주문 시점 통화 스냅샷 (공개 #91 후속).
+     *
+     * 소수 자릿수를 현재 설정이 아니라 주문 시점 값으로 고정하기 위해 전파한다.
+     * null 이면 현재 설정으로 폴백 — 상품 등 카탈로그 경로는 그것이 정답이다.
+     */
+    protected ?array $currencySnapshot = null;
+
+    /**
      * 주문 시점 기준 통화 코드를 주입합니다 (부모 → 자식 리소스 전파).
      *
      * @param  string|null  $currencyCode  주문 시점 기준 통화 코드
@@ -29,6 +37,23 @@ trait HasMultiCurrencyPrices
     public function withOrderCurrency(?string $currencyCode): static
     {
         $this->orderCurrencyCode = $currencyCode;
+
+        return $this;
+    }
+
+    /**
+     * 주문 시점 통화 스냅샷을 주입합니다 (부모 → 자식 리소스 전파).
+     *
+     * 관리자가 통화를 삭제하면 현재 설정에서 사라져 자릿수가 폴백 2자리로 바뀐다.
+     * 그러면 0자리 통화로 결제된 과거 주문의 표기가 `¥14,835` → `¥14,835.00` 이 되고,
+     * 3자리 이상 통화는 표시 금액이 절사된다. 스냅샷이 있으면 그것을 SSoT 로 삼는다.
+     *
+     * @param  array|null  $snapshot  주문의 `currency_snapshot`
+     * @return $this 메서드 체이닝을 위한 자기 자신
+     */
+    public function withCurrencySnapshot(?array $snapshot): static
+    {
+        $this->currencySnapshot = $snapshot;
 
         return $this;
     }
@@ -302,11 +327,20 @@ trait HasMultiCurrencyPrices
     /**
      * 통화의 소수 자릿수를 반환합니다.
      *
+     * 주문 시점 스냅샷이 주입돼 있고 그 통화의 자릿수를 박제해 두었으면 그것이 SSoT 다
+     * (공개 #91 후속 — 삭제된 통화가 현재 설정에 없어 폴백 2자리로 바뀌는 것을 막는다).
+     * 스냅샷이 없으면(상품 등 카탈로그 경로) 현재 설정을 그대로 따른다.
+     *
      * @param  string  $code  통화 코드
      * @return int 소수 자릿수 (기본값: 2)
      */
     protected function getDecimalPlacesForCurrency(string $code): int
     {
+        $snapshotPlaces = $this->currencySnapshot['exchange_rates'][$code]['decimal_places'] ?? null;
+        if ($snapshotPlaces !== null) {
+            return (int) $snapshotPlaces;
+        }
+
         $currencies = $this->getCurrencySettings();
 
         foreach ($currencies as $currency) {

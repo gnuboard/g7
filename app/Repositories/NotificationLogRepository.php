@@ -6,6 +6,7 @@ use App\Contracts\Repositories\NotificationLogRepositoryInterface;
 use App\Enums\NotificationLogStatus;
 use App\Models\NotificationLog;
 use App\Models\User;
+use App\Repositories\Concerns\DeletesInBatches;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Repositories\Concerns\ResolvesSortSpec;
 use App\Support\Query\KeysetPaginator;
@@ -17,6 +18,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 class NotificationLogRepository implements NotificationLogRepositoryInterface
 {
+    use DeletesInBatches;
     use PaginatesWithDeferredJoin;
     use ResolvesSortSpec;
 
@@ -96,6 +98,22 @@ class NotificationLogRepository implements NotificationLogRepositoryInterface
     public function bulkDelete(array $ids): int
     {
         return NotificationLog::whereIn('id', $ids)->delete();
+    }
+
+    /**
+     * 보존 기간이 지난 발송 이력을 삭제합니다.
+     *
+     * 보존 기간 하한(1일)은 이 계층이 소유한다 — 파기는 되돌릴 수 없으므로 호출자마다
+     * 다시 막지 않고 실제로 지우는 자리에서 한 번 막는다.
+     *
+     * @param  int  $days  보존 기간 (일)
+     * @return int 삭제된 건수
+     */
+    public function deleteOlderThan(int $days): int
+    {
+        return $this->deleteInBatches(
+            NotificationLog::where('created_at', '<', now()->subDays(max(1, $days)))
+        );
     }
 
     /**

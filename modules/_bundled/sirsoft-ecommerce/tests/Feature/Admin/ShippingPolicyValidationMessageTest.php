@@ -334,4 +334,228 @@ class ShippingPolicyValidationMessageTest extends ModuleTestCase
 
         $response->assertStatus(422);
     }
+
+    // ───────── #94: 구간 필수값·경계 규칙 ─────────
+
+    #[Test]
+    public function test_range_policy_without_tiers_is_rejected(): void
+    {
+        // 구간이 없으면 모든 주문이 조용히 0원(무료배송)이 된다
+        $cs = $this->krSetting([
+            'charge_policy' => 'range_quantity',
+            'base_fee' => 0,
+            'ranges' => ['type' => 'quantity', 'tiers' => []],
+        ]);
+
+        $response = $this->store($this->payload([$cs]));
+
+        $response->assertStatus(422);
+        $this->assertNoRawKeys($response);
+        $this->assertStringContainsString('구간을 1개 이상', implode(' ', $this->allMessages($response)));
+    }
+
+    #[Test]
+    public function test_per_unit_policy_without_unit_value_is_rejected(): void
+    {
+        $cs = $this->krSetting([
+            'charge_policy' => 'per_weight',
+            'base_fee' => 1000,
+            'ranges' => ['type' => 'per_weight'],
+        ]);
+
+        $response = $this->store($this->payload([$cs]));
+
+        $response->assertStatus(422);
+        $this->assertNoRawKeys($response);
+        $this->assertStringContainsString('단위값', implode(' ', $this->allMessages($response)));
+    }
+
+    #[Test]
+    public function test_conditional_free_without_threshold_is_rejected(): void
+    {
+        $cs = $this->krSetting([
+            'charge_policy' => 'conditional_free',
+            'base_fee' => 3000,
+            'free_threshold' => null,
+        ]);
+
+        $response = $this->store($this->payload([$cs]));
+
+        $response->assertStatus(422);
+        $this->assertNoRawKeys($response);
+        $this->assertStringContainsString('무료배송 기준금액', implode(' ', $this->allMessages($response)));
+    }
+
+    #[Test]
+    public function test_api_policy_with_zero_base_fee_is_rejected(): void
+    {
+        // API 폴백 배송비가 0 이면 외부 API 장애가 곧 무음 무료배송이 된다
+        $cs = $this->krSetting([
+            'charge_policy' => 'api',
+            'base_fee' => 0,
+            'api_endpoint' => 'https://example.com/calc',
+        ]);
+
+        $response = $this->store($this->payload([$cs]));
+
+        $response->assertStatus(422);
+        $this->assertNoRawKeys($response);
+    }
+
+    #[Test]
+    public function test_middle_tier_without_max_is_rejected(): void
+    {
+        // 중간 구간의 종료값이 비면 뒤 구간이 영구히 도달 불가해진다
+        $cs = $this->krSetting([
+            'charge_policy' => 'range_weight',
+            'base_fee' => 0,
+            'ranges' => [
+                'type' => 'weight',
+                'tiers' => [
+                    ['min' => 0, 'max' => null, 'fee' => 3000],
+                    ['min' => 2, 'max' => null, 'fee' => 5000],
+                ],
+            ],
+        ]);
+
+        $response = $this->store($this->payload([$cs]));
+
+        $response->assertStatus(422);
+        $this->assertNoRawKeys($response);
+        $this->assertStringContainsString('종료값을 입력', implode(' ', $this->allMessages($response)));
+    }
+
+    #[Test]
+    public function test_continuous_range_accepts_next_min_equal_to_previous_max(): void
+    {
+        $cs = $this->krSetting([
+            'charge_policy' => 'range_weight',
+            'base_fee' => 0,
+            'ranges' => [
+                'type' => 'weight',
+                'tiers' => [
+                    ['min' => 0, 'max' => 2, 'fee' => 3000],
+                    ['min' => 2, 'max' => null, 'fee' => 5000],
+                ],
+            ],
+        ]);
+
+        $this->store($this->payload([$cs]))->assertStatus(201);
+    }
+
+    #[Test]
+    public function test_continuous_range_rejects_legacy_max_plus_one_gap(): void
+    {
+        // 구 규칙(max + 1)은 2 초과 3 미만 구간에 간극을 만든다
+        $cs = $this->krSetting([
+            'charge_policy' => 'range_weight',
+            'base_fee' => 0,
+            'ranges' => [
+                'type' => 'weight',
+                'tiers' => [
+                    ['min' => 0, 'max' => 2, 'fee' => 3000],
+                    ['min' => 3, 'max' => null, 'fee' => 5000],
+                ],
+            ],
+        ]);
+
+        $response = $this->store($this->payload([$cs]));
+
+        $response->assertStatus(422);
+        $this->assertStringContainsString('연속', implode(' ', $this->allMessages($response)));
+    }
+
+    #[Test]
+    public function test_continuous_range_accepts_decimal_boundary(): void
+    {
+        // 소수 구간(2.5kg)은 정상 설정이다 — 구 max+1 규칙에서는 저장 자체가 불가했다
+        $cs = $this->krSetting([
+            'charge_policy' => 'range_weight',
+            'base_fee' => 0,
+            'ranges' => [
+                'type' => 'weight',
+                'tiers' => [
+                    ['min' => 0, 'max' => 2.5, 'fee' => 3000],
+                    ['min' => 2.5, 'max' => null, 'fee' => 5000],
+                ],
+            ],
+        ]);
+
+        $this->store($this->payload([$cs]))->assertStatus(201);
+    }
+
+    #[Test]
+    public function test_discrete_quantity_range_accepts_max_plus_one(): void
+    {
+        // 수량은 이산형이라 "5개 다음은 6개"가 맞다 (공개 #94 본문 설정)
+        $cs = $this->krSetting([
+            'charge_policy' => 'range_quantity',
+            'base_fee' => 0,
+            'ranges' => [
+                'type' => 'quantity',
+                'tiers' => [
+                    ['min' => 0, 'max' => 5, 'fee' => 3000],
+                    ['min' => 6, 'max' => null, 'fee' => 5000],
+                ],
+            ],
+        ]);
+
+        $this->store($this->payload([$cs]))->assertStatus(201);
+    }
+
+    #[Test]
+    public function test_discrete_quantity_range_rejects_fractional_boundary(): void
+    {
+        $cs = $this->krSetting([
+            'charge_policy' => 'range_quantity',
+            'base_fee' => 0,
+            'ranges' => [
+                'type' => 'quantity',
+                'tiers' => [
+                    ['min' => 0, 'max' => 5.5, 'fee' => 3000],
+                    ['min' => 6.5, 'max' => null, 'fee' => 5000],
+                ],
+            ],
+        ]);
+
+        $response = $this->store($this->payload([$cs]));
+
+        $response->assertStatus(422);
+        $this->assertStringContainsString('정수', implode(' ', $this->allMessages($response)));
+    }
+
+    // ───────── #94: 도서산간 우편번호 형식 ─────────
+
+    #[Test]
+    public function test_extra_fee_accepts_three_supported_zipcode_formats(): void
+    {
+        $cs = $this->krSetting([
+            'extra_fee_enabled' => true,
+            'extra_fee_settings' => [
+                ['zipcode' => '63000', 'fee' => 3000, 'region' => '정확일치'],
+                ['zipcode' => '63000-63644', 'fee' => 3000, 'region' => '범위'],
+                ['zipcode' => '63*', 'fee' => 3000, 'region' => '접두 와일드카드'],
+            ],
+        ]);
+
+        $this->store($this->payload([$cs]))->assertStatus(201);
+    }
+
+    #[Test]
+    public function test_extra_fee_rejects_unsupported_zipcode_format(): void
+    {
+        // 어떤 우편번호에도 매칭되지 않아 추가배송비가 조용히 누락된다
+        $cs = $this->krSetting([
+            'extra_fee_enabled' => true,
+            'extra_fee_settings' => [
+                ['zipcode' => '제주 63*', 'fee' => 3000, 'region' => '오형식'],
+            ],
+        ]);
+
+        $response = $this->store($this->payload([$cs]));
+
+        $response->assertStatus(422);
+        $this->assertNoRawKeys($response);
+        $this->assertStringContainsString('우편번호', implode(' ', $this->allMessages($response)));
+    }
 }

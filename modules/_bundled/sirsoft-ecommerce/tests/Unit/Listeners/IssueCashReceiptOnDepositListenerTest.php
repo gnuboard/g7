@@ -18,6 +18,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderCashReceipt;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Services\CashReceiptService;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
+use Modules\Sirsoft\Ecommerce\Tests\Concerns\RegistersTestCashReceiptProvider;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -29,6 +30,8 @@ use PHPUnit\Framework\Attributes\Test;
  */
 class IssueCashReceiptOnDepositListenerTest extends ModuleTestCase
 {
+    use RegistersTestCashReceiptProvider;
+
     private const PROVIDER = 'tosspayments';
 
     private const IDENTIFIER = '01012345678';
@@ -48,6 +51,7 @@ class IssueCashReceiptOnDepositListenerTest extends ModuleTestCase
         $this->receiptSequence = 0;
         $this->issueCalls = [];
 
+        $this->registerCashReceiptProvider(self::PROVIDER);
         app(EcommerceSettingsService::class)->setSetting('order_settings.cash_receipt_provider', self::PROVIDER);
     }
 

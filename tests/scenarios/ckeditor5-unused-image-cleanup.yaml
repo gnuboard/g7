@@ -1,0 +1,167 @@
+feature: 에디터 업로드 이미지 미참조 정리 (CKEditor5 Unused Image Cleanup)
+
+description: |
+  에디터로 올렸지만 어떤 콘텐츠에서도 쓰이지 않는 이미지를 파일·기록 함께 회수한다.
+  공개 이슈 #115 — 종전에는 회수 경로가 플러그인 언인스톨(테이블 드롭)뿐이었다.
+
+  핵심 동작:
+    - 참조 판정 토큰 2종: hash(API 폴백 URL형) + 저장 파일명(디스크 직접 URL형).
+      한쪽만 검사하면 다른 형태로 저장된 이미지를 미참조로 오판해 삭제한다.
+    - 참조 소스는 코어 6개 + 확장이 filter 훅으로 등록(게시글/페이지/상품 설명).
+      로그 사본 테이블은 제외 — 소스로 삼으면 "로그 삭제 → 이미지 고아화" 역전이 생긴다.
+    - 삭제 순서는 파일 먼저, 기록 나중. 파일이 이미 없으면 고아 기록이므로 기록만 지운다
+      (그러지 않으면 매 회차 같은 행을 재시도하는 루프가 된다).
+    - 자동 정리는 기본 꺼짐(운영자 옵트인). 스케줄 게이트가 설정 조회 실패 시 true 로
+      폴백하므로 커맨드가 `--scheduled` 에서 false 폴백으로 재확인한다.
+    - 관리 화면은 참조 상태를 저장하지 않고 조회 시 판정한다(참조는 수시 변동).
+      기본 목록은 현재 페이지만, 참조 필터는 최신 500건 윈도우 + scan_limited 고지.
+
+# axes 는 "한 업로드 행의 정리 여부를 가르는 판정 입력" 만 둔다 — 이 셋은 한 테스트가
+# 동시에 지정하는 값이라 조합마다 실제 케이스가 대응된다.
+# 실행 경로(스케줄 게이트 / 수동 CLI / 관리 화면)와 dry-run 은 판정과 직교한 흐름이라
+# sub_flows 로 분리했다. 한 축으로 묶으면 "화면 삭제 + dry-run" 같은 존재하지 않는 조합이
+# cross product 에 생기고, 그 조합에 @scenario 를 붙이는 순간 마킹이 사실이 아니게 된다.
+axes:
+  url_variant: [hash_api_fallback, direct_url_uuid, absent]
+  age: [within_retention, past_retention]
+  disk_state: [default_local, secondary_disk, file_missing]
+
+exclusions:
+  - { url_variant: hash_api_fallback, disk_state: file_missing, reason: "참조된 이미지는 삭제 대상이 아니라 파일 부재 분기(고아 기록 수거)에 도달하지 않는다" }
+  - { url_variant: direct_url_uuid, disk_state: file_missing, reason: "동일" }
+  - { url_variant: hash_api_fallback, age: within_retention, reason: "보존기간 안이면 참조 판정 전에 후보에서 빠진다 — 참조 변종은 경과분에서만 의미가 있다" }
+  - { url_variant: direct_url_uuid, age: within_retention, reason: "동일" }
+  - { url_variant: hash_api_fallback, disk_state: secondary_disk, reason: "참조 보존은 파일을 건드리지 않으므로 disk 축과 무관 — 기본 디스크 1건으로 충분" }
+  - { url_variant: direct_url_uuid, disk_state: secondary_disk, reason: "동일" }
+  - { age: within_retention, disk_state: secondary_disk, reason: "보존기간 안이면 후보 조회 단계에서 빠져 파일 접근에 도달하지 않는다 — disk 상태가 결과를 바꾸지 않는다" }
+  - { age: within_retention, disk_state: file_missing, reason: "동일" }
+
+effects:
+  # 참조 판정
+  - reference_sources_default_core_only
+  - reference_sources_hook_append
+  - reference_match_hash_api_url
+  - reference_match_direct_url
+  - reference_unreferenced
+  - reference_like_escape
+  - reference_invalid_source_skipped
+  - reference_invalid_source_warns
+  - reference_map_batch
+  - reference_source_listener_subscribes_as_filter
+  - reference_source_listener_appends_without_dropping
+  - reference_source_listener_schema_contract
+  # 정리 동작
+  - prune_deletes_file_and_record
+  - prune_keeps_referenced_hash_form
+  - prune_keeps_referenced_direct_url
+  - prune_keeps_within_retention
+  - prune_dry_run_no_delete
+  - prune_limit_oldest_first
+  - prune_missing_file_removes_record
+  - prune_delete_failure_keeps_record
+  - prune_logs_run_summary
+  - prune_respects_row_disk
+  - delete_upload_shared_by_ui_and_command
+  # 스케줄 게이트 (인수 기준: 설정을 만지지 않은 사이트에서 자동 삭제 0)
+  - schedule_gate_off_by_default
+  - schedule_gate_off_explicit
+  - schedule_gate_on
+  - retention_disabled_guard
+  - days_option_overrides_setting
+  - manual_run_dry_run_no_delete
+  - manual_run_ignores_toggle
+  # 관리 API
+  - admin_index_lists_uploads
+  - admin_index_column_pruning
+  - admin_index_referenced_badge
+  - admin_index_unreferenced_filter
+  - admin_index_scan_window_limited
+  - admin_index_rejects_unknown_sort
+  - admin_index_requires_read_permission
+  - admin_index_requires_authentication
+  - admin_destroy_removes_file_and_record
+  - admin_destroy_not_found
+  - admin_destroy_requires_delete_permission
+  - admin_bulk_delete_removes_selected
+  - admin_bulk_delete_rejects_empty
+  - admin_bulk_delete_rejects_unknown_id
+  # 화면 계약
+  - admin_ui_selection_scope_page
+  - admin_ui_merge_query
+  - admin_ui_sort_subset
+  - admin_ui_reference_badge
+  - settings_cleanup_toggle_default_off
+  - settings_cleanup_keys_declared
+  - settings_cleanup_retention_round_trip
+
+sub_flows:
+  - id: schedule_gate
+    description: |
+      자동 정리는 사용자 파일을 지우므로 기본 꺼짐이다. 스케줄 등록부의 enabled_config 게이트는
+      설정 조회가 실패하면 true 로 폴백하므로, 커맨드가 `--scheduled` 에서 같은 설정을 false
+      폴백으로 재확인한다. 인수 기준은 "설정을 만지지 않은 사이트에서 자동 삭제 0".
+    effects:
+      - schedule_gate_off_by_default
+      - schedule_gate_off_explicit
+      - schedule_gate_on
+      - manual_run_ignores_toggle
+  - id: retention_resolution
+    description: 보존기간 해석 순서(옵션 > 플러그인 설정 > 기본 30일)와 1일 미만 자기 차단
+    effects:
+      - retention_disabled_guard
+      - days_option_overrides_setting
+  - id: dry_run
+    description: 판정만 수행하고 파일·기록을 건드리지 않는 미리보기 경로
+    effects:
+      - prune_dry_run_no_delete
+      - manual_run_dry_run_no_delete
+  - id: admin_api
+    description: 관리 화면이 쓰는 조회·단건 삭제·일괄 삭제 API 와 권한 경계
+    effects:
+      - admin_index_lists_uploads
+      - admin_index_referenced_badge
+      - admin_index_unreferenced_filter
+      - admin_index_scan_window_limited
+      - admin_index_rejects_unknown_sort
+      - admin_index_requires_read_permission
+      - admin_index_requires_authentication
+      - admin_destroy_removes_file_and_record
+      - admin_destroy_not_found
+      - admin_destroy_requires_delete_permission
+      - admin_bulk_delete_removes_selected
+      - admin_bulk_delete_rejects_empty
+      - admin_bulk_delete_rejects_unknown_id
+      - delete_upload_shared_by_ui_and_command
+  - id: reference_source_registry
+    description: 참조 소스 확장점(filter 훅)과 불량 선언 방어
+    effects:
+      - reference_sources_default_core_only
+      - reference_sources_hook_append
+      - reference_invalid_source_skipped
+      - reference_invalid_source_warns
+      - reference_map_batch
+      - reference_source_listener_subscribes_as_filter
+      - reference_source_listener_appends_without_dropping
+      - reference_source_listener_schema_contract
+  - id: admin_screen_contract
+    description: 화면이 지키기로 한 계약 (선택 범위 / 목록 상태 승계 / 정렬 부분집합 / 설정 기본값)
+    effects:
+      - admin_ui_selection_scope_page
+      - admin_ui_merge_query
+      - admin_ui_sort_subset
+      - admin_ui_reference_badge
+      - settings_cleanup_toggle_default_off
+      - settings_cleanup_keys_declared
+      - settings_cleanup_retention_round_trip
+
+test_files:
+  - plugins/_bundled/sirsoft-ckeditor5/tests/Unit/Services/ImageReferenceScanServiceTest.php
+  - plugins/_bundled/sirsoft-ckeditor5/tests/Unit/Services/ImageCleanupServiceTest.php
+  - plugins/_bundled/sirsoft-ckeditor5/tests/Feature/Console/PruneUnusedImagesCommandTest.php
+  - plugins/_bundled/sirsoft-ckeditor5/tests/Feature/Http/Controllers/Admin/ImageUploadAdminControllerTest.php
+  - plugins/_bundled/sirsoft-ckeditor5/resources/js/__tests__/layouts/ckeditor5Uploads.test.tsx
+  - plugins/_bundled/sirsoft-ckeditor5/resources/js/__tests__/layouts/pluginSettingsCleanup.test.tsx
+  - plugins/_bundled/sirsoft-ckeditor5/tests/Playwright/specs/admin/uploads-admin.spec.ts
+  - modules/_bundled/sirsoft-board/tests/Unit/Listeners/Ckeditor5ReferenceSourcesListenerTest.php
+  - modules/_bundled/sirsoft-page/tests/Unit/Listeners/Ckeditor5ReferenceSourcesListenerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/Ckeditor5ReferenceSourcesListenerTest.php

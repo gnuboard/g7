@@ -38,9 +38,15 @@ class PageResource extends BaseApiResource
                 'uuid' => $this->updater->uuid,
                 'name' => $this->updater->name,
             ]),
+            // 미발행 페이지 첨부는 한시 서명 preview URL 로 직렬화한다.
+            // 이 리소스는 게이트(pages.read 권한 미들웨어)를 통과한 관리자 응답에만 쓰이므로
+            // 서명 발급이 곧 게이트 통과 자격의 위임이다. 발행 페이지는 무서명 공개 URL 유지.
             'attachments' => $this->whenLoaded(
                 'attachments',
-                fn () => PageAttachmentResource::collectionFor($this->attachments)
+                fn () => PageAttachmentResource::collectionFor(
+                    $this->attachments,
+                    signedPreview: ! $this->published
+                )
             ),
             ...$this->formatTimestamps(),
             ...$this->resourceMeta($request),

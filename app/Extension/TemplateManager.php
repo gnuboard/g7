@@ -52,6 +52,14 @@ class TemplateManager implements TemplateManagerInterface
     protected array $templates = [];
 
     /**
+     * 템플릿 디렉토리 스캔이 1회 이상 수행되었는지 여부
+     *
+     * `ensureLoaded()` 의 멱등 판정에만 쓴다 — 명시적 `loadTemplates()` 는 이 값과 무관하게
+     * 항상 재스캔한다(설치/삭제 직후 갱신 계약).
+     */
+    protected bool $templatesLoaded = false;
+
+    /**
      * _pending 디렉토리의 템플릿 메타데이터 배열
      *
      * @var array<string, array>
@@ -99,12 +107,32 @@ class TemplateManager implements TemplateManagerInterface
     }
 
     /**
+     * 템플릿이 아직 로드되지 않았을 때만 로드합니다. (멱등)
+     *
+     * 소비자가 "템플릿 맵이 채워져 있음" 만 필요로 할 때 쓴다. `loadTemplates()` 는 맵을
+     * 리셋하고 디렉토리를 통째로 재스캔하므로, 그것을 무조건 호출하면 공유 인스턴스의
+     * 상태를 매번 갈아엎으면서 풀스캔 비용까지 반복된다.
+     */
+    public function ensureLoaded(): void
+    {
+        if ($this->templatesLoaded) {
+            return;
+        }
+
+        $this->loadTemplates();
+    }
+
+    /**
      * 모든 템플릿을 로드하고 초기화합니다.
+     *
+     * 항상 재스캔한다 — 설치/삭제/업데이트 직후 갱신을 보장하는 계약이다.
+     * 단순히 "채워져 있으면 됨" 인 호출자는 `ensureLoaded()` 를 쓴다.
      */
     public function loadTemplates(): void
     {
         // 기존 템플릿 캐시 초기화 (테스트 환경에서 재로드 지원)
         $this->templates = [];
+        $this->templatesLoaded = true;
 
         if (! File::exists($this->templatesPath)) {
             return;
@@ -1659,13 +1687,9 @@ class TemplateManager implements TemplateManagerInterface
                 }
 
                 if (! in_array($override->name, $registeredLayoutNames)) {
-                    // 캐시 삭제 (레코드 삭제 전에 수행)
-                    $cacheKey = "template.{$templateId}.layout.{$override->name}";
-                    $this->cache()->forget($cacheKey);
-
-                    $sourceHash = md5($override->source_type?->value.$override->source_identifier);
-                    $cacheKeyWithHash = "template.{$templateId}.layout.{$override->name}.{$sourceHash}";
-                    $this->cache()->forget($cacheKeyWithHash);
+                    // 캐시 삭제 (레코드 삭제 전에 수행) — 키 조립은 트레이트 단일 지점에 위임
+                    // (.with_source_meta 변종 포함, 수작업 키 목록의 규약 드리프트 방지)
+                    $this->forgetLayoutCacheKeys($override, $templateName);
 
                     $override->forceDelete();
                     $deletedCount++;
@@ -1712,14 +1736,10 @@ class TemplateManager implements TemplateManagerInterface
             }
 
             foreach ($overrideLayouts as $layout) {
-                // 기본 캐시 키 패턴으로 삭제
-                $cacheKey = "template.{$templateId}.layout.{$layout->name}";
-                $this->cache()->forget($cacheKey);
-
-                // sourceHash를 포함한 캐시 키도 삭제 (LayoutService의 캐시 키 패턴)
-                $sourceHash = md5($layout->source_type?->value.$layout->source_identifier);
-                $cacheKeyWithHash = "template.{$templateId}.layout.{$layout->name}.{$sourceHash}";
-                $this->cache()->forget($cacheKeyWithHash);
+                // 키 조립은 트레이트 단일 지점에 위임 (.with_source_meta 변종 포함).
+                // 이 경로는 identifier 를 보유하지 않으므로 '' 전달 — 버전 포함 공개
+                // 서빙 키는 종전과 동일하게 버전 bump 로 무효화된다.
+                $this->forgetLayoutCacheKeys($layout, '');
             }
 
             Log::info(__('templates.info.override_layouts_cache_invalidated'), [
@@ -1766,41 +1786,79 @@ class TemplateManager implements TemplateManagerInterface
     /**
      * 템플릿 관련 모든 캐시를 삭제합니다.
      *
+     * 템플릿 라이프사이클(update/deactivate/uninstall/cache-clear)이 공유하는
+     * 무효화 단일 지점이다. 버전 접미사 없는 고정 키(`template.config.{identifier}`,
+     * `template.{id|identifier}.components_manifest`)는 캐시 버전 bump 로 무효화되지
+     * 않으므로 여기서 능동 forget 한다 — 누락 시 공개 config.json 이 TTL(1시간) 동안
+     * 이전 manifest 로 응답된다 (#588, 공개 #119).
+     *
+     * template:cache-clear 커맨드가 호출할 수 있도록 public 이다.
+     *
      * @param  string  $templateIdentifier  템플릿 식별자
+     * @return int 능동 삭제를 시도한 캐시 키 수
      */
-    protected function clearTemplateCache(string $templateIdentifier): void
+    public function clearTemplateCache(string $templateIdentifier): int
     {
+        $clearedCount = 0;
+
+        // identifier 만으로 가능한 고정 키 forget — uninstall 등 DB 레코드가 이미
+        // 없는 상황에서도 반드시 수행되어야 하므로 레코드 조회보다 먼저 둔다.
+        $this->cache()->forget("template.config.{$templateIdentifier}");
+        $clearedCount++;
+
+        // components_manifest identifier 변종 (ComponentExists 는 int|string 수용)
+        $this->cache()->forget("template.{$templateIdentifier}.components_manifest");
+        $clearedCount++;
+
+        // 활성 템플릿 + 레이아웃 무변경 업데이트 경로는 캐시 버전 bump 가 없어
+        // 현재 버전 routes/language 키가 stale 로 남는다 — warmTemplateCache() 와
+        // 대칭으로 현재 버전 키를 능동 삭제한다 (이전 버전 키는 TTL 자연 만료).
+        $cacheVersion = self::getExtensionCacheVersion();
+        $this->cache()->forget("template.routes.{$templateIdentifier}.v{$cacheVersion}");
+        $clearedCount++;
+        foreach (config('app.supported_locales', ['ko', 'en']) as $locale) {
+            $this->cache()->forget("template.language.{$templateIdentifier}.{$locale}.v{$cacheVersion}");
+            $clearedCount++;
+        }
+
         // DB 기반 조회 — 파일 시스템 상태와 무관하게 캐시 삭제 보장
         // (파일 교체 중이거나 reloadTemplate() 전에도 캐시를 확실히 삭제)
         $templateRecord = $this->templateRepository->findByIdentifier($templateIdentifier);
         if (! $templateRecord) {
-            return;
+            return $clearedCount;
         }
 
-        // 레이아웃 캐시 삭제 (버전 없는 내부 캐시)
-        $this->clearLayoutCaches($templateIdentifier);
+        // components_manifest 숫자 id 변종 (StoreLayoutRequest 가 integer 검증 — 실운영 키)
+        $this->cache()->forget("template.{$templateRecord->id}.components_manifest");
+        $clearedCount++;
 
-        // Routes/다국어 캐시는 버전 포함 키이므로 incrementExtensionCacheVersion() + TTL로 무효화됨
+        // 레이아웃 캐시 삭제 (버전 없는 내부 캐시)
+        $clearedCount += $this->clearLayoutCaches($templateIdentifier);
 
         Log::info(__('templates.info.cache_cleared'), [
             'template' => $templateIdentifier,
         ]);
+
+        return $clearedCount;
     }
 
     /**
      * 템플릿의 모든 레이아웃 캐시를 삭제합니다.
      *
      * @param  string  $templateIdentifier  템플릿 식별자
+     * @return int 캐시를 무효화한 레이아웃 수
      */
-    protected function clearLayoutCaches(string $templateIdentifier): void
+    protected function clearLayoutCaches(string $templateIdentifier): int
     {
         // 템플릿의 모든 레이아웃 조회
         $template = $this->templateRepository->findByIdentifier($templateIdentifier);
         if (! $template) {
-            return;
+            return 0;
         }
 
         $this->invalidateTemplateLayoutCache($template->id, $templateIdentifier);
+
+        return $this->layoutRepository->getByTemplateId($template->id)->count();
     }
 
     /**
@@ -3081,6 +3139,12 @@ class TemplateManager implements TemplateManagerInterface
             // 8. 백업 삭제 + 캐시 삭제
             $onProgress?->__invoke('cleanup', '정리 중...');
             ExtensionBackupHelper::deleteBackup($backupPath);
+
+            // 고정 키(config/components_manifest) + 현재 버전 routes/language 키 능동 삭제.
+            // 비활성 업데이트·레이아웃 무변경 업데이트 경로는 버전 bump 가 없어 이 호출이
+            // 없으면 공개 config.json 이 TTL 동안 이전 manifest 로 응답된다 (#588, 공개 #119).
+            // 활성 경로의 refreshTemplateLayouts() 경유 중복 삭제는 forget 멱등이라 무해.
+            $this->clearTemplateCache($identifier);
 
             $this->clearAllTemplateLanguageCaches();
             $this->clearAllTemplateRoutesCaches();

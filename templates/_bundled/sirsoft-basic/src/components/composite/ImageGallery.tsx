@@ -20,6 +20,7 @@ import 'yet-another-react-lightbox/plugins/thumbnails.css';
 
 import { Button } from '../basic/Button';
 import { I } from '../basic/I';
+import { isCrossOriginAssetUrl } from './assetOrigin';
 import { Div } from '../basic/Div';
 import { Img } from '../basic/Img';
 import type { EditorAttrs } from '../../types';
@@ -134,7 +135,9 @@ export const executeImageDownload = async (image: GalleryImage): Promise<void> =
   const downloadUrl = image.downloadUrl || image.src;
   const filename = image.filename || image.title || 'image';
 
-  if (image.downloadRequiresAuth) {
+  // 공개 자산 디스크(S3/CDN)의 교차 출처 URL 은 인증이 필요 없는 공개 자산이다.
+  // 인증 XHR 로 가져오면 CORS 미설정 CDN 에서 실패하므로 일반 링크 다운로드를 쓴다.
+  if (image.downloadRequiresAuth && !isCrossOriginAssetUrl(downloadUrl)) {
     await downloadAuthenticatedFile(downloadUrl, filename);
   } else {
     downloadFile(downloadUrl, filename);

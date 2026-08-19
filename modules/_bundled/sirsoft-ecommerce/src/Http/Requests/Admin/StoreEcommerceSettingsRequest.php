@@ -3,9 +3,9 @@
 namespace Modules\Sirsoft\Ecommerce\Http\Requests\Admin;
 
 use App\Rules\LocaleRequiredTranslatable;
+use App\Services\DriverRegistryService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
-use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingFeeTaxPolicy;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
@@ -206,6 +206,13 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'basic_info.privacy_officer_email' => ['nullable', 'email', 'max:255'],
             'basic_info.mail_order_number' => ['nullable', 'string', 'max:100'],
             'basic_info.telecom_number' => ['nullable', 'string', 'max:100'],
+            // 공개 자산 디스크 — 빈 값은 코어 공개 자산 디스크 설정을 따른다.
+            // 선택지가 코어 카탈로그 + 플러그인 훅 등록 디스크로 동적이라 정적 in 불가 —
+            // 코어 SaveSettingsRequest 와 동일하게 카탈로그 조회 closure 로 검증한다.
+            // (런타임 resolvePublicAssetDisk() 의 스트리밍 폴백은 최후 안전망이지, 저장
+            //  시점의 오타를 성공 응답으로 통과시켜도 된다는 뜻이 아니다 — 운영자에게는
+            //  "저장됐는데 CDN 이 안 붙는" 무증상 상태로만 보인다.)
+            'basic_info.public_asset_disk' => ['nullable', 'string', 'max:100', $this->publicAssetDiskRule()],
 
             'language_currency' => ['sometimes', 'array'],
             // default_language 제거 (A1-⑤, D-LANG): 사이트 언어는 코어 일반설정으로 일원화. 모듈 orphan 필드.
@@ -362,6 +369,28 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'shipping.types.*.is_active' => ['nullable', 'boolean'],
             'shipping.types.*.sort_order' => ['nullable', 'integer', 'min:0'],
         ];
+    }
+
+    /**
+     * 공개 자산 디스크 존재 검증 규칙을 만듭니다.
+     *
+     * 선택지는 코어 3종 + 플러그인이 훅으로 등록한 디스크라 런타임에만 확정되므로
+     * 정적 `Rule::in` 을 쓸 수 없습니다. 코어 `SaveSettingsRequest` 와 동일하게
+     * 카탈로그 게터(SSoT)를 조회하는 closure 로 검증해 두 표면의 강도를 맞춥니다.
+     *
+     * @return \Closure 검증 closure
+     */
+    protected function publicAssetDiskRule(): \Closure
+    {
+        return function (string $attribute, mixed $value, \Closure $fail): void {
+            if ($value === null || $value === '') {
+                return;
+            }
+
+            if (! app(DriverRegistryService::class)->isDriverAvailable('public_asset', $value)) {
+                $fail(__('sirsoft-ecommerce::validation.public_asset_disk_invalid'));
+            }
+        };
     }
 
     /**

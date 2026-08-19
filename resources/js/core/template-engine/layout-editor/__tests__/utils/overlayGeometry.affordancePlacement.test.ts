@@ -30,11 +30,13 @@ function overlaps(
 }
 
 describe('resolveAffordancePlacement', () => {
+  /** @effects overlay_affordances_inside_when_box_ge_44 */
   it('임계값(44px) 이상의 큰 박스는 inside 배치', () => {
     expect(resolveAffordancePlacement(box(200, 100))).toBe('inside');
     expect(resolveAffordancePlacement(box(44, 44))).toBe('inside');
   });
 
+  /** @effects overlay_affordances_outside_when_box_lt_44_no_overlap */
   it('width 가 임계값 미만이면 outside 배치 (겹침 회피)', () => {
     expect(resolveAffordancePlacement(box(20, 100))).toBe('outside');
   });
@@ -92,6 +94,7 @@ describe('resolveInsertionCrossOffsets', () => {
     expect(-push - half + INSERTION_AFFORDANCE_BUTTON).toBe(-gap); // 버튼 하단 = -gap
   });
 
+  /** @effects insertion_affordances_cross_layout_when_box_lt_44_no_overlap_no_clip */
   it('네 버튼은 서로 겹치지 않는다 (작은 6×20 박스)', () => {
     const c = resolveInsertionCrossOffsets(box(6, 20));
     const dirs = ['above', 'below', 'left', 'right'] as const;

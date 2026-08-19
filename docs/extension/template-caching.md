@@ -34,23 +34,24 @@
 
 ## 캐싱 계층
 
-### 1. 활성 템플릿 캐시
+### 1. 활성 템플릿 상태 캐시
 
 ```php
-// 키: templates.active.{type}
-// TTL: 3600초 (1시간)
-// 값: Template 모델 객체
+// 키: ext.templates.active_identifiers / ext.templates.active_identifiers_{type} / ext.templates.installed_identifiers
+// TTL: extension_status_ttl 설정값 (기본 86400초)
+// 값: 템플릿 식별자 목록 (CachesTemplateStatus 트레이트가 관리)
 
-Cache::remember("templates.active.admin", 3600, function () {
+$activeIdentifiers = $cache->remember('ext.templates.active_identifiers_admin', function () {
     return Template::where('type', 'admin')
         ->where('is_active', true)
-        ->first();
-});
+        ->pluck('identifier')
+        ->all();
+}, $ttl);
 ```
 
 **무효화 시점**:
-- 템플릿 활성화/비활성화 시
-- 템플릿 삭제 시
+- 템플릿 설치/활성화/비활성화/삭제/업데이트 시 (`TemplateManager::invalidateTemplateStatusCache()` — 상태 키 4종 일괄 삭제)
+- `template:cache-clear` 실행 시
 
 ---
 
@@ -93,22 +94,22 @@ Cache::remember("template.layout.merged.dashboard.ko", 3600, function () use ($l
 
 ---
 
-### 4. 컴포넌트 레지스트리 캐시
+### 4. 컴포넌트 매니페스트 캐시
 
 ```php
-// 키: template.components.{identifier}
-// TTL: 무제한 (수동 무효화)
-// 값: components.json 파싱 결과
+// 키: template.{templateId}.components_manifest  (숫자 id / identifier 두 변종)
+// TTL: 3600초 (1시간)
+// 값: components.json 파싱 결과 (레이아웃 컴포넌트 검증용)
 
-Cache::rememberForever("template.components.sirsoft-admin_basic", function () use ($identifier) {
+$manifest = $cache->remember("template.{$templateId}.components_manifest", function () use ($identifier) {
     $componentsPath = base_path("templates/{$identifier}/components.json");
     return json_decode(file_get_contents($componentsPath), true);
 });
 ```
 
 **무효화 시점**:
-- 템플릿 재설치 시
-- components.json 수정 시 (개발 중)
+- 템플릿 라이프사이클 전 경로 (`TemplateManager::clearTemplateCache()` — update/deactivate/uninstall/`template:cache-clear`)
+- components.json 이 바뀌는 템플릿 업데이트 시 (위 경로에 포함)
 
 ---
 
@@ -326,11 +327,13 @@ use Illuminate\Support\Facades\Cache;
 class TemplateCacheService
 {
     /**
-     * 템플릿 활성화 캐시 무효화
+     * 템플릿 상태 캐시 무효화
      */
     public function invalidateActiveTemplate(string $type): void
     {
-        Cache::forget("templates.active.{$type}");
+        // 상태 키(ext.templates.active_identifiers* / installed_identifiers)는
+        // CachesTemplateStatus 가 관리 — 단일 지점에 위임한다
+        TemplateManager::invalidateTemplateStatusCache();
     }
 
     /**
@@ -363,11 +366,12 @@ class TemplateCacheService
     }
 
     /**
-     * 컴포넌트 레지스트리 캐시 무효화
+     * 컴포넌트 매니페스트 캐시 무효화 (숫자 id / identifier 두 변종)
      */
-    public function invalidateComponentRegistry(string $identifier): void
+    public function invalidateComponentRegistry(int $templateId, string $identifier): void
     {
-        Cache::forget("template.components.{$identifier}");
+        Cache::forget("template.{$templateId}.components_manifest");
+        Cache::forget("template.{$identifier}.components_manifest");
     }
 
     /**
@@ -387,8 +391,8 @@ class TemplateCacheService
             $this->invalidateLayoutChain($layout->layout_name);
         }
 
-        // 컴포넌트 레지스트리 캐시 무효화
-        $this->invalidateComponentRegistry($identifier);
+        // 컴포넌트 매니페스트 캐시 무효화
+        $this->invalidateComponentRegistry($template->id, $identifier);
     }
 }
 ```
@@ -460,7 +464,7 @@ class LayoutService
 `LayoutService`의 저장(`updateLayoutContent`) 및 버전 복원(`restoreVersion`) 메서드에서:
 
 1. **`clearDependentLayoutsCache()`** 호출 — 해당 레이아웃 + 이를 extends하는 자식 레이아웃의 병합 캐시 + `PublicLayoutController` 서빙 캐시(`layout.{identifier}.{name}.v{version}`)를 재귀적으로 무효화
-2. **`extension_cache_version` 증가** (`Cache::put('extension_cache_version', time())`) — CDN/브라우저 HTTP 캐시 busting. `PublicLayoutController`가 `?v={version}` 기반 캐싱을 사용하므로, 버전 변경 시 브라우저가 새 URL로 인식하여 캐시를 우회합니다.
+2. **`ext.cache_version` 증가** (`$this->incrementExtensionCacheVersion()` — `ClearsTemplateCaches` 트레이트) — CDN/브라우저 HTTP 캐시 busting. `PublicLayoutController`가 `?v={version}` 기반 캐싱을 사용하므로, 버전 변경 시 브라우저가 새 URL로 인식하여 캐시를 우회합니다. 버전 키 쓰기는 반드시 트레이트를 경유합니다 — 캐시 드라이버에 직접 `put` 하면 스토어/네임스페이스가 어긋날 때 bump 가 읽기 경로에서 보이지 않습니다.
 
 ```php
 // LayoutService::updateLayoutContent() 내부
@@ -469,8 +473,8 @@ $layout = $this->layoutRepository->update($layout->id, $updateData);
 // 캐시 무효화 (현재 레이아웃 + 자식 레이아웃 + PublicLayoutController 서빙 캐시)
 $this->clearDependentLayoutsCache($templateId, $name);
 
-// 프론트엔드 브라우저 캐시 무효화
-Cache::put('extension_cache_version', time());
+// 프론트엔드 브라우저 캐시 무효화 (ClearsTemplateCaches 트레이트)
+$this->incrementExtensionCacheVersion();
 ```
 
 ```php
@@ -479,12 +483,12 @@ $newVersion = $this->versionRepository->restoreVersion($layout->id, $versionId);
 
 // 동일하게 캐시 무효화
 $this->clearDependentLayoutsCache($templateId, $name);
-Cache::put('extension_cache_version', time());
+$this->incrementExtensionCacheVersion();
 ```
 
 이 과정이 누락되면 편집/복원 내용이 실제 사이트에 반영되지 않습니다.
 
-> 참고: `clearDependentLayoutsCache()`는 내부적으로 `clearLayoutCache()`를 호출하며, 이 메서드는 병합 캐시 삭제 + `clearPublicServingCache()`(기본 v0 + 현재 extension_cache_version 캐시 삭제) + 모듈 레이아웃인 경우 `LayoutResolverService` 캐시도 무효화합니다.
+> 참고: `clearDependentLayoutsCache()`는 내부적으로 `clearLayoutCache()`를 호출하며, 이 메서드는 병합 캐시 삭제(일반 + `.with_source_meta` 편집기 변종) + `clearPublicServingCache()`(현재 `ext.cache_version` 버전 키 삭제) + 모듈 레이아웃인 경우 `LayoutResolverService` 캐시도 무효화합니다.
 
 ---
 
@@ -519,12 +523,31 @@ Cache::put('extension_cache_version', time());
 
 ## 캐시 키 요약
 
-| 캐시 타입 | 키 패턴 | TTL |
-|----------|---------|-----|
-| 활성 템플릿 | `templates.active.{type}` | 3600초 (1시간) |
-| 레이아웃 JSON | `template.layout.{name}.{locale}` | 1800초 (30분) |
-| 병합된 레이아웃 | `template.layout.merged.{name}.{locale}` | 3600초 (1시간) |
-| 컴포넌트 레지스트리 | `template.components.{identifier}` | 무제한 |
+서버 사이드 캐시는 모두 `CacheInterface`(`g7:core:` 네임스페이스) 에 저장됩니다. 무효화 방식은 두 갈래입니다 — **버전 키**(`.v{v}` 접미사)는 `ext.cache_version` bump 로 다음 요청부터 새 키를 쓰고 이전 키는 TTL 로 자연 만료되며, **고정 키**(버전 접미사 없음)는 라이프사이클에서 능동 `forget` 해야 합니다.
+
+| 캐시 타입 | 키 패턴 | TTL | 무효화 |
+|----------|---------|-----|--------|
+| 공개 템플릿 설정 (config.json) | `template.config.{identifier}` | 3600초 | 고정 키 — 라이프사이클 능동 삭제 |
+| 공개 라우트 (routes.json) | `template.routes.{identifier}.v{v}` | 3600초 | 버전 키 + 현재 버전 키 능동 삭제 |
+| 공개 다국어 (lang/{locale}.json) | `template.language.{identifier}.{locale}.v{v}` | 3600초 | 버전 키 + 현재 버전 키 능동 삭제 |
+| 공개 레이아웃 서빙 | `layout.{identifier}.{name}.v{v}` (+ 편집기 `.meta` 변종) | layout_ttl (기본 3600초) | 버전 키 + 현재 버전 키 능동 삭제 |
+| 병합 레이아웃 (내부) | `template.{templateId}.layout.{name}` (+ `.{sourceHash}` / `.with_source_meta` 변종) | layout_ttl | 고정 키 — 능동 삭제 |
+| 컴포넌트 매니페스트 (검증) | `template.{templateId}.components_manifest` (identifier 변종 포함) | 3600초 | 고정 키 — 능동 삭제 |
+| 템플릿 상태 | `ext.templates.active_identifiers*` / `ext.templates.installed_identifiers` | 86400초 | 라이프사이클 능동 삭제 |
+| 확장 캐시 버전 좌표 | `ext.cache_version` | 없음 | bump 전용 (`ClearsTemplateCaches`) |
+
+### `template:cache-clear` 가 무효화하는 대상
+
+`template:cache-clear {identifier?}` 는 템플릿 라이프사이클(update/deactivate/uninstall)과 동일한 무효화 단일 지점을 경유합니다.
+
+| 대상 | 단일 모드 | 전체 모드 |
+|------|-----------|-----------|
+| `template.config.{identifier}` | ✅ | ✅ (설치된 전 템플릿) |
+| `template.{id}.components_manifest` (identifier 변종 포함) | ✅ | ✅ |
+| 현재 버전 routes/language 키 | ✅ | ✅ |
+| 병합 레이아웃 캐시 (변종 포함) | ✅ | ✅ |
+| 템플릿 상태 키 + `ext.cache_version` bump | ✅ | ✅ (1회) |
+| 확장 프론트엔드 병합 번들 파일 | — | ✅ |
 
 ---
 

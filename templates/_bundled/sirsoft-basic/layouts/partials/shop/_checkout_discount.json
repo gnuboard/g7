@@ -95,7 +95,7 @@
                       "handler": "toast",
                       "params": {
                         "type": "error",
-                        "message": "$t:shop.coupon_download.fetch_failed"
+                        "message": "{{error.message ?? '$t:shop.coupon_download.fetch_failed'}}"
                       }
                     }
                   ]
@@ -442,7 +442,7 @@
                       "handler": "toast",
                       "params": {
                         "type": "error",
-                        "message": "$t:shop.checkout.discount_code_invalid"
+                        "message": "{{error.message ?? '$t:shop.checkout.discount_code_invalid'}}"
                       }
                     }
                   ]

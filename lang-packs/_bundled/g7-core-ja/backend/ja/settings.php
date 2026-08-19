@@ -20,6 +20,7 @@ return [
     'backup_success' => 'データベースバックアップが正常に開始されました。',
     'backup_failed' => 'データベースバックアップに失敗しました。',
     'backup_error' => 'データベースバックアップ中にエラーが発生しました。',
+    'database_backup_unavailable' => 'データベースバックアップ機能はまだ提供されていません。設定のバックアップは設定バックアップ機能をご利用ください。',
     'backup_path_required' => 'バックアップパスを入力してください。',
     'restore_success' => '設定が正常に復元されました。',
     'restore_failed' => '設定の復元に失敗しました。',
@@ -34,6 +35,11 @@ return [
     'drivers' => [
         'storage' => [
             'local' => 'ローカル',
+            's3' => 'Amazon S3',
+        ],
+        'public_asset' => [
+            'none' => '使用しない (ストリーミング)',
+            'public' => 'Public ディスク',
             's3' => 'Amazon S3',
         ],
         'cache' => [
@@ -62,6 +68,9 @@ return [
             'mailgun' => 'Mailgun',
             'ses' => 'SES (Amazon)',
         ],
+        'search' => [
+            'mysql-fulltext' => 'MySQL 全文検索',
+        ],
     ],
     'driver_test_success' => 'すべてのドライバ接続テストが成功しました。',
     'driver_test_partial' => '一部のドライバ接続テストが失敗しました。',
@@ -71,6 +80,7 @@ return [
     's3_test_failed' => 'S3バケットへの接続に失敗しました。',
     's3_missing_config' => 'S3設定が不足しています。(バケット、リージョン、アクセスキー、シークレットキー)',
     's3_sdk_missing' => 'AWS SDKがインストールされていません。',
+    's3_adapter_missing' => 'S3ストレージアダプター(league/flysystem-aws-s3-v3)がインストールされていません。',
     's3_bucket_not_found' => 'S3バケットが見つかりません。',
     's3_access_denied' => 'S3バケットへのアクセスが拒否されました。',
     's3_invalid_credentials' => 'S3認証情報が正しくありません。',
@@ -86,6 +96,10 @@ return [
     'memcached_connection_failed' => 'Memcachedサーバーに接続できません。',
     'websocket_test_success' => 'Websocketサーバーに正常に接続されました。',
     'websocket_test_failed' => 'Websocketサーバーへの接続に失敗しました。',
+    'websocket_server_test_failed' => 'Websocketサーバー(バックエンド送信用)エンドポイントへの接続に失敗しました。クライアントエンドポイントは正常です。',
+    'driver_unusable_s3_adapter' => 'S3ストレージアダプター(league/flysystem-aws-s3-v3)がインストールされていません。',
+    'driver_unusable_redis_client' => 'phpredis拡張とpredisライブラリのどちらも利用できません。',
+    'driver_unusable_memcached_extension' => 'memcached PHP拡張がインストールされていません。',
     'websocket_invalid_host' => 'Websocketホスト設定が正しくありません。ホストにはアドレスのみを入力し、アカウント情報(@)またはhttp/https以外のプロトコルは使用できません。',
     'websocket_connection_refused' => 'Websocketサーバーに接続できません。サーバーが実行中であるか確認してください。',
     'invalid_email' => '無効なメールアドレスです。',

@@ -65,4 +65,12 @@ interface ActivityLogRepositoryInterface
      * @return int 익명화된 row 수
      */
     public function anonymizeUserId(int $userId): int;
+
+    /**
+     * 보존 기간이 지난 활동 로그를 삭제합니다.
+     *
+     * @param  int  $days  보존 기간 (일)
+     * @return int 삭제된 건수
+     */
+    public function deleteOlderThan(int $days): int;
 }

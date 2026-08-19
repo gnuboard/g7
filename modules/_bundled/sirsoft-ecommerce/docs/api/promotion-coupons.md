@@ -215,7 +215,7 @@ HTTP/1.1 200
 | valid_to | body | date | 아니오 | — | 유효기간 종료일 (valid_type=period 시 필수, valid_from 이후) |
 | issue_from | body | date | 아니오 | — | 발급기간 시작 일시 (미입력 시 상시발급) |
 | issue_to | body | date | 아니오 | — | 발급기간 종료 일시 (issue_from 이후) |
-| is_combinable | body | boolean | 아니오 | — | combinable 여부 |
+| is_combinable | body | boolean | 아니오 | — | 다른 쿠폰과 중복 사용 가능 여부. 문자열 `"true"`/`"false"`/`"1"`/`"0"` 도 수용해 boolean 으로 정규화한다 (해석 불가값은 422) |
 | target_scope | body | string | 아니오 | `all`, `products`, `categories` | 적용 범위: all(전체 상품), products(특정 상품), categories(특정 카테고리) |
 | products | body | array | 아니오 | — | 적용 상품 목록 (`target_scope=products`), 항목별 `{id, type: include\|exclude}` |
 | categories | body | array | 아니오 | — | 적용 카테고리 목록 (`target_scope=categories`), 항목별 `{id, type: include\|exclude}` |
@@ -515,11 +515,25 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| coupon_id | integer | `52` | 삭제된 쿠폰(정의)의 ID |
 
 **응답 예시**
 
-<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "쿠폰이 삭제되었습니다.",
+    "data": {
+        "coupon_id": 52
+    }
+}
+```
 
 **에러 응답**
 
@@ -528,6 +542,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.promotion-coupon.delete`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
 
@@ -557,11 +572,36 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: `data` 객체의 필드 (`CouponResource`) — 생성(`POST /admin/promotion-coupons`) 201 응답의 `data` 와 동일 스키마이므로 필드 표는 그 절을 참조합니다._
 
 **응답 예시**
 
-<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "쿠폰 정보를 조회했습니다.",
+    "data": {
+        "id": 2,
+        "name": "신규가입 쿠폰",
+        "discount_type": "fixed",
+        "discount_value": 5000,
+        "issue_status": "issuing",
+        "is_combinable": false,
+        "target_scope": "all",
+        "abilities": {
+            "can_create": true,
+            "can_update": true,
+            "can_delete": true
+        }
+    }
+}
+```
+
+_예시는 대표 필드만 발췌한 축약본입니다. 전체 필드는 생성 201 응답 예시와 동일합니다._
 
 **에러 응답**
 
@@ -605,7 +645,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | valid_to | body | date | 아니오 | — | 유효기간 종료일 (valid_type=period 시 필수, valid_from 이후) |
 | issue_from | body | date | 아니오 | — | 발급기간 시작 일시 (미입력 시 상시발급) |
 | issue_to | body | date | 아니오 | — | 발급기간 종료 일시 (issue_from 이후) |
-| is_combinable | body | boolean | 아니오 | — | combinable 여부 |
+| is_combinable | body | boolean | 아니오 | — | 다른 쿠폰과 중복 사용 가능 여부. 문자열 `"true"`/`"false"`/`"1"`/`"0"` 도 수용해 boolean 으로 정규화한다 (해석 불가값은 422) |
 | target_scope | body | string | 아니오 | `all`, `products`, `categories` | 적용 범위: all(전체 상품), products(특정 상품), categories(특정 카테고리) |
 | products | body | array | 아니오 | — | 적용 상품 목록 (`target_scope=products`), 항목별 `{id, type: include\|exclude}` |
 | categories | body | array | 아니오 | — | 적용 카테고리 목록 (`target_scope=categories`), 항목별 `{id, type: include\|exclude}` |
@@ -811,6 +851,7 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.promotion-coupon.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
 
@@ -890,6 +931,7 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.promotion-coupon.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
 
@@ -951,16 +993,59 @@ _목록 응답: `data.data[]` 배열 항목의 필드 (`CouponIssueResource`) + 
 
 **응답 예시**
 
-<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "쿠폰 발급 내역을 조회했습니다.",
+    "data": {
+        "data": [
+            {
+                "id": 1,
+                "coupon_id": 1,
+                "user_id": "a1e0a91a-fba6-491c-a53e-7285a5686857",
+                "coupon_code": "WELCOME2026",
+                "status": "available",
+                "status_label": "사용가능",
+                "status_badge_color": "blue",
+                "issued_at": "2026-07-08 10:50:11",
+                "expired_at": "2026-07-31 23:59:59",
+                "used_at": null,
+                "order_id": null,
+                "order_number": null,
+                "discount_amount": null,
+                "is_used": false,
+                "is_expired": false,
+                "is_usable": true,
+                "is_cancellable": true,
+                "user_name": "홍길동"
+            }
+        ],
+        "pagination": {
+            "current_page": 1,
+            "last_page": 1,
+            "per_page": 20,
+            "total": 1,
+            "from": 1,
+            "to": 1,
+            "has_more_pages": false
+        }
+    }
+}
+```
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
+| 400 | Bad Request | `{id}` 에 해당하는 쿠폰이 없는 경우 (`sirsoft-ecommerce::exceptions.coupon_not_found`) |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.promotion-coupon.read`)이 없는 경우 |
-| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
 
@@ -1053,6 +1138,7 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.promotion-coupon.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
 

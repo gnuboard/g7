@@ -588,7 +588,7 @@
                                                         },
                                                         "children": [
                                                             {
-                                                                "type": "basic",
+                                                                "type": "composite",
                                                                 "name": "Toggle",
                                                                 "props": {
                                                                     "name": "banner_enabled"

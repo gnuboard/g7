@@ -484,4 +484,52 @@ class ExtraFeeTemplateControllerTest extends ModuleTestCase
         $response = $this->getJson('/api/modules/sirsoft-ecommerce/admin/extra-fee-templates');
         $response->assertStatus(401);
     }
+
+    // ────────────────────────────────────────────────────────
+    // 능력(abilities) 게이트 정합성 — 라우트 SSoT(shipping-policies.*) 일치
+    // ────────────────────────────────────────────────────────
+
+    /**
+     * 상세 리소스의 can_* 능력은 라우트 SSoT(shipping-policies.*)로 게이팅된다.
+     *
+     * 회귀 방지: 과거 상세 리소스만 abilityMap 을 settings.update(타 리소스)로 게이팅해,
+     * shipping-policies.* 만 보유한(=라우트상 편집 권한이 있는) 액터가 상세 화면에서 can_update
+     * 가 false 로 보이던 결함. 이제 상세도 형제 Collection·라우트와 동일한 권한으로 게이팅한다.
+     */
+    public function test_show_abilities_follow_shipping_policies_permission(): void
+    {
+        $template = $this->createTemplate();
+
+        // adminUser 는 shipping-policies.* 만 보유하고 settings.update 는 없다(setUp).
+        $response = $this->actingAs($this->adminUser)
+            ->getJson("/api/modules/sirsoft-ecommerce/admin/extra-fee-templates/{$template->id}");
+
+        $response->assertOk();
+        $this->assertTrue($response->json('data.abilities.can_update'), 'can_update 는 shipping-policies.update 로 게이팅되어야 합니다');
+        $this->assertTrue($response->json('data.abilities.can_create'), 'can_create 는 shipping-policies.create 로 게이팅되어야 합니다');
+        $this->assertTrue($response->json('data.abilities.can_delete'), 'can_delete 는 shipping-policies.delete 로 게이팅되어야 합니다');
+    }
+
+    /**
+     * settings.update 만 있고 shipping-policies 권한이 없으면 상세 능력은 모두 false 여야 한다.
+     *
+     * (게이트가 실제로 shipping-policies 로 옮겨졌음을 반대 방향으로 고정 — settings.update 로는
+     * 더 이상 편집 능력이 켜지지 않는다)
+     */
+    public function test_show_abilities_false_with_only_settings_permission(): void
+    {
+        $settingsOnlyUser = $this->createAdminUser([
+            'sirsoft-ecommerce.shipping-policies.read', // 상세 조회용
+            'sirsoft-ecommerce.settings.update',
+        ]);
+        $template = $this->createTemplate();
+
+        $response = $this->actingAs($settingsOnlyUser)
+            ->getJson("/api/modules/sirsoft-ecommerce/admin/extra-fee-templates/{$template->id}");
+
+        $response->assertOk();
+        $this->assertFalse($response->json('data.abilities.can_update'), 'settings.update 로는 편집 능력이 켜지면 안 됩니다');
+        $this->assertFalse($response->json('data.abilities.can_create'));
+        $this->assertFalse($response->json('data.abilities.can_delete'));
+    }
 }

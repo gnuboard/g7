@@ -104,6 +104,18 @@ export interface DataGridProps {
     selectedIds?: (string | number)[];
     onSelectionChange?: (ids: (string | number)[]) => void;
     idField?: string;
+    /**
+     * 선택의 유효 범위.
+     *
+     * - `'page'`: 선택은 지금 그려진 행에서만 유효하다. 검색·필터·페이지 이동으로
+     *   행이 목록에서 빠지면 그 행의 선택도 함께 버린다. 일괄 처리 버튼이 달린
+     *   목록 화면은 이 값을 쓴다 — 그래야 "보이지 않는 행이 일괄 처리 대상" 이
+     *   되는 상태가 만들어지지 않는다.
+     * - `'free'`(기본): 선택을 컴포넌트가 건드리지 않는다. 선택 자체가 저장 대상인
+     *   폼(쿠폰 적용 대상 고르기 등)처럼, 목록에 안 보이는 항목도 선택으로 남아야
+     *   하는 화면용.
+     */
+    selectionScope?: 'page' | 'free';
     showColumnSelector?: boolean;
     visibleColumns?: string[];
     onColumnVisibilityChange?: (fields: string[]) => void;

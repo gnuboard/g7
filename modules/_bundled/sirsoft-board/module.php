@@ -14,6 +14,7 @@ use Modules\Sirsoft\Board\Listeners\BoardCommentsCountSyncListener;
 use Modules\Sirsoft\Board\Listeners\BoardNotificationChannelListener;
 use Modules\Sirsoft\Board\Listeners\BoardNotificationDataListener;
 use Modules\Sirsoft\Board\Listeners\BoardPostsCountSyncListener;
+use Modules\Sirsoft\Board\Listeners\Ckeditor5ReferenceSourcesListener;
 use Modules\Sirsoft\Board\Listeners\CommentReplySyncListener;
 use Modules\Sirsoft\Board\Listeners\EcommerceInquiryHookListener;
 use Modules\Sirsoft\Board\Listeners\PostAttachmentCountSyncListener;
@@ -71,6 +72,15 @@ class Module extends AbstractModule
                 'command' => 'sirsoft-board:aggregate-stats',
                 'schedule' => 'hourly',
                 'description' => '대시보드 게시물 현황 집계',
+            ],
+            [
+                'command' => 'sirsoft-board:prune-attachments --scheduled',
+                'schedule' => 'daily',
+                'description' => '방치된 임시 첨부 정리 + 보존기간 경과 삭제 첨부 영구 정리',
+                // 임시 첨부 정리 파트는 상시 동작해야 하므로 스케줄 자체는 항상 등록한다.
+                // 사용자 파일을 실제로 파기하는 영구 정리 파트만 커맨드 내부에서 게이트한다
+                // (attachment_settings.purge_enabled, false 폴백).
+                'enabled_config' => null,
             ],
         ];
     }
@@ -246,6 +256,33 @@ class Module extends AbstractModule
                         ],
                     ],
                 ],
+                // 대시보드 조회 권한 (type: admin)
+                [
+                    'identifier' => 'dashboard',
+                    'name' => [
+                        'ko' => '게시판 대시보드',
+                        'en' => 'Board Dashboard',
+                    ],
+                    'description' => [
+                        'ko' => '게시판 대시보드 조회 권한',
+                        'en' => 'Board dashboard view permissions',
+                    ],
+                    'permissions' => [
+                        [
+                            'action' => 'view',
+                            'name' => [
+                                'ko' => '대시보드 조회',
+                                'en' => 'View Dashboard',
+                            ],
+                            'description' => [
+                                'ko' => '게시판 대시보드(현황/추세/최신글/미처리 신고) 조회',
+                                'en' => 'View board dashboard (overview, trend, recent posts, pending reports)',
+                            ],
+                            'type' => 'admin',
+                            'roles' => ['admin', 'manager'],
+                        ],
+                    ],
+                ],
                 // 신고 관리 권한 (type: admin)
                 [
                     'identifier' => 'reports',
@@ -416,6 +453,7 @@ class Module extends AbstractModule
             CommentReplySyncListener::class,
             BoardPostsCountSyncListener::class,
             BoardCommentsCountSyncListener::class,
+            Ckeditor5ReferenceSourcesListener::class,
         ];
     }
 

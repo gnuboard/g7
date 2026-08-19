@@ -6,6 +6,7 @@ use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Exception;
 use Illuminate\Http\JsonResponse;
+use Modules\Sirsoft\Ecommerce\Exceptions\ProductInquiryOperationException;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\StoreInquiryReplyRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\UpdateInquiryReplyRequest;
 use Modules\Sirsoft\Ecommerce\Services\ProductInquiryService;
@@ -39,8 +40,12 @@ class ProductInquiryController extends AdminBaseController
                 ['id' => $inquiry->id, 'is_answered' => $inquiry->is_answered],
                 201
             );
-        } catch (\RuntimeException $e) {
-            return ResponseHelper::error($e->getMessage(), 422);
+        } catch (ProductInquiryOperationException $e) {
+            // 도메인 규칙 위반 — 예외가 보관한 메시지 키로 응답을 구성한다.
+            // 종전처럼 번역된 원문을 키 자리에 넘기면 키 해석에 실패해 원문이 그대로 노출된다.
+            $messageKey = $e->getMessageKey();
+
+            return ResponseHelper::error($messageKey, 422, null, $e->getMessageParams());
         } catch (Exception $e) {
             return ResponseHelper::moduleError('sirsoft-ecommerce', 'messages.inquiries.reply_failed', 500);
         }
@@ -58,8 +63,12 @@ class ProductInquiryController extends AdminBaseController
             $this->inquiryService->deleteInquiry($inquiryId);
 
             return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.inquiries.deleted', ['deleted' => true]);
-        } catch (\RuntimeException $e) {
-            return ResponseHelper::error($e->getMessage(), 422);
+        } catch (ProductInquiryOperationException $e) {
+            // 도메인 규칙 위반 — 예외가 보관한 메시지 키로 응답을 구성한다.
+            // 종전처럼 번역된 원문을 키 자리에 넘기면 키 해석에 실패해 원문이 그대로 노출된다.
+            $messageKey = $e->getMessageKey();
+
+            return ResponseHelper::error($messageKey, 422, null, $e->getMessageParams());
         } catch (Exception $e) {
             return ResponseHelper::moduleError('sirsoft-ecommerce', 'messages.inquiries.delete_failed', 500);
         }
@@ -78,8 +87,12 @@ class ProductInquiryController extends AdminBaseController
             $this->inquiryService->updateReply($inquiryId, $request->validated());
 
             return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.inquiries.reply_updated', ['id' => $inquiryId]);
-        } catch (\RuntimeException $e) {
-            return ResponseHelper::error($e->getMessage(), 422);
+        } catch (ProductInquiryOperationException $e) {
+            // 도메인 규칙 위반 — 예외가 보관한 메시지 키로 응답을 구성한다.
+            // 종전처럼 번역된 원문을 키 자리에 넘기면 키 해석에 실패해 원문이 그대로 노출된다.
+            $messageKey = $e->getMessageKey();
+
+            return ResponseHelper::error($messageKey, 422, null, $e->getMessageParams());
         } catch (Exception $e) {
             return ResponseHelper::moduleError('sirsoft-ecommerce', 'messages.inquiries.reply_update_failed', 500);
         }
@@ -97,8 +110,12 @@ class ProductInquiryController extends AdminBaseController
             $this->inquiryService->deleteReply($inquiryId);
 
             return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.inquiries.reply_deleted', ['deleted' => true]);
-        } catch (\RuntimeException $e) {
-            return ResponseHelper::error($e->getMessage(), 422);
+        } catch (ProductInquiryOperationException $e) {
+            // 도메인 규칙 위반 — 예외가 보관한 메시지 키로 응답을 구성한다.
+            // 종전처럼 번역된 원문을 키 자리에 넘기면 키 해석에 실패해 원문이 그대로 노출된다.
+            $messageKey = $e->getMessageKey();
+
+            return ResponseHelper::error($messageKey, 422, null, $e->getMessageParams());
         } catch (Exception $e) {
             return ResponseHelper::moduleError('sirsoft-ecommerce', 'messages.inquiries.reply_delete_failed', 500);
         }

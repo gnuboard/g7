@@ -75,12 +75,28 @@ enum ChargePolicyEnum: string
         return in_array($this, [
             self::FIXED,
             self::CONDITIONAL_FREE,
+            // API 정책의 base_fee 는 외부 API 장애 시의 폴백 배송비다.
+            // 0 으로 강제되면 장애가 곧 무음 무료배송이 된다.
+            self::API,
             self::PER_QUANTITY,
             self::PER_WEIGHT,
             self::PER_VOLUME,
             self::PER_VOLUME_WEIGHT,
             self::PER_AMOUNT,
         ]);
+    }
+
+    /**
+     * 구간 경계값이 이산형(정수)인 정책인지 확인합니다.
+     *
+     * 수량은 정수 단위라 "5개 다음은 6개"(max + 1)로 이어지고, 금액·무게·부피는
+     * 연속값이라 "5kg 다음은 5kg 초과"(다음 min = max)로 이어집니다.
+     *
+     * @return bool 이산형 여부
+     */
+    public function hasDiscreteRangeValues(): bool
+    {
+        return $this === self::RANGE_QUANTITY;
     }
 
     /**

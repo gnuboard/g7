@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Modules\Sirsoft\Ecommerce\Models\CategoryImage;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CategoryImageRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesRowStorage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -21,6 +22,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class CategoryImageService
 {
+    use ResolvesRowStorage;
+
     /**
      * CategoryImageService 생성자
      *
@@ -174,7 +177,7 @@ class CategoryImageService
             return null;
         }
 
-        $response = $this->storage->response(
+        $response = $this->storageForRow($image->disk)->response(
             'images',
             $image->path,
             $image->original_filename,
@@ -188,7 +191,7 @@ class CategoryImageService
             Log::error('카테고리 이미지 스토리지에 없음', [
                 'category_image_id' => $image->id,
                 'path' => $image->path,
-                'disk' => $this->storage->getDisk(),
+                'disk' => $image->disk ?: $this->storage->getDisk(),
             ]);
 
             return null;
@@ -218,11 +221,12 @@ class CategoryImageService
         // Before 훅
         HookManager::doAction('sirsoft-ecommerce.category-image.before_delete', $image);
 
-        // 스토리지에서 파일 삭제
+        // 스토리지에서 파일 삭제 — 행 disk 기준
         // DB에 저장된 경로: category/{date}/{filename}
         // storage->exists/delete에 category를 전달하면 자동으로 images/ 추가됨
-        if ($this->storage->exists('images', $image->path)) {
-            $this->storage->delete('images', $image->path);
+        $rowStorage = $this->storageForRow($image->disk);
+        if ($rowStorage->exists('images', $image->path)) {
+            $rowStorage->delete('images', $image->path);
         }
 
         // DB에서 삭제
@@ -242,6 +246,49 @@ class CategoryImageService
         HookManager::doAction('sirsoft-ecommerce.category-image.after_delete', $image);
 
         return $result;
+    }
+
+    /**
+     * 카테고리에 속한 이미지를 파일까지 함께 삭제합니다.
+     *
+     * 카테고리 삭제 흐름에서 호출합니다. 단건 삭제(delete)와 달리 남은 이미지 재정렬이
+     * 필요 없으므로(카테고리 자체가 사라짐) 재정렬 없이 파일 → 행 순으로 정리합니다.
+     *
+     * 행마다 disk 가 다를 수 있으므로 파일 삭제는 각 행의 disk 를 향해 수행합니다.
+     *
+     * @param  int  $categoryId  카테고리 ID
+     * @return int 삭제된 이미지 행 수
+     */
+    public function deleteByCategoryId(int $categoryId): int
+    {
+        $images = $this->repository->getByCategoryId($categoryId);
+
+        if ($images->isEmpty()) {
+            return 0;
+        }
+
+        foreach ($images as $image) {
+            HookManager::doAction('sirsoft-ecommerce.category-image.before_delete', $image);
+
+            $rowStorage = $this->storageForRow($image->disk);
+
+            if ($rowStorage->exists('images', $image->path)) {
+                $rowStorage->delete('images', $image->path);
+            }
+        }
+
+        $deleted = $this->repository->deleteByCategoryId($categoryId);
+
+        Log::info('카테고리 이미지 일괄 삭제 완료', [
+            'category_id' => $categoryId,
+            'deleted' => $deleted,
+        ]);
+
+        foreach ($images as $image) {
+            HookManager::doAction('sirsoft-ecommerce.category-image.after_delete', $image);
+        }
+
+        return $deleted;
     }
 
     /**

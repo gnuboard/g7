@@ -1,0 +1,50 @@
+feature: 미연결 임시 페이지 첨부 회수 (Temp Page Attachment Cleanup)
+
+description: |
+  페이지 작성 폼에서 첨부만 올리고 저장 없이 이탈하면 `temp_key` 가 남고 `page_id` 가 비어
+  있는 행과 그 파일이 영구 잔존한다. 공개 이슈 #115 동류 결함.
+
+  연결 시점에 본경로로 옮겨지므로 `temp_key` 잔존 = 끝내 연결되지 않음이 확정이라 오탐
+  여지가 구조적으로 없다. 운영 데이터가 아닌 폼 세션 부산물이므로 토글 없이 상시 실행되며,
+  보존기간만 커맨드 옵션으로 조정한다.
+
+  삭제 순서는 파일 먼저, 기록 나중. 행마다 disk 가 다를 수 있어 그 행의 disk 를 향해 지운다.
+
+axes:
+  attachment_state: [temp_unlinked, linked_to_page]
+  age: [within_retention, past_retention]
+
+exclusions:
+  - { attachment_state: linked_to_page, age: within_retention, reason: "연결된 첨부는 나이와 무관하게 대상이 아니다 — 경과분 1건으로 충분" }
+
+sub_flows:
+  - id: dry_run
+    description: 판정만 수행하고 파일·기록을 건드리지 않는 미리보기 경로
+    effects:
+      - page_temp_prune_dry_run
+  - id: retention_guard
+    description: 보존기간 1일 미만 자기 차단 (방금 올린 임시 첨부까지 지우는 사고 방지)
+    effects:
+      - page_temp_prune_days_guard
+  - id: temp_directory_hygiene
+    description: |
+      파일을 지운 뒤 남는 temp 디렉토리 처리. 비워졌을 때만 지우고, 다른 폼 세션의 파일이
+      남아 있으면 그대로 둔다 (디렉토리째 지우면 아직 작성 중인 페이지의 첨부가 사라진다).
+    effects:
+      - page_temp_prune_removes_empty_directory
+      - page_temp_prune_keeps_directory_with_remaining_files
+  - id: reference_source_registry
+    description: 페이지 본문·버전 스냅샷을 에디터 이미지 참조 소스로 등록하는 리스너
+    effects:
+      - reference_source_listener_subscribes_as_filter
+      - reference_source_listener_appends_without_dropping
+      - reference_source_listener_schema_contract
+
+effects:
+  - page_temp_prune_deletes_file_and_record
+  - page_temp_prune_keeps_within_retention
+  - page_temp_prune_skips_linked
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Feature/Console/PruneTempAttachmentsCommandTest.php
+  - modules/_bundled/sirsoft-page/tests/Unit/Listeners/Ckeditor5ReferenceSourcesListenerTest.php

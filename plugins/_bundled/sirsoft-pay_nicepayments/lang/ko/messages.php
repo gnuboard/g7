@@ -8,7 +8,6 @@ return [
         'order_not_found' => '주문을 찾을 수 없습니다.',
         'invalid_request' => '잘못된 요청입니다.',
         'invalid_amount' => '요청 금액이 유효하지 않습니다.',
-        'vbank_refund_required_fields' => 'TID, 주문번호, 취소금액, 환불계좌 정보(계좌번호·은행코드·예금주)를 모두 입력해주세요.',
         'vbank_refund_order_not_found' => '환불할 주문을 찾을 수 없습니다.',
         'vbank_refund_invalid_payment' => '환불 가능한 나이스페이먼츠 가상계좌 입금완료 결제가 아닙니다.',
         'vbank_refund_amount_mismatch' => '요청 환불 금액이 DB의 취소 가능 금액과 일치하지 않습니다.',
@@ -22,5 +21,14 @@ return [
     ],
     'defaults' => [
         'vbank_refund_msg' => '가상계좌 환불',
+    ],
+    'fields' => [
+        'tid' => '거래 ID(TID)',
+        'moid' => '주문번호',
+        'cancel_amt' => '취소 금액',
+        'cancel_msg' => '취소 사유',
+        'refund_acct_no' => '환불 계좌번호',
+        'refund_bank_cd' => '환불 은행코드',
+        'refund_acct_nm' => '환불 예금주',
     ],
 ];

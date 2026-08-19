@@ -40,7 +40,7 @@ class IndexReportRequest extends FormRequest
             'board_id' => ['nullable', 'integer'],
             'reported_at_from' => ['nullable', 'string'],
             'reported_at_to' => ['nullable', 'string'],
-            'sort_by' => ['nullable', 'string'],
+            // sort_by 는 받지 않는다 — 저장소가 last_reported_at 고정 정렬 (死규칙 정리)
             'sort_order' => ['nullable', 'string', 'in:asc,desc'],
             'per_page' => ['nullable', 'integer'],
         ];

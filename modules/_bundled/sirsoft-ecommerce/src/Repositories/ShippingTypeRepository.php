@@ -149,4 +149,12 @@ class ShippingTypeRepository implements ShippingTypeRepositoryInterface
             ->orderBy('sort_order')
             ->value('code');
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function pluckIds(): array
+    {
+        return $this->model->newQuery()->pluck('id')->all();
+    }
 }

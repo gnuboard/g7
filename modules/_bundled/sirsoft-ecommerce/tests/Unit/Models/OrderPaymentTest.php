@@ -13,8 +13,11 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 /**
  * OrderPayment 모델 테스트
  *
- * @scenario extension_payment_method method_kind=extension × capability_declared=declared × capability=refund_method
- * @effects extension_id_persisted_as_is, builtin_capability_unchanged, refund_method_is_pg
+ * 축 요약(마커 아님 — 평문): method_kind=extension, capability_declared=declared,
+ * capability=refund_method. 요약을 시나리오 축 마커로 적으면 파서가 쉼표로만 축을 분리하므로 `×`
+ * 표기는 실재하지 않는 조합 1건으로 집계된다(커버리지를 부풀리는 방향).
+ *
+ * 효과 요약(마커 아님 — 평문): extension_id_persisted_as_is, builtin_capability_unchanged, refund_method_is_pg.
  */
 class OrderPaymentTest extends ModuleTestCase
 {
@@ -42,6 +45,9 @@ class OrderPaymentTest extends ModuleTestCase
         $this->assertEquals($order->id, $payment->order->id);
     }
 
+    /**
+     * @effects builtin_capability_unchanged
+     */
     public function test_order_payment_method_is_stored_as_plain_string(): void
     {
         // payment_method 는 enum 캐스트를 두지 않는다 (#475) — PG 플러그인이 등록하는
@@ -54,6 +60,9 @@ class OrderPaymentTest extends ModuleTestCase
         $this->assertTrue($payment->isCardPayment());
     }
 
+    /**
+     * @effects extension_id_persisted_as_is
+     */
     public function test_order_payment_accepts_extension_payment_method_id(): void
     {
         // 확장 결제수단 ID 를 1급 시민으로 저장할 수 있어야 한다 (캐스트가 있으면 ValueError).

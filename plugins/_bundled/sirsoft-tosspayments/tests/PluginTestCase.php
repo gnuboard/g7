@@ -2,7 +2,16 @@
 
 namespace Plugins\Sirsoft\Tosspayments\Tests;
 
+use App\Enums\PermissionType;
+use App\Extension\HookManager;
+use App\Models\Permission;
+use App\Models\Role;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Route;
+use Modules\Sirsoft\Ecommerce\Database\Seeders\TestingSeeder;
+use Modules\Sirsoft\Ecommerce\Providers\EcommerceServiceProvider;
 use Tests\TestCase;
 
 /**
@@ -32,7 +41,7 @@ abstract class PluginTestCase extends TestCase
      */
     protected function seeder(): string
     {
-        return \Modules\Sirsoft\Ecommerce\Database\Seeders\TestingSeeder::class;
+        return TestingSeeder::class;
     }
 
     /**
@@ -82,7 +91,7 @@ abstract class PluginTestCase extends TestCase
         $this->registerPluginAutoload();
 
         // 이커머스 모듈 ServiceProvider 등록 (Repository 바인딩)
-        $this->app->register(\Modules\Sirsoft\Ecommerce\Providers\EcommerceServiceProvider::class);
+        $this->app->register(EcommerceServiceProvider::class);
 
         // 모듈 라우트를 수동으로 등록
         $this->registerModuleRoutes();
@@ -93,7 +102,7 @@ abstract class PluginTestCase extends TestCase
         // SettingsServiceProvider 가 storage/app/settings/general.json 의 site_url 로
         // app.url 을 override 하면 Laravel 의 assertRedirect (APP_URL 기반) 와 mismatch.
         // 테스트 환경에서는 APP_URL 그대로 사용하도록 명시 리셋.
-        \Illuminate\Support\Facades\Config::set('app.url', env('APP_URL', 'http://localhost'));
+        Config::set('app.url', env('APP_URL', 'http://localhost'));
 
         // HookManager 상태 스냅샷 (tearDown 에서 복원)
         $this->snapshotHookManager();
@@ -114,7 +123,7 @@ abstract class PluginTestCase extends TestCase
      */
     private function snapshotHookManager(): void
     {
-        $ref = new \ReflectionClass(\App\Extension\HookManager::class);
+        $ref = new \ReflectionClass(HookManager::class);
         $this->hookSnapshot = [
             'hooks' => $ref->getProperty('hooks')->getValue(),
             'filters' => $ref->getProperty('filters')->getValue(),
@@ -131,7 +140,7 @@ abstract class PluginTestCase extends TestCase
             return;
         }
 
-        $ref = new \ReflectionClass(\App\Extension\HookManager::class);
+        $ref = new \ReflectionClass(HookManager::class);
         $ref->getProperty('hooks')->setValue(null, $this->hookSnapshot['hooks']);
         $ref->getProperty('filters')->setValue(null, $this->hookSnapshot['filters']);
         $ref->getProperty('dispatching')->setValue(null, $this->hookSnapshot['dispatching']);
@@ -155,15 +164,19 @@ abstract class PluginTestCase extends TestCase
             }
 
             $relativeClass = substr($class, $len);
-            $file = $moduleBasePath . str_replace('\\', '/', $relativeClass) . '.php';
+            $file = $moduleBasePath.str_replace('\\', '/', $relativeClass).'.php';
 
-            if (file_exists($file)) {
-                require $file;
+            if (file_exists($file)
+                && ! class_exists($class, false) && ! interface_exists($class, false)
+                && ! trait_exists($class, false) && ! enum_exists($class, false)) {
+                // 활성 디렉토리 사본이 이미 로드된 심볼을 다시 선언하면 fatal 이 된다 —
+                // 선언 여부를 자체 확인하고 require_once 로 이중 방어한다
+                require_once $file;
             }
         });
 
         // composer.json files 오토로드 (헬퍼 함수 등록)
-        $helpersFile = $moduleBasePath . 'Helpers/helpers.php';
+        $helpersFile = $moduleBasePath.'Helpers/helpers.php';
         if (file_exists($helpersFile)) {
             require_once $helpersFile;
         }
@@ -176,7 +189,7 @@ abstract class PluginTestCase extends TestCase
     {
         // 활성 디렉토리(plugins/sirsoft-tosspayments)가 아닌 자기 자신 기준 경로 —
         // _bundled 에서 직접 실행할 때도 소스를 찾도록 한다.
-        $pluginBasePath = dirname(__DIR__) . '/src/';
+        $pluginBasePath = dirname(__DIR__).'/src/';
 
         spl_autoload_register(function ($class) use ($pluginBasePath) {
             $prefix = 'Plugins\\Sirsoft\\Tosspayments\\';
@@ -187,10 +200,14 @@ abstract class PluginTestCase extends TestCase
             }
 
             $relativeClass = substr($class, $len);
-            $file = $pluginBasePath . str_replace('\\', '/', $relativeClass) . '.php';
+            $file = $pluginBasePath.str_replace('\\', '/', $relativeClass).'.php';
 
-            if (file_exists($file)) {
-                require $file;
+            if (file_exists($file)
+                && ! class_exists($class, false) && ! interface_exists($class, false)
+                && ! trait_exists($class, false) && ! enum_exists($class, false)) {
+                // 활성 디렉토리 사본이 이미 로드된 심볼을 다시 선언하면 fatal 이 된다 —
+                // 선언 여부를 자체 확인하고 require_once 로 이중 방어한다
+                require_once $file;
             }
         });
     }
@@ -203,7 +220,7 @@ abstract class PluginTestCase extends TestCase
         $apiRoutesFile = base_path('modules/sirsoft-ecommerce/src/routes/api.php');
 
         if (file_exists($apiRoutesFile)) {
-            \Illuminate\Support\Facades\Route::prefix('api/modules/sirsoft-ecommerce')
+            Route::prefix('api/modules/sirsoft-ecommerce')
                 ->name('api.modules.sirsoft-ecommerce.')
                 ->middleware('api')
                 ->group($apiRoutesFile);
@@ -215,10 +232,10 @@ abstract class PluginTestCase extends TestCase
      */
     protected function registerPluginRoutes(): void
     {
-        $webRoutesFile = dirname(__DIR__) . '/src/routes/web.php';
+        $webRoutesFile = dirname(__DIR__).'/src/routes/web.php';
 
         if (file_exists($webRoutesFile)) {
-            \Illuminate\Support\Facades\Route::prefix('plugins/sirsoft-tosspayments')
+            Route::prefix('plugins/sirsoft-tosspayments')
                 ->name('plugins.sirsoft-tosspayments.')
                 ->middleware('web')
                 ->group($webRoutesFile);
@@ -228,32 +245,32 @@ abstract class PluginTestCase extends TestCase
     /**
      * 관리자 사용자를 생성합니다.
      *
-     * @param array $permissions 추가 권한 목록
-     * @return \App\Models\User
+     * @param  array  $permissions  추가 권한 목록
+     * @return User
      */
-    protected function createAdminUser(array $permissions = []): \App\Models\User
+    protected function createAdminUser(array $permissions = []): User
     {
-        $user = \App\Models\User::factory()->create();
+        $user = User::factory()->create();
 
-        $uniqueRoleIdentifier = 'admin-test-' . $user->id . '-' . time();
-        $userRole = \App\Models\Role::create([
+        $uniqueRoleIdentifier = 'admin-test-'.$user->id.'-'.time();
+        $userRole = Role::create([
             'identifier' => $uniqueRoleIdentifier,
             'name' => ['ko' => '테스트 관리자', 'en' => 'Test Admin'],
         ]);
         $user->roles()->attach($userRole->id);
 
-        $adminAccessPermission = \App\Models\Permission::firstOrCreate(
+        $adminAccessPermission = Permission::firstOrCreate(
             ['identifier' => 'admin.access'],
             [
                 'name' => ['ko' => '관리자 접근', 'en' => 'Admin Access'],
-                'type' => \App\Enums\PermissionType::Admin,
+                'type' => PermissionType::Admin,
             ]
         );
         $userRole->permissions()->attach($adminAccessPermission->id);
 
         if (! empty($permissions)) {
             foreach ($permissions as $permissionIdentifier) {
-                $permission = \App\Models\Permission::firstOrCreate(
+                $permission = Permission::firstOrCreate(
                     ['identifier' => $permissionIdentifier],
                     [
                         'name' => ['ko' => $permissionIdentifier, 'en' => $permissionIdentifier],
@@ -270,12 +287,12 @@ abstract class PluginTestCase extends TestCase
     /**
      * 일반 사용자를 생성합니다.
      *
-     * @return \App\Models\User
+     * @return User
      */
-    protected function createUser(): \App\Models\User
+    protected function createUser(): User
     {
-        $userRole = \App\Models\Role::where('identifier', 'user')->first();
-        $user = \App\Models\User::factory()->create();
+        $userRole = Role::where('identifier', 'user')->first();
+        $user = User::factory()->create();
 
         if ($userRole) {
             $user->roles()->attach($userRole->id);

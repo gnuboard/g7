@@ -1,0 +1,39 @@
+feature: 코어 보안 수정 묶음 (2026-08 비공개 제보 대응 — 만료 토큰 로케일 / 실패 응답 마스킹 / 검색 하이라이트 이스케이프)
+
+description: |
+  2026-08 비공개 보안 제보 대응으로 코어에 반영된 세 수정의 회귀 고정.
+
+  1) 만료 토큰 로케일(㉗): SetLocale 미들웨어가 만료된 Sanctum 토큰을 유효한 회원으로
+     취급해 회원 로케일을 적용하던 문제. 만료 토큰은 guest 와 동일하게 처리한다.
+  2) 실패 응답 마스킹(㉚-2/N-9): UserService create/update/delete/withdraw 실패 시
+     예외 원문(SQLSTATE·쿼리)이 사용자 응답 메시지에 노출되던 문제. 고정 i18n 키만
+     응답하고 원문은 Log::error 로만 기록한다. 대상 lang 키의 :error 치환자 제거 포함.
+     (Module/Plugin/Template/Settings 서비스는 관리자 전용 진단면이라 의도적으로 제외 —
+     exceptions.md "예외 → 응답 매핑" 의 노출 폭 정책)
+  3) 검색 하이라이트 SSoT(⑧/N-8): app/Search/SearchHighlighter — 이스케이프 후
+     <mark> 삽입, 프리뷰는 decode → strip_tags 순서(엔티티 인코딩 태그 부활 방지).
+     board/ecommerce/page 3개 리스너가 이 헬퍼를 공유한다(각 확장 매니페스트 참조).
+
+axes:
+  case: [expired_token_locale, valid_token_locale, user_create_failure_masked, user_withdraw_failure_masked, masked_lang_keys, highlighter_escape, highlighter_plain_text]
+
+exclusions: []
+
+effects:
+  - expired_token_treated_as_guest_for_locale
+  - valid_token_applies_member_locale
+  - failure_response_omits_sql_text
+  - masked_lang_keys_have_no_error_placeholder
+  - highlight_escapes_markup_and_marks_keyword
+  - plain_text_never_resurrects_entity_encoded_tags
+
+test_files:
+  - tests/Feature/Middleware/SetLocaleExpiredTokenTest.php
+  - tests/Feature/Http/CoreExceptionMessageLeakTest.php
+  - tests/Feature/User/UserWithdrawErrorLeakTest.php
+  - tests/Unit/Search/SearchHighlighterTest.php
+
+notes: |
+  통합 검색 라우트의 optional.sanctum 부재(인증 회원이 guest 로 판정되던 문제)는
+  board 확장의 security-fixes-2026-08.yaml (available_boards_bearer_http 케이스)이
+  HTTP 전 구간으로 고정한다 — 서비스 직접 호출 테스트는 이 사각을 보지 못한다.

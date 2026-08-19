@@ -261,7 +261,8 @@ Route::post('user/orders', [PublicOrderController::class, 'store'])
 
 // 비회원 주문 조회 인증 API (주문번호+전화번호+비밀번호 → 조회 토큰 발급)
 // POST /api/modules/sirsoft-ecommerce/guest/orders/verify
-// 실패 잠금은 GuestOrderAuthService 가 담당하고, throttle 로 요청 빈도도 제한한다.
+// 무차별 대입 방어는 라우트 throttle(분당 20회, IP 기준) + 조회 비밀번호 정책(영문+숫자 8자 이상)이
+// 담당한다. 업계 표준·로그인/IDV 일관성을 고려해 별도 N회 잠금은 두지 않는다(#55 결정).
 Route::post('guest/orders/verify', [PublicOrderController::class, 'verify'])
     ->middleware('throttle:20,1')
     ->name('guest.orders.verify');
@@ -1136,16 +1137,20 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     // DELETE /api/modules/sirsoft-ecommerce/admin/presets/{preset} - 프리셋 삭제
     Route::prefix('presets')->group(function () {
         Route::get('/', [SearchPresetController::class, 'index'])
+            ->middleware('permission:admin,sirsoft-ecommerce.products.read')
             ->name('admin.presets.index');
 
         Route::post('/', [SearchPresetController::class, 'store'])
+            ->middleware('permission:admin,sirsoft-ecommerce.products.update')
             ->name('admin.presets.store');
 
         Route::put('/{preset}', [SearchPresetController::class, 'update'])
+            ->middleware('permission:admin,sirsoft-ecommerce.products.update')
             ->whereNumber('preset')
             ->name('admin.presets.update');
 
         Route::delete('/{preset}', [SearchPresetController::class, 'destroy'])
+            ->middleware('permission:admin,sirsoft-ecommerce.products.update')
             ->whereNumber('preset')
             ->name('admin.presets.destroy');
     });

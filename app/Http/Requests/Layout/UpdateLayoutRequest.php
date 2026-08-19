@@ -7,8 +7,10 @@ use App\Models\Template;
 use App\Models\TemplateLayout;
 use App\Rules\ComponentExists;
 use App\Rules\NoExternalUrls;
+use App\Rules\SafeLayoutExpressions;
 use App\Rules\ValidLayoutStructure;
 use App\Rules\WhitelistedEndpoint;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -24,6 +26,8 @@ class UpdateLayoutRequest extends FormRequest
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
      *
      * 권한 체크는 라우트의 permission 미들웨어에서 수행됩니다.
+     *
+     * @return bool 항상 true (권한은 미들웨어가 담당)
      */
     public function authorize(): bool
     {
@@ -33,7 +37,7 @@ class UpdateLayoutRequest extends FormRequest
     /**
      * 요청에 적용할 검증 규칙
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -71,6 +75,8 @@ class UpdateLayoutRequest extends FormRequest
                 new WhitelistedEndpoint,
                 // 4. 외부 URL 차단
                 new NoExternalUrls,
+                // 5. 표현식 샌드박스 우회/원격 스크립트 저장측 차단
+                new SafeLayoutExpressions,
             ],
         ];
 

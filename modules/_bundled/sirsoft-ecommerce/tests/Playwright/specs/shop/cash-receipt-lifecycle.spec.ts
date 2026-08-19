@@ -679,4 +679,50 @@ test.describe('현금영수증 전주기 (신청 → 입금확인 → 자동발�
       '거부된 조합인데 영수증이 발급되었다'
     ).toBeNull();
   });
+
+  // 발급사를 제공하는 확장이 없는 상태(미설정 또는 플러그인 제거)에서의 계약.
+  // 위 테스트들과 정확히 반대 조건이라 서로 배타적으로 skip 된다.
+  // @scenario provider_state=dead
+  // @effects issue_blocked_when_provider_unregistered, dead_provider_nulled_in_resource
+  test('발급사가 없으면 신규 발급이 차단되고 발급사 필드가 null 로 내려간다', async ({
+    page,
+    orderManageToken,
+  }) => {
+    await authenticatePage(page, orderManageToken);
+    await page.addInitScript((l) => localStorage.setItem('g7_locale', l), CART_LOCALE);
+    await page.goto('/shop');
+    await page.waitForLoadState('domcontentloaded');
+
+    const provider = await cashReceiptProvider(page);
+    test.skip(provider !== null, '현금영수증 발급사가 설정된 환경 — 이 계약은 미설정 상태 전용');
+
+    const orderNumber = await placeDbankOrderWithCashReceipt(page, null);
+    const orderId = await resolveOrderId(page, orderNumber);
+
+    // 주문 상세가 발급사를 null 로 내려야 화면이 발급 버튼을 켜지 않는다
+    const detail = await api(page, `/api/modules/sirsoft-ecommerce/admin/orders/${orderId}`);
+    expect(detail.status, `주문 상세 조회 실패: ${detail.body}`).toBe(200);
+
+    const payment = JSON.parse(detail.body)?.data?.payment ?? {};
+    expect(
+      payment,
+      '주문 상세 응답에 결제 정보가 없다 — 이후 단언이 무의미해진다'
+    ).toHaveProperty('cash_receipt_provider');
+    expect(
+      payment.cash_receipt_provider ?? null,
+      '발급사가 없는데 발급사 필드가 값을 갖고 있다'
+    ).toBeNull();
+
+    // 발급 시도는 거부되고 발급 이력도 남지 않아야 한다
+    const attempt = await api(page, `/api/modules/sirsoft-ecommerce/admin/orders/${orderId}/cash-receipt`, {
+      method: 'POST',
+      body: { receipt_type: 'income', identifier_type: 'phone', identifier: '01012345678' },
+    });
+
+    expect(attempt.status, `발급사가 없는데 발급이 수락됐다: ${attempt.body}`).not.toBe(200);
+    expect(
+      (await readReceiptState(page, orderId)).active,
+      '발급사가 없는데 활성 영수증이 생겼다'
+    ).toBeNull();
+  });
 });

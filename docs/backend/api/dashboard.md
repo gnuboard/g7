@@ -214,7 +214,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.dashboard.activities`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.dashboard.read`)이 없는 경우 |
 
 <!-- @generated:end -->
 
@@ -323,7 +323,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.dashboard.activities`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.notification-logs.read`)이 없는 경우 |
 
 <!-- @generated:end -->
 
@@ -395,7 +395,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.dashboard.activities`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.dashboard.read`)이 없는 경우 |
 
 <!-- @generated:end -->
 
@@ -481,7 +481,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.dashboard.activities`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.dashboard.read`)이 없는 경우 |
 
 <!-- @generated:end -->
 

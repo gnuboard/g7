@@ -518,7 +518,7 @@
                                             {
                                               "comment": "verify 실패는 결제 자체를 막지 않음 — 주문은 이미 생성되었으므로 사용자가 나중에 lookup 폼으로 재인증 가능. 토스트로만 안내.",
                                               "handler": "toast",
-                                              "params": { "type": "warning", "message": "$t:shop.checkout.guest_token_issue_failed" }
+                                              "params": { "type": "warning", "message": "{{error.message ?? '$t:shop.checkout.guest_token_issue_failed'}}" }
                                             }
                                           ]
                                         }

@@ -27,6 +27,12 @@ class SeoBoardSettingsCacheListener implements HookListenerInterface
                 'method' => 'onModuleSettingsSave',
                 'priority' => 20,
             ],
+            // 환경설정 기본값 일괄 적용도 게시판 화면 출력을 바꾸므로 같은 무효화가 필요하다.
+            // payload 가 ($fields, $updatedCount) 라 식별자 인자가 없어 전용 핸들러로 받는다.
+            'sirsoft-board.settings.after_bulk_apply' => [
+                'method' => 'onBulkApply',
+                'priority' => 20,
+            ],
         ];
     }
 
@@ -56,6 +62,27 @@ class SeoBoardSettingsCacheListener implements HookListenerInterface
             return;
         }
 
+        $this->invalidateBoardSeoCache();
+    }
+
+    /**
+     * 환경설정 기본값 일괄 적용 후 게시판 SEO 캐시를 무효화합니다.
+     *
+     * 이 훅의 payload 는 ($fields, $updatedCount) 로 모듈 식별자를 담지 않는다 —
+     * 게시판 모듈이 발행하는 훅이므로 식별자 가드 자체가 불필요하다.
+     *
+     * @param  mixed  ...$args  훅 인자 ($fields, $updatedCount)
+     */
+    public function onBulkApply(...$args): void
+    {
+        $this->invalidateBoardSeoCache();
+    }
+
+    /**
+     * 게시판 관련 SEO 레이아웃 캐시와 sitemap 캐시를 무효화합니다.
+     */
+    private function invalidateBoardSeoCache(): void
+    {
         try {
             $cache = app(SeoCacheManagerInterface::class);
 

@@ -4,6 +4,16 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.3] - 2026-08-19
+
+### Added
+
+- 가상계좌 환불 입력 필드 표시명(거래 ID·주문번호·취소 금액·취소 사유·환불 계좌번호·은행코드·예금주)의 일본어 번역을 추가했습니다.
+
+### Removed
+
+- 원본 플러그인에서 삭제된 가상계좌 환불 필수값 안내 문구(`errors.vbank_refund_required_fields`)를 함께 정리했습니다 — 개별 필드 검증 메시지로 대체되었습니다.
+
 ## [1.0.2] - 2026-08-10
 
 ### Changed

@@ -130,4 +130,17 @@ final class InlinePluginExtensionAdapter implements CacheableExtensionInterface
     {
         return $this->storage ??= new PluginStorageDriver($this->identifier);
     }
+
+    /**
+     * 카테고리별 스토리지 드라이버를 반환합니다.
+     *
+     * fallback 어댑터는 플러그인 인스턴스(오버라이드 지점)가 없으므로 기본 스토리지를 그대로 반환합니다.
+     *
+     * @param  string  $category  카테고리
+     * @return StorageInterface 기본 디스크의 스토리지 인스턴스
+     */
+    public function getStorageFor(string $category): StorageInterface
+    {
+        return $this->getStorage();
+    }
 }

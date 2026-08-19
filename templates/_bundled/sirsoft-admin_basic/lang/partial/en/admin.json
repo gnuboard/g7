@@ -205,7 +205,16 @@
       "bulk_block_success": "Users have been blocked.",
       "bulk_withdraw_title": "Withdraw Users",
       "bulk_withdraw_confirm": "Withdraw {{count}} user(s). This action may be difficult to reverse.",
-      "bulk_withdraw_success": "Users have been withdrawn."
+      "bulk_withdraw_success": "Users have been withdrawn.",
+      "bulk_withdraw_partial": "{updated} user(s) withdrawn. {failed} could not be processed — {reason}",
+      "bulk_withdraw_all_failed": "No users were withdrawn — {reason}",
+      "withdraw_confirm_title": "Confirm Withdrawal",
+      "withdraw_confirm_lead": "Saving the status as 'Withdrawn' will actually withdraw this user. This cannot be undone.",
+      "withdraw_confirm_effects_title": "What happens as well",
+      "withdraw_confirm_effect_anonymize": "Email, name and nickname are anonymized.",
+      "withdraw_confirm_effect_sessions": "All login sessions for this user are revoked.",
+      "withdraw_confirm_effect_linked": "Consent history and profile image are deleted, and linked data such as mileage and identity verification records is cleaned up.",
+      "withdraw_confirm_submit": "Withdraw User"
     },
     "form": {
       "page_title_create": "Create User",
@@ -1379,7 +1388,13 @@
       "image_max_width": "Max Width",
       "image_max_height": "Max Height",
       "image_quality": "Image Quality",
-      "image_quality_hint": "Enter a value between 1-100. Higher values mean better quality."
+      "image_quality_hint": "Enter a value between 1-100. Higher values mean better quality.",
+      "orphan_cleanup": "Orphan Attachment Cleanup",
+      "orphan_cleanup_desc": "Clean up attachments left without an owner because a form was abandoned before saving.",
+      "orphan_cleanup_enabled": "Auto cleanup orphan attachments",
+      "orphan_cleanup_enabled_hint": "Off by default — the operator must turn it on. When on, files and records of orphan attachments past the retention period are deleted daily. Attachments currently in use, such as the site logo, are never deleted.",
+      "orphan_retention_days": "Orphan attachment retention (days)",
+      "orphan_retention_days_hint": "Only orphan attachments older than this period are eligible for cleanup. Allow generous headroom for forms left open. (1 ~ 3650 days)"
     },
     "seo": {
       "meta_settings": "Meta Tag Settings",
@@ -1615,7 +1630,9 @@
     },
     "drivers": {
       "common": {
-        "optional": "Optional"
+        "optional": "Optional",
+        "unavailable_saved_value_prefix": "The saved value ",
+        "unavailable_saved_value_suffix": " is no longer available. Choose an available option and save."
       },
       "storage": {
         "title": "File Storage",
@@ -1627,17 +1644,21 @@
         },
         "s3_bucket": "S3 Bucket",
         "s3_region": "S3 Region",
-        "regions": {
-          "ap_northeast_2": "Asia Pacific (Seoul)",
-          "ap_northeast_1": "Asia Pacific (Tokyo)",
-          "us_east_1": "US East (N. Virginia)",
-          "us_west_2": "US West (Oregon)",
-          "eu_west_1": "Europe (Ireland)"
-        },
+        "s3_region_desc": "Enter an AWS region code or the region value of your S3-compatible storage. (e.g. ap-northeast-2, or auto for Cloudflare R2)",
         "s3_access_key": "Access Key",
         "s3_secret_key": "Secret Key",
-        "s3_url": "S3 URL",
-        "s3_url_desc": "Only enter if using a custom endpoint or CDN URL."
+        "s3_endpoint": "Endpoint URL",
+        "s3_endpoint_desc": "API endpoint of S3-compatible storage (Cloudflare R2, MinIO, etc.). Leave empty for AWS S3.",
+        "s3_use_path_style": "Use path-style addressing",
+        "s3_use_path_style_desc": "Enable for storages that only support path-style addressing, such as MinIO.",
+        "s3_url": "S3 URL (Public URL)",
+        "s3_url_desc": "CDN or custom domain used to build public file URLs. Enter the API address in the Endpoint URL field instead."
+      },
+      "public_asset": {
+        "title": "Public Asset Storage",
+        "desc": "Configure the disk for serving fully public assets (product, category, review, and editor images, etc.) via direct URLs. When disabled, the existing streaming method is used.",
+        "disk": "Disk",
+        "s3_help": "When selecting S3, the S3 URL (CDN domain) in the File Storage card above must be configured. Without it, streaming is used."
       },
       "cache": {
         "title": "Cache",
@@ -1730,9 +1751,6 @@
         "desc": "Configure the search engine driver for integrated and admin search.",
         "driver": "Search Engine Driver",
         "driver_desc": "The built-in MySQL FULLTEXT (ngram) engine supports Korean search without additional configuration.",
-        "options": {
-          "mysql_fulltext": "MySQL FULLTEXT (ngram)"
-        },
         "plugin_notice": "Additional drivers will appear when search engine plugins (Meilisearch, Elasticsearch, etc.) are installed."
       },
       "test_connection": "Test Connection",

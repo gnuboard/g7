@@ -38,6 +38,10 @@
     "pages_in_all": "ページの検索結果がありません",
     "suggestion": "別の検索キーワードで試してみてください"
   },
+  "failed": {
+    "title": "検索中にエラーが発生しました",
+    "suggestion": "しばらくしてからもう一度お試しください"
+  },
   "page_published_at": "公開日:{{date}}",
   "view_more": "さらに表示",
   "view_all": "すべて表示",

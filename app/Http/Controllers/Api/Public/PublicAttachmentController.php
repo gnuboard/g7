@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Api\Public;
 
 use App\Http\Controllers\Api\Base\PublicBaseController;
+use App\Http\Requests\Public\Attachment\DownloadAttachmentRequest;
 use App\Services\AttachmentService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -22,7 +22,7 @@ class PublicAttachmentController extends PublicBaseController
     /**
      * PublicAttachmentController 생성자
      *
-     * @param AttachmentService $attachmentService 첨부파일 서비스
+     * @param  AttachmentService  $attachmentService  첨부파일 서비스
      */
     public function __construct(
         private AttachmentService $attachmentService
@@ -36,11 +36,11 @@ class PublicAttachmentController extends PublicBaseController
      * 이미지 파일은 캐싱 헤더와 함께 인라인 표시하고,
      * 그 외 파일은 다운로드 방식으로 제공합니다.
      *
-     * @param Request $request HTTP 요청
-     * @param string $hash 첨부파일 해시 (12자)
+     * @param  DownloadAttachmentRequest  $request  다운로드 요청
+     * @param  string  $hash  첨부파일 해시 (12자)
      * @return BinaryFileResponse|StreamedResponse|Response|JsonResponse 파일 응답 또는 에러 응답
      */
-    public function download(Request $request, string $hash): BinaryFileResponse|StreamedResponse|Response|JsonResponse
+    public function download(DownloadAttachmentRequest $request, string $hash): BinaryFileResponse|StreamedResponse|Response|JsonResponse
     {
         $user = $request->user();
 
@@ -48,10 +48,10 @@ class PublicAttachmentController extends PublicBaseController
             // 파일 정보 조회 (권한 체크 포함)
             $fileInfo = $this->attachmentService->getFileInfo($hash, $user);
 
-            if (!$fileInfo) {
+            if (! $fileInfo) {
                 $attachment = $this->attachmentService->findByHash($hash);
 
-                if (!$attachment) {
+                if (! $attachment) {
                     return $this->notFound('attachment.not_found');
                 }
 
@@ -59,10 +59,11 @@ class PublicAttachmentController extends PublicBaseController
             }
 
             // 이미지 파일은 캐싱 헤더와 함께 응답 (환경설정 레이아웃 캐시 TTL 사용, 기본 24시간)
+            // 행 disk 를 따르는 스토리지 스트림 — 로컬 경로 전제 fileResponse 는 S3 행에서 성립하지 않는다 (#99)
             if (str_starts_with($fileInfo['mime_type'], 'image/')) {
-                return $this->fileResponse(
-                    $fileInfo['path'],
-                    $fileInfo['mime_type'],
+                return $this->streamedFileResponse(
+                    $fileInfo['response'],
+                    $fileInfo['etag_source'],
                     (int) g7_core_settings('cache.layout_ttl', 86400)
                 );
             }
@@ -70,7 +71,7 @@ class PublicAttachmentController extends PublicBaseController
             // 이미지가 아닌 파일은 기존 다운로드 방식 유지
             $response = $this->attachmentService->download($hash, $user);
 
-            if (!$response) {
+            if (! $response) {
                 return $this->forbidden('attachment.access_denied');
             }
 

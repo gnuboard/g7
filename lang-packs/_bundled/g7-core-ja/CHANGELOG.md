@@ -4,6 +4,35 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.6] - 2026-08-19
+
+### Changed
+
+- 회원 관리(생성·수정·삭제·탈퇴) 실패 안내에서 오류 원문 노출(`:error`)이 제거된 것에 맞춰, 해당 실패 문구의 일본어 번역을 재시도 안내 문구로 갱신했습니다 (`user.create_failed`, `user.update_failed`, `user.delete_failed`, `user.withdraw_failed`).
+- S3 리전 검증 메시지를 목록 선택 안내에서 형식 안내(소문자 영숫자·하이픈, R2 는 `auto`)로 개정했습니다.
+
+### Added
+
+- 검색엔진 드라이버 라벨 일본어 번역을 추가했습니다 (`settings.drivers.search.*`) — 환경설정 > 드라이버 탭의 검색엔진 선택지가 일본어 로케일에서 표시됩니다.
+- S3 호환 스토리지 설정 신설 항목(엔드포인트 URL·Path-style 주소)과 리전 형식 안내의 검증 메시지 일본어 번역 추가 (`validation.settings.s3_endpoint_*`, `s3_use_path_style_boolean`, `s3_region_*`) — 드라이버 설정 저장 시 오류 안내가 일본어 로케일에서 자연스럽게 표시됩니다. (#99 @lyg-kaban 님께서 제보해주셨습니다.)
+- 드라이버 사용 불능 안내 문구 일본어 번역 추가 (`validation.settings.driver_unusable`, `settings.driver_unusable_*`, `settings.s3_adapter_missing`) — 필요한 라이브러리·PHP 확장이 없는 드라이버를 저장·테스트할 때의 사유 안내가 일본어 로케일에서 표시됩니다.
+- 웹소켓 서버(백엔드 발송용) endpoint 연결 실패 안내 일본어 번역 추가 (`settings.websocket_server_test_failed`).
+- 공개 자산 스토리지(공개 이미지 직접 URL 서빙) 설정의 드라이버 라벨과 검증 메시지 일본어 번역을 추가했습니다. 환경설정 > 드라이버 탭의 새 설정이 일본어 로케일에서 자연스럽게 표시됩니다. (#100 @lyg-kaban 님께서 건의해주셨습니다.)
+- 설정 항목 단위 저장의 값 형식 안내 일본어 번역을 추가했습니다 (`validation.setting.value.*`) — 켜기/끄기·숫자 설정에 맞지 않는 값을 저장할 때의 안내가 일본어 로케일에서 표시됩니다.
+- 슈퍼 관리자 계정·역할 수정 상한 및 권한 부여 상한 위반 시 표시되는 예외 메시지(`cannot_modify_super_admin`, `cannot_grant_unheld_permission`, `cannot_modify_protected_role`)의 일본어 번역을 추가했습니다.
+- 레이아웃 저장 시 위험 표현식·외부 리소스 URL 거부 안내(`layout.dangerous_expression`, `layout.external_resource_url`)의 일본어 번역을 추가했습니다.
+- 고아 첨부 정리 설정의 검증 메시지와 항목명 일본어 번역을 추가했습니다 (`validation.settings.orphan_*`) — 환경설정 > 업로드의 자동 정리·보존기간을 잘못 저장할 때의 안내가 일본어 로케일에서 항목 이름과 함께 표시됩니다.
+- 데이터베이스 백업 미제공 안내 문구의 일본어 번역을 추가했습니다 (`settings.database_backup_unavailable`).
+- 셸 예약 작업 허용목록에 인터프리터를 등록했을 때 인라인 명령 실행·안전하지 않은 스크립트 경로를 거부하는 안내 문구의 일본어 번역을 추가했습니다 (`validation.schedule_command.shell_interpreter_denied`).
+
+### Removed
+
+- 참조처가 사라진 S3 리전 선택 검증 메시지(`validation.settings.s3_region_required`)를 원본(ko/en)과 함께 정리했습니다.
+
+### Fixed
+
+- 범용 입력 항목의 검증 문구가 특정 화면 전용 이름(SMTP 비밀번호·기본 언어·기본 통화 등)으로 표시되던 문제를 수정했습니다 — 전역 라벨을 범용 문구로 되돌리고 SMTP·사용자 목록 등 도메인 전용 라벨을 별도 키로 분리했습니다. (#113 @Tuwasduliebst 님께서 제보해주셨습니다.)
+
 ## [1.0.5] - 2026-08-10
 
 ### Added

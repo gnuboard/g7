@@ -83,4 +83,26 @@ class ActivityLogService
 
         return $count;
     }
+
+    /**
+     * 보존 기간이 지난 활동 로그를 정리합니다 (자동 파기).
+     *
+     * 운영자가 고른 ID 를 지우는 deleteMany 와는 별개의 훅을 발행한다. 자동 파기는
+     * 대상을 ID 로 지목하지 않고(기간으로 정한다), 사람이 없는 예약 실행이라
+     * 본인인증 같은 대화형 가드를 태울 수 없기 때문이다. 확장은 이 훅으로
+     * 외부 보관 등 자기 처리를 붙인다.
+     *
+     * @param  int  $days  보존 기간 (일)
+     * @return int 삭제된 건수
+     */
+    public function prune(int $days): int
+    {
+        HookManager::doAction('core.activity_log.before_prune', $days);
+
+        $count = $this->repository->deleteOlderThan($days);
+
+        HookManager::doAction('core.activity_log.after_prune', $days, $count);
+
+        return $count;
+    }
 }

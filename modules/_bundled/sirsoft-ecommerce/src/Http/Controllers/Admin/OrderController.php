@@ -12,6 +12,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
+use Modules\Sirsoft\Ecommerce\Exceptions\OrderAmountChangedException;
+use Modules\Sirsoft\Ecommerce\Exceptions\OrderCancellationException;
+use Modules\Sirsoft\Ecommerce\Exceptions\OrderProcessingException;
 use Modules\Sirsoft\Ecommerce\Exceptions\PaymentAmountMismatchException;
 use Modules\Sirsoft\Ecommerce\Exceptions\ResourceScopeMismatchException;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\BulkChangeOrderOptionStatusRequest;
@@ -31,6 +34,7 @@ use Modules\Sirsoft\Ecommerce\Services\OrderCancellationService;
 use Modules\Sirsoft\Ecommerce\Services\OrderOptionService;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Modules\Sirsoft\Ecommerce\Services\OrderService;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * 주문 관리 컨트롤러
@@ -67,6 +71,8 @@ class OrderController extends AdminBaseController
                 'messages.orders.fetch_success',
                 $collection->withStatistics($statistics)
             );
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
@@ -100,6 +106,8 @@ class OrderController extends AdminBaseController
                 'messages.orders.fetch_success',
                 new OrderResource($order)
             );
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
@@ -132,6 +140,8 @@ class OrderController extends AdminBaseController
                 'messages.orders.update_failed',
                 422
             );
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
@@ -164,6 +174,8 @@ class OrderController extends AdminBaseController
                 'messages.orders.bulk_update_failed',
                 422
             );
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
@@ -190,6 +202,8 @@ class OrderController extends AdminBaseController
                 'messages.orders.deleted',
                 ['deleted' => true]
             );
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
@@ -247,6 +261,8 @@ class OrderController extends AdminBaseController
                 'messages.orders.option_status_change_failed',
                 400
             );
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
@@ -273,6 +289,8 @@ class OrderController extends AdminBaseController
                 'sirsoft-ecommerce',
                 'messages.orders.email_sent'
             );
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
@@ -304,6 +322,8 @@ class OrderController extends AdminBaseController
                 'messages.orders.estimate_refund_success',
                 $result->toPreviewArray()
             );
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             Log::error('환불 예상금액 계산 실패', [
                 'order_id' => $order->id,
@@ -361,6 +381,18 @@ class OrderController extends AdminBaseController
                 'messages.orders.cancelled',
                 new OrderResource($updatedOrder)
             );
+        } catch (OrderCancellationException $e) {
+            // 취소 도메인 규칙 위반 — 운영자에게 안내 가능한 상황이므로 422.
+            // detail 은 PG 환불 거절 사유 등 조치 근거다 — 관리자 전용 면의 errors
+            // 페이로드는 진단 정보로 허용된다(감추면 서버 로그 없이는 조치 불가).
+            return ResponseHelper::moduleError(
+                'sirsoft-ecommerce',
+                'messages.orders.cancel_failed',
+                422,
+                ['detail' => $e->getMessage()]
+            );
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             Log::error('주문 취소 실패 (관리자)', [
                 'order_id' => $order->id,
@@ -370,9 +402,8 @@ class OrderController extends AdminBaseController
 
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
-                'messages.orders.cancel_failed',
-                422,
-                ['detail' => $e->getMessage()]
+                'exceptions.operation_failed',
+                500
             );
         }
     }
@@ -412,6 +443,18 @@ class OrderController extends AdminBaseController
                 422,
                 ['detail' => $e->getMessage()]
             );
+        } catch (OrderProcessingException|OrderAmountChangedException $e) {
+            // 입금확인 도메인 규칙 위반(전이 불가 상태/결제예정금액 변동) — 422.
+            // detail 은 같은 메서드의 PaymentAmountMismatchException 과 동일한 관리자
+            // 진단 통로다 — 한 메서드 안에서 노출 수준이 갈리면 안 된다.
+            return ResponseHelper::moduleError(
+                'sirsoft-ecommerce',
+                'messages.orders.deposit_confirm_failed',
+                422,
+                ['detail' => $e->getMessage()]
+            );
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             Log::error('무통장 입금확인 실패 (관리자)', [
                 'order_id' => $order->id,
@@ -420,9 +463,8 @@ class OrderController extends AdminBaseController
 
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
-                'messages.orders.deposit_confirm_failed',
-                422,
-                ['detail' => $e->getMessage()]
+                'exceptions.operation_failed',
+                500
             );
         }
     }
@@ -458,6 +500,8 @@ class OrderController extends AdminBaseController
                 'sirsoft-ecommerce',
                 'messages.orders.guest_password_reset_success'
             );
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             Log::error('비회원 조회 비밀번호 재설정 실패', [
                 'order_id' => $order->id,
@@ -490,6 +534,8 @@ class OrderController extends AdminBaseController
                 'messages.orders.logs_fetch_success',
                 ActivityLogResource::collection($logs)->response()->getData(true)
             );
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',

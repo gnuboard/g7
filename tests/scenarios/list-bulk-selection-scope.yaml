@@ -1,0 +1,44 @@
+feature: 일괄 처리 목록의 선택 범위 (DataGrid selectionScope)
+
+description: |
+  체크박스 선택은 화면 밖(전역/로컬 상태)에 저장되므로, 검색·필터·페이지 이동으로 행이
+  목록에서 빠져도 선택은 남는다. 그 상태에서 일괄 처리를 누르면 운영자가 보고 있지도,
+  체크하지도 않은 행이 대상이 된다. 확인 창은 건수만 말하고 대상을 부르지 않으므로 실행
+  전에 알아챌 방법이 없고, 서버는 정상 처리하므로 오류도 남지 않는다.
+
+  수정: DataGrid 가 `selectionScope` 를 갖고, `"page"` 인 목록은 지금 그려진 행에 없는
+  선택을 버린다. 선택 자체가 저장 대상인 폼(쿠폰 적용 대상 고르기 등)은 `"free"` 로
+  종전 동작을 유지한다. 값은 소비 화면이 반드시 명시하며 정적 검사가 미선언을 차단한다.
+
+  범위: 저장소의 모든 소비 화면 16곳 (page 12 / free 4).
+
+axes:
+  scope: [page, free]
+  transition: [search_filter_change, page_change, initial_mount]
+
+exclusions:
+  - { scope: free, transition: page_change, reason: "free 는 정의상 어떤 전이에서도 선택을 건드리지 않는다 — 전이별 분해가 의미 없어 대표 1건(search_filter_change)으로 고정" }
+  - { scope: free, transition: initial_mount, reason: "동일" }
+
+effects:
+  - hidden_row_selection_dropped
+  - visible_row_selection_survives
+  - selection_cleaned_even_when_selectable_off
+  - free_scope_leaves_selection_untouched
+  - no_callback_when_nothing_to_drop
+  - bulk_button_disabled_when_selection_empties
+  - bulk_request_carries_only_visible_checked_rows
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/DataGrid.test.tsx
+  - tests/Playwright/specs/admin/list-bulk-selection-scope.spec.ts
+
+rules_layer_coverage:
+  - rule: layout-datagrid-selection-scope
+    coverage: |
+      소비 화면 전수(16곳)가 scope 를 명시했는지는 테스트가 아니라 룰이 증명한다 —
+      화면을 axis 로 두면 화면이 늘 때마다 테스트를 복제해야 하고, 정작 새로 생긴
+      화면의 누락은 잡히지 않는다. 룰은 onSelectionChange 가 배선된 DataGrid 전수에서
+      미선언·비허용값을 차단한다.
+      설계상 free 고정 화면: 쿠폰 적용 대상 선택기(여러 페이지에 걸쳐 고른다),
+      주문 상세 클레임 대상 선택기(선택이 곧 입력값).

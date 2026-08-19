@@ -16,6 +16,27 @@
 
 ---
 
+## 옵션의 무게·부피 (`options[].weight` / `options[].volume`)
+
+옵션 리소스(`ProductOptionResource`)는 배송비 계산에 쓰이는 물성 두 개를 함께 내려보냅니다.
+
+| 필드 | 타입 | 단위 | 설명 |
+| --- | --- | --- | --- |
+| weight | number\|null | g (그램) | 옵션 1개의 무게. 미입력이면 `null` |
+| volume | number\|null | cm³ (세제곱센티미터) | 옵션 1개의 부피. 미입력이면 `null` |
+
+단위는 저장 단위 그대로입니다. 배송정책의 구간·단위값은 kg / L 로 입력받으며, 환산은
+배송비를 계산하는 시점에 한 번만 수행됩니다 (`docs/api/shipping-policies.md` 참고).
+
+`null` 과 `0` 은 구분됩니다 — `null` 은 미입력, `0` 은 "무게 없음"입니다. 수정 요청은
+전달된 필드만 반영하므로, 편집 화면이 이 값을 받지 못한 채 저장하면 기존 값이 그대로
+유지되지만 화면에 `0` 으로 그려 놓고 저장하면 실측값이 0 으로 덮어써집니다.
+
+주문 생성 시 이 값은 주문 옵션(`unit_weight`/`unit_volume`)에 g / cm³ 그대로 복사되고,
+주문의 `total_weight`/`total_volume` 은 옵션 소계의 합입니다.
+
+---
+
 ## 목록 응답의 총 건수와 페이지 이동
 
 상품 목록(관리자·공개 양쪽)은 총 건수를 상한까지만 셉니다. 상한을 넘으면 응답의
@@ -1321,6 +1342,7 @@ HTTP/1.1 201
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) 또는 상품 이미지 개수 상한 초과 (`ProductImageUploadLimitException`) |
+| 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
 
@@ -1383,6 +1405,7 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
 
@@ -1436,6 +1459,7 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없는 경우 |
 | 404 | Not Found | `id` 에 해당하는 이미지가 없는 경우 (`messages.product_images.not_found`) |
+| 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
 
@@ -1694,6 +1718,7 @@ HTTP/1.1 201
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) 또는 상품 이미지 개수 상한 초과 (`ProductImageUploadLimitException`) |
+| 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
 
@@ -1748,6 +1773,7 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
 
@@ -3392,7 +3418,7 @@ HTTP/1.1 200
 | product | path | string | 예 | — | 대상 product의 식별자 |
 | page | query | integer | 아니오 | min 1 | 조회할 페이지 번호 (1부터 시작) |
 | per_page | query | integer | 아니오 | min 1, max 100 | 페이지당 항목 수 |
-| exclude_secret | query | boolean | 아니오 | — | 비밀글 제외 여부 (기본 `false` — 포함). `true` 면 비밀 문의를 목록에서 제외합니다. 쿼리 문자열 `"true"`/`"false"` 도 해석되며, 해석할 수 없는 값은 그대로 검증되어 422 가 됩니다 |
+| exclude_secret | query | boolean | 아니오 | — | 비밀글 제외 여부 (기본 `false` — 포함). `true` 면 비밀 문의를 목록에서 제외합니다. 쿼리 문자열 `"true"`/`"false"` 도 해석되며, 해석할 수 없는 값은 그대로 검증되어 422 가 됩니다. **보안 경계가 아니라 단순 표시 필터입니다** — 비밀 문의의 노출/마스킹은 이 값과 무관하게 서버가 요청자 신원으로 결정합니다 |
 
 **요청 예시**
 
@@ -3495,7 +3521,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 상품의 1:1 문의 목록을 조회합니다. `optional.sanctum`(회원/비회원 모두 접근) + `sirsoft-ecommerce.user-products.read` 권한이 적용되며, `ProductInquiryService::getProductInquiries()`가 게시판 모듈과 연동된 문의 글을 페이지네이션해 `items`와 `board_settings`(비밀글 모드·카테고리 등) 메타를 반환합니다. `per_page`/`page`/`exclude_secret` 쿼리로 조회 범위를 조정하며, 비밀 문의는 설정과 열람 권한에 따라 마스킹됩니다. 상품 상세의 문의 탭에 사용됩니다.
+**설명** 상품의 1:1 문의 목록을 조회합니다. `optional.sanctum`(회원/비회원 모두 접근) + `sirsoft-ecommerce.user-products.read` 권한이 적용되며, `ProductInquiryService::getProductInquiries()`가 게시판 모듈과 연동된 문의 글을 페이지네이션해 `items`와 `board_settings`(비밀글 모드·카테고리 등) 메타를 반환합니다. `per_page`/`page`/`exclude_secret` 쿼리로 조회 범위를 조정합니다. 비밀 문의는 요청자 신원(작성자 본인·게시판 비밀글 열람 권한)에 따라 서버가 마스킹하며, 열람 권한이 없으면 `title`은 "비밀글" 플레이스홀더로 치환되고 `content`·`reply`는 `null`, `attachments`는 빈 배열로 내려갑니다(`is_secret`·작성자·답변 여부 등 메타는 유지). 이 마스킹은 게시판 모듈이 실어 보내는 권위 플래그(`can_view_secret`)를 신뢰하며, 플래그가 없으면 fail-closed 로 마스킹합니다. `exclude_secret` 쿼리는 표시 필터일 뿐 이 판정에 관여하지 않습니다. 상품 상세의 문의 탭에 사용됩니다.
 
 
 ### POST /api/modules/sirsoft-ecommerce/products/{product}/inquiries
@@ -3565,11 +3591,11 @@ HTTP/1.1 201
 | --- | --- | --- |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-products.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) 또는 도메인 규칙 위반(비밀글 비허용 등, `RuntimeException` → `messages.inquiries.create_failed`) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) 또는 도메인 규칙 위반(문의 게시판 미설정·게시판 모듈 불가 등, `ProductInquiryOperationException` → `messages.inquiries.operation_failed_reason` 에 사유가 담김) |
 
 <!-- @generated:end -->
 
-**설명** 상품에 1:1 문의를 작성합니다. `optional.sanctum` + `sirsoft-ecommerce.user-products.read` 권한이 적용되며(선택적 인증 표면이지만 실제 작성은 인증 사용자를 전제), `ProductInquiryService::createInquiry()`가 게시판 모듈과 연동해 문의 글을 생성하고 성공 시 201과 생성된 `id`를 반환합니다. `content`는 필수, `title`/`category`/`is_secret`은 선택이며, 첨부는 사전 업로드한 `temp_key`로 연결됩니다. 도메인 규칙 위반(비밀글 비허용 등)은 `RuntimeException`으로 422를 반환합니다.
+**설명** 상품에 1:1 문의를 작성합니다. `optional.sanctum` + `sirsoft-ecommerce.user-products.read` 권한이 적용되며(선택적 인증 표면이지만 실제 작성은 인증 사용자를 전제), `ProductInquiryService::createInquiry()`가 게시판 모듈과 연동해 문의 글을 생성하고 성공 시 201과 생성된 `id`를 반환합니다. `content`는 필수, `title`/`category`/`is_secret`은 선택이며, 첨부는 사전 업로드한 `temp_key`로 연결됩니다. 도메인 규칙 위반(문의 게시판 미설정·게시판 모듈 불가 등)은 `ProductInquiryOperationException` 으로 422 를 반환하며, 예외가 들고 있는 다국어 키로 해석한 사유가 응답 문구에 포함됩니다. 그 밖의 예외는 서버 결함으로 보아 500 입니다.
 
 
 ### GET /api/modules/sirsoft-ecommerce/products/{product}/reviews

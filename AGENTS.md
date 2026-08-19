@@ -165,7 +165,7 @@
 | `sirsoft-board` | 모듈 | [docs/api/](modules/_bundled/sirsoft-board/docs/api/README.md) | 10 / 80 |
 | `sirsoft-ecommerce` | 모듈 | [docs/api/](modules/_bundled/sirsoft-ecommerce/docs/api/README.md) | 33 / 239 |
 | `sirsoft-page` | 모듈 | [docs/api/](modules/_bundled/sirsoft-page/docs/api/README.md) | 2 / 17 |
-| `sirsoft-ckeditor5` | 플러그인 | [docs/api/](plugins/_bundled/sirsoft-ckeditor5/docs/api/README.md) | 2 / 2 |
+| `sirsoft-ckeditor5` | 플러그인 | [docs/api/](plugins/_bundled/sirsoft-ckeditor5/docs/api/README.md) | 3 / 5 |
 | `sirsoft-gdpr` | 플러그인 | [docs/api/](plugins/_bundled/sirsoft-gdpr/docs/api/README.md) | 4 / 15 |
 | `sirsoft-marketing` | 플러그인 | [docs/api/](plugins/_bundled/sirsoft-marketing/docs/api/README.md) | 2 / 2 |
 | `sirsoft-pay_kginicis` | 플러그인 | [docs/api/](plugins/_bundled/sirsoft-pay_kginicis/docs/api/README.md) | 5 / 34 |
@@ -260,6 +260,9 @@
 | `Select valueKey/labelKey` | computed로 `{ value, label }` 변환 |
 | Form 내 `Button` type 없음 | `type="button"` 명시 (submit 방지) |
 | `options={{options}}` | `options={{options ?? []}}` (fallback) |
+| boolean 필드를 `RadioGroup`/`Select` 의 `name` 자동바인딩만으로 폼에 묶기 | `autoBinding: false` + `value: "{{String(_local.form?.필드 ?? 기본값)}}"` + `change` 액션 `"{{$event.target.value === 'true'}}"` 캐스팅. 자동바인딩 value 경로는 `e.target.value` 문자열을 그대로 저장해 서버 `boolean` 규칙에서 422 가 된다 (표시만 보면 정상이라 저장 시점에야 드러남) |
+| `options` 지정 커스텀 `Select`(composite) 에 `defaultValue` | `value: "{{상태 ?? 기본값}}"` + `change` 액션 + 열기 지점 상태 시드 — 커스텀 Select 는 value-제어 전용이라 `defaultValue` 는 렌더되지 않고(빈 표시) 숨은 input 도 없어 값이 조용히 미전송된다 (options 없는 네이티브 렌더 경로만 defaultValue 유효) |
+| 폼 밖 제출 버튼 `props.form: "X"` 만 선언 | 참조 대상 `Form` 에 `props.id: "X"` 동반 필수 — id 가 없으면 버튼이 어떤 폼에도 연결되지 않아 클릭이 무반응이 된다 (오류 없음) |
 
 Icon 은 `<i>` 글리프라 박스 크기가 곧 `font-size` 다. `w-N h-N` 은 박스만 정하고 글리프는 부모 `font-size` 를 상속하므로 어긋난다. 기존 `w-N h-N` 을 옮길 때는 아래 등가표를 쓴다 (Chrome 실측).
 
@@ -355,6 +358,21 @@ Icon 은 `<i>` 글리프라 박스 크기가 곧 `font-size` 다. `w-N h-N` 은 
 
 의도적 리셋(검색 초기화 / 필터 초기화 / 탭 전환 / 프리셋 적용 / 다른 목록으로의 이동)은 예외다. 그 경우 액션 노드 `comment` 에 `audit:allow layout-list-context-navigate-merge-query <사유>` 를 남겨 의도를 코드에 기록한다. 상세: [actions-handlers-navigation.md "목록 컨텍스트 왕복 규약"](docs/frontend/actions-handlers-navigation.md)
 
+### 일괄 처리 목록의 선택 범위
+
+체크박스 선택은 화면 밖(전역/로컬 상태)에 저장된다. 그래서 검색·필터·페이지 이동으로 행이 목록에서 빠져도 그 행의 선택은 남는다. 그 상태에서 일괄 처리를 누르면 사용자가 보고 있지도, 체크하지도 않은 행이 대상이 된다. 확인 모달은 건수만 말하므로 실행 전에 알아챌 방법이 없고, 처리는 정상 성공하므로 실행 후에도 오류가 남지 않는다.
+
+| ❌ 금지 | ✅ 올바른 사용 |
+|--------|---------------|
+| 선택을 화면 밖 상태에 저장하는 DataGrid 에 `selectionScope` 미선언 | `"selectionScope": "page"`(일괄 처리 목록) 또는 `"free"`(선택 자체가 저장 대상인 폼)를 **명시** |
+| 일괄 처리 버튼이 달린 목록에 `"free"` | `"page"` — 대상은 언제나 "화면에 보이고 체크된 행" |
+| 여러 페이지에 걸쳐 고르는 폼 선택기에 `"page"` | `"free"` — 페이지를 넘기면 앞 페이지 선택이 사라져 기능이 깨진다 |
+| `selectable` 이 꺼진 화면이라 안전하다고 간주 | 체크박스가 없으면 남은 선택이 **더** 안 보인다 — 범위 판정은 `selectable` 과 무관 |
+| `"selectionScope": "{{조건}}"` 표현식 분기 | 리터럴 고정 — 분기마다 보존 여부가 갈리면 한쪽이 조용히 대상 밖 행을 싣는다 |
+| 화면마다 검색·필터·페이지 액션에 선택 초기화 액션을 복제 | 컴포넌트가 단일 지점에서 정리 — 액션 복제는 한 곳만 빠져도 같은 결함이 남는다 |
+
+정적 검사가 `onSelectionChange` 가 배선된 DataGrid 를 전수 검사해 미선언을 차단한다. 상세: [component-props.md DataGrid](docs/frontend/component-props.md)
+
 ### 중첩 리소스 스코프 / 계층 무결성
 
 | 금지 | 올바른 사용 |
@@ -368,6 +386,33 @@ Icon 은 `<i>` 글리프라 박스 크기가 곧 `font-size` 다. `w-N h-N` 은 
 | 계층 재귀(path/depth 재계산)에 방문 ID 가드 없음 | 방문 집합으로 유한 종료 — 검증 우회 경로/오염 데이터에서도 무한 루프 금지 |
 
 > 상세: [validation.md "계층 리소스 순환 참조" / "배열 항목의 상위 스코프"](docs/backend/validation.md), [service-repository.md "중첩 리소스 스코프" / "설정 기반 한계값"](docs/backend/service-repository.md)
+
+#### 보안 게이트 대칭성 (KVE-2026-1914/1915/1919)
+
+접근 게이트와 권한 등급 상한은 한 경로에만 있으면 다른 경로가 조용한 우회로가 된다. 게이트는 생산 지점(부모 비밀 판정 · 소유권 판정 · 등급 판정) 한 곳을 SSoT 로 두고, 같은 데이터를 내보내는 소비 경로 전부가 그 게이트를 경유해야 한다.
+
+| 금지 | 올바른 사용 |
+|------|------------|
+| 비밀/비공개 부모(게시글)의 비밀 게이트를 하위 리소스(댓글·첨부·문의) 독립 엔드포인트에서 재적용하지 않음 | 부모 비밀 판정을 하위 전 경로(훅·서비스·첨부 서빙·댓글 목록)에 재적용 — PostResource 한 곳만으로는 부족하다 (KVE-2026-1914) |
+| hash 기반 file-serving(preview/download)이 소유권·비밀·발행 상태 검사 없이 서빙 | preview 와 download 가 동일 게이트 공유 — 미발행·비소유·비밀 첨부는 404 (KVE-2026-1914 A-3/S-1/S-2) |
+| User/Role 의 쓰기·상태변경·권한부여 경로가 삭제 경로보다 약한 등급 가드 | 전 경로에 동일 등급-상한(rank ceiling)을 대칭 적용 — 정적 라우트(bulk)는 스코프 미들웨어가 우회되므로 서비스 계층에서 강제한다 (KVE-2026-1919) |
+| 저장측 레이아웃 표현식 검증(SafeLayoutExpressions)을 문자열 endpoint 필드에만 부착 | 표현식이 실릴 수 있는 배열 트리 전체(`content`)에 부착 — 문자열 한정 부착은 `is_array` 가드로 무력화되어 no-op 이 된다 (KVE-2026-1915) |
+| 배열 트리 순회용 규칙(`NoExternalUrls`)이 문자열 필드에도 부착돼 `is_array` 로 조용히 통과 | 규칙이 문자열 스칼라도 처리하거나, 그 자리에서 떼어낸다 — 부착만 해두고 통과시키는 상태가 최악이다 |
+| 같은 저장 대상의 FormRequest 마다 부착 규칙이 다름 (편집기 경로만 누락) | Store·Update·Content·ExtensionContent 4경로 동일 강도 — 편집기 저장 경로가 가장 약하면 그 경로가 우회로다 |
+| same-origin 을 `//` 접두·scheme·`/` 시작 **문자열 검사**로만 판정 | 브라우저 URL 파서와 동일 정규화(tab·LF·CR 제거 → 백슬래시를 슬래시로 → 선행 슬래시 런 접기) 후 판정 — `/\/evil.com/x.js` 는 문자열상 path 지만 브라우저는 외부 origin 으로 해석한다. 런타임·저장측·정적검사 3층이 같은 정규화를 공유한다 (KVE-2026-1915 B-2) |
+| same-origin 판정만 정규화하고 **신뢰 호스트 추출(`hostOf`)은 원문**으로 판정 | 두 판정이 같은 `if` 안에서 이어지므로 정규화도 공유 — 어긋나면 `https://evil.com\@cdn.신뢰.com/x.js` 가 저장측에서만 신뢰 호스트로 보여 통과한다 |
+| 정적 일괄 라우트(`bulk-*`)에 등급 상한만 적용하고 **스코프 축은 비움** | 라우트 모델이 없으면 미들웨어 스코프 검사가 스킵되므로 서비스가 상세 경로와 **같은 스코프 판정**(`PermissionHelper::filterByScope`)을 재적용 — 등급 축만 막으면 스코프 축이 우회로다 (KVE-2026-1919) |
+| 권한 상한(ceiling) 검사를 DB 쓰기 **뒤**에 배치 | 가드 → 쓰기 순서 — 쓰기 뒤에 검사하면 거부된 요청이 고아 행·반영된 속성 변경을 남긴다. 회귀 테스트는 403 뿐 아니라 **상태 불변**까지 단언한다 |
+| 같은 리소스를 쓰는 public 서비스 메서드 중 일부만 보호 가드 보유 | 형제 public 메서드 전부 동일 가드 — 서비스는 확장에 열려 있으므로 "현재 호출부가 없다" 는 방어가 아니다 |
+| 라우트 파라미터가 Model 로 resolve 되지 않는 쓰기 경로를 미들웨어 스코프 검사에 맡김 | 서비스 계층에서 재적용 — 스킵 조건은 정적 경로(`bulk-*`·`reorder`)뿐 아니라 **파라미터명 불일치**(`{id}` + `int` 타입힌트)도 있고, 후자는 상세 경로까지 무가드다 |
+| 순서 변경·일괄 작업의 스코프 거부를 "대상 일부 제외" 로 처리 | 순서·트리처럼 집합 전체가 하나의 값인 작업은 **전량 거부** — 일부만 반영하면 나머지와 어긋난 상태가 저장된다 |
+| 가시성 판정을 호출부가 넘기는 옵트인 플래그(`$filters['is_public'] ?? false`)에 의존 | 열람자 신원 기반 fail-closed — 옵트인은 호출부가 빠뜨리면 조용히 열린다(읽기만 하고 쓰는 곳이 없는 사문 플래그가 실재했다) |
+| 부모 상태로 판정하는 게이트를 `$x->parent && …` 로 작성 | 부모를 못 읽으면 차단 — 부모가 soft-delete 되면 조건이 성립하지 않아 통과한다 |
+| 리소스 `abilityMap can_*` 을 연관/타 리소스 권한으로 게이팅 | 그 엔드포인트의 라우트 권한(SSoT)과 **같은 리소스 prefix** — 상승 방지는 게이트 이중화가 아니라 rank ceiling 이 담당한다 |
+
+이 결함군은 예외도 오류도 남기지 않는다 — 약한 경로가 정상 응답을 내보내는 것이 유일한 증상이다. secret 게이트 재적용·hash 서빙 게이트·rank 대칭·URL 판정 3층 동형·정적 bulk 스코프 재적용·가드 선행·형제 메서드 가드 패리티·abilityMap prefix 정합은 의미 판정 영역이라 정적 검사가 일부만 덮으므로, 부모 변경·하위 서빙·등급 경로·URL 검증 지점을 건드릴 때 코드 리뷰에서 대칭성을 확인한다.
+
+> 상세: [validation.md](docs/backend/validation.md), [service-repository.md](docs/backend/service-repository.md), [frontend/security.md](docs/frontend/security.md)
 
 ### 목록 응답의 하위 컬렉션
 
@@ -500,6 +545,15 @@ G7 은 **기본 통화**(상품·쿠폰·배송비 저장 기준), **표시 통�
 
 주문·결제·환불 금액은 **거래 시점 통화로 동결**한다(`currency_snapshot.base_currency`). 운영자가 이후 기본 통화를 바꿔도 과거 주문의 표기는 불변이어야 한다.
 
+동결 대상은 환율만이 아니다 — **소수 자릿수·절사 규칙·환산 분모(base_unit)까지 스냅샷이 SSoT** 다. 이 값들을 현재 설정에서 조회하면, 운영자가 그 통화를 삭제하는 순간 설정에서 사라져 폴백(자릿수 2)이 적용된다. 소수 0자리 통화의 과거 주문 표기가 `¥14,835` → `¥14,835.00` 으로 바뀌고, 3자리 이상으로 설정했던 통화는 표시 금액이 절사된다. 금액 계산은 스냅샷을 쓰는데 표기만 현재 설정을 따라가면 같은 화면 안에서 근거가 갈린다.
+
+| ❌ 금지 | ✅ 올바른 사용 |
+| --- | --- |
+| 주문·환불 표시에서 `getDecimalPlaces($code)` 를 스냅샷 없이 호출 | `getDecimalPlaces($code, $currencySnapshot)` — 스냅샷이 있으면 그것이 우선 |
+| 리소스가 주문 스냅샷을 자식에게 전파하지 않음 | `withOrderCurrency()` 를 전파하는 지점마다 `withCurrencySnapshot()` 도 함께 전파 |
+| 상품·카탈로그 표시까지 스냅샷으로 고정 | 현재 판매가는 **현재 설정**이 정답 — 스냅샷 없이 호출한다 |
+| 자릿수를 박제하지 않은 구형 스냅샷에서 예외/0 자리 강제 | 박제값이 없으면 현재 설정 폴백을 그대로 탄다 (하위호환) |
+
 > 상세: [api-resources.md](docs/backend/api-resources.md), [service-repository.md](docs/backend/service-repository.md)
 
 ### 확장 결제수단은 자기 능력을 선언한다
@@ -514,6 +568,26 @@ G7 은 **기본 통화**(상품·쿠폰·배송비 저장 기준), **표시 통�
 | 선언을 바꾸고 기설치본은 그대로 | 저장된 `order_settings.json` 을 정정하는 업그레이드 스텝 동반 (자기 접두사만, 멱등) |
 
 레이아웃 치환 방식은 코어가 그 리터럴을 버리는 순간 조용히 사문화된다 — 합성 입력으로만 검증한 테스트는 계속 통과하므로 사문화가 드러나지 않는다. 정적 검사가 능력 선언 누락을 차단한다.
+
+### 예외를 응답으로 바꾸는 자리
+
+`catch (\Exception)` / `catch (\Throwable)` 는 **도메인 예외가 아닌 것**을 잡는 자리다. 여기서 4xx 를 돌려주면 인프라 장애·코드 결함이 "입력 오류" 로 위장되어 사용자는 고칠 수 없는 안내를 보고 운영자는 장애를 늦게 안다. 그리고 이미 번역된 `$e->getMessage()` 를 응답의 메시지 **키** 자리에 넘기면 키 해석에 실패해 원문(SQL 상태코드·경로 포함 가능)이 그대로 화면에 나간다. 둘 다 예외도 로그도 남기지 않는다.
+
+| 금지 | 올바른 사용 |
+|--------|---------------|
+| generic catch 가 4xx 반환 | 5xx — 의도적 4xx 는 사유와 함께 판정 테스트의 상수에 선언 |
+| generic catch 에서 상태코드 인자 생략 (`moduleError($mod,'key')`) | 상태코드 명시 — 생략 시 `ResponseHelper` 기본값 **400** 이 조용히 적용된다 |
+| 도메인 예외를 typed 로 승격한 뒤에도 `catch (\RuntimeException)` 유지 | 승격한 예외로 좁힌다 — 도메인 예외의 **부모**를 잡으면 남는 것은 인프라 예외뿐인데 그것까지 4xx 가 된다 |
+| `error($e->getMessage(), 422)` | `error($e->getMessageKey(), 422, null, $e->getMessageParams())` |
+| 도메인 예외가 번역문만 들고 다님 | 생성자에 키+치환 파라미터 보관 → `getMessageKey()` / `getMessageParams()` |
+| 서비스를 typed 예외로 승격하고 컨트롤러는 generic 만 유지 | 그 서비스 메서드를 호출하는 **컨트롤러 메서드 전수**에 typed catch 추가 (없으면 도메인 사유가 500 이 된다) |
+| typed 예외 도입하면서 그 분기의 상태코드도 변경 | typed 는 **기존 상태코드 유지** — 예외 도입이 사용자 계약을 함께 바꾸면 회귀다 |
+| 공개(비인증) 엔드포인트 응답에 예외 원문 포함 | 원문은 `Log::error` 로만 — 관리자 전용 면의 `errors` 페이로드는 진단 정보로 허용된다 |
+| 원문을 직접 문자열로 조립해 노출 폭을 호출부가 정함 | 노출 폭은 `ResponseHelper` 가 정한다 — Throwable 을 넘기면 `app.debug` 에서만 펼쳐진다 |
+
+`message`(첫 인자)와 `errors`(셋째 인자)는 다른 통로다. **키 자리에 원문을 넘기는 것은 언제나 금지**지만, `errors` 페이로드의 원문은 금지 대상이 아니다 — `ResponseHelper::error` 가 문자열 `errors` 를 `500+` 비디버그에서만 차단하고 배열은 통과시키는 것은 `tests/Unit/Helpers/ResponseHelperTest.php` 가 고정한 의도다. 관리자에게 결제대행사·외부 시스템이 돌려준 사유를 감추면 조치 근거가 사라지고, 다국어 키는 유한해서 예상 못 한 실패를 담지 못한다. 판단 축은 "원문이냐 키냐" 가 아니라 **누구에게 / 무엇의 원문인가 / 어느 통로인가** 셋이다.
+
+상세: [exceptions.md "예외 → 응답 매핑"](docs/backend/exceptions.md). `tests/Feature/Http/GenericCatchStatusCodeContractTest.php` 가 코어와 모든 번들 확장의 컨트롤러를 전수 스캔해 두 규칙을 고정한다. 판정기를 한 확장 안에 두면 그 확장 밖의 동형 결함이 검출되지 않는다.
 
 ### Listener 데이터 접근
 
@@ -1097,6 +1171,8 @@ php artisan plugin:build sirsoft-payment --active       # 활성 디렉토리에
 ```
 
 > **빌드 원칙**: 기본값은 `_bundled` 디렉토리. 빌드 결과물은 빌드 경로 내에만 남음.
+
+`_bundled` 의 `dist/`(코어는 `public/build/core/`)는 Git 추적되는 배포 산출물이다 (`*.map` 만 ignore). src 변경 시 커밋 dist 를 `--production` 으로 동반 재빌드한다 — 신규 소스 리터럴이 dist 에 없으면 stale 빌드이며, 정적 검사가 이를 검출한다. 커밋 dist 에 `//# sourceMappingURL=` 참조를 남기지 않는다 — `.map` 은 배포본에 존재하지 않아 브라우저 개발자 도구에서 404 를 유발한다. 코어 3번들 재빌드는 `core:build --production` (`--full` 은 앱 번들 전용 — `public/build` 를 비워 코어 3번들을 지운다).
 > 활성 디렉토리 반영은 `update` 커맨드로만 수행. `--watch` 모드는 실시간 개발용으로 활성 디렉토리를 자동 사용.
 
 ---

@@ -75,20 +75,39 @@ class BoardSettingsService implements ModuleSettingsInterface
     /**
      * 설정값 저장
      *
-     * @param  string  $key  설정 키
+     * 벌크 저장(saveSettings)과 같은 본문을 경유해 정규화·신고 알림 강제 활성·캐시 무효화·
+     * 알림 정의 동기화를 함께 수행한다 (공개 #114 동종). 예전에는 `Arr::set` 결과를 카테고리
+     * 파일에 통째로 덮어써서 이 단계들을 모두 건너뛰었고, 자기 캐시도 비우지 않아 같은
+     * 요청 안의 곧이은 조회가 저장 전 값을 반환했다.
+     *
+     * 위임 payload 의 기저는 **저장본**(loadCategorySettings)이다. 조회 결과를 기저로 삼으면
+     * defaults 병합분이 저장 파일에 통째로 영속화된다.
+     *
+     * boolean backfill 은 적용하지 않는다 — 폼 Toggle-OFF 미전송 대응이라 부분 저장에 태우면
+     * 제출하지 않은 boolean 이 전부 false 로 박제되어 기본값 true 인 항목이 뒤집힌다.
+     *
+     * @param  string  $key  설정 키 (예: 'basic_defaults.per_page', 카테고리 통째 지정도 허용)
      * @param  mixed  $value  저장할 값
      * @return bool 성공 여부
      */
     public function setSetting(string $key, mixed $value): bool
     {
-        $settings = $this->getAllSettings();
-        Arr::set($settings, $key, $value);
-
-        // 카테고리 추출
         $parts = explode('.', $key);
-        $category = $parts[0];
+        $category = array_shift($parts);
 
-        return $this->saveCategorySettings($category, $settings[$category] ?? []);
+        if ($parts === []) {
+            // 카테고리 통째 저장 — 배열이 아니면 저장할 카테고리 데이터가 없다
+            if (! is_array($value)) {
+                return false;
+            }
+
+            $categoryData = $value;
+        } else {
+            $categoryData = $this->loadCategorySettings($category);
+            Arr::set($categoryData, implode('.', $parts), $value);
+        }
+
+        return $this->persistCategories([$category => $categoryData], backfillBooleans: false);
     }
 
     /**
@@ -142,6 +161,19 @@ class BoardSettingsService implements ModuleSettingsInterface
      */
     public function saveSettings(array $settings): bool
     {
+        return $this->persistCategories($settings, backfillBooleans: true);
+    }
+
+    /**
+     * 카테고리 설정을 정규화 파이프라인에 태워 저장합니다. (벌크/단건 공통 본문)
+     *
+     * @param  array  $settings  [카테고리 => 카테고리 설정] 배열
+     * @param  bool  $backfillBooleans  미제출 boolean 필드를 false 로 채울지 여부
+     *                                  (폼 전체 제출을 전제로 하는 벌크 저장만 true)
+     * @return bool 성공 여부
+     */
+    private function persistCategories(array $settings, bool $backfillBooleans): bool
+    {
         $success = true;
         $defaults = $this->getDefaults();
         $defaultValues = $defaults['defaults'] ?? [];
@@ -160,9 +192,12 @@ class BoardSettingsService implements ModuleSettingsInterface
             $categoryDefaults = $defaultValues[$category] ?? [];
 
             // Toggle/체크박스 OFF 시 키 미전송 대응: boolean 기본값 필드가 누락되면 false로 채움
-            foreach ($categoryDefaults as $key => $defaultValue) {
-                if (is_bool($defaultValue) && ! array_key_exists($key, $categorySettings)) {
-                    $categorySettings[$key] = false;
+            // (폼 전체 제출을 전제로 한 보정이라 부분 저장 경로에서는 적용하지 않는다)
+            if ($backfillBooleans) {
+                foreach ($categoryDefaults as $key => $defaultValue) {
+                    if (is_bool($defaultValue) && ! array_key_exists($key, $categorySettings)) {
+                        $categorySettings[$key] = false;
+                    }
                 }
             }
 
@@ -185,6 +220,9 @@ class BoardSettingsService implements ModuleSettingsInterface
 
         // 캐시 초기화
         $this->settings = null;
+
+        // 상주 프로세스의 config 미러도 함께 갱신한다 (공개이슈 #109)
+        g7_refresh_module_settings_config('sirsoft-board');
 
         // report_policy 설정 변경 시 알림 정의 활성 상태 동기화
         // 저장된 최종 설정을 사용 (boolean 보정 후 값)
@@ -323,6 +361,9 @@ class BoardSettingsService implements ModuleSettingsInterface
     {
         $this->defaults = null;
         $this->settings = null;
+
+        // 상주 프로세스의 config 미러도 함께 갱신한다 (공개이슈 #109)
+        g7_refresh_module_settings_config('sirsoft-board');
     }
 
     /**
@@ -412,10 +453,18 @@ class BoardSettingsService implements ModuleSettingsInterface
     /**
      * 설정 저장 경로 반환
      *
+     * testing 환경에서는 운영 설정(storage/app/modules/.../settings)을 보호하기 위해
+     * 격리된 임시 경로를 사용합니다. 설정 저장을 수행하는 테스트가 운영 basic_defaults.json
+     * 등을 덮어쓰거나 지우는 것을 차단합니다(운영 설정 영구 보존).
+     *
      * @return string 설정 파일 저장 디렉토리 경로
      */
     private function getStoragePath(): string
     {
+        if (app()->runningUnitTests()) {
+            return storage_path('framework/testing/modules/'.self::MODULE_IDENTIFIER.'/settings');
+        }
+
         return storage_path('app/modules/'.self::MODULE_IDENTIFIER.'/settings');
     }
 }

@@ -19,6 +19,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Services\CashReceiptService;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\OrderCancellationService;
+use Modules\Sirsoft\Ecommerce\Tests\Concerns\RegistersTestCashReceiptProvider;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -31,6 +32,8 @@ use PHPUnit\Framework\Attributes\Test;
  */
 class CashReceiptCancellationSyncTest extends ModuleTestCase
 {
+    use RegistersTestCashReceiptProvider;
+
     private const PROVIDER = 'tosspayments';
 
     private const IDENTIFIER = '01012345678';
@@ -46,6 +49,7 @@ class CashReceiptCancellationSyncTest extends ModuleTestCase
         $this->issueShouldFail = false;
         $this->receiptSequence = 0;
 
+        $this->registerCashReceiptProvider(self::PROVIDER);
         app(EcommerceSettingsService::class)->setSetting('order_settings.cash_receipt_provider', self::PROVIDER);
     }
 

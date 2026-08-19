@@ -324,7 +324,7 @@
                                                             "handler": "toast",
                                                             "params": {
                                                                 "type": "error",
-                                                                "message": "$t:sirsoft-pay_kginicis.admin.cbt_reconciliation_retry_error"
+                                                                "message": "{{error.message ?? '$t:sirsoft-pay_kginicis.admin.cbt_reconciliation_retry_error'}}"
                                                             }
                                                         },
                                                         {
@@ -707,7 +707,7 @@
                                                             "handler": "toast",
                                                             "params": {
                                                                 "type": "error",
-                                                                "message": "$t:sirsoft-pay_kginicis.admin.cbt_cvs_action_error"
+                                                                "message": "{{error.message ?? '$t:sirsoft-pay_kginicis.admin.cbt_cvs_action_error'}}"
                                                             }
                                                         },
                                                         {
@@ -829,7 +829,7 @@
                                                             "handler": "toast",
                                                             "params": {
                                                                 "type": "error",
-                                                                "message": "$t:sirsoft-pay_kginicis.admin.cbt_cvs_action_error"
+                                                                "message": "{{error.message ?? '$t:sirsoft-pay_kginicis.admin.cbt_cvs_action_error'}}"
                                                             }
                                                         },
                                                         {
@@ -945,7 +945,7 @@
                                                             "handler": "toast",
                                                             "params": {
                                                                 "type": "error",
-                                                                "message": "$t:sirsoft-pay_kginicis.admin.cbt_cvs_action_error"
+                                                                "message": "{{error.message ?? '$t:sirsoft-pay_kginicis.admin.cbt_cvs_action_error'}}"
                                                             }
                                                         },
                                                         {

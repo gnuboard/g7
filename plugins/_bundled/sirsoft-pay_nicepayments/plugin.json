@@ -5,7 +5,7 @@
         "ko": "나이스페이먼츠",
         "en": "NicePayments"
     },
-    "version": "1.0.1",
+    "version": "1.0.2",
     "license": "MIT",
     "github_url": "https://github.com/gnuboard/g7-plugin-sirsoft-pay_nicepayments",
     "github_changelog_url": "https://github.com/gnuboard/g7-plugin-sirsoft-pay_nicepayments/blob/main/CHANGELOG.md",

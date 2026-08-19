@@ -150,7 +150,32 @@ abstract class TestCase extends BaseTestCase
         // 누수를 차단한다 (프로덕션은 단일 부팅이라 무관 — 테스트 격리 전용).
         EnforceIdentityPolicyListener::resetDynamicSubscriptions();
 
+        $this->purgeIdleDatabaseConnections();
+
         parent::tearDown();
+    }
+
+    /**
+     * 트랜잭션이 걸려 있지 않은 DB 연결을 모두 닫습니다.
+     *
+     * 트랜잭션 트레이트 없이 DB 를 쓴 테스트의 연결을 닫는다. RefreshDatabase 계열은
+     * 롤백 후 스스로 disconnect 하지만, 순수 TestCase 는 아무도 닫지 않아 프로세스 내
+     * 테스트 수만큼 연결이 누적된다 — DB 를 쓰는 테스트가 151개(max_connections)를
+     * 넘는 클래스/스위트는 그 지점부터 전부 1040 Too many connections 로 실패한다.
+     * 트랜잭션 진행 중인 연결은 건드리지 않는다 (트레이트의 롤백 콜백이 처리).
+     */
+    protected function purgeIdleDatabaseConnections(): void
+    {
+        if ($this->app === null) {
+            return;
+        }
+
+        $db = $this->app['db'];
+        foreach ($db->getConnections() as $name => $connection) {
+            if ($connection->transactionLevel() === 0) {
+                $db->purge($name);
+            }
+        }
     }
 
     /**

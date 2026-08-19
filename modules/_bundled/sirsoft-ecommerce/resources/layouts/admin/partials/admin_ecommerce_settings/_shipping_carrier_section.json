@@ -677,7 +677,7 @@
                     },
                     "children": [
                       {
-                        "type": "basic",
+                        "type": "composite",
                         "name": "Toggle",
                         "props": {
                           "checked": "{{$carrier.is_active ?? false}}",

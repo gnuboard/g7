@@ -181,7 +181,7 @@ php artisan template:install [identifier] [--force]
 php artisan template:activate [identifier]
 php artisan template:deactivate [identifier]
 php artisan template:uninstall [identifier]
-php artisan template:cache-clear
+php artisan template:cache-clear [identifier?]
 php artisan template:check-updates [identifier?]
 php artisan template:update [identifier] [--layout-strategy=overwrite] [--force] [--source=auto|bundled|github]
 

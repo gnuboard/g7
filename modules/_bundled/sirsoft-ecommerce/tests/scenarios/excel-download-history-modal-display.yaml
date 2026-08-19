@@ -1,0 +1,36 @@
+feature: 엑셀 다운로드 이력 모달의 선택 항목 표시 가드
+
+description: |
+  관리자 "엑셀 다운로드 관리" 화면의 다운로드 이력 모달은 목록에서 고른 항목(`_local.selectedItem`)의
+  파일 내용·분류·생성일·만료일·다운로드 횟수를 표시한다. 이 키는 부모 레이아웃이 `null` 로만 시드하고
+  행 클릭 시에만 채워지므로, 아직 아무 행도 고르지 않은 구간이 항상 존재한다.
+
+  수정 이력 (공개 이슈 #92 와 동일한 결함 클래스):
+    - 모든 표시식이 `{{_local.selectedItem.<field>}}` 형태로 옵셔널 체이닝이 없었고,
+      모달에 selectedItem 을 검사하는 `if` 가드도 없었다. 상태 배지의 조건식
+      (`selectedItem.status === '...'`)은 값 부재 구간에서 조건 평가가 실패해
+      경고 로그를 남기며 false 로 떨어지고 있었다.
+    - 모든 하위 접근에 `?.` 를, 표시식에 폴백(`?? ''`, 횟수는 `?? 0`)을 부여했다.
+      값이 채워진 뒤의 출력은 이전과 동일하므로 기능 변화는 없다.
+    - 브라우저 실측에서 별개 결함이 함께 드러났다 — "다운로드 기록" 목록의 iteration 이
+      문자열 형태로 선언되어 엔진이 source 를 읽지 못하고 매 렌더마다 예외로 떨어졌다.
+      목록이 통째로 비어 보이던 문제이며, 객체 형태(source/item_var/index_var)로 정정했다.
+    - 상태 배지 3종의 아이콘 이름이 Font Awesome Free 에 없는 값이라 빈 글리프로 렌더됐다.
+
+axes:
+  selection_state: [unselected, selected]   # 이력 행 미선택 / 선택
+
+effects:
+  - history_modal_display_guarded   # 값 부재 구간에서 조건 평가 실패·표시 공백이 발생하지 않음
+  - history_list_renders            # 다운로드 기록 목록이 실제로 렌더된다 (iteration 선언 형태)
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/excel-download-history-modal-fallback.test.tsx
+
+validation:
+  audit_rule: frontend-change-requires-e2e
+  browser_check: Chrome MCP   # 관리자 화면 실측(정밀 점검 매트릭스 T9)으로 브라우저 검증 대체
+  note: |
+    레이아웃 JSON 은 헤더 주석을 가질 수 없어 `e2e:allow` 를 붙일 수 없다. 표시식의 옵셔널/폴백
+    유무는 정적 구조로 판정 가능하므로 레이아웃 정적 가드 테스트가 두 selection_state 를 모두
+    떠받치고, 실제 모달 열기 전/후 화면은 Chrome MCP 정밀 점검이 확인한다.

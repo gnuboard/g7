@@ -1,3 +1,4 @@
+// audit:allow extension-dist-source-literal-sync DEFAULT_BLOCKED_DOMAINS 는 현재 소비처가 없어 tree-shake 로 번들에서 제외된다 (도메인 문자열 부재 = stale 아님)
 /**
  * GDPR 도메인 기반 차단 매칭 + 기본 카탈로그
  *

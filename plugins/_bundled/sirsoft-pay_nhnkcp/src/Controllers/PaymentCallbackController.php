@@ -429,7 +429,7 @@ class PaymentCallbackController
 
             return redirect($this->resolveFailUrl([
                 'error' => 'confirm_failed',
-                'message' => $e->getMessage(),
+                'message' => __('sirsoft-pay_nhnkcp::messages.errors.payment_failed'),
                 'orderId' => $ordrIdxx,
             ]));
         } finally {
@@ -625,7 +625,7 @@ class PaymentCallbackController
 
                 return redirect($this->resolveFailUrl([
                     'error' => 'cli_exception',
-                    'message' => $e->getMessage(),
+                    'message' => __('sirsoft-pay_nhnkcp::messages.errors.payment_failed'),
                     'orderId' => $ordrIdxx,
                 ]));
             }
@@ -745,7 +745,7 @@ class PaymentCallbackController
 
             return redirect($this->resolveFailUrl([
                 'error' => 'vbank_save_failed',
-                'message' => $e->getMessage(),
+                'message' => __('sirsoft-pay_nhnkcp::messages.errors.payment_failed'),
                 'orderId' => $ordrIdxx,
             ]));
         }

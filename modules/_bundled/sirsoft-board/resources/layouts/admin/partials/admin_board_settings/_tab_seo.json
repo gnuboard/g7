@@ -620,7 +620,7 @@
                                       "handler": "toast",
                                       "params": {
                                         "type": "error",
-                                        "message": "$t:sirsoft-board.admin.settings.seo.seo_friendly.clear_cache_error"
+                                        "message": "{{error.message ?? '$t:sirsoft-board.admin.settings.seo.seo_friendly.clear_cache_error'}}"
                                       }
                                     }
                                   ]
@@ -637,7 +637,7 @@
                                     "handler": "toast",
                                     "params": {
                                       "type": "error",
-                                      "message": "$t:sirsoft-board.admin.settings.seo.seo_friendly.clear_cache_error"
+                                      "message": "{{error.message ?? '$t:sirsoft-board.admin.settings.seo.seo_friendly.clear_cache_error'}}"
                                     }
                                   }
                                 ]
@@ -654,7 +654,7 @@
                                   "handler": "toast",
                                   "params": {
                                     "type": "error",
-                                    "message": "$t:sirsoft-board.admin.settings.seo.seo_friendly.clear_cache_error"
+                                    "message": "{{error.message ?? '$t:sirsoft-board.admin.settings.seo.seo_friendly.clear_cache_error'}}"
                                   }
                                 }
                               ]

@@ -57,17 +57,24 @@ class SeoPageCacheListenerTest extends ModuleTestCase
         $this->assertArrayHasKey('sirsoft-page.page.after_delete', $hooks);
         // 버전 복원도 SEO 캐시 무효화가 필요하다 (복원 후 봇에 복원 전 버전 잔존 회귀 방지)
         $this->assertArrayHasKey('sirsoft-page.page.after_restore', $hooks);
+        // 발행/미발행 전환(단건 setPublished·일괄 bulk-publish)은 after_publish 만 발화한다.
+        // 미구독 시 발행 상태를 바꿔도 SEO 캐시가 이전 상태(soft-404/이전 콘텐츠)로 남고
+        // 사이트맵 증분 색인도 수행되지 않는다 (7.0.7 사전점검 브라우저+curl 실측 발견).
+        $this->assertArrayHasKey('sirsoft-page.page.after_publish', $hooks);
 
         $this->assertEquals('onPageChange', $hooks['sirsoft-page.page.after_create']['method']);
         $this->assertEquals('onPageChange', $hooks['sirsoft-page.page.after_update']['method']);
         // delete 는 모델 상태와 무관하게 색인을 제거해야 하므로 전용 메서드로 분리
         $this->assertEquals('onPageDelete', $hooks['sirsoft-page.page.after_delete']['method']);
         $this->assertEquals('onPageChange', $hooks['sirsoft-page.page.after_restore']['method']);
+        // publish 는 모델의 published 최신 상태로 onPageChange 가 색인/해제를 판정한다
+        $this->assertEquals('onPageChange', $hooks['sirsoft-page.page.after_publish']['method']);
 
         $this->assertEquals(20, $hooks['sirsoft-page.page.after_create']['priority']);
         $this->assertEquals(20, $hooks['sirsoft-page.page.after_update']['priority']);
         $this->assertEquals(20, $hooks['sirsoft-page.page.after_delete']['priority']);
         $this->assertEquals(20, $hooks['sirsoft-page.page.after_restore']['priority']);
+        $this->assertEquals(20, $hooks['sirsoft-page.page.after_publish']['priority']);
     }
 
     // ─── onPageChange: 캐시 무효화 상태 검증 ──────────────

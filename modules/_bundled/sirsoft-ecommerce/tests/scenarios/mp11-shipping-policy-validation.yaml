@@ -2,9 +2,10 @@
 #   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 nested axes 를 읽지 못하는
 #   한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도 audit:allow). 본 변경은
 #   StoreShippingPolicyRequest 의 attributes()/messages() 보강(A12) + api_endpoint 필수화(W1)
-#   + i18n 키 보강(W2) + api_request_fields Rule::in 후보 검증(W3)을 PHPUnit Feature 가
-#   대상필드 × 입력 × 로케일 × Store/Update cross product 로 커버하며 green.
-feature: 배송정책 구간/계산 API 검증 메시지 친화화 (A12 + A13)
+#   + i18n 키 보강(W2) + api_request_fields Rule::in 후보 검증(W3) + 구간 필수/연속성 규칙
+#   신설(공개 #94)을 PHPUnit Feature 가 대상필드 × 입력 × 로케일 × Store/Update cross product
+#   로 커버하며 green.
+feature: 배송정책 구간/계산 API 검증 메시지 친화화 (A12 + A13) + 구간 설정 필수 규칙 (#94)
 
 description: |
   구간별 배송비(tier fee/min/max/unit_value)·추가배송비 음수/비숫자/required 누락 시 사용자
@@ -12,13 +13,22 @@ description: |
   계산 API 정책 선택 시 api_endpoint 필수화(cross-field), 잘못된 URL 시 i18n 키 보강,
   api_request_fields 는 후보 5종 SSoT enum 의 Rule::in 으로 검증(후보 외 거부).
 
+  공개 #94 로 저장 시점 차단 규칙이 확장된다 — 계산이 조용히 0원이 되는 설정(구간 없음 /
+  단위값 없음 / 무료 기준금액 없음 / 중간 구간 상한 무제한 / 계산 API 폴백 배송비 0)은 422 로
+  거부하고, 연속성 규칙은 정책 타입별로 갈린다(이산형 수량 = 다음 시작값이 직전 종료값 + 1,
+  연속형 금액·무게·부피 = 다음 시작값이 직전 종료값과 동일, 소수 경계 허용). 추가배송비
+  우편번호는 지원 3형식만 통과한다.
+
 axes:
   target_field:
     - tier_fee
     - tier_min
     - tier_max
+    - tiers            # 구간 배열 자체 (RANGE_* 필수)
     - unit_value
+    - free_threshold   # conditional_free 필수
     - extra_fee
+    - extra_fee_zipcode
     - base_fee
     - api_endpoint
     - api_request_fields
@@ -30,6 +40,16 @@ axes:
     - api_empty_endpoint # api 정책 + 빈 endpoint → W1 422
     - field_in_candidates    # api_request_fields 후보 내 → 통과
     - field_out_candidates   # api_request_fields 후보 외 → Rule::in 422
+    - empty_tiers            # RANGE_* 인데 구간 0개 → 422 (#94)
+    - middle_max_unlimited   # 중간 구간 상한 무제한 → 422 (#94)
+    - continuous_next_min_equals_prev_max  # 연속형 정상 → 통과 (#94)
+    - continuous_legacy_max_plus_one       # 연속형 구 규칙 → 422 간극 (#94)
+    - continuous_decimal_boundary          # 연속형 소수 경계 → 통과 (#94)
+    - discrete_next_min_equals_prev_max_plus_one # 이산형 정상 → 통과 (#94)
+    - discrete_fractional_boundary         # 이산형 소수 경계 → 422 (#94)
+    - zero_base_fee_on_api                 # 계산 API 폴백 0원 → 422 (#94)
+    - zipcode_supported_format             # 3형식 → 통과 (#94)
+    - zipcode_unsupported_format           # 그 외 → 422 (#94)
   locale:
     - ko
     - en
@@ -46,6 +66,14 @@ effects:
   - request_field_out_of_candidates_rejected # W3 Rule::in
   - request_field_in_candidates_accepted     # W3 통과
   - update_inherits_messages_attributes      # Update 상속
+  - range_policy_requires_tiers              # #94 구간 없는 구간별 정책 차단
+  - per_unit_policy_requires_unit_value      # #94 단위값 없는 단위당 정책 차단
+  - conditional_free_requires_threshold      # #94 무료 기준금액 없는 조건부 무료 차단
+  - middle_tier_unlimited_max_rejected       # #94 중간 구간 상한 무제한 차단
+  - continuity_rule_matches_policy_type      # #94 이산형 max+1 / 연속형 max
+  - decimal_tier_boundary_accepted           # #94 소수 구간(2.5kg) 저장 허용
+  - api_policy_requires_positive_base_fee    # #94 폴백 0원 차단
+  - zipcode_format_validated                 # #94 지원 3형식 외 거부
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/ShippingPolicyValidationMessageTest.php

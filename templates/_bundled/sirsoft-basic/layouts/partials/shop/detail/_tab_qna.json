@@ -691,7 +691,7 @@
                                           ],
                                           "onError": [
                                             { "handler": "setState", "params": { "target": "local", "qnaReplySubmitting": false } },
-                                            { "handler": "toast", "params": { "message": "$t:shop.qna.reply_update_failed", "type": "error" } }
+                                            { "handler": "toast", "params": { "message": "{{error.message ?? '$t:shop.qna.reply_update_failed'}}", "type": "error" } }
                                           ]
                                         }
                                       ]
@@ -837,7 +837,7 @@
                                           ],
                                           "onError": [
                                             { "handler": "setState", "params": { "target": "local", "qnaNewReplySubmitting": false } },
-                                            { "handler": "toast", "params": { "message": "$t:shop.qna.reply_submit_failed", "type": "error" } }
+                                            { "handler": "toast", "params": { "message": "{{error.message ?? '$t:shop.qna.reply_submit_failed'}}", "type": "error" } }
                                           ]
                                         }
                                       ]

@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayNicepayments\Controllers;
 
+// audit:allow api-doc-coverage 요청 파라미터·응답 구조 무변경 — 테이블명 리터럴을 모델 파생으로 정리한 내부 리팩토링 (#571)
+
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Plugins\Sirsoft\PayNicepayments\Concerns\ResolvesEasyPayDisplay;
 
 class AdminOrderListController extends AdminBaseController
@@ -30,8 +34,9 @@ class AdminOrderListController extends AdminBaseController
      */
     public function testModeMap(): JsonResponse
     {
-        $rows = DB::table('ecommerce_orders as o')
-            ->join('ecommerce_order_payments as p', 'p.order_id', '=', 'o.id')
+        // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
+        $rows = DB::table((new Order)->getTable().' as o')
+            ->join((new OrderPayment)->getTable().' as p', 'p.order_id', '=', 'o.id')
             ->whereIn('p.pg_provider', ['nicepayments', 'nicepay'])
             ->whereNotNull('p.payment_meta')
             ->where('p.created_at', '>=', now()->subMonths(6))
@@ -59,8 +64,9 @@ class AdminOrderListController extends AdminBaseController
      */
     public function easyPayDisplayMap(): JsonResponse
     {
-        $rows = DB::table('ecommerce_orders as o')
-            ->join('ecommerce_order_payments as p', 'p.order_id', '=', 'o.id')
+        // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
+        $rows = DB::table((new Order)->getTable().' as o')
+            ->join((new OrderPayment)->getTable().' as p', 'p.order_id', '=', 'o.id')
             ->whereIn('p.pg_provider', ['nicepayments', 'nicepay'])
             ->where('p.created_at', '>=', now()->subMonths(6))
             ->select([

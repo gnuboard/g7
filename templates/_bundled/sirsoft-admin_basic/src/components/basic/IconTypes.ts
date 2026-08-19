@@ -1,3 +1,4 @@
+// audit:allow extension-dist-source-literal-sync 타입/미소비 상수 중심 모듈 — 타입 소거·tree-shake 로 일부 리터럴이 번들에 남지 않는다 (fresh 빌드로 실측 — stale 아님)
 /**
  * Font Awesome 아이콘 스타일
  */

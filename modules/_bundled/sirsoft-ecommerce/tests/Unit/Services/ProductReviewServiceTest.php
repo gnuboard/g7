@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Services;
 
 use App\Contracts\Extension\StorageInterface;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Queue;
@@ -432,6 +433,14 @@ class ProductReviewServiceTest extends ModuleTestCase
     #[Test]
     public function test_bulk_update_status_delegates_to_repository(): void
     {
+        // 일괄 라우트는 라우트 모델이 없어 PermissionMiddleware 의 스코프 검사가 스킵되므로
+        // 서비스가 대상을 조회해 스코프를 재적용한다 — 순수 위임이 아니다.
+        $this->repository
+            ->shouldReceive('getByIdsWithImages')
+            ->with([1, 2, 3])
+            ->once()
+            ->andReturn(new EloquentCollection);
+
         $this->repository
             ->shouldReceive('bulkUpdateStatus')
             ->with([1, 2, 3], 'hidden')

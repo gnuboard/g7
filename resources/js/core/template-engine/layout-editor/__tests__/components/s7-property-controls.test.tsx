@@ -94,6 +94,7 @@ describe('RecipePickerControls', () => {
     expect(onChange).toHaveBeenCalledWith('/board');
   });
 
+  /** @effects condition_param_widget_dispatches_via_widget_registry */
   it('datasource-picker 후보 select → onChange(id)', () => {
     const onChange = vi.fn();
     render(
@@ -152,6 +153,7 @@ describe('RecipePickerControls', () => {
 describe('ActionRecipeEditor', () => {
   const node: EditorNode = { name: 'Button', props: {} };
 
+  /** @effects spec_undeclared_event_hides_action_slot */
   it('events 미선언 → 안내', () => {
     render(<ActionRecipeEditor node={node} spec={SPEC} capability={{}} t={t} onPatchNode={vi.fn()} />);
     expect(screen.getByTestId('g7le-action-no-events')).toBeInTheDocument();
@@ -212,6 +214,10 @@ describe('ActionRecipeEditor', () => {
     expect(screen.getByTestId('g7le-widget-page-picker-input')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario action_recipe=openModal_lazy_id, followup_chain=none
+   * @effects action_recipe_does_not_expose_handler_jargon_to_user
+   */
   it('레시피 친화 명칭만 노출 — 핸들러 용어 없음(추가 목록 라벨)', () => {
     render(<ActionRecipeEditor node={node} spec={SPEC} capability={{ events: ['onClick'] }} t={t} onPatchNode={vi.fn()} />);
     fireEvent.click(screen.getByTestId('g7le-action-slot-onClick-add-picker-toggle'));
@@ -221,6 +227,10 @@ describe('ActionRecipeEditor', () => {
     expect(goToPageItem.querySelector('span')?.textContent).not.toMatch(/navigate|apiCall|handler/);
   });
 
+  /**
+   * @scenario action_recipe=callServerThen, followup_chain=none
+   * @effects nested_action_list_widget_assembles_recursive_actions
+   */
   it('callServerThen 추가 → 중첩 action-list(onSuccess) 슬롯 렌더', () => {
     // 최상위 actions + type:'click'
     const node2: EditorNode = { name: 'Button', actions: [{ type: 'click', handler: 'apiCall', target: 'x', onSuccess: [] }] };
@@ -231,6 +241,10 @@ describe('ActionRecipeEditor', () => {
     expect(screen.getByTestId('g7le-action-slot-onClick-edit-onSuccess')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario action_recipe=custom_extension_recipe, followup_chain=success_and_error_both
+   * @effects action_recipe_reverse_matches_existing_action_to_recipe
+   */
   it('legacy props.actions 도 읽어 친화 편집 진입 (역호환) — 저장 시 최상위로 이관', () => {
     const onPatch = vi.fn();
     // 과거 S7 결함으로 props.actions 에 저장된 노드도 빌더가 읽어야 한다.
@@ -289,6 +303,10 @@ describe('ConditionBuilder', () => {
     expect((patched as { props?: { if?: unknown } }).props?.if).toBeUndefined();
   });
 
+  /**
+   * @scenario action_recipe=custom_extension_recipe, followup_chain=none
+   * @effects condition_builder_preserves_advanced_handwritten_expr
+   */
   it('고급식(직접 작성) → 보존 + 원문 표시', () => {
     const node2: EditorNode = { name: 'Div', if: '{{ custom.weird && expr }}', props: {} };
     render(<ConditionBuilder node={node2} spec={SPEC} t={t} onPatchNode={vi.fn()} />);

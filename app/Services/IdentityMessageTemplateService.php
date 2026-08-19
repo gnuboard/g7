@@ -7,6 +7,7 @@ use App\Contracts\Repositories\IdentityMessageTemplateRepositoryInterface;
 use App\Extension\HookManager;
 use App\Models\IdentityMessageDefinition;
 use App\Models\IdentityMessageTemplate;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Auth;
 
 /**
@@ -65,6 +66,29 @@ class IdentityMessageTemplateService
             $this->getCacheTtl(),
             [$this->cacheTag]
         );
+    }
+
+    /**
+     * ID 로 템플릿을 조회하며, 없으면 예외를 발생시킵니다.
+     *
+     * 컨트롤러가 모델을 직접 조회하지 않도록 하는 Service 경유 접근자입니다
+     * (Controller → Service → Repository 계층 규정).
+     *
+     * @param  int  $id  템플릿 ID
+     * @return IdentityMessageTemplate 템플릿 모델
+     *
+     * @throws ModelNotFoundException 템플릿이 없는 경우
+     */
+    public function findOrFailById(int $id): IdentityMessageTemplate
+    {
+        $template = $this->repository->findById($id);
+
+        if (! $template) {
+            throw (new ModelNotFoundException)
+                ->setModel(IdentityMessageTemplate::class, [$id]);
+        }
+
+        return $template;
     }
 
     /**

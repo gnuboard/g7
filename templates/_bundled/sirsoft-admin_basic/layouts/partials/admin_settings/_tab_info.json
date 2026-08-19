@@ -354,7 +354,7 @@
                                       "handler": "toast",
                                       "params": {
                                         "type": "error",
-                                        "message": "$t:admin.settings.info.changelog_load_failed"
+                                        "message": "{{error.message ?? '$t:admin.settings.info.changelog_load_failed'}}"
                                       }
                                     }
                                   ]

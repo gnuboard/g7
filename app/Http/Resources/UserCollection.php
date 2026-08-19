@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use App\Http\Resources\Traits\HasAbilityCheck;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class UserCollection extends BaseApiCollection
 {
@@ -20,7 +21,10 @@ class UserCollection extends BaseApiCollection
             'can_create' => 'core.users.create',
             'can_update' => 'core.users.update',
             'can_delete' => 'core.users.delete',
-            'can_assign_roles' => 'core.permissions.update',
+            // 역할 부여는 "사용자 관리"(core.users.update)의 일부다 — "역할 정의 수정"
+            // (core.permissions.update)이 아니다. 부여 가능한 개별 역할의 범위는 서버
+            // 상한(PermissionEscalationGuard)이 역할별로 강제한다.
+            'can_assign_roles' => 'core.users.update',
         ];
     }
 
@@ -36,7 +40,7 @@ class UserCollection extends BaseApiCollection
             'data' => $this->mapWithRowNumber(function ($user) {
                 return (new UserResource($user))->toListArray(request());
             }),
-            'pagination' => $this->when($this->resource instanceof \Illuminate\Pagination\LengthAwarePaginator, [
+            'pagination' => $this->when($this->resource instanceof LengthAwarePaginator, [
                 'current_page' => $this->resource->currentPage(),
                 'last_page' => $this->resource->lastPage(),
                 'per_page' => $this->resource->perPage(),
@@ -56,7 +60,7 @@ class UserCollection extends BaseApiCollection
      */
     public function withStatistics(array $statistics = []): array
     {
-        $isPaginator = $this->resource instanceof \Illuminate\Pagination\LengthAwarePaginator;
+        $isPaginator = $this->resource instanceof LengthAwarePaginator;
 
         return [
             'data' => $this->mapWithRowNumber(function ($user) {
@@ -87,7 +91,7 @@ class UserCollection extends BaseApiCollection
             'data' => $this->mapWithRowNumber(function ($user) {
                 return (new UserResource($user))->withAdminInfo();
             }),
-            'pagination' => $this->when($this->resource instanceof \Illuminate\Pagination\LengthAwarePaginator, [
+            'pagination' => $this->when($this->resource instanceof LengthAwarePaginator, [
                 'current_page' => $this->resource->currentPage(),
                 'last_page' => $this->resource->lastPage(),
                 'per_page' => $this->resource->perPage(),

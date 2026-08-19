@@ -19,8 +19,8 @@
  * dnd-kit 비호환(feedback_chrome_mcp_dnd_kit_incompatible) 회피 — 노드 선택은 합성 마우스
  * 이벤트 시퀀스로 드래그 핸들 pointer 가로채기를 우회한다.
  *
- * @scenario property_modal_visibility_preset_recognition + visibility_compound_stays_advanced + numeric_array_preset_recognition + explicit_boolean_compare_preset_recognition + comparison_pattern_preset_recognition + coverage_gate_presets_served
- * @effects visibility_builder_renders + variant_defense_no_false_positive + stage2_numeric_array_presets_served + stage3_boolean_compare_presets_served + stage4_comparison_presets_served + stage5_gate_presets_served
+ * 축 요약(마커 아님 — 평문): property_modal_visibility_preset_recognition, visibility_compound_stays_advanced, numeric_array_preset_recognition, explicit_boolean_compare_preset_recognition, comparison_pattern_preset_recognition, coverage_gate_presets_served.
+ * 효과 요약(마커 아님 — 평문): visibility_builder_renders, variant_defense_no_false_positive, stage2_numeric_array_presets_served, stage3_boolean_compare_presets_served, stage4_comparison_presets_served, stage5_gate_presets_served.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 
@@ -83,6 +83,7 @@ async function openVisibilityTab(page: PwPage, path: string): Promise<boolean> {
 }
 
 test.describe('@layout-editor 표시조건 변종 방어 인프라 (단계 0)', () => {
+  /** @effects visibility_builder_renders */
   test('표시조건 탭이 빌더 또는 no-recipes 로 렌더 (인프라 배선 회귀 가드)', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -110,6 +111,7 @@ test.describe('@layout-editor 표시조건 변종 방어 인프라 (단계 0)', 
     expect(opened).toBe(true);
   });
 
+  /** @effects stage2_numeric_array_presets_served */
   test('P2/P3 operator 가 served editor-spec 에 노출 + 숫자/배열 패턴 인식', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -136,6 +138,7 @@ test.describe('@layout-editor 표시조건 변종 방어 인프라 (단계 0)', 
     }
   });
 
+  /** @effects stage3_boolean_compare_presets_served */
   test('P5 valueIsTrue/valueIsFalse 가 served editor-spec 에 노출', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -166,6 +169,7 @@ test.describe('@layout-editor 표시조건 변종 방어 인프라 (단계 0)', 
     }
   });
 
+  /** @effects stage4_comparison_presets_served */
   test('단계 4 비교 패턴 operator 가 served editor-spec 에 노출', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -197,6 +201,7 @@ test.describe('@layout-editor 표시조건 변종 방어 인프라 (단계 0)', 
     }
   });
 
+  /** @effects stage5_gate_presets_served */
   test('60% 게이트 토대 프리셋 18종이 양 템플릿 served editor-spec 에 전부 노출', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -231,6 +236,7 @@ test.describe('@layout-editor 표시조건 변종 방어 인프라 (단계 0)', 
     }
   });
 
+  /** @effects variant_defense_no_false_positive */
   test('콘솔/네트워크 에러 없이 표시조건 모달 진입 (variant-defense 무결성)', async ({ page }) => {
     const consoleErrors: string[] = [];
     page.on('console', (msg) => {

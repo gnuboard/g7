@@ -543,6 +543,7 @@ describe('코드 편집기 ?route= URL 동기화', () => {
     expect(routeInit.params.selectedNodeKind).toBe('layout');
   });
 
+  /** @effects code_editor_file_select_syncs_route_query */
   it('데스크탑 파일 항목 클릭 시 replaceUrl 로 file.route_path 를 ?route= 에 반영한다', () => {
     // 좌측 트리 레이아웃 파일 iteration (file_var) 의 click 시퀀스
     const fileIteration = findComponent(layoutEditJson, (n) =>
@@ -567,6 +568,7 @@ describe('코드 편집기 ?route= URL 동기화', () => {
     expect(replaceUrl.params.query.route).toContain('route_path');
   });
 
+  /** @effects code_editor_extension_select_clears_route_query */
   it('확장 선택 시 replaceUrl 로 ?route= 를 비운다 (확장은 라우트 없음)', () => {
     const extIteration = findComponent(layoutEditJson, (n) =>
       Boolean(n.iteration?.source?.includes('extGroup.extensions'))

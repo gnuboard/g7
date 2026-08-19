@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Board\Http\Controllers\Admin;
 
+use App\Extension\HookManager;
 use App\Helpers\PermissionHelper;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
@@ -116,6 +117,10 @@ class BoardSettingsController extends AdminBaseController
                 if ($request->has('report_permissions')) {
                     $this->settingsService->syncReportPermissionRoles($request->input('report_permissions'));
                 }
+
+                // 코어 모듈 설정 저장 훅 — SEO 캐시 무효화 등 코어/타 확장 리스너가 구독한다.
+                // 훅 의미가 "관리자가 설정을 저장했다" 이므로 서비스가 아니라 여기서 발화한다.
+                HookManager::doAction('core.module_settings.after_save', 'sirsoft-board', $settings, $result);
 
                 $updatedSettings = $this->settingsService->getAllSettings();
                 $updatedSettings['report_permissions'] = $this->settingsService->getReportPermissionRoles();

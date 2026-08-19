@@ -27,6 +27,9 @@ class OrderResource extends BaseApiResource
     {
         // 주문 시점 기준 통화 — 과거 주문의 *_formatted 는 설정 변경과 무관하게 이 통화로 고정 표기한다.
         $orderCurrency = $this->resolveOrderBaseCurrencyCode($this->resource);
+        // 주문 시점 통화 스냅샷 — 소수 자릿수를 현재 설정이 아닌 주문 시점 값으로 고정 (공개 #91 후속).
+        $currencySnapshot = $this->resource->currency_snapshot ?? null;
+        $this->withCurrencySnapshot($currencySnapshot);
 
         // 결제 통화(order_currency) — 유저가 선택·결제한 통화. base 통화와 다를 때 화면에 함께 표기한다.
         $paymentCurrency = $this->currency
@@ -177,7 +180,7 @@ class OrderResource extends BaseApiResource
 
             // 주문 옵션 (품목) — 주문 시점 통화를 자식에 전파
             'options' => $this->whenLoaded('options', fn () => OrderOptionResource::collection($this->options)->each(
-                fn ($r) => $r->withOrderCurrency($orderCurrency)
+                fn ($r) => $r->withOrderCurrency($orderCurrency)->withCurrencySnapshot($currencySnapshot)
             )),
 
             // 배송지 정보
@@ -185,27 +188,30 @@ class OrderResource extends BaseApiResource
             'billing_address' => new OrderAddressResource($this->whenLoaded('billingAddress')),
 
             // 결제 정보
-            'payment' => $this->whenLoaded('payment', fn () => (new OrderPaymentResource($this->payment))->withOrderCurrency($orderCurrency)),
+            'payment' => $this->whenLoaded('payment', fn () => (new OrderPaymentResource($this->payment))->withOrderCurrency($orderCurrency)->withCurrencySnapshot($currencySnapshot)),
             'payments' => $this->whenLoaded('payments', fn () => OrderPaymentResource::collection($this->payments)->each(
-                fn ($r) => $r->withOrderCurrency($orderCurrency)
+                fn ($r) => $r->withOrderCurrency($orderCurrency)->withCurrencySnapshot($currencySnapshot)
             )),
 
             // 현금영수증 — 현재 활성 영수증 1건(없으면 null). 발급 카드의 "발급완료" 상태 근거.
-            'cash_receipt' => $this->whenLoaded('cashReceipts', function () use ($orderCurrency, $paymentCurrency) {
+            // 통화 스냅샷은 명시 캡처가 필요하다 — 형제 항목들이 쓰는 화살표 함수와 달리 이
+            // 클로저는 자동 캡처가 없어, use 목록에서 빠지면 undefined 로 떨어져 주문 시점
+            // 통화(자릿수·절사 규칙)가 전파되지 않는다.
+            'cash_receipt' => $this->whenLoaded('cashReceipts', function () use ($orderCurrency, $paymentCurrency, $currencySnapshot) {
                 $active = OrderCashReceipt::filterActive($this->cashReceipts)[0] ?? null;
 
                 return $active
-                    ? (new CashReceiptResource($active))->withOrderCurrency($orderCurrency)->withReceiptCurrency($paymentCurrency)
+                    ? (new CashReceiptResource($active))->withOrderCurrency($orderCurrency)->withCurrencySnapshot($currencySnapshot)->withReceiptCurrency($paymentCurrency)
                     : null;
             }),
             // 발급/취소 전체 이력 — 관리자 화면의 "취소 성공 + 재발급 실패" 경고 배지 판정 근거.
             'cash_receipts' => $this->whenLoaded('cashReceipts', fn () => CashReceiptResource::collection(
                 $this->cashReceipts->sortByDesc('id')->values()
-            )->each(fn ($r) => $r->withOrderCurrency($orderCurrency)->withReceiptCurrency($paymentCurrency))),
+            )->each(fn ($r) => $r->withOrderCurrency($orderCurrency)->withCurrencySnapshot($currencySnapshot)->withReceiptCurrency($paymentCurrency))),
 
             // 배송 정보
             'shippings' => $this->whenLoaded('shippings', fn () => OrderShippingResource::collection($this->shippings)->each(
-                fn ($r) => $r->withOrderCurrency($orderCurrency)
+                fn ($r) => $r->withOrderCurrency($orderCurrency)->withCurrencySnapshot($currencySnapshot)
             )),
 
             // 취소 이력 (취소 사유·상세 사유·취소일시 표시용) — 최근 취소가 먼저 오도록 정렬

@@ -163,10 +163,30 @@ describe('W-2 유저 주문상세 현금영수증 카드 — 상태머신 5종',
         ...over,
     });
 
-    it('① 무통장이 아니거나 프로바이더 미설정이면 카드 자체를 렌더하지 않는다', () => {
+    it('① 무통장이 아니면 카드 자체를 렌더하지 않는다', () => {
         expect(evalIf(card.if, { order: { data: { payment: payment() } } })).toBe(true);
         expect(evalIf(card.if, { order: { data: { payment: payment({ payment_method: 'card' }) } } })).toBe(false);
-        expect(evalIf(card.if, { order: { data: { payment: payment({ cash_receipt_provider: null }) } } })).toBe(false);
+    });
+
+    // A3 — 제공 확장이 사라지면 프로바이더는 미설정으로 해석된다. 그때 이력까지 감추면
+    // 이미 발급된 영수증 URL 에 도달할 방법이 없어진다.
+    it('① 프로바이더 미설정 + 이력 없음이면 카드를 렌더하지 않는다', () => {
+        const ctx = { order: { data: { payment: payment({ cash_receipt_provider: null }), cash_receipt: null, cash_receipts: [] } } };
+        expect(evalIf(card.if, ctx)).toBe(false);
+    });
+
+    it('① 프로바이더 미설정이어도 발급/시도 이력이 있으면 카드를 유지한다', () => {
+        const issued = { order: { data: { payment: payment({ cash_receipt_provider: null }), cash_receipt: { id: 1 }, cash_receipts: [{ id: 1 }] } } };
+        expect(evalIf(card.if, issued)).toBe(true);
+
+        const failedOnly = { order: { data: { payment: payment({ cash_receipt_provider: null }), cash_receipt: null, cash_receipts: [{ issue_status: 'FAILED' }] } } };
+        expect(evalIf(card.if, failedOnly)).toBe(true);
+    });
+
+    it('③ 발급 버튼은 프로바이더가 해석될 때만 렌더한다 (죽은 provider 로 신청 불가)', () => {
+        const node = byId(mypageExt, 'ext_mypage_cash_receipt_issuable');
+        const dead = { order: { data: { payment: payment({ cash_receipt_provider: null }), cash_receipt: null, cash_receipts: [] } } };
+        expect(evalIf(node.if, dead)).toBe(false);
     });
 
     it('② 입금 전에는 안내만 노출한다 — 무통장은 ready, 가상계좌는 waiting_deposit', () => {
@@ -267,10 +287,23 @@ describe('W-2 유저 주문상세 현금영수증 카드 — 상태머신 5종',
 describe('W-3 관리자 주문상세 현금영수증 카드', () => {
     const card = byRowId(paymentInfo, 'payment_cash_receipt_card');
 
-    it('결제카드 반복(payment) 컨텍스트에서 무통장 + 프로바이더 설정 시에만 렌더된다', () => {
+    it('결제카드 반복(payment) 컨텍스트에서 무통장일 때만 렌더된다', () => {
         expect(evalIf(card.if, { payment: { payment_method: 'dbank', cash_receipt_provider: 'toss' } })).toBe(true);
         expect(evalIf(card.if, { payment: { payment_method: 'vbank', cash_receipt_provider: 'toss' } })).toBe(false);
-        expect(evalIf(card.if, { payment: { payment_method: 'dbank', cash_receipt_provider: '' } })).toBe(false);
+    });
+
+    // A3 — 유저 화면과 같은 규칙: 프로바이더가 사라져도 이력이 있으면 관리자도 계속 봐야 한다
+    it('프로바이더 미설정 + 이력 없음이면 카드를 렌더하지 않는다', () => {
+        const ctx = { payment: { payment_method: 'dbank', cash_receipt_provider: '' }, order: { data: { cash_receipt: null, cash_receipts: [] } } };
+        expect(evalIf(card.if, ctx)).toBe(false);
+    });
+
+    it('프로바이더 미설정이어도 발급/시도 이력이 있으면 카드를 유지한다', () => {
+        const issued = { payment: { payment_method: 'dbank', cash_receipt_provider: '' }, order: { data: { cash_receipt: { id: 1 }, cash_receipts: [{ id: 1 }] } } };
+        expect(evalIf(card.if, issued)).toBe(true);
+
+        const failedOnly = { payment: { payment_method: 'dbank', cash_receipt_provider: null }, order: { data: { cash_receipt: null, cash_receipts: [{ issue_status: 'FAILED' }] } } };
+        expect(evalIf(card.if, failedOnly)).toBe(true);
     });
 
     it('입금 전 안내는 무통장(ready)과 가상계좌(waiting_deposit) 모두에서 노출된다', () => {

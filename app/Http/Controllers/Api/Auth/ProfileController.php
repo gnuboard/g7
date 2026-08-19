@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Auth;
 
 use App\Enums\AttachmentSourceType;
+use App\Exceptions\CannotDeleteSuperAdminException;
 use App\Http\Controllers\Api\Base\AuthBaseController;
 use App\Http\Requests\Auth\VerifyPasswordRequest;
 use App\Http\Requests\User\ChangePasswordRequest;
@@ -15,6 +16,7 @@ use App\Services\UserService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -302,14 +304,28 @@ class ProfileController extends AuthBaseController
                 return $this->unauthorized('auth.unauthenticated');
             }
 
-            $this->logUserActivity('profile.withdraw');
-
             // 사용자 탈퇴 처리 (아바타, 토큰 삭제 및 익명화)
             $this->userService->withdrawUser($user);
 
+            // 활동 로그는 성공한 뒤에만 남긴다 — 실패한 탈퇴가 기록으로 남으면
+            // 이력만 보고는 탈퇴한 것으로 읽힌다.
+            $this->logUserActivity('profile.withdraw');
+
             return $this->success('user.withdraw_success');
+        } catch (ValidationException $e) {
+            // 관리자/수퍼관리자 탈퇴 차단은 요청이 잘못된 것이지 서버 오류가 아니다.
+            return $this->validationError($e->errors(), 'user.withdraw_failed');
+        } catch (CannotDeleteSuperAdminException $e) {
+            // 이 예외는 ValidationException 을 상속하지 않으므로 별도 매핑이 필요하다.
+            return $this->validationError(
+                ['general' => [$e->getMessage()]],
+                'user.withdraw_failed'
+            );
         } catch (\Exception $e) {
-            return $this->error('user.withdraw_failed', 500, null, ['error' => $e->getMessage()]);
+            // 원본 예외는 로그로만 남기고, 사용자 응답에는 원문을 싣지 않는다.
+            Log::error('User withdraw failed (profile)', ['exception' => $e]);
+
+            return $this->error('user.withdraw_failed', 500);
         }
     }
 }

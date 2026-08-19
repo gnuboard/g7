@@ -2,23 +2,64 @@ feature: 레이아웃 편집기 chrome 컨트롤 (디바이스 custom width / �
 phase: 3
 session: S5b-pre
 issue: 383
+# axis 의미:
+#   본 매니페스트가 묶는 것은 "편집기 chrome" 이라는 화면 영역이지 하나의 상호작용
+#   흐름이 아니다. 디바이스 미리보기 / 툴바 / 코드편집기 진입 / 오버레이 배치 / 팔레트는
+#   서로 곱해지지 않는다 (툴바 버튼 상태가 오버레이 배치 판정을 바꾸지 않는다).
+#   그래서 상호작용이 실재하는 축만 axes 에 두고, 나머지는 sub_flows 로 분리한다.
+#
+#   axes 로 남긴 것: 미리보기 디바이스 × custom 폭 입력.
+#     custom 폭은 device=custom 일 때만 반영되고 그 외 디바이스에서는 무시되어야 하므로
+#     두 축이 실제로 교차한다 (무시 여부가 조합으로 갈린다).
 axes:
   preview_device: [desktop, tablet, mobile, custom]
-  custom_width_input: [below_min_320, in_range, above_max_1920, non_numeric]
-  toolbar_action: [exit_clean, exit_dirty_confirm, edit_code_navigate, save_in_progress, save_done]
-  toolbar_button_state: [enabled_hover, disabled_no_hover, focused_after_click]
-  edited_template_type: [user, admin]
-  code_editor_entry: [from_wysiwyg_with_route, direct_route_query, file_select_in_editor, extension_select_in_editor]
-  selected_box_size: [normal_ge_44, small_lt_44_width, small_lt_44_height, scaled_small]
-  affordance_kind: [info_menu, base_lock, extension_lock, nav_route_in_tree, nav_unreachable, insertion_cross]
-  palette_entry_type: [basic, composite, layout]
+  custom_width_input: [below_min_320, in_range, above_max_1920]
 exclusions:
-  - { toolbar_action: edit_code_navigate, toolbar_button_state: disabled_no_hover,
-      reason: "onEditCode 미주입(disabled) 이면 navigate 자체가 일어나지 않음" }
-  - { custom_width_input: non_numeric, preview_device: desktop,
-      reason: "custom width 입력은 preview_device=custom 일 때만 노출" }
-  - { code_editor_entry: extension_select_in_editor, edited_template_type: user,
-      reason: "확장 선택은 라우트 없음 → ?route= 를 비움. 템플릿 타입과 무관한 동작" }
+  - { preview_device: desktop, custom_width_input: below_min_320,
+      reason: "custom 이 아닌 디바이스는 custom 폭을 무시 — 대표로 in_range 1건만 검증" }
+  - { preview_device: desktop, custom_width_input: above_max_1920, reason: "동일" }
+  - { preview_device: tablet, custom_width_input: below_min_320, reason: "동일" }
+  - { preview_device: tablet, custom_width_input: above_max_1920, reason: "동일" }
+  - { preview_device: mobile, custom_width_input: below_min_320, reason: "동일" }
+  - { preview_device: mobile, custom_width_input: above_max_1920, reason: "동일" }
+
+sub_flows:
+  - id: toolbar_actions
+    description: |
+      툴바 버튼(나가기 / 코드편집 / 저장)의 동작과 시각 상태. 미리보기 디바이스와
+      곱해지지 않는다 — 어느 디바이스에서 보든 툴바 동작은 같다.
+      축: toolbar_action(exit_clean·edit_code_navigate·save_in_progress·save_done) ×
+          toolbar_button_state(enabled_hover·disabled_no_hover·focused_after_click) ×
+          edited_template_type(user·admin — 나가기 목적지 분기)
+    effects:
+      - toolbar_exit_navigates_to_template_list_by_type
+      - toolbar_edit_code_opens_text_layout_editor_in_new_window_with_route
+      - toolbar_save_shows_spinner_while_pending_then_restores
+      - toolbar_buttons_hover_transition_when_enabled_not_when_disabled
+      - toolbar_buttons_no_residual_focus_outline_after_click
+  - id: code_editor_route_sync
+    description: |
+      코드편집기(텍스트 화면)의 `?route=` 쿼리 동기화. 진입 경로별로 쿼리를 싣거나 비운다.
+      축: code_editor_entry(from_wysiwyg_with_route·direct_route_query·file_select_in_editor·extension_select_in_editor)
+    effects:
+      - code_editor_restores_layout_from_route_query
+      - code_editor_file_select_syncs_route_query
+      - code_editor_extension_select_clears_route_query
+  - id: overlay_affordance_placement
+    description: |
+      선택 박스 크기에 따른 오버레이 버튼 배치. 툴바·팔레트와 무관한 기하 판정이다.
+      축: selected_box_size(normal_ge_44·small_lt_44_width·small_lt_44_height·scaled_small) ×
+          affordance_kind(info_menu·base_lock·extension_lock·nav_route_in_tree·nav_unreachable·insertion_cross)
+    effects:
+      - overlay_affordances_inside_when_box_ge_44
+      - overlay_affordances_outside_when_box_lt_44_no_overlap
+      - insertion_affordances_cross_layout_when_box_lt_44_no_overlap_no_clip
+  - id: palette_entry_badge
+    description: |
+      팔레트 카드의 React 컴포넌트 태그 배지. 축: palette_entry_type(basic·composite·layout)
+    effects:
+      - palette_card_shows_react_component_tag_badge
+
 effects:
   - preview_custom_device_uses_clamped_input_width_as_override
   - preview_custom_width_clamped_320_to_1920

@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Carbon;
 use Modules\Sirsoft\Ecommerce\Models\ProductImage;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductImageRepositoryInterface;
 
@@ -88,6 +89,21 @@ class ProductImageRepository implements ProductImageRepositoryInterface
         $image = $this->findById($id);
 
         return $image?->forceDelete() ?? false;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function findStaleTempImages(Carbon $threshold, int $limit): Collection
+    {
+        return $this->model->newQuery()
+            ->whereNotNull('temp_key')
+            ->whereNull('product_id')
+            ->where('created_at', '<', $threshold)
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->limit($limit)
+            ->get(['id', 'temp_key', 'disk', 'path', 'created_at']);
     }
 
     /**

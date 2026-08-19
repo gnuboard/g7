@@ -90,7 +90,7 @@ test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderServiceTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderOptionServiceTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Notifications/OrderStatusNotificationTest.php
-  - tests/Playwright/specs/admin/order-status-notification.spec.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/order-status-notification.spec.ts
 
 validation:
   audit_rule: test-scenario-coverage

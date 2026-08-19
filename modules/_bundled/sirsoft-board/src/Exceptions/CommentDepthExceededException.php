@@ -48,4 +48,24 @@ class CommentDepthExceededException extends Exception
     {
         return $this->attempted;
     }
+
+    /**
+     * 다국어 메시지 키를 반환합니다.
+     *
+     * @return string 다국어 메시지 키
+     */
+    public function getMessageKey(): string
+    {
+        return 'sirsoft-board::validation.comment.depth.exceeded';
+    }
+
+    /**
+     * 메시지 치환 파라미터를 반환합니다.
+     *
+     * @return array<string, mixed> 치환 파라미터
+     */
+    public function getMessageParams(): array
+    {
+        return ['max' => $this->limit];
+    }
 }

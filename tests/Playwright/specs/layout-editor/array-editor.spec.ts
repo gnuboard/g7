@@ -14,8 +14,8 @@
  *  을 검증한다. 추가/삭제/정렬/필드편집/디그레이드 회귀는 단위(ArrayItemsEditor.test.tsx)가
  *  잠그고, 본 E2E 는 라이브 반영·저장을 브라우저로 확인한다.
  *
- * @scenario array_node_editor + add_item + edit_text_field + live_persist
- * @effects property_modal_dispatches_array_node_editor_in_props_tab_by_kind, add_item_appends_newitem_skeleton_patches_whole_node, text_field_updates_item_immediately, live_add_tab_edit_label_reorder_save_persists_to_user_page, editor_save_specs_target_sandbox_layout_not_product_layout
+ * 축 요약(마커 아님 — 평문): array_node_editor, add_item, edit_text_field, live_persist.
+ * 효과 요약(마커 아님 — 평문): property_modal_dispatches_array_node_editor_in_props_tab_by_kind, add_item_appends_newitem_skeleton_patches_whole_node, text_field_updates_item_immediately, live_add_tab_edit_label_reorder_save_persists_to_user_page, editor_save_specs_target_sandbox_layout_not_product_layout.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 import type { Page } from '@playwright/test';
@@ -122,6 +122,7 @@ async function appendTabNavigationTo(page: Page, containerPath: string): Promise
 }
 
 test.describe('@layout-editor array 노드 에디터(빌트인 ARRAY-PROP)', () => {
+  /** @effects property_modal_dispatches_array_node_editor_in_props_tab_by_kind, add_item_appends_newitem_skeleton_patches_whole_node */
   test('TabNavigation 선택 시 array 에디터가 속성 탭에 마운트되고 항목 추가가 행 반영', async ({ page }) => {
     await gotoEditor(page);
     const navPath = await addTabNavigation(page);
@@ -137,6 +138,7 @@ test.describe('@layout-editor array 노드 에디터(빌트인 ARRAY-PROP)', () 
     expect(rowsAfter).toBe(rowsBefore + 1);
   });
 
+  /** @effects text_field_updates_item_immediately */
   test('항목 id text 필드 편집이 즉시 반영(입력값 유지)', async ({ page }) => {
     await gotoEditor(page);
     const navPath = await addTabNavigation(page);
@@ -158,6 +160,7 @@ test.describe('@layout-editor array 노드 에디터(빌트인 ARRAY-PROP)', () 
   // 시드 화면(e2e_sandbox)을 대상으로 한다. 이전에는 "추가한 TabNavigation 삭제 후 재저장" 으로
   // 원복했으나, 원복 자체가 또 한 번의 저장이라 실패하면 잔여물이 남았다. 시드 화면은 globalSetup 이
   // 매 실행 fixture 원본으로 덮어쓰므로 원복 절차가 필요 없다.
+  /** @effects live_add_tab_edit_label_reorder_save_persists_to_user_page, editor_save_specs_target_sandbox_layout_not_product_layout */
   test('array 편집 후 저장 → PUT 200', async ({ page }) => {
     test.setTimeout(60_000); // 저장 + 모달 닫힘 대기 합산 — 기본 30s 부족
     await gotoEditor(page, sandboxRouteParam());

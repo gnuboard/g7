@@ -138,13 +138,32 @@
       ]
     },
     {
-      "comment": "결과 없음 안내",
+      "comment": "결과 없음 안내 (검색 실패는 결과 없음이 아니다 — categories_failed 로 구분, 키 부재(구버전 코어)는 종전 렌더 유지)",
       "type": "basic",
       "name": "Div",
-      "if": "{{!searchResults?.data?.posts?.items || searchResults?.data?.posts?.items?.length === 0}}",
+      "if": "{{(!searchResults?.data?.posts?.items || searchResults?.data?.posts?.items?.length === 0) && !(searchResults?.data?.categories_failed?.posts ?? false)}}",
       "props": { "className": "px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400" },
       "children": [
         { "type": "basic", "name": "Span", "text": "$t:search.empty.posts_in_all" }
+      ]
+    },
+    {
+      "comment": "검색 실패 안내",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{searchResults?.data?.categories_failed?.posts ?? false}}",
+      "props": { "className": "px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex items-center justify-center gap-2" },
+          "children": [
+            { "type": "basic", "name": "Icon", "props": { "name": "triangle-exclamation", "size": "sm", "className": "text-red-500 dark:text-red-400" } },
+            { "type": "basic", "name": "Span", "text": "$t:search.failed.title" }
+          ]
+        },
+        { "type": "basic", "name": "P", "props": { "className": "mt-1 text-xs text-gray-400 dark:text-gray-500" }, "text": "$t:search.failed.suggestion" }
       ]
     }
   ]

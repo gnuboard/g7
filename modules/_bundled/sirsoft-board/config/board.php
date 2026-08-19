@@ -155,6 +155,10 @@ return [
         'max_comment_depth_min' => 0,
         'max_comment_depth_max' => 10,
 
+        // 삭제 첨부 영구 정리 보존기간 (일)
+        'attachment_purge_retention_days_min' => 1,
+        'attachment_purge_retention_days_max' => 3650,
+
         // 신고 정책
         'auto_hide_threshold_min' => 0,
         'auto_hide_threshold_max' => 100,

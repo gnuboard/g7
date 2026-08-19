@@ -1,0 +1,42 @@
+feature: 게시판 설정 저장 파이프라인과 저장 훅 (B-2 / B-5)
+
+description: |
+  게시판 설정도 저장 경로가 셋이다 — 관리자 화면의 벌크 저장, 값 하나만 바꾸는 단건 저장,
+  여러 게시판에 한꺼번에 적용하는 일괄 적용. 파이프라인 단계(캐시 무효화, 신고 알림 플래그
+  강제, 숫자 문자열 정규화)를 벌크 경로만 통과하고 있으면, 같은 값을 어느 경로로 저장했느냐에
+  따라 결과가 달라진다. 저장은 성공하고 파생 값만 어긋나므로 오류가 남지 않는다.
+
+  boolean 백필은 반대다 — 벌크 저장은 화면이 보낸 폼 전체가 기준이라 미제출 체크박스를
+  false 로 채워야 하지만, 단건 저장은 그 키 하나만 바꾸겠다는 뜻이다. 여기서 백필하면
+  운영자가 건드리지도 않은 다른 토글이 전부 꺼진다.
+
+  저장 훅(`core.module_settings.after_save`)의 구독자는 SEO 캐시 무효화다. 게시판 설정의
+  SEO 메타 템플릿을 바꿔도 캐시가 그대로면 봇 화면만 옛 값을 계속 보여준다.
+
+axis_notes:
+  save_path: |
+    bulk_apply 는 게시판 여러 개에 같은 설정을 적용하는 경로다. 대상이 N개라 캐시 무효화도
+    N개 게시판에 걸려야 한다 — 한 건만 무효화하면 나머지는 옛 값을 유지한다.
+    카테고리·파이프라인 단계는 조합이 아니라 각 경로가 통과해야 할 목록이라 effects 로 둔다.
+
+axes:
+  save_path: [single_key, bulk, bulk_apply]
+
+effects:
+  # 파이프라인 통과 (B-2)
+  - single_key_save_invalidates_service_cache        # 저장 직후 조회가 새 값을 본다
+  - single_key_save_does_not_backfill_booleans       # 단건 저장이 미제출 토글을 끄지 않는다
+  - bulk_save_backfills_unsubmitted_booleans         # 벌크 저장은 폼 전체가 기준 (기존 계약 유지)
+  - report_notification_flags_forced_on_single_key_save
+  - numeric_string_normalized_on_single_key_save
+  - board_settings_storage_isolated_in_tests         # 테스트 저장소 격리 (실제 설정 파일 오염 차단)
+
+  # 저장 훅과 구독자 (B-5)
+  - module_settings_after_save_hook_fired
+  - seo_cache_invalidated_on_module_settings_save
+  - seo_cache_invalidated_on_bulk_apply              # 일괄 적용은 대상 게시판 전부에 걸린다
+  - seo_cache_untouched_for_other_module             # 다른 모듈 식별자의 저장에는 반응하지 않는다
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Unit/BoardSetSettingPipelineTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/BoardSettingsSeoCacheInvalidationTest.php

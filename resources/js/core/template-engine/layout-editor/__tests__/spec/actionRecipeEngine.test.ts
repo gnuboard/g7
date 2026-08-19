@@ -74,16 +74,28 @@ describe('buildAction — 코어 핸들러 규칙 준수', () => {
   const recipes = normalizeActionRecipes(RECIPES);
   const byId = (id: string) => recipes.find((r) => r.id === id)!;
 
+  /**
+   * @scenario action_recipe=goToPage, followup_chain=none
+   * @effects action_recipe_build_emits_correct_handler_name_and_top_level_target, action_recipe_navigate_uses_navigate_not_nav
+   */
   it('goToPage → navigate (nav 아님) + path 치환', () => {
     const a = buildAction(byId('goToPage'), { url: '/board' });
     expect(a).toEqual({ handler: 'navigate', params: { path: '/board' } });
   });
 
+  /**
+   * @scenario action_recipe=showMessage, followup_chain=none
+   * @effects action_recipe_toast_handler_not_showToast
+   */
   it('showMessage → toast (showToast 아님) + message/type', () => {
     const a = buildAction(byId('showMessage'), { text: '저장되었습니다', tone: 'success' });
     expect(a).toEqual({ handler: 'toast', params: { message: '저장되었습니다', type: 'success' } });
   });
 
+  /**
+   * @scenario action_recipe=changeState, followup_chain=none
+   * @effects action_recipe_setState_target_top_level_not_in_params
+   */
   it('changeState → setState + target top-level (params 밖)', () => {
     const a = buildAction(byId('changeState'), { key: 'activeTab', value: 'detail' });
     expect(a.handler).toBe('setState');
@@ -91,11 +103,19 @@ describe('buildAction — 코어 핸들러 규칙 준수', () => {
     expect(a.params).toEqual({ activeTab: 'detail' });
   });
 
+  /**
+   * @scenario action_recipe=refreshData, followup_chain=none
+   * @effects action_recipe_refetchDataSource_uses_dataSourceId_key_not_id
+   */
   it('refreshData → refetchDataSource + dataSourceId (id 아님)', () => {
     const a = buildAction(byId('refreshData'), { src: 'recent_posts' });
     expect(a).toEqual({ handler: 'refetchDataSource', params: { dataSourceId: 'recent_posts' } });
   });
 
+  /**
+   * @scenario action_recipe=callServerThen, followup_chain=success_and_error_both
+   * @effects action_recipe_top_level_onSuccess_onError_keys_not_in_params, action_recipe_apiCall_target_outside_params_to_avoid_resolvedTarget_undefined
+   */
   it('callServerThen → apiCall + target/onSuccess/onError 가 top-level', () => {
     const onSuccess = [{ handler: 'toast', params: { message: 'ok' } }];
     const a = buildAction(byId('callServerThen'), { endpoint: 'admin/users', onSuccess, onError: [] });
@@ -108,6 +128,7 @@ describe('buildAction — 코어 핸들러 규칙 준수', () => {
     expect(a.params).toBeUndefined();
   });
 
+  /** @effects nested_action_list_widget_assembles_recursive_actions */
   it('중첩 action-list — onSuccess 안에 N개 액션 배열 조립', () => {
     const onSuccess = [
       { handler: 'toast', params: { message: 'saved' } },
@@ -137,6 +158,7 @@ describe('assertHandlerRules — 금지 별칭 교정', () => {
     warn.mockRestore();
   });
 
+  /** @effects action_recipe_handler_name_follows_claude_md_critical_rules */
   it('올바른 핸들러는 그대로', () => {
     expect(assertHandlerRules({ handler: 'navigate' }).handler).toBe('navigate');
   });
@@ -145,6 +167,7 @@ describe('assertHandlerRules — 금지 별칭 교정', () => {
 describe('matchAction — 역해석', () => {
   const recipes = normalizeActionRecipes(RECIPES);
 
+  /** @effects action_recipe_reverse_matches_existing_action_to_recipe */
   it('navigate 액션 → goToPage 레시피 + url 복원', () => {
     const m = matchAction({ handler: 'navigate', params: { path: '/board' } }, recipes);
     expect(m?.recipeId).toBe('goToPage');
@@ -465,6 +488,7 @@ describe('resolveActionCard / summarizeAction / if (S10-1 보강)', () => {
     expect(card.handler).toBe('customUnknown');
   });
 
+  /** @effects action_recipe_does_not_expose_handler_jargon_to_user */
   it('summarizeAction — 라벨 + 주요 입력값 (핸들러명 미노출)', () => {
     const recipe = recipes.find((r) => r.id === 'goToPage')!;
     const t = (k: string) => (k === '$t:editor.action.go_to_page.label' ? '페이지 이동' : k);

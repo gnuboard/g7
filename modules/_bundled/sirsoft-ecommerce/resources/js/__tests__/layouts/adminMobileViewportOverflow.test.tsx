@@ -97,11 +97,17 @@ describe('B2 — 주문상세 모달 상품표 카드형 전환', () => {
     const cancel = load('partials/admin_ecommerce_order_detail/_modal_cancel_order.json');
     const batch = load('partials/admin_ecommerce_order_detail/_modal_batch_change_confirm.json');
 
-    const unitPrice = collect(
+    // 금액 노드는 서버가 통화까지 포함해 서식한 `*_formatted` 를 그대로 출력한다.
+    // (한때 `원` 리터럴로 이 노드를 찾았으나 통화 하드코딩 제거 후 선택자가 아무것도 못 찾아
+    //  `cls(undefined)` 를 단언하는 빈 가드가 되어 있었다 — 선택자를 서식 필드 기준으로 고정한다)
+    const unitPrices = collect(
       cancel,
-      (n) => typeof n.text === 'string' && n.text.includes('unit_price') && n.text.includes('원'),
-    )[0];
-    expect(cls(unitPrice)).toContain('whitespace-nowrap');
+      (n) => typeof n.text === 'string' && n.text.includes('unit_price_formatted'),
+    );
+    expect(unitPrices.length, '단가 표시 노드를 찾지 못했다').toBeGreaterThan(0);
+    for (const node of unitPrices) {
+      expect(cls(node)).toContain('whitespace-nowrap');
+    }
 
     const batchAmounts = collect(
       batch,

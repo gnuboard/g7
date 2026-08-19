@@ -1,0 +1,42 @@
+feature: 이커머스 단건 설정 저장의 파이프라인 통과 (B-1)
+
+description: |
+  이커머스 설정은 저장 전에 여러 단계를 거친다 — 분할 입력 필드 병합, 통화 기본값 동기화,
+  결제수단 메타데이터 스냅샷, 은행명 다국어 정규화. 벌크 저장(`saveSettings`)은 그 파이프라인을
+  전부 통과하는데, 단건 저장(`setSetting`)은 값 하나를 파일에 바로 써 넣었다.
+
+  그래서 같은 값을 어느 화면에서 저장했느냐에 따라 결과가 달라졌다. 오류는 나지 않는다 —
+  저장은 성공하고, 파생 값만 갱신되지 않은 채 남는다.
+
+  단건 저장이 딛는 기준(payload_basis)도 문제였다. 조회 결과에는 읽기 시점 보강값(카탈로그
+  라벨 등)이 섞여 있고, 삭제된 통화의 tombstone 은 조회에서 걸러진다. 조회 결과를 기준으로
+  덮어쓰면 보강값이 파일에 눌어붙고 tombstone 이 사라진다 — 저장된 파일이 기준이어야 한다.
+
+axis_notes:
+  pipeline_stage: |
+    벌크 경로가 이미 수행하던 단계를 단건 경로에도 통과시킨다. 각 단계는 서로 다른 입력을
+    보므로 조합이 아니라 독립 축이다 — 한 단계를 통과시켜도 다른 단계가 빠지면 그 축만
+    조용히 어긋난다.
+
+axes:
+  pipeline_stage:
+    - stored_file_basis            # 저장 파일 기준 병합 (조회 결과 기준 금지)
+    - currency_default_sync        # is_default 통화 ↔ default_currency 일치
+    - split_fields                 # 화면의 분할 입력 필드를 한 키로 병합
+    - payment_method_snapshot      # 결제수단 카탈로그 메타데이터 박제
+    - currency_cache_flush         # 요청 캐시 무효화
+    - normalize_category_data      # 카테고리 단위 정규화 (은행명 다국어)
+
+effects:
+  - read_time_enrichment_not_persisted        # 읽기 시점 보강값이 파일에 눌어붙지 않는다
+  - other_category_file_untouched             # 단건 저장이 다른 카테고리 파일을 건드리지 않는다
+  - removed_currency_tombstone_preserved      # 삭제 통화 tombstone 보존
+  - saved_file_default_currency_matches_is_default
+  - split_input_fields_merged_on_single_key_save
+  - payment_method_metadata_snapshotted
+  - currency_request_cache_cleared_on_single_key_save
+  - bank_name_normalized_to_multilingual
+  - sibling_keys_preserved_on_bank_save       # 은행 저장이 같은 카테고리의 형제 키를 지우지 않는다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/EcommerceSettingsSetSettingPipelineTest.php

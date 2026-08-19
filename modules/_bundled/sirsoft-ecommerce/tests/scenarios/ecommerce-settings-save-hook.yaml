@@ -1,0 +1,37 @@
+feature: 모듈 설정 저장 훅의 발화 지점 (B-5)
+
+description: |
+  `core.module_settings.after_save` 를 구독하는 리스너가 셋(이커머스 SEO 캐시 / 게시판 SEO
+  캐시 / 코어 활동로그) 있는데, 정작 발화 지점인 `ModuleSettingsService::save()` 는
+  프로덕션에서 호출되지 않았다. 모듈 설정은 각 모듈의 관리자 컨트롤러가 자기
+  SettingsService 로 직접 저장하기 때문이다.
+
+  결과: 모듈 환경설정에서 SEO 메타 템플릿을 바꿔도 SEO 캐시가 무효화되지 않고, 설정 변경이
+  감사 기록에도 남지 않았다. 예외도 경고도 없이 구독자만 굶었다.
+
+  발화 지점은 관리자 컨트롤러다. 서비스에 두면 시더·업그레이드 스텝·테스트 픽스처의 모든
+  저장이 활동로그와 SEO 무효화를 유발하고, 훅의 의미도 "관리자가 설정을 저장했다" 이다.
+
+axis_notes:
+  actor: |
+    admin = 관리자 HTTP 요청(컨트롤러 경유). system = 서비스 직접 호출(시더·내부 로직).
+    이 축이 곧 발화 여부를 가르는 설계 결정이라, 두 값 모두에 대해 저장 경로 전부를 본다 —
+    한쪽 경로만 조용하면 나머지 경로로 감사 기록이 오염된다.
+  save_path: |
+    single_key 는 아직 라우트가 없다(설정 화면은 벌크 저장만 사용). 컨트롤러 메서드를 직접
+    호출해 계약을 고정한다 — 라우트가 붙는 시점에 발화 계약이 이미 서 있게 한다.
+
+axes:
+  actor: [admin, system]
+  save_path: [bulk, single_key, save_banks]
+
+effects:
+  - module_settings_after_save_hook_fired            # 관리자 저장 → 발화 (저장 카테고리 payload 동반)
+  - module_settings_after_save_hook_not_fired_on_failure  # 검증 탈락 시 미발화
+  - service_level_save_stays_silent                  # 서비스 직접 호출은 전 경로에서 침묵
+  - seo_cache_invalidated_on_module_settings_save    # 구독자 ① SEO 프리렌더 캐시
+  - seo_cache_untouched_for_non_seo_tab              # SEO 무관 탭 저장은 캐시를 건드리지 않는다
+  - module_settings_save_recorded_in_activity_log    # 구독자 ② 코어 활동로그
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/EcommerceSettingsSeoCacheInvalidationTest.php

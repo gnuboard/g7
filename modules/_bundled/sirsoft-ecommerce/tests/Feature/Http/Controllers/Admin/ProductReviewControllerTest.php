@@ -7,6 +7,7 @@ use Modules\Sirsoft\Ecommerce\Enums\ReviewStatus;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Models\ProductReview;
+use Modules\Sirsoft\Ecommerce\Models\ProductReviewImage;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -573,5 +574,62 @@ class ProductReviewControllerTest extends ModuleTestCase
 
         // Then
         $response->assertForbidden();
+    }
+
+    // ========================================
+    // 이미지 download URL 직렬화 (숨김 리뷰 <img> 썸네일 렌더 계약)
+    // ========================================
+
+    /**
+     * 숨김(HIDDEN) 리뷰의 관리자 상세 응답은 이미지에 한시 서명 download URL 을
+     * 직렬화한다 — <img> 는 인증 헤더를 실을 수 없어, 무서명 URL 이면 관리자
+     * 화면의 썸네일이 서빙 게이트(404)에 깨진다.
+     *
+     * @scenario resource=review_image, parent_state=restricted
+     *
+     * @effects admin_review_serializes_signed_download_url_for_hidden_review
+     */
+    #[Test]
+    public function test_admin_detail_serializes_signed_download_url_for_hidden_review(): void
+    {
+        // Given: 숨김 리뷰 + 이미지
+        $review = $this->createReview(['status' => ReviewStatus::HIDDEN->value]);
+        ProductReviewImage::factory()->create(['review_id' => $review->id]);
+
+        // When
+        $downloadUrl = $this->actingAs($this->adminUser)
+            ->getJson("{$this->apiBase}/{$review->id}")
+            ->assertOk()
+            ->json('data.images.0.download_url');
+
+        // Then: 서명 쿼리가 실린 URL
+        $this->assertIsString($downloadUrl);
+        $this->assertStringContainsString('signature=', $downloadUrl, '숨김 리뷰 이미지는 서명 download URL 로 직렬화되어야 합니다');
+    }
+
+    /**
+     * 전시중(VISIBLE) 리뷰의 이미지 download URL 은 종전과 동일한 무서명 URL 이다
+     * (공개 콘텐츠에 만료성 URL 이 섞이는 회귀 방지 — CDN·캐시 안정성).
+     *
+     * @scenario resource=review_image, parent_state=public
+     *
+     * @effects visible_review_serializes_plain_download_url
+     */
+    #[Test]
+    public function test_admin_detail_serializes_plain_download_url_for_visible_review(): void
+    {
+        // Given: 전시중 리뷰 + 이미지
+        $review = $this->createReview();
+        $image = ProductReviewImage::factory()->create(['review_id' => $review->id]);
+
+        // When
+        $downloadUrl = $this->actingAs($this->adminUser)
+            ->getJson("{$this->apiBase}/{$review->id}")
+            ->assertOk()
+            ->json('data.images.0.download_url');
+
+        // Then: 기존 무서명 URL 그대로 (직접 URL 또는 API 폴백)
+        $this->assertSame($image->download_url, $downloadUrl);
+        $this->assertStringNotContainsString('signature=', (string) $downloadUrl);
     }
 }

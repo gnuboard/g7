@@ -1,0 +1,84 @@
+feature: 관리자 CRUD 의 예외 → 상태코드 매핑 (Admin CRUD Exception Status)
+
+description: |
+  브랜드·쿠폰·배송사·상품 공통정보의 관리자 CRUD 가 실패했을 때, 그 원인이
+  "운영자가 고칠 수 있는 도메인 사유" 인지 "서버 결함·인프라 장애" 인지를
+  응답 상태코드로 구분한다.
+
+  배경:
+    이 확장의 관리자 CRUD 는 `ResponseHelper::moduleError` 의 기본 상태코드가 400 이라,
+    광역 catch 에서 상태코드 인자를 생략하거나 400 을 그대로 두면 인프라 장애가
+    "입력 오류" 로 위장된다. 운영자는 고칠 수 없는 안내를 보고, 장애는 늦게 발견된다.
+
+  핵심 설계:
+    - typed 도메인 예외 → **기존 400 유지** (예외 승격이 사용자 계약을 함께 바꾸면 그것이 회귀다)
+    - 그 외 예외 → 500, 응답 본문에 예외 원문(SQLSTATE 등) 미포함
+
+  소스 전수 계약(`tests/Feature/Http/GenericCatchStatusCodeContractTest.php`)은
+  "광역 catch 에 500 이라고 적혀 있다" 까지만 보증한다. 그 앞의 FormRequest·미들웨어가
+  다른 응답을 만들 수 있으므로, 이 매니페스트가 담당하는 축은 **계약이 실제 HTTP 응답까지
+  도달하는가** 이고 대표 엔드포인트의 런타임 매핑으로 확인한다.
+
+  인프라 500 축은 서비스 mock 으로만 유발할 수 있어 PHPUnit 이 SSoT 다.
+  브라우저에서는 도메인 사유나 검증이 먼저 걸려 재현되지 않는다.
+
+axes:
+  error_class: [domain, infrastructure]
+
+exclusions: []
+
+effects:
+  # 도메인 예외 — 기존 400 을 유지한다
+  - admin_brand_delete_domain_exception_keeps_400
+  - admin_brand_toggle_status_domain_exception_keeps_400
+  - admin_coupon_delete_domain_exception_keeps_400
+  - admin_shipping_carrier_toggle_status_domain_exception_keeps_400
+  - admin_product_common_info_delete_domain_exception_keeps_400
+  - admin_product_common_info_toggle_active_domain_exception_keeps_400
+  # 인프라 예외 — 500 으로 구분된다
+  - admin_brand_delete_infrastructure_exception_returns_500
+  - admin_brand_toggle_status_infrastructure_exception_returns_500
+  - admin_coupon_delete_infrastructure_exception_returns_500
+  - admin_shipping_carrier_toggle_status_infrastructure_exception_returns_500
+  - admin_product_common_info_delete_infrastructure_exception_returns_500
+  - admin_product_common_info_toggle_active_infrastructure_exception_returns_500
+  # 공통 — 응답 본문에 예외 원문이 실리지 않는다
+  - admin_crud_infrastructure_response_omits_exception_text
+
+scenarios:
+  - id: admin_crud_domain_failure_keeps_original_status
+    description: 도메인 사유로 실패하면 그 엔드포인트가 원래 쓰던 400 이 그대로 전달된다 (예외 typed 승격이 계약을 바꾸지 않았음)
+    effects:
+      - admin_brand_delete_domain_exception_keeps_400
+      - admin_brand_toggle_status_domain_exception_keeps_400
+      - admin_coupon_delete_domain_exception_keeps_400
+      - admin_shipping_carrier_toggle_status_domain_exception_keeps_400
+      - admin_product_common_info_delete_domain_exception_keeps_400
+      - admin_product_common_info_toggle_active_domain_exception_keeps_400
+
+  - id: admin_crud_infrastructure_failure_is_not_disguised_as_input_error
+    description: DB 장애 등 인프라 예외는 500 으로 구분되고 응답 본문에 예외 원문(SQLSTATE 등)이 포함되지 않는다
+    effects:
+      - admin_brand_delete_infrastructure_exception_returns_500
+      - admin_brand_toggle_status_infrastructure_exception_returns_500
+      - admin_coupon_delete_infrastructure_exception_returns_500
+      - admin_shipping_carrier_toggle_status_infrastructure_exception_returns_500
+      - admin_product_common_info_delete_infrastructure_exception_returns_500
+      - admin_product_common_info_toggle_active_infrastructure_exception_returns_500
+      - admin_crud_infrastructure_response_omits_exception_text
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/ExceptionStatusMappingTest.php
+
+notes: |
+  **엔드포인트를 axis 로 두지 않은 이유**: 대상 테스트는 DataProvider 로 6개 엔드포인트를
+  한 메서드가 쓸어 담는다. `@scenario` 마커는 도크블록당 1개이고 축마다 값 1개만 받으므로,
+  엔드포인트를 axis 로 세우면 cross product 6×2=12 칸 중 2칸만 마킹되어 나머지 10칸이
+  영구 미커버로 남는다. 실제로 판정을 가르는 축은 `error_class` 하나이고,
+  엔드포인트별 커버리지는 effects 12건이 1:1로 담는다.
+
+  이 매니페스트는 5차 감사에서 신설됐다. `OrderDomainExceptionStatusPairTest` 와
+  `InquiryDomainExceptionStatusPairTest` 는 3차 감사에서 각각 전용 매니페스트를 받았는데,
+  같은 라운드에 만들어진 이 파일만 `@scenario`/`@effects` 가 하나도 없고 어느 매니페스트
+  `test_files` 에도 등록되지 않은 채였다. effect 선언이 아예 없으면 test-scenario-coverage
+  의 두 방향 검사(선언→테스트, 테스트→선언) 어느 쪽에도 걸리지 않아 조용히 통과한다.

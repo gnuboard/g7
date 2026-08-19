@@ -1,5 +1,7 @@
 <?php
 
+// audit:allow api-doc-coverage reason: 룰 면제 주석만 추가 — 요청/응답 계약 불변 (해당 엔드포인트 문서 부재는 사전 상태)
+
 declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayNhnkcp\Controllers;
@@ -43,7 +45,7 @@ class MobileApprovalController
 
     /** 간편결제 direct 파라미터 기본값 (매 결제 시 초기화) */
     private const EASY_PAY_DIRECT_DEFAULTS = [
-        'payco_direct'    => '',
+        'payco_direct' => '',
         'naverpay_direct' => 'A',
         'kakaopay_direct' => 'A',
         'applepay_direct' => 'A',
@@ -51,11 +53,11 @@ class MobileApprovalController
 
     /** 간편결제별 direct 파라미터 override (기본값 위에 덮어씀) */
     private const EASY_PAY_DIRECT_FIELDS = [
-        'nhnkcp_payco'          => ['payco_direct' => 'Y'],
-        'nhnkcp_naverpay'       => ['naverpay_direct' => 'Y'],
+        'nhnkcp_payco' => ['payco_direct' => 'Y'],
+        'nhnkcp_naverpay' => ['naverpay_direct' => 'Y'],
         'nhnkcp_naverpay_point' => ['naverpay_direct' => 'Y', 'naverpay_point_direct' => 'Y'],
-        'nhnkcp_kakaopay'       => ['kakaopay_direct' => 'Y'],
-        'nhnkcp_applepay'       => ['applepay_direct' => 'Y'],
+        'nhnkcp_kakaopay' => ['kakaopay_direct' => 'Y'],
+        'nhnkcp_applepay' => ['applepay_direct' => 'Y'],
     ];
 
     private const PLUGIN_IDENTIFIER = 'sirsoft-pay_nhnkcp';
@@ -80,6 +82,7 @@ class MobileApprovalController
      * @param  Request  $request  주문/결제 메타
      * @return JsonResponse approval_key + pay_url
      */
+    // audit:allow controller-base-request-injection reason: 인라인 validate 로 전 필드 계약 보유 — FormRequest 승격은 후속 백로그 (계획 범위 제외 합의)
     public function getApprovalKey(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -249,9 +252,9 @@ class MobileApprovalController
         $supplyAmt = $taxablePaymentAmt - $vatAmt; // 공급가액 (VAT 제외)
 
         return [
-            'tax_flag'      => 'TG03',
-            'comm_tax_mny'  => (string) $supplyAmt,
-            'comm_vat_mny'  => (string) $vatAmt,
+            'tax_flag' => 'TG03',
+            'comm_tax_mny' => (string) $supplyAmt,
+            'comm_vat_mny' => (string) $vatAmt,
             'comm_free_mny' => (string) $taxFreeAmt,
         ];
     }
