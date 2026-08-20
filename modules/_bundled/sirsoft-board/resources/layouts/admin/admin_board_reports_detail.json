@@ -131,6 +131,7 @@
                                 "name": "Button",
                                 "actions": [
                                     {
+                                        "comment": "신고 목록으로. 보던 목록 상태를 이고 간다",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {

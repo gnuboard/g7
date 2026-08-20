@@ -68,6 +68,7 @@
           <div class="flex items-center gap-2">
             <input type="number" class="{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.ranges.unit_value'] ? 'input input-error' : 'input'}}" value="{{_computed.activeCountrySetting?.ranges?.unit_value ?? ''}}" :min="0.01" :step="0.01" disabled="{{_computed.isReadOnly}}">
               <on type="change">
+                <!-- 구간 단위값. 입력할 때마다 구간 표 전체를 다시 계산해야 해서 전용 핸들러가 맡고, 타이핑 도중 매 글자마다 재계산하지 않도록 짧게 묶어 처리한다 -->
                 <action handler="sirsoft-ecommerce.updateUnitValue" :debounce="300" value="{{$event.target.value}}"/>
               </on>
             </input>

@@ -5,6 +5,7 @@
       <div class="flex items-center gap-4">
         <button class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer">
           <on type="click">
+            <!-- 취소. 수정 중이면 그 글로, 새 글이면 게시판 목록으로 돌아가며 보던 목록 상태를 이고 간다 -->
             <navigate path="{{route.id ? '/board/' + route.slug + '/' + route.id : '/board/' + route.slug}}" :mergeQuery="true">
               <query/>
             </navigate>

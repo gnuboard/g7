@@ -29,6 +29,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "취소. 수정 중이면 그 글로, 새 글이면 게시판 목록으로 돌아가며 보던 목록 상태를 이고 간다",
                                     "type": "click",
                                     "handler": "navigate",
                                     "params": {

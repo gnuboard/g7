@@ -262,6 +262,7 @@
         <responsive on="portable" class="divider-list flex flex-col"/>
         <div data-ref="prev_post" data-if="{{post?.data?.navigation?.prev}}" class="flex-1 px-4 py-3 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 cursor-pointer transition-colors">
           <on type="click">
+            <!-- 이 글의 수정 화면으로. 보던 목록 상태를 이고 간다 -->
             <navigate path="/admin/board/{{route.slug}}/post/{{post?.data?.navigation?.prev?.id}}" :mergeQuery="true">
               <query/>
             </navigate>
@@ -275,6 +276,7 @@
         </div>
         <div data-ref="next_post" data-if="{{post?.data?.navigation?.next}}" class="flex-1 px-4 py-3 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 cursor-pointer transition-colors">
           <on type="click">
+            <!-- 작성자의 회원 상세로. 신고 처리를 하려면 그 사람의 다른 활동을 함께 봐야 한다 -->
             <navigate path="/admin/board/{{route.slug}}/post/{{post?.data?.navigation?.next?.id}}" :mergeQuery="true">
               <query/>
             </navigate>

@@ -339,6 +339,7 @@
                                         "text": "$t:admin.dashboard.asset_url_mode_drift_description"
                                     },
                                     {
+                                        "comment": "자산 주소 방식이 어긋났다는 경고에서 설정 화면으로 바로 보낸다 — 대시보드에서 문제를 알리고 고칠 자리까지 데려가는 것이 이 링크의 몫이다",
                                         "id": "asset_url_mode_drift_link",
                                         "type": "basic",
                                         "name": "Button",

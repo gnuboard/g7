@@ -71,9 +71,26 @@ describe('W-1 체크아웃 현금영수증 신청 폼', () => {
 
     it('신청 전에는 하위 필드가 렌더되지 않는다 (M4: 0 → 3)', () => {
         const fields = byId(checkoutExt, 'ext_checkout_cash_receipt_fields');
+        const requested = {
+            _local: {
+                cashReceiptRequested: true,
+                checkoutExtraPayload: { cash_receipt_requested: true },
+            },
+        };
 
         expect(evalIf(fields.if, { _local: {} })).toBe(false);
-        expect(evalIf(fields.if, { _local: { cashReceiptRequested: true } })).toBe(true);
+        expect(evalIf(fields.if, requested)).toBe(true);
+    });
+
+    it('결제수단 전환으로 확장 칸이 비워지면 신청 표시도 함께 닫힌다', () => {
+        // 템플릿은 결제수단을 바꿀 때 `checkoutExtraPayload` 만 비운다(조각 전용 미러는 모른다).
+        // 표시 상태가 미러만 읽으면 "신청함으로 보이지만 주문에는 실리지 않는" 상태로 남는다.
+        const cleared = { _local: { cashReceiptRequested: true, checkoutExtraPayload: {} } };
+        const fields = byId(checkoutExt, 'ext_checkout_cash_receipt_fields');
+        const toggle = byId(checkoutExt, 'ext_checkout_cash_receipt_toggle');
+
+        expect(evalIf(fields.if, cleared)).toBe(false);
+        expect(evalIf(toggle.props.checked, cleared)).toBe(false);
     });
 
     it('신청 체크박스는 확장 병합 칸에 4키를 기입한다 (직접 _local 기입은 서버 미도달)', () => {

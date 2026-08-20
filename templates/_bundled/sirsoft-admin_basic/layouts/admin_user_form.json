@@ -1750,6 +1750,7 @@
                                 "name": "Button",
                                 "actions": [
                                     {
+                                        "comment": "탈퇴 확인 취소. 확인 문구만 접고 폼은 그대로 둔다",
                                         "type": "click",
                                         "handler": "setState",
                                         "params": {
@@ -1776,6 +1777,7 @@
                                 "name": "Button",
                                 "actions": [
                                     {
+                                        "comment": "탈퇴 실행. 확인 문구를 먼저 접는 것은 요청이 끝난 뒤 화면이 바뀌어도 확인 창이 남지 않게 하기 위해서다",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [

@@ -271,6 +271,7 @@
                             "name": "Div",
                             "children": [
                                 {
+                                    "comment": "기본 문안으로 되돌린다. 손댄 내용을 버리고 코어가 제공하는 원문을 다시 싣는 자리다",
                                     "type": "basic",
                                     "name": "Button",
                                     "actions": [
@@ -337,6 +338,7 @@
                             },
                             "children": [
                                 {
+                                    "comment": "저장. 본인인증 안내 문구는 알림 시스템과 분리된 전용 템플릿이라 저장 경로도 따로다",
                                     "type": "basic",
                                     "name": "Button",
                                     "actions": [

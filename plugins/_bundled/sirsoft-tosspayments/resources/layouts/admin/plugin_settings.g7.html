@@ -1,5 +1,7 @@
+<!-- 토스페이먼츠 결제 연동 설정 화면. 결제창을 하나로 띄우는 통합 모드와 주문서에서 결제수단을 직접 고르게 하는 모드를 여기서 가른다 -->
 <layout name="plugin_settings" version="1.0.0" extends="_admin_base">
   <meta title="$t:sirsoft-tosspayments.settings.title" description="$t:sirsoft-tosspayments.settings.description"/>
+  <!-- 저장된 플러그인 설정을 폼 초기값으로 싣는다. refetchOnMount 라 저장하고 돌아와도 서버 값이 다시 실린다 -->
   <data-source id="settings" label_key="$t:sirsoft-tosspayments.editor.data_source.settings" type="api" endpoint="/api/admin/plugins/{{route.identifier}}/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true"/>
   <permissions>
     <permission>core.plugins.update</permission>
@@ -121,6 +123,7 @@
             <div data-ref="method_checkbox_grid" class="grid grid-cols-3 gap-3">
               <responsive on="portable" class="grid grid-cols-1 gap-2"/>
               <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+                <!-- 카드. 자동바인딩을 끄고 checked 와 hasChanges 를 손으로 다루는 것은 저장값이 null 일 수 있어서다 — 자동바인딩은 boolean 이 아닌 값을 빈 문자열로 보내고 서버가 그것을 null 로 저장해 다시 켤 수 없게 고착시킨다 -->
                 <checkbox name="method_card" :autoBinding="false" checked="{{!!_local.form?.method_card}}">
                   <on type="change">
                     <set-state target="local" form.method_card="{{$event.target.checked}}" :hasChanges="true"/>
@@ -129,6 +132,7 @@
                 <span>$t:sirsoft-tosspayments.settings.method_card</span>
               </label>
               <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+                <!-- 가상계좌. 켜면 아래 가상계좌 구역의 입금기한·자동 현금영수증 설정이 실제로 쓰인다 -->
                 <checkbox name="method_virtual_account" :autoBinding="false" checked="{{!!_local.form?.method_virtual_account}}">
                   <on type="change">
                     <set-state target="local" form.method_virtual_account="{{$event.target.checked}}" :hasChanges="true"/>
@@ -137,6 +141,7 @@
                 <span>$t:sirsoft-tosspayments.settings.method_virtual_account</span>
               </label>
               <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+                <!-- 계좌이체. 에스크로를 쓰는 상점이면 이 수단과 가상계좌에만 구매안전서비스가 붙는다 -->
                 <checkbox name="method_transfer" :autoBinding="false" checked="{{!!_local.form?.method_transfer}}">
                   <on type="change">
                     <set-state target="local" form.method_transfer="{{$event.target.checked}}" :hasChanges="true"/>
@@ -145,6 +150,7 @@
                 <span>$t:sirsoft-tosspayments.settings.method_transfer</span>
               </label>
               <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+                <!-- 휴대폰 소액결제. 국내 전용이라 원화가 아닌 주문에서는 서버가 막는다 -->
                 <checkbox name="method_mobile_phone" :autoBinding="false" checked="{{!!_local.form?.method_mobile_phone}}">
                   <on type="change">
                     <set-state target="local" form.method_mobile_phone="{{$event.target.checked}}" :hasChanges="true"/>
@@ -153,6 +159,7 @@
                 <span>$t:sirsoft-tosspayments.settings.method_mobile_phone</span>
               </label>
               <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+                <!-- 토스페이 -->
                 <checkbox name="method_tosspay" :autoBinding="false" checked="{{!!_local.form?.method_tosspay}}">
                   <on type="change">
                     <set-state target="local" form.method_tosspay="{{$event.target.checked}}" :hasChanges="true"/>
@@ -161,6 +168,7 @@
                 <span>$t:sirsoft-tosspayments.settings.method_tosspay</span>
               </label>
               <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+                <!-- 카카오페이 -->
                 <checkbox name="method_kakaopay" :autoBinding="false" checked="{{!!_local.form?.method_kakaopay}}">
                   <on type="change">
                     <set-state target="local" form.method_kakaopay="{{$event.target.checked}}" :hasChanges="true"/>
@@ -169,6 +177,7 @@
                 <span>$t:sirsoft-tosspayments.settings.method_kakaopay</span>
               </label>
               <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+                <!-- 네이버페이 -->
                 <checkbox name="method_naverpay" :autoBinding="false" checked="{{!!_local.form?.method_naverpay}}">
                   <on type="change">
                     <set-state target="local" form.method_naverpay="{{$event.target.checked}}" :hasChanges="true"/>
@@ -177,6 +186,7 @@
                 <span>$t:sirsoft-tosspayments.settings.method_naverpay</span>
               </label>
               <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+                <!-- 페이코 -->
                 <checkbox name="method_payco" :autoBinding="false" checked="{{!!_local.form?.method_payco}}">
                   <on type="change">
                     <set-state target="local" form.method_payco="{{$event.target.checked}}" :hasChanges="true"/>
@@ -185,6 +195,7 @@
                 <span>$t:sirsoft-tosspayments.settings.method_payco</span>
               </label>
               <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+                <!-- 삼성페이 -->
                 <checkbox name="method_samsungpay" :autoBinding="false" checked="{{!!_local.form?.method_samsungpay}}">
                   <on type="change">
                     <set-state target="local" form.method_samsungpay="{{$event.target.checked}}" :hasChanges="true"/>
@@ -244,6 +255,7 @@
               <button data-ref="webhook_copy_button" type="button" class="btn btn-secondary btn-sm flex-shrink-0">
                 <responsive on="portable" type="button" class="btn btn-secondary btn-sm w-full"/>
                 <on type="click">
+                  <!-- 웹훅 주소는 운영자가 토스 상점관리자에 직접 등록해야 입금통보가 들어온다. 그래서 보여 주기만 하지 않고 복사까지 시켜 준다 -->
                   <action handler="copyToClipboard" text="/plugins/sirsoft-tosspayments/webhook/deposit">
                     <success>
                       <toast type="success" message="$t:sirsoft-tosspayments.settings.webhook_url_copied"/>
@@ -273,18 +285,21 @@
         </button>
         <button data-ref="save_button" disabled="{{!_local.hasChanges || _local.isSaving}}" class="btn btn-primary flex-center gap-1.5">
           <on type="click">
-            <set-state target="local" :isSaving="true" :errors="null"/>
-            <api-call :auth_required="true" target="/api/admin/plugins/{{route.identifier}}/settings" method="PUT" body="{{_local.form}}">
-              <success>
-                <set-state target="local" :isSaving="false" :hasChanges="false"/>
-                <toast type="success" message="$t:admin.plugins.settings.save_success"/>
-                <refetch-data-source dataSourceId="settings"/>
-              </success>
-              <fail>
-                <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
-                <toast type="error" message="{{error.message ?? '$t:admin.plugins.settings.save_error'}}"/>
-              </fail>
-            </api-call>
+            <!-- 저장. 직전 오류를 먼저 지워야 이번 시도의 결과만 화면에 남는다. 성공 후 설정을 다시 불러오는 것은 서버가 비밀키를 마스크해 돌려주기 때문이다 — 다시 싣지 않으면 화면의 폼 값과 저장값이 어긋난 채 다음 저장이 나간다 -->
+            <sequence>
+              <set-state target="local" :isSaving="true" :errors="null"/>
+              <api-call :auth_required="true" target="/api/admin/plugins/{{route.identifier}}/settings" method="PUT" body="{{_local.form}}">
+                <success>
+                  <set-state target="local" :isSaving="false" :hasChanges="false"/>
+                  <toast type="success" message="$t:admin.plugins.settings.save_success"/>
+                  <refetch-data-source dataSourceId="settings"/>
+                </success>
+                <fail>
+                  <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
+                  <toast type="error" message="{{error.message ?? '$t:admin.plugins.settings.save_error'}}"/>
+                </fail>
+              </api-call>
+            </sequence>
           </on>
           <icon data-if="{{_local.isSaving}}" name="spinner" class="spinner-sm"/>
           <span data-if="{{!_local.isSaving}}">$t:common.save</span>

@@ -644,11 +644,11 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "고른 대로 저장하고 배너를 닫는다. 필수 항목은 화면 선택과 무관하게 참으로 실어 보내고, 닫힘 표시는 사용자별로(비로그인은 guest) 남겨 다른 계정으로 바꾸면 배너가 다시 뜬다. 저장 뒤 자동차단 엔진의 동의 캐시를 갱신해야 이미 걸린 차단이 풀린다",
                                                     "type": "click",
                                                     "handler": "sequence",
                                                     "actions": [
                                                         {
-                                                            "comment": "자동 차단 엔진 동의 메모리 캐시 갱신 + rescan",
                                                             "handler": "setState",
                                                             "params": {
                                                                 "target": "global",

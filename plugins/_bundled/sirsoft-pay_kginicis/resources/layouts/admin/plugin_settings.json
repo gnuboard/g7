@@ -2640,11 +2640,11 @@
                                 "name": "Button",
                                 "actions": [
                                     {
+                                        "comment": "설정 저장. 저장 중 플래그로 버튼을 잠그고 직전 오류를 지운 뒤 보내며, 성공하면 설정을 다시 받아 화면을 서버 값에 맞춘다 — 서버가 비밀키를 마스크해 돌려주므로 다시 싣지 않으면 화면 값과 저장값이 어긋난다",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [
                                             {
-                                                "comment": "설정 저장 — 저장 중 플래그로 버튼을 잠그고 이전 오류를 지운 뒤 보내며, 성공하면 설정을 다시 받아 화면을 서버 값으로 맞춘다",
                                                 "handler": "setState",
                                                 "params": {
                                                     "target": "local",

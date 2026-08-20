@@ -25,6 +25,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
           <div data-ref="bulk_apply_target_all" class="{{_local.bulkApplyAll !== false ? 'flex-center gap-2 p-3 rounded-lg border-2 border-blue-500 bg-blue-50 dark:bg-blue-900/20 cursor-pointer' : 'flex-center gap-2 p-3 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 cursor-pointer hover:border-gray-300 dark:hover:border-gray-600'}}">
             <on type="click">
+              <!-- 전체 게시판에 적용. 라디오 자체가 아니라 감싼 자리를 눌러도 고르게 하려고 클릭으로 값을 세운다 -->
               <set-state target="local" :bulkApplyAll="true"/>
             </on>
             <input type="radio" name="_bulkApplyAll" class="radio" checked="{{_local.bulkApplyAll !== false}}">
@@ -37,6 +38,7 @@
           </div>
           <div data-ref="bulk_apply_target_selected" class="{{_local.bulkApplyAll === false ? 'flex-center gap-2 p-3 rounded-lg border-2 border-blue-500 bg-blue-50 dark:bg-blue-900/20 cursor-pointer' : 'flex-center gap-2 p-3 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 cursor-pointer hover:border-gray-300 dark:hover:border-gray-600'}}">
             <on type="click">
+              <!-- 고른 게시판에만 적용 -->
               <set-state target="local" :bulkApplyAll="false"/>
             </on>
             <input type="radio" name="_bulkApplyAll" class="radio" checked="{{_local.bulkApplyAll === false}}">
@@ -61,15 +63,17 @@
       <div data-if="{{(boards_list?.data?.data ?? []).length > 0}}" class="flex justify-end mt-6">
         <button type="button" disabled="{{_computed.isReadOnly}}" class="flex-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
-            <!-- 검증 실패 안내 토스트 - 적용할 항목 미선택 -->
-            <toast if="{{!(_local.bulkApplyFields ?? []).length}}" type="error" message="$t:sirsoft-board.admin.settings.bulk_apply.no_fields_selected"/>
-            <!-- 검증 실패 안내 토스트 - 선택한 게시판 미선택 (적용 항목은 선택된 경우에만 표시) -->
-            <toast if="{{(_local.bulkApplyFields ?? []).length > 0 &amp;&amp; _local.bulkApplyAll === false &amp;&amp; !(_local._bulkApplyBoardIds ?? []).length}}" type="error" message="$t:sirsoft-board.admin.settings.bulk_apply.no_boards_selected"/>
-            <!-- 모달 열기 전 현재 _local 상태를 _global 스냅샷에 저장 + 오류 상태 초기화 -->
-            <set-state if="{{(_local.bulkApplyFields ?? []).length > 0 &amp;&amp; (_local.bulkApplyAll !== false || (_local._bulkApplyBoardIds ?? []).length > 0)}}" target="global" bulkApplySnapshot="{{(function() { const fields = _local.bulkApplyFields ?? []; const applyAll = _local.bulkApplyAll !== false; const boardIds = _local._bulkApplyBoardIds ?? []; const tab = _global.activeBoardSettingsTab || 'basic_defaults'; const form = _local.form || {}; return { fields: fields, applyAll: applyAll, boardIds: boardIds, tab: tab, form: form }; })()}}"/>
-            <!-- 이전 오류/롤백 안내 초기화 (모달 재오픈 시 직전 실패 안내 잔존 방지) -->
-            <set-state if="{{(_local.bulkApplyFields ?? []).length > 0 &amp;&amp; (_local.bulkApplyAll !== false || (_local._bulkApplyBoardIds ?? []).length > 0)}}" target="local" :bulkApplySaveError="false" :bulkApplyAborted="false" :bulkApplyAbortedBoard="null"/>
-            <open-modal if="{{(_local.bulkApplyFields ?? []).length > 0 &amp;&amp; (_local.bulkApplyAll !== false || (_local._bulkApplyBoardIds ?? []).length > 0)}}" target="bulk_apply_confirm_modal"/>
+            <!-- 일괄 적용 실행. 고른 항목만 덮어쓰므로 체크하지 않은 설정은 각 게시판의 값이 그대로 남는다 -->
+            <sequence>
+              <toast if="{{!(_local.bulkApplyFields ?? []).length}}" type="error" message="$t:sirsoft-board.admin.settings.bulk_apply.no_fields_selected"/>
+              <!-- 검증 실패 안내 토스트 - 선택한 게시판 미선택 (적용 항목은 선택된 경우에만 표시) -->
+              <toast if="{{(_local.bulkApplyFields ?? []).length > 0 &amp;&amp; _local.bulkApplyAll === false &amp;&amp; !(_local._bulkApplyBoardIds ?? []).length}}" type="error" message="$t:sirsoft-board.admin.settings.bulk_apply.no_boards_selected"/>
+              <!-- 모달 열기 전 현재 _local 상태를 _global 스냅샷에 저장 + 오류 상태 초기화 -->
+              <set-state if="{{(_local.bulkApplyFields ?? []).length > 0 &amp;&amp; (_local.bulkApplyAll !== false || (_local._bulkApplyBoardIds ?? []).length > 0)}}" target="global" bulkApplySnapshot="{{(function() { const fields = _local.bulkApplyFields ?? []; const applyAll = _local.bulkApplyAll !== false; const boardIds = _local._bulkApplyBoardIds ?? []; const tab = _global.activeBoardSettingsTab || 'basic_defaults'; const form = _local.form || {}; return { fields: fields, applyAll: applyAll, boardIds: boardIds, tab: tab, form: form }; })()}}"/>
+              <!-- 이전 오류/롤백 안내 초기화 (모달 재오픈 시 직전 실패 안내 잔존 방지) -->
+              <set-state if="{{(_local.bulkApplyFields ?? []).length > 0 &amp;&amp; (_local.bulkApplyAll !== false || (_local._bulkApplyBoardIds ?? []).length > 0)}}" target="local" :bulkApplySaveError="false" :bulkApplyAborted="false" :bulkApplyAbortedBoard="null"/>
+              <open-modal if="{{(_local.bulkApplyFields ?? []).length > 0 &amp;&amp; (_local.bulkApplyAll !== false || (_local._bulkApplyBoardIds ?? []).length > 0)}}" target="bulk_apply_confirm_modal"/>
+            </sequence>
           </on>
           <span>$t:sirsoft-board.admin.settings.bulk_apply.apply_button</span>
         </button>

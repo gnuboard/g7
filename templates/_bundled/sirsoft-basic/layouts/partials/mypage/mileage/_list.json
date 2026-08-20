@@ -253,6 +253,7 @@
             },
             "children": [
                 {
+                    "comment": "전체. 아래 분류 버튼들은 목록을 다시 부르기 전에 페이지를 1로 되돌린다 — 분류를 좁히면 보던 페이지가 결과 범위를 벗어난다",
                     "type": "basic",
                     "name": "Button",
                     "classMap": {
@@ -297,6 +298,7 @@
                     "text": "$t:mypage.mileage.filter.all"
                 },
                 {
+                    "comment": "적립",
                     "type": "basic",
                     "name": "Button",
                     "classMap": {
@@ -341,6 +343,7 @@
                     "text": "$t:mypage.mileage.filter.earn"
                 },
                 {
+                    "comment": "사용",
                     "type": "basic",
                     "name": "Button",
                     "classMap": {
@@ -385,6 +388,7 @@
                     "text": "$t:mypage.mileage.filter.use"
                 },
                 {
+                    "comment": "소멸",
                     "type": "basic",
                     "name": "Button",
                     "classMap": {
@@ -429,6 +433,7 @@
                     "text": "$t:mypage.mileage.filter.expire"
                 },
                 {
+                    "comment": "조정 — 운영자가 손으로 더하거나 뺀 내역이다",
                     "type": "basic",
                     "name": "Button",
                     "classMap": {

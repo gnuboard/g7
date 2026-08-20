@@ -2049,6 +2049,7 @@
                     ]
                 },
                 {
+                    "comment": "프리셋 버튼. 누르면 저장된 조건 세트를 통째로 갈아끼운다 — 지금 걸린 조건과 섞지 않는 것이 프리셋의 뜻이라 병합하지 않는다",
                     "id": "preset_buttons_dynamic_{{presetIdx}}",
                     "type": "basic",
                     "name": "Div",

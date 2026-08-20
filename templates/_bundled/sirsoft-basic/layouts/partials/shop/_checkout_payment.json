@@ -404,6 +404,7 @@
                                     },
                                     "actions": [
                                         {
+                                            "comment": "환불 계좌 은행(넓은 화면). 무통장 주문은 취소 시 돈을 돌려줄 계좌가 필요해 결제 단계에서 미리 받아 둔다",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -431,6 +432,7 @@
                                     },
                                     "actions": [
                                         {
+                                            "comment": "환불 계좌번호",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -461,6 +463,7 @@
                             },
                             "actions": [
                                 {
+                                    "comment": "예금주. 은행이 대조하는 값이라 계좌 주인과 다르면 환불이 막힌다",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -775,6 +778,7 @@
                                     },
                                     "actions": [
                                         {
+                                            "comment": "환불 계좌 은행(좁은 화면). 위와 같은 값을 쓰며 반응형 배치만 다르다",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -802,6 +806,7 @@
                                     },
                                     "actions": [
                                         {
+                                            "comment": "환불 계좌번호",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -832,6 +837,7 @@
                             },
                             "actions": [
                                 {
+                                    "comment": "예금주",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {

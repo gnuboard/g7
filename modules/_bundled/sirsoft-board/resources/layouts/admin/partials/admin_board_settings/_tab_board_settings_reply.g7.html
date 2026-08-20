@@ -51,6 +51,7 @@
               <label class="flex-start gap-2 text-body font-medium flex-1 cursor-pointer">
                 <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('reply_delete_policy')}}">
                   <on type="change">
+                    <!-- 이 항목을 일괄 적용 대상에 넣고 뺀다. 배열에서 빼고 다시 넣는 식이라 같은 값이 두 번 들어가지 않는다 -->
                     <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('reply_delete_policy') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'reply_delete_policy') : [...(_local.bulkApplyFields ?? []), 'reply_delete_policy']}}"/>
                   </on>
                 </input>

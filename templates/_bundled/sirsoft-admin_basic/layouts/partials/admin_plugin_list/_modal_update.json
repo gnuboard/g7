@@ -459,6 +459,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "검색 인덱스 재생성 여부. 창을 다시 열 때 이월되지 않도록 시드와 제출 뒤 양쪽에서 해제하며, 모듈 창과 다른 전역 키를 쓰는 것은 한쪽 체크가 다른 쪽으로 옮지 않게 하기 위해서다",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {

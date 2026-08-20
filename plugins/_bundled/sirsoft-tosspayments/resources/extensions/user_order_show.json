@@ -1,4 +1,5 @@
 {
+    "comment": "구매자 주문 상세의 결제 정보 패널에 토스 영수증 링크를 덧붙인다. 영수증 주소는 PG 가 발급하므로 코어가 갖고 있지 않다",
     "target_layout": "mypage/orders/show",
     "injections": [
         {

@@ -76,13 +76,25 @@ test('#509 - 관리자 환경설정 카드 제목이 에러 색상(빨간색)으
   const header = page.locator(CARD_OPERATOR_HEADER);
   await expect(header).toBeVisible({ timeout: 10_000 });
 
-  const color = await header.evaluate((el) => getComputedStyle(el).color);
-  // text-error-strong(text-red-800/dark:text-red-200) 이 남아있다면 rgb 값의 R 채널이
-  // G/B 채널보다 뚜렷이 높은 붉은 계열로 계산된다. 정상(중립 톤)은 R≈G≈B.
-  const rgbMatch = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-  expect(rgbMatch).not.toBeNull();
-  const [, r, g, b] = rgbMatch as unknown as [string, string, string, string];
-  expect(Number(r) - Math.max(Number(g), Number(b))).toBeLessThan(40);
+  // text-error-strong(text-red-800/dark:text-red-200) 이 남아있다면 R 채널이 G/B 보다
+  // 뚜렷이 높은 붉은 계열로 계산된다. 정상(중립 톤)은 R≈G≈B.
+  //
+  // 계산값을 문자열로 파싱하지 않는다 — 브라우저는 색 공간에 따라 `rgb()` 대신
+  // `oklch()` 로도 돌려주며, 그때 정규식 파싱은 무조건 실패해 색과 무관하게 red 가 된다.
+  // 1×1 캔버스에 칠해 실제 화면 픽셀값을 읽으면 표기 형식과 무관하게 판정할 수 있다.
+  const channels = await header.evaluate((el) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1;
+    canvas.height = 1;
+    const context = canvas.getContext('2d') as CanvasRenderingContext2D;
+    context.fillStyle = getComputedStyle(el).color;
+    context.fillRect(0, 0, 1, 1);
+    const [r, g, b] = Array.from(context.getImageData(0, 0, 1, 1).data);
+
+    return { r, g, b };
+  });
+
+  expect(channels.r - Math.max(channels.g, channels.b)).toBeLessThan(40);
 });
 
 // @scenario tab=card_cookie_banner, permitted=yes

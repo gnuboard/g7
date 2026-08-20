@@ -43,6 +43,7 @@
           <responsive on="portable" class="flex items-center gap-2 mb-4"/>
           <button class="flex items-center gap-1 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer">
             <on type="click">
+              <!-- 주문 목록으로. 보던 목록 상태를 이고 간다 -->
               <navigate path="/mypage/orders" :mergeQuery="true">
                 <query/>
               </navigate>

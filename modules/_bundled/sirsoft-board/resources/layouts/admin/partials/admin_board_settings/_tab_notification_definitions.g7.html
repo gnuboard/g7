@@ -52,6 +52,7 @@
               <option value="50">50</option>
             </options>
             <on type="change">
+              <!-- 한 쪽에 보일 건수 변경. 쪽수를 1로 되돌리지 않으면 늘어난 건수 기준으로 보던 쪽이 결과 범위를 벗어난다 -->
               <navigate path="/admin/boards/settings" :replace="true" :mergeQuery="true">
                 <query per_page="{{$event.target.value}}" :page="1"/>
               </navigate>
@@ -65,6 +66,7 @@
             <div class="flex-shrink-0 pt-0.5">
               <button type="button" class="p-1.5 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                 <on type="click">
+                  <!-- 이 정의의 상세를 접었다 편다. 정의마다 따로 기억해야 해서 id 를 키로 하는 객체에 담는다 -->
                   <set-state target="local" expandedNotifications="{{Object.assign({}, _local.expandedNotifications ?? {}, {[def.id]: !(_local.expandedNotifications ?? {})[def.id]})}}"/>
                 </on>
                 <icon name="{{(_local.expandedNotifications ?? {})[def.id] ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'}}" size="sm"/>
@@ -100,6 +102,7 @@
                 <div class="flex-center gap-3 flex-shrink-0">
                   <toggle data-if="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}" checked="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.is_active ?? false}}" disabled="{{_computed.isNotificationReadOnly}}">
                     <on type="change">
+                      <!-- 이 채널의 알림 사용 여부를 뒤집는다. 지금 보고 있는 채널의 템플릿을 골라 보내며, 성공하면 정의 목록을 다시 받아 표시를 맞춘다 -->
                       <api-call :auth_required="true" target="{{'/api/admin/notification-templates/' + (def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.id + '/toggle-active'}}" method="PATCH">
                         <success>
                           <refetch-data-source dataSourceId="boardNotificationDefinitions"/>
@@ -111,7 +114,9 @@
                       </api-call>
                     </on>
                   </toggle>
+                  <!-- 알림 문안 편집. 편집기는 모달이라 이 화면의 상태를 읽지 못하므로 대상을 전역으로 옮겨 담은 뒤 연다 -->
                   <button type="button" disabled="{{_computed.isNotificationReadOnly}}" class="text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"><on type="click"><sequence><set-state target="global"><field name="board_notification_template_form_modal"><field name="template" value="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}"/><field name="definition" value="{{def}}"/><field name="recipients" value="{{JSON.parse(JSON.stringify((def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.recipients ?? []))}}"/><field name="editLang" value="{{$locale}}"/><field name="errors" :value="null"/><field name="isSaving" :value="false"/><field name="roleSearchResults" :value="[]"/><field name="userSearchResults" :value="[]"/></field></set-state><open-modal target="modal_board_notification_template_edit"/></sequence></on>$t:sirsoft-board.admin.settings.notification_definitions.btn_edit</button>
+                  <!-- 기본 문안으로 되돌리기 -->
                   <button data-if="{{!def.is_default || def.has_customized_templates === true}}" type="button" disabled="{{_computed.isNotificationReadOnly}}" class="text-sm px-3 py-1.5 rounded-md border border-orange-300 dark:border-orange-600 text-orange-700 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"><on type="click"><set-state target="global" resetTargetId="{{def.id}}" resetTargetName="{{$localized(def.name)}}"/><open-modal target="modal_board_notification_definition_reset"/></on>$t:sirsoft-board.admin.settings.notification_definitions.btn_reset</button>
                 </div>
               </div>

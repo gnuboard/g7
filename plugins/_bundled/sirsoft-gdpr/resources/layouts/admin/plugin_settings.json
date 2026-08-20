@@ -1204,6 +1204,7 @@
                                                                                         "name": "Button",
                                                                                         "actions": [
                                                                                             {
+                                                                                                "comment": "이전 페이지. 이력은 이 화면 안에서만 넘기므로 URL 이 아니라 폼 상태에 페이지를 두고 데이터소스를 다시 부른다. 마지막 페이지 번호를 모를 수 있어(총 건수 상한) 상한이 있을 때만 그 값으로 조인다",
                                                                                                 "type": "click",
                                                                                                 "handler": "sequence",
                                                                                                 "actions": [
@@ -1236,6 +1237,7 @@
                                                                                         "name": "Button",
                                                                                         "actions": [
                                                                                             {
+                                                                                                "comment": "다음 페이지. 마지막 번호를 모르는 목록에서는 그 대신 서버가 알려 준 has_more_pages 로 버튼을 잠근다 — 총 건수에 상한이 걸리면 last_page 가 비어 오기 때문이다",
                                                                                                 "type": "click",
                                                                                                 "handler": "sequence",
                                                                                                 "actions": [
@@ -1948,6 +1950,7 @@
                                 "name": "Button",
                                 "actions": [
                                     {
+                                        "comment": "설정 저장. 실패 안내는 서버가 준 검증 오류의 첫 항목을 그대로 쓴다 — 어느 항목이 왜 막혔는지 알려 주지 않으면 운영자가 같은 저장을 반복하게 된다",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [

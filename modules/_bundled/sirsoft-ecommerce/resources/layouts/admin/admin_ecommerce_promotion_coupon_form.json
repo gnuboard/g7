@@ -156,6 +156,7 @@
                                                 "name": "Button",
                                                 "actions": [
                                                     {
+                                                        "comment": "목록으로. 보던 검색·필터·페이지를 이고 가므로 폼을 열었다 닫아도 목록이 되감기지 않는다",
                                                         "type": "click",
                                                         "handler": "navigate",
                                                         "params": {
@@ -222,6 +223,7 @@
                                         },
                                         "children": [
                                             {
+                                                "comment": "취소하고 목록으로. 위 뒤로가기 버튼과 같은 이동이며 화면 위아래 어디서든 빠져나갈 수 있게 둘 다 둔다",
                                                 "id": "cancel_button_top",
                                                 "type": "basic",
                                                 "name": "Button",

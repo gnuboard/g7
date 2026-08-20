@@ -74,12 +74,14 @@
           <select name="refund_bank_code" value="{{_local.refundBankCode ?? ''}}" options="{{[{ value: '', label: $t('shop.checkout.refund_bank_select') }, ...((paymentSettings.data?.order_settings?.banks ?? []).map(b => ({ value: b.code, label: $localized(b.name) ?? b.code })))]}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
             <responsive on="portable" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"/>
             <on type="change">
+              <!-- 환불 계좌 은행(넓은 화면). 무통장 주문은 취소 시 돈을 돌려줄 계좌가 필요해 결제 단계에서 미리 받아 둔다 -->
               <set-state target="local" refundBankCode="{{$event.target.value}}"/>
             </on>
           </select>
           <input type="text" name="refund_bank_account" value="{{_local.refundBankAccount ?? ''}}" placeholder="$t:shop.checkout.refund_bank_account_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
             <responsive on="portable" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"/>
             <on type="change">
+              <!-- 환불 계좌번호 -->
               <set-state target="local" refundBankAccount="{{$event.target.value}}"/>
             </on>
           </input>
@@ -87,6 +89,7 @@
         <input type="text" name="refund_bank_holder" value="{{_local.refundBankHolder ?? ''}}" placeholder="$t:shop.checkout.refund_bank_holder_placeholder" class="w-full mt-3 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
           <responsive on="portable" class="w-full mt-3 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"/>
           <on type="change">
+            <!-- 예금주. 은행이 대조하는 값이라 계좌 주인과 다르면 환불이 막힌다 -->
             <set-state target="local" refundBankHolder="{{$event.target.value}}"/>
           </on>
         </input>
@@ -150,12 +153,14 @@
           <select name="refund_bank_code" value="{{_local.refundBankCode ?? ''}}" options="{{[{ value: '', label: $t('shop.checkout.refund_bank_select') }, ...((paymentSettings.data?.order_settings?.banks ?? []).map(b => ({ value: b.code, label: $localized(b.name) ?? b.code })))]}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
             <responsive on="portable" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"/>
             <on type="change">
+              <!-- 환불 계좌 은행(좁은 화면). 위와 같은 값을 쓰며 반응형 배치만 다르다 -->
               <set-state target="local" refundBankCode="{{$event.target.value}}"/>
             </on>
           </select>
           <input type="text" name="refund_bank_account" value="{{_local.refundBankAccount ?? ''}}" placeholder="$t:shop.checkout.refund_bank_account_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
             <responsive on="portable" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"/>
             <on type="change">
+              <!-- 환불 계좌번호 -->
               <set-state target="local" refundBankAccount="{{$event.target.value}}"/>
             </on>
           </input>
@@ -163,6 +168,7 @@
         <input type="text" name="refund_bank_holder" value="{{_local.refundBankHolder ?? ''}}" placeholder="$t:shop.checkout.refund_bank_holder_placeholder" class="w-full mt-3 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
           <responsive on="portable" class="w-full mt-3 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"/>
           <on type="change">
+            <!-- 예금주 -->
             <set-state target="local" refundBankHolder="{{$event.target.value}}"/>
           </on>
         </input>

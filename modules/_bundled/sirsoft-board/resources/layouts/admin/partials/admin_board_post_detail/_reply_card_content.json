@@ -149,6 +149,7 @@
                             "if": "{{item.id != route.id}}",
                             "actions": [
                                 {
+                                    "comment": "댓글 작성자의 회원 상세로. 같은 사람이 여러 건에 걸려 있는지 확인하는 자리다",
                                     "type": "click",
                                     "handler": "navigate",
                                     "params": {

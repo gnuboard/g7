@@ -19,6 +19,7 @@
             </on>
             <input type="radio" name="display.date_display_format" value="standard" class="radio mt-0.5" disabled="{{_computed.isReadOnly}}" checked="{{(_local.form?.display?.date_display_format ?? 'standard') === 'standard'}}">
               <on type="change">
+                <!-- 날짜를 절대 시각으로 보여 준다 -->
                 <set-state target="local" :hasChanges="true" form.display.date_display_format="standard"/>
               </on>
             </input>
@@ -35,6 +36,7 @@
             </on>
             <input type="radio" name="display.date_display_format" value="relative" class="radio mt-0.5" disabled="{{_computed.isReadOnly}}" checked="{{(_local.form?.display?.date_display_format ?? 'standard') === 'relative'}}">
               <on type="change">
+                <!-- 날짜를 「3일 전」 같은 상대 표기로 보여 준다 -->
                 <set-state target="local" :hasChanges="true" form.display.date_display_format="relative"/>
               </on>
             </input>
@@ -55,6 +57,7 @@
         <p class="text-tertiary">$t:sirsoft-board.admin.settings.fields.attachment_purge_enabled_hint</p>
         <toggle name="attachment_settings.purge_enabled" disabled="{{_computed.isReadOnly}}" checked="{{!!_local.form?.attachment_settings?.purge_enabled}}">
           <on type="change">
+            <!-- 오래된 첨부 자동 정리 사용 여부. 켜야 아래 보관 일수가 쓰인다 -->
             <set-state target="local" :hasChanges="true" form.attachment_settings.purge_enabled="{{$event.target.checked}}"/>
           </on>
         </toggle>
@@ -64,6 +67,7 @@
         <p class="text-tertiary">$t:sirsoft-board.admin.settings.fields.attachment_purge_retention_days_hint</p>
         <input type="number" name="attachment_settings.purge_retention_days" min="{{_local?.form?._meta?.limits?.attachment_purge_retention_days_min ?? 1}}" max="{{_local?.form?._meta?.limits?.attachment_purge_retention_days_max ?? 3650}}" class="input w-40" disabled="{{_computed.isReadOnly}}" value="{{_local.form?.attachment_settings?.purge_retention_days ?? 30}}">
           <on type="change">
+            <!-- 첨부 보관 일수. 이 기간이 지난 첨부가 정리 대상이 된다 -->
             <set-state target="local" :hasChanges="true" form.attachment_settings.purge_retention_days="{{$event.target.value}}"/>
           </on>
         </input>

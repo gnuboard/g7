@@ -105,6 +105,7 @@
             },
             "children": [
                 {
+                    "comment": "기존 팩을 대체하고 설치한다. 같은 로케일 자리는 하나만 활성일 수 있어 어느 쪽을 남길지 운영자가 골라야 한다",
                     "type": "basic",
                     "name": "Button",
                     "actions": [
@@ -141,6 +142,7 @@
                     "text": "$t:admin.language_packs.slot_conflict_modal.cancel"
                 },
                 {
+                    "comment": "기존 팩을 그대로 두고 이번 설치만 비활성으로 둔다",
                     "type": "basic",
                     "name": "Button",
                     "actions": [

@@ -36,6 +36,7 @@
           </div>
           <select data-ref="cash_receipt_provider_select" data-if="{{(_local.form?.available_cash_receipt_providers ?? []).length > 0}}" value="{{_local.form?.order_settings?.cash_receipt_provider ?? ''}}" class="w-full" options="{{[{ value: '', label: $t('sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.provider_none') }].concat((_local.form?.available_cash_receipt_providers ?? []).map(p => ({ value: p.id, label: $localized(p.name) ?? p.id })))}}" disabled="{{_computed.isReadOnly}}">
             <on type="change">
+              <!-- 현금영수증 발급사 선택. 빈 값을 빈 문자열로 눌러 담는 것은 「선택 안 함」 과 미설정을 같은 값으로 모으기 위해서다 -->
               <set-state target="local" form.order_settings.cash_receipt_provider="{{$event.target.value || ''}}" :hasChanges="true"/>
             </on>
           </select>
@@ -57,6 +58,7 @@
         <label class="flex items-center gap-2">
           <input data-ref="cash_receipt_self_issue_toggle" type="checkbox" name="order_settings.cash_receipt_self_issue" checked="{{_local.form?.order_settings?.cash_receipt_self_issue ?? false}}" disabled="{{_computed.isReadOnly}}" class="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500">
             <on type="change">
+              <!-- 자진발급 사용 여부. 구매자가 현금영수증을 신청하지 않은 무통장 주문을 국세청 지정번호로 자동 발급할지 정한다 -->
               <set-state target="local" form.order_settings.cash_receipt_self_issue="{{$event.target.checked}}" :hasChanges="true"/>
             </on>
           </input>

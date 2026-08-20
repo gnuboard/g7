@@ -31,6 +31,7 @@
       <page-header data-ref="page_header" title="$t:sirsoft-page.admin.page.detail.page_title" description="$t:sirsoft-page.admin.page.detail.page_description" backLink="/admin/pages" backLinkText="$t:sirsoft-page.admin.page.detail.back_to_list">
         <button data-ref="header_back_button" class="btn btn-secondary">
           <on type="click">
+            <!-- 목록으로 돌아간다. 보던 검색어·필터·페이지를 그대로 이고 가므로(mergeQuery) 상세를 열었다 닫아도 목록이 처음으로 되감기지 않는다 -->
             <navigate path="/admin/pages" :mergeQuery="true">
               <query/>
             </navigate>
@@ -40,6 +41,7 @@
         </button>
         <button data-ref="header_edit_button" disabled="{{page?.data?.abilities?.can_update !== true}}" class="btn btn-primary">
           <on type="click">
+            <!-- 수정 화면으로. 같은 목록 클러스터 안의 이동이라 목록 상태를 그대로 넘긴다 — 수정을 마치고 돌아올 때 보던 자리로 복귀시키기 위해서다 -->
             <navigate path="/admin/pages/{{route?.id}}/edit" :mergeQuery="true">
               <query/>
             </navigate>

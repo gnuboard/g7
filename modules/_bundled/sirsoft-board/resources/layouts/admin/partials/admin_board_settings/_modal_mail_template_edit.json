@@ -557,11 +557,11 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "메일 문안 저장. 성공하면 템플릿 목록을 다시 부른다 — 목록이 제목과 사용 여부를 그대로 보여 주므로 갱신하지 않으면 방금 고친 값이 낡은 채로 남는다",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
                                                 {
-                                                    "comment": "저장 — 편집 중인 값에서 제목·본문·사용 여부 셋만 골라 보낸다. 성공하면 편집 상태를 비우고 창을 닫은 뒤 같은 주소로 다시 들어가 목록을 새로 읽는다(고친 문안이 목록 요약에도 반영돼야 하므로)",
                                                     "handler": "setState",
                                                     "params": {
                                                         "target": "$parent._local",

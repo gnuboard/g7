@@ -1014,11 +1014,11 @@
                                                                 },
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "언어팩 설치. 설치 뒤 목록을 다시 부르는 것은 설치본의 버전과 활성 여부가 응답에만 있기 때문이다",
                                                                         "type": "click",
                                                                         "handler": "sequence",
                                                                         "actions": [
                                                                             {
-                                                                                "comment": "아직 안 깔린 번들 팩을 설치하는 길. 고른 팩을 통째로 전역에 실어 두는 이유는 확인 창이 이름·언어·의존 대상까지 보여 줘야 하기 때문이다(창은 서버를 다시 부르지 않는다).",
                                                                                 "handler": "setState",
                                                                                 "params": {
                                                                                     "target": "global",
@@ -1060,6 +1060,7 @@
                                                                 "if": "{{row.files_missing === true && row.bundled_source_available === true && row.abilities?.can_install === true}}",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "언어팩 삭제. 코어·번들이 제공하는 보호 행은 이 버튼이 뜨지 않으므로 여기 오는 것은 운영자가 따로 설치한 팩뿐이다",
                                                                         "type": "click",
                                                                         "handler": "sequence",
                                                                         "actions": [

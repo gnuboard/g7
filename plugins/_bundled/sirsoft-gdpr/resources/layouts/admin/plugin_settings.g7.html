@@ -241,8 +241,26 @@
                   <div data-ref="policy_version_history_pager" data-if="{{((gdprPolicyVersionHistory?.data?.pagination?.last_page ?? 0) > 1) || (gdprPolicyVersionHistory?.data?.pagination?.has_more_pages === true) || ((gdprPolicyVersionHistory?.data?.pagination?.current_page ?? 1) > 1)}}" class="flex items-center justify-between gap-3 pt-3 mt-3 border-t border-gray-200 dark:border-gray-700">
                     <span class="text-label-subtle text-sm">$t:sirsoft-gdpr.settings.policy_version.history_page_summary|current={{gdprPolicyVersionHistory?.data?.pagination?.current_page ?? 1}}|last={{gdprPolicyVersionHistory?.data?.pagination?.last_page ?? '-'}}|total={{gdprPolicyVersionHistory?.data?.pagination?.total ?? 0}}</span>
                     <div class="flex items-center gap-2">
-                      <button data-ref="policy_history_prev" type="button" class="btn btn-sm btn-neutral" disabled="{{(gdprPolicyVersionHistory?.data?.pagination?.current_page ?? 1) <= 1}}"><on type="click"><set-state target="local" policyHistoryPage="{{gdprPolicyVersionHistory?.data?.pagination?.last_page ? Math.min(Math.max(1, (_local.policyHistoryPage ?? 1) + (-1)), gdprPolicyVersionHistory?.data?.pagination?.last_page) : Math.max(1, (_local.policyHistoryPage ?? 1) + (-1))}}"/><refetch-data-source dataSourceId="gdprPolicyVersionHistory"/></on>$t:sirsoft-gdpr.settings.policy_version.history_prev</button>
-                      <button data-ref="policy_history_next" type="button" class="btn btn-sm btn-neutral" disabled="{{gdprPolicyVersionHistory?.data?.pagination?.last_page ? ((gdprPolicyVersionHistory?.data?.pagination?.current_page ?? 1) >= gdprPolicyVersionHistory?.data?.pagination?.last_page) : (gdprPolicyVersionHistory?.data?.pagination?.has_more_pages !== true)}}"><on type="click"><set-state target="local" policyHistoryPage="{{gdprPolicyVersionHistory?.data?.pagination?.last_page ? Math.min(Math.max(1, (_local.policyHistoryPage ?? 1) + (1)), gdprPolicyVersionHistory?.data?.pagination?.last_page) : Math.max(1, (_local.policyHistoryPage ?? 1) + (1))}}"/><refetch-data-source dataSourceId="gdprPolicyVersionHistory"/></on>$t:sirsoft-gdpr.settings.policy_version.history_next</button>
+                      <button data-ref="policy_history_prev" type="button" class="btn btn-sm btn-neutral" disabled="{{(gdprPolicyVersionHistory?.data?.pagination?.current_page ?? 1) <= 1}}">
+                        <on type="click">
+                          <!-- 이전 페이지. 이력은 이 화면 안에서만 넘기므로 URL 이 아니라 폼 상태에 페이지를 두고 데이터소스를 다시 부른다. 마지막 페이지 번호를 모를 수 있어(총 건수 상한) 상한이 있을 때만 그 값으로 조인다 -->
+                          <sequence>
+                            <set-state target="local" policyHistoryPage="{{gdprPolicyVersionHistory?.data?.pagination?.last_page ? Math.min(Math.max(1, (_local.policyHistoryPage ?? 1) + (-1)), gdprPolicyVersionHistory?.data?.pagination?.last_page) : Math.max(1, (_local.policyHistoryPage ?? 1) + (-1))}}"/>
+                            <refetch-data-source dataSourceId="gdprPolicyVersionHistory"/>
+                          </sequence>
+                        </on>
+                        $t:sirsoft-gdpr.settings.policy_version.history_prev
+                      </button>
+                      <button data-ref="policy_history_next" type="button" class="btn btn-sm btn-neutral" disabled="{{gdprPolicyVersionHistory?.data?.pagination?.last_page ? ((gdprPolicyVersionHistory?.data?.pagination?.current_page ?? 1) >= gdprPolicyVersionHistory?.data?.pagination?.last_page) : (gdprPolicyVersionHistory?.data?.pagination?.has_more_pages !== true)}}">
+                        <on type="click">
+                          <!-- 다음 페이지. 마지막 번호를 모르는 목록에서는 그 대신 서버가 알려 준 has_more_pages 로 버튼을 잠근다 — 총 건수에 상한이 걸리면 last_page 가 비어 오기 때문이다 -->
+                          <sequence>
+                            <set-state target="local" policyHistoryPage="{{gdprPolicyVersionHistory?.data?.pagination?.last_page ? Math.min(Math.max(1, (_local.policyHistoryPage ?? 1) + (1)), gdprPolicyVersionHistory?.data?.pagination?.last_page) : Math.max(1, (_local.policyHistoryPage ?? 1) + (1))}}"/>
+                            <refetch-data-source dataSourceId="gdprPolicyVersionHistory"/>
+                          </sequence>
+                        </on>
+                        $t:sirsoft-gdpr.settings.policy_version.history_next
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -372,18 +390,21 @@
         </button>
         <button data-ref="footer_save_button" type="button" disabled="{{!_local.hasChanges || _local.isSaving}}" class="btn btn-primary flex-center gap-1.5 text-sm">
           <on type="click">
-            <set-state target="local" :isSaving="true" :errors="null"/>
-            <api-call :auth_required="true" target="/api/plugins/sirsoft-gdpr/admin/settings" method="PUT" body="{{_local.form}}">
-              <success>
-                <set-state target="local" :isSaving="false" :hasChanges="false"/>
-                <refetch-data-source dataSourceId="gdprSettings"/>
-                <toast type="success" message="$t:sirsoft-gdpr.settings.save_success"/>
-              </success>
-              <fail>
-                <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
-                <toast type="error" message="{{Object.values(error.errors ?? {})[0]?.[0] ?? '$t:sirsoft-gdpr.settings.save_error'}}"/>
-              </fail>
-            </api-call>
+            <!-- 설정 저장. 실패 안내는 서버가 준 검증 오류의 첫 항목을 그대로 쓴다 — 어느 항목이 왜 막혔는지 알려 주지 않으면 운영자가 같은 저장을 반복하게 된다 -->
+            <sequence>
+              <set-state target="local" :isSaving="true" :errors="null"/>
+              <api-call :auth_required="true" target="/api/plugins/sirsoft-gdpr/admin/settings" method="PUT" body="{{_local.form}}">
+                <success>
+                  <set-state target="local" :isSaving="false" :hasChanges="false"/>
+                  <refetch-data-source dataSourceId="gdprSettings"/>
+                  <toast type="success" message="$t:sirsoft-gdpr.settings.save_success"/>
+                </success>
+                <fail>
+                  <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
+                  <toast type="error" message="{{Object.values(error.errors ?? {})[0]?.[0] ?? '$t:sirsoft-gdpr.settings.save_error'}}"/>
+                </fail>
+              </api-call>
+            </sequence>
           </on>
           <icon data-if="{{_local.isSaving}}" name="spinner" size="sm" :spin="true"/>
           <span data-if="{{!_local.isSaving}}">$t:common.save</span>

@@ -401,7 +401,7 @@
                                         },
                                         "children": [
                                             {
-                                                "comment": "별점을 가리지 않고 모두. 아래 필터 버튼들은 값을 화면에 담지 않고 곧바로 주소를 바꾼다 — 조회 조건이 URL 에 있어야 재진입·뒤로가기에서 같은 목록이 다시 선다\n                 5점만\n                 4점만\n                 3점만\n                 2점만\n                 1점만 — 낮은 별점부터 훑어 답글을 다는 것이 이 화면의 주된 쓰임이다",
+                                                "comment": "별점을 가리지 않고 모두. 이 줄 아래 필터 버튼들은 값을 화면에 담지 않고 곧바로 주소를 바꾼다 — 조회 조건이 URL 에 있어야 재진입·뒤로가기에서 같은 목록이 다시 선다. 값을 바꿀 때마다 페이지를 1로 되돌리는 것은 조건이 좁아지면 보던 페이지가 결과 범위를 벗어나기 때문이다",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -434,6 +434,7 @@
                                                 "text": "$t:sirsoft-ecommerce.admin.product_review.filter.all"
                                             },
                                             {
+                                                "comment": "5점만",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -466,6 +467,7 @@
                                                 "text": "★★★★★"
                                             },
                                             {
+                                                "comment": "4점만",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -498,6 +500,7 @@
                                                 "text": "★★★★☆"
                                             },
                                             {
+                                                "comment": "3점만",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -530,6 +533,7 @@
                                                 "text": "★★★☆☆"
                                             },
                                             {
+                                                "comment": "2점만",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -562,6 +566,7 @@
                                                 "text": "★★☆☆☆"
                                             },
                                             {
+                                                "comment": "1점만 — 낮은 별점부터 훑어 답글을 다는 것이 이 화면의 주된 쓰임이다",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -621,7 +626,7 @@
                                         },
                                         "children": [
                                             {
-                                                "comment": "답글 여부를 가리지 않고 모두\n                 답글을 이미 단 후기\n                 답글 없는 후기 — 운영자가 손대야 할 몫이다",
+                                                "comment": "답글 여부를 가리지 않고 모두",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -654,6 +659,7 @@
                                                 "text": "$t:sirsoft-ecommerce.admin.product_review.filter.all"
                                             },
                                             {
+                                                "comment": "답글을 이미 단 후기",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -686,6 +692,7 @@
                                                 "text": "$t:sirsoft-ecommerce.admin.product_review.filter.replied"
                                             },
                                             {
+                                                "comment": "답글 없는 후기 — 운영자가 손대야 할 몫이다",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -745,7 +752,7 @@
                                         },
                                         "children": [
                                             {
-                                                "comment": "사진 유무를 가리지 않고 모두\n                 사진이 붙은 후기 — 상품 화면에 크게 노출되므로 따로 살핀다\n                 글만 있는 후기",
+                                                "comment": "사진 유무를 가리지 않고 모두",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -778,6 +785,7 @@
                                                 "text": "$t:sirsoft-ecommerce.admin.product_review.filter.all"
                                             },
                                             {
+                                                "comment": "사진이 붙은 후기 — 상품 화면에 크게 노출되므로 따로 살핀다",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -810,6 +818,7 @@
                                                 "text": "$t:sirsoft-ecommerce.admin.product_review.filter.photo_review"
                                             },
                                             {
+                                                "comment": "글만 있는 후기",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -869,7 +878,7 @@
                                         },
                                         "children": [
                                             {
-                                                "comment": "노출 여부를 가리지 않고 모두\n                 상품 화면에 보이는 후기\n                 숨긴 후기 — 신고·부적절로 내린 것이 여기 모인다",
+                                                "comment": "노출 여부를 가리지 않고 모두",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -902,6 +911,7 @@
                                                 "text": "$t:sirsoft-ecommerce.admin.product_review.filter.all"
                                             },
                                             {
+                                                "comment": "상품 화면에 보이는 후기",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -934,6 +944,7 @@
                                                 "text": "$t:sirsoft-ecommerce.admin.product_review.filter.visible"
                                             },
                                             {
+                                                "comment": "숨긴 후기 — 신고·부적절로 내린 것이 여기 모인다",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -1324,6 +1335,7 @@
                                                 "text": "$t:sirsoft-ecommerce.admin.product_review.filter.search"
                                             },
                                             {
+                                                "comment": "필터 초기화. 폼 상태와 주소 양쪽을 비운다 — 한쪽만 비우면 입력칸에 남은 값이 다음 검색에 되살아나거나, 주소에 남은 조건이 화면 표시와 어긋난다",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "responsive": {
@@ -1449,6 +1461,7 @@
                                 ]
                             },
                             {
+                                "comment": "일괄 적용. 고른 작업과 대상 id 를 전역에 옮겨 담은 뒤 확인 모달을 연다 — 모달은 별도 컨텍스트라 이 화면의 폼 상태를 그대로 읽지 못한다",
                                 "type": "basic",
                                 "name": "Button",
                                 "actions": [

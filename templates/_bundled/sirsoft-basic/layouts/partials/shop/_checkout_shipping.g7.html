@@ -57,18 +57,21 @@
       <select name="country_code" value="{{_local.shipping?.country_code ?? _global.preferredShippingCountry ?? 'KR'}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500" options="{{(shippingSettings?.data?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: c.name?.[_global.locale] ?? c.name?.ko ?? c.code }))}}">
         <responsive on="portable" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"/>
         <on type="change">
-          <!-- 국가 변경 시 주소 필드 초기화 (이전 국가의 우편번호/주소가 남아 다른 국가 배송비에 잘못 반영되는 것 방지)
-               배송국가 변경 시 checkout API 호출(배송비 재계산). 저장배송지 선택/주소검색 경로와 동일하게 PUT 으로 country_code 를 저장해 미리보기 금액과 주문 확정 재계산(저장값 기준)이 일치하도록 보장한다 — 주문서 선택국가가 SSoT. -->
-          <set-state target="local" shipping.country_code="{{$event.target.value}}" checkout.country_code="{{$event.target.value}}"/>
-          <set-state target="local" shipping.zipcode="" shipping.address="" shipping.address_detail="" shipping.address_line_1="" shipping.address_line_2="" shipping.intl_city="" shipping.intl_state="" shipping.intl_postal_code=""/>
-          <api-call target="/api/modules/sirsoft-ecommerce/checkout" auth_mode="optional" method="PUT" body="{{_local.checkout}}">
-            <success>
-              <update-data-source dataSourceId="checkoutData" data="{{response}}"/>
-            </success>
-            <fail>
-              <toast type="error" message="{{error.message}}"/>
-            </fail>
-          </api-call>
+          <!-- 배송 국가 변경. 이전 국가의 우편번호·주소를 함께 비우고 배송비를 다시 계산한다 — 남겨 두면 다른 나라 주소로 배송비가 잘못 매겨진다 -->
+          <sequence>
+            <!-- 국가 변경 시 주소 필드 초기화 (이전 국가의 우편번호/주소가 남아 다른 국가 배송비에 잘못 반영되는 것 방지)
+                 배송국가 변경 시 checkout API 호출(배송비 재계산). 저장배송지 선택/주소검색 경로와 동일하게 PUT 으로 country_code 를 저장해 미리보기 금액과 주문 확정 재계산(저장값 기준)이 일치하도록 보장한다 — 주문서 선택국가가 SSoT. -->
+            <set-state target="local" shipping.country_code="{{$event.target.value}}" checkout.country_code="{{$event.target.value}}"/>
+            <set-state target="local" shipping.zipcode="" shipping.address="" shipping.address_detail="" shipping.address_line_1="" shipping.address_line_2="" shipping.intl_city="" shipping.intl_state="" shipping.intl_postal_code=""/>
+            <api-call target="/api/modules/sirsoft-ecommerce/checkout" auth_mode="optional" method="PUT" body="{{_local.checkout}}">
+              <success>
+                <update-data-source dataSourceId="checkoutData" data="{{response}}"/>
+              </success>
+              <fail>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+            </api-call>
+          </sequence>
         </on>
       </select>
     </div>

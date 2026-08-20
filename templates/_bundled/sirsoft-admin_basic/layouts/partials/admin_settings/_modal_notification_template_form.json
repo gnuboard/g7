@@ -824,6 +824,7 @@
                             "name": "Div",
                             "children": [
                                 {
+                                    "comment": "닫기. 저장 중에는 잠긴다 — 요청이 도는 도중 창이 사라지면 성공·실패 안내가 갈 곳을 잃는다",
                                     "type": "basic",
                                     "name": "Button",
                                     "actions": [

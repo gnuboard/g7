@@ -640,6 +640,7 @@
                     },
                     "children": [
                         {
+                            "comment": "이 메뉴를 편집 상태로 연다. 트리에서 고른 항목을 오른쪽 패널이 받아 그리는 구조라 선택과 편집 상태를 함께 옮긴다",
                             "type": "basic",
                             "name": "Button",
                             "actions": [

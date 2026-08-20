@@ -358,7 +358,9 @@
             <p class="form-hint mt-1">$t:sirsoft-ecommerce.admin.product.options.additional_hint</p>
           </div>
           <div class="btn-group">
+            <!-- 추가옵션 사용. 이미 한 줄이라도 있으면 아무 일도 하지 않는다 — 다시 눌러 빈 줄이 늘어나는 것을 막는다 -->
             <button type="button" class="btn-group-item {{(_local.form.additional_options ?? []).length > 0 ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><on type="click"><action handler="sirsoft-ecommerce.addAdditionalOption" if="{{(_local.form.additional_options ?? []).length === 0}}"/></on>$t:sirsoft-ecommerce.common.use</button>
+            <!-- 추가옵션 사용 안 함. 이미 입력한 줄이 있을 때만 확인 창을 띄운다 — 비어 있으면 지울 것이 없어 그냥 꺼진 상태가 된다 -->
             <button type="button" class="btn-group-item {{(_local.form.additional_options ?? []).length === 0 ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><on type="click"><open-modal if="{{(_local.form.additional_options ?? []).length > 0}}" target="additional_options_clear_modal"/></on>$t:sirsoft-ecommerce.common.not_use</button>
           </div>
         </div>

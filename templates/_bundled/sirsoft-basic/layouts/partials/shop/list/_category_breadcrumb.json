@@ -48,6 +48,7 @@
                     }
                 },
                 {
+                    "comment": "1단계 카테고리로 되돌아간다. 하위 단계 선택을 버리고 그 단계만 남긴다",
                     "type": "basic",
                     "name": "Button",
                     "actions": [
@@ -88,6 +89,7 @@
                     }
                 },
                 {
+                    "comment": "2단계 카테고리로 되돌아간다",
                     "type": "basic",
                     "name": "Button",
                     "actions": [
@@ -129,6 +131,7 @@
                     }
                 },
                 {
+                    "comment": "3단계 카테고리로 되돌아간다",
                     "type": "basic",
                     "name": "Button",
                     "actions": [

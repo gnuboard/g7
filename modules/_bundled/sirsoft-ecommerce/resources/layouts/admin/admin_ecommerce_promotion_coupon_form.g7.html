@@ -98,6 +98,7 @@
           <div class="flex-center gap-3">
             <button data-ref="back_button" type="button" class="p-1.5 rounded-lg hover:bg-gray-200 dark:bg-gray-600 dark:hover:bg-gray-700 transition-colors">
               <on type="click">
+                <!-- 목록으로. 보던 검색·필터·페이지를 이고 가므로 폼을 열었다 닫아도 목록이 되감기지 않는다 -->
                 <navigate path="/admin/ecommerce/promotion-coupons" :mergeQuery="true">
                   <query/>
                 </navigate>
@@ -111,6 +112,7 @@
             </div>
           </div>
           <div class="page-actions">
+            <!-- 취소하고 목록으로. 위 뒤로가기 버튼과 같은 이동이며 화면 위아래 어디서든 빠져나갈 수 있게 둘 다 둔다 -->
             <button data-ref="cancel_button_top" type="button" class="btn btn-outline"><on type="click"><navigate path="/admin/ecommerce/promotion-coupons" :mergeQuery="true"><query/></navigate></on>$t:sirsoft-ecommerce.admin.promotion_coupon.form.button.cancel</button>
             <button data-ref="save_button_top" type="button" disabled="{{_local.isSaving || (route.id &amp;&amp; coupon?.data?.abilities?.can_update !== true)}}" class="flex-center btn btn-primary gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed">
               <on type="click">

@@ -90,6 +90,7 @@
           <label class="flex items-start gap-2 cursor-pointer select-none">
             <input type="checkbox" checked="{{_global.moduleRebuildSearchIndex === true}}" class="w-4 h-4 mt-0.5 rounded border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-400 focus:ring-blue-500 dark:focus:ring-blue-400">
               <on type="change">
+                <!-- 검색 인덱스 재생성 여부. 전역 한 곳에서 뒤집으므로 창을 다시 열 때 이월되지 않도록 시드와 제출 뒤 양쪽에서 해제한다 — 재생성은 운영자가 이 창에서 명시로 고를 때만 수행된다 -->
                 <set-state target="global" moduleRebuildSearchIndex="{{!_global.moduleRebuildSearchIndex}}"/>
               </on>
             </input>

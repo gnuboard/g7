@@ -167,6 +167,7 @@
           <div data-ref="options_loading_{{row.id}}" data-if="{{(optionsLoadingIds || []).some(id => id + '' === row.id + '')}}" class="text-center py-4 text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.product.table.options.loading</div>
           <div data-ref="options_error_{{row.id}}" data-if="{{(optionsErrorIds || []).some(id => id + '' === row.id + '')}}" class="flex items-center justify-center gap-3 py-4">
             <span class="text-red-500 dark:text-red-400">$t:sirsoft-ecommerce.admin.product.table.options.load_failed</span>
+            <!-- 옵션 목록을 다시 불러온다. 실패한 행만 다시 시도하므로 나머지 행의 펼침 상태는 건드리지 않는다 -->
             <button type="button" class="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"><on type="click" event="onClick"><action handler="sirsoft-ecommerce.retryExpandedOptions" productId="{{row.id}}"/></on>$t:sirsoft-ecommerce.admin.product.table.options.retry</button>
           </div>
           <div data-if="{{!(optionsLoadingIds || []).some(id => id + '' === row.id + '') &amp;&amp; !(optionsErrorIds || []).some(id => id + '' === row.id + '')}}" class="overflow-x-auto">
@@ -381,10 +382,13 @@
         <action handler="sirsoft-ecommerce.loadExpandedOptions" expandedRows="{{$args[0]}}"/>
       </on>
       <on type="change" event="onPageChange">
-        <set-state target="local" :expandedRows="[]" :optionsLoadingIds="[]" :optionsErrorIds="[]" :selectedOptionIds="[]"/>
-        <navigate path="/admin/ecommerce/products" :replace="true" :mergeQuery="true" transition_overlay_target="product_datagrid__body">
-          <query page="{{$args[0]}}"/>
-        </navigate>
+        <!-- 페이지 이동. 펼쳐 둔 옵션 행과 그 선택을 먼저 비운다 — 페이지가 바뀌면 그 행들은 더 이상 화면에 없는 상품이고, 남겨 두면 보이지도 않는 옵션이 일괄 처리 대상에 실린다 -->
+        <sequence>
+          <set-state target="local" :expandedRows="[]" :optionsLoadingIds="[]" :optionsErrorIds="[]" :selectedOptionIds="[]"/>
+          <navigate path="/admin/ecommerce/products" :replace="true" :mergeQuery="true" transition_overlay_target="product_datagrid__body">
+            <query page="{{$args[0]}}"/>
+          </navigate>
+        </sequence>
       </on>
       <on type="action" event="onRowAction">
         <!-- 행 액션. 상품은 주문과 달리 내부 id 로 이동한다 — 사람이 읽는 상품코드는 따로 있고 그것은 바뀔 수 있다. -->

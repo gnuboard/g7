@@ -412,6 +412,7 @@
                                                     "name": "Input",
                                                     "actions": [
                                                         {
+                                                            "comment": "지출증빙. 사업자 비용 처리용이라 아래 식별번호가 사업자등록번호를 받는다",
                                                             "type": "change",
                                                             "handler": "setState",
                                                             "params": {
@@ -494,6 +495,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "식별번호. 소득공제면 휴대폰번호나 현금영수증카드, 지출증빙이면 사업자등록번호다",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {

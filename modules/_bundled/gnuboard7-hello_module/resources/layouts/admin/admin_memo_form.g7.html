@@ -32,6 +32,7 @@
         <div data-ref="memo_form_actions" class="flex-center justify-end gap-2">
           <button data-ref="memo_cancel_button" type="button" class="px-4 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 font-medium transition-colors">
             <on type="click">
+              <!-- 취소하고 목록으로. 목록 상태를 그대로 넘겨 보던 페이지로 돌아간다 -->
               <navigate path="/admin/memos" :mergeQuery="true">
                 <query/>
               </navigate>

@@ -883,6 +883,7 @@
                                 },
                                 "children": [
                                     {
+                                        "comment": "목록으로. 보던 목록 상태를 이고 간다",
                                         "id": "footer_list_button",
                                         "type": "basic",
                                         "name": "Button",

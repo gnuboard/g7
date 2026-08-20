@@ -45,6 +45,7 @@
                     "text": "$t:admin.language_packs.actions.cancel"
                 },
                 {
+                    "comment": "번역 캐시 비우기. 언어팩 파일을 바꿔도 캐시가 남아 있으면 화면 문구가 그대로라, 그 캐시를 운영자가 직접 비우는 자리다",
                     "type": "basic",
                     "name": "Button",
                     "actions": [

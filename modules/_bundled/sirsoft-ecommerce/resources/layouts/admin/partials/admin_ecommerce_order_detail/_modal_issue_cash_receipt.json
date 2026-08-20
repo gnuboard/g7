@@ -1,4 +1,5 @@
 {
+    "comment": "관리자 주문상세의 현금영수증 발급 창. 구매자가 신청하지 않았거나 발급이 실패한 건을 운영자가 사후에 발급하는 자리다",
     "meta": {
         "is_partial": true,
         "description": "관리자 주문상세 - 현금영수증 발급 모달 (사후 발급 포함)"
@@ -96,6 +97,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "지출증빙. 사업자가 비용 처리에 쓰는 형태라 아래 식별번호 칸이 사업자등록번호를 받는다",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -180,6 +182,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "식별번호. 소득공제면 휴대폰번호나 현금영수증카드, 지출증빙이면 사업자등록번호가 들어간다 — 전역에 담는 것은 이 창이 부모와 별도 컨텍스트여서다",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {

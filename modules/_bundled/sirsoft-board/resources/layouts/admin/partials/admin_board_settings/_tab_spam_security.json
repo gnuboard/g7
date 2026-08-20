@@ -284,11 +284,11 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "차단 낱말 추가. 빈 값이나 이미 있는 낱말은 담지 않으며, 담은 뒤 입력칸을 비워 연속 입력을 이어 갈 수 있게 한다",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
                                                 {
-                                                    "comment": "게시판 설정 캐시 비우기 — 한 번의 호출로 끝난다. 성공·실패 어느 쪽이든 진행 표시를 내려 버튼이 잠긴 채 남지 않게 한다",
                                                     "handler": "setState",
                                                     "params": {
                                                         "target": "local",

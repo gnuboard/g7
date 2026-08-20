@@ -1089,6 +1089,7 @@
                     "text": "$t:sirsoft-ecommerce.admin.shipping_policy.action.search"
                 },
                 {
+                    "comment": "검색 조건 초기화. 폼 상태를 비우고 목록을 조건 없는 상태로 다시 세운다",
                     "type": "basic",
                     "name": "Button",
                     "responsive": {

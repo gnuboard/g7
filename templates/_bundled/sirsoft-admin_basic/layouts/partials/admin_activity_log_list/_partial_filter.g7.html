@@ -144,6 +144,7 @@
     <div data-ref="filter_actions" class="flex justify-center gap-3 mt-6">
       <responsive on="portable" class="flex gap-3 mt-6"/>
       <button type="button" class="btn btn-primary px-6"><responsive on="portable" class="btn btn-primary flex-1"/><on type="click"><action-ref name="searchActivityLogs"/></on>$t:admin.activity_log.filter.search_button</button>
+      <!-- 검색 조건 초기화. 폼 상태와 주소를 함께 비운다 — 초기화는 걸린 조건을 없애는 것이라 지금 조건과 병합하지 않는다 -->
       <button type="button" class="btn btn-secondary px-6"><responsive on="portable" class="btn btn-secondary flex-1"/><on type="click"><set-state target="local" :actorSearchResults="[]"><field name="filter"><field name="searchType" value="all"/><field name="search" value=""/><field name="logTypes" :value="[]"/><field name="createdBy" value=""/><field name="dateQuick" value=""/><field name="dateFrom" value=""/><field name="dateTo" value=""/></field></set-state><!-- audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. --><navigate path="/admin/activity-logs" :mergeQuery="false"/></on>$t:admin.activity_log.filter.reset_button</button>
     </div>
   </div>

@@ -44,6 +44,7 @@
                     "text": "$t:common.cancel"
                 },
                 {
+                    "comment": "단독 사용 쿠폰을 그대로 적용한다. 이 쿠폰은 다른 할인과 겹쳐 쓸 수 없어 이미 걸린 할인을 내리게 되므로 확인을 한 단계 둔다",
                     "type": "basic",
                     "name": "Button",
                     "actions": [

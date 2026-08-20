@@ -79,6 +79,7 @@
         </div>
         <button type="button" class="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{shipping_policies?.data?.abilities?.can_create !== true}}">
           <on type="click">
+            <!-- 새 배송정책 등록. 등록을 취소하고 돌아왔을 때를 위해 목록 상태를 넘긴다 -->
             <navigate path="/admin/ecommerce/shipping-policies/create" :mergeQuery="true">
               <query/>
             </navigate>

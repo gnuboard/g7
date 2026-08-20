@@ -117,28 +117,31 @@
                 </toggle>
                 <button data-if="{{row.update_available &amp;&amp; row.status !== 'uninstalled'}}" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" type="button" disabled="{{row.abilities?.can_install !== true || row.is_compatible === false}}" title="{{row.is_compatible === false ? '$t:defer:extensions.badges.incompatible_tooltip|required=' + (row.required_core_version ?? row.incompatible_required_version ?? '') + '|installed=' + (row.current_core_version ?? '') : ''}}" aria-describedby="{{row.is_compatible === false ? 'compat_sr_' + row.identifier : ''}}">
                   <on type="click">
-                    <!-- 업데이트 창 열기 — 고친 레이아웃 여부와 변경 이력을 미리 물어 둔다.
-                         전역값을 기본값으로 되돌리고 시작하는 것은 직전 템플릿의 결과가 남아 있기 때문이다. -->
-                    <set-state target="global" selectedTemplate="{{row}}" templateLayoutStrategy="overwrite" :hasModifiedTemplateLayouts="false" :modifiedTemplateLayoutsCount="0" :modifiedTemplateLayouts="[]" :modifiedTemplateLayoutsCheckFailed="false"/>
-                    <api-call :auth_required="true" target="/api/admin/templates/{{row.identifier}}/check-modified-layouts" method="GET">
-                      <success>
-                        <set-state target="global" hasModifiedTemplateLayouts="{{response.data?.has_modified_layouts ?? false}}" modifiedTemplateLayoutsCount="{{response.data?.modified_count ?? 0}}" modifiedTemplateLayouts="{{response.data?.modified_layouts ?? []}}" :modifiedTemplateLayoutsCheckFailed="false"/>
-                      </success>
-                      <fail>
-                        <set-state target="global" :modifiedTemplateLayoutsCheckFailed="true"/>
-                      </fail>
-                    </api-call>
-                    <api-call :auth_required="true" target="/api/admin/templates/{{row.identifier}}/changelog?source={{row.update_source ?? 'bundled'}}&amp;from_version={{row.version}}&amp;to_version={{row.latest_version}}" method="GET">
-                      <success>
-                        <set-state target="global" updateChangelog="{{response.data.changelog ?? []}}"/>
-                        <set-state target="global" :templateUpdateError="null"/>
-                        <open-modal target="template_update_modal"/>
-                      </success>
-                      <fail>
-                        <set-state target="global" :updateChangelog="[]" :templateUpdateError="null"/>
-                        <open-modal target="template_update_modal"/>
-                      </fail>
-                    </api-call>
+                    <!-- 업데이트 창 열기. 고친 레이아웃 여부와 변경 이력을 미리 물어 둔다 — 전역값을 기본으로 되돌리고 시작하는 것은 직전 템플릿의 결과가 남아 있기 때문이다 -->
+                    <sequence>
+                      <!-- 업데이트 창 열기 — 고친 레이아웃 여부와 변경 이력을 미리 물어 둔다.
+                           전역값을 기본값으로 되돌리고 시작하는 것은 직전 템플릿의 결과가 남아 있기 때문이다. -->
+                      <set-state target="global" selectedTemplate="{{row}}" templateLayoutStrategy="overwrite" :hasModifiedTemplateLayouts="false" :modifiedTemplateLayoutsCount="0" :modifiedTemplateLayouts="[]" :modifiedTemplateLayoutsCheckFailed="false"/>
+                      <api-call :auth_required="true" target="/api/admin/templates/{{row.identifier}}/check-modified-layouts" method="GET">
+                        <success>
+                          <set-state target="global" hasModifiedTemplateLayouts="{{response.data?.has_modified_layouts ?? false}}" modifiedTemplateLayoutsCount="{{response.data?.modified_count ?? 0}}" modifiedTemplateLayouts="{{response.data?.modified_layouts ?? []}}" :modifiedTemplateLayoutsCheckFailed="false"/>
+                        </success>
+                        <fail>
+                          <set-state target="global" :modifiedTemplateLayoutsCheckFailed="true"/>
+                        </fail>
+                      </api-call>
+                      <api-call :auth_required="true" target="/api/admin/templates/{{row.identifier}}/changelog?source={{row.update_source ?? 'bundled'}}&amp;from_version={{row.version}}&amp;to_version={{row.latest_version}}" method="GET">
+                        <success>
+                          <set-state target="global" updateChangelog="{{response.data.changelog ?? []}}"/>
+                          <set-state target="global" :templateUpdateError="null"/>
+                          <open-modal target="template_update_modal"/>
+                        </success>
+                        <fail>
+                          <set-state target="global" :updateChangelog="[]" :templateUpdateError="null"/>
+                          <open-modal target="template_update_modal"/>
+                        </fail>
+                      </api-call>
+                    </sequence>
                   </on>
                   <icon name="refresh" class="text-base"/>
                   <span>$t:admin.templates.actions.update</span>

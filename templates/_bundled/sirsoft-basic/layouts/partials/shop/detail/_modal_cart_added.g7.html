@@ -16,11 +16,13 @@
       <button class="flex-1 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isNavigatingToCart}}"><on type="click"><!-- 계속 둘러보기 — 이미 담긴 뒤이므로 구매 카드에 쌓아 둔 선택을 비워야 한다. 안 그러면 같은 것을 한 번 더 담게 된다 --><sequence><set-state target="$parent._local" :selectedOptionItems="[]" :currentSelection="{}" :noOptionQuantity="1" :additionalOptions="{}"/><close-modal/></sequence></on>$t:shop.product.continue_shopping</button>
       <button class="flex-1 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isNavigatingToCart}}">
         <on type="click">
-          <!-- audit:allow layout-list-context-navigate-merge-query 장바구니로 이동 — 상품 목록/상세와 다른 클러스터로 나가는 이동이다. -->
-          <set-state target="global" :isNavigatingToCart="true"/>
-          <close-modal/>
-          <!-- audit:allow layout-list-context-navigate-merge-query 장바구니로 나가는 이동이다 — 상품 목록의 페이지·정렬을 물려주면 장바구니가 읽지도 않는 query 만 주소에 붙는다. -->
-          <navigate path="{{_global.shopBase}}/cart"/>
+          <!-- 장바구니로 이동. 이동 표시를 먼저 세우고 창을 닫는다 — 상품 목록 클러스터 밖으로 나가는 이동이라 목록 상태를 승계하지 않는다 -->
+          <sequence>
+            <set-state target="global" :isNavigatingToCart="true"/>
+            <close-modal/>
+            <!-- audit:allow layout-list-context-navigate-merge-query 장바구니로 나가는 이동이다 — 상품 목록의 페이지·정렬을 물려주면 장바구니가 읽지도 않는 query 만 주소에 붙는다. -->
+            <navigate path="{{_global.shopBase}}/cart"/>
+          </sequence>
         </on>
         <icon data-if="{{_global.isNavigatingToCart}}" name="spinner" size="sm" class="animate-spin"/>
         <span>$t:shop.product.go_to_cart</span>

@@ -1,3 +1,4 @@
+<!-- 마이페이지 프로필에 NHN KCP 본인인증 결과 카드를 덧붙인다. 인증 기록이 있을 때만 보이므로 미인증 회원 화면은 그대로다 -->
 <extension target-layout="mypage/profile" priority="120">
   <inject target-id="profile_view_bio_card" position="append">
     <div data-ref="profile_view_nhnkcp_identity_card" data-if="{{nhnkcpRecord?.data}}" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
@@ -53,5 +54,6 @@
       </div>
     </div>
   </inject>
+  <!-- 이 회원의 NHN KCP 인증 기록. 기록이 없으면 응답이 비어 위 카드가 통째로 렌더되지 않는다 -->
   <data-source id="nhnkcpRecord" label_key="$t:sirsoft-verification_nhnkcp.editor.data_source.nhnkcpRecord" type="api" endpoint="/api/plugins/sirsoft-verification_nhnkcp/me/identity/nhnkcp" method="GET" :auto_fetch="true" :auth_required="true"/>
 </extension>

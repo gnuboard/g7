@@ -54,6 +54,7 @@
         </button>
         <button data-ref="add_page_button" class="btn btn-primary" disabled="{{pages?.data?.abilities?.can_create !== true}}">
           <on type="click">
+            <!-- 새 페이지 작성. 작성 취소로 목록에 돌아왔을 때 보던 자리가 유지되도록 목록 상태를 넘긴다 -->
             <navigate path="/admin/pages/create" :mergeQuery="true">
               <query/>
             </navigate>
@@ -239,6 +240,7 @@
           </navigate>
         </on>
         <on type="change" event="onPageChange">
+          <!-- 페이지 이동. 걸려 있던 검색·필터는 그대로 두고 페이지 번호만 바꾼다. 표 몸통만 전환 오버레이로 덮어 필터 영역이 깜빡이지 않는다 -->
           <navigate path="/admin/pages" :mergeQuery="true" :replace="true" transition_overlay_target="pages_data_grid__body">
             <query page="{{$args[0]}}"/>
           </navigate>

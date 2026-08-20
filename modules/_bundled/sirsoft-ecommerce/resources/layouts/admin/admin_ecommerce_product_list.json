@@ -249,6 +249,7 @@
             }
         },
         "searchProductsNavigate": {
+            "comment": "필터 값을 URL 로 옮겨 목록을 다시 세운다. 값이 비면 키를 아예 빼는 것(null)이 요점이다 — 빈 문자열로 남기면 서버가 그 조건을 걸린 것으로 읽어 결과가 통째로 사라진다. 페이지는 늘 1로 되돌린다",
             "handler": "navigate",
             "params": {
                 "path": "/admin/ecommerce/products",
@@ -282,6 +283,7 @@
             }
         },
         "searchProducts": {
+            "comment": "검색 진입점. 주소를 바꾸기 전에 펼쳐 둔 옵션 행 상태를 먼저 비운다 — 결과가 바뀌면 그 행들은 더 이상 같은 상품이 아니다",
             "handler": "sequence",
             "actions": [
                 {
@@ -430,6 +432,7 @@
                                         "name": "Button",
                                         "actions": [
                                             {
+                                                "comment": "새 상품 등록. 등록을 취소하고 돌아왔을 때 보던 목록이 그대로 서도록 목록 상태를 넘긴다",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
@@ -660,6 +663,7 @@
                                         }
                                     },
                                     {
+                                        "comment": "일괄 적용. 고른 값과 대상(상품·옵션 양쪽)을 전역으로 옮긴 뒤 확인 데이터를 만들고 창을 연다 — 창은 별도 컨텍스트라 이 화면의 폼 상태를 읽지 못한다",
                                         "type": "basic",
                                         "name": "Button",
                                         "actions": [
@@ -721,6 +725,7 @@
                                         },
                                         "children": [
                                             {
+                                                "comment": "정렬 선택. 값 하나에 필드와 방향이 함께 담겨 있고, 바꿀 때 펼침 상태를 비운 뒤 주소를 바꾼다 — 두 일을 함께 해야 해서 아래 블록이 두 액션으로 나뉜다",
                                                 "type": "basic",
                                                 "name": "Select",
                                                 "actions": [

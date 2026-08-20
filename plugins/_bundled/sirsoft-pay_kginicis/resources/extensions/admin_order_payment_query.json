@@ -270,11 +270,11 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "CBT(국경간 거래) 환불 재시도. 성공·실패 어느 쪽이든 대사 결과를 다시 받는다 — 실패해도 PG 쪽 상태는 움직였을 수 있어 화면을 그대로 두면 다음 판단이 옛 상태 위에서 이뤄진다",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
                                                 {
-                                                    "comment": "CBT 환불 재시도 — 처리 중 플래그로 버튼을 잠그고 이전 오류를 지운 뒤 보내며, 끝나면 대사 결과를 다시 받아 화면을 서버 상태로 맞춘다",
                                                     "handler": "setState",
                                                     "params": {
                                                         "target": "local",
@@ -657,11 +657,11 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "편의점 입금을 PG 에 다시 물어 온다. 입금은 구매자가 오프라인에서 하므로 통보가 유실되면 주문만 미결제로 남는데, 이 버튼이 그 간극을 운영자가 직접 메우는 수단이다",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
                                                 {
-                                                    "comment": "편의점 입금 재확인 — PG 에 현재 상태를 다시 물어 화면을 갱신한다",
                                                     "handler": "setState",
                                                     "params": {
                                                         "target": "local",
@@ -768,11 +768,11 @@
                                     "if": "{{kginicis_cbt_cvs.data?.can_simulate_notify === true}}",
                                     "actions": [
                                         {
+                                            "comment": "입금통보 모의 발송. 테스트 환경에서 실제 입금 없이 통보 흐름을 재현한다. 성공 시 주문과 결제 상태까지 다시 받는 것은 통보가 그 둘을 함께 바꾸기 때문이다",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
                                                 {
-                                                    "comment": "입금통보 모의 발송 — 테스트 환경에서 실제 입금 없이 통보 흐름을 재현한다",
                                                     "handler": "setState",
                                                     "params": {
                                                         "target": "local",
@@ -891,11 +891,11 @@
                                     "if": "{{kginicis_cbt_cvs.data?.can_mark_expired === true}}",
                                     "actions": [
                                         {
+                                            "comment": "기한이 지난 편의점 입금 건을 수동으로 닫는다. 주문 상태도 함께 다시 받는다 — 만료 처리는 결제 대기 주문을 종료시키므로 결제 영역만 갱신하면 주문 머리말이 어긋난 채 남는다",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
                                                 {
-                                                    "comment": "편의점 입금 만료 처리 — 기한이 지난 건을 수동으로 닫는다",
                                                     "handler": "setState",
                                                     "params": {
                                                         "target": "local",

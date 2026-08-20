@@ -242,31 +242,34 @@
                   </button>
                   <button data-ref="update_button" data-if="{{row.update_available &amp;&amp; row.status != 'updating' &amp;&amp; row.status != 'uninstalled'}}" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed" type="button" disabled="{{row.abilities?.can_install !== true || row.is_compatible === false}}" title="{{row.is_compatible === false ? '$t:defer:extensions.badges.incompatible_tooltip|required=' + (row.required_core_version ?? row.incompatible_required_version ?? '') + '|installed=' + (row.current_core_version ?? '') : ''}}" aria-describedby="{{row.is_compatible === false ? 'compat_sr_' + row.identifier : ''}}">
                     <on type="click">
-                      <!-- 업데이트 창 열기 — 두 가지를 미리 물어 두고 연다.
-                           ⑴ 손으로 고친 레이아웃이 있는지(있으면 창이 덮어쓰기/보존을 묻는다)
-                           ⑵ 이번 버전의 변경 이력.
-                           전역값을 먼저 기본값으로 되돌리는 것은 **직전 모듈의 결과가 남아 있기 때문**이다.
-                           이력 조회는 실패해도 창을 연다(빈 이력으로) — 이력이 없다고 업데이트를 막지 않는다. -->
-                      <set-state target="global" selectedModule="{{row}}" moduleLayoutStrategy="overwrite" :hasModifiedModuleLayouts="false" :modifiedModuleLayoutsCount="0" :modifiedModuleLayouts="[]" :modifiedModuleLayoutsCheckFailed="false" :moduleRebuildSearchIndex="false"/>
-                      <api-call :auth_required="true" target="/api/admin/modules/{{row.identifier}}/check-modified-layouts" method="GET">
-                        <success>
-                          <set-state target="global" hasModifiedModuleLayouts="{{response.data?.has_modified_layouts ?? false}}" modifiedModuleLayoutsCount="{{response.data?.modified_count ?? 0}}" modifiedModuleLayouts="{{response.data?.modified_layouts ?? []}}" :modifiedModuleLayoutsCheckFailed="false"/>
-                        </success>
-                        <fail>
-                          <set-state target="global" :modifiedModuleLayoutsCheckFailed="true"/>
-                        </fail>
-                      </api-call>
-                      <api-call :auth_required="true" target="/api/admin/modules/{{row.identifier}}/changelog?source={{row.update_source ?? 'bundled'}}&amp;from_version={{row.version}}&amp;to_version={{row.latest_version}}" method="GET">
-                        <success>
-                          <set-state target="global" updateChangelog="{{response.data.changelog ?? []}}"/>
-                          <set-state target="global" :moduleUpdateError="null"/>
-                          <open-modal target="module_update_modal"/>
-                        </success>
-                        <fail>
-                          <set-state target="global" :updateChangelog="[]" :moduleUpdateError="null"/>
-                          <open-modal target="module_update_modal"/>
-                        </fail>
-                      </api-call>
+                      <!-- 업데이트 창 열기. 손으로 고친 레이아웃이 있는지와 이번 버전의 변경 이력을 미리 물어 둔다 — 전역값을 먼저 기본으로 되돌리는 것은 직전 모듈의 결과가 남아 있기 때문이다 -->
+                      <sequence>
+                        <!-- 업데이트 창 열기 — 두 가지를 미리 물어 두고 연다.
+                             ⑴ 손으로 고친 레이아웃이 있는지(있으면 창이 덮어쓰기/보존을 묻는다)
+                             ⑵ 이번 버전의 변경 이력.
+                             전역값을 먼저 기본값으로 되돌리는 것은 **직전 모듈의 결과가 남아 있기 때문**이다.
+                             이력 조회는 실패해도 창을 연다(빈 이력으로) — 이력이 없다고 업데이트를 막지 않는다. -->
+                        <set-state target="global" selectedModule="{{row}}" moduleLayoutStrategy="overwrite" :hasModifiedModuleLayouts="false" :modifiedModuleLayoutsCount="0" :modifiedModuleLayouts="[]" :modifiedModuleLayoutsCheckFailed="false" :moduleRebuildSearchIndex="false"/>
+                        <api-call :auth_required="true" target="/api/admin/modules/{{row.identifier}}/check-modified-layouts" method="GET">
+                          <success>
+                            <set-state target="global" hasModifiedModuleLayouts="{{response.data?.has_modified_layouts ?? false}}" modifiedModuleLayoutsCount="{{response.data?.modified_count ?? 0}}" modifiedModuleLayouts="{{response.data?.modified_layouts ?? []}}" :modifiedModuleLayoutsCheckFailed="false"/>
+                          </success>
+                          <fail>
+                            <set-state target="global" :modifiedModuleLayoutsCheckFailed="true"/>
+                          </fail>
+                        </api-call>
+                        <api-call :auth_required="true" target="/api/admin/modules/{{row.identifier}}/changelog?source={{row.update_source ?? 'bundled'}}&amp;from_version={{row.version}}&amp;to_version={{row.latest_version}}" method="GET">
+                          <success>
+                            <set-state target="global" updateChangelog="{{response.data.changelog ?? []}}"/>
+                            <set-state target="global" :moduleUpdateError="null"/>
+                            <open-modal target="module_update_modal"/>
+                          </success>
+                          <fail>
+                            <set-state target="global" :updateChangelog="[]" :moduleUpdateError="null"/>
+                            <open-modal target="module_update_modal"/>
+                          </fail>
+                        </api-call>
+                      </sequence>
                     </on>
                     <icon name="refresh" class="text-base"/>
                     <span>$t:admin.modules.actions.update</span>

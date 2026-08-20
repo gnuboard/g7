@@ -170,6 +170,7 @@
                                     "if": "{{(_local.form?.available_cash_receipt_providers ?? []).length > 0}}",
                                     "actions": [
                                         {
+                                            "comment": "현금영수증 발급사 선택. 빈 값을 빈 문자열로 눌러 담는 것은 「선택 안 함」 과 미설정을 같은 값으로 모으기 위해서다",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -264,6 +265,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "자진발급 사용 여부. 구매자가 현금영수증을 신청하지 않은 무통장 주문을 국세청 지정번호로 자동 발급할지 정한다",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {

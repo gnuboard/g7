@@ -825,11 +825,12 @@
                     },
                     "actions": [
                         {
+                            "comment": "주문 상태 필터. 셀렉트가 읽는 폼 값과 목록이 읽는 주소를 함께 맞춘다",
                             "type": "change",
                             "handler": "sequence",
                             "actions": [
                                 {
-                                    "comment": "셀렉트가 읽는 로컬 값과 목록이 읽는 URL 쿼리를 함께 맞춘다. 쪽수를 1 로 되돌리지 않으면\n               3쪽을 보던 중 상태를 바꿨을 때 빈 쪽이 뜬다",
+                                    "comment": "셀렉트가 읽는 로컬 값과 목록이 읽는 URL 쿼리를 함께 맞춘다. 쪽수를 1 로 되돌리지 않으면\n                 3쪽을 보던 중 상태를 바꿨을 때 빈 쪽이 뜬다",
                                     "handler": "setState",
                                     "params": {
                                         "target": "local",
@@ -1389,6 +1390,7 @@
                                             },
                                             "actions": [
                                                 {
+                                                    "comment": "주문 상세로. 보던 목록 상태를 이고 가므로 상세에서 돌아오면 같은 자리가 열린다",
                                                     "type": "click",
                                                     "handler": "navigate",
                                                     "params": {

@@ -543,6 +543,7 @@
                                     "name": "Select",
                                     "actions": [
                                         {
+                                            "comment": "환불 계좌 은행. 가상계좌·무통장 주문을 취소할 때만 쓰이며, 세 칸(은행·계좌·예금주)이 다 차야 취소 요청이 나간다",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -564,6 +565,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "환불 계좌번호",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -586,6 +588,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "예금주. 은행이 대조하는 값이라 계좌 주인과 다르면 PG 가 취소를 거절한다",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {

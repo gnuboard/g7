@@ -54,11 +54,11 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "프리셋 삭제. 성공하면 프리셋 목록만 다시 부르고 창을 닫는다 — 지운 것은 검색조건이지 주문이 아니므로 주문 목록은 건드리지 않는다",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
                                 {
-                                    "comment": "삭제. 성공하면 프리셋 목록만 다시 부르고 창을 닫는다 — 주문 목록은 건드리지 않는다(지운 것은 검색조건이지 주문이 아니다).",
                                     "handler": "setState",
                                     "params": {
                                         "target": "global",

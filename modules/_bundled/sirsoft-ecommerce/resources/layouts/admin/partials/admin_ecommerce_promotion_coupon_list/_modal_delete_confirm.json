@@ -73,11 +73,11 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "쿠폰 삭제. 성공하면 대상을 비우는 것이 창 닫기보다 앞이다 — 남겨 두면 다음에 다른 쿠폰으로 창을 열 때 이전 이름이 잠깐 보인다",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
                                 {
-                                    "comment": "삭제. 성공하면 대상을 비우는 것이 창 닫기보다 앞이다 — 남겨 두면 다음에 다른 쿠폰으로 창을 열 때 이전 이름이 잠깐 보인다.",
                                     "handler": "setState",
                                     "params": {
                                         "target": "global",

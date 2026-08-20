@@ -5,7 +5,7 @@
     <responsive on="portable" class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600"/>
     <!-- 신청 체크박스 — 해제 시 하위 3필드를 if 로 숨기고 확장 칸을 비운다 -->
     <div class="flex items-center gap-2">
-      <input data-ref="ext_checkout_cash_receipt_toggle" type="checkbox" name="cash_receipt_requested" checked="{{_local.cashReceiptRequested ?? false}}" class="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500">
+      <input data-ref="ext_checkout_cash_receipt_toggle" type="checkbox" name="cash_receipt_requested" checked="{{!!_local.cashReceiptRequested &amp;&amp; !!_local.checkoutExtraPayload?.cash_receipt_requested}}" class="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500">
         <on type="change">
           <!-- 체크 시 기본값(소득공제 × 휴대폰번호)으로 확장 칸을 시드하고, 해제 시 확장 칸을 비워 주문 payload 에서 제거한다. -->
           <set-state target="local" cashReceiptRequested="{{$event.target.checked}}" cashReceiptType="{{$event.target.checked ? (_local.cashReceiptType ?? 'income') : null}}" cashReceiptIdentifierType="{{$event.target.checked ? (_local.cashReceiptIdentifierType ?? 'phone') : null}}" cashReceiptIdentifier="{{$event.target.checked ? (_local.cashReceiptIdentifier ?? '') : null}}" checkoutExtraPayload="{{$event.target.checked ? { cash_receipt_requested: true, cash_receipt_type: (_local.cashReceiptType ?? 'income'), cash_receipt_identifier_type: (_local.cashReceiptIdentifierType ?? 'phone'), cash_receipt_identifier: (_local.cashReceiptIdentifier ?? '') } : {}}}"/>
@@ -13,8 +13,11 @@
       </input>
       <label class="text-sm font-medium text-gray-700 dark:text-gray-300">$t:sirsoft-ecommerce.checkout.cash_receipt.request</label>
     </div>
-    <!-- 신청 시에만 렌더 (M4 — 클릭 전후 필드 수 0 → 3) -->
-    <div data-ref="ext_checkout_cash_receipt_fields" data-if="{{!!_local.cashReceiptRequested}}" class="mt-3 space-y-3">
+    <!-- 신청 시에만 렌더 (M4 — 클릭 전후 필드 수 0 → 3).
+         표시 상태는 조각 미러(cashReceiptRequested)와 확장 칸(checkoutExtraPayload) 양쪽이
+         살아 있을 때만 참이다. 결제수단을 바꾸면 템플릿이 확장 칸만 비우므로, 미러만 읽으면
+         칸은 비었는데 체크는 남아 "신청함으로 보이지만 주문에는 실리지 않는" 상태가 된다. -->
+    <div data-ref="ext_checkout_cash_receipt_fields" data-if="{{!!_local.cashReceiptRequested &amp;&amp; !!_local.checkoutExtraPayload?.cash_receipt_requested}}" class="mt-3 space-y-3">
       <!-- 용도 — 라디오 2종 (가로 → portable 세로 스택) -->
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-ecommerce.checkout.cash_receipt.purpose</label>
@@ -56,6 +59,7 @@
         <input data-ref="ext_checkout_cash_receipt_identifier" type="text" name="cash_receipt_identifier" value="{{_local.cashReceiptIdentifier ?? ''}}" placeholder="$t:sirsoft-ecommerce.checkout.cash_receipt.identifier_placeholder" class="{{_local.errors?.cash_receipt_identifier ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}">
           <responsive on="portable" class="{{_local.errors?.cash_receipt_identifier ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm'}}"/>
           <on type="change">
+            <!-- 식별번호를 입력할 때마다 주문서가 서버로 보낼 꾸러미를 통째로 다시 만든다 — 개별 키만 고치면 신청 여부·유형과 어긋난 채 전송될 수 있다 -->
             <set-state target="local" cashReceiptIdentifier="{{$event.target.value}}" checkoutExtraPayload="{{ { cash_receipt_requested: true, cash_receipt_type: (_local.cashReceiptType ?? 'income'), cash_receipt_identifier_type: (_local.cashReceiptIdentifierType ?? 'phone'), cash_receipt_identifier: $event.target.value } }}"/>
           </on>
         </input>

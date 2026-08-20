@@ -1,3 +1,4 @@
+<!-- 구매자 주문 상세의 결제 정보 패널에 토스 영수증 링크를 덧붙인다. 영수증 주소는 PG 가 발급하므로 코어가 갖고 있지 않다 -->
 <extension target-layout="mypage/orders/show">
   <inject target-id="order_payment_info_panel" position="append_child">
     <div data-if="{{order.data.payment?.pg_provider === 'tosspayments' &amp;&amp; !!order.data.payment?.pg_receipt_url}}" class="pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 space-y-3">

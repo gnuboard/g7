@@ -170,12 +170,15 @@
       <select value="{{_local.ordersStatus || ''}}" class="min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
         <responsive on="portable" value="{{_local.ordersStatus || ''}}" class="min-w-[100px] px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"/>
         <on type="change">
-          <!-- 셀렉트가 읽는 로컬 값과 목록이 읽는 URL 쿼리를 함께 맞춘다. 쪽수를 1 로 되돌리지 않으면
-               3쪽을 보던 중 상태를 바꿨을 때 빈 쪽이 뜬다 -->
-          <set-state target="local" ordersStatus="{{$event.target.value}}" :ordersPage="1"/>
-          <navigate path="/mypage/orders" :mergeQuery="true" :replace="true">
-            <query status="{{$event.target.value}}" page="1"/>
-          </navigate>
+          <!-- 주문 상태 필터. 셀렉트가 읽는 폼 값과 목록이 읽는 주소를 함께 맞춘다 -->
+          <sequence>
+            <!-- 셀렉트가 읽는 로컬 값과 목록이 읽는 URL 쿼리를 함께 맞춘다. 쪽수를 1 로 되돌리지 않으면
+                 3쪽을 보던 중 상태를 바꿨을 때 빈 쪽이 뜬다 -->
+            <set-state target="local" ordersStatus="{{$event.target.value}}" :ordersPage="1"/>
+            <navigate path="/mypage/orders" :mergeQuery="true" :replace="true">
+              <query status="{{$event.target.value}}" page="1"/>
+            </navigate>
+          </sequence>
         </on>
         <option value="">$t:mypage.orders.filter.all</option>
         <option value="pending_payment">$t:mypage.orders.filter.pending</option>
@@ -261,6 +264,7 @@
             <button type="button" class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors cursor-pointer">
               <responsive on="portable" type="button" class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors cursor-pointer"/>
               <on type="click">
+                <!-- 주문 상세로. 보던 목록 상태를 이고 가므로 상세에서 돌아오면 같은 자리가 열린다 -->
                 <navigate path="/mypage/orders/{{order.order_number}}" :mergeQuery="true">
                   <query/>
                 </navigate>

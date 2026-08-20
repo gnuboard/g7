@@ -2239,6 +2239,7 @@
                                     "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.action.search"
                                 },
                                 {
+                                    "comment": "필터 초기화(넓은 화면). 검색 조건과 함께 발급자 검색 결과 목록까지 비운다 — 남겨 두면 초기화한 뒤에도 지난 검색의 후보가 떠 있다",
                                     "id": "reset_button_pc",
                                     "type": "basic",
                                     "name": "Button",
@@ -2374,6 +2375,7 @@
                             ]
                         },
                         {
+                            "comment": "필터 초기화(좁은 화면). 넓은 화면 버튼과 같은 일을 하며, 두 벌을 두는 것은 반응형에서 버튼 배치가 달라지기 때문이다",
                             "id": "reset_button_mobile",
                             "type": "basic",
                             "name": "Button",

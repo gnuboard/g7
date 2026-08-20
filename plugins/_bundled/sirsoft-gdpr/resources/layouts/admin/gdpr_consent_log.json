@@ -774,6 +774,7 @@
                                                                 "name": "Input",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "거부 이력 필터. 체크를 켜고 끌 때마다 목록을 다시 부른다. 값을 배열에서 빼고 다시 넣는 식으로 쓰는 것은 같은 값이 두 번 들어가는 것을 막기 위해서다",
                                                                         "type": "change",
                                                                         "handler": "sequence",
                                                                         "actions": [
@@ -1025,6 +1026,7 @@
                                                                 "name": "Input",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "가입 시점에 받은 동의만 추린다. 유입 경로별로 동의를 나눠 보는 것이 이 필터 묶음의 목적이다",
                                                                         "type": "change",
                                                                         "handler": "sequence",
                                                                         "actions": [
@@ -1069,6 +1071,7 @@
                                                                 "name": "Input",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "마이페이지에서 전체 재동의를 눌러 들어온 동의만 추린다. 정책 버전을 새로 발행한 뒤 재동의가 실제로 걷혔는지 확인할 때 쓴다",
                                                                         "type": "change",
                                                                         "handler": "sequence",
                                                                         "actions": [

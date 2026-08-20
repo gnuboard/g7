@@ -77,6 +77,7 @@
       </column>
       <column field="name" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.name" width="200px">
         <cell>
+          <!-- 쿠폰 이름을 눌러 수정 화면으로. 보던 목록 상태를 이고 가므로 수정을 마치고 돌아오면 같은 자리가 열린다 -->
           <a href="#" class="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer font-medium"><on type="click"><navigate path="/admin/ecommerce/promotion-coupons/{{row.id}}/edit" :mergeQuery="true"><query/></navigate></on>{{row.localized_name}}</a>
         </cell>
       </column>

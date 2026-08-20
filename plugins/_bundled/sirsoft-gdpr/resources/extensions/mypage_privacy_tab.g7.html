@@ -59,20 +59,23 @@
           <span class="text-sm text-blue-800 dark:text-blue-200">$t:sirsoft-gdpr.mypage.privacy.enable_all_hint</span>
           <button type="button" disabled="{{!!_local.enablingAll}}" class="shrink-0 px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center">
             <on type="click">
-              <set-state target="local" :enablingAll="true"/>
-              <api-call :auth_required="true" target="/api/plugins/sirsoft-gdpr/consent/cookie" method="POST" body="{{{ source: 'mypage', consents: (gdprMeConsents?.data?.consents ?? []).reduce((acc, c) => (c?.is_required === true ? acc : { ...acc, [c.consent_key]: true }), {}) }}}">
-                <success>
-                  <set-state target="local" :enablingAll="null"/>
-                  <refetch-data-source dataSourceId="gdprMeConsents"/>
-                  <refetch-data-source dataSourceId="gdprMyConsents"/>
-                  <action handler="sirsoft-gdpr.syncConsent"/>
-                  <toast type="success" message="$t:sirsoft-gdpr.mypage.privacy.enable_all_success"/>
-                </success>
-                <fail>
-                  <set-state target="local" :enablingAll="null"/>
-                  <toast type="error" message="{{error?.message ?? 'Error'}}"/>
-                </fail>
-              </api-call>
+              <!-- 선택 동의 전부 켜기. 필수 항목은 이미 동의로 고정돼 있어 대상에서 뺀다. 두 데이터소스를 다시 부르는 것은 이 탭의 목록과 요약이 서로 다른 응답에서 오기 때문이고, syncConsent 는 브라우저에 올라와 있는 자동차단 엔진의 동의 캐시를 갱신한다 -->
+              <sequence>
+                <set-state target="local" :enablingAll="true"/>
+                <api-call :auth_required="true" target="/api/plugins/sirsoft-gdpr/consent/cookie" method="POST" body="{{{ source: 'mypage', consents: (gdprMeConsents?.data?.consents ?? []).reduce((acc, c) => (c?.is_required === true ? acc : { ...acc, [c.consent_key]: true }), {}) }}}">
+                  <success>
+                    <set-state target="local" :enablingAll="null"/>
+                    <refetch-data-source dataSourceId="gdprMeConsents"/>
+                    <refetch-data-source dataSourceId="gdprMyConsents"/>
+                    <action handler="sirsoft-gdpr.syncConsent"/>
+                    <toast type="success" message="$t:sirsoft-gdpr.mypage.privacy.enable_all_success"/>
+                  </success>
+                  <fail>
+                    <set-state target="local" :enablingAll="null"/>
+                    <toast type="error" message="{{error?.message ?? 'Error'}}"/>
+                  </fail>
+                </api-call>
+              </sequence>
             </on>
             <icon data-if="{{!!_local.enablingAll}}" name="spinner" size="xs" :spin="true" class="mr-1"/>
             <span>$t:sirsoft-gdpr.mypage.privacy.enable_all</span>
@@ -194,22 +197,25 @@
           </button>
           <button type="button" disabled="{{_local.isGranting || !_global.grantTargetKey}}" class="px-4 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
             <on type="click">
-              <set-state target="local" :isGranting="true"/>
-              <api-call :auth_required="true" target="/api/plugins/sirsoft-gdpr/consent/grant" method="POST" body="{{{ consent_key: _global.grantTargetKey }}}">
-                <success>
-                  <set-state target="local" :isGranting="false"/>
-                  <set-state target="global" :grantTargetKey="null" :grantTargetLabel="null" :grantTargetDescription="null"/>
-                  <refetch-data-source dataSourceId="gdprMeConsents"/>
-                  <refetch-data-source dataSourceId="gdprMyConsents"/>
-                  <action handler="sirsoft-gdpr.syncConsent"/>
-                  <close-modal/>
-                  <toast type="success" message="$t:sirsoft-gdpr.consent.granted_again"/>
-                </success>
-                <fail>
-                  <set-state target="local" :isGranting="false"/>
-                  <toast type="error" message="{{error?.message ?? 'Error'}}"/>
-                </fail>
-              </api-call>
+              <!-- 개별 항목 동의. 성공 시 모달이 물고 있던 대상 키까지 비운다 — 남겨 두면 다음에 모달을 열 때 직전 항목이 선택된 채로 뜬다 -->
+              <sequence>
+                <set-state target="local" :isGranting="true"/>
+                <api-call :auth_required="true" target="/api/plugins/sirsoft-gdpr/consent/grant" method="POST" body="{{{ consent_key: _global.grantTargetKey }}}">
+                  <success>
+                    <set-state target="local" :isGranting="false"/>
+                    <set-state target="global" :grantTargetKey="null" :grantTargetLabel="null" :grantTargetDescription="null"/>
+                    <refetch-data-source dataSourceId="gdprMeConsents"/>
+                    <refetch-data-source dataSourceId="gdprMyConsents"/>
+                    <action handler="sirsoft-gdpr.syncConsent"/>
+                    <close-modal/>
+                    <toast type="success" message="$t:sirsoft-gdpr.consent.granted_again"/>
+                  </success>
+                  <fail>
+                    <set-state target="local" :isGranting="false"/>
+                    <toast type="error" message="{{error?.message ?? 'Error'}}"/>
+                  </fail>
+                </api-call>
+              </sequence>
             </on>
             <icon data-if="{{_local.isGranting}}" name="spinner" size="sm" :spin="true" class="mr-1"/>
             <span data-if="{{!_local.isGranting}}">$t:sirsoft-gdpr.mypage.privacy.grant</span>

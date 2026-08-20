@@ -1407,6 +1407,7 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "GeoIP 데이터베이스를 내려받아 갱신한다. 파일이 커서 시간이 걸리므로 진행 중에는 버튼을 잠근다",
                                                     "type": "basic",
                                                     "name": "Button",
                                                     "actions": [

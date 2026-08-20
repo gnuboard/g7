@@ -104,6 +104,7 @@
             <set-state target="local" checkout="{{Object.assign({}, _local.checkout, { discount_code: $event.target.value || null })}}"/>
           </on>
         </input>
+        <!-- 할인코드 적용. 서버가 코드의 유효성과 이 주문에 쓸 수 있는지를 함께 판정하므로 화면에서 미리 거르지 않는다 -->
         <button type="button" class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50" disabled="{{!_local.checkout?.discount_code}}"><responsive on="portable" class="px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium text-sm hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50"/><on type="click"><api-call target="/api/modules/sirsoft-ecommerce/checkout" auth_mode="optional" method="PUT" body="{{_local.checkout}}"><success><update-data-source dataSourceId="checkoutData" data="{{response}}"/><toast type="success" message="$t:shop.checkout.discount_code_applied"/></success><fail><toast type="error" message="{{error.message ?? '$t:shop.checkout.discount_code_invalid'}}"/></fail></api-call></on>$t:shop.checkout.discount_code_apply</button>
       </div>
       <!-- 적용된 할인코드 정보 -->

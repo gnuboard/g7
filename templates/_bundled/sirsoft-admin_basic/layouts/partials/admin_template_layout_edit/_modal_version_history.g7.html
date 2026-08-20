@@ -52,6 +52,7 @@
     <div data-if="{{(layout_versions?.data?.length ?? 0) >= (_global.layoutVersionLimit ?? 100) &amp;&amp; (_global.layoutVersionLimit ?? 100) < 500}}" class="flex-center justify-center mt-3">
       <button type="button" class="btn-secondary w-full" data-testid="layout-version-history-load-more">
         <on type="click">
+          <!-- 이 버전으로 되돌린다. 되돌리기도 새 버전으로 쌓이므로 이력이 끊기지 않는다 -->
           <sequence>
             <set-state target="global" layoutVersionLimit="{{Math.min((_global.layoutVersionLimit ?? 100) + 100, 500)}}"/>
             <refetch-data-source dataSourceId="layout_versions"/>

@@ -189,28 +189,30 @@
         </button>
         <button data-ref="save_button" type="button" disabled="{{!_local.hasChanges || _local.isSaving}}" class="btn btn-primary flex-center gap-1.5">
           <on type="click">
-            <!-- 채널 저장 — 전역에 쌓아 둔 채널 목록을 통째로 보낸다 -->
-            <set-state target="local" :isSaving="true" :errors="null"/>
-            <api-call :auth_required="true" target="/api/plugins/sirsoft-marketing/admin/channels" method="PUT" body="{{{ channels: _global.channels ?? [] }}}">
-              <success>
-                <api-call :auth_required="true" target="/api/admin/plugins/{{route.identifier}}/settings" method="PUT" body="{{{ marketing_consent_enabled: _local.form.marketing_consent_enabled, marketing_consent_terms_slug: _local.form.marketing_consent_terms_slug, third_party_consent_enabled: _local.form.third_party_consent_enabled, third_party_consent_terms_slug: _local.form.third_party_consent_terms_slug, info_disclosure_enabled: _local.form.info_disclosure_enabled, info_disclosure_terms_slug: _local.form.info_disclosure_terms_slug, channels: _global.channels ?? [] }}}">
-                  <success>
-                    <set-state target="local" :isSaving="false" :hasChanges="false"/>
-                    <refetch-data-source dataSourceId="settings"/>
-                    <toast type="success" message="$t:admin.plugins.settings.save_success"/>
-                  </success>
-                  <fail>
-                    <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
-                    <toast type="error" message="{{error.message ?? '$t:admin.plugins.settings.save_error'}}"/>
-                  </fail>
-                </api-call>
-              </success>
-              <fail>
-                <set-state target="local" :isSaving="false"/>
-                <set-state target="global" deletingChannelKey="{{error.errors?.channels?.[0] ?? ''}}"/>
-                <open-modal target="channel_deactivate_modal"/>
-              </fail>
-            </api-call>
+            <!-- 저장은 두 번에 나눠 나간다 — 채널 목록은 전용 엔드포인트가 받고 동의 항목은 플러그인 설정이 받는다. 채널 저장이 성공한 뒤에야 설정을 보내므로, 채널 쪽이 실패하면 동의 설정은 손대지 않은 채로 남는다 -->
+            <sequence>
+              <set-state target="local" :isSaving="true" :errors="null"/>
+              <api-call :auth_required="true" target="/api/plugins/sirsoft-marketing/admin/channels" method="PUT" body="{{{ channels: _global.channels ?? [] }}}">
+                <success>
+                  <api-call :auth_required="true" target="/api/admin/plugins/{{route.identifier}}/settings" method="PUT" body="{{{ marketing_consent_enabled: _local.form.marketing_consent_enabled, marketing_consent_terms_slug: _local.form.marketing_consent_terms_slug, third_party_consent_enabled: _local.form.third_party_consent_enabled, third_party_consent_terms_slug: _local.form.third_party_consent_terms_slug, info_disclosure_enabled: _local.form.info_disclosure_enabled, info_disclosure_terms_slug: _local.form.info_disclosure_terms_slug, channels: _global.channels ?? [] }}}">
+                    <success>
+                      <set-state target="local" :isSaving="false" :hasChanges="false"/>
+                      <refetch-data-source dataSourceId="settings"/>
+                      <toast type="success" message="$t:admin.plugins.settings.save_success"/>
+                    </success>
+                    <fail>
+                      <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
+                      <toast type="error" message="{{error.message ?? '$t:admin.plugins.settings.save_error'}}"/>
+                    </fail>
+                  </api-call>
+                </success>
+                <fail>
+                  <set-state target="local" :isSaving="false"/>
+                  <set-state target="global" deletingChannelKey="{{error.errors?.channels?.[0] ?? ''}}"/>
+                  <open-modal target="channel_deactivate_modal"/>
+                </fail>
+              </api-call>
+            </sequence>
           </on>
           <icon data-if="{{_local.isSaving}}" name="spinner" class="spinner-sm"/>
           <span data-if="{{!_local.isSaving}}">$t:common.save</span>

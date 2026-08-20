@@ -99,6 +99,7 @@
                                 "name": "Button",
                                 "actions": [
                                     {
+                                        "comment": "새 게시판 만들기. 만들기를 취소하고 돌아왔을 때를 위해 목록 상태를 넘긴다",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {

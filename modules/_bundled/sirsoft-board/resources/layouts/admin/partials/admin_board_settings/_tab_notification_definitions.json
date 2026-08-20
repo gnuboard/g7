@@ -231,6 +231,7 @@
                                     "name": "Select",
                                     "actions": [
                                         {
+                                            "comment": "한 쪽에 보일 건수 변경. 쪽수를 1로 되돌리지 않으면 늘어난 건수 기준으로 보던 쪽이 결과 범위를 벗어난다",
                                             "type": "change",
                                             "handler": "navigate",
                                             "params": {
@@ -304,6 +305,7 @@
                                                     "name": "Button",
                                                     "actions": [
                                                         {
+                                                            "comment": "이 정의의 상세를 접었다 편다. 정의마다 따로 기억해야 해서 id 를 키로 하는 객체에 담는다",
                                                             "type": "click",
                                                             "handler": "setState",
                                                             "params": {
@@ -517,6 +519,7 @@
                                                                     "if": "{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}",
                                                                     "actions": [
                                                                         {
+                                                                            "comment": "이 채널의 알림 사용 여부를 뒤집는다. 지금 보고 있는 채널의 템플릿을 골라 보내며, 성공하면 정의 목록을 다시 받아 표시를 맞춘다",
                                                                             "type": "change",
                                                                             "handler": "apiCall",
                                                                             "target": "{{'/api/admin/notification-templates/' + (def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.id + '/toggle-active'}}",
@@ -554,6 +557,7 @@
                                                                     }
                                                                 },
                                                                 {
+                                                                    "comment": "알림 문안 편집. 편집기는 모달이라 이 화면의 상태를 읽지 못하므로 대상을 전역으로 옮겨 담은 뒤 연다",
                                                                     "type": "basic",
                                                                     "name": "Button",
                                                                     "actions": [
@@ -592,6 +596,7 @@
                                                                     "text": "$t:sirsoft-board.admin.settings.notification_definitions.btn_edit"
                                                                 },
                                                                 {
+                                                                    "comment": "기본 문안으로 되돌리기",
                                                                     "type": "basic",
                                                                     "name": "Button",
                                                                     "if": "{{!def.is_default || def.has_customized_templates === true}}",

@@ -243,6 +243,7 @@
                                                             "name": "Input",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "이 항목을 일괄 적용 대상에 넣고 뺀다. 배열에서 빼고 다시 넣는 식이라 같은 값이 두 번 들어가지 않는다",
                                                                     "type": "change",
                                                                     "handler": "setState",
                                                                     "params": {

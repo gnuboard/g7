@@ -315,6 +315,7 @@
                                 "name": "Button",
                                 "actions": [
                                     {
+                                        "comment": "취소. 게시판 목록으로 돌아가며 보던 목록 상태를 이고 간다",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
@@ -349,6 +350,7 @@
                                         "name": "Button",
                                         "actions": [
                                             {
+                                                "comment": "취소(화면 아래 버튼). 위쪽 취소와 같은 자리로 돌아간다",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {

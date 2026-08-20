@@ -162,22 +162,24 @@
       <!-- 취소 버튼 (등록: 목록, 수정: 상세) --><button type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"><on type="click"><navigate path="{{route.id ? '/board/' + route.slug + '/' + route.id : '/board/' + route.slug}}" :mergeQuery="true"><query/></navigate></on>$t:common.cancel</button>
       <button type="button" disabled="{{_local?.isSaving}}" class="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed">
         <on type="click">
-          <!-- 저장 — 아직 안 올라간 첨부를 먼저 올리라고 알린 뒤 글을 보낸다(둘을 잇는 것이 임시 키다). 주소와 방식은 글 번호 유무로 갈려 같은 버튼이 등록과 수정을 겸한다. 성공하면 저장된 글로 바로 넘어간다. -->
-          <set-state target="local" :isSaving="true" :errors="null"/>
-          <emit-event event="upload:board_attachments"/>
-          <api-call target="{{route.id ? '/api/modules/sirsoft-board/boards/' + route.slug + '/posts/' + route.id : '/api/modules/sirsoft-board/boards/' + route.slug + '/posts'}}" :auth_required="true" method="{{route.id ? 'PUT' : 'POST'}}" body="{{Object.assign({}, _local.form, { temp_key: _local?.tempKey })}}">
-            <success>
-              <set-state target="local" :isSaving="false" :hasChanges="false" :errors="null"/>
-              <toast type="success" message="{{route?.id ? '$t:board.post_updated' : '$t:board.post_created'}}"/>
-              <navigate path="/board/{{route?.slug}}/{{result?.data?.id}}" :mergeQuery="true">
-                <query/>
-              </navigate>
-            </success>
-            <fail>
-              <set-state target="local" :isSaving="false" errors="{{error?.errors ?? null}}"/>
-              <toast type="error" message="{{error?.message ?? '$t:common.error_occurred'}}"/>
-            </fail>
-          </api-call>
+          <!-- 저장. 아직 올라가지 않은 첨부를 먼저 올리라고 알린 뒤 글을 보낸다 — 둘을 잇는 것이 임시 키이고, 주소와 방식은 글 번호 유무로 갈린다 -->
+          <sequence>
+            <set-state target="local" :isSaving="true" :errors="null"/>
+            <emit-event event="upload:board_attachments"/>
+            <api-call target="{{route.id ? '/api/modules/sirsoft-board/boards/' + route.slug + '/posts/' + route.id : '/api/modules/sirsoft-board/boards/' + route.slug + '/posts'}}" :auth_required="true" method="{{route.id ? 'PUT' : 'POST'}}" body="{{Object.assign({}, _local.form, { temp_key: _local?.tempKey })}}">
+              <success>
+                <set-state target="local" :isSaving="false" :hasChanges="false" :errors="null"/>
+                <toast type="success" message="{{route?.id ? '$t:board.post_updated' : '$t:board.post_created'}}"/>
+                <navigate path="/board/{{route?.slug}}/{{result?.data?.id}}" :mergeQuery="true">
+                  <query/>
+                </navigate>
+              </success>
+              <fail>
+                <set-state target="local" :isSaving="false" errors="{{error?.errors ?? null}}"/>
+                <toast type="error" message="{{error?.message ?? '$t:common.error_occurred'}}"/>
+              </fail>
+            </api-call>
+          </sequence>
         </on>
         <icon data-if="{{_local?.isSaving}}" name="spinner" size="sm" class="animate-spin"/>
         <span>{{_local?.isSaving ? '$t:common.saving' : (route?.id ? '$t:common.save' : '$t:board.form.submit')}}</span>

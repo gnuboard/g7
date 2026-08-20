@@ -67,11 +67,11 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "프리셋 이름 저장. 공백만 남은 이름은 버튼 잠금이 먼저 막고, 보내는 것은 이름 하나뿐이라 저장된 조건은 그대로 남는다",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
                                 {
-                                    "comment": "저장. 공백만 남은 이름은 버튼 잠금이 먼저 막고, 보내는 것은 `name` 하나뿐이라 저장된 조건은 그대로 남는다. 성공하면 프리셋 목록만 다시 부른다.",
                                     "handler": "setState",
                                     "params": {
                                         "target": "global",

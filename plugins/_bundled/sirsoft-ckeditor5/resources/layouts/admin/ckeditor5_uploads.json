@@ -1,4 +1,5 @@
 {
+    "comment": "위지윅 에디터가 본문에 끼워 넣은 이미지를 운영자가 한자리에서 보고 지우는 화면. 에디터는 업로드 시점에 파일을 남기지만 그 글이 지워져도 파일은 남으므로, 어느 파일이 아직 본문에 인용되고 있는지(참조 여부)가 이 목록의 존재 이유다",
     "version": "1.0.0",
     "layout_name": "ckeditor5_uploads",
     "extends": "_admin_base",
@@ -50,7 +51,8 @@
                         "scan_window": 500
                     }
                 }
-            }
+            },
+            "comment": "업로드 목록. 필터·정렬·페이지를 전부 URL 쿼리에서 읽으므로 새로고침·뒤로가기로도 같은 목록이 복원된다. 참조 여부는 본문을 훑어야 알 수 있어 서버가 훑는 범위에 상한이 있고, 그 상한에 걸리면 meta.scan_limited 로 알려 온다"
         }
     ],
     "initLocal": {
@@ -71,6 +73,7 @@
     },
     "named_actions": {
         "searchUploads": {
+            "comment": "필터 입력을 URL 로 밀어 넣어 목록을 다시 부른다. page 를 빈 값으로 덮는 것이 핵심이다 — 3페이지를 보던 중 검색하면 결과가 3페이지에 못 미쳐 빈 화면이 열린다",
             "handler": "navigate",
             "params": {
                 "path": "/admin/plugins/sirsoft-ckeditor5/uploads",
@@ -87,6 +90,7 @@
             }
         },
         "clearFilters": {
+            "comment": "초기화는 두 곳을 함께 비운다 — 폼 상태를 비우지 않으면 URL 만 깨끗해지고 입력칸에는 지운 값이 남아 다음 검색에 되살아난다",
             "handler": "sequence",
             "actions": [
                 {
@@ -306,6 +310,7 @@
                                                 "name": "Input",
                                                 "actions": [
                                                     {
+                                                        "comment": "타이핑은 폼 상태에만 담아 둔다. 여기서 목록을 부르지 않는 것은 의도다 — 검색 실행은 Enter 또는 검색 버튼이 맡는다",
                                                         "type": "change",
                                                         "handler": "setState",
                                                         "params": {
@@ -334,6 +339,7 @@
                                         "name": "Select",
                                         "actions": [
                                             {
+                                                "comment": "참조 여부는 고르는 즉시 목록을 다시 부른다 — 값이 세 가지뿐이라 따로 실행 버튼을 누르게 할 이유가 없다. 폼 상태를 먼저 채워야 뒤이은 검색 액션이 그 값을 URL 로 나른다",
                                                 "type": "change",
                                                 "handler": "sequence",
                                                 "actions": [
@@ -374,6 +380,7 @@
                                         "name": "Input",
                                         "actions": [
                                             {
+                                                "comment": "기간 시작일도 담아만 둔다 — 시작·종료를 따로 고르는 동안 매번 목록을 부르면 반쪽짜리 기간으로 조회가 나간다",
                                                 "type": "change",
                                                 "handler": "setState",
                                                 "params": {
@@ -395,6 +402,7 @@
                                         "name": "Input",
                                         "actions": [
                                             {
+                                                "comment": "종료일도 마찬가지다. 두 날짜가 다 정해진 뒤 검색 버튼이 한 번에 URL 로 싣는다",
                                                 "type": "change",
                                                 "handler": "setState",
                                                 "params": {
@@ -509,6 +517,7 @@
                         "name": "DataGrid",
                         "actions": [
                             {
+                                "comment": "페이지 이동은 걸려 있던 검색·필터를 그대로 이고 간다(mergeQuery). 표 몸통만 전환 오버레이로 덮어 헤더·필터가 깜빡이지 않는다",
                                 "type": "change",
                                 "event": "onPageChange",
                                 "handler": "navigate",
@@ -523,6 +532,7 @@
                                 }
                             },
                             {
+                                "comment": "정렬을 바꾸면 page 를 비운다 — 순서가 달라졌는데 보던 페이지 번호를 유지하면 전혀 다른 구간이 열린다",
                                 "type": "change",
                                 "event": "onSortChange",
                                 "handler": "navigate",
@@ -539,6 +549,7 @@
                                 }
                             },
                             {
+                                "comment": "선택은 전역에 둔다 — 일괄 삭제 바와 확인 모달이 표 밖에 있어 같은 목록을 공유해야 하기 때문이다. 표가 selectionScope=\"page\" 라 화면을 벗어난 행은 선택이 따라오지 않는다",
                                 "type": "action",
                                 "event": "onSelectionChange",
                                 "handler": "setState",
@@ -548,6 +559,7 @@
                                 }
                             },
                             {
+                                "comment": "행 삭제 버튼. 대상 행을 전역에 담은 뒤에야 모달을 연다 — 순서가 뒤집히면 모달이 직전 대상을 그린 채 뜬다",
                                 "type": "action",
                                 "event": "onRowAction",
                                 "handler": "switch",
@@ -721,6 +733,7 @@
     },
     "modals": [
         {
+            "comment": "행의 삭제 버튼으로 열린다. 아직 본문에 인용 중인 이미지도 지울 수 있으므로(목록이 참조 배지로 알려 줄 뿐 막지는 않는다) 확인을 한 단계 둔다",
             "id": "delete_confirm_modal",
             "type": "composite",
             "name": "Modal",
@@ -780,6 +793,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "진행 플래그를 먼저 세워 두 버튼을 잠근다 — 삭제는 되돌릴 수 없어 연타로 같은 요청이 두 번 나가는 것을 막아야 한다. 성공·실패·403 세 갈래 모두에서 플래그를 반드시 되돌린다",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -884,6 +898,7 @@
             }
         },
         {
+            "comment": "체크한 행이 하나라도 있을 때만 뜨는 일괄 삭제 바에서 열린다. 대상은 지금 화면에 보이는 선택분이며, 확인 문구가 그 건수를 그대로 되읽어 준다",
             "id": "bulk_delete_confirm_modal",
             "type": "composite",
             "name": "Modal",
@@ -943,6 +958,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "성공하면 선택 목록도 함께 비운다 — 지워진 행의 id 가 선택에 남아 있으면 다음 일괄 처리가 이미 없는 대상을 싣는다. 서버가 건별 결과를 요약해 주므로 안내 문구는 응답 것을 그대로 쓴다",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [

@@ -28,6 +28,7 @@
         <!-- 액션 버튼 그룹 -->
         <div class="flex items-center gap-3">
           <responsive on="portable" class="flex items-center justify-end gap-3"/>
+          <!-- 읽지 않은 알림을 모두 읽음으로 표시한다. 목록이 비어 있으면 버튼 자체가 뜨지 않는다 -->
           <button data-if="{{userNotifications.data.data &amp;&amp; userNotifications.data.data.length > 0}}" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors" type="button"><on type="click"><api-call :auth_required="true" target="/api/user/notifications/read-all" method="POST"><success><refetch-data-source dataSourceId="userNotifications"/><refetch-data-source dataSourceId="notification_unread_count"/><set-state target="global" :notificationCount="0"/></success><fail><toast type="error" message="{{error.message}}"/></fail></api-call></on>$t:mypage.notifications.mark_all_read</button>
           <button data-if="{{userNotifications.data.data &amp;&amp; userNotifications.data.data.length > 0}}" class="text-sm text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 transition-colors" type="button"><on type="click"><open-modal target="notification_delete_all_confirm_modal"/></on>$t:mypage.notifications.delete_all</button>
         </div>

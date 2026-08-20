@@ -734,6 +734,7 @@
                     "text": "$t:admin.activity_log.filter.search_button"
                 },
                 {
+                    "comment": "검색 조건 초기화. 폼 상태와 주소를 함께 비운다 — 초기화는 걸린 조건을 없애는 것이라 지금 조건과 병합하지 않는다",
                     "type": "basic",
                     "name": "Button",
                     "responsive": {

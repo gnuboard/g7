@@ -259,6 +259,7 @@
     <div data-ref="filter_buttons" class="flex justify-center gap-3 mt-6">
       <responsive on="portable" class="flex gap-3 mt-6"/>
       <button type="button" class="btn btn-primary px-6"><responsive on="portable" class="btn btn-primary flex-1"/><on type="click"><action-ref name="searchShippingPolicies"/></on>$t:sirsoft-ecommerce.admin.shipping_policy.action.search</button>
+      <!-- 검색 조건 초기화. 폼 상태를 비우고 목록을 조건 없는 상태로 다시 세운다 -->
       <button type="button" class="btn btn-secondary px-6"><responsive on="portable" class="btn btn-secondary flex-1"/><on type="click"><set-state target="_local"><field name="filter"><field name="searchType" value="name"/><field name="search" value=""/><field name="shipping_methods" :value="[]"/><field name="charge_policies" :value="[]"/><field name="countries" :value="[]"/><field name="is_active" value=""/></field></set-state><!-- audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. --><navigate path="/admin/ecommerce/shipping-policies" :mergeQuery="false"/></on>$t:sirsoft-ecommerce.admin.shipping_policy.action.reset</button>
     </div>
   </div>

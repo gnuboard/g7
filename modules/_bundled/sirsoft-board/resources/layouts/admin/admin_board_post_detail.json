@@ -145,6 +145,7 @@
                                 "name": "Button",
                                 "actions": [
                                     {
+                                        "comment": "글 목록으로. 보던 검색·필터·페이지를 이고 간다 — 글 하나를 처리하고 목록으로 돌아가는 왕복이 이 화면의 기본 동선이다",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {

@@ -557,6 +557,7 @@
                                                                     }
                                                                 },
                                                                 {
+                                                                    "comment": "알림 문안 편집. 편집기는 모달이라 이 화면의 상태를 읽지 못하므로 대상 정의를 전역으로 옮겨 담은 뒤 연다",
                                                                     "type": "basic",
                                                                     "name": "Button",
                                                                     "actions": [
@@ -595,6 +596,7 @@
                                                                     "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.btn_edit"
                                                                 },
                                                                 {
+                                                                    "comment": "기본 문안으로 되돌리기. 기본 정의가 아니거나 손댄 문안이 있을 때만 보인다 — 되돌릴 것이 없으면 버튼 자체가 뜨지 않는다",
                                                                     "type": "basic",
                                                                     "name": "Button",
                                                                     "if": "{{!def.is_default || def.has_customized_templates === true}}",

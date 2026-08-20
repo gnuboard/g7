@@ -133,6 +133,7 @@
                                     "name": "Div",
                                     "actions": [
                                         {
+                                            "comment": "전체 게시판에 적용. 라디오 자체가 아니라 감싼 자리를 눌러도 고르게 하려고 클릭으로 값을 세운다",
                                             "type": "click",
                                             "handler": "setState",
                                             "params": {
@@ -182,6 +183,7 @@
                                     "name": "Div",
                                     "actions": [
                                         {
+                                            "comment": "고른 게시판에만 적용",
                                             "type": "click",
                                             "handler": "setState",
                                             "params": {
@@ -282,11 +284,11 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "일괄 적용 실행. 고른 항목만 덮어쓰므로 체크하지 않은 설정은 각 게시판의 값이 그대로 남는다",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
                                         {
-                                            "comment": "검증 실패 안내 토스트 - 적용할 항목 미선택",
                                             "handler": "toast",
                                             "if": "{{!(_local.bulkApplyFields ?? []).length}}",
                                             "params": {

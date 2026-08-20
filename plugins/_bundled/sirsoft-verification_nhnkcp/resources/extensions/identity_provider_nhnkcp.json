@@ -1,4 +1,5 @@
 {
+    "comment": "본인인증 화면에 NHN KCP 전용 안내를 끼워 넣는다. 인증 진행 상태(시작 전·진행 중)에 따라 다른 문안을 보여야 하는데 그 상태는 코어가 전역에 실어 주고 문안은 제공사마다 다르다",
     "extension_point": "identity_provider_ui:provider",
     "mode": "append",
     "priority": 100,

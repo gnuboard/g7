@@ -1696,6 +1696,7 @@
                     ]
                 },
                 {
+                    "comment": "프리셋 버튼. 저장된 조건 세트를 통째로 갈아끼우고 펼침 상태를 비운 뒤 주소를 바꾼다 — 지금 걸린 조건과 섞지 않는 것이 프리셋의 뜻이다",
                     "id": "preset_buttons_dynamic_{{presetIdx}}",
                     "type": "basic",
                     "name": "Div",
@@ -2289,6 +2290,7 @@
                                     "text": "$t:sirsoft-ecommerce.admin.product.action.search"
                                 },
                                 {
+                                    "comment": "필터 초기화. 폼 상태·펼침 상태·주소를 모두 비운다 — 한 곳만 비우면 남은 값이 다음 검색에 되살아난다",
                                     "type": "basic",
                                     "name": "Button",
                                     "responsive": {
@@ -2356,6 +2358,7 @@
                                     "text": "$t:sirsoft-ecommerce.admin.product.action.reset"
                                 },
                                 {
+                                    "comment": "지금 조건을 프리셋으로 저장. 조건을 전역으로 옮겨 담은 뒤 이름 입력 창을 연다 — 창은 별도 컨텍스트라 이 화면의 필터를 읽지 못한다",
                                     "id": "preset_save_button_desktop",
                                     "type": "basic",
                                     "name": "Button",

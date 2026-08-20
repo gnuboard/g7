@@ -125,6 +125,7 @@
     <div data-ref="filter_actions" class="flex justify-center gap-3 mt-6">
       <responsive on="portable" class="flex gap-3 mt-6"/>
       <button type="button" class="btn btn-primary px-6"><responsive on="portable" class="btn btn-primary flex-1"/><on type="click"><action-ref name="searchNotificationLogs"/></on>$t:admin.notification_log.filter.search_button</button>
+      <!-- 검색 실행. 폼에 담아 둔 조건을 주소로 옮겨 목록을 다시 세운다 -->
       <button type="button" class="btn btn-secondary px-6"><responsive on="portable" class="btn btn-secondary flex-1"/><on type="click"><sequence><set-state target="local"><field name="filter"><field name="searchType" value="all"/><field name="search" value=""/><field name="extensionTypes" :value="[]"/><field name="statuses" :value="[]"/></field></set-state><!-- audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. --><navigate path="/admin/notification-logs" :mergeQuery="false"/></sequence></on>$t:admin.notification_log.filter.reset_button</button>
     </div>
   </div>

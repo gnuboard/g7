@@ -173,7 +173,10 @@ test.describe('게시판 관리 화면 — 라우트 파라미터 · 필터 초�
     await search.press('Enter');
     await page.waitForLoadState('networkidle', { timeout: 30_000 });
 
-    expect(new URL(page.url()).searchParams.get('page')).toBe('1');
+    // 페이지 되돌림은 `page` 를 빈 값으로 덮어 키 자체를 지우는 형태로도 표현된다
+    // (주소에 키가 없으면 1페이지). 표기가 아니라 "첫 페이지로 돌아왔는가" 를 본다 —
+    // 되돌리지 못한 회귀는 `2` 로 남으므로 어느 표기든 그대로 걸린다.
+    expect(new URL(page.url()).searchParams.get('page') ?? '1').toBe('1');
   });
 
   // @scenario filter=category, page_origin=later

@@ -249,6 +249,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "이 버전으로 되돌린다. 되돌리기도 새 버전으로 쌓이므로 이력이 끊기지 않는다",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [

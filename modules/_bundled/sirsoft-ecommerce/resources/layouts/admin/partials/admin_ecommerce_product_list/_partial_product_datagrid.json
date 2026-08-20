@@ -34,6 +34,7 @@
                     }
                 },
                 {
+                    "comment": "페이지 이동. 펼쳐 둔 옵션 행과 그 선택을 먼저 비운다 — 페이지가 바뀌면 그 행들은 더 이상 화면에 없는 상품이고, 남겨 두면 보이지도 않는 옵션이 일괄 처리 대상에 실린다",
                     "type": "change",
                     "event": "onPageChange",
                     "handler": "sequence",
@@ -800,6 +801,7 @@
                                         "text": "$t:sirsoft-ecommerce.admin.product.table.options.load_failed"
                                     },
                                     {
+                                        "comment": "옵션 목록을 다시 불러온다. 실패한 행만 다시 시도하므로 나머지 행의 펼침 상태는 건드리지 않는다",
                                         "type": "basic",
                                         "name": "Button",
                                         "actions": [

@@ -1,5 +1,7 @@
+<!-- 위지윅 에디터가 본문에 끼워 넣은 이미지를 운영자가 한자리에서 보고 지우는 화면. 에디터는 업로드 시점에 파일을 남기지만 그 글이 지워져도 파일은 남으므로, 어느 파일이 아직 본문에 인용되고 있는지(참조 여부)가 이 목록의 존재 이유다 -->
 <layout name="ckeditor5_uploads" version="1.0.0" extends="_admin_base">
   <meta title="$t:sirsoft-ckeditor5.admin.uploads.title" description="$t:sirsoft-ckeditor5.admin.uploads.description"/>
+  <!-- 업로드 목록. 필터·정렬·페이지를 전부 URL 쿼리에서 읽으므로 새로고침·뒤로가기로도 같은 목록이 복원된다. 참조 여부는 본문을 훑어야 알 수 있어 서버가 훑는 범위에 상한이 있고, 그 상한에 걸리면 meta.scan_limited 로 알려 온다 -->
   <data-source id="ckeditor5Uploads" label_key="$t:sirsoft-ckeditor5.editor.data_source.ckeditor5Uploads" type="api" endpoint="/api/plugins/sirsoft-ckeditor5/admin/uploads" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
     <params page="{{query.page || 1}}" per_page="{{query.per_page || 20}}" search="{{query.search}}" referenced="{{query.referenced}}" date_from="{{query.date_from}}" date_to="{{query.date_to}}" sort_by="{{query.sort_by}}" sort_order="{{query.sort_order}}"/>
     <error-handling>
@@ -39,11 +41,13 @@
   <transition-overlay>
     <wait-for>ckeditor5Uploads</wait-for>
   </transition-overlay>
+  <!-- 필터 입력을 URL 로 밀어 넣어 목록을 다시 부른다. page 를 빈 값으로 덮는 것이 핵심이다 — 3페이지를 보던 중 검색하면 결과가 3페이지에 못 미쳐 빈 화면이 열린다 -->
   <action name="searchUploads">
     <navigate path="/admin/plugins/sirsoft-ckeditor5/uploads" :replace="true" :mergeQuery="true" transition_overlay_target="ckeditor5_uploads_datagrid__body">
       <query page="" search="{{_local.filter.search || ''}}" referenced="{{_local.filter.referenced || 'all'}}" date_from="{{_local.filter.dateFrom || ''}}" date_to="{{_local.filter.dateTo || ''}}"/>
     </navigate>
   </action>
+  <!-- 초기화는 두 곳을 함께 비운다 — 폼 상태를 비우지 않으면 URL 만 깨끗해지고 입력칸에는 지운 값이 남아 다음 검색에 되살아난다 -->
   <action name="clearFilters">
     <sequence>
       <set-state target="local">
@@ -105,6 +109,7 @@
             <icon name="fa-solid fa-search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm pointer-events-none"/>
             <input name="search" type="text" placeholder="$t:sirsoft-ckeditor5.admin.uploads.filter.search_placeholder" class="input pl-10" value="{{_local.filter.search || ''}}">
               <on type="change">
+                <!-- 타이핑은 폼 상태에만 담아 둔다. 여기서 목록을 부르지 않는 것은 의도다 — 검색 실행은 Enter 또는 검색 버튼이 맡는다 -->
                 <set-state target="local" filter.search="{{$event.target.value}}"/>
               </on>
               <on type="keydown" key="Enter">
@@ -119,6 +124,7 @@
               <option value="unreferenced">$t:sirsoft-ckeditor5.admin.uploads.filter.unreferenced_only</option>
             </options>
             <on type="change">
+              <!-- 참조 여부는 고르는 즉시 목록을 다시 부른다 — 값이 세 가지뿐이라 따로 실행 버튼을 누르게 할 이유가 없다. 폼 상태를 먼저 채워야 뒤이은 검색 액션이 그 값을 URL 로 나른다 -->
               <sequence>
                 <set-state target="local" filter.referenced="{{$event.target.value}}"/>
                 <action-ref name="searchUploads"/>
@@ -127,11 +133,13 @@
           </select>
           <input name="date_from" type="date" class="input w-40" title="$t:sirsoft-ckeditor5.admin.uploads.filter.date_from" value="{{_local.filter.dateFrom || ''}}">
             <on type="change">
+              <!-- 기간 시작일도 담아만 둔다 — 시작·종료를 따로 고르는 동안 매번 목록을 부르면 반쪽짜리 기간으로 조회가 나간다 -->
               <set-state target="local" filter.dateFrom="{{$event.target.value}}"/>
             </on>
           </input>
           <input name="date_to" type="date" class="input w-40" title="$t:sirsoft-ckeditor5.admin.uploads.filter.date_to" value="{{_local.filter.dateTo || ''}}">
             <on type="change">
+              <!-- 종료일도 마찬가지다. 두 날짜가 다 정해진 뒤 검색 버튼이 한 번에 URL 로 싣는다 -->
               <set-state target="local" filter.dateTo="{{$event.target.value}}"/>
             </on>
           </input>
@@ -194,19 +202,23 @@
           </cell>
         </column>
         <on type="change" event="onPageChange">
+          <!-- 페이지 이동은 걸려 있던 검색·필터를 그대로 이고 간다(mergeQuery). 표 몸통만 전환 오버레이로 덮어 헤더·필터가 깜빡이지 않는다 -->
           <navigate path="/admin/plugins/sirsoft-ckeditor5/uploads" :replace="true" :mergeQuery="true" transition_overlay_target="ckeditor5_uploads_datagrid__body">
             <query page="{{$args[0]}}"/>
           </navigate>
         </on>
         <on type="change" event="onSortChange">
+          <!-- 정렬을 바꾸면 page 를 비운다 — 순서가 달라졌는데 보던 페이지 번호를 유지하면 전혀 다른 구간이 열린다 -->
           <navigate path="/admin/plugins/sirsoft-ckeditor5/uploads" :replace="true" :mergeQuery="true" transition_overlay_target="ckeditor5_uploads_datagrid__body">
             <query page="" sort_by="{{$args[0]}}" sort_order="{{$args[1]}}"/>
           </navigate>
         </on>
         <on type="action" event="onSelectionChange">
+          <!-- 선택은 전역에 둔다 — 일괄 삭제 바와 확인 모달이 표 밖에 있어 같은 목록을 공유해야 하기 때문이다. 표가 selectionScope="page" 라 화면을 벗어난 행은 선택이 따라오지 않는다 -->
           <set-state target="global" selectedIds_ckeditor5_uploads="{{$args[0]}}"/>
         </on>
         <on type="action" event="onRowAction">
+          <!-- 행 삭제 버튼. 대상 행을 전역에 담은 뒤에야 모달을 연다 — 순서가 뒤집히면 모달이 직전 대상을 그린 채 뜬다 -->
           <switch>
             <case when="delete">
               <set-state target="global" modal_data="{{$args[1]}}">
@@ -221,6 +233,7 @@
     </div>
   </slot>
   <modal>
+    <!-- 행의 삭제 버튼으로 열린다. 아직 본문에 인용 중인 이미지도 지울 수 있으므로(목록이 참조 배지로 알려 줄 뿐 막지는 않는다) 확인을 한 단계 둔다 -->
     <modal data-ref="delete_confirm_modal" title="$t:sirsoft-ckeditor5.admin.uploads.delete.confirm_title" size="sm">
       <meta editor_label="$t:sirsoft-ckeditor5.admin.uploads.delete.confirm_title"/>
       <div class="py-2">
@@ -235,6 +248,7 @@
         </button>
         <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeletingUpload}}">
           <on type="click">
+            <!-- 진행 플래그를 먼저 세워 두 버튼을 잠근다 — 삭제는 되돌릴 수 없어 연타로 같은 요청이 두 번 나가는 것을 막아야 한다. 성공·실패·403 세 갈래 모두에서 플래그를 반드시 되돌린다 -->
             <sequence>
               <set-state target="global" :isDeletingUpload="true"/>
               <api-call :auth_required="true" target="/api/plugins/sirsoft-ckeditor5/admin/uploads/{{_global.modal_data.id}}" method="DELETE">
@@ -265,6 +279,7 @@
     </modal>
   </modal>
   <modal>
+    <!-- 체크한 행이 하나라도 있을 때만 뜨는 일괄 삭제 바에서 열린다. 대상은 지금 화면에 보이는 선택분이며, 확인 문구가 그 건수를 그대로 되읽어 준다 -->
     <modal data-ref="bulk_delete_confirm_modal" title="$t:sirsoft-ckeditor5.admin.uploads.bulk_delete.confirm_title" size="sm">
       <meta editor_label="$t:sirsoft-ckeditor5.admin.uploads.bulk_delete.confirm_title"/>
       <div class="py-2">
@@ -279,6 +294,7 @@
         </button>
         <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeletingUpload}}">
           <on type="click">
+            <!-- 성공하면 선택 목록도 함께 비운다 — 지워진 행의 id 가 선택에 남아 있으면 다음 일괄 처리가 이미 없는 대상을 싣는다. 서버가 건별 결과를 요약해 주므로 안내 문구는 응답 것을 그대로 쓴다 -->
             <sequence>
               <set-state target="global" :isDeletingUpload="true"/>
               <api-call :auth_required="true" target="/api/plugins/sirsoft-ckeditor5/admin/uploads/bulk-delete" method="POST">

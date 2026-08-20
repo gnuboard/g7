@@ -506,6 +506,7 @@
                     "text": "$t:admin.notification_log.filter.search_button"
                 },
                 {
+                    "comment": "검색 실행. 폼에 담아 둔 조건을 주소로 옮겨 목록을 다시 세운다",
                     "type": "basic",
                     "name": "Button",
                     "responsive": {

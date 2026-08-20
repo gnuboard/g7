@@ -49,7 +49,16 @@
     </div>
     <div data-ref="bulk_price_footer" class="flex justify-end gap-2 mt-6">
       <button type="button" class="btn btn-outline"><on type="click"><close-modal/></on>$t:sirsoft-ecommerce.admin.product.modal.common.cancel</button>
-      <button type="button" class="btn btn-primary"><on type="click"><set-state target="global" bulkPriceCondition="{{(() => { const unit = (_local.bulkPriceUnit || 'won') === 'percent' ? '%' : ((_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency)); const val = _local.bulkPriceValue || 0; return (_local.bulkPriceMethod || 'increase') === 'fixed' ? val + unit : ((_local.bulkPriceMethod || 'increase') === 'increase' ? '+' : '-') + val + unit; })()}}" bulkPriceMethod="{{_local.bulkPriceMethod || 'increase'}}" bulkPriceValue="{{_local.bulkPriceValue || 0}}" bulkPriceUnit="{{_local.bulkPriceUnit || 'won'}}"/></on><on type="click"><close-modal/></on>$t:sirsoft-ecommerce.admin.product.modal.common.change</button>
+      <button type="button" class="btn btn-primary">
+        <on type="click">
+          <!-- 적용. 확인 창에 보여 줄 조건 문구를 여기서 만든다 — 창은 별도 컨텍스트라 이 창의 입력값을 다시 계산할 수 없다. 단위 기호는 기본 통화 설정에서 끌어오므로 원화가 아닌 상점에서도 맞는 기호가 붙는다 -->
+          <set-state target="global" bulkPriceCondition="{{(() => { const unit = (_local.bulkPriceUnit || 'won') === 'percent' ? '%' : ((_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency)); const val = _local.bulkPriceValue || 0; return (_local.bulkPriceMethod || 'increase') === 'fixed' ? val + unit : ((_local.bulkPriceMethod || 'increase') === 'increase' ? '+' : '-') + val + unit; })()}}" bulkPriceMethod="{{_local.bulkPriceMethod || 'increase'}}" bulkPriceValue="{{_local.bulkPriceValue || 0}}" bulkPriceUnit="{{_local.bulkPriceUnit || 'won'}}"/>
+        </on>
+        <on type="click">
+          <close-modal/>
+        </on>
+        $t:sirsoft-ecommerce.admin.product.modal.common.change
+      </button>
     </div>
   </modal>
 </partial>

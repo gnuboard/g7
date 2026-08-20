@@ -115,11 +115,11 @@
                             "if": "{{$parent._local.isClearingCache !== true}}",
                             "actions": [
                                 {
+                                    "comment": "캐시 비우기. 성공·실패 어느 쪽이든 처리중 표시를 먼저 내린다 — 실패하면 창을 열어 둔 채 다시 시도할 수 있어야 한다",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
                                         {
-                                            "comment": "캐시 비우기. 성공·실패 어느 쪽이든 처리중 표시를 먼저 내린다 — 실패 시 창을 열어 둔 채 다시 시도할 수 있어야 한다.",
                                             "handler": "setState",
                                             "params": {
                                                 "target": "$parent._local",

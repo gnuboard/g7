@@ -277,6 +277,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "구간 단위값. 입력할 때마다 구간 표 전체를 다시 계산해야 해서 전용 핸들러가 맡고, 타이핑 도중 매 글자마다 재계산하지 않도록 짧게 묶어 처리한다",
                                                     "type": "change",
                                                     "handler": "sirsoft-ecommerce.updateUnitValue",
                                                     "params": {

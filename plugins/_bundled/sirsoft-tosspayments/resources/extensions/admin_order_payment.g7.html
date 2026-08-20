@@ -1,3 +1,4 @@
+<!-- 관리자 주문 상세에 토스페이먼츠 결제 정보 패널을 덧붙인다. 가상계좌 입금 정보와 에스크로 여부처럼 이 PG 에만 있는 값이라 코어 주문 화면이 알 수 없다 -->
 <extension target-layout="admin_ecommerce_order_detail">
   <inject target-id="tab_content_area" position="append_child">
     <div data-ref="tosspayments_payment_panel" data-if="{{(order.data?.payments?.filter(p => p.pg_provider === 'tosspayments' &amp;&amp; p.transaction_id) ?? []).length > 0}}" class="admin-card">

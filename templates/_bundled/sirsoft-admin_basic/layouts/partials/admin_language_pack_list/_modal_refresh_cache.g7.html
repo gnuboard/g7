@@ -7,6 +7,7 @@
     <p class="text-body">$t:admin.language_packs.modal.refresh_cache.body</p>
     <div class="flex justify-end gap-2 mt-6">
       <button type="button" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 text-sm font-medium rounded-md"><on event="onClick"><close-modal target="language_pack_refresh_cache_modal"/></on>$t:admin.language_packs.actions.cancel</button>
+      <!-- 번역 캐시 비우기. 언어팩 파일을 바꿔도 캐시가 남아 있으면 화면 문구가 그대로라, 그 캐시를 운영자가 직접 비우는 자리다 -->
       <button type="button" class="px-4 py-2 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white text-sm font-medium rounded-md"><on event="onClick"><api-call :auth_required="true" target="/api/admin/language-packs/refresh-cache" method="POST"><success><toast type="success" message="$t:admin.language_packs.messages.refresh_cache_done"/><close-modal target="language_pack_refresh_cache_modal"/><refetch-data-source dataSourceId="language_packs"/></success><fail><toast type="error" message="{{error.message ?? '$t:admin.language_packs.messages.refresh_cache_failed'}}"/></fail></api-call></on>$t:admin.language_packs.actions.refresh_cache_now</button>
     </div>
   </modal>

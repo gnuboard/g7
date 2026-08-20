@@ -86,6 +86,7 @@
       <div data-ref="footer_buttons" class="sticky-footer-buttons-between">
         <button data-ref="footer_list_button" type="button" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors">
           <on type="click">
+            <!-- 취소. 게시판 목록으로 돌아가며 보던 목록 상태를 이고 간다 -->
             <navigate path="/admin/boards" :mergeQuery="true">
               <query/>
             </navigate>
@@ -95,6 +96,7 @@
         <div class="flex-center gap-3">
           <button data-ref="footer_cancel_button" type="button" class="btn btn-secondary">
             <on type="click">
+              <!-- 취소(화면 아래 버튼). 위쪽 취소와 같은 자리로 돌아간다 -->
               <navigate path="/admin/boards" :mergeQuery="true">
                 <query/>
               </navigate>

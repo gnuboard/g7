@@ -116,11 +116,20 @@ class RegisterCashReceiptProviderListener implements HookListenerInterface
             ];
         }
 
+        $identifier = (string) ($payload['identifier'] ?? '');
+
         $body = [
             'amount' => (int) ($payload['amount'] ?? 0),
             'orderId' => $orderId,
             'orderName' => (string) ($payload['order_name'] ?? ''),
-            'customerIdentityNumber' => (string) ($payload['identifier'] ?? ''),
+            // 소비자 인증수단은 상점의 토스 API 버전에 따라 요구하는 필드명이 다르다 —
+            // 2022-07-27 이상은 `customerIdentityNumber`, 그 이전은 `registrationNumber` 다.
+            // 토스 레퍼런스가 두 필드를 모두 요청 본문 파라미터로 기재하고 있고, 한쪽만 보내면
+            // 다른 버전의 상점에서 `INVALID_REQUIRED_PARAM` 으로 발급이 막힌다(샌드박스 실측:
+            // customerIdentityNumber 단독 400 / registrationNumber 단독 200 / 둘 다 200).
+            // 상점 버전을 플러그인이 알 수 없으므로 둘 다 싣는다.
+            'customerIdentityNumber' => $identifier,
+            'registrationNumber' => $identifier,
             // 토스는 한글 문자열을 요구한다. 코어 enum(income/expense) 변환은 여기서만 수행한다.
             'type' => $this->resolveTossType($payload['type'] ?? null),
         ];
@@ -146,7 +155,10 @@ class RegisterCashReceiptProviderListener implements HookListenerInterface
                 'error_message' => null,
                 'receipt_key' => $response['receiptKey'] ?? null,
                 'receipt_url' => $response['receiptUrl'] ?? null,
-                'issue_number' => $response['issueNumber'] ?? null,
+                // 발급번호도 API 버전에 따라 키가 갈린다 — 2022-07-27 이상은 `issueNumber`,
+                // 그 이전은 `approvalNumber` 만 돌려준다(샌드박스 실측). 둘 다 9자 이내의
+                // 발급 식별번호이므로 있는 쪽을 쓴다. 없으면 국세청 승인 전이라 null 이다.
+                'issue_number' => $response['issueNumber'] ?? $response['approvalNumber'] ?? null,
                 'raw_response' => $response,
             ];
         } catch (\Exception $e) {

@@ -20,6 +20,7 @@
         </div>
         <button data-ref="detail_button" data-if="{{item.id != route.id}}" class="flex-center gap-1.5 px-3 py-1.5 text-sm bg-gray-800 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-600 transition-colors">
           <on type="click">
+            <!-- 댓글 작성자의 회원 상세로. 같은 사람이 여러 건에 걸려 있는지 확인하는 자리다 -->
             <navigate path="/admin/board/{{route.slug}}/post/{{item.id}}" :mergeQuery="true">
               <query/>
             </navigate>

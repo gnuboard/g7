@@ -48,6 +48,7 @@
                             "text": "$t:common.cancel"
                         },
                         {
+                            "comment": "메뉴 삭제. 하위 메뉴가 딸려 있으면 서버가 막으므로 여기서는 요청만 보내고 사유는 응답 안내로 전한다",
                             "type": "basic",
                             "name": "Button",
                             "actions": [

@@ -158,11 +158,13 @@
   <action name="resetExpandedOptionState">
     <set-state target="local" :expandedRows="[]" :optionsLoadingIds="[]" :optionsErrorIds="[]" :selectedOptionIds="[]"/>
   </action>
+  <!-- 필터 값을 URL 로 옮겨 목록을 다시 세운다. 값이 비면 키를 아예 빼는 것(null)이 요점이다 — 빈 문자열로 남기면 서버가 그 조건을 걸린 것으로 읽어 결과가 통째로 사라진다. 페이지는 늘 1로 되돌린다 -->
   <action name="searchProductsNavigate">
     <navigate path="/admin/ecommerce/products" :replace="true" :mergeQuery="true" transition_overlay_target="product_datagrid__body">
       <query :page="1" search_field="{{$computed.filterSearchField !== 'all' ? $computed.filterSearchField : null}}" search_keyword="{{$computed.filterSearchKeyword || null}}" category_id1="{{_local.filter.category1 || null}}" category_id2="{{_local.filter.category2 || null}}" category_id3="{{_local.filter.category3 || null}}" category_id4="{{_local.filter.category4 || null}}" no_category="{{(_local.filter.noCategoryRegistered ?? (query.no_category === 'true')) ? true : null}}" sales_status="{{((_local.filter.salesStatus ?? query['sales_status[]'] ?? []) || []).length > 0 ? (_local.filter.salesStatus ?? query['sales_status[]']) : null}}" display_status="{{$computed.filterDisplayStatus !== 'all' ? $computed.filterDisplayStatus : null}}" brand_id="{{$computed.filterBrandId || null}}" no_brand="{{(_local.filter.noBrandRegistered ?? (query.no_brand === 'true')) ? true : null}}" tax_status="{{$computed.filterTaxStatus !== 'all' ? $computed.filterTaxStatus : null}}" date_type="{{$computed.filterDateType}}" start_date="{{$computed.filterStartDate || null}}" end_date="{{$computed.filterEndDate || null}}" price_type="{{$computed.filterPriceType}}" min_price="{{$computed.filterMinPrice || null}}" max_price="{{$computed.filterMaxPrice || null}}" min_stock="{{$computed.filterMinStock || null}}" max_stock="{{$computed.filterMaxStock || null}}" shipping_policy_id="{{$computed.filterShippingPolicy || null}}"/>
     </navigate>
   </action>
+  <!-- 검색 진입점. 주소를 바꾸기 전에 펼쳐 둔 옵션 행 상태를 먼저 비운다 — 결과가 바뀌면 그 행들은 더 이상 같은 상품이 아니다 -->
   <action name="searchProducts">
     <action-ref name="resetExpandedOptionState"/>
     <action-ref name="searchProductsNavigate"/>
@@ -235,6 +237,7 @@
           </button>
           <button type="button" class="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{products?.data?.abilities?.can_create !== true}}">
             <on type="click">
+              <!-- 새 상품 등록. 등록을 취소하고 돌아왔을 때 보던 목록이 그대로 서도록 목록 상태를 넘긴다 -->
               <navigate path="/admin/ecommerce/products/create" :mergeQuery="true">
                 <query/>
               </navigate>
@@ -290,11 +293,13 @@
             </button>
           </div>
           <div class="flex-1"/>
+          <!-- 일괄 적용. 고른 값과 대상(상품·옵션 양쪽)을 전역으로 옮긴 뒤 확인 데이터를 만들고 창을 연다 — 창은 별도 컨텍스트라 이 화면의 폼 상태를 읽지 못한다 -->
           <button type="button" data-testid="product-bulk-apply" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white dark:text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{((!_local.selectedItems || _local.selectedItems.length === 0) &amp;&amp; (!_local.selectedOptionIds || _local.selectedOptionIds.length === 0)) || products?.data?.abilities?.can_update !== true}}"><on type="click"><set-state target="global" bulkSalesStatus="{{_local.bulkSalesStatus}}" bulkDisplayStatus="{{_local.bulkDisplayStatus}}" bulkSelectedItems="{{_local.selectedItems}}" bulkSelectedOptionIds="{{_local.selectedOptionIds}}"/><action handler="sirsoft-ecommerce.buildConfirmData"/><open-modal target="modal_bulk_confirm"/></on>$t:sirsoft-ecommerce.admin.product.bulk_apply</button>
         </div>
         <div data-ref="table_header_bar" class="flex-between flex-wrap gap-3 mb-4">
           <span class="text-label">$t:sirsoft-ecommerce.admin.product.total_count|count={{products?.data?.pagination?.total || 0}}</span>
           <div class="flex-center gap-3">
+            <!-- 정렬 선택. 값 하나에 필드와 방향이 함께 담겨 있고, 바꿀 때 펼침 상태를 비운 뒤 주소를 바꾼다 — 두 일을 함께 해야 해서 아래 블록이 두 액션으로 나뉜다 -->
             <select name="sortBy" class="w-32 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}">
               <options>
                 <option value="created_at_desc">$t:sirsoft-ecommerce.admin.product.sort.latest</option>

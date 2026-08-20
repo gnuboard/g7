@@ -589,11 +589,12 @@
                                                                 "if": "{{row.update_available && row.status !== 'uninstalled'}}",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "업데이트 창 열기. 고친 레이아웃 여부와 변경 이력을 미리 물어 둔다 — 전역값을 기본으로 되돌리고 시작하는 것은 직전 템플릿의 결과가 남아 있기 때문이다",
                                                                         "type": "click",
                                                                         "handler": "sequence",
                                                                         "actions": [
                                                                             {
-                                                                                "comment": "업데이트 창 열기 — 고친 레이아웃 여부와 변경 이력을 미리 물어 둔다.\n                         전역값을 기본값으로 되돌리고 시작하는 것은 직전 템플릿의 결과가 남아 있기 때문이다.",
+                                                                                "comment": "업데이트 창 열기 — 고친 레이아웃 여부와 변경 이력을 미리 물어 둔다.\n                           전역값을 기본값으로 되돌리고 시작하는 것은 직전 템플릿의 결과가 남아 있기 때문이다.",
                                                                                 "handler": "setState",
                                                                                 "params": {
                                                                                     "target": "global",

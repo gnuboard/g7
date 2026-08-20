@@ -556,6 +556,7 @@
                                     },
                                     "children": [
                                         {
+                                            "comment": "오늘. 기간 프리셋은 두 날짜를 한 번에 바꾸고 페이지를 1로 되돌린다 — 좁아진 기간에서 보던 페이지 번호는 결과 범위를 벗어난다",
                                             "type": "basic",
                                             "name": "Button",
                                             "actions": [
@@ -581,6 +582,7 @@
                                             "text": "$t:admin.schedules.filters.preset.today"
                                         },
                                         {
+                                            "comment": "최근 7일",
                                             "type": "basic",
                                             "name": "Button",
                                             "actions": [
@@ -606,6 +608,7 @@
                                             "text": "$t:admin.schedules.filters.preset.week"
                                         },
                                         {
+                                            "comment": "최근 30일",
                                             "type": "basic",
                                             "name": "Button",
                                             "actions": [
@@ -631,6 +634,7 @@
                                             "text": "$t:admin.schedules.filters.preset.month"
                                         },
                                         {
+                                            "comment": "최근 90일",
                                             "type": "basic",
                                             "name": "Button",
                                             "actions": [
@@ -656,6 +660,7 @@
                                             "text": "$t:admin.schedules.filters.preset.3months"
                                         },
                                         {
+                                            "comment": "최근 180일",
                                             "type": "basic",
                                             "name": "Button",
                                             "actions": [
@@ -681,6 +686,7 @@
                                             "text": "$t:admin.schedules.filters.preset.6months"
                                         },
                                         {
+                                            "comment": "최근 1년",
                                             "type": "basic",
                                             "name": "Button",
                                             "actions": [

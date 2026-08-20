@@ -5,6 +5,7 @@ namespace Plugins\Sirsoft\Gdpr\Services;
 use App\Extension\HookManager;
 use App\Services\PluginSettingsService;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Plugins\Sirsoft\Gdpr\Enums\ConsentAction;
 use Plugins\Sirsoft\Gdpr\Enums\ConsentSource;
 use Plugins\Sirsoft\Gdpr\Models\GdprUserConsent;

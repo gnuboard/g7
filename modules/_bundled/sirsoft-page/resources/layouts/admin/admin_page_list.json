@@ -136,6 +136,7 @@
                                 "name": "Button",
                                 "actions": [
                                     {
+                                        "comment": "새 페이지 작성. 작성 취소로 목록에 돌아왔을 때 보던 자리가 유지되도록 목록 상태를 넘긴다",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
@@ -701,6 +702,7 @@
                                 }
                             },
                             {
+                                "comment": "페이지 이동. 걸려 있던 검색·필터는 그대로 두고 페이지 번호만 바꾼다. 표 몸통만 전환 오버레이로 덮어 필터 영역이 깜빡이지 않는다",
                                 "type": "change",
                                 "event": "onPageChange",
                                 "handler": "navigate",

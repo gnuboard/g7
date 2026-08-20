@@ -79,6 +79,7 @@
                   <set-state target="_local" productSearchKeyword="{{$event.target.value}}"/>
                 </on>
               </input>
+              <!-- 입력한 회원을 찾아 후보 목록에 채운다. 쿠폰 적용 대상을 회원으로 좁힐 때 쓰며, 아이디를 외우지 않아도 되게 이름·아이디 어느 쪽으로도 찾는다 -->
               <button type="button" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 dark:bg-gray-500 dark:hover:bg-gray-600 text-white rounded-lg text-sm"><on type="click"><api-call auth_mode="required" target="/api/modules/sirsoft-ecommerce/admin/products" method="GET"><success><set-state target="_local" productSearchResults="{{response?.data?.data ?? response?.data ?? []}}" productSearchPage="{{response?.data?.pagination?.current_page ?? 1}}" productSearchLastPage="{{response?.data?.pagination?.last_page ?? null}}" productSearchHasMore="{{response?.data?.pagination?.has_more_pages ?? false}}" productSearchTotal="{{response?.data?.pagination?.total ?? 0}}"/></success><query search_field="{{_local.productSearchField ?? 'all'}}" search_keyword="{{_local.productSearchKeyword}}" :per_page="10" :page="1"/></api-call></on>$t:common.search</button>
             </div>
           </div>

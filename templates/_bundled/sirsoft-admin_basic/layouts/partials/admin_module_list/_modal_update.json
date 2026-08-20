@@ -459,6 +459,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "검색 인덱스 재생성 여부. 전역 한 곳에서 뒤집으므로 창을 다시 열 때 이월되지 않도록 시드와 제출 뒤 양쪽에서 해제한다 — 재생성은 운영자가 이 창에서 명시로 고를 때만 수행된다",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {

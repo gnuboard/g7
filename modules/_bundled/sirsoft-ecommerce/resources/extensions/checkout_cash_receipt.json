@@ -51,7 +51,7 @@
                             "props": {
                                 "type": "checkbox",
                                 "name": "cash_receipt_requested",
-                                "checked": "{{_local.cashReceiptRequested ?? false}}",
+                                "checked": "{{!!_local.cashReceiptRequested && !!_local.checkoutExtraPayload?.cash_receipt_requested}}",
                                 "className": "w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
                             }
                         },
@@ -66,11 +66,11 @@
                     ]
                 },
                 {
-                    "comment": "신청 시에만 렌더 (M4 — 클릭 전후 필드 수 0 → 3)",
+                    "comment": "신청 시에만 렌더 (M4 — 클릭 전후 필드 수 0 → 3).\n         표시 상태는 조각 미러(cashReceiptRequested)와 확장 칸(checkoutExtraPayload) 양쪽이\n         살아 있을 때만 참이다. 결제수단을 바꾸면 템플릿이 확장 칸만 비우므로, 미러만 읽으면\n         칸은 비었는데 체크는 남아 \"신청함으로 보이지만 주문에는 실리지 않는\" 상태가 된다.",
                     "id": "ext_checkout_cash_receipt_fields",
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{!!_local.cashReceiptRequested}}",
+                    "if": "{{!!_local.cashReceiptRequested && !!_local.checkoutExtraPayload?.cash_receipt_requested}}",
                     "props": {
                         "className": "mt-3 space-y-3"
                     },
@@ -246,6 +246,7 @@
                                     },
                                     "actions": [
                                         {
+                                            "comment": "식별번호를 입력할 때마다 주문서가 서버로 보낼 꾸러미를 통째로 다시 만든다 — 개별 키만 고치면 신청 여부·유형과 어긋난 채 전송될 수 있다",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {

@@ -17,6 +17,7 @@
       </div>
     </div>
     <div class="modal-footer-buttons">
+      <!-- 기본 정책 지정. 성공하면 목록을 다시 부르므로 다른 정책의 기본 표시가 풀린 것도 함께 반영된다 — 그래서 화면에서 직접 되돌리는 처리가 없다 -->
       <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isSettingDefault}}"><on type="click"><remount componentId="is_default_toggle_{{_global.targetDefaultPolicy?.id}}"/><set-state target="global" :targetDefaultPolicy="null"/><close-modal/></on>$t:sirsoft-ecommerce.admin.shipping_policy.modal.set_default.cancel</button>
       <button type="button" class="flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isSettingDefault}}">
         <on type="click">

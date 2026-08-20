@@ -136,6 +136,7 @@
                                         "name": "Button",
                                         "actions": [
                                             {
+                                                "comment": "취소하고 목록으로. 목록 상태를 그대로 넘겨 보던 페이지로 돌아간다",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {

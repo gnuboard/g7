@@ -73,6 +73,7 @@
         </column>
         <column field="order_number" header="$t:sirsoft-ecommerce.admin.order.column.order_number" width="140px" :sortable="true" :required="true">
           <cell>
+            <!-- 주문번호를 눌러 상세로. 보던 목록 상태를 이고 가므로 상세에서 돌아오면 같은 자리가 열린다 -->
             <span class="font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline"><on type="click"><navigate path="/admin/ecommerce/orders/{{row.order_number}}" :mergeQuery="true"><query/></navigate></on>{{row.order_number}}</span>
           </cell>
         </column>

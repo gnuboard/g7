@@ -176,6 +176,7 @@
                                     "name": "Select",
                                     "actions": [
                                         {
+                                            "comment": "스케줄 종류. 종류에 따라 아래 입력칸 구성이 달라지므로 값이 바뀌면 폼 전체가 다시 그려진다. 전역에 담는 것은 이 창이 목록과 별도 컨텍스트여서다",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -495,6 +496,7 @@
                                     "name": "Toggle",
                                     "actions": [
                                         {
+                                            "comment": "겹침 방지. 앞 실행이 끝나지 않았으면 이번 회차를 건너뛴다",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -545,6 +547,7 @@
                                     "name": "Toggle",
                                     "actions": [
                                         {
+                                            "comment": "점검 모드에서도 실행. 꺼 두면 사이트를 점검 모드로 돌린 동안 이 작업은 쉰다",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -595,6 +598,7 @@
                                     "name": "Toggle",
                                     "actions": [
                                         {
+                                            "comment": "사용 여부. 정의는 남기고 실행만 멈추고 싶을 때 쓴다",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {

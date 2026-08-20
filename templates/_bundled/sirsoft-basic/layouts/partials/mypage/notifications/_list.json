@@ -127,6 +127,7 @@
                             },
                             "children": [
                                 {
+                                    "comment": "읽지 않은 알림을 모두 읽음으로 표시한다. 목록이 비어 있으면 버튼 자체가 뜨지 않는다",
                                     "type": "basic",
                                     "name": "Button",
                                     "if": "{{userNotifications.data.data && userNotifications.data.data.length > 0}}",

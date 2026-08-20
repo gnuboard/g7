@@ -15,7 +15,15 @@
         </column>
         <column field="order_number" header="$t:sirsoft-ecommerce.admin.order.column.order_number" width="140px" :sortable="true" :required="true">
           <cell>
-            <span class="font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline"><on type="click"><navigate path="/admin/ecommerce/orders/{{row.order_number}}" :mergeQuery="true"><query/></navigate></on>{{row.order_number}}</span>
+            <span class="font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline">
+              <on type="click">
+                <!-- 주문번호를 눌러 상세로. 보던 목록의 검색·필터·페이지를 그대로 이고 가므로 상세에서 되돌아왔을 때 같은 자리가 열린다 -->
+                <navigate path="/admin/ecommerce/orders/{{row.order_number}}" :mergeQuery="true">
+                  <query/>
+                </navigate>
+              </on>
+              {{row.order_number}}
+            </span>
           </cell>
         </column>
         <column field="product" header="$t:sirsoft-ecommerce.admin.order.column.product" width="auto" :sortable="false" :required="false">

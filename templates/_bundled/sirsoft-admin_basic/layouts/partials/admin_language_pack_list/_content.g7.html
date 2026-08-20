@@ -225,17 +225,22 @@
                 <button data-if="{{row.status === 'uninstalled'}}" type="button" disabled="{{row.abilities?.can_install !== true}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                   <responsive on="portable" class="flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm transition-colors w-full"/>
                   <on type="click">
-                    <!-- 아직 안 깔린 번들 팩을 설치하는 길. 고른 팩을 통째로 전역에 실어 두는 이유는 확인 창이 이름·언어·의존 대상까지 보여 줘야 하기 때문이다(창은 서버를 다시 부르지 않는다). -->
-                    <set-state target="global" selectedBundledLanguagePack="{{row}}" :languagePackReinstallMode="false"/>
-                    <open-modal target="language_pack_install_bundled_modal"/>
+                    <!-- 언어팩 설치. 설치 뒤 목록을 다시 부르는 것은 설치본의 버전과 활성 여부가 응답에만 있기 때문이다 -->
+                    <sequence>
+                      <set-state target="global" selectedBundledLanguagePack="{{row}}" :languagePackReinstallMode="false"/>
+                      <open-modal target="language_pack_install_bundled_modal"/>
+                    </sequence>
                   </on>
                   <icon name="fas fa-download" size="sm"/>
                   <span>$t:admin.language_packs.actions.install</span>
                 </button>
                 <button data-if="{{row.files_missing === true &amp;&amp; row.bundled_source_available === true &amp;&amp; row.abilities?.can_install === true}}" type="button" title="$t:admin.language_packs.actions.reinstall" data-testid="lp-reinstall-button" class="flex-center gap-2 px-4 py-2 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors">
                   <on type="click">
-                    <set-state target="global" selectedBundledLanguagePack="{{row}}" :languagePackReinstallMode="true"/>
-                    <open-modal target="language_pack_install_bundled_modal"/>
+                    <!-- 언어팩 삭제. 코어·번들이 제공하는 보호 행은 이 버튼이 뜨지 않으므로 여기 오는 것은 운영자가 따로 설치한 팩뿐이다 -->
+                    <sequence>
+                      <set-state target="global" selectedBundledLanguagePack="{{row}}" :languagePackReinstallMode="true"/>
+                      <open-modal target="language_pack_install_bundled_modal"/>
+                    </sequence>
                   </on>
                   <icon name="fas fa-rotate" size="sm"/>
                   <span>$t:admin.language_packs.actions.reinstall</span>

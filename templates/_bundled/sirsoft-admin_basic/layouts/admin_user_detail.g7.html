@@ -43,6 +43,7 @@
             </button>
             <button data-ref="header_edit_button" disabled="{{user?.data?.abilities?.can_update !== true}}" class="flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
               <on type="click">
+                <!-- 이 회원 수정 화면으로. 보던 목록 상태를 이고 가므로 수정을 마치고 목록까지 되짚어 나가도 자리가 남는다 -->
                 <navigate path="/admin/users/{{route?.id}}/edit" :mergeQuery="true">
                   <query/>
                 </navigate>
@@ -52,6 +53,7 @@
             </button>
             <button data-ref="header_unlock_button" data-if="{{user?.data?.is_locked === true}}" disabled="{{user?.data?.abilities?.can_update !== true}}" class="flex-center gap-2 btn btn-warning">
               <on type="click">
+                <!-- 계정 잠금 해제. 로그인 실패가 쌓여 잠긴 계정을 운영자가 푸는 자리이며, 성공하면 회원 정보를 다시 받아 잠금 표시를 내린다 -->
                 <api-call :auth_required="true" target="/api/admin/users/{{route?.id}}/unlock" method="POST">
                   <success>
                     <refetch-data-source dataSourceId="user"/>

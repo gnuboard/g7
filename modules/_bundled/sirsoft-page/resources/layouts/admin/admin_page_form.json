@@ -964,6 +964,7 @@
                                 "name": "Button",
                                 "actions": [
                                     {
+                                        "comment": "취소. 수정 중이면 그 페이지 상세로, 새로 만드는 중이면 목록으로 돌아간다. 어느 쪽이든 목록 상태를 이고 가므로 목록까지 되짚어 나가도 보던 자리가 남는다",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {

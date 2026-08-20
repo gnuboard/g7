@@ -103,11 +103,11 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "장바구니로 이동. 이동 표시를 먼저 세우고 창을 닫는다 — 상품 목록 클러스터 밖으로 나가는 이동이라 목록 상태를 승계하지 않는다",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
                                 {
-                                    "comment": "audit:allow layout-list-context-navigate-merge-query 장바구니로 이동 — 상품 목록/상세와 다른 클러스터로 나가는 이동이다.",
                                     "handler": "setState",
                                     "params": {
                                         "target": "global",

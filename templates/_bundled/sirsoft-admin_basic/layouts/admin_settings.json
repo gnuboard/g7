@@ -298,7 +298,8 @@
                         "id": "sitemap_progress_poll"
                     }
                 }
-            ]
+            ],
+            "comment": "사이트맵 생성 상태. SEO 탭을 보고 있을 때만 부른다 — 다른 탭에서는 쓰지 않는 값이라 매번 조회하면 화면 진입만 느려진다"
         },
         {
             "id": "sitemap_progress_ws",
@@ -307,7 +308,8 @@
             "channel": "core.admin.seo.sitemap",
             "event": "sitemap.progress.updated",
             "channel_type": "private",
-            "target_source": "sitemap_status"
+            "target_source": "sitemap_status",
+            "comment": "사이트맵 생성 진행률. 생성은 오래 걸려 응답을 기다릴 수 없으므로 웹소켓으로 진행 상황을 받아 위 상태 소스에 흘려 넣는다"
         }
     ],
     "initLocal": {

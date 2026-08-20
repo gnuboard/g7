@@ -22,7 +22,9 @@
       <p class="text-warning-soft">$t:admin.language_packs.slot_conflict_modal.warning</p>
     </div>
     <div class="mt-6 flex justify-end gap-2">
+      <!-- 기존 팩을 대체하고 설치한다. 같은 로케일 자리는 하나만 활성일 수 있어 어느 쪽을 남길지 운영자가 골라야 한다 -->
       <button type="button" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600"><on event="onClick"><set-state target="global" :slotConflictCurrent="null" :slotConflictTarget="null" :slotConflictTargetId="null"/><close-modal target="language_pack_slot_conflict_modal"/><refetch-data-source dataSourceId="language_packs"/></on>$t:admin.language_packs.slot_conflict_modal.cancel</button>
+      <!-- 기존 팩을 그대로 두고 이번 설치만 비활성으로 둔다 -->
       <button type="button" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 rounded-md"><on event="onClick"><api-call :auth_required="true" target="/api/admin/language-packs/{{_global.slotConflictTargetId}}/activate" method="POST"><success><set-state target="global" :slotConflictCurrent="null" :slotConflictTarget="null" :slotConflictTargetId="null"/><close-modal target="language_pack_slot_conflict_modal"/><toast type="success" message="$t:admin.language_packs.messages.activate_success"/><refetch-data-source dataSourceId="language_packs"/><reload-extensions/></success><fail><toast type="error" message="{{error.message ?? '$t:admin.language_packs.messages.toggle_failed'}}"/></fail><body :force="true"/></api-call></on>$t:admin.language_packs.slot_conflict_modal.confirm</button>
     </div>
   </modal>

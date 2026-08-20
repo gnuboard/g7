@@ -93,6 +93,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "날짜를 절대 시각으로 보여 준다",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -171,6 +172,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "날짜를 「3일 전」 같은 상대 표기로 보여 준다",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -283,6 +285,7 @@
                             "name": "Toggle",
                             "actions": [
                                 {
+                                    "comment": "오래된 첨부 자동 정리 사용 여부. 켜야 아래 보관 일수가 쓰인다",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -329,6 +332,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "첨부 보관 일수. 이 기간이 지난 첨부가 정리 대상이 된다",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {

@@ -196,6 +196,7 @@
           <span class="text-heading block">$t:admin.settings.seo.sitemap_last_updated_at</span>
           <div class="flex flex-col gap-2 md:flex-row md:items-center md:">
             <input type="text" :disabled="true" value="{{sitemap_status?.data?.last_updated_at ?? _local.form?.seo?.sitemap_last_updated_at ?? '-'}}" class="md:flex-1 dark:bg-gray-900 text-gray-700 dark:text-gray-300"/>
+            <!-- 사이트맵 생성 요청. 대기·진행·기록 중인 동안에는 잠겨 있어 같은 작업이 겹쳐 돌지 않는다 -->
             <button type="button" disabled="{{_computed.isReadOnly || ['queued','running','writing'].includes(sitemap_status?.data?.progress?.status ?? '')}}" class="w-full md:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"><on type="click"><api-call :auth_required="true" target="/api/admin/seo/sitemap/regenerate" method="POST"><success><refetch-data-source dataSourceId="sitemap_status"/><toast type="success" message="{{$t('admin.settings.seo.sitemap_update_success')}}"/></success><fail><toast type="error" message="{{error.message ?? $t('admin.settings.seo.sitemap_update_failed')}}"/></fail></api-call></on>{{['queued','running','writing'].includes(sitemap_status?.data?.progress?.status ?? '') ? $t('admin.settings.seo.sitemap_regenerating') : $t('admin.settings.seo.sitemap_manual_update')}}</button>
           </div>
         </div>

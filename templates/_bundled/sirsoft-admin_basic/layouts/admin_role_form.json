@@ -715,6 +715,7 @@
                         },
                         "children": [
                             {
+                                "comment": "취소하고 역할 목록으로. 보던 목록 상태를 이고 간다",
                                 "id": "footer_cancel_button",
                                 "type": "basic",
                                 "name": "Button",
@@ -790,6 +791,7 @@
                         },
                         "children": [
                             {
+                                "comment": "저장. 폼 밖에 있는 버튼이라 form 속성으로 위쪽 역할 폼에 연결한다 — 그 폼에 같은 id 가 있어야 눌리므로 둘은 짝이다",
                                 "type": "basic",
                                 "name": "Button",
                                 "actions": [

@@ -391,6 +391,7 @@
                             "text": "$t:common.cancel"
                         },
                         {
+                            "comment": "고른 배송지를 주문서에 적용한다. 고르지 않으면 잠겨 있어 빈 주소가 실려 나가지 않는다",
                             "type": "basic",
                             "name": "Button",
                             "actions": [

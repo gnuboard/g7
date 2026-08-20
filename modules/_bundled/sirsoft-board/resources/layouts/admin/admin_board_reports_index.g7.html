@@ -559,18 +559,24 @@
           <set-state target="local" visibleColumns_reports="{{$args[0]}}"/>
         </on>
         <on type="change" event="onSortChange">
-          <!-- 정렬 바꾸기 — 정렬이 바뀌면 같은 체크가 다른 행을 가리키게 되므로 선택을 먼저 비운다
-               페이지 이동 — 선택을 비우는 이유는 정렬과 같다. 다음 쪽으로 넘어가면 화면에 없는 건이 선택된 채로 일괄 처리에 실린다 -->
-          <set-state target="global" :selectedIds="[]"/>
-          <navigate path="/admin/boards/reports" :mergeQuery="true" :replace="true" transition_overlay_target="reports_data_grid__body">
-            <query sort_by="{{$args[0]}}" sort_order="{{$args[1]}}" :page="1"/>
-          </navigate>
+          <!-- 정렬 변경. 페이지를 1로 되돌린다 — 순서가 달라졌는데 보던 번호를 유지하면 전혀 다른 구간이 열린다 -->
+          <sequence>
+            <!-- 정렬 바꾸기 — 정렬이 바뀌면 같은 체크가 다른 행을 가리키게 되므로 선택을 먼저 비운다
+                 페이지 이동 — 선택을 비우는 이유는 정렬과 같다. 다음 쪽으로 넘어가면 화면에 없는 건이 선택된 채로 일괄 처리에 실린다 -->
+            <set-state target="global" :selectedIds="[]"/>
+            <navigate path="/admin/boards/reports" :mergeQuery="true" :replace="true" transition_overlay_target="reports_data_grid__body">
+              <query sort_by="{{$args[0]}}" sort_order="{{$args[1]}}" :page="1"/>
+            </navigate>
+          </sequence>
         </on>
         <on type="change" event="onPageChange">
-          <set-state target="global" :selectedIds="[]"/>
-          <navigate path="/admin/boards/reports" :mergeQuery="true" :replace="true" transition_overlay_target="reports_data_grid__body">
-            <query page="{{$args[0]}}"/>
-          </navigate>
+          <!-- 페이지 이동. 걸려 있던 검색·필터는 그대로 두고 번호만 바꾼다 -->
+          <sequence>
+            <set-state target="global" :selectedIds="[]"/>
+            <navigate path="/admin/boards/reports" :mergeQuery="true" :replace="true" transition_overlay_target="reports_data_grid__body">
+              <query page="{{$args[0]}}"/>
+            </navigate>
+          </sequence>
         </on>
         <on event="onRowAction">
           <!-- 행 메뉴 세 갈래 — 신고 상세로 가거나, 신고가 걸린 게시판·글로 곧장 건너뛴다. 대상 값은 표가 넘겨준 행(`$args[1]`)에서 읽는다 -->

@@ -1688,6 +1688,7 @@
                                     },
                                     "children": [
                                         {
+                                            "comment": "추가옵션 사용. 이미 한 줄이라도 있으면 아무 일도 하지 않는다 — 다시 눌러 빈 줄이 늘어나는 것을 막는다",
                                             "type": "basic",
                                             "name": "Button",
                                             "actions": [
@@ -1705,6 +1706,7 @@
                                             "text": "$t:sirsoft-ecommerce.common.use"
                                         },
                                         {
+                                            "comment": "추가옵션 사용 안 함. 이미 입력한 줄이 있을 때만 확인 창을 띄운다 — 비어 있으면 지울 것이 없어 그냥 꺼진 상태가 된다",
                                             "type": "basic",
                                             "name": "Button",
                                             "actions": [

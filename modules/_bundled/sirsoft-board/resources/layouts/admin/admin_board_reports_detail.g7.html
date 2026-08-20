@@ -49,6 +49,7 @@
         </button>
         <button data-ref="back_button" class="flex-center gap-2 btn btn-secondary">
           <on type="click">
+            <!-- 신고 목록으로. 보던 목록 상태를 이고 간다 -->
             <navigate path="/admin/boards/reports" :mergeQuery="true">
               <query/>
             </navigate>

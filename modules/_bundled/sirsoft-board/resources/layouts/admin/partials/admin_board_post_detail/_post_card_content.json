@@ -1173,6 +1173,7 @@
                             "if": "{{post?.data?.navigation?.prev}}",
                             "actions": [
                                 {
+                                    "comment": "이 글의 수정 화면으로. 보던 목록 상태를 이고 간다",
                                     "type": "click",
                                     "handler": "navigate",
                                     "params": {
@@ -1237,6 +1238,7 @@
                             "if": "{{post?.data?.navigation?.next}}",
                             "actions": [
                                 {
+                                    "comment": "작성자의 회원 상세로. 신고 처리를 하려면 그 사람의 다른 활동을 함께 봐야 한다",
                                     "type": "click",
                                     "handler": "navigate",
                                     "params": {

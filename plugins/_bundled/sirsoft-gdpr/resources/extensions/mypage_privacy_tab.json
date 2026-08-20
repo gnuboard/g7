@@ -340,6 +340,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "개별 항목 동의. 성공 시 모달이 물고 있던 대상 키까지 비운다 — 남겨 두면 다음에 모달을 열 때 직전 항목이 선택된 채로 뜬다",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
@@ -765,6 +766,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "선택 동의 전부 켜기. 필수 항목은 이미 동의로 고정돼 있어 대상에서 뺀다. 두 데이터소스를 다시 부르는 것은 이 탭의 목록과 요약이 서로 다른 응답에서 오기 때문이고, syncConsent 는 브라우저에 올라와 있는 자동차단 엔진의 동의 캐시를 갱신한다",
                                                     "type": "click",
                                                     "handler": "sequence",
                                                     "actions": [

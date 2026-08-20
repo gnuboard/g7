@@ -111,16 +111,19 @@
           <responsive on="portable" class="grid grid-cols-1 gap-3"/>
           <select data-ref="cancel_refund_bank_code" name="refund_bank_code" value="{{_local.refundBankCode ?? ''}}" options="{{[{ value: '', label: $t('sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_select') }].concat((paymentSettings.data?.order_settings?.banks ?? []).map(b => ({ value: b.code, label: $localized(b.name) ?? b.code })))}}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
             <on type="change">
+              <!-- 환불 계좌 은행. 가상계좌·무통장 주문을 취소할 때만 쓰이며, 세 칸(은행·계좌·예금주)이 다 차야 취소 요청이 나간다 -->
               <set-state target="local" refundBankCode="{{$event.target.value}}"/>
             </on>
           </select>
           <input data-ref="cancel_refund_bank_account" type="text" name="refund_bank_account" value="{{_local.refundBankAccount ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_account_placeholder" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
             <on type="change">
+              <!-- 환불 계좌번호 -->
               <set-state target="local" refundBankAccount="{{$event.target.value}}"/>
             </on>
           </input>
           <input data-ref="cancel_refund_bank_holder" type="text" name="refund_bank_holder" value="{{_local.refundBankHolder ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_holder_placeholder" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
             <on type="change">
+              <!-- 예금주. 은행이 대조하는 값이라 계좌 주인과 다르면 PG 가 취소를 거절한다 -->
               <set-state target="local" refundBankHolder="{{$event.target.value}}"/>
             </on>
           </input>

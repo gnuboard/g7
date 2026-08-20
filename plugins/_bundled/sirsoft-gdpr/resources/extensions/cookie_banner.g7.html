@@ -128,20 +128,22 @@
         <div class="flex justify-end">
           <button type="button" disabled="{{!!_global.gdprBannerSubmittingAction}}" class="px-4 py-2 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center">
             <on type="click">
-                  <!-- 자동 차단 엔진 동의 메모리 캐시 갱신 + rescan -->
-              <set-state target="global" gdprBannerSubmittingAction="save_selection"/>
-              <api-call auth_mode="optional" target="/api/plugins/sirsoft-gdpr/consent/cookie" method="POST" body="{{{ consents: (gdprPublicSettings?.data?.cookie_categories ?? []).reduce((acc, c) => ({ ...acc, ['cookie_' + c.key]: ((_global.gdprConsent ?? {})[c.key] === true) || c.required === true }), {}), source: 'banner' }}}">
-                <success>
-                  <set-state target="global" :gdprBannerSubmittingAction="null" gdprBannerDismissedFor="{{_global.currentUser?.uuid ?? 'guest'}}" :gdprPreferencesOpen="false"/>
-                  <refetch-data-source dataSourceId="gdprMyConsent"/>
-                  <action handler="sirsoft-gdpr.syncConsent"/>
-                  <toast type="success" message="$t:sirsoft-gdpr.consent.granted"/>
-                </success>
-                <fail>
-                  <set-state target="global" :gdprBannerSubmittingAction="null"/>
-                  <toast type="error" message="{{error?.message ?? 'Error'}}"/>
-                </fail>
-              </api-call>
+              <!-- 고른 대로 저장하고 배너를 닫는다. 필수 항목은 화면 선택과 무관하게 참으로 실어 보내고, 닫힘 표시는 사용자별로(비로그인은 guest) 남겨 다른 계정으로 바꾸면 배너가 다시 뜬다. 저장 뒤 자동차단 엔진의 동의 캐시를 갱신해야 이미 걸린 차단이 풀린다 -->
+              <sequence>
+                <set-state target="global" gdprBannerSubmittingAction="save_selection"/>
+                <api-call auth_mode="optional" target="/api/plugins/sirsoft-gdpr/consent/cookie" method="POST" body="{{{ consents: (gdprPublicSettings?.data?.cookie_categories ?? []).reduce((acc, c) => ({ ...acc, ['cookie_' + c.key]: ((_global.gdprConsent ?? {})[c.key] === true) || c.required === true }), {}), source: 'banner' }}}">
+                  <success>
+                    <set-state target="global" :gdprBannerSubmittingAction="null" gdprBannerDismissedFor="{{_global.currentUser?.uuid ?? 'guest'}}" :gdprPreferencesOpen="false"/>
+                    <refetch-data-source dataSourceId="gdprMyConsent"/>
+                    <action handler="sirsoft-gdpr.syncConsent"/>
+                    <toast type="success" message="$t:sirsoft-gdpr.consent.granted"/>
+                  </success>
+                  <fail>
+                    <set-state target="global" :gdprBannerSubmittingAction="null"/>
+                    <toast type="error" message="{{error?.message ?? 'Error'}}"/>
+                  </fail>
+                </api-call>
+              </sequence>
             </on>
             <icon data-if="{{_global.gdprBannerSubmittingAction === 'save_selection'}}" name="spinner" size="xs" :spin="true" class="mr-1"/>
             <span data-if="{{_global.gdprBannerSubmittingAction !== 'save_selection'}}">$t:sirsoft-gdpr.banner.save</span>

@@ -59,6 +59,7 @@
       <page-header data-ref="page_header" title="{{form_meta?.data?.board?.name}} {{route?.id ? '$t:sirsoft-board.admin.posts.form.edit_title' : (query?.parent_id ? '$t:sirsoft-board.admin.posts.reply.title' : '$t:sirsoft-board.admin.posts.form.create_title')}}" description="{{form_meta?.data?.board?.name}}$t:sirsoft-board.admin.posts.page_description_with_board">
         <button data-ref="header_cancel_button" class="btn btn-secondary">
           <on type="click">
+            <!-- 취소. 수정 중이면 그 글로, 새 글이면 게시판 글 목록으로 돌아가며 보던 목록 상태를 이고 간다 -->
             <navigate path="{{route?.id ? '/admin/board/' + route.slug + '/post/' + route.id : '/admin/board/' + route.slug}}" :mergeQuery="true">
               <query/>
             </navigate>
@@ -67,22 +68,24 @@
         </button>
         <button data-ref="header_save_button" disabled="{{_computed.isReadOnly || _local.isSaving || (!!route?.id &amp;&amp; !_local.hasChanges)}}" class="flex-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
-            <!-- 헤더 저장 — 첨부 업로드를 먼저 발화하고(그 파일들이 `tempKey` 로 묶인다) 본문을 보낸다. 저장 뒤에는 목록이 아니라 방금 쓴 글의 상세로 간다 — 신규는 응답이 준 id 로, 수정은 원래 id 로 -->
-            <set-state target="local" :isSaving="true" :errors="null"/>
-            <emit-event event="upload:board_attachments"/>
-            <api-call :auth_required="true" target="{{route?.id ? '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + route.id : '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts'}}" method="{{route?.id ? 'PUT' : 'POST'}}" body="{{Object.assign({}, _local.form, { temp_key: _local.tempKey })}}">
-              <success>
-                <set-state target="local" :isSaving="false" :hasChanges="false" :errors="null"/>
-                <toast type="success" message="{{route?.id ? '$t:sirsoft-board.admin.posts.messages.update_success' : '$t:sirsoft-board.admin.posts.messages.create_success'}}"/>
-                <navigate path="/admin/board/{{route.slug}}/post/{{route?.id ?? result?.data?.id}}" :mergeQuery="true">
-                  <query/>
-                </navigate>
-              </success>
-              <fail>
-                <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
-                <toast type="error" message="{{error.message ?? '$t:sirsoft-board.admin.posts.messages.save_failed'}}" icon="triangle-exclamation"/>
-              </fail>
-            </api-call>
+            <!-- 저장. 등록과 수정은 글 번호 유무로 갈리며, 성공하면 목록으로 나가므로 폼을 되받지 않는다 -->
+            <sequence>
+              <set-state target="local" :isSaving="true" :errors="null"/>
+              <emit-event event="upload:board_attachments"/>
+              <api-call :auth_required="true" target="{{route?.id ? '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + route.id : '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts'}}" method="{{route?.id ? 'PUT' : 'POST'}}" body="{{Object.assign({}, _local.form, { temp_key: _local.tempKey })}}">
+                <success>
+                  <set-state target="local" :isSaving="false" :hasChanges="false" :errors="null"/>
+                  <toast type="success" message="{{route?.id ? '$t:sirsoft-board.admin.posts.messages.update_success' : '$t:sirsoft-board.admin.posts.messages.create_success'}}"/>
+                  <navigate path="/admin/board/{{route.slug}}/post/{{route?.id ?? result?.data?.id}}" :mergeQuery="true">
+                    <query/>
+                  </navigate>
+                </success>
+                <fail>
+                  <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
+                  <toast type="error" message="{{error.message ?? '$t:sirsoft-board.admin.posts.messages.save_failed'}}" icon="triangle-exclamation"/>
+                </fail>
+              </api-call>
+            </sequence>
           </on>
           <span>{{_local.isSaving ? '$t:sirsoft-board.common.saving' : '$t:sirsoft-board.common.save'}}</span>
         </button>
@@ -119,6 +122,7 @@
         <div class="flex-center gap-3">
           <button data-ref="footer_cancel_button" type="button" class="btn btn-secondary">
             <on type="click">
+              <!-- 취소(화면 아래 버튼). 위쪽 취소와 같은 자리로 돌아간다 -->
               <navigate path="{{route?.id ? '/admin/board/' + route.slug + '/post/' + route.id : '/admin/board/' + route.slug}}" :mergeQuery="true">
                 <query/>
               </navigate>
@@ -127,22 +131,24 @@
           </button>
           <button data-ref="footer_save_button" type="button" disabled="{{_computed.isReadOnly || _local.isSaving || (!!route?.id &amp;&amp; !_local.hasChanges)}}" class="btn btn-primary flex-center gap-1.5">
             <on type="click">
-              <!-- 하단 고정 바의 저장 — 헤더 버튼과 같은 동작을 화면 끝에서도 닿게 둔 것이다(긴 폼에서 위로 올라가지 않아도 되도록). 두 자리가 갈라지면 한쪽만 고쳐지므로 함께 본다 -->
-              <set-state target="local" :isSaving="true" :errors="null"/>
-              <emit-event event="upload:board_attachments"/>
-              <api-call :auth_required="true" target="{{route?.id ? '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + route.id : '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts'}}" method="{{route?.id ? 'PUT' : 'POST'}}" body="{{Object.assign({}, _local.form, { temp_key: _local.tempKey })}}">
-                <success>
-                  <set-state target="local" :isSaving="false" :hasChanges="false" :errors="null"/>
-                  <toast type="success" message="{{route?.id ? '$t:sirsoft-board.admin.posts.messages.update_success' : '$t:sirsoft-board.admin.posts.messages.create_success'}}"/>
-                  <navigate path="/admin/board/{{route.slug}}/post/{{route?.id ?? result?.data?.id}}" :mergeQuery="true">
-                    <query/>
-                  </navigate>
-                </success>
-                <fail>
-                  <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
-                  <toast type="error" message="{{error.message ?? '$t:sirsoft-board.admin.posts.messages.save_failed'}}" icon="triangle-exclamation"/>
-                </fail>
-              </api-call>
+              <!-- 저장(화면 아래 버튼). 위쪽 저장과 같은 처리이며 긴 폼에서 위로 올라가지 않아도 되게 둘 다 둔다 -->
+              <sequence>
+                <set-state target="local" :isSaving="true" :errors="null"/>
+                <emit-event event="upload:board_attachments"/>
+                <api-call :auth_required="true" target="{{route?.id ? '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + route.id : '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts'}}" method="{{route?.id ? 'PUT' : 'POST'}}" body="{{Object.assign({}, _local.form, { temp_key: _local.tempKey })}}">
+                  <success>
+                    <set-state target="local" :isSaving="false" :hasChanges="false" :errors="null"/>
+                    <toast type="success" message="{{route?.id ? '$t:sirsoft-board.admin.posts.messages.update_success' : '$t:sirsoft-board.admin.posts.messages.create_success'}}"/>
+                    <navigate path="/admin/board/{{route.slug}}/post/{{route?.id ?? result?.data?.id}}" :mergeQuery="true">
+                      <query/>
+                    </navigate>
+                  </success>
+                  <fail>
+                    <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
+                    <toast type="error" message="{{error.message ?? '$t:sirsoft-board.admin.posts.messages.save_failed'}}" icon="triangle-exclamation"/>
+                  </fail>
+                </api-call>
+              </sequence>
             </on>
             <span>{{_local.isSaving ? '$t:sirsoft-board.common.saving' : '$t:sirsoft-board.common.save'}}</span>
           </button>

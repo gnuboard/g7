@@ -133,6 +133,7 @@
                                                 "name": "Button",
                                                 "actions": [
                                                     {
+                                                        "comment": "이 회원 수정 화면으로. 보던 목록 상태를 이고 가므로 수정을 마치고 목록까지 되짚어 나가도 자리가 남는다",
                                                         "type": "click",
                                                         "handler": "navigate",
                                                         "params": {
@@ -169,6 +170,7 @@
                                                 "if": "{{user?.data?.is_locked === true}}",
                                                 "actions": [
                                                     {
+                                                        "comment": "계정 잠금 해제. 로그인 실패가 쌓여 잠긴 계정을 운영자가 푸는 자리이며, 성공하면 회원 정보를 다시 받아 잠금 표시를 내린다",
                                                         "type": "click",
                                                         "handler": "apiCall",
                                                         "target": "/api/admin/users/{{route?.id}}/unlock",

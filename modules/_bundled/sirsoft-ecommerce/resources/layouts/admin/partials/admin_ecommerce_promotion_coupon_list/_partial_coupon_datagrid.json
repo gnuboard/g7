@@ -418,6 +418,7 @@
                         "width": "200px",
                         "cellChildren": [
                             {
+                                "comment": "쿠폰 이름을 눌러 수정 화면으로. 보던 목록 상태를 이고 가므로 수정을 마치고 돌아오면 같은 자리가 열린다",
                                 "type": "basic",
                                 "name": "A",
                                 "actions": [

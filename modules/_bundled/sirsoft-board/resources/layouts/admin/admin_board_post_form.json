@@ -136,6 +136,7 @@
                                 "name": "Button",
                                 "actions": [
                                     {
+                                        "comment": "취소. 수정 중이면 그 글로, 새 글이면 게시판 글 목록으로 돌아가며 보던 목록 상태를 이고 간다",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
@@ -162,11 +163,11 @@
                                 "name": "Button",
                                 "actions": [
                                     {
+                                        "comment": "저장. 등록과 수정은 글 번호 유무로 갈리며, 성공하면 목록으로 나가므로 폼을 되받지 않는다",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [
                                             {
-                                                "comment": "헤더 저장 — 첨부 업로드를 먼저 발화하고(그 파일들이 `tempKey` 로 묶인다) 본문을 보낸다. 저장 뒤에는 목록이 아니라 방금 쓴 글의 상세로 간다 — 신규는 응답이 준 id 로, 수정은 원래 id 로",
                                                 "handler": "setState",
                                                 "params": {
                                                     "target": "local",
@@ -431,6 +432,7 @@
                                         "name": "Button",
                                         "actions": [
                                             {
+                                                "comment": "취소(화면 아래 버튼). 위쪽 취소와 같은 자리로 돌아간다",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
@@ -458,11 +460,11 @@
                                         "name": "Button",
                                         "actions": [
                                             {
+                                                "comment": "저장(화면 아래 버튼). 위쪽 저장과 같은 처리이며 긴 폼에서 위로 올라가지 않아도 되게 둘 다 둔다",
                                                 "type": "click",
                                                 "handler": "sequence",
                                                 "actions": [
                                                     {
-                                                        "comment": "하단 고정 바의 저장 — 헤더 버튼과 같은 동작을 화면 끝에서도 닿게 둔 것이다(긴 폼에서 위로 올라가지 않아도 되도록). 두 자리가 갈라지면 한쪽만 고쳐지므로 함께 본다",
                                                         "handler": "setState",
                                                         "params": {
                                                             "target": "local",
