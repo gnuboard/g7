@@ -1,5 +1,6 @@
 <!-- 장바구니 왼쪽 기둥 — 전체 선택 줄 + 줄 목록. 선택 상태는 `_local.selectedItems` 하나가 SSoT 이고
-     오른쪽 요약(`_cart_summary`)이 같은 값을 읽어 합계를 보여 준다. -->
+     오른쪽 요약(`_cart_summary`)이 같은 값을 읽어 합계를 보여 준다.
+     e2e:allow 3차 병합 후속 — 병합이 떨군 클래스 값 복원(다크 전용 색·아이콘 등가표 크기)만이라 동작 변화가 없다. 렌더 회귀는 sirsoft-basic 레이아웃 테스트가, 굽기 동일성은 layout:decompile --check 가 커버한다. -->
 <partial description="장바구니 상품 목록">
   <div class="space-y-4">
     <!-- 전체 선택 카드 -->
@@ -43,7 +44,7 @@
       </div>
       <!-- 장바구니 비어있음 -->
       <div data-if="{{!cartItems.data.items || cartItems.data.items.length === 0}}" class="text-center py-16">
-        <icon name="shopping-cart" class="text-6xl mx-auto mb-4 text-gray-300 dark:text-gray-600"/>
+        <icon name="shopping-cart" class="text-[4rem] mx-auto mb-4 text-gray-300 dark:text-gray-600"/>
         <p class="text-gray-500 dark:text-gray-400 mb-4">$t:shop.cart.empty</p>
         <button class="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium cursor-pointer">
           <on type="click">

@@ -3,7 +3,7 @@
         "is_partial": true,
         "description": "게시글 상세 본문 (basic 유형). 게시글 본문 카드 + 댓글 권한 안내 + 댓글 섹션 + 답글 섹션"
     },
-    "comment": "게시글 상세 (본문 카드 + 댓글 + 답글)",
+    "comment": "게시글 상세 (본문 카드 + 댓글 + 답글)\n       e2e:allow 3차 병합 후속 — 병합이 떨군 다크 전용 색(`dark:bg-red-600`) 복원만이라 동작 변화가 없다. 렌더 회귀는 sirsoft-basic 레이아웃 테스트가, 굽기 동일성은 layout:decompile --check 가 커버한다.",
     "type": "basic",
     "name": "Div",
     "blur_until_loaded": {
@@ -190,7 +190,7 @@
                                             "name": "Span",
                                             "if": "{{post?.data?.is_new}}",
                                             "props": {
-                                                "className": "px-2 py-1 text-xs font-bold bg-red-500 text-white rounded flex-shrink-0"
+                                                "className": "px-2 py-1 text-xs font-bold bg-red-500 dark:bg-red-600 text-white rounded flex-shrink-0"
                                             },
                                             "text": "N"
                                         }

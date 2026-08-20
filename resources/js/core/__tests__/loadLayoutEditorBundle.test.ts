@@ -1,3 +1,4 @@
+// e2e:allow Vitest 테스트 파일의 훅 예산 조정만 — 제품 코드 변화 0 이라 브라우저에서 밟을 분기가 없다. 이 파일 자신이 로더 계약의 회귀 테스트다.
 /**
  * loadLayoutEditorBundle 테스트 — 편집기 lazy 번들 로더 (engine-v1.51.0)
  *
@@ -38,7 +39,12 @@ describe('loadLayoutEditorBundle — 편집기 lazy 번들 로더', () => {
     // 모듈 재로드로 layoutEditorLoadPromise 초기화 (테스트 격리)
     vi.resetModules();
     ({ loadLayoutEditorBundle } = await import('../template-engine'));
-  });
+    // 이 훅만 예산을 따로 준다 — `vi.resetModules()` 가 그래프를 통째로 무효화하므로
+    // 매 테스트가 template-engine 배럴(엔진 전량)을 다시 변환·임포트한다. 격리를 포기하면
+    // 모듈 레벨 in-flight promise 가 테스트 사이에 새어 단언 자체가 무의미해지므로 줄이는
+    // 것은 답이 아니다. 단독 실행은 3초 안쪽이지만 전량 병렬 실행에서는 기본 10초를 넘어
+    // 통과/실패가 동시 실행 부하로 갈린다 — 그러면 게이트 구실을 못 한다.
+  }, 30_000);
 
   afterEach(() => {
     vi.restoreAllMocks();

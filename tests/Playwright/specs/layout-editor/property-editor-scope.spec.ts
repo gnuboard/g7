@@ -6,16 +6,16 @@
  * 무손실로 기록·역해석하고, 저장·새로고침 후 복원되는지 검증한다.
  *
  * @scenario color_scheme, device, apply_type, edit_target
- * @effects device_scope_writes_responsive_breakpoint_props_base_unchanged
- *   + dark_classToken_coexists_with_light_token_in_one_className
- *   + dark_inline_control_readonly_value_never_overwritten
- *   + scope_without_override_shows_base_inherited_value_as_placeholder
- *   + custom_range_scope_writes_responsive_range_key
- *   + device_flex_disable_writes_explicit_off_token_breaking_base_inheritance
- *   + modal_scope_snapshots_toolbar_on_open
- *   + modal_scope_independent_after_toolbar_change
- *   + save_persists_responsive_and_if_on_reload
- *   + preview_color_scheme_toggle_applies_dark_wrapper_to_preview_frame_only
+ * @effects device_scope_writes_responsive_breakpoint_props_base_unchanged,
+ *   dark_classToken_coexists_with_light_token_in_one_className,
+ *   dark_inline_control_readonly_value_never_overwritten,
+ *   scope_without_override_shows_base_inherited_value_as_placeholder,
+ *   custom_range_scope_writes_responsive_range_key,
+ *   device_flex_disable_writes_explicit_off_token_breaking_base_inheritance,
+ *   modal_scope_snapshots_toolbar_on_open,
+ *   modal_scope_independent_after_toolbar_change,
+ *   save_persists_responsive_and_if_on_reload,
+ *   preview_color_scheme_toggle_applies_dark_wrapper_to_preview_frame_only
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 import type { Page } from '@playwright/test';
@@ -79,6 +79,7 @@ test.describe('@layout-editor 스타일 탭 색 모드 × 디바이스 scope', (
     await expect(page.getByTestId('g7le-style-bp-add-custom')).toBeVisible();
   });
 
+  /** @effects device_scope_writes_responsive_breakpoint_props_base_unchanged */
   test('T2: 디바이스 탭에서 textAlign 변경 → 기본값 className 시드되어 base 토큰 보존(B안)', async ({ page }) => {
     await openEditorLogin(page);
     await openPropsFor(page, CARD);
@@ -105,6 +106,7 @@ test.describe('@layout-editor 스타일 탭 색 모드 × 디바이스 scope', (
     }
   });
 
+  /** @effects scope_without_override_shows_base_inherited_value_as_placeholder */
   test('T2b: 디바이스 override 후 "기본값으로 초기화" → 표시점/override 제거', async ({ page }) => {
     await openEditorLogin(page);
     await openPropsFor(page, CARD);
@@ -122,6 +124,7 @@ test.describe('@layout-editor 스타일 탭 색 모드 × 디바이스 scope', (
     }
   });
 
+  /** @effects dark_inline_control_readonly_value_never_overwritten */
   test('T3: 다크 세부탭에서 인라인 색상 컨트롤은 읽기전용 안내', async ({ page }) => {
     await openEditorLogin(page);
     await openPropsFor(page, CARD);
@@ -137,6 +140,7 @@ test.describe('@layout-editor 스타일 탭 색 모드 × 디바이스 scope', (
     }
   });
 
+  /** @effects dark_classToken_coexists_with_light_token_in_one_className */
   test('T3b: 색 컨트롤 classToken — 라이트 프리셋 적용 + 다크 프리셋 dark: 토큰 공존', async ({ page }) => {
     await openEditorLogin(page);
     await openPropsFor(page, CARD);
@@ -166,6 +170,7 @@ test.describe('@layout-editor 스타일 탭 색 모드 × 디바이스 scope', (
     }
   });
 
+  /** @effects custom_range_scope_writes_responsive_range_key */
   test('T6: 커스텀 크기 탭 추가 → 600-900 탭 활성 + 우선순위 안내', async ({ page }) => {
     await openEditorLogin(page);
     await openPropsFor(page, CARD);
@@ -192,6 +197,7 @@ test.describe('@layout-editor 스타일 탭 색 모드 × 디바이스 scope', (
     }
   });
 
+  /** @effects preview_color_scheme_toggle_applies_dark_wrapper_to_preview_frame_only */
   test('T12: 툴바 라이트/다크 토글 → 프리뷰 프레임만.g7le-preview-dark (편집기 chrome 비다크 격리)', async ({ page }) => {
     await openEditorLogin(page);
 

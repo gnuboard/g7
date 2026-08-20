@@ -1,5 +1,6 @@
 <partial description="게시글 상세 본문 (basic 유형). 게시글 본문 카드 + 댓글 권한 안내 + 댓글 섹션 + 답글 섹션">
-  <!-- 게시글 상세 (본문 카드 + 댓글 + 답글) -->
+  <!-- 게시글 상세 (본문 카드 + 댓글 + 답글)
+       e2e:allow 3차 병합 후속 — 병합이 떨군 다크 전용 색(`dark:bg-red-600`) 복원만이라 동작 변화가 없다. 렌더 회귀는 sirsoft-basic 레이아웃 테스트가, 굽기 동일성은 layout:decompile --check 가 커버한다. -->
   <div>
     <blur-until-loaded sources="post"/>
     <!-- 관리자 진입 크로스링크 (게시판 관리 권한 보유 시) — 관리자 게시물 조회 + 게시판 관리, 새 탭 -->
@@ -32,7 +33,7 @@
           <div class="flex items-center gap-2 flex-1 min-w-0">
             <!-- 제목 --><h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{post?.data?.title ?? ''}}</h1>
             <!-- 삭제됨 배지 --><span data-if="{{post?.data?.deleted_at}}" class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 flex-shrink-0">$t:board.post.deleted_badge</span>
-            <!-- 새글 배지 (제목 바로 옆) --><span data-if="{{post?.data?.is_new}}" class="px-2 py-1 text-xs font-bold bg-red-500 text-white rounded flex-shrink-0">N</span>
+            <!-- 새글 배지 (제목 바로 옆) --><span data-if="{{post?.data?.is_new}}" class="px-2 py-1 text-xs font-bold bg-red-500 dark:bg-red-600 text-white rounded flex-shrink-0">N</span>
           </div>
         </div>
         <!-- 작성자 정보 + 조회수/댓글수 -->
