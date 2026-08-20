@@ -82,7 +82,6 @@ return [
             'notification:cleanup' => ['options' => []],
             'layout-previews:cleanup' => ['options' => []],
             'ext-bundles:cleanup' => ['options' => []],
-            'ext-static:cleanup' => ['options' => []],
             'seo:prune-stats' => ['options' => ['days']],
             'schedules:prune-history' => ['options' => ['days']],
             'identity:expire-challenges' => ['options' => []],

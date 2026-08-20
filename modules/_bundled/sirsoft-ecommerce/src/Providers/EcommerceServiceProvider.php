@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Providers;
 
 use App\Extension\BaseModuleServiceProvider;
 use App\Seo\SitemapGenerator;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Modules\Sirsoft\Ecommerce\Console\Commands\AggregateEcommerceStatsCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\CancelPendingPaymentOrdersCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\EarnMileageCommand;
@@ -13,16 +14,24 @@ use Modules\Sirsoft\Ecommerce\Console\Commands\PruneExpiredCartsCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\PruneExpiredTempOrdersCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\PruneTempProductImagesCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\ReconcileMileageBalanceCommand;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Http\Middleware\DetectDevice;
+use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
+use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
+use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
 use Modules\Sirsoft\Ecommerce\Repositories\BrandRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\CartRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\CategoryImageRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\CategoryRepository;
+use Modules\Sirsoft\Ecommerce\Repositories\ClaimImageRepository;
+use Modules\Sirsoft\Ecommerce\Repositories\ClaimPaymentRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\ClaimReasonRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\BrandRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CartRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CategoryImageRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CategoryRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimImageRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimReasonRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponIssueRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponRepositoryInterface;
@@ -34,11 +43,15 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageTransactionRepositor
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderCancelOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderCancelRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderCashReceiptRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderExchangeOptionRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderExchangeRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderPaymentRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderReturnOptionRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderReturnRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderShippingRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductAdditionalOptionValueRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductCommonInfoRepositoryInterface;
@@ -55,6 +68,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductWishlistRepositoryIn
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\SearchPresetRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\SequenceRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingCarrierRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingPolicyClaimAddressRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingPolicyRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingTypeRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\TempOrderRepositoryInterface;
@@ -69,11 +83,15 @@ use Modules\Sirsoft\Ecommerce\Repositories\MileageTransactionRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\OrderCancelOptionRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\OrderCancelRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\OrderCashReceiptRepository;
+use Modules\Sirsoft\Ecommerce\Repositories\OrderExchangeOptionRepository;
+use Modules\Sirsoft\Ecommerce\Repositories\OrderExchangeRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\OrderOptionRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\OrderPaymentRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\OrderRefundOptionRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\OrderRefundRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\OrderRepository;
+use Modules\Sirsoft\Ecommerce\Repositories\OrderReturnOptionRepository;
+use Modules\Sirsoft\Ecommerce\Repositories\OrderReturnRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\OrderShippingRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\ProductAdditionalOptionValueRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\ProductCommonInfoRepository;
@@ -90,6 +108,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\ProductWishlistRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\SearchPresetRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\SequenceRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\ShippingCarrierRepository;
+use Modules\Sirsoft\Ecommerce\Repositories\ShippingPolicyClaimAddressRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\ShippingPolicyRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\ShippingTypeRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\TempOrderRepository;
@@ -153,6 +172,8 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         CouponRepositoryInterface::class => CouponRepository::class,
         EcommerceStatRepositoryInterface::class => EcommerceStatRepository::class,
         ExtraFeeTemplateRepositoryInterface::class => ExtraFeeTemplateRepository::class,
+        ClaimImageRepositoryInterface::class => ClaimImageRepository::class,
+        ClaimPaymentRepositoryInterface::class => ClaimPaymentRepository::class,
         OrderCancelRepositoryInterface::class => OrderCancelRepository::class,
         OrderCancelOptionRepositoryInterface::class => OrderCancelOptionRepository::class,
         OrderCashReceiptRepositoryInterface::class => OrderCashReceiptRepository::class,
@@ -160,7 +181,11 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         OrderPaymentRepositoryInterface::class => OrderPaymentRepository::class,
         OrderRefundRepositoryInterface::class => OrderRefundRepository::class,
         OrderRefundOptionRepositoryInterface::class => OrderRefundOptionRepository::class,
+        OrderExchangeRepositoryInterface::class => OrderExchangeRepository::class,
+        OrderExchangeOptionRepositoryInterface::class => OrderExchangeOptionRepository::class,
         OrderRepositoryInterface::class => OrderRepository::class,
+        OrderReturnRepositoryInterface::class => OrderReturnRepository::class,
+        OrderReturnOptionRepositoryInterface::class => OrderReturnOptionRepository::class,
         OrderShippingRepositoryInterface::class => OrderShippingRepository::class,
         ProductInquiryRepositoryInterface::class => ProductInquiryRepository::class,
         ProductLogRepositoryInterface::class => ProductLogRepository::class,
@@ -178,6 +203,7 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         SequenceRepositoryInterface::class => SequenceRepository::class,
         ShippingCarrierRepositoryInterface::class => ShippingCarrierRepository::class,
         ShippingPolicyRepositoryInterface::class => ShippingPolicyRepository::class,
+        ShippingPolicyClaimAddressRepositoryInterface::class => ShippingPolicyClaimAddressRepository::class,
         ShippingTypeRepositoryInterface::class => ShippingTypeRepository::class,
         TempOrderRepositoryInterface::class => TempOrderRepository::class,
         ProductWishlistRepositoryInterface::class => ProductWishlistRepository::class,
@@ -234,6 +260,8 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
     {
         parent::boot();
 
+        $this->registerClaimMorphMap();
+
         // Artisan 커맨드 등록
         if ($this->app->runningInConsole()) {
             $this->commands($this->commands);
@@ -252,5 +280,25 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
                 );
             }
         });
+    }
+
+    /**
+     * 클레임 다형 관계의 morph map 을 등록합니다.
+     *
+     * 클레임 첨부(`ecommerce_claim_images.claimable_type`)와 추가결제
+     * (`ecommerce_claim_payments.payable_type`)는 FQCN 대신 ClaimTypeEnum 값
+     * (exchange/return/refund)을 저장한다. 저장값이 짧고 읽히며, 네임스페이스가
+     * 바뀌어도 기존 행이 깨지지 않는다.
+     *
+     * enforceMorphMap 이 아니라 morphMap 을 쓴다 — 코어·타 확장이 등록하는 다형
+     * 관계까지 이 목록으로 한정하면 그쪽이 조용히 깨진다.
+     */
+    protected function registerClaimMorphMap(): void
+    {
+        Relation::morphMap([
+            ClaimTypeEnum::EXCHANGE->value => OrderExchange::class,
+            ClaimTypeEnum::RETURN->value => OrderReturn::class,
+            ClaimTypeEnum::REFUND->value => OrderRefund::class,
+        ]);
     }
 }

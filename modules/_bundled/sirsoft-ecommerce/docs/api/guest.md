@@ -56,7 +56,7 @@ _단건 응답: `data` 객체의 필드._
 | expires_at | string | `2026-07-14T15:02:11+09:00` | 토큰 만료 일시 (ISO 8601) |
 | order | object | — | 최소 주문 요약 (상세는 토큰 보호 엔드포인트에서 제공) |
 | order.order_number | string | `20260714000012` | 인증된 주문의 주문번호 |
-| order.order_status | string | `payment_complete` | 주문 상태 (`pending_order`, `pending_payment`, `payment_complete`, `shipping_hold`, `preparing`, `shipping_ready`, `shipping`, `delivered`, `confirmed`, `cancelled`) |
+| order.order_status | string | `payment_complete` | 주문 상태 (`pending_order`, `pending_payment`, `payment_complete`, `shipping_hold`, `preparing`, `shipping_ready`, `shipping`, `delivered`, `confirmed`, `cancelled`, `exchange_in_progress`, `return_in_progress`, `exchanged`, `returned`) |
 
 **응답 예시**
 
@@ -130,7 +130,7 @@ _단건 응답: `data` 객체의 필드 (`GuestOrderResource` — 취소 후 갱
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | order_number | string | `20260714000012` | 주문번호 |
-| order_status | string | `cancelled` | 주문 상태 (`pending_order`, `pending_payment`, `payment_complete`, `shipping_hold`, `preparing`, `shipping_ready`, `shipping`, `delivered`, `confirmed`, `cancelled`) |
+| order_status | string | `cancelled` | 주문 상태 (`pending_order`, `pending_payment`, `payment_complete`, `shipping_hold`, `preparing`, `shipping_ready`, `shipping`, `delivered`, `confirmed`, `cancelled`, `exchange_in_progress`, `return_in_progress`, `exchanged`, `returned`) |
 | order_status_label | string\|null | `주문취소` | 주문 상태의 다국어 라벨 |
 | order_status_variant | string\|null | `danger` | 주문 상태 뱃지 표시용 variant |
 | is_partially_cancelled | boolean | `false` | 일부 옵션만 취소된 주문인지 여부 (별도 상태가 아닌 파생 플래그, 보조 뱃지용) |

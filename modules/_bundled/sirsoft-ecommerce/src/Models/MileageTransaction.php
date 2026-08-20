@@ -29,6 +29,7 @@ class MileageTransaction extends Model
         'order_id',
         'order_option_id',
         'order_cancel_id',
+        'claim_payment_id',
         'source_transaction_id',
         'granted_by',
         'description',
@@ -47,6 +48,7 @@ class MileageTransaction extends Model
     {
         return [
             'type' => MileageTransactionTypeEnum::class,
+            'claim_payment_id' => 'integer',
             'amount' => 'decimal:2',
             'remaining_amount' => 'decimal:2',
             'balance_after' => 'decimal:2',
@@ -74,6 +76,18 @@ class MileageTransaction extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
+    }
+
+    /**
+     * 클레임 추가결제 관계
+     *
+     * 클레임 배송비·차액을 마일리지로 결제하거나 그 건을 환급할 때의 멱등 기준이다.
+     *
+     * @return BelongsTo 클레임 추가결제 관계
+     */
+    public function claimPayment(): BelongsTo
+    {
+        return $this->belongsTo(ClaimPayment::class, 'claim_payment_id');
     }
 
     /**

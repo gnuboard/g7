@@ -18,9 +18,11 @@ class SequenceSeederTest extends ModuleTestCase
     {
         $this->seed(SequenceSeeder::class);
 
-        $this->assertEquals(5, Sequence::count());
+        // 시더가 SequenceType::cases() 전체를 순회하므로 기대값도 enum 에서 파생한다.
+        // 손으로 적은 목록은 enum 에 케이스가 늘어난 사실을 증명하지 못한다.
+        $this->assertEquals(count(SequenceType::cases()), Sequence::count());
 
-        foreach ([SequenceType::PRODUCT, SequenceType::ORDER, SequenceType::SHIPPING, SequenceType::CANCEL, SequenceType::REFUND] as $type) {
+        foreach (SequenceType::cases() as $type) {
             $this->assertTrue(
                 Sequence::where('type', $type->value)->exists(),
                 "{$type->value} 시퀀스가 생성되어야 함"
@@ -33,7 +35,11 @@ class SequenceSeederTest extends ModuleTestCase
         $this->seed(SequenceSeeder::class);
         $this->seed(SequenceSeeder::class);
 
-        $this->assertEquals(5, Sequence::count(), '재실행해도 중복 생성되지 않아야 함');
+        $this->assertEquals(
+            count(SequenceType::cases()),
+            Sequence::count(),
+            '재실행해도 중복 생성되지 않아야 함'
+        );
     }
 
     /**
@@ -80,7 +86,7 @@ class SequenceSeederTest extends ModuleTestCase
      * 단독 동작만 검증해야 함 (그렇지 않으면 시더 결함을 TestingSeeder 가 메워서
      * 통과하는 false-green 발생 — 본 회귀 테스트의 발단이 정확히 이 시나리오).
      */
-    public function test_seeder_은_모든_SequenceType_enum_멤버를_시드한다_drift_차단(): void
+    public function test_seeder_은_모든_sequence_type_enum_멤버를_시드한다_drift_차단(): void
     {
         // TestingSeeder 사전 시드 제거 — SequenceSeeder 단독 동작 검증
         Sequence::query()->delete();

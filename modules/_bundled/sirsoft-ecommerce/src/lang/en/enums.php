@@ -70,6 +70,10 @@ return [
         'delivered' => 'Delivered',
         'confirmed' => 'Confirmed',
         'cancelled' => 'Cancelled',
+        'exchange_in_progress' => 'Exchange in Progress',
+        'return_in_progress' => 'Return in Progress',
+        'exchanged' => 'Exchanged',
+        'returned' => 'Returned',
     ],
 
     // Payment Status (matches PaymentStatusEnum values)
@@ -268,6 +272,76 @@ return [
     // Claim Reason Type (matches ClaimReasonTypeEnum values)
     'claim_reason_type' => [
         'refund' => 'Refund/Cancel',
+        'exchange' => 'Exchange',
+        'return' => 'Return',
+    ],
+
+    // Order Adjustment Type (matches AdjustmentType values)
+    'adjustment_type' => [
+        'cancel' => 'Cancel',
+        'exchange' => 'Exchange',
+        'order_return' => 'Return',
+    ],
+
+    // Claim Type (matches ClaimTypeEnum values)
+    'claim_type' => [
+        'exchange' => 'Exchange',
+        'return' => 'Return',
+        'refund' => 'Refund',
+        'cancel' => 'Cancel',
+    ],
+
+    // Claim Charge Method (matches ClaimChargeMethodEnum values)
+    'claim_charge_method' => [
+        'pay_on_request' => 'Pay on Request',
+        'pay_on_approval' => 'Pay after Approval',
+        'deduct_from_refund' => 'Deduct from Refund',
+    ],
+
+    // Claim Payment Status (matches ClaimPaymentStatusEnum values)
+    'claim_payment_status' => [
+        'pending' => 'Payment Pending',
+        'paid' => 'Paid',
+        'failed' => 'Payment Failed',
+        'cancelled' => 'Payment Cancelled',
+        'refunded' => 'Refunded',
+    ],
+
+    // Claim Shipping Fee Mode (matches ClaimShippingFeeModeEnum values)
+    'claim_shipping_fee_mode' => [
+        'fixed' => 'Fixed Amount',
+        'original_policy' => 'Recalculate by Original Policy',
+    ],
+
+    // Exchange Status (matches ExchangeStatusEnum values)
+    'exchange_status' => [
+        'requested' => 'Exchange Requested',
+        'payment_pending' => 'Exchange Payment Pending',
+        'approved' => 'Exchange Approved',
+        'on_hold' => 'Exchange On Hold',
+        'rejected' => 'Exchange Rejected',
+        'collection_ready' => 'Exchange Pickup Ready',
+        'collecting' => 'Exchange Pickup in Transit',
+        'collected' => 'Exchange Pickup Arrived',
+        'redelivery_ready' => 'Exchange Reshipment Ready',
+        'redelivering' => 'Exchange Reshipment in Transit',
+        'redelivered' => 'Exchange Reshipment Delivered',
+        'completed' => 'Exchange Completed',
+        'withdrawn' => 'Exchange Withdrawn',
+    ],
+
+    // Return Status (matches ReturnStatusEnum values)
+    'return_status' => [
+        'requested' => 'Return Requested',
+        'payment_pending' => 'Return Payment Pending',
+        'approved' => 'Return Approved',
+        'on_hold' => 'Return On Hold',
+        'rejected' => 'Return Rejected',
+        'collection_ready' => 'Return Pickup Ready',
+        'collecting' => 'Return Pickup in Transit',
+        'collected' => 'Return Pickup Arrived',
+        'completed' => 'Return Completed',
+        'withdrawn' => 'Return Withdrawn',
     ],
 
     // Cancel Option Status (matches CancelOptionStatusEnum values)
@@ -284,6 +358,15 @@ return [
         'on_hold' => 'Refund On Hold',
         'completed' => 'Refund Completed',
         'rejected' => 'Refund Rejected',
+        'withdrawn' => 'Refund Withdrawn',
+    ],
+
+    // Refund Source Type (matches RefundSourceTypeEnum values)
+    'refund_source_type' => [
+        'cancel' => 'Order Cancellation',
+        'return' => 'Return',
+        'exchange' => 'Exchange Difference',
+        'direct' => 'Direct Refund by Admin',
     ],
 
     // Refund Method (matches RefundMethodEnum values)

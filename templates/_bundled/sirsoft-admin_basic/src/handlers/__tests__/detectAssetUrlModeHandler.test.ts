@@ -322,12 +322,8 @@ describe('detectAssetUrlMode — 프로브 판정 (§12 L6)', () => {
 
             await detectAssetUrlModeHandler(null, { setState });
 
-            // 값 경로는 'form.general.asset_url_mode' 다 — 이 필드를 감싸는 Div 가
-            // dataKey: "form" 이라 자동바인딩 경로와 저장 body 가 모두 _local.form[tab] 이다.
-            // 'general.asset_url_mode' 로 쓰면 _local.general.* 에 떨어져 Select 표시에도
-            // 저장 body 에도 도달하지 않는다.
             expect(setState).toHaveBeenCalledWith({
-                'form.general.asset_url_mode': 'extension',
+                'general.asset_url_mode': 'extension',
                 asset_url_mode_detect_status: 'extension',
             });
         });
@@ -338,7 +334,7 @@ describe('detectAssetUrlMode — 프로브 판정 (§12 L6)', () => {
             await detectAssetUrlModeHandler(null, { setState });
 
             expect(setState).toHaveBeenCalledWith({
-                'form.general.asset_url_mode': 'extensionless',
+                'general.asset_url_mode': 'extensionless',
                 asset_url_mode_detect_status: 'extensionless',
             });
         });
@@ -350,7 +346,7 @@ describe('detectAssetUrlMode — 프로브 판정 (§12 L6)', () => {
 
             expect(setState).toHaveBeenCalledWith({ asset_url_mode_detect_status: 'unavailable' });
             const valueWrites = setState.mock.calls.filter(
-                (c) => 'form.general.asset_url_mode' in (c[0] ?? {}),
+                (c) => 'general.asset_url_mode' in (c[0] ?? {}),
             );
             expect(valueWrites, '판정 불가인데 폼 값을 덮어썼다').toHaveLength(0);
         });

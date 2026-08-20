@@ -9,9 +9,9 @@ use App\Contracts\Notifications\ChannelReadinessCheckerInterface;
 use App\Extension\HookManager;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
-use App\Helpers\ResponseHelper;
 use App\Http\View\Composers\TemplateComposer;
 use App\Http\View\Composers\UserTemplateComposer;
+use App\Listeners\ExtensionCompatibilityAlertListener;
 use App\Notifications\NotificationChannelManager;
 use App\Services\ChannelReadinessService;
 use App\Services\GeoIpService;
@@ -99,6 +99,9 @@ class AppServiceProvider extends ServiceProvider
         View::composer('admin', TemplateComposer::class);
         View::composer('app', UserTemplateComposer::class);
 
+        // 확장 호환성 알림 리스너 등록
+        $this->registerExtensionCompatibilityAlertListener();
+
         // SQL 쿼리 로그 설정
         $this->configureSqlQueryLogging();
 
@@ -127,19 +130,32 @@ class AppServiceProvider extends ServiceProvider
                 $maxPerMinute = 60;
             }
 
-            // 기본 응답은 영문 "Too Many Attempts." 이다 — 로그인 화면은 이 문구를
-            // 그대로 노출하므로 다국어 키로 갈아끼운다.
-            return Limit::perMinute($maxPerMinute)
-                ->by($request->ip())
-                ->response(function (Request $request, array $headers) {
-                    return ResponseHelper::error(
-                        'auth.too_many_attempts',
-                        429,
-                        null,
-                        ['seconds' => (int) ($headers['Retry-After'] ?? 60)]
-                    )->withHeaders($headers);
-                });
+            return Limit::perMinute($maxPerMinute)->by($request->ip());
         });
+    }
+
+    /**
+     * 확장 호환성 알림 리스너를 등록합니다.
+     *
+     * 코어 버전 호환성 문제로 자동 비활성화된 확장에 대한
+     * 알림을 관리자 대시보드에 표시하기 위한 훅 리스너입니다.
+     */
+    private function registerExtensionCompatibilityAlertListener(): void
+    {
+        $listener = new ExtensionCompatibilityAlertListener;
+        $subscribedHooks = ExtensionCompatibilityAlertListener::getSubscribedHooks();
+
+        foreach ($subscribedHooks as $hookName => $config) {
+            $method = $config['method'] ?? 'handle';
+            $priority = $config['priority'] ?? 10;
+            $type = $config['type'] ?? 'action';
+
+            if ($type === 'filter') {
+                HookManager::addFilter($hookName, [$listener, $method], $priority);
+            } else {
+                HookManager::addAction($hookName, [$listener, $method], $priority);
+            }
+        }
     }
 
     /**

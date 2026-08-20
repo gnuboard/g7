@@ -70,6 +70,10 @@ return [
         'delivered' => '배송완료',
         'confirmed' => '구매확정',
         'cancelled' => '주문취소',
+        'exchange_in_progress' => '교환진행중',
+        'return_in_progress' => '반품진행중',
+        'exchanged' => '교환완료',
+        'returned' => '반품완료',
     ],
 
     // 결제상태 (PaymentStatusEnum 값과 일치)
@@ -268,6 +272,76 @@ return [
     // 클레임 사유 유형 (ClaimReasonTypeEnum 값과 일치)
     'claim_reason_type' => [
         'refund' => '환불/취소',
+        'exchange' => '교환',
+        'return' => '반품',
+    ],
+
+    // 주문 변경 유형 (AdjustmentType 값과 일치)
+    'adjustment_type' => [
+        'cancel' => '취소',
+        'exchange' => '교환',
+        'order_return' => '반품',
+    ],
+
+    // 클레임 유형 (ClaimTypeEnum 값과 일치)
+    'claim_type' => [
+        'exchange' => '교환',
+        'return' => '반품',
+        'refund' => '환불',
+        'cancel' => '취소',
+    ],
+
+    // 클레임 청구 방식 (ClaimChargeMethodEnum 값과 일치)
+    'claim_charge_method' => [
+        'pay_on_request' => '신청 시 결제',
+        'pay_on_approval' => '승인 후 결제',
+        'deduct_from_refund' => '환불액에서 차감',
+    ],
+
+    // 클레임 추가결제 상태 (ClaimPaymentStatusEnum 값과 일치)
+    'claim_payment_status' => [
+        'pending' => '결제대기',
+        'paid' => '결제완료',
+        'failed' => '결제실패',
+        'cancelled' => '결제취소',
+        'refunded' => '환급완료',
+    ],
+
+    // 클레임 배송비 산정 모드 (ClaimShippingFeeModeEnum 값과 일치)
+    'claim_shipping_fee_mode' => [
+        'fixed' => '고정 금액',
+        'original_policy' => '원 배송정책 재계산',
+    ],
+
+    // 교환상태 (ExchangeStatusEnum 값과 일치)
+    'exchange_status' => [
+        'requested' => '교환신청',
+        'payment_pending' => '교환결제대기',
+        'approved' => '교환승인',
+        'on_hold' => '교환보류',
+        'rejected' => '교환반려',
+        'collection_ready' => '교환회수준비중',
+        'collecting' => '교환회수중',
+        'collected' => '교환회수도착',
+        'redelivery_ready' => '교환발송준비중',
+        'redelivering' => '교환발송중',
+        'redelivered' => '교환발송도착',
+        'completed' => '교환완료',
+        'withdrawn' => '교환철회',
+    ],
+
+    // 반품상태 (ReturnStatusEnum 값과 일치)
+    'return_status' => [
+        'requested' => '반품신청',
+        'payment_pending' => '반품결제대기',
+        'approved' => '반품승인',
+        'on_hold' => '반품보류',
+        'rejected' => '반품반려',
+        'collection_ready' => '반품회수준비중',
+        'collecting' => '반품회수중',
+        'collected' => '반품회수도착',
+        'completed' => '반품완료',
+        'withdrawn' => '반품철회',
     ],
 
     // 취소옵션상태 (CancelOptionStatusEnum 값과 일치)
@@ -284,6 +358,15 @@ return [
         'on_hold' => '환불보류',
         'completed' => '환불완료',
         'rejected' => '환불반려',
+        'withdrawn' => '환불철회',
+    ],
+
+    // 환불 발생 출처 유형 (RefundSourceTypeEnum 값과 일치)
+    'refund_source_type' => [
+        'cancel' => '주문 취소',
+        'return' => '반품',
+        'exchange' => '교환 차액',
+        'direct' => '관리자 직접 환불',
     ],
 
     // 환불수단 (RefundMethodEnum 값과 일치)

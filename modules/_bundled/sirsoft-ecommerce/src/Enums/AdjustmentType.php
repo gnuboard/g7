@@ -7,7 +7,9 @@ namespace Modules\Sirsoft\Ecommerce\Enums;
  */
 enum AdjustmentType: string
 {
-    case CANCEL = 'cancel';
+    case CANCEL = 'cancel';              // 취소
+    case EXCHANGE = 'exchange';          // 교환
+    case ORDER_RETURN = 'order_return';  // 반품 (`return` 은 PHP 예약어)
 
     /**
      * 다국어 라벨을 반환합니다.
@@ -38,6 +40,8 @@ enum AdjustmentType: string
     {
         return match ($this) {
             self::CANCEL => 'danger',
+            self::EXCHANGE => 'info',
+            self::ORDER_RETURN => 'warning',
         };
     }
 

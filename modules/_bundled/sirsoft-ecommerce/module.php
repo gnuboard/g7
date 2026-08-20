@@ -196,6 +196,68 @@ class Module extends AbstractModule
                         ],
                     ],
                 ],
+                // 클레임(교환/반품/환불) 관리 권한
+                [
+                    'identifier' => 'claims',
+                    'name' => [
+                        'ko' => '취소/반품/교환 관리',
+                        'en' => 'Claim Management',
+                    ],
+                    'description' => [
+                        'ko' => '교환/반품/환불 신청서 관리 권한',
+                        'en' => 'Exchange, return and refund claim permissions',
+                    ],
+                    'permissions' => [
+                        [
+                            'action' => 'read',
+                            'name' => [
+                                'ko' => '클레임 조회',
+                                'en' => 'Read Claims',
+                            ],
+                            'description' => [
+                                'ko' => '교환/반품/환불 신청 목록 및 상세 조회',
+                                'en' => 'Read exchange, return and refund claim list and details',
+                            ],
+                            'roles' => ['admin', 'manager', 'sirsoft-ecommerce.manager'],
+                        ],
+                        [
+                            'action' => 'update-status',
+                            'name' => [
+                                'ko' => '클레임 상태 변경',
+                                'en' => 'Update Claim Status',
+                            ],
+                            'description' => [
+                                'ko' => '승인/보류/반려·회수·재발송 등 상태 전이 및 송장 입력',
+                                'en' => 'Approve, hold, reject, pickup, reship transitions and tracking input',
+                            ],
+                            'roles' => ['admin', 'manager', 'sirsoft-ecommerce.manager'],
+                        ],
+                        [
+                            'action' => 'update-amounts',
+                            'name' => [
+                                'ko' => '클레임 금액 수정',
+                                'en' => 'Update Claim Amounts',
+                            ],
+                            'description' => [
+                                'ko' => '클레임 배송비·차액·환불 예정액 수정',
+                                'en' => 'Update claim shipping fee, price difference and refundable amount',
+                            ],
+                            'roles' => ['admin', 'sirsoft-ecommerce.manager'],
+                        ],
+                        [
+                            'action' => 'execute-refund',
+                            'name' => [
+                                'ko' => '클레임 환불 실행',
+                                'en' => 'Execute Claim Refund',
+                            ],
+                            'description' => [
+                                'ko' => '환불 실행(PG 부분취소/마일리지/계좌)',
+                                'en' => 'Execute refund via PG partial cancel, mileage or bank transfer',
+                            ],
+                            'roles' => ['admin', 'sirsoft-ecommerce.manager'],
+                        ],
+                    ],
+                ],
                 // 카테고리 관리 권한
                 [
                     'identifier' => 'categories',
@@ -918,6 +980,73 @@ class Module extends AbstractModule
                             'roles' => ['*'],
                             'resource_route_key' => 'id',
                             'owner_key' => 'user_id',
+                        ],
+                    ],
+                ],
+
+                // 사용자 클레임 권한
+                [
+                    'identifier' => 'user-claims',
+                    'name' => [
+                        'ko' => '사용자 클레임',
+                        'en' => 'User Claims',
+                    ],
+                    'description' => [
+                        'ko' => '교환/반품/환불 신청 관련 권한 (블랙컨슈머 차단용)',
+                        'en' => 'Exchange, return and refund request permissions (for blocking malicious consumers)',
+                    ],
+                    'permissions' => [
+                        [
+                            'action' => 'request',
+                            'type' => 'user',
+                            'name' => [
+                                'ko' => '클레임 신청',
+                                'en' => 'Request Claim',
+                            ],
+                            'description' => [
+                                'ko' => '교환/반품/환불 신청 및 신청 내용 수정',
+                                'en' => 'Create and edit exchange, return and refund requests',
+                            ],
+                            'roles' => ['*'],
+                        ],
+                        [
+                            'action' => 'read',
+                            'type' => 'user',
+                            'name' => [
+                                'ko' => '클레임 조회',
+                                'en' => 'View Claims',
+                            ],
+                            'description' => [
+                                'ko' => '본인 신청 내역 목록 및 상세 조회',
+                                'en' => 'View own claim list and details',
+                            ],
+                            'roles' => ['*'],
+                        ],
+                        [
+                            'action' => 'withdraw',
+                            'type' => 'user',
+                            'name' => [
+                                'ko' => '클레임 철회',
+                                'en' => 'Withdraw Claim',
+                            ],
+                            'description' => [
+                                'ko' => '승인 전 신청 철회',
+                                'en' => 'Withdraw a claim before approval',
+                            ],
+                            'roles' => ['*'],
+                        ],
+                        [
+                            'action' => 'pay',
+                            'type' => 'user',
+                            'name' => [
+                                'ko' => '클레임 추가결제',
+                                'en' => 'Pay Claim Charge',
+                            ],
+                            'description' => [
+                                'ko' => '클레임 배송비·차액 추가결제',
+                                'en' => 'Pay claim shipping fee and price difference',
+                            ],
+                            'roles' => ['*'],
                         ],
                     ],
                 ],
@@ -2368,11 +2497,13 @@ class Module extends AbstractModule
                 ? (str_starts_with($imageRaw, 'http') ? $imageRaw : url($imageRaw))
                 : '';
 
-            // thumbnail_width/height 는 어떤 Resource 도 방출하지 않는 死키였다 — 값 공급이
-            // 불가능한 축이므로 제거하고 크기 메타는 코어 기본값 폴백에 맡긴다 (공개 #22 부수 정리)
             return array_filter([
                 'type' => 'product',
                 'image' => $image,
+                'image_width' => isset($product['thumbnail_width']) && (int) $product['thumbnail_width'] > 0
+                    ? (int) $product['thumbnail_width'] : null,
+                'image_height' => isset($product['thumbnail_height']) && (int) $product['thumbnail_height'] > 0
+                    ? (int) $product['thumbnail_height'] : null,
                 'image_alt' => $name,
                 'extra' => $extra,
             ], fn ($v) => $v !== null && $v !== '' && $v !== []);

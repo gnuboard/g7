@@ -1,0 +1,88 @@
+<?php
+
+namespace Modules\Sirsoft\Ecommerce\Repositories;
+
+use Illuminate\Database\Eloquent\Collection;
+use Modules\Sirsoft\Ecommerce\Models\OrderExchangeOption;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderExchangeOptionRepositoryInterface;
+
+/**
+ * 교환 신청 상품 리포지토리 구현체
+ */
+class OrderExchangeOptionRepository implements OrderExchangeOptionRepositoryInterface
+{
+    /**
+     * @param  OrderExchangeOption  $model  교환 신청 상품 모델
+     */
+    public function __construct(
+        protected OrderExchangeOption $model
+    ) {}
+
+    /**
+     * {@inheritDoc}
+     */
+    public function create(array $data): OrderExchangeOption
+    {
+        return $this->model->create($data);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function update(OrderExchangeOption $option, array $data): OrderExchangeOption
+    {
+        $option->update($data);
+
+        return $option->refresh();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function findById(int $id, array $relations = []): ?OrderExchangeOption
+    {
+        return $this->model->newQuery()
+            ->with($relations)
+            ->find($id);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function listByExchangeId(int $exchangeId, array $relations = []): Collection
+    {
+        return $this->model->newQuery()
+            ->with($relations)
+            ->where('order_exchange_id', $exchangeId)
+            ->orderBy('id')
+            ->get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function bulkUpdateStatus(int $exchangeId, string $status, array $optionIds = []): int
+    {
+        $query = $this->model->newQuery()
+            ->where('order_exchange_id', $exchangeId);
+
+        if ($optionIds !== []) {
+            $query->whereIn('id', $optionIds);
+        }
+
+        return $query->update([
+            'option_status' => $status,
+            'updated_at' => now(),
+        ]);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function deleteByExchangeId(int $exchangeId): int
+    {
+        return $this->model->newQuery()
+            ->where('order_exchange_id', $exchangeId)
+            ->delete();
+    }
+}

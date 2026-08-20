@@ -29,8 +29,15 @@ function installState(currencies: any[], preferred?: string): any {
 
     (window as any).G7Core = { state: { get: () => state } };
 
-    // 엔진 ActionContext 에는 getState 가 없다 — 통화는 G7Core.state.get() 에서 읽힌다.
-    return { setState: () => {} } as any;
+    return {
+        setState: () => {},
+        getState: (path: string) => {
+            if (path === '_global.preferredCurrency') return state.preferredCurrency;
+            if (path === '_global.defaultCurrency') return state.defaultCurrency;
+
+            return undefined;
+        },
+    } as any;
 }
 
 describe('formatCurrencyHandler — 설정 기반 통화 표기', () => {
@@ -44,7 +51,7 @@ describe('formatCurrencyHandler — 설정 기반 통화 표기', () => {
             'GBP'
         );
 
-        const formatted = formatCurrencyHandler({ handler: 'formatCurrency', params: { value: 1234.5 } }, ctx);
+        const formatted = formatCurrencyHandler({ value: 1234.5 }, ctx);
 
         expect(formatted).toContain('£');
         expect(formatted).not.toContain('₩');
@@ -57,7 +64,7 @@ describe('formatCurrencyHandler — 설정 기반 통화 표기', () => {
             'GBP'
         );
 
-        expect(formatCurrencyHandler({ handler: 'formatCurrency', params: { value: 1234.5 } }, ctx)).toBe('£1,234.50');
+        expect(formatCurrencyHandler({ value: 1234.5 }, ctx)).toBe('£1,234.50');
     });
 
     it('원화는 기존과 동일하게 금액 뒤에 원을 붙인다', () => {
@@ -66,7 +73,7 @@ describe('formatCurrencyHandler — 설정 기반 통화 표기', () => {
             'KRW'
         );
 
-        expect(formatCurrencyHandler({ handler: 'formatCurrency', params: { value: 10000 } }, ctx)).toBe('10,000원');
+        expect(formatCurrencyHandler({ value: 10000 }, ctx)).toBe('10,000원');
     });
 
     it('표시 통화가 없으면 기본 통화로 표기한다', () => {
@@ -75,7 +82,7 @@ describe('formatCurrencyHandler — 설정 기반 통화 표기', () => {
             { code: 'KRW', symbol: '₩', decimal_places: 0 },
         ]);
 
-        const formatted = formatCurrencyHandler({ handler: 'formatCurrency', params: { value: 5000 } }, ctx);
+        const formatted = formatCurrencyHandler({ value: 5000 }, ctx);
 
         expect(formatted).toContain('¥');
         expect(formatted).not.toContain('원');
@@ -84,7 +91,7 @@ describe('formatCurrencyHandler — 설정 기반 통화 표기', () => {
     it('통화를 판정할 수 없으면 단위를 임의로 붙이지 않는다', () => {
         const ctx = installState([]);
 
-        const formatted = formatCurrencyHandler({ handler: 'formatCurrency', params: { value: 3000 } }, ctx);
+        const formatted = formatCurrencyHandler({ value: 3000 }, ctx);
 
         expect(formatted).not.toContain('원');
         expect(formatted).not.toContain('₩');

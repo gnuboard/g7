@@ -501,26 +501,6 @@ public function updateUser(User $user, array $data): User
 
 > 상세: [validation.md](validation.md) "계층 리소스"·"보안 게이트 대칭성"
 
-### 서비스가 제3자 라이브러리를 붙일 때
-
-그 라이브러리가 디스크에 무엇을 어디에 쓰는지는 **서비스가 책임진다.** 제3자 라이브러리는 캐시·임시파일 경로를 설정하지 않으면 자기 설치 폴더(vendor 안)나 현재 작업 디렉토리에 쓰는데, 배포본의 vendor 를 읽기 전용으로 두는 서버에서는 그 쓰기가 PHP 경고를 내고 Laravel 이 이를 `ErrorException` 으로 승격시켜 요청이 500 으로 끝난다.
-
-```
-필수: 경로는 `ExtensionStoragePath::module($identifier, 'cache/…')` 로 얻는다
-      (디스크 root 단일 출처 — 테스트 분기를 서비스가 들고 있지 않는다)
-필수: 확보는 `FilePermissionHelper::ensureWritableDirectory($path, $mode, $failure)` 에 맡긴다
-      (억제된 생성 + umask 무력화 chmod + POSIX setgid + 소유권 상속 + 쓰기 판정을 한 번에)
-필수: 확보 실패 시 캐시만 끄고 본래 기능은 계속 수행 + `error` 수준 통지 1회 기록
-      (출하 기본 로그 수준이 `error` 라 `warning` 은 기본 설치 상태에서 기록되지 않는다)
-필수: 통지에 `$failure['reason']` 을 함께 싣는다 (사유마다 운영자가 고칠 대상이 다르다)
-금지: 경로를 `storage_path('app/modules/…')` 로 직접 조립하는 것
-금지: 확보 절차(생성·chmod·setgid·판정)를 서비스가 자기 안에 복사하는 것
-금지: 캐시 확보 실패를 그대로 500 으로 흘리는 것
-금지: 폴백에서 정화·검증 자체를 건너뛰는 것 (캐시는 성능 장치, 정화는 보안 장치)
-```
-
-> 상세: [storage-driver.md](../extension/storage-driver.md) "제3자 라이브러리에 절대 경로를 넘길 때"
-
 ---
 
 ## 트랜잭션 및 관계 삭제 패턴
@@ -1678,15 +1658,6 @@ $data['depth'] = ($parent->depth ?? 0) + 1;
 코드 리뷰에서 리터럴 상한을 볼 때마다 "이 값을 정하는 설정이 따로 있는가" 를 확인한다.
 
 ---
-
-## 입력 크기에 비례하는 메모리
-
-브라우저에서 잘 돌던 알고리즘을 PHP 로 옮길 때 시간 상한만 함께 오고 메모리 상한은 오지 않는다. PHP 배열은 원소당 수십 바이트라 (줄 수)² 크기 표는 2,350줄에서 약 150MB 이고, 운영 서버의 PHP 기본 `memory_limit` 은 128M 이다. 개발 머신에서는 통과하고 서버에서만 500 이 되며, 남는 것은 `Allowed memory size … exhausted` 한 줄뿐이다.
-
-- 카운트·길이만 쓰는 LCS/DP 는 두 행 DP 로 길이만 구한다. 추가 = 새 줄 − LCS, 삭제 = 옛 줄 − LCS 이므로 전체 표를 되짚어 얻는 숫자와 같다. 실제 줄을 그려야 하는 쪽(브라우저 diff 뷰)만 전체 표를 쓴다.
-- 브라우저 구현의 임계값을 옮겨 왔다면 그 임계에서의 PHP 메모리를 실측한다. 시간만 막는 임계가 있다.
-- "인접 버전 비교는 변경 영역이 작다" 같은 가정으로 최악 경로를 비워 두지 않는다. 앞뒤 공통 부분 트리밍은 양끝이 동시에 바뀌면 무력하고, 편집기가 `comment` 키를 떼어내는 첫 저장이 정확히 그 형태다.
-- 메모리 회귀 테스트는 `memory_get_peak_usage()` 증가량의 상한을 단언한다. 잠금 대상은 코어 `CalculatesJsonContentDiff`(레이아웃·레이아웃 확장 버전 변경량)이며 `tests/Unit/Repositories/Concerns/CalculatesJsonContentDiffTest.php` 가 상한과 참조 구현 동치를 함께 고정한다.
 
 ## 관련 문서
 

@@ -808,8 +808,7 @@
                                                 "params": {
                                                   "target": "global",
                                                   "selectedTemplate": "{{row}}",
-                                                  "templateUninstallInfo": null,
-                                                  "templateUninstallBackups": null
+                                                  "templateUninstallInfo": null
                                                 }
                                               },
                                               {

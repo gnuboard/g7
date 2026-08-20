@@ -1088,14 +1088,7 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-| 이름 | 타입 | 예시 | 용도 |
-| --- | --- | --- | --- |
-| preserved_backups | array | `[{"directory":"custom","archive":"…/extension-custom-backups/…"}]` | 삭제 전에 보관한 운영자 소유 디렉토리의 사본 목록. 보관 대상이 없으면 빈 배열 |
-| preserved_backups[].directory | string | `custom` | 보관된 디렉토리 이름 |
-| preserved_backups[].archive | string | `storage/app/extension-custom-backups/{identifier}-{Ymd_His}/custom` | 사본이 놓인 절대 경로 |
-
-> 운영자가 `custom/` 에 넣은 파일은 확장 삭제와 함께 사라지지만, 삭제 직전에 사본이
-> 보관됩니다. 이 필드가 그 경로를 알리는 유일한 통로이므로 화면에 노출해야 합니다.
+_이 엔드포인트는 `data` 를 반환하지 않습니다 (`data`: `null`, 성공 메시지만)._
 
 **응답 예시**
 
@@ -1103,14 +1096,7 @@ Authorization: Bearer {YOUR_TOKEN}
 {
     "success": true,
     "message": "템플릿이 성공적으로 제거되었습니다.",
-    "data": {
-        "preserved_backups": [
-            {
-                "directory": "custom",
-                "archive": "/var/www/g7/storage/app/extension-custom-backups/sirsoft-basic-20260825_231500/custom"
-            }
-        ]
-    }
+    "data": null
 }
 ```
 
@@ -77650,8 +77636,8 @@ HTTP/1.1 200
                     ],
                     "build": {
                         "handler": "setState",
+                        "target": "local",
                         "params": {
-                            "target": "local",
                             "{{key}}": "{{value}}"
                         }
                     }
@@ -77723,7 +77709,9 @@ HTTP/1.1 200
                     ],
                     "build": {
                         "handler": "setLocale",
-                        "target": "{{target}}"
+                        "params": {
+                            "target": "{{target}}"
+                        }
                     }
                 },
                 "setTheme": {
@@ -77751,22 +77739,24 @@ HTTP/1.1 200
                     ],
                     "build": {
                         "handler": "setTheme",
-                        "target": "{{target}}"
+                        "params": {
+                            "target": "{{target}}"
+                        }
                     }
                 },
                 "scrollToSection": {
                     "label": "$t:editor.action.scroll_to_section.label",
                     "params": [
                         {
-                            "key": "targetId",
-                            "label": "$t:editor.action.scroll_to_section.param_target_id",
+                            "key": "sectionId",
+                            "label": "$t:editor.action.scroll_to_section.param_section_id",
                             "widget": "text"
                         }
                     ],
                     "build": {
                         "handler": "scrollToSection",
                         "params": {
-                            "targetId": "{{targetId}}"
+                            "sectionId": "{{sectionId}}"
                         }
                     }
                 },
@@ -77791,8 +77781,8 @@ HTTP/1.1 200
                                     "label": "$t:editor.action.set_date_range.preset_month"
                                 },
                                 {
-                                    "value": "1year",
-                                    "label": "$t:editor.action.set_date_range.preset_1year"
+                                    "value": "year",
+                                    "label": "$t:editor.action.set_date_range.preset_year"
                                 }
                             ]
                         }
@@ -77808,29 +77798,32 @@ HTTP/1.1 200
                     "label": "$t:editor.action.toggle_filter_visibility.label",
                     "params": [
                         {
-                            "key": "storageKey",
-                            "label": "$t:editor.action.toggle_filter_visibility.param_storage_key",
-                            "widget": "text"
-                        },
-                        {
-                            "key": "filterId",
-                            "label": "$t:editor.action.toggle_filter_visibility.param_filter_id",
+                            "key": "filterKey",
+                            "label": "$t:editor.action.toggle_filter_visibility.param_filter_key",
                             "widget": "text"
                         }
                     ],
                     "build": {
                         "handler": "toggleFilterVisibility",
                         "params": {
-                            "storageKey": "{{storageKey}}",
-                            "filterId": "{{filterId}}"
+                            "filterKey": "{{filterKey}}"
                         }
                     }
                 },
                 "saveMultilingualTag": {
                     "label": "$t:editor.action.save_multilingual_tag.label",
-                    "params": [],
+                    "params": [
+                        {
+                            "key": "tag",
+                            "label": "$t:editor.action.save_multilingual_tag.param_tag",
+                            "widget": "i18n-text"
+                        }
+                    ],
                     "build": {
-                        "handler": "saveMultilingualTag"
+                        "handler": "saveMultilingualTag",
+                        "params": {
+                            "tag": "{{tag}}"
+                        }
                     }
                 },
                 "initTheme": {
@@ -77858,7 +77851,9 @@ HTTP/1.1 200
                     ],
                     "build": {
                         "handler": "initTheme",
-                        "target": "{{target}}"
+                        "params": {
+                            "target": "{{target}}"
+                        }
                     }
                 },
                 "initMenuFromUrl": {
@@ -77870,18 +77865,9 @@ HTTP/1.1 200
                 },
                 "initFilterVisibility": {
                     "label": "$t:editor.action.init_filter_visibility.label",
-                    "params": [
-                        {
-                            "key": "storageKey",
-                            "label": "$t:editor.action.init_filter_visibility.param_storage_key",
-                            "widget": "text"
-                        }
-                    ],
+                    "params": [],
                     "build": {
-                        "handler": "initFilterVisibility",
-                        "params": {
-                            "storageKey": "{{storageKey}}"
-                        }
+                        "handler": "initFilterVisibility"
                     }
                 }
             },
@@ -94667,7 +94653,7 @@ _목록 응답: `data` 는 첨부 항목 배열입니다 (페이지네이션 없
 | original_name | string | `hero-bg.png` | 업로드 당시 원본 파일명 |
 | mime_type | string | `image/png` | 파일 MIME 타입 |
 | size | integer | `204800` | 파일 크기 (바이트) |
-| url | string | `/api/templates/sirsoft-basic/layout-attachments/1/file` | 첨부 파일 접근 URL. 기본은 공개 서빙 라우트(프록시)의 **사이트 상대 경로**(`/api/...`)이고, 관리자 환경설정의 공개 자산 스토리지를 켠 뒤 그 디스크에 올라간 첨부만 직접 URL(CDN 절대 주소)로 내려온다. 어느 형태든 레이아웃 저장의 외부 URL 차단 규칙을 통과한다(사이트 자기 host 와 선언된 공개 자산 디스크 host 는 외부가 아니다) |
+| url | string | `/storage/template-layout-attachments/sirsoft-basic/hero-bg.png` | 첨부 파일 접근 URL |
 | created_at | string | `2026-07-14T10:00:00+09:00` | 업로드 일시 (ISO 8601) |
 
 **응답 예시**
@@ -94748,7 +94734,7 @@ _단건 응답: `data` 객체의 필드._
 | original_name | string | `hero-bg.png` | 업로드된 원본 파일명 |
 | mime_type | string | `image/png` | 파일 MIME 타입 |
 | size | integer | `204800` | 파일 크기 (바이트) |
-| url | string | `/api/templates/sirsoft-basic/layout-attachments/1/file` | 업로드된 파일의 접근 URL (편집기 ImagePickerControl 이 값으로 그대로 쓴다). 기본은 공개 서빙 라우트(프록시)의 **사이트 상대 경로**(`/api/...`)이고, 공개 자산 스토리지를 켜 그 디스크에 저장된 경우에만 직접 URL(CDN 절대 주소)이다. 어느 형태든 레이아웃 저장의 외부 URL 차단 규칙을 통과한다 — 절대 프록시 URL 이던 시절 로고처럼 props 에 들어가는 값은 저장 시 422 였다 |
+| url | string | `/storage/template-layout-attachments/sirsoft-basic/hero-bg.png` | 업로드된 파일의 접근 URL (편집기 ImagePickerControl 이 사용) |
 
 **응답 예시**
 
@@ -94762,7 +94748,7 @@ _단건 응답: `data` 객체의 필드._
         "original_name": "hero-bg.png",
         "mime_type": "image/png",
         "size": 204800,
-        "url": "/api/templates/sirsoft-basic/layout-attachments/1/file"
+        "url": "/storage/template-layout-attachments/sirsoft-basic/hero-bg.png"
     }
 }
 ```
@@ -97273,7 +97259,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 템플릿 컴포넌트 정의(`GET /api/templates/{identifier}/components.json`)의 확장자 없는 이중 모드 변형입니다. 응답·캐시·폴백 동작이 확장자 형태와 동일하며, `.json` 주소를 가로채는 정적 파일 최적화 서버 설정에서 프론트가 이 형태로 자동 전환합니다 (자산 URL 이중 모드).
+**설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
 
 
 ### GET /api/templates/{identifier}/components.json
@@ -97341,7 +97327,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 템플릿의 컴포넌트 정의(components.json)를 서빙하는 공개 엔드포인트입니다(TemplateService::getComponentsFilePath). 프론트엔드 렌더 엔진 부팅에 사용합니다. 조건부 캐시가 적용됩니다 — 응답에 ETag 가 부착되며 `If-None-Match` 일치 시 본문 없는 `304` 를 반환하고, Cache-Control 은 프로덕션 `public, max-age=3600` / 그 외 환경 `no-cache`(파일 수정 즉시 반영)로 분기합니다. 정적 게시본(`/build/ext/{v}/…`)이 있으면 프론트는 그 정적 파일을 우선 수신하며, 본 API 는 미게시/부분게시/GC 직후의 **폴백 경로**입니다. 인증이 필요 없습니다.
+**설명** 템플릿의 컴포넌트 정의(components.json)를 서빙하는 공개 엔드포인트입니다(TemplateService::getComponentsFilePath). 프론트엔드 렌더 엔진 부팅에 사용하며 1시간 캐시됩니다. 인증이 필요 없습니다.
 
 
 ### GET /api/templates/{identifier}/config
@@ -97388,7 +97374,7 @@ _단건 응답: `data` 객체의 필드._
 | error_config | object | `{"layouts":{"401":"errors\/401","403":"errors\/403","404"…` | 에러 표시 설정 객체 |
 | github_url | string | `https://github.com/gnuboard/g7-templa…` | GitHub 저장소 URL |
 | github_changelog_url | string | `https://github.com/gnuboard/g7-templa…` | GitHub 변경 내역 URL |
-| externals | array | `[{"id":"fontawesome","type":"style","url":"\/api\/templat…` | 외부 의존 라이브러리 목록 (번들에서 제외되고 전역에서 해석) |
+| externals | array | `[{"id":"fontawesome","type":"style","url":"https:\/\/cdnj…` | 외부 의존 라이브러리 목록 (번들에서 제외되고 전역에서 해석) |
 | cache_version | integer | `1784000969` | 에셋 캐시 무효화 버전 (번들 URL 파일명에 포함) |
 
 **응답 예시**
@@ -97533,17 +97519,20 @@ HTTP/1.1 200
             {
                 "id": "fontawesome",
                 "type": "style",
-                "url": "/api/templates/assets/sirsoft-admin_basic?file=vendor%2Ffont-awesome%2F6.4.0%2Fcss%2Fall.inlined.css&v=1785848038"
+                "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css",
+                "preconnect": "https://cdnjs.cloudflare.com"
             },
             {
                 "id": "pretendard",
                 "type": "webfont",
-                "url": "/api/templates/assets/sirsoft-admin_basic?file=vendor%2Fpretendard%2F1.3.9%2Fpretendard-variable.css&v=1785848038"
+                "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css",
+                "preconnect": "https://cdn.jsdelivr.net",
+                "crossorigin": "anonymous"
             },
             {
                 "id": "flag-icons",
                 "type": "style",
-                "url": "/api/templates/assets/sirsoft-admin_basic?file=vendor%2Fflag-icons%2F7.2.3%2Fcss%2Fflag-icons.min.css&v=1785848038"
+                "url": "https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css"
             }
         ],
         "cache_version": 1785848038
@@ -173497,8 +173486,8 @@ HTTP/1.1 200
                     ],
                     "build": {
                         "handler": "setState",
+                        "target": "local",
                         "params": {
-                            "target": "local",
                             "{{key}}": "{{value}}"
                         }
                     }
@@ -173570,7 +173559,9 @@ HTTP/1.1 200
                     ],
                     "build": {
                         "handler": "setLocale",
-                        "target": "{{target}}"
+                        "params": {
+                            "target": "{{target}}"
+                        }
                     }
                 },
                 "setTheme": {
@@ -173598,22 +173589,24 @@ HTTP/1.1 200
                     ],
                     "build": {
                         "handler": "setTheme",
-                        "target": "{{target}}"
+                        "params": {
+                            "target": "{{target}}"
+                        }
                     }
                 },
                 "scrollToSection": {
                     "label": "$t:editor.action.scroll_to_section.label",
                     "params": [
                         {
-                            "key": "targetId",
-                            "label": "$t:editor.action.scroll_to_section.param_target_id",
+                            "key": "sectionId",
+                            "label": "$t:editor.action.scroll_to_section.param_section_id",
                             "widget": "text"
                         }
                     ],
                     "build": {
                         "handler": "scrollToSection",
                         "params": {
-                            "targetId": "{{targetId}}"
+                            "sectionId": "{{sectionId}}"
                         }
                     }
                 },
@@ -173638,8 +173631,8 @@ HTTP/1.1 200
                                     "label": "$t:editor.action.set_date_range.preset_month"
                                 },
                                 {
-                                    "value": "1year",
-                                    "label": "$t:editor.action.set_date_range.preset_1year"
+                                    "value": "year",
+                                    "label": "$t:editor.action.set_date_range.preset_year"
                                 }
                             ]
                         }
@@ -173655,29 +173648,32 @@ HTTP/1.1 200
                     "label": "$t:editor.action.toggle_filter_visibility.label",
                     "params": [
                         {
-                            "key": "storageKey",
-                            "label": "$t:editor.action.toggle_filter_visibility.param_storage_key",
-                            "widget": "text"
-                        },
-                        {
-                            "key": "filterId",
-                            "label": "$t:editor.action.toggle_filter_visibility.param_filter_id",
+                            "key": "filterKey",
+                            "label": "$t:editor.action.toggle_filter_visibility.param_filter_key",
                             "widget": "text"
                         }
                     ],
                     "build": {
                         "handler": "toggleFilterVisibility",
                         "params": {
-                            "storageKey": "{{storageKey}}",
-                            "filterId": "{{filterId}}"
+                            "filterKey": "{{filterKey}}"
                         }
                     }
                 },
                 "saveMultilingualTag": {
                     "label": "$t:editor.action.save_multilingual_tag.label",
-                    "params": [],
+                    "params": [
+                        {
+                            "key": "tag",
+                            "label": "$t:editor.action.save_multilingual_tag.param_tag",
+                            "widget": "i18n-text"
+                        }
+                    ],
                     "build": {
-                        "handler": "saveMultilingualTag"
+                        "handler": "saveMultilingualTag",
+                        "params": {
+                            "tag": "{{tag}}"
+                        }
                     }
                 },
                 "initTheme": {
@@ -173705,7 +173701,9 @@ HTTP/1.1 200
                     ],
                     "build": {
                         "handler": "initTheme",
-                        "target": "{{target}}"
+                        "params": {
+                            "target": "{{target}}"
+                        }
                     }
                 },
                 "initMenuFromUrl": {
@@ -173717,18 +173715,9 @@ HTTP/1.1 200
                 },
                 "initFilterVisibility": {
                     "label": "$t:editor.action.init_filter_visibility.label",
-                    "params": [
-                        {
-                            "key": "storageKey",
-                            "label": "$t:editor.action.init_filter_visibility.param_storage_key",
-                            "widget": "text"
-                        }
-                    ],
+                    "params": [],
                     "build": {
-                        "handler": "initFilterVisibility",
-                        "params": {
-                            "storageKey": "{{storageKey}}"
-                        }
+                        "handler": "initFilterVisibility"
                     }
                 }
             },
@@ -189495,7 +189484,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 템플릿 다국어(`GET /api/templates/{identifier}/lang/{locale}.json`)의 확장자 없는 이중 모드 변형입니다. 응답·캐시·폴백 동작이 확장자 형태와 동일하며, `.json` 주소를 가로채는 정적 파일 최적화 서버 설정에서 프론트가 이 형태로 자동 전환합니다 (자산 URL 이중 모드).
+**설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
 
 
 ### GET /api/templates/{identifier}/lang/{locale}.json
@@ -189550,7 +189539,7 @@ _이 엔드포인트는 `success`/`message`/`data` 봉투를 사용하지 않습
 
 <!-- @generated:end -->
 
-**설명** 활성 템플릿의 다국어 파일(lang/{locale}.json)을 활성화된 모듈의 다국어 데이터와 병합해 서빙하는 공개 엔드포인트입니다(TemplateService::getLanguageDataWithModules). 지원하지 않는 로케일/파일 부재 시 404입니다. 조건부 캐시가 적용됩니다 — 응답에 ETag 가 부착되며 `If-None-Match` 일치 시 본문 없는 `304` 를 반환하고, Cache-Control 은 프로덕션 `public, max-age=3600` / 그 외 환경 `no-cache` 로 분기합니다. 정적 게시본(`/build/ext/{v}/…`)이 있으면 프론트는 그 정적 파일을 우선 수신하며, 본 API 는 미게시/부분게시/GC 직후의 **폴백 경로**입니다. 인증이 필요 없습니다.
+**설명** 활성 템플릿의 다국어 파일(lang/{locale}.json)을 활성화된 모듈의 다국어 데이터와 병합해 서빙하는 공개 엔드포인트입니다(TemplateService::getLanguageDataWithModules). 지원하지 않는 로케일/파일 부재 시 404이며 1시간 캐시됩니다. 인증이 필요 없습니다.
 
 
 ### GET /api/templates/{identifier}/layout-attachments/{attachment}/file
@@ -189716,7 +189705,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 템플릿 라우트(`GET /api/templates/{identifier}/routes.json`)의 확장자 없는 이중 모드 변형입니다. 응답·캐시·폴백 동작이 확장자 형태와 동일하며, `.json` 주소를 가로채는 정적 파일 최적화 서버 설정에서 프론트가 이 형태로 자동 전환합니다 (자산 URL 이중 모드).
+**설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
 
 
 ### GET /api/templates/{identifier}/routes.json
@@ -189784,6 +189773,6 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 템플릿의 라우트 정의(routes.json)를 활성화된 모듈의 라우트와 병합해 서빙하는 공개 엔드포인트입니다(TemplateService::getRoutesDataWithModules). 프론트엔드 라우팅 부팅에 사용합니다. 캐시 헤더는 **`v` 쿼리를 명시한 요청에만** 적용됩니다 — 버전 키드 URL 은 확장 변경 시 URL 자체가 바뀌므로 ETag + `If-None-Match` 304 + Cache-Control(프로덕션 `public, max-age=3600` / 그 외 `no-cache`)이 안전하고, 무버전 요청(핸드셰이크 폴백)은 종전대로 캐시 헤더 없이 신선 응답합니다. 단 라우트 병합이 열화 상태(확장 업데이트 진행 중 등)면 `v` 명시 요청이어도 공개 캐시 헤더를 부여하지 않습니다 — 열화 응답이 브라우저/CDN 에 1시간 박제되는 것을 막습니다(서버측 캐시 회피와 동일 규율). 정적 게시본(`/build/ext/{v}/…`)이 있으면 프론트는 그 정적 파일을 우선 수신하며, 본 API 는 미게시/부분게시/GC 직후의 **폴백 경로**입니다. 인증이 필요 없습니다.
+**설명** 템플릿의 라우트 정의(routes.json)를 활성화된 모듈의 라우트와 병합해 서빙하는 공개 엔드포인트입니다(TemplateService::getRoutesDataWithModules). 프론트엔드 라우팅 부팅에 사용하며 `v` query로 캐시를 무효화하고 1시간 캐시됩니다. 인증이 필요 없습니다.
 
 

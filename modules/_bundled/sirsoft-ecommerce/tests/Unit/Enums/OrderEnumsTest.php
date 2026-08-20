@@ -40,9 +40,14 @@ class OrderEnumsTest extends ModuleTestCase
         $values = OrderStatusEnum::values();
 
         $this->assertIsArray($values);
-        $this->assertCount(10, $values);
+        // 진행 9종 + 취소 1종 + 클레임 코스 4종(교환/반품 진행·완료)
+        $this->assertCount(14, $values);
         $this->assertContains('pending_order', $values);
         $this->assertContains('cancelled', $values);
+        $this->assertContains('exchange_in_progress', $values);
+        $this->assertContains('return_in_progress', $values);
+        $this->assertContains('exchanged', $values);
+        $this->assertContains('returned', $values);
         $this->assertNotContains('partial_cancelled', $values, '부분취소는 별도 주문 상태가 아니다');
     }
 
@@ -51,7 +56,7 @@ class OrderEnumsTest extends ModuleTestCase
         $options = OrderStatusEnum::toSelectOptions();
 
         $this->assertIsArray($options);
-        $this->assertCount(10, $options);
+        $this->assertCount(14, $options);
 
         // 각 옵션에 value와 label이 있는지 확인
         foreach ($options as $option) {
@@ -116,13 +121,17 @@ class OrderEnumsTest extends ModuleTestCase
         $this->assertFalse(OrderStatusEnum::CANCELLED->isCompleted());
     }
 
-    public function test_order_status_sync_excluded_statuses_are_cancel_lifecycle(): void
+    public function test_order_status_sync_excluded_statuses_are_separate_lifecycles(): void
     {
         $excluded = OrderStatusEnum::syncExcludedStatuses();
 
-        // 주문→옵션 동기화에서 제외할 별도 라이프사이클(취소) SSoT.
-        // 부분취소는 별도 상태가 아니므로(잔여 옵션 기준 파생) 제외 목록은 CANCELLED 뿐이다.
+        // 주문→옵션 동기화에서 제외할 별도 라이프사이클 SSoT.
+        // 부분취소는 별도 상태가 아니므로(잔여 옵션 기준 파생) 취소는 CANCELLED 뿐이고,
+        // 여기에 클레임(교환/반품) 코스 상태 4종이 함께 들어간다.
         $this->assertContains(OrderStatusEnum::CANCELLED, $excluded);
+        foreach (OrderStatusEnum::claimCourseStatuses() as $claimStatus) {
+            $this->assertContains($claimStatus, $excluded);
+        }
 
         // 활성 진행 상태는 동기화 대상이므로 제외 목록에 없어야 한다.
         $this->assertNotContains(OrderStatusEnum::PENDING_ORDER, $excluded);
@@ -135,9 +144,37 @@ class OrderEnumsTest extends ModuleTestCase
         $values = OrderStatusEnum::syncExcludedValues();
 
         $this->assertEquals(
-            ['cancelled'],
+            ['cancelled', 'exchange_in_progress', 'return_in_progress', 'exchanged', 'returned'],
             $values
         );
+    }
+
+    public function test_claim_course_statuses_are_excluded_from_admin_assignable(): void
+    {
+        $assignable = OrderStatusEnum::adminAssignableValues();
+
+        // 클레임 코스 상태는 교환·반품 서비스가 신청서와 짝을 맞춰 기록하는 값이라
+        // 관리자 주문 화면의 상태 변경 선택지가 아니다.
+        foreach (OrderStatusEnum::claimCourseValues() as $claimValue) {
+            $this->assertNotContains($claimValue, $assignable);
+        }
+
+        // 그 외 상태는 전부 남아 있어야 한다 (기존 계약 보존).
+        $this->assertCount(10, $assignable);
+        $this->assertContains('pending_order', $assignable);
+        $this->assertContains('cancelled', $assignable);
+    }
+
+    public function test_claim_course_statuses_are_not_in_progress_or_sales_order(): void
+    {
+        // 진행 순서·매출 반영 집합은 불변이어야 한다 — 기존 계산·통계 계약 보호.
+        foreach (OrderStatusEnum::claimCourseStatuses() as $claimStatus) {
+            $this->assertNotContains($claimStatus, OrderStatusEnum::progressOrder());
+            $this->assertNotContains($claimStatus, OrderStatusEnum::salesEligibleStatuses());
+        }
+
+        $this->assertCount(9, OrderStatusEnum::progressOrder());
+        $this->assertCount(7, OrderStatusEnum::salesEligibleStatuses());
     }
 
     // ========================================

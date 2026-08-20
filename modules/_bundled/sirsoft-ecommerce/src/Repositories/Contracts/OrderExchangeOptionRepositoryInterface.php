@@ -1,0 +1,67 @@
+<?php
+
+namespace Modules\Sirsoft\Ecommerce\Repositories\Contracts;
+
+use Illuminate\Database\Eloquent\Collection;
+use Modules\Sirsoft\Ecommerce\Models\OrderExchangeOption;
+
+/**
+ * 교환 신청 상품 리포지토리 인터페이스
+ */
+interface OrderExchangeOptionRepositoryInterface
+{
+    /**
+     * 교환 신청 상품을 생성합니다.
+     *
+     * @param  array  $data  신청 상품 데이터
+     * @return OrderExchangeOption 생성된 신청 상품
+     */
+    public function create(array $data): OrderExchangeOption;
+
+    /**
+     * 교환 신청 상품을 수정합니다.
+     *
+     * @param  OrderExchangeOption  $option  신청 상품
+     * @param  array  $data  수정 데이터
+     * @return OrderExchangeOption 수정된 신청 상품
+     */
+    public function update(OrderExchangeOption $option, array $data): OrderExchangeOption;
+
+    /**
+     * ID로 교환 신청 상품을 조회합니다.
+     *
+     * @param  int  $id  신청 상품 ID
+     * @param  array<int, string>  $relations  eager load 할 관계
+     * @return OrderExchangeOption|null 신청 상품 (없으면 null)
+     */
+    public function findById(int $id, array $relations = []): ?OrderExchangeOption;
+
+    /**
+     * 교환 신청서의 신청 상품 목록을 조회합니다.
+     *
+     * @param  int  $exchangeId  교환 신청서 ID
+     * @param  array<int, string>  $relations  eager load 할 관계
+     * @return Collection 신청 상품 목록
+     */
+    public function listByExchangeId(int $exchangeId, array $relations = []): Collection;
+
+    /**
+     * 교환 신청서의 신청 상품 상태를 일괄 변경합니다.
+     *
+     * @param  int  $exchangeId  교환 신청서 ID
+     * @param  string  $status  변경할 상태 값
+     * @param  array<int, int>  $optionIds  대상 신청 상품 ID (빈 배열이면 전건)
+     * @return int 변경된 행 수
+     */
+    public function bulkUpdateStatus(int $exchangeId, string $status, array $optionIds = []): int;
+
+    /**
+     * 교환 신청서의 신청 상품을 모두 삭제합니다.
+     *
+     * 신청 수정(교체 저장) 경로에서 사용합니다.
+     *
+     * @param  int  $exchangeId  교환 신청서 ID
+     * @return int 삭제된 행 수
+     */
+    public function deleteByExchangeId(int $exchangeId): int;
+}

@@ -6,7 +6,11 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimReasonFaultTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 
 /**
@@ -29,9 +33,15 @@ class OrderRefund extends Model
     protected $fillable = [
         'order_id',
         'order_cancel_id',
+        'refund_source_type',
+        'refund_source_id',
         'refund_number',
         'refund_status',
         'refund_method',
+        'reason_code',
+        'reason_detail',
+        'fault_type',
+        'requested_by',
         'refund_amount',
         'refund_points_amount',
         'refund_shipping_amount',
@@ -51,6 +61,10 @@ class OrderRefund extends Model
         'pg_error_code',
         'pg_error_message',
         'refunded_at',
+        'approved_at',
+        'on_hold_at',
+        'withdrawn_at',
+        'reject_reason',
         'processed_by',
     ];
 
@@ -64,6 +78,9 @@ class OrderRefund extends Model
         return [
             'refund_status' => RefundStatusEnum::class,
             'refund_method' => RefundMethodEnum::class,
+            'refund_source_type' => RefundSourceTypeEnum::class,
+            'refund_source_id' => 'integer',
+            'fault_type' => ClaimReasonFaultTypeEnum::class,
             'refund_amount' => 'decimal:2',
             'refund_points_amount' => 'decimal:2',
             'refund_shipping_amount' => 'decimal:2',
@@ -76,6 +93,9 @@ class OrderRefund extends Model
             'is_additional_payment_completed' => 'boolean',
             'additional_paid_at' => 'datetime',
             'refunded_at' => 'datetime',
+            'approved_at' => 'datetime',
+            'on_hold_at' => 'datetime',
+            'withdrawn_at' => 'datetime',
         ];
     }
 
@@ -92,11 +112,107 @@ class OrderRefund extends Model
     /**
      * 취소 레코드와의 관계
      *
+     * @deprecated refund_source_type/refund_source_id 로 대체됨. 취소 발 환불에는
+     *             하위호환을 위해 두 축이 함께 기록되므로 기존 호출부는 그대로 동작한다.
+     *
      * @return BelongsTo
      */
     public function orderCancel(): BelongsTo
     {
         return $this->belongsTo(OrderCancel::class, 'order_cancel_id');
+    }
+
+    /**
+     * 환불 발생 출처 레코드(취소/반품/교환)를 해석합니다.
+     *
+     * Eloquent 다형 관계(morphTo)를 쓰지 않는다 — `direct`(관리자 직접 환불)에는
+     * 대응 모델이 없어 morphTo 가 그 값을 클래스명으로 해석하다 fatal 이 난다.
+     *
+     * @return Model|null 출처 레코드 (없으면 null)
+     */
+    public function resolveRefundSource(): ?Model
+    {
+        $type = $this->refundSourceType();
+        $modelClass = $type?->sourceModelClass();
+
+        if ($modelClass === null || $this->refund_source_id === null) {
+            return null;
+        }
+
+        return $modelClass::find($this->refund_source_id);
+    }
+
+    /**
+     * 환불 발생 출처 유형을 반환합니다.
+     *
+     * @return RefundSourceTypeEnum|null 출처 유형 (미기록이면 null)
+     */
+    public function refundSourceType(): ?RefundSourceTypeEnum
+    {
+        return $this->refund_source_type;
+    }
+
+    /**
+     * 첨부 이미지 목록과의 관계
+     *
+     * @return MorphMany 첨부 이미지 관계
+     */
+    public function images(): MorphMany
+    {
+        return $this->morphMany(ClaimImage::class, 'claimable')->orderBy('sort_order');
+    }
+
+    /**
+     * 클레임 유형을 반환합니다.
+     *
+     * @return ClaimTypeEnum 클레임 유형
+     */
+    public function claimType(): ClaimTypeEnum
+    {
+        return ClaimTypeEnum::REFUND;
+    }
+
+    /**
+     * 신청자와의 관계
+     *
+     * @return BelongsTo 신청 사용자 관계
+     */
+    public function requestedByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'requested_by');
+    }
+
+    /**
+     * 신청자가 철회할 수 있는 상태인지 반환합니다.
+     *
+     * @return bool 철회 가능하면 true
+     */
+    public function isWithdrawable(): bool
+    {
+        return $this->refund_status->isWithdrawable();
+    }
+
+    /**
+     * 비회원 신청 건인지 반환합니다.
+     *
+     * @return bool 비회원 신청이면 true
+     */
+    public function isGuestRequest(): bool
+    {
+        return $this->requested_by === null;
+    }
+
+    /**
+     * 환불 사유 라벨을 반환합니다.
+     *
+     * @return string 현지화된 사유 라벨
+     */
+    public function getReasonLabel(): string
+    {
+        $reason = ClaimReason::where('type', ClaimTypeEnum::REFUND->value)
+            ->where('code', $this->reason_code)->first();
+
+        return $reason ? $reason->getLocalizedName() : ($this->reason_code ?? '');
     }
 
     /**

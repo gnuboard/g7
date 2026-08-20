@@ -304,7 +304,7 @@ HTTP/1.1 200
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | ids | body | array | 예 | min 1 | 대상 리소스 식별자 배열 (대량 작업 대상) |
-| order_status | body | string | 아니오 | — | 일괄 전환할 주문상태 (OrderStatusEnum 값, pending_order 제외 · 전이 규칙 검증) |
+| order_status | body | string | 아니오 | — | 일괄 전환할 주문상태 (OrderStatusEnum 값, `pending_order` 및 클레임 코스 상태 4종(`exchange_in_progress`, `return_in_progress`, `exchanged`, `returned`) 제외 · 전이 규칙 검증) |
 | carrier_id | body | integer | 아니오 | — | carrier 식별자 |
 | tracking_number | body | string | 아니오 | max 50 | 송장(운송장)번호 (배송 관련 상태로 전환 시 carrier_id 와 함께 필수) |
 
@@ -611,7 +611,7 @@ HTTP/1.1 200
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | order | path | string | 예 | — | 정렬 방향 (asc 오름차순 / desc 내림차순) |
-| order_status | body | string | 아니오 | — | 변경할 주문상태 (OrderStatusEnum 값, 현재 상태에서 전이 가능한 값만 허용) |
+| order_status | body | string | 아니오 | — | 변경할 주문상태 (OrderStatusEnum 값, 클레임 코스 상태 4종(`exchange_in_progress`, `return_in_progress`, `exchanged`, `returned`) 제외 · 현재 상태에서 전이 가능한 값만 허용) |
 | admin_memo | body | string | 아니오 | max 2000 | 관리자 메모 (내부 관리용, 고객 비노출) |
 | recipient_name | body | string | 예 | max 50 | 수령인 이름 |
 | recipient_phone | body | string | 아니오 | max 20 | 수령인 연락처 |
@@ -1580,7 +1580,7 @@ HTTP/1.1 200
 | --- | --- | --- | --- | --- | --- |
 | order | path | string | 예 | — | 정렬 방향 (asc 오름차순 / desc 내림차순) |
 | items | body | array | 예 | min 1 | 처리 대상 항목 배열 |
-| status | body | string | 예 | — | 일괄 전환할 옵션 상태 (OrderStatusEnum 값, 옵션별 전이 규칙 검증) |
+| status | body | string | 예 | — | 일괄 전환할 옵션 상태 (OrderStatusEnum 값, 클레임 코스 상태 4종(`exchange_in_progress`, `return_in_progress`, `exchanged`, `returned`) 제외 · 옵션별 전이 규칙 검증) |
 | carrier_id | body | integer | 아니오 | — | carrier 식별자 |
 | tracking_number | body | string | 아니오 | max 50 | 송장(운송장)번호 (배송 관련 상태로 전환 시 carrier_id 와 함께 필수) |
 
@@ -1850,11 +1850,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 회원/비회원이 PG 결제창을 닫았을 때 결제 취소 이력만 기록합니다.
-
-**비회원 요청은 `X-Guest-Order-Token` 헤더가 필요합니다.** 이 경로는 `optional.sanctum` 으로 회원/비회원이 공유하므로 소유권 판정이 분기됩니다 — 회원 주문은 로그인 본인만, 비회원 주문(`user_id` 없음)은 비회원 주문 조회에서 발급받은 토큰이 그 주문번호와 일치할 때만 통과합니다. 토큰이 없거나 만료·위조·다른 주문의 것이면 정보 노출을 막기 위해 존재하지 않는 주문과 동일하게 `404` 를 반환합니다. 토큰 발급은 비회원 주문 조회 인증(`POST /api/modules/sirsoft-ecommerce/guest/orders/authenticate`)이 담당합니다.
-
-`optional.sanctum`으로 회원/비회원 모두 접근하며, `Public\OrderController@cancelPayment`가 `OrderProcessingService::recordPaymentCancellation()`으로 주문 상태는 변경하지 않고 `order_payments`에 취소창 닫힘 이력(`cancel_code`·`cancel_message`)만 남깁니다. 결제 SDK가 사용자 취소 콜백을 받았을 때 프론트가 호출해 결제 시도 이력을 추적하는 용도입니다.
+**설명** 회원/비회원이 PG 결제창을 닫았을 때 결제 취소 이력만 기록합니다. `optional.sanctum`으로 회원/비회원 모두 접근하며, `Public\OrderController@cancelPayment`가 `OrderProcessingService::recordPaymentCancellation()`으로 주문 상태는 변경하지 않고 `order_payments`에 취소창 닫힘 이력(`cancel_code`·`cancel_message`)만 남깁니다. 결제 SDK가 사용자 취소 콜백을 받았을 때 프론트가 호출해 결제 시도 이력을 추적하는 용도입니다.
 
 
 ### GET /api/modules/sirsoft-ecommerce/user/orders
@@ -2157,7 +2153,6 @@ HTTP/1.1 201
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-orders.create`)이 없는 경우 |
 | 404 | Not Found | 임시 주문(주문서)이 없거나 만료된 경우 (`주문서를 찾을 수 없습니다.` 계열 — `exceptions.temp_order_not_found`) |
 | 422 | Unprocessable Entity | 요청 파라미터 검증 실패, 예상 결제금액 불일치(`expected_total_amount` ≠ 서버 재계산값), 결제 통화 미지원(`errors.code = unsupported_payment_currency`), 재고 부족(`errors.insufficient_items`), 구매 불가 상품(`errors.code = cart_unavailable`), 주문 확정 재계산 검증 실패(쿠폰 만료·최소주문금액 미달 등 — `errors.code = order_calculation_validation_failed`). `payment_method` 가 결제수단 카탈로그에 없는 값이면 여기서 차단된다 |
-| 409 | Conflict | 적용한 쿠폰을 다른 주문이 먼저 사용한 경우 (`errors.code = coupon_already_used`, `errors.coupon_issue_id` 에 해당 발급 ID). 주문은 생성되지 않고 쿠폰도 소모되지 않으므로 그대로 재시도할 수 있습니다 |
 | 428 | Identity Verification Required | 결제 진입 본인인증(IDV) 정책이 활성이고 미인증(grace 만료)인 경우 |
 | 500 | Server Error | 주문 생성 중 예기치 못한 오류 (`주문 생성에 실패했습니다.`) |
 

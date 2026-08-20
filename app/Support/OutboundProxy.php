@@ -14,7 +14,7 @@ namespace App\Support;
  * 않는다 — 관리자 화면에서 입력칸을 감추는 것만으로는 저장 API 를 직접 호출하는 경로를 막지
  * 못하므로, 화면이 아니라 이 판정이 실질 게이트다.
  *
- * @since 7.0.8
+ * @since 7.1.0
  */
 final class OutboundProxy
 {
@@ -163,56 +163,29 @@ final class OutboundProxy
      * 빈 항목과 중복을 걸러내고 순번을 다시 매깁니다 — 비연속 키는 JSON 직렬화 시 객체가 되어
      * Guzzle 이 목록으로 읽지 못합니다.
      *
-     * 목록 맨 앞에는 사이트 자기 호스트와 루프백이 항상 들어갑니다 (selfHosts 참조).
-     *
      * @param  mixed  $value  원본 예외 목록
      * @return array<int, string> 정규화된 호스트 목록
      */
     private static function normalizeBypass(mixed $value): array
     {
-        $hosts = self::selfHosts();
+        if (! is_array($value)) {
+            return [];
+        }
 
-        if (is_array($value)) {
-            foreach ($value as $host) {
-                if (! is_string($host)) {
-                    continue;
-                }
+        $hosts = [];
 
-                $host = trim($host);
+        foreach ($value as $host) {
+            if (! is_string($host)) {
+                continue;
+            }
 
-                if ($host !== '') {
-                    $hosts[] = $host;
-                }
+            $host = trim($host);
+
+            if ($host !== '') {
+                $hosts[] = $host;
             }
         }
 
         return array_values(array_unique($hosts));
-    }
-
-    /**
-     * 프록시를 거치지 않아야 하는 자기 자신 호스트 목록을 돌려줍니다.
-     *
-     * 아웃바운드 프록시는 **바깥으로 나가는** 트래픽의 출발지를 지정하려는 장치입니다. 그런데
-     * 사이트는 자기 자신에게도 HTTP 를 겁니다 — SEO 렌더러가 데이터소스를 부를 때, API 문서
-     * 생성기가 엔드포인트를 탐침할 때가 그렇습니다. 그 요청까지 프록시로 내보내면 프록시가
-     * 응답하지 않을 때 호출마다 연결 실패 시각까지 매달리고, 실패는 폴백으로 삼켜지므로
-     * 예외도 오류 화면도 없이 저장 요청만 느려집니다. 운영자에게는 원인을 알 단서가 없습니다.
-     *
-     * 자기 자신으로 가는 요청을 프록시로 보내는 것은 어떤 구성에서도 의도가 아니므로, 운영자가
-     * 예외 목록에 적었는지와 무관하게 항상 제외합니다.
-     *
-     * @return array<int, string> 항상 우회할 호스트 목록
-     */
-    private static function selfHosts(): array
-    {
-        $hosts = ['localhost', '127.0.0.1', '::1'];
-
-        $appHost = parse_url((string) config('app.url'), PHP_URL_HOST);
-
-        if (is_string($appHost) && $appHost !== '') {
-            $hosts[] = $appHost;
-        }
-
-        return $hosts;
     }
 }

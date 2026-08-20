@@ -43,7 +43,9 @@ class BulkChangeOrderOptionStatusRequest extends FormRequest
                 Rule::exists(OrderOption::class, 'id')->where('order_id', $orderId),
             ],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
-            'status' => ['required', 'string', Rule::in(OrderStatusEnum::values())],
+            // 클레임 코스 상태(교환진행중/반품진행중/교환완료/반품완료)는 교환·반품 서비스가
+            // 신청서와 짝을 맞춰 기록하는 값이라 주문 화면에서 직접 지정할 수 없다.
+            'status' => ['required', 'string', Rule::in(OrderStatusEnum::adminAssignableValues())],
             'carrier_id' => ['nullable', 'integer', Rule::exists(ShippingCarrier::class, 'id')],
             'tracking_number' => ['nullable', 'string', 'max:50'],
         ];

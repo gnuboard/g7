@@ -17,6 +17,10 @@ enum OrderStatusEnum: string
     case DELIVERED = 'delivered';                   // 배송완료
     case CONFIRMED = 'confirmed';                   // 구매확정
     case CANCELLED = 'cancelled';                   // 주문취소
+    case EXCHANGE_IN_PROGRESS = 'exchange_in_progress'; // 교환진행중 (클레임 코스 상태)
+    case RETURN_IN_PROGRESS = 'return_in_progress';     // 반품진행중 (클레임 코스 상태)
+    case EXCHANGED = 'exchanged';                       // 교환완료 (터미널, 매출은 신규 옵션이 승계)
+    case RETURNED = 'returned';                         // 반품완료 (터미널)
 
     /**
      * 다국어 라벨을 반환합니다.
@@ -66,6 +70,10 @@ enum OrderStatusEnum: string
             self::DELIVERED => 'success',
             self::CONFIRMED => 'success',
             self::CANCELLED => 'danger',
+            self::EXCHANGE_IN_PROGRESS => 'warning',
+            self::RETURN_IN_PROGRESS => 'warning',
+            self::EXCHANGED => 'secondary',
+            self::RETURNED => 'secondary',
         };
     }
 
@@ -109,7 +117,7 @@ enum OrderStatusEnum: string
      * 별도 라이프사이클(취소/환불, 향후 클레임 등)을 가진 옵션은 덮어쓰지 않는다.
      * 취소된 옵션이 결제완료/배송중 등으로 되살아나는 것을 차단하는 SSoT.
      *
-     * 향후 클레임(반품/교환) 상태가 추가되면 이 목록에 함께 등록하면
+     * 클레임(교환/반품) 코스 상태 4종도 같은 이유로 이 목록에 포함된다 — 등록만 하면
      * 모든 동기화 지점(completePayment / OrderService::update /
      * bulkUpdateOptionStatus / syncParentOrderStatus)에 일괄 반영된다.
      *
@@ -117,7 +125,73 @@ enum OrderStatusEnum: string
      */
     public static function syncExcludedStatuses(): array
     {
-        return [self::CANCELLED];
+        return [
+            self::CANCELLED,
+            self::EXCHANGE_IN_PROGRESS,
+            self::RETURN_IN_PROGRESS,
+            self::EXCHANGED,
+            self::RETURNED,
+        ];
+    }
+
+    /**
+     * 클레임(교환/반품) 라이프사이클이 소유하는 코스 상태 목록을 반환합니다.
+     *
+     * 세밀 상태(ExchangeStatusEnum 13종 / ReturnStatusEnum 10종)는 클레임 테이블에만
+     * 두고, 원 주문·주문옵션에는 이 4종만 기록한다. 진행 2종은 회수/재발송이 도는 동안,
+     * 완료 2종은 터미널이다.
+     *
+     * 이 상태들은 클레임 서비스가 전담 기록하므로 관리자 주문 화면의 일반 상태 변경에서는
+     * 선택 대상이 아니다(adminAssignableStatuses 참조).
+     *
+     * @return array<self> 클레임 코스 상태 목록
+     */
+    public static function claimCourseStatuses(): array
+    {
+        return [
+            self::EXCHANGE_IN_PROGRESS,
+            self::RETURN_IN_PROGRESS,
+            self::EXCHANGED,
+            self::RETURNED,
+        ];
+    }
+
+    /**
+     * 클레임 코스 상태 값 배열을 반환합니다.
+     *
+     * @return array<string> 클레임 코스 상태 값 배열
+     */
+    public static function claimCourseValues(): array
+    {
+        return array_map(fn ($case) => $case->value, self::claimCourseStatuses());
+    }
+
+    /**
+     * 관리자가 주문/주문옵션 상태 변경에서 직접 지정할 수 있는 상태 목록을 반환합니다.
+     *
+     * 클레임 코스 상태는 교환·반품 서비스가 신청서와 짝을 맞춰 기록하는 값이라,
+     * 주문 화면에서 직접 지정하면 신청서 없는 코스 상태가 남아 이후 클레임 흐름과
+     * 어긋난다(오류 없이 데이터만 어긋나는 결함). 상태 **필터**는 이 목록이 아니라
+     * values() 전체를 쓴다 — 조회는 클레임 진행 건도 대상이다.
+     *
+     * @return array<self> 관리자 지정 가능 상태 목록
+     */
+    public static function adminAssignableStatuses(): array
+    {
+        return array_values(array_filter(
+            self::cases(),
+            fn (self $case) => ! in_array($case, self::claimCourseStatuses(), true),
+        ));
+    }
+
+    /**
+     * 관리자 지정 가능 상태 값 배열을 반환합니다.
+     *
+     * @return array<string> 관리자 지정 가능 상태 값 배열
+     */
+    public static function adminAssignableValues(): array
+    {
+        return array_map(fn ($case) => $case->value, self::adminAssignableStatuses());
     }
 
     /**
@@ -373,7 +447,8 @@ enum OrderStatusEnum: string
      *
      * 판정 순서:
      *   1) 동일 상태(self-transition) → true (일괄에서 이미 그 상태인 건 혼입 방어)
-     *   2) 목표가 취소(CANCELLED) → true (취소는 이 게이트 책임 밖, OrderCancellationService 전담)
+     *   2) 목표가 별도 라이프사이클 상태(syncExcludedStatuses — 취소 + 클레임 코스 4종)
+     *      → true (각각 OrderCancellationService / 교환·반품 서비스 전담)
      *   3) 그 외 → allowedTransitions() 포함 여부
      *
      * @param  self  $target  목표 상태
@@ -386,7 +461,7 @@ enum OrderStatusEnum: string
         }
 
         if (in_array($target, self::syncExcludedStatuses(), true)) {
-            return true; // 취소 진입은 OrderCancellationService 전담
+            return true; // 취소·클레임 코스 진입은 전담 서비스 소관
         }
 
         return in_array($target, $this->allowedTransitions(), true);

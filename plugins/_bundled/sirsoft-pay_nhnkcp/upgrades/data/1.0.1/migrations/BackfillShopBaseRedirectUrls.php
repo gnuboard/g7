@@ -7,7 +7,6 @@ namespace App\Upgrades\Data\Ext\Plugins\SirsoftPayNhnkcp\V1_0_1\Migrations;
 use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\Upgrade\DataMigration;
 use App\Extension\UpgradeContext;
-use App\Support\ExtensionStoragePath;
 use Illuminate\Support\Facades\File;
 
 /**
@@ -36,6 +35,11 @@ use Illuminate\Support\Facades\File;
 final class BackfillShopBaseRedirectUrls implements DataMigration
 {
     /**
+     * 이 플러그인의 설정 저장 경로.
+     */
+    private const SETTINGS_PATH = 'app/plugins/sirsoft-pay_nhnkcp/settings/setting.json';
+
+    /**
      * 예전 기본값 => 새 기본값. 저장값이 좌변과 정확히 같을 때만 우변으로 바꾼다.
      *
      * @var array<string, array{0: string, 1: string}>
@@ -62,9 +66,7 @@ final class BackfillShopBaseRedirectUrls implements DataMigration
      */
     public function run(UpgradeContext $context): void
     {
-        // 이 플러그인의 설정 저장 경로. 절대 경로는 코어 해석기가 디스크 root 를 기준으로 조립한다 — 확장마다
-        // 경로를 직접 조립하면 테스트 환경에서 운영 설정 파일을 그대로 건드리게 된다.
-        $path = ExtensionStoragePath::plugin('sirsoft-pay_nhnkcp', 'settings').'/setting.json';
+        $path = storage_path(self::SETTINGS_PATH);
 
         if (! File::exists($path)) {
             $context->logger->info('[nhnkcp] 설정 파일 없음 — 새 기본값으로 동작하므로 skip');

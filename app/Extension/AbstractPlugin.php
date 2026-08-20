@@ -9,8 +9,6 @@ use App\Contracts\Extension\StorageInterface;
 use App\Contracts\Extension\UpgradeStepInterface;
 use App\Extension\Cache\PluginCacheDriver;
 use App\Extension\Storage\PluginStorageDriver;
-use App\Extension\Traits\ReportsLifecycleFailure;
-use App\Support\PublicAssetDisk;
 use Illuminate\Database\Seeder;
 use ReflectionClass;
 
@@ -26,8 +24,6 @@ use ReflectionClass;
  */
 abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInterface
 {
-    use ReportsLifecycleFailure;
-
     /**
      * 플러그인 디렉토리 경로 (캐시)
      */
@@ -1128,29 +1124,6 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
     }
 
     /**
-     * 매니페스트가 **선언한** 프론트엔드 자산의 절대 경로를 반환합니다 (파일 존재 여부 무관).
-     *
-     * `getBuiltAssetAbsolutePaths()` 는 `file_exists()` 게이트라 소실된 산출물이 목록에서
-     * 사라진다. 배포 중 `dist` 가 잠깐 비는 상태를 "선언은 있는데 파일이 없다" 로 세려면
-     * 선언 축을 그대로 돌려주는 통로가 필요하다 — 이 메서드가 그 축이다.
-     *
-     * @return array<string, string> kind('js'|'css') => 절대 경로 (선언된 kind 만)
-     */
-    public function getDeclaredAssetAbsolutePaths(): array
-    {
-        $assets = $this->getAssets();
-        $result = [];
-
-        foreach (['js', 'css'] as $kind) {
-            if (! empty($assets[$kind]['output'])) {
-                $result[$kind] = $this->getPluginPath().'/'.$assets[$kind]['output'];
-            }
-        }
-
-        return $result;
-    }
-
-    /**
      * 플러그인이 설정 페이지를 가지고 있는지 확인합니다.
      *
      * 설정 레이아웃 파일이 존재하면 설정 페이지가 있는 것으로 간주합니다.
@@ -1314,7 +1287,15 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
      */
     protected function resolvePublicAssetDisk(?string $override = null): ?string
     {
-        return PublicAssetDisk::resolve($override);
+        $disk = ($override !== null && $override !== '')
+            ? $override
+            : (string) config('core.storage.public_asset_disk', '');
+
+        if ($disk === '' || $disk === 'none' || config("filesystems.disks.{$disk}") === null) {
+            return null;
+        }
+
+        return $disk;
     }
 
     /**
@@ -1352,30 +1333,26 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
     /**
      * 카테고리별 스토리지 기본 경로 반환
      *
-     * 카테고리가 다른 디스크로 배선돼 있으면(getStorageDiskFor 오버라이드) 그 디스크
-     * 기준 경로를 돌려줍니다. 기본 디스크를 보면 배선한 카테고리의 경로가 어긋납니다.
-     *
      * @param  string  $category  카테고리 (settings, data, temp)
      * @return string 전체 파일 시스템 경로
      */
     public function getStorageBasePath(string $category): string
     {
-        return $this->getStorageFor($category)->getBasePath($category);
+        return $this->getStorage()->getBasePath($category);
     }
 
     /**
      * 파일의 공개 URL 반환
      *
-     * 카테고리에 배선된 디스크(getStorageDiskFor)가 직접 URL 을 지원하면 그 URL 을,
-     * 아니면 null 을 반환합니다 (별도 API 엔드포인트 사용). 기본 디스크를 보면
-     * 공개 자산 디스크로 옮긴 카테고리가 항상 null 을 받습니다.
+     * public disk인 경우 직접 URL을 반환하고,
+     * private disk인 경우 null을 반환합니다 (별도 API 엔드포인트 사용).
      *
      * @param  string  $category  카테고리
      * @param  string  $path  파일 경로
-     * @return string|null 파일 URL (직접 URL 불가 디스크인 경우 null)
+     * @return string|null 파일 URL (private disk인 경우 null)
      */
     public function getStorageUrl(string $category, string $path): ?string
     {
-        return $this->getStorageFor($category)->url($category, $path);
+        return $this->getStorage()->url($category, $path);
     }
 }
