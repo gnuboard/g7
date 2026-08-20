@@ -1163,7 +1163,7 @@ _단건 응답: `data` 객체의 필드 (`LanguagePackResource::toDetailArray`).
 | source_meta.installed_by | integer\|null | `1` | 설치를 수행한 사용자 ID |
 | source_meta.latest_version | string\|null | `1.0.6` | 업데이트 확인으로 파악된 최신 버전 |
 | source_meta.directory_path | string\|null | `lang-packs/g7-core-ja` | 프로젝트 루트 기준 설치 디렉토리 경로 (해석 실패 시 `null`) |
-| changelog_entries | array | `[{"version":"1.0.7","date":"2026-08-08","categories":[…]}]` | 언어팩 CHANGELOG.md 파싱 결과 — 항목별 `version`/`date`/`categories[]`(각 항목은 `name` 과 불릿 문자열 배열 `items`) |
+| changelog_entries | array | `[{"version":"1.0.7","date":"2026-08-20","categories":[…]}]` | 언어팩 CHANGELOG.md 파싱 결과 — 항목별 `version`/`date`/`categories[]`(각 항목은 `name` 과 불릿 문자열 배열 `items`) |
 
 **응답 예시**
 
@@ -1187,7 +1187,7 @@ HTTP/1.1 200
         "validation_summary": { "target_version_mismatch": false, "depends_on_core_locale": null },
         "source_meta": { "type": "bundled", "url": null, "installed_by": 1, "latest_version": null, "directory_path": "lang-packs/g7-core-ja" },
         "changelog_entries": [
-            { "version": "1.0.7", "date": "2026-08-08", "categories": [ { "name": "Added", "items": ["레이아웃 저작 파일 검사 문구 일본어 번역 추가"] } ] }
+            { "version": "1.0.7", "date": "2026-08-20", "categories": [ { "name": "Added", "items": ["레이아웃 저작 파일 검사 문구 일본어 번역 추가"] } ] }
         ]
     }
 }
@@ -1375,10 +1375,10 @@ _단건 응답: `data` 객체의 필드. `{id}` 가 정수면 설치된 언어�
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | identifier | string | `g7-core-ja` | 대상 언어팩 식별자 |
-| entries | array | `[{"version":"1.0.7","date":"2026-08-08","categories":[…]}]` | `CHANGELOG.md` 를 파싱한 버전별 항목 목록 (Keep a Changelog 기준) — 항목별 `version`/`date`/`categories[]`(각 항목은 `name` 과 불릿 문자열 배열 `items`). 파일이 없으면 빈 배열 |
+| entries | array | `[{"version":"1.0.7","date":"2026-08-20","categories":[…]}]` | `CHANGELOG.md` 를 파싱한 버전별 항목 목록 (Keep a Changelog 기준) — 항목별 `version`/`date`/`categories[]`(각 항목은 `name` 과 불릿 문자열 배열 `items`). 파일이 없으면 빈 배열 |
 | changelog | string | `"# Changelog
 
-## [1.0.7] - 2026-08-08
+## [1.0.7] - 2026-08-20
 ..."` | `CHANGELOG.md` 원문. 파일이 없으면 빈 문자열 |
 | has_changelog | boolean | `true` | 표시할 변경 이력이 있는지 여부 (`entries` 가 비어 있지 않거나 원문이 빈 문자열이 아니면 `true`) |
 
@@ -1395,9 +1395,9 @@ HTTP/1.1 200
     "data": {
         "identifier": "g7-core-ja",
         "entries": [
-            { "version": "1.0.7", "date": "2026-08-08", "categories": [ { "name": "Added", "items": ["레이아웃 저작 파일 검사 문구 일본어 번역 추가"] } ] }
+            { "version": "1.0.7", "date": "2026-08-20", "categories": [ { "name": "Added", "items": ["레이아웃 저작 파일 검사 문구 일본어 번역 추가"] } ] }
         ],
-        "changelog": "# Changelog\n\n## [1.0.7] - 2026-08-08\n\n### Added\n\n- 레이아웃 저작 파일 검사 문구 일본어 번역 추가 …",
+        "changelog": "# Changelog\n\n## [1.0.7] - 2026-08-20\n\n### Added\n\n- 레이아웃 저작 파일 검사 문구 일본어 번역 추가 …",
         "has_changelog": true
     }
 }
