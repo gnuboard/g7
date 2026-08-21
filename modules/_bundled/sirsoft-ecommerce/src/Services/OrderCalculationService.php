@@ -1211,7 +1211,7 @@ class OrderCalculationService
      * @param  array  $group  그룹 정보 (total_amount, total_quantity, total_weight, total_volume)
      * @return int 추가 배송비
      */
-    protected function calculateExtraShippingFee(ShippingPolicyCountrySetting $countrySetting, string $countryCode, ?string $zipcode, array $group): int
+    public function calculateExtraShippingFee(ShippingPolicyCountrySetting $countrySetting, string $countryCode, ?string $zipcode, array $group): int
     {
         // 도서산간 추가배송비는 KR 전용
         if ($countryCode !== 'KR') {
@@ -2839,10 +2839,14 @@ class OrderCalculationService
     /**
      * 스냅샷의 policy_snapshot 데이터에서 ShippingPolicyCountrySetting 모델을 생성합니다.
      *
+     * 클레임 배송비의 '원 배송정책 기준' 모드가 주문 시점 정책을 복원할 때도 쓰므로 public 이다.
+     * 이 재구성물에는 `api_endpoint` / `api_config` 가 없다 — 스냅샷 페이로드가 그 둘을 담지
+     * 않기 때문이며, 그래서 재계산 경로의 `api` 부과정책은 외부 호출 없이 `base_fee` 로 떨어진다.
+     *
      * @param  array  $snapshotData  AppliedShippingPolicy 직렬화 데이터
      * @return ShippingPolicyCountrySetting|null 스냅샷 기반 국가별 설정
      */
-    protected function buildSnapshotCountrySetting(array $snapshotData): ?ShippingPolicyCountrySetting
+    public function buildSnapshotCountrySetting(array $snapshotData): ?ShippingPolicyCountrySetting
     {
         $policySnapshot = $snapshotData['policy_snapshot'] ?? null;
 

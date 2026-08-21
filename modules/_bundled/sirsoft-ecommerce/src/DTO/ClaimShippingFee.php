@@ -13,8 +13,9 @@ use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
  * `shipping_fee_mode` / `claim_shipping_fee` / `shipping_fee_snapshot` 세 컬럼이
  * 이 DTO 하나에서 나온다.
  *
- * 금액은 주문 기본 통화 기준 정수다. 다통화 표현(`mc_claim_shipping_fee`)과
- * 근거 스냅샷의 확장(도서산간·수량 안분)은 S2b2 가 이 DTO 위에 덧붙인다.
+ * `fee` 는 주문 기본 통화 기준 정수이고, `mcFee` 는 주문 시점 환율로 환산한 통화별 금액
+ * (`mc_claim_shipping_fee`)이다. `extraFee` 는 그 안에 포함된 도서산간 추가배송비 합계라
+ * 기본 배송비분은 `fee − extraFee` 로 읽는다.
  *
  * 패턴은 이 모듈의 다른 DTO 와 같은 **Data Carrier** 다 — 산정 이후 다통화 금액이 덧붙고,
  * 동결된 `shipping_fee_snapshot` 을 화면에서 되읽는 재구성 경로가 뒤따르기 때문이다.
@@ -44,6 +45,9 @@ class ClaimShippingFee
      * @param  bool  $charged  실제 청구가 발생했는지 여부
      * @param  string  $reason  산정 결과 사유 키 (REASON_* 상수)
      * @param  array<int, array>  $groups  배송정책 그룹별 산정 근거
+     * @param  int  $extraFee  청구액에 포함된 도서산간 추가배송비 합계 (주문 기본 통화)
+     * @param  array<string, int|float>  $mcFee  통화코드 → 청구 배송비 (주문 시점 환율)
+     * @param  bool  $redeliveryChanged  재발송지가 회수지와 달라 도서산간을 구간별로 다시 판정했는지 여부 (D14)
      */
     public function __construct(
         public int $fee = 0,
@@ -53,6 +57,9 @@ class ClaimShippingFee
         public bool $charged = false,
         public string $reason = self::REASON_CHARGED,
         public array $groups = [],
+        public int $extraFee = 0,
+        public array $mcFee = [],
+        public bool $redeliveryChanged = false,
     ) {}
 
     /**
@@ -63,6 +70,7 @@ class ClaimShippingFee
      * @param  string  $reason  사유 키 (REASON_* 상수)
      * @param  ClaimShippingFeeModeEnum  $mode  헤더에 기록할 산정 모드
      * @param  array<int, array>  $groups  배송정책 그룹별 근거
+     * @param  bool  $redeliveryChanged  재발송지 재판정 여부 (D14)
      * @return self 청구 0원 결과
      */
     public static function notCharged(
@@ -71,6 +79,7 @@ class ClaimShippingFee
         string $reason,
         ClaimShippingFeeModeEnum $mode = ClaimShippingFeeModeEnum::FIXED,
         array $groups = [],
+        bool $redeliveryChanged = false,
     ): self {
         return new self(
             fee: 0,
@@ -80,6 +89,7 @@ class ClaimShippingFee
             charged: false,
             reason: $reason,
             groups: $groups,
+            redeliveryChanged: $redeliveryChanged,
         );
     }
 
@@ -92,11 +102,18 @@ class ClaimShippingFee
     {
         return [
             'fee' => $this->fee,
+            'extra_fee' => $this->extraFee,
+            'mc_fee' => $this->mcFee,
             'mode' => $this->mode->value,
             'claim_type' => $this->claimType->value,
             'fault_type' => $this->fault->value,
             'charged' => $this->charged,
             'reason' => $this->reason,
+            // 재발송지를 바꿔 도서산간을 구간별로 다시 판정했는가(D14). 두 구간의 추가액이
+            // 우연히 같을 때(둘 다 0원 · 둘 다 같은 도서산간)는 금액만으로 구분되지 않는다.
+            // 우편번호·국가 기준이므로 배송비가 달라지지 않는 상세주소 수정은 여기 잡히지 않는다
+            // — 그 축은 신청서의 '고객이 수정함' 표시가 담당한다.
+            'redelivery_changed' => $this->redeliveryChanged,
             'groups' => $this->groups,
         ];
     }

@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Services;
 
 use App\Extension\HookManager;
+use Illuminate\Support\Facades\Http;
 use Modules\Sirsoft\Ecommerce\DTO\ClaimShippingFee;
 use Modules\Sirsoft\Ecommerce\Enums\ChargePolicyEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimReasonFaultTypeEnum;
@@ -10,15 +11,17 @@ use Modules\Sirsoft\Ecommerce\Enums\ClaimShippingFeeModeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Models\OrderAddress;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderShipping;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
 use Modules\Sirsoft\Ecommerce\Services\ClaimShippingFeeService;
+use Modules\Sirsoft\Ecommerce\Support\ShippingPolicySnapshot;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
- * 클레임 배송비 산정 서비스 테스트 (S2b1 — 본체)
+ * 클레임 배송비 산정 서비스 테스트 (S2b1 본체 + S2b2 확장)
  *
  * 검증 축:
  * - 청구 대상 유형 게이트 (환불·취소는 회수 배송이 없어 청구 없음)
@@ -27,8 +30,12 @@ use PHPUnit\Framework\Attributes\DataProvider;
  * - `original_policy` 모드 × 부과정책 6종 (무료·고정·조건부무료 미달/충족·수량당·구간) × 반품 ×1 / 교환 ×2
  * - 다중 배송정책 그룹 합산과 헤더 모드 결정
  * - 대상 아이템 정규화와 정책 미해석 시 0원 처리
- *
- * 도서산간 재판정·다통화·수량 안분·원 정책 스냅샷 재구성은 S2b2 범위다.
+ * - 부과정책 파라미터의 출처 (주문 시점 스냅샷 우선 · 스냅샷 없는 과거 주문만 현재 정책 행)
+ * - 도서산간 추가배송비 (회수 구간 · 교환 재발송 구간 · `extra_fee_multiply`)
+ * - 재발송지 변경 시 도서산간 재판정 (D14)
+ * - 그룹 청구액의 수량 안분과 근거 아이템 기록
+ * - 주문 시점 환율 기준 다통화 금액 (`mc_claim_shipping_fee`)
+ * - 외부 요금 API 정책의 기본 배송비 폴백 (클레임 문맥에서는 외부 호출 없음)
  */
 class ClaimShippingFeeServiceTest extends ModuleTestCase
 {
@@ -120,13 +127,102 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
     /**
      * 빈 주문을 만듭니다.
      *
+     * @param  array  $overrides  주문 override
      * @return Order 생성된 주문
      */
-    protected function makeOrder(): Order
+    protected function makeOrder(array $overrides = []): Order
     {
-        return Order::factory()->create([
+        return Order::factory()->create(array_merge([
             'order_status' => OrderStatusEnum::DELIVERED,
-        ]);
+        ], $overrides));
+    }
+
+    /**
+     * 주문 시점 배송지(국가/우편번호) 스냅샷을 기록합니다.
+     *
+     * 도서산간 판정의 SSoT 이며, 이 스냅샷이 없으면 서비스는 주문 배송주소로 폴백한다.
+     *
+     * @param  Order  $order  대상 주문
+     * @param  string|null  $zipcode  우편번호
+     * @param  string  $countryCode  국가코드
+     * @return Order 갱신된 주문
+     */
+    protected function withDeliveryAddress(Order $order, ?string $zipcode, string $countryCode = 'KR'): Order
+    {
+        $order->forceFill([
+            'shipping_policy_applied_snapshot' => ShippingPolicySnapshot::make([], [
+                'country_code' => $countryCode,
+                'zipcode' => $zipcode,
+            ]),
+        ])->save();
+
+        return $order;
+    }
+
+    /**
+     * 주문 시점 배송정책 스냅샷(`delivery_policy_snapshot`) 페이로드를 만듭니다.
+     *
+     * 주문 생성 시 `OrderCalculationService::calculateShippingFee()` 가 기록하는 것과 같은
+     * 키 집합이다 — 클레임 약관 3종(`claim_fee_mode`·고정액 2종)은 여기에 없다.
+     *
+     * @param  array  $overrides  스냅샷 override
+     * @param  string  $countryCode  국가코드
+     * @return array 배송정책 스냅샷
+     */
+    protected function snapshotPolicy(array $overrides = [], string $countryCode = 'KR'): array
+    {
+        return array_merge([
+            'country_code' => $countryCode,
+            'shipping_method' => 'parcel',
+            'custom_shipping_name' => null,
+            'currency_code' => 'KRW',
+            'charge_policy' => 'fixed',
+            'base_fee' => 3000,
+            'free_threshold' => null,
+            'ranges' => null,
+            'extra_fee_enabled' => false,
+            'extra_fee_multiply' => false,
+            'extra_fee_settings' => [],
+        ], $overrides);
+    }
+
+    /**
+     * 도서산간 추가배송비 설정 override 를 만듭니다.
+     *
+     * @param  int  $fee  추가배송비
+     * @param  string  $pattern  우편번호 패턴 (범위·와일드카드·정확일치)
+     * @param  bool  $multiply  per_* 정책에서 단위 수만큼 중복 부과할지 여부
+     * @return array 국가별 설정 override
+     */
+    protected function remoteArea(int $fee = 3000, string $pattern = '63000-63999', bool $multiply = false): array
+    {
+        return [
+            'extra_fee_enabled' => true,
+            'extra_fee_settings' => [['zipcode' => $pattern, 'fee' => $fee]],
+            'extra_fee_multiply' => $multiply,
+        ];
+    }
+
+    /**
+     * 두 통화(KRW 기준 · USD 환산)를 담은 주문 시점 통화 스냅샷을 만듭니다.
+     *
+     * 환산 분모(base_unit) 1,000 · USD 환율 0.75 이므로 3,000원 = 2.25 USD 다.
+     *
+     * @return array 통화 스냅샷
+     */
+    protected function currencySnapshot(): array
+    {
+        return [
+            'base_currency' => 'KRW',
+            'order_currency' => 'KRW',
+            'exchange_rate' => 1.0,
+            'base_unit' => 1000,
+            'exchange_rates' => [
+                'KRW' => ['rate' => 1.0, 'rounding_unit' => '1', 'rounding_method' => 'floor', 'decimal_places' => 0, 'base_unit' => 1000],
+                'USD' => ['rate' => 0.75, 'rounding_unit' => '0.01', 'rounding_method' => 'round', 'decimal_places' => 2, 'base_unit' => 1000],
+            ],
+            'snapshot_at' => '2026-08-21T00:00:00+09:00',
+        ];
     }
 
     /**
@@ -145,6 +241,7 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
         array $overrides = [],
         string $countryCode = 'KR',
         bool $withShipping = true,
+        ?array $policySnapshot = null,
     ): OrderOption {
         $quantity = $overrides['quantity'] ?? 2;
         $subtotal = $overrides['subtotal_price'] ?? 20000;
@@ -168,7 +265,7 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
                 'order_id' => $order->id,
                 'order_option_id' => $option->id,
                 'shipping_policy_id' => $policy?->id,
-                'delivery_policy_snapshot' => ['country_code' => $countryCode],
+                'delivery_policy_snapshot' => $policySnapshot ?? ['country_code' => $countryCode],
             ]);
         }
 
@@ -210,6 +307,7 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
      * @param  ClaimTypeEnum  $type  클레임 유형
      * @param  array  $items  대상 아이템
      * @param  ClaimReasonFaultTypeEnum  $fault  귀책
+     * @param  array|null  $redeliveryAddress  교환 재발송지 (D14)
      * @return ClaimShippingFee 산정 결과
      */
     protected function calc(
@@ -217,8 +315,9 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
         ClaimTypeEnum $type,
         array $items,
         ClaimReasonFaultTypeEnum $fault = ClaimReasonFaultTypeEnum::CUSTOMER,
+        ?array $redeliveryAddress = null,
     ): ClaimShippingFee {
-        return $this->service->calculate($order->fresh(), $type, $items, $fault);
+        return $this->service->calculate($order->fresh(), $type, $items, $fault, $redeliveryAddress);
     }
 
     /**
@@ -1474,7 +1573,7 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
         $snapshot = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option))->toArray();
 
         $this->assertSame(
-            ['fee', 'mode', 'claim_type', 'fault_type', 'charged', 'reason', 'groups'],
+            ['fee', 'extra_fee', 'mc_fee', 'mode', 'claim_type', 'fault_type', 'charged', 'reason', 'redelivery_changed', 'groups'],
             array_keys($snapshot)
         );
     }
@@ -1502,8 +1601,9 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
         $this->assertSame(
             [
                 'shipping_policy_id', 'country_code', 'mode', 'charge_policy',
-                'hook_overridden', 'base_fee', 'multiplier', 'fee', 'reason',
-                'item_count', 'total_amount', 'total_quantity',
+                'policy_source', 'hook_overridden', 'api_fallback',
+                'base_fee', 'multiplier', 'extra_fee', 'extra_fee_legs',
+                'fee', 'reason', 'item_count', 'total_amount', 'total_quantity', 'items',
             ],
             array_keys($result->groups[0])
         );
@@ -1669,5 +1769,1349 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
         ]);
 
         $this->assertSame(2, $result->groups[0]['item_count']);
+    }
+
+    // ================================================================
+    // 12. 부과정책 파라미터의 출처 — 주문 시점 스냅샷 우선
+    // ================================================================
+
+    public function test_original_policy_reads_the_charge_policy_from_the_order_snapshot(): void
+    {
+        $order = $this->makeOrder();
+        // 현재 정책 행은 9,000원인데 주문 시점 스냅샷은 3,000원이다.
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, ['base_fee' => 9000]));
+        $option = $this->makeOption($order, $policy, [], 'KR', true, $this->snapshotPolicy(['base_fee' => 3000]));
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option));
+
+        $this->assertSame(3000, $result->fee);
+    }
+
+    public function test_later_changes_to_the_live_fee_table_do_not_move_a_past_order(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, ['base_fee' => 3000]));
+        $option = $this->makeOption($order, $policy, [], 'KR', true, $this->snapshotPolicy(['base_fee' => 3000]));
+
+        // 운영자가 요금표를 올린다.
+        $policy->countrySettings->first()->update(['base_fee' => 12000]);
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option));
+
+        $this->assertSame(3000, $result->fee);
+    }
+
+    public function test_snapshot_backed_group_records_the_order_snapshot_source(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED));
+        $option = $this->makeOption($order, $policy, [], 'KR', true, $this->snapshotPolicy());
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option));
+
+        $this->assertSame(ClaimShippingFeeService::SOURCE_ORDER_SNAPSHOT, $result->groups[0]['policy_source']);
+    }
+
+    public function test_group_without_a_snapshot_records_the_live_policy_source(): void
+    {
+        [$order, $option] = $this->scenario($this->originalPolicy(ChargePolicyEnum::FIXED));
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option));
+
+        $this->assertSame(ClaimShippingFeeService::SOURCE_LIVE_POLICY, $result->groups[0]['policy_source']);
+    }
+
+    public function test_order_without_a_snapshot_falls_back_to_the_live_fee_table(): void
+    {
+        [$order, $option] = $this->scenario($this->originalPolicy(ChargePolicyEnum::FIXED, ['base_fee' => 4500]));
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option));
+
+        $this->assertSame(4500, $result->fee);
+    }
+
+    public function test_claim_fee_mode_is_always_read_from_the_live_policy_row(): void
+    {
+        $order = $this->makeOrder();
+        // 스냅샷은 claim_fee_mode 를 담지 않는다 — 모드는 현재 정책 행이 정한다.
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, ['base_fee' => 3300]));
+        $option = $this->makeOption($order, $policy, [], 'KR', true, $this->snapshotPolicy(['base_fee' => 3300]));
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option));
+
+        $this->assertSame(ClaimShippingFeeModeEnum::ORIGINAL_POLICY, $result->mode);
+        $this->assertSame(3300, $result->fee);
+    }
+
+    public function test_fixed_fees_are_always_read_from_the_live_policy_row(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy(['return_fixed_fee' => 4400]);
+        $option = $this->makeOption($order, $policy, [], 'KR', true, $this->snapshotPolicy(['base_fee' => 3000]));
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option));
+
+        // 고정액 모드는 스냅샷의 base_fee 를 쓰지 않는다.
+        $this->assertSame(4400, $result->fee);
+    }
+
+    public function test_deleted_live_country_row_is_not_recovered_from_the_snapshot(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED));
+        $option = $this->makeOption($order, $policy, [], 'KR', true, $this->snapshotPolicy(['base_fee' => 7000]));
+
+        $policy->countrySettings()->delete();
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option));
+
+        $this->assertSame(0, $result->fee);
+        $this->assertSame(ClaimShippingFee::REASON_NO_SHIPPING_POLICY, $result->reason);
+    }
+
+    public function test_snapshot_threshold_decides_the_conditional_free_result(): void
+    {
+        $order = $this->makeOrder();
+        // 현재 정책은 임계 500,000(미달 → 유료), 주문 시점 스냅샷은 임계 10,000(충족 → 무료).
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::CONDITIONAL_FREE, [
+            'base_fee' => 2500,
+            'free_threshold' => 500000,
+        ]));
+        $option = $this->makeOption($order, $policy, ['quantity' => 2, 'subtotal_price' => 40000], 'KR', true, $this->snapshotPolicy([
+            'charge_policy' => 'conditional_free',
+            'base_fee' => 2500,
+            'free_threshold' => 10000,
+        ]));
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option, 2));
+
+        $this->assertSame(0, $result->fee);
+    }
+
+    public function test_snapshot_ranges_decide_the_matching_tier(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::RANGE_AMOUNT, [
+            'base_fee' => 0,
+            'ranges' => ['tiers' => [['max' => null, 'fee' => 9900]]],
+        ]));
+        $option = $this->makeOption($order, $policy, ['quantity' => 2, 'subtotal_price' => 40000], 'KR', true, $this->snapshotPolicy([
+            'charge_policy' => 'range_amount',
+            'base_fee' => 0,
+            'ranges' => ['tiers' => [['max' => 50000, 'fee' => 4000], ['max' => null, 'fee' => 0]]],
+        ]));
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option, 2));
+
+        $this->assertSame(4000, $result->fee);
+    }
+
+    public function test_snapshot_per_quantity_unit_value_is_used(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::PER_QUANTITY, [
+            'base_fee' => 5000,
+            'ranges' => ['unit_value' => 1],
+        ]));
+        $option = $this->makeOption($order, $policy, ['quantity' => 2, 'subtotal_price' => 40000], 'KR', true, $this->snapshotPolicy([
+            'charge_policy' => 'per_quantity',
+            'base_fee' => 1000,
+            'ranges' => ['unit_value' => 1],
+        ]));
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option, 2));
+
+        $this->assertSame(2000, $result->fee);
+    }
+
+    public function test_exchange_multiplier_applies_to_the_snapshot_base_fee(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, ['base_fee' => 9000]));
+        $option = $this->makeOption($order, $policy, [], 'KR', true, $this->snapshotPolicy(['base_fee' => 3000]));
+
+        $result = $this->calc($order, ClaimTypeEnum::EXCHANGE, $this->items($option));
+
+        $this->assertSame(6000, $result->fee);
+        $this->assertSame(3000, $result->groups[0]['base_fee']);
+        $this->assertSame(2, $result->groups[0]['multiplier']);
+    }
+
+    public function test_snapshot_without_a_charge_policy_falls_back_to_the_live_row(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, ['base_fee' => 5500]));
+        // 정책이 해석되지 않은 주문의 스냅샷은 국가코드만 담는다.
+        $option = $this->makeOption($order, $policy, [], 'KR', true, ['country_code' => 'KR']);
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option));
+
+        $this->assertSame(5500, $result->fee);
+        $this->assertSame(ClaimShippingFeeService::SOURCE_LIVE_POLICY, $result->groups[0]['policy_source']);
+    }
+
+    public function test_unresolvable_group_has_no_policy_source(): void
+    {
+        $order = $this->makeOrder();
+        $option = $this->makeOption($order, null);
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option));
+
+        $this->assertNull($result->groups[0]['policy_source']);
+    }
+
+    // ================================================================
+    // 13. 도서산간 추가배송비
+    // ================================================================
+
+    public function test_remote_area_fee_is_added_to_a_return(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, $this->remoteArea()));
+        $option = $this->makeOption($order, $policy);
+        $this->withDeliveryAddress($order, '63001');
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option));
+
+        $this->assertSame(6000, $result->fee);
+        $this->assertSame(3000, $result->extraFee);
+    }
+
+    public function test_remote_area_fee_is_charged_on_both_legs_of_an_exchange(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, $this->remoteArea()));
+        $option = $this->makeOption($order, $policy);
+        $this->withDeliveryAddress($order, '63001');
+
+        $result = $this->calc($order, ClaimTypeEnum::EXCHANGE, $this->items($option));
+
+        // 기본 3,000 × 2 + 도서산간 3,000 × 2구간
+        $this->assertSame(12000, $result->fee);
+        $this->assertSame(6000, $result->extraFee);
+    }
+
+    public function test_non_remote_zipcode_adds_nothing(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, $this->remoteArea()));
+        $option = $this->makeOption($order, $policy);
+        $this->withDeliveryAddress($order, '06234');
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option));
+
+        $this->assertSame(3000, $result->fee);
+        $this->assertSame(0, $result->extraFee);
+    }
+
+    public function test_disabled_remote_area_setting_adds_nothing(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, [
+            'extra_fee_enabled' => false,
+            'extra_fee_settings' => [['zipcode' => '63000-63999', 'fee' => 3000]],
+        ]));
+        $option = $this->makeOption($order, $policy);
+        $this->withDeliveryAddress($order, '63001');
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option));
+
+        $this->assertSame(0, $result->extraFee);
+    }
+
+    public function test_missing_zipcode_adds_nothing(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, $this->remoteArea()));
+        $option = $this->makeOption($order, $policy);
+        $this->withDeliveryAddress($order, null);
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option));
+
+        $this->assertSame(0, $result->extraFee);
+    }
+
+    public function test_remote_area_fee_is_korea_only(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, $this->remoteArea()), 'JP');
+        $option = $this->makeOption($order, $policy, [], 'JP');
+        $this->withDeliveryAddress($order, '63001', 'JP');
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option));
+
+        $this->assertSame(0, $result->extraFee);
+    }
+
+    public function test_remote_area_fee_uses_a_wildcard_pattern(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, $this->remoteArea(2500, '63*')));
+        $option = $this->makeOption($order, $policy);
+        $this->withDeliveryAddress($order, '63555');
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option));
+
+        $this->assertSame(2500, $result->extraFee);
+    }
+
+    public function test_remote_area_multiply_scales_with_the_charge_units(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::PER_QUANTITY, array_merge(
+            ['base_fee' => 1000, 'ranges' => ['unit_value' => 1]],
+            $this->remoteArea(3000, '63000-63999', true),
+        )));
+        $option = $this->makeOption($order, $policy, ['quantity' => 2, 'subtotal_price' => 40000]);
+        $this->withDeliveryAddress($order, '63001');
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option, 2));
+
+        // 수량당 1,000 × 2 + 도서산간 3,000 × 2단위
+        $this->assertSame(8000, $result->fee);
+        $this->assertSame(6000, $result->extraFee);
+    }
+
+    public function test_remote_area_multiply_follows_the_claim_quantity_not_the_order_quantity(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::PER_QUANTITY, array_merge(
+            ['base_fee' => 1000, 'ranges' => ['unit_value' => 1]],
+            $this->remoteArea(3000, '63000-63999', true),
+        )));
+        $option = $this->makeOption($order, $policy, ['quantity' => 4, 'subtotal_price' => 80000]);
+        $this->withDeliveryAddress($order, '63001');
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option, 1));
+
+        $this->assertSame(3000, $result->extraFee);
+    }
+
+    public function test_remote_area_multiply_is_ignored_for_non_per_unit_policies(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, array_merge(
+            ['base_fee' => 3000],
+            $this->remoteArea(3000, '63000-63999', true),
+        )));
+        $option = $this->makeOption($order, $policy, ['quantity' => 3, 'subtotal_price' => 60000]);
+        $this->withDeliveryAddress($order, '63001');
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option, 3));
+
+        $this->assertSame(3000, $result->extraFee);
+    }
+
+    public function test_fixed_mode_does_not_add_the_remote_area_fee(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy(array_merge(['return_fixed_fee' => 3000], $this->remoteArea()));
+        $option = $this->makeOption($order, $policy);
+        $this->withDeliveryAddress($order, '63001');
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option));
+
+        $this->assertSame(3000, $result->fee);
+        $this->assertSame(0, $result->extraFee);
+    }
+
+    public function test_seller_fault_does_not_add_the_remote_area_fee(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, $this->remoteArea()));
+        $option = $this->makeOption($order, $policy);
+        $this->withDeliveryAddress($order, '63001');
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option), ClaimReasonFaultTypeEnum::SELLER);
+
+        $this->assertSame(0, $result->fee);
+        $this->assertSame(0, $result->extraFee);
+    }
+
+    public function test_remote_area_settings_come_from_the_order_snapshot(): void
+    {
+        $order = $this->makeOrder();
+        // 현재 정책은 도서산간을 껐지만 주문 시점에는 켜져 있었다.
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, ['extra_fee_enabled' => false]));
+        $option = $this->makeOption($order, $policy, [], 'KR', true, $this->snapshotPolicy([
+            'extra_fee_enabled' => true,
+            'extra_fee_settings' => [['zipcode' => '63000-63999', 'fee' => 3000]],
+        ]));
+        $this->withDeliveryAddress($order, '63001');
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option));
+
+        $this->assertSame(3000, $result->extraFee);
+    }
+
+    public function test_basis_records_the_extra_fee_legs_for_a_return(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, $this->remoteArea()));
+        $option = $this->makeOption($order, $policy);
+        $this->withDeliveryAddress($order, '63001');
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option));
+
+        $this->assertSame(['collection' => 3000, 'redelivery' => null], $result->groups[0]['extra_fee_legs']);
+    }
+
+    public function test_basis_records_the_extra_fee_legs_for_an_exchange(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, $this->remoteArea()));
+        $option = $this->makeOption($order, $policy);
+        $this->withDeliveryAddress($order, '63001');
+
+        $result = $this->calc($order, ClaimTypeEnum::EXCHANGE, $this->items($option));
+
+        $this->assertSame(['collection' => 3000, 'redelivery' => 3000], $result->groups[0]['extra_fee_legs']);
+    }
+
+    public function test_basis_extra_fee_is_the_sum_of_the_legs(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, $this->remoteArea(2000)));
+        $option = $this->makeOption($order, $policy);
+        $this->withDeliveryAddress($order, '63001');
+
+        $result = $this->calc($order, ClaimTypeEnum::EXCHANGE, $this->items($option));
+
+        $this->assertSame(4000, $result->groups[0]['extra_fee']);
+    }
+
+    public function test_extra_fee_totals_across_two_policy_groups(): void
+    {
+        $order = $this->makeOrder();
+        $first = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, $this->remoteArea(1000)));
+        $second = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, $this->remoteArea(2000)));
+        $firstOption = $this->makeOption($order, $first);
+        $secondOption = $this->makeOption($order, $second);
+        $this->withDeliveryAddress($order, '63001');
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, [
+            ['order_option_id' => $firstOption->id, 'cancel_quantity' => 1],
+            ['order_option_id' => $secondOption->id, 'cancel_quantity' => 1],
+        ]);
+
+        $this->assertSame(3000, $result->extraFee);
+        $this->assertSame(9000, $result->fee);
+    }
+
+    public function test_zipcode_falls_back_to_the_order_shipping_address(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, $this->remoteArea()));
+        $option = $this->makeOption($order, $policy);
+
+        // 배송지 스냅샷이 없는 과거 주문은 주문 배송주소로 폴백한다.
+        OrderAddress::factory()->create([
+            'order_id' => $order->id,
+            'address_type' => 'shipping',
+            'recipient_country_code' => 'KR',
+            'zipcode' => '63001',
+        ]);
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option));
+
+        $this->assertSame(3000, $result->extraFee);
+    }
+
+    public function test_delivery_address_snapshot_wins_over_the_current_shipping_address(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, $this->remoteArea()));
+        $option = $this->makeOption($order, $policy);
+
+        OrderAddress::factory()->create([
+            'order_id' => $order->id,
+            'address_type' => 'shipping',
+            'recipient_country_code' => 'KR',
+            'zipcode' => '63001',
+        ]);
+        // 주문 시점에는 도서산간이 아닌 곳으로 배송되었다.
+        $this->withDeliveryAddress($order, '06234');
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option));
+
+        $this->assertSame(0, $result->extraFee);
+    }
+
+    public function test_unresolvable_group_records_empty_extra_fee_legs(): void
+    {
+        $order = $this->makeOrder();
+        $option = $this->makeOption($order, null);
+
+        $result = $this->calc($order, ClaimTypeEnum::EXCHANGE, $this->items($option));
+
+        $this->assertSame(['collection' => 0, 'redelivery' => 0], $result->groups[0]['extra_fee_legs']);
+    }
+
+    // ================================================================
+    // 14. 재발송지 변경 재판정 (D14)
+    // ================================================================
+
+    public function test_changed_redelivery_zipcode_is_used_for_the_second_leg(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, $this->remoteArea()));
+        $option = $this->makeOption($order, $policy);
+        $this->withDeliveryAddress($order, '63001');
+
+        $result = $this->calc(
+            $order,
+            ClaimTypeEnum::EXCHANGE,
+            $this->items($option),
+            ClaimReasonFaultTypeEnum::CUSTOMER,
+            ['country_code' => 'KR', 'zipcode' => '06234'],
+        );
+
+        // 회수 구간만 도서산간이다.
+        $this->assertSame(['collection' => 3000, 'redelivery' => 0], $result->groups[0]['extra_fee_legs']);
+        $this->assertSame(9000, $result->fee);
+    }
+
+    public function test_moving_the_redelivery_into_a_remote_area_adds_the_second_leg(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, $this->remoteArea()));
+        $option = $this->makeOption($order, $policy);
+        $this->withDeliveryAddress($order, '06234');
+
+        $result = $this->calc(
+            $order,
+            ClaimTypeEnum::EXCHANGE,
+            $this->items($option),
+            ClaimReasonFaultTypeEnum::CUSTOMER,
+            ['country_code' => 'KR', 'zipcode' => '63001'],
+        );
+
+        $this->assertSame(['collection' => 0, 'redelivery' => 3000], $result->groups[0]['extra_fee_legs']);
+        $this->assertSame(9000, $result->fee);
+    }
+
+    public function test_unchanged_redelivery_address_keeps_both_legs(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, $this->remoteArea()));
+        $option = $this->makeOption($order, $policy);
+        $this->withDeliveryAddress($order, '63001');
+
+        $result = $this->calc(
+            $order,
+            ClaimTypeEnum::EXCHANGE,
+            $this->items($option),
+            ClaimReasonFaultTypeEnum::CUSTOMER,
+            ['country_code' => 'KR', 'zipcode' => '63001'],
+        );
+
+        $this->assertSame(6000, $result->extraFee);
+    }
+
+    public function test_redelivery_address_without_a_zipcode_keeps_the_original(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, $this->remoteArea()));
+        $option = $this->makeOption($order, $policy);
+        $this->withDeliveryAddress($order, '63001');
+
+        $result = $this->calc(
+            $order,
+            ClaimTypeEnum::EXCHANGE,
+            $this->items($option),
+            ClaimReasonFaultTypeEnum::CUSTOMER,
+            ['country_code' => 'KR'],
+        );
+
+        $this->assertSame(6000, $result->extraFee);
+    }
+
+    public function test_redelivery_address_is_ignored_for_a_return(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, $this->remoteArea()));
+        $option = $this->makeOption($order, $policy);
+        $this->withDeliveryAddress($order, '63001');
+
+        $result = $this->calc(
+            $order,
+            ClaimTypeEnum::RETURN,
+            $this->items($option),
+            ClaimReasonFaultTypeEnum::CUSTOMER,
+            ['country_code' => 'KR', 'zipcode' => '06234'],
+        );
+
+        $this->assertSame(['collection' => 3000, 'redelivery' => null], $result->groups[0]['extra_fee_legs']);
+    }
+
+    public function test_redelivery_to_another_country_drops_the_korea_only_extra_fee(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, $this->remoteArea()));
+        $option = $this->makeOption($order, $policy);
+        $this->withDeliveryAddress($order, '63001');
+
+        $result = $this->calc(
+            $order,
+            ClaimTypeEnum::EXCHANGE,
+            $this->items($option),
+            ClaimReasonFaultTypeEnum::CUSTOMER,
+            ['country_code' => 'JP', 'zipcode' => '63001'],
+        );
+
+        $this->assertSame(['collection' => 3000, 'redelivery' => 0], $result->groups[0]['extra_fee_legs']);
+    }
+
+    public function test_redelivery_change_does_not_move_the_base_fee(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, $this->remoteArea()));
+        $option = $this->makeOption($order, $policy);
+        $this->withDeliveryAddress($order, '63001');
+
+        $result = $this->calc(
+            $order,
+            ClaimTypeEnum::EXCHANGE,
+            $this->items($option),
+            ClaimReasonFaultTypeEnum::CUSTOMER,
+            ['country_code' => 'KR', 'zipcode' => '06234'],
+        );
+
+        $this->assertSame(3000, $result->groups[0]['base_fee']);
+        $this->assertSame(2, $result->groups[0]['multiplier']);
+    }
+
+    public function test_redelivery_change_is_ignored_without_a_remote_area_setting(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED));
+        $option = $this->makeOption($order, $policy);
+        $this->withDeliveryAddress($order, '63001');
+
+        $result = $this->calc(
+            $order,
+            ClaimTypeEnum::EXCHANGE,
+            $this->items($option),
+            ClaimReasonFaultTypeEnum::CUSTOMER,
+            ['country_code' => 'KR', 'zipcode' => '06234'],
+        );
+
+        $this->assertSame(6000, $result->fee);
+        $this->assertSame(0, $result->extraFee);
+    }
+
+    public function test_fixed_mode_ignores_the_redelivery_address(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy(array_merge(['exchange_fixed_fee' => 5000], $this->remoteArea()));
+        $option = $this->makeOption($order, $policy);
+        $this->withDeliveryAddress($order, '06234');
+
+        $result = $this->calc(
+            $order,
+            ClaimTypeEnum::EXCHANGE,
+            $this->items($option),
+            ClaimReasonFaultTypeEnum::CUSTOMER,
+            ['country_code' => 'KR', 'zipcode' => '63001'],
+        );
+
+        $this->assertSame(5000, $result->fee);
+    }
+
+    public function test_null_redelivery_address_behaves_like_no_change(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, $this->remoteArea()));
+        $option = $this->makeOption($order, $policy);
+        $this->withDeliveryAddress($order, '63001');
+
+        $withNull = $this->calc($order, ClaimTypeEnum::EXCHANGE, $this->items($option));
+        $withSame = $this->calc(
+            $order,
+            ClaimTypeEnum::EXCHANGE,
+            $this->items($option),
+            ClaimReasonFaultTypeEnum::CUSTOMER,
+            ['country_code' => 'KR', 'zipcode' => '63001'],
+        );
+
+        $this->assertSame($withSame->fee, $withNull->fee);
+    }
+
+    // ================================================================
+    // 15. 수량 안분
+    // ================================================================
+
+    public function test_single_item_takes_the_whole_group_fee(): void
+    {
+        [$order, $option] = $this->scenario(['return_fixed_fee' => 3000]);
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option));
+
+        $this->assertCount(1, $result->groups[0]['items']);
+        $this->assertSame(3000, $result->groups[0]['items'][0]['fee']);
+    }
+
+    public function test_group_fee_is_apportioned_by_amount(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy(['return_fixed_fee' => 3000]);
+        $cheap = $this->makeOption($order, $policy, ['quantity' => 1, 'subtotal_price' => 10000]);
+        $pricey = $this->makeOption($order, $policy, ['quantity' => 1, 'subtotal_price' => 30000]);
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, [
+            ['order_option_id' => $cheap->id, 'cancel_quantity' => 1],
+            ['order_option_id' => $pricey->id, 'cancel_quantity' => 1],
+        ]);
+
+        $this->assertSame(750, $result->groups[0]['items'][0]['fee']);
+        $this->assertSame(2250, $result->groups[0]['items'][1]['fee']);
+    }
+
+    public function test_apportioned_shares_sum_to_the_group_fee(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy(['return_fixed_fee' => 1000]);
+        $first = $this->makeOption($order, $policy, ['quantity' => 1, 'subtotal_price' => 10000]);
+        $second = $this->makeOption($order, $policy, ['quantity' => 1, 'subtotal_price' => 10000]);
+        $third = $this->makeOption($order, $policy, ['quantity' => 1, 'subtotal_price' => 10000]);
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, [
+            ['order_option_id' => $first->id, 'cancel_quantity' => 1],
+            ['order_option_id' => $second->id, 'cancel_quantity' => 1],
+            ['order_option_id' => $third->id, 'cancel_quantity' => 1],
+        ]);
+
+        $this->assertSame(1000, array_sum(array_column($result->groups[0]['items'], 'fee')));
+    }
+
+    public function test_apportionment_remainder_lands_on_the_last_item(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy(['return_fixed_fee' => 1000]);
+        $first = $this->makeOption($order, $policy, ['quantity' => 1, 'subtotal_price' => 10000]);
+        $second = $this->makeOption($order, $policy, ['quantity' => 1, 'subtotal_price' => 10000]);
+        $third = $this->makeOption($order, $policy, ['quantity' => 1, 'subtotal_price' => 10000]);
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, [
+            ['order_option_id' => $first->id, 'cancel_quantity' => 1],
+            ['order_option_id' => $second->id, 'cancel_quantity' => 1],
+            ['order_option_id' => $third->id, 'cancel_quantity' => 1],
+        ]);
+
+        $fees = array_column($result->groups[0]['items'], 'fee');
+
+        $this->assertSame([333, 333, 334], $fees);
+    }
+
+    public function test_zero_fee_apportions_to_zero(): void
+    {
+        [$order, $option] = $this->scenario(['return_fixed_fee' => 0]);
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option));
+
+        $this->assertSame(0, $result->groups[0]['items'][0]['fee']);
+    }
+
+    public function test_free_items_are_apportioned_evenly(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy(['return_fixed_fee' => 1000]);
+        $first = $this->makeOption($order, $policy, ['quantity' => 1, 'subtotal_price' => 0]);
+        $second = $this->makeOption($order, $policy, ['quantity' => 1, 'subtotal_price' => 0]);
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, [
+            ['order_option_id' => $first->id, 'cancel_quantity' => 1],
+            ['order_option_id' => $second->id, 'cancel_quantity' => 1],
+        ]);
+
+        $this->assertSame([500, 500], array_column($result->groups[0]['items'], 'fee'));
+    }
+
+    public function test_apportioned_item_carries_the_order_option_id(): void
+    {
+        [$order, $option] = $this->scenario();
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option));
+
+        $this->assertSame($option->id, $result->groups[0]['items'][0]['order_option_id']);
+        $this->assertSame($option->product_option_id, $result->groups[0]['items'][0]['product_option_id']);
+    }
+
+    public function test_apportioned_item_carries_the_claim_quantity_not_the_ordered_quantity(): void
+    {
+        [$order, $option] = $this->scenario([], ['quantity' => 4, 'subtotal_price' => 40000]);
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option, 1));
+
+        $this->assertSame(1, $result->groups[0]['items'][0]['quantity']);
+        $this->assertSame(10000, $result->groups[0]['items'][0]['subtotal']);
+    }
+
+    public function test_apportioned_item_exposes_the_expected_keys(): void
+    {
+        [$order, $option] = $this->scenario();
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option));
+
+        $this->assertSame(
+            ['order_option_id', 'product_option_id', 'quantity', 'subtotal', 'fee'],
+            array_keys($result->groups[0]['items'][0])
+        );
+    }
+
+    public function test_apportionment_includes_the_remote_area_fee(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, $this->remoteArea()));
+        $option = $this->makeOption($order, $policy);
+        $this->withDeliveryAddress($order, '63001');
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option));
+
+        $this->assertSame(6000, $result->groups[0]['items'][0]['fee']);
+    }
+
+    public function test_each_policy_group_apportions_its_own_fee(): void
+    {
+        $order = $this->makeOrder();
+        $first = $this->makePolicy(['return_fixed_fee' => 1000]);
+        $second = $this->makePolicy(['return_fixed_fee' => 2000]);
+        $firstOption = $this->makeOption($order, $first);
+        $secondOption = $this->makeOption($order, $second);
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, [
+            ['order_option_id' => $firstOption->id, 'cancel_quantity' => 1],
+            ['order_option_id' => $secondOption->id, 'cancel_quantity' => 1],
+        ]);
+
+        $this->assertSame(1000, $result->groups[0]['items'][0]['fee']);
+        $this->assertSame(2000, $result->groups[1]['items'][0]['fee']);
+    }
+
+    public function test_not_charged_result_apportions_to_zero(): void
+    {
+        [$order, $option] = $this->scenario();
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option), ClaimReasonFaultTypeEnum::SELLER);
+
+        $this->assertSame(0, $result->groups[0]['items'][0]['fee']);
+    }
+
+    // ================================================================
+    // 16. 다통화 청구액 (mc_claim_shipping_fee)
+    // ================================================================
+
+    public function test_multi_currency_fee_uses_the_order_snapshot_rate(): void
+    {
+        $order = $this->makeOrder(['currency_snapshot' => $this->currencySnapshot()]);
+        $policy = $this->makePolicy(['return_fixed_fee' => 3000]);
+        $option = $this->makeOption($order, $policy);
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option));
+
+        $this->assertSame(3000, $result->mcFee['KRW']);
+        $this->assertSame(2.25, $result->mcFee['USD']);
+    }
+
+    public function test_multi_currency_fee_covers_every_snapshot_currency(): void
+    {
+        $order = $this->makeOrder(['currency_snapshot' => $this->currencySnapshot()]);
+        $policy = $this->makePolicy(['return_fixed_fee' => 3000]);
+        $option = $this->makeOption($order, $policy);
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option));
+
+        $this->assertSame(['KRW', 'USD'], array_keys($result->mcFee));
+    }
+
+    public function test_multi_currency_fee_follows_the_exchange_multiplier(): void
+    {
+        $order = $this->makeOrder(['currency_snapshot' => $this->currencySnapshot()]);
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, ['base_fee' => 3000]));
+        $option = $this->makeOption($order, $policy);
+
+        $result = $this->calc($order, ClaimTypeEnum::EXCHANGE, $this->items($option));
+
+        $this->assertSame(6000, $result->mcFee['KRW']);
+        $this->assertSame(4.5, $result->mcFee['USD']);
+    }
+
+    public function test_multi_currency_fee_includes_the_remote_area_fee(): void
+    {
+        $order = $this->makeOrder(['currency_snapshot' => $this->currencySnapshot()]);
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, $this->remoteArea(1000)));
+        $option = $this->makeOption($order, $policy);
+        $this->withDeliveryAddress($order, '63001');
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option));
+
+        $this->assertSame(4000, $result->mcFee['KRW']);
+        $this->assertSame(3.0, $result->mcFee['USD']);
+    }
+
+    public function test_multi_currency_fee_is_zero_for_a_seller_fault(): void
+    {
+        $order = $this->makeOrder(['currency_snapshot' => $this->currencySnapshot()]);
+        $policy = $this->makePolicy(['return_fixed_fee' => 3000]);
+        $option = $this->makeOption($order, $policy);
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option), ClaimReasonFaultTypeEnum::SELLER);
+
+        $this->assertSame(0, $result->mcFee['KRW']);
+        $this->assertSame(0.0, $result->mcFee['USD']);
+    }
+
+    public function test_multi_currency_fee_is_present_for_a_non_chargeable_claim_type(): void
+    {
+        $order = $this->makeOrder(['currency_snapshot' => $this->currencySnapshot()]);
+        $policy = $this->makePolicy();
+        $option = $this->makeOption($order, $policy);
+
+        $result = $this->calc($order, ClaimTypeEnum::REFUND, $this->items($option));
+
+        $this->assertSame(['KRW', 'USD'], array_keys($result->mcFee));
+    }
+
+    public function test_multi_currency_fee_is_empty_without_a_currency_snapshot(): void
+    {
+        $order = $this->makeOrder(['currency_snapshot' => null]);
+        $policy = $this->makePolicy(['return_fixed_fee' => 3000]);
+        $option = $this->makeOption($order, $policy);
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option));
+
+        $this->assertSame([], $result->mcFee);
+        $this->assertSame(3000, $result->fee);
+    }
+
+    public function test_multi_currency_fee_ignores_a_later_rate_change(): void
+    {
+        $snapshot = $this->currencySnapshot();
+        $order = $this->makeOrder(['currency_snapshot' => $snapshot]);
+        $policy = $this->makePolicy(['return_fixed_fee' => 3000]);
+        $option = $this->makeOption($order, $policy);
+
+        // 현재 설정의 환율이 바뀌어도 주문 스냅샷 환율이 산정 근거다.
+        $this->setupTestCurrencySettings();
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option));
+
+        $this->assertSame(2.25, $result->mcFee['USD']);
+    }
+
+    public function test_snapshot_exposes_the_multi_currency_fee(): void
+    {
+        $order = $this->makeOrder(['currency_snapshot' => $this->currencySnapshot()]);
+        $policy = $this->makePolicy(['return_fixed_fee' => 3000]);
+        $option = $this->makeOption($order, $policy);
+
+        $snapshot = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option))->toArray();
+
+        $this->assertSame(2.25, $snapshot['mc_fee']['USD']);
+    }
+
+    public function test_snapshot_exposes_the_extra_fee_total(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, $this->remoteArea(1500)));
+        $option = $this->makeOption($order, $policy);
+        $this->withDeliveryAddress($order, '63001');
+
+        $snapshot = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option))->toArray();
+
+        $this->assertSame(1500, $snapshot['extra_fee']);
+        $this->assertSame(4500, $snapshot['fee']);
+    }
+
+    public function test_extra_fee_total_is_zero_without_a_remote_area(): void
+    {
+        [$order, $option] = $this->scenario();
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option));
+
+        $this->assertSame(0, $result->extraFee);
+    }
+
+    // ================================================================
+    // 17. 외부 요금 API 부과정책 — 클레임 문맥에서는 호출하지 않는다
+    // ================================================================
+
+    public function test_api_charge_policy_falls_back_to_the_base_fee(): void
+    {
+        Http::fake();
+
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::API, [
+            'base_fee' => 2800,
+            'api_endpoint' => 'https://carrier.example.com/rates',
+        ]));
+        $option = $this->makeOption($order, $policy);
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option));
+
+        $this->assertSame(2800, $result->fee);
+    }
+
+    public function test_api_charge_policy_does_not_dispatch_an_external_request(): void
+    {
+        Http::fake();
+
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::API, [
+            'base_fee' => 2800,
+            'api_endpoint' => 'https://carrier.example.com/rates',
+        ]));
+        $option = $this->makeOption($order, $policy);
+
+        $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option));
+
+        Http::assertNothingSent();
+    }
+
+    public function test_api_charge_policy_from_the_order_snapshot_also_falls_back(): void
+    {
+        Http::fake();
+
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, [
+            'base_fee' => 9000,
+            'api_endpoint' => 'https://carrier.example.com/rates',
+        ]));
+        $option = $this->makeOption($order, $policy, [], 'KR', true, $this->snapshotPolicy([
+            'charge_policy' => 'api',
+            'base_fee' => 2800,
+        ]));
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option));
+
+        $this->assertSame(2800, $result->fee);
+        Http::assertNothingSent();
+    }
+
+    public function test_api_fallback_is_recorded_in_the_basis(): void
+    {
+        Http::fake();
+
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::API, [
+            'base_fee' => 2800,
+            'api_endpoint' => 'https://carrier.example.com/rates',
+        ]));
+        $option = $this->makeOption($order, $policy);
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option));
+
+        $this->assertTrue($result->groups[0]['api_fallback']);
+        $this->assertSame('api', $result->groups[0]['charge_policy']);
+    }
+
+    public function test_non_api_policies_are_not_marked_as_api_fallback(): void
+    {
+        [$order, $option] = $this->scenario($this->originalPolicy(ChargePolicyEnum::FIXED));
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option));
+
+        $this->assertFalse($result->groups[0]['api_fallback']);
+    }
+
+    public function test_api_charge_policy_doubles_for_an_exchange(): void
+    {
+        Http::fake();
+
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::API, [
+            'base_fee' => 2800,
+            'api_endpoint' => 'https://carrier.example.com/rates',
+        ]));
+        $option = $this->makeOption($order, $policy);
+
+        $result = $this->calc($order, ClaimTypeEnum::EXCHANGE, $this->items($option));
+
+        $this->assertSame(5600, $result->fee);
+    }
+
+    // ================================================================
+    // 18. 확장 축 교차 회귀 (S2b1 본체와 S2b2 확장이 만나는 지점)
+    // ================================================================
+
+    public function test_hook_overridden_group_still_adds_the_remote_area_fee(): void
+    {
+        HookManager::addFilter(
+            'sirsoft-ecommerce.shipping.calculate_fee',
+            fn ($fee, $countrySetting, $group) => 5000,
+            10,
+            3
+        );
+
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, $this->remoteArea()));
+        $option = $this->makeOption($order, $policy);
+        $this->withDeliveryAddress($order, '63001');
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option));
+
+        // 주문 배송비 경로와 동형 — 훅은 기본 배송비만 정하고 도서산간은 그대로 얹힌다.
+        $this->assertSame(8000, $result->fee);
+        $this->assertTrue($result->groups[0]['hook_overridden']);
+        $this->assertSame(3000, $result->groups[0]['extra_fee']);
+    }
+
+    public function test_fixed_mode_exchange_records_both_legs_as_zero(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy(array_merge(['exchange_fixed_fee' => 5000], $this->remoteArea()));
+        $option = $this->makeOption($order, $policy);
+        $this->withDeliveryAddress($order, '63001');
+
+        $result = $this->calc($order, ClaimTypeEnum::EXCHANGE, $this->items($option));
+
+        $this->assertSame(['collection' => 0, 'redelivery' => 0], $result->groups[0]['extra_fee_legs']);
+    }
+
+    public function test_policy_source_is_recorded_per_group(): void
+    {
+        $order = $this->makeOrder();
+        $withSnapshot = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, ['base_fee' => 9000]));
+        $withoutSnapshot = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, ['base_fee' => 1500]));
+        $first = $this->makeOption($order, $withSnapshot, [], 'KR', true, $this->snapshotPolicy(['base_fee' => 2000]));
+        $second = $this->makeOption($order, $withoutSnapshot);
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, [
+            ['order_option_id' => $first->id, 'cancel_quantity' => 1],
+            ['order_option_id' => $second->id, 'cancel_quantity' => 1],
+        ]);
+
+        $this->assertSame(ClaimShippingFeeService::SOURCE_ORDER_SNAPSHOT, $result->groups[0]['policy_source']);
+        $this->assertSame(ClaimShippingFeeService::SOURCE_LIVE_POLICY, $result->groups[1]['policy_source']);
+        $this->assertSame(3500, $result->fee);
+    }
+
+    public function test_no_items_result_still_carries_the_multi_currency_fee(): void
+    {
+        $order = $this->makeOrder(['currency_snapshot' => $this->currencySnapshot()]);
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, []);
+
+        $this->assertSame(ClaimShippingFee::REASON_NO_ITEMS, $result->reason);
+        $this->assertSame(['KRW', 'USD'], array_keys($result->mcFee));
+    }
+
+    public function test_redelivery_change_is_reflected_in_the_apportioned_item_fee(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, $this->remoteArea()));
+        $option = $this->makeOption($order, $policy);
+        $this->withDeliveryAddress($order, '63001');
+
+        $remote = $this->calc($order, ClaimTypeEnum::EXCHANGE, $this->items($option));
+        $moved = $this->calc(
+            $order,
+            ClaimTypeEnum::EXCHANGE,
+            $this->items($option),
+            ClaimReasonFaultTypeEnum::CUSTOMER,
+            ['country_code' => 'KR', 'zipcode' => '06234'],
+        );
+
+        $this->assertSame(12000, $remote->groups[0]['items'][0]['fee']);
+        $this->assertSame(9000, $moved->groups[0]['items'][0]['fee']);
+    }
+
+    public function test_api_policy_also_carries_the_remote_area_fee(): void
+    {
+        Http::fake();
+
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::API, array_merge(
+            ['base_fee' => 2800, 'api_endpoint' => 'https://carrier.example.com/rates'],
+            $this->remoteArea(1200),
+        )));
+        $option = $this->makeOption($order, $policy);
+        $this->withDeliveryAddress($order, '63001');
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option));
+
+        $this->assertSame(4000, $result->fee);
+        Http::assertNothingSent();
+    }
+
+    public function test_remote_area_multiply_setting_comes_from_the_order_snapshot(): void
+    {
+        $order = $this->makeOrder();
+        // 현재 정책은 중복 부과를 껐지만 주문 시점에는 켜져 있었다.
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::PER_QUANTITY, array_merge(
+            ['base_fee' => 1000, 'ranges' => ['unit_value' => 1]],
+            $this->remoteArea(3000, '63000-63999', false),
+        )));
+        $option = $this->makeOption($order, $policy, ['quantity' => 2, 'subtotal_price' => 40000], 'KR', true, $this->snapshotPolicy([
+            'charge_policy' => 'per_quantity',
+            'base_fee' => 1000,
+            'ranges' => ['unit_value' => 1],
+            'extra_fee_enabled' => true,
+            'extra_fee_multiply' => true,
+            'extra_fee_settings' => [['zipcode' => '63000-63999', 'fee' => 3000]],
+        ]));
+        $this->withDeliveryAddress($order, '63001');
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option, 2));
+
+        $this->assertSame(6000, $result->extraFee);
+    }
+    // ================================================================
+    // 19. 사후 비활성화된 국가 설정 (PO 확정 2026-08-21)
+    // ================================================================
+
+    public function test_deactivated_live_country_row_still_charges_the_fixed_claim_fee(): void
+    {
+        [$order, $option] = $this->scenario(['return_fixed_fee' => 3000, 'is_active' => false]);
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option));
+
+        $this->assertTrue($result->charged);
+        $this->assertSame(3000, $result->fee);
+    }
+
+    public function test_deactivated_live_country_row_still_charges_from_the_order_snapshot(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, [
+            'base_fee' => 9000,
+            'is_active' => false,
+        ]));
+        $option = $this->makeOption($order, $policy, [], 'KR', true, $this->snapshotPolicy([
+            'charge_policy' => 'fixed',
+            'base_fee' => 4000,
+        ]));
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option));
+
+        $this->assertTrue($result->charged);
+        // 부과정책은 주문 시점 스냅샷(4,000), 꺼진 현재 행의 9,000 이 아니다.
+        $this->assertSame(4000, $result->fee);
+        $this->assertSame(ClaimShippingFeeService::SOURCE_ORDER_SNAPSHOT, $result->groups[0]['policy_source']);
+    }
+
+    public function test_deactivated_live_country_row_still_adds_the_remote_area_fee(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, array_merge(
+            ['base_fee' => 3000, 'is_active' => false],
+            $this->remoteArea(3000),
+        )));
+        $option = $this->makeOption($order, $policy, [], 'KR', true, $this->snapshotPolicy(array_merge(
+            ['charge_policy' => 'fixed', 'base_fee' => 3000],
+            ['extra_fee_enabled' => true, 'extra_fee_settings' => [['zipcode' => '63000-63999', 'fee' => 3000]]],
+        )));
+        $this->withDeliveryAddress($order, '63001');
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option));
+
+        $this->assertSame(6000, $result->fee);
+        $this->assertSame(3000, $result->extraFee);
+    }
+    // ================================================================
+    // 20. 재발송지 재판정 사실의 근거 기록 (D14 · PO 확정 2026-08-21)
+    // ================================================================
+
+    public function test_redelivery_change_is_recorded_in_the_snapshot(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, array_merge(
+            ['base_fee' => 3000],
+            $this->remoteArea(3000),
+        )));
+        $option = $this->makeOption($order, $policy);
+        $this->withDeliveryAddress($order, '63001');
+
+        $result = $this->calc($order, ClaimTypeEnum::EXCHANGE, $this->items($option), ClaimReasonFaultTypeEnum::CUSTOMER, [
+            'country_code' => 'KR',
+            'zipcode' => '06234',
+        ]);
+
+        $this->assertTrue($result->redeliveryChanged);
+        $this->assertTrue($result->toArray()['redelivery_changed']);
+    }
+
+    public function test_unchanged_redelivery_is_not_recorded_as_changed(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, array_merge(
+            ['base_fee' => 3000],
+            $this->remoteArea(3000),
+        )));
+        $option = $this->makeOption($order, $policy);
+        $this->withDeliveryAddress($order, '63001');
+
+        $result = $this->calc($order, ClaimTypeEnum::EXCHANGE, $this->items($option));
+
+        $this->assertFalse($result->redeliveryChanged);
+    }
+
+    public function test_redelivery_change_is_recorded_even_when_the_two_legs_cost_the_same(): void
+    {
+        $order = $this->makeOrder();
+        // 두 우편번호가 같은 도서산간 구간이라 회수·재발송 추가액이 같다 —
+        // 금액만으로는 "안 바꿈" 과 구분되지 않으므로 사실 자체를 남겨야 한다.
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, array_merge(
+            ['base_fee' => 3000],
+            $this->remoteArea(3000),
+        )));
+        $option = $this->makeOption($order, $policy);
+        $this->withDeliveryAddress($order, '63001');
+
+        $result = $this->calc($order, ClaimTypeEnum::EXCHANGE, $this->items($option), ClaimReasonFaultTypeEnum::CUSTOMER, [
+            'country_code' => 'KR',
+            'zipcode' => '63500',
+        ]);
+
+        $this->assertSame([3000, 3000], [
+            $result->groups[0]['extra_fee_legs']['collection'],
+            $result->groups[0]['extra_fee_legs']['redelivery'],
+        ]);
+        $this->assertTrue($result->redeliveryChanged);
+    }
+
+    public function test_return_never_records_a_redelivery_change(): void
+    {
+        [$order, $option] = $this->scenario();
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option), ClaimReasonFaultTypeEnum::CUSTOMER, [
+            'country_code' => 'KR',
+            'zipcode' => '06234',
+        ]);
+
+        $this->assertFalse($result->redeliveryChanged);
+    }
+
+    public function test_seller_fault_still_records_the_redelivery_change(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, ['base_fee' => 3000]));
+        $option = $this->makeOption($order, $policy);
+        $this->withDeliveryAddress($order, '63001');
+
+        $result = $this->calc($order, ClaimTypeEnum::EXCHANGE, $this->items($option), ClaimReasonFaultTypeEnum::SELLER, [
+            'country_code' => 'KR',
+            'zipcode' => '06234',
+        ]);
+
+        $this->assertFalse($result->charged);
+        $this->assertTrue($result->redeliveryChanged);
+    }
+
+    public function test_detail_only_address_edit_is_not_a_redelivery_change(): void
+    {
+        $order = $this->makeOrder();
+        $policy = $this->makePolicy($this->originalPolicy(ChargePolicyEnum::FIXED, ['base_fee' => 3000]));
+        $option = $this->makeOption($order, $policy);
+        $this->withDeliveryAddress($order, '06234');
+
+        // 우편번호·국가가 같으면 배송비가 달라지지 않으므로 산정 근거는 "변경 없음" 이다.
+        // 고객이 상세주소를 손댔다는 사실은 신청서의 '고객이 수정함' 표시가 담당한다.
+        $result = $this->calc($order, ClaimTypeEnum::EXCHANGE, $this->items($option), ClaimReasonFaultTypeEnum::CUSTOMER, [
+            'country_code' => 'KR',
+            'zipcode' => '06234',
+        ]);
+
+        $this->assertFalse($result->redeliveryChanged);
     }
 }

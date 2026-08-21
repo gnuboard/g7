@@ -537,16 +537,18 @@ class OrderCancellationService
     protected function buildShippingSnapshot(Order $order, array $cancelItems): array
     {
         $orderSnapshot = $order->shipping_policy_applied_snapshot ?? [];
-        $address = ShippingPolicySnapshot::address($orderSnapshot);
 
-        // 주문 스냅샷에 배송지가 없으면 현재 배송주소에서 폴백 복원(과거 주문 호환).
-        if (empty($address['country_code'])) {
+        // 배송지 해석(스냅샷 우선 · 없으면 현재 배송주소 폴백)은 ShippingPolicySnapshot 단일
+        // 출처에 위임한다 — 클레임 배송비의 도서산간 재판정이 같은 판정을 쓰므로, 두 벌로 두면
+        // 한쪽만 고쳐질 때 같은 주문의 도서산간이 경로에 따라 갈린다.
+        $address = ShippingPolicySnapshot::deliveryAddress($orderSnapshot, function () use ($order) {
             $shippingAddress = $order->shippingAddress;
-            $address = [
-                'country_code' => strtoupper((string) ($shippingAddress?->recipient_country_code ?: 'KR')),
-                'zipcode' => $shippingAddress?->zipcode ?: ($shippingAddress?->intl_postal_code ?: null),
+
+            return [
+                'country_code' => $shippingAddress?->recipient_country_code,
+                'zipcode' => $shippingAddress?->zipcode ?: $shippingAddress?->intl_postal_code,
             ];
-        }
+        });
 
         // 취소 대상 옵션의 product_option_id 기준으로 적용 정책만 추려 보존.
         $cancelOptionIds = [];
