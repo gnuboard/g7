@@ -998,12 +998,15 @@ Controller → Request → Service → RepositoryInterface → Repository → Mo
 필수: 마이그레이션 한국어 comment 필수, down() 구현 필수
 필수: FK 컬럼의 ->comment() 는 ->constrained()/->references()/->on() 앞에 둔다 (뒤에 두면 comment 가 컬럼이 아닌 FK 정의에 부착되어 조용히 사라진다)
 필수: 소스 교정만으로는 기설치본이 낫지 않는다 — 마이그레이션은 재실행되지 않으므로 업그레이드 스텝 백필을 함께 작성
+필수: 재실행 가드는 컬럼뿐 아니라 인덱스·외래키까지 up() 의 전 DDL 단계에 건다 — 컬럼만 가드하면 인덱스 단계 실패 후 재실행이 영구 실패한다
 필수: 필터가 걸린 쿼리를 순회하며 그 행을 update/delete 하면 chunkById() (키셋 순회)
 절대 금지: 그 경우 chunk()/each()/lazy() 사용 — OFFSET 기반이라 처리된 행이 결과에서 이탈한 만큼 커서가 밀려 미처리 행을 조용히 건너뛴다 (250건/청크 100 → 100건 누락, 예외·로그 없음)
 주의: ResponseHelper::success($messageKey, $data) — 메시지가 첫 번째 인수
 ```
 
 갱신값이 항상 필터 소속을 유지해 안전한 경우(예: `whereNotNull` + 갱신값이 항상 non-null)만 예외이며, 그 근거를 코드 주석에 남긴다. 정적 검사가 이 패턴을 검출한다.
+
+MySQL 은 DDL 을 롤백하지 않는다. 한 마이그레이션이 `컬럼 → 인덱스 → 외래키` 를 함께 만드는데 인덱스 단계에서 실패하면 컬럼은 만들어진 채 남고, 재실행 시 컬럼은 가드에 막혀 건너뛰지만 인덱스가 다시 시도되어 `Duplicate key name` 으로 또 실패한다 — 그 설치본은 재실행으로 복구되지 않는다. 오류 메시지가 첫 실패와 달라져 원인을 컬럼 쪽에서 찾게 되는 것도 이 결함의 특징이다. 정적 검사가 컬럼 축과 인덱스·외래키 축을 각각 검출한다.
 
 > 상세 규칙 (API 리소스, ServiceProvider, validation, 인증, 활동 로그 등): [docs/backend/](docs/backend/) 각 문서 참조
 
