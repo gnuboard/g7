@@ -874,7 +874,10 @@ function LayoutEditorChromeBody({
           <EditorToolbar
             onSave={() => {
               // 단축키(Ctrl+S)와 동일 경로 — 저장 + 배너 + 트리 버전 배지 동기화 일원화.
-              void handleSaveAction();
+              // Promise 를 **돌려준다** — EditorToolbar 는 반환값이 thenable 일 때만 저장 중
+              // 스피너를 띄우고 버튼을 잠근다. `void` 로 버리면 진행 표시가 영영 뜨지 않고
+              // 저장 중 중복 클릭도 막히지 않는다(단위 테스트는 Promise 를 주입해 통과했다).
+              return handleSaveAction();
             }}
             isDirty={activeDocument.isDirty}
             onExit={handleExit}

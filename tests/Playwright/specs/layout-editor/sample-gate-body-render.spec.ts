@@ -17,9 +17,9 @@
  * Vitest 는 JSON+격리 렌더로 시뮬레이터 경로를 잠그고, 본 spec 은 실제 편집기 chrome +
  * 캔버스 통합 렌더에서 게이트 본체가 실제로 보이는지(브라우저 가시 결과)를 측정한다.
  *
- * @scenario gate_body_kind=computed_if_gate, gate_body_kind=lazy_datasource_subtab
- * @effects shipping_policy_edit_country_setting_panel_renders_via_computed_gate,
- *   mypage_board_my_comments_subtab_renders_via_lazy_datasource_sample_injection
+ * 축 요약(마커 아님 — 평문): gate_body_kind:computed_if_gate, gate_body_kind:lazy_datasource_subtab.
+ * 효과 요약(마커 아님 — 평문): shipping_policy_edit_country_setting_panel_renders_via_computed_gate.
+ * 효과 요약(마커 아님 — 평문): mypage_board_my_comments_subtab_renders_via_lazy_datasource_sample_injection.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 

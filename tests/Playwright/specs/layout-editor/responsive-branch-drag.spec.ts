@@ -16,8 +16,7 @@
  *  단위(`responsiveBranchPath.test.ts` moveNode 분기 정렬)와 실브라우저(Chrome MCP
  *    검수)로 검증한다(feedback_chrome_mcp_dnd_kit_incompatible).
  *
- * @scenario responsive_branch_edit, drag_drop
- * @effects branch_drop_slots_render, branch_node_has_drag_handle
+ * 효과 요약(마커 아님 — 평문): branch_drop_slots_render, branch_node_has_drag_handle.
  */
 import type { Page } from '@playwright/test';
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
@@ -106,6 +105,7 @@ test.describe('@layout-editor responsive 분기 드래그/슬롯', () => {
       });
   });
 
+  /** @effects branch_node_has_drag_handle */
   test('모바일 보기에서 responsive 분기 자식이 드래그 핸들을 가진다', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -123,6 +123,7 @@ test.describe('@layout-editor responsive 분기 드래그/슬롯', () => {
     ).toBeGreaterThan(0);
   });
 
+  /** @effects branch_drop_slots_render */
   test('분기 안 노드를 드래그하면 같은 분기 안에 드롭 슬롯이 생성된다 (결함① 회귀 가드)', async ({
     page,
   }) => {

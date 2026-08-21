@@ -4,8 +4,8 @@
  * 반복 항목(iteration_item) 편집 모드의  4종을 브라우저에서 가드한다. 단위 테스트는
  * URL pushState/popstate, 오버레이 레이어 hit-test, 캐시 무효화→재fetch render-cycle 을 모사 못 함.
  *
- * @scenario iteration_edit_entry, save_invalidation, exit_return, inline_double_click, lock_visibility
- * @effects url_direct_entry_renders_iteration_mode_with_host, exit_iteration_edit_returns_to_host_route, iteration_save_invalidates_host_route_cache_and_busts_get, double_click_plain_text_enters_inline_edit, data_bound_node_shows_data_area_notice
+ * 축 요약(마커 아님 — 평문): iteration_edit_entry, save_invalidation, exit_return, inline_double_click, lock_visibility.
+ * 효과 요약(마커 아님 — 평문): url_direct_entry_renders_iteration_mode_with_host, exit_iteration_edit_returns_to_host_route, iteration_save_invalidates_host_route_cache_and_busts_get, double_click_plain_text_enters_inline_edit, data_bound_node_shows_data_area_notice.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 import { editorPath as resolveEditorPath } from '../../fixtures/layout-editor';
@@ -44,6 +44,7 @@ async function gotoIterationEdit(page: import('@playwright/test').Page): Promise
 
 test.describe('@layout-editor 반복 항목 편집 — 저장/복귀/인라인/잠금가시', () => {
   // URL 다이렉트 진입 시 반복 항목 편집 모드 + 호스트(인기글) 인플레이스 렌더.
+  /** @effects url_direct_entry_renders_iteration_mode_with_host */
   test('URL 다이렉트 진입 → iteration_item 모드 + 호스트 렌더', async ({ page }) => {
     await gotoIterationEdit(page);
     await expect(page.locator('[data-mode="iteration_item"]')).toBeAttached({ timeout: 20_000 });
@@ -54,6 +55,7 @@ test.describe('@layout-editor 반복 항목 편집 — 저장/복귀/인라인/�
   });
 
   // 편집 종료 시 호스트 라우트로 복귀("라우트 선택" 화면 회귀 방지).
+  /** @effects exit_iteration_edit_returns_to_host_route */
   test('편집 종료 → 호스트 라우트(?route=/boards/popular)로 복귀', async ({ page }) => {
     await gotoIterationEdit(page);
     // "반복 항목 편집 종료" 버튼.
@@ -67,6 +69,7 @@ test.describe('@layout-editor 반복 항목 편집 — 저장/복귀/인라인/�
   // 렌더된 텍스트만으로는 평문/바인딩을 구분할 수 없으므로(렌더 결과엔 중괄호가 없음 — 인기글
   // 카드는 전부 바인딩), 불변식은 "인라인 편집기(contenteditable) 또는 데이터 영역 안내 중
   // 하나가 반드시 뜬다"로 가드한다(평문→인라인 D-33 / 바인딩→안내 D-34, 무반응이면 실패).
+  /** @effects double_click_plain_text_enters_inline_edit */
   test('항목 안 텍스트 더블클릭 → 인라인 편집 또는 데이터 영역 안내(무반응 금지)', async ({ page }) => {
     await gotoIterationEdit(page);
     const found = await page.evaluate((srcPath) => {
@@ -93,6 +96,7 @@ test.describe('@layout-editor 반복 항목 편집 — 저장/복귀/인라인/�
 
   // 항목 안 데이터 바인딩 노드 선택 시 "데이터 영역은 직접 편집할 수 없습니다" 안내 표시
   // (일반 편집기와 동일 가시). iteration 범위 안이라고 무반응이면 안 된다.
+  /** @effects data_bound_node_shows_data_area_notice */
   test('데이터 바인딩 노드 선택 → "데이터 영역" 안내 표시', async ({ page }) => {
     await gotoIterationEdit(page);
     // 바인딩 텍스트(제목 등) 좌표 클릭.
@@ -118,5 +122,64 @@ test.describe('@layout-editor 반복 항목 편집 — 저장/복귀/인라인/�
     await expect(page.locator('[data-testid="g7le-overlay-data-bound-notice"]')).toBeAttached({
       timeout: 10_000,
     });
+  });
+
+  /**
+   * 반복 항목을 저장하면 그 내용은 **호스트 화면**의 레이아웃에 들어간다. 그래서 저장 뒤
+   * 호스트를 다시 읽을 때 옛 응답을 그대로 받으면 방금 저장한 것이 화면에 없다. 저장 직후
+   * 캐시 우회 값이 올라가 새 요청이 나가는지를 잠근다.
+   *
+   * 저장 요청은 서버로 보내지 않고 이 자리에서 성공 응답을 만들어 돌려준다 — 실제 화면
+   * 레이아웃은 건드리지 않는다(중단돼도 남는 것이 없다).
+   */
+  /** @effects iteration_save_invalidates_host_route_cache_and_busts_get */
+  test('반복 항목 저장 → 호스트 레이아웃을 캐시 우회 값이 바뀐 채로 다시 읽는다', async ({ page }) => {
+    const layoutGets: string[] = [];
+    let saves = 0;
+    await page.route(/\/api\/layouts\//, async (route) => {
+      if (route.request().method() === 'GET') layoutGets.push(route.request().url());
+      await route.fallback();
+    });
+    await page.route(/\/api\/admin\/templates\/[^/]+\/layouts\//, async (route) => {
+      if (route.request().method() !== 'PUT') {
+        await route.fallback();
+        return;
+      }
+      saves += 1;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ success: true, message: 'ok', data: { content_version: 1 } }),
+      });
+    });
+
+    await gotoIterationEdit(page);
+    await expect
+      .poll(() => layoutGets.length, { timeout: 20_000 })
+      .toBeGreaterThan(0);
+
+    /** URL 의 캐시 우회 값(`v=` 파라미터) 을 뽑는다. */
+    const bustOf = (u: string): string => new URL(u, 'https://x').searchParams.get('v') ?? '';
+    const beforeBusts = new Set(layoutGets.map(bustOf));
+    expect([...beforeBusts].every((b) => b !== '')).toBe(true); // 캐시 우회 값이 실재한다
+
+    const seen = layoutGets.length;
+
+    // 편집분을 만들고 저장
+    await page.getByTestId('g7le-toolbar-add-element').click();
+    await page.waitForSelector('[data-testid="g7le-palette-item-Div"]', { timeout: 10_000 });
+    await page.getByTestId('g7le-palette-item-Div').click();
+    await page.getByTestId('g7le-toolbar-save').click();
+
+    // 저장이 실제로 나갔는지 먼저 확정한다(안 나갔는데 "GET 이 없다"로 오판하지 않도록).
+    await expect.poll(() => saves, { timeout: 20_000 }).toBeGreaterThan(0);
+
+    // 편집을 끝내고 호스트 라우트로 복귀 — 이때 호스트 레이아웃을 다시 읽는다.
+    await page.locator('[data-testid="g7le-toolbar-exit-alt-mode"]').click();
+
+    // 새 GET 이 나가고, 그 캐시 우회 값이 이전과 달라야 한다.
+    await expect.poll(() => layoutGets.length, { timeout: 20_000 }).toBeGreaterThan(seen);
+    const afterBusts = layoutGets.slice(seen).map(bustOf);
+    expect(afterBusts.some((b) => !beforeBusts.has(b))).toBe(true);
   });
 });

@@ -28,8 +28,8 @@
  * 단위(prop-i18n-text-field.test 칸자리 칩 4건)로 검증한다. 본 spec 은 종전대로 평문 미리보기 input·키
  * 생성·펼침 폼 노출·저장 영속(비-칩 경로)을 라이브로 잠근다.
  *
- * @scenario prop_i18n_text_field_inline_preview, prop_i18n_create_key_via_post, prop_i18n_expand_ko_en_ja, children_item_text_i18n_widget, token_persists_on_save
- * @effects text_propcontrol_renders_i18n_widget_not_raw_key_input, prop_i18n_plain_input_creates_custom_key_via_post, prop_i18n_expand_shows_all_active_locales_bulk_form, children_item_text_uses_shared_i18n_widget_ssot, custom_key_token_recorded_in_prop_value_and_node_text_persists_on_put, editor_save_specs_target_sandbox_layout_not_product_layout
+ * 축 요약(마커 아님 — 평문): prop_i18n_text_field_inline_preview, prop_i18n_create_key_via_post, prop_i18n_expand_ko_en_ja, children_item_text_i18n_widget, token_persists_on_save.
+ * 효과 요약(마커 아님 — 평문): text_propcontrol_renders_i18n_widget_not_raw_key_input, prop_i18n_plain_input_creates_custom_key_via_post, prop_i18n_expand_shows_all_active_locales_bulk_form, children_item_text_uses_shared_i18n_widget_ssot, custom_key_token_recorded_in_prop_value_and_node_text_persists_on_put, editor_save_specs_target_sandbox_layout_not_product_layout.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 import type { Page } from '@playwright/test';
@@ -116,6 +116,7 @@ async function openPropsTab(page: Page): Promise<void> {
 }
 
 test.describe('@layout-editor 텍스트 propControl 동적 다국어 (부록7 7-b)', () => {
+  /** @effects text_propcontrol_renders_i18n_widget_not_raw_key_input, prop_i18n_plain_input_creates_custom_key_via_post, prop_i18n_expand_shows_all_active_locales_bulk_form */
   test('Input placeholder propControl 이 raw 키 아닌 i18n 위젯(미리보기+🌐)으로 렌더되고 평문 입력→키 생성→펼침', async ({ page }) => {
     await gotoEditor(page);
     const vdiv = await addEmptyDiv(page);
@@ -159,6 +160,7 @@ test.describe('@layout-editor 텍스트 propControl 동적 다국어 (부록7 7-
   // 저장(PUT)하는 테스트는 편집 결과가 그대로 영속되므로 제품 화면(home)이 아니라 E2E 전용
   // 시드 화면(e2e_sandbox)을 대상으로 한다. 시드 화면은 globalSetup 이 매 실행 fixture 원본으로
   // 덮어쓰므로 회차 간 누적이 성립하지 않는다.
+  /** @effects children_item_text_uses_shared_i18n_widget_ssot, custom_key_token_recorded_in_prop_value_and_node_text_persists_on_put, editor_save_specs_target_sandbox_layout_not_product_layout */
   test('children 항목 텍스트도 동일 i18n 위젯으로 편집(평문→키 생성) + 저장 PUT 200 영속', async ({ page }) => {
     await gotoEditor(page, sandboxRouteParam());
     const vdiv = await addEmptyDiv(page, true);
