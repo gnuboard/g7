@@ -17,6 +17,16 @@ use App\Extension\AbstractUpgradeStep;
  *
  * 모든 비즈니스 로직은 data/1.2.0/migrations/ 로 격리(AbstractUpgradeStep 규약).
  *
+ * 백필하지 않는 것 — `ecommerce_orders.total_refunded_amount` / `total_refunded_points_amount`
+ *
+ * 1.2.0 부터 RefundExecutionService::execute() 가 이 두 컬럼을 누적한다(클레임 환불 경로).
+ * 기존 주문은 값이 전부 0 이지만 과거 환불액으로 채우지 않는다 — 1.2.0 이전의 환불은 전부
+ * 취소 경로에서 발생했고, 취소는 `total_paid_amount` 자체를 재계산값으로 덮어써 이미 반영돼
+ * 있기 때문이다. 여기에 과거 환불액을 더하면 OrderAdjustmentService 의 잔여 결제 한도
+ * (`total_paid_amount - total_refunded_amount`)가 같은 금액을 두 번 빼게 되어, 아직 환불
+ * 가능한 기존 주문의 환불 한도가 실제보다 낮게 잠긴다. 오류 없이 금액만 줄어드는 형태라
+ * 발견도 어렵다.
+ *
  * @upgrade-path A
  */
 class Upgrade_1_2_0 extends AbstractUpgradeStep {}

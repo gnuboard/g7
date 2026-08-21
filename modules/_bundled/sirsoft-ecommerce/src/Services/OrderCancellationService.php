@@ -5,7 +5,6 @@ namespace Modules\Sirsoft\Ecommerce\Services;
 use App\Extension\HookManager;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\DTO\AdjustmentResult;
 use Modules\Sirsoft\Ecommerce\DTO\CancellationAdjustment;
 use Modules\Sirsoft\Ecommerce\DTO\CancellationResult;
@@ -23,10 +22,7 @@ use Modules\Sirsoft\Ecommerce\Enums\SequenceType;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderCancellationException;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
-use Modules\Sirsoft\Ecommerce\Models\OrderCancelOption;
-use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
-use Modules\Sirsoft\Ecommerce\Models\OrderRefundOption;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderCancelOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderCancelRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderOptionRepositoryInterface;
@@ -47,7 +43,6 @@ class OrderCancellationService
     /**
      * @param  OrderAdjustmentService  $adjustmentService  환불금액 계산 서비스
      * @param  OrderOptionService  $orderOptionService  주문 옵션 서비스
-     * @param  StockService  $stockService  재고 서비스
      * @param  SequenceService  $sequenceService  채번 서비스
      * @param  EcommerceSettingsService  $settingsService  이커머스 설정 서비스
      * @param  OrderOptionRepositoryInterface  $orderOptionRepository  주문 옵션 Repository
@@ -56,13 +51,12 @@ class OrderCancellationService
      * @param  OrderCancelOptionRepositoryInterface  $orderCancelOptionRepository  주문 취소 옵션 Repository
      * @param  OrderRefundRepositoryInterface  $orderRefundRepository  주문 환불 Repository
      * @param  OrderRefundOptionRepositoryInterface  $orderRefundOptionRepository  주문 환불 옵션 Repository
-     * @param  CashReceiptService  $cashReceiptService  현금영수증 발급/취소 서비스
      * @param  OrderPaymentRepositoryInterface  $orderPaymentRepository  주문 결제 Repository
+     * @param  RefundExecutionService  $refundExecutionService  환불 실행 서비스 (PG 환불·복원·현금영수증 공용)
      */
     public function __construct(
         protected OrderAdjustmentService $adjustmentService,
         protected OrderOptionService $orderOptionService,
-        protected StockService $stockService,
         protected SequenceService $sequenceService,
         protected EcommerceSettingsService $settingsService,
         protected OrderOptionRepositoryInterface $orderOptionRepository,
@@ -71,8 +65,8 @@ class OrderCancellationService
         protected OrderCancelOptionRepositoryInterface $orderCancelOptionRepository,
         protected OrderRefundRepositoryInterface $orderRefundRepository,
         protected OrderRefundOptionRepositoryInterface $orderRefundOptionRepository,
-        protected CashReceiptService $cashReceiptService,
         protected OrderPaymentRepositoryInterface $orderPaymentRepository,
+        protected RefundExecutionService $refundExecutionService,
     ) {}
 
     /**
@@ -108,32 +102,14 @@ class OrderCancellationService
     /**
      * 취소 확정 후 현금영수증을 현재 금액에 맞춰 동기화합니다.
      *
-     * 발급 이력이 없으면 no-op 이고, 잔여 발급액이 0 이면 전액취소만 수행하며,
-     * 그 외에는 전체취소 후 잔여 과세금액 기준으로 재발급한다 (부분취소 API 미사용).
-     *
-     * 어떤 실패도 호출부로 전파하지 않는다 — 환불은 이미 DB 에 확정됐고 되돌릴 수 없다.
-     * 실패는 이력 테이블(issue_status=FAILED)과 로그에 남아 관리자 수동 재발급으로 복구된다.
-     *
-     * 로그 레벨이 error 인 이유 — CashReceiptService 는 예상 가능한 실패(프로바이더가 success=false
-     * 반환, 복호화 불가)를 스스로 삼키고 warning + FAILED 이력으로 남긴다. 따라서 여기까지 예외가
-     * 올라왔다면 리스너가 계약을 어긴 것이고, 프로바이더 쪽 영수증이 실제로 취소됐는지조차 알 수 없다
-     * (국세청 기록과 DB 가 어긋날 수 있는 상태). 취소/재고/쿠폰 복원 실패(warning)와 달리 즉시
-     * 사람이 개입해야 하므로 PG 환불 실패와 같은 error 로 둔다.
+     * 실행 규칙(재발급 방식·실패 삼킴·로그 레벨)은 RefundExecutionService::syncCashReceipt 에 있다.
      *
      * @param  Order  $order  취소가 반영된 주문
      * @param  string|null  $reason  취소 사유
      */
     protected function syncCashReceipt(Order $order, ?string $reason): void
     {
-        try {
-            $this->cashReceiptService->syncFromOrder($order, $reason);
-        } catch (\Throwable $e) {
-            // 식별번호·PG raw 응답은 담지 않는다 (개인정보 로그 미노출).
-            Log::error('현금영수증 동기화 실패 — 주문 취소는 확정됨 (관리자 수동 재발급 필요)', [
-                'order_id' => $order->id,
-                'message' => $e->getMessage(),
-            ]);
-        }
+        $this->refundExecutionService->syncCashReceipt($order, $reason);
     }
 
     /**
@@ -304,7 +280,7 @@ class OrderCancellationService
 
         // ②-a. 재계산 결제금액이 원 결제금액을 초과하는지 검증
         // (쿠폰 조건 미달 등으로 할인 소멸 시 추가 결제가 필요한 경우 취소 불가)
-        $this->validateRefundNotNegative($order, $adjustmentResult, $cancelType);
+        $this->validateRefundNotNegative($adjustmentResult, $cancelType);
 
         // ③ DB 트랜잭션
         $orderCancel = null;
@@ -315,8 +291,6 @@ class OrderCancellationService
             $cancelledBy, $cancelPg, $adjustmentResult,
             &$orderCancel, &$orderRefund,
         ) {
-            $now = Carbon::now();
-            $isFullCancel = $cancelType === CancelTypeEnum::FULL;
             $isPaid = ! $order->order_status->isBeforePayment();
 
             // ③-a. OrderCancel INSERT (pending)
@@ -462,13 +436,12 @@ class OrderCancellationService
      * 위임하여, 미리보기 가능/실행 차단 같은 사용자 기만을 제거합니다.
      * 실결제 0원(미입금·운영자 0원 결제완료) 주문은 환불/추가청구 개념이 없어 차단하지 않습니다.
      *
-     * @param  Order  $order  주문
      * @param  AdjustmentResult  $result  환불 계산 결과
      * @param  CancelTypeEnum  $cancelType  취소 유형
      *
      * @throws \Exception 재계산 결제금액 초과 시
      */
-    protected function validateRefundNotNegative(Order $order, AdjustmentResult $result, CancelTypeEnum $cancelType): void
+    protected function validateRefundNotNegative(AdjustmentResult $result, CancelTypeEnum $cancelType): void
     {
         // 전체취소는 모든 금액이 0이므로 검증 불필요
         if ($cancelType === CancelTypeEnum::FULL) {
@@ -917,10 +890,9 @@ class OrderCancellationService
         $orderCurrency = $payment->currency ?: ($order->currency_snapshot['order_currency'] ?? null);
         $refundLocal = $this->resolveOrderCurrencyRefundAmount($result, $orderCurrency);
 
-        $mcCancelled = $payment->mc_cancelled_amount ?? [];
-        foreach ($result->mcRefundAmount ?? [] as $code => $amount) {
-            $mcCancelled[$code] = (float) ($mcCancelled[$code] ?? 0) + (float) $amount;
-        }
+        // 취소 누적 컬럼(cancelled_amount / mc_cancelled_amount)의 규칙은 클레임 환불과 동일하므로
+        // RefundExecutionService 가 SSoT 다. 여기서는 취소 고유 필드만 덧붙인다.
+        $cancelledUpdates = $this->refundExecutionService->buildCancelledAmountUpdates($payment, $result);
 
         $cancelHistory = $payment->cancel_history ?? [];
         $cancelHistory[] = [
@@ -934,16 +906,14 @@ class OrderCancellationService
             'date' => Carbon::now()->toIso8601String(),
         ];
 
-        $payment->update([
-            'cancelled_amount' => (float) $payment->cancelled_amount + $result->refundAmount,
-            'mc_cancelled_amount' => $mcCancelled,
+        $payment->update(array_merge($cancelledUpdates, [
             'cancel_reason' => $cancel->cancel_reason_type,
             'cancel_history' => $cancelHistory,
             'cancelled_at' => Carbon::now(),
             'payment_status' => $isFullCancel
                 ? PaymentStatusEnum::CANCELLED
                 : PaymentStatusEnum::PARTIAL_CANCELLED,
-        ]);
+        ]));
     }
 
     /**
@@ -958,15 +928,14 @@ class OrderCancellationService
      */
     protected function resolveOrderCurrencyRefundAmount(AdjustmentResult $result, ?string $orderCurrency): float
     {
-        if ($orderCurrency !== null && isset($result->mcRefundAmount[$orderCurrency])) {
-            return (float) $result->mcRefundAmount[$orderCurrency];
-        }
-
-        return (float) $result->refundAmount;
+        return $this->refundExecutionService->resolveOrderCurrencyRefundAmount($result, $orderCurrency);
     }
 
     // ───────────────────────────────────────────────
     // ③-i. 훅 실행 (PG 환불, 쿠폰/마일리지/재고 복원)
+    //
+    // 실행 본체는 RefundExecutionService 가 갖는다 (취소·클레임 공용). 여기 남은 메서드는
+    // 취소 흐름이 부르는 이름을 유지하기 위한 위임이며, 취소 고유 규칙은 담지 않는다.
     // ───────────────────────────────────────────────
 
     /**
@@ -985,51 +954,7 @@ class OrderCancellationService
         AdjustmentResult $result,
         ?string $reason,
     ): void {
-        $refund->update(['refund_status' => RefundStatusEnum::PROCESSING]);
-
-        // PG 실환불 금액은 결제 통화(order_currency)여야 한다. base≠결제 통화일 때 base 금액을 그대로
-        // 전송하면 PG 가 결제 통화 단위로 오인해 실환불액이 틀어진다(예: base JPY 500 → KRW 500 환불).
-        // updatePayment 가 이미 mc_cancelled_amount 를 결제 통화로 누적했으므로, 리스너는 결제 통화 기준
-        // (paid_amount_local / mc_cancelled_amount[order_currency])으로 부분취소 누적을 계산한다.
-        $orderCurrency = $order->payment->currency ?: ($order->currency_snapshot['order_currency'] ?? null);
-        $refundLocal = $this->resolveOrderCurrencyRefundAmount($result, $orderCurrency);
-
-        // $refund 는 이 환불 시도의 고유 레코드다. PG 리스너가 멱등키(Idempotency-Key)를 조립할 때
-        // 사용한다 — 네트워크 재시도로 같은 취소가 두 번 도달해도 PG 가 중복 청구를 차단한다.
-        // 인자 추가는 하위호환이다: 기존 리스너(5-파라미터)는 초과 인자를 그대로 무시한다.
-        $pgResult = HookManager::applyFilters(
-            'sirsoft-ecommerce.payment.refund',
-            ['success' => false, 'error_code' => null, 'error_message' => null, 'transaction_id' => null],
-            $order,
-            $order->payment,
-            $refundLocal,
-            $reason,
-            $refund
-        );
-
-        if (! empty($pgResult['success'])) {
-            $refund->update([
-                'pg_transaction_id' => $pgResult['transaction_id'] ?? null,
-                'refund_status' => RefundStatusEnum::COMPLETED,
-                'refunded_at' => Carbon::now(),
-            ]);
-        } else {
-            $refund->update([
-                'pg_error_code' => $pgResult['error_code'] ?? null,
-                'pg_error_message' => $pgResult['error_message'] ?? null,
-            ]);
-
-            Log::error('PG 환불 실패', [
-                'order_id' => $order->id,
-                'refund_id' => $refund->id,
-                'error_code' => $pgResult['error_code'] ?? null,
-                'error_message' => $pgResult['error_message'] ?? null,
-            ]);
-
-            throw new OrderCancellationException(__('sirsoft-ecommerce::exceptions.pg_refund_failed', [
-                'error' => $pgResult['error_message'] ?? 'Unknown error',
-            ]));
-        }
+        $this->refundExecutionService->executePgRefund($order, $refund, $result, $reason);
     }
 
     /**
@@ -1040,21 +965,7 @@ class OrderCancellationService
      */
     protected function restoreCoupons(Order $order, AdjustmentResult $result): void
     {
-        if (! empty($result->restoredCouponIssueIds)) {
-            try {
-                HookManager::doAction(
-                    'sirsoft-ecommerce.coupon.restore',
-                    $order,
-                    $result->restoredCouponIssueIds
-                );
-            } catch (\Exception $e) {
-                Log::warning('쿠폰 복원 실패', [
-                    'order_id' => $order->id,
-                    'coupon_ids' => $result->restoredCouponIssueIds,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        }
+        $this->refundExecutionService->restoreCoupons($order, $result);
     }
 
     /**
@@ -1066,29 +977,7 @@ class OrderCancellationService
      */
     protected function restoreMileage(Order $order, AdjustmentResult $result, ?OrderCancel $orderCancel = null): void
     {
-        // 실제 차감이 일어난 주문만 복원한다. 결제수단별 차감 시점이 payment_complete 인데
-        // 결제 전 취소되어 마일리지가 차감된 적 없는 주문(is_mileage_deducted=false)은 복원 대상이 아니다.
-        // 가드가 없으면 사용 의도(total_points_used_amount)만으로 신규 lot 이 발행되어 유령 적립이 발생한다.
-        if (! $order->is_mileage_deducted) {
-            return;
-        }
-
-        if ($result->refundPointsAmount > 0) {
-            try {
-                HookManager::doAction(
-                    'sirsoft-ecommerce.mileage.restore',
-                    $result->refundPointsAmount,
-                    $order,
-                    $orderCancel?->id
-                );
-            } catch (\Exception $e) {
-                Log::warning('마일리지 복원 실패', [
-                    'order_id' => $order->id,
-                    'points_amount' => $result->refundPointsAmount,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        }
+        $this->refundExecutionService->restoreMileage($order, $result, $orderCancel);
     }
 
     /**
@@ -1099,37 +988,7 @@ class OrderCancellationService
      */
     protected function restoreStock(Order $order, array $cancelItems): void
     {
-        $shouldRestore = $this->settingsService->getSetting(
-            'order_settings.stock_restore_on_cancel',
-            true
-        );
-
-        if (! $shouldRestore) {
-            return;
-        }
-
-        foreach ($cancelItems as $item) {
-            $option = $order->options->find($item['order_option_id']);
-            if (! $option || ! $option->is_stock_deducted) {
-                continue;
-            }
-
-            try {
-                // 복원 + is_stock_deducted 플래그 정리를 한 트랜잭션에서 원자적으로 처리.
-                // (재고 리스너 제거로 플래그 리셋 주체가 Service 경로로 단일화됨)
-                $this->stockService->restoreOptionStockForOrderOption(
-                    $option,
-                    $item['cancel_quantity']
-                );
-            } catch (\Exception $e) {
-                Log::warning('재고 복원 실패', [
-                    'order_id' => $order->id,
-                    'option_id' => $option->id,
-                    'quantity' => $item['cancel_quantity'],
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        }
+        $this->refundExecutionService->restoreStock($order, $cancelItems);
     }
 
     // ───────────────────────────────────────────────
