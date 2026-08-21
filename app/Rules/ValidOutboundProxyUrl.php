@@ -15,7 +15,7 @@ use Illuminate\Contracts\Validation\ValidationRule;
  * 빈 값은 통과시킨다. 프록시를 쓰지 않는 것이 기본 상태이며, 필수 여부는 FormRequest 의
  * nullable 규칙이 정한다.
  *
- * @since 7.1.0
+ * @since 7.0.8
  */
 class ValidOutboundProxyUrl implements ValidationRule
 {
