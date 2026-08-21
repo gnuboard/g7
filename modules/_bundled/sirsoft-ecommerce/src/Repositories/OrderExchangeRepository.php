@@ -74,6 +74,27 @@ class OrderExchangeRepository implements OrderExchangeRepositoryInterface
     /**
      * {@inheritDoc}
      */
+    public function listPendingByOrderId(int $orderId, array $excludeIds = []): Collection
+    {
+        $finalValues = array_map(
+            fn (ExchangeStatusEnum $status) => $status->value,
+            ExchangeStatusEnum::finalStatuses(),
+        );
+
+        $query = $this->model->newQuery()
+            ->where('order_id', $orderId)
+            ->whereNotIn('exchange_status', $finalValues);
+
+        if ($excludeIds !== []) {
+            $query->whereNotIn('id', $excludeIds);
+        }
+
+        return $query->orderBy('id')->get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function findForUpdate(int $id): ?OrderExchange
     {
         return $this->model->newQuery()

@@ -74,6 +74,32 @@ class OrderReturnRepository implements OrderReturnRepositoryInterface
     /**
      * {@inheritDoc}
      */
+    public function listPendingWithoutRefundByOrderId(
+        int $orderId,
+        array $excludeIds = [],
+        array $relations = [],
+    ): Collection {
+        $finalValues = array_map(
+            fn (ReturnStatusEnum $status) => $status->value,
+            ReturnStatusEnum::finalStatuses(),
+        );
+
+        $query = $this->model->newQuery()
+            ->with($relations)
+            ->where('order_id', $orderId)
+            ->whereNull('refund_id')
+            ->whereNotIn('return_status', $finalValues);
+
+        if ($excludeIds !== []) {
+            $query->whereNotIn('id', $excludeIds);
+        }
+
+        return $query->orderBy('id')->get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function findForUpdate(int $id): ?OrderReturn
     {
         return $this->model->newQuery()

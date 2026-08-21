@@ -1044,7 +1044,6 @@ return [
         'can_write_checked' => 'レビュー作成可否を確認しました。',
         'can_write_check_failed' => 'レビュー作成可否の確認に失敗しました。',
         'cannot_write' => 'レビューを作成できません。(理由: :reason)',
-        // 作成不可理由ラベル — :reason 置換子に生の識別子ではなく翻訳文を載せる
         'reasons' => [
             'order_option_not_found' => '注文内容が見つかりません',
             'not_own_order' => 'ご本人の注文ではありません',
@@ -1151,5 +1150,12 @@ return [
         'fetched' => '配送国を照会しました。',
         'updated' => '配送国が変更されました。',
         'update_failed' => '配送国の変更に失敗しました。',
+    ],
+    'claims' => [
+        'cancellable_binding' => [
+            'domain_refundable' => '返金対象金額が上限です。',
+            'payment_capacity' => '決済方法の残り上限が上限です。',
+            'reserved' => '進行中の他のクレームが占有した金額分、上限が減少しました。',
+        ],
     ],
 ];

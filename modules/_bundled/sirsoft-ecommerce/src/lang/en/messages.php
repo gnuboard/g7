@@ -463,6 +463,16 @@ return [
         'delete_failed_in_use' => 'Cannot delete a reason in use by order cancellations. We recommend deactivating it instead.',
     ],
 
+    // Claim Common Messages
+    'claims' => [
+        // Which axis bound the cancellable amount (D19) — shown as the basis on the admin screen.
+        'cancellable_binding' => [
+            'domain_refundable' => 'The refundable amount is the binding limit.',
+            'payment_capacity' => 'The remaining payment method capacity is the binding limit.',
+            'reserved' => 'The limit was reduced by amounts reserved by other in-progress claims.',
+        ],
+    ],
+
     // Shipping Policy Messages
     'shipping_policy' => [
         'list_retrieved' => 'Shipping policy list retrieved successfully.',

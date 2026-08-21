@@ -467,6 +467,16 @@ return [
         'delete_failed_in_use' => '주문 취소에서 사용 중인 사유는 삭제할 수 없습니다. 비활성화를 권장합니다.',
     ],
 
+    // 클레임 공통 메시지
+    'claims' => [
+        // 취소 가능 금액의 한도를 정한 축 (D19) — 관리자 화면이 근거로 표시한다.
+        'cancellable_binding' => [
+            'domain_refundable' => '환불 대상 금액이 한도입니다.',
+            'payment_capacity' => '결제수단 잔여 한도가 한도입니다.',
+            'reserved' => '진행 중인 다른 클레임이 선점한 금액만큼 한도가 줄었습니다.',
+        ],
+    ],
+
     // 배송정책 메시지
     'shipping_policy' => [
         'list_retrieved' => '배송정책 목록을 조회했습니다.',

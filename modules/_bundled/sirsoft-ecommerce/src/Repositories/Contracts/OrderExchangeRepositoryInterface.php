@@ -55,6 +55,19 @@ interface OrderExchangeRepositoryInterface
     public function listByOrderId(int $orderId, array $relations = []): Collection;
 
     /**
+     * 주문의 진행 중(비터미널) 교환 신청서를 조회합니다.
+     *
+     * 취소 가능 금액 산정(D19)의 선점액 축이 쓰는 조회다 — 교환에서 선점되는 것은
+     * 저가 교환의 차액 환불분(`refund_product_amount`)뿐이며, 청구액은 받는 돈이라
+     * 선점 대상이 아니다.
+     *
+     * @param  int  $orderId  주문 ID
+     * @param  array<int>  $excludeIds  집계에서 제외할 교환 신청서 ID (실행 대상 자기 자신)
+     * @return Collection 진행 중 교환 신청서 목록
+     */
+    public function listPendingByOrderId(int $orderId, array $excludeIds = []): Collection;
+
+    /**
      * 잠금(SELECT ... FOR UPDATE)과 함께 교환 신청서를 조회합니다.
      *
      * 상태 전이·수량 검증처럼 동시 요청이 겹치면 안 되는 경로에서 사용합니다.

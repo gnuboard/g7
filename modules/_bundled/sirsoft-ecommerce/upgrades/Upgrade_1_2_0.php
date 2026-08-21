@@ -14,6 +14,7 @@ use App\Extension\AbstractUpgradeStep;
  *   1. 기존 환불 이력의 발생 출처를 polymorphic 축(refund_source_*)으로 백필
  *   2. 교환/반품 사유 카탈로그 시드
  *   3. claim 설정 카테고리 기본값 병합 (즉시취소 상태는 기존 값 승계)
+ *   4. 배송지 스냅샷이 빈 구형 주문(1.0.0-beta.5 이전)의 배송지 백필
  *
  * 모든 비즈니스 로직은 data/1.2.0/migrations/ 로 격리(AbstractUpgradeStep 규약).
  *

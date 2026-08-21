@@ -68,7 +68,15 @@ class OrderAdjustmentService
 
         // 전량 제외(전체취소)인 경우
         if (empty($recalcInput->items)) {
-            return $this->buildFullCancelResult($order, $originalSnapshot, $originalPaidAmount, $originalPointsUsed, $excludedItems, $refundPriority);
+            return $this->buildFullCancelResult(
+                $order,
+                $originalSnapshot,
+                $originalPaidAmount,
+                $originalPointsUsed,
+                $excludedItems,
+                $refundPriority,
+                $adjustment->getAdditionalCharges(),
+            );
         }
 
         // 4. 재계산 실행
@@ -420,14 +428,16 @@ class OrderAdjustmentService
     }
 
     /**
-     * 전체취소 결과를 생성합니다.
+     * 전량 제외(전체취소·전량 반품) 결과를 생성합니다.
      *
      * @param  Order  $order  주문
      * @param  array  $originalSnapshot  원 스냅샷
      * @param  float  $originalPaidAmount  원 결제금액
      * @param  float  $originalPointsUsed  원 포인트 사용액
-     * @param  array  $excludedItems  취소 대상 아이템
-     * @return AdjustmentResult 전체취소 결과
+     * @param  array  $excludedItems  제외 대상 아이템
+     * @param  RefundPriorityEnum  $refundPriority  환불 우선순위
+     * @param  float  $additionalCharges  환불액에서 차감할 추가 비용 (취소는 0)
+     * @return AdjustmentResult 전량 제외 결과
      */
     private function buildFullCancelResult(
         Order $order,
@@ -436,6 +446,7 @@ class OrderAdjustmentService
         float $originalPointsUsed,
         array $excludedItems,
         RefundPriorityEnum $refundPriority = RefundPriorityEnum::PG_FIRST,
+        float $additionalCharges = 0,
     ): AdjustmentResult {
         $adjustedItems = [];
         foreach ($order->options as $option) {
@@ -456,9 +467,22 @@ class OrderAdjustmentService
             $restoredCouponIds = $promoSnapshot['coupon_issue_ids'];
         }
 
-        // 환불 우선순위 기반 배분 (전체취소 시)
-        $refundAmount = $originalPaidAmount;
-        $refundPointsAmount = $originalPointsUsed;
+        // 환불 우선순위 기반 배분 (전량 제외 시)
+        //
+        // 추가 비용(반품 회수배송비의 환불금 차감 등)은 여기서도 빼야 한다. 취소는 추가 비용이
+        // 항상 0 이라 이 경로가 그 축을 몰라도 성립했지만, 전량 반품은 가장 흔한 반품이면서
+        // 동시에 이 경로를 타므로 빼지 않으면 차감하기로 한 회수배송비가 조용히 사라진다.
+        // 추가 비용이 0 이면 아래 식은 종전 값(`refundAmount = 원 결제금액`)과 완전히 같다.
+        $totalRefundable = max(0, ($originalPaidAmount + $originalPointsUsed) - $additionalCharges);
+
+        if ($refundPriority === RefundPriorityEnum::POINTS_FIRST) {
+            $refundPointsAmount = min($totalRefundable, max(0, $originalPointsUsed));
+            $refundAmount = $totalRefundable - $refundPointsAmount;
+        } else {
+            $refundAmount = min($totalRefundable, max(0, $originalPaidAmount));
+            $refundPointsAmount = $totalRefundable - $refundAmount;
+        }
+
         $shippingDifference = (float) $order->total_shipping_amount;
 
         // 잔여 잔액

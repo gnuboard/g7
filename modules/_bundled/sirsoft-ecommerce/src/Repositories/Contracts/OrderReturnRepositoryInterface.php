@@ -55,6 +55,23 @@ interface OrderReturnRepositoryInterface
     public function listByOrderId(int $orderId, array $relations = []): Collection;
 
     /**
+     * 주문의 진행 중(비터미널)이면서 환불신청서가 아직 없는 반품 신청서를 조회합니다.
+     *
+     * 취소 가능 금액 산정(D19)의 선점액 축이 쓰는 조회다. 환불신청서가 생긴 반품은
+     * 그 환불신청서 쪽에서 이미 선점액으로 잡히므로 여기서 또 세면 두 배가 된다.
+     *
+     * @param  int  $orderId  주문 ID
+     * @param  array<int>  $excludeIds  집계에서 제외할 반품 신청서 ID (실행 대상 자기 자신)
+     * @param  array<int, string>  $relations  eager load 할 관계
+     * @return Collection 선점 대상 반품 신청서 목록
+     */
+    public function listPendingWithoutRefundByOrderId(
+        int $orderId,
+        array $excludeIds = [],
+        array $relations = [],
+    ): Collection;
+
+    /**
      * 잠금(SELECT ... FOR UPDATE)과 함께 반품 신청서를 조회합니다.
      *
      * @param  int  $id  반품 신청서 ID
