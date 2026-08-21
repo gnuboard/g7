@@ -9,7 +9,12 @@ namespace Modules\Sirsoft\Ecommerce\Enums;
  * 선언하고, 신청 시점에 클레임 헤더(`shipping_fee_mode`)로 동결된다.
  *
  * - FIXED: 정책에 지정된 고정액(반품 편도 `return_fixed_fee` / 교환 왕복 `exchange_fixed_fee`)
- * - ORIGINAL_POLICY: 원 주문의 배송비 정책을 스냅샷 기준으로 재계산
+ * - ORIGINAL_POLICY: 원 주문의 배송정책 부과 규칙으로 편도 배송비를 재산출한 뒤 반품 ×1 · 교환 ×2
+ *
+ * 이 Enum 값 자체와 고정액 2종은 **주문 시점 스냅샷이 아니라 현재 배송정책 국가별 설정 행**에서
+ * 읽는다 — `order_shippings.delivery_policy_snapshot` 은 세 값을 담지 않으며, 위 문단이 말하는
+ * 동결 시점도 주문 시점이 아니라 신청 시점이기 때문이다. 주문 스냅샷이 정하는 것은
+ * "어느 정책의 어느 국가 행을 읽을 것인가" 뿐이다(`ClaimShippingFeeService` 참조).
  */
 enum ClaimShippingFeeModeEnum: string
 {

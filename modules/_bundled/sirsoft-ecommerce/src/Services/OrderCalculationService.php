@@ -2110,11 +2110,15 @@ class OrderCalculationService
     /**
      * 국가별 설정에 따라 배송비를 계산합니다.
      *
+     * 부과정책 14종의 분기가 이 메서드 한 곳에 있다. 클레임 배송비의 '원 배송정책 기준' 모드도
+     * 같은 분기를 타야 하므로(`ClaimShippingFeeService`) public 이다 — 두 벌로 두면 정책이
+     * 늘어날 때 한쪽만 갱신되어 주문 배송비와 클레임 배송비가 조용히 갈린다.
+     *
      * @param  ShippingPolicyCountrySetting  $countrySetting  국가별 설정
      * @param  array  $group  그룹 정보 (total_amount, total_quantity, total_weight, total_volume)
      * @return int 배송비
      */
-    protected function calculateCountryShippingFee(ShippingPolicyCountrySetting $countrySetting, array &$group): int
+    public function calculateCountryShippingFee(ShippingPolicyCountrySetting $countrySetting, array &$group): int
     {
         // 스냅샷 모드: 원 주문 시 계산된 배송비를 직접 사용 (플러그인 훅 미호출)
         // → 플러그인 ON/OFF 무관하게 환불 정확성 보장
