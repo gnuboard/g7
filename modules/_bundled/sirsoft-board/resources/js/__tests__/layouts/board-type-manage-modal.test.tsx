@@ -209,7 +209,12 @@ describe('게시판 유형 관리 모달 레이아웃', () => {
     it('name 셀이 다국어 fallback 체인으로 표시한다', () => {
       const nameCell = findByIdPrefix(modal, 'bt_td_name');
       expect(nameCell.text).toContain('btItem.name');
-      expect(nameCell.text).toContain('_global.locale');
+
+      // 엔진은 현재 로케일을 전역 변수 `$locale` 로만 노출한다. `_global.locale` 은 심는 곳이
+      // 없어 항상 undefined 이고, 그러면 뒤의 `?? 'ko'` 가 걸려 **모든 언어에서 한국어**가
+      // 나간다. 같은 폴더의 `board-locale-fallback.test.ts` 가 이미 요구하던 형태다.
+      expect(nameCell.text).toContain('$locale');
+      expect(nameCell.text).not.toContain('_global.locale');
     });
   });
 

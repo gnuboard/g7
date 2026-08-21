@@ -120,7 +120,10 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
     if (!g7core?.state?.subscribe) return;
 
     const unsubscribe = g7core.state.subscribe((state: any) => {
-      const newLocale = state?._global?.locale || g7core?.locale?.current?.() || 'ko';
+      // 현재 로케일의 출처는 엔진 하나다 — `_global.locale` 은 어디서도 채워지지 않는 경로라
+      // 항상 undefined 로 떨어졌다(엔진은 `state.locale` → 전역 변수 `$locale` 로만 노출한다).
+      // 폴백이 뒤에 있어 동작은 정상이었지만, 죽은 경로를 앞에 두면 다음 사람이 그것을 선례로 복사한다.
+      const newLocale = g7core?.locale?.current?.() || 'ko';
       setLocale(newLocale);
 
       // 현재 경로 업데이트

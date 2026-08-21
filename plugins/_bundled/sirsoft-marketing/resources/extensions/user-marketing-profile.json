@@ -360,7 +360,7 @@
                                                                     "props": {
                                                                         "className": "block text-heading"
                                                                     },
-                                                                    "text": "{{$get(channel.label_i18n, _global.locale, channel.label)}}"
+                                                                    "text": "{{$get(channel.label_i18n, $locale, channel.label)}}"
                                                                 }
                                                             ]
                                                         }

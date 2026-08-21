@@ -539,7 +539,7 @@
                                                                             "props": {
                                                                                 "className": "w-28 text-center text-red-600 dark:text-red-400"
                                                                             },
-                                                                            "text": "{{change.old_label ?? change.old?.[_global.locale] ?? (typeof change.old === 'object' && change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}"
+                                                                            "text": "{{change.old_label ?? change.old?.[$locale] ?? (typeof change.old === 'object' && change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}"
                                                                         },
                                                                         {
                                                                             "type": "basic",
@@ -547,7 +547,7 @@
                                                                             "props": {
                                                                                 "className": "w-28 text-center text-green-600 dark:text-green-400"
                                                                             },
-                                                                            "text": "{{change.new_label ?? change.new?.[_global.locale] ?? (typeof change.new === 'object' && change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}"
+                                                                            "text": "{{change.new_label ?? change.new?.[$locale] ?? (typeof change.new === 'object' && change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}"
                                                                         }
                                                                     ]
                                                                 }
@@ -632,7 +632,7 @@
                                                                                     "props": {
                                                                                         "className": "w-28 text-center text-red-600 dark:text-red-400"
                                                                                     },
-                                                                                    "text": "{{change.old_label ?? change.old?.[_global.locale] ?? (typeof change.old === 'object' && change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}"
+                                                                                    "text": "{{change.old_label ?? change.old?.[$locale] ?? (typeof change.old === 'object' && change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}"
                                                                                 },
                                                                                 {
                                                                                     "type": "basic",
@@ -640,7 +640,7 @@
                                                                                     "props": {
                                                                                         "className": "w-28 text-center text-green-600 dark:text-green-400"
                                                                                     },
-                                                                                    "text": "{{change.new_label ?? change.new?.[_global.locale] ?? (typeof change.new === 'object' && change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}"
+                                                                                    "text": "{{change.new_label ?? change.new?.[$locale] ?? (typeof change.new === 'object' && change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}"
                                                                                 }
                                                                             ]
                                                                         }
@@ -917,7 +917,7 @@
                                                     "props": {
                                                         "className": "w-20 text-center text-red-600 dark:text-red-400"
                                                     },
-                                                    "text": "{{change.old_label ?? change.old?.[_global.locale] ?? (typeof change.old === 'object' && change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}"
+                                                    "text": "{{change.old_label ?? change.old?.[$locale] ?? (typeof change.old === 'object' && change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}"
                                                 },
                                                 {
                                                     "type": "basic",
@@ -925,7 +925,7 @@
                                                     "props": {
                                                         "className": "w-20 text-center text-green-600 dark:text-green-400"
                                                     },
-                                                    "text": "{{change.new_label ?? change.new?.[_global.locale] ?? (typeof change.new === 'object' && change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}"
+                                                    "text": "{{change.new_label ?? change.new?.[$locale] ?? (typeof change.new === 'object' && change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}"
                                                 }
                                             ]
                                         }
@@ -1007,7 +1007,7 @@
                                                             "props": {
                                                                 "className": "w-20 text-center text-red-600 dark:text-red-400"
                                                             },
-                                                            "text": "{{change.old_label ?? change.old?.[_global.locale] ?? (typeof change.old === 'object' && change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}"
+                                                            "text": "{{change.old_label ?? change.old?.[$locale] ?? (typeof change.old === 'object' && change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}"
                                                         },
                                                         {
                                                             "type": "basic",
@@ -1015,7 +1015,7 @@
                                                             "props": {
                                                                 "className": "w-20 text-center text-green-600 dark:text-green-400"
                                                             },
-                                                            "text": "{{change.new_label ?? change.new?.[_global.locale] ?? (typeof change.new === 'object' && change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}"
+                                                            "text": "{{change.new_label ?? change.new?.[$locale] ?? (typeof change.new === 'object' && change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}"
                                                         }
                                                     ]
                                                 }

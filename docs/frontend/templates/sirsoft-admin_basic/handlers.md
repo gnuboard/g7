@@ -64,7 +64,7 @@
 
 ```text
 1. 로케일 변경 → 번역 파일 다시 로드
-2. _global.locale 자동 업데이트
+2. 전역 변수 $locale 갱신
 3. 모든 $t: 표현식 재평가
 ```
 
@@ -497,7 +497,7 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
 
 ```html
 <on type="click">
-  <action handler="saveMultilingualTag" field="tags" locale="{{_global.locale}}"/>
+  <action handler="saveMultilingualTag" field="tags" locale="{{$locale}}"/>
 </on>
 ```
 
@@ -508,7 +508,7 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
   "handler": "saveMultilingualTag",
   "params": {
     "field": "tags",
-    "locale": "{{_global.locale}}"
+    "locale": "{{$locale}}"
   }
 }
 ```

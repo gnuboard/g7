@@ -52,7 +52,7 @@
               </div>
               <p class="text-field-hint pl-6">$t:sirsoft-board.admin.settings.fields.descriptions.type</p>
             </div>
-            <select name="basic_defaults.type" options="{{board_types?.data?.map(t => ({value: t.slug, label: (t.name[_global.locale ?? $locale ?? 'ko'] ?? t.name.ko ?? t.slug) + ' (' + t.slug + ')'})) ?? []}}" class="w-48 flex-shrink-0 text-sm" disabled="{{_computed.isReadOnly}}"/>
+            <select name="basic_defaults.type" options="{{board_types?.data?.map(t => ({value: t.slug, label: (t.name[$locale ?? 'ko'] ?? t.name.ko ?? t.slug) + ' (' + t.slug + ')'})) ?? []}}" class="w-48 flex-shrink-0 text-sm" disabled="{{_computed.isReadOnly}}"/>
           </div>
         </div>
         <div data-ref="field_secret_mode" class="">

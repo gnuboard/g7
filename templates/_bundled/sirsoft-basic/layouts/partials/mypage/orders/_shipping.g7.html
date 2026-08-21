@@ -43,7 +43,7 @@
       <!-- 배송국가 (D9 — 항상 표시, KR 포함) -->
       <div class="flex items-start">
         <span class="w-28 flex-shrink-0 text-gray-500 dark:text-gray-400"><responsive on="portable" class="w-20 flex-shrink-0 text-gray-500 dark:text-gray-400 text-sm"/>$t:shop.checkout.shipping_country</span>
-        <span class="text-gray-900 dark:text-white"><responsive on="portable" class="text-gray-900 dark:text-white text-sm"/>{{order.data.shipping_address?.recipient_country_name?.[_global.locale] ?? order.data.shipping_address?.recipient_country_name?.ko ?? order.data.shipping_address?.recipient_country_code ?? 'KR'}}</span>
+        <span class="text-gray-900 dark:text-white"><responsive on="portable" class="text-gray-900 dark:text-white text-sm"/>{{order.data.shipping_address?.recipient_country_name?.[$locale] ?? order.data.shipping_address?.recipient_country_name?.ko ?? order.data.shipping_address?.recipient_country_code ?? 'KR'}}</span>
       </div>
       <!-- 연락처 -->
       <div class="flex items-start">

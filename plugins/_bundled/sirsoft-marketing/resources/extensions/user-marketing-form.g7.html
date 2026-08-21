@@ -64,7 +64,7 @@
                     </on>
                   </checkbox>
                   <div class="flex-1 space-y-1">
-                    <span class="block text-heading">{{$get(channel.label_i18n, _global.locale, channel.label)}}</span>
+                    <span class="block text-heading">{{$get(channel.label_i18n, $locale, channel.label)}}</span>
                   </div>
                 </label>
                 <button data-if="{{channel.terms_slug_set === true}}" type="button" class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline flex-shrink-0 mt-0.5">

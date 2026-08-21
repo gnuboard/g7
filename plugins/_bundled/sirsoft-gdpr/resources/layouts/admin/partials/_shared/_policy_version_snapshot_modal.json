@@ -266,13 +266,13 @@
                                                     "text": "{{category?.key ?? '?'}}"
                                                 },
                                                 {
-                                                    "comment": "라벨 — 다국어 객체 (ko/en) 또는 plain 문자열 양쪽 호환. 객체일 때 ko 우선 추출, 아니면 그대로.",
+                                                    "comment": "라벨 — 다국어 객체 또는 plain 문자열 양쪽 호환. 객체일 때 현재 로케일 우선 추출(없으면 ko→en), 아니면 그대로.",
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
                                                         "className": "text-gray-500 dark:text-gray-400"
                                                     },
-                                                    "text": "{{(category?.label && typeof category.label === 'object') ? (category.label.ko ?? category.label.en ?? '-') : (category?.label ?? '-')}}"
+                                                    "text": "{{(category?.label && typeof category.label === 'object') ? (category.label[$locale] ?? category.label.ko ?? category.label.en ?? '-') : (category?.label ?? '-')}}"
                                                 },
                                                 {
                                                     "type": "basic",

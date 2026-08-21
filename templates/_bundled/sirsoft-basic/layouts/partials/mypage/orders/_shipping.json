@@ -206,7 +206,7 @@
                             "props": {
                                 "className": "text-gray-900 dark:text-white"
                             },
-                            "text": "{{order.data.shipping_address?.recipient_country_name?.[_global.locale] ?? order.data.shipping_address?.recipient_country_name?.ko ?? order.data.shipping_address?.recipient_country_code ?? 'KR'}}"
+                            "text": "{{order.data.shipping_address?.recipient_country_name?.[$locale] ?? order.data.shipping_address?.recipient_country_name?.ko ?? order.data.shipping_address?.recipient_country_code ?? 'KR'}}"
                         }
                     ]
                 },

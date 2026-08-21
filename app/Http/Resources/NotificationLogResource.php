@@ -8,6 +8,9 @@ class NotificationLogResource extends BaseApiResource
 {
     /**
      * 리소스를 배열로 변환합니다.
+     *
+     * @param  Request  $request  HTTP 요청
+     * @return array<string, mixed> 변환된 배열 데이터
      */
     public function toArray(Request $request): array
     {
@@ -27,7 +30,7 @@ class NotificationLogResource extends BaseApiResource
                 return $user ? [
                     'uuid' => $user->uuid,
                     'name' => $user->name,
-                    'email' => $user->email,
+                    'email' => $this->canExposeMemberEmail(null, $user->id) ? $user->email : null,
                 ] : null;
             }),
             'recipient' => $this->whenLoaded('recipientUser', function () {
@@ -36,7 +39,7 @@ class NotificationLogResource extends BaseApiResource
                 return $user ? [
                     'uuid' => $user->uuid,
                     'name' => $user->name,
-                    'email' => $user->email,
+                    'email' => $this->canExposeMemberEmail(null, $user->id) ? $user->email : null,
                 ] : null;
             }),
             'subject' => $this->getValue('subject'),

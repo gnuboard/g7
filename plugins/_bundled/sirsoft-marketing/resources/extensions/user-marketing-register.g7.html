@@ -41,7 +41,7 @@
               <set-state target="local" registerForm="{{Object.assign({}, _local.registerForm, $event.target.checked ? { ['agree_' + channel.key]: true, agree_marketing_consent: true } : { ['agree_' + channel.key]: false })}}"/>
             </on>
           </checkbox>
-          <span>{{$get(channel.label_i18n, _global.locale, channel.label)}}</span>
+          <span>{{$get(channel.label_i18n, $locale, channel.label)}}</span>
         </label>
         <button data-if="{{channel.terms_slug_set === true}}" type="button" class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline flex-shrink-0">
           <on type="click">

@@ -128,7 +128,7 @@
                                                         "value": "{{_computed.activeCountrySetting?.custom_shipping_name ?? {}}}",
                                                         "layout": "inline",
                                                         "placeholder": "$t:sirsoft-ecommerce.admin.shipping_policy.form.custom_shipping_name_placeholder",
-                                                        "error": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.custom_shipping_name.' + (_global.locale || 'ko')]?.[0] ?? ''}}",
+                                                        "error": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.custom_shipping_name.' + ($locale || 'ko')]?.[0] ?? ''}}",
                                                         "disabled": "{{_computed.isReadOnly}}"
                                                     }
                                                 }

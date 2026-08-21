@@ -312,7 +312,7 @@ class MarketingConsentListener implements HookListenerInterface
 
             $channelsMeta[] = [
                 'key'            => $key,
-                'label'          => $channel['label'][$locale] ?? $channel['label']['ko'] ?? $key,
+                'label'          => $this->resolveChannelLabel($channel, $locale),
                 'enabled'        => (bool) ($channel['enabled'] ?? true),
                 'terms_slug'     => $slug ?: null,
                 'terms_slug_set' => ! empty($slug),
@@ -405,10 +405,48 @@ class MarketingConsentListener implements HookListenerInterface
     /**
      * 현재 요청 경로에서 변경 출처를 판별합니다.
      *
+     * 동의 이력에 남길 "어느 화면에서 바꿨는가" 는 도메인 값이 아니라 전송 계층 사실이고,
+     * 코어의 회원 수정 훅은 그 값을 payload 로 전달하지 않는다. 같은 사유로 면제한
+     * 선례가 이미 있다(`MergeCartOnLoginListener`).
+     *
      * @return string 변경 경로 (admin/profile)
      */
     private function detectSource(): string
     {
+        // audit:allow listener-formrequest-bypass reason: 코어 훅이 전달하지 않는 전송 계층 사실(요청 경로) — 값은 admin/profile 두 가지로 닫혀 있다
         return request()->routeIs('api.admin.*') ? 'admin' : 'profile';
+    }
+
+    /**
+     * 채널 라벨을 현재 로케일로 해석합니다.
+     *
+     * `label_key` 가 SSoT 다 — 저장된 `label` 맵은 언어팩 미설치 환경 보호용 폴백이고,
+     * 그 맵은 저장 시점의 지원 로케일만 담는다. 맵만 읽으면 나중에 추가된 로케일에서
+     * 이 항목만 ko 로 떨어져, 같은 목록의 다른 항목이 번역되는 와중에 한 줄만 한국어로 남는다.
+     *
+     * @param  array<string, mixed>  $channel  채널 정의
+     * @param  string  $locale  현재 로케일
+     * @return string 해석된 라벨
+     */
+    private function resolveChannelLabel(array $channel, string $locale): string
+    {
+        $labelKey = $channel['label_key'] ?? null;
+
+        if (is_string($labelKey) && $labelKey !== '') {
+            $translated = __($labelKey, [], $locale);
+
+            // 번역 부재 시 __() 는 키 원문을 돌려준다 — 그때만 저장된 맵으로 내려간다.
+            if (is_string($translated) && $translated !== $labelKey) {
+                return $translated;
+            }
+        }
+
+        $label = $channel['label'] ?? [];
+
+        if (is_string($label)) {
+            return $label;
+        }
+
+        return $label[$locale] ?? $label[config('app.fallback_locale', 'ko')] ?? $label['ko'] ?? (string) $channel['key'];
     }
 }

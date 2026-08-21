@@ -1075,7 +1075,7 @@
                                                         {
                                                             "type": "basic",
                                                             "name": "Span",
-                                                            "text": "{{order.recipient_country_name?.[_global.locale] ?? order.recipient_country_name?.ko ?? order.recipient_country_code}}"
+                                                            "text": "{{order.recipient_country_name?.[$locale] ?? order.recipient_country_name?.ko ?? order.recipient_country_code}}"
                                                         }
                                                     ]
                                                 }

@@ -478,6 +478,17 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             expect(text).toContain('"disabled": "{{category?.required === true}}"');
         });
 
+        it('카테고리 라벨·설명은 현재 로케일($locale)을 먼저 본다', () => {
+            const text = serializeForSearch(panel);
+
+            // 엔진은 현재 로케일을 전역 변수 $locale 로 노출한다. _global.locale 은 심는 곳이
+            // 없어 항상 undefined 이고, 그러면 ?? 폴백이 걸려 **모든 언어에서 한국어**가 나간다.
+            expect(text).toContain('category?.label?.[$locale]');
+            expect(text).toContain('category?.description?.[$locale]');
+            expect(text).not.toContain('_global.locale');
+            expect(text).not.toContain('_global?.locale');
+        });
+
         it('저장 버튼 클릭 시 POST /consent/cookie + 배너 dismissedFor 갱신 + 성공 토스트', () => {
             const text = serializeForSearch(panel);
             expect(text).toContain('/api/plugins/sirsoft-gdpr/consent/cookie');

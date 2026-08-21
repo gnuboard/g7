@@ -54,7 +54,7 @@
         <span>$t:shop.checkout.shipping_country</span>
         <span class="text-red-500 ml-1">*</span>
       </label>
-      <select name="country_code" value="{{_local.shipping?.country_code ?? _global.preferredShippingCountry ?? 'KR'}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500" options="{{(shippingSettings?.data?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: c.name?.[_global.locale] ?? c.name?.ko ?? c.code }))}}">
+      <select name="country_code" value="{{_local.shipping?.country_code ?? _global.preferredShippingCountry ?? 'KR'}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500" options="{{(shippingSettings?.data?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: c.name?.[$locale] ?? c.name?.ko ?? c.code }))}}">
         <responsive on="portable" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"/>
         <on type="change">
           <!-- 배송 국가 변경. 이전 국가의 우편번호·주소를 함께 비우고 배송비를 다시 계산한다 — 남겨 두면 다른 나라 주소로 배송비가 잘못 매겨진다 -->

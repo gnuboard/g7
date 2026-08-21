@@ -26,7 +26,7 @@
             <span data-if="{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.shipping_method']}}" class="form-error-xs mt-0.5">{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.shipping_method']?.[0]}}</span>
             <div data-if="{{_computed.activeCountrySetting?.shipping_method === 'custom'}}" class="">
               <label class="text-secondary block text-xs font-medium mb-1">$t:sirsoft-ecommerce.admin.shipping_policy.form.custom_shipping_name</label>
-              <multilingual-input value="{{_computed.activeCountrySetting?.custom_shipping_name ?? {}}}" layout="inline" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.form.custom_shipping_name_placeholder" error="{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.custom_shipping_name.' + (_global.locale || 'ko')]?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
+              <multilingual-input value="{{_computed.activeCountrySetting?.custom_shipping_name ?? {}}}" layout="inline" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.form.custom_shipping_name_placeholder" error="{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.custom_shipping_name.' + ($locale || 'ko')]?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
                 <on type="change">
                   <!-- 직접 입력한 배송 방법 이름 — 언어별 묶음을 통째로 받아 그대로 저장한다(언어 하나씩 쪼개지 않는다). -->
                   <action handler="sirsoft-ecommerce.updateCountryField" field="custom_shipping_name" value="{{$event.target.value}}"/>

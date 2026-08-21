@@ -89,7 +89,7 @@
                 <div class="grid grid-cols-12 gap-2 px-4 py-3 items-center hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700/50">
                   <div class="col-span-6 sm:col-span-4">
                     <div class="flex-center gap-2 flex-wrap">
-                      <span class="text-heading">{{channel.label.ko ?? channel.key}}</span>
+                      <!-- 채널 라벨 — 현재 로케일 우선. ko 고정이면 다른 언어로 운영하는 관리자에게도 한국어가 나간다 --><span class="text-heading">{{channel.label?.[$locale] ?? channel.label?.ko ?? channel.label?.en ?? channel.key}}</span>
                       <span data-if="{{channel.is_system}}" class="text-info-soft inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-blue-100 dark:bg-blue-900">$t:sirsoft-marketing.settings.channels.system_badge</span>
                     </div>
                     <span class="text-hint font-mono mt-0.5">{{channel.key}}</span>

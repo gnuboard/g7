@@ -88,7 +88,7 @@
         <!-- 배송국가 (D10 — 해외배송 활성 시에만 표시. name 바인딩으로 editingAddress.country_code 저장. 선택에 따라 국내/해외 주소 입력 분기.) -->
         <div data-if="{{_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}">
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:shop.checkout.shipping_country</label>
-          <select name="country_code" value="{{_local.editingAddress?.country_code ?? _global.preferredShippingCountry ?? 'KR'}}" options="{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: (c.name?.[_global.locale] ?? c.name?.ko ?? c.code) }))}}" class="w-full"/>
+          <select name="country_code" value="{{_local.editingAddress?.country_code ?? _global.preferredShippingCountry ?? 'KR'}}" options="{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: (c.name?.[$locale] ?? c.name?.ko ?? c.code) }))}}" class="w-full"/>
         </div>
         <!-- 받는 분 + 연락처 -->
         <div class="grid grid-cols-2 gap-4">

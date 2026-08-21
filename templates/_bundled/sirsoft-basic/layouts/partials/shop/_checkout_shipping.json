@@ -396,7 +396,7 @@
                         "name": "country_code",
                         "value": "{{_local.shipping?.country_code ?? _global.preferredShippingCountry ?? 'KR'}}",
                         "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500",
-                        "options": "{{(shippingSettings?.data?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: c.name?.[_global.locale] ?? c.name?.ko ?? c.code }))}}"
+                        "options": "{{(shippingSettings?.data?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: c.name?.[$locale] ?? c.name?.ko ?? c.code }))}}"
                     }
                 }
             ]

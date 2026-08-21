@@ -441,12 +441,13 @@
                                                                                 },
                                                                                 "children": [
                                                                                     {
+                                                                                        "comment": "채널 라벨 — 현재 로케일 우선. ko 고정이면 다른 언어로 운영하는 관리자에게도 한국어가 나간다",
                                                                                         "type": "basic",
                                                                                         "name": "Span",
                                                                                         "props": {
                                                                                             "className": "text-heading"
                                                                                         },
-                                                                                        "text": "{{channel.label.ko ?? channel.key}}"
+                                                                                        "text": "{{channel.label?.[$locale] ?? channel.label?.ko ?? channel.label?.en ?? channel.key}}"
                                                                                     },
                                                                                     {
                                                                                         "type": "basic",

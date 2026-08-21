@@ -212,7 +212,7 @@
               <!-- 배송국가 칩 (D9 — 항상 표시, KR 포함) -->
               <span data-if="{{order.recipient_country_code}}" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
                 <span class="{{'fi fi-' + (order.recipient_country_code ?? 'kr').toLowerCase()}}"/>
-                <span>{{order.recipient_country_name?.[_global.locale] ?? order.recipient_country_name?.ko ?? order.recipient_country_code}}</span>
+                <span>{{order.recipient_country_name?.[$locale] ?? order.recipient_country_name?.ko ?? order.recipient_country_code}}</span>
               </span>
             </div>
           </div>

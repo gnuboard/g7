@@ -577,12 +577,13 @@
                                                             },
                                                             "children": [
                                                                 {
+                                                                    "comment": "카테고리 라벨 — 현재 로케일 우선. ko 를 먼저 집으면 영어·일본어 방문자에게도 한국어가 나간다",
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
                                                                         "className": "text-xs font-semibold text-gray-900 dark:text-white"
                                                                     },
-                                                                    "text": "{{category?.label?.ko ?? category?.label?.en ?? category?.key ?? ''}}"
+                                                                    "text": "{{category?.label?.[$locale] ?? category?.label?.ko ?? category?.label?.en ?? category?.key ?? ''}}"
                                                                 },
                                                                 {
                                                                     "type": "basic",
@@ -596,14 +597,14 @@
                                                             ]
                                                         },
                                                         {
-                                                            "comment": "카테고리 description — 사용자 친화 한 줄 (시더의 user_info 표현 사용. 이전 자세히 보기 펼침 영역과 중복되어 펼침 영역 통째 제거)",
+                                                            "comment": "카테고리 description — 사용자 친화 한 줄 (시더의 user_info 표현 사용. 이전 자세히 보기 펼침 영역과 중복되어 펼침 영역 통째 제거). 라벨과 같이 현재 로케일 우선",
                                                             "type": "basic",
                                                             "name": "P",
-                                                            "if": "{{!!category?.description?.ko || !!category?.description?.en}}",
+                                                            "if": "{{!!category?.description?.[$locale] || !!category?.description?.ko || !!category?.description?.en}}",
                                                             "props": {
                                                                 "className": "mt-1 text-xs leading-relaxed text-gray-500 dark:text-gray-400"
                                                             },
-                                                            "text": "{{category?.description?.ko ?? category?.description?.en ?? ''}}"
+                                                            "text": "{{category?.description?.[$locale] ?? category?.description?.ko ?? category?.description?.en ?? ''}}"
                                                         }
                                                     ]
                                                 },

@@ -496,7 +496,7 @@ post-cache filtering — 기존 캐시 구조에 영향 없음
 
 ```html
 <global-headers>
-  <match pattern="/api/modules/sirsoft-ecommerce/*" X-Cart-Key="{{_global.cartKey}}" X-User-Locale="{{_global.locale ?? 'ko'}}"/>
+  <match pattern="/api/modules/sirsoft-ecommerce/*" X-Cart-Key="{{_global.cartKey}}" X-User-Locale="{{$locale}}"/>
 </global-headers>
 ```
 
@@ -509,7 +509,7 @@ post-cache filtering — 기존 캐시 구조에 영향 없음
       "pattern": "/api/modules/sirsoft-ecommerce/*",
       "headers": {
         "X-Cart-Key": "{{_global.cartKey}}",
-        "X-User-Locale": "{{_global.locale ?? 'ko'}}"
+        "X-User-Locale": "{{$locale}}"
       }
     }
   ]

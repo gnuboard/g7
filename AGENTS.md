@@ -443,6 +443,23 @@ Icon 은 `<i>` 글리프라 박스 크기가 곧 `font-size` 다. `w-N h-N` 은 
 
 > 상세: [validation.md](docs/backend/validation.md), [service-repository.md](docs/backend/service-repository.md), [frontend/security.md](docs/frontend/security.md)
 
+#### 공개 응답의 회원 개인 연락처
+
+응답은 화면과 무관하게 나간다. 인증 없이 열람되는 목록·상세·댓글·리뷰에 회원 이메일을 직렬화하면,
+그 화면이 이메일을 그리지 않아도 응답 본문에서 회원 주소록을 통째로 수집할 수 있다.
+"소비 화면이 관리자 전용" 이라는 사실은 방어가 아니다.
+
+| 금지 | 올바른 사용 |
+|------|------------|
+| `'email' => $this->user->email` (게이트 없음) | `'email' => $this->canExposeMemberEmail($request, $this->user_id) ? $this->user->email : null` |
+| 헤더·쿼리 등 클라이언트가 보내는 값으로 노출 판정 | 요청이 도달한 **컨트롤러**(`AdminBaseController` 여부)로 판정 — 클라이언트가 못 바꾼다 |
+| "이 Resource 는 관리자 라우트 전용" 이라 게이트 생략 | 부착 비용 0(관리자 응답은 true) — 다음 사람이 공개 경로에 붙이는 순간 그 전제가 사라진다 |
+| 노출을 막으려고 필드 자체를 제거 | 값만 `null` — 필드를 없애면 응답 구조가 바뀌어 소비처가 깨진다 |
+
+이메일 외의 개인 연락처(휴대폰·주소)를 새로 직렬화할 때도 같은 기준을 적용한다.
+
+> 상세: [api-resources.md "회원 이메일은 공개 응답에 싣지 않는다"](docs/backend/api-resources.md)
+
 ### 목록 응답의 하위 컬렉션
 
 목록은 화면이 그 행에서 **실제로 그리는 것**만 싣는다. 행마다 하위 컬렉션을 통째로 직렬화하면 한 페이지를 여는 것만으로 수백~수천 행이 응답에 실린다 (공개 #76 — 상품 100건 × 옵션 20건).

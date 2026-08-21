@@ -23,7 +23,7 @@
       <!-- 배송국가 (D10 — 해외배송 활성 시에만 표시. _global.editingAddress.country_code 저장. 선택에 따라 국내/해외 주소 입력 분기. 체크아웃 배송지 관리 모달과 동형.) -->
       <div data-if="{{_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}">
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:shop.checkout.shipping_country</label>
-        <select name="country_code" value="{{_global.editingAddress?.country_code ?? _global.preferredShippingCountry ?? 'KR'}}" options="{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: (c.name?.[_global.locale] ?? c.name?.ko ?? c.code) }))}}" class="w-full">
+        <select name="country_code" value="{{_global.editingAddress?.country_code ?? _global.preferredShippingCountry ?? 'KR'}}" options="{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: (c.name?.[$locale] ?? c.name?.ko ?? c.code) }))}}" class="w-full">
           <on type="change">
             <!-- 배송 국가 — 이 값이 아래 주소 칸을 국내형/해외형으로 갈라 놓는다. 주문서와 달리 여기서는
                  배송비를 다시 계산하지 않는다(저장만 하는 자리라 계산할 주문이 없다) -->
