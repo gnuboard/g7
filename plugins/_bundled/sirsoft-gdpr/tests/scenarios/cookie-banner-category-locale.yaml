@@ -1,0 +1,47 @@
+feature: 쿠키 배너 카테고리 라벨의 로케일 해석 (`label[$locale]` 우선 + 폴백)
+
+description: |
+  공개 쿠키 배너가 카테고리 라벨을 그릴 때 **접속 언어를 먼저 본다**.
+
+  배포되는 표현식 (extensions/cookie_banner.g7.html):
+    category?.label?.[$locale] ?? category?.label?.ko ?? category?.label?.en ?? category?.key ?? ''
+
+  회귀 배경: 종전 표현식이 `label?.ko ?? label?.en` 이라 **접속 언어와 무관하게 항상 한국어**를
+  집었다. 영어로 보는 방문자에게도 한국어 라벨이 그대로 나갔다. 현재 로케일이 `_global.locale`
+  (엔진이 채우지 않는 죽은 경로) 이 아니라 전역 변수 `$locale` 로만 노출된다는 점이 원인이었고,
+  그래서 뒤의 `?? ko` 폴백이 늘 이겨 결함이 화면상 "정상" 으로 보였다.
+
+  축이 둘인 이유: 라벨 해석은 **누가 보고 있는가(visitor_locale)** 와 **그 언어의 문구가
+  저장돼 있는가(category_label)** 두 조건의 곱으로만 갈린다. 앞이 라벨 선택을, 뒤가 폴백
+  진입 여부를 정한다.
+
+axes:
+  visitor_locale: [ko, en]
+  category_label: [present_for_locale, missing_for_locale]
+
+effects:
+  - banner_category_label_uses_current_locale
+  - banner_category_label_falls_back_when_locale_missing
+
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/tests/Playwright/specs/public/cookie-banner-category-label-locale.spec.ts
+  - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/layouts/cookie_banner.test.tsx
+
+notes:
+  - |
+    검증 계층이 축마다 갈리는 이유 — `category_label=present_for_locale` 은 E2E 로,
+    `missing_for_locale` 은 레이아웃 테스트로 태운다.
+
+    폴백 축을 E2E 로 태울 수 없다: 이 코어의 `app.supported_locales` 는 `[ko, en]` 이고
+    `CookieCategoryService` 시드 카테고리 4종이 **전부 ko·en 라벨을 모두** 갖는다. 즉
+    브라우저에서는 `label[$locale]` 이 비는 상태 자체가 만들어지지 않아 `?? ko` 가지에
+    도달할 수 없다. 폴백을 E2E 로 만들려면 운영자 데이터(카테고리 라벨)를 테스트가 지우거나
+    미지원 로케일을 주입해야 하는데, 둘 다 사이트 상태를 훼손하는 방식이라 택하지 않는다.
+
+    대신 레이아웃 테스트가 **저작본 `plugins/_bundled/sirsoft-gdpr/resources/extensions/cookie_banner.g7.html` 에서 구워진 짝 산출을
+    읽어 그 표현식 문자열을 그대로 꺼내** 평가한다(같은 파일의 `dismissedFor` 분기 선례와
+    동일 방식). 표현식을 테스트에 옮겨 적지 않으므로, 저작본을 고치면 테스트가 함께 따라간다.
+  - |
+    라벨과 같은 폴백 사슬을 `category?.description` 도 쓴다(같은 파일 인접 줄). 이번 매니페스트는
+    라벨 축만 선언한다 — 회귀가 보고된 표면이 라벨이고, 설명까지 축에 넣으면 선언과 검증 범위가
+    어긋난 채로 남는다. 설명축 편입 여부는 별건.

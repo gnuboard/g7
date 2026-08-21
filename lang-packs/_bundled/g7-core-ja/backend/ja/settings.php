@@ -76,6 +76,12 @@ return [
     'driver_test_partial' => '一部のドライバ接続テストが失敗しました。',
     'driver_test_error' => 'ドライバ接続テスト中にエラーが発生しました。',
     'unknown_driver' => '不明なドライバです。',
+
+    // アウトバウンドプロキシ接続テストメッセージ
+    'outbound_proxy_test_success' => 'プロキシ接続に成功しました。外部サービスにはこの IP アドレスとして見えます。',
+    'outbound_proxy_test_failed' => 'プロキシ経由で接続できませんでした。アドレスとプロキシサーバーの状態を確認してください。',
+    'outbound_proxy_test_invalid_url' => 'プロキシアドレスの形式が正しくありません。',
+    'outbound_proxy_test_no_lookup_url' => '送信元 IP の照会先が設定されていないため確認できません。',
     's3_test_success' => 'S3バケットに正常に接続されました。',
     's3_test_failed' => 'S3バケットへの接続に失敗しました。',
     's3_missing_config' => 'S3設定が不足しています。(バケット、リージョン、アクセスキー、シークレットキー)',

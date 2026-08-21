@@ -86,6 +86,12 @@ return [
     'driver_test_error' => '드라이버 연결 테스트 중 오류가 발생했습니다.',
     'unknown_driver' => '알 수 없는 드라이버입니다.',
 
+    // 아웃바운드 프록시 연결 테스트 메시지
+    'outbound_proxy_test_success' => '프록시 연결에 성공했습니다. 외부 서비스에는 이 IP 로 보입니다.',
+    'outbound_proxy_test_failed' => '프록시로 연결하지 못했습니다. 주소와 프록시 서버 상태를 확인해주세요.',
+    'outbound_proxy_test_invalid_url' => '프록시 주소 형식이 올바르지 않습니다.',
+    'outbound_proxy_test_no_lookup_url' => '출발지 IP 조회 대상이 설정되어 있지 않아 확인할 수 없습니다.',
+
     // S3 테스트 메시지
     's3_test_success' => 'S3 버킷에 성공적으로 연결되었습니다.',
     's3_test_failed' => 'S3 버킷 연결에 실패했습니다.',

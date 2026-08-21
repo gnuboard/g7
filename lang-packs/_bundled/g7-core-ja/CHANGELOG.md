@@ -4,7 +4,7 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
-## [1.0.7] - 2026-08-20
+## [1.1.0] - 2026-08-20
 
 ### Added
 
@@ -37,6 +37,13 @@
 ### Removed
 
 - 더 이상 사용하지 않는 검사 문구를 정리했습니다 — 항목명이 바뀌었거나 검사 자체가 없어진 자리입니다.
+
+## [1.0.7] - 2026-08-20
+
+### Added
+
+- 아웃바운드 프록시 설정의 검증 메시지와 항목명 일본어 번역을 추가했습니다 (`settings.outbound_proxy_*`, `attributes.outbound_proxy*`).
+- 아웃바운드 프록시 연결 테스트 결과 안내 문구의 일본어 번역을 추가했습니다 (`settings.outbound_proxy_test_*`).
 
 ## [1.0.6] - 2026-08-19
 

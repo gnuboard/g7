@@ -1,8 +1,8 @@
 /**
  * E2E: 쿠키 배너의 카테고리 라벨·설명이 접속 언어를 따른다
  *
- * @scenario cookie_banner_category_label_follows_locale
- * @effects banner_category_label_uses_current_locale, banner_category_label_falls_back_when_locale_missing
+ * 시나리오 매니페스트: `tests/scenarios/cookie-banner-category-locale.yaml`
+ * (조합 마킹은 파서가 조합을 여러 개 읽을 수 있는 라인 주석으로 테스트 바로 앞에 둔다)
  *
  * 배경: 배너의 카테고리 라벨/설명 표현식이 `category?.label?.ko ?? category?.label?.en` 이라
  * **접속 언어와 무관하게 항상 한국어**를 집었다. 영어로 보는 방문자에게도 한국어 라벨이
@@ -71,6 +71,10 @@ async function openCategoryList(page: import('@playwright/test').Page): Promise<
     await expect(page.locator(`${BANNER} input[type="checkbox"]`).first()).toBeVisible({ timeout: 15_000 });
 }
 
+// @scenario visitor_locale=ko, category_label=present_for_locale
+// @effects banner_category_label_uses_current_locale
+// @scenario visitor_locale=en, category_label=present_for_locale
+// @effects banner_category_label_uses_current_locale
 test('쿠키 배너 카테고리 라벨이 접속 언어를 따른다', async ({ page, request }) => {
     const category = await resolveDistinguishableCategory(request);
 

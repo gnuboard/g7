@@ -154,6 +154,33 @@
           </div>
           <toggle name="advanced.sql_query_log" size="md" disabled="{{_computed.isReadOnly}}"/>
         </div>
+        <!--
+          아웃바운드 프록시 — 디버그 모드일 때만 노출한다. 서버가 프록시를 실제로 적용하는 조건도 디버그 모드라,
+          꺼 두면 값이 남아 있어도 적용되지 않는다. 「연결 테스트」는 저장 전에 입력값 그대로 서버에 보내
+          연결 여부와 외부에 보이는 IP 를 돌려받는다(결제사에 등록할 IP 확인용).
+        -->
+        <div data-ref="outbound_proxy_settings" data-if="{{_local.form?.advanced?.debug_mode}}" class="ml-4 pl-4 border-l-2 border-blue-200 dark:border-blue-800 space-y-4">
+          <div data-ref="input_outbound_proxy" class="row-stack">
+            <div class="flex-center">
+              <span class="text-heading">$t:admin.settings.advanced.outbound_proxy</span>
+            </div>
+            <p class="text-label-subtle">$t:admin.settings.advanced.outbound_proxy_desc</p>
+            <input type="text" name="advanced.outbound_proxy" placeholder="$t:admin.settings.advanced.outbound_proxy_placeholder" autoComplete="off" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['advanced.outbound_proxy'] ? 'input-error' : ''}}"/>
+            <span data-if="{{_local.errors?.['advanced.outbound_proxy']}}" class="form-error">{{_local.errors?.['advanced.outbound_proxy']?.[0] ?? ''}}</span>
+            <div data-ref="outbound_proxy_test_row" class="flex items-center gap-3 mt-2">
+              <button data-ref="btn_test_outbound_proxy" type="button" class="px-3 py-1.5 bg-gray-700 dark:bg-gray-600 text-white dark:text-white text-xs font-medium rounded-md hover:bg-gray-800 dark:hover:bg-gray-500 transition-colors whitespace-nowrap disabled:opacity-50" disabled="{{_computed.isReadOnly || !_local.form?.advanced?.outbound_proxy || _local.outboundProxyTesting}}"><on event="click"><set-state target="local" :outboundProxyTesting="true"/></on><on event="click"><api-call target="/api/admin/settings/test-outbound-proxy" :auth_required="true" method="POST"><success><set-state target="local" :outboundProxyTesting="false" outboundProxyTest="{{response.data}}" outboundProxyTestMessage="{{response.message}}"/><toast type="{{response.data?.success ? 'success' : 'error'}}" message="{{response.message}}"/></success><fail><set-state target="local" :outboundProxyTesting="false" :outboundProxyTest="null" outboundProxyTestMessage="{{error.message}}"/><toast type="error" message="{{error.message}}"/></fail><body outbound_proxy="{{_local.form?.advanced?.outbound_proxy}}" outbound_proxy_bypass="{{_local.form?.advanced?.outbound_proxy_bypass ?? []}}"/></api-call></on>$t:admin.settings.advanced.outbound_proxy_test</button>
+              <span data-ref="outbound_proxy_test_result" data-if="{{!!_local.outboundProxyTestMessage &amp;&amp; !_local.outboundProxyTesting}}" class="{{_local.outboundProxyTest?.success ? 'text-xs text-green-600 dark:text-green-400' : 'text-xs text-red-600 dark:text-red-400'}}">{{_local.outboundProxyTest?.egress_ip ? (_local.outboundProxyTestMessage + ' (' + _local.outboundProxyTest.egress_ip + ')') : _local.outboundProxyTestMessage}}</span>
+            </div>
+          </div>
+          <div data-ref="input_outbound_proxy_bypass" class="row-stack">
+            <div class="flex-center">
+              <span class="text-heading">$t:admin.settings.advanced.outbound_proxy_bypass</span>
+            </div>
+            <p class="text-label-subtle">$t:admin.settings.advanced.outbound_proxy_bypass_desc</p>
+            <tag-input name="advanced.outbound_proxy_bypass" :creatable="true" placeholder="$t:admin.settings.advanced.outbound_proxy_bypass_placeholder" class="w-full" defaultVariant="blue" disabled="{{_computed.isReadOnly}}"/>
+            <span data-if="{{_local.errors?.['advanced.outbound_proxy_bypass']}}" class="form-error">{{_local.errors?.['advanced.outbound_proxy_bypass']?.[0] ?? ''}}</span>
+          </div>
+        </div>
       </div>
     </div>
     <div data-ref="card_pagination_settings" class="card-stack-item">

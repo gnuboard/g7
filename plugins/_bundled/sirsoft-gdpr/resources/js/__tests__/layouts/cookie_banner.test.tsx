@@ -651,4 +651,77 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             }
         });
     });
+    /**
+     * 카테고리 라벨의 로케일 해석 — **배포되는 표현식을 그대로 꺼내** 평가한다.
+     *
+     * 표현식을 여기에 다시 옮겨 적지 않는 이유: 옮겨 적으면 저작본이 바뀌어도 테스트는
+     * 옛 문자열을 계속 통과시킨다. 같은 파일의 dismissedFor 분기가 쓰는 방식과 동일하게
+     * cookie_banner.json 에서 뽑아 평가한다.
+     *
+     * E2E(cookie-banner-category-label-locale.spec.ts) 가 못 덮는 축을 여기서 덮는다 —
+     * 코어 supported_locales 가 [ko, en] 이고 시드 카테고리 4종이 전부 ko·en 을 모두 가져
+     * 브라우저에서는 `label[$locale]` 이 비는 상태 자체를 만들 수 없다.
+     */
+    describe('카테고리 라벨 로케일 해석 — 실제 표현식 평가', () => {
+        /** 배포되는 JSON 트리에서 카테고리 라벨 표현식을 가진 노드의 text 를 찾는다. */
+        const findLabelExpression = (): string => {
+            const stack: unknown[] = [extension];
+            while (stack.length) {
+                const node = stack.pop();
+                if (Array.isArray(node)) {
+                    stack.push(...node);
+                    continue;
+                }
+                if (!node || typeof node !== 'object') continue;
+                const text = (node as { text?: unknown }).text;
+                if (typeof text === 'string' && text.includes('category?.label?.[$locale]')) return text;
+                stack.push(...Object.values(node as Record<string, unknown>));
+            }
+            throw new Error('카테고리 라벨 표현식을 cookie_banner.json 에서 찾지 못했다');
+        };
+
+        const renderLabel = (
+            category: { key?: string; label?: Record<string, string> },
+            locale: string,
+        ): string => {
+            const expr = findLabelExpression().replace(/^\{\{/, '').replace(/\}\}$/, '');
+            // eslint-disable-next-line no-new-func
+            const fn = new Function('category', '$locale', 'return (' + expr + ');');
+            return fn(category, locale) as string;
+        };
+
+        const BOTH = { key: 'analytics', label: { ko: '분석 쿠키', en: 'Analytics' } };
+
+        /**
+         * @scenario visitor_locale=en, category_label=present_for_locale
+         * @effects banner_category_label_uses_current_locale
+         */
+        it('영어 방문자에게는 en 라벨이 나간다 (ko 를 먼저 집지 않는다)', () => {
+            expect(renderLabel(BOTH, 'en')).toBe('Analytics');
+        });
+
+        /**
+         * @scenario visitor_locale=ko, category_label=present_for_locale
+         * @effects banner_category_label_uses_current_locale
+         */
+        it('한국어 방문자에게는 ko 라벨이 나간다', () => {
+            expect(renderLabel(BOTH, 'ko')).toBe('분석 쿠키');
+        });
+
+        /**
+         * @scenario visitor_locale=en, category_label=missing_for_locale
+         * @effects banner_category_label_falls_back_when_locale_missing
+         */
+        it('en 라벨이 없으면 ko 로 내려간다 (빈 문자열·키 노출이 아니다)', () => {
+            expect(renderLabel({ key: 'analytics', label: { ko: '분석 쿠키' } }, 'en')).toBe('분석 쿠키');
+        });
+
+        /**
+         * @scenario visitor_locale=ko, category_label=missing_for_locale
+         * @effects banner_category_label_falls_back_when_locale_missing
+         */
+        it('ko 라벨이 없으면 en 으로 내려간다', () => {
+            expect(renderLabel({ key: 'analytics', label: { en: 'Analytics' } }, 'ko')).toBe('Analytics');
+        });
+    });
 });
