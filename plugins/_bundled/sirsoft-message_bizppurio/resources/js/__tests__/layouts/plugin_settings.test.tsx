@@ -162,7 +162,7 @@ describe('plugin_settings.json — 연결 확인 (§529)', () => {
         expect(field).not.toBe(findById(root, 'field_password'));
     });
 
-    it('연결 확인 버튼이 캐시 초기화 버튼과 동일한 grid-cols-12(4/8) + 우측 정렬 패턴을 따른다', () => {
+    it('연결 확인 버튼이 설정 행과 동일한 grid-cols-12(4/8) + 우측 정렬 패턴을 따른다', () => {
         const field = findById(root, 'field_connection_check');
         const raw = JSON.stringify(field);
         expect(raw).toContain('grid-cols-1');
@@ -346,8 +346,9 @@ describe('plugin_settings.json — 저장 버튼', () => {
         const allowed = [
             'apiCall', 'setState', 'toast', 'navigate', 'sequence', 'switch',
             'refetchDataSource', 'scrollIntoView', 'copyToClipboard',
-            'openModal', 'closeModal', 'replaceUrl',
+            'openModal', 'closeModal', 'replaceUrl', 'suppress',
             'sirsoft-message_bizppurio.uploadTemplateImage',
+            'sirsoft-message_bizppurio.insertVariable',
         ];
         for (const h of handlers) {
             expect(allowed).toContain(h);
@@ -409,28 +410,26 @@ describe('plugin_settings.json — 탭 전환', () => {
     });
 });
 
-describe('plugin_settings.json — 목록 조회 실패 표시', () => {
-    it('alimtalk_templates 데이터소스가 실패 사유를 _local.templateListError 에 담는다', () => {
+describe('plugin_settings.json — templates 탭 readiness 게이트 (#597 재편)', () => {
+    // 구 조회 전용 목록(alimtalk_templates + templateListError 배너)은 #597 에서
+    // DB 목록 관리 화면(bizppurio_templates_list)으로 교체됐다. 관리 화면 상세 배선은
+    // plugin_settings_manage.test.tsx 가 담당하고, 여기서는 탭 골격만 잠근다.
+    it('templates_readiness 데이터소스가 templates 탭에서만 조회된다', () => {
         const sources = (root as { data_sources?: AnyNode[] }).data_sources ?? [];
-        const ds = sources.find((s) => s.id === 'alimtalk_templates') as
+        const ds = sources.find((s) => s.id === 'templates_readiness') as
             | Record<string, unknown>
             | undefined;
         expect(ds).toBeTruthy();
-        const onError = JSON.stringify(ds?.onError ?? {});
-        // 카카오가 준 사유(kakao_message)를 우선 노출, 없으면 error.message 폴백
-        expect(onError).toContain('templateListError');
-        expect(onError).toContain('kakao_message');
+        expect(ds?.endpoint).toBe('/api/plugins/sirsoft-message_bizppurio/admin/templates-readiness');
+        expect(ds?.if).toContain("query.tab ?? 'connection') === 'templates'");
     });
 
-    it('목록 오류 배너가 오류 존재 + 준비완료(ready) 조건으로 존재한다', () => {
-        const banner = findById(layout, 'templates_list_error') as
-            | Record<string, unknown>
-            | undefined;
-        expect(banner).toBeTruthy();
-        // 키 미설정(ready=false)일 때는 readiness 안내 배너가 담당 → 빨간 오류 배너는 숨겨
-        // 두 배너가 동시에 뜨지 않게 한다. 즉 '키는 넣었는데 다른 이유로 실패'한 경우만 노출.
-        expect(banner?.if).toBe('{{_local.templateListError && templates_readiness?.data?.ready}}');
-        // 사유 본문(카카오 실제 사유)을 그대로 렌더한다
-        expect(JSON.stringify(banner)).toContain('{{_local.templateListError}}');
+    it('readiness 안내(!ready)와 관리 뷰(ready)가 상호배타로 존재한다', () => {
+        const notice = findById(layout, 'templates_readiness') as Record<string, unknown> | null;
+        const manageView = findById(layout, 'templates_manage_view') as Record<string, unknown> | null;
+        expect(notice).toBeTruthy();
+        expect(manageView).toBeTruthy();
+        expect(notice?.if).toBe('{{templates_readiness?.data && !(templates_readiness?.data?.ready)}}');
+        expect(manageView?.if).toBe('{{templates_readiness?.data?.ready}}');
     });
 });

@@ -94,6 +94,31 @@ class RegisterNotificationChannelsListenerTest extends PluginTestCase
         $this->assertFalse($alimtalk['is_test_mode'], '운영 모드면 is_test_mode=false.');
     }
 
+    public function test_채널메타에_비즈뿌리오_통합_탭_필드가_실린다(): void
+    {
+        // #597 §3.3 '비즈뿌리오' 통합 탭: sms 는 탭만 숨기고(hidden_tab — 채널 토글 카드·발송
+        // 축은 유지), alimtalk 이 두 채널을 묶은 통합 탭을 대표한다(tab_channels/tab_label_key).
+        // 코어 getAvailableChannels 는 임의 필드를 보존하므로 프론트까지 그대로 도달한다.
+        $channels = $this->makeListener()->addChannels([]);
+
+        $sms = collect($channels)->firstWhere('id', 'sms');
+        $this->assertTrue($sms['hidden_tab'], 'sms 는 자체 탭을 숨겨야 한다(hidden_tab:true).');
+        $this->assertArrayNotHasKey('tab_channels', $sms, '통합 탭 대표는 alimtalk 하나뿐이어야 한다.');
+
+        $alimtalk = collect($channels)->firstWhere('id', 'alimtalk');
+        $this->assertArrayNotHasKey('hidden_tab', $alimtalk, 'alimtalk 탭은 숨기지 않는다(통합 탭 대표).');
+        $this->assertSame(
+            ['sms', 'alimtalk'],
+            $alimtalk['tab_channels'],
+            'tab_channels 중 하나라도 활성 저장이면 통합 탭을 노출한다.'
+        );
+        $this->assertSame(
+            'sirsoft-message_bizppurio.channels.bizppurio_tab',
+            $alimtalk['tab_label_key'],
+            '탭 라벨은 프론트 lang 키($t 해석)로 선언한다(카드 라벨 name_key 와 분리).'
+        );
+    }
+
     public function test_어떤_채널에도_uses_custom_list_플래그가_없다(): void
     {
         // Phase 6 재설계 A(⚑⚑ 결정 A): 알림톡 탭도 코어 기본 목록을 그대로 쓴다. 코어 목록을

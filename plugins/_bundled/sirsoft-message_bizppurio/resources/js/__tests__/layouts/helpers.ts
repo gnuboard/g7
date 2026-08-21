@@ -118,3 +118,22 @@ export function collectI18nKeys(json: unknown): string[] {
     const matches = text.match(/\$t:sirsoft-message_bizppurio\.[a-zA-Z0-9_.]+/g) ?? [];
     return Array.from(new Set(matches));
 }
+
+/**
+ * `{{...}}` 단일 바인딩 조건식을 주어진 자유변수 스코프로 실제 평가합니다.
+ *
+ * 문자열 포함/동일성 단언(`toContain`/`toBe`)은 조건을 잘못 고쳐도 기대 문자열을 함께
+ * 고치면 통과하므로 회귀를 잡지 못한다. 식을 그대로 실행해 결과 boolean 을 본다.
+ *
+ * @param expr  `{{ ... }}` 형태의 조건식(감싸지 않은 식도 허용)
+ * @param scope  식이 참조하는 자유변수 (예: `{ _global: {...} }`)
+ * @returns 평가 결과의 boolean 캐스팅
+ */
+export function evalBinding(expr: string, scope: Record<string, unknown>): boolean {
+    const body = String(expr).trim().replace(/^\{\{/, '').replace(/\}\}$/, '');
+    const names = Object.keys(scope);
+    // eslint-disable-next-line no-new-func
+    const fn = new Function(...names, `return (${body});`);
+
+    return Boolean(fn(...names.map((n) => scope[n])));
+}

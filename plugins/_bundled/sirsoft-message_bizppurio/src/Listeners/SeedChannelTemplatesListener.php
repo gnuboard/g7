@@ -29,6 +29,13 @@ use App\Contracts\Extension\HookListenerInterface;
  * 증강 대상 = 회원(사용자) 대상 알림(결정 E). 관리자 전용(수신자가 role:admin 뿐인) 알림은
  * 문자/알림톡 대상이 아니므로 건너뛴다. 기본 body 는 그 알림의 database 채널 body(짧은 평문)를
  * 재활용하고, 없으면 mail body 의 HTML 을 제거해 만든다.
+ *
+ * #597 이후에도 이 시딩은 존치한다. 발송 본문의 SSoT 는 bizppurio_templates 로 옮겨졌지만
+ * (SmsChannelDriver 는 sms_body, AlimtalkChannelDriver 는 approved_content 를 읽는다),
+ * 코어·게시판·이커머스의 알림 설정 화면이 여전히 이 template 행을 그리기 때문이다
+ * (채널 서브탭의 행 제목·수신자 표시, 행이 없으면 "no_template_for_channel" 문구).
+ * 즉 이 행들은 화면 표시 전용이며 발송 경로는 소비하지 않는다 — 발송이 안 쓴다는 이유로
+ * 시딩을 지우면 알림 설정 화면의 비즈뿌리오 탭에서 행 정보가 사라진다.
  */
 class SeedChannelTemplatesListener implements HookListenerInterface
 {

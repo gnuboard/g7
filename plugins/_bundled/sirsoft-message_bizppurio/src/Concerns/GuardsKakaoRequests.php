@@ -15,6 +15,11 @@ use Plugins\Sirsoft\MessageBizppurio\Exceptions\BizppurioApiException;
  * 하여 카카오가 준 실패 사유(message)와 결과 코드를 그대로 422 로 반환한다. 운영자가 반려/차단
  * 사유를 화면에서 바로 확인할 수 있게 한다. 알림톡 템플릿 관리(Phase 5)와 연동(Phase 6)
  * 컨트롤러가 공유한다.
+ *
+ * errors 키는 `bizppurio_message` 로 고정한다 — 이 플러그인의 다른 kapi 경로
+ * (BizppurioTemplateController·TokenCheckController)와 화면 소비처, API 문서가 모두 그 키를
+ * 읽는다. 이 트레이트만 다른 키를 쓰면 카테고리·발신프로필 조회 실패에서만 사유 원문이
+ * 버려지고 고정 문구만 노출된다.
  */
 trait GuardsKakaoRequests
 {
@@ -33,7 +38,7 @@ trait GuardsKakaoRequests
                 'sirsoft-message_bizppurio::messages.error.kakao_request_failed',
                 422,
                 [
-                    'kakao_message' => $e->getMessage(),
+                    'bizppurio_message' => $e->getMessage(),
                     'result_code' => $e->getResultCode(),
                 ],
             );

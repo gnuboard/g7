@@ -34,6 +34,15 @@
         "label": "ビズプリオモジュールパスワード",
         "hint": "ビズプリオモジュールパスワードを入力してください。(ビズプリオコンソール > モジュール連携環境設定 > モジュールパスワード変更)"
       },
+      "connection_check": {
+        "label": "接続確認",
+        "hint": "保存されたID·パスワードが有効かどうか、クリックしてすぐに確認してください。(保存後に反映されます)",
+        "button": "接続確認",
+        "checking": "確認中...",
+        "success": "認証が正常に確認されました。IDとパスワードが正しいです。",
+        "failed": "認証確認に失敗しました。",
+        "unsaved_changes": "変更内容を先に保存してください。"
+      },
       "api_key": {
         "label": "API キー",
         "hint": "API キーは ビズプリオ カスタマーセンターに ID とともに申し込むと確認後、発行されます。"
@@ -45,23 +54,6 @@
       "sender_key": {
         "label": "アラート톡 発信プロファイル キー",
         "hint": "アラート톡 発送・テンプレート確認に使用する発信プロファイル キー(40文字)です。"
-      },
-      "template_cache_minutes": {
-        "label": "アラート톡 内容 キャッシュ 時間(分)",
-        "hint": "カカオ テンプレート内容をこの時間だけ再利用します。0 = 毎回最新(発送が多い場合は非推奨)。",
-        "clear_cache": "キャッシュ 初期化",
-        "clear_cache_hint": "カカオでテンプレートを修正した場合は押して即座に反映してください。",
-        "clear_cache_success": "テンプレート内容 キャッシュを初期化しました。次の発送から最新内容が反映されます。",
-        "clear_cache_failed": "キャッシュ 初期化に失敗しました。"
-      },
-      "connection_check": {
-        "label": "接続確認",
-        "hint": "保存されたID·パスワードが有効かどうか、クリックしてすぐに確認してください。(保存後に反映されます)",
-        "button": "接続確認",
-        "checking": "確認中...",
-        "success": "認証が正常に確認されました。IDとパスワードが正しいです。",
-        "failed": "認証確認に失敗しました。",
-        "unsaved_changes": "変更内容を先に保存してください。"
       }
     },
     "report": {
@@ -71,13 +63,9 @@
       "copy": "コピー",
       "copied": "レポート受信アドレスがクリップボードにコピーされました。"
     },
-    "cache": {
-      "section_title": "アラート톡 発送内容 キャッシュ",
-      "section_description": "アラート톡は発送する際、カカオに登録されたテンプレート内容(本文・ボタン)をそのまま送信する必要があります。発送するたびにカカオに内容をリクエストしないよう、一度取得した内容を一定時間再利用(キャッシュ)します。これにより、発送が多くてもカカオ確認の制限に引っかからず、素早く発送されます。"
-    },
     "tabs": {
       "connection": "環境設定",
-      "templates": "アラート톡 テンプレート"
+      "templates": "通知テンプレート管理"
     },
     "preparation": {
       "intro": "文字・カカオ アラート톡を発送するには、まず ビズプリオ コンソールで以下の事前準備を完了する必要があります。",
@@ -85,31 +73,16 @@
       "sms_sender": "発信番号を登録してください。",
       "kakao_label": "カカオ アラート톡",
       "kakao_channel": "카카오톡 ビジネスチャネルを作成し、発信プロファイルを登録してください。",
-      "kakao_template": "アラート톡 テンプレートを登録して承認を受けてください。",
+      "kakao_template": "アラームトークテンプレートは管理者の通知設定(ビズプリオタブ)で作成して審査を申請します。",
       "kakao_apikey": "カスタマーセンターに API キーをリクエストしてください。",
       "console_link": "ビズプリオ コンソールを開く"
     }
   },
+  "channels": {
+    "bizppurio_tab": "ビズプリオ"
+  },
   "binding": {
-    "section_title": "カカオ アラート톡 連動",
-    "list_guide": "各 通知に発送するカカオ アラート톡 テンプレートを接続してください。[接続]で承認されたテンプレートを指定すると、該当イベント発生時にアラート톡が自動発送されます。",
-    "section_hint": "承認されたアラート톡 テンプレートのみ接続できます。保存するとこの 通知に即座に反映されます。",
-    "modal_title": "アラート톡 接続 · {name}",
-    "unbound": "未接続",
-    "unavailable": "使用不可 — 再接続が必要",
-    "btn_connect": "接続",
-    "btn_change": "接続を変更",
-    "fallback_on": "SMS 代替 ON",
-    "fallback_off": "SMS 代替 OFF",
-    "connected_template": "接続テンプレート",
-    "none": "接続しない",
-    "no_approved_templates": "発送可能な(承認された)アラート톡 テンプレートがありません。まずテンプレートを登録・検査してください。",
-    "templates_load_failed": "テンプレート リストを読み込みできませんでした。プラグイン 設定(認証情報)を確認してください。",
-    "fallback_sms": "失敗時 SMS で代替発送",
-    "fallback_hint": "アラート톡 発送が失敗すると、この 通知の本文内容が文字(SMS)で代わりに発送されます。",
-    "variables_hint": "提供変数(発送時に自動置換)",
-    "saved": "アラート톡 連動を保存しました。",
-    "save_error": "アラート톡 連動 保存に失敗しました。"
+    "variables_hint": "提供変数(クリックすると本文のカーソル位置に挿入されます)"
   },
   "banner": {
     "not_ready": "発送に必要な 設定が完了していません。",
@@ -124,70 +97,174 @@
     "detail_title": "文字・アラート톡 発送 結果",
     "channel_label": "発送チャネル: {channel}",
     "sent_content_label": "実際の発送内容",
-    "sent_content_hint": "アラート톡 はカカオ承認テンプレートの実際の内容で発送され、上記の\"本文\"と異なる場合があります。"
+    "sent_content_hint": "アラート톡 は承認確定されたテンプレート内容で発送され、上記の\"本文\"と異なる場合があります。"
   },
   "editor": {
     "data_source": {
       "dispatch_results": "ビズプリオ送信結果"
     }
   },
+  "template": {
+    "tab_guide": "通知ごとにアラームトークテンプレートを作成して審査を申請してください。カカオ承認後にアラームトークが自動送信され、代替SMS・SMS単独送信もこの画面で設定します。",
+    "status": {
+      "unwritten": "未作成",
+      "draft": "作成中",
+      "requested": "審査中",
+      "approved": "承認済み",
+      "rejected": "却下",
+      "stopped": "停止",
+      "blocked": "ブロック",
+      "dormant": "休眠"
+    },
+    "row": {
+      "alimtalk_label": "アラームトーク",
+      "requested_on": "{date} 申請",
+      "synced_on": "{date} 同期",
+      "alimtalk_enabled": "送信を使用",
+      "btn_view_reason": "理由を表示",
+      "btn_compose": "アラームトークテンプレート作成",
+      "btn_edit": "編集",
+      "btn_edit_approved": "編集 (承認取り消し)",
+      "btn_request": "審査申請",
+      "btn_cancel_request": "申請取り消し",
+      "btn_release": "休眠解除",
+      "btn_refresh": "更新",
+      "requested_toast": "審査を申請しました。",
+      "cancel_request_toast": "審査申請を取り消しました。",
+      "released_toast": "休眠状態を解除しました。",
+      "synced_toast": "カカオ審査ステータスを同期しました。",
+      "fallback_sms": "代替SMS",
+      "sms_only": "SMS単独",
+      "sms_body_prefix": "本文:",
+      "sms_body_missing": "SMS本文未設定",
+      "btn_edit_sms": "SMS本文を編集"
+    },
+    "form": {
+      "modal_title": "アラームトークテンプレート — {name}",
+      "rejected_banner": "却下されたテンプレートです。以下の理由を確認し、修正後に再度申請してください。",
+      "sender_profile": "発信プロフィール",
+      "sender_profile_placeholder": "発信プロフィール選択(参考用)",
+      "sender_profile_hint": "審査申請は環境設定に保存された発信プロフィールキーで行われます。",
+      "category": "カテゴリ",
+      "category_placeholder": "カテゴリ選択",
+      "name": "テンプレート名",
+      "message_type": "メッセージ種別",
+      "templateMessageType_options": {
+        "BA": "基本型",
+        "EX": "付加情報型",
+        "AD": "チャネル追加型",
+        "MI": "複合型"
+      },
+      "emphasize_type": "強調種別",
+      "templateEmphasizeType_options": {
+        "NONE": "なし",
+        "TEXT": "強調表記",
+        "IMAGE": "画像",
+        "ITEM_LIST": "アイテムリスト"
+      },
+      "emphasize_title": "強調表記タイトル",
+      "emphasize_subtitle": "強調表記サブタイトル",
+      "image": "画像",
+      "image_hint": "jpg/png · 500KB以下 · 横500px以上 · 横:縦 2:1 (アップロードするとURLが自動入力されます)",
+      "image_uploading": "画像をアップロード中...",
+      "image_upload_failed": "画像のアップロードに失敗しました。",
+      "content": "本文",
+      "extra": "付加情報",
+      "header": "ヘッダー",
+      "header_hint": "本文上部に表示される最大16文字の文言(任意)",
+      "buttons": "ボタン (最大5個)",
+      "button_add": "ボタン追加",
+      "button_name": "ボタン名 (最大14文字)",
+      "quick_replies": "クイックリンク (最大10個)",
+      "quick_reply_add": "クイックリンク追加",
+      "link_mo": "モバイルリンク (必須)",
+      "link_pc": "PCリンク (任意)",
+      "link_and": "Androidスキーム (必須)",
+      "link_ios": "iOSスキーム (必須)",
+      "tel_number": "電話番号 (必須)",
+      "plugin_id": "プラグインID (必須)",
+      "item_highlight": "アイテムハイライト (任意)",
+      "hl_title": "ハイライトタイトル",
+      "hl_description": "ハイライト説明",
+      "hl_image_url": "サムネイル画像URL (任意)",
+      "item_list": "アイテム一覧 (2~10個)",
+      "item_list_hint": "アイテムは最小2個、最大10個です。(タイトル6文字・説明23文字以内)",
+      "item_add": "アイテム追加",
+      "item_title": "タイトル",
+      "item_description": "説明",
+      "item_summary": "要約(価格情報)",
+      "summary_description": "要約値 (14文字以内)",
+      "btn_remove_item": "アイテム削除",
+      "btn_remove_button": "ボタン削除",
+      "btn_remove_quick_reply": "クイックリプライ削除",
+      "btn_save": "保存",
+      "btn_save_request": "保存して審査申請",
+      "saved_toast": "通知テンプレートを保存しました。",
+      "requested_toast": "審査を申請しました。承認されるとアラームトーク送信が開始されます。"
+    },
+    "sms": {
+      "modal_title": "SMS本文 — {name}",
+      "hint": "代替SMSとSMS単独送信に共通で使用する本文です。#{변수} は送信時に自動置換されます。",
+      "btn_save": "保存",
+      "saved_toast": "SMS本文を保存しました。"
+    },
+    "cancel_approval": {
+      "modal_title": "承認取り消しの確認",
+      "warning": "「{name}」テンプレートの承認を取り消すと、直ちにこの通知のアラームトーク送信が停止されます。(代替SMS・SMS単独送信はSMS設定に従って継続されます。)修正後に再度審査を申請して承認を受けると、アラームトーク送信が再開されます。",
+      "btn_confirm": "承認を取り消して編集",
+      "done_toast": "承認を取り消しました。修正後に再度審査を申請してください。"
+    },
+    "rejection": {
+      "modal_title": "却下理由 — {name}",
+      "btn_close": "閉じる"
+    }
+  },
+  "manage": {
+    "guide": "すべての通知のビズプリオテンプレート状態を一目で管理します。作成・審査申請は通知設定画面と同じように動作します。",
+    "filter_all": "すべてのステータス",
+    "search_placeholder": "通知名/タイプ検索",
+    "btn_search": "検索",
+    "total_count": "合計 {count}件",
+    "btn_compose": "作成",
+    "btn_edit": "編集",
+    "btn_delete": "削除",
+    "empty": "登録されたビズプリオ通知テンプレートがありません。",
+    "empty_hint": "管理者の通知設定のビズプリオタブでアラームトークテンプレートを作成するか、SMSを設定するとここに表示されます。",
+    "sms_only": "単独",
+    "sms_fallback": "代替",
+    "owner": {
+      "core": "コア",
+      "module": "モジュール",
+      "plugin": "プラグイン"
+    },
+    "columns": {
+      "notification": "通知",
+      "owner": "所属",
+      "status": "アラームトークステータス",
+      "sms": "SMS",
+      "requested_at": "申請日",
+      "synced_at": "同期",
+      "actions": "管理"
+    },
+    "delete": {
+      "modal_title": "テンプレート削除",
+      "warning": "「{name}」のビズプリオテンプレート設定を削除します。カカオに登録されたテンプレートは削除可能なステータス(登録/却下)の場合のみ一緒に削除されます。",
+      "btn_confirm": "削除",
+      "done_with_kakao": "テンプレートを削除しました。(カカオ側テンプレートを含む)",
+      "done_db_only": "テンプレート設定を削除しました。カカオ側テンプレートはステータス制約により残っています。"
+    }
+  },
   "templates": {
-    "title": "アラームトークテンプレート",
-    "description": "カカオアラームトークテンプレートを登録·審査·管理します。承認されたテンプレートのみアラーム連動に使用できます。",
     "readiness": {
       "title": "アラームトークテンプレートを使用するには、以下の設定が必要です",
       "go_settings": "環境設定に移動",
       "missing_label": "未設定項目",
       "api_key_missing": "カカオ管理API キー",
       "sender_key_missing": "アラームトーク送信プロフィールキー",
-      "note": "上記項目を環境設定タブで入力すると、テンプレート照会·登録が可能になります。実際の送信は審査モードをオフにして運用に切り替えた後、カカオ承認を受けたテンプレートのみ使用できます。"
-    },
-    "list_error": {
-      "title": "テンプレート一覧を読み込めませんでした"
-    },
-    "list_notice": {
-      "console_desc": "テンプレートの登録·編集·審査はビズプリオコンソールで進めてください。",
-      "console_link": "ビズプリオコンソールを開く"
+      "note": "上記項目を環境設定タブで入力すると、テンプレートの作成・審査申請が可能になります。実際の送信は検査モードをオフにして運用に切り替えた後、承認されたテンプレートのみ使用できます。"
     },
     "list": {
-      "refresh": "更新",
-      "search": "検索",
-      "search_placeholder": "テンプレート名検索（2~50文字）",
-      "filter_all": "すべてのステータス",
-      "empty": "登録されたアラームトークテンプレートがありません。",
-      "empty_hint": "ビズプリオコンソールで登録したテンプレートがここに表示されます。",
-      "load_failed": "テンプレート一覧を読み込めませんでした。送信プロフィールキーとAPI キーを確認してください。",
-      "columns": {
-        "no": "番号",
-        "name": "テンプレート名",
-        "code": "コード",
-        "status": "ステータス",
-        "requested_at": "登録申請日",
-        "processed_at": "処理日",
-        "actions": "内容"
-      }
-    },
-    "status": {
-      "sendable": "送信可能",
-      "inspecting": "審査中",
-      "rejected": "却下",
-      "uninspected": "未審査",
-      "stopped": "停止",
-      "blocked": "ブロック",
-      "dormant": "休止",
-      "unknown": "不明"
-    },
-    "status_sub": {
-      "rdy": "（使用前）"
-    },
-    "status_guide": {
-      "title": "ステータスバッジ",
-      "sendable_label": "送信可能",
-      "sendable": "承認完了。このステータスのみアラームに接続·送信できます。",
-      "inspecting_label": "審査中",
-      "inspecting": "カカオ審査進行中（営業日2~3日）。",
-      "pending_label": "未審査·却下",
-      "pending": "まだ送信できません。コンソールで審査申請·修正してください。"
+      "refresh": "更新"
     },
     "link_type": {
       "WL": "ウェブリンク",
@@ -203,25 +280,6 @@
       "P1": "画像セキュア送信",
       "P2": "個人情報利用",
       "P3": "ワンクリック決済"
-    },
-    "actions": {
-      "detail": "詳細"
-    },
-    "detail": {
-      "title": "テンプレート詳細",
-      "close": "閉じる",
-      "buttons": "ボタン",
-      "extra": "付加情報",
-      "category": "カテゴリ",
-      "code": "テンプレートコード",
-      "content": "テンプレート内容",
-      "emphasize_type": "テンプレート種別",
-      "image_upload": "画像添付",
-      "subtitle_field": "補助文句",
-      "title_field": "強調表記文句",
-      "type_image": "画像形",
-      "type_none": "基本形",
-      "type_text": "強調表記形"
     }
   }
 }

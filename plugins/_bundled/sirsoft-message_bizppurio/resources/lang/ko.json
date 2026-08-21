@@ -53,15 +53,7 @@
       },
       "sender_key": {
         "label": "알림톡 발신프로필 키",
-        "hint": "알림톡 발송·템플릿 조회에 사용하는 발신프로필 키(40자)입니다."
-      },
-      "template_cache_minutes": {
-        "label": "알림톡 내용 캐시 시간(분)",
-        "hint": "카카오 템플릿 내용을 이 시간만큼 재사용합니다. 0 = 매번 최신(발송 많으면 비권장).",
-        "clear_cache": "캐시 초기화",
-        "clear_cache_hint": "카카오에서 템플릿을 수정했다면 눌러서 즉시 반영하세요.",
-        "clear_cache_success": "템플릿 내용 캐시를 초기화했습니다. 다음 발송부터 최신 내용이 반영됩니다.",
-        "clear_cache_failed": "캐시 초기화에 실패했습니다."
+        "hint": "알림톡 발송·템플릿 신청에 사용하는 발신프로필 키(40자)입니다."
       }
     },
     "report": {
@@ -71,13 +63,9 @@
       "copy": "복사",
       "copied": "리포트 수신 주소가 클립보드에 복사되었습니다."
     },
-    "cache": {
-      "section_title": "알림톡 발송 내용 캐시",
-      "section_description": "알림톡은 발송할 때 카카오에 등록된 템플릿 내용(본문·버튼)을 그대로 보내야 합니다. 발송할 때마다 카카오에 내용을 요청하지 않도록, 한 번 가져온 내용을 일정 시간 재사용(캐시)합니다. 덕분에 발송이 많아도 카카오 조회 제한에 걸리지 않고 빠르게 발송됩니다."
-    },
     "tabs": {
       "connection": "환경설정",
-      "templates": "알림톡 템플릿"
+      "templates": "알림 템플릿 관리"
     },
     "preparation": {
       "intro": "문자·카카오 알림톡을 발송하려면 먼저 비즈뿌리오 콘솔에서 아래 사전 준비를 완료해야 합니다.",
@@ -85,31 +73,16 @@
       "sms_sender": "발신번호를 등록하세요.",
       "kakao_label": "카카오 알림톡",
       "kakao_channel": "카카오톡 비즈니스 채널을 만들고 발신프로필을 등록하세요.",
-      "kakao_template": "알림톡 템플릿을 등록하고 승인받으세요.",
+      "kakao_template": "알림톡 템플릿은 관리자 알림 설정(비즈뿌리오 탭)에서 작성해 검수를 신청합니다.",
       "kakao_apikey": "고객센터에 API 키를 요청하세요.",
       "console_link": "비즈뿌리오 콘솔 열기"
     }
   },
+  "channels": {
+    "bizppurio_tab": "비즈뿌리오"
+  },
   "binding": {
-    "section_title": "카카오 알림톡 연동",
-    "list_guide": "각 알림에 발송할 카카오 알림톡 템플릿을 연결하세요. [연결]로 승인된 템플릿을 지정하면 해당 이벤트 발생 시 알림톡이 자동 발송됩니다.",
-    "section_hint": "승인된 알림톡 템플릿만 연결할 수 있습니다. 저장하면 이 알림에 즉시 반영됩니다.",
-    "modal_title": "알림톡 연결 · {name}",
-    "unbound": "미연결",
-    "unavailable": "사용 불가 — 재연결 필요",
-    "btn_connect": "연결",
-    "btn_change": "연결 변경",
-    "fallback_on": "SMS 대체 ON",
-    "fallback_off": "SMS 대체 OFF",
-    "connected_template": "연결 템플릿",
-    "none": "연결 안 함",
-    "no_approved_templates": "발송 가능한(승인된) 알림톡 템플릿이 없습니다. 먼저 템플릿을 등록·검수하세요.",
-    "templates_load_failed": "템플릿 목록을 불러오지 못했습니다. 플러그인 설정(자격증명)을 확인하세요.",
-    "fallback_sms": "실패 시 SMS로 대체발송",
-    "fallback_hint": "알림톡 발송이 실패하면 이 알림의 본문 내용이 문자(SMS)로 대신 발송됩니다.",
-    "variables_hint": "제공 변수 (발송 시 자동 치환)",
-    "saved": "알림톡 연동을 저장했습니다.",
-    "save_error": "알림톡 연동 저장에 실패했습니다."
+    "variables_hint": "제공 변수 (클릭하면 본문 커서 위치에 삽입됩니다)"
   },
   "banner": {
     "not_ready": "발송에 필요한 설정이 완료되지 않았습니다.",
@@ -124,70 +97,174 @@
     "detail_title": "문자·알림톡 발송 결과",
     "channel_label": "발송 채널: {channel}",
     "sent_content_label": "실제 발송 내용",
-    "sent_content_hint": "알림톡은 카카오 승인 템플릿의 실제 내용으로 발송되며, 위 \"본문\"과 다를 수 있습니다."
+    "sent_content_hint": "알림톡은 승인 확정된 템플릿 내용으로 발송되며, 위 \"본문\"과 다를 수 있습니다."
   },
   "editor": {
     "data_source": {
       "dispatch_results": "비즈뿌리오 발송 결과"
     }
   },
+  "template": {
+    "tab_guide": "알림별로 알림톡 템플릿을 작성해 검수를 신청하세요. 카카오 승인 후 알림톡이 자동 발송되며, 대체 SMS·SMS 단독 발송도 이 화면에서 설정합니다.",
+    "status": {
+      "unwritten": "미작성",
+      "draft": "작성중",
+      "requested": "검수중",
+      "approved": "승인됨",
+      "rejected": "반려",
+      "stopped": "중지",
+      "blocked": "차단",
+      "dormant": "휴면"
+    },
+    "row": {
+      "alimtalk_label": "알림톡",
+      "requested_on": "{date} 신청",
+      "synced_on": "{date} 동기화",
+      "alimtalk_enabled": "발송 사용",
+      "btn_view_reason": "사유 보기",
+      "btn_compose": "알림톡 템플릿 작성",
+      "btn_edit": "수정",
+      "btn_edit_approved": "수정 (승인 취소)",
+      "btn_request": "검수 신청",
+      "btn_cancel_request": "신청 취소",
+      "btn_release": "휴면 해제",
+      "btn_refresh": "새로고침",
+      "requested_toast": "검수를 신청했습니다.",
+      "cancel_request_toast": "검수 신청을 취소했습니다.",
+      "released_toast": "휴면 상태를 해제했습니다.",
+      "synced_toast": "카카오 검수 상태를 동기화했습니다.",
+      "fallback_sms": "대체 SMS",
+      "sms_only": "SMS 단독",
+      "sms_body_prefix": "본문:",
+      "sms_body_missing": "SMS 본문 미설정",
+      "btn_edit_sms": "SMS 본문 편집"
+    },
+    "form": {
+      "modal_title": "알림톡 템플릿 — {name}",
+      "rejected_banner": "반려된 템플릿입니다. 아래 사유를 확인하고 수정 후 다시 신청하세요.",
+      "sender_profile": "발신프로필",
+      "sender_profile_placeholder": "발신프로필 선택(참고용)",
+      "sender_profile_hint": "검수 신청은 환경설정에 저장된 발신프로필 키로 진행됩니다.",
+      "category": "카테고리",
+      "category_placeholder": "카테고리 선택",
+      "name": "템플릿명",
+      "message_type": "메시지 유형",
+      "templateMessageType_options": {
+        "BA": "기본형",
+        "EX": "부가정보형",
+        "AD": "채널추가형",
+        "MI": "복합형"
+      },
+      "emphasize_type": "강조 유형",
+      "templateEmphasizeType_options": {
+        "NONE": "없음",
+        "TEXT": "강조표기",
+        "IMAGE": "이미지",
+        "ITEM_LIST": "아이템리스트"
+      },
+      "emphasize_title": "강조표기 타이틀",
+      "emphasize_subtitle": "강조표기 서브타이틀",
+      "image": "이미지",
+      "image_hint": "jpg/png · 500KB 이하 · 가로 500px 이상 · 가로:세로 2:1 (업로드하면 URL 이 자동 기입됩니다)",
+      "image_uploading": "이미지 업로드 중...",
+      "image_upload_failed": "이미지 업로드에 실패했습니다.",
+      "content": "본문",
+      "extra": "부가정보",
+      "header": "헤더",
+      "header_hint": "본문 상단에 표기되는 최대 16자 문구(선택)",
+      "buttons": "버튼 (최대 5개)",
+      "button_add": "버튼 추가",
+      "button_name": "버튼명 (최대 14자)",
+      "quick_replies": "바로연결 (최대 10개)",
+      "quick_reply_add": "바로연결 추가",
+      "link_mo": "모바일 링크 (필수)",
+      "link_pc": "PC 링크 (선택)",
+      "link_and": "Android 스킴 (필수)",
+      "link_ios": "iOS 스킴 (필수)",
+      "tel_number": "전화번호 (필수)",
+      "plugin_id": "플러그인 ID (필수)",
+      "item_highlight": "아이템 하이라이트 (선택)",
+      "hl_title": "하이라이트 타이틀",
+      "hl_description": "하이라이트 설명",
+      "hl_image_url": "썸네일 이미지 URL (선택)",
+      "item_list": "아이템 목록 (2~10개)",
+      "item_list_hint": "아이템은 최소 2개, 최대 10개입니다. (제목 6자·설명 23자 이내)",
+      "item_add": "아이템 추가",
+      "item_title": "제목",
+      "item_description": "설명",
+      "item_summary": "요약(가격 정보)",
+      "summary_description": "요약 값 (14자 이내)",
+      "btn_remove_item": "아이템 삭제",
+      "btn_remove_button": "버튼 삭제",
+      "btn_remove_quick_reply": "바로연결 삭제",
+      "btn_save": "저장",
+      "btn_save_request": "저장 후 검수 신청",
+      "saved_toast": "알림 템플릿을 저장했습니다.",
+      "requested_toast": "검수를 신청했습니다. 승인되면 알림톡 발송이 시작됩니다."
+    },
+    "sms": {
+      "modal_title": "SMS 본문 — {name}",
+      "hint": "대체 SMS 와 SMS 단독 발송에 공통으로 사용하는 본문입니다. #{변수} 는 발송 시 자동 치환됩니다.",
+      "btn_save": "저장",
+      "saved_toast": "SMS 본문을 저장했습니다."
+    },
+    "cancel_approval": {
+      "modal_title": "승인 취소 확인",
+      "warning": "'{name}' 템플릿의 승인을 취소하면 즉시 이 알림의 알림톡 발송이 중단됩니다. (대체 SMS·SMS 단독 발송은 SMS 설정에 따라 계속됩니다.) 수정 후 다시 검수 신청해 승인을 받아야 알림톡 발송이 재개됩니다.",
+      "btn_confirm": "승인 취소 후 수정",
+      "done_toast": "승인을 취소했습니다. 수정 후 다시 검수 신청하세요."
+    },
+    "rejection": {
+      "modal_title": "반려 사유 — {name}",
+      "btn_close": "닫기"
+    }
+  },
+  "manage": {
+    "guide": "모든 알림의 비즈뿌리오 템플릿 상태를 한눈에 관리합니다. 작성·검수 신청은 알림 설정 화면과 동일하게 동작합니다.",
+    "filter_all": "전체 상태",
+    "search_placeholder": "알림 이름/유형 검색",
+    "btn_search": "검색",
+    "total_count": "총 {count}건",
+    "btn_compose": "작성",
+    "btn_edit": "수정",
+    "btn_delete": "삭제",
+    "empty": "등록된 비즈뿌리오 알림 템플릿이 없습니다.",
+    "empty_hint": "관리자 알림 설정의 비즈뿌리오 탭에서 알림톡 템플릿을 작성하거나 SMS 를 설정하면 여기에 표시됩니다.",
+    "sms_only": "단독",
+    "sms_fallback": "대체",
+    "owner": {
+      "core": "코어",
+      "module": "모듈",
+      "plugin": "플러그인"
+    },
+    "columns": {
+      "notification": "알림",
+      "owner": "소속",
+      "status": "알림톡 상태",
+      "sms": "SMS",
+      "requested_at": "신청일",
+      "synced_at": "동기화",
+      "actions": "관리"
+    },
+    "delete": {
+      "modal_title": "템플릿 삭제",
+      "warning": "'{name}' 의 비즈뿌리오 템플릿 설정을 삭제합니다. 카카오에 등록된 템플릿은 삭제 가능한 상태(등록/반려)일 때만 함께 삭제됩니다.",
+      "btn_confirm": "삭제",
+      "done_with_kakao": "템플릿을 삭제했습니다. (카카오측 템플릿 포함)",
+      "done_db_only": "템플릿 설정을 삭제했습니다. 카카오측 템플릿은 상태 제약으로 남아 있습니다."
+    }
+  },
   "templates": {
-    "title": "알림톡 템플릿",
-    "description": "카카오 알림톡 템플릿을 등록·검수·관리합니다. 승인된 템플릿만 알림 연동에 사용할 수 있습니다.",
     "readiness": {
       "title": "알림톡 템플릿을 사용하려면 아래 설정이 필요합니다",
       "go_settings": "환경설정으로 이동",
       "missing_label": "미설정 항목",
       "api_key_missing": "카카오 관리 API 키",
       "sender_key_missing": "알림톡 발신프로필 키",
-      "note": "위 항목을 환경설정 탭에서 입력하면 템플릿 조회·등록이 가능합니다. 실제 발송은 검수 모드를 끄고 운영으로 전환한 뒤 카카오 승인을 받은 템플릿만 사용할 수 있습니다."
-    },
-    "list_error": {
-      "title": "템플릿 목록을 불러오지 못했습니다"
-    },
-    "list_notice": {
-      "console_desc": "템플릿 등록·수정·검수는 비즈뿌리오 콘솔에서 진행해주세요.",
-      "console_link": "비즈뿌리오 콘솔 열기"
+      "note": "위 항목을 환경설정 탭에서 입력하면 템플릿 작성·검수 신청이 가능합니다. 실제 발송은 검수 모드를 끄고 운영으로 전환한 뒤 승인된 템플릿만 사용할 수 있습니다."
     },
     "list": {
-      "refresh": "새로고침",
-      "search": "검색",
-      "search_placeholder": "템플릿명 검색 (2~50자)",
-      "filter_all": "전체 상태",
-      "empty": "등록된 알림톡 템플릿이 없습니다.",
-      "empty_hint": "비즈뿌리오 콘솔에서 등록한 템플릿이 여기에 표시됩니다.",
-      "load_failed": "템플릿 목록을 불러오지 못했습니다. 발신프로필 키와 API 키를 확인하세요.",
-      "columns": {
-        "no": "번호",
-        "name": "템플릿명",
-        "code": "코드",
-        "status": "상태",
-        "requested_at": "등록요청일",
-        "processed_at": "처리일",
-        "actions": "내용"
-      }
-    },
-    "status": {
-      "sendable": "발송가능",
-      "inspecting": "검수중",
-      "rejected": "반려",
-      "uninspected": "미검수",
-      "stopped": "중지",
-      "blocked": "차단",
-      "dormant": "휴면",
-      "unknown": "알 수 없음"
-    },
-    "status_sub": {
-      "rdy": "(사용전)"
-    },
-    "status_guide": {
-      "title": "상태 배지",
-      "sendable_label": "발송가능",
-      "sendable": "승인 완료. 이 상태만 알림에 연결·발송할 수 있습니다.",
-      "inspecting_label": "검수중",
-      "inspecting": "카카오 검수 진행 중 (영업일 2~3일).",
-      "pending_label": "미검수·반려",
-      "pending": "아직 발송할 수 없습니다. 콘솔에서 검수요청·수정하세요."
+      "refresh": "새로고침"
     },
     "link_type": {
       "WL": "웹링크",
@@ -203,25 +280,6 @@
       "P1": "이미지 보안전송",
       "P2": "개인정보이용",
       "P3": "원클릭 결제"
-    },
-    "actions": {
-      "detail": "상세"
-    },
-    "detail": {
-      "title": "템플릿 상세",
-      "close": "닫기",
-      "buttons": "버튼",
-      "extra": "부가정보",
-      "category": "카테고리",
-      "code": "템플릿 코드",
-      "content": "템플릿 내용",
-      "emphasize_type": "템플릿 유형",
-      "image_upload": "이미지 첨부",
-      "subtitle_field": "보조 문구",
-      "title_field": "강조표기 문구",
-      "type_image": "이미지형",
-      "type_none": "기본형",
-      "type_text": "강조표기형"
     }
   }
 }

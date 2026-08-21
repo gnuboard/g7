@@ -25,10 +25,11 @@ use App\Services\SettingsService;
  * ChannelManager 에 등록되어야 발화하므로, 드라이버 등록은 ServiceProvider::boot() 가
  * 담당한다(이 리스너는 채널 "노출·판정"만 책임진다).
  *
- * 알림톡 탭은 코어 기본 목록을 그대로 사용한다(Phase 6 재설계, 계획서 ⚑⚑ 블록 A).
- * 연결 템플릿·SMS 대체 등 알림톡 전용 설정은 코어 목록 행 하단에 overlay 로 얹은
- * [연결/변경] 버튼 → 우리 연결 모달 → 우리 API(notification-bindings)로 직접 저장하므로,
- * 이 리스너는 코어 목록을 숨기는 별도 플래그를 두지 않는다.
+ * 화면 노출은 '비즈뿌리오' 통합 탭 방식이다(#597 §3.3). sms 채널 메타의 hidden_tab 으로
+ * 개별 탭만 숨기고(채널 토글 카드·발송 축은 유지), alimtalk 메타의 tab_channels ·
+ * tab_label_key 로 통합 탭의 노출 조건·라벨을 선언한다. 알림톡 템플릿 작성·검수·대체 SMS
+ * 설정은 코어 목록 행 하단 overlay(row_footer)가 담당하며 저장은 우리 템플릿 API
+ * (admin/templates)로 직접 수행한다.
  */
 class RegisterNotificationChannelsListener implements HookListenerInterface
 {
@@ -265,6 +266,13 @@ class RegisterNotificationChannelsListener implements HookListenerInterface
     /**
      * sms·alimtalk 채널 메타 정의를 반환합니다.
      *
+     * '비즈뿌리오' 통합 탭 메타(#597 §3.3 — 범용 키, 확장명 하드코딩 없음):
+     *  - sms.hidden_tab: 탭만 숨긴다(채널 토글 카드·발송 축은 그대로).
+     *  - alimtalk.tab_channels: 이 목록 중 하나라도 활성 저장이면 탭을 노출한다.
+     *  - alimtalk.tab_label_key: 탭 라벨용 프론트 lang 키($t 해석 — 카드 라벨(name)과 분리).
+     * 코어 getAvailableChannels 는 임의 필드를 보존하므로 프론트까지 그대로 도달한다
+     * (is_test_mode 와 동일 경로).
+     *
      * @return array<int, array<string, mixed>>
      */
     private function channelMetas(): array
@@ -278,6 +286,7 @@ class RegisterNotificationChannelsListener implements HookListenerInterface
                 'source' => self::PLUGIN_IDENTIFIER,
                 'source_label_key' => self::LANG.'.channels.source_label',
                 'allow_guest' => true,
+                'hidden_tab' => true,
             ],
             [
                 'id' => 'alimtalk',
@@ -287,6 +296,8 @@ class RegisterNotificationChannelsListener implements HookListenerInterface
                 'source' => self::PLUGIN_IDENTIFIER,
                 'source_label_key' => self::LANG.'.channels.source_label',
                 'allow_guest' => true,
+                'tab_channels' => ['sms', 'alimtalk'],
+                'tab_label_key' => self::PLUGIN_IDENTIFIER.'.channels.bizppurio_tab',
             ],
         ];
     }

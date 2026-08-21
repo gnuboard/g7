@@ -6,6 +6,7 @@ use App\Enums\ExtensionOwnerType;
 use App\Models\Menu;
 use Illuminate\Support\Facades\Schema;
 use Plugins\Sirsoft\MessageBizppurio\Models\BizppurioDispatch;
+use Plugins\Sirsoft\MessageBizppurio\Models\BizppurioTemplate;
 use Plugins\Sirsoft\MessageBizppurio\Plugin;
 use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
 
@@ -135,16 +136,25 @@ class InstallationTest extends PluginTestCase
     }
 
     /**
-     * Phase 4 발송 이력·연동 테이블이 마이그레이션으로 생성된다.
+     * Phase 4 발송 이력·알림 템플릿 테이블이 마이그레이션으로 생성된다.
+     *
+     * bizppurio_notification_bindings 는 #597 개편으로 bizppurio_templates(알림톡 등록
+     * 페이로드·승인 스냅샷·검수 상태 + SMS 본문)로 대체되었다.
      */
     public function test_phase4_테이블이_생성된다(): void
     {
         $this->assertTrue(Schema::hasTable('bizppurio_dispatches'));
-        $this->assertTrue(Schema::hasTable('bizppurio_notification_bindings'));
+        $this->assertTrue(Schema::hasTable('bizppurio_templates'));
 
         $this->assertTrue(Schema::hasColumns('bizppurio_dispatches', [
             'refkey', 'messagekey', 'channel', 'to_number', 'to_user_id',
             'status', 'result_code', 'reported_at', 'raw_payload',
+        ]));
+
+        $this->assertTrue(Schema::hasColumns('bizppurio_templates', [
+            'notification_type', 'alimtalk_enabled', 'template_code', 'sender_key',
+            'content', 'approved_content', 'status', 'inspection_detail',
+            'fallback_sms_enabled', 'sms_body', 'sms_only', 'is_active',
         ]));
     }
 
@@ -158,10 +168,12 @@ class InstallationTest extends PluginTestCase
         // down
         $this->artisan('migrate:rollback', ['--path' => $migrations, '--realpath' => true])->run();
         $this->assertFalse(Schema::hasTable('bizppurio_dispatches'));
+        $this->assertFalse(Schema::hasTable('bizppurio_templates'), '롤백 시 bizppurio_templates 도 함께 제거되어야 한다.');
 
         // up
         $this->artisan('migrate', ['--path' => $migrations, '--realpath' => true])->run();
         $this->assertTrue(Schema::hasTable('bizppurio_dispatches'));
+        $this->assertTrue(Schema::hasTable('bizppurio_templates'), '재실행 시 bizppurio_templates 가 다시 생성되어야 한다.');
 
         // 왕복 후 Repository 호출 1회전 (create → 조회)
         $dispatch = BizppurioDispatch::create([
@@ -174,5 +186,15 @@ class InstallationTest extends PluginTestCase
         ]);
         $this->assertNotNull(BizppurioDispatch::query()->byRefkey('roundtrip')->first());
         $this->assertSame('roundtrip', $dispatch->refkey);
+
+        // 왕복 후 템플릿 모델 1회전 — unique(notification_type)·JSON 캐스팅이 살아 있는지 확인
+        $template = BizppurioTemplate::create([
+            'notification_type' => 'welcome',
+            'alimtalk_enabled' => true,
+            'content' => ['templateName' => '가입 환영'],
+            'sms_body' => ['ko' => '가입을 환영합니다.', 'en' => 'Welcome aboard.'],
+        ]);
+        $this->assertNotNull(BizppurioTemplate::query()->where('notification_type', 'welcome')->first());
+        $this->assertSame(['templateName' => '가입 환영'], $template->content);
     }
 }

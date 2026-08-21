@@ -143,6 +143,193 @@ class BizppurioKakaoApiClientTest extends PluginTestCase
         }
     }
 
+    public function test_템플릿_등록은_add_경로로_pos_t한다(): void
+    {
+        Http::fake(['kapi.ppurio.com/*' => Http::response(['code' => '200'], 200)]);
+
+        $this->client()->addTemplate([
+            'senderKey' => 'SK',
+            'templateCode' => 'TW_1',
+            'templateName' => '주문완료',
+        ]);
+
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), '/v3/kakao/template/add')
+                && $request['senderKey'] === 'SK'
+                && $request['templateCode'] === 'TW_1'
+                && $request['templateName'] === '주문완료'
+                && $request['bizId'] === 'biz01'
+                && $request['apiKey'] === 'key01';
+        });
+    }
+
+    public function test_템플릿_수정은_update_경로로_pos_t한다(): void
+    {
+        Http::fake(['kapi.ppurio.com/*' => Http::response(['code' => '200'], 200)]);
+
+        $this->client()->updateTemplate([
+            'senderKey' => 'SK',
+            'templateCode' => 'TW_1',
+            'newTemplateCode' => 'TW_2',
+        ]);
+
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), '/v3/kakao/template/update')
+                && $request['newTemplateCode'] === 'TW_2'
+                && $request['bizId'] === 'biz01'
+                && $request['apiKey'] === 'key01';
+        });
+    }
+
+    public function test_템플릿_삭제는_delete_경로로_pos_t한다(): void
+    {
+        Http::fake(['kapi.ppurio.com/*' => Http::response(['code' => '200'], 200)]);
+
+        $this->client()->deleteTemplate('SK', 'TW_1');
+
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), '/v3/kakao/template/delete')
+                && $request['senderKey'] === 'SK'
+                && $request['templateCode'] === 'TW_1'
+                && $request['bizId'] === 'biz01'
+                && $request['apiKey'] === 'key01';
+        });
+    }
+
+    public function test_템플릿_코드_중복검증은_code_check_경로로_pos_t한다(): void
+    {
+        Http::fake(['kapi.ppurio.com/*' => Http::response(['code' => '200'], 200)]);
+
+        $this->client()->checkTemplateCode('SK', 'TW_1');
+
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), '/v3/kakao/template/codeCheck')
+                && $request['senderKey'] === 'SK'
+                && $request['templateCode'] === 'TW_1'
+                && $request['bizId'] === 'biz01'
+                && $request['apiKey'] === 'key01';
+        });
+    }
+
+    public function test_검수요청은_comment를_포함해_request_경로로_pos_t한다(): void
+    {
+        Http::fake(['kapi.ppurio.com/*' => Http::response(['code' => '200'], 200)]);
+
+        $this->client()->requestInspection('SK', 'TW_1', '변수는 주문번호입니다.');
+
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), '/v3/kakao/template/request')
+                && $request['senderKey'] === 'SK'
+                && $request['templateCode'] === 'TW_1'
+                && $request['comment'] === '변수는 주문번호입니다.'
+                && $request['bizId'] === 'biz01'
+                && $request['apiKey'] === 'key01';
+        });
+    }
+
+    public function test_검수요청_comment_미전달시_comment_키를_싣지_않는다(): void
+    {
+        Http::fake(['kapi.ppurio.com/*' => Http::response(['code' => '200'], 200)]);
+
+        $this->client()->requestInspection('SK', 'TW_1');
+
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), '/v3/kakao/template/request')
+                && $request['senderKey'] === 'SK'
+                && ! array_key_exists('comment', $request->data())
+                && $request['bizId'] === 'biz01';
+        });
+    }
+
+    public function test_검수취소는_cancel_request_경로로_pos_t한다(): void
+    {
+        Http::fake(['kapi.ppurio.com/*' => Http::response(['code' => '200'], 200)]);
+
+        $this->client()->cancelInspection('SK', 'TW_1');
+
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), '/v3/kakao/template/cancel_request')
+                && $request['senderKey'] === 'SK'
+                && $request['templateCode'] === 'TW_1'
+                && $request['bizId'] === 'biz01'
+                && $request['apiKey'] === 'key01';
+        });
+    }
+
+    public function test_승인취소는_cancel_approval_경로로_pos_t한다(): void
+    {
+        Http::fake(['kapi.ppurio.com/*' => Http::response(['code' => '200'], 200)]);
+
+        $this->client()->cancelApproval('SK', 'TW_1');
+
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), '/v3/kakao/template/cancel_approval')
+                && $request['senderKey'] === 'SK'
+                && $request['templateCode'] === 'TW_1'
+                && $request['bizId'] === 'biz01'
+                && $request['apiKey'] === 'key01';
+        });
+    }
+
+    public function test_휴면해제는_release_경로로_pos_t한다(): void
+    {
+        Http::fake(['kapi.ppurio.com/*' => Http::response(['code' => '200'], 200)]);
+
+        $this->client()->releaseDormant('SK', 'TW_1');
+
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), '/v3/kakao/template/release')
+                && $request['senderKey'] === 'SK'
+                && $request['templateCode'] === 'TW_1'
+                && $request['bizId'] === 'biz01'
+                && $request['apiKey'] === 'key01';
+        });
+    }
+
+    public function test_이미지_업로드는_multipart로_전송하고_최상위_image_필드를_반환한다(): void
+    {
+        // kapi 유일의 비-JSON(multipart) 엔드포인트 — 응답도 data 봉투가 아니라
+        // 최상위 image 필드에 업로드 URL 이 실린다(부록 A-7).
+        Http::fake([
+            'kapi.ppurio.com/*' => Http::response([
+                'code' => '200',
+                'message' => 'success',
+                'image' => 'https://mud-kage.kakao.com/dn/example.png',
+            ], 200),
+        ]);
+
+        $tmpPath = tempnam(sys_get_temp_dir(), 'biz_img_');
+        file_put_contents($tmpPath, 'fake-png-bytes');
+
+        try {
+            $result = $this->client()->uploadTemplateImage($tmpPath, 'template.png');
+        } finally {
+            @unlink($tmpPath);
+        }
+
+        $this->assertSame('https://mud-kage.kakao.com/dn/example.png', $result['image']);
+        $this->assertArrayNotHasKey('data', $result);
+
+        Http::assertSent(function ($request) {
+            if (! str_contains($request->url(), '/v3/kakao/image/alimtalk/template')) {
+                return false;
+            }
+
+            if (! $request->isMultipart()) {
+                return false;
+            }
+
+            // multipart 파트에 image 파일 + bizId/apiKey 필드가 실려야 한다.
+            // 파일 contents 는 스트림 리소스로 실리므로(전송 후 close) 값 비교가 불가 —
+            // 파트명 + 원본 파일명으로 단언한다.
+            $parts = collect($request->data());
+
+            return $request->hasFile('image', null, 'template.png')
+                && $parts->contains(fn ($part) => ($part['name'] ?? null) === 'bizId' && ($part['contents'] ?? null) === 'biz01')
+                && $parts->contains(fn ($part) => ($part['name'] ?? null) === 'apiKey' && ($part['contents'] ?? null) === 'key01');
+        });
+    }
+
     protected function tearDown(): void
     {
         Mockery::close();

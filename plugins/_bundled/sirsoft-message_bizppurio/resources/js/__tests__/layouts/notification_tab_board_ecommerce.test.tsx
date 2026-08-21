@@ -1,35 +1,36 @@
-// e2e:allow 게시판·이커머스 배너/버튼/모달 노출은 Chrome MCP 로 실브라우저 확인·수정까지 완료
-// (2026-07-28). 정식 E2E는 비즈뿌리오 발송 인프라 의존이 커서 별도 계획에서 다룸(코어와 동일 사유).
+// e2e:allow 3면 패리티는 정규화 문자열 대조 Vitest 로 잠근다(#597 재작성) — 라이프사이클 전이
+// 브라우저 흐름은 코어 면 대표로 tests/Playwright/specs/admin/template-lifecycle.spec.ts 가 담당.
 /**
- * 게시판·이커머스 알림 설정 알림톡 탭 연동 UI 구조 검증 (이슈 #28 후속)
+ * 게시판·이커머스 알림 설정 '비즈뿌리오' 통합 탭 오버레이 — 3면 패리티 검증 (#597)
  *
- * 배경: notification_tab_core.json(target_layout=admin_settings) + notification_row_footer.json
- * (extension_point, 전역 매칭)은 코어 알림 설정 화면에만 연동 버튼·배너를 노출했다.
- * extension_point 는 이름만 같으면 어느 레이아웃에서도 매칭되지만, target_id 기반 overlay
- * injection 은 레이아웃별로 독립이라 게시판·이커머스는 배너/안내박스/연결모달이 뜨지 않았다.
+ * 시나리오 매니페스트 exclusions 근거: "3면은 동일 오버레이 패턴(파일 diff 는 id·target 뿐)
+ * — 라이프사이클 전이는 코어 면으로 대표하고 면 axis 는 렌더 패리티(Vitest)로 잠근다".
  *
- * notification_tab_board.json / notification_tab_ecommerce.json 을 신설해
- * target_layout=admin_board_settings / admin_ecommerce_settings 로 각각 등록했다.
- * notification_row_footer.json 은 그대로(전역 매칭)이므로 재사용된다.
- */
+ * 검증 방식: comment 필드 제거 후 JSON 문자열에서 면 고유 토큰(target_layout·target_id·
+ * 컴포넌트 id 접두)만 코어 형으로 치환하면 코어 오버레이와 완전 동일해야 한다.
+ * 반대로 데이터소스 id·모달 id·전역 상태 경로(bz_tpl_modal 등)는 치환 없이도 3면 동일해야
+ * 한다 — notification_row_footer.json(전역 매칭)이 이 이름들을 공유 참조하기 때문이다.
+  *
+ * 세 오버레이가 전문 동일하다는 것이 board/ecommerce 면의 화면 효과를 떠받치는 근거다 —
+ * core 면에서 단언한 것들(탭 통합·행 하단 UI·업로드 잠금·SMS 언어 탭)이 두 면에도 있다는
+ * 보장은 이 패리티뿐이고, 그래서 이 파일이 사라지면 두 면은 미측정으로 남는다.
+ *
+ * @effects bizppurio_tab_replaces_sms_and_alimtalk_tabs, row_footer_shows_status_badge_and_lifecycle_actions,
+ *          upload_in_progress_locks_save_buttons_not_cancel, sms_modal_edits_body_per_locale_tab
+*/
 
 import { describe, it, expect } from 'vitest';
+import coreOverlay from '../../../extensions/notification_tab_core.json';
 import boardOverlay from '../../../extensions/notification_tab_board.json';
 import ecommerceOverlay from '../../../extensions/notification_tab_ecommerce.json';
-import ko from '../../../lang/ko.json';
-import en from '../../../lang/en.json';
-import { findById, type AnyNode } from './helpers';
+import { type AnyNode } from './helpers';
 
 type OverlayFixture = {
     label: string;
     overlay: typeof boardOverlay;
     targetLayout: string;
     targetId: string;
-    bannerId: string;
-    notReadyId: string;
-    testModeId: string;
-    guideId: string;
-    modalBodyId: string;
+    idPrefix: string;
 };
 
 const FIXTURES: OverlayFixture[] = [
@@ -38,44 +39,44 @@ const FIXTURES: OverlayFixture[] = [
         overlay: boardOverlay,
         targetLayout: 'admin_board_settings',
         targetId: 'board_notif_channel_content',
-        bannerId: 'bizppurio_board_status_banner',
-        notReadyId: 'bizppurio_board_banner_not_ready',
-        testModeId: 'bizppurio_board_banner_test_mode',
-        guideId: 'bizppurio_board_alimtalk_guide',
-        modalBodyId: 'bizppurio_board_binding_modal_body',
+        idPrefix: 'bizppurio_board_',
     },
     {
         label: '이커머스',
         overlay: ecommerceOverlay,
         targetLayout: 'admin_ecommerce_settings',
         targetId: 'ecommerce_notif_channel_content',
-        bannerId: 'bizppurio_ecommerce_status_banner',
-        notReadyId: 'bizppurio_ecommerce_banner_not_ready',
-        testModeId: 'bizppurio_ecommerce_banner_test_mode',
-        guideId: 'bizppurio_ecommerce_alimtalk_guide',
-        modalBodyId: 'bizppurio_ecommerce_binding_modal_body',
+        idPrefix: 'bizppurio_ecommerce_',
     },
 ];
 
-const collectPluginKeys = (json: unknown): string[] => {
-    const text = JSON.stringify(json);
-    const prefixed = text.match(/\$t:sirsoft-message_bizppurio\.[a-zA-Z0-9_.]+/g) ?? [];
-    const called = text.match(/\$t\('sirsoft-message_bizppurio\.[a-zA-Z0-9_.]+'\)/g) ?? [];
-    return Array.from(new Set([
-        ...prefixed.map((m) => m.replace('$t:', '')),
-        ...called.map((m) => m.replace(/^\$t\('/, '').replace(/'\)$/, '')),
-    ]));
+/** comment 필드를 재귀 제거한다(설명문은 면마다 달라도 되는 유일한 자유 축). */
+const stripComments = (node: unknown): unknown => {
+    if (Array.isArray(node)) return node.map(stripComments);
+    if (node && typeof node === 'object') {
+        const out: Record<string, unknown> = {};
+        for (const [k, v] of Object.entries(node as Record<string, unknown>)) {
+            if (k === 'comment') continue;
+            out[k] = stripComments(v);
+        }
+        return out;
+    }
+    return node;
 };
 
-describe.each(FIXTURES)('$label 알림톡 연동 overlay', ({
-    overlay, targetLayout, targetId, bannerId, notReadyId, testModeId, guideId, modalBodyId,
-}) => {
-    const injectionRoot = {
-        children: ((overlay as { injections?: Array<{ components?: AnyNode[] }> }).injections ?? [])
-            .flatMap((i) => i.components ?? []),
-    } as AnyNode;
-    const modalRoot = { children: (overlay as { modals?: AnyNode[] }).modals ?? [] } as AnyNode;
+const normalizedCore = JSON.stringify(stripComments(coreOverlay));
 
+/** 3면 공유 이름(치환 없이 동일해야 하는 축) */
+const SHARED_DATA_SOURCE_IDS = ['bizppurioTemplates', 'bizppurioCategories', 'bizppurioProfiles'];
+const SHARED_MODAL_IDS = [
+    'modal_bizppurio_template',
+    'modal_bizppurio_sms',
+    'modal_bizppurio_cancel_approval',
+    'modal_bizppurio_rejection',
+];
+const SHARED_GLOBAL_STATE_PATHS = ['bz_tpl_modal', 'bz_sms_modal', 'bz_cancel_approval', 'bz_reject_view', 'bz_tpl_upload'];
+
+describe.each(FIXTURES)('$label 오버레이 — 3면 패리티', ({ label, overlay, targetLayout, targetId, idPrefix }) => {
     it(`target_layout=${targetLayout} 이고 extension_point 키가 없다(overlay 전용)`, () => {
         expect((overlay as { target_layout?: string }).target_layout).toBe(targetLayout);
         expect((overlay as Record<string, unknown>).extension_point).toBeUndefined();
@@ -88,80 +89,45 @@ describe.each(FIXTURES)('$label 알림톡 연동 overlay', ({
         expect(injections[0].position).toBe('prepend_child');
     });
 
-    it('연결 맵·승인 템플릿 데이터소스를 등록한다(코어와 동일 endpoint)', () => {
+    it('면 고유 토큰(target_layout/target_id/id 접두)만 치환하면 코어 오버레이와 완전 동일하다(comment 제외)', () => {
+        const normalized = JSON.stringify(stripComments(overlay))
+            .split(targetLayout).join('admin_settings')
+            .split(targetId).join('notif_channel_content')
+            .split(idPrefix).join('bizppurio_');
+        expect(normalized, `${label} 오버레이가 코어와 구조 불일치`).toBe(normalizedCore);
+    });
+
+    it('데이터소스 id 3종이 코어와 완전 동일하다(순서 포함 — 행 footer 공유 참조)', () => {
         const ids = ((overlay as { data_sources?: Array<{ id: string }> }).data_sources ?? []).map((d) => d.id);
-        expect(ids).toContain('bizppurioBindings');
-        expect(ids).toContain('bizppurioApprovedTemplates');
+        expect(ids).toEqual(SHARED_DATA_SOURCE_IDS);
     });
 
-    it('상태 배너는 sms·alimtalk 탭에서 문제(readiness 미충족 / test_mode)일 때만 노출된다', () => {
-        const banner = findById(injectionRoot, bannerId);
-        expect(banner).toBeTruthy();
-        const cond = (banner as { if?: string }).if ?? '';
-        expect(cond).toContain("'sms'");
-        expect(cond).toContain("'alimtalk'");
-        expect(cond).toContain('readiness?.ready === false');
-        expect(cond).toContain('is_test_mode === true');
+    it('모달 id 4종이 코어와 완전 동일하다(행 footer 의 openModal target 공유)', () => {
+        const ids = ((overlay as { modals?: AnyNode[] }).modals ?? []).map((m) => m.id);
+        expect(ids).toEqual(SHARED_MODAL_IDS);
     });
 
-    it('readiness 미충족 배너에 설정하기 이동 버튼이 있다', () => {
-        const raw = JSON.stringify(findById(injectionRoot, notReadyId));
-        expect(raw).toContain('banner.not_ready');
-        expect(raw).toContain('banner.setup_action');
-        expect(raw).toContain('/admin/plugins/sirsoft-message_bizppurio/settings');
-    });
-
-    it('검수 모드 배너는 readiness 와 무관하게 is_test_mode 만으로 노출된다', () => {
-        const banner = findById(injectionRoot, testModeId);
-        expect(banner).toBeTruthy();
-        const cond = (banner as { if?: string }).if ?? '';
-        expect(cond).not.toContain('readiness');
-        expect(cond).toContain('is_test_mode === true');
-    });
-
-    it('알림톡 탭 상시 안내 박스가 있다', () => {
-        const guide = findById(injectionRoot, guideId);
-        expect(guide).toBeTruthy();
-        expect((guide as { if?: string }).if).toContain("=== 'alimtalk'");
-        expect(JSON.stringify(guide)).toContain('binding.list_guide');
-    });
-
-    it('연결 전용 모달(modal_bizppurio_binding)이 modals 로 등록된다', () => {
-        const modal = findById(modalRoot, 'modal_bizppurio_binding');
-        expect(modal).toBeTruthy();
-        expect((modal as { name?: string }).name).toBe('Modal');
-    });
-
-    it('[저장] 은 우리 API store 로 저장하고 toast + 모달 닫힘 + 목록 갱신한다', () => {
-        const modal = findById(modalRoot, 'modal_bizppurio_binding');
-        const raw = JSON.stringify(modal);
-        expect(raw).toContain('/api/plugins/sirsoft-message_bizppurio/admin/notification-bindings');
-        expect(raw).toContain('"method":"POST"');
-        expect(raw).toContain('binding.saved');
-        expect(raw).toContain('"closeModal"');
-        expect(raw).toContain('bizppurioBindings');
-    });
-
-    it('연결 템플릿이 없으면 SMS 대체 토글이 비활성이다(코어와 동일 규칙)', () => {
-        const raw = JSON.stringify(findById(modalRoot, modalBodyId));
-        expect(raw).toContain('"disabled"');
-        expect(raw).toContain("=== ''");
-    });
-
-    it('overlay 는 코어 편집 모달 저장 body(notification-templates PUT)를 건드리지 않는다', () => {
+    it('전역 상태 경로(bz_*)가 접두 치환 없이 그대로 사용된다(면 전용 상태 분기 금지)', () => {
         const raw = JSON.stringify(overlay);
-        expect(raw).not.toContain('/api/admin/notification-templates/');
-        expect(raw).not.toContain('notification_template_form_modal');
+        for (const path of SHARED_GLOBAL_STATE_PATHS) {
+            expect(raw, `${label} 에 ${path} 없음`).toContain(`_global.${path}`);
+            // 면 접두가 붙은 변형(bz_board_* 등)이 존재하면 footer 공유가 깨진다
+            expect(raw).not.toContain(path.replace('bz_', `bz_${idPrefix.replace('bizppurio_', '')}`));
+        }
+    });
+});
+
+describe('3면 패리티 — 공유 축 교차 검증', () => {
+    it('코어 오버레이도 동일한 공유 데이터소스·모달 id 집합을 갖는다(패리티 기준점 고정)', () => {
+        const dsIds = ((coreOverlay as { data_sources?: Array<{ id: string }> }).data_sources ?? []).map((d) => d.id);
+        const modalIds = ((coreOverlay as { modals?: AnyNode[] }).modals ?? []).map((m) => m.id);
+        expect(dsIds).toEqual(SHARED_DATA_SOURCE_IDS);
+        expect(modalIds).toEqual(SHARED_MODAL_IDS);
     });
 
-    it('참조하는 모든 플러그인 i18n 키가 ko·en 에 존재한다', () => {
-        const keys = collectPluginKeys(overlay);
-        expect(keys.length).toBeGreaterThan(0);
-        const resolve = (root: unknown, path: string): unknown =>
-            path.split('.').slice(1).reduce<unknown>((acc, seg) => (acc as Record<string, unknown>)?.[seg], root);
-        for (const key of Array.from(new Set(keys))) {
-            expect(resolve(ko, key), `ko 누락: ${key}`).toBeTruthy();
-            expect(resolve(en, key), `en 누락: ${key}`).toBeTruthy();
-        }
+    it('세 오버레이의 init_actions(탭 진입 요약 맵 조회)가 comment 제외 완전 동일하다', () => {
+        const pick = (o: unknown) => JSON.stringify(stripComments((o as { init_actions?: unknown }).init_actions ?? []));
+        expect(pick(boardOverlay)).toBe(pick(coreOverlay));
+        expect(pick(ecommerceOverlay)).toBe(pick(coreOverlay));
     });
 });

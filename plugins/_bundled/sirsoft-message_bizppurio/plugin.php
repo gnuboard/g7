@@ -151,6 +151,11 @@ class Plugin extends AbstractPlugin
      * 발송이 불가능한 죽은 설정이라 보존할 가치가 없고, 재설치 시 activate() 가 재시딩하며
      * 자동으로 복원된다.
      *
+     * 반대로 우리 소유 테이블(bizppurio_templates·bizppurio_dispatches)은 여기서 손대지 않는다.
+     * 코어 PluginManager 가 "데이터도 함께 삭제" 를 선택했을 때만 rollbackMigrations() 로,
+     * 그것도 uninstall() 호출 **이전에** 제거하기 때문이다. 여기에 dropIfExists 를 더하면
+     * 테이블 정리 책임이 두 곳으로 갈라지고, 데이터 보존을 선택한 운영자의 테이블까지 지운다.
+     *
      * @return bool 제거 성공 여부
      */
     public function uninstall(): bool
@@ -333,16 +338,6 @@ class Plugin extends AbstractPlugin
                 'sensitive' => true,
                 'required' => false,
             ],
-            'template_cache_minutes' => [
-                'type' => 'number',
-                'default' => 60,
-                'label' => ['ko' => '알림톡 내용 캐시 시간(분)', 'en' => 'Alimtalk content cache (minutes)'],
-                'hint' => [
-                    'ko' => '카카오 알림톡 템플릿 내용을 이 시간 동안 기억해 재사용합니다(기본 60분). 이 시간이 지나면 다음 발송 때 최신 내용을 다시 가져옵니다. 0으로 두면 매번 최신 내용을 가져옵니다 — 발송이 많으면 조회 제한에 걸릴 수 있어 권장하지 않습니다. 카카오에서 템플릿을 방금 수정했다면 아래 [캐시 초기화]로 즉시 반영할 수 있습니다.',
-                    'en' => 'Reuses Kakao alimtalk template content for this period (default 60 minutes). After it expires, the latest content is fetched on the next dispatch. Set to 0 to always fetch the latest — not recommended for high volume as it may hit rate limits. If you just edited a template in Kakao, use [Clear cache] below to apply it immediately.',
-                ],
-                'required' => false,
-            ],
         ];
     }
 
@@ -363,7 +358,6 @@ class Plugin extends AbstractPlugin
             'api_key' => '',
             'sender_number' => '',
             'sender_key' => '',
-            'template_cache_minutes' => 60,
         ];
     }
 
@@ -454,6 +448,26 @@ class Plugin extends AbstractPlugin
             LinkNotificationLogListener::class,
             ValidateBizppurioSettingsListener::class,
             InvalidateTokenOnSettingsSaveListener::class,
+        ];
+    }
+
+    /**
+     * 스케줄 작업 목록 반환 (#597 §3.4).
+     *
+     * 검수중(requested) 알림톡 템플릿의 카카오 검수 상태를 30분 주기로 동기화한다.
+     * 커맨드는 requested 행이 없으면 카카오 API 를 호출하지 않으며, 화면의 수동
+     * [새로고침]이 동등 기능을 제공하므로 cron 미가동 환경에서도 승인 확인이 가능하다.
+     *
+     * @return array<int, array<string, string>> 스케줄 정의 목록
+     */
+    public function getSchedules(): array
+    {
+        return [
+            [
+                'command' => 'bizppurio:sync-template-status',
+                'schedule' => 'everyThirtyMinutes',
+                'description' => '비즈뿌리오 알림톡 템플릿 검수 상태 동기화',
+            ],
         ];
     }
 

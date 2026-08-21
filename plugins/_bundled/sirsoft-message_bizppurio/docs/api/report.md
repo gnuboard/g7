@@ -41,7 +41,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| url | string | `http://g7-issue.eh.test/api/plugins/s…` | <!-- TODO: 설명 --> |
+| url | string | `https://api.example.com/api/plugins/sirsoft-message_bizppurio/webhook` | 비즈뿌리오 콘솔에 등록할 발송 결과 리포트 수신 URL (현재 사이트 기준 절대 URL) |
 
 **응답 예시**
 

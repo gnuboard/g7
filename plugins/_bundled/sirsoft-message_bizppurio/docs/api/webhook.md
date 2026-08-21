@@ -27,15 +27,15 @@
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| DEVICE | body | string | 아니오 | max 20 | <!-- TODO: 용도 --> |
-| CMSGID | body | string | 아니오 | max 64 | <!-- TODO: 용도 --> |
-| MSGID | body | string | 아니오 | max 64 | <!-- TODO: 용도 --> |
-| PHONE | body | string | 아니오 | max 20 | <!-- TODO: 용도 --> |
-| MEDIA | body | string | 아니오 | max 10 | <!-- TODO: 용도 --> |
-| RESULT | body | string | 예 | max 10 | <!-- TODO: 용도 --> |
-| REFKEY | body | string | 예 | max 32 | <!-- TODO: 용도 --> |
-| TELRES | body | string | 아니오 | max 10 | <!-- TODO: 용도 --> |
-| KAORES | body | string | 아니오 | max 10 | <!-- TODO: 용도 --> |
+| DEVICE | body | string | 아니오 | max 20 | 발송 메시지 유형(SMS/LMS/MMS/AT 등 비즈뿌리오 코드) |
+| CMSGID | body | string | 아니오 | max 64 | 비즈뿌리오 메시지 키(발송 요청 시 채번된 식별자) |
+| MSGID | body | string | 아니오 | max 64 | 비즈뿌리오 내부 메시지 ID |
+| PHONE | body | string | 아니오 | max 20 | 수신 전화번호 |
+| MEDIA | body | string | 아니오 | max 10 | 실제 발송된 매체 유형(대체발송 시 요청 유형과 다를 수 있음) |
+| RESULT | body | string | 예 | max 10 | 발송 결과 코드 — ResultCodeResolver 가 성공/실패와 사유로 해석 |
+| REFKEY | body | string | 예 | max 32 | 발송 시 G7 이 부여한 참조 키 — 이 값으로 bizppurio_dispatches 행을 찾는다 |
+| TELRES | body | string | 아니오 | max 10 | 대체발송(문자) 결과 코드 |
+| KAORES | body | string | 아니오 | max 10 | 알림톡 발송 결과 코드 |
 
 **요청 예시**
 
@@ -60,11 +60,21 @@ Content-Type: application/json
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: http-403 — 응답 필드는 사람이 작성하세요. -->
+이 엔드포인트는 `data` 를 반환하지 않는다. 비즈뿌리오 URL PUSH 규약상 수신 사실만 알리면 되므로,
+성공·실패와 무관하게 `success: true` + 수신 확인 메시지만 담은 200 봉투를 돌려준다.
+리포트 해석 결과(성공/실패·사유)는 `bizppurio_dispatches` 행에 기록되며 응답에는 싣지 않는다.
 
 **응답 예시**
 
-<!-- 실측 제외: http-403 — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+Content-Type: application/json
+
+{
+    "success": true,
+    "message": "발송 결과 리포트를 수신했습니다."
+}
+```
 
 **에러 응답**
 

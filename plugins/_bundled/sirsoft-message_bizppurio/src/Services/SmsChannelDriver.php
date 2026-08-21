@@ -8,7 +8,6 @@ use App\Models\User;
 use App\Notifications\BaseNotification;
 use App\Notifications\GenericNotification;
 use App\Services\NotificationDefinitionService;
-use App\Services\NotificationTemplateService;
 use App\Services\PluginSettingsService;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Str;
@@ -18,30 +17,30 @@ use Plugins\Sirsoft\MessageBizppurio\Enums\DispatchStatus;
 use Plugins\Sirsoft\MessageBizppurio\Exceptions\NotificationSendSkippedException;
 use Plugins\Sirsoft\MessageBizppurio\Jobs\SendMessageJob;
 use Plugins\Sirsoft\MessageBizppurio\Repositories\Contracts\BizppurioDispatchRepositoryInterface;
+use Plugins\Sirsoft\MessageBizppurio\Repositories\Contracts\BizppurioTemplateRepositoryInterface;
 
 /**
- * 코어 알림 시스템의 sms 채널 드라이버.
+ * 코어 알림 시스템의 sms 채널 드라이버 (#597 §3.5).
  *
  * ChannelManager::extend('sms', …)(ServiceProvider::boot)로 등록되어, 코어가
  * `via()` 에서 'sms' 채널을 선택하면 이 드라이버의 send() 가 호출된다. Laravel 채널 계약
  * (`send($notifiable, Notification $notification)`)을 구현한다.
  *
- * 처리 흐름(계획서 Phase 3 ②):
- *  1. sms 채널 알림 템플릿 resolve → 본문 렌더(변수 치환). 템플릿 없으면
- *     NotificationSendSkippedException(Phase 6 에서 3영역 기본 body 시드 예정 — A안 확정).
+ * 본문 소스는 코어 알림 템플릿이 아니라 bizppurio_templates.sms_body 다 — 비즈뿌리오
+ * 탭에서 운영자가 알림별로 입력한 본문(#{var} 치환)이 그대로 발송된다. sms_body 는
+ * 로케일별 맵이며 수신자 로케일로 렌더한다(알림톡 content 의 단일 언어 제약은 카카오
+ * 승인 규칙 때문이고 SMS 에는 적용되지 않는다 — §14.3).
+ *
+ * 발송 게이트: 행 존재 + is_active + 어느 로케일에든 본문 있음. sms_only 여부와 무관하다 —
+ * sms 채널이 켜진 알림이면 발송하며, sms_only 는 화면 표시·알림톡 게이트용 플래그다.
+ *
+ * 처리 흐름:
+ *  1. 템플릿 행 조회 → 게이트 판정. 불충족 시 NotificationSendSkippedException
+ *     (코어 NotificationDispatcher 의 catch 가 실패로 기록 — 이슈 #28 계약 유지).
  *  2. 전화번호 해석: 회원=Notifiable->mobile, 비회원=알림 data 의 _recipient_phone
  *     (게스트 전화번호는 각 도메인 extract_data 리스너가 data 에 주입 — D1).
- *  3. refkey(우리 부여 unique 키) 생성 → SmsTypeResolver 로 SMS/LMS 판별 →
+ *  3. sms_body 의 #{var} 치환 → refkey 생성 → SmsTypeResolver 로 SMS/LMS 판별 →
  *     MessagePayloadBuilder 로 payload 조립 → SendMessageJob 위임(발송·재시도는 Job 책임).
- *
- * 1~2단계는 비즈뿌리오 API 호출 자체를 시도하지 못하는 사전 조건 미비 상태라
- * NotificationSendSkippedException 을 던진다. 코어 NotificationDispatcher 의
- * catch(\Exception)가 이를 channel_send_failed 훅으로 연결해, 발송 이력에 "성공"이 아닌
- * "실패"로 정확히 기록되게 한다(조용히 return 하면 코어가 "정상 처리 완료"로 오인해 성공으로
- * 기록하는 문제 — 이슈 #28).
- *
- * 발송 이력(bizppurio_dispatches) 영속화는 Phase 4(테이블 신설)에서 이 흐름에 연결한다.
- * Phase 3 은 refkey 생성 + payload 조립 + Job 위임까지 담당한다.
  */
 class SmsChannelDriver
 {
@@ -52,17 +51,19 @@ class SmsChannelDriver
     public const RECIPIENT_PHONE_KEY = '_recipient_phone';
 
     /**
-     * @param  NotificationTemplateService  $templateService  sms 채널 본문 템플릿 resolve
-     * @param  NotificationDefinitionService  $definitionService  알림 유형의 사람이 읽는 이름 조회(스킵 예외 메시지용)
+     * @param  NotificationDefinitionService  $definitionService  알림 유형의 사람이 읽는 이름 조회(스킵 예외 메시지·LMS 제목용)
+     * @param  BizppurioTemplateRepositoryInterface  $templates  알림 템플릿 행 조회(발송 게이트·본문 소스)
+     * @param  AlimtalkPayloadMapper  $payloadMapper  sms_body 의 #{var} 치환
      * @param  SmsTypeResolver  $typeResolver  SMS/LMS byte 판별
      * @param  MessagePayloadBuilder  $payloadBuilder  발송 payload 조립
-     * @param  BizppurioDispatchRepositoryInterface  $dispatches  발송 이력 영속화(Phase 4)
+     * @param  BizppurioDispatchRepositoryInterface  $dispatches  발송 이력 영속화
      * @param  DispatchLinkContext  $linkContext  발송 사이클 refkey↔코어 로그 연결 컨텍스트(A-2)
      * @param  PluginSettingsService  $pluginSettings  검수 모드 여부 조회(이력 스냅샷용)
      */
     public function __construct(
-        private readonly NotificationTemplateService $templateService,
         private readonly NotificationDefinitionService $definitionService,
+        private readonly BizppurioTemplateRepositoryInterface $templates,
+        private readonly AlimtalkPayloadMapper $payloadMapper,
         private readonly SmsTypeResolver $typeResolver,
         private readonly MessagePayloadBuilder $payloadBuilder,
         private readonly BizppurioDispatchRepositoryInterface $dispatches,
@@ -71,17 +72,21 @@ class SmsChannelDriver
     ) {}
 
     /**
-     * 알림 유형의 사람이 읽는 이름을 반환합니다 (스킵 예외 메시지용).
+     * 알림 유형의 사람이 읽는 이름을 반환합니다 (스킵 예외 메시지·LMS 제목용).
      *
      * 정의 조회 실패·이름 미설정 시 코드값(type)을 그대로 반환한다(안전 폴백).
      *
+     * LMS 제목으로 쓸 때는 수신자 로케일을 넘긴다 — 인자를 생략하면 앱 로케일이 적용되어
+     * 본문과 제목의 언어가 갈린다. 운영자에게 보이는 스킵 예외 메시지는 앱 로케일이 맞다.
+     *
      * @param  string  $type  알림 유형 코드값 (welcome 등)
+     * @param  string|null  $locale  렌더 로케일 (null 이면 현재 앱 로케일)
      * @return string 사람이 읽는 이름 또는 코드값
      */
-    private function resolveTypeLabel(string $type): string
+    private function resolveTypeLabel(string $type, ?string $locale = null): string
     {
         try {
-            $label = $this->definitionService->resolve($type)?->getLocalizedName();
+            $label = $this->definitionService->resolve($type)?->getLocalizedName($locale);
 
             return $label !== null && $label !== '' ? $label : $type;
         } catch (\Throwable $e) {
@@ -106,11 +111,11 @@ class SmsChannelDriver
 
         $type = $notification->getType();
 
-        // 1. sms 채널 본문 템플릿 resolve (없으면 발송 안 함 — Phase 6 에서 기본 body 시드)
+        // 1. 템플릿 행 조회 + 게이트 판정 (행 없음·비활성·본문 없음 → skip).
         //    코어 NotificationDispatcher::sendToNotifiable()의 catch(\Exception)가 이 예외를
         //    channel_send_failed 훅으로 연결해, 발송 이력에 "성공"이 아닌 "실패"로 기록되게 한다.
-        $template = $this->templateService->resolve($type, DispatchChannel::Sms->value);
-        if ($template === null || ! $template->is_active) {
+        $template = $this->templates->findByType($type);
+        if ($template === null || ! $template->is_active || ! $template->hasSmsBody()) {
             throw new NotificationSendSkippedException(
                 __('sirsoft-message_bizppurio::messages.send_skipped.sms_template_missing', ['type' => $this->resolveTypeLabel($type)])
             );
@@ -124,22 +129,27 @@ class SmsChannelDriver
             );
         }
 
-        // 3. 본문 렌더 (변수 치환)
+        // 3. 본문 렌더 — 수신자 로케일의 sms_body 를 골라 #{var} 치환(알림톡 본문과 동일 규칙).
+        //    로케일 해석은 코어와 같은 규약(BaseNotification::resolveNotifiableLocale)을 쓴다.
         $locale = BaseNotification::resolveNotifiableLocale($notifiable);
-        $rendered = $template->replaceVariables($notification->getData(), $locale);
-        $message = (string) ($rendered['body'] ?? '');
+        $message = $this->payloadMapper->substituteText(
+            trim($template->getLocalizedSmsBody($locale)),
+            $notification->getData()
+        );
         if (trim($message) === '') {
             throw new NotificationSendSkippedException(
                 __('sirsoft-message_bizppurio::messages.send_skipped.message_body_empty', ['type' => $this->resolveTypeLabel($type)])
             );
         }
 
-        // 4. refkey 생성 → SMS/LMS 판별 → payload 조립
+        // 4. refkey 생성 → SMS/LMS 판별 → payload 조립.
+        //    LMS 제목은 알림 정의 이름이며, 본문과 같은 수신자 로케일로 렌더한다 — 본문만
+        //    로케일을 따르고 제목이 앱 로케일이면 한 통 안에서 언어가 갈린다.
         $refkey = $this->generateRefkey();
         $channel = $this->typeResolver->resolve($message);
 
         $payload = $channel === DispatchChannel::Lms
-            ? $this->payloadBuilder->buildLms($to, $message, $refkey, (string) ($rendered['subject'] ?? ''))
+            ? $this->payloadBuilder->buildLms($to, $message, $refkey, $this->resolveTypeLabel($type, $locale))
             : $this->payloadBuilder->buildSms($to, $message, $refkey);
 
         // 5. 발송 이력 pending 생성(Phase 4) → Job 위임. Job 이 refkey 로 조회해 sent/failed 갱신.

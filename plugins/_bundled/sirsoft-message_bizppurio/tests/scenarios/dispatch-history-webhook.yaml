@@ -67,7 +67,6 @@ test_files:
   - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Jobs/SendMessageJobTest.php
   - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Models/BizppurioDispatchTest.php
   - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Repositories/BizppurioDispatchRepositoryTest.php
-  - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Repositories/BizppurioNotificationBindingRepositoryTest.php
   - plugins/_bundled/sirsoft-message_bizppurio/tests/Feature/Installation/InstallationTest.php
 
 audit:

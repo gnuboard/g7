@@ -1,0 +1,131 @@
+feature: 비즈뿌리오 알림톡 템플릿 라이프사이클 (#597)
+
+description: |
+  알림톡 템플릿을 시스템에서 작성(draft) → 검수 신청(requested) → 카카오 승인(approved)
+  후 발송 활성화하는 전 흐름. 발송 판정은 DB(bizppurio_templates)가 유일한 근거다
+  (발송 전 실시간 조회 폐지 — 이슈 요구).
+
+  핵심 동작:
+    - 작성: 알림 1건당 1행(unique), content 는 kapi 등록 페이로드 JSON 단일 컬럼
+      (유형별 컬럼 분해 없음 — 카카오 규격 변경에 스키마 불변)
+    - 검수 신청: template_code 자체 채번(g7_{md5 8}_{세대}, codeCheck 충돌 시 세대 증가
+      최대 3회) → kapi add(최초)/update(재신청) → request → requested
+    - 전이 가드: content 수정·삭제는 draft/rejected 만 (requested 는 신청 취소 먼저,
+      approved 는 승인 취소 먼저 — 승인 취소 즉시 발송 게이트 차단 경고)
+    - 동기화: 스케줄러(30분, requested 있을 때만 list 일괄 대조) + 수동 새로고침(detail 1건).
+      승인 전이 시 content 를 approved_content 로 동결(발송 SSoT), 반려 시 comments 저장
+    - 화면: 3면(코어/게시판/이커머스) '비즈뿌리오' 통합 탭(sms 탭 숨김 + tab_channels 규칙)
+      행 하단 라이프사이클 UI + 작성 모달(4×4 유형) + 플러그인 관리 화면(DB 목록)
+
+  axis 설계 노트:
+    - content_variant 는 카카오 메시지유형×강조유형의 대표 변형 4종이다 — 유형별 조건부
+      검증·페이로드 보존이 각 변형에서 실측된다. 유형 전 조합(4×4)의 세부 판정은
+      FormRequest 매트릭스 effects(데이터셋 전수)가 담당한다.
+    - 전이 axis 는 유형과 직교(전이 로직은 content 를 불투명 JSON 으로 다룬다)하므로
+      대표 유형(ba_none)으로만 교차한다 — exclusions 에 명시.
+    - 동기화 경로(스케줄러/수동)·화면 면(3면+관리)은 조합 폭발 축이 아니라 효과 축이라
+      effects 로 검증한다(스케줄러=커맨드 테스트, 3면 패리티=렌더 테스트, 브라우저=e2e).
+
+axes:
+  content_variant: [ba_none, ex_text, ad_image, mi_item_list]
+  transition: [draft_to_requested, requested_to_approved, requested_to_rejected, approved_cancel, requested_cancel]
+
+exclusions:
+  - { content_variant: [ex_text, ad_image, mi_item_list], transition: [requested_to_approved, requested_to_rejected, approved_cancel, requested_cancel], reason: "전이 규칙은 유형과 직교(content 는 불투명 JSON) — 전이 axis 는 대표 유형(ba_none)으로 검증하고, 유형 axis 는 검증 매트릭스·신청 페이로드 보존으로 검증" }
+
+effects:
+  # 데이터 모델·상태 (S1)
+  - status_enum_maps_kapi_service_status_vocabulary
+  - unknown_service_status_does_not_overwrite_state
+  - notification_type_unique_one_row_per_definition
+  - model_casts_content_snapshot_inspection_json
+  # 검수 신청 (S2)
+  - request_generates_code_with_codecheck_retry_up_to_three_generations
+  - first_request_calls_add_then_request_with_full_content_payload
+  - rerequest_calls_update_not_add
+  - request_without_content_rejected_422
+  - request_snapshots_sender_key
+  - kapi_failure_reason_surfaced_in_errors_bizppurio_message
+  # 전이 가드 (S2)
+  - content_edit_locked_outside_draft_rejected
+  - concurrent_duplicate_request_claims_single_submission
+  - request_chain_click_actions_carry_reentrancy_guard
+  - sms_delivery_fields_editable_in_any_status
+  - cancel_request_returns_to_draft
+  - cancel_approval_returns_to_draft_keeping_snapshot
+  - cancel_approval_immediately_blocks_dispatch_gate
+  - delete_removes_kakao_side_only_in_deletable_state
+  # 유형 매트릭스 (S2 — FormRequest)
+  - ex_mi_require_template_extra
+  - text_requires_title_and_subtitle
+  - image_requires_image_url
+  - item_list_requires_two_to_ten_items
+  - buttons_max_five_with_linktype_conditional_fields
+  - quick_replies_restricted_linktypes
+  - highlight_length_depends_on_thumbnail_presence
+  - server_prunes_irrelevant_type_fields_before_save
+  # 이미지 업로드 프록시 (S2 — 부록 A-7)
+  - image_upload_proxies_to_kapi_and_returns_url
+  - image_upload_rejects_out_of_spec_file_before_kapi
+  # 동기화 (S3)
+  - scheduler_skips_kapi_when_no_requested_rows
+  - scheduler_uses_list_batch_not_per_row_detail
+  - approval_transition_freezes_content_into_approved_content
+  - rejection_transition_stores_comments_detail
+  - manual_sync_updates_single_row
+  # 화면 (S5)
+  - bizppurio_tab_replaces_sms_and_alimtalk_tabs
+  - tab_visible_when_any_of_tab_channels_active
+  - row_footer_shows_status_badge_and_lifecycle_actions
+  - compose_modal_switches_conditional_fields_by_type
+  - manage_screen_lists_db_rows_with_merge_query_round_trip
+  - sms_modal_saves_body_via_delivery_upsert
+  - sms_modal_edits_body_per_locale_tab
+  # 업로드 진행 상태 배선 (라운드 5 — 이 축이 effect 에 없어 배선 단언만 지우면 룰이 조용했다)
+  - upload_in_progress_locks_save_buttons_not_cancel
+  - upload_rejects_concurrent_selection_while_in_flight
+  - upload_result_discarded_when_modal_reseeded
+  # 화면·서버 판정 일치 (라운드 5)
+  - save_chain_click_actions_carry_reentrancy_guard
+  - manage_row_actions_match_row_footer_visibility
+  - sms_body_presence_and_preview_resolved_by_server
+
+scenarios:
+  - id: bizppurio_tab_integration_e2e
+    description: 코어 알림 설정에서 문자·알림톡 개별 탭이 사라지고 '비즈뿌리오' 통합 탭이 노출되며, 행 하단에 알림톡·SMS 라이프사이클 UI 가 렌더된다 (i18n 원문 노출 0)
+    effects:
+      - bizppurio_tab_replaces_sms_and_alimtalk_tabs
+      - row_footer_shows_status_badge_and_lifecycle_actions
+  - id: bizppurio_compose_modal_e2e
+    description: 작성 모달을 열고 강조 유형(NONE→TEXT→IMAGE→ITEM_LIST)을 전환하면 조건부 필드 블록이 등장/소멸한다
+    effects:
+      - compose_modal_switches_conditional_fields_by_type
+  - id: bizppurio_manage_round_trip_e2e
+    description: 플러그인 관리 화면에서 필터·페이지 상태가 URL 에 보존되고(mergeQuery) SMS 본문 모달이 저장 왕복한다
+    effects:
+      - manage_screen_lists_db_rows_with_merge_query_round_trip
+      - sms_modal_saves_body_via_delivery_upsert
+
+test_files:
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Enums/BizppurioTemplateStatusTest.php
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Models/BizppurioTemplateTest.php
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Services/BizppurioTemplateServiceTest.php
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Feature/Template/BizppurioTemplateControllerTest.php
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Feature/Template/SyncTemplateStatusCommandTest.php
+  - plugins/_bundled/sirsoft-message_bizppurio/resources/js/__tests__/handlers/uploadTemplateImage.test.ts
+  - plugins/_bundled/sirsoft-message_bizppurio/resources/js/__tests__/layouts/notification_tab_lifecycle.test.tsx
+  - plugins/_bundled/sirsoft-message_bizppurio/resources/js/__tests__/layouts/plugin_settings_manage.test.tsx
+  - plugins/_bundled/sirsoft-message_bizppurio/resources/js/__tests__/layouts/template_request_reentrancy_guard.test.ts
+  # 3면 패리티(오버레이 전문 동일성) — 파일째 지워도 룰이 울지 않던 사각을 닫는다.
+  # plugin_settings.test.tsx 는 plugin-settings.yaml 이 소유하므로 여기에 중복 등재하지 않는다.
+  - plugins/_bundled/sirsoft-message_bizppurio/resources/js/__tests__/layouts/notification_tab_board_ecommerce.test.tsx
+  # E2E spec — 통합 탭 노출(tab_channels 활성 규칙 포함)은 브라우저 실측이 SSoT 라 여기에도 선언
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Playwright/specs/admin/template-lifecycle-matrix.spec.ts
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Playwright/specs/admin/template-lifecycle.spec.ts
+
+e2e_files:
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Playwright/specs/admin/template-lifecycle-matrix.spec.ts
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Playwright/specs/admin/template-lifecycle.spec.ts
+
+audit:
+  status: codified

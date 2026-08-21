@@ -87,9 +87,11 @@ effects:
   - settings_save_success_invalidates_token_cache_regardless_of_changed_fields
   - settings_save_failure_does_not_invalidate_token_cache
   - other_plugin_settings_save_does_not_invalidate_this_plugin_token_cache
-  # 탭 전환 (환경설정 ↔ 알림톡 템플릿) — query.tab 변경 시 if 조건부 패널 재평가 필요
+  # 탭 전환 (환경설정 ↔ 알림 템플릿 관리) — query.tab 변경 시 if 조건부 패널 재평가 필요
   - tab_buttons_use_navigate_not_replaceurl  # replaceUrl 은 URL만 바꿔 if 재평가 없음 → 화면 미전환 회귀
-  - alimtalk_template_list_error_shown_with_kakao_reason  # 목록 조회 실패 시 카카오 사유(kakao_message)를 배너로 노출
+  # 구 '알림톡 템플릿'(kapi 실시간 목록 조회) 탭의 오류 배너 effect 는 제거했다 — 그 화면 자체가
+  # #597 §3.5 에서 DB 기반 라이프사이클로 대체돼 사라졌고, 남겨 두면 존재하지 않는 화면을
+  # 서술하는 계약이 된다. 현 오류 표면화 계약은 bizppurio-template-lifecycle.yaml 이 소유한다.
   # 다국어
   - all_referenced_i18n_keys_exist_in_ko_and_en
   # 설치·활성화 (백엔드)

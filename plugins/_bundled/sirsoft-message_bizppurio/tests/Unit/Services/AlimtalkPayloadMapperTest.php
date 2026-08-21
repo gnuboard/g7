@@ -19,6 +19,9 @@ class AlimtalkPayloadMapperTest extends PluginTestCase
         return new AlimtalkPayloadMapper;
     }
 
+    /**
+     * @effects snapshot_content_substituted_with_notification_data
+     */
     public function test_본문의_변수를_치환해_message로_반환한다(): void
     {
         $result = $this->mapper()->map(
@@ -29,6 +32,9 @@ class AlimtalkPayloadMapperTest extends PluginTestCase
         $this->assertSame('홍길동님 주문 A123 완료', $result['message']);
     }
 
+    /**
+     * @effects snapshot_buttons_mapped_to_dispatch_button_fields
+     */
     public function test_웹링크_버튼을_발송형식으로_변환하고_url변수를_치환한다(): void
     {
         $result = $this->mapper()->map(
@@ -56,6 +62,9 @@ class AlimtalkPayloadMapperTest extends PluginTestCase
         $this->assertArrayNotHasKey('linkMo', $button);
     }
 
+    /**
+     * @effects snapshot_buttons_mapped_to_dispatch_button_fields
+     */
     public function test_앱링크_전화_플러그인_버튼_필드를_매핑한다(): void
     {
         $result = $this->mapper()->map(
@@ -271,5 +280,68 @@ class AlimtalkPayloadMapperTest extends PluginTestCase
         );
 
         $this->assertArrayNotHasKey('button', $result['extra']);
+    }
+
+    public function test_substitute_text는_임의_텍스트의_변수를_치환한다(): void
+    {
+        // 대체 SMS·SMS 단독 본문(sms_body)이 이 공개 진입점으로 치환된다 (#597 §3.5).
+        $result = (new AlimtalkPayloadMapper)->substituteText(
+            '[샵] #{name}님 #{order_number} 주문',
+            ['name' => '김철수', 'order_number' => 'A1'],
+        );
+
+        $this->assertSame('[샵] 김철수님 A1 주문', $result);
+    }
+
+    /**
+     * @effects snapshot_content_substituted_with_notification_data, snapshot_buttons_mapped_to_dispatch_button_fields
+     */
+    public function test_등록_페이로드_형태의_승인_스냅샷을_그대로_소비한다(): void
+    {
+        // #597: 발송 소스가 kapi 상세 응답에서 등록 페이로드 스냅샷(approved_content)으로
+        // 전환됐다. 두 형태는 필드명이 동일하다는 대응표를 여기서 고정한다:
+        //   templateContent→message / buttons[].linkMo→button[].url_mobile /
+        //   quickReplies→quickreply / templateTitle→title / templateHeader→header /
+        //   templateItem→item / templateItemHighlight→itemhighlight / templateRepresentLink→link
+        $snapshot = [
+            'templateName' => '주문 완료',
+            'templateMessageType' => 'MI',
+            'templateEmphasizeType' => 'ITEM_LIST',
+            'templateContent' => '#{name}님 주문 완료',
+            'templateTitle' => '주문 #{order_number}',
+            'templateHeader' => '헤더',
+            'categoryCode' => '001001',
+            'buttons' => [
+                ['name' => '주문조회', 'linkType' => 'WL', 'linkMo' => 'https://m.shop/#{order_number}'],
+            ],
+            'quickReplies' => [
+                ['name' => '문의', 'linkType' => 'BK'],
+            ],
+            'templateItem' => [
+                'list' => [
+                    ['title' => '품목', 'description' => '#{item_name}'],
+                    ['title' => '수량', 'description' => '#{qty}'],
+                ],
+                'summary' => ['title' => '합계', 'description' => '#{total}원'],
+            ],
+            'templateItemHighlight' => ['title' => '#{name}님 주문', 'description' => '결제 완료'],
+            'templateRepresentLink' => ['linkMo' => 'https://m.shop/orders'],
+        ];
+
+        $result = (new AlimtalkPayloadMapper)->map($snapshot, [
+            'name' => '김철수', 'order_number' => 'A1', 'item_name' => '연필', 'qty' => '2', 'total' => '1000',
+        ]);
+
+        $this->assertSame('김철수님 주문 완료', $result['message']);
+        $this->assertSame('https://m.shop/A1', $result['extra']['button'][0]['url_mobile']);
+        $this->assertSame('BK', $result['extra']['quickreply'][0]['type']);
+        $this->assertSame('주문 A1', $result['extra']['title']);
+        $this->assertSame('헤더', $result['extra']['header']);
+        $this->assertSame('연필', $result['extra']['item']['list'][0]['description']);
+        $this->assertSame('1000원', $result['extra']['item']['summary']['description']);
+        $this->assertSame('김철수님 주문', $result['extra']['itemhighlight']['title']);
+        $this->assertSame('https://m.shop/orders', $result['extra']['link']['url_mobile']);
+        // 등록 전용 메타(templateName 등)는 발송 extra 에 실리지 않는다.
+        $this->assertArrayNotHasKey('templateName', $result['extra']);
     }
 }
