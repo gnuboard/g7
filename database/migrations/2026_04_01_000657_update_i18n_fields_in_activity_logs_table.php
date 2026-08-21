@@ -22,22 +22,39 @@ return new class extends Migration
         });
 
         Schema::table('activity_logs', function (Blueprint $table) {
-            $table->string('description_key', 150)->nullable()->after('action')
-                ->comment('다국어 번역 키 (예: activity_log.description.user_create)');
-            $table->text('description_params')->nullable()->after('description_key')
-                ->comment('다국어 번역 파라미터 (예: {"user_id": "abc-123"})');
-            $table->mediumText('changes')->nullable()->after('properties')
-                ->comment('구조화된 변경 이력 (필드별 label_key, old, new, type)');
+            if (! Schema::hasColumn('activity_logs', 'description_key')) {
+                $table->string('description_key', 150)->nullable()->after('action')
+                    ->comment('다국어 번역 키 (예: activity_log.description.user_create)');
+            }
 
-            $table->index(
-                ['loggable_type', 'loggable_id', 'created_at'],
-                'idx_activity_logs_loggable'
-            );
-            $table->index(
-                ['log_type', 'action', 'created_at'],
-                'idx_activity_logs_type_action_date'
-            );
+            if (! Schema::hasColumn('activity_logs', 'description_params')) {
+                $table->text('description_params')->nullable()->after('description_key')
+                    ->comment('다국어 번역 파라미터 (예: {"user_id": "abc-123"})');
+            }
+
+            if (! Schema::hasColumn('activity_logs', 'changes')) {
+                $table->mediumText('changes')->nullable()->after('properties')
+                    ->comment('구조화된 변경 이력 (필드별 label_key, old, new, type)');
+            }
         });
+
+        if (! Schema::hasIndex('activity_logs', 'idx_activity_logs_loggable')) {
+            Schema::table('activity_logs', function (Blueprint $table) {
+                $table->index(
+                    ['loggable_type', 'loggable_id', 'created_at'],
+                    'idx_activity_logs_loggable'
+                );
+            });
+        }
+
+        if (! Schema::hasIndex('activity_logs', 'idx_activity_logs_type_action_date')) {
+            Schema::table('activity_logs', function (Blueprint $table) {
+                $table->index(
+                    ['log_type', 'action', 'created_at'],
+                    'idx_activity_logs_type_action_date'
+                );
+            });
+        }
     }
 
     public function down(): void
@@ -48,9 +65,11 @@ return new class extends Migration
             $table->dropColumn(['description_key', 'description_params', 'changes']);
         });
 
-        Schema::table('activity_logs', function (Blueprint $table) {
-            $table->text('description')->nullable()->after('action')
-                ->comment('활동 설명');
-        });
+        if (! Schema::hasColumn('activity_logs', 'description')) {
+            Schema::table('activity_logs', function (Blueprint $table) {
+                $table->text('description')->nullable()->after('action')
+                    ->comment('활동 설명');
+            });
+        }
     }
 };

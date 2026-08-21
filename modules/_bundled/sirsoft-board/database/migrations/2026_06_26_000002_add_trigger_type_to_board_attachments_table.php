@@ -21,9 +21,13 @@ return new class extends Migration
                 ->default('admin')
                 ->after('created_by')
                 ->comment('삭제 조치 주체 (admin: 관리자, user: 사용자 직접 삭제, cascade: 게시글 삭제 연쇄)');
-
-            $table->index(['board_id', 'post_id', 'trigger_type'], 'idx_board_post_trigger');
         });
+
+        if (! Schema::hasIndex('board_attachments', 'idx_board_post_trigger')) {
+            Schema::table('board_attachments', function (Blueprint $table) {
+                $table->index(['board_id', 'post_id', 'trigger_type'], 'idx_board_post_trigger');
+            });
+        }
     }
 
     /**
