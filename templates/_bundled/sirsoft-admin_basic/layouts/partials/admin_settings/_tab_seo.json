@@ -405,6 +405,107 @@
                   "props": {
                     "className": "form-label"
                   },
+                  "text": "$t:admin.settings.seo.og_image_default"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-tertiary mb-2"
+                  },
+                  "text": "$t:admin.settings.seo.og_image_default_desc"
+                },
+                {
+                  "id": "og_image_default_uploader",
+                  "type": "composite",
+                  "name": "FileUploader",
+                  "props": {
+                    "collection": "og_image_default",
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "maxFiles": 1,
+                    "maxSize": "{{_global.settings?.upload?.max_file_size ?? _global.uploadSettings?.max_file_size ?? 10}}",
+                    "accept": "{{_global.settings?.upload?.allowed_extensions_formatted ?? _global.uploadSettings?.allowed_extensions_formatted ?? '.jpg,.jpeg,.png,.gif,.svg,.webp'}}",
+                    "imageCompression": {
+                      "maxSizeMB": 1,
+                      "maxWidthOrHeight": "{{_global.settings?.upload?.image_max_width ?? _global.uploadSettings?.image_max_width ?? 1200}}"
+                    },
+                    "initialFiles": "{{settings?.data?.seo?.og_image_default ?? []}}",
+                    "autoUpload": false,
+                    "uploadTriggerEvent": "upload:og_image_default",
+                    "confirmBeforeRemove": true
+                  },
+                  "actions": [
+                    {
+                      "event": "onFilesChange",
+                      "type": "change",
+                      "if": "{{$args[0] && $args[0].length > 0}}",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "hasChanges": true
+                      }
+                    },
+                    {
+                      "event": "onUploadComplete",
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "hasChanges": true,
+                        "form.seo.og_image_default": "{{[...(_local.form?.seo?.og_image_default ?? []), ...$args[0]]}}"
+                      }
+                    },
+                    {
+                      "event": "onUploadComplete",
+                      "type": "custom",
+                      "handler": "toast",
+                      "params": {
+                        "type": "success",
+                        "message": "$t:attachment.upload_success"
+                      }
+                    },
+                    {
+                      "event": "onUploadError",
+                      "type": "custom",
+                      "handler": "toast",
+                      "params": {
+                        "type": "error",
+                        "message": "{{$args[0]}}"
+                      }
+                    },
+                    {
+                      "event": "onRemove",
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "hasChanges": true,
+                        "form.seo.og_image_default": "{{(_local.form?.seo?.og_image_default ?? []).filter(item => (item.hash || item.id) !== $args[0])}}"
+                      }
+                    },
+                    {
+                      "event": "onRemove",
+                      "type": "custom",
+                      "handler": "toast",
+                      "params": {
+                        "type": "info",
+                        "message": "$t:attachment.deleted"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "form-label"
+                  },
                   "text": "$t:admin.settings.seo.twitter_default_card"
                 },
                 {
@@ -1197,7 +1298,7 @@
                       "props": {
                         "type": "button",
                         "disabled": "{{_computed.isReadOnly || ['queued','running','writing'].includes(sitemap_status?.data?.progress?.status ?? '')}}",
-                        "className": "w-full md:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
+                        "className": "w-full md:w-auto px-4 py-2 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
                       },
                       "text": "{{['queued','running','writing'].includes(sitemap_status?.data?.progress?.status ?? '') ? $t('admin.settings.seo.sitemap_regenerating') : $t('admin.settings.seo.sitemap_manual_update')}}",
                       "actions": [

@@ -15,12 +15,14 @@
             "og": {
                 "type": "website",
                 "title": "{{page.data.title ?? ''}}",
-                "description": "{{page.data.excerpt ?? ''}}"
+                "description": "{{page.data.seo_meta?.description ?? ''}}",
+                "image": "{{page.data.content_thumbnail_url ?? ''}}"
             },
             "structured_data": {
                 "@type": "WebPage",
                 "name": "{{page.data.title ?? ''}}",
-                "description": "{{page.data.excerpt ?? ''}}",
+                "description": "{{page.data.seo_meta?.description ?? ''}}",
+                "image": "{{page.data.content_thumbnail_url ?? ''}}",
                 "datePublished": "{{page.data.created_at ?? ''}}",
                 "dateModified": "{{page.data.updated_at ?? ''}}"
             }
@@ -302,7 +304,7 @@
                                                                         "if": "{{!att_item.is_image}}",
                                                                         "props": {
                                                                             "name": "file",
-                                                                            "className": "text-gray-400 text-sm flex-shrink-0"
+                                                                            "className": "text-gray-400 dark:text-gray-500 text-sm flex-shrink-0"
                                                                         }
                                                                     },
                                                                     {

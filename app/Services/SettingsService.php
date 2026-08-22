@@ -147,6 +147,9 @@ class SettingsService
         // 첨부파일 정보 추가 (general 카테고리에)
         $settings['general']['site_logo'] = $this->getSiteLogoAttachment();
 
+        // 사이트 기본 OG 이미지 첨부 정보 (seo 카테고리에 — site_logo 와 동형)
+        $settings['seo']['og_image_default'] = $this->getAttachmentListSetting('seo.og_image_default');
+
         return $settings;
     }
 
@@ -437,22 +440,51 @@ class SettingsService
      */
     private function getSiteLogoAttachment(): array
     {
-        // JSON 설정에서 site_logo ID 배열 조회
-        $siteLogoIds = $this->configRepository->get('general.site_logo', []);
+        return $this->getAttachmentListSetting('general.site_logo');
+    }
+
+    /**
+     * 첨부 ID 배열 설정을 첨부 목록(리소스 배열)으로 해석합니다.
+     *
+     * site_logo / og_image_default 처럼 "첨부 ID 배열 + 화면은 첨부 객체" 패턴의
+     * 설정이 공유하는 로드 경로입니다.
+     *
+     * @param  string  $configKey  설정 키 (예: 'general.site_logo')
+     * @return array 첨부 목록 (없으면 빈 배열)
+     */
+    private function getAttachmentListSetting(string $configKey): array
+    {
+        // JSON 설정에서 첨부 ID 배열 조회
+        $ids = $this->configRepository->get($configKey, []);
 
         // 빈 배열이거나 배열이 아닌 경우
-        if (empty($siteLogoIds) || ! is_array($siteLogoIds)) {
+        if (empty($ids) || ! is_array($ids)) {
             return [];
         }
 
         // ID 배열로 첨부파일 조회 (DB order 기준 정렬)
-        $attachments = $this->attachmentRepository->findByIds($siteLogoIds);
+        $attachments = $this->attachmentRepository->findByIds($ids);
 
         if ($attachments->isEmpty()) {
             return [];
         }
 
         return $attachments->map(fn ($attachment) => (new AttachmentResource($attachment))->toListArray())->toArray();
+    }
+
+    /**
+     * 사이트 기본 OG 이미지 URL 을 반환합니다.
+     *
+     * SeoMetaResolver 가 레이아웃 og.image 선언(도메인 캐시 포함)이 빈 값일 때
+     * 마지막 폴백으로 사용합니다 (공개 이슈 #22 — 사이트 기본 공유 이미지).
+     *
+     * @return string|null 첫 번째 이미지 첨부의 다운로드 URL (미설정 시 null)
+     */
+    public function getOgDefaultImageUrl(): ?string
+    {
+        $ids = $this->configRepository->get('seo.og_image_default', []);
+
+        return $this->getFirstImageUrl(is_array($ids) ? $ids : []);
     }
 
     /**
@@ -530,6 +562,22 @@ class SettingsService
                 $tabSettings['site_logo'] = $this->resolveSiteLogoIds($tabSettings['site_logo']);
             }
 
+            // 사이트 기본 OG 이미지도 site_logo 와 동형으로 처리 (공개 이슈 #22)
+            $removedOgImageIds = [];
+
+            if ($tab === 'seo' && is_array($tabSettings['og_image_default'] ?? null)) {
+                $removedOgImageIds = $this->resolveRemovedAttachmentIds(
+                    'seo',
+                    'og_image_default',
+                    $tabSettings['og_image_default']
+                );
+
+                $tabSettings['og_image_default'] = $this->resolveSubmittedAttachmentIds(
+                    'og_image_default',
+                    $tabSettings['og_image_default']
+                );
+            }
+
             // 기존 설정과 병합 (탭별로 일부 필드만 전송되어도 기존 설정 유지)
             $existingSettings = $this->configRepository->getCategory($tab);
             $mergedSettings = array_merge($existingSettings, $tabSettings);
@@ -548,6 +596,7 @@ class SettingsService
 
                 // 저장이 확정된 뒤에야 파일을 파기한다 (위 판정 시점 주석 참조).
                 $this->purgeSiteLogoAttachments($removedSiteLogoIds);
+                $this->purgeRemovedAttachments($removedOgImageIds, '기본 OG 이미지');
 
                 // SEO 프리렌더 캐시에는 생성 시점의 자산 URL 이 그대로 구워져 있다.
                 // 모드가 바뀌면 그 URL 들이 전부 어긋나는데, 봇은 JavaScript 를 실행하지
@@ -710,17 +759,88 @@ class SettingsService
      */
     private function resolveSiteLogoIds(array $submitted): array
     {
+        return $this->resolveSubmittedAttachmentIds('site_logo', $submitted);
+    }
+
+    /**
+     * 제출된 첨부 목록에서 해당 컬렉션에 실재하는 첨부 ID 만 남깁니다.
+     *
+     * @param  string  $collection  첨부 컬렉션명 (예: 'site_logo', 'og_image_default')
+     * @param  array  $submitted  제출값 (첨부 객체 배열 또는 ID 배열)
+     * @return array<int, int> 저장할 첨부 ID 목록
+     */
+    private function resolveSubmittedAttachmentIds(string $collection, array $submitted): array
+    {
         $submittedIds = $this->extractAttachmentIds($submitted);
 
         if ($submittedIds === []) {
             return [];
         }
 
-        $existingIds = $this->attachmentRepository->getByCollection('site_logo')
+        $existingIds = $this->attachmentRepository->getByCollection($collection)
             ->pluck('id')
             ->all();
 
         return array_values(array_intersect($submittedIds, $existingIds));
+    }
+
+    /**
+     * 저장 요청에서 빠진(= 운영자가 화면에서 제거한) 첨부 설정 ID 를 가려냅니다.
+     *
+     * 판정 기준·시점 규율은 resolveRemovedSiteLogoIds 와 동일합니다 — 직전 저장값에
+     * 있었는데 이번 제출에서 빠진 id 만 파기 대상이며, 저장으로 값이 덮이기 전에
+     * 판정해야 합니다.
+     *
+     * @param  string  $category  설정 카테고리 (예: 'seo')
+     * @param  string  $key  설정 키 (예: 'og_image_default')
+     * @param  mixed  $submitted  제출값 (미제출이면 null)
+     * @return array<int, int> 파기 대상 첨부 ID 목록
+     */
+    private function resolveRemovedAttachmentIds(string $category, string $key, mixed $submitted): array
+    {
+        if (! is_array($submitted)) {
+            return [];
+        }
+
+        $previousIds = $this->extractAttachmentIds(
+            $this->configRepository->getCategory($category)[$key] ?? []
+        );
+
+        if ($previousIds === []) {
+            return [];
+        }
+
+        $keptIds = $this->extractAttachmentIds($submitted);
+
+        return array_values(array_diff($previousIds, $keptIds));
+    }
+
+    /**
+     * 제거가 확정된 설정 첨부를 파일까지 파기합니다 (저장 성공 후에만 호출).
+     *
+     * @param  array<int, int>  $removedIds  파기 대상 첨부 ID 목록
+     * @param  string  $label  로그 표기용 설정 이름
+     */
+    private function purgeRemovedAttachments(array $removedIds, string $label): void
+    {
+        if ($removedIds === []) {
+            return;
+        }
+
+        foreach ($removedIds as $removedId) {
+            // 설정 저장은 이미 확정된 뒤다 — 파기 실패가 저장 실패(422)로 위장되면
+            // 운영자는 성공한 저장을 실패로 오인한다. 실패 파일은 로그로만 남긴다.
+            try {
+                $this->attachmentService->delete($removedId);
+            } catch (\Exception $e) {
+                Log::warning($label.' 첨부 파기 실패 — 저장은 확정됨', [
+                    'attachment_id' => $removedId,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        Log::info($label.' 첨부 제거', ['attachment_ids' => $removedIds]);
     }
 
     /**

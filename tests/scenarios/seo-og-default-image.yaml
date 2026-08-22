@@ -1,0 +1,28 @@
+feature: 사이트 기본 OG 이미지 폴백
+
+description: |
+  공개 이슈 #22 동종(증폭 레이어) — SeoMetaResolver 의 og:image 는 title/description 과
+  달리 폴백 체인이 없어, 레이아웃 선언이 비면 그대로 비었다. 환경설정 > SEO 에 사이트
+  기본 공유 이미지(seo.og_image_default, 첨부 ID 배열)를 신설하고, resolveOgData 가
+  선언이 빈 값일 때 이 기본값으로 폴백한다. 체인: 레이아웃 선언(도메인 본문 캐시 포함)
+  → 사이트 기본 이미지 → 빈 값(태그 미출력). secure_url 은 폴백 적용 후 image 기준 파생.
+
+axes:
+  image_chain: [layout_declared, site_default, none]
+  setting_state: [saved, absent]
+
+exclusions:
+  - { image_chain: layout_declared, setting_state: absent, reason: "선언이 있으면 기본값 설정 유무는 결과에 관여하지 않는다 — saved 대표 조합이 선언 우선을 검증" }
+  - { image_chain: site_default, setting_state: absent, reason: "기본값 미설정이면 site_default 체인 자체가 성립하지 않는다 (none 조합이 그 상태)" }
+  - { image_chain: none, setting_state: saved, reason: "none 은 선언·기본값 모두 부재의 정의 — saved 와 모순 조합" }
+
+effects:
+  - layout_declaration_wins_over_site_default
+  - empty_declaration_falls_back_to_site_default
+  - no_image_emits_nothing
+  - og_default_image_persists_to_seo_category
+  - og_default_image_resolves_first_image_url
+
+test_files:
+  - tests/Unit/Seo/SeoMetaResolverTest.php
+  - tests/Feature/Settings/OgDefaultImageSettingTest.php

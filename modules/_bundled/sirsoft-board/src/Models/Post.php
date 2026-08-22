@@ -5,10 +5,12 @@ namespace Modules\Sirsoft\Board\Models;
 use App\Extension\HookManager;
 use App\Models\User;
 use App\Search\Contracts\FulltextSearchable;
+use App\Support\HtmlImageExtractor;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Laravel\Scout\Searchable;
 use Modules\Sirsoft\Board\Enums\PostStatus;
@@ -30,7 +32,7 @@ class Post extends Model implements FulltextSearchable
         'content_mode' => ['label_key' => 'sirsoft-board::activity_log.fields.content_mode', 'type' => 'text'],
         'is_notice' => ['label_key' => 'sirsoft-board::activity_log.fields.is_notice', 'type' => 'boolean'],
         'is_secret' => ['label_key' => 'sirsoft-board::activity_log.fields.is_secret', 'type' => 'boolean'],
-        'status' => ['label_key' => 'sirsoft-board::activity_log.fields.status', 'type' => 'enum', 'enum' => \Modules\Sirsoft\Board\Enums\PostStatus::class],
+        'status' => ['label_key' => 'sirsoft-board::activity_log.fields.status', 'type' => 'enum', 'enum' => PostStatus::class],
     ];
 
     /**
@@ -64,6 +66,7 @@ class Post extends Model implements FulltextSearchable
         'title',
         'content',
         'content_mode',
+        'content_thumbnail_url',
         'user_id',
         'author_name',
         'password',
@@ -103,6 +106,47 @@ class Post extends Model implements FulltextSearchable
             'updated_at' => 'datetime',
             'deleted_at' => 'datetime',
         ];
+    }
+
+    /**
+     * 모델 이벤트 등록
+     *
+     * 본문 첫 내부 이미지 URL 캐시(content_thumbnail_url)는 저장 시점에만 계산한다 —
+     * 목록 쿼리는 content 를 SELECT 하지 않으므로(컬럼 프루닝) 조회 시점 파싱이 불가하다.
+     * Service 가 아닌 모델 saving 이벤트에 두는 이유: 시더·테스트의 Post::create() 직접
+     * 호출과 이커머스 문의 훅 리스너 경유 경로까지 누락 없이 커버되는 유일 지점이기 때문.
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (Post $post) {
+            if ($post->exists && ! $post->isDirty('content') && ! $post->isDirty('content_mode')) {
+                return;
+            }
+
+            // text 모드 본문은 이스케이프되어 렌더된다(상세에 이미지 미표시) — 리터럴
+            // img 마크업을 캐시하면 목록 썸네일만 떠서 상세와 어긋나므로 추출하지 않는다.
+            if ($post->content_mode !== 'html') {
+                $post->content_thumbnail_url = null;
+
+                return;
+            }
+
+            $content = (string) $post->content;
+
+            // 확장이 후보를 대체(CDN prefix 승격 등)하거나 차단(null)할 수 있는 필터 훅.
+            // 특정 에디터 확장에 의존하지 않는다 — 페이로드는 일반 HTML 파싱 결과뿐이다.
+            $value = HookManager::applyFilters(
+                'sirsoft-board.post.filter_content_thumbnail',
+                HtmlImageExtractor::firstInternal($content),
+                $post,
+                HtmlImageExtractor::candidates($content)
+            );
+
+            // 필터 반환값 방어 — 비문자열/빈 값/컬럼 상한 초과는 null(후보 없음)로 강등
+            $post->content_thumbnail_url = is_string($value) && $value !== '' && mb_strlen($value) <= 1000
+                ? $value
+                : null;
+        });
     }
 
     /**
@@ -181,9 +225,9 @@ class Post extends Model implements FulltextSearchable
      *
      * 전체 attachments를 eager loading하는 대신 이미지 1건만 가져와 성능을 확보합니다.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     * @return HasOne
      */
-    public function thumbnailAttachment(): \Illuminate\Database\Eloquent\Relations\HasOne
+    public function thumbnailAttachment(): HasOne
     {
         return $this->hasOne(Attachment::class, 'post_id')
             ->where('mime_type', 'like', 'image/%')

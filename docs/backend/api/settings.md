@@ -214,6 +214,7 @@ HTTP/1.1 200
 | seo.bot_detection_enabled | body | boolean | 아니오 | — | 검색엔진 봇 감지 사용 여부 (봇 요청에 SEO 렌더링 적용) |
 | seo.bot_detection_library_enabled | body | boolean | 아니오 | — | 봇 감지 라이브러리 사용 여부 (User-Agent 목록 대신 라이브러리 판정) |
 | seo.og_default_site_name | body | string | 아니오 | max 200 | seo.og default site 이름 (식별자) |
+| seo.og_image_default | body | array | 아니오 | 항목: 존재하는 첨부 ID | 사이트 기본 공유 이미지(og:image) 첨부 ID 배열 — 화면별 og:image 가 없을 때 폴백으로 사용. 화면 제출 형태(첨부 객체 배열)도 수용하며 정수 ID 배열로 정규화된다 (7.0.9+) |
 | seo.og_image_default_width | body | integer | 아니오 | min 0, max 8000 | 기본 Open Graph 이미지 너비 (px) |
 | seo.og_image_default_height | body | integer | 아니오 | min 0, max 8000 | 기본 Open Graph 이미지 높이 (px) |
 | seo.twitter_default_card | body | string | 아니오 | — | 기본 트위터 카드 유형 (summary 등) |

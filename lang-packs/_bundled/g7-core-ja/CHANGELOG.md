@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.8] - 2026-08-22
+
+### Added
+
+- 사이트 기본 공유 이미지(og:image) 설정의 검증 속성 라벨 번역을 추가했습니다.
+
 ## [1.0.7] - 2026-08-22
 
 ### Added

@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.7] - 2026-08-22
+
+### Added
+
+- 환경설정 > SEO 탭에서 사이트 기본 공유 이미지(og:image)를 업로드할 수 있습니다. 화면별 공유 이미지가 없을 때 이 이미지가 링크 미리보기 카드에 사용됩니다.
+
 ## [1.0.6] - 2026-08-22
 
 ### Added

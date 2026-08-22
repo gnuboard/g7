@@ -1369,6 +1369,6 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** slug로 단일 공개 카테고리와 직계 자식을 조회합니다. 인증이 필요 없는 공개 엔드포인트이며, `Public\CategoryController@show`가 `CategoryService::getPublicCategoryBySlug()`를 호출해 활성 자식(`activeChildren`)과 이미지를 함께 로드합니다. 조회된 카테고리가 비활성(`is_active=false`)이면 없는 것으로 간주해 404를 반환하며, 응답에는 상위 경로를 나타내는 `breadcrumb` 배열과 `products_count` 집계가 포함됩니다. 스토어프론트 카테고리 상세/목록 페이지 진입 시 사용합니다.
+**설명** slug로 단일 공개 카테고리와 직계 자식을 조회합니다. 인증이 필요 없는 공개 엔드포인트이며, `Public\CategoryController@show`가 `CategoryService::getPublicCategoryBySlug()`를 호출해 활성 자식(`activeChildren`)과 이미지를 함께 로드합니다. 조회된 카테고리가 비활성(`is_active=false`)이면 없는 것으로 간주해 404를 반환하며, 응답에는 상위 경로를 나타내는 `breadcrumb` 배열과 `products_count` 집계가 포함됩니다. 스토어프론트 카테고리 상세/목록 페이지 진입 시 사용합니다. 1.2.0 부터 `thumbnail_url` 필드(로드된 카테고리 이미지 첫 건의 URL, 없으면 `null`)가 추가되어 카테고리 페이지의 공유 미리보기 이미지(og:image)에 사용됩니다.
 
 

@@ -123,7 +123,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | name_localized | string | `겨울 패딩 점퍼 #100` | `name` 의 현재 로케일 해석 값 (다국어 필드를 표시용 문자열로 해석) |
 | product_code | string | `GGK6A9N8PXNR35OQ` | 상품코드 (상품 고유 관리 식별자) |
 | sku | string | `JK-0100` | 재고관리코드(SKU) |
-| thumbnail_url | string | `/api/modules/sirsoft-ecommerce/produc…` | thumbnail URL |
+| thumbnail_url | string | `/api/modules/sirsoft-ecommerce/produc…` | 대표 이미지 다운로드 URL — 상품 이미지가 없으면 상세설명의 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.2.0+) |
 | list_price | integer | `200000` | 정가 (기본통화 자릿수로 정규화된 값) |
 | list_price_formatted | string | `200,000원` | `list_price` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | selling_price | integer | `169000` | 판매가 (기본통화 자릿수로 정규화된 값) |
@@ -413,7 +413,7 @@ _단건 응답: `data` 객체의 필드 (`ProductResource`). 성공 시 HTTP 201
 | hs_code | string | `null` | HS 코드 (수출입 관세 분류 코드) |
 | images | array | `[]` | 상품 이미지 목록 (images 관계 로드 시) |
 | thumbnail_hash | string | `null` | 대표 이미지 해시 |
-| thumbnail_url | string | `null` | 대표 이미지 다운로드 URL |
+| thumbnail_url | string | `null` | 대표 이미지 다운로드 URL — 상품 이미지가 없으면 상세설명의 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.2.0+) |
 | meta_title | object | `null` | SEO 메타 제목 (다국어 JSON) |
 | meta_description | object | `null` | SEO 메타 설명 (다국어 JSON) |
 | meta_keywords | array | `null` | SEO 메타 키워드 배열 |
@@ -1084,7 +1084,7 @@ _단건 응답: `data` 객체의 필드 (`ProductResource` — 수정 후 상품
 | hs_code | string | `null` | HS 코드 |
 | images | array | `[]` | 상품 이미지 목록 (images 관계 로드 시) |
 | thumbnail_hash | string | `null` | 대표 이미지 해시 |
-| thumbnail_url | string | `null` | 대표 이미지 다운로드 URL |
+| thumbnail_url | string | `null` | 대표 이미지 다운로드 URL — 상품 이미지가 없으면 상세설명의 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.2.0+) |
 | meta_title | object | `null` | SEO 메타 제목 (다국어 JSON) |
 | meta_description | object | `null` | SEO 메타 설명 (다국어 JSON) |
 | meta_keywords | array | `null` | SEO 메타 키워드 배열 |
@@ -2011,7 +2011,7 @@ _단건 응답: `data` 객체의 필드 (`ProductResource` — 수정 후 상품
 | hs_code | string | `null` | HS 코드 |
 | images | array | `[]` | 상품 이미지 목록 (images 관계 로드 시) |
 | thumbnail_hash | string | `null` | 대표 이미지 해시 |
-| thumbnail_url | string | `null` | 대표 이미지 다운로드 URL |
+| thumbnail_url | string | `null` | 대표 이미지 다운로드 URL — 상품 이미지가 없으면 상세설명의 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.2.0+) |
 | meta_title | object | `null` | SEO 메타 제목 (다국어 JSON) |
 | meta_description | object | `null` | SEO 메타 설명 (다국어 JSON) |
 | meta_keywords | array | `null` | SEO 메타 키워드 배열 |
@@ -2249,7 +2249,7 @@ _단건 응답: `data` 객체의 필드._
 | seo_sync_description | boolean | `true` | SEO 설명 동기화 여부 (1: 상품 설명으로 자동 채움, 0: 직접 입력 보존) |
 | barcode | null | `null` | 바코드 |
 | hs_code | null | `null` | HS 코드 (관세 분류) |
-| thumbnail_url | string | `/api/modules/sirsoft-ecommerce/produc…` | thumbnail URL |
+| thumbnail_url | string | `/api/modules/sirsoft-ecommerce/produc…` | 대표 이미지 다운로드 URL — 상품 이미지가 없으면 상세설명의 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.2.0+) |
 | categories | array | `[{"id":29,"name":{"ko":"의류","en":"Clothing"},"name_locali…` | 소속 카테고리 목록 (breadcrumb 포함 — 복사 폼의 카테고리 표시용) |
 
 **응답 예시**
@@ -2636,7 +2636,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | name_localized | string | `겨울 패딩 점퍼 #100` | `name` 의 현재 로케일 해석 값 (다국어 필드를 표시용 문자열로 해석) |
 | product_code | string | `GGK6A9N8PXNR35OQ` | 상품코드 (상품 고유 관리 식별자) |
 | sku | string | `JK-0100` | 재고관리코드(SKU) |
-| thumbnail_url | string | `/api/modules/sirsoft-ecommerce/produc…` | thumbnail URL |
+| thumbnail_url | string | `/api/modules/sirsoft-ecommerce/produc…` | 대표 이미지 다운로드 URL — 상품 이미지가 없으면 상세설명의 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.2.0+) |
 | list_price | integer | `200000` | 정가 (기본통화 자릿수로 정규화된 값) |
 | list_price_formatted | string | `200,000원` | `list_price` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | selling_price | integer | `169000` | 판매가 (기본통화 자릿수로 정규화된 값) |
@@ -2766,7 +2766,7 @@ Authorization: Bearer {YOUR_TOKEN}   (optional.sanctum: 비회원은 헤더 생�
 | name_localized | string | `겨울 패딩 점퍼 #100` | `name` 의 현재 로케일 해석 값 (다국어 필드를 표시용 문자열로 해석) |
 | product_code | string | `GGK6A9N8PXNR35OQ` | 상품코드 (상품 고유 관리 식별자) |
 | sku | string | `JK-0100` | 재고관리코드(SKU) |
-| thumbnail_url | string | `/api/modules/sirsoft-ecommerce/produc…` | thumbnail URL |
+| thumbnail_url | string | `/api/modules/sirsoft-ecommerce/produc…` | 대표 이미지 다운로드 URL — 상품 이미지가 없으면 상세설명의 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.2.0+) |
 | list_price | integer | `200000` | 정가 (기본통화 자릿수로 정규화된 값) |
 | list_price_formatted | string | `200,000원` | `list_price` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | selling_price | integer | `169000` | 판매가 (기본통화 자릿수로 정규화된 값) |
@@ -2913,7 +2913,7 @@ Authorization: Bearer {YOUR_TOKEN}   (optional.sanctum: 비회원은 헤더 생�
 | name_localized | string | `프리미엄 브이넥 티셔츠 #5` | `name` 의 현재 로케일 해석 값 (다국어 필드를 표시용 문자열로 해석) |
 | product_code | string | `4R5OG8VYO0JKG1WQ` | 상품코드 (상품 고유 관리 식별자) |
 | sku | string | `TS-0005` | 재고관리코드(SKU) |
-| thumbnail_url | string | `/api/modules/sirsoft-ecommerce/produc…` | thumbnail URL |
+| thumbnail_url | string | `/api/modules/sirsoft-ecommerce/produc…` | 대표 이미지 다운로드 URL — 상품 이미지가 없으면 상세설명의 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.2.0+) |
 | list_price | integer | `34000` | 정가 (기본통화 자릿수로 정규화된 값) |
 | list_price_formatted | string | `34,000원` | `list_price` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | selling_price | integer | `27000` | 판매가 (기본통화 자릿수로 정규화된 값) |
@@ -3062,7 +3062,7 @@ _목록 응답: `data[]` 배열 항목의 필드 (`ProductListResource` — `GET
 | name_localized | string | `eum et quia` | `name` 의 현재 로케일 해석 값 |
 | product_code | string | `PROD-GJUX-1484` | 상품코드 (상품 고유 관리 식별자) |
 | sku | string | `SKU-MRAD-9306` | 재고관리코드(SKU) |
-| thumbnail_url | string | `/api/modules/sirsoft-ecommerce/products/images/3f7a1c9e/download` | 대표 이미지 URL |
+| thumbnail_url | string | `/api/modules/sirsoft-ecommerce/products/images/3f7a1c9e/download` | 대표 이미지 URL — 상품 이미지가 없으면 상세설명의 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.2.0+) |
 | list_price | integer | `112594` | 정가 (기본통화 자릿수로 정규화) |
 | list_price_formatted | string | `112,594원` | `list_price` 의 표시용 통화 포맷 문자열 |
 | selling_price | integer | `88949` | 판매가 (기본통화 자릿수로 정규화) |
@@ -3186,7 +3186,7 @@ _단건 응답: `data` 객체의 필드._
 | description_localized | string | `<p>부드러운 면 100% 손수건 3매 세트입니다.</p>` | `description` 의 현재 로케일 해석 값 (다국어 필드를 표시용 문자열로 해석) |
 | description_mode | string | `text` | 설명 모드: text(텍스트), html(HTML) |
 | images | array | `[{"id":7,"hash":"7df7761cdf16","original_filename":"produ…` | 상품 이미지 목록 (각 항목: hash·url·alt_text·is_thumbnail·sort_order 등, images 관계 로드 시) |
-| thumbnail_url | string | `/api/modules/sirsoft-ecommerce/produc…` | thumbnail URL |
+| thumbnail_url | string | `/api/modules/sirsoft-ecommerce/produc…` | 대표 이미지 다운로드 URL — 상품 이미지가 없으면 상세설명의 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.2.0+) |
 | meta_title | null | `null` | SEO 제목 (다국어 JSON) |
 | meta_description | object | `{"ko":"면 손수건 3매입 #1 의 직접 입력 SEO 설명입니다.","en":"Custom SEO …` | SEO 설명 (다국어 JSON) |
 | meta_keywords | null | `null` | SEO 키워드 (배열) |
