@@ -14,14 +14,22 @@ use Modules\Sirsoft\Ecommerce\DTO\ItemCalculation;
 use Modules\Sirsoft\Ecommerce\DTO\OrderCalculationResult;
 use Modules\Sirsoft\Ecommerce\DTO\PromotionsSummary;
 use Modules\Sirsoft\Ecommerce\DTO\Summary;
+use Modules\Sirsoft\Ecommerce\Enums\CouponDiscountType;
+use Modules\Sirsoft\Ecommerce\Enums\CouponIssueRecordStatus;
+use Modules\Sirsoft\Ecommerce\Enums\CouponTargetScope;
+use Modules\Sirsoft\Ecommerce\Enums\CouponTargetType;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\CartUnavailableException;
+use Modules\Sirsoft\Ecommerce\Exceptions\CouponAlreadyUsedException;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderAmountChangedException;
 use Modules\Sirsoft\Ecommerce\Exceptions\PaymentAmountMismatchException;
 use Modules\Sirsoft\Ecommerce\Exceptions\UnsupportedPaymentCurrencyException;
+use Modules\Sirsoft\Ecommerce\Listeners\CouponUseListener;
 use Modules\Sirsoft\Ecommerce\Models\Cart;
+use Modules\Sirsoft\Ecommerce\Models\Coupon;
+use Modules\Sirsoft\Ecommerce\Models\CouponIssue;
 use Modules\Sirsoft\Ecommerce\Models\MileageTransaction;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
@@ -969,6 +977,103 @@ class OrderProcessingServiceTest extends ModuleTestCase
 
         $this->assertTrue($hookCalled, '쿠폰 사용 훅이 호출되어야 합니다');
         $this->assertContains(201, $capturedCouponIds);
+    }
+
+    /**
+     * 이미 다른 주문이 선점한 쿠폰으로 주문을 확정하면 트랜잭션 전체가 롤백되어야 합니다.
+     *
+     * 쿠폰 차감 실패를 삼키고 주문만 생성하면, 1회 제한 쿠폰의 할인이 두 주문에 모두
+     * 적용된 채로 확정된다 (KVE-2026-1886).
+     *
+     * @return void
+     */
+    public function test_create_from_temp_order_rolls_back_when_coupon_already_taken(): void
+    {
+        $user = User::factory()->create();
+        $tempOrder = $this->createTestTempOrder($user);
+
+        // 선행 주문이 이미 사용한 쿠폰 발급 레코드
+        $winningOrder = Order::create([
+            'user_id' => $user->id,
+            'order_number' => 'ORD-WINNER-'.uniqid(),
+            'order_status' => OrderStatusEnum::PENDING_PAYMENT,
+            'currency' => 'KRW',
+            'item_count' => 1,
+            'ordered_at' => now(),
+            'subtotal_amount' => 50000,
+            'total_amount' => 45000,
+            'total_paid_amount' => 45000,
+        ]);
+
+        $couponModel = Coupon::create([
+            'name' => ['ko' => '선점 쿠폰', 'en' => 'Taken Coupon'],
+            'target_type' => CouponTargetType::PRODUCT_AMOUNT,
+            'discount_type' => CouponDiscountType::FIXED,
+            'discount_value' => 5000,
+            'min_order_amount' => 0,
+            'target_scope' => CouponTargetScope::ALL,
+            'is_combinable' => true,
+            'valid_from' => now()->subDay(),
+            'valid_to' => now()->addDays(30),
+        ]);
+
+        $issue = CouponIssue::create([
+            'coupon_id' => $couponModel->id,
+            'user_id' => $user->id,
+            'coupon_code' => 'TAKEN'.uniqid(),
+            'status' => CouponIssueRecordStatus::USED,
+            'issued_at' => now(),
+            'expired_at' => now()->addDays(30),
+            'used_at' => now(),
+            'order_id' => $winningOrder->id,
+        ]);
+
+        $coupon = new CouponApplication(
+            couponId: $couponModel->id,
+            couponIssueId: $issue->id,
+            name: '선점 쿠폰',
+            targetType: 'product_amount',
+            discountType: 'fixed',
+            discountValue: 5000,
+            totalDiscount: 5000,
+        );
+        $promotions = new PromotionsSummary(
+            productPromotions: new AppliedPromotions(coupons: [$coupon])
+        );
+
+        $this->mockCalculationService($this->makeCalculationResult(103000, [
+            'promotions' => $promotions,
+        ]));
+
+        // 실제 리스너를 훅에 연결 (프로덕션과 동일 경로)
+        $listener = app(CouponUseListener::class);
+        HookManager::addAction(
+            'sirsoft-ecommerce.coupon.use',
+            fn ($couponIds, $order) => $listener->markCouponsUsed($couponIds, $order)
+        );
+
+        $ordersBefore = Order::query()->count();
+
+        try {
+            $this->service->createFromTempOrder(
+                $tempOrder,
+                ['name' => 'Test', 'phone' => '010-0000-0000', 'email' => 'test@test.com'],
+                ['recipient_name' => 'Test', 'recipient_phone' => '010-0000-0000', 'zipcode' => '00000', 'address' => 'Test', 'address_detail' => 'Test'],
+                'card',
+                103000
+            );
+            $this->fail('선점된 쿠폰으로 주문이 확정되어서는 안 됩니다.');
+        } catch (CouponAlreadyUsedException $e) {
+            $this->assertSame($issue->id, $e->getCouponIssueId());
+        }
+
+        // 주문 트랜잭션 전체 롤백 — 주문 행이 늘지 않아야 한다
+        $this->assertSame($ordersBefore, Order::query()->count(), '경쟁에서 밀린 주문은 생성되지 않아야 합니다.');
+
+        // 쿠폰 소유는 선행 주문 그대로
+        $issue->refresh();
+        $this->assertEquals(CouponIssueRecordStatus::USED, $issue->status);
+        $this->assertEquals($winningOrder->id, $issue->order_id);
     }
 
     public function test_create_from_temp_order_calls_mileage_use_hook(): void

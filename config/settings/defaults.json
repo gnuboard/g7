@@ -102,7 +102,9 @@
         "debug": {
             "mode": false,
             "sql_query_log": false,
-            "log_level": "error"
+            "log_level": "error",
+            "outbound_proxy": "",
+            "outbound_proxy_bypass": []
         },
         "core_update": {
             "github_url": "",
@@ -270,7 +272,9 @@
             "_comment": "debug 설정은 advanced 카테고리에 병합",
             "fields": {
                 "mode": { "type": "boolean", "sensitive": false, "frontend_key": "debug_mode" },
-                "sql_query_log": { "type": "boolean", "sensitive": false, "expose": false }
+                "sql_query_log": { "type": "boolean", "sensitive": false, "expose": false },
+                "outbound_proxy": { "type": "string", "sensitive": true },
+                "outbound_proxy_bypass": { "type": "array", "sensitive": false, "expose": false }
             }
         },
         "core_update": {

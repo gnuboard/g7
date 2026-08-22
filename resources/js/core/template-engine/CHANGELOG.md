@@ -5,6 +5,18 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.60.6] - 2026-08-22
+
+### Fixed
+
+#### 정규식 lookbehind 로 인한 구형 Safari 전면 부팅 실패
+
+- `DataBindingEngine` 의 정규식 2건(`preprocessTranslationTokens` · `extractVariablesFromExpression`)이 ES2018 lookbehind(`(?<!...)`)를 쓰고 있었다. 정규식 **리터럴**은 스크립트 파싱 단계에서 검증되므로, lookbehind 를 모르는 엔진(WebKit 은 Safari 16.4 에서 구현)은 코어 엔진 번들을 **한 줄도 실행하지 못한다.** 번들은 `async`/`defer` 없는 동기 classic 스크립트라 폴백 경로도 없어, iOS 15 대 기기에서 사이트가 통째로 뜨지 않았다.
+- 두 정규식을 lookbehind 없는 형태로 교체했다 — 선행 따옴표/구분자를 **소비**한 뒤 캡처 그룹으로 분기한다. 식별자 패턴은 구분자가 `match[1]`, 식별자명이 `match[2]` 로 이동했다.
+- 동작은 완전히 동일하다: 무작위 200,034 표본(손으로 고른 경계 케이스 34건 포함) 퍼징에서 교체 전/후 결과 불일치 0건.
+- 이 2건이 유일한 병목이었다 — 제거 후 코어 엔진 번들의 파싱 하한이 Safari 16.4 → 14.1 로 내려간다(esbuild 타깃 판정). 빌드 타깃 하향은 해법이 아니다: esbuild 는 lookbehind 를 `new RegExp(...)` 로 옮길 뿐이라 파싱 오류가 **런타임 오류로 이동**한다.
+- 재발 방지: 배포 JS 산출물의 브라우저 하한 초과 문법을 정적 검사가 차단한다. 특히 부팅 임계 번들(코어 엔진 · 템플릿 컴포넌트)은 하한과 같은 버전이라도 정규식 리터럴 전용 문법을 금지한다 — 이 두 파일이 파싱되지 않으면 안내 화면조차 렌더되지 않기 때문이다.
+
 ## [engine-v1.60.5] - 2026-08-19
 
 ### Fixed

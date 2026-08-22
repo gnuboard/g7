@@ -21,6 +21,7 @@ use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\ChannelManager;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
@@ -104,6 +105,9 @@ class AppServiceProvider extends ServiceProvider
         // SQL 쿼리 로그 설정
         $this->configureSqlQueryLogging();
 
+        // 아웃바운드 HTTP 프록시 설정
+        $this->configureOutboundProxy();
+
         // 로그인 라우트 per-IP 백업 throttle — 보안 환경설정의 per-account 잠금과 2중 방어.
         // 존재하지 않는 계정에 대한 brute-force / 동일 IP 의 다른 계정 시도까지 차단.
         $this->configureLoginRateLimiter();
@@ -152,6 +156,29 @@ class AppServiceProvider extends ServiceProvider
                 HookManager::addAction($hookName, [$listener, $method], $priority);
             }
         }
+    }
+
+    /**
+     * 아웃바운드 HTTP 프록시를 설정합니다.
+     *
+     * 환경설정에 프록시가 지정되어 있으면 `Http::` 파사드로 나가는 모든 요청이 그 프록시를
+     * 경유합니다. 결제 승인, 코어 업데이트 조회, GeoIP 내려받기, 알림 웹훅 등 확장이 보내는
+     * 요청까지 함께 적용되므로, 확장 코드를 고치지 않고도 출발지 IP 를 바꿀 수 있습니다.
+     *
+     * 적용 여부 판정은 `App\Support\OutboundProxy` 가 소유하며, 이 메서드는 판정 결과만
+     * 소비합니다 — 디버그 모드 게이트를 여기서 다시 검사하지 않는 이유입니다.
+     *
+     * 개별 요청이 `withOptions(['proxy' => ...])` 로 지정한 값은 전역 옵션보다 우선합니다.
+     */
+    private function configureOutboundProxy(): void
+    {
+        $proxy = config('g7.outbound_proxy');
+
+        if (empty($proxy)) {
+            return;
+        }
+
+        Http::globalOptions(['proxy' => $proxy]);
     }
 
     /**

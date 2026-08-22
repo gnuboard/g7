@@ -149,6 +149,14 @@ class OrderRepository implements OrderRepositoryInterface
     /**
      * {@inheritDoc}
      */
+    public function findByIdForUpdate(int $id): ?Order
+    {
+        return $this->model->newQuery()->lockForUpdate()->find($id);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function findWithRelations(int $id): ?Order
     {
         return $this->model

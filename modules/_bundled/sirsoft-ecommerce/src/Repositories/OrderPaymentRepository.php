@@ -17,6 +17,14 @@ class OrderPaymentRepository implements OrderPaymentRepositoryInterface
     /**
      * {@inheritDoc}
      */
+    public function findByOrderIdForUpdate(int $orderId): ?OrderPayment
+    {
+        return OrderPayment::query()->where('order_id', $orderId)->lockForUpdate()->first();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function markCashReceiptIssued(
         OrderPayment $payment,
         OrderCashReceipt $receipt,

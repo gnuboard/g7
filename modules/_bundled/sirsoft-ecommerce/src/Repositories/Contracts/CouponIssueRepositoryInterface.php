@@ -2,6 +2,9 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories\Contracts;
 
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
+use Modules\Sirsoft\Ecommerce\Enums\CouponIssueRecordStatus;
 use Modules\Sirsoft\Ecommerce\Models\CouponIssue;
 
 /**
@@ -45,9 +48,9 @@ interface CouponIssueRepositoryInterface
      * @param  int  $userId  사용자 ID
      * @param  string|null  $status  필터 상태 (available, used, expired)
      * @param  int  $perPage  페이지당 항목 수
-     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator 쿠폰함 페이지네이터
+     * @return LengthAwarePaginator 쿠폰함 페이지네이터
      */
-    public function getUserCoupons(int $userId, ?string $status = null, int $perPage = 10): \Illuminate\Contracts\Pagination\LengthAwarePaginator;
+    public function getUserCoupons(int $userId, ?string $status = null, int $perPage = 10): LengthAwarePaginator;
 
     /**
      * 특정 사용자가 소유한 쿠폰만 조회 (소유권 검증용)
@@ -57,14 +60,14 @@ interface CouponIssueRepositoryInterface
      *
      * @param  array  $couponIssueIds  쿠폰 발급 ID 배열
      * @param  int  $userId  사용자 ID
-     * @return \Illuminate\Support\Collection CouponIssue 컬렉션
+     * @return Collection CouponIssue 컬렉션
      */
-    public function findByIdsForUser(array $couponIssueIds, int $userId): \Illuminate\Support\Collection;
+    public function findByIdsForUser(array $couponIssueIds, int $userId): Collection;
 
     /**
      * 쿠폰 발급 레코드 생성
      *
-     * @param array $data 발급 데이터
+     * @param  array  $data  발급 데이터
      * @return CouponIssue
      */
     public function create(array $data): CouponIssue;
@@ -72,8 +75,8 @@ interface CouponIssueRepositoryInterface
     /**
      * 특정 사용자의 특정 쿠폰 발급 횟수 조회
      *
-     * @param int $userId 사용자 ID
-     * @param int $couponId 쿠폰 ID
+     * @param  int  $userId  사용자 ID
+     * @param  int  $couponId  쿠폰 ID
      * @return int 발급 횟수
      */
     public function getUserIssuedCountForCoupon(int $userId, int $couponId): int;
@@ -98,6 +101,20 @@ interface CouponIssueRepositoryInterface
      * @return bool 성공 여부
      */
     public function update(int $id, array $data): bool;
+
+    /**
+     * 현재 상태가 기대값과 같을 때만 쿠폰 발급 레코드를 갱신합니다.
+     *
+     * 조회 후 갱신하는 방식은 두 요청이 같은 상태를 읽어 서로를 덮어쓰는 lost update 를
+     * 허용하므로, 상태 판정과 갱신을 하나의 UPDATE 문에서 원자적으로 수행합니다.
+     * 갱신된 행 수가 0 이면 다른 요청이 이미 상태를 바꾼 것입니다.
+     *
+     * @param  int  $id  쿠폰 발급 ID
+     * @param  CouponIssueRecordStatus  $expected  기대하는 현재 상태
+     * @param  array  $data  업데이트 데이터
+     * @return int 갱신된 행 수 (0 이면 경쟁에서 밀렸거나 상태 불일치)
+     */
+    public function updateIfStatus(int $id, CouponIssueRecordStatus $expected, array $data): int;
 
     /**
      * ID 목록으로 쿠폰 발급 레코드를 조회합니다.

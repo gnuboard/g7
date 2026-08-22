@@ -2,6 +2,8 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Feature\Http\Controllers\User;
 
+use App\Extension\HookManager;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
@@ -17,6 +19,7 @@ use Modules\Sirsoft\Ecommerce\Models\ProductOption;
 use Modules\Sirsoft\Ecommerce\Models\TempOrder;
 use Modules\Sirsoft\Ecommerce\Models\UserAddress;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
+use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
@@ -66,6 +69,33 @@ class UserOrderControllerTest extends ModuleTestCase
             'is_active' => true,
             'sort_order' => 1,
         ]);
+    }
+
+    /**
+     * 기본 PG 제공자를 설정하고, 그 제공자를 레지스트리에도 등록합니다.
+     *
+     * 설정만 바꾸면 카탈로그가 그 PG 를 "사라진 PG"(`_orphaned_pg`)로 판정해 해당 결제수단이
+     * 주문 불가가 되고 주문 생성이 422 로 막힙니다(#570 고아 카탈로그 차단). 실제 운영에서는
+     * PG 플러그인이 이 훅으로 자신을 등록하므로, 테스트도 같은 경로로 등록해야 합니다.
+     *
+     * @param  string  $providerId  PG 제공자 식별자
+     * @return void
+     */
+    protected function registerDefaultPgProvider(string $providerId): void
+    {
+        app(EcommerceSettingsService::class)->setSetting('order_settings.default_pg_provider', $providerId);
+
+        HookManager::addFilter(
+            'sirsoft-ecommerce.payment.registered_pg_providers',
+            fn (array $providers) => array_merge($providers, [[
+                'id' => $providerId,
+                'name' => $providerId,
+                'payment_handler' => 'sirsoft-pay_'.$providerId.'.requestPayment',
+            ]])
+        );
+
+        app(PaymentMethodResolver::class)->flushCache();
+        app(EcommerceSettingsService::class)->clearCache();
     }
 
     /**
@@ -357,6 +387,7 @@ class UserOrderControllerTest extends ModuleTestCase
      * 화면은 `?with_items=1` 로 켠다.
      *
      * @scenario surface=my_page_list,option_profile=multiple
+     *
      * @effects my_page_list_default_is_representative_only
      */
     public function test_기본_목록은_대표_아이템_1건과_개수만_싣는다(): void
@@ -386,6 +417,7 @@ class UserOrderControllerTest extends ModuleTestCase
      * 깨지면 주문마다 상품 한 줄만 남는다.
      *
      * @scenario surface=my_page_list,option_profile=multiple
+     *
      * @effects my_page_list_enumerates_every_item_when_requested
      */
     public function test_with_items_1_이면_아이템을_전부_싣는다(): void
@@ -414,6 +446,7 @@ class UserOrderControllerTest extends ModuleTestCase
      * 페이로드를 줄이려다 쿼리를 늘리는 맞바꿈이 된다.
      *
      * @scenario surface=my_page_list,option_profile=multiple
+     *
      * @effects my_page_list_option_query_count_is_constant
      */
     public function test_아이템_조회_쿼리수가_주문수에_비례하지_않는다(): void
@@ -433,7 +466,7 @@ class UserOrderControllerTest extends ModuleTestCase
 
         $measure = function (): int {
             $count = 0;
-            \Illuminate\Support\Facades\DB::listen(function ($query) use (&$count) {
+            DB::listen(function ($query) use (&$count) {
                 if (str_contains($query->sql, 'ecommerce_order_options')) {
                     $count++;
                 }
@@ -465,6 +498,7 @@ class UserOrderControllerTest extends ModuleTestCase
      * null 로 정규화하면 오타 파라미터가 "미지정" 으로 통과해 호출자가 잘못을 알 수 없다.
      *
      * @scenario surface=my_page_list,option_profile=multiple
+     *
      * @effects my_page_list_rejects_unparseable_with_items
      */
     public function test_with_items_에_해석불가한_값이_오면_422(): void
@@ -948,7 +982,7 @@ class UserOrderControllerTest extends ModuleTestCase
     public function test_p_g_체크_o_n_order_meta에_플래그_저장(): void
     {
         // PG 결제가 실제로 동작하도록 기본 PG 제공자 설정
-        app(EcommerceSettingsService::class)->setSetting('order_settings.default_pg_provider', 'tosspayments');
+        $this->registerDefaultPgProvider('tosspayments');
 
         $user = $this->createUser();
         $this->actingAs($user);
@@ -975,7 +1009,7 @@ class UserOrderControllerTest extends ModuleTestCase
 
     public function test_p_g_체크_o_n_user_address_미생성(): void
     {
-        app(EcommerceSettingsService::class)->setSetting('order_settings.default_pg_provider', 'tosspayments');
+        $this->registerDefaultPgProvider('tosspayments');
 
         $user = $this->createUser();
         $this->actingAs($user);
@@ -1001,7 +1035,7 @@ class UserOrderControllerTest extends ModuleTestCase
 
     public function test_p_g_체크_of_f_order_meta_미저장(): void
     {
-        app(EcommerceSettingsService::class)->setSetting('order_settings.default_pg_provider', 'tosspayments');
+        $this->registerDefaultPgProvider('tosspayments');
 
         $user = $this->createUser();
         $this->actingAs($user);

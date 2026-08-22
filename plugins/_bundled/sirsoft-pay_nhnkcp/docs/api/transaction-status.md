@@ -22,7 +22,7 @@
 | --- | --- |
 | 메서드/URI | `GET /api/plugins/sirsoft-pay_nhnkcp/admin/orders/{orderNumber}/transaction-status` |
 | 인증 | Bearer 토큰 (관리자) |
-| 권한 | 주문 조회 권한 |
+| 권한 | 주문 조회 권한 (`sirsoft-ecommerce.orders.read`) — 미보유 시 403 |
 
 ### 경로 파라미터
 

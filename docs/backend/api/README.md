@@ -120,6 +120,10 @@ Authorization: Bearer {YOUR_TOKEN}
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 | 428 | Precondition Required | 본인인증(IDV)이 선행되어야 하는 경우 |
 
+확장(모듈·플러그인)이 제공하는 엔드포인트(`/api/modules/{id}/…`, `/api/plugins/{id}/…`)는 그 확장이
+**활성 상태일 때만** 존재합니다. 비활성화·제거된 확장의 엔드포인트는 404 를 반환하며, 이는 권한
+문제가 아니라 라우트가 등록되지 않은 상태입니다. 확장을 업데이트하는 동안에도 잠시 같은 상태가 됩니다.
+
 428 응답은 `error_code: "identity_verification_required"` 와 함께 `verification` 객체를 반환합니다.
 클라이언트는 이 값으로 본인인증 화면을 띄운 뒤 원래 요청을 재시도합니다.
 

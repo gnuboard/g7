@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Enums\LanguagePackScope;
+use App\Exceptions\PluginOperationException;
 use App\Extension\Vendor\VendorMode;
 use App\Helpers\PermissionHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
@@ -188,7 +189,7 @@ class PluginController extends AdminBaseController
             // cascade 1단계: 사용자가 선택한 의존 확장 사전 설치 (실패 시 abort)
             $this->installSelectedDependencies($validated['dependencies'] ?? []);
 
-            $pluginInfo = $this->pluginService->installPlugin($pluginName, $vendorMode);
+            $pluginInfo = $this->pluginService->installPlugin($pluginName, $vendorMode, false, $installFailureReason);
 
             if ($pluginInfo) {
                 // cascade 2단계: 동반 번들 언어팩 best-effort 설치
@@ -199,7 +200,9 @@ class PluginController extends AdminBaseController
 
                 return $this->success('plugins.install_success', $payload);
             } else {
-                return $this->error('plugins.install_failed');
+                return $this->error('plugins.install_failed', 400, null, [
+                    'error' => $installFailureReason ?? __('plugins.errors.unknown_error'),
+                ]);
             }
         } catch (ValidationException $e) {
             // Service에서 이미 번역된 메시지를 errors에 포함하므로
@@ -260,13 +263,16 @@ class PluginController extends AdminBaseController
                     'pending_language_packs' => $pendingLanguagePacks,
                 ]));
             } else {
-                return $this->error('plugins.activate_failed');
+                return $this->error('plugins.activate_failed', 400, null, [
+                    'error' => $result['reason'] ?? __('plugins.errors.unknown_error'),
+                ]);
             }
         } catch (ValidationException $e) {
             return $this->error(
                 'plugins.activate_validation_failed',
                 422,
-                $e->errors()
+                $e->errors(),
+                ['error' => $e->getMessage()]
             );
         } catch (\Exception $e) {
             return $this->error(
@@ -317,13 +323,16 @@ class PluginController extends AdminBaseController
 
                 return $this->success('plugins.deactivate_success', $result);
             } else {
-                return $this->error('plugins.deactivate_failed');
+                return $this->error('plugins.deactivate_failed', 400, null, [
+                    'error' => $result['reason'] ?? __('plugins.errors.unknown_error'),
+                ]);
             }
         } catch (ValidationException $e) {
             return $this->error(
                 'plugins.deactivate_validation_failed',
                 422,
-                $e->errors()
+                $e->errors(),
+                ['error' => $e->getMessage()]
             );
         } catch (\Exception $e) {
             return $this->error(
@@ -388,18 +397,21 @@ class PluginController extends AdminBaseController
             $pluginName = $validated['plugin_name'];
             $deleteData = $validated['delete_data'] ?? false;
 
-            $result = $this->pluginService->uninstallPlugin($pluginName, $deleteData);
+            $result = $this->pluginService->uninstallPlugin($pluginName, $deleteData, $uninstallFailureReason);
 
             if ($result) {
                 return $this->success('plugins.uninstall_success');
             } else {
-                return $this->error('plugins.uninstall_failed');
+                return $this->error('plugins.uninstall_failed', 400, null, [
+                    'error' => $uninstallFailureReason ?? __('plugins.errors.unknown_error'),
+                ]);
             }
         } catch (ValidationException $e) {
             return $this->error(
                 'plugins.uninstall_validation_failed',
                 422,
-                $e->errors()
+                $e->errors(),
+                ['error' => $e->getMessage()]
             );
         } catch (\Exception $e) {
             return $this->error(
@@ -444,8 +456,10 @@ class PluginController extends AdminBaseController
                 new PluginResource($plugin),
                 201
             );
-        } catch (\RuntimeException $e) {
-            return $this->error($e->getMessage(), 422);
+        } catch (PluginOperationException $e) {
+            // 원본 키와 파라미터를 보존해 넘긴다 — 이미 번역된 getMessage() 를 키 자리에
+            // 넘기면 키 해석에 실패해 그 문장이 그대로 나간다 (상태코드는 기존 계약 유지).
+            return $this->error($e->errorKey, 422, null, $e->params);
         } catch (\Exception $e) {
             return $this->error('plugins.install_failed', 500, null, ['error' => $e->getMessage()]);
         }
@@ -468,8 +482,10 @@ class PluginController extends AdminBaseController
                 new PluginResource($plugin),
                 201
             );
-        } catch (\RuntimeException $e) {
-            return $this->error($e->getMessage(), 422);
+        } catch (PluginOperationException $e) {
+            // 원본 키와 파라미터를 보존해 넘긴다 — 이미 번역된 getMessage() 를 키 자리에
+            // 넘기면 키 해석에 실패해 그 문장이 그대로 나간다 (상태코드는 기존 계약 유지).
+            return $this->error($e->errorKey, 422, null, $e->params);
         } catch (\Exception $e) {
             return $this->error('plugins.install_failed', 500, null, ['error' => $e->getMessage()]);
         }
@@ -487,7 +503,7 @@ class PluginController extends AdminBaseController
 
             return $this->success('plugins.check_updates_success', $result);
         } catch (ValidationException $e) {
-            return $this->error('plugins.check_updates_failed', 422, $e->errors());
+            return $this->error('plugins.check_updates_failed', 422, $e->errors(), ['error' => $e->getMessage()]);
         } catch (\Exception $e) {
             return $this->error('plugins.check_updates_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
@@ -512,7 +528,7 @@ class PluginController extends AdminBaseController
 
             return $this->success('plugins.check_modified_layouts_success', $result);
         } catch (ValidationException $e) {
-            return $this->error('plugins.check_modified_layouts_failed', 422, $e->errors());
+            return $this->error('plugins.check_modified_layouts_failed', 422, $e->errors(), ['error' => $e->getMessage()]);
         } catch (\Exception $e) {
             return $this->error('plugins.check_modified_layouts_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
@@ -608,13 +624,16 @@ class PluginController extends AdminBaseController
                     'unchanged' => $result['unchanged'],
                 ]);
             } else {
-                return $this->error('plugins.refresh_layouts_failed');
+                return $this->error('plugins.refresh_layouts_failed', 400, null, [
+                    'error' => __('plugins.errors.unknown_error'),
+                ]);
             }
         } catch (ValidationException $e) {
             return $this->error(
                 'plugins.refresh_layouts_validation_failed',
                 422,
-                $e->errors()
+                $e->errors(),
+                ['error' => $e->getMessage()]
             );
         } catch (\Exception $e) {
             return $this->error(

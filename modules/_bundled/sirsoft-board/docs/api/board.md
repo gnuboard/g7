@@ -361,7 +361,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | reply_count | integer | `0` | reply 개수 (집계) |
 | attachment_count | integer | `0` | attachment 개수 (집계) |
 | has_attachment | boolean | `false` | attachment 여부 |
-| thumbnail | string | `/api/modules/sirsoft-board/boards/api…` | 썸네일 이미지 URL/경로 — `/api/modules/sirsoft-board/boards/{slug}/attachment/{hash}/preview` 형식 (첫 이미지 첨부의 미리보기 서빙 URL) |
+| thumbnail | string | `/api/modules/sirsoft-board/boards/api…` | 썸네일 이미지 URL/경로 — `/api/modules/sirsoft-board/boards/{slug}/attachment/{hash}/preview` 형식 (첫 이미지 첨부의 미리보기 서빙 URL). 비밀글은 열람 권한이 없으면 `null` 로 내려간다(첨부 해시 노출 차단 — 필드 자체는 유지) |
 | parent_id | null | `null` | parent 식별자 (연관 리소스 참조) |
 | depth | integer | `0` | 계층 트리에서의 깊이 (0 = 최상위, 하위로 갈수록 증가) |
 | is_reply | boolean | `false` | reply 여부 |
@@ -1040,7 +1040,7 @@ _단건 응답: `data` 객체의 필드._
 | reply_count | integer | `0` | reply 개수 (집계) |
 | attachment_count | integer | `0` | attachment 개수 (집계) |
 | has_attachment | boolean | `false` | attachment 여부 |
-| thumbnail | string | `/api/modules/sirsoft-board/boards/api…` | 썸네일 이미지 URL/경로 — `/api/modules/sirsoft-board/boards/{slug}/attachment/{hash}/preview` 형식 (첫 이미지 첨부의 미리보기 서빙 URL) |
+| thumbnail | string | `/api/modules/sirsoft-board/boards/api…` | 썸네일 이미지 URL/경로 — `/api/modules/sirsoft-board/boards/{slug}/attachment/{hash}/preview` 형식 (첫 이미지 첨부의 미리보기 서빙 URL). 비밀글은 열람 권한이 없으면 `null` 로 내려간다(첨부 해시 노출 차단 — 필드 자체는 유지) |
 | parent_id | null | `null` | parent 식별자 (연관 리소스 참조) |
 | depth | integer | `0` | 계층 트리에서의 깊이 (0 = 최상위, 하위로 갈수록 증가) |
 | is_reply | boolean | `false` | reply 여부 |

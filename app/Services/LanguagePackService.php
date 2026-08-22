@@ -763,7 +763,12 @@ class LanguagePackService
 
             $response = Http::timeout(120)->get($url);
             if (! $response->successful()) {
-                throw new LanguagePackOperationException('language_packs.errors.download_failed', ['url' => $url]);
+                // 응답 상태를 사유로 싣는다 — 비우면 치환 자리가 남아 관리자 화면에
+                // 리터럴 ':error' 가 그대로 노출된다.
+                throw new LanguagePackOperationException('language_packs.errors.download_failed', [
+                    'url' => $url,
+                    'error' => 'HTTP '.$response->status(),
+                ]);
             }
             File::put($zipPath, $response->body());
 

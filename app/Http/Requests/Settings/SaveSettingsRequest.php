@@ -4,6 +4,7 @@ namespace App\Http\Requests\Settings;
 
 use App\Extension\HookManager;
 use App\Models\Attachment;
+use App\Rules\ValidOutboundProxyUrl;
 use App\Search\Engines\DatabaseFulltextEngine;
 use App\Services\DriverRegistryService;
 use App\Support\AllowedExtensions;
@@ -295,6 +296,13 @@ class SaveSettingsRequest extends FormRequest
             // 디버그 설정 (advanced 탭)
             'advanced.debug_mode' => $this->getTabRules($tab, 'advanced', 'boolean'),
             'advanced.sql_query_log' => $this->getTabRules($tab, 'advanced', 'boolean'),
+
+            // 아웃바운드 HTTP 프록시 (advanced 탭)
+            // 디버그 모드 OFF 시 하위 필드는 collapse 되어 미전송됨 → nullable 필수
+            // (geoip 하위 필드와 같은 사유 — 조건부 렌더링 내부에 있다)
+            'advanced.outbound_proxy' => ['nullable', 'string', 'max:500', new ValidOutboundProxyUrl],
+            'advanced.outbound_proxy_bypass' => ['nullable', 'array'],
+            'advanced.outbound_proxy_bypass.*' => ['string', 'max:255'],
 
             // 코어 업데이트 설정 (advanced 탭)
             'advanced.core_update_github_url' => ['nullable', 'url', 'max:500'],
@@ -779,6 +787,13 @@ class SaveSettingsRequest extends FormRequest
             'advanced.sql_query_log.required' => __('validation.settings.sql_query_log_required'),
             'advanced.sql_query_log.boolean' => __('validation.settings.sql_query_log_boolean'),
 
+            // 아웃바운드 HTTP 프록시
+            'advanced.outbound_proxy.string' => __('validation.settings.outbound_proxy_string'),
+            'advanced.outbound_proxy.max' => __('validation.settings.outbound_proxy_max'),
+            'advanced.outbound_proxy_bypass.array' => __('validation.settings.outbound_proxy_bypass_array'),
+            'advanced.outbound_proxy_bypass.*.string' => __('validation.settings.outbound_proxy_bypass_item_string'),
+            'advanced.outbound_proxy_bypass.*.max' => __('validation.settings.outbound_proxy_bypass_item_max'),
+
             // 목록 한계값
             'advanced.pagination_result_cap.integer' => __('validation.settings.pagination_result_cap_integer'),
             'advanced.pagination_result_cap.min' => __('validation.settings.pagination_result_cap_min'),
@@ -972,6 +987,8 @@ class SaveSettingsRequest extends FormRequest
             'advanced.seo_sitemap_cache_ttl' => __('validation.attributes.seo_sitemap_cache_ttl'),
             'advanced.debug_mode' => __('validation.attributes.debug_mode'),
             'advanced.sql_query_log' => __('validation.attributes.sql_query_log'),
+            'advanced.outbound_proxy' => __('validation.attributes.outbound_proxy'),
+            'advanced.outbound_proxy_bypass' => __('validation.attributes.outbound_proxy_bypass'),
             'advanced.core_update_github_url' => __('validation.attributes.core_update_github_url'),
             'advanced.core_update_github_token' => __('validation.attributes.core_update_github_token'),
             'advanced.geoip_enabled' => __('validation.attributes.geoip_enabled'),

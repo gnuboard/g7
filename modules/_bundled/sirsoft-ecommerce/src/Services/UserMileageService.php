@@ -7,6 +7,7 @@ use App\Extension\HookManager;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\DTO\MileageAdminDeductDto;
 use Modules\Sirsoft\Ecommerce\DTO\MileageAdminEarnDto;
@@ -379,36 +380,35 @@ class UserMileageService
         // 방식 A: 기존 purchase_earn lot 이 있으면 그 lot 에 델타를 증액(적립 내역 한 줄 유지).
         // 취소 회수(findEarnLotForOption 단일 lot 가정)·유효기간 정합을 위해 신규 lot 을 늘리지 않는다.
         if ($type === MileageTransactionTypeEnum::PURCHASE_EARN
-            && ($existingLot = $this->ledger->findEarnLotForOption($option->id)) !== null) {
-            $this->ledger->incrementEarnLotAmount($existingLot, $amount);
-
-            $this->cache->recalculateForUser($order->user_id, $currency);
-            $this->cache->recalculatePending($order->user_id, $currency);
-
-            $this->logActivity('mileage.earn', [
-                'loggable' => $existingLot,
-                'description_key' => 'sirsoft-ecommerce::activity_log.description.mileage_earn',
-                'description_params' => ['amount' => ecommerce_format_price((int) $amount, $currency)],
-                'properties' => ['order_id' => $order->id, 'order_option_id' => $option->id, 'currency' => $currency, 'delta' => (int) $amount],
-            ]);
-
-            return $existingLot;
+            && $this->ledger->findEarnLotForOption($option->id) !== null) {
+            return $this->applyDeltaToExistingEarnLot($order, $option, $currency, $target);
         }
 
         $expiresAt = $this->resolveEarnExpiry();
 
-        $tx = $this->ledger->createTransaction([
-            'user_id' => $order->user_id,
-            'currency' => $currency,
-            'type' => $type->value,
-            'amount' => $amount,
-            'remaining_amount' => $amount,
-            'balance_after' => $this->ledger->getBalanceByCurrency($order->user_id, $currency) + $amount,
-            'order_id' => $order->id,
-            'order_option_id' => $option->id,
-            'expires_at' => $expiresAt,
-            'description' => __('sirsoft-ecommerce::activity_log.description.mileage_earn', ['amount' => ecommerce_format_price($amount, $currency)]),
-        ]);
+        try {
+            $tx = $this->ledger->createTransaction([
+                'user_id' => $order->user_id,
+                'currency' => $currency,
+                'type' => $type->value,
+                'amount' => $amount,
+                'remaining_amount' => $amount,
+                'balance_after' => $this->ledger->getBalanceByCurrency($order->user_id, $currency) + $amount,
+                'order_id' => $order->id,
+                'order_option_id' => $option->id,
+                'expires_at' => $expiresAt,
+                'description' => __('sirsoft-ecommerce::activity_log.description.mileage_earn', ['amount' => ecommerce_format_price($amount, $currency)]),
+            ]);
+        } catch (UniqueConstraintViolationException $e) {
+            // 최초 적립이 동시에 겹쳐 다른 요청이 먼저 lot 을 만들었다. 옵션당 적립 lot 은
+            // 한 줄이어야 하므로(취소 회수가 그 한 줄을 되돌린다) 새로 만들지 않고 증액 경로로
+            // 흡수한다 — 델타는 잠근 행 기준으로 다시 산정되므로 이중 적립이 되지 않는다.
+            if ($type !== MileageTransactionTypeEnum::PURCHASE_EARN) {
+                throw $e;
+            }
+
+            return $this->applyDeltaToExistingEarnLot($order, $option, $currency, $target);
+        }
 
         $this->cache->recalculateForUser($order->user_id, $currency);
         $this->cache->recalculatePending($order->user_id, $currency);
@@ -558,17 +558,24 @@ class UserMileageService
             return null;
         }
 
-        // 해당 옵션 적립건 조회
-        $earnLot = $this->ledger->findEarnLotForOption($option->id);
-
-        if ($earnLot === null) {
+        // 해당 옵션 적립건 존재 확인 (실제 회수 대상은 트랜잭션 안에서 잠금과 함께 되읽는다)
+        if ($this->ledger->findEarnLotForOption($option->id) === null) {
             return null;
         }
 
         $currency = $this->baseCurrencyForOrder($order);
-        $toRecover = (float) $earnLot->amount;
 
-        return DB::transaction(function () use ($order, $option, $earnLot, $currency, $toRecover) {
+        return DB::transaction(function () use ($order, $option, $currency) {
+            // 회수액은 잠근 행의 커밋된 금액 기준이어야 한다 — 트랜잭션 밖에서 읽은 값을 쓰면
+            // 그 사이 반영된 적립 증액분이 회수에서 누락된다.
+            $earnLot = $this->ledger->findEarnLotForOptionForUpdate($option->id);
+
+            if ($earnLot === null) {
+                return null;
+            }
+
+            $toRecover = (float) $earnLot->amount;
+
             $shortfall = $this->recoverPoints($order->user_id, $currency, $toRecover, $earnLot);
 
             $tx = $this->ledger->createTransaction([
@@ -962,6 +969,49 @@ class UserMileageService
             ]);
 
             return $tx;
+        });
+    }
+
+    /**
+     * 기존 구매 적립 lot 에 목표액 대비 델타만 증액합니다 (방식 A — 적립 내역 한 줄 유지).
+     *
+     * 델타는 행을 잠근 뒤 다시 산정한다 — 두 확정 요청이 같은 기적립 합계를 읽으면 같은
+     * 델타를 각자 증액해 목표 적립액을 넘어선다.
+     *
+     * @param  Order  $order  주문
+     * @param  OrderOption  $option  주문옵션
+     * @param  string  $currency  기준 통화
+     * @param  float  $target  목표 적립액
+     * @return MileageTransaction|null 증액된 적립건 (대상 없으면 null)
+     */
+    private function applyDeltaToExistingEarnLot(Order $order, OrderOption $option, string $currency, float $target): ?MileageTransaction
+    {
+        return DB::transaction(function () use ($order, $option, $currency, $target) {
+            $existingLot = $this->ledger->findEarnLotForOptionForUpdate($option->id);
+
+            if ($existingLot === null) {
+                return null;
+            }
+
+            $delta = $target - $this->ledger->sumPurchaseEarnedForOption($option->id);
+
+            if ($delta <= 0) {
+                return $existingLot;
+            }
+
+            $this->ledger->incrementEarnLotAmount($existingLot, $delta);
+
+            $this->cache->recalculateForUser($order->user_id, $currency);
+            $this->cache->recalculatePending($order->user_id, $currency);
+
+            $this->logActivity('mileage.earn', [
+                'loggable' => $existingLot,
+                'description_key' => 'sirsoft-ecommerce::activity_log.description.mileage_earn',
+                'description_params' => ['amount' => ecommerce_format_price((int) $delta, $currency)],
+                'properties' => ['order_id' => $order->id, 'order_option_id' => $option->id, 'currency' => $currency, 'delta' => (int) $delta],
+            ]);
+
+            return $existingLot;
         });
     }
 

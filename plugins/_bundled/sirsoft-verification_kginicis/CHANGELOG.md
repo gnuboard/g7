@@ -4,6 +4,13 @@ All notable changes to this plugin will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.0.4] - 2026-08-22
+
+### Changed
+
+- 본인인증 승인 요청이 사이트 환경설정의 아웃바운드 프록시 설정을 따르도록 했습니다. 이전에는 이 요청만 프록시를 거치지 않고 직접 나가서, 프록시를 사용하는 환경에서 결제사에 등록한 IP 와 다른 IP 로 접속했습니다.
+- 코어 최소 요구 버전을 7.0.8 로 상향했습니다.
+
 ## [1.0.3] - 2026-08-19
 
 ### Fixed

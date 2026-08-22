@@ -88,8 +88,11 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
      */
     public function decrementRemaining(MileageTransaction $lot, float $amount): void
     {
-        $lot->remaining_amount = (float) $lot->remaining_amount - $amount;
-        $lot->save();
+        // 값을 PHP 에서 빼고 모델 전체를 저장하면, 스냅샷을 읽은 뒤 다른 요청이 반영한
+        // 증감이 통째로 사라진다. 컬럼 연산으로 위임해 커밋된 값에서 차감한다.
+        MileageTransaction::query()->where('id', $lot->id)->decrement('remaining_amount', $amount);
+
+        $lot->refresh();
     }
 
     /**
@@ -130,9 +133,14 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
      */
     public function incrementEarnLotAmount(MileageTransaction $lot, float $delta): void
     {
-        $lot->amount = (float) $lot->amount + $delta;
-        $lot->remaining_amount = (float) $lot->remaining_amount + $delta;
-        $lot->save();
+        // 스냅샷 기준 재계산 대신 컬럼 연산 — 그 사이 반영된 다른 증감을 덮어쓰지 않는다.
+        MileageTransaction::query()->where('id', $lot->id)->incrementEach([
+            'amount' => $delta,
+            'remaining_amount' => $delta,
+        ]);
+
+        // 호출부가 이 모델을 그대로 반환·기록하므로 반영된 값으로 되읽는다
+        $lot->refresh();
     }
 
     /**
@@ -445,6 +453,19 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
         return MileageTransaction::query()
             ->where('order_option_id', $orderOptionId)
             ->where('type', MileageTransactionTypeEnum::PURCHASE_EARN->value)
+            ->first();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function findEarnLotForOptionForUpdate(int $orderOptionId): ?MileageTransaction
+    {
+        // 잠금은 트랜잭션 안에서만 의미가 있다 — 적립/회수 갱신 트랜잭션에서 호출한다
+        return MileageTransaction::query()
+            ->where('order_option_id', $orderOptionId)
+            ->where('type', MileageTransactionTypeEnum::PURCHASE_EARN->value)
+            ->lockForUpdate()
             ->first();
     }
 

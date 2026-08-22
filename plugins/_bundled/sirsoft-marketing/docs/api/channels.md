@@ -79,7 +79,7 @@ _단건 응답: `data` 객체의 필드. `data.channels` 는 저장 후 확정�
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 관리자 권한이 없는 사용자가 호출한 경우 (`AdminBaseController`) |
+| 403 | Forbidden | 관리자가 아니거나 `core.plugins.update` 권한이 없는 경우 |
 | 422 | 동의 이력 존재 | 삭제 대상 채널에 동의한 회원이 있는 경우 — "채널(:key)에 동의한 회원이 :count명 있어 삭제할 수 없습니다." |
 
 <!-- @generated:end -->
@@ -87,6 +87,8 @@ _단건 응답: `data` 객체의 필드. `data.channels` 는 저장 후 확정�
 **설명**
 
 관리자 환경설정 화면에서 마케팅 동의 **채널 목록 전체를 한 번에 저장**하는 엔드포인트다. 컨트롤러가 `AdminBaseController` 를 상속하므로 실제 인증은 `auth:sanctum` **에 더해 관리자(admin) 권한**을 요구한다(생성기 표기는 `auth:sanctum` 만 노출). 제출된 배열이 곧 새 상태가 되며, 개별 채널 추가/수정 엔드포인트는 없다(전량 교체 방식).
+
+이 엔드포인트는 코어의 `PUT /api/admin/plugins/{identifier}/settings` 와 같은 `plugin_settings` 를 덮어쓰므로, 라우트에 **`permission:admin,core.plugins.update`** 가 부착되어 있다. 관리자 계정이더라도 플러그인 설정 권한이 없으면 403 이 된다(생성기 표기에는 나타나지 않는다).
 
 **요청 파라미터**는 생성기가 배열 중첩 규칙(`channels.*`)을 평면화하지 못해 위 표에 "없음"으로 표기되나, 실제 `ChannelUpdateRequest` 는 다음 body 를 요구한다:
 

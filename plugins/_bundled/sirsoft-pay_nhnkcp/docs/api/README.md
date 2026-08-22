@@ -5,4 +5,5 @@
 | 문서 | 도메인 | 설명 |
 | --- | --- | --- |
 | [vbank.md](vbank.md) | `payment` | 가상계좌 입금통보·에스크로 공통통보 수신 경로와 발신 서버(IP) 확인 |
+| [admin-orders.md](admin-orders.md) | `admin` | 관리자 주문 연동 경로 전체와 각 경로의 요구 권한 |
 | [transaction-status.md](transaction-status.md) | `admin` | 관리자 주문 상세의 거래 상태·취소·환불 조회 |

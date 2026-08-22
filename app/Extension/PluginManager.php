@@ -296,6 +296,7 @@ class PluginManager implements PluginManagerInterface
      * @param  \Closure|null  $onProgress  진행 콜백 (?string $step, string $message)
      * @param  VendorMode  $vendorMode  vendor 디렉토리 처리 모드
      * @param  bool  $force  강제 설치 여부
+     * @param  string|null  $failureReason  실패 시 사유가 담기는 out 파라미터 (성공 시 null)
      * @return bool 설치 성공 여부
      *
      * @throws \Exception 플러그인을 찾을 수 없거나 의존성 문제 시
@@ -305,7 +306,10 @@ class PluginManager implements PluginManagerInterface
         ?\Closure $onProgress = null,
         VendorMode $vendorMode = VendorMode::Auto,
         bool $force = false,
+        ?string &$failureReason = null,
     ): bool {
+        $failureReason = null;
+
         // identifier 형식 검증 (내부 호출 방어)
         ExtensionManager::validateIdentifierFormat($pluginName);
 
@@ -386,7 +390,12 @@ class PluginManager implements PluginManagerInterface
 
         // 플러그인 설치 실행
         $onProgress?->__invoke('validate', '검증 중...');
+        $plugin->clearLifecycleFailureReason();
         $result = $plugin->install();
+
+        if (! $result) {
+            $failureReason = $plugin->getLifecycleFailureReason() ?? __('plugins.errors.unknown_error');
+        }
 
         if (! $result) {
             return false;
@@ -522,8 +531,14 @@ class PluginManager implements PluginManagerInterface
     {
         $plugin = $this->getPlugin($pluginName);
         if (! $plugin) {
-            return ['success' => false, 'layouts_registered' => 0];
+            return [
+                'success' => false,
+                'layouts_registered' => 0,
+                'reason' => __('plugins.errors.not_found', ['plugin' => $pluginName]),
+            ];
         }
+
+        $plugin->clearLifecycleFailureReason();
 
         // 상태 가드: 진행 중 상태 체크
         $record = $this->pluginRepository->findByIdentifier($plugin->getIdentifier());
@@ -613,6 +628,13 @@ class PluginManager implements PluginManagerInterface
                 'updated_at' => now(),
             ]);
 
+            // 플러그인 상태 캐시 무효화 — DB 상태 쓰기 직후에 둔다.
+            // 뒤따르는 굽기(RouteCacheHelper::rebuild() 의 route:cache, 훅 캐시 재생성)는
+            // 새 애플리케이션을 부팅해 "캐시된" 활성 플러그인 목록을 읽는다. 여기서 비우지 않으면
+            // 방금 활성으로 바뀐 이 플러그인이 목록에서 빠진 채 라우트가 박제되고,
+            // 라우트 캐시에는 스캔 폴백이 없어 오류·경고 없이 그 엔드포인트만 404 가 된다.
+            self::invalidatePluginStatusCache();
+
             // soft deleted된 플러그인 레이아웃 복원 (재활성화 시)
             $this->restorePluginLayouts($plugin->getIdentifier());
 
@@ -635,9 +657,6 @@ class PluginManager implements PluginManagerInterface
             $this->incrementExtensionCacheVersion();
             RouteCacheHelper::rebuild();
 
-            // 플러그인 상태 캐시 무효화
-            self::invalidatePluginStatusCache();
-
             // 본인인증 route scope 캐시 무효화 — 재활성화 시 이 플러그인이 선언한 정책이
             // 다시 enforce 대상에 포함되도록 한다 (applyActiveExtensionScope 재평가).
             IdentityPolicy::flushRouteScopeCache();
@@ -652,7 +671,18 @@ class PluginManager implements PluginManagerInterface
             HookManager::doAction('core.plugins.activated', $pluginName);
         }
 
-        return ['success' => $result, 'layouts_registered' => $layoutsRegistered];
+        if (! $result) {
+            // 플러그인이 스스로 활성화를 거부했다. 사유를 남겼으면 그대로 싣고,
+            // 남기지 않았으면 일반 문구로 대체한다 — 원인 자리를 비워 두면
+            // 관리자 화면에 치환되지 않은 자리표시자가 그대로 노출된다.
+            return [
+                'success' => false,
+                'layouts_registered' => $layoutsRegistered,
+                'reason' => $plugin->getLifecycleFailureReason() ?? __('plugins.errors.unknown_error'),
+            ];
+        }
+
+        return ['success' => true, 'layouts_registered' => $layoutsRegistered];
     }
 
     /**
@@ -699,8 +729,14 @@ class PluginManager implements PluginManagerInterface
     ): array {
         $plugin = $this->getPlugin($pluginName);
         if (! $plugin) {
-            return ['success' => false, 'layouts_deleted' => 0];
+            return [
+                'success' => false,
+                'layouts_deleted' => 0,
+                'reason' => __('plugins.errors.not_found', ['plugin' => $pluginName]),
+            ];
         }
+
+        $plugin->clearLifecycleFailureReason();
 
         // 상태 가드: 진행 중 상태 체크
         $record = $this->pluginRepository->findByIdentifier($plugin->getIdentifier());
@@ -765,6 +801,12 @@ class PluginManager implements PluginManagerInterface
                 'updated_at' => now(),
             ]);
 
+            // 플러그인 상태 캐시 무효화 — DB 상태 쓰기 직후에 둔다.
+            // 뒤따르는 RouteCacheHelper::rebuild() 가 캐시된 활성 플러그인 목록을 읽으므로,
+            // 여기서 비우지 않으면 방금 비활성으로 바꾼 플러그인의 라우트가 그대로 박제되어
+            // 비활성 상태에서도 그 API 가 계속 호출 가능한 상태로 남는다.
+            self::invalidatePluginStatusCache();
+
             // 플러그인 레이아웃 soft delete
             $layoutsDeleted = $this->softDeletePluginLayouts($plugin->getIdentifier());
 
@@ -784,9 +826,6 @@ class PluginManager implements PluginManagerInterface
             // 플러그인 자체 캐시 전체 정리
             $this->flushPluginCache($plugin);
 
-            // 플러그인 상태 캐시 무효화
-            self::invalidatePluginStatusCache();
-
             // 본인인증 route scope 캐시 무효화 — 비활성 플러그인이 선언한 정책이 enforce
             // 대상에서 즉시 제외되도록 한다. 정책 행은 변경하지 않으므로(enabled 보존)
             // IdentityPolicy 모델 이벤트가 발화하지 않아, 라이프사이클에서 명시적으로 호출한다.
@@ -800,6 +839,10 @@ class PluginManager implements PluginManagerInterface
         }
 
         $response = ['success' => $result, 'layouts_deleted' => $layoutsDeleted];
+
+        if (! $result) {
+            $response['reason'] = $plugin->getLifecycleFailureReason() ?? __('plugins.errors.unknown_error');
+        }
 
         if (! empty($driverWarnings)) {
             $response['driver_warnings'] = $driverWarnings;
@@ -888,12 +931,19 @@ class PluginManager implements PluginManagerInterface
      * @param  string  $pluginName  제거할 플러그인명
      * @param  bool  $deleteData  플러그인 데이터(테이블) 삭제 여부
      * @param  \Closure|null  $onProgress  진행 콜백 (?string $step, string $message)
+     * @param  string|null  $failureReason  실패 시 사유가 담기는 out 파라미터 (성공 시 null)
      * @return bool 제거 성공 여부
      *
      * @throws \Exception 플러그인을 찾을 수 없을 때
      */
-    public function uninstallPlugin(string $pluginName, bool $deleteData = false, ?\Closure $onProgress = null): bool
-    {
+    public function uninstallPlugin(
+        string $pluginName,
+        bool $deleteData = false,
+        ?\Closure $onProgress = null,
+        ?string &$failureReason = null,
+    ): bool {
+        $failureReason = null;
+
         // 상태 가드: 진행 중 상태 체크
         $existingRecord = $this->pluginRepository->findByIdentifier($pluginName);
         if ($existingRecord) {
@@ -922,7 +972,12 @@ class PluginManager implements PluginManagerInterface
             DB::beginTransaction();
 
             // 플러그인 제거 실행
+            $plugin->clearLifecycleFailureReason();
             $result = $plugin->uninstall();
+
+            if (! $result) {
+                $failureReason = $plugin->getLifecycleFailureReason() ?? __('plugins.errors.unknown_error');
+            }
 
             if ($result) {
                 // 권한/역할은 $deleteData=true 시에만 삭제.
@@ -984,6 +1039,12 @@ class PluginManager implements PluginManagerInterface
 
             // 트랜잭션 외부에서 실행
             if ($result) {
+                // 플러그인 상태 캐시 무효화 — DB 에서 플러그인 행을 지운 직후(커밋 직후)에 둔다.
+                // 뒤따르는 굽기(오토로드 갱신 내 훅 캐시 재생성, RouteCacheHelper::rebuild())가
+                // 캐시된 활성 플러그인 목록을 읽으므로, 여기서 비우지 않으면 이미 제거된
+                // 플러그인이 목록에 남은 채로 라우트·훅이 박제된다.
+                self::invalidatePluginStatusCache();
+
                 // 플러그인 설정 디렉토리 삭제 (deleteData 옵션이 true인 경우)
                 if ($deleteData) {
                     $this->deletePluginSettingsDirectory($plugin);
@@ -1008,9 +1069,6 @@ class PluginManager implements PluginManagerInterface
 
                 // 플러그인 자체 캐시 전체 정리
                 $this->flushPluginCache($plugin);
-
-                // 플러그인 상태 캐시 무효화
-                self::invalidatePluginStatusCache();
 
                 // 확장 미들웨어 인덱스 무효화 — 제거된 플러그인의 미들웨어가 게이트 매칭에서 즉시 제외.
                 ExtensionMiddlewareRegistry::flush();
@@ -4725,6 +4783,13 @@ class PluginManager implements PluginManagerInterface
                 'updated_at' => now(),
             ]);
 
+            // 플러그인 상태 캐시 무효화 — 상태 복원 쓰기 직후에 둔다.
+            // Updating 전이 직후에는 비우지 않는다: 그러면 Updating 창 안의
+            // updateComposerAutoload() 가 DB 를 재조회해 이 플러그인을 비활성으로 판정하고
+            // 훅 캐시에서 리스너를 떨군다(지금 없는 결함을 새로 만든다).
+            // 복원 직후에 비워야 뒤따르는 굽기(라우트·훅)가 복원된 상태를 읽는다.
+            self::invalidatePluginStatusCache();
+
             // 9. 레이아웃 갱신 (이전 상태가 active였으면)
             // refreshPluginLayouts()는 캐시 무효화 + 캐시 버전 증가를 포함
             $onProgress?->__invoke('layout', '레이아웃 갱신 중...');
@@ -4748,7 +4813,13 @@ class PluginManager implements PluginManagerInterface
             $this->clearAllTemplateRoutesCaches();
             $this->incrementExtensionCacheVersion();
             RouteCacheHelper::rebuild();
-            self::invalidatePluginStatusCache();
+
+            // 훅 캐시 재생성 — Updating 창 안의 updateComposerAutoload() 가 구운 훅 캐시에는
+            // 그 시점 이 플러그인이 Updating(=비활성)으로 판정되어 리스너가 통째로 빠져 있을 수 있다.
+            // 훅 캐시 폴백은 파일 부재/손상에만 작동하므로 내용이 stale 한 경우는 조용히 통과한다.
+            // 상태를 복원하고 상태 캐시를 비운 지금 다시 구워야 그 누락이 교정된다.
+            // updateComposerAutoload() 전체를 재호출하지 않는다 — composer autoload 병합은 이미 끝났고 비싸다.
+            $this->extensionManager->regenerateHookCache();
 
             // 훅 발행: 플러그인 업데이트 완료 (Artisan 직접 호출 시에도 리스너 트리거)
             HookManager::doAction('core.plugins.updated', $identifier);

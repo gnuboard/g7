@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Enums\LanguagePackScope;
+use App\Exceptions\TemplateOperationException;
 use App\Helpers\PermissionHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Controllers\Concerns\InjectsExtensionLanguagePacks;
@@ -169,7 +170,9 @@ class TemplateController extends AdminBaseController
 
                 return $this->success('templates.install_success', $payload, 201);
             } else {
-                return $this->error('templates.install_failed');
+                return $this->error('templates.install_failed', 400, null, [
+                    'error' => __('templates.errors.unknown_error'),
+                ]);
             }
         } catch (ValidationException $e) {
             // Service에서 이미 번역된 메시지를 errors에 포함하므로
@@ -230,10 +233,12 @@ class TemplateController extends AdminBaseController
                     'pending_language_packs' => $pendingLanguagePacks,
                 ]));
             } else {
-                return $this->error('templates.activate_failed');
+                return $this->error('templates.activate_failed', 400, null, [
+                    'error' => $result['reason'] ?? __('templates.errors.unknown_error'),
+                ]);
             }
         } catch (ValidationException $e) {
-            return $this->error('templates.activate_failed', 422, $e->errors());
+            return $this->error('templates.activate_failed', 422, $e->errors(), ['error' => $e->getMessage()]);
         } catch (\Exception $e) {
             return $this->error('templates.activate_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
@@ -249,7 +254,7 @@ class TemplateController extends AdminBaseController
     {
         try {
             $templateName = $request->validated()['template_name'];
-            $template = $this->templateService->deactivateTemplate($templateName);
+            $template = $this->templateService->deactivateTemplate($templateName, $deactivateFailureReason);
 
             if ($template) {
                 return $this->successWithResource(
@@ -257,10 +262,12 @@ class TemplateController extends AdminBaseController
                     new TemplateResource($template)
                 );
             } else {
-                return $this->error('templates.deactivate_failed');
+                return $this->error('templates.deactivate_failed', 400, null, [
+                    'error' => $deactivateFailureReason ?? __('templates.errors.unknown_error'),
+                ]);
             }
         } catch (ValidationException $e) {
-            return $this->error('templates.deactivate_failed', 422, $e->errors());
+            return $this->error('templates.deactivate_failed', 422, $e->errors(), ['error' => $e->getMessage()]);
         } catch (\Exception $e) {
             return $this->error('templates.deactivate_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
@@ -284,10 +291,12 @@ class TemplateController extends AdminBaseController
             if ($result) {
                 return $this->success('templates.uninstall_success');
             } else {
-                return $this->error('templates.uninstall_failed');
+                return $this->error('templates.uninstall_failed', 400, null, [
+                    'error' => __('templates.errors.unknown_error'),
+                ]);
             }
         } catch (ValidationException $e) {
-            return $this->error('templates.uninstall_failed', 422, $e->errors());
+            return $this->error('templates.uninstall_failed', 422, $e->errors(), ['error' => $e->getMessage()]);
         } catch (\Exception $e) {
             return $this->error('templates.uninstall_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
@@ -348,8 +357,10 @@ class TemplateController extends AdminBaseController
                 new TemplateResource($template),
                 201
             );
-        } catch (\RuntimeException $e) {
-            return $this->error($e->getMessage(), 422);
+        } catch (TemplateOperationException $e) {
+            // 원본 키와 파라미터를 보존해 넘긴다 — 이미 번역된 getMessage() 를 키 자리에
+            // 넘기면 키 해석에 실패해 그 문장이 그대로 나간다 (상태코드는 기존 계약 유지).
+            return $this->error($e->errorKey, 422, null, $e->params);
         } catch (\Exception $e) {
             return $this->error('templates.install_failed', 500, null, ['error' => $e->getMessage()]);
         }
@@ -372,8 +383,10 @@ class TemplateController extends AdminBaseController
                 new TemplateResource($template),
                 201
             );
-        } catch (\RuntimeException $e) {
-            return $this->error($e->getMessage(), 422);
+        } catch (TemplateOperationException $e) {
+            // 원본 키와 파라미터를 보존해 넘긴다 — 이미 번역된 getMessage() 를 키 자리에
+            // 넘기면 키 해석에 실패해 그 문장이 그대로 나간다 (상태코드는 기존 계약 유지).
+            return $this->error($e->errorKey, 422, null, $e->params);
         } catch (\Exception $e) {
             return $this->error('templates.install_failed', 500, null, ['error' => $e->getMessage()]);
         }
@@ -397,10 +410,12 @@ class TemplateController extends AdminBaseController
                     new TemplateResource($template)
                 );
             } else {
-                return $this->error('templates.refresh_layouts_failed');
+                return $this->error('templates.refresh_layouts_failed', 400, null, [
+                    'error' => __('templates.errors.unknown_error'),
+                ]);
             }
         } catch (ValidationException $e) {
-            return $this->error('templates.refresh_layouts_failed', 422, $e->errors());
+            return $this->error('templates.refresh_layouts_failed', 422, $e->errors(), ['error' => $e->getMessage()]);
         } catch (\Exception $e) {
             return $this->error('templates.refresh_layouts_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
@@ -418,7 +433,7 @@ class TemplateController extends AdminBaseController
 
             return $this->success('templates.check_updates_success', $result);
         } catch (ValidationException $e) {
-            return $this->error('templates.check_updates_failed', 422, $e->errors());
+            return $this->error('templates.check_updates_failed', 422, $e->errors(), ['error' => $e->getMessage()]);
         } catch (\Exception $e) {
             return $this->error('templates.check_updates_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
@@ -446,7 +461,7 @@ class TemplateController extends AdminBaseController
 
             return $this->success('templates.check_modified_layouts_success', $result);
         } catch (ValidationException $e) {
-            return $this->error('templates.check_modified_layouts_failed', 422, $e->errors());
+            return $this->error('templates.check_modified_layouts_failed', 422, $e->errors(), ['error' => $e->getMessage()]);
         } catch (\Exception $e) {
             return $this->error('templates.check_modified_layouts_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }

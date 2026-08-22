@@ -9,6 +9,7 @@ use App\Contracts\Extension\StorageInterface;
 use App\Contracts\Extension\UpgradeStepInterface;
 use App\Extension\Cache\ModuleCacheDriver;
 use App\Extension\Storage\ModuleStorageDriver;
+use App\Extension\Traits\ReportsLifecycleFailure;
 use Illuminate\Database\Seeder;
 use ReflectionClass;
 
@@ -21,6 +22,8 @@ use ReflectionClass;
  */
 abstract class AbstractModule implements CacheableExtensionInterface, ModuleInterface
 {
+    use ReportsLifecycleFailure;
+
     /**
      * 모듈 디렉토리 경로 (캐시)
      */
