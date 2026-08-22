@@ -70,6 +70,57 @@ class EcommerceModuleSeoTest extends ModuleTestCase
     }
 
     /**
+     * 카테고리 og:image 출력 레벨 — thumbnail_url 이 있으면 image 가 절대 URL 로 방출된다.
+     *
+     * @scenario product-content-thumbnail-fallback
+     *
+     * @effects category_og_image_emitted_from_thumbnail_url
+     */
+    public function test_category_seo_og_defaults_emits_image_from_thumbnail_url(): void
+    {
+        $context = [
+            'category' => [
+                'data' => [
+                    'name' => ['ko' => '아우터', 'en' => 'Outer'],
+                    'thumbnail_url' => '/api/modules/sirsoft-ecommerce/category-image/cat123',
+                ],
+            ],
+        ];
+
+        $og = $this->module->seoOgDefaults('category', $context);
+
+        $this->assertArrayHasKey('image', $og);
+        $this->assertStringStartsWith('http', $og['image'], 'og:image 는 절대 URL 이어야 공유 카드가 인식합니다');
+        $this->assertStringContainsString('/api/modules/sirsoft-ecommerce/category-image/cat123', $og['image']);
+        $this->assertSame('아우터', $og['image_alt']);
+    }
+
+    /**
+     * 카테고리 og:image 출력 레벨 — 이미지 없는 카테고리는 image 키 자체가 미출력된다
+     * (빈 값은 array_filter 로 제거 → 코어 사이트 기본 OG 이미지 폴백에 위임).
+     *
+     * @scenario product-content-thumbnail-fallback
+     *
+     * @effects category_og_image_omitted_without_thumbnail
+     */
+    public function test_category_seo_og_defaults_omits_image_without_thumbnail(): void
+    {
+        $context = [
+            'category' => [
+                'data' => [
+                    'name' => '아우터',
+                    'thumbnail_url' => null,
+                ],
+            ],
+        ];
+
+        $og = $this->module->seoOgDefaults('category', $context);
+
+        $this->assertArrayNotHasKey('image', $og);
+        $this->assertSame('website', $og['type']);
+    }
+
+    /**
      * 회귀: 상품 structured_data 도 다국어 array 안전 처리.
      */
     public function test_product_structured_data_handles_multilingual_array(): void

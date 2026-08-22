@@ -133,6 +133,14 @@ core.activity_log.before_prune          core.activity_log.after_prune
 core.notification_log.before_prune      core.notification_log.after_prune
 core.schedule.before_prune_history      core.schedule.after_prune_history
 
+# 본문 첫 내부 이미지 썸네일 캐시 (Filter, 공개#22) — 각 모델 saving 이벤트가 발행.
+# 값 = 추출된 첫 내부 이미지 URL(없으면 null), 인자 = (값, 모델, 전체 후보 src 배열).
+# 확장이 후보를 대체(CDN prefix 승격 등)하거나 차단(null 반환)할 수 있다.
+# 특정 에디터 확장에 의존하지 않는다 — 페이로드는 일반 HTML 파싱 결과뿐이다.
+sirsoft-board.post.filter_content_thumbnail
+sirsoft-ecommerce.product.filter_content_thumbnail
+sirsoft-page.page.filter_content_thumbnail
+
 # 업로드 트라이어드 — 사용자 첨부 업로드 지점의 표준 3훅 패턴
 # before_upload(액션) → filter_upload_file(필터: UploadedFile 을 받아 변형본을 반환.
 # 저장 파일명·MIME·크기가 모두 반환 파일 기준이 된다) → after_upload(액션)

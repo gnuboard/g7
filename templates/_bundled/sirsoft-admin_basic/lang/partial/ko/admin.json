@@ -1423,6 +1423,8 @@
       "og_image_default_width": "OG 이미지 기본 가로 (px)",
       "og_image_default_height": "OG 이미지 기본 세로 (px)",
       "og_image_default_size_hint": "썸네일 실제 크기를 모르는 경우의 기본값입니다. 페이스북은 권장 1200×630, 최소 200×200.",
+      "og_image_default": "기본 공유 이미지",
+      "og_image_default_desc": "화면별 공유 이미지가 없을 때 사용할 사이트 기본 이미지입니다. 링크 공유 시 미리보기 카드에 표시됩니다.",
       "twitter_default_card": "Twitter 카드 기본 타입",
       "twitter_default_card_hint": "이미지가 큰 카드는 summary_large_image, 작은 카드는 summary 권장.",
       "twitter_default_site": "Twitter 사이트 핸들",
