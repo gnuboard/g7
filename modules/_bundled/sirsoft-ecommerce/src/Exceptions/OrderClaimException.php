@@ -255,6 +255,58 @@ class OrderClaimException extends Exception
     }
 
     /**
+     * 교환 대상 신규 상품옵션이 유효하지 않을 때 (부재·비활성·다른 상품의 옵션)
+     *
+     * 교환은 **같은 상품의 다른 옵션**으로만 바꿀 수 있다(D29 "동일상품/옵션변경"). 다른 상품의
+     * 옵션을 받으면 배송정책·과세·적립 정책이 원 상품과 달라 차액 하나로 정산할 수 없다.
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function newOptionInvalid(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_new_option_invalid');
+    }
+
+    /**
+     * 교환 대상 신규 상품옵션의 재고가 신청 수량에 못 미칠 때
+     *
+     * 신청 시점과 승인 시점(재고 차감) 양쪽에서 쓴다. 승인 시점의 부족은 재고 서비스가
+     * `InsufficientStockException` 으로 올리는 것을 이 사유로 바꿔 일괄 전이 보고에 싣는다.
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function newOptionOutOfStock(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_new_option_out_of_stock');
+    }
+
+    /**
+     * 교환 재발송지의 국가를 주문 배송지와 다르게 지정했을 때 (교환 해외배송 미지원)
+     *
+     * 재발송지는 우편번호·상세주소만 바꿀 수 있다. 국가가 바뀌면 배송정책 자체가 달라져
+     * 왕복 배송비를 원 정책으로 재산정할 근거가 없다.
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function redeliveryCountryChangeNotAllowed(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_redelivery_country_change_not_allowed');
+    }
+
+    /**
+     * 환불이 발생하지 않는 클레임에 환불신청서 접수를 요구했을 때 (동가·고가 교환)
+     *
+     * 조용히 건너뛰면 운영자는 "접수했다" 고 알고 있는데 신청서가 없는 상태가 된다 —
+     * 접수할 것이 없음을 명시적으로 알린다.
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function refundNotApplicable(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_refund_not_applicable');
+    }
+
+    /**
      * 다국어 메시지 키를 반환합니다.
      *
      * @return string 다국어 메시지 키

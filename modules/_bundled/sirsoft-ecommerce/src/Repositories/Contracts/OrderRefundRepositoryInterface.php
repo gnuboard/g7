@@ -40,4 +40,18 @@ interface OrderRefundRepositoryInterface
      * @return Collection 진행 중 환불신청서 목록
      */
     public function listPendingByOrderId(int $orderId, array $excludeIds = []): Collection;
+
+    /**
+     * 발생 출처(polymorphic 축)로 환불신청서 목록을 조회합니다.
+     *
+     * 교환 신청서는 반품과 달리 `refund_id` 역참조 컬럼이 없어, "이 교환에서 어떤 환불신청서가
+     * 접수됐는가" 는 이 축으로만 되짚는다. 교환은 완료 라운드마다 그 라운드의 차액으로
+     * 환불신청서를 접수할 수 있으므로 출처당 여러 건이 있을 수 있다(반려·철회된 건 포함).
+     *
+     * @param  string  $sourceType  발생 출처 유형 (RefundSourceTypeEnum 값)
+     * @param  int  $sourceId  발생 출처 ID
+     * @param  array<string>  $relations  함께 로드할 관계 (예: refundOptions)
+     * @return Collection<int, OrderRefund> 환불신청서 목록 (ID 오름차순)
+     */
+    public function listBySource(string $sourceType, int $sourceId, array $relations = []): Collection;
 }

@@ -114,6 +114,10 @@ return [
     'claim_option_in_course' => '교환·반품이 진행 중인 상품(:status)은 취소할 수 없습니다.',
     'claim_option_in_course_status_change' => '교환·반품이 진행 중인 상품(:status)은 상태를 변경할 수 없습니다. 해당 신청 건을 먼저 처리하세요.',
     'claim_course_status_not_assignable' => '교환·반품 진행 상태(:status)는 주문 화면에서 직접 지정할 수 없습니다. 교환·반품 신청을 통해서만 진입합니다.',
+    'claim_new_option_invalid' => '교환할 옵션을 사용할 수 없습니다. 같은 상품의 판매 중인 옵션을 선택해 주세요.',
+    'claim_new_option_out_of_stock' => '교환할 옵션의 재고가 부족합니다.',
+    'claim_redelivery_country_change_not_allowed' => '교환 재발송지는 주문 배송지와 같은 국가만 지정할 수 있습니다. (교환 해외배송 미지원)',
+    'claim_refund_not_applicable' => '환불이 발생하지 않는 신청 건이라 환불신청서를 접수할 수 없습니다.',
 
     // 클레임 사유 관련
     'claim_reason_not_found' => '클레임 사유를 찾을 수 없습니다.',

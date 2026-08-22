@@ -338,6 +338,15 @@ class OrderAdjustmentService
     /**
      * 잔여 옵션으로 재계산 입력을 구성합니다.
      *
+     * 교환이 끝난 주문에는 같은 상품이 두 행으로 남는다 — 교환완료(`EXCHANGED`)로 닫힌 원 행과,
+     * 재발송으로 생성된 후속 행(`source_type=exchange`)이다. 후속 행은 원 행의 금액 컬럼·스냅샷
+     * 가격을 그대로 승계하므로 **둘 중 하나만** 세야 한다. 둘 다 세면 교환 뒤의 부분취소에서
+     * 그 상품이 두 번 잔여로 잡혀 환불액이 상품 금액만큼 작아진다 — 오류도 로그도 없다.
+     *
+     * 규칙: 원 행이 아직 교환 진행 중이면 원 행이 회계 주체이고 후속 행은 뺀다(재발송중~완료 전
+     * 구간). 원 행이 교환완료로 닫히면 후속 행이 주체가 되고 원 행을 뺀다. 반품완료(`RETURNED`)는
+     * 승계 행이 없으므로 종전대로 잔여로 센다.
+     *
      * @param  Order  $order  주문
      * @param  array  $excludedMap  제외 맵
      * @return CalculationInput 재계산 입력
@@ -347,9 +356,24 @@ class OrderAdjustmentService
         $items = [];
         $restoredCoupons = [];
 
+        $exchangedSourceIds = $order->options
+            ->filter(fn ($option) => $option->option_status === OrderStatusEnum::EXCHANGED)
+            ->pluck('id')
+            ->all();
+
         foreach ($order->options as $option) {
             // 이미 취소된 옵션은 제외
             if ($option->option_status === OrderStatusEnum::CANCELLED) {
+                continue;
+            }
+
+            // 교환완료로 닫힌 원 행은 후속 행이 승계한다.
+            if ($option->option_status === OrderStatusEnum::EXCHANGED) {
+                continue;
+            }
+
+            // 원 행이 아직 교환 진행 중인 후속 행은 회계 주체가 아니다.
+            if ($option->isExchanged() && ! in_array((int) $option->source_option_id, $exchangedSourceIds, true)) {
                 continue;
             }
 

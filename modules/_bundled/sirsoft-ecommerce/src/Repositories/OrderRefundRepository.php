@@ -40,6 +40,19 @@ class OrderRefundRepository implements OrderRefundRepositoryInterface
     /**
      * {@inheritDoc}
      */
+    public function listBySource(string $sourceType, int $sourceId, array $relations = []): Collection
+    {
+        return $this->model->newQuery()
+            ->with($relations)
+            ->where('refund_source_type', $sourceType)
+            ->where('refund_source_id', $sourceId)
+            ->orderBy('id')
+            ->get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function listPendingByOrderId(int $orderId, array $excludeIds = []): Collection
     {
         $finalValues = array_map(

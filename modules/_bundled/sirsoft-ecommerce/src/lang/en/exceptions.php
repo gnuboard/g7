@@ -114,6 +114,10 @@ return [
     'claim_option_in_course' => 'An item with an exchange or return in progress (:status) cannot be cancelled.',
     'claim_option_in_course_status_change' => 'The status of an item with an exchange or return in progress (:status) cannot be changed. Process the related request first.',
     'claim_course_status_not_assignable' => 'The exchange/return course status (:status) cannot be assigned directly from the order screen. It is entered only through an exchange or return request.',
+    'claim_new_option_invalid' => 'The selected exchange option is unavailable. Please choose an active option of the same product.',
+    'claim_new_option_out_of_stock' => 'The selected exchange option is out of stock.',
+    'claim_redelivery_country_change_not_allowed' => 'The exchange redelivery address must be in the same country as the order shipping address. (International exchange is not supported.)',
+    'claim_refund_not_applicable' => 'A refund request cannot be created because this claim does not produce a refund.',
 
     // Claim Reason related
     'claim_reason_not_found' => 'Claim reason not found.',

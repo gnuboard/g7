@@ -11,8 +11,12 @@ use Modules\Sirsoft\Ecommerce\DTO\ReturnAdjustment;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundPriorityEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
+use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderExchangeRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundRepositoryInterface;
@@ -222,7 +226,10 @@ class CancellableAmountCalculator
      * - 반품(`OrderReturn`): 환불신청서가 아직 없는 건만 재계산으로 환불 예정액을 구한다.
      *   환불신청서가 생긴 건은 그쪽에서 이미 세므로 여기서 또 세면 두 배가 된다
      * - 교환(`OrderExchange`): 저가 교환 차액 환불분(`refund_product_amount`)만 선점 대상이다.
-     *   교환의 배송비·차액 청구는 받는 돈이지 나가는 돈이 아니다
+     *   교환의 배송비·차액 청구는 받는 돈이지 나가는 돈이 아니다. 교환은 완료 라운드마다
+     *   환불신청서를 접수할 수 있어 진행 중에도 그 교환에서 난 환불신청서가 있을 수 있다 —
+     *   그 몫(환불액 + 마일리지 + 차감 배송비, 반려·철회 제외)은 환불신청서 쪽에서 세거나 이미
+     *   나갔으므로 여기서 빼야 두 번 세지 않는다
      *
      * 자기 자신은 반드시 제외해야 한다 — 환불 실행 직전 가드에서 실행 대상 클레임이
      * 선점 목록에 남아 있으면 자기 금액을 스스로 빼 한도가 0 이 되고, 정당한 환불이 막힌다.
@@ -270,7 +277,7 @@ class CancellableAmountCalculator
         }
 
         foreach ($this->pendingExchanges($order, $excludeClaims) as $exchange) {
-            $amount = (float) $exchange->refund_product_amount;
+            $amount = max(0.0, (float) $exchange->refund_product_amount - $this->filedExchangeRefundTotal($exchange));
 
             if ($amount <= 0) {
                 continue;
@@ -332,6 +339,30 @@ class CancellableAmountCalculator
             $order->id,
             $this->excludedIds($excludeClaims, ClaimTypeEnum::EXCHANGE),
         );
+    }
+
+    /**
+     * 이 교환에서 이미 접수된 환불신청서의 차액 총액을 반환합니다. (반려·철회 제외)
+     *
+     * 환불신청서의 `refund_amount` 는 차감 배송비를 뺀 순액이므로, 교환 헤더의 차액(총액)과 같은
+     * 단위로 돌리기 위해 차감 배송비(`refund_shipping_amount` 의 음수분)를 더해 **총액**으로 센다.
+     * 완료된 환불도 포함한다 — 그 돈은 이미 나가 ② 축(결제수단 잔여)에서 빠져 있다.
+     *
+     * @param  OrderExchange  $exchange  교환 신청서
+     * @return float 접수된 차액 총액
+     */
+    protected function filedExchangeRefundTotal(OrderExchange $exchange): float
+    {
+        return (float) $this->refundRepository
+            ->listBySource(RefundSourceTypeEnum::EXCHANGE->value, $exchange->id)
+            ->reject(fn (OrderRefund $refund) => in_array(
+                $refund->refund_status,
+                [RefundStatusEnum::REJECTED, RefundStatusEnum::WITHDRAWN],
+                true,
+            ))
+            ->sum(fn (OrderRefund $refund) => (float) $refund->refund_amount
+                + (float) $refund->refund_points_amount
+                + max(0.0, -(float) $refund->refund_shipping_amount));
     }
 
     /**

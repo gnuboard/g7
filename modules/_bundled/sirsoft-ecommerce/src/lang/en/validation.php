@@ -1905,6 +1905,35 @@ return [
         ],
     ],
 
+    // Claim (exchange/return) request validation messages
+    'claims' => [
+        'items' => [
+            'required' => 'Please select the items to request.',
+            'array' => 'Items must be an array.',
+            'order_option_id_required' => 'Please specify the order item to request.',
+            'quantity_required' => 'Please enter the requested quantity.',
+            'quantity_min' => 'The requested quantity must be at least 1.',
+            'new_product_option_id_integer' => 'The exchange option ID must be a number.',
+            'custom_options_array' => 'Custom option inputs must be an array.',
+        ],
+        'reason_code' => [
+            'required' => 'Please select a reason.',
+            'exists' => 'The selected reason is unavailable.',
+        ],
+        'reason_detail' => [
+            'max' => 'The detailed reason may not be longer than :max characters.',
+        ],
+        'charge_method' => [
+            'in' => 'The selected charge method is unavailable.',
+        ],
+        'redelivery_address' => [
+            'array' => 'The redelivery address must be an object of address fields.',
+            'country_code_size' => 'The redelivery country code must be 2 characters.',
+            'country_code_unchanged' => 'The exchange redelivery address must be in the same country as the order shipping address. (International exchange is not supported.)',
+            'changed_by_user_boolean' => 'The redelivery edited flag must be true or false.',
+        ],
+    ],
+
     // User address validation messages
     'user_address' => [
         'name_required' => 'Address label is required.',

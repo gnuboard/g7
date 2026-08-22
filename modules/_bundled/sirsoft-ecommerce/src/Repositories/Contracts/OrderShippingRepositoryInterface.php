@@ -74,4 +74,27 @@ interface OrderShippingRepositoryInterface
      * @return OrderShipping|null 갱신된 배송 레코드 (레코드가 없으면 null)
      */
     public function updateTrackingByOrderOptionId(int $orderOptionId, array $tracking): ?OrderShipping;
+
+    /**
+     * 주문 옵션의 첫 배송 레코드를 조회합니다.
+     *
+     * @param  int  $orderOptionId  주문 옵션 ID
+     * @return OrderShipping|null 배송 레코드 (없으면 null)
+     */
+    public function findFirstByOrderOptionId(int $orderOptionId): ?OrderShipping;
+
+    /**
+     * 기존 배송 레코드를 다른 주문 옵션용으로 복제합니다.
+     *
+     * 교환 재발송으로 생성된 후속 주문옵션이 원 옵션의 배송정책·국가 설정을 그대로 승계하기 위한
+     * 경로다 — 배송 레코드의 정책 파생 컬럼(shipping_type/정책 스냅샷/금액)은 임의로 만들 수 없고
+     * 원 레코드를 복사하는 것이 유일한 출처다. 시각 컬럼(shipped_at/estimated_arrival_at/
+     * delivered_at/confirmed_at)은 복사하지 않는다.
+     *
+     * @param  OrderShipping  $source  원 배송 레코드
+     * @param  int  $orderOptionId  후속 주문 옵션 ID
+     * @param  array<string, mixed>  $overrides  덮어쓸 컬럼 (shipping_status / carrier_id / tracking_number / shipped_at 등)
+     * @return OrderShipping 생성된 배송 레코드
+     */
+    public function replicateForOrderOption(OrderShipping $source, int $orderOptionId, array $overrides = []): OrderShipping;
 }

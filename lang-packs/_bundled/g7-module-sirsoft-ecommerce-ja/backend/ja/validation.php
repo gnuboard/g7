@@ -1763,6 +1763,33 @@ return [
             'invalid' => '配送可能な国のみ選択できます。',
         ],
     ],
+    'claims' => [
+        'items' => [
+            'required' => '申請する商品を選択してください。',
+            'array' => '申請商品は配列形式である必要があります。',
+            'order_option_id_required' => '申請対象の注文商品を指定してください。',
+            'quantity_required' => '申請数量を入力してください。',
+            'quantity_min' => '申請数量は1以上である必要があります。',
+            'new_product_option_id_integer' => '交換するオプション ID は数字である必要があります。',
+            'custom_options_array' => 'カスタムオプションの入力値は配列形式である必要があります。',
+        ],
+        'reason_code' => [
+            'required' => '申請理由を選択してください。',
+            'exists' => '選択された理由は使用できません。',
+        ],
+        'reason_detail' => [
+            'max' => '詳細理由は:max文字以内で入力してください。',
+        ],
+        'charge_method' => [
+            'in' => '選択された請求方法は使用できません。',
+        ],
+        'redelivery_address' => [
+            'array' => '再配送先は住所項目を含むオブジェクトである必要があります。',
+            'country_code_size' => '再配送先の国コードは2桁である必要があります。',
+            'country_code_unchanged' => '交換の再配送先は注文の配送先と同じ国のみ指定できます。(交換の海外配送は未対応)',
+            'changed_by_user_boolean' => '再配送先の修正有無は true/false である必要があります。',
+        ],
+    ],
     'user_address' => [
         'name_required' => '配送先名は必須です。',
         'name_string' => '配送先名は文字列である必要があります。',

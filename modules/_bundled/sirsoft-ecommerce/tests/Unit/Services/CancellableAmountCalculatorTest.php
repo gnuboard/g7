@@ -10,6 +10,7 @@ use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
@@ -102,6 +103,53 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
             'refund_amount' => $amount,
             'refund_points_amount' => $pointsAmount,
             'refund_shipping_amount' => 0,
+        ]);
+    }
+
+    /**
+     * 진행 중 저가 교환 신청서를 만듭니다.
+     *
+     * @param  Order  $order  주문
+     * @param  float  $refundProductAmount  저가 차액 환불분
+     * @return OrderExchange 교환 신청서
+     */
+    protected function createPendingExchange(Order $order, float $refundProductAmount): OrderExchange
+    {
+        return OrderExchange::factory()->create([
+            'order_id' => $order->id,
+            'exchange_status' => ExchangeStatusEnum::REDELIVERED,
+            'refund_product_amount' => $refundProductAmount,
+            'additional_product_amount' => 0,
+            'claim_shipping_fee' => 0,
+            'total_charge_amount' => 0,
+        ]);
+    }
+
+    /**
+     * 교환에서 접수된 환불신청서를 만듭니다.
+     *
+     * @param  OrderExchange  $exchange  교환 신청서
+     * @param  float  $amount  환불액 (배송비 차감 후)
+     * @param  RefundStatusEnum  $status  환불 상태
+     * @param  float  $deductedFee  차감한 왕복 배송비
+     * @return OrderRefund 환불신청서
+     */
+    protected function createExchangeRefund(
+        OrderExchange $exchange,
+        float $amount,
+        RefundStatusEnum $status = RefundStatusEnum::REQUESTED,
+        float $deductedFee = 0,
+    ): OrderRefund {
+        return OrderRefund::create([
+            'order_id' => $exchange->order_id,
+            'refund_source_type' => RefundSourceTypeEnum::EXCHANGE,
+            'refund_source_id' => $exchange->id,
+            'refund_number' => 'RF'.uniqid(),
+            'refund_status' => $status,
+            'refund_method' => RefundMethodEnum::PG,
+            'refund_amount' => $amount,
+            'refund_points_amount' => 0,
+            'refund_shipping_amount' => -$deductedFee,
         ]);
     }
 
@@ -682,6 +730,64 @@ class CancellableAmountCalculatorTest extends ModuleTestCase
 
         $this->assertSame(0.0, $result->reserved);
         $this->assertSame([], $result->reservedClaims);
+    }
+
+    /**
+     * 교환에서 이미 접수된 환불신청서 몫은 환불신청서 쪽에서 세므로 교환 선점에서 뺀다.
+     *
+     * 교환은 완료 라운드마다 환불신청서를 접수할 수 있어, 진행 중 교환과 그 교환에서 난
+     * 환불신청서가 동시에 존재한다. 둘을 각각 전액 세면 같은 차액이 두 번 선점된다.
+     */
+    public function test_pending_exchange_reservation_excludes_refund_requests_already_filed(): void
+    {
+        $order = $this->createSingleItemClaimOrder(price: 50000);
+        $exchange = $this->createPendingExchange($order, 7000);
+        // 차액 4,000 중 배송비 1,000 을 차감해 3,000 을 접수한 환불신청서 — 총액 4,000 이 접수된 것이다.
+        $this->createExchangeRefund($exchange, 3000, RefundStatusEnum::REQUESTED, 1000);
+
+        $result = $this->calculator->calculate(
+            $order,
+            $this->claimItemsForAll($order),
+            ClaimTypeEnum::RETURN,
+        );
+
+        // 환불신청서 3,000 + 교환 잔여 (7,000 − 4,000) 3,000
+        $this->assertSame(6000.0, $result->reserved);
+        $this->assertSame(44000.0, $result->amount);
+        $this->assertCount(2, $result->reservedClaims);
+    }
+
+    public function test_rejected_exchange_refund_request_does_not_reduce_the_exchange_reservation(): void
+    {
+        $order = $this->createSingleItemClaimOrder(price: 50000);
+        $exchange = $this->createPendingExchange($order, 7000);
+        $this->createExchangeRefund($exchange, 3000, RefundStatusEnum::REJECTED);
+
+        $result = $this->calculator->calculate(
+            $order,
+            $this->claimItemsForAll($order),
+            ClaimTypeEnum::RETURN,
+        );
+
+        // 반려된 신청서는 환불되지 않으므로 그 상품의 차액은 교환이 그대로 선점한다.
+        $this->assertSame(7000.0, $result->reserved);
+        $this->assertCount(1, $result->reservedClaims);
+    }
+
+    public function test_completed_exchange_refund_is_subtracted_from_the_exchange_reservation(): void
+    {
+        $order = $this->createSingleItemClaimOrder(price: 50000);
+        $exchange = $this->createPendingExchange($order, 7000);
+        $this->createExchangeRefund($exchange, 4000, RefundStatusEnum::COMPLETED);
+
+        $result = $this->calculator->calculate(
+            $order,
+            $this->claimItemsForAll($order),
+            ClaimTypeEnum::RETURN,
+        );
+
+        // 완료된 환불은 이미 나간 돈이라 환불신청서 축에도, 교환 선점에도 남지 않는다.
+        $this->assertSame(3000.0, $result->reserved);
     }
 
     #[DataProvider('terminalExchangeStatusProvider')]

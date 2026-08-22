@@ -329,11 +329,44 @@ class OrderReturnService
             throw OrderClaimException::transitionNotAllowed($current->label(), $target->label());
         }
 
+        if ($this->revertsOrderOptions($target)) {
+            $this->assertLivingItemsCanTransitionTo($return, $target);
+        }
+
         $updated = $this->applyTransition($return, $target, $context);
 
         $this->fireStatusHooks($updated, $current, $target);
 
         return $updated;
+    }
+
+    /**
+     * 살아 있는 신청 상품이 모두 목표 상태로 갈 수 있는지 검증합니다. (신청서 단위 반려·철회의 전제)
+     *
+     * 상품 단위 전이로 일부 상품이 헤더보다 앞서 있으면(승인·회수중 등) 헤더만 반려·철회로 닫을 수 없다 —
+     * `syncOptionStatuses` 는 그 상품을 건너뛰지만 `revertOrderOptions` 는 전 상품을 되돌리므로, 상품 행은
+     * 회수중인데 주문옵션은 코스를 벗어난 어긋남이 생긴다. 그런 신청서는 상품 단위(`transitionOption`)로만
+     * 처리한다. 끝난 상품은 헤더 판정에서 빠지므로(`syncHeaderFromOptions` 와 같은 규칙) 여기서도 보지 않는다.
+     * 교환 서비스와 같은 규칙이다.
+     *
+     * @param  OrderReturn  $return  반품 신청서
+     * @param  ReturnStatusEnum  $target  목표 상태 (반려·철회)
+     *
+     * @throws OrderClaimException 앞서 있는 상품이 있을 때
+     */
+    protected function assertLivingItemsCanTransitionTo(OrderReturn $return, ReturnStatusEnum $target): void
+    {
+        $return->loadMissing('returnOptions');
+
+        foreach ($return->returnOptions as $item) {
+            if ($item->option_status->isFinal() || $item->option_status === $target) {
+                continue;
+            }
+
+            if (! $item->option_status->canTransitionTo($target)) {
+                throw OrderClaimException::transitionNotAllowed($item->option_status->label(), $target->label());
+            }
+        }
     }
 
     /**
@@ -461,6 +494,21 @@ class OrderReturnService
 
         DB::transaction(function () use ($items, $target, $processedBy, &$succeeded, &$skipped) {
             foreach ($items as $item) {
+                // 끝난 상품(반려·철회·완료)은 전이 게이트가 막지 못한다 — 자기 전이는 언제나 참이라
+                // 이미 반려된 상품에 반려를 다시 지시하면 상태·처리자가 다시 쓰인다. 건너뛰고 보고한다
+                // (교환 서비스와 같은 규칙).
+                if ($item->option_status->isFinal()) {
+                    $skipped[] = [
+                        'id' => $item->id,
+                        'message' => __('sirsoft-ecommerce::exceptions.claim_transition_not_allowed', [
+                            'from' => $item->option_status->label(),
+                            'to' => $target->label(),
+                        ]),
+                    ];
+
+                    continue;
+                }
+
                 if (! $item->option_status->canTransitionTo($target)) {
                     $skipped[] = [
                         'id' => $item->id,
@@ -573,6 +621,12 @@ class OrderReturnService
 
             if ($fee < 0) {
                 throw OrderClaimException::amountInvalid();
+            }
+
+            // 청구 방식이 없는 신청서(접수 시 청구 0원)의 청구액을 양수로 올리면 결제할 수 없는 청구가
+            // 남는다 — 청구 방식을 함께 정하는 경로(금액 수정 API)가 아니면 거절한다.
+            if ($fee > 0 && $return->charge_method === null) {
+                throw OrderClaimException::chargeMethodRequired();
             }
 
             $snapshot = $return->shipping_fee_snapshot ?? [];

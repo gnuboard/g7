@@ -76,6 +76,8 @@ class ClaimEnumsTest extends ModuleTestCase
     {
         $this->assertTrue(ExchangeStatusEnum::REQUESTED->canTransitionTo(ExchangeStatusEnum::APPROVED));
         $this->assertTrue(ExchangeStatusEnum::REQUESTED->canTransitionTo(ExchangeStatusEnum::PAYMENT_PENDING));
+        $this->assertTrue(ExchangeStatusEnum::REQUESTED->canTransitionTo(ExchangeStatusEnum::ON_HOLD));
+        $this->assertTrue(ExchangeStatusEnum::REQUESTED->canTransitionTo(ExchangeStatusEnum::REJECTED));
         $this->assertTrue(ExchangeStatusEnum::PAYMENT_PENDING->canTransitionTo(ExchangeStatusEnum::APPROVED));
         $this->assertTrue(ExchangeStatusEnum::APPROVED->canTransitionTo(ExchangeStatusEnum::COLLECTION_READY));
         $this->assertTrue(ExchangeStatusEnum::COLLECTION_READY->canTransitionTo(ExchangeStatusEnum::COLLECTING));
@@ -86,12 +88,94 @@ class ClaimEnumsTest extends ModuleTestCase
         $this->assertTrue(ExchangeStatusEnum::REDELIVERED->canTransitionTo(ExchangeStatusEnum::COMPLETED));
     }
 
+    public function test_exchange_status_payment_pending_keeps_all_three_exits(): void
+    {
+        // §4-2 전이표 payment_pending 행 — 유저 철회 / 관리자 반려 / (수동·결제 완료) 승인.
+        // 반품 축(test_return_status_payment_pending_keeps_all_three_exits)과 같은 형태로 고정한다 —
+        // 한쪽만 단언하면 두 유형의 방어 강도가 갈린다.
+        $this->assertTrue(ExchangeStatusEnum::PAYMENT_PENDING->canTransitionTo(ExchangeStatusEnum::WITHDRAWN));
+        $this->assertTrue(ExchangeStatusEnum::PAYMENT_PENDING->canTransitionTo(ExchangeStatusEnum::REJECTED));
+        $this->assertTrue(ExchangeStatusEnum::PAYMENT_PENDING->canTransitionTo(ExchangeStatusEnum::APPROVED));
+
+        $this->assertFalse(ExchangeStatusEnum::PAYMENT_PENDING->canTransitionTo(ExchangeStatusEnum::COLLECTION_READY));
+    }
+
+    public function test_exchange_status_on_hold_can_be_approved_or_rejected(): void
+    {
+        // §4-2 전이표 on_hold 행의 관리자 축은 승인·반려 둘 다이다.
+        $this->assertTrue(ExchangeStatusEnum::ON_HOLD->canTransitionTo(ExchangeStatusEnum::APPROVED));
+        $this->assertTrue(ExchangeStatusEnum::ON_HOLD->canTransitionTo(ExchangeStatusEnum::REJECTED));
+    }
+
+    public function test_exchange_status_approved_cannot_be_rejected(): void
+    {
+        // 승인 뒤에는 반려로 되돌릴 수 없다 — 승인 시점에 신규 옵션 재고가 차감되고 회수 준비가
+        // 시작되므로, 되돌릴 대상이 이미 움직여 있다. 승인 후의 종료는 완료뿐이다.
+        $this->assertFalse(ExchangeStatusEnum::APPROVED->canTransitionTo(ExchangeStatusEnum::REJECTED));
+        $this->assertSame([ExchangeStatusEnum::COLLECTION_READY], ExchangeStatusEnum::APPROVED->allowedTransitions());
+    }
+
     public function test_exchange_status_skipping_stages_is_blocked(): void
     {
         // 단계 건너뛰기 금지 — 회수도 하지 않고 완료로 넘기면 재고·정산 근거가 사라진다.
         $this->assertFalse(ExchangeStatusEnum::APPROVED->canTransitionTo(ExchangeStatusEnum::COMPLETED));
         $this->assertFalse(ExchangeStatusEnum::REQUESTED->canTransitionTo(ExchangeStatusEnum::COLLECTED));
         $this->assertFalse(ExchangeStatusEnum::COLLECTING->canTransitionTo(ExchangeStatusEnum::REDELIVERED));
+        // 회수도착에서 재발송준비중을 건너뛰고 곧장 재발송중으로 가면 후속 주문옵션 생성 시점이 흐트러진다.
+        $this->assertFalse(ExchangeStatusEnum::COLLECTED->canTransitionTo(ExchangeStatusEnum::REDELIVERING));
+    }
+
+    /**
+     * 상태 13종의 허용 간선을 **행 단위 등식**으로 고정한다 (§4-2 전이표).
+     *
+     * 개별 셀만 짚으면 그 행에 간선이 새로 늘어나도 red 가 되지 않는다 — 단계를 건너뛰는 통로가
+     * 조용히 열려도 재고·정산 근거가 사라진 채 통과한다. 표 전체를 한 벌로 적어 그 사각을 없앤다.
+     */
+    public function test_exchange_status_allowed_transitions_match_the_lifecycle_table(): void
+    {
+        $expected = [
+            ExchangeStatusEnum::REQUESTED->value => [
+                ExchangeStatusEnum::PAYMENT_PENDING,
+                ExchangeStatusEnum::APPROVED,
+                ExchangeStatusEnum::ON_HOLD,
+                ExchangeStatusEnum::REJECTED,
+                ExchangeStatusEnum::WITHDRAWN,
+            ],
+            ExchangeStatusEnum::PAYMENT_PENDING->value => [
+                ExchangeStatusEnum::APPROVED,
+                ExchangeStatusEnum::REJECTED,
+                ExchangeStatusEnum::WITHDRAWN,
+            ],
+            ExchangeStatusEnum::ON_HOLD->value => [
+                ExchangeStatusEnum::APPROVED,
+                ExchangeStatusEnum::REJECTED,
+                ExchangeStatusEnum::WITHDRAWN,
+            ],
+            ExchangeStatusEnum::APPROVED->value => [ExchangeStatusEnum::COLLECTION_READY],
+            ExchangeStatusEnum::COLLECTION_READY->value => [ExchangeStatusEnum::COLLECTING],
+            ExchangeStatusEnum::COLLECTING->value => [ExchangeStatusEnum::COLLECTED],
+            ExchangeStatusEnum::COLLECTED->value => [ExchangeStatusEnum::REDELIVERY_READY],
+            ExchangeStatusEnum::REDELIVERY_READY->value => [ExchangeStatusEnum::REDELIVERING],
+            ExchangeStatusEnum::REDELIVERING->value => [ExchangeStatusEnum::REDELIVERED],
+            ExchangeStatusEnum::REDELIVERED->value => [ExchangeStatusEnum::COMPLETED],
+            ExchangeStatusEnum::COMPLETED->value => [],
+            ExchangeStatusEnum::REJECTED->value => [],
+            ExchangeStatusEnum::WITHDRAWN->value => [],
+        ];
+
+        $this->assertEqualsCanonicalizing(
+            array_map(fn (ExchangeStatusEnum $status) => $status->value, ExchangeStatusEnum::cases()),
+            array_keys($expected),
+            '표가 상태 전수를 덮어야 한다 — 상태가 늘면 이 표도 함께 늘어난다.'
+        );
+
+        foreach ($expected as $value => $targets) {
+            $this->assertEqualsCanonicalizing(
+                $targets,
+                ExchangeStatusEnum::from($value)->allowedTransitions(),
+                "{$value} 의 허용 간선이 전이표와 달라졌습니다."
+            );
+        }
     }
 
     public function test_exchange_status_terminal_states_have_no_transitions(): void
@@ -249,6 +333,54 @@ class ClaimEnumsTest extends ModuleTestCase
 
         // 신청 → 승인 도 Enum 단위로 직접 고정한다 (교환 축과 대칭 — 서비스 경로 간접 증명에만 의존하지 않는다).
         $this->assertTrue(ReturnStatusEnum::REQUESTED->canTransitionTo(ReturnStatusEnum::APPROVED));
+    }
+
+    public function test_return_status_allowed_transitions_match_the_lifecycle_table(): void
+    {
+        // 교환 축(test_exchange_status_allowed_transitions_match_the_lifecycle_table)과 같은 형태로
+        // 10행 전수를 행 등식으로 고정한다. 개별 케이스들이 approved·회수 3단계·터미널 3종 7행만
+        // 고정하고 있어 requested·payment_pending·on_hold 3행은 간선이 늘어도 red 가 나지 않았다.
+        $expected = [
+            ReturnStatusEnum::REQUESTED->value => [
+                ReturnStatusEnum::PAYMENT_PENDING,
+                ReturnStatusEnum::APPROVED,
+                ReturnStatusEnum::ON_HOLD,
+                ReturnStatusEnum::REJECTED,
+                ReturnStatusEnum::WITHDRAWN,
+            ],
+            ReturnStatusEnum::PAYMENT_PENDING->value => [
+                ReturnStatusEnum::APPROVED,
+                ReturnStatusEnum::REJECTED,
+                ReturnStatusEnum::WITHDRAWN,
+            ],
+            ReturnStatusEnum::ON_HOLD->value => [
+                ReturnStatusEnum::APPROVED,
+                ReturnStatusEnum::REJECTED,
+                ReturnStatusEnum::WITHDRAWN,
+            ],
+            ReturnStatusEnum::APPROVED->value => [ReturnStatusEnum::COLLECTION_READY],
+            ReturnStatusEnum::COLLECTION_READY->value => [ReturnStatusEnum::COLLECTING],
+            ReturnStatusEnum::COLLECTING->value => [ReturnStatusEnum::COLLECTED],
+            // 반품은 회수도착에서 곧바로 완료다 — 재발송 3단계가 없다(§4-2).
+            ReturnStatusEnum::COLLECTED->value => [ReturnStatusEnum::COMPLETED],
+            ReturnStatusEnum::COMPLETED->value => [],
+            ReturnStatusEnum::REJECTED->value => [],
+            ReturnStatusEnum::WITHDRAWN->value => [],
+        ];
+
+        $this->assertEqualsCanonicalizing(
+            array_map(fn (ReturnStatusEnum $status) => $status->value, ReturnStatusEnum::cases()),
+            array_keys($expected),
+            '표가 상태 전수를 덮어야 한다 — 상태가 늘면 이 표도 함께 늘어난다.'
+        );
+
+        foreach ($expected as $value => $targets) {
+            $this->assertEqualsCanonicalizing(
+                $targets,
+                ReturnStatusEnum::from($value)->allowedTransitions(),
+                "{$value} 의 허용 간선이 전이표와 달라졌습니다."
+            );
+        }
     }
 
     public function test_return_status_terminal_states_have_no_transitions(): void

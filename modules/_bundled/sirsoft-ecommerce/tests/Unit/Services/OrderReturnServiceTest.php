@@ -10,11 +10,13 @@ use Modules\Sirsoft\Ecommerce\DTO\ClaimCompletionOptions;
 use Modules\Sirsoft\Ecommerce\Enums\ChargePolicyEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimChargeMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimReasonFaultTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\MileageTransactionTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
+use Modules\Sirsoft\Ecommerce\Models\MileageTransaction;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
@@ -1329,6 +1331,21 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertFalse($updated->requiresAdditionalPayment());
     }
 
+    /**
+     * 청구 방식이 없는 신청서(접수 시 청구 0원)의 청구액을 양수로 올리면 거절한다 — 결제할 수 없는
+     * 청구가 남는다. 청구 방식을 함께 정하는 금액 수정 API 가 그 경로다(교환과 같은 규칙).
+     */
+    public function test_update_amounts_refuses_to_raise_a_charge_without_a_charge_method(): void
+    {
+        $order = $this->deliveredOrder();
+        $return = $this->service->requestReturn($order, $this->payload($order));
+        $this->assertNull($return->charge_method);
+
+        $this->assertClaimException('claim_charge_method_required', fn () => $this->service->updateAmounts($return, ['claim_shipping_fee' => 3000]));
+        $this->assertSame(0.0, (float) $return->fresh()->total_charge_amount);
+        $this->assertSame(0.0, (float) $return->fresh()->claim_shipping_fee);
+    }
+
     // ================================================================
     // 완료 처리 (D26)
     // ================================================================
@@ -1351,6 +1368,41 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertNotNull($completed->completed_at);
         $this->assertSame(ReturnStatusEnum::COMPLETED, $completed->returnOptions->first()->option_status);
         $this->assertSame(OrderStatusEnum::RETURNED, $order->options->first()->fresh()->option_status);
+    }
+
+    /**
+     * 완료 시 반품 상품의 적립예정 마일리지를 회수한다 — 상품이 주문에서 빠졌으므로 그 적립도
+     * 남으면 안 된다. (교환 축 `OrderExchangeServiceTest` 의 같은 이름 단언과 한 벌)
+     */
+    public function test_complete_cancels_the_pending_earn_of_the_returned_option(): void
+    {
+        $order = $this->deliveredOrder();
+        $return = $this->advanceTo(
+            $this->service->requestReturn($order, $this->payload($order)),
+            ReturnStatusEnum::COLLECTED
+        );
+        $orderOptionId = (int) $return->returnOptions->first()->order_option_id;
+
+        MileageTransaction::create([
+            'user_id' => $order->user_id,
+            'currency' => 'KRW',
+            'type' => MileageTransactionTypeEnum::PURCHASE_EARN->value,
+            'amount' => 500,
+            'remaining_amount' => 500,
+            'balance_after' => 500,
+            'order_id' => $order->id,
+            'order_option_id' => $orderOptionId,
+        ]);
+
+        $this->service->completeReturn($return, [], $this->completionOptions($return, false, false));
+
+        $this->assertSame(
+            1,
+            MileageTransaction::where('order_option_id', $orderOptionId)
+                ->where('type', MileageTransactionTypeEnum::EARN_CANCEL->value)
+                ->count(),
+            '반품 상품의 적립 lot 이 회수되어야 한다.'
+        );
     }
 
     public function test_complete_without_refund_request_creates_no_refund(): void
@@ -2019,6 +2071,44 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertSame(OrderStatusEnum::DELIVERED, $optionA->option_status, '반려된 상품이 코스에 남아 있습니다.');
         $this->assertSame(OrderStatusEnum::RETURN_IN_PROGRESS, $optionB->option_status, '반려하지 않은 상품까지 복귀했습니다.');
         $this->assertSame(ReturnStatusEnum::REQUESTED, $return->fresh()->return_status);
+    }
+
+    /**
+     * 상품 일부가 헤더보다 앞서 있으면 신청서 단위 반려·철회는 거부된다 — 상품 단위로만 처리한다.
+     *
+     * 거부하지 않으면 `syncOptionStatuses` 는 앞선 상품을 건너뛰는데 `revertOrderOptions` 는 전 상품을
+     * 되돌려, 상품 행은 승인·회수중인데 주문옵션은 코스를 벗어난 어긋남이 생긴다(교환과 같은 규칙).
+     */
+    public function test_header_rejection_is_refused_while_an_item_has_moved_past_the_gate(): void
+    {
+        [$return, $itemA, $itemB] = $this->twoItemReturn();
+        $this->service->transitionOption($return, [$itemA], ReturnStatusEnum::APPROVED);
+
+        $this->assertClaimException('claim_transition_not_allowed', fn () => $this->service->transition($return->fresh(['returnOptions']), ReturnStatusEnum::REJECTED));
+        $this->assertClaimException('claim_transition_not_allowed', fn () => $this->service->withdraw($return->fresh(['returnOptions'])));
+        $this->assertSame(ReturnStatusEnum::REQUESTED, $return->fresh()->return_status);
+        $this->assertSame(ReturnStatusEnum::APPROVED, OrderReturnOption::find($itemA)->option_status);
+        $this->assertSame(OrderStatusEnum::RETURN_IN_PROGRESS, OrderReturnOption::find($itemA)->orderOption->option_status, '거부된 반려가 앞서 있는 상품의 주문옵션을 되돌렸습니다.');
+        $this->assertSame(OrderStatusEnum::RETURN_IN_PROGRESS, OrderReturnOption::find($itemB)->orderOption->option_status);
+    }
+
+    /**
+     * 끝난 상품(반려·철회·완료)에 같은 상태를 다시 지시하면 건너뛰고 보고한다 — 자기 전이는 게이트가
+     * 언제나 허용하므로 막지 않으면 처리자·상태가 다시 쓰인다(교환과 같은 규칙).
+     */
+    public function test_transition_option_skips_an_item_that_is_already_finished(): void
+    {
+        [$return, $itemA] = $this->twoItemReturn();
+
+        $this->service->transitionOption($return, [$itemA], ReturnStatusEnum::REJECTED);
+        $rejected = OrderReturnOption::find($itemA);
+
+        $result = $this->service->transitionOption($return->fresh(['returnOptions']), [$itemA], ReturnStatusEnum::REJECTED, ['processed_by' => 99]);
+
+        $this->assertSame([], $result['succeeded']);
+        $this->assertSame($itemA, $result['skipped'][0]['id']);
+        $this->assertNull(OrderReturnOption::find($itemA)->processed_by, '건너뛴 상품에는 처리자가 덮어써지지 않는다.');
+        $this->assertEquals($rejected->updated_at, OrderReturnOption::find($itemA)->updated_at, '종결 상품은 다시 쓰이지 않는다.');
     }
 
     /**

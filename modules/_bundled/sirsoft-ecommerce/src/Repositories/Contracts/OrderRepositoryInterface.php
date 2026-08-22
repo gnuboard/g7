@@ -20,6 +20,19 @@ interface OrderRepositoryInterface
     public function find(int $id): ?Order;
 
     /**
+     * ID로 주문을 배송지와 함께 조회합니다.
+     *
+     * 클레임 신청 검증(재발송지 국가 비교 등)처럼 주문 헤더와 배송지만 필요한 경로용이다.
+     * `findWithRelations()` 는 상품·배송·리뷰까지 싣는 상세 화면용이라 여기에 쓰면 과하고,
+     * `find()` 뒤에 배송지를 지연 로드하면 조회 시점이 호출부로 새어 나간다 — 관계를
+     * 불러올지는 Repository 가 정한다.
+     *
+     * @param  int  $id  주문 ID
+     * @return Order|null 배송지(shippingAddress)가 로드된 주문 (없으면 null)
+     */
+    public function findWithShippingAddress(int $id): ?Order;
+
+    /**
      * ID로 주문을 배타적 잠금과 함께 조회합니다.
      *
      * 클레임 신청·완료 처리처럼 "이 주문의 잔여 수량" 을 읽고 그 위에 쓰는 흐름이

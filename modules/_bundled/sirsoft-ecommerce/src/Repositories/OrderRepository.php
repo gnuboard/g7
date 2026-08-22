@@ -149,6 +149,14 @@ class OrderRepository implements OrderRepositoryInterface
     /**
      * {@inheritDoc}
      */
+    public function findWithShippingAddress(int $id): ?Order
+    {
+        return $this->model->with('shippingAddress')->find($id);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function findForUpdate(int $id): ?Order
     {
         return $this->model->newQuery()

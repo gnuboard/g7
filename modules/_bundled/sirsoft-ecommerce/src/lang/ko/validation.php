@@ -1905,6 +1905,35 @@ return [
         ],
     ],
 
+    // 클레임(교환/반품) 신청 검증 메시지
+    'claims' => [
+        'items' => [
+            'required' => '신청할 상품을 선택해 주세요.',
+            'array' => '신청 상품은 배열 형태여야 합니다.',
+            'order_option_id_required' => '신청 대상 주문 상품을 지정해 주세요.',
+            'quantity_required' => '신청 수량을 입력해 주세요.',
+            'quantity_min' => '신청 수량은 1 이상이어야 합니다.',
+            'new_product_option_id_integer' => '교환할 옵션 ID 는 숫자여야 합니다.',
+            'custom_options_array' => '커스텀 옵션 입력값은 배열 형태여야 합니다.',
+        ],
+        'reason_code' => [
+            'required' => '신청 사유를 선택해 주세요.',
+            'exists' => '선택한 사유를 사용할 수 없습니다.',
+        ],
+        'reason_detail' => [
+            'max' => '상세 사유는 :max자 이하로 입력해 주세요.',
+        ],
+        'charge_method' => [
+            'in' => '선택한 청구 방식을 사용할 수 없습니다.',
+        ],
+        'redelivery_address' => [
+            'array' => '재발송지는 주소 항목을 담은 객체여야 합니다.',
+            'country_code_size' => '재발송지 국가 코드는 2자리여야 합니다.',
+            'country_code_unchanged' => '교환 재발송지는 주문 배송지와 같은 국가만 지정할 수 있습니다. (교환 해외배송 미지원)',
+            'changed_by_user_boolean' => '재발송지 수정 여부는 true/false 여야 합니다.',
+        ],
+    ],
+
     // 사용자 배송지 검증 메시지
     'user_address' => [
         'name_required' => '배송지명은 필수입니다.',

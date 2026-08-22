@@ -105,4 +105,8 @@ return [
     'claim_option_in_course' => '交換·返品が進行中の商品(:status)はキャンセルできません。',
     'claim_option_in_course_status_change' => '交換·返品が進行中の商品(:status)は状態を変更できません。該当の申請を先に処理してください。',
     'claim_course_status_not_assignable' => '交換·返品の進行状態(:status)は注文画面から直接指定できません。交換·返品の申請を通じてのみ進入します。',
+    'claim_new_option_invalid' => '交換するオプションは使用できません。同じ商品の販売中のオプションを選択してください。',
+    'claim_new_option_out_of_stock' => '交換するオプションの在庫が不足しています。',
+    'claim_redelivery_country_change_not_allowed' => '交換の再配送先は注文の配送先と同じ国のみ指定できます。(交換の海外配送は未対応)',
+    'claim_refund_not_applicable' => '返金が発生しない申請のため、返金申請書を受け付けることができません。',
 ];

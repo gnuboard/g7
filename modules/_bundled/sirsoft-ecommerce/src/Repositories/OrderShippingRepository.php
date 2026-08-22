@@ -78,6 +78,34 @@ class OrderShippingRepository implements OrderShippingRepositoryInterface
     /**
      * {@inheritDoc}
      */
+    public function findFirstByOrderOptionId(int $orderOptionId): ?OrderShipping
+    {
+        return $this->model
+            ->where('order_option_id', $orderOptionId)
+            ->orderBy('id')
+            ->first();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function replicateForOrderOption(OrderShipping $source, int $orderOptionId, array $overrides = []): OrderShipping
+    {
+        $copy = $source->replicate(['shipped_at', 'estimated_arrival_at', 'delivered_at', 'confirmed_at']);
+        $copy->order_option_id = $orderOptionId;
+
+        foreach ($overrides as $column => $value) {
+            $copy->{$column} = $value;
+        }
+
+        $copy->save();
+
+        return $copy;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function updateTrackingByOrderOptionId(int $orderOptionId, array $tracking): ?OrderShipping
     {
         $payload = array_filter(
