@@ -13,6 +13,7 @@ use App\Extension\HookManager;
 use App\Helpers\TimezoneHelper;
 use App\Models\ActivityLog;
 use App\Models\NotificationLog;
+use App\Support\ExecutionEnvironment;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
@@ -247,22 +248,24 @@ class DashboardService
     /**
      * CPU 수집 불가 시 폴백 구조를 반환합니다.
      *
-     * @return array CPU 폴백 (percentage 0, color gray)
+     * percentage null = 측정 불가 — 화면은 0% 가 아니라 "측정 불가" 로 표기한다 (A-8).
+     *
+     * @return array CPU 폴백 (percentage null, color gray)
      */
     protected function fallbackCpu(): array
     {
-        return ['percentage' => 0, 'color' => 'gray'];
+        return ['percentage' => null, 'color' => 'gray'];
     }
 
     /**
      * 메모리 수집 불가 시 폴백 구조를 반환합니다.
      *
-     * @return array 메모리 폴백 (percentage 0, used/total "알 수 없음", color gray)
+     * @return array 메모리 폴백 (percentage null = 측정 불가, used/total "알 수 없음", color gray)
      */
     protected function fallbackMemory(): array
     {
         return [
-            'percentage' => 0,
+            'percentage' => null,
             'used' => __('common.unknown'),
             'total' => __('common.unknown'),
             'color' => 'gray',
@@ -272,12 +275,12 @@ class DashboardService
     /**
      * 디스크 수집 불가 시 폴백 구조를 반환합니다.
      *
-     * @return array 디스크 폴백 (percentage 0, used/total "알 수 없음", color gray)
+     * @return array 디스크 폴백 (percentage null = 측정 불가, used/total "알 수 없음", color gray)
      */
     protected function fallbackDisk(): array
     {
         return [
-            'percentage' => 0,
+            'percentage' => null,
             'used' => __('common.unknown'),
             'total' => __('common.unknown'),
             'color' => 'gray',
@@ -291,7 +294,8 @@ class DashboardService
      */
     protected function getCpuUsage(): array
     {
-        $percentage = 0;
+        // 측정 불가는 null 로 구분한다 — 0% 로 표기하면 "한가한 서버" 와 구분되지 않는다.
+        $percentage = null;
 
         if (PHP_OS_FAMILY === 'Windows') {
             $percentage = $this->getWindowsCpuUsage();
@@ -300,9 +304,11 @@ class DashboardService
             if (function_exists('sys_getloadavg')) {
                 $load = sys_getloadavg();
                 // 1분 평균 로드를 CPU 코어 수로 나눠서 백분율로 변환.
-                // disable_functions 에 shell_exec 가 있으면 호출 자체가 warning → 가드 (공개#40).
-                $cores = function_exists('shell_exec') ? ((int) @shell_exec('nproc 2>/dev/null') ?: 1) : 1;
-                $percentage = min(100, round(($load[0] / $cores) * 100));
+                // shell_exec 차단 판정은 ExecutionEnvironment 가 SSoT (공개#40 가드 승계).
+                $cores = ExecutionEnvironment::hasFunction('shell_exec')
+                    ? ((int) @shell_exec('nproc 2>/dev/null') ?: 1)
+                    : 1;
+                $percentage = (int) min(100, round(($load[0] / $cores) * 100));
             }
         }
 
@@ -316,11 +322,17 @@ class DashboardService
      * Windows에서 CPU 사용률을 조회합니다.
      *
      * PowerShell Get-CimInstance를 우선 사용하고, 실패 시 wmic을 fallback으로 사용합니다.
+     * shell_exec 차단 환경(disable_functions)에서는 호출 없이 null(측정 불가)을 반환합니다.
      *
-     * @return int CPU 사용률 (0-100)
+     * @return int|null CPU 사용률 (0-100). 측정 불가 시 null
      */
-    private function getWindowsCpuUsage(): int
+    private function getWindowsCpuUsage(): ?int
     {
+        // disable_functions 차단 시 호출 자체가 fatal Error — 가드 필수 (A-8)
+        if (! ExecutionEnvironment::hasFunction('shell_exec')) {
+            return null;
+        }
+
         // PowerShell Get-CimInstance 시도 (Windows 10/11 권장)
         $output = shell_exec('powershell -NoProfile -Command "Get-CimInstance -ClassName Win32_Processor | Select-Object -ExpandProperty LoadPercentage" 2>&1');
         if ($output !== null) {
@@ -339,7 +351,7 @@ class DashboardService
             }
         }
 
-        return 0;
+        return null;
     }
 
     /**
@@ -351,7 +363,6 @@ class DashboardService
     {
         $used = 0;
         $total = 0;
-        $percentage = 0;
 
         if (PHP_OS_FAMILY === 'Windows') {
             [$total, $used] = $this->getWindowsMemoryUsage();
@@ -373,9 +384,12 @@ class DashboardService
             }
         }
 
-        if ($total > 0) {
-            $percentage = round(($used / $total) * 100);
+        // total 을 못 읽었으면 측정 불가 — 0% 가 아니라 null 로 구분한다 (A-8)
+        if ($total <= 0) {
+            return $this->fallbackMemory();
         }
+
+        $percentage = (int) round(($used / $total) * 100);
 
         return [
             'percentage' => $percentage,
@@ -389,13 +403,19 @@ class DashboardService
      * Windows에서 메모리 사용량을 조회합니다.
      *
      * PowerShell Get-CimInstance를 우선 사용하고, 실패 시 wmic을 fallback으로 사용합니다.
+     * shell_exec 차단 환경(disable_functions)에서는 호출 없이 [0, 0](측정 불가)을 반환합니다.
      *
-     * @return array [total, used] 바이트 단위
+     * @return array [total, used] 바이트 단위 (측정 불가 시 [0, 0])
      */
     private function getWindowsMemoryUsage(): array
     {
         $total = 0;
         $used = 0;
+
+        // disable_functions 차단 시 호출 자체가 fatal Error — 가드 필수 (A-8)
+        if (! ExecutionEnvironment::hasFunction('shell_exec')) {
+            return [0, 0];
+        }
 
         // PowerShell Get-CimInstance 시도 (Windows 10/11 권장)
         $totalOutput = shell_exec('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_ComputerSystem).TotalPhysicalMemory" 2>&1');
@@ -452,7 +472,12 @@ class DashboardService
         $free = is_numeric($freeRaw) ? (float) $freeRaw : 0;
         $used = $total - $free;
 
-        $percentage = $total > 0 ? round(($used / $total) * 100) : 0;
+        // total 을 못 읽었으면 측정 불가 — 0% 가 아니라 null 로 구분한다 (A-8)
+        if ($total <= 0) {
+            return $this->fallbackDisk();
+        }
+
+        $percentage = (int) round(($used / $total) * 100);
 
         return [
             'percentage' => $percentage,
@@ -465,11 +490,15 @@ class DashboardService
     /**
      * 리소스 사용률에 따른 색상을 반환합니다.
      *
-     * @param  int  $percentage  사용률 (0-100)
-     * @return string 색상명
+     * @param  int|null  $percentage  사용률 (0-100). null 은 측정 불가
+     * @return string 색상명 (측정 불가 시 gray)
      */
-    private function getResourceColor(int $percentage): string
+    private function getResourceColor(?int $percentage): string
     {
+        if ($percentage === null) {
+            return 'gray';
+        }
+
         if ($percentage >= 90) {
             return 'red';
         } elseif ($percentage >= 70) {

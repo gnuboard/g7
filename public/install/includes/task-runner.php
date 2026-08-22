@@ -1147,6 +1147,7 @@ if (! function_exists('executeArtisanCommandSSE')) {
         $phpBin = escapeshellarg(getPhpBinary());
 
         $cmdLogFile = reserveCommandOutputFile();
+        // audit:allow web-artisan-spawn-requires-runner 현행 subprocess 경로 — P2(G2) 에서 실행 모드 러너(stepwise)로 이관
         $fullCommand = "{$phpBin} -d memory_limit=512M artisan {$artisanCommand} > "
             .escapeshellarg($cmdLogFile).' 2>&1';
         exec($fullCommand, $_ignored, $returnCode);
@@ -1213,6 +1214,7 @@ if (! function_exists('executeDbCommandSSE')) {
         $phpBin = escapeshellarg(getPhpBinary());
 
         $cmdLogFile = reserveCommandOutputFile();
+        // audit:allow web-artisan-spawn-requires-runner 현행 subprocess 경로 — P2(G2) 에서 실행 모드 러너(stepwise)로 이관
         $fullCommand = "{$phpBin} -d memory_limit=512M artisan {$artisanCommand} > "
             .escapeshellarg($cmdLogFile).' 2>&1';
 
@@ -1346,6 +1348,7 @@ if (! function_exists('executeExtensionCommandSSE')) {
         $phpBin = escapeshellarg(getPhpBinary());
 
         $cmdLogFile = reserveCommandOutputFile();
+        // audit:allow web-artisan-spawn-requires-runner 현행 subprocess 경로 — P2(G2) 에서 실행 모드 러너(stepwise)로 이관
         $fullCommand = "{$phpBin} -d memory_limit=512M artisan {$artisanCommand} > "
             .escapeshellarg($cmdLogFile).' 2>&1';
 

@@ -179,4 +179,10 @@ return [
     'static_cache_status_loaded' => 'ホーム画面の静的ファイルの状態を読み込みました。',
     'static_cache_republished' => 'ホーム画面の静的ファイルを再作成しました。',
     'static_cache_republish_failed' => 'ホーム画面の静的ファイルを再作成できませんでした。サイトは正常に動作しています。',
+
+    'execution_mode' => [
+        'auto' => '自動判断',
+        'subprocess' => '常にCLIを使用',
+        'inprocess' => '常にCLIなし',
+    ],
 ];

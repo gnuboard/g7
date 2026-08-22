@@ -1864,6 +1864,53 @@ hr {
   color: #fca5a5;
 }
 
+/* 정보(파랑) 카드 — 실행 방식 판정처럼 통과/차단 게이트가 아닌 "안내" 항목 (A-1 · W1) */
+.requirement-card--info {
+  border-color: var(--info-color);
+  border-left-width: 4px;
+  background-color: #eff6ff;
+}
+
+.requirement-card--info .requirement-card-header {
+  background: transparent;
+}
+
+.requirement-card--info .value-text {
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
+[data-theme="dark"] .requirement-card--info {
+  background-color: rgba(59, 130, 246, 0.12);
+}
+
+[data-theme="dark"] .requirement-card--info .value-text {
+  color: #93c5fd;
+}
+
+/* 실행 방식 정보 카드 본문 */
+.execution-mode-info {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.execution-mode-info p {
+  margin: 0 0 var(--spacing-sm);
+}
+
+.execution-mode-info ul {
+  margin: 0 0 var(--spacing-md);
+  padding-left: 1.25rem;
+}
+
+.execution-mode-info ul:last-child {
+  margin-bottom: 0;
+}
+
+.execution-mode-info li {
+  margin-bottom: 2px;
+}
+
 .requirement-card-header {
   display: flex;
   justify-content: space-between;
@@ -1954,6 +2001,10 @@ hr {
 
 .status-icon.status-warning {
   color: var(--warning-color);
+}
+
+.status-icon.status-info {
+  color: var(--info-color);
 }
 
 .status-icon svg {

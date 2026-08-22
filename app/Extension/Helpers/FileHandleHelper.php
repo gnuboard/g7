@@ -2,6 +2,7 @@
 
 namespace App\Extension\Helpers;
 
+use App\Support\ExecutionEnvironment;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -246,7 +247,7 @@ class FileHandleHelper
     {
         $output = $onOutput ?? function () {};
 
-        if (! function_exists('exec')) {
+        if (! ExecutionEnvironment::hasFunction('exec')) {
             $output('[WMI] exec() 함수 사용 불가');
 
             return [];
@@ -304,7 +305,7 @@ class FileHandleHelper
     {
         $output = $onOutput ?? function () {};
 
-        if (! function_exists('exec')) {
+        if (! ExecutionEnvironment::hasFunction('exec')) {
             $output('[RestartManager] exec() 함수 사용 불가');
 
             return [];
@@ -482,7 +483,7 @@ PSFOOTER;
     {
         $logOutput = $onOutput ?? function () {};
 
-        if (! function_exists('exec')) {
+        if (! ExecutionEnvironment::hasFunction('exec')) {
             $logOutput('[handle.exe] exec() 함수 사용 불가');
 
             return [];
@@ -807,7 +808,7 @@ PSFOOTER;
      */
     private static function killWindowsProcess(int $pid): bool
     {
-        if (! function_exists('exec')) {
+        if (! ExecutionEnvironment::hasFunction('exec')) {
             return false;
         }
 
@@ -830,7 +831,7 @@ PSFOOTER;
             return posix_kill($pid, 9); // SIGKILL
         }
 
-        if (function_exists('exec')) {
+        if (ExecutionEnvironment::hasFunction('exec')) {
             $output = [];
             $exitCode = 0;
             exec("kill -9 {$pid} 2>/dev/null", $output, $exitCode);

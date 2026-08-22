@@ -45,6 +45,7 @@ class ExtensionSettingsMirror
         'seo',
         'identity',
         'pagination',
+        'system',
     ];
 
     /**

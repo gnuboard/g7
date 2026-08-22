@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\ExecutionEnvironment;
 use App\Support\OpcacheStatus;
 use App\Support\PrivilegedDatabaseAccounts;
 
@@ -626,31 +627,56 @@ class ValidationApi
     }
 
     /**
-     * 필수 PHP 함수(exec, proc_open) 비활성화 여부 검증
+     * 실행 방식 판정 (구 "필수 PHP 함수 비활성화 여부 검증")
+     *
+     * 차단/통과 이분 게이트가 아니라 실행 모드 분기다 (A-1):
+     * - subprocess: 함수 전부 가용 + PHP 바이너리 검증 통과 → 현행 그대로 (초록)
+     * - inprocess: 위 실패 + vendor-bundle.zip 존재 → CLI 없이 설치 진행 (정보, 파랑)
+     * - blocked: 위 실패 + 번들도 없음 → 설치 차단 (빨강) — 사유는 "CLI 부재" 가 아니라 "번들 부재"
+     *
+     * 판정 본체는 App\Support\ExecutionEnvironment 가 SSoT — 코어의 실행 모드
+     * 해석기(CommandRunnerResolver)와 같은 판정을 공유한다.
      */
     private function checkDisabledFunctions(): array
     {
-        $requiredFunctions = ['exec', 'proc_open', 'shell_exec'];
-        $disabledStr = ini_get('disable_functions');
-        $disabledList = array_map('trim', explode(',', $disabledStr));
+        $detection = ExecutionEnvironment::detect('php');
+        $requiredFunctions = ExecutionEnvironment::SUBPROCESS_FUNCTIONS;
+        $disabled = $detection['blocked_functions'];
 
-        $disabled = [];
-        foreach ($requiredFunctions as $func) {
-            if (in_array($func, $disabledList, true)) {
-                $disabled[] = $func;
-            }
+        $bundleAvailable = file_exists(BASE_PATH.'/vendor-bundle.zip');
+
+        if ($detection['mode'] === ExecutionEnvironment::MODE_SUBPROCESS) {
+            $status = 'pass';
+            $message = lang('success_required_functions');
+        } elseif ($bundleAvailable) {
+            $status = 'info';
+            $message = lang('execution_mode_inprocess_notice');
+        } else {
+            $status = 'fail';
+            $message = lang('error_no_cli_and_no_bundle');
         }
 
-        $passed = empty($disabled);
+        // 판정 근거 (정보 카드가 그대로 표시한다 — W1)
+        $reasons = [];
+        if ($disabled !== []) {
+            $reasons[] = lang('execution_mode_reason_functions', ['functions' => implode(', ', $disabled)]);
+        }
+        if ($disabled === [] && ($detection['php_probe']['status'] ?? '') === 'invalid') {
+            $reasons[] = lang('execution_mode_reason_php_probe');
+        }
 
         return [
             'required' => true,
             'checked_functions' => $requiredFunctions,
             'disabled' => $disabled,
-            'passed' => $passed,
-            'message' => $passed
-                ? lang('success_required_functions')
-                : lang('error_disabled_functions', ['functions' => implode(', ', $disabled)]),
+            'execution_mode' => $detection['mode'],
+            'bundle_available' => $bundleAvailable,
+            'php_probe' => $detection['php_probe'],
+            'reasons' => $reasons,
+            'status' => $status,
+            // 정보(inprocess + 번들 보유) 상태는 설치를 막지 않는다
+            'passed' => $status !== 'fail',
+            'message' => $message,
         ];
     }
 
@@ -663,11 +689,8 @@ class ValidationApi
         $cliVersion = null;
         $cliPath = 'php';
 
-        // exec 사용 가능 여부 먼저 확인
-        $disabledStr = ini_get('disable_functions');
-        $disabledList = array_map('trim', explode(',', $disabledStr));
-
-        if (in_array('exec', $disabledList, true)) {
+        // exec 사용 가능 여부 먼저 확인 — 판정은 ExecutionEnvironment 가 SSoT (실행 방식 게이트와 동일 판정)
+        if (! ExecutionEnvironment::hasFunction('exec')) {
             return [
                 'required' => false,
                 'web_version' => $webVersion,

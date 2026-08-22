@@ -1,0 +1,75 @@
+# audit:allow test-scenario-coverage reason: disable_functions 는 INI 값이라 PHPUnit/Playwright 런타임에서 재현 불가 (계획서 §8 자동화 한계). 판정·해석 분기는 콜백 주입 단위 테스트(test_files)가 커버하고, 무CLI 프로필의 종단(E2E) 검증은 P0 격리 환경의 브라우저 실측(§9 S2·S6)이 담당한다 — 그 실측 결과는 G8 보고서에 기록된다.
+
+feature: 공통 실행 모드 (무CLI 환경 지원 축 A 의 뼈대 — P1/G1)
+
+description: |
+  웹 요청 안에서 Artisan 커맨드를 실행해야 할 때(인스톨러·웹 크론·코어 업데이트)
+  어떤 실행기를 쓸지의 공통 판정. VendorMode 와 같은 골격 —
+  열거(ExecutionMode) · 해석기(CommandRunnerResolver) · 러너 2종
+  (SubprocessCommandRunner / InProcessCommandRunner) · 판정 SSoT(ExecutionEnvironment,
+  인스톨러 게이트와 공유).
+
+  회귀 불변식 (계획서 A-0):
+    1. subprocess 경로는 현행 그대로 — 신규 코드는 전부 inprocess 분기 안.
+    2. 기본값 불변 — 설정 없는 환경의 판정은 subprocess (fail-safe 방향).
+    3. 두 러너 등가 계약 — 같은 커맨드·파라미터가 같은 의미로 실행.
+    4. 인스톨러 게이트(A-1)는 차단이 아니라 모드 분기 — inprocess + 번들 보유는
+       정보(파랑)로 통과, 번들 부재만 차단(사유는 "번들 부재").
+
+axes:
+  requested_mode: [none, auto, subprocess, inprocess]              # 호출부 명시 모드
+  saved_setting: [absent, auto, subprocess, inprocess, invalid]   # system.execution_mode 저장값
+  function_availability: [all_available, one_blocked, all_blocked] # exec/proc_open/shell_exec
+  php_binary_probe: [valid, invalid_with_autodetect, invalid_no_autodetect, uncertain]
+  vendor_bundle_presence: [present, absent]                        # 인스톨러 게이트(A-1) 분기
+  installer_gate_status: [pass_green, info_blue, fail_red]         # Step 2 카드 상태
+  shell_exec_guard_surface: [dashboard_cpu, dashboard_memory, settings_memory, settings_cpu_info]  # A-8 가드 7곳
+  measurement_result: [measured, not_measurable]                   # percentage null 계약
+
+exclusions:
+  - { function_availability: all_blocked, php_binary_probe: valid, reason: "함수 차단 시 probe 는 수행되지 않는다 (unavailable 고정)" }
+  - { function_availability: one_blocked, php_binary_probe: valid, reason: "동일 — 부분 차단도 probe 생략" }
+  - { installer_gate_status: pass_green, vendor_bundle_presence: absent, function_availability: all_blocked, reason: "차단 + 번들 부재는 정의상 fail_red" }
+
+effects:
+  # 판정 SSoT (ExecutionEnvironment)
+  - detect_returns_subprocess_when_functions_available_and_probe_valid
+  - detect_returns_inprocess_when_functions_blocked
+  - detect_returns_inprocess_when_single_function_blocked
+  - detect_returns_inprocess_when_probe_invalid_and_no_autodetect
+  - detect_falls_back_to_autodetected_binary
+  - detect_fail_safe_to_subprocess_when_probe_uncertain
+  - probe_returns_unavailable_when_exec_blocked
+  - subprocess_function_set_is_stable
+  # 해석기 (CommandRunnerResolver) — 명시 → 설정 → 감지 + 기본값 불변
+  - default_resolves_to_subprocess_without_any_setting
+  - auto_follows_detection_to_inprocess
+  - explicit_request_overrides_everything
+  - saved_setting_overrides_detection
+  - saved_auto_setting_still_detects
+  - invalid_saved_setting_falls_back_to_detection
+  - requested_auto_is_not_explicit
+  - detection_report_exposes_basis
+  # 두 러너 등가 계약
+  - format_parameters_matches_artisan_call_convention
+  - inprocess_runner_executes_safe_command
+  - both_runners_agree_on_safe_command_exit_status
+  - both_runners_agree_on_unknown_command_failure
+  # A-8 shell_exec 가드 — 측정 불가는 0% 가 아니라 null
+  - get_system_resources_isolates_failing_cpu_probe
+  - get_system_resources_isolates_failing_memory_probe
+  - get_system_resources_isolates_failing_disk_probe
+  - resources_probe_failure_returns_null_percentage_not_zero
+
+test_files:
+  - tests/Unit/Support/ExecutionEnvironmentTest.php
+  - tests/Unit/Execution/ExecutionModeTest.php
+  - tests/Unit/Execution/CommandRunnerResolverTest.php
+  - tests/Feature/Execution/CommandRunnerEquivalenceTest.php
+  - tests/Unit/Services/DashboardServiceTest.php
+  - tests/Feature/Api/Admin/DashboardControllerTest.php
+
+# 인스톨러 게이트(installer_gate_status 축)는 check-configuration.php 의 procedural
+# 클래스 안에 있어 단위 하네스 비용이 크고, disable_functions 재현도 불가하다 —
+# pass_green(일반 환경)·info_blue(P0 프로필 + 번들)·fail_red(P0 + 번들 제거)는
+# P0 격리 환경 브라우저 실측(§9 S2 · G1 DoD)으로 판정한다.

@@ -2,6 +2,7 @@
 
 namespace App\Extension\Vendor;
 
+use App\Support\ExecutionEnvironment;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -25,17 +26,24 @@ class EnvironmentDetector
     /**
      * proc_open() 함수 사용 가능 여부.
      *
+     * 판정은 ExecutionEnvironment::hasFunction 이 SSoT — 인스톨러 게이트·실행 모드
+     * 해석기와 같은 판정을 공유한다 (동일 로직 이중화 금지).
+     *
      * @return bool proc_open 호출 가능 여부 (disable_functions 차단 시 false)
      */
     public function hasProcOpen(): bool
     {
-        if (! function_exists('proc_open')) {
-            return false;
-        }
+        return ExecutionEnvironment::hasFunction('proc_open');
+    }
 
-        $disabled = array_map('trim', explode(',', (string) ini_get('disable_functions')));
-
-        return ! in_array('proc_open', $disabled, true);
+    /**
+     * exec() 함수 사용 가능 여부.
+     *
+     * @return bool exec 호출 가능 여부 (disable_functions 차단 시 false)
+     */
+    public function hasExec(): bool
+    {
+        return ExecutionEnvironment::hasFunction('exec');
     }
 
     /**
@@ -45,13 +53,21 @@ class EnvironmentDetector
      */
     public function hasShellExec(): bool
     {
-        if (! function_exists('shell_exec')) {
-            return false;
-        }
+        return ExecutionEnvironment::hasFunction('shell_exec');
+    }
 
-        $disabled = array_map('trim', explode(',', (string) ini_get('disable_functions')));
-
-        return ! in_array('shell_exec', $disabled, true);
+    /**
+     * PHP 바이너리 실행 probe.
+     *
+     * 실행 모드(축 A) 판정용 — 실제로 `{binary} --version` 을 실행해 본다.
+     * 판정 본체는 ExecutionEnvironment::probePhpBinary 가 SSoT.
+     *
+     * @param  string  $binary  probe 대상 PHP 바이너리 경로
+     * @return array{status: string, version: string|null, message: string} status 는 'valid'|'invalid'|'unavailable'
+     */
+    public function probePhpBinary(string $binary = 'php'): array
+    {
+        return ExecutionEnvironment::probePhpBinary($binary);
     }
 
     /**

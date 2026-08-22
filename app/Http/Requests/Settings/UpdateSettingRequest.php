@@ -7,6 +7,7 @@ use App\Extension\HookManager;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\Rules\In;
 
 /**
  * 단건 설정 저장 요청 검증
@@ -116,6 +117,13 @@ class UpdateSettingRequest extends FormRequest
             'value' => ['present', 'nullable', $this->valueShapeRule()],
         ];
 
+        // 허용값이 닫힌 키(실행 모드·자산 URL 방식 등)는 벌크 저장과 같은 표로 값을 제한한다.
+        // 이 경로에만 게이트가 없으면 벌크 저장의 허용값 검사가 우회된다.
+        $enumerated = $this->enumeratedValueRule();
+        if ($enumerated !== null) {
+            $rules['value'][] = $enumerated;
+        }
+
         // 모듈/플러그인이 validation rules를 동적으로 추가할 수 있도록 훅 제공
         return HookManager::applyFilters('core.settings.update_validation_rules', $rules, $this);
     }
@@ -173,6 +181,22 @@ class UpdateSettingRequest extends FormRequest
                 $fail(__('validation.setting.value.type'));
             }
         };
+    }
+
+    /**
+     * 저장 대상 키의 허용값 규칙을 반환합니다.
+     *
+     * @return In|null 허용값 규칙, 허용값이 닫힌 키가 아니면 null
+     */
+    private function enumeratedValueRule(): ?In
+    {
+        $key = $this->route('key');
+
+        if (! is_string($key) || $key === '') {
+            return null;
+        }
+
+        return EnumeratedSettingValues::ruleFor($key);
     }
 
     /**

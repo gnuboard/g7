@@ -6,7 +6,7 @@
 
 <!-- AUTO-GENERATED-START: docs-quick-reference -->
 
-### 백엔드 [backend/](docs/backend/) (36개)
+### 백엔드 [backend/](docs/backend/) (37개)
 
 | 문서 | 설명 | TL;DR 핵심 |
 |------|------|-----------|
@@ -26,6 +26,7 @@
 | [dto.md](docs/backend/dto.md) | DTO (Data Transfer Object) 사용 규칙 | DTO 두 패턴 — Value Object(불변 1회 전달) vs Data Carrier(다단계 변형/... |
 | [enum.md](docs/backend/enum.md) | Enum 사용 규칙 | 상태/타입/분류 = Enum 필수 (PHP 8.1+ Backed Enum) |
 | [exceptions.md](docs/backend/exceptions.md) | Custom Exception 다국어 처리 | 예외 메시지 하드코딩 금지 → __() 함수 필수 |
+| [execution-mode.md](docs/backend/execution-mode.md) | 실행 모드 (Execution Mode) — 웹 요청 안의 커맨드 실행 | 웹 도달 코드가 Artisan 을 실행할 때는 App\Execution\CommandRunner 를 경... |
 | [geoip.md](docs/backend/geoip.md) | GeoIP 시스템 (MaxMind GeoLite2) | MaxMind GeoLite2-City DB 기반 IP → 타임존 감지 (SetTimezone 미들웨어... |
 | [identity-messages.md](docs/backend/identity-messages.md) | 본인인증 메시지 템플릿 시스템 (Identity Messages) | 알림 시스템(notification_*)과 완전 분리된 IDV 전용 템플릿 인프라 |
 | [identity-policies.md](docs/backend/identity-policies.md) | 본인인증 정책 시스템 (Identity Policies) | - |
@@ -42,7 +43,7 @@
 | [service-provider.md](docs/backend/service-provider.md) | 서비스 프로바이더 안전성 | DB 접근 전 .env 파일 존재 확인 필수 |
 | [service-repository.md](docs/backend/service-repository.md) | Service-Repository 패턴 | RepositoryInterface 주입 필수 (구체 클래스 직접 주입 금지) |
 | [settings-multilingual-enrichment.md](docs/backend/settings-multilingual-enrichment.md) | Settings 카탈로그 다국어 자동 보강 | settings JSON 의 다국어 카탈로그 라벨(_cached_name 등)은 카탈로그 빌드 시점에 보강 |
-| [static-asset-publishing.md](docs/backend/static-asset-publishing.md) | 부트스트랩 리소스 정적 게시 (Static Asset Publishing) | 게시물: public/build/ext/{cache_version}/ — 수명주기 이벤트와 운영자 cu... |
+| [static-asset-publishing.md](docs/backend/static-asset-publishing.md) | 부트스트랩 리소스 정적 게시 (Static Asset Publishing) | 게시물: public/build/ext/{cache_version}/ — 수명주기 이벤트·자산 URL ... |
 | [translatable-seeders.md](docs/backend/translatable-seeders.md) | 다국어 시더 인터페이스 (Translatable Seeders) | 다국어 JSON 컬럼(name 등)을 시드하는 확장 entity 시더는 TranslatableSeede... |
 | [user-overrides.md](docs/backend/user-overrides.md) | 사용자 수정 보존 (HasUserOverrides Trait) | 모델에 `use HasUserOverrides;` + `protected array $trackable... |
 | [validation.md](docs/backend/validation.md) | 검증 (Validation) | 필수: FormRequest에서 검증 (Service에 검증 로직 배치 금지) |
@@ -198,7 +199,7 @@
 | `sirsoft-verification_nhnkcp` | 플러그인 | [AGENTS.md](plugins/_bundled/sirsoft-verification_nhnkcp/AGENTS.md) | [docs/](plugins/_bundled/sirsoft-verification_nhnkcp/docs/README.md) | 훅 0 · 라우트 2 · 모델 2 · 레이아웃 1 |
 | `gnuboard7-hello_admin_template` | 템플릿 | [AGENTS.md](templates/_bundled/gnuboard7-hello_admin_template/AGENTS.md) | [docs/](templates/_bundled/gnuboard7-hello_admin_template/docs/README.md) | 훅 0 · 라우트 1 · 모델 0 · 레이아웃 8 |
 | `gnuboard7-hello_user_template` | 템플릿 | [AGENTS.md](templates/_bundled/gnuboard7-hello_user_template/AGENTS.md) | [docs/](templates/_bundled/gnuboard7-hello_user_template/docs/README.md) | 훅 0 · 라우트 1 · 모델 0 · 레이아웃 8 |
-| `sirsoft-admin_basic` | 템플릿 | [AGENTS.md](templates/_bundled/sirsoft-admin_basic/AGENTS.md) | [docs/](templates/_bundled/sirsoft-admin_basic/docs/README.md) | 훅 0 · 라우트 29 · 모델 0 · 레이아웃 145 |
+| `sirsoft-admin_basic` | 템플릿 | [AGENTS.md](templates/_bundled/sirsoft-admin_basic/AGENTS.md) | [docs/](templates/_bundled/sirsoft-admin_basic/docs/README.md) | 훅 0 · 라우트 29 · 모델 0 · 레이아웃 146 |
 | `sirsoft-basic` | 템플릿 | [AGENTS.md](templates/_bundled/sirsoft-basic/AGENTS.md) | [docs/](templates/_bundled/sirsoft-basic/docs/README.md) | 훅 0 · 라우트 40 · 모델 0 · 레이아웃 166 |
 
 
@@ -395,6 +396,19 @@ pending 은 저장소 B 의 base 가 된다 — `setLocal` 이 `currentSnapshot 
 catch-all shadow 는 보호처럼 보인다는 점이 위험하다. 가려진 라우트는 도달 불가라 게이트가 없어도 증상이 없고, 제외 패턴이 한 줄 바뀌는 순간 무방비로 노출된다 — 실제로 `_boost` GET 4종이 그 상태였고, 같은 그룹의 `DELETE clear` 는 shadow 밖이라 운영 환경·`APP_DEBUG=false` 에서 미인증 200 으로 `storage/debug-dump` 전체를 지웠다(공개#128). 등록 계약 축을 행위 테스트로 대체할 수 없는 이유도 같다: 가려진 라우트는 행위상 "막힌 것" 과 구분되지 않는다.
 
 정적 검사가 디버그 라우트 파일의 개별 게이트를 차단하며, 부착·행위·캐시 축과 방송 인증 라우트 단일성은 테스트가 잠근다. 상세: [routing.md](docs/backend/routing.md) "디버그·개발 라우트는 그룹 단위로 게이트한다".
+
+### 웹 요청 안의 커맨드 실행 (실행 모드)
+
+웹 요청 안에서 Artisan 을 실행하는 지점(인스톨러·업데이트·예약 작업)은 실행 방식을 호출부가 고르지 않는다. `php artisan …` 스폰이 막힌 호스팅(`disable_functions`)에서는 그 경로만 터지고, 그 경로는 무CLI 환경에서만 터져 개발 환경에서는 발견되지 않는다.
+
+| 금지 | 올바른 사용 |
+|------|------------|
+| 웹 도달 코드(컨트롤러·서비스·인스톨러·예약 작업)에서 `proc_open`/`exec` 로 `php artisan …` 을 직접 스폰 | `App\Execution\CommandRunner` 경유 — `CommandRunnerResolver::resolve()->run($command, $params)` (모드 결정: 명시 인자 > `system.execution_mode` > `ExecutionEnvironment::detect()`) |
+| `function_exists('proc_open')` 등으로 실행 함수 가용성을 직접 판정 | `ExecutionEnvironment::hasFunction()` — `function_exists` + `disable_functions` 를 함께 본다 (인스톨러도 같은 클래스를 `require_once` 로 공유) |
+| `php artisan schema:dump` 산출물(`database/schema/*.sql`) 커밋 | 마이그레이션만 커밋 — `migrate` 가 덤프를 발견하면 `mysql` 바이너리를 스폰한다 |
+| 허용값이 닫힌 설정 키(`system.execution_mode`·`general.asset_url_mode`)의 허용값 규칙을 한쪽 FormRequest 에만 부착 | `EnumeratedSettingValues` 표 하나를 벌크(`SaveSettingsRequest`)·단건(`UpdateSettingRequest`) 양쪽이 공유 — 한쪽만 검사하면 다른 쪽이 우회로가 되어 임의 문자열이 설정 파일에 남는다 |
+
+불확실할 때의 기본값은 subprocess 다(기본값 불변) — inprocess 는 스폰 불가가 확인된 환경에서만 고른다. 정적 검사가 직접 스폰과 `schema:dump` 산출물을 차단한다. 아직 러너로 옮기지 못한 기존 스폰 지점은 `// audit:allow web-artisan-spawn-requires-runner <사유>` 표식을 남기며, 표식이 곧 이관 대상 목록이다. 정적 검사는 `function_exists` 직접 판정도 차단하며, 아직 옮기지 못한 지점은 `// audit:allow execution-function-availability-via-ssot <사유>` 표식을 남긴다. 허용값 표 공유는 코드 리뷰에서 확인한다. 상세: [execution-mode.md](docs/backend/execution-mode.md).
 
 ### 목록 컨텍스트 왕복 (list context round-trip)
 
@@ -1568,6 +1582,7 @@ php artisan migrate:rollback
 | `routes/**` | [routing.md](docs/backend/routing.md) |
 | `app/Seo/**` | [seo-system.md](docs/backend/seo-system.md) |
 | `app/Benchmark/**`, `config/benchmark.php` | [benchmark.md](docs/backend/benchmark.md) |
+| `app/Execution/**`, `app/Support/ExecutionEnvironment.php`, `app/Http/Requests/Settings/EnumeratedSettingValues.php` | [execution-mode.md](docs/backend/execution-mode.md) |
 
 ---
 

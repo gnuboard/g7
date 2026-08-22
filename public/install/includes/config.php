@@ -231,3 +231,10 @@ if (! class_exists('App\\Support\\PrivilegedDatabaseAccounts')) {
 if (! class_exists('App\\Support\\OpcacheStatus')) {
     require_once BASE_PATH.'/app/Support/OpcacheStatus.php';
 }
+// 실행 모드 판정 SSoT — PhpBinaryResolver 는 ExecutionEnvironment 의 probe 위임 대상이라 함께 로드
+if (! class_exists('App\\Support\\PhpBinaryResolver')) {
+    require_once BASE_PATH.'/app/Support/PhpBinaryResolver.php';
+}
+if (! class_exists('App\\Support\\ExecutionEnvironment')) {
+    require_once BASE_PATH.'/app/Support/ExecutionEnvironment.php';
+}

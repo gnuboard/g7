@@ -490,7 +490,26 @@
                       "props": {
                         "className": "text-heading"
                       },
-                      "text": "{{systemInfo?.data?.memory_usage?.used ?? '-'}} / {{systemInfo?.data?.memory_usage?.total ?? '-'}} ({{systemInfo?.data?.memory_usage?.percentage ?? 0}}%)"
+                      "if": "{{systemInfo?.data?.memory_usage?.percentage != null}}",
+                      "text": "{{systemInfo?.data?.memory_usage?.used ?? '-'}} / {{systemInfo?.data?.memory_usage?.total ?? '-'}} ({{systemInfo?.data?.memory_usage?.percentage}}%)"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-heading"
+                      },
+                      "if": "{{systemInfo?.data != null && systemInfo?.data?.memory_usage?.percentage == null}}",
+                      "text": "$t:admin.settings.info.not_measurable"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-heading"
+                      },
+                      "if": "{{systemInfo?.data == null}}",
+                      "text": "-"
                     }
                   ]
                 },
@@ -515,7 +534,26 @@
                       "props": {
                         "className": "text-heading"
                       },
-                      "text": "{{systemInfo?.data?.disk_usage?.used ?? '-'}} / {{systemInfo?.data?.disk_usage?.total ?? '-'}} ({{systemInfo?.data?.disk_usage?.percentage ?? 0}}%)"
+                      "if": "{{systemInfo?.data?.disk_usage?.percentage != null}}",
+                      "text": "{{systemInfo?.data?.disk_usage?.used ?? '-'}} / {{systemInfo?.data?.disk_usage?.total ?? '-'}} ({{systemInfo?.data?.disk_usage?.percentage}}%)"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-heading"
+                      },
+                      "if": "{{systemInfo?.data != null && systemInfo?.data?.disk_usage?.percentage == null}}",
+                      "text": "$t:admin.settings.info.not_measurable"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-heading"
+                      },
+                      "if": "{{systemInfo?.data == null}}",
+                      "text": "-"
                     }
                   ]
                 },

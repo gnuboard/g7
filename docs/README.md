@@ -9,7 +9,7 @@
 
 | 카테고리 | 문서 수 | 링크 상태 |
 |----------|---------|----------|
-| [백엔드](backend/) | 37개 | 정상 |
+| [백엔드](backend/) | 38개 | 정상 |
 | [프론트엔드](frontend/) | 46개 | 정상 |
 | [확장 시스템](extension/) | 32개 | 정상 |
 | 공통 | 20개 | 정상 |
@@ -127,7 +127,7 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 <!-- AUTO-GENERATED-START: docs-readme-full-list -->
 ## 카테고리별 전체 문서 목록
 
-### 백엔드 (37개)
+### 백엔드 (38개)
 
 | 문서 | 제목 |
 |------|------|
@@ -147,6 +147,7 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | [dto.md](backend/dto.md) | DTO (Data Transfer Object) 사용 규칙 |
 | [enum.md](backend/enum.md) | Enum 사용 규칙 |
 | [exceptions.md](backend/exceptions.md) | Custom Exception 다국어 처리 |
+| [execution-mode.md](backend/execution-mode.md) | 실행 모드 (Execution Mode) — 웹 요청 안의 커맨드 실행 |
 | [geoip.md](backend/geoip.md) | GeoIP 시스템 (MaxMind GeoLite2) |
 | [identity-messages.md](backend/identity-messages.md) | 본인인증 메시지 템플릿 시스템 (Identity Messages) |
 | [identity-policies.md](backend/identity-policies.md) | 본인인증 정책 시스템 (Identity Policies) |

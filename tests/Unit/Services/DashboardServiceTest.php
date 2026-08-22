@@ -393,8 +393,8 @@ class DashboardServiceTest extends TestCase
 
         $resources = $service->getSystemResources();
 
-        // cpu 는 폴백, 나머지는 정상값 — 예외 비전파.
-        $this->assertSame(0, $resources['cpu']['percentage']);
+        // cpu 는 폴백(측정 불가 = null, 0% 아님 — A-8), 나머지는 정상값 — 예외 비전파.
+        $this->assertNull($resources['cpu']['percentage']);
         $this->assertSame('gray', $resources['cpu']['color']);
         $this->assertSame(60, $resources['memory']['percentage']);
         $this->assertSame(75, $resources['disk']['percentage']);
@@ -406,7 +406,7 @@ class DashboardServiceTest extends TestCase
 
         $resources = $service->getSystemResources();
 
-        $this->assertSame(0, $resources['memory']['percentage']);
+        $this->assertNull($resources['memory']['percentage']);
         $this->assertSame('gray', $resources['memory']['color']);
         $this->assertSame(__('common.unknown'), $resources['memory']['used']);
         $this->assertSame(__('common.unknown'), $resources['memory']['total']);
@@ -420,7 +420,7 @@ class DashboardServiceTest extends TestCase
 
         $resources = $service->getSystemResources();
 
-        $this->assertSame(0, $resources['disk']['percentage']);
+        $this->assertNull($resources['disk']['percentage']);
         $this->assertSame('gray', $resources['disk']['color']);
         $this->assertSame(__('common.unknown'), $resources['disk']['used']);
         $this->assertSame(45, $resources['cpu']['percentage']);
@@ -453,7 +453,7 @@ class DashboardServiceTest extends TestCase
         $this->assertSame('gray', $resources['cpu']['color']);
         $this->assertSame('gray', $resources['memory']['color']);
         $this->assertSame('gray', $resources['disk']['color']);
-        $this->assertSame(0, $resources['cpu']['percentage']);
+        $this->assertNull($resources['cpu']['percentage']);
     }
 
     // ========================================================================

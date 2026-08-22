@@ -355,9 +355,9 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| cpu | object | `{"percentage":21,"color":"green"}` | CPU 사용률 정보 (percentage: 0~100 사용률, color: 임계 색상 — green<50, blue 50~69, yellow 70~89, red≥90) |
-| memory | object | `{"percentage":77,"used":"24.3 GB","total":"31.5 GB","colo…` | 메모리 사용량 정보 (percentage 사용률, used/total: 사용량·총량 형식화 문자열, color: 임계 색상). 수집 불가 시 percentage 0·"알 수 없음"·color gray 폴백 |
-| disk | object | `{"percentage":86,"used":"408.2 GB","total":"474.7 GB","co…` | 디스크 사용량 정보 (percentage 사용률, used/total: 사용량·총량 형식화 문자열, color: 임계 색상). 수집 불가 시 percentage 0·"알 수 없음"·color gray 폴백 |
+| cpu | object | `{"percentage":21,"color":"green"}` | CPU 사용률 정보 (percentage: 0~100 사용률 또는 측정 불가 시 `null`, color: 임계 색상 — green<50, blue 50~69, yellow 70~89, red≥90, 측정 불가 시 gray). 측정 불가 = 서버가 외부 명령 실행(`exec` 등)을 막아 수집 경로가 없는 경우로, `0` 과 구분된다 |
+| memory | object | `{"percentage":77,"used":"24.3 GB","total":"31.5 GB","colo…` | 메모리 사용량 정보 (percentage 사용률, used/total: 사용량·총량 형식화 문자열, color: 임계 색상). 측정 불가 시 percentage `null`·"알 수 없음"·color gray 폴백 (`0` 은 실측 0% 다) |
+| disk | object | `{"percentage":86,"used":"408.2 GB","total":"474.7 GB","co…` | 디스크 사용량 정보 (percentage 사용률, used/total: 사용량·총량 형식화 문자열, color: 임계 색상). 측정 불가 시 percentage `null`·"알 수 없음"·color gray 폴백 (`0` 은 실측 0% 다) |
 
 **응답 예시**
 
@@ -399,7 +399,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 서버의 CPU·메모리·디스크 사용량을 조회합니다. 인증(`auth:sanctum`)과 `core.dashboard.read` 권한이 필요합니다. 각 항목은 사용률(`percentage`)과 상태 색상(`color`), 메모리·디스크의 경우 사용량/총량 문자열을 포함하며, 대시보드 시스템 리소스 게이지를 렌더링할 때 사용합니다.
+**설명** 서버의 CPU·메모리·디스크 사용량을 조회합니다. 인증(`auth:sanctum`)과 `core.dashboard.read` 권한이 필요합니다. 각 항목은 사용률(`percentage`)과 상태 색상(`color`), 메모리·디스크의 경우 사용량/총량 문자열을 포함하며, 대시보드 시스템 리소스 게이지를 렌더링할 때 사용합니다. 수집 경로가 없는 서버(외부 명령 실행 차단 등)에서는 `percentage` 가 `null` 로 내려가며 화면은 이를 "측정 불가" 로 표기해야 합니다 — `0` 으로 채우면 실측 0% 와 구분되지 않습니다.
 
 
 ### GET /api/admin/dashboard/stats

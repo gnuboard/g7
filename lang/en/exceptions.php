@@ -1,5 +1,7 @@
 <?php
 
+// changelog:allow 무CLI 실행 모드 축의 신규 키 — 사용자 노출 경로 미구현 단계라 공개 CHANGELOG 는 기능 완성 릴리즈 섹션에 일괄 기재 (#609)
+
 return [
     // User related exceptions
     'cannot_delete_super_admin' => 'Super admin cannot be deleted.',
@@ -81,6 +83,12 @@ return [
         'no_composer_lock' => 'composer.lock is required. Run composer install first: :path',
         'vendor_dir_not_found' => 'vendor/ directory does not exist. Run composer install first: :path',
         'composer_binary_not_found' => 'Composer binary not found. Set the COMPOSER_BINARY environment variable or add composer to your PATH.',
+    ],
+
+    // 실행 모드(커맨드 러너) 관련 예외
+    'execution' => [
+        'spawn_unavailable' => 'This server cannot launch external processes (:reason). Check the execution mode.',
+        'spawn_failed' => 'Failed to start the command execution process: :command',
     ],
 
     // SEO / Sitemap 관련 예외

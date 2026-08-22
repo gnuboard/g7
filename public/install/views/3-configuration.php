@@ -400,6 +400,7 @@ foreach (SUPPORTED_LANGUAGES as $code => $label) { ?>
         <?php
             $bundleZipExists = file_exists(BASE_PATH.'/vendor-bundle.zip');
 $zipArchiveAvailable = class_exists('ZipArchive');
+// audit:allow execution-function-availability-via-ssot 현행 직접 판정 — G2(인스톨러)에서 ExecutionEnvironment::hasFunction 으로 이관 (#609 D34)
 $procOpenAvailable = function_exists('proc_open')
     && ! in_array('proc_open', array_map('trim', explode(',', (string) ini_get('disable_functions'))), true);
 $bundleAvailable = $bundleZipExists && $zipArchiveAvailable;

@@ -8,7 +8,6 @@
  *
  * Laravel 측 클래스와의 동등성은 VendorBundleInstallerShimTest 가 보장한다.
  */
-
 const VENDOR_BUNDLE_SCHEMA_VERSION = '1.0';
 const VENDOR_BUNDLE_ZIP_FILENAME = 'vendor-bundle.zip';
 const VENDOR_BUNDLE_MANIFEST_FILENAME = 'vendor-bundle.json';
@@ -297,7 +296,7 @@ function deleteVendorBundleDirectory(string $dir): bool
  * 본 함수는 Laravel\Foundation\ComposerScripts::clearCompiled() 와 동일한 3개 파일을 정리한다.
  *
  * @param  string  $basePath  프로젝트 루트 (bootstrap/cache 의 상위 디렉토리)
- * @return array<string>  실제로 삭제된 파일명 목록 (basename)
+ * @return array<string> 실제로 삭제된 파일명 목록 (basename)
  */
 function clearLaravelCompiledCache(string $basePath): array
 {
@@ -326,6 +325,7 @@ function clearLaravelCompiledCache(string $basePath): array
 function canExecuteComposerForInstall(?string $composerBinary, ?string $phpBinary): bool
 {
     // proc_open 사용 가능 여부
+    // audit:allow execution-function-availability-via-ssot 현행 직접 판정 — G2(인스톨러)에서 ExecutionEnvironment::hasFunction 으로 이관 (#609 D34)
     if (! function_exists('proc_open')) {
         return false;
     }

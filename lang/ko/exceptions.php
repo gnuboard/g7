@@ -1,5 +1,7 @@
 <?php
 
+// changelog:allow 무CLI 실행 모드 축의 신규 키 — 사용자 노출 경로 미구현 단계라 공개 CHANGELOG 는 기능 완성 릴리즈 섹션에 일괄 기재 (#609)
+
 return [
     // 사용자 관련 예외
     'cannot_delete_super_admin' => '슈퍼 관리자는 삭제할 수 없습니다.',
@@ -81,6 +83,12 @@ return [
         'no_composer_lock' => 'composer.lock 파일이 필요합니다. 먼저 composer install을 실행하세요: :path',
         'vendor_dir_not_found' => 'vendor/ 디렉토리가 존재하지 않습니다. 먼저 composer install을 실행하세요: :path',
         'composer_binary_not_found' => 'Composer 바이너리를 찾을 수 없습니다. COMPOSER_BINARY 환경변수를 설정하거나 composer를 PATH에 추가하세요.',
+    ],
+
+    // 실행 모드(커맨드 러너) 관련 예외
+    'execution' => [
+        'spawn_unavailable' => '이 서버에서는 외부 프로세스를 실행할 수 없습니다 (:reason). 실행 모드를 확인하세요.',
+        'spawn_failed' => '커맨드 실행 프로세스를 시작하지 못했습니다: :command',
     ],
 
     // SEO / Sitemap 관련 예외

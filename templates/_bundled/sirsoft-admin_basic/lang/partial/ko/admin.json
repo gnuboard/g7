@@ -1980,6 +1980,7 @@
       "cpu": "CPU",
       "memory": "메모리",
       "disk": "디스크",
+      "not_measurable": "측정 불가",
       "php_memory": "PHP 메모리 제한",
       "opcache": "OPcache",
       "opcache_enabled": "활성화됨",

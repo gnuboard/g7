@@ -1012,8 +1012,8 @@ _단건 응답: `data` 객체의 필드._
 | laravel_version | string | `12.62.0` | 프레임워크 Laravel 버전 (`app()->version()`) |
 | environment | string | `local` | 현재 실행 환경 (`app()->environment()` — local/production/testing 등) |
 | cpu_info | string | `Intel(R) Core(TM) Ultra 5 225H` | CPU 모델명 (OS별 시스템 probe 산물). 수집 실패 시 "알 수 없음" 폴백 |
-| memory_usage | object | `{"total":"31.49 GB","used":"24.31 GB","free":"7.18 GB","p…` | 물리 메모리 사용량. total/used/free 는 사람이 읽기 쉬운 단위 문자열, percentage 는 사용률(%) |
-| disk_usage | object | `{"total":"474.72 GB","used":"408.15 GB","free":"66.57 GB"…` | 설치 볼륨 디스크 사용량. total/used/free 단위 문자열 + percentage 사용률(%) |
+| memory_usage | object | `{"total":"31.49 GB","used":"24.31 GB","free":"7.18 GB","p…` | 물리 메모리 사용량. total/used/free 는 사람이 읽기 쉬운 단위 문자열, percentage 는 사용률(%). 측정 불가(외부 명령 실행 차단 등으로 수집 경로 없음) 시 total/used/free 는 "알 수 없음", percentage 는 `null` — `0` 은 실측 0% 다 |
+| disk_usage | object | `{"total":"474.72 GB","used":"408.15 GB","free":"66.57 GB"…` | 설치 볼륨 디스크 사용량. total/used/free 단위 문자열 + percentage 사용률(%). 측정 불가 시 percentage `null` (memory_usage 와 같은 계약) |
 | php_memory_limit | string | `512M` | PHP `memory_limit` ini 값 |
 | max_execution_time | string | `36000초` | PHP `max_execution_time` ini 값 (초 단위 접미사 부착) |
 | upload_max_filesize | string | `2G` | PHP `upload_max_filesize` ini 값 |

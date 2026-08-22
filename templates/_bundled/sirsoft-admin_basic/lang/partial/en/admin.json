@@ -1976,6 +1976,7 @@
       "cpu": "CPU",
       "memory": "Memory",
       "disk": "Disk",
+      "not_measurable": "Not measurable",
       "php_memory": "PHP Memory Limit",
       "opcache": "OPcache",
       "opcache_enabled": "Enabled",

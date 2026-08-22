@@ -411,25 +411,38 @@
             false
         );
 
-        // 7. 필수 함수 (exec, proc_open, shell_exec) 카드
+        // 7. 실행 방식 카드 (구 필수 함수 카드 — A-1 모드 분기)
+        //    status: 'pass'(subprocess, 현행 초록) / 'info'(inprocess + 번들 보유, 파랑 정보)
+        //            / 'fail'(inprocess + 번들 부재, 빨강 차단)
         if (data.disabled_functions) {
-            const dfPassed = data.disabled_functions.passed;
-            const dfStatusClass = dfPassed ? 'status-pass' : 'status-fail';
-            const dfDisabledList = data.disabled_functions.disabled || [];
-            if (!dfPassed) {
-                failedRequirements.push(
-                    lang('error_disabled_functions').replace(':functions', dfDisabledList.join(', '))
+            const df = data.disabled_functions;
+            const dfStatus = df.status || (df.passed ? 'pass' : 'fail');
+            const dfDisabledList = df.disabled || [];
+
+            if (dfStatus === 'pass') {
+                // 현행과 동일한 통과 카드 (S1 회귀 기준면)
+                html += renderSingleItemCard(
+                    lang('required_functions'),
+                    'status-pass',
+                    lang('required_functions_available'),
+                    'exec, proc_open, shell_exec',
+                    true
+                );
+            } else if (dfStatus === 'info') {
+                // 정보(파랑) — 실패가 아니라 "어떻게 설치되는지" 안내 (W1)
+                html += renderExecutionModeInfoCard(df);
+            } else {
+                failedRequirements.push(df.message || lang('error_no_cli_and_no_bundle'));
+                html += renderSingleItemCard(
+                    lang('execution_mode_title'),
+                    'status-fail',
+                    dfDisabledList.length > 0
+                        ? lang('required_functions_disabled').replace(':count', dfDisabledList.length)
+                        : lang('execution_mode_reason_php_probe'),
+                    'exec, proc_open, shell_exec',
+                    true
                 );
             }
-            html += renderSingleItemCard(
-                lang('required_functions'),
-                dfStatusClass,
-                dfPassed
-                    ? lang('required_functions_available')
-                    : lang('required_functions_disabled').replace(':count', dfDisabledList.length),
-                'exec, proc_open, shell_exec',
-                true
-            );
         }
 
         // 8. PHP CLI 버전 일치 확인 카드 (경고만, 필수 아님)
@@ -829,8 +842,62 @@
             iconType = 'failed';
         } else if (statusClass === 'status-warning') {
             iconType = 'warning';
+        } else if (statusClass === 'status-info') {
+            iconType = 'info';
         }
         return `<span class="status-icon ${statusClass}">${getIconSvg(iconType)}</span>`;
+    }
+
+    /**
+     * 실행 방식 정보(파랑) 카드 렌더링 (A-1 · W1)
+     *
+     * 실패가 아니라 "CLI 없이 설치한다" 는 정보 항목이다. 판정 근거와
+     * 설치 후 달라지는 것 3가지를 카드 본문에 함께 표시한다.
+     *
+     * @param {object} df disabled_functions 판정 응답 (status/reasons/message 포함)
+     */
+    function renderExecutionModeInfoCard(df) {
+        const reasons = (df.reasons || [])
+            .map((r) => `<li>${escapeHtml(r)}</li>`)
+            .join('');
+
+        const bodyHtml = `
+            <div class="execution-mode-info">
+                <p class="execution-mode-detail">${lang('execution_mode_inprocess_detail')}</p>
+                ${reasons ? `
+                <p class="execution-mode-reasons-label">${lang('execution_mode_reason_prefix')}</p>
+                <ul class="execution-mode-reasons">${reasons}</ul>
+                ` : ''}
+                <p class="execution-mode-changes-intro">${lang('execution_mode_changes_intro')}</p>
+                <ul class="execution-mode-changes">
+                    <li>${lang('execution_mode_change_vendor')}</li>
+                    <li>${lang('execution_mode_change_cron')}</li>
+                    <li>${lang('execution_mode_change_update')}</li>
+                </ul>
+            </div>
+        `;
+
+        const statusIcon = getStatusIcon('status-info');
+
+        return `
+            <div class="requirement-card requirement-card--info">
+                <div class="requirement-card-header">
+                    <div class="header-left">
+                        ${statusIcon}
+                        <h3 class="requirement-card-title">${lang('execution_mode_title')}</h3>
+                    </div>
+                    <div class="header-right">
+                        <div class="current-value">
+                            <span class="value-text">${lang('execution_mode_inprocess_notice')}</span>
+                        </div>
+                        <div class="requirement-badge badge-required">${lang('badge_required')}</div>
+                    </div>
+                </div>
+                <div class="requirement-card-body">
+                    ${bodyHtml}
+                </div>
+            </div>
+        `;
     }
 
     /**
@@ -4987,6 +5054,12 @@
                 <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: ${size}; height: ${size};" class="${className}">
                     <path d="M10 2L2 17h16L10 2z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" fill="none"/>
                     <path d="M10 8v4M10 14v.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            `,
+            info: `
+                <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: ${size}; height: ${size};" class="${className}">
+                    <circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                    <path d="M10 9v5M10 6v.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                 </svg>
             `,
             spinner: '<div class="task-icon-spinner"></div>'

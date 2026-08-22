@@ -11,6 +11,7 @@ use App\Http\Resources\AttachmentResource;
 use App\Seo\Contracts\SeoCacheManagerInterface;
 use App\Support\ConfigCacheHelper;
 use App\Support\EnvPriority;
+use App\Support\ExecutionEnvironment;
 use App\Support\ExtensionSettingsMirror;
 use App\Support\OpcacheStatus;
 use App\Support\ProcessOutputEncoding;
@@ -1392,11 +1393,12 @@ class SettingsService
      */
     private function unknownUsage(): array
     {
+        // percentage null = 측정 불가 — 화면은 0% 가 아니라 "측정 불가" 로 표기한다 (A-8)
         return [
             'total' => __('common.unknown'),
             'used' => __('common.unknown'),
             'free' => __('common.unknown'),
-            'percentage' => 0,
+            'percentage' => null,
         ];
     }
 
@@ -1550,7 +1552,8 @@ class SettingsService
                     $free = (int) $m[1] * 1024;
                 }
             }
-        } elseif (PHP_OS_FAMILY === 'Windows') {
+        } elseif (PHP_OS_FAMILY === 'Windows' && ExecutionEnvironment::hasFunction('shell_exec')) {
+            // disable_functions 차단 시 호출 자체가 fatal Error — 가드 필수 (A-8)
             $script = '$os = Get-CimInstance Win32_OperatingSystem; '
                 .'Write-Output $os.TotalVisibleMemorySize; '
                 .'Write-Output $os.FreePhysicalMemory';
@@ -1636,6 +1639,11 @@ class SettingsService
     protected function getCpuInfo(): string
     {
         if (PHP_OS_FAMILY === 'Windows') {
+            // disable_functions 차단 시 호출 자체가 fatal Error — 가드 필수 (A-8)
+            if (! ExecutionEnvironment::hasFunction('shell_exec')) {
+                return __('common.unknown');
+            }
+
             $output = @shell_exec('powershell -NoProfile -NonInteractive -Command "(Get-CimInstance Win32_Processor | Select-Object -First 1).Name" 2>&1');
             if ($output) {
                 // 2>&1 로 합쳐진 오류 문장은 시스템 코드페이지(한국어 Windows = CP949)로 출력된다.

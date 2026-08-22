@@ -8,7 +8,7 @@ description: |
   등) 는 호스팅의 disable_functions / open_basedir 제약으로 예외·Error 를 던질 수 있다.
 
   SettingsService::safeSystemProbe 가 각 항목 수집을 개별 격리하여, 한 항목의 실패가
-  전체 API 를 500 으로 떨어뜨리지 않고 해당 항목만 'unknown'(사용량 배열은 percentage 0)
+  전체 API 를 500 으로 떨어뜨리지 않고 해당 항목만 'unknown'(사용량 배열은 percentage null — 측정 불가, 0 은 실측 0%)
   폴백으로 채우도록 한다. 개별 실패는 Log::warning, 격리를 뚫은 전체 실패는 컨트롤러
   Log::error 로 기록된다.
 
@@ -34,7 +34,7 @@ effects:
   - opcache_status_exposed_in_system_info
   - failing_probe_isolated_and_api_returns_200
   - failed_item_filled_with_unknown_fallback
-  - usage_array_fallback_keeps_total_used_free_unknown_and_percentage_zero
+  - usage_array_fallback_keeps_total_used_free_unknown_and_percentage_null
   - all_probes_success_returns_full_payload
   - unauthenticated_returns_401
   - without_permission_returns_403

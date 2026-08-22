@@ -2,7 +2,7 @@
     "_meta": {
         "version": "1.0.0",
         "description": "그누보드7 환경설정 기본값 및 프론트엔드 스키마",
-        "categories": ["general", "security", "mail", "upload", "seo", "cache", "debug", "drivers", "core_update", "geoip", "notifications", "identity", "pagination"]
+        "categories": ["general", "security", "mail", "upload", "seo", "cache", "debug", "drivers", "core_update", "geoip", "notifications", "identity", "pagination", "system"]
     },
     "defaults": {
         "general": {
@@ -172,6 +172,9 @@
             },
             "challenge_ttl_minutes": 15,
             "max_attempts": 5
+        },
+        "system": {
+            "execution_mode": "auto"
         }
     },
     "frontend_schema": {
@@ -363,6 +366,13 @@
                 "purpose_providers": { "type": "array", "sensitive": false, "expose": false },
                 "challenge_ttl_minutes": { "type": "integer", "sensitive": false, "expose": false },
                 "max_attempts": { "type": "integer", "sensitive": false, "expose": false }
+            }
+        },
+        "system": {
+            "expose": false,
+            "_comment": "실행 모드 (웹 요청 안의 커맨드 실행 방식) — CommandRunnerResolver 가 소비. W5 관리자 화면(예약 작업·실행 방식 탭)은 P5 공정에서 frontend 노출·저장 경로(merge_into/frontend_name)를 선언한다",
+            "fields": {
+                "execution_mode": { "type": "string", "sensitive": false }
             }
         }
     }

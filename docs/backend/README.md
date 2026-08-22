@@ -46,6 +46,7 @@
 | [dto.md](dto.md) | DTO (Data Transfer Object) 사용 규칙 | DTO 두 패턴 — Value Object(불변 1회 전달) vs Data Carri... |
 | [enum.md](enum.md) | Enum 사용 규칙 | 상태/타입/분류 = Enum 필수 (PHP 8.1+ Backed Enum) |
 | [exceptions.md](exceptions.md) | Custom Exception 다국어 처리 | 예외 메시지 하드코딩 금지 → __() 함수 필수 |
+| [execution-mode.md](execution-mode.md) | 실행 모드 (Execution Mode) — 웹 요청 안의 커맨드 실행 | 웹 도달 코드가 Artisan 을 실행할 때는 App\Execution\Command... |
 | [geoip.md](geoip.md) | GeoIP 시스템 (MaxMind GeoLite2) | MaxMind GeoLite2-City DB 기반 IP → 타임존 감지 (SetTim... |
 | [identity-messages.md](identity-messages.md) | 본인인증 메시지 템플릿 시스템 (Identity Messages) | 알림 시스템(notification_*)과 완전 분리된 IDV 전용 템플릿 인프라 |
 | [identity-policies.md](identity-policies.md) | 본인인증 정책 시스템 (Identity Policies) | - |

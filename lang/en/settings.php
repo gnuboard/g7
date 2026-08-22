@@ -1,5 +1,7 @@
 <?php
 
+// changelog:allow 무CLI 실행 모드 축의 신규 키 — 사용자 노출 화면 미구현 단계라 공개 CHANGELOG 는 기능 완성 릴리즈 섹션에 일괄 기재 (#609)
+
 return [
     // Settings related messages
     'fetch_success' => 'Settings retrieved successfully.',
@@ -40,6 +42,13 @@ return [
 
     // System info related
     'seconds' => 's',
+
+    // Execution mode (how commands run inside web requests)
+    'execution_mode' => [
+        'auto' => 'Detect automatically',
+        'subprocess' => 'Always use CLI',
+        'inprocess' => 'Always without CLI',
+    ],
 
     // Driver labels (resolved per active language pack by DriverRegistryService)
     'drivers' => [

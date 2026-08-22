@@ -72,4 +72,8 @@ return [
         'sitemap_temp_file_unreadable' => 'Sitemap一時ファイルを読み込めません: :file',
         'sitemap_stat_group_column_unsupported' => 'サポートされていないグループ基準列です: :column',
     ],
+    'execution' => [
+        'spawn_unavailable' => 'このサーバーでは外部プロセスを実行できません (:reason)。実行モードを確認してください。',
+        'spawn_failed' => 'コマンド実行プロセスを開始できませんでした: :command',
+    ],
 ];

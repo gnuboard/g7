@@ -730,6 +730,7 @@ function getWebServerUser(): ?string
     // 한국어 Windows(OEM 949)에서 계정명에 한글이 있으면 invalid UTF-8 바이트가 들어오고,
     // 그 값이 응답에 실리면 json_encode 가 false 를 반환해 빈 본문(HTTP 200)이 나간다
     // (gnuboard/g7#62). 반환 전에 반드시 정규화한다.
+    // audit:allow execution-function-availability-via-ssot 현행 직접 판정 — G2(인스톨러)에서 ExecutionEnvironment::hasFunction 으로 이관 (#609 D34)
     if (function_exists('exec')) {
         $user = @exec('whoami');
         if (! empty($user)) {

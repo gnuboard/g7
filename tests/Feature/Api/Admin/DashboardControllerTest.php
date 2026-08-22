@@ -293,7 +293,8 @@ class DashboardControllerTest extends TestCase
 
         $response->assertStatus(200);
         $this->assertSame('gray', $response->json('data.cpu.color'));
-        $this->assertSame(0, $response->json('data.cpu.percentage'));
+        // 측정 불가는 0% 가 아니라 null 로 내려간다 (A-8)
+        $this->assertNull($response->json('data.cpu.percentage'));
         // memory/disk 구조는 정상 유지
         $response->assertJsonStructure([
             'data' => [

@@ -8,7 +8,6 @@ use App\Rules\ValidOutboundProxyUrl;
 use App\Search\Engines\DatabaseFulltextEngine;
 use App\Services\DriverRegistryService;
 use App\Support\AllowedExtensions;
-use App\Support\AssetUrl;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -212,10 +211,12 @@ class SaveSettingsRequest extends FormRequest
             // 자산 URL 방식 — 정적 최적화 서버 대응 (이슈 #486).
             // 임의 문자열이 들어오면 AssetUrl::mode() 가 기본값으로 폴백하지만,
             // 저장 단계에서 막아 설정 파일에 뜻 모를 값이 남지 않게 한다.
-            'general.asset_url_mode' => ['nullable', 'string', Rule::in([
-                AssetUrl::MODE_EXTENSION,
-                AssetUrl::MODE_EXTENSIONLESS,
-            ])],
+            // 허용값은 단건 저장(UpdateSettingRequest)과 같은 표(EnumeratedSettingValues)를 쓴다.
+            'general.asset_url_mode' => ['nullable', 'string', EnumeratedSettingValues::ruleFor('general.asset_url_mode')],
+
+            // 실행 모드 — 웹 요청 안의 커맨드 실행 방식 (#609). 화면 노출은 P5 공정이 맡지만
+            // 카테고리가 카탈로그에 등재된 순간 저장 경로는 열리므로 허용값 게이트는 먼저 둔다.
+            'system.execution_mode' => ['nullable', 'string', EnumeratedSettingValues::ruleFor('system.execution_mode')],
             'general.site_logo' => ['nullable', 'array'],
             'general.site_logo.*' => ['integer', Rule::exists(Attachment::class, 'id')],
 

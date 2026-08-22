@@ -84,6 +84,7 @@ function executeMigrateRollback(?string $logPrefix = null): array
         $output = [];
         $returnCode = 0;
         $phpBin = escapeshellarg(function_exists('getPhpBinary') ? getPhpBinary() : 'php');
+        // audit:allow web-artisan-spawn-requires-runner 현행 subprocess 롤백 경로 — P2(G2) 에서 실행 모드 러너로 이관
         $command = sprintf(
             'cd /d %s && %s artisan migrate:rollback --force 2>&1',
             escapeshellarg(BASE_PATH),

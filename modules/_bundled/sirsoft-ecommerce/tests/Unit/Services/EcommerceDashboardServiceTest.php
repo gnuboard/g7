@@ -39,6 +39,15 @@ class EcommerceDashboardServiceTest extends ModuleTestCase
         ProductInquiry::query()->forceDelete();
         EcommerceStat::query()->delete();
 
+        // 매출 정규화 단언(0자리 통화 → 정수)은 통화 설정에 의존한다 — 실행 환경의
+        // 설치본 설정을 전제하지 않도록 setUp 에서 고정한다 (형제 통화 테스트와 동일 패턴).
+        config(['g7_settings.modules.sirsoft-ecommerce.language_currency' => [
+            'default_currency' => 'KRW',
+            'currencies' => [
+                ['code' => 'KRW', 'name' => ['ko' => 'KRW', 'en' => 'KRW'], 'exchange_rate' => null, 'base_unit' => 1000, 'rounding_unit' => '1', 'rounding_method' => 'floor', 'decimal_places' => 0, 'is_default' => true],
+            ],
+        ]]);
+
         $this->service = $this->app->make(EcommerceDashboardService::class);
     }
 
