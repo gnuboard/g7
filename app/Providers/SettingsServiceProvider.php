@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Repositories\JsonConfigRepository;
 use App\Support\AllowedExtensions;
 use App\Support\ExtensionSettingsMirror;
+use App\Support\OutboundProxy;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\ServiceProvider;
 use Predis\Client;
@@ -274,6 +275,11 @@ class SettingsServiceProvider extends ServiceProvider
         if (isset($debugSettings['sql_query_log'])) {
             Config::set('g7.sql_query_log', (bool) $debugSettings['sql_query_log']);
         }
+
+        // 아웃바운드 HTTP 프록시 설정.
+        // 적용 여부 판정은 OutboundProxy 가 단독으로 소유한다 — 디버그 모드가 꺼져 있으면
+        // 저장값이 남아 있어도 null 이 되어 주입되지 않는다.
+        Config::set('g7.outbound_proxy', OutboundProxy::resolve($debugSettings));
     }
 
     /**

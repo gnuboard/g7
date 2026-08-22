@@ -20,6 +20,18 @@ interface OrderRepositoryInterface
     public function find(int $id): ?Order;
 
     /**
+     * ID로 주문을 행 잠금과 함께 조회합니다.
+     *
+     * 취소 총액·취소 횟수처럼 현재 값을 읽어 더하는 컬럼은 두 요청이 같은 값을 읽으면
+     * 후행이 선행을 덮어씁니다. 트랜잭션 안에서 이 메서드로 행을 잠근 뒤 갱신하면
+     * 뒤따르는 요청이 앞선 커밋을 본 뒤에 진행합니다.
+     *
+     * @param  int  $id  주문 ID
+     * @return Order|null 잠긴 주문 모델 (없으면 null)
+     */
+    public function findByIdForUpdate(int $id): ?Order;
+
+    /**
      * 주문이 1건이라도 존재하는지 확인합니다. (A2 base 통화 변경 가드)
      *
      * 소프트삭제된 주문도 과거 base 로 생성된 이력이므로 포함(withTrashed)해 판정한다.

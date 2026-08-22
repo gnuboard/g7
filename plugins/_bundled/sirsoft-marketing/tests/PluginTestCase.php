@@ -3,14 +3,13 @@
 namespace Plugins\Sirsoft\Marketing\Tests;
 
 use App\Enums\PermissionType;
+use App\Extension\HookManager;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
 use Plugins\Sirsoft\Marketing\Repositories\Contracts\MarketingConsentRepositoryInterface;
-use Plugins\Sirsoft\Marketing\Http\Controllers\MarketingAdminController;
-use Plugins\Sirsoft\Marketing\Http\Controllers\MarketingSettingsController;
 use Plugins\Sirsoft\Marketing\Repositories\MarketingConsentRepository;
 use Tests\TestCase;
 
@@ -43,19 +42,7 @@ abstract class PluginTestCase extends TestCase
 
         $this->app->bind(MarketingConsentRepositoryInterface::class, MarketingConsentRepository::class);
 
-        Route::prefix('api/plugins/sirsoft-marketing')
-            ->middleware('api')
-            ->group(function () {
-                Route::get('/settings', [MarketingSettingsController::class, 'settings'])
-                    ->name('api.sirsoft-marketing.settings');
-
-                Route::prefix('admin')
-                    ->middleware('auth:sanctum')
-                    ->group(function () {
-                        Route::put('/channels', [MarketingAdminController::class, 'updateChannels'])
-                            ->name('api.sirsoft-marketing.admin.channels.update');
-                    });
-            });
+        $this->registerPluginRoutes();
 
         // HookManager 상태 스냅샷 (tearDown 에서 복원)
         $this->snapshotHookManager();
@@ -76,7 +63,7 @@ abstract class PluginTestCase extends TestCase
      */
     private function snapshotHookManager(): void
     {
-        $ref = new \ReflectionClass(\App\Extension\HookManager::class);
+        $ref = new \ReflectionClass(HookManager::class);
         $this->hookSnapshot = [
             'hooks' => $ref->getProperty('hooks')->getValue(),
             'filters' => $ref->getProperty('filters')->getValue(),
@@ -93,7 +80,7 @@ abstract class PluginTestCase extends TestCase
             return;
         }
 
-        $ref = new \ReflectionClass(\App\Extension\HookManager::class);
+        $ref = new \ReflectionClass(HookManager::class);
         $ref->getProperty('hooks')->setValue(null, $this->hookSnapshot['hooks']);
         $ref->getProperty('filters')->setValue(null, $this->hookSnapshot['filters']);
         $ref->getProperty('dispatching')->setValue(null, $this->hookSnapshot['dispatching']);
@@ -102,18 +89,45 @@ abstract class PluginTestCase extends TestCase
     }
 
     /**
+     * 플러그인 API 라우트를 실제 라우트 파일에서 등록합니다.
+     *
+     * 테스트 안에 라우트 정의를 복제하면 라우트 파일의 미들웨어 변경이 테스트에 도달하지
+     * 않아, 권한 게이트가 빠져도 검사가 통과한다. 프로덕션 PluginRouteServiceProvider 와
+     * 동일한 prefix/name 으로 실제 파일을 그대로 로드한다.
+     *
+     * @return void
+     */
+    protected function registerPluginRoutes(): void
+    {
+        $apiRoutesFile = base_path('plugins/sirsoft-marketing/src/routes/api.php');
+
+        if (file_exists($apiRoutesFile)) {
+            Route::prefix('api/plugins/sirsoft-marketing')
+                ->name('api.plugins.sirsoft-marketing.')
+                ->middleware('api')
+                ->group($apiRoutesFile);
+        }
+    }
+
+    /**
      * 관리자 권한을 가진 사용자를 생성합니다.
      *
      * isAdmin()이 Role/Permission 기반이므로 admin Role과 type=admin Permission을 직접 생성합니다.
      *
-     * @return User
+     * @param  array<int, string>  $permissions  추가로 부여할 업무 권한 식별자 목록
+     * @return User 생성된 관리자
      */
-    protected function createAdminUser(): User
+    protected function createAdminUser(array $permissions = []): User
     {
-        $adminRole = Role::firstOrCreate(
-            ['identifier' => 'admin'],
-            ['name' => ['ko' => '관리자', 'en' => 'Admin'], 'description' => ['ko' => '관리자', 'en' => 'Admin']]
-        );
+        $user = User::factory()->create();
+
+        // 사용자마다 고유 역할을 만든다 — 공용 'admin' 역할을 재사용하면 한 테스트 안에서
+        // 권한 보유 관리자에게 부여한 권한이 무권한 관리자에게도 새어 음성 케이스가 무력화된다.
+        $adminRole = Role::create([
+            'identifier' => 'admin-test-'.$user->id.'-'.uniqid(),
+            'name' => ['ko' => '테스트 관리자', 'en' => 'Test Admin'],
+            'description' => ['ko' => '테스트 관리자', 'en' => 'Test Admin'],
+        ]);
 
         $permission = Permission::firstOrCreate(
             ['identifier' => 'admin.access'],
@@ -122,7 +136,14 @@ abstract class PluginTestCase extends TestCase
 
         $adminRole->permissions()->syncWithoutDetaching([$permission->id]);
 
-        $user = User::factory()->create();
+        foreach ($permissions as $identifier) {
+            $granted = Permission::firstOrCreate(
+                ['identifier' => $identifier],
+                ['name' => ['ko' => $identifier, 'en' => $identifier], 'type' => PermissionType::Admin]
+            );
+            $adminRole->permissions()->syncWithoutDetaching([$granted->id]);
+        }
+
         $user->roles()->attach($adminRole->id);
 
         return $user;

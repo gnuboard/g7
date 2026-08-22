@@ -584,10 +584,15 @@ G7 은 **기본 통화**(상품·쿠폰·배송비 저장 기준), **표시 통�
 | typed 예외 도입하면서 그 분기의 상태코드도 변경 | typed 는 **기존 상태코드 유지** — 예외 도입이 사용자 계약을 함께 바꾸면 회귀다 |
 | 공개(비인증) 엔드포인트 응답에 예외 원문 포함 | 원문은 `Log::error` 로만 — 관리자 전용 면의 `errors` 페이로드는 진단 정보로 허용된다 |
 | 원문을 직접 문자열로 조립해 노출 폭을 호출부가 정함 | 노출 폭은 `ResponseHelper` 가 정한다 — Throwable 을 넘기면 `app.debug` 에서만 펼쳐진다 |
+| 치환 자리(`:error`)를 가진 키를 파라미터 없이 호출 | 넷째 인자 `messageParams` 로 채운다 — 비워 두면 번역기가 자리표시자를 **그대로 둔 문장**을 돌려줘 운영자 화면에 `:error` 가 노출된다 (실패했을 때만 드러나 정상 흐름 테스트로는 안 잡힌다) |
+| 사유를 모른다고 치환 자리를 비워 두기 | 알 수 없으면 일반 문구(`errors.unknown_error`)로 채운다 |
+| 원문을 싣지 않기로 한 문구에 `:error` 자리를 남겨 두기 | 그 키에서 **치환 자리 자체를 없앤다** — 자리를 남기면 나중에 예외 원문으로 채우는 회귀를 부른다 |
+| 하위 계층이 `false`/`null` 만 돌려주고 실패 사유를 버림 | 사유를 반환 경로에 실어 올린다 (배열 키 `reason` 또는 **뒤에 붙인 선택적 out 파라미터**) — 기존 호출부를 깨지 않는다 |
+| 확장 수명주기 훅이 사유 없이 `false` 반환 | `AbstractModule`/`AbstractPlugin` 의 `failWith(__('...'))` — 코어가 그 사유를 원인 자리에 싣는다 |
 
 `message`(첫 인자)와 `errors`(셋째 인자)는 다른 통로다. **키 자리에 원문을 넘기는 것은 언제나 금지**지만, `errors` 페이로드의 원문은 금지 대상이 아니다 — `ResponseHelper::error` 가 문자열 `errors` 를 `500+` 비디버그에서만 차단하고 배열은 통과시키는 것은 `tests/Unit/Helpers/ResponseHelperTest.php` 가 고정한 의도다. 관리자에게 결제대행사·외부 시스템이 돌려준 사유를 감추면 조치 근거가 사라지고, 다국어 키는 유한해서 예상 못 한 실패를 담지 못한다. 판단 축은 "원문이냐 키냐" 가 아니라 **누구에게 / 무엇의 원문인가 / 어느 통로인가** 셋이다.
 
-상세: [exceptions.md "예외 → 응답 매핑"](docs/backend/exceptions.md). `tests/Feature/Http/GenericCatchStatusCodeContractTest.php` 가 코어와 모든 번들 확장의 컨트롤러를 전수 스캔해 두 규칙을 고정한다. 판정기를 한 확장 안에 두면 그 확장 밖의 동형 결함이 검출되지 않는다.
+상세: [exceptions.md "예외 → 응답 매핑"](docs/backend/exceptions.md). `tests/Feature/Http/GenericCatchStatusCodeContractTest.php` 가 코어와 모든 번들 확장의 컨트롤러를 전수 스캔해 두 규칙을 고정한다. 판정기를 한 확장 안에 두면 그 확장 밖의 동형 결함이 검출되지 않는다. 치환 자리 축은 `tests/Feature/Http/ErrorMessageParamSubstitutionTest.php` 가 고정한다 — 호출부를 열거하지 않고 `->error(...)` 전수를 괄호 균형으로 잘라, 키를 실제로 번역해 `:error` 를 요구하는지 판정한다. 같은 판정기가 `new *OperationException(...)` 생성자 축도 덮는다(파라미터 배열이 넷째가 아니라 둘째 인자다). 이 축이 없으면 키를 들고 다니는 예외로 던지는 경로가 통째로 사각이 된다.
 
 ### Listener 데이터 접근
 
@@ -599,6 +604,8 @@ G7 은 **기본 통화**(상품·쿠폰·배송비 저장 기준), **표시 통�
 | Listener 생성자에 구체 Repository 직접 주입 | Repository Interface 주입 |
 | Listener 에서 `request()` / `$_POST` 직접 접근 | Service 가 검증 후 도메인 객체로 전달 받기 |
 | Filter 훅에 `'type' => 'filter'` 누락 | type 명시 필수 (반환값 무시 회귀 차단) |
+| 실패 시 호출자 트랜잭션을 되돌려야 하는 Action 훅에 `'sync' => true` 누락 | 금전 이동(쿠폰 차감·복원, 적립금 차감·복원)은 `sync` 필수. 기본값은 큐 래핑 + `afterCommit` 이라 **커밋 뒤에** 실행되어, 예외를 던져도 롤백되지 않고 오류 응답만 나간 채 데이터가 남는다 (큐 드라이버가 `sync` 여도 동일) |
+| 훅 회귀 테스트에서 리스너를 손으로 `addAction` 등록 | `HookListenerRegistrar::register()` 로 **실제 등록 경로**를 태운다 — 손으로 등록하면 큐 래핑을 건너뛰어 커밋 이후 실행 문제를 통과시킨다 |
 | Listener 가 `HookListenerInterface` 미구현 (auto-discovery 대상) | implements + `getSubscribedHooks()` 정적 메서드 |
 
 > 상세: [hooks.md "Listener 데이터 접근 규정"](docs/extension/hooks.md), [service-repository.md](docs/backend/service-repository.md)
@@ -1051,6 +1058,8 @@ BaseApiController (최상위)
 필수: ActionDispatcher 에 핸들러를 등록하는 확장은 재등록 진입점을 window 전역에 고정 이름으로 노출 — 모듈 window.__[Name].initModule, 플러그인 window.__[Name].initPlugin (미노출 시 로케일 전환 후 해당 확장 액션이 전부 무반응, 에러·토스트 없음). 진입점은 핸들러 재등록만 수행
 필수: 확장 미들웨어는 getMiddleware() 로 부착 대상(targets) 명시 선언 (self-gate) — SP Kernel 미들웨어 그룹 직접 조작·라우트 파일 자기 미들웨어 FQCN 부착 금지, 무규율 전역 개입 금지
 필수: 라우트 정의를 바꾸는 지점은 App\Support\RouteCacheHelper::rebuild() 로 라우트 캐시 갱신 — 확장 설치/활성화/비활성화/삭제/업데이트, 코어 업데이트·업그레이드 스텝. route:clear/route:cache 를 각 지점에 직접 흩어 놓지 않는다 (누락 발생, 비우기만 하면 재생성되지 않아 성능 이점 영구 소실). 훅 캐시와 달리 라우트 캐시에는 스캔 폴백이 없어 캐시에 없는 라우트는 예외·경고 없이 404. 파일 교체 중인 코어 업데이트는 중간에 clear(), 끝에서 rebuild(). 템플릿·모듈 설정은 서버 라우트 무관 (상세: docs/backend/routing.md "라우트 캐시")
+필수: 확장 라우트는 활성 상태인 확장의 것만 등록한다 — 모듈·플러그인 두 라우트 프로바이더가 같은 기준을 쓴다. 게이트가 한쪽에만 있으면 그 비대칭은 오류가 아니라 "조용히 열린 경로" 로만 나타난다: 비활성화해도 화면·메뉴·에셋만 사라지고 API 는 계속 호출 가능하며, 컨트롤러가 정상 처리하므로 오류도 로그도 남지 않는다
+필수: 그 rebuild() 는 확장 상태 캐시 무효화(invalidate*StatusCache()) 뒤에 온다 — route:cache 는 새 앱을 부팅해 라우트를 수집하는데 그 부팅의 확장 라우트 프로바이더는 DB 가 아니라 캐시된 활성 확장 목록(TTL 기본 1일)을 읽으므로, 먼저 구우면 방금 바뀐 상태가 빠진 채 박제되고 자가 회복되지 않는다 (활성화 → 그 확장 API 전량 404 / 비활성화 → 끈 확장 API 가 계속 호출 가능 / 업데이트 → 404 + 훅 리스너 누락). 무효화는 굽기 직전이 아니라 DB 상태 쓰기 직후에 둔다 — 같은 목록을 읽는 굽기가 라우트 캐시 말고도 있다 (오토로드 갱신 안의 훅 매핑 캐시). update 경로만 예외: Updating 전이 직후에는 비우지 않고 (비우면 그 창의 오토로드 갱신이 그 확장을 비활성으로 판정해 훅 리스너를 떨군다) 상태 복원 직후에 비운 뒤 ExtensionManager::regenerateHookCache() 로 훅 캐시를 다시 굽는다. 훅 캐시 폴백은 파일 부재·손상에만 작동해 내용이 stale 한 경우는 조용히 통과한다
 필수: 코어 레이아웃에 모듈 UI 주입은 layout_extensions만 사용
 필수: 모든 확장 작업은 Artisan 커맨드로 수행
 ```
@@ -1118,6 +1127,21 @@ php artisan language-pack:update g7-core-ja --force
 ```
 
 번들 언어팩도 `_bundled` 는 배포 원본일 뿐이다. 설치본(`lang-packs/{id}/`)을 갱신하지 않으면 새로 추가한 번역 키가 런타임에 존재하지 않아 해당 로케일이 조용히 기준 로케일로 폴백한다.
+
+### 배포 산출물의 브라우저 하한
+
+선언 하한은 **Chrome 111 / Safari 16.4 / Firefox 128** 이다 ([requirements.md §7](docs/requirements.md)). 빌드 타깃(`target: 'es2020'`)은 이 하한을 강제하지 못한다 — **ES 연도와 브라우저 지원 연도가 다르기 때문**이다. ES2018 인 정규식 lookbehind 를 WebKit 은 Safari 16.4 에서야 구현했고, 타깃 검사는 그대로 통과시킨다.
+
+정규식 **리터럴** 문법은 그중에서도 다운레벨이 원리상 불가능하다. 번들러는 lookbehind 를 `new RegExp(...)` 로 옮길 뿐이라 파싱 오류가 **런타임 오류로 이동**할 뿐 사라지지 않는다. 따라서 타깃 하향은 해법이 아니다.
+
+| ❌ 금지 | ✅ 올바른 사용 |
+|--------|---------------|
+| 배포 JS 산출물에 선언 하한 **초과** 문법·API (`Object.groupBy`·`Promise.withResolvers`·`Array.fromAsync`·`RegExp.escape`·정규식 `v` 플래그) | 하한 이하 문법으로 작성 |
+| **부팅 임계 번들**(`public/build/core/template-engine.min.js`, `templates/_bundled/*/dist/js/components.iife.js`)에 정규식 리터럴 전용 문법(lookbehind `(?<!` `(?<=`, `v` 플래그) — 하한과 같은 버전이어도 | 그 두 파일만은 하한 미만 브라우저에서도 **파싱**돼야 한다 |
+| 빌드 타깃을 낮춰 해결 시도 | 소스에서 그 문법을 쓰지 않는다 |
+| 바이트 길이 비교식 번들러 검출기로 판정 | 문법·API 표 기반 검사 (프린터 표기 차이가 오탐을 낸다) |
+
+부팅 임계 번들 둘은 `async`/`defer` 없는 동기 classic 스크립트다. 파싱에 실패하면 **폴백 안내 화면조차 렌더되지 않아** 사용자에게는 백지 또는 거짓 진단만 남는다. 하한 미만 브라우저에 "지원 범위 밖" 안내를 띄우려면 이 두 파일은 파싱에 성공해야 하므로, 하한과 **정확히 같은** 버전을 요구하는 문법(lookbehind = Safari 16.4)도 금지한다 — 하한 초과만 보는 검사로는 영원히 잡히지 않는 지점이다. 정적 검사가 이 규칙을 강제한다.
 
 ### 코어 3-번들 구조 + 공유 런타임 (engine-v1.51.0+)
 

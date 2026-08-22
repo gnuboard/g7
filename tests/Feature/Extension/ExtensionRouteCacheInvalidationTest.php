@@ -71,7 +71,9 @@ class ExtensionRouteCacheInvalidationTest extends TestCase
             foreach ($methods as $method) {
                 $this->assertStringContainsString(
                     'RouteCacheHelper::rebuild()',
-                    $this->methodSource($class, $method),
+                    // 주석을 걷어낸 뒤 본다 — 설명 주석의 언급만으로 통과하면
+                    // 호출이 사라져도 green 이 된다.
+                    $this->stripComments($this->methodSource($class, $method)),
                     $class.'::'.$method.' 이 라우트 캐시를 갱신하지 않는다 — '
                     .'캐시가 걸린 사이트에서 이 조작 뒤 확장 라우트가 404 가 된다'
                 );
@@ -105,6 +107,77 @@ class ExtensionRouteCacheInvalidationTest extends TestCase
         }
     }
 
+    #[Test]
+    public function 라우트_캐시_재생성은_상태_캐시_무효화_뒤에_온다(): void
+    {
+        $targets = [
+            ModuleManager::class => 'invalidateModuleStatusCache',
+            PluginManager::class => 'invalidatePluginStatusCache',
+        ];
+
+        foreach ($targets as $class => $invalidator) {
+            $found = 0;
+
+            $reflection = new ReflectionClass($class);
+
+            foreach ($reflection->getMethods() as $method) {
+                // trait 메서드는 getDeclaringClass() 가 사용 클래스를 가리키므로 이 필터만으로는
+                // 걸러지지 않는다. methodSource() 는 클래스 파일을 줄 번호로 자르므로,
+                // 다른 파일에 정의된 메서드가 섞이면 엉뚱한 구간을 읽고 판정이 오염된다.
+                if ($method->getFileName() !== $reflection->getFileName()) {
+                    continue;
+                }
+
+                // 주석을 걷어낸 뒤 판정한다 — 주석 안의 호출 언급을 실제 호출로 오인하면
+                // 순서 판정이 통째로 뒤집힌다(설명 주석이 호출보다 앞서는 것이 보통이다).
+                $source = $this->stripComments($this->methodSource($class, $method->getName()));
+                $rebuildAt = strpos($source, 'RouteCacheHelper::rebuild()');
+
+                if ($rebuildAt === false) {
+                    continue;
+                }
+
+                $found++;
+                $invalidateAt = strpos($source, $invalidator.'()');
+
+                $this->assertNotFalse(
+                    $invalidateAt,
+                    $class.'::'.$method->getName().' 이 라우트 캐시를 구우면서 상태 캐시를 무효화하지 않는다'
+                );
+
+                // route:cache 는 새 앱을 부팅해 캐시된 활성 확장 목록을 읽는다.
+                // 무효화가 뒤에 오면 방금 바뀐 상태가 반영되지 않은 채 라우트가 박제된다.
+                $this->assertLessThan(
+                    $rebuildAt,
+                    $invalidateAt,
+                    $class.'::'.$method->getName().' 이 상태 캐시 무효화보다 먼저 라우트 캐시를 굽는다 — '
+                    .'그 확장의 라우트가 빠진 채 박제되어 오류 없이 404 가 된다 (#519 회귀)'
+                );
+            }
+
+            // 판정기 자신이 모집단을 잃는 것을 막는 가드 — 리플렉션 필터가 잘못되면
+            // 0건을 순회하고도 green 이 된다.
+            $this->assertGreaterThanOrEqual(5, $found, $class.' 에서 굽기 지점을 도출하지 못했다 — 판정기 모집단이 비었다');
+        }
+    }
+
+    #[Test]
+    public function 업데이트는_상태_복원_뒤에_훅_캐시를_다시_굽는다(): void
+    {
+        foreach ([[ModuleManager::class, 'updateModule'], [PluginManager::class, 'updatePlugin']] as [$class, $method]) {
+            // 주석을 걷어낸 뒤 판정한다 — 설명 주석의 언급만으로 통과하면 안 된다.
+            $source = $this->stripComments($this->methodSource($class, $method));
+
+            // Updating 창 안에서 구워진 훅 캐시는 그 확장의 리스너를 누락한 채 남는다.
+            // 훅 캐시 폴백은 파일 부재/손상에만 작동하므로 stale 은 조용히 통과한다.
+            $this->assertStringContainsString(
+                'regenerateHookCache()',
+                $source,
+                $class.'::'.$method.' 이 상태 복원 뒤 훅 캐시를 재생성하지 않는다'
+            );
+        }
+    }
+
     /**
      * 지정한 메서드의 소스 본문을 반환합니다.
      *
@@ -123,5 +196,35 @@ class ExtensionRouteCacheInvalidationTest extends TestCase
             $target->getStartLine() - 1,
             $target->getEndLine() - $target->getStartLine() + 1
         ));
+    }
+
+    /**
+     * 소스에서 주석을 제거합니다.
+     *
+     * 호출 순서를 문자열 위치로 판정하므로, 그 호출을 설명하는 주석이 실제 호출로
+     * 오인되면 판정이 뒤집힌다. 어휘 분석으로 주석 토큰만 걷어낸다.
+     *
+     * @param  string  $source  대상 소스
+     * @return string 주석이 제거된 소스
+     */
+    private function stripComments(string $source): string
+    {
+        $stripped = '';
+
+        foreach (token_get_all('<?php '.$source) as $token) {
+            if (is_array($token)) {
+                if ($token[0] === T_COMMENT || $token[0] === T_DOC_COMMENT) {
+                    continue;
+                }
+
+                $stripped .= $token[1];
+
+                continue;
+            }
+
+            $stripped .= $token;
+        }
+
+        return $stripped;
     }
 }

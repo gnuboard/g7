@@ -96,6 +96,8 @@ class MigrateSettingsToJsonCommand extends Command
         'debug_mode' => 'debug',
         'sql_query_log' => 'debug',
         'log_level' => 'debug',
+        'outbound_proxy' => 'debug',
+        'outbound_proxy_bypass' => 'debug',
     ];
 
     /**

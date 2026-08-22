@@ -215,6 +215,17 @@ interface MileageTransactionRepositoryInterface
     public function findEarnLotForOption(int $orderOptionId): ?MileageTransaction;
 
     /**
+     * 주문옵션의 적립 lot 을 행 잠금과 함께 조회합니다.
+     *
+     * 적립 증액·취소 회수는 lot 의 현재 값을 읽어 더하거나 빼는 경로라, 두 요청이 같은
+     * 값을 읽으면 한쪽 반영이 사라집니다. 갱신 트랜잭션 안에서 이 메서드로 잠급니다.
+     *
+     * @param  int  $orderOptionId  주문옵션 ID
+     * @return MileageTransaction|null 잠긴 적립 lot (없으면 null)
+     */
+    public function findEarnLotForOptionForUpdate(int $orderOptionId): ?MileageTransaction;
+
+    /**
      * 회원의 활성 적립건(lot) 전부를 조회합니다 (FOR UPDATE 없음 — 탈퇴 정리용).
      *
      * @param  int  $userId  회원 ID

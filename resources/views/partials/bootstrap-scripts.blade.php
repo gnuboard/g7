@@ -61,10 +61,35 @@
     // 헬퍼가 없으면(부분 include 등) 자가 복구 없이 기존 재시도 로직으로만 동작한다.
     var assetUrl = window.__g7AssetUrl || null;
 
+    // URL 을 문서 기준 절대 URL 로 정규화한다 (ES5 — `new URL` 은 구형 브라우저에 없다).
+    function absoluteUrl(src) {
+        var a = document.createElement('a');
+        a.href = src;
+        return a.href;
+    }
+
     // 부트스트랩 상태 — 정적 <script> 의 onerror/onload 가 여기에 기록한다
     var bootstrap = window.__g7Bootstrap = {
         failed: false,
         pending: 0,
+
+        /**
+         * 번들이 파싱 단계에서 거부됐는지 (SyntaxError 관측 결과).
+         *
+         * 다운로드는 성공했는데 전역이 없는 상황은 두 가지다 — ① 브라우저가 번들 문법을
+         * 모른다(지원 범위 밖) ② 번들 자체가 손상됐다. 둘은 안내 문구가 달라야 하므로
+         * 실제 오류를 관측해 가른다.
+         */
+        syntaxError: false,
+
+        /** 부팅에 필요한 번들 URL (절대 URL). 재시도로 바뀐 URL 도 여기에 누적된다. */
+        bundleSrcs: [absoluteUrl(@json($coreEngineSrc)), absoluteUrl(@json($componentsSrc))],
+
+        /** 재시도·모드전환으로 새 URL 을 쓰게 되면 관측 대상에 추가한다. */
+        trackBundleSrc: function (src) {
+            var abs = absoluteUrl(src);
+            if (bootstrap.bundleSrcs.indexOf(abs) === -1) bootstrap.bundleSrcs.push(abs);
+        },
 
         /** 모드 전환을 이미 시도했는지 (L1 — 페이지 수명당 1회) */
         modeSwitched: false,
@@ -86,7 +111,7 @@
             if (attempt >= MAX_ATTEMPTS) {
                 console.error(LABEL + ' Failed to load after ' + MAX_ATTEMPTS + ' attempts: ' + src);
                 bootstrap.failed = true;
-                bootstrap.renderFallback();
+                bootstrap.renderFallback('network');
                 return;
             }
 
@@ -105,6 +130,8 @@
 
             var delay = BASE_DELAY_MS * Math.pow(2, attempt - 1);
             console.warn(LABEL + ' Script load failed (attempt ' + attempt + '/' + MAX_ATTEMPTS + '), retrying in ' + delay + 'ms: ' + src);
+
+            bootstrap.trackBundleSrc(src);
 
             setTimeout(function () {
                 var script = document.createElement('script');
@@ -135,6 +162,8 @@
         replaceScript: function (src, attempt) {
             if (window.__g7Unloading) return;
 
+            bootstrap.trackBundleSrc(src);
+
             var script = document.createElement('script');
             script.src = src;
             script.async = false; // 삽입 순서대로 실행 (코어 → 컴포넌트 순서 보장)
@@ -154,30 +183,51 @@
          *
          * 코어 번들이 없을 수 있으므로 템플릿 엔진에 의존하지 않는 순수 DOM + 인라인 스타일.
          * 종전에는 콘솔에만 기록되어 사용자에게는 영구 백지로 보였다.
+         *
+         * 사유별로 문구가 갈린다 — 새로고침이 도움이 되는 실패와 그렇지 않은 실패를
+         * 같은 문구로 안내하면 사용자가 자기 회선을 탓하며 영원히 새로고침하게 된다.
+         *
+         * @param reason 'network'(다운로드 실패) | 'incompatible'(브라우저가 실행 못 함)
+         *               | 'corrupt'(받았으나 전역 부재, 사유 미상). 미지정 시 'network'.
          */
-        renderFallback: function () {
+        renderFallback: function (reason) {
             if (window.__g7Unloading) return;
 
             var app = document.getElementById('app');
             if (!app) return;
             if (app.childElementCount > 0) return; // 이미 렌더된 화면은 덮지 않는다
 
+            var incompatible = reason === 'incompatible';
+
+            var title = incompatible
+                ? @json(__('errors.bootstrap.incompatible_title'))
+                : @json(__('errors.bootstrap.title'));
+            var message = incompatible
+                ? @json(__('errors.bootstrap.incompatible_message'))
+                : @json(__('errors.bootstrap.message'));
+
+            // 새로고침해도 낫지 않는 상황에서 버튼을 두면 그것 자체가 다시 거짓 안내가 된다.
+            var button = incompatible
+                ? ''
+                : '<button type="button" onclick="window.location.reload()" ' +
+                  'style="border:0;border-radius:6px;background:#2563eb;color:#fff;font-size:14px;font-weight:500;' +
+                  'padding:10px 20px;cursor:pointer;">' +
+                  @json(__('errors.bootstrap.reload')) +
+                  '</button>';
+
             app.innerHTML =
-                '<div style="min-height:60vh;display:flex;align-items:center;justify-content:center;padding:24px;' +
+                '<div data-g7-bootstrap-fallback="' + (incompatible ? 'incompatible' : 'network') + '" ' +
+                'style="min-height:60vh;display:flex;align-items:center;justify-content:center;padding:24px;' +
                 'font-family:system-ui,-apple-system,\'Segoe UI\',sans-serif;">' +
                 '<div style="text-align:center;max-width:420px;">' +
                 '<div style="font-size:40px;line-height:1;margin-bottom:16px;">&#9888;&#65039;</div>' +
                 '<h1 style="font-size:18px;font-weight:600;margin:0 0 8px;color:#111827;">' +
-                @json(__('errors.bootstrap.title')) +
+                title +
                 '</h1>' +
                 '<p style="font-size:14px;line-height:1.6;margin:0 0 20px;color:#6b7280;">' +
-                @json(__('errors.bootstrap.message')) +
+                message +
                 '</p>' +
-                '<button type="button" onclick="window.location.reload()" ' +
-                'style="border:0;border-radius:6px;background:#2563eb;color:#fff;font-size:14px;font-weight:500;' +
-                'padding:10px 20px;cursor:pointer;">' +
-                @json(__('errors.bootstrap.reload')) +
-                '</button>' +
+                button +
                 '</div></div>';
         },
 
@@ -195,11 +245,26 @@
                 return;
             }
 
-            // 번들은 받았으나 전역이 없다 = 번들 자체가 손상됨
-            console.error(LABEL + ' G7Core.initTemplateApp is not available');
-            bootstrap.renderFallback();
+            // 번들은 받았으나 전역이 없다 = 실행되지 않았다.
+            // SyntaxError 를 관측했다면 브라우저가 문법을 모르는 것(지원 범위 밖)이고,
+            // 그렇지 않으면 사유 미상(번들 손상 등)이므로 기존 문구를 유지한다.
+            console.error(LABEL + ' G7Core.initTemplateApp is not available'
+                + (bootstrap.syntaxError ? ' (bundle rejected at parse time)' : ''));
+            bootstrap.renderFallback(bootstrap.syntaxError ? 'incompatible' : 'corrupt');
         },
     };
+
+    // 번들의 파싱 실패 관측 (ES5) — 파싱 오류는 <script> 의 error 가 아니라 load 를
+    // 발생시키므로 element 이벤트로는 구분할 수 없다. window 의 error 이벤트로만 보인다.
+    window.addEventListener('error', function (e) {
+        if (!e || !e.filename) return;
+        if (bootstrap.bundleSrcs.indexOf(absoluteUrl(e.filename)) === -1) return;
+
+        var message = e.message ? String(e.message) : '';
+        if (message.indexOf('SyntaxError') !== -1 || (e.error && e.error.name === 'SyntaxError')) {
+            bootstrap.syntaxError = true;
+        }
+    }, true);
 
     // 정적 <script> 2개(코어 + 컴포넌트)가 완료돼야 초기화한다
     bootstrap.pending = 2;

@@ -52,7 +52,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
             'url' => url('/plugins/sirsoft-pay_nhnkcp/payment/vbank-notify'),
             'escrow_common_notify_url' => url('/plugins/sirsoft-pay_nhnkcp/payment/escrow-common-notify'),
         ],
-    ]))->name('vbank.notify.url');
+    ]))->middleware('permission:admin,sirsoft-ecommerce.settings.read')
+        ->name('vbank.notify.url');
 
     Route::get('/settings/test-mode-status', [AdminSettingsStatusController::class, 'testMode'])
         ->middleware('permission:admin,sirsoft-ecommerce.settings.read')
@@ -60,23 +61,29 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
 
     // 테스트 모드 주문 맵 (관리자 주문목록 배지 표시용)
     Route::get('/orders/test-mode-map', [AdminOrderListController::class, 'testModeMap'])
+        ->middleware('permission:admin,sirsoft-ecommerce.orders.read')
         ->name('orders.test-mode-map');
 
     // 간편결제 원 결제수단 표시 맵 (관리자 주문목록 보강용)
     Route::get('/orders/easy-pay-display-map', [AdminOrderListController::class, 'easyPayDisplayMap'])
+        ->middleware('permission:admin,sirsoft-ecommerce.orders.read')
         ->name('orders.easy-pay-display-map');
 
     // 주문번호로 거래 정보 조회 (레이아웃 확장 자동 로드용)
     Route::get('/orders/{orderNumber}/transaction-status', [AdminTransactionController::class, 'queryByOrder'])
+        ->middleware('permission:admin,sirsoft-ecommerce.orders.read')
         ->name('orders.transaction-status');
 
     // 에스크로 배송 등록
     Route::get('/orders/{orderNumber}/escrow-delivery', [AdminEscrowDeliveryController::class, 'formData'])
+        ->middleware('permission:admin,sirsoft-ecommerce.orders.read')
         ->name('orders.escrow-delivery.form');
     Route::post('/orders/{orderNumber}/escrow-delivery', [AdminEscrowDeliveryController::class, 'register'])
+        ->middleware('permission:admin,sirsoft-ecommerce.orders.update')
         ->name('orders.escrow-delivery.register');
 
     // 시스템 점검 (PC/모바일 결제 사전조건 진단 + 자동 chmod +x 복구)
     Route::get('/health', [HealthCheckController::class, 'check'])
+        ->middleware('permission:admin,sirsoft-ecommerce.settings.read')
         ->name('health');
 });

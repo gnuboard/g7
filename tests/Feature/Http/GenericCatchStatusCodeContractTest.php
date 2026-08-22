@@ -38,40 +38,29 @@ class GenericCatchStatusCodeContractTest extends TestCase
     /**
      * 예외 원문을 메시지 키로 넘기는 것이 아직 남아 있는 지점.
      *
-     * 코어 확장 설치 경로는 `\RuntimeException(__('key', [...]))` 형태로 서비스·헬퍼
-     * 40여 곳에서 던져진다. 키를 들고 다니는 예외로 승격하려면 설치/업데이트 경로 전체를
-     * 건드려야 하므로 별도 작업으로 분리한다 — 여기 남겨 두는 이유는 "판정기가 못 봐서
-     * 통과한 것" 과 "알고 남긴 것" 을 구분하기 위해서다. 목록이 늘어나면 실패한다.
+     * 확장 설치 경로 6곳(모듈·플러그인·템플릿 × from-file/from-github)이 여기 있었다.
+     * 도메인 실패가 이미 `*OperationException`(errorKey + params)으로 승격되어 있었는데
+     * catch 만 부모 `\RuntimeException` 으로 남아, 이미 번역된 문장을 키 자리로 넘기고
+     * 있었다. typed catch 로 좁히고 원본 키·파라미터를 넘기도록 바꿔 전부 해소했다.
+     *
+     * 비운 채로 둔다 — 새 위반이 생기면 그 자리에서 실패해야 한다.
      *
      * @var array<int, string>
      */
-    private const KNOWN_EXCEPTION_TEXT_AS_KEY = [
-        'app/Http/Controllers/Api/Admin/ModuleController.php:437',
-        'app/Http/Controllers/Api/Admin/ModuleController.php:461',
-        'app/Http/Controllers/Api/Admin/PluginController.php:448',
-        'app/Http/Controllers/Api/Admin/PluginController.php:472',
-        'app/Http/Controllers/Api/Admin/TemplateController.php:352',
-        'app/Http/Controllers/Api/Admin/TemplateController.php:376',
-    ];
+    private const KNOWN_EXCEPTION_TEXT_AS_KEY = [];
 
     /**
      * 광역 `\RuntimeException` catch 가 4xx 를 반환하는 것이 아직 남아 있는 지점.
      *
      * `\RuntimeException` 은 도메인 예외의 부모가 되기 쉬워, 도메인 실패를 typed 로
      * 승격한 뒤에도 이 catch 를 남겨 두면 남는 것은 인프라 예외뿐인데 그것까지 4xx 로
-     * 뭉갠다. 위 `KNOWN_EXCEPTION_TEXT_AS_KEY` 와 같은 줄이며, 같은 설치 경로 개편에서
-     * 함께 해소된다.
+     * 뭉갠다. 위 `KNOWN_EXCEPTION_TEXT_AS_KEY` 와 같은 줄이었고 함께 해소되었다.
+     *
+     * 비운 채로 둔다 — 새 위반이 생기면 그 자리에서 실패해야 한다.
      *
      * @var array<string, string>
      */
-    private const KNOWN_BROAD_RUNTIME_CATCH_4XX = [
-        'app/Http/Controllers/Api/Admin/ModuleController.php::installFromFile' => '설치 경로가 도메인 실패를 키 없는 RuntimeException 으로 던진다 — 예외 승격과 함께 해소',
-        'app/Http/Controllers/Api/Admin/ModuleController.php::installFromGithub' => '동일',
-        'app/Http/Controllers/Api/Admin/PluginController.php::installFromFile' => '동일',
-        'app/Http/Controllers/Api/Admin/PluginController.php::installFromGithub' => '동일',
-        'app/Http/Controllers/Api/Admin/TemplateController.php::installFromFile' => '동일',
-        'app/Http/Controllers/Api/Admin/TemplateController.php::installFromGithub' => '동일',
-    ];
+    private const KNOWN_BROAD_RUNTIME_CATCH_4XX = [];
 
     /**
      * 스캔 대상 컨트롤러 루트 목록 (코어 + 번들 모듈/플러그인).

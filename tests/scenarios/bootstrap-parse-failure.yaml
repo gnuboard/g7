@@ -1,0 +1,49 @@
+feature: bootstrap_parse_failure
+
+description: |
+  부팅 스크립트 실패 사유별 안내 분기 (공개 #121).
+
+  번들을 **받았는데 실행되지 않는** 경우와 **끝내 받지 못한** 경우는 사용자가 취해야 할
+  행동이 정반대다. 파싱 실패 시 스크립트 태그는 error 가 아니라 load 를 발생시키므로
+  재시도조차 일어나지 않고 곧장 "전역 부재" 경로로 간다 — 종전에는 그 경로가 네트워크
+  문구를 그대로 그려, 새로고침해도 낫지 않는 상황에서 새로고침을 권했다.
+
+  핵심 동작:
+    - window 의 error 이벤트로 번들 SyntaxError 를 관측(element 이벤트로는 구분 불가)
+    - 관측되면 renderFallback('incompatible') — 전용 문구 + 새로고침 버튼 생략
+    - 관측되지 않으면 renderFallback('corrupt') — 기존 문구 유지(사유 미상)
+    - 재시도 소진 경로는 renderFallback('network') — 기존 문구 + 버튼 유지
+    - 코어 엔진 번들에서 정규식 lookbehind 제거(파싱 하한 Safari 16.4 → 14.1)
+
+axes:
+  entrypoint: [user, admin]
+  failure_mode: [parse_error, network_exhausted, none]
+
+effects:
+  - syntax_error_renders_incompatible_notice
+  - incompatible_notice_omits_reload_button
+  - network_failure_renders_network_notice
+  - network_notice_keeps_reload_button
+  - normal_boot_renders_no_fallback
+  - shipped_core_bundle_has_no_lookbehind
+  - bootstrap_partial_emits_reason_branch
+  - incompatible_strings_defined_per_locale
+  - core_source_has_no_lookbehind
+  - variable_extraction_contract_unchanged
+
+test_files:
+  - tests/Playwright/specs/smoke/bootstrap-parse-failure.spec.ts
+  - tests/Feature/View/BootstrapFallbackDiagnosisTest.php
+  - resources/js/core/template-engine/__tests__/DataBindingEngine.test.ts
+
+notes: |
+  로케일 축은 E2E cross product 에 넣지 않는다 — 화면 문구는 서버가 렌더한 문자열을
+  그대로 심는 구조라 브라우저 경로가 로케일마다 갈리지 않기 때문이다. ko/en/ja 문구의
+  실존과 상호 구분은 BootstrapFallbackDiagnosisTest 가 직접 단언하고, 번들 ja 언어팩의
+  키 동기는 언어팩 동기 검사가 담당한다.
+
+  하한 미만 실기기(iOS 15) 에서 "깨진 채로 이용 가능한가" 는 재현 수단이 없어 이 매니페스트
+  범위 밖이다 — 최신 WebKit(Playwright) 도 lookbehind 를 지원해 결함 자체가 재현되지 않는다.
+
+  배포 번들에 lookbehind 등 파싱 하한 초과 문법이 재유입되는 회귀는 위 테스트와 별개로
+  저장소의 정적 검사가 차단한다 (이 매니페스트의 검증 범위 밖).

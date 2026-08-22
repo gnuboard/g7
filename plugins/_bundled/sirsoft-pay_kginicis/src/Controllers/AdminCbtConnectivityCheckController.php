@@ -6,6 +6,7 @@ namespace Plugins\Sirsoft\PayKginicis\Controllers;
 
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
+use App\Support\OutboundProxy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 
@@ -114,6 +115,7 @@ class AdminCbtConnectivityCheckController extends AdminBaseController
                 return $ip;
             }
         }
+
         return null;
     }
 
@@ -129,6 +131,11 @@ class AdminCbtConnectivityCheckController extends AdminBaseController
             CURLOPT_TIMEOUT => self::EGRESS_LOOKUP_TIMEOUT,
             CURLOPT_FOLLOWLOCATION => false,
         ]);
+
+        // 코어 환경설정의 아웃바운드 프록시를 이 조회에도 적용한다.
+        // 이 값은 운영자가 이니시스에 등록할 IP 이므로 실제 결제 호출과 같은 경로로 나가야
+        // 한다 — 프록시를 켠 상태에서 직접 조회하면 등록해야 할 IP 와 다른 값을 보고한다.
+        curl_setopt_array($ch, OutboundProxy::curlOptions());
         $body = curl_exec($ch);
         curl_close($ch);
 
@@ -136,31 +143,59 @@ class AdminCbtConnectivityCheckController extends AdminBaseController
             return null;
         }
         $body = trim($body);
+
         return filter_var($body, FILTER_VALIDATE_IP) !== false ? $body : null;
     }
 
     /**
      * TCP 443 연결 가능 여부 확인.
      *
+     * 연결만 수행하고 데이터는 주고받지 않는다(`CURLOPT_CONNECT_ONLY`). 원시 소켓(`fsockopen`)
+     * 대신 curl 을 쓰는 이유는 사이트 환경설정의 아웃바운드 프록시를 이 검사에도 태우기
+     * 위해서다 — 프록시 핸드셰이크(HTTP CONNECT / SOCKS)는 curl 이 처리한다.
+     *
+     * 이 구분은 진단의 정확성을 좌우한다. 프록시를 쓰는 환경에서 원시 소켓으로 직접 확인하면
+     * 실제 결제 요청이 지나는 경로가 아닌 곳을 재는 셈이라, 결제는 정상 동작하는데 진단만
+     * "연결 불가" 로 보고하는 상태가 된다.
+     *
+     * @param  string  $host  검사 대상 호스트
      * @return array{reachable: bool, error: ?string, latency_ms: ?int}
      */
     private function checkTcp443(string $host): array
     {
         $start = microtime(true);
-        $errno = 0;
-        $errstr = '';
-        $fp = @fsockopen($host, 443, $errno, $errstr, self::TCP_TIMEOUT_SECONDS);
-        $latencyMs = (int) round((microtime(true) - $start) * 1000);
 
-        if ($fp === false) {
+        $ch = curl_init('https://'.$host);
+
+        if ($ch === false) {
             return [
                 'reachable' => false,
-                'error' => $errstr !== '' ? $errstr : 'connect failed',
+                'error' => 'connect failed',
+                'latency_ms' => 0,
+            ];
+        }
+
+        curl_setopt_array($ch, [
+            CURLOPT_CONNECT_ONLY => true,
+            CURLOPT_CONNECTTIMEOUT => self::TCP_TIMEOUT_SECONDS,
+            CURLOPT_TIMEOUT => self::TCP_TIMEOUT_SECONDS,
+        ]);
+        curl_setopt_array($ch, OutboundProxy::curlOptions());
+
+        $connected = curl_exec($ch);
+        $error = curl_error($ch);
+        curl_close($ch);
+
+        $latencyMs = (int) round((microtime(true) - $start) * 1000);
+
+        if ($connected === false) {
+            return [
+                'reachable' => false,
+                'error' => $error !== '' ? $error : 'connect failed',
                 'latency_ms' => $latencyMs,
             ];
         }
 
-        fclose($fp);
         return [
             'reachable' => true,
             'error' => null,

@@ -6,6 +6,7 @@ use App\Enums\PermissionType;
 use App\Enums\UserStatus;
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Auth;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Enums\ReportReasonType;
@@ -308,6 +309,13 @@ class PostResource extends BaseApiResource
      */
     private function getThumbnailUrlFromRelations(): ?string
     {
+        // 비밀글은 썸네일 URL 자체를 방출하지 않는다 — 서빙은 이미 차단되어 이미지가 보이지는
+        // 않지만, URL 에 실린 첨부 해시가 목록·상세 응답으로 나가 있었다(KVE-2026-1894).
+        // 판정은 첨부 목록과 같은 SecretContentGate(SSoT)를 쓴다. 필드는 남기고 값만 가린다.
+        if ($this->is_secret && ! $this->canViewSecretContent(request())) {
+            return null;
+        }
+
         // 목록용 경량 관계 우선 — slug를 직접 전달하여 Board::find() N+1 방지
         if ($this->relationLoaded('thumbnailAttachment') && $this->thumbnailAttachment) {
             $attachment = $this->thumbnailAttachment;
@@ -678,9 +686,35 @@ class PostResource extends BaseApiResource
      */
     private function canViewSecretContent(Request $request, ?string $slug = null): bool
     {
+        $post = $this->resolvePostModel();
+
+        if ($post === null) {
+            // 원본 모델을 확인할 수 없으면 열람 불가로 판정한다 (fail-closed)
+            return false;
+        }
+
         // 판정 규칙은 SecretContentGate(SSoT)에 있다 — 리스너·댓글 경로와 규칙을 공유해
         // 드리프트를 방지한다.
-        return self::canViewSecretForPost($this->resource, $request);
+        return self::canViewSecretForPost($post, $request);
+    }
+
+    /**
+     * 감싸인 원본 게시글 모델을 반환합니다.
+     *
+     * 컬렉션 경로에서는 리소스가 다시 리소스를 감싸고 있을 수 있어, $this->resource 가
+     * 곧 Post 라고 가정하면 타입 오류로 응답 전체가 실패합니다.
+     *
+     * @return Post|null 원본 게시글 모델 (해석 불가 시 null)
+     */
+    private function resolvePostModel(): ?Post
+    {
+        $candidate = $this->resource;
+
+        while ($candidate instanceof JsonResource) {
+            $candidate = $candidate->resource;
+        }
+
+        return $candidate instanceof Post ? $candidate : null;
     }
 
     /**

@@ -240,6 +240,9 @@ HTTP/1.1 200
 | advanced.seo_cache_ttl | body | integer | 아니오 | min 0, max 14400 | SEO 캐시 만료 시간 (초, 0 = 만료 없음) |
 | advanced.debug_mode | body | boolean | 아니오 | — | 디버그 모드 사용 여부 (상세 오류 노출) |
 | advanced.sql_query_log | body | boolean | 아니오 | — | SQL 쿼리 로그 기록 여부 |
+| advanced.outbound_proxy | body | string | 아니오 | max 500, 스킴 `http`/`https`/`socks4`/`socks4a`/`socks5`/`socks5h` | 외부 HTTP 호출이 경유할 프록시 주소 (예: `socks5h://127.0.0.1:1080`). 빈 값이면 사용하지 않으며, 디버그 모드가 꺼져 있으면 저장되어도 적용되지 않는다 |
+| advanced.outbound_proxy_bypass | body | array | 아니오 | — | 프록시를 경유하지 않을 호스트 목록 |
+| advanced.outbound_proxy_bypass.* | body | string | 아니오 | max 255 | 프록시 예외 호스트 |
 | advanced.core_update_github_url | body | string | 아니오 | max 500 | 코어 업데이트를 확인할 GitHub 저장소 URL |
 | advanced.core_update_github_token | body | string | 아니오 | max 500 | 프라이빗 저장소의 코어/확장 업데이트에 사용할 GitHub 액세스 토큰 (공개 저장소는 비워둘 수 있음) |
 | advanced.geoip_enabled | body | boolean | 아니오 | — | IP 기반 타임존 감지(GeoIP) 사용 여부 |
@@ -1248,6 +1251,79 @@ _단건 응답: `data` 객체의 필드 (DriverConnectionTester::testAll() 산�
 **설명**
 
 폼에 입력한 드라이버 접속 정보(S3·Redis·Memcached·Websocket 등)로 실제 연결을 시도해 결과를 반환합니다. 설정을 저장하기 전에 접속 정보가 유효한지 확인하는 용도입니다. 모든 테스트 통과 시 성공 메시지, 일부 실패 시에도 HTTP 성공 응답으로 항목별 결과(`all_passed=false` 포함)를 함께 반환합니다.
+
+
+### POST /api/admin/settings/test-outbound-proxy
+<!-- @generated:start:api.admin.settings.test-outbound-proxy -->
+- **라우트명**: `api.admin.settings.test-outbound-proxy`
+- **컨트롤러**: `AppHttpControllersApiAdminSettingsController@testOutboundProxy`
+- **인증/권한**: `auth:sanctum` + `permission:core.settings.update`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| outbound_proxy | body | string | 예 | max 500, 스킴 `http`/`https`/`socks4`/`socks4a`/`socks5`/`socks5h` | 검사할 프록시 주소 |
+| outbound_proxy_bypass | body | array | 아니오 | — | 프록시를 경유하지 않을 호스트 목록 |
+| outbound_proxy_bypass.* | body | string | 아니오 | max 255 | 프록시 예외 호스트 |
+
+**요청 예시**
+
+```http
+POST /api/admin/settings/test-outbound-proxy HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "outbound_proxy": "socks5h://127.0.0.1:1080",
+    "outbound_proxy_bypass": ["internal.example.com"]
+}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| success | boolean | `true` | 프록시를 거쳐 외부에 도달했는지 여부. `false` 여도 HTTP 200 으로 응답한다 — 연결 실패는 요청 처리 실패가 아니라 진단 결과다 |
+| egress_ip | string|null | `203.0.113.9` | 프록시를 거쳤을 때 상대편에 보이는 출발지 IP. 외부 서비스에 등록할 값이며 실패 시 `null` |
+| elapsed_ms | integer | `512` | 검사에 걸린 시간 (밀리초) |
+| error | string|null | `cURL error 7: Failed to connect` | 실패 시에만 채워지는 원인 원문 (관리자 진단용) |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "프록시 연결에 성공했습니다. 외부 서비스에는 이 IP 로 보입니다.",
+    "data": {
+        "success": true,
+        "message_key": "settings.outbound_proxy_test_success",
+        "egress_ip": "203.0.113.9",
+        "elapsed_ms": 512,
+        "error": null
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.settings.update`)이 없는 경우 |
+| 422 | Unprocessable Entity | 프록시 주소가 비어 있거나 허용 스킴이 아닌 경우 |
+
+<!-- @generated:end -->
+
+**설명**
+
+입력한 프록시로 외부에 연결해 보고, 성공하면 그 프록시를 거쳤을 때 상대편에 보이는 출발지 IP 를 함께 반환합니다. 이 IP 는 운영자가 결제사·외부 서비스의 허용 목록에 등록해야 하는 값이라, 설정을 저장하기 전에 확인할 수 있도록 제공합니다.
+
+검사 대상은 **이번 요청이 제출한 값**입니다. 저장된 설정이나 전역 프록시 옵션을 보지 않으므로, 저장 전에도 그대로 확인할 수 있고 이 호출이 다른 요청의 경로를 바꾸지도 않습니다.
+
+조회 대상은 `config('core.outbound_proxy.egress_lookup_urls')` 가 소유하며 순차 시도합니다. 목록을 비우면 도달성만 확인하고 IP 는 보고하지 않습니다(폐쇄망 대응).
 
 
 ### POST /api/admin/settings/test-mail

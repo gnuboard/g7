@@ -1416,6 +1416,82 @@ class OrderCancellationServiceTest extends ModuleTestCase
     }
 
     /**
+     * 낡은 주문 스냅샷으로 두 번째 취소를 실행해도 취소 누산이 유실되지 않아야 합니다.
+     *
+     * 취소 총액·취소 횟수·결제 취소액은 현재 값을 읽어 더하는 read-modify-write 다.
+     * 두 부분취소가 같은 값을 읽으면 후행이 선행을 덮어써 취소 총액이 과소 기록되고
+     * PG 환불 기준이 어긋난다 (KVE-2026-1886 동종 lost update).
+     *
+     * @return void
+     */
+    public function test_concurrent_partial_cancel_does_not_lose_accumulated_totals(): void
+    {
+        $this->createShippingPolicy();
+        [$pA, $oA] = $this->createProductWithOption(price: 20000);
+
+        $input = new CalculationInput(
+            items: [new CalculationItem(productId: $pA->id, productOptionId: $oA->id, quantity: 3)],
+        );
+        $order = $this->createOrderFromCalculation($input);
+        $optionA = $order->options->first();
+
+        // 두 번째 취소 요청이 손에 쥔, 1차 취소 이전에 읽은 주문 스냅샷
+        $staleOrder = Order::with(['options', 'payment', 'shippings'])->find($order->id);
+        $this->assertEquals(0.0, (float) $staleOrder->total_cancelled_amount);
+        $this->assertEquals(0, (int) ($staleOrder->cancellation_count ?? 0));
+
+        // 1차 취소 (선행 요청)
+        $result1 = $this->cancellationService->cancelOrderOptions(
+            order: $order,
+            cancelItems: [['order_option_id' => $optionA->id, 'cancel_quantity' => 1]],
+            cancelPg: false,
+        );
+        $cancelledAfterFirst = (float) $result1->order->fresh()->total_cancelled_amount;
+        $paymentCancelledAfterFirst = (float) $result1->order->fresh()->payment->cancelled_amount;
+        $this->assertGreaterThan(0, $cancelledAfterFirst);
+
+        // 2차 취소 (낡은 스냅샷을 든 후행 요청) — 취소 가능 상태만 되돌려 실행 조건을 맞춘다
+        Order::query()->where('id', $order->id)
+            ->update(['order_status' => OrderStatusEnum::PAYMENT_COMPLETE]);
+
+        $remainingOption = $staleOrder->options
+            ->where('id', '!=', $optionA->id)
+            ->first() ?? OrderOption::query()
+            ->where('order_id', $order->id)
+            ->where('option_status', '!=', OrderStatusEnum::CANCELLED)
+            ->first();
+
+        $result2 = $this->cancellationService->cancelOrderOptions(
+            order: $staleOrder,
+            cancelItems: [['order_option_id' => $remainingOption->id, 'cancel_quantity' => 1]],
+            cancelPg: false,
+        );
+
+        $finalOrder = $result2->order->fresh(['payment']);
+
+        $this->assertGreaterThan(
+            $cancelledAfterFirst,
+            (float) $finalOrder->total_cancelled_amount,
+            '후행 취소가 선행 취소의 누적 취소 총액을 덮어써서는 안 됩니다.'
+        );
+        $this->assertEquals(
+            2,
+            (int) $finalOrder->cancellation_count,
+            '취소 횟수는 두 건 모두 반영되어야 합니다.'
+        );
+        $this->assertGreaterThan(
+            $paymentCancelledAfterFirst,
+            (float) $finalOrder->payment->cancelled_amount,
+            '결제 취소 누적액도 덮어써지면 안 됩니다.'
+        );
+        $this->assertCount(
+            2,
+            $finalOrder->payment->cancel_history ?? [],
+            '취소 이력은 두 건 모두 남아야 합니다.'
+        );
+    }
+
+    /**
      * C-2-4: 취소 시 AdjustmentResult에 환불 우선순위가 저장되는지 검증
      */
     public function test_cancel_stores_refund_priority_in_adjustment_result(): void

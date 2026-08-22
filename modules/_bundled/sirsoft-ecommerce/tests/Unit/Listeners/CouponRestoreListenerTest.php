@@ -12,6 +12,7 @@ use Modules\Sirsoft\Ecommerce\Listeners\CouponRestoreListener;
 use Modules\Sirsoft\Ecommerce\Models\Coupon;
 use Modules\Sirsoft\Ecommerce\Models\CouponIssue;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponIssueRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
@@ -261,5 +262,132 @@ class CouponRestoreListenerTest extends ModuleTestCase
 
         $couponIssue->refresh();
         $this->assertEquals(CouponIssueRecordStatus::AVAILABLE, $couponIssue->status);
+    }
+
+    /**
+     * 복원은 조건부 갱신으로 수행되어 이미 복원된 건을 다시 건드리지 않아야 합니다.
+     *
+     * 무락 조회 후 무조건 갱신하면 두 취소 요청이 같은 USED 를 읽어 각자 복원을 수행하고,
+     * 그 사이에 재사용된 쿠폰을 되돌려 놓을 수 있다. 복원 자체는 멱등이 정상이므로
+     * 예외는 던지지 않고 조용히 skip 한다 (KVE-2026-1886 동종).
+     *
+     * @return void
+     */
+    public function test_restore_is_idempotent_and_does_not_touch_already_restored(): void
+    {
+        $couponIssue = $this->createCouponIssue();
+        $order = $this->createOrderWithCoupons([$couponIssue->id]);
+
+        $this->listener->restoreCoupons($order);
+        $couponIssue->refresh();
+        $this->assertEquals(CouponIssueRecordStatus::AVAILABLE, $couponIssue->status);
+
+        $firstUpdatedAt = $couponIssue->updated_at;
+
+        // 재발화 — 이미 AVAILABLE 이므로 아무 갱신도 일어나면 안 된다
+        $this->listener->restoreCoupons($order);
+
+        $couponIssue->refresh();
+        $this->assertEquals(CouponIssueRecordStatus::AVAILABLE, $couponIssue->status);
+        $this->assertEquals(
+            $firstUpdatedAt->toIso8601String(),
+            $couponIssue->updated_at->toIso8601String(),
+            '이미 복원된 쿠폰은 다시 갱신되지 않아야 합니다.'
+        );
+    }
+
+    /**
+     * 복원 도중 쿠폰이 다시 사용되면(USED 아님) 그 건은 건드리지 않아야 합니다.
+     *
+     * @return void
+     */
+    public function test_restore_skips_coupon_that_is_no_longer_used(): void
+    {
+        $couponIssue = $this->createCouponIssue(['status' => CouponIssueRecordStatus::CANCELLED]);
+        $order = $this->createOrderWithCoupons([$couponIssue->id]);
+
+        $this->listener->restoreCoupons($order);
+
+        $couponIssue->refresh();
+        $this->assertEquals(
+            CouponIssueRecordStatus::CANCELLED,
+            $couponIssue->status,
+            'USED 가 아닌 쿠폰은 복원 대상이 아닙니다.'
+        );
+    }
+
+    /**
+     * 스냅샷을 읽은 뒤 다른 요청이 상태를 바꿨다면 복원 쓰기가 거부되어야 합니다.
+     *
+     * 조회와 갱신 사이의 창을 재현한다 — 리스너가 USED 스냅샷을 손에 든 사이 DB 행은
+     * 이미 EXPIRED 로 바뀐 상황. 무조건 갱신이면 만료된 쿠폰이 다시 사용 가능 상태로
+     * 되살아난다 (KVE-2026-1886 동종의 lost update).
+     *
+     * @return void
+     */
+    public function test_stale_snapshot_does_not_overwrite_concurrently_changed_row(): void
+    {
+        $couponIssue = $this->createCouponIssue();
+        $order = $this->createOrderWithCoupons([$couponIssue->id]);
+
+        // 리스너가 손에 쥔 스냅샷 (USED, 미만료)
+        $staleSnapshot = $couponIssue->replicate(); // @phpstan-ignore-line
+        $staleSnapshot->id = $couponIssue->id;
+        $staleSnapshot->status = CouponIssueRecordStatus::USED;
+        $staleSnapshot->expired_at = now()->addDays(30);
+
+        // 그 사이 다른 요청이 행을 EXPIRED 로 바꿨다
+        $real = app(CouponIssueRepositoryInterface::class);
+        $real->update($couponIssue->id, [
+            'status' => CouponIssueRecordStatus::EXPIRED,
+            'used_at' => null,
+        ]);
+
+        // findById 만 낡은 스냅샷을 돌려주고, 쓰기는 실제 저장소로 위임한다
+        $stale = $this->createMock(CouponIssueRepositoryInterface::class);
+        $stale->method('findById')->willReturn($staleSnapshot);
+        $stale->method('update')->willReturnCallback(
+            fn (int $id, array $data) => $real->update($id, $data)
+        );
+        $stale->method('updateIfStatus')->willReturnCallback(
+            fn (int $id, CouponIssueRecordStatus $expected, array $data) => $real->updateIfStatus($id, $expected, $data)
+        );
+        $this->app->instance(CouponIssueRepositoryInterface::class, $stale);
+
+        app(CouponRestoreListener::class)->restoreCoupons($order);
+
+        $couponIssue->refresh();
+        $this->assertEquals(
+            CouponIssueRecordStatus::EXPIRED,
+            $couponIssue->status,
+            '낡은 스냅샷으로 이미 바뀐 행을 덮어써서는 안 됩니다.'
+        );
+    }
+
+    /**
+     * 만료된 쿠폰의 상태 변경도 조건부 갱신이어야 합니다.
+     *
+     * @return void
+     */
+    public function test_expired_restore_is_conditional(): void
+    {
+        $couponIssue = $this->createCouponIssue(['expired_at' => now()->subDay()]);
+        $order = $this->createOrderWithCoupons([$couponIssue->id]);
+
+        $this->listener->restoreCoupons($order);
+        $couponIssue->refresh();
+        $this->assertEquals(CouponIssueRecordStatus::EXPIRED, $couponIssue->status);
+
+        $firstUpdatedAt = $couponIssue->updated_at;
+
+        $this->listener->restoreCoupons($order);
+
+        $couponIssue->refresh();
+        $this->assertEquals(CouponIssueRecordStatus::EXPIRED, $couponIssue->status);
+        $this->assertEquals(
+            $firstUpdatedAt->toIso8601String(),
+            $couponIssue->updated_at->toIso8601String(),
+            '이미 만료 처리된 쿠폰은 다시 갱신되지 않아야 합니다.'
+        );
     }
 }

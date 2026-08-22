@@ -2153,6 +2153,7 @@ HTTP/1.1 201
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-orders.create`)이 없는 경우 |
 | 404 | Not Found | 임시 주문(주문서)이 없거나 만료된 경우 (`주문서를 찾을 수 없습니다.` 계열 — `exceptions.temp_order_not_found`) |
 | 422 | Unprocessable Entity | 요청 파라미터 검증 실패, 예상 결제금액 불일치(`expected_total_amount` ≠ 서버 재계산값), 결제 통화 미지원(`errors.code = unsupported_payment_currency`), 재고 부족(`errors.insufficient_items`), 구매 불가 상품(`errors.code = cart_unavailable`), 주문 확정 재계산 검증 실패(쿠폰 만료·최소주문금액 미달 등 — `errors.code = order_calculation_validation_failed`). `payment_method` 가 결제수단 카탈로그에 없는 값이면 여기서 차단된다 |
+| 409 | Conflict | 적용한 쿠폰을 다른 주문이 먼저 사용한 경우 (`errors.code = coupon_already_used`, `errors.coupon_issue_id` 에 해당 발급 ID). 주문은 생성되지 않고 쿠폰도 소모되지 않으므로 그대로 재시도할 수 있습니다 |
 | 428 | Identity Verification Required | 결제 진입 본인인증(IDV) 정책이 활성이고 미인증(grace 만료)인 경우 |
 | 500 | Server Error | 주문 생성 중 예기치 못한 오류 (`주문 생성에 실패했습니다.`) |
 

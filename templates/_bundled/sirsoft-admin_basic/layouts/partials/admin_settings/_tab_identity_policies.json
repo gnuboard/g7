@@ -290,14 +290,24 @@
             {
               "type": "basic",
               "name": "Input",
+              "comment": "검색 필터는 설정 폼의 일부가 아니다 — 자동바인딩되면 검색어가 설정 폼 상태(filter.search)에 남아 초기화 후에도 입력창에 되살아나고, 설정 dirty 판정까지 오염시킨다.",
               "props": {
                 "type": "text",
                 "name": "filter.search",
-                "value": "{{query.search ?? ''}}",
+                "autoBinding": false,
+                "value": "{{_local.identityPolicySearch ?? query.search ?? ''}}",
                 "placeholder": "$t:admin.identity.policies.search_placeholder",
                 "className": "md:flex-1"
               },
               "actions": [
+                {
+                  "type": "change",
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "identityPolicySearch": "{{$event.target.value}}"
+                  }
+                },
                 {
                   "type": "keypress",
                   "key": "Enter",
@@ -331,10 +341,25 @@
               },
               "actions": [
                 {
+                  "comment": "Enter 키와 동일하게 입력값을 쿼리로 실어 이동한다 — refetch 만 하면 입력 중인 검색어가 반영되지 않는다.",
                   "type": "click",
-                  "handler": "refetchDataSource",
+                  "handler": "navigate",
                   "params": {
-                    "dataSourceId": "policies"
+                    "path": "/admin/settings",
+                    "replace": true,
+                    "mergeQuery": true,
+                    "query": {
+                      "tab": "identity",
+                      "search": "{{(_local.identityPolicySearch ?? query.search) || undefined}}",
+                      "page": 1
+                    },
+                    "transition_overlay_target": "policy_table_card",
+                    "scroll": {
+                      "container": "#right_content_area",
+                      "to": "#identity_section_policies",
+                      "offset": 180,
+                      "block": "start"
+                    }
                   }
                 }
               ],
@@ -355,6 +380,15 @@
                 "className": "px-4 py-2 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
               },
               "actions": [
+                {
+                  "comment": "입력창의 미제출 검색어도 함께 비운다 — 상태만 남으면 초기화가 안 된 것으로 보인다.",
+                  "type": "click",
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "identityPolicySearch": ""
+                  }
+                },
                 {
                   "comment": "audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다.",
                   "type": "click",

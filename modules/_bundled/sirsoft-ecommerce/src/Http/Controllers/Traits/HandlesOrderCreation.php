@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Exceptions\CartUnavailableException;
+use Modules\Sirsoft\Ecommerce\Exceptions\CouponAlreadyUsedException;
 use Modules\Sirsoft\Ecommerce\Exceptions\InsufficientStockException;
 use Modules\Sirsoft\Ecommerce\Exceptions\MileageValidationException;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderProcessingException;
@@ -167,6 +168,22 @@ trait HandlesOrderCreation
                 'has_status_issue' => $e->hasStatusIssue(),
                 'has_restriction_issue' => $e->hasRestrictionIssue(),
             ]);
+
+        } catch (CouponAlreadyUsedException $e) {
+            // 주문 확정 시점에 다른 주문이 같은 쿠폰을 선점했다 — 주문 트랜잭션은 롤백된 상태다.
+            // generic 500 이 아닌 409 로 알려 사용자가 쿠폰 소진 없이 재시도할 수 있게 한다.
+            Log::warning('Order create: coupon already taken by another order', [
+                'coupon_issue_id' => $e->getCouponIssueId(),
+            ]);
+
+            $messageKey = $e->getMessageKey();
+
+            return ResponseHelper::error(
+                $messageKey,
+                409,
+                ['code' => 'coupon_already_used', 'coupon_issue_id' => $e->getCouponIssueId()],
+                $e->getMessageParams()
+            );
 
         } catch (MileageValidationException $e) {
             // 마일리지 사용 정책 위반(한도/단위/최소사용액/잔액) — generic 500 이 아닌 422 명시 차단.

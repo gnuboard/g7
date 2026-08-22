@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.6] - 2026-08-22
+
+### Added
+
+- 환경설정 > 고급의 아웃바운드 프록시 설정 항목명·설명·입력 안내와 연결 테스트 버튼 라벨의 일본어 번역을 추가했습니다.
+
 ## [1.0.5] - 2026-08-19
 
 ### Added

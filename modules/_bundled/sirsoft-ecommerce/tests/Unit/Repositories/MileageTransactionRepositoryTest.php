@@ -196,4 +196,100 @@ class MileageTransactionRepositoryTest extends ModuleTestCase
         $desc = $this->repo->paginateWithFilters(['sort' => 'amount_desc'], 20);
         $this->assertSame(3000.0, (float) $desc->items()[0]->amount);
     }
+
+    /**
+     * lot 잔여 차감은 낡은 스냅샷의 값을 덮어쓰지 않아야 합니다.
+     *
+     * 값을 PHP 에서 빼고 모델 전체를 저장하면, 그 사이 다른 요청이 반영한 증액이
+     * 통째로 사라진다 (KVE-2026-1886 동종 lost update).
+     *
+     * @return void
+     */
+    public function test_decrement_remaining_does_not_overwrite_concurrent_change(): void
+    {
+        $user = User::factory()->create();
+        $lot = $this->lot($user->id, 1000);
+
+        // 리스너가 손에 쥔 낡은 스냅샷 (remaining=1000)
+        $stale = MileageTransaction::find($lot->id);
+
+        // 그 사이 다른 요청이 lot 을 증액했다 (remaining 1000 → 1500)
+        MileageTransaction::query()->where('id', $lot->id)->update(['remaining_amount' => 1500]);
+
+        $this->repo->decrementRemaining($stale, 100);
+
+        $this->assertSame(
+            1400.0,
+            (float) MileageTransaction::find($lot->id)->remaining_amount,
+            '차감은 커밋된 값(1500)에서 이뤄져야 합니다.'
+        );
+    }
+
+    /**
+     * lot 증액도 낡은 스냅샷의 값을 덮어쓰지 않아야 합니다.
+     *
+     * @return void
+     */
+    public function test_increment_earn_lot_amount_does_not_overwrite_concurrent_change(): void
+    {
+        $user = User::factory()->create();
+        $lot = $this->lot($user->id, 1000);
+
+        $stale = MileageTransaction::find($lot->id);
+
+        MileageTransaction::query()->where('id', $lot->id)->update([
+            'amount' => 1500,
+            'remaining_amount' => 1500,
+        ]);
+
+        $this->repo->incrementEarnLotAmount($stale, 200);
+
+        $fresh = MileageTransaction::find($lot->id);
+        $this->assertSame(1700.0, (float) $fresh->amount, '증액은 커밋된 값(1500)에 더해져야 합니다.');
+        $this->assertSame(1700.0, (float) $fresh->remaining_amount);
+    }
+
+    /**
+     * 증액 후 돌려받는 모델은 반영된 값을 들고 있어야 합니다.
+     *
+     * 호출부가 이 모델을 그대로 반환·기록하므로, 낡은 값이 남으면 화면·로그가 어긋난다.
+     *
+     * @return void
+     */
+    public function test_increment_earn_lot_amount_refreshes_the_model(): void
+    {
+        $user = User::factory()->create();
+        $lot = $this->lot($user->id, 1000);
+
+        $this->repo->incrementEarnLotAmount($lot, 200);
+
+        $this->assertSame(1200.0, (float) $lot->amount);
+        $this->assertSame(1200.0, (float) $lot->remaining_amount);
+    }
+
+    /**
+     * 적립 lot 조회의 잠금 변형이 같은 행을 돌려줘야 합니다.
+     *
+     * @return void
+     */
+    public function test_find_earn_lot_for_option_for_update_returns_same_row(): void
+    {
+        $user = User::factory()->create();
+        $orderOptionId = 987654;
+
+        $lot = MileageTransaction::create([
+            'user_id' => $user->id,
+            'currency' => 'KRW',
+            'type' => MileageTransactionTypeEnum::PURCHASE_EARN->value,
+            'amount' => 500,
+            'remaining_amount' => 500,
+            'balance_after' => 500,
+            'order_option_id' => $orderOptionId,
+        ]);
+
+        $found = $this->repo->findEarnLotForOptionForUpdate($orderOptionId);
+
+        $this->assertNotNull($found);
+        $this->assertSame($lot->id, $found->id);
+    }
 }

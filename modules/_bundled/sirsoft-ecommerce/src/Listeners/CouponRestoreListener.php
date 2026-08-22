@@ -35,12 +35,16 @@ class CouponRestoreListener implements HookListenerInterface
             'sirsoft-ecommerce.order.after_cancel' => [
                 'method' => 'restoreCoupons',
                 'priority' => 10,
+                // 취소 트랜잭션 안에서 실행되어야 한다 — 큐 기본값(afterCommit)이면 취소가
+                // 커밋된 뒤에 복원이 돌아, 취소가 되돌려져도 쿠폰만 복원된 상태가 남는다.
+                'sync' => true,
             ],
             // 부분취소(및 전체취소 트랜잭션 내부)에서 OrderCancellationService 가 발화하는
             // 명시적 복원 ID 훅. 스냅샷 파싱 없이 전달받은 ID 만 used→available 복원한다.
             'sirsoft-ecommerce.coupon.restore' => [
                 'method' => 'restoreCouponsByIds',
                 'priority' => 10,
+                'sync' => true,
             ],
         ];
     }
@@ -147,27 +151,43 @@ class CouponRestoreListener implements HookListenerInterface
                 continue;
             }
 
-            // 만료 확인: 만료된 쿠폰은 expired 상태로 변경
+            // 만료 확인: 만료된 쿠폰은 expired 상태로 변경.
+            // 조회 시점의 USED 를 조건으로 실어 원자적으로 쓴다 — 그 사이 다른 요청이 상태를
+            // 바꿨다면 갱신을 포기해야 낡은 스냅샷이 최신 상태를 덮어쓰지 않는다.
             if ($couponIssue->expired_at !== null && $couponIssue->expired_at->isPast()) {
-                $this->couponIssueRepository->update($issueId, [
-                    'status' => CouponIssueRecordStatus::EXPIRED,
-                    'used_at' => null,
-                ]);
+                $expiredAffected = $this->couponIssueRepository->updateIfStatus(
+                    $issueId,
+                    CouponIssueRecordStatus::USED,
+                    [
+                        'status' => CouponIssueRecordStatus::EXPIRED,
+                        'used_at' => null,
+                    ]
+                );
 
-                Log::info('CouponRestoreListener: 만료된 쿠폰 상태 변경', [
-                    'coupon_issue_id' => $issueId,
-                    'order_id' => $order->id,
-                    'new_status' => CouponIssueRecordStatus::EXPIRED->value,
-                ]);
+                if ($expiredAffected > 0) {
+                    Log::info('CouponRestoreListener: 만료된 쿠폰 상태 변경', [
+                        'coupon_issue_id' => $issueId,
+                        'order_id' => $order->id,
+                        'new_status' => CouponIssueRecordStatus::EXPIRED->value,
+                    ]);
+                }
 
                 continue;
             }
 
-            // 사용 가능 상태로 복원
-            $this->couponIssueRepository->update($issueId, [
-                'status' => CouponIssueRecordStatus::AVAILABLE,
-                'used_at' => null,
-            ]);
+            // 사용 가능 상태로 복원 (복원은 멱등이 정상이므로 경쟁에서 밀리면 조용히 skip)
+            $affected = $this->couponIssueRepository->updateIfStatus(
+                $issueId,
+                CouponIssueRecordStatus::USED,
+                [
+                    'status' => CouponIssueRecordStatus::AVAILABLE,
+                    'used_at' => null,
+                ]
+            );
+
+            if ($affected === 0) {
+                continue;
+            }
 
             $restoredCount++;
         }

@@ -913,6 +913,15 @@ return [
         'sql_query_log_required' => 'Please select the SQL query log setting.',
         'sql_query_log_boolean' => 'SQL query log must be true or false.',
 
+        // Outbound HTTP proxy
+        'outbound_proxy_required' => 'Please enter the outbound proxy address.',
+        'outbound_proxy_string' => 'The outbound proxy address must be a string.',
+        'outbound_proxy_max' => 'The outbound proxy address may not be greater than :max characters.',
+        'outbound_proxy_invalid' => 'The outbound proxy address format is invalid. Supported schemes: :schemes (e.g. socks5h://127.0.0.1:1080)',
+        'outbound_proxy_bypass_array' => 'The proxy bypass list must be an array.',
+        'outbound_proxy_bypass_item_string' => 'Each proxy bypass entry must be a string.',
+        'outbound_proxy_bypass_item_max' => 'Each proxy bypass entry may not be greater than :max characters.',
+
         // List limits
         'pagination_result_cap_integer' => 'The total count cap must be a number.',
         'pagination_result_cap_min' => 'The total count cap must be at least :min. (0 = unlimited)',
@@ -1307,6 +1316,8 @@ return [
         'seo_sitemap_cache_ttl' => 'SEO sitemap cache lifetime',
         'debug_mode' => 'debug mode',
         'sql_query_log' => 'SQL query log',
+        'outbound_proxy' => 'outbound proxy address',
+        'outbound_proxy_bypass' => 'proxy bypass list',
         'core_update_github_url' => 'core update GitHub URL',
         'core_update_github_token' => 'core update GitHub token',
         'geoip_enabled' => 'GeoIP',

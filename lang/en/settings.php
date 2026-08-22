@@ -86,6 +86,12 @@ return [
     'driver_test_error' => 'An error occurred while testing driver connections.',
     'unknown_driver' => 'Unknown driver.',
 
+    // Outbound proxy connection test messages
+    'outbound_proxy_test_success' => 'Connected through the proxy. External services will see this IP address.',
+    'outbound_proxy_test_failed' => 'Could not connect through the proxy. Check the address and the proxy server status.',
+    'outbound_proxy_test_invalid_url' => 'The proxy address format is invalid.',
+    'outbound_proxy_test_no_lookup_url' => 'No egress IP lookup target is configured, so the address could not be determined.',
+
     // S3 test messages
     's3_test_success' => 'Successfully connected to S3 bucket.',
     's3_test_failed' => 'Failed to connect to S3 bucket.',

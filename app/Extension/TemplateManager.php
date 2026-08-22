@@ -672,15 +672,21 @@ class TemplateManager implements TemplateManagerInterface
      * @param  string  $templateName  비활성화할 템플릿명 (identifier)
      * @param  string  $reason  비활성화 사유 (DeactivationReason enum value: manual|incompatible_core)
      * @param  string|null  $incompatibleRequiredVersion  incompatible_core 사유 시 요구된 코어 버전 제약
+     * @param  string|null  $failureReason  실패 시 사유가 담기는 out 파라미터 (성공 시 null)
      * @return bool 비활성화 성공 여부
      */
     public function deactivateTemplate(
         string $templateName,
         string $reason = DeactivationReason::Manual->value,
         ?string $incompatibleRequiredVersion = null,
+        ?string &$failureReason = null,
     ): bool {
+        $failureReason = null;
+
         $template = $this->getTemplate($templateName);
         if (! $template) {
+            $failureReason = __('templates.errors.not_found', ['template' => $templateName]);
+
             return false;
         }
 

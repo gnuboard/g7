@@ -3,11 +3,15 @@
 namespace Tests\Feature\Api\Admin;
 
 use App\Enums\ExtensionOwnerType;
+use App\Enums\PermissionType;
+use App\Exceptions\PluginOperationException;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\PluginService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -51,7 +55,7 @@ class PluginControllerTest extends TestCase
                     'description' => json_encode(['ko' => $permIdentifier.' 권한', 'en' => $permIdentifier.' Permission']),
                     'extension_type' => ExtensionOwnerType::Core,
                     'extension_identifier' => 'core',
-                    'type' => \App\Enums\PermissionType::Admin,
+                    'type' => PermissionType::Admin,
                 ]
             );
             $permissionIds[] = $permission->id;
@@ -423,7 +427,7 @@ class PluginControllerTest extends TestCase
     public function test_activate_returns_409_when_dependencies_not_met(): void
     {
         // Arrange: PluginService를 Mock
-        $pluginServiceMock = \Mockery::mock(\App\Services\PluginService::class);
+        $pluginServiceMock = \Mockery::mock(PluginService::class);
         $pluginServiceMock->shouldReceive('activatePlugin')
             ->with('test-plugin', false)
             ->andReturn([
@@ -437,7 +441,7 @@ class PluginControllerTest extends TestCase
                 ],
                 'message' => '플러그인 활성화를 위해 필요한 의존성이 충족되지 않았습니다.',
             ]);
-        $this->app->instance(\App\Services\PluginService::class, $pluginServiceMock);
+        $this->app->instance(PluginService::class, $pluginServiceMock);
 
         // Act
         $response = $this->authRequest()->postJson('/api/admin/plugins/activate', [
@@ -472,7 +476,7 @@ class PluginControllerTest extends TestCase
     public function test_activate_with_force_bypasses_dependency_check(): void
     {
         // Arrange: PluginService를 Mock
-        $pluginServiceMock = \Mockery::mock(\App\Services\PluginService::class);
+        $pluginServiceMock = \Mockery::mock(PluginService::class);
         $pluginServiceMock->shouldReceive('activatePlugin')
             ->with('test-plugin', true)
             ->andReturn([
@@ -483,7 +487,7 @@ class PluginControllerTest extends TestCase
                     'status' => 'active',
                 ],
             ]);
-        $this->app->instance(\App\Services\PluginService::class, $pluginServiceMock);
+        $this->app->instance(PluginService::class, $pluginServiceMock);
 
         // Act
         $response = $this->authRequest()->postJson('/api/admin/plugins/activate', [
@@ -502,7 +506,7 @@ class PluginControllerTest extends TestCase
     public function test_deactivate_returns_409_when_dependents_exist(): void
     {
         // Arrange: PluginService를 Mock
-        $pluginServiceMock = \Mockery::mock(\App\Services\PluginService::class);
+        $pluginServiceMock = \Mockery::mock(PluginService::class);
         $pluginServiceMock->shouldReceive('deactivatePlugin')
             ->with('test-plugin', false)
             ->andReturn([
@@ -517,7 +521,7 @@ class PluginControllerTest extends TestCase
                 ],
                 'message' => '이 플러그인에 의존하는 활성화된 확장이 있습니다.',
             ]);
-        $this->app->instance(\App\Services\PluginService::class, $pluginServiceMock);
+        $this->app->instance(PluginService::class, $pluginServiceMock);
 
         // Act
         $response = $this->authRequest()->postJson('/api/admin/plugins/deactivate', [
@@ -545,7 +549,7 @@ class PluginControllerTest extends TestCase
     public function test_deactivate_with_force_bypasses_dependent_check(): void
     {
         // Arrange: PluginService를 Mock
-        $pluginServiceMock = \Mockery::mock(\App\Services\PluginService::class);
+        $pluginServiceMock = \Mockery::mock(PluginService::class);
         $pluginServiceMock->shouldReceive('deactivatePlugin')
             ->with('test-plugin', true)
             ->andReturn([
@@ -556,7 +560,7 @@ class PluginControllerTest extends TestCase
                     'status' => 'inactive',
                 ],
             ]);
-        $this->app->instance(\App\Services\PluginService::class, $pluginServiceMock);
+        $this->app->instance(PluginService::class, $pluginServiceMock);
 
         // Act
         $response = $this->authRequest()->postJson('/api/admin/plugins/deactivate', [
@@ -579,7 +583,7 @@ class PluginControllerTest extends TestCase
     public function test_activate_response_includes_assets_when_plugin_has_assets(): void
     {
         // Arrange: PluginService를 Mock
-        $pluginServiceMock = \Mockery::mock(\App\Services\PluginService::class);
+        $pluginServiceMock = \Mockery::mock(PluginService::class);
         $pluginServiceMock->shouldReceive('activatePlugin')
             ->with('test-plugin', false)
             ->andReturn([
@@ -595,7 +599,7 @@ class PluginControllerTest extends TestCase
                     ],
                 ],
             ]);
-        $this->app->instance(\App\Services\PluginService::class, $pluginServiceMock);
+        $this->app->instance(PluginService::class, $pluginServiceMock);
 
         // Act
         $response = $this->authRequest()->postJson('/api/admin/plugins/activate', [
@@ -616,7 +620,7 @@ class PluginControllerTest extends TestCase
     public function test_deactivate_response_includes_assets_when_plugin_has_assets(): void
     {
         // Arrange: PluginService를 Mock
-        $pluginServiceMock = \Mockery::mock(\App\Services\PluginService::class);
+        $pluginServiceMock = \Mockery::mock(PluginService::class);
         $pluginServiceMock->shouldReceive('deactivatePlugin')
             ->with('test-plugin', false)
             ->andReturn([
@@ -632,7 +636,7 @@ class PluginControllerTest extends TestCase
                     ],
                 ],
             ]);
-        $this->app->instance(\App\Services\PluginService::class, $pluginServiceMock);
+        $this->app->instance(PluginService::class, $pluginServiceMock);
 
         // Act
         $response = $this->authRequest()->postJson('/api/admin/plugins/deactivate', [
@@ -656,8 +660,8 @@ class PluginControllerTest extends TestCase
     public function test_changelog_returns_parsed_entries(): void
     {
         $pluginPath = base_path('plugins/test-changelog-plg');
-        \Illuminate\Support\Facades\File::ensureDirectoryExists($pluginPath);
-        \Illuminate\Support\Facades\File::put($pluginPath.'/CHANGELOG.md', "# Changelog\n\n## [0.1.1] - 2026-02-25\n\n### Fixed\n- 버그 수정\n");
+        File::ensureDirectoryExists($pluginPath);
+        File::put($pluginPath.'/CHANGELOG.md', "# Changelog\n\n## [0.1.1] - 2026-02-25\n\n### Fixed\n- 버그 수정\n");
 
         try {
             $response = $this->authRequest()->getJson('/api/admin/plugins/test-changelog-plg/changelog');
@@ -666,7 +670,7 @@ class PluginControllerTest extends TestCase
                 ->assertJsonPath('data.changelog.0.version', '0.1.1')
                 ->assertJsonPath('data.changelog.0.categories.0.name', 'Fixed');
         } finally {
-            \Illuminate\Support\Facades\File::deleteDirectory($pluginPath);
+            File::deleteDirectory($pluginPath);
         }
     }
 
@@ -817,7 +821,7 @@ class PluginControllerTest extends TestCase
      */
     public function test_install_from_file_calls_service_with_valid_zip(): void
     {
-        $pluginServiceMock = \Mockery::mock(\App\Services\PluginService::class);
+        $pluginServiceMock = \Mockery::mock(PluginService::class);
         $pluginServiceMock->shouldReceive('installFromZipFile')
             ->once()
             ->andReturn([
@@ -825,7 +829,7 @@ class PluginControllerTest extends TestCase
                 'name' => 'Test Plugin',
                 'version' => '1.0.0',
             ]);
-        $this->app->instance(\App\Services\PluginService::class, $pluginServiceMock);
+        $this->app->instance(PluginService::class, $pluginServiceMock);
 
         $file = UploadedFile::fake()->create('plugin.zip', 100, 'application/zip');
 
@@ -841,13 +845,13 @@ class PluginControllerTest extends TestCase
     /**
      * PluginService에서 RuntimeException 발생 시 422 반환
      */
-    public function test_install_from_file_returns_422_on_runtime_exception(): void
+    public function test_install_from_file_returns_422_on_domain_exception(): void
     {
-        $pluginServiceMock = \Mockery::mock(\App\Services\PluginService::class);
+        $pluginServiceMock = \Mockery::mock(PluginService::class);
         $pluginServiceMock->shouldReceive('installFromZipFile')
             ->once()
-            ->andThrow(new \RuntimeException('plugin.json을 찾을 수 없습니다.'));
-        $this->app->instance(\App\Services\PluginService::class, $pluginServiceMock);
+            ->andThrow(new PluginOperationException('plugins.errors.plugin_json_not_found'));
+        $this->app->instance(PluginService::class, $pluginServiceMock);
 
         $file = UploadedFile::fake()->create('plugin.zip', 100, 'application/zip');
 
@@ -856,7 +860,7 @@ class PluginControllerTest extends TestCase
         ]);
 
         $response->assertStatus(422);
-        $response->assertJsonPath('message', 'plugin.json을 찾을 수 없습니다.');
+        $response->assertJsonPath('message', __('plugins.errors.plugin_json_not_found'));
     }
 
     /**
@@ -864,11 +868,11 @@ class PluginControllerTest extends TestCase
      */
     public function test_install_from_file_returns_500_on_general_exception(): void
     {
-        $pluginServiceMock = \Mockery::mock(\App\Services\PluginService::class);
+        $pluginServiceMock = \Mockery::mock(PluginService::class);
         $pluginServiceMock->shouldReceive('installFromZipFile')
             ->once()
             ->andThrow(new \Exception('예상치 못한 오류'));
-        $this->app->instance(\App\Services\PluginService::class, $pluginServiceMock);
+        $this->app->instance(PluginService::class, $pluginServiceMock);
 
         $file = UploadedFile::fake()->create('plugin.zip', 100, 'application/zip');
 
@@ -970,7 +974,7 @@ class PluginControllerTest extends TestCase
      */
     public function test_install_from_github_calls_service_with_valid_url(): void
     {
-        $pluginServiceMock = \Mockery::mock(\App\Services\PluginService::class);
+        $pluginServiceMock = \Mockery::mock(PluginService::class);
         $pluginServiceMock->shouldReceive('installFromGithub')
             ->once()
             ->with('https://github.com/sirsoft/sample-plugin')
@@ -979,7 +983,7 @@ class PluginControllerTest extends TestCase
                 'name' => 'Sample Plugin',
                 'version' => '1.0.0',
             ]);
-        $this->app->instance(\App\Services\PluginService::class, $pluginServiceMock);
+        $this->app->instance(PluginService::class, $pluginServiceMock);
 
         $response = $this->authRequest()->postJson('/api/admin/plugins/install-from-github', [
             'github_url' => 'https://github.com/sirsoft/sample-plugin',
@@ -993,20 +997,20 @@ class PluginControllerTest extends TestCase
     /**
      * PluginService에서 RuntimeException 발생 시 422 반환
      */
-    public function test_install_from_github_returns_422_on_runtime_exception(): void
+    public function test_install_from_github_returns_422_on_domain_exception(): void
     {
-        $pluginServiceMock = \Mockery::mock(\App\Services\PluginService::class);
+        $pluginServiceMock = \Mockery::mock(PluginService::class);
         $pluginServiceMock->shouldReceive('installFromGithub')
             ->once()
-            ->andThrow(new \RuntimeException('GitHub 저장소를 다운로드할 수 없습니다.'));
-        $this->app->instance(\App\Services\PluginService::class, $pluginServiceMock);
+            ->andThrow(new PluginOperationException('plugins.errors.github_repo_not_found'));
+        $this->app->instance(PluginService::class, $pluginServiceMock);
 
         $response = $this->authRequest()->postJson('/api/admin/plugins/install-from-github', [
             'github_url' => 'https://github.com/sirsoft/sample-plugin',
         ]);
 
         $response->assertStatus(422);
-        $response->assertJsonPath('message', 'GitHub 저장소를 다운로드할 수 없습니다.');
+        $response->assertJsonPath('message', __('plugins.errors.github_repo_not_found'));
     }
 
     /**
@@ -1014,11 +1018,11 @@ class PluginControllerTest extends TestCase
      */
     public function test_install_from_github_returns_500_on_general_exception(): void
     {
-        $pluginServiceMock = \Mockery::mock(\App\Services\PluginService::class);
+        $pluginServiceMock = \Mockery::mock(PluginService::class);
         $pluginServiceMock->shouldReceive('installFromGithub')
             ->once()
             ->andThrow(new \Exception('예상치 못한 오류'));
-        $this->app->instance(\App\Services\PluginService::class, $pluginServiceMock);
+        $this->app->instance(PluginService::class, $pluginServiceMock);
 
         $response = $this->authRequest()->postJson('/api/admin/plugins/install-from-github', [
             'github_url' => 'https://github.com/sirsoft/sample-plugin',

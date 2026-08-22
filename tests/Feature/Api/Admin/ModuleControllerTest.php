@@ -3,11 +3,15 @@
 namespace Tests\Feature\Api\Admin;
 
 use App\Enums\ExtensionOwnerType;
+use App\Enums\PermissionType;
+use App\Exceptions\ModuleOperationException;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\ModuleService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -54,7 +58,7 @@ class ModuleControllerTest extends TestCase
                     'description' => json_encode(['ko' => $permIdentifier.' 권한', 'en' => $permIdentifier.' Permission']),
                     'extension_type' => ExtensionOwnerType::Core,
                     'extension_identifier' => 'core',
-                    'type' => \App\Enums\PermissionType::Admin,
+                    'type' => PermissionType::Admin,
                 ]
             );
             $permissionIds[] = $permission->id;
@@ -498,7 +502,7 @@ class ModuleControllerTest extends TestCase
      */
     public function test_install_from_file_succeeds_with_valid_zip(): void
     {
-        $moduleServiceMock = \Mockery::mock(\App\Services\ModuleService::class);
+        $moduleServiceMock = \Mockery::mock(ModuleService::class);
         $moduleServiceMock->shouldReceive('installFromZipFile')
             ->once()
             ->andReturn([
@@ -506,7 +510,7 @@ class ModuleControllerTest extends TestCase
                 'name' => 'Test Module',
                 'version' => '1.0.0',
             ]);
-        $this->app->instance(\App\Services\ModuleService::class, $moduleServiceMock);
+        $this->app->instance(ModuleService::class, $moduleServiceMock);
 
         $file = UploadedFile::fake()->create('module.zip', 100, 'application/zip');
 
@@ -520,15 +524,20 @@ class ModuleControllerTest extends TestCase
     }
 
     /**
-     * ModuleService에서 RuntimeException 발생 시 422 반환
+     * ModuleService에서 도메인 예외 발생 시 422 반환 + 키가 해석된 문구
+     *
+     * 종전에는 raw `\RuntimeException` 이 이미 번역된 문장을 들고 오는 것을 컨트롤러가
+     * 메시지 **키** 자리로 넘겨 그대로 내보냈다. 키 해석에 실패한 원문이 나가는 형태라
+     * 계약 테스트가 이 지점을 위반으로 등재해 두고 있었다. 이제 도메인 실패는 키와
+     * 파라미터를 들고 다니는 예외로 오고, 컨트롤러가 그 키를 해석해 내보낸다.
      */
-    public function test_install_from_file_returns_422_on_runtime_exception(): void
+    public function test_install_from_file_returns_422_on_domain_exception(): void
     {
-        $moduleServiceMock = \Mockery::mock(\App\Services\ModuleService::class);
+        $moduleServiceMock = \Mockery::mock(ModuleService::class);
         $moduleServiceMock->shouldReceive('installFromZipFile')
             ->once()
-            ->andThrow(new \RuntimeException('module.json을 찾을 수 없습니다.'));
-        $this->app->instance(\App\Services\ModuleService::class, $moduleServiceMock);
+            ->andThrow(new ModuleOperationException('modules.errors.module_json_not_found'));
+        $this->app->instance(ModuleService::class, $moduleServiceMock);
 
         $file = UploadedFile::fake()->create('module.zip', 100, 'application/zip');
 
@@ -537,7 +546,61 @@ class ModuleControllerTest extends TestCase
         ]);
 
         $response->assertStatus(422);
-        $response->assertJsonPath('message', 'module.json을 찾을 수 없습니다.');
+        $response->assertJsonPath('message', __('modules.errors.module_json_not_found'));
+    }
+
+    /**
+     * 도메인 예외가 아닌 raw RuntimeException 은 500 (인프라 장애를 입력 오류로 위장하지 않는다)
+     */
+    public function test_install_from_file_returns_500_on_raw_runtime_exception(): void
+    {
+        $moduleServiceMock = \Mockery::mock(ModuleService::class);
+        $moduleServiceMock->shouldReceive('installFromZipFile')
+            ->once()
+            ->andThrow(new \RuntimeException('disk full'));
+        $this->app->instance(ModuleService::class, $moduleServiceMock);
+
+        $file = UploadedFile::fake()->create('module.zip', 100, 'application/zip');
+
+        $response = $this->authRequest()->postJson('/api/admin/modules/install-from-file', [
+            'file' => $file,
+        ]);
+
+        $response->assertStatus(500);
+    }
+
+    /**
+     * 실제 서비스 경로: module.json 없는 ZIP 업로드는 422 를 유지한다.
+     *
+     * ZipInstallHelper 는 이런 사용자 입력 오류를 raw `\RuntimeException` 으로 던진다.
+     * 컨트롤러 catch 가 도메인 예외로 좁혀지면서 서비스가 이를 승격하지 않으면, 종전
+     * 422 였던 실패가 500(인프라 장애)으로 위장된다 — 서비스 계층의 승격을 고정한다.
+     * (mock 이 아닌 실제 ZIP 으로 서비스 실경로를 태운다.)
+     */
+    public function test_install_from_file_with_zip_missing_manifest_returns_422(): void
+    {
+        $zipPath = tempnam(sys_get_temp_dir(), 'g7zip').'.zip';
+        $zip = new \ZipArchive;
+        $zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+        $zip->addFromString('readme.txt', 'manifest 없는 ZIP');
+        $zip->close();
+
+        try {
+            $file = new UploadedFile($zipPath, 'module.zip', 'application/zip', null, true);
+
+            $response = $this->authRequest()->postJson('/api/admin/modules/install-from-file', [
+                'file' => $file,
+            ]);
+
+            $response->assertStatus(422);
+            $this->assertStringContainsString(
+                __('modules.errors.module_json_not_found'),
+                (string) $response->json('message'),
+                '실패 사유(:error 자리)가 응답 메시지에 보존되지 않았습니다.'
+            );
+        } finally {
+            @unlink($zipPath);
+        }
     }
 
     /**
@@ -545,11 +608,11 @@ class ModuleControllerTest extends TestCase
      */
     public function test_install_from_file_returns_500_on_general_exception(): void
     {
-        $moduleServiceMock = \Mockery::mock(\App\Services\ModuleService::class);
+        $moduleServiceMock = \Mockery::mock(ModuleService::class);
         $moduleServiceMock->shouldReceive('installFromZipFile')
             ->once()
             ->andThrow(new \Exception('예상치 못한 오류'));
-        $this->app->instance(\App\Services\ModuleService::class, $moduleServiceMock);
+        $this->app->instance(ModuleService::class, $moduleServiceMock);
 
         $file = UploadedFile::fake()->create('module.zip', 100, 'application/zip');
 
@@ -569,7 +632,7 @@ class ModuleControllerTest extends TestCase
      */
     public function test_install_from_github_calls_service_with_valid_url(): void
     {
-        $moduleServiceMock = \Mockery::mock(\App\Services\ModuleService::class);
+        $moduleServiceMock = \Mockery::mock(ModuleService::class);
         $moduleServiceMock->shouldReceive('installFromGithub')
             ->once()
             ->with('https://github.com/sirsoft/sample-module')
@@ -578,7 +641,7 @@ class ModuleControllerTest extends TestCase
                 'name' => 'Sample Module',
                 'version' => '1.0.0',
             ]);
-        $this->app->instance(\App\Services\ModuleService::class, $moduleServiceMock);
+        $this->app->instance(ModuleService::class, $moduleServiceMock);
 
         $response = $this->authRequest()->postJson('/api/admin/modules/install-from-github', [
             'github_url' => 'https://github.com/sirsoft/sample-module',
@@ -592,20 +655,20 @@ class ModuleControllerTest extends TestCase
     /**
      * ModuleService에서 RuntimeException 발생 시 422 반환 (GitHub)
      */
-    public function test_install_from_github_returns_422_on_runtime_exception(): void
+    public function test_install_from_github_returns_422_on_domain_exception(): void
     {
-        $moduleServiceMock = \Mockery::mock(\App\Services\ModuleService::class);
+        $moduleServiceMock = \Mockery::mock(ModuleService::class);
         $moduleServiceMock->shouldReceive('installFromGithub')
             ->once()
-            ->andThrow(new \RuntimeException('GitHub 저장소를 찾을 수 없습니다.'));
-        $this->app->instance(\App\Services\ModuleService::class, $moduleServiceMock);
+            ->andThrow(new ModuleOperationException('modules.errors.github_repo_not_found'));
+        $this->app->instance(ModuleService::class, $moduleServiceMock);
 
         $response = $this->authRequest()->postJson('/api/admin/modules/install-from-github', [
             'github_url' => 'https://github.com/sirsoft/sample-module',
         ]);
 
         $response->assertStatus(422);
-        $response->assertJsonPath('message', 'GitHub 저장소를 찾을 수 없습니다.');
+        $response->assertJsonPath('message', __('modules.errors.github_repo_not_found'));
     }
 
     /**
@@ -613,11 +676,11 @@ class ModuleControllerTest extends TestCase
      */
     public function test_install_from_github_returns_500_on_general_exception(): void
     {
-        $moduleServiceMock = \Mockery::mock(\App\Services\ModuleService::class);
+        $moduleServiceMock = \Mockery::mock(ModuleService::class);
         $moduleServiceMock->shouldReceive('installFromGithub')
             ->once()
             ->andThrow(new \Exception('예상치 못한 오류'));
-        $this->app->instance(\App\Services\ModuleService::class, $moduleServiceMock);
+        $this->app->instance(ModuleService::class, $moduleServiceMock);
 
         $response = $this->authRequest()->postJson('/api/admin/modules/install-from-github', [
             'github_url' => 'https://github.com/sirsoft/sample-module',
@@ -682,7 +745,7 @@ class ModuleControllerTest extends TestCase
     public function test_activate_returns_409_when_dependencies_not_met(): void
     {
         // Arrange: ModuleService를 Mock
-        $moduleServiceMock = \Mockery::mock(\App\Services\ModuleService::class);
+        $moduleServiceMock = \Mockery::mock(ModuleService::class);
         $moduleServiceMock->shouldReceive('activateModule')
             ->with('test-module', false)
             ->andReturn([
@@ -696,7 +759,7 @@ class ModuleControllerTest extends TestCase
                 ],
                 'message' => '이 모듈을 활성화하려면 필요한 의존성이 충족되어야 합니다.',
             ]);
-        $this->app->instance(\App\Services\ModuleService::class, $moduleServiceMock);
+        $this->app->instance(ModuleService::class, $moduleServiceMock);
 
         // Act
         $response = $this->authRequest()->postJson('/api/admin/modules/activate', [
@@ -731,7 +794,7 @@ class ModuleControllerTest extends TestCase
     public function test_activate_with_force_bypasses_dependency_check(): void
     {
         // Arrange: ModuleService를 Mock
-        $moduleServiceMock = \Mockery::mock(\App\Services\ModuleService::class);
+        $moduleServiceMock = \Mockery::mock(ModuleService::class);
         $moduleServiceMock->shouldReceive('activateModule')
             ->with('test-module', true)
             ->andReturn([
@@ -742,7 +805,7 @@ class ModuleControllerTest extends TestCase
                     'status' => 'active',
                 ],
             ]);
-        $this->app->instance(\App\Services\ModuleService::class, $moduleServiceMock);
+        $this->app->instance(ModuleService::class, $moduleServiceMock);
 
         // Act
         $response = $this->authRequest()->postJson('/api/admin/modules/activate', [
@@ -761,7 +824,7 @@ class ModuleControllerTest extends TestCase
     public function test_deactivate_returns_409_when_dependents_exist(): void
     {
         // Arrange: ModuleService를 Mock
-        $moduleServiceMock = \Mockery::mock(\App\Services\ModuleService::class);
+        $moduleServiceMock = \Mockery::mock(ModuleService::class);
         $moduleServiceMock->shouldReceive('deactivateModule')
             ->with('test-module', false)
             ->andReturn([
@@ -774,7 +837,7 @@ class ModuleControllerTest extends TestCase
                 'dependent_plugins' => [],
                 'message' => '이 모듈에 의존하는 활성화된 확장이 있습니다.',
             ]);
-        $this->app->instance(\App\Services\ModuleService::class, $moduleServiceMock);
+        $this->app->instance(ModuleService::class, $moduleServiceMock);
 
         // Act
         $response = $this->authRequest()->postJson('/api/admin/modules/deactivate', [
@@ -801,7 +864,7 @@ class ModuleControllerTest extends TestCase
     public function test_deactivate_with_force_bypasses_dependent_check(): void
     {
         // Arrange: ModuleService를 Mock
-        $moduleServiceMock = \Mockery::mock(\App\Services\ModuleService::class);
+        $moduleServiceMock = \Mockery::mock(ModuleService::class);
         $moduleServiceMock->shouldReceive('deactivateModule')
             ->with('test-module', true)
             ->andReturn([
@@ -812,7 +875,7 @@ class ModuleControllerTest extends TestCase
                     'status' => 'inactive',
                 ],
             ]);
-        $this->app->instance(\App\Services\ModuleService::class, $moduleServiceMock);
+        $this->app->instance(ModuleService::class, $moduleServiceMock);
 
         // Act
         $response = $this->authRequest()->postJson('/api/admin/modules/deactivate', [
@@ -835,7 +898,7 @@ class ModuleControllerTest extends TestCase
     public function test_activate_response_includes_assets_when_module_has_assets(): void
     {
         // Arrange: ModuleService를 Mock
-        $moduleServiceMock = \Mockery::mock(\App\Services\ModuleService::class);
+        $moduleServiceMock = \Mockery::mock(ModuleService::class);
         $moduleServiceMock->shouldReceive('activateModule')
             ->with('test-module', false)
             ->andReturn([
@@ -851,7 +914,7 @@ class ModuleControllerTest extends TestCase
                     ],
                 ],
             ]);
-        $this->app->instance(\App\Services\ModuleService::class, $moduleServiceMock);
+        $this->app->instance(ModuleService::class, $moduleServiceMock);
 
         // Act
         $response = $this->authRequest()->postJson('/api/admin/modules/activate', [
@@ -872,7 +935,7 @@ class ModuleControllerTest extends TestCase
     public function test_deactivate_response_includes_assets_when_module_has_assets(): void
     {
         // Arrange: ModuleService를 Mock
-        $moduleServiceMock = \Mockery::mock(\App\Services\ModuleService::class);
+        $moduleServiceMock = \Mockery::mock(ModuleService::class);
         $moduleServiceMock->shouldReceive('deactivateModule')
             ->with('test-module', false)
             ->andReturn([
@@ -888,7 +951,7 @@ class ModuleControllerTest extends TestCase
                     ],
                 ],
             ]);
-        $this->app->instance(\App\Services\ModuleService::class, $moduleServiceMock);
+        $this->app->instance(ModuleService::class, $moduleServiceMock);
 
         // Act
         $response = $this->authRequest()->postJson('/api/admin/modules/deactivate', [
@@ -913,8 +976,8 @@ class ModuleControllerTest extends TestCase
     {
         // Arrange: 테스트용 CHANGELOG.md 생성
         $modulePath = base_path('modules/test-changelog-mod');
-        \Illuminate\Support\Facades\File::ensureDirectoryExists($modulePath);
-        \Illuminate\Support\Facades\File::put($modulePath.'/CHANGELOG.md', "# Changelog\n\n## [0.1.1] - 2026-02-25\n\n### Added\n- 새 기능\n\n## [0.1.0] - 2026-02-20\n\n### Added\n- 초기 릴리스\n");
+        File::ensureDirectoryExists($modulePath);
+        File::put($modulePath.'/CHANGELOG.md', "# Changelog\n\n## [0.1.1] - 2026-02-25\n\n### Added\n- 새 기능\n\n## [0.1.0] - 2026-02-20\n\n### Added\n- 초기 릴리스\n");
 
         try {
             $response = $this->authRequest()->getJson('/api/admin/modules/test-changelog-mod/changelog');
@@ -924,7 +987,7 @@ class ModuleControllerTest extends TestCase
                 ->assertJsonPath('data.changelog.0.categories.0.name', 'Added')
                 ->assertJsonPath('data.changelog.1.version', '0.1.0');
         } finally {
-            \Illuminate\Support\Facades\File::deleteDirectory($modulePath);
+            File::deleteDirectory($modulePath);
         }
     }
 
@@ -945,8 +1008,8 @@ class ModuleControllerTest extends TestCase
     public function test_changelog_with_version_range(): void
     {
         $modulePath = base_path('modules/test-changelog-range');
-        \Illuminate\Support\Facades\File::ensureDirectoryExists($modulePath);
-        \Illuminate\Support\Facades\File::put($modulePath.'/CHANGELOG.md', "# Changelog\n\n## [0.1.2] - 2026-02-28\n\n### Added\n- 기능 C\n\n## [0.1.1] - 2026-02-25\n\n### Added\n- 기능 B\n\n## [0.1.0] - 2026-02-20\n\n### Added\n- 초기 릴리스\n");
+        File::ensureDirectoryExists($modulePath);
+        File::put($modulePath.'/CHANGELOG.md', "# Changelog\n\n## [0.1.2] - 2026-02-28\n\n### Added\n- 기능 C\n\n## [0.1.1] - 2026-02-25\n\n### Added\n- 기능 B\n\n## [0.1.0] - 2026-02-20\n\n### Added\n- 초기 릴리스\n");
 
         try {
             $response = $this->authRequest()->getJson('/api/admin/modules/test-changelog-range/changelog?from_version=0.1.0&to_version=0.1.2');
@@ -957,7 +1020,7 @@ class ModuleControllerTest extends TestCase
             $this->assertSame('0.1.2', $changelog[0]['version']);
             $this->assertSame('0.1.1', $changelog[1]['version']);
         } finally {
-            \Illuminate\Support\Facades\File::deleteDirectory($modulePath);
+            File::deleteDirectory($modulePath);
         }
     }
 
@@ -980,8 +1043,8 @@ class ModuleControllerTest extends TestCase
     public function test_license_returns_content(): void
     {
         $modulePath = base_path('modules/test-license-mod');
-        \Illuminate\Support\Facades\File::ensureDirectoryExists($modulePath);
-        \Illuminate\Support\Facades\File::put($modulePath.'/LICENSE', 'MIT License - Test');
+        File::ensureDirectoryExists($modulePath);
+        File::put($modulePath.'/LICENSE', 'MIT License - Test');
 
         try {
             $response = $this->authRequest()->getJson('/api/admin/modules/test-license-mod/license');
@@ -989,7 +1052,7 @@ class ModuleControllerTest extends TestCase
             $response->assertStatus(200)
                 ->assertJsonPath('data.content', 'MIT License - Test');
         } finally {
-            \Illuminate\Support\Facades\File::deleteDirectory($modulePath);
+            File::deleteDirectory($modulePath);
         }
     }
 

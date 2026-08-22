@@ -25,9 +25,9 @@ class PostResourceThumbnailUrlTest extends BoardTestCase
      * @param  string  $mimeType  첨부 MIME 타입
      * @return array{post: Post, attachment: Attachment} 게시글/첨부
      */
-    private function createPostWithAttachment(string $mimeType): array
+    private function createPostWithAttachment(string $mimeType, array $postAttributes = []): array
     {
-        $postId = $this->createTestPost();
+        $postId = $this->createTestPost($postAttributes);
 
         $attachment = Attachment::create([
             'board_id' => $this->board->id,
@@ -74,5 +74,42 @@ class PostResourceThumbnailUrlTest extends BoardTestCase
         $response = (new PostResource($post))->toArray(Request::create('/'));
 
         $this->assertNull($response['thumbnail']);
+    }
+
+    /**
+     * 비밀글의 썸네일 URL은 열람 권한이 없으면 방출되지 않아야 합니다 (KVE-2026-1894).
+     *
+     * 서빙은 막혀 있어 이미지가 보이지는 않지만, URL 에 실린 첨부 해시 자체가
+     * 목록·상세 응답으로 나가 있었다. 필드는 남기고 값만 가린다.
+     *
+     * @effects secret_post_thumbnail_hash_not_exposed
+     */
+    #[Test]
+    public function thumbnail_is_null_for_secret_post_without_permission(): void
+    {
+        ['post' => $post] = $this->createPostWithAttachment('image/jpeg', ['is_secret' => true]);
+
+        $response = (new PostResource($post))->toArray(Request::create('/'));
+
+        $this->assertArrayHasKey('thumbnail', $response, 'thumbnail 키 자체는 유지되어야 합니다.');
+        $this->assertNull($response['thumbnail']);
+    }
+
+    /**
+     * 비밀글이 아니면 썸네일 URL이 그대로 유지되어야 합니다 (선택적 차단 회귀 방지).
+     *
+     * @effects secret_post_thumbnail_hash_not_exposed
+     */
+    #[Test]
+    public function thumbnail_is_preserved_for_non_secret_post(): void
+    {
+        ['post' => $post, 'attachment' => $attachment] = $this->createPostWithAttachment('image/jpeg');
+
+        $response = (new PostResource($post))->toArray(Request::create('/'));
+
+        $this->assertSame(
+            '/api/modules/sirsoft-board/boards/'.$this->board->slug.'/attachment/'.$attachment->hash.'/preview',
+            $response['thumbnail'],
+        );
     }
 }

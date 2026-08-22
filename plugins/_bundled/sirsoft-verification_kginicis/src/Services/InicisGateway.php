@@ -2,6 +2,7 @@
 
 namespace Plugins\Sirsoft\VerificationKginicis\Services;
 
+use App\Support\OutboundProxy;
 use App\Support\OutboundUrlValidator;
 use Illuminate\Support\Str;
 use Plugins\Sirsoft\VerificationKginicis\Exceptions\DecryptException;
@@ -140,6 +141,12 @@ class InicisGateway implements InicisGatewayInterface
             ]);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
             curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+
+            // 코어 환경설정의 아웃바운드 프록시를 이 호출에도 적용한다.
+            // 본인인증 승인 요청은 이니시스가 가맹점 서버 IP 를 화이트리스트로 제한하는
+            // 대상이라, 코어의 다른 외부 호출과 같은 IP 로 나가야 한다. 적용 여부 판정은
+            // 코어가 소유하며 미적용 시 빈 배열이라 그대로 넘겨도 무해하다.
+            curl_setopt_array($ch, OutboundProxy::curlOptions());
 
             $responseBody = curl_exec($ch);
             $httpStatus = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);

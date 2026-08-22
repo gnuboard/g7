@@ -8,10 +8,12 @@ use App\Http\Requests\Settings\RestoreSettingsRequest;
 use App\Http\Requests\Settings\SaveSettingsRequest;
 use App\Http\Requests\Settings\TestDriverConnectionRequest;
 use App\Http\Requests\Settings\TestMailRequest;
+use App\Http\Requests\Settings\TestOutboundProxyRequest;
 use App\Http\Requests\Settings\UpdateSettingRequest;
 use App\Http\Resources\SettingsResource;
 use App\Services\DriverConnectionTester;
 use App\Services\DriverRegistryService;
+use App\Services\OutboundProxyTester;
 use App\Services\SettingsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
@@ -27,7 +29,8 @@ class SettingsController extends AdminBaseController
     public function __construct(
         private SettingsService $settingsService,
         private DriverConnectionTester $driverConnectionTester,
-        private DriverRegistryService $driverRegistryService
+        private DriverRegistryService $driverRegistryService,
+        private OutboundProxyTester $outboundProxyTester
     ) {
         parent::__construct();
     }
@@ -339,5 +342,31 @@ class SettingsController extends AdminBaseController
         } catch (\Exception $e) {
             return $this->error('settings.driver_test_error', 500, $e->getMessage());
         }
+    }
+
+    /**
+     * 아웃바운드 프록시 연결을 테스트합니다.
+     *
+     * 저장하기 전에 프록시가 실제로 동작하는지, 그리고 그 프록시를 거쳐 나갔을 때 상대편에
+     * 어떤 IP 로 보이는지 확인합니다. 출발지 IP 는 운영자가 결제사·외부 서비스에 등록해야
+     * 하는 값이라 결과의 핵심입니다.
+     *
+     * 검사 대상은 저장된 설정이 아니라 이번 요청이 제출한 값입니다.
+     *
+     * @param  TestOutboundProxyRequest  $request  검증된 요청
+     * @return JsonResponse 검사 결과
+     */
+    public function testOutboundProxy(TestOutboundProxyRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+
+        $result = $this->outboundProxyTester->test(
+            (string) $validated['outbound_proxy'],
+            (array) ($validated['outbound_proxy_bypass'] ?? [])
+        );
+
+        // 연결 실패는 요청 처리 실패가 아니라 진단 결과다 — 200 으로 결과를 돌려주고
+        // 성공 여부는 페이로드가 말한다 (드라이버 연결 테스트와 같은 규약).
+        return $this->success($result['message_key'], $result);
     }
 }

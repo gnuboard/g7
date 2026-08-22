@@ -13902,6 +13902,8 @@
           "debug_mode": true,
           "sql_query_log": false,
           "log_level": "error",
+          "outbound_proxy": "",
+          "outbound_proxy_bypass": [],
           "core_update_github_url": "https://github.com/gnuboard/g7",
           "core_update_github_token": null,
           "geoip_enabled": false,
@@ -13928,7 +13930,9 @@
         "debug": {
           "debug_mode": true,
           "sql_query_log": false,
-          "log_level": "error"
+          "log_level": "error",
+          "outbound_proxy": "",
+          "outbound_proxy_bypass": []
         },
         "drivers": {
           "storage_driver": "local",

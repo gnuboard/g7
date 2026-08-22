@@ -33,6 +33,8 @@
 | `general.timezone` | `app.default_user_timezone` (`app.timezone` 아님) |
 | `general.language` | `app.locale` |
 | `debug.mode` | `app.debug`, `logging.*.level` |
+| `debug.sql_query_log` | `g7.sql_query_log` |
+| `debug.outbound_proxy`, `debug.outbound_proxy_bypass` | `g7.outbound_proxy` (디버그 모드 OFF 면 `null`) |
 | `drivers.cache_driver` | `cache.default` (testing 차단) |
 | `drivers.session_driver` | `session.driver` (testing 차단) |
 | `drivers.session_lifetime` | `session.lifetime` (testing 차단) |
@@ -137,6 +139,45 @@ plugin_setting('sirsoft-pay_kginicis', 'api_key');
 3. testing 격리가 필요한 키 (드라이버, 외부 서비스 자격증명 등) 는 `! $isTestingEnv` 가드로 sync 를 차단한다. 이 키들은 `config()` 가 testing 격리 SSoT 다.
 4. 의미가 다른 키 (`app.timezone` 처럼) 는 sync 하지 않고 별도 키 (`app.default_user_timezone`) 로 분리한다.
 5. 고급 탭 화면에 얹을 카테고리는 `config/settings/defaults.json` 의 `frontend_schema.{카테고리}.merge_into` 를 `advanced` 로 선언한다. 저장 시 어느 카테고리 파일에 쓸지는 이 선언에서 도출되므로 별도 등록이 필요 없다. 선언이 없으면 화면·검증·읽기가 모두 정상인데 입력값만 저장되지 않고 버려진다 — 저장 응답은 성공이고 화면에도 값이 보여 실패 신호가 없으므로, 새 카테고리를 추가했으면 저장 후 `storage/app/settings/{카테고리}.json` 이 생성되는지 직접 확인한다.
+
+---
+
+## 설정이 여는 기능에 게이트가 필요한 경우
+
+설정 하나가 위험한 동작을 여는 경우, 관리자 화면에서 입력칸을 조건부로 감추는 것은 게이트가 아니다. 저장 API 를 직접 호출하면 값은 그대로 저장되므로, 실질 게이트는 **그 값을 실제로 쓸지 판정하는 지점** 하나뿐이다.
+
+`debug.outbound_proxy` 가 그 예다. 지정된 프록시는 코어가 바깥으로 내보내는 모든 HTTP 요청(결제 승인, 코어 업데이트 조회, GeoIP 내려받기, 알림 웹훅)의 경로를 바꾸므로, 디버그 모드가 켜져 있을 때만 적용한다.
+
+| 구분 | 담당 |
+|------|------|
+| 판정 (SSoT) | `App\Support\OutboundProxy::resolve()` — 디버그 모드 OFF 면 저장값이 있어도 `null` |
+| 조립 (SSoT) | `OutboundProxy::options()` — 주소·예외 목록 정규화. 저장 전 연결 테스트도 이 조립을 거친다 |
+| 주입 | `SettingsServiceProvider::applyDebugConfig()` — 판정 결과를 `g7.outbound_proxy` 에 넣는다 |
+| 적용 | `AppServiceProvider::configureOutboundProxy()` — `Http::globalOptions()` 에 실는다 |
+| 화면 | 고급 탭의 조건부 렌더링 — 편의이며 게이트가 아니다 |
+
+주입·적용 지점은 게이트를 다시 검사하지 않는다. 같은 판정을 두 곳에 두면 한쪽만 바뀌었을 때 "저장은 되는데 적용되지 않는" 상태가 예외 없이 생긴다.
+
+저장 전 확인 기능(연결 테스트 등)이 있다면 그 경로도 같은 조립을 거쳐야 한다. 테스트가 값을 손으로 조립하면 정규화가 어긋나 운영자가 확인한 구성과 저장 후 적용되는 구성이 달라지는데, 두 구성 모두 정상 동작하므로 그 어긋남 자체는 아무 신호도 남기지 않는다.
+
+새 설정이 이런 성격이라면 같은 형태를 따른다 — 판정 함수 하나, 그 결과만 소비하는 주입·적용 지점, 그리고 디버그 모드 OFF 에서 미적용을 단언하는 회귀 테스트.
+
+### 적용 범위 — `Http::` 를 쓰지 않는 호출
+
+`Http::globalOptions()` 는 `Http` 파사드가 만든 요청에만 걸린다. 같은 사이트 안에서도 아래는 갈린다.
+
+| 호출 방식 | 프록시 적용 | 비고 |
+|---|---|---|
+| `Http::get(...)` | 적용 | 코어·확장 구분 없이 자동 |
+| `Http::withOptions([...])` (다른 옵션) | 적용 | `array_replace_recursive` 라 `proxy` 키는 보존된다 |
+| `Http::withOptions(['proxy' => ...])` | 호출부 값 우선 | 의도된 우선순위 (연결 테스트가 이 경로를 쓴다) |
+| `curl_*` 직접 | **미적용** | `OutboundProxy::curlOptions()` 를 `curl_setopt_array()` 에 넘겨 편입 |
+| `new GuzzleHttp\Client()` 직접 | **미적용** | Laravel 팩토리를 거치지 않는다 |
+| `fsockopen` / 원시 소켓 | **미적용** | 프로토콜상 프록시를 태우려면 별도 구현이 필요하다 |
+
+외부 연동 규약 때문에 `Http::` 를 쓸 수 없는 확장은 `OutboundProxy::curlOptions()` 를 쓴다. 판정은 코어가 하고 확장은 결과만 받으므로 게이트가 갈라지지 않으며, 미적용 상태에서는 빈 배열이라 그대로 넘겨도 무해하다.
+
+이 결함은 신호를 남기지 않는다 — 우회한 호출도 정상 성공하고, 상대편에 보이는 출발지 IP 만 달라진다. 외부 호출 지점을 새로 만들 때 어느 통로를 쓰는지 확인한다.
 
 ---
 

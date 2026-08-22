@@ -13,6 +13,17 @@ use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 interface OrderPaymentRepositoryInterface
 {
     /**
+     * 주문 ID로 결제 행을 잠금과 함께 조회합니다.
+     *
+     * 취소 누적액·취소 이력은 현재 값을 읽어 더하거나 덧붙이는 컬럼이라, 두 요청이 같은
+     * 값을 읽으면 후행이 선행을 덮어씁니다. 트랜잭션 안에서 행을 잠근 뒤 갱신합니다.
+     *
+     * @param  int  $orderId  주문 ID
+     * @return OrderPayment|null 잠긴 결제 모델 (없으면 null)
+     */
+    public function findByOrderIdForUpdate(int $orderId): ?OrderPayment;
+
+    /**
      * 현금영수증 발급 성공 시 결제의 요약 컬럼을 갱신합니다.
      *
      * 원본 식별번호는 encrypted cast 로 암호화되어 저장되고, 표시용으로는 마스킹 값만 남는다.

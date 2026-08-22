@@ -82,6 +82,7 @@ return [
     'additional_option_custom_text_required' => '追加オプション(:name)の直接入力内容を入力してください。',
     'coupon_issue_not_found' => 'クーポン発行履歴が見つかりません。',
     'coupon_issue_not_cancellable' => '未使用状態の発行分のみキャンセルできます。',
+    'coupon_already_used' => 'すでに使用されたクーポンです。クーポンをご確認のうえ、再度ご注文ください。',
     'country_not_shippable' => '選択された配送先国には配送できない商品です。',
     'order_shipping_address_update_failed' => '配送先変更処理中にエラーが発生しました。',
     'order_option_not_confirmable' => '現在の状態では購入確定できない注文オプションです。',

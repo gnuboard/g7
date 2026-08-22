@@ -1,0 +1,51 @@
+feature: 코어 아웃바운드 HTTP 프록시 설정
+
+description: |
+  코어가 바깥으로 내보내는 모든 HTTP 요청(결제 승인, 코어 업데이트 조회, GeoIP 내려받기,
+  알림 웹훅)을 운영자가 지정한 프록시로 경유시키는 환경설정. 접속 IP 를 제한하는 외부
+  서비스를 로컬·스테이징 환경에서 연동하기 위한 것이다.
+
+  핵심 동작:
+    - 저장 키는 debug 카테고리 소속 (debug.outbound_proxy, debug.outbound_proxy_bypass)
+    - 적용 게이트는 디버그 모드 — App\Support\OutboundProxy 가 단독 판정
+    - 디버그 모드 OFF 면 저장값이 남아 있어도 미적용 (화면 조건부 렌더링은 게이트가 아님)
+    - 적용은 Http::globalOptions 전역 옵션 — 확장의 Http:: 호출까지 함께 경유
+    - 개별 요청의 withOptions(['proxy' => ...]) 가 전역 옵션보다 우선
+    - Http:: 파사드를 쓰지 못하는 curl 직접 호출은 OutboundProxy::curlOptions() 로 편입
+    - 저장 전 연결 테스트는 저장값이 아니라 제출값을 검사하고 출발지 IP 를 보고
+
+  축 설계: 판정에 실제로 영향을 주는 입력만 축으로 둔다. 검증 지점(단위/저장/적용/화면)은
+  같은 조합을 여러 계층에서 확인하는 것이므로 축이 아니라 테스트 파일의 분담이다.
+
+axes:
+  debug_mode: [on, off]
+  proxy_value: [valid, invalid, empty]
+  bypass_list: [empty, normalizable]
+
+exclusions:
+  - { debug_mode: off, proxy_value: invalid, reason: "게이트가 먼저 걸려 주소 형태를 평가하지 않는다" }
+  - { debug_mode: off, proxy_value: empty, reason: "동일 — 미적용 판정이 주소보다 앞선다" }
+  - { debug_mode: off, bypass_list: normalizable, reason: "미적용 판정에서는 예외 목록을 계산하지 않는다" }
+  - { proxy_value: invalid, bypass_list: normalizable, reason: "주소가 거부되면 예외 목록은 계산되지 않는다" }
+  - { proxy_value: empty, bypass_list: normalizable, reason: "프록시를 쓰지 않으면 예외 목록은 의미가 없다" }
+
+effects:
+  - proxy_not_applied_when_debug_mode_off
+  - proxy_applied_when_debug_mode_on
+  - proxy_rejects_disallowed_scheme
+  - proxy_bypass_list_normalized
+  - proxy_setting_persists_to_debug_category
+  - proxy_setting_rejects_invalid_url
+  - proxy_applied_to_global_http_options
+  - proxy_absent_leaves_global_http_options_untouched
+  - proxy_inputs_hidden_when_debug_mode_off
+  - proxy_inputs_visible_when_debug_mode_on
+  - proxy_exposed_as_curl_options
+  - proxy_connection_test_reports_egress_ip
+  - proxy_connection_test_button_wired
+
+test_files:
+  - tests/Unit/Support/OutboundProxyTest.php
+  - tests/Feature/Settings/OutboundProxySettingTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-outbound-proxy-visibility.test.tsx
+  - tests/Playwright/specs/admin/settings-outbound-proxy.spec.ts

@@ -25,15 +25,38 @@ const DEAD_SCREEN = /초기화 실패|페이지 로딩 실패|Unknown action han
 const FALLBACK_UI = /화면을 불러오지 못했습니다|Failed to load the page/;
 
 /**
+ * 자산 URL 이 **이중 모드**라는 사실을 흡수하는 매처 생성기.
+ *
+ * `asset_url_mode` 가 `extensionless` 인 사이트에서는 `.../routes.json` 이
+ * `.../routes` 로, `/api/modules/bundle.js` 가 `/api/modules/bundle/js` 로 나간다
+ * (nginx 정적 최적화 블록 우회 — `partials/asset-url-recovery` 참조).
+ * 확장자 형태만 매칭하면 그 사이트에서는 **한 건도 가로채지 못한 채** 테스트가
+ * "복구 성공" 처럼 조용히 통과하거나 카운터 0 으로 실패한다.
+ *
+ * @param base 확장자 앞까지의 경로 정규식 소스 (예: `\\/api\\/templates\\/[^/]+\\/routes`)
+ * @param ext 확장자 (예: 'json')
+ * @return URL 매처
+ */
+function suffixedPath(base: string, ext: string): (url: URL) => boolean {
+  const withExt = new RegExp(`^${base}\\.${ext}$`);
+  const without = new RegExp(`^${base}$`);
+  const segment = new RegExp(`^${base}\\/${ext}$`);
+  return (url: URL) => withExt.test(url.pathname) || without.test(url.pathname) || segment.test(url.pathname);
+}
+
+/**
  * 지정 패턴의 **첫 요청 1건만** 취소한다 (재시도 요청은 통과).
  *
  * 일시적 커넥션 유실을 모사한다 — 재시도가 실제로 복구하는지 보기 위함.
  *
  * @param page Playwright page
- * @param pattern 취소할 요청 URL glob
+ * @param pattern 취소할 요청 URL glob 또는 매처
  * @return 취소·통과 카운터 (재시도 발동 여부 확인용)
  */
-async function abortFirstRequestOnly(page: Page, pattern: string): Promise<{ hits: () => number }> {
+async function abortFirstRequestOnly(
+  page: Page,
+  pattern: string | ((url: URL) => boolean)
+): Promise<{ hits: () => number }> {
   let hits = 0;
   await page.route(pattern, (route) => {
     hits += 1;
@@ -50,10 +73,10 @@ async function bodyText(page: Page): Promise<string> {
 
 test.describe('네트워크 복원력 — 요청 1건의 일시 실패 (#463)', () => {
   // 각 경로의 첫 요청 1건을 취소해도 재시도로 복구되어 앱이 정상 렌더돼야 한다.
-  const SINGLE_ABORT_PATHS: Array<{ name: string; pattern: string }> = [
-    { name: 'routes.json', pattern: '**/api/templates/*/routes.json*' },
-    { name: 'components.json', pattern: '**/api/templates/*/components.json*' },
-    { name: 'modules/bundle.js', pattern: '**/api/modules/bundle.js*' },
+  const SINGLE_ABORT_PATHS: Array<{ name: string; pattern: string | ((url: URL) => boolean) }> = [
+    { name: 'routes.json', pattern: suffixedPath('\\/api\\/templates\\/[^/]+\\/routes', 'json') },
+    { name: 'components.json', pattern: suffixedPath('\\/api\\/templates\\/[^/]+\\/components', 'json') },
+    { name: 'modules/bundle.js', pattern: suffixedPath('\\/api\\/modules\\/bundle', 'js') },
     { name: 'layouts/*.json', pattern: '**/api/layouts/**' },
   ];
 
@@ -221,7 +244,7 @@ test.describe('네트워크 복원력 — 번들이 끝내 부재할 때 (#463)'
    */
   test('@smoke routes.json 상시 부재 → 명시적 에러 화면 + 새로고침 버튼', async ({ page }) => {
     let attempts = 0;
-    await page.route('**/api/templates/*/routes.json*', (route) => {
+    await page.route(suffixedPath('\\/api\\/templates\\/[^/]+\\/routes', 'json'), (route) => {
       attempts += 1;
       return route.abort('failed');
     });
@@ -251,7 +274,7 @@ test.describe('네트워크 복원력 — 번들이 끝내 부재할 때 (#463)'
    *   (b) `Unknown action handler: sirsoft-ecommerce.initPreferredCurrency` raw 노출
    */
   test('@smoke 모듈 번들 상시 부재 → 5초 블로킹 없이 렌더 + 내부 식별자 미노출', async ({ page }) => {
-    await page.route('**/api/modules/bundle.js*', (route) => route.abort('failed'));
+    await page.route(suffixedPath('\\/api\\/modules\\/bundle', 'js'), (route) => route.abort('failed'));
 
     // `waitUntil: 'commit'` — 기본값('load')은 취소된 번들의 재시도 체인까지 포함한
     // 모든 서브리소스를 기다리므로, 측정 시작점이 밀려 "렌더까지 걸린 시간" 이 아니라

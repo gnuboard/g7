@@ -32,6 +32,7 @@ return [
     'coupon_has_issues' => '발급된 쿠폰이 :count건 있어 삭제할 수 없습니다.',
     'coupon_issue_not_found' => '쿠폰 발급 내역을 찾을 수 없습니다.',
     'coupon_issue_not_cancellable' => '미사용 상태의 발급 건만 취소할 수 있습니다.',
+    'coupon_already_used' => '이미 사용된 쿠폰입니다. 쿠폰을 다시 확인한 뒤 주문해 주세요.',
     'label_not_found' => '라벨을 찾을 수 없습니다.',
     'product_notice_template_not_found' => '상품정보제공고시 템플릿을 찾을 수 없습니다.',
     'product_common_info_not_found' => '상품 공통정보를 찾을 수 없습니다.',

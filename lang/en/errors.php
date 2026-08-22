@@ -44,5 +44,10 @@ return [
         'title' => 'Failed to load the page',
         'message' => 'Your network connection may be unstable. Please refresh and try again.',
         'reload' => 'Refresh',
+
+        // 스크립트를 받았으나 브라우저가 실행하지 못한 경우 (지원 범위보다 오래된 브라우저 등).
+        // 새로고침해도 낫지 않으므로 이 분기에서는 새로고침 버튼을 렌더하지 않는다.
+        'incompatible_title' => 'This browser cannot display the page',
+        'incompatible_message' => 'Your browser is too old to run this site. Please update it to the latest version, or try a different browser.',
     ],
 ];
