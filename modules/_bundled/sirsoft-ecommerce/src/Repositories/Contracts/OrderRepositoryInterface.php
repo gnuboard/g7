@@ -20,6 +20,18 @@ interface OrderRepositoryInterface
     public function find(int $id): ?Order;
 
     /**
+     * ID로 주문을 배타적 잠금과 함께 조회합니다.
+     *
+     * 클레임 신청·완료 처리처럼 "이 주문의 잔여 수량" 을 읽고 그 위에 쓰는 흐름이
+     * 동시에 들어오면, 두 요청이 같은 잔여를 보고 각각 통과해 합계가 잔여를 넘는다.
+     * 수량 잠금(D15) 검증과 신청서 생성을 한 트랜잭션 안에서 직렬화하기 위한 잠금이다.
+     *
+     * @param  int  $id  주문 ID
+     * @return Order|null 주문 모델 (없으면 null)
+     */
+    public function findForUpdate(int $id): ?Order;
+
+    /**
      * 주문이 1건이라도 존재하는지 확인합니다. (A2 base 통화 변경 가드)
      *
      * 소프트삭제된 주문도 과거 base 로 생성된 이력이므로 포함(withTrashed)해 판정한다.

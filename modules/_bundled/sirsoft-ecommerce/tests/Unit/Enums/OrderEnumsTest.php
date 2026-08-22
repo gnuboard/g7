@@ -177,6 +177,42 @@ class OrderEnumsTest extends ModuleTestCase
         $this->assertCount(7, OrderStatusEnum::salesEligibleStatuses());
     }
 
+    public function test_claim_in_progress_statuses_can_return_to_sales_states(): void
+    {
+        // 교환·반품이 반려·철회되면 그 상품옵션은 신청 직전 상태로 돌아가야 한다.
+        // 게이트가 막으면 클레임 서비스가 게이트를 우회해야 하므로 구간을 연다 —
+        // 정확한 복귀 대상은 신청 상품의 original_option_status 가 좁힌다.
+        foreach (OrderStatusEnum::revertibleClaimCourseStatuses() as $courseStatus) {
+            $this->assertSame(
+                OrderStatusEnum::salesEligibleStatuses(),
+                $courseStatus->allowedTransitions()
+            );
+            $this->assertTrue($courseStatus->canTransitionTo(OrderStatusEnum::DELIVERED));
+            $this->assertTrue($courseStatus->canTransitionTo(OrderStatusEnum::SHIPPING));
+
+            // 결제 전 상태로의 복귀는 취소 reactivation 과 동일하게 막는다.
+            $this->assertFalse($courseStatus->canTransitionTo(OrderStatusEnum::PENDING_PAYMENT));
+        }
+    }
+
+    public function test_claim_terminal_statuses_stay_terminal(): void
+    {
+        // 완료 시점에 환불 집행·재고 복구가 끝나 있어 상태만 되돌리면 기록과 어긋난다 (PO 확정).
+        foreach ([OrderStatusEnum::EXCHANGED, OrderStatusEnum::RETURNED] as $terminal) {
+            $this->assertSame([], $terminal->allowedTransitions());
+            $this->assertFalse($terminal->canTransitionTo(OrderStatusEnum::DELIVERED));
+            $this->assertNotContains($terminal, OrderStatusEnum::revertibleClaimCourseStatuses());
+        }
+    }
+
+    public function test_revertible_claim_course_is_the_in_progress_pair(): void
+    {
+        $this->assertSame(
+            [OrderStatusEnum::EXCHANGE_IN_PROGRESS, OrderStatusEnum::RETURN_IN_PROGRESS],
+            OrderStatusEnum::revertibleClaimCourseStatuses()
+        );
+    }
+
     // ========================================
     // OrderOptionStatusEnum → OrderStatusEnum 통일 확인
     // ========================================

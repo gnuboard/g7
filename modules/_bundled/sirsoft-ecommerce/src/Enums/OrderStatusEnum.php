@@ -167,6 +167,32 @@ enum OrderStatusEnum: string
     }
 
     /**
+     * 판매 상태로 되돌릴 수 있는 클레임 코스 상태 목록을 반환합니다.
+     *
+     * 진행 2종만 대상이다. 교환·반품이 반려·철회되면 그 상품옵션은 신청 직전 상태로
+     * 정확히 돌아가야 하는데(배송중에 신청한 건을 배송완료로 되돌리면 도착하지 않은
+     * 상품이 도착한 것으로 기록된다), 그 복귀가 canTransitionTo 게이트에 막히면
+     * 클레임 서비스가 게이트를 우회해야 한다.
+     *
+     * 완료 2종(EXCHANGED/RETURNED)은 제외한다 — 완료 시점에 환불 집행·재고 복구·신규
+     * 옵션 발송이 이미 끝나 있어 상태만 되돌리면 돈·재고와 기록이 어긋난다. 오조작은
+     * 새 클레임 또는 수동 조정으로 정정한다.
+     *
+     * 게이트는 판매 반영 구간(salesEligibleStatuses)까지만 열고, **정확한 복귀 대상**은
+     * 클레임 신청 상품의 original_option_status 가 정한다 — 게이트를 좁히면 신청 직전
+     * 상태가 무엇이었느냐에 따라 복귀가 되기도 안 되기도 한다.
+     *
+     * @return array<self> 복귀 가능한 클레임 진행 코스 상태 목록
+     */
+    public static function revertibleClaimCourseStatuses(): array
+    {
+        return [
+            self::EXCHANGE_IN_PROGRESS,
+            self::RETURN_IN_PROGRESS,
+        ];
+    }
+
+    /**
      * 관리자가 주문/주문옵션 상태 변경에서 직접 지정할 수 있는 상태 목록을 반환합니다.
      *
      * 클레임 코스 상태는 교환·반품 서비스가 신청서와 짝을 맞춰 기록하는 값이라,
@@ -310,7 +336,8 @@ enum OrderStatusEnum: string
      *
      * "결제됨 & 미취소" 구간 — 결제완료 이후 구매확정까지(배송보류 포함).
      * 대시보드 판매 현황 집계(순매출/판매수량)에서 이 상태의 주문상품만 합산합니다.
-     * 결제 전(pending_order/pending_payment)과 취소(partial_cancelled/cancelled)는 제외됩니다.
+     * 결제 전(pending_order/pending_payment)과 취소(cancelled — 부분취소는 별도 상태가 아니라
+     * CANCELLED 로 분할된 행으로 표현된다)는 제외됩니다.
      *
      * @return array<self>
      */
@@ -414,6 +441,9 @@ enum OrderStatusEnum: string
      * - 현재 상태가 CANCELLED 면 판매 반영 상태(salesEligibleStatuses)로만 복원 허용
      *   (취소된 주문/옵션을 다시 판매 진행 상태로 되살리는 reactivation 운영 기능 — 재고 재차감 동반.
      *    결제 전 상태(pending_order/pending_payment)로의 복원은 차단. 2026-06-23).
+     * - 현재 상태가 클레임 진행 코스(교환진행중/반품진행중)면 같은 규칙으로 판매 반영 상태 복귀 허용
+     *   (반려·철회 시 신청 직전 상태로 되돌리는 경로 — revertibleClaimCourseStatuses 참조).
+     *   완료 2종(EXCHANGED/RETURNED)은 터미널이라 빈 배열을 유지한다.
      *
      * @return array<self>
      */
@@ -421,6 +451,12 @@ enum OrderStatusEnum: string
     {
         if ($this === self::CANCELLED) {
             // 취소 → 판매 상태 복원(reactivation)만 허용. 결제 전 상태 복귀는 차단.
+            return self::salesEligibleStatuses();
+        }
+
+        if (in_array($this, self::revertibleClaimCourseStatuses(), true)) {
+            // 클레임 진행 코스 → 판매 상태 복귀(반려·철회). 취소 reactivation 과 같은 형태이며,
+            // 정확한 복귀 대상은 클레임 신청 상품의 original_option_status 가 좁힌다.
             return self::salesEligibleStatuses();
         }
 

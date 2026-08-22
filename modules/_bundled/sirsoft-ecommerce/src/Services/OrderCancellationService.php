@@ -20,6 +20,7 @@ use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\SequenceType;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderCancellationException;
+use Modules\Sirsoft\Ecommerce\Exceptions\OrderClaimException;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
@@ -53,6 +54,7 @@ class OrderCancellationService
      * @param  OrderRefundOptionRepositoryInterface  $orderRefundOptionRepository  주문 환불 옵션 Repository
      * @param  OrderPaymentRepositoryInterface  $orderPaymentRepository  주문 결제 Repository
      * @param  RefundExecutionService  $refundExecutionService  환불 실행 서비스 (PG 환불·복원·현금영수증 공용)
+     * @param  ClaimQuantityGuard  $claimQuantityGuard  클레임 수량 잠금 가드 (D15)
      */
     public function __construct(
         protected OrderAdjustmentService $adjustmentService,
@@ -67,6 +69,7 @@ class OrderCancellationService
         protected OrderRefundOptionRepositoryInterface $orderRefundOptionRepository,
         protected OrderPaymentRepositoryInterface $orderPaymentRepository,
         protected RefundExecutionService $refundExecutionService,
+        protected ClaimQuantityGuard $claimQuantityGuard,
     ) {}
 
     /**
@@ -255,6 +258,7 @@ class OrderCancellationService
         // ① 검증
         $this->validateCancellable($order);
         $this->validateCancelItems($order, $cancelItems);
+        $this->validateNotLockedByClaim($order, $cancelItems);
 
         // 환불 계좌 갱신 — PG 환불(executePgRefund)이 이 컬럼을 읽어 refundReceiveAccount 를
         // 구성하므로 환불 실행 전에 반영해야 한다. 관리자가 취소 모달에서 입력/수정한 값이다.
@@ -422,6 +426,31 @@ class OrderCancellationService
             if ($item['cancel_quantity'] < 1 || $item['cancel_quantity'] > $option->quantity) {
                 throw new OrderCancellationException(__('sirsoft-ecommerce::exceptions.cancel_quantity_invalid'));
             }
+        }
+    }
+
+    /**
+     * 취소 대상이 진행 중인 교환·반품에 묶여 있지 않은지 검증합니다. (D15)
+     *
+     * 취소 경로는 옵션 상태가 CANCELLED 인지만 보고 클레임 코스 상태를 보지 않는다.
+     * 신청 가능 상태 목록은 운영자 설정이라 취소 가능 상태와 겹칠 수 있고, 겹치면 반품
+     * 진행 중인 수량이 취소로도 빠져나가 같은 상품이 두 번 환불된다 — 예외도 경고도
+     * 남지 않고 금액만 어긋나는 형태다.
+     *
+     * 판정은 ClaimQuantityGuard 단일 출처에 위임하고, 취소 경로의 응답 계약(422)을
+     * 유지하기 위해 취소 예외로 변환한다.
+     *
+     * @param  Order  $order  주문
+     * @param  array  $cancelItems  취소 대상
+     *
+     * @throws OrderCancellationException 진행 중인 클레임에 묶인 수량일 때
+     */
+    protected function validateNotLockedByClaim(Order $order, array $cancelItems): void
+    {
+        try {
+            $this->claimQuantityGuard->assertNotLockedForCancellation($order, $cancelItems);
+        } catch (OrderClaimException $e) {
+            throw new OrderCancellationException($e->getMessage());
         }
     }
 
@@ -799,18 +828,14 @@ class OrderCancellationService
     /**
      * 환불 수단을 결정합니다.
      *
+     * 판정 규칙은 취소와 클레임이 같아야 하므로 RefundExecutionService 가 SSoT 다.
+     *
      * @param  Order  $order  주문
      * @return RefundMethodEnum 환불 수단
      */
     protected function determineRefundMethod(Order $order): RefundMethodEnum
     {
-        if (! $order->payment) {
-            return RefundMethodEnum::BANK;
-        }
-
-        // 확장 결제수단(간편결제 등)도 카탈로그 선언을 통해 올바른 환불수단으로 해석된다.
-        // enum match 로 두면 확장 ID 가 default → BANK 로 떨어져 카드 취소가 누락된다(#475).
-        return $order->payment->refundMethod();
+        return $this->refundExecutionService->determineRefundMethod($order);
     }
 
     // ───────────────────────────────────────────────
@@ -831,39 +856,12 @@ class OrderCancellationService
         array $cancelItems,
         AdjustmentResult $result,
     ): void {
-        foreach ($cancelItems as $item) {
-            $option = $order->options->find($item['order_option_id']);
-            if (! $option) {
-                continue;
-            }
-
-            // adjustedItems에서 해당 옵션의 취소 금액 조회
-            $adjustedItem = collect($result->adjustedItems)
-                ->firstWhere('order_option_id', $item['order_option_id']);
-
-            $subtotalAmount = (float) $option->unit_price * $item['cancel_quantity'];
-            $cancelAmount = $adjustedItem['cancel_amount'] ?? $subtotalAmount;
-
-            // 할인 차감분 계산 (원래 옵션 할인 비율 기반)
-            $discountAmount = 0;
-            if ($option->subtotal_price > 0) {
-                $discountRatio = (float) $option->subtotal_discount_amount / (float) $option->subtotal_price;
-                $discountAmount = round($subtotalAmount * $discountRatio, 2);
-            }
-
-            $refundAmount = $cancelAmount - $discountAmount;
-
-            $this->orderRefundOptionRepository->create([
-                'order_refund_id' => $refund->id,
-                'order_id' => $order->id,
-                'order_option_id' => $option->id,
-                'option_status' => RefundOptionStatusEnum::REQUESTED,
-                'quantity' => $item['cancel_quantity'],
-                'unit_price' => (float) $option->unit_price,
-                'subtotal_amount' => $subtotalAmount,
-                'discount_amount' => $discountAmount,
-                'refund_amount' => max(0, $refundAmount),
-            ]);
+        // 안분 규칙(원 옵션 할인 비율 기반 차감)은 클레임 발 환불과 같아야 하므로
+        // RefundExecutionService 가 SSoT 다. 여기서는 환불 레코드 소속만 붙인다.
+        foreach ($this->refundExecutionService->buildRefundOptionRows($order, $cancelItems, $result) as $row) {
+            $this->orderRefundOptionRepository->create(
+                array_merge(['order_refund_id' => $refund->id], $row)
+            );
         }
     }
 

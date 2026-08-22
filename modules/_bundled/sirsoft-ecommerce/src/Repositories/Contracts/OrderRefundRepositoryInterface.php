@@ -21,6 +21,15 @@ interface OrderRefundRepositoryInterface
     public function create(array $data): OrderRefund;
 
     /**
+     * ID로 환불신청서를 조회합니다.
+     *
+     * @param  int  $id  환불신청서 ID
+     * @param  array  $relations  로드할 관계
+     * @return OrderRefund|null 환불신청서 (없으면 null)
+     */
+    public function findById(int $id, array $relations = []): ?OrderRefund;
+
+    /**
      * 주문의 진행 중(비터미널) 환불신청서를 조회합니다.
      *
      * 취소 가능 금액 산정(D19)의 선점액 축이 쓰는 조회다 — 아직 실행되지 않은 환불이

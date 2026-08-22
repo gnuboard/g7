@@ -14,6 +14,7 @@ use Illuminate\Validation\ValidationException;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderAmountChangedException;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderCancellationException;
+use Modules\Sirsoft\Ecommerce\Exceptions\OrderClaimException;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderProcessingException;
 use Modules\Sirsoft\Ecommerce\Exceptions\PaymentAmountMismatchException;
 use Modules\Sirsoft\Ecommerce\Exceptions\ResourceScopeMismatchException;
@@ -260,6 +261,21 @@ class OrderController extends AdminBaseController
                 'sirsoft-ecommerce',
                 'messages.orders.option_status_change_failed',
                 400
+            );
+        } catch (OrderClaimException $e) {
+            // 교환·반품 진행 중인 상품의 상태 변경 차단 (D15 후단). FormRequest 가 1차로 422 를
+            // 내지만, 훅·내부 호출로 Service 2차 방어가 트립한 경우에도 500 이 아닌 422 로 응답해
+            // 화면 경로와 같은 운영자 안내를 전달한다 — 위 스코프 불일치 catch 와 같은 이유다.
+            // 이미 번역된 원문($e->getMessage())이 아니라 키+치환 파라미터로 응답을 구성한다.
+            // getMessageKey() 는 모듈 접두를 이미 포함한 완전한 키라 moduleError() 가 아닌
+            // error() 에 그대로 넘긴다 — 접두를 두 번 붙이면 키가 해석되지 않는다.
+            $messageKey = $e->getMessageKey();
+
+            return ResponseHelper::error(
+                $messageKey,
+                422,
+                null,
+                $e->getMessageParams()
             );
         } catch (AccessDeniedHttpException $e) {
             return ResponseHelper::forbidden('auth.scope_denied');

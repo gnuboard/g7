@@ -31,6 +31,7 @@ return new class extends Migration
             // 수량 / 원 가격
             $table->unsignedInteger('exchange_quantity')->comment('교환 신청 수량');
             $table->unsignedInteger('original_quantity')->comment('신청 전 원래 수량 (감사용)');
+            $table->string('original_option_status', 30)->comment('신청 직전 원 주문옵션 상태 (반려·철회 시 상품옵션 단위 복귀 기준, OrderStatusEnum)');
             $table->decimal('unit_price', 12, 2)->comment('신청 시점 원 옵션 단가');
 
             // 신규 옵션

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderExchangeOptionFactory;
 use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 
 /**
  * 교환 신청 상품별 상세 모델
@@ -40,6 +41,7 @@ class OrderExchangeOption extends Model
         'option_status',
         'exchange_quantity',
         'original_quantity',
+        'original_option_status',
         'unit_price',
         'new_product_option_id',
         'new_option_snapshot',
@@ -63,6 +65,7 @@ class OrderExchangeOption extends Model
             'option_status' => ExchangeStatusEnum::class,
             'exchange_quantity' => 'integer',
             'original_quantity' => 'integer',
+            'original_option_status' => OrderStatusEnum::class,
             'unit_price' => 'decimal:2',
             'new_option_snapshot' => 'array',
             'new_unit_price' => 'decimal:2',

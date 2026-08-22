@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
@@ -33,6 +34,7 @@ class OrderReturnOptionFactory extends Factory
             'option_status' => ReturnStatusEnum::REQUESTED,
             'return_quantity' => 1,
             'original_quantity' => 1,
+            'original_option_status' => OrderStatusEnum::DELIVERED,
             'unit_price' => $unitPrice,
             'subtotal_amount' => $unitPrice,
             'completed_at' => null,

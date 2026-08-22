@@ -93,6 +93,28 @@ return [
     'invalid_exchange_rate' => 'Invalid exchange rate for currency: :currency',
     'unsupported_payment_currency' => 'Payment is not available in :currency. Please check the exchange rate settings.',
 
+    // Claim (exchange/return) lifecycle related
+    'claim_items_required' => 'Please select the items to request.',
+    'claim_not_found' => 'The request could not be found.',
+    'claim_option_not_found' => 'The requested order item could not be found.',
+    'claim_option_not_claimable' => 'A :type request is not available for an item in the :status state.',
+    'claim_quantity_invalid' => 'The requested quantity is invalid.',
+    'claim_quantity_locked' => 'Another request is already in progress, so :requested item(s) cannot be requested. (Available: :available)',
+    'claim_reason_unavailable' => 'The selected reason is unavailable. Please choose another reason.',
+    'claim_charge_method_required' => 'A charge method must be selected because a charge applies.',
+    'claim_charge_method_not_allowed' => 'The selected charge method is currently unavailable.',
+    'claim_request_period_expired' => 'The request period (:days days) has passed.',
+    'claim_transition_not_allowed' => 'The status cannot be changed from :from to :to.',
+    'claim_not_withdrawable' => 'The request cannot be withdrawn in its current state.',
+    'claim_completion_flow_required' => 'Completion can only be processed through the completion screen.',
+    'claim_completion_items_invalid' => 'There are no items available to complete.',
+    'claim_refund_request_exists' => 'A refund request (:number) has already been created for this claim.',
+    'claim_amount_invalid' => 'The amount to update is invalid.',
+    'claim_tracking_incomplete' => 'Please enter both the carrier and the tracking number.',
+    'claim_option_in_course' => 'An item with an exchange or return in progress (:status) cannot be cancelled.',
+    'claim_option_in_course_status_change' => 'The status of an item with an exchange or return in progress (:status) cannot be changed. Process the related request first.',
+    'claim_course_status_not_assignable' => 'The exchange/return course status (:status) cannot be assigned directly from the order screen. It is entered only through an exchange or return request.',
+
     // Claim Reason related
     'claim_reason_not_found' => 'Claim reason not found.',
     'claim_reason_in_use' => 'Cannot delete a reason in use by order cancellations. (Used :count times)',

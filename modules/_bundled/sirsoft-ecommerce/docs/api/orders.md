@@ -1659,12 +1659,15 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.orders.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터 검증 실패, 또는 옵션 상태 변경 실패 — 옵션 전이 규칙 위반, 취소 후 복원 시 재고 부족 등 (`옵션 상태 변경에 실패했습니다.`) |
+| 422 | Unprocessable Entity | 대상 옵션이 교환·반품 진행 중(`exchange_in_progress` / `return_in_progress` / `exchanged` / `returned`)인 경우 — 화면 요청은 `items.N.status` 에 안내가 실리고, 검증을 거치지 않는 내부·훅 호출로 서비스 방어가 트립한 경우에는 같은 안내가 `message` 에 실린다 |
 | 428 | Identity Verification Required | 결제완료(`payment_complete`) 전이 시 본인인증(IDV) 정책이 enforce 이고 미인증인 경우 |
 | 500 | Server Error | 옵션 상태 변경 중 예기치 못한 오류 (`옵션 상태 변경에 실패했습니다.`) |
 
 <!-- @generated:end -->
 
 **설명** 관리자가 특정 주문(`order`)의 여러 주문 옵션 상태를 수량 분할까지 지원해 일괄 변경합니다. `auth:sanctum` + `sirsoft-ecommerce.orders.update` 권한이 필요하며, `Admin\OrderController@bulkChangeOptionStatus`가 `status`를 `OrderStatusEnum`으로 변환한 뒤 `OrderOptionService::bulkChangeStatusWithQuantity()`로 처리합니다. 배송중으로 전환 시 `carrier_id`·`tracking_number`(택배사·송장번호)를 함께 넘길 수 있습니다. 한 옵션의 일부 수량만 상태 전환(부분 배송 등)하는 시나리오를 지원합니다. `items[].option_id`는 경로의 `{order}`에 속한 옵션이어야 합니다. 다른 주문의 옵션 ID를 포함하면 422(`items.N.option_id`)로 거절되며, 요청 전체가 반영되지 않습니다. 검증을 거치지 않는 내부·훅 호출 경로에서 같은 불일치가 감지되면 400으로 응답합니다.
+
+교환·반품이 진행 중인 옵션은 이 엔드포인트로 상태를 바꿀 수 없습니다. 클레임 코스 상태는 `status` 로 **지정**할 수 없을 뿐 아니라 그 상태에서 **빠져나오는** 전이도 막힙니다 — 코스 상태의 전이 게이트는 클레임 반려·철회 시의 복귀를 위해 판매 상태로의 전이를 허용하지만, 그 허용은 교환·반품 서비스의 복귀 경로 전용입니다. 주문 화면에서 직접 빼내면 그 옵션은 이후 신청서의 복귀 대상에서 조용히 제외되어 신청서와 주문옵션이 어긋납니다. 해당 교환·반품 건을 먼저 처리(승인·반려·철회·완료)한 뒤 상태를 변경하세요.
 
 
 ### POST /api/modules/sirsoft-ecommerce/admin/orders/{order}/reset-guest-lookup-password

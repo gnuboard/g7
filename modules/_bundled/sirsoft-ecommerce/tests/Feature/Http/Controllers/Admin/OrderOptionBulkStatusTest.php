@@ -7,10 +7,12 @@ use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderOptionFactory;
 use Modules\Sirsoft\Ecommerce\Enums\OrderOptionSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
+use Modules\Sirsoft\Ecommerce\Exceptions\OrderClaimException;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderShipping;
 use Modules\Sirsoft\Ecommerce\Models\ProductReview;
 use Modules\Sirsoft\Ecommerce\Models\ShippingCarrier;
+use Modules\Sirsoft\Ecommerce\Services\OrderOptionService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
@@ -1218,5 +1220,92 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
         $splitOption = OrderOption::find($results[0]['split_order_option_id']);
         $this->assertNotNull($splitOption);
         $this->assertEquals(OrderStatusEnum::PREPARING, $splitOption->option_status);
+    }
+    // ========== 클레임 코스 상태 차단 (D15 후단) ==========
+
+    public function test_claim_course_item_is_blocked_with_a_guidance_message(): void
+    {
+        // 화면 경로 — FormRequest 가 items.N.status 에 운영자 안내를 싣는다.
+        $order = OrderFactory::new()->create();
+        $option = OrderOptionFactory::new()->forOrder($order)->create([
+            'quantity' => 1,
+            'option_status' => OrderStatusEnum::RETURN_IN_PROGRESS,
+        ]);
+
+        // 전이 게이트 자체는 이 전이를 허용한다(반려·철회 복귀용) — 가드가 유일한 차단 지점이다.
+        $this->assertTrue(OrderStatusEnum::RETURN_IN_PROGRESS->canTransitionTo(OrderStatusEnum::DELIVERED));
+
+        $response = $this->actingAs($this->adminUser)
+            ->patchJson($this->bulkStatusUrl($order->order_number), [
+                'items' => [
+                    ['option_id' => $option->id, 'quantity' => 1],
+                ],
+                'status' => OrderStatusEnum::DELIVERED->value,
+            ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['items.0.status']);
+        $this->assertEquals(OrderStatusEnum::RETURN_IN_PROGRESS, $option->fresh()->option_status);
+    }
+
+    public function test_claim_course_block_from_the_service_path_keeps_the_same_guidance(): void
+    {
+        // FormRequest 를 우회하는 내부·훅 호출이 서비스 2차 방어에 걸린 경우.
+        // 도메인 실패이므로 화면 경로와 같은 422 안내여야 한다 — 광역 catch 로 흘러 500 이 되면
+        // 운영자는 스스로 고칠 수 있는 상황을 서버 장애로 읽는다. docs/api/orders.md 도 422 로 적혀 있다.
+        $order = OrderFactory::new()->create();
+        $option = OrderOptionFactory::new()->forOrder($order)->create([
+            'quantity' => 1,
+            'option_status' => OrderStatusEnum::SHIPPING,
+        ]);
+
+        // 라벨은 예외 생성 시점에 치환 파라미터로 굳는다 — 같은 값을 기대값에도 써서
+        // 테스트 본문과 요청 처리의 로케일 차이가 단언을 흔들지 않게 한다.
+        $courseLabel = OrderStatusEnum::RETURN_IN_PROGRESS->label();
+
+        $this->mock(OrderOptionService::class, function ($mock) use ($courseLabel) {
+            $mock->shouldReceive('bulkChangeStatusWithQuantity')
+                ->andThrow(OrderClaimException::optionInClaimCourseStatusChange($courseLabel));
+            $mock->shouldReceive()->andReturnNull();
+        });
+
+        $response = $this->actingAs($this->adminUser)
+            ->patchJson($this->bulkStatusUrl($order->order_number), [
+                'items' => [
+                    ['option_id' => $option->id, 'quantity' => 1],
+                ],
+                'status' => OrderStatusEnum::DELIVERED->value,
+            ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonPath('message', __('sirsoft-ecommerce::exceptions.claim_option_in_course_status_change', [
+            'status' => $courseLabel,
+        ]));
+    }
+
+    public function test_infrastructure_failure_of_bulk_status_still_returns_500(): void
+    {
+        // 대조군 — 도메인 예외가 아닌 실패는 계속 500 이어야 한다(장애가 입력 오류로 위장되지 않음).
+        $order = OrderFactory::new()->create();
+        $option = OrderOptionFactory::new()->forOrder($order)->create([
+            'quantity' => 1,
+            'option_status' => OrderStatusEnum::SHIPPING,
+        ]);
+
+        $this->mock(OrderOptionService::class, function ($mock) {
+            $mock->shouldReceive('bulkChangeStatusWithQuantity')
+                ->andThrow(new \RuntimeException('SQLSTATE[HY000]: General error'));
+            $mock->shouldReceive()->andReturnNull();
+        });
+
+        $response = $this->actingAs($this->adminUser)
+            ->patchJson($this->bulkStatusUrl($order->order_number), [
+                'items' => [
+                    ['option_id' => $option->id, 'quantity' => 1],
+                ],
+                'status' => OrderStatusEnum::DELIVERED->value,
+            ]);
+
+        $response->assertStatus(500);
     }
 }

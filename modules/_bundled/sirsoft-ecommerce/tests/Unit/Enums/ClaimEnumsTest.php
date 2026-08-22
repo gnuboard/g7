@@ -169,6 +169,88 @@ class ClaimEnumsTest extends ModuleTestCase
         $this->assertFalse(ReturnStatusEnum::COLLECTED->isWithdrawable());
     }
 
+    public function test_return_status_payment_pending_keeps_all_three_exits(): void
+    {
+        // §4-2 전이표 payment_pending 행 — 유저 철회 / 관리자 반려 / (수동·결제 완료) 승인.
+        // 결제 자체는 ClaimPaymentService(S5) 몫이지만 그 서비스가 도착할 지점이 열려 있는지는
+        // 게이트가 지금 고정한다 — 닫혀 있으면 S5 가 전이할 곳이 없다.
+        $this->assertTrue(ReturnStatusEnum::PAYMENT_PENDING->canTransitionTo(ReturnStatusEnum::WITHDRAWN));
+        $this->assertTrue(ReturnStatusEnum::PAYMENT_PENDING->canTransitionTo(ReturnStatusEnum::REJECTED));
+        $this->assertTrue(ReturnStatusEnum::PAYMENT_PENDING->canTransitionTo(ReturnStatusEnum::APPROVED));
+
+        // 결제 대기에서 회수로 바로 건너뛸 수는 없다 (승인을 거쳐야 한다).
+        $this->assertFalse(ReturnStatusEnum::PAYMENT_PENDING->canTransitionTo(ReturnStatusEnum::COLLECTION_READY));
+    }
+
+    public function test_return_status_on_hold_can_be_rejected(): void
+    {
+        // §4-2 전이표 on_hold 행의 관리자 축은 승인·반려 둘 다이다.
+        $this->assertTrue(ReturnStatusEnum::ON_HOLD->canTransitionTo(ReturnStatusEnum::APPROVED));
+        $this->assertTrue(ReturnStatusEnum::ON_HOLD->canTransitionTo(ReturnStatusEnum::REJECTED));
+    }
+
+    public function test_return_status_requested_can_enter_payment_pending(): void
+    {
+        // §4-2 전이표 requested 행의 자동 축 — charge>0 ∧ pay_on_request 미결제 → payment_pending.
+        // 축 구현은 S5 지만 진입 게이트가 열려 있지 않으면 그 서비스가 들어갈 곳이 없다.
+        // 교환 축은 같은 셀을 test_exchange_status_forward_transitions_follow_lifecycle 이
+        // 고정하고 있어, 이 케이스가 없으면 두 유형의 방어 강도가 갈린다.
+        $this->assertTrue(ReturnStatusEnum::REQUESTED->canTransitionTo(ReturnStatusEnum::PAYMENT_PENDING));
+    }
+
+    public function test_return_status_approved_cannot_be_rejected(): void
+    {
+        // 승인 뒤에는 반려로 되돌릴 수 없다 — 승인 시점에 회수 준비가 시작되고,
+        // 반려는 원 주문옵션을 신청 직전 상태로 되돌리는 경로라 회수가 진행된 뒤에는
+        // 되돌릴 대상이 이미 움직여 있다. 승인 후의 종료는 완료뿐이다.
+        $this->assertFalse(ReturnStatusEnum::APPROVED->canTransitionTo(ReturnStatusEnum::REJECTED));
+        $this->assertSame([ReturnStatusEnum::COLLECTION_READY], ReturnStatusEnum::APPROVED->allowedTransitions());
+    }
+
+    public function test_return_status_withdrawn_reachable_only_before_approval(): void
+    {
+        // 교환 축의 정합성 루프(test_exchange_status_withdrawn_reachable_only_before_approval)와
+        // 동형. isWithdrawable() 과 전이 게이트가 서로 다른 답을 내면 화면은 [철회] 버튼을
+        // 보여 주는데 요청은 거부되는(혹은 그 반대) 형태가 된다.
+        foreach (ReturnStatusEnum::cases() as $status) {
+            if ($status === ReturnStatusEnum::WITHDRAWN) {
+                continue; // self-transition 은 무조건 허용이라 비교 대상이 아니다
+            }
+
+            $this->assertSame(
+                $status->isWithdrawable(),
+                $status->canTransitionTo(ReturnStatusEnum::WITHDRAWN),
+                "{$status->value} 의 철회 가능 여부와 전이 게이트가 일치해야 합니다."
+            );
+        }
+    }
+
+    public function test_return_status_self_transition_is_allowed_as_noop(): void
+    {
+        // 교환 축과 같은 형태 — 일괄 전이에서 이미 그 상태인 건이 섞여도 실패하지 않아야 한다.
+        foreach (ReturnStatusEnum::cases() as $status) {
+            $this->assertTrue($status->canTransitionTo($status));
+        }
+    }
+
+    public function test_return_status_collection_stages_only_move_forward(): void
+    {
+        // 회수 3단계는 행 전체를 고정한다 — 승인 후에는 반려·철회·역행이 없고 다음 단계 하나뿐이다.
+        // approved 행만 고정돼 있던 동안 이 3행의 불허 20셀은 무단언이었다.
+        $this->assertSame([ReturnStatusEnum::COLLECTING], ReturnStatusEnum::COLLECTION_READY->allowedTransitions());
+        $this->assertSame([ReturnStatusEnum::COLLECTED], ReturnStatusEnum::COLLECTING->allowedTransitions());
+        $this->assertSame([ReturnStatusEnum::COMPLETED], ReturnStatusEnum::COLLECTED->allowedTransitions());
+
+        foreach ([ReturnStatusEnum::COLLECTION_READY, ReturnStatusEnum::COLLECTING, ReturnStatusEnum::COLLECTED] as $stage) {
+            $this->assertFalse($stage->canTransitionTo(ReturnStatusEnum::REJECTED), "{$stage->value} 에서 반려로 갈 수 없어야 합니다.");
+            $this->assertFalse($stage->canTransitionTo(ReturnStatusEnum::WITHDRAWN), "{$stage->value} 에서 철회로 갈 수 없어야 합니다.");
+            $this->assertFalse($stage->canTransitionTo(ReturnStatusEnum::APPROVED), "{$stage->value} 에서 승인으로 역행할 수 없어야 합니다.");
+        }
+
+        // 신청 → 승인 도 Enum 단위로 직접 고정한다 (교환 축과 대칭 — 서비스 경로 간접 증명에만 의존하지 않는다).
+        $this->assertTrue(ReturnStatusEnum::REQUESTED->canTransitionTo(ReturnStatusEnum::APPROVED));
+    }
+
     public function test_return_status_terminal_states_have_no_transitions(): void
     {
         foreach (ReturnStatusEnum::finalStatuses() as $terminal) {

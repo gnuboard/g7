@@ -30,6 +30,16 @@ class OrderRefundRepository implements OrderRefundRepositoryInterface
     /**
      * {@inheritDoc}
      */
+    public function findById(int $id, array $relations = []): ?OrderRefund
+    {
+        return $this->model->newQuery()
+            ->with($relations)
+            ->find($id);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function listPendingByOrderId(int $orderId, array $excludeIds = []): Collection
     {
         $finalValues = array_map(

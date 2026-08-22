@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderReturnOptionFactory;
+use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
 
 /**
@@ -40,6 +41,7 @@ class OrderReturnOption extends Model
         'option_status',
         'return_quantity',
         'original_quantity',
+        'original_option_status',
         'unit_price',
         'subtotal_amount',
         'completed_at',
@@ -57,6 +59,7 @@ class OrderReturnOption extends Model
             'option_status' => ReturnStatusEnum::class,
             'return_quantity' => 'integer',
             'original_quantity' => 'integer',
+            'original_option_status' => OrderStatusEnum::class,
             'unit_price' => 'decimal:2',
             'subtotal_amount' => 'decimal:2',
             'completed_at' => 'datetime',

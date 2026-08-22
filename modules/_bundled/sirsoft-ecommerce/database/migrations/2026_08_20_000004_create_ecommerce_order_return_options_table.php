@@ -28,6 +28,7 @@ return new class extends Migration
             $table->string('option_status', 30)->comment('상품 단위 반품 상태 (ReturnStatusEnum)');
             $table->unsignedInteger('return_quantity')->comment('반품 신청 수량');
             $table->unsignedInteger('original_quantity')->comment('신청 전 원래 수량 (감사용)');
+            $table->string('original_option_status', 30)->comment('신청 직전 원 주문옵션 상태 (반려·철회 시 상품옵션 단위 복귀 기준, OrderStatusEnum)');
             $table->decimal('unit_price', 12, 2)->comment('신청 시점 단가');
             $table->decimal('subtotal_amount', 12, 2)->comment('반품 소계 (return_quantity × unit_price)');
             $table->timestamp('completed_at')->nullable()->comment('상품 단위 완료 시각');

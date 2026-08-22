@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Enums\OrderOptionSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
+use Modules\Sirsoft\Ecommerce\Exceptions\OrderClaimException;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderProcessingException;
 use Modules\Sirsoft\Ecommerce\Exceptions\ResourceScopeMismatchException;
 use Modules\Sirsoft\Ecommerce\Models\Order;
@@ -31,6 +32,7 @@ class OrderOptionService
      * @param  OrderRepositoryInterface  $orderRepository  주문 Repository
      * @param  ProductReviewRepositoryInterface  $productReviewRepository  상품 리뷰 Repository
      * @param  MileageTransactionRepositoryInterface  $mileageTransactionRepository  마일리지 거래 Repository (병합 시 적립 거래 이전)
+     * @param  ClaimQuantityGuard  $claimQuantityGuard  클레임 수량 잠금 가드 (D15)
      */
     public function __construct(
         protected OrderOptionRepositoryInterface $orderOptionRepository,
@@ -40,6 +42,7 @@ class OrderOptionService
         protected StockService $stockService,
         protected EcommerceSettingsService $settingsService,
         protected MileageTransactionRepositoryInterface $mileageTransactionRepository,
+        protected ClaimQuantityGuard $claimQuantityGuard,
     ) {}
 
     /**
@@ -99,6 +102,11 @@ class OrderOptionService
      *                                      per-line 상태변경(직접 호출)은 true(기본) — 이 경로가 유일한 복원 주체.
      *                                      취소 모달(OrderCancellationService)은 false — 자체 restoreStock() 이
      *                                      복원을 전담하므로 여기서 복원하면 이중 복원이 된다.
+     * @param  bool  $mergeSiblings  전이 후 같은 상태의 형제 레코드와 병합할지 여부.
+     *                               일반 상태 변경은 true(기본) — 같은 상품옵션의 같은 상태 행을 합쳐 목록을 단순화한다.
+     *                               클레임(교환/반품) 코스 전이는 false — 병합은 피흡수 레코드를 삭제하는데
+     *                               클레임 신청 상품 행이 그 레코드를 FK(cascade)로 참조하므로 신청 이력이 함께 사라지고,
+     *                               합쳐진 행은 어느 신청서 몫인지 구분되지 않아 신청서 단위 복귀·완료가 불가능해진다.
      * @return array{original: OrderOption, split: ?OrderOption} 변경 결과
      */
     public function changeStatusWithQuantity(
@@ -106,7 +114,8 @@ class OrderOptionService
         OrderStatusEnum $newStatus,
         int $quantity,
         array $metadata = [],
-        bool $restoreStockOnCancel = true
+        bool $restoreStockOnCancel = true,
+        bool $mergeSiblings = true
     ): array {
         // 변경 전 훅
         HookManager::doAction('sirsoft-ecommerce.order_option.before_status_change', $option, $newStatus, $quantity);
@@ -142,7 +151,7 @@ class OrderOptionService
             true
         );
 
-        DB::transaction(function () use ($option, $newStatus, $quantity, $metadata, $isReactivation, $shouldRestoreOnCancel, &$result) {
+        DB::transaction(function () use ($option, $newStatus, $quantity, $metadata, $isReactivation, $shouldRestoreOnCancel, $mergeSiblings, &$result) {
             if ($quantity === $option->quantity) {
                 // 전체 수량 변경 → UPDATE만
                 $updateData = ['option_status' => $newStatus];
@@ -173,8 +182,10 @@ class OrderOptionService
                     $this->stockService->restoreOptionStockForOrderOption($option, $quantity);
                 }
 
-                // 병합 가능한 형제 레코드 검색 → 있으면 병합
-                $mergeCandidate = $this->orderOptionRepository->findMergeCandidate($option, $newStatus);
+                // 병합 가능한 형제 레코드 검색 → 있으면 병합 (클레임 코스 전이는 호출부가 끈다)
+                $mergeCandidate = $mergeSiblings
+                    ? $this->orderOptionRepository->findMergeCandidate($option, $newStatus)
+                    : null;
                 if ($mergeCandidate && $mergeCandidate->id !== $option->id) {
                     $this->mergeOptions($mergeCandidate, $option);
                     $result['merged_into'] = $mergeCandidate;
@@ -235,8 +246,10 @@ class OrderOptionService
                     $this->stockService->restoreOptionStockForOrderOption($splitOption, $quantity);
                 }
 
-                // 병합 가능한 형제 레코드 검색 → 있으면 병합
-                $mergeCandidate = $this->orderOptionRepository->findMergeCandidate($splitOption, $newStatus);
+                // 병합 가능한 형제 레코드 검색 → 있으면 병합 (클레임 코스 전이는 호출부가 끈다)
+                $mergeCandidate = $mergeSiblings
+                    ? $this->orderOptionRepository->findMergeCandidate($splitOption, $newStatus)
+                    : null;
                 if ($mergeCandidate && $mergeCandidate->id !== $splitOption->id) {
                     $this->mergeOptions($mergeCandidate, $splitOption);
                     $result['split'] = null;
@@ -311,6 +324,9 @@ class OrderOptionService
      * @return array 변경 결과
      *
      * @throws ResourceScopeMismatchException 옵션이 상위 주문에 속하지 않는 경우
+     * @throws OrderClaimException 대상 옵션이 교환·반품
+     *                             코스 상태이거나 목표 상태가 코스 상태인 경우 (D15 후단 —
+     *                             화면 검증을 거치지 않는 내부·훅 호출까지 막는 2차 방어)
      */
     public function bulkChangeStatusWithQuantity(
         array $items,
@@ -325,6 +341,18 @@ class OrderOptionService
         // 상위 주문 스코프 2차 방어 — FormRequest 를 우회한 내부/훅 호출도 차단.
         // 선택 파라미터로 두면 신규 호출처가 빠뜨렸을 때 방어가 조용히 꺼지므로 필수로 받는다.
         $this->assertOptionsBelongToOrder($optionIds, $orderId);
+
+        // 클레임 코스 상태 가드 (D15 후단) — 진행 중인 교환·반품의 상품은 주문화면에서 상태를
+        // 바꿀 수 없다. FormRequest 도 같은 판정으로 422 를 내지만, 위 스코프 방어와 같은 이유로
+        // FormRequest 를 우회하는 내부·훅 호출까지 막는다. 판정은 ClaimQuantityGuard 단일 출처다.
+        $this->claimQuantityGuard->assertNotInClaimCourse(
+            array_map(fn ($snapshot) => $snapshot['option_status'] ?? null, $snapshots)
+        );
+
+        // 목표 축 — 코스 상태는 클레임 서비스만 기록한다. FormRequest 의 adminAssignableValues 가
+        // 같은 축을 막지만, 그 목록을 거치지 않는 내부·훅 호출이 신청서 없는 코스 상태를 만들면
+        // 복귀·완료할 신청서가 없는 고아 행이 생긴다.
+        $this->claimQuantityGuard->assertNotClaimCourseTarget($newStatus);
 
         // 결제완료(payment_complete) 목표 전이 시 본인인증(IDV) 정책 가드 (A8 / N4).
         // 관리자 주문상세 "주문상태 변경"(옵션 일괄변경)이 결제완료로 부모 주문을 전이시키는,

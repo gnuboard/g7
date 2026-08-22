@@ -93,6 +93,28 @@ return [
     'invalid_exchange_rate' => '유효하지 않은 환율입니다: :currency',
     'unsupported_payment_currency' => ':currency 통화로는 결제할 수 없습니다. 환율 설정을 확인해 주세요.',
 
+    // 클레임(교환/반품) 라이프사이클 관련
+    'claim_items_required' => '신청할 상품을 선택해 주세요.',
+    'claim_not_found' => '해당 신청서를 찾을 수 없습니다.',
+    'claim_option_not_found' => '신청 대상 주문 상품을 찾을 수 없습니다.',
+    'claim_option_not_claimable' => '현재 상품 상태(:status)에서는 :type 을(를) 신청할 수 없습니다.',
+    'claim_quantity_invalid' => '신청 수량이 유효하지 않습니다.',
+    'claim_quantity_locked' => '이미 진행 중인 신청 건이 있어 :requested개를 신청할 수 없습니다. (신청 가능 수량: :available개)',
+    'claim_reason_unavailable' => '선택한 사유를 사용할 수 없습니다. 사유를 다시 선택해 주세요.',
+    'claim_charge_method_required' => '청구 금액이 있어 청구 방식을 선택해야 합니다.',
+    'claim_charge_method_not_allowed' => '선택한 청구 방식은 현재 사용할 수 없습니다.',
+    'claim_request_period_expired' => '신청 가능 기간(:days일)이 지나 신청할 수 없습니다.',
+    'claim_transition_not_allowed' => ':from 에서 :to 로는 상태를 변경할 수 없습니다.',
+    'claim_not_withdrawable' => '현재 상태에서는 신청을 철회할 수 없습니다.',
+    'claim_completion_flow_required' => '완료 처리는 완료 처리 화면에서만 진행할 수 있습니다.',
+    'claim_completion_items_invalid' => '완료 처리할 수 있는 신청 상품이 없습니다.',
+    'claim_refund_request_exists' => '이미 환불신청서(:number)가 접수된 신청 건입니다.',
+    'claim_amount_invalid' => '수정할 금액이 유효하지 않습니다.',
+    'claim_tracking_incomplete' => '택배사와 운송장 번호를 함께 입력해 주세요.',
+    'claim_option_in_course' => '교환·반품이 진행 중인 상품(:status)은 취소할 수 없습니다.',
+    'claim_option_in_course_status_change' => '교환·반품이 진행 중인 상품(:status)은 상태를 변경할 수 없습니다. 해당 신청 건을 먼저 처리하세요.',
+    'claim_course_status_not_assignable' => '교환·반품 진행 상태(:status)는 주문 화면에서 직접 지정할 수 없습니다. 교환·반품 신청을 통해서만 진입합니다.',
+
     // 클레임 사유 관련
     'claim_reason_not_found' => '클레임 사유를 찾을 수 없습니다.',
     'claim_reason_in_use' => '주문 취소에서 사용 중인 사유는 삭제할 수 없습니다. (사용 횟수: :count건)',

@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Services;
 
+use App\Extension\HookManager;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Exceptions\InsufficientStockException;
 use Modules\Sirsoft\Ecommerce\Models\Order;
@@ -26,8 +27,9 @@ class StockService
     /**
      * 주문 옵션들의 재고 검증
      *
-     * @param array $items [['product_option_id' => int, 'quantity' => int], ...]
+     * @param  array  $items  [['product_option_id' => int, 'quantity' => int], ...]
      * @return bool 재고 충분 여부
+     *
      * @throws InsufficientStockException 재고 부족 시
      */
     public function validateStock(array $items): bool
@@ -61,13 +63,14 @@ class StockService
     /**
      * 주문에 대한 재고 차감
      *
-     * @param Order $order 주문 모델 (options 관계 로드 필요)
+     * @param  Order  $order  주문 모델 (options 관계 로드 필요)
      * @return void
+     *
      * @throws InsufficientStockException 재고 부족 시
      */
     public function deductStock(Order $order): void
     {
-        \App\Extension\HookManager::doAction('sirsoft-ecommerce.stock.before_deduct', $order);
+        HookManager::doAction('sirsoft-ecommerce.stock.before_deduct', $order);
 
         DB::transaction(function () use ($order) {
             $productIds = [];
@@ -112,18 +115,18 @@ class StockService
             }
         });
 
-        \App\Extension\HookManager::doAction('sirsoft-ecommerce.stock.after_deduct', $order);
+        HookManager::doAction('sirsoft-ecommerce.stock.after_deduct', $order);
     }
 
     /**
      * 주문 취소/환불에 대한 재고 복원
      *
-     * @param Order $order 주문 모델 (options 관계 로드 필요)
+     * @param  Order  $order  주문 모델 (options 관계 로드 필요)
      * @return void
      */
     public function restoreStock(Order $order): void
     {
-        \App\Extension\HookManager::doAction('sirsoft-ecommerce.stock.before_restore', $order);
+        HookManager::doAction('sirsoft-ecommerce.stock.before_restore', $order);
 
         DB::transaction(function () use ($order) {
             $productIds = [];
@@ -154,15 +157,16 @@ class StockService
             }
         });
 
-        \App\Extension\HookManager::doAction('sirsoft-ecommerce.stock.after_restore', $order);
+        HookManager::doAction('sirsoft-ecommerce.stock.after_restore', $order);
     }
 
     /**
      * 단일 옵션 재고 차감
      *
-     * @param int $productOptionId 상품 옵션 ID
-     * @param int $quantity 차감 수량
+     * @param  int  $productOptionId  상품 옵션 ID
+     * @param  int  $quantity  차감 수량
      * @return bool 성공 여부
+     *
      * @throws InsufficientStockException 재고 부족 시
      */
     public function deductOptionStock(int $productOptionId, int $quantity): bool
@@ -199,8 +203,8 @@ class StockService
     /**
      * 단일 옵션 재고 복원
      *
-     * @param int $productOptionId 상품 옵션 ID
-     * @param int $quantity 복원 수량
+     * @param  int  $productOptionId  상품 옵션 ID
+     * @param  int  $quantity  복원 수량
      * @return bool 성공 여부
      */
     public function restoreOptionStock(int $productOptionId, int $quantity): bool
@@ -219,6 +223,11 @@ class StockService
 
     /**
      * 주문 취소 시 단일 옵션 재고 복원 + is_stock_deducted 플래그 정리
+     *
+     * **취소 전용이다.** 클레임(교환·반품) 완료의 재고 복원은 형제 `restoreOptionStockForClaim()` 이
+     * 담당한다 — 아래 CANCELLED 형제 행 플래그 정리를 클레임 완료가 함께 수행하면, 재고를 복원하지
+     * 않고 취소된 행까지 "복원됨" 으로 바뀌어 그 취소를 되살릴 때 재고가 이중 차감된다. 이 정리의
+     * 대상 범위를 넓히기 전에 그 메서드의 docblock 을 먼저 읽을 것.
      *
      * 재고 리스너(StockRestoreListener)를 제거하고 Service 단일 경로로 복원을 일원화하면서,
      * 복원 후 플래그 리셋 주체가 사라지므로 Service 경로가 직접 플래그를 정리한다.
@@ -244,6 +253,42 @@ class StockService
             $this->orderOptionRepository->clearStockDeductedForCancelledOptions(
                 $orderOption->order_id,
                 $orderOption->product_option_id
+            );
+
+            $option = $this->optionRepository->findById($orderOption->product_option_id);
+            if ($option) {
+                $this->productRepository->syncStockFromOptions($option->product_id);
+            }
+
+            return $result;
+        });
+    }
+
+    /**
+     * 클레임(교환·반품) 완료 시 단일 옵션 재고 복원
+     *
+     * 형제 메서드 `restoreOptionStockForOrderOption()` 과 나뉘는 지점은 **CANCELLED 형제
+     * 행의 플래그 정리 여부** 하나다. 그쪽은 취소 전용이라 같은 상품옵션의 CANCELLED 행을
+     * 전부 `is_stock_deducted=false` 로 내리는데, 그 정리는 "이번에 복원된 재고를 담는 행"
+     * 을 겨냥한 것이다.
+     *
+     * 클레임 완료가 그 정리를 함께 수행하면 **재고를 복원하지 않고 취소된 행**(`재고 복구
+     * 안 함` 선택)의 플래그까지 내려간다. 그 행은 여전히 재고를 점유하고 있으므로,
+     * 이후 그 취소를 되살리면 `redeductForReactivation()` 이 복원된 적 없는 재고를 다시
+     * 차감해 재고가 실제보다 줄어든다 — 예외도 로그도 남지 않는다.
+     *
+     * 클레임 몫 행의 플래그는 호출부(클레임 서비스)가 자기 행에만 직접 내린다.
+     *
+     * @param  OrderOption  $orderOption  복원 대상 주문 옵션 (코스 상태로 전이된 행)
+     * @param  int  $quantity  복원 수량
+     * @return bool 복원 성공 여부
+     */
+    public function restoreOptionStockForClaim(OrderOption $orderOption, int $quantity): bool
+    {
+        return DB::transaction(function () use ($orderOption, $quantity) {
+            $result = $this->optionRepository->incrementStock(
+                $orderOption->product_option_id,
+                $quantity
             );
 
             $option = $this->optionRepository->findById($orderOption->product_option_id);

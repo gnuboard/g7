@@ -6,6 +6,8 @@ use App\Extension\HookManager;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\DTO\AdjustmentResult;
+use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundOptionStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderCancellationException;
 use Modules\Sirsoft\Ecommerce\Models\Order;
@@ -118,6 +120,82 @@ class RefundExecutionService
         }
 
         $payment->update($this->buildCancelledAmountUpdates($payment, $result));
+    }
+
+    /**
+     * 환불 수단을 결정합니다.
+     *
+     * 확장 결제수단(간편결제 등)도 카탈로그 선언을 통해 올바른 환불수단으로 해석된다.
+     * enum match 로 두면 확장 ID 가 default → BANK 로 떨어져 카드 취소가 누락된다(#475).
+     * 취소와 클레임이 같은 규칙으로 환불 수단을 정하도록 이 서비스가 SSoT 다.
+     *
+     * @param  Order  $order  주문
+     * @return RefundMethodEnum 환불 수단
+     */
+    public function determineRefundMethod(Order $order): RefundMethodEnum
+    {
+        if (! $order->payment) {
+            return RefundMethodEnum::BANK;
+        }
+
+        return $order->payment->refundMethod();
+    }
+
+    /**
+     * 환불 상세(옵션별) 레코드의 필드 배열을 만듭니다.
+     *
+     * 취소 발 환불과 클레임 발 환불이 같은 안분 규칙(원 옵션 할인 비율 기반 차감)을 쓰도록
+     * 계산을 한 곳에 둔다. 반환값에는 order_refund_id 가 없다 — 그 값은 환불 레코드를 만든
+     * 호출부가 채운다.
+     *
+     * @param  Order  $order  주문
+     * @param  array  $items  대상 아이템 [{order_option_id, cancel_quantity}]
+     * @param  AdjustmentResult  $result  계산 결과
+     * @return array<int, array<string, mixed>> 환불 옵션 행 배열
+     */
+    public function buildRefundOptionRows(Order $order, array $items, AdjustmentResult $result): array
+    {
+        $order->loadMissing('options');
+
+        $rows = [];
+
+        foreach ($items as $item) {
+            $option = $order->options->find($item['order_option_id']);
+
+            if (! $option) {
+                continue;
+            }
+
+            // adjustedItems 에서 해당 옵션의 취소 금액 조회
+            $adjustedItem = collect($result->adjustedItems)
+                ->firstWhere('order_option_id', $item['order_option_id']);
+
+            $quantity = (int) $item['cancel_quantity'];
+            $subtotalAmount = (float) $option->unit_price * $quantity;
+            $cancelAmount = $adjustedItem['cancel_amount'] ?? $subtotalAmount;
+
+            // 할인 차감분 계산 (원래 옵션 할인 비율 기반)
+            $discountAmount = 0;
+            if ($option->subtotal_price > 0) {
+                $discountRatio = (float) $option->subtotal_discount_amount / (float) $option->subtotal_price;
+                $discountAmount = round($subtotalAmount * $discountRatio, 2);
+            }
+
+            $refundAmount = $cancelAmount - $discountAmount;
+
+            $rows[] = [
+                'order_id' => $order->id,
+                'order_option_id' => $option->id,
+                'option_status' => RefundOptionStatusEnum::REQUESTED,
+                'quantity' => $quantity,
+                'unit_price' => (float) $option->unit_price,
+                'subtotal_amount' => $subtotalAmount,
+                'discount_amount' => $discountAmount,
+                'refund_amount' => max(0, $refundAmount),
+            ];
+        }
+
+        return $rows;
     }
 
     /**
