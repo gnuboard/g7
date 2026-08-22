@@ -4,11 +4,9 @@ namespace App\Models;
 
 use App\Enums\DeactivationReason;
 use App\Enums\ExtensionStatus;
-use App\Support\LocalizedValue;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
@@ -67,8 +65,6 @@ class Template extends Model
 
     /**
      * 현재 로케일의 템플릿 이름 반환
-     *
-     * @return Attribute 현재 로케일 이름 접근자
      */
     protected function localizedName(): Attribute
     {
@@ -79,8 +75,6 @@ class Template extends Model
 
     /**
      * 현재 로케일의 템플릿 설명 반환
-     *
-     * @return Attribute 현재 로케일 설명 접근자
      */
     protected function localizedDescription(): Attribute
     {
@@ -92,8 +86,7 @@ class Template extends Model
     /**
      * 지정된 로케일의 템플릿 이름 반환
      *
-     * @param  string|null  $locale  로케일 (null이면 현재 로케일 사용)
-     * @return string 로케일의 템플릿 이름
+     * @param string|null $locale 로케일 (null이면 현재 로케일 사용)
      */
     public function getLocalizedName(?string $locale = null): string
     {
@@ -103,15 +96,17 @@ class Template extends Model
             return (string) $this->name;
         }
 
-        // 요청 언어 → 사이트 기본 언어 → 영어 → 첫 값 (#148)
-        return LocalizedValue::pick($this->name, $locale) ?? '';
+        // 요청 언어 → fallback 언어 → 첫 번째 값 → 빈 문자열
+        return $this->name[$locale]
+            ?? $this->name[config('app.fallback_locale')]
+            ?? (! empty($this->name) ? array_values($this->name)[0] : '')
+            ?? '';
     }
 
     /**
      * 지정된 로케일의 템플릿 설명 반환
      *
-     * @param  string|null  $locale  로케일 (null이면 현재 로케일 사용)
-     * @return string 로케일의 템플릿 설명
+     * @param string|null $locale 로케일 (null이면 현재 로케일 사용)
      */
     public function getLocalizedDescription(?string $locale = null): string
     {
@@ -121,14 +116,15 @@ class Template extends Model
             return (string) $this->description;
         }
 
-        // 요청 언어 → 사이트 기본 언어 → 영어 → 첫 값 (#148)
-        return LocalizedValue::pick($this->description, $locale) ?? '';
+        // 요청 언어 → fallback 언어 → 첫 번째 값 → 빈 문자열
+        return $this->description[$locale]
+            ?? $this->description[config('app.fallback_locale')]
+            ?? (! empty($this->description) ? array_values($this->description)[0] : '')
+            ?? '';
     }
 
     /**
      * Get the layouts for the template.
-     *
-     * @return HasMany 템플릿 레이아웃 관계
      */
     public function layouts(): HasMany
     {
@@ -153,14 +149,12 @@ class Template extends Model
     public function isInstalled(): bool
     {
         return in_array($this->status, [
-            ExtensionStatus::Active->value, ExtensionStatus::Inactive->value,
+            ExtensionStatus::Active->value, ExtensionStatus::Inactive->value
         ]);
     }
 
     /**
      * 템플릿을 생성한 사용자와의 관계를 정의합니다.
-     *
-     * @return BelongsTo 생성자 관계
      */
     public function creator()
     {
@@ -169,8 +163,6 @@ class Template extends Model
 
     /**
      * 템플릿을 마지막으로 수정한 사용자와의 관계를 정의합니다.
-     *
-     * @return BelongsTo 최종 수정자 관계
      */
     public function updater()
     {

@@ -56,8 +56,6 @@ export const DropdownButton: React.FC<DropdownButtonProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const triggerRef = useRef<HTMLButtonElement>(null);
-  /** 메뉴를 띄운 때의 트리거 위치 — 스크롤로 트리거가 실제로 움직였는지 가르는 기준 */
-  const anchorRectRef = useRef<{ top: number; left: number } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // 메뉴 위치 계산
@@ -65,7 +63,6 @@ export const DropdownButton: React.FC<DropdownButtonProps> = ({
     if (!triggerRef.current) return;
 
     const rect = triggerRef.current.getBoundingClientRect();
-    anchorRectRef.current = { top: rect.top, left: rect.left };
     const menuWidth = 224; // w-56 = 14rem = 224px
 
     let left = position === 'right' ? rect.right - menuWidth : rect.left;
@@ -91,29 +88,20 @@ export const DropdownButton: React.FC<DropdownButtonProps> = ({
     }
   }, [isOpen, updateMenuPosition]);
 
-  // 스크롤/리사이즈 시 메뉴 닫기 — 스크롤은 트리거가 실제로 움직였을 때만(ActionMenu 와 같은 규칙, #757).
-  // 단추를 보이게 한 스크롤의 scroll 이벤트는 메뉴를 연 뒤에 늦게 와 첫 클릭에 곧바로 닫히게 했다.
+  // 스크롤/리사이즈 시 메뉴 닫기
   useEffect(() => {
     if (!isOpen) return;
 
-    const handleScroll = () => {
-      const anchor = anchorRectRef.current;
-      const rect = triggerRef.current?.getBoundingClientRect();
-      if (anchor && rect && Math.abs(rect.top - anchor.top) < 1 && Math.abs(rect.left - anchor.left) < 1) {
-        return;
-      }
-      setIsOpen(false);
-    };
-    const handleResize = () => {
+    const handleScrollOrResize = () => {
       setIsOpen(false);
     };
 
-    window.addEventListener('scroll', handleScroll, true);
-    window.addEventListener('resize', handleResize);
+    window.addEventListener('scroll', handleScrollOrResize, true);
+    window.addEventListener('resize', handleScrollOrResize);
 
     return () => {
-      window.removeEventListener('scroll', handleScroll, true);
-      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('scroll', handleScrollOrResize, true);
+      window.removeEventListener('resize', handleScrollOrResize);
     };
   }, [isOpen]);
 

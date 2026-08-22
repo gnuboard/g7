@@ -9,11 +9,6 @@ export interface ToggleProps {
     disabled?: boolean;
     /** 라벨 텍스트 */
     label?: string;
-    /**
-     * 보이는 라벨 없이 스위치에만 붙일 접근 가능한 이름(aria-label).
-     * 표의 열 머리글·옆 문구처럼 라벨이 스위치 밖에 있을 때 쓴다. 없으면 `label` → 곁 제목(aria-labelledby) → `name` 순으로 쓴다.
-     */
-    ariaLabel?: string;
     /** 설명 텍스트 */
     description?: string;
     /** 토글 크기 */
@@ -30,15 +25,6 @@ export interface ToggleProps {
     id?: string;
     /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
     editorAttrs?: EditorAttrs;
-    /**
-     * 바뀐 값이 확정되기를 기다리는지 — true 면 눌러도 스위치가 스스로 바뀌지 않고 `onChange` 로 다음 값만 알린다.
-     * 스위치는 바깥이 `checked` 를 바꿔 줄 때만 바뀐다(서버 작업이 끝난 뒤 목록 값으로). 기본 false(누르면 바로 바뀜).
-     */
-    awaitConfirmation?: boolean;
-    /**
-     * 바깥 작업이 진행 중인지 — true 면 잠그고(누를 수 없음, 금지 커서·흐린 트랙) 손잡이 자리에 스피너를 보인다(`aria-busy`).
-     */
-    pending?: boolean;
 }
 /**
  * Toggle 스위치 컴포넌트

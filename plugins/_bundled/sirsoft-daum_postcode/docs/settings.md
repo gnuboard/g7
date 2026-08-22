@@ -7,13 +7,12 @@
 <!-- @generated:settings-schema START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 키 | 타입 | 기본값 | 설명 |
 |---|---|---|---|
-| `display_mode_pc` | `enum` | `layer` | PC 표시 방식 |
-| `display_mode_mobile` | `enum` | `inline` | 모바일 표시 방식 |
-| `popup_width` | `integer` | `500` | PC 레이어·팝업 너비 (px) |
-| `popup_height` | `integer` | `600` | PC 레이어·팝업 높이 (px) |
+| `display_mode` | `enum` | `layer` | 표시 방식 |
+| `popup_width` | `integer` | `500` | 팝업 너비 (px) |
+| `popup_height` | `integer` | `600` | 팝업 높이 (px) |
 | `theme_color` | `string` | `#1D4ED8` | 테마 색상 |
 
-기본값 파일: `config/settings/defaults.json` · 설정 화면 레이아웃: `resources/layouts/admin/plugin_settings.g7.html`
+기본값 파일: `config/settings/defaults.json` · 설정 화면 레이아웃: `resources/layouts/admin/plugin_settings.json`
 <!-- @generated:settings-schema END -->
 
 <!-- @intent START -->
@@ -22,21 +21,16 @@
 
 | 키 | 기본값 | 왜 그 기본값인가 |
 |---|---|---|
-| `display_mode_pc` | `layer` | PC(클릭 시점 화면 폭 1024px 이상)의 방식 — `popup`·`layer`·`inline`. 팝업은 브라우저·확장 프로그램에 차단될 수 있고, 차단되면 사용자에게는 "버튼을 눌러도 아무 일이 없는" 것으로 보입니다. 레이어는 그 위험이 없습니다 |
-| `display_mode_mobile` | `inline` | 휴대폰·태블릿(엔진 반응형 `portable`, 1023px 이하)의 방식 — `inline`·`fullscreen`. 위에 겹치는 레이어는 좁은 화면에서 잘리기 쉬워 모바일 선택지에서 뺐고, 카카오 가이드가 모바일에 권하는 끼워 넣기를 기본으로 둡니다 |
-| `popup_width` · `popup_height` | 500 × 600 | PC 의 레이어·팝업 크기입니다(레이어는 화면보다 크면 화면에 맞춰 줄고, 펼치기 모드는 첫 높이로만 쓴 뒤 검색 결과 높이를 따릅니다). 스키마의 `min` 100 · `max` 2000 을 코어 설정 저장 검증이 규칙으로 쓰고(범위 밖 422), 설정 화면 입력칸도 같은 값을 갖습니다 |
+| `display_mode` | `layer` | 팝업은 브라우저·확장 프로그램에 차단될 수 있고, 차단되면 사용자에게는 "버튼을 눌러도 아무 일이 없는" 것으로 보입니다. 레이어는 그 위험이 없습니다 |
+| `popup_width` · `popup_height` | 500 × 600 | 팝업 모드에서만 쓰입니다 |
 | `theme_color` | `#1D4ED8` | 검색 창의 강조 색 |
-
-저장 검증 오류 문구의 항목 이름은 `RegisterSettingsAttributeLabelsListener` 가 `core.plugin_settings.update_validation_rules`
-필터에서 요청 언어로 등록합니다(`messages.settings.{필드}_attribute`). 스키마 `label` 은 ko/en 만 들고 있어, 등록하지 않으면
-일본어 화면의 오류에 한국어 항목 이름이 섞입니다. 설정 항목을 더하면 이 번역 키도 ko/en lang 과 언어팩에 함께 둡니다.
 
 `getConfigValues()` 가 같은 값을 한 번 더 선언합니다 — 스키마의 `default` 는 설정 화면의
 초기값이고, 이쪽은 설정이 아직 저장되지 않은 상태에서 코드가 읽는 폴백입니다. **두 곳이
 어긋나면** 설정을 한 번도 저장하지 않은 사이트와 저장한 사이트의 동작이 달라지므로 함께
 고칩니다.
 
-설정 화면은 `resources/layouts/admin/plugin_settings.g7.html` 이 그립니다 — 코어가 플러그인
+설정 화면은 `resources/layouts/admin/plugin_settings.json` 이 그립니다 — 코어가 플러그인
 디렉토리의 이 고정 경로를 찾으므로 파일 이름을 바꾸면 설정 화면 자체가 사라집니다.
 <!-- @intent END -->
 
@@ -63,7 +57,7 @@ _등록하는 메뉴가 없습니다._
 등록하지 않습니다. 자체 관리 화면이 없기 때문입니다.
 
 설정은 코어의 플러그인 목록에서 이 플러그인의 설정으로 들어가는 공통 경로를 씁니다 — 코어가
-`resources/layouts/admin/plugin_settings.g7.html` 을 찾아 그리므로 자체 메뉴가 필요 없습니다.
+`resources/layouts/admin/plugin_settings.json` 을 찾아 그리므로 자체 메뉴가 필요 없습니다.
 <!-- @intent END -->
 
 ## 라우트
@@ -91,13 +85,9 @@ _라우트 파일이 없습니다._
 
 **이 확장에 의존하는 확장** (이 확장을 비활성화하면 함께 영향을 받습니다)
 
-없음.
-
-**이 확장과 연동하는 확장** (이 확장이 있으면 기능을 더합니다 — 이 확장의 화면·훅 이름을 바꿀 때 함께 확인)
-
 | 확장 | 유형 | 요구 버전 |
 |---|---|---|
-| `sirsoft-basic` | 템플릿 | `>=1.2.0` |
+| `sirsoft-basic` | 템플릿 | `>=1.0.0` |
 <!-- @generated:dependencies END -->
 
 <!-- @intent START -->

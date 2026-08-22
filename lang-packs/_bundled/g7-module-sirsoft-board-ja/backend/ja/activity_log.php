@@ -2,7 +2,6 @@
 
 return [
     'action' => [
-        'reorder' => '並び順変更',
         'add_to_menu' => 'メニュー追加',
         'blind' => 'ブラインド',
         'blind_content' => 'コンテンツブラインド',
@@ -19,12 +18,6 @@ return [
         'update' => '編集',
         'update_status' => 'ステータス変更',
         'upload' => 'アップロード',
-        'scrap' => 'スクラップ',
-        'unscrap' => 'スクラップ解除',
-        'add' => 'リアクション登録',
-        'change' => 'リアクション変更',
-        'remove' => 'リアクション取消',
-        'cancel' => 'キャンセル',
     ],
     'description' => [
         'board_index' => '掲示板一覧閲覧',
@@ -35,7 +28,6 @@ return [
         'board_copy' => '掲示板コピー(:board_name)',
         'board_add_to_menu' => '掲示板メニュー追加(:board_name)',
         'board_remove_from_menu' => '掲示板メニュー削除(:board_name)',
-        'board_reorder' => '掲示板の並び順を変更(:count件)',
         'board_type_index' => '掲示板タイプ一覧閲覧',
         'board_type_create' => '掲示板タイプ作成(:type_name)',
         'board_type_update' => '掲示板タイプ編集(:type_name)',
@@ -65,15 +57,6 @@ return [
         'board_settings_bulk_apply' => '掲示板設定一括適用',
         'board_settings_bulk_apply_aborted' => '掲示板設定一括適用中止(全体ロールバック、失敗掲示板::failed_board_name、:failed_at/:total)',
         'board_type_show' => '掲示板タイプ詳細閲覧 (:type_name)',
-        'scrap_add' => '投稿のスクラップ (ID: :post_id)',
-        'scrap_remove' => '投稿のスクラップ解除 (ID: :post_id)',
-        'reaction_add' => 'リアクション登録 (掲示板: :board_name, タイトル: :title, タイプ: :reaction_type)',
-        'reaction_change' => 'リアクション変更 (掲示板: :board_name, タイトル: :title, タイプ: :reaction_type)',
-        'reaction_remove' => 'リアクション取消 (掲示板: :board_name, タイトル: :title)',
-        'report_cancel' => '通報キャンセル (ID: :report_id)',
-        'comment_reaction_add' => 'コメント反応登録 (掲示板: :board_name, 投稿 ID: :post_id, コメント ID: :comment_id, タイプ: :reaction_type)',
-        'comment_reaction_change' => 'コメント反応変更 (掲示板: :board_name, 投稿 ID: :post_id, コメント ID: :comment_id, タイプ: :reaction_type)',
-        'comment_reaction_remove' => 'コメント反応キャンセル (掲示板: :board_name, 投稿 ID: :post_id, コメント ID: :comment_id)',
     ],
     'fields' => [
         'name' => '掲示板名',
@@ -89,7 +72,6 @@ return [
         'use_reply' => '返信使用',
         'max_reply_depth' => '最大返信深度',
         'reply_delete_policy' => '返信の削除方式',
-        'secret_reply_visibility' => '非公開返信の閲覧範囲',
         'use_report' => '通報使用',
         'use_file_upload' => 'ファイルアップロード使用',
         'max_file_size' => '最大ファイルサイズ',
@@ -102,7 +84,5 @@ return [
         'is_secret' => '非公開投稿',
         'status' => 'ステータス',
         'content' => '内容',
-        'use_scrap' => 'スクラップ使用',
-        'use_comment_reaction' => 'コメント反応使用',
     ],
 ];

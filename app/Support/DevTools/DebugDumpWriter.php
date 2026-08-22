@@ -188,7 +188,6 @@ class DebugDumpWriter
      */
     public static function handleLegacy(Request $request, string $debugDir): JsonResponse
     {
-        // audit:allow datetime-display-user-timezone reason: 저장 경로(디렉터리 날짜) — 기계값
         $timestamp = now()->format('Ymd_His');
         $saveHistory = $request->boolean('saveHistory');
 
@@ -277,11 +276,9 @@ class DebugDumpWriter
     private static function formatTimestamp(mixed $timestamp): string
     {
         if (! is_numeric($timestamp)) {
-            // audit:allow datetime-display-user-timezone reason: 저장 경로(디렉터리 날짜) — 기계값
             return now()->format('Ymd_His');
         }
 
-        // audit:allow datetime-display-user-timezone reason: 저장 경로(디렉터리 날짜) — 기계값
         return date('Ymd_His', (int) ($timestamp / 1000));
     }
 }

@@ -127,7 +127,7 @@ public function isAdmin(): bool
     [
         'identifier' => 'core.users',
         'category' => 'users',
-        'order' => 100,                             // ← 정수. 코어 카테고리는 100 단위
+        'order' => 1,
         'type' => 'admin',                          // ← 카테고리 타입 명시
         'permissions' => [
             ['identifier' => 'core.users.read', 'type' => 'admin', ...],   // ← 권한 타입 명시
@@ -137,7 +137,7 @@ public function isAdmin(): bool
     [
         'identifier' => 'core.user-notifications',
         'category' => 'user-notifications',
-        'order' => 760,
+        'order' => 7.6,
         'type' => 'user',                           // ← 사용자 컨텍스트 카테고리
         'permissions' => [
             ['identifier' => 'core.user-notifications.read', 'type' => 'user', ...],
@@ -148,7 +148,6 @@ public function isAdmin(): bool
 
 ```text
 ✅ 필수: 신규 코어 권한 정의 시 카테고리/개별 권한 모두에 `type` 명시 (가독성 + 의도 명확화)
-✅ 필수: `order` 는 정수 — 권한 행의 정렬 칸이 정수라 `7.65` 같은 소수는 반올림되어 이웃과 같은 순위가 됩니다. 코어 카테고리는 100 단위(100, 200, … 760)로 두어 사이에 새 카테고리를 끼울 자리를 남깁니다
 ✅ 카테고리 type은 (1) 명시 필드 (2) 하위 권한이 모두 동일 type일 때 추론 (3) admin 기본값 우선순위로 결정됨
 ✅ 권한 type 미지정 시 카테고리 type을 상속
 ```
@@ -495,18 +494,11 @@ G7은 기능 레벨 권한 외에 **리소스 레벨 권한**을 지원합니다
 
 레이아웃 JSON에서 `abilities.can_*` 키로 접근합니다:
 
-```html
-<button data-if="{{item.abilities.can_update}}">수정</button>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
     "if": "{{item.abilities.can_update}}",
-    "type": "basic",
-    "name": "Button",
-    "text": "수정"
+    "type": "Button",
+    "props": { "text": "수정" }
 }
 ```
 
@@ -609,10 +601,6 @@ enum ScopeType: string
 | `'self'` | 본인 리소스만 | `WHERE {owner_key} = {user_id}` | `$model->{owner_key} === $user->id` |
 | `'role'` | 내 역할 범위 | `WHERE {owner_key} IN (내 역할 공유 사용자)` | 소유자가 내 역할 공유하는지 체크 |
 
-> **소유역할(`'role'`)의 실제 범위**: 「작성자와 역할을 하나라도 공유」 이다. 모든 회원은 기본 `user` 역할을 가지므로,
-> 판정하는 쪽도 `user` 역할을 가진 일반적인 경우 소유역할은 사실상 **「회원이 소유한 것 전체(비회원 것 제외)」** 가
-> 된다. 소유자가 없는 리소스(비회원이 쓴 글처럼 `owner_key` 값이 null)는 `'self'`·`'role'` 모두에서 닫힌다.
-
 ### union 정책 (복수 역할 보유 시)
 
 - **우선순위**: `null`(전체) > `'role'`(소유역할) > `'self'`(본인)
@@ -639,68 +627,6 @@ permission:admin,core.users.read  ← 옵션 없음
    h. scope='role' → 소유자가 내 역할 공유하는지 체크
 ```
 
-> **d 단계 주의**: 라우트가 `resource_route_key` 이름의 파라미터를 Model 로 바인딩할 때만 상세 스코프 검사가 돈다.
-> `{slug}`·`{id}`·`{postId}` 처럼 바인딩하지 않는 라우트, 파라미터가 없는 정적 일괄 라우트(`bulk-*`)는 스코프 메타가
-> 있어도 **조용히 건너뛴다**. 그런 경로는 서비스·저장소가 대상을 찾은 뒤 다시 판정하고, 그 위치를 아래
-> 「강제 지점 원장」 에 등록한다. 비회원은 스코프를 가질 수 없으므로 스코프 검사를 받지 않는다(「비회원 역할과 스코프」).
-
-### 강제 지점 원장 (7.1.1)
-
-스코프가 라우트 바인딩 밖에서 강제되는 권한은 그 위치를 **강제 지점 원장**에 등록한다. 원장은 런타임 동작을 바꾸지
-않는다 — 테스트 감사가 「스코프 메타가 있는 권한을 거는데 모델 바인딩도 원장 등록도 없는 라우트」 와 「원장에
-적혔지만 사라졌거나 스코프를 판정하지 않는 메서드」 를 찾아낸다.
-
-| 모드 | 상수 | 의미 |
-|---|---|---|
-| 라우트 바인딩 | `ScopedPermissionEnforcement::MODE_ROUTE` | 미들웨어가 자동 판정 (보통 원장 등록 불필요) |
-| 서비스 재적용 | `ScopedPermissionEnforcement::MODE_SERVICE` | 서비스·게이트가 대상을 조회한 뒤 `checkScopeAccess`·`filterByScope` 등으로 판정 |
-| 쿼리 스코프 | `ScopedPermissionEnforcement::MODE_QUERY` | 저장소 쿼리가 `applyPermissionScope` 등으로 조건을 건다 |
-
-항목 형식 — 키는 권한 식별자(`{slug}` 같은 자리표시자 = 점 없는 한 구간, `*` = 아무 문자열):
-
-```php
-'vendor-module.{slug}.posts.read' => [
-    'mode' => ScopedPermissionEnforcement::MODE_SERVICE,
-    'routes' => ['api.modules.vendor-module.posts.reports.*'],   // 모델을 바인딩하지 않는 라우트 이름 패턴
-    'paths' => ['Modules\Vendor\Module\Services\ReportService::create'], // 실제로 판정하는 메서드
-],
-```
-
-확장은 `core.permission.scope_enforcement_ledger` 필터 훅을 구독해 자기 항목을 병합한다.
-
-```php
-public static function getSubscribedHooks(): array
-{
-    return [
-        'core.permission.scope_enforcement_ledger' => [
-            'method' => 'addLedgerEntries',
-            'priority' => 10,
-            'type' => 'filter',
-        ],
-    ];
-}
-
-public function addLedgerEntries(array $ledger): array
-{
-    return array_merge($ledger, self::LEDGER);
-}
-```
-
-확장 테스트에서 감사를 돌린다(`$prefix` 는 **권한 식별자 접두사**, 자리표시자 값은 메타 조회용):
-
-```php
-$violations = ScopedPermissionEnforcement::auditRoutes(Route::getRoutes(), 'vendor-module.', ['slug' => [$board->slug]]);
-$this->assertSame([], $violations);
-$this->assertSame([], ScopedPermissionEnforcement::auditEnforcers('vendor-module.'));
-```
-
-범위로 좁힐 소유 대상이 없는 라우트(예: manifest 선언만 돌려주는 목록, 다른 회원이 쓰는 값인지 알려 줘야 하는 존재 확인)는
-선택 키 `'exempt' => ['라우트 이름 패턴' => '사유']` 에 사유와 함께 적는다. 라우트 감사는 면제 라우트를 통과시키고, 사유가
-비어 있으면 강제 메서드 감사가 위반(`exempt_without_reason`)으로 본다.
-
-메서드 본문에 `checkScopeAccess`·`applyPermissionScope`·`filterByScope` 같은 판정 흔적이 있거나, 원장에 적힌 다른
-메서드를 부르면(위임) 판정하는 것으로 본다. 확장 고유 가드 이름은 `auditEnforcers($prefix, ['MyScopeGuard'])` 로 더한다.
-
 ### 목록 엔드포인트 필터링 (Repository 패턴)
 
 ```php
@@ -708,48 +634,6 @@ $this->assertSame([], ScopedPermissionEnforcement::auditEnforcers('vendor-module
 $query = User::query();
 PermissionHelper::applyPermissionScope($query, 'core.users.read');
 // ... 기존 필터/정렬/페이지네이션
-```
-
-**같은 권한으로 열리는 조회 경로는 전부 같은 스코프를 건다.** 목록에만 걸고 최근 항목·통계·검색
-(한 건 조회 포함)·대시보드 카드 같은 보조 경로에 빠뜨리면, 본인 것만 보도록 제한된 역할이 그
-경로로 전체 데이터를 받는다. 한 저장소 안에서는 스코프를 건 기본 쿼리를 만드는 메서드 하나를 두고
-모든 조회 메서드가 그것에서 출발하게 하면 경로마다 다시 거는 누락을 막을 수 있다. 쿼리 조건을 걸
-수 없는 한 건 조회(uuid·id 로 집는 검색 등)는 찾은 뒤 `checkScopeAccess()` 로 판정하고, 범위 밖이면
-「없음」으로 답한다. 사용자와 무관하게 캐시하는 사이트 전체 집계만 스코프를 끄고 센다 — 스코프를
-건 숫자가 공용 캐시에 앉으면 다른 방문자에게 그 사람 기준 숫자가 나간다.
-
-### 쿼리 스코프가 정본인 권한
-
-소유 컬럼이 둘 이상이라 단일 `owner_key` 로 표현할 수 없는 권한(예: 발신자·수신자가 모두 당사자인
-`core.notification-logs.read`)은 `resource_route_key`/`owner_key` 를 두지 않고, 그 권한으로 열리는
-**모든** 조회 경로의 Repository 가 직접 self·role 조건을 건다. 이런 권한은 라우트 미들웨어의 상세
-스코프 검사를 받지 못하므로 쿼리 스코프가 유일한 강제 수단이다.
-
-확장이 이런 권한을 추가하면 `core.permission.query_scoped_permissions` 필터 훅으로 식별자를 등록한다
-(7.1.1 부터는 강제 지점 원장에 `MODE_QUERY` 항목으로 적으면 이 목록에도 자동으로 합쳐진다 — 기존 훅은 그대로 동작).
-권한 시드와 코어 업데이트는 스코프(self·role)가 붙었는데 `resource_route_key`+`owner_key` 도 없고 이
-목록에도 없는 역할-권한 부여를 찾아 경고로 남긴다 — 그런 부여는 설정 화면에 「본인만」으로 보여도
-실제로는 아무것도 좁히지 않는다.
-
-```php
-// 확장의 훅 리스너 — 쿼리 스코프가 정본인 권한 등록
-public static function getSubscribedHooks(): array
-{
-    return [
-        'core.permission.query_scoped_permissions' => [
-            'method' => 'registerQueryScopedPermissions',
-            'priority' => 10,
-            'type' => 'filter',
-        ],
-    ];
-}
-
-public function registerQueryScopedPermissions(array $identifiers): array
-{
-    $identifiers[] = 'vendor-module.messages.read'; // 발신자·수신자 두 소유 컬럼
-
-    return $identifiers;
-}
 ```
 
 ### 소유자 식별 전체 매핑
@@ -767,10 +651,7 @@ public function registerQueryScopedPermissions(array $identifiers): array
 | sirsoft-ecommerce.orders.* | order | user_id | |
 | sirsoft-page.pages.* | page | created_by | |
 
-> resource_route_key/owner_key가 null → scope_type UI 미표시, 설정해도 무시 (단, 위 「쿼리 스코프가 정본인 권한」 은 Repository 가 스코프를 건다)
-
-> `resource_route_key`·`owner_key` 는 **카테고리 단위**로만 읽힌다. 권한(`action`) 항목 안에 적으면 무시되어 「강제된다」 는
-> 착시만 남으므로 적지 않는다(코어 테스트가 번들 확장 선언을 검사한다). `create` 액션은 카테고리에 적어도 스코프 대상이 아니다.
+> resource_route_key/owner_key가 null → scope_type UI 미표시, 설정해도 무시
 
 ### getPermissions() 포맷 (모듈)
 
@@ -800,8 +681,7 @@ public function registerQueryScopedPermissions(array $identifiers): array
 ### 역할 관리 UI
 
 - PermissionTree 컴포넌트에 scope_type 드롭다운 추가
-- 범위를 지원하는 권한(권한 트리 노드 `scope_supported` = `resource_route_key` 와 `owner_key` 가 모두 있음) + 체크된 상태에서만 드롭다운 표시
-- 비회원 역할(역할 응답 `supports_permission_scope: false`)에서는 드롭다운을 숨기고 안내 문구를 보인다
+- resource_route_key가 있는 권한 + 체크된 상태에서만 드롭다운 표시
 - 선택지: 전체(null), 소유역할('role'), 본인만('self')
 - 폼 데이터: `permissions: [{id: 1, scope_type: null}, {id: 2, scope_type: 'self'}]`
 
@@ -842,24 +722,12 @@ public function registerQueryScopedPermissions(array $identifiers): array
 
 ### 상위-하위 중복 선언
 
-```html
-<div>
-  <permissions>
-    <permission>core.users.read</permission>
-  </permissions>
-  <button><permissions><permission>core.users.delete</permission></permissions>삭제</button>
-</div>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
-  "type": "basic",
-  "name": "Div",
+  "type": "Div",
   "permissions": ["core.users.read"],
   "children": [
-    { "type": "basic", "name": "Button", "permissions": ["core.users.delete"], "text": "삭제" }
+    { "type": "Button", "permissions": ["core.users.delete"], "text": "삭제" }
   ]
 }
 ```
@@ -1005,23 +873,6 @@ public function syncPermissions(Role $role, array $permissions): void
 | 권한 매핑 + guest 역할 보유 | 허용 |
 | 권한 매핑 + guest 역할 미보유 | 거부 (401/403) |
 
-### 비회원 역할과 스코프 (7.1.1)
-
-비회원 역할은 권한 범위(`self`·`role`)를 **가질 수 없다**. 비회원에게는 「본인」 을 가릴 신원이 없어 판정 경로
-(`GuestRoleResolver`·`PermissionHelper`·미들웨어 Step 4)가 비회원의 범위를 보지 않는다 — 범위를 저장해도 실제로는
-「전체」 다. 비회원 본인 글은 비밀번호로 확인한다.
-
-| 경로 | 동작 |
-|---|---|
-| 역할 수정 API (`PUT /api/admin/roles/{guest}`) | 범위가 실린 항목마다 422 — 오류 키 `permissions.{N}.scope_type` |
-| 역할 생성 API | 식별자가 `guest` 면 같은 규칙(방어) |
-| `RoleService::syncPermissions()` 직접 호출 | `ValidationException` (같은 오류 키) |
-| 확장 선언(`getPermissions()` 의 `roles`, 와일드카드 `'*'` 포함) | 범위 없이 부여하고 경고 로그 |
-| 역할 응답 | `supports_permission_scope` — 비회원만 `false` (`Role::supportsPermissionScope()`) |
-| 7.1.1 업데이트 | 비회원의 범위 부여를 회수(삭제)하고 회수 목록을 비회원 역할 `user_overrides` 에 기록 — 이후 동기화가 범위 없이 되살리지 않는다 |
-
-확장이 비회원에게 권한을 주려면 범위 없이(`'guest'` 문자열 또는 `['role' => 'guest', 'scope_type' => null]`) 선언한다.
-
 ---
 
 ## Role identifier 자동 생성
@@ -1075,7 +926,7 @@ generateIdentifier(name)
 - [menus.md](./menus.md) - 메뉴 권한 시스템
 - [hooks.md](./hooks.md) - 훅 권한 시스템
 - [module-basics.md](./module-basics.md) - 모듈 기본 구조
-- [README.md](./README.md) - 확장 시스템 인덱스
+- [index.md](./index.md) - 확장 시스템 인덱스
 - [../backend/core-config.md](../backend/core-config.md#완전-동기화-원칙) - 완전 동기화 원칙
 - [../backend/data-sync-helpers.md](../backend/data-sync-helpers.md) - 데이터 동기화 Helper
 - [../backend/user-overrides.md](../backend/user-overrides.md) - 사용자 수정 보존

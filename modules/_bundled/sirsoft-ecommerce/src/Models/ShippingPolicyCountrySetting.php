@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Modules\Sirsoft\Ecommerce\Casts\ShippingApiConfigCast;
 use Modules\Sirsoft\Ecommerce\Enums\ChargePolicyEnum;
-use Modules\Sirsoft\Ecommerce\Enums\ClaimShippingFeeModeEnum;
 
 /**
  * 배송정책 국가별 설정 모델
@@ -34,9 +33,6 @@ class ShippingPolicyCountrySetting extends Model
         'extra_fee_enabled',
         'extra_fee_settings',
         'extra_fee_multiply',
-        'claim_fee_mode',
-        'return_fixed_fee',
-        'exchange_fixed_fee',
         'is_active',
     ];
 
@@ -49,9 +45,6 @@ class ShippingPolicyCountrySetting extends Model
         'free_threshold' => 'decimal:2',
         'extra_fee_enabled' => 'boolean',
         'extra_fee_multiply' => 'boolean',
-        'claim_fee_mode' => ClaimShippingFeeModeEnum::class,
-        'return_fixed_fee' => 'decimal:2',
-        'exchange_fixed_fee' => 'decimal:2',
         'is_active' => 'boolean',
         'custom_shipping_name' => 'array',
         'charge_policy' => ChargePolicyEnum::class,

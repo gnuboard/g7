@@ -63,12 +63,10 @@ class ApiDocScaffolder
     /**
      * @param  ResourceFieldDescriber  $fieldDescriber  accessor/computed 필드 설명기
      * @param  ParameterDescriber  $paramDescriber  공통 요청 파라미터 설명기
-     * @param  ApiDocExampleSanitizer  $exampleSanitizer  실측 응답 민감값·식별정보 마스킹기
      */
     public function __construct(
         private readonly ResourceFieldDescriber $fieldDescriber = new ResourceFieldDescriber,
-        private readonly ParameterDescriber $paramDescriber = new ParameterDescriber,
-        private readonly ApiDocExampleSanitizer $exampleSanitizer = new ApiDocExampleSanitizer
+        private readonly ParameterDescriber $paramDescriber = new ParameterDescriber
     ) {}
 
     /**
@@ -837,12 +835,11 @@ class ApiDocScaffolder
 
         $status = $probeMeta['status'] ?? 200;
         $truncated = $this->truncateListBody($body);
+        // 실측 응답에 섞여 나온 민감값(토큰·비밀번호·시크릿 등)을 마스킹한다.
+        $sanitized = $this->sanitizeSensitive($truncated);
         // 응답 body 내부의 절대 URL(페이지네이터 링크·콜백 URL 등)에 실측 기준 호스트가
         // 그대로 직렬화돼 들어올 수 있으므로 공개 문서용 placeholder 호스트로 마스킹한다.
-        $hostMasked = $this->maskResponseHost($truncated, $probeMeta['base_url'] ?? null);
-        // 실측 응답에 섞여 나온 민감값(토큰·비밀번호·시크릿 등)과 식별정보(메일 주소·설치 경로·
-        // APP_URL 호스트·공인 IP)를 공개 문서용 자리표시자로 바꾼다.
-        $masked = $this->exampleSanitizer->sanitize($hostMasked);
+        $masked = $this->maskResponseHost($sanitized, $probeMeta['base_url'] ?? null);
         // 목록 절단은 페이지네이션 형태(`data.data[]`)만 다룬다. 카탈로그·스펙처럼 목록이 아닌
         // 큰 응답은 그대로 두면 문서 한 파일이 수 MB 로 불어난다 — 전체 크기 상한을 별도로 건다.
         $capped = $this->capExampleSize($masked);
@@ -893,6 +890,49 @@ class ApiDocScaffolder
         }
 
         return $value;
+    }
+
+    /**
+     * 응답 body 에서 민감한 필드 값을 placeholder 로 마스킹합니다 (재귀).
+     *
+     * 실측 응답에 실제 토큰·비밀번호 해시·시크릿·API 키가 섞여 나올 수 있으므로 공개 문서에
+     * 방출하기 전에 마스킹한다. 필드명(키)에 민감 키워드가 포함되면 값을 placeholder 로 대체.
+     *
+     * @param  mixed  $value  응답 값 (배열/스칼라)
+     * @return mixed 마스킹된 값
+     */
+    private function sanitizeSensitive(mixed $value): mixed
+    {
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        $sensitiveKeys = [
+            'token', 'access_token', 'refresh_token', 'plaintexttoken', 'plain_text_token',
+            'password', 'secret', 'api_key', 'apikey', 'private_key', 'client_secret',
+            'authorization', 'remember_token', 'app_key',
+        ];
+
+        $result = [];
+        foreach ($value as $k => $v) {
+            $keyLower = is_string($k) ? strtolower($k) : '';
+            $isSensitive = false;
+            foreach ($sensitiveKeys as $needle) {
+                if ($keyLower !== '' && str_contains($keyLower, $needle)) {
+                    $isSensitive = true;
+                    break;
+                }
+            }
+
+            if ($isSensitive && ! is_array($v) && $v !== null) {
+                // 타입 표기용 접미(_type/_expires 등)는 마스킹 대상이 아니므로 스칼라만 마스킹.
+                $result[$k] = ($keyLower === 'token_type') ? $v : '{MASKED}';
+            } else {
+                $result[$k] = $this->sanitizeSensitive($v);
+            }
+        }
+
+        return $result;
     }
 
     /**
@@ -1250,17 +1290,6 @@ class ApiDocScaffolder
         return substr_replace($preserved, '`'.$new[1].'`', $pos, strlen($needle));
     }
 
-    /**
-     * 재생성한 섹션의 에러 응답 표에 기존 문서의 사람이 쓴 행·서술을 되살립니다.
-     *
-     * 같은 상태코드는 기존 행이 이기고, 자동 추론에만 있는 상태코드는 새로 들어간다. 기존 본문이 표가 아닌
-     * 사람 서술이면 그 서술을 그대로 둔다.
-     *
-     * @param  string  $section  재생성한 엔드포인트 섹션
-     * @param  string|null  $previous  기존 문서의 같은 블록(없으면 null)
-     * @param  string|null  $generated  자동 생성 원본 블록(비교용, 없으면 null)
-     * @return string 에러 응답 표가 병합된 섹션
-     */
     private function applyPreservedErrorTable(string $section, ?string $previous, ?string $generated = null): string
     {
         if ($previous === null) {
@@ -2138,7 +2167,7 @@ class ApiDocScaffolder
      * 이미 예시 블록이 있으면(멱등) 그 블록만 새 내용으로 치환합니다.
      *
      * @param  string  $content  기존 문서 내용
-     * @param  array<string, array{request: string, response: string, response_fields?: string|null, skipped?: bool}>  $exampleBlocks  라우트명 키 => 예시 블록(skipped: 실측 제외 — 기존 예시 보존)
+     * @param  array<string, array{request: string, response: string}>  $exampleBlocks  라우트명 키 => 예시 블록
      * @return array{0: string, 1: int} [갱신된 문서, 삽입/치환한 예시 블록 수]
      */
     public function insertExampleBlocks(string $content, array $exampleBlocks): array
@@ -2180,23 +2209,13 @@ class ApiDocScaffolder
                 $updatedBlock = $this->refreshResponseFieldMarker($updatedBlock, $blocks['response_fields'], $inserted);
             }
 
-            // 실측이 제외된 엔드포인트(권한·404·부수효과 쓰기 등)는 새 예시가 자동 요청 예시와 「실측 제외」 마커뿐이다.
-            // 그것으로 사람이 써 둔 예시를 덮지 않는다 — 기존 요청 예시와 손으로 쓴 응답 예시를 보존한다.
-            $skipped = ! empty($blocks['skipped']);
-            $handResponse = $this->isHandWrittenExample($updatedBlock, '**응답 예시**', '**에러 응답**');
-
-            if (! ($skipped && $this->hasExampleSection($updatedBlock, '**요청 예시**'))) {
-                $updatedBlock = $this->applyExampleBlock($updatedBlock, '**요청 예시**', '**응답 필드**', $blocks['request'], $inserted);
-            }
+            $updatedBlock = $this->applyExampleBlock($updatedBlock, '**요청 예시**', '**응답 필드**', $blocks['request'], $inserted);
 
             if ($proseHasResponseExample) {
                 // 서술 영역에 수기 응답 예시가 있으면 블록 안 응답 예시는 두지 않는다(중복 헤딩 회피).
-                // 과거 run 이 삽입한 블록 내 응답 예시가 남아 있으면 제거한다. 실측이 제외됐을 때 블록 안 예시가
-                // 손으로 쓴 것이면 지우지 않는다.
-                if (! ($skipped && $handResponse)) {
-                    $updatedBlock = $this->removeExampleBlock($updatedBlock, '**응답 예시**', '**에러 응답**', $inserted);
-                }
-            } elseif (! ($skipped && $handResponse)) {
+                // 과거 run 이 삽입한 블록 내 응답 예시가 남아 있으면 제거한다.
+                $updatedBlock = $this->removeExampleBlock($updatedBlock, '**응답 예시**', '**에러 응답**', $inserted);
+            } else {
                 $updatedBlock = $this->applyExampleBlock($updatedBlock, '**응답 예시**', '**에러 응답**', $blocks['response'], $inserted);
             }
 
@@ -2206,45 +2225,6 @@ class ApiDocScaffolder
         }
 
         return [$content, $inserted];
-    }
-
-    /**
-     * `@generated` 블록에 예시 섹션(`$label` 헤딩)이 있는지 확인합니다.
-     *
-     * @param  string  $block  `@generated` 블록 문자열
-     * @param  string  $label  예시 섹션 헤딩 (`**요청 예시**` 등)
-     * @return bool 섹션이 있으면 true
-     */
-    private function hasExampleSection(string $block, string $label): bool
-    {
-        return str_contains($block, $label."\n");
-    }
-
-    /**
-     * `@generated` 블록의 예시 섹션이 사람이 쓴 것인지 확인합니다.
-     *
-     * 기계가 넣은 응답 예시는 실측 표식(`<!-- @probed -->`)이나 실측 제외 마커(`<!-- 실측 제외`)를 단다.
-     * 둘 다 없는 예시 섹션은 사람이 쓴 것으로 본다.
-     *
-     * @param  string  $block  `@generated` 블록 문자열
-     * @param  string  $label  예시 섹션 헤딩
-     * @param  string  $anchor  섹션 끝 기준 헤딩
-     * @return bool 사람이 쓴 예시 섹션이 있으면 true
-     */
-    private function isHandWrittenExample(string $block, string $label, string $anchor): bool
-    {
-        $labelPos = strpos($block, $label."\n");
-        if ($labelPos === false) {
-            return false;
-        }
-
-        $anchorPos = strpos($block, $anchor, $labelPos);
-        $section = $anchorPos === false ? substr($block, $labelPos) : substr($block, $labelPos, $anchorPos - $labelPos);
-        $body = trim(substr($section, strlen($label)));
-
-        return $body !== ''
-            && ! str_contains($section, self::PROBED_BODY_MARKER)
-            && ! str_contains($section, '<!-- 실측 제외');
     }
 
     /**

@@ -5,9 +5,7 @@
   },
   "today_badges": {
     "new_posts": "{{count}} new posts",
-    "new_posts_one": "{{count}} new post",
-    "new_comments": "{{count}} new comments",
-    "new_comments_one": "{{count}} new comment"
+    "new_comments": "{{count}} new comments"
   },
   "community": {
     "title": "Community",
@@ -22,8 +20,6 @@
     "no_reports": "No reports",
     "updated_at": "Updated: {{time}}",
     "go_to_boards": "All boards",
-    "go_to_reports": "View all",
-    "untitled": "(Untitled)",
-    "anonymous": "Anonymous"
+    "go_to_reports": "View all"
   }
 }

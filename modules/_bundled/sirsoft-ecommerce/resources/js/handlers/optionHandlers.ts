@@ -1,4 +1,3 @@
-// e2e:allow 7.1.0 출시 점검 — 지원 언어 읽기를 코어 공개 API(locale.supported)로 교체. 단위 시험이 코어 API 모양 그대로 덮고, ja 기본 언어 화면 실측은 출시 리허설(W3) 브라우저 매트릭스에서 한다
 /**
  * 옵션 관련 핸들러
  *
@@ -6,7 +5,6 @@
  */
 
 import type { ActionContext } from '../types';
-import { localizedText } from '../utils/localizedText';
 import { convertCurrencyPrice, sumActiveOptionStock } from './productOptionHandlers';
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
@@ -17,37 +15,23 @@ const logger = ((window as any).G7Core?.createLogger?.('Ecom:Option')) ?? {
 };
 
 /**
- * 지원되는 로케일 목록을 가져옵니다.
- *
- * 코어 공개 API `G7Core.locale.supported()`(시스템 활성 언어팩) 를 쓴다 — 코어에 `G7Core.config()` 는 없어
- * 예전 읽기는 늘 ko·en 으로 떨어졌고, 사이트 기본 언어가 ja 등이면 필수 칸을 잘못 골랐다(D3-1).
+ * 설정에서 지원되는 로케일 목록을 가져옵니다.
  *
  * @returns 지원되는 로케일 배열
  */
 function getSupportedLocales(): string[] {
     const G7Core = (window as any).G7Core;
-    const supported = G7Core?.locale?.supported?.();
-    return Array.isArray(supported) && supported.length > 0 ? supported : ['ko', 'en'];
+    return G7Core?.config?.('app.supported_locales') ?? ['ko', 'en'];
 }
 
 /**
- * 필수로 채워야 하는 로케일(사이트 기본 언어)을 가져옵니다.
- *
- * 서버 검증(LocaleRequiredTranslatable)은 요청 언어가 아니라 사이트 기본 언어(`app.site_locale`)를 필수로
- * 보고, 관리자 다국어 입력도 같은 칸에 필수(*)를 붙인다. 옵션 조합으로 만든 이름도 그 칸에 넣어야
- * 다른 언어로 보는 관리자가 만들거나 이어 고친 상품이 저장된다(이커머스 전수 실측 S5, 제품 결정 2026-10-08).
- * 사이트 기본 언어는 프론트 `appConfig.siteLocale` 로 온다 — 없거나 지원 언어 밖이면 첫 지원 언어.
+ * 기본 로케일을 가져옵니다.
  *
  * @returns 기본 로케일 코드
  */
 function getDefaultLocale(): string {
-    const w = window as any;
-    const supported = getSupportedLocales();
-    const site = w.G7Core?.state?.get?.()?.appConfig?.siteLocale ?? w.G7Config?.appConfig?.siteLocale;
-    if (typeof site === 'string' && site && supported.includes(site)) {
-        return site;
-    }
-    return supported[0] ?? 'ko';
+    const G7Core = (window as any).G7Core;
+    return G7Core?.config?.('app.locale') ?? getSupportedLocales()[0] ?? 'ko';
 }
 
 /**
@@ -110,8 +94,6 @@ interface ProductOption {
     is_active: boolean;
     sku: string;
     multi_currency_prices?: Record<string, number>;
-    /** 옵션별 과세 종류 — null 은 상품 기본값을 따른다 (#612). 재생성 때 같은 조합의 기존 값은 병합으로 이어진다 */
-    tax_status?: 'taxable' | 'tax_free' | 'zero_rated' | null;
     [key: string]: any;
 }
 
@@ -172,7 +154,7 @@ interface ActionWithParams {
  */
 function getValueForLocale(value: string | OptionValueMultilingual, locale: string): string {
     if (typeof value === 'string') return value;
-    return localizedText(value, locale) ?? '';
+    return value[locale] ?? value['ko'] ?? Object.values(value)[0] ?? '';
 }
 
 /**
@@ -558,7 +540,6 @@ export function generateOptionsHandler(
             is_default: idx === 0,
             is_active: true,
             sku: '',
-            tax_status: null,
             multi_currency_selling_price: multiCurrencySellingPrice,
         };
     });

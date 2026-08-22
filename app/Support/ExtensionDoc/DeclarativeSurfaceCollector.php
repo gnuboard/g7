@@ -4,7 +4,6 @@ namespace App\Support\ExtensionDoc;
 
 use App\Extension\AbstractModule;
 use App\Extension\AbstractPlugin;
-use App\Extension\Helpers\ExtensionEntrySource;
 use ReflectionClass;
 use Throwable;
 
@@ -56,8 +55,6 @@ class DeclarativeSurfaceCollector
         'getLayoutExtensions' => '레이아웃 확장',
         'getNotificationDefinitions' => '알림 정의',
         'getBenchmarkProfiles' => '성능 계측 프로파일',
-        'getAnalyticsGoals' => '통계 전환 지점',
-        'getAnalyticsDimensions' => '통계 분류 기준(dimension)',
         // 본인인증
         'getIdentityPolicies' => 'IDV 정책',
         'getIdentityPurposes' => 'IDV 목적',
@@ -79,7 +76,6 @@ class DeclarativeSurfaceCollector
         'getCacheStore' => '캐시 스토어',
         // 메타
         'getDependencies' => '의존 확장',
-        'getIntegrations' => '연동 확장(선택)',
         'getRequiredCoreVersion' => '코어 최소 버전',
         'getLicense' => '라이선스',
         'getGithubUrl' => 'GitHub URL',
@@ -198,11 +194,6 @@ class DeclarativeSurfaceCollector
     }
 
     /**
-     * 직전 인스턴스화에서 발생한 경로 주입 실패 사유 (없으면 null).
-     */
-    private ?string $pathInjectionError = null;
-
-    /**
      * 진입 클래스를 인스턴스화합니다.
      *
      * 같은 FQCN 이 이미 로드되어 있으면(활성 디렉토리 확장이 부팅된 경우) 클래스명을 바꿔
@@ -211,6 +202,11 @@ class DeclarativeSurfaceCollector
      * @param  array<string, mixed>  $record  확장 레코드
      * @return object|null 확장 인스턴스 (실패 시 null)
      */
+    /**
+     * 직전 인스턴스화에서 발생한 경로 주입 실패 사유 (없으면 null).
+     */
+    private ?string $pathInjectionError = null;
+
     private function instantiate(array $record): ?object
     {
         $fqcn = (string) $record['entryClass'];
@@ -238,12 +234,21 @@ class DeclarativeSurfaceCollector
      */
     private function evalFreshEntry(array $record): ?object
     {
+        $content = @file_get_contents((string) $record['entryFile']);
+        if ($content === false) {
+            return null;
+        }
+
         $short = (string) $record['entryClassShort'];
         $uid = '_extdoc_'.bin2hex(random_bytes(6));
 
-        // 클래스명 치환·여는 태그 제거, __DIR__·__FILE__ 은 진입 파일 위치로 (#159)
-        $renamed = ExtensionEntrySource::forEval((string) $record['entryFile'], $short, $short.$uid);
-        if ($renamed === null) {
+        $renamed = preg_replace('/\bclass\s+'.preg_quote($short, '/').'\b/', 'class '.$short.$uid, $content, 1);
+        if (! is_string($renamed)) {
+            return null;
+        }
+
+        $renamed = preg_replace('/^<\?php\s*/', '', $renamed);
+        if (! is_string($renamed)) {
             return null;
         }
 
@@ -265,7 +270,6 @@ class DeclarativeSurfaceCollector
      *
      * @param  object  $instance  확장 인스턴스
      * @param  string  $path  확장 디렉토리 절대 경로
-     * @return string|null 주입 실패 사유 (성공하면 null)
      */
     private function injectExtensionPath(object $instance, string $path): ?string
     {

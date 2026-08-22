@@ -2,8 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Console\Commands\Traits\LocalizesDescription;
-use App\Console\Commands\Traits\ParsesDaysOption;
 use App\Services\AttachmentService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -22,9 +20,6 @@ use Illuminate\Support\Facades\Log;
  */
 class PruneOrphanAttachmentsCommand extends Command
 {
-    use LocalizesDescription;
-    use ParsesDaysOption;
-
     /**
      * 커맨드 이름 및 시그니처
      *
@@ -35,6 +30,13 @@ class PruneOrphanAttachmentsCommand extends Command
                             {--limit=500 : 한 번에 처리할 최대 건수}
                             {--days= : 보존기간(일) 재정의 — 미지정 시 환경설정값}
                             {--scheduled : 스케줄러 호출 표시 — 자동 정리 토글이 꺼져 있으면 조기 종료}';
+
+    /**
+     * 커맨드 설명
+     *
+     * @var string
+     */
+    protected $description = '소유자 없이 방치된 고아 첨부파일을 정리합니다.';
 
     /**
      * @param  AttachmentService  $attachmentService  첨부파일 서비스
@@ -53,19 +55,15 @@ class PruneOrphanAttachmentsCommand extends Command
     public function handle(): int
     {
         if ($this->option('scheduled') && ! $this->isCleanupEnabled()) {
-            $this->info(__('attachment.console.prune_orphans.disabled'));
+            $this->info('고아 첨부 자동 정리가 꺼져 있어 실행하지 않았습니다. (upload.orphan_cleanup_enabled = false)');
 
             return Command::SUCCESS;
         }
 
         $days = $this->resolveRetentionDays();
 
-        if ($days === false) {
-            return Command::FAILURE;
-        }
-
         if ($days < 1) {
-            $this->info(__('attachment.console.prune_orphans.retention_below_minimum'));
+            $this->info('고아 첨부 보존기간이 1일 미만이어서 정리를 수행하지 않았습니다.');
 
             return Command::SUCCESS;
         }
@@ -76,17 +74,18 @@ class PruneOrphanAttachmentsCommand extends Command
         $result = $this->attachmentService->pruneOrphans($days, $limit, $isDryRun);
 
         if ($isDryRun) {
-            $this->info('[DRY RUN] '.__('attachment.console.prune_orphans.dry_run', ['days' => $days, 'count' => $result['scanned']]));
+            $this->info("[DRY RUN] 보존기간({$days}일) 경과 고아 첨부: {$result['scanned']}건");
 
             return Command::SUCCESS;
         }
 
-        $this->info(__('attachment.console.prune_orphans.done', [
-            'days' => $days,
-            'scanned' => $result['scanned'],
-            'deleted' => $result['deleted'],
-            'failed' => $result['failed'],
-        ]));
+        $this->info(sprintf(
+            '보존기간(%d일) 경과 고아 첨부 %d건 중 %d건을 삭제했습니다. (실패 %d건)',
+            $days,
+            $result['scanned'],
+            $result['deleted'],
+            $result['failed'],
+        ));
 
         Log::info('PruneOrphanAttachmentsCommand: 고아 첨부 정리 완료', [
             'days' => $days,
@@ -109,14 +108,14 @@ class PruneOrphanAttachmentsCommand extends Command
     /**
      * 보존기간을 해석합니다 (옵션 > 환경설정 > 기본 30일).
      *
-     * @return int|false 보존기간(일), `--days` 가 0 이상의 정수가 아니면 false (오류는 이미 출력함)
+     * @return int 보존기간(일)
      */
-    private function resolveRetentionDays(): int|false
+    private function resolveRetentionDays(): int
     {
-        $option = $this->parseDaysOption();
+        $option = $this->option('days');
 
-        if ($option !== null) {
-            return $option;
+        if ($option !== null && $option !== '') {
+            return (int) $option;
         }
 
         return (int) g7_core_settings('upload.orphan_retention_days', 30);

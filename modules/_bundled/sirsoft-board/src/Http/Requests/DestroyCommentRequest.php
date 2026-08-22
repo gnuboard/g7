@@ -3,7 +3,6 @@
 namespace Modules\Sirsoft\Board\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Modules\Sirsoft\Board\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
 
 /**
  * 댓글 삭제 요청을 검증합니다.
@@ -15,8 +14,6 @@ use Modules\Sirsoft\Board\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
  */
 class DestroyCommentRequest extends FormRequest
 {
-    use ProvidesFallbackRuleMessages;
-
     /**
      * 요청 권한 — 소유권/권한 판정은 Service(canDelete)가 담당.
      *

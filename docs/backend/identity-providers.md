@@ -92,28 +92,6 @@ final class SmsIdentityProvider implements VerificationProviderInterface
 
 **target 식별자 규약**: SMS 라면 E.164 정규화된 휴대폰번호, 이메일이라면 소문자, 외부 ID 라면 안정 식별자. 핵심은 challenge 시작과 verify 후 listener 가 같은 식별자를 SHA256 한다는 일관성입니다.
 
-### 3.0 상태 전이는 조건부 갱신으로 (7.1.6)
-
-「로그를 읽고 → 판단하고 → `update()`」 는 동시 요청에서 시도 횟수를 잃고(KVE-2026-3190), 같은 코드로 토큰을 여러 개
-만들고, 이미 쓴 결과를 다시 통과시킵니다. provider 의 `verify()`·`cancel()` 은 `IdentityVerificationLogRepositoryInterface` 의
-조건부 메서드를 쓰고 **반환값(이겼는지)으로 판정**합니다.
-
-| 메서드 | 조건 | 반환 |
-| --- | --- | --- |
-| `incrementAttemptsIfAllowed($id)` | `attempts < max_attempts` 이고 대기 상태(requested·sent) | 증가 후 값, 0행이면 `null` |
-| `markVerifiedIfPending($id, $attributes)` | 대기 상태(requested·sent·processing)이고 `verified_at` 없음 | 이겼으면 `true` — `false` 면 다른 요청이 먼저 확정한 것이므로 실패(`INVALID_STATE`) |
-| `markFailedIfPending($id)` / `markCancelledIfPending($id)` | 대기 상태 | 같음 |
-| `consumeIfUnconsumed($id, $at)` / `releaseConsumption($id, $at)` | verified·미소비·미만료 / 그 시각에 소비한 것 | 같음 |
-| `findByIdForUpdate($id)` | 행 잠금 읽기(metadata 병합 저장용) | 로그 |
-
-상태 검사는 enum 으로 합니다(`$log->status` 는 `IdentityVerificationStatus` 로 캐스트됨 — 문자열 배열과 엄격 비교하면 늘
-거짓이 되어, 이미 쓴·취소된 코드가 다시 통과했습니다). 코드를 보내지 않는 수단(인증 앱 등)은
-`App\Contracts\Extension\ChallengeDeliveryAwareProviderInterface::deliversChallengeCode()` 로 `false` 를 알립니다 — 코어가
-로그인 2단계 재발송을 거부합니다(구버전 provider 는 challenge 채널 `app` 으로 보조 판정).
-
-`verify()` 결과의 `identityHash` 는 비어 있지 않을 때만 회원의 `identity_hash` 를 갱신합니다 — 실명 정보가 없는 수단(메일)이
-기존 실명 확인 기록을 지우지 않습니다.
-
 ## 3.1 VerificationChallenge DTO 필드 규약
 
 `requestChallenge()` 가 반환하는 `VerificationChallenge` DTO 는 프론트 launcher 가 모달 상태 초기화에 그대로 사용합니다. 모든 필드는 named arguments 로 호출하며, 향후 코어가 신규 필드를 추가해도 기본값으로 자동 처리되도록 named args 패턴을 유지합니다.
@@ -231,15 +209,8 @@ public static function providerMatrix(): array
 | `IdentityVerificationLog` 미사용 + 자체 테이블에 토큰 저장 | 단일 SSoT 테이블 사용 (감사 로그/관리자 검색/통계 일원화) |
 | `target_hash` 를 raw 식별자로 저장 | 반드시 SHA256(lower(식별자)) 로 PII 보호 |
 | `verify()` 성공 시 `consumed_at = now()` 자동 set | 다운스트림 listener (가입/비번리셋 등) 가 사용 시점에 set |
-| `$log->update(['attempts' => $log->attempts + 1])`·`$log->update(['status' => 'verified', …])` 처럼 읽은 값으로 덮어쓰기 | `incrementAttemptsIfAllowed()`·`markVerifiedIfPending()` 조건부 갱신 + 반환값 판정 (§3.0) |
-| 다운스트림에서 `findVerifiedForToken()` 으로 찾은 뒤 따로 소비 | `IdentityTokenAcceptanceService::accept()` 로 결박 검사와 소비를 한 번에 |
 | provider 가 listener 책임을 가져가서 직접 사용자 생성 | provider 는 verify 만 담당. 사용자 생성/세션은 도메인 service |
 | `purpose` 를 정책 purpose 와 다르게 임의 부여 | 정책-provider purpose 일치 (`signup`, `password_reset`, `sensitive_action`, `self_update`, `login`) |
-| 콜백·브리지·제공자 전송 주소를 `url()`·`route()`·요청 Host 로 생성 | `SiteUrl::absolute()` — 사이트 주소 기준 |
-
-### 콜백·브리지·제공자 전송 주소는 `SiteUrl`
-
-제공자에게 넘기는 복귀·콜백 주소, 결과를 창 밖으로 전달하는 브리지 화면의 대상 출처(`postMessage` targetOrigin), 메일 링크는 모두 `App\Support\SiteUrl` 로 사이트 주소 기준으로 만든다. `url()`·`route()` 는 요청 Host 를 따르므로 Host 를 바꿔 보낸 요청에서 시작한 인증은 결과와 `verification_token` 을 그 호스트로 넘기게 된다. 프런트에 내려주는 출처(`siteOrigin`)도 서버가 `SiteUrl::origin()` 으로 정해 주고, 클라이언트는 받은 메시지의 `origin` 을 그 값과 비교한다. 상세: [routing.md 「절대 URL 은 사이트 주소로 만든다」](routing.md#절대-url-은-사이트-주소로-만든다).
 
 ## 8. 관련 코드 진입점
 
@@ -255,7 +226,6 @@ public static function providerMatrix(): array
 ## 9. 관련 문서
 
 - [identity-policies.md](identity-policies.md) — 정책 시스템 전체 흐름
-- [routing.md 「절대 URL 은 사이트 주소로 만든다」](routing.md#절대-url-은-사이트-주소로-만든다) — 콜백·링크 주소 생성 규칙
-- [identity-messages.md](identity-messages.md) — 본인인증 알림 (메일 provider 발송 문구 — 알림 정의 category=identity)
+- [identity-messages.md](identity-messages.md) — 메시지 템플릿 (provider 발송 콘텐츠)
 - [../frontend/identity-verification-ui.md](../frontend/identity-verification-ui.md) — 프론트엔드 launcher/모달 UI
 - [../extension/module-identity-settings.md](../extension/module-identity-settings.md) — 모듈/플러그인 IDV 정책 등록

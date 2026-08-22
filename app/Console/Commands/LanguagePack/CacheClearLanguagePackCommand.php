@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands\LanguagePack;
 
-use App\Console\Commands\Traits\LocalizesDescription;
 use App\Services\LanguagePackService;
 use Illuminate\Console\Command;
 use Throwable;
@@ -15,12 +14,15 @@ use Throwable;
  */
 class CacheClearLanguagePackCommand extends Command
 {
-    use LocalizesDescription;
-
     /**
      * @var string
      */
     protected $signature = 'language-pack:cache-clear';
+
+    /**
+     * @var string
+     */
+    protected $description = '언어팩 캐시(registry/translator/template/version)를 정리합니다.';
 
     /**
      * @param  LanguagePackService  $service  언어팩 Service
@@ -40,14 +42,14 @@ class CacheClearLanguagePackCommand extends Command
     {
         try {
             $result = $this->service->refreshCache();
-            $this->info(__('language_packs.commands.cache_clear.done'));
+            $this->info('언어팩 캐시 정리 완료:');
             foreach ($result as $key => $ok) {
                 $this->line('  - '.$key.': '.($ok ? 'ok' : 'failed'));
             }
 
             return collect($result)->every(fn ($v) => $v === true) ? self::SUCCESS : self::FAILURE;
         } catch (Throwable $e) {
-            $this->error(__('language_packs.commands.cache_clear.failed', ['error' => $e->getMessage()]));
+            $this->error('언어팩 캐시 정리 실패: '.$e->getMessage());
 
             return self::FAILURE;
         }

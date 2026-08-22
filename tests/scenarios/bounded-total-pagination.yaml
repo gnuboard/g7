@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product,effects] reason: 이슈 #519(공개 #82) 상한 총 건수·정확도 계약 SSoT. axes cross product 는 저장소별 호출처 전수에 걸쳐 있어 docblock 전수 @scenario 매핑이 비현실적이라 면제하고, 회귀 가드는 test_files(코어 계약 단위 + 도메인별 소비자 + 화면 소비단 + Playwright E2E)로 커버한다.
+# audit:allow test-scenario-coverage reason: 이슈 #519(공개 #82) 상한 총 건수·정확도 계약 SSoT. axes cross product 는 저장소별 호출처 전수에 걸쳐 있어 docblock 전수 @scenario 매핑이 비현실적이라 면제하고, 회귀 가드는 test_files(코어 계약 단위 + 도메인별 소비자 + 화면 소비단 + Playwright E2E)로 커버한다.
 
 feature: bounded_total_pagination
 
@@ -73,9 +73,6 @@ effects:
   - every_uses_cursor_call_forwards_page
   - search_deep_page_link_keeps_offset
   - search_first_page_starts_cursor
-  # 코어 판정 규칙 단위(SearchPagePolicy) — 첫 페이지는 커서 시작점, 커서 없는 깊은 페이지는 offset 유지
-  - cursor_starts_on_first_page
-  - deep_page_without_cursor_stays_on_offset
   # ── 집계 정확도 (P1) ──
   - aggregate_is_inexact_when_any_category_truncated
   - single_tab_accuracy_ignores_other_categories

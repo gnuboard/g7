@@ -33,20 +33,6 @@ import {
 import { reseedPendingIntoEngine } from './pendingCustomTranslations';
 import { suffixed } from '../../../support/assetUrl';
 import { isAllowedScriptSrc, getTrustedScriptHosts } from '../../../support/scriptSrcPolicy';
-import { has as hasRules, setRules } from '../../../style/RuntimeStyleSheet';
-import { createLogger } from '../../../utils/Logger';
-
-const logger = createLogger('useEditorTemplateAssets');
-
-/**
- * 편집기 CSS 자산의 런타임 시트 키(표식 요소의 id).
- *
- * @param href CSS URL
- * @returns 규칙 묶음 키
- */
-export function editorAssetStyleKey(href: string): string {
-  return `g7le-asset:${href}`;
-}
 
 export interface EditorTemplateAssetsState {
   componentRegistry: ComponentRegistry | null;
@@ -166,22 +152,18 @@ function injectScript(src: string): Promise<void> {
 /**
  * 편집기 CSS 주입. 권한 가드된 admin 엔드포인트(`/api/admin/...`)는 `<link>` 태그가
  * Authorization 헤더를 못 실어 401/리다이렉트(500)로 떨어지므로, Bearer 토큰을 실은
- * fetch 로 텍스트를 받아 런타임 시트로 붙인다(다크 격리 CSS 가
- * 편집 권한 가드 엔드포인트로 이동). `<style>` 요소를 만들지 않는다 — 엄격한 스타일
- * 정책(`style-src 'self'`)에서도 적용되게 `RuntimeStyleSheet`(키 `g7le-asset:{href}`)를 쓴다.
- * 공개 자산(`/api/templates/assets/...`)이나 외부 URL 은 종전대로 `<link>` 로 주입(인증 불필요).
+ * fetch 로 텍스트를 받아 `<style>` 로 주입한다(다크 격리 CSS 가
+ * 편집 권한 가드 엔드포인트로 이동). 공개 자산(`/api/templates/assets/...`)이나 외부
+ * URL 은 종전대로 `<link>` 로 주입(인증 불필요).
  *
  * @param href CSS URL
  */
 async function injectStylesheet(href: string): Promise<void> {
   if (typeof document === 'undefined') return;
-  const key = editorAssetStyleKey(href);
-  if (hasRules(key)) return;
-  for (const link of Array.from(document.querySelectorAll('link[data-g7le-asset]'))) {
-    if (link.getAttribute('data-g7le-asset') === href) return;
-  }
+  const marker = `[data-g7le-asset="${href}"]`;
+  if (document.querySelector(`link${marker}, style${marker}`)) return;
 
-  // 권한 가드된 admin CSS 엔드포인트는 Bearer fetch → 런타임 시트
+  // 권한 가드된 admin CSS 엔드포인트는 Bearer fetch → <style> 주입
   const isGuardedAdminCss = href.includes('/api/admin/');
   if (isGuardedAdminCss) {
     try {
@@ -192,11 +174,10 @@ async function injectStylesheet(href: string): Promise<void> {
       const res = await fetch(href, { headers, credentials: 'same-origin' });
       if (res.ok) {
         const css = await res.text();
-        // 생성형 시트의 replaceSync 는 @import 를 무시한다 — 조용히 빠지지 않게 알린다
-        if (/@import\b/i.test(css)) {
-          logger.warn(`[g7le] 편집기 CSS 의 @import 는 적용되지 않습니다: ${href}`);
-        }
-        setRules(key, css, { markerAttrs: { 'data-g7le-asset': href } });
+        const style = document.createElement('style');
+        style.textContent = css;
+        style.setAttribute('data-g7le-asset', href);
+        document.head.appendChild(style);
         return;
       }
       // 실패 시 <link> 폴백(공개 변종이 가능하면 동작)
@@ -241,7 +222,7 @@ export function useEditorTemplateAssets(
         const manifest = await fetchEditorAssets(templateIdentifier);
         if (cancelled) return;
 
-        // 2. CSS 주입 — 권한 가드된 admin CSS 는 Bearer fetch→런타임 시트(다크 격리),
+        // 2. CSS 주입 — 권한 가드된 admin CSS 는 Bearer fetch→<style>(다크 격리),
         //    공개/외부 URL 은 <link>. 가드 CSS fetch 가 캔버스 다크 스타일을 좌우하므로 await.
         for (const href of manifest.css ?? []) {
           await injectStylesheet(href);
@@ -265,20 +246,6 @@ export function useEditorTemplateAssets(
         const componentRegistry = ComponentRegistry.createIsolatedInstance();
         await componentRegistry.loadComponents(templateIdentifier, templateType);
         if (cancelled) return;
-
-        // 4-1. 확장이 제공한 컴포넌트를 이 인스턴스에도 반영.
-        //
-        // 확장 IIFE 는 호스트 페이지 부팅 때 한 번 실행되며 그때 싱글톤에만 등록한다. 이
-        // 격리 인스턴스는 그보다 나중에 만들어지므로, 부르지 않으면 확장 컴포넌트를 쓰는
-        // 노드가 캔버스에서 조용히 사라진다(미발견 컴포넌트는 null 렌더).
-        //
-        // 판본 선택이 호스트와 갈릴 수 있다는 점이 이 호출의 요점이다 — admin 템플릿을 띄운
-        // 채 user 템플릿을 편집하면 호스트는 기본 판본을, 캔버스는 user 전용 판본을 써야
-        // 한다. 그래서 싱글톤의 결과를 복사하지 않고 선언에서 다시 고른다.
-        //
-        // loadComponents 뒤에 두는 이유: 템플릿의 오버라이드 선언을 먼저 알아야 확장의
-        // 원본이 그것을 되덮지 않는다.
-        componentRegistry.applyExtensionComponents();
 
         // 5. 독립 TranslationEngine 인스턴스 + loadTranslations
         //

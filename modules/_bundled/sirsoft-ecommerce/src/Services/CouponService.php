@@ -7,13 +7,11 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Enums\CouponIssueRecordStatus;
-use Modules\Sirsoft\Ecommerce\Exceptions\CouponNotIssuableException;
 use Modules\Sirsoft\Ecommerce\Exceptions\CouponOperationException;
 use Modules\Sirsoft\Ecommerce\Models\Coupon;
 use Modules\Sirsoft\Ecommerce\Models\CouponIssue;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponIssueRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponRepositoryInterface;
-use Modules\Sirsoft\Ecommerce\Support\ConcurrencyErrors;
 use Modules\Sirsoft\Ecommerce\Traits\ReappliesPermissionScope;
 
 /**
@@ -23,13 +21,6 @@ class CouponService
 {
     use ReappliesPermissionScope;
 
-    /**
-     * 쿠폰 서비스를 생성합니다.
-     *
-     * @param  CouponRepositoryInterface  $repository  쿠폰 Repository
-     * @param  UserCouponService  $userCouponService  회원 쿠폰 서비스
-     * @param  CouponIssueRepositoryInterface  $issueRepository  쿠폰 발급 Repository
-     */
     public function __construct(
         protected CouponRepositoryInterface $repository,
         protected UserCouponService $userCouponService,
@@ -82,9 +73,6 @@ class CouponService
         ]);
 
         if ($coupon) {
-            // 상세 라우트는 `{id}` 라 미들웨어 스코프 검사가 돌지 않는다 — 목록과 같은 `promotion-coupon.read` 범위를 재적용
-            $this->assertWithinScope($coupon, 'sirsoft-ecommerce.promotion-coupon.read');
-
             // 필터 훅 - 조회 결과 변형
             $coupon = HookManager::applyFilters('sirsoft-ecommerce.coupon.filter_show_result', $coupon);
 
@@ -313,23 +301,13 @@ class CouponService
                 $userId = (int) $userId;
 
                 try {
-                    // 회원별 세이브포인트(B8) — 발급 행 생성 뒤 발급 수 증가나 훅이 실패하면 그 회원의 발급만 되돌린다.
-                    // 없으면 발급 행은 커밋되는데 건너뜀으로 보고되고 발급 수는 늘지 않아, 한도를 넘겨 발급될 수 있었다.
-                    DB::transaction(function () use ($coupon, $userId) {
-                        $couponIssue = $this->userCouponService->issueDirectlyToUser($coupon, $userId);
-
-                        // 발급 성공 1건당 활동로그 (per-item)
-                        HookManager::doAction('sirsoft-ecommerce.coupon.after_direct_issue', $coupon, $couponIssue, $userId);
-                    });
+                    $couponIssue = $this->userCouponService->issueDirectlyToUser($coupon, $userId);
                     $issued++;
+
+                    // 발급 성공 1건당 활동로그 (per-item)
+                    HookManager::doAction('sirsoft-ecommerce.coupon.after_direct_issue', $coupon, $couponIssue, $userId);
                 } catch (\Exception $e) {
-                    ConcurrencyErrors::rethrowIfConcurrencyError($e);
-                    // 사유는 코드(reason)와 문구(message)로 나눠 싣는다 — 쿠폰 일괄 받기와 같은 사유 코드 체계
-                    $skipped[] = [
-                        'user_id' => $userId,
-                        'reason' => $e instanceof CouponNotIssuableException ? $e->getReason() : 'operation_failed',
-                        'message' => $e->getMessage(),
-                    ];
+                    $skipped[] = ['user_id' => $userId, 'reason' => $e->getMessage()];
                 }
             }
 
@@ -355,13 +333,6 @@ class CouponService
      */
     public function cancelIssue(int $couponId, int $issueId): CouponIssue
     {
-        // 발급 취소는 쿠폰의 `promotion-coupon.update` 범위 안이어야 한다(라우트가 `{id}` 라 미들웨어가 건너뜀).
-        // 쿠폰이 없으면 아래 발급 내역 대조가 기존 not_found 계약으로 답한다.
-        $coupon = $this->repository->findById($couponId);
-        if ($coupon) {
-            $this->assertWithinScope($coupon, 'sirsoft-ecommerce.promotion-coupon.update');
-        }
-
         return DB::transaction(function () use ($couponId, $issueId) {
             $issue = $this->issueRepository->findById($issueId);
 
@@ -407,8 +378,6 @@ class CouponService
         if (! $coupon) {
             throw new CouponOperationException('sirsoft-ecommerce::exceptions.coupon_not_found');
         }
-
-        $this->assertWithinScope($coupon, 'sirsoft-ecommerce.promotion-coupon.read');
 
         // Before 훅
         HookManager::doAction('sirsoft-ecommerce.coupon.before_issues_list', $couponId, $filters);

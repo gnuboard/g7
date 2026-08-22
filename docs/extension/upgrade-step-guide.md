@@ -12,8 +12,6 @@
 5. 모든 분기에 upgrade.log 출력 — 로그 없음 = 디버깅 단서 없음
 6. beta.3+ 타깃 step 이 중간에 새 프로세스 재진입이 필요하면 `UpgradeHandoffException` throw (섹션 10.5)
 7. 7.0.0-beta.5+ 신규 step 은 `AbstractUpgradeStep` 상속 의무 + 카탈로그/변환/핫픽스를 `upgrades/data/{version}/` 으로 격리 (섹션 13)
-8. 확장 upgrade step 은 확장 자신의 새 저장소·서비스를 컨테이너에서 해석하지 않는다 — 업데이트 프로세스엔 옛 프로바이더만 등록됨 (원칙 5)
-9. step·데이터 마이그레이션 파일이 있는데 클래스가 없거나 인터페이스 미구현이면 업데이트 실패 (7.1.3+, 원칙 6)
 ```
 
 ---
@@ -139,33 +137,6 @@ upgrade step 은 동일 버전으로 재실행될 수 있다(`--force` 옵션). 
 - 테이블/컬럼 조작 전 `Schema::hasTable/hasColumn` 체크
 - 데이터 이관은 "이미 이관됨" 플래그로 skip 가능하게 설계
 
-### 원칙 5 — 확장 자신의 새 저장소·서비스를 해석하지 않는다
-
-모듈·플러그인 업데이트(경로 A)를 실행하는 프로세스에는 **부팅 때 등록된 옛 버전의 서비스 프로바이더** 만 있다. 새 버전 파일로 교체한 뒤에도 PHP 는 이미 로드한 프로바이더 클래스를 다시 읽을 수 없으므로, 새 버전 프로바이더가 추가한 바인딩(새 Repository 인터페이스 → 구현체, 새 Service 싱글턴 등)은 업그레이드 단계 실행 시점에 존재하지 않는다.
-
-- 금지: `app(VendorFooNewRepositoryInterface::class)`, `app(VendorFooNewService::class)` 처럼 **이번 버전에서 확장이 새로 바인딩한** 저장소·서비스를 해석
-- 허용: 코어 서비스·파사드 해석, `DB`/`Schema` 파사드로 직접 처리, 로컬 private 헬퍼
-- 새 바인딩이 필요한 후속 작업은 업그레이드 단계가 아니라 업데이트 뒤 다음 요청(새 프로바이더가 등록된 프로세스)에서 처리하도록 설계한다 — 예: 설정 저장 시 보정, 다음 활성화 때 재시드
-
-> 설치·활성화 경로는 다르다. 7.1.3 부터 설치·활성화·언어팩 시더 재실행 직전에 확장 프로바이더를 부팅과 같은 규칙으로 먼저 등록하므로, 설치 시더는 확장 자신의 저장소·서비스를 해석할 수 있다 — [모듈 개발 기초](module-basics.md) 참조.
-
-### 원칙 6 — 클래스를 쓸 수 없으면 업데이트 실패 (7.1.3+)
-
-아래 파일이 있는데 클래스를 쓸 수 없으면(클래스 없음 — 네임스페이스·클래스명 오타, 또는 요구 인터페이스·부모 미구현) 그 단계를 건너뛰지 않고 **업데이트를 실패로 끝낸다**. 이전에는 조용히 건너뛰어 데이터는 옛 형태인데 버전만 올라가는 상태가 생겼다.
-
-| 파일 | 요구 타입 | 실패 시 |
-| --- | --- | --- |
-| 코어 `upgrades/Upgrade_*.php` (업데이트 범위 안) | `UpgradeStepInterface` | `CoreUpdateOperationException` → 코어 업데이트 실패 경로(백업 복원) |
-| 확장 `upgrades/Upgrade_*.php` (업데이트 범위 안) | `UpgradeStepInterface` | `UpgradeStepClassMissingException` → 확장 업데이트 실패(범위 안 단계를 하나도 돌리기 전에) |
-| `upgrades/data/{version}/migrations/*.php` (코어·확장) | `DataMigration` 상속 | `UpgradeStepClassMissingException` → 업데이트 실패 |
-| 업데이트로 교체한 새 판 `module.php`·`plugin.php` (확장 진입 클래스) | `Modules\{Vendor}\{Name}\Module`·`Plugins\{Vendor}\{Name}\Plugin` | 버전을 기록하기 전에 업데이트 실패(`extensions.errors.entry_class_missing_on_update`) → 백업 복원·옛 버전 유지 |
-
-「업데이트 범위 안」은 시작 판 초과 ~ 목표 판 이하다. 이미 지난 판이나 아직 아닌 판의 단계 파일이 깨져 있어도 이번 업데이트는 막지 않는다 — 코어·확장이 같은 규칙이다(확장은 수집할 때 깨진 파일 자리에 표시만 두고, 범위로 고른 단계에 그 표시가 있을 때 실패한다).
-
-실패 메시지에 파일명과 기대한 클래스(FQCN)가 들어 있다. 파일명 접두 번호(`01_`)는 클래스명에서 빠지므로 클래스는 접두 없이 선언한다.
-
-위 표 밖의 클래스 누락은 업데이트를 막지 않고 **경고 로그** 만 남긴다 — 확장의 서비스 프로바이더·라우트 파일 누락, 업데이트가 아닌 경로(부팅·설치·번들 목록)의 확장 진입 클래스 누락, 훅 리스너의 인터페이스 미구현.
-
 ## 4. 허용/금지 패턴
 
 ### ❌ 금지 — 기존 클래스의 신규 메서드 호출
@@ -233,20 +204,6 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 ```
 
-### 기록된 예외 — 레이아웃 마크업 컴파일 트레이트 (7.1.0 스텝 04, 2026-09-30 승인)
-
-`upgrades/data/7.1.0/migrations/04_BackfillTemplateOverrideOriginals.php` 는 템플릿 오버라이드 `.g7.html` 을 컴파일하려고
-`App\Extension\Traits\ValidatesLayoutFiles` 를 쓴다. 마크업 컴파일러·partial 해석을 스텝 안에 사본으로 두기엔 규모가 커서
-예외로 인정했다. 성립 조건:
-
-- 부르는 메서드(`validateLayoutFiles(dir, basename, 'template', true)`)가 이 스텝이 도는 모든 출발 버전(7.0.x)에 같은 시그니처로
-  있다 — 7.0.x 판은 `original` 항목을 돌려주지 않으므로 그때는 `data` 를 원본으로 쓴다.
-- 뒤 버전이 컴파일 결과를 바꿔도 해가 "운영자 판 손실" 이 아니다 — 해시가 어긋난 행은 다음 keep 업데이트에서 「비교 기준 없음」
-  으로 통째 유지될 뿐이다.
-- `app(*Manager|*Service|*Repository)` 는 쓰지 않는다.
-
-같은 조건을 만족하지 않는 스텝이 이 예외를 선례로 삼지 않는다 — 새 예외는 승인을 받은 뒤 이 절에 추가한다.
-
 ### ✅ 허용 — 사용자 입력 (yes/no 프롬프트)
 
 upgrade step 에서 사용자 확인이 필요한 경우 `\App\Console\Helpers\ConsoleConfirm::ask()` 를 **FQN 직접 호출**한다. fgets(STDIN) 직접 사용 금지.
@@ -281,8 +238,6 @@ upgrade step PR 검토 시 아래 항목을 모두 확인:
 - [ ] 필요한 로직이 로컬 private 메서드로 작성되어 있는가?
 - [ ] 모든 return 분기에 upgrade.log 메시지가 있는가?
 - [ ] `--force` 재실행 시 안전한 멱등 동작인가?
-- [ ] (확장) 이번 버전에서 확장이 새로 바인딩한 저장소·서비스를 `app()` 으로 해석하지 않는가? (원칙 5)
-- [ ] step·데이터 마이그레이션 파일의 네임스페이스·클래스명이 파일과 일치하고 요구 인터페이스를 구현하는가? (원칙 6 — 어긋나면 업데이트 실패)
 - [ ] sudo 실행 환경에서 root 오염이 발생할 수 있는 파일 조작이 있다면 소유권 복원 로직이 포함되었는가?
 - [ ] 테스트 환경(`beta.N fresh` → `beta.N+1 update`) 에서 수동 검증을 통과했는가?
 
@@ -295,13 +250,6 @@ upgrade step PR 검토 시 아래 항목을 모두 확인:
 - 원본 소유자(www-data 등) 를 보존하려면 **업데이트 후 명시적 chown 필요**
 
 beta.2 이후 버전은 `CoreUpdateService::snapshotOwnership() + restoreOwnership()` 공통 로직이 Step 11 Cleanup 에서 자동 수행. upgrade step 에서 별도 소유권 복원이 필요한 예외 상황(이전 버전에 해당 로직이 없음) 에서만 인라인 작성.
-
-공통 복원이 닿지 않는 자리가 두 곳 있다 — 스텝이 그 자리에 파일을 새로 만들면 sudo 실행에서 root 소유로 남아 웹 계정이 다시 쓰지 못한다.
-
-- 복원 대상 목록(`config('app.update.restore_ownership')`) **밖** 경로. `storage/app/public`·`storage/app/{modules,plugins,attachments,settings}` 같은 사용자 데이터 영역은 업로드 파일 소유자를 지키려고 일부러 뺐다(재귀 chown 대상 아님).
-- 업데이트 **시작 시점에 없던** 파일. 스냅샷은 시작 시점의 경로만 기록한다.
-
-이런 파일은 스텝이 쓴 직후 부모 디렉터리의 소유자·그룹으로 직접 맞춘다(root 로 실행 중일 때만 실제로 바뀐다). 스텝은 신규 헬퍼 대신 PHP 파일 함수(`fileowner`·`filegroup`·`chown`·`chgrp`)로 쓴다 — 선례: 7.1.6 `WritePublicDiskHtaccess`(`storage/app/public/.htaccess`), 설정 JSON 은 `SettingsMigrator` 가 같은 방식으로 부모 소유를 잇는다.
 
 ### 6.1 항목별 정확 복원 — `snapshotOwnershipDetailed` + `restoreOwnership($detailedSnapshot)` (beta.4+)
 
@@ -355,8 +303,6 @@ beta.1 의 `CoreUpdateService::syncCoreMailTemplates()` 가 `App\Models\MailTemp
 
 이 경우 shim 파일은 "upgrade step 의 의존성" 이지만 **이전 버전(beta.1) 이 메모리에 올리는 대상** 이므로 upgrade step 밖의 신규 파일로 작성되어야 했다. upgrade step 내부에서 `class_exists` 체크만으로 충분.
 
-후속 (7.1.0): `mail_templates`·`mail_send_logs` 생성 마이그레이션이 남아 신규 설치에도 빈 표가 생기던 문제는 7.1.0 에서 생성 마이그레이션을 지우고, 기존 설치는 데이터 마이그레이션 `DropLegacyMailTables` 가 안전할 때만(행 0건, 또는 발송 이력 이관 확인) 드랍하는 것으로 정리했다. `App\Models\MailTemplate` shim 파일은 호환을 위해 남아 있다(@deprecated).
-
 ### 사례 B — vendor 소유권 복원 (sudo + 비대칭 환경)
 
 beta.1 의 `runComposerInstall(base_path())` 가 sudo 에서 vendor/ 를 root 로 재생성. beta.2 upgrade step 이 storage/ 디렉토리 기준으로 원본 웹서버 계정(www-data) 을 추정하여 vendor/ 복원.
@@ -378,7 +324,6 @@ beta.1 의 `runComposerInstall(base_path())` 가 sudo 에서 vendor/ 를 root �
 - 단, `reloadModule`/`reloadPlugin` 이 `evalFreshModule` 로 **진입점 클래스만 재로드** (`app/Extension/ModuleManager.php` 의 `evalFreshModule`, `PluginManager.php` 의 `evalFreshPlugin` 참조)
 - 진입점 메서드(`getPermissions`/`getMenus` 등)는 재로드 덕분에 최신 정의 반환
 - 하지만 **그 외 App\* 클래스**(Helper, Service, Model)는 여전히 이전 버전 메모리
-- 서비스 컨테이너에도 **옛 버전 프로바이더의 바인딩만** 있다 — 새 버전이 추가한 저장소·서비스 바인딩은 해석할 수 없다 (원칙 5)
 - **적용 규율**: 섹션 3~5 의 모든 작성 규칙 적용. 로컬 private 헬퍼 우선, 기존 클래스의 신규 메서드 호출 금지
 
 ### 경로 B — 코어 upgrade step (beta.3 이후, 규율 완화)
@@ -486,7 +431,7 @@ Call to undefined method App\Services\CoreUpdateService::ensureWritableDirectori
 
 beta.4 의 `Upgrade_7_0_0_beta_4` step 이 `app(CoreUpdateService::class)->ensureWritableDirectories(...)` 를 호출했으나, 부모 메모리의 stale beta.3 `CoreUpdateService` 인스턴스에는 `ensureWritableDirectories` 가 없어 fatal. 디스크는 이미 beta.4 였음에도 PHP autoloader 가 beta.3 인스턴스를 재사용한 결과.
 
-#### 자동 검출 — V-1 안전 자동 검증 (리뷰 경고)
+#### 자동 검출 — V-1 안전 정적 검사 (리뷰 경고)
 
 `upgrades/Upgrade_*.php` 안의 `app(\w+Service::class)` / `app(\w+Manager::class)` / `app(\w+Repository::class)` 패턴은 PR review reviewer 에게 manual-only 경고를 발행한다. 자동 차단은 아니지만, 매치된 위치를 보고 "이 메서드가 이전 버전 디스크에 존재했는가" 를 reviewer 가 수동 판정한다. 면제: `// audit:allow upgrade-step-vone-safety reason: ...` 인라인 주석.
 
@@ -670,7 +615,7 @@ upgrade step 이 수행하는 데이터 변경은 단순 "마이그레이션" �
 
 ## 12. Declarative artifacts 일회성 보정 패턴
 
-번들 모듈/플러그인의 **declarative 시드** (예: `getIdentityPolicies()`, `getNotificationDefinitions()` — 본인인증 알림 포함. 옛 `getIdentityMessages()` 는 @deprecated 7.1.0 으로, 선언이 있으면 알림 정의로 변환되어 함께 동기화된다) 는 정상 흐름에서 `ExecuteBundledUpdatesCommand` 의 spawn 자식 프로세스가 신버전 `ModuleManager::syncDeclarativeArtifacts()` 를 호출해 시드한다. 따라서 미래 release 의 회귀 차단은 spawn 구조에 의해 자동 보장되며 추가 추상화 불필요.
+번들 모듈/플러그인의 **declarative 시드** (예: `getIdentityPolicies()`, `getIdentityMessageDefinitions()`, `getNotificationDefinitions()`) 는 정상 흐름에서 `ExecuteBundledUpdatesCommand` 의 spawn 자식 프로세스가 신버전 `ModuleManager::syncDeclarativeArtifacts()` 를 호출해 시드한다. 따라서 미래 release 의 회귀 차단은 spawn 구조에 의해 자동 보장되며 추가 추상화 불필요.
 
 ### 일회성 사후 보정이 필요한 transition
 
@@ -705,7 +650,7 @@ $pluginResult = app(PluginManager::class)->resyncAllActiveDeclarativeArtifacts()
 3. 확장 작성자는 자신의 `module.php` / `plugin.php` 에 declaration override (필요 확장만)
 4. manifest(`module.json` / `plugin.json`) 변경 불필요 — declaration 은 PHP 클래스 메서드
 
-**자동 정합성 검증**: 자동 검증이 새 declaration 메서드 추가 시 sync 묶음에 누락 없이 반영되는지 검증. 누락 시 빌드/커밋 단계에서 차단된다.
+**자동 정합성 검증**: 정적 검사가 새 declaration 메서드 추가 시 sync 묶음에 누락 없이 반영되는지 검증. 누락 시 빌드/커밋 단계에서 차단된다.
 
 ### 권한 정상화 실패 노출
 
@@ -725,7 +670,7 @@ spawn 자식 (경로 B) 은 디스크의 *최신* 코드/시더/카탈로그를 
 
 - **코어**: 7.0.0-beta.5 부터 신규 step 의무 (beta.2~4 는 legacy 호환 유지)
 - **번들 모듈/플러그인**: `module.json` / `plugin.json` 의 `g7_version` 제약 최소 버전이 `7.0.0-beta.5` 이상이면 *그 확장의 현재 version 부터* 신규 step 의무. 그 미만이면 legacy (가드 미발동)
-- **외부 확장 (`modules/{not _bundled}` / `plugins/{not _bundled}`)**: 런타임 가드는 동일하게 발화 (manifest g7_version 판정), 자동 검증만 적용 제외 (사용자 수정 코드 PR 차단 부적합)
+- **외부 확장 (`modules/{not _bundled}` / `plugins/{not _bundled}`)**: 런타임 가드는 동일하게 발화 (manifest g7_version 판정), 정적 검사만 적용 제외 (사용자 수정 코드 PR 차단 부적합)
 - **번들 템플릿/언어팩**: upgrade step 시스템 자체가 부재 — 미래 도입 시 동일 규약 자동 상속
 
 ### 확장 작성자의 적용 트리거
@@ -840,10 +785,10 @@ final public function run(UpgradeContext $context): void
 
 - **raw JSON 만 read** (Applier) — 시더 클래스 `Database\Seeders\*` 참조 금지 (fresh-load invariant)
 - **idempotent** — `Schema::hasColumn` / `where->exists()` 가드 동반
-- **V-1 안전 강화** — `app(*Service|*Manager|*Repository::class)` 호출 금지 (자동 검증이 차단)
+- **V-1 안전 강화** — `app(*Service|*Manager|*Repository::class)` 호출 금지 (정적 검사가 차단)
 - **버전 격리** — 다른 버전 namespace `App\Upgrades\Data\V{other}\*` 참조 금지
 - **로컬 헬퍼 + Illuminate 파사드만 사용** — 신규 도입 클래스 / 미래 변경 가능 클래스 의존 회피
-- **공용 헬퍼 사용 시 신중** — `FilePermissionHelper::copyDirectory` 처럼 V-1 안전 검증된 헬퍼만 허용 (자동 검증이 미허용 호출은 차단)
+- **공용 헬퍼 사용 시 신중** — `FilePermissionHelper::copyDirectory` 처럼 V-1 안전 검증된 헬퍼만 허용 (정적 검사가 미허용 호출은 차단)
 
 ### 강제 메커니즘
 
@@ -852,7 +797,7 @@ final public function run(UpgradeContext $context): void
 | 런타임 | 코어 | `CoreUpdateService::runUpgradeSteps()` 의 instance 검증 | 버전 ≥ beta.5 인데 `AbstractUpgradeStep` 미상속 → `CoreUpdateOperationException` throw → update 전체 중단 → 백업 복원 |
 | 런타임 | 모듈 | `ModuleManager::runUpgradeSteps()` 내 `ExtensionUpgradeGuardHelper` 호출 | manifest g7_version 기반 since-version 판정 → 미상속 시 `RuntimeException` throw |
 | 런타임 | 플러그인 | `PluginManager::runUpgradeSteps()` 내 `ExtensionUpgradeGuardHelper` 호출 | 동일 패턴 (식별자만 다름) |
-| PR 시점 | 코어 + 번들 모듈/플러그인 | 자동 검증 (위반 시 차단) | namespace 불일치 / Seeders use / app() 호출 / 다른 버전 참조 / 공용 디렉토리 사용 자동 차단. 확장 경로는 manifest g7_version 기반 since-version 으로 검사 범위 결정 |
+| PR 시점 | 코어 + 번들 모듈/플러그인 | 정적 검사 (위반 시 차단) | namespace 불일치 / Seeders use / app() 호출 / 다른 버전 참조 / 공용 디렉토리 사용 자동 차단. 확장 경로는 manifest g7_version 기반 since-version 으로 검사 범위 결정 |
 
 면제: `// audit:allow upgrade-step-data-snapshot reason: ...` 인라인 주석. legacy 미들 케이스 또는 임시 우회 시.
 
@@ -886,7 +831,7 @@ final public function run(UpgradeContext $context): void
   4. `04_IdentityPermissionPivotMerge.php` — IDV 권한 rename 충돌 경로 피벗 병합
   5. `05_RecoverPublicStorageSymlink.php` — public/storage symlink 복구
 
-beta.4 까지 출시본의 박제된 핫픽스 모든 동작이 본 격리 구조로 100% 보존되며, 미래 버전이 이 디렉토리를 *수정하지 않는 한* (수정은 자동 검증 차단 대상) beta.1 → beta.7 같은 멀티 점프에서도 동일한 결과를 보장한다.
+beta.4 까지 출시본의 박제된 핫픽스 모든 동작이 본 격리 구조로 100% 보존되며, 미래 버전이 이 디렉토리를 *수정하지 않는 한* (수정은 정적 검사 차단 대상) beta.1 → beta.7 같은 멀티 점프에서도 동일한 결과를 보장한다.
 
 ---
 

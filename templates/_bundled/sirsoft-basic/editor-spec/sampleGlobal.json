@@ -1,10 +1,7 @@
 {
-  "comment": "_user_base.json 헤더/푸터/Welcome 이 의존하는 _global.* baseline. 코어 임시 시드(coreSampleGlobalSeed) 를 본 템플릿 스펙으로 이관(S6-2 (C)). `$`-prefixed 키($locale/$locales)는 PreviewCanvas 가 렌더 컨텍스트 최상위로 끌어올리는 엔진 전역 샘플 — 로케일 선택 드롭다운(`{{$locales}}`) 미리보기용. `settings.analytics.public_summary_enabled` 는 홈 방문자 카운터 조각이 보는 공개 설정이다 — 없으면 편집 캔버스에서 카운터가 늘 숨는다(숫자는 `sampleData.visitor_summary` 가 채운다).",
+  "comment": "_user_base.json 헤더/푸터/Welcome 이 의존하는 _global.* baseline. 코어 임시 시드(coreSampleGlobalSeed) 를 본 템플릿 스펙으로 이관(S6-2 (C)). `$`-prefixed 키($locale/$locales)는 PreviewCanvas 가 렌더 컨텍스트 최상위로 끌어올리는 엔진 전역 샘플 — 로케일 선택 드롭다운(`{{$locales}}`) 미리보기용.",
   "$locale": "ko",
-  "$locales": [
-    "ko",
-    "en"
-  ],
+  "$locales": ["ko", "en"],
   "currentUser": {
     "uuid": "sample-uuid-current-user",
     "id": 1,
@@ -23,10 +20,7 @@
       "site_logo_url": null
     },
     "site_name": "샘플 사이트",
-    "site_description": "편집 모드 미리보기 — 실제 사이트 설정은 운영 환경에서 적용됩니다.",
-    "analytics": {
-      "public_summary_enabled": true
-    }
+    "site_description": "편집 모드 미리보기 — 실제 사이트 설정은 운영 환경에서 적용됩니다."
   },
   "site": {
     "name": "샘플 사이트"
@@ -45,42 +39,5 @@
       "country_code": "KR"
     },
     "shippingMemo": "door"
-  },
-  "appConfig": {
-    "version": "1.1.0",
-    "releaseYear": 2026,
-    "isIos": false,
-    "supportedLocales": [
-      "ko",
-      "en",
-      "ja"
-    ],
-    "localeNames": {
-      "ko": "한국어",
-      "en": "English",
-      "ja": "日本語"
-    },
-    "supportedTimezones": [
-      "Asia/Seoul",
-      "Asia/Tokyo",
-      "UTC"
-    ]
-  },
-  "modules": {
-    "sirsoft-ecommerce": {
-      "basic_info": {
-        "show_business_footer": true,
-        "company_name": "샘플 상사",
-        "ceo_name": "홍길동",
-        "zipcode": "06236",
-        "base_address": "서울시 강남구 테헤란로 1",
-        "detail_address": "10층",
-        "phone": "02-000-0000",
-        "email": "help@example.com",
-        "business_number": "000-00-00000",
-        "mail_order_number": "2026-서울강남-0000",
-        "hosting_provider": "샘플 호스팅"
-      }
-    }
   }
 }

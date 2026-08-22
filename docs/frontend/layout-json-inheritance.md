@@ -8,7 +8,7 @@
 ## TL;DR (5초 요약)
 
 ```text
-1. extends: 베이스 레이아웃 상속 (베이스에서 노드 키 slot: "이름" 을 단 노드 자리에 삽입)
+1. extends: 베이스 레이아웃 상속 (type: "slot" 위치에 삽입)
 2. slots: 상속 시 슬롯별 컴포넌트 배열 정의
 3. partials: 파일 분할 (컴포넌트 내용만 치환)
 4. 병합 규칙: extends 상속 시 data_sources, modals, init_actions, computed, globalHeaders 자동 병합
@@ -19,7 +19,7 @@
 
 ## 독립 레이아웃의 글로벌 호스트 컴포넌트 (CRITICAL)
 
-`extends` 가 없는 독립 레이아웃(예: `admin_login.g7.html`)은 베이스의 `Toast`, `ModalRoot` 등 글로벌 호스트 컴포넌트를 자동으로 마운트하지 않는다. `toast` / `openModal` 같은 핸들러는 `_global.toasts` / `_global.modal` 에 데이터를 push 만 하고 화면 렌더는 호스트 컴포넌트의 책임이므로, 호스트 미마운트 상태에서 핸들러를 호출하면 `success` 로 기록되지만 사용자에게 보이지 않는 silent failure 가 발생한다.
+`extends` 가 없는 독립 레이아웃(예: `admin_login.json`)은 베이스의 `Toast`, `ModalRoot` 등 글로벌 호스트 컴포넌트를 자동으로 마운트하지 않는다. `toast` / `openModal` 같은 핸들러는 `_global.toasts` / `_global.modal` 에 데이터를 push 만 하고 화면 렌더는 호스트 컴포넌트의 책임이므로, 호스트 미마운트 상태에서 핸들러를 호출하면 `success` 로 기록되지만 사용자에게 보이지 않는 silent failure 가 발생한다.
 
 ```text
 ❌ 독립 레이아웃에서 init_actions 의 toast / openModal 발화 + 호스트 컴포넌트 누락
@@ -33,14 +33,12 @@
 
 ### 베이스 레이아웃의 호스트 컴포넌트 위치
 
-| 템플릿 | 베이스 레이아웃 (소스 SSoT) | Toast 컴포넌트 위치 |
+| 템플릿 | 베이스 레이아웃 | Toast 컴포넌트 위치 |
 |--------|----------------|--------------------|
-| sirsoft-admin_basic | `layouts/_admin_base.g7.html` | `<toast data-ref="global_toast">` (산출 JSON 기준 `components[1]`) |
-| sirsoft-basic | `layouts/_user_base.g7.html` | `<toast data-ref="global_toast">` (산출 JSON 기준 `components[1]`) |
+| sirsoft-admin_basic | `layouts/_admin_base.json` | `components[0]` (id: `global_toast`) |
+| sirsoft-basic | `layouts/_user_base.json` | components 내 `Toast` 항목 |
 
 독립 레이아웃을 작성할 때는 위 베이스의 `global_toast` (또는 동등 항목) 블록을 그대로 복사한다. 사용자 정의 변형 없이 정의를 통일하면 회귀가 발생하지 않는다.
-
-`.g7.html` 컴파일의 `standalone_missing_global_host` 경고는 호스트를 **컴포넌트 이름으로 찾지 않는다**(템플릿마다 이름이 다를 수 있다). `toast` 를 발화하면 `_global.toasts` 를 props·조건에서 읽는 노드가, `openModal` 을 발화하면 `modals` 섹션(또는 `_global.modalStack` 을 읽는 노드)이 있어야 한다. `showAlert` 는 브라우저 `alert()` 라 호스트가 필요 없다.
 
 ---
 
@@ -119,45 +117,22 @@ Partial 경로는 다음 순서로 해석된다 — 다른 레이아웃의 parti
 
 **올바른 computed 정의 방법**:
 
-computed 는 부모 레이아웃에 정의하고 partial 에서는 참조만 합니다. 두 곳 이상에서 쓰는 파생값만 computed 로 두고, 한 곳에서만 쓰는 식은 그 자리에 바로 적습니다.
-
-```html
-<!-- ✅ admin_product_list.json (부모 레이아웃) - computed 정의 -->
-<layout name="admin_product_list" version="1.0.0">
-  <computed name="selectedCount">{{(_local.selectedIds ?? []).length}}</computed>
-  <computed name="hasSelection">{{$computed.selectedCount > 0}}</computed>
-  <slot name="content">
-    <include src="partials/_bulk_toolbar.g7.html"/>
-  </slot>
-</layout>
-
-<!-- ✅ _bulk_toolbar.json (partial 파일) - $computed 참조만 가능 -->
-<partial>
-  <div>
-    <span data-if="{{$computed.hasSelection}}">{{$computed.selectedCount}}개 선택됨</span>
-    <button disabled="{{!$computed.hasSelection}}">$t:common.delete</button>
-  </div>
-</partial>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 // ✅ admin_product_list.json (부모 레이아웃) - computed 정의
 {
   "layout_name": "admin_product_list",
   "computed": {
-    "selectedCount": "{{(_local.selectedIds ?? []).length}}",
-    "hasSelection": "{{$computed.selectedCount > 0}}"
+    "filterPriceType": "{{_local.filter.priceType ?? query.price_type ?? 'selling_price'}}",
+    "filterDateType": "{{_local.filter.dateType ?? query.date_type ?? 'created_at'}}"
   },
   "slots": {
     "content": [
-      { "partial": "partials/_bulk_toolbar.json" }
+      { "partial": "partials/_filter_section.json" }
     ]
   }
 }
 
-// ✅ _bulk_toolbar.json (partial 파일) - $computed 참조만 가능
+// ✅ _filter_section.json (partial 파일) - $computed 참조만 가능
 {
   "meta": { "is_partial": true },
   "type": "basic",
@@ -166,20 +141,11 @@ computed 는 부모 레이아웃에 정의하고 partial 에서는 참조만 합
     {
       "type": "basic",
       "name": "Span",
-      "if": "{{$computed.hasSelection}}",
-      "text": "{{$computed.selectedCount}}개 선택됨"
-    },
-    {
-      "type": "basic",
-      "name": "Button",
-      "props": { "disabled": "{{!$computed.hasSelection}}" },
-      "text": "$t:common.delete"
+      "text": "가격 유형: {{$computed.filterPriceType}}"
     }
   ]
 }
 ```
-
-`hasSelection` 은 앞에 정의한 `selectedCount` 를 참조합니다. computed 는 정의 순서대로 계산되므로 참조되는 키를 위에 둡니다(engine-v1.74.0+, [computed 평가 모델](layout-json-features-styling.md#평가-모델-engine-v1740)).
 
 **잘못된 예시 (partial에서 computed 정의)**:
 
@@ -188,14 +154,14 @@ computed 는 부모 레이아웃에 정의하고 partial 에서는 참조만 합
 {
   "meta": { "is_partial": true },
   "computed": {
-    "selectedCount": "..."  // 이 computed는 병합되지 않음!
+    "filterPriceType": "..."  // 이 computed는 병합되지 않음!
   },
   "type": "basic",
   "name": "Div"
 }
 ```
 
-위 partial의 `computed`는 **부모 레이아웃과 병합되지 않습니다**. `$computed.selectedCount`는 `undefined`로 평가됩니다.
+위 partial의 `computed`는 **부모 레이아웃과 병합되지 않습니다**. `$computed.filterPriceType`은 `undefined`로 평가됩니다.
 
 ---
 
@@ -214,16 +180,6 @@ computed 는 부모 레이아웃에 정의하고 partial 에서는 참조만 합
 
 ### Base 레이아웃 예시
 
-```html
-<layout name="base_admin" version="1.0.0">
-  <admin-header data-ref="header"/>
-  <div data-ref="main-content" data-slot="content"/>
-  <admin-footer data-ref="footer"/>
-</layout>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "version": "1.0.0",
@@ -236,9 +192,9 @@ computed 는 부모 레이아웃에 정의하고 partial 에서는 참조만 합
     },
     {
       "id": "main-content",
-      "type": "basic",
-      "name": "Div",
-      "slot": "content"
+      "type": "slot",
+      "name": "content",
+      "default": []
     },
     {
       "id": "footer",
@@ -250,17 +206,6 @@ computed 는 부모 레이아웃에 정의하고 partial 에서는 참조만 합
 ```
 
 ### 상속 레이아웃 예시
-
-```html
-<layout name="dashboard" version="1.0.0" extends="base_admin">
-  <meta title="$t:dashboard.title" description="$t:dashboard.description"/>
-  <slot name="content">
-    <div data-ref="dashboard-content"/>
-  </slot>
-</layout>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -277,7 +222,7 @@ computed 는 부모 레이아웃에 정의하고 partial 에서는 참조만 합
       {
         "id": "dashboard-content",
         "type": "composite",
-        "name": "Div"
+        "name": "DashboardStats"
       }
     ]
   }
@@ -314,29 +259,14 @@ computed 는 부모 레이아웃에 정의하고 partial 에서는 참조만 합
 **디렉토리 구조**:
 ```
 templates/sirsoft-admin_basic/layouts/
-├── template_partial_test.g7.html       # 메인 레이아웃 (소스 SSoT) + 짝 .json (런타임 계약)
+├── template_partial_test.json          # 메인 레이아웃
 └── partials/                           # Partial 파일 폴더
     └── template_partial_test/          # 메인 레이아웃명으로 그룹핑
-        ├── _content_section.g7.html    # Level 1 partial (+ 짝 .json)
-        └── _info_card.g7.html          # Level 2 partial (+ 짝 .json)
+        ├── _content_section.json      # Level 1 partial
+        └── _info_card.json            # Level 2 partial
 ```
-
-> 디스크에는 소스와 짝 `.json` 이 함께 있고, 편집 대상은 `.g7.html` 이다.
-> 아래 `partial` **값**이 `.json` 인 것은 별개 축 — 그것은 런타임 계약이 참조하는 경로다.
 
 **메인 레이아웃**:
-```html
-<layout name="template_partial_test" version="1.0.0" extends="_admin_base">
-  <slot name="content">
-    <div>
-      <include src="partials/template_partial_test/_content_section.g7.html"/>
-    </div>
-  </slot>
-</layout>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "version": "1.0.0",
@@ -359,16 +289,6 @@ templates/sirsoft-admin_basic/layouts/
 ```
 
 **Partial 파일** (_content_section.json):
-```html
-<partial description="컨텐츠 섹션">
-  <div>
-    <include src="_info_card.g7.html"/>
-  </div>
-</partial>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "meta": {
@@ -386,17 +306,6 @@ templates/sirsoft-admin_basic/layouts/
 ```
 
 **중첩 Partial 파일** (_info_card.json):
-```html
-<partial description="정보 카드">
-  <card title="Partial 테스트" content="이 Card는 partial로 포함되었습니다.
-특징:
-• 무제한 중첩 깊이
-• data_sources 전파"/>
-</partial>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "meta": {
@@ -415,14 +324,6 @@ templates/sirsoft-admin_basic/layouts/
 ### is_partial 메타데이터
 
 Partial 전용 파일임을 표시하는 메타데이터 (선택사항):
-
-```html
-<partial description="Partial 전용 파일 설명">
-  <div/>
-</partial>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -457,18 +358,6 @@ Partial 전용 파일임을 표시하는 메타데이터 (선택사항):
 ### data_sources 전파
 
 **핵심 기능**: 메인 레이아웃의 `data_sources`가 partial 파일에서도 접근 가능
-
-```html
-<!-- 메인 레이아웃 -->
-<data-source id="items" endpoint="/api/admin/sample/test-data"/>
-<slot name="content">
-  <include src="partials/sample_content/_tab_content.g7.html"/>
-</slot>
-<!-- _tab_content.json (partial 파일) -->
-<card content="Items 총 개수: {{items.data.pagination.total}}"/>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 // 메인 레이아웃
@@ -514,33 +403,20 @@ Partial 전용 파일임을 표시하는 메타데이터 (선택사항):
 
 **디렉토리 구조**:
 ```
-modules/_bundled/sirsoft-board/resources/layouts/admin/
-├── admin_board_form.g7.html            # 메인 레이아웃 (소스 SSoT) + 짝 .json
+modules/sirsoft-board/resources/layouts/admin/
+├── admin_board_form.json               # 메인 레이아웃
 └── partials/
-    ├── admin_board_form/               # 레이아웃 전용 Partial 파일 (각각 짝 .json 동반)
-    │   ├── _tab_basic.g7.html
-    │   ├── _tab_permissions.g7.html
-    │   ├── _tab_list.g7.html
-    │   ├── _tab_post.g7.html
-    │   └── _tab_notification.g7.html
+    ├── admin_board_form/               # 레이아웃 전용 Partial 파일
+    │   ├── _tab_basic.json
+    │   ├── _tab_permissions.json
+    │   ├── _tab_list.json
+    │   ├── _tab_post.json
+    │   └── _tab_notification.json
     └── common/                         # 재사용 가능한 공통 Partial (향후)
-        └── _common_section.g7.html
+        └── _common_section.json
 ```
 
 **메인 레이아웃** (admin_board_form.json):
-```html
-<layout name="admin_board_form" version="1.0.0" extends="_admin_base">
-  <slot name="content">
-    <form data-ref="board_form">
-      <include src="partials/admin_board_form/_tab_basic.g7.html"/>
-      <include src="partials/admin_board_form/_tab_permissions.g7.html"/>
-    </form>
-  </slot>
-</layout>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "version": "1.0.0",
@@ -567,16 +443,6 @@ modules/_bundled/sirsoft-board/resources/layouts/admin/
 ```
 
 **Partial 파일** (partials/admin_board_form/_tab_basic.json):
-```html
-<partial description="Board Form - Basic Tab Content">
-  <div data-ref="tab_content_basic" data-if="{{(_local.activeTab ?? 'basic') === 'basic'}}" class="space-y-6 max-w-2xl pt-6">
-    <input data-ref="board_id_field" type="text" name="board_id" placeholder="$t:sirsoft-board.admin.form.board_id_placeholder"/>
-  </div>
-</partial>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "meta": {
@@ -778,7 +644,7 @@ Partial은 PHP의 include와 동일하게 "단순 문자열 삽입"입니다.
 |------|------|--------------|
 | `version` | 레이아웃 스키마 버전 | 자식 → 부모 → "1.0.0" |
 | `layout_name` | 레이아웃 식별자 | 자식 → 부모 → "" |
-| `meta` | 메타 정보 | 키 단위로 자식이 부모를 덮어씀 (`seo`·`scroll_restoration` 은 하위 키까지 깊게 병합) |
+| `meta` | 메타 정보 | 자식이 부모를 덮어씀 |
 | `data_sources` | 데이터 소스 | 부모 + 자식 (ID 중복 불가) |
 | `components` | 컴포넌트 트리 | 슬롯 교체 병합 |
 | `modals` | 모달 컴포넌트 | ID 기반 병합 (자식 우선) |
@@ -828,28 +694,7 @@ Partial은 PHP의 include와 동일하게 "단순 문자열 삽입"입니다.
 
 자식이 `enabled: false` 지정 시 → SEO 비활성화 (자식 우선)
 
-레이아웃 편집기 페이지 설정([기본 정보]·[검색엔진] 탭)으로 저장하면 이 화면이 직접 적은 SEO 키와 베이스와 값이 달라진
-키만 화면 레이아웃에 남는다(`data_sources` 는 베이스에 없는 항목만). 베이스에서 물려받은 값을 그대로 두면 저장하지 않아,
-그 뒤 베이스의 SEO 를 바꾸면 이 화면에도 반영된다(engine-v1.85.0 — 종전에는 병합본을 통째로 저장해 베이스 값이 화면 값으로
-굳었다). 같은 병합 규칙상 베이스가 준 키를 화면에서 지우는 것은 표현할 수 없다 — 바꾸려면 값을 덮어쓴다.
-
 > 상세: [seo-system.md](../backend/seo-system.md)
-
-### meta.scroll_restoration 병합 규칙 (engine-v1.85.0)
-
-베이스 레이아웃(`_user_base`·`_admin_base` 등)의 `meta.scroll_restoration` 은 레이아웃 편집기에서 고치는 「템플릿 기본값」이다. 화면 레이아웃은 바꿀 키만 적는다 — 서버(`LayoutService`)가 베이스 → 화면 순서로 깊게 병합한다.
-
-| 키 | 병합 전략 |
-|----|----------|
-| 스칼라 (`mode`·`on_reload`·`wait`·`timeout_ms`) | 자식 우선 |
-| `snapshot` (객체) | 하위 키 단위로 자식 우선 (`enabled`·`ttl_seconds`·`revalidate`·`item_key`·`state`). `snapshot.state`(상태 경로 배열)는 `containers` 처럼 통째로 바꾼다 |
-| `containers` (선택자 배열) | 자식이 적으면 통째로 바꾼다 (인덱스별로 섞지 않는다). 빈 배열 `[]` 도 「이 화면은 안쪽 영역 없음」이라는 지정이다 |
-
-- 베이스: `{ "mode": "restore", "containers": ["#admin-main"], "snapshot": { "ttl_seconds": 300 } }`
-- 화면: `{ "mode": "top", "snapshot": { "revalidate": false } }`
-- 결과: `{ "mode": "top", "containers": ["#admin-main"], "snapshot": { "ttl_seconds": 300, "revalidate": false } }`
-
-3단계 이상 상속도 같은 규칙으로 누적된다. 병합 결과 위에 엔진이 template.json 값·엔진 기본값을 깔고, 이동 액션의 `returnScroll` 을 마지막에 덮는다 — 키 표와 적용 순서는 [layout-json.md](layout-json.md#metascroll_restoration-뒤로-가기와-새로고침-스크롤-복원).
 
 #### 데이터소스 initLocal의 `_merge` 옵션 (engine-v1.18.0+)
 
@@ -903,15 +748,6 @@ Partial은 PHP의 include와 동일하게 "단순 문자열 삽입"입니다.
 
 **부모 레이아웃** (`_user_base.json`):
 
-```html
-<global-headers>
-  <match pattern="*" X-Template="basic"/>
-  <match pattern="/api/modules/sirsoft-ecommerce/*" X-Cart-Key="{{_global.cartKey}}"/>
-</global-headers>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "globalHeaders": [
@@ -923,14 +759,6 @@ Partial은 PHP의 include와 동일하게 "단순 문자열 삽입"입니다.
 
 **자식 레이아웃** (`shop/cart.json`):
 
-```html
-<global-headers>
-  <match pattern="*" X-Page="cart"/>
-</global-headers>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "extends": "_user_base",
@@ -941,15 +769,6 @@ Partial은 PHP의 include와 동일하게 "단순 문자열 삽입"입니다.
 ```
 
 **병합 결과**:
-
-```html
-<global-headers>
-  <match pattern="*" X-Template="basic" X-Page="cart"/>
-  <match pattern="/api/modules/sirsoft-ecommerce/*" X-Cart-Key="{{_global.cartKey}}"/>
-</global-headers>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

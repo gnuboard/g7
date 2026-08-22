@@ -4,13 +4,11 @@ return [
     'title' => '템플릿 관리',
 
     'errors' => [
-        'force_update_no_source' => ':template 템플릿을 강제 업데이트할 소스를 찾을 수 없습니다. 번들 및 GitHub URL이 모두 없습니다.',
+        'force_update_no_source' => ':template 을(를) 강제 업데이트할 소스를 찾을 수 없습니다. 번들 및 GitHub URL이 모두 없습니다.',
         'downgrade_blocked' => '다운그레이드가 차단되었습니다 (:from → :to). 의도적 다운그레이드는 --force 옵션을 사용하세요.',
         'not_found' => '템플릿을 찾을 수 없습니다. (:template)',
         'not_installed' => '템플릿이 설치되지 않았습니다. (:template)',
         'already_active' => '이미 활성화된 템플릿입니다.',
-        'last_active_deactivate' => '마지막으로 활성화된 :type 템플릿은 비활성화할 수 없습니다. 같은 유형의 다른 템플릿을 먼저 활성화하세요.',
-        'last_active_uninstall' => '마지막으로 활성화된 :type 템플릿은 삭제할 수 없습니다. 같은 유형의 다른 템플릿을 먼저 활성화하세요.',
         'invalid_format' => '잘못된 템플릿 형식입니다.',
         'activation_failed' => '템플릿 활성화에 실패했습니다: :error',
         'file_copy_failed' => '파일 복사에 실패했습니다: :error',
@@ -30,11 +28,9 @@ return [
         'missing_layout_name' => '레이아웃 JSON에 layout_name 필드가 누락되었습니다.',
         'layout_registration_failed' => '레이아웃 등록에 실패했습니다: :error',
         'layout_validation_failed' => ':template 템플릿의 레이아웃 검증에 실패했습니다. (:count개 오류)',
-        'layout_validation_validation_failed' => ':identifier 템플릿의 레이아웃 검증에 실패했습니다. (:count개 오류)',
         'layout_validation_json_error' => ':file - JSON 파싱 오류: :error',
         'layout_validation_missing_name' => ':file - layout_name 필드가 누락되었습니다.',
         'layout_validation_partial_error' => ':file - Partial 처리 오류 (:partial): :error',
-        'layout_validation_markup_error' => ':file - 마크업 컴파일 오류: :error',
         'override_layout_registration_failed' => '오버라이드 레이아웃 등록에 실패했습니다: :error',
         'file_not_found' => '파일을 찾을 수 없습니다.',
         'file_type_not_allowed' => '허용되지 않은 파일 타입입니다.',
@@ -77,7 +73,7 @@ return [
         'contact_admin' => '관리자에게 문의하세요.',
 
         // 업데이트 관련 에러
-        'operation_in_progress' => '":name" 템플릿이 현재 :status 상태입니다. 작업이 완료될 때까지 기다려 주세요.',
+        'operation_in_progress' => '템플릿 ":name"이(가) 현재 :status 상태입니다. 작업이 완료될 때까지 기다려 주세요.',
         'github_api_failed' => 'GitHub API 호출에 실패했습니다: :error',
         'invalid_github_url' => '유효하지 않은 GitHub URL입니다.',
         'zip_url_not_found' => 'ZIP 다운로드 URL을 찾을 수 없습니다.',
@@ -88,7 +84,6 @@ return [
         'delete_directory_failed' => '템플릿 디렉토리 삭제에 실패했습니다: :error',
         'update_failed' => '템플릿 ":template" 업데이트에 실패했습니다: :error',
         'invalid_layout_strategy' => '유효하지 않은 레이아웃 전략입니다. (overwrite 또는 keep만 허용)',
-        'invalid_layout_source' => '유효하지 않은 레이아웃 설치 소스입니다. (auto 또는 json만 허용)',
     ],
 
     'messages' => [
@@ -109,13 +104,12 @@ return [
         'editor_spec_empty' => '편집기 스펙이 비어 있습니다.',
         'editor_spec_retrieved' => '편집기 스펙을 조회했습니다.',
         'editor_assets_retrieved' => '편집기 자산 정보를 조회했습니다.',
-        'editor_assets_missing' => '설치본에 편집기 빌드 파일이 없습니다. 해당 템플릿을 다시 업데이트하세요.',
-        'installed_file_missing' => '설치본에 :file 파일이 없습니다. 해당 템플릿을 다시 업데이트하세요.',
+        'editor_assets_missing' => '편집기 자산 매니페스트가 없습니다 (빌드되지 않음).',
         'language_retrieved' => '다국어 데이터를 조회했습니다.',
         'language_empty' => '다국어 데이터가 비어 있습니다.',
     ],
 
-    'not_found' => ':template 템플릿을 찾을 수 없습니다.',
+    'not_found' => '템플릿 :template을(를) 찾을 수 없습니다.',
     'layout_not_found' => '레이아웃을 찾을 수 없습니다.',
 
     'info' => [
@@ -218,38 +212,26 @@ return [
     'refresh_layouts_failed' => '템플릿 레이아웃 갱신에 실패했습니다: :error',
 
     // 업데이트 관련 메시지
-    'update_success' => '":template" 템플릿이 :version 버전으로 업데이트되었습니다.',
+    'update_success' => '템플릿 ":template"이(가) :version 버전으로 업데이트되었습니다.',
     'update_failed' => '템플릿 업데이트에 실패했습니다: :error',
     'update_hook_failed' => '템플릿 업데이트 훅 실행에 실패했습니다: :error',
     'no_update_available' => '업데이트할 내용이 없습니다.',
     'check_updates_success' => '업데이트 확인이 완료되었습니다.',
     'check_updates_failed' => '업데이트 확인에 실패했습니다: :error',
-    'not_installed' => '":template" 템플릿이 설치되지 않았습니다.',
+    'not_installed' => '템플릿 ":template"이(가) 설치되지 않았습니다.',
     'check_modified_layouts_success' => '수정된 레이아웃 확인이 완료되었습니다.',
     'check_modified_layouts_failed' => '수정된 레이아웃 확인에 실패했습니다: :error',
 
     // _pending 관련 메시지
-    'pending_not_found' => '설치 대기 목록에서 ":template" 템플릿을 찾을 수 없습니다.',
-    'already_exists' => '":template" 템플릿이 이미 존재합니다.',
+    'pending_not_found' => '설치 대기 목록에서 템플릿 ":template"을(를) 찾을 수 없습니다.',
+    'already_exists' => '템플릿 ":template"이(가) 이미 존재합니다.',
     'move_failed' => '템플릿 ":template" 이동에 실패했습니다: :error',
 
     'commands' => [
-        // `template:refresh-layout` 명령 출력
-        'refresh_layout' => [
-            'refreshing' => '템플릿 \':template\' 레이아웃 갱신 중...',
-            'success' => '템플릿 \':template\' 레이아웃 갱신 완료',
-            'failed' => '템플릿 \':template\' 레이아웃 갱신 실패',
-            'none_active' => '활성화된 템플릿이 없습니다.',
-            'refreshing_all' => '모든 활성 템플릿 레이아웃 갱신 중...',
-            'item_refreshing' => ':identifier 갱신 중...',
-            'item_done' => ':identifier 완료',
-            'item_failed' => ':identifier 실패',
-            'summary' => '총 :success개 성공, :failed개 실패',
-        ],
         'install' => [
             'success' => '템플릿 ":template" 설치 완료',
-            'already_installed' => '":template" 템플릿이 이미 설치되어 있습니다.',
-            'force_reinstall' => '":template" 템플릿을 강제 재설치합니다 (활성 디렉토리 덮어쓰기)...',
+            'already_installed' => '템플릿 ":template"이(가) 이미 설치되어 있습니다.',
+            'force_reinstall' => '템플릿 ":template" 을(를) 강제 재설치합니다 (활성 디렉토리 덮어쓰기)...',
             'layouts_created' => '레이아웃 :count개 생성됨',
             'type' => '타입: :type',
             'version' => '버전: :version',
@@ -258,32 +240,17 @@ return [
         ],
         'activate' => [
             'success' => '템플릿 ":template" 활성화 완료',
-            'language_packs_restored' => '언어팩 :count개를 함께 켰습니다: :list',
-            'language_packs_kept' => '다시 켜지 않은 언어팩: :list (관리자 화면에서 다시 켤 수 있습니다)',
-            'language_pack_restore_failed' => '언어팩 ":pack" 을(를) 다시 켜지 못했습니다: :error',
-            'option_without_language_packs' => '이 확장을 끌 때 함께 꺼진 언어팩을 다시 켜지 않습니다 (기본은 함께 켭니다)',
-            'not_installed' => '":template" 템플릿이 설치되지 않았습니다.',
+            'not_installed' => '템플릿 ":template"이(가) 설치되지 않았습니다.',
             'deactivated_previous' => '기존 :type 템플릿 ":previous" 비활성화',
-            // `template:activate` 의존성 미충족 안내
-            'required_modules' => '필요한 모듈:',
-            'required_plugins' => '필요한 플러그인:',
-            'missing_status' => [
-                'not_installed' => '미설치',
-                'inactive' => '비활성',
-                'version_mismatch' => '버전 미달 :installed → :required',
-            ],
-            'force_hint' => '강제로 활성화하려면 --force 옵션을 사용하세요.',
-            'force_503_hint_user' => '강제로 켜면 조건을 맞출 때까지 사용자 화면이 「서비스 일시 중단(503)」 안내로 바뀝니다.',
-            'force_503_hint_admin' => '강제로 켜면 관리자 화면이 503 안내로 바뀌어 관리자 화면에서 되돌릴 수 없습니다. 복구: php artisan template:activate :identifier',
         ],
         'deactivate' => [
             'success' => '템플릿 ":template" 비활성화 완료',
-            'not_active' => '":template" 템플릿이 활성화되지 않았습니다.',
+            'not_active' => '템플릿 ":template"이(가) 활성화되지 않았습니다.',
             'no_active_warning' => '현재 활성화된 :type 템플릿이 없습니다.',
         ],
         'uninstall' => [
             'success' => '템플릿 ":template" 삭제 완료',
-            'confirm_prompt' => '":template" 템플릿을 삭제하시겠습니까?',
+            'confirm_prompt' => '템플릿 ":template"을(를) 삭제하시겠습니까?',
             'confirm_details' => [
                 'layouts' => '- 레이아웃 :count개가 삭제됩니다',
                 'versions' => '- user 타입 템플릿의 경우 버전 히스토리도 삭제됩니다',
@@ -293,7 +260,6 @@ return [
             'versions_deleted' => '버전 히스토리 :count개 삭제됨',
             'custom_preserved' => '운영자 파일(:directory)을 :archive 에 보관했습니다.',
             'aborted' => '삭제가 취소되었습니다.',
-            'delete_data_notice' => '⚠️  --delete-data: 「데이터도 삭제」를 선택한 것으로 제거합니다(활동 로그와 제거를 구독하는 확장에 전달됩니다).',
         ],
         'list' => [
             'no_templates' => '등록된 템플릿이 없습니다.',
@@ -318,7 +284,7 @@ return [
             'success_all' => '전체 템플릿 캐시 :count개 삭제 완료',
         ],
         'check_updates' => [
-            'not_installed' => '":template" 템플릿이 설치되지 않았습니다.',
+            'not_installed' => '템플릿 ":template"이(가) 설치되지 않았습니다.',
             'no_installed' => '설치된 템플릿이 없습니다.',
             'update_available' => '업데이트 가능',
             'up_to_date' => '최신',
@@ -330,59 +296,26 @@ return [
                 'status' => '상태',
             ],
             'summary' => '총 :total개 확인 (업데이트 가능: :updates개)',
-            'single_up_to_date' => '":template" 템플릿은 최신 버전입니다. (v:version)',
+            'single_up_to_date' => '템플릿 ":template"은(는) 최신 버전입니다. (v:version)',
             'single_update_available' => '템플릿 ":template" 업데이트 가능: v:current → v:latest (:source)',
         ],
         'update' => [
             'success' => '템플릿 ":template" 업데이트 완료',
             'version_change' => 'v:from → v:to',
             'no_update' => '템플릿 ":template"에 사용 가능한 업데이트가 없습니다.',
-            'not_installed' => '":template" 템플릿이 설치되지 않았습니다.',
+            'not_installed' => '템플릿 ":template"이(가) 설치되지 않았습니다.',
             'invalid_strategy' => '잘못된 레이아웃 전략입니다. overwrite 또는 keep만 사용 가능합니다.',
             'current_version' => '현재 버전: :version',
             'latest_version' => '최신 버전: :version',
             'update_source' => '업데이트 소스: :source',
             'layout_strategy' => '레이아웃 전략: :strategy',
-            'modified_layouts_warning' => '관리자가 수정한 레이아웃·확장 조각 :count개가 덮어씌워집니다:',
+            'modified_layouts_warning' => '수정된 레이아웃 :count개가 덮어씌워집니다:',
             'modified_layout_item' => '  - :name (수정일: :date)',
             'confirm_question' => '업데이트를 진행하시겠습니까?',
             'aborted' => '업데이트가 취소되었습니다.',
             'backup_restored' => '백업에서 이전 버전이 복원되었습니다.',
             'force_mode' => '강제 업데이트 모드: 버전 비교를 건너뛰고 재설치합니다.',
         ],
-        // `template:build` 명령 출력
-        'build' => [
-            'missing_identifier' => '템플릿 식별자를 지정하거나 --all 옵션을 사용하세요.',
-            'usage' => '사용법:',
-            'not_found' => '템플릿을 찾을 수 없습니다: :identifier',
-            'not_found_detail' => '_bundled 및 활성 디렉토리 모두 존재하지 않습니다.',
-            'source' => '빌드 소스: :source (:path)',
-            'source_active' => '활성',
-            'package_json_missing' => 'package.json 파일이 없습니다: :path',
-            'package_json_hint' => '템플릿 프론트엔드 구조를 먼저 생성하세요.',
-            'installing_dependencies' => '의존성 설치 중...',
-            'npm_install_failed' => 'npm install 실패',
-            'watch_start' => '파일 감시 모드로 빌드 시작: :identifier',
-            'watch_hint' => 'Ctrl+C로 종료할 수 있습니다.',
-            'start' => '빌드 시작: :identifier',
-            'start_production' => '빌드 시작: :identifier (프로덕션)',
-            'pruned' => '이전 산출물 정리: :files',
-            'done' => '빌드 완료: :identifier',
-            'build_results' => '빌드 결과:',
-            'cache_version_bumped' => '캐시 버전 갱신됨',
-            'apply_hint' => '활성 디렉토리에 반영하려면: php artisan template:update :identifier',
-            'no_targets' => '빌드할 템플릿이 없습니다.',
-            'start_all' => '모든 템플릿 빌드 시작 (:source)',
-            'start_all_production' => '모든 템플릿 빌드 시작 (:source) (프로덕션)',
-            'targets' => '대상 템플릿: :list',
-            'summary' => '빌드 결과: 성공 :success개, 실패 :failed개',
-        ],
-    ],
-
-    // 레이아웃 설치 소스 선택 (--layout-source=auto|json)
-    'layout_install_source' => [
-        'invalid' => '❌ --layout-source 는 auto 또는 json 이어야 합니다. (입력값: :value)',
-        'json_notice' => '⚠️  레이아웃 설치 소스를 JSON 강제로 전환합니다 — 짝 .json 이 있는 .g7.html 은 무시됩니다.',
     ],
 
     // 레이아웃 첨부 파일 (배경 이미지 등)
@@ -400,7 +333,8 @@ return [
         'validation' => [
             'file_required' => '업로드할 파일을 선택해 주세요.',
             'file_invalid' => '올바른 파일이 아닙니다.',
-            'file_extensions' => '올릴 수 없는 파일 형식입니다. 허용 형식: :extensions',
+            'file_image' => '이미지 파일만 업로드할 수 있습니다.',
+            'file_mimes' => '지원하는 이미지 형식이 아닙니다 (jpg, jpeg, png, gif, webp, svg).',
             'file_max' => '파일 크기는 최대 :max MB까지 허용됩니다.',
             'layout_name_max' => '레이아웃 이름은 최대 150자까지 허용됩니다.',
         ],

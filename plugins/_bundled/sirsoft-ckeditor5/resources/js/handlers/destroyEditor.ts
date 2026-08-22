@@ -6,7 +6,7 @@
 
 // 컨테이너 ID → 인스턴스 맵 (initEditor.ts와 공유)
 import { editorInstances, stopExternalSyncs } from './editorInstances';
-import { MIN_HEIGHT_ATTR, MIN_HEIGHT_VAR } from './initEditor';
+import { disconnectDarkModeObserver } from './initEditor';
 
 /**
  * destroyEditor 핸들러
@@ -50,10 +50,14 @@ export async function destroyEditorHandler(
 
     editorInstances.delete(containerId);
 
-    // 최소 높이 표식 정리 — 컨테이너가 아직 문서에 있으면 속성과 CSS 변수를 걷는다
-    const heightHost = document.getElementById(containerId);
-    if (heightHost) {
-        heightHost.removeAttribute(MIN_HEIGHT_ATTR);
-        heightHost.style.removeProperty(MIN_HEIGHT_VAR);
+    // height style 요소 정리
+    const heightStyle = document.getElementById(`ckeditor5-height-style-${containerId}`);
+    if (heightStyle) {
+        heightStyle.remove();
+    }
+
+    // 모든 에디터 인스턴스가 제거되면 다크모드 옵저버도 해제
+    if (editorInstances.size === 0) {
+        disconnectDarkModeObserver();
     }
 }

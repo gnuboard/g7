@@ -34,11 +34,6 @@ class InstallerRuntimeServiceProviderTest extends TestCase
         'DB_PREFIX', 'APP_KEY',
     ];
 
-    /**
-     * 앱 루트를 임시 디렉토리로 격리하고 프로세스 env 스냅샷을 남깁니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -58,11 +53,6 @@ class InstallerRuntimeServiceProviderTest extends TestCase
         }
     }
 
-    /**
-     * runtime 파일·환경·프로세스 env·임시 앱 루트를 원래대로 되돌립니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function tearDown(): void
     {
         // 테스트 후 정리 — 운영 환경 영향 방지
@@ -99,12 +89,10 @@ class InstallerRuntimeServiceProviderTest extends TestCase
     }
 
     /**
-     * 인스톨러 runtime 파일의 주입을 검증하기 위해 일시적으로 production 환경으로 전환합니다.
+     * 인스톨러 runtime 파일의 주입을 검증하기 위해 일시적으로 production 환경으로 전환.
      *
      * register() 가 testing 환경을 감지하면 즉시 return 하므로,
-     * 주입 동작 자체를 검증하는 테스트는 비-테스팅 환경 컨텍스트에서 실행합니다.
-     *
-     * @return void 반환값 없음
+     * 주입 동작 자체를 검증하는 테스트는 비-테스팅 환경 컨텍스트에서 실행.
      */
     private function withProductionEnv(): void
     {
@@ -112,15 +100,6 @@ class InstallerRuntimeServiceProviderTest extends TestCase
         $this->app['env'] = 'production';
     }
 
-    /**
-     * runtime 파일이 없으면 아무것도 주입하지 않고 조용히 지나간다.
-     *
-     * @scenario case=runtime_absent
-     *
-     * @effects runtime_config_skipped
-     *
-     * @return void 반환값 없음
-     */
     public function test_provider_skips_silently_when_runtime_file_absent(): void
     {
         $this->withProductionEnv();
@@ -137,20 +116,11 @@ class InstallerRuntimeServiceProviderTest extends TestCase
         $this->assertSame($originalKey, Config::get('app.key'));
     }
 
-    /**
-     * testing 환경에서는 runtime 파일이 있어도 주입하지 않는다.
-     *
-     * @scenario case=testing_env
-     *
-     * @effects runtime_config_skipped
-     *
-     * @return void 반환값 없음
-     */
     public function test_provider_skips_in_testing_env_even_when_runtime_present(): void
     {
         // 회귀 가드: storage/installer/runtime.php 가 프로덕션 install 로 생성되어 있어도
         // testing 환경에서는 .env.testing 의 DB 자격증명이 SSoT 로 보존되어야 한다.
-        // (회귀 사고: runtime 의 개발 DB 이름이 .env.testing 의 테스트 DB 이름을 덮어써
+        // (회귀 사고: runtime 의 g7_2 가 .env.testing 의 g7_2_testing 을 덮어써
         //  RefreshDatabase 가 프로덕션 DB 를 대상으로 실행되던 결함)
         $this->writeRuntime([
             'db' => [
@@ -179,15 +149,6 @@ class InstallerRuntimeServiceProviderTest extends TestCase
         $this->assertSame($originalKey, Config::get('app.key'));
     }
 
-    /**
-     * runtime 파일이 있으면 DB 자격증명을 config 에 주입한다.
-     *
-     * @scenario case=runtime_db
-     *
-     * @effects runtime_config_injected
-     *
-     * @return void 반환값 없음
-     */
     public function test_provider_injects_db_credentials_when_runtime_file_present(): void
     {
         $this->withProductionEnv();
@@ -218,15 +179,6 @@ class InstallerRuntimeServiceProviderTest extends TestCase
         $this->assertSame(['test-db-host'], Config::get('database.connections.mysql.read.host'));
     }
 
-    /**
-     * runtime 파일의 APP_KEY 를 config 에 주입한다.
-     *
-     * @scenario case=runtime_app_key
-     *
-     * @effects runtime_config_injected
-     *
-     * @return void 반환값 없음
-     */
     public function test_provider_injects_app_key(): void
     {
         $this->withProductionEnv();
@@ -242,15 +194,6 @@ class InstallerRuntimeServiceProviderTest extends TestCase
         $this->assertSame($key, Config::get('app.key'));
     }
 
-    /**
-     * 읽기 전용 DB 설정이 따로 있으면 read 연결에 주입한다.
-     *
-     * @scenario case=runtime_read_db
-     *
-     * @effects runtime_config_injected
-     *
-     * @return void 반환값 없음
-     */
     public function test_provider_handles_separate_read_db_config(): void
     {
         $this->withProductionEnv();
@@ -283,15 +226,6 @@ class InstallerRuntimeServiceProviderTest extends TestCase
         $this->assertSame(['write-host'], Config::get('database.connections.mysql.write.host'));
     }
 
-    /**
-     * runtime 파일 형식이 잘못되면 조용히 건너뛴다.
-     *
-     * @scenario case=runtime_invalid
-     *
-     * @effects runtime_config_skipped
-     *
-     * @return void 반환값 없음
-     */
     public function test_provider_silently_skips_invalid_runtime_format(): void
     {
         $this->withProductionEnv();
@@ -307,15 +241,6 @@ class InstallerRuntimeServiceProviderTest extends TestCase
         $this->assertSame($originalHost, Config::get('database.connections.mysql.write.host'));
     }
 
-    /**
-     * runtime 의 APP_KEY 가 비어 있으면 주입하지 않는다.
-     *
-     * @scenario case=runtime_empty_app_key
-     *
-     * @effects runtime_config_skipped
-     *
-     * @return void 반환값 없음
-     */
     public function test_provider_skips_app_key_when_empty(): void
     {
         $this->withProductionEnv();
@@ -346,18 +271,9 @@ class InstallerRuntimeServiceProviderTest extends TestCase
     // 에 적용. 정상 환경에서는 #3 (stale 시그니처) 가 false 라 트리거 안 됨.
     // -----------------------------------------------------------------------
 
-    /**
-     * beta.7 코어에서 디스크 .env 가 정합이고 프로세스 env 가 stale 이면 프로세스 env 를 디스크 값으로 복구한다.
-     *
-     * @scenario case=beta7_stale_env
-     *
-     * @effects beta7_stale_env_recovered
-     *
-     * @return void 반환값 없음
-     */
     public function test_recovers_stale_process_env_when_disk_env_is_healthy(): void
     {
-        $this->writeDiskCoreVersion('7.0.0-beta.7');
+        $this->skipUnlessBeta7CoreVersion();
         $this->withProductionEnv();
 
         // 디스크 .env 는 정합 자격증명 + INSTALLER_COMPLETED (finalize 완료 신호)
@@ -402,15 +318,6 @@ class InstallerRuntimeServiceProviderTest extends TestCase
         $this->assertSame('g7_user', $_SERVER['DB_WRITE_USERNAME'] ?? null);
     }
 
-    /**
-     * 프로세스 env 가 이미 정합이면 복구하지 않는다.
-     *
-     * @scenario case=healthy_env
-     *
-     * @effects beta7_recovery_not_triggered
-     *
-     * @return void 반환값 없음
-     */
     public function test_no_recovery_when_process_env_already_healthy(): void
     {
         $this->withProductionEnv();
@@ -436,15 +343,6 @@ class InstallerRuntimeServiceProviderTest extends TestCase
         $this->assertSame('already_correct_pw', getenv('DB_WRITE_PASSWORD'));
     }
 
-    /**
-     * 디스크 .env 도 stale 이면 복구하지 않는다.
-     *
-     * @scenario case=disk_stale
-     *
-     * @effects beta7_recovery_not_triggered
-     *
-     * @return void 반환값 없음
-     */
     public function test_no_recovery_when_disk_env_also_stale(): void
     {
         $this->withProductionEnv();
@@ -469,15 +367,6 @@ class InstallerRuntimeServiceProviderTest extends TestCase
         $this->assertSame('root', getenv('DB_WRITE_USERNAME'), '.env 도 stale 이면 보정 미발동 (정상 ENV 손상 방지)');
     }
 
-    /**
-     * 설치가 끝나지 않았으면 복구하지 않는다.
-     *
-     * @scenario case=installer_incomplete
-     *
-     * @effects beta7_recovery_not_triggered
-     *
-     * @return void 반환값 없음
-     */
     public function test_no_recovery_when_installer_not_completed(): void
     {
         $this->withProductionEnv();
@@ -499,15 +388,6 @@ class InstallerRuntimeServiceProviderTest extends TestCase
         $this->assertSame('root', getenv('DB_WRITE_USERNAME'), 'INSTALLER_COMPLETED 부재 시 보정 미발동');
     }
 
-    /**
-     * runtime.php 가 남아 있으면 기존 주입 경로가 동작하고 복구는 발동하지 않는다.
-     *
-     * @scenario case=runtime_present
-     *
-     * @effects beta7_recovery_not_triggered
-     *
-     * @return void 반환값 없음
-     */
     public function test_no_recovery_when_runtime_php_still_present(): void
     {
         $this->withProductionEnv();
@@ -534,188 +414,33 @@ class InstallerRuntimeServiceProviderTest extends TestCase
     }
 
     /**
-     * 격리된 앱 루트에 지정한 코어 버전 기본값을 가진 config/app.php 를 씁니다.
-     *
-     * beta.7 stale-ENV 복구는 디스크 config/app.php 의 version 이 '7.0.0-beta.7' 일 때만 발동한다
-     * (InstallerRuntimeServiceProvider::recoverStaleProcessEnvFromDiskEnv 의 한시 가드). 실제 저장소 버전에
-     * 결과가 갈리지 않도록 격리 루트에 그 버전을 직접 둔다 — 종전에는 저장소 버전이 beta.7 이 아니면 건너뛰었다.
-     *
-     * @param  string  $version  config/app.php 에 적을 코어 버전
-     * @return void 반환값 없음
+     * beta.7 stale-ENV 복구는 config/app.php version === '7.0.0-beta.7' 일 때만 발동한다
+     * (InstallerRuntimeServiceProvider::recoverStaleProcessEnvFromDiskEnv 의 한시 가드).
+     * 코어가 beta.7 을 지난 버전이면 복구가 의도적으로 비활성이므로, 복구 발동을 기대하는
+     * 테스트는 skip 한다. no-recovery 테스트들은 비활성 상태에서도 결과가 동일하여 영향 없음.
      */
-    private function writeDiskCoreVersion(string $version): void
+    private function skipUnlessBeta7CoreVersion(): void
     {
-        $configDir = base_path('config');
-        if (! is_dir($configDir)) {
-            mkdir($configDir, 0755, true);
+        $configPath = base_path('config/app.php');
+        $content = is_file($configPath) ? (string) @file_get_contents($configPath) : '';
+
+        $version = null;
+        if (preg_match("/'version'\s*=>\s*env\(\s*'APP_VERSION'\s*,\s*'([^']+)'\s*\)/", $content, $m)) {
+            $version = $m[1];
+        } elseif (preg_match("/'version'\s*=>\s*'([^']+)'/", $content, $m)) {
+            $version = $m[1];
         }
 
-        file_put_contents($configDir.'/app.php', "<?php
-
-return [
-    'version' => env('APP_VERSION', '{$version}'),
-];
-");
+        if ($version !== '7.0.0-beta.7') {
+            $this->markTestSkipped(
+                'beta.7 stale-ENV 복구는 코어 version === 7.0.0-beta.7 일 때만 발동. '
+                .'현재 version='.($version ?? 'unknown').' → 한시 보정 비활성 (정상).'
+            );
+        }
     }
 
     /**
-     * 설치가 끝난 사이트에 runtime 파일이 남아 있어도 `.env` 에 적힌 값이 이긴다.
-     *
-     * 서버를 옮기며 `.env` 의 DB 정보를 고쳤는데 남은 runtime 파일이 옛 값으로 덮어 반영되지 않던 문제.
-     *
-     * @scenario case=residual_env_wins
-     *
-     * @effects residual_runtime_does_not_override_env
-     *
-     * @return void 반환값 없음
-     */
-    public function test_completed_install_keeps_env_values_over_residual_runtime(): void
-    {
-        $this->withProductionEnv();
-        file_put_contents($this->envPath, implode("\n", [
-            'INSTALLER_COMPLETED=true',
-            'APP_KEY=base64:env-key',
-            'DB_WRITE_HOST=new-db-host',
-            'DB_WRITE_PORT=3307',
-            'DB_WRITE_DATABASE=new_db',
-            'DB_WRITE_USERNAME=new_user',
-            'DB_WRITE_PASSWORD=',
-            'DB_PREFIX=g7_',
-        ]));
-        Config::set('database.connections.mysql.write.host', ['new-db-host']);
-        Config::set('database.connections.mysql.write.database', 'new_db');
-        Config::set('database.connections.mysql.write.username', 'new_user');
-        Config::set('database.connections.mysql.write.password', '');
-        Config::set('database.connections.mysql.prefix', 'g7_');
-        Config::set('app.key', 'base64:env-key');
-        $this->writeRuntime([
-            'db' => ['write' => ['host' => 'old-db-host', 'port' => '3306', 'database' => 'old_db', 'username' => 'old_user', 'password' => 'old_pass'], 'prefix' => 'old_'],
-            'app' => ['key' => 'base64:runtime-key'],
-        ]);
-
-        (new InstallerRuntimeServiceProvider($this->app))->register();
-
-        $this->assertSame(['new-db-host'], Config::get('database.connections.mysql.write.host'));
-        $this->assertSame('new_db', Config::get('database.connections.mysql.write.database'));
-        $this->assertSame('new_user', Config::get('database.connections.mysql.write.username'));
-        // `.env` 에 계정이 적혀 있으면 빈 비밀번호도 `.env` 의 뜻이다 — runtime 의 옛 비밀번호로 채우지 않는다
-        $this->assertSame('', Config::get('database.connections.mysql.write.password'));
-        $this->assertSame('g7_', Config::get('database.connections.mysql.prefix'));
-        // 앱 키만은 runtime 의 것 — 지금까지 암호화에 쓰인 키라, 다른 키로 바꾸면 암호화된 설정을 읽지 못한다
-        $this->assertSame('base64:runtime-key', Config::get('app.key'));
-    }
-
-    /**
-     * `.env` 의 DB 계정이 예시 파일 기본값(root)으로 남아 있으면 runtime 의 계정이 이긴다.
-     *
-     * 설치 마무리가 `.env` 를 채우지 못하고 끝난 사이트의 표식이다. 이때 `.env` 를 믿으면 DB 에 붙지 못한다.
-     *
-     * @scenario case=residual_env_example_account
-     *
-     * @effects residual_runtime_wins_over_example_account
-     *
-     * @return void 반환값 없음
-     */
-    public function test_completed_install_prefers_runtime_when_env_account_is_example_default(): void
-    {
-        $this->withProductionEnv();
-        file_put_contents($this->envPath, implode('
-', [
-            'INSTALLER_COMPLETED=true',
-            'DB_WRITE_HOST=127.0.0.1',
-            'DB_WRITE_DATABASE=laravel',
-            'DB_WRITE_USERNAME=root',
-            'DB_WRITE_PASSWORD=',
-        ]));
-        Config::set('database.connections.mysql.write.host', ['127.0.0.1']);
-        Config::set('database.connections.mysql.write.username', 'root');
-        $this->writeRuntime([
-            'db' => ['write' => ['host' => 'runtime-host', 'port' => '3306', 'database' => 'runtime_db', 'username' => 'runtime_user', 'password' => 'runtime_pass'], 'prefix' => 'g7_'],
-        ]);
-
-        (new InstallerRuntimeServiceProvider($this->app))->register();
-
-        $this->assertSame(['runtime-host'], Config::get('database.connections.mysql.write.host'));
-        $this->assertSame('runtime_user', Config::get('database.connections.mysql.write.username'));
-        $this->assertSame('runtime_pass', Config::get('database.connections.mysql.write.password'));
-        $this->assertSame('g7_', Config::get('database.connections.mysql.prefix'));
-    }
-
-    /**
-     * 설치는 끝났는데 `.env` 의 칸이 비어 runtime 파일로만 돌던 사이트는 빈 칸만 runtime 값으로 채운다.
-     *
-     * @scenario case=residual_fills_blank
-     *
-     * @effects residual_runtime_fills_blank_env_keys
-     *
-     * @return void 반환값 없음
-     */
-    public function test_completed_install_fills_blank_env_keys_from_residual_runtime(): void
-    {
-        $this->withProductionEnv();
-        file_put_contents($this->envPath, implode("\n", [
-            'INSTALLER_COMPLETED=true',
-            'APP_KEY=',
-            'DB_WRITE_HOST=',
-            'DB_WRITE_DATABASE=',
-            'DB_WRITE_USERNAME=',
-            'DB_WRITE_PASSWORD=',
-            'DB_PREFIX=kept_',
-        ]));
-        Config::set('database.connections.mysql.prefix', 'kept_');
-        Config::set('app.key', '');
-        $this->writeRuntime([
-            'db' => ['write' => ['host' => 'runtime-host', 'port' => '3306', 'database' => 'runtime_db', 'username' => 'runtime_user', 'password' => 'runtime_pass'], 'prefix' => 'old_'],
-            'app' => ['key' => 'base64:runtime-key'],
-        ]);
-
-        (new InstallerRuntimeServiceProvider($this->app))->register();
-
-        $this->assertSame(['runtime-host'], Config::get('database.connections.mysql.write.host'));
-        $this->assertSame('runtime_db', Config::get('database.connections.mysql.write.database'));
-        $this->assertSame('runtime_user', Config::get('database.connections.mysql.write.username'));
-        $this->assertSame('runtime_pass', Config::get('database.connections.mysql.write.password'));
-        // 읽기 연결을 따로 적지 않았으면 쓰기 연결을 따라간다
-        $this->assertSame(['runtime-host'], Config::get('database.connections.mysql.read.host'));
-        $this->assertSame('runtime_user', Config::get('database.connections.mysql.read.username'));
-        // `.env` 에 값이 있는 칸은 그대로
-        $this->assertSame('kept_', Config::get('database.connections.mysql.prefix'));
-        $this->assertSame('base64:runtime-key', Config::get('app.key'));
-    }
-
-    /**
-     * 설치가 아직 끝나지 않았으면 지금처럼 runtime 값이 이긴다(설치 중에는 `.env` 가 아직 비어 있거나 예시 값이다).
-     *
-     * @scenario case=installing_runtime_wins
-     *
-     * @effects runtime_config_injected
-     *
-     * @return void 반환값 없음
-     */
-    public function test_incomplete_install_still_prefers_runtime(): void
-    {
-        $this->withProductionEnv();
-        file_put_contents($this->envPath, implode("\n", [
-            'INSTALLER_COMPLETED=false',
-            'DB_WRITE_HOST=example-host',
-            'DB_WRITE_USERNAME=root',
-        ]));
-        Config::set('database.connections.mysql.write.host', ['example-host']);
-        $this->writeRuntime([
-            'db' => ['write' => ['host' => 'runtime-host', 'port' => '3306', 'database' => 'runtime_db', 'username' => 'runtime_user', 'password' => 'runtime_pass'], 'prefix' => ''],
-        ]);
-
-        (new InstallerRuntimeServiceProvider($this->app))->register();
-
-        $this->assertSame(['runtime-host'], Config::get('database.connections.mysql.write.host'));
-        $this->assertSame('runtime_user', Config::get('database.connections.mysql.write.username'));
-    }
-
-    /**
-     * 격리된 앱 루트에 인스톨러 runtime 파일을 씁니다.
-     *
-     * @param  array<string, mixed>  $data  runtime 배열
-     * @return void 반환값 없음
+     * @param  array<string, mixed>  $data
      */
     private function writeRuntime(array $data): void
     {

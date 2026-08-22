@@ -21,9 +21,6 @@ export * from './components/basic';
 // Composite Components
 export * from './components/composite';
 
-// Shared Components
-export * from './components/shared';
-
 // Layout Components
 export * from './components/layout';
 

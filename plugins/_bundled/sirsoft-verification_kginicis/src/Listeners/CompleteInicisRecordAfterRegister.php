@@ -6,9 +6,9 @@ use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
 use App\Models\User;
-use App\Services\IdentityTokenAcceptanceService;
 use Illuminate\Support\Facades\Log;
 use Plugins\Sirsoft\VerificationKginicis\Identity\InicisIdentityProvider;
+use Plugins\Sirsoft\VerificationKginicis\Repositories\InicisIdentityLogQueryRepositoryInterface;
 use Plugins\Sirsoft\VerificationKginicis\Repositories\InicisIdentityRecordRepositoryInterface;
 
 /**
@@ -30,13 +30,13 @@ class CompleteInicisRecordAfterRegister implements HookListenerInterface
 {
     /**
      * @param  IdentityVerificationLogRepositoryInterface  $logRepository  코어 IDV log Repository (user_id backfill 용)
-     * @param  IdentityTokenAcceptanceService  $tokenAcceptance  같은 가입 요청에서 인정한 본인인증 결과 조회 (1.1.4)
+     * @param  InicisIdentityLogQueryRepositoryInterface  $logQueryRepository  consumed_at 무관 verified log 조회용 (본 plugin Repository)
      * @param  InicisIdentityRecordRepositoryInterface  $recordRepository  본 plugin record Repository
      * @param  CacheInterface  $cache  비로그인 verify PII stash 회수 + 정리용 (PluginCacheDriver 자동 prefix)
      */
     public function __construct(
         protected readonly IdentityVerificationLogRepositoryInterface $logRepository,
-        protected readonly IdentityTokenAcceptanceService $tokenAcceptance,
+        protected readonly InicisIdentityLogQueryRepositoryInterface $logQueryRepository,
         protected readonly InicisIdentityRecordRepositoryInterface $recordRepository,
         protected readonly CacheInterface $cache,
     ) {}
@@ -85,9 +85,10 @@ class CompleteInicisRecordAfterRegister implements HookListenerInterface
             return;
         }
 
-        // 같은 가입 요청에서 before_register 단계가 인정(1회 소비)한 결과를 받는다(1.1.4) — 소비 여부와 무관하게 토큰만으로
-        // 다시 찾으면 다른 요청이 쓴 결과의 PII 를 이 회원에게 붙일 수 있었다.
-        $log = $this->tokenAcceptance->acceptedInRequest($token, 'signup');
+        // 코어 priority 10 listener (AssertIdentityVerifiedBeforeRegister) 가 token 검증 후
+        // consumed_at 을 set 하므로 코어 표준 Repository (findVerifiedForToken) 는 null 반환.
+        // 본 plugin 의 LogQueryRepository 는 consumed_at 무관 조회를 제공한다.
+        $log = $this->logQueryRepository->findVerifiedLogForToken($token, 'signup');
         if ($log === null) {
             return;
         }

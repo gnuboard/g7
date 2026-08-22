@@ -1,6 +1,6 @@
 # 서비스 프로바이더 안전성
 
-> **목차**: [README.md](./README.md) | [enum.md](./enum.md) | [controllers.md](./controllers.md) | [service-repository.md](./service-repository.md) | [validation.md](./validation.md) | [exceptions.md](./exceptions.md) | [api-resources.md](./api-resources.md) | [routing.md](./routing.md) | [response-helper.md](./response-helper.md) | [middleware.md](./middleware.md) | [authentication.md](./authentication.md) | **service-provider.md**
+> **목차**: [index.md](./index.md) | [enum.md](./enum.md) | [controllers.md](./controllers.md) | [service-repository.md](./service-repository.md) | [validation.md](./validation.md) | [exceptions.md](./exceptions.md) | [api-resources.md](./api-resources.md) | [routing.md](./routing.md) | [response-helper.md](./response-helper.md) | [middleware.md](./middleware.md) | [authentication.md](./authentication.md) | **service-provider.md**
 
 ---
 
@@ -197,9 +197,6 @@ class TemplateService
 ```
 인스톨러 단계 1: composer install
 ├─ .env 없음 → ModuleRouteServiceProvider 스킵 ✅
-├─ vendor 재사용 분기 (vendor/autoload.php + composer.lock 존재)
-│  ├─ 개발용 패키지 감지 → 경고 카드·설치 로그 (설치는 계속)
-│  └─ 이전 환경의 컴파일 캐시 정리 (packages/services/config)
 └─ package:discover 정상 완료
 
 인스톨러 단계 2: .env 생성
@@ -458,43 +455,6 @@ if (! config('app.installer_completed') && ! Schema::hasTable('notification_defi
 
 `installer_completed` 가드가 부팅 시 DB 조회를 줄이는 것과 별개로, `CoreServiceProvider::boot()` 의 정적 훅 리스너 등록(`app/Listeners` 재귀 스캔 + 모듈/플러그인 `getHookListeners()` 클래스 로딩)은 `bootstrap/cache/hooks.php` 캐시로 매 요청 스캔·리플렉션을 제거한다. 캐시 부재/테스트 환경에서는 기존 스캔 경로로 안전 폴백하며, 등록 결과는 스캔 경로와 바이트 동일하다. 상세: [extension/hooks.md "정적 훅 매핑 캐시"](../extension/hooks.md).
 
-### 부팅 중 번역 문구 로그 (BootDeferredLog)
-
-활성 언어팩(ja 등)의 번역 경로는 `LanguagePackServiceProvider` 의 booted 콜백에서 등록된다. 그보다 앞선 `register()`·`boot()`(예: `CoreServiceProvider` 의 확장 자동 비활성화 판정)에서 `Log::warning(__('…'))` 처럼 문구를 바로 만들면 사이트 언어가 ja 여도 폴백(ko) 문구로 기록된다. 부팅 중에도 불리는 번역 문구 로그는 `App\Support\BootDeferredLog::warning()`·`info()` 에 번역 키·치환값·맥락을 넘긴다 — 부팅 중이면 언어팩 등록 직후 사이트 언어로 한 번 남기고(언어팩이 없거나 설치 전이어도 비운다), booted 뒤에는 바로 남긴다.
-
-### 비활성 확장의 boot 부수효과 게이트 (`isExtensionActive`, 7.1.5)
-
-비활성 확장도 프로바이더는 등록된다 — 바인딩·번역·morphMap·명령은 설치 시더·관리 화면·다른 코드가 쓰기 때문이다. 그러나 **요청 처리에 끼어드는 부수효과**는 비활성 확장이 걸면 안 된다. `AbstractExtensionServiceProvider::isExtensionActive()` 가 그 판정이다.
-
-| 구분 | 예 | 처리 |
-| ------ | ------ | ------ |
-| (가) 다른 코드가 참조할 수 있는 선언 | 바인딩·scoped 등록, 번역, morphMap, config, 명령 등록 | 그대로 |
-| (나) 요청·큐 처리에 끼어드는 부수효과 | `RateLimiter::for`, `EncryptCookies::except`, `Queue::before/after`, 사이트맵 기여자, 요청마다 쓰는 `resolving` 콜백(알림 채널 드라이버 등록 포함 — 비활성 확장의 채널은 코어가 사용 가능 채널에서 먼저 빼므로 발송 경로가 드라이버를 찾지 않는다) | 게이트 안 |
-
-```php
-public function boot(): void
-{
-    parent::boot();
-
-    // method_exists 가드: 7.1.4 이하 코어에는 메서드가 없다 — 그때는 지금처럼 실행된다
-    if (! method_exists($this, 'isExtensionActive') || $this->isExtensionActive()) {
-        EncryptCookies::except(['my_receipt_token']);
-    }
-}
-```
-
-- 판정은 새 판정식이 아니라 코어 상태 목록(`getActiveModuleIdentifiers()`·`getActivePluginIdentifiers()`, 요청 메모 경유)을 본다.
-- 상태를 알 수 없으면 **참**이다 — 설치 미완료, 스키마를 바꾸는 artisan 명령, 코어 업데이트 중, 조회 실패.
-- 활성화 요청 안에서는 프로바이더가 상태를 쓰기 전에 이미 부팅돼 있으므로, 부수효과는 활성화 **다음 요청**의 첫 부팅부터 걸린다.
-- 제3자 확장에 강제하지는 않는다. 게이트를 쓰지 않은 확장은 7.1.4 까지처럼 상태와 무관하게 부수효과를 건다. 번들 확장의 가드 사용은 `BundledProviderActiveGateCompatTest` 가 잠근다.
-- 7.1.5 부터 기반 프로바이더에 `protected` 메서드 `isExtensionActive(): bool`·`activeIdentifiersForGate(): ?array` 가 있다. 확장 프로바이더가 같은 이름의 메서드를 이미 선언했다면 가시성(`private`)이나 반환형이 다를 때 PHP 가 클래스를 읽지 못하므로, 다른 이름으로 바꾼다.
-
-### 요청 단위 메모 (scoped)
-
-부팅·요청 처리에서 같은 값을 여러 번 읽는 객체는 `$this->app->scoped()` 로 두고 인스턴스에 메모한다(활성 확장 목록 `ExtensionStatusMemo`, 확장 미들웨어 레지스트리, 플러그인 설정 서비스, 동의 관리 매니저 등). scoped 인스턴스는 웹 요청마다 새로 만들어지고 큐 워커는 작업마다 비우므로 상주 프로세스에서도 옛 값이 남지 않는다. 같은 요청에서 값이 바뀌는 경로(상태 캐시 무효화·설정 저장)는 메모를 직접 비운다.
-
-> 시험에서 scoped 로 바뀐 클래스를 `$this->app->instance()` 로 바꿔 끼우면, 큐 워커처럼 `forgetScopedInstances()` 를 부르는 경로에서 그 목이 사라진다. 그런 시험은 `$this->app->scoped(클래스, fn () => $목)` 으로 묶는다.
-
 ### 주의사항
 
 - **인스톨러 설치 완료 시점에 `INSTALLER_COMPLETED=true` 가 `.env` 에 기록되어야 함** — G7 인스톨러(`public/install/includes/task-runner.php`)는 이를 이미 수행
@@ -511,7 +471,6 @@ public function boot(): void
 - [ ] `config('app.installer_completed')` 가드로 hasTable 블록 래핑 (성능 최적화)
 - [ ] 인스톨러 환경에서 테스트 수행 (`INSTALLER_COMPLETED` 미설정 상태)
 - [ ] `composer install` 단독 실행 테스트
-- [ ] `boot()` 중에 남기는 번역 문구 로그는 `BootDeferredLog` 로 남긴다 (언어팩 번역 등록 전이라 `__()` 가 폴백 문구가 됨)
 
 ---
 
@@ -549,13 +508,12 @@ config 소스(`config/*.php`, `.env`, `storage/app/settings/*.json`, 활성 확�
 - **testing 환경**: `config:clear` 는 수행(값 반영 계약 유지)하되 `config:cache` 생성은 스킵(캐시된 config 가 다음 테스트로 누출되는 격리 파괴 방지).
 - **설치 미완료 상태**: 불완전 config 박제를 피하려 재생성을 스킵하고 clear 만 한다.
 - **local 개발 주의**: config:cache 가 켜지면 `config/*.php` 를 직접 수정해도 다음 요청에 반영되지 않는다. 이는 개발자가 `php artisan config:clear` 로 대응하는 개발자 책임 영역이다.
-- **먼저 지우지 않는다 (7.1.5)**: 설치된 환경의 `rebuild()` 는 `config:clear` 를 먼저 하지 않고, `config:cache` 의 출력 경로(`APP_CONFIG_CACHE`)를 같은 폴더의 임시 파일로 돌려 구운 뒤 실제 파일과 바꿔 끼운다(`App\Support\AtomicBootstrapCache`). 굽기가 실패하면 그때 `config:clear` 로 낡은 캐시를 지운다. 지운 뒤 굽는 사이에 들어온 요청이 비캐시 부팅·반쯤 쓰인 파일을 만나던 경합을 없앤다 — 라우트 캐시와 같은 방식(`docs/backend/routing.md` 「먼저 지우지 않는다」).
 
 ### 적용 지점
 
 | 라이프사이클 | 재생성 위치 |
 | --- | --- |
-| 코어 설치 완료 | 인스톨러 `complete_flag` 직후 `config:cache` task (라우트 캐시도 같은 자리에서 굽는다 — `docs/backend/routing.md` 「갱신이 필요한 지점」) |
+| 코어 설치 완료 | 인스톨러 `complete_flag` 직후 `config:cache` task |
 | 코어 업데이트 | `CoreUpdateCommand` Step 11 완료 지점 |
 | 코어 업그레이드 스텝(단독 실행) | `ExecuteUpgradeStepsCommand` 캐시 정리 블록 (spawn 자식은 부모가 처리) |
 | 코어 관리자 설정 저장 / 캐시 정리 / GeoIP / APP_KEY | `SettingsService` / `GeoIpDatabaseService` 의 각 지점 |
@@ -580,4 +538,4 @@ config 소스(`config/*.php`, `.env`, `storage/app/settings/*.json`, 활성 확�
 
 - [middleware.md](./middleware.md) - 미들웨어 등록 규칙
 - [authentication.md](./authentication.md) - 인증 및 세션 처리
-- [README.md](./README.md) - 백엔드 가이드 인덱스
+- [index.md](./index.md) - 백엔드 가이드 인덱스

@@ -9,9 +9,7 @@ use Illuminate\Http\Resources\MissingValue;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Concerns\LocalizesCountryName;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\SummarizesAdditionalOptions;
-use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\SummarizesClaims;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
-use Modules\Sirsoft\Ecommerce\Models\OrderShipping;
 
 /**
  * 사용자 주문 목록 리소스
@@ -24,7 +22,6 @@ class UserOrderListResource extends BaseApiResource
     use HasMultiCurrencyPrices;
     use LocalizesCountryName;
     use SummarizesAdditionalOptions;
-    use SummarizesClaims;
 
     /**
      * 리소스를 배열로 변환
@@ -49,8 +46,6 @@ class UserOrderListResource extends BaseApiResource
             'status' => $this->order_status?->value,
             'status_label' => $this->order_status?->label(),
             'status_variant' => $this->order_status?->variant(),
-            // 아이콘 의미 토큰(status-*) — 목록 행 상태 뱃지가 아이콘을 함께 그린다.
-            'status_icon' => $this->order_status?->icon(),
             // 부분취소 파생 플래그 — 일부 옵션만 취소된 주문(별도 order_status 아님). 보조 뱃지 표시용.
             'is_partially_cancelled' => $this->resolveIsPartiallyCancelled(),
 
@@ -76,15 +71,7 @@ class UserOrderListResource extends BaseApiResource
             'total_points_used_amount' => $this->roundToOrderCurrency($this->total_points_used_amount, $orderCurrency),
             'total_points_used_amount_formatted' => $this->formatOrderCurrency($this->total_points_used_amount, $orderCurrency),
             'total_earned_points_amount' => $this->roundToOrderCurrency($this->total_earned_points_amount, $orderCurrency),
-            'total_earned_points_amount_formatted' => $this->formatEarnedPoints($this->total_earned_points_amount),
-
-            // 대표 배송의 송장 정보 — 목록 행의 「배송 조회」 단추가 쓴다. 조회 주소는 주문 상세와 같은 규칙
-            // (택배사의 조회 주소 틀에 송장 번호를 넣음)으로 만든다. 송장·택배사가 없으면 null.
-            'shipping' => $this->whenLoaded('firstShipping', fn () => [
-                'carrier_name' => $this->firstShipping?->carrier?->getLocalizedName(),
-                'tracking_number' => $this->firstShipping?->tracking_number,
-                'tracking_url' => $this->resolveTrackingUrl($this->firstShipping),
-            ]),
+            'total_earned_points_amount_formatted' => $this->formatOrderCurrency($this->total_earned_points_amount, $orderCurrency),
 
             // 주문 옵션 (상품 정보)
             //
@@ -93,11 +80,6 @@ class UserOrderListResource extends BaseApiResource
             // 서버가 모두에게 전량을 안기는 쪽이 아니다.
             'items' => $this->resolveItems($orderCurrency),
             'item_count' => $this->resolveItemCount(),
-
-            // 클레임 요약 (D22) — 관리자 목록과 같은 형태다. 주문 목록 조회가 관계·집계를
-            // 항상 싣게 된 뒤로 이 값은 이미 손에 있었는데 직렬화만 하지 않아, 구매자는 자기
-            // 주문에 접수된 교환·반품·환불·취소가 어디까지 갔는지 목록에서 볼 수 없었다.
-            'claim_summary' => $this->resolveClaimSummary(),
 
             // 권한 메타
             'abilities' => [
@@ -111,21 +93,6 @@ class UserOrderListResource extends BaseApiResource
                 ) && PermissionHelper::check('sirsoft-ecommerce.user-orders.cancel'),
             ],
         ]);
-    }
-
-    /**
-     * 배송 레코드의 송장 조회 주소를 반환합니다.
-     *
-     * @param  OrderShipping|null  $shipping  배송 레코드
-     * @return string|null 송장 조회 주소 (택배사·송장 번호·조회 주소 틀 중 하나라도 없으면 null)
-     */
-    private function resolveTrackingUrl(?OrderShipping $shipping): ?string
-    {
-        if ($shipping === null || empty($shipping->tracking_number) || $shipping->carrier === null) {
-            return null;
-        }
-
-        return $shipping->carrier->buildTrackingUrl((string) $shipping->tracking_number);
     }
 
     /**

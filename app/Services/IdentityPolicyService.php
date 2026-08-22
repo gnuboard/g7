@@ -9,17 +9,14 @@ use App\Enums\IdentityPolicyAppliesTo;
 use App\Enums\IdentityPolicyFailMode;
 use App\Enums\IdentityPolicySourceType;
 use App\Enums\IdentityVerificationStatus;
-use App\Exceptions\IdentityPolicyProviderUnavailableException;
 use App\Exceptions\IdentityVerificationRequiredException;
 use App\Extension\HookManager;
 use App\Extension\IdentityVerification\IdentityVerificationManager;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
-use App\Models\Concerns\UserOverrideValueComparator;
 use App\Models\IdentityPolicy;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Http\Request;
 
 /**
  * 본인인증 정책 해석/강제 Service.
@@ -32,67 +29,11 @@ use Illuminate\Http\Request;
  */
 class IdentityPolicyService
 {
-    /**
-     * 본인인증 정책 서비스 생성자.
-     *
-     * @param  IdentityPolicyRepositoryInterface  $policyRepository  본인인증 정책 리포지토리
-     * @param  IdentityVerificationLogRepositoryInterface  $logRepository  본인인증 이력 조회 리포지토리
-     * @param  IdentityVerificationManager  $manager  본인인증 프로바이더 매니저
-     * @param  IdentityTokenAcceptanceService|null  $tokenAcceptance  본인인증 결과 인정(결박·1회 소비) 서비스 — 미지정 시 같은 로그 저장소로 만든다(7.1.6, 수동 생성 호환)
-     */
     public function __construct(
         protected IdentityPolicyRepositoryInterface $policyRepository,
         protected IdentityVerificationLogRepositoryInterface $logRepository,
         protected IdentityVerificationManager $manager,
-        protected ?IdentityTokenAcceptanceService $tokenAcceptance = null,
     ) {}
-
-    /**
-     * 본인인증 결과 인정 서비스를 돌려줍니다.
-     *
-     * @return IdentityTokenAcceptanceService 인정 서비스
-     */
-    protected function tokenAcceptance(): IdentityTokenAcceptanceService
-    {
-        return $this->tokenAcceptance ??= new IdentityTokenAcceptanceService($this->logRepository);
-    }
-
-    /**
-     * 정책이 지정한 인증 수단을 돌려줍니다 (지정하지 않았으면 null — 어떤 수단의 결과든 인정).
-     *
-     * @param  IdentityPolicy  $policy  정책
-     * @return string|null 지정 수단 ID
-     *
-     * @since 7.1.6
-     */
-    public function requiredProviderId(IdentityPolicy $policy): ?string
-    {
-        $providerId = trim((string) ($policy->provider_id ?? ''));
-
-        return $providerId === '' ? null : $providerId;
-    }
-
-    /**
-     * 수단이 등록돼 있고 목적을 지원하며 지금 쓸 수 있는지 판정합니다.
-     *
-     * @param  string  $providerId  수단 ID
-     * @param  string  $purpose  목적
-     * @return bool 쓸 수 있으면 true
-     */
-    protected function isProviderUsable(string $providerId, string $purpose): bool
-    {
-        try {
-            if (! $this->manager->has($providerId)) {
-                return false;
-            }
-
-            $provider = $this->manager->get($providerId);
-
-            return $provider->supportsPurpose($purpose) && $provider->isAvailable();
-        } catch (\Throwable) {
-            return false;
-        }
-    }
 
     /**
      * scope + target 으로 매칭 가능한 활성 정책 중 가장 높은 priority 정책을 반환합니다.
@@ -134,18 +75,15 @@ class IdentityPolicyService
      * 분기 순서:
      *   1. policy.enabled=false → no-op
      *   2. applies_to 와 사용자(admin/일반) 매칭 안 되면 no-op
-     *   3. 같은 요청에서 인정한 인증 결과(정책 지정 수단과 일치)가 있으면 통과
-     *   4. grace_minutes 내 verified 로그(정책 지정 수단과 일치) 있으면 통과
-     *   5. 정책이 지정한 수단을 지금 쓸 수 없으면 503 예외(fail_mode=log_only 면 감사 로그 후 통과)
-     *   6. fail_mode=log_only 이면 감사 로그 남기고 통과, 아니면 예외 throw
+     *   3. grace_minutes 내 verified 로그 있으면 통과
+     *   4. fail_mode=log_only 이면 감사 로그 남기고 통과, 아니면 예외 throw
      *
      * @param  IdentityPolicy  $policy  강제 대상 정책
      * @param  User|null  $user  현재 사용자 (게스트 가입 흐름에서는 null)
      * @param  array<string, mixed>  $context  요청 컨텍스트 (target_email, user_roles, return_request 등)
-     * @return void 반환값 없음
+     * @return void
      *
      * @throws IdentityVerificationRequiredException grace 내 verified 없고 fail_mode != log_only 일 때
-     * @throws IdentityPolicyProviderUnavailableException 정책이 지정한 수단을 지금 쓸 수 없고 fail_mode != log_only 일 때
      */
     public function enforce(IdentityPolicy $policy, ?User $user, array $context = []): void
     {
@@ -175,50 +113,30 @@ class IdentityPolicyService
 
         $targetHash = $this->resolveTargetHash($user, $context);
         $userId = $user?->id;
-        $requiredProviderId = $this->requiredProviderId($policy);
 
-        // verification_token — IdentityGuardInterceptor 가 verify 직후 토큰을 부착해 원 요청을 재실행할 때
-        // grace_minutes 윈도우와 무관하게 통과시킨다. 모든 enforce 진입점(미들웨어/리스너/직접 호출)이 이 한 곳을 지난다.
-        // 결과는 목적·지정 수단·대상이 맞을 때만, 작업(요청) 1건에 한 번만 인정한다(KVE-2026-3188).
-        // 같은 요청 안의 다른 정책 검사(라우트 + 훅)는 같은 결과를 다시 인정한다.
+        // verification_token 우회 — IdentityGuardInterceptor 가 verify 직후 토큰을 부착해
+        // 원 요청을 재실행할 때 grace_minutes 윈도우와 무관하게 통과시킨다.
+        // 모든 enforce 진입점(미들웨어/리스너/직접 호출) 에 동일 우회가 적용되도록 Service 단계에서 처리.
+        // 회귀 차단: hook scope 정책 (예: core.admin.user_delete, grace_minutes=0) 에서 미들웨어만
+        // 토큰을 알고 listener 는 모르던 결함으로 인해 verify 후 retry 시 재차 428 이 발생하던 무한 루프.
         $token = (string) ($context['verification_token'] ?? '');
         if ($token !== '') {
-            $accepted = $this->tokenAcceptance()->accept(
-                token: $token,
-                purpose: $policy->purpose,
-                requiredProviderId: $requiredProviderId,
-                targetHash: $targetHash,
-                userId: $userId !== null ? (int) $userId : null,
-                request: ($context['http_request'] ?? null) instanceof Request ? $context['http_request'] : null,
-            );
-
-            if ($accepted !== null) {
+            $verifiedLog = $this->logRepository->findVerifiedForToken($token, $policy->purpose);
+            if ($verifiedLog !== null
+                && ($targetHash === null || $verifiedLog->target_hash === $targetHash)) {
                 return;
             }
         }
 
-        // 유예 시간 안의 인증도 지정 수단으로 받은 것만 인정한다(B3)
         $recent = $this->logRepository->findRecentVerified(
             purpose: $policy->purpose,
             userId: $userId,
             targetHash: $targetHash,
             withinMinutes: max(0, $policy->grace_minutes),
-            providerId: $requiredProviderId,
         );
 
         if ($recent !== null) {
             return;
-        }
-
-        // 지정 수단을 지금 쓸 수 없으면 다른 수단으로 대신 받지 않는다 — 받아도 위 결박에서 다시 거부된다(B9)
-        if ($requiredProviderId !== null && ! $this->isProviderUsable($requiredProviderId, $policy->purpose)) {
-            if ($policy->fail_mode === IdentityPolicyFailMode::LogOnly) {
-                $this->logPolicyViolation($policy, $user, $context);
-
-                return;
-            }
-
-            throw new IdentityPolicyProviderUnavailableException($policy->key, $requiredProviderId);
         }
 
         // fail_mode=log_only → 감사 로그만 남기고 요청 통과
@@ -228,137 +146,13 @@ class IdentityPolicyService
             return;
         }
 
-        $targetEmail = (string) ($context['target_email'] ?? '');
-
         throw new IdentityVerificationRequiredException(
             policyKey: $policy->key,
             purpose: $policy->purpose,
-            providerId: $requiredProviderId ?? $this->resolveProviderId($policy),
+            providerId: $this->resolveProviderId($policy),
             renderHint: $this->resolveRenderHint($policy),
             returnRequest: $context['return_request'] ?? null,
-            target: $user === null && $targetEmail !== '' ? ['email' => $targetEmail] : null,
         );
-    }
-
-    /**
-     * 정책 키로 찾은 활성 정책을 HTTP 요청 문맥으로 강제합니다.
-     *
-     * 라우트 미들웨어가 아닌 자리(예: 정보수정 API 가 비밀번호를 함께 바꿀 때)에서 같은 정책을
-     * 같은 판정으로 걸 때 쓴다 — 판정 로직을 미들웨어와 따로 두지 않는다(이중화 금지).
-     * 정책이 없거나 꺼져 있으면 아무 일도 하지 않는다.
-     *
-     * @param  string  $policyKey  정책 키 (identity_policies.key)
-     * @param  Request  $request  HTTP 요청
-     * @return void 반환값 없음
-     *
-     * @throws IdentityVerificationRequiredException 정책 위반 시
-     *
-     * @since 7.1.0
-     */
-    public function enforceForRequest(string $policyKey, Request $request): void
-    {
-        $policy = $this->policyRepository->findByKey($policyKey);
-
-        if (! $policy || ! $policy->enabled) {
-            return;
-        }
-
-        $this->enforcePolicyForRequest($policy, $request);
-    }
-
-    /**
-     * 단일 정책을 HTTP 요청 문맥으로 강제합니다 (token bypass → grace 윈도우 → exception).
-     *
-     * `EnforceIdentityPolicy` 미들웨어와 `enforceForRequest()` 가 함께 쓰는 한 곳이다.
-     *
-     * @param  IdentityPolicy  $policy  강제할 정책
-     * @param  Request  $request  HTTP 요청
-     * @return void 반환값 없음
-     *
-     * @throws IdentityVerificationRequiredException 정책 위반 시
-     *
-     * @since 7.1.0
-     */
-    public function enforcePolicyForRequest(IdentityPolicy $policy, Request $request): void
-    {
-        // verification_token 은 enforce() 한 곳이 판정한다(목적·지정 수단·대상 결박 + 1회 소비) — 미들웨어·리스너·직접 호출의
-        // 판정이 갈리지 않게 토큰을 문맥에 실어 넘긴다(7.1.6).
-        $context = [
-            'verification_token' => (string) $request->input('verification_token', ''),
-            // 인정 기록·해제는 이 요청 객체에 묶는다 — 「작업 1건 = 요청 1건」 경계
-            'http_request' => $request,
-            'http_method' => $request->getMethod(),
-            'user_roles' => $this->collectRequestUserRoles($request),
-            'user_is_admin' => $this->resolveRequestUserIsAdmin($request),
-            'target_email' => $this->resolveRequestTargetEmail($request),
-            'origin_type' => IdentityOriginType::Route->value,
-            'origin_identifier' => $request->route()?->getName() ?: $request->path(),
-            'origin_policy_key' => $policy->key,
-            'return_request' => [
-                'method' => $request->getMethod(),
-                // 보안: 경로+쿼리만 — 요청 Host·scheme 을 실으면 클라이언트 재요청이 교차 출처로 인증 정보를 보낼 수 있다.
-                'url' => $request->getRequestUri(),
-            ],
-        ];
-
-        $user = $request->user();
-
-        $this->enforce($policy, $user instanceof User ? $user : null, $context);
-    }
-
-    /**
-     * 현재 요청 사용자의 역할 식별자 목록을 수집합니다.
-     *
-     * @param  Request  $request  HTTP 요청
-     * @return array<int, string> 역할 식별자 배열
-     */
-    private function collectRequestUserRoles(Request $request): array
-    {
-        $user = $request->user();
-        if (! $user instanceof User) {
-            return [];
-        }
-
-        return $user->roles()->pluck('identifier')->all();
-    }
-
-    /**
-     * 현재 요청 사용자의 admin 여부를 permission 기반으로 판정합니다 (User::isAdmin() 위임).
-     * 게스트는 항상 false.
-     *
-     * @param  Request  $request  HTTP 요청
-     * @return bool admin 여부
-     */
-    private function resolveRequestUserIsAdmin(Request $request): bool
-    {
-        $user = $request->user();
-        if (! $user instanceof User) {
-            return false;
-        }
-
-        try {
-            return (bool) $user->isAdmin();
-        } catch (\Throwable) {
-            return false;
-        }
-    }
-
-    /**
-     * 게스트 라우트(register/forgot/reset)에서 폼 입력 email 을 정책 컨텍스트에 노출합니다.
-     * 인증 사용자의 경우는 resolveTargetHash() 가 user->email 을 우선 사용합니다.
-     *
-     * @param  Request  $request  HTTP 요청
-     * @return string|null 요청 input.email 또는 null
-     */
-    private function resolveRequestTargetEmail(Request $request): ?string
-    {
-        $email = $request->input('email');
-
-        if (is_string($email) && $email !== '') {
-            return $email;
-        }
-
-        return null;
     }
 
     /**
@@ -372,24 +166,20 @@ class IdentityPolicyService
      * 428 강제 경로와 프론트 프리페치 엔드포인트가 이 게터 하나로 수렴한다 — 같은 데이터에
      * 두 개의 해석이 존재하면 한쪽만 조용히 raw 값을 내보낸다(A6a).
      *
-     * 정책에 수단이 지정돼 있으면 그 수단을 쓸 수 있을 때만 그 값을, 쓸 수 없으면 null 을 돌려준다 — 다른 수단(메일)으로
-     * 폴백하면 받은 결과가 정책 결박에서 다시 거부된다(7.1.6, B9).
-     *
      * @param  IdentityPolicy  $policy  대상 정책
-     * @return string|null 해석된 provider id (지정 수단을 쓸 수 없거나 해석 실패 시 null)
+     * @return string|null 해석된 provider id (해석 실패 시 정책의 원본 값)
      */
     public function resolveProviderId(IdentityPolicy $policy): ?string
     {
-        $required = $this->requiredProviderId($policy);
-
-        if ($required !== null) {
-            return $this->isProviderUsable($required, $policy->purpose) ? $required : null;
-        }
-
         try {
-            return $this->manager->resolveForPurpose($policy->purpose)->getId();
+            $providerId = $policy->provider_id;
+            if ($providerId && $this->manager->has($providerId)) {
+                return $providerId;
+            }
+
+            return $this->manager->resolveForPurpose($policy->purpose, $providerId)->getId();
         } catch (\Throwable) {
-            return null;
+            return $policy->provider_id;
         }
     }
 
@@ -398,7 +188,7 @@ class IdentityPolicyService
      * 현재 구현은 로그에만 남기고, 필터 훅으로 소비되도록 설계.
      *
      * @param  IdentityPolicy  $policy  임시 정책 인스턴스
-     * @return void 반환값 없음
+     * @return void
      */
     public function registerRuntime(IdentityPolicy $policy): void
     {
@@ -429,27 +219,6 @@ class IdentityPolicyService
     }
 
     /**
-     * challenge 를 연 정책으로 받아들일 수 있는 정책을 키로 찾습니다 — 있고, 켜져 있고, 목적이 같을 때만.
-     *
-     * 화면은 428 응답의 정책 키를 challenge 요청에 그대로 싣는다. 클라이언트가 보낸 값이므로 다른 목적의
-     * 정책이나 꺼진 정책을 대어 그 정책의 문구를 고르게 두지 않는다.
-     *
-     * @param  string|null  $key  정책 키
-     * @param  string  $purpose  challenge 목적
-     * @return IdentityPolicy|null 받아들일 수 있는 정책, 없으면 null
-     */
-    public function findUsableForChallenge(?string $key, string $purpose): ?IdentityPolicy
-    {
-        if ($key === null || $key === '') {
-            return null;
-        }
-
-        $policy = $this->policyRepository->findByKey($key);
-
-        return $policy !== null && $policy->enabled && $policy->purpose === $purpose ? $policy : null;
-    }
-
-    /**
      * 신규 정책을 생성합니다 (source_type='admin' 고정).
      *
      * @param  array<string, mixed>  $data  정책 데이터
@@ -474,20 +243,9 @@ class IdentityPolicyService
      */
     public function updatePolicy(IdentityPolicy $policy, array $attributes): bool
     {
-        // 값이 같은 칸은 빼고 저장한다 — 편집 창은 8칸 전부를 늘 보내고(`conditions` 는 null 대신 `{}`·
-        // `{signup_stage: null}`), 종전엔 보낸 키 전부를 수정으로 기록해 한 칸만 고쳐도 전 칸이 고정됐다
-        // (#727 D5-②). 수정 기록은 모델 updating 이벤트가 실제로 바뀐 칸만 한다(HasUserOverrides).
-        $attributes = array_filter(
-            $attributes,
-            fn ($value, $field) => ! UserOverrideValueComparator::same($policy->getAttribute($field), $value),
-            ARRAY_FILTER_USE_BOTH
-        );
+        $overrides = $policy->source_type !== IdentityPolicySourceType::Admin ? array_keys($attributes) : [];
 
-        if ($attributes === []) {
-            return true;
-        }
-
-        return $this->policyRepository->updateByKey($policy->key, $attributes);
+        return $this->policyRepository->updateByKey($policy->key, $attributes, $overrides);
     }
 
     /**
@@ -781,7 +539,7 @@ class IdentityPolicyService
      * @param  IdentityPolicy  $policy  위반된 정책
      * @param  User|null  $user  현재 사용자
      * @param  array<string, mixed>  $context  요청 컨텍스트 (origin_type, origin_identifier 등)
-     * @return void 반환값 없음
+     * @return void
      */
     protected function logPolicyViolation(IdentityPolicy $policy, ?User $user, array $context): void
     {

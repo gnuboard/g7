@@ -3,9 +3,7 @@
 namespace Modules\Sirsoft\Page\Http\Resources;
 
 use App\Http\Resources\BaseApiResource;
-use App\Support\LocalizedValue;
 use Illuminate\Http\Request;
-use Modules\Sirsoft\Page\Services\PageContentMediaService;
 
 /**
  * 페이지 API 리소스 (공개용)
@@ -37,18 +35,6 @@ class PublicPageResource extends BaseApiResource
     }
 
     /**
-     * 공개 페이지의 관리자 [편집]·버전 배지를 여는 근거 — 링크 대상(관리자 페이지 수정 화면)과 같은 권한이다.
-     *
-     * @return array<string, string> 능력 키 → 권한 식별자
-     */
-    protected function abilityMap(): array
-    {
-        return [
-            'can_update' => 'sirsoft-page.pages.update',
-        ];
-    }
-
-    /**
      * 리소스를 배열로 변환합니다.
      *
      * @param  Request  $request  HTTP 요청 객체
@@ -57,20 +43,15 @@ class PublicPageResource extends BaseApiResource
     public function toArray(Request $request): array
     {
         $locale = app()->getLocale();
+        $fallback = config('app.fallback_locale', 'ko');
 
         return [
             'id' => $this->id,
             'slug' => $this->slug,
             'title' => $this->getLocalizedTitle(),
-            // 미리보기(미발행)만 본문 미디어를 서명 주소로 — 발행 페이지는 정식 주소라 정적 캐시와 충돌하지 않는다 (#883)
-            // 서명은 이 페이지가 소유한 해시만 — 다른 페이지 소유 해시는 원본 페이지의 게이트를 따른다 (#887)
-            'content' => app(PageContentMediaService::class)->presentContent(
-                is_array($this->content)
-                    ? (LocalizedValue::pick($this->content, $locale) ?? '')
-                    : (string) ($this->content ?? ''),
-                (bool) $this->published,
-                (int) $this->id
-            ),
+            'content' => is_array($this->content)
+                ? ($this->content[$locale] ?? $this->content[$fallback] ?? (! empty($this->content) ? array_values($this->content)[0] : ''))
+                : (string) ($this->content ?? ''),
             'content_mode' => $this->content_mode ?? 'html',
             // 본문 첫 내부 이미지 URL 캐시 — 페이지 표시 레이아웃의 og:image 가 소비 (공개 #22)
             'content_thumbnail_url' => $this->content_thumbnail_url,
@@ -96,8 +77,6 @@ class PublicPageResource extends BaseApiResource
             'updated_at' => $this->updated_at
                 ? $this->formatDateTimeStringForUser($this->updated_at)
                 : null,
-            // 관리자 링크 판정(can_update) — is_admin 만 보던 링크가 수정 권한 없는 관리자에게도 열렸다
-            ...$this->resourceMeta($request),
         ];
     }
 }

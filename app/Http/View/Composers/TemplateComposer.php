@@ -11,14 +11,10 @@ use App\Http\View\Composers\Traits\CollectsActiveExtensionMeta;
 use App\Http\View\Composers\Traits\CollectsCustomAssets;
 use App\Http\View\Composers\Traits\CollectsExtensionAssets;
 use App\Http\View\Composers\Traits\CollectsTemplateExternals;
-use App\Http\View\Composers\Traits\CollectsTemplateStylesheets;
-use App\Seo\SeoTitleRuleExporter;
 use App\Services\ModuleSettingsService;
 use App\Services\PluginSettingsService;
 use App\Services\SettingsService;
 use App\Services\TemplateService;
-use App\Support\EmptyMapChildren;
-use App\Support\StateContracts;
 use App\Support\TrustedScriptHosts;
 use Illuminate\View\View;
 
@@ -28,7 +24,6 @@ class TemplateComposer
     use CollectsCustomAssets;
     use CollectsExtensionAssets;
     use CollectsTemplateExternals;
-    use CollectsTemplateStylesheets;
 
     /**
      * 서비스 주입
@@ -53,9 +48,6 @@ class TemplateComposer
 
     /**
      * 뷰에 데이터 바인딩
-     *
-     * @param  View  $view  뷰 인스턴스
-     * @return void 반환값 없음
      */
     public function compose(View $view): void
     {
@@ -121,8 +113,7 @@ class TemplateComposer
 
         $view->with('activeAdminTemplate', $activeTemplate);
         $view->with('extensionCacheVersion', $extensionCacheVersion);
-        // 카테고리 값은 화면이 이름표로 읽는 맵이다 — 보이는 필드가 없는 카테고리(`identity`)도 `[]` 가 아니라 `{}` 로 심는다(7.1.1 출시 전)
-        $view->with('frontendSettings', EmptyMapChildren::asObjects($frontendSettings));
+        $view->with('frontendSettings', $frontendSettings);
         $view->with('pluginSettings', $pluginSettings);
         $view->with('moduleSettings', $moduleSettings);
         $view->with('moduleAssets', $moduleAssets);
@@ -131,35 +122,9 @@ class TemplateComposer
         $view->with('activeModulesMeta', $activeModulesMeta);
         $view->with('activePluginsMeta', $activePluginsMeta);
         $view->with('appConfig', $appConfig);
-        $view->with('seoTitle', $this->collectAdminTitle($appConfig['supportedLocales'] ?? null));
         $view->with('templateExternals', $templateExternals);
-        // 템플릿이 선언하고 산출물이 있는 CSS 만 링크한다 — CSS 없는 템플릿에 없는 파일 요청을 남기지 않는다
-        $view->with('templateStylesheets', $this->collectTemplateStylesheets($activeTemplate));
         $view->with('customAssets', $this->collectCustomAssets($activeTemplate));
         $view->with('customAssetsDisabled', $this->customAssetsDisabledByRequest());
         $view->with('trustedScriptHosts', $trustedScriptHosts);
-        // 전역 상태 공개 계약 — G7Core.stateContracts 가 읽는다 (#639)
-        $view->with('stateContracts', StateContracts::forFrontend());
-    }
-
-    /**
-     * 관리자 화면 브라우저 탭 제목 계산 값을 모읍니다 (`{화면 제목} - {사이트 이름} 관리자`).
-     *
-     * 실패하면 null 을 돌려준다 — 엔진은 값이 없으면 탭 제목을 바꾸지 않는다(종전 동작: 셸 제목).
-     *
-     * @param  mixed  $supportedLocales  프론트 앱 설정의 지원 언어 목록 (없으면 config 값)
-     * @return array<string, mixed>|null 제목 계산 값
-     */
-    private function collectAdminTitle(mixed $supportedLocales): ?array
-    {
-        try {
-            $locales = is_array($supportedLocales) && $supportedLocales !== []
-                ? array_values($supportedLocales)
-                : (array) config('app.supported_locales', [app()->getLocale()]);
-
-            return app(SeoTitleRuleExporter::class)->exportForAdmin($locales);
-        } catch (\Throwable $e) {
-            return null;
-        }
     }
 }

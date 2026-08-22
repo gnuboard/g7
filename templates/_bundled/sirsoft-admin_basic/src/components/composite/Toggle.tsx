@@ -1,6 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Icon } from '../basic/Icon';
-import { linkAdjacentLabel } from '../../hooks/useAdjacentLabel';
+import React, { useState, useEffect } from 'react';
 import type { EditorAttrs } from '../../types';
 
 /**
@@ -18,11 +16,6 @@ export interface ToggleProps {
   disabled?: boolean;
   /** 라벨 텍스트 */
   label?: string;
-  /**
-   * 보이는 라벨 없이 스위치에만 붙일 접근 가능한 이름(aria-label).
-   * 표의 열 머리글·옆 문구처럼 라벨이 스위치 밖에 있을 때 쓴다. 없으면 `label` → 곁 제목(aria-labelledby) → `name` 순으로 쓴다.
-   */
-  ariaLabel?: string;
   /** 설명 텍스트 */
   description?: string;
   /** 토글 크기 */
@@ -39,15 +32,6 @@ export interface ToggleProps {
   id?: string;
   /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
   editorAttrs?: EditorAttrs;
-  /**
-   * 바뀐 값이 확정되기를 기다리는지 — true 면 눌러도 스위치가 스스로 바뀌지 않고 `onChange` 로 다음 값만 알린다.
-   * 스위치는 바깥이 `checked` 를 바꿔 줄 때만 바뀐다(서버 작업이 끝난 뒤 목록 값으로). 기본 false(누르면 바로 바뀜).
-   */
-  awaitConfirmation?: boolean;
-  /**
-   * 바깥 작업이 진행 중인지 — true 면 잠그고(누를 수 없음, 금지 커서·흐린 트랙) 손잡이 자리에 스피너를 보인다(`aria-busy`).
-   */
-  pending?: boolean;
 }
 
 /**
@@ -69,39 +53,15 @@ export const Toggle: React.FC<ToggleProps> = ({
   onChange,
   disabled = false,
   label,
-  ariaLabel,
   description,
   size = 'md',
   className = '',
   name,
   id,
   editorAttrs,
-  awaitConfirmation = false,
-  pending = false,
 }) => {
-  // 진행 중이면 누를 수 없다 — 같은 스위치의 연속 클릭이 같은 작업을 거듭 보내지 않게 한다
-  const locked = disabled || pending;
   // 내부 상태로 관리
   const [checked, setChecked] = useState(() => checkedProp ?? valueProp ?? false);
-
-  // 이름: ariaLabel → 옆 라벨(label) → 행 제목(곁 라벨, aria-labelledby) → 마지막 수단으로 name.
-  // 종전에는 곁 제목을 보지 않고 곧장 name(「security.force_https」 같은 필드 키)을 이름으로 달았다(7.1.0 실측).
-  const switchRef = useRef<HTMLDivElement>(null);
-  const [useNameFallback, setUseNameFallback] = useState(false);
-  useEffect(() => {
-    if (ariaLabel || label) return;
-    const el = switchRef.current;
-    if (!el) return;
-    // name 은 곁 제목을 못 찾았을 때의 임시 이름이다. 그대로 두면 「이미 이름 있음」으로 보여 늦게 그려진 제목을
-    // 다시 찾지 않으므로, 찾는 동안만 떼었다가 못 찾으면 되돌린다(다시 찾는 횟수는 linkAdjacentLabel 이 제한한다).
-    const fallbackName = useNameFallback ? el.getAttribute('aria-label') : null;
-    if (fallbackName !== null) el.removeAttribute('aria-label');
-    // 라벨 탐색은 이 부품의 바깥 상자(toggle-container)에서 시작한다 — 스위치는 한 겹 안쪽이다
-    linkAdjacentLabel(el, false, el.parentElement ?? null, true);
-    const linked = !!el.getAttribute('aria-labelledby');
-    if (!linked && fallbackName !== null) el.setAttribute('aria-label', fallbackName);
-    setUseNameFallback(!linked);
-  });
 
   // prop 변경 시 내부 상태 동기화
   useEffect(() => {
@@ -112,12 +72,10 @@ export const Toggle: React.FC<ToggleProps> = ({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newChecked = e.target.checked;
 
-    // 내부 상태 즉시 업데이트 — 확정을 기다리는 스위치는 바깥이 checked 를 바꿀 때까지 그대로 둔다
-    if (!awaitConfirmation) {
-      setChecked(newChecked);
-    }
+    // 내부 상태 즉시 업데이트
+    setChecked(newChecked);
 
-    if (onChange && !locked) {
+    if (onChange && !disabled) {
       // 템플릿 엔진의 actions는 이벤트 객체를 받으므로 항상 이벤트로 전달
       (onChange as any)(e);
     }
@@ -128,28 +86,23 @@ export const Toggle: React.FC<ToggleProps> = ({
     sm: {
       track: 'w-9 h-5',
       thumb: 'after:h-4 after:w-4',
-      spinner: 'h-4 w-4',
     },
     md: {
       track: 'w-11 h-6',
       thumb: 'after:h-5 after:w-5',
-      spinner: 'h-5 w-5',
     },
     lg: {
       track: 'w-14 h-7',
       thumb: 'after:h-6 after:w-6',
-      spinner: 'h-6 w-6',
     },
   };
 
   const currentSize = sizeClasses[size];
 
   const handleToggleClick = () => {
-    if (!locked) {
+    if (!disabled) {
       const newChecked = !checked;
-      if (!awaitConfirmation) {
-        setChecked(newChecked);
-      }
+      setChecked(newChecked);
       if (onChange) {
         const G7Core = getG7Core();
         if (G7Core?.createChangeEvent) {
@@ -168,7 +121,7 @@ export const Toggle: React.FC<ToggleProps> = ({
    * @param e 키보드 이벤트
    */
   const handleToggleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (locked) return;
+    if (disabled) return;
     if (e.key !== ' ' && e.key !== 'Enter' && e.key !== 'Spacebar') return;
 
     // Space 는 기본 동작이 스크롤이므로 막는다.
@@ -179,18 +132,15 @@ export const Toggle: React.FC<ToggleProps> = ({
   return (
     <div className={`toggle-container ${className}`} id={id} {...editorAttrs}>
       {/* 토글 스위치 */}
-      {/* 진행 중에도 비활성 모양으로 보인다(금지 커서·흐린 트랙) — 스피너만 흐리지 않아 작업 중임이 드러난다 */}
       <div
         className={`toggle-switch-wrapper ${
-          disabled ? 'cursor-not-allowed opacity-50' : pending ? 'cursor-not-allowed' : 'cursor-pointer'
+          disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
         }`}
-        ref={switchRef}
         role="switch"
         aria-checked={checked}
-        aria-disabled={locked || undefined}
-        aria-busy={pending || undefined}
-        aria-label={ariaLabel ?? label ?? (useNameFallback ? name : undefined)}
-        tabIndex={locked ? -1 : 0}
+        aria-disabled={disabled || undefined}
+        aria-label={label ?? name}
+        tabIndex={disabled ? -1 : 0}
         onKeyDown={handleToggleKeyDown}
         onClick={(e) => {
           e.preventDefault();
@@ -204,24 +154,11 @@ export const Toggle: React.FC<ToggleProps> = ({
           name={name}
           checked={checked}
           onChange={handleChange}
-          disabled={locked}
+          disabled={disabled}
           className="sr-only peer"
           tabIndex={-1}
-          // 스위치 역할은 바깥 래퍼(role=switch)가 맡는다 — 안쪽 체크박스가 접근성 트리에 남으면
-          // 이름 없는 「체크박스」 가 스위치마다 하나씩 더 읽혔다(7.1.0 실측).
-          aria-hidden="true"
         />
-        <div className={`toggle-switch-track ${currentSize.track} ${currentSize.thumb}${pending && !disabled ? ' opacity-50' : ''}`} />
-        {/* 진행 중 — 손잡이 자리(현재 값 쪽)에 스피너를 겹친다. 스위치 크기·배치는 그대로다 */}
-        {pending && (
-          <span
-            className={`toggle-switch-spinner ${checked ? 'toggle-switch-spinner-on' : 'toggle-switch-spinner-off'} ${currentSize.spinner}`}
-            data-testid="toggle-pending-spinner"
-            aria-hidden="true"
-          >
-            <Icon name="spinner" className="spinner-sm" />
-          </span>
-        )}
+        <div className={`toggle-switch-track ${currentSize.track} ${currentSize.thumb}`} />
       </div>
 
       {/* 라벨 (토글 옆) */}

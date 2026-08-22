@@ -3,8 +3,6 @@
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Extension\HookManager;
-use App\Support\LocalizedValue;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -23,25 +21,12 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CartRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
-use Modules\Sirsoft\Ecommerce\Traits\ReappliesPermissionScope;
 
 /**
  * 장바구니 서비스
  */
 class CartService
 {
-    use ReappliesPermissionScope;
-
-    /**
-     * CartService 생성자
-     *
-     * @param  CartRepositoryInterface  $cartRepository  장바구니 리포지토리
-     * @param  ProductOptionRepositoryInterface  $productOptionRepository  상품 옵션 리포지토리
-     * @param  OrderCalculationService  $orderCalculationService  주문 금액 계산 서비스
-     * @param  OrderRepositoryInterface  $orderRepository  주문 리포지토리
-     * @param  ProductRepositoryInterface  $productRepository  상품 리포지토리
-     * @param  AdditionalOptionSelectionService  $additionalOptionSelectionService  추가 옵션 선택 서비스
-     */
     public function __construct(
         protected CartRepositoryInterface $cartRepository,
         protected ProductOptionRepositoryInterface $productOptionRepository,
@@ -151,7 +136,6 @@ class CartService
         // 응답 items 에는 남기되(2-f 플래그로 구분) 합계 계산에서만 제외한다.
         $itemsForCalculation = $itemsForCalculation->filter(
             fn ($cart) => $cart->product && $cart->product->isPurchasable()
-                && (! $cart->productOption || $cart->productOption->is_active)
         );
 
         // 비정상 항목 제외 후 계산 대상이 없으면 빈 계산 결과 반환
@@ -317,11 +301,10 @@ class CartService
 
                 $productOptionId = $matchedOption->id;
             } else {
-                // 옵션을 지정하지 않은 담기: 판매 중인(활성) 옵션 중 첫 번째를 쓴다. 옵션 행이 없거나
-                // 전부 비활성이면 구매할 수 있는 옵션이 없는 상품이므로 422 로 거절한다.
-                $defaultOption = $productOptions->first(fn ($option) => (bool) $option->is_active);
+                // 옵션 없는 상품: 첫 번째(기본) 옵션 사용
+                $defaultOption = $productOptions->first();
                 if (! $defaultOption) {
-                    throw new CartOperationException('no_purchasable_option');
+                    throw new CartOperationException('option_not_found');
                 }
                 $productOptionId = $defaultOption->id;
             }
@@ -719,22 +702,13 @@ class CartService
         $addedCount = 0;
         $skipped = [];
 
-        // 최상위 행 = 자식이 아닌 행. 수량 분할이 일어나면 **분할 가족의 머리 행이
-        // `parent_option_id` 에 자기 id** 를 담으므로(자식만 남의 id 를 가리킨다),
-        // `null` 만 최상위로 보면 분할을 겪은 상품이 통째로 빠진다. 루프 이전에 걸러져
-        // `skipped` 에도 안 잡혀 **조용히 사라졌다**(S1-D5 — 실측: 3상품 주문 재주문이
-        // `added_count=1 · skipped=[]`, 분할된 2상품 소실).
-        $topLevelOptions = $order->options->filter(
-            fn ($opt) => $opt->parent_option_id === null
-                || (int) $opt->parent_option_id === (int) $opt->id
-        );
+        $topLevelOptions = $order->options->filter(fn ($opt) => $opt->parent_option_id === null);
 
         $locale = app()->getLocale();
         foreach ($topLevelOptions as $orderOption) {
             $rawName = $orderOption->product_name;
             if (is_array($rawName)) {
-                // 보는 언어 → 사이트 기본 언어 → 영어 → 남은 아무 언어 순 (#148)
-                $productName = (string) (LocalizedValue::pick($rawName, $locale) ?? __('sirsoft-ecommerce::messages.cart.unknown_product'));
+                $productName = (string) ($rawName[$locale] ?? $rawName['ko'] ?? $rawName['en'] ?? __('sirsoft-ecommerce::messages.cart.unknown_product'));
             } else {
                 $productName = (string) ($rawName ?? __('sirsoft-ecommerce::messages.cart.unknown_product'));
             }
@@ -762,13 +736,7 @@ class CartService
             } catch (\Exception $e) {
                 $skipped[] = [
                     'product_name' => $productName,
-                    // 구매불가 사유는 `getUserMessage()` 가 구체 문구(필수 추가옵션 미선택·재고
-                    // 부족·구매수량 한도 등)를 만든다. `getMessage()` 만 쓰면 전부 일반 문구
-                    // 「구매할 수 없는 상품이 있습니다.」 로 뭉개져 **왜 못 담았는지 알 수 없다**
-                    // (S1-D7 — 실측: 필수 A/S 보증이 걸린 상품이 그 문구로만 표시됐다).
-                    'reason' => $e instanceof CartUnavailableException
-                        ? $e->getUserMessage()
-                        : $e->getMessage(),
+                    'reason' => $e->getMessage(),
                 ];
             }
         }
@@ -847,7 +815,6 @@ class CartService
      * @param  int  $productOptionId  상품 옵션 ID
      * @param  int  $requestedQuantity  요청 수량
      * @param  int  $currentQuantity  현재 장바구니에 담긴 수량 (합산용, 기본값 0)
-     * @return void 반환값 없음
      *
      * @throws \Exception 재고 초과 시 예외
      */
@@ -885,14 +852,13 @@ class CartService
     /**
      * 상품 판매 가능 여부를 검증합니다. (담기/수량변경/옵션변경 시)
      *
-     * 판매중지/품절/출시예정/전시중지(hidden) 상품과, 상품은 판매 중이어도 판매 중지(비활성)된 옵션은 담을 수 없습니다.
+     * 판매중지/품절/출시예정/전시중지(hidden) 상품은 담을 수 없습니다.
      * 재고 검증보다 먼저 호출하여 판매상태 메시지를 우선 노출합니다.
      *
      * @param  int  $productOptionId  상품 옵션 ID
-     * @return void 반환값 없음
      *
-     * @throws CartUnavailableException 판매중지/품절/출시예정/전시중지 상품이거나 옵션이 판매 중지인 경우
-     * @throws CartOperationException 옵션/상품을 찾을 수 없는 경우(option_not_found)
+     * @throws CartUnavailableException 판매중지/품절/출시예정/전시중지 상품인 경우
+     * @throws \Exception 옵션/상품을 찾을 수 없는 경우
      */
     protected function validatePurchasable(int $productOptionId): void
     {
@@ -902,8 +868,7 @@ class CartService
             throw new CartOperationException('option_not_found');
         }
 
-        // 상품이 판매 중이어도 옵션이 판매 중지(비활성)면 살 수 없다 — 옵션 id 를 직접 지정한 담기·옵션 변경도 막는다.
-        if (! $option->product->isPurchasable() || ! $option->is_active) {
+        if (! $option->product->isPurchasable()) {
             throw CartUnavailableException::fromItems([[
                 'product_id' => $option->product->id,
                 'product_option_id' => $productOptionId,
@@ -921,7 +886,6 @@ class CartService
      *
      * @param  int  $productId  상품 ID
      * @param  int  $totalQuantity  검증 후 상품 총수량 (기존 장바구니 + 이번 요청)
-     * @return void 반환값 없음
      *
      * @throws CartUnavailableException 최소 미달/최대 초과 시
      */
@@ -962,7 +926,6 @@ class CartService
      *
      * @param  Cart  $cart  현재 장바구니 아이템
      * @param  int  $newProductOptionId  변경하려는 옵션 ID
-     * @return void 반환값 없음
      *
      * @throws \Exception 다른 상품의 옵션으로 변경 시도 시
      */
@@ -1048,7 +1011,6 @@ class CartService
      * 필드 규칙(`max:`)은 이번 요청분만 보므로, 기존 수량과 합산되는 경로는 여기서 판정합니다.
      *
      * @param  int  $totalQuantity  합산 후 라인 수량
-     * @return void 반환값 없음
      *
      * @throws CartOperationException 상한 초과 시
      */
@@ -1059,86 +1021,5 @@ class CartService
         if ($max > 0 && $totalQuantity > $max) {
             throw new CartQuantityLimitException($max, $totalQuantity);
         }
-    }
-
-    /**
-     * 관리자용 전 회원 장바구니 목록을 조회합니다.
-     *
-     * @param  array<string, mixed>  $filters  필터 (검색 대상·검색어·회원·기간·정렬)
-     * @param  int  $perPage  페이지당 개수
-     * @return LengthAwarePaginator 페이지네이션된 목록
-     */
-    public function paginateForAdmin(array $filters, int $perPage = 20): LengthAwarePaginator
-    {
-        return $this->cartRepository->paginateForAdmin($filters, $perPage);
-    }
-
-    /**
-     * 관리자가 장바구니 한 건을 삭제합니다 (소유자 무관).
-     *
-     * @param  int  $id  행 ID
-     * @return bool 삭제 성공 여부
-     */
-    public function deleteByAdmin(int $id): bool
-    {
-        $row = $this->cartRepository->find($id);
-        if ($row === null) {
-            return false;
-        }
-
-        // 라우트가 `{id}` 라 미들웨어 스코프 검사가 돌지 않는다 — `carts.manage` 범위를 재적용
-        $this->assertWithinScope($row, 'sirsoft-ecommerce.carts.manage');
-
-        return $this->cartRepository->deleteById($id);
-    }
-
-    /**
-     * 관리자가 장바구니를 일괄 삭제합니다 (소유자 무관).
-     *
-     * 훅을 루프 앞뒤로 한 번씩만 발화한다 — 항목마다 발화하면 활동 로그가 폭주하고,
-     * IDV 같은 before 훅 소비자가 루프 중간에 끼어들어 앞부분만 지워진 상태가 된다.
-     *
-     * @param  array<int, int>  $ids  행 ID 목록
-     * @return int 실제로 삭제된 건수
-     */
-    public function bulkDeleteByAdmin(array $ids): int
-    {
-        // 스냅샷은 삭제 «전» 에 뜬다 — 장바구니는 소프트 삭제가 아니라 지우고 나면 행이
-        // 사라져 활동 로그에 남은 id 로는 「누구의 무엇」을 되짚을 수 없다.
-        $rows = $this->cartRepository->findByIds($ids);
-
-        // 정적 경로라 미들웨어 스코프 검사가 돌지 않는다 — 대상 전량이 `carts.manage` 범위 안이어야 한다(전량 거부)
-        $this->assertAllWithinScope($rows, 'sirsoft-ecommerce.carts.manage');
-
-        $snapshots = $rows
-            ->map(fn ($row) => [
-                'id' => (int) $row->id,
-                'user_id' => $row->user_id !== null ? (int) $row->user_id : null,
-                'user_uuid' => $row->user?->uuid,
-                'user_name' => $row->user?->name,
-                'product_id' => $row->product_id !== null ? (int) $row->product_id : null,
-                'product_name' => $row->product?->getLocalizedName(),
-                'quantity' => $row->quantity !== null ? (int) $row->quantity : null,
-            ])
-            ->all();
-
-        HookManager::doAction('sirsoft-ecommerce.cart.before_bulk_delete', $ids);
-
-        $count = $this->cartRepository->bulkDelete($ids);
-
-        HookManager::doAction('sirsoft-ecommerce.cart.after_bulk_delete', $ids, $count, $snapshots);
-
-        return $count;
-    }
-
-    /**
-     * 회원의 장바구니 건수를 조회합니다 (회원 상세 요약용).
-     *
-     * @param  int  $userId  회원 ID
-     * @return int 건수
-     */
-    public function countByUserForAdmin(int $userId): int
-    {
-        return $this->cartRepository->countByUser($userId);
     }
 }

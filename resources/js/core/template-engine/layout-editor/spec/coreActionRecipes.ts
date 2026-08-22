@@ -92,8 +92,6 @@ export const CORE_ACTION_RECIPES: Record<string, ActionRecipeSpec> = {
     label: `$t:${L}.navigate.label`,
     params: [
       { key: 'path', label: `$t:${L}.navigate.param_path`, widget: 'page-picker', required: true },
-      // 이동 주소가 비었거나 거부될 때(실행 스킴·다른 사이트) 갈 안전한 경로 (engine-v1.80.1)
-      { key: 'fallbackPath', label: `$t:${L}.navigate.param_fallback_path`, widget: 'page-picker' },
       { key: 'query', label: `$t:${L}.navigate.param_query`, widget: 'key-value' },
       { key: 'mergeQuery', label: `$t:${L}.navigate.param_merge_query`, widget: 'toggle' },
       {
@@ -102,31 +100,7 @@ export const CORE_ACTION_RECIPES: Record<string, ActionRecipeSpec> = {
         widget: 'select',
         options: [{ value: 'top' }, { value: 'preserve' }, { value: 'none' }],
       },
-      {
-        // 스크롤 애니메이션(engine-v1.37.0) — build 틀에 없으면 편집기 폼 저장이 이 값을 지운다.
-        key: 'scrollBehavior',
-        label: `$t:${L}.navigate.param_scroll_behavior`,
-        widget: 'select',
-        options: [
-          { value: 'instant', label: `$t:${L}.navigate.scroll_behavior_instant` },
-          { value: 'smooth', label: `$t:${L}.navigate.scroll_behavior_smooth` },
-        ],
-      },
-      {
-        // 이 이동으로 떠나는 화면에 뒤로 가기로 돌아올 때의 스크롤 동작(engine-v1.85.0). 비우면 그 화면·템플릿
-        // 설정(meta.scroll_restoration)을 따른다. 선택자 값(`#id`)은 엔진이 받지만 칸은 세 가지만 고른다.
-        key: 'returnScroll',
-        label: `$t:${L}.navigate.param_return_scroll`,
-        widget: 'select',
-        options: [
-          { value: 'restore', label: `$t:${L}.navigate.return_scroll_restore` },
-          { value: 'top', label: `$t:${L}.navigate.return_scroll_top` },
-          { value: 'none', label: `$t:${L}.navigate.return_scroll_none` },
-        ],
-      },
       { key: 'replace', label: `$t:${L}.navigate.param_replace`, widget: 'toggle' },
-      // 저장 뒤 이동 등 레이아웃 이탈 확인(meta.leave_guard)을 이 이동에 한해 묻지 않는다(engine-v1.82.0).
-      { key: 'bypassLeaveGuard', label: `$t:${L}.navigate.param_bypass_leave_guard`, widget: 'toggle' },
       {
         key: 'transition_overlay_target',
         label: `$t:${L}.navigate.param_overlay_target`,
@@ -134,29 +108,16 @@ export const CORE_ACTION_RECIPES: Record<string, ActionRecipeSpec> = {
         // replace=true 일 때만 노출(폼이 dependsOn 으로 게이팅). C4 주.
         dependsOn: { param: 'replace', equals: true },
       },
-      {
-        // 이 이동에서 다시 받을 데이터 소스 id(쉼표 구분 또는 배열) — 빠지면 쿼리 갱신이 auto_fetch 소스를
-        // 전부 다시 받는다(engine-v1.79.0). build 틀에 없으면 편집기 폼 저장이 이 값을 지운다.
-        key: 'refetch_data_sources',
-        label: `$t:${L}.navigate.param_refetch_data_sources`,
-        widget: 'text',
-        dependsOn: { param: 'replace', equals: true },
-      },
     ],
     build: {
       handler: 'navigate',
       params: {
         path: '{{path}}',
-        fallbackPath: '{{fallbackPath}}',
         query: '{{query}}',
         mergeQuery: '{{mergeQuery}}',
         scroll: '{{scroll}}',
-        scrollBehavior: '{{scrollBehavior}}',
-        returnScroll: '{{returnScroll}}',
         replace: '{{replace}}',
-        bypassLeaveGuard: '{{bypassLeaveGuard}}',
         transition_overlay_target: '{{transition_overlay_target}}',
-        refetch_data_sources: '{{refetch_data_sources}}',
       },
     },
   },
@@ -324,30 +285,6 @@ export const CORE_ACTION_RECIPES: Record<string, ActionRecipeSpec> = {
     params: [{ key: 'body', label: `$t:${L}.login.param_body`, widget: 'key-value' }],
     build: { handler: 'login', params: { body: '{{body}}' } },
   },
-  // C18-1 2단계 인증 코드 확인 (로그인 완료)
-  loginTwoFactor: {
-    label: `$t:${L}.login_two_factor.label`,
-    params: [{ key: 'body', label: `$t:${L}.login_two_factor.param_body`, widget: 'key-value' }],
-    build: { handler: 'loginTwoFactor', params: { body: '{{body}}' } },
-  },
-  // C18-2 2단계 인증 코드 재발송
-  loginTwoFactorResend: {
-    label: `$t:${L}.login_two_factor_resend.label`,
-    params: [{ key: 'body', label: `$t:${L}.login_two_factor_resend.param_body`, widget: 'key-value' }],
-    build: { handler: 'loginTwoFactorResend', params: { body: '{{body}}' } },
-  },
-  // C18-3 로그인 비밀번호 변경 단계 완료 (engine-v1.77.0)
-  loginPasswordChange: {
-    label: `$t:${L}.login_password_change.label`,
-    params: [{ key: 'body', label: `$t:${L}.login_password_change.param_body`, widget: 'key-value' }],
-    build: { handler: 'loginPasswordChange', params: { body: '{{body}}' } },
-  },
-  // C18-4 로그인 비밀번호 변경 단계 연기 (engine-v1.77.0)
-  loginPasswordChangePostpone: {
-    label: `$t:${L}.login_password_change_postpone.label`,
-    params: [{ key: 'body', label: `$t:${L}.login_password_change_postpone.param_body`, widget: 'key-value' }],
-    build: { handler: 'loginPasswordChangePostpone', params: { body: '{{body}}' } },
-  },
   // C19 로그아웃 처리
   logout: {
     label: `$t:${L}.logout.label`,
@@ -368,22 +305,6 @@ export const CORE_ACTION_RECIPES: Record<string, ActionRecipeSpec> = {
       { key: 'data', label: `$t:${L}.emit_event.param_data`, widget: 'data-chip' },
     ],
     build: { handler: 'emitEvent', params: { event: '{{event}}', data: '{{data}}' } },
-  },
-  // C21a 방문자 동의 상태 다시 읽기 (engine-v1.78.0, #639) — 동의 저장 성공 뒤에 둔다
-  refreshConsent: {
-    label: `$t:${L}.refresh_consent.label`,
-    params: [],
-    build: { handler: 'refreshConsent' },
-  },
-  // C21b 검색창 제출 검색어를 최근 검색어에 기록 (engine-v1.87.0) — 검색 이동(navigate) 앞에 둔다.
-  // 범위는 코어 `core.site` 또는 확장이 manifest search_scopes 로 선언한 `{확장 식별자}.{이름}`.
-  recordSearchKeyword: {
-    label: `$t:${L}.record_search_keyword.label`,
-    params: [
-      { key: 'scope', label: `$t:${L}.record_search_keyword.param_scope`, widget: 'text', required: true },
-      { key: 'keyword', label: `$t:${L}.record_search_keyword.param_keyword`, widget: 'data-chip', required: true },
-    ],
-    build: { handler: 'recordSearchKeyword', params: { scope: '{{scope}}', keyword: '{{keyword}}' } },
   },
   // C22 서버에 보내고 결과 처리 — onSuccess/onError 는 친화 중첩 액션 빌더(action-list)로 편집.
   // 응답 후속 동작(결제 진입·상태 저장·이동 등)을 코드 없이 추가/순서/속성 편집한다.

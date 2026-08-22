@@ -3,12 +3,11 @@
 namespace App\Rules;
 
 use App\Models\TemplateLayout;
-use App\Support\LayoutDataSourceIds;
 use Closure;
 use Illuminate\Contracts\Validation\DataAwareRule;
 use Illuminate\Contracts\Validation\ValidationRule;
 
-class ValidDataSourceMerge implements DataAwareRule, ValidationRule
+class ValidDataSourceMerge implements ValidationRule, DataAwareRule
 {
     /**
      * 검증할 전체 데이터
@@ -17,9 +16,6 @@ class ValidDataSourceMerge implements DataAwareRule, ValidationRule
 
     /**
      * 전체 데이터 설정
-     *
-     * @param  array  $data  검증 대상 요청의 전체 데이터
-     * @return static 체이닝용 자기 자신
      */
     public function setData(array $data): static
     {
@@ -30,11 +26,6 @@ class ValidDataSourceMerge implements DataAwareRule, ValidationRule
 
     /**
      * 데이터 소스 병합 검증
-     *
-     * @param  string  $attribute  검증 중인 필드 이름
-     * @param  mixed  $value  data_sources 값
-     * @param  Closure  $fail  실패를 알리는 콜백
-     * @return void
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
@@ -44,7 +35,7 @@ class ValidDataSourceMerge implements DataAwareRule, ValidationRule
         }
 
         // data_sources는 배열이어야 함
-        if (! is_array($value)) {
+        if (!is_array($value)) {
             $fail(__('validation.layout_inheritance.data_sources_must_be_array'));
 
             return;
@@ -53,13 +44,13 @@ class ValidDataSourceMerge implements DataAwareRule, ValidationRule
         // 현재 레이아웃의 data_sources ID 수집
         $currentIds = [];
         foreach ($value as $index => $dataSource) {
-            if (! isset($dataSource['id'])) {
+            if (!isset($dataSource['id'])) {
                 $fail(__('validation.layout_inheritance.data_source_must_have_id', ['index' => $index]));
 
                 return;
             }
 
-            if (! is_string($dataSource['id'])) {
+            if (!is_string($dataSource['id'])) {
                 $fail(__('validation.layout_inheritance.data_source_id_must_be_string', ['index' => $index]));
 
                 return;
@@ -68,9 +59,9 @@ class ValidDataSourceMerge implements DataAwareRule, ValidationRule
             $currentIds[] = $dataSource['id'];
         }
 
-        // ID 중복 검증 (현재 레이아웃 내에서) — 같은 id 를 조건(if·conditions)으로 여러 판 선언한 것은 허용(7.1.1 출시 전)
-        $duplicates = LayoutDataSourceIds::conflictingDuplicates($value);
-        if (! empty($duplicates)) {
+        // ID 중복 검증 (현재 레이아웃 내에서)
+        $duplicates = $this->findDuplicates($currentIds);
+        if (!empty($duplicates)) {
             $fail(__('validation.layout_inheritance.data_source_id_duplicate', ['id' => $duplicates[0]]));
 
             return;
@@ -78,13 +69,13 @@ class ValidDataSourceMerge implements DataAwareRule, ValidationRule
 
         // extends가 있으면 부모 레이아웃과의 ID 중복 검증
         $extends = $this->data['content']['extends'] ?? null;
-        if (! $extends) {
+        if (!$extends) {
             return; // extends가 없으면 추가 검증 불필요
         }
 
         // template_id가 필요함
         $templateId = $this->data['template_id'] ?? null;
-        if (! $templateId) {
+        if (!$templateId) {
             return; // template_id가 없으면 ValidParentLayout에서 처리
         }
 
@@ -93,7 +84,7 @@ class ValidDataSourceMerge implements DataAwareRule, ValidationRule
 
         // 부모와 중복되는 ID 확인
         $duplicatesWithParent = array_intersect($currentIds, $parentIds);
-        if (! empty($duplicatesWithParent)) {
+        if (!empty($duplicatesWithParent)) {
             $fail(__('validation.layout_inheritance.data_source_id_duplicate', ['id' => reset($duplicatesWithParent)]));
 
             return;
@@ -101,11 +92,15 @@ class ValidDataSourceMerge implements DataAwareRule, ValidationRule
     }
 
     /**
+     * 배열에서 중복 값 찾기
+     */
+    private function findDuplicates(array $array): array
+    {
+        return array_values(array_unique(array_diff_assoc($array, array_unique($array))));
+    }
+
+    /**
      * 부모 레이아웃의 모든 data_sources ID 수집 (상속 체인 전체)
-     *
-     * @param  int  $templateId  템플릿 ID
-     * @param  string  $layoutName  상속 체인을 시작할 부모 레이아웃 이름
-     * @return array 부모 체인 전체의 data_sources ID 목록
      */
     private function collectParentDataSourceIds(int $templateId, string $layoutName): array
     {
@@ -126,7 +121,7 @@ class ValidDataSourceMerge implements DataAwareRule, ValidationRule
                 ->where('name', $currentName)
                 ->first();
 
-            if (! $layout) {
+            if (!$layout) {
                 break;
             }
 

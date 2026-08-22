@@ -42,7 +42,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| mileage | object | `{"enabled":false,"available":102200,"pending":0,"expiring…` | 마일리지 잔액 요약 객체 (enabled 기능 활성화 여부, available 사용 가능, pending 적립 대기, expiring_soon/expiring_date 소멸 예정(ISO 8601 기계값), expiring_date_formatted 소멸 예정일의 보는 사람 시간대 날짜(`Y-m-d`, 마이페이지 카드 표시용), total_earned/total_used 누적 적립·사용, by_currency 통화별 잔액) |
+| mileage | object | `{"enabled":false,"available":102200,"pending":0,"expiring…` | 마일리지 잔액 요약 객체 (enabled 기능 활성화 여부, available 사용 가능, pending 적립 대기, expiring_soon/expiring_date 소멸 예정, total_earned/total_used 누적 적립·사용, by_currency 통화별 잔액) |
 
 **응답 예시**
 
@@ -61,7 +61,6 @@ HTTP/1.1 200
             "pending": 0,
             "expiring_soon": 0,
             "expiring_date": null,
-            "expiring_date_formatted": null,
             "total_earned": 110000,
             "total_used": 7800,
             "by_currency": {
@@ -71,8 +70,7 @@ HTTP/1.1 200
                     "total_earned": 110000,
                     "total_used": 7800,
                     "expiring_soon": 0,
-                    "expiring_date": null,
-                    "expiring_date_formatted": null
+                    "expiring_date": null
                 }
             }
         }
@@ -203,7 +201,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 로그인한 회원이 마이페이지에서 자신의 마일리지 적립/사용 내역을 페이지네이션으로 조회합니다. `category`(earn·use·expire·adjust) 4분류 필터와 `currency`·`per_page`(최대 100)를 지원하며, `UserMileageService::paginateUserHistory()`가 필터를 적용해 조회한 뒤 `MileageTransactionCollection`으로 직렬화해 `transactions` 에 담습니다. `category` 는 원장의 원시 type 이 아니라 사용자 표시용 4분류로 매핑된 값입니다. 관리자 전용 값인 처리 메모(`memo`)와 처리 관리자(`granted_by`·`granted_by_name`·`granted_by_uuid`)는 키만 두고 값은 항상 `null` 로 내보내며, 회원에게 보여 줄 사유는 `description` 을 씁니다.
+**설명** 로그인한 회원이 마이페이지에서 자신의 마일리지 적립/사용 내역을 페이지네이션으로 조회합니다. `category`(earn·use·expire·adjust) 4분류 필터와 `currency`·`per_page`(최대 100)를 지원하며, `UserMileageService::paginateUserHistory()`가 필터를 적용해 조회한 뒤 `MileageTransactionCollection`으로 직렬화해 `transactions` 에 담습니다. `category` 는 원장의 원시 type 이 아니라 사용자 표시용 4분류로 매핑된 값입니다.
 
 
 ### GET /api/modules/sirsoft-ecommerce/user/mileage/max-usable
@@ -217,7 +215,6 @@ HTTP/1.1 200
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | order_amount | query | integer | 예 | min 0 | 사용 가능 상한 계산 기준 주문금액 (마일리지 사용액은 이 금액을 넘을 수 없음) |
-| product_total | query | integer | 아니오 | min 0 | 상품 합계(판매가 × 수량 합, 쿠폰·배송비 반영 전). 주면 환경설정 「상품 합계가 기준 미만이면 사용 불가」도 함께 판정해, 기준 미만이면 `max_usable` 이 0 입니다 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-ecommerce.mileage.max_usable_validation_rules`).
 

@@ -1,30 +1,15 @@
 import React, { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
 import { Div } from '../basic/Div';
-import { A } from '../basic/A';
 import { Button } from '../basic/Button';
 import { Span } from '../basic/Span';
 import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
 import { Input } from '../basic/Input';
 import type { EditorAttrs } from '../../types';
-import { handleLinkClick, resolveLinkHref } from '../../support/navigationLink';
-
-// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다
-const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
-  const translated = (window as any).G7Core?.t?.(key, params);
-  return typeof translated === 'string' && translated !== key ? translated : fallback;
-};
 
 /**
  * 알림 아이템 인터페이스
  */
-/**
- * 닫을 때 읽음 처리로 한 번에 넘기는 id 의 최대 개수.
- *
- * 코어 읽음 일괄 API(`POST .../notifications/read-batch`)의 `ids` 상한(NotificationBatchReadRequest `max:100`)과 같다.
- */
-export const READ_BATCH_MAX_IDS = 100;
-
 export interface NotificationItem {
   id: string | number;
   title: string;
@@ -32,11 +17,6 @@ export interface NotificationItem {
   time: string;
   read?: boolean;
   iconName?: IconName;
-  /**
-   * 알림의 이동 주소(응답 `url`) — 있으면 알림 본문을 `<a href>` 로 그려 가운데 클릭·Ctrl+클릭 「새 탭에서 열기」가 된다(#757).
-   * 보통 클릭은 종전처럼 알림 클릭 콜백(이동·읽음 처리), 수정키 클릭은 브라우저 기본 동작. 바깥 주소는 새 탭으로 연다.
-   */
-  url?: string | null;
   data?: Record<string, unknown>;
   onClick?: () => void;
 }
@@ -67,12 +47,7 @@ export interface NotificationCenterProps {
   unreadOnly?: boolean;
   /** 알림 클릭 핸들러 (알림 전체 객체 전달) */
   onNotificationClick?: (notification: NotificationItem) => void;
-  /**
-   * 링크 알림을 브라우저가 새 탭·새 창에서 열었을 때(Ctrl·Meta·Shift·가운데 클릭, 바깥 주소) — 이동 콜백
-   * (onNotificationClick)은 부르지 않으므로 읽음 처리만 여기로 알린다. 안 읽은 알림만, 읽음 권한(canUpdate)이 있을 때만 부른다.
-   */
-  onNotificationRead?: (notification: NotificationItem) => void;
-  /** 드롭다운 닫힐 때 (뷰포트에 들어온 미읽음 알림 ID 목록 — READ_BATCH_MAX_IDS 건 단위로 나눠 여러 번 호출될 수 있음) */
+  /** 드롭다운 닫힐 때 (뷰포트에 들어온 미읽음 알림 ID 목록) */
   onClose?: (visibleUnreadIds: (string | number)[]) => void;
   /** 추가 로드 요청 */
   onLoadMore?: () => void;
@@ -84,13 +59,6 @@ export interface NotificationCenterProps {
   onDelete?: (notification: NotificationItem) => void;
   /** "미읽음만" 체크박스 토글 */
   onUnreadOnlyToggle?: (checked: boolean) => void;
-  /**
-   * 읽음 처리 권한 — false 면 「모두 읽음」 버튼을 숨기고, 닫을 때 보인 미읽음 id 를 onClose 로 보내지 않는다.
-   * 생략하면 true(기존 동작). 관리자 헤더는 응답 abilities.can_update 를 넘긴다.
-   */
-  canUpdate?: boolean;
-  /** 삭제 권한 — false 면 「모두 삭제」·개별 삭제 버튼을 숨긴다. 생략하면 true(기존 동작) */
-  canDelete?: boolean;
   /** 드롭다운 정렬 방향 — "right"(기본): 우측 정렬되어 좌측으로 확장 / "left": 좌측 정렬되어 우측으로 확장 */
   dropdownAlign?: 'left' | 'right';
   className?: string;
@@ -126,17 +94,14 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   unreadCount = 0,
   hasMore = false,
   loading = false,
-  titleText: titleTextProp,
-  emptyText: emptyTextProp,
-  markAllReadText: markAllReadTextProp,
-  deleteAllText: deleteAllTextProp,
-  unreadOnlyText: unreadOnlyTextProp,
+  titleText = 'Notifications',
+  emptyText = 'No notifications',
+  markAllReadText = 'Mark all as read',
+  deleteAllText = 'Delete all',
+  unreadOnlyText = 'Unread only',
   unreadOnly = false,
   onNotificationClick,
-  onNotificationRead,
   onClose,
-  canUpdate = true,
-  canDelete = true,
   onLoadMore,
   onMarkAllRead,
   onDeleteAll,
@@ -147,12 +112,6 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   id,
   editorAttrs,
 }) => {
-  // 기본 문구는 화면 언어를 따른다 — 레이아웃이 넘긴 문구가 우선이다(7.1.0)
-  const titleText = titleTextProp ?? tOr('admin.notifications', 'Notifications');
-  const emptyText = emptyTextProp ?? tOr('admin.no_notifications', 'No notifications');
-  const markAllReadText = markAllReadTextProp ?? tOr('admin.notifications_mark_all_read', 'Mark all as read');
-  const deleteAllText = deleteAllTextProp ?? tOr('admin.notifications_delete_all', 'Delete all');
-  const unreadOnlyText = unreadOnlyTextProp ?? tOr('admin.notifications_unread_only', 'Unread only');
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -248,22 +207,19 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
    */
   const handleClose = useCallback(() => {
     if (showNotifications) {
-      // 읽음 처리 권한이 없으면 서버가 403 으로 거절하므로 요청하지 않는다.
-      if (canUpdate && displayCount > 0) {
+      if (displayCount > 0) {
         const unreadIds = Array.from(visibleUnreadIdsRef.current).filter((id) => {
           const n = notifications.find((item) => String(item.id) === String(id));
           return n && !n.read;
         });
-        // 읽음 일괄 API 는 한 번에 READ_BATCH_MAX_IDS 건까지만 받는다 — 더보기로 많이 펼친 뒤
-        // 닫으면 그 수를 넘을 수 있어, 넘긴 채 보내면 요청 전체가 422 로 거절된다. 한도 단위로 나눠 보낸다.
-        for (let i = 0; i < unreadIds.length; i += READ_BATCH_MAX_IDS) {
-          onClose?.(unreadIds.slice(i, i + READ_BATCH_MAX_IDS));
+        if (unreadIds.length > 0) {
+          onClose?.(unreadIds);
         }
       }
       visibleUnreadIdsRef.current.clear();
       setShowNotifications(false);
     }
-  }, [showNotifications, onClose, displayCount, notifications, canUpdate]);
+  }, [showNotifications, onClose, displayCount, notifications]);
 
   /**
    * 외부 클릭 감지 — 드롭다운이 열려 있을 때만 리스너 등록
@@ -338,8 +294,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
       >
         <Icon name={IconName.Bell} className="text-sm text-slate-500 dark:text-slate-400" />
         {displayCount > 0 && (
-          // 20px 원 안에 12px `99+` 는 넘친다(실측 23.28px) — 세 자리 표시일 때만 9px 로 줄인다
-          <Span className={`absolute top-0 right-0 flex items-center justify-center w-5 h-5 ${displayCount > 99 ? 'text-[9px]' : 'text-xs'} font-bold text-white bg-red-600 dark:bg-red-600 rounded-full`}>
+          <Span className="absolute top-0 right-0 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 dark:bg-red-600 rounded-full">
             {displayCount > 99 ? '99+' : displayCount}
           </Span>
         )}
@@ -371,7 +326,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
               )}
             </Div>
             <Div className="flex items-center gap-3 flex-shrink-0">
-              {onMarkAllRead && canUpdate && displayCount > 0 && (
+              {onMarkAllRead && displayCount > 0 && (
                 <Button
                   onClick={() => {
                     onMarkAllRead();
@@ -382,7 +337,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                   {markAllReadText}
                 </Button>
               )}
-              {onDeleteAll && canDelete && notifications.length > 0 && (
+              {onDeleteAll && notifications.length > 0 && (
                 <Button
                   onClick={() => {
                     // 드롭다운은 닫지 않음 — 확인 모달이 닫히면 다시 자연스럽게 노출되어야 하고,
@@ -405,25 +360,27 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
               <>
                 {notifications.map((notification) => {
                   const isUnread = !notification.read;
-                  // 알림 클릭 — 종전 동작(항목 콜백 → 알림 클릭 콜백 → 닫기)
-                  const activate = () => {
-                    notification.onClick?.();
-                    onNotificationClick?.(notification);
-                    setShowNotifications(false);
-                  };
-                  // 새 탭·새 창으로 연 링크 알림 — 이 화면은 그대로이므로 목록은 열어 두고 읽음만 알린다
-                  const markOpenedElsewhere = () => {
-                    if (isUnread && canUpdate) onNotificationRead?.(notification);
-                  };
-                  // 이동 주소가 있으면 아이콘·본문을 링크로 감싼다. 삭제 단추는 링크 밖 형제로 둔다(상호작용 요소 중첩 금지).
-                  const link = resolveLinkHref(notification.url);
-                  const body = (
-                    <>
+                  return (
+                    <Div
+                      key={notification.id}
+                      data-notification-id={notification.id}
+                      data-unread={isUnread ? 'true' : 'false'}
+                      onClick={() => {
+                        notification.onClick?.();
+                        onNotificationClick?.(notification);
+                        setShowNotifications(false);
+                      }}
+                      className={`group flex items-start gap-3 px-4 py-3 text-left border-b border-gray-100 dark:border-gray-700 transition-colors cursor-pointer ${
+                        isUnread
+                          ? 'bg-blue-50/70 dark:bg-blue-900/20 hover:bg-blue-50 dark:hover:bg-blue-900/30'
+                          : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50 opacity-70'
+                      }`}
+                    >
                       {notification.iconName && (
                         <Icon
                           name={notification.iconName}
                           className={`w-5 h-5 mt-0.5 flex-shrink-0 ${
-                            isUnread ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-500'
+                            isUnread ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'
                           }`}
                         />
                       )}
@@ -439,61 +396,27 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                         </Div>
                         <Div
                           className={`text-sm mt-1 line-clamp-2 ${
-                            isUnread ? 'text-gray-700 dark:text-gray-300' : 'text-gray-500 dark:text-gray-400'
+                            isUnread ? 'text-gray-700 dark:text-gray-300' : 'text-gray-500 dark:text-gray-500'
                           }`}
                         >
                           {notification.message}
                         </Div>
-                        <Div className="text-gray-500 dark:text-gray-400 text-xs mt-1 font-mono">
+                        <Div className="text-gray-400 dark:text-gray-500 text-xs mt-1 font-mono">
                           {notification.time}
                         </Div>
                       </Div>
-                    </>
-                  );
-                  return (
-                    <Div
-                      key={notification.id}
-                      data-notification-id={notification.id}
-                      data-unread={isUnread ? 'true' : 'false'}
-                      onClick={activate}
-                      className={`group flex items-start gap-3 px-4 py-3 text-left border-b border-gray-100 dark:border-gray-700 transition-colors cursor-pointer ${
-                        isUnread
-                          ? 'bg-blue-50/70 dark:bg-blue-900/20 hover:bg-blue-50 dark:hover:bg-blue-900/30'
-                          : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50'
-                      }`}
-                    >
-                      {link ? (
-                        <A
-                          href={link.href}
-                          {...(link.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-                          className="flex items-start gap-3 flex-1 min-w-0"
-                          onClick={(event) => {
-                            // 줄(바깥 Div)의 클릭 처리가 다시 부르지 않게 여기서 멈춘다 — 수정키 클릭은 브라우저에 맡긴다
-                            event.stopPropagation();
-                            if (!handleLinkClick(event, activate) && !event.defaultPrevented) markOpenedElsewhere();
-                          }}
-                          onAuxClick={(event) => {
-                            // 가운데 단추는 click 이 아니라 auxclick 으로 온다 — 브라우저가 새 탭에서 연다
-                            if (event.button === 1) markOpenedElsewhere();
-                          }}
-                        >
-                          {body}
-                        </A>
-                      ) : (
-                        body
-                      )}
                       <Div className="flex flex-col items-center gap-2 flex-shrink-0">
                         {isUnread && (
                           <Span className="w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full mt-1.5" />
                         )}
-                        {onDelete && canDelete && (
+                        {onDelete && (
                           <Button
                             onClick={(e) => {
                               e.stopPropagation();
                               onDelete(notification);
                             }}
-                            className="p-1 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
-                            aria-label={tOr('common.delete_notification', 'Delete notification')}
+                            className="p-1 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 rounded hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
+                            aria-label="Delete notification"
                           >
                             <Icon name={IconName.Trash} className="w-4 h-4" />
                           </Button>
@@ -506,15 +429,15 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                 {hasMore && (
                   <Div ref={sentinelRef} className="px-4 py-3 text-center">
                     {loading ? (
-                      <Span className="text-sm text-gray-500 dark:text-gray-400">...</Span>
+                      <Span className="text-sm text-gray-400 dark:text-gray-500">...</Span>
                     ) : (
-                      <Span className="text-sm text-gray-500 dark:text-gray-400" />
+                      <Span className="text-sm text-gray-400 dark:text-gray-500" />
                     )}
                   </Div>
                 )}
                 {loading && !hasMore && notifications.length > 0 && (
                   <Div className="px-4 py-2 text-center">
-                    <Span className="text-sm text-gray-500 dark:text-gray-400">...</Span>
+                    <Span className="text-sm text-gray-400 dark:text-gray-500">...</Span>
                   </Div>
                 )}
               </>

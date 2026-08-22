@@ -47,8 +47,8 @@ class SmsChannelDriver
     /** 플러그인 식별자 (manifest 와 일치) */
     private const PLUGIN_IDENTIFIER = 'sirsoft-message_bizppurio';
 
-    /** 알림 data 의 수신 전화번호 키 — 코어 표준 키의 별칭(도메인이 extract_data 로 싣고 이 드라이버는 읽기만 한다) */
-    public const RECIPIENT_PHONE_KEY = GenericNotification::RECIPIENT_PHONE_KEY;
+    /** 알림 data 에서 비회원 전화번호를 싣는 표준 키 (extract_data 리스너와 계약) */
+    public const RECIPIENT_PHONE_KEY = '_recipient_phone';
 
     /**
      * @param  NotificationDefinitionService  $definitionService  알림 유형의 사람이 읽는 이름 조회(스킵 예외 메시지·LMS 제목용)
@@ -57,6 +57,7 @@ class SmsChannelDriver
      * @param  SmsTypeResolver  $typeResolver  SMS/LMS byte 판별
      * @param  MessagePayloadBuilder  $payloadBuilder  발송 payload 조립
      * @param  BizppurioDispatchRepositoryInterface  $dispatches  발송 이력 영속화
+     * @param  DispatchLinkContext  $linkContext  발송 사이클 refkey↔코어 로그 연결 컨텍스트(A-2)
      * @param  PluginSettingsService  $pluginSettings  검수 모드 여부 조회(이력 스냅샷용)
      */
     public function __construct(
@@ -66,6 +67,7 @@ class SmsChannelDriver
         private readonly SmsTypeResolver $typeResolver,
         private readonly MessagePayloadBuilder $payloadBuilder,
         private readonly BizppurioDispatchRepositoryInterface $dispatches,
+        private readonly DispatchLinkContext $linkContext,
         private readonly PluginSettingsService $pluginSettings,
     ) {}
 
@@ -100,7 +102,6 @@ class SmsChannelDriver
      *
      * @param  object  $notifiable  수신자 (User 또는 GuestNotifiable)
      * @param  Notification  $notification  발송 대상 알림
-     * @return void
      */
     public function send(object $notifiable, Notification $notification): void
     {
@@ -169,9 +170,7 @@ class SmsChannelDriver
 
         // A-2: 이 발송 사이클 직후 발화할 코어 알림 로그(after_log_sent)에 이 dispatch 를 잇도록
         // refkey 를 컨텍스트에 남긴다. LinkNotificationLogListener 가 그 로그 id 를 여기에 연결한다.
-        // 컨텍스트는 발송할 때마다 컨테이너에서 꺼낸다(#139) — 채널 매니저가 이 드라이버를 프로세스 동안 재사용하는데
-        // 큐 워커는 잡마다 scoped 인스턴스를 비우므로, 생성자에서 받아 두면 두 번째 잡부터 옛 컨텍스트에 남아 연결이 빈다.
-        app(DispatchLinkContext::class)->remember($refkey);
+        $this->linkContext->remember($refkey);
 
         SendMessageJob::dispatch($payload, $refkey);
     }
@@ -195,12 +194,8 @@ class SmsChannelDriver
     /**
      * 수신자의 전화번호를 해석합니다.
      *
-     * **수신자군으로 가른다.** 회원(관리자 포함)은 자기 번호만 쓰고, 비회원은 알림 data 가
-     * 실은 번호(`_recipient_phone`)만 쓴다.
-     *
-     * 종전에는 `$notifiable->mobile ?? $data[번호]` 였다 — 휴대폰을 등록하지 않은 회원이
-     * 수신자면 **그 알림이 나르는 고객 번호로 문자가 나갈 수 있었다.** 지금은 주문 6종
-     * 화이트리스트가 우연히 막고 있을 뿐이고, 관리자 수신 알림이 늘면 그 우연이 깨진다.
+     * 회원(Notifiable)은 mobile 속성을, 비회원은 알림 data 의 _recipient_phone 을 사용한다.
+     * 숫자·하이픈 외 문자는 제거하고, 값이 없으면 null 을 반환한다.
      *
      * @param  object  $notifiable  수신자
      * @param  array<string, mixed>  $data  알림 data
@@ -208,9 +203,8 @@ class SmsChannelDriver
      */
     private function resolvePhone(object $notifiable, array $data): ?string
     {
-        $raw = $notifiable instanceof User
-            ? ($notifiable->mobile ?? null)
-            : ($notifiable->mobile ?? ($data[self::RECIPIENT_PHONE_KEY] ?? null));
+        $raw = $notifiable->mobile
+            ?? ($data[self::RECIPIENT_PHONE_KEY] ?? null);
 
         $normalized = preg_replace('/[^0-9]/', '', (string) $raw);
 

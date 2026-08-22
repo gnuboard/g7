@@ -2,7 +2,6 @@
 
 namespace Modules\Sirsoft\Page\Models;
 
-use App\Helpers\InlineMediaPolicy;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -16,8 +15,6 @@ class PageAttachment extends Model
 
     /**
      * 팩토리 클래스를 반환합니다.
-     *
-     * @return PageAttachmentFactory
      */
     protected static function newFactory(): PageAttachmentFactory
     {
@@ -33,8 +30,6 @@ class PageAttachment extends Model
 
     /**
      * 모델 부트
-     *
-     * @return void
      */
     protected static function boot(): void
     {
@@ -118,15 +113,13 @@ class PageAttachment extends Model
     }
 
     /**
-     * 인라인 표시 가능한 이미지 파일 여부를 확인합니다.
+     * 이미지 파일 여부를 확인합니다.
      *
-     * 스크립트를 품을 수 있는 SVG 는 이미지가 아닌 파일로 취급한다 (InlineMediaPolicy — KVE-2026-2366).
-     *
-     * @return bool 래스터 이미지 여부
+     * @return bool 이미지 여부
      */
     public function isImage(): bool
     {
-        return InlineMediaPolicy::isInlineImage($this->mime_type);
+        return str_starts_with($this->mime_type, 'image/');
     }
 
     /**
@@ -207,17 +200,4 @@ class PageAttachment extends Model
      * URL 유출 시 노출 창을 좁힐 만큼 짧은 값.
      */
     public const SIGNED_PREVIEW_TTL_MINUTES = 30;
-
-    /**
-     * 본문 미디어(편집기 본문에 넣은 이미지·동영상·오디오) 컬렉션 (#883).
-     * 첨부 목록·첨부 개수 상한에 들지 않고, 일반 첨부 업로드로는 쓸 수 없다.
-     */
-    public const COLLECTION_CONTENT_MEDIA = 'content_media';
-
-    /**
-     * 일반 첨부 업로드가 쓸 수 없는 예약 컬렉션 — 첨부 조회·개수에서 뺀다.
-     *
-     * @var array<int, string>
-     */
-    public const RESERVED_COLLECTIONS = [self::COLLECTION_CONTENT_MEDIA];
 }

@@ -6,14 +6,12 @@ use App\Contracts\Extension\CacheInterface;
 use App\Enums\ExtensionStatus;
 use App\Extension\Helpers\EditorSpecAssembler;
 use App\Extension\Traits\ClearsTemplateCaches;
-use App\Helpers\InlineMediaPolicy;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use App\Http\Controllers\Concerns\ServesRewritableCssAssets;
 use App\Http\Requests\Public\Template\ServeTemplateAssetRequest;
 use App\Models\TemplateLayoutAttachment;
 use App\Services\TemplateLayoutAttachmentService;
 use App\Services\TemplateService;
-use App\Support\LayoutMarkup\EmptyMap;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
@@ -28,12 +26,6 @@ class PublicTemplateController extends PublicBaseController
     use ClearsTemplateCaches;
     use ServesRewritableCssAssets;
 
-    /**
-     * PublicTemplateController 생성자
-     *
-     * @param  TemplateService  $templateService  템플릿 서비스
-     * @param  TemplateLayoutAttachmentService  $layoutAttachmentService  레이아웃 첨부 서비스
-     */
     public function __construct(
         private TemplateService $templateService,
         private TemplateLayoutAttachmentService $layoutAttachmentService,
@@ -52,19 +44,18 @@ class PublicTemplateController extends PublicBaseController
         // API 사용량 기록
         $this->logApiUsage('templates.routes', ['identifier' => $identifier]);
 
-        // 서버 캐시 키는 **서버 현재** 확장 캐시 버전으로만 조립한다 (#588 레이아웃 서빙과 같은 규율).
-        // 클라이언트 `?v` 를 키에 넣으면 미인증 요청이 `?v=1,2,3,…` 로 서버 캐시 엔트리를 무한히
-        // 늘려 디스크를 고갈시킨다 (KVE-2026-2336). `?v` 는 아래 HTTP 캐시 정책 판단에만 쓴다.
+        // 캐시 버전을 키에 포함하여 모듈/플러그인 변경 시 캐시 무효화.
+        // `?v` 생략 시 현재 버전으로 폴백 — 리터럴 0 폴백은 워밍/무효화 어느 경로에도
+        // 걸리지 않는 `.v0` 영구 사각 키를 만든다 (#588). `(int)` 캐스트로 키 위생 겸용.
         $rawVersion = request()->query('v');
-        $cacheVersion = self::getExtensionCacheVersion();
+        $cacheVersion = $rawVersion !== null ? (int) $rawVersion : self::getExtensionCacheVersion();
 
         // 확장 업데이트 중에는 활성 디렉토리가 잠시 비어 그 모듈의 라우트가 통째로 빠진다.
         // 그 순간의 응답을 버전 키에 캐시하면 업데이트가 끝난 뒤에도 캐시가 만료될 때까지
         // 해당 모듈의 모든 화면이 404 로 남는다 — 버전은 이미 올라간 뒤라 스스로 회복되지 않는다.
         // 따라서 열화 스냅샷은 그대로 응답하되 캐시에 남기지 않는다.
         $buildRoutes = function () use ($identifier) {
-            // 응답 전용 — routes.json 의 빈 맵 `{}` 를 보존한다 (#758)
-            $result = $this->templateService->getRoutesDataWithModules($identifier, preserveEmptyMaps: true);
+            $result = $this->templateService->getRoutesDataWithModules($identifier);
 
             if (! $result['success']) {
                 return ['error' => $result['error']];
@@ -85,9 +76,7 @@ class PublicTemplateController extends PublicBaseController
                     'template' => $identifier,
                     'cache_version' => $cacheVersion,
                 ]);
-            } elseif (! isset($routesData['error'])) {
-                // 에러 결과(미존재 식별자 등)는 캐시하지 않는다 — cached() 헬퍼와 같은 규율.
-                // 임의 식별자 요청이 에러 스텁 엔트리를 쌓지 않고, 일시적 상태의 에러가 박제되지 않는다.
+            } else {
                 $cache->put($cacheKey, $routesData, 3600);
             }
         }
@@ -196,8 +185,7 @@ class PublicTemplateController extends PublicBaseController
         }
 
         // JSON 파싱 및 반환
-        // props 매니페스트의 빈 맵을 `{}` 로 응답하도록 보존해 읽는다 (#758)
-        $components = EmptyMap::decodePreserving((string) file_get_contents($result['componentsPath']));
+        $components = json_decode(file_get_contents($result['componentsPath']), true);
 
         return $this->cachedJsonResponse($components, 3600);
     }
@@ -233,8 +221,7 @@ class PublicTemplateController extends PublicBaseController
                 }
 
                 $content = file_get_contents($configPath);
-                // 빈 맵(`dependencies.modules: {}` 등)을 `{}` 로 응답하도록 보존해 읽는다 (#758)
-                $data = EmptyMap::decodePreserving((string) $content);
+                $data = json_decode($content, true);
 
                 if (json_last_error() !== JSON_ERROR_NONE) {
                     return ['error' => 'invalid_json'];
@@ -287,9 +274,10 @@ class PublicTemplateController extends PublicBaseController
             'locale' => $locale,
         ]);
 
-        // 서버 캐시 키는 서버 현재 확장 캐시 버전으로만 조립한다 (getRoutes 와 동일 — KVE-2026-2336).
-        // 클라이언트 `?v` 는 브라우저 HTTP 캐시 좌표일 뿐 서버 키의 근거가 아니다.
-        $cacheVersion = self::getExtensionCacheVersion();
+        // 캐시 버전을 키에 포함하여 모듈/플러그인 변경 시 캐시 무효화.
+        // `?v` 생략 시 현재 버전으로 폴백 (getRoutes 와 동일 — `.v0` 사각 키 방지)
+        $rawVersion = request()->query('v');
+        $cacheVersion = $rawVersion !== null ? (int) $rawVersion : self::getExtensionCacheVersion();
 
         // 캐싱된 응답 반환 (1시간 유효)
         $languageData = $this->cached(
@@ -314,8 +302,7 @@ class PublicTemplateController extends PublicBaseController
                 'template_not_found' => $this->notFound(
                     __('templates.errors.not_found', ['template' => $identifier])
                 ),
-                // 형식 위반(invalid_locale)도 "지원하지 않는 언어" 로 404 — 500 이 아니다 (#148)
-                'locale_not_supported', 'invalid_locale' => $this->notFound(
+                'locale_not_supported' => $this->notFound(
                     __('templates.errors.locale_not_supported', [
                         'template' => $identifier,
                         'locale' => $locale,
@@ -340,7 +327,7 @@ class PublicTemplateController extends PublicBaseController
      * 편집기 스펙 조회 — 템플릿 editor-spec.json 파일 반환
      *
      * Phase 3 S5a-1 에서 `nesting` 블록이 추가되었다. 본 엔드포인트는
-     * 설치본의 editor-spec.json 만 읽어 반환한다(배포 원본 폴백 없음).
+     * 활성 디렉토리 → _bundled 폴백 순으로 editor-spec.json 을 읽어 반환한다.
      * 파일 미존재 시 spec=null 로 폴백 (편집기는 spec 미제공 안내).
      *
      * @param  string  $identifier  템플릿 식별자
@@ -391,16 +378,13 @@ class PublicTemplateController extends PublicBaseController
             return $this->notFound('templates.layout_attachments.errors.not_found');
         }
 
-        // 캐싱 헤더와 함께 응답 (레이아웃 캐시 TTL, 기본 24시간).
+        // 이미지/일반 파일 모두 캐싱 헤더와 함께 인라인 응답 (레이아웃 캐시 TTL, 기본 24시간).
         // PublicAttachmentController 의 이미지 서빙과 동일한 streamedFileResponse(ETag/Cache-Control) 사용
         // — 행 disk 를 따르는 스토리지 스트림이라 S3 등 원격 디스크 행에서도 성립한다 (#99).
-        // 인라인은 래스터 이미지만, 그 외(SVG 등)는 다운로드로 — 모든 응답에 nosniff (KVE-2026-2366).
-        $response = $this->streamedFileResponse(
+        return $this->streamedFileResponse(
             $serveInfo['response'],
             $serveInfo['etag_source'],
             (int) g7_core_settings('cache.layout_ttl', 86400)
         );
-
-        return InlineMediaPolicy::harden($response, $attachment->mime_type, $attachment->original_name);
     }
 }

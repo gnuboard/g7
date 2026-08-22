@@ -3,7 +3,6 @@
 namespace App\Models\Concerns;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Query\Builder;
 
 /**
  * HasUserOverrides Trait.
@@ -44,7 +43,7 @@ trait HasUserOverrides
     /**
      * 커스텀 Eloquent Builder 반환 — mass update 시에도 user_overrides 자동 기록.
      *
-     * @param  Builder  $query
+     * @param  \Illuminate\Database\Query\Builder  $query
      * @return UserOverridesAwareBuilder
      */
     public function newEloquentBuilder($query): UserOverridesAwareBuilder
@@ -54,8 +53,6 @@ trait HasUserOverrides
 
     /**
      * trait 부팅 — Eloquent updating 이벤트로 사용자 수정 자동 기록.
-     *
-     * @return void 반환값 없음
      */
     public static function bootHasUserOverrides(): void
     {
@@ -70,15 +67,6 @@ trait HasUserOverrides
 
             foreach ($model->getTrackableFields() as $field) {
                 if (! $model->isDirty($field)) {
-                    continue;
-                }
-
-                // 표기만 다른 저장(공백·빈 문자열/null·[]/null·숫자 문자열)은 수정이 아니다 — 저장만 해도
-                // "수정됨" 이 되면 새 버전 교정이 영영 막힌다(#727 §5.11).
-                if (UserOverrideValueComparator::same(
-                    $model->comparableTrackableValue($field, $model->getOriginal($field)),
-                    $model->comparableTrackableValue($field, $model->getAttribute($field)),
-                )) {
                     continue;
                 }
 
@@ -133,28 +121,13 @@ trait HasUserOverrides
     }
 
     /**
-     * 수정 여부를 가릴 때 쓸 값 — 같은 뜻을 여러 모양으로 저장하는 칸은 모델이 한 모양으로 맞춰 돌려준다.
-     *
-     * 기본은 값 그대로다. 예: 알림 템플릿 수신자 규칙은 역할 값을 문자열 하나(`"admin"`)로도, 목록(`["admin"]`)으로도
-     * 저장하는데, 화면은 목록으로 받아 그대로 돌려보낸다 — 맞추지 않으면 저장만 해도 수정으로 기록된다.
-     *
-     * @param  string  $field  trackable 컬럼명
-     * @param  mixed  $value  비교할 값
-     * @return mixed 비교용 값
-     */
-    public function comparableTrackableValue(string $field, mixed $value): mixed
-    {
-        return $value;
-    }
-
-    /**
      * 다국어 필드 변경 비교 후 user_overrides 에 dot-path 항목을 누적 추가합니다.
      *
      * @param  array<int, string>  $userOverrides  현재 user_overrides 배열
      * @param  string  $field  컬럼명 (예: 'name')
      * @param  mixed  $original  변경 전 컬럼 값 (array 또는 null)
      * @param  mixed  $current  변경 후 컬럼 값 (array 또는 null)
-     * @return array<int, string> 갱신된 user_overrides 배열
+     * @return array<int, string>  갱신된 user_overrides 배열
      */
     protected function mergeTranslatableOverrides(array $userOverrides, string $field, mixed $original, mixed $current): array
     {
@@ -165,7 +138,7 @@ trait HasUserOverrides
         foreach ($allLocales as $locale) {
             $before = $originalArr[$locale] ?? null;
             $after = $currentArr[$locale] ?? null;
-            if (UserOverrideValueComparator::same($before, $after)) {
+            if ($before === $after) {
                 continue;
             }
             $entry = "{$field}.{$locale}";
@@ -185,7 +158,7 @@ trait HasUserOverrides
      * 공개 메서드로 노출합니다.
      *
      * @param  array<string, mixed>  $incomingAttributes  사용자 입력/mass update 값
-     * @return array<int, string> 계산된 user_overrides 배열
+     * @return array<int, string>  계산된 user_overrides 배열
      */
     public function calculateUserOverridesFor(array $incomingAttributes): array
     {
@@ -201,7 +174,7 @@ trait HasUserOverrides
             if (in_array($field, $translatable, true)) {
                 $incomingArr = $this->normalizeTranslatableValue($incoming);
                 if ($incomingArr === null) {
-                    if (! UserOverrideValueComparator::same($this->{$field}, $incoming) && ! in_array($field, $current, true)) {
+                    if ($this->{$field} != $incoming && ! in_array($field, $current, true)) {
                         $current[] = $field;
                     }
 
@@ -212,19 +185,7 @@ trait HasUserOverrides
                 continue;
             }
 
-            // 모델 저장(save)은 바뀐 칸을 **직렬화한 값**으로 이 빌더에 넘긴다 — 배열 캐스트 칸은 JSON 문자열이다.
-            // 디코드하지 않으면 원래 값(null)과 문자열 `'[]'` 이 달라 보여, 아무것도 안 바꾼 저장이 수정으로 기록된다(#699).
-            if (is_string($incoming) && $this->hasCast($field, ['array', 'json', 'object', 'collection', 'encrypted:array', 'encrypted:json'])) {
-                $decoded = json_decode($incoming, true);
-                if (json_last_error() === JSON_ERROR_NONE) {
-                    $incoming = $decoded;
-                }
-            }
-
-            if (! UserOverrideValueComparator::same(
-                $this->comparableTrackableValue($field, $this->{$field}),
-                $this->comparableTrackableValue($field, $incoming),
-            ) && ! in_array($field, $current, true)) {
+            if ($this->{$field} != $incoming && ! in_array($field, $current, true)) {
                 $current[] = $field;
             }
         }
@@ -256,56 +217,17 @@ trait HasUserOverrides
     /**
      * 업그레이드 스텝/시더에서 호출 — user_overrides 보존하며 갱신합니다.
      *
-     * 갱신 값 계산은 {@see planUpgrade()} 가 한다.
-     *
-     * @param  array<string, mixed>  $newAttributes  시더 정의 값
-     * @return void 반환값 없음
-     */
-    public function syncFromUpgrade(array $newAttributes): void
-    {
-        $updateData = $this->planUpgrade($newAttributes);
-
-        if (empty($updateData)) {
-            return;
-        }
-
-        app()->instance('user_overrides.seeding', true);
-        try {
-            if (array_key_exists('user_overrides', $updateData)) {
-                $this->user_overrides = $updateData['user_overrides'];
-                unset($updateData['user_overrides']);
-            }
-
-            if ($updateData === []) {
-                $this->save();
-            } else {
-                $this->update($updateData);
-            }
-        } finally {
-            app()->forgetInstance('user_overrides.seeding');
-        }
-    }
-
-    /**
-     * 선언값으로 갱신할 속성을 계산합니다 — 운영자가 고친 칸은 보존하고, 운영자 값과 새 선언값이 같아진 칸은 표식을 푼다.
-     *
      * 일반 trackable 필드: user_overrides 에 컬럼명이 있으면 갱신 SKIP.
      * 다국어 trackable 필드 (translatableTrackableFields): sub-key 단위 머지.
      *   - user_overrides 에 `field.{locale}` 이 있으면 해당 locale 키만 기존 값 유지
      *   - 나머지 locale 키는 신규 값으로 갱신 (활성 언어팩 자동 동기화)
      *   - 호환성: user_overrides 에 컬럼명(`field`) 만 있는 legacy row 는 컬럼 전체 보존 (기존 동작)
      *
-     * **합의 해제 규칙**(#727): 표식이 있는 칸이라도 지금 값과 새 선언값이 같으면 표식을 지운다 — 운영자 값과 새 버전 값이
-     * 같아졌으니 더는 수정본이 아니고, 다음 버전의 변경부터 다시 들어와야 한다. 과거의 거짓 표식이 업데이트를 거치며
-     * 저절로 줄어드는 경로다. 표식이 바뀌면 반환값에 `user_overrides` 키가 실린다.
-     *
-     * @param  array<string, mixed>  $newAttributes  시더·확장 정의 값
-     * @return array<string, mixed> 갱신할 속성 (비었으면 갱신할 것이 없다)
+     * @param array<string, mixed> $newAttributes 시더 정의 값
      */
-    public function planUpgrade(array $newAttributes): array
+    public function syncFromUpgrade(array $newAttributes): void
     {
         $userOverrides = $this->user_overrides ?? [];
-        $remaining = $userOverrides;
         $trackable = $this->getTrackableFields();
         $translatable = $this->getTranslatableTrackableFields();
         $updateData = [];
@@ -314,15 +236,8 @@ trait HasUserOverrides
             $isTrackable = in_array($field, $trackable, true);
             $isTranslatable = in_array($field, $translatable, true);
 
-            // legacy 컬럼명 보존 (전체 컬럼 갱신 SKIP) — 값이 같아졌으면 표식만 푼다
+            // legacy 컬럼명 보존 (전체 컬럼 갱신 SKIP)
             if ($isTrackable && in_array($field, $userOverrides, true)) {
-                if (UserOverrideValueComparator::same(
-                    $this->comparableTrackableValue($field, $this->getAttribute($field)),
-                    $this->comparableTrackableValue($field, $value),
-                )) {
-                    $remaining = array_values(array_diff($remaining, [$field]));
-                }
-
                 continue;
             }
 
@@ -338,17 +253,9 @@ trait HasUserOverrides
                 $merged = $newArr;
                 foreach ($newArr as $locale => $newVal) {
                     $entry = "{$field}.{$locale}";
-                    if (! in_array($entry, $userOverrides, true) || ! array_key_exists($locale, $currentArr)) {
-                        continue;
+                    if (in_array($entry, $userOverrides, true) && array_key_exists($locale, $currentArr)) {
+                        $merged[$locale] = $currentArr[$locale];
                     }
-
-                    if (UserOverrideValueComparator::same($currentArr[$locale], $newVal)) {
-                        $remaining = array_values(array_diff($remaining, [$entry]));
-
-                        continue;
-                    }
-
-                    $merged[$locale] = $currentArr[$locale];
                 }
                 // 신규 값에 누락된 locale 키 중 사용자가 보존한 키는 유지
                 foreach ($currentArr as $locale => $currentVal) {
@@ -368,17 +275,22 @@ trait HasUserOverrides
             $updateData[$field] = $value;
         }
 
-        if ($remaining !== $userOverrides) {
-            $updateData['user_overrides'] = $remaining === [] ? null : $remaining;
+        if (empty($updateData)) {
+            return;
         }
 
-        return $updateData;
+        app()->instance('user_overrides.seeding', true);
+        try {
+            $this->update($updateData);
+        } finally {
+            app()->forgetInstance('user_overrides.seeding');
+        }
     }
 
     /**
      * 시더 컨텍스트에서 신규 생성 — user_overrides 자동 기록 비활성.
      *
-     * @param  array<string, mixed>  $attributes  신규 생성 속성
+     * @param array<string, mixed> $attributes 신규 생성 속성
      * @return static 생성된 모델 인스턴스
      */
     public static function createFromUpgrade(array $attributes): self
@@ -397,8 +309,8 @@ trait HasUserOverrides
     /**
      * 시더 헬퍼 — 존재하지 않으면 생성, 존재하면 syncFromUpgrade 호출합니다.
      *
-     * @param  array<string, mixed>  $finder  updateOrCreate 의 첫 번째 인자
-     * @param  array<string, mixed>  $attributes  시더 정의 값
+     * @param array<string, mixed> $finder updateOrCreate 의 첫 번째 인자
+     * @param array<string, mixed> $attributes 시더 정의 값
      * @return static 생성/갱신된 모델 인스턴스
      */
     public static function syncOrCreateFromUpgrade(array $finder, array $attributes): self

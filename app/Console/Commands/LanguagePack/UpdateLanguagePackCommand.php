@@ -2,8 +2,6 @@
 
 namespace App\Console\Commands\LanguagePack;
 
-use App\Console\Commands\Traits\LocalizesDescription;
-use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Services\LanguagePackService;
 use Illuminate\Console\Command;
 use Throwable;
@@ -20,9 +18,6 @@ use Throwable;
  */
 class UpdateLanguagePackCommand extends Command
 {
-    use LocalizesDescription;
-    use ReportsLifecycleWarnings;
-
     /**
      * @var string
      */
@@ -30,6 +25,11 @@ class UpdateLanguagePackCommand extends Command
         {identifier : 언어팩 식별자}
         {--force : 버전 변경이 없어도 강제 재적용 (_bundled 우선)}
         {--source=auto : 업데이트 소스 (auto|bundled|github)}';
+
+    /**
+     * @var string
+     */
+    protected $description = '언어팩을 GitHub 또는 _bundled 신버전으로 업데이트합니다.';
 
     /**
      * @param  LanguagePackService  $service  언어팩 Service
@@ -52,14 +52,14 @@ class UpdateLanguagePackCommand extends Command
         $source = (string) $this->option('source');
 
         if (! in_array($source, ['auto', 'bundled', 'github'], true)) {
-            $this->error(__('language_packs.commands.update.invalid_source', ['source' => $source]));
+            $this->error("알 수 없는 --source 값: {$source} (auto|bundled|github 중 선택)");
 
             return self::FAILURE;
         }
 
         $pack = $this->service->findByIdentifier($identifier);
         if (! $pack) {
-            $this->error(__('language_packs.commands.update.not_found', ['identifier' => $identifier]));
+            $this->error("언어팩을 찾을 수 없습니다: {$identifier}");
 
             return self::FAILURE;
         }
@@ -70,15 +70,16 @@ class UpdateLanguagePackCommand extends Command
             $effectiveForce = $force || $source === 'bundled';
             $updated = $this->service->performUpdate($pack, $effectiveForce);
 
-            $this->info(__('language_packs.commands.update.done', [
-                'identifier' => $updated->identifier,
-                'from' => $fromVersion,
-                'to' => $updated->version,
-            ]));
+            $this->info(sprintf(
+                '언어팩 업데이트 완료: %s (%s → %s)',
+                $updated->identifier,
+                $fromVersion,
+                $updated->version,
+            ));
 
             return self::SUCCESS;
         } catch (Throwable $e) {
-            $this->error(__('language_packs.commands.update.failed', ['error' => $e->getMessage()]));
+            $this->error('언어팩 업데이트 실패: '.$e->getMessage());
 
             return self::FAILURE;
         }

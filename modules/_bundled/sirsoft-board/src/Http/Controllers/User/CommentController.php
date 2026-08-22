@@ -2,8 +2,6 @@
 
 namespace Modules\Sirsoft\Board\Http\Controllers\User;
 
-use App\Enums\PermissionType;
-use Modules\Sirsoft\Board\Http\Controllers\Concerns\RespondsToExpiredSession;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
@@ -19,12 +17,8 @@ use Modules\Sirsoft\Board\Http\Requests\VerifyCommentPasswordRequest;
 use Modules\Sirsoft\Board\Http\Resources\CommentResource;
 use Modules\Sirsoft\Board\Http\Resources\PostResource;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
-use Modules\Sirsoft\Board\Repositories\Contracts\ReactionRepositoryInterface;
 use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Services\CommentService;
-use Modules\Sirsoft\Board\Services\ReactionService;
-use Modules\Sirsoft\Board\Support\SecretContentGate;
-use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 
 /**
  * 사용자용 댓글 컨트롤러
@@ -33,16 +27,11 @@ use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
  */
 class CommentController extends PublicBaseController
 {
-    use RespondsToExpiredSession;
-
-    use ChecksBoardPermission;
-
     /**
      * CommentController 생성자
      *
      * @param  CommentService  $commentService  댓글 서비스
      * @param  BoardService  $boardService  게시판 서비스
-     * @param  mixed  $postRepository
      */
     public function __construct(
         private CommentService $commentService,
@@ -98,36 +87,7 @@ class CommentController extends PublicBaseController
                 request()->attributes->set('sirsoft_board_parent_post', $post);
             }
 
-            // 상세 화면 댓글과 같은 규칙으로 부른다 — 맥락을 빼면 기본값 'admin' 이 돼 댓글 범위 권한을
-            // 관리자용 admin.comments.read 로 판정했고(「본인만」 회원에게 남의 댓글이 나감), 매니저에게는
-            // del_cmt 없이도 삭제 댓글이 나갔다(#142).
-            $canViewDeleted = $this->checkBoardPermission($slug, 'manager', PermissionType::User);
-            $comments = $this->commentService->getCommentsByPostId(
-                $slug,
-                $postId,
-                context: 'user',
-                withTrashed: $canViewDeleted && request()->boolean('del_cmt'),
-                boardId: $board->id,
-                board: $board,
-            );
-
-            // 내 댓글 반응 일괄 조회 — 프리로드 키가 없으면 Resource 가 댓글마다
-            // 개별 조회로 퇴화한다(정당한 null 과 미프리로드를 키 존재로 구분한다).
-            $user = request()->user();
-            $myCommentReactions = $user
-                ? app(ReactionRepositoryInterface::class)->getUserReactionTypeIdsByTargets(
-                    $user->id,
-                    ReactionService::TARGET_COMMENT,
-                    $comments->pluck('id')->all(),
-                )
-                : [];
-
-            foreach ($comments as $comment) {
-                $comment->my_reaction_type_id_preloaded = $myCommentReactions[$comment->id] ?? null;
-            }
-
-            // 비밀 대댓글 판정에 쓰는 부모 댓글 작성자 — 댓글마다 조회하지 않게 목록에서 미리 싣는다
-            SecretContentGate::preloadParentCommentOwners($comments);
+            $comments = $this->commentService->getCommentsByPostId($slug, $postId);
 
             return $this->success(
                 'sirsoft-board::messages.comments.index_success',
@@ -240,7 +200,7 @@ class CommentController extends PublicBaseController
             }
 
             if (! $canUpdate) {
-                return $this->ownershipDenied($request, 'sirsoft-board::messages.comment.update_forbidden');
+                return $this->forbidden('sirsoft-board::messages.comment.update_forbidden');
             }
 
             // 검증된 필드만 반영 (미검증 입력의 대량 할당 차단).
@@ -306,7 +266,7 @@ class CommentController extends PublicBaseController
             }
 
             if (! $canDelete) {
-                return $this->ownershipDenied($request, 'sirsoft-board::messages.comment.delete_forbidden');
+                return $this->forbidden('sirsoft-board::messages.comment.delete_forbidden');
             }
 
             $this->commentService->deleteComment($slug, $commentId, 'user', $postId);

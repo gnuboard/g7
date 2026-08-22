@@ -1,9 +1,5 @@
 <?php
 
-use App\Support\ComposerInstallInfo;
-
-require_once __DIR__.'/safe-archive-extractor.php';
-
 /**
  * Vendor 번들 설치 헬퍼 (웹 인스톨러 전용 shim).
  *
@@ -12,6 +8,7 @@ require_once __DIR__.'/safe-archive-extractor.php';
  *
  * Laravel 측 클래스와의 동등성은 VendorBundleInstallerShimTest 가 보장한다.
  */
+
 const VENDOR_BUNDLE_SCHEMA_VERSION = '1.0';
 const VENDOR_BUNDLE_ZIP_FILENAME = 'vendor-bundle.zip';
 const VENDOR_BUNDLE_MANIFEST_FILENAME = 'vendor-bundle.json';
@@ -141,19 +138,25 @@ function extractVendorBundle(string $sourceDir, string $targetDir): array
         }
     }
 
-    // 역슬래시 경로 정규화 + 압축 밖 경로·심볼릭 링크 거부
-    $extracted = g7InstallSafeExtractZip($zipPath, $targetDir);
-
-    if (! $extracted['success']) {
+    $zip = new ZipArchive;
+    $openResult = $zip->open($zipPath);
+    if ($openResult !== true) {
         if ($hasBackup && is_dir($backupDir)) {
             restoreVendorFromBackup($vendorDir, $backupDir, $backupDirName);
         }
 
-        if (($extracted['error'] ?? '') === 'unsafe_entry') {
-            return ['success' => false, 'error' => 'bundle_contains_unsafe_path: '.$extracted['unsafe_entry']];
+        return ['success' => false, 'error' => 'extraction_failed: ZipArchive::open failed (code '.$openResult.')'];
+    }
+
+    $extracted = $zip->extractTo($targetDir);
+    $zip->close();
+
+    if (! $extracted) {
+        if ($hasBackup && is_dir($backupDir)) {
+            restoreVendorFromBackup($vendorDir, $backupDir, $backupDirName);
         }
 
-        return ['success' => false, 'error' => 'extraction_failed: '.($extracted['error'] ?? 'unknown')];
+        return ['success' => false, 'error' => 'extraction_failed: ZipArchive::extractTo returned false'];
     }
 
     // 성공: 백업 디렉토리 삭제 (vendor/.bundle_backup_{ts}/)
@@ -234,8 +237,31 @@ function restoreVendorFromBackup(string $vendorDir, string $backupDir, string $b
  */
 function checkVendorBundleZipSafety(string $zipPath): ?string
 {
-    // `..` 조각·절대경로·드라이브·UNC·널 문자·심볼릭 링크 거부 (safe-archive-extractor.php)
-    return g7InstallFindUnsafeZipEntry($zipPath);
+    $zip = new ZipArchive;
+    if ($zip->open($zipPath) !== true) {
+        return 'cannot open zip';
+    }
+
+    for ($i = 0; $i < $zip->numFiles; $i++) {
+        $name = $zip->getNameIndex($i);
+        if ($name === false) {
+            continue;
+        }
+        $normalized = str_replace('\\', '/', $name);
+        if (
+            str_contains($normalized, '../')
+            || str_starts_with($normalized, '/')
+            || preg_match('#^[A-Za-z]:/#', $normalized)
+        ) {
+            $zip->close();
+
+            return $name;
+        }
+    }
+
+    $zip->close();
+
+    return null;
 }
 
 /**
@@ -271,7 +297,7 @@ function deleteVendorBundleDirectory(string $dir): bool
  * 본 함수는 Laravel\Foundation\ComposerScripts::clearCompiled() 와 동일한 3개 파일을 정리한다.
  *
  * @param  string  $basePath  프로젝트 루트 (bootstrap/cache 의 상위 디렉토리)
- * @return array<string> 실제로 삭제된 파일명 목록 (basename)
+ * @return array<string>  실제로 삭제된 파일명 목록 (basename)
  */
 function clearLaravelCompiledCache(string $basePath): array
 {
@@ -290,31 +316,6 @@ function clearLaravelCompiledCache(string $basePath): array
     }
 
     return $cleared;
-}
-
-/**
- * 이미 준비된 vendor 가 개발용(require-dev 포함) 설치인지 조사합니다.
- *
- * 판정은 코어와 공유하는 `App\Support\ComposerInstallInfo` 가 단독으로 소유한다 — 인스톨러와
- * 코어 업데이트가 같은 vendor 를 두고 서로 다른 답을 내놓지 않도록.
- *
- * 클래스 파일 경로는 인자 `$basePath` 가 아니라 **인스톨러 자신의 트리** 기준으로 읽는다.
- * 단위 테스트는 임시 디렉토리를 `$basePath` 로 넘기는데 그 경로에는 `app/Support` 가 없다.
- *
- * @param  string  $basePath  프로젝트 루트 (vendor 의 상위 디렉토리)
- * @return array{dev: bool|null, packages: array<int, string>} dev 가 null 이면 판정 불가
- */
-function detectDevVendorInstall(string $basePath): array
-{
-    if (! class_exists('App\\Support\\ComposerInstallInfo')) {
-        $classFile = dirname(__DIR__, 3).'/app/Support/ComposerInstallInfo.php';
-        if (! is_file($classFile)) {
-            return ['dev' => null, 'packages' => []];
-        }
-        require_once $classFile;
-    }
-
-    return ComposerInstallInfo::inspect(rtrim($basePath, '/\\').'/vendor');
 }
 
 /**

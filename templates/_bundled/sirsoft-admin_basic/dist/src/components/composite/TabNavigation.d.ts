@@ -7,17 +7,6 @@ export interface Tab {
     iconName?: IconName;
     disabled?: boolean;
     badge?: string | number;
-    /**
-     * 표시 조건. 레이아웃의 `if="{{...}}"` 가 평가된 값이며, 키가 있고 값이 거짓(false·undefined·null·빈 문자열·0)이면
-     * 탭을 그리지 않는다 — 노드의 `if` 와 같은 뜻이다(`{{route?.id}}` 처럼 거짓이 undefined 로 오는 식도 숨는다).
-     * 확장이 끼워 넣는 탭은 이동할 본문과 같은 조건을 달아, 본문이 없을 때 갈 곳 없는 빈 탭이 남지 않게 한다.
-     */
-    if?: unknown;
-    /**
-     * 탭이 가리키는 주소 — 주면 `<a role="tab" href>` 로 그려 가운데 클릭·Ctrl+클릭으로 새 탭에서 열 수 있다.
-     * 보통 클릭은 지금처럼 탭 전환(onTabChange — 저장 안 한 변경 확인 흐름 유지)(#757).
-     */
-    href?: string;
 }
 export interface TabNavigationProps {
     tabs: Tab[];
@@ -34,11 +23,6 @@ export interface TabNavigationProps {
     id?: string;
     /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
     editorAttrs?: EditorAttrs;
-    /**
-     * 좁은 화면에서 탭 대신 그리는 선택 상자의 이름(「{이름} {현재 탭}」으로 읽힌다).
-     * 없으면 공용 문구 「섹션 이동」 — 종전에는 이름이 없어 현재 탭 글자(「기본정보」)만 읽혔다(#757)
-     */
-    'aria-label'?: string;
 }
 /**
  * TabNavigation 집합 컴포넌트

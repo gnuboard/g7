@@ -2,7 +2,6 @@
 
 namespace Plugins\Sirsoft\Tosspayments\Http\Requests;
 
-use App\Support\SiteUrl;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -55,8 +54,7 @@ class SuccessCallbackRequest extends FormRequest
     protected function failedValidation(Validator $validator): void
     {
         $settings = plugin_settings(self::PLUGIN_IDENTIFIER);
-        // 보안: 요청 Host 가 아니라 사이트 주소 기준 절대 URL
-        $baseUrl = SiteUrl::absolute(ShopRedirectUrl::resolve($settings['redirect_fail_url'] ?? ShopRedirectUrl::DEFAULT_FAIL_URL));
+        $baseUrl = ShopRedirectUrl::resolve($settings['redirect_fail_url'] ?? ShopRedirectUrl::DEFAULT_FAIL_URL);
         $separator = str_contains($baseUrl, '?') ? '&' : '?';
 
         throw new HttpResponseException(

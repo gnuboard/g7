@@ -13,7 +13,6 @@
  */
 
 import { createLogger } from '../utils/Logger';
-import { armLeaveGuardBypass } from '../routing/LeaveGuard';
 
 const logger = createLogger('networkResilience');
 
@@ -60,22 +59,13 @@ export function isAbortError(error: unknown): boolean {
  * fetch 스펙상 네트워크 오류는 TypeError 로 reject 된다. 취소(AbortError)는
  * 호출부의 의도이므로 재시도 대상이 아니다.
  *
- * axios 경로(로그인 등 ApiClient 를 쓰는 요청)는 TypeError 가 아니라 `AxiosError` 로
- * reject 되며 종류는 `code` 에만 남는다. TypeError 만 보면 그 경로의 네트워크 실패가
- * 판정에서 빠져 영문 원문(`Network Error`)이 그대로 화면에 노출된다.
- *
  * @param error 검사할 에러
  * @return bool 재시도할 가치가 있는 네트워크 실패이면 true
  * @since engine-v1.53.0
- * @since engine-v1.65.0 axios 네트워크 오류 코드(ERR_NETWORK/ECONNABORTED) 인식
  */
 export function isNetworkFailure(error: unknown): boolean {
     if (isAbortError(error)) return false;
-    if (error instanceof TypeError) return true;
-
-    const code = (error as { code?: string } | null)?.code;
-
-    return code === 'ERR_NETWORK' || code === 'ECONNABORTED';
+    return error instanceof TypeError;
 }
 
 let unloading = false;
@@ -121,42 +111,9 @@ export function installUnloadGuard(): void {
     });
 
     // Safari 보강 (pagehide 미발화 케이스 대비)
-    window.addEventListener('beforeunload', (event) => {
+    window.addEventListener('beforeunload', () => {
         unloading = true;
-        // 다른 리스너(레이아웃 이탈 가드·코드 편집기 등)가 떠나기를 취소해 확인 창이 떴고 사용자가 머무르면
-        // 이 문서는 계속 쓰인다 — 표지를 되돌리지 않으면 이후 재시도·오류 표시가 영구히 꺼진다.
-        // 떠나기를 고르면 그 사이 pagehide 가 다시 켠다. 확인 창이 떠 있는 동안 타이머는 돌지 않는다 (engine-v1.82.0)
-        setTimeout(() => {
-            const legacyPrompt = typeof event.returnValue === 'string' && event.returnValue !== '';
-            if (event.defaultPrevented || legacyPrompt) {
-                unloading = false;
-            }
-        }, UNLOAD_CANCEL_RECHECK_MS);
     });
-}
-
-/**
- * beforeunload 가 취소됐는지 다시 보는 지연(ms) — 떠나기를 고른 문서의 새 응답이 보통 이 안에 온다
- *
- * @since engine-v1.82.0
- */
-const UNLOAD_CANCEL_RECHECK_MS = 1000;
-
-/**
- * 문서가 곧 떠난다고 표시합니다 — 코드가 직접 다른 문서로 옮길 때(`window.location.href = …`).
- *
- * `pagehide`·`beforeunload` 는 새 문서 응답이 와야 발화하므로, 그 사이(수백 ms)에 끝나는 같은 원인의
- * 실패(세션 만료 401 등)가 떠날 문서에 오류 토스트를 그린다. 세션 만료로 로그인 화면으로 옮기는
- * 경로는 이동을 시작하기 직전에 이 함수를 불러 이탈 가드를 미리 켠다.
- *
- * @return void
- * @since engine-v1.78.2
- */
-export function markDocumentLeaving(): void {
-    unloading = true;
-    // 코드가 일부러 떠나는 이동(세션 만료 → 로그인)은 레이아웃 이탈 가드를 묻지 않는다 — 토큰을 이미 지운 뒤라
-    // 머물러도 쓸 수 없는 화면이 남는다 (engine-v1.82.0)
-    armLeaveGuardBypass();
 }
 
 /**

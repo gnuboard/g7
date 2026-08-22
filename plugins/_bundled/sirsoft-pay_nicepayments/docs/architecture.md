@@ -13,10 +13,6 @@
 
 이 플러그인도 결제 상태 자체는 소유하지 않습니다 — 주문·결제 테이블은 `sirsoft-ecommerce`
 소유이고, 이 플러그인은 그 상태를 나이스페이먼츠 API 와 어떻게 주고받는가만 책임집니다.
-
-시각 값은 결제 메타에 ISO8601(오프셋 포함)로 저장합니다. 요청 시각(`EdiDate`)은 PG 통신값이라 나이스페이 사양의
-시간대 확인 전까지 서버 시각 그대로 두고, 휴대폰 환불의 「같은 달」 판정은 PG·통신사 정산 월 규칙이라 한국 시간으로
-판정합니다 — 둘 다 사이트·보는 사람 시간대를 따르지 않는 의도된 예외입니다.
 <!-- @intent END -->
 
 ## 계층 지도
@@ -50,7 +46,7 @@ API 호출 없이 조기 반환하는 것이 이 플러그인 계층 구조의 �
 | `src/Listeners/` | 훅 리스너 | Repository 경유 (Model·DB 파사드 직접 접근 금지) |
 | `src/routes/` | 라우트 | 모든 라우트에 `name()` 필수 |
 | `upgrades/` | 업그레이드 스텝 | DB·설정 구조 변경 시 작성 (모듈/플러그인 전용) |
-| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan plugin:update sirsoft-pay_nicepayments --force` (빌드 불필요) |
+| `resources/layouts/` | 레이아웃 JSON | `php artisan plugin:update sirsoft-pay_nicepayments --force` (빌드 불필요) |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan plugin:build` → `php artisan plugin:update sirsoft-pay_nicepayments --force` |
 | `resources/extensions/` | 다른 확장 레이아웃에 주입하는 조각 | `php artisan plugin:update sirsoft-pay_nicepayments --force` |
 | `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan plugin:update sirsoft-pay_nicepayments --force` |
@@ -58,8 +54,7 @@ API 호출 없이 조기 반환하는 것이 이 플러그인 계층 구조의 �
 | `config/` | 확장 config | 설정 기본값은 settings 스키마와 어긋나지 않게 |
 | `tests/` | 테스트 | 변경 범위만 필터 실행 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
-| `components.json` | 편집기 컴포넌트 선언 (레이아웃 작성자가 읽는 props 계약) | `php artisan plugin:update sirsoft-pay_nicepayments --force` |
-| `assets/icon.svg` | 확장 아이콘 (관리자 목록·설치 마법사 카드) | 정사각·100KB 이하·스크립트 없는 SVG — 교체 후 `php artisan plugin:update sirsoft-pay_nicepayments --force` |
+| `components.json` | 편집기 컴포넌트 선언 (레이아웃 저작자가 읽는 props 계약) | `php artisan plugin:update sirsoft-pay_nicepayments --force` |
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 | `lang/` | 다국어 | 키 추가 시 ko·en 동시 반영 + 번들 ja 팩 동기화 |
 <!-- @generated:directory-map END -->

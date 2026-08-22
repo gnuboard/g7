@@ -39,7 +39,6 @@
   "sort": {
     "label": "Sort",
     "created_at_desc": "Newest",
-    "created_at_asc": "Oldest",
     "amount_desc": "Amount High",
     "amount_asc": "Amount Low"
   },
@@ -69,8 +68,7 @@
     "partial_expired": "Partially Expired",
     "expired_amount": "{{amount}} expired",
     "unlimited": "Unlimited",
-    "none": "-",
-    "deleted_member": "Deleted member"
+    "none": "-"
   },
   "row_action": {
     "expand": "View Detail",
@@ -121,12 +119,10 @@
   "modal_extend": {
     "title": "Extend Expiry",
     "days": "Extension Days",
-    "days_suffix": "days",
-    "days_suffix_one": "day",
+    "days_suffix": "day(s)",
     "submit": "Extend",
     "submitting": "Processing...",
-    "selected_lots": "Extend expiry for {{count}} selected grant lots.",
-    "selected_lots_one": "Extend expiry for {{count}} selected grant lot.",
+    "selected_lots": "Extend expiry for {{count}} selected grant lot(s).",
     "validation_error": "Please check your input.",
     "field_days": "Extension days"
   },

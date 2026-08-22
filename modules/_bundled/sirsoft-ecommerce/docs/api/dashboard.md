@@ -42,13 +42,13 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| pending_payment | integer | `0` | 오늘(사이트 하루) 결제대기 주문 수 |
-| payment_complete | integer | `0` | 오늘 결제완료 주문 수 |
-| preparing | integer | `0` | 오늘 상품준비중 주문 수 (주문 목록 상태 필터처럼 배송준비중 주문 포함) |
-| shipping_ready | integer | `0` | 오늘 배송준비중 주문 수 |
-| shipping | integer | `0` | 오늘 배송중 주문 수 |
-| cancellations | integer | `0` | 오늘 주문취소 주문 수 (주문 전체가 취소된 주문 — 일부 취소 주문은 진행 단계 칸에 남는다) |
-| returns | integer | `0` | 오늘 반품 완료 신청서가 있는 주문 수 |
+| pending_payment | integer | `0` | 오늘 결제대기 상태 주문상품 수량 |
+| payment_complete | integer | `0` | 오늘 결제완료 상태 주문상품 수량 |
+| preparing | integer | `0` | 오늘 상품준비중 상태 주문상품 수량 |
+| shipping_ready | integer | `0` | 오늘 배송준비 상태 주문상품 수량 |
+| shipping | integer | `0` | 오늘 배송중 상태 주문상품 수량 |
+| cancellations | integer | `0` | 오늘 취소 상태 주문상품 수량 (전체취소 기준, 부분취소 포함) |
+| returns | integer | `0` | 오늘 반품 상태 주문상품 수량 (환불 도메인 미반영으로 현재 항상 0) |
 
 **응답 예시**
 
@@ -81,7 +81,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 관리자 대시보드 상단의 "오늘 주문 현황" 배지를 채우는 조회 엔드포인트입니다. `auth:sanctum` + admin + `sirsoft-ecommerce.dashboard.view` 권한이 필요하며, `EcommerceDashboardService::getOverview()`가 오늘자 주문을 상태별(결제대기/결제완료/상품준비중/배송준비/배송중/취소/반품)로 세어 각 **주문 수**를 반환합니다(옵션 수량이 아닙니다). 「오늘」은 사이트 기본 시간대의 하루이고, 각 값은 그 배지를 눌러 여는 관리자 주문 목록(`GET /admin/orders` 에 같은 상태 조건 + `date_type=ordered_at` + `date_basis=site` + 시작·종료일 = 사이트 오늘)의 총 건수와 같습니다 — 목록과 같은 필터로 주문 표에서 바로 세므로 매시 집계를 기다리지 않습니다. 목록과 같은 조회 범위도 겁니다 — 주문 조회 권한(`sirsoft-ecommerce.orders.read`)이 본인·역할 범위로 좁혀진 관리자는 그 범위 안의 주문만 셉니다(전체 권한이면 전체). 반품은 `claim_return_statuses[]=completed` 조건입니다. 관리자가 처리해야 할 주문 흐름을 한눈에 파악하는 용도입니다.
+**설명** 관리자 대시보드 상단의 "오늘 주문 현황" 배지를 채우는 조회 엔드포인트입니다. `auth:sanctum` + admin + `sirsoft-ecommerce.dashboard.view` 권한이 필요하며, `EcommerceDashboardService::getOverview()`가 오늘자 주문을 상태별(결제대기/결제완료/상품준비중/배송준비/배송중/취소/반품)로 집계해 각 건수를 반환합니다. 모든 값은 오늘 하루 범위의 집계이며, 관리자가 처리해야 할 주문 흐름을 한눈에 파악하는 용도입니다.
 
 
 ### GET /api/modules/sirsoft-ecommerce/admin/dashboard/pending-inquiries
@@ -114,7 +114,6 @@ _단건 응답: `data` 객체의 필드._
 | items | array | `[{"id":60,"product_id":1732,"inquirable_id":284,"product_…` | 미답변 상품문의 목록 (최신순, PendingInquiryResource — 문의 id/상품/작성자/게시판 글 id 등) |
 | total | integer | `22` | 전체 개수 (집계) |
 | board_slug | string | `inquiry` | 문의가 저장된 연동 게시판의 slug (관리자 문의 상세 링크용, 미연동 시 null) |
-| board_active | boolean | `true` | 게시판 모듈(선택 연동)이 활성인지. `false` 면 items 는 빈 배열·total 0·board_slug null 이다 (1.3.3+) |
 
 **응답 예시**
 
@@ -170,8 +169,7 @@ HTTP/1.1 200
             }
         ],
         "total": 22,
-        "board_slug": "inquiry",
-        "board_active": true
+        "board_slug": "inquiry"
     }
 }
 ```
@@ -186,7 +184,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 전체 상품에 달린 미답변 상품문의 목록과 총 건수를 조회합니다. `auth:sanctum` + admin + `sirsoft-ecommerce.dashboard.view` 권한이 필요하며, `EcommerceDashboardService::getPendingInquiries()`가 답변 대기 문의를 최신순으로 조회해 `items`(문의 목록)·`total`(전체 미답변 건수)·`board_slug`(연동 게시판 slug, 미연동 시 null)·`board_active`(게시판 모듈 활성 여부)를 반환합니다. 상품 문의는 게시판 모듈의 글이므로 게시판 모듈이 꺼져 있거나 설치되지 않았으면 항목을 내지 않습니다(`board_active=false`, 빈 목록). `limit` 쿼리로 표시 건수를 1~50 사이에서 조정할 수 있고, 미지정 시 모듈 설정 `dashboard.recent_limit`(기본 5) 값이 적용됩니다.
+**설명** 전체 상품에 달린 미답변 상품문의 목록과 총 건수를 조회합니다. `auth:sanctum` + admin + `sirsoft-ecommerce.dashboard.view` 권한이 필요하며, `EcommerceDashboardService::getPendingInquiries()`가 답변 대기 문의를 최신순으로 조회해 `items`(문의 목록)·`total`(전체 미답변 건수)·`board_slug`(연동 게시판 slug, 미연동 시 null)를 반환합니다. `limit` 쿼리로 표시 건수를 1~50 사이에서 조정할 수 있고, 미지정 시 모듈 설정 `dashboard.recent_limit`(기본 5) 값이 적용됩니다.
 
 
 ### GET /api/modules/sirsoft-ecommerce/admin/dashboard/recent-reviews
@@ -220,7 +218,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | product_id | integer | `320` | product 식별자 (연관 리소스 참조) |
 | product_name | string | `API 문서 샘플 상품` | 리뷰 대상 상품의 현재 로케일 상품명 (product 관계 파생) |
 | rating | integer | `5` | 리뷰 평점 (별점 정수) |
-| author_name | string | `API 문서 샘플 사용자` | 리뷰 작성자 표시 이름 — 회원 후기는 회원 이름, 회원 없이 등록한 후기(다른 쇼핑몰에서 이관)는 저장된 이름 |
+| author_name | string | `API 문서 샘플 사용자` | 리뷰 작성자 이름 (user 관계 파생) |
 | created_at | string | `2026-07-07 14:47:31` | 생성 일시 |
 
 **응답 예시**

@@ -1,15 +1,13 @@
 /**
  * _admin_base 레이아웃 전용 컴포넌트 클래스
  *
- * `templates/_bundled/sirsoft-admin_basic/layouts/_admin_base.g7.html` 의
+ * `templates/_bundled/sirsoft-admin_basic/layouts/_admin_base.json` 의
  * 1회 등장 컴포넌트(공통 선언)의 인라인 Tailwind 토큰을 id 와 동일한
- * 시맨틱 클래스로 캡슐화한다. 소스 SSoT 는 `.g7.html` 이고 짝 `.json` 은
- * 런타임 계약이다(D38/D39) — 형제 `main.css` 가 두 표기를 모두 `@source`
- * 앵커하는 것과 같은 규약이다.
+ * 시맨틱 클래스로 캡슐화한다.
  *
  * 원칙:
  * - 컴포넌트 id 와 클래스명 1:1 매칭 (underscore_case)
- * - responsive variant 는 .{id}_portable 별도 클래스 (작성 responsive.portable 와 짝)
+ * - responsive variant 는 .{id}_portable 별도 클래스 (JSON responsive.portable 와 짝)
  * - 상태 토글(_global.sidebarOpen 등) 은 .{id}_open 변형 클래스
  *
  * 주의 (Tailwind v4 제약):
@@ -106,8 +104,8 @@
   }
 
   .admin_sidebar_empty {
-    @apply px-4 py-8 text-center text-sm text-gray-500;
-    @apply dark:text-gray-400;
+    @apply px-4 py-8 text-center text-sm text-gray-400;
+    @apply dark:text-gray-500;
   }
 
   .admin_sidebar_empty_icon {
@@ -225,10 +223,8 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   }
 
-  /* 좌측 칸(메뉴 단추 + 이름)이 줄어들 수 있어야 긴 사이트 이름이 우측 테마·알림 단추를 화면 밖으로 밀지 않는다(#143).
-     이름 Span 은 이미 truncate 이고 .mobile_logo 도 min-w-0 flex-1 이지만, 이 칸이 기본 min-width:auto 라 이름 폭 아래로 줄지 않았다. */
   .mobile_header_left {
-    @apply flex items-center gap-3 min-w-0 flex-1;
+    @apply flex items-center gap-3;
   }
 
   .mobile_header_right {

@@ -125,21 +125,15 @@ _bundled/_pending 디렉토리는 활성 확장으로 인식하지 않습니다
 
 ### 로딩 진입점
 
-**public/index.php** 와 **artisan** 은 Laravel 부팅 전에 같은 순서를 **파일 안에서 직접(인라인)** 수행하고 `G7_EXTENSION_AUTOLOAD_REGISTERED` 상수를 세웁니다(`artisan` 은 소스 classmap 을 등록하지 않아 PSR-4 탐색만 씁니다 — 동작은 같고 클래스 탐색 비용만 다릅니다). 진입점이 등록하지 않은 부팅(기본 진입점을 거치지 않는 실행 스크립트 등)에서는 `CoreServiceProvider` 가 `ExtensionManager::registerExtensionAutoload($loader)` 를 호출하고, 설치·업데이트 중 같은 프로세스의 재등록(`reregisterRuntimeAutoload()`)도 이 함수를 씁니다:
+**public/index.php** 및 **artisan**에서 `ExtensionManager::registerExtensionAutoload($loader)` 호출:
 
 ```text
 registerExtensionAutoload($loader)
     ↓ 1. PSR-4 네임스페이스 등록 ($loader->addPsr4())
-    ↓    (소스 classmap 등록 — $loader->addClassMap())
-    ↓ 2. Classmap 파일 로드 (module.php, plugin.php → require_once, 이미 선언된 진입 클래스는 건너뜀)
+    ↓ 2. Classmap 파일 로드 (module.php, plugin.php → require_once)
     ↓ 3. Files 로드 (헬퍼 함수 등 → require_once)
-    ↓ 4. Vendor autoloads 로드 (모듈/플러그인의 vendor/autoload.php → require_once, 이미 선언된 오토로더는 건너뜀)
+    ↓ 4. Vendor autoloads 로드 (모듈/플러그인의 vendor/autoload.php → require_once)
 ```
-
-- **중복 선언 가드**: 같은 확장의 `_bundled`·`_pending`·활성 사본은 진입 클래스명과 vendor 오토로더 클래스명(`ComposerAutoloaderInit…`)이 같습니다. 경로가 달라 `require_once` 가 막지 못하므로, 이미 선언된 클래스의 다른 경로 사본은 읽지 않습니다(7.1.5~ vendor 오토로더 포함).
-- **코어 로더 선택**: 재등록·자기 복구는 `ClassLoader::getRegisteredLoaders()` 의 첫 항목이 아니라 키(vendor 디렉터리)가 코어 `vendor/` 인 로더에 등록합니다. Composer 오토로더는 자신을 맨 앞에 넣으므로 확장 vendor 를 불러온 뒤의 첫 항목은 확장 vendor 로더입니다.
-- **설치 직전 소스 classmap**: 설치·활성화·시더 실행 직전 `registerExtensionAutoloadPaths()` 가 그 확장의 PSR-4 와 함께 소스 classmap 을 등록합니다(확장 `vendor/`·`node_modules/` 제외). Composer 는 classMap 을 「없는 클래스」 기억(missingClasses)보다 먼저 보므로, 같은 프로세스에서 앞서 실패한 조회가 있어도 설치가 이어집니다.
-- **캐시에 없는 활성 폴더**: 부팅의 확장 로드(`loadModules()`·`loadPlugins()`)는 오토로드 캐시에 없는 활성 폴더(설치 기록 없이 남은 사본)만 진입 파일을 읽기 전에 그 확장의 PSR-4·소스 classmap 을 등록합니다(`registerAutoloadIfMissing()`). 캐시에 있는 확장은 추가 비용이 없습니다.
 
 **로딩 순서가 중요합니다**:
 
@@ -197,8 +191,6 @@ updateComposerAutoload() → autoload-extensions.php에 vendor_autoloads 등록
     ↓
 public/index.php / artisan → vendor/autoload.php를 require_once
 ```
-
-> 확장의 진입 파일(module.php·plugin.php)에서 자체 `vendor/autoload.php` 를 직접 불러오지 마세요. 코어가 `vendor_autoloads` 로 불러옵니다. 직접 부르던 확장도 7.1.5 부터는 중복 선언 오류가 나지 않지만 불필요합니다.
 
 ### 주요 메서드
 
@@ -342,17 +334,6 @@ php artisan extension:composer-install
 
 ---
 
-## 확장 아이콘
-
-확장과 언어팩은 자기 아이콘을 담을 수 있습니다. 패키지 루트에 `assets/icon.svg` 를 두거나
-매니페스트에 `"icon"` 경로를 적으면 관리자 확장 관리 목록·상세·확인 창과 설치 마법사에
-그 그림이 나옵니다. 아이콘이 없는 확장은 종류별 기본 그림으로 표시됩니다.
-
-규격(정사각·100KB 이하·스크립트 없는 SVG), 서빙 주소, 언어팩 합성 규칙은
-[확장 아이콘](extension-icons.md)에 있습니다.
-
----
-
 ## 관리자 UI 필터링 (hidden 플래그)
 
 확장 manifest (`module.json` / `plugin.json` / `template.json`) 에 `"hidden": true` 를 설정하면, 관리자 UI 목록 응답과 artisan `*:list` 기본 출력에서 제외됩니다. 학습용 샘플 확장, 내부 운영 전용 확장을 숨길 때 사용합니다.
@@ -382,8 +363,6 @@ GET /api/admin/modules?include_hidden=1
 GET /api/admin/plugins?include_hidden=1
 GET /api/admin/templates?include_hidden=1
 ```
-
-API 의 `include_hidden` 은 최고관리자(`is_super`)에게만 적용됩니다. 다른 관리자가 이 값을 보내면(최고관리자가 공유한 주소로 들어온 경우 등) 요청 단계(`RestrictsHiddenExtensionsToSuperAdmin`)에서 거짓으로 바뀌어 숨김 확장이 빠진 목록을 받습니다.
 
 ### manifest 설정
 
@@ -417,13 +396,14 @@ public function register(): void
         return new ExtensionManager;
     });
 
-    // 모듈·플러그인 매니저는 저장소·레이아웃 동기화기(LayoutRowSynchronizer) 등 여러 의존을 받는다 —
-    // 실제 인자 목록은 CoreServiceProvider 를 보고, 코드에서는 직접 new 하지 말고 컨테이너로 받는다.
+    // 모듈 매니저에 주입
     $this->app->singleton(ModuleManager::class, function ($app) {
-        return new ModuleManager(
-            $app->make(ExtensionManager::class),
-            // … 저장소들 · LayoutExtensionService · LayoutRowSynchronizer · LayoutExtensionRepositoryInterface
-        );
+        return new ModuleManager($app->make(ExtensionManager::class));
+    });
+
+    // 플러그인 매니저에 주입
+    $this->app->singleton(PluginManager::class, function ($app) {
+        return new PluginManager($app->make(ExtensionManager::class));
     });
 }
 ```
@@ -479,4 +459,4 @@ DB 컬럼: `modules/plugins/templates` 테이블의 `deactivated_reason` (string
 - [플러그인 개발](plugin-development.md) - 플러그인 구조 및 설정
 - [모듈 Artisan 커맨드](module-commands.md) - 모듈 관련 커맨드
 - [확장 업데이트 시스템](extension-update-system.md) - _bundled/_pending 및 업데이트
-- [인덱스](README.md) - 확장 시스템 전체 문서 목록
+- [인덱스](index.md) - 확장 시스템 전체 문서 목록

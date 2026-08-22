@@ -4,10 +4,8 @@ namespace Modules\Sirsoft\Ecommerce\Models;
 
 use App\Casts\AsUnicodeJson;
 use App\Extension\HookManager;
-use App\Helpers\TimezoneHelper;
 use App\Models\User;
 use App\Search\Contracts\FulltextSearchable;
-use App\Support\LocalizedValue;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -23,7 +21,6 @@ use Modules\Sirsoft\Ecommerce\Enums\CouponIssueStatus;
 use Modules\Sirsoft\Ecommerce\Enums\CouponTargetScope;
 use Modules\Sirsoft\Ecommerce\Enums\CouponTargetType;
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
-use Modules\Sirsoft\Ecommerce\Support\DecimalTrim;
 
 /**
  * 쿠폰 모델
@@ -214,7 +211,7 @@ class Coupon extends Model implements FulltextSearchable
     {
         $locale = $locale ?? app()->getLocale();
 
-        return LocalizedValue::pick($this->name, $locale, anyAsLast: false) ?? '';
+        return $this->name[$locale] ?? $this->name['ko'] ?? '';
     }
 
     /**
@@ -230,7 +227,7 @@ class Coupon extends Model implements FulltextSearchable
         }
         $locale = $locale ?? app()->getLocale();
 
-        return LocalizedValue::pick($this->description, $locale, anyAsLast: false);
+        return $this->description[$locale] ?? $this->description['ko'] ?? null;
     }
 
     /**
@@ -249,13 +246,13 @@ class Coupon extends Model implements FulltextSearchable
         // 정률
         if ($this->discount_max_amount) {
             return __('sirsoft-ecommerce::messages.coupons.benefit_rate_with_max_format', [
-                'rate' => DecimalTrim::trim($this->discount_value),
+                'rate' => $this->discount_value,
                 'max' => ecommerce_format_price($this->discount_max_amount),
             ]);
         }
 
         return __('sirsoft-ecommerce::messages.coupons.benefit_rate_format', [
-            'rate' => DecimalTrim::trim($this->discount_value),
+            'rate' => $this->discount_value,
         ]);
     }
 
@@ -288,7 +285,7 @@ class Coupon extends Model implements FulltextSearchable
         if ($this->discount_max_amount) {
             foreach ($converter->convertToMultiCurrency((int) $this->discount_max_amount) as $code => $max) {
                 $result[$code] = __('sirsoft-ecommerce::messages.coupons.benefit_rate_with_max_format', [
-                    'rate' => DecimalTrim::trim($this->discount_value),
+                    'rate' => $this->discount_value,
                     'max' => $max['formatted'],
                 ]);
             }
@@ -298,7 +295,7 @@ class Coupon extends Model implements FulltextSearchable
 
         // 정률(최대금액 없음): 전 통화 동일 문자열. 기본 통화 코드 1건만 채워 폴백 기준 제공.
         $result[$converter->getDefaultCurrency()] = __('sirsoft-ecommerce::messages.coupons.benefit_rate_format', [
-            'rate' => DecimalTrim::trim($this->discount_value),
+            'rate' => $this->discount_value,
         ]);
 
         return $result;
@@ -307,28 +304,26 @@ class Coupon extends Model implements FulltextSearchable
     /**
      * 유효기간 포맷팅 반환
      *
-     * 저장값은 UTC 라 그대로 찍으면 사이트 자정으로 받은 시작일이 하루 이르게 보인다 — 사이트 시간대 날짜로 찍는다.
-     *
      * @return string 포맷팅된 유효기간
      */
     public function getValidPeriodFormattedAttribute(): string
     {
         if ($this->valid_type === 'days_from_issue') {
-            return trans_choice('sirsoft-ecommerce::messages.coupons.valid_days_format', (int) $this->valid_days, [
+            return __('sirsoft-ecommerce::messages.coupons.valid_days_format', [
                 'days' => $this->valid_days,
             ]);
         }
 
         if ($this->valid_from && $this->valid_to) {
-            return TimezoneHelper::toSiteDateString($this->valid_from).' ~ '.TimezoneHelper::toSiteDateString($this->valid_to);
+            return $this->valid_from->format('Y-m-d').' ~ '.$this->valid_to->format('Y-m-d');
         }
 
         if ($this->valid_from) {
-            return TimezoneHelper::toSiteDateString($this->valid_from).' ~';
+            return $this->valid_from->format('Y-m-d').' ~';
         }
 
         if ($this->valid_to) {
-            return '~ '.TimezoneHelper::toSiteDateString($this->valid_to);
+            return '~ '.$this->valid_to->format('Y-m-d');
         }
 
         return '-';
@@ -342,15 +337,15 @@ class Coupon extends Model implements FulltextSearchable
     public function getIssuePeriodFormattedAttribute(): string
     {
         if ($this->issue_from && $this->issue_to) {
-            return TimezoneHelper::toSiteDateString($this->issue_from).' ~ '.TimezoneHelper::toSiteDateString($this->issue_to);
+            return $this->issue_from->format('Y-m-d').' ~ '.$this->issue_to->format('Y-m-d');
         }
 
         if ($this->issue_from) {
-            return TimezoneHelper::toSiteDateString($this->issue_from).' ~';
+            return $this->issue_from->format('Y-m-d').' ~';
         }
 
         if ($this->issue_to) {
-            return '~ '.TimezoneHelper::toSiteDateString($this->issue_to);
+            return '~ '.$this->issue_to->format('Y-m-d');
         }
 
         return __('sirsoft-ecommerce::messages.coupons.issue_period_unlimited');
@@ -487,7 +482,7 @@ class Coupon extends Model implements FulltextSearchable
     /**
      * FULLTEXT 검색 대상 컬럼 목록을 반환합니다.
      *
-     * @return array<string> 검색 대상 컬럼 이름 목록
+     * @return array<string>
      */
     public function searchableColumns(): array
     {
@@ -497,7 +492,7 @@ class Coupon extends Model implements FulltextSearchable
     /**
      * 컬럼별 검색 가중치를 반환합니다.
      *
-     * @return array<string, float> 컬럼별 검색 가중치
+     * @return array<string, float>
      */
     public function searchableWeights(): array
     {
@@ -526,7 +521,7 @@ class Coupon extends Model implements FulltextSearchable
     /**
      * 검색 인덱스용 배열을 반환합니다.
      *
-     * @return array<string, mixed> 검색 인덱스에 넣을 값
+     * @return array<string, mixed>
      */
     public function toSearchableArray(): array
     {

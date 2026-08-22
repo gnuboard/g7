@@ -16,7 +16,6 @@ use App\Extension\Traits\ClearsTemplateCaches;
 use App\Helpers\PermissionHelper;
 use App\Models\TemplateLayout;
 use App\Models\User;
-use App\Support\LayoutEmptyObjects;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Log;
@@ -26,28 +25,7 @@ class LayoutService
     use ClearsTemplateCaches;
 
     /**
-     * 컴포넌트 권한 필터가 내려가지 않는 노드 키 — 동작·데이터 정의라 컴포넌트를 담지 않는다.
-     *
-     * @var array<int, string>
-     */
-    private const NON_COMPONENT_KEYS = ['actions', 'params', 'data_sources', 'errorHandling', 'lifecycle', 'init_actions', 'computed', 'meta'];
-
-    /**
-     * 요청 본문 자리 키 — 개발자 주석 제거가 이 키 아래로는 내려가지 않는다(서버로 보낼 데이터라 `comment` 도 값이다).
-     *
-     * @var array<int, string>
-     */
-    private const REQUEST_PAYLOAD_KEYS = ['body', 'query', 'headers'];
-
-    /**
      * LayoutRepository, LayoutVersionRepository, TemplateRepository, LayoutResolverService 및 LayoutExtensionService 주입
-     *
-     * @param  LayoutRepositoryInterface  $layoutRepository  레이아웃 저장소
-     * @param  LayoutVersionRepositoryInterface  $versionRepository  레이아웃 버전 저장소
-     * @param  TemplateRepositoryInterface  $templateRepository  템플릿 저장소
-     * @param  LayoutResolverService  $layoutResolverService  레이아웃 해석 서비스
-     * @param  LayoutExtensionService  $layoutExtensionService  레이아웃 확장 서비스
-     * @param  CacheInterface  $cache  캐시 드라이버
      */
     public function __construct(
         private LayoutRepositoryInterface $layoutRepository,
@@ -60,8 +38,6 @@ class LayoutService
 
     /**
      * 최대 레이아웃 중첩 깊이를 반환합니다.
-     *
-     * @return int 최대 레이아웃 중첩 깊이
      */
     private function getMaxDepth(): int
     {
@@ -72,8 +48,6 @@ class LayoutService
      * 병합된 레이아웃 캐시 TTL을 반환합니다.
      *
      * g7_core_settings('cache.layout_ttl') 우선, 없으면 config('template.layout.cache_ttl').
-     *
-     * @return int 병합 레이아웃 캐시 TTL(초)
      */
     private function getCacheTtl(): int
     {
@@ -319,7 +293,7 @@ class LayoutService
     }
 
     /**
-     * meta 병합 - 자식 값이 우선 (seo·scroll_restoration 키는 deep merge)
+     * meta 병합 - 자식 값이 우선 (seo 키는 deep merge)
      *
      * @param  array  $parentMeta  부모 메타 데이터
      * @param  array  $childMeta  자식 메타 데이터
@@ -332,36 +306,7 @@ class LayoutService
             $childMeta['seo'] = $this->mergeSeo($parentMeta['seo'], $childMeta['seo']);
         }
 
-        // scroll_restoration 은 베이스(편집기의 템플릿 기본값) 위에 화면이 적은 키만 덮어쓴다
-        if (is_array($parentMeta['scroll_restoration'] ?? null) && is_array($childMeta['scroll_restoration'] ?? null)) {
-            $childMeta['scroll_restoration'] = $this->mergeScrollRestoration(
-                $parentMeta['scroll_restoration'],
-                $childMeta['scroll_restoration']
-            );
-        }
-
         return array_merge($parentMeta, $childMeta);
-    }
-
-    /**
-     * 스크롤 복원 설정을 병합합니다.
-     *
-     * 최상위 키와 하위 snapshot 은 키 단위로 자식이 우선한다. 목록 값(containers·snapshot.state)은 자식이
-     * 적으면 통째로 바꾼다(array_replace_recursive 처럼 인덱스별로 섞지 않는다).
-     *
-     * @param  array  $parent  부모(베이스) 스크롤 복원 설정
-     * @param  array  $child  자식(화면) 스크롤 복원 설정
-     * @return array 병합된 스크롤 복원 설정
-     */
-    private function mergeScrollRestoration(array $parent, array $child): array
-    {
-        $merged = array_merge($parent, $child);
-
-        if (is_array($parent['snapshot'] ?? null) && is_array($child['snapshot'] ?? null)) {
-            $merged['snapshot'] = array_merge($parent['snapshot'], $child['snapshot']);
-        }
-
-        return $merged;
     }
 
     /**
@@ -396,28 +341,22 @@ class LayoutService
     /**
      * data_sources 병합 - ID 중복 체크 후 부모와 자식 모두 포함
      *
-     *
-     * @param  array  $parentDataSources  부모 레이아웃의 데이터소스 목록
-     * @param  array  $childDataSources  자식 레이아웃의 데이터소스 목록
-     * @return array 병합된 데이터소스 목록
-     *
      * @throws \Exception ID 중복 시
      */
     private function mergeDataSources(array $parentDataSources, array $childDataSources): array
     {
         $merged = $parentDataSources;
-        // 부모와 겹치는 id 만 막는다 — 자식 안에서 같은 id 를 조건(if·conditions)으로 여러 판 선언한 것은 엔진이 조건으로
-        // 고른다(7.1.1 출시 전). 자식 안의 조건 없는 중복은 설치·저장 검증이 이미 거부한다.
-        $parentIds = array_column($parentDataSources, 'id');
+        $existingIds = array_column($parentDataSources, 'id');
 
         foreach ($childDataSources as $childDataSource) {
-            if (in_array($childDataSource['id'], $parentIds, true)) {
+            if (in_array($childDataSource['id'], $existingIds, true)) {
                 throw new LayoutIncludeException(
                     __('exceptions.layout.duplicate_data_source_id', ['id' => $childDataSource['id']])
                 );
             }
 
             $merged[] = $childDataSource;
+            $existingIds[] = $childDataSource['id'];
         }
 
         return $merged;
@@ -429,10 +368,6 @@ class LayoutService
      * @param  array|null  $sourceMeta  ['kind' => 'base', 'layout' => '부모 레이아웃명'] 또는 null (편집 모드 전용)
      *
      * @since engine-v1.50.0 `$sourceMeta` 옵션 추가
-     *
-     * @param  array  $parentComponents  부모 레이아웃의 컴포넌트 트리
-     * @param  array  $childSlots  자식 레이아웃이 채우는 슬롯 정의
-     * @return array 슬롯이 채워진 컴포넌트 트리
      */
     private function mergeComponents(array $parentComponents, array $childSlots, ?array $sourceMeta = null): array
     {
@@ -840,9 +775,6 @@ class LayoutService
      *
      * 주의: slot 속성은 replaceSlots에서 사용된 것만 제거되므로
      * 여기서는 사용되지 않은 slot을 유지합니다 (다음 상속에서 사용될 수 있음)
-     *
-     * @param  array  $layout  레이아웃 데이터
-     * @return array 서빙에 불필요한 필드를 걷어낸 레이아웃
      */
     private function removeUnnecessaryFields(array $layout): array
     {
@@ -947,16 +879,10 @@ class LayoutService
     /**
      * 레이아웃을 로드하고 상속 구조를 병합합니다. (내부 메서드, 캐싱 없음)
      *
-     *
-     * @since engine-v1.50.0 `$withSourceMeta` 옵션 추가
-     *
-     * @param  int  $templateId  템플릿 ID
-     * @param  string  $layoutName  레이아웃 이름
-     * @param  bool  $withSourceMeta  편집기용 출처 메타 포함 여부
-     * @return array 상속을 모두 병합한 레이아웃
-     *
      * @throws CircularReferenceException 순환 참조 감지 시
      * @throws \Exception 최대 깊이 초과 시
+     *
+     * @since engine-v1.50.0 `$withSourceMeta` 옵션 추가
      */
     private function loadAndMergeLayoutInternal(int $templateId, string $layoutName, bool $withSourceMeta = false): array
     {
@@ -999,9 +925,7 @@ class LayoutService
                 );
             }
 
-            // 저장 원문을 다시 읽어 값 자리의 빈 객체 `{}` 를 보존한다 — 배열 캐스트는 `{}` 를 `[]` 로
-            // 바꿔 응답에서 화면 상태(initLocal 값·액션 인자)가 배열이 된다(7.1.0 실측)
-            $layoutData = LayoutEmptyObjects::decode($layout->getAttributes()['content'] ?? null, $layout->content ?? []);
+            $layoutData = $layout->content;
 
             // 5. 상속 처리 (extends가 있는 경우)
             if (isset($layoutData['extends'])) {
@@ -1051,10 +975,8 @@ class LayoutService
                 // 저장 시 클라이언트가 머지된 트리에서 원본을
                 // 추측 복원하지 않고, 본 메타에서 원본 그대로 가져다 PUT 한다.
                 if ($withSourceMeta) {
-                    // 원본은 빈 객체 전부를 보존한 원문이다 — 규칙 기반 디코드(`$layoutData`)는 값 자리 밖의 `{}` 를
-                    // `[]` 로 두므로, 편집기가 그것을 받아 저장하면 DB 원문에 그대로 굳는다 (#758)
                     $mergedLayout['__editor'] = [
-                        'original' => LayoutEmptyObjects::rawPreserving($layout),
+                        'original' => $layoutData,
                     ];
                 }
             } else {
@@ -1072,7 +994,7 @@ class LayoutService
                     // 편집 모드: 독립 레이아웃도 원본 컨테이너를 보존해 저장 시 SSoT 로 사용.
                     // 합본/원본이 같지만 클라이언트의 저장 경로를 단일화하기 위해 항상 부착.
                     $mergedLayout['__editor'] = [
-                        'original' => LayoutEmptyObjects::rawPreserving($layout),
+                        'original' => $layoutData,
                     ];
                 }
             }
@@ -1090,10 +1012,6 @@ class LayoutService
      * 모듈 레이아웃 이름 패턴인 경우 LayoutResolverService를 통해
      * 오버라이드 여부를 확인하고 적절한 레이아웃을 반환합니다.
      * 일반 레이아웃은 기존 방식대로 처리합니다.
-     *
-     * @param  int  $templateId  템플릿 ID
-     * @param  string  $layoutName  레이아웃 이름
-     * @return ?TemplateLayout 찾은 레이아웃 (없으면 null)
      */
     private function resolveLayout(int $templateId, string $layoutName): ?TemplateLayout
     {
@@ -1125,9 +1043,6 @@ class LayoutService
      * 모듈 레이아웃 이름은 vendor-module.path 또는 vendor-module_path 형식입니다.
      * 예: sirsoft-ecommerce.admin_products_index (DOT 포맷)
      *     sirsoft-ecommerce_admin_products_index (UNDERSCORE 포맷, 하위 호환)
-     *
-     * @param  string  $layoutName  레이아웃 이름
-     * @return bool 모듈 레이아웃 이름 형식이면 true
      */
     private function isModuleLayoutName(string $layoutName): bool
     {
@@ -1147,11 +1062,6 @@ class LayoutService
      * 일반 응답 캐시와 분리합니다.
      *
      * @since engine-v1.50.0 `$withSourceMeta` 옵션 추가
-     *
-     * @param  int  $templateId  템플릿 ID
-     * @param  string  $layoutName  레이아웃 이름
-     * @param  bool  $withSourceMeta  편집기용 출처 메타 포함 여부
-     * @return string 병합 레이아웃 캐시 키
      */
     private function getMergedLayoutCacheKey(int $templateId, string $layoutName, bool $withSourceMeta = false): string
     {
@@ -1177,7 +1087,6 @@ class LayoutService
      *
      * @param  int  $templateId  대상 템플릿 ID
      * @param  string  $layoutName  대상 레이아웃 이름
-     * @return void 반환값 없음
      */
     public function clearLayoutCache(int $templateId, string $layoutName): void
     {
@@ -1216,7 +1125,6 @@ class LayoutService
      *
      * @param  int  $templateId  템플릿 ID
      * @param  string  $layoutName  레이아웃 이름
-     * @return void 반환값 없음
      */
     private function clearPublicServingCache(int $templateId, string $layoutName): void
     {
@@ -1244,7 +1152,6 @@ class LayoutService
      *
      * @param  int  $templateId  대상 템플릿 ID
      * @param  string  $layoutName  변경된 부모 레이아웃 이름
-     * @return void 반환값 없음
      */
     public function clearDependentLayoutsCache(int $templateId, string $layoutName): void
     {
@@ -1294,8 +1201,6 @@ class LayoutService
 
     /**
      * 캐시 통계 초기화
-     *
-     * @return void 반환값 없음
      */
     public function resetCacheStats(): void
     {
@@ -1349,18 +1254,6 @@ class LayoutService
 
         // 모듈/플러그인 Extension 적용 (Overlay, Extension Point)
         $layout = $this->layoutExtensionService->applyExtensions($layout, $template->id, $withSourceMeta);
-
-        // 확장이 **방금 얹은** 조각의 개발자 주석 제거 (편집 모드는 보존).
-        //
-        // `loadAndMergeLayout` 안에서도 같은 제거를 하지만 그것은 병합 시점이라, 그 뒤에 붙는
-        // 확장 주입 조각(`resources/extensions/`)은 지나친다. 이 누출은 주입 단락이 만든 것이
-        // 아니라 이미 있던 것이다 — 공개 릴리스 7.0.5(`origin/main`) 시점에 확장 조각 41개 중
-        // 19파일·도달 지점 주석 110건이 그대로 응답에 실려 나가고 있었다. S21.3 이 이 경로에
-        // 주석을 늘리며 표본이 커져 드러났을 뿐이다.
-        // 두 번 도는 비용보다 「브라우저가 보는 값이 주입 전후로 같다」는 계약이 우선이다.
-        if (! $withSourceMeta) {
-            $layout = $this->stripDeveloperComments($layout);
-        }
 
         // 편집 모드 응답에 자식 레이아웃의 실제 DB lock_version 동봉.
         // PublicLayoutController 가 LayoutResource 를 거치지 않고 머지된 배열을 그대로 반환하므로,
@@ -1549,9 +1442,7 @@ class LayoutService
         // content 키가 있으면 추출 (UpdateLayoutContentRequest 사용 시)
         $updateData = $data['content'] ?? $data;
 
-        // 수정 전 원문 — 기준 버전·변경 요약에 쓴다. 캐스트(`$layout->content`)는 `{}` 를 `[]` 로 만들어
-        // 그 기준 버전을 복원하면 빈 객체가 사라진다 (#758)
-        $oldContent = LayoutEmptyObjects::rawPreserving($layout);
+        $oldContent = $layout->content;
 
         // 레이아웃 업데이트 (lock_version 1 증가)
         $layout = $this->layoutRepository->updateContent($layout->id, $updateData, $currentVersion + 1);
@@ -1733,9 +1624,6 @@ class LayoutService
 
     /**
      * 컴포넌트 배열을 재귀적으로 sanitize합니다.
-     *
-     * @param  array  $components  컴포넌트 목록
-     * @return array XSS 위험 값을 걸러 낸 컴포넌트 목록
      */
     private function sanitizeComponents(array $components): array
     {
@@ -1766,59 +1654,17 @@ class LayoutService
      * 공개 서빙 응답에서만 제거하여 전송 크기를 줄이며, 편집 모드(withSourceMeta)에서는
      * 호출하지 않아 보존한다. 배열/객체 노드를 재귀 순회하며 두 키만 unset 한다.
      *
-     * 화면 렌더용 JSON 을 내보내는 소비자는 이 서비스 밖에도 있다(`LayoutPreviewService` 의
-     * 미리보기 서빙). 그 경로도 같은 계약을 지어야 하므로 public 이다 — 각자 재귀 제거를
-     * 새로 짜면 한쪽만 키를 늘렸을 때 조용히 갈린다.
-     *
-     * 요청 본문 자리(`body`·`query`·`headers` 아래, 데이터소스의 `params` 아래)는 서버로 보낼 데이터라
-     * `comment` 키도 값이다 — 그 아래는 손대지 않는다(종전에는 지워 비즈뿌리오 「검수 의견」 본문이 빈 채로 갔다).
-     * 액션 `params`·`props`·`initLocal` 바로 아래의 `comment` 는 번들에서 설명 자리로 쓰여 왔으므로 계속 지운다
-     * (남기면 처리기 인자·컴포넌트 prop·`_local.comment` 가 된다).
-     *
      * @param  array  $node  정리 대상 레이아웃(또는 하위) 배열
      * @return array comment 필드가 제거된 배열
      */
-    public function stripDeveloperComments(array $node): array
-    {
-        return $this->stripDeveloperCommentsIn($node, false);
-    }
-
-    /**
-     * stripDeveloperComments 의 재귀 본체.
-     *
-     * @param  array  $node  정리 대상 배열
-     * @param  bool  $isDataSource  `data_sources` 목록의 원소(데이터소스 정의)인지 — 그 `params` 는 요청 데이터다
-     * @return array comment 필드가 제거된 배열
-     */
-    private function stripDeveloperCommentsIn(array $node, bool $isDataSource): array
+    private function stripDeveloperComments(array $node): array
     {
         unset($node['comment'], $node['_comment']);
 
-        // 화면 조각(partial)의 `meta.description` 은 마크업 `<partial description="…">` 이 컴파일된 개발자용 설명이다
-        // (런타임 렌더러 미사용). 레이아웃 최상단 `meta.description` 은 화면 설명(SEO)이므로 조각 표식이 있는 meta 만 지운다.
-        if (isset($node['meta']) && is_array($node['meta']) && ($node['meta']['is_partial'] ?? false) === true) {
-            unset($node['meta']['description']);
-        }
-
         foreach ($node as $key => $value) {
-            if (! is_array($value)) {
-                continue;
+            if (is_array($value)) {
+                $node[$key] = $this->stripDeveloperComments($value);
             }
-            if (is_string($key) && in_array($key, self::REQUEST_PAYLOAD_KEYS, true)) {
-                continue;
-            }
-            if ($isDataSource && $key === 'params') {
-                continue;
-            }
-            if ($key === 'data_sources' && array_is_list($value)) {
-                $node[$key] = array_map(
-                    fn ($source) => is_array($source) ? $this->stripDeveloperCommentsIn($source, true) : $source,
-                    $value
-                );
-
-                continue;
-            }
-            $node[$key] = $this->stripDeveloperCommentsIn($value, false);
         }
 
         return $node;
@@ -1858,9 +1704,6 @@ class LayoutService
 
     /**
      * 문자열에서 위험한 패턴을 제거합니다.
-     *
-     * @param  string  $value  정리할 문자열
-     * @return string 정리된 문자열
      */
     private function sanitizeString(string $value): string
     {
@@ -1887,9 +1730,6 @@ class LayoutService
 
     /**
      * data_sources 배열을 sanitize합니다.
-     *
-     * @param  array  $dataSources  데이터소스 목록
-     * @return array 정리된 데이터소스 목록
      */
     private function sanitizeDataSources(array $dataSources): array
     {
@@ -1909,9 +1749,6 @@ class LayoutService
 
     /**
      * URL을 sanitize합니다. (안전한 프로토콜만 허용)
-     *
-     * @param  string  $url  정리할 URL
-     * @return string 허용된 형식으로 정리된 URL
      */
     private function sanitizeUrl(string $url): string
     {
@@ -1974,13 +1811,6 @@ class LayoutService
         $filtered = [];
 
         foreach ($components as $component) {
-            // 컴포넌트 모양이 아닌 원소는 그대로 둔다(평가할 permissions 가 없다)
-            if (! is_array($component)) {
-                $filtered[] = $component;
-
-                continue;
-            }
-
             // permissions 속성 확인
             $permissions = $component['permissions'] ?? [];
 
@@ -1994,71 +1824,15 @@ class LayoutService
                 unset($component['permissions']);
             }
 
-            // children 과 props 안에 든 컴포넌트 목록(DataGrid cellChildren·expandChildren 등)까지 재귀 필터링
-            $filtered[] = $this->filterNestedComponentLists($component, $user);
+            // children 재귀 필터링
+            if (! empty($component['children'])) {
+                $component['children'] = $this->filterComponentTree($component['children'], $user);
+            }
+
+            $filtered[] = $component;
         }
 
         return $filtered;
-    }
-
-    /**
-     * 노드 안의 모든 컴포넌트 목록에 권한 필터를 적용합니다.
-     *
-     * 컴포넌트는 `children` 에만 있지 않다 — DataGrid 열의 `cellChildren`, 노드의 `expandChildren`·
-     * `subRowChildren`·`footerCardChildren`, 모달의 `children` 처럼 props·노드 키 아래에도 놓인다.
-     * 그 자리의 `permissions` 가 평가도 제거도 되지 않으면 무권한자에게 컴포넌트와 권한 식별자가 그대로
-     * 나간다. 키 이름을 열거하지 않고, 원소가 모두 컴포넌트 모양(type·name 문자열)인 목록이면
-     * 컴포넌트 트리로 걸러 새 키가 생겨도 빠지지 않게 한다.
-     *
-     * @param  array<string, mixed>  $node  노드(컴포넌트·모달·props 하위 배열)
-     * @param  User|null  $user  현재 사용자
-     * @param  int  $depth  재귀 깊이 (비정상 입력 방어)
-     * @return array<string, mixed> 필터링된 노드
-     */
-    private function filterNestedComponentLists(array $node, ?User $user, int $depth = 0): array
-    {
-        if ($depth > 32) {
-            return $node;
-        }
-
-        foreach ($node as $key => $value) {
-            // 액션·데이터 소스 같은 동작 정의 안에는 컴포넌트가 없다 — 그 안의 데이터 필드(`permissions` 등)를
-            // 권한 구조로 오인해 걸러내지 않도록 내려가지 않는다.
-            if (! is_array($value) || $value === [] || in_array($key, self::NON_COMPONENT_KEYS, true)) {
-                continue;
-            }
-
-            // `children` 목록은 원소 모양과 상관없이 늘 컴포넌트 트리로 거른다 — 모양이 다른 원소 하나가
-            // 섞였다고 형제 컴포넌트의 permissions 가 평가되지 않으면 무권한자에게 그대로 나간다.
-            $isChildrenList = $key === 'children' && array_is_list($value);
-
-            $node[$key] = $isChildrenList || $this->isComponentList($value)
-                ? $this->filterComponentTree($value, $user)
-                : $this->filterNestedComponentLists($value, $user, $depth + 1);
-        }
-
-        return $node;
-    }
-
-    /**
-     * 배열이 컴포넌트 목록(원소가 모두 type·name 문자열을 가진 배열)인지 판정합니다.
-     *
-     * @param  array<int|string, mixed>  $list  검사할 배열
-     * @return bool 컴포넌트 목록이면 true
-     */
-    private function isComponentList(array $list): bool
-    {
-        if (! array_is_list($list)) {
-            return false;
-        }
-
-        foreach ($list as $item) {
-            if (! is_array($item) || ! is_string($item['type'] ?? null) || ! is_string($item['name'] ?? null)) {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     /**
@@ -2087,9 +1861,12 @@ class LayoutService
                 unset($modal['permissions']);
             }
 
-            // 모달 내부 컴포넌트 필터링 — 번들 모달은 `children` 을 쓰고 옛 형태는 `components` 를 쓴다.
-            // 두 형태와 props 안 컴포넌트 목록을 같은 규칙으로 거른다.
-            $filtered[] = $this->filterNestedComponentLists($modal, $user);
+            // 모달 내부 컴포넌트 필터링
+            if (! empty($modal['components'])) {
+                $modal['components'] = $this->filterComponentTree($modal['components'], $user);
+            }
+
+            $filtered[] = $modal;
         }
 
         return $filtered;
@@ -2104,42 +1881,31 @@ class LayoutService
      */
     private function filterDefines(array $defines, ?User $user): array
     {
-        // 레이아웃의 defines 는 `이름 => 값` 맵이다(화면이 `_defines.이름` 으로 읽는다). 목록으로 다시
-        // 쌓으면 이름이 사라져 `_defines.countryList` 같은 참조가 전부 undefined 가 된다(#705 회귀).
-        // 목록형(이름 없는 컴포넌트 정의 묶음)으로 들어온 경우만 종전처럼 재색인한다.
-        $isList = array_is_list($defines);
         $filtered = [];
 
-        foreach ($defines as $name => $define) {
-            // 컴포넌트 정의(연관 배열)만 권한 필터 대상이다 — 데이터 목록·스칼라 맵 값은 그대로 둔다.
-            if (is_array($define) && ! array_is_list($define)) {
-                // define 자체에 permissions가 있으면 전체 제거 여부 판단
-                $permissions = $define['permissions'] ?? [];
+        foreach ($defines as $define) {
+            // define 자체에 permissions가 있으면 전체 제거 여부 판단
+            $permissions = $define['permissions'] ?? [];
 
-                if (! empty($permissions) && is_array($permissions)) {
-                    if (! PermissionHelper::checkWithLogic($permissions, $user)) {
-                        continue;
-                    }
-
-                    unset($define['permissions']);
+            if (! empty($permissions)) {
+                if (! PermissionHelper::checkWithLogic($permissions, $user)) {
+                    continue;
                 }
 
-                // define 내부 컴포넌트 필터링
-                if (! empty($define['components']) && is_array($define['components'])) {
-                    $define['components'] = $this->filterComponentTree($define['components'], $user);
-                }
-
-                // define 내부 children 필터링
-                if (! empty($define['children']) && is_array($define['children'])) {
-                    $define['children'] = $this->filterComponentTree($define['children'], $user);
-                }
+                unset($define['permissions']);
             }
 
-            if ($isList) {
-                $filtered[] = $define;
-            } else {
-                $filtered[$name] = $define;
+            // define 내부 컴포넌트 필터링
+            if (! empty($define['components'])) {
+                $define['components'] = $this->filterComponentTree($define['components'], $user);
             }
+
+            // define 내부 children 필터링
+            if (! empty($define['children'])) {
+                $define['children'] = $this->filterComponentTree($define['children'], $user);
+            }
+
+            $filtered[] = $define;
         }
 
         return $filtered;

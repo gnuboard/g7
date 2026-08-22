@@ -24,8 +24,6 @@ class PageAttachmentControllerTest extends FeatureTestCase
 
     /**
      * 테스트 환경 설정
-     *
-     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -53,8 +51,6 @@ class PageAttachmentControllerTest extends FeatureTestCase
 
     /**
      * 테스트 정리
-     *
-     * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
@@ -67,10 +63,6 @@ class PageAttachmentControllerTest extends FeatureTestCase
 
     /**
      * 첨부파일을 업로드할 수 있는지 확인
-     *
-     * @return void 반환값 없음
-     *
-     * @effects admin_upload_to_existing_page_succeeds
      */
     public function test_admin_can_upload_attachment_to_existing_page(): void
     {
@@ -103,10 +95,6 @@ class PageAttachmentControllerTest extends FeatureTestCase
 
     /**
      * temp_key로 임시 업로드할 수 있는지 확인
-     *
-     * @return void 반환값 없음
-     *
-     * @effects temp_upload_with_uuid_key_succeeds
      */
     public function test_admin_can_upload_attachment_with_temp_key(): void
     {
@@ -115,22 +103,18 @@ class PageAttachmentControllerTest extends FeatureTestCase
         $response = $this->actingAs($this->adminUser)
             ->postJson('/api/modules/sirsoft-page/admin/attachments', [
                 'file' => $file,
-                'temp_key' => '00000000-0000-4000-8000-000000000101',
+                'temp_key' => 'test-temp-key-123',
             ]);
 
         $response->assertStatus(201);
         $this->assertDatabaseHas('page_attachments', [
-            'temp_key' => '00000000-0000-4000-8000-000000000101',
+            'temp_key' => 'test-temp-key-123',
             'original_filename' => 'report.pdf',
         ]);
     }
 
     /**
      * 파일 없이 업로드 시 422를 반환하는지 확인
-     *
-     * @return void 반환값 없음
-     *
-     * @effects upload_rejects_invalid_file
      */
     public function test_upload_without_file_returns_422(): void
     {
@@ -147,10 +131,6 @@ class PageAttachmentControllerTest extends FeatureTestCase
      * `rules()` 문자열 단언만으로는 규칙이 실제 요청에 적용되는지 알 수 없다 — Request 가
      * 라우트에 배선되지 않았거나 컨트롤러가 우회하면 문자열은 맞는데 요청은 통과한다.
      * 기본값(10MB)과 다른 값을 주입해 하드코딩과의 우연한 일치를 피한다.
-     *
-     * @return void 반환값 없음
-     *
-     * @effects upload_policy_from_settings_enforced
      */
     public function test_upload_over_configured_size_returns_422(): void
     {
@@ -164,7 +144,7 @@ class PageAttachmentControllerTest extends FeatureTestCase
         $response = $this->actingAs($this->adminUser)
             ->postJson('/api/modules/sirsoft-page/admin/attachments', [
                 'file' => UploadedFile::fake()->create('over-size.png', 6 * 1024, 'image/png'),
-                'temp_key' => '00000000-0000-4000-8000-000000000102',
+                'temp_key' => 'test-over-size',
             ]);
 
         $response->assertStatus(422)
@@ -176,10 +156,6 @@ class PageAttachmentControllerTest extends FeatureTestCase
      *
      * 개수 상한의 최종 관문은 Service 지만, 사용자는 파일을 한 건씩 올린다 — 마지막 한 건이
      * 500 이 아니라 422 로 돌아와야 화면이 사유를 안내할 수 있다.
-     *
-     * @return void 반환값 없음
-     *
-     * @effects upload_policy_from_settings_enforced
      */
     public function test_single_upload_beyond_count_limit_returns_422(): void
     {
@@ -189,7 +165,7 @@ class PageAttachmentControllerTest extends FeatureTestCase
             'allowed_types' => ['image/jpeg', 'image/png', 'application/pdf'],
         ]]);
 
-        $tempKey = '00000000-0000-4000-8000-000000000103';
+        $tempKey = 'test-count-limit';
 
         for ($i = 0; $i < 3; $i++) {
             PageAttachment::create([
@@ -223,10 +199,6 @@ class PageAttachmentControllerTest extends FeatureTestCase
      *
      * 문서 형식은 수정 전에는 통과했고 설정 기준으로는 차단되므로, 전환이 실제로 적용된
      * 것을 red 로 증명할 수 있는 유일한 경계다.
-     *
-     * @return void 반환값 없음
-     *
-     * @effects upload_policy_from_settings_enforced
      */
     public function test_upload_type_allowed_before_but_not_in_settings_returns_422(): void
     {
@@ -243,7 +215,7 @@ class PageAttachmentControllerTest extends FeatureTestCase
                     100,
                     'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
                 ),
-                'temp_key' => '00000000-0000-4000-8000-000000000104',
+                'temp_key' => 'test-legacy-type',
             ]);
 
         $response->assertStatus(422)
@@ -255,10 +227,6 @@ class PageAttachmentControllerTest extends FeatureTestCase
      *
      * 위 케이스와 같은 파일을 설정에만 넣어 통과시킨다. 두 케이스가 짝을 이뤄야 "설정이
      * SSoT" 라는 계약이 증명된다 — 차단만 보면 목록이 그냥 좁아진 것과 구분되지 않는다.
-     *
-     * @return void 반환값 없음
-     *
-     * @effects upload_policy_from_settings_enforced
      */
     public function test_upload_type_added_to_settings_is_allowed(): void
     {
@@ -278,7 +246,7 @@ class PageAttachmentControllerTest extends FeatureTestCase
                     100,
                     'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
                 ),
-                'temp_key' => '00000000-0000-4000-8000-000000000105',
+                'temp_key' => 'test-added-type',
             ]);
 
         $response->assertStatus(201);
@@ -286,10 +254,6 @@ class PageAttachmentControllerTest extends FeatureTestCase
 
     /**
      * 허용되지 않는 파일 형식 업로드 시 422를 반환하는지 확인
-     *
-     * @return void 반환값 없음
-     *
-     * @effects upload_rejects_invalid_file
      */
     public function test_upload_disallowed_file_type_returns_422(): void
     {
@@ -298,7 +262,7 @@ class PageAttachmentControllerTest extends FeatureTestCase
         $response = $this->actingAs($this->adminUser)
             ->postJson('/api/modules/sirsoft-page/admin/attachments', [
                 'file' => $file,
-                'temp_key' => '00000000-0000-4000-8000-000000000106',
+                'temp_key' => 'test-bad-type',
             ]);
 
         $response->assertStatus(422)
@@ -309,10 +273,6 @@ class PageAttachmentControllerTest extends FeatureTestCase
 
     /**
      * 첨부파일을 삭제할 수 있는지 확인
-     *
-     * @return void 반환값 없음
-     *
-     * @effects admin_delete_attachment_handles_missing
      */
     public function test_admin_can_delete_attachment(): void
     {
@@ -346,10 +306,6 @@ class PageAttachmentControllerTest extends FeatureTestCase
 
     /**
      * 존재하지 않는 첨부파일 삭제 시 404를 반환하는지 확인
-     *
-     * @return void 반환값 없음
-     *
-     * @effects admin_delete_attachment_handles_missing
      */
     public function test_deleting_nonexistent_attachment_returns_404(): void
     {
@@ -363,10 +319,6 @@ class PageAttachmentControllerTest extends FeatureTestCase
 
     /**
      * 첨부파일 순서를 변경할 수 있는지 확인
-     *
-     * @return void 반환값 없음
-     *
-     * @effects admin_reorder_attachments_validated
      */
     public function test_admin_can_reorder_attachments(): void
     {
@@ -421,10 +373,6 @@ class PageAttachmentControllerTest extends FeatureTestCase
 
     /**
      * 빈 order 배열로 순서 변경 시 422를 반환하는지 확인
-     *
-     * @return void 반환값 없음
-     *
-     * @effects admin_reorder_attachments_validated
      */
     public function test_reorder_with_empty_order_returns_422(): void
     {
@@ -445,10 +393,6 @@ class PageAttachmentControllerTest extends FeatureTestCase
 
     /**
      * 미인증 사용자가 첨부파일을 업로드할 수 없는지 확인
-     *
-     * @return void 반환값 없음
-     *
-     * @effects unauthenticated_upload_rejected
      */
     public function test_unauthenticated_user_cannot_upload_attachment(): void
     {
@@ -456,7 +400,7 @@ class PageAttachmentControllerTest extends FeatureTestCase
 
         $response = $this->postJson('/api/modules/sirsoft-page/admin/attachments', [
             'file' => $file,
-            'temp_key' => '00000000-0000-4000-8000-000000000107',
+            'temp_key' => 'test-unauth',
         ]);
 
         $response->assertStatus(401);

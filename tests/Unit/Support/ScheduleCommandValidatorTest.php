@@ -5,7 +5,6 @@ namespace Tests\Unit\Support;
 use App\Support\ScheduleCommandValidator;
 use Illuminate\Support\Facades\Artisan;
 use Modules\G7Testing\Console\FakeExtensionScheduleCommand;
-use Modules\G7Testing\Providers\FakeExtensionScheduleServiceProvider;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -697,7 +696,7 @@ class ScheduleCommandValidatorTest extends TestCase
         require_once __DIR__.'/../../Fixtures/Extension/FakeExtensionScheduleServiceProvider.php';
 
         // Artisan::registerCommand 를 호출하지 않는다 — HTTP 문맥 재현.
-        $this->app->register(FakeExtensionScheduleServiceProvider::class);
+        $this->app->register(\Modules\G7Testing\Providers\FakeExtensionScheduleServiceProvider::class);
 
         $verdict = ScheduleCommandValidator::inspectArtisanCommand('g7-testing-fake-extension-command --scope=all');
 

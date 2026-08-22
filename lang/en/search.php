@@ -6,8 +6,8 @@
 
 return [
     'empty_keyword' => 'Please enter a search keyword.',
-    'results_found' => ':count result found.|:count results found.',
-    'results_found_at_least' => 'More than :count result found.|More than :count results found.',
+    'results_found' => ':count results found.',
+    'results_found_at_least' => 'More than :count results found.',
     'result_cap_notice' => 'More than :cap items matched, so the exact total was not counted. You can still move to the next page.',
     'refine_query_hint' => 'Narrow your search terms to see the exact total and jump to the last page.',
     'no_results' => 'No results found.',
@@ -46,13 +46,13 @@ return [
         ],
 
         'counts' => 'Healthy :healthy · Partial :degraded · Not indexed :stale · Not determinable :skipped  (total :total)',
-        'rebuild_targets' => ':count index to rebuild|:count indexes to rebuild',
+        'rebuild_targets' => ':count index(es) to rebuild',
         'rebuild_cost_warning' => 'Rebuilding locks or re-indexes the target. On a live site, run it during a maintenance window.',
         'rebuild_confirm' => 'Rebuild the indexes listed above?',
         'rebuild_after_bulk_confirm' => 'Rebuild search indexes after the bulk update? (default: no — on a live site, run it during a maintenance window)',
         'rebuild_skipped' => 'Skipping the rebuild.',
         'stale_hint' => 'Some indexes hold no indexed content. Rebuild them with `php artisan search:index --repair`.',
-        'stale_after_update' => ':count search index holds no indexed content, so that search returns nothing.|:count search indexes hold no indexed content, so those searches return nothing.',
+        'stale_after_update' => ':count search index(es) hold no indexed content, so those searches return nothing.',
         'rebuilt_item' => 'Rebuilt: :index',
         'rebuild_failed_item' => 'Rebuild failed: :index — :error',
         'still_stale_item' => 'Still not indexed after rebuild: :index',
@@ -66,50 +66,12 @@ return [
         // mysql-fulltext driver specific
         'fulltext' => [
             'unsupported_driver' => 'The current database driver does not support FULLTEXT (search falls back to LIKE; nothing to inspect).',
-            'self_match' => ':found/:probed row found itself|:found/:probed rows found themselves',
+            'self_match' => ':found/:probed rows found themselves',
             'skip' => [
                 'no_single_pk' => 'No single-column primary key, so per-row inspection is not possible',
                 'no_rows' => 'No row has content in the indexed columns',
                 'no_tokens' => 'Could not build a search token from the sampled rows (content too short)',
             ],
-        ],
-    ],
-
-    // Recent searches (/api/me/search-history · admin Settings > Privacy "Recent searches" card, 7.1.5)
-    'history' => [
-        // Core reserved search scope names — the scope column of the admin Settings > Privacy "Recent searches" card.
-        'scopes' => [
-            'core_site' => 'Site search',
-        ],
-
-        // Scope owner column — scopes defined by the core.
-        'owner_core' => 'Core',
-
-        // /api/me/search-history response messages.
-        'messages' => [
-            'list_success' => 'Recent searches loaded.',
-            'record_success' => 'Search saved.',
-            'record_skipped' => 'The search was not saved.',
-            'delete_success' => 'Search deleted.',
-            'not_found' => 'Search not found.',
-            'clear_success' => 'All recent searches deleted.',
-            'merge_success' => 'Recent searches from this browser were merged.',
-            'auto_save_on' => 'Search auto-save turned on.',
-            'auto_save_off' => 'Search auto-save turned off.',
-            'failed' => 'Could not process recent searches.',
-        ],
-
-        // Request validation — field names and messages.
-        'attributes' => [
-            'scope' => 'search scope',
-            'keyword' => 'search term',
-            'items' => 'searches to merge',
-            'searched_at' => 'search time',
-            'auto_save' => 'auto-save',
-        ],
-        'validation' => [
-            'scope_unknown' => 'This search scope is not available.',
-            'items_max' => 'You can merge up to :max searches at a time.',
         ],
     ],
 ];

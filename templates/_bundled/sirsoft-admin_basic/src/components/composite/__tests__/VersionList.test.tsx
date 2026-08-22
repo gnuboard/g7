@@ -35,8 +35,6 @@ describe('VersionList', () => {
   ];
 
   describe('렌더링', () => {
-    // @scenario selection=none
-    // @effects version_items_show_version_date_and_line_counts
     it('버전 목록을 렌더링해야 함', () => {
       render(<VersionList versions={mockVersions} />);
 
@@ -45,8 +43,6 @@ describe('VersionList', () => {
       expect(screen.getByText('버전 2.0.0')).toBeInTheDocument();
     });
 
-    // @scenario selection=none
-    // @effects version_items_show_version_date_and_line_counts
     it('각 버전의 생성 날짜를 표시해야 함', () => {
       render(<VersionList versions={mockVersions} />);
 
@@ -55,8 +51,6 @@ describe('VersionList', () => {
       expect(dateElements.length).toBeGreaterThan(0);
     });
 
-    // @scenario selection=none
-    // @effects version_items_show_version_date_and_line_counts
     it('changes_summary의 added 라인 수를 표시해야 함', () => {
       render(<VersionList versions={mockVersions} />);
 
@@ -65,8 +59,6 @@ describe('VersionList', () => {
       expect(screen.getByText('+50')).toBeInTheDocument();
     });
 
-    // @scenario selection=none
-    // @effects version_items_show_version_date_and_line_counts
     it('changes_summary의 removed 라인 수를 표시해야 함', () => {
       render(<VersionList versions={mockVersions} />);
 
@@ -75,8 +67,6 @@ describe('VersionList', () => {
       expect(screen.getByText('-30')).toBeInTheDocument();
     });
 
-    // @scenario selection=none
-    // @effects empty_versions_show_notice
     it('빈 배열을 전달하면 아무것도 렌더링하지 않아야 함', () => {
       const { container } = render(<VersionList versions={[]} />);
       const list = container.querySelector('ul');
@@ -86,8 +76,6 @@ describe('VersionList', () => {
   });
 
   describe('선택 기능', () => {
-    // @scenario selection=selected
-    // @effects selected_item_marked
     it('selectedId와 일치하는 항목을 하이라이트해야 함', () => {
       render(<VersionList versions={mockVersions} selectedId={2} />);
 
@@ -97,8 +85,6 @@ describe('VersionList', () => {
       expect(items[2]).toHaveAttribute('aria-selected', 'false');
     });
 
-    // @scenario selection=selected
-    // @effects selected_item_marked
     it('selectedId와 일치하는 항목에 선택 스타일이 적용되어야 함', () => {
       render(<VersionList versions={mockVersions} selectedId={1} />);
 
@@ -107,8 +93,6 @@ describe('VersionList', () => {
       expect(items[0]).toHaveClass('bg-blue-50');
     });
 
-    // @scenario selection=none
-    // @effects item_click_calls_on_select_with_id
     it('항목 클릭 시 onSelect 콜백을 올바른 id로 호출해야 함', async () => {
       const user = userEvent.setup();
       const onSelect = vi.fn();
@@ -131,8 +115,6 @@ describe('VersionList', () => {
       expect(onSelect).toHaveBeenCalledWith(3);
     });
 
-    // @scenario selection=none
-    // @effects item_click_calls_on_select_with_id
     it('onSelect가 없으면 클릭해도 에러가 발생하지 않아야 함', async () => {
       const user = userEvent.setup();
 
@@ -144,16 +126,12 @@ describe('VersionList', () => {
   });
 
   describe('접근성', () => {
-    // @scenario selection=none
-    // @effects list_has_list_semantics
     it('list 역할을 가진 ul 요소를 렌더링해야 함', () => {
       render(<VersionList versions={mockVersions} />);
 
       expect(screen.getByRole('list')).toBeInTheDocument();
     });
 
-    // @scenario selection=none
-    // @effects list_has_list_semantics
     it('각 항목이 listitem 역할을 가져야 함', () => {
       render(<VersionList versions={mockVersions} />);
 
@@ -161,8 +139,6 @@ describe('VersionList', () => {
       expect(items).toHaveLength(3);
     });
 
-    // @scenario selection=selected
-    // @effects list_has_list_semantics
     it('각 항목이 aria-selected 속성을 가져야 함', () => {
       render(<VersionList versions={mockVersions} selectedId={1} />);
 
@@ -174,8 +150,6 @@ describe('VersionList', () => {
   });
 
   describe('날짜 포맷팅', () => {
-    // @scenario selection=none
-    // @effects version_items_show_version_date_and_line_counts
     it('ISO 8601 날짜 문자열을 로케일 형식으로 변환해야 함', () => {
       render(<VersionList versions={mockVersions} />);
 
@@ -186,8 +160,6 @@ describe('VersionList', () => {
   });
 
   describe('스타일링', () => {
-    // @scenario selection=selected
-    // @effects selected_item_marked
     it('선택되지 않은 항목은 기본 테두리 색상을 가져야 함', () => {
       render(<VersionList versions={mockVersions} selectedId={1} />);
 
@@ -196,23 +168,17 @@ describe('VersionList', () => {
       expect(items[2]).toHaveClass('border-gray-300');
     });
 
-    // @scenario selection=none
-    // @effects line_counts_colored_by_direction
     it('added 라인 수는 녹색으로 표시되어야 함', () => {
       const { container } = render(<VersionList versions={mockVersions} />);
 
-      // 추가 줄 수는 green-700(흰 바탕 4.94) — green-600 은 3.22 로 대비 미달
-      const addedElements = container.querySelectorAll('.text-green-700');
+      const addedElements = container.querySelectorAll('.text-green-600');
       expect(addedElements.length).toBe(3);
     });
 
-    // @scenario selection=none
-    // @effects line_counts_colored_by_direction
     it('removed 라인 수는 빨간색으로 표시되어야 함', () => {
       const { container } = render(<VersionList versions={mockVersions} />);
 
-      // 선택된 항목 바탕(blue-50) 위에서도 4.5 이상이 되도록 red-700 으로 올렸다(red-600 4.37)
-      const removedElements = container.querySelectorAll('.text-red-700');
+      const removedElements = container.querySelectorAll('.text-red-600');
       expect(removedElements.length).toBe(3);
     });
   });

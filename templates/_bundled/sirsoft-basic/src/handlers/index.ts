@@ -6,13 +6,11 @@
  */
 
 // 상품 옵션 관련 핸들러
-import { quickAddToCartHandler, openQuickOptionHandler, toggleWishlistQuickHandler } from './productQuickActions';
 import {
   addSelectedItemIfCompleteHandler,
   updateSelectedItemQuantityHandler,
   removeSelectedItemHandler,
   updateNoOptionQuantityHandler,
-  setNoOptionAdditionalOptionHandler,
   setBlockAdditionalOptionHandler,
 } from './productOptions';
 
@@ -44,9 +42,6 @@ import {
   saveGuestOrderTokenHandler,
   clearGuestOrderTokenHandler,
   clearGuestTokenOnEntryHandler,
-  initSecretViewTokenHandler,
-  saveSecretViewTokenHandler,
-  clearSecretViewTokenHandler,
 } from './storageHandlers';
 
 // 다중 통화 관련 핸들러
@@ -65,10 +60,6 @@ import { redirectToLoginWithReturnHandler } from './redirectToLoginWithReturn';
 
 // 게시판 첨부 다운로드 핸들러 (토큰 동반 → 활동이력 행위자 기록)
 import { downloadAttachmentHandler } from './downloadAttachment';
-
-// 데이터소스 onSuccess 의 「한 번만」 가드 (onSuccess 컨텍스트에는 _local 이 없다)
-import { markLocalOnceHandler } from './markLocalOnce';
-import { rememberIdentityClaimHandler, restoreIdentityTargetHandler } from './identityLauncher';
 
 // 언어 관련 핸들러는 엔진 레벨(ActionDispatcher)에서 처리
 // setLocale 핸들러는 ActionDispatcher에 빌트인으로 등록되어 있음
@@ -98,13 +89,7 @@ export const handlers = {
   'sirsoft-basic.updateSelectedItemQuantity': updateSelectedItemQuantityHandler,
   'sirsoft-basic.removeSelectedItem': removeSelectedItemHandler,
   'sirsoft-basic.updateNoOptionQuantity': updateNoOptionQuantityHandler,
-  'sirsoft-basic.setNoOptionAdditionalOption': setNoOptionAdditionalOptionHandler,
   'sirsoft-basic.setBlockAdditionalOption': setBlockAdditionalOptionHandler,
-
-  // 상품 카드의 곧바로 담기·옵션 선택 창·찜
-  'sirsoft-basic.quickAddToCart': quickAddToCartHandler,
-  'sirsoft-basic.openQuickOption': openQuickOptionHandler,
-  'sirsoft-basic.toggleWishlistQuick': toggleWishlistQuickHandler,
 
   // 다중 통화
   'sirsoft-basic.getDisplayPrice': getDisplayPriceHandler,
@@ -122,13 +107,6 @@ export const handlers = {
 
   // 게시판 첨부 다운로드 (토큰 동반 → 활동이력 행위자 기록)
   downloadAttachment: downloadAttachmentHandler,
-
-  // 데이터소스 onSuccess 의 「한 번만」 가드 — 주문서 기본 배송지 채움이 목록 재조회마다 선택을 덮지 않게
-  'sirsoft-basic.markLocalOnce': markLocalOnceHandler,
-  // 본인인증 링크 방식 — [다시 보내기]가 받은 새 건의 일회용 비밀값을 처리기에 넘긴다(전역 상태에 두지 않는다).
-  'sirsoft-basic.rememberIdentityClaim': rememberIdentityClaimHandler,
-  // 본인인증 전체화면 — 넘어오기 전 화면이 보관한 비회원 인증 대상을 되살려 [코드 재전송] 에 싣는다.
-  'sirsoft-basic.restoreIdentityTarget': restoreIdentityTargetHandler,
 
   // 언어: setLocale은 엔진 레벨(ActionDispatcher)에서 빌트인으로 처리
 
@@ -155,10 +133,6 @@ export const handlers = {
   saveGuestOrderToken: saveGuestOrderTokenHandler,
   clearGuestOrderToken: clearGuestOrderTokenHandler,
   clearGuestTokenOnEntry: clearGuestTokenOnEntryHandler,
-  // 비밀글 열람 토큰 — 탭 세션에 두어 답변 링크(전체 이동)·새로고침에서도 비밀번호 확인이 유지된다
-  initSecretViewToken: initSecretViewTokenHandler,
-  saveSecretViewToken: saveSecretViewTokenHandler,
-  clearSecretViewToken: clearSecretViewTokenHandler,
 };
 
 /**
@@ -179,11 +153,7 @@ export {
   updateSelectedItemQuantityHandler,
   removeSelectedItemHandler,
   updateNoOptionQuantityHandler,
-  setNoOptionAdditionalOptionHandler,
   setBlockAdditionalOptionHandler,
-  quickAddToCartHandler,
-  openQuickOptionHandler,
-  toggleWishlistQuickHandler,
   getDisplayPriceHandler,
   formatCurrencyHandler,
   getCurrencySymbol,
@@ -195,7 +165,6 @@ export {
   redirectToLoginWithReturnHandler,
   // 게시판 첨부 다운로드
   downloadAttachmentHandler,
-  markLocalOnceHandler,
   // setLocaleHandler는 엔진 레벨에서 처리하므로 제거됨
   // 장바구니
   toggleCartItemSelectionHandler,
@@ -218,7 +187,4 @@ export {
   saveGuestOrderTokenHandler,
   clearGuestOrderTokenHandler,
   clearGuestTokenOnEntryHandler,
-  initSecretViewTokenHandler,
-  saveSecretViewTokenHandler,
-  clearSecretViewTokenHandler,
 };

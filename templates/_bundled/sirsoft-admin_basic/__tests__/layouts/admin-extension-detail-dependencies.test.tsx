@@ -56,7 +56,7 @@ const translations = {
         dependency_installed_version: '설치: {{version}}',
         dependency_not_installed: '미설치',
         dependency_met: '충족',
-        dependency_unmet_version: '버전 미달',
+        dependency_unmet_version: '버전 불일치',
         dependency_inactive: '비활성',
       },
     },
@@ -70,7 +70,7 @@ const translations = {
         dependency_installed_version: '설치: {{version}}',
         dependency_not_installed: '미설치',
         dependency_met: '충족',
-        dependency_unmet_version: '버전 미달',
+        dependency_unmet_version: '버전 불일치',
         dependency_inactive: '비활성',
       },
     },
@@ -84,7 +84,7 @@ const translations = {
         dependency_installed_version: '설치: {{version}}',
         dependency_not_installed: '미설치',
         dependency_met: '충족',
-        dependency_unmet_version: '버전 미달',
+        dependency_unmet_version: '버전 불일치',
         dependency_inactive: '비활성',
       },
     },
@@ -114,8 +114,7 @@ function buildLayoutFromSection(section: any, globalKey: string, value: Record<s
   return {
     version: '1.0.0',
     layout_name: 'dependency_section_test',
-    // 상세 응답 형태 — metadata 는 상세에만 있는 필드라 「없음」 안내가 상세를 받은 뒤에만 보이는 표지다(#915)
-    initGlobal: { [globalKey]: { metadata: [], ...value } },
+    initGlobal: { [globalKey]: value },
     components: [section],
   };
 }
@@ -134,19 +133,11 @@ describe('모듈 정보 모달 - 의존성 섹션', () => {
     if (testUtils) testUtils.cleanup();
   });
 
-  /**
-   * @scenario surface=module_detail
-   * @effects detail_dependencies_section_present
-   */
   it('dependencies_section 이 partial 에 존재한다', () => {
     expect(section).toBeDefined();
     expect(section.id).toBe('dependencies_section');
   });
 
-  /**
-   * @scenario surface=module_detail
-   * @effects detail_core_requirement_badge
-   */
   it('requires_core 값이 있으면 버전 문자열이 배지로 표시된다', async () => {
     testUtils = createLayoutTest(
       buildLayoutFromSection(section, 'selectedModule', {
@@ -161,10 +152,6 @@ describe('모듈 정보 모달 - 의존성 섹션', () => {
     expect(screen.getByText('의존하는 확장이 없습니다.')).toBeTruthy();
   });
 
-  /**
-   * @scenario surface=module_detail
-   * @effects detail_core_requirement_badge
-   */
   it('requires_core 가 null 이면 "지정되지 않음" 메시지가 표시된다', async () => {
     testUtils = createLayoutTest(
       buildLayoutFromSection(section, 'selectedModule', {
@@ -178,10 +165,6 @@ describe('모듈 정보 모달 - 의존성 섹션', () => {
     expect(screen.getByText('지정되지 않음')).toBeTruthy();
   });
 
-  /**
-   * @scenario surface=module_detail
-   * @effects detail_dependency_met_badge
-   */
   it('충족된 모듈 의존성 행에 "충족" 뱃지가 표시된다', async () => {
     testUtils = createLayoutTest(
       buildLayoutFromSection(section, 'selectedModule', {
@@ -208,10 +191,6 @@ describe('모듈 정보 모달 - 의존성 섹션', () => {
     expect(screen.getByText('충족')).toBeTruthy();
   });
 
-  /**
-   * @scenario surface=module_detail
-   * @effects detail_dependency_not_installed_badge
-   */
   it('미설치 의존성 행에 "미설치" 뱃지가 표시된다', async () => {
     testUtils = createLayoutTest(
       buildLayoutFromSection(section, 'selectedModule', {
@@ -235,10 +214,6 @@ describe('모듈 정보 모달 - 의존성 섹션', () => {
     expect(screen.getByText('미설치')).toBeTruthy();
   });
 
-  /**
-   * @scenario surface=module_detail
-   * @effects detail_dependency_inactive_badge
-   */
   it('설치되었지만 비활성 의존성에 "비활성" 뱃지가 표시된다', async () => {
     testUtils = createLayoutTest(
       buildLayoutFromSection(section, 'selectedModule', {
@@ -262,11 +237,7 @@ describe('모듈 정보 모달 - 의존성 섹션', () => {
     expect(screen.getByText('비활성')).toBeTruthy();
   });
 
-  /**
-   * @scenario surface=module_detail
-   * @effects detail_dependency_version_below_badge
-   */
-  it('설치/활성이지만 버전 미달인 의존성에 "버전 미달" 뱃지가 표시된다', async () => {
+  it('설치/활성이지만 버전 불일치인 의존성에 "버전 불일치" 뱃지가 표시된다', async () => {
     testUtils = createLayoutTest(
       buildLayoutFromSection(section, 'selectedModule', {
         requires_core: '>=7.0.0-beta.2',
@@ -286,7 +257,7 @@ describe('모듈 정보 모달 - 의존성 섹션', () => {
     );
     await testUtils.render();
 
-    expect(screen.getByText('버전 미달')).toBeTruthy();
+    expect(screen.getByText('버전 불일치')).toBeTruthy();
   });
 });
 
@@ -304,18 +275,10 @@ describe('플러그인 정보 모달 - 의존성 섹션', () => {
     if (testUtils) testUtils.cleanup();
   });
 
-  /**
-   * @scenario surface=plugin_detail
-   * @effects detail_dependencies_section_present
-   */
   it('dependencies_section 이 plugin partial 에 존재한다', () => {
     expect(section).toBeDefined();
   });
 
-  /**
-   * @scenario surface=plugin_detail
-   * @effects detail_dependency_met_badge
-   */
   it('requires_core 와 충족 뱃지가 함께 표시된다', async () => {
     testUtils = createLayoutTest(
       buildLayoutFromSection(section, 'selectedPlugin', {
@@ -356,18 +319,10 @@ describe('템플릿 정보 모달 - 의존성 섹션', () => {
     if (testUtils) testUtils.cleanup();
   });
 
-  /**
-   * @scenario surface=template_detail
-   * @effects detail_dependencies_section_present
-   */
   it('dependencies_section 이 template partial 에 존재한다', () => {
     expect(section).toBeDefined();
   });
 
-  /**
-   * @scenario surface=template_detail
-   * @effects detail_dependencies_empty_message
-   */
   it('의존성 없을 때 "없음" 메시지와 코어 요구 버전이 표시된다', async () => {
     testUtils = createLayoutTest(
       buildLayoutFromSection(section, 'selectedTemplate', {
@@ -382,10 +337,6 @@ describe('템플릿 정보 모달 - 의존성 섹션', () => {
     expect(screen.getByText('의존하는 확장이 없습니다.')).toBeTruthy();
   });
 
-  /**
-   * @scenario surface=template_detail
-   * @effects detail_dependency_met_badge
-   */
   it('모듈 의존성에 버전 및 충족 뱃지가 표시된다', async () => {
     testUtils = createLayoutTest(
       buildLayoutFromSection(section, 'selectedTemplate', {

@@ -14,7 +14,6 @@
 7. 도메인 ownership: 모듈/플러그인이 `seoOgDefaults`/`seoTwitterDefaults`/`seoStructuredData` 메서드로 자기 도메인 OG/Twitter/JSON-LD 를 owned (이커머스 Product, 게시판 Article 등)
 8. Sitemap: 스트리밍 writer(유계 메모리)로 비공개 디스크에 분할 커밋(sitemapindex + sitemap-{n}.xml) 후 서빙 — 요청 스레드 생성 없음, 미스 시 잡 디스패치 + stale/503. 증분 저장소(sitemap_urls) + 재생성 모드(SitemapGenerationMode full/auto/incremental) + 진행상황(SitemapProgress, Reverb 실시간/OFF 폴링)
 9. Artisan: seo:warmup, seo:clear, seo:stats, seo:generate-sitemap(--rebuild/--mode)
-10. Host 비신뢰: 봇 화면의 절대 URL·데이터소스 호출 주소는 요청 Host 가 아니라 APP_URL(SeoUrl) 기준. 동시 미스 렌더는 사이트 전체 상한(max_concurrent_renders) 안에서만
 ```
 
 ## 아키텍처 개요
@@ -58,8 +57,6 @@ Request → web.php catch-all → SeoMiddleware (봇 감지)
 | SeoCacheManagerInterface | 캐시 저장/조회/무효화 |
 | SitemapContributorInterface | 확장별 Sitemap URL 기여 |
 
-> `SeoRendererInterface` 구현과 `SeoCacheRegenerator` 는 요청·큐 작업 단위(`scoped`)로 바인딩된다(7.1.5). 렌더러가 플러그인 설정 서비스를 생성자로 받으므로, 싱글톤이면 큐 워커가 첫 작업의 플러그인 설정을 재시작 전까지 SEO HTML 에 쓴다. 다른 SEO 클래스는 싱글톤이다.
-
 ### 코어 클래스 (`app/Seo/`)
 
 | 클래스 | 역할 |
@@ -69,15 +66,12 @@ Request → web.php catch-all → SeoMiddleware (봇 감지)
 | BotDetector | User-Agent 기반 봇 감지 |
 | ExpressionEvaluator | `{{}}` 바인딩 표현식 평가 |
 | ComponentHtmlMapper | 컴포넌트→HTML 태그 매핑 |
-| DataSourceResolver | 내부 HTTP API 호출 (주소는 APP_URL 고정, 서명한 렌더 표식 헤더 동봉) |
-| SeoRenderRequest | 내부 호출 표식 헤더(`X-G7-Seo-Render`, 앱 키 서명) 생성·판정 — 받는 쪽이 열람 집계에서 뺀다 |
-| SeoUrl | 봇 화면 절대 URL·캐시 키 origin 의 단일 출처 (요청 Host 비의존). 계산은 코어 `App\Support\SiteUrl` 에 위임 — [routing.md](routing.md#절대-url-은-사이트-주소로-만든다) |
+| DataSourceResolver | 내부 HTTP API 호출 |
 | TemplateRouteResolver | URL→레이아웃 매핑 |
 | SeoMetaResolver | 3계층 캐스케이드 메타 해석 |
 | SeoMiddleware | 미들웨어 (봇 감지 → 렌더링) |
 | SeoServiceProvider | DI 바인딩 |
-| SitemapGenerator | Sitemap 수집기 (정적 화면 → contributor 드레인 → writer 스트리밍, 같은 주소 1회) |
-| SeoToggleEvaluator | 레이아웃 `meta.seo.toggle_setting` 판정 — 봇 화면(SeoRenderer)과 사이트맵 정적 화면이 공용 |
+| SitemapGenerator | Sitemap 수집기 (contributor 드레인 → writer 스트리밍) |
 | SitemapManager | Sitemap 재생성 오케스트레이션 (모드 분기 + 진행상황 + 훅) |
 | SitemapWriter | 자식파일당 in-memory 버퍼 flush + 분할 + atomic commit |
 | SitemapFileStore | 디스크 세트 읽기/서빙 (manifest·index·child 응답) |
@@ -111,31 +105,6 @@ Request → web.php catch-all → SeoMiddleware (봇 감지)
 
 - 봇 감지: `BotDetector` 4-레이어 체인 (아래 "봇 감지 구조" 섹션 참조)
 - 렌더링 실패 시: SPA fallback (기존 응답 통과)
-- 캐시 키: 사이트 origin(APP_URL) + 경로 + **정규화된** 쿼리(`locale`·`_escaped_fragment_` 제외, 키 순서 정렬, 개수·길이 상한)
-- 미스 렌더는 IP 당 분당 상한 안에서만 — 초과분은 SPA + `X-SEO-Cache: BYPASS`(오류가 아니다). 렌더러가 "그릴 게 없음"(null)으로 돌아온 요청은 차감을 되돌린다
-- 동시에 진행하는 미스 렌더는 사이트 전체 상한(`max_concurrent_renders`) 안에서만 — 초과분도 SPA + `BYPASS`
-- 기본 로케일을 `?locale=` 로 명시한 요청의 301 `Location` 은 요청 Host 가 아니라 APP_URL 기준
-- 저장 상한: 경로·언어당 쿼리 변종 수 · 캐시 인덱스 전체 항목 수
-- 캐시 HIT/MISS 를 통계에 기록 (IP 당 분당 상한). HIT 의 레이아웃명은 캐시 항목에 함께 저장된 값으로 귀속한다. 모듈 화면이면 모듈 식별자도 함께 기록한다(MISS 는 렌더러가 남긴 값, HIT 는 캐시 항목의 레이아웃 이름에서 되살린 값)
-
-## 확장 레이아웃 이름 규약
-
-모듈·플러그인이 제공하는 레이아웃은 라우트(`routes.json` 의 `layout`)·DB(`template_layouts.name`)·레이아웃 편집기에서
-`{확장식별자}.{레이아웃}` **전체 이름**으로 다룹니다(예: `gnuboard7-hello_module.user_memo_list`). 봇 렌더도 이 이름을 씁니다.
-
-| 쓰임 | 이름 |
-|------|------|
-| 레이아웃 조회(봇 렌더) | 전체 이름 |
-| 봇 캐시 항목·캐시 통계의 레이아웃 이름 | 전체 이름 — `seo:clear --layout=`·관리자 캐시 비우기도 이 이름으로 지운다 |
-| 훅 컨텍스트 `layoutName` | 확장 식별자를 뗀 이름(기존 값 유지) |
-| 훅 컨텍스트 `storedLayoutName` | 전체 이름 |
-| 템플릿 레이아웃(점 없는 이름) | 두 이름이 같다 |
-
-- 뗀 이름으로 레이아웃을 찾으면 모듈 화면은 「레이아웃 없음」이 되고, 뗀 이름이 템플릿 레이아웃과 같으면(모듈 `vendor-x.home` → `home`) 템플릿 화면이 그 주소로 렌더됩니다. 그래서 조회와 캐시 이름은 전체 이름입니다.
-- 소속 판별 순서: 설치된 모듈 → 설치된 플러그인 → 둘 다 아니면 모듈로 간주.
-- 봇 렌더가 레이아웃을 찾지 못하면 `[SEO] Layout load failed` 를 **error** 로 남기고 SPA 로 응답합니다. 로그에는 `url`·`template`·`layout`(전체 이름)·`route_layout_name`(뗀 이름)·`module`·`plugin`·`error` 가 실립니다.
-- 플러그인 라우트는 **관리자 템플릿에만 병합**됩니다. 그래서 플러그인이 소유한 사용자 화면은 지금 구조로는 없고, 플러그인 레이아웃의 봇 렌더는 템플릿 `routes.json` 이 점 붙은 플러그인 레이아웃을 직접 지정할 때만 일어납니다(이름 규약은 모듈과 같습니다).
-- 모듈 화면 SEO 예시: 번들 Hello 모듈의 `/memos`(`user_memo_list`)가 `meta.seo` 를 선언해 템플릿 `_user_base` 의 기본값(SEO 끔)을 덮습니다.
 
 ## 봇 감지 구조
 
@@ -144,12 +113,11 @@ Request → web.php catch-all → SeoMiddleware (봇 감지)
 | # | 레이어 | 동작 | 비고 |
 | - | ----- | ---- | ---- |
 | 1 | `seo.bot_detection_enabled` | false 면 즉시 false | 전역 비활성 |
-| 2 | UA 빈 문자열 | false | UA 없는 요청 |
-| 3 | `core.seo.resolve_is_bot` 훅 | 결과가 non-null 이면 즉시 결정 | 확장 슬롯 |
-| 4 | `seo.bot_detection_library_enabled` (기본 true) | jaybizzle/crawler-detect + G7 보강 + 사용자 패턴을 단일 정규식으로 평가 | 주 경로 |
-| 5 | 라이브러리 비활성 시 | `seo.bot_user_agents` stripos 매칭만 | 레거시 모드 |
-
-`?_escaped_fragment_` 쿼리는 봇 신호가 아닙니다. 구글이 2015년에 폐기한 AJAX 크롤링 스킴이라 현대 크롤러는 보내지 않는데, 쿼리 글자 하나로 User-Agent 와 무관하게 누구나 봇 렌더 경로를 태울 수 있는 통로였습니다(KVE-2026-2333/2334/2335 공통 진입점). 봇 화면을 확인하려면 검색엔진 User-Agent 로 요청합니다 — 예: `curl -A 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)' https://<사이트>/<경로>`.
+| 2 | `_escaped_fragment_` 쿼리 | 존재하면 true | 구형 크롤러 호환 |
+| 3 | UA 빈 문자열 | false | UA 없는 요청 |
+| 4 | `core.seo.resolve_is_bot` 훅 | 결과가 non-null 이면 즉시 결정 | 확장 슬롯 |
+| 5 | `seo.bot_detection_library_enabled` (기본 true) | jaybizzle/crawler-detect + G7 보강 + 사용자 패턴을 단일 정규식으로 평가 | 주 경로 |
+| 6 | 라이브러리 비활성 시 | `seo.bot_user_agents` stripos 매칭만 | 레거시 모드 |
 
 ### jaybizzle/crawler-detect 통합
 
@@ -206,14 +174,6 @@ SEO 렌더링 시 `_global` 컨텍스트에 프론트엔드 설정 데이터를 
 | `_global.pluginSettings` | `PluginSettingsService` | 플러그인 설정 데이터 |
 | `_global.site_name` | `general.site_name` | 사이트 이름. `resolveLocalizedValue` 통과 (다국어 array 안전) |
 | `_global.site_url` | `general.site_url` | 사이트 URL |
-| `_global.activeModules` | `ModuleManager::getActiveModules()` | 활성 모듈 식별자 배열 — 사용자 화면의 같은 키와 같은 출처 (코어 7.1.4+). 목록을 못 구하면 키를 싣지 않는다 |
-| `_global.activePlugins` | `PluginManager::getActivePlugins()` | 활성 플러그인 식별자 배열 (코어 7.1.4+) |
-
-레이아웃 가드 `{{_global.activeModules?.includes('id') ?? true}}`(부정 `{{!(… ?? true)}}`)는 봇 화면에서도 브라우저와 같은 값(켜짐 true · 꺼짐 false · 키 없음 true)이 나온다. 이 `_global` 은 데이터소스 `if` 평가에도 쓰여, 꺼진 모듈의 API 는 봇 렌더에서 부르지 않는다. 라우트 자체는 routes.json `requires` 로 거른 결과(공개 routes 응답과 같은 필터)를 쓴다 — [template-routing.md](../extension/template-routing.md#requires--모듈이-꺼지면-라우트-숨기기).
-
-봇 화면 평가기는 `+` 를 JS 와 같게 처리한다 — 한쪽이 문자열이면 잇고 둘 다 수면 더한다(`'/' + (route_path ?? 'shop')` → `/shop`). 값 자리의 `??` 는 null(없는 값)일 때만 오른쪽으로 넘어간다(빈 문자열은 값). 코어 7.1.4+.
-
-seo-config 의 `fields` 모드 항목은 `"if": "{prop}"` 로 props 값이 거짓(`false`·빈 값·`0`)이면 빠지고, `attrs` 는 `"{shopBase}/products"` 처럼 값과 글자를 섞어 쓸 수 있다(코어 7.1.4+).
 
 ### site_name SSoT 체인 (다국어 일관성)
 
@@ -223,8 +183,7 @@ seo-config 의 `fields` 모드 항목은 `"if": "{prop}"` 로 props 값이 거�
 |------|------|--------|
 | OG `og:site_name` | `seo.og_default_site_name ?? general.site_name` (`SeoMetaResolver`) | `resolveLocalizedValue` ✅ |
 | JSON-LD `WebSite.name` / `{site_name}` 치환 | `_global.site_name` ← `general.site_name` (`SeoRenderer::buildGlobalContext`) | `resolveLocalizedValue` ✅ |
-| SPA 첫 응답 `<title>` | `config('app.name')` ← `general.site_name` (`SettingsServiceProvider::applyAppConfig`) — 화면이 뜨면 엔진이 제목 규칙으로 바꾼다 | `localizeSettingValue` ✅ |
-| 제목 접미사 기본값·탭 제목 | `G7Config.seoTitle.site_name` ← `general.site_name` (`SeoTitleRuleExporter`) | 엔진 `pickLocalized` · 서버 `LocalizedValue::pick` ✅ |
+| SPA `<title>` | `config('app.name')` ← `general.site_name` (`SettingsServiceProvider::applyAppConfig`) | `localizeSettingValue` ✅ |
 | canonical | URL 기반, site_name 미사용 (`seo.blade.php`) | N/A (무관) |
 
 > **OG 직접입력은 의도된 override**: `seo.og_default_site_name` 에 값을 입력하면 그 값이 우선하고, 비우면 `general.site_name` 을 따른다. admin SEO 탭의 OG 입력칸 라벨/안내가 이 "선택 재정의" 위상을 명시한다. 자동 동기화/칸 제거는 하지 않는다 (drift 는 명시적 override 로 허용).
@@ -235,19 +194,11 @@ seo-config 의 `fields` 모드 항목은 `"if": "{prop}"` 로 props 값이 거�
 
 데이터소스의 `initGlobal` 설정에 따라 API 응답 데이터를 `_global` 경로에 매핑합니다.
 
-```html
-<json key="id">"boards"</json>
-<json key="endpoint">"/api/modules/sirsoft-board/boards"</json>
-<json key="initGlobal">"boards"</json>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 // 레이아웃 data_source 예시
 {
     "id": "boards",
-    "endpoint": "/api/modules/sirsoft-board/boards",
+    "endpoint": "/api/boards",
     "initGlobal": "boards"
 }
 ```
@@ -268,8 +219,8 @@ seo-config 의 `fields` 모드 항목은 `"if": "{prop}"` 로 props 값이 거�
 | seo.page_type | string | X | 모듈 설정 템플릿 키 결정 (예: `"product"` → `seo.meta_product_title`) |
 | seo.toggle_setting | string | X | SEO 활성화 토글 설정 경로 (예: `"$module_settings:seo.seo_product_detail"`) |
 | seo.vars | object | X | SEO 변수 선언 — 모듈 설정 title/description 템플릿의 `{key}` 치환용 |
-| seo.priority | number | X | sitemap priority (0.0~1.0). 정적 화면 사이트맵 항목에 쓰임 — 범위 밖·숫자가 아니면 0.5 |
-| seo.changefreq | string | X | sitemap changefreq (daily/weekly 등). 정적 화면 사이트맵 항목에 쓰임 — 비표준 값이면 weekly |
+| seo.priority | number | X | sitemap priority (0.0~1.0) |
+| seo.changefreq | string | X | sitemap changefreq (daily/weekly 등) |
 | seo.og | object | X | Open Graph 메타태그 |
 | seo.structured_data | object | X | JSON-LD 구조화 데이터 |
 
@@ -310,63 +261,25 @@ seo-config 의 `fields` 모드 항목은 `"if": "{prop}"` 로 props 값이 거�
 - Partial에 meta.seo 정의 금지 (무시됨)
 - meta.seo 추가/변경 시 `UpdateLayoutContentRequest` 검증 규칙 동기화 필수
 
-## 화면 제목 규칙 (봇 `<title>` · 사람 브라우저 탭 공통)
-
-검색엔진(봇) `<title>` 과 사람 방문자의 브라우저 탭 제목(`document.title`)은 **한 규칙**으로 정합니다(코어 7.1.5, 템플릿 엔진 engine-v1.86.0).
-서버 원본은 `App\Seo\SeoTitleRule`(순수 함수 — `SeoMetaResolver`·`SeoRenderer` 가 사용), 화면 짝은 `resources/js/core/routing/DocumentTitle.ts`
-이고, 두 구현은 판정 사례 파일 `tests/fixtures/seo/title-rule-cases.json` 하나로 같은 답을 잠급니다(서버 `SeoTitleRuleParityTest` · 엔진
-`DocumentTitle.parity.test.ts`). 한쪽만 고치지 않습니다.
+## 3계층 캐스케이드 메타 해석
 
 ```
-제목 후보 (앞에서부터 처음으로 비어 있지 않고 사이트 이름만이 아닌 값):
-1. 리소스 meta_title            — meta.seo.data_sources 소스의 data.meta_title (레이아웃 data_sources 순서)
-2. 페이지 seo_meta.title        — data.seo_meta.title
-3. meta.seo.title              — 레이아웃 편집기 페이지 설정 「검색 제목」 (식·다국어 허용, 7.1.5)
-4. 확장 제목 틀                 — _seo.{page_type}.title (extensions 의 seoVariables + seo.meta_{page_type}_title 치환)
-                                   · extensions 미선언이면 라우트 레이아웃 소속 확장의 같은 틀(하위호환)
-5. meta.seo.og.title            — 레이아웃 식 평가 결과 ($t: 키·{{식}} 허용)
-6. 라우트 meta.title            — routes.json
-+ 접미사: 코어 seo.meta_title_suffix (비면 " - {site_name}", {site_name} 은 현재 언어 사이트 이름)
+우선순위: 리소스 개별 설정 > 모듈 설정 > 코어 설정 + 코어 suffix 항상 추가
+
+상품 상세 페이지 title 결정:
+1순위: 상품 meta_title 있으면 → 사용
+2순위: 모듈 meta_product_title 템플릿 → "{commerce_name} - {product_name}" 치환
+3순위: 코어 meta_description → fallback
+최종: + 코어 meta_title_suffix 항상 추가
 ```
 
-| 규칙 | 내용 |
-|------|------|
-| 사이트 이름뿐인 후보 | 사이트 이름(`general.site_name`)이나 접미사에서 구분자를 뗀 이름과 같은 후보는 건너뜁니다(게시판 목록 기본 틀 `{site_name}` 등). 어느 단계든 같습니다 |
-| 접미사 중복 방지 | 제목이 이미 접미사로 끝나거나 「` - `·` \| `·` · `·` – `·` — ` + 사이트 이름」으로 끝나면 다시 붙이지 않습니다(옮겨 온 상품 meta_title 「상품명 - 사이트명」 등 — 데이터를 고치지 않아도 됨) |
-| 접미사 공백 | 저장값의 앞 공백이 지워졌어도(TrimStrings) 공백 하나를 복원해 잇습니다 |
-| 사이트 첫 화면(`/`) | 사이트 이름만(레이아웃 OG 제목·라우트 제목을 쓰지 않음) |
-| 후보가 모두 빔 | 접미사의 구분자를 뗀 값 = 사이트 이름. 사이트 이름도 접미사도 없으면 빈 값 |
-| 정리 | 각 후보는 태그 제거·HTML 엔티티 해제·공백 한 칸으로 정리합니다 |
-| `og:title` | 레이아웃 `og.title` → 고른 제목 → (제목이 비면) 사이트 이름 |
-| 편집기 「검색 제목·설명」 | 레이아웃 편집기 → 페이지 설정 → 검색엔진의 「제목」「설명」(`meta.seo.title`·`meta.seo.description`)은 그 화면의 기본 제목·설명입니다. 상품·게시글·페이지 자체 값이 있으면 그것이 앞서고, 확장 제목·설명 틀과 소셜 공유(og) 값보다는 앞섭니다. 설명 순서는 리소스 `meta_description` → 페이지 `seo_meta.description` → `meta.seo.description` → 확장 설명 틀 → `og.description` → 코어 설명 |
-| 확장 제목 틀 | 사이트 이름을 넣지 않습니다(접미사가 붙임). 다국어 값(`{ko, en, …}`)이면 현재 로케일 → 사이트 기본 언어 → 영어 |
-| 필수 변수가 빈 확장 제목 틀 | 확장 변수 선언의 `required: true` 변수(상품명·카테고리명)가 비면 그 확장 제목 틀은 후보가 아닙니다(`SeoTitleRule::hasMissingRequired` · 엔진 `hasMissingRequiredSeoVar`). 틀의 고정 글자만 남은 제목(`{product_name} 특가` → 「특가」)을 쓰지 않고 다음 후보로 갑니다 — 화면은 데이터를 받는 동안 라우트 제목입니다. 설명 틀은 그대로 씁니다 |
-| 레이아웃 후보 식 | `vars`·`og` 식에서 `$localized(…)` 를 이어 쓸 때는 `??` 가 아니라 `\|\|` 로 잇습니다. 화면 `$localized` 는 빈 값을 빈 글자로 돌려줘 `??` 가 다음 후보로 넘어가지 않습니다(서버는 null 을 그대로 돌려줘 넘어감) — 두 구현이 다른 제목을 냅니다 |
-
-| 페이지 | 기본 제목 (접미사 기본값일 때) |
-|--------|------|
-| 상품 상세 | 상품 `meta_title` → `{product_name}` → … 예: 「후드 티 - 사이트 이름」 |
-| 카테고리 / 검색 결과 / 쇼핑몰 메인 | `{category_name}` / `{keyword_name}` / `{commerce_name}` + 접미사 |
-| 게시판 목록 / 글 | `{board_name}` / `{board_name} - {post_title}` + 접미사 (게시판 모음 `{site_name}` 은 건너뛰어 라우트 제목) |
-| 페이지 | 페이지 `seo_meta.title` → OG 제목(페이지 제목) + 접미사 |
-| SEO 선언 없음·꺼짐 (장바구니·주문서·마이페이지·로그인 등) | 라우트 `meta.title` + 접미사 (봇은 SEO 화면을 받지 않음, 사람 탭만) |
-
-### 사람 브라우저 탭 제목 (엔진)
-
-- 서버는 첫 응답 `<title>` 을 종전처럼 사이트 이름으로 둡니다(`app.blade.php`). 엔진이 화면을 그리며 바꿉니다.
-- 엔진은 이동마다 서버에 묻지 않습니다. 부팅 값 `window.G7Config.seoTitle`(`App\Seo\SeoTitleRuleExporter` — 코어 접미사·사이트 이름, 활성 확장의
-  `seoVariables()`·`seo.meta_{page_type}_{title|description}` 틀·`source: setting/core_setting` 변수 값만)과 화면 데이터로 계산합니다.
-  확장 공개 설정(`frontend_schema` expose)은 넓히지 않습니다.
-- 갱신 시점: 이동 시작 즉시 라우트 제목(+접미사) → 새 화면을 그린 뒤 그 레이아웃에 연결해 계산 → 데이터가 올 때마다 **연결한 레이아웃 객체일 때만**
-  다시 계산(앞 화면의 늦은 데이터가 덮지 않음) → 언어 전환 재진입에서 다시 계산. 404 는 템플릿 `/404` 라우트 제목.
-- 위 규칙은 사용자 템플릿에 적용합니다. 레이아웃 편집기(`/admin/layout-editor/*`)·편집기 미리보기(`__preview__`)는 탭 제목을 바꾸지 않습니다.
-- 관리자 템플릿(engine-v1.88.0)은 검색엔진 규칙을 쓰지 않고 「{화면 제목} - {사이트 이름} 관리자」입니다. 화면 제목은 관리자 레이아웃의
-  `meta.title`(식·`$t:` 허용), 없으면 라우트 제목입니다. 관리자 셸(`admin.blade.php`)이 `G7Config.seoTitle` 로 사이트 이름과 언어별 접미사
-  (`SeoTitleRuleExporter::exportForAdmin` — 코어 문구 `seo.admin_title_suffix`, 지원 언어 전부의 맵)를 넘깁니다. 갱신 시점·앞 화면 늦은 데이터
-  무시는 사용자 화면과 같습니다. 값이 없는 옛 서버에서는 셸 제목(`{앱 이름} - Admin`)을 그대로 둡니다.
-- `toggle_setting`(확장별 봇 SEO 토글)은 사람 탭 제목에 쓰지 않습니다 — 토글이 꺼져도 탭 제목은 같은 규칙입니다.
-
-- 편집기 봇 미리보기(`renderFromResolved` 직접 호출)는 URL 매핑을 거치지 않습니다. 대신 편집기가 보낸 레이아웃 전체 이름(`layout_name`)으로 그 레이아웃을 쓰는 라우트를 찾아 같은 라우트 제목 대체를 적용합니다(사이트 첫 화면 제외). 레이아웃 이름이 없는 편집(베이스·모달)은 라우트 제목 대체가 없습니다.
+| 페이지 | title 우선순위 | description 우선순위 |
+|--------|---------------|---------------------|
+| 상품 상세 | 상품 `meta_title` → 모듈 `meta_product_title` → 코어 | 상품 `meta_description` → 모듈 → 코어 |
+| 카테고리 | 카테고리 `meta_title` → 모듈 `meta_category_title` → 코어 | 카테고리 `meta_description` → 모듈 → 코어 |
+| 검색 결과 | 모듈 `meta_search_title` → 코어 | 모듈 `meta_search_description` → 코어 |
+| 페이지 | 페이지 `seo_meta.title` → 코어 | 페이지 `seo_meta.description` → 코어 |
+| 메인/게시판 | 코어 title (레이아웃 meta.title) | 코어 meta_description |
 
 ## 레이아웃 meta.seo 선언적 설정
 
@@ -496,8 +409,7 @@ SEO 엔진은 특정 모듈/템플릿 지식을 갖지 않습니다. 모든 SEO 
 
 ```php
 $context = HookManager::applyFilters('core.seo.filter_context', $context, [
-    'layoutName' => $layoutName,             // 확장 식별자를 뗀 이름 (기존 값)
-    'storedLayoutName' => $storedLayoutName, // 전체 이름 (DB·편집기·봇 캐시)
+    'layoutName' => $layoutName,
     'moduleIdentifier' => $moduleIdentifier,
     'pluginIdentifier' => $pluginIdentifier,
     'routeParams' => $routeParams,
@@ -515,8 +427,7 @@ $context = HookManager::applyFilters('core.seo.filter_context', $context, [
 
 ```php
 $meta = HookManager::applyFilters('core.seo.filter_meta', $meta, [
-    'layoutName' => $layoutName,             // 확장 식별자를 뗀 이름 (기존 값)
-    'storedLayoutName' => $storedLayoutName, // 전체 이름 (DB·편집기·봇 캐시)
+    'layoutName' => $layoutName,
     'moduleIdentifier' => $moduleIdentifier,
     'pluginIdentifier' => $pluginIdentifier,
     'context' => $context,
@@ -534,8 +445,7 @@ $meta = HookManager::applyFilters('core.seo.filter_meta', $meta, [
 
 ```php
 $meta['og'] = HookManager::applyFilters('core.seo.filter_og_data', $meta['og'], [
-    'layoutName' => $layoutName,             // 확장 식별자를 뗀 이름 (기존 값)
-    'storedLayoutName' => $storedLayoutName, // 전체 이름 (DB·편집기·봇 캐시)
+    'layoutName' => $layoutName,
     'moduleIdentifier' => $moduleIdentifier,
     'pluginIdentifier' => $pluginIdentifier,
     'context' => $context,
@@ -588,8 +498,7 @@ HookManager::addFilter('core.seo.filter_og_data', function (array $og, array $ct
 
 ```php
 $viewData = HookManager::applyFilters('core.seo.filter_view_data', $viewData, [
-    'layoutName' => $layoutName,             // 확장 식별자를 뗀 이름 (기존 값)
-    'storedLayoutName' => $storedLayoutName, // 전체 이름 (DB·편집기·봇 캐시)
+    'layoutName' => $layoutName,
     'moduleIdentifier' => $moduleIdentifier,
     'pluginIdentifier' => $pluginIdentifier,
 ]);
@@ -626,7 +535,7 @@ $viewData = HookManager::applyFilters('core.seo.filter_view_data', $viewData, [
 
 ### 도메인 스키마 ownership — seoOgDefaults / seoTwitterDefaults / seoStructuredData
 
-모듈/플러그인은 `AbstractModule` / `AbstractPlugin` 의 다음 메서드를 오버라이드하여 자기 도메인의 OG/Twitter/JSON-LD 를 owned 한다. 레이아웃 JSON 직접 선언은 페이지별 override 가 꼭 필요할 때만 사용 (도메인 스키마는 모듈로 이전 — `seo-domain-schema-in-layout` 자동 검증이 자동 차단).
+모듈/플러그인은 `AbstractModule` / `AbstractPlugin` 의 다음 메서드를 오버라이드하여 자기 도메인의 OG/Twitter/JSON-LD 를 owned 한다. 레이아웃 JSON 직접 선언은 페이지별 override 가 꼭 필요할 때만 사용 (도메인 스키마는 모듈로 이전 — `seo-domain-schema-in-layout` 정적 검사가 자동 차단).
 
 ```php
 class EcommerceModule extends AbstractModule
@@ -724,42 +633,20 @@ if (app()->bound(\App\Seo\SitemapGenerator::class)) {
 | 훅 | 무효화 대상 |
 |----|-----------|
 | `[module].product.after_create/update/delete` | 해당 URL + 목록/카테고리 |
-| `[module].post.after_create/update/delete` | 게시글 상세 + 그 게시판 목록과 쪽 변종(`/board/{slug}?*`) |
-| `[module].board.after_update` | 그 게시판 목록·쪽 변종·글 상세(`/board/{slug}/*` — 게시판 이름을 렌더) + 게시판 인덱스·홈·검색. 다른 게시판은 유지 |
+| `[module].post.after_create/update/delete` | 게시글 + 게시판 |
 | `[module].page.after_create/update/delete` | 페이지 + 홈 |
-
-`invalidateByUrl()` 패턴은 캐시 URL 전체와 일치해야 한다. **와일드카드는 `*` 하나뿐이고 `?`·`.` 은 글자 그대로**다 —
-쿼리 변종은 `/board/free?*`, 하위 경로는 `/board/free/*` 처럼 따로 적는다(정규식으로 해석하던 동안 `/boards?*` 가
-모든 `/board*` 캐시를 지웠다). 캐시 키의 경로는 끝·연속 슬래시를 정리한 정규형이므로(`/x` 와 `/x/` 는 같은 키)
-패턴도 정규형으로 적는다.
 
 #### 확장 라이프사이클 리스너 (코어)
 
 | 훅 | 무효화 대상 | 사유 |
 |----|-----------|------|
-| `core.modules.after_{install,activate,deactivate,update,uninstall}` | 전체 SEO 캐시 + sitemap | 레이아웃 등록/변경·제거 |
-| `core.plugins.after_{install,activate,deactivate,update,uninstall}` | 전체 SEO 캐시 + sitemap | layout_extensions 변경·제거 |
-| `core.templates.after_{install,activate,deactivate,version_update,uninstall}` | 전체 SEO 캐시 + sitemap + SEO config 병합 캐시 | seo-config.json/컴포넌트 맵 변경 |
-| `core.settings.after_save`(탭 `seo`·`content`) · `core.settings.after_set`(키 `seo.*`·`content.*`) | 전체 SEO 캐시 + sitemap | SEO 설정 또는 본문 표시 규칙(그림 캡션·외부 영상·추가 태그) 변경 — 봇 화면은 본문 규칙으로 정화되므로 「본문 콘텐츠」 저장도 캐시를 비운다(`SeoSettingsCacheListener`) |
-
-> 구독은 정규 생명주기 훅 15개이고(`SeoExtensionCacheListener`), Manager 가 어드민 UI·CLI 공통으로 한 번 발화한다.
-> **비활성화·제거도 구독한다** — `SeoMiddleware` 는 캐시 적중 시 확장 활성 여부를 보지 않으므로, 끈 확장의 페이지가
-> 캐시에 남으면 검색 봇에게 계속 나간다. 모든 구독은 `sync` 다 — 캐시 정리는 즉시 반영돼야 하고, 큐로 가면 워커가
-> 없는 사이트에서 영영 비워지지 않는다([hooks.md](../extension/hooks.md)).
+| `core.modules.after_install/activate/update` | 전체 SEO 캐시 + sitemap | 레이아웃 등록/변경 |
+| `core.plugins.after_install/activate/update` | 전체 SEO 캐시 + sitemap | layout_extensions 변경 |
+| `core.templates.after_install/activate/version_update` | 전체 SEO 캐시 + sitemap + SEO config 병합 캐시 | seo-config.json/컴포넌트 맵 변경 |
 
 > 확장 라이프사이클은 드문 이벤트이므로 전체 캐시 클리어(`clearAll()`)로 안전하게 처리합니다.
 
 캐시 무효화 시 `app(CacheInterface::class)->forget('seo.sitemap')` + `SeoConfigMerger::clearCache()` 도 함께 호출 (드라이버가 `g7:core:` 접두사 자동 적용)
-
-#### 레이아웃 변경 리스너 (코어)
-
-| 훅 | 무효화 대상 | 사유 |
-|----|-----------|------|
-| `core.layout.after_cache_clear` | 그 레이아웃 이름의 봇 캐시(`invalidateByLayout`) | 레이아웃 저장·버전 복원·파일 생성/이름 변경/삭제·레이아웃 확장(오버레이) 변경 |
-
-- 위 작업은 모두 레이아웃 캐시 정리(`LayoutService::clearDependentLayoutsCache()`)를 거치고, 그 정리는 자기 자신과 `extends` 로 물려받는 자식 레이아웃마다 이 훅을 발화합니다. 그래서 공통 레이아웃(`_user_base`)을 고치면 그것을 물려받는 화면의 봇 캐시도 함께 지워집니다.
-- **활성 사용자 템플릿**의 레이아웃만 지웁니다. 관리자 템플릿·꺼진 사용자 템플릿의 레이아웃은 검색봇이 받는 화면이 아닙니다.
-- 실패는 경고로 남기고 저장 흐름을 막지 않습니다. 구독은 `sync` 입니다(`SeoLayoutCacheListener`).
 
 ## Artisan 커맨드
 
@@ -767,9 +654,8 @@ if (app()->bound(\App\Seo\SitemapGenerator::class)) {
 php artisan seo:warmup              # SEO 캐시 워밍업
 php artisan seo:warmup --layout=shop/show  # 특정 레이아웃만
 php artisan seo:clear               # 전체 SEO 캐시 삭제
-php artisan seo:clear --layout=home # 특정 레이아웃만 (템플릿 화면)
-php artisan seo:clear --layout=gnuboard7-hello_module.user_memo_list  # 모듈 화면 — 편집기에 보이는 전체 이름
-php artisan seo:stats               # 캐시 통계 출력 (미들웨어가 HIT/MISS 를 기록 — IP 당 분당 상한)
+php artisan seo:clear --layout=home # 특정 레이아웃만
+php artisan seo:stats               # 캐시 통계 출력
 php artisan seo:generate-sitemap    # Sitemap 생성 (큐 디스패치, mode=auto)
 php artisan seo:generate-sitemap --sync  # Sitemap 동기 생성
 php artisan seo:generate-sitemap --rebuild            # 전체 재생성 (mode=full 상당)
@@ -807,27 +693,13 @@ sitemap/_tmp/              생성 중 임시 디렉토리 (커밋 시 정리)
 
 봇 요청 스레드에서 동기 생성하면 대용량(수백만 URL)에서 메모리 초과·타임아웃이 발생하므로 생성은 항상 큐가 담당합니다. 잡은 유니크 락(`seo-sitemap`)을 쓰므로 캐시 미스가 몰려도 동시에 여러 건이 실행되지 않습니다.
 
-**전용 큐(`GenerateSitemapJob::QUEUE = 'sitemap'`)**: 사이트맵 생성 잡은 `sitemap` 전용 큐로 라우팅됩니다. 배포 시 이 큐 워커를 별도로 띄우되 **워커를 1개만** 배치해야 합니다(`php artisan queue:work --queue=sitemap` — supervisor 프로그램을 기본 큐와 분리해 등록). 이유: ①긴 생성 작업이 기본(`default`) 큐의 방송·알림을 막지 않아 진행상황이 실시간으로 흐르고, ②워커가 1개뿐이라 잡이 동시에 두 번 실행되지 않습니다(큐 `retry_after` 가 잡 실행보다 짧아도 단일 워커라 재예약 중복 실행이 발생하지 않음). `sitemap` 큐 워커가 없으면 재생성 잡이 처리되지 않으니 주의합니다. 「큐 워커」 등록(환경설정 → 드라이버)에 `sitemap` 큐를 넣어 두면 화면에서 대기 건수·워커 신호를 볼 수 있습니다.
-
-재시도는 `tries` 3·`backoff` 120초로 끝이 정해지고 `retryUntil` 은 두지 않습니다(#139) — 라라벨은 `retryUntil` 이 있으면 `tries` 를 무시하며, 종전 마감 30분이 timeout 30분과 같아 시간 초과 뒤 재시도할 수 없었고 큐에서 30분 넘게 기다리면 한 번도 돌지 못한 채 실패했습니다. 중복 방지 잠금 `uniqueFor` 는 재시도 전체 기간 `1800×3 + 120×2 + 1800 = 7440` 초(약 2시간)를 덮습니다 — 워커가 강제 종료되면 최대 그 시간 동안 재생성이 막히는 것은 감수합니다. 사이트맵 잡은 긴 작업 큐(`long`)로 옮기지 않습니다 — 전용 큐·단일 워커가 이미 재예약 중복을 막습니다.
+**전용 큐(`GenerateSitemapJob::QUEUE = 'sitemap'`)**: 사이트맵 생성 잡은 `sitemap` 전용 큐로 라우팅됩니다. 배포 시 이 큐 워커를 별도로 띄우되 **워커를 1개만** 배치해야 합니다(`php artisan queue:work --queue=sitemap` — supervisor 프로그램을 기본 큐와 분리해 등록). 이유: ①긴 생성 작업이 기본(`default`) 큐의 방송·알림을 막지 않아 진행상황이 실시간으로 흐르고, ②워커가 1개뿐이라 잡이 동시에 두 번 실행되지 않습니다(큐 `retry_after` 가 잡 실행보다 짧아도 단일 워커라 재예약 중복 실행이 발생하지 않음). `sitemap` 큐 워커가 없으면 재생성 잡이 처리되지 않으니 주의합니다.
 
 **완료/실패 알림**: 관리자 수동 재생성(위 API)은 실행한 관리자 ID 를 잡에 실어, 완료 시 `sitemap_regenerated`, **최종 실패(재시도 소진, `Job::failed()`) 시** `sitemap_regenerate_failed` 알림을 그 관리자에게 발송합니다(기본 채널: 앱 내 알림). 매 시도 실패마다 발화하는 `core.seo.sitemap.after_regenerate_failed` 훅이 아니라 최종 실패 시 1회만 발화하는 `core.seo.sitemap.regenerate_failed_final` 훅에 알림이 연결되어, 재시도 중 실패가 반복되거나 결국 성공해도 실패 알림이 중복/오발송되지 않습니다. 스케줄러·증분·봇 재생성은 실행 관리자가 없어 알림을 보내지 않습니다.
 
 **분할 기준**: `sitemap_urls_per_file`(기본 50000) 또는 파일 크기 임계(`SitemapWriter::MAX_FILE_BYTES`, 45MB) 중 먼저 도달하는 쪽. 둘 다 sitemaps.org 프로토콜 제한(50,000 URL / 50MB)을 지키기 위한 것입니다.
 
-**관리자 수동 재생성**: `POST /api/admin/seo/sitemap/regenerate` 는 큐에 `mode=full` 로 예약만 하고 즉시 진행상황(`getStatus()`)을 응답합니다. 완료 여부는 진행상황(아래) 또는 `sitemap_last_updated_at` 갱신으로 확인합니다. 잡의 유니크 잠금을 먼저 잡은 뒤 **발행 전에** `queued` 를 기록하므로, 다른 생성이 진행 중이거나 이전 작업의 잠금이 남아 있으면 진행 상태를 덮어쓰지 않고 409 로 거부합니다. 큐 연결이 즉시 실행(`sync`)이면 요청 안에서 생성이 끝나 `completed` 와 「완료」 메시지를 돌려줍니다 — 이때 관리자 요청 안에서 전체 생성이 돌므로 대용량 사이트는 비동기 큐를 권장합니다(상세: [api/seo.md](api/seo.md)).
-
-**정적 화면 포함 조건**: 사용자 템플릿 라우트 중 아래를 모두 만족하는 화면만 사이트맵에 정적 항목으로 싣습니다. 봇 화면(SEO HTML)을 내는 기준과 같습니다.
-
-- 로그인 필요(`auth_required`)·비로그인 전용(`guest_only`) 화면이 아니고 레이아웃이 지정돼 있다.
-- 경로에 동적 파라미터(`:id`)나 템플릿 표현식(`{{...}}`)이 없다. 앞의 `*/`(언어 접두사 자리)는 떼고, 끝·연속 슬래시는 정리한 정규형(`*/board//free/` → `/board/free`)으로 싣는다 — 끝·연속 슬래시 주소는 정규형으로 301 이동하기 때문이다.
-- 병합 레이아웃(부모 `extends` 반영)의 `meta.seo.enabled` 가 `true` 다. SEO 블록이 없는 화면(오류 화면·본인인증 화면처럼 `_user_base` 의 기본값을 그대로 쓰는 화면 포함)은 싣지 않는다.
-- `meta.seo.toggle_setting` 이 켜져 있다(예: 쇼핑몰 「검색 결과 SEO」를 끄면 `/search` 가 빠진다).
-- `priority`·`changefreq` 는 레이아웃 `meta.seo` 값을 쓴다(위 스키마 표).
-
-같은 주소는 한 번만 적습니다 — 정적 화면이 먼저 적히고, 기여자나 사이트맵 저장소가 같은 loc 를 내면 건너뜁니다. 비교할 때만 스킴·호스트를 소문자로, 빈 경로를 `/` 로 보므로 `https://사이트` 와 `https://사이트/` 는 같은 홈이고, 다른 경로의 끝 `/` 와 쿼리는 그대로 다른 주소로 남습니다. 비교 집합에는 정적 화면 주소만 담으므로 대용량 스트리밍의 메모리 상한은 그대로입니다.
-
-사이트맵 생성 경로(기여자 실패·확장 상태 조회 실패·정적 화면 수집 실패·레이아웃 로드 실패)의 예외는 경고 대신 `report()` 로 오류 로그에 올리고, 나머지 URL 생성은 계속합니다.
+**관리자 수동 재생성**: `POST /api/admin/seo/sitemap/regenerate` 는 큐에 `mode=full` 로 예약만 하고 즉시 진행상황(`getStatus()`)을 응답합니다. 완료 여부는 진행상황(아래) 또는 `sitemap_last_updated_at` 갱신으로 확인합니다.
 
 ## 증분 저장소 (sitemap_urls)
 
@@ -835,7 +707,7 @@ sitemap/_tmp/              생성 중 임시 디렉토리 (커밋 시 정리)
 
 - **테이블**: `resource_type`/`resource_id`/`loc`/`loc_hash`(=`sha256(loc)`)/`lastmod`/`changefreq`/`priority`/`contributor`/`is_visible`. unique 는 `(resource_type, resource_id, loc_hash)` — `loc string(2048)` utf8mb4 는 InnoDB 키 길이(3072 byte)를 초과하므로 ascii 64 해시로 identity 를 유지합니다(상세: docs/database-guide.md).
 - **Repository**: `SitemapUrlRepositoryInterface`(`upsertForResource`=delete-후-insert 멱등 / `removeForResource` / `streamVisible`(lazyById) / `countVisible` / `replaceAllForContributor`). `SeoServiceProvider` 가 singleton 바인딩.
-- **인덱서**: `SitemapIndexer::indexResource($type,$model,$entries)` / `deindexResource($type,$model)` — 리스너가 직접 모델/DB 를 만지지 않고 이 서비스를 경유합니다(`service-direct-data-access` 규율). 제3자 확장은 filter 훅 `sitemap.index.collect_for_resource` 로 리소스→entries 를 가공/추가할 수 있습니다(docs/extension/hooks.md). 부모 리소스가 비공개·삭제·재공개되어 자식 수만 건을 한꺼번에 바꿀 때는 `deindexResources($type, $ids)` / `indexResources($type, $contributor, [$id => $entries])` 를 씁니다 — 리소스마다 부르면 큐 작업 시간 제한(기본 60초)을 넘길 수 있습니다(게시글 27,000건 실측: 건별 255초 / 묶음 7초). 묶음 색인도 filter 훅은 리소스마다 호출하고, 저장만 1,000건 단위 삭제·삽입으로 처리합니다.
+- **인덱서**: `SitemapIndexer::indexResource($type,$model,$entries)` / `deindexResource($type,$model)` — 리스너가 직접 모델/DB 를 만지지 않고 이 서비스를 경유합니다(`service-direct-data-access` 규율). 제3자 확장은 filter 훅 `sitemap.index.collect_for_resource` 로 리소스→entries 를 가공/추가할 수 있습니다(docs/extension/hooks.md).
 - **리스너**: 모듈 SEO 리스너가 `after_create/update/delete` 에서 공개상태를 판정해 index/deindex 하고 `GenerateSitemapJob::dispatch()`(유니크 락 디바운스)를 겁니다. 리소스 단위 증분에서 자식 파일 URL 수가 임계 미만으로 줄어드는 것(5000→4999)은 감안하며, 균등 재분배(리밸런싱)는 full 재생성 때만 합니다.
 
 ## 재생성 모드 (SitemapGenerationMode)
@@ -858,7 +730,7 @@ sitemap/_tmp/              생성 중 임시 디렉토리 (커밋 시 정리)
 - **방송**: `SitemapProgress` 가 `core.admin.seo.sitemap` 채널로 `sitemap.progress.updated` 를 방송합니다(payload 는 상태 API `data` 와 동형). Reverb OFF 면 `HookManager::broadcast` 가 자동 skip 하고 캐시만 기록되어 폴링 폴백이 성립합니다. 방송은 N URL(5000) 간격으로 스로틀합니다.
 - **채널 인증**: `routes/channels.php` 에 `core.admin.seo.sitemap` → `core.settings.read`(docs/backend/broadcasting.md).
 - **잡 실패**: `GenerateSitemapJob::failed()` 가 `SitemapProgress::fail()` 을 호출해 무한 running 을 방지합니다(TTL 만료 시 idle 복귀).
-- **프론트**: SEO 탭이 상태 API 초기 로드 후 `realtime_enabled` 로 분기합니다 — true 면 websocket 데이터소스(`target_source`)로 갱신, false 면 `startInterval`/`stopInterval` 로 3초 폴링(진행 중 `queued`/`running`/`writing` 이 아니게 되면 중단 — 상태 캐시가 만료돼 진행상황이 비어도 멈춘다).
+- **프론트**: SEO 탭이 상태 API 초기 로드 후 `realtime_enabled` 로 분기합니다 — true 면 websocket 데이터소스(`target_source`)로 갱신, false 면 `startInterval`/`stopInterval` 로 3초 폴링(완료/실패 전이 시 중단).
 
 ## 설정값 (코어 seo.*)
 
@@ -882,75 +754,6 @@ sitemap/_tmp/              생성 중 임시 디렉토리 (커밋 시 정리)
 | og_image_default_height | integer | 630 | og:image:height 기본값 (픽셀) |
 | twitter_default_card | string | "summary_large_image" | twitter:card 기본 (summary/summary_large_image/app/player) |
 | twitter_default_site | string | "" | twitter:site 핸들 (예: @gnuboard). 비면 출력 생략 |
-
-## 캐시 상한 (config/core.php `seo_cache_limits`)
-
-봇 판정은 User-Agent 문자열뿐이라 위장이 가능하고, 캐시 키에 쿼리가 들어가므로 물음표 뒤 값만 바꾼 반복 요청이 매번 미스가 됩니다. 미스 1건은 레이아웃 병합 · 표현식 평가 · 자기 API 루프백 호출을 유발하고 그 결과가 캐시에 쌓이므로, 요청 하나가 워커 여러 개를 묶고 저장소를 계속 키울 수 있습니다.
-
-아래 상한이 그 증식을 막습니다. 관리자 화면에는 노출하지 않고 서버 설정으로만 조정합니다.
-
-| 키 | env | 기본값 | 설명 |
-|----|-----|-------|------|
-| max_query_params | `G7_SEO_CACHE_MAX_QUERY_PARAMS` | 10 | 캐시 키에 허용하는 쿼리 파라미터 수. 초과 시 캐시·렌더 안 함 |
-| max_query_length | `G7_SEO_CACHE_MAX_QUERY_LENGTH` | 512 | 정규화된 쿼리 문자열 길이 상한(바이트) |
-| max_variants_per_path | `G7_SEO_CACHE_MAX_VARIANTS_PER_PATH` | 50 | 같은 경로·언어에 저장하는 쿼리 변종 수 (언어별로 따로 센다) |
-| max_entries | `G7_SEO_CACHE_MAX_ENTRIES` | 20000 | 캐시 인덱스 전체 항목 수 |
-| render_misses_per_minute | `G7_SEO_RENDER_MISSES_PER_MINUTE` | 60 | IP 당 분당 미스 렌더 수. 렌더러가 그릴 게 없다고 돌아온 요청(미라우트 404·SEO 비활성 화면)은 세지 않는다 |
-| stats_records_per_minute | `G7_SEO_STATS_RECORDS_PER_MINUTE` | 300 | IP 당 분당 통계 기록 수 |
-| max_concurrent_renders | `G7_SEO_MAX_CONCURRENT_RENDERS` | 4 | 사이트 전체에서 동시에 진행하는 미스 렌더 수. 0 이면 제한 없음 |
-
-데이터소스 호출 1건의 제한 시간은 `config/core.php` 의 `seo_datasource.timeout`(`G7_SEO_DATASOURCE_TIMEOUT`, 기본 2초)입니다. 넘기면 그 데이터소스는 `fallback` 으로 채워집니다. 시간 초과·연결 오류·5xx 로 `fallback` 을 쓴 렌더는 그 봇에게만 보내고 캐시에 넣지 않습니다(미들웨어·캐시 재생성 모두, 로그 `[SEO] Degraded render not cached`) — 넣으면 데이터 없는 화면(상품명 없는 제목·본문)이 캐시 수명 동안 나갑니다. 다음 미스가 다시 그립니다. 4xx(없는 상품 등)는 다시 불러도 같은 결과라 그대로 캐시합니다.
-
-상한을 넘긴 요청은 **차단되지 않고** 일반 SPA 응답을 받습니다. 봇에게 오류를 돌려주면 그 URL 이 색인에서 빠지므로 차단이 곧 손해입니다. 판정 결과는 응답 헤더 `X-SEO-Cache`(`HIT`/`MISS`/`BYPASS`)로 드러나며, 그것이 운영 진단의 통로입니다.
-
-이미 캐시에 있는 키의 **갱신**은 저장 규모를 늘리지 않으므로 상한과 무관하게 수행됩니다.
-
-### IP 단위 상한은 프록시 신뢰 설정에 의존합니다
-
-`render_misses_per_minute` 와 `stats_records_per_minute` 는 요청 IP 를 기준으로 셉니다. TLS 가 앞단에서 종단되는 구성(리버스 프록시, CDN, 로드밸런서)에서 신뢰할 프록시를 지정하지 않으면 모든 요청의 IP 가 프록시 IP 하나로 보이므로, 그 분당 예산을 사이트 전체 봇 트래픽이 함께 쓰게 됩니다. 예산을 넘긴 시점부터 정상 검색엔진 봇도 SEO HTML 대신 SPA 를 받아 색인 품질이 떨어지고, 응답은 200 이라 서버 로그에 흔적이 남지 않습니다.
-
-프록시 뒤에 두는 설치본은 `TRUSTED_PROXIES` 를 반드시 지정합니다 — 설정 방법과 진단은 [리버스 프록시 환경](reverse-proxy.md)에 있습니다. 진단이 어려우면 응답 헤더 `X-SEO-Cache` 가 `BYPASS` 로 몰리는지를 먼저 봅니다.
-
-### 동시 렌더 상한은 IP 예산이 막지 못하는 몰아치기를 막습니다
-
-IP 당 예산은 요청이 끝나야 차감이 보이므로, 한꺼번에 몰아친 요청은 모두 차감 전의 값을 보고 통과합니다(동시 15건 전량 렌더 실측). 미스 렌더 1건은 자기 워커와 순차 내부 API 호출 1건으로 워커 2개를 잡으므로, 그런 몰아치기는 곧바로 PHP 워커 고갈로 이어집니다. 그래서 사이트 전체에 동시 렌더 슬롯(`max_concurrent_renders`, 캐시 잠금)을 두고, 빈 슬롯이 없으면 SPA + `BYPASS` 로 돌려보냅니다. 슬롯은 렌더가 끝나는 즉시(예외 포함) 반환하고, 워커가 죽어 반환하지 못한 슬롯은 60초 뒤 저절로 풀립니다. PHP 워커 수(php-fpm `pm.max_children` / Apache `MaxRequestWorkers`)의 절반보다 작게 둡니다.
-
-IP 당 예산의 판정과 차감도 같은 IP 의 잠금 안에서 한 번에 합니다. 파일 캐시의 카운터 증가는 읽고-쓰기라 동시 요청끼리 서로의 증가를 덮어써 실제보다 적게 셌습니다. 캐시 저장소가 잠금을 제공하지 못하면 두 판정 모두 종전 방식(잠금 없음)으로 동작합니다.
-
-### 경로당 변종 상한은 언어별로 셉니다
-
-캐시 인덱스 항목은 URL 과 로케일의 조합마다 하나입니다. 경로만 보고 변종을 합산하면 언어 수만큼 실효 상한이 줄어, 언어가 셋인 사이트는 한 경로에 언어당 16개만 저장되고 목록 17페이지부터는 봇이 올 때마다 새로 그리되 저장하지 않게 됩니다. 그래서 상한은 경로와 언어의 조합 단위로 판정합니다.
-
-### 그릴 게 없는 요청은 렌더 예산을 쓰지 않습니다
-
-렌더 예산은 새로 그리기 직전에 1을 차감합니다. 그런데 미라우트 주소(404)나 SEO 를 끈 화면은 렌더러가 "그릴 게 없음"으로 바로 돌아오고 캐시에도 남지 않아, 올 때마다 다시 차감됩니다. 봇은 예전에 있던 죽은 주소를 오래 다시 긁으므로 그 요청까지 세면 정상 페이지의 예산이 죽은 주소에 소진됩니다. 렌더러가 null 을 돌려주면 그 차감을 되돌리고, 렌더 도중 예외는 비용을 이미 치른 것이라 되돌리지 않습니다.
-
-### 캐시 항목은 레이아웃명을 함께 담습니다
-
-페이지 캐시 값은 HTML 과 레이아웃명의 쌍입니다. 캐시 적중(HIT) 경로는 렌더러를 거치지 않아 요청 속성에 레이아웃명이 없으므로, 통계를 화면별로 귀속하려면 캐시 항목이 그것을 알아야 합니다. `SeoCacheManagerInterface::get()` 은 종전대로 HTML 만 돌려주고, 코어 구현 `SeoCacheManager::getEntry()` 가 쌍 전체를 돌려줍니다. 미들웨어는 코어 구현일 때만 쌍을 읽고, 다른 구현이 바인딩된 경우에는 레이아웃명 없이 기록합니다. 이전 버전이 문자열로만 저장한 항목은 레이아웃명 없이 그대로 읽힙니다 — 배포 직후 살아 있는 캐시를 버리지 않습니다.
-
-통계 테이블(`seo_cache_stats`)의 `url` 컬럼은 캐시 키 URL 상한(경로 + 정규화 쿼리 최대 512바이트)을 담도록 768자입니다. 컬럼이 짧으면 긴 주소의 기록이 엄격 모드에서 실패하고, 통계 서비스는 그 예외를 삼키므로 흔적이 남지 않습니다.
-
-### 인덱스는 잠금 안에서 고칩니다 (7.1.5+)
-
-캐시된 URL 목록(인덱스)은 항목 하나에 전체 배열을 담아 저장마다 통째로 다시 쓴다. 두 요청이 같은 인덱스를 읽고 각자 덮어쓰면 한쪽 항목이 사라져, 그 페이지는 무효화(글 수정 등)에서 빠지고 TTL 동안 낡은 화면이 남았다. 이제 인덱스 읽기·상한 판정·페이지 저장·인덱스 쓰기를 한 잠금(인덱스 키 + `:lock`, 10초, 최대 2초 대기) 안에서 한다.
-
-- 잠금을 잡지 못하면(대기 초과·저장소 오류) 이번 페이지를 **저장하지 않는다** — 성능 캐시라 쓰지 않는 쪽이 안전하다.
-- 무효화(`invalidateByUrl`·`invalidateByLayout`)의 페이지 삭제는 잠금 밖에서 항상 하고, 인덱스 재구성만 잠금 안에서 한다(못 잡으면 다음 재구성이 정리한다).
-- 전체 비우기(`clearAll`)는 잠금을 못 잡아도 인덱스를 지운다.
-- 잠금을 제공하지 않는 스토어는 종전처럼 잠금 없이 고친다.
-
-### 저장 상한이 세는 것은 살아 있는 항목입니다
-
-캐시 인덱스 항목은 페이지보다 오래 삽니다(기본 30일 vs 2시간). 그래서 저장 상한에 닿으면 **먼저 만료된 항목을 인덱스에서 걷어내고 다시 판정**합니다. 그러지 않으면 상한이 "지금 저장된 양"이 아니라 "과거에 저장한 적이 있는 양"을 재게 되어, 한 번 상한에 닿은 경로는 실제 캐시가 비어 있어도 다시는 저장되지 않습니다.
-
-이 정리는 인덱스 전체를 훑으므로 **최소 60초 간격**으로만 수행합니다. 살아 있는 항목만으로 상한에 닿은 경우에는 정리해도 자리가 나지 않는데, 그 상태에서 저장 시도마다 훑으면 비용만 반복되기 때문입니다. 따라서 항목이 만료된 뒤 저장이 다시 열리기까지 최대 그 간격만큼 늦어질 수 있습니다.
-
-### 상한은 봇 요청만이 아니라 모든 저장 경로에 걸립니다
-
-저장 상한은 `SeoCacheManagerInterface` 의 저장 메서드(`put`·`putWithLayout`)에 공통으로 걸립니다. 봇 요청의 미스 렌더뿐 아니라, 게시글·상품을 저장할 때 도는 단건 재생성(`SeoCacheRegenerator`)도 같은 판정을 거칩니다 — 한쪽만 상한 밖이면 그쪽이 증식 우회로가 되기 때문입니다.
-
-상한에 닿아 저장하지 않은 경우 재생성 호출은 **예외를 던지지 않고** 흔적을 `Log::debug` 로만 남깁니다. 콘텐츠 페이지는 서로 다른 경로라 경로당 변종 상한(`max_variants_per_path`)과는 무관하고, 전체 항목 상한(`max_entries`)은 만료 항목을 걷어낸 뒤 판정하므로 실제로는 페이지 TTL 안에 살아 있는 항목만 셉니다. 그래도 대규모 사이트에서 이 상한에 닿는다면 저장이 조용히 넘어가므로, `seo:stats` 의 미스 비율이 지속적으로 오르는지를 신호로 삼고 `G7_SEO_CACHE_MAX_ENTRIES` 를 올립니다.
 
 ## SEO Config 동적 확장 시스템
 
@@ -985,7 +788,7 @@ SEO 엔진은 컴포넌트 지식을 갖지 않습니다. 모든 컴포넌트→
 ### 캐싱
 
 - 병합 결과는 24시간 TTL로 캐시 (`seo:config:merged:{templateIdentifier}`)
-- 확장 설치/활성화/비활성화/업데이트/제거 시 `SeoExtensionCacheListener`가 자동 무효화
+- 확장 설치/활성화/업데이트 시 `SeoExtensionCacheListener`가 자동 무효화
 
 ### 모듈/플러그인 seo-config.json 예시
 
@@ -1169,19 +972,10 @@ config에 없는 컴포넌트는 `<div>` fallback으로 렌더링됩니다.
 | 함수 | 설명 | 예시 |
 |------|------|------|
 | `$t('key')` | 번역 키 해석 (`$t:key`와 동일) | `{{$t('shop.product.sold_out')}}` |
-| `$t('key', {이름: 값})` | 인자 치환 (engine-v1.80.1 과 같은 규칙) | `{{$t('common.row_n', {n: i + 1})}}` |
 | `$localized(expr)` | 다국어 객체 → 현재 로케일 값 | `{{$localized(product.name)}}` |
 
-- `$t()`: 기존 `$t:key` prefix 방식의 함수 호출 구문. 삼항 내부에서 사용 가능. 두 번째 인수가 객체면 값(산술·`||`·삼항 식 포함)을 글자로 풀어 치환하고, 객체가 아니면 인자 없는 호출과 같다. 비어 있는 값은 빈 글자
-- 인자 치환은 `$t:키|…`·`$t()` 모두 한 번에(`strtr`) 한다 — 앞 인자 값에 든 뒤 인자 자리표시자(`{{column}}`)를 다시 치환하지 않는다
-- `$localized()`: `{ko: "상품", en: "Product"}` → 현재 로케일(`ko`) → `"상품"`. fallback: 사이트 기본 언어(`app.site_locale`) → en → 첫 번째 값, 빈 문자열은 건너뜀(`App\Support\LocalizedValue::pick()` — 화면 `$localized` 와 같은 규칙)
-
-### ExpressionEvaluator — 빈 바인딩 뒤 남은 부호 정리
-
-봇 화면이 풀지 못한 식(`+{{미지원함수()}}`)이 빈 글자가 되면 앞뒤 부호만 남으므로, `evaluate()` 는 **빈 바인딩이 있었을 때만** 결과가 2글자 이하의 부호(`+`·`-`·`/`·`*`)뿐이면 빈 글자로 바꿉니다.
-
-- 바인딩이 없는 글자(`/`·`-`)와 비지 않은 바인딩 값(`{{home}}` → `/`)은 그대로 둡니다 — 일반 화면과 같은 값. 7.1.1 이전에는 이것까지 지워 홈 링크(`href="/"`)가 봇 화면에서 href 없는 `<a>` 로 나갔습니다.
-- URL 자리(`href`·`src`·`fallbackHref`·이동 액션 `path`)는 세 번째 인자 `dropOrphanOperators: false` 로 평가해 정리하지 않습니다 — `/{{빈값}}` 도 일반 화면처럼 `/` 입니다.
+- `$t()`: 기존 `$t:key` prefix 방식의 함수 호출 구문. 삼항 내부에서 사용 가능
+- `$localized()`: `{ko: "상품", en: "Product"}` → 현재 로케일(`ko`) → `"상품"`. fallback: ko → 첫 번째 값
 
 ### ExpressionEvaluator — 객체 리터럴 / 스프레드 연산자
 
@@ -1207,13 +1001,6 @@ config에 없는 컴포넌트는 `<div>` fallback으로 렌더링됩니다.
 레이아웃 JSON의 `computed` 섹션을 평가하여 `_computed` / `$computed`에 저장합니다.
 
 **문자열 표현식**:
-```html
-<computed name="totalPrice">{{product.data.price * 2}}</computed>
-<computed name="label">static text</computed>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "computed": {
@@ -1302,15 +1089,6 @@ SEO 렌더링은 `renderComponent()` 진입 시점에 이 값을 해석해 데�
 - `href`/`src` 등 URL 속성은 허용 스킴만 남깁니다. `javascript:` 는 제어문자를 끼워 넣은 우회 형태까지 차단하고, `data:` 는 이미지 형식만 허용합니다.
 - 외부 링크에는 `rel="noopener noreferrer"` 를 보강합니다.
 - 파싱에 실패하면 정화되지 않은 HTML 을 내보내지 않고 전체를 이스케이프합니다.
-- 코어 환경설정 「본문 콘텐츠」에서 켠 후보 태그(그림 설명 `figcaption`, 업로드 `video`·`audio`·`source`, 외부 영상 `oembed`)와 운영자 추가 태그는
-  제거·벗김 목록에서 빠집니다(`App\Support\Content\ContentHtmlPolicy`, 7.1.5). 정화 뒤 `finalize('bot')` 이 후보 태그의 속성을 정해진 것만 남기고,
-  미디어 `src`·`poster` 는 서빙 주소 패턴에 맞을 때만 남기며, `<oembed url>` 은 원래 주소의 `nofollow` 링크로 바꿉니다(http(s) 가 아니면 지움).
-  봇 화면에는 iframe 을 내보내지 않습니다.
-- 서빙 주소 패턴은 확장이 등록한 실제 본문 미디어 서빙 라우트에서 만들어집니다(`App\Support\Content\MediaSourceRoutes`, 7.1.5). 꺼진 확장의
-  라우트는 빠지므로 그 확장의 미디어 요소는 봇 화면에서 지워지고, 경로 모양만 흉내 낸 주소도 지워집니다. 사람 화면(`render_policy.media_src_patterns`)과
-  같은 목록입니다.
-- 「그림 캡션」을 끄면 `finalize('bot')` 이 `figcaption` 을 내용째 지우고 그림은 남깁니다 — 사람 화면(`render_policy.drop_tags`)과 같습니다.
-  「외부 영상 삽입」을 끄면 `<oembed url>` 은 늘 원래 주소 링크입니다(사람 화면도 같은 링크).
 
 차단 목록의 기준은 일반 화면 컴포넌트의 DOMPurify 설정입니다(`templates/_bundled/sirsoft-basic/src/components/composite/HtmlContent.tsx`). **한쪽만 바꾸면 두 화면의 정화 강도가 어긋나므로 함께 갱신**하세요. 계약은 `tests/Unit/Seo/HtmlSanitizerTest.php` 와 `tests/Unit/Seo/ExtensionPointPropsRenderingTest.php` 가 잠급니다.
 
@@ -1343,14 +1121,9 @@ SEO 렌더링은 `renderComponent()` 진입 시점에 이 값을 해석해 데�
 | `extensionPointProps` | ✅ | ✅ | `app/Seo/ComponentHtmlMapper.php::injectExtensionPointContext` | 자손 상속 |
 | `default` (extension_point 호스트) | ✅ | ✅ | 렌더 전 단계에서 처리 | 확장이 꺼져 있을 때 쓰는 기본 children — 주입 단계에서 교체·전개되어 렌더러에는 남지 않음 |
 | `callbacks` (extension_point 호스트) | ✅ | ❌ (의도) | 미처리 | 주입 단계에서 `extensionPointCallbacks` 로 부착 — 봇 화면에는 액션 실행기가 없음 |
-| `type: "extension_point"` 호스트 (반복 항목 안 포함) | ✅ | ✅ | `app/Seo/ComponentHtmlMapper.php::renderComponent` → `renderTag` (`div` 폴백) | 주입된 children 을 감싸는 래퍼. `iteration` 항목 안에서도 같은 경로로 그 항목의 컨텍스트로 그린다 — React 는 engine-v1.73.0 에서 `renderItemChildren` 분기를 더해 이 동작에 맞췄다. 호스트 속성은 양쪽 모두 허용 목록만 싣고, `layout`/`columns`/`gap` 을 컨테이너 클래스로 접는 것은 React 만 한다(봇 화면의 내용에는 영향 없음) |
-| `date` / `datetime` 파이프 | 브라우저 시간대 | 보는 사람 시간대(오프셋 입력만) | `app/Seo/PipeRegistry.php::toCarbon` | 숫자 타임스탬프·오프셋이 붙은 값(`Z`/`+hh:mm`)은 보는 사람 시간대(`user_timezone` → 사이트 기본)로 옮겨 찍고, 오프셋 없는 문자열은 이미 표시용 벽시계 값(`*_formatted`)으로 보고 그대로 찍는다. 봇 HTML 에는 서버가 만든 `*_formatted` 를 바인딩하는 것이 가장 안전하다(브라우저 화면의 파이프 시간대 처리는 후속 과제) |
 | `computed` / `extends` / 파셜 | ✅ | ✅ | `app/Seo/SeoRenderer.php::resolveComputed` / `app/Services/LayoutService.php::getLayout` | 레이아웃 병합·설치 시점에 처리 |
-| `$t:` / `$t:defer:` | ✅ | ✅ | `app/Seo/ExpressionEvaluator.php::resolveTranslation` | 봇 화면은 지연 개념이 없어 동일 키로 해석. 인자 값의 `{{…}}`(파이프·`\|\|` 포함)는 인자를 나눈 뒤 푼다(engine-v1.80.1). **빈 인자 값(`이름=`·`{{없는.경로}}`)은 빈 글자로 치환한다** — 일반 화면은 그 인자를 빼서 자리표시자(`{{name}}`)가 남지만(빈 인자 진단 단서), 봇 화면은 없는 키를 빈 글자로 내는 것과 같은 이유로 색인 HTML 에 자리표시자를 싣지 않는다(의도된 차이). 값이 빌 수 있는 줄은 레이아웃에서 `if` 로 숨기거나 대체 문구를 준다 |
-| `$t(키, 인자)` 식 안 인자 | ✅ | ✅ | `app/Seo/ExpressionEvaluator.php::evaluateTranslationFunction` / `translateKey` | engine-v1.80.1 — 객체 인자 치환, 값은 글자 그대로 |
-| `$t:키\|count=N` 복수형 변형(`키_one` 등) | ✅ | ✅ | `app/Seo/ExpressionEvaluator.php::pluralVariant` | engine-v1.78.7 — 현재 로케일 CLDR 범주로 `키_{범주}` 를 먼저, 없거나 other 면 기본 키. intl 이 없으면 ko·ja·zh 등 other, 나머지 1 → one 근사([다국어 처리](../frontend/data-binding-i18n.md#수에-따른-단수복수-engine-v1787)) |
-| `actions` | ✅ | 링크만 | `app/Seo/ComponentHtmlMapper.php::extractLinkAction` | 페이지 이동/새 창 열기 액션만 `<a href>` 로 승격 — sequence·parallel·conditions·switch·중첩 sequence 안까지, 최상위 `target` 경로 포함(7.1.3) |
-| 정적 링크(`a`)의 `target`·`rel`·`fallbackHref`·`disabled` | ✅ | ✅ | `app/Seo/ComponentHtmlMapper.php::presetAnchorAttributes` | 템플릿 `A` 컴포넌트와 같은 규칙(7.1.1) — `target="_blank"` 면 `rel` 에 `noopener noreferrer` 를 합치고(받은 토큰 유지), `fallbackHref` 가 있으면 이 사이트 주소가 아닌 href(다른 사이트·`//host`·`https://이 사이트//다른호스트`·`#`·실행 스킴)를 그 주소로, `disabled` 가 참이면 href 를 빼고 `role="link"`. 대체 주소가 없는 href 는 양쪽 모두 그대로(실행 스킴만 `#`) — 같은 출처 전체 주소·외부 주소를 경로로 바꾸지 않는다. `mergeQuery` 는 봇 화면이 합치지 않는다(이동 액션의 `mergeQuery` 와 같음) |
+| `$t:` / `$t:defer:` | ✅ | ✅ | `app/Seo/ExpressionEvaluator.php::resolveTranslation` | 봇 화면은 지연 개념이 없어 동일 키로 해석 |
+| `actions` | ✅ | 링크만 | `app/Seo/ComponentHtmlMapper.php::extractLinkAction` | 페이지 이동/새 창 열기 액션만 `<a href>` 로 승격 |
 | `extensionPointCallbacks` | ✅ | ❌ (의도) | 미처리 | 액션 실행기 부재 |
 | `lifecycle` / `dataKey` / `trackChanges` | ✅ | ❌ (무해) | 미처리 | 입력·생명주기 전용 |
 | `slot` / `slotOrder` | ✅ | ❌ (무해) | `app/Services/LayoutService.php::replaceSlots` 에서 선처리 | 레이아웃 병합 단계에서 제거 |
@@ -1370,54 +1143,14 @@ SEO 렌더링은 `renderComponent()` 진입 시점에 이 값을 해석해 데�
 
 확장 포인트 쪽 서술은 [layout-extensions.md "Extension Point 데이터 전달"](../extension/layout-extensions.md), 레이아웃 작성자 관점 요약은 [layout-json.md](../frontend/layout-json.md) 를 참조하세요.
 
-### 요청 Host 를 믿지 않습니다 (SeoUrl · 데이터소스 호출 주소)
-
-Host 헤더는 방문자가 마음대로 적어 보낼 수 있습니다. 예전에는 봇 화면이 Laravel `url()`(요청 Host 기준)로 절대 URL 을 만들어 두 가지 결함이 있었습니다(KVE-2026-2333/2334).
-
-- **캐시 오염** — canonical·og:url·hreflang·이미지 주소에 위조 Host 가 박힌 화면이 캐시에 남아 이후 정상 방문자에게 나갔습니다.
-- **요청 위조(SSRF)** — 데이터소스를 부르는 내부 API 주소도 요청 Host 로 만들어, 서버가 공격자가 고른 호스트·포트로 요청을 보내고 그 응답을 봇 화면에 실었습니다. TLS 검증까지 꺼져 있었습니다.
-
-지금은 봇 화면이 쓰는 절대 URL 을 모두 `App\Seo\SeoUrl` 로 만듭니다 — 기준은 요청이 아니라 `APP_URL` 입니다. 같은 사이트를 여러 도메인으로 서빙해도 canonical 은 APP_URL 하나로 모입니다. **`APP_URL` 이 실제 사이트 주소와 다르면 canonical·og:url 과 데이터소스 호출이 틀어지므로 반드시 맞춥니다**(비어 있으면 상대 경로가 나갑니다).
-
-데이터소스 호출은 다음 규칙을 따릅니다.
-
-- 호출 주소 = `APP_URL` + 엔드포인트 경로. 엔드포인트 표현식(`{{query.*}}` 등)이 `https://다른곳/…` 을 만들어도 경로 조각이 될 뿐이고, 조립 결과를 `OutboundUrlValidator::isHostAllowed()` 로 한 번 더 확인합니다(scheme·userinfo·host·port 가 APP_URL 과 같아야 통과). 레이아웃 엔드포인트에 외부 절대 URL 을 적는 것은 지원하지 않습니다.
-- 리다이렉트는 APP_URL 안에서만 따릅니다(http→https 같은 정상 전환은 통과, 최대 3회).
-- TLS 검증은 켜 둡니다. 단 APP_URL 호스트가 **루프백(127.0.0.0/8·::1)으로 풀리는 서버**(자기 도메인을 hosts 로 127.0.0.1 에 묶은 구성, 자가서명 인증서를 쓰는 로컬 개발)에서는 연결을 가로챌 경로가 없어 검증을 생략하고, 판정한 주소로 연결을 고정(CURLOPT_RESOLVE)합니다. APP_URL 이 외부 IP 로 풀리는데 인증서를 PHP 가 검증하지 못하면(자가서명·CA 번들 없음) 데이터소스가 fallback 으로 채워지고 `[SEO] DataSource API error` 경고가 남습니다.
-
-마지막 겹으로 전역 `TrustHosts` 미들웨어가 APP_URL 의 도메인·하위 도메인·www 쌍(`www.` 를 붙이거나 뗀 주소)과 `TRUSTED_HOSTS` 가 아닌 Host 로 온 요청을 받지 않습니다(운영 환경·설치 완료 후, `config/trustedhosts.php`). 이 검사는 포트를 보지 않으므로 코드 쪽 방어를 대신하지 않습니다.
-
-### DataSourceResolver — 내부 호출 표식 헤더
-
-SEO 렌더러는 화면을 만들려고 데이터 소스 API 를 서버 자신에게 HTTP 로 부릅니다(봇 방문 렌더, 글 작성·수정 직후 캐시 재생성). 이 호출은 사람의 열람이 아니므로, `DataSourceResolver` 는 모든 내부 호출에 `X-G7-Seo-Render` 헤더를 붙입니다. 값은 앱 키로 만든 HMAC 서명이라 바깥 요청이 흉내 낼 수 없습니다.
-
-받는 쪽은 `App\Seo\SeoRenderRequest::matches($request)` 로 판정해 조회수 같은 열람 집계에서 뺍니다(서명이 틀린 헤더는 일반 요청으로 취급). 예: 게시판 상세 API 는 이 요청을 조회수로 세지 않습니다 — 세면 글을 쓰자마자 조회수가 1 이 되고, 서버 IP 로 잡힌 1회 판정 키가 같은 IP 의 비로그인 방문을 막습니다.
-
-```php
-use App\Seo\SeoRenderRequest;
-
-if (SeoRenderRequest::matches(request())) {
-    return false; // 서버 자신의 렌더 호출 — 열람으로 세지 않는다
-}
-```
-
 ### DataSourceResolver — params 쿼리 파라미터 해석
 
 data_source 정의에 `params` 필드가 있으면 해당 값을 해석하여 API 호출 시 쿼리 파라미터로 전달합니다.
 
-```html
-<json key="id">"products"</json>
-<json key="endpoint">"/api/modules/sirsoft-ecommerce/products"</json>
-<json key="method">"GET"</json>
-<json key="params">{"page":"{{query.page ?? 1}}","per_page":12,"sort":"{{query.sort ?? 'latest'}}","category_slug":"{{route.slug}}"}</json>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
     "id": "products",
-    "endpoint": "/api/modules/sirsoft-ecommerce/products",
+    "endpoint": "/api/products",
     "method": "GET",
     "params": {
         "page": "{{query.page ?? 1}}",
@@ -1692,7 +1425,7 @@ SEO 렌더링 시 레이아웃의 `init_actions`에서 `setState` 핸들러를 �
 
 #### 동작 원리
 
-1. `init_actions` 배열에서 `handler: "setState"` 항목만 추출 — `handler: "sequence"`·`"parallel"` 항목은 `actions`(없으면 `params.actions`) 안으로 내려가 같은 규칙으로 읽는다(깊이 상한 10, 엔진이 `<init>` 의 sequence 를 실행하게 된 engine-v1.80.0 짝)
+1. `init_actions` 배열에서 `handler: "setState"` 항목만 추출
 2. `target: "global"`인 항목은 스킵 (SEO `_global`은 별도 주입)
 3. `params`의 메타 키(`target`, `handler`, `comment`)를 제외한 나머지를 `_local`에 매핑
 4. `{{expression}}` 값은 현재 컨텍스트(`query`, `route` 등)로 평가
@@ -1706,15 +1439,6 @@ SEO 렌더링 시 레이아웃의 `init_actions`에서 `setState` 핸들러를 �
 | 중첩 배열/객체 | 재귀적으로 `{{}}` 평가 | `{ "filters": { "sort": "{{query.sort ?? 'latest'}}" } }` |
 
 #### 레이아웃 예시
-
-```html
-<init>
-  <!-- 탭 초기 상태 -->
-  <set-state target="local" activeTab="{{query.tab ?? 'info'}}"/>
-</init>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1740,8 +1464,6 @@ SEO 렌더링 시 레이아웃의 `init_actions`에서 `setState` 핸들러를 �
 | `loadFromLocalStorage` | 서버 사이드에서 localStorage 미존재 |
 | `closeModal` | SEO에서 모달 상태 불필요 |
 | `navigate` | SEO 렌더링은 단일 페이지 |
-| `conditions` · `switch` | 봇 렌더러는 분기를 평가하지 않는다 — 분기 안의 setState 는 반영하지 않는다(`if` 도 지금처럼 무시) |
-| `actionRef`(`<action-ref>`) | 봇 렌더러는 `named_actions` 를 따라가지 않는다 — 참조한 named action 안의 setState 는 반영하지 않는다. 봇 화면 초기값이 필요하면 init 최상위나 `sequence` 안에 직접 적는다 |
 | 기타 비-setState | _local 초기화와 무관 |
 
 ### 파이프라인 흐름
@@ -1763,7 +1485,7 @@ SeoRenderer.render()
   └─ htmlMapper.setGlobalResolver(closure)  ← _global 표현식 해석
   └─ resolveSeoVars(seoConfig.vars) → $core_settings:, $module_settings:, $plugin_settings: 해석
   └─ htmlMapper.setSeoVars(resolvedVars)  ← format 모드 변수 주입
-  └─ toggleEvaluator.isEnabled(seoConfig.toggle_setting) → false면 null 반환 (SeoToggleEvaluator — 사이트맵 정적 화면과 공용)
+  └─ isExtensionSeoEnabled(seoConfig.toggle_setting) → false면 null 반환
   └─ metaResolver.resolve(seoConfig, context, moduleId, pluginId, routeParams) → vars 치환
   └─ View::make('seo', [..., 'stylesheets' => config.stylesheets])
 ```
@@ -1782,7 +1504,7 @@ SEO 렌더링 시 `navigate`/`openWindow` 핸들러가 정의된 컴포넌트에
 | 핸들러 | 변환 결과 | 비고 |
 |--------|----------|------|
 | `navigate` | `<a href="...">` | 내부 페이지 이동 |
-| `openWindow` | `<a href="..." target="_blank" rel="noopener noreferrer">` | 새 탭/외부 링크 (`target: "_self"` 는 `navigate` 와 같이 같은 탭 링크) |
+| `openWindow` | `<a href="..." target="_blank">` | 새 탭/외부 링크 |
 
 #### 지원 패턴
 
@@ -1790,8 +1512,7 @@ SEO 렌더링 시 `navigate`/`openWindow` 핸들러가 정의된 컴포넌트에
 - **동적 경로**: `"path": "/posts/{{post.slug}}"` → 데이터소스 컨텍스트에서 해석
 - **_global 참조**: `"path": "{{_global.shopBase}}/products"` → globalResolver로 `g7_module_settings()`/`g7_plugin_settings()` 해석
 - **query params**: `"query": { "q": "test" }` → `?q=test` 쿼리스트링 빌드
-- **중첩 액션 내부 (7.1.3+)**: 엔진이 실행하는 중첩 키를 모두 따라 내려가 첫 navigate/openWindow 를 추출 — `sequence`·`parallel` 의 `actions`(또는 `params.actions`), `conditions` 의 `then`, `switch` 의 `cases`, 그리고 sequence 안의 sequence 같은 중첩(깊이 상한 8). 7.1.2 까지는 sequence 한 단계만 봐서 parallel·conditions·switch·중첩 sequence 안의 링크가 봇 HTML 에서 빠졌다
-- **최상위 `target` 경로 (7.1.3+)**: `params.path` 가 없고 액션 최상위 `target` 에 경로가 있으면 그것을 path 로 쓴다 — 엔진과 같은 해석
+- **sequence 내부**: `handler: "sequence"` 내 navigate/openWindow 자동 추출
 
 #### skip 조건
 
@@ -1802,13 +1523,6 @@ SEO 렌더링 시 `navigate`/`openWindow` 핸들러가 정의된 컴포넌트에
 | 미해석 `{{}}` 잔존 | `_local.*`, `$event.*` 등 런타임 전용 값 |
 | `_global` 참조 + globalResolver 미설정/실패 | SEO 컨텍스트에서 해석 불가 |
 | Fragment (빈 태그) | 래퍼 없어 링크 적용 불가 |
-| 실행 스킴(`javascript:`·`vbscript:`·`data:`) | 클라이언트 이동 판정과 같음 |
-| 같은 탭 이동의 다른 출처(`https://다른 사이트`·`//host`·`/\host`·사용자 정보 포함) | 클라이언트가 이동하지 않는 값 — 쿼리 유래 주소의 외부 링크 주입 방지 |
-| 새 창의 https 아닌 외부 주소 | 클라이언트 `openWindow` 가 열지 않는 값 |
-
-navigate 의 대체 경로 `fallbackPath` 도 클라이언트와 같습니다 — path 가 비었거나 거부되면 `fallbackPath` 로 링크하고, 그것도 거부되면 링크를 만들지 않습니다. path 가 봇이 모르는 실행 시점 값(`_local`·`_isolated`·`$event`·`$args`)이면 대체 경로로도 링크하지 않습니다. 정적 경로는 식 평가를 거치지 않습니다(첫 화면 `/` 가 평가기의 남은 연산자 정리에 지워지지 않게).
-
-같은 출처 판정은 사이트 주소(`app.url`) 또는 이 요청의 주소와 스킴·호스트·포트(기본 포트 정규화)를 비교합니다. 같은 출처 전체 주소(`https://이 사이트/board/free?page=2`)는 경로(`/board/free?page=2`)로 바꿔 링크에 씁니다.
 
 #### 태그별 변환 전략
 
@@ -1899,7 +1613,6 @@ navigate 의 대체 경로 `fallbackPath` 도 클라이언트와 같습니다 �
 ```
 
 - `x-default`: 기본 로케일 URL (파라미터 없음) — 언어 감지 불가 시 기본 버전으로 안내
-- 주소의 사이트 부분은 요청 Host 가 아니라 APP_URL 입니다(`SeoUrl::absolute()`)
 - 단일 로케일 시: hreflang 태그 미생성
 
 ### 다국어 Sitemap
@@ -1936,14 +1649,13 @@ navigate 의 대체 경로 `fallbackPath` 도 클라이언트와 같습니다 �
 
 ### 캐시
 
-SeoCacheManager는 사이트 origin + URL + locale 기반 캐시 키(`md5(SeoUrl::origin().'|'.$cacheUrl.'|'.$locale)`)를 사용하므로 다국어 캐시가 자동 분리됩니다. origin 은 요청이 아니라 APP_URL 에서 뽑습니다 — 요청 origin 으로 가르면 포트만 바꾼 요청이 경로당 변종 상한을 채워 정상 저장을 막을 수 있습니다.
+SeoCacheManager는 URL + locale 기반 캐시 키(`md5($cacheUrl.'|'.$locale)`)를 사용하므로 다국어 캐시가 자동 분리됩니다.
 
 SeoMiddleware의 `buildCacheUrl()`이 캐시 키용 URL을 구성합니다:
 
-- **경로 + 정규화된 쿼리 파라미터**: `/shop/products?page=2&sort=price` → 페이지별 독립 캐시
-- **시스템 파라미터 제외**: `locale` 은 캐시 키의 두 번째 차원(`$locale`)으로 별도 관리하고, 옛 크롤러가 붙여 오는 `_escaped_fragment_` 는(더 이상 봇 신호는 아니지만) 내용에 영향이 없어 키에서 뺍니다(남기면 같은 페이지가 두 벌 저장됩니다)
+- **경로 + 쿼리 파라미터 포함**: `/shop/products?page=2&sort=price` → 페이지별 독립 캐시
+- **`locale` 파라미터 제외**: locale은 캐시 키의 두 번째 차원(`$locale`)으로 별도 관리
 - **쿼리 파라미터 정렬**: `ksort()` — 동일 파라미터 조합 = 동일 캐시 키 보장
-- **상한 초과 시 캐시 불가**: 파라미터 수·길이가 상한을 넘으면 색인 대상이 아니라고 보고 캐시도 렌더도 하지 않습니다(위 "캐시 상한" 절)
 
 ## SEO 변수 시스템
 
@@ -2021,7 +1733,6 @@ public function seoVariables(): array
 ```
 
 - 값이 비면 `Log::warning('[SEO] Required variable not resolved', ...)` 기록 (SeoRenderer)
-- 그 확장의 **제목 틀은 쓰지 않음** — `_seo.{page_type}.title` 이 빈 값이라 다음 제목 후보(og·라우트 제목)로 넘어갑니다. 설명 틀은 그대로 씁니다. 사람 탭 제목도 같은 규칙입니다(데이터를 받기 전 고정 글자만 남은 제목 방지)
 - 렌더링을 **중단하지 않음** — 빈 값으로 계속 진행 (부분 누락 허용)
 - 기본값 주입/예외 발생 없음 — 누락을 감지하는 진단용 표시
 
@@ -2030,20 +1741,6 @@ SEO 렌더링은 변수 하나가 비어도 나머지 메타태그를 정상 출
 ### meta.seo.extensions — 확장 변수 로드 선언
 
 레이아웃 JSON에서 SEO 변수를 제공하는 확장을 선언합니다.
-
-```html
-<meta>
-  <seo :enabled="true" page_type="product">
-    <extensions>
-      <item type="module" id="sirsoft-ecommerce"/>
-      <item type="plugin" id="sirsoft-payment"/>
-    </extensions>
-    <vars product_name="{{product.data.name ?? ''}}" product_description="{{product.data.short_description ?? ''}}"/>
-  </seo>
-</meta>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

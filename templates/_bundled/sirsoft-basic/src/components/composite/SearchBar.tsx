@@ -92,21 +92,6 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   const containerRef = React.useRef<HTMLDivElement>(null);
   const previousValueRef = React.useRef<string>('');
 
-  // blur 후 제안목록을 닫는 지연 타이머. 제안 항목 클릭이 blur 보다 먼저 처리되도록 200ms 미룬다.
-  // 그 사이에 컴포넌트가 사라지면(라우팅·조건부 렌더·테스트 teardown) 타이머는 여전히 살아 있어
-  // 언마운트된 컴포넌트의 setState 를 호출한다 — admin_basic 판본에서 실제로 Vitest 가 teardown
-  // 이후 발화한 이 타이머를 unhandled error 로 잡아 스위트 종료코드를 1 로 만들었다.
-  const blurTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(
-    () => () => {
-      if (blurTimerRef.current !== null) {
-        clearTimeout(blurTimerRef.current);
-      }
-    },
-    [],
-  );
-
   const value = controlledValue !== undefined ? controlledValue : internalValue;
   const shouldShowSuggestions = showSuggestions && isFocused && suggestions.length > 0 && value.length > 0;
 
@@ -160,7 +145,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           <Div className="relative flex-1">
             {/* 검색 아이콘 */}
             <Div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-              <Icon name={IconName.Search} className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              <Icon name={IconName.Search} className="w-5 h-5 text-gray-400 dark:text-gray-500" />
             </Div>
 
             {/* 검색 입력 */}
@@ -170,15 +155,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
               value={value}
               onChange={handleChange}
               onFocus={() => setIsFocused(true)}
-              onBlur={() => {
-                if (blurTimerRef.current !== null) {
-                  clearTimeout(blurTimerRef.current);
-                }
-                blurTimerRef.current = setTimeout(() => {
-                  blurTimerRef.current = null;
-                  setIsFocused(false);
-                }, 200);
-              }}
+              onBlur={() => setTimeout(() => setIsFocused(false), 200)}
               placeholder={resolvedPlaceholder}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
             />
@@ -206,7 +183,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
               onClick={() => handleSuggestionClick(suggestion)}
             >
               <Div className="flex items-center gap-2">
-                <Icon name={IconName.Search} className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                <Icon name={IconName.Search} className="w-4 h-4 text-gray-400 dark:text-gray-500" />
                 <Span className="text-sm text-gray-700 dark:text-gray-300">{suggestion.text}</Span>
               </Div>
             </Div>

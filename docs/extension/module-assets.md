@@ -60,26 +60,6 @@
 
 ---
 
-## 확장 컴포넌트 등록 (self-register)
-
-확장 번들은 액션 핸들러와 같은 방식으로 자기 화면 컴포넌트를 코어 레지스트리에 직접 등록한다 — 템플릿 컴포넌트처럼 매니페스트 + 전역 변수 경로로 실릴 자리가 확장에는 없기 때문이다.
-
-```ts
-const registry = (window as any).G7Core?.getComponentRegistry?.();
-
-registry?.registerExtensionComponent(
-    `${MODULE_IDENTIFIER}.ProductCard`,
-    ProductCard,
-    { name: `${MODULE_IDENTIFIER}.ProductCard`, type: 'composite' }
-);
-```
-
-**등록 시점은 안전하다.** 코어가 확장 번들 로드를 초기 라우트 처리 전에 기다리므로 이 등록은 첫 렌더보다 먼저 끝난다. 번들 로드가 실패하면 등록이 오지 않고 그 컴포넌트 노드는 화면에서 조용히 사라지며(미발견 컴포넌트는 `null` 렌더), 그 침묵은 `registry.getMissingExtensionComponents(names)` 로 관측한다.
-
-React 는 반드시 external 로 둔다 — 번들이 자기 React 사본을 품으면 훅 호출이 다른 인스턴스에 걸려 "Invalid hook call" 로 죽는다.
-
-규약 전문(이름 프리픽스·판본 선택·오버라이드 우선순위): **[extension-components.md](extension-components.md)**
-
 ## 에셋 매니페스트 스키마
 
 ### module.json (통합 스키마)
@@ -144,7 +124,6 @@ React 는 반드시 external 로 둔다 — 번들이 자기 React 사본을 품
 | `github_url` | `string\|null` | 선택 | GitHub 저장소 URL (업데이트 감지용) |
 | `github_changelog_url` | `string\|null` | 선택 | GitHub 변경 이력 URL |
 | `trusted_script_hosts` | `string[]` | 선택 | 레이아웃이 로드할 수 있는 외부 스크립트 신뢰 호스트 목록 (아래 참조) |
-| `trusted_style_hosts` | `string[]` | 선택 | 확장이 싣는 외부 스크립트가 스스로 불러오는 CSS 파일의 호스트 목록 — 스타일 정책에 자동 허용 (아래 「외부 스크립트가 싣는 CSS 호스트」, 코어 7.1.6) |
 
 #### `trusted_script_hosts` — 외부 스크립트 신뢰 호스트
 
@@ -165,15 +144,15 @@ React 는 반드시 external 로 둔다 — 번들이 자기 React 사본을 품
 그 호스트를 이 배열에 선언합니다. 활성 확장이 선언한 호스트만 집계되며(편집자는 추가 불가 —
 manifest 는 배포물), 코어가 활성 확장 전체의 선언을 모아 allowlist 를 구성합니다.
 
-- 값은 호스트명만(스킴/경로 없이). 예: `"t1.kakaocdn.net"`.
+- 값은 호스트명만(스킴/경로 없이). 예: `"t1.daumcdn.net"`.
 - **`trusted_script_hosts_reason` 에 호스트별 사유를 함께 선언합니다.** 사유가 없는 선언은
   자체 제공 원칙의 예외로 인정되지 않습니다 — 왜 외부로 나가는지가 코드에 남아야 합니다.
 
   ```jsonc
   {
-    "trusted_script_hosts": ["t1.kakaocdn.net"],
+    "trusted_script_hosts": ["t1.daumcdn.net"],
     "trusted_script_hosts_reason": {
-      "t1.kakaocdn.net": "라이브러리가 아니라 카카오가 운영하는 서비스 SDK 다. 스크립트가 카카오 서버와 통신하므로 자체 호스팅해도 동작하지 않는다."
+      "t1.daumcdn.net": "라이브러리가 아니라 Daum 이 운영하는 서비스 SDK 다. 스크립트가 Daum 서버와 통신하므로 자체 호스팅해도 동작하지 않는다."
     }
   }
   ```
@@ -182,7 +161,7 @@ manifest 는 배포물), 코어가 활성 확장 전체의 선언을 모아 allo
 - 결제 플러그인의 PG SDK 도 같은 부류입니다(그 회사 서버와 통신하므로 자체 호스팅 불가).
   선언 사례: KG 이니시스 `stgstdpay.inicis.com`·`stdpay.inicis.com` / 토스페이먼츠
   `js.tosspayments.com` / 나이스페이먼츠 `web.nicepay.co.kr` / NHN KCP `testpay.kcp.co.kr`·
-  `pay.kcp.co.kr`(+ SDK 가 이어서 싣는 `npay`·`spay` 계열 — 아래 「콘텐츠 보안 정책」). 이 플러그인들은 **코드에도 같은 호스트 목록을 두고 주입 직전에 확인**하며,
+  `pay.kcp.co.kr`. 이 플러그인들은 **코드에도 같은 호스트 목록을 두고 주입 직전에 확인**하며,
   확인에 실패하면 결제를 진행하지 않습니다(fail-closed). SDK URL 이 확장자로 끝나지 않는
   경우(예: `/v2/standard`)에는 그 런타임 확인이 유일한 게이트입니다. PG사가 호스트를 바꾸면
   manifest 와 코드 상수를 **함께** 갱신해야 하며, 두 목록의 일치는 각 플러그인 테스트가
@@ -190,118 +169,6 @@ manifest 는 배포물), 코어가 활성 확장 전체의 선언을 모아 allo
 - 이 기능은 코어 7.0.7 에서 도입되었습니다. 선언하는 확장은 `g7_version` 을 `>=7.0.7` 로 두는
   것이 계약상 정확합니다(하위 코어에서는 필드가 무시되어 무해).
 - 관련 보안 정책 상세: [frontend/security.md](../frontend/security.md).
-
-##### 콘텐츠 보안 정책(CSP)과의 관계 (코어 7.1.4)
-
-운영자가 환경설정 > 보안에서 CSP 를 켜면 코어는 **켜진 확장의 `trusted_script_hosts` 를 모아**
-`script-src` 에 넣습니다([backend/content-security-policy.md](../backend/content-security-policy.md)).
-그래서 이 선언은 레이아웃 로더 허용목록이면서 동시에 운영 사이트의 브라우저 정책이 됩니다.
-
-- **SDK 가 이어서 불러오는 호스트까지 선언합니다.** 서비스 SDK 는 자기 호스트 밖의 스크립트를 더
-  싣는 경우가 있습니다. 예: KCP `payplus_web.jsp` 는 `npay.kcp.co.kr`(결제 연동)·`spay.kcp.co.kr`
-  (간편결제)과 그 테스트 호스트(`testnpay`·`testspay`)에서 스크립트를 싣습니다. 빠지면 강제 모드에서
-  결제창이 열리지 않는데, 레이아웃 로더는 SDK 가 스스로 붙이는 스크립트를 보지 않으므로 다른 검사로는
-  드러나지 않습니다.
-- **확인 방법** — 개발 사이트에서 CSP 를 「점검만」으로 켜고 그 기능을 끝까지 실행(결제창 열기·간편결제
-  선택 등)한 뒤 `storage/logs/csp-*.log` 의 `blocked_uri` 를 확인합니다. 찍힌 호스트를 선언하고 사유를
-  적습니다. 결제사가 SDK 내부 호스트를 바꾸면 다시 확인합니다.
-- **확장이 직접 내는 HTML 에 인라인 실행 코드를 쓰지 않습니다.** 결제 닫기·본인인증 결과·팝업 브리지처럼
-  컨트롤러가 HTML 을 돌려주는 화면은 `<script>…</script>` 본문·`onclick=` 속성·`href="javascript:…"` 대신
-  서버 값을 `<script type="application/json" id="…">` 데이터 블록으로 싣고, 동작은 확장이 동봉한 정적 JS
-  (`assets/bridge/*.js`, 손작성 ES5)를 `<script src>` 로 싣습니다. 빈 iframe 에 `document.write` 로 인라인
-  스크립트를 써 넣는 방식도 부모 문서의 정책을 이어받아 막힙니다 — 같은 출처 라우트를 여는 방식으로 바꿉니다.
-  번들 확장은 이 규칙을 자동 검사로 확인합니다.
-
-##### 외부 스크립트가 싣는 CSS 호스트 — `trusted_style_hosts` (코어 7.1.6)
-
-확장의 CSS 는 동봉해 같은 사이트에서 싣는 것이 원칙입니다. 다만 결제사 결제창처럼 **외부 스크립트가 자기
-호스트의 CSS 파일을 스스로 싣는** 경우는 확장이 그 CSS 를 대신 실을 수 없습니다. 운영자가 스타일 정책을
-강제하면 그 CSS 가 막혀 결제창이 화면을 덮지 못합니다. 이런 호스트는 manifest 에 선언합니다.
-
-```jsonc
-{
-  "trusted_style_hosts": ["stdpay.example.com"],
-  "trusted_style_hosts_reason": {
-    "stdpay.example.com": "결제창 스크립트가 결제창 CSS 파일을 이 호스트에서 스스로 싣는다. 막히면 결제창이 화면을 덮지 못한다."
-  }
-}
-```
-
-- 코어는 **켜진 모듈·플러그인의 선언만** 모아 스타일 정책(`style-src-elem` / `style-src`)의 허용 호스트에 더합니다.
-  환경설정 > 보안의 「자동으로 포함되는 스타일 호스트」에 보입니다. 꺼진 확장의 선언은 빠집니다.
-- 값은 호스트명만 씁니다(스킴·경로 없이). 형식이 어긋난 값은 정책에서 빠집니다.
-- 사유(`trusted_style_hosts_reason`)를 호스트별로 함께 적습니다. 확장이 직접 쓰는 CSS 를 외부에서 싣기 위한
-  용도로 쓰지 않습니다 — 그런 CSS 는 동봉합니다.
-- 실행 중에 정해지는 호스트는 필터 훅 `core.csp.trusted_style_hosts` 로 더할 수 있습니다.
-- 이 선언이 허용하는 것은 **CSS 파일 주소**뿐입니다. 외부 스크립트가 요소에 다는 `style` 속성은 엄격 강도에서
-  여전히 막힙니다.
-- 코어 7.1.5 이하에서는 필드가 무시됩니다(무해). 그 사이트에서는 운영자가 「추가 스타일 허용 호스트」에 직접 넣어야 합니다.
-- 템플릿은 이 키 대신 `externals` 선언의 외부 스타일시트가 자동으로 합산됩니다.
-
-##### 인라인 스타일을 쓰지 않습니다 (코어 7.1.6)
-
-운영자가 스타일 정책을 켜거나 웹서버에 `style-src 'self'; style-src-attr 'none'` 을 걸면 브라우저는 인라인
-스타일을 적용하지 않습니다([backend/content-security-policy.md](../backend/content-security-policy.md#1-무엇을-막는가)).
-확장의 화면이 그 사이트에서 깨지지 않도록 아래 세 가지를 쓰지 않습니다.
-
-| 쓰지 않는 것 | 예 |
-| --- | --- |
-| `<style>` 요소 | 컨트롤러가 돌려주는 HTML 의 `<style>…</style>`, `document.createElement('style')`, 컴포넌트가 그리는 `<style>` |
-| HTML 문자열의 `style="…"` 속성 | 서버가 돌려주는 HTML, `innerHTML`·`dangerouslySetInnerHTML`·`insertAdjacentHTML` 에 넣는 문자열 |
-| `setAttribute('style', …)` | 스크립트가 속성으로 스타일을 넣는 코드 |
-
-스크립트가 스타일 객체에 값을 대입하는 것(`el.style.width = …`, `el.style.cssText = …`,
-`el.style.setProperty(…)`, React `style={{…}}`)은 정책에 걸리지 않습니다. 대체 수단은 다음 네 가지입니다.
-
-1. **정해진 모양은 확장 CSS 로** — 규칙을 CSS 파일에 두고 manifest 의 `assets.css`(`entry`·`output`)로
-   선언합니다. 컨트롤러가 직접 돌려주는 HTML(결제 닫기·팝업 브리지 등)은 확장이 동봉한 CSS 파일을
-   `<link rel="stylesheet">` 로 싣습니다.
-2. **실행 중에 정해지는 값은 스타일 객체 대입이나 CSS 변수로** — 너비·좌표·색처럼 값이 바뀌는 것은
-   `el.style.x = …` 또는 React `style` prop 으로 넣습니다. 여러 요소가 같은 값을 쓰면 CSS 파일에
-   `var(--my-plugin-color)` 를 두고 `el.style.setProperty('--my-plugin-color', 값)` 으로 바꿉니다.
-3. **실행 중에 만들어야 하는 규칙은 `G7Core.style.setRules`** — 선택자가 실행 중에 정해지거나 `::after`·
-   `@keyframes` 처럼 스타일 객체로 표현할 수 없는 규칙은 `<style>` 요소를 만드는 대신 이 API 를 씁니다.
-
-   ```typescript
-   // 같은 key 로 다시 부르면 규칙이 교체됩니다
-   const handle = G7Core.style.setRules(
-       'my-plugin-highlight',
-       `#${CSS.escape(targetId)}::after{content:"";position:absolute;inset:0;background:rgba(0,0,0,.4)}`
-   );
-
-   G7Core.style.has('my-plugin-highlight'); // true
-   handle.remove();                         // 또는 G7Core.style.remove('my-plugin-highlight')
-   ```
-
-   key 는 확장 식별자를 접두사로 붙여 다른 확장과 겹치지 않게 합니다. 규칙은 문서 전체에 적용되므로
-   선택자를 좁게 씁니다.
-4. **사용자가 쓴 본문 HTML 은 `G7Core.inlineStyle`** — 게시글·상품 설명처럼 `style` 속성이 든 HTML 을
-   정화해 화면에 꽂는 컴포넌트는, 정화할 때 `style` 을 `data-g7-style` 속성으로 옮겨 받고 화면에 붙인 뒤
-   `apply()` 로 입힙니다. 저장 데이터는 바꾸지 않습니다.
-
-   ```typescript
-   // (가) 코어 본문 규칙으로 정화하는 경우 — 설정에 G7_DEFER_STYLE 을 더합니다
-   const html = G7Core.contentPolicy.sanitize(DOMPurify, raw, { ...config, G7_DEFER_STYLE: true });
-
-   // (나) 직접 정화하는 경우 — 전용 DOMPurify 인스턴스를 넘깁니다(전역 인스턴스에 훅이 남지 않게)
-   const html = G7Core.inlineStyle.sanitize(DOMPurify(window), raw, config);
-
-   // 화면에 붙인 뒤 한 번 호출합니다 (React 라면 dangerouslySetInnerHTML 로 그린 뒤 effect 에서)
-   container.innerHTML = html;
-   G7Core.inlineStyle.apply(container); // 입힌 요소 수를 돌려줍니다
-   ```
-
-   `apply()` 를 부르지 않으면 서식이 보이지 않으므로, `G7_DEFER_STYLE` 은 `apply()` 를 구현한 컴포넌트에서만
-   켭니다. 정화 설정이 `style` 속성을 금지하면(`FORBID_ATTR` 에 있거나 `ALLOWED_ATTR` 에 없으면) 서식은
-   옮기지 않고 버리며, 원문에 미리 적힌 `data-g7-style` 도 버립니다.
-
-- **옛 코어와의 호환** — `G7Core.style.setRules`·`G7Core.inlineStyle` 은 코어 7.1.6(템플릿 엔진
-  engine-v1.91.0)부터 있습니다. `g7_version` 을 올리지 않으려면 `typeof G7Core.style?.setRules === 'function'`
-  처럼 있는지 확인하고, 없으면 종전 방식으로 동작하게 둡니다.
-- **외부 라이브러리** — 확장이 싣는 라이브러리가 스스로 `<style>` 요소나 `style` 속성을 만들면 확장 코드로
-  막을 수 없습니다. 그 화면은 확장 문서에 한계로 적어 운영자가 알 수 있게 합니다.
-- **확인 방법** — 개발 사이트에서 스타일 정책을 「점검만」·강도 「엄격」으로 켜고 확장 화면을 끝까지 써 본 뒤
-  `storage/logs/csp-*.log` 에서 `effective_directive` 가 `style-src-elem`·`style-src-attr` 인 줄을 확인합니다.
 
 플러그인(`plugin.json`)·템플릿(`template.json`)도 동일 필드를 지원합니다.
 
@@ -322,32 +189,8 @@ manifest 는 배포물), 코어가 활성 확장 전체의 선언을 모아 allo
 어느 소비자도 읽지 않아 **그 자산이 영영 로드되지 않는데, 오류도 경고도 남지 않습니다.**
 
 선언한 `output` 이 가리키는 파일은 디스크에 실재해야 합니다. 내용이 비어 있는 것(0바이트)은
-정상입니다 — 스타일 규칙이 아직 없는 확장이 CSS 를 선언하는 것은 어긋남이 아닙니다. 자동 검증이
+정상입니다 — 스타일 규칙이 아직 없는 확장이 CSS 를 선언하는 것은 어긋남이 아닙니다. 정적 검사가
 번들 확장 전수를 대상으로 두 조건(객체 형식 · 산출물 실재)을 확인합니다.
-
-### 확장 화면의 의미 색은 확장 CSS 가 싣는다
-
-확장 레이아웃(환경설정 화면, 조각)의 경고, 성공, 위험, 안내 글자색은 템플릿의 의미 색 클래스(`text-warning-soft`,
-`text-success-soft` 등)에 기대지 않고 **확장이 자기 CSS 에 접두 클래스로 직접 정의**합니다. 템플릿은 자기 화면에 맞춰
-의미 클래스의 이름이나 색을 바꿀 수 있고, 그러면 확장 화면의 색이 오류도 없이 따라 바뀝니다(경고 본문이 초록으로 보이는 식).
-
-- 이름은 확장 고유 접두를 붙입니다. 번들 결제 플러그인은 `pay-<id>-tone-{warning|success|danger|info}` 와 진한 제목용
-  `-strong` 짝을 씁니다(예: `pay-kginicis-tone-warning-strong`). 다른 확장의 클래스는 참조하지 않습니다.
-- 다크 모드 짝을 함께 둡니다. 관리자 템플릿은 `<html class="dark">` 로 전환하므로 `.dark .pay-kginicis-tone-warning` 처럼
-  조상 선택자로 씁니다.
-- 글자 크기와 굵기는 레이아웃의 유틸리티 클래스가 정하고, 접두 클래스는 색만 맡습니다.
-- 그 화면에만 있는 임의값 배치(`grid-cols-[150px_1fr]`, `min-w-[180px]` 등)도 같은 파일에 접두 클래스로 둡니다. 템플릿은
-  자기 레이아웃만 훑어 CSS 를 만들므로 확장 레이아웃에만 있는 임의값 유틸리티는 규칙이 생성되지 않습니다.
-- 배선은 세 곳입니다. manifest 에 `assets.css`(`entry`·`output`)를 선언하고, JS 엔트리가 CSS 를 import 하며,
-  `vite.config.ts` 의 `assetFileNames` 가 CSS 를 `output` 과 같은 경로(예: `{확장}/dist/css/plugin.css`)로 냅니다.
-
-```ts
-// vite.config.ts — rollupOptions.output
-assetFileNames: (info) => (info.name?.endsWith('.css') ? 'css/plugin.css' : 'assets/[name][extname]'),
-```
-
-입력 줄 배치(`grid-3col-responsive`), 섹션 제목(`section-heading-md`), 저장 오류 상자(`text-error-strong`·`text-error-soft`)처럼
-코어 플러그인 설정 화면 규약이 정한 구조 클래스는 계속 템플릿 것을 씁니다. 이 절은 확장 화면에서 **뜻이 있는 색**을 고를 때의 규약입니다.
 
 ---
 
@@ -563,23 +406,15 @@ export const handlerMap: Record<string, ActionHandler> = {
 
 ### 레이아웃에서 핸들러 사용
 
-```html
-<input type="number" value="{{row.stock_quantity}}">
-  <on type="blur">
-    <action handler="sirsoft-ecommerce.updateProductField" productId="{{row.id}}" field="stock_quantity" value="{{$event.target.value}}"/>
-  </on>
-</input>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
-    "type": "basic",
-    "name": "Input",
-    "actions": [
-        {
-            "type": "blur",
+    "component": "Input",
+    "props": {
+        "type": "number",
+        "value": "{{row.stock_quantity}}"
+    },
+    "events": {
+        "onBlur": {
             "handler": "sirsoft-ecommerce.updateProductField",
             "params": {
                 "productId": "{{row.id}}",
@@ -587,10 +422,6 @@ export const handlerMap: Record<string, ActionHandler> = {
                 "value": "{{$event.target.value}}"
             }
         }
-    ],
-    "props": {
-        "type": "number",
-        "value": "{{row.stock_quantity}}"
     }
 }
 ```
@@ -645,23 +476,6 @@ GET /api/modules/assets/{identifier}/{path}
 /api/modules/assets/sirsoft-ecommerce/dist/css/module.css
 ```
 
-### 아이콘 주소는 별도입니다
-
-확장 아이콘(`assets/icon.svg`)은 위 에셋 주소가 아니라 전용 주소로 서빙됩니다.
-
-```
-GET /api/extensions/{type}/{identifier}/icon
-```
-
-에셋 주소와 다른 점이 셋 있습니다.
-
-- **로그인이 필요 없습니다.** 아직 설치하지 않은 동봉 확장도 관리자 목록에 그림이 보여야 합니다.
-- **설치본만 보지 않습니다.** 설치본 → 대기 → 동봉 순으로 찾으므로 설치 전에도 그림이 나옵니다.
-- **정적 게시 대상이 아닙니다.** `?v=` 와 `ETag`(변경 시각·크기 기반, 같으면 304)로 캐시를 다룹니다.
-
-파일이 없거나 규격을 어기면 404 이고, 화면은 종류별 기본 그림으로 표시합니다.
-규격과 선언 방법은 [확장 아이콘](extension-icons.md) 에 있습니다.
-
 ---
 
 ## 서버측 번들 병합 (Server-side Bundle)
@@ -695,7 +509,7 @@ GET /api/plugins/bundle.css?v={version}
 
 ### 병합 규율
 
-| 규율 | 내용 | 자동 검증 |
+| 규율 | 내용 | 정적 검사 |
 |------|------|---------|
 | priority 순서 | manifest `loading.priority` 오름차순만. 확장 이름 하드코딩 금지 | (선언형) |
 | `\n;\n` 구분자 | IIFE 사이는 `\n;\n`(JS)/`\n`(CSS). 미사용 시 ASI 붕괴 → 전체 파싱 에러 | `extension-bundle-concat-separator` |
@@ -706,7 +520,6 @@ GET /api/plugins/bundle.css?v={version}
 | CSS url() | 상대 `url()`·`@import` 참조는 그 확장의 절대 자산 URL 로 **치환**해 병합. 병합본의 주소는 어느 확장의 dist 디렉토리도 아니라 상대 해석이 반드시 어긋난다 | (계약 테스트) |
 | 디스크 캐시 fail-soft | 캐시 쓰기 실패는 **500 이 아니다** — 메모리 병합 결과를 그대로 200 으로 서빙 | (계약 테스트) |
 | 빈 번들 판정 | 선언한 산출물이 소실·판독 불가면 **503**, 존재하되 비었으면 빈 200 (선언 0 도 빈 200) | (계약 테스트) |
-| 캐시 우선 | 프로덕션은 `(type, kind, version)` 캐시 파일 존재를 **빌드보다 먼저** 확인한다. 캐시 미스는 같은 키의 잠금으로 1회 빌드에 수렴(잠금 실패는 각자 빌드). 병합 단계에서 건너뛴 확장이 있는 결과는 캐시하지 않는다 | (계약 테스트) |
 
 ### 병합 CSS 의 상대 참조
 
@@ -725,7 +538,7 @@ GET /api/plugins/bundle.css?v={version}
 | 상태 | 판정 | 응답 |
 |---|---|---|
 | 에셋을 선언한 활성 확장이 0개 | 정상 | 빈 200 |
-| 선언은 있고 그 산출물이 **전부 존재**하되 비어 있음 | 정상 (스타일이 비어 있는 확장) | 0바이트 캐시 파일 + 정적 게시, 빈 200 |
+| 선언은 있고 그 산출물이 **전부 존재**하되 비어 있음 | 정상 (스타일이 비어 있는 확장) | 빈 200 |
 | 선언한 산출물이 **소실·판독 불가** | 장애 (배포 중 `dist` 가 잠깐 빔, 경로 어긋남) | **503** + `Log::error`(소실 경로 목록) |
 
 장애를 정상으로 흘리면 프론트는 404 도 오류도 받지 못한 채 한참 뒤 "Unknown action handler" 로 죽는다 — 그 시점에는 원인이 번들이라는 사실이 화면에도 로그에도 남아 있지 않다. 반대로 정상을 장애로 잡으면 스타일 소스가 자리표시 주석뿐인 확장만 설치된 기본 구성이 통째로 503 이 되어 **사용자 화면마다 실패 안내가 뜬다.** 판정은 **kind 별**이다(js 만 선언한 확장이 있는 상태에서 css 번들이 비는 것은 정상).
@@ -737,9 +550,7 @@ GET /api/plugins/bundle.css?v={version}
 
 0바이트 산출물은 정당한 상태다. 스타일 규칙이 아직 없는 확장이 CSS 를 선언하는 것은 어긋남이 아니며, 그 상태를 배포 장애로 등치하면 정상 사이트가 서비스 불능으로 보고된다.
 
-선언 산출물이 전부 존재하는 빈 번들은 **0바이트 파일로 캐시·정적 게시**되어 브라우저가 웹서버에서 직접 받는다. 게시하지 않으면 `AssetUrl::extensionBundle()` 이 API URL 을 방출해 그 구성의 **모든 페이지 로드**가 PHP 를 거치고, 그 요청마다 컨트롤러가 활성 확장 열거를 세 번 반복한다(경로 조회 → 재빌드 → 소실 판정). 오류도 로그도 남지 않아 드러나지 않는 경로다.
-
-캐시하지 않는 것은 셋뿐이다 — 선언 산출물이 **소실**된 경우(503 판정을 그대로 유지해야 한다), 병합 단계에서 확장을 **건너뛴** 경우(파일은 있는데 읽기·치환이 실패한 상태가 캐시로 굳으면 버전 bump 전까지 그 확장 자산이 사라진 채 고정되므로, 종전처럼 매 요청 재시도에 맡긴다), 그리고 디스크 쓰기 자체가 실패한 경우다.
+빈 번들은 정적 게시 대상이 아니다(게시할 사본이 없다). 그 결과 `AssetUrl::extensionBundle()` 이 정적 URL 대신 API URL 을 방출하므로 브라우저에는 정적 404 폴백이 생기지 않고, 그 API 가 위 표대로 빈 200 을 낸다.
 
 두 판정은 모듈·플러그인 컨트롤러가 **공유하는 단일 지점**(`ServesExtensionBundles::bundleResponse()`)에 둔다. 각자 구현하면 한쪽만 고쳐진 채 다른 쪽이 옛 동작으로 남는다.
 
@@ -758,19 +569,9 @@ php artisan template:cache-clear          # 전체 번들 파일 정리 포함
 
 프로덕션은 version-in-path 디스크 캐시, 비프로덕션(dev/watch)은 캐시 없이 매 요청 concat(rebuild 즉시 반영). `_bundled` 수정 후에는 `{type}:update {id} --force` 로 활성 반영 후 version bump 로 번들이 재생성된다.
 
-캐시 적중 시에는 원본 에셋을 읽지 않으므로 원본 교체는 반드시 version bump 로 반영한다 — `{type}:update {id} --force` 가 그 bump 를 수행한다. `dist` 를 손으로 덮어쓰고 bump 를 건너뛰면 같은 version 의 캐시가 계속 서빙된다.
-
 > 개별 에셋 서빙 라우트(`/api/{type}/assets/...`, `*.map` 포함)는 소스맵·static 참조를 위해 존치한다.
 > 다만 `*.map` 의 **실제 서빙은 `local` 환경에서만** 허용된다 — 소스맵에는 원본 코드 전문이
 > 담기므로 운영에서는 확장자 화이트리스트가 차단한다. 상세: [template-security.md](template-security.md) "소스맵 (`map`) — 로컬 개발 환경 전용".
-
-### 요청 제한을 두지 않는 이유
-
-공개 번들 라우트(`/api/{modules,plugins}/bundle.{js,css}`)에는 애플리케이션 수준의 요청 제한을 붙이지 않는다.
-
-- 캐시 우선 순서를 갖춘 뒤로 이 엔드포인트의 응답 비용은 **프레임워크 부팅**이 지배한다. 부팅을 마친 뒤에야 판정할 수 있는 앱 throttle 은 그 비용을 이미 치른 다음이라 방어 효과가 제한적이다.
-- 정적 자산 성격의 공개 API 는 요청 제한을 두지 않는 것이 이 저장소의 기존 관행이다(공개 컨트롤러 계층 전반).
-- 반복 요청을 실제로 줄이는 것은 앞단 캐시다. 응답이 `Cache-Control: immutable, max-age=31536000, public` 을 내보내므로, 리버스 프록시나 CDN 이 그 헤더를 존중하도록 `/api/*/bundle*` 을 캐시 대상에 넣으면 앱까지 도달하는 요청 자체가 사라진다. 파일명에 캐시 버전이 들어 있어 stale 위험도 없다.
 
 ### 전송 압축 (gzip)
 
@@ -867,10 +668,8 @@ G7Core.asset.template('sirsoft-admin_basic', 'vendor/flag-icons/7.2.3/css/flag-i
 조용히 404 가 됩니다.
 
 AMD 로더나 워커처럼 디렉토리 접두 뒤에 파일명을 이어 붙이는 소비자는 `templateDir()` 을
-씁니다 — `template()` 의 쿼리 형태는 파일 경로를 인코딩해 뒤에 파일명을 이어 붙일 수 없기 때문입니다.
-확장자 없는 모드에서 `templateDir()` 은 `?file=` 디렉토리를 돌려주고, 쿼리가 있는 URL 에 `.js` 를 붙이지 않는
-AMD 로더를 위해 템플릿 자산 서빙이 같은 이름의 `.js` 파일을 찾아 줍니다. 그래도 자산을 받지 못하는 환경이
-있으므로 그 소비자는 폴백을 갖춰야 합니다.
+씁니다 — 쿼리 형태는 뒤에 파일명을 이어 붙일 수 없기 때문입니다. 확장자 없는 모드에서 404
+일 수 있으므로 그 소비자는 폴백을 갖춰야 합니다.
 
 로드에 끝내 실패하면 `G7Core.assets.notifyFailure({ id, label, retry })` 로 사용자에게
 알립니다. `console.error` 한 줄로 끝내면 사용자에게는 빈 자리로만 나타나고 자체 서버 로그에도
@@ -897,21 +696,13 @@ AMD 로더를 위해 템플릿 자산 서빙이 같은 이름의 `.js` 파일을
 
 ### 레이아웃 scripts 섹션
 
-외부 호스트(CDN)의 스크립트를 실으려면 그 호스트를 확장 매니페스트 `trusted_script_hosts` 에 선언해야 한다(위 「`trusted_script_hosts`」). 선언 없는 외부 호스트는 컴파일·저장·런타임에서 모두 거부되므로, 가능하면 아래처럼 확장이 동봉한 같은 origin 경로를 쓴다.
-
-```html
-<script src="/modules/vendor-sample/vendor/external-lib.js" id="external-lib" :async="true" data-if="{{_global.modules['vendor-sample'].useExternalLib}}"/>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
     "scripts": [
         {
-            "src": "/modules/vendor-sample/vendor/external-lib.js",
+            "src": "https://cdn.example.com/lib.js",
             "id": "external-lib",
-            "if": "{{_global.modules['vendor-sample'].useExternalLib}}",
+            "if": "{{_global.modules['sirsoft-ecommerce'].useExternalLib}}",
             "async": true
         }
     ]
@@ -1062,7 +853,7 @@ API 레퍼런스: [docs/backend/api/extensions.md](../backend/api/extensions.md)
 | 방법 | 판정 |
 |---|---|
 | `dist/css/components.css` 직접 수정 | 다음 빌드·업데이트에 소실된다 |
-| `src/styles/custom.css` + 빌드 | 확장 **작성자**의 방법으로는 유효하다. 운영자에게는 부적합(빌드 필요 + 업데이트 소실) |
+| `src/styles/custom.css` + 빌드 | 확장 **저작자**의 방법으로는 유효하다. 운영자에게는 부적합(빌드 필요 + 업데이트 소실) |
 | `custom/custom.css` 에 파일만 놓기 | 권장 |
 
 ## AbstractModule 에셋 메서드

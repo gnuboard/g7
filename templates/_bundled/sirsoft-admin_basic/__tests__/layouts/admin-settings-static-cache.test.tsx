@@ -17,9 +17,6 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { createLayoutTest } from '@core/template-engine/__tests__/utils/layoutTestUtils';
 import { ComponentRegistry } from '@core/template-engine/ComponentRegistry';
-// 레이아웃 JSON 은 모양이 아니라 뜻으로 읽는다 — 컴파일러가 원소 하나짜리 배열을 객체로 접으므로
-// `actions`/`onSuccess` 를 배열로 단정하면 다음 굽기에서 깨진다 (D67).
-import { actionsOf, callbacksOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 const layout = require('../../layouts/admin_settings.json');
 const generalPartial = JSON.parse(
@@ -71,8 +68,6 @@ describe('admin_settings — staticCacheStatus 데이터소스 배선', () => {
     expect(s!.auth_required).toBe(true);
   });
 
-  // @scenario permission=granted, publishable=non_production, outcome=publish_failed_marker
-  // @effects republish_button_disabled_when_not_publishable
   it('fallback 은 버튼을 비활성으로 두는 안전 기본값이다 (publishable:false)', () => {
     const s = byId('staticCacheStatus')!;
     expect(s.fallback.data.publishable).toBe(false);
@@ -80,14 +75,10 @@ describe('admin_settings — staticCacheStatus 데이터소스 배선', () => {
     expect(s.fallback.data.failure).toBeNull();
   });
 
-  // @scenario permission=granted, publishable=production_enabled, outcome=success
-  // @effects card_renders_status_rows
   it('탭 전환 오버레이가 이 소스를 기다린다', () => {
     expect(layout.transition_overlay.wait_for).toContain('staticCacheStatus');
   });
 
-  // @scenario permission=granted, publishable=production_enabled, outcome=success
-  // @effects confirm_modal_then_toast_and_refetch
   it('다시 만들기 확인 모달이 등록되어 있다', () => {
     const partials = (layout.modals as AnyJson[]).map(m => m.partial);
     expect(partials).toContain('partials/admin_settings/_modal_static_cache_republish.json');
@@ -96,8 +87,6 @@ describe('admin_settings — staticCacheStatus 데이터소스 배선', () => {
 });
 
 describe('_tab_general — 초기 화면 정적 파일 카드 스키마', () => {
-  // @scenario permission=granted, publishable=production_enabled, outcome=success
-  // @effects card_renders_status_rows
   it('카드가 에셋 서빙 방식 카드 바로 다음에 있다', () => {
     const ids = (generalPartial.children as AnyJson[]).map(c => c.id);
     const assetIdx = ids.indexOf('card_asset_serving');
@@ -114,27 +103,23 @@ describe('_tab_general — 초기 화면 정적 파일 카드 스키마', () => 
     expect(btn.props.type).toBe('button');
     expect(btn.props.disabled).toContain('staticCacheStatus?.data?.publishable');
     expect(btn.props.disabled).toContain('_computed.isReadOnly');
-    const open = actionsOf(btn).find((a: AnyJson) => a.handler === 'openModal');
+    const open = btn.actions.find((a: AnyJson) => a.handler === 'openModal');
     expect(open).toBeTruthy();
     expect(open.target).toBe('settings_static_cache_republish_modal');
   });
 
-  // @scenario permission=granted, publishable=production_enabled, outcome=success
-  // @effects card_renders_status_rows
   it('상태 배지는 게시됨/미게시/비활성/개발 모드 4분기를 갖는다', () => {
     const badge = findInPartial(generalPartial, 'static_cache_status_badge');
     expect(badge).not.toBeNull();
-    // 엔진은 노드 최상위 classMap 만 읽는다 — props.classMap 은 무시돼 배지 색이 칠해지지 않았다(#703).
-    expect(badge.props?.classMap).toBeUndefined();
-    const variants = Object.keys(badge.classMap.variants).sort();
+    const variants = Object.keys(badge.props.classMap.variants).sort();
     expect(variants).toEqual(['dev_mode', 'disabled', 'published', 'unpublished']);
   });
 });
 
 describe('_modal_static_cache_republish — 확인 → POST → 후속 체인', () => {
   const confirmBtn = findNodeById(republishModal, 'static_cache_republish_confirm_button');
-  const seq = actionsOf(confirmBtn)[0];
-  const apiCall = callbacksOf(seq, 'actions').find(a => a.handler === 'apiCall');
+  const seq = confirmBtn?.actions?.[0];
+  const apiCall = (seq?.actions as AnyJson[] | undefined)?.find(a => a.handler === 'apiCall');
 
   // @scenario permission=granted, publishable=production_enabled, outcome=success
   // @effects confirm_modal_then_toast_and_refetch
@@ -150,8 +135,7 @@ describe('_modal_static_cache_republish — 확인 → POST → 후속 체인', 
   // @scenario permission=granted, publishable=production_enabled, outcome=publish_failed_marker
   // @effects confirm_modal_then_toast_and_refetch
   it('성공 시 상태 재조회 → 토스트 → 모달 닫기 순서다', () => {
-    const onSuccess = callbacksOf(apiCall, 'onSuccess');
-    const handlers = onSuccess.map(a => a.handler);
+    const handlers = (apiCall!.onSuccess as AnyJson[]).map(a => a.handler);
     const refetchIdx = handlers.indexOf('refetchDataSource');
     const toastIdx = handlers.indexOf('toast');
     const closeIdx = handlers.indexOf('closeModal');
@@ -159,19 +143,17 @@ describe('_modal_static_cache_republish — 확인 → POST → 후속 체인', 
     expect(toastIdx).toBeGreaterThan(refetchIdx);
     expect(closeIdx).toBeGreaterThan(toastIdx);
 
-    const refetch = onSuccess[refetchIdx];
+    const refetch = (apiCall!.onSuccess as AnyJson[])[refetchIdx];
     expect(refetch.params.dataSourceId).toBe('staticCacheStatus');
 
     // 게시 실패도 HTTP 200 이다 — 토스트가 페이로드(republished)로 분기해야 한다
-    const toast = onSuccess[toastIdx];
+    const toast = (apiCall!.onSuccess as AnyJson[])[toastIdx];
     expect(toast.params.message).toContain('response?.data?.republished');
     expect(toast.params.type).toContain('response?.data?.republished');
   });
 
-  // @scenario permission=granted, publishable=production_enabled, outcome=publish_failed_marker
-  // @effects confirm_modal_then_toast_and_refetch
   it('실패 시 에러 토스트 후 모달을 닫는다', () => {
-    const handlers = callbacksOf(apiCall, 'onError').map(a => a.handler);
+    const handlers = (apiCall!.onError as AnyJson[]).map(a => a.handler);
     expect(handlers).toContain('toast');
     expect(handlers).toContain('closeModal');
   });
@@ -290,8 +272,6 @@ describe('환경설정 일반 — 초기 화면 정적 파일 카드 렌더', ()
   beforeEach(() => { registry = setupTestRegistry(); });
   afterEach(() => { (registry as any).registry = {}; });
 
-  // @scenario permission=granted, publishable=production_enabled, outcome=success
-  // @effects card_renders_status_rows
   it('입력 컨트롤을 하나도 렌더하지 않는다 (진단 + 동작 패널 — 저장 필드 없음)', async () => {
     const testUtils = renderCard(PUBLISHED);
     await testUtils.render();
@@ -369,8 +349,6 @@ describe('환경설정 일반 — 초기 화면 정적 파일 카드 렌더', ()
     testUtils.cleanup();
   });
 
-  // @scenario permission=granted, publishable=production_enabled, outcome=success
-  // @effects card_renders_status_rows
   it('다국어 키가 화면에 그대로 노출되지 않는다', async () => {
     const testUtils = renderCard(PUBLISHED);
     await testUtils.render();

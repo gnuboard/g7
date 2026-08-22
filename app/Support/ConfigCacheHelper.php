@@ -3,12 +3,7 @@
 namespace App\Support;
 
 use Illuminate\Container\Container;
-use Illuminate\Contracts\Events\Dispatcher;
-use Illuminate\Database\ConnectionResolverInterface;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Pagination\PaginationState;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Facade;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 
@@ -34,87 +29,31 @@ use Illuminate\Support\Facades\Log;
 class ConfigCacheHelper
 {
     /**
-     * deferRebuilds() 중첩 깊이 — 0 보다 크면 rebuild() 는 대기 표시만 한다.
-     */
-    private static int $deferDepth = 0;
-
-    /**
-     * 묶는 동안 재생성 요청이 있었는지 여부.
-     */
-    private static bool $rebuildPending = false;
-
-    /**
-     * 콜백이 도는 동안의 재생성 요청을 모아 가장 바깥 호출이 끝날 때 한 번만 재생성합니다.
-     *
-     * 확장 비활성화 1건마다 리스너가 config:cache(일회용 앱 부팅)를 돌리면, 부팅 시 자동 비활성화 연쇄 17건에서
-     * MySQL 연결 151개가 고갈됐다(#145 F6). 여러 확장을 한꺼번에 바꾸는 경로는 이 래퍼로 감싼다.
-     * 예외가 나도 깊이는 복구하고, 대기 중인 재생성은 실행한다(이미 바뀐 상태를 캐시에 반영해야 한다).
-     *
-     * @param  callable  $callback  묶을 작업
-     * @return mixed 콜백 반환값
-     */
-    public static function deferRebuilds(callable $callback): mixed
-    {
-        self::$deferDepth++;
-
-        try {
-            return $callback();
-        } finally {
-            self::$deferDepth--;
-
-            if (self::$deferDepth === 0 && self::$rebuildPending) {
-                self::$rebuildPending = false;
-                self::rebuild();
-            }
-        }
-    }
-
-    /**
-     * config 캐시를 다시 굽습니다 — 임시 파일에 다 구운 뒤 실제 파일과 바꿔 끼웁니다(`AtomicBootstrapCache`).
-     *
-     * 굽는 동안 실제 파일은 그대로 남아 다른 요청이 계속 쓴다 — 종전처럼 먼저 지우면 그 사이 요청이
-     * 비캐시 부팅하거나 반쯤 쓰인 파일을 만났다(#882).
+     * config 캐시를 비우고 즉시 재생성합니다.
      *
      * 설치 미완료(installer 실행 전) 환경에서는 config:cache 가 불완전한 부팅을
      * 캐시에 박제해 부팅 실패를 유발할 수 있으므로, clear 만 수행하고 재생성은 건너뛴다.
      * 테스트 환경(APP_ENV=testing)은 tests/bootstrap.php 가 config 캐시를 자동 삭제하며
      * 캐시 생성이 테스트 격리를 깨므로 no-op 로 스킵한다.
      *
-     * 재생성 실패(권한/디스크 등)는 치명적이지 않다 — 실패하면 그때 config:clear 로 stale 캐시를
-     * 지워 다음 요청이 fresh config 로 안전하게 부팅되므로, 경고만 남기고 넘어간다.
-     *
-     * deferRebuilds() 안에서는 대기 표시만 하고 즉시 돌아간다.
-     *
-     * @return void 반환값 없음
+     * 재생성 실패(권한/디스크 등)는 치명적이지 않다 — config:clear 로 stale 캐시는
+     * 이미 제거되어 다음 요청이 fresh config 로 안전하게 부팅되므로, 경고만 남기고 넘어간다.
      */
     public static function rebuild(): void
     {
-        if (self::$deferDepth > 0) {
-            self::$rebuildPending = true;
-
-            return;
-        }
+        // 항상 stale 캐시부터 제거 (값 반영 보장). testing 환경에서도 clear 는 수행한다 —
+        // 캐시 파일이 없으면 사실상 no-op 이고 격리를 깨지 않으며, 설정 저장 후 값 반영을
+        // 검증하는 기존 테스트(SettingsServiceConfigClearTest) 계약을 유지한다.
+        Artisan::call('config:clear');
 
         // config:cache 생성은 격리를 깨므로(캐시된 config 가 다음 테스트로 누출) testing 에서
         // 스킵한다. 설치 미완료 상태에서도 불완전 config 박제를 피하려 재생성하지 않는다.
-        // 그 둘은 낡은 캐시만 지운다(값 반영 보장) — testing 에서도 clear 는 수행한다. 캐시 파일이 없으면
-        // 사실상 no-op 이고 격리를 깨지 않으며, 설정 저장 후 값 반영을 검증하는 기존 테스트
-        // (SettingsServiceConfigClearTest) 계약을 유지한다.
         if (app()->environment('testing') || ! self::isInstalled()) {
-            Artisan::call('config:clear');
-
             return;
         }
 
         try {
-            // 먼저 지우지 않는다 — 지운 뒤 굽는 사이 다른 요청이 비캐시 부팅·반쯤 쓰인 파일을 만났다(#882).
-            // 임시 파일에 다 구운 뒤 실제 파일과 바꿔 끼우고, 굽기가 실패하면 그때 낡은 캐시를 지운다.
-            AtomicBootstrapCache::regenerate(
-                'APP_CONFIG_CACHE',
-                app()->getCachedConfigPath(),
-                static fn () => self::withPreservedContainer(static fn () => Artisan::call('config:cache')),
-                static fn () => Artisan::call('config:clear'),
-            );
+            self::withPreservedContainer(static fn () => Artisan::call('config:cache'));
         } catch (\Throwable $e) {
             Log::warning('config 캐시 재생성 실패 (config:clear 로 stale 은 제거됨 — 다음 요청은 비캐시 부팅)', [
                 'error' => $e->getMessage(),
@@ -123,117 +62,26 @@ class ConfigCacheHelper
     }
 
     /**
-     * 콜백 실행 뒤 전역 컨테이너 인스턴스와 파사드 애플리케이션을 원래 앱으로 되돌립니다.
+     * 콜백 실행 뒤 전역 컨테이너 인스턴스를 원래 앱으로 되돌립니다.
      *
-     * `config:cache` 는 신선한 설정을 얻기 위해 **새 Application 을 부팅**하는데, 그 부팅이 전역 상태를
-     * 두 군데 바꾼다.
-     *
-     * 1. `Application` 생성자의 `Container::setInstance()` — 그 순간부터 `app()` 헬퍼가 실행 중인 앱이
-     *    아니라 일회용 앱을 가리킨다. 같은 프로세스에서 그 뒤에 등록되는 `app()->terminating()` 콜백은
-     *    종료되지 않는 앱에 걸려 **영원히 실행되지 않는다** — 설정 저장 뒤의 확장 캐시 버전 bump 가
-     *    예약한 정적 재게시가 그렇게 조용히 사라졌다(#651 F5 실측: 버전은 올랐는데 게시는 다음 렌더의
-     *    자가 치유까지 미뤄짐).
-     * 2. `registerBaseBindings()` 의 `Facade::clearResolvedInstances()` + `Facade::setFacadeApplication()`
-     *    — 그 순간부터 **모든 파사드**(`Artisan`·`Log`·`DB`·`Cache` …)가 일회용 앱에서 새 인스턴스를
-     *    해석한다. 컨테이너만 되돌리면 이 축이 남는다.
-     *
-     * 2번이 코어 업데이트에서 드러난 형태: Step 11 의 `ConfigCacheHelper::rebuild()` 뒤에 오는
-     * `RouteCacheHelper::rebuild()` 의 `Artisan::call('route:clear')` 가 일회용 앱에서 **새 콘솔 Kernel** 을
-     * 해석하고, 그 Kernel 은 콘솔 Application 을 처음부터 구성하며 등록된 커맨드를 전부 resolve 한다.
-     * 부팅 시점 vendor 가 개발용이었다면 그 목록에 `command.tinker` 같은 require-dev 커맨드가 들어
-     * 있는데, Step 8 이 vendor 를 `--no-dev` 로 이미 교체했으므로 그 클래스가 없어
-     * `Target class [command.tinker] does not exist.` 로 업데이트 전체가 실패·롤백한다
-     * (2026-09-07 7.0.9 → 7.0.11 실측). 프로세스에 이미 등록된 provider 목록은 vendor 교체로 갱신되지
-     * 않으므로, 방어는 "교체 뒤에 콘솔 Application 을 다시 구성하지 않는 것" 이다.
+     * `config:cache` 는 신선한 설정을 얻기 위해 **새 Application 을 부팅**하는데, `Application` 생성자가
+     * `Container::setInstance()` 를 호출하므로 그 순간부터 `app()` 헬퍼가 실행 중인 앱이 아니라 그
+     * 일회용 앱을 가리킨다(파사드는 별도 참조라 그대로다). 같은 프로세스에서 그 뒤에 등록되는
+     * `app()->terminating()` 콜백은 종료되지 않는 앱에 걸려 **영원히 실행되지 않는다** — 설정 저장
+     * 뒤의 확장 캐시 버전 bump 가 예약한 정적 재게시가 그렇게 조용히 사라졌다(#651 F5 실측: 버전은
+     * 올랐는데 게시는 다음 렌더의 자가 치유까지 미뤄짐). 예외도 로그도 없고, 자가 치유가 한 렌더
+     * 뒤에 덮어 주므로 "한 박자 늦게 반영" 으로만 나타난다.
      *
      * @param  callable  $callback  전역 인스턴스를 바꿔 놓을 수 있는 작업
-     * @return void 반환값 없음
      */
     public static function withPreservedContainer(callable $callback): void
     {
         $app = Container::getInstance();
-        $facadeApp = Facade::getFacadeApplication();
-        // 일회용 앱의 DatabaseServiceProvider 가 부팅하며 Eloquent 의 정적 연결 해석기·이벤트 디스패처를 자기 것으로
-        // 바꾼다. 되돌리지 않으면 그 뒤 모델 조회가 (아래에서 닫은) 일회용 앱의 DB 관리자로 다시 연결해 연결이 쌓이고
-        // (번들 일괄 업데이트 실측: 확장마다 +4, 18개에 최대 66개), 모델 이벤트도 실행 중인 앱의 리스너에 닿지 않는다.
-        $modelResolver = Model::getConnectionResolver();
-        $modelDispatcher = Model::getEventDispatcher();
 
         try {
             $callback();
         } finally {
-            // 일회용 앱이 부팅하며 연 DB 연결을 닫는다 — 그대로 두면 프로세스가 끝날 때까지 남는다.
-            // 캐시를 한 번 구울 때마다 연결이 하나씩 쌓여(실측: 10번 구워 +10), 확장 여러 개를 한 프로세스에서
-            // 차례로 업데이트하면 DB 의 동시 연결 한도를 넘겼다.
-            $disposable = Container::getInstance();
-            if ($disposable !== $app && $disposable instanceof Container) {
-                self::closeDatabaseConnections($disposable);
-            }
-
             Container::setInstance($app);
-
-            // 일회용 앱이 남긴 파사드 해석 결과를 버리고 원래 앱으로 되돌린다.
-            // 순서 주의: clear 를 먼저 해야 일회용 앱에서 해석된 인스턴스가 캐시에 남지 않는다.
-            Facade::clearResolvedInstances();
-            if ($facadeApp !== null) {
-                Facade::setFacadeApplication($facadeApp);
-            }
-
-            self::restoreFrameworkStatics($app, $modelResolver, $modelDispatcher);
-        }
-    }
-
-    /**
-     * 일회용 앱의 부팅이 바꿔 놓은 프레임워크 정적 상태를 실행 중인 앱의 것으로 되돌립니다.
-     *
-     * Eloquent 연결 해석기·이벤트 디스패처는 콜백 전에 잡아 둔 값으로, 페이지네이터 해석기(현재 주소·쪽 번호·검색어)는
-     * 실행 중인 앱 기준으로 다시 묶는다 — 일회용 앱의 PaginationServiceProvider 가 자기 요청으로 묶어 둔다.
-     *
-     * @param  Container|null  $app  실행 중인 앱
-     * @param  ConnectionResolverInterface|null  $modelResolver  콜백 전 Eloquent 연결 해석기
-     * @param  Dispatcher|null  $modelDispatcher  콜백 전 Eloquent 이벤트 디스패처
-     * @return void 반환값 없음
-     */
-    private static function restoreFrameworkStatics(?Container $app, ?ConnectionResolverInterface $modelResolver, ?Dispatcher $modelDispatcher): void
-    {
-        if ($modelResolver !== null) {
-            Model::setConnectionResolver($modelResolver);
-        }
-        if ($modelDispatcher !== null) {
-            Model::setEventDispatcher($modelDispatcher);
-        } else {
-            Model::unsetEventDispatcher();
-        }
-        if ($app instanceof Container && $app->bound('request')) {
-            PaginationState::resolveUsing($app);
-        }
-    }
-
-    /**
-     * 컨테이너(일회용 앱)가 연 DB 연결을 모두 닫습니다.
-     *
-     * 트랜잭션이 열려 있는 연결은 건드리지 않습니다. 실패해도 예외를 던지지 않습니다 — 닫지 못한 연결은
-     * 프로세스가 끝날 때 닫힙니다.
-     *
-     * @param  Container  $container  연결을 닫을 컨테이너
-     * @return void 반환값 없음
-     */
-    private static function closeDatabaseConnections(Container $container): void
-    {
-        try {
-            if (! $container->bound('db') || ! $container->resolved('db')) {
-                return;
-            }
-
-            $manager = $container->make('db');
-            foreach ($manager->getConnections() as $name => $connection) {
-                if (is_callable([$connection, 'transactionLevel']) && $connection->transactionLevel() > 0) {
-                    continue;
-                }
-                $manager->disconnect($name);
-            }
-        } catch (\Throwable) {
-            // 닫기 실패는 캐시 굽기 결과에 영향을 주지 않는다
         }
     }
 
@@ -241,8 +89,6 @@ class ConfigCacheHelper
      * config 캐시만 제거합니다 (재생성 없음).
      *
      * 재생성이 부적절한 특수 경로(예: 설치 직전 초기화)를 위한 보조 진입점.
-     *
-     * @return void 반환값 없음
      */
     public static function clear(): void
     {

@@ -37,20 +37,6 @@ Listener (RegisterKcpProviderListener 등)
 `sirsoft-verification_kginicis`와 계층 구조가 거의 동일한 것은 둘 다 같은 코어 계약을
 구현하기 때문입니다 — 새 IDV provider 를 추가할 때 이 두 플러그인을 참조 구현으로 삼을 수
 있습니다.
-
-날짜 기준도 두 플러그인이 같습니다. 성인 판정(`KcpIdentityProvider::isAdult()`)의 만 나이는
-한국 법상 나이라 생일과 오늘을 모두 `Asia/Seoul` 날짜로 셉니다(서버 UTC 날짜로 세면 한국 시간
-0~9시에 생일을 맞은 사람이 하루 늦게 성인이 됩니다). 마이페이지 카드의 `verified_at` 은 보는 사람
-시간대 문자열입니다.
-
-**1인 1계정 판정은 두 단계입니다(1.1.4).** 가입 전 리스너(`AssertNoDuplicateKcpIdentity`)는 record·선점표를 조회해
-이미 가입한 명의를 먼저 안내하지만, 가입 트랜잭션 밖이라 같은 명의로 동시에 가입하면 둘 다 통과할 수 있습니다. 그래서
-최종 판정은 코어가 가입 트랜잭션 안에서 발행하는 `core.auth.registering` 의 동기 구독자(`ClaimKcpIdentityOnRegistering`)가
-**선점표(`nhnkcp_identity_claims`, `(hash_type, hash)` 유니크)에 자리를 잡는 것**으로 합니다 — 자리를 못 잡으면 예외로 가입
-전체(회원·동의 이력)가 롤백되고, 「어느 식별값이 겹쳤는지」 감사 기록만 롤백 뒤에 남깁니다. 선점표는 탈퇴·삭제 리스너가
-같은 트랜잭션에서 비워 탈퇴 후 재가입은 그대로 허용됩니다. 선점표를 KCP·이니시스가 따로 갖는 것은 판정 키·해시·파기
-수명주기를 각 플러그인이 소유하기 때문입니다(교차 차단은 하지 않음). 정책이 KCP 를 지정했는데 다른 수단의 결과로 가입하려
-하면 가입 전 리스너가 거부합니다.
 <!-- @intent END -->
 
 ## 디렉토리
@@ -70,8 +56,7 @@ Listener (RegisterKcpProviderListener 등)
 | `src/Enums/` | 상태·타입·분류 | 문자열 리터럴 대신 Enum 을 SSoT 로 둔다 |
 | `src/routes/` | 라우트 | 모든 라우트에 `name()` 필수 |
 | `database/migrations/` | 마이그레이션 | 한국어 comment + `down()` 필수, 기설치본은 업그레이드 스텝으로 백필 |
-| `upgrades/` | 업그레이드 스텝 | DB·설정 구조 변경 시 작성 (모듈/플러그인 전용) |
-| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan plugin:update sirsoft-verification_nhnkcp --force` (빌드 불필요) |
+| `resources/layouts/` | 레이아웃 JSON | `php artisan plugin:update sirsoft-verification_nhnkcp --force` (빌드 불필요) |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan plugin:build` → `php artisan plugin:update sirsoft-verification_nhnkcp --force` |
 | `resources/extensions/` | 다른 확장 레이아웃에 주입하는 조각 | `php artisan plugin:update sirsoft-verification_nhnkcp --force` |
 | `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan plugin:update sirsoft-verification_nhnkcp --force` |
@@ -79,18 +64,7 @@ Listener (RegisterKcpProviderListener 등)
 | `config/` | 확장 config | 설정 기본값은 settings 스키마와 어긋나지 않게 |
 | `tests/` | 테스트 | 변경 범위만 필터 실행 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
-| `components.json` | 편집기 컴포넌트 선언 (레이아웃 작성자가 읽는 props 계약) | `php artisan plugin:update sirsoft-verification_nhnkcp --force` |
-| `assets/icon.svg` | 확장 아이콘 (관리자 목록·설치 마법사 카드) | 정사각·100KB 이하·스크립트 없는 SVG — 교체 후 `php artisan plugin:update sirsoft-verification_nhnkcp --force` |
+| `components.json` | 편집기 컴포넌트 선언 (레이아웃 저작자가 읽는 props 계약) | `php artisan plugin:update sirsoft-verification_nhnkcp --force` |
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 | `lang/` | 다국어 | 키 추가 시 ko·en 동시 반영 + 번들 ja 팩 동기화 |
 <!-- @generated:directory-map END -->
-
-## 마이페이지 카드 라우트의 상태 게이트 (이슈 #636 S4)
-
-카드 조회 라우트는 `auth:sanctum` + `check.user_status` 를 씁니다. 종전 표기 `check.user_status:active` 의
-`:active` 는 **아무 일도 하지 않았습니다** — 이 미들웨어는 파라미터를 받지 않고 Laravel 이 초과 인자를
-조용히 버립니다. 「이 라우트만 active 로 좁혔다」는 거짓 신호였으므로 제거했습니다.
-
-통과 어휘는 미들웨어가 단독으로 소유합니다(활성만 통과 / 비활성·차단·**휴면**·탈퇴는 403). 라우트별로
-상태 어휘를 갈라 두면 휴면처럼 상태가 새로 생길 때 게이트 강도가 라우트마다 어긋납니다 — 그래서 이
-플러그인은 상태 판정을 재선언하지 않습니다.

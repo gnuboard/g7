@@ -63,13 +63,12 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지�
 | --- | --- | --- |
 | 401 | 비밀번호 불일치 | 전달한 `password` 가 저장된 해시와 일치하지 않는 경우 (`message`: 비밀번호가 일치하지 않습니다.) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
-| 429 | Too Many Requests | 비밀번호 확인을 너무 여러 번 틀린 경우 (`auth.password_reconfirm_throttled`, `:seconds` 치환, `Retry-After` 헤더, 7.1.6). 회원 단위로 세며(`PasswordReconfirmationService`, 키 `password-reconfirm:{userId}`) 상한은 환경설정 보안의 「로그인 시도 횟수」, 대기는 「잠금 시간」(분)이다. 맞히면 횟수가 초기화된다. 인증 앱 등록 시작(`sirsoft-totp`)의 현재 비밀번호 확인과 같은 횟수를 공유한다 |
 | 500 | 비밀번호 확인 실패 | 확인 처리 중 예기치 못한 예외가 발생한 경우 (`message`: 비밀번호 확인에 실패했습니다.) |
 
 <!-- @generated:end -->
 
 **설명**
 
-현재 로그인한 사용자의 비밀번호를 재확인한다. 민감한 작업 직전 본인 확인 게이트로 사용되며, 프론트의 `_password_verify_section.g7.html` 이 호출한다. 요청의 `password` 를 `Hash::check` 로 저장된 해시와 대조해, 일치하면 성공 응답(`user.password_verified`)을, 틀리면 401(`user.password_incorrect`)을 반환한다. 비밀번호를 변경하지 않고 신원만 확인하므로 사용자 데이터는 바뀌지 않는다.
+현재 로그인한 사용자의 비밀번호를 재확인한다. 민감한 작업 직전 본인 확인 게이트로 사용되며, 프론트의 `_password_verify_section.json` 이 호출한다. 요청의 `password` 를 `Hash::check` 로 저장된 해시와 대조해, 일치하면 성공 응답(`user.password_verified`)을, 틀리면 401(`user.password_incorrect`)을 반환한다. 비밀번호를 변경하지 않고 신원만 확인하므로 사용자 데이터는 바뀌지 않는다.
 
 

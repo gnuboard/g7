@@ -4,28 +4,21 @@ namespace App\Services;
 
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Repositories\LanguagePackRepositoryInterface;
-use App\Enums\ExtensionStatus;
-use App\Enums\LanguagePackDeactivationReason;
 use App\Enums\LanguagePackScope;
 use App\Enums\LanguagePackStatus;
 use App\Exceptions\LanguagePackOperationException;
 use App\Exceptions\LanguagePackSlotConflictException;
 use App\Extension\Helpers\ExtensionBackupHelper;
-use App\Extension\Helpers\ExtensionOperationLock;
-use App\Extension\Helpers\ExtensionPendingHelper;
 use App\Extension\Helpers\GithubHelper;
-use App\Extension\Helpers\InstalledExtensionLookup;
 use App\Extension\Helpers\ZipInstallHelper;
 use App\Extension\HookManager;
 use App\Extension\Traits\ClearsTemplateCaches;
 use App\Models\LanguagePack;
-use App\Services\Extension\ExtensionIconResolver;
 use App\Services\LanguagePack\LanguagePackBaseLocales;
 use App\Services\LanguagePack\LanguagePackManifestValidator;
 use App\Services\LanguagePack\LanguagePackPhpArrayValidator;
 use App\Services\LanguagePack\LanguagePackRegistry;
 use App\Support\OutboundUrlValidator;
-use App\Support\SafeExceptionMessage;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
@@ -195,80 +188,7 @@ class LanguagePackService
             $pack->setAttribute('bundled_source_available', $this->hasBundledSource($pack));
         }
 
-        return $this->annotateIcons($packs);
-    }
-
-    /**
-     * 언어팩 행에 아이콘 URL·출처를 부여합니다.
-     *
-     * 언어팩은 대개 자기 아이콘을 담지 않는다 — 기본은 **대상 확장의 아이콘**이고
-     * 화면이 거기에 로케일 배지를 얹는다(국기는 쓰지 않는다. 언어≠국가).
-     * 우선순위는 자기 선언 → 코어 아이콘(scope=core) → 대상 확장 아이콘 → 없음이다.
-     *
-     * @param  Collection<int, LanguagePack>  $packs  대상 컬렉션
-     * @return Collection<int, LanguagePack> 동일 컬렉션(icon_url·icon_source 부여됨)
-     */
-    private function annotateIcons(Collection $packs): Collection
-    {
-        foreach ($packs as $pack) {
-            $this->annotateIcon($pack);
-        }
-
         return $packs;
-    }
-
-    /**
-     * 언어팩 한 벌에 icon_url·icon_source 를 부여합니다.
-     *
-     * 목록과 단건 조회가 같은 판정을 쓰도록 여기 한 곳에 둔다 — 상세 창은 목록을 거치지 않고
-     * 이 경로로 받은 행을 그대로 그리므로, 목록에만 얹으면 상세 창에서 아이콘이 사라진다.
-     *
-     * 설치 확인 창(`ExtensionInstallPreviewBuilder`)도 이 메서드를 쓴다 — 거기서 해석기를
-     * 따로 부르면 「자기 선언 → 코어 → 대상 확장 → 없음」 4갈래 판정이 두 벌로 갈린다.
-     * **읽기 전용 경로에서만** 부른다(`find()`·`findByIdentifier()` 는 활성화·삭제로 이어져
-     * 모델이 그대로 저장되는데, 이 두 속성은 컬럼이 아니라 저장 시 500 이 된다).
-     *
-     * @param  LanguagePack  $pack  대상 언어팩
-     * @return LanguagePack 동일 인스턴스(icon_url·icon_source 부여됨)
-     */
-    public function annotateIcon(LanguagePack $pack): LanguagePack
-    {
-        $resolver = app(ExtensionIconResolver::class);
-
-        $identifier = (string) $pack->identifier;
-        $version = $pack->version !== null ? (string) $pack->version : null;
-
-        if ($identifier !== '' && $resolver->resolve('language-pack', $identifier) !== null) {
-            $pack->setAttribute('icon_url', $resolver->url('language-pack', $identifier, $version));
-            $pack->setAttribute('icon_source', 'manifest');
-
-            return $pack;
-        }
-
-        $scope = (string) $pack->scope;
-
-        if ($scope === 'core') {
-            $pack->setAttribute('icon_url', ExtensionIconResolver::CORE_ICON_URL);
-            $pack->setAttribute('icon_source', 'core');
-
-            return $pack;
-        }
-
-        $target = (string) ($pack->target_identifier ?? '');
-
-        if ($target !== ''
-            && in_array($scope, ['module', 'plugin', 'template'], true)
-            && $resolver->resolve($scope, $target) !== null) {
-            $pack->setAttribute('icon_url', $resolver->url($scope, $target));
-            $pack->setAttribute('icon_source', 'target');
-
-            return $pack;
-        }
-
-        $pack->setAttribute('icon_url', null);
-        $pack->setAttribute('icon_source', 'none');
-
-        return $pack;
     }
 
     /**
@@ -334,19 +254,15 @@ class LanguagePackService
     }
 
     /**
-     * 코어와 설치된 확장의 `lang/{ko,en}/` 디렉토리를 스캔하여 가상 보호 LanguagePack
+     * 코어/번들 확장의 `lang/{ko,en}/` 디렉토리를 자동 스캔하여 가상 보호 LanguagePack
      * 인스턴스 컬렉션을 반환합니다 (요구사항 #1, #2).
      *
      * 스캔 대상 — **런타임이 실제로 로드하는 경로**와 같아야 한다. 어긋나면 관리자 화면이
      * "내장 번역" 으로 보여주는 것과 화면에 나오는 문구의 출처가 달라진다.
      *  - 코어: lang/{ko,en}/
-     *  - 설치된 모듈: modules/{id}/src/lang/{ko,en}/ (TranslationServiceProvider 기준)
-     *  - 설치된 플러그인: plugins/{id}/lang/{ko,en}/
-     *  - 설치된 템플릿: templates/{id}/lang/{ko,en}.json 또는 lang/partial/{ko,en}/
-     *
-     * 「설치된 확장」 은 확장 테이블에 active·inactive 행이 있는 확장이다(InstalledExtensionLookup).
-     * 설치 소스(번들·마켓·업로드)와 무관하게 모두 나오고, 설치하지 않은 번들 확장은 나오지 않는다 —
-     * 동봉 원본은 설치 전 보관본이라 런타임이 읽지 않는다.
+     *  - 번들 모듈: modules/_bundled/{id}/src/lang/{ko,en}/ (TranslationServiceProvider 기준)
+     *  - 번들 플러그인: plugins/_bundled/{id}/lang/{ko,en}/
+     *  - 번들 템플릿: templates/_bundled/{id}/lang/{ko,en}.json
      *
      * 발견된 각 슬롯에 대해 Repository::buildVirtualBuiltInPack() 으로 가상 행 합성.
      * 모든 가상 행은 status=active, is_protected=true, source_type=built_in.
@@ -357,13 +273,6 @@ class LanguagePackService
     public function getVirtualBuiltInPacks(array $filters = []): Collection
     {
         $packs = collect();
-
-        // 설치된 확장 식별자는 로케일마다 다시 조회하지 않는다.
-        $installed = [
-            LanguagePackScope::Module->value => InstalledExtensionLookup::identifiers('module'),
-            LanguagePackScope::Plugin->value => InstalledExtensionLookup::identifiers('plugin'),
-            LanguagePackScope::Template->value => InstalledExtensionLookup::identifiers('template'),
-        ];
 
         foreach (LanguagePackBaseLocales::all() as $locale) {
             // 코어
@@ -381,68 +290,65 @@ class LanguagePackService
                 }
             }
 
-            // 설치된 모듈 (런타임 등록 경로 = src/lang)
-            $packs = $packs->concat($this->scanInstalledExtensionLang(
-                installRoot: 'modules',
-                identifiers: $installed[LanguagePackScope::Module->value],
+            // 번들 모듈 (런타임 등록 경로 = src/lang)
+            $packs = $packs->concat($this->scanBundledExtensionLang(
+                bundledRoot: 'modules/_bundled',
                 scope: LanguagePackScope::Module->value,
                 langSubpath: 'src/lang/'.$locale,
                 locale: $locale,
                 filters: $filters,
             ));
 
-            // 설치된 플러그인
-            $packs = $packs->concat($this->scanInstalledExtensionLang(
-                installRoot: 'plugins',
-                identifiers: $installed[LanguagePackScope::Plugin->value],
+            // 번들 플러그인
+            $packs = $packs->concat($this->scanBundledExtensionLang(
+                bundledRoot: 'plugins/_bundled',
                 scope: LanguagePackScope::Plugin->value,
                 langSubpath: 'lang/'.$locale,
                 locale: $locale,
                 filters: $filters,
             ));
 
-            // 설치된 템플릿 (lang/{locale}.json 또는 lang/partial/{locale}/)
-            $packs = $packs->concat($this->scanInstalledTemplateLang(
-                $installed[LanguagePackScope::Template->value],
-                $locale,
-                $filters,
-            ));
+            // 번들 템플릿 (lang/{locale}.json 또는 lang/partial/{locale}/)
+            $packs = $packs->concat($this->scanBundledTemplateLang($locale, $filters));
         }
 
         return $packs->values();
     }
 
     /**
-     * 설치된 확장(모듈·플러그인)의 설치본 lang/{locale}/ 자원을 스캔합니다.
+     * 번들 확장 디렉토리(modules/_bundled, plugins/_bundled) 의 lang/{locale}/ 자원을 스캔합니다.
      *
-     * 설치 기록은 있는데 설치본 디렉토리나 lang 디렉토리가 없으면 그 확장은 건너뛴다 —
-     * 런타임도 그 자리에서 번역을 읽지 못하므로 "내장 번역" 으로 보여줄 것이 없다.
-     *
-     * @param  string  $installRoot  base_path 기준 설치 루트 (예: 'modules')
-     * @param  array<int, string>  $identifiers  설치된 확장 식별자 목록
+     * @param  string  $bundledRoot  base_path 기준 상대 경로 (예: 'modules/_bundled')
      * @param  string  $scope  스코프 enum 값
-     * @param  string  $langSubpath  확장 디렉토리 하위의 lang 경로 (예: 'src/lang/ko')
+     * @param  string  $langSubpath  확장 디렉토리 하위의 lang 경로 (예: 'resources/lang/ko')
      * @param  string  $locale  로케일
      * @param  array<string, mixed>  $filters  필터
-     * @return Collection<int, LanguagePack> 설치본 lang 이 있는 확장의 가상 보호 행
+     * @return Collection<int, LanguagePack>
      */
-    private function scanInstalledExtensionLang(
-        string $installRoot,
-        array $identifiers,
+    private function scanBundledExtensionLang(
+        string $bundledRoot,
         string $scope,
         string $langSubpath,
         string $locale,
         array $filters,
     ): Collection {
+        $absRoot = base_path($bundledRoot);
+        if (! File::isDirectory($absRoot)) {
+            return collect();
+        }
+
         $packs = collect();
-        foreach ($identifiers as $extId) {
-            $extDir = base_path($installRoot.DIRECTORY_SEPARATOR.$extId);
+        foreach (File::directories($absRoot) as $extDir) {
+            $extId = basename($extDir);
             $langDir = $extDir.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $langSubpath);
             if (! File::isDirectory($langDir)) {
                 continue;
             }
 
-            [$vendor, $version] = $this->readBuiltInManifestMeta($extDir, $scope, $extId);
+            $manifestPath = $extDir.DIRECTORY_SEPARATOR.$this->guessManifestFilename($scope);
+            $manifest = is_file($manifestPath) ? json_decode((string) @file_get_contents($manifestPath), true) : null;
+            $vendor = is_array($manifest) ? (string) ($manifest['vendor'] ?? explode('-', $extId)[0] ?? 'g7') : 'g7';
+            $version = is_array($manifest) ? (string) ($manifest['version'] ?? '0.0.0') : '0.0.0';
 
             $pack = $this->repository->buildVirtualBuiltInPack(
                 scope: $scope,
@@ -450,7 +356,7 @@ class LanguagePackService
                 locale: $locale,
                 vendor: $vendor,
                 version: $version,
-                langPathRelative: $installRoot.'/'.$extId.'/'.$langSubpath,
+                langPathRelative: $bundledRoot.'/'.$extId.'/'.$langSubpath,
             );
             if ($this->matchesBuiltInFilters($pack, $filters)) {
                 $packs->push($pack);
@@ -461,25 +367,32 @@ class LanguagePackService
     }
 
     /**
-     * 설치된 템플릿의 설치본 lang/{locale}.json 또는 lang/partial/{locale}/ 자원을 스캔합니다.
+     * 번들 템플릿의 lang/{locale}.json 또는 lang/partial/{locale}/ 자원을 스캔합니다.
      *
-     * @param  array<int, string>  $identifiers  설치된 템플릿 식별자 목록
      * @param  string  $locale  로케일
      * @param  array<string, mixed>  $filters  필터
-     * @return Collection<int, LanguagePack> 설치본 lang 이 있는 템플릿의 가상 보호 행
+     * @return Collection<int, LanguagePack>
      */
-    private function scanInstalledTemplateLang(array $identifiers, string $locale, array $filters): Collection
+    private function scanBundledTemplateLang(string $locale, array $filters): Collection
     {
+        $absRoot = base_path('templates/_bundled');
+        if (! File::isDirectory($absRoot)) {
+            return collect();
+        }
+
         $packs = collect();
-        foreach ($identifiers as $tplId) {
-            $tplDir = base_path('templates'.DIRECTORY_SEPARATOR.$tplId);
+        foreach (File::directories($absRoot) as $tplDir) {
+            $tplId = basename($tplDir);
             $hasJson = is_file($tplDir.DIRECTORY_SEPARATOR.'lang'.DIRECTORY_SEPARATOR.$locale.'.json');
             $hasPartial = File::isDirectory($tplDir.DIRECTORY_SEPARATOR.'lang'.DIRECTORY_SEPARATOR.'partial'.DIRECTORY_SEPARATOR.$locale);
             if (! $hasJson && ! $hasPartial) {
                 continue;
             }
 
-            [$vendor, $version] = $this->readBuiltInManifestMeta($tplDir, LanguagePackScope::Template->value, $tplId);
+            $manifestPath = $tplDir.DIRECTORY_SEPARATOR.'template.json';
+            $manifest = is_file($manifestPath) ? json_decode((string) @file_get_contents($manifestPath), true) : null;
+            $vendor = is_array($manifest) ? (string) ($manifest['vendor'] ?? explode('-', $tplId)[0] ?? 'g7') : 'g7';
+            $version = is_array($manifest) ? (string) ($manifest['version'] ?? '0.0.0') : '0.0.0';
 
             $pack = $this->repository->buildVirtualBuiltInPack(
                 scope: LanguagePackScope::Template->value,
@@ -487,7 +400,7 @@ class LanguagePackService
                 locale: $locale,
                 vendor: $vendor,
                 version: $version,
-                langPathRelative: 'templates/'.$tplId.'/lang',
+                langPathRelative: 'templates/_bundled/'.$tplId.'/lang',
             );
             if ($this->matchesBuiltInFilters($pack, $filters)) {
                 $packs->push($pack);
@@ -495,29 +408,6 @@ class LanguagePackService
         }
 
         return $packs;
-    }
-
-    /**
-     * 설치본 매니페스트에서 가상 보호 행의 vendor·version 을 읽습니다.
-     *
-     * @param  string  $extDir  확장 설치본 절대 경로
-     * @param  string  $scope  스코프 enum 값 (매니페스트 파일명 결정)
-     * @param  string  $extId  확장 식별자 (매니페스트에 vendor 가 없을 때 접두사로 대신한다)
-     * @return array{0: string, 1: string} [vendor, version] — 매니페스트가 없으면 ['g7', '0.0.0']
-     */
-    private function readBuiltInManifestMeta(string $extDir, string $scope, string $extId): array
-    {
-        $manifestPath = $extDir.DIRECTORY_SEPARATOR.$this->guessManifestFilename($scope);
-        $manifest = is_file($manifestPath) ? json_decode((string) @file_get_contents($manifestPath), true) : null;
-
-        if (! is_array($manifest)) {
-            return ['g7', '0.0.0'];
-        }
-
-        return [
-            (string) ($manifest['vendor'] ?? explode('-', $extId)[0] ?? 'g7'),
-            (string) ($manifest['version'] ?? '0.0.0'),
-        ];
     }
 
     /**
@@ -541,7 +431,6 @@ class LanguagePackService
      *
      * @param  LanguagePack  $pack  가상 행
      * @param  array<string, mixed>  $filters  필터
-     * @return bool 필터에 맞으면 true
      */
     private function matchesBuiltInFilters(LanguagePack $pack, array $filters): bool
     {
@@ -640,7 +529,6 @@ class LanguagePackService
 
             $virtual = $this->repository->buildVirtualFromManifest($manifest, basename($dir));
             $virtual->setAttribute('install_blocked_reason', $this->resolveInstallBlockedReason($manifest));
-            $virtual->setAttribute('install_notice', $this->resolveInstallNotice($manifest));
             $packs->push($virtual);
         }
 
@@ -712,8 +600,6 @@ class LanguagePackService
      */
     public function find(int $id): ?LanguagePack
     {
-        // 아이콘을 얹지 않는다 — 이 경로는 활성화·해제·삭제로 이어져 모델이 그대로 저장되는데,
-        // 컬럼이 없는 속성이 실려 있으면 저장이 깨진다. 화면용 주석은 findOrBundled 가 맡는다.
         return $this->repository->findById($id);
     }
 
@@ -727,7 +613,6 @@ class LanguagePackService
      */
     public function findByIdentifier(string $identifier): ?LanguagePack
     {
-        // find() 와 같은 이유로 아이콘을 얹지 않는다 — Artisan 커맨드가 이 모델을 저장한다.
         return $this->repository->findByIdentifier($identifier);
     }
 
@@ -738,19 +623,12 @@ class LanguagePackService
      * 언어팩의 합집합을 반환하여 코어 기본 로케일이 누락되지 않도록
      * 합니다. 언어팩 설치/활성화 직후 사용자 UI 갱신용으로 사용됩니다.
      *
-     * 활성 코어 언어팩은 부팅에서 레지스트리가 이미 읽어 둔 메모를 쓴다 — DB 를 다시 조회하지 않는다(#860).
-     * 활성화·비활성화·제거는 `LanguagePackRegistry::invalidate()` 로 그 메모를 비운다.
-     *
      * @return array<int, string> 로케일 문자열 배열
      */
     public function getActiveLocales(): array
     {
         $configLocales = (array) config('app.supported_locales', ['ko', 'en']);
-        $activeLocales = $this->registry->getActivePacks(LanguagePackScope::Core->value)
-            ->pluck('locale')
-            ->unique()
-            ->values()
-            ->all();
+        $activeLocales = $this->repository->getActiveCoreLocales();
 
         return array_values(array_unique(array_merge($configLocales, $activeLocales)));
     }
@@ -767,11 +645,8 @@ class LanguagePackService
      */
     public function findOrBundled(int|string $id): ?LanguagePack
     {
-        // 이 메서드는 상세 화면이 쓰는 읽기 전용 경로다 — 저장으로 이어지지 않으므로 아이콘을 얹는다.
         if (is_numeric($id)) {
-            $pack = $this->find((int) $id);
-
-            return $pack !== null ? $this->annotateIcon($pack) : null;
+            return $this->find((int) $id);
         }
 
         // 1) lang-packs/_bundled/{id}/ 의 ja 등 별도 패키지 가상 행
@@ -779,16 +654,14 @@ class LanguagePackService
         if (File::isFile($manifestPath)) {
             $manifest = json_decode(File::get($manifestPath), true);
             if (is_array($manifest) && ($manifest['identifier'] ?? null) === $id) {
-                return $this->annotateIcon(
-                    $this->repository->buildVirtualFromManifest($manifest, (string) $id)
-                );
+                return $this->repository->buildVirtualFromManifest($manifest, (string) $id);
             }
         }
 
         // 2) 코어/번들 확장의 lang/{ko,en}/ 가상 보호 행
         foreach ($this->getVirtualBuiltInPacks() as $pack) {
             if ($pack->identifier === $id) {
-                return $this->annotateIcon($pack);
+                return $pack;
             }
         }
 
@@ -814,7 +687,7 @@ class LanguagePackService
 
         try {
             $zipPath = $file->getRealPath();
-            ZipInstallHelper::extractZip($zipPath, $extractPath, $file->getClientOriginalName());
+            ZipInstallHelper::extractZip($zipPath, $extractPath);
 
             return $this->finalizeInstall($extractPath, 'zip', $file->getClientOriginalName(), $autoActivate, $installedBy);
         } catch (Throwable $e) {
@@ -844,8 +717,7 @@ class LanguagePackService
 
         try {
             File::ensureDirectoryExists($tempPath);
-            // parseUrl 은 [소유자, 저장소] 목록을 돌려준다 — 종전의 키 분해(owner/repo)는 늘 실패해 GitHub 경로가 동작하지 않았다.
-            [$owner, $repo] = GithubHelper::parseUrl($githubUrl);
+            ['owner' => $owner, 'repo' => $repo] = GithubHelper::parseUrl($githubUrl);
             $zipPath = GithubHelper::downloadZip($owner, $repo, $tempPath);
             ZipInstallHelper::extractZip($zipPath, $extractPath);
 
@@ -966,7 +838,6 @@ class LanguagePackService
      * @param  string  $sourceUrl  설치 소스 URL/파일명
      * @param  bool  $autoActivate  설치 후 자동 활성화 여부
      * @param  int|null  $installedBy  설치자 사용자 ID
-     * @param  bool  $force  다운그레이드·충돌 가드를 건너뛸지 여부
      * @return LanguagePack 설치/갱신된 언어팩
      *
      * @throws RuntimeException 검증/의존성/충돌 실패 시
@@ -995,16 +866,9 @@ class LanguagePackService
 
         $this->assertSecurityRules($packageRoot, $manifest);
         $this->assertDependencies($manifest);
-        // 설치는 대상 확장이 **설치돼 있으면** 꺼져 있어도 허용한다(켜는 것은 activate() 가 여전히 대상 활성을 요구).
-        // 확장 설치 창은 설치 직후 비활성인 그 확장 자신의 언어팩을 함께 고르므로, 여기서 거절하면 늘 실패했다.
-        $this->assertTargetExtensionExists($manifest, allowInactiveTarget: true);
-        $targetInactive = $this->isTargetExtensionInactive($manifest);
+        $this->assertTargetExtensionExists($manifest);
 
         $identifier = $manifest['identifier'];
-
-        // 같은 언어팩의 다른 작업과 겹치지 않게 잠근다 — 업데이트(performUpdate)가 부른 설치는 그 잠금에 합류한다(#161)
-        $operationLock = ExtensionOperationLock::acquire('language_pack', $identifier, 'install');
-
         $existing = $this->repository->findByIdentifier($identifier);
 
         if ($existing && ! $force) {
@@ -1013,21 +877,21 @@ class LanguagePackService
         }
 
         $finalPath = base_path('lang-packs/'.$identifier);
-        $this->placeInstallDirectory($packageRoot, $finalPath, $manifest);
+        if (File::isDirectory($finalPath)) {
+            File::deleteDirectory($finalPath);
+        }
+        File::ensureDirectoryExists(dirname($finalPath));
+        File::moveDirectory($packageRoot, $finalPath);
 
-        // 새 판은 복사로 놓였으므로 _pending 사본은 통째로 정리한다(잠금으로 덜 지워져도 무해 — 다음 설치와 이름이 겹치지 않는다).
-        $this->cleanupPending($extractPath);
+        if ($extractPath !== $packageRoot) {
+            File::deleteDirectory($extractPath);
+        }
 
         // 재설치(update path) 시 자기 자신을 슬롯 충돌로 오인하지 않도록 $existing->id 를 제외.
         // 이전엔 재설치 시 자기가 active 였더라도 $shouldActivate 가 false 가 되어
         // status 가 active → installed 로 강등 → 의존하는 확장 언어팩이 'core_locale_missing'
         // 으로 차단되는 회귀가 발생.
-        // 켜 달라는 요청이지만 대상 확장이 꺼져 있으면 지금은 켜지 않고 「대상 켜짐 대기」로 표시해 둔다 —
-        // 대상 확장을 켤 때(LanguagePackBundledRegistrar::activateAwaitingForExtension) 함께 켜진다.
-        $awaitingHost = $autoActivate && $targetInactive;
-
         $shouldActivate = $autoActivate
-            && ! $targetInactive
             && ! $this->repository->findActiveForSlot(
                 $manifest['scope'],
                 $manifest['target_identifier'] ?? null,
@@ -1035,7 +899,7 @@ class LanguagePackService
                 $existing?->id
             );
 
-        $pack = DB::transaction(function () use ($existing, $manifest, $sourceType, $sourceUrl, $installedBy, $awaitingHost) {
+        $pack = DB::transaction(function () use ($existing, $manifest, $sourceType, $sourceUrl, $installedBy) {
             $data = $this->buildPackData($manifest, $sourceType, $sourceUrl, $installedBy);
 
             // 설치 트랜잭션은 항상 installed 로만 기록한다. 활성화는 아래에서 activate() 를
@@ -1050,8 +914,6 @@ class LanguagePackService
             //  우회하는 경로를 닫는다. 정상 운영자는 auto_activate 로 활성 상태를 유지하며,
             //  그 플래그는 RequiresActivationPermission 이 지킨다.)
             $data['status'] = LanguagePackStatus::Installed->value;
-            // 대기 표시는 이번 설치 요청의 뜻을 따른다 — 켜 달라고 하지 않은 재설치는 이전 대기 표시도 지운다.
-            $data['deactivated_reason'] = $awaitingHost ? LanguagePackDeactivationReason::AwaitingHost->value : null;
 
             return $existing
                 ? $this->repository->update($existing, $data)
@@ -1090,10 +952,6 @@ class LanguagePackService
      */
     public function activate(LanguagePack $pack, bool $force = false): LanguagePack
     {
-        // 같은 언어팩의 다른 작업(설치·업데이트·활성화·비활성화·제거)과 겹치지 않게 잠근다 — 겹치면 409, 잠금 저장소 오류면
-        // 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(#161).
-        $operationLock = ExtensionOperationLock::acquire('language_pack', $pack->identifier, 'activate');
-
         $this->assertNotInProgress($pack);
 
         if ($pack->isActive()) {
@@ -1124,8 +982,6 @@ class LanguagePackService
 
             $this->repository->update($pack, [
                 'status' => LanguagePackStatus::Active->value,
-                'deactivated_reason' => null,
-                'deactivated_at' => null,
                 'activated_at' => now(),
             ]);
         });
@@ -1162,7 +1018,7 @@ class LanguagePackService
                 $this->activate($pack);
                 $succeeded[] = $pack->id;
             } catch (Throwable $e) {
-                $failed[] = ['id' => $id, 'reason' => SafeExceptionMessage::for($e)];
+                $failed[] = ['id' => $id, 'reason' => $e->getMessage()];
             }
         }
 
@@ -1180,10 +1036,6 @@ class LanguagePackService
      */
     public function deactivate(LanguagePack $pack, bool $cascadeFromHost = false): LanguagePack
     {
-        // 같은 언어팩의 다른 작업(설치·업데이트·활성화·비활성화·제거)과 겹치지 않게 잠근다 — 겹치면 409, 잠금 저장소 오류면
-        // 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(#161).
-        $operationLock = ExtensionOperationLock::acquire('language_pack', $pack->identifier, 'deactivate');
-
         $this->assertNotInProgress($pack);
 
         if (! $pack->isActive()) {
@@ -1195,13 +1047,9 @@ class LanguagePackService
             throw new LanguagePackOperationException('language_packs.errors.protected_pack');
         }
 
-        DB::transaction(function () use ($pack, $cascadeFromHost) {
-            // 호스트 연쇄면 사유를 남겨 호스트를 다시 켤 때 함께 켤 대상으로 삼는다(#145 — 캐시 대신 DB).
-            // 운영자가 직접 끈 팩은 사유 없이 시각만 남긴다 — 호스트를 켜도 다시 켜지 않는다.
+        DB::transaction(function () use ($pack) {
             $this->repository->update($pack, [
                 'status' => LanguagePackStatus::Inactive->value,
-                'deactivated_reason' => $cascadeFromHost ? LanguagePackDeactivationReason::HostDeactivated->value : null,
-                'deactivated_at' => now(),
             ]);
 
             $this->promoteSlotSuccessor($pack);
@@ -1218,17 +1066,12 @@ class LanguagePackService
      *
      * @param  LanguagePack  $pack  대상 언어팩
      * @param  bool  $cascade  코어 제거 시 하위(module/plugin/template) 동일 locale 팩도 함께 제거
-     * @return void 반환값 없음
      */
     public function uninstall(LanguagePack $pack, bool $cascade = false): void
     {
         if ($pack->isProtected()) {
             throw new LanguagePackOperationException('language_packs.errors.protected_pack');
         }
-
-        // 같은 언어팩의 다른 작업(설치·업데이트·활성화·비활성화·제거)과 겹치지 않게 잠근다 — 겹치면 409, 잠금 저장소 오류면
-        // 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(#161).
-        $operationLock = ExtensionOperationLock::acquire('language_pack', $pack->identifier, 'uninstall');
 
         $this->assertNotInProgress($pack);
 
@@ -1267,7 +1110,6 @@ class LanguagePackService
      * 슬롯 비활성화 후 다음 후보를 active 로 승격합니다.
      *
      * @param  LanguagePack  $pack  방금 비활성화된 언어팩
-     * @return void 반환값 없음
      */
     private function promoteSlotSuccessor(LanguagePack $pack): void
     {
@@ -1279,8 +1121,6 @@ class LanguagePackService
         if ($next) {
             $this->repository->update($next, [
                 'status' => LanguagePackStatus::Active->value,
-                'deactivated_reason' => null,
-                'deactivated_at' => null,
                 'activated_at' => now(),
             ]);
         }
@@ -1338,7 +1178,6 @@ class LanguagePackService
      *
      * @param  string  $packageRoot  패키지 루트 디렉토리
      * @param  array<string, mixed>  $manifest  manifest 데이터
-     * @return void 반환값 없음
      *
      * @throws RuntimeException 보안 위반 발견 시
      */
@@ -1455,7 +1294,6 @@ class LanguagePackService
      * 모듈/플러그인/템플릿 install 과 동일 수준의 가드 — 권한 부족 시 chmod 안내 메시지가
      * 포함된 `RuntimeException` 을 던집니다. 컨트롤러는 본 예외를 422 응답으로 변환합니다.
      *
-     * @return void 반환값 없음
      *
      * @throws RuntimeException 디렉토리 미존재/쓰기 불가 시
      */
@@ -1478,7 +1316,6 @@ class LanguagePackService
      * 의존성 검증 — depends_on_core_locale 이 true 면 코어 언어팩 active 여부 확인.
      *
      * @param  array<string, mixed>  $manifest  manifest 데이터
-     * @return void 반환값 없음
      *
      * @throws RuntimeException 의존성 미충족 시
      */
@@ -1495,19 +1332,15 @@ class LanguagePackService
     /**
      * 대상 확장 존재 + 활성 여부를 확인합니다.
      *
-     * 활성화(activate)는 모듈/플러그인 시스템과 동일한 강도로 — 비활성 확장에 언어팩이 켜지지 않게 차단합니다.
-     * 설치는 `$allowInactiveTarget=true` 로 불러 설치돼 있으나 꺼진 대상을 허용합니다(꺼진 채 설치, 켜기는 대상 활성 후).
-     * 미설치 대상·버전 미달은 설치에서도 차단합니다.
+     * 모듈/플러그인 시스템과 동일한 강도로 — 비활성 확장에도 언어팩이 들러붙지 않게 차단합니다.
      *
      * @param  array<string, mixed>  $manifest  manifest 데이터
-     * @param  bool  $allowInactiveTarget  설치돼 있으나 꺼진 대상을 허용할지 여부 (설치 경로 전용)
-     * @return void 반환값 없음
      *
-     * @throws RuntimeException 대상 확장 미설치/비활성(허용하지 않을 때)/버전 미달 시
+     * @throws RuntimeException 대상 확장 미설치/비활성 시
      */
-    private function assertTargetExtensionExists(array $manifest, bool $allowInactiveTarget = false): void
+    private function assertTargetExtensionExists(array $manifest): void
     {
-        $reason = $this->resolveTargetExtensionBlockedReason($manifest, $allowInactiveTarget);
+        $reason = $this->resolveTargetExtensionBlockedReason($manifest);
         if ($reason === 'target_not_installed') {
             throw new LanguagePackOperationException('language_packs.errors.target_not_installed', [
                 'scope' => $manifest['scope'],
@@ -1533,9 +1366,8 @@ class LanguagePackService
     /**
      * 설치 차단 사유를 단일 키워드로 반환합니다 (UI 표시 + 차단 검증의 SSoT).
      *
-     * 우선순위: 코어 locale 미활성 → 대상 미설치 → 대상 버전 미달.
-     * 대상이 설치돼 있으나 꺼져 있는 것은 설치 차단 사유가 아닙니다 — 꺼진 채 설치되고, 켜는 것은 대상을 켠 뒤에
-     * 합니다(안내는 `resolveInstallNotice()`). 어느 것도 해당하지 않으면 null 을 반환합니다.
+     * 우선순위: 코어 locale 미활성 → 대상 미설치 → 대상 비활성 → 대상 버전 미달.
+     * 어느 것도 해당하지 않으면 null 을 반환합니다.
      *
      * @param  array<string, mixed>  $manifest  manifest 데이터
      * @return string|null 차단 사유 키 또는 null
@@ -1543,60 +1375,7 @@ class LanguagePackService
     public function resolveInstallBlockedReason(array $manifest): ?string
     {
         return $this->resolveCoreLocaleBlockedReason($manifest)
-            ?? $this->resolveTargetExtensionBlockedReason($manifest, true);
-    }
-
-    /**
-     * 번들 언어팩의 설치 차단 사유를 지금 다시 판정합니다 — 같은 실행에서 앞선 팩(코어 locale 팩)이 설치되면 사유가 사라질 수 있다.
-     *
-     * `language-pack:provision` 이 미리 계산된 `install_blocked_reason` 대신 그 팩 차례에 부른다(#153).
-     *
-     * @param  string  $bundledIdentifier  번들 식별자 (`lang-packs/_bundled/{식별자}`)
-     * @return string|null 차단 사유 키 또는 null (manifest 를 읽지 못하면 null — 설치 단계가 사유와 함께 실패한다)
-     */
-    public function bundledInstallBlockedReason(string $bundledIdentifier): ?string
-    {
-        $manifestPath = base_path('lang-packs/_bundled/'.$bundledIdentifier.'/language-pack.json');
-        if (! File::isFile($manifestPath)) {
-            return null;
-        }
-
-        $manifest = json_decode(File::get($manifestPath), true);
-
-        return is_array($manifest) ? $this->resolveInstallBlockedReason($manifest) : null;
-    }
-
-    /**
-     * 설치는 되지만 알려 둘 사정을 단일 키워드로 반환합니다 (UI 안내용, 설치를 막지 않음).
-     *
-     * 현재는 대상 확장이 설치돼 있으나 꺼진 경우 `target_inactive` — 설치는 꺼진 채 되고, 그 확장을 켠 뒤에 켤 수 있습니다.
-     *
-     * @param  array<string, mixed>  $manifest  manifest 데이터
-     * @return string|null 안내 사유 키 또는 null
-     */
-    public function resolveInstallNotice(array $manifest): ?string
-    {
-        return $this->isTargetExtensionInactive($manifest) ? 'target_inactive' : null;
-    }
-
-    /**
-     * 대상 확장이 설치돼 있으나 꺼져 있는지 판정합니다 (코어 범위·대상 없음·미설치는 false).
-     *
-     * @param  array<string, mixed>  $manifest  manifest 데이터
-     * @return bool 설치돼 있고 비활성이면 true
-     */
-    private function isTargetExtensionInactive(array $manifest): bool
-    {
-        $scope = $manifest['scope'] ?? null;
-        $target = $manifest['target_identifier'] ?? null;
-
-        if ($scope === LanguagePackScope::Core->value || ! $target) {
-            return false;
-        }
-
-        $row = $this->repository->findHostExtensionRow($scope, $target);
-
-        return $row !== null && ($row->status ?? null) !== ExtensionStatus::Active->value;
+            ?? $this->resolveTargetExtensionBlockedReason($manifest);
     }
 
     /**
@@ -1629,10 +1408,9 @@ class LanguagePackService
      * 대상 확장 존재/활성/버전 차단 사유를 반환합니다.
      *
      * @param  array<string, mixed>  $manifest  manifest 데이터
-     * @param  bool  $allowInactiveTarget  true 면 설치돼 있으나 꺼진 대상을 차단하지 않고 버전 검사로 넘어간다 (설치 경로)
      * @return string|null 'target_not_installed' / 'target_inactive' / 'target_version_too_old' 또는 null
      */
-    private function resolveTargetExtensionBlockedReason(array $manifest, bool $allowInactiveTarget = false): ?string
+    private function resolveTargetExtensionBlockedReason(array $manifest): ?string
     {
         $scope = $manifest['scope'] ?? null;
         $target = $manifest['target_identifier'] ?? null;
@@ -1646,7 +1424,7 @@ class LanguagePackService
             return 'target_not_installed';
         }
 
-        if (($row->status ?? null) !== ExtensionStatus::Active->value && ! $allowInactiveTarget) {
+        if (($row->status ?? null) !== 'active') {
             return 'target_inactive';
         }
 
@@ -1666,7 +1444,6 @@ class LanguagePackService
      *
      * @param  LanguagePack  $existing  기존 언어팩
      * @param  array<string, mixed>  $manifest  새 manifest
-     * @return void 반환값 없음
      *
      * @throws RuntimeException 다운그레이드 시도 시
      */
@@ -1708,69 +1485,9 @@ class LanguagePackService
     }
 
     /**
-     * 검증을 마친 새 설치본을 활성 디렉토리(`lang-packs/{identifier}`) 자리에 놓습니다.
-     *
-     * 확장 폴더 교체와 같은 `ExtensionPendingHelper::copyToActive` 를 쓴다 — 사본을 만든 뒤 옛 폴더를 `_pending` 으로
-     * 비켜 두고 새 폴더를 놓으며, 디렉토리 rename 이 막히면(Windows 에서 다른 프로그램이 트리 안 핸들을 잡고 있을 때)
-     * 파일 단위 복사·제자리 동기화로 폴백한다. 놓은 뒤 manifest 의 식별자·판이 설치하려던 것과 같은지 확인한다.
-     *
-     * 예전에는 옛 폴더를 먼저 지우고(`deleteDirectory`) `moveDirectory` 결과를 보지 않았다. rename 이 실패하면 예외 없이
-     * DB 만 새 판·active 로 기록되고 활성 폴더는 사라졌다 — 2026-10-14 `g7-plugin-sirsoft-pay_nicepayments-ja` 재설치 뒤
-     * 사본이 `lang-packs/_pending/{uuid}` 에 남고 설치 폴더가 없어져 「파일 없음」 이 된 실측 사례.
-     *
-     * @param  string  $packageRoot  검증을 마친 새 설치본 디렉토리(`_pending` 아래)
-     * @param  string  $finalPath  활성 디렉토리 경로
-     * @param  array<string, mixed>  $manifest  검증을 마친 manifest
-     * @return void 반환값 없음
-     *
-     * @throws LanguagePackOperationException 새 설치본을 활성 자리에 놓지 못했을 때(DB 기록 전)
-     */
-    private function placeInstallDirectory(string $packageRoot, string $finalPath, array $manifest): void
-    {
-        $identifier = (string) $manifest['identifier'];
-
-        try {
-            File::ensureDirectoryExists(dirname($finalPath));
-            ExtensionPendingHelper::copyToActive($packageRoot, $finalPath);
-        } catch (Throwable $e) {
-            Log::error('lang-pack install directory replace failed', [
-                'identifier' => $identifier,
-                'path' => $finalPath,
-                'error' => $e->getMessage(),
-            ]);
-
-            throw new LanguagePackOperationException(
-                'language_packs.errors.install_directory_replace_failed',
-                ['identifier' => $identifier],
-                $e
-            );
-        }
-
-        // 폴백 복사가 일부 파일을 조용히 놓치는 경우까지 — 활성 자리의 manifest 가 이번 판이어야 DB 에 기록한다.
-        $placedManifestPath = $finalPath.DIRECTORY_SEPARATOR.'language-pack.json';
-        $placed = File::isFile($placedManifestPath) ? json_decode((string) File::get($placedManifestPath), true) : null;
-        if (! is_array($placed)
-            || ($placed['identifier'] ?? null) !== $identifier
-            || (string) ($placed['version'] ?? '') !== (string) ($manifest['version'] ?? '')) {
-            Log::error('lang-pack install directory replace incomplete', [
-                'identifier' => $identifier,
-                'path' => $finalPath,
-                'placed_version' => is_array($placed) ? ($placed['version'] ?? null) : null,
-                'expected_version' => $manifest['version'] ?? null,
-            ]);
-
-            throw new LanguagePackOperationException(
-                'language_packs.errors.install_directory_replace_failed',
-                ['identifier' => $identifier]
-            );
-        }
-    }
-
-    /**
      * _pending 임시 디렉토리를 정리합니다.
      *
      * @param  string  $path  정리 대상 경로
-     * @return void 반환값 없음
      */
     private function cleanupPending(string $path): void
     {
@@ -1825,13 +1542,11 @@ class LanguagePackService
      * 단일 GitHub 언어팩의 최신 버전을 조회하고 latest_version 을 갱신합니다.
      *
      * @param  LanguagePack  $pack  대상 언어팩
-     *                              후보는 GitHub 공개 최신과 번들(`lang-packs/_bundled`) 판 중 높은 버전이다(같으면 GitHub) — 모듈·플러그인·템플릿과 같은 규칙.
-     *                              확장 공개 릴리스가 코어 출시보다 늦으면 옛 공개 판만 보고 「최신」으로 끝나지 않게 한다.
-     * @return array{identifier:string, current:string, latest:string|null, source:string|null, has_update:bool, error:string|null}
+     * @return array{identifier:string, current:string, latest:string|null, has_update:bool, error:string|null}
      */
     private function checkSinglePackUpdate(LanguagePack $pack): array
     {
-        $githubLatest = null;
+        $latest = null;
         $error = null;
 
         // 1순위: GitHub (manifest.github_url SSoT — 모듈/플러그인/템플릿과 동일 패턴.
@@ -1839,11 +1554,9 @@ class LanguagePackService
         $githubUrl = $this->resolveGithubUrl($pack);
         if ($githubUrl !== null) {
             try {
-                [$owner, $repo] = GithubHelper::parseUrl($githubUrl);
+                ['owner' => $owner, 'repo' => $repo] = GithubHelper::parseUrl($githubUrl);
                 $release = GithubHelper::fetchLatestRelease($owner, $repo);
-                // 헬퍼는 `version`(태그의 v 를 뗀 값)을 돌려준다 — 종전에는 `tag_name` 을 읽어 늘 비어 번들로 폴백했다.
-                $githubLatest = ltrim((string) ($release['version'] ?? $release['tag_name'] ?? ''), 'v') ?: null;
-                $error = $release['error'] ?? null;
+                $latest = ltrim((string) ($release['tag_name'] ?? ''), 'v') ?: null;
             } catch (Throwable $e) {
                 $error = $e->getMessage();
                 Log::warning('language-pack github update check failed', [
@@ -1853,13 +1566,9 @@ class LanguagePackService
             }
         }
 
-        // 번들 판 (lang-packs/_bundled/{identifier}/language-pack.json) — GitHub 보다 높으면 번들을 후보로
-        $latest = $githubLatest;
-        $source = $githubLatest !== null ? 'github' : null;
-        $bundledLatest = $this->resolveBundledLatestVersion($pack);
-        if ($bundledLatest !== null && ($latest === null || version_compare($bundledLatest, $latest, '>'))) {
-            $latest = $bundledLatest;
-            $source = 'bundled';
+        // 2순위: bundled 폴백 (lang-packs/_bundled/{identifier}/language-pack.json)
+        if ($latest === null) {
+            $latest = $this->resolveBundledLatestVersion($pack);
         }
 
         if ($latest === null) {
@@ -1867,7 +1576,6 @@ class LanguagePackService
                 'identifier' => $pack->identifier,
                 'current' => $pack->version,
                 'latest' => null,
-                'source' => null,
                 'has_update' => false,
                 'error' => $error,
             ];
@@ -1879,7 +1587,6 @@ class LanguagePackService
             'identifier' => $pack->identifier,
             'current' => $pack->version,
             'latest' => $latest,
-            'source' => $source,
             'has_update' => version_compare($latest, $pack->version, '>'),
             'error' => null,
         ];
@@ -2040,32 +1747,24 @@ class LanguagePackService
             throw new LanguagePackOperationException('language_packs.errors.update_no_source');
         }
 
-        // 같은 언어팩의 업데이트는 한 번에 하나만 — 업데이트 확인(네트워크)과 Updating 기록 사이 구간에 들어온 두 번째 요청이
-        // 함께 통과하던 창(#138 과 같은 창)을 막는다. 안쪽 설치(finalizeInstall)는 이 잠금에 합류한다(#161).
-        $operationLock = ExtensionOperationLock::acquire('language_pack', $pack->identifier, 'update');
-
         $this->assertNotInProgress($pack);
 
         // force=false 일 때만 버전 변동 여부를 가드한다. force=true 는 모듈/플러그인/템플릿의
         // {type}:update --force 와 동일하게 버전이 같아도 _bundled 에서 강제 재적용을 허용한다.
-        $preferBundled = false;
         if (! $force) {
             $check = $this->checkSinglePackUpdate($pack);
             if (! $check['has_update']) {
                 throw new LanguagePackOperationException('language_packs.errors.update_already_latest');
             }
-            // 확인이 고른 출처에서 받는다 — 번들이 공개 최신보다 높아 번들을 후보로 골랐으면 GitHub 에서 옛 판을 받지 않는다.
-            $preferBundled = ($check['source'] ?? null) === 'bundled';
         }
 
         $identifier = $pack->identifier;
         $previousStatus = $pack->status;
-        $previousReason = $pack->deactivated_reason;
         $autoActivate = $pack->isActive();
         $backupPath = null;
 
-        // 출처 결정: force=true 또는 확인이 번들을 골랐으면(번들이 공개 최신보다 높음) + bundled 존재 → bundled, 그 외 → GitHub
-        $useBundled = ($force || $preferBundled) && $this->hasBundledManifest($identifier);
+        // 우선순위 결정: force=true + bundled 존재 → bundled, 그 외 → GitHub (manifest.github_url 우선)
+        $useBundled = $force && $this->hasBundledManifest($identifier);
         if (! $useBundled && $githubUrl === null) {
             // GitHub URL 해석 실패 시 bundled 폴백 자동 사용
             $useBundled = $this->hasBundledManifest($identifier);
@@ -2082,7 +1781,6 @@ class LanguagePackService
             if (File::isDirectory($activeDir)) {
                 $backupPath = ExtensionBackupHelper::createBackup('lang-packs', $identifier);
             }
-            $operationLock->keepAlive();
 
             // 3. 신버전 다운로드 + 적용 (force 전파 — 다운그레이드 우회 허용)
             if ($useBundled) {
@@ -2090,28 +1788,8 @@ class LanguagePackService
             } else {
                 $updated = $this->installFromGithub((string) $githubUrl, $autoActivate, $pack->installed_by, $force);
             }
-            $operationLock->keepAlive(force: true);
 
-            // 4. 꺼져 있던 팩의 상태·사유 복원 — 재설치 경로는 활성이 아닌 팩을 installed·사유 없음으로 기록한다.
-            //    그대로 두면 꺼 둔 팩(inactive)은 대상 확장을 다시 켤 때의 「함께 켤 언어팩」 목록(inactive 만 고른다)에서,
-            //    대상 확장을 기다리던 팩(awaiting_host)은 대상 확장 활성화의 자동 켜기에서 빠져 꺼진 채 남는다.
-            if (! $autoActivate && $updated->status === LanguagePackStatus::Installed->value) {
-                $restore = [];
-                if ($previousStatus === LanguagePackStatus::Inactive->value) {
-                    $restore['status'] = LanguagePackStatus::Inactive->value;
-                }
-                if ($previousReason !== null && $updated->deactivated_reason !== $previousReason) {
-                    $restore['deactivated_reason'] = $previousReason;
-                }
-                if ($restore !== []) {
-                    $this->repository->update($updated, $restore);
-                    $updated = $this->repository->findById($updated->id) ?? $updated;
-                    $this->refreshCache();
-                }
-            }
-            $operationLock->keepAlive();
-
-            // 5. 백업 정리
+            // 4. 백업 정리
             if ($backupPath) {
                 ExtensionBackupHelper::deleteBackup($backupPath);
             }
@@ -2174,7 +1852,6 @@ class LanguagePackService
      * status=Updating 인 팩에 대해 활성/제거/재업데이트 진입을 차단합니다.
      *
      * @param  LanguagePack  $pack  대상 언어팩
-     * @return void 반환값 없음
      *
      * @throws RuntimeException 진행 중일 때
      */
@@ -2254,7 +1931,7 @@ class LanguagePackService
 
         try {
             $zipPath = $file->getRealPath();
-            ZipInstallHelper::extractZip($zipPath, $extractPath, $file->getClientOriginalName());
+            ZipInstallHelper::extractZip($zipPath, $extractPath);
 
             $manifestPath = ZipInstallHelper::findManifest($extractPath, 'language-pack.json');
             if (! $manifestPath) {
@@ -2273,18 +1950,13 @@ class LanguagePackService
             try {
                 $this->validator->validate($manifest, $packageRoot);
             } catch (Throwable $e) {
-                $validationErrors[] = SafeExceptionMessage::for($e);
+                $validationErrors[] = $e->getMessage();
             }
 
             $existing = $this->repository->findByIdentifier($manifest['identifier'] ?? '');
 
-            // 아이콘 규격 검사는 설치를 막지 않는다 — 경고만 보이고 화면은 유형 글리프로 떨어진다.
-            $icon = app(ExtensionIconResolver::class)
-                ->inspectRootForApi($packageRoot, $manifest['icon'] ?? null);
-
             return [
                 'manifest' => $manifest,
-                'icon' => $icon,
                 'validation' => [
                     'errors' => $validationErrors,
                     'is_valid' => $validationErrors === [],

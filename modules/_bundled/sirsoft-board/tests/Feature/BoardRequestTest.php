@@ -31,8 +31,6 @@ class BoardRequestTest extends ModuleTestCase
     /**
      * BoardTypeValidationRule이 DB에서 타입 목록을 조회하므로
      * 테스트 전 기본 타입을 생성합니다.
-     *
-     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -52,12 +50,6 @@ class BoardRequestTest extends ModuleTestCase
      * FormRequest authorize() 메서드가 항상 true를 반환하는지 확인
      *
      * 실제 권한 체크는 라우트 미들웨어에서 수행됩니다.
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=authorize
-     *
-     * @effects form_request_authorize_delegates_to_middleware
      */
     public function test_form_requests_authorize_always_returns_true(): void
     {
@@ -76,8 +68,6 @@ class BoardRequestTest extends ModuleTestCase
 
     /**
      * 정상적인 게시판 생성 데이터
-     *
-     * @return array 정상 게시판 생성 입력
      */
     private function getValidStoreBoardData(): array
     {
@@ -97,9 +87,6 @@ class BoardRequestTest extends ModuleTestCase
             'use_comment' => true,
             'use_reply' => false,
             'use_report' => false,
-            // rules() 를 직접 검증하므로 prepareForValidation() 의 기본값 병합을 거치지 않는다 — 필수 필드를 명시한다
-            'use_reaction' => false,
-            'reply_delete_policy' => 'cascade',
             'comment_order' => 'ASC',
             'use_file_upload' => false,
             'max_file_size' => null,
@@ -121,29 +108,17 @@ class BoardRequestTest extends ModuleTestCase
 
     /**
      * 정상적인 데이터로 검증 통과
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=store_board
-     *
-     * @effects store_board_request_rules_enforced
      */
     public function test_store_request_valid_data_passes_validation(): void
     {
         $request = new StoreBoardRequest;
         $validator = Validator::make($this->getValidStoreBoardData(), $request->rules());
 
-        $this->assertTrue($validator->passes(), json_encode($validator->errors()->toArray(), JSON_UNESCAPED_UNICODE));
+        $this->assertTrue($validator->passes());
     }
 
     /**
      * 필수 필드 누락 시 검증 실패
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=store_board
-     *
-     * @effects store_board_request_rules_enforced
      */
     public function test_store_request_required_fields_fail_when_missing(): void
     {
@@ -169,12 +144,6 @@ class BoardRequestTest extends ModuleTestCase
      *
      * SlugUniqueRule은 DB에 존재하는 slug를 거부하므로,
      * 형식 검증은 slug 규칙에서 regex 부분만 추출하여 독립 검증합니다.
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=store_board
-     *
-     * @effects store_board_request_rules_enforced
      */
     public function test_store_request_slug_format_validation(): void
     {
@@ -198,12 +167,6 @@ class BoardRequestTest extends ModuleTestCase
 
     /**
      * slug 중복 검증 테스트
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=store_board
-     *
-     * @effects store_board_request_rules_enforced
      */
     public function test_store_request_slug_unique_validation(): void
     {
@@ -241,12 +204,6 @@ class BoardRequestTest extends ModuleTestCase
 
     /**
      * per_page 범위 검증 테스트
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=store_board
-     *
-     * @effects store_board_request_rules_enforced
      */
     public function test_store_request_per_page_range_validation(): void
     {
@@ -273,80 +230,7 @@ class BoardRequestTest extends ModuleTestCase
     }
 
     /**
-     * 게시판 생성 요청도 수정 요청과 같은 설정 필드 표시명을 쓴다.
-     *
-     * 생성 화면에서 신규 표시 기간에 -1 을 넣으면 「new display hours 필드는 최소 0 이상이어야 합니다.」처럼
-     * 영문 필드 키가 그대로 보였다(수정 화면은 「신규 표시 시간 필드는…」). 표시명 매핑이 수정 요청에만 있었다.
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=store_board
-     *
-     * @effects store_board_attribute_names_match_update
-     */
-    public function test_store_request_uses_same_setting_attribute_names_as_update(): void
-    {
-        app()->setLocale('ko');
-
-        $storeAttributes = (new StoreBoardRequest)->attributes();
-        $updateAttributes = $this->makeUpdateRequest()->attributes();
-
-        foreach (['new_display_hours', 'per_page', 'max_file_size', 'max_file_count', 'allowed_extensions'] as $field) {
-            $this->assertArrayHasKey($field, $storeAttributes, "생성 요청에 {$field} 표시명이 없다");
-            $this->assertSame($updateAttributes[$field] ?? null, $storeAttributes[$field], "{$field} 표시명이 수정 요청과 다르다");
-        }
-
-        $data = $this->getValidStoreBoardData();
-        $data['new_display_hours'] = -1;
-        $request = new StoreBoardRequest;
-        $validator = Validator::make($data, $request->rules(), $request->messages(), $request->attributes());
-
-        $this->assertTrue($validator->fails());
-        $this->assertStringNotContainsString('new display hours', $validator->errors()->first('new_display_hours'));
-        $this->assertStringContainsString('신규 표시 시간', $validator->errors()->first('new_display_hours'));
-    }
-
-    /**
-     * 게시판 이름(다국어) 필수 문구가 칸 이름을 「name」 이 아니라 화면 이름으로 부른다.
-     *
-     * 2026-10-07 실측(후속): 코어 다국어 필수 문구가 칸 이름(:attribute)을 싣도록
-     * 바뀐 뒤, 게시판 생성 화면에서 이름을 비우면 「name의 한국어(ko) 값은 필수입니다.」 로 필드 키가
-     * 그대로 보였다 — 생성·수정 요청의 표시명 매핑에 name·description 이 없었다.
-     *
-     * @scenario request=store_board
-     *
-     * @effects board_name_attribute_named_in_locale_message
-     *
-     * @return void 반환값 없음
-     */
-    public function test_board_name_locale_required_message_uses_display_name(): void
-    {
-        foreach (['ko' => ['게시판 이름', '한국어(ko)'], 'en' => ['Board Name', '한국어 (ko)']] as $locale => [$label, $language]) {
-            app()->setLocale($locale);
-
-            $data = $this->getValidStoreBoardData();
-            $data['name'] = ['ko' => '', 'en' => ''];
-
-            $store = new StoreBoardRequest;
-            $storeMessage = Validator::make($data, $store->rules(), $store->messages(), $store->attributes())->errors()->first('name');
-            $this->assertStringNotContainsString('name', $storeMessage, "[{$locale}] 생성 요청 문구에 필드 키가 보인다: {$storeMessage}");
-            $this->assertStringContainsString($label, $storeMessage, "[{$locale}] 생성 요청 문구: {$storeMessage}");
-            $this->assertStringContainsString($language, $storeMessage, "[{$locale}] 생성 요청 문구: {$storeMessage}");
-
-            $update = $this->makeUpdateRequest();
-            $this->assertSame($label, $update->attributes()['name'] ?? null, "[{$locale}] 수정 요청에 name 표시명이 없다");
-            $this->assertSame($store->attributes()['description'] ?? null, $update->attributes()['description'] ?? null);
-        }
-    }
-
-    /**
      * max_reply_depth 범위 검증 테스트 (rules만 독립 검증)
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=store_board
-     *
-     * @effects store_board_request_rules_enforced
      */
     public function test_store_request_max_reply_depth_range_validation(): void
     {
@@ -370,39 +254,7 @@ class BoardRequestTest extends ModuleTestCase
     }
 
     /**
-     * 비밀 답변 열람 범위(secret_reply_visibility)는 세 값만 받는다 — 생성·수정·환경설정 기본값 (#789 D19)
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=store_board
-     *
-     * @effects store_board_request_rules_enforced
-     */
-    public function test_secret_reply_visibility_accepts_only_three_values(): void
-    {
-        $cases = [
-            'secret_reply_visibility' => (new StoreBoardRequest)->rules()['secret_reply_visibility'] ?? null,
-            'update' => (new UpdateBoardRequest)->rules()['secret_reply_visibility'] ?? null,
-            'basic_defaults.secret_reply_visibility' => (new StoreBoardSettingsRequest)->rules()['basic_defaults.secret_reply_visibility'] ?? null,
-        ];
-
-        foreach ($cases as $label => $rules) {
-            $this->assertNotNull($rules, "{$label} 규칙이 있어야 한다");
-            foreach (['thread_path', 'descendants_only', 'per_post'] as $value) {
-                $this->assertTrue(Validator::make(['v' => $value], ['v' => $rules])->passes(), "{$label}={$value} 통과");
-            }
-            $this->assertFalse(Validator::make(['v' => 'everyone'], ['v' => $rules])->passes(), "{$label}=everyone 거부");
-        }
-    }
-
-    /**
      * max_comment_depth 범위 검증 테스트 (rules만 독립 검증)
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=store_board
-     *
-     * @effects store_board_request_rules_enforced
      */
     public function test_store_request_max_comment_depth_range_validation(): void
     {
@@ -435,9 +287,6 @@ class BoardRequestTest extends ModuleTestCase
 
     /**
      * Mock Board 객체 생성
-     *
-     * @param  bool  $useFileUpload  첨부 사용 여부
-     * @return object 게시판 대역 객체
      */
     private function getMockBoard(bool $useFileUpload = true): object
     {
@@ -453,7 +302,6 @@ class BoardRequestTest extends ModuleTestCase
      * UpdateBoardRequest 인스턴스 생성 (route 파라미터 포함)
      *
      * @param  bool  $boardUseFileUpload  기존 게시판에 저장된 첨부 사용 여부
-     * @return UpdateBoardRequest 라우트가 연결된 수정 요청
      */
     private function makeUpdateRequest(bool $boardUseFileUpload = true): UpdateBoardRequest
     {
@@ -494,8 +342,6 @@ class BoardRequestTest extends ModuleTestCase
 
     /**
      * 정상적인 수정 데이터
-     *
-     * @return array 정상 게시판 수정 입력
      */
     private function getValidUpdateData(): array
     {
@@ -509,12 +355,6 @@ class BoardRequestTest extends ModuleTestCase
 
     /**
      * 정상적인 데이터로 검증 통과
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=update_board
-     *
-     * @effects update_board_request_rules_enforced
      */
     public function test_update_request_valid_data_passes_validation(): void
     {
@@ -526,12 +366,6 @@ class BoardRequestTest extends ModuleTestCase
 
     /**
      * 부분 업데이트 - 일부 필드만 전송해도 검증 통과
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=update_board
-     *
-     * @effects update_board_request_rules_enforced
      */
     public function test_update_request_partial_update_with_sometimes_rule(): void
     {
@@ -548,12 +382,6 @@ class BoardRequestTest extends ModuleTestCase
 
     /**
      * slug 필드는 수정 불가 (rules에 정의되지 않음)
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=update_board
-     *
-     * @effects update_board_request_rules_enforced
      */
     public function test_update_request_slug_field_is_not_in_rules(): void
     {
@@ -565,12 +393,6 @@ class BoardRequestTest extends ModuleTestCase
 
     /**
      * name 필드 검증 테스트
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=update_board
-     *
-     * @effects update_board_request_rules_enforced
      */
     public function test_update_request_name_validation(): void
     {
@@ -591,12 +413,6 @@ class BoardRequestTest extends ModuleTestCase
 
     /**
      * UpdateBoardRequest - max_reply_depth 부분 업데이트 검증 테스트
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=update_board
-     *
-     * @effects update_board_request_rules_enforced
      */
     public function test_update_request_max_reply_depth_validation(): void
     {
@@ -615,12 +431,6 @@ class BoardRequestTest extends ModuleTestCase
 
     /**
      * UpdateBoardRequest - max_comment_depth 부분 업데이트 검증 테스트
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=update_board
-     *
-     * @effects update_board_request_rules_enforced
      */
     public function test_update_request_max_comment_depth_validation(): void
     {
@@ -643,12 +453,6 @@ class BoardRequestTest extends ModuleTestCase
      * 환경설정에서 max_comment_length를 1001~10000으로 저장할 수 있으므로
      * 게시판 생성 Request도 동일 상한(10000)을 허용해야 함.
      * config('sirsoft-board.limits.max_comment_length_max') 가 10000 이어야 함.
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=store_board
-     *
-     * @effects store_board_request_rules_enforced
      */
     public function test_store_request_max_comment_length_allows_up_to_10000(): void
     {
@@ -669,12 +473,6 @@ class BoardRequestTest extends ModuleTestCase
 
     /**
      * UpdateBoardRequest - max_comment_length 상한 10000 검증 (회귀: issue#413)
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=update_board
-     *
-     * @effects update_board_request_rules_enforced
      */
     public function test_update_request_max_comment_length_allows_up_to_10000(): void
     {
@@ -694,12 +492,6 @@ class BoardRequestTest extends ModuleTestCase
      *
      * 환경설정에서 max_title_length를 201~1000으로 저장할 수 있으므로
      * 게시판 생성 Request도 동일 상한(1000)을 허용해야 함.
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=store_board
-     *
-     * @effects store_board_request_rules_enforced
      */
     public function test_store_request_max_title_length_allows_up_to_1000(): void
     {
@@ -718,12 +510,6 @@ class BoardRequestTest extends ModuleTestCase
 
     /**
      * UpdateBoardRequest - max_title_length 상한 1000 검증 (회귀: issue#413)
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=update_board
-     *
-     * @effects update_board_request_rules_enforced
      */
     public function test_update_request_max_title_length_allows_up_to_1000(): void
     {
@@ -741,12 +527,6 @@ class BoardRequestTest extends ModuleTestCase
      *
      * 환경설정에서 max_content_length를 50001~100000으로 저장할 수 있으므로
      * 게시판 생성 Request도 동일 상한(100000)을 허용해야 함.
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=store_board
-     *
-     * @effects store_board_request_rules_enforced
      */
     public function test_store_request_max_content_length_allows_up_to_100000(): void
     {
@@ -765,12 +545,6 @@ class BoardRequestTest extends ModuleTestCase
 
     /**
      * UpdateBoardRequest - max_content_length 상한 100000 검증 (회귀: issue#413)
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=update_board
-     *
-     * @effects update_board_request_rules_enforced
      */
     public function test_update_request_max_content_length_allows_up_to_100000(): void
     {
@@ -792,12 +566,6 @@ class BoardRequestTest extends ModuleTestCase
      *
      * config('sirsoft-board.limits.category_max') 개수까지는 통과,
      * 초과하면 실패해야 함. (이전엔 max 규칙이 없어 51개 저장이 200 통과되던 버그)
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=store_board
-     *
-     * @effects store_board_request_rules_enforced
      */
     public function test_store_request_categories_max_count_validation(): void
     {
@@ -823,12 +591,6 @@ class BoardRequestTest extends ModuleTestCase
 
     /**
      * StoreBoardRequest - 빈 카테고리명 차단 (회귀: issue#413 19-4a)
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=store_board
-     *
-     * @effects store_board_request_rules_enforced
      */
     public function test_store_request_categories_empty_name_fails(): void
     {
@@ -851,12 +613,6 @@ class BoardRequestTest extends ModuleTestCase
 
     /**
      * UpdateBoardRequest - 카테고리 최대 개수 초과 시 검증 실패 (회귀: issue#413 19-4a)
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=update_board
-     *
-     * @effects update_board_request_rules_enforced
      */
     public function test_update_request_categories_max_count_validation(): void
     {
@@ -877,12 +633,6 @@ class BoardRequestTest extends ModuleTestCase
 
     /**
      * UpdateBoardRequest - 빈 카테고리명 차단 (회귀: issue#413 19-4a)
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=update_board
-     *
-     * @effects update_board_request_rules_enforced
      */
     public function test_update_request_categories_empty_name_fails(): void
     {
@@ -902,12 +652,6 @@ class BoardRequestTest extends ModuleTestCase
      *
      * nullable → required_with+min:1 변경으로 빈 배열 전송 시
      * syncReportPermissionRoles()가 모든 역할을 detach하는 버그 차단.
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=board_settings
-     *
-     * @effects board_settings_request_rules_enforced
      */
     public function test_settings_request_report_permissions_empty_view_roles_fails(): void
     {
@@ -925,12 +669,6 @@ class BoardRequestTest extends ModuleTestCase
 
     /**
      * report_permissions.manage_roles 빈 배열은 검증 실패해야 함 (회귀: issue#413)
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=board_settings
-     *
-     * @effects board_settings_request_rules_enforced
      */
     public function test_settings_request_report_permissions_empty_manage_roles_fails(): void
     {
@@ -953,12 +691,6 @@ class BoardRequestTest extends ModuleTestCase
      * attachments, 값=중첩 객체)가 섞여 들어오면, 권한 설정 화면에 raw i18n 키와
      * [object Object] 로 노출된다. prepareForValidation 에서 값이 배열인 flat 키만
      * 남기고 nested 객체 그룹 키는 걸러내 재오염을 차단한다.
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=board_settings
-     *
-     * @effects board_settings_request_rules_enforced
      */
     public function test_settings_request_strips_nested_group_permission_keys(): void
     {
@@ -994,12 +726,6 @@ class BoardRequestTest extends ModuleTestCase
 
     /**
      * 유효한 역할 식별자가 포함된 report_permissions는 통과해야 함 (회귀: issue#413)
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=board_settings
-     *
-     * @effects board_settings_request_rules_enforced
      */
     public function test_settings_request_report_permissions_valid_roles_passes(): void
     {
@@ -1024,12 +750,6 @@ class BoardRequestTest extends ModuleTestCase
      * attributes() 에 필드 라벨이 없으면 :attribute 가 영문 snake_case ("per page")
      * 로 노출되던 문제. attributes() 에서 settings.basic_defaults 라벨을 재사용해
      * 한국어 라벨이 표시되어야 한다.
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=update_board
-     *
-     * @effects update_board_request_rules_enforced
      */
     public function test_update_request_integer_fields_show_localized_attribute_on_type_violation(): void
     {
@@ -1078,12 +798,6 @@ class BoardRequestTest extends ModuleTestCase
      *
      * 회귀 (issue#413): en 로케일에서도 attributes() 라벨("Posts Per Page")이
      * 적용되어 Laravel 의 자동 변환("per page") 대신 정의된 라벨이 표시되어야 한다.
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=update_board
-     *
-     * @effects update_board_request_rules_enforced
      */
     public function test_update_request_per_page_integer_uses_defined_label_in_english(): void
     {
@@ -1131,8 +845,6 @@ class BoardRequestTest extends ModuleTestCase
      * @scenario case=store_min_gt_max
      *
      * @effects min_gt_max_rejected_on_store, error_attached_to_max_field
-     *
-     * @return void 반환값 없음
      */
     public function test_store_request_rejects_min_length_greater_than_max(): void
     {
@@ -1167,8 +879,6 @@ class BoardRequestTest extends ModuleTestCase
      * @scenario case=store_min_eq_max
      *
      * @effects min_le_max_passes
-     *
-     * @return void 반환값 없음
      */
     public function test_store_request_allows_min_length_equal_to_max(): void
     {
@@ -1186,8 +896,6 @@ class BoardRequestTest extends ModuleTestCase
      * @scenario case=store_min_lt_max
      *
      * @effects min_le_max_passes
-     *
-     * @return void 반환값 없음
      */
     public function test_store_request_allows_min_length_less_than_max(): void
     {
@@ -1207,8 +915,6 @@ class BoardRequestTest extends ModuleTestCase
      * @scenario case=update_both_min_gt_max
      *
      * @effects min_gt_max_rejected_on_update_when_both_present
-     *
-     * @return void 반환값 없음
      */
     public function test_update_request_rejects_min_length_greater_than_max(): void
     {
@@ -1230,8 +936,6 @@ class BoardRequestTest extends ModuleTestCase
      * @scenario case=update_partial_skip
      *
      * @effects cross_validation_skipped_on_partial_update
-     *
-     * @return void 반환값 없음
      */
     public function test_update_request_skips_cross_validation_on_partial_submit(): void
     {
@@ -1256,12 +960,6 @@ class BoardRequestTest extends ModuleTestCase
      * StoreBoardRequest - 첨부 사용 게시판에서 allowed_extensions 빈 배열은 검증 실패해야 함 (회귀)
      *
      * use_file_upload=true 인데 빈 배열을 보내면 required + min:1 로 차단되어야 한다.
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=store_board
-     *
-     * @effects store_board_request_rules_enforced
      */
     public function test_store_request_empty_allowed_extensions_fails_when_upload_enabled(): void
     {
@@ -1282,12 +980,6 @@ class BoardRequestTest extends ModuleTestCase
      *
      * messages() ↔ validation.allowed_extensions.min 매핑이 연결되어 코어 기본 메시지가
      * 아닌 정의된 메시지가 표시되는지 확인한다.
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=store_board
-     *
-     * @effects store_board_request_rules_enforced
      */
     public function test_store_request_empty_allowed_extensions_shows_localized_message(): void
     {
@@ -1310,12 +1002,6 @@ class BoardRequestTest extends ModuleTestCase
 
     /**
      * StoreBoardRequest - 정상 확장자 1개 이상 지정 시 통과 (회귀)
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=store_board
-     *
-     * @effects store_board_request_rules_enforced
      */
     public function test_store_request_nonempty_allowed_extensions_passes_when_upload_enabled(): void
     {
@@ -1335,12 +1021,6 @@ class BoardRequestTest extends ModuleTestCase
      *
      * use_file_upload=false 이면 exclude_if 로 검증에서 제외되어 빈 배열도 통과해야 한다.
      * (required_if + min:1 만으로는 min:1 이 빈 배열에 무조건 걸려 실패하므로 exclude_if 사용)
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=store_board
-     *
-     * @effects store_board_request_rules_enforced
      */
     public function test_store_request_empty_allowed_extensions_passes_when_upload_disabled(): void
     {
@@ -1361,12 +1041,6 @@ class BoardRequestTest extends ModuleTestCase
      * 첨부를 쓰는 게시판에 확장자를 비워 저장하면 이후 모든 파일이 거부되므로 차단한다.
      * 첨부 미사용 게시판은 exclude_if 로 배제되어 통과한다(케이스 3 참조) — 이 테스트는
      * 그 경계 중 "차단되어야 하는 쪽"만 고정한다.
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=update_board
-     *
-     * @effects update_board_request_rules_enforced
      */
     public function test_update_request_empty_allowed_extensions_fails_when_upload_enabled(): void
     {
@@ -1383,12 +1057,6 @@ class BoardRequestTest extends ModuleTestCase
 
     /**
      * UpdateBoardRequest - 첨부 미사용 게시판의 빈 확장자는 통과 (케이스 3 · GH #78)
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=update_board
-     *
-     * @effects update_board_request_rules_enforced
      */
     public function test_update_request_empty_allowed_extensions_passes_when_upload_disabled(): void
     {
@@ -1408,12 +1076,6 @@ class BoardRequestTest extends ModuleTestCase
      * exclude_if 는 조건 필드가 데이터에 없으면 배제하지 않는다. 부분 수정 요청이
      * use_file_upload 없이 allowed_extensions 만 보내면 첨부 미사용 게시판인데도
      * 확장자 필수 규칙이 발화하므로, prepareForValidation() 이 저장값을 주입해야 한다.
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=update_board
-     *
-     * @effects update_board_request_rules_enforced
      */
     public function test_update_request_omitted_toggle_follows_stored_board_value(): void
     {
@@ -1446,12 +1108,6 @@ class BoardRequestTest extends ModuleTestCase
      *
      * 확장자를 건드리지 않는 부분 수정에 조건 필드를 주입하면, 보내지도 않은 토글이
      * 검증 대상으로 올라온다.
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=update_board
-     *
-     * @effects update_board_request_rules_enforced
      */
     public function test_update_request_does_not_inject_toggle_when_extensions_omitted(): void
     {
@@ -1467,12 +1123,6 @@ class BoardRequestTest extends ModuleTestCase
      * UpdateBoardRequest - allowed_extensions 미전송(부분 수정)은 통과해야 함 (회귀 방지)
      *
      * sometimes 규칙으로 키가 없으면 검증을 건너뛴다.
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=update_board
-     *
-     * @effects update_board_request_rules_enforced
      */
     public function test_update_request_omitted_allowed_extensions_passes(): void
     {
@@ -1486,12 +1136,6 @@ class BoardRequestTest extends ModuleTestCase
 
     /**
      * UpdateBoardRequest - 정상 확장자 전송 시 통과 (회귀)
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=update_board
-     *
-     * @effects update_board_request_rules_enforced
      */
     public function test_update_request_nonempty_allowed_extensions_passes(): void
     {
@@ -1506,12 +1150,6 @@ class BoardRequestTest extends ModuleTestCase
      * StoreBoardSettingsRequest - basic_defaults.allowed_extensions 빈 배열 차단 (회귀)
      *
      * 설정 탭 저장에서 빈 배열은 sometimes + array + min:1 로 차단되어야 한다.
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=board_settings
-     *
-     * @effects board_settings_request_rules_enforced
      */
     public function test_settings_request_empty_allowed_extensions_fails(): void
     {
@@ -1529,12 +1167,6 @@ class BoardRequestTest extends ModuleTestCase
 
     /**
      * StoreBoardSettingsRequest - 정상 확장자 지정 시 통과 (회귀)
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=board_settings
-     *
-     * @effects board_settings_request_rules_enforced
      */
     public function test_settings_request_nonempty_allowed_extensions_passes(): void
     {
@@ -1554,12 +1186,6 @@ class BoardRequestTest extends ModuleTestCase
      *
      * 다른 탭(예: report_policy)만 저장할 때 allowed_extensions 키가 없어도
      * sometimes 로 검증을 건너뛰어 통과해야 한다.
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario request=board_settings
-     *
-     * @effects board_settings_request_rules_enforced
      */
     public function test_settings_request_partial_tab_save_without_extensions_passes(): void
     {
@@ -1588,9 +1214,7 @@ class BoardRequestTest extends ModuleTestCase
      *
      * @scenario case=upload_enabled_extensions_empty
      *
-     * @effects upload_enabled_empty_extensions_fails, extensions_still_required_when_upload_enabled
-     *
-     * @return void 반환값 없음
+     * @effects upload_enabled_empty_extensions_fails
      */
     public function test_update_matrix_upload_enabled_with_empty_extensions_fails(): void
     {
@@ -1611,8 +1235,6 @@ class BoardRequestTest extends ModuleTestCase
      * @scenario case=upload_enabled_extensions_nonempty
      *
      * @effects upload_enabled_nonempty_extensions_passes
-     *
-     * @return void 반환값 없음
      */
     public function test_update_matrix_upload_enabled_with_extensions_passes(): void
     {
@@ -1633,9 +1255,7 @@ class BoardRequestTest extends ModuleTestCase
      *
      * @scenario case=upload_disabled_extensions_empty
      *
-     * @effects upload_disabled_empty_extensions_passes, board_stays_editable
-     *
-     * @return void 반환값 없음
+     * @effects upload_disabled_empty_extensions_passes
      */
     public function test_update_matrix_upload_disabled_with_empty_extensions_passes(): void
     {
@@ -1660,8 +1280,6 @@ class BoardRequestTest extends ModuleTestCase
      * @scenario case=upload_disabled_extensions_null
      *
      * @effects upload_disabled_empty_extensions_passes
-     *
-     * @return void 반환값 없음
      */
     public function test_update_matrix_upload_disabled_with_null_extensions_passes(): void
     {
@@ -1684,8 +1302,6 @@ class BoardRequestTest extends ModuleTestCase
      * @scenario case=extensions_key_absent
      *
      * @effects extensions_key_absent_passes
-     *
-     * @return void 반환값 없음
      */
     public function test_update_matrix_absent_extensions_key_passes(): void
     {
@@ -1704,9 +1320,7 @@ class BoardRequestTest extends ModuleTestCase
      *
      * @scenario case=upload_disabled_extensions_empty
      *
-     * @effects upload_disabled_extensions_excluded_from_validated, extensions_excluded_when_upload_disabled
-     *
-     * @return void 반환값 없음
+     * @effects upload_disabled_extensions_excluded_from_validated
      */
     public function test_update_matrix_upload_disabled_excludes_extensions_from_validated(): void
     {
@@ -1732,11 +1346,10 @@ class BoardRequestTest extends ModuleTestCase
      *
      * @scenario case=new_display_hours_zero
      *
-     * @effects new_display_hours_zero_passes, new_display_hours_out_of_range_fails, zero_accepted_on_update, negative_rejected, over_max_rejected
+     * @effects new_display_hours_zero_passes, new_display_hours_out_of_range_fails
      *
      * @param  mixed  $value  new_display_hours 값
      * @param  bool  $shouldPass  통과 기대 여부
-     * @return void 반환값 없음
      */
     #[DataProvider('newDisplayHoursProvider')]
     public function test_update_matrix_new_display_hours_boundaries(mixed $value, bool $shouldPass): void
@@ -1773,9 +1386,7 @@ class BoardRequestTest extends ModuleTestCase
      *
      * @scenario case=new_display_hours_zero
      *
-     * @effects new_display_hours_zero_passes, zero_accepted_on_store
-     *
-     * @return void 반환값 없음
+     * @effects new_display_hours_zero_passes
      */
     public function test_store_request_new_display_hours_zero_passes(): void
     {
@@ -1796,8 +1407,6 @@ class BoardRequestTest extends ModuleTestCase
      * @scenario case=upload_enabled_extensions_empty
      *
      * @effects upload_enabled_empty_extensions_fails
-     *
-     * @return void 반환값 없음
      */
     public function test_settings_matrix_upload_enabled_with_empty_extensions_fails(): void
     {
@@ -1820,8 +1429,6 @@ class BoardRequestTest extends ModuleTestCase
      * @scenario case=upload_enabled_extensions_nonempty
      *
      * @effects upload_enabled_nonempty_extensions_passes
-     *
-     * @return void 반환값 없음
      */
     public function test_settings_matrix_upload_enabled_with_extensions_passes(): void
     {
@@ -1843,8 +1450,6 @@ class BoardRequestTest extends ModuleTestCase
      * @scenario case=upload_disabled_extensions_empty
      *
      * @effects upload_disabled_empty_extensions_passes
-     *
-     * @return void 반환값 없음
      */
     public function test_settings_matrix_upload_disabled_with_empty_extensions_passes(): void
     {
@@ -1872,8 +1477,6 @@ class BoardRequestTest extends ModuleTestCase
      * @scenario case=upload_disabled_extensions_null
      *
      * @effects settings_upload_null_empty_extensions_passes
-     *
-     * @return void 반환값 없음
      */
     public function test_settings_matrix_upload_null_with_empty_extensions_passes(): void
     {
@@ -1900,10 +1503,9 @@ class BoardRequestTest extends ModuleTestCase
      *
      * @scenario case=zero_lower_bound_length_fields
      *
-     * @effects zero_lower_bound_length_fields_pass, zero_accepted_on_settings
+     * @effects zero_lower_bound_length_fields_pass
      *
      * @param  string  $field  basic_defaults 하위 필드명
-     * @return void 반환값 없음
      */
     #[DataProvider('settingsZeroLowerBoundProvider')]
     public function test_settings_matrix_zero_lower_bounds_pass(string $field): void
@@ -1934,11 +1536,6 @@ class BoardRequestTest extends ModuleTestCase
         ];
     }
 
-    /**
-     * Mockery 기대값을 정리하고 부모 정리를 수행합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function tearDown(): void
     {
         \Mockery::close();

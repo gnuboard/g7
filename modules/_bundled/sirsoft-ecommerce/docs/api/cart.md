@@ -73,7 +73,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 장바구니에서 선택한 여러 아이템(`ids`)을 한 번에 삭제합니다. `optional.sanctum`으로 회원은 `Auth::id()`, 비회원은 cart_key(`X-Cart-Key`)로 소유를 식별하며, `CartController@destroyMultiple`이 `CartService::deleteItems()`를 호출해 삭제된 건수(`deleted_count`)를 반환합니다. 장바구니 화면에서 체크박스로 선택한 항목들을 "선택 삭제"할 때 사용합니다. 비회원인데 cart_key가 없거나 형식(`ck_`+32자)이 틀리면 400을 반환합니다(조회·담기와 같은 판정 — 키 없는 요청이 주인 없는 행을 고치지 못하게).
+**설명** 장바구니에서 선택한 여러 아이템(`ids`)을 한 번에 삭제합니다. `optional.sanctum`으로 회원은 `Auth::id()`, 비회원은 cart_key(`X-Cart-Key`)로 소유를 식별하며, `CartController@destroyMultiple`이 `CartService::deleteItems()`를 호출해 삭제된 건수(`deleted_count`)를 반환합니다. 장바구니 화면에서 체크박스로 선택한 항목들을 "선택 삭제"할 때 사용합니다.
 
 
 ### GET /api/modules/sirsoft-ecommerce/cart
@@ -258,8 +258,8 @@ _단건 응답: `data` 객체의 필드._
 | updated_at | string | `2026-07-14 10:00:00` | 최종 수정 일시 (사용자 타임존 포맷) |
 | product | object\|null | `{"id":201,"name":"티셔츠", …}` | 상품 요약 (`id`, `name`, `product_code`, `thumbnail_url`, `sales_status`, `display_status`) |
 | product_option | object\|null | `{"id":1086,"selling_price":19000, …}` | 옵션 요약 (`id`, `option_code`, `option_name`, `option_name_localized`, `option_values`, `option_values_localized`, `list_price`, `list_price_formatted`, `multi_currency_list_price`, `selling_price`, `selling_price_formatted`, `multi_currency_selling_price`, `discount_rate`, `stock_quantity`, `is_active`) |
-| available | boolean | `true` | 현재 구매 가능 여부 (`Product::isPurchasable()` 이고 담은 옵션이 판매 중(`is_active`)일 때 `true`) |
-| unavailable_reason | string\|null | `sold_out` | 구매 불가 사유 (판매상태 `suspended`/`sold_out`/`coming_soon` 또는 전시상태 `hidden`. 상품은 판매 중이지만 담은 옵션이 판매 중지면 `suspended`. 구매 가능 시 `null`) |
+| available | boolean | `true` | 현재 구매 가능 여부 (`Product::isPurchasable()`) |
+| unavailable_reason | string\|null | `sold_out` | 구매 불가 사유 (판매상태 `suspended`/`sold_out`/`coming_soon` 또는 전시상태 `hidden`. 구매 가능 시 `null`) |
 | is_shippable_to_selected_country | boolean | `true` | 선택된 배송 국가로 배송 가능한지 (배송정책 기준) |
 | selected_shipping_country | string | `KR` | 판정에 사용된 배송 국가 코드 |
 | subtotal | integer | `19000` | 표시 소계 = (옵션 판매가 + 추가옵션 단위 합계) × 수량 (옵션이 로드된 경우에만 존재) |
@@ -333,7 +333,7 @@ HTTP/1.1 201
 | 400 | Bad Request | 비회원인데 `X-Cart-Key` 헤더가 없거나 형식(`ck_`+32자 영숫자)이 아닌 경우 |
 | 403 | Forbidden | 타인 소유 장바구니 항목 조작 (`CartOperationException: access_denied`) |
 | 404 | Not Found | 대상 장바구니 항목 없음 (`CartOperationException: item_not_found`) |
-| 422 | Unprocessable Entity | 요청 파라미터 검증 실패 (`error.errors`) 또는 재고 부족·판매 중지·구매 대상 제한·구매 수량 한도 위반 (`CartUnavailableException` — `error` 에 `code: cart_unavailable`, `unavailable_items`, `has_stock_issue`, `has_status_issue`, `has_restriction_issue`, `has_min_qty_issue`, `has_max_qty_issue`), 옵션 없음/타상품 옵션 (`CartOperationException: option_not_found`/`invalid_option`), 옵션을 지정하지 않았는데 판매 중인 옵션이 하나도 없는 상품 (`CartOperationException: no_purchasable_option` — 메시지 `지금은 구매할 수 있는 옵션이 없는 상품입니다.`) |
+| 422 | Unprocessable Entity | 요청 파라미터 검증 실패 (`error.errors`) 또는 재고 부족·판매 중지·구매 대상 제한·구매 수량 한도 위반 (`CartUnavailableException` — `error` 에 `code: cart_unavailable`, `unavailable_items`, `has_stock_issue`, `has_status_issue`, `has_restriction_issue`, `has_min_qty_issue`, `has_max_qty_issue`), 옵션 없음/타상품 옵션 (`CartOperationException: option_not_found`/`invalid_option`) |
 | 500 | Internal Server Error | 담기 처리 중 예외 발생 (`messages.cart.add_failed`) |
 
 <!-- @generated:end -->
@@ -544,14 +544,14 @@ HTTP/1.1 200
 ```json
 {
     "success": true,
-    "message": "2개 상품이 장바구니로 병합되었습니다.",
+    "message": ":count개 상품이 장바구니로 병합되었습니다.",
     "data": {
         "merged_count": 2
     }
 }
 ```
 
-> 응답 `message` 의 `:count` 는 `merged_count` 로 치환됩니다.
+> `messages.cart.merged` 는 `:count` 플레이스홀더를 갖지만 컨트롤러가 messageParams 를 전달하지 않으므로 응답 메시지에는 치환되지 않은 원문이 그대로 실립니다. 화면 표기는 `data.merged_count` 를 사용하십시오.
 
 **에러 응답**
 
@@ -570,7 +570,6 @@ HTTP/1.1 200
 - **라우트명**: `api.modules.sirsoft-ecommerce.cart.query`
 - **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Public\CartController@index`
 - **인증/권한**: `optional.sanctum` (선택적 인증: 회원/비회원 모두 접근)
-- **권한 메모(1.3.0)**: 응답 `abilities.can_order`(= `sirsoft-ecommerce.user-orders.create`, 비회원은 guest 역할) — [주문하기] 잠금 키. 수량·옵션 변경 응답도 같은 키를 싣는다.
 
 **요청 파라미터**
 
@@ -862,7 +861,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 장바구니 아이템(`id`)의 선택 옵션과 수량을 변경합니다. `optional.sanctum`으로 회원/비회원 모두 접근하며, `CartController@changeOption`이 `CartService::changeOption()`으로 `product_option_id`·`quantity`(및 추가 옵션 선택)를 반영한 뒤 수정된 아이템을 반환합니다. 다른 상품의 옵션으로 바꾸려 하거나 옵션이 없는 경우, 재고/판매상태/구매수량 한도 위반은 사유별 422/404/403으로 매핑됩니다. 장바구니에서 옵션(예: 색상/사이즈)을 바꿀 때 사용합니다. 비회원인데 cart_key가 없거나 형식(`ck_`+32자)이 틀리면 400을 반환합니다(조회·담기와 같은 판정 — 키 없는 요청이 주인 없는 행을 고치지 못하게).
+**설명** 장바구니 아이템(`id`)의 선택 옵션과 수량을 변경합니다. `optional.sanctum`으로 회원/비회원 모두 접근하며, `CartController@changeOption`이 `CartService::changeOption()`으로 `product_option_id`·`quantity`(및 추가 옵션 선택)를 반영한 뒤 수정된 아이템을 반환합니다. 다른 상품의 옵션으로 바꾸려 하거나 옵션이 없는 경우, 재고/판매상태/구매수량 한도 위반은 사유별 422/404/403으로 매핑됩니다. 장바구니에서 옵션(예: 색상/사이즈)을 바꿀 때 사용합니다.
 
 
 ### PATCH /api/modules/sirsoft-ecommerce/cart/{id}/quantity
@@ -1005,16 +1004,6 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 장바구니 아이템(`id`)의 수량만 변경합니다. `optional.sanctum`으로 회원/비회원 모두 접근하며, `CartController@updateQuantity`가 `CartService::updateQuantity()`로 수량을 반영한 뒤 프론트가 별도 refetch 없이 화면을 갱신할 수 있도록 `index`와 동일한 전체 목록·계산 결과(`items`·`calculation`)를 함께 반환합니다. 수량 상한은 관리자 환경설정의 장바구니 수량 상한(기본 99)을 따르며, 재고 부족·판매 중지·구매수량 한도 위반은 사유별 422, 항목/권한 문제는 404/403으로 매핑됩니다. 장바구니의 수량 증감(+/-) 컨트롤에 사용합니다. 비회원인데 cart_key가 없거나 형식(`ck_`+32자)이 틀리면 400을 반환합니다(조회·담기와 같은 판정 — 키 없는 요청이 주인 없는 행을 고치지 못하게).
+**설명** 장바구니 아이템(`id`)의 수량만 변경합니다. `optional.sanctum`으로 회원/비회원 모두 접근하며, `CartController@updateQuantity`가 `CartService::updateQuantity()`로 수량을 반영한 뒤 프론트가 별도 refetch 없이 화면을 갱신할 수 있도록 `index`와 동일한 전체 목록·계산 결과(`items`·`calculation`)를 함께 반환합니다. 수량 상한은 관리자 환경설정의 장바구니 수량 상한(기본 99)을 따르며, 재고 부족·판매 중지·구매수량 한도 위반은 사유별 422, 항목/권한 문제는 404/403으로 매핑됩니다. 장바구니의 수량 증감(+/-) 컨트롤에 사용합니다.
 
 
-## 요청 제한 (1.3.5+)
-
-장바구니 **쓰기** 라우트는 한 제한기(`sirsoft-ecommerce.cart-write`, 기본 분당 120회)로 합산한다.
-
-| 대상 | 라우트 |
-| --- | --- |
-| 센다 | `POST /cart/key` · `POST /cart/merge` · `POST /cart` · `PATCH /cart/{id}/quantity` · `PUT /cart/{id}/option` · `DELETE /cart/{id}` · `DELETE /cart` · `DELETE /cart/all` |
-| 세지 않는다 | `GET /cart` · `POST /cart/query` · `GET /cart/count` (조회) |
-
-한도는 모듈 설정 `rate_limits`(`config/ecommerce.php`)의 분당 횟수이고, 로그인 회원은 회원 단위로·비회원은 IP 단위로 센다 — 같은 IP 의 회원끼리, 회원과 비회원끼리 서로의 한도를 깎지 않는다. 넘으면 `429` 와 `Retry-After` 헤더(남은 초)를 돌려준다 (문구는 로그인 요청 제한과 같은 `auth.too_many_attempts`).

@@ -59,7 +59,7 @@ class EarnMileageCommand extends Command
     public function handle(): int
     {
         if (! module_setting('sirsoft-ecommerce', 'mileage.enabled', false)) {
-            $this->info(__('sirsoft-ecommerce::messages.console.mileage.disabled'));
+            $this->info('마일리지 기능이 비활성화되어 있습니다.');
 
             return Command::SUCCESS;
         }
@@ -73,23 +73,19 @@ class EarnMileageCommand extends Command
 
         $targets = $this->ledger->getEarnableOptions(
             $trigger->timestampColumn(),
-            $trigger->eligibleStatuses(),
+            $trigger->value,
             $delayDays,
             now(),
             $limit,
         );
 
         if ($targets->isEmpty()) {
-            $this->info(__('sirsoft-ecommerce::messages.console.earn_mileage.no_targets'));
+            $this->info('적립 대상이 없습니다.');
 
             return Command::SUCCESS;
         }
 
-        $this->info(__('sirsoft-ecommerce::messages.console.earn_mileage.targets', [
-            'count' => $targets->count(),
-            'trigger' => $trigger->value,
-            'delay' => $delayDays,
-        ]).($isDryRun ? ' [DRY-RUN]' : ''));
+        $this->info(sprintf('적립 대상 %d건 (trigger=%s, delay=%d일)%s', $targets->count(), $trigger->value, $delayDays, $isDryRun ? ' [DRY-RUN]' : ''));
 
         if ($isDryRun) {
             return Command::SUCCESS;
@@ -97,26 +93,17 @@ class EarnMileageCommand extends Command
 
         $earned = 0;
         $affectedUsers = [];
-        $failed = 0;
         foreach ($targets as $row) {
-            // 행마다 격리한다(B10) — 한 행의 예외가 배치 전체를 멈추면, id 오름차순이라 같은 행이 매 실행 앞을 막아
-            // 뒤의 모든 적립이 영영 밀린다. 실패 행은 보고하고 다음 실행에서 다시 잡힌다(적립은 금액 델타 멱등).
-            try {
-                $order = $this->orderRepository->find((int) $row->order_id);
-                $option = $this->orderOptionRepository->findOrFail((int) $row->option_id);
-                if ($order === null) {
-                    continue;
-                }
+            $order = $this->orderRepository->find((int) $row->order_id);
+            $option = $this->orderOptionRepository->findOrFail((int) $row->option_id);
+            if ($order === null) {
+                continue;
+            }
 
-                $tx = $this->mileageService->earnForOrderOption($order, $option, MileageTransactionTypeEnum::PURCHASE_EARN);
-                if ($tx !== null) {
-                    $earned++;
-                    $affectedUsers[(int) $row->user_id] = $order->currency ?? 'KRW';
-                }
-            } catch (\Throwable $e) {
-                $failed++;
-                report($e);
-                $this->warn(__('sirsoft-ecommerce::messages.console.earn_mileage.failed', ['option_id' => (int) $row->option_id, 'error' => $e->getMessage()]));
+            $tx = $this->mileageService->earnForOrderOption($order, $option, MileageTransactionTypeEnum::PURCHASE_EARN);
+            if ($tx !== null) {
+                $earned++;
+                $affectedUsers[(int) $row->user_id] = $order->currency ?? 'KRW';
             }
         }
 
@@ -125,7 +112,7 @@ class EarnMileageCommand extends Command
             $this->cache->recalculatePending($userId, $currency);
         }
 
-        $this->info(__('sirsoft-ecommerce::messages.console.earn_mileage.done', ['count' => $earned]));
+        $this->info(sprintf('적립 완료: %d건', $earned));
 
         return Command::SUCCESS;
     }

@@ -8,20 +8,11 @@ use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
-use Plugins\Sirsoft\PayKginicis\Concerns\GuardsOrderScope;
 use Plugins\Sirsoft\PayKginicis\Services\CbtReconciliationService;
 use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
 
 class AdminCbtReconciliationController extends AdminBaseController
 {
-    use GuardsOrderScope;
-
-    /**
-     * 의존성을 주입받습니다.
-     *
-     * @param  CbtReconciliationService  $reconciliationService  해외 결제 정산 레코드 서비스
-     * @param  KgInicisApiService  $apiService  KG이니시스 API 서비스
-     */
     public function __construct(
         private readonly CbtReconciliationService $reconciliationService,
         private readonly KgInicisApiService $apiService,
@@ -37,10 +28,6 @@ class AdminCbtReconciliationController extends AdminBaseController
      */
     public function show(string $orderNumber): JsonResponse
     {
-        if ($denied = $this->orderScopeDenial($orderNumber, 'sirsoft-ecommerce.orders.read')) {
-            return $denied;
-        }
-
         return ResponseHelper::success('common.success', $this->reconciliationService->get($orderNumber));
     }
 
@@ -52,10 +39,6 @@ class AdminCbtReconciliationController extends AdminBaseController
      */
     public function retryRefund(string $orderNumber): JsonResponse
     {
-        if ($denied = $this->orderScopeDenial($orderNumber, 'sirsoft-ecommerce.claims.execute-refund')) {
-            return $denied;
-        }
-
         $record = $this->reconciliationService->claimRefundRetry($orderNumber);
 
         if (! $record) {
@@ -87,7 +70,6 @@ class AdminCbtReconciliationController extends AdminBaseController
                 'reason' => (string) ($record['reason'] ?? ''),
                 'refund_error' => null,
                 'refund_result' => $this->sanitizeRefundResponse($refundResult),
-                // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
                 'last_retry_at' => now()->toIso8601String(),
                 'last_retry_error' => null,
                 'retry_count' => $retryCount,
@@ -111,7 +93,6 @@ class AdminCbtReconciliationController extends AdminBaseController
                 'tid' => $tid,
                 'amount' => $amount,
                 'refund_error' => $e->getMessage(),
-                // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
                 'last_retry_at' => now()->toIso8601String(),
                 'last_retry_error' => $e->getMessage(),
                 'retry_count' => $retryCount,
@@ -125,12 +106,6 @@ class AdminCbtReconciliationController extends AdminBaseController
         }
     }
 
-    /**
-     * 환불 API 응답에서 기록할 필드만 남깁니다.
-     *
-     * @param  array<string, mixed>  $response  환불 API 응답
-     * @return array<string, mixed> 기록용 응답 필드
-     */
     private function sanitizeRefundResponse(array $response): array
     {
         return array_intersect_key($response, array_flip([

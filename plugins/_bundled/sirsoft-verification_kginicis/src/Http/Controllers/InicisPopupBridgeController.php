@@ -3,10 +3,8 @@
 namespace Plugins\Sirsoft\VerificationKginicis\Http\Controllers;
 
 use App\Http\Controllers\Api\Base\PublicBaseController;
-use App\Support\SiteUrl;
 use Illuminate\Http\Response;
 use Plugins\Sirsoft\VerificationKginicis\Http\Requests\InicisPopupBridgeRequest;
-use Plugins\Sirsoft\VerificationKginicis\Support\BridgeScript;
 
 /**
  * 이니시스 매뉴얼 STEP4 결과 전달 페이지 — 데스크톱 팝업 / 모바일 redirect 분기.
@@ -33,7 +31,7 @@ class InicisPopupBridgeController extends PublicBaseController
      * Bridge 페이지를 렌더링한다.
      *
      * @param  InicisPopupBridgeRequest  $request  callback 컨트롤러가 전달한 query (verification_token / challenge_id / identity_error)
-     * @return Response 부모창으로 결과를 전달하는 브리지 HTML
+     * @return Response
      */
     public function show(InicisPopupBridgeRequest $request): Response
     {
@@ -48,18 +46,12 @@ class InicisPopupBridgeController extends PublicBaseController
     /**
      * UTF-8 HTML 응답 헬퍼.
      *
-     * 보안: 이 페이지 주소에는 검증 토큰이 실린다 — 다른 곳으로 Referer 를 남기지 않고 캐시하지 않는다.
-     *
-     * @param  string  $html  본문 HTML
-     * @return Response UTF-8 로 인코딩된 HTML 응답
+     * @param  string  $html
+     * @return Response
      */
     protected function htmlResponse(string $html): Response
     {
-        return response($html, 200, [
-            'Content-Type' => 'text/html; charset=UTF-8',
-            'Referrer-Policy' => 'no-referrer',
-            'Cache-Control' => 'no-store, private',
-        ]);
+        return response($html, 200, ['Content-Type' => 'text/html; charset=UTF-8']);
     }
 
     /**
@@ -68,8 +60,8 @@ class InicisPopupBridgeController extends PublicBaseController
      * sessionStorage 키는 코어 `IDENTITY_REDIRECT_STASH_KEY` 상수와 동일해야 launcher 가
      * stash 한 redirectStash 를 정상적으로 복원할 수 있다.
      *
-     * @param  string  $payloadJson  json_encode 결과 (데이터 블록 안전 — JSON_HEX_* 적용됨)
-     * @return string 인증 결과를 부모 창/복귀 주소로 전달하는 브리지 페이지 HTML
+     * @param  string  $payloadJson  json_encode 결과 (script 컨텍스트 안전 — JSON_HEX_* 적용됨)
+     * @return string
      */
     protected function renderBridgeHtml(string $payloadJson): string
     {
@@ -77,12 +69,6 @@ class InicisPopupBridgeController extends PublicBaseController
         // 문서 언어와 제목을 현재 로케일에 맞춘다.
         $locale = e(app()->getLocale());
         $title = e(__('sirsoft-verification_kginicis::messages.bridge_page_title'));
-        // 보안: 부모창 전달 대상은 브리지 자신의 주소(요청 Host 를 따른다)가 아니라 사이트 주소의 origin.
-        $siteOrigin = json_encode(SiteUrl::origin(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
-        // 동작은 정적 브리지 파일이 한다 — 인라인 <script> 는 strict CSP(script-src 'self')에서 실행되지 않아
-        // 인증 결과가 전달되지 않고 팝업도 닫히지 않았다(#158). 서버 값은 비실행 JSON 데이터 블록으로만 넘긴다.
-        $bridgeData = '<script type="application/json" id="bridge-data">{"siteOrigin":'.$siteOrigin.',"payload":'.$payloadJson.'}</script>';
-        $bridgeScript = BridgeScript::tag('popup-bridge.js');
 
         return <<<HTML
 <!DOCTYPE html>
@@ -93,8 +79,44 @@ class InicisPopupBridgeController extends PublicBaseController
     <title>{$title}</title>
 </head>
 <body>
-{$bridgeData}
-{$bridgeScript}
+<script>
+(function () {
+    var REDIRECT_STASH_KEY = 'g7.identity.redirectStash';
+    var payload = {$payloadJson};
+
+    // 데스크톱: 부모창 postMessage + 자기 창 닫기
+    if (window.opener && !window.opener.closed) {
+        try {
+            window.opener.postMessage({
+                type: 'identity_result',
+                verification_token: payload.verification_token,
+                challenge_id: payload.challenge_id,
+                identity_error: payload.identity_error
+            }, window.location.origin);
+        } catch (e) { /* opener cross-origin — 무시 */ }
+        window.close();
+        return;
+    }
+
+    // 모바일: sessionStorage redirectStash 복원 후 원 페이지로 이동
+    var stashRaw = null;
+    try { stashRaw = window.sessionStorage.getItem(REDIRECT_STASH_KEY); } catch (e) {}
+    var stash = null;
+    if (stashRaw) {
+        try { stash = JSON.parse(stashRaw); } catch (e) {}
+    }
+    try { window.sessionStorage.removeItem(REDIRECT_STASH_KEY); } catch (e) {}
+
+    var dest = (stash && stash.return_url) ? stash.return_url : '/';
+    var sep = dest.indexOf('?') >= 0 ? '&' : '?';
+    if (payload.verification_token) {
+        dest += sep + 'verification_token=' + encodeURIComponent(payload.verification_token);
+    } else if (payload.identity_error) {
+        dest += sep + 'identity_error=' + encodeURIComponent(payload.identity_error);
+    }
+    window.location.replace(dest);
+})();
+</script>
 </body>
 </html>
 HTML;

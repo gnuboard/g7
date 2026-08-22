@@ -21,29 +21,19 @@ return [
         'max_attempts' => '試行回数を超過しました。もう一度リクエストしてください。',
         'invalid_code' => '認証コードが正しくありません。',
         'invalid_verification_token' => '無効な本人認証トークンです。',
-        'provider_policy_mismatch' => 'この操作は指定された認証手段でのみ確認できます。',
-        'policy_provider_unavailable' => 'この操作に必要な本人認証手段は現在利用できません。サイト管理者にお問い合わせください。',
-        'purpose_unknown' => '不明な認証目的です。',
         'missing_target' => '認証対象 (メール·電話番号) が必要です。',
-        'claim_denied' => '本人確認の結果を受け取れません。認証をやり直してください。',
-        'claim_already_used' => 'この本人確認はすでに使用されています。認証をやり直してください。',
-        'claim_unavailable' => '本人確認の期限が切れたか、完了していません。認証をやり直してください。',
         'target_mismatch' => '認証された対象とリクエストされた対象が一致しません。',
         'purpose_not_supported' => '選択されたプロバイダーはこの目的をサポートしていません。',
         'provider_unavailable' => '本人認証プロバイダーを使用できません。',
-        'challenge_dispatch_failed' => '認証コードを送信できませんでした。しばらくしてからもう一度お試しいただくか、別の認証手段をご利用ください。',
-        'challenge_cooldown' => '先ほど認証メールを送信しました。:seconds秒後にもう一度リクエストできます。',
         'generic' => '本人認証に失敗しました。',
         'missing_scope_or_target' => 'ポリシー照会には scope と target の両方が必要です。',
         'admin_policy_has_no_default' => '管理者が直接作成したポリシーには宣言デフォルト値がありません。',
         'reset_field_failed' => '宣言デフォルト値の復元に失敗しました。フィールドが有効であることを確認してください。',
         'cannot_delete_system_policy' => 'システムが宣言したポリシーは削除できません。管理者が直接作成したポリシーのみ削除できます。',
-        'purpose_not_allowed' => 'この認証リクエストはこの画面では処理できません。',
     ],
     'messages' => [
         'challenge_requested' => '本人認証コードを送信しました。',
         'challenge_verified' => '本人確認が完了しました。',
-        'challenge_pending' => 'メールのリンクによる本人確認を待っています。',
         'challenge_cancelled' => '本人認証リクエストがキャンセルされました。',
     ],
     'logs' => [
@@ -79,7 +69,6 @@ return [
     ],
     'channels' => [
         'email' => 'メール',
-        'app' => '認証アプリ',
     ],
     'origin_types' => [
         'route' => 'ルート',
@@ -112,10 +101,11 @@ return [
             'admin' => '管理者',
         ],
     ],
-    // `identity:expire-challenges` コマンド出力
-    'console' => [
-        'expire_challenges' => [
-            'done' => '本人認証 challenge :count 件を期限切れにしました。',
+    'message' => [
+        'scope_type' => [
+            'provider_default' => 'Provider デフォルト',
+            'purpose' => 'Purpose 別',
+            'policy' => 'Policy 別',
         ],
     ],
 ];

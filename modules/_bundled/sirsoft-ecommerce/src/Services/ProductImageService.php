@@ -3,12 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Contracts\Extension\StorageInterface;
-use App\Exceptions\UnsafeStoragePathException;
-use App\Extension\Helpers\StorageTransaction;
 use App\Extension\HookManager;
-use App\Helpers\InlineMediaPolicy;
-use App\Helpers\PermissionHelper;
-use App\Support\Files\StoredFileExtension;
 use App\Support\ImageResizer;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
@@ -23,9 +18,7 @@ use Modules\Sirsoft\Ecommerce\Models\ProductImage;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductImageRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesRowStorage;
-use Modules\Sirsoft\Ecommerce\Traits\ReappliesPermissionScope;
 use Symfony\Component\HttpFoundation\StreamedResponse;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * 상품 이미지 서비스
@@ -34,7 +27,6 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
  */
 class ProductImageService
 {
-    use ReappliesPermissionScope;
     use ResolvesRowStorage;
 
     /**
@@ -72,12 +64,6 @@ class ProductImageService
         ?string $tempKey = null,
         ?array $altText = null
     ): ProductImage {
-        // 상품에 직접 붙이는 업로드는 그 상품의 `products.update` 스코프 안이어야 한다 —
-        // 라우트 파라미터가 `{productId}` 라 미들웨어 스코프 검사가 돌지 않는다. 파일을 쓰기 전에 거부한다.
-        if ($productId) {
-            $this->assertProductsWithinUpdateScope([$productId]);
-        }
-
         // productId와 tempKey 모두 없으면 tempKey 자동 생성
         if (! $productId && ! $tempKey) {
             $tempKey = Str::uuid()->toString();
@@ -93,8 +79,7 @@ class ProductImageService
         $file = HookManager::applyFilters('sirsoft-ecommerce.product-image.filter_upload_file', $file);
 
         // 저장 경로 결정
-        $extension = StoredFileExtension::resolve($file, 'jpg');
-        $storedFilename = Str::uuid().'.'.$extension;
+        $storedFilename = Str::uuid().'.'.$file->getClientOriginalExtension();
 
         if ($productId) {
             $product = $this->productRepository->find($productId);
@@ -107,13 +92,10 @@ class ProductImageService
         // 환경설정 > 업로드의 최대 가로/세로·품질 적용 (코어 설정이 모든 업로드 경로에 동일 적용)
         app(ImageResizer::class)->resizeInPlace($file->getRealPath(), $file->getMimeType());
 
-        // 공개 자산 디스크를 주입받았어도 「공개 디스크로 내보낼 확장자」 밖이면 모듈 기본 디스크에 저장한다.
-        $storage = $this->storageForUpload($extension);
-
-        $storage->put('images', $path, file_get_contents($file->getRealPath()));
+        $this->storage->put('images', $path, file_get_contents($file->getRealPath()));
 
         // Disk 정보는 스토리지 드라이버에서 가져옴
-        $disk = $storage->getDisk();
+        $disk = $this->storage->getDisk();
 
         // 현재 컬렉션의 최대 sort_order 조회
         $maxSortOrder = $productId
@@ -173,7 +155,6 @@ class ProductImageService
      * @param  int|null  $productId  상품 ID
      * @param  string|null  $tempKey  임시 업로드 키
      * @param  string  $collection  컬렉션명
-     * @return void
      *
      * @throws ProductImageUploadLimitException 상한 도달 시
      */
@@ -207,13 +188,6 @@ class ProductImageService
     public function linkTempImages(string $tempKey, int $productId, string $productCode): int
     {
         $tempImages = $this->repository->getByTempKey($tempKey);
-
-        // 연결할 임시 이미지가 없으면 디렉토리 정리도 하지 않는다 — temp_key 는 요청에서 온 값이라
-        // 조회 결과 없이 정리 경로를 만들면 사용자 입력으로 삭제 대상을 고르게 된다 (KVE-2026-2349)
-        if ($tempImages->isEmpty()) {
-            return 0;
-        }
-
         $linkedCount = 0;
 
         // 기존 이미지의 최대 sort_order 조회 (복사 이미지 뒤에 배치)
@@ -223,10 +197,13 @@ class ProductImageService
             // 새 경로 생성: products/{productCode}/{filename}
             $newPath = "products/{$productCode}/{$image->stored_filename}";
 
-            // 파일 이동 — 행 disk 기준 (이동 후에도 행 disk 불변). 상품 저장 트랜잭션 안에서는 복사해 두고 커밋되면
-            // 원본을 지운다 — 롤백되면 사본을 지워 DB 와 파일이 함께 임시 자리로 돌아간다 (StorageTransaction, #883)
+            // 파일 이동 (get + put + delete) — 행 disk 기준 (이동 후에도 행 disk 불변)
             $rowStorage = $this->storageForRow($image->disk);
-            StorageTransaction::move($rowStorage, 'images', $image->path, $newPath);
+            $content = $rowStorage->get('images', $image->path);
+            if ($content) {
+                $rowStorage->put('images', $newPath, $content);
+                $rowStorage->delete('images', $image->path);
+            }
 
             // DB 업데이트: product_id 설정, temp_key 제거, path 변경, sort_order 재배치, is_thumbnail 해제
             $this->repository->update($image->id, [
@@ -240,24 +217,11 @@ class ProductImageService
             $linkedCount++;
         }
 
-        // 빈 임시 디렉토리 정리 — 임시 행이 여러 disk 에 걸칠 수 있어 disk 별로 정리.
-        // 부수 작업이라 실패해도 연결을 되돌리지 않는다 — 막 옮긴 대용량 파일을 운영체제가 잠시 붙잡고 있으면
-        // 디렉토리 순회가 lstat 오류를 던져 저장 전체가 500 이 되고 파일·DB 경로가 어긋났다(#703 게시판 실측).
-        // 원본 삭제가 커밋 뒤라 정리도 커밋 뒤에 한다.
-        $tempDisks = $tempImages->pluck('disk')->filter()->unique();
-        StorageTransaction::afterCommit(function () use ($tempDisks, $tempKey) {
-            try {
-                foreach ($tempDisks as $tempDisk) {
-                    $this->storageForRow($tempDisk)->deleteDirectory('images', "products/temp/{$tempKey}");
-                }
-                $this->storage->deleteDirectory('images', "products/temp/{$tempKey}");
-            } catch (\Throwable $e) {
-                Log::warning('상품 임시 이미지 디렉토리 정리 실패 — 연결은 완료, 빈 디렉토리가 남음', [
-                    'temp_key' => $tempKey,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        });
+        // 빈 임시 디렉토리 정리 — 임시 행이 여러 disk 에 걸칠 수 있어 disk 별로 정리
+        foreach ($tempImages->pluck('disk')->filter()->unique() as $tempDisk) {
+            $this->storageForRow($tempDisk)->deleteDirectory('images', "products/temp/{$tempKey}");
+        }
+        $this->storage->deleteDirectory('images', "products/temp/{$tempKey}");
 
         return $linkedCount;
     }
@@ -297,11 +261,6 @@ class ProductImageService
 
         if (! $image) {
             return false;
-        }
-
-        // 임시 업로드(상품 미귀속)는 상품 스코프 대상이 아니다
-        if ($image->product_id) {
-            $this->assertProductsWithinUpdateScope([(int) $image->product_id]);
         }
 
         // 삭제 후 재정렬을 위해 정보 저장
@@ -344,9 +303,6 @@ class ProductImageService
      */
     public function reorder(array $orders): bool
     {
-        // 정적 경로라 미들웨어가 건너뛴다 — 이미지가 속한 상품 전량이 스코프 안이어야 한다(전량 거부)
-        $this->assertProductsWithinUpdateScope(fn () => $this->repository->pluckProductIdsByIds(array_map('intval', array_keys($orders))));
-
         // Before 훅
         HookManager::doAction('sirsoft-ecommerce.product-image.before_reorder', $orders);
 
@@ -369,8 +325,6 @@ class ProductImageService
      */
     public function setThumbnail(int $productId, int $imageId): bool
     {
-        $this->assertProductsWithinUpdateScope([$productId]);
-
         $images = $this->repository->getByProductId($productId);
 
         // 대상 이미지가 이 상품에 속하는지 먼저 확인 (교차 상품 오염 차단)
@@ -425,9 +379,6 @@ class ProductImageService
             return null;
         }
 
-        // 인라인 표시는 래스터 이미지만, 그 외(SVG 등)는 다운로드로 — 모든 응답에 nosniff (KVE-2026-2366)
-        InlineMediaPolicy::harden($response, $image->mime_type, $image->original_filename);
-
         return $response;
     }
 
@@ -468,8 +419,7 @@ class ProductImageService
         $sourceStorage = $this->storageForRow($source->disk);
         $content = $sourceStorage->get('images', $source->path);
         if ($content) {
-            // 상품 복사 저장이 롤백되면 복사본 파일도 지운다 (StorageTransaction, #883)
-            StorageTransaction::put($sourceStorage, 'images', $newPath, $content);
+            $sourceStorage->put('images', $newPath, $content);
         } else {
             Log::warning('상품 이미지 복사 실패: 원본 파일 없음', [
                 'hash' => $sourceHash,
@@ -504,35 +454,10 @@ class ProductImageService
      * 상품 이미지 폴더 전체를 삭제합니다.
      * 실제 경로: storage/app/modules/sirsoft-ecommerce/images/products/{productCode}/
      *
-     * 상품 코드가 저장소 경로 규칙에 맞지 않으면(허용 문자 규칙 이전에 저장된 코드) 폴더를 지우지 않고
-     * 경고만 남긴 뒤 false 를 돌려준다 — 이미지 폴더 때문에 상품 삭제 자체가 막히지 않게 한다.
-     *
      * @param  int  $productId  상품 ID
      * @return bool 삭제 성공 여부 (대상 디스크 전체 기준)
      */
     public function deleteByProductId(int $productId): bool
-    {
-        try {
-            return $this->deleteProductDirectories($productId);
-        } catch (UnsafeStoragePathException $e) {
-            Log::warning('상품 코드가 저장소 경로 규칙에 맞지 않아 이미지 폴더를 지우지 못했습니다 — 수동 정리가 필요합니다', [
-                'product_id' => $productId,
-                'reason' => $e->getReason(),
-            ]);
-
-            return false;
-        }
-    }
-
-    /**
-     * 상품 이미지 폴더를 행이 실린 디스크별로 삭제합니다.
-     *
-     * @param  int  $productId  상품 ID
-     * @return bool 삭제 성공 여부 (대상 디스크 전체 기준)
-     *
-     * @throws UnsafeStoragePathException 상품 코드가 저장소 경로 규칙에 맞지 않을 때
-     */
-    private function deleteProductDirectories(int $productId): bool
     {
         $product = $this->productRepository->find($productId);
 
@@ -628,7 +553,6 @@ class ProductImageService
      * 빠졌거나 파일 삭제에 실패한 경우 등) 삭제하지 않습니다.
      *
      * @param  Collection  $images  이번 회차에 처리한 이미지 목록
-     * @return void
      */
     private function removeEmptyTempDirectories(Collection $images): void
     {
@@ -673,7 +597,6 @@ class ProductImageService
      * 상품 저장 실패 시 업로드된 이미지들을 정리하기 위해 사용됩니다.
      *
      * @param  array<int>  $imageIds  이미지 ID 배열
-     * @return void
      */
     public function rollbackUploadedImages(array $imageIds): void
     {
@@ -687,7 +610,6 @@ class ProductImageService
      *
      * @param  int  $productId  상품 ID
      * @param  string  $collection  컬렉션명
-     * @return void
      */
     protected function reorderAfterDelete(int $productId, string|ProductImageCollection $collection): void
     {
@@ -702,32 +624,5 @@ class ProductImageService
         if (! empty($orders)) {
             $this->repository->reorder($orders);
         }
-    }
-
-    /**
-     * 상품 집합 전량이 액터의 `products.update` 스코프 안인지 단언합니다.
-     *
-     * 이미지 경로(`{productId}`·`images/{id}`·`images/reorder`)는 권한의 `resource_route_key`(`product`)
-     * 와 이름이 달라 미들웨어 스코프 검사가 돌지 않으므로 여기서 재적용한다. 없는 상품 ID 는 건너뛴다 —
-     * 부재 판정은 각 호출부의 기존 계약(404·400)을 따른다. 범위가 「전체」인 액터(와 비인증 내부 호출)는
-     * 대상 상품도 다시 읽지 않고 통과한다 — 판정 결과가 같으므로 조회를 아낀다(대상 ID 계산도 그때만 한다).
-     *
-     * @param  array<int, int>|\Closure(): array<int, int>  $productIds  상품 ID 목록 (조회가 필요하면 지연 계산 클로저)
-     * @return void
-     *
-     * @throws AccessDeniedHttpException 스코프 밖 상품이 하나라도 있는 경우
-     */
-    private function assertProductsWithinUpdateScope(array|\Closure $productIds): void
-    {
-        if (PermissionHelper::getEffectiveScope('sirsoft-ecommerce.products.update') === null) {
-            return;
-        }
-
-        $productIds = $productIds instanceof \Closure ? $productIds() : $productIds;
-        if ($productIds === []) {
-            return;
-        }
-
-        $this->assertAllWithinScope($this->productRepository->findByIdsKeyed($productIds), 'sirsoft-ecommerce.products.update');
     }
 }

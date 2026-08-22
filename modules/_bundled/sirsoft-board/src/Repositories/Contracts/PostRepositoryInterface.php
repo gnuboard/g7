@@ -11,7 +11,6 @@ use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\Post;
-use Modules\Sirsoft\Board\Support\PostQueryExtensions;
 
 /**
  * 게시글 Repository 인터페이스
@@ -26,10 +25,9 @@ interface PostRepositoryInterface
      * @param  int  $perPage  페이지당 항목 수
      * @param  bool  $withTrashed  삭제된 게시글 포함 여부
      * @param  Board|null  $board  게시판 모델 (이미 조회된 경우 전달하여 중복 쿼리 방지)
-     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 list·notice·reply — 없으면 지금과 같다)
      * @return Paginator 게시글 페이지네이터
      */
-    public function paginate(string $slug, array $filters = [], int $perPage = 15, bool $withTrashed = false, ?Board $board = null, ?PostQueryExtensions $extensions = null): Paginator;
+    public function paginate(string $slug, array $filters = [], int $perPage = 15, bool $withTrashed = false, ?Board $board = null): Paginator;
 
     /**
      * 게시글을 생성합니다.
@@ -161,10 +159,9 @@ interface PostRepositoryInterface
      * @param  int  $id  게시글 ID
      * @param  int|null  $boardId  게시판 ID (전달 시 Board 재조회 생략)
      * @param  Board|null  $board  이미 조회한 게시판 모델 (전달 시 board 관계 적재까지 생략)
-     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 thread — 상세의 답글 스레드)
      * @return Post|null 게시글 모델 (카운트 포함)
      */
-    public function findWithCounts(string $slug, int $id, ?int $boardId = null, ?Board $board = null, ?PostQueryExtensions $extensions = null): ?Post;
+    public function findWithCounts(string $slug, int $id, ?int $boardId = null, ?Board $board = null): ?Post;
 
     /**
      * 전체 일반 게시글(원글) 수를 조회합니다.
@@ -173,10 +170,9 @@ interface PostRepositoryInterface
      * @param  string  $slug  게시판 슬러그
      * @param  array  $filters  필터 조건
      * @param  bool  $withTrashed  삭제된 게시글 포함 여부
-     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 count·reply — list 와 같은 조건이어야 건수가 맞는다)
      * @return BoundedCount 일반 게시글 수 + 정확도 (답글, 공지 제외)
      */
-    public function countNormalPosts(string $slug, array $filters = [], bool $withTrashed = false, ?PostQueryExtensions $extensions = null): BoundedCount;
+    public function countNormalPosts(string $slug, array $filters = [], bool $withTrashed = false): BoundedCount;
 
     /**
      * 이전/다음 게시글을 조회합니다.
@@ -186,10 +182,9 @@ interface PostRepositoryInterface
      * @param  array  $filters  정렬 파라미터 (order_by, order_direction)
      * @param  bool  $withTrashed  삭제된 게시글 포함 여부
      * @param  int|null  $boardId  게시판 ID (전달 시 Board 재조회 생략)
-     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 adjacent)
      * @return array{prev: Post|null, next: Post|null} 이전/다음 게시글
      */
-    public function getAdjacentPosts(string $slug, int $id, array $filters = [], bool $withTrashed = false, ?int $boardId = null, ?PostQueryExtensions $extensions = null): array;
+    public function getAdjacentPosts(string $slug, int $id, array $filters = [], bool $withTrashed = false, ?int $boardId = null): array;
 
     /**
      * 사용자의 게시글 활동 목록을 조회합니다.
@@ -197,10 +192,9 @@ interface PostRepositoryInterface
      * @param  int  $userId  사용자 ID
      * @param  array  $filters  필터 조건 (board_slug, search)
      * @param  int  $perPage  페이지당 항목 수
-     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 user_activity)
      * @return LengthAwarePaginator 게시글 활동 목록
      */
-    public function getUserActivities(int $userId, array $filters = [], int $perPage = 20, ?PostQueryExtensions $extensions = null): LengthAwarePaginator;
+    public function getUserActivities(int $userId, array $filters = [], int $perPage = 20): LengthAwarePaginator;
 
     /**
      * 게시판에서 키워드로 게시글을 검색합니다.
@@ -211,7 +205,6 @@ interface PostRepositoryInterface
      * @param  string  $direction  정렬 방향 (asc, desc)
      * @param  int  $perPage  페이지당 항목 수
      * @param  int  $page  페이지 번호
-     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 search)
      * @return BoundedPage 페이지 결과 (총 건수 정확도 포함)
      */
     public function searchByKeyword(
@@ -220,8 +213,7 @@ interface PostRepositoryInterface
         string $orderBy = 'created_at',
         string $direction = 'desc',
         int $perPage = 10,
-        int $page = 1,
-        ?PostQueryExtensions $extensions = null
+        int $page = 1
     ): BoundedPage;
 
     /**
@@ -229,10 +221,9 @@ interface PostRepositoryInterface
      *
      * @param  string  $slug  게시판 슬러그
      * @param  string  $keyword  검색 키워드
-     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 search)
      * @return BoundedCount 일치하는 게시글 수 (정확도 포함)
      */
-    public function countByKeyword(string $slug, string $keyword, ?PostQueryExtensions $extensions = null): BoundedCount;
+    public function countByKeyword(string $slug, string $keyword): BoundedCount;
 
     /**
      * 여러 게시판에서 키워드로 게시글을 검색합니다 (단일 쿼리, DB 페이지네이션).
@@ -243,9 +234,7 @@ interface PostRepositoryInterface
      * @param  string  $direction  정렬 방향 (asc, desc)
      * @param  int  $perPage  페이지당 항목 수
      * @param  int  $page  페이지 번호
-     * @param  array  $readScope  읽기 스코프 명세 (BoardReadScope::resolve() — 비면 스코프 없음)
-     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 search_across)
-     * @return array{total: int, items: Collection} 결과 객체
+     * @return array{total: int, items: Collection}
      */
     public function searchAcrossBoards(
         array $boardIds,
@@ -253,9 +242,7 @@ interface PostRepositoryInterface
         string $orderBy = 'created_at',
         string $direction = 'desc',
         int $perPage = 10,
-        int $page = 1,
-        array $readScope = [],
-        ?PostQueryExtensions $extensions = null
+        int $page = 1
     ): BoundedPage;
 
     /**
@@ -269,8 +256,6 @@ interface PostRepositoryInterface
      * @param  array<int, array{0: string, 1: string}>  $sortKeys  [[컬럼, 방향], ...]
      * @param  int  $perPage  페이지당 항목 수
      * @param  string|null  $cursor  인코딩된 커서 (첫 페이지면 null)
-     * @param  array  $readScope  읽기 스코프 명세 (BoardReadScope::resolve() — 비면 스코프 없음)
-     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 search_across)
      * @return CursorPaginator 커서 페이지 결과
      */
     public function searchAcrossBoardsByCursor(
@@ -278,9 +263,7 @@ interface PostRepositoryInterface
         string $keyword,
         array $sortKeys,
         int $perPage = 10,
-        ?string $cursor = null,
-        array $readScope = [],
-        ?PostQueryExtensions $extensions = null
+        ?string $cursor = null
     ): CursorPaginator;
 
     /**
@@ -288,11 +271,9 @@ interface PostRepositoryInterface
      *
      * @param  array  $boardIds  검색 대상 게시판 ID 목록
      * @param  string  $keyword  검색 키워드
-     * @param  array  $readScope  읽기 스코프 명세 (BoardReadScope::resolve() — 비면 스코프 없음)
-     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 search_across — 목록·커서와 같은 집합)
      * @return BoundedCount 키워드와 일치하는 게시글 수 (정확도 포함)
      */
-    public function countAcrossBoards(array $boardIds, string $keyword, array $readScope = [], ?PostQueryExtensions $extensions = null): BoundedCount;
+    public function countAcrossBoards(array $boardIds, string $keyword): BoundedCount;
 
     /**
      * 사용자의 게시글 활동 통계를 조회합니다.
@@ -300,10 +281,9 @@ interface PostRepositoryInterface
      * 작성한 게시글 수, 작성한 댓글 수, 총 조회수를 반환합니다.
      *
      * @param  int  $userId  사용자 ID
-     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 user_stats — 게시글 쪽 집계만)
      * @return array{total_posts: int, total_comments: int, total_views: int} 활동 통계
      */
-    public function getUserActivityStats(int $userId, ?PostQueryExtensions $extensions = null): array;
+    public function getUserActivityStats(int $userId): array;
 
     /**
      * 사용자의 공개 게시글/댓글 통계를 조회합니다 (공개 프로필용).
@@ -311,14 +291,11 @@ interface PostRepositoryInterface
      * 기존 getUserActivityStats()와 다른 점:
      * - status='published' 조건 적용
      * - comments_count = 실제 작성한 댓글 수 (댓글 단 게시글 수가 아님)
-     * - 비활성 게시판과 $excludeBoardIds(보는 사람이 읽을 수 없는 게시판)의 글·댓글은 세지 않음
      *
      * @param  int  $userId  사용자 ID
-     * @param  array<int>  $excludeBoardIds  세지 않을 게시판 ID 목록
-     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 user_stats — 게시글 수만, 댓글 수는 미적용)
      * @return array{posts_count: int, comments_count: int} 공개 게시글/댓글 통계
      */
-    public function getUserPublicStats(int $userId, array $excludeBoardIds = [], ?PostQueryExtensions $extensions = null): array;
+    public function getUserPublicStats(int $userId): array;
 
     /**
      * 게시판 ID와 게시글 ID로 게시글을 조회합니다 (삭제 포함).
@@ -337,10 +314,9 @@ interface PostRepositoryInterface
      *
      * @param  int  $boardId  게시판 ID
      * @param  int  $chunkSize  청크 크기
-     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 sitemap)
      * @return iterable<Post> 공개 게시글 순회자 (id, updated_at 만 조회)
      */
-    public function streamPublishedForSitemap(int $boardId, int $chunkSize = 500, ?PostQueryExtensions $extensions = null): iterable;
+    public function streamPublishedForSitemap(int $boardId, int $chunkSize = 500): iterable;
 
     /**
      * 게시판 ID 기준으로 게시글을 일괄 소프트 삭제합니다.
@@ -360,31 +336,6 @@ interface PostRepositoryInterface
      * @return int 삭제된 게시글 수
      */
     public function forceDeleteByBoardId(int $boardId): int;
-
-    /**
-     * 지정한 게시글과 그 답변 글(자손 전체)을 하위 데이터와 함께 영구 삭제합니다 (소프트 삭제된 글 포함).
-     *
-     * 이커머스 샘플 시더의 재시드 정리(`sirsoft-ecommerce.inquiry.purge_sample_posts` 훅)에서
-     * 사용합니다. 넘겨받은 ID 의 글과 그 글에 달린 답변만 지우고, 같은 게시판의 다른 글(운영자 답변·
-     * 실제 문의)은 건드리지 않습니다. 댓글·첨부 행·반응·스크랩도 함께 지웁니다.
-     * 운영 경로의 삭제는 PostService 를 거칩니다.
-     *
-     * @param  int  $boardId  게시판 ID (다른 게시판의 같은 ID 는 지우지 않는다)
-     * @param  array<int, int>  $ids  삭제할 원글 ID 목록
-     * @return int 삭제된 게시글 수 (답변 포함)
-     */
-    public function forceDeleteWithRepliesByIds(int $boardId, array $ids): int;
-
-    /**
-     * 지정한 게시글(그 게시판 안의 것만)과 자손 답글 전체의 ID 를 모읍니다 (소프트 삭제된 글 포함).
-     *
-     * 영구 삭제 전에 첨부 파일을 먼저 정리할 대상을 고를 때 씁니다.
-     *
-     * @param  int  $boardId  게시판 ID
-     * @param  array<int, int>  $ids  원글 ID 목록
-     * @return array<int, int> 원글 + 자손 답글 ID
-     */
-    public function collectWithRepliesIds(int $boardId, array $ids): array;
 
     /**
      * ID로 게시글을 조회합니다 (게시판 슬러그 불필요, board 관계 포함).
@@ -467,7 +418,6 @@ interface PostRepositoryInterface
      * @param  int  $boardId  게시판 ID
      * @param  int  $size  청크 크기
      * @param  callable  $callback  청크마다 호출될 콜백 (int[] $postIds)
-     * @return void 반환값 없음
      */
     public function eachIdChunkByBoardId(int $boardId, int $size, callable $callback): void;
 
@@ -480,27 +430,6 @@ interface PostRepositoryInterface
      * @return int 갱신된 카운트 값
      */
     public function recalculateCommentsCount(int $postId): int;
-
-    /**
-     * 게시글의 scrap_count 를 1 증가시키고 갱신된 값을 반환합니다.
-     *
-     * 스크랩 등록 시 PostScrapService 가 호출하는 영속 단일 진입점.
-     * 반환값은 낙관적 UI 없이 화면 수치를 서버 응답으로 갱신하는 데 쓰인다.
-     *
-     * @param  int  $postId  게시글 ID
-     * @return int 증가 후 scrap_count
-     */
-    public function incrementScrapCount(int $postId): int;
-
-    /**
-     * 게시글의 scrap_count 를 1 감소시키고 갱신된 값을 반환합니다 (0 미만으로 내려가지 않음).
-     *
-     * 스크랩 해제 시 PostScrapService 가 호출하는 영속 단일 진입점.
-     *
-     * @param  int  $postId  게시글 ID
-     * @return int 감소 후 scrap_count
-     */
-    public function decrementScrapCount(int $postId): int;
 
     /**
      * 게시글의 attachments_count 컬럼을 활성 첨부파일 수로 재계산해 갱신합니다.
@@ -523,7 +452,7 @@ interface PostRepositoryInterface
      *
      * 삭제되지 않은(deleted_at IS NULL) 게시글만 카운트합니다.
      *
-     * @param  string  $date  집계 기준 날짜 (Y-m-d, 사이트 표준시)
+     * @param  string  $date  집계 기준 날짜 (Y-m-d)
      * @return int 해당 날짜 작성 게시글 수
      */
     public function countCreatedOnDate(string $date): int;
@@ -535,46 +464,7 @@ interface PostRepositoryInterface
      * 게시판/작성자 관계를 eager load 합니다.
      *
      * @param  int  $limit  조회 건수
-     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 admin_dashboard)
      * @return Collection<int, Post> 최신 게시글 컬렉션
      */
-    public function getRecentAcrossBoards(int $limit, ?PostQueryExtensions $extensions = null): Collection;
-
-    /**
-     * 비밀글 스레드 판정용 노드 요약을 ID 로 조회합니다 (삭제 글 포함, 게시판 한정).
-     *
-     * @param  int  $boardId  게시판 ID
-     * @param  array<int, int>  $ids  게시글 ID 목록
-     * @return array<int, array{id: int, parent_id: int|null, user_id: int|null, is_secret: bool, alive: bool, has_password: bool}> 노드 요약 목록
-     */
-    public function findThreadNodes(int $boardId, array $ids): array;
-
-    /**
-     * 비밀글 스레드 판정용 자식 노드 요약을 부모 ID 로 조회합니다 (삭제 글 포함, 게시판 한정).
-     *
-     * @param  int  $boardId  게시판 ID
-     * @param  array<int, int>  $parentIds  부모 게시글 ID 목록
-     * @return array<int, array{id: int, parent_id: int|null, user_id: int|null, is_secret: bool, alive: bool, has_password: bool}> 노드 요약 목록
-     */
-    public function findThreadChildNodes(int $boardId, array $parentIds): array;
-
-    /**
-     * 회원이 이 게시판에 답변(부모가 있는 글)을 하나라도 썼는지 확인합니다 (삭제 글 제외).
-     *
-     * @param  int  $boardId  게시판 ID
-     * @param  int  $userId  회원 ID
-     * @return bool 답변 존재 여부
-     */
-    public function userHasReplyInBoard(int $boardId, int $userId): bool;
-
-    /**
-     * 스레드 비밀번호 검증 전용으로 글 비밀번호 해시를 조회합니다.
-     *
-     * 해시를 읽는 경로를 이 메서드 하나로 모은다 — 다른 조회는 해시를 싣지 않는다.
-     *
-     * @param  int  $boardId  게시판 ID
-     * @param  array<int, int>  $ids  게시글 ID 목록
-     * @return array<int, string> 게시글 ID ⇒ 비밀번호 해시 (비밀번호 없는 글은 빠진다)
-     */
-    public function findPasswordHashesByIds(int $boardId, array $ids): array;
+    public function getRecentAcrossBoards(int $limit): Collection;
 }

@@ -33,38 +33,6 @@
 저장. 문의는 게시판 모듈이 글로 보관하고 이 모듈은 상품↔글 피벗만 갖는데, manifest 의존에는
 게시판이 없습니다. 연결이 코드 결합이 아니라 훅 구독이라 게시판이 없으면 문의 기능만 비고
 나머지는 그대로 동작합니다.
-
-**클레임(교환·반품·환불)은 취소의 확장이 아니라 별도 축입니다.** 취소는 옵션을 주문에서 빼는
-한 번의 사건이지만 클레임은 신청 → (추가결제) → 승인 → 회수 → 재발송 → 완료 → 환불 실행이
-시간차를 두고 이어집니다. 그래서 유형별 신청서 테이블(교환 · 반품 · 환불)을 두고 상태머신을
-각 Enum 의 `canTransitionTo()` 로 고정했으며, 유형을 가로지르는 것(첨부 · 추가결제)만 polymorphic
-으로 묶었습니다. 금액은 여전히 계산기 하나를 지납니다 — 반품·교환의 환불 대상액은 취소와 같은
-`OrderAdjustmentService` 경로이고, 취소 가능 금액의 상한은 `CancellableAmountCalculator` 가
-도메인 환불 대상액과 결제수단 잔여 한도의 최솟값으로 정합니다. 결제사와의 접합면도 같은 원칙을
-따릅니다 — 추가결제(`CP` 채번)의 승인·환급은 이 모듈이 발행하는 `claim_payment.approve` /
-`claim_payment.refund` 필터를 결제 플러그인이 구현하는 방식이라, 이 모듈은 여기서도 PG 를
-알지 않습니다.
-
-환불신청서의 수단은 **저장값과 실효 수단**이 다를 수 있습니다. 결제 플러그인이 꺼진 동안 접수된 카드
-신청서는 계좌 환불로 폴백되고, 플러그인이 돌아오면 운영자가 수단을 고르지 않은 한 실행 때 PG 로
-되돌아갑니다. 화면(신청서 상세)·저장·실행이 모두 `OrderRefundRequestService::effectiveRefundMethod()`
-하나를 읽고, 운영자 선택 표지(`refund_method_overridden`)는 **실효 수단과 다른 값을 고른 때만** 붙습니다 —
-화면은 고치지 않은 수단도 실행 본문에 싣기 때문입니다. 반대 방향(PG → 계좌)은 바꾸지 않으며, 꺼진
-플러그인의 PG 건은 저장·실행 모두 「결제 플러그인이 꺼져 있습니다」 사유(`pg_provider_inactive`)로 막습니다.
-
-주문 하나에 여러 유형의 클레임이 걸릴 때 **어느 유형을 먼저 보여 줄 것인가**는 서비스 상수
-`UserClaimService::ORDER_LIST_TYPE_PRIORITY` 가 정합니다 — 접수 건이 있는 첫 유형을 고르되
-순서는 교환 → 반품 → 취소 → 환불입니다(설계 결정 2026-09-09). 화면 서브탭의 배열 순서와
-다른 것은 의도입니다: 결제완료 주문의 취소·환불 신청은 즉시취소로 분기해 취소만 남는 주문이
-흔한데, 늘 교환 탭부터 열면 취소 1건인 주문에서 빈 안내가 먼저 보입니다. 회원·비회원 주문 상세와
-관리자 주문상세 클레임 내역(`claimHistoryActiveType`)이 같은 상수를 씁니다.
-
-결제사에 **한 번만 일어나야 하는 요청**(현금영수증 발급·취소)은 「조회로 없음을 확인 → 결제사 호출 → 저장」 순서로 두지 않습니다.
-동시에 두 요청이 오면 둘 다 「없음」을 읽고 결제사에 두 번 요청하기 때문입니다. 대신 처리 중 예약 행을 먼저 넣어 DB 유니크가
-두 번째를 거부하게 하고, 결제사 호출은 트랜잭션 밖에서 한 뒤 예약 행을 조건부 갱신으로 마무리합니다(`CashReceiptService`,
-열·제약은 [data-model.md](data-model.md) 「현금영수증 활성 발급 슬롯」). 결과를 모르는 오래된 예약은 실패로 바꾸되 다시 발급하지
-않습니다 — 결제사 쪽 발급 여부는 사람이 확인합니다. 결제·웹훅의 주문별 잠금, 환불의 행 잠금, 후기의 주문 옵션당 1건 유니크도 같은
-원칙(판정을 DB 한 문장으로)입니다.
 <!-- @intent END -->
 
 ## 계층 지도
@@ -93,27 +61,15 @@ Models 47종 (Order/OrderOption/Product/... — 주문 계열은 SoftDeletes)
 
 Support 클래스(`src/Support/`)는 계층이 아니라 **규칙의 단일 출처**입니다 — `VatCalculator`
 (과세/면세 안분) · `MileageRounding`(적립 절사) · `ShippingPolicySnapshot`(주문 시점 배송정책
-동결 — 표시용 금액 문자열은 `forViewer()` 가 응답 시점 언어로 다시 적는다) · `CurrencySettingsCache`(통화 설정 조회) · `ReviewWritePolicy`(리뷰 작성 가능 판정) ·
+동결) · `CurrencySettingsCache`(통화 설정 조회) · `ReviewWritePolicy`(리뷰 작성 가능 판정) ·
 `ShopPathResolver`(상점 경로). 같은 규칙을 서비스마다 다시 구현하지 않기 위한 자리이므로,
 새 서비스가 반올림·안분·경로 조립을 직접 하고 있으면 여기로 올려야 하는 신호입니다.
 
 Listeners 33종은 이 흐름과 **별도 레인**입니다. Service 가 발행한 훅을 받아 활동 로그·검색
 색인·SEO 캐시 무효화·카테고리 트리 캐시·마일리지 적립·현금영수증 발행·알림 데이터 추출·장바구니
-병합을 수행하며, Service 자신은 이 부가효과를 알지 못합니다(카테고리 트리 캐시는 상품 수 기준별로 키가 갈린다 —
-관리자 트리는 연결된 상품 전부, 공개 트리는 공개 상품 목록과 같은 전시 상품만(`Category::getTree()` 의
-`visibleProductsOnly`). 리스너가 상품·카테고리 변경 때 두 기준을 함께 비운다). 그래서 새 부가효과는 Service 를
+병합을 수행하며, Service 자신은 이 부가효과를 알지 못합니다. 그래서 새 부가효과는 Service 를
 건드리지 않고 리스너 추가만으로 끝납니다 — 단, 금전이 되돌아가야 하는 리스너(쿠폰·마일리지
-복원)는 `'sync' => true` 로 구독해야 호출자 트랜잭션과 함께 롤백됩니다. 큐로 도는 **일괄** 활동 로그
-핸들러(일괄 상태·삭제·가격·재고 등)는 항목별 기록 루프를 `DB::transaction` 으로 감쌉니다 — 잡이 중간에 끊겨
-재시도되면 앞부분이 두 번 기록되던 것을 막습니다 — 끊긴 묶음은 커밋되지 않고, 항목 하나의 저장 실패는 종전대로 건너뜁니다(코어
-`docs/backend/activity-log.md` 「일괄 핸들러 트랜잭션 패턴」).
-
-클레임은 흐름 레인에 **한 줄이 더 있는 셈**입니다 — `User|Guest\ClaimController` →
-`OrderExchangeService` / `OrderReturnService` / `OrderRefundRequestService`(신청·전이·완료) →
-`ClaimPaymentService`(추가결제) → `RefundExecutionService`(환불 실행 — 취소와 공용). 그 옆에
-규칙의 단일 출처가 셋 더 있습니다: `ClaimQuantityGuard`(수량 잠금 검증) · `ClaimShippingFeeService`
-(클레임 배송비) · `CancellableAmountCalculator`(취소 가능 금액 상한). 새 클레임 유형이나 새 청구
-방식을 더할 때 이 셋을 우회해 서비스 안에서 다시 계산하면 취소 경로와 규칙이 갈립니다.
+복원)는 `'sync' => true` 로 구독해야 호출자 트랜잭션과 함께 롤백됩니다.
 <!-- @intent END -->
 
 ## 디렉토리
@@ -136,7 +92,7 @@ Listeners 33종은 이 흐름과 **별도 레인**입니다. Service 가 발행�
 | `database/migrations/` | 마이그레이션 | 한국어 comment + `down()` 필수, 기설치본은 업그레이드 스텝으로 백필 |
 | `database/seeders/` | 시더 | composer autoload 등록 + `extension:update-autoload` |
 | `upgrades/` | 업그레이드 스텝 | DB·설정 구조 변경 시 작성 (모듈/플러그인 전용) |
-| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan module:update sirsoft-ecommerce --force` (빌드 불필요) |
+| `resources/layouts/` | 레이아웃 JSON | `php artisan module:update sirsoft-ecommerce --force` (빌드 불필요) |
 | `resources/routes/` | 라우트 → 레이아웃 매핑 (분할) | `php artisan module:update sirsoft-ecommerce --force` |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan module:build` → `php artisan module:update sirsoft-ecommerce --force` |
 | `resources/extensions/` | 다른 확장 레이아웃에 주입하는 조각 | `php artisan module:update sirsoft-ecommerce --force` |
@@ -145,7 +101,6 @@ Listeners 33종은 이 흐름과 **별도 레인**입니다. Service 가 발행�
 | `config/` | 확장 config | 설정 기본값은 settings 스키마와 어긋나지 않게 |
 | `tests/` | 테스트 | 변경 범위만 필터 실행 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
-| `components.json` | 편집기 컴포넌트 선언 (레이아웃 작성자가 읽는 props 계약) | `php artisan module:update sirsoft-ecommerce --force` |
-| `assets/icon.svg` | 확장 아이콘 (관리자 목록·설치 마법사 카드) | 정사각·100KB 이하·스크립트 없는 SVG — 교체 후 `php artisan module:update sirsoft-ecommerce --force` |
+| `components.json` | 편집기 컴포넌트 선언 (레이아웃 저작자가 읽는 props 계약) | `php artisan module:update sirsoft-ecommerce --force` |
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 <!-- @generated:directory-map END -->

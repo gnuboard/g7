@@ -3,7 +3,6 @@
 namespace Tests\Feature\Seo;
 
 use App\Seo\Contracts\SitemapContributorInterface;
-use App\Seo\SeoCacheManager;
 use App\Seo\SitemapGenerator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
@@ -164,7 +163,7 @@ class JaLocaleSeoIntegrationTest extends TestCase
         Cache::flush();
 
         // ja 로케일과 ko 로케일이 같은 URL 에서 별도 캐시 키를 사용하는지 검증
-        $cacheManager = app(SeoCacheManager::class);
+        $cacheManager = app(\App\Seo\SeoCacheManager::class);
 
         $reflection = new \ReflectionClass($cacheManager);
         if (! $reflection->hasMethod('buildKey')) {

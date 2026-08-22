@@ -34,14 +34,6 @@ Listener (RegisterInicisProviderListener 등)
 `InicisIdentityProvider`가 4개의 협력자(게이트웨이·Repository 2종·캐시)를 생성자 주입받는
 것은 그 각각이 서로 다른 관심사(외부 API 통신, DB 영속, 임시 캐시)이기 때문입니다 — 하나로
 합치면 단위 테스트에서 외부 API 를 모킹할 때 DB/캐시까지 함께 모킹해야 합니다.
-
-**1인 1계정 판정은 두 단계입니다(1.1.4).** 가입 전 리스너(`AssertNoDuplicateInicisIdentity`)는 record·선점표를 조회해
-이미 가입한 명의를 먼저 안내하지만, 가입 트랜잭션 밖이라 같은 명의로 동시에 가입하면 둘 다 통과할 수 있습니다. 그래서
-최종 판정은 코어가 가입 트랜잭션 안에서 발행하는 `core.auth.registering` 의 동기 구독자(`ClaimInicisIdentityOnRegistering`)가
-**선점표(`inicis_identity_claims`, `(hash_type, hash)` 유니크)에 자리를 잡는 것**으로 합니다 — 자리를 못 잡으면 예외로 가입
-전체(회원·동의 이력)가 롤백되고, 「어느 식별값이 겹쳤는지」 감사 기록만 롤백 뒤에 남깁니다. 선점표는 탈퇴·삭제 리스너가
-같은 트랜잭션에서 비워 탈퇴 후 재가입은 그대로 허용됩니다. 본인확인 콜백의 완료 전이는 코어 로그 저장소의 조건부 갱신
-(`markVerifiedIfPending`)이라, 같은 콜백이 동시에 두 번 와도 인증 결과는 하나만 만들어집니다(두 번째는 `ALREADY_CONSUMED`).
 <!-- @intent END -->
 
 ## 디렉토리
@@ -62,7 +54,7 @@ Listener (RegisterInicisProviderListener 등)
 | `src/routes/` | 라우트 | 모든 라우트에 `name()` 필수 |
 | `database/migrations/` | 마이그레이션 | 한국어 comment + `down()` 필수, 기설치본은 업그레이드 스텝으로 백필 |
 | `upgrades/` | 업그레이드 스텝 | DB·설정 구조 변경 시 작성 (모듈/플러그인 전용) |
-| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan plugin:update sirsoft-verification_kginicis --force` (빌드 불필요) |
+| `resources/layouts/` | 레이아웃 JSON | `php artisan plugin:update sirsoft-verification_kginicis --force` (빌드 불필요) |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan plugin:build` → `php artisan plugin:update sirsoft-verification_kginicis --force` |
 | `resources/extensions/` | 다른 확장 레이아웃에 주입하는 조각 | `php artisan plugin:update sirsoft-verification_kginicis --force` |
 | `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan plugin:update sirsoft-verification_kginicis --force` |
@@ -70,18 +62,7 @@ Listener (RegisterInicisProviderListener 등)
 | `config/` | 확장 config | 설정 기본값은 settings 스키마와 어긋나지 않게 |
 | `tests/` | 테스트 | 변경 범위만 필터 실행 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
-| `components.json` | 편집기 컴포넌트 선언 (레이아웃 작성자가 읽는 props 계약) | `php artisan plugin:update sirsoft-verification_kginicis --force` |
-| `assets/icon.svg` | 확장 아이콘 (관리자 목록·설치 마법사 카드) | 정사각·100KB 이하·스크립트 없는 SVG — 교체 후 `php artisan plugin:update sirsoft-verification_kginicis --force` |
+| `components.json` | 편집기 컴포넌트 선언 (레이아웃 저작자가 읽는 props 계약) | `php artisan plugin:update sirsoft-verification_kginicis --force` |
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 | `lang/` | 다국어 | 키 추가 시 ko·en 동시 반영 + 번들 ja 팩 동기화 |
 <!-- @generated:directory-map END -->
-
-## 마이페이지 카드 라우트의 상태 게이트 (이슈 #636 S4)
-
-카드 조회 라우트는 `auth:sanctum` + `check.user_status` 를 씁니다. 종전 표기 `check.user_status:active` 의
-`:active` 는 **아무 일도 하지 않았습니다** — 이 미들웨어는 파라미터를 받지 않고 Laravel 이 초과 인자를
-조용히 버립니다. 「이 라우트만 active 로 좁혔다」는 거짓 신호였으므로 제거했습니다.
-
-통과 어휘는 미들웨어가 단독으로 소유합니다(활성만 통과 / 비활성·차단·**휴면**·탈퇴는 403). 라우트별로
-상태 어휘를 갈라 두면 휴면처럼 상태가 새로 생길 때 게이트 강도가 라우트마다 어긋납니다 — 그래서 이
-플러그인은 상태 판정을 재선언하지 않습니다.

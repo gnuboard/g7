@@ -33,7 +33,7 @@ public/build/ext/{cache_version}/
 │   ├── routes.json                            ← 병합 결과 + {"success":true,...} 봉투
 │   └── assets/{dist 이하 경로}                 ← dist/** 사본 (*.map 제외, 허용 확장자만)
 └── bundles/
-    ├── modules.js / modules.css               ← 확장 병합 번들 사본 (빈 번들도 0바이트로 게시)
+    ├── modules.js / modules.css               ← 확장 병합 번들 사본
     └── plugins.js / plugins.css
 ```
 
@@ -89,7 +89,7 @@ public/build/ext/{cache_version}/
 ## 3. 서빙·폴백 모델
 
 - 실파일이므로 Apache(`RewriteCond !-f`)/nginx(`try_files $uri`) 어느 쪽이든 서버 설정 추가 없이 rewrite 전에 직접 서빙된다. 정적 확장자 정규식 location(`location ~* \.(js|css|json)$`)이 있는 서버에서는 그 location 이 곧 서빙 메커니즘이 된다.
-- **`.json/.js/.css` 로 끝나는 신규 동적(Laravel) 라우트를 만들지 않는다.** 정적 확장자 location 이 있는 서버에서 PHP 폴백 없이 404 가 되는 함정을 원천 회피한다 (자동 검증이 차단). 404 는 프론트 폴백의 설계된 신호다.
+- **`.json/.js/.css` 로 끝나는 신규 동적(Laravel) 라우트를 만들지 않는다.** 정적 확장자 location 이 있는 서버에서 PHP 폴백 없이 404 가 되는 함정을 원천 회피한다 (정적 검사가 차단). 404 는 프론트 폴백의 설계된 신호다.
 - **서버 렌더(blade) 층**: `AssetUrl::staticExtBase()` 가 게이트 3조건(프로덕션·`core.static_cache.enabled`·게시 완료)을 판정한다. 태그로 방출되는 자산(템플릿 CSS·JS, 번들 4종)은 **그 자산의 개별 `file_exists`** 까지 확인 후에만 정적 URL 을 방출한다 — 태그는 404 를 받아도 스스로 재시도하지 못하기 때문.
 - **프론트 fetch 층**: routes/lang/components 는 정적 URL 우선 + 응답 `!ok`/네트워크 실패 시 **즉시** 종전 API URL 폴백. 폴백 발생은 console.warn 1줄로 관측 가능하다 (조용한 폴백 금지 — 자가 치유 실패를 발견할 유일한 통로).
 - **태그 계층 런타임 복구**: 브라우저에 캐시된 구 HTML 이 GC 된 구버전 정적 자산을 참조하는 등 서빙 시점 404 는, 자산 URL 자가 복구 파샬이 `/build/ext/{v}/…` → 종전 `/api/…` URL 로 1회 역변환한다. `/build/core/**` 는 실물 정적 파일이라 변환 대상이 아니다. 확장 병합 번들(`ModuleAssetLoader`)도 동일 규칙 — 정적 번들 URL 은 1회만 시도하고 미스 시 종전 API URL 에서 기존 재시도 예산을 이어간다 (같은 정적 URL 재시도는 게시본 소실을 복구하지 못한다).
@@ -176,7 +176,7 @@ public/build/ext/{cache_version}/
 
 같은 엔드포인트가 대시보드의 「초기 화면 파일 생성 실패」 알림에도 [다시 만들기] 버튼으로 붙는다 — 운영자가 결함을 처음 만나는 곳에서 복구가 끝나도록.
 
-715파일·40MB 복사와 번들 재병합이 **웹 요청 안에서** 돈다(번들은 캐시가 있으면 재병합하지 않는다). 서버는 게시 락 TTL(300초)만큼 실행 시간을 확보하고 클라이언트가 끊어도 게시를 끝내지만, FPM `request_terminate_timeout`·nginx `fastcgi_read_timeout` 이 그보다 짧은 서버에서는 응답이 먼저 끊길 수 있다. 그 경우에도 게시는 계속되므로 카드를 다시 열어 결과를 확인한다.
+715파일·40MB 복사와 번들 재병합이 **웹 요청 안에서** 돈다. 서버는 게시 락 TTL(300초)만큼 실행 시간을 확보하고 클라이언트가 끊어도 게시를 끝내지만, FPM `request_terminate_timeout`·nginx `fastcgi_read_timeout` 이 그보다 짧은 서버에서는 응답이 먼저 끊길 수 있다. 그 경우에도 게시는 계속되므로 카드를 다시 열어 결과를 확인한다.
 
 이 통로가 있으므로 kill-switch 를 관리자 UI 로 두지 않는 방침(§5)은 그대로다 — 복구는 화면에서, 끄기는 서버에서.
 
@@ -243,5 +243,5 @@ Apache 는 게시 트리에 포함된 `.htaccess` 가 같은 캐시 헤더와 `m
 
 - 정적 우선 URL 규칙은 서버측 `AssetUrl` 과 프론트측 `assetUrl.ts`(+ 자가 복구 파샬 역변환)가 **항상 쌍으로** 수정되어야 한다 — 한쪽만 바꾸면 그 자산만 404 가 된다.
 - 게시 산출물(`public/build/ext/`)은 git 미추적·release 페이로드 제외다. `public/build/core/` 는 계속 추적한다 (배포 산출물) — 혼동 금지.
-- 루트 `npm run build`(기본 vite 앱 빌드)는 더 이상 `public/build` 를 비우지 않는다 — 루트 vite config 가 `build.emptyOutDir: false` 를 명시한다. 종전에는 기본값 `true` 로 `core`(폴백 없는 코어 3번들)와 `ext`(게시본)가 함께 지워졌고, 이미 배달된 HTML 의 immutable URL 은 재게시로도 복구되지 않았다(공개 #70 · #122). 잔존 구 해시 산출물은 `manifest.json` 이 선택하므로 참조되지 않는 사표이며, 산출물 정리 책임은 빌드 커맨드(`PrunesBuildOutput`)가 진다. 저장소의 모든 vite config 는 이 규약을 명시해야 한다 — 기본값 의존은 자동 검증이 차단한다.
+- 루트 `npm run build`(기본 vite 앱 빌드)는 더 이상 `public/build` 를 비우지 않는다 — 루트 vite config 가 `build.emptyOutDir: false` 를 명시한다. 종전에는 기본값 `true` 로 `core`(폴백 없는 코어 3번들)와 `ext`(게시본)가 함께 지워졌고, 이미 배달된 HTML 의 immutable URL 은 재게시로도 복구되지 않았다(공개 #70 · #122). 잔존 구 해시 산출물은 `manifest.json` 이 선택하므로 참조되지 않는 사표이며, 산출물 정리 책임은 빌드 커맨드(`PrunesBuildOutput`)가 진다. 저장소의 모든 vite config 는 이 규약을 명시해야 한다 — 기본값 의존은 정적 검사가 차단한다.
 - 확장 병합 번들의 생성 규율은 [module-assets.md "서버측 번들 병합"](../extension/module-assets.md) 이 소유한다. 본 게시는 그 산출물의 **사본**만 만든다.

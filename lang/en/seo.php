@@ -3,7 +3,7 @@
 return [
     // Cache clear
     'cache_cleared_all' => 'All SEO cache has been cleared.',
-    'cache_cleared_layout' => ':count SEO cache entry for layout :layout has been cleared.|:count SEO cache entries for layout :layout have been cleared.',
+    'cache_cleared_layout' => ':count SEO cache entries for layout :layout have been cleared.',
 
     // Cache warmup
     'warmup_started' => 'SEO cache warmup started.',
@@ -14,8 +14,6 @@ return [
     'sitemap_regenerated' => 'Sitemap regeneration completed.',
     'sitemap_regenerate_dispatched' => 'Sitemap regeneration has started. It may take a while to finish.',
     'sitemap_regenerate_failed' => 'Sitemap regeneration failed.',
-    'sitemap_regenerate_in_progress' => 'The Sitemap is already being generated. Please try again after it finishes.',
-    'sitemap_regenerate_locked' => 'Another Sitemap generation job is waiting in the queue, or a lock from a previous job remains. Please try again shortly, or run `php artisan cache:clear` on the server and try again.',
     'sitemap_disabled' => 'Sitemap generation is disabled.',
 
     // Sitemap generation/serving
@@ -23,7 +21,7 @@ return [
     'sitemap_generate_failed' => 'Sitemap generation failed: :error',
 
     // Cache stats
-    'stats_period' => 'SEO cache statistics for the last :days day|SEO cache statistics for the last :days days',
+    'stats_period' => 'SEO cache statistics for the last :days days',
     'stats_overall' => 'Overall Statistics',
     'stats_metric' => 'Metric',
     'stats_value' => 'Value',
@@ -37,17 +35,4 @@ return [
     'stats_total' => 'Total',
     'stats_by_module' => 'Statistics by Module',
     'stats_module_identifier' => 'Module',
-    // `seo:generate-sitemap` command output
-    'console' => [
-        'generate_sitemap' => [
-            'already_running' => 'A sitemap is already being generated, so this run is skipped.',
-            'lock_unavailable' => 'The sitemap generation lock store (cache) is unavailable, so it was not run.',
-            'invalid_mode' => 'Invalid mode. Allowed: :allowed',
-            'generated' => 'Sitemap generated. (mode: :mode)',
-            'dispatched' => 'Sitemap generation dispatched to the queue. (mode: :mode)',
-        ],
-    ],
-
-    // Admin browser tab title suffix — appended after the screen title ({site_name} is the site name)
-    'admin_title_suffix' => ' - {site_name} Admin',
 ];

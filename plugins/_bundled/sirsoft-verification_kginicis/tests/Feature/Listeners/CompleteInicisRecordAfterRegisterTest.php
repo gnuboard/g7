@@ -10,7 +10,6 @@ use App\Extension\Cache\PluginCacheDriver;
 use App\Extension\HookManager;
 use App\Models\IdentityVerificationLog;
 use App\Models\User;
-use App\Services\IdentityTokenAcceptanceService;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Str;
 use Plugins\Sirsoft\VerificationKginicis\Identity\InicisIdentityProvider;
@@ -38,11 +37,6 @@ class CompleteInicisRecordAfterRegisterTest extends PluginTestCase
 
     private CacheInterface $cache;
 
-    /**
-     * 테스트 환경을 준비합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -58,13 +52,9 @@ class CompleteInicisRecordAfterRegisterTest extends PluginTestCase
     }
 
     /**
-     * 같은 요청에서 인정한 결과로 record 를 저장하고 log.user_id 를 역참조하며 임시 PII 캐시를 지우는지 확인합니다.
-     *
      * @scenario case=all_present
      *
-     * @effects success_with_record_stored, listener_upserts_inicis_identity_records_for_new_user_on_after_register_hook, listener_backfills_log_user_id_with_new_user_id, listener_clears_pending_record_cache_after_successful_upsert
-     *
-     * @return void 반환값 없음
+     * @effects success_with_record_stored
      */
     public function test_listener_upserts_record_backfills_user_id_and_clears_cache_on_after_register_hook(): void
     {
@@ -75,8 +65,7 @@ class CompleteInicisRecordAfterRegisterTest extends PluginTestCase
         // 2. 가입이 완료된 시점의 user
         $user = User::factory()->create();
 
-        // 3. 같은 가입 요청에서 before_register 가 결과를 인정한 상태 (1.1.4) + 실제 hook 발화 (코어 AuthService::register 가 하는 그대로)
-        $this->acceptInRequest($token);
+        // 3. 실제 hook 발화 (코어 AuthService::register 가 하는 그대로)
         HookManager::doAction('core.auth.after_register', $user, [
             'verification_token' => $token,
             'signup_stage' => 'after_create',
@@ -100,23 +89,14 @@ class CompleteInicisRecordAfterRegisterTest extends PluginTestCase
         );
     }
 
-    /**
-     * 코어 가입 가드가 같은 요청에서 결과를 인정(소비)한 뒤에도 본 listener 가 그 결과로 record 를 저장하는지 확인합니다.
-     *
-     * @scenario registration_context=happy_path
-     *
-     * @effects listener_processes_token_accepted_earlier_in_same_request
-     *
-     * @return void 반환값 없음
-     */
     public function test_listener_processes_token_even_after_core_listener_consumed_it(): void
     {
-        // 회귀 차단: 코어 AssertIdentityVerifiedBeforeRegister (priority 10) 가 같은 요청에서 결과를
-        // 인정(consumed_at 기록)한 후에도 본 listener (priority 50) 가 정상 처리되어야 함 (1.1.4 — 같은 요청 인정 결과를 받는다).
+        // 회귀 차단: 코어 AssertIdentityVerifiedBeforeRegister (priority 10) 가
+        // consumed_at 을 set 한 후에도 본 listener (priority 50) 가 정상 처리되어야 함.
+        // 본 plugin 의 InicisIdentityLogQueryRepository 가 consumed_at 무관 조회를 보장.
         $log = $this->createVerifiedSignupLog($token = 'tok-consumed-still-processed');
         $this->stashPendingRecord($log->id);
-        $this->acceptInRequest($token);
-        $this->assertNotNull($this->logRepository->findById($log->id)->consumed_at, '인정하면 결과가 소비로 표시되어야 한다');
+        $this->logRepository->updateById($log->id, ['consumed_at' => now()]);
 
         $user = User::factory()->create();
 
@@ -136,15 +116,6 @@ class CompleteInicisRecordAfterRegisterTest extends PluginTestCase
         );
     }
 
-    /**
-     * 가입 문맥에 확인 토큰이 없으면 아무것도 하지 않는지 확인합니다.
-     *
-     * @scenario registration_context=missing_token
-     *
-     * @effects listener_noops_when_verification_token_missing_in_context
-     *
-     * @return void 반환값 없음
-     */
     public function test_listener_noops_when_verification_token_missing_in_context(): void
     {
         $user = User::factory()->create();
@@ -157,15 +128,6 @@ class CompleteInicisRecordAfterRegisterTest extends PluginTestCase
         $this->assertDatabaseMissing('inicis_identity_records', ['user_id' => $user->id]);
     }
 
-    /**
-     * 어떤 확인 결과와도 맞지 않는 토큰이면 아무것도 하지 않는지 확인합니다.
-     *
-     * @scenario registration_context=bogus_token
-     *
-     * @effects listener_noops_when_token_does_not_match_any_verified_log
-     *
-     * @return void 반환값 없음
-     */
     public function test_listener_noops_when_token_does_not_match_any_verified_log(): void
     {
         $user = User::factory()->create();
@@ -177,15 +139,6 @@ class CompleteInicisRecordAfterRegisterTest extends PluginTestCase
         $this->assertDatabaseMissing('inicis_identity_records', ['user_id' => $user->id]);
     }
 
-    /**
-     * 다른 인증 수단의 결과면 record 도 캐시도 건드리지 않는지 확인합니다.
-     *
-     * @scenario registration_context=other_provider_token
-     *
-     * @effects listener_noops_when_log_provider_id_is_not_inicis, listener_does_not_clear_cache_for_other_provider_log
-     *
-     * @return void 반환값 없음
-     */
     public function test_listener_noops_when_log_belongs_to_other_provider(): void
     {
         // 다른 provider (mail 등) 의 verified log — token 매칭은 되지만 우리가 처리할 대상 아님
@@ -194,7 +147,6 @@ class CompleteInicisRecordAfterRegisterTest extends PluginTestCase
 
         $user = User::factory()->create();
 
-        $this->acceptInRequest($token);
         HookManager::doAction('core.auth.after_register', $user, [
             'verification_token' => $token,
         ]);
@@ -206,15 +158,6 @@ class CompleteInicisRecordAfterRegisterTest extends PluginTestCase
         );
     }
 
-    /**
-     * 임시 PII 캐시가 비어 있으면 record 저장과 역참조를 건너뛰는지 확인합니다.
-     *
-     * @scenario registration_context=cache_pii_missing
-     *
-     * @effects listener_skips_when_cache_pii_payload_missing_or_empty
-     *
-     * @return void 반환값 없음
-     */
     public function test_listener_logs_warning_and_skips_when_cache_pii_missing(): void
     {
         // log 는 있지만 Cache 가 비어있는 경우 (TTL 만료 등)
@@ -223,7 +166,6 @@ class CompleteInicisRecordAfterRegisterTest extends PluginTestCase
 
         $user = User::factory()->create();
 
-        $this->acceptInRequest($token);
         HookManager::doAction('core.auth.after_register', $user, [
             'verification_token' => $token,
         ]);
@@ -234,15 +176,6 @@ class CompleteInicisRecordAfterRegisterTest extends PluginTestCase
         $this->assertNull($reload->user_id);
     }
 
-    /**
-     * 이미 다른 회원이 역참조된 결과의 log.user_id 를 덮어쓰지 않는지 확인합니다.
-     *
-     * @scenario registration_context=existing_user_id_on_log
-     *
-     * @effects listener_does_not_overwrite_existing_user_id_on_log_via_backfill_safe_guard
-     *
-     * @return void 반환값 없음
-     */
     public function test_listener_does_not_overwrite_existing_user_id_via_backfill(): void
     {
         // 코어 backfillUserId 의 안전 가드 (이미 user_id 있으면 false 반환) 가 적용되는지 확인
@@ -252,7 +185,6 @@ class CompleteInicisRecordAfterRegisterTest extends PluginTestCase
 
         $newUser = User::factory()->create();
 
-        $this->acceptInRequest($token);
         HookManager::doAction('core.auth.after_register', $newUser, [
             'verification_token' => $token,
         ]);
@@ -265,15 +197,6 @@ class CompleteInicisRecordAfterRegisterTest extends PluginTestCase
         ]);
     }
 
-    /**
-     * 역참조가 실패해도 record 는 남기고 임시 PII 캐시는 지우는지 확인합니다.
-     *
-     * @scenario registration_context=happy_path
-     *
-     * @effects listener_clears_pending_record_cache_after_successful_upsert
-     *
-     * @return void 반환값 없음
-     */
     public function test_listener_clears_cache_even_when_backfill_fails(): void
     {
         // 보강 회귀: record upsert 성공 후 backfill 이 실패해도 (1) PII 저장은 유지되고
@@ -281,9 +204,6 @@ class CompleteInicisRecordAfterRegisterTest extends PluginTestCase
         $log = $this->createVerifiedSignupLog($token = 'tok-backfill-throws');
         $this->stashPendingRecord($log->id);
         $user = User::factory()->create();
-
-        // 같은 요청 인정은 실제 Repository 로 먼저 심는다 — 아래 mock 은 backfillUserId 만 흉내 낸다.
-        $this->acceptInRequest($token);
 
         // backfillUserId 만 예외를 던지는 mock 을 컨테이너에 주입.
         // 본 리스너는 이 시점에 log repository 의 backfillUserId 외 메서드를 호출하지 않으므로
@@ -307,41 +227,7 @@ class CompleteInicisRecordAfterRegisterTest extends PluginTestCase
     }
 
     /**
-     * 같은 가입 요청에서 인정하지 않은 결과는 토큰이 맞아도 이 회원에게 붙이지 않는지 확인합니다 (1.1.4).
-     *
-     * 수정 전에는 소비 여부와 무관하게 토큰만으로 결과를 다시 찾아, 다른 요청이 이미 쓴 결과의 PII 를 붙일 수 있었다.
-     *
-     * @scenario registration_context=consumed_by_other_request
-     *
-     * @effects unaccepted_token_not_attached_to_new_user
-     *
-     * @return void 반환값 없음
-     */
-    public function test_listener_ignores_token_not_accepted_in_this_request(): void
-    {
-        $log = $this->createVerifiedSignupLog($token = 'tok-used-by-other-request');
-        $this->stashPendingRecord($log->id);
-        // 다른 요청이 이미 쓴 결과 — 이 요청의 인정 기록에는 없다
-        $this->logRepository->updateById($log->id, ['consumed_at' => now()]);
-
-        $user = User::factory()->create();
-
-        HookManager::doAction('core.auth.after_register', $user, [
-            'verification_token' => $token,
-            'signup_stage' => 'after_create',
-        ]);
-
-        $this->assertDatabaseMissing('inicis_identity_records', ['user_id' => $user->id]);
-        $this->assertNull($this->logRepository->findById($log->id)->user_id, '인정하지 않은 결과에 회원을 역참조하면 안 된다');
-    }
-
-    /**
      * inicis 본인확인 verified 로그를 직접 만들어 cache 와 함께 기본 환경 셋업.
-     *
-     * @param  string  $token  확인 토큰
-     * @param  int|null  $userId  이미 역참조된 회원 ID (없으면 null)
-     * @param  string  $providerId  인증 수단 ID
-     * @return IdentityVerificationLog 만든 결과
      */
     private function createVerifiedSignupLog(
         string $token,
@@ -370,23 +256,7 @@ class CompleteInicisRecordAfterRegisterTest extends PluginTestCase
     }
 
     /**
-     * 같은 가입 요청에서 before_register 단계가 결과를 인정한 상태를 만듭니다 (1.1.4).
-     *
-     * 리스너는 소비 여부와 무관한 토큰 재조회 대신, 이 요청에서 인정(1회 소비)한 결과만 받는다.
-     *
-     * @param  string  $token  확인 토큰
-     * @return void 반환값 없음
-     */
-    private function acceptInRequest(string $token): void
-    {
-        app(IdentityTokenAcceptanceService::class)->accept($token, 'signup');
-    }
-
-    /**
      * provider.verify() 가 비로그인 사용자에 대해 cache 에 PII stash 하는 동작을 시뮬레이션.
-     *
-     * @param  string  $logId  challenge ID (캐시 키 접미사)
-     * @return void 반환값 없음
      */
     private function stashPendingRecord(string $logId): void
     {

@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Plugins\Sirsoft\VerificationKginicis\Listeners\AssertNoDuplicateInicisIdentity;
-use Plugins\Sirsoft\VerificationKginicis\Listeners\ClaimInicisIdentityOnRegistering;
 use Plugins\Sirsoft\VerificationKginicis\Listeners\CleanInicisRecordOnUserDelete;
 use Plugins\Sirsoft\VerificationKginicis\Listeners\CleanInicisRecordOnUserWithdraw;
 use Plugins\Sirsoft\VerificationKginicis\Listeners\CompleteInicisRecordAfterRegister;
@@ -31,11 +30,6 @@ abstract class PluginTestCase extends TestCase
     /** 테스트 격리용 임시 plugins 스토리지 루트 (setUp 에서 생성, tearDown 에서 제거). */
     private ?string $isolatedPluginsRoot = null;
 
-    /**
-     * migrate:fresh 에 이 플러그인 마이그레이션 경로를 함께 넘긴다.
-     *
-     * @return array<string, mixed> migrate:fresh 옵션
-     */
     protected function migrateFreshUsing(): array
     {
         // 모든 번들 확장 migrations 포함 — 여러 확장 스위트를 한 프로세스에서 함께 돌릴 때
@@ -57,11 +51,6 @@ abstract class PluginTestCase extends TestCase
         ];
     }
 
-    /**
-     * 스토리지 격리 → 오토로드 → 다국어 → 서비스·라우트·훅 등록 순으로 플러그인 실행 환경을 꾸린다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -110,11 +99,6 @@ abstract class PluginTestCase extends TestCase
         $this->registerPluginHookListeners();
     }
 
-    /**
-     * 격리했던 플러그인 스토리지를 되돌린다.
-     *
-     * @return void 반환값 없음
-     */
     protected function tearDown(): void
     {
         $this->restorePluginStorage();
@@ -131,8 +115,6 @@ abstract class PluginTestCase extends TestCase
      * (RefreshDatabase 는 DB 만 롤백하고 파일시스템은 되돌리지 않음). 디스크 root 를
      * 임시 경로로 바꾸고 resolved 인스턴스를 purge 하여 실제 파일을 원천적으로 못
      * 건드리게 한다.
-     *
-     * @return void 반환값 없음
      */
     private function isolatePluginStorage(): void
     {
@@ -153,8 +135,6 @@ abstract class PluginTestCase extends TestCase
 
     /**
      * 격리 임시 디렉토리를 제거한다 (테스트 간 잔여 파일 격리).
-     *
-     * @return void 반환값 없음
      */
     private function restorePluginStorage(): void
     {
@@ -172,8 +152,6 @@ abstract class PluginTestCase extends TestCase
      *
      * 실 환경: 코어 PluginManager 가 부팅 시 HookListenerRegistrar 를 호출.
      * 테스트 환경: plugin 이 미설치 상태이므로 수동 등록 필수.
-     *
-     * @return void 반환값 없음
      */
     protected function registerPluginHookListeners(): void
     {
@@ -197,11 +175,6 @@ abstract class PluginTestCase extends TestCase
             AssertNoDuplicateInicisIdentity::class,
             'plugin:sirsoft-verification_kginicis',
         );
-        // 1.1.4 — 가입 트랜잭션 안 동일인 선점 (plugin.php getHookListeners() 와 같은 목록)
-        HookListenerRegistrar::register(
-            ClaimInicisIdentityOnRegistering::class,
-            'plugin:sirsoft-verification_kginicis',
-        );
         HookListenerRegistrar::register(
             ValidateInicisSettingsListener::class,
             'plugin:sirsoft-verification_kginicis',
@@ -210,8 +183,6 @@ abstract class PluginTestCase extends TestCase
 
     /**
      * 활성 디렉토리(plugins/sirsoft-verification_kginicis/src/) PSR-4 자동 로드.
-     *
-     * @return void 반환값 없음
      */
     protected function registerPluginAutoload(): void
     {
@@ -238,28 +209,16 @@ abstract class PluginTestCase extends TestCase
      * Plugin 라우트 등록 — 코어 PluginManager 의 자동 prefix 흉내.
      *
      * 실 환경: `/plugins/sirsoft-verification_kginicis/{path}` + 이름 prefix `web.plugins.sirsoft-verification_kginicis.`
-     *
-     * @return void 반환값 없음
      */
     protected function registerPluginRoutes(): void
     {
         $webRoutesFile = base_path('plugins/sirsoft-verification_kginicis/src/routes/web.php');
-        $apiRoutesFile = base_path('plugins/sirsoft-verification_kginicis/src/routes/api.php');
 
         if (file_exists($webRoutesFile)) {
             Route::prefix('plugins/sirsoft-verification_kginicis')
                 ->name('web.plugins.sirsoft-verification_kginicis.')
                 ->middleware('web')
                 ->group($webRoutesFile);
-        }
-
-        // API 라우트도 직접 등록한다 — 코어 라우트 등록은 테스트 DB 의 플러그인 활성 상태에 따라 달라져,
-        // 앞선 테스트가 남긴 상태에 따라 `me/identity/inicis` 가 404 로 나오곤 했다(NHN KCP 테스트 기반과 같은 방식).
-        if (file_exists($apiRoutesFile)) {
-            Route::prefix('api/plugins/sirsoft-verification_kginicis')
-                ->name('api.plugins.sirsoft-verification_kginicis.')
-                ->middleware('api')
-                ->group($apiRoutesFile);
         }
     }
 }

@@ -1,22 +1,29 @@
 <?php
 
-// audit:allow api-doc-coverage reason: 상한·허용 형식 해석(기본값·폴백)을 Support\AttachmentLimits 로 옮긴 계층 정리다. 검증 규칙의 값·요청 키·422 형태·응답이 모두 그대로다 — 폴백 목록과 용량 계산식은 동일하게 이동했다(`api:docgen --scope=module:sirsoft-page --check` drift 없음 확인, 2026-09-23).
-
 namespace Modules\Sirsoft\Page\Http\Requests;
 
-use App\Support\AllowedExtensions;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
-use Modules\Sirsoft\Page\Models\PageAttachment;
-use Modules\Sirsoft\Page\Http\Requests\Concerns\ValidatesTempKey;
-use Modules\Sirsoft\Page\Support\AttachmentLimits;
 
 /**
  * 페이지 첨부파일 업로드 요청
  */
 class UploadPageAttachmentRequest extends FormRequest
 {
-    use ValidatesTempKey;
+    /**
+     * 허용 형식 폴백 (config/settings/defaults.json 의 attachment.allowed_types 와 동일)
+     *
+     * 설정이 로드되지 않은 상태에서도 형식 제한이 유지되도록 하는 안전값입니다.
+     *
+     * @return bool 항상 true (권한은 미들웨어에서 검증)
+     */
+    private const FALLBACK_ALLOWED_TYPES = [
+        'image/jpeg',
+        'image/png',
+        'image/gif',
+        'image/webp',
+        'application/pdf',
+        'application/zip',
+    ];
 
     /**
      * 권한 체크는 라우트의 permission 미들웨어에서 수행됩니다.
@@ -30,8 +37,6 @@ class UploadPageAttachmentRequest extends FormRequest
 
     /**
      * query string 파라미터를 body로 병합합니다.
-     *
-     * @return void
      */
     protected function prepareForValidation(): void
     {
@@ -51,34 +56,28 @@ class UploadPageAttachmentRequest extends FormRequest
     {
         // 모듈 환경설정(attachment.*)이 SSoT — 하드코딩된 상한/형식과 이원화되지 않도록 동적 생성한다.
         // 설정이 MIME 배열이므로 mimes: 가 아니라 mimetypes: 를 사용한다(의미 정합).
-        // 해석(기본값·폴백)은 화면용 공개 설정과 같은 지점(AttachmentLimits)을 쓴다 — 두 벌이면
-        // 화면이 안내한 상한과 서버가 거절하는 상한이 갈린다.
-        $maxSizeKb = AttachmentLimits::maxSizeMb() * 1024;
-        $allowedTypes = AttachmentLimits::allowedTypes();
+        $maxSizeMb = (int) g7_module_settings('sirsoft-page', 'attachment.max_size_mb', 10);
+        $maxSizeKb = max(1, $maxSizeMb) * 1024;
+
+        // 설정이 아직 로드되지 않은 환경(신규 설치 직후 등)에서 형식 검증이 통째로 비활성화되지
+        // 않도록, 키가 없으면 모듈 기본값으로 폴백한다. 명시적 빈 배열만 "제한 없음" 이다.
+        $allowedTypes = g7_module_settings('sirsoft-page', 'attachment.allowed_types', null);
+        if (! is_array($allowedTypes)) {
+            $allowedTypes = self::FALLBACK_ALLOWED_TYPES;
+        }
+        $allowedTypes = array_values(array_filter(array_map('strval', $allowedTypes)));
 
         $fileRules = ['required', 'file', 'max:'.$maxSizeKb];
         // 목록이 비면 형식 제한 없음 — 빈 규칙을 붙이면 전 파일이 거부된다
         if ($allowedTypes !== []) {
-            // 이름 확장자도 같은 설정에서 파생해 함께 좁힌다 — 내용(MIME)만 보면 내용은 이미지이고
-            // 이름만 `.html` 인 파일이 통과한다. 이름 확장자를 알 수 없는 형식(확장자 표에 없는 MIME,
-            // 임의 이진 파일)이 하나라도 허용돼 있으면 이름 검사는 생략한다 — 그 형식의 정상 파일이
-            // 이름 때문에 거부되지 않게. 저장 파일명은 어느 경우든 내용 기준이다.
-            $allowedExtensions = AllowedExtensions::coversEveryMimeType($allowedTypes)
-                ? AllowedExtensions::fromMimeTypes($allowedTypes)
-                : [];
-            if ($allowedExtensions !== []) {
-                $fileRules[] = 'extensions:'.implode(',', $allowedExtensions);
-            }
-
             $fileRules[] = 'mimetypes:'.implode(',', $allowedTypes);
         }
 
         return [
             'file' => $fileRules,
             'page_id' => ['nullable', 'integer', 'min:1'],
-            // 예약 컬렉션(본문 미디어)은 전용 업로드로만 — 일반 첨부로 올려 개수 상한을 피하지 못하게 (#883)
-            'collection' => ['sometimes', 'string', 'max:100', Rule::notIn(PageAttachment::RESERVED_COLLECTIONS)],
-            'temp_key' => $this->tempKeyRules(),
+            'collection' => ['sometimes', 'string', 'max:100'],
+            'temp_key' => ['nullable', 'string', 'max:64'],
         ];
     }
 
@@ -95,17 +94,6 @@ class UploadPageAttachmentRequest extends FormRequest
             'file.max' => __('sirsoft-page::validation.attachment.file.max'),
             'file.mimes' => __('sirsoft-page::validation.attachment.file.mimes'),
             'file.mimetypes' => __('sirsoft-page::validation.attachment.file.mimetypes'),
-            'file.extensions' => __('sirsoft-page::validation.attachment.file.mimetypes'),
         ];
-    }
-
-    /**
-     * 검증 오류에 사용할 사용자 친화적 필드명
-     *
-     * @return array<string, string> 필드명 → 표시 이름
-     */
-    public function attributes(): array
-    {
-        return $this->tempKeyAttributes();
     }
 }

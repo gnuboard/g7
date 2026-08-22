@@ -6,8 +6,6 @@ use App\Casts\AsUnicodeJson;
 use App\Extension\HookManager;
 use App\Search\Contracts\FulltextSearchable;
 use App\Support\HtmlImageExtractor;
-use App\Support\LocalizedValue;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -22,7 +20,6 @@ use Modules\Sirsoft\Ecommerce\Enums\ProductDisplayStatus;
 use Modules\Sirsoft\Ecommerce\Enums\ProductSalesStatus;
 use Modules\Sirsoft\Ecommerce\Enums\ProductTaxStatus;
 use Modules\Sirsoft\Ecommerce\Enums\ReviewStatus;
-use Modules\Sirsoft\Ecommerce\Support\LocalizedText;
 
 /**
  * 상품 모델
@@ -51,11 +48,6 @@ class Product extends Model implements FulltextSearchable
         'max_purchase_qty' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.max_purchase_qty', 'type' => 'number'],
     ];
 
-    /**
-     * 이 모델의 팩토리 인스턴스를 반환합니다.
-     *
-     * @return untyped
-     */
     protected static function newFactory()
     {
         return ProductFactory::new();
@@ -150,8 +142,6 @@ class Product extends Model implements FulltextSearchable
      * 목록 쿼리는 description 을 SELECT 하지 않으므로 조회 시점 파싱이 불가하다.
      * 시더·테스트의 Product::create() 직접 호출까지 커버되는 유일 지점이 모델
      * saving 이벤트다 (공개 이슈 #22 동종 — board 와 동형).
-     *
-     * @return void
      */
     protected static function booted(): void
     {
@@ -204,40 +194,6 @@ class Product extends Model implements FulltextSearchable
                 ? $value
                 : null;
         });
-    }
-
-    /**
-     * 전시 중인 상품만 남깁니다 (display_status = visible).
-     *
-     * 「숨김」은 운영자가 상품을 사용자 표면에서 내린 상태다. 품절·판매중지(sales_status)와
-     * 달리 **목록에 남아 있으면 안 되는** 축이라, 카드 오버레이로 덮는 것이 아니라 결과
-     * 집합에서 빼야 한다. 공개 목록들이 이 조건을 각자 리터럴로 적고 있어 한 곳만 빠뜨리면
-     * 그 경로로 숨긴 상품이 그대로 새어나간다 — 판정을 모델 스코프 한 곳에 둔다.
-     *
-     * @param  Builder  $query  대상 쿼리
-     * @return Builder 전시 상품으로 좁혀진 쿼리
-     */
-    public function scopeVisible(Builder $query): Builder
-    {
-        // 조인이 붙은 쿼리에서도 모호하지 않게 상품 테이블 소속을 밝힌다
-        return $query->where($this->qualifyColumn('display_status'), ProductDisplayStatus::VISIBLE->value);
-    }
-
-    /**
-     * 품절이 아닌 상품만 남깁니다.
-     *
-     * 품절 판정 기준은 이 스코프 한 곳에 둔다 — 판매상태가 「품절」이거나 활성 옵션의 재고가
-     * 모두 0 이면 품절이다(옵션 없는 상품도 기본 옵션 한 개를 가지므로 같은 식으로 판정된다).
-     * 목록·검색이 이 조건을 각자 적으면 한 곳만 어긋나도 화면마다 품절 상품이 다르게 보인다.
-     *
-     * @param  Builder  $query  대상 쿼리
-     * @return Builder 품절이 아닌 상품으로 좁혀진 쿼리
-     */
-    public function scopeInStock(Builder $query): Builder
-    {
-        return $query
-            ->where($this->qualifyColumn('sales_status'), '!=', ProductSalesStatus::SOLD_OUT->value)
-            ->whereHas('activeOptions', fn (Builder $option) => $option->where('stock_quantity', '>', 0));
     }
 
     /**
@@ -481,7 +437,7 @@ class Product extends Model implements FulltextSearchable
         $locale = $locale ?? app()->getLocale();
         $name = $this->name;
 
-        return LocalizedText::pick($name, $locale);
+        return $name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? $name[array_key_first($name)] ?? '';
     }
 
     /**
@@ -499,7 +455,7 @@ class Product extends Model implements FulltextSearchable
         $locale = $locale ?? app()->getLocale();
         $desc = $this->description;
 
-        return LocalizedValue::pick($desc, $locale);
+        return $desc[$locale] ?? $desc[config('app.fallback_locale', 'ko')] ?? $desc[array_key_first($desc)] ?? null;
     }
 
     /**
@@ -523,12 +479,12 @@ class Product extends Model implements FulltextSearchable
             $values = $group['values'] ?? [];
 
             // name이 다국어 객체인 경우
-            $localizedName = is_array($name) ? LocalizedText::pick($name, $locale) : $name;
+            $localizedName = is_array($name) ? ($name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? array_values($name)[0] ?? '') : $name;
 
             // values가 다국어 객체 배열인 경우
             $localizedValues = [];
             foreach ($values as $value) {
-                $localizedValues[] = is_array($value) ? LocalizedText::pick($value, $locale) : $value;
+                $localizedValues[] = is_array($value) ? ($value[$locale] ?? $value[config('app.fallback_locale', 'ko')] ?? array_values($value)[0] ?? '') : $value;
             }
 
             $result[] = [
@@ -561,12 +517,12 @@ class Product extends Model implements FulltextSearchable
             $values = $group['values'] ?? [];
 
             // name_localized
-            $nameLocalized = is_array($name) ? LocalizedText::pick($name, $locale) : $name;
+            $nameLocalized = is_array($name) ? ($name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? array_values($name)[0] ?? '') : $name;
 
             // values_localized
             $valuesLocalized = [];
             foreach ($values as $value) {
-                $valuesLocalized[] = is_array($value) ? LocalizedText::pick($value, $locale) : $value;
+                $valuesLocalized[] = is_array($value) ? ($value[$locale] ?? $value[config('app.fallback_locale', 'ko')] ?? array_values($value)[0] ?? '') : $value;
             }
 
             $result[] = [
@@ -589,12 +545,11 @@ class Product extends Model implements FulltextSearchable
      */
     public function calculateOptionStockSum(): int
     {
-        // 옵션 없는 상품도 기본 옵션 한 개가 재고를 갖는다. 옵션 행이 아예 없을 때만 상품 재고 칸을 그대로 쓴다
-        if (! $this->has_options && ! $this->options()->exists()) {
+        if (! $this->has_options) {
             return $this->stock_quantity;
         }
 
-        return (int) $this->options()->where('is_active', true)->sum('stock_quantity');
+        return $this->options()->where('is_active', true)->sum('stock_quantity');
     }
 
     /**

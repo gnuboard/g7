@@ -2,8 +2,6 @@ import { default as React } from 'react';
 export interface SelectOption {
     value: string | number;
     label: string;
-    /** 드롭다운 목록에서 라벨 아래 작은 글자로 보이는 설명 (트리거 버튼에는 보이지 않는다) */
-    description?: string;
     disabled?: boolean;
 }
 export interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'onChange'> {
@@ -19,8 +17,6 @@ export interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectE
     searchable?: boolean;
     /** 검색 input placeholder */
     searchPlaceholder?: string;
-    /** 값이 비었을 때 버튼에 흐리게 보이는 안내 글자 — 버튼의 읽기 이름도 된다 */
-    placeholder?: string;
     /**
      * 레이아웃 편집기 주입 속성 (편집 모드 전용). Select 는 커스텀 드롭다운 루트에
      * 개별 data-editor-* 키를 spread 해야 선택/편집이 닿는다(커스텀 루트

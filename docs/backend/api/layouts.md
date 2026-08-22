@@ -101,7 +101,6 @@ Content-Type: application/json
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 404 | Not Found | 토큰에 해당하는 미리보기가 없거나 **만료된 경우** (`templates.layout_not_found`). 조회 시 `notExpired()` 스코프가 적용되므로 만료 토큰은 미존재와 동일하게 404 다 |
-| 429 | Too Many Requests | 공개 lane 속도 제한 초과 — 비로그인은 IP, 로그인은 사용자 단위로 분당 `auth.throttle.public`(기본 600회, `.env` `THROTTLE_PUBLIC`) · 접두사 `public_ext`. `Retry-After` 헤더 동봉 (KVE-2026-2336) |
 
 <!-- @generated:end -->
 
@@ -155,8 +154,8 @@ _이 엔드포인트는 `success`/`message`/`data` 봉투를 사용하지 않습
 | extends | string\|null | `"_user_base"` | 상속할 베이스 레이아웃 이름 (미리보기 서빙 시 이미 병합됨) |
 | slots | object | `{"content": [ ... ]}` | 베이스 레이아웃 슬롯에 삽입할 컴포넌트 배열 (extends 레이아웃) |
 | components | array | `[{"type":"basic","name":"Div", ...}]` | 렌더링할 컴포넌트 트리 (병합·확장 적용 결과) |
-| endpoint | string\|null | `"/api/modules/sirsoft-ecommerce/products"` | 화면이 주로 fetch 하는 데이터 API 경로 (레거시·선택) |
-| data_sources | array | `[{"id":"products","endpoint":"/api/modules/sirsoft-ecommerce/products","method":"GET"}]` | 화면이 로드하는 API 데이터 소스 정의 |
+| endpoint | string\|null | `"/api/products"` | 화면이 주로 fetch 하는 데이터 API 경로 (레거시·선택) |
+| data_sources | array | `[{"id":"products","endpoint":"/api/products","method":"GET"}]` | 화면이 로드하는 API 데이터 소스 정의 |
 | meta | object | `{"title":"상품 목록","auth_required":false}` | 메타 정보 (title, description, keywords, auth_required, is_base, guest_only, is_error_layout, error_code, seo) |
 | permissions | array\|object | `["core.templates.layouts.edit"]` | 레이아웃 접근에 필요한 권한 (flat 배열=AND, 구조화 객체=OR/AND 중첩) |
 | modals | object | `{}` | 모달 컴포넌트 정의 |
@@ -184,7 +183,7 @@ _이 엔드포인트는 `success`/`message`/`data` 봉투를 사용하지 않습
     "data_sources": [
         {
             "id": "products",
-            "endpoint": "/api/modules/sirsoft-ecommerce/products",
+            "endpoint": "/api/products",
             "method": "GET"
         }
     ],
@@ -216,13 +215,11 @@ _이 엔드포인트는 `success`/`message`/`data` 봉투를 사용하지 않습
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 404 | Not Found | 토큰에 해당하는 미리보기가 없거나 만료된 경우 (`templates.layout_not_found`) |
-| 429 | Too Many Requests | 공개 lane 속도 제한 초과 — 비로그인은 IP, 로그인은 사용자 단위로 분당 `auth.throttle.public`(기본 600회, `.env` `THROTTLE_PUBLIC`) · 접두사 `public_ext`. `Retry-After` 헤더 동봉 (KVE-2026-2336) |
 
 <!-- @generated:end -->
 
 **설명** 편집 중인 레이아웃을 미리보기 토큰(UUID)으로 조회해 JSON으로 서빙합니다. 토큰으로 대상 레이아웃을 찾은 뒤 상속 병합과 확장(extension) 적용까지 마친 결과를 반환하며, 토큰이 유효하지 않으면 404를 반환합니다. 인증 미들웨어가 적용되지만 실질적 보안 메커니즘은 토큰 자체이며, 레이아웃 편집기에서 저장 전 변경분을 실제 렌더링으로 확인하는 용도입니다.
 
-**권한 필터(7.1.0)** 미리보기 응답도 공개 서빙과 같이 컴포넌트 `permissions` 를 요청자 기준으로 걸러 내고 속성을 지운다. 모달 `children`·DataGrid 셀(`cellChildren` 등) 안의 컴포넌트도 같은 규칙으로 걸러진다.
 
 ### GET /api/layouts/{templateIdentifier}/{layoutName}
 <!-- @generated:start:api.public.layouts.serve.extensionless -->
@@ -288,7 +285,6 @@ Content-Type: application/json
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 404 | Not Found | 토큰에 해당하는 미리보기가 없거나 **만료된 경우** (`templates.layout_not_found`). 서버의 정적 최적화 블록이 `.json` 확장자를 가로채도 404 가 되므로, 이 경우 확장자 없는 형태로 재요청한다 |
-| 429 | Too Many Requests | 공개 lane 속도 제한 초과 — 비로그인은 IP, 로그인은 사용자 단위로 분당 `auth.throttle.public`(기본 600회, `.env` `THROTTLE_PUBLIC`) · 접두사 `public_ext`. `Retry-After` 헤더 동봉 (KVE-2026-2336) |
 
 <!-- @generated:end -->
 
@@ -298,17 +294,6 @@ Content-Type: application/json
 
 두 형태가 함께 등록되는 이유는 서버 설정 차이 때문이다. 정규식 location(`location ~* \.(js|css|json)$`)이 프리픽스 location 보다 먼저 매칭되는 nginx 구성에서는 `.json` 으로 끝나는 동적 응답이 `try_files ... /index.php` 폴백 없이 404 가 된다. 그래서 라우트는 `Route::dualSuffix()` 로 두 형태를 동시에 등록하고, 클라이언트는 `/api/system/asset-probe` 프로브 결과에 따라 어느 쪽을 쓸지 결정한다. URL 조립은 서버측 `App\Support\AssetUrl`, 프론트측 `resources/js/core/support/assetUrl.ts` 가 담당하며 직접 문자열로 조립하지 않는다.
 
-
-**빈 객체 보존** — 병합된 레이아웃 응답은 원본(`.g7.html`·짝 `.json`·DB 행)이 빈 객체 `{}` 인 자리를 `{}` 로 돌려준다. 대상은 화면이 그대로 받는 값 자리다.
-
-- `initLocal`·`initGlobal`·`initIsolated`·`state`·`defines`·`computed` 섹션의 값과 그 아래
-- 어느 깊이든 `params`(액션 인자)·`fallback`(데이터 소스 대체값)·`props`(컴포넌트 props, `responsive.*.props`, overlay `injections[].props` 포함)·`isolatedState`·`data`(정적 데이터)·`headers`·`extensionPointProps` 키의 값 아래 — 키 자신의 값이 비어 있으면(`props: {}`) 구조로 보아 배열 그대로다
-
-비어 있는 맵 섹션(`meta`·`initLocal`·`initGlobal`·`initIsolated`·`state`·`computed`·`defines`·`named_actions`)도 `{}` 로 낸다. 목록(`[]`)은 그대로 목록이다. 미리보기 서빙(`GET /api/layouts/preview/{token}`)도 같은 규칙을 따른다.
-
-**저장·복원 경로** — 편집기 저장(`PUT …/layouts/{name}`, `PUT …/layout-extensions/{id}` — `content` 를 JSON 문자열로 보내든 JSON 객체로 보내든), 첫 저장이 남기는 「수정 전」 기준 버전, 버전 복원, 이름 바꾸기, 미리보기 저장은 DB 원문의 `{}` 를 그대로 저장한다. 편집기가 받는 본문(위지윅 편집 모드의 `__editor.original`, 레이아웃·확장·버전 단건 조회)도 원문의 `{}` 를 지킨다. 검증 규칙은 종전처럼 `{}` 를 `[]` 로 보고 판정하므로 `"meta": {}` 같은 본문이 422 로 막히지 않는다. 7.1.0 까지는 이 경로들이 `{}` 를 `[]` 로 굳혀, 위지윅으로 한 번 저장한 레이아웃은 이후 서빙에서도 `[]` 를 냈다. 이미 굳은 행은 `php artisan layout:repair-empty-objects` 로 확인(기본 미리보기)하고 `--apply` 로 원본 기준 되돌린다.
-
-**PHP 쪽 소비자** — 이 보존은 병합 단계에서 일어나므로 응답만이 아니라 PHP 가 받는 레이아웃에도 적용된다. `LayoutService::getLayout()`·`loadAndMergeLayout()` 의 반환값과 `core.layout.filter_parent_data`·`core.layout.filter_child_data`·`core.layout.filter_merged`·`core.layout.after_merge`·`core.layout.after_load`·`core.layout.after_get` 훅 페이로드에서, 위 값 자리의 빈 객체는 빈 배열이 아니라 `stdClass` 다(섹션 자체와 `props`·`params` 등 키 자신의 값은 종전대로 배열). 확장 `inject_props` 의 병합 지시(`_append`·`_prepend`·`_merge`)는 값이 빈 객체면 덧붙일 것이 없는 것으로 보고, `_merge` 결과가 비면 `{}` 로 둔다. 그 자리를 배열로 다루는 확장 코드(`array_merge`, `count`, 배열 인덱싱 등)는 `is_array()` 로 먼저 가리거나, 화면에 넘기지 않고 PHP 안에서만 쓸 레이아웃이면 `App\Support\LayoutEmptyObjects::toArrays($layout)` 로 빈 배열로 되돌려 쓴다(코어 SEO 렌더러가 이렇게 한다). 화면에 내보낼 레이아웃을 되돌리면 `{}` 가 다시 `[]` 로 나간다.
 
 ### GET /api/layouts/{templateIdentifier}/{layoutName}.json
 <!-- @generated:start:api.public.layouts.serve -->
@@ -343,8 +328,8 @@ _단건 응답: `data` 는 병합된 레이아웃 JSON 객체입니다 (상속 �
 | extends | string\|null | `"_user_base"` | 상속한 베이스 레이아웃 이름 (서빙 시 이미 병합 반영됨) |
 | slots | object | `{"content": [ ... ]}` | 베이스 슬롯에 삽입되는 컴포넌트 배열 (extends 레이아웃) |
 | components | array | `[{"type":"basic","name":"Div", ...}]` | 렌더링할 컴포넌트 트리 (병합·확장·권한 필터 적용 결과) |
-| endpoint | string\|null | `"/api/modules/sirsoft-ecommerce/products"` | 화면이 주로 fetch 하는 데이터 API 경로 (레거시·선택) |
-| data_sources | array | `[{"id":"products","endpoint":"/api/modules/sirsoft-ecommerce/products","method":"GET"}]` | 화면이 로드하는 API 데이터 소스 정의 |
+| endpoint | string\|null | `"/api/products"` | 화면이 주로 fetch 하는 데이터 API 경로 (레거시·선택) |
+| data_sources | array | `[{"id":"products","endpoint":"/api/products","method":"GET"}]` | 화면이 로드하는 API 데이터 소스 정의 |
 | meta | object | `{"title":"상품 목록","auth_required":false}` | 메타 정보 (title, description, keywords, auth_required, is_base, guest_only, is_error_layout, error_code, seo) |
 | permissions | array\|object | `["core.templates.layouts.edit"]` | 레이아웃 접근에 필요한 권한 (flat 배열=AND, 구조화 객체=OR/AND 중첩) |
 | modals | object | `{}` | 모달 컴포넌트 정의 |
@@ -360,7 +345,7 @@ _단건 응답: `data` 는 병합된 레이아웃 JSON 객체입니다 (상속 �
 | pageConfig / schema | object | `{}` | 플러그인 설정 레이아웃 전용 (설정 UI 안내/스키마) |
 | lock_version | integer | `3` | 낙관적 잠금 버전. `with_source_meta=1` 일 때만 부착 (편집기 저장 시 `expected_lock_version` 으로 되돌려 보냄) |
 | __editor | object | `{"original": { ... }}` | 자식 레이아웃의 저장 원본 content. `with_source_meta=1` 일 때만 부착 (편집기 전용) |
-| __source (각 노드 내부) | object | `{"kind":"base","layout":"_user_base"}` | 각 컴포넌트/데이터소스 노드의 출처 메타 (`base` / `extension` / `partial` / `route`). `with_source_meta=1` 일 때만 부착. `extension` 출처가 overlay 주입이면 `injectionIndex`(그 확장 content 의 `injections[]` 순번)를 함께 실어 편집기가 저장 시 원래 injection 으로 되돌린다 |
+| __source (각 노드 내부) | object | `{"kind":"base","layout":"_user_base"}` | 각 컴포넌트/데이터소스 노드의 출처 메타 (`base` / `extension` / `partial` / `route`). `with_source_meta=1` 일 때만 부착 |
 
 응답 헤더: `ETag`(본문 md5), `Cache-Control: public, max-age=3600`, `Vary: Accept-Encoding, Accept-Language`. 클라이언트 `If-None-Match` 가 일치하면 본문 없이 `304 Not Modified` 를 반환합니다.
 
@@ -380,7 +365,7 @@ _단건 응답: `data` 는 병합된 레이아웃 JSON 객체입니다 (상속 �
         "data_sources": [
             {
                 "id": "products",
-                "endpoint": "/api/modules/sirsoft-ecommerce/products",
+                "endpoint": "/api/products",
                 "method": "GET"
             }
         ],
@@ -406,10 +391,9 @@ _단건 응답: `data` 는 병합된 레이아웃 JSON 객체입니다 (상속 �
 | 401 | Unauthorized | 비회원이 `permissions` 요구 레이아웃에 접근 (`auth.layout_guest_permission_denied`), 또는 비회원이 `with_source_meta=1` 요청 |
 | 403 | Forbidden | 회원이지만 레이아웃 `permissions` 미충족 (`auth.layout_permission_denied`), 또는 `with_source_meta=1` 요청 시 `core.templates.layouts.edit` 권한 없음 |
 | 404 | Not Found | 템플릿이 없거나 비활성 상태, 또는 레이아웃/부모 레이아웃 미존재 (`templates.layout_not_found`) |
-| 429 | Too Many Requests | 공개 lane 속도 제한 초과 — 비로그인은 IP, 로그인은 사용자 단위로 분당 `auth.throttle.public`(기본 600회, `.env` `THROTTLE_PUBLIC`) · 접두사 `public_ext`. `Retry-After` 헤더 동봉 (KVE-2026-2336) |
 
 <!-- @generated:end -->
 
-**설명** 활성 템플릿의 병합된 레이아웃 JSON을 프론트엔드에 서빙합니다. 템플릿이 존재하고 활성 상태여야 하며, 상속 병합·확장 적용을 마친 결과를 ETag·Cache-Control 헤더와 함께 반환하고 미변경 시 304로 응답합니다. 레이아웃의 `permissions`에 따라 접근을 제한하고(비회원 401, 권한 부족 403), 컴포넌트 단위 권한 필터링을 사용자별로 적용합니다. 쿼리 `v` 는 브라우저 HTTP 캐시 우회용 좌표이며(레이아웃 편집기는 `{cache_version}.{nonce}` 형식으로 보냄), 서버 캐시 키는 요청의 `v` 와 무관하게 서버 현재 확장 캐시 버전으로만 만들어져 저장·복원 직후의 재요청이 항상 최신 내용을 받습니다. `with_source_meta=1`은 `core.templates.layouts.edit` 권한이 있어야 노드별 출처 메타(편집기 전용)를 포함해 반환합니다.
+**설명** 활성 템플릿의 병합된 레이아웃 JSON을 프론트엔드에 서빙합니다. 템플릿이 존재하고 활성 상태여야 하며, 상속 병합·확장 적용을 마친 결과를 ETag·Cache-Control 헤더와 함께 반환하고 미변경 시 304로 응답합니다. 레이아웃의 `permissions`에 따라 접근을 제한하고(비회원 401, 권한 부족 403), 컴포넌트 단위 권한 필터링을 사용자별로 적용합니다. 쿼리 `v`(정수 캐시 버전)로 캐시를 구분하며, `with_source_meta=1`은 `core.templates.layouts.edit` 권한이 있어야 노드별 출처 메타(편집기 전용)를 포함해 반환합니다.
 
 

@@ -3,7 +3,6 @@
 namespace App\Console\Commands\Template;
 
 use App\Console\Commands\Concerns\PrunesBuildOutput;
-use App\Console\Commands\Traits\LocalizesDescription;
 use App\Extension\TemplateManager;
 use App\Extension\Traits\ClearsTemplateCaches;
 use Illuminate\Console\Command;
@@ -13,7 +12,6 @@ use Symfony\Component\Process\Process;
 class BuildTemplateCommand extends Command
 {
     use ClearsTemplateCaches;
-    use LocalizesDescription;
     use PrunesBuildOutput;
 
     /**
@@ -27,9 +25,12 @@ class BuildTemplateCommand extends Command
                             {--active : 활성 디렉토리에서 빌드}';
 
     /**
-     * 커맨드를 생성합니다.
-     *
-     * @param  TemplateManager  $templateManager  템플릿 관리자
+     * The console command description.
+     */
+    protected $description = '템플릿의 프론트엔드 에셋을 빌드합니다 (기본: _bundled 디렉토리)';
+
+    /**
+     * 템플릿 관리자
      */
     public function __construct(
         private TemplateManager $templateManager
@@ -50,9 +51,9 @@ class BuildTemplateCommand extends Command
         $productionMode = $this->option('production');
 
         if (! $identifier && ! $buildAll) {
-            $this->error('❌ '.__('templates.commands.build.missing_identifier'));
+            $this->error('❌ 템플릿 식별자를 지정하거나 --all 옵션을 사용하세요.');
             $this->line('');
-            $this->line(__('templates.commands.build.usage'));
+            $this->line('사용법:');
             $this->line('  php artisan template:build sirsoft-admin_basic');
             $this->line('  php artisan template:build --all');
             $this->line('  php artisan template:build sirsoft-admin_basic --watch');
@@ -136,8 +137,8 @@ class BuildTemplateCommand extends Command
         // 경로 결정
         $resolved = $this->resolveBuildPath($identifier);
         if (! $resolved) {
-            $this->error('❌ '.__('templates.commands.build.not_found', ['identifier' => $identifier]));
-            $this->line('   '.__('templates.commands.build.not_found_detail'));
+            $this->error("❌ 템플릿을 찾을 수 없습니다: {$identifier}");
+            $this->line('   _bundled 및 활성 디렉토리 모두 존재하지 않습니다.');
 
             return Command::FAILURE;
         }
@@ -146,25 +147,25 @@ class BuildTemplateCommand extends Command
         $source = $resolved['source'];
 
         // 소스 표시
-        $sourceLabel = $source === 'bundled' ? '_bundled' : __('templates.commands.build.source_active');
-        $this->info('📂 '.__('templates.commands.build.source', ['source' => $sourceLabel, 'path' => $buildPath]));
+        $sourceLabel = $source === 'bundled' ? '_bundled' : '활성';
+        $this->info("📂 빌드 소스: {$sourceLabel} ({$buildPath})");
 
         // package.json 존재 확인
         $packageJsonPath = $buildPath.'/package.json';
         if (! file_exists($packageJsonPath)) {
-            $this->error('❌ '.__('templates.commands.build.package_json_missing', ['path' => $packageJsonPath]));
-            $this->line('   '.__('templates.commands.build.package_json_hint'));
+            $this->error('❌ package.json 파일이 없습니다: '.$packageJsonPath);
+            $this->line('   템플릿 프론트엔드 구조를 먼저 생성하세요.');
 
             return Command::FAILURE;
         }
 
         // node_modules 확인 및 설치
         if (! is_dir($buildPath.'/node_modules')) {
-            $this->info('📦 '.__('templates.commands.build.installing_dependencies'));
+            $this->info('📦 의존성 설치 중...');
             $installResult = $this->runNpmCommand(['npm', 'install'], $buildPath);
 
             if ($installResult !== Command::SUCCESS) {
-                $this->error('❌ '.__('templates.commands.build.npm_install_failed'));
+                $this->error('❌ npm install 실패');
 
                 return Command::FAILURE;
             }
@@ -175,13 +176,11 @@ class BuildTemplateCommand extends Command
 
         if ($watchMode) {
             $buildCommand[] = 'dev';
-            $this->info('👀 '.__('templates.commands.build.watch_start', ['identifier' => $identifier]));
-            $this->line('   '.__('templates.commands.build.watch_hint'));
+            $this->info("👀 파일 감시 모드로 빌드 시작: {$identifier}");
+            $this->line('   Ctrl+C로 종료할 수 있습니다.');
         } else {
             $buildCommand[] = 'build';
-            $this->info('🔨 '.($productionMode
-                ? __('templates.commands.build.start_production', ['identifier' => $identifier])
-                : __('templates.commands.build.start', ['identifier' => $identifier])));
+            $this->info("🔨 빌드 시작: {$identifier}".($productionMode ? ' (프로덕션)' : ''));
         }
 
         // 이전 산출물 정리 (동봉 vendor 는 보존 — vite emptyOutDir 대체)
@@ -189,7 +188,7 @@ class BuildTemplateCommand extends Command
             $removed = $this->pruneBuildOutput($buildPath);
 
             if ($removed !== []) {
-                $this->line('   🧹 '.__('templates.commands.build.pruned', ['files' => implode(', ', $removed)]));
+                $this->line('   🧹 이전 산출물 정리: '.implode(', ', $removed));
             }
         }
         // 빌드 실행 (감시 모드에는 소스맵 억제를 주입하지 않는다 — 개발 중 디버깅 필요)
@@ -201,12 +200,12 @@ class BuildTemplateCommand extends Command
         );
 
         if ($result === Command::SUCCESS && ! $watchMode) {
-            $this->info('✅ '.__('templates.commands.build.done', ['identifier' => $identifier]));
+            $this->info("✅ 빌드 완료: {$identifier}");
 
             // 빌드 결과 파일 확인
             $distPath = $buildPath.'/dist';
             if (is_dir($distPath)) {
-                $this->line('   '.__('templates.commands.build.build_results'));
+                $this->line('   빌드 결과:');
 
                 // JS 파일 확인
                 $jsFiles = glob($distPath.'/*.js');
@@ -227,12 +226,12 @@ class BuildTemplateCommand extends Command
 
             // 캐시 버전 증가 (브라우저 캐시 무효화)
             $this->incrementExtensionCacheVersion();
-            $this->line('   - '.__('templates.commands.build.cache_version_bumped'));
+            $this->line('   - 캐시 버전 갱신됨');
 
             // _bundled 빌드 시 활성 반영 안내
             if ($source === 'bundled') {
                 $this->line('');
-                $this->info('💡 '.__('templates.commands.build.apply_hint', ['identifier' => $identifier]));
+                $this->info("💡 활성 디렉토리에 반영하려면: php artisan template:update {$identifier}");
             }
         }
 
@@ -270,16 +269,14 @@ class BuildTemplateCommand extends Command
         }
 
         if (empty($buildTargets)) {
-            $this->warn('⚠️  '.__('templates.commands.build.no_targets'));
+            $this->warn('⚠️  빌드할 템플릿이 없습니다.');
 
             return Command::SUCCESS;
         }
 
-        $sourceLabel = $this->option('active') ? __('templates.commands.build.source_active') : '_bundled';
-        $this->info('🔨 '.($productionMode
-            ? __('templates.commands.build.start_all_production', ['source' => $sourceLabel])
-            : __('templates.commands.build.start_all', ['source' => $sourceLabel])));
-        $this->line('   '.__('templates.commands.build.targets', ['list' => implode(', ', array_keys($buildTargets))]));
+        $sourceLabel = $this->option('active') ? '활성' : '_bundled';
+        $this->info("🔨 모든 템플릿 빌드 시작 ({$sourceLabel})".($productionMode ? ' (프로덕션)' : ''));
+        $this->line('   대상 템플릿: '.implode(', ', array_keys($buildTargets)));
         $this->line('');
 
         $successCount = 0;
@@ -298,7 +295,7 @@ class BuildTemplateCommand extends Command
             $this->line('');
         }
 
-        $this->info('📊 '.__('templates.commands.build.summary', ['success' => $successCount, 'failed' => $failCount]));
+        $this->info("📊 빌드 결과: 성공 {$successCount}개, 실패 {$failCount}개");
 
         return $failCount > 0 ? Command::FAILURE : Command::SUCCESS;
     }

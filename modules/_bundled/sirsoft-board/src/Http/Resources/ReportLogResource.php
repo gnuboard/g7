@@ -27,7 +27,7 @@ class ReportLogResource extends BaseApiResource
                 ? [
                     'uuid'  => $this->reporter->uuid,
                     'name'  => $this->reporter->name,
-                    'email' => $this->canExposeMemberEmail(null, $this->reporter->id) ? $this->reporter->email : null,
+                    'email' => $this->reporter->email,
                 ]
                 : null,
             'reason_type'       => $this->reason_type?->value ?? null,

@@ -8,7 +8,6 @@
  *
  * @scenario toss_payment_methods_vbank_escrow
  * @effects escrow_operation_notice_shown_when_escrow_enabled
- * @effects webhook_url_display_and_copy_use_absolute_url
  */
 
 import { describe, it, expect } from 'vitest';
@@ -27,9 +26,6 @@ function collect(node: unknown, pred: (n: Record<string, unknown>) => boolean): 
   return out;
 }
 
-/** 웹훅 URL 표시·복사 값 — 서버가 내려준 전체 주소, 응답 전에는 경로로 폴백. */
-const WEBHOOK_URL_EXPR = "{{_local.webhookInfo?.url ?? '/plugins/sirsoft-tosspayments/webhook/deposit'}}";
-
 function findById(node: unknown, id: string): Record<string, unknown> | undefined {
   return collect(node, (n) => n.id === id)[0];
 }
@@ -40,19 +36,11 @@ function nameOf(node: Record<string, unknown>): string {
 }
 
 describe('plugin_settings — 결제 방식 섹션', () => {
-  /**
-   * @scenario use_escrow=on
-   * @effects admin_payment_methods_layout_contract
-   */
   it('order_sheet_mode 토글이 존재한다', () => {
     const toggles = collect(pluginSettingsLayout, (n) => n.name === 'Toggle' && nameOf(n) === 'order_sheet_mode');
     expect(toggles).toHaveLength(1);
   });
 
-  /**
-   * @scenario use_escrow=on
-   * @effects admin_payment_methods_layout_contract
-   */
   it('결제수단 9종 체크박스가 method_* name 으로 존재한다', () => {
     const checkboxes = collect(pluginSettingsLayout, (n) => n.name === 'Checkbox');
     const names = checkboxes.map(nameOf).filter((s) => s.startsWith('method_'));
@@ -73,10 +61,6 @@ describe('plugin_settings — 결제 방식 섹션', () => {
     expect(names).toHaveLength(9);
   });
 
-  /**
-   * @scenario use_escrow=on
-   * @effects admin_payment_methods_layout_contract
-   */
   it('결제수단 9종의 라벨이 Label 래핑 + Span 텍스트로 렌더된다', () => {
     // Checkbox 컴포넌트는 label prop 을 렌더하지 않는다 (부모 Label 이 처리).
     // label prop 에만 의존하면 화면에 라벨이 표시되지 않으므로 사용을 금지한다.
@@ -101,10 +85,6 @@ describe('plugin_settings — 결제 방식 섹션', () => {
     }
   });
 
-  /**
-   * @scenario use_escrow=on
-   * @effects admin_payment_methods_layout_contract
-   */
   it('결제수단 체크박스는 boolean 저장을 보장한다 (autoBinding 우회 + checked 강제 + change 액션)', () => {
     // 엔진의 폼 자동바인딩은 현재 값이 boolean 일 때만 checked 바인딩을 쓴다
     // (DynamicRenderer `isCheckedBinding`: typeof currentValue === 'boolean').
@@ -137,20 +117,12 @@ describe('plugin_settings — 결제 방식 섹션', () => {
     }
   });
 
-  /**
-   * @scenario use_escrow=on
-   * @effects admin_payment_methods_layout_contract
-   */
   it('결제수단 그룹은 order_sheet_mode 가 켜졌을 때만 노출된다 (if)', () => {
     const group = findById(pluginSettingsLayout, 'enabled_methods_group');
     expect(group).toBeDefined();
     expect(group!.if).toContain('order_sheet_mode');
   });
 
-  /**
-   * @scenario use_escrow=on
-   * @effects admin_payment_methods_layout_contract
-   */
   it('체크박스 그리드는 responsive.portable 로 1열 스택한다', () => {
     const grid = findById(pluginSettingsLayout, 'method_checkbox_grid');
     expect(grid).toBeDefined();
@@ -160,10 +132,6 @@ describe('plugin_settings — 결제 방식 섹션', () => {
 });
 
 describe('plugin_settings — 가상계좌 섹션', () => {
-  /**
-   * @scenario use_escrow=on
-   * @effects admin_payment_methods_layout_contract
-   */
   it('입금기한 입력(number) 이 존재한다', () => {
     const inputs = collect(pluginSettingsLayout, (n) => n.name === 'Input' && nameOf(n) === 'vbank_valid_hours');
     expect(inputs).toHaveLength(1);
@@ -171,10 +139,6 @@ describe('plugin_settings — 가상계좌 섹션', () => {
     expect(props.type).toBe('number');
   });
 
-  /**
-   * @scenario use_escrow=on
-   * @effects admin_payment_methods_layout_contract
-   */
   it('현금영수증 유형 Select 가 3옵션(없음/소득공제/지출증빙)을 갖는다', () => {
     const selects = collect(pluginSettingsLayout, (n) => n.name === 'Select' && nameOf(n) === 'vbank_cash_receipt_type');
     expect(selects).toHaveLength(1);
@@ -182,10 +146,6 @@ describe('plugin_settings — 가상계좌 섹션', () => {
     expect(options.map((o) => o.value)).toEqual(['', '소득공제', '지출증빙']);
   });
 
-  /**
-   * @scenario use_escrow=on
-   * @effects admin_payment_methods_layout_contract
-   */
   it('에스크로 Select 가 3-상태(off/on/buyer_choice)를 갖는다', () => {
     const selects = collect(pluginSettingsLayout, (n) => n.name === 'Select' && nameOf(n) === 'use_escrow');
     expect(selects).toHaveLength(1);
@@ -193,24 +153,16 @@ describe('plugin_settings — 가상계좌 섹션', () => {
     expect(options.map((o) => o.value)).toEqual(['off', 'on', 'buyer_choice']);
   });
 
-  /**
-   * @scenario use_escrow=on
-   * @effects admin_payment_methods_layout_contract
-   */
   it('에스크로 운영 안내(부분취소 불가 · 배송정보 등록)가 use_escrow !== off 일 때만 노출된다 (W-6)', () => {
     const notice = findById(pluginSettingsLayout, 'escrow_operation_notice');
     expect(notice).toBeDefined();
-    expect(notice!.if).toBe("{{settings !== undefined && (_local.form?.use_escrow !== 'off')}}");
+    expect(notice!.if).toBe("{{_local.form?.use_escrow !== 'off'}}");
 
     const texts = collect(notice, (n) => typeof n.text === 'string').map((n) => n.text as string);
     expect(texts).toContain('$t:sirsoft-tosspayments.settings.escrow_no_partial_cancel_notice');
     expect(texts).toContain('$t:sirsoft-tosspayments.settings.escrow_shipping_info_notice');
   });
 
-  /**
-   * @scenario use_escrow=on
-   * @effects admin_payment_methods_layout_contract
-   */
   it('배송정보 안내는 토스 상점관리자 외부 링크를 제공한다 (W-6)', () => {
     const notice = findById(pluginSettingsLayout, 'escrow_operation_notice');
     const links = collect(notice, (n) => n.name === 'A');
@@ -223,71 +175,18 @@ describe('plugin_settings — 가상계좌 섹션', () => {
     expect(links[0].text).toBe('$t:sirsoft-tosspayments.settings.escrow_shipping_info_link');
   });
 
-  /**
-   * @scenario use_escrow=on
-   * @effects admin_payment_methods_layout_contract
-   */
   it('웹훅 secret 검증 토글이 존재한다', () => {
     const toggles = collect(pluginSettingsLayout, (n) => n.name === 'Toggle' && nameOf(n) === 'webhook_secret_verify');
     expect(toggles).toHaveLength(1);
   });
 
-  /**
-   * @scenario use_escrow=on
-   * @effects admin_payment_methods_layout_contract
-   */
-  it('웹훅 URL 복사 버튼이 이 플러그인이 소유한 copyToClipboard 핸들러를 사용한다', () => {
-    // 네임스페이스 없는 `copyToClipboard` 는 코어·템플릿 어디에도 없어 버튼이 무반응이었다
+  it('웹훅 URL 복사 버튼이 copyToClipboard 핸들러를 사용한다', () => {
     const btn = findById(pluginSettingsLayout, 'webhook_copy_button');
     expect(btn).toBeDefined();
     const actions = btn!.actions as Array<Record<string, unknown>>;
-    expect(actions[0].handler).toBe('sirsoft-tosspayments.copyToClipboard');
-    expect((actions[0].params as Record<string, unknown>).text).toBe(WEBHOOK_URL_EXPR);
+    expect(actions[0].handler).toBe('copyToClipboard');
   });
 
-  /**
-   * @scenario use_escrow=on
-   * @effects admin_payment_methods_layout_contract
-   */
-  it('웹훅 URL 은 서버가 만든 전체 주소(webhook_info 데이터소스)를 받아 쓴다', () => {
-    // 레이아웃에 경로만 적어 두면 운영자가 사이트 주소를 손으로 붙여야 했다.
-    // 다른 결제사 플러그인처럼 서버가 url() 로 만든 https://… 전체 주소를 내려준다.
-    const dataSources = (pluginSettingsLayout as { data_sources?: Record<string, unknown>[] }).data_sources ?? [];
-    const ds = dataSources.find((d) => d.id === 'webhook_info');
-    expect(ds, 'webhook_info 데이터소스 누락').toBeDefined();
-    expect(ds!.endpoint).toBe('/api/plugins/sirsoft-tosspayments/admin/webhook-url');
-    expect(ds!.method).toBe('GET');
-    expect(ds!.auto_fetch).toBe(true);
-    expect(ds!.auth_required).toBe(true);
-    expect(ds!.initLocal).toBe('webhookInfo');
-  });
-
-  /**
-   * @scenario use_escrow=on
-   * @effects admin_payment_methods_layout_contract
-   */
-  it('웹훅 URL 표시와 복사는 같은 전체 주소 값을 쓴다 (경로 문자열 하드코딩 금지)', () => {
-    const field = findById(pluginSettingsLayout, 'field_webhook_url');
-    expect(field).toBeDefined();
-    // 화면에 보이는 컴포넌트(name 보유)만 — 액션 params.text 는 아래에서 따로 본다.
-    const shown = collect(
-      field,
-      (n) => typeof n.name === 'string' && typeof n.text === 'string' && (n.text as string).includes('webhook/deposit')
-    );
-    expect(shown).toHaveLength(1);
-    expect(shown[0].text).toBe(WEBHOOK_URL_EXPR);
-
-    // 경로만 있는 고정 문자열이 표시·복사 어느 쪽에도 남아 있지 않아야 한다.
-    const btn = findById(pluginSettingsLayout, 'webhook_copy_button');
-    const copied = ((btn!.actions as Array<Record<string, unknown>>)[0].params as Record<string, unknown>).text;
-    expect(copied).toBe(shown[0].text);
-    expect(copied).not.toBe('/plugins/sirsoft-tosspayments/webhook/deposit');
-  });
-
-  /**
-   * @scenario use_escrow=on
-   * @effects admin_payment_methods_layout_contract
-   */
   it('웹훅 URL 복사 버튼은 portable 에서 full-width 로 전환된다', () => {
     const btn = findById(pluginSettingsLayout, 'webhook_copy_button');
     const responsive = btn!.responsive as Record<string, any> | undefined;
@@ -296,10 +195,6 @@ describe('plugin_settings — 가상계좌 섹션', () => {
 });
 
 describe('plugin_settings — 기존 섹션 보존', () => {
-  /**
-   * @scenario use_escrow=on
-   * @effects admin_payment_methods_layout_contract
-   */
   it('기존 저장 버튼 sticky 는 유지된다', () => {
     const footer = findById(pluginSettingsLayout, 'footer_buttons');
     expect((footer!.props as any).className).toContain('sticky-footer-buttons');

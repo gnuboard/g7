@@ -9,7 +9,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 use Modules\Sirsoft\Board\Upgrades\Upgrade_1_1_1;
-use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
@@ -24,16 +23,12 @@ use PHPUnit\Framework\Attributes\Test;
  * - 교체 후에도 작성자가 알던 원래 비밀번호로 검증된다
  * - 이미 해시인 행은 값이 그대로다 (재해싱하지 않는다)
  * - 재실행해도 결과가 동일하다 (멱등)
+ *
+ * @group board
+ * @group upgrade
  */
-#[Group('board')]
-#[Group('upgrade')]
 class PlaintextPostPasswordRehashTest extends BoardTestCase
 {
-    /**
-     * 이 테스트가 쓰는 게시판 slug 를 돌려줍니다.
-     *
-     * @return string 게시판 slug
-     */
     protected function getTestBoardSlug(): string
     {
         return 'plaintext-password-rehash';
@@ -41,20 +36,12 @@ class PlaintextPostPasswordRehashTest extends BoardTestCase
 
     /**
      * 1.1.1 복구 스텝을 실행합니다.
-     *
-     * @return void 반환값 없음
      */
     private function runRehash(): void
     {
         (new Upgrade_1_1_1)->run(new UpgradeContext('1.1.0', '1.1.1', '1.1.1', 'extension-upgrade'));
     }
 
-    /**
-     * DB 에 저장된 게시글 비밀번호 값을 읽습니다.
-     *
-     * @param  int  $postId  게시글 ID
-     * @return string 저장된 비밀번호 값
-     */
     private function storedPassword(int $postId): string
     {
         return (string) DB::table('board_posts')->where('id', $postId)->value('password');
@@ -63,11 +50,9 @@ class PlaintextPostPasswordRehashTest extends BoardTestCase
     /**
      * 평문으로 남은 행이 해시로 복구되고, 원래 비밀번호로 검증된다.
      *
-     * @scenario upgrade_step=rehash_plaintext_password, existing_data=needs_change
+     * @scenario stored=plaintext
      *
      * @effects plaintext_password_rehashed_to_bcrypt
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function plaintext_rows_are_rehashed_and_still_verify(): void
@@ -87,11 +72,9 @@ class PlaintextPostPasswordRehashTest extends BoardTestCase
     /**
      * 이미 해시인 행은 건드리지 않는다 (재해싱 금지).
      *
-     * @scenario upgrade_step=rehash_plaintext_password, existing_data=already_applied
+     * @scenario stored=bcrypt
      *
      * @effects already_hashed_rows_untouched
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function already_hashed_rows_are_left_untouched(): void
@@ -107,11 +90,9 @@ class PlaintextPostPasswordRehashTest extends BoardTestCase
     /**
      * 비밀번호가 없는 회원 게시글은 대상이 아니다.
      *
-     * @scenario upgrade_step=rehash_plaintext_password, existing_data=nothing_to_change
+     * @scenario stored=null
      *
      * @effects rows_without_password_untouched
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function rows_without_password_are_untouched(): void
@@ -126,11 +107,9 @@ class PlaintextPostPasswordRehashTest extends BoardTestCase
     /**
      * 재실행해도 결과가 변하지 않는다 (멱등).
      *
-     * @scenario upgrade_step=rehash_plaintext_password, existing_data=already_applied
+     * @scenario run=twice
      *
      * @effects rehash_is_idempotent
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function rerunning_does_not_change_the_result(): void

@@ -66,7 +66,17 @@ class ShippingCarrierController extends AdminBaseController
      */
     public function active(ActiveShippingCarrierRequest $request): JsonResponse
     {
-        $data = $this->carrierService->getActiveCarrierOptions($request->type());
+        $carriers = $this->carrierService->getActiveCarriers($request->type());
+
+        $data = $carriers->map(function ($carrier) {
+            return [
+                'value' => $carrier->id,
+                'label' => $carrier->getLocalizedName(),
+                'code' => $carrier->code,
+                'type' => $carrier->type,
+                'tracking_url' => $carrier->tracking_url,
+            ];
+        })->values()->toArray();
 
         return ResponseHelper::moduleSuccess(
             'sirsoft-ecommerce',

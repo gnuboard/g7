@@ -4,26 +4,19 @@ return [
     // Action labels (last segment).
     // ActivityLog::getActionLabelAttribute resolves module-origin labels from the module's lang first.
     'action' => [
-        'reorder' => 'Reordered',
-        'add' => 'Reaction Added',
         'add_to_menu' => 'Added to Menu',
         'blind' => 'Blinded',
-        'change' => 'Reaction Changed',
         'blind_content' => 'Content Blinded',
         'bulk_apply' => 'Bulk Applied',
         'bulk_apply_aborted' => 'Bulk Apply Aborted',
         'bulk_update_status' => 'Bulk Status Changed',
-        'cancel' => 'Cancelled',
         'create' => 'Created',
         'delete' => 'Deleted',
         'delete_content' => 'Content Deleted',
         'download' => 'Downloaded',
-        'remove' => 'Reaction Removed',
         'remove_from_menu' => 'Removed from Menu',
         'restore' => 'Restored',
         'restore_content' => 'Content Restored',
-        'scrap' => 'Scrapped',
-        'unscrap' => 'Scrap Removed',
         'update' => 'Updated',
         'update_status' => 'Status Updated',
         'upload' => 'Uploaded',
@@ -39,7 +32,6 @@ return [
         'board_copy' => 'Board copied (:board_name)',
         'board_add_to_menu' => 'Board added to menu (:board_name)',
         'board_remove_from_menu' => 'Board removed from menu (:board_name)',
-        'board_reorder' => 'Reordered boards (:count)',
 
         // Board type (Admin)
         'board_type_index' => 'Board type list viewed',
@@ -71,23 +63,11 @@ return [
         // Report management (Admin)
         'report_create' => 'Report created (ID: :report_id)',
         'report_update_status' => 'Report status changed (ID: :report_id)',
-        'report_bulk_update_status' => 'Report statuses bulk changed (:count item)|Report statuses bulk changed (:count items)',
+        'report_bulk_update_status' => 'Report statuses bulk changed (:count items)',
         'report_delete' => 'Report deleted (ID: :report_id)',
         'report_restore_content' => 'Report content restored (ID: :report_id)',
         'report_blind_content' => 'Report content blinded (ID: :report_id)',
         'report_delete_content' => 'Report content deleted (ID: :report_id)',
-        'report_cancel' => 'Report cancelled (ID: :report_id)',
-
-        // Scrap
-        'scrap_add' => 'Post scrapped (ID: :post_id)',
-        'scrap_remove' => 'Post scrap removed (ID: :post_id)',
-        // Reaction (recommend/not recommend)
-        'reaction_add' => 'Reaction added (Board: :board_name, Title: :title, Type: :reaction_type)',
-        'reaction_change' => 'Reaction changed (Board: :board_name, Title: :title, Type: :reaction_type)',
-        'reaction_remove' => 'Reaction removed (Board: :board_name, Title: :title)',
-        'comment_reaction_add' => 'Comment reaction added (Board: :board_name, Post ID: :post_id, Comment ID: :comment_id, Type: :reaction_type)',
-        'comment_reaction_change' => 'Comment reaction changed (Board: :board_name, Post ID: :post_id, Comment ID: :comment_id, Type: :reaction_type)',
-        'comment_reaction_remove' => 'Comment reaction removed (Board: :board_name, Post ID: :post_id, Comment ID: :comment_id)',
 
         // Board settings
         'board_settings_index' => 'Board settings viewed',
@@ -111,10 +91,7 @@ return [
         'use_reply' => 'Use Replies',
         'max_reply_depth' => 'Max Reply Depth',
         'reply_delete_policy' => 'Reply Delete Policy',
-        'secret_reply_visibility' => 'Secret Reply Visibility',
         'use_report' => 'Use Reports',
-        'use_scrap' => 'Use Scrap',
-        'use_comment_reaction' => 'Use Comment Reaction',
         'use_file_upload' => 'Use File Upload',
         'max_file_size' => 'Max File Size',
         'max_file_count' => 'Max File Count',

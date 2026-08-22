@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands\Template;
 
-use App\Console\Commands\Traits\LocalizesDescription;
 use App\Extension\TemplateManager;
 use App\Extension\Traits\ClearsTemplateCaches;
 use App\Models\Template;
@@ -13,7 +12,6 @@ use Illuminate\Support\Facades\Log;
 class ClearTemplateCacheCommand extends Command
 {
     use ClearsTemplateCaches;
-    use LocalizesDescription;
 
     /**
      * The name and signature of the console command.
@@ -22,10 +20,12 @@ class ClearTemplateCacheCommand extends Command
         {identifier? : 특정 템플릿의 캐시만 삭제 (생략 시 모든 템플릿)}';
 
     /**
+     * The console command description.
+     */
+    protected $description = '템플릿 관련 캐시를 삭제합니다';
+
+    /**
      * 템플릿 관리자
-     *
-     * @param  TemplateManager  $templateManager  템플릿 관리자
-     * @param  ExtensionBundleService  $bundleService  확장 번들 서비스
      */
     public function __construct(
         private TemplateManager $templateManager,
@@ -36,8 +36,6 @@ class ClearTemplateCacheCommand extends Command
 
     /**
      * Execute the console command.
-     *
-     * @return int 명령 종료 코드
      */
     public function handle(): int
     {
@@ -73,9 +71,6 @@ class ClearTemplateCacheCommand extends Command
      * 라이프사이클(update/deactivate/uninstall)과 동일한 무효화 단일 지점
      * (`TemplateManager::clearTemplateCache()`)을 경유한다 — 커맨드가 키 목록을
      * 별도로 유지하면 키 규약 변경 시 유령 forget 으로 사문화된다 (#588, 공개 #119).
-     *
-     * @param  string  $identifier  템플릿 식별자
-     * @return void 반환값 없음
      */
     private function clearSingleTemplateCache(string $identifier): void
     {
@@ -94,12 +89,12 @@ class ClearTemplateCacheCommand extends Command
         TemplateManager::invalidateTemplateStatusCache();
         $this->incrementExtensionCacheVersion();
 
-        $this->info('✅ '.trans_choice('templates.commands.cache_clear.success_single', $clearedCount, [
+        $this->info('✅ '.__('templates.commands.cache_clear.success_single', [
             'template' => $identifier,
             'count' => $clearedCount,
         ]));
 
-        Log::info(trans_choice('templates.commands.cache_clear.success_single', $clearedCount, [
+        Log::info(__('templates.commands.cache_clear.success_single', [
             'template' => $identifier,
             'count' => $clearedCount,
         ]));
@@ -107,8 +102,6 @@ class ClearTemplateCacheCommand extends Command
 
     /**
      * 모든 템플릿 캐시 삭제
-     *
-     * @return void 반환값 없음
      */
     private function clearAllTemplateCache(): void
     {
@@ -128,11 +121,11 @@ class ClearTemplateCacheCommand extends Command
         // 확장 프론트엔드 병합 번들 파일 전체 삭제 (템플릿 캐시 정리는 페이지 전면 갱신)
         $clearedCount += $this->bundleService->clearBundles();
 
-        $this->info('✅ '.trans_choice('templates.commands.cache_clear.success_all', $clearedCount, [
+        $this->info('✅ '.__('templates.commands.cache_clear.success_all', [
             'count' => $clearedCount,
         ]));
 
-        Log::info(trans_choice('templates.commands.cache_clear.success_all', $clearedCount, [
+        Log::info(__('templates.commands.cache_clear.success_all', [
             'count' => $clearedCount,
         ]));
     }

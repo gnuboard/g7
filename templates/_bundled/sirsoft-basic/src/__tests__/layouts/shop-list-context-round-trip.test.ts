@@ -10,6 +10,9 @@
  * 이 액션은 `params.path` 가 없다 — "현재 주소를 유지한 채 쿼리만 바꾼다" 는 형태라
  * 목적지 경로 문자열이 존재하지 않고, 그래서 경로 기반 검사망을 그대로 통과했다.
  *
+ * @scenario leg=enter|tab_switch|back
+ * @effects navigation_preserves_list_query
+ *
  * @vitest-environment jsdom
  */
 
@@ -46,31 +49,23 @@ type NavAction = {
  */
 function collectNavActions(node: unknown): NavAction[] {
     const out: NavAction[] = [];
-    // 링크(A) 안의 경로 없는 navigate 는 자기 자신이 아니라 그 링크의 href 로 간다(엔진 규칙) — href 를 path 로 채워 모은다
-    const walk = (n: unknown, linkHref: string | null): void => {
+    const walk = (n: unknown): void => {
         if (Array.isArray(n)) {
-            n.forEach((c) => walk(c, linkHref));
+            n.forEach(walk);
             return;
         }
         if (!n || typeof n !== 'object') return;
         const obj = n as Record<string, unknown>;
-        const props = obj.props as { href?: unknown } | undefined;
-        const href = obj.name === 'A' && typeof props?.href === 'string' ? props.href : linkHref;
         if (
             (obj.handler === 'navigate' || obj.handler === 'replaceUrl') &&
             obj.params &&
             typeof obj.params === 'object'
         ) {
-            const params = obj.params as Record<string, unknown>;
-            out.push(
-                (obj.handler === 'navigate' && !params.path && href
-                    ? { ...obj, params: { ...params, path: href } }
-                    : obj) as unknown as NavAction
-            );
+            out.push(obj as unknown as NavAction);
         }
-        Object.values(obj).forEach((c) => walk(c, href));
+        Object.values(obj).forEach(walk);
     };
-    walk(node, null);
+    walk(node);
     return out;
 }
 
@@ -108,8 +103,6 @@ async function runAction(action: NavAction): Promise<string | undefined> {
 }
 
 describe('#75 목적지가 자기 자신인 액션도 목록 상태를 유지한다', () => {
-    // @scenario leg=self_target
-    // @effects self_target_actions_merge_list_query
     it.each(CLUSTER_FILES)('%s 의 path 없는 navigate/replaceUrl 은 mergeQuery: true', (rel) => {
         const offenders = collectNavActions(readLayout(rel))
             .filter((a) => {
@@ -134,8 +127,6 @@ describe('#75 상품 상세 탭 전환이 목록 상태를 지우지 않는다',
     /** 목록에서 상세로 넘어온 직후의 URL — `preserveListQuery` 가 실어 온 상태 */
     const DETAIL_URL = '/shop/products/12?page=2&sort=price_asc&keyword=신발&category=3';
 
-    // @scenario leg=self_target
-    // @effects tab_switch_keeps_list_query
     it('탭을 눌러도 page·정렬·검색어·분류가 URL 에 남는다', async () => {
         window.history.replaceState({}, '', DETAIL_URL);
 
@@ -148,19 +139,9 @@ describe('#75 상품 상세 탭 전환이 목록 상태를 지우지 않는다',
         );
         expect(action, '상세 탭 전환 replaceUrl 을 찾지 못했습니다.').toBeTruthy();
 
-        // 탭 값은 레이아웃이 `$args[0]`(눌린 탭 id)로 받는데, `triggerAction` 이 쓰는
-        // `ActionDispatcher.createHandler` 는 `(event) => void` 라 추가 인자를 받지 않는다
-        // (`$args` 는 named action 경로인 `executeAction(…, args)` 가 채운다). 그래서 두 축으로
-        // 나눠 단언한다 — ① 프로덕션에서 탭이 URL 에 실리는 근거인 `$args[0]` 바인딩 자체를
-        // 선언으로 고정하고(브라우저 실측 2026-09-01 계획 검증 4차 ·
-        // `/shop/products/1?page=2&sort=price_asc&keyword=신발&category=3` 에서 리뷰 탭 클릭 →
-        // `…&category=3&tab=reviews` · 목록 상태 4종 전건 보존), ② 화면이 넘길 값을 그 자리에 직접
-        // 넣어 mergeQuery·query 구성이 목록 상태를 보존한 채 탭을 싣는지를 실제로 잰다.
-        const tabBinding = (action as NavAction).params.query as Record<string, unknown>;
-        expect(tabBinding.tab, '탭 값이 $args[0] 바인딩이어야 프로덕션에서 URL 에 실린다').toBe(
-            '{{$args[0]}}'
-        );
-
+        // 이 액션의 `tab` 값은 `{{$args[0]}}` 다 — 실제 화면에서는 Tabs 의 onTabChange 가 넘긴다.
+        // `triggerAction` 은 `$args` 를 제공하지 않으므로(이벤트 하나만 만든다) 그 자리에
+        // 화면이 넘길 값을 그대로 넣는다. 나머지(mergeQuery·query 구성)는 실 레이아웃 그대로다.
         const withTabArg = {
             ...(action as NavAction),
             params: {
@@ -179,8 +160,6 @@ describe('#75 상품 상세 탭 전환이 목록 상태를 지우지 않는다',
         expect(q.get('tab')).toBe('reviews');
     });
 
-    // @scenario leg=back
-    // @effects list_return_preserves_query
     it("탭을 누른 뒤 '상품 목록' 으로 돌아가도 보던 페이지가 복원된다", async () => {
         window.history.replaceState({}, '', DETAIL_URL);
 

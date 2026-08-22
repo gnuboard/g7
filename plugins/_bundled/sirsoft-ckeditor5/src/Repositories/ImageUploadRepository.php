@@ -51,11 +51,6 @@ class ImageUploadRepository implements ImageUploadRepositoryInterface
         'original_name',
     ];
 
-    /**
-     * 저장소를 만듭니다.
-     *
-     * @param  Ckeditor5ImageUpload  $model  업로드 기록 모델
-     */
     public function __construct(
         protected Ckeditor5ImageUpload $model
     ) {}
@@ -187,8 +182,7 @@ class ImageUploadRepository implements ImageUploadRepositoryInterface
             });
         }
 
-        // 목록은 업로드 시각을 보는 사람의 시간대로 그린다 — 같은 하루로 자른다.
-        $this->applyViewerDateRangeFilter(
+        $this->applyDateRangeFilter(
             $query,
             'created_at',
             $filters['date_from'] ?? null,

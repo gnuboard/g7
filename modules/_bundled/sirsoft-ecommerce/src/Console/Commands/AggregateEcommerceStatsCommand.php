@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Console\Commands;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceDashboardService;
@@ -62,19 +63,15 @@ class AggregateEcommerceStatsCommand extends Command
         }
 
         if (! (bool) g7_module_settings('sirsoft-ecommerce', 'dashboard.scheduler_enabled', true)) {
-            $this->warn(__('sirsoft-ecommerce::messages.console.aggregate_stats.scheduler_disabled'));
+            $this->warn('대시보드 집계 스케줄러가 비활성화되어 있습니다 (dashboard.scheduler_enabled=false). 건너뜁니다.');
 
             return Command::SUCCESS;
         }
 
         $rows = $this->dashboardService->aggregateRecentDays(self::AGGREGATE_DAYS);
 
-        $this->info(__('sirsoft-ecommerce::messages.console.aggregate_stats.done', ['days' => self::AGGREGATE_DAYS, 'rows' => count($rows)]));
-        $this->table([
-            __('sirsoft-ecommerce::messages.console.aggregate_stats.headers.date'),
-            __('sirsoft-ecommerce::messages.console.aggregate_stats.headers.sales_quantity'),
-            __('sirsoft-ecommerce::messages.console.aggregate_stats.headers.net_sales'),
-        ], array_map(
+        $this->info(sprintf('판매 현황 집계 완료: 최근 %d일치 %d개 행 갱신', self::AGGREGATE_DAYS, count($rows)));
+        $this->table(['날짜', '판매수량', '순매출'], array_map(
             fn (array $row) => [$row['date'], $row['sales_quantity'], number_format($row['sales_amount'])],
             $rows,
         ));
@@ -89,12 +86,10 @@ class AggregateEcommerceStatsCommand extends Command
      */
     private function runDryRun(): int
     {
-        // 실제 집계와 같은 하루(사이트 표준시)로 미리 보여 준다.
-        $today = $this->dashboardService->siteToday();
+        $today = CarbonImmutable::today();
         $preview = [];
 
         for ($i = 0; $i < self::AGGREGATE_DAYS; $i++) {
-            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             $date = $today->subDays($i)->toDateString();
             $preview[] = [
                 $date,
@@ -103,12 +98,8 @@ class AggregateEcommerceStatsCommand extends Command
             ];
         }
 
-        $this->info('[dry-run] '.__('sirsoft-ecommerce::messages.console.aggregate_stats.dry_run_header', ['days' => self::AGGREGATE_DAYS]));
-        $this->table([
-            __('sirsoft-ecommerce::messages.console.aggregate_stats.headers.date'),
-            __('sirsoft-ecommerce::messages.console.aggregate_stats.headers.sales_quantity'),
-            __('sirsoft-ecommerce::messages.console.aggregate_stats.headers.net_sales'),
-        ], $preview);
+        $this->info(sprintf('[dry-run] 집계 대상 최근 %d일 (저장하지 않음):', self::AGGREGATE_DAYS));
+        $this->table(['날짜', '판매수량', '순매출'], $preview);
 
         return Command::SUCCESS;
     }

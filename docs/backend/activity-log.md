@@ -13,7 +13,6 @@ ActivityLogHandler가 `activity_logs` 테이블에 저장합니다.
 4. 변경 추적: $activityLogFields 정의 필수 + ChangeDetector → changes JSON (미정의 시 null)
 5. Bulk 작업 Per-Item 필수: N건 처리 시 N건 개별 로그 (집계 1건 금지), 삭제 시 loggable_type/loggable_id 직접 지정
 6. 새 모듈 추가 시: Listener + DescriptionResolver + module.php 등록 + lang + $activityLogFields
-7. 보관: 환경설정 > 보안 「활동 로그 보관 기간」(365~3650일)으로 자동 파기, 법정 최소 365일 · 권한·역할 변경 기록은 최소 3년 (7.1.0)
 ```
 
 ---
@@ -30,11 +29,10 @@ ActivityLogHandler가 `activity_logs` 테이블에 저장합니다.
 8. [모듈 리스너 등록](#모듈-리스너-등록)
 9. [모델별 로그 조회 API 패턴](#모델별-로그-조회-api-패턴)
 10. [Bulk 로깅 패턴 (Per-Item 필수)](#bulk-로깅-패턴-per-item-필수)
-11. [보관 기간 (자동 파기)](#보관-기간-자동-파기)
-12. [DB 스키마](#db-스키마)
-13. [인덱스](#인덱스)
-14. [금지 사항](#금지-사항)
-15. [개발자 체크리스트](#개발자-체크리스트)
+11. [DB 스키마](#db-스키마)
+12. [인덱스](#인덱스)
+13. [금지 사항](#금지-사항)
+14. [개발자 체크리스트](#개발자-체크리스트)
 
 ---
 
@@ -132,7 +130,7 @@ private function logActivity(string $action, array $context): void
 
 ### 3단계: Processor + Handler
 
-1. **ActivityLogProcessor**: 리스너에서 명시적으로 전달하지 않은 `user_id`, `ip_address`, `user_agent`를 자동 주입. 작업이 CLI(Artisan 커맨드·스케줄러)에서 시작됐으면 `properties.via = 'cli'` 도 남긴다(명시값은 보존, 웹 요청은 표기하지 않음)
+1. **ActivityLogProcessor**: 리스너에서 명시적으로 전달하지 않은 `user_id`, `ip_address`, `user_agent`를 자동 주입
 2. **ActivityLogHandler**: context에서 구조화 데이터를 추출하여 `ActivityLog::create()` 호출
 
 ### 큐 워커에서의 사용자 컨텍스트
@@ -147,13 +145,8 @@ private function logActivity(string $action, array $context): void
 | `ip_address` / `user_agent` | Processor가 자동 주입하는 IP/UA가 원래 요청 값으로 정상 기록 |
 | `path` | `ResolvesActivityLogType::resolveLogType()`이 워커에서 정상 동작 (Admin/User/System 분류) |
 | `locale` | 다국어 메시지가 원래 요청 로케일로 발송 |
-| `origin` | 진입점(`cli`/`http`). 워커 자신도 콘솔 프로세스라 이 값이 없으면 어드민 화면에서 한 작업까지 CLI 로 오판한다. `HookContextCapture::origin()` 이 복원값을 우선한다 |
-
-데몬 워커는 컨테이너를 작업 간에 재사용하므로 `DispatchHookListenerJob` 은 작업이 끝나면 복원한 진입점(`origin`)과 인증 사용자를 **작업 전 상태로 되돌린다** — 되돌리지 않으면 회원 작업 다음에 처리된 시스템 작업이 그 회원을 행위자로 물려받는다.
 
 리스너 코드는 변경 불필요 — `Log::channel('activity')->info()` 호출만으로 동작합니다.
-
-터미널 운영 명령(`user:reset-password`·`settings:set`·`--with-dependencies` 연쇄 설치, 7.1.4)은 웹과 같은 서비스·같은 훅을 타므로 같은 활동 로그를 남기되, 진입점이 `cli` 이고 인증 사용자가 없어 행위자 없는 「시스템」 기록이 됩니다. 비밀번호 재설정은 출처 `console` 로 구분해 전용 설명 키(`auth_reset_password_by_console`)를 씁니다 — 「회원 본인 변경」으로 남지 않습니다.
 
 > 자세한 큐 컨텍스트 동작은 [extension/hooks.md "사용자 컨텍스트 자동 복원"](../extension/hooks.md) 참조
 
@@ -167,7 +160,7 @@ private function logActivity(string $action, array $context): void
 | `loggable_id` | `int` | - | `loggable` 대신 morph ID 직접 지정 (삭제된 엔티티용) |
 | `description_key` | `string` | O | 다국어 번역 키 |
 | `description_params` | `array` | - | 번역 파라미터 |
-| `properties` | `array` | - | 추가 속성 (JSON). CLI 진입점이면 Processor 가 `via: 'cli'` 를 더한다 — 회원이 없는 로그의 행위자 라벨이 "시스템(CLI)" 가 되는 근거 |
+| `properties` | `array` | - | 추가 속성 (JSON) |
 | `changes` | `array` | - | 변경 이력 (ChangeDetector 결과) |
 | `user_id` | `int` | - | 자동 주입 (Processor) |
 | `ip_address` | `string` | - | 자동 주입 (Processor) |
@@ -292,7 +285,6 @@ $this->logActivity('schedule.auto_run', [
 | after_xxx priority 20 | 실제 로직 완료 후 기록 |
 | `log_type` 하드코딩 금지 | 트레이트가 `Auth::user()` 기반으로 자동 결정 (필요 시 명시 가능) |
 | 스냅샷 사용 후 `unset` | 메모리 누수 방지 |
-| 큐로 도는 일괄 핸들러는 기록 루프를 `DB::transaction` 으로 | 재시도·재예약 때 앞부분이 두 번 남지 않게 — [Bulk 로깅 패턴의 해당 절](#큐로-도는-일괄-핸들러는-기록-루프를-트랜잭션으로-감싼다-139) |
 
 ### 다국어 키 커버리지
 
@@ -308,6 +300,7 @@ $this->logActivity('schedule.auto_run', [
 번들 일본어 언어팩(`lang-packs/_bundled/g7-core-ja/backend/ja/activity_log.php`)도 함께 동기화한다.
 
 ```text
+정적 검사: 코어/모듈/플러그인 ActivityLog 리스너 전 영역에서 키 누락 자동 검출
 ```
 
 ---
@@ -508,16 +501,6 @@ public function handleEntityAfterDelete(Model $entity): void
 }
 ```
 
-### 개수가 들어가는 문구: `count` 함께 저장
-
-영어 값이 `단수|복수`(예: `'(:count item)|(:count items)'`)인 문구는 화면 번역이 `description_params.count`
-로 단·복수를 고릅니다. 수 자리표시자가 `:count` 가 아니어도(`:attempts`·`:days` 등) 같은 수를 `count` 로 함께
-저장합니다. `count` 없이 저장된 옛 행은 처음 나오는 수 치환값으로 고릅니다.
-
-```php
-'description_params' => ['attempts' => $attempts, 'minutes' => $minutes, 'count' => $attempts],
-```
-
 ### properties vs changes vs description_params 역할 구분
 
 | 컬럼 | 용도 | 저장 내용 |
@@ -625,7 +608,7 @@ public function getHookListeners(): array
 
 ### 다국어 이름 처리
 
-이름이 다국어 배열(`['ko' => '한국어', 'en' => 'English']`)인 경우 현재 로케일에 맞게 해석합니다. 현재 로케일 값이 없거나 비면 사이트 기본 언어 → en → 첫 값 순입니다.
+이름이 다국어 배열(`['ko' => '한국어', 'en' => 'English']`)인 경우 현재 로케일에 맞게 해석합니다.
 
 ```php
 private function resolveI18nName(mixed $name): string
@@ -634,7 +617,8 @@ private function resolveI18nName(mixed $name): string
         return $name;
     }
     if (is_array($name)) {
-        return LocalizedValue::pick($name, app()->getLocale()) ?? '';
+        $locale = app()->getLocale();
+        return $name[$locale] ?? $name['ko'] ?? (array_values($name)[0] ?? '');
     }
     return '';
 }
@@ -734,16 +718,6 @@ Route::get('products/{product}/logs', [ProductController::class, 'logs']);
 
 ### 레이아웃 JSON에서 처리로그 탭 구현
 
-```html
-<json key="id">"activity_logs"</json>
-<json key="endpoint">"/api/admin/vendor-module/products/{{route.id}}/logs"</json>
-<json key="method">"GET"</json>
-<json key="autoFetch">false</json>
-<json key="params">{"per_page":10,"page":1}</json>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
     "id": "activity_logs",
@@ -816,26 +790,6 @@ public function handleAfterBulkStatusUpdate(array $ids, int $updatedCount, array
 }
 ```
 
-#### 큐로 도는 일괄 핸들러는 기록 루프를 트랜잭션으로 감싼다 (#139)
-
-일괄 핸들러는 큐 워커에서 돈다(`'sync' => true` 가 아니면). 잡이 중간에 끊겨(제한 시간·워커 종료·재예약) 다시 실행되면 앞부분 항목의 로그가 한 번 더 기록된다. 항목별 기록 루프를 `DB::transaction` 으로 감싸 **중간에 끊긴 묶음은 커밋되지 않게** 한다 — 다시 실행되면 항목마다 한 번만 남는다. 트랜잭션 자체가 실패하면(커밋 실패 등) 묶음 전체가 되돌려지고 오류 로그만 남는다. 다만 항목 하나의 저장 실패는 `logActivity()` 가 종전대로 잡아 오류 로그를 남기고 건너뛰므로(활동 로그는 부수 기록 — 호출자 작업을 실패시키지 않는다) 이 패턴이 「항목 실패 시 묶음 전체 취소」를 보장하지는 않는다. 그렇게 하려면 `logActivity()` 가 트랜잭션 안에서 예외를 다시 던져야 하는데, 다른 트랜잭션 안에서 부르는 호출자까지 실패시키므로 하지 않는다.
-
-```php
-try {
-    DB::transaction(function () use ($ids, $models, $snapshots) {
-        foreach ($ids as $id) {
-            // … 위 패턴 그대로 $this->logActivity(...)
-        }
-    });
-} catch (\Throwable $e) {
-    Log::error('활동 로그 일괄 기록 실패 — 묶음 전체를 되돌렸습니다', ['handler' => __METHOD__, 'error' => $e->getMessage()]);
-}
-```
-
-- 리스너는 DB 파사드를 직접 쓰지 않는 것이 원칙이지만 `DB::transaction` 은 허용된다(하네스 `listener-direct-db-facade`).
-- `'sync' => true` 구독은 재실행 경로가 없어 대상이 아니다. 기록이 한 줄인 핸들러(루프는 변경 목록만 만드는 경우)도 대상이 아니다.
-- 확장이 코어 신버전에 의존하지 않도록 헬퍼를 두지 않고 각 리스너에 이 패턴을 직접 쓴다.
-
 ### 패턴 3: Bulk Delete — 삭제된 엔티티의 per-item 로깅
 
 엔티티가 이미 삭제되어 DB 조회가 불가한 경우, `loggable_type`/`loggable_id`를 직접 지정합니다.
@@ -902,26 +856,6 @@ bulk delete 는 변경 전후 비교가 불필요하므로 ChangeDetector를 사
 대신 `properties.snapshot` 에 삭제 전 데이터를 보존합니다.
 
 ---
-
-## 보관 기간 (자동 파기)
-
-활동 로그는 접속기록이다 — 개인정보의 안전성 확보조치 기준 제8조는 1년(회원 5만 명 이상이거나 고유식별·민감정보를 처리하면
-2년), 제5조③은 권한 부여·변경·말소 내역 3년 보관을 요구한다. 매일 04:45 예약 실행되는 `activity-log:prune` 이 아래 규칙으로
-지운다(7.1.0).
-
-| 대상 | 보관 일수 | 근거 |
-| --- | --- | --- |
-| 일반 로그 | 환경설정 > 보안 「활동 로그 보관 기간」 `security.activity_log_retention_days` (365~3650, 기본 365) | 제8조 — 운영자가 2년 이상으로 늘릴 수 있다 |
-| 권한·역할 변경 기록 (`config('core.activity_log.long_retention_actions')`) | max(위 값, `core.activity_log.long_retention_days` = 1095) | 제5조③ |
-
-- 장기 보관 액션: `role.create`·`role.update`·`role.delete`·`role.sync_permissions`·`role.toggle_status`·`menu.sync_roles`·
-  `user.roles_update`(회원 등록·수정의 역할 변경)·`user.bulk_roles`(회원 역할 일괄 변경). 액션 이름이 정확히 일치해야 한다.
-- `--days=N` 으로 직접 줘도 365일 아래로는 내려가지 않는다(`ActivityLogService::LEGAL_MIN_RETENTION_DAYS`). 파기는 되돌릴 수 없으므로
-  법정 바닥은 저장 검증·판독부 클램프·파기 서비스 세 곳이 모두 건다.
-- `core.activity_log.before_prune($days)` · `after_prune($days, $count)` 의 `$days` 는 실제로 적용한 일반 로그 보관 일수,
-  `$count` 는 두 단계(일반·장기 보관 액션) 삭제 합계다.
-- 확장이 자기 권한 변경 액션을 3년 보관 대상에 넣으려면 `config/core.php` 의 목록에 액션 이름을 추가한다(설정 키가 아니라 코드 목록 — 운영자가 줄일 수 없게).
-- 운영자가 활동 로그를 직접 지우는 삭제 권한(`core.activities.delete`)은 이 규칙과 별개이며 현재 동작을 그대로 유지한다.
 
 ## DB 스키마
 

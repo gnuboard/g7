@@ -3,7 +3,6 @@
 namespace Modules\Sirsoft\Board\Http\Requests\User;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Modules\Sirsoft\Board\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
 
 /**
  * 게시글 삭제 요청을 검증합니다.
@@ -14,8 +13,6 @@ use Modules\Sirsoft\Board\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
  */
 class DestroyPostRequest extends FormRequest
 {
-    use ProvidesFallbackRuleMessages;
-
     /**
      * 요청 권한 — 소유권/권한 판정은 컨트롤러(canModifyPost)가 담당.
      *

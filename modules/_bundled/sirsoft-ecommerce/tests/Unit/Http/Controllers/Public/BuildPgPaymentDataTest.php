@@ -2,13 +2,10 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Http\Controllers\Public;
 
-use Carbon\Carbon;
-use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\OrderController;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderAddress;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
-use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use ReflectionMethod;
 
@@ -20,7 +17,8 @@ use ReflectionMethod;
  * - 배송지 주소 기반 고객 정보
  * - 결제 금액/통화
  * - 에스크로 상품 상세(escrow_products)
- * - 가상계좌 입금 기한(vbank_due_at)
+ *
+ * @effects escrow_products_localized_unit_price_per_item
  */
 class BuildPgPaymentDataTest extends ModuleTestCase
 {
@@ -28,11 +26,6 @@ class BuildPgPaymentDataTest extends ModuleTestCase
 
     private OrderController $controller;
 
-    /**
-     * 테스트마다 주문 컨트롤러와 보호 메서드 buildPgPaymentData 의 리플렉션을 준비합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -54,11 +47,6 @@ class BuildPgPaymentDataTest extends ModuleTestCase
 
     /**
      * 한국어 로케일에서 주문명이 올바르게 생성되는지 확인
-     *
-     * @return void 반환값 없음
-     *
-     * @effects order_name_is_localized_with_a_count_suffix
-     * @effects customer_fields_come_from_the_shipping_address
      */
     public function test_한국어_로케일에서_주문명_생성(): void
     {
@@ -94,10 +82,6 @@ class BuildPgPaymentDataTest extends ModuleTestCase
 
     /**
      * 영어 로케일에서 주문명이 올바르게 생성되는지 확인
-     *
-     * @return void 반환값 없음
-     *
-     * @effects order_name_is_localized_with_a_count_suffix
      */
     public function test_영어_로케일에서_주문명_생성(): void
     {
@@ -122,10 +106,6 @@ class BuildPgPaymentDataTest extends ModuleTestCase
 
     /**
      * 여러 상품 주문 시 "외 N건" 표시 확인
-     *
-     * @return void 반환값 없음
-     *
-     * @effects order_name_is_localized_with_a_count_suffix
      */
     public function test_복수_상품_주문명에_외_n건_표시(): void
     {
@@ -156,10 +136,6 @@ class BuildPgPaymentDataTest extends ModuleTestCase
 
     /**
      * 전화번호에서 하이픈 등 숫자 외 문자가 제거되는지 확인
-     *
-     * @return void 반환값 없음
-     *
-     * @effects customer_fields_come_from_the_shipping_address
      */
     public function test_전화번호_숫자만_추출(): void
     {
@@ -184,10 +160,6 @@ class BuildPgPaymentDataTest extends ModuleTestCase
 
     /**
      * 비회원(user_id null) 주문 시 customer_key가 null인지 확인
-     *
-     * @return void 반환값 없음
-     *
-     * @effects guest_order_has_no_customer_key
      */
     public function test_비회원_주문시_customer_key_null(): void
     {
@@ -210,10 +182,6 @@ class BuildPgPaymentDataTest extends ModuleTestCase
 
     /**
      * 배송지 주소 없는 경우 고객 정보가 null인지 확인
-     *
-     * @return void 반환값 없음
-     *
-     * @effects customer_fields_come_from_the_shipping_address
      */
     public function test_배송지_없는_경우_고객정보_null(): void
     {
@@ -238,10 +206,6 @@ class BuildPgPaymentDataTest extends ModuleTestCase
 
     /**
      * product_name이 문자열인 경우 처리 확인
-     *
-     * @return void 반환값 없음
-     *
-     * @effects order_name_is_localized_with_a_count_suffix
      */
     public function test_product_name이_문자열인_경우(): void
     {
@@ -264,10 +228,6 @@ class BuildPgPaymentDataTest extends ModuleTestCase
 
     /**
      * currency_snapshot에 order_currency가 없는 경우 기본값 KRW 확인
-     *
-     * @return void 반환값 없음
-     *
-     * @effects charge_currency_defaults_to_krw
      */
     public function test_통화_기본값_krw(): void
     {
@@ -294,9 +254,6 @@ class BuildPgPaymentDataTest extends ModuleTestCase
 
     /**
      * base=USD 주문 스냅샷 (실제 버그 재현 형태).
-     *
-     * @param  string  $orderCurrency  결제 통화 코드
-     * @return array<string, mixed> 주문 통화 스냅샷
      */
     private function usdBaseSnapshot(string $orderCurrency): array
     {
@@ -312,13 +269,6 @@ class BuildPgPaymentDataTest extends ModuleTestCase
         ];
     }
 
-    /**
-     * 통화 스냅샷과 기준 통화 결제예정액으로 상품 1개·배송지가 있는 주문을 만듭니다.
-     *
-     * @param  array<string, mixed>  $snapshot  주문 통화 스냅샷
-     * @param  float  $baseDue  기준 통화 결제예정액
-     * @return Order 새로 읽은 주문
-     */
     private function makeOrderWithSnapshot(array $snapshot, float $baseDue): Order
     {
         $user = $this->createUser();
@@ -332,13 +282,6 @@ class BuildPgPaymentDataTest extends ModuleTestCase
         return $order->fresh();
     }
 
-    /**
-     * 기준 통화 USD 주문을 KRW 로 결제하면 주문 스냅샷 환율로 환산한 원화 정수를 청구한다($6 → 7,058원, 화면 표시액과 같음).
-     *
-     * @return void 반환값 없음
-     *
-     * @effects charge_amount_is_converted_to_the_payment_currency_minor_unit
-     */
     public function test_base_usd_결제통화_krw_환산_청구(): void
     {
         // $6(base) → KRW 7058 (화면 표시액과 일치), price min:100 통과
@@ -348,13 +291,6 @@ class BuildPgPaymentDataTest extends ModuleTestCase
         $this->assertEquals(7058, $result['amount']);
     }
 
-    /**
-     * 기준 통화와 결제 통화가 모두 USD 이면 센트 단위 정수를 청구한다($6 → 600, KG 「1달러=100」 규칙).
-     *
-     * @return void 반환값 없음
-     *
-     * @effects charge_amount_is_converted_to_the_payment_currency_minor_unit
-     */
     public function test_base_usd_결제통화_usd_minor_unit_청구(): void
     {
         // $6(base=결제통화) → minor unit 600 (KG "1달러=100" 규칙)
@@ -364,13 +300,6 @@ class BuildPgPaymentDataTest extends ModuleTestCase
         $this->assertEquals(600, $result['amount']);
     }
 
-    /**
-     * 기준 통화 USD 주문을 JPY 로 결제하면 엔화 정수를 청구한다($6 → 942엔, CBT 결제 경로로 전달될 값).
-     *
-     * @return void 반환값 없음
-     *
-     * @effects charge_amount_is_converted_to_the_payment_currency_minor_unit
-     */
     public function test_base_usd_결제통화_jpy_정수_청구(): void
     {
         // $6(base) → JPY 942 (CBT 결제 경로로 전달될 정수)
@@ -386,10 +315,6 @@ class BuildPgPaymentDataTest extends ModuleTestCase
 
     /**
      * escrow_products 가 주문 옵션 수만큼, 개당가·수량·로컬라이즈 상품명으로 구성되는지 확인.
-     *
-     * @return void 반환값 없음
-     *
-     * @effects escrow_products_localized_unit_price_per_item
      */
     public function test_escrow_products_옵션별_개당가_수량_상품명(): void
     {
@@ -430,10 +355,6 @@ class BuildPgPaymentDataTest extends ModuleTestCase
 
     /**
      * escrow_products 상품명이 영어 로케일에서 로컬라이즈되는지 확인.
-     *
-     * @return void 반환값 없음
-     *
-     * @effects escrow_products_localized_unit_price_per_item
      */
     public function test_escrow_products_상품명_영어_로컬라이즈(): void
     {
@@ -456,229 +377,5 @@ class BuildPgPaymentDataTest extends ModuleTestCase
         $result = $this->callBuildPgPaymentData($order->fresh());
 
         $this->assertSame('Product A', $result['escrow_products'][0]['name']);
-    }
-
-    /**
-     * 가상계좌 주문은 주문이 정한 입금 기한을 한국 시각 ISO 8601 로 싣는다.
-     *
-     * PG 결제창이 이 값을 계좌 만료 시각으로 받는다 — 싣지 않으면 PG 가 자기 기본 기한(KG 10~30일·나이스 10일)으로
-     * 계좌를 열고 콜백이 그 값으로 주문 기한을 덮어써 주문서 안내(자동취소 기한)와 실제 기한이 어긋난다.
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario payment_method=vbank, tax=taxable_only
-     *
-     * @effects pg_payment_data_carries_the_order_vbank_due_in_kst
-     */
-    public function test_가상계좌_주문은_입금_기한을_한국_시각으로_싣는다(): void
-    {
-        $order = Order::factory()->forUser($this->createUser())->create([
-            'total_due_amount' => 23000,
-            'currency_snapshot' => ['order_currency' => 'KRW'],
-        ]);
-        OrderOption::factory()->forOrder($order)->create(['product_name' => ['ko' => '상품 A'], 'unit_price' => 23000, 'quantity' => 1]);
-        OrderPayment::factory()->create([
-            'order_id' => $order->id,
-            'payment_method' => PaymentMethodEnum::VBANK,
-            'vbank_due_at' => Carbon::parse('2026-10-10 04:39:23', 'UTC'),
-        ]);
-
-        $result = $this->callBuildPgPaymentData($order->fresh());
-
-        $this->assertSame('2026-10-10T13:39:23+09:00', $result['vbank_due_at'] ?? null);
-    }
-
-    /**
-     * 가상계좌가 아닌 주문에는 입금 기한 키를 싣지 않는다.
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario payment_method=card, tax=taxable_only
-     *
-     * @effects non_vbank_order_omits_the_vbank_due
-     */
-    public function test_가상계좌가_아닌_주문은_입금_기한을_싣지_않는다(): void
-    {
-        $order = Order::factory()->forUser($this->createUser())->create([
-            'total_due_amount' => 23000,
-            'currency_snapshot' => ['order_currency' => 'KRW'],
-        ]);
-        OrderOption::factory()->forOrder($order)->create(['product_name' => ['ko' => '상품 A'], 'unit_price' => 23000, 'quantity' => 1]);
-        OrderPayment::factory()->create([
-            'order_id' => $order->id,
-            'payment_method' => PaymentMethodEnum::CARD,
-        ]);
-
-        $result = $this->callBuildPgPaymentData($order->fresh());
-
-        $this->assertArrayNotHasKey('vbank_due_at', $result);
-    }
-
-    // ──────────────────────────────────────────────
-    // 과세·면세 구분 — 공급가액·부가세를 나눠 받는 PG(NHN KCP·나이스페이먼츠)용
-    // ──────────────────────────────────────────────
-
-    /**
-     * 면세분이 있는 주문(과세 22,000·부가세 2,000·면세 5,000)을 결제수단과 함께 만듭니다.
-     *
-     * @param  PaymentMethodEnum  $method  결제수단
-     * @param  float  $taxFree  면세 합계
-     * @return Order 새로 읽은 주문
-     */
-    private function makeTaxSplitOrder(PaymentMethodEnum $method, float $taxFree): Order
-    {
-        $order = Order::factory()->forUser($this->createUser())->create([
-            'total_due_amount' => 24000,
-            'total_tax_amount' => 22000,
-            'total_vat_amount' => 2000,
-            'total_tax_free_amount' => $taxFree,
-            'currency_snapshot' => ['order_currency' => 'KRW'],
-        ]);
-        OrderOption::factory()->forOrder($order)->create(['product_name' => ['ko' => '상품 A']]);
-        OrderPayment::factory()->create(['order_id' => $order->id, 'payment_method' => $method]);
-
-        return $order->fresh();
-    }
-
-    /**
-     * 면세분이 있는 주문은 면세 합계와 함께 과세 합계(부가세 포함)·부가세를 싣는다.
-     *
-     * 공급가액·부가세를 나눠 받는 PG 는 결제액을 `vat_amount / tax_amount` 비율로 나눈다. 종전에는 면세 합계만
-     * 실어, NHN KCP 결제창의 부가세(`comm_vat_mny`)가 늘 0 이 되고 과세분 전액이 공급가액으로 갔다.
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario payment_method=card, tax=mixed
-     *
-     * @effects pg_payment_data_carries_tax_and_vat_with_tax_free
-     */
-    public function test_면세분이_있으면_과세_합계와_부가세를_함께_싣는다(): void
-    {
-        $result = $this->callBuildPgPaymentData($this->makeTaxSplitOrder(PaymentMethodEnum::CARD, 5000));
-
-        $this->assertSame(5000, $result['tax_free_amount']);
-        $this->assertSame(22000, $result['tax_amount']);
-        $this->assertSame(2000, $result['vat_amount']);
-    }
-
-    /**
-     * 가상계좌 주문도 같은 과세 구분을 싣는다 — 결제수단과 무관하게 결제창이 같은 비율로 나눈다.
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario payment_method=vbank, tax=mixed
-     *
-     * @effects pg_payment_data_carries_tax_and_vat_with_tax_free
-     */
-    public function test_가상계좌_면세_주문도_과세_합계와_부가세를_싣는다(): void
-    {
-        $result = $this->callBuildPgPaymentData($this->makeTaxSplitOrder(PaymentMethodEnum::VBANK, 5000));
-
-        $this->assertSame(5000, $result['tax_free_amount']);
-        $this->assertSame(22000, $result['tax_amount']);
-        $this->assertSame(2000, $result['vat_amount']);
-    }
-
-    /**
-     * 마일리지를 과세분보다 많이 써 청구액이 면세 합계보다 작아지면 면세 금액을 청구액으로 자른다.
-     *
-     * 면세 합계는 쿠폰 할인 뒤·마일리지 차감 전 값이다. PG 는 면세 금액이 결제 금액 안에 있어야 받는다.
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario payment_method=card, tax=mixed
-     *
-     * @effects tax_free_amount_is_capped_by_the_charge
-     */
-    public function test_면세_합계가_청구액보다_크면_청구액으로_자른다(): void
-    {
-        $order = $this->makeTaxSplitOrder(PaymentMethodEnum::CARD, 30000);
-
-        $result = $this->callBuildPgPaymentData($order);
-
-        $this->assertSame(24000, $result['amount']);
-        $this->assertSame(24000, $result['tax_free_amount']);
-    }
-
-    /**
-     * 면세분이 없는 주문은 과세 구분 키를 모두 null 로 둔다 — 과세 전용 상점에 불필요한 복합과세 분기를 태우지 않는다.
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario payment_method=card, tax=taxable_only
-     *
-     * @effects taxable_only_order_carries_no_tax_split
-     */
-    public function test_면세분이_없으면_과세_구분_키가_모두_null(): void
-    {
-        $result = $this->callBuildPgPaymentData($this->makeTaxSplitOrder(PaymentMethodEnum::CARD, 0));
-
-        $this->assertNull($result['tax_free_amount']);
-        $this->assertNull($result['tax_amount']);
-        $this->assertNull($result['vat_amount']);
-    }
-
-    /**
-     * 영세 금액은 결제사에 면세로 넘기고, 과세 합계에서는 뺀다(#612 P2).
-     *
-     * 주문: 과세표준 31,000(과세 21,000 + 영세 10,000)·부가세 1,909·면세 5,000. 결제사는 「면세 + 영세」를
-     * 부가세 없는 금액으로 받아야 영세분에 부가세를 매기지 않는다.
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario payment_method=card, tax=mixed_with_zero_rated
-     *
-     * @effects zero_rated_amount_is_sent_as_tax_free
-     */
-    public function test_영세_금액은_면세에_합산하고_과세_합계에서_뺀다(): void
-    {
-        $order = Order::factory()->forUser($this->createUser())->create([
-            'total_due_amount' => 36000,
-            'total_tax_amount' => 31000,
-            'total_zero_rated_amount' => 10000,
-            'total_vat_amount' => 1909,
-            'total_tax_free_amount' => 5000,
-            'currency_snapshot' => ['order_currency' => 'KRW'],
-        ]);
-        OrderOption::factory()->forOrder($order)->create(['product_name' => ['ko' => '상품 A']]);
-        OrderPayment::factory()->create(['order_id' => $order->id, 'payment_method' => PaymentMethodEnum::CARD]);
-
-        $result = $this->callBuildPgPaymentData($order->fresh());
-
-        $this->assertSame(15000, $result['tax_free_amount']);
-        $this->assertSame(21000, $result['tax_amount']);
-        $this->assertSame(1909, $result['vat_amount']);
-        $this->assertSame($result['amount'], $result['tax_free_amount'] + $result['tax_amount']);
-    }
-
-    /**
-     * 영세만 든 주문도 면세분이 있는 주문으로 다뤄 과세 구분 키를 싣는다 — 과세 0·부가세 0.
-     *
-     * 영세 도입 전에는 이런 주문이 면세분 없음으로 분류돼 결제사가 전액에 부가세를 매겼다.
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario payment_method=card, tax=zero_rated_only
-     *
-     * @effects zero_rated_amount_is_sent_as_tax_free
-     */
-    public function test_영세만_든_주문은_전액을_면세로_싣는다(): void
-    {
-        $order = Order::factory()->forUser($this->createUser())->create([
-            'total_due_amount' => 13000,
-            'total_tax_amount' => 13000,
-            'total_zero_rated_amount' => 13000,
-            'total_vat_amount' => 0,
-            'total_tax_free_amount' => 0,
-            'currency_snapshot' => ['order_currency' => 'KRW'],
-        ]);
-        OrderOption::factory()->forOrder($order)->create(['product_name' => ['ko' => '상품 A']]);
-        OrderPayment::factory()->create(['order_id' => $order->id, 'payment_method' => PaymentMethodEnum::CARD]);
-
-        $result = $this->callBuildPgPaymentData($order->fresh());
-
-        $this->assertSame(13000, $result['tax_free_amount']);
-        $this->assertSame(0, $result['tax_amount']);
-        $this->assertSame(0, $result['vat_amount']);
     }
 }

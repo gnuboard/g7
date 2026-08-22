@@ -2,16 +2,13 @@
 
 namespace Modules\Sirsoft\Ecommerce\Services;
 
-use App\Extension\ModuleManager;
 use App\Helpers\TimezoneHelper;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
-use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\EcommerceStatRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderOptionRepositoryInterface;
-use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductInquiryRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductReviewRepositoryInterface;
 
@@ -20,44 +17,15 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductReviewRepositoryInte
  *
  * 관리자 대시보드의 이커머스 영역을 위한 조회/집계 로직을 담당합니다.
  *
- * - 판매 추세(sales-graph)는 집계 테이블 ecommerce_stats 만 읽어 원본(주문/주문상품) 풀스캔을 피합니다.
- * - 「오늘」 상태 배지(overview)는 주문 수다 — 배지 링크가 여는 주문 목록과 같은 조건으로 주문 표에서 바로 센다
- *   (사이트 하루 범위 + ordered_at 인덱스라 풀스캔이 아니다). 7.1.0 결정(2026-10-08 4차) 전에는 집계 표의 옵션 수량을 읽어
- *   한 주문에 수량이 여럿이면 배지 「결제완료 2건」 → 목록 「총 1개」로 갈렸다.
+ * - 조회(overview/sales-graph)는 집계 테이블 ecommerce_stats 만 읽어 원본(주문/주문상품) 풀스캔을 피합니다.
  * - 집계(aggregateRecentDays)는 스케쥴러가 1시간마다 호출해 최근 N일치를 upsert 합니다.
  * - 판매 수량/순매출은 주문상품(order_options)의 매출 반영 상태(option_status) 옵션만 합산하며,
  *   날짜는 주문(orders.ordered_at) 기준으로 귀속합니다.
- * - 「하루」는 사이트 표준시의 하루다(저장 시각은 UTC 그대로, 질의할 때 사이트 하루를 UTC 범위로 바꾼다).
  */
 class EcommerceDashboardService
 {
     /**
-     * 상품 문의를 글로 저장하는 게시판 모듈 식별자 (manifest `integrations.modules` 에 선언한 선택 연동).
-     */
-    private const BOARD_MODULE = 'sirsoft-board';
-
-    /**
-     * 「오늘」 배지 키 → 그 배지 링크가 여는 주문 목록의 상태 조건 (`admin_dashboard_commerce.g7.html` 의 navigate 경로와 같다).
-     *
-     * 배지 숫자는 이 조건 + 사이트 오늘(`date_basis=site`, 주문일)로 연 목록의 총 건수다. 목록 필터를 그대로 쓰므로
-     * 「준비중」은 목록 상태 필터처럼 상품준비중+배송준비중을 함께 세고(OrderStatusEnum::statisticsFilterGroups),
-     * 「반품」은 반품 완료 신청서가 있는 주문을 센다. 링크를 바꾸면 이 표도 같이 바꾼다 — 두 곳이 같은지는
-     * `DashboardBadgeOrderCountTest::server_badge_conditions_equal_the_layout_badge_links` 가 레이아웃을 읽어 잠근다.
-     *
-     * @var array<string, array<string, array<int, string>>>
-     */
-    private const BADGE_LIST_FILTERS = [
-        'pending_payment' => ['order_status' => [OrderStatusEnum::PENDING_PAYMENT->value]],
-        'payment_complete' => ['order_status' => [OrderStatusEnum::PAYMENT_COMPLETE->value]],
-        'preparing' => ['order_status' => [OrderStatusEnum::PREPARING->value]],
-        'shipping_ready' => ['order_status' => [OrderStatusEnum::SHIPPING_READY->value]],
-        'shipping' => ['order_status' => [OrderStatusEnum::SHIPPING->value]],
-        'cancellations' => ['order_status' => [OrderStatusEnum::CANCELLED->value]],
-        'returns' => ['claim_return_statuses' => [ReturnStatusEnum::COMPLETED->value]],
-    ];
-
-    /**
-     * 일 집계 행(option_status_counts)에 남기는 옵션 상태 버킷 키 목록 (option_status 7버킷 — 상태별 수량 기록).
+     * 오늘 배지에 표시할 주문 상태 키 목록 (option_status 7버킷).
      *
      * @var array<int, string>
      */
@@ -74,15 +42,12 @@ class EcommerceDashboardService
     /**
      * @param  EcommerceStatRepositoryInterface  $statRepository  일별 집계 Repository
      * @param  OrderOptionRepositoryInterface  $orderOptionRepository  주문상품 Repository
-     * @param  OrderRepositoryInterface  $orderRepository  주문 Repository (오늘 배지 주문 수)
      * @param  ProductReviewRepositoryInterface  $reviewRepository  리뷰 Repository
      * @param  ProductInquiryRepositoryInterface  $inquiryRepository  문의 Repository
-     * @param  CurrencyConversionService  $currencyService  기본 통화 소수 자릿수 정규화용 통화 서비스
      */
     public function __construct(
         private readonly EcommerceStatRepositoryInterface $statRepository,
         private readonly OrderOptionRepositoryInterface $orderOptionRepository,
-        private readonly OrderRepositoryInterface $orderRepository,
         private readonly ProductReviewRepositoryInterface $reviewRepository,
         private readonly ProductInquiryRepositoryInterface $inquiryRepository,
         private readonly CurrencyConversionService $currencyService,
@@ -106,29 +71,21 @@ class EcommerceDashboardService
     }
 
     /**
-     * 「오늘」 배지 7개의 주문 수를 조회합니다.
+     * 오늘 주문 상태별 판매 수량(배지 7버킷)을 집계 테이블에서 조회합니다.
      *
-     * 각 배지 값 = 그 배지 링크가 여는 주문 목록(상태 조건 + 주문일 + 사이트 표준시의 오늘)의 총 건수. 목록 필터 단일 출처
-     * (`OrderRepository::applyListFilters`)로 주문 표에서 바로 세므로 옵션 수량이 아니라 주문 수이고, 매시 집계를
-     * 기다리지 않는다. 목록과 같은 주문 조회 권한 범위(현재 관리자의 `orders.read` 본인·역할 범위)도 건다 — 범위가 좁혀진
-     * 관리자에게도 배지 = 그 관리자가 연 목록 건수다. 범위가 사이트 하루라 ordered_at 인덱스 범위 조회다.
+     * ecommerce_stats 의 오늘 행을 읽으며, 행이 없으면 모두 0 으로 반환합니다 (최대 1시간 지연 허용).
      *
-     * @return array<string, int> 배지 키 => 주문 수
+     * @return array<string, int> 상태 키 => 수량 매핑 (배지 7버킷)
      */
     public function getOverview(): array
     {
-        // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
-        $today = $this->siteToday()->toDateString();
-        $dayFilters = [
-            'date_type' => 'ordered_at',
-            'date_basis' => 'site',
-            'start_date' => $today,
-            'end_date' => $today,
-        ];
+        $today = CarbonImmutable::today()->toDateString();
+        $row = $this->statRepository->findByDate($today);
+        $counts = $row?->option_status_counts ?? [];
 
         $overview = [];
-        foreach (self::BADGE_LIST_FILTERS as $key => $statusFilters) {
-            $overview[$key] = $this->orderRepository->countWithListFilters(array_merge($dayFilters, $statusFilters));
+        foreach (self::BADGE_STATUS_KEYS as $key) {
+            $overview[$key] = (int) ($counts[$key] ?? 0);
         }
 
         return $overview;
@@ -154,30 +111,24 @@ class EcommerceDashboardService
      */
     public function getSalesGraph(int $graphDays = 7): array
     {
-        $today = $this->siteToday();
+        $today = CarbonImmutable::today();
         $currentStart = $today->subDays($graphDays - 1);
         $previousStart = $today->subDays($graphDays * 2 - 1);
         $previousEnd = $currentStart->subDay();
 
         $currentRows = $this->statRepository->getByDateRange(
-            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             $currentStart->toDateString(),
-            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             $today->toDateString(),
         );
         $previousRows = $this->statRepository->getByDateRange(
-            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             $previousStart->toDateString(),
-            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             $previousEnd->toDateString(),
         );
 
-        // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
         $indexed = $currentRows->keyBy(fn ($row) => $row->date->toDateString());
 
         $days = [];
         for ($i = 0; $i < $graphDays; $i++) {
-            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             $date = $currentStart->addDays($i)->toDateString();
             $row = $indexed->get($date);
             $days[] = [
@@ -219,33 +170,17 @@ class EcommerceDashboardService
     /**
      * 전체 상품의 미답변 문의 목록과 총 건수를 조회합니다.
      *
-     * 상품 문의는 게시판 모듈의 글로 저장되고, 항목·「전체 보기」는 게시판 관리자 화면으로 간다.
-     * 게시판 모듈(선택 연동)이 꺼져 있거나 설치되지 않았으면 그 화면이 없으므로 항목을 내지 않는다
-     * (`board_active=false`, 빈 목록·0건·slug null). 대시보드 카드도 이 값으로 숨는다.
-     *
      * @param  int  $limit  조회 건수
-     * @return array{items: Collection, total: int, board_slug: string|null, board_active: bool} 미답변 문의
+     * @return array{items: Collection, total: int, board_slug: string|null} 미답변 문의
      */
     public function getPendingInquiries(int $limit): array
     {
-        $boardActive = in_array(self::BOARD_MODULE, ModuleManager::getActiveModuleIdentifiers(), true);
-
-        if (! $boardActive) {
-            return [
-                'items' => new Collection,
-                'total' => 0,
-                'board_slug' => null,
-                'board_active' => false,
-            ];
-        }
-
         return [
             'items' => $this->inquiryRepository->getPendingRecent($limit),
             'total' => $this->inquiryRepository->countPending(),
             // 상품 문의는 게시판 모듈 Post 로 저장된다. 관리자 상세는 지정된 문의 게시판의
             // 글 상세(/admin/board/{slug}/post/{inquirable_id})에서 본다 (미지정 시 null).
             'board_slug' => g7_module_settings('sirsoft-ecommerce', 'inquiry.board_slug'),
-            'board_active' => true,
         ];
     }
 
@@ -253,20 +188,18 @@ class EcommerceDashboardService
      * 최근 N일치(오늘 포함) 판매 집계 행을 ecommerce_stats 에 upsert 합니다.
      *
      * 그 이전 날짜 행은 건드리지 않아 과거 추세가 보존됩니다. date unique 로 멱등합니다.
-     * 판매 수량/순매출은 매출 반영 상태(option_status) 옵션만 합산하고, 상태별 수량 기록(option_status_counts)은
-     * 당일 전체 옵션 수량을 7버킷으로 매핑합니다 — 「오늘」 배지는 이 기록이 아니라 주문 수를 바로 센다(getOverview).
-     * 날짜는 주문(orders.ordered_at) 기준입니다.
+     * 판매 수량/순매출은 매출 반영 상태(option_status) 옵션만 합산하고, 상태 배지는
+     * 당일 전체 옵션을 7버킷으로 매핑합니다. 날짜는 주문(orders.ordered_at) 기준입니다.
      *
      * @param  int  $days  집계 대상 일수 (오늘 포함, 기본 7)
      * @return array<int, array{date: string, sales_quantity: int, sales_amount: float}> 갱신된 집계 목록
      */
     public function aggregateRecentDays(int $days = 7): array
     {
-        $today = $this->siteToday();
+        $today = CarbonImmutable::today();
         $result = [];
 
         for ($i = 0; $i < $days; $i++) {
-            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             $date = $today->subDays($i)->toDateString();
 
             $salesQuantity = $this->orderOptionRepository->sumNetQuantityOnDate($date);
@@ -288,32 +221,14 @@ class EcommerceDashboardService
     }
 
     /**
-     * 사이트 표준시의 오늘(0시)을 돌려줍니다.
+     * 원시 option_status 수량 맵을 배지 7버킷으로 매핑합니다.
      *
-     * 집계 표(ecommerce_stats)는 모든 운영자가 함께 보는 하루 1행이라 보는 사람마다 하루 경계를 달리할 수 없다.
-     * 방문자 통계·게시판 대시보드처럼 사이트 표준시의 하루로 행을 만들고 읽는다 — UTC 자정으로 자르면 한국 시간
-     * 새벽 0~9시 주문이 전날 행에 들어가고 「오늘」 배지가 아침 9시까지 어제 행을 읽는다(7.1.0).
-     *
-     * @return CarbonImmutable 사이트 표준시 오늘 0시
-     */
-    public function siteToday(): CarbonImmutable
-    {
-        return CarbonImmutable::now(TimezoneHelper::getSiteTimezone() ?: 'UTC')->startOfDay();
-    }
-
-    /**
-     * 원시 option_status 수량 맵을 상태별 수량 기록 7버킷(일 집계 option_status_counts)으로 매핑합니다.
-     *
-     * 이 기록은 옵션 수량이다 — 「오늘」 배지는 이 기록을 읽지 않고 주문 수를 바로 센다(getOverview, 7.1.0 결정).
      * 취소(cancelled)는 cancellations 버킷으로, 그 외 상태는 동일 키로 매핑합니다.
      * 부분취소는 별도 상태가 아니라 취소된 옵션(option_status=cancelled)으로 집계되므로 cancellations 에 포함됩니다.
-     * returns(반품) 버킷은 취소 칸과 같은 규칙으로 반품완료 옵션(option_status=returned)을 셉니다 —
-     * 반품 진행 중(return_in_progress)은 아직 돌려받지 않은 상품이라 넣지 않는다(취소 칸도 환불신청 중은 세지 않는다).
-     * #599 통합 실측 P15 ① · S0-D1: 클레임 도메인이 생긴 뒤에도 0 으로 고정돼 있어 반품 완료 38건 위에서
-     * 배지가 계속 0 이었다.
+     * returns(반품) 버킷은 환불 도메인 미반영이므로 0 으로 둡니다.
      *
      * @param  array<string, int>  $rawCounts  option_status 값 => 수량
-     * @return array<string, int> 상태별 수량 7버킷 (상태 키 => 수량)
+     * @return array<string, int> 배지 7버킷 (상태 키 => 수량)
      */
     private function buildBadgeBuckets(array $rawCounts): array
     {
@@ -325,9 +240,9 @@ class EcommerceDashboardService
         $buckets['shipping_ready'] = (int) ($rawCounts[OrderStatusEnum::SHIPPING_READY->value] ?? 0);
         $buckets['shipping'] = (int) ($rawCounts[OrderStatusEnum::SHIPPING->value] ?? 0);
         // 부분취소는 별도 주문 상태가 아니라 잔여 옵션 기준 진행 상태로 집계되므로(partial_cancelled 제거),
-        // 취소 칸은 전체취소(CANCELLED)만 합산한다.
+        // 취소 배지는 전체취소(CANCELLED)만 합산한다.
         $buckets['cancellations'] = (int) ($rawCounts[OrderStatusEnum::CANCELLED->value] ?? 0);
-        $buckets['returns'] = (int) ($rawCounts[OrderStatusEnum::RETURNED->value] ?? 0);
+        $buckets['returns'] = 0;
 
         return $buckets;
     }

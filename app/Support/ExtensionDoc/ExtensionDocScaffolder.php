@@ -2,10 +2,6 @@
 
 namespace App\Support\ExtensionDoc;
 
-use App\Extension\ExtensionManager;
-use App\Extension\Traits\CollectsFragmentSources;
-use Illuminate\Support\Facades\File;
-
 /**
  * 확장 문서 스캐폴더
  *
@@ -20,9 +16,6 @@ use Illuminate\Support\Facades\File;
  */
 class ExtensionDocScaffolder
 {
-    // 조각 읽기는 등록 경로와 같은 규약을 쓴다 — 문서만 `.json` 을 직접 읽으면 소스만 고친 조각이 문서에서 낡는다.
-    use CollectsFragmentSources;
-
     /**
      * @var string 자동 생성 블록 시작 마커 접두
      */
@@ -292,13 +285,6 @@ class ExtensionDocScaffolder
         'hooks-subscribed',
     ];
 
-    /**
-     * 문서 종류·확장 유형에 해당하는 섹션 목록을 돌려줍니다.
-     *
-     * @param  string  $doc  문서 종류 (agents|architecture 등)
-     * @param  string  $type  확장 유형 (module|plugin|template)
-     * @return array<int, string> 섹션 키 목록
-     */
     public static function sectionsFor(string $doc, string $type): array
     {
         $meta = self::DOCUMENTS[$doc] ?? null;
@@ -713,15 +699,6 @@ class ExtensionDocScaffolder
         $rows[] = ['그누보드7 코어', $this->code($ctx['deps']['coreVersion'] ?? '(제약 없음)')];
         $rows[] = ['PHP', $this->code($this->composerPhp($ctx) ?? '^8.2')];
 
-        // composer.json require/suggest ext-* — 필수는 설치·활성화를 막고, 권장은 경고만 한다(#151)
-        $phpExtensions = app(ExtensionManager::class)->getPhpExtensionRequirementsAt($ctx['record']['path']);
-        if ($phpExtensions['required'] !== []) {
-            $rows[] = ['PHP 확장(필수)', implode(', ', array_map(fn ($e) => $this->code($e), $phpExtensions['required']))];
-        }
-        foreach ($phpExtensions['suggested'] as $extension => $reason) {
-            $rows[] = ['PHP 확장(권장)', $this->code($extension).($reason !== '' ? ' — '.$reason : '')];
-        }
-
         foreach ($ctx['deps']['requires'] as $dep) {
             $label = ExtensionInventory::typeLabel(rtrim($dep['type'], 's'));
             $rows[] = ["의존 {$label}", $this->code($dep['id']).' '.$this->code($dep['constraint'])];
@@ -807,38 +784,6 @@ class ExtensionDocScaffolder
                     $this->code($d['constraint']),
                 ], $requiredBy),
             );
-
-        // 선택 연동(#639) — 선언이 있는 확장에만 절을 둔다(없음 문장으로 모든 문서를 바꾸지 않는다).
-        $integrates = $ctx['deps']['integrates'] ?? [];
-        if ($integrates !== []) {
-            $sections[] = '';
-            $sections[] = '**함께 쓰면 연동되는 확장** (manifest `integrations` — 없어도 이 확장은 동작합니다)';
-            $sections[] = '';
-            $sections[] = $this->table(
-                ['확장', '유형', '버전 제약', '번들'],
-                array_map(fn (array $d): array => [
-                    $this->code($d['id']),
-                    ExtensionInventory::typeLabel(rtrim($d['type'], 's')),
-                    $this->code($d['constraint'] ?? '*'),
-                    $d['bundled'] ? '✅' : '—',
-                ], $integrates),
-            );
-        }
-
-        $integratedBy = $ctx['deps']['integratedBy'] ?? [];
-        if ($integratedBy !== []) {
-            $sections[] = '';
-            $sections[] = '**이 확장과 연동하는 확장** (이 확장이 있으면 기능을 더합니다 — 이 확장의 화면·훅 이름을 바꿀 때 함께 확인)';
-            $sections[] = '';
-            $sections[] = $this->table(
-                ['확장', '유형', '요구 버전'],
-                array_map(fn (array $d): array => [
-                    $this->code($d['id']),
-                    ExtensionInventory::typeLabel($d['type']),
-                    $this->code($d['constraint'] ?? '*'),
-                ], $integratedBy),
-            );
-        }
 
         return implode("\n", $sections);
     }
@@ -980,25 +925,22 @@ class ExtensionDocScaffolder
 
         $common = [
             'CHANGELOG.md' => ['변경 이력', '버전 상향 시 항목 추가 (미기재 시 버전 상향 불가)'],
-            // 편집기 컴포넌트 선언은 레이아웃 작성자가 읽는 props 계약이다(실측 15파일).
+            // 편집기 컴포넌트 선언은 레이아웃 저작자가 읽는 props 계약이다(실측 15파일).
             // 자리가 없으면 그 선언을 고쳐도 `docs/components.md` 갱신 요구가 걸리지 않는다.
-            'components.json' => ['편집기 컴포넌트 선언 (레이아웃 작성자가 읽는 props 계약)', $updateCmd],
+            'components.json' => ['편집기 컴포넌트 선언 (레이아웃 저작자가 읽는 props 계약)', $updateCmd],
             // 확장이 셸로 호출하는 외부 실행파일·인증서·WSDL 자리다(실측 6파일, 결제 플러그인).
             // 비면 그 기능이 죽는데 코드에는 "bin/ 에 복사하세요" 안내만 있고 문서에는 자리가 없었다.
             'bin/' => ['확장이 실행하는 외부 바이너리·인증서', '교체 시 OS별 파일과 권한을 함께 확인 (비면 해당 기능 정지)'],
-            // 확장 아이콘 자리다 — 관리자 목록·상세·확인 창과 설치 마법사가 이 파일을 그린다.
-            // 규격을 어기면 서빙되지 않고 종류별 기본 그림으로 떨어진다(docs/extension/extension-icons.md).
-            'assets/icon.svg' => ['확장 아이콘 (관리자 목록·설치 마법사 카드)', '정사각·100KB 이하·스크립트 없는 SVG — 교체 후 '.$updateCmd],
             'docs/' => ['개발자 문서', '표면 변경 시 `php artisan ext:docgen` 재실행'],
             'lang/' => ['다국어', '키 추가 시 ko·en 동시 반영 + 번들 ja 팩 동기화'],
-            'custom/' => ['운영자 추가 에셋 자리', '작성자는 두지 않는다 (운영자 소유 — 보존 계층이 덮지 않음)'],
+            'custom/' => ['운영자 추가 에셋 자리', '저작자는 두지 않는다 (운영자 소유 — 보존 계층이 덮지 않음)'],
         ];
 
         if ($type === ExtensionInventory::TYPE_TEMPLATE) {
             return [
                 'template.json' => ['manifest (버전 SSoT)', 'version 변경 시 package.json·package-lock.json 동기화'],
                 'routes.json' => ['라우트 → 레이아웃 매핑', $updateCmd],
-                'layouts/' => ['레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관)', $updateCmd.' (빌드 불필요)'],
+                'layouts/' => ['레이아웃 JSON', $updateCmd.' (빌드 불필요)'],
                 // 모듈·플러그인의 `resources/extensions/` 와 같은 개념인데 템플릿은
                 // 확장 루트 직속에 둔다. 유형 분기를 놓치면 다른 확장 화면에 끼워 넣는
                 // 조각을 고쳐도 문서에 반영할 자리가 없다.
@@ -1038,7 +980,7 @@ class ExtensionDocScaffolder
             'database/migrations/' => ['마이그레이션', '한국어 comment + `down()` 필수, 기설치본은 업그레이드 스텝으로 백필'],
             'database/seeders/' => ['시더', 'composer autoload 등록 + `extension:update-autoload`'],
             'upgrades/' => ['업그레이드 스텝', 'DB·설정 구조 변경 시 작성 (모듈/플러그인 전용)'],
-            'resources/layouts/' => ['레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관)', $updateCmd.' (빌드 불필요)'],
+            'resources/layouts/' => ['레이아웃 JSON', $updateCmd.' (빌드 불필요)'],
             // 모듈·플러그인의 라우트 → 레이아웃 매핑은 `resources/routes.json`(단일) 또는
             // `resources/routes/*.json`(분할)에 있다(실측 7파일). 여기 자리가 없으면
             // "라우트를 고쳤는데 문서에 반영할 곳이 없다" 가 된다 — editor-spec 과 같은 형태다.
@@ -1371,12 +1313,11 @@ class ExtensionDocScaffolder
      */
     private function renderLayoutExtensions(array $ctx): string
     {
-        $record = $ctx['record'];
         $files = $ctx['frontend']['layoutExtensions'];
         $declared = $ctx['surface']['values']['getLayoutExtensions'] ?? [];
-        // 템플릿의 `extensions/{module-identifier}/*.g7.html` 은 그 모듈/플러그인이 발행한
+        // 템플릿의 `extensions/{module-identifier}/*.json` 은 그 모듈/플러그인이 발행한
         // 조각을 이 템플릿이 대체하는 것이지, 모듈/플러그인처럼 밖으로 발행하는 것이 아니다.
-        $isTemplate = ($record['type'] ?? null) === ExtensionInventory::TYPE_TEMPLATE;
+        $isTemplate = ($ctx['record']['type'] ?? null) === ExtensionInventory::TYPE_TEMPLATE;
 
         if ($files === [] && ! is_array($declared)) {
             return $this->none($isTemplate ? '오버라이드하는 레이아웃 확장 조각이 없습니다.' : '레이아웃 확장이 없습니다.');
@@ -1386,38 +1327,11 @@ class ExtensionDocScaffolder
             return $this->none($isTemplate ? '오버라이드하는 레이아웃 확장 조각이 없습니다.' : '레이아웃 확장이 없습니다.');
         }
 
-        // 표에 실을 대상(주입 레이아웃·확장점)은 조각의 **내용**에 있다. 읽기는 등록 경로와 같은 규약
-        // (`loadFragmentDefinitions` — 소스 `.g7.html` 이 있으면 컴파일해 읽고, 없으면 `.json`)에
-        // 위임한다. 문서가 `.json` 을 직접 읽으면 소스만 고친 조각의 대상이 문서에서 낡은 채 남는다.
-        $targets = [];
-        $root = rtrim((string) $record['path'], '/\\').DIRECTORY_SEPARATOR
-            .($isTemplate ? 'extensions' : 'resources'.DIRECTORY_SEPARATOR.'extensions');
-        foreach ($this->fragmentDirectories($root) as $directory => $jsonFiles) {
-            foreach ($this->loadFragmentDefinitions($directory, $jsonFiles, ['scope' => 'ext:docgen', 'extension' => $record['id'] ?? null]) as $definition) {
-                $data = $definition['data'];
-                $target = null;
-                if (isset($data['target_layout']) && is_string($data['target_layout'])) {
-                    $target = '대상 레이아웃 '.$this->code($data['target_layout']);
-                } elseif (isset($data['extension_point']) && is_string($data['extension_point'])) {
-                    $target = '확장점 '.$this->code($data['extension_point']);
-                }
-                $targets[$this->relativeToExtension($ctx, $definition['path'])] = $target;
-            }
-        }
-
         $known = array_flip($files);
-        $baseDescription = $isTemplate ? '모듈/플러그인 확장 조각을 대체하는 오버라이드' : '다른 확장/템플릿 레이아웃에 주입되는 조각';
 
         $rows = [];
         foreach ($files as $file) {
-            if (! array_key_exists($file, $targets)) {
-                // 읽기에 실패한 조각(컴파일·파싱 오류)은 정의 목록에서 빠진다 — 파일은 싣되 실패를 드러낸다.
-                $rows[] = [$this->code($file), $baseDescription.' — 읽기 실패(컴파일·파싱 로그 확인)'];
-
-                continue;
-            }
-            $target = $targets[$file];
-            $rows[] = [$this->code($file), $target !== null ? "{$baseDescription} — {$target}" : $baseDescription];
+            $rows[] = [$this->code($file), $isTemplate ? '모듈/플러그인 확장 조각을 대체하는 오버라이드' : '다른 확장/템플릿 레이아웃에 주입되는 조각'];
         }
 
         // `getLayoutExtensions()` 기본 구현(AbstractModule/AbstractPlugin)은 위 파일 목록과
@@ -1427,10 +1341,7 @@ class ExtensionDocScaffolder
             foreach ($declared as $key => $value) {
                 $raw = is_string($key) ? $key : (is_string($value) ? $value : (string) $value);
                 $rel = $this->relativeToExtension($ctx, $raw);
-                // 기본 구현은 `.json` 경로를 돌려주고 위 목록은 소스(`.g7.html`) 경로라, 같은 조각을
-                // 짝 이름으로 대조해야 중복이 걸러진다.
-                $relMarkup = preg_replace('/\.json$/', '.g7.html', $rel) ?? $rel;
-                if (isset($known[$rel]) || isset($known[$relMarkup])) {
+                if (isset($known[$rel])) {
                     continue;
                 }
                 $known[$rel] = true;
@@ -1439,33 +1350,6 @@ class ExtensionDocScaffolder
         }
 
         return $this->table(['대상', '설명'], $rows);
-    }
-
-    /**
-     * 조각 루트 아래 디렉토리별 `.json` 파일 목록을 돌려줍니다 — 템플릿 오버라이드는 `extensions/{확장식별자}/` 로 나뉜다.
-     *
-     * @param  string  $root  조각 루트 절대 경로
-     * @return array<string, array<int, string>> 디렉토리 => `.json` 절대 경로 목록 (소스만 있는 디렉토리는 빈 배열)
-     */
-    private function fragmentDirectories(string $root): array
-    {
-        if (! is_dir($root)) {
-            return [];
-        }
-
-        $byDir = [];
-        foreach (File::allFiles($root) as $file) {
-            $name = $file->getFilename();
-            if (! str_ends_with($name, '.g7.html') && ! str_ends_with($name, '.json')) {
-                continue;
-            }
-            $byDir[$file->getPath()] ??= [];
-            if (str_ends_with($name, '.json')) {
-                $byDir[$file->getPath()][] = $file->getPathname();
-            }
-        }
-
-        return $byDir;
     }
 
     /**
@@ -1986,7 +1870,7 @@ class ExtensionDocScaffolder
         $layouts = $frontend['layouts'];
 
         if ($layouts === []) {
-            return $this->none('레이아웃이 없습니다.');
+            return $this->none('레이아웃 JSON 이 없습니다.');
         }
 
         $groupRows = [];
@@ -2004,13 +1888,7 @@ class ExtensionDocScaffolder
             ];
         }
 
-        // 목록은 이름만 싣지만 작성 지점은 소스(`.g7.html`)다 — 짝 `.json` 은 굽기 산출이라
-        // 직접 고치면 다음 `layout:decompile --sync` 에 소실된다.
-        return sprintf(
-            '레이아웃 %d개 (루트: `%s` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).',
-            count($layouts),
-            $frontend['layoutRoot']
-        )."\n\n"
+        return sprintf('레이아웃 %d개 (루트: `%s`).', count($layouts), $frontend['layoutRoot'])."\n\n"
             .$this->table(['그룹', '개수'], $groupRows)."\n\n"
             .$this->table(['레이아웃', '그룹', '종류', 'extends'], $rows);
     }
@@ -2115,13 +1993,9 @@ class ExtensionDocScaffolder
             ['재등록 진입점', $entry['initFunction'] !== null ? $this->code($entry['initFunction'].'()') : '**미노출**'],
         ];
 
-        $note = match (true) {
-            ($entry['missingReinit'] ?? false) => '⚠️ **재등록 전역 누락** — 이 엔트리는 액션 핸들러를 등록하지만 재등록 전역(`window.__{Name}`)이 없습니다. 로케일 전환 후 이 확장의 액션이 전부 무반응이 됩니다 (오류·토스트 없음).',
-            $entry['global'] === 'G7TemplateHandlers' => '템플릿 핸들러는 `window.G7TemplateHandlers` 맵으로 노출되어, 로케일 전환 시 코어가 그 맵을 다시 등록합니다.',
-            ! ($entry['registersHandlers'] ?? true) => '이 엔트리는 액션 핸들러를 등록하지 않으므로 재등록 계약 대상이 아닙니다. 전역 객체는 외부에서 확장 존재를 확인하는 용도로만 남습니다.',
-            $entry['global'] === null || $entry['initFunction'] === null => '재등록 진입점이 전역에 고정 이름으로 노출되지 않으면 로케일 전환 후 이 확장의 액션이 전부 무반응이 됩니다 (오류·토스트 없음).',
-            default => '로케일 전환 시 코어가 이 진입점을 호출해 핸들러를 다시 등록합니다. 진입점은 핸들러 재등록만 수행하고 1회성 부팅 작업을 포함하지 않습니다.',
-        };
+        $note = $entry['global'] === null || $entry['initFunction'] === null
+            ? '재등록 진입점이 전역에 고정 이름으로 노출되지 않으면 로케일 전환 후 이 확장의 액션이 전부 무반응이 됩니다 (오류·토스트 없음).'
+            : '로케일 전환 시 코어가 이 진입점을 호출해 핸들러를 다시 등록합니다. 진입점은 핸들러 재등록만 수행하고 1회성 부팅 작업을 포함하지 않습니다.';
 
         return $this->table(['항목', '값'], $rows)."\n\n".$note;
     }
@@ -2380,7 +2254,7 @@ class ExtensionDocScaffolder
         }
 
         if ($ctx['frontend']['layouts'] !== []) {
-            $items[] = '레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인';
+            $items[] = '레이아웃 JSON 변경 시 빌드 없이 update 만 — 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인';
         }
 
         if ($ctx['frontend']['builtAssets'] !== []) {
@@ -2429,11 +2303,11 @@ class ExtensionDocScaffolder
             $sections,
         );
 
-        // 확장명은 히어로 이미지가 아니라 평범한 H1 이다 (설계 결정 2026-08-31). 확장 20개는
+        // 확장명은 히어로 이미지가 아니라 평범한 H1 이다 (PO 결정 2026-08-31). 확장 20개는
         // 대등하게 병렬로 존재하는 구성요소이고, 각자가 코어와 같은 히어로 브랜딩을 받으면
         // "이 확장이 곧 독립 프로젝트" 라는 착시를 준다. `@generated:badges` 블록의
         // flat-square 정보 배지는 manifest 에서 오는 것이라 그대로 둔다.
-        // 제목은 확장명만이 아니라 「그누보드7 {확장명} {유형}」 이다 (설계 결정 2026-09-04) —
+        // 제목은 확장명만이 아니라 「그누보드7 {확장명} {유형}」 이다 (PO 결정 2026-09-04) —
         // 이 문서만 연 사람이 그누보드7의 어떤 종류 확장인지 제목에서 알 수 있어야 한다.
         $lines = [];
         $lines[] = '# '.ExtensionInventory::docTitle($name, $record['type']);

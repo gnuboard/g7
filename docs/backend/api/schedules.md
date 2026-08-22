@@ -38,7 +38,7 @@
 | run_in_maintenance | query | string | 아니오 | `0`, `1` | 점검 모드 중 실행 여부 |
 | extension_type | query | string | 아니오 | `core`, `module`, `plugin` | 확장 유형 (core/module/plugin/template) |
 | extension_identifier | query | string | 아니오 | max 255 | 확장 식별자 |
-| created_from | query | date | 아니오 | — | 생성일 범위의 시작일 (이 날짜 이후 생성된 스케줄만 조회 — 보는 사람의 시간대 하루로 해석) |
+| created_from | query | date | 아니오 | — | 생성일 범위의 시작일 (이 날짜 이후 생성된 스케줄만 조회) |
 | created_to | query | date | 아니오 | — | 생성일 범위의 종료일 (이 날짜 이전 생성된 스케줄만 조회, created_from 이후여야 함) |
 | sort_by | query | string | 아니오 | `created_at`, `name`, `next_run_at`, `last_run_at`, `is_active`, `last_result` | 정렬 기준 필드명 |
 | sort_order | query | string | 아니오 | `asc`, `desc` | 정렬 방향 (asc 오름차순 / desc 내림차순) |
@@ -156,7 +156,6 @@ HTTP/1.1 200
 
 **설명** 예약 작업(스케줄) 목록을 페이지네이션과 함께 조회하며, 응답에는 상태별 통계도 포함됩니다. `core.schedules.read` 권한이 필요합니다. `type`/`frequency`/`status`/`last_result`/`extension_type` 등으로 필터링하고 `sort_by`/`sort_order` 로 정렬할 수 있습니다. 관리자 스케줄 관리 화면의 목록·필터·요약 카드 표시에 사용합니다.
 
-**권한 값(7.1.0)** 응답 `data.abilities` 에 컬렉션 권한이 실린다 — `can_create`(= `core.schedules.create`)·`can_update`·`can_delete`·`can_run`. 「예약 작업 등록」·일괄 상태 변경·행 선택이 이 값으로 잠긴다.
 
 ### POST /api/admin/schedules
 <!-- @generated:start:api.admin.schedules.store -->
@@ -971,7 +970,7 @@ HTTP/1.1 201
 | per_page | query | integer | 아니오 | min 1, max 100 | 페이지당 항목 수 |
 | status | query | string | 아니오 | `success`, `failed`, `running` | 상태 필터 (해당 상태의 항목만 조회) |
 | trigger_type | query | string | 아니오 | `scheduled`, `manual` | 실행 방식 필터: scheduled(예약 시각 자동 실행), manual(관리자의 즉시 실행) 중 해당 이력만 조회 |
-| started_from | query | date | 아니오 | — | 실행 시작일 범위의 시작일 (이 날짜 이후 시작된 이력만 조회 — 보는 사람의 시간대 하루로 해석) |
+| started_from | query | date | 아니오 | — | 실행 시작일 범위의 시작일 (이 날짜 이후 시작된 이력만 조회) |
 | started_to | query | date | 아니오 | — | 실행 시작일 범위의 종료일 (이 날짜 이전 시작된 이력만 조회, started_from 이후여야 함) |
 | sort_by | query | string | 아니오 | `started_at`, `ended_at`, `duration`, `status` | 정렬 기준 필드명 |
 | sort_order | query | string | 아니오 | `asc`, `desc` | 정렬 방향 (asc 오름차순 / desc 내림차순) |
@@ -991,7 +990,7 @@ Authorization: Bearer {YOUR_TOKEN}
 
 _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 
-목록 항목은 `ScheduleHistoryResource::toListArray()` 산물입니다 (단건 실행 응답과 달리 `memory_usage`(raw)/`created_at`/`updated_at` 은 포함되지 않습니다. 실행 이력 창이 회차별 출력을 보여 주므로 `output`/`error_output` 은 포함합니다).
+목록 항목은 `ScheduleHistoryResource::toListArray()` 산물입니다 (단건 실행 응답과 달리 `output`/`error_output`/`memory_usage`(raw)/`created_at`/`updated_at` 은 포함되지 않습니다).
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
@@ -1005,8 +1004,6 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | status_label | string\|null | `성공` | `status` 값의 사람이 읽는 라벨 (`schedule.result.*` 현지화) |
 | exit_code | integer\|null | `0` | 실행 종료 코드 (0=성공, 그 외=실패) |
 | memory_usage_formatted | string\|null | `417.34 KB` | 실행 중 메모리 사용량의 표시용 포맷 문자열 |
-| output | string\|null | `Done.` | 실행 표준 출력 (없으면 null) |
-| error_output | string\|null | `null` | 실행 오류 출력 (실패 회차에서 주로 채워짐, 없으면 null) |
 | trigger_type | string | `manual` | 실행 방식: scheduled(예약 자동 실행), manual(수동 즉시 실행) |
 | trigger_type_label | string\|null | `수동 실행` | `trigger_type` 값의 사람이 읽는 라벨 (`schedule.trigger_type.*` 현지화) |
 | triggered_by | object\|null | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"관리자"}` | 수동 실행을 트리거한 사용자 정보 (uuid/name — triggeredBy 관계가 로드되지 않았거나 자동 실행이면 null) |
@@ -1153,8 +1150,6 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`core.schedules.run`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
-| 409 | Conflict | 「중복 실행 방지」를 켠 스케줄이 이미 실행 중인 경우 (`schedule.already_running`). 실행 이력을 만들지 않는다 (7.1.5) |
-| 503 | Service Unavailable | 「중복 실행 방지」 스케줄의 실행 잠금 저장소(캐시)를 쓸 수 없는 경우 (`schedule.run_lock_unavailable`). 실행 이력을 만들지 않는다 (7.1.5) |
 
 <!-- @generated:end -->
 

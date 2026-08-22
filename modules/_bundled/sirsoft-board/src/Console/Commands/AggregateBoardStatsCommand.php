@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Board\Console\Commands;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
@@ -66,12 +67,8 @@ class AggregateBoardStatsCommand extends Command
 
         $rows = $this->dashboardService->aggregateRecentDays(self::AGGREGATE_DAYS);
 
-        $this->info(__('sirsoft-board::messages.console.aggregate_stats.done', ['days' => self::AGGREGATE_DAYS, 'rows' => count($rows)]));
-        $this->table([
-            __('sirsoft-board::messages.console.aggregate_stats.headers.date'),
-            __('sirsoft-board::messages.console.aggregate_stats.headers.posts'),
-            __('sirsoft-board::messages.console.aggregate_stats.headers.comments'),
-        ], array_map(
+        $this->info(sprintf('게시판 현황 집계 완료: 최근 %d일치 %d개 행 갱신', self::AGGREGATE_DAYS, count($rows)));
+        $this->table(['날짜', '게시글', '댓글'], array_map(
             fn (array $row) => [$row['date'], $row['post_count'], $row['comment_count']],
             $rows,
         ));
@@ -86,11 +83,10 @@ class AggregateBoardStatsCommand extends Command
      */
     private function runDryRun(): int
     {
-        $today = $this->dashboardService->siteToday();
+        $today = CarbonImmutable::today();
         $preview = [];
 
         for ($i = 0; $i < self::AGGREGATE_DAYS; $i++) {
-            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             $date = $today->subDays($i)->toDateString();
             $preview[] = [
                 $date,
@@ -99,12 +95,8 @@ class AggregateBoardStatsCommand extends Command
             ];
         }
 
-        $this->info('[dry-run] '.__('sirsoft-board::messages.console.aggregate_stats.dry_run_header', ['days' => self::AGGREGATE_DAYS]));
-        $this->table([
-            __('sirsoft-board::messages.console.aggregate_stats.headers.date'),
-            __('sirsoft-board::messages.console.aggregate_stats.headers.posts'),
-            __('sirsoft-board::messages.console.aggregate_stats.headers.comments'),
-        ], $preview);
+        $this->info(sprintf('[dry-run] 집계 대상 최근 %d일 (저장하지 않음):', self::AGGREGATE_DAYS));
+        $this->table(['날짜', '게시글', '댓글'], $preview);
 
         return Command::SUCCESS;
     }

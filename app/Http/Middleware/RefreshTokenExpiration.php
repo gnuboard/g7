@@ -2,7 +2,6 @@
 
 namespace App\Http\Middleware;
 
-use App\Contracts\Repositories\UserRepositoryInterface;
 use Closure;
 use Illuminate\Http\Request;
 use Laravel\Sanctum\PersonalAccessToken;
@@ -46,25 +45,14 @@ class RefreshTokenExpiration
         $remainingSeconds = now()->diffInSeconds($token->expires_at, false);
         $thresholdSeconds = ($lifetime / 2) * 60;
 
-        // 컨트롤러가 이 토큰을 지웠으면(로그아웃·갱신) 늘리지 않는다 — 지운 토큰을 다시 살리지 않는다(KVE-2026-3187)
-        if (! $token->exists) {
-            return $response;
-        }
-
         // 임계값 미만이고 아직 만료 전이면 갱신
         if ($remainingSeconds > 0 && $remainingSeconds < $thresholdSeconds) {
-            $expiresAt = now()->addMinutes($lifetime);
+            $token->expires_at = now()->addMinutes($lifetime);
+            $token->save();
 
-            // save() 는 지워진 행을 INSERT 로 되살린다 — 행이 있을 때만 바뀌는 UPDATE 로 늘린다.
-            // 그 사이 다른 요청이 토큰을 지웠으면 0행이 바뀌고 메모리 값도 그대로 둔다.
-            if (app(UserRepositoryInterface::class)->extendTokenExpiration((int) $token->getKey(), $expiresAt)) {
-                $token->expires_at = $expiresAt;
-                $token->syncOriginalAttribute('expires_at');
-
-                // 세션 만료 시간도 토큰과 동기화 (웹 세션이 있는 경우)
-                if ($request->hasSession()) {
-                    config(['session.lifetime' => $lifetime]);
-                }
+            // 세션 만료 시간도 토큰과 동기화 (웹 세션이 있는 경우)
+            if ($request->hasSession()) {
+                config(['session.lifetime' => $lifetime]);
             }
         }
 

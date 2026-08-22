@@ -15,7 +15,6 @@
  */
 
 import { buildAuthHeaders } from './authToken';
-import { readConflictVersion } from './conflictVersion';
 
 /** 교차 저장 결과 */
 export type InjectedPropsSaveResult =
@@ -113,8 +112,8 @@ export async function saveInjectedPropsToExtension(
   if (putRes.status === 409) {
     return {
       kind: 'conflict',
-      currentVersion: readConflictVersion(putBody, 'current_version') ?? -1,
-      yourVersion: readConflictVersion(putBody, 'your_version') ?? lockVersion,
+      currentVersion: (putBody as any)?.current_version ?? -1,
+      yourVersion: (putBody as any)?.your_version ?? lockVersion,
     };
   }
   return { kind: 'error', message: (putBody as any)?.message ?? `HTTP ${putRes.status}` };

@@ -26,7 +26,6 @@
     "category": "Category",
     "no_category": "No Category",
     "date": "Date",
-    "date_type_select": "Date basis",
     "date_type": {
       "created_at": "Created Date",
       "updated_at": "Updated Date"
@@ -61,11 +60,9 @@
     "tax_status_options": {
       "all": "All",
       "taxable": "Taxable",
-      "tax_free": "Tax Free",
-      "zero_rated": "Zero-rated"
+      "tax_free": "Tax Free"
     },
     "price": "Price",
-    "price_type_select": "Price basis",
     "price_type": {
       "selling_price": "Selling Price",
       "supply_price": "Supply Price",
@@ -81,8 +78,7 @@
     "shipping_policy_options": {
       "all": "All"
     },
-    "detail_filter_label": "Detail Search Filter",
-    "category_step": "Category step {{n}}"
+    "detail_filter_label": "Detail Search Filter"
   },
   "action": {
     "edit": "Edit",
@@ -98,10 +94,9 @@
   "bulk_success": "Selected products have been changed.",
   "bulk": {
     "no_selection": "No items selected.",
-    "update_success": "Updated — products {{products}} · options {{options}}.",
+    "update_success": "{{products}} products and {{options}} options have been updated.",
     "update_error": "Bulk update failed.",
     "option_update_success": "{{count}} options have been updated.",
-    "option_update_success_one": "{{count}} option has been updated.",
     "option_update_error": "Option bulk update failed."
   },
   "stock_options_hint": "Products with options manage stock per option",
@@ -140,7 +135,6 @@
       "price_desc": "Price High to Low"
     },
     "per_page": "{{count}} items",
-    "per_page_one": "{{count}} item",
     "excel_download": "Excel Download",
     "column": {
       "image": "Image",
@@ -290,10 +284,8 @@
       "tax_status": "Tax Status",
       "tax_status_options": {
         "taxable": "Taxable",
-        "tax_free": "Tax Free",
-        "zero_rated": "Zero-rated"
+        "tax_free": "Tax Free"
       },
-      "tax_status_help": "To set it per option, change \"Tax Type\" in the option table. Zero-rated means a 0% rate (e.g. exports) and is sent to the payment provider as tax-free.",
       "sales_status": "Sales Status",
       "sales_status_options": {
         "on_sale": "On Sale",
@@ -371,7 +363,6 @@
       },
       "items_header": "Item List",
       "items_count": "{{count}} items",
-      "items_count_one": "{{count}} item",
       "batch_change": "Set all items to 'See Details'",
       "table": {
         "order": "Order",
@@ -509,7 +500,8 @@
     },
     "modal": {
       "add_language": {
-        "title": "Add Language"
+        "title": "Add Language",
+        "description": "Select a language to add."
       },
       "label_period": {
         "title": "Label Period Settings",
@@ -548,11 +540,13 @@
     "multilingual_tag_edit_editor_label": "Edit multilingual tags",
     "preset_manage": {
       "title": "Preset Management",
+      "description": "Manage search presets.",
       "add_new": "Add New Preset",
       "empty": "No saved presets."
     },
     "preset_save": {
       "title": "Save Preset",
+      "description": "Save current search as preset.",
       "placeholder": "Enter preset name",
       "save": "Save"
     },
@@ -565,12 +559,12 @@
     },
     "bulk_price": {
       "title": "Bulk Price Change",
+      "description": "Change price of {{count}} selected products.",
       "method": "Change Method",
       "method_increase": "Increase",
       "method_decrease": "Decrease",
       "method_fixed": "Set to",
       "value": "Amount/Rate",
-      "unit": "Change unit",
       "unit_won": "KRW",
       "unit_percent": "%",
       "preview_increase": "Increase price by {{value}}{{unit}}.",
@@ -579,6 +573,7 @@
     },
     "bulk_stock": {
       "title": "Bulk Stock Change",
+      "description": "Change stock of {{count}} selected products.",
       "method": "Change Method",
       "method_increase": "Increase",
       "method_decrease": "Decrease",
@@ -586,8 +581,7 @@
       "value": "Quantity",
       "preview_increase": "Increase stock by {{value}}.",
       "preview_decrease": "Decrease stock by {{value}}.",
-      "preview_set": "Set stock to {{value}}.",
-      "quantity_unit": " ea"
+      "preview_set": "Set stock to {{value}}."
     },
     "bulk_confirm": {
       "title": "Confirm Bulk Change",
@@ -603,8 +597,7 @@
       "stock_change": "Bulk stock change",
       "no_changes": "No items to change.",
       "error_section": "Change failed",
-      "options_aggregate": "{{product}} > all {{count}} options",
-      "options_aggregate_one": "{{product}} > {{count}} option"
+      "options_aggregate": "{{product}} > all {{count}} option(s)"
     },
     "bulk_placeholder": {
       "sales_status": "Select Sales Status",
@@ -612,12 +605,11 @@
     },
     "excel_download": {
       "title": "Excel Download",
+      "description": "Select download range.",
       "option_search": "Download by search condition",
       "option_search_desc": "{{count}} products will be downloaded.",
-      "option_search_desc_one": "{{count}} product will be downloaded.",
       "option_selected": "Download selected only",
       "option_selected_desc": "Only {{count}} products will be downloaded.",
-      "option_selected_desc_one": "Only {{count}} product will be downloaded.",
       "download": "Download"
     },
     "common": {
@@ -651,10 +643,7 @@
       "related_data_notice": "The following data will also be deleted:",
       "warning_message": "Deleted products cannot be recovered.",
       "permanent_warning": "This action cannot be undone. All data related to this product (images, options, inventory, etc.) will be permanently deleted.",
-      "confirm_button": "Delete",
-      "related_images": "- Images: {{count}}",
-      "related_options": "- Options: {{count}}",
-      "related_additional_options": "- Additional options: {{count}}"
+      "confirm_button": "Delete"
     },
     "mode_change": {
       "title": "Change Description Mode",
@@ -860,7 +849,6 @@
     "additional_clear_confirm": "All entered additional options will be removed. Continue?",
     "auto_currency_hint": "Foreign prices are shown automatically using the exchange rate based on the selling price",
     "items_count": "{{count}} options",
-    "items_count_one": "{{count}} option",
     "required": "Required",
     "columns": {
       "default": "Default",
@@ -869,7 +857,6 @@
       "category": "Category",
       "list_price": "List Price",
       "selling_price": "Selling Price",
-      "tax_status": "Tax Type",
       "price": "Price",
       "price_type": "Price Type",
       "sku": "SKU",
@@ -882,14 +869,11 @@
       "active": "Active",
       "required": "Required"
     },
-    "mileage_value_label": "Mileage amount",
-    "mileage_type_label": "Mileage unit",
     "mileage_type": {
       "fixed": "KRW",
       "percent": "%"
     },
     "option_count": "({count} options)",
-    "option_count_one": "({count} option)",
     "price_type": {
       "fixed": "Fixed Price",
       "additional": "Additional Amount"
@@ -902,16 +886,12 @@
       "input_max_3": "You can add up to 3 option inputs.",
       "name_value_required": "Please enter option name and values.",
       "generated": "{count} options have been generated.",
-      "generated_one": "{count} option has been generated.",
       "name_required": "Please enter option name.",
       "add_tool_applied": "Option add tool has been applied.",
       "additional_max_5": "You can add up to 5 option groups.",
       "additional_value_max_20": "You can add up to 20 choices per group.",
       "additional_value_min_1": "At least one choice is required per group."
-    },
-    "option_group_name_n": "Option group {{n}} name",
-    "option_group_values_n": "Option group {{n}} values",
-    "tax_status_inherit": "Use default ({{status}})"
+    }
   },
   "notice": {
     "tab_existing_template": "Select Template",
@@ -999,7 +979,6 @@
     },
     "per_page": "Per Page",
     "total_count": "Total {{count}} items",
-    "total_count_one": "Total {{count}} item",
     "empty": "No activity history",
     "system": "System",
     "actor_action": {
@@ -1102,7 +1081,6 @@
     "deleted": "Image has been deleted.",
     "messages": {
       "max_count": "You can add up to {max} images.",
-      "max_count_one": "You can add up to {max} image.",
       "unsupported_format": "{name}: Unsupported format.",
       "size_exceeded": "{name}: Exceeds 10MB limit.",
       "upload_failed": "{name}: Upload failed"
@@ -1113,7 +1091,6 @@
     "no_subcategory": "No subcategories",
     "selected": "Selected",
     "max_count": "Up to {{count}} categories",
-    "max_count_one": "Up to {{count}} category",
     "max_5": "Max 5",
     "add_selected": "Add Selected Categories",
     "step_1": "Step 1",
@@ -1156,8 +1133,7 @@
   },
   "tax": {
     "taxable": "Taxable",
-    "tax_free": "Tax Free",
-    "zero_rated": "Zero-rated"
+    "tax_free": "Tax Free"
   },
   "labels": {
     "title": "Labels",
@@ -1172,6 +1148,7 @@
     "modal_title_create": "Create Label",
     "modal_title_edit": "Edit Label",
     "create_success": "Label created.",
+    "modal_description": "Set the label name, color, and display period.",
     "name": "Label Name",
     "color": "Color",
     "color_reset": "Reset Color",
@@ -1229,14 +1206,5 @@
     "manage_common_info": "Manage Common Info",
     "manage_notice_template": "Manage Product Notices",
     "create_shipping_policy": "Create Shipping Policy"
-  },
-  "selector_forbidden": {
-    "categories": "You do not have permission to view categories, so no category can be selected.",
-    "brands": "You do not have permission to view brands, so no brand can be selected.",
-    "notice_templates": "You do not have permission to view product notice templates, so templates cannot be loaded. You can still fill in the notice items manually.",
-    "common_infos": "You do not have permission to view common information, so none can be selected.",
-    "shipping_policies": "You do not have permission to view shipping policies, so no policy can be selected. If you save without choosing one, the policy already assigned is kept, or the default shipping policy applies if none is assigned.",
-    "product_labels": "You do not have permission to view product labels, so no label can be selected.",
-    "roles": "You do not have permission to load the member role list, so no role can be selected."
   }
 }

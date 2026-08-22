@@ -47,7 +47,7 @@ class RegisterTossPaymentMethodsListener implements HookListenerInterface
         'toss_mobile_phone' => ['icon' => 'mobile-screen-button'],
         'toss_tosspay' => [
             'icon' => 'wallet',
-            'brand_mark' => ['text' => 'T', 'class' => 'bg-blue-700 text-white'],
+            'brand_mark' => ['text' => 'T', 'class' => 'bg-blue-500 text-white'],
         ],
         'toss_kakaopay' => [
             'icon' => 'wallet',
@@ -55,11 +55,11 @@ class RegisterTossPaymentMethodsListener implements HookListenerInterface
         ],
         'toss_naverpay' => [
             'icon' => 'wallet',
-            'brand_mark' => ['text' => 'N', 'class' => 'bg-green-700 text-white'],
+            'brand_mark' => ['text' => 'N', 'class' => 'bg-green-500 text-white'],
         ],
         'toss_payco' => [
             'icon' => 'wallet',
-            'brand_mark' => ['text' => 'P', 'class' => 'bg-red-600 text-white'],
+            'brand_mark' => ['text' => 'P', 'class' => 'bg-red-500 text-white'],
         ],
         'toss_samsungpay' => [
             'icon' => 'mobile-screen-button',
@@ -87,7 +87,6 @@ class RegisterTossPaymentMethodsListener implements HookListenerInterface
      * 기본 핸들러 (미사용).
      *
      * @param  mixed  ...$args
-     * @return void
      */
     public function handle(...$args): void {}
 
@@ -168,11 +167,6 @@ class RegisterTossPaymentMethodsListener implements HookListenerInterface
                 'pg_locked' => true,
                 'needs_pg' => true,
                 'refund_method' => 'pg',
-                // 사람의 개입 없이 환불이 집행되는 수단인지 (코어 P16·P17 능력 키).
-                // 카드 계열(간편결제 포함)은 토스 결제취소 API 가 그 자리에서 환불한다.
-                // 가상계좌·계좌이체·휴대폰은 고객 환불계좌를 받아 사람이 확인해야 끝나므로
-                // 선언하지 않는다 — 자동 승인하면 신청서만 완료로 앞서 나가고 돈은 남는다.
-                'auto_approve_refund' => self::TOSS_METHOD_MAP[$id]['core'] === 'card',
                 'is_active' => false,
                 'min_order_amount' => 0,
                 'stock_deduction_timing' => 'payment_complete',

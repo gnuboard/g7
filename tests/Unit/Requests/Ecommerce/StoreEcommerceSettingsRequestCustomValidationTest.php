@@ -3,10 +3,7 @@
 namespace Tests\Unit\Requests\Ecommerce;
 
 use Illuminate\Support\Facades\App;
-use Illuminate\Validation\Validator;
-use Mockery;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\StoreEcommerceSettingsRequest;
-use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimReasonRepositoryInterface;
 use Tests\TestCase;
 
 /**
@@ -18,22 +15,12 @@ use Tests\TestCase;
  */
 class StoreEcommerceSettingsRequestCustomValidationTest extends TestCase
 {
-    /**
-     * 로케일·사유 코드 저장소·모듈 번역을 준비합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
 
         // 한국어 로케일 설정
         App::setLocale('ko');
-
-        // 코어 묶음에서는 이커머스 프로바이더가 서지 않는다 — 요청이 읽는 사유 코드 저장소를 빈 목록으로 세운다
-        $this->app->instance(ClaimReasonRepositoryInterface::class, Mockery::mock(ClaimReasonRepositoryInterface::class, function ($mock) {
-            $mock->shouldReceive('getCodesByType')->andReturn([]);
-        }));
 
         // sirsoft-ecommerce 모듈 번역은 단위 테스트 환경에서 자동 로드되지 않으므로 수동 등록
         app('translator')->addLines([
@@ -45,12 +32,13 @@ class StoreEcommerceSettingsRequestCustomValidationTest extends TestCase
     /**
      * FormRequest를 통한 검증 수행 (커스텀 로직 포함)
      *
-     * @param  array  $data  검증할 데이터
-     * @return Validator 추가 검증까지 붙인 검증기
+     * @param array $data 검증할 데이터
+     *
+     * @return \Illuminate\Validation\Validator
      */
-    protected function validateWithCustomRules(array $data): Validator
+    protected function validateWithCustomRules(array $data): \Illuminate\Validation\Validator
     {
-        $request = new StoreEcommerceSettingsRequest;
+        $request = new StoreEcommerceSettingsRequest();
         $request->merge($data);
 
         $validator = \Illuminate\Support\Facades\Validator::make($data, $request->rules());
@@ -63,12 +51,6 @@ class StoreEcommerceSettingsRequestCustomValidationTest extends TestCase
 
     /**
      * 통화 코드 중복 - 중복된 코드가 있으면 실패
-     *
-     * @scenario case=duplicate_currency_codes_fail_validation
-     *
-     * @effects duplicate_currency_codes_fail_validation
-     *
-     * @return void 반환값 없음
      */
     public function test_duplicate_currency_codes_fail_validation(): void
     {
@@ -99,12 +81,6 @@ class StoreEcommerceSettingsRequestCustomValidationTest extends TestCase
 
     /**
      * 통화 코드 중복 - 대소문자 무시하여 중복 검출
-     *
-     * @scenario case=duplicate_currency_codes_case_insensitive
-     *
-     * @effects duplicate_currency_codes_case_insensitive
-     *
-     * @return void 반환값 없음
      */
     public function test_duplicate_currency_codes_case_insensitive(): void
     {
@@ -135,12 +111,6 @@ class StoreEcommerceSettingsRequestCustomValidationTest extends TestCase
 
     /**
      * 통화 코드 중복 - 고유한 코드들은 통과
-     *
-     * @scenario case=unique_currency_codes_pass_validation
-     *
-     * @effects unique_currency_codes_pass_validation
-     *
-     * @return void 반환값 없음
      */
     public function test_unique_currency_codes_pass_validation(): void
     {
@@ -174,12 +144,6 @@ class StoreEcommerceSettingsRequestCustomValidationTest extends TestCase
 
     /**
      * 통화명 필수 - 빈 배열이면 실패
-     *
-     * @scenario case=empty_currency_name_array_fails_validation
-     *
-     * @effects empty_currency_name_array_fails_validation
-     *
-     * @return void 반환값 없음
      */
     public function test_empty_currency_name_array_fails_validation(): void
     {
@@ -206,12 +170,6 @@ class StoreEcommerceSettingsRequestCustomValidationTest extends TestCase
 
     /**
      * 통화명 필수 - name이 없으면 실패
-     *
-     * @scenario case=missing_currency_name_fails_validation
-     *
-     * @effects missing_currency_name_fails_validation
-     *
-     * @return void 반환값 없음
      */
     public function test_missing_currency_name_fails_validation(): void
     {
@@ -238,12 +196,6 @@ class StoreEcommerceSettingsRequestCustomValidationTest extends TestCase
 
     /**
      * 통화명 필수 - 모든 로케일이 빈 문자열이면 실패
-     *
-     * @scenario case=all_empty_locale_names_fail_validation
-     *
-     * @effects all_empty_locale_names_fail_validation
-     *
-     * @return void 반환값 없음
      */
     public function test_all_empty_locale_names_fail_validation(): void
     {
@@ -273,12 +225,6 @@ class StoreEcommerceSettingsRequestCustomValidationTest extends TestCase
 
     /**
      * 통화명 필수 - 모든 로케일이 공백만 있으면 실패
-     *
-     * @scenario case=whitespace_only_locale_names_fail_validation
-     *
-     * @effects whitespace_only_locale_names_fail_validation
-     *
-     * @return void 반환값 없음
      */
     public function test_whitespace_only_locale_names_fail_validation(): void
     {
@@ -308,12 +254,6 @@ class StoreEcommerceSettingsRequestCustomValidationTest extends TestCase
 
     /**
      * 통화명 필수 - 하나의 로케일에만 이름이 있으면 통과
-     *
-     * @scenario case=single_locale_name_passes_validation
-     *
-     * @effects single_locale_name_passes_validation
-     *
-     * @return void 반환값 없음
      */
     public function test_single_locale_name_passes_validation(): void
     {
@@ -342,12 +282,6 @@ class StoreEcommerceSettingsRequestCustomValidationTest extends TestCase
 
     /**
      * 통화명 필수 - 일부 로케일만 비어있어도 다른 로케일에 값이 있으면 통과
-     *
-     * @scenario case=partial_locale_names_pass_validation
-     *
-     * @effects partial_locale_names_pass_validation
-     *
-     * @return void 반환값 없음
      */
     public function test_partial_locale_names_pass_validation(): void
     {
@@ -376,12 +310,6 @@ class StoreEcommerceSettingsRequestCustomValidationTest extends TestCase
 
     /**
      * 통화명 필수 - 여러 통화 중 일부만 문제가 있는 경우
-     *
-     * @scenario case=mixed_valid_invalid_currencies
-     *
-     * @effects mixed_valid_invalid_currencies
-     *
-     * @return void 반환값 없음
      */
     public function test_mixed_valid_invalid_currencies(): void
     {
@@ -428,12 +356,6 @@ class StoreEcommerceSettingsRequestCustomValidationTest extends TestCase
 
     /**
      * 통화 목록이 비어있으면 커스텀 검증 건너뜀
-     *
-     * @scenario case=empty_currencies_array_skips_custom_validation
-     *
-     * @effects empty_currencies_array_skips_custom_validation
-     *
-     * @return void 반환값 없음
      */
     public function test_empty_currencies_array_skips_custom_validation(): void
     {
@@ -454,12 +376,6 @@ class StoreEcommerceSettingsRequestCustomValidationTest extends TestCase
 
     /**
      * 통화 설정이 없으면 커스텀 검증 건너뜀
-     *
-     * @scenario case=missing_currencies_skips_custom_validation
-     *
-     * @effects missing_currencies_skips_custom_validation
-     *
-     * @return void 반환값 없음
      */
     public function test_missing_currencies_skips_custom_validation(): void
     {
@@ -483,12 +399,6 @@ class StoreEcommerceSettingsRequestCustomValidationTest extends TestCase
      *
      * 빈 배열이 아닌 모든 로케일이 빈 문자열인 경우 테스트
      * (빈 배열은 기본 required_with 검증에서 먼저 잡힘)
-     *
-     * @scenario case=error_messages_are_localized
-     *
-     * @effects error_messages_are_localized
-     *
-     * @return void 반환값 없음
      */
     public function test_error_messages_are_localized(): void
     {
@@ -518,12 +428,6 @@ class StoreEcommerceSettingsRequestCustomValidationTest extends TestCase
 
     /**
      * 중복 코드 오류 메시지가 다국어로 표시되는지 확인
-     *
-     * @scenario case=duplicate_code_error_message_is_localized
-     *
-     * @effects duplicate_code_error_message_is_localized
-     *
-     * @return void 반환값 없음
      */
     public function test_duplicate_code_error_message_is_localized(): void
     {

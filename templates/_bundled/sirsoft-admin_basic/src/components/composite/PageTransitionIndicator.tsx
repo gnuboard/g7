@@ -1,10 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Div } from '../basic/Div';
 
-// G7Core.t() 번역 함수 참조
-const t = (key: string, params?: Record<string, string | number>) =>
-  (window as any).G7Core?.t?.(key, params) ?? key;
-
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
 const logger = ((window as any).G7Core?.createLogger?.('Comp:PageTransition')) ?? {
     log: (...args: unknown[]) => console.log('[Comp:PageTransition]', ...args),
@@ -22,9 +18,6 @@ export interface PageTransitionIndicatorProps {
  *
  * TransitionManager의 isPending 상태를 구독하여 페이지 전환 시
  * 상단에 로딩 바를 표시합니다.
- *
- * 띠가 쓰는 `@keyframes loading` 은 `src/styles/main.css` 에 있다 — 컴포넌트가 `<style>` 요소로 실으면
- * 엄격한 스타일 정책(`style-src 'self'`)에서 막혀 띠가 움직이지 않는다 (공개 #163).
  *
  * @example
  * // 레이아웃 JSON 사용 예시
@@ -67,17 +60,31 @@ export const PageTransitionIndicator: React.FC<PageTransitionIndicatorProps> = (
       className={`fixed top-0 left-0 right-0 z-[999] ${className}`}
       style={style}
       role="progressbar"
-      aria-label={t('common.page_loading')}
+      aria-label="페이지 로딩 중"
     >
       <Div className="h-1 bg-gradient-to-r from-blue-500 via-blue-600 to-blue-500 animate-pulse">
         <Div
-          className="h-full bg-blue-700 dark:bg-blue-400 animate-[loading_1.5s_ease-in-out_infinite]"
+          className="h-full bg-blue-700 animate-[loading_1.5s_ease-in-out_infinite]"
           style={{
             width: '30%',
             animation: 'loading 1.5s ease-in-out infinite',
           }}
         />
       </Div>
+
+      <style>{`
+        @keyframes loading {
+          0% {
+            transform: translateX(-100%);
+          }
+          50% {
+            transform: translateX(300%);
+          }
+          100% {
+            transform: translateX(-100%);
+          }
+        }
+      `}</style>
     </Div>
   );
 };

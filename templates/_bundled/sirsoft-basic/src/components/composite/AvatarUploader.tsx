@@ -33,9 +33,9 @@ export interface AvatarUploaderProps {
   fallbackText?: string;
   /** 아바타 크기 */
   size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
-  /** 업로드 API 엔드포인트 (기본: /api/me/avatar). G7Core.api 로 요청 — 토큰은 코어가 동일 출처 대상에만 싣는다 */
+  /** 업로드 API 엔드포인트 (기본: /api/me/avatar) */
   uploadEndpoint?: string;
-  /** 삭제 API 엔드포인트 (기본: /api/me/avatar). G7Core.api 로 요청 — 토큰은 코어가 동일 출처 대상에만 싣는다 */
+  /** 삭제 API 엔드포인트 (기본: /api/me/avatar) */
   deleteEndpoint?: string;
   /** 업로드 성공 콜백 */
   onUploadSuccess?: (data: { avatar: string; attachment_id: number }) => void;
@@ -149,15 +149,19 @@ export function AvatarUploader({
     return G7Core?.t?.(key) ?? key;
   }, []);
 
-  // API 오류에서 사용자에게 보일 메시지 추출 — 서버 응답이 있으면 그 message, 없으면 기본 문구,
-  // 응답 자체가 없으면(네트워크 오류 등) 원래 오류 메시지
-  const toErrorMessage = useCallback((error: unknown, fallbackKey: string): string => {
-    const response = (error as { response?: { data?: { message?: string } } })?.response;
-    if (response) {
-      return response.data?.message || t(fallbackKey);
+  // CSRF 토큰 가져오기
+  const getCsrfToken = useCallback((): string | null => {
+    const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
+    if (match) {
+      return decodeURIComponent(match[1]);
     }
-    return error instanceof Error ? error.message : String(error);
-  }, [t]);
+    return null;
+  }, []);
+
+  // 인증 토큰 가져오기 (ApiClient에서 토큰 조회)
+  const getAuthToken = useCallback((): string | null => {
+    return G7Core?.api?.getToken?.() ?? null;
+  }, []);
 
   // 실제 업로드 실행 함수
   const executeUpload = useCallback(async (file: File) => {
@@ -171,21 +175,26 @@ export function AvatarUploader({
       const formData = new FormData();
       formData.append('avatar', file);
 
-      // API 호출 — 코어 `G7Core.api` 로 보낸다. 엔드포인트는 레이아웃 prop 이지만 Bearer·XSRF 는 코어가
-      // 동일 출처 대상에만 싣는다(KVE-2026-2350). multipart 경계는 브라우저가 붙인다
-      const api = (window as any).G7Core?.api;
-      if (typeof api?.post !== 'function') {
-        throw new Error(t('attachment.upload_failed'));
+      // API 호출
+      const csrfToken = getCsrfToken();
+      const authToken = getAuthToken();
+      const response = await fetch(uploadEndpoint, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          ...(csrfToken && { 'X-XSRF-TOKEN': csrfToken }),
+          ...(authToken && { Authorization: `Bearer ${authToken}` }),
+        },
+        credentials: 'include',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || t('attachment.upload_failed'));
       }
-      let data: any;
-      try {
-        data = await api.post(uploadEndpoint, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
-      } catch (apiError) {
-        throw new Error(toErrorMessage(apiError, 'attachment.upload_failed'));
-      }
-      data = data ?? {};
+
+      const data = await response.json();
       const result = data.data || data;
 
       // 로컬 상태 즉시 업데이트 (빠른 피드백)
@@ -200,7 +209,7 @@ export function AvatarUploader({
       if (uploadSuccessActions?.length) {
         uploadSuccessActions.forEach(action => G7Core?.dispatch?.(action));
       } else {
-        G7Core?.dataSource?.refetch?.('user');
+        G7Core?.refetchDataSource?.('user');
       }
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
@@ -218,7 +227,7 @@ export function AvatarUploader({
         inputRef.current.value = '';
       }
     }
-  }, [uploadEndpoint, onUploadSuccess, onUploadError, toErrorMessage, t]);
+  }, [uploadEndpoint, onUploadSuccess, onUploadError, getCsrfToken, getAuthToken, t]);
 
   // 파일 선택 핸들러
   const handleFileChange = useCallback(
@@ -266,16 +275,22 @@ export function AvatarUploader({
     setErrorMessage(null);
 
     try {
-      // 코어 `G7Core.api` 로 보낸다 — 엔드포인트는 레이아웃 prop 이지만 Bearer·XSRF 는 코어가 동일 출처
-      // 대상에만 싣는다(KVE-2026-2350)
-      const api = (window as any).G7Core?.api;
-      if (typeof api?.delete !== 'function') {
-        throw new Error(t('attachment.delete_failed'));
-      }
-      try {
-        await api.delete(deleteEndpoint);
-      } catch (apiError) {
-        throw new Error(toErrorMessage(apiError, 'attachment.delete_failed'));
+      const csrfToken = getCsrfToken();
+      const authToken = getAuthToken();
+      const response = await fetch(deleteEndpoint, {
+        method: 'DELETE',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          ...(csrfToken && { 'X-XSRF-TOKEN': csrfToken }),
+          ...(authToken && { Authorization: `Bearer ${authToken}` }),
+        },
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || t('attachment.delete_failed'));
       }
 
       // 로컬 상태 즉시 업데이트 (빠른 피드백)
@@ -288,7 +303,7 @@ export function AvatarUploader({
       if (deleteSuccessActions?.length) {
         deleteSuccessActions.forEach(action => G7Core?.dispatch?.(action));
       } else {
-        G7Core?.dataSource?.refetch?.('user');
+        G7Core?.refetchDataSource?.('user');
       }
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
@@ -302,7 +317,7 @@ export function AvatarUploader({
     } finally {
       setIsDeleting(false);
     }
-  }, [deleteEndpoint, onDeleteSuccess, onDeleteError, toErrorMessage, t]);
+  }, [deleteEndpoint, onDeleteSuccess, onDeleteError, getCsrfToken, getAuthToken, t]);
 
   // 삭제 버튼 클릭 핸들러 (확인 다이얼로그 표시 또는 즉시 삭제)
   const handleDeleteClick = useCallback(() => {
@@ -396,7 +411,7 @@ export function AvatarUploader({
           {showDeleteButton && (
             <Button
               type="button"
-              className="inline-flex items-center gap-2 px-4 py-2 border border-red-300 dark:border-red-600 text-red-700 dark:text-red-400 rounded-lg text-sm font-medium hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-2 px-4 py-2 border border-red-300 dark:border-red-600 text-red-600 dark:text-red-400 rounded-lg text-sm font-medium hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={handleDeleteClick}
               disabled={isDeleting}
             >
@@ -420,7 +435,7 @@ export function AvatarUploader({
         <Div className="relative">
           <Img
             src={previewUrl}
-            alt={t('mypage.profile.avatar_preview')}
+            alt="Preview"
             className={`rounded-full object-cover ${
               size === 'sm' ? 'w-10 h-10' :
               size === 'md' ? 'w-12 h-12' :
@@ -429,7 +444,7 @@ export function AvatarUploader({
               'w-32 h-32'
             }`}
           />
-          <Div className="absolute inset-0 rounded-full bg-blue-500/20 dark:bg-blue-400/20 border-2 border-blue-500 dark:border-blue-400 border-dashed" />
+          <Div className="absolute inset-0 rounded-full bg-blue-500/20 border-2 border-blue-500 border-dashed" />
         </Div>
       ) : (
         <Avatar
@@ -457,7 +472,7 @@ export function AvatarUploader({
               <Div className="grid grid-cols-2 gap-2">
                 <Button
                   type="button"
-                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white dark:text-white rounded-md text-sm font-medium transition-colors disabled:opacity-50"
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors disabled:opacity-50"
                   onClick={handleUploadConfirm}
                   disabled={isUploading}
                 >
@@ -491,7 +506,7 @@ export function AvatarUploader({
               <Div className="grid grid-cols-2 gap-2">
                 <Button
                   type="button"
-                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700 text-white dark:text-white rounded-md text-sm font-medium transition-colors disabled:opacity-50"
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md text-sm font-medium transition-colors disabled:opacity-50"
                   onClick={executeDelete}
                   disabled={isDeleting}
                 >
@@ -521,7 +536,7 @@ export function AvatarUploader({
       {/* 오류 메시지 표시 */}
       {errorMessage && !isConfirmMode && (
         <Div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
-          <Icon name="circle-exclamation" size="sm" />
+          <Icon name="alert-circle" size="sm" />
           <Span>{errorMessage}</Span>
         </Div>
       )}

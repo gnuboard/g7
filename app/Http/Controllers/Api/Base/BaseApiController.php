@@ -2,8 +2,6 @@
 
 namespace App\Http\Controllers\Api\Base;
 
-use App\Exceptions\ExtensionOperationLockException;
-use App\Extension\Support\LifecycleWarnings;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Controller;
 use App\Models\User;
@@ -36,7 +34,7 @@ abstract class BaseApiController extends Controller
         int $statusCode = 200,
         array $messageParams = []
     ) {
-        return $this->withLifecycleWarnings(ResponseHelper::success($messageKey, $data, $statusCode, $messageParams, 'core'));
+        return ResponseHelper::success($messageKey, $data, $statusCode, $messageParams, 'core');
     }
 
     /**
@@ -58,20 +56,6 @@ abstract class BaseApiController extends Controller
     }
 
     /**
-     * 작업 잠금 거절(같은 대상 진행 중 409 / 잠금 저장소 오류 503)을 응답으로 만듭니다.
-     *
-     * `errors` 에 `operation_in_progress` 또는 `operation_lock_unavailable` 표지를 싣는다 — 화면이 같은 409 의 다른 계약
-     * (의존 경고·칸 충돌)과 이 거절을 가른다. 원본 오류는 싣지 않는다(잠금 쪽 `Log::error` 에만 남는다).
-     *
-     * @param  ExtensionOperationLockException  $e  잠금 거절 예외
-     * @return JsonResponse 409 또는 503 응답
-     */
-    protected function operationLockError(ExtensionOperationLockException $e): JsonResponse
-    {
-        return $this->error($e->getMessageKey(), $e->getStatusCode(), $e->getErrors(), $e->getMessageParams());
-    }
-
-    /**
      * 리소스와 함께 성공 응답을 생성합니다.
      *
      * @param  string  $messageKey  메시지 키
@@ -86,45 +70,7 @@ abstract class BaseApiController extends Controller
         int $statusCode = 200,
         array $messageParams = []
     ) {
-        return $this->withLifecycleWarnings(ResponseHelper::successWithResource($messageKey, $resource, $statusCode, $messageParams, 'core'));
-    }
-
-    /**
-     * 이 요청에서 확장 생명주기 작업이 남긴 부분 실패 경고를 `data.warnings` 로 싣습니다 (7.1.3).
-     *
-     * 설치·활성화·업데이트·레이아웃 갱신은 항목 하나가 실패해도 성공으로 끝난다. 그 실패를 화면이 노란 경고
-     * 결과로 보이도록 응답에 목록을 붙인다. 경고가 없으면 응답을 그대로 둔다(기존 키·모양 하위 호환).
-     *
-     * @param  JsonResponse  $response  성공 응답
-     * @return JsonResponse 경고를 실은 응답
-     */
-    private function withLifecycleWarnings(JsonResponse $response): JsonResponse
-    {
-        $warnings = LifecycleWarnings::current();
-        if ($warnings->isEmpty()) {
-            return $response;
-        }
-
-        // 객체(stdClass)로 풀어 고친다 — 연관 배열로 풀면 빈 객체 `{}` 가 다시 쓸 때 `[]` 로 바뀐다(#758 같은 결함군, #822)
-        $payload = $response->getData();
-        if (! is_object($payload)) {
-            return $response;
-        }
-
-        $data = $payload->data ?? null;
-        if ($data === null || $data === []) {
-            $data = new \stdClass;
-        }
-
-        if (! is_object($data)) {
-            // 목록 응답은 모양을 바꾸지 않는다 — 생명주기 응답은 객체다
-            return $response;
-        }
-
-        $data->warnings = $warnings->all();
-        $payload->data = $data;
-
-        return $response->setData($payload);
+        return ResponseHelper::successWithResource($messageKey, $resource, $statusCode, $messageParams, 'core');
     }
 
     /**
@@ -201,7 +147,6 @@ abstract class BaseApiController extends Controller
      * @param  string  $filePath  파일 경로
      * @param  string  $mimeType  MIME 타입
      * @param  int  $maxAge  캐시 유지 시간 (초, 기본: 1년)
-     * @return BinaryFileResponse|Response 파일 응답 또는 304 응답
      */
     protected function fileResponse(string $filePath, string $mimeType, int $maxAge = 31536000): BinaryFileResponse|Response
     {
@@ -374,8 +319,7 @@ abstract class BaseApiController extends Controller
 
         return response()->json([
             'success' => true,
-            // ResponseHelper 와 같은 번역 — 치환값의 `count` 로 `단수|복수` 문구를 고른다.
-            'message' => trans_count($messageKey, $messageParams),
+            'message' => __($messageKey, $messageParams),
             'data' => $data,
         ], 200, [], ResponseHelper::JSON_ENCODE_OPTIONS)
             ->header('ETag', $etag)

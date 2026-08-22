@@ -19,7 +19,6 @@
  */
 
 import { createLogger } from '../utils/Logger';
-import { isDangerousScheme, isSameOriginRequestUrl } from '../support/navPolicy';
 import {
   IDENTITY_REDIRECT_STASH_KEY,
   type IdentityResponse428,
@@ -212,13 +211,6 @@ export class IdentityGuardInterceptor {
       return null;
     }
 
-    // 보안: 재요청은 원 요청의 헤더(인증 포함)와 검증 토큰을 싣는다 — 같은 출처 주소일 때만 보낸다.
-    if (!isSameOriginRequestUrl(returnReq.url)) {
-      logger.warn('return_request.url 이 같은 출처가 아니라 재요청하지 않습니다.', returnReq.url);
-
-      return null;
-    }
-
     const replayUrl = appendVerificationToken(returnReq.url, result.token);
     return fetch(replayUrl, {
       method: returnReq.method,
@@ -251,17 +243,6 @@ export class IdentityGuardInterceptor {
         status: 'failed',
         failureCode: 'MISSING_REDIRECT_URL',
         reason: 'verification.redirect_url is required for external_redirect flow',
-      });
-    }
-
-    // 제공자 외부 인증 페이지(https)는 정당한 이동이지만 실행 스킴은 현재 origin 에서
-    // 코드를 돌리는 sink 가 된다 — 이동 전에 막는다.
-    if (isDangerousScheme(redirectUrl)) {
-      logger.error('redirectExternally: 실행 스킴 redirect_url 은 이동하지 않습니다.');
-      return Promise.resolve({
-        status: 'failed',
-        failureCode: 'UNSAFE_REDIRECT_URL',
-        reason: 'verification.redirect_url uses an executable scheme',
       });
     }
 
@@ -382,10 +363,7 @@ export const defaultLauncher: ModalLauncher = async (payload) => {
     /* ignore */
   }
 
-  // 챌린지 화면은 `query.return_url` 을 읽는다 — 같은 출처 경로+쿼리만 넘긴다(절대 주소 아님). 해시는
-  // 빼는데, 챌린지 화면의 복귀 이동(mergeQuery)이 쿼리를 덧붙일 때 해시 안으로 들어가지 않게 하기 위해서다.
-  const returnPath = `${window.location.pathname}${window.location.search}`;
-  const challengePath = `/identity/challenge?return_url=${encodeURIComponent(returnPath)}`;
+  const challengePath = `/identity/challenge?return=${encodeURIComponent(returnUrl)}`;
   try {
     await G7Core.dispatch({
       handler: 'navigate',

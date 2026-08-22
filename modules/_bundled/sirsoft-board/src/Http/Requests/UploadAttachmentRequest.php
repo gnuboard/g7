@@ -5,13 +5,9 @@ namespace Modules\Sirsoft\Board\Http\Requests;
 use App\Extension\HookManager;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
-use Modules\Sirsoft\Board\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ResolvesAllowedExtensions;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ValidatesAttachmentCount;
-use Modules\Sirsoft\Board\Http\Requests\Concerns\ValidatesTempKey;
-use Modules\Sirsoft\Board\Models\Attachment;
-use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
+use Modules\Sirsoft\Board\Models\Board;
 
 /**
  * 게시판 첨부파일 업로드 요청 검증
@@ -23,10 +19,8 @@ use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
  */
 class UploadAttachmentRequest extends FormRequest
 {
-    use ProvidesFallbackRuleMessages;
     use ResolvesAllowedExtensions;
     use ValidatesAttachmentCount;
-    use ValidatesTempKey;
 
     /**
      * 요청 권한 확인
@@ -46,36 +40,37 @@ class UploadAttachmentRequest extends FormRequest
     public function rules(): array
     {
         $slug = $this->route('slug');
-        $board = app(BoardRepositoryInterface::class)->findBySlug((string) $slug);
+        $board = Board::where('slug', $slug)->first();
 
         // 게시판이 없으면 기본 규칙 반환
         if (! $board) {
             return [
                 'file' => ['required', 'file'],
                 'post_id' => ['nullable', 'integer', 'min:1'],
-                'collection' => ['sometimes', 'string', 'max:100', Rule::notIn(Attachment::RESERVED_COLLECTIONS)],
-                'temp_key' => $this->tempKeyRules(),
+                'collection' => ['sometimes', 'string', 'max:100'],
+                'temp_key' => ['nullable', 'string', 'max:64'],
             ];
         }
 
-        // 게시판 값이 비어 있으면(null 또는 []) 모듈 기본값으로 폴백한다.
-        // 빈 배열을 그대로 쓰면 'extensions:' 빈 규칙이 되어 전 파일이 거부된다.
-        $defaults = g7_module_settings('sirsoft-board', 'basic_defaults', []);
-
-        // 게시판 설정을 기반으로 한 검증 규칙 — 용량도 게시글 저장 검증(StorePostRequest)과 같은 폴백 체인을 쓴다
-        $maxSizeMB = $this->resolveMaxFileSizeMB($board->max_file_size, $defaults);
+        // 게시판 설정을 기반으로 한 검증 규칙
+        $maxSizeMB = $board->max_file_size ?? 10;
         $maxSizeKB = $maxSizeMB * 1024;
+
+        // 게시판 값이 비어 있으면(null 또는 []) 모듈 기본값으로 폴백한다.
+        // 빈 배열을 그대로 쓰면 'mimes:' 빈 규칙이 되어 전 파일이 거부된다.
+        $defaults = g7_module_settings('sirsoft-board', 'basic_defaults', []);
         $allowedExtensions = $this->resolveAllowedExtensions(
             $board->allowed_extensions,
             $defaults['allowed_extensions'] ?? null
         );
 
-        // 이름 확장자와 내용 추론 확장자가 모두 허용 목록에 들어야 통과 (코어 첨부와 같은 기준)
+        $mimes = implode(',', $allowedExtensions);
+
         $rules = [
-            'file' => ['required', 'file', 'max:'.$maxSizeKB, ...$this->attachmentFileTypeRules($allowedExtensions)],
+            'file' => ['required', 'file', 'max:'.$maxSizeKB, 'mimes:'.$mimes],
             'post_id' => ['nullable', 'integer', 'min:1'],
-            'collection' => ['sometimes', 'string', 'max:100', Rule::notIn(Attachment::RESERVED_COLLECTIONS)],
-            'temp_key' => $this->tempKeyRules(),
+            'collection' => ['sometimes', 'string', 'max:100'],
+            'temp_key' => ['nullable', 'string', 'max:64'],
         ];
 
         // 모듈/플러그인이 validation rules를 동적으로 추가할 수 있도록 훅 제공
@@ -90,45 +85,24 @@ class UploadAttachmentRequest extends FormRequest
     public function messages(): array
     {
         $slug = $this->route('slug');
-        $board = app(BoardRepositoryInterface::class)->findBySlug((string) $slug);
+        $board = Board::where('slug', $slug)->first();
 
-        $maxSizeMB = $this->resolveMaxFileSizeMB(
-            $board?->max_file_size,
-            g7_module_settings('sirsoft-board', 'basic_defaults', [])
-        );
+        $maxSizeMB = $board?->max_file_size ?? 10;
 
         return [
             'file.required' => __('sirsoft-board::validation.attachment.file_required'),
             'file.file' => __('sirsoft-board::validation.attachment.file_invalid'),
             'file.max' => __('sirsoft-board::validation.attachment.file_max', ['max' => $maxSizeMB]),
-            'file.extensions' => __('sirsoft-board::validation.attachment.file_mimes'),
+            'file.mimes' => __('sirsoft-board::validation.attachment.file_mimes'),
             'post_id.required' => __('sirsoft-board::validation.attachment.post_id_required'),
             'post_id.integer' => __('sirsoft-board::validation.attachment.post_id_invalid'),
-            // 예약 컬렉션(본문 미디어)은 전용 업로드로만 올린다 — 일반 첨부로 올려 개수 상한을 피하지 못하게 (#883)
-            'collection.not_in' => __('sirsoft-board::validation.attachment.collection_reserved'),
         ];
-    }
-
-    /**
-     * 업로드 용량 상한(MB)을 결정합니다.
-     *
-     * 게시판 값이 비어 있으면(null — 기본값 따름) 게시판 환경설정 기본값, 그것도 없으면 10MB.
-     * 게시글 저장 검증(StorePostRequest)과 같은 체인이라 두 단계의 상한이 갈리지 않는다.
-     *
-     * @param  mixed  $boardValue  게시판의 max_file_size (MB, null 허용)
-     * @param  mixed  $defaults  게시판 환경설정 basic_defaults
-     * @return int 용량 상한 (MB)
-     */
-    private function resolveMaxFileSizeMB(mixed $boardValue, mixed $defaults): int
-    {
-        return (int) ($boardValue ?? (is_array($defaults) ? ($defaults['max_file_size'] ?? null) : null) ?? 10);
     }
 
     /**
      * 첨부 개수 상한을 선차단합니다.
      *
      * @param  Validator  $validator  검증기
-     * @return void
      */
     public function withValidator(Validator $validator): void
     {
@@ -142,7 +116,7 @@ class UploadAttachmentRequest extends FormRequest
             $postId = $this->input('post_id');
 
             $this->assertSingleAttachmentSlotAvailable(
-                app(BoardRepositoryInterface::class)->findBySlug((string) $this->route('slug')),
+                Board::where('slug', $this->route('slug'))->first(),
                 $postId !== null && $postId !== '' ? (int) $postId : null,
                 $this->input('temp_key')
             );
@@ -151,8 +125,6 @@ class UploadAttachmentRequest extends FormRequest
 
     /**
      * 검증 전 데이터 준비
-     *
-     * @return void
      */
     protected function prepareForValidation(): void
     {

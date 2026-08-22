@@ -2,7 +2,6 @@
 
 namespace Modules\Sirsoft\Ecommerce\Models\Concerns;
 
-use App\Support\PublicAssetDisk;
 use Modules\Sirsoft\Ecommerce\Support\AssetStorage;
 
 /**
@@ -17,13 +16,6 @@ use Modules\Sirsoft\Ecommerce\Support\AssetStorage;
  * 이미지 외의 완전 공개 자산 모델도 재사용할 수 있습니다. 단, 권한 검사가 걸린
  * 첨부파일(비밀글/회원 전용 게시판 등)에는 배선하지 않습니다 — 직접 URL 은
  * 서버 스트리밍 경로의 권한 검사를 우회합니다.
- *
- * 알려진 예외와 그 한계 — `ProductReviewImage` 는 이 trait 을 씁니다. 리뷰 노출 상태는
- * 리소스 층에서 걸러지므로 HIDDEN 리뷰의 이미지는 응답에 실리지 않지만, 공개 자산
- * 디스크를 켠 상태에서 **이미 발급된 직접 URL 을 알고 있는 쪽은 VISIBLE→HIDDEN 전환
- * 이후에도 그 파일에 접근할 수 있습니다.** 직접 URL 은 저장소의 파일을 직접 가리키므로
- * 응답에서 감추는 것으로는 회수되지 않습니다. 노출 상태를 접근 차단 수단으로 써야 하는
- * 운용이라면 그 카테고리에 공개 자산 디스크를 적용하지 않아야 합니다.
  */
 trait HasDirectAssetUrl
 {
@@ -48,11 +40,6 @@ trait HasDirectAssetUrl
         $path = (string) ($this->path ?? '');
 
         if ($disk === '' || $path === '') {
-            return null;
-        }
-
-        // 「공개 디스크로 내보낼 확장자」 밖의 파일은 직접 주소로 내보내지 않는다 — 서버를 거치는 주소로.
-        if (! PublicAssetDisk::exportsExtension(pathinfo($path, PATHINFO_EXTENSION))) {
             return null;
         }
 

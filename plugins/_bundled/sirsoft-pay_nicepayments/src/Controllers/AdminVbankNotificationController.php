@@ -6,7 +6,6 @@ namespace Plugins\Sirsoft\PayNicepayments\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
-use Plugins\Sirsoft\PayNicepayments\Concerns\GuardsOrderScope;
 
 /**
  * 어드민 — 가상계좌 입금통보 이력 조회 컨트롤러
@@ -29,13 +28,6 @@ use Plugins\Sirsoft\PayNicepayments\Concerns\GuardsOrderScope;
  */
 class AdminVbankNotificationController
 {
-    use GuardsOrderScope;
-
-    /**
-     * 의존성을 주입받습니다.
-     *
-     * @param  OrderProcessingService  $orderService  주문 처리 서비스 (주문번호 조회)
-     */
     public function __construct(
         private readonly OrderProcessingService $orderService
     ) {}
@@ -51,10 +43,6 @@ class AdminVbankNotificationController
      */
     public function show(string $orderNumber): JsonResponse
     {
-        if ($denied = $this->orderScopeDenial($orderNumber, 'sirsoft-ecommerce.orders.read')) {
-            return $denied;
-        }
-
         $order = $this->orderService->findByOrderNumber($orderNumber);
 
         if (! $order) {

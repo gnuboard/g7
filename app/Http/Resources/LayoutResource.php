@@ -1,13 +1,8 @@
 <?php
 
-// audit:allow api-doc-coverage reason: 자식의 중복 private formatFileSize() 를 제거해 부모 BaseApiResource 의 공용 포맷터를 상속하게 한 내부 수정(S3-D11 — 가시성 축소로 인한 FatalError 해소). 응답 키(size_formatted)·상태코드·payload 형태 모두 불변 — `api:docgen --scope=core --check` drift 없음 확인.
-
 namespace App\Http\Resources;
 
-use App\Models\TemplateLayout;
-use App\Services\LayoutMarkupService;
 use App\Support\LayoutDescription;
-use App\Support\LayoutEmptyObjects;
 use Illuminate\Http\Request;
 
 class LayoutResource extends BaseApiResource
@@ -52,26 +47,6 @@ class LayoutResource extends BaseApiResource
     }
 
     /**
-     * `?with_markup=1` 응답에 싣는 마크업 페이로드 — 컨트롤러가 변환 서비스로 만들어 주입한다(없으면 미부착).
-     *
-     * @var array{content_markup: string, markup_escapes: array<int, string>, markup_warnings: array<int, array<string, mixed>>, markup_compile_error: array<string, mixed>|null}|null
-     */
-    protected ?array $markup = null;
-
-    /**
-     * 마크업 페이로드를 주입합니다 (`?with_markup=1`).
-     *
-     * @param  array<string, mixed>  $markup  변환 결과
-     * @return $this
-     */
-    public function withMarkup(array $markup): static
-    {
-        $this->markup = $markup;
-
-        return $this;
-    }
-
-    /**
      * 리소스를 배열로 변환
      *
      * @param  Request  $request  현재 요청 객체
@@ -81,20 +56,6 @@ class LayoutResource extends BaseApiResource
     {
         $content = $this->getValue('content', []);
         $contentJson = is_array($content) ? json_encode($content, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) : '{}';
-        // 그대로 응답하는 보조 필드(components·data_sources·metadata)는 원문을 빈 객체 보존 디코드해 꺼낸다 (#758)
-        $preserved = $this->resource instanceof TemplateLayout ? LayoutEmptyObjects::rawPreserving($this->resource) : $content;
-
-        // 편집기 JSON 탭이 처음 여는 본문 — 배열 캐스트를 거친 `$content` 는 `{}` 와 `[]` 를 같게 만들어
-        // 저장된 `{}` 가 `[]` 로 보인다(한 글자 치면 컴파일 결과로 `{}` 로 바뀌어 탭이 스스로 어긋난다).
-        // 행 원본 문자열을 빈 map 을 보존해 다시 인코딩한다 — 컴파일 응답과 같은 인코더라 표기도 같다.
-        if ($this->resource instanceof TemplateLayout) {
-            $raw = $this->resource->getRawOriginal('content');
-
-            if (is_string($raw) && $raw !== '') {
-                $service = app(LayoutMarkupService::class);
-                $contentJson = $service->encodeJson($service->decodeStoredContent($raw));
-            }
-        }
         $name = $this->getValue('name');
 
         return [
@@ -108,9 +69,9 @@ class LayoutResource extends BaseApiResource
             // 이 레이아웃을 사용하는 라우트의 path (routes.json 기준). 코드 편집기가
             // 파일 선택 시 ?route= 동기화 / 위지윅에서 넘어온 ?route= 복원에 사용.
             'route_path' => $this->routePathMap[$name] ?? null,
-            'components' => $preserved['components'] ?? [],
-            'data_sources' => $preserved['data_sources'] ?? [],
-            'metadata' => $preserved['metadata'] ?? [],
+            'components' => $content['components'] ?? [],
+            'data_sources' => $content['data_sources'] ?? [],
+            'metadata' => $content['metadata'] ?? [],
 
             // 레이아웃 편집 페이지용 필드
             'content' => $contentJson,
@@ -126,9 +87,6 @@ class LayoutResource extends BaseApiResource
             'current_version' => $this->getValue('current_version') !== null
                 ? (int) $this->getValue('current_version')
                 : null,
-
-            // `?with_markup=1` — 코드 편집기 HTML 탭용 역변환 결과 (기본 응답은 무변경)
-            ...($this->markup ?? []),
 
             ...$this->formatTimestamps(),
             ...$this->resourceMeta($request),
@@ -146,5 +104,22 @@ class LayoutResource extends BaseApiResource
         return [
             'can_update' => 'core.templates.layouts.edit',
         ];
+    }
+
+    /**
+     * 파일 크기를 사람이 읽기 쉬운 형태로 변환
+     *
+     * @param  int  $bytes  바이트 크기
+     * @return string 포맷된 크기 (예: "12.5 KB")
+     */
+    private function formatFileSize(int $bytes): string
+    {
+        if ($bytes < 1024) {
+            return $bytes.' B';
+        } elseif ($bytes < 1048576) {
+            return round($bytes / 1024, 1).' KB';
+        } else {
+            return round($bytes / 1048576, 1).' MB';
+        }
     }
 }

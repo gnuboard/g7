@@ -18,30 +18,19 @@ _`getSettingsSchema()` 선언이 없습니다._
 |---|---|---|
 | `attachment.max_count` | 5 | `PageAttachmentService` — 초과 시 `AttachmentLimitExceededException` |
 | `attachment.max_size_mb` | 10 | `UploadPageAttachmentRequest` 검증 규칙 |
-| `attachment.allowed_types` | 이미지 4종 + PDF + ZIP | 같은 FormRequest (미설정 시 `AttachmentLimits::FALLBACK_ALLOWED_TYPES` 폴백) |
+| `attachment.allowed_types` | 이미지 4종 + PDF + ZIP | 같은 FormRequest (미설정 시 클래스 상수 폴백) |
 
-세 값의 해석(기본값·폴백·0 이하 = 제한 없음)은 `modules/_bundled/sirsoft-page/src/Support/AttachmentLimits.php` 한 곳이
-합니다. 업로드 검증(`UploadPageAttachmentRequest`)과 화면용 공개 설정
-(`PageAttachmentService::publicLimits()`)이 모두 이것을 읽습니다 — Service 가 FormRequest 의
-상수를 읽으면 하위 계층이 HTTP 계층에 기대는 역전이 되고, 두 계층이 따로 해석하면 화면이
-안내한 상한과 서버가 거절하는 상한이 갈립니다.
-
-파일 형태는 이커머스·게시판과 같은 `{_meta, defaults, frontend_schema}` 3단 구조입니다. 관리자
-설정 화면은 없지만 **관리자 페이지 폼의 첨부 업로더**가 서버 검증과 같은 개수·용량·형식을 쓰도록
-`frontend_schema` 로 `attachment.*` 세 값을 프론트엔드 전역(`_global.modules['sirsoft-page']`)에
-노출합니다 — 업로더에 리터럴을 박으면 설정을 바꿨을 때 화면이 서버가 허용하는 파일을 먼저
-거절하거나, 서버가 거절할 파일을 받아 저장 단계에서야 실패합니다. 업로더 자체는 공개 설정 API
-(`/api/modules/sirsoft-page/admin/attachments/settings`, 데이터 소스 `attachmentSettings`)가 돌려주는
-`PageAttachmentService::publicLimits()` 값을 읽습니다 — MIME → 확장자 변환(`accept`)과 「0 이하 = 제한 없음」
-해석은 서버가 합니다. 읽기는
-`g7_module_settings('sirsoft-page', 'attachment.…')` 로 하고, `PageSettingsService` 가 설정이 아직
-동기화되지 않은 환경을 위해 파일 직접 읽기를 폴백으로 갖습니다(평평한 값 트리 형식도 계속 읽습니다).
+파일 형태가 다른 확장과 다릅니다 — 이커머스·게시판은 `{_meta, defaults, frontend_schema}` 3단
+구조지만 여기는 **평평한 값 트리**입니다. 관리자 화면이 없어 `frontend_schema` 가 필요 없고,
+그래서 `_meta` 도 두지 않았습니다. 읽기는 `g7_module_settings('sirsoft-page', 'attachment.…')`
+로 하고, `PageSettingsService` 가 설정이 아직 동기화되지 않은 환경을 위해 파일 직접 읽기를
+폴백으로 갖습니다.
 
 **서비스에서 상한을 리터럴로 재클램프하지 않습니다.** 계산은 서비스가, 상한 검증은
 FormRequest 가 단일 책임으로 갖습니다 — 이중 클램프가 생기면 설정을 올려도 반영되지 않습니다.
 
-설정 화면을 나중에 추가하더라도 값의 위치(`attachment.*`)는 바꾸지 않아야 기존 설치의 값이
-유지됩니다.
+설정 화면을 나중에 추가한다면 `_meta.categories` 와 `frontend_schema` 를 더하는 방식이며, 그때
+값의 위치(`attachment.*`)는 바꾸지 않아야 기존 설치의 값이 유지됩니다.
 <!-- @intent END -->
 
 ## 권한
@@ -121,14 +110,10 @@ FormRequest 가 단일 책임으로 갖습니다 — 이중 클램프가 생기�
 
 **이 확장에 의존하는 확장** (이 확장을 비활성화하면 함께 영향을 받습니다)
 
-없음.
-
-**이 확장과 연동하는 확장** (이 확장이 있으면 기능을 더합니다 — 이 확장의 화면·훅 이름을 바꿀 때 함께 확인)
-
 | 확장 | 유형 | 요구 버전 |
 |---|---|---|
 | `sirsoft-marketing` | 플러그인 | `>=1.0.0` |
-| `sirsoft-basic` | 템플릿 | `>=1.2.0` |
+| `sirsoft-basic` | 템플릿 | `>=1.1.0` |
 <!-- @generated:dependencies END -->
 
 <!-- @intent START -->
@@ -143,11 +128,3 @@ manifest 에는 없지만 **훅으로 맞물리는 확장이 하나 더** 있습
 `dependencies` 최소 버전 상향이 필요한지 검토합니다. 특히 공개 조회 API 의 응답 형태는
 템플릿이 그대로 화면에 그리므로, 필드를 빼면 그 템플릿의 페이지 화면이 빈 채로 렌더됩니다.
 <!-- @intent END -->
-
-## 본문 미디어 (`content_media`, 1.2.2)
-
-편집기 본문 미디어 정책입니다. 형식은 코어 `ContentMediaPolicy`(`{image|video|audio: {enabled, max_size_mb, extensions[]}, max_per_document}`)이고,
-비어 있으면(기본 `{}`) 첨부 정책(`attachment.max_size_mb`·`allowed_types` 중 이미지)으로 만든 대체 정책을 씁니다 — 이미지는 첨부 형식
-중 이미지(없으면 이미지 후보 전부)로 받고, 동영상·오디오는 코어 환경설정 「본문 콘텐츠」의 업로드 후보를 켜면 첨부 파일당 크기로 받습니다(첨부 형식에 그 종류가 없으면 후보 형식 전부). 이 판에는 설정 화면이 없어 값은 모듈 설정 파일로만 바꿉니다.
-편집 화면은 이 정책으로 만든 업로드 계약을 표준 계약 엔드포인트 `GET admin/content-media/target`(#887)으로 받습니다
-(첨부 설정 응답 `content_media` 는 같은 값을 싣는 호환 별칭).

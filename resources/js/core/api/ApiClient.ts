@@ -2,7 +2,6 @@ import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, InternalAxiosR
 import { AuthManager } from '../auth/AuthManager';
 import { createLogger } from '../utils/Logger';
 import { IdentityGuardInterceptor } from '../identity/IdentityGuardInterceptor';
-import { isSameOriginRequestUrl } from '../support/navPolicy';
 import type { G7DevToolsCore } from '../devtools/G7DevToolsCore';
 
 const logger = createLogger('ApiClient');
@@ -23,16 +22,6 @@ function getDevTools(): G7DevToolsCore | null {
 interface AxiosConfigWithDevTools extends InternalAxiosRequestConfig {
   _devToolsRequestId?: string | null;
   _retry?: boolean;
-  /**
-   * 이 요청이 나갈 때 Authorization 헤더를 실었는지 (요청 인터셉터가 기록).
-   *
-   * 401 을 받았을 때 「세션이 만료됐다」고 볼 수 있는 것은 토큰을 실어 보낸 요청뿐이다.
-   * 응답 시점의 `getToken()` 은 근거가 될 수 없다 — 그사이 다른 요청의 갱신 실패로 토큰이
-   * 지워졌거나 다른 탭에서 로그인했을 수 있다.
-   *
-   * @since engine-v1.88.2
-   */
-  _g7AuthTokenSent?: boolean;
   /**
    * IDV 428 인터셉트 시 challenge 에 사용할 인증 대상(이메일·전화).
    * axios(G7Core.api) 직접 호출 경로에서 호출자가 config 에 실어 보내면 인터셉터가 launcher 로 전달.
@@ -128,20 +117,8 @@ class ApiClient {
 
   /**
    * 토큰 저장
-   *
-   * 문자열이 아닌 값은 저장하지 않는다. `localStorage` 는 무엇을 넣든 문자열로 바꿔
-   * 저장하므로 `undefined` 를 넘기면 `"undefined"` 라는 truthy 문자열이 남고, 이후
-   * 모든 요청이 `Bearer undefined` 로 나가 401 로 튕긴다 — 화면에는 "세션이 만료되었습니다"
-   * 로 보여 원인을 추적할 단서가 남지 않는다.
-   *
-   * @since engine-v1.65.0
    */
   setToken(token: string): void {
-    if (typeof token !== 'string' || token === '') {
-      logger.warn('Ignoring invalid auth token — token must be a non-empty string.');
-      return;
-    }
-
     if (typeof window !== 'undefined') {
       localStorage.setItem(this.TOKEN_KEY, token);
     }
@@ -155,37 +132,6 @@ class ApiClient {
       return localStorage.getItem(this.TOKEN_KEY);
     }
     return null;
-  }
-
-  /**
-   * 요청 대상이 현재 문서와 같은 출처인지 판정합니다.
-   *
-   * 확장이 `fetch` 로 직접 요청하면서 `getToken()` 을 실을 때, 대상이 레이아웃 prop·응답 본문처럼
-   * 바깥에서 정해지는 값이면 먼저 이 판정을 거친다 — 교차 출처 대상에 토큰을 실으면 레이아웃 편집
-   * 권한만으로 관리자 토큰을 외부로 보낼 수 있다(KVE-2026-2350). 판정은 apiCall 과 같은
-   * `navPolicy.isSameOriginRequestUrl`(fetch 와 같은 URL 파서)이다.
-   *
-   * @param url 요청 대상 (절대·상대 모두)
-   * @returns 같은 출처면 true (문자열이 아니거나 파싱할 수 없으면 false)
-   * @since engine-v1.73.0
-   */
-  isSameOriginUrl(url: unknown): boolean {
-    return isSameOriginRequestUrl(url);
-  }
-
-  /**
-   * 토큰 없이 보낸 요청이 401 로 거부됐는지 판정합니다.
-   *
-   * 이 오류는 세션 만료가 아니므로 ApiClient 가 로그인 화면으로 옮기지 않는다. 호출자는 이 판정으로
-   * 「로그인이 필요합니다」 같은 안내를 띄우고 입력을 그대로 둔다.
-   *
-   * @param error `G7Core.api` 호출이 reject 한 오류
-   * @returns 상태 401 이고 요청에 토큰을 싣지 않았으면 true
-   * @since engine-v1.88.2
-   */
-  isAnonymousUnauthorized(error: unknown): boolean {
-    const candidate = error as { response?: { status?: number }; g7Auth?: { tokenSent?: boolean } } | null;
-    return candidate?.response?.status === 401 && candidate?.g7Auth?.tokenSent === false;
   }
 
   /**
@@ -217,12 +163,6 @@ class ApiClient {
         if (token && config.headers && !this.isCrossOriginRequest(config.url)) {
           config.headers.Authorization = `Bearer ${token}`;
         }
-
-        // 토큰을 실었는지 기록 — 호출자가 직접 넣은 Authorization 도 실은 것으로 본다.
-        // 401 갈래가 「세션 만료」와 「처음부터 로그인하지 않음」을 가르는 근거다(engine-v1.88.2).
-        const sentAuthorization = config.headers?.Authorization ?? config.headers?.authorization;
-        (config as AxiosConfigWithDevTools)._g7AuthTokenSent =
-          typeof sentAuthorization === 'string' && sentAuthorization !== '';
 
         // g7_locale이 설정되어 있으면 Accept-Language 헤더로 전송
         if (typeof window !== 'undefined' && config.headers) {
@@ -280,23 +220,8 @@ class ApiClient {
         ];
         const shouldSkipUnauthorized = skipUnauthorizedPatterns.some(pattern => requestUrl.includes(pattern));
 
-        // 401 Unauthorized 처리 — 동일 출처 요청만. 교차 출처 서버의 401 은 우리 세션 상태가 아니며,
-        // 갱신한 토큰을 헤더에 직접 붙여 그 외부 주소로 재시도하게 된다(KVE-2026-2350).
-        if (
-          error.response?.status === 401
-          && !originalRequest?._retry
-          && !shouldSkipUnauthorized
-          && !this.isCrossOriginRequest(requestUrl)
-        ) {
-          // 토큰 없이 보낸 요청의 401 은 세션 만료가 아니다 — 비회원이 권한 없는 기능(편집기 이미지
-          // 업로드 등)을 눌렀을 뿐이다. 갱신·토큰 삭제·로그인 이동을 하지 않고 호출자에게 돌려준다.
-          // 종전에는 이 요청도 세션 만료로 보고 로그인 화면으로 옮겨 쓰던 글이 사라졌다(#883, engine-v1.88.2).
-          if (!originalRequest?._g7AuthTokenSent) {
-            this.completeDevToolsRequest(originalRequest, error);
-            error.g7Auth = Object.freeze({ tokenSent: false });
-            return Promise.reject(error);
-          }
-
+        // 401 Unauthorized 처리
+        if (error.response?.status === 401 && !originalRequest?._retry && !shouldSkipUnauthorized) {
           originalRequest!._retry = true;
 
           // AuthManager를 통한 토큰 갱신 시도
@@ -337,12 +262,7 @@ class ApiClient {
         // 직접 호출 경로(입금확인/주문취소 등 모듈 JS 핸들러)는 이 인터셉터를 거치지 않아 모듈마다
         // 428 분기를 수동 추가해야 했고 누락 위험이 있었다(취소 핸들러 미노출 회귀). 여기서 중앙
         // 처리하면 axios 를 쓰는 모든 호출이 본인인증 모달 → verify → 원 요청 재실행을 자동 수행한다.
-        // 교차 출처 응답의 428 은 따르지 않는다 — launcher 가 응답의 challenge_start_url 로 토큰을 실어
-        // 보내므로 외부 서버가 428 을 흉내 내면 토큰을 받아 간다(KVE-2026-2350). 토큰 첨부와 같은 출처 판정.
-        if (
-          !this.isCrossOriginRequest(originalRequest?.url)
-          && IdentityGuardInterceptor.isIdentityRequired(error.response?.status, error.response?.data)
-        ) {
+        if (IdentityGuardInterceptor.isIdentityRequired(error.response?.status, error.response?.data)) {
           this.completeDevToolsRequest(originalRequest, error);
 
           // 원 요청 헤더(Authorization 포함)/body 를 재실행에 그대로 재사용 — 누락 시 백엔드가

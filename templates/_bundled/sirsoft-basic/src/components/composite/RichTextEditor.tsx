@@ -8,8 +8,6 @@
  */
 
 import React, { useEffect, useRef, useState } from 'react';
-// @ts-ignore - DOMPurify 타입 정의 없음
-import DOMPurify from 'dompurify';
 import { Div } from '../basic/Div';
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
@@ -24,7 +22,6 @@ import { Textarea } from '../basic/Textarea';
 import { H3 } from '../basic/H3';
 import { Label } from '../basic/Label';
 import type { EditorAttrs } from '../../types';
-import { applyDeferredStyles, sanitizeDeferred } from '../../support/inlineStyleDeferral';
 
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
@@ -119,27 +116,18 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
   // 에디터 초기화 (실제 구현 시 TipTap/Quill 초기화)
   useEffect(() => {
-    // 초기값 설정 (dangerouslySetInnerHTML 대신 직접 설정). 정화 없이 넣으면 초기값의 <script>·on* 이
-    // 편집 영역에서 살아나는 XSS 싱크가 된다(#158 부수 결함) — HtmlContent 와 같은 DOMPurify 로 거른다.
-    // 초기값의 style 속성은 엄격한 스타일 정책(`style-src-attr 'none'`)에서 innerHTML 로 들어가면 막힌다. 코어 본문 서식 지연
-    // 장치(G7Core.inlineStyle)가 있으면 정화 → innerHTML → `el.style.cssText` 대입 순서로 입히고, 없으면(옛 코어) 종전 그대로다 (공개 #163).
+    // 초기값 설정 (dangerouslySetInnerHTML 대신 직접 설정)
     if (editorRef.current && !editorRef.current.innerHTML) {
-      const purifyConfig = { FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed'] };
-      const deferred = sanitizeDeferred(initialValue ?? '', purifyConfig);
-      editorRef.current.innerHTML = deferred ?? (DOMPurify.sanitize(initialValue ?? '', purifyConfig) as unknown as string);
-      if (deferred !== null) {
-        applyDeferredStyles(editorRef.current);
-      }
+      editorRef.current.innerHTML = initialValue;
     }
   }, [initialValue]);
 
-  // 값 변경 — 사용자가 내용을 바꿀 때만 onChange 를 부른다. 종전에는 useEffect([content, onChange]) 로 불러
-  // 마운트와 콜백이 바뀌는 리렌더마다 불렸고, 편집기가 이 칸을 원시값 콜백(event: "onChange")으로 적으면
-  // 사용자 조작 없이도 동작이 실행됐다(사례 26, 7.1.0 O-I2F-4).
-  const updateContent = (next: string) => {
-    setContent(next);
-    onChange?.(next);
-  };
+  // 값 변경 시 콜백 호출
+  useEffect(() => {
+    if (onChange) {
+      onChange(content);
+    }
+  }, [content, onChange]);
 
   // 포맷 적용 (실제 구현 시 에디터 API 사용)
   const applyFormat = (format: FormatType) => {
@@ -299,17 +287,17 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       {showCodeView ? (
         <Textarea
           value={content}
-          onChange={(e) => updateContent(e.target.value)}
+          onChange={(e) => setContent(e.target.value)}
           placeholder={placeholder}
           disabled={disabled}
-          className="w-full p-4 bg-gray-900 dark:bg-gray-900 text-gray-100 dark:text-gray-100 font-mono text-sm focus:outline-none resize-none"
+          className="w-full p-4 bg-gray-900 text-gray-100 font-mono text-sm focus:outline-none resize-none"
           style={{ minHeight }}
         />
       ) : (
         <Div
           ref={editorRef}
           contentEditable={!disabled}
-          onInput={(e) => updateContent(e.currentTarget.innerHTML)}
+          onInput={(e) => setContent(e.currentTarget.innerHTML)}
           className="p-4 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none prose dark:prose-invert max-w-none"
           style={{ minHeight }}
           data-placeholder={placeholder}
@@ -347,7 +335,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
               <Button
                 type="button"
                 onClick={insertLink}
-                className="px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
               >
                 {t('editor.link_modal.insert')}
               </Button>

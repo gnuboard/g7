@@ -49,7 +49,7 @@
 | `payment_status_variant` | string | 상태 뱃지 색상 구분 |
 | `cancelled_amount` | number | 취소 금액 (주문 시점 기준 통화) |
 | `cancelled_amount_formatted` | string | 취소 금액 표기 — **주문 시점 기준 통화의 기호·자릿수** |
-| `cancelled_at` | string\|null | 취소 일시 — 보는 사람 시간대 (`Y-m-d H:i:s`) |
+| `cancelled_at` | string\|null | 취소 일시 |
 | `cancel_history` | array | 부분취소 이력 |
 | `refund_number` | string\|null | 환불 번호 |
 | `refund_status` | string\|null | 환불 상태 코드 |
@@ -57,7 +57,7 @@
 | `refund_status_variant` | string\|null | 환불 상태 뱃지 색상 구분 |
 | `refund_amount` | number | 환불 금액 (주문 시점 기준 통화) |
 | `refund_amount_formatted` | string | 환불 금액 표기 — **주문 시점 기준 통화의 기호·자릿수** |
-| `refunded_at` | string\|null | 환불 완료 일시 — 보는 사람 시간대 (`Y-m-d H:i:s`) |
+| `refunded_at` | string\|null | 환불 완료 일시 |
 | `refund_pg_transaction_id` | string\|null | 환불 거래번호 |
 | `payment_method_display_label` | string | 화면 표시용 결제수단명 |
 | `_is_test_mode` | boolean | 테스트 결제 여부 |
@@ -67,7 +67,7 @@
 ### 요청 예시
 
 ```http
-GET /api/plugins/sirsoft-pay_nhnkcp/admin/orders/20260807-1529487361/transaction-status
+GET /api/plugins/sirsoft-pay_nhnkcp/admin/orders/20260807-0001/transaction-status
 Authorization: Bearer {token}
 ```
 
@@ -93,7 +93,7 @@ Authorization: Bearer {token}
     "cancelled_amount_formatted": "1,100원",
     "cancelled_at": "2026-08-07 15:40:22",
     "cancel_history": [],
-    "refund_number": "RF20260807-1540229154",
+    "refund_number": "RF-20260807-0001",
     "refund_status": "completed",
     "refund_status_label": "환불완료",
     "refund_status_variant": "success",

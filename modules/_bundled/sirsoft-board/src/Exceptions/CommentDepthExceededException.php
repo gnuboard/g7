@@ -24,7 +24,7 @@ class CommentDepthExceededException extends Exception
         private int $limit,
         private int $attempted,
     ) {
-        parent::__construct(trans_choice('sirsoft-board::validation.comment.depth.exceeded', $limit, [
+        parent::__construct(__('sirsoft-board::validation.comment.depth.exceeded', [
             'max' => $limit,
         ]));
     }
@@ -66,7 +66,6 @@ class CommentDepthExceededException extends Exception
      */
     public function getMessageParams(): array
     {
-        // `count` 로 「1 level」/「2 levels」 를 고른다 (ResponseHelper 가 trans_count 로 번역).
-        return ['max' => $this->limit, 'count' => $this->limit];
+        return ['max' => $this->limit];
     }
 }

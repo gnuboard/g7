@@ -3,11 +3,9 @@
 namespace Plugins\Sirsoft\Gdpr\Models;
 
 use App\Models\User;
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Plugins\Sirsoft\Gdpr\Support\GdprConsentReadMemo;
 
 /**
  * GDPR 사용자 현재 동의 상태 모델 (mutable status)
@@ -21,14 +19,14 @@ use Plugins\Sirsoft\Gdpr\Support\GdprConsentReadMemo;
  * @property string|null $consent_category
  * @property bool $is_consented
  * @property bool $is_rejected
- * @property Carbon|null $consented_at
- * @property Carbon|null $revoked_at
- * @property Carbon|null $rejected_at
+ * @property \Carbon\Carbon|null $consented_at
+ * @property \Carbon\Carbon|null $revoked_at
+ * @property \Carbon\Carbon|null $rejected_at
  * @property int $consent_count
  * @property string|null $policy_version
  * @property string|null $last_source
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
+ * @property \Carbon\Carbon|null $created_at
+ * @property \Carbon\Carbon|null $updated_at
  * @property-read User $user
  */
 class GdprUserConsent extends Model
@@ -79,7 +77,7 @@ class GdprUserConsent extends Model
     /**
      * 동의 상태인 레코드만 조회하는 스코프
      *
-     * @param  Builder  $query
+     * @param Builder $query
      * @return Builder
      */
     public function scopeConsented(Builder $query): Builder
@@ -90,8 +88,8 @@ class GdprUserConsent extends Model
     /**
      * 특정 동의 항목 키로 조회하는 스코프
      *
-     * @param  Builder  $query
-     * @param  string  $key  동의 항목 키
+     * @param Builder $query
+     * @param string $key 동의 항목 키
      * @return Builder
      */
     public function scopeByConsentKey(Builder $query, string $key): Builder
@@ -107,16 +105,5 @@ class GdprUserConsent extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
-    }
-
-    /**
-     * 저장·삭제되면 요청 안 동의 조회 메모를 비웁니다 (#860).
-     *
-     * @return void 반환값 없음
-     */
-    protected static function booted(): void
-    {
-        static::saved(fn () => GdprConsentReadMemo::forgetConsentRows());
-        static::deleted(fn () => GdprConsentReadMemo::forgetConsentRows());
     }
 }

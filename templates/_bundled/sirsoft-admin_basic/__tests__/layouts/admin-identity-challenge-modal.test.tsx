@@ -14,7 +14,6 @@
 import { describe, expect, it } from 'vitest';
 
 import identityModal from '../../layouts/partials/_identity_challenge_modal.json';
-import { asArray, callbacksOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 type Action = {
   event?: string;
@@ -56,10 +55,10 @@ function walk(input: Node | Node[] | undefined, visit: (node: Node) => void): vo
 function collectActions(node: Node): Action[] {
   const out: Action[] = [];
   walk(node, (n) => {
-    if (asArray(n?.actions).length > 0) out.push(...asArray(n?.actions));
+    if (Array.isArray(n.actions)) out.push(...n.actions);
     if (n.events) {
       for (const ev of Object.values(n.events)) {
-        if (asArray(ev?.actions).length > 0) out.push(...asArray(ev?.actions));
+        if (Array.isArray(ev.actions)) out.push(...ev.actions);
       }
     }
   });
@@ -72,12 +71,12 @@ function deepFindActions(actions: Action[], predicate: (a: Action) => boolean): 
     if (!list) return;
     for (const a of list) {
       if (predicate(a)) result.push(a);
-      if (a.handler === 'sequence' && callbacksOf(a, 'actions').length > 0) {
-        visit(callbacksOf(a, 'actions') as Action[]);
+      if (a.handler === 'sequence' && Array.isArray(a.params?.actions)) {
+        visit(a.params!.actions as Action[]);
       }
-      if (asArray(a?.actions).length > 0) visit(asArray(a?.actions));
-      if (asArray(a?.onSuccess).length > 0) visit(asArray(a?.onSuccess));
-      if (asArray(a?.onError).length > 0) visit(asArray(a?.onError));
+      if (Array.isArray(a.actions)) visit(a.actions);
+      if (Array.isArray(a.onSuccess)) visit(a.onSuccess);
+      if (Array.isArray(a.onError)) visit(a.onError);
     }
   };
   visit(actions);
@@ -90,7 +89,7 @@ describe('Admin 본인인증 모달 cancel 흐름 (sirsoft-admin_basic)', () => 
   function findCancelSequence(): Action | undefined {
     const sequences = deepFindActions(allActions, (a) => a.handler === 'sequence');
     return sequences.find((seq) => {
-      const inner = callbacksOf(seq, 'actions') as Action[];
+      const inner = (seq.params?.actions ?? []) as Action[];
       return inner.some(
         (a) => a.handler === 'resolveIdentityChallenge' && a.params?.result === 'cancelled',
       );
@@ -103,7 +102,7 @@ describe('Admin 본인인증 모달 cancel 흐름 (sirsoft-admin_basic)', () => 
 
   it('cancel sequence 의 첫 액션이 서버 cancel API 호출 — audit trail 정합', () => {
     const seq = findCancelSequence();
-    const inner = callbacksOf(seq, 'actions') as Action[];
+    const inner = (seq!.params!.actions ?? []) as Action[];
     const apiCall = inner.find((a) => a.handler === 'apiCall');
     expect(apiCall).toBeDefined();
     // apiCall 표준: target 은 액션 top-level, params 안은 method/body 만
@@ -116,16 +115,16 @@ describe('Admin 본인인증 모달 cancel 흐름 (sirsoft-admin_basic)', () => 
 
   it('cancel apiCall 이 challenge 발급된 경우에만 호출 (if 가드)', () => {
     const seq = findCancelSequence();
-    const inner = callbacksOf(seq, 'actions') as Action[];
+    const inner = (seq!.params!.actions ?? []) as Action[];
     const apiCall = inner.find((a) => a.handler === 'apiCall');
     expect(apiCall!.if).toContain('_global.identityChallenge?.challenge_id');
   });
 
   it('cancel apiCall 실패해도 모달 닫기는 진행 (onError suppress)', () => {
     const seq = findCancelSequence();
-    const inner = callbacksOf(seq, 'actions') as Action[];
+    const inner = (seq!.params!.actions ?? []) as Action[];
     const apiCall = inner.find((a) => a.handler === 'apiCall');
-    const onError = callbacksOf(apiCall, 'onError');
+    const onError = apiCall!.onError ?? [];
     expect(onError.length).toBeGreaterThanOrEqual(1);
     expect(onError[0].handler).toBe('suppress');
   });
@@ -133,7 +132,7 @@ describe('Admin 본인인증 모달 cancel 흐름 (sirsoft-admin_basic)', () => 
   /** @effects admin_basic_modal_cancel_flow_matches_basic_template */
   it('cancel sequence 가 [apiCall, resolveIdentityChallenge, closeModal] 순서', () => {
     const seq = findCancelSequence();
-    const inner = callbacksOf(seq, 'actions') as Action[];
+    const inner = (seq!.params!.actions ?? []) as Action[];
     const handlers = inner.map((a) => a.handler);
     expect(handlers).toEqual(['apiCall', 'resolveIdentityChallenge', 'closeModal']);
   });
@@ -165,6 +164,7 @@ describe('Admin 본인인증 모달 Extension Point 구조 (sirsoft-admin_basic)
     const cores: Node[] = [];
     walk(identityModal as unknown as Node, (n) => {
       if (
+        n.type === 'basic' &&
         n.name === 'Div' &&
         typeof (n as any).if === 'string' &&
         (n as any).if.includes("'text_code'") &&
@@ -183,6 +183,7 @@ describe('Admin 본인인증 모달 Extension Point 구조 (sirsoft-admin_basic)
     const buttonsWithGuard: Node[] = [];
     walk(identityModal as unknown as Node, (n) => {
       if (
+        n.type === 'basic' &&
         n.name === 'Button' &&
         typeof (n as any).if === 'string' &&
         (n as any).if.includes('_global.identityChallenge?.provider_id')

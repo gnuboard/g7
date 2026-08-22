@@ -1,6 +1,6 @@
 # 미들웨어 등록 규칙
 
-> **참조**: [백엔드 가이드 인덱스](README.md) | [인증 시스템](authentication.md)
+> **참조**: [백엔드 가이드 인덱스](index.md) | [인증 시스템](authentication.md)
 
 ---
 
@@ -78,7 +78,7 @@
 
 | 방식 | 실행 시점 | Auth 사용 | 사용 사례 |
 |------|----------|----------|----------|
-| `append()` | 인증 **전** | ❌ 불가 | CORS, 로깅, IP 접근 제한 등 |
+| `append()` | 인증 **전** | ❌ 불가 | CORS, 로깅 등 |
 | `prepend()` | 인증 **전** (최우선) | ❌ 불가 | 보안 헤더 등 |
 | `appendToGroup('api', ...)` | 인증 **후** | ✅ 가능 | 사용자별 설정 |
 | `appendToGroup('web', ...)` | 인증 **후** | ✅ 가능 | 사용자별 설정 |
@@ -155,7 +155,7 @@ public function getMiddleware(): array
 
 다만 상위 glob 이 **인증 전 단계** 라우트(토큰 발급 등)를 삼키면 기능이 통째로 막힌다 — 토큰을 받으러 오는 요청에는 아직 토큰이 없기 때문이다. 삼키는 경우에만 한 단계 아래로 정밀화하고, 제외 이유를 PHPDoc 에 남긴다.
 
-targets 정합성은 자동 검증이 불가능하다. 라우트 전체 이름이 확장 라우트 파일의 접미부와 모듈 로더가 부팅 시 붙이는 prefix 의 조합으로 결정될 뿐 아니라, "이 라우트가 보호되어야 하는가" 자체가 의미적 판단이기 때문이다. 그러므로 확장은 **계약 테스트**를 둔다:
+targets 정합성은 정적 검사가 불가능하다. 라우트 전체 이름이 확장 라우트 파일의 접미부와 모듈 로더가 부팅 시 붙이는 prefix 의 조합으로 결정될 뿐 아니라, "이 라우트가 보호되어야 하는가" 자체가 의미적 판단이기 때문이다. 그러므로 확장은 **계약 테스트**를 둔다:
 
 - `Route::getRoutes()` 에서 그 서브트리 라우트를 **전수 수집**하고, 클래스 상수로 선언한 면제 목록(사유 주석 필수)을 뺀 나머지가 전부 `resolveForRoute()` 결과에 그 미들웨어를 포함하는지 단언한다. 모집단을 라우트 테이블에서 파생시키므로, 새 라우트를 추가하고 targets 를 안 고치면 테스트를 손대지 않아도 자동으로 실패한다.
 - 면제 대상은 **미부착임을 별도로 단언**한다 (상위 glob 으로 뭉뚱그리는 회귀 차단).
@@ -183,6 +183,7 @@ target 이 `/` 로 시작하면 **URI 패턴**(`$request->path()` 매칭), 아�
 | 확장 SP 에서 `aliasMiddleware()` 직접 호출 | `getMiddleware()` 선언 |
 | 확장 라우트 파일에서 자기 `Http\Middleware\` FQCN 을 `->middleware(Foo::class)` 로 부착 | `getMiddleware()` 선언 |
 
+자동 차단: 위 규율은 모두 정적 검사 대상 (위반 시 차단). 서드파티 확장의 구방식은 Laravel 공식 API 라 런타임 차단은 없고 문서로 안내한다.
 
 ---
 
@@ -210,12 +211,6 @@ target 이 `/` 로 시작하면 **URI 패턴**(`$request->path()` 매칭), 아�
 ```
 
 > **참고**: `EnsureFrontendRequestsAreStateful` (stateful)은 제거되었습니다. API 인증은 Bearer 토큰 전용이며, 세션은 `start.api.session` 미들웨어로 로그인/로그아웃 라우트에서만 생성됩니다. 상세: [authentication.md](authentication.md)
-
-### 전역 미들웨어에서 클라이언트 IP 를 볼 때 (IP 접근 제한 선례)
-
-IP 로 요청을 가르는 전역 미들웨어는 **`prepend()` 가 아니라 `append()`** 로 등록합니다. 신뢰 프록시를 적용하는 `TrustProxies` 가 라라벨 기본 전역 스택에 들어 있어, 그보다 **앞**에 두면 `$request->ip()` 가 프록시 주소로 보입니다 — 프록시 뒤 사이트에서는 모든 방문자가 한 IP 로 보여 판정이 통째로 무너집니다. `append()` 도 그룹·라우트 미들웨어보다는 먼저 돌므로, 라우트의 `withoutMiddleware()` 로 빠져나갈 수 없다는 성질은 그대로입니다.
-
-설정을 읽어 판정하는 미들웨어는 **읽기가 깨졌을 때 열어 두고 오류를 남깁니다**(fail-open). 닫아 두면 설정 파일 한 줄이 깨졌을 때 관리자를 포함한 전원이 잠기고, 복구 수단이 서버 셸뿐이 됩니다. 코어 구현과 운영자용 설명은 [IP 접근 제한](api/settings.md#ip-접근-제한-security-탭) 을 참고하세요.
 
 ---
 
@@ -392,35 +387,6 @@ Route::middleware('optional.sanctum')
 | 토큰 만료 | 401 | guest 통과 |
 | 토큰 무효 | 401 | 401 |
 
-### 만료 토큰 표지 — `hadExpiredToken()` (7.1.5)
-
-`optional.sanctum` 은 만료 토큰을 비회원으로 통과시키므로, 그 요청이 뒤에서 「본인 확인」(내 글 수정·내 업로드 연결 등)에 실패하면 컨트롤러는
-비회원 기준으로 막게 됩니다. 이때 권한 없음(403)으로 답하면 화면은 「권한이 없습니다」만 보여 주지만, 실제로는 다시 로그인하면 되는 상황입니다.
-미들웨어는 만료 토큰을 실은 요청에 표지를 남기고, 컨트롤러는 그 표지로 401(`auth.token_expired`, 세션 만료)과 403(권한 없음)을 가릅니다.
-401 을 받은 화면은 토큰 갱신 → 세션 만료 안내 흐름을 탑니다.
-
-| 공개 API | 내용 |
-| --- | --- |
-| `OptionalSanctumMiddleware::EXPIRED_TOKEN_ATTRIBUTE` | 요청 속성 이름(`g7.auth.expired_token`). 만료 토큰으로 비회원 통과할 때 `true` 로 남습니다 |
-| `OptionalSanctumMiddleware::hadExpiredToken(Request $request): bool` | 이 요청이 만료 토큰을 실었는지. 토큰 없음·유효 토큰이면 `false` |
-
-```php
-use App\Http\Middleware\OptionalSanctumMiddleware;
-
-// 본인 확인 실패 응답 — 만료 토큰이면 세션 만료(401), 아니면 권한 없음(403)
-protected function ownershipDenied(Request $request, string $messageKey): JsonResponse
-{
-    if (OptionalSanctumMiddleware::hadExpiredToken($request)) {
-        return $this->error('auth.token_expired', 401);
-    }
-
-    return $this->error($messageKey, 403);
-}
-```
-
-번들 게시판 모듈의 `RespondsToExpiredSession` 트레이트가 이 방식으로 비회원 쓰기·업로드 권한이 있는 게시판의 본인 확인 실패를 가립니다.
-본인 확인과 무관한 권한 거부(역할·권한 부족)에는 쓰지 않습니다 — 만료 여부와 관계없이 403 이 맞습니다.
-
 ### 구현 파일
 
 - `app/Http/Middleware/OptionalSanctumMiddleware.php`
@@ -524,13 +490,13 @@ if (Auth::check()) {  // ✅ 정상 작동! Sanctum 인증 후이므로
 - [권한 시스템](../extension/permissions.md) - scope_type 시스템 상세, resource_route_key/owner_key 매핑
 - [인증 시스템](authentication.md) - Sanctum 인증 및 세션 처리
 - [서비스 프로바이더 안전성](service-provider.md) - 프로바이더 등록 규칙
-- [백엔드 가이드 인덱스](README.md) - 전체 가이드 목록
+- [백엔드 가이드 인덱스](index.md) - 전체 가이드 목록
 
 ---
 
 ## 참고 이력
 
-- [SetTimezone 미들웨어 구현](../../app/Http/Middleware/SetTimezone.php)
+- [SetTimezone 미들웨어 리팩토링](../../history/20251127_1402_SetTimezone미들웨어리팩토링.md)
 
 ### SEO 미들웨어
 

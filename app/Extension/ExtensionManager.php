@@ -4,17 +4,9 @@ namespace App\Extension;
 
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
-use App\Exceptions\PhpExtensionRequirementException;
 use App\Extension\Helpers\GithubHelper;
-use App\Extension\Helpers\SafeArchiveExtractor;
-use App\Extension\Support\ExtensionFingerprint;
-use App\Extension\Support\LifecycleWarnings;
 use App\Rules\ValidExtensionIdentifier;
-use App\Support\AtomicBootstrapCache;
-use App\Support\CacheSelfHeal;
 use App\Support\ConfigCacheHelper;
-use App\Support\PhpExtensionProbe;
-use Closure;
 use Composer\Autoload\ClassLoader;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
@@ -39,19 +31,6 @@ class ExtensionManager
      */
     protected string $autoloadFilePath;
 
-    /**
-     * 이 프로세스가 등록한 확장 오토로드의 지문·소스 classmap 키 ({@see rememberRegisteredAutoload()}).
-     *
-     * @var array{fingerprint: array<string, string>, src_keys: array<int, string>}|null
-     */
-    private static ?array $registeredAutoloadState = null;
-
-    /**
-     * 확장 관리자를 생성합니다.
-     *
-     * @param  ModuleRepositoryInterface  $moduleRepository  설치된 모듈 조회 리포지토리
-     * @param  PluginRepositoryInterface  $pluginRepository  설치된 플러그인 조회 리포지토리
-     */
     public function __construct(
         protected ModuleRepositoryInterface $moduleRepository,
         protected PluginRepositoryInterface $pluginRepository
@@ -61,11 +40,6 @@ class ExtensionManager
         $this->autoloadFilePath = base_path('bootstrap/cache/autoload-extensions.php');
     }
 
-    /**
-     * 확장 오토로드 파일을 다시 만들고 현재 프로세스·훅 캐시·config 캐시에 반영합니다.
-     *
-     * @return void 반환값 없음
-     */
     public function updateComposerAutoload(): void
     {
         // 테스트 환경에서 오토로드 업데이트 스킵 (성능 최적화)
@@ -91,9 +65,7 @@ class ExtensionManager
         // config 캐시도 함께 재생성. 확장 설치/삭제/업데이트는 활성 확장 목록을 바꾸므로
         // (optimizeSystem 이 config:cache 를 만든 시점의 스냅샷이 stale 해짐), 오토로드/훅
         // 캐시와 동일 생명주기로 config 캐시를 재빌드해 캐시가 비활성 상태로 남지 않게 한다.
-        // activate/deactivate 는 이 메서드를 거치지 않는다 — after_activate/after_deactivate 훅의
-        // ExtensionConfigCacheListener 가 재생성한다. 여러 건을 한꺼번에 바꾸는 경로는 ConfigCacheHelper::deferRebuilds()
-        // 로 감싸 마지막에 한 번만 재생성한다(#145 F6).
+        // activate/deactivate 는 이 메서드를 거치지 않으므로 각 Manager 에서 별도 호출한다.
         ConfigCacheHelper::rebuild();
     }
 
@@ -106,18 +78,9 @@ class ExtensionManager
      * 확장 수명주기에서 상태를 되돌린 뒤 다시 부를 수 있도록 public 이다 —
      * Updating 창 안에서 구워진 훅 캐시는 그 확장의 리스너가 빠진 채 남고,
      * 훅 캐시 폴백은 파일 부재/손상에만 작동해 stale 한 내용은 조용히 통과하기 때문이다.
-     *
-     * @return void 반환값 없음
      */
     public function regenerateHookCache(): void
     {
-        // 시험 환경에서 실 캐시(bootstrap/cache/hooks.php)를 시험 DB 기준 활성 목록으로 덮지 않는다 —
-        // 활성화·비활성화도 이 재생성을 부르게 된 뒤(7.1.3) 모의 없이 활성화하는 시험이 많다. 모의 객체를 묶은 시험만 통과.
-        $hookCache = app(HookCacheManager::class);
-        if (app()->environment('testing') && get_class($hookCache) === HookCacheManager::class) {
-            return;
-        }
-
         try {
             $moduleManager = app(ModuleManager::class);
             $moduleManager->loadModules();
@@ -125,13 +88,12 @@ class ExtensionManager
             $pluginManager = app(PluginManager::class);
             $pluginManager->loadPlugins();
 
-            $hookCache->generate($moduleManager, $pluginManager);
+            app(HookCacheManager::class)->generate($moduleManager, $pluginManager);
         } catch (\Throwable $e) {
             // 훅 캐시 생성 실패는 치명적이지 않다 — 부팅 시 스캔 폴백이 안전망.
             Log::warning('훅 매핑 캐시 재생성 실패 (스캔 폴백으로 동작)', [
                 'error' => $e->getMessage(),
             ]);
-            LifecycleWarnings::current()->add('hook_cache', 'hooks.php', $e->getMessage());
         }
     }
 
@@ -143,11 +105,10 @@ class ExtensionManager
      * 로드되므로, 동일 프로세스 내부에서 PSR-4 네임스페이스가 추가·변경된 경우
      * 다음 부트스트랩 이전까지 신규 매핑이 반영되지 않는다.
      *
-     * 본 메서드는 코어 Composer ClassLoader({@see coreClassLoader()})에 `addPsr4()` 를
-     * 다시 호출해 신규 매핑을 즉시 유효화한다. 기존 매핑에 경로가 추가되거나 새
-     * 네임스페이스가 등록되며, 동일 매핑은 중복 없이 merge 된다.
-     *
-     * @return void 반환값 없음
+     * 본 메서드는 `Composer\Autoload\ClassLoader::getRegisteredLoaders()` 로 현재
+     * 프로세스에 등록된 ClassLoader 를 조회하여 `addPsr4()` 를 다시 호출해 신규
+     * 매핑을 즉시 유효화한다. 기존 매핑에 경로가 추가되거나 새 네임스페이스가
+     * 등록되며, 동일 매핑은 중복 없이 merge 된다.
      */
     public function reregisterRuntimeAutoload(): void
     {
@@ -159,39 +120,15 @@ class ExtensionManager
             return;
         }
 
-        $loader = self::coreClassLoader();
-        if ($loader === null) {
+        $loaders = ClassLoader::getRegisteredLoaders();
+        if (empty($loaders)) {
             return;
         }
 
-        self::registerExtensionAutoload($loader, $this->autoloadFilePath);
-    }
-
-    /**
-     * 코어(base_path('vendor')) Composer ClassLoader 를 돌려줍니다.
-     *
-     * `ClassLoader::getRegisteredLoaders()` 의 첫 항목은 코어 로더가 아니다 — Composer 오토로더는 자신을 맨 앞에 넣으므로
-     * 확장 자체 vendor 오토로더가 불린 뒤에는 마지막에 불린 확장 vendor 로더가 첫 항목이다(#159). 키(vendorDir)를 정규화해
-     * 코어 vendor 와 같은 로더를 고른다. 일치하는 키가 없을 때만 코어 autoload.php 의 싱글턴으로 폴백한다 — 제자리 vendor
-     * 교체 뒤 다시 부르면 새 접미어의 루트 로더가 하나 더 등록될 수 있어 1순위로 쓰지 않는다.
-     *
-     * @return ClassLoader|null 코어 로더 (찾지 못하면 null)
-     */
-    private static function coreClassLoader(): ?ClassLoader
-    {
-        $coreVendorDir = realpath(base_path('vendor'));
-
-        if ($coreVendorDir !== false) {
-            foreach (ClassLoader::getRegisteredLoaders() as $vendorDir => $loader) {
-                if (realpath($vendorDir) === $coreVendorDir) {
-                    return $loader;
-                }
-            }
+        foreach ($loaders as $loader) {
+            self::registerExtensionAutoload($loader);
+            break;
         }
-
-        $loader = require base_path('vendor/autoload.php');
-
-        return $loader instanceof ClassLoader ? $loader : null;
     }
 
     /**
@@ -199,8 +136,6 @@ class ExtensionManager
      *
      * bootstrap/cache/autoload-extensions.php 파일에
      * 설치된 모듈/플러그인의 PSR-4 매핑과 classmap을 저장합니다.
-     *
-     * @return void 반환값 없음
      */
     public function generateAutoloadFile(): void
     {
@@ -265,8 +200,8 @@ class ExtensionManager
             return;
         }
 
-        // 파일 내용 생성 — 활성 확장 파일 지문을 함께 기록해 파일만 교체한 확장을 부팅이 알아채게 한다 (7.1.3)
-        $content = $this->buildAutoloadFileContent($psr4, $classmap, $files, $vendorAutoloads, $srcClassmap, $this->fingerprintForPsr4($psr4));
+        // 파일 내용 생성
+        $content = $this->buildAutoloadFileContent($psr4, $classmap, $files, $vendorAutoloads, $srcClassmap);
 
         // 디렉토리 확인
         $dir = dirname($this->autoloadFilePath);
@@ -274,9 +209,8 @@ class ExtensionManager
             File::makeDirectory($dir, 0755, true);
         }
 
-        // 파일 저장 — 제자리에 덮어쓰지 않는다. 쓰는 사이 다른 요청이 반쯤 쓰인 파일을 읽었다(#882).
-        // 임시 파일에 다 쓴 뒤 바꿔 끼운다.
-        AtomicBootstrapCache::write($this->autoloadFilePath, $content);
+        // 파일 저장
+        File::put($this->autoloadFilePath, $content);
 
         Log::info('확장 오토로드 파일 생성 완료', [
             'path' => $this->autoloadFilePath,
@@ -340,14 +274,10 @@ class ExtensionManager
      * @param  array  $psr4  PSR-4 네임스페이스 매핑
      * @param  array  $classmap  클래스맵 파일 목록
      * @param  array  $files  헬퍼 파일 목록
-     * @param  array  $vendorAutoloads  확장 vendor/autoload.php 경로 목록
-     * @param  array  $srcClassmap  확장 소스 classmap (FQCN => 상대 경로)
-     * @param  array<string, string>  $fingerprint  활성 확장 파일 지문 (ExtensionFingerprint::compute)
      * @return string PHP 파일 내용
      */
-    protected function buildAutoloadFileContent(array $psr4, array $classmap, array $files = [], array $vendorAutoloads = [], array $srcClassmap = [], array $fingerprint = []): string
+    protected function buildAutoloadFileContent(array $psr4, array $classmap, array $files = [], array $vendorAutoloads = [], array $srcClassmap = []): string
     {
-        $fingerprintPhp = var_export($fingerprint, true);
         $generatedAt = now()->toDateTimeString();
 
         // JSON으로 변환 후 PHP 배열 문법으로 변환 (깔끔한 들여쓰기)
@@ -382,119 +312,9 @@ return [
     'src_classmap' => {$srcClassmapPhp},
     'files' => {$filesPhp},
     'vendor_autoloads' => {$vendorAutoloadsPhp},
-    'extensions_fingerprint' => {$fingerprintPhp},
 ];
 
 PHP;
-    }
-
-    /**
-     * PSR-4 매핑이 가리키는 확장들의 파일 지문을 계산합니다.
-     *
-     * @param  array<string, string|array<int, string>>  $psr4  네임스페이스 => 상대 경로 (modules/{id}/… · plugins/{id}/…)
-     * @return array<string, string> 확장 지문 ({@see ExtensionFingerprint::compute()})
-     */
-    protected function fingerprintForPsr4(array $psr4): array
-    {
-        $extensions = ['modules' => [], 'plugins' => []];
-        foreach ($psr4 as $paths) {
-            foreach ((array) $paths as $path) {
-                if (preg_match('#^(modules|plugins)/([^/_][^/]*)/#', str_replace('\\', '/', (string) $path), $m)) {
-                    $extensions[$m[1]][$m[2]] = $m[2];
-                }
-            }
-        }
-
-        return ExtensionFingerprint::compute(array_values($extensions['modules']), array_values($extensions['plugins']));
-    }
-
-    /**
-     * 진입점·서비스 공급자가 등록한 오토로드 파일의 지문과 확장 소스 classmap 키를 기억합니다.
-     *
-     * @param  array<string, mixed>  $autoloads  autoload-extensions.php 반환값
-     * @return void 반환값 없음
-     */
-    public static function rememberRegisteredAutoload(array $autoloads): void
-    {
-        self::$registeredAutoloadState = [
-            'fingerprint' => is_array($autoloads['extensions_fingerprint'] ?? null) ? $autoloads['extensions_fingerprint'] : [],
-            'src_keys' => array_keys($autoloads['src_classmap'] ?? []),
-        ];
-    }
-
-    /**
-     * 등록된 확장 오토로드가 낡았으면(확장 파일만 교체) Composer 없이 다시 만들어 현재 프로세스에 반영합니다.
-     *
-     * 지문(매니페스트·진입 파일·composer.json 수정 시각)이 다르면 PHP 생성부만 다시 돌린다. 새 파일은 실제 파일을
-     * 훑어 만들므로 사라진 클래스가 빠지고, 이미 등록된 classmap 에 남은 그 클래스는 null 로 덮어 PSR-4 폴백으로
-     * 찾게 한다(Composer ClassLoader 는 classmap 값을 isset 으로 보므로 null 이면 PSR-4 로 넘어간다).
-     * 지문이 없는 옛 파일(7.1.2 이하가 만든 것)은 판정하지 않는다 — 코어 업데이트가 다시 만든다.
-     *
-     * 캐시 파일이 **아예 없으면**(서버 이전·배포 도구가 비움) 등록된 것이 없어 낡았는지 판정할 수 없다. 그대로 두면
-     * 확장별 폴백이 PSR-4 만 등록해 확장의 composer 의존성과 헬퍼 파일이 빠진 채 500 이 난다 — 이때도 다시 만든다 (7.1.6).
-     *
-     * @return bool 다시 만들었으면 true
-     */
-    public function healStaleAutoload(): bool
-    {
-        $state = self::$registeredAutoloadState;
-        if ($state === null) {
-            return $this->healMissingAutoload();
-        }
-        if ($state['fingerprint'] === [] || ExtensionFingerprint::matches($state['fingerprint'])) {
-            return false;
-        }
-
-        Log::warning('확장 파일이 바뀌어 확장 오토로드 캐시를 다시 만듭니다', [
-            'extensions' => ExtensionFingerprint::changedKeys($state['fingerprint']),
-        ]);
-
-        $oldKeys = $state['src_keys'];
-        $this->generateAutoloadFile();
-        $this->reregisterRuntimeAutoload();
-        ExtensionFingerprint::forget();
-
-        $removed = array_values(array_diff($oldKeys, self::$registeredAutoloadState['src_keys'] ?? []));
-        if ($removed !== [] && class_exists(ClassLoader::class, false)) {
-            self::coreClassLoader()?->addClassMap(array_fill_keys($removed, null));
-        }
-
-        return true;
-    }
-
-    /**
-     * 확장 오토로드 캐시 파일이 없으면 다시 만들어 현재 프로세스에 반영합니다.
-     *
-     * 다시 만들었는데도 파일이 없을 수 있다(설치된 확장이 0건으로 조회돼 기존 캐시를 보존하는 갈래). 그때 매 요청이
-     * 같은 일을 되풀이하지 않도록 표식 파일로 잠시 쉰다. root 프로세스는 만들지 않는다 — root 가 만든 캐시 파일은
-     * 웹 서버 사용자가 고쳐 쓰지 못한다.
-     *
-     * @return bool 다시 만들었으면 true
-     */
-    protected function healMissingAutoload(): bool
-    {
-        if (file_exists($this->autoloadFilePath)) {
-            return false;
-        }
-
-        if (! CacheSelfHeal::claim('autoload-extensions', CacheSelfHeal::EXTENSION_BACKOFF_SECONDS)) {
-            return false;
-        }
-
-        Log::warning('확장 오토로드 캐시 파일이 없어 다시 만듭니다');
-
-        $this->generateAutoloadFile();
-
-        if (! file_exists($this->autoloadFilePath)) {
-            // 만들지 못했다(확장 0건 보존 갈래 등) — 표식이 남아 잠시 뒤에 다시 시도한다
-            return false;
-        }
-
-        $this->reregisterRuntimeAutoload();
-        ExtensionFingerprint::forget();
-        CacheSelfHeal::clear('autoload-extensions');
-
-        return true;
     }
 
     /**
@@ -536,19 +356,16 @@ PHP;
      * public/index.php 및 artisan에서 호출됩니다.
      *
      * @param  ClassLoader  $loader  Composer ClassLoader 인스턴스
-     * @param  string|null  $autoloadFile  오토로드 파일 경로 (null 이면 bootstrap/cache/autoload-extensions.php)
-     * @return void 반환값 없음
      */
-    public static function registerExtensionAutoload($loader, ?string $autoloadFile = null): void
+    public static function registerExtensionAutoload($loader): void
     {
-        $autoloadFile ??= base_path('bootstrap/cache/autoload-extensions.php');
+        $autoloadFile = base_path('bootstrap/cache/autoload-extensions.php');
 
         if (! file_exists($autoloadFile)) {
             return;
         }
 
         $autoloads = require $autoloadFile;
-        self::rememberRegisteredAutoload(is_array($autoloads) ? $autoloads : []);
 
         // PSR-4 네임스페이스 등록
         if (! empty($autoloads['psr4'])) {
@@ -576,12 +393,10 @@ PHP;
         }
 
         // Classmap 파일 로드 (module.php, plugin.php)
-        // 진입 클래스가 이미 선언돼 있으면 건너뛴다 — 다른 경로 사본(_bundled/_pending)에서 먼저 선언됐으면
-        // 경로가 달라 require_once 의 중복 제거가 통하지 않아 "Cannot declare class" 로 프로세스가 죽는다.
         if (! empty($autoloads['classmap'])) {
             foreach ($autoloads['classmap'] as $file) {
                 $absolutePath = base_path($file);
-                if (file_exists($absolutePath) && ! self::isEntryClassDeclared($file)) {
+                if (file_exists($absolutePath)) {
                     require_once $absolutePath;
                 }
             }
@@ -598,85 +413,14 @@ PHP;
         }
 
         // Vendor autoloads 로드 (모듈/플러그인의 composer 의존성)
-        // 오토로더 클래스가 이미 선언돼 있으면 건너뛴다 — 진입 파일이 자체 vendor 를 부르는 확장은 설치 전 확인이
-        // _bundled 경로 사본으로 같은 이름의 ComposerAutoloaderInit 를 먼저 선언할 수 있고, 경로가 달라 require_once 의
-        // 중복 제거가 통하지 않아 "Cannot declare class" 로 프로세스가 죽는다(#159).
         if (! empty($autoloads['vendor_autoloads'])) {
             foreach ($autoloads['vendor_autoloads'] as $vendorAutoload) {
                 $absolutePath = base_path($vendorAutoload);
-                if (! file_exists($absolutePath)) {
-                    continue;
+                if (file_exists($absolutePath)) {
+                    require_once $absolutePath;
                 }
-
-                $declared = self::declaredVendorAutoloaderClass($absolutePath);
-                if ($declared !== null) {
-                    if (! self::wasIncluded($absolutePath)) {
-                        Log::debug('다른 경로 사본에서 이미 선언된 확장 vendor 오토로더를 건너뜁니다', [
-                            'path' => $vendorAutoload,
-                            'class' => $declared,
-                        ]);
-                    }
-
-                    continue;
-                }
-
-                require_once $absolutePath;
             }
         }
-    }
-
-    /**
-     * 확장 vendor 의 Composer 오토로더 클래스(`ComposerAutoloaderInit…`)가 이미 선언돼 있는지 확인합니다.
-     *
-     * 같은 composer.json 으로 만든 vendor 는 `_bundled`·`_pending`·활성 사본이 같은 클래스명을 가진다. 한 사본이 선언된 뒤
-     * 다른 경로 사본을 require 하면 치명 오류로 죽으므로 require 전에 거른다. 접미어는 Composer `autoloader-suffix`
-     * 설정으로 임의 문자열일 수 있어 16진수로 한정하지 않는다.
-     *
-     * @param  string  $absoluteAutoloadPath  vendor/autoload.php 절대경로
-     * @return bool 이미 선언돼 있으면 true (파일 없음·클래스명 없음이면 false)
-     */
-    public static function isVendorAutoloaderDeclared(string $absoluteAutoloadPath): bool
-    {
-        return self::declaredVendorAutoloaderClass($absoluteAutoloadPath) !== null;
-    }
-
-    /**
-     * vendor/autoload.php 가 부르는 오토로더 클래스가 이미 선언돼 있으면 그 클래스명을 돌려줍니다.
-     *
-     * @param  string  $absoluteAutoloadPath  vendor/autoload.php 절대경로
-     * @return string|null 선언된 클래스명 (없으면 null)
-     */
-    private static function declaredVendorAutoloaderClass(string $absoluteAutoloadPath): ?string
-    {
-        if (! is_file($absoluteAutoloadPath)) {
-            return null;
-        }
-
-        $contents = @file_get_contents($absoluteAutoloadPath);
-        if ($contents === false || ! preg_match('/ComposerAutoloaderInit[A-Za-z0-9_]+/', $contents, $matches)) {
-            return null;
-        }
-
-        return class_exists($matches[0], false) ? $matches[0] : null;
-    }
-
-    /**
-     * 현재 프로세스가 이미 포함한 파일인지 확인합니다 (경로 구분자·대소문자 차이 무시).
-     *
-     * @param  string  $absolutePath  절대경로
-     * @return bool 포함 여부
-     */
-    private static function wasIncluded(string $absolutePath): bool
-    {
-        $target = strtolower(str_replace('\\', '/', realpath($absolutePath) ?: $absolutePath));
-
-        foreach (get_included_files() as $included) {
-            if (strtolower(str_replace('\\', '/', $included)) === $target) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**
@@ -870,52 +614,26 @@ PHP;
      */
     protected function buildSourceClassmap(array $psr4): array
     {
-        $absolutePsr4 = [];
-        foreach ($psr4 as $namespace => $paths) {
-            $absolutePsr4[$namespace] = array_map(fn (string $relativePath) => base_path($relativePath), (array) $paths);
-        }
-
-        $classmap = [];
-        foreach (self::scanPsr4Classes($absolutePsr4) as $fqcn => $absolutePath) {
-            // base_path 상대경로로 정규화 (autoload-extensions.php 의 다른 경로와 일관)
-            $classmap[$fqcn] = str_replace('\\', '/', substr($absolutePath, strlen(base_path()) + 1));
-        }
-
-        ksort($classmap);
-
-        return $classmap;
-    }
-
-    /**
-     * PSR-4 디렉토리를 재귀 스캔해 FQCN → 절대경로 맵을 만듭니다.
-     *
-     * 확장 자체 `vendor/`·`node_modules/` 하위는 훑지 않는다 — 번들 플러그인은 PSR-4 가 확장 루트(`./`)도 가리켜
-     * 그 아래를 통째로 읽게 되는데, 그곳 파일은 아래 네임스페이스 접두 필터가 어차피 버린다(산출물 동일, 스캔 비용만 절감).
-     *
-     * @param  array<string, array<int, string>>  $psr4  네임스페이스 → 절대경로 목록
-     * @return array<string, string> FQCN → 절대경로 (.php 포함)
-     */
-    protected static function scanPsr4Classes(array $psr4): array
-    {
         $classmap = [];
 
         foreach ($psr4 as $namespace => $paths) {
-            foreach ($paths as $absoluteDir) {
+            foreach ((array) $paths as $relativePath) {
+                $absoluteDir = base_path($relativePath);
+
                 if (! is_dir($absoluteDir)) {
                     continue;
                 }
 
-                $iterator = new \RecursiveIteratorIterator(new \RecursiveCallbackFilterIterator(
-                    new \RecursiveDirectoryIterator($absoluteDir, \RecursiveDirectoryIterator::SKIP_DOTS),
-                    fn (\SplFileInfo $entry) => ! ($entry->isDir() && in_array($entry->getFilename(), ['vendor', 'node_modules'], true))
-                ));
+                $iterator = new \RecursiveIteratorIterator(
+                    new \RecursiveDirectoryIterator($absoluteDir, \RecursiveDirectoryIterator::SKIP_DOTS)
+                );
 
                 foreach ($iterator as $file) {
                     if ($file->getExtension() !== 'php') {
                         continue;
                     }
 
-                    $fqcn = self::extractFqcnFromFile($file->getPathname());
+                    $fqcn = $this->extractFqcnFromFile($file->getPathname());
                     if ($fqcn === null) {
                         continue;
                     }
@@ -926,10 +644,14 @@ PHP;
                         continue;
                     }
 
-                    $classmap[$fqcn] = $file->getPathname();
+                    // base_path 상대경로로 정규화 (autoload-extensions.php 의 다른 경로와 일관)
+                    $rel = str_replace('\\', '/', substr($file->getPathname(), strlen(base_path()) + 1));
+                    $classmap[$fqcn] = $rel;
                 }
             }
         }
+
+        ksort($classmap);
 
         return $classmap;
     }
@@ -942,7 +664,7 @@ PHP;
      * @param  string  $filePath  PHP 파일 절대경로
      * @return string|null FQCN 또는 null
      */
-    protected static function extractFqcnFromFile(string $filePath): ?string
+    protected function extractFqcnFromFile(string $filePath): ?string
     {
         $contents = @file_get_contents($filePath);
         if ($contents === false) {
@@ -1069,32 +791,6 @@ PHP;
     }
 
     /**
-     * 오토로드 classmap 의 진입 파일(module.php·plugin.php)이 선언하는 클래스가 이미 메모리에 있는지 확인합니다.
-     *
-     * ZIP·GitHub 설치는 "이미 설치됐는가" 를 확인하며 `_bundled` 사본의 진입 파일로 진짜 클래스명을 선언하고,
-     * 설치 뒤 런타임 오토로드 재등록이 활성 사본의 진입 파일을 다시 읽는다. 두 파일은 경로가 달라
-     * `require_once` 가 막지 못하므로, 매니저의 로드({@see ModuleManager::loadModules()})와 같이 클래스 존재로 거른다.
-     * 진입 파일이 아닌 경로는 판정하지 않는다(false).
-     *
-     * @param  string  $relativePath  base_path 기준 진입 파일 경로 (예: modules/sirsoft-board/module.php)
-     * @return bool 진입 클래스가 이미 선언돼 있으면 true
-     */
-    public static function isEntryClassDeclared(string $relativePath): bool
-    {
-        $normalized = str_replace('\\', '/', $relativePath);
-
-        if (! preg_match('#(?:^|/)([^/]+)/(module|plugin)\.php$#', $normalized, $matches)) {
-            return false;
-        }
-
-        $class = $matches[2] === 'module'
-            ? 'Modules\\'.self::directoryToNamespace($matches[1]).'\\Module'
-            : 'Plugins\\'.self::directoryToNamespace($matches[1]).'\\Plugin';
-
-        return class_exists($class, false);
-    }
-
-    /**
      * FQCN 으로부터 등록된 확장(모듈/플러그인) 식별자를 추론합니다.
      *
      * `directoryToNamespace()` 의 역변환. PSR-4 prefix `Modules\` / `Plugins\` 의
@@ -1186,7 +882,6 @@ PHP;
      * 실패 시 InvalidArgumentException을 throw합니다.
      *
      * @param  string  $identifier  확장 식별자
-     * @return void 반환값 없음
      *
      * @throws \InvalidArgumentException 식별자 형식이 올바르지 않을 때
      */
@@ -1217,7 +912,6 @@ PHP;
      *
      * @param  string  $type  확장 타입 ('modules' 또는 'plugins')
      * @param  string  $dirName  확장 디렉토리명 (예: 'sirsoft-ecommerce')
-     * @return void 반환값 없음
      */
     public static function registerExtensionAutoloadPaths(string $type, string $dirName): void
     {
@@ -1244,93 +938,6 @@ PHP;
                     $loader->addPsr4($namespace, $absolutePath);
                 }
             }
-        }
-
-        // PSR-4 만으로는 같은 프로세스의 앞선 실패 조회(설치 전 확인·고아 폴더 부팅 등)가 남긴 음성 캐시를 풀지 못한다 (#159)
-        self::registerExtensionClassmapAt(base_path("{$type}/{$dirName}"), $loader);
-    }
-
-    /**
-     * 오토로드 캐시에 없는 활성 확장이면 진입 파일을 읽기 전에 그 확장 하나의 PSR-4·소스 classmap 을 등록합니다.
-     *
-     * 부팅의 확장 로드는 활성 디렉토리 진입 파일을 모두 읽는다. 설치된 확장은 진입점이 캐시로 먼저 등록하지만, 캐시에 없는
-     * 폴더(설치가 끊겨 DB 행만 지워진 사본·손으로 복사한 사본)는 등록되지 않아, 진입 클래스가 자기 PSR-4 클래스를 상속하면
-     * 부팅이 「Class not found」 로 죽고 복구 명령(`{type}:install {id} --force`)조차 실행되지 않았다(#159). 캐시 지문에
-     * 있거나 composer.json 의 PSR-4 접두가 모두 등록된 확장은 아무것도 하지 않는다(설치된 확장의 부팅 비용 없음).
-     *
-     * @param  string  $absoluteExtensionDir  확장 활성 디렉토리 절대경로
-     * @param  string  $fingerprintKey  오토로드 캐시 지문 키 (`plugins:{id}`·`modules:{id}`)
-     * @return void 반환값 없음
-     */
-    public static function registerAutoloadIfMissing(string $absoluteExtensionDir, string $fingerprintKey): void
-    {
-        if (isset(self::$registeredAutoloadState['fingerprint'][$fingerprintKey])) {
-            return;
-        }
-
-        $composerFile = $absoluteExtensionDir.'/composer.json';
-        if (! file_exists($composerFile)) {
-            return;
-        }
-
-        $psr4 = json_decode((string) file_get_contents($composerFile), true)['autoload']['psr-4'] ?? [];
-        if (! is_array($psr4) || $psr4 === []) {
-            return;
-        }
-
-        $loader = self::coreClassLoader();
-        if ($loader === null) {
-            return;
-        }
-
-        $registered = $loader->getPrefixesPsr4();
-        if (array_diff_key($psr4, $registered) === []) {
-            return;
-        }
-
-        foreach ($psr4 as $namespace => $paths) {
-            foreach ((array) $paths as $path) {
-                $absolutePath = $absoluteExtensionDir.'/'.$path;
-                if (is_dir($absolutePath)) {
-                    $loader->addPsr4($namespace, $absolutePath);
-                }
-            }
-        }
-
-        self::registerExtensionClassmapAt($absoluteExtensionDir, $loader);
-    }
-
-    /**
-     * 확장 하나의 소스 classmap(FQCN → 절대경로)을 Composer 로더에 등록합니다.
-     *
-     * Composer `ClassLoader::findFile()` 은 classMap → missingClasses(음성 캐시) → PSR-4 순으로 본다. 같은 프로세스에서
-     * 그 확장의 클래스를 먼저 못 찾은 적이 있으면 `addPsr4()` 를 해도 음성 캐시에 막혀 「Class not found」 가 나지만,
-     * classMap 은 음성 캐시보다 먼저 보므로 여기서 등록한 클래스는 찾는다. 클래스 로딩은 여전히 지연(lazy)이다.
-     *
-     * @param  string  $absoluteExtensionDir  확장 디렉토리 절대경로 (composer.json 이 있는 곳)
-     * @param  ClassLoader  $loader  등록할 Composer 로더
-     * @return void 반환값 없음
-     */
-    public static function registerExtensionClassmapAt(string $absoluteExtensionDir, ClassLoader $loader): void
-    {
-        $composerFile = $absoluteExtensionDir.'/composer.json';
-        if (! file_exists($composerFile)) {
-            return;
-        }
-
-        $psr4 = json_decode((string) file_get_contents($composerFile), true)['autoload']['psr-4'] ?? [];
-        if (! is_array($psr4) || $psr4 === []) {
-            return;
-        }
-
-        $absolutePsr4 = [];
-        foreach ($psr4 as $namespace => $paths) {
-            $absolutePsr4[$namespace] = array_map(fn (string $p) => $absoluteExtensionDir.'/'.$p, (array) $paths);
-        }
-
-        $classmap = self::scanPsr4Classes($absolutePsr4);
-        if ($classmap !== []) {
-            $loader->addClassMap($classmap);
         }
     }
 
@@ -1410,130 +1017,6 @@ PHP;
         return array_filter($require, function (string $package) {
             return $package !== 'php' && ! str_starts_with($package, 'ext-');
         }, ARRAY_FILTER_USE_KEY);
-    }
-
-    /**
-     * 확장이 composer.json 에 선언한 PHP 확장 요구를 반환합니다.
-     *
-     * @param  string  $type  확장 타입 ('modules' 또는 'plugins')
-     * @param  string  $dirName  확장 디렉토리명 (예: 'sirsoft-pay_nhnkcp')
-     * @return array{required: list<string>, suggested: array<string, string>} 필수 확장 이름 / 권장 확장 이름 => 사유
-     */
-    public function getPhpExtensionRequirements(string $type, string $dirName): array
-    {
-        return $this->getPhpExtensionRequirementsAt(base_path("{$type}/{$dirName}"));
-    }
-
-    /**
-     * 지정 경로의 composer.json 에 선언된 PHP 확장 요구를 반환합니다.
-     *
-     * `require.ext-*` 는 필수(설치·활성화 차단), `suggest.ext-*` 는 권장(경고만)이다. 이름은 `ext-` 를 떼고
-     * 소문자로 정규화한다. `getComposerDependencies[At]()` 가 `ext-*` 를 버리는 것과는 목적이 다르다 — 그쪽은
-     * 「composer install 을 돌릴지」만 정한다.
-     *
-     * @param  string  $path  composer.json이 있는 디렉토리 경로 (활성·스테이징·_bundled 어느 것이든)
-     * @return array{required: list<string>, suggested: array<string, string>} 필수 확장 이름 / 권장 확장 이름 => 사유
-     */
-    public function getPhpExtensionRequirementsAt(string $path): array
-    {
-        $result = ['required' => [], 'suggested' => []];
-        $composerFile = $path.DIRECTORY_SEPARATOR.'composer.json';
-
-        if (! is_file($composerFile)) {
-            return $result;
-        }
-
-        $composerJson = json_decode((string) file_get_contents($composerFile), true);
-        if (! is_array($composerJson)) {
-            return $result;
-        }
-
-        foreach (array_keys(is_array($composerJson['require'] ?? null) ? $composerJson['require'] : []) as $package) {
-            if (str_starts_with((string) $package, 'ext-')) {
-                $result['required'][] = strtolower(substr((string) $package, 4));
-            }
-        }
-
-        foreach (is_array($composerJson['suggest'] ?? null) ? $composerJson['suggest'] : [] as $package => $reason) {
-            if (str_starts_with((string) $package, 'ext-')) {
-                $result['suggested'][strtolower(substr((string) $package, 4))] = is_string($reason) ? $reason : '';
-            }
-        }
-
-        return $result;
-    }
-
-    /**
-     * 지정 경로 확장의 PHP 확장 요구와 미충족 목록을 함께 반환합니다.
-     *
-     * 로드 여부는 컨테이너의 {@see PhpExtensionProbe} 로 판정한다(테스트가 부재를 주입).
-     *
-     * @param  string  $path  composer.json이 있는 디렉토리 경로
-     * @return array{required: list<string>, suggested: array<string, string>, missing_required: list<string>, missing_suggested: list<string>} 선언과 미충족 목록
-     */
-    public function checkPhpExtensionRequirementsAt(string $path): array
-    {
-        $declared = $this->getPhpExtensionRequirementsAt($path);
-        $probe = app(PhpExtensionProbe::class);
-
-        return $declared + [
-            'missing_required' => $probe->missing($declared['required']),
-            'missing_suggested' => $probe->missing(array_keys($declared['suggested'])),
-        ];
-    }
-
-    /**
-     * 확장이 필수로 선언한 PHP 확장이 서버에 없으면 막습니다. (설치·활성화 게이트)
-     *
-     * @param  string  $extensionType  확장 타입 (module|plugin)
-     * @param  string  $identifier  확장 식별자
-     * @param  string  $path  composer.json 이 있는 확장 디렉토리
-     * @param  string|array<string, string>|Closure(): (string|array<string, string>)  $name  사람이 읽는 확장 이름 (매니페스트 name — 다국어 배열이면 현재 로케일, 비우면 식별자). 클로저면 미충족일 때만 호출한다
-     * @return void 반환값 없음
-     *
-     * @throws PhpExtensionRequirementException 필수 PHP 확장이 없을 때
-     */
-    public function assertPhpExtensionRequirements(string $extensionType, string $identifier, string $path, string|array|Closure $name = ''): void
-    {
-        $missing = $this->checkPhpExtensionRequirementsAt($path)['missing_required'];
-
-        if ($missing !== []) {
-            $name = $name instanceof Closure ? $name() : $name;
-            $label = is_array($name) ? (string) ($name[app()->getLocale()] ?? reset($name) ?: '') : $name;
-
-            throw new PhpExtensionRequirementException($extensionType, $identifier, $missing, $label);
-        }
-    }
-
-    /**
-     * 확장이 필수로 선언한 PHP 확장이 서버에 없으면 경고만 남깁니다. (업데이트·강제 활성화·코어 업데이트 중 활성화)
-     *
-     * 생명주기 경고(`php_extension_missing`)와 로그에 남기고 작업은 계속한다 — 업데이트를 막으면 보안 수정까지
-     * 못 받게 되므로 차단하지 않는다(#151 D3). 권장(suggest) 미충족은 관리자 배지로만 알린다.
-     *
-     * @param  string  $extensionType  확장 타입 (module|plugin)
-     * @param  string  $identifier  확장 식별자
-     * @param  string  $path  composer.json 이 있는 확장 디렉토리 (업데이트는 스테이징 경로)
-     * @return list<string> 서버에 없는 필수 PHP 확장 이름
-     */
-    public function warnPhpExtensionRequirements(string $extensionType, string $identifier, string $path): array
-    {
-        $missing = $this->checkPhpExtensionRequirementsAt($path)['missing_required'];
-
-        if ($missing !== []) {
-            Log::warning('확장이 요구하는 PHP 확장이 서버에 없습니다', [
-                'type' => $extensionType,
-                'identifier' => $identifier,
-                'missing' => $missing,
-            ]);
-            LifecycleWarnings::current()->add(
-                'php_extension_missing',
-                $identifier,
-                __('extensions.warnings.php_extension_missing', ['extensions' => implode(', ', $missing)]),
-            );
-        }
-
-        return $missing;
     }
 
     /**
@@ -1845,8 +1328,14 @@ PHP;
             ];
         }
 
-        // unzip 명령어 폴백은 두지 않는다 — 항목 이름 검사(역슬래시 정규화·압축 밖 경로 거부)를
-        // 거치지 않고 심볼릭 링크까지 풀기 때문이다. ZipArchive(zip 확장)는 필수 요구사항이다.
+        // 2단계: unzip 명령어 (Linux만)
+        if (PHP_OS_FAMILY !== 'Windows' && $this->isUnzipAvailable()) {
+            $strategies[] = [
+                'archive_type' => 'zipball',
+                'method' => 'extractWithUnzip',
+                'label' => 'unzip',
+            ];
+        }
 
         return $strategies;
     }
@@ -1856,25 +1345,60 @@ PHP;
      *
      * @param  string  $zipPath  ZIP 파일 경로
      * @param  string  $extractDir  추출 대상 디렉토리
-     * @return void 반환값 없음
      *
      * @throws \RuntimeException 추출 실패 시
      */
     public function extractWithZipArchive(string $zipPath, string $extractDir): void
     {
-        if (! class_exists(\ZipArchive::class)) {
+        $zip = new \ZipArchive;
+        if ($zip->open($zipPath) !== true) {
             throw new \RuntimeException(__('settings.core_update.zip_extract_failed'));
         }
 
-        // 역슬래시 경로 정규화 + 압축 밖 경로·심볼릭 링크 거부
-        SafeArchiveExtractor::extractZip($zipPath, $extractDir);
+        $zip->extractTo($extractDir);
+        $zip->close();
+    }
+
+    /**
+     * unzip 명령어를 사용하여 아카이브를 추출합니다.
+     *
+     * @param  string  $zipPath  ZIP 파일 경로
+     * @param  string  $extractDir  추출 대상 디렉토리
+     *
+     * @throws \RuntimeException 추출 실패 시
+     */
+    public function extractWithUnzip(string $zipPath, string $extractDir): void
+    {
+        $escapedZip = escapeshellarg($zipPath);
+        $escapedDir = escapeshellarg($extractDir);
+
+        exec("unzip -o {$escapedZip} -d {$escapedDir} 2>&1", $output, $exitCode);
+
+        if ($exitCode !== 0) {
+            throw new \RuntimeException(__('settings.core_update.unzip_command_failed', [
+                'code' => $exitCode,
+                'output' => implode("\n", array_slice($output, -5)),
+            ]));
+        }
+    }
+
+    /**
+     * unzip 명령어 사용 가능 여부를 확인합니다.
+     *
+     * @return bool unzip 실행 파일이 PATH 에 존재하면 true
+     */
+    public function isUnzipAvailable(): bool
+    {
+        exec('which unzip 2>/dev/null', $output, $exitCode);
+
+        return $exitCode === 0;
     }
 
     /**
      * GitHub에서 확장을 다운로드하고 추출합니다.
      *
      * 코어 업데이트의 downloadUpdate()와 동일한 폴백 체인을 사용합니다.
-     * (zipball/ZipArchive — unzip 명령 폴백은 7.1.3 에서 제거)
+     * (zipball/ZipArchive → zipball/unzip)
      *
      * 모든 HTTP 호출은 `GithubHelper` (Http 파사드 기반)로 위임되어
      * `allow_url_fopen=Off` 환경에서도 정상 동작합니다.
@@ -1898,7 +1422,6 @@ PHP;
         }
 
         $lastError = null;
-        $resolvedAny = false;
 
         foreach ($strategies as $strategy) {
             $archiveType = $strategy['archive_type'];
@@ -1909,8 +1432,6 @@ PHP;
             if (! $archiveUrl) {
                 continue;
             }
-
-            $resolvedAny = true;
 
             $extension = $archiveType === 'zipball' ? '.zip' : '.tar.gz';
             $archivePath = $destDir.DIRECTORY_SEPARATOR.'download'.$extension;
@@ -1955,15 +1476,6 @@ PHP;
             }
         }
 
-        // 어느 전략도 아카이브 주소를 얻지 못했다 = 한 번도 내려받지 않았다(태그 없음·GitHub 연결 실패).
-        // 「추출 실패」로 알리면 원인을 추출 도구로 잘못 짚는다(7.1.1 출시 전).
-        if (! $resolvedAny) {
-            throw new \RuntimeException(__('settings.core_update.extension_release_not_found', [
-                'repository' => $owner.'/'.$repo,
-                'version' => $version,
-            ]));
-        }
-
         throw new \RuntimeException(
             __('settings.core_update.all_extract_methods_failed'),
             0,
@@ -1979,7 +1491,7 @@ PHP;
      * 추출 후 extractDir 내용이 단일 디렉토리뿐이면 그 디렉토리를 반환하고,
      * 그 외에는 extractDir 자체를 반환합니다.
      *
-     * downloadAndExtractFromGitHub 와 동일한 추출 전략(ZipArchive + 안전 해제)을
+     * downloadAndExtractFromGitHub 와 동일한 폴백 체인(ZipArchive → unzip)을
      * 사용하며, GitHub 호출은 수행하지 않습니다.
      *
      * @param  string  $zipPath  외부 ZIP 파일 경로

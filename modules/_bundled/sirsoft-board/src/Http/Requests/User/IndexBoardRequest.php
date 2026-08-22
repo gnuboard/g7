@@ -3,7 +3,6 @@
 namespace Modules\Sirsoft\Board\Http\Requests\User;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Modules\Sirsoft\Board\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
 
 /**
  * 활성 게시판 목록(경량) 조회 요청을 검증합니다.
@@ -12,8 +11,6 @@ use Modules\Sirsoft\Board\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
  */
 class IndexBoardRequest extends FormRequest
 {
-    use ProvidesFallbackRuleMessages;
-
     /** 게시판별 최신글 동시 조회 상한 */
     public const MAX_RECENT_POSTS = 10;
 

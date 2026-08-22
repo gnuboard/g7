@@ -9,7 +9,6 @@
 회원가입·비밀번호 재설정·민감 작업 등 모든 IDV 강제 시점은 IdentityPolicy 단일 진실로 통합
 정책 = (scope, target, purpose, applies_to, conditions, enabled, grace, fail_mode) 9개 필드
 미들웨어 `identity.policy:KEY` 부착 또는 `EnforceIdentityPolicyListener` 의 hook scope 매칭으로 자동 enforce
-라우트명으로 매핑할 수 없는 자리는 코드가 정책 키로 직접 건다 — IdentityPolicyService::enforceForRequest() (7.1.0, §2.4)
 applies_to 는 permission 기반 admin 판정 (User::isAdmin() — type='admin' 권한 보유 역할 검사)
 회원가입 단계 분기는 `conditions.signup_stage` 키로 표현 (before_submit / after_create)
 ```
@@ -42,7 +41,7 @@ applies_to 는 permission 기반 admin 판정 (User::isAdmin() — type='admin' 
 
 운영자 입력 UI: 정책 폼 모달의 "우선순위" 입력칸(0~65535, 기본 100) + 정책 목록의 "우선순위" 컬럼. 코어(`sirsoft-admin_basic`)·모듈(`sirsoft-board`/`sirsoft-ecommerce`) 환경설정 정책 탭 모두 동일.
 
-## 2. enforce 경로 (모두 동적 — 정책 DB toggle 만으로 즉시 효과)
+## 2. 두 가지 enforce 경로 (모두 동적 — 정책 DB toggle 만으로 즉시 효과)
 
 ### 2.1 라우트 자동 매핑 (scope=route)
 
@@ -82,12 +81,6 @@ scope=route 가 자동 매핑으로 동일한 "DB toggle = 즉시 효과" 모델
 
 **라우트 작성 시 별도 안전망 코드 작성 불필요** — 어떤 catch-all 패턴을 쓰더라도 IDV 흐름은 항상 글로벌 핸들러까지 도달.
 
-### 2.4 코드에서 정책 키로 거는 자리 (7.1.0)
-
-한 라우트가 입력에 따라 민감 작업이 되기도 하고 아니기도 해서 라우트명으로 매핑할 수 없을 때는 코드가 정책 키로 직접 겁니다 — `IdentityPolicyService::enforceForRequest('정책 키', $request)`. 판정은 라우트 미들웨어와 같은 한 곳(`enforcePolicyForRequest()` — `verification_token` 우회 → `applies_to`·`conditions` → grace → 428)이라 결과가 같고, 정책이 없거나 꺼져 있으면 아무 일도 하지 않습니다. 정책의 `target` 은 보지 않습니다 — 거는 자리가 코드에 고정되므로 그 자리를 만든 쪽이 문서에 적습니다.
-
-코어 사용처: `PUT /api/me`·`PUT /api/user/profile` 로 비밀번호를 함께 바꾸면 `core.profile.password_change`(target 은 전용 경로 `api.me.password`)를 겁니다 — 정보수정 API 가 비밀번호 변경 본인인증의 우회로가 되지 않게 하려는 것입니다([password-policy.md](password-policy.md)).
-
 ## 3. `applies_to` 분기 (permission 기반)
 
 `IdentityPolicyService::isAdminContext()` 가 admin 여부 판정:
@@ -114,19 +107,6 @@ scope=route 가 자동 매핑으로 동일한 "DB toggle = 즉시 효과" 모델
 | `user_role` | `context['user_roles']` | `['admin']` (교집합 1개 이상) |
 | `signup_stage` | `context['signup_stage']` | `'before_submit'` 또는 `'after_create'` |
 
-### 4.0 훅 경로의 `changed_fields` 계산 (7.1.0)
-
-scope=hook 정책은 훅 인자에서 바뀐 항목을 직접 계산한다(`EnforceIdentityPolicyListener::extractChangedFields()`). 순서:
-
-1. 인자 중 `changed_fields` 키를 가진 배열이 있으면 그 값을 그대로 쓴다 — 발행자가 명시한 값이 우선.
-2. 인자에 **모델과 입력 배열**이 함께 있으면(예: `core.user.before_update($user, $data)`) 입력값과 저장된 값을 비교한다.
-   - 모델 컬럼에 있는 키만, 스칼라·null 값만 비교한다. 배열 값(`roles`·`role_ids` 등)은 건너뛴다.
-   - 비교 전에 앞뒤 공백을 지우고 빈 문자열은 null 로 본다 — 폼이 빈 칸을 빈 문자열로 보내도 "바뀜" 이 아니다.
-   - `password` 는 저장값이 해시라 비교하지 않고, 비어 있지 않으면 바뀐 것으로 본다.
-3. 그 외에는 객체의 `getDirty()` — 모델을 채운 **뒤** 발행하는 훅용.
-
-`before_*` 훅은 모델을 채우기 **전에** 발행되므로 모델의 `getDirty()` 는 늘 비어 있다. 7.1.0 전에는 첫 객체의 `getDirty()` 를 곧바로 돌려줘 `core.profile.contact_change`(기본 켜짐)가 이메일·전화·휴대폰을 바꿔도 한 번도 발동하지 않았다. 모델과 입력 배열을 함께 넘기는 확장 훅에 `changed_fields` 조건 정책을 걸면 같은 규칙으로 판정된다.
-
 ### 4.1 `signup_stage` 사용 사례 — 회원가입 단계 분기
 
 | 단계 | 정책 KEY | scope/target | enabled 시 동작 |
@@ -150,43 +130,17 @@ HookManager::addFilter(
 
 **보안**: 훅이 `IdentityPolicy` 외 타입(`null` 등)을 반환하면 원본 정책이 그대로 유지됩니다 (silent retention). 의도적으로 정책을 변경하려면 반드시 `IdentityPolicy` 인스턴스를 반환할 것.
 
-## 5.1 정책 provider_id = 인정할 수단 (7.1.6)
+## 5.1 정책 provider_id 해석 — fallback 체인
 
-정책의 `provider_id` 는 **그 정책이 인정하는 본인인증 수단**입니다(KVE-2026-3188).
+`IdentityPolicyService::enforce()` 는 정책 위반 시 `IdentityVerificationRequiredException` 을 던지는데, 정책에 `provider_id` 가 명시되지 않은 경우 `resolveProviderId()` 가 환경설정의 기본 프로바이더로 자동 fallback 합니다. 운영자가 정책마다 provider 를 일일이 지정하지 않아도 환경설정 default 가 일관 적용되도록 보장합니다.
 
-| 정책 `provider_id` | 인정하는 인증 결과 | 428 이 여는 인증 창 |
-| --- | --- | --- |
-| 지정됨(예: `sirsoft-verification_nhnkcp`) | 그 수단으로 받은 결과만 — 정확히 일치. 토큰 경로·「재요청 주기」(grace) 경로·가입 전/후 정책 모두 | 지정 수단 |
-| `null`(「지정 안 함 — 모든 수단 인정」) | 어떤 수단의 결과든 | 목적의 기본 수단(환경설정 `purpose_providers.{purpose}` → `default_provider` → 등록된 첫 수단) |
+해석 순서:
 
-- 지정 수단을 지금 쓸 수 없으면(미등록·비활성·목적 미지원) **다른 수단으로 대신 발급하지 않습니다.** 정책 강제는
-  `IdentityPolicyProviderUnavailableException`(503, `failure_code=POLICY_PROVIDER_UNAVAILABLE`), `fail_mode=log_only` 정책은
-  기록만 하고 통과합니다. 공개 인증 요청(`POST /api/identity/challenges`)도 `policy_key` 정책이 수단을 지정했으면 그 수단으로만
-  발급하고(생략하면 정책 값, 다른 값이면 422 `identity.errors.provider_policy_mismatch`), 쓸 수 없으면 503 입니다.
-- `IdentityPolicyService::requiredProviderId(IdentityPolicy): ?string` 이 지정 수단을 돌려줍니다(trim, 빈 값은 `null`).
-  `resolveProviderId()` 는 지정 수단이 있으면 쓸 수 있을 때만 그 값, 아니면 `null` 입니다(메일 폴백 없음).
-- 관리자 정책 저장·수정 요청은 등록되고 정책 목적을 지원하는 수단만 받습니다. 수정은 현재 저장된 값과 같으면 플러그인이
-  꺼져 있어도 받아 줍니다 — 그런 정책도 「끄기」 저장은 가능해야 합니다. 운영자는 수단 플러그인을 끄기 전에 그 수단을 지정한
-  정책의 수단을 바꿔야 합니다.
+1. 정책 `provider_id` 가 등록된 provider 면 그대로 사용
+2. 정책 미명시 또는 미등록 provider → `IdentityVerificationManager::resolveForPurpose()` 호출 (purpose 기반 fallback 체인 — 환경설정 `purpose_providers.{purpose}` → `default_provider` → 등록된 첫 provider)
+3. Manager 예외 시 정책의 원본 provider_id 그대로 반환 (정책 정보 보존)
 
-### 5.1.1 인증 결과는 작업 1건에 한 번 (D2)
-
-정책 강제는 `App\Services\IdentityTokenAcceptanceService::accept($token, $purpose, $requiredProviderId, $targetHash, $userId)` 로
-토큰을 판정하고 **소비**합니다(`consumed_at` 조건부 갱신 — 동시 두 요청 중 하나만 이깁니다).
-
-- 결박: purpose 같음 / 지정 수단이 있으면 수단 같음 / 회원이면 `log.user_id === 회원 id`(또는 `user_id` 가 비고 대상 해시
-  일치) / 비회원이고 대상이 있으면 대상 해시 일치 / 대상 개념이 없는 비회원 정책은 purpose·수단·1회만으로 인정.
-- 한 HTTP 요청 = 작업 1건: 같은 요청 안에서는 서로 다른 정책이라도 결박이 맞으면 다시 인정합니다(route 정책과 hook 정책이
-  한 요청에 겹치는 프로필 수정). 상태는 현재 `Request` 의 attributes(`g7.identity.accepted_tokens`)에 둡니다.
-- 요청이 422·428 로 끝나면 `EnforceIdentityPolicy` 미들웨어가 `releaseAccepted()` 로 이 요청이 소비한 것만 되돌립니다(입력
-  오류로 실패한 작업은 인증 결과를 돌려준다). 「재요청 주기」(grace) 안의 재요청 생략은 그대로입니다.
-- 비회원 대상: `EnforceIdentityPolicyListener` 는 훅 인자 중 `target_email` 키를 가진 배열(없으면 요청의 `email` 입력)을
-  대상으로 씁니다. 비회원 대상이 있는 정책 훅을 발행하는 확장은 `['target_email' => …]` 를 인자로 덧붙입니다(이커머스
-  `sirsoft-ecommerce.checkout.before_payment` 가 주문자 이메일을 넘깁니다).
-- 검증 규칙 `App\Rules\IdvTokenRule` 은 `acceptedInRequest()` 를 먼저 봅니다 — 미들웨어가 이미 소비한 토큰도 같은 요청 안에서는
-  유효합니다.
-
-`resolveRenderHint()` 는 위 해석과 같은 수단으로 모달 launcher payload 의 `provider_id` 를 채웁니다.
+`resolveRenderHint()` 와 동일한 우선순위 체인을 적용하여 정책에 provider 가 지정되지 않아도 환경설정 default 가 모달 launcher payload 의 `provider_id` 로 정확히 전달됩니다.
 
 ## 5.2 Service 라이프사이클 훅 (cancel / consume_token)
 
@@ -283,25 +237,24 @@ public function getIdentityPolicies(): array
 
 ## 9. 관련 코드 진입점
 
-- `app/Services/IdentityPolicyService.php` — `resolve()` / `enforce()` / `isAdminContext()` / `policyMatchesContext()` / `enforceForRequest()`·`enforcePolicyForRequest()`(HTTP 요청 문맥 — `verification_token` 우회 + `user_is_admin` / `target_email` 컨텍스트 주입, 7.1.0)
-- `app/Http/Middleware/EnforceIdentityPolicy.php` — 라우트 단계 enforce (판정은 `enforcePolicyForRequest()` 에 위임)
+- `app/Services/IdentityPolicyService.php` — `resolve()` / `enforce()` / `isAdminContext()` / `policyMatchesContext()`
+- `app/Http/Middleware/EnforceIdentityPolicy.php` — 라우트 단계 enforce + `user_is_admin` / `target_email` 컨텍스트 주입
 - `app/Listeners/Identity/EnforceIdentityPolicyListener.php` — 훅 단계 enforce
 - `app/Extension/Helpers/IdentityPolicySyncHelper.php` — Seeder 가 사용하는 upsert + cleanup
 - `app/Models/IdentityPolicy.php` — `HasUserOverrides` 트레이트로 운영자 수정값 보존
 - `config/core.php` `identity_policies` — 코어 기본 정책 선언
 
-## 9.1 정책 ↔ 본인인증 알림 연계
+## 9.1 정책 ↔ 메시지 템플릿 연계
 
-정책이 트리거하는 본인인증 메일 문구는 알림 시스템의 본인인증 알림(`notification_definitions.category = 'identity'` + 메일 채널 `notification_templates`)으로 관리합니다. `IdentityMessageDispatcher` 가 정책 컨텍스트를 받아 가장 구체적인 정의를 fallback 체인으로 고른 뒤 알림 발송 경로(`NotificationDispatcher`)로 보냅니다. 후보는 활성 + category identity + 메일 템플릿이 있는 정의만입니다.
+정책이 트리거하는 본인인증 메일 문구는 별도의 IDV 메시지 템플릿 시스템에서 관리합니다 (알림 시스템과 분리). `IdentityMessageDispatcher` 가 정책 컨텍스트를 받아 가장 구체적인 템플릿을 fallback 체인으로 해석합니다.
 
 ```text
-identity.policy.{policy_key}  →  identity.purpose.{purpose}  →  identity.default
+policy:{policy_key}  →  purpose:{purpose}  →  provider_default
 ```
 
-- 정책별 커스텀 문구가 필요하면 type `identity.policy.{policy_key}` 정의를 추가 (type 이 100자를 넘으면 `identity.policy.~{sha1 앞 20자}`)
-  - 운영자는 운영자 정책(`source_type=admin`)에 한해 관리자 화면에서 추가·삭제할 수 있습니다 (`POST /api/admin/notification-definitions` — `category=identity`, `policy_key`)
-- 그 외에는 코어 기본 6종(`identity.default` + 목적 5종: signup·password_reset·self_update·sensitive_action·login)과 확장이 선언한 목적별 정의가 적용
-- 운영자 편집 UI: 환경설정 → 알림 설정 → 분류 「본인인증」
+- 정책별 커스텀 문구가 필요하면 `(provider_id, scope_type='policy', scope_value=$policy->key)` 정의를 추가
+- 그 외에는 기본 5종(provider_default + 4 purposes)이 자동 적용
+- 운영자 편집 UI: 환경설정 → 본인인증 → "메시지 템플릿" 서브탭
 
 상세: [identity-messages.md](identity-messages.md)
 

@@ -43,11 +43,6 @@ class AttachmentServiceTest extends ModuleTestCase
 
     private User $user;
 
-    /**
-     * 테스트 환경을 준비합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -75,24 +70,12 @@ class AttachmentServiceTest extends ModuleTestCase
         Auth::login($this->user);
     }
 
-    /**
-     * 테스트 환경을 정리합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function tearDown(): void
     {
         Mockery::close();
         parent::tearDown();
     }
 
-    /**
-     * 업로드한 파일을 저장소에 쓰고 첨부 행을 만든다.
-     *
-     * @return void 반환값 없음
-     *
-     * @effects upload_stores_file_and_creates_row
-     */
     #[Test]
     public function test_upload_stores_file_and_creates_attachment(): void
     {
@@ -155,13 +138,6 @@ class AttachmentServiceTest extends ModuleTestCase
         $this->assertEquals('document.pdf', $result->original_filename);
     }
 
-    /**
-     * temp_key 로 올린 첨부는 키를 보존한 임시 첨부 행으로 저장된다.
-     *
-     * @return void 반환값 없음
-     *
-     * @effects temp_upload_stored_under_temp_key_path
-     */
     #[Test]
     public function test_upload_with_temp_key_creates_temp_attachment(): void
     {
@@ -212,13 +188,6 @@ class AttachmentServiceTest extends ModuleTestCase
         $this->assertEquals($tempKey, $result->temp_key);
     }
 
-    /**
-     * 글 없이 올린 첨부는 {slug}/temp/{temp_key} 임시 경로에 저장된다.
-     *
-     * @return void 반환값 없음
-     *
-     * @effects temp_upload_stored_under_temp_key_path
-     */
     #[Test]
     public function test_upload_creates_file_in_temp_path_when_no_post_id(): void
     {
@@ -260,13 +229,6 @@ class AttachmentServiceTest extends ModuleTestCase
         $this->assertEquals(1, $result->id);
     }
 
-    /**
-     * 글이 있으면 날짜별 최종 경로에 바로 저장한다.
-     *
-     * @return void 반환값 없음
-     *
-     * @effects upload_stores_file_and_creates_row
-     */
     #[Test]
     public function test_upload_creates_file_in_final_path_when_post_id_exists(): void
     {
@@ -311,13 +273,6 @@ class AttachmentServiceTest extends ModuleTestCase
         $this->assertEquals(1, $result->id);
     }
 
-    /**
-     * 임시 첨부를 최종 경로로 옮겨 글에 잇고 임시 디렉토리를 정리한다.
-     *
-     * @return void 반환값 없음
-     *
-     * @effects owned_temp_attachments_moved_and_temp_dir_cleaned
-     */
     #[Test]
     public function test_link_temp_attachments_with_move_moves_files_and_updates_db(): void
     {
@@ -332,8 +287,6 @@ class AttachmentServiceTest extends ModuleTestCase
         $attachment1->path = "{$slug}/temp/{$tempKey}/uuid1.pdf";
         $attachment1->stored_filename = 'uuid1.pdf';
         $attachment1->id = 1;
-        // 올린 사람 = 로그인 회원 — 회원은 본인이 올린 임시 첨부만 잇는다(#883)
-        $attachment1->created_by = $this->user->id;
         $attachment1->shouldReceive('update')
             ->once()
             ->with(Mockery::on(function ($data) use ($postId, $slug, $datePath) {
@@ -341,7 +294,6 @@ class AttachmentServiceTest extends ModuleTestCase
                     && $data['temp_key'] === null
                     && str_starts_with($data['path'], "{$slug}/{$datePath}/")
                     && str_ends_with($data['path'], 'uuid1.pdf')
-                    && $data['order'] === 1
                     && isset($data['board_id']);
             }))
             ->andReturn(true);
@@ -350,8 +302,6 @@ class AttachmentServiceTest extends ModuleTestCase
         $attachment2->path = "{$slug}/temp/{$tempKey}/uuid2.jpg";
         $attachment2->stored_filename = 'uuid2.jpg';
         $attachment2->id = 2;
-        // 올린 사람 = 로그인 회원 — 회원은 본인이 올린 임시 첨부만 잇는다(#883)
-        $attachment2->created_by = $this->user->id;
         $attachment2->shouldReceive('update')
             ->once()
             ->with(Mockery::on(function ($data) use ($postId, $slug, $datePath) {
@@ -359,7 +309,6 @@ class AttachmentServiceTest extends ModuleTestCase
                     && $data['temp_key'] === null
                     && str_starts_with($data['path'], "{$slug}/{$datePath}/")
                     && str_ends_with($data['path'], 'uuid2.jpg')
-                    && $data['order'] === 2
                     && isset($data['board_id']);
             }))
             ->andReturn(true);
@@ -372,9 +321,6 @@ class AttachmentServiceTest extends ModuleTestCase
             ->once()
             ->with($slug, $tempKey)
             ->andReturn($tempAttachments);
-
-        // 새 글이라 기존 첨부가 없다 — 번호는 1 부터 (수정 화면이면 기존 마지막 번호 뒤)
-        $this->repository->shouldReceive('getMaxOrder')->andReturn(0);
 
         // Storage: 파일 이동 (get + put + delete) x 2
         $this->storage
@@ -417,57 +363,12 @@ class AttachmentServiceTest extends ModuleTestCase
         $this->assertEquals(2, $result);
     }
 
-    /**
-     * 임시 디렉토리 정리가 실패해도 이미 옮긴 첨부의 연결은 끝까지 진행한다.
-     *
-     * 정리는 부수 작업이다. 막 옮긴 대용량 파일을 운영체제가 잠시 붙잡고 있으면(삭제 대기) 디렉토리
-     * 순회가 lstat 오류를 던졌고, 그 예외가 글 저장 전체를 500 으로 되돌렸다 — 파일은 이미 본경로로
-     * 옮겨졌는데 DB 는 임시 경로를 가리킨 채 남았다(#703 브라우저 실측). 정리 실패로 남는 것은 빈 임시 디렉토리뿐이다.
-     *
-     * @return void 반환값 없음
-     *
-     * @effects temp_dir_cleanup_failure_does_not_abort_link
-     */
-    #[Test]
-    public function test_link_continues_when_temp_directory_cleanup_fails(): void
-    {
-        $slug = 'notice';
-        $tempKey = '9b7c0f1e-2d3c-4b5a-8e7f-6a5b4c3d2e1f';
-        $postId = 7;
-
-        $attachment = Mockery::mock(Attachment::class)->makePartial();
-        $attachment->path = "{$slug}/temp/{$tempKey}/big.zip";
-        $attachment->stored_filename = 'big.zip';
-        $attachment->id = 3;
-        // 올린 사람 = 로그인 회원 — 회원은 본인이 올린 임시 첨부만 잇는다(#883)
-        $attachment->created_by = $this->user->id;
-        $attachment->shouldReceive('update')->once()->andReturn(true);
-
-        $this->repository->shouldReceive('getByTempKey')->once()->with($slug, $tempKey)
-            ->andReturn(new EloquentCollection([$attachment]));
-        $this->repository->shouldReceive('getMaxOrder')->andReturn(0);
-        $this->storage->shouldReceive('get')->once()->andReturn('zip-content');
-        $this->storage->shouldReceive('put')->once()->andReturn(true);
-        $this->storage->shouldReceive('delete')->once()->andReturn(true);
-        $this->storage->shouldReceive('deleteDirectory')->once()
-            ->andThrow(new \RuntimeException('SplFileInfo::getType(): Lstat failed'));
-
-        $this->assertSame(1, $this->service->linkTempAttachmentsWithMove($slug, $tempKey, $postId));
-    }
-
-    /**
-     * 옮길 임시 첨부가 없으면 어떤 파일·디렉토리도 건드리지 않고 0 을 반환한다.
-     *
-     * @return void 반환값 없음
-     *
-     * @effects empty_temp_link_deletes_nothing
-     */
     #[Test]
     public function test_link_temp_attachments_with_move_handles_empty_temp_files(): void
     {
         // Arrange
         $slug = 'notice';
-        $tempKey = '5f0c3a3e-1b2c-4d5e-8f90-a1b2c3d4e5f6';
+        $tempKey = 'temp-uuid-empty';
         $postId = 5;
 
         $this->repository
@@ -476,12 +377,12 @@ class AttachmentServiceTest extends ModuleTestCase
             ->with($slug, $tempKey)
             ->andReturn(new EloquentCollection([]));
 
-        // 옮길 임시 첨부가 없으면 어떤 파일·디렉토리도 건드리지 않는다 (KVE-2026-2349 —
-        // 종전에는 여기서 정리를 실행해 temp_key 조작으로 저장소 루트까지 지워졌다)
-        $this->storage->shouldNotReceive('deleteDirectory');
-        $this->storage->shouldNotReceive('get');
-        $this->storage->shouldNotReceive('put');
-        $this->storage->shouldNotReceive('delete');
+        // 파일이 없어도 임시 디렉토리 정리는 실행
+        $this->storage
+            ->shouldReceive('deleteDirectory')
+            ->once()
+            ->with('attachments', "{$slug}/temp/{$tempKey}")
+            ->andReturn(true);
 
         // Act
         $result = $this->service->linkTempAttachmentsWithMove($slug, $tempKey, $postId);
@@ -490,37 +391,6 @@ class AttachmentServiceTest extends ModuleTestCase
         $this->assertEquals(0, $result);
     }
 
-    /**
-     * 비회원은 소유 쿠키가 맞는, 글에 연결되기 전의 비회원 임시 첨부만 지울 수 있다 (#883 2단계).
-     *
-     * @return void 반환값 없음
-     *
-     * @effects guest_can_delete_and_reorder_own_temp_with_cookie, guest_without_matching_cookie_denied
-     */
-    #[Test]
-    public function test_can_delete_allows_guest_only_with_matching_owner_cookie(): void
-    {
-        $token = str_repeat('a', 40);
-        $temp = new Attachment(['post_id' => null, 'created_by' => null, 'guest_owner_hash' => hash('sha256', $token)]);
-
-        $this->assertTrue($this->service->canDelete($temp, null, $token));
-        $this->assertFalse($this->service->canDelete($temp, null, null));
-        $this->assertFalse($this->service->canDelete($temp, null, str_repeat('b', 40)));
-
-        $linked = new Attachment(['post_id' => 9, 'created_by' => null, 'guest_owner_hash' => hash('sha256', $token)]);
-        $this->assertFalse($this->service->canDelete($linked, null, $token));
-
-        $legacy = new Attachment(['post_id' => null, 'created_by' => null, 'guest_owner_hash' => null]);
-        $this->assertFalse($this->service->canDelete($legacy, null, $token), '해시가 없는 옛 행은 종전처럼 지울 수 없다');
-    }
-
-    /**
-     * 업로드 전후 훅이 발화한다.
-     *
-     * @return void 반환값 없음
-     *
-     * @effects attachment_lifecycle_hooks_fire
-     */
     #[Test]
     public function test_upload_fires_hooks(): void
     {
@@ -567,13 +437,6 @@ class AttachmentServiceTest extends ModuleTestCase
         HookManager::clearAction('sirsoft-board.attachment.after_upload');
     }
 
-    /**
-     * 삭제는 소프트 삭제이며 실제 파일은 남긴다.
-     *
-     * @return void 반환값 없음
-     *
-     * @effects soft_delete_keeps_physical_file
-     */
     #[Test]
     public function test_delete_soft_deletes_without_removing_physical_file(): void
     {
@@ -618,13 +481,6 @@ class AttachmentServiceTest extends ModuleTestCase
         $this->assertTrue($result);
     }
 
-    /**
-     * 삭제 전후 훅이 발화한다.
-     *
-     * @return void 반환값 없음
-     *
-     * @effects attachment_lifecycle_hooks_fire
-     */
     #[Test]
     public function test_delete_fires_hooks(): void
     {
@@ -660,13 +516,6 @@ class AttachmentServiceTest extends ModuleTestCase
         HookManager::clearAction('sirsoft-board.attachment.after_delete');
     }
 
-    /**
-     * 파일 이동 없는 임시 첨부 연결은 행만 글에 잇는다.
-     *
-     * @return void 반환값 없음
-     *
-     * @effects temp_link_without_move_links_rows
-     */
     #[Test]
     public function test_link_temp_attachments_links_temp_files_to_post(): void
     {
@@ -713,13 +562,6 @@ class AttachmentServiceTest extends ModuleTestCase
         $this->assertEquals(3, $result);
     }
 
-    /**
-     * 순서 변경이 각 첨부의 order 를 갱신한다.
-     *
-     * @return void 반환값 없음
-     *
-     * @effects reorder_updates_order
-     */
     #[Test]
     public function test_reorder_updates_attachment_order(): void
     {
@@ -730,9 +572,6 @@ class AttachmentServiceTest extends ModuleTestCase
             2 => 1,
             3 => 2,
         ];
-
-        // 순서 변경은 대상 첨부를 하나씩 찾아 범위와 올린 사람을 확인한다(맵의 키가 첨부 ID)
-        $this->mockOwnedAttachmentsForReorder([1, 2, 3]);
 
         $this->repository
             ->shouldReceive('reorder')
@@ -747,13 +586,6 @@ class AttachmentServiceTest extends ModuleTestCase
         $this->assertTrue($result);
     }
 
-    /**
-     * 순서 변경 훅이 발화한다.
-     *
-     * @return void 반환값 없음
-     *
-     * @effects attachment_lifecycle_hooks_fire
-     */
     #[Test]
     public function test_reorder_fires_hooks(): void
     {
@@ -770,7 +602,6 @@ class AttachmentServiceTest extends ModuleTestCase
             $afterReorderFired = true;
         });
 
-        $this->mockOwnedAttachmentsForReorder([1, 2]);
         $this->repository->shouldReceive('reorder')->andReturn(true);
 
         // Act
@@ -785,13 +616,6 @@ class AttachmentServiceTest extends ModuleTestCase
         HookManager::clearAction('sirsoft-board.attachment.after_reorder');
     }
 
-    /**
-     * 다운로드는 저장 파일을 스트림 응답으로 돌려준다.
-     *
-     * @return void 반환값 없음
-     *
-     * @effects download_streams_stored_file
-     */
     #[Test]
     public function test_download_returns_streamed_response(): void
     {
@@ -830,13 +654,6 @@ class AttachmentServiceTest extends ModuleTestCase
         $this->assertInstanceOf(StreamedResponse::class, $result);
     }
 
-    /**
-     * 첨부가 없으면 다운로드는 null 을 돌려준다.
-     *
-     * @return void 반환값 없음
-     *
-     * @effects download_streams_stored_file
-     */
     #[Test]
     public function test_download_returns_null_when_not_found(): void
     {
@@ -853,13 +670,6 @@ class AttachmentServiceTest extends ModuleTestCase
         $this->assertNull($result);
     }
 
-    /**
-     * 한글 파일명도 다운로드 응답에 그대로 실린다.
-     *
-     * @return void 반환값 없음
-     *
-     * @effects download_streams_stored_file
-     */
     #[Test]
     public function test_download_with_korean_filename(): void
     {
@@ -900,13 +710,6 @@ class AttachmentServiceTest extends ModuleTestCase
         $this->assertInstanceOf(StreamedResponse::class, $result);
     }
 
-    /**
-     * 다운로드 후 훅이 발화한다.
-     *
-     * @return void 반환값 없음
-     *
-     * @effects attachment_lifecycle_hooks_fire
-     */
     #[Test]
     public function test_download_fires_after_download_hook(): void
     {
@@ -952,13 +755,6 @@ class AttachmentServiceTest extends ModuleTestCase
         HookManager::clearAction('sirsoft-board.attachment.after_download');
     }
 
-    /**
-     * 다운로드 훅에 관리자 여부가 함께 전달된다.
-     *
-     * @return void 반환값 없음
-     *
-     * @effects attachment_lifecycle_hooks_fire
-     */
     #[Test]
     public function test_download_passes_admin_context_to_hook(): void
     {
@@ -998,13 +794,6 @@ class AttachmentServiceTest extends ModuleTestCase
         HookManager::clearAction('sirsoft-board.attachment.after_download');
     }
 
-    /**
-     * 첨부가 없으면 다운로드 훅을 발화하지 않는다.
-     *
-     * @return void 반환값 없음
-     *
-     * @effects attachment_lifecycle_hooks_fire
-     */
     #[Test]
     public function test_download_does_not_fire_hook_when_not_found(): void
     {
@@ -1034,77 +823,29 @@ class AttachmentServiceTest extends ModuleTestCase
         HookManager::clearAction('sirsoft-board.attachment.after_download');
     }
 
-    /**
-     * 업로드 응답의 url 칸이 게이트가 살아 있는 서빙 URL 이어야 합니다.
-     *
-     * 이전에는 비공개 디스크에서 항상 null 이 나가 응답의 url 칸이 늘 비어 있었다.
-     * 게시판 첨부는 비밀글·삭제글 게이트가 걸려 있으므로 직접 URL 로 바꾸지 않고,
-     * 그 게이트를 통과하는 다운로드 서빙 URL 로 채운다.
-     *
-     * @return void 반환값 없음
-     *
-     * @effects board_upload_response_url_uses_gated_route, download_url_falls_back_to_api_path_when_direct_unavailable
-     */
     #[Test]
-    public function test_get_url_returns_gated_serving_url(): void
+    public function test_get_url_returns_url(): void
     {
         // Arrange
         $attachment = new Attachment([
+            'id' => 1,
             'path' => 'notice/2025/01/21/test.jpg',
         ]);
-        $attachment->hash = 'abc123def456';
-        $attachment->setRelation('board', new Board(['slug' => 'notice']));
 
         $this->repository->shouldReceive('findById')
             ->once()
             ->with('notice', 1)
             ->andReturn($attachment);
 
-        // 직접 URL 은 시도조차 하지 않는다 (게이트 우회 차단)
-        $this->storage->shouldNotReceive('url');
+        $this->storage->shouldReceive('url')
+            ->once()
+            ->with('attachments', 'notice/2025/01/21/test.jpg')
+            ->andReturn('https://example.com/storage/modules/sirsoft-board/attachments/notice/2025/01/21/test.jpg');
 
         // Act
         $result = $this->service->getUrl('notice', 1);
 
         // Assert
-        $this->assertSame(
-            '/api/modules/sirsoft-board/boards/notice/attachment/abc123def456',
-            $result
-        );
-    }
-
-    /**
-     * 첨부가 없으면 null 이어야 합니다 (기존 계약 유지).
-     *
-     * @return void 반환값 없음
-     *
-     * @effects url_null_when_attachment_missing
-     */
-    #[Test]
-    public function test_get_url_returns_null_when_attachment_missing(): void
-    {
-        $this->repository->shouldReceive('findById')
-            ->once()
-            ->with('notice', 99)
-            ->andReturnNull();
-
-        $this->assertNull($this->service->getUrl('notice', 99));
-    }
-
-    /**
-     * 순서 변경 대상 첨부를 현재 사용자가 올린 글 첨부로 돌려주도록 저장소를 설정합니다.
-     *
-     * @param  array<int, int>  $ids  첨부 ID 목록
-     * @return void 반환값 없음
-     */
-    private function mockOwnedAttachmentsForReorder(array $ids): void
-    {
-        foreach ($ids as $id) {
-            $attachment = new Attachment(['post_id' => 1, 'path' => "notice/file-{$id}.pdf", 'collection' => 'attachments']);
-            $attachment->id = $id;
-            $attachment->created_by = $this->user->id;
-
-            $this->repository->shouldReceive('findById')->with('notice', $id)->andReturn($attachment);
-        }
+        $this->assertEquals('https://example.com/storage/modules/sirsoft-board/attachments/notice/2025/01/21/test.jpg', $result);
     }
 }

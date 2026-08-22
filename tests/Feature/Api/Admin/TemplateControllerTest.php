@@ -15,7 +15,6 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Illuminate\Validation\ValidationException;
 use Mockery;
-use Tests\Concerns\FakesGithubReleases;
 use Tests\TestCase;
 
 /**
@@ -30,7 +29,6 @@ use Tests\TestCase;
  */
 class TemplateControllerTest extends TestCase
 {
-    use FakesGithubReleases;
     use RefreshDatabase;
 
     private User $adminUser;
@@ -41,17 +39,9 @@ class TemplateControllerTest extends TestCase
 
     private string $normalToken;
 
-    /**
-     * 템플릿 매니저를 목으로 바꾸고, 템플릿 권한을 가진 관리자와 일반 사용자 토큰을 준비합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
-
-        // 설치·업데이트 확인 경로의 GitHub 실제 접속 차단(테스트마다 최대 10초 대기 방지)
-        $this->fakeGithubReleases();
 
         // TemplateManager를 Mock하여 파일 시스템 의존성 제거
         $this->mockTemplateManager();
@@ -77,7 +67,6 @@ class TemplateControllerTest extends TestCase
      * 따라서 역할 identifier는 반드시 'admin'이어야 합니다.
      *
      * @param  array  $permissions  사용자에게 부여할 권한 식별자 목록
-     * @return User admin 역할과 권한 전용 역할이 배정된 사용자
      */
     private function createAdminUser(array $permissions = []): User
     {
@@ -138,8 +127,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 인증된 요청 헬퍼 메서드
-     *
-     * @return static 관리자 토큰 헤더를 단 테스트 인스턴스
      */
     private function authRequest(): static
     {
@@ -151,8 +138,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 일반 사용자 요청 헬퍼 메서드
-     *
-     * @return static 일반 사용자 토큰 헤더를 단 테스트 인스턴스
      */
     private function normalUserRequest(): static
     {
@@ -164,8 +149,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * TemplateManager를 Mock 처리합니다.
-     *
-     * @return void 반환값 없음
      */
     protected function mockTemplateManager(): void
     {
@@ -185,11 +168,6 @@ class TemplateControllerTest extends TestCase
         $this->app->instance(TemplateManagerInterface::class, $mock);
     }
 
-    /**
-     * Mockery 목을 정리합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function tearDown(): void
     {
         Mockery::close();
@@ -202,10 +180,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 템플릿 목록 조회 성공
-     *
-     * @scenario endpoint=index
-     *
-     * @return void 반환값 없음
      */
     public function test_can_list_templates(): void
     {
@@ -262,12 +236,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * type=user 필터링 테스트
-     *
-     * @scenario endpoint=index
-     *
-     * @effects template_list_filters_by_type
-     *
-     * @return void 반환값 없음
      */
     public function test_can_filter_templates_by_type_user(): void
     {
@@ -310,12 +278,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * type=admin 필터링 테스트
-     *
-     * @scenario endpoint=index
-     *
-     * @effects template_list_filters_by_type
-     *
-     * @return void 반환값 없음
      */
     public function test_can_filter_templates_by_type_admin(): void
     {
@@ -358,10 +320,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 잘못된 type 파라미터 검증
-     *
-     * @scenario endpoint=index
-     *
-     * @return void 반환값 없음
      */
     public function test_rejects_invalid_type_parameter(): void
     {
@@ -375,12 +333,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 인증되지 않은 사용자 접근 거부
-     *
-     * @scenario endpoint=index
-     *
-     * @effects template_api_rejects_unauthenticated_and_unauthorized
-     *
-     * @return void 반환값 없음
      */
     public function test_unauthenticated_user_cannot_access(): void
     {
@@ -393,12 +345,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 권한 없는 사용자 접근 거부
-     *
-     * @scenario endpoint=index
-     *
-     * @effects template_api_rejects_unauthenticated_and_unauthorized
-     *
-     * @return void 반환값 없음
      */
     public function test_unauthorized_user_cannot_access(): void
     {
@@ -411,10 +357,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 빈 목록 조회 (템플릿이 없을 때)
-     *
-     * @scenario endpoint=index
-     *
-     * @return void 반환값 없음
      */
     public function test_returns_empty_array_when_no_templates(): void
     {
@@ -429,12 +371,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 전체 권한 유저의 index 응답에 abilities 포함 확인
-     *
-     * @scenario endpoint=index
-     *
-     * @effects template_list_exposes_abilities_by_permission
-     *
-     * @return void 반환값 없음
      */
     public function test_index_returns_abilities_for_full_permission_user(): void
     {
@@ -451,12 +387,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * read 전용 유저의 index 응답에 abilities false 확인
-     *
-     * @scenario endpoint=index
-     *
-     * @effects template_list_exposes_abilities_by_permission
-     *
-     * @return void 반환값 없음
      */
     public function test_index_returns_false_abilities_for_read_only_user(): void
     {
@@ -480,10 +410,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 템플릿 상세 조회 성공
-     *
-     * @scenario endpoint=show
-     *
-     * @return void 반환값 없음
      */
     public function test_can_show_template(): void
     {
@@ -549,10 +475,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 존재하지 않는 템플릿 조회 시 404 응답
-     *
-     * @scenario endpoint=show
-     *
-     * @return void 반환값 없음
      */
     public function test_returns_404_for_nonexistent_template(): void
     {
@@ -565,12 +487,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 인증되지 않은 사용자는 템플릿 상세 조회 불가
-     *
-     * @scenario endpoint=show
-     *
-     * @effects template_api_rejects_unauthenticated_and_unauthorized
-     *
-     * @return void 반환값 없음
      */
     public function test_unauthenticated_user_cannot_show_template(): void
     {
@@ -586,12 +502,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 권한 없는 사용자는 템플릿 상세 조회 불가
-     *
-     * @scenario endpoint=show
-     *
-     * @effects template_api_rejects_unauthenticated_and_unauthorized
-     *
-     * @return void 반환값 없음
      */
     public function test_unauthorized_user_cannot_show_template(): void
     {
@@ -607,12 +517,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 템플릿 상세 조회 시 민감한 정보 제외
-     *
-     * @scenario endpoint=show
-     *
-     * @effects template_detail_excludes_sensitive_fields
-     *
-     * @return void 반환값 없음
      */
     public function test_show_response_excludes_sensitive_fields(): void
     {
@@ -648,10 +552,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 상세 응답에 template.json 의 externals 가 정규화되어 포함된다.
-     *
-     * @scenario endpoint=show
-     *
-     * @return void 반환값 없음
      */
     public function test_show_response_includes_normalized_externals(): void
     {
@@ -711,10 +611,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * externals 가 없는 템플릿은 상세 응답에서 빈 배열로 노출된다.
-     *
-     * @scenario endpoint=show
-     *
-     * @return void 반환값 없음
      */
     public function test_show_response_externals_defaults_to_empty_array(): void
     {
@@ -749,10 +645,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 템플릿 활성화 성공
-     *
-     * @scenario endpoint=activate
-     *
-     * @return void 반환값 없음
      */
     public function test_can_activate_template(): void
     {
@@ -811,10 +703,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 템플릿 활성화 시 template_name 필수
-     *
-     * @scenario endpoint=activate
-     *
-     * @return void 반환값 없음
      */
     public function test_activate_requires_template_name(): void
     {
@@ -828,10 +716,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 존재하지 않는 템플릿 활성화 시 422 응답 (ValidationException)
-     *
-     * @scenario endpoint=activate
-     *
-     * @return void 반환값 없음
      */
     public function test_activate_nonexistent_template_returns_422(): void
     {
@@ -857,12 +741,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 권한 없는 사용자는 템플릿 활성화 불가
-     *
-     * @scenario endpoint=activate
-     *
-     * @effects template_api_rejects_unauthenticated_and_unauthorized
-     *
-     * @return void 반환값 없음
      */
     public function test_unauthorized_user_cannot_activate_template(): void
     {
@@ -880,12 +758,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 인증되지 않은 사용자는 템플릿 활성화 불가
-     *
-     * @scenario endpoint=activate
-     *
-     * @effects template_api_rejects_unauthenticated_and_unauthorized
-     *
-     * @return void 반환값 없음
      */
     public function test_unauthenticated_user_cannot_activate_template(): void
     {
@@ -904,10 +776,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 템플릿 설치 성공
-     *
-     * @scenario endpoint=install
-     *
-     * @return void 반환값 없음
      */
     public function test_can_install_template(): void
     {
@@ -933,8 +801,6 @@ class TemplateControllerTest extends TestCase
             'type' => 'admin',
             'status' => 'inactive',
         ]);
-        // 설치가 빈 자리로 등록한 조각 참조 경고를 꺼내 응답 `data.layout_warnings` 에 싣는다 (#712)
-        $mock->shouldReceive('takeLastLayoutWarnings')->andReturn([]);
         $this->app->instance(TemplateManagerInterface::class, $mock);
 
         // Act
@@ -949,10 +815,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 템플릿 설치 시 template_name 필수
-     *
-     * @scenario endpoint=install
-     *
-     * @return void 반환값 없음
      */
     public function test_install_template_requires_template_name(): void
     {
@@ -966,10 +828,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 존재하지 않는 템플릿 설치 시 422 응답 (ValidationException)
-     *
-     * @scenario endpoint=install
-     *
-     * @return void 반환값 없음
      */
     public function test_install_nonexistent_template_fails(): void
     {
@@ -996,12 +854,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 인증되지 않은 사용자는 템플릿 설치 불가
-     *
-     * @scenario endpoint=install
-     *
-     * @effects template_api_rejects_unauthenticated_and_unauthorized
-     *
-     * @return void 반환값 없음
      */
     public function test_unauthenticated_user_cannot_install_template(): void
     {
@@ -1016,12 +868,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 권한 없는 사용자는 템플릿 설치 불가
-     *
-     * @scenario endpoint=install
-     *
-     * @effects template_api_rejects_unauthenticated_and_unauthorized
-     *
-     * @return void 반환값 없음
      */
     public function test_unauthorized_user_cannot_install_template(): void
     {
@@ -1040,10 +886,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * ZIP 파일에서 템플릿 설치 시 파일 필수
-     *
-     * @scenario endpoint=install_from_file
-     *
-     * @return void 반환값 없음
      */
     public function test_install_from_file_requires_file(): void
     {
@@ -1057,10 +899,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * ZIP 파일이 아닌 파일 업로드 시 실패
-     *
-     * @scenario endpoint=install_from_file
-     *
-     * @return void 반환값 없음
      */
     public function test_install_from_file_rejects_non_zip_file(): void
     {
@@ -1079,12 +917,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 인증되지 않은 사용자는 파일 설치 불가
-     *
-     * @scenario endpoint=install_from_file
-     *
-     * @effects template_api_rejects_unauthenticated_and_unauthorized
-     *
-     * @return void 반환값 없음
      */
     public function test_unauthenticated_user_cannot_install_from_file(): void
     {
@@ -1102,12 +934,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 권한 없는 사용자는 파일 설치 불가
-     *
-     * @scenario endpoint=install_from_file
-     *
-     * @effects template_api_rejects_unauthenticated_and_unauthorized
-     *
-     * @return void 반환값 없음
      */
     public function test_unauthorized_user_cannot_install_from_file(): void
     {
@@ -1129,10 +955,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * GitHub URL 필수
-     *
-     * @scenario endpoint=install_from_github
-     *
-     * @return void 반환값 없음
      */
     public function test_install_from_github_requires_url(): void
     {
@@ -1146,12 +968,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 잘못된 GitHub URL 형식 거부
-     *
-     * @scenario endpoint=install_from_github
-     *
-     * @effects install_from_github_accepts_only_github_urls
-     *
-     * @return void 반환값 없음
      */
     public function test_install_from_github_rejects_invalid_url(): void
     {
@@ -1167,12 +983,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * GitHub 이외의 URL 거부
-     *
-     * @scenario endpoint=install_from_github
-     *
-     * @effects install_from_github_accepts_only_github_urls
-     *
-     * @return void 반환값 없음
      */
     public function test_install_from_github_rejects_non_github_url(): void
     {
@@ -1188,10 +998,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 유효한 ZIP 파일로 템플릿 설치 성공 (Service Mock)
-     *
-     * @scenario endpoint=install_from_file
-     *
-     * @return void 반환값 없음
      */
     public function test_install_from_file_succeeds_with_valid_zip(): void
     {
@@ -1218,12 +1024,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * TemplateService에서 RuntimeException 발생 시 422 반환
-     *
-     * @scenario endpoint=install_from_file
-     *
-     * @effects install_from_file_maps_domain_errors_to_422
-     *
-     * @return void 반환값 없음
      */
     public function test_install_from_file_returns_422_on_domain_exception(): void
     {
@@ -1245,10 +1045,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * TemplateService에서 일반 Exception 발생 시 500 반환
-     *
-     * @scenario endpoint=install_from_file
-     *
-     * @return void 반환값 없음
      */
     public function test_install_from_file_returns_500_on_general_exception(): void
     {
@@ -1273,10 +1069,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 유효한 GitHub URL로 템플릿 설치 성공 (Service Mock)
-     *
-     * @scenario endpoint=install_from_github
-     *
-     * @return void 반환값 없음
      */
     public function test_install_from_github_calls_service_with_valid_url(): void
     {
@@ -1302,10 +1094,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * TemplateService에서 RuntimeException 발생 시 422 반환 (GitHub)
-     *
-     * @scenario endpoint=install_from_github
-     *
-     * @return void 반환값 없음
      */
     public function test_install_from_github_returns_422_on_domain_exception(): void
     {
@@ -1325,10 +1113,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * TemplateService에서 일반 Exception 발생 시 500 반환 (GitHub)
-     *
-     * @scenario endpoint=install_from_github
-     *
-     * @return void 반환값 없음
      */
     public function test_install_from_github_returns_500_on_general_exception(): void
     {
@@ -1347,12 +1131,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 인증되지 않은 사용자는 GitHub 설치 불가
-     *
-     * @scenario endpoint=install_from_github
-     *
-     * @effects template_api_rejects_unauthenticated_and_unauthorized
-     *
-     * @return void 반환값 없음
      */
     public function test_unauthenticated_user_cannot_install_from_github(): void
     {
@@ -1367,12 +1145,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 권한 없는 사용자는 GitHub 설치 불가
-     *
-     * @scenario endpoint=install_from_github
-     *
-     * @effects template_api_rejects_unauthenticated_and_unauthorized
-     *
-     * @return void 반환값 없음
      */
     public function test_unauthorized_user_cannot_install_from_github(): void
     {
@@ -1391,12 +1163,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 템플릿 제거 성공
-     *
-     * @scenario endpoint=uninstall
-     *
-     * @effects uninstall_delegates_to_manager
-     *
-     * @return void 반환값 없음
      */
     public function test_can_uninstall_template(): void
     {
@@ -1437,10 +1203,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 템플릿 제거 시 template_name 필수
-     *
-     * @scenario endpoint=uninstall
-     *
-     * @return void 반환값 없음
      */
     public function test_uninstall_requires_template_name(): void
     {
@@ -1454,12 +1216,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 인증되지 않은 사용자는 템플릿 제거 불가
-     *
-     * @scenario endpoint=uninstall
-     *
-     * @effects template_api_rejects_unauthenticated_and_unauthorized
-     *
-     * @return void 반환값 없음
      */
     public function test_unauthenticated_user_cannot_uninstall_template(): void
     {
@@ -1474,12 +1230,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 권한 없는 사용자는 템플릿 제거 불가
-     *
-     * @scenario endpoint=uninstall
-     *
-     * @effects template_api_rejects_unauthenticated_and_unauthorized
-     *
-     * @return void 반환값 없음
      */
     public function test_unauthorized_user_cannot_uninstall_template(): void
     {
@@ -1498,24 +1248,11 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 템플릿 비활성화 성공
-     *
-     * 유형의 마지막 활성 템플릿은 끌 수 없으므로(#703, TemplateOperationGuardTest), 같은 유형의
-     * 다른 활성 템플릿이 남는 배치로 비활성화 성공 경로를 확인한다.
-     *
-     * @scenario endpoint=deactivate
-     *
-     * @effects deactivate_succeeds_when_peer_template_stays_active
-     *
-     * @return void 반환값 없음
      */
     public function test_can_deactivate_template(): void
     {
         // Arrange
         $template = Template::factory()->create([
-            'type' => 'admin',
-            'status' => 'active',
-        ]);
-        Template::factory()->create([
             'type' => 'admin',
             'status' => 'active',
         ]);
@@ -1558,10 +1295,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 템플릿 비활성화 시 template_name 필수
-     *
-     * @scenario endpoint=deactivate
-     *
-     * @return void 반환값 없음
      */
     public function test_deactivate_requires_template_name(): void
     {
@@ -1575,10 +1308,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 존재하지 않는 템플릿 비활성화 시 422 응답 (ValidationException)
-     *
-     * @scenario endpoint=deactivate
-     *
-     * @return void 반환값 없음
      */
     public function test_deactivate_nonexistent_template_fails(): void
     {
@@ -1604,10 +1333,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 이미 비활성화된 템플릿 비활성화 시 실패
-     *
-     * @scenario endpoint=deactivate
-     *
-     * @return void 반환값 없음
      */
     public function test_deactivate_inactive_template_fails(): void
     {
@@ -1637,12 +1362,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 인증되지 않은 사용자는 템플릿 비활성화 불가
-     *
-     * @scenario endpoint=deactivate
-     *
-     * @effects template_api_rejects_unauthenticated_and_unauthorized
-     *
-     * @return void 반환값 없음
      */
     public function test_unauthenticated_user_cannot_deactivate_template(): void
     {
@@ -1657,12 +1376,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 권한 없는 사용자는 템플릿 비활성화 불가
-     *
-     * @scenario endpoint=deactivate
-     *
-     * @effects template_api_rejects_unauthenticated_and_unauthorized
-     *
-     * @return void 반환값 없음
      */
     public function test_unauthorized_user_cannot_deactivate_template(): void
     {
@@ -1684,12 +1397,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 템플릿 활성화 시 필요한 의존성이 충족되지 않으면 409 경고 응답
-     *
-     * @scenario endpoint=activate
-     *
-     * @effects activate_reports_missing_dependencies_as_409
-     *
-     * @return void 반환값 없음
      */
     public function test_activate_returns_409_when_dependencies_not_met(): void
     {
@@ -1746,10 +1453,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 템플릿 활성화 시 force=true로 의존성 경고 무시하고 강제 활성화
-     *
-     * @scenario endpoint=activate
-     *
-     * @return void 반환값 없음
      */
     public function test_activate_with_force_bypasses_dependency_check(): void
     {
@@ -1799,12 +1502,6 @@ class TemplateControllerTest extends TestCase
      * 템플릿 의존성 경고 응답에서 missing_modules의 형식 검증
      * dependencies.modules가 연관 배열 {"identifier": ">=version"} 형식일 때
      * identifier가 올바르게 파싱되는지 확인
-     *
-     * @scenario endpoint=activate
-     *
-     * @effects activate_reports_missing_dependencies_as_409
-     *
-     * @return void 반환값 없음
      */
     public function test_activate_dependency_warning_parses_associative_array_format(): void
     {
@@ -1857,12 +1554,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * CHANGELOG.md가 있는 템플릿의 changelog를 조회합니다.
-     *
-     * @scenario endpoint=changelog
-     *
-     * @effects changelog_parsed_from_template_file
-     *
-     * @return void 반환값 없음
      */
     public function test_changelog_returns_parsed_entries(): void
     {
@@ -1883,10 +1574,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * CHANGELOG.md가 없는 템플릿은 빈 배열을 반환합니다.
-     *
-     * @scenario endpoint=changelog
-     *
-     * @return void 반환값 없음
      */
     public function test_changelog_returns_empty_for_missing_file(): void
     {
@@ -1898,12 +1585,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 인증 없이 changelog 조회 시 401 반환
-     *
-     * @scenario endpoint=changelog
-     *
-     * @effects template_api_rejects_unauthenticated_and_unauthorized
-     *
-     * @return void 반환값 없음
      */
     public function test_changelog_returns_401_without_authentication(): void
     {
@@ -1917,12 +1598,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 잘못된 형식의 템플릿 식별자로 설치 요청 시 422 반환
-     *
-     * @scenario endpoint=install
-     *
-     * @effects install_rejects_invalid_identifier_format
-     *
-     * @return void 반환값 없음
      */
     public function test_install_returns_422_for_invalid_identifier_format(): void
     {
@@ -1936,12 +1611,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 숫자로 시작하는 단어가 포함된 템플릿 식별자로 설치 요청 시 422 반환
-     *
-     * @scenario endpoint=install
-     *
-     * @effects install_rejects_invalid_identifier_format
-     *
-     * @return void 반환값 없음
      */
     public function test_install_returns_422_for_digit_starting_identifier(): void
     {
@@ -1955,12 +1624,6 @@ class TemplateControllerTest extends TestCase
 
     /**
      * 특수문자가 포함된 템플릿 식별자로 설치 요청 시 422 반환
-     *
-     * @scenario endpoint=install
-     *
-     * @effects install_rejects_invalid_identifier_format
-     *
-     * @return void 반환값 없음
      */
     public function test_install_returns_422_for_special_char_identifier(): void
     {

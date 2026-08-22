@@ -8,26 +8,17 @@ namespace Plugins\Sirsoft\PayKginicis\Controllers;
 
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
-use App\Helpers\TimezoneHelper;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
-use Plugins\Sirsoft\PayKginicis\Concerns\GuardsOrderScope;
 use Plugins\Sirsoft\PayKginicis\Http\Requests\TransactionQueryRequest;
 use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
 
 class AdminTransactionController extends AdminBaseController
 {
-    use GuardsOrderScope;
-
-    /**
-     * 의존성을 주입받습니다.
-     *
-     * @param  KgInicisApiService  $apiService  KG이니시스 API 서비스
-     */
     public function __construct(
         private readonly KgInicisApiService $apiService,
     ) {
@@ -42,10 +33,6 @@ class AdminTransactionController extends AdminBaseController
      */
     public function query(TransactionQueryRequest $request): JsonResponse
     {
-        if ($denied = $this->transactionScopeDenial(trim((string) $request->validated('tid')), 'sirsoft-ecommerce.orders.read')) {
-            return $denied;
-        }
-
         return $this->queryByTid(trim((string) $request->validated('tid')));
     }
 
@@ -57,10 +44,6 @@ class AdminTransactionController extends AdminBaseController
      */
     public function queryByOrder(string $orderNumber): JsonResponse
     {
-        if ($denied = $this->orderScopeDenial($orderNumber, 'sirsoft-ecommerce.orders.read')) {
-            return $denied;
-        }
-
         $orders = (new Order)->getTable();
         $payments = (new OrderPayment)->getTable();
 
@@ -81,12 +64,6 @@ class AdminTransactionController extends AdminBaseController
         return $this->queryByTid($payment->transaction_id);
     }
 
-    /**
-     * 거래번호로 거래를 조회해 화면 표시용 응답을 만듭니다(로컬 결제 기록으로 보강).
-     *
-     * @param  string  $tid  거래번호
-     * @return JsonResponse 거래 조회 응답
-     */
     private function queryByTid(string $tid): JsonResponse
     {
         try {
@@ -220,13 +197,6 @@ class AdminTransactionController extends AdminBaseController
         return null;
     }
 
-    /**
-     * 콜백 원본 응답에 빠진 값을 로컬 결제 레코드로 채웁니다.
-     *
-     * @param  array<string, mixed>  $localRaw  결제 콜백 시 저장한 원본 응답
-     * @param  mixed  $localPayment  로컬 결제 레코드 (없으면 null)
-     * @return array<string, mixed> 보강된 원본 응답
-     */
     private function mergeLocalPaymentFallback(array $localRaw, mixed $localPayment): array
     {
         if (! $localPayment) {
@@ -259,15 +229,6 @@ class AdminTransactionController extends AdminBaseController
         return $localRaw;
     }
 
-    /**
-     * 로컬 결제가 해외(CBT) 결제인지 판별합니다.
-     *
-     * @param  mixed  $localPayment  로컬 결제 레코드
-     * @param  array<string, mixed>  $localMeta  결제 메타
-     * @param  array<string, mixed>  $localRaw  결제 콜백 원본 응답
-     * @param  string  $tid  거래번호
-     * @return bool 해외 결제면 true
-     */
     private function isCbtLocalPayment(mixed $localPayment, array $localMeta, array $localRaw, string $tid): bool
     {
         if (($localMeta['is_cbt'] ?? false) === true || ($localMeta['cbt_type'] ?? '') !== '') {
@@ -290,16 +251,6 @@ class AdminTransactionController extends AdminBaseController
         return $currency === 'JPY' && str_starts_with($tid, 'INIJPG');
     }
 
-    /**
-     * 해외(CBT) 결제는 조회 API 대신 로컬 기록으로 거래 응답을 만듭니다.
-     *
-     * @param  string  $tid  거래번호
-     * @param  mixed  $localPayment  로컬 결제 레코드
-     * @param  array<string, mixed>  $localMeta  결제 메타
-     * @param  array<string, mixed>  $localRaw  결제 콜백 원본 응답
-     * @param  string|null  $embeddedPgProvider  간편결제 제공자
-     * @return array<string, mixed> 거래 응답
-     */
     private function buildLocalCbtTransactionResult(
         string $tid,
         mixed $localPayment,
@@ -356,11 +307,10 @@ class AdminTransactionController extends AdminBaseController
                 ? $embeddedPgProviderLabel.' ('.$basePayMethodLabel.')'
                 : $basePayMethodLabel,
             '_auth_code' => $pick('approve', 'applNo', 'approvalNo', 'authCode', 'confNo', 'receiptNo'),
-            // 편의점 승인일시는 일본 PG 입금 통보 시각(일본 시각) 그대로 두고 시간대를 밝힌다(D11).
-            '_auth_date' => $this->markJstForCvs($payMethod, $this->formatCbtDateTime(
+            '_auth_date' => $this->formatCbtDateTime(
                 $pick('auth_date', 'applDate', 'applDt'),
                 $pick('applTime', 'applTm'),
-            )) ?? $this->formatTimestamp((string) ($localPayment?->paid_at ?? '')),
+            ) ?? $this->formatTimestamp((string) ($localPayment?->paid_at ?? '')),
             '_total_price' => $pick('amount', 'price', 'cvs_amount', 'paid_amount_local'),
             '_currency' => $currency !== '' ? $currency : 'JPY',
             '_moid' => $pick('orderId', 'orderID', 'oid', 'order_number'),
@@ -380,13 +330,10 @@ class AdminTransactionController extends AdminBaseController
             '_vbank_bank_code' => $pick('convenience', 'vbank_code'),
             '_vbank_bank_name' => $pick('vbank_name') ?? ($payMethod === 'CVS' ? 'CVS' : null),
             '_vbank_holder' => $pick('vbank_holder'),
-            // 일본 편의점 결제기한은 일본 PG 가 준 일본 시각 그대로 두고 시간대를 밝힌다(D11).
-            // 로컬 vbank_due_at(UTC 저장) 대체값은 보는 사람 시간대로 바꾼다.
-            '_vbank_expire_date' => $this->markJst($this->formatCompactDateTime($pick('paymentTerm', 'cvs_payment_term')))
+            '_vbank_expire_date' => $this->formatCompactDateTime($pick('paymentTerm', 'cvs_payment_term'))
                 ?? $this->formatTimestamp((string) ($localPayment?->vbank_due_at ?? '')),
             '_vbank_status' => $pick('cvs_status'),
-            // 편의점 입금 시각도 일본 PG 가 준 일본 시각이다 — 결제기한과 같이 시간대를 밝힌다(D11).
-            '_vbank_paid_at' => $this->markJst($this->formatCbtDateTime($pick('applDt'), $pick('applTm'))),
+            '_vbank_paid_at' => $this->formatCbtDateTime($pick('applDt'), $pick('applTm')),
             '_bank_code' => null,
             '_bank_name' => null,
             '_bank_acnt_num' => null,
@@ -394,7 +341,7 @@ class AdminTransactionController extends AdminBaseController
             '_hpp_corp' => null,
             '_escrow_status' => null,
             '_escrow_confirm' => null,
-            '_inquiry_at' => TimezoneHelper::toUserDateTimeString(now()),
+            '_inquiry_at' => date('Y-m-d H:i:s'),
             '_local_notice' => 'CBT 거래는 한국 INIAPI 거래조회 대상이 아니므로 저장된 승인/입금 확인 정보로 표시됩니다.',
             '_cbt_cvs' => $payMethod === 'CVS' ? [
                 'status' => (string) ($localMeta['cvs_status'] ?? ''),
@@ -414,24 +361,11 @@ class AdminTransactionController extends AdminBaseController
         return $result;
     }
 
-    /**
-     * 해외 결제수단 코드를 비교용 대문자로 정규화합니다.
-     *
-     * @param  string  $code  결제수단 코드
-     * @return string 정규화된 코드
-     */
     private function normalizeCbtPayMethod(string $code): string
     {
         return strtoupper(trim($code));
     }
 
-    /**
-     * 해외 결제의 날짜·시각 문자열을 표시 형식으로 바꿉니다.
-     *
-     * @param  string|null  $date  날짜
-     * @param  string|null  $time  시각
-     * @return string|null 표시용 일시 (값이 없으면 null)
-     */
     private function formatCbtDateTime(?string $date, ?string $time): ?string
     {
         if ($date === null || $date === '') {
@@ -445,12 +379,6 @@ class AdminTransactionController extends AdminBaseController
         return $this->formatDateTime($date, $time);
     }
 
-    /**
-     * 14자리 일시(YmdHis)를 표시 형식으로 바꿉니다.
-     *
-     * @param  string|null  $value  14자리 일시
-     * @return string|null 표시용 일시 (형식이 다르면 null)
-     */
     private function formatCompactDateTime(?string $value): ?string
     {
         if ($value === null || preg_match('/^\d{14}$/', $value) !== 1) {
@@ -465,12 +393,6 @@ class AdminTransactionController extends AdminBaseController
             .substr($value, 12, 2);
     }
 
-    /**
-     * 로컬 DB 의 UTC 일시 문자열을 보는 사람 시간대 표시 형식으로 바꿉니다.
-     *
-     * @param  string  $value  UTC 일시 문자열 (DB 원문)
-     * @return string|null 표시용 일시 (빈 값이면 null)
-     */
     private function formatTimestamp(string $value): ?string
     {
         if ($value === '') {
@@ -478,35 +400,10 @@ class AdminTransactionController extends AdminBaseController
         }
 
         try {
-            return TimezoneHelper::toUserDateTimeString(Carbon::parse($value, 'UTC'));
+            return Carbon::parse($value)->format('Y-m-d H:i:s');
         } catch (\Throwable) {
             return null;
         }
-    }
-
-    /**
-     * 일본 PG 의 일본 시각 표시 문자열에 시간대 표기( (JST))를 붙입니다.
-     *
-     * @param  string|null  $value  일본 시각 표시 문자열
-     * @return string|null 시간대를 붙인 문자열 (값이 없으면 null)
-     */
-    private function markJst(?string $value): ?string
-    {
-        return $value === null ? null : $value.' (JST)';
-    }
-
-    /**
-     * 편의점(CVS) 결제의 PG 시각에만 시간대 표기( (JST))를 붙입니다.
-     *
-     * 편의점 시각은 일본 PG 입금 통보의 일본 시각이다. 카드·PayPay 승인 시각은 PG 시간대 사양을 확인하지 않아 그대로 둔다.
-     *
-     * @param  string  $payMethod  CBT 결제수단 코드
-     * @param  string|null  $value  PG 시각 표시 문자열
-     * @return string|null 표기를 붙인 문자열 (값이 없으면 null)
-     */
-    private function markJstForCvs(string $payMethod, ?string $value): ?string
-    {
-        return $payMethod === 'CVS' ? $this->markJst($value) : $value;
     }
 
     /**
@@ -518,7 +415,6 @@ class AdminTransactionController extends AdminBaseController
      * @param  array  $localRaw  결제 콜백 시 저장한 raw 응답
      * @param  bool  $isEscrow  로컬 결제 레코드의 에스크로 여부
      * @param  string|null  $localVbankDueAt  로컬 DB 의 vbank_due_at (정확한 cutoff timestamp)
-     * @param  string|null  $embeddedPgProvider  간편결제 제공자
      * @return array 보강된 응답
      */
     private function enrichResult(
@@ -592,13 +488,13 @@ class AdminTransactionController extends AdminBaseController
         $result['_vbank_bank_name'] = $pick('VACT_BankName', 'vactBankName', 'vbank_bank_name') ?? $this->bankNameByCode($result['_vbank_bank_code'] ?? null);
         $result['_vbank_holder'] = $pick('VACT_Name', 'vactName', 'vbank_holder');
         // 가상계좌 입금기한:
-        // 로컬 vbank_due_at 이 있으면 그것을 쓴다 — 결제 발급 시 KG 이니시스가 보낸
+        // 로컬 vbank_due_at 이 있으면 KST 로 변환해 사용 — 결제 발급 시 KG 이니시스가 보낸
         // VACT_Date(=다음 영업일) + VACT_Time(=08:59:59) 으로 만든 정확한 cutoff timestamp.
-        // DB 는 UTC 로 저장되므로 표시 시 보는 사람 시간대로 바꿔야 주문 상세 화면과 일치한다.
+        // DB 는 UTC 로 저장되므로 표시 시 Asia/Seoul 로 변환해야 주문 상세 화면(KST 표시) 과 일치.
         // 조회 응답의 vacctInfo.validDate 는 "마지막 입금 가능일" convention 이라 1일 일찍 표시되어
         // 로컬 timestamp 가 더 정확.
         $result['_vbank_expire_date'] = $localVbankDueAt !== null
-            ? TimezoneHelper::toUserDateTimeString(Carbon::parse($localVbankDueAt, 'UTC'))
+            ? Carbon::parse($localVbankDueAt, 'UTC')->setTimezone('Asia/Seoul')->format('Y-m-d H:i:s')
             : $this->formatDate($pick('VACT_Date', 'vactDate', 'vbank_expire_date', 'validDate'));
         $vbankStatus = $pick('VACT_Status', 'vactStatus', 'vbank_status');
         $result['_vbank_status'] = $vbankStatus;
@@ -615,7 +511,7 @@ class AdminTransactionController extends AdminBaseController
         $result['_escrow_confirm'] = $this->formatDateTime($pick('escrowConfirmDate'), $pick('escrowConfirmTime'));
 
         // 환경 정보
-        $result['_inquiry_at'] = TimezoneHelper::toUserDateTimeString(now());
+        $result['_inquiry_at'] = date('Y-m-d H:i:s');
 
         return $result;
     }
@@ -660,12 +556,6 @@ class AdminTransactionController extends AdminBaseController
         };
     }
 
-    /**
-     * 간편결제 제공자 코드의 표시 이름을 돌려줍니다.
-     *
-     * @param  string|null  $provider  간편결제 제공자 코드
-     * @return string|null 표시 이름 (없으면 null)
-     */
     private function embeddedPgProviderLabel(?string $provider): ?string
     {
         if ($provider === null || $provider === '') {

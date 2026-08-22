@@ -13,8 +13,6 @@
  * 7. 템플릿 errorHandling[default]
  * 8. 시스템 기본값
  *
- * 결정된 핸들러는 통째로 실행된다 — conditions·switch·if·actionRef·onSuccess 를 그대로 쓸 수 있다(engine-v1.80.0).
- *
  * @module ErrorHandlingResolver
  */
 
@@ -33,7 +31,6 @@ import {
   ErrorHandlingUtils,
 } from '../types/ErrorHandling';
 import { createLogger } from '../utils/Logger';
-import { isDocumentUnloading } from '../template-engine/networkResilience';
 
 const logger = createLogger('ErrorHandlingResolver');
 
@@ -172,9 +169,8 @@ export class ErrorHandlingResolver {
                 handler: 'sequence',
                 actions: normalizedOnError as any,
               };
-        // onError 안 showErrorPage 도 실제 오류 코드를 받는다 (@since engine-v1.83.0) — 종전에는 넣지 않아 기본값 500 화면
         return {
-          handler: ErrorHandlingUtils.injectErrorCode(sequenceHandler, 'onError', errorCode),
+          handler: sequenceHandler,
           level: 'action',
           matchedKey: 'onError',
         };
@@ -227,24 +223,14 @@ export class ErrorHandlingResolver {
    *
    * @param handler 실행할 핸들러 설정
    * @param errorContext 에러 컨텍스트
-   * @param extraData 실행 문맥에 더 실을 값 — 데이터소스 오류 처리는 `{ route, query }` 를 넘긴다(engine-v1.80.0).
-   *                  `error` 는 덮지 못한다.
    * @returns 실행 결과
    */
   async execute(
     handler: ErrorHandlerConfig,
-    errorContext: ErrorContext,
-    extraData?: Record<string, unknown>
+    errorContext: ErrorContext
   ): Promise<any> {
     if (!this.executeAction) {
       logger.error('Action executor is not set');
-      return;
-    }
-
-    // 떠나는 문서(세션 만료로 로그인 화면으로 옮기는 중·새로고침·이동)의 실패는 화면에 그리지 않는다
-    // — 토스트·이동이 떠날 화면에 남거나 진행 중인 이동과 겨룬다(engine-v1.78.2).
-    if (isDocumentUnloading()) {
-      logger.log('Document is leaving — error handler skipped:', handler.handler);
       return;
     }
 
@@ -253,7 +239,7 @@ export class ErrorHandlingResolver {
     });
 
     try {
-      return await this.executeAction(handler, { ...(extraData ?? {}), error: errorContext });
+      return await this.executeAction(handler, { error: errorContext });
     } catch (error) {
       logger.error('Failed to execute handler:', error);
       throw error;
@@ -268,7 +254,6 @@ export class ErrorHandlingResolver {
    * @param errorCode HTTP 에러 코드
    * @param errorContext 에러 컨텍스트
    * @param options 액션/데이터소스 레벨 설정
-   * @param extraData 실행 문맥에 더 실을 값(execute 와 같다)
    * @returns 실행 결과
    */
   async resolveAndExecute(
@@ -277,8 +262,7 @@ export class ErrorHandlingResolver {
     options: {
       errorHandling?: ErrorHandlingMap;
       onError?: OnErrorHandler;
-    } = {},
-    extraData?: Record<string, unknown>
+    } = {}
   ): Promise<{ handled: boolean; result?: any }> {
     const result = this.resolve(errorCode, options);
 
@@ -295,7 +279,7 @@ export class ErrorHandlingResolver {
     }
 
     try {
-      const execResult = await this.execute(result.handler, errorContext, extraData);
+      const execResult = await this.execute(result.handler, errorContext);
       return { handled: true, result: execResult };
     } catch (error) {
       logger.error('Handler execution failed:', error);

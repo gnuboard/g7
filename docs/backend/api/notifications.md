@@ -55,7 +55,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | type_label | string | `신규 주문 관리자 알림` | `type` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
 | subject | string | `새로운 주문이 접수되었습니다` | 알림 제목 (알림 템플릿의 subject 를 변수 치환해 렌더한 문자열) |
 | body | string | `소경은님이 주문번호 20260713-0038038875 (결제금액:…` | 알림 본문 (알림 템플릿의 body 를 변수 치환해 렌더한 문자열) |
-| url | string | `https://example.com/admin/ecommerce/orders…` | 알림 클릭 시 이동할 URL (템플릿의 click_url 우선, 없으면 메일 CTA action_url) |
+| url | string | `https://g7.dev/admin/ecommerce/orders…` | 알림 클릭 시 이동할 URL (템플릿의 click_url 우선, 없으면 메일 CTA action_url) |
 | data | object | `{"type":"new_order_admin","subject":"새로운 주문이 접수되었습니다","bo…` | 알림 원본 페이로드 객체 (type/subject/body/click_url 과 발송 시 전달된 변수 data 를 포함) |
 | read_at | null | `null` | read 일시 |
 | created_at | string | `2026-07-13 09:38:04` | 생성 일시 |
@@ -151,9 +151,8 @@ HTTP/1.1 200
 
 **설명**
 
-인증된 관리자 본인의 사이트내 알림 목록을 최신순(`created_at desc`)으로 페이지네이션해 반환합니다. `read` 파라미터로 미읽음(`unread`)·읽음(`read`)·전체(`all`, 기본)를 필터링하고, `per_page` 미지정 시 15건 단위로 반환합니다. 조회 대상은 항상 요청 사용자 본인의 알림으로 한정되며, 다른 사용자의 알림은 조회되지 않습니다. `_admin_base.g7.html` 헤더의 알림 벨이 이 엔드포인트를 auto_fetch 로 소비하며 WebSocket 알림 수신 시 갱신됩니다. 항목 필드는 `id`, `type`, `type_label`, `subject`, `body`, `url`, `read_at`, `created_at` 로 구성됩니다.
+인증된 관리자 본인의 사이트내 알림 목록을 최신순(`created_at desc`)으로 페이지네이션해 반환합니다. `read` 파라미터로 미읽음(`unread`)·읽음(`read`)·전체(`all`, 기본)를 필터링하고, `per_page` 미지정 시 15건 단위로 반환합니다. 조회 대상은 항상 요청 사용자 본인의 알림으로 한정되며, 다른 사용자의 알림은 조회되지 않습니다. `_admin_base.json` 헤더의 알림 벨이 이 엔드포인트를 auto_fetch 로 소비하며 WebSocket 알림 수신 시 갱신됩니다. 항목 필드는 `id`, `type`, `type_label`, `subject`, `body`, `url`, `read_at`, `created_at` 로 구성됩니다.
 
-**권한 값(7.1.0)** 응답 `data.abilities` 는 관리자 알림 라우트와 같은 판정이다 — `can_update`(= `core.notifications.update`, 읽음 처리)·`can_delete`(= `core.notifications.delete`). 헤더 알림 센터는 이 값으로 「모두 읽음」·삭제 버튼과 닫을 때의 자동 읽음 처리를 끈다.
 
 ### DELETE /api/admin/notifications/all
 <!-- @generated:start:api.admin.notifications.destroy-all -->
@@ -395,7 +394,7 @@ HTTP/1.1 200
 
 **설명**
 
-인증된 관리자 본인의 미읽음 알림 개수를 집계해 `data.unread_count` 로 반환합니다. `_admin_base.g7.html` 헤더 알림 벨의 미읽음 배지에 사용되며, WebSocket 으로 새 알림이 수신되면 이 값을 재조회해 갱신합니다.
+인증된 관리자 본인의 미읽음 알림 개수를 집계해 `data.unread_count` 로 반환합니다. `_admin_base.json` 헤더 알림 벨의 미읽음 배지에 사용되며, WebSocket 으로 새 알림이 수신되면 이 값을 재조회해 갱신합니다.
 
 
 ### DELETE /api/admin/notifications/{notification}
@@ -485,7 +484,7 @@ _단건 응답: `data` 객체의 필드 (읽음 처리 후 갱신된 알림 1건
 | type_label | string | `신규 주문 관리자 알림` | `type` 값의 사람이 읽는 라벨 (알림 정의의 현지화 이름, 정의 미존재 시 빈 문자열) |
 | subject | string | `새로운 주문이 접수되었습니다` | 알림 제목 (알림 템플릿의 subject 를 변수 치환해 렌더한 문자열) |
 | body | string | `소경은님이 주문번호 20260713-0038038875 (결제금액:…` | 알림 본문 (알림 템플릿의 body 를 변수 치환해 렌더한 문자열) |
-| url | string \| null | `https://example.com/admin/ecommerce/orders/1` | 알림 클릭 시 이동할 URL (템플릿의 `click_url` 우선, 없으면 메일 CTA `action_url`, 둘 다 없으면 `null`) |
+| url | string \| null | `https://g7.dev/admin/ecommerce/orders/1` | 알림 클릭 시 이동할 URL (템플릿의 `click_url` 우선, 없으면 메일 CTA `action_url`, 둘 다 없으면 `null`) |
 | data | object | `{"type":"new_order_admin","subject":"...","body":"...","click_url":"..."}` | 알림 원본 페이로드 객체 (type/subject/body/click_url 과 발송 시 전달된 변수 data 를 포함) |
 | read_at | string \| null | `2026-07-13 09:40:11` | 읽음 처리 일시 (사용자 타임존 기준 `Y-m-d H:i:s`) — 이 엔드포인트 성공 시 항상 값이 채워짐 |
 | created_at | string \| null | `2026-07-13 09:38:04` | 알림 생성 일시 (사용자 타임존 기준 `Y-m-d H:i:s`) |
@@ -506,14 +505,14 @@ HTTP/1.1 200
         "type_label": "신규 주문 관리자 알림",
         "subject": "새로운 주문이 접수되었습니다",
         "body": "소경은님이 주문번호 20260713-0038038875 주문을 접수했습니다.",
-        "url": "https://example.com/admin/ecommerce/orders/1",
+        "url": "https://g7.dev/admin/ecommerce/orders/1",
         "data": {
             "type": "new_order_admin",
             "subject": "새로운 주문이 접수되었습니다",
             "body": "소경은님이 주문번호 20260713-0038038875 주문을 접수했습니다.",
-            "click_url": "https://example.com/admin/ecommerce/orders/1",
+            "click_url": "https://g7.dev/admin/ecommerce/orders/1",
             "data": {
-                "action_url": "https://example.com/admin/ecommerce/orders/1"
+                "action_url": "https://g7.dev/admin/ecommerce/orders/1"
             }
         },
         "read_at": "2026-07-13 09:40:11",
@@ -576,7 +575,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | type_label | string | `신규 주문 관리자 알림` | `type` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
 | subject | string | `새로운 주문이 접수되었습니다` | 알림 제목 (알림 템플릿의 subject 를 변수 치환해 렌더한 문자열) |
 | body | string | `소경은님이 주문번호 20260713-0038038875 (결제금액:…` | 알림 본문 (알림 템플릿의 body 를 변수 치환해 렌더한 문자열) |
-| url | string | `https://example.com/admin/ecommerce/orders…` | 알림 클릭 시 이동할 URL (템플릿의 click_url 우선, 없으면 메일 CTA action_url) |
+| url | string | `https://g7.dev/admin/ecommerce/orders…` | 알림 클릭 시 이동할 URL (템플릿의 click_url 우선, 없으면 메일 CTA action_url) |
 | data | object | `{"type":"new_order_admin","subject":"새로운 주문이 접수되었습니다","bo…` | 알림 원본 페이로드 객체 (type/subject/body/click_url 과 발송 시 전달된 변수 data 를 포함) |
 | read_at | null | `null` | read 일시 |
 | created_at | string | `2026-07-13 09:38:04` | 생성 일시 |
@@ -672,9 +671,7 @@ HTTP/1.1 200
 
 **설명**
 
-인증된 사용자 본인의 사이트내 알림 목록을 최신순(`created_at desc`)으로 페이지네이션해 반환합니다. `read` 파라미터로 미읽음(`unread`)·읽음(`read`)·전체(`all`, 기본)를 필터링하고, `per_page` 미지정 시 20건 단위로 반환합니다. 조회 대상은 항상 요청 사용자 본인의 알림으로 한정됩니다. `_user_base.g7.html` 이 이 엔드포인트를 소비하며 WebSocket 알림 수신 시 갱신됩니다. 관리자 스코프(`/api/admin/notifications`)와 동일한 서비스·리소스를 사용하되 권한(`core.user-notifications.*`)과 기본 페이지 크기(20건)가 다릅니다.
-
-**권한 값(7.1.0)** 응답 `data.abilities` — `can_update`(= `core.user-notifications.update`, 읽음 처리)·`can_delete`(= `core.user-notifications.delete`). 마이페이지 알림함과 헤더 알림 센터는 이 값으로 「모두 읽음」·삭제 버튼을 잠근다.
+인증된 사용자 본인의 사이트내 알림 목록을 최신순(`created_at desc`)으로 페이지네이션해 반환합니다. `read` 파라미터로 미읽음(`unread`)·읽음(`read`)·전체(`all`, 기본)를 필터링하고, `per_page` 미지정 시 20건 단위로 반환합니다. 조회 대상은 항상 요청 사용자 본인의 알림으로 한정됩니다. `_user_base.json` 이 이 엔드포인트를 소비하며 WebSocket 알림 수신 시 갱신됩니다. 관리자 스코프(`/api/admin/notifications`)와 동일한 서비스·리소스를 사용하되 권한(`core.user-notifications.*`)과 기본 페이지 크기(20건)가 다릅니다.
 
 
 ### DELETE /api/user/notifications/all
@@ -917,7 +914,7 @@ HTTP/1.1 200
 
 **설명**
 
-인증된 사용자 본인의 미읽음 알림 개수를 집계해 `data.unread_count` 로 반환합니다. `_user_base.g7.html` 의 알림 미읽음 배지에 사용되며, WebSocket 으로 새 알림이 수신되면 이 값을 재조회해 갱신합니다.
+인증된 사용자 본인의 미읽음 알림 개수를 집계해 `data.unread_count` 로 반환합니다. `_user_base.json` 의 알림 미읽음 배지에 사용되며, WebSocket 으로 새 알림이 수신되면 이 값을 재조회해 갱신합니다.
 
 
 ### DELETE /api/user/notifications/{notification}
@@ -1007,7 +1004,7 @@ _단건 응답: `data` 객체의 필드 (읽음 처리 후 갱신된 알림 1건
 | type_label | string | `배송 시작 알림` | `type` 값의 사람이 읽는 라벨 (알림 정의의 현지화 이름, 정의 미존재 시 빈 문자열) |
 | subject | string | `주문하신 상품이 발송되었습니다` | 알림 제목 (알림 템플릿의 subject 를 변수 치환해 렌더한 문자열) |
 | body | string | `주문번호 20260713-0038038875 상품이 발송되었습니다.` | 알림 본문 (알림 템플릿의 body 를 변수 치환해 렌더한 문자열) |
-| url | string \| null | `https://example.com/mypage/orders/1` | 알림 클릭 시 이동할 URL (템플릿의 `click_url` 우선, 없으면 메일 CTA `action_url`, 둘 다 없으면 `null`) |
+| url | string \| null | `https://g7.dev/mypage/orders/1` | 알림 클릭 시 이동할 URL (템플릿의 `click_url` 우선, 없으면 메일 CTA `action_url`, 둘 다 없으면 `null`) |
 | data | object | `{"type":"order_shipped","subject":"...","body":"...","click_url":"..."}` | 알림 원본 페이로드 객체 (type/subject/body/click_url 과 발송 시 전달된 변수 data 를 포함) |
 | read_at | string \| null | `2026-07-13 10:02:33` | 읽음 처리 일시 (사용자 타임존 기준 `Y-m-d H:i:s`) — 이 엔드포인트 성공 시 항상 값이 채워짐 |
 | created_at | string \| null | `2026-07-13 09:58:12` | 알림 생성 일시 (사용자 타임존 기준 `Y-m-d H:i:s`) |
@@ -1028,14 +1025,14 @@ HTTP/1.1 200
         "type_label": "배송 시작 알림",
         "subject": "주문하신 상품이 발송되었습니다",
         "body": "주문번호 20260713-0038038875 상품이 발송되었습니다.",
-        "url": "https://example.com/mypage/orders/1",
+        "url": "https://g7.dev/mypage/orders/1",
         "data": {
             "type": "order_shipped",
             "subject": "주문하신 상품이 발송되었습니다",
             "body": "주문번호 20260713-0038038875 상품이 발송되었습니다.",
-            "click_url": "https://example.com/mypage/orders/1",
+            "click_url": "https://g7.dev/mypage/orders/1",
             "data": {
-                "action_url": "https://example.com/mypage/orders/1"
+                "action_url": "https://g7.dev/mypage/orders/1"
             }
         },
         "read_at": "2026-07-13 10:02:33",

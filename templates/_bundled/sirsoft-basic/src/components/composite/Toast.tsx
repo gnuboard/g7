@@ -96,7 +96,7 @@ const positionClassMap: Record<ToastPosition, string> = {
  * - 수동 닫기 버튼
  *
  * @example
- * // 레이아웃 JSON 사용 예시 (_user_base.g7.html)
+ * // 레이아웃 JSON 사용 예시 (_user_base.json)
  * {
  *   "id": "global_toast",
  *   "type": "composite",
@@ -190,8 +190,6 @@ export const Toast: React.FC<ToastProps> = ({
   return (
     <Div
       className={`fixed z-[9999] flex flex-col gap-2 ${positionClassMap[position]}`}
-      // 좁은 화면 하단 구매바가 있을 때 스타일시트가 이 표시를 보고 알림을 바 위로 올린다
-      data-toast-position={position}
       aria-live="polite"
       aria-atomic="true"
     >

@@ -1,17 +1,9 @@
-import React, { useMemo, useState, useRef, useEffect, useCallback, useId } from 'react';
+import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import { Div } from '../basic/Div';
 import { Button } from '../basic/Button';
 import { Span } from '../basic/Span';
 import { Svg } from '../basic/Svg';
 import type { EditorAttrs } from '../../types';
-import { useAdjacentLabel } from '../../hooks/useAdjacentLabel';
-
-// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다.
-// 레이아웃이 문구를 넘기지 않으면 기본 문구가 언어와 무관하게 영어였다(7.1.0).
-const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
-  const translated = (window as any).G7Core?.t?.(key, params);
-  return typeof translated === 'string' && translated !== key ? translated : fallback;
-};
 
 export interface SearchableDropdownOption {
   value: string | number;
@@ -39,14 +31,6 @@ export interface SearchableDropdownProps {
   initialText?: string;
   /** 트리거 버튼 텍스트 */
   triggerLabel?: string;
-  /**
-   * 다중 선택에서 둘 이상 골랐을 때의 트리거 문구. `{count}` 가 고른 수로 치환된다.
-   *
-   * 기본값이 영어인 것은 이 컴포넌트가 코어 번역을 읽지 않기 때문이다 — 화면(레이아웃)이
-   * `$t:` 로 넘긴다. 넘기지 않으면 한국어 관리자 화면에 「2 selected」 가 그대로 뜬다
-   * (2026-09-21 브라우저 실측: 회원 배송지 목록의 회원 필터).
-   */
-  selectedCountLabel?: string;
   /** 트리거 버튼 아이콘 */
   triggerIcon?: React.ReactNode;
   /** 비활성화 */
@@ -59,10 +43,6 @@ export interface SearchableDropdownProps {
   id?: string;
   /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
   editorAttrs?: EditorAttrs;
-  /** 트리거 단추 이름 — 단추는 「{이름} {현재 값}」으로 읽힌다. 없으면 곁 라벨을 잇는다(#757) */
-  'aria-label'?: string;
-  /** 트리거 단추 이름이 될 요소 id — 단추는 「{그 요소 글자} {현재 값}」으로 읽힌다 */
-  'aria-labelledby'?: string;
 }
 
 /**
@@ -76,26 +56,17 @@ export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
   value,
   onChange,
   multiple = false,
-  searchPlaceholder: searchPlaceholderProp,
+  searchPlaceholder = 'Search...',
   onSearch,
-  noResultsText: noResultsTextProp,
-  initialText: initialTextProp,
-  triggerLabel: triggerLabelProp,
-  selectedCountLabel: selectedCountLabelProp,
+  noResultsText = 'No results found',
+  initialText = 'Type to search',
+  triggerLabel = 'Select',
   triggerIcon,
   disabled = false,
   className = '',
   id,
   editorAttrs,
-  'aria-label': ariaLabel,
-  'aria-labelledby': ariaLabelledBy,
 }) => {
-  // 기본 문구는 화면 언어를 따른다 — 레이아웃이 넘긴 문구가 우선이다(7.1.0)
-  const searchPlaceholder = searchPlaceholderProp ?? tOr('common.search_placeholder', 'Search...');
-  const noResultsText = noResultsTextProp ?? tOr('common.no_results', 'No results found');
-  const initialText = initialTextProp ?? tOr('common.type_to_search', 'Type to search');
-  const triggerLabel = triggerLabelProp ?? tOr('common.select_placeholder', 'Select');
-  const selectedCountLabel = selectedCountLabelProp ?? tOr('common.selected_count', '{count} selected', { count: '{count}' });
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
@@ -110,19 +81,13 @@ export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
   }, [value]);
 
   // 검색어로 옵션 필터링
-  //
-  // 라벨·설명을 **문자열로 좁혀서** 비교한다. 옵션은 화면마다 다른 곳에서 온다 — 검색 API,
-  // 현재 선택값 시드, 확장이 주입한 목록. 그중 하나가 문자열이 아닌 값을 흘리면 종전에는
-  // `opt.label.toLowerCase is not a function` 이 나면서 **드롭다운 전체가 언마운트**됐다
-  // (실측 §9 T-D2: 알림 템플릿 수정 창의 역할 칸이 검색어 첫 글자에 사라졌다).
-  // 한 항목이 이상한 것과 그 화면을 못 쓰게 되는 것은 대가가 다르다.
   const filteredOptions = useMemo(() => {
     if (!searchTerm.trim()) return options;
     const term = searchTerm.toLowerCase();
     return options.filter(
       opt =>
-        String(opt.label ?? '').toLowerCase().includes(term) ||
-        String(opt.description ?? '').toLowerCase().includes(term)
+        opt.label.toLowerCase().includes(term) ||
+        opt.description?.toLowerCase().includes(term)
     );
   }, [options, searchTerm]);
 
@@ -135,27 +100,11 @@ export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
         const selected = options.find(opt => String(opt.value) === String(selectedValues[0]));
         return selected?.label || triggerLabel;
       }
-      return selectedCountLabel.replace('{count}', String(count));
+      return `${count} selected`;
     }
     const selected = options.find(opt => String(opt.value) === String(selectedValues[0]));
     return selected?.label || triggerLabel;
-  }, [selectedValues, options, multiple, triggerLabel, selectedCountLabel]);
-
-  // 트리거 이름 — 종전에는 고른 값만 읽혀 무엇을 고르는 칸인지 알 수 없었다(회원 국가·작성자·수신자, #757).
-  // 이름 span + 현재 값 span 을 aria-labelledby 로 이어 「{이름} {현재 값}」으로 읽힌다. 이름 prop 이 없으면 곁 라벨 + 단추 글자.
-  const domId = useId().replace(/[^a-zA-Z0-9_-]/g, '');
-  const nameId = `${domId}-name`;
-  const valueId = `${domId}-value`;
-  // 고른 값이 없으면 단추 글자는 안내 글자(triggerLabel)라 이름에 잇지 않는다. 레이아웃이 값 없음을 빈 문자열('')로
-  // 넘기거나 옵션에 없는 값이면 단추에는 안내 글자가 보이므로 같은 경우로 본다 — 「국가 국가 선택」 겹침(브라우저 실측)
-  const hasValue = selectedValues.some((v) => v !== '' && v !== null && v !== undefined) && displayLabel !== triggerLabel;
-  const valuePart = hasValue ? ` ${valueId}` : '';
-  const triggerLabelledBy = ariaLabel
-    ? `${nameId}${valuePart}`
-    : ariaLabelledBy
-      ? `${ariaLabelledBy}${valuePart}`
-      : undefined;
-  useAdjacentLabel(buttonRef as React.RefObject<HTMLElement | null>, !triggerLabelledBy, true);
+  }, [selectedValues, options, multiple, triggerLabel]);
 
   // 외부 클릭 시 드롭다운 닫기
   useEffect(() => {
@@ -254,11 +203,6 @@ export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
 
   return (
     <Div ref={containerRef} className={`relative inline-block ${className}`} id={id} {...editorAttrs}>
-      {ariaLabel && (
-        <Span id={nameId} className="sr-only">
-          {ariaLabel}
-        </Span>
-      )}
       {/* 트리거 버튼 */}
       <Button
         ref={buttonRef}
@@ -277,11 +221,10 @@ export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
         `}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
-        aria-labelledby={triggerLabelledBy}
       >
         <Div className="flex items-center gap-2">
           {triggerIcon}
-          <Span id={valueId} className="truncate">{displayLabel}</Span>
+          <Span className="truncate">{displayLabel}</Span>
         </Div>
         <Svg
           className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
@@ -307,8 +250,7 @@ export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
               value={searchTerm}
               onChange={handleSearchChange}
               placeholder={searchPlaceholder}
-              aria-label={tOr('common.search', 'Search')}
-              className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:outline-none"
+              className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:outline-none"
             />
           </Div>
 
@@ -373,14 +315,14 @@ export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
                         <Div
                           className={`font-medium ${
                             selected
-                              ? 'text-blue-600 dark:text-blue-300'
+                              ? 'text-blue-600 dark:text-blue-400'
                               : 'text-gray-900 dark:text-white'
                           }`}
                         >
                           {option.label}
                         </Div>
                         {option.description && (
-                          <Div className="text-sm text-gray-500 dark:text-gray-300 mt-0.5">
+                          <Div className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
                             {option.description}
                           </Div>
                         )}

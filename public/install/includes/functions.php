@@ -505,10 +505,10 @@ function showInstallationCompletedAlert(): void
 }
 
 /**
- * 안내 문구를 보여 주고 잠시 뒤 지정된 URL로 이동합니다 (스크립트 없음 — meta refresh).
+ * 알럿을 표시하고 지정된 URL로 리다이렉트합니다.
  *
  * @param  string  $title  페이지 제목
- * @param  string  $message  안내 문구
+ * @param  string  $message  알럿 메시지
  * @param  string  $redirectUrl  리다이렉트 URL
  */
 function showAlertAndRedirect(string $title, string $message, string $redirectUrl): void
@@ -530,47 +530,15 @@ function showAlertAndRedirect(string $title, string $message, string $redirectUr
     echo '<meta charset="UTF-8">';
     echo '<meta name="viewport" content="width=device-width, initial-scale=1.0">';
     echo '<title>'.$title.'</title>';
-    // 스크립트 없이 안내 + 3초 뒤 meta refresh 이동 — 종전 alert + location 인라인 스크립트는 웹서버가
-    // `Content-Security-Policy: script-src 'self'` 를 걸면 실행되지 않아 흰 화면에 머물렀다(#158).
-    echo '<meta http-equiv="refresh" content="3;url='.$redirectUrl.'">';
-    // 스타일은 파일로 싣는다 — 문서 안 style 요소는 웹서버가 `style-src 'self'` 를 걸면 막힌다.
-    echo '<link rel="stylesheet" href="'.htmlspecialchars(installerStandaloneCssUrl()).'">';
     echo '</head>';
-    echo '<body class="standalone-redirect">';
-    echo '<main role="alert">';
-    echo '<p>'.$message.'</p>';
-    echo '<p class="hint">'.htmlspecialchars(lang('redirect_auto_notice')).'</p>';
-    echo '<p><a href="'.$redirectUrl.'">'.htmlspecialchars(lang('redirect_go_now')).'</a></p>';
-    echo '</main>';
+    echo '<body>';
+    echo '<script>';
+    echo 'alert("'.$message.'");';
+    echo 'window.location.href = "'.$redirectUrl.'";';
+    echo '</script>';
     echo '</body>';
     echo '</html>';
     exit;
-}
-
-/**
- * 독립 화면(안내 후 이동·403)용 스타일 파일 주소를 반환합니다.
- *
- * 설치기 기준 URL 상수(INSTALLER_BASE_URL)가 정의돼 있으면 그것을 쓰고(index.php 진입 — config.php 가 먼저 로드된다),
- * 없으면 요청 경로에서 계산합니다(session.php 만 로드한 진입에서 403 화면이 뜨는 경우).
- *
- * @return string 스타일 파일 URL
- */
-function installerStandaloneCssUrl(): string
-{
-    if (defined('INSTALLER_BASE_URL')) {
-        $base = INSTALLER_BASE_URL;
-    } else {
-        $script = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
-        $pos = strrpos($script, '/install/');
-        if ($pos !== false) {
-            // /install/index.php, /install/api/*.php 모두 설치기 루트까지 자른다
-            $base = substr($script, 0, $pos).'/install';
-        } else {
-            $base = rtrim(dirname($script), '/.').'/install';
-        }
-    }
-
-    return rtrim($base, '/').'/assets/css/installer-standalone.css';
 }
 
 /**
@@ -633,7 +601,7 @@ function getSvgIcon(string $type): string
                 <circle class="result-icon-circle" cx="26" cy="26" r="25" fill="none"/>
                 <path class="result-icon-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
             </svg>',
-        'warning' => '<svg class="result-icon result-icon-warning" viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        'warning' => '<svg class="result-icon result-icon-warning" viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="color:#f59e0b">
                 <circle class="result-icon-circle" cx="26" cy="26" r="25" fill="none" stroke="currentColor" stroke-width="2"/>
                 <path d="M26 12 L26 28" stroke="currentColor" stroke-width="3" stroke-linecap="round" fill="none"/>
                 <circle cx="26" cy="36" r="2.5" fill="currentColor"/>
@@ -939,13 +907,8 @@ function checkDirectoryPermissions(array $directories): array
         if (! $exists) {
             $errorType = 'not_exists';
         } elseif (! $writable) {
-            // Windows: ReadOnly 속성이 걸려 있으면 icacls 로는 해소되지 않는다.
-            // ACL 안내보다 먼저 판별해 attrib -R 을 안내한다.
-            if (hasWindowsReadOnlyAttribute($fullPath)) {
-                $errorType = 'windows_readonly';
-            }
             // 권한 비트가 충분(0755+)한데도 쓰기 불가 → 소유권 불일치 가능성
-            elseif ($permsOctal >= 0755 && $webServerUser && $owner && $owner !== $webServerUser) {
+            if ($permsOctal >= 0755 && $webServerUser && $owner && $owner !== $webServerUser) {
                 $errorType = 'ownership_mismatch';
             } else {
                 $errorType = 'not_writable';
@@ -953,18 +916,8 @@ function checkDirectoryPermissions(array $directories): array
         } elseif (! $readable) {
             $errorType = 'not_readable';
         } elseif ($hasSubdirectoryIssues) {
-            // 상위는 OK, 하위 디렉토리만 문제.
-            // 하위 중 하나라도 ReadOnly 속성이 원인이면 icacls 안내로는 해소되지 않으므로
-            // 상위 결과에도 그 사실을 올려 attrib -R 안내가 함께 노출되게 한다.
-            $hasReadOnlySubdirectory = false;
-            foreach ($failedSubdirectories as $failedSubdirectory) {
-                if (! empty($failedSubdirectory['windows_readonly'])) {
-                    $hasReadOnlySubdirectory = true;
-                    break;
-                }
-            }
-
-            $errorType = $hasReadOnlySubdirectory ? 'windows_readonly' : 'subdirectory_issues';
+            // 상위는 OK, 하위 디렉토리만 문제
+            $errorType = 'subdirectory_issues';
         }
 
         $results[$path] = [
@@ -1054,8 +1007,6 @@ function checkSubdirectoriesRecursive(string $path, int $maxDepth = 1, int $curr
             $failedPaths[] = [
                 'path' => $relativePath,
                 'permissions' => $permissions,
-                // Windows ReadOnly 속성이 원인이면 icacls 가 아니라 attrib -R 이 필요하다.
-                'windows_readonly' => hasWindowsReadOnlyAttribute($itemPath),
             ];
         }
 
@@ -1171,10 +1122,10 @@ function generateEnvContent(): ?string
     $replacements['APP_ENV=production'] = 'APP_ENV='.serializeEnvValue((string) ($config['app_env'] ?? 'production'));
     $replacements['APP_URL=http://localhost'] = 'APP_URL='.serializeEnvValue((string) ($config['app_url'] ?? 'http://localhost'));
 
-    // 언어 설정 — 세션이 아니라 state 에서 정한다(설정 general.language 와 같은 값).
-    $siteLang = installer_site_language($state);
-    $replacements['APP_LOCALE=ko'] = 'APP_LOCALE='.$siteLang;
-    $replacements['APP_FAKER_LOCALE=ko_KR'] = 'APP_FAKER_LOCALE='.($siteLang === 'ko' ? 'ko_KR' : 'en_US');
+    // 언어 설정
+    $currentLang = getCurrentLanguage();
+    $replacements['APP_LOCALE=ko'] = 'APP_LOCALE='.$currentLang;
+    $replacements['APP_FAKER_LOCALE=ko_KR'] = 'APP_FAKER_LOCALE='.($currentLang === 'ko' ? 'ko_KR' : 'en_US');
 
     if (isset($config['app_env']) && $config['app_env'] !== 'production') {
         $replacements['APP_DEBUG=false'] = 'APP_DEBUG=true';
@@ -1210,59 +1161,6 @@ function generateEnvContent(): ?string
 function isWindows(): bool
 {
     return strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
-}
-
-/**
- * Windows 읽기 전용(ReadOnly) 속성이 걸린 디렉토리인지 판별합니다.
- *
- * ReadOnly 는 ACL(접근 제어 목록)이 아니라 파일 속성이다. 두 값은 서로 독립이라
- * icacls 로 Everyone:(OI)(CI)F 를 부여해도 ReadOnly 가 남아 있으면 PHP 의
- * is_writable() 은 계속 false 를 반환한다. 이 경우 안내된 icacls 명령을 몇 번
- * 실행해도 같은 실패 화면이 반복되므로(압축 해제·백업 복원·동기화 도구가 흔한 원인),
- * 원인을 따로 식별해 attrib -R 안내로 유도한다.
- *
- * @param  string  $path  검사할 경로
- * @return bool ReadOnly 속성이 설정되어 있으면 true (Windows 아니면 항상 false)
- */
-function hasWindowsReadOnlyAttribute(string $path): bool
-{
-    if (! isWindows() || ! file_exists($path)) {
-        return false;
-    }
-
-    // PHP 는 Windows 파일 속성을 직접 노출하지 않는다. COM 이 있으면 정확히 읽는다.
-    // FILE_ATTRIBUTE_READONLY = 0x1
-    if (class_exists('COM')) {
-        try {
-            $fso = new COM('Scripting.FileSystemObject');
-            $target = is_dir($path) ? $fso->GetFolder($path) : $fso->GetFile($path);
-
-            return ((int) $target->Attributes & 0x1) === 0x1;
-        } catch (Throwable $e) {
-            // COM 사용 불가 시 아래 폴백으로 진행
-        }
-    }
-
-    // 폴백: attrib 로 속성 문자열을 조회한다. 첫 필드에 R 이 있으면 ReadOnly.
-    // ACL 문제를 ReadOnly 로 오진하면 엉뚱한 명령을 안내하게 되므로, 확인되지
-    // 않으면 false 를 반환해 기존 icacls 안내를 유지한다.
-    if (! function_exists('exec')) {
-        return false;
-    }
-
-    $output = [];
-    $exitCode = 1;
-    @exec('attrib '.escapeshellarg($path).' 2>&1', $output, $exitCode);
-
-    if ($exitCode !== 0 || $output === []) {
-        return false;
-    }
-
-    // 출력 예: "A    R          C:\path\to\dir"  → 경로 앞 속성 플래그 구간만 검사
-    $line = (string) ($output[0] ?? '');
-    $flags = substr($line, 0, max(0, strpos($line, ':') - 1));
-
-    return strpos($flags, 'R') !== false;
 }
 
 /**
@@ -1303,14 +1201,6 @@ function getPermissionFixCommand(string $pathList, string $mode = 'ownership'): 
         $winPath = str_replace('/', '\\', $pathList);
         if ($mode === 'file') {
             return 'icacls '.$winPath.' /grant Everyone:F';
-        }
-
-        if ($mode === 'windows_readonly') {
-            // 두 줄이 필요하다 — `attrib -R "<폴더>" /D /S` 는 경로를 파일 사양으로 읽어 폴더 자체만 풀고
-            // 안쪽 파일·하위 폴더는 읽기 전용으로 남긴다(2026-09-23 Windows 실측). 안쪽은 `<폴더>\*` 로 푼다.
-            $target = trim($winPath, '"');
-
-            return 'attrib -R "'.$target.'"'."\n".'attrib -R "'.$target.'\\*" /S /D';
         }
 
         return 'icacls '.$winPath.' /grant Everyone:(OI)(CI)F /T';

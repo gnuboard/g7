@@ -42,18 +42,6 @@ export interface CardGridProps {
         xl?: number;
     };
     cardClassName?: string;
-    /**
-     * 카드 이동 주소(행 표현식) — 있으면 카드 전체를 덮는 `<a href>` 를 깔아 가운데 클릭·Ctrl+클릭 「새 탭에서 열기」가
-     * 된다(#757). 엔진은 원문 그대로 넘기고(components.json skipBindingKeys) 카드마다 그 행으로 푼다.
-     * 예: `cardHref="/admin/boards/{{row.slug}}/edit"`. 보통 클릭은 SPA 이동, 수정키 클릭은 브라우저 기본 동작,
-     * 바깥 주소는 새 탭. 카드 내용은 링크 밖 위층이라(링크 안 단추 없음) 안쪽 단추·스위치·메뉴는 그 요소만 동작한다.
-     * 카드는 쌓임 맥락을 만들므로 카드 안 펼침 요소는 포털로 그린다(ActionMenu 는 이미 포털).
-     */
-    cardHref?: string;
-    /**
-     * 카드 덮는 링크의 이름(행 표현식) — 예: `cardLinkLabel="{{row.name}} 편집"`. 없으면 카드 글자 전체가 링크 이름이다.
-     */
-    cardLinkLabel?: string;
     idField?: string;
     pagination?: boolean;
     pageSize?: number;
@@ -62,12 +50,6 @@ export interface CardGridProps {
     serverTotalPages?: number;
     alwaysShowPagination?: boolean;
     onPageChange?: (page: number) => void;
-    /**
-     * 페이지 번호 주소 틀 — `{page}` 자리에 번호(예: `/admin/boards?page={page}`). 주면 내장 페이지 번호가 링크가 된다(#757).
-     */
-    pageHref?: string;
-    /** 페이지 주소에 현재 주소의 쿼리를 합친다 */
-    pageHrefMergeQuery?: boolean;
     rowActions?: ActionMenuItem[];
     onRowAction?: (actionId: string | number, row: any) => void;
     className?: string;
@@ -85,20 +67,6 @@ export interface CardGridProps {
     id?: string;
     /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
     editorAttrs?: EditorAttrs;
-    /**
-     * 엔진이 자동 주입하는 부모 컴포넌트 컨텍스트
-     *
-     * `renderEnvRef.current` 는 이 CardGrid 를 그린 렌더러의 렌더 환경(폭·언어·dispatcher·레지스트리·
-     * 편집 모드)이다. 셀을 그릴 때 이 값을 넘겨, 레이아웃 편집기 미리보기에서 셀이 브라우저 창 폭·
-     * 호스트 언어가 아니라 미리보기 값을 따르게 한다(#141).
-     *
-     * @internal 템플릿 엔진 내부 사용
-     */
-    __componentContext?: {
-        renderEnvRef?: {
-            current: Record<string, any> | null;
-        };
-    };
 }
 /**
  * CardGrid 집합 컴포넌트

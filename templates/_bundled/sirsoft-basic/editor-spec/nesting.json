@@ -26,7 +26,6 @@
     "Pagination",
     "SearchBar",
     "Avatar",
-    "VisitorCounter",
     "UserInfo",
     "HtmlContent",
     "HtmlEditor",
@@ -38,6 +37,7 @@
     "FileUploader",
     "AvatarUploader",
     "SocialLoginButtons",
+    "PostReactions",
     "Input",
     "Textarea",
     "Select",
@@ -45,11 +45,7 @@
     "PasswordInput",
     "Label",
     "Form",
-    "Table",
-    "ProductRail",
-    "ChipRows",
-    "MobileBuyBar",
-    "BottomSheet"
+    "Table"
   ],
   "containers": {
     "Div": {
@@ -80,7 +76,6 @@
         "Pagination",
         "SearchBar",
         "Avatar",
-        "VisitorCounter",
         "UserInfo",
         "HtmlContent",
         "HtmlEditor",
@@ -92,21 +87,13 @@
         "FileUploader",
         "AvatarUploader",
         "SocialLoginButtons",
+        "PostReactions",
         "Input",
         "Textarea",
         "Select",
         "Checkbox",
         "PasswordInput",
-        "Label",
-        "BrandMark",
-        "Footer",
-        "Header",
-        "NotificationCenter",
-        "SlotContainer",
-        "ThemeToggle",
-        "RecentSearchCombobox",
-        "ProductRail",
-        "ChipRows"
+        "Label"
       ]
     },
     "Nav": {
@@ -139,9 +126,7 @@
       "accepts": [
         "Span",
         "Img",
-        "Icon",
-        "Div",
-        "H3"
+        "Icon"
       ]
     },
     "Ul": {
@@ -184,11 +169,7 @@
         "ProductCard",
         "ImageGallery",
         "Pagination",
-        "SearchBar",
-        "TabNavigation",
-        "ChipRows",
-        "MobileBuyBar",
-        "BottomSheet"
+        "SearchBar"
       ]
     },
     "Flex": {
@@ -260,26 +241,6 @@
     },
     "Table": {
       "accepts": []
-    },
-    "ProductRail": {
-      "accepts": [
-        "Div",
-        "ProductCard"
-      ]
-    },
-    "ChipRows": {
-      "accepts": [
-        "Div",
-        "A"
-      ]
-    },
-    "BottomSheet": {
-      "accepts": [
-        "Div",
-        "Span",
-        "P",
-        "Button"
-      ]
     }
   }
 }

@@ -20,14 +20,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (! Schema::hasIndex('board_posts', 'idx_board_posts_recent_across_boards')) {
-            Schema::table('board_posts', function (Blueprint $table) {
-                $table->index(
-                    ['deleted_at', 'parent_id', 'created_at'],
-                    'idx_board_posts_recent_across_boards'
-                );
-            });
-        }
+        Schema::table('board_posts', function (Blueprint $table) {
+            $table->index(
+                ['deleted_at', 'parent_id', 'created_at'],
+                'idx_board_posts_recent_across_boards'
+            );
+        });
     }
 
     /**

@@ -141,7 +141,9 @@ return [
     'cooldown_duration' => [
         'seconds' => ':seconds 秒',
         'minutes' => ':minutes 分',
+        'minutes_seconds' => ':minutes 分 :seconds 秒',
         'hours' => ':hours 時間',
+        'hours_minutes' => ':hours 時間 :minutes 分',
     ],
     'board' => [
         'not_found' => '掲示板が見つかりません。',
@@ -246,44 +248,8 @@ return [
             'file_max' => 'ファイルサイズが許可されたサイズを超えています。',
             'mimes' => '許可されていないファイル形式です。',
         ],
-        'search_field' => [
-            'in' => '無効な検索対象です。',
-        ],
-        'bulk' => [
-            'ids' => [
-                'required' => '投稿IDは必須です。',
-                'array' => '投稿IDは配列形式である必要があります。',
-                'min' => '最小1件以上の投稿を選択する必要があります。',
-                'max' => '1回に:max件まで選択できます。',
-                'integer' => '投稿IDは整数である必要があります。',
-                'distinct' => '投稿IDが重複しています。',
-            ],
-            'reason' => [
-                'max' => '理由は:max文字を超えることができません。',
-            ],
-        ],
     ],
-
-    // 게시판 표시 순서 저장 (관리자 게시판 목록 「순서 변경」)
-    'boards' => [
-        'reorder_stale' => '掲示板一覧が変更されました。並び順変更ウィンドウを閉じて、もう一度開いてください。',
-    ],
-
     'attributes' => [
-        'content_media' => [
-            'file' => '本文メディアファイル',
-            'temp_key' => '一時キー',
-            'post_id' => '投稿番号',
-        ],
-        'content_media_policy' => [
-            'policy' => '本文メディアポリシー',
-            'max_per_document' => '文書あたりの本文メディア最大数',
-            'kind' => ':kind 本文メディア設定',
-            'enabled' => ':kind 本文メディアの使用',
-            'max_size_mb' => ':kind ファイルあたりの最大サイズ(MB)',
-            'extensions' => ':kind 許可拡張子',
-        ],
-        'board_ids' => '掲示板の並び順',
         'settings' => [
             'basic_defaults.type' => '掲示板タイプ',
             'basic_defaults.per_page' => 'ページあたりの投稿数',
@@ -295,7 +261,6 @@ return [
             'basic_defaults.use_reply' => '返信使用有無',
             'basic_defaults.max_reply_depth' => '最大返信深さ',
             'basic_defaults.reply_delete_policy' => '返信の削除方式',
-            'basic_defaults.secret_reply_visibility' => '非公開返信の閲覧範囲',
             'basic_defaults.max_comment_depth' => '最大コメント深さ',
             'basic_defaults.comment_order' => 'コメント並べ替え',
             'basic_defaults.show_view_count' => '閲覧数表示',
@@ -326,49 +291,6 @@ return [
             'spam_security.comment_cooldown_seconds' => 'コメント作成クールダウン(秒)',
             'spam_security.report_cooldown_seconds' => '通報クールダウン(秒)',
             'spam_security.view_count_cache_ttl' => '閲覧数キャッシュ有効期限(秒)',
-            // グループ・その他の項目 — 代替メッセージにフィールドキーが出ないよう画面上の名前を使う
-            '_tab' => '設定タブ',
-            'basic_defaults' => '掲示板設定',
-            'basic_defaults.use_scrap' => 'スクラップの使用',
-            'basic_defaults.blocked_keywords' => '禁止ワード',
-            'basic_defaults.reaction_types.*.id' => 'リアクションタイプ',
-            'report_policy' => '通報ポリシー',
-            'report_policy.notify_admin_on_report' => '通報受理管理者通知',
-            'report_policy.notify_admin_on_report_scope' => '通知発送範囲',
-            'report_policy.notify_admin_on_report_channels' => '管理者通知チャネル',
-            'report_policy.notify_author_on_report_action' => '通報処理通知',
-            'report_policy.notify_author_on_report_action_channels' => '作成者通知チャネル',
-            'report_permissions' => '通報管理権限',
-            'spam_security' => 'セキュリティ設定',
-            'notifications' => '通知設定',
-            'notifications.channels' => '通知チャネル',
-            'notifications.channels.*.id' => '通知チャネル',
-            'notifications.channels.*.is_active' => '通知チャネルの使用有無',
-            'notifications.channels.*.sort_order' => '通知チャネルの順序',
-            'display' => '表示設定',
-            'display.date_display_format' => '日付表示方式',
-            'seo' => 'SEO設定',
-            'seo.meta_boards_title' => '掲示板一覧ページのメタタイトル',
-            'seo.meta_boards_description' => '掲示板一覧ページのメタ説明',
-            'seo.meta_board_title' => '掲示板投稿一覧ページのメタタイトル',
-            'seo.meta_board_description' => '掲示板投稿一覧ページのメタ説明',
-            'seo.meta_post_title' => '投稿詳細ページのメタタイトル',
-            'seo.meta_post_description' => '投稿詳細ページのメタ説明',
-            'seo.seo_boards' => '掲示板一覧ページのSEO提供',
-            'seo.seo_board' => '掲示板投稿一覧ページのSEO提供',
-            'seo.seo_post_detail' => '投稿詳細ページのSEO提供',
-            'attachment_settings.purge_enabled' => '削除添付の永久クリーンアップ',
-            'attachment_settings.purge_retention_days' => '削除添付の保持期間',
-            'basic_defaults.use_reaction' => 'リアクション機能を使用',
-            'basic_defaults.active_reaction_types' => '使用するリアクションタイプ',
-            'basic_defaults.use_comment_reaction' => 'コメント反応使用',
-            'basic_defaults.reaction_types' => '反応タイプ',
-            'basic_defaults.reaction_types.*.code' => '反応タイプコード',
-            'basic_defaults.reaction_types.*.name' => '反応タイプ名',
-            'basic_defaults.reaction_types.*.name.ko' => '反応タイプ名(韓国語)',
-            'basic_defaults.reaction_types.*.icon_attachment_id' => '反応タイプアイコン',
-            'basic_defaults.reaction_types.*.display_order' => '反応タイプ表示順序',
-            'basic_defaults.reaction_types.*.is_active' => '反応タイプ使用有無',
         ],
         'post' => [
             'title' => 'タイトル',
@@ -409,13 +331,8 @@ return [
             'reason' => '復元理由',
         ],
         'board' => [
-            'name' => '掲示板名',
-            'description' => '掲示板の説明',
             'add_to_menu' => '管理者メニューに表示',
             'blocked_keywords' => '禁止ワード',
-        ],
-        'board_type' => [
-            'name' => '掲示板タイプ名',
         ],
         'bulk_apply' => [
             'fields' => '適用項目',
@@ -428,7 +345,6 @@ return [
             'override_values.per_page_mobile' => 'モバイルページあたりの投稿数',
             'override_values.max_reply_depth' => '最大返信深さ',
             'override_values.reply_delete_policy' => '返信の削除方式',
-            'override_values.secret_reply_visibility' => '非公開返信の閲覧範囲',
             'override_values.max_comment_depth' => '最大コメント深さ',
             'override_values.min_title_length' => '最小タイトル長',
             'override_values.max_title_length' => '最大タイトル長',
@@ -441,33 +357,6 @@ return [
             'override_values.new_display_hours' => '新規表示時間',
             'attachment_settings.purge_enabled' => '削除添付の永久クリーンアップ',
             'attachment_settings.purge_retention_days' => '削除添付の保持期間',
-        ],
-        'scrap' => [
-            'ids' => 'スクラップID',
-            'search_field' => '検索対象',
-        ],
-        'reaction' => [
-            'reaction_type_id' => 'リアクションタイプ',
-            'ids' => '反応ID',
-            'search_field' => '検索対象',
-            'target_type' => '対象区分',
-        ],
-        'report_my' => [
-            'search_field' => '検索対象',
-            'target_type' => '対象区分',
-            'status' => '処理ステータス',
-        ],
-        'reaction_type' => [
-            'id' => '反応タイプ',
-            'icon' => 'アイコン画像',
-        ],
-        'use_comment_reaction' => 'コメント反応使用',
-        'bulk_members' => [
-            'apply_all' => '対象掲示板の範囲',
-            'board_ids' => '対象掲示板',
-            'user_uuids' => '会員',
-            'member_type' => '区分',
-            'mode' => '操作',
         ],
     ],
     'blind' => [
@@ -523,15 +412,11 @@ return [
             'required' => 'パスワードを入力してください。',
             'min' => 'パスワードは最小:min文字以上である必要があります。',
         ],
-        'blocked_keyword' => '禁止用語":keyword"が含まれています。',
-        'status' => [
-            'in' => '無効なコメントステータスです。',
+        'ip_address' => [
+            'required' => 'IPアドレスは必須です。',
         ],
+        'blocked_keyword' => '禁止用語":keyword"が含まれています。',
     ],
-    'content_media' => [
-        'temp_key_required' => '本文メディアのアップロードには一時キー(UUID)が必要です。画面を再読み込みしてからもう一度お試しください。',
-    ],
-
     'attachment' => [
         'file' => [
             'required' => 'ファイルは必須です。',
@@ -545,7 +430,6 @@ return [
         'file_mimes' => '許可されていないファイル形式です。',
         'post_id_required' => '投稿IDは必須です。',
         'post_id_invalid' => '無効な投稿IDです。',
-        'collection_reserved' => 'この添付区分ではアップロードできません。',
         'max_count_exceeded' => '最大アップロードファイル数(:max個)を超えました。',
         'extension_not_allowed' => '許可されていないファイル拡張子です::extension',
         'orders_required' => '順序情報は必須です。',
@@ -601,7 +485,6 @@ return [
             'read' => '投稿閲覧',
             'write' => '投稿作成',
             'read-secret' => '非公開投稿閲覧',
-            'write-notice' => 'お知らせ登録',
         ],
         'comments' => [
             'read' => 'コメント閲覧',
@@ -651,151 +534,5 @@ return [
         ],
         'daily_limit_exceeded' => '本日の通報可能回数(:limit回)を超過しました。',
         'rejection_limit_exceeded' => '最近 :days 日間の通報却下が :count 回累積され、通報が制限されました。',
-    ],
-    'scrap' => [
-        'ids' => [
-            'required' => 'スクラップIDは必須です。',
-            'array' => 'スクラップIDは配列形式である必要があります。',
-            'min' => '最小1件以上のスクラップを選択する必要があります。',
-            'max' => '1回に:max件まで選択できます。',
-            'integer' => 'スクラップIDは整数である必要があります。',
-            'distinct' => 'スクラップIDが重複しています。',
-            'exists' => '存在しないスクラップです。',
-        ],
-        'search_field' => [
-            'in' => '無効な検索対象です。',
-        ],
-    ],
-    'reaction' => [
-        'reaction_type_id' => [
-            'required' => 'リアクションタイプは必須です。',
-            'integer' => 'リアクションタイプは整数である必要があります。',
-            'exists' => '存在しない反応タイプです。',
-        ],
-        'ids' => [
-            'required' => '反応IDは必須です。',
-            'array' => '反応IDは配列形式である必要があります。',
-            'min' => '最低1つ以上の反応を選択する必要があります。',
-            'max' => ':max個まで選択できます。',
-            'integer' => '反応IDは整数である必要があります。',
-            'distinct' => '反応IDが重複しています。',
-            'exists' => '存在しない反応です。',
-        ],
-        'search_field' => [
-            'in' => '有効でない検索対象です。',
-        ],
-        'target_type' => [
-            'in' => '有効でない対象区分です。',
-        ],
-    ],
-    'reaction_type' => [
-        'code' => [
-            'regex' => 'コードは英小文字で始まり、英小文字・数字・アンダースコアのみが使用できます(2～50文字)。',
-            'distinct' => '反応タイプコードが重複しています。',
-            'unique' => '既に使用中のコードです。',
-        ],
-        'name' => [
-            'ko' => [
-                'required' => '既定言語(韓国語)の名前を入力してください。',
-            ],
-        ],
-        'icon_attachment_id' => [
-            'exists' => '有効でないアイコン画像です。',
-        ],
-        'icon' => [
-            'required' => 'アイコン画像を選択してください。',
-            'image' => 'アイコンは画像ファイルである必要があります。',
-            'mimes' => 'アイコンはJPG・PNG・GIF・WEBP形式のみアップロード可能です。',
-            'max' => 'アイコン画像は1MB以下である必要があります。',
-        ],
-    ],
-    'report_my' => [
-        'search_field' => [
-            'in' => '有効でない検索対象です。',
-        ],
-        'target_type' => [
-            'in' => '有効でない対象区分です。',
-        ],
-        'status' => [
-            'in' => '有効でない処理ステータスです。',
-        ],
-    ],
-    'privacy_retention_attributes' => [
-        'enabled' => '個人情報保有期間自動削除',
-        'ip_retention_days' => '作成IP保有期間',
-        'guest_retention_days' => '非会員作成者情報保有期間',
-        'guest_mode' => '非会員投稿処理方式',
-    ],
-
-    // 掲示板リクエスト共通の代替メッセージ (Concerns\ProvidesFallbackRuleMessages)
-    'fallback' => [
-        'in' => '選択された :attribute の値は正しくありません。',
-        'not_in' => '選択された :attribute の値は使用できません。',
-        'enum' => '選択された :attribute の値は正しくありません。',
-        'exists' => '選択された :attribute の値は存在しません。',
-        'unique' => ':attribute の値は既に使用されています。',
-        'required_if' => ':other が :value の場合、:attribute は必須です。',
-        'required_with' => ':values がある場合、:attribute も必須です。',
-        'required_without' => ':values がない場合、:attribute は必須です。',
-        'same' => ':attribute と :other は一致する必要があります。',
-        'different' => ':attribute と :other は異なる必要があります。',
-    ],
-
-    // 掲示板リクエスト共通の項目名 (Concerns\ProvidesFallbackRuleMessages) — リクエストが attributes() で
-    // 名前を付けていない項目に使う。配列の要素(キー.*)は親項目の名前を引き継ぐ。
-    'fallback_attributes' => [
-        'ids' => '選択項目',
-        'reason' => '理由',
-        'limit' => '表示件数',
-        'period' => '期間',
-        'type' => '掲示板タイプ',
-        'name' => '名前',
-        'slug' => 'スラッグ',
-        'is_active' => '使用有無',
-        'search' => '検索キーワード',
-        'search_field' => '検索対象',
-        'sort' => '並び順',
-        'sort_by' => '並び替え基準',
-        'sort_order' => '並び替え方向',
-        'filters' => '検索条件',
-        'filters.*.field' => '検索対象',
-        'filters.*.value' => '検索キーワード',
-        'filters.*.operator' => '検索方式',
-        'board_id' => '掲示板',
-        'board_slug' => '掲示板',
-        'user_uuid' => '会員',
-        'post_id' => '投稿',
-        'parent_id' => '元の投稿',
-        'reaction_type_id' => 'リアクションタイプ',
-        'target_type' => '対象区分',
-        'target_status' => '変更後の状態',
-        'reacted_at_from' => 'リアクション日(開始)',
-        'reacted_at_to' => 'リアクション日(終了)',
-        'scrapped_at_from' => 'スクラップ日(開始)',
-        'scrapped_at_to' => 'スクラップ日(終了)',
-        'reported_at_from' => '通報日(開始)',
-        'reported_at_to' => '通報日(終了)',
-        'verification_token' => '本人確認トークン',
-        'force_delete' => '完全削除',
-        'collection' => '添付コレクション',
-        'temp_key' => '一時アップロードキー',
-        'order' => '添付の順序',
-        'order.*.id' => '添付ファイル',
-        'order.*.order' => '添付の順番',
-        'categories' => '分類',
-        'board_manager_ids' => '掲示板管理者',
-        'board_step_ids' => '掲示板スタッフ',
-        'permissions' => '権限',
-        'permissions.*.roles' => '権限ロール',
-        'reply_delete_policy' => '返信の削除方式',
-        'secret_reply_visibility' => '非公開返信の閲覧範囲',
-        'attachment_ids' => '添付ファイル',
-        'password' => 'パスワード',
-    ],
-
-    // 本人認証ポリシータブの検証メッセージ
-    'identity_policy' => [
-        'target_not_owned' => '掲示板の本人認証ポリシーは掲示板の地点のみを対象にできます。フック・カスタム範囲は「sirsoft-board.」、ルート範囲は「api.modules.sirsoft-board.」で始まる必要があります。',
-        'nothing_to_update' => '変更する項目がありません。',
     ],
 ];

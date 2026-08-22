@@ -26,7 +26,6 @@
     "category": "カテゴリ",
     "no_category": "カテゴリ未登録",
     "date": "日付",
-    "date_type_select": "日付の基準",
     "date_type": {
       "created_at": "登録日",
       "updated_at": "編集日"
@@ -61,11 +60,9 @@
     "tax_status_options": {
       "all": "すべて",
       "taxable": "課税",
-      "tax_free": "非課税",
-      "zero_rated": "ゼロ税率"
+      "tax_free": "非課税"
     },
     "price": "価格",
-    "price_type_select": "価格の基準",
     "price_type": {
       "selling_price": "販売価格",
       "supply_price": "仕入価格",
@@ -81,8 +78,7 @@
     "shipping_policy_options": {
       "all": "すべて"
     },
-    "detail_filter_label": "詳細検索フィルター",
-    "category_step": "カテゴリ{{n}}段階"
+    "detail_filter_label": "詳細検索フィルター"
   },
   "action": {
     "edit": "編集",
@@ -288,10 +284,8 @@
       "tax_status": "課税対象",
       "tax_status_options": {
         "taxable": "課税",
-        "tax_free": "非課税",
-        "zero_rated": "ゼロ税率"
+        "tax_free": "非課税"
       },
-      "tax_status_help": "オプションごとに変える場合は、商品オプション表の「課税区分」で変更します。ゼロ税率は税率0%（輸出など）で、決済代行会社には非課税として送信されます。",
       "sales_status": "販売ステータス",
       "sales_status_options": {
         "on_sale": "販売中",
@@ -506,7 +500,8 @@
     },
     "modal": {
       "add_language": {
-        "title": "言語を追加"
+        "title": "言語を追加",
+        "description": "追加する言語を選択してください。"
       },
       "label_period": {
         "title": "ラベル期間設定",
@@ -544,11 +539,13 @@
   "modal": {
     "preset_manage": {
       "title": "プリセット管理",
+      "description": "検索プリセットを管理します。",
       "add_new": "新しいプリセットを追加",
       "empty": "保存されたプリセットがありません。"
     },
     "preset_save": {
       "title": "プリセット保存",
+      "description": "現在の検索条件をプリセットとして保存します。",
       "placeholder": "プリセット名を入力してください",
       "save": "保存"
     },
@@ -561,12 +558,12 @@
     },
     "bulk_price": {
       "title": "販売価格一括変更",
+      "description": "選択した{{count}}個の商品の販売価格を変更します。",
       "method": "変更方式",
       "method_increase": "値上げ",
       "method_decrease": "値下げ",
       "method_fixed": "に変更",
       "value": "変更金額/比率",
-      "unit": "変更の単位",
       "unit_won": "円",
       "unit_percent": "%",
       "preview_increase": "販売価格を{{value}}{{unit}}値上げします。",
@@ -575,6 +572,7 @@
     },
     "bulk_stock": {
       "title": "在庫一括変更",
+      "description": "選択した{{count}}個の商品の在庫を変更します。",
       "method": "変更方式",
       "method_increase": "増加",
       "method_decrease": "減少",
@@ -582,8 +580,7 @@
       "value": "変更数量",
       "preview_increase": "在庫を{{value}}個増加させます。",
       "preview_decrease": "在庫を{{value}}個減少させます。",
-      "preview_set": "在庫を{{value}}個に変更します。",
-      "quantity_unit": "個"
+      "preview_set": "在庫を{{value}}個に変更します。"
     },
     "bulk_confirm": {
       "title": "一括変更確認",
@@ -607,6 +604,7 @@
     },
     "excel_download": {
       "title": "エクセルダウンロード",
+      "description": "ダウンロードする注文書の範囲を選択してください。",
       "option_search": "現在の検索条件でダウンロード",
       "option_search_desc": "合計{{count}}個の商品がダウンロードされます。",
       "option_selected": "選択した商品のみダウンロード",
@@ -644,10 +642,7 @@
       "related_data_notice": "次のデータが一緒に削除されます:",
       "warning_message": "削除された商品は復旧できません。",
       "permanent_warning": "この操作は取り消せません。商品に関連するすべてのデータ(画像、オプション、在庫など)が永久に削除されます。",
-      "confirm_button": "削除",
-      "related_images": "- 画像: {{count}}件",
-      "related_options": "- オプション: {{count}}件",
-      "related_additional_options": "- 追加オプション: {{count}}件"
+      "confirm_button": "削除"
     },
     "mode_change": {
       "title": "詳細説明モード変更",
@@ -844,6 +839,7 @@
     "additional_name_label": "オプション名",
     "additional_name_placeholder": "刻印文句",
     "no_additional": "登録された追加オプションはありません",
+    "auto_currency": "多通貨価格自動計算",
     "items_count": "{{count}}個オプション",
     "required": "必須",
     "columns": {
@@ -853,7 +849,6 @@
       "category": "分類",
       "list_price": "定価",
       "selling_price": "販売価格",
-      "tax_status": "課税区分",
       "price": "価格",
       "price_type": "価格タイプ",
       "sku": "SKU",
@@ -866,8 +861,6 @@
       "active": "使用",
       "required": "必須"
     },
-    "mileage_value_label": "マイレージ積立値",
-    "mileage_type_label": "マイレージ積立単位",
     "mileage_type": {
       "fixed": "円",
       "percent": "%"
@@ -899,10 +892,7 @@
     "additional_value_price_label": "追加料金",
     "additional_value_default": "デフォルト",
     "additional_value_active": "使用",
-    "additional_value_allow_custom_text": "直接入力",
-    "option_group_name_n": "オプショングループ{{n}}の名前",
-    "option_group_values_n": "オプショングループ{{n}}の値",
-    "tax_status_inherit": "デフォルトに従う（{{status}}）"
+    "additional_value_allow_custom_text": "直接入力"
   },
   "notice": {
     "tab_existing_template": "テンプレート選択",
@@ -1144,8 +1134,7 @@
   },
   "tax": {
     "taxable": "課税",
-    "tax_free": "非課税",
-    "zero_rated": "ゼロ税率"
+    "tax_free": "非課税"
   },
   "labels": {
     "title": "ラベル",
@@ -1154,6 +1143,7 @@
     "remove": "削除",
     "no_period": "期間未設定",
     "modal_title": "ラベル設定",
+    "modal_description": "ラベルの名前、色、適用期間を設定します。",
     "name": "ラベル名",
     "color": "色",
     "color_reset": "色をリセット",
@@ -1217,14 +1207,5 @@
     "manage_common_info": "共通情報管理",
     "manage_notice_template": "商品情報提供告示管理",
     "create_shipping_policy": "配送ポリシーを作成"
-  },
-  "selector_forbidden": {
-    "categories": "カテゴリの閲覧権限がないため、カテゴリを選択できません。",
-    "brands": "ブランドの閲覧権限がないため、ブランドを選択できません。",
-    "notice_templates": "商品情報提供告示テンプレートの閲覧権限がないため、テンプレートを読み込めません。告示項目は直接入力できます。",
-    "common_infos": "共通情報の閲覧権限がないため、共通情報を選択できません。",
-    "shipping_policies": "配送ポリシーの閲覧権限がないため、配送ポリシーを選択できません。指定せずに保存すると、既に指定されている配送ポリシーが、指定がなければ基本配送ポリシーが適用されます。",
-    "product_labels": "商品ラベルの閲覧権限がないため、ラベルを選択できません。",
-    "roles": "会員等級の一覧を読み込む権限がないため、等級を選択できません。"
   }
 }

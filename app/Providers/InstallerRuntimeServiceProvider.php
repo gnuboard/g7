@@ -2,10 +2,7 @@
 
 namespace App\Providers;
 
-use App\Support\CoreVersionDiskReader;
-use App\Support\InstallerResidual;
 use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 
 /**
@@ -28,18 +25,13 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
     /**
      * 인스톨러 런타임 파일 경로 (storage/installer/runtime.php).
      */
-    public const RUNTIME_PATH_RELATIVE = InstallerResidual::RUNTIME_PATH_RELATIVE;
+    public const RUNTIME_PATH_RELATIVE = 'storage/installer/runtime.php';
 
-    /**
-     * 인스톨러 런타임 설정과 beta.7 한시 보정을 등록 단계에서 적용합니다.
-     *
-     * @return void 반환값 없음
-     */
     public function register(): void
     {
         // testing 환경은 .env.testing 의 DB/APP_KEY 가 SSoT 이며,
         // 인스톨러 runtime 파일이 존재하더라도 그 값으로 덮어쓰면
-        // 운영·개발 DB 가 테스트 대상이 되어 RefreshDatabase 가
+        // 프로덕션 DB(g7_2 등) 가 테스트 대상이 되어 RefreshDatabase 가
         // 프로덕션 데이터를 파괴할 수 있다. 테스트 환경에서는 무조건 skip.
         if ($this->app->environment('testing')) {
             return;
@@ -96,82 +88,8 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
             return;
         }
 
-        // 설치가 끝난 사이트에 남은 runtime 파일(지우지 못한 잔여)은 `.env` 를 이기지 않는다 — `.env` 의 빈 칸만 채운다.
-        // 종전에는 이 파일이 있으면 무조건 덮어써, 서버를 옮기며 `.env` 를 고쳐도 옛 DB 로 붙었다.
-        // 설치 중에는 `.env` 가 아직 예시 값이므로 지금처럼 runtime 이 이긴다.
-        if (InstallerResidual::isInstallCompleted(base_path())) {
-            $this->fillBlankEnvKeysFromRuntime($runtime);
-
-            return;
-        }
-
         $this->applyDatabaseConfig($runtime);
         $this->applyAppKey($runtime);
-    }
-
-    /**
-     * 설치 완료 사이트의 잔여 runtime — `.env` 에 비어 있는 칸만 runtime 값으로 채웁니다.
-     *
-     * `.env` 에 값이 적힌 DB 칸은 건드리지 않습니다. 비밀번호는 빈 값이 정상일 수 있어, 계정 이름이 `.env` 에
-     * 적혀 있으면 채우지 않습니다(그 계정의 비밀번호가 빈 것으로 본다).
-     *
-     * 두 가지는 runtime 이 그대로 이깁니다:
-     *   - APP_KEY — 지금까지 암호화에 쓰인 키는 runtime 의 것이다. 다른 키로 바꾸면 암호화된 설정·세션을 읽지 못한다.
-     *   - `.env` 의 DB 계정이 예시 파일 기본값(`root`)이고 runtime 의 계정은 그렇지 않을 때 — 설치 마무리가 `.env` 를
-     *     채우지 못하고 끝난 사이트의 표식이다(#371). 이때 `.env` 를 믿으면 업데이트 도중 DB 에 붙지 못한다.
-     * 둘 다 7.1.6 업그레이드 단계가 `.env` 로 옮기고 runtime 파일을 지우면 사라지는 상태다.
-     *
-     * @param  array<string, mixed>  $runtime  인스톨러 런타임 설정
-     * @return void 반환값 없음
-     */
-    protected function fillBlankEnvKeysFromRuntime(array $runtime): void
-    {
-        $env = InstallerResidual::parseEnvFile(base_path('.env'));
-        $fromRuntime = InstallerResidual::runtimeToEnvMap($runtime);
-        $blank = static fn (string $key): bool => trim((string) ($env[$key] ?? '')) === '';
-
-        $this->applyAppKey($runtime);
-
-        $envAccount = trim((string) ($env['DB_WRITE_USERNAME'] ?? ''));
-        $runtimeAccount = (string) ($fromRuntime['DB_WRITE_USERNAME'] ?? '');
-        if ($envAccount === 'root' && $runtimeAccount !== '' && $runtimeAccount !== 'root') {
-            $this->applyDatabaseConfig($runtime);
-
-            return;
-        }
-
-        // 쓰기 연결 — 채운 값은 읽기 연결이 따라갈 수 있게 기억한다
-        $filledWrite = [];
-        $fields = ['HOST' => 'host', 'PORT' => 'port', 'DATABASE' => 'database', 'USERNAME' => 'username', 'PASSWORD' => 'password'];
-        foreach ($fields as $suffix => $field) {
-            $key = 'DB_WRITE_'.$suffix;
-            if (! $blank($key) || ! array_key_exists($key, $fromRuntime)) {
-                continue;
-            }
-            // 주소가 `.env` 에 있으면 빈 포트는 기본 포트라는 뜻이고, 계정이 있으면 빈 비밀번호는 그 계정의 것이다
-            if (($suffix === 'PORT' && ! $blank('DB_WRITE_HOST')) || ($suffix === 'PASSWORD' && ! $blank('DB_WRITE_USERNAME'))) {
-                continue;
-            }
-            $filledWrite[$suffix] = $fromRuntime[$key];
-            Config::set('database.connections.mysql.write.'.$field, $suffix === 'HOST' ? [$fromRuntime[$key]] : $fromRuntime[$key]);
-        }
-
-        // 읽기 연결 — `.env` 에 없으면 runtime 의 읽기 값, 그것도 없으면 방금 채운 쓰기 값을 따른다
-        foreach ($fields as $suffix => $field) {
-            $key = 'DB_READ_'.$suffix;
-            if (! $blank($key)) {
-                continue;
-            }
-            $value = $fromRuntime[$key] ?? $filledWrite[$suffix] ?? null;
-            if ($value === null) {
-                continue;
-            }
-            Config::set('database.connections.mysql.read.'.$field, $suffix === 'HOST' ? [$value] : $value);
-        }
-
-        if ($blank('DB_PREFIX') && array_key_exists('DB_PREFIX', $fromRuntime)) {
-            Config::set('database.connections.mysql.prefix', $fromRuntime['DB_PREFIX']);
-        }
     }
 
     /**
@@ -179,8 +97,6 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
      *
      * 트리거 조건이 매우 보수적이라 정상 환경 부팅 비용은 .env 의 parseEnvFile 1회 + 키 4~5개
      * 비교. 손상 환경에서만 putenv/$_ENV/$_SERVER 갱신이 일어남.
-     *
-     * @return void 반환값 없음
      */
     private function recoverStaleProcessEnvFromDiskEnv(): void
     {
@@ -263,8 +179,7 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
      *
      * 기존 `applyDatabaseConfig` 와 동등한 키 경로 / 구조 (`database.connections.mysql.{read,write}.*`).
      *
-     * @param  array<string, string>  $parsed  파싱된 .env 키-값
-     * @return void 반환값 없음
+     * @param  array<string, string>  $parsed
      */
     private function applyConfigFromParsedEnv(array $parsed): void
     {
@@ -306,7 +221,7 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
         // 새 Config 로 재인스턴스화되도록 강제. config.write.username 이 stale root 로
         // 남아 있던 회귀의 부속 원인 차단 (DB Manager 의 connection 캐시).
         try {
-            DB::purge('mysql');
+            \Illuminate\Support\Facades\DB::purge('mysql');
         } catch (\Throwable $e) {
             // non-fatal — Config 만 갱신된 상태로도 다음 connection 시 정합 값 사용
         }
@@ -324,8 +239,6 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
      *   - 디스크 config/app.php version === '7.0.0-beta.7' (recover 와 동일)
      *   - posix_geteuid() === 0 (root 권한 자식만 — 운영자 의도 권한 보존)
      *   - cache/data 자신이 정합 owner/group (chown 기준값 추정)
-     *
-     * @return void 반환값 없음
      */
     private function normalizeRootOwnedCacheDirs(): void
     {
@@ -388,9 +301,6 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
     /**
      * 디렉토리/파일을 재귀적으로 chown + chgrp.
      *
-     * @param  string  $path  대상 경로
-     * @param  int  $uid  소유자 UID
-     * @param  int  $gid  그룹 GID
      * @return bool 모든 항목 성공 시 true
      */
     private function chownRecursive(string $path, int $uid, int $gid): bool
@@ -417,13 +327,30 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
      *
      * 메모리 config('app.version') 은 부모 stale ENV 의 APP_VERSION 을 따르므로
      * 본 fix 의 자기 활성화 가드로 사용 불가. 디스크 SSoT (config/app.php) 직접 읽기로
-     * 코어 업그레이드 시점의 실제 적용 버전 확보. 정규식은 `CoreVersionDiskReader` 한 곳에 둔다.
+     * 코어 업그레이드 시점의 실제 적용 버전 확보.
      *
      * @return string|null 추출 실패 시 null
      */
     private function readCoreVersionFromDisk(): ?string
     {
-        return CoreVersionDiskReader::shippedVersion(base_path('config/app.php'));
+        $configPath = base_path('config/app.php');
+        if (! is_file($configPath)) {
+            return null;
+        }
+        $content = @file_get_contents($configPath);
+        if ($content === false) {
+            return null;
+        }
+        // 'version' => env('APP_VERSION', '7.0.0-beta.7'),
+        if (preg_match("/'version'\s*=>\s*env\(\s*'APP_VERSION'\s*,\s*'([^']+)'\s*\)/", $content, $m)) {
+            return $m[1];
+        }
+        // fallback: 'version' => '7.0.0-beta.7',
+        if (preg_match("/'version'\s*=>\s*'([^']+)'/", $content, $m)) {
+            return $m[1];
+        }
+
+        return null;
     }
 
     /**
@@ -435,30 +362,62 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
      *   - 외곽 인용부호 (single/double) 제거 — unwrapEnvValue 사용
      *   - 키 이름은 [A-Za-z_][A-Za-z0-9_]* 만 인정
      *
-     * @param  string  $envPath  .env 파일 경로
-     * @return array<string, string> 키-값 배열
+     * @return array<string, string>
      */
     private function parseEnvFile(string $envPath): array
     {
-        return InstallerResidual::parseEnvFile($envPath);
+        $content = @file_get_contents($envPath);
+        if ($content === false) {
+            return [];
+        }
+
+        $lines = preg_split('/\r\n|\r|\n/', $content);
+        if ($lines === false) {
+            return [];
+        }
+
+        $result = [];
+        foreach ($lines as $line) {
+            $trimmed = ltrim($line);
+            if ($trimmed === '' || $trimmed[0] === '#' || $trimmed[0] === ';') {
+                continue;
+            }
+            $eqPos = strpos($trimmed, '=');
+            if ($eqPos === false || $eqPos === 0) {
+                continue;
+            }
+            $key = rtrim(substr($trimmed, 0, $eqPos));
+            if (! preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $key)) {
+                continue;
+            }
+            $value = substr($trimmed, $eqPos + 1);
+            // 줄 끝의 행간 공백 제거 (인용된 값은 인용부호 안의 내용 보존)
+            $value = rtrim($value, " \t");
+            $value = $this->unwrapEnvValue($value);
+            $result[$key] = $value;
+        }
+
+        return $result;
     }
 
-    /**
-     * .env 값의 외곽 인용부호(single/double)를 벗깁니다.
-     *
-     * @param  string  $value  원본 값
-     * @return string 인용부호를 벗긴 값
-     */
     private function unwrapEnvValue(string $value): string
     {
-        return InstallerResidual::unwrapEnvValue($value);
+        $length = strlen($value);
+        if ($length >= 2) {
+            $first = $value[0];
+            $last = $value[$length - 1];
+            if (($first === '"' && $last === '"') || ($first === "'" && $last === "'")) {
+                return substr($value, 1, $length - 2);
+            }
+        }
+
+        return $value;
     }
 
     /**
      * runtime 배열의 DB 자격증명을 config('database.connections.mysql.*') 에 주입.
      *
-     * @param  array<string, mixed>  $runtime  인스톨러 런타임 설정
-     * @return void 반환값 없음
+     * @param  array<string, mixed>  $runtime
      */
     protected function applyDatabaseConfig(array $runtime): void
     {
@@ -504,8 +463,7 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
      *
      * Encrypter 가 lazy resolve 이므로 register 단계 변경으로 충분.
      *
-     * @param  array<string, mixed>  $runtime  인스톨러 런타임 설정
-     * @return void 반환값 없음
+     * @param  array<string, mixed>  $runtime
      */
     protected function applyAppKey(array $runtime): void
     {

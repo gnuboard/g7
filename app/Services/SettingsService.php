@@ -5,31 +5,15 @@ namespace App\Services;
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Repositories\AttachmentRepositoryInterface;
 use App\Contracts\Repositories\ConfigRepositoryInterface;
-use App\Contracts\Repositories\ModuleRepositoryInterface;
-use App\Contracts\Repositories\PluginRepositoryInterface;
-use App\Extension\ExtensionManager;
 use App\Extension\HookManager;
 use App\Extension\Traits\ClearsTemplateCaches;
-use App\Helpers\TimezoneHelper;
 use App\Http\Resources\AttachmentResource;
-use App\Rules\ConnectionHost;
-use App\Rules\EmbedCustomProviderRule;
 use App\Seo\Contracts\SeoCacheManagerInterface;
-use App\Services\Queue\QueueWorkerRegistry;
 use App\Support\ConfigCacheHelper;
-use App\Support\Content\ContentHtmlPolicy;
-use App\Support\Content\EmbedProviderRegistry;
 use App\Support\EnvPriority;
 use App\Support\ExtensionSettingsMirror;
 use App\Support\OpcacheStatus;
-use App\Support\PhpExtensionProbe;
-use App\Support\PhpExtensionRequirements;
 use App\Support\ProcessOutputEncoding;
-use App\Support\RouteCacheHelper;
-use App\Support\SearchScopes;
-use App\Support\Settings\ComputedSettingFields;
-use App\Support\SettingsVersion;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -49,14 +33,6 @@ class SettingsService
     // 않는다 — 트레이트가 고정 `CoreCacheDriver` + 메모이즈 스토어를 쓰는 이유가 그 안에 있다.
     use ClearsTemplateCaches;
 
-    /**
-     * 설정 서비스를 생성합니다.
-     *
-     * @param  ConfigRepositoryInterface  $configRepository  설정 카테고리 저장소
-     * @param  AttachmentRepositoryInterface  $attachmentRepository  설정 첨부 저장소
-     * @param  CacheInterface  $cache  설정 캐시
-     * @param  AttachmentService  $attachmentService  첨부 파기·정리 서비스
-     */
     public function __construct(
         private ConfigRepositoryInterface $configRepository,
         private AttachmentRepositoryInterface $attachmentRepository,
@@ -71,13 +47,8 @@ class SettingsService
      * config 캐시는 clear 후 즉시 재생성한다(ConfigCacheHelper). config:clear 만
      * 하면 config:cache 가 비워진 채 재생성되지 않아 이후 모든 요청이 config 파일을
      * 재파싱하는 성능 손실이 발생하기 때문이다.
-     *
-     * 저장소에 직접 쓰는 경로(`settings:install`)도 쓰기를 마친 뒤 이 메서드를 부른다 — 부르지 않으면
-     * 캐시·미러·설정 버전이 옛 값에 머문다.
-     *
-     * @return void 반환값 없음
      */
-    public function invalidateSettingsCache(): void
+    private function invalidateSettingsCache(): void
     {
         $this->cache->forget('settings.system');
         ConfigCacheHelper::rebuild();
@@ -86,10 +57,6 @@ class SettingsService
         // 이 호출이 없으면 상주 프로세스(큐 워커·schedule:work·Reverb)는 저장 후에도
         // 부팅 시점의 옛 값을 영원히 읽는다 — FPM 에서만 드러나지 않는 결함이다.
         app(ExtensionSettingsMirror::class)->refreshCore();
-
-        // 다른 상주 프로세스(큐 워커)가 바뀐 것을 알 수 있도록 설정 버전을 올린다 — 워커는 작업 시작 전에
-        // 비교해 다시 읽는다(#724).
-        SettingsVersion::bump();
     }
 
     /**
@@ -100,8 +67,6 @@ class SettingsService
      * 신호가 없으면 워커가 부팅 시점의 옛 드라이버로 계속 동작한다.
      *
      * 신호 전송 실패가 설정 저장을 되돌리지는 않는다 (경고 로깅 후 계속).
-     *
-     * @return void 반환값 없음
      */
     private function restartQueueWorkers(): void
     {
@@ -123,8 +88,6 @@ class SettingsService
      *
      * 캐시 삭제 실패가 설정 저장 자체를 되돌리지는 않는다 — 설정은 이미 저장됐고,
      * 캐시는 TTL 만료나 `seo:clear` 로도 회복 가능한 부수 상태다.
-     *
-     * @return void 반환값 없음
      */
     private function clearSeoCacheForAssetUrlMode(): void
     {
@@ -148,8 +111,6 @@ class SettingsService
      *
      * 스키마의 frontend_name/merge_into 설정에 따라 카테고리를 자동 병합합니다.
      * (예: cache, debug → advanced)
-     *
-     * 공개 설정의 화면용 계산 값(`computed: true` 필드)도 함께 싣습니다 — appendComputedFields() 참조.
      *
      * @return array 시스템 설정 배열
      */
@@ -196,128 +157,7 @@ class SettingsService
         // 사이트 기본 OG 이미지 첨부 정보 (seo 카테고리에 — site_logo 와 동형)
         $settings['seo']['og_image_default'] = $this->getAttachmentListSetting('seo.og_image_default');
 
-        // 화면용 계산 값(frontend_schema 의 computed 필드)을 공개 설정과 같은 계산으로 싣는다(#887).
-        // 저장 응답도 이 경로로 다시 조회하므로, 화면이 저장 응답으로 전역 설정을 병합하면 같은 탭에서도 저장 뒤 계산 값을 쓴다.
-        $settings = $this->appendComputedFields($settings, $schema);
-
-        // GeoIP 최근 갱신 — 저장값은 ISO8601 그대로, 화면 표시용 문자열은 보는 사람 시간대.
-        // 저장 경로(saveAdvancedSettings)는 스키마에 없는 이 키를 버린다.
-        $settings['advanced']['geoip_last_updated_at_formatted'] = $this->formatIsoForViewer($settings['advanced']['geoip_last_updated_at'] ?? null);
-
         return $this->overlayEnvLockedValues($settings);
-    }
-
-    /**
-     * 화면용 계산 값을 관리자 설정 묶음에 덧붙입니다 (#887).
-     *
-     * 대상은 `frontend_schema` 의 `computed: true` 필드 전부이고, 계산은 공개 설정(formatCategorySettings)과 같은
-     * computeFieldValue() 를 씁니다 — 계산 필드가 늘어도 스키마와 그 변환 한 곳만 고치면 관리자 응답도 따라옵니다.
-     * 범주 공개 여부(`expose`)는 보지 않습니다. 관리자 응답은 원본을 이미 담고 있고 계산 값은 그 원본에서 나온 값입니다.
-     * `sensitive` 계산 필드는 공개 설정과 같이 뺍니다.
-     *
-     * 화면은 저장 응답(`data.settings`)으로 전역 설정을 병합하므로, 이 값이 없으면 저장 뒤 같은 탭에서 페이지 로드 때 받은
-     * 옛 계산 값이 남습니다(예: 동영상 업로드 허용을 켜고 저장해도 `content.render_policy` 가 그대로라 본문 동영상이 지워짐).
-     * 화면이 이 값을 저장 본문에 되돌려 보내도 저장하지 않습니다 — rejectComputedForSave() 참조.
-     *
-     * @param  array<string, mixed>  $settings  frontend 키 변환이 끝난 설정 배열
-     * @param  array<string, mixed>  $schema  프론트엔드 스키마
-     * @return array<string, mixed> 계산 값이 더해진 설정 배열
-     */
-    private function appendComputedFields(array $settings, array $schema): array
-    {
-        foreach ($schema as $category => $categorySchema) {
-            if (str_starts_with((string) $category, '_') || ! is_array($categorySchema)) {
-                continue;
-            }
-
-            $fields = $this->computedFieldSchemas($categorySchema);
-
-            if ($fields === []) {
-                continue;
-            }
-
-            // 공개 설정과 같은 입력 — 저장소의 범주 값(기본값 병합). 저장 직후에는 saveCategory() 가 비운 캐시 뒤의 새 값이다.
-            $source = $this->getSettings((string) $category);
-
-            foreach ($fields as $fieldName => $fieldSchema) {
-                if ($fieldSchema['sensitive'] ?? false) {
-                    continue;
-                }
-
-                $value = $this->computeFieldValue($source, $fieldSchema);
-
-                foreach ($this->resolveFrontendKeyTargets((string) $category, (string) $fieldName) as [$targetCategory, $outputKey]) {
-                    if (! isset($settings[$targetCategory]) || ! is_array($settings[$targetCategory])) {
-                        $settings[$targetCategory] = [];
-                    }
-
-                    $settings[$targetCategory][$outputKey] = $value;
-                }
-            }
-        }
-
-        return $settings;
-    }
-
-    /**
-     * 범주 스키마에서 계산 필드(`computed: true`)만 고릅니다 — 판정은 터미널 설정 명령과 같은 `ComputedSettingFields` 한 곳.
-     *
-     * @param  array<string, mixed>  $categorySchema  범주 스키마
-     * @return array<string, array<string, mixed>> 필드명 => 필드 스키마
-     */
-    private function computedFieldSchemas(array $categorySchema): array
-    {
-        return ComputedSettingFields::schemas($categorySchema);
-    }
-
-    /**
-     * 저장 본문에서 계산 필드를 뺍니다 (#887).
-     *
-     * 관리자 응답이 계산 값을 함께 싣고 화면은 응답으로 만든 탭 값 전체를 저장 본문에 되돌려 보내므로, 걸러내지 않으면
-     * 계산 값이 원본 설정처럼 저장소에 굳습니다. 그 탭에 합쳐지는 범주(`frontend_name`·`merge_into`)의 계산 필드도 뺍니다.
-     *
-     * @param  string  $tab  저장 탭
-     * @param  array<string, mixed>  $settings  원본 키로 역변환한 탭 값
-     * @return array<string, mixed> 계산 필드를 뺀 탭 값
-     */
-    private function rejectComputedForSave(string $tab, array $settings): array
-    {
-        foreach ($this->configRepository->getFrontendSchema() as $category => $categorySchema) {
-            if (str_starts_with((string) $category, '_') || ! is_array($categorySchema)) {
-                continue;
-            }
-
-            $targetCategory = $categorySchema['frontend_name'] ?? $categorySchema['merge_into'] ?? $category;
-
-            if ($category !== $tab && $targetCategory !== $tab) {
-                continue;
-            }
-
-            foreach ($this->computedFieldSchemas($categorySchema) as $fieldName => $fieldSchema) {
-                unset($settings[$fieldName], $settings[$fieldSchema['frontend_key'] ?? $fieldName]);
-            }
-        }
-
-        return $settings;
-    }
-
-    /**
-     * 저장된 ISO8601 시각을 보는 사람 시간대 표시 문자열로 바꿉니다.
-     *
-     * @param  mixed  $iso  저장된 ISO8601 시각
-     * @return string|null 표시용 일시 (값이 없거나 해석할 수 없으면 null)
-     */
-    private function formatIsoForViewer(mixed $iso): ?string
-    {
-        if (! is_string($iso) || $iso === '') {
-            return null;
-        }
-
-        try {
-            return TimezoneHelper::toUserDateTimeString(Carbon::parse($iso));
-        } catch (\Throwable) {
-            return null;
-        }
     }
 
     /**
@@ -626,37 +466,8 @@ class SettingsService
         return match ($transform) {
             'format_extensions' => $this->formatExtensions($sourceValue),
             'first_image_url' => $this->getFirstImageUrl($sourceValue),
-            // 본문 콘텐츠 규칙 — 표시기·편집기용 계산값(허용 태그·속성·미디어 출처·외부 영상 컴파일 정규식, #883)
-            'content_render_policy' => ContentHtmlPolicy::fromSettings($settings)->toFrontendArray(),
             default => $sourceValue,
         };
-    }
-
-    /**
-     * 외부 영상 서비스 예시 주소 확인 — 저장 전 입력값으로 꺼낸 id 와 만들어질 플레이어 주소 (#883).
-     *
-     * 저장하지 않는다. 형식이 틀리면 필드별 문구를 함께 돌려 창이 저장 전에 알린다(저장 때와 같은 검증·컴파일 규칙).
-     *
-     * @param  array<string, mixed>  $entry  서비스 입력값(`url_patterns`·`player_url`·`id_rule`)
-     * @param  string  $sampleUrl  확인할 예시 주소
-     * @return array{matched: bool, id: ?string, player_url: ?string, errors: array<string, string>} 확인 결과
-     */
-    public function previewEmbedProvider(array $entry, string $sampleUrl): array
-    {
-        $errors = array_map(fn (string $key) => __($key, ['index' => 1, 'field' => '']), EmbedCustomProviderRule::validateEntry($entry + ['id' => 'preview', 'name' => 'preview'], false));
-        $preview = $errors === [] ? EmbedProviderRegistry::preview($entry, $sampleUrl) : ['matched' => false, 'id' => null, 'player_url' => null];
-
-        return ['matched' => $preview['matched'], 'id' => $preview['id'], 'player_url' => $preview['player_url'], 'errors' => $errors];
-    }
-
-    /**
-     * 확장이 제공한 외부 영상 서비스의 켜기 선택지 — 「본문 콘텐츠」 탭이 그린다 (#883).
-     *
-     * @return array<int, array{key: string, extension: string, id: string, name: string}> 선택지
-     */
-    public function embedExtensionProviderOptions(): array
-    {
-        return EmbedProviderRegistry::extensionProviderOptions();
     }
 
     /**
@@ -827,9 +638,6 @@ class SettingsService
             // frontend_key를 원본 키로 역변환
             $tabSettings = $this->reverseFrontendKeys($tabSettings);
 
-            // 응답에 실려 나간 화면용 계산 값이 되돌아와도 저장하지 않는다(#887)
-            $tabSettings = $this->rejectComputedForSave($tab, $tabSettings);
-
             // `.env` 가 소유권을 가져간 키는 저장 대상에서 제거한다. 화면의 disabled 는
             // 게이트가 아니다 — 저장 API 를 직접 호출하는 경로가 남으므로 실질 차단은 여기다.
             // (advanced 탭은 아직 카테고리가 갈리지 않았으므로 saveAdvancedSettings 가 분리 후 적용한다.)
@@ -877,23 +685,8 @@ class SettingsService
                 );
             }
 
-            // 큐 워커 등록(#139) — 빈 연결 목록은 현재 드라이버 연결 하나로, 큐 목록이 없는 연결은 기본 큐로 채우고,
-            // 등록하지 않은 연결의 큐 목록은 버린다. 검증(V1~V9)은 FormRequest 가 이미 끝냈다.
-            if ($tab === 'drivers') {
-                $tabSettings = app(QueueWorkerRegistry::class)->normalizeForSave($tabSettings);
-            }
-
             // 기존 설정과 병합 (탭별로 일부 필드만 전송되어도 기존 설정 유지)
             $existingSettings = $this->configRepository->getCategory($tab);
-
-            // 최근 검색어 범위 행(7.1.5) — 화면에는 지금 선언된 범위만 나오므로, 끈 확장의 기존 행은 보존해 다시 켤 때
-            // 운영자 값이 돌아오게 한다. 형식 검증은 FormRequest 가 마쳤다.
-            if ($tab === 'privacy' && is_array($tabSettings[SearchScopes::SETTINGS_ROWS_KEY] ?? null)) {
-                $tabSettings[SearchScopes::SETTINGS_ROWS_KEY] = SearchScopes::mergeForSave(
-                    $tabSettings[SearchScopes::SETTINGS_ROWS_KEY],
-                    $existingSettings[SearchScopes::SETTINGS_ROWS_KEY] ?? []
-                );
-            }
             $mergedSettings = array_merge($existingSettings, $tabSettings);
 
             // 자산 URL 방식이 바뀌는지 저장 **전에** 판정한다 (이슈 #486).
@@ -1139,7 +932,6 @@ class SettingsService
      *
      * @param  array<int, int>  $removedIds  파기 대상 첨부 ID 목록
      * @param  string  $label  로그 표기용 설정 이름
-     * @return void 반환값 없음
      */
     private function purgeRemovedAttachments(array $removedIds, string $label): void
     {
@@ -1203,7 +995,6 @@ class SettingsService
      * 이미 없는 첨부 id 가 남아 로고가 깨집니다.
      *
      * @param  array<int, int>  $removedIds  파기 대상 첨부 ID 목록
-     * @return void 반환값 없음
      */
     private function purgeSiteLogoAttachments(array $removedIds): void
     {
@@ -1372,8 +1163,6 @@ class SettingsService
      * 게시본은 캐시 버전으로 키드되어 있어, 버전이 오르지 않으면 모드를 바꿔도 옛 형태의
      * URL 이 남고 그 참조(글꼴·이미지)가 서버에서 404 가 된다(#651 F5). bump 단일 지점이
      * 번들 재병합과 정적 재게시를 함께 예약한다.
-     *
-     * @return void 반환값 없음
      */
     private function bumpExtensionCacheForAssetUrlMode(): void
     {
@@ -1393,37 +1182,8 @@ class SettingsService
             $savedSettings = $this->configRepository->getCategory('mail');
             $mailSettings = array_merge($savedSettings, $overrideSettings);
 
-            // `.env` 로 잠긴 키는 저장값·요청값이 아니라 `.env` 유효값으로 보낸다 — 잠긴 민감 키는
-            // 화면에 값이 실리지 않아 요청이 빈 칸으로 오고, 저장값은 적용되지 않는 옛 값이다.
-            // 아래에서 config 를 덮기 **전에** 읽어야 런타임 유효값(=`.env`)을 얻는다.
-            foreach (array_keys(EnvPriority::lockedKeys()) as $storageKey) {
-                if (str_starts_with($storageKey, 'mail.')) {
-                    $mailSettings[substr($storageKey, 5)] = EnvPriority::effectiveValue($storageKey);
-                }
-            }
-
             // 메일 설정 임시 적용 (드라이버별)
             $mailer = $mailSettings['mailer'] ?? 'smtp';
-
-            // 실제 연결에 쓰이는 호스트를 연결 직전에 한 번 더 본다 — 요청 검증을 거치지 않은 값
-            // (저장값·`.env` 값·내부 호출)도 같은 판정을 받는다. 형식이 틀렸거나 링크로컬·메타데이터
-            // 주소면 연결을 시도하지 않는다.
-            $connectionHost = match ($mailer) {
-                'smtp' => (string) ($mailSettings['host'] ?? ''),
-                'mailgun' => (string) ($mailSettings['mailgun_endpoint'] ?? ''),
-                default => '',
-            };
-
-            if ($connectionHost !== '' && ($violation = ConnectionHost::violation($connectionHost)) !== null) {
-                return [
-                    'success' => false,
-                    'message' => __('settings.test_mail_failed'),
-                    'error' => $violation === 'format'
-                        ? __('validation.settings.host_format_invalid')
-                        : __('settings.connection_target_blocked'),
-                ];
-            }
-
             config(['mail.default' => $mailer]);
 
             match ($mailer) {
@@ -1457,7 +1217,6 @@ class SettingsService
             $subject = __('settings.test_mail_subject', ['app_name' => config('app.name')]);
             $body = __('settings.test_mail_body');
 
-            // audit:allow mail-send-must-go-through-notification-dispatcher reason: 입력 중인 SMTP 설정 자체를 시험하는 메일 — 알림 채널이 꺼져 있어도, 저장 전 설정으로도 보내야 의미가 있다(notification-system.md 「예외」 표)
             Mail::raw($body, function ($message) use ($toEmail, $subject) {
                 $message->to($toEmail)
                     ->subject($subject);
@@ -1541,7 +1300,6 @@ class SettingsService
             self::SYSTEM_INFO_CACHE_TTL
         );
 
-        // audit:allow datetime-display-user-timezone reason: 서버 시각 진단값 — 의도된 서버 기준
         $info['server_time'] = now()->format('Y-m-d H:i:s');
 
         return $info;
@@ -1580,7 +1338,7 @@ class SettingsService
             'config_path' => storage_path('app/settings'),
             'log_path' => storage_path('logs'),
             'upload_path' => storage_path('app/public'),
-            'php_extensions' => $this->safeSystemProbe('php_extensions', fn () => $this->getPhpExtensions(), ['required' => [], 'optional' => [], 'requested' => [], 'requested_by' => []]),
+            'php_extensions' => $this->safeSystemProbe('php_extensions', fn () => $this->getPhpExtensions(), ['required' => [], 'optional' => []]),
             'database_config' => $this->safeSystemProbe('database_config', fn () => $this->getDatabaseConfig(), ['has_read_write_split' => false, 'write' => [], 'read' => []]),
             'timezone' => config('app.timezone'),
         ];
@@ -1655,11 +1413,10 @@ class SettingsService
             }
 
             Artisan::call('cache:clear');
+            Artisan::call('route:clear');
             Artisan::call('view:clear');
 
-            // 라우트·config 는 지우는 대신 다시 구워 바꿔 끼운다 — 비운 채 두면 이후 모든 요청이 재파싱하고,
-            // 지우는 순간 들어온 요청은 500(`routes-v7.php: No such file`)을 받았다(#882).
-            RouteCacheHelper::rebuild();
+            // config 는 clear 후 즉시 재생성 (비운 채 두면 이후 모든 요청이 config 재파싱).
             ConfigCacheHelper::rebuild();
 
             return true;
@@ -1676,11 +1433,12 @@ class SettingsService
     public function optimizeSystem(): bool
     {
         try {
-            // config·라우트 캐시는 두 헬퍼로 굽는다 — 새 Application 을 부팅하는 명령을 보존 래퍼(withPreservedContainer)로
-            // 감싸고(후속 `app()->terminating()` 예약 보존), 임시 파일에 다 구운 뒤 바꿔 끼운다. 명령을 직접 부르면 명령이
-            // 먼저 지운 뒤 다시 써서 그 사이 들어온 요청이 500 을 받았다(#882).
-            ConfigCacheHelper::rebuild();
-            RouteCacheHelper::rebuild();
+            // config:cache / route:cache 는 새 Application 을 부팅하며 전역 Container 를 바꿔 놓는다.
+            // 보존 래퍼 없이 부르면 이 요청의 후속 `app()->terminating()` 예약이 사라진다.
+            ConfigCacheHelper::withPreservedContainer(static function (): void {
+                Artisan::call('config:cache');
+                Artisan::call('route:cache');
+            });
             Artisan::call('view:cache');
 
             return true;
@@ -2069,73 +1827,26 @@ class SettingsService
     /**
      * PHP 확장 모듈 상태를 조회합니다.
      *
-     * 필수·선택 목록은 코어 SSoT(`App\Support\PhpExtensionRequirements`)에서 읽는다 — 인스톨러·코어 업데이트
-     * 사전점검·문서와 같은 목록이다. 설치된 모듈·플러그인이 composer.json 으로 요구한 확장은 `requested_by`
-     * (확장 → 요구한 확장 목록)로, 코어 목록 밖의 요구 확장(soap 등)의 로드 상태는 `requested` 로 싣는다.
-     *
-     * @return array{required: array<string, bool>, optional: array<string, bool>, requested: array<string, bool>, requested_by: array<string, list<array{type: string, identifier: string, name: string, level: string}>>} PHP 확장 모듈 상태
+     * @return array PHP 확장 모듈 상태 배열
      */
     public function getPhpExtensions(): array
     {
-        $requirements = PhpExtensionRequirements::load();
-        $probe = app(PhpExtensionProbe::class);
+        $required = ['openssl', 'pdo', 'mbstring', 'tokenizer', 'xml', 'curl', 'json', 'zip', 'fileinfo', 'bcmath'];
+        $optional = ['gd', 'imagick', 'redis', 'memcached', 'sodium', 'exif', 'intl', 'ldap', 'zlib'];
 
         $extensions = [
             'required' => [],
             'optional' => [],
-            'requested' => [],
-            'requested_by' => $this->collectExtensionPhpRequirements(),
         ];
 
-        foreach ($requirements['required'] as $ext) {
-            $extensions['required'][$ext] = $probe->loaded($ext);
+        foreach ($required as $ext) {
+            $extensions['required'][$ext] = extension_loaded($ext);
         }
 
-        foreach ($requirements['optional'] as $ext) {
-            $extensions['optional'][$ext] = $probe->loaded($ext);
-        }
-
-        foreach (array_keys($extensions['requested_by']) as $ext) {
-            if (! isset($extensions['required'][$ext]) && ! isset($extensions['optional'][$ext])) {
-                $extensions['requested'][$ext] = $probe->loaded($ext);
-            }
+        foreach ($optional as $ext) {
+            $extensions['optional'][$ext] = extension_loaded($ext);
         }
 
         return $extensions;
-    }
-
-    /**
-     * 설치된 모듈·플러그인이 composer.json 으로 요구한 PHP 확장을 모읍니다.
-     *
-     * @return array<string, list<array{type: string, identifier: string, name: string, level: string}>> PHP 확장 이름 => 요구한 확장 목록 (level: require|suggest)
-     */
-    protected function collectExtensionPhpRequirements(): array
-    {
-        $extensionManager = app(ExtensionManager::class);
-        $requestedBy = [];
-
-        $sources = [
-            ['module', 'modules', app(ModuleRepositoryInterface::class)->getAll()],
-            ['plugin', 'plugins', app(PluginRepositoryInterface::class)->getAll()],
-        ];
-
-        foreach ($sources as [$type, $directory, $records]) {
-            foreach ($records as $record) {
-                $declared = $extensionManager->getPhpExtensionRequirements($directory, $record->identifier);
-                $requester = ['type' => $type, 'identifier' => $record->identifier, 'name' => $record->getLocalizedName()];
-
-                foreach ($declared['required'] as $ext) {
-                    $requestedBy[$ext][] = $requester + ['level' => 'require'];
-                }
-
-                foreach (array_keys($declared['suggested']) as $ext) {
-                    $requestedBy[$ext][] = $requester + ['level' => 'suggest'];
-                }
-            }
-        }
-
-        ksort($requestedBy);
-
-        return $requestedBy;
     }
 }

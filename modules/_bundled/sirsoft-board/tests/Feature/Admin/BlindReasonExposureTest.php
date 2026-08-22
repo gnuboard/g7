@@ -5,11 +5,9 @@ namespace Modules\Sirsoft\Board\Tests\Feature\Admin;
 require_once __DIR__.'/../../ModuleTestCase.php';
 
 use App\Models\User;
-use Carbon\Carbon;
 use Modules\Sirsoft\Board\Services\CommentService;
 use Modules\Sirsoft\Board\Services\PostService;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
-use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 블라인드 사유 노출 테스트 (#413-69-1 / #413-70-2 / #413-71-1)
@@ -18,29 +16,19 @@ use PHPUnit\Framework\Attributes\Group;
  * - 관리(admin.manage) 권한자: 게시글/댓글 상세 응답의 action_logs 에 블라인드 사유 포함
  * - 민감 필드(admin_id, ip_address)는 action_logs 항목에서 제외
  * - 비관리 권한자(read 만): action_logs 키 자체 미노출 (사유 누출 방지)
+ *
+ * @group board
+ * @group admin
  */
-#[Group('board')]
-#[Group('admin')]
 class BlindReasonExposureTest extends BoardTestCase
 {
     private User $adminWithManage;
 
-    /**
-     * 이 테스트가 쓰는 게시판 slug 를 돌려줍니다.
-     *
-     * @return string 게시판 slug
-     */
     protected function getTestBoardSlug(): string
     {
         return 'blind-reason-exposure';
     }
 
-    /**
-     * 이 테스트에 맞춘 게시판 속성을 반환합니다.
-     *
-     * @param  string  $slug  게시판 slug
-     * @return array 게시판 속성
-     */
     protected function getDefaultBoardAttributes(string $slug): array
     {
         return [
@@ -52,11 +40,6 @@ class BlindReasonExposureTest extends BoardTestCase
         ];
     }
 
-    /**
-     * 테스트 환경을 준비합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -69,12 +52,6 @@ class BlindReasonExposureTest extends BoardTestCase
         ]);
     }
 
-    /**
-     * 관리자 게시글 API 주소를 만듭니다.
-     *
-     * @param  string  $suffix  게시글 경로 뒤에 붙일 부분
-     * @return string API 주소
-     */
     private function postUrl(string $suffix = ''): string
     {
         $slug = $this->board->slug;
@@ -82,12 +59,6 @@ class BlindReasonExposureTest extends BoardTestCase
         return "/api/modules/sirsoft-board/admin/board/{$slug}/posts{$suffix}";
     }
 
-    /**
-     * 사용자 게시글 API 주소를 만듭니다.
-     *
-     * @param  string  $suffix  게시글 경로 뒤에 붙일 부분
-     * @return string API 주소
-     */
     private function userPostUrl(string $suffix = ''): string
     {
         $slug = $this->board->slug;
@@ -95,13 +66,6 @@ class BlindReasonExposureTest extends BoardTestCase
         return "/api/modules/sirsoft-board/boards/{$slug}/posts{$suffix}";
     }
 
-    /**
-     * 사용자 댓글 API 주소를 만듭니다.
-     *
-     * @param  int  $postId  게시글 ID
-     * @param  string  $suffix  댓글 경로 뒤에 붙일 부분
-     * @return string API 주소
-     */
     private function userCommentUrl(int $postId, string $suffix = ''): string
     {
         $slug = $this->board->slug;
@@ -111,26 +75,17 @@ class BlindReasonExposureTest extends BoardTestCase
 
     /**
      * 관리 권한자가 블라인드된 게시글 상세 조회 시 사유가 action_logs 에 포함된다.
-     *
-     * @scenario concern=blind_reason, condition=viewer_with_access
-     *
-     * @effects manager_sees_blind_reason_in_post_action_logs, action_log_time_uses_viewer_timezone
-     *
-     * @return void 반환값 없음
      */
     public function test_manager_sees_blind_reason_in_post_action_logs(): void
     {
         $postId = $this->createTestPost(['status' => 'published']);
 
-        // 처리 시각은 UTC 로 저장된다 — UTC 16:00 은 서울 다음 날 01:00
-        Carbon::setTestNow(Carbon::parse('2026-11-03 16:00:00', 'UTC'));
-        $this->actingAs($this->adminWithManage)->withHeader('X-Timezone', 'Asia/Seoul')->patchJson(
+        $this->actingAs($this->adminWithManage)->patchJson(
             $this->postUrl("/{$postId}/blind"),
             ['reason' => '운영 정책 위반으로 블라인드 처리']
         )->assertStatus(200);
-        Carbon::setTestNow();
 
-        $response = $this->actingAs($this->adminWithManage)->withHeader('X-Timezone', 'Asia/Seoul')->getJson($this->postUrl("/{$postId}"));
+        $response = $this->actingAs($this->adminWithManage)->getJson($this->postUrl("/{$postId}"));
 
         $response->assertStatus(200);
         $logs = $response->json('data.action_logs');
@@ -140,7 +95,6 @@ class BlindReasonExposureTest extends BoardTestCase
         $blind = collect($logs)->firstWhere('action', 'blind');
         $this->assertNotNull($blind, 'blind 액션 로그가 있어야 합니다.');
         $this->assertSame('운영 정책 위반으로 블라인드 처리', $blind['reason']);
-        $this->assertSame('2026-11-04 01:00:00', $blind['created_at'], '처리일은 보는 사람 시간대여야 합니다.');
 
         // 민감 필드는 노출되지 않아야 한다.
         $this->assertArrayNotHasKey('admin_id', $blind, 'admin_id 는 노출되면 안 됩니다.');
@@ -152,12 +106,6 @@ class BlindReasonExposureTest extends BoardTestCase
      *
      * 블라인드 글은 유저가 상세 진입 자체가 막히므로, 블라인드→복원으로 published 상태이면서
      * 처리 이력(action_logs)이 남은 게시글을 유저가 조회할 때 사유가 새지 않는지 검증한다.
-     *
-     * @scenario concern=blind_reason, condition=viewer_without_access
-     *
-     * @effects regular_user_does_not_see_post_action_logs
-     *
-     * @return void 반환값 없음
      */
     public function test_regular_user_does_not_see_post_action_logs(): void
     {
@@ -182,24 +130,16 @@ class BlindReasonExposureTest extends BoardTestCase
 
     /**
      * 관리 권한자가 블라인드 처리한 댓글 응답에 사유가 action_logs 에 포함된다. (#413-71-1)
-     *
-     * @scenario concern=blind_reason, condition=viewer_with_access
-     *
-     * @effects manager_sees_blind_reason_in_comment_action_logs, action_log_time_uses_viewer_timezone
-     *
-     * @return void 반환값 없음
      */
     public function test_manager_sees_blind_reason_in_comment_action_logs(): void
     {
         $postId = $this->createTestPost(['status' => 'published']);
         $commentId = $this->createTestComment($postId);
 
-        Carbon::setTestNow(Carbon::parse('2026-11-03 16:00:00', 'UTC'));
-        $response = $this->actingAs($this->adminWithManage)->withHeader('X-Timezone', 'Asia/Seoul')->patchJson(
+        $response = $this->actingAs($this->adminWithManage)->patchJson(
             $this->postUrl("/{$postId}/comments/{$commentId}/blind"),
             ['reason' => '댓글 운영 정책 위반으로 블라인드']
         );
-        Carbon::setTestNow();
 
         $response->assertStatus(200);
         $logs = $response->json('data.action_logs');
@@ -209,7 +149,6 @@ class BlindReasonExposureTest extends BoardTestCase
         $blind = collect($logs)->firstWhere('action', 'blind');
         $this->assertNotNull($blind, 'blind 액션 로그가 있어야 합니다.');
         $this->assertSame('댓글 운영 정책 위반으로 블라인드', $blind['reason']);
-        $this->assertSame('2026-11-04 01:00:00', $blind['created_at'], '처리일은 보는 사람 시간대여야 합니다.');
 
         // 민감 필드는 노출되지 않아야 한다.
         $this->assertArrayNotHasKey('admin_id', $blind, 'admin_id 는 노출되면 안 됩니다.');
@@ -218,12 +157,6 @@ class BlindReasonExposureTest extends BoardTestCase
 
     /**
      * 유저 화면 댓글 목록에는 action_logs 가 노출되지 않는다 (사유 누출 방지). (#413-71-1)
-     *
-     * @scenario concern=blind_reason, condition=viewer_without_access
-     *
-     * @effects regular_user_does_not_see_comment_action_logs
-     *
-     * @return void 반환값 없음
      */
     public function test_regular_user_does_not_see_comment_action_logs(): void
     {

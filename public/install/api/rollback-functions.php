@@ -70,21 +70,6 @@ function rollbackTask(string $taskId, array $state): array
 }
 
 /**
- * 마이그레이션 롤백 명령 문자열을 만듭니다.
- *
- * 작업 디렉터리는 호출자가 chdir(BASE_PATH) 로 맞춘다 — 다른 artisan 실행 경로와 같은 방식.
- * 종전의 `cd /d` 접두는 Windows cmd 전용이라 리눅스·맥 셸에서는 명령 전체가 실패해
- * db_migrate·db_seed 실패 뒤 자동 롤백이 한 번도 실행되지 않았다.
- *
- * @param  string  $phpBinary  PHP 실행 경로 (escape 전)
- * @return string 셸에 넘길 명령
- */
-function buildMigrateRollbackCommand(string $phpBinary): string
-{
-    return escapeshellarg($phpBinary).' artisan migrate:rollback --force 2>&1';
-}
-
-/**
  * 마이그레이션 롤백을 실행합니다 (migrate:rollback --force)
  *
  * @param  string|null  $logPrefix  로그 접두사 (null이면 lang('log_prefix_rollback') 사용)
@@ -98,9 +83,13 @@ function executeMigrateRollback(?string $logPrefix = null): array
 
         $output = [];
         $returnCode = 0;
-        $command = buildMigrateRollbackCommand(function_exists('getPhpBinary') ? getPhpBinary() : 'php');
+        $phpBin = escapeshellarg(function_exists('getPhpBinary') ? getPhpBinary() : 'php');
+        $command = sprintf(
+            'cd /d %s && %s artisan migrate:rollback --force 2>&1',
+            escapeshellarg(BASE_PATH),
+            $phpBin
+        );
 
-        chdir(BASE_PATH);
         exec($command, $output, $returnCode);
 
         addLog("{$logPrefix} ".lang('rollback_migrate_result', ['result' => implode("\n", $output)]));
@@ -493,10 +482,7 @@ function getManualCommands(string $taskId, ?string $target = null): array
 
     switch ($taskId) {
         case 'composer_install':
-            // --no-dev 는 마법사가 실제로 실행하는 명령(task-runner.php)과 같아야 한다. 이 안내를
-            // 옵션 없이 따라 하면 개발용(require-dev) 패키지가 섞인 vendor 가 만들어지고, 그 상태는
-            // 이후 코어 업데이트가 vendor 를 교체할 때 이전 패키지 매니페스트와 어긋나 부팅을 깨뜨린다.
-            $commands[] = "{$composer} install --no-interaction --no-dev --prefer-dist --optimize-autoloader";
+            $commands[] = "{$composer} install --no-interaction --prefer-dist --optimize-autoloader";
             break;
 
         case 'env_create':

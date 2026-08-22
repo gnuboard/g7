@@ -25,13 +25,12 @@
 ```php
 class LanguagePackService
 {
-    // 조회 — list() 는 DB 행 + 가상 보호 행(코어·설치된 확장 설치본의 lang/{ko,en}) + 미설치 번들 가상 행을 병합하며,
+    // 조회 — list() 는 DB 행 + 가상 보호 행 + 미설치 번들 가상 행을 병합하며,
     //         각 행에 드리프트 파생 플래그 files_missing(active 인데 설치본 부재) 을 부여
     public function list(array $filters = [], int $perPage = 20): LengthAwarePaginator;
     public function find(int $id): ?LanguagePack;
     public function getUninstalledBundledPacks(array $filters = []): Collection;   // lang-packs/_bundled/ 미설치 번들 가상 행
     public function getDriftedInstalledPacks(array $filters = []): Collection;     // 설치 행 존재 + 설치본 파일 부재 (복구 대상)
-    public function bundledInstallBlockedReason(string $bundledIdentifier): ?string; // 번들 팩의 설치 차단 사유를 지금 다시 판정
 
     // 설치 (4가지 소스)
     public function installFromBundled(string $identifier, bool $autoActivate = false, ?int $installedBy = null, bool $force = false): LanguagePack;
@@ -64,10 +63,9 @@ assertDependencies($manifest)
   - scope ∈ {module, plugin, template} + requires.depends_on_core_locale=true (기본)
     → registry->hasActiveCoreLocale($manifest['locale']) 확인 → false 면 거부
   ↓
-assertTargetExtensionExists($manifest, allowInactiveTarget: true)
+assertTargetExtensionExists($manifest)
   - scope ∈ {module, plugin, template}
-    → modules/plugins/templates 테이블에서 target_identifier 존재 확인 (미설치·버전 미달은 거부)
-    → 설치돼 있으나 꺼진 대상은 허용 — 꺼진 채(installed) 설치한다. 활성화(activate)는 여전히 대상 활성을 요구
+    → modules/plugins/templates 테이블에서 target_identifier 존재 확인
   ↓
 assertNotDowngrade($existing, $manifest)
   - identifier 가 이미 설치되어 있으면 version_compare 로 다운그레이드 차단
@@ -80,8 +78,6 @@ File::moveDirectory($packageRoot, lang-packs/{identifier}/)
   ↓
 DB::transaction:
   - 슬롯 비어있고 autoActivate=true → 신규 레코드 status=active + activated_at=now
-  - autoActivate=true 인데 대상 확장이 꺼져 있음 → status=installed + deactivated_reason=awaiting_host
-    (대상 확장을 켤 때 함께 켜진다 — 아래 「대상 켜짐 대기」)
   - 그 외 → status=installed
   - Repository::create or update
   ↓
@@ -104,8 +100,7 @@ php artisan language-pack:provision --no-activate   # 설치만, 자동 활성�
 - 대상 로케일 = `--locale` 지정값, 미지정 시 `config('app.supported_locales')` ∖ base locale(ko/en).
 - 대상 후보는 두 갈래입니다 — `getUninstalledBundledPacks()` (신규 프로비저닝) + `getDriftedInstalledPacks()` (수동 복구). 각각 `installFromBundled($id, autoActivate: true)` 를 호출하며, 정상 설치된 팩은 두 집합 어디에도 속하지 않으므로 **재실행 시 신규 설치 0 건으로 수렴(멱등)**.
 - 드리프트 팩은 슬롯이 점유돼 있어 미설치 목록에 잡히지 않습니다. 이 커맨드가 복구까지 겸하지 않으면 드리프트는 화면에서 보이기만 하고 CLI 로는 고칠 수 없습니다. 재설치는 `finalizeInstall` 의 update 경로를 타므로 동일 버전 재설치도 다운그레이드로 차단되지 않습니다.
-- 코어 범위 팩을 먼저 처리합니다(그 안과 나머지는 원래 순서). 확장 팩은 같은 로케일의 코어 팩이 활성이어야 설치되므로, 이번 실행에서 앞선 팩이 설치됐으면 미리 계산된 `core_locale_missing` 을 그 팩 차례에 `bundledInstallBlockedReason()` 으로 다시 판정합니다 — 새 로케일도 한 번 실행으로 코어 팩과 확장 팩이 함께 설치됩니다.
-- 설치 차단 사유(`install_blocked_reason`: 코어 로케일 미활성·대상 확장 미설치·버전 미달)가 있는 팩은 skip + 경고(best-effort). 대상 확장이 설치돼 있으나 꺼진 팩은 꺼진 채 설치되고 「대상 켜짐 대기」로 남아 그 확장을 켤 때 켜집니다. 신규 도메인 로직 없이 기존 Service 메서드만 조합합니다.
+- 설치 차단 사유(`install_blocked_reason`: 대상 확장 미설치/미활성 등)가 있는 팩은 skip + 경고(best-effort). 신규 도메인 로직 없이 기존 Service 메서드만 조합합니다.
 
 ## 드리프트 표면화 (files_missing / bundled_source_available)
 
@@ -151,11 +146,9 @@ HookManager::doAction('core.language_packs.after_activate', $pack);
 | ZIP 경로 이탈 (`..` 포함) | manifest validator 가 거부 (`contents.*` 체크) |
 | 의존성 미충족 (모듈/플러그인/템플릿 + 코어 언어팩 없음) | 설치 거부 |
 | 대상 확장 미설치 | 설치 거부 |
-| 대상 확장 비활성 | 설치는 허용(꺼진 채), 활성화 거부 (`target_inactive`) |
 | 다운그레이드 시도 | 설치 거부 |
 | protected 팩 비활성화/제거 | `RuntimeException` |
 | 슬롯당 active 2개 이상 | application 트랜잭션이 자동으로 기존 active 강등 |
-| 같은 팩에 다른 작업 진행 중 (7.1.5+) | 설치·업데이트·활성화·비활성화·제거가 같은 작업 잠금(`extension-update:language_pack:{identifier}`)을 쓴다 — 겹치면 409(`operation_in_progress`), 잠금 저장소 오류면 503(`operation_lock_unavailable`). 업데이트가 부르는 설치는 그 잠금에 합류한다 |
 
 ## 이벤트 (HookManager 액션 훅)
 
@@ -174,40 +167,7 @@ HookManager::doAction('core.language_packs.after_activate', $pack);
 |---|---|
 | `core.modules.after_install` / `after_update` | `syncFromExtension('module', identifier, vendor, version, langDir)` |
 | `core.modules.after_uninstall` | `cleanupForExtension('module', identifier)` — 가상 레코드 삭제 + 외부 벤더 레코드는 `error` 상태 전환 |
-| (plugin 동일 패턴) | `core.plugins.after_install` / `after_update` / `after_uninstall` |
-| 템플릿 | `core.templates.after_install` / **`after_version_update`** / `after_uninstall` — `after_update` 는 템플릿 **레코드 수정** 훅이라 버전 업데이트에 반응하지 않는다 |
-| `core.{modules,plugins}.after_deactivate` / `core.templates.after_deactivate` | `deactivateForExtension` — 켜져 있던 종속 언어팩을 끄고 `deactivated_reason=host_deactivated` 로 표시(「언어팩 다시 켜기」 창·CLI activate 의 후보) |
-| `core.{modules,plugins}.after_activate` / `core.templates.after_activate`(정보 배열) | `activateAwaitingForExtension` — 「대상 켜짐 대기」 언어팩을 켠다 |
-
-### 호스트와 함께 꺼짐 (`deactivated_reason = host_deactivated`)
-
-대상 확장(호스트)을 끌 때 `deactivateForExtension()` 이 켜져 있던 팩을 `deactivate(cascadeFromHost: true)` 로 끄면 `status=inactive` +
-`deactivated_reason=host_deactivated` + `deactivated_at` 이 남는다. 운영자가 직접 끈 팩은 사유 없이(`null`) 시각만 남는다.
-
-- 호스트를 다시 켤 때 `getPendingForReactivation(scope, target)` 이 이 표시가 있는 inactive 팩을 돌려준다. 관리자 화면은 활성화 응답의
-  `pending_language_packs` 로 「언어팩 다시 켜기」 창을 띄우고, `module:activate`·`plugin:activate`·`template:activate` 는 기본으로 함께
-  켠다(`--without-language-packs` 면 켜지 않고 목록만 출력).
-- 표시는 DB 에 있으므로 캐시를 비워도 사라지지 않고, 팩을 켤 때(`activate()`) 사유·시각이 지워진다 — 창을 닫으면 다음 활성화 때 다시 묻는다.
-- 7.1.0 이하는 후보 목록을 캐시(`language-pack:reactivation:{scope}:{target}`)에만 두었다. 업데이트 전에 남은 목록은 같은 조회가 한 번 합쳐 읽고 지운다.
-
-### 대상 켜짐 대기 (`deactivated_reason = awaiting_host`)
-
-켜 달라는 요청(`autoActivate=true` — 확장 설치 창의 함께 설치, `language-pack:install`, `language-pack:provision`)으로
-설치했지만 그때 대상 확장이 꺼져 있던 언어팩은 `status=installed` + `deactivated_reason=awaiting_host` 로 남고, 대상 확장을 켤 때
-`activateAwaitingForExtension()` 이 `activate()`(force 없이)로 켠다. 켜지면 사유가 지워진다.
-
-- 켜지 않는 것: 켜 달라고 하지 않고 설치한 팩(언어팩 관리 화면의 개별 설치 — installed, 사유 없음), 사용자가 끈 팩(inactive),
-  확장을 끌 때 함께 꺼진 팩(inactive — 「언어팩 다시 켜기」 창이 따로 묻는다), 같은 언어 자리를 이미 다른 팩이 쓰는 경우(밀어내지 않음).
-- 실패(코어 로케일 미활성 등)는 확장 활성화를 막지 않고 경고 로그만 남기며, 사유는 그대로 두어 다음 활성화 때 다시 시도한다.
-- 이 대기 표시는 설치 요청마다 다시 정해진다 — 켜 달라고 하지 않은 재설치는 이전 대기 표시를 지운다.
-
-> 가상 등록은 레코드를 바로 `installed`/`active` 로 만들며 `core.language_packs.installed`·`activated` 훅을 **발화하지 않는다**(설계 결정 2026-09-29).
-> 이 두 훅의 구독자는 DB 번역 동기화·시더 재실행뿐인데, 확장 설치 과정에서 그 확장의 시더가 이미 돌므로 발화하면
-> 로케일마다 같은 작업을 되풀이한다. 동봉 언어팩의 설치를 알아야 하는 확장은 확장 생명주기 훅(`core.{modules,plugins,templates}.after_install`)을 구독한다.
-> 반대로 확장 비활성화 때의 연쇄 비활성화(`deactivateForExtension`)와 재활성화 모달은 `LanguagePackService` 를 거치므로 훅이 발화한다.
-
-> 이 후크들은 Manager 가 발화하므로 어드민 UI 뿐 아니라 Artisan 커맨드(`module:install`·`template:update` 등)로 설치·업데이트해도
-> 동기화된다. 언어팩 버전은 후크가 넘기는 확장 정보의 `version` 을 쓴다(없으면 `1.0.0`).
+| (plugin/template 동일 패턴) | 9개 후크 리스너 등록 |
 
 ## 캐시 무효화
 
@@ -219,8 +179,6 @@ HookManager::doAction('core.language_packs.after_activate', $pack);
 invalidate 가 무효화하는 캐시:
 - `activePacksCache` (활성 언어팩 컬렉션)
 - `activeCoreLocalesCache` (코어 활성 locale 배열)
-
-`LanguagePackService::getActiveLocales()` 는 DB 를 따로 조회하지 않고 레지스트리의 `getActivePacks('core')` 결과에서 locale 을 뽑습니다(7.1.5) — 같은 요청에서 레지스트리가 이미 읽어 둔 목록을 다시 쓰고, 무효화도 위 `invalidate()` 하나로 함께 따라갑니다.
 
 ## 트러블슈팅
 

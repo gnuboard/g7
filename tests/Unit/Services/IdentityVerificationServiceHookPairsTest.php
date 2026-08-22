@@ -23,24 +23,12 @@ use Tests\TestCase;
  */
 class IdentityVerificationServiceHookPairsTest extends TestCase
 {
-    /**
-     * 테스트 뒷정리를 합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function tearDown(): void
     {
         Mockery::close();
         parent::tearDown();
     }
 
-    /**
-     * test_cancel_dispatches_before_and_after_hooks_on_success 시나리오를 검증합니다.
-     *
-     * @effects cancel_hook_pair_dispatched
-     *
-     * @return void 반환값 없음
-     */
     public function test_cancel_dispatches_before_and_after_hooks_on_success(): void
     {
         $fired = [];
@@ -82,13 +70,6 @@ class IdentityVerificationServiceHookPairsTest extends TestCase
         $this->assertTrue($fired[1]['args'][2]);
     }
 
-    /**
-     * test_cancel_dispatches_after_hook_with_false_when_log_missing 시나리오를 검증합니다.
-     *
-     * @effects cancel_hook_pair_dispatched
-     *
-     * @return void 반환값 없음
-     */
     public function test_cancel_dispatches_after_hook_with_false_when_log_missing(): void
     {
         $fired = [];
@@ -118,13 +99,6 @@ class IdentityVerificationServiceHookPairsTest extends TestCase
         $this->assertFalse($fired[1]['args'][2]);
     }
 
-    /**
-     * test_consume_token_dispatches_before_and_after_hooks_on_success 시나리오를 검증합니다.
-     *
-     * @effects consume_hook_pair_dispatched
-     *
-     * @return void 반환값 없음
-     */
     public function test_consume_token_dispatches_before_and_after_hooks_on_success(): void
     {
         $fired = [];
@@ -142,9 +116,8 @@ class IdentityVerificationServiceHookPairsTest extends TestCase
         $logRepo->shouldReceive('findVerifiedForToken')
             ->with('token-abc', 'signup')
             ->andReturn($log);
-        // 소비는 「아직 안 쓴 행만」 바꾸는 조건부 갱신이다 — 동시 소비 두 번째는 false (KVE 동형 O4)
-        $logRepo->shouldReceive('consumeIfUnconsumed')
-            ->with('log-uuid', Mockery::type(\DateTimeInterface::class))
+        $logRepo->shouldReceive('updateById')
+            ->with(Mockery::any(), Mockery::on(fn ($attrs) => isset($attrs['consumed_at'])))
             ->andReturn(true);
 
         $userRepo = Mockery::mock(UserRepositoryInterface::class);
@@ -162,13 +135,6 @@ class IdentityVerificationServiceHookPairsTest extends TestCase
         $this->assertTrue($fired[1]['args'][2]);
     }
 
-    /**
-     * test_consume_token_dispatches_after_hook_with_false_when_log_missing 시나리오를 검증합니다.
-     *
-     * @effects consume_hook_pair_dispatched
-     *
-     * @return void 반환값 없음
-     */
     public function test_consume_token_dispatches_after_hook_with_false_when_log_missing(): void
     {
         $fired = [];

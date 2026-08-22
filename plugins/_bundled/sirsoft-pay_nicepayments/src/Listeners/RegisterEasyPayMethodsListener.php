@@ -26,27 +26,27 @@ class RegisterEasyPayMethodsListener implements HookListenerInterface
             'name_key' => 'sirsoft-pay_nicepayments::payment_methods.naverpay.name',
             'description_key' => 'sirsoft-pay_nicepayments::payment_methods.naverpay.description',
             'icon' => 'wallet',
-            'brand_mark' => ['text' => 'N', 'class' => 'bg-green-700 text-white'],
+            'brand_mark' => ['text' => 'N', 'class' => 'bg-green-500 text-white'],
         ],
         [
             'id' => 'nicepay_kakaopay',
             'name_key' => 'sirsoft-pay_nicepayments::payment_methods.kakaopay.name',
             'description_key' => 'sirsoft-pay_nicepayments::payment_methods.kakaopay.description',
-            'icon' => 'comment',
+            'icon' => 'message-circle',
             'brand_mark' => ['text' => 'K', 'class' => 'bg-yellow-400 text-gray-950'],
         ],
         [
             'id' => 'nicepay_samsungpay',
             'name_key' => 'sirsoft-pay_nicepayments::payment_methods.samsungpay.name',
             'description_key' => 'sirsoft-pay_nicepayments::payment_methods.samsungpay.description',
-            'icon' => 'mobile-screen',
+            'icon' => 'smartphone',
             'brand_mark' => ['text' => 'S', 'class' => 'bg-blue-600 text-white'],
         ],
         [
             'id' => 'nicepay_applepay',
             'name_key' => 'sirsoft-pay_nicepayments::payment_methods.applepay.name',
             'description_key' => 'sirsoft-pay_nicepayments::payment_methods.applepay.description',
-            'icon' => 'mobile-screen',
+            'icon' => 'smartphone',
             'brand_mark' => ['text' => 'A', 'class' => 'bg-gray-900 text-white'],
             // 애플페이는 iOS 기기에서만 노출(과거 injector iOS 게이팅 이관).
             'requires_ios' => true,
@@ -56,14 +56,14 @@ class RegisterEasyPayMethodsListener implements HookListenerInterface
             'name_key' => 'sirsoft-pay_nicepayments::payment_methods.payco.name',
             'description_key' => 'sirsoft-pay_nicepayments::payment_methods.payco.description',
             'icon' => 'wallet',
-            'brand_mark' => ['text' => 'P', 'class' => 'bg-red-600 text-white'],
+            'brand_mark' => ['text' => 'P', 'class' => 'bg-red-500 text-white'],
         ],
         [
             'id' => 'nicepay_skpay',
             'name_key' => 'sirsoft-pay_nicepayments::payment_methods.skpay.name',
             'description_key' => 'sirsoft-pay_nicepayments::payment_methods.skpay.description',
-            'icon' => 'wallet',
-            'brand_mark' => ['text' => '11', 'class' => 'bg-orange-700 text-white'],
+            'icon' => 'wallet-cards',
+            'brand_mark' => ['text' => '11', 'class' => 'bg-orange-500 text-white'],
         ],
         [
             'id' => 'nicepay_ssgpay',
@@ -96,10 +96,7 @@ class RegisterEasyPayMethodsListener implements HookListenerInterface
     }
 
     /**
-     * 기본 핸들러 — 이 리스너는 필터 훅(`injectEasyPayMethods`)만 쓰므로 하는 일이 없다.
-     *
-     * @param  mixed  ...$args  훅 인자
-     * @return void 없음
+     * @param  mixed  ...$args
      */
     public function handle(...$args): void {}
 
@@ -140,10 +137,7 @@ class RegisterEasyPayMethodsListener implements HookListenerInterface
     }
 
     /**
-     * 간편결제 수단을 끼워 넣을 위치를 찾는다 — 휴대폰 결제와 그 뒤에 이어진 PG 수단들의 마지막 자리.
-     *
-     * @param  array<int, array<string, mixed>>  $methods  결제수단 목록
-     * @return int|null 이 인덱스 뒤에 넣는다. 휴대폰 결제가 없으면 null(목록 끝에 붙인다)
+     * @param  array<int, array<string, mixed>>  $methods
      */
     private function resolveInsertionIndex(array $methods): ?int
     {
@@ -176,16 +170,8 @@ class RegisterEasyPayMethodsListener implements HookListenerInterface
     }
 
     /**
-     * 간편결제 수단 한 건의 결제수단 항목을 만든다.
-     * 형식은 코어 EcommerceSettingsService 의 builtin 결제수단 항목과 같다.
-     *
-     * @param  string  $id  결제수단 ID
-     * @param  string  $nameKey  이름 번역 키
-     * @param  string  $descriptionKey  설명 번역 키
-     * @param  string  $icon  대체 아이콘 이름(Font Awesome — 브랜드 마크가 없을 때 그린다)
      * @param  array{text: string, class: string}|null  $brandMark  배지 브랜드 마크(텍스트+색상 클래스)
      * @param  bool  $requiresIos  iOS 기기에서만 노출되는 수단 여부(애플페이)
-     * @return array<string, mixed> 결제수단 항목
      */
     private function buildEntry(
         string $id,
@@ -215,9 +201,6 @@ class RegisterEasyPayMethodsListener implements HookListenerInterface
                 'pg_locked' => true,
                 'needs_pg' => true,
                 'refund_method' => 'pg',
-                // 간편결제는 PG 결제취소 API 가 그 자리에서 환불을 집행한다 — 사람의 개입이 없으므로
-                // 코어 환불 자동 승인 목록에 기본 포함된다 (코어 P16·P17 능력 키).
-                'auto_approve_refund' => true,
                 'is_active' => false,
                 'min_order_amount' => 0,
                 'stock_deduction_timing' => 'payment_complete',

@@ -26,7 +26,6 @@ import {
   type RestoreResult,
 } from '../hooks/useLayoutVersions';
 import { VersionDiffView } from './VersionDiffView';
-import { useEditorDialog } from './EditorDialog';
 
 export interface VersionHistoryModalProps {
   /** 편집 대상 템플릿 식별자 */
@@ -213,7 +212,6 @@ export function VersionHistoryModal({
   onRestored,
   onClose,
 }: VersionHistoryModalProps): React.ReactElement {
-  const dialog = useEditorDialog(t);
   const {
     versions,
     isLoading,
@@ -287,13 +285,8 @@ export function VersionHistoryModal({
   const handleRestore = useCallback(
     async (versionId: number): Promise<void> => {
       setActionError(null);
-      // 편집기 대화상자(engine-v1.78.7) — 브라우저 기본 confirm 대신.
-      const proceed = await dialog.confirm({
-        title: t('layout_editor.version_history.restore'),
-        message: t('layout_editor.version_history.restore_confirm'),
-        confirmLabel: t('layout_editor.version_history.restore'),
-        danger: true,
-      });
+      const confirmMsg = t('layout_editor.version_history.restore_confirm');
+      const proceed = typeof window !== 'undefined' ? window.confirm(confirmMsg) : true;
       if (!proceed) return;
       const result: RestoreResult = await restore(versionId);
       if (result.kind === 'success') {
@@ -305,7 +298,7 @@ export function VersionHistoryModal({
         setActionError(result.message);
       }
     },
-    [restore, onClose, dialog, t],
+    [restore, onClose, t],
   );
 
   const displayError = actionError ?? error;
@@ -397,8 +390,6 @@ export function VersionHistoryModal({
                       <span style={{ color: '#94a3b8', fontWeight: 500 }} data-testid={`g7le-version-chars-${it.id}`}>
                         {t('layout_editor.version_history.chars', {
                           diff: `${charDiff >= 0 ? '+' : ''}${charDiff}`,
-                          // 부호가 붙은 글자(`+1`)는 수가 아니라 복수형을 고르지 못한다 — 절댓값을 count 로도 넘긴다(engine-v1.78.8).
-                          count: Math.abs(charDiff),
                         })}
                       </span>
                     </span>

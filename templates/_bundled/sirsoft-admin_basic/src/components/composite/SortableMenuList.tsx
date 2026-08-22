@@ -18,7 +18,6 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { SortableMenuItem, MenuItemData } from './SortableMenuItem';
-import { mergeQueryIntoHref, resolveRowExpression, useLocationSearch } from '../../support/navigationLink';
 import { Div } from '../basic/Div';
 import { H3 } from '../basic/H3';
 import type { EditorAttrs } from '../../types';
@@ -53,8 +52,6 @@ export interface MenuItem {
     name: string | Record<string, string>;
     permission_type?: string | null;
   }[];
-  /** 관리 목록이 싣는 부여 역할 ID (이름은 roleOptions 에서 찾는다) */
-  role_ids?: number[];
   created_at?: string;
   updated_at?: string;
 }
@@ -81,28 +78,6 @@ export interface SortableMenuListProps {
   titleClassName?: string;
   enableDrag?: boolean;
   toggleDisabled?: boolean;
-  /**
-   * 여러 개 선택 모드 (기본값: false). 켜면 항목 앞에 체크박스가 보이고, 끌어 옮기기와 상태
-   * 토글이 꺼지며, 항목 클릭은 상세 선택(onSelect) 대신 체크를 토글한다. 자식은 모두 펼친다.
-   */
-  selectionMode?: boolean;
-  /** 선택 모드에서 체크된 메뉴 ID */
-  selectedIds?: number[];
-  /** 선택 모드에서 체크가 바뀔 때 — 새 ID 배열 */
-  onSelectionChange?: (ids: number[]) => void;
-  /**
-   * 역할 이름표 — 항목의 role_ids 를 이름으로 바꿔 행마다 배지로 보인다. 주지 않으면 배지를 그리지 않는다.
-   * 목록에 없는 ID(비활성 역할 등)는 건너뛴다.
-   */
-  roleOptions?: { id: number; name: string | Record<string, string> }[];
-  /**
-   * 항목 편집 주소(행 표현식, 예: `/admin/menus?id={{row.id}}&mode=edit`) — 주면 항목 이름이 그 주소의 링크가 되어
-   * 가운데 클릭·Ctrl+클릭 「새 탭에서 열기」로 그 항목 편집 화면을 연다(#757). 보통 클릭은 지금처럼 onSelect.
-   * 엔진은 원문을 넘기고(components.json skipBindingKeys) 항목마다 그 항목으로 푼다. 여러 개 선택 모드에서는 링크를 그리지 않는다.
-   */
-  itemHref?: string;
-  /** 참이면 현재 주소의 쿼리(검색 등)를 항목 주소에 합친다(같은 키는 항목 주소 쪽이 이긴다) */
-  itemHrefMergeQuery?: boolean;
   /**
    * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
    */
@@ -280,17 +255,9 @@ export const SortableMenuList: React.FC<SortableMenuListProps> = ({
   titleClassName = 'px-4 py-3 border-b border-gray-200 dark:border-gray-700',
   enableDrag = true,
   toggleDisabled = false,
-  selectionMode = false,
-  selectedIds = [],
-  onSelectionChange,
-  itemHref,
-  itemHrefMergeQuery = false,
-  roleOptions,
   id,
   editorAttrs,
 }) => {
-  // 쿼리만 바꾸는 같은 화면 이동 뒤에도 링크 href 가 새 쿼리를 합치도록 주소를 구독한다(props 가 같아 엔진이 다시 그리지 않는다)
-  useLocationSearch(itemHrefMergeQuery && !!itemHref && !selectionMode);
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
   const [localItems, setLocalItems] = useState<MenuItem[]>(items);
@@ -363,51 +330,9 @@ export const SortableMenuList: React.FC<SortableMenuListProps> = ({
     });
   }, []);
 
-  const selectedSet = useMemo(() => new Set(selectedIds ?? []), [selectedIds]);
-
-  // 역할 ID → 이름 (현재 로케일). roleOptions 가 없으면 배지를 그리지 않는다.
-  const roleNameById = useMemo(() => {
-    // 빈 배열은 「역할 목록 아직 안 옴」 이다(데이터소스 fallback) — 관리자 역할은 늘 있으므로 실제로 빈 경우는 없다
-    if (!Array.isArray(roleOptions) || roleOptions.length === 0) return null;
-    const map = new Map<number, string>();
-    roleOptions.forEach((role) => map.set(Number(role.id), getMenuLabel(role.name)));
-
-    return map;
-  }, [roleOptions, getMenuLabel]);
-
-  // 「역할 없음」 은 role_ids 가 정말 비었을 때만 보인다. 이름표(활성 역할 목록) 밖 ID 는 이름 없이 개수(roleCount)로만 센다.
-  // 이름표가 아직 안 왔거나(로그인 직후 진입 등)
-  // 부여된 역할이 모두 이름표 밖이면 이름을 모르는 것이지 역할이 없는 것이 아니므로 배지 줄을 그리지 않는다.
-  const resolveRoleNames = useCallback((item: MenuItem): string[] | undefined => {
-    if (!roleNameById || !Array.isArray(item.role_ids)) return undefined;
-    if (item.role_ids.length === 0) return [];
-
-    const names = item.role_ids
-      .map((roleId) => roleNameById.get(Number(roleId)))
-      .filter((name): name is string => !!name);
-
-    return names.length > 0 ? names : undefined;
-  }, [roleNameById]);
-
-  // 부모 체크 = 부모와 자손 전체 토글. 자손 일부만 골라져 있으면 indeterminate.
-  const subtreeIds = useCallback((item: MenuItem): number[] => [item.id, ...collectDescendantIds(item)], []);
-
-  const toggleSelection = useCallback((item: MenuItem) => {
-    const ids = subtreeIds(item);
-    const allChecked = ids.every((menuId) => selectedSet.has(menuId));
-    const next = new Set(selectedSet);
-    ids.forEach((menuId) => (allChecked ? next.delete(menuId) : next.add(menuId)));
-    onSelectionChange?.(Array.from(next));
-  }, [selectedSet, subtreeIds, onSelectionChange]);
-
   const handleItemClick = useCallback((item: MenuItem) => {
-    if (selectionMode) {
-      toggleSelection(item);
-
-      return;
-    }
     onSelect?.(item);
-  }, [onSelect, selectionMode, toggleSelection]);
+  }, [onSelect]);
 
   const handleToggleStatus = useCallback((id: number, currentStatus: boolean, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -492,38 +417,12 @@ export const SortableMenuList: React.FC<SortableMenuListProps> = ({
     isModuleMenu: !!item.module_id,
     moduleName: item.module ? getMenuLabel(item.module.name) : undefined,
     hasChildren: item.children && item.children.length > 0,
-    roleNames: resolveRoleNames(item),
-    roleCount: Array.isArray(item.role_ids) ? item.role_ids.length : undefined,
-    href: itemHref && !selectionMode ? resolveItemHref(item) : undefined,
   });
-
-  // 항목 편집 주소 — 행 식을 그 항목으로 풀고, 켜졌으면 현재 쿼리를 합친다
-  function resolveItemHref(item: MenuItem): string | undefined {
-    const resolved = resolveRowExpression(itemHref, item);
-    if (!resolved) return undefined;
-
-    return itemHrefMergeQuery ? mergeQueryIntoHref(resolved) : resolved;
-  }
-
-  // 선택 모드에서는 자식을 모두 펼친다 — 접힌 자식은 고를 수 없다
-  const effectiveExpanded = useMemo(() => {
-    if (!selectionMode) return expandedItems;
-    const all = new Set<number>();
-    const walk = (menuItems: MenuItem[]) => menuItems.forEach((item) => {
-      if (item.children?.length > 0) {
-        all.add(item.id);
-        walk(item.children);
-      }
-    });
-    walk(localItems);
-
-    return all;
-  }, [selectionMode, expandedItems, localItems]);
 
   // 트리를 평탄화 — 단일 SortableContext 사용
   const flatItems = useMemo(
-    () => flattenTree(localItems, effectiveExpanded),
-    [localItems, effectiveExpanded]
+    () => flattenTree(localItems, expandedItems),
+    [localItems, expandedItems]
   );
 
   const sortableIds = useMemo(
@@ -556,8 +455,8 @@ export const SortableMenuList: React.FC<SortableMenuListProps> = ({
               >
                 <SortableMenuItem
                   item={toMenuItemData(flatItem.item)}
-                  isSelected={!selectionMode && selectedId === flatItem.item.id}
-                  isExpanded={effectiveExpanded.has(flatItem.item.id)}
+                  isSelected={selectedId === flatItem.item.id}
+                  isExpanded={expandedItems.has(flatItem.item.id)}
                   level={flatItem.depth}
                   onClick={() => handleItemClick(flatItem.item)}
                   onToggle={(e) => handleToggleStatus(flatItem.item.id, flatItem.item.is_active, e)}
@@ -565,15 +464,8 @@ export const SortableMenuList: React.FC<SortableMenuListProps> = ({
                   className={itemClassName}
                   selectedClassName={itemSelectedClassName}
                   defaultClassName={itemDefaultClassName}
-                  enableDrag={enableDrag && !selectionMode}
+                  enableDrag={enableDrag}
                   toggleDisabled={toggleDisabled}
-                  selectable={selectionMode}
-                  {...(selectionMode ? (() => {
-                    const ids = subtreeIds(flatItem.item);
-                    const count = ids.filter((menuId) => selectedSet.has(menuId)).length;
-
-                    return { checked: count === ids.length, indeterminate: count > 0 && count < ids.length };
-                  })() : {})}
                 />
               </Div>
             ))}

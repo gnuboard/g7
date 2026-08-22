@@ -8,7 +8,6 @@
   "save": "Save",
   "saving": "Saving",
   "refresh": "Refresh",
-  "remove": "Remove",
   "created_at": "Created At",
   "updated_at": "Updated At",
   "active": "Active",
@@ -43,8 +42,7 @@
     "1year": "1 Year"
   },
   "error": {
-    "general": "An error occurred.",
-    "list_load_failed": "Could not load the list. Please try again in a moment."
+    "general": "An error occurred."
   },
   "currency": {
     "won": "KRW"
@@ -52,6 +50,5 @@
   "currency_label": "Currency",
   "shipping_country_label": "Shipping Country",
   "read_only_notice": "You have read-only access. Contact an administrator if you need to make changes.",
-  "validation_error_notice": "Please check your input. Some fields are invalid.",
-  "module_name": "Ecommerce"
+  "validation_error_notice": "Please check your input. Some fields are invalid."
 }

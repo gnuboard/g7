@@ -39,82 +39,14 @@ class CoreUpdateServiceTest extends TestCase
      */
     private array $tempFiles = [];
 
-    /**
-     * 진입 시점의 업데이트 트리 플래그 (tearDown 에서 복원)
-     */
-    private string|false $originalUpdateFlag = false;
-
-    /**
-     * 진입 시점의 APP_VERSION 3채널 값 (tearDown 에서 복원)
-     *
-     * @var array{env: string|null, server: string|null, putenv: string|false}
-     */
-    private array $originalAppVersion = ['env' => null, 'server' => null, 'putenv' => false];
-
-    /**
-     * APP_VERSION 3채널과 업데이트 트리 플래그를 스냅샷하고 시험 대상 서비스를 만든다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
-
-        // `updateVersionInEnv()` 는 `.env` 파일만이 아니라 프로세스 환경(3채널)도 갱신한다.
-        // 그 부수효과가 클래스 안에 남으면 **뒤이은 테스트가 부팅하는 앱의 `config('app.version')`**
-        // 이 오염된다(`config/app.php` 가 `env('APP_VERSION', …)` 이므로). 실제로 그 순서 의존으로
-        // `test_check_updates_command_shows_success` 가 "현재 최신 버전입니다" 대신 업데이트 있음으로
-        // 갈렸다. 진입 시 스냅샷을 떠 두고 종료 시 되돌린다.
-        $this->originalAppVersion = [
-            'env' => $_ENV['APP_VERSION'] ?? null,
-            'server' => $_SERVER['APP_VERSION'] ?? null,
-            'putenv' => getenv('APP_VERSION'),
-        ];
-
-        // 이 클래스의 한 케이스가 `core:update` 를 실제로 호출하는데, 부모 커맨드는 "프로세스
-        // 종료와 함께 소멸" 을 전제로 `G7_UPDATE_IN_PROGRESS` 를 정리하지 않는다. PHPUnit 은
-        // 프로세스가 이어지므로 그 플래그가 이후 모든 테스트로 새어 나가, 부팅마다
-        // `bootstrap/app.php` 의 매니페스트 자가 치유가 발동한다(내용은 같아도 불필요한 churn).
-        // 진입 시 비우고 종료 시 되돌린다 — ExecuteUpgradeStepsStandaloneTest 와 같은 규율.
-        $this->originalUpdateFlag = getenv('G7_UPDATE_IN_PROGRESS');
-        putenv('G7_UPDATE_IN_PROGRESS');
-        unset($_ENV['G7_UPDATE_IN_PROGRESS'], $_SERVER['G7_UPDATE_IN_PROGRESS']);
-
         $this->service = new CoreUpdateService;
     }
 
-    /**
-     * APP_VERSION 3채널·업데이트 트리 플래그를 진입 시점 값으로 되돌리고 임시 파일·디렉토리를 정리한다.
-     *
-     * @return void 반환값 없음
-     */
     protected function tearDown(): void
     {
-        // APP_VERSION 3채널 복원 (updateVersionInEnv 부수효과 격리)
-        foreach (['env' => &$_ENV, 'server' => &$_SERVER] as $slot => &$bag) {
-            if ($this->originalAppVersion[$slot] === null) {
-                unset($bag['APP_VERSION']);
-            } else {
-                $bag['APP_VERSION'] = $this->originalAppVersion[$slot];
-            }
-        }
-        unset($bag);
-
-        if ($this->originalAppVersion['putenv'] === false) {
-            putenv('APP_VERSION');
-        } else {
-            putenv('APP_VERSION='.$this->originalAppVersion['putenv']);
-        }
-
-        if ($this->originalUpdateFlag === false) {
-            putenv('G7_UPDATE_IN_PROGRESS');
-            unset($_ENV['G7_UPDATE_IN_PROGRESS'], $_SERVER['G7_UPDATE_IN_PROGRESS']);
-        } else {
-            putenv('G7_UPDATE_IN_PROGRESS='.$this->originalUpdateFlag);
-            $_ENV['G7_UPDATE_IN_PROGRESS'] = $this->originalUpdateFlag;
-            $_SERVER['G7_UPDATE_IN_PROGRESS'] = $this->originalUpdateFlag;
-        }
-
         // 임시 파일 정리
         foreach ($this->tempFiles as $file) {
             if (File::exists($file)) {
@@ -138,10 +70,6 @@ class CoreUpdateServiceTest extends TestCase
 
     /**
      * checkForUpdates()가 올바른 구조의 배열을 반환하는지 검증합니다.
-     *
-     * @effects checkForUpdates_returns_version_comparison_structure
-     *
-     * @return void 반환값 없음
      */
     public function test_check_for_updates_returns_correct_structure(): void
     {
@@ -149,12 +77,6 @@ class CoreUpdateServiceTest extends TestCase
 
         $service = new class extends CoreUpdateService
         {
-            /**
-             * GitHub 조회를 시험용 고정 응답으로 대체한다.
-             *
-             * @param  string  $githubUrl  조회 대상 GitHub 저장소 URL
-             * @return array 버전과 오류 메시지를 담은 고정 응답
-             */
             protected function fetchLatestVersionFromGithub(string $githubUrl): array
             {
                 return ['version' => '2.0.0', 'error' => null];
@@ -182,10 +104,6 @@ class CoreUpdateServiceTest extends TestCase
 
     /**
      * GitHub API 실패 시 check_failed를 포함한 에러 응답을 반환하는지 검증합니다.
-     *
-     * @effects checkForUpdates_marks_check_failed_with_error_when_lookup_fails
-     *
-     * @return void 반환값 없음
      */
     public function test_check_for_updates_returns_check_failed_when_github_fails(): void
     {
@@ -193,12 +111,6 @@ class CoreUpdateServiceTest extends TestCase
 
         $service = new class extends CoreUpdateService
         {
-            /**
-             * GitHub 조회를 시험용 고정 응답으로 대체한다.
-             *
-             * @param  string  $githubUrl  조회 대상 GitHub 저장소 URL
-             * @return array 버전과 오류 메시지를 담은 고정 응답
-             */
             protected function fetchLatestVersionFromGithub(string $githubUrl): array
             {
                 return ['version' => null, 'error' => '프라이빗 저장소입니다.'];
@@ -215,10 +127,6 @@ class CoreUpdateServiceTest extends TestCase
 
     /**
      * GitHub API 성공 + 릴리스 없음 (version null, error null)일 때 정상 처리되는지 검증합니다.
-     *
-     * @effects checkForUpdates_marks_check_failed_with_error_when_lookup_fails
-     *
-     * @return void 반환값 없음
      */
     public function test_check_for_updates_handles_no_releases(): void
     {
@@ -226,12 +134,6 @@ class CoreUpdateServiceTest extends TestCase
 
         $service = new class extends CoreUpdateService
         {
-            /**
-             * GitHub 조회를 시험용 고정 응답으로 대체한다.
-             *
-             * @param  string  $githubUrl  조회 대상 GitHub 저장소 URL
-             * @return array 버전과 오류 메시지를 담은 고정 응답
-             */
             protected function fetchLatestVersionFromGithub(string $githubUrl): array
             {
                 return ['version' => null, 'error' => '릴리스가 없습니다.'];
@@ -255,10 +157,6 @@ class CoreUpdateServiceTest extends TestCase
 
     /**
      * CHANGELOG.md 파일을 파싱하여 올바른 버전 엔트리를 반환하는지 검증합니다.
-     *
-     * @effects getChangelog_parses_versions_and_categories
-     *
-     * @return void 반환값 없음
      */
     public function test_get_changelog_parses_file(): void
     {
@@ -324,10 +222,6 @@ MD;
 
     /**
      * 버전 범위를 지정하여 CHANGELOG를 필터링하는지 검증합니다.
-     *
-     * @effects getChangelog_filters_by_version_range
-     *
-     * @return void 반환값 없음
      */
     public function test_get_changelog_with_version_range(): void
     {
@@ -396,10 +290,6 @@ MD;
 
     /**
      * CHANGELOG.md 파일이 없을 때 빈 배열을 반환하는지 검증합니다.
-     *
-     * @effects getChangelog_returns_empty_when_file_missing
-     *
-     * @return void 반환값 없음
      */
     public function test_get_changelog_returns_empty_when_file_missing(): void
     {
@@ -432,10 +322,6 @@ MD;
 
     /**
      * 존재하지 않는 _pending 디렉토리를 자동 생성하는지 검증합니다.
-     *
-     * @effects validatePendingPath_creates_missing_directory
-     *
-     * @return void 반환값 없음
      */
     public function test_validate_pending_path_creates_directory(): void
     {
@@ -474,10 +360,6 @@ MD;
 
     /**
      * 유지보수 모드 활성화/비활성화가 정상 동작하는지 검증합니다.
-     *
-     * @effects maintenance_mode_toggles_via_down_and_up_commands
-     *
-     * @return void 반환값 없음
      */
     public function test_enable_disable_maintenance_mode(): void
     {
@@ -521,10 +403,6 @@ MD;
      * `base_path('.env')` 를 직접 덮어쓰는 구조였고, 테스트 실행이 중단되면
      * `finally` 의 복원 로직이 손상된 fixture 를 그대로 다시 기록해 영구 고착되는
      * 자기 영속화 결함이 있어 회귀 차단을 위해 격리 기반으로 재작성됨.
-     *
-     * @effects updateVersionInEnv_replaces_app_version_keeping_other_keys
-     *
-     * @return void 반환값 없음
      */
     public function test_update_version_in_env(): void
     {
@@ -548,64 +426,7 @@ MD;
     }
 
     /**
-     * `.env` 파일만이 아니라 프로세스 환경(3채널)도 함께 갱신하는지 검증합니다.
-     *
-     * 부모가 config 캐시 없이 부팅했다면 Dotenv 가 `$_ENV['APP_VERSION']` 에 이전 버전을 채워 두고,
-     * env 저장소가 불변이라 뒤이어 부팅하는 `config:cache` 프로세스가 `.env` 를 다시 읽어도 그 값이
-     * 바뀌지 않는다. 그러면 `bootstrap/cache/config.php` 에 **이전 버전**이 박제되어 이후 모든 웹
-     * 요청이 옛 버전으로 판정한다 — 새 코어를 요구하는 확장이 `incompatible_core` 로 꺼지는 경로다.
-     * (2026-09-07 실측: `config:clear` 후 7.0.10 → 7.0.11 업데이트가 config 캐시에 7.0.10 을 구웠다.)
-     *
-     * @effects updateVersionInEnv_syncs_process_env_channels
-     *
-     * @return void 반환값 없음
-     */
-    public function test_update_version_in_env_also_updates_process_env(): void
-    {
-        $originalEnv = $_ENV['APP_VERSION'] ?? null;
-        $originalServer = $_SERVER['APP_VERSION'] ?? null;
-        $originalPutenv = getenv('APP_VERSION');
-
-        try {
-            // 업데이트 전 프로세스 환경 = 이전 버전 (캐시 없이 부팅한 부모의 상태)
-            $_ENV['APP_VERSION'] = '1.0.0';
-            $_SERVER['APP_VERSION'] = '1.0.0';
-            putenv('APP_VERSION=1.0.0');
-
-            $this->withIsolatedBasePath(function (string $tempBase): void {
-                File::put($tempBase.DIRECTORY_SEPARATOR.'.env', "APP_NAME=G7\nAPP_VERSION=1.0.0\n");
-
-                $this->service->updateVersionInEnv('2.5.0');
-            });
-
-            $this->assertSame('2.5.0', $_ENV['APP_VERSION'], '$_ENV 채널이 갱신되어야 한다');
-            $this->assertSame('2.5.0', $_SERVER['APP_VERSION'], '$_SERVER 채널이 갱신되어야 한다');
-            $this->assertSame('2.5.0', getenv('APP_VERSION'), 'putenv 채널이 갱신되어야 한다');
-        } finally {
-            if ($originalEnv === null) {
-                unset($_ENV['APP_VERSION']);
-            } else {
-                $_ENV['APP_VERSION'] = $originalEnv;
-            }
-            if ($originalServer === null) {
-                unset($_SERVER['APP_VERSION']);
-            } else {
-                $_SERVER['APP_VERSION'] = $originalServer;
-            }
-            if ($originalPutenv === false) {
-                putenv('APP_VERSION');
-            } else {
-                putenv('APP_VERSION='.$originalPutenv);
-            }
-        }
-    }
-
-    /**
      * .env 파일에 APP_VERSION 이 없을 때 새로 추가하는지 검증합니다.
-     *
-     * @effects updateVersionInEnv_appends_app_version_when_missing
-     *
-     * @return void 반환값 없음
      */
     public function test_update_version_in_env_appends_when_missing(): void
     {
@@ -630,10 +451,6 @@ MD;
      * 본 테스트가 실행되어도 진짜 `.env` 의 mtime/내용 모두 불변이어야 합니다.
      * 과거 회귀 (테스트 fixture 가 실 `.env` 를 덮어쓰고 finally 복원 실패 시
      * 영구 고착) 의 재발을 차단합니다.
-     *
-     * @effects updateVersionInEnv_never_touches_real_env_file
-     *
-     * @return void 반환값 없음
      */
     public function test_update_version_in_env_never_touches_real_env(): void
     {
@@ -662,8 +479,7 @@ MD;
      * finally 로 원본 base path 를 복원하고 임시 디렉토리는 tempDirs 에 등록되어
      * tearDown 에서 일괄 정리됩니다.
      *
-     * @param  \Closure(string $tempBase): void  $callback  격리된 임시 base path 를 인자로 받아 실행할 콜백
-     * @return void 반환값 없음
+     * @param  \Closure(string $tempBase): void  $callback
      */
     private function withIsolatedBasePath(\Closure $callback): void
     {
@@ -687,10 +503,6 @@ MD;
 
     /**
      * 업데이트 실패 리포트 파일이 올바르게 생성되는지 검증합니다.
-     *
-     * @effects generateFailureReport_writes_log_with_versions_and_trace
-     *
-     * @return void 반환값 없음
      */
     public function test_generate_failure_report_creates_log_file(): void
     {
@@ -726,10 +538,6 @@ MD;
      * 타임스탬프 기반 pending 디렉토리가 통째로 삭제되는지 검증합니다.
      *
      * cleanupPending(string $pendingPath)는 지정된 경로를 전체 삭제합니다.
-     *
-     * @effects cleanupPending_removes_directory_and_tolerates_missing_path
-     *
-     * @return void 반환값 없음
      */
     public function test_cleanup_pending_removes_directory(): void
     {
@@ -751,10 +559,6 @@ MD;
 
     /**
      * 존재하지 않는 경로에 대해 cleanupPending()이 예외 없이 처리되는지 검증합니다.
-     *
-     * @effects cleanupPending_removes_directory_and_tolerates_missing_path
-     *
-     * @return void 반환값 없음
      */
     public function test_cleanup_pending_does_not_fail_when_directory_missing(): void
     {
@@ -772,10 +576,6 @@ MD;
 
     /**
      * createPendingDirectory()가 타임스탬프 형식의 디렉토리를 생성하는지 검증합니다.
-     *
-     * @effects createPendingDirectory_creates_unique_timestamped_directory
-     *
-     * @return void 반환값 없음
      */
     public function test_create_pending_directory_creates_timestamped_directory(): void
     {
@@ -801,10 +601,6 @@ MD;
 
     /**
      * createPendingDirectory()가 매 호출마다 고유한 경로를 반환하는지 검증합니다.
-     *
-     * @effects createPendingDirectory_creates_unique_timestamped_directory
-     *
-     * @return void 반환값 없음
      */
     public function test_create_pending_directory_returns_unique_paths(): void
     {
@@ -817,11 +613,8 @@ MD;
         $path1 = $this->service->createPendingDirectory();
         $this->tempDirs[] = $path1;
 
-        // 경로 이름은 PHP date('Ymd_His') 라 시각을 옮길 수 없다 — 1초를 통째로 쉬지 않고 다음 초가 될 때까지만 기다린다
-        $second = date('Ymd_His');
-        while (date('Ymd_His') === $second) {
-            usleep(20_000);
-        }
+        // 1초 대기하여 다른 타임스탬프 보장
+        sleep(1);
 
         $path2 = $this->service->createPendingDirectory();
         $this->tempDirs[] = $path2;
@@ -837,10 +630,6 @@ MD;
 
     /**
      * 모든 캐시 초기화 및 패키지 재생성 명령이 순서대로 호출되는지 검증합니다.
-     *
-     * @effects clearAllCaches_runs_cache_clear_and_package_discovery_commands
-     *
-     * @return void 반환값 없음
      */
     public function test_clear_all_caches_calls_artisan_commands(): void
     {
@@ -860,10 +649,6 @@ MD;
 
     /**
      * 업데이트 확인 성공 시 커맨드가 정상 종료되는지 검증합니다.
-     *
-     * @effects core_check_updates_command_reports_up_to_date
-     *
-     * @return void 반환값 없음
      */
     public function test_check_updates_command_shows_success(): void
     {
@@ -871,12 +656,6 @@ MD;
 
         $this->instance(CoreUpdateService::class, new class extends CoreUpdateService
         {
-            /**
-             * GitHub 조회를 시험용 고정 응답으로 대체한다.
-             *
-             * @param  string  $githubUrl  조회 대상 GitHub 저장소 URL
-             * @return array 버전과 오류 메시지를 담은 고정 응답
-             */
             protected function fetchLatestVersionFromGithub(string $githubUrl): array
             {
                 return ['version' => '7.0.0-alpha.1', 'error' => null];
@@ -884,16 +663,12 @@ MD;
         });
 
         $this->artisan('core:check-updates')
-            ->expectsOutputToContain(__('common.console.core_check_updates.up_to_date'))
+            ->expectsOutputToContain('현재 최신 버전입니다.')
             ->assertExitCode(0);
     }
 
     /**
      * 업데이트 확인 실패 시 커맨드가 에러 메시지를 출력하는지 검증합니다.
-     *
-     * @effects core_check_updates_command_prints_failure_and_exits_nonzero
-     *
-     * @return void 반환값 없음
      */
     public function test_check_updates_command_shows_error_on_failure(): void
     {
@@ -901,12 +676,6 @@ MD;
 
         $this->instance(CoreUpdateService::class, new class extends CoreUpdateService
         {
-            /**
-             * GitHub 조회를 시험용 고정 응답으로 대체한다.
-             *
-             * @param  string  $githubUrl  조회 대상 GitHub 저장소 URL
-             * @return array 버전과 오류 메시지를 담은 고정 응답
-             */
             protected function fetchLatestVersionFromGithub(string $githubUrl): array
             {
                 return ['version' => null, 'error' => 'GitHub 저장소를 찾을 수 없습니다.'];
@@ -914,16 +683,12 @@ MD;
         });
 
         $this->artisan('core:check-updates')
-            ->expectsOutputToContain(__('common.console.core_check_updates.failed', ['error' => 'GitHub 저장소를 찾을 수 없습니다.']))
+            ->expectsOutputToContain('업데이트 확인 실패: GitHub 저장소를 찾을 수 없습니다.')
             ->assertExitCode(1);
     }
 
     /**
      * core:update 커맨드에서 업데이트 확인 실패 시 에러 출력 후 종료하는지 검증합니다.
-     *
-     * @effects core_update_command_aborts_when_update_check_fails
-     *
-     * @return void 반환값 없음
      */
     public function test_update_command_shows_error_on_check_failure(): void
     {
@@ -931,22 +696,11 @@ MD;
 
         $this->instance(CoreUpdateService::class, new class extends CoreUpdateService
         {
-            /**
-             * 시스템 요구사항 검사를 항상 통과하는 고정 응답으로 대체한다.
-             *
-             * @return array 통과 상태와 사용 가능한 추출 방식을 담은 고정 응답
-             */
             public function checkSystemRequirements(): array
             {
                 return ['valid' => true, 'errors' => [], 'available_methods' => ['ZipArchive']];
             }
 
-            /**
-             * GitHub 조회를 시험용 고정 응답으로 대체한다.
-             *
-             * @param  string  $githubUrl  조회 대상 GitHub 저장소 URL
-             * @return array 버전과 오류 메시지를 담은 고정 응답
-             */
             protected function fetchLatestVersionFromGithub(string $githubUrl): array
             {
                 return ['version' => null, 'error' => 'GitHub 저장소를 찾을 수 없습니다.'];
@@ -960,10 +714,6 @@ MD;
 
     /**
      * 토큰 인증 실패 시 커맨드가 적절한 에러를 출력하는지 검증합니다.
-     *
-     * @effects core_check_updates_command_prints_failure_and_exits_nonzero
-     *
-     * @return void 반환값 없음
      */
     public function test_check_updates_command_shows_auth_error(): void
     {
@@ -971,12 +721,6 @@ MD;
 
         $this->instance(CoreUpdateService::class, new class extends CoreUpdateService
         {
-            /**
-             * GitHub 조회를 시험용 고정 응답으로 대체한다.
-             *
-             * @param  string  $githubUrl  조회 대상 GitHub 저장소 URL
-             * @return array 버전과 오류 메시지를 담은 고정 응답
-             */
             protected function fetchLatestVersionFromGithub(string $githubUrl): array
             {
                 return ['version' => null, 'error' => __('settings.core_update.github_token_invalid')];
@@ -994,10 +738,6 @@ MD;
 
     /**
      * targets에 public 디렉토리가 통합 포함되고 분할 항목이 없는지 검증합니다.
-     *
-     * @effects update_targets_include_public_and_core_root_files
-     *
-     * @return void 반환값 없음
      */
     public function test_update_targets_includes_public_directory(): void
     {
@@ -1014,10 +754,6 @@ MD;
 
     /**
      * targets에 라라벨 기본 탑재 파일이 모두 포함되는지 검증합니다.
-     *
-     * @effects update_targets_include_public_and_core_root_files
-     *
-     * @return void 반환값 없음
      */
     public function test_update_targets_includes_all_laravel_default_files(): void
     {
@@ -1044,10 +780,6 @@ MD;
 
     /**
      * targets에 코어 추가 파일이 모두 포함되는지 검증합니다.
-     *
-     * @effects update_targets_include_public_and_core_root_files
-     *
-     * @return void 반환값 없음
      */
     public function test_update_targets_includes_additional_core_files(): void
     {
@@ -1062,11 +794,6 @@ MD;
             'docs',
             // 한국어 README — 영문 README.md 와 짝을 이루는 공개 문서이므로 함께 배포되어야 한다.
             'README.ko.md',
-            // 빌드 보조 스크립트 폴더와 개발 대시보드 빌드 설정 — 배포본에 실리는데 대상에서 빠지면 업데이트 뒤에도 옛 것이 남는다.
-            'scripts',
-            'vite.config.devdashboard.js',
-            // 터미널 설치 명령 진입 파일(7.1.4) — artisan 과 같은 루트 실행 파일이라 빠지면 업데이트 뒤에도 옛 것이 남는다.
-            'g7-install',
         ];
 
         foreach ($coreAdditional as $item) {
@@ -1084,10 +811,6 @@ MD;
 
     /**
      * 현재 환경에서 시스템 요구사항 검증이 올바른 구조를 반환하는지 확인합니다.
-     *
-     * @effects checkSystemRequirements_returns_validity_structure
-     *
-     * @return void 반환값 없음
      */
     public function test_check_system_requirements_returns_correct_structure(): void
     {
@@ -1107,10 +830,6 @@ MD;
 
     /**
      * 추출 전략에 PharData가 포함되지 않는지 검증합니다 (tar 경로 길이 제한으로 제거됨).
-     *
-     * @effects extraction_strategies_exclude_phardata_and_use_zipball
-     *
-     * @return void 반환값 없음
      */
     public function test_build_extraction_strategies_does_not_include_phardata(): void
     {
@@ -1122,10 +841,6 @@ MD;
 
     /**
      * ZipArchive 사용 가능 시 전략에 포함되는지 검증합니다.
-     *
-     * @effects extraction_strategies_exclude_phardata_and_use_zipball
-     *
-     * @return void 반환값 없음
      */
     public function test_build_extraction_strategies_includes_ziparchive_when_available(): void
     {
@@ -1141,10 +856,6 @@ MD;
 
     /**
      * 모든 전략이 zipball 타입을 사용하는지 검증합니다.
-     *
-     * @effects extraction_strategies_exclude_phardata_and_use_zipball
-     *
-     * @return void 반환값 없음
      */
     public function test_build_extraction_strategies_all_use_zipball(): void
     {
@@ -1165,10 +876,6 @@ MD;
 
     /**
      * ZipArchive로 실제 ZIP 파일을 추출할 수 있는지 검증합니다.
-     *
-     * @effects extractWithZipArchive_extracts_zip_contents
-     *
-     * @return void 반환값 없음
      */
     public function test_extract_with_zip_archive(): void
     {
@@ -1202,10 +909,6 @@ MD;
 
     /**
      * 유효한 G7 패키지 디렉토리가 검증을 통과하는지 검증합니다.
-     *
-     * @effects validatePendingUpdate_requires_g7_config_with_version
-     *
-     * @return void 반환값 없음
      */
     public function test_validate_pending_update_passes_for_valid_g7_package(): void
     {
@@ -1224,10 +927,6 @@ MD;
 
     /**
      * config/app.php가 없는 디렉토리에서 예외가 발생하는지 검증합니다.
-     *
-     * @effects validatePendingUpdate_requires_g7_config_with_version
-     *
-     * @return void 반환값 없음
      */
     public function test_validate_pending_update_fails_for_non_g7_package(): void
     {
@@ -1244,10 +943,6 @@ MD;
 
     /**
      * config/app.php에 version 키가 없을 때 예외가 발생하는지 검증합니다.
-     *
-     * @effects validatePendingUpdate_requires_g7_config_with_version
-     *
-     * @return void 반환값 없음
      */
     public function test_validate_pending_update_fails_without_version_key(): void
     {
@@ -1273,7 +968,6 @@ MD;
      * @param  object  $object  대상 객체
      * @param  string  $method  메서드명
      * @param  array  $args  인수
-     * @return mixed 호출한 메서드의 반환값
      */
     private function invokeProtectedMethod(object $object, string $method, array $args = []): mixed
     {
@@ -1289,10 +983,6 @@ MD;
 
     /**
      * 평탄 루트 G7 ZIP 을 _pending 으로 추출하고 검증을 통과하는지 확인합니다.
-     *
-     * @effects extractZipToPending_returns_package_root_for_flat_and_wrapped_zip
-     *
-     * @return void 반환값 없음
      */
     public function test_extract_zip_to_pending_flat_layout(): void
     {
@@ -1324,10 +1014,6 @@ MD;
 
     /**
      * 래퍼 디렉토리(owner-repo-hash/) 를 자동 감지하여 그 내부를 반환하는지 검증합니다.
-     *
-     * @effects extractZipToPending_returns_package_root_for_flat_and_wrapped_zip
-     *
-     * @return void 반환값 없음
      */
     public function test_extract_zip_to_pending_unwraps_wrapper_directory(): void
     {
@@ -1359,10 +1045,6 @@ MD;
 
     /**
      * ZIP 파일이 존재하지 않을 때 RuntimeException 이 발생하는지 검증합니다.
-     *
-     * @effects extractZipToPending_rejects_missing_or_invalid_zip
-     *
-     * @return void 반환값 없음
      */
     public function test_extract_zip_to_pending_throws_when_zip_missing(): void
     {
@@ -1372,10 +1054,6 @@ MD;
 
     /**
      * ZIP 내용이 G7 패키지가 아닐 때 검증에서 RuntimeException 이 발생하는지 확인합니다.
-     *
-     * @effects extractZipToPending_rejects_missing_or_invalid_zip
-     *
-     * @return void 반환값 없음
      */
     public function test_extract_zip_to_pending_throws_for_invalid_package(): void
     {
@@ -1404,10 +1082,6 @@ MD;
 
     /**
      * applyUpdate가 소스에 없는 파일을 삭제하는지 검증합니다.
-     *
-     * @effects copyDirectory_remove_orphans_deletes_files_absent_from_source
-     *
-     * @return void 반환값 없음
      */
     public function test_apply_update_removes_orphan_files(): void
     {
@@ -1449,12 +1123,6 @@ MD;
      * 스킵되어 사용자가 수정한 현재 디스크 내용이 보존됩니다.
      *
      * 이슈 #64 핵심 회귀 가드 — `.htaccess` 커스텀 블록 소실 방지.
-     *
-     * @scenario apply_mode=incremental
-     *
-     * @effects test_apply_update_incremental_preserves_user_modified_unchanged_file
-     *
-     * @return void 반환값 없음
      */
     public function test_apply_update_incremental_preserves_user_modified_unchanged_file(): void
     {
@@ -1496,12 +1164,6 @@ MD;
     /**
      * 증분 모드: applyList 에 없는 신규 파일이 source 에 있어도 스킵됩니다.
      * (코어가 실제 추가했다면 applyList 에 담겼을 것 — 목록이 최종 권위)
-     *
-     * @scenario apply_mode=incremental
-     *
-     * @effects test_apply_update_incremental_applies_only_listed_files
-     *
-     * @return void 반환값 없음
      */
     public function test_apply_update_incremental_applies_only_listed_files(): void
     {
@@ -1536,12 +1198,6 @@ MD;
      * 새 번들(vendor-bundle.json/composer.json 갱신)이 포함돼도 활성 서버의
      * `_bundled` 가 갱신되지 않아 이후 `module:update` 무결성 검증이 실패하던
      * 회귀를 차단한다.
-     *
-     * @scenario apply_mode=incremental
-     *
-     * @effects test_incremental_apply_reflects_changed_bundled_extension_file
-     *
-     * @return void 반환값 없음
      */
     public function test_incremental_apply_reflects_changed_bundled_extension_file(): void
     {
@@ -1586,12 +1242,6 @@ MD;
     /**
      * 증분 모드는 orphan(소스에 없는 대상 파일)을 삭제하지 않습니다
      * (사용자가 추가한 신규 파일 보존).
-     *
-     * @scenario apply_mode=incremental
-     *
-     * @effects test_apply_update_incremental_does_not_remove_orphans
-     *
-     * @return void 반환값 없음
      */
     public function test_apply_update_incremental_does_not_remove_orphans(): void
     {
@@ -1617,12 +1267,6 @@ MD;
 
     /**
      * prune=true: 전체 덮어쓰기 + orphan 삭제 (기존 동작).
-     *
-     * @scenario apply_mode=prune
-     *
-     * @effects test_apply_update_prune_removes_orphans_and_overwrites_all
-     *
-     * @return void 반환값 없음
      */
     public function test_apply_update_prune_removes_orphans_and_overwrites_all(): void
     {
@@ -1655,12 +1299,6 @@ MD;
      *
      * 게시본은 릴리즈 소스에 없는 로컬 파생물이라 excludes(`build/ext`) 미등록 시
      * prune 이 삭제해, 업데이트 완료까지 정적 fast path 가 불필요하게 끊긴다.
-     *
-     * @scenario apply_mode=prune
-     *
-     * @effects applyUpdate_prune_preserves_static_publish_dir
-     *
-     * @return void 반환값 없음
      */
     public function test_apply_update_prune_preserves_static_publish_dir(): void
     {
@@ -1704,12 +1342,6 @@ MD;
      * 릴리즈 소스(`public/`)에는 런타임 symlink 가 없으므로 prune 이 orphan 으로 판정하여
      * `@unlink` 하던 결함으로 업로드 파일이 404 되던 회귀를 차단한다. 층1 화이트리스트
      * 전파(`public` → `preserveLinkPaths: ['storage']`) 합류 지점 검증.
-     *
-     * @scenario apply_mode=prune
-     *
-     * @effects applyUpdate_prune_preserves_public_storage_symlink
-     *
-     * @return void 반환값 없음
      */
     public function test_apply_update_prune_preserves_public_storage_symlink(): void
     {
@@ -1768,12 +1400,6 @@ MD;
 
     /**
      * applyList=null (백업 부재 fallback): prune 이 아니어도 전체 덮어쓰기로 회귀.
-     *
-     * @scenario apply_mode=fallback_no_backup
-     *
-     * @effects test_apply_update_null_apply_list_falls_back_to_full_overwrite
-     *
-     * @return void 반환값 없음
      */
     public function test_apply_update_null_apply_list_falls_back_to_full_overwrite(): void
     {
@@ -1837,10 +1463,6 @@ MD;
      *
      * 회귀 시나리오: beta.3 → beta.4 업그레이드에서 beta.3 의 targets 에 `lang-packs/_bundled`
      * 가 없어 신버전 zip 의 lang-packs 가 활성 디렉토리로 복사되지 않은 결함.
-     *
-     * @effects applyUpdate_auto_discovers_new_top_level_directories_from_source
-     *
-     * @return void 반환값 없음
      */
     public function test_apply_update_auto_discovers_new_top_level_directories(): void
     {
@@ -1911,10 +1533,6 @@ MD;
      * applied=['templates/_bundled'] 일 때 source 의 'templates' 자체를 신규 항목으로
      * 오인 → `copyDirectory(removeOrphans:true)` 가 base 의 활성 sirsoft-* 서브디렉토리를
      * orphan 으로 판정하여 삭제.
-     *
-     * @effects applyDiscoveredTopLevelPaths_does_not_remove_active_subdirs_when_source_only_has_bundled
-     *
-     * @return void 반환값 없음
      */
     public function test_apply_update_preserves_active_extension_dirs_when_source_only_has_bundled(): void
     {
@@ -1981,10 +1599,6 @@ MD;
      * 회귀 시나리오: targets 의 `{domain}/_bundled` 를 source 기준으로 sync 할 때,
      * source(신버전 코어 배포본)에 없는 사용자 디렉토리(`_bundled/my-project`) 가
      * orphan 으로 판정되어 삭제되던 결함 (공개 gnuboard/g7 #43 제보).
-     *
-     * @effects test_apply_update_preserves_user_added_bundled_subdir_all_domains
-     *
-     * @return void 반환값 없음
      */
     public function test_apply_update_preserves_user_added_bundled_subdir_all_domains(): void
     {
@@ -2075,12 +1689,6 @@ MD;
      * 기본(증분) 모드는 orphan 을 삭제하지 않으므로 본 회귀 가드는 prune 컨텍스트로 검증한다.
      * 기본 모드에서 stale 파일이 보존되는 동작은 별도 테스트
      * (test_apply_update_incremental_does_not_remove_orphans)가 커버한다.
-     *
-     * @scenario apply_mode=prune
-     *
-     * @effects test_apply_update_prune_still_cleans_stale_file_inside_bundled_extension, applyUpdate_targets_branch_continues_to_remove_orphans_within_bundled_subtree
-     *
-     * @return void 반환값 없음
      */
     public function test_apply_update_prune_still_cleans_stale_file_inside_bundled_extension(): void
     {
@@ -2139,10 +1747,6 @@ MD;
 
     /**
      * modules/, plugins/ 에도 동일 패턴 보존 확인.
-     *
-     * @effects applyDiscoveredTopLevelPaths_does_not_remove_active_subdirs_when_source_only_has_bundled
-     *
-     * @return void 반환값 없음
      */
     public function test_apply_update_preserves_active_module_and_plugin_dirs_same_pattern(): void
     {
@@ -2223,10 +1827,6 @@ MD;
 
     /**
      * 자동 발견 폴백이 protected_paths 와 user excludes 양쪽을 존중하는지 검증합니다.
-     *
-     * @effects applyUpdate_auto_discovery_skips_protected_paths_and_excludes
-     *
-     * @return void 반환값 없음
      */
     public function test_apply_update_auto_discovery_respects_protected_paths_and_excludes(): void
     {

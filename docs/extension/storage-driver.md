@@ -11,9 +11,6 @@
 4. 경로: modules/{identifier}/{category}/{path} (기본 disk: 'modules')
 5. Service 생성자에서 StorageInterface 타입힌트하면 자동 주입
 6. response() 메서드로 StreamedResponse 생성 (파일 다운로드/표시)
-7. 경로에 `..`·`.`·절대경로·역슬래시·`%2e`/`%2f`/`%5c`·빈 조각(`a//b`, 끝 `/`)이 섞이면 드라이버가 거부한다 — 요청값(임시 키 등)을 경로에 넣기 전에 형식을 검증한다
-8. deleteDirectory() 는 카테고리와 그 하위 폴더를 지운다(빈 디렉토리 인자 = 카테고리 전체, deleteAll() 과 같음) — 확장 최상위·디스크 루트는 어떤 API 로도 지우지 않는다
-9. 업로드 파일을 브라우저로 내보내는 응답은 반드시 `InlineMediaPolicy::harden($response, $mime, $filename)` 을 거친다 — 래스터 이미지만 인라인, 그 밖(SVG 포함)은 다운로드 + nosniff. "이미지인가" 판정은 `str_starts_with($mime, 'image/')` 가 아니라 `InlineMediaPolicy::isInlineImage()`
 ```
 
 ---
@@ -25,9 +22,6 @@
 - [모듈에서 사용하기](#모듈에서-사용하기)
 - [카테고리 네이밍 규칙](#카테고리-네이밍-규칙)
 - [예제 코드](#예제-코드)
-- [저장 파일명 확장자](#저장-파일명-확장자)
-- [스트림 계약 (StreamingStorageInterface)](#스트림-계약-streamingstorageinterface-715)
-- [트랜잭션 파일 보상 (StorageTransaction)](#트랜잭션-파일-보상-storagetransaction-715)
 - [마이그레이션 가이드](#마이그레이션-가이드)
 - [API 레퍼런스](#api-레퍼런스)
 - [트러블슈팅](#트러블슈팅)
@@ -129,23 +123,6 @@ storage/app/modules/sirsoft-ecommerce/images/category/2024/01/19/uuid.jpg
 storage/app/modules/sirsoft-ecommerce/settings/setting.json
 ```
 
-#### 경로 안전 규칙
-
-드라이버는 카테고리와 경로를 문자열로 이어 붙여 디스크에 넘기므로, 요청에서 온 값(임시 업로드 키·슬러그·코드 등)이 경로에 섞이면 `../..` 같은 값으로 다른 확장의 저장소까지 가리킬 수 있습니다. 드라이버가 다음을 막습니다.
-
-| 검사 | 거부되는 예 | 결과 |
-| --- | --- | --- |
-| 결합 전 조각 검사 | `../x`, `a/../..`, `.`, `/etc`, `C:/x`, `a\\b`, `..%2f..`, `a//b`, `dir/`, NUL | `App\Exceptions\UnsafeStoragePathException` (`getReason()` 으로 사유 코드) |
-| 결합 후 재확인 | 결과가 `{identifier}/{category}` 밖 | 같은 예외 |
-| 파괴 작업 보호 루트 | 확장 최상위(빈 카테고리)·디스크 루트 | 같은 예외 + 보안 로그 |
-| `url()` | 위 규칙에 걸린 경로 | 예외 대신 `null` (목록 직렬화 보호) |
-
-- 빈 경로 `''` 는 "카테고리 자신" 으로 허용됩니다(`files()`·`getBasePath()`·`deleteDirectory()` — 빈 디렉토리 인자는 그 카테고리 전체 삭제). 카테고리 자체는 비울 수 없고, 그보다 위(확장 최상위·디스크 루트)는 어떤 API 로도 지우지 않습니다.
-- 요청값을 경로에 넣는 확장은 **FormRequest 에서 형식을 먼저 좁힙니다**(예: 임시 업로드 키는 `uuid` 규칙). 드라이버 거부는 최후 방어선이라 사용자에게는 500 으로 보입니다.
-- 임시 디렉토리 정리는 **실제로 옮긴 파일이 있을 때만** 합니다. 조회 결과가 비었는데 요청값으로 정리 경로를 만들면 사용자 입력이 삭제 대상을 고르게 됩니다.
-- 코어 `modules`·`plugins`·`attachments`·`public` 디스크는 `local-safe` 드라이버로 `..` 상대경로 이동 자체를 거부합니다(`config/filesystems.php`).
-  `local-safe` 는 표준 `local` 드라이버의 설정(`root`·`url`·`visibility`·`permissions`·`read-only`·`prefix` 등)을 그대로 받습니다. `read-only`·`prefix` 는 Laravel 과 같이 `league/flysystem-read-only`·`league/flysystem-path-prefixing` 패키지가 있어야 하며, 없으면 무시하지 않고 설정 오류로 알립니다. 서명 URL 서빙(`serve`)은 지원하지 않습니다.
-
 ### 4. ModuleStorageDriver
 
 `StorageInterface`의 구현체로, 모듈별 격리된 저장소를 제공합니다.
@@ -229,7 +206,7 @@ class AttachmentService
     public function upload(string $slug, UploadedFile $file, ?int $postId = null): DynamicAttachment
     {
         // 경로 생성
-        $storedFilename = Str::uuid() . '.' . StoredFileExtension::resolve($file);
+        $storedFilename = Str::uuid() . '.' . $file->getClientOriginalExtension();
         $datePath = date('Y/m/d');
         $path = "{$slug}/{$datePath}/{$storedFilename}";
 
@@ -361,7 +338,7 @@ class CategoryImageService
     public function upload(UploadedFile $file, int $categoryId): CategoryImage
     {
         // 원본 이미지 저장
-        $storedFilename = Str::uuid() . '.' . StoredFileExtension::resolve($file);
+        $storedFilename = Str::uuid() . '.' . $file->getClientOriginalExtension();
         $datePath = date('Y/m/d');
         $path = "category/{$datePath}/{$storedFilename}";
 
@@ -466,7 +443,7 @@ class TempFileService
      */
     public function storeTempFile(string $sessionId, UploadedFile $file): string
     {
-        $filename = Str::uuid() . '.' . StoredFileExtension::resolve($file);
+        $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
         $path = "{$sessionId}/{$filename}";
 
         $this->storage->put('temp', $path, file_get_contents($file->getRealPath()));
@@ -479,7 +456,6 @@ class TempFileService
      */
     public function cleanupSession(string $sessionId): bool
     {
-        // $sessionId 가 요청에서 왔다면 FormRequest 에서 uuid 등으로 형식을 먼저 검증한다
         return $this->storage->deleteDirectory('temp', $sessionId);
     }
 
@@ -556,7 +532,6 @@ class AttachmentController extends BaseApiController
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Contracts\Extension\StorageInterface;
-use App\Helpers\InlineMediaPolicy;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Models\ProductImage;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductImageRepositoryInterface;
@@ -619,124 +594,10 @@ class ProductImageService
             return null;
         }
 
-        // 래스터 이미지만 인라인, 그 외(SVG 등)는 다운로드로 — 모든 응답에 nosniff
-        InlineMediaPolicy::harden($response, $image->mime_type, $image->original_filename);
-
         return $response;
     }
 }
 ```
-
----
-
-## 저장 파일명 확장자
-
-저장 파일명의 확장자는 **올린 파일 이름이 아니라 파일 내용**에서 정합니다. 코어의 `App\Support\Files\StoredFileExtension` 을 씁니다.
-
-```php
-use App\Support\Files\StoredFileExtension;
-
-// ✅ 올바름 — 내용에서 추론한 확장자 (소문자, 점 없음). 추론하지 못하면 두 번째 인자(기본 'bin')
-$storedFilename = Str::uuid() . '.' . StoredFileExtension::resolve($file);
-$storedFilename = Str::uuid() . '.' . StoredFileExtension::resolve($file, 'jpg'); // 이미지 전용 업로드
-
-// ❌ 금지 — 올린 이름의 확장자를 저장 경로에 그대로 사용
-$storedFilename = Str::uuid() . '.' . $file->getClientOriginalExtension();
-```
-
-이유: 업로드 검증(`image`·`mimes`·내용 판정 규칙)의 통과 기준은 파일 **내용**입니다. 내용은 정상 이미지이고 이름만 `.html`·`.js` 인 파일은 그 검증을 통과합니다. 그 이름의 확장자로 저장하면, 그 디스크를 직접 내보내는 웹서버·객체 저장소가 **확장자로** 형식을 정해 같은 출처에서 스크립트가 실행됩니다(공개 자산 디스크 운용에서 특히).
-
-지켜야 할 것:
-
-| 지점 | 규칙 |
-| --- | --- |
-| 업로드 요청 검증 | 이름 확장자(`extensions:`)와 내용(`mimes:`·`mimetypes:`·`AttachmentFileContent`)을 **둘 다** 봅니다. 한쪽만 보면 이름만 바꾼 파일이 통과합니다 |
-| 저장 파일명 | `StoredFileExtension::resolve($file)` |
-| 표시·내려받기 이름 | 원본 파일 이름 컬럼(`original_name` 등)을 그대로 씁니다 — 저장 확장자가 달라도 사용자가 받는 이름은 바뀌지 않습니다 |
-
-참고:
-
-- 텍스트 계열(csv·md·log 등)은 내용이 일반 텍스트로 추론되어 `.txt` 로 저장됩니다. 내려받는 이름은 원본 이름입니다.
-- 이름 확장자를 **허용 목록·내용과 교차 검증한 뒤** 저장에 쓰는 구현(코어 일반 첨부·본문 미디어·게시판 첨부)은 이 규칙의 예외입니다 — 검증이 이름과 내용의 짝을 이미 확인했기 때문입니다. 새 업로드 경로는 예외를 만들지 말고 `StoredFileExtension` 을 씁니다.
-
-### 레이아웃 첨부 허용 확장자
-
-레이아웃 편집기에서 올릴 수 있는 형식은 `App\Support\TemplateLayoutAttachmentPolicy::allowedExtensions($templateIdentifier)` 가 정합니다. 우선순위는 **템플릿 설정 > 코어 설정 > 기본값** 입니다.
-
-| 순서 | 출처 | 값 |
-| --- | --- | --- |
-| 1 | 기본값 | `jpg, jpeg, png, gif, webp` |
-| 2 | 코어 설정 | 환경설정 > 업로드 「레이아웃 첨부 허용 확장자」 (비어 있으면 기본값) |
-| 3 | 템플릿 설정 | 필터 훅 `core.template_layout_attachment.filter_allowed_extensions` |
-
-```php
-use App\Extension\HookManager;
-
-// 템플릿별 목록을 가진 쪽이 그 템플릿의 목록을 돌려준다. 다른 템플릿은 받은 값을 그대로 돌려준다.
-HookManager::addFilter(
-    'core.template_layout_attachment.filter_allowed_extensions',
-    function (array $extensions, string $templateIdentifier): array {
-        return $templateIdentifier === 'vendor-mytemplate' ? ['png', 'webp', 'pdf'] : $extensions;
-    }
-);
-```
-
-- 훅이 빈 목록을 돌려주면 코어 값으로 되돌아갑니다(업로드 전면 차단 방지).
-- 템플릿별 값은 코어 설정을 덮어쓰지 않고 이 훅으로만 끼어듭니다.
-- 이미지가 아닌 형식을 허용해도, 「공개 디스크로 내보낼 확장자」 밖의 파일은 공개 자산 디스크에 저장되지 않고 서버를 거치는 주소(내려받기)로 제공됩니다.
-
----
-
-## 스트림 계약 (StreamingStorageInterface, 7.1.5+)
-
-`StorageInterface` 는 파일 내용을 문자열로 주고받는다. 동영상처럼 큰 파일을 메모리에 통째로 올리지 않고 옮기거나 일부 구간만
-내보내려면 `App\Contracts\Extension\StreamingStorageInterface`(같은 계약을 확장)를 쓴다. 코어 드라이버 셋
-(`CoreStorageDriver`·`ModuleStorageDriver`·`PluginStorageDriver`)이 구현한다. 계약을 직접 구현한 제3자 드라이버를 깨지 않으려고
-`StorageInterface` 에 메서드를 더하지 않고 별도 계약으로 두었다 — 쓰는 쪽은 `instanceof StreamingStorageInterface` 로 확인하고,
-아니면 `get()`/`put()` 으로 내려간다.
-
-| 메서드 | 반환 | 설명 |
-| --- | --- | --- |
-| `readStream($category, $path)` | resource\|null | 읽기 스트림(없으면 null) |
-| `writeStream($category, $path, $stream)` | bool | 스트림 내용을 쓴다 |
-| `size($category, $path)` | int\|null | 바이트 크기 |
-| `localPath($category, $path)` | string\|null | 로컬 디스크면 실제 경로(원격·없음은 null) — `BinaryFileResponse` 로 Range 를 맡길 때 |
-| `readRangeStream($category, $path, $start, $end)` | resource\|null | 바이트 구간 [start, end] 을 시작 위치에 둔 스트림. s3 는 Range 로 그 구간만 받고, 그 밖은 시크(안 되면 앞부분을 읽어 버린다 — 큰 오프셋에서 느리다) |
-
-모든 경로는 `StorageInterface` 와 같은 경로 가드(순회·절대경로·인코딩 조각 거부)를 거친다.
-
-## 트랜잭션 파일 보상 (StorageTransaction, 7.1.5+)
-
-파일 저장소는 DB 트랜잭션에 참여하지 않는다. 저장 도중 파일을 옮기고 뒤 단계가 실패해 DB 가 되돌아가면 파일만 새 자리에 남는다.
-`App\Extension\Helpers\StorageTransaction` 은 「커밋되면 옮기고, 롤백되면 원래대로」를 보장한다.
-
-```php
-use App\Extension\Helpers\StorageTransaction;
-
-DB::transaction(function () use ($temp, $final) {
-    // 트랜잭션 안: 대상에 복사해 두고, 커밋되면 원본을 지운다. 롤백되면 사본을 지운다.
-    StorageTransaction::move($this->storage, 'attachments', $temp, $final);
-    $this->repository->update($row, ['path' => $final]);
-
-    // 임시 디렉토리 정리처럼 커밋된 뒤에 할 일
-    StorageTransaction::afterCommit(fn () => $this->storage->deleteDirectory('attachments', $tempDir));
-});
-```
-
-| 메서드 | 트랜잭션 안 | 커밋되면 | 롤백되면 | 트랜잭션 밖 |
-| --- | --- | --- | --- | --- |
-| `move($storage, $category, $from, $to, ?$connection)` | 대상에 복사(스트림 저장소면 스트림) | 원본 삭제 | 대상 삭제 | 즉시 이동 |
-| `put($storage, $category, $path, $content, ?$connection)` | 기록 | — | 삭제 | 즉시 |
-| `deleteAfterCommit($storage, $category, $path, ?$connection)` | 지우지 않음 | 삭제 | 그대로 | 즉시 삭제 |
-| `afterCommit(callable, ?$connection)` | — | 실행(예외는 경고 로그) | — | 즉시 |
-
-- 롤백 감지는 `TransactionRolledBack` 이벤트와 등록 깊이 비교다. 안쪽 트랜잭션(savepoint)이 먼저 커밋된 뒤 바깥이 롤백돼도 보상한다
-  — `DB::afterRollBack()` 은 이 경우 콜백을 실행하지 않는다(커밋된 안쪽 콜백을 버린다).
-- 보상·마무리 실패는 경고 로그(「파일 보상 실패 — 수동 정리 필요」·「파일 마무리 실패 — 수동 정리 필요」)만 남기고 예외를 올리지 않는다.
-  원래 예외를 덮지 않기 위해서다.
-- 복사하는 동안 원본과 사본이 함께 있어 용량을 잠깐 두 배로 쓴다. 커밋 직후 프로세스가 죽으면 원본이 남을 수 있다(경고 로그도 없이) —
-  확장의 임시 파일 정리 명령이 그 자리를 함께 정리하게 둔다.
-- 저장 트랜잭션 안 훅에서 파일을 다루는 리스너도 이 도구를 쓴다([훅 시스템 — 저장 트랜잭션 안 훅](hooks.md#저장-트랜잭션-안-훅)).
 
 ---
 
@@ -761,7 +622,7 @@ class AttachmentService
         $disk = config('sirsoft-board.attachment.disk', 'local');
 
         // 경로 생성
-        $storedFilename = Str::uuid() . '.' . StoredFileExtension::resolve($file);
+        $storedFilename = Str::uuid() . '.' . $file->getClientOriginalExtension();
         $datePath = date('Y/m/d');
         $path = "attachments/modules/sirsoft/board/{$slug}/{$datePath}/{$storedFilename}";
 
@@ -812,7 +673,7 @@ class AttachmentService
     public function upload(string $slug, UploadedFile $file, ?int $postId = null): DynamicAttachment
     {
         // 경로 생성 (모듈 prefix 제거)
-        $storedFilename = Str::uuid() . '.' . StoredFileExtension::resolve($file);
+        $storedFilename = Str::uuid() . '.' . $file->getClientOriginalExtension();
         $datePath = date('Y/m/d');
         $path = "{$slug}/{$datePath}/{$storedFilename}";  // 변경됨
 
@@ -1061,7 +922,7 @@ $files = $this->storage->files('temp', 'session-123');
 
 ### deleteDirectory()
 
-카테고리 하위 디렉토리와 그 안의 모든 파일을 삭제합니다.
+디렉토리와 그 하위의 모든 파일을 삭제합니다.
 
 **시그니처**:
 ```php
@@ -1070,10 +931,7 @@ public function deleteDirectory(string $category, string $directory = ''): bool
 
 **파라미터**:
 - `$category` (string): 카테고리
-- `$directory` (string): 카테고리 하위 디렉토리 경로. 빈 문자열이면 카테고리 루트(카테고리 전체 삭제 — `deleteAll()` 과 같은 결과)
-
-**예외**:
-- `UnsafeStoragePathException`: 경로 안전 규칙 위반, 또는 확장 최상위(빈 카테고리)·디스크 루트를 가리킬 때
+- `$directory` (string): 디렉토리 경로 (빈 문자열이면 카테고리 루트)
 
 **반환값**:
 - `bool`: 삭제 성공 여부
@@ -1083,7 +941,7 @@ public function deleteDirectory(string $category, string $directory = ''): bool
 // 특정 디렉토리 삭제
 $this->storage->deleteDirectory('temp', 'session-123');
 
-// 카테고리 전체 삭제 (deleteAll('temp') 와 같다)
+// 카테고리 전체 삭제
 $this->storage->deleteDirectory('temp', '');
 ```
 
@@ -1164,7 +1022,7 @@ $disk = $this->storage->getDisk();
 
 ### deleteAll()
 
-카테고리의 모든 파일을 삭제합니다(확장 최상위·디스크 루트는 지우지 않습니다).
+카테고리의 모든 파일을 삭제합니다.
 
 **시그니처**:
 ```php
@@ -1203,13 +1061,6 @@ public function response(string $category, string $path, string $filename, array
 **반환값**:
 
 - `StreamedResponse|null`: 파일 스트림 (파일이 없으면 null)
-
-> **업로드 파일을 브라우저로 내보낼 때 (필수)**: `response()` 는 `Content-Type` 을 행에 저장된 MIME 그대로 쓰고
-> 기본이 `inline` 이다. SVG·HTML 처럼 스크립트를 품을 수 있는 파일이 사이트 주소에서 인라인으로 열리면
-> 그 스크립트가 로그인 토큰에 닿는다. 그래서 받은 응답을 `App\Helpers\InlineMediaPolicy::harden($response, $mime, $filename)`
-> 에 통과시킨다 — 래스터 이미지(JPEG·PNG·GIF·WebP·AVIF·BMP)만 인라인을 유지하고, 그 밖은
-> `Content-Disposition: attachment` + CSP sandbox 로 바꾸며, 모든 응답에 `X-Content-Type-Options: nosniff` 를 붙인다.
-> 미리보기·썸네일 대상인지 가르는 판정도 `InlineMediaPolicy::isInlineImage($mime)` 을 쓴다(`image/` 접두사 판정 금지).
 
 **예시**:
 ```php
@@ -1730,9 +1581,8 @@ class AttachmentServiceTest extends TestCase
 
 ## 공개 자산 전용 디스크 분리 (직접 URL/CDN 서빙)
 
-완전 공개 자산(상품/카테고리/리뷰/에디터 이미지, 레이아웃 배경 이미지 등)을 S3+CDN 등
-원격 디스크에서 직접 URL 로 서빙하는 옵트인 기능입니다. 미설정 시 기존 PHP 스트리밍이
-100% 보존됩니다.
+완전 공개 자산(상품/카테고리/리뷰/에디터 이미지 등)을 S3+CDN 등 원격 디스크에서
+직접 URL 로 서빙하는 옵트인 기능입니다. 미설정 시 기존 PHP 스트리밍이 100% 보존됩니다.
 
 ### 설정 사슬
 
@@ -1758,51 +1608,6 @@ class AttachmentServiceTest extends TestCase
 - `none` 은 스트리밍 유지(확장 개별 설정에서는 전역이 CDN 이어도 강제 스트리밍)입니다.
 - 플러그인 비활성화로 디스크가 config 에서 사라지면(고아 디스크) 자동으로 스트리밍
   폴백합니다 — 저장값은 보존되므로 재활성화 시 되살아납니다.
-- 코어의 **레이아웃 첨부**(레이아웃 편집기에서 올리는 배경 이미지)도 이 배선 대상입니다.
-  이 카테고리의 서빙 라우트는 무인증 공개이고 검사가 템플릿 소속 확인 하나뿐이라
-  "완전 공개 자산" 에 해당합니다. 설정을 켠 뒤 업로드한 파일이 공개 자산 디스크에
-  저장되고, 그 행의 disk 가 지금 설정된 공개 자산 디스크와 **일치할 때만** 직접 URL 이
-  발급됩니다. 디스크에 공개 URL(`url`) 설정이 있다는 사실만으로는 직접 URL 을 발급하지
-  않습니다 — 그 설정은 "URL 문자열을 만들 수 있는가" 일 뿐 "익명 읽기가 되는가" 가
-  아니어서, 비공개 버킷에 공개 URL 을 적어 둔 구성에서는 발급된 주소가 403 이 됩니다.
-- 발급된 주소는 **레이아웃 저장의 외부 URL 차단 규칙을 통과해야** 합니다. 편집기 image 위젯은
-  그 주소를 props 에 그대로 넣고, 헤더 「로고 이미지」처럼 값 슬롯이 하나뿐인 컨트롤은
-  `style` 이 아니라 `props` 에 쓰므로 규칙의 스캔 대상입니다. 그래서 공개 서빙(프록시) URL 은
-  사이트 상대 경로(`/api/templates/.../file`)로 발급하고, 직접 URL 의 host(선언된 공개 자산
-  디스크)와 사이트 자기 host 는 규칙이 외부로 보지 않습니다(`App\Support\SiteAssetHosts`).
-  프록시 URL 을 절대 형태로 발급하면 그 저장이 422 로 거부될 뿐 아니라, 저장된 레이아웃이
-  발급 시점의 도메인·스킴에 묶여 주소가 바뀌면 그 이미지가 전부 깨집니다.
-
-### 공개 디스크로 내보낼 확장자 (7.1.6+)
-
-공개 자산 디스크의 파일은 서버(PHP)를 거치지 않고 직접 주소로 나가므로, 그대로 열려도 안전한 형식만 공개 디스크에 둡니다. 목록은 환경설정 > 드라이버 「공개 디스크로 내보낼 확장자」 (기본 `jpg, jpeg, png, gif, webp, avif`)이고, 판정은 `App\Support\PublicAssetDisk` 가 소유합니다.
-
-| 메서드 | 쓰는 곳 |
-| --- | --- |
-| `exportsExtension($ext)` | 확장자가 목록 안인지 |
-| `resolveForExtension($ext, $override)` | 저장할 공개 디스크 이름 — 디스크가 선언돼 있고 확장자가 목록 안일 때만, 아니면 null |
-| `storageForExtension($storage, $ext, $fallbackDisk)` | 공개 자산 디스크를 카테고리 단위로 주입받는 업로드 서비스용 — 목록 밖이면 확장의 기본 디스크 저장소를 돌려줍니다 |
-| `allowsDirectUrl($rowDisk, $path, $override)` | 행에 직접 주소를 발급해도 되는지 |
-
-확장의 `resolvePublicAssetDisk($override, $extension)` 도 두 번째 인자로 확장자를 받습니다(주지 않으면 종전과 같습니다).
-
-```php
-use App\Support\Files\StoredFileExtension;
-use App\Support\PublicAssetDisk;
-
-$extension = StoredFileExtension::resolve($file, 'jpg');
-
-// 목록 밖 확장자면 확장의 기본 디스크(서버를 거치는 주소)로 저장한다 — 업로드는 성공한다
-$storage = PublicAssetDisk::storageForExtension($this->storage, $extension, $defaultDisk);
-$storage->put('images', $path, file_get_contents($file->getRealPath()));
-
-$record->disk = $storage->getDisk(); // 행에는 실제로 저장한 디스크를 기록한다
-```
-
-- 목록 밖 확장자의 **기존 행**은 직접 주소 대신 서버를 거치는 주소로 내려갑니다. 파일은 옮기지 않습니다.
-- **저장 드라이버의 최후 관문**: 대상 디스크가 Laravel `public` 디스크이거나 코어 전역 공개 자산 디스크인데 경로의 확장자가 목록 밖이면 `put()`·`writeStream()` 이 `false` 를 반환하고 경고 로그를 남깁니다. 조용히 다른 디스크로 돌리지 않습니다 — 디스크 선택은 위 메서드로 서비스 계층이 합니다. 일반 첨부 디스크를 `public` 으로 돌려 둔 구성이라면 그 첨부 형식을 목록에 넣어야 저장됩니다. 예외로, 코어 전역 공개 자산 디스크가 일반 첨부 디스크(`attachment.disk`)와 같은 디스크이면(저장소와 공개 자산 스토리지를 둘 다 객체 저장소로 고른 구성) 관문이 막지 않습니다 — 그 디스크가 비공개 첨부의 정상 저장 위치이기 때문이며, 직접 주소는 이때도 목록 안 확장자에만 발급됩니다. `public` 디스크에는 이 예외가 없습니다. 확장 저장소(`getStorage()`)가 자기 기본 디스크(`getStorageDisk()`)에 쓸 때도 막지 않는다 — 그 디스크가 공개 자산 디스크와 같은 저장 공간이어도 확장의 비공개 파일이 원래 놓이는 자리이기 때문이다. 다른 디스크가 기본인 확장이 `withDisk()` 로 공개 자산 디스크에 쓰는 경우와 Laravel `public` 디스크는 그대로 막는다.
-- 운영자가 목록에 넣은 비이미지 형식은 직접 주소에서도 내려받기로만 열립니다(웹서버 규칙·객체 메타데이터). 웹서버·CDN 쪽 설정은 [requirements.md](../requirements.md) 의 「`/storage` 와 S3 공개 디스크 하드닝」 을 참고하세요.
-- S3 디스크에 쓸 때는 객체에 `Content-Type`(내용 기준)이 기록되고, 이미지가 아니면 `Content-Disposition: attachment` 가 함께 기록됩니다.
 
 ### 혼재 운용
 
@@ -1827,15 +1632,6 @@ $record->disk = $storage->getDisk(); // 행에는 실제로 저장한 디스크�
 | 객체가 익명 읽기 가능 (버킷 정책 `s3:GetObject` 공개 또는 CDN 공개 배포) | 화면의 그 이미지들이 전부 깨짐 (S3 는 `403 AccessDenied` 를 XML 로 응답) |
 | 공개 URL base(`S3 URL`)가 그 객체를 가리킴 | `url()` 이 null → 스트리밍 폴백(기능은 정상, CDN 이점만 없음) |
 
-### 켜기 전에 알아야 할 것
-
-| 항목 | 내용 |
-| --- | --- |
-| 이미 올라간 파일에도 소급 적용될 수 있다 | 기존 첨부 디스크와 공개 자산 디스크가 **같은 디스크**(예: 둘 다 S3)라면, 설정을 켜는 순간 켜기 이전에 올라간 첨부까지 직접 URL 로 바뀝니다. 행에 기록된 disk 값이 같아 신·구를 구분할 수단이 없기 때문입니다. 두 디스크를 다르게 두면(예: 첨부는 로컬, 공개 자산은 S3) 켠 뒤 올린 파일만 전환됩니다 |
-| 저장된 레이아웃에 주소가 그대로 남는다 | 설정을 켠 동안 배경 이미지를 지정해 저장하면 그 직접 URL 문자열이 레이아웃에 고정됩니다. 이후 설정을 끄거나 버킷을 비공개로 바꿔도 그 문자열은 자동으로 되돌아가지 않습니다(서버가 개입할 지점이 없습니다). 되돌리려면 편집기에서 이미지를 다시 선택해 저장해야 합니다 |
-| 첨부를 지워도 직접 URL 은 살아 있을 수 있다 | 직접 URL 은 첨부 기록과 무관하게 저장소의 파일을 가리킵니다. 스트리밍 방식에서는 기록을 지우면 그 주소가 곧바로 404 가 되었지만, 직접 URL 은 파일이 남아 있는 한 계속 열립니다. 접근을 확실히 끊으려면 저장소에서 파일 자체를 지워야 합니다 |
-| 확장 훅에 새로운 조합이 흘러간다 | `core.storage.filter_url` 훅을 `scope` 로 분기하는 확장은 이번부터 `scope='core'`, `identifier=null`, `category='template-layout-attachments'` 조합을 받습니다. 지금까지 코어에서 이 훅으로 URL 을 만드는 호출부가 없었으므로 이 조합은 처음 등장합니다 |
-
 관리자 화면의 썸네일은 교차 출처 공개 URL 을 `<img>` 로 직접 사용하므로 CORS 설정은
 필요하지 않습니다. 다만 그 URL 을 자바스크립트로 읽는 커스텀 확장을 만든다면 그때는
 버킷/CDN 에 CORS 규칙이 필요합니다.
@@ -1854,13 +1650,6 @@ $record->disk = $storage->getDisk(); // 행에는 실제로 저장한 디스크�
 권한 검사가 걸린 첨부파일(비밀글/회원 전용 게시판 첨부 등)은 배선 자체가 없습니다 —
 직접 URL 은 서버 스트리밍 경로의 권한 검사를 우회하므로, 완전 공개 자산 카테고리에만
 공개 자산 디스크를 적용합니다.
-
-**알려진 한계** — 상품 리뷰 이미지는 공개 자산으로 배선되어 있습니다. 리뷰를 노출에서
-숨김으로 바꾸면 목록·상세 응답에서 이미지가 사라지지만, 공개 자산 디스크를 켠 상태에서
-이미 발급된 직접 URL 을 알고 있는 사람은 그 주소로 파일에 계속 접근할 수 있습니다.
-직접 URL 은 저장소의 파일을 직접 가리키므로 응답에서 감추는 것만으로는 회수되지 않습니다.
-숨김을 접근 차단으로 쓰려면 그 카테고리에 공개 자산 디스크를 적용하지 않거나, 저장소에서
-파일 자체를 지워야 합니다.
 
 ---
 

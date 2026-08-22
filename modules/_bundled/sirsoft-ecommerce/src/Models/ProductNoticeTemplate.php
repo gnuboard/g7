@@ -2,8 +2,6 @@
 
 namespace Modules\Sirsoft\Ecommerce\Models;
 
-use App\Support\LocalizedValue;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -38,7 +36,7 @@ class ProductNoticeTemplate extends Model
     /**
      * 현재 로케일의 템플릿명 반환
      *
-     * @param  string|null  $locale  로케일 (기본값: 현재 앱 로케일)
+     * @param string|null $locale 로케일 (기본값: 현재 앱 로케일)
      * @return string
      */
     public function getLocalizedName(?string $locale = null): string
@@ -50,14 +48,14 @@ class ProductNoticeTemplate extends Model
             return '';
         }
 
-        return LocalizedValue::pick($name, $locale) ?? '';
+        return $name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? $name[array_key_first($name)] ?? '';
     }
 
     /**
      * 활성 템플릿만 조회하는 스코프
      *
-     * @param  Builder  $query  쿼리 빌더
-     * @return Builder 쿼리 빌더
+     * @param \Illuminate\Database\Eloquent\Builder $query 쿼리 빌더
+     * @return \Illuminate\Database\Eloquent\Builder 쿼리 빌더
      */
     public function scopeActive($query)
     {
@@ -67,8 +65,8 @@ class ProductNoticeTemplate extends Model
     /**
      * 정렬 순서대로 조회하는 스코프
      *
-     * @param  Builder  $query  쿼리 빌더
-     * @return Builder 쿼리 빌더
+     * @param \Illuminate\Database\Eloquent\Builder $query 쿼리 빌더
+     * @return \Illuminate\Database\Eloquent\Builder 쿼리 빌더
      */
     public function scopeOrdered($query)
     {

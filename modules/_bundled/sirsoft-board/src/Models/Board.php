@@ -5,7 +5,6 @@ namespace Modules\Sirsoft\Board\Models;
 use App\Casts\AsUnicodeJson;
 use App\Models\Permission;
 use App\Models\User;
-use App\Support\LocalizedValue;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -17,7 +16,6 @@ use Modules\Sirsoft\Board\Enums\BoardOrderBy;
 use Modules\Sirsoft\Board\Enums\OrderDirection;
 use Modules\Sirsoft\Board\Enums\ReplyDeletePolicy;
 use Modules\Sirsoft\Board\Enums\SecretMode;
-use Modules\Sirsoft\Board\Enums\SecretReplyVisibility;
 
 class Board extends Model
 {
@@ -37,10 +35,7 @@ class Board extends Model
         'use_reply' => ['label_key' => 'sirsoft-board::activity_log.fields.use_reply', 'type' => 'boolean'],
         'max_reply_depth' => ['label_key' => 'sirsoft-board::activity_log.fields.max_reply_depth', 'type' => 'number'],
         'reply_delete_policy' => ['label_key' => 'sirsoft-board::activity_log.fields.reply_delete_policy', 'type' => 'enum', 'enum' => ReplyDeletePolicy::class],
-        'secret_reply_visibility' => ['label_key' => 'sirsoft-board::activity_log.fields.secret_reply_visibility', 'type' => 'enum', 'enum' => SecretReplyVisibility::class],
         'use_report' => ['label_key' => 'sirsoft-board::activity_log.fields.use_report', 'type' => 'boolean'],
-        'use_scrap' => ['label_key' => 'sirsoft-board::activity_log.fields.use_scrap', 'type' => 'boolean'],
-        'use_comment_reaction' => ['label_key' => 'sirsoft-board::activity_log.fields.use_comment_reaction', 'type' => 'boolean'],
         'use_file_upload' => ['label_key' => 'sirsoft-board::activity_log.fields.use_file_upload', 'type' => 'boolean'],
         'max_file_size' => ['label_key' => 'sirsoft-board::activity_log.fields.max_file_size', 'type' => 'number'],
         'max_file_count' => ['label_key' => 'sirsoft-board::activity_log.fields.max_file_count', 'type' => 'number'],
@@ -71,8 +66,6 @@ class Board extends Model
 
     /**
      * 팩토리 생성
-     *
-     * @return BoardFactory 게시판 팩토리
      */
     protected static function newFactory(): BoardFactory
     {
@@ -96,8 +89,6 @@ class Board extends Model
 
     /**
      * 모델 부트
-     *
-     * @return void
      */
     protected static function boot(): void
     {
@@ -119,7 +110,6 @@ class Board extends Model
         'name',
         'slug',
         'is_active',
-        'display_order',
         'description',
 
         // 게시글 설정
@@ -139,12 +129,7 @@ class Board extends Model
         'use_reply',
         'max_reply_depth',
         'reply_delete_policy',
-        'secret_reply_visibility',
         'use_report',
-        'use_scrap',
-        'use_reaction',
-        'use_comment_reaction',
-        'active_reaction_types',
         'new_display_hours',
 
         // 입력 제한 설정
@@ -160,9 +145,6 @@ class Board extends Model
         'max_file_size',
         'max_file_count',
         'allowed_extensions',
-
-        // 본문 미디어 정책 (null: 첨부 정책을 따름, #883)
-        'content_media_policy',
 
         // 댓글 설정
         'comment_order',
@@ -186,8 +168,6 @@ class Board extends Model
 
     /**
      * 속성 캐스팅
-     *
-     * @return array<string, mixed> 캐스팅 정의
      */
     protected function casts(): array
     {
@@ -197,25 +177,16 @@ class Board extends Model
             'categories' => 'array',
             // 빈 배열을 NULL 로 정규화해 "확장자 미지정" 표현을 하나로 유지합니다.
             'allowed_extensions' => AsAllowedExtensions::class,
-            'content_media_policy' => 'array',
             'blocked_keywords' => 'array',
             'is_active' => 'boolean',
-            'display_order' => 'integer',
             'show_view_count' => 'boolean',
             'use_comment' => 'boolean',
             'use_reply' => 'boolean',
             'max_reply_depth' => 'integer',
             'reply_delete_policy' => ReplyDeletePolicy::class,
-            'secret_reply_visibility' => SecretReplyVisibility::class,
             // Post::isNew() 가 Carbon 시간 연산에 넘기는 값 — 조회 시점과 무관하게 정수를 보장한다.
             'new_display_hours' => 'integer',
             'use_report' => 'boolean',
-            'use_scrap' => 'boolean',
-            'use_reaction' => 'boolean',
-            // 댓글 반응 사용 여부 — use_reaction 의 하위 토글(둘 다 켜져야 댓글 반응이 열린다)
-            'use_comment_reaction' => 'boolean',
-            // 활성 반응 유형 code 목록 (문자열 배열, 예: ["like","dislike"])
-            'active_reaction_types' => 'array',
             'use_file_upload' => 'boolean',
             'notify_author' => 'boolean',
             'notify_admin_on_post' => 'boolean',
@@ -303,14 +274,14 @@ class Board extends Model
             return (string) $this->name;
         }
 
-        // 요청 언어 → 사이트 기본 언어 → 영어 → 첫 값 (#148)
-        return LocalizedValue::pick($this->name, $locale) ?? '';
+        return $this->name[$locale]
+            ?? $this->name[config('app.fallback_locale')]
+            ?? (! empty($this->name) ? array_values($this->name)[0] : '')
+            ?? '';
     }
 
     /**
      * 현재 로케일의 게시판명 반환
-     *
-     * @return Attribute 로케일 폴백이 적용된 게시판명 접근자
      */
     protected function localizedName(): Attribute
     {
@@ -333,14 +304,14 @@ class Board extends Model
             return (string) $this->description;
         }
 
-        // 요청 언어 → 사이트 기본 언어 → 영어 → 첫 값 (#148)
-        return LocalizedValue::pick($this->description, $locale) ?? '';
+        return $this->description[$locale]
+            ?? $this->description[config('app.fallback_locale')]
+            ?? (! empty($this->description) ? array_values($this->description)[0] : '')
+            ?? '';
     }
 
     /**
      * 현재 로케일의 게시판 설명 반환
-     *
-     * @return Attribute 로케일 폴백이 적용된 게시판 설명 접근자
      */
     protected function localizedDescription(): Attribute
     {

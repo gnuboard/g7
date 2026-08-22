@@ -17,18 +17,6 @@ class OrderPaymentFactory extends Factory
     protected $model = OrderPayment::class;
 
     /**
-     * 은행 코드-이름 쌍 (코드와 이름이 어긋난 행을 만들지 않도록 쌍으로 고른다)
-     *
-     * @var array<int, array{0: string, 1: string}>
-     */
-    private const BANKS = [
-        ['004', '국민은행'],
-        ['088', '신한은행'],
-        ['020', '우리은행'],
-        ['081', '하나은행'],
-    ];
-
-    /**
      * 기본 정의
      */
     public function definition(): array
@@ -39,8 +27,7 @@ class OrderPaymentFactory extends Factory
         return [
             'order_id' => Order::factory(),
             'payment_status' => PaymentStatusEnum::PAID,
-            // 결제 플러그인이 등록하는 실제 id 만 쓴다 (가짜 id 는 결제 상세·환불 화면이 PG 를 찾지 못한다)
-            'pg_provider' => $faker->randomElement(['tosspayments', 'kginicis', 'nhnkcp', 'nicepayments']),
+            'pg_provider' => $faker->randomElement(['tosspayments', 'inicis', 'nicepay']),
             'embedded_pg_provider' => null,
             'transaction_id' => $faker->uuid(),
             'merchant_order_id' => 'MO-'.strtoupper($faker->bothify('????-####-????')),
@@ -85,7 +72,7 @@ class OrderPaymentFactory extends Factory
             'refund_bank_name' => null,
             'refund_bank_account' => null,
             'refund_bank_holder' => null,
-            'receipt_url' => null,
+            'receipt_url' => $faker->optional()->url(),
             'payment_name' => $faker->words(3, true),
             'user_agent' => null,
             'payment_meta' => null,
@@ -155,17 +142,14 @@ class OrderPaymentFactory extends Factory
     public function directBank(): static
     {
         $faker = \fake();
-        [$bankCode, $bankName] = $faker->randomElement(self::BANKS);
 
         return $this->state(fn (array $attributes) => [
             'payment_method' => PaymentMethodEnum::DBANK->value,
             'payment_status' => PaymentStatusEnum::WAITING_DEPOSIT,
-            // 무통장입금은 PG 를 거치지 않는다 — OrderProcessingService::determinePgProvider() 와 같은 'manual'
-            'pg_provider' => 'manual',
+            'pg_provider' => '',
             'embedded_pg_provider' => null,
-            'transaction_id' => null,
-            'dbank_code' => $bankCode,
-            'dbank_name' => $bankName,
+            'dbank_code' => '088',
+            'dbank_name' => $faker->randomElement(['신한은행', '국민은행', '우리은행', '하나은행']),
             'dbank_account' => $faker->numerify('###-###-######'),
             'dbank_holder' => '(주)테스트몰',
             'depositor_name' => $faker->name(),
@@ -183,13 +167,12 @@ class OrderPaymentFactory extends Factory
     public function virtualAccount(): static
     {
         $faker = \fake();
-        [$bankCode, $bankName] = $faker->randomElement(self::BANKS);
 
         return $this->state(fn (array $attributes) => [
             'payment_method' => PaymentMethodEnum::VBANK->value,
             'payment_status' => PaymentStatusEnum::WAITING_DEPOSIT,
-            'vbank_code' => $bankCode,
-            'vbank_name' => $bankName,
+            'vbank_code' => '088',
+            'vbank_name' => $faker->randomElement(['신한은행', '국민은행', '우리은행']),
             'vbank_number' => $faker->numerify('###-###-######'),
             'vbank_holder' => $faker->name(),
             'vbank_due_at' => now()->addDays(7),

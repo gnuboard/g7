@@ -1,0 +1,37 @@
+{
+    "version": "1.0.0",
+    "routes": [
+        {
+            "path": "*/admin/memos",
+            "layout": "admin_memo_list",
+            "auth_required": true,
+            "meta": {
+                "title": "$t:gnuboard7-hello_module.admin.memos.index.title"
+            }
+        },
+        {
+            "path": "*/admin/memos/create",
+            "layout": "admin_memo_form",
+            "auth_required": true,
+            "meta": {
+                "title": "$t:gnuboard7-hello_module.admin.memos.form.title_create"
+            }
+        },
+        {
+            "path": "*/admin/memos/:id/edit",
+            "layout": "admin_memo_form",
+            "auth_required": true,
+            "meta": {
+                "title": "$t:gnuboard7-hello_module.admin.memos.form.title_edit"
+            }
+        },
+        {
+            "path": "*/memos",
+            "layout": "user_memo_list",
+            "auth_required": false,
+            "meta": {
+                "title": "$t:gnuboard7-hello_module.user.memos.index.title"
+            }
+        }
+    ]
+}

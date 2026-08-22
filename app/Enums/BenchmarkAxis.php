@@ -5,7 +5,7 @@ namespace App\Enums;
 /**
  * 성능 계측 축 Enum
  *
- * `g7:bench` 커맨드가 재는 다섯 가지 대상을 구분합니다. 프로파일 선언의 `type` 필드
+ * `g7:bench` 커맨드가 재는 네 가지 대상을 구분합니다. 프로파일 선언의 `type` 필드
  * 값 도메인이며, 축마다 필수 옵션과 실행기(`App\Benchmark\Axes\*`)가 다릅니다.
  */
 enum BenchmarkAxis: string
@@ -31,11 +31,6 @@ enum BenchmarkAxis: string
     case Batch = 'batch';
 
     /**
-     * 요청 1건을 새 프로세스에서 처음부터 처리하는 부팅 비용 (오토로드·부트스트랩·처리 시간 + 쿼리·캐시 조회 수)
-     */
-    case Boot = 'boot';
-
-    /**
      * 사람이 읽을 수 있는 라벨
      *
      * @return string 축 라벨
@@ -47,7 +42,6 @@ enum BenchmarkAxis: string
             self::Screen => '화면 응답',
             self::Write => '쓰기 작업',
             self::Batch => '배치 작업',
-            self::Boot => '요청 부팅',
         };
     }
 
@@ -68,7 +62,6 @@ enum BenchmarkAxis: string
             self::Screen => [['route', 'uri']],
             self::Write => [['callback']],
             self::Batch => [['command']],
-            self::Boot => [['uri']],
         };
     }
 
@@ -83,7 +76,7 @@ enum BenchmarkAxis: string
     public function mutatesByDefault(): bool
     {
         return match ($this) {
-            self::ListQuery, self::Screen, self::Boot => false,
+            self::ListQuery, self::Screen => false,
             self::Write, self::Batch => true,
         };
     }

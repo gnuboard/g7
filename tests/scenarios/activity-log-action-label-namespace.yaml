@@ -35,7 +35,6 @@ effects:
   - core_origin_action_unaffected_by_module_lang
   - extension_origin_resolved_from_loggable_type_fqcn
   - extension_origin_resolved_from_properties_when_loggable_null
-  - legacy_rows_resolve_origin_from_description_key  # 출처 주입 이전 행 — 설명 키 네임스페이스로 추론 (#138 실측 ⑧)
   - explicit_extension_origin_in_properties_preserved_over_auto_resolve
   - core_listener_does_not_inject_extension_origin_into_properties
   - module_listener_auto_injects_extension_origin
@@ -48,13 +47,8 @@ effects:
   - extension_manager_handles_internal_underscore_via_pascal_to_snake
   - extension_manager_returns_null_for_app_namespace
   - extension_manager_returns_null_for_too_short_namespace
-  - extension_manager_returns_null_for_unknown_namespace
-  - extension_manager_returns_null_for_empty_fqcn
-  - extension_manager_ignores_leading_backslash
-  - extension_manager_round_trips_directory_to_namespace
   - ja_locale_module_lang_resolved_via_module_lang_pack
   - ja_locale_core_lang_resolved_via_core_lang_pack
-  - module_lang_action_labels_defined_for_module_origin
 
 test_files:
   - tests/Unit/Extension/ExtensionManagerResolveByFqcnTest.php

@@ -6,7 +6,6 @@ require_once __DIR__.'/../ModuleTestCase.php';
 
 use Illuminate\Support\Facades\Hash;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
-use PHPUnit\Framework\Attributes\Group;
 
 /**
  * FormRequest 검증 규칙 테스트
@@ -44,28 +43,18 @@ use PHPUnit\Framework\Attributes\Group;
  * DestroyPostRequest:
  * - verification_token 배열 주입 → 422
  * - 비회원 글 올바른 password 로 삭제 → 200
+ *
+ * @group board
+ * @group feature
+ * @group formrequest
  */
-#[Group('board')]
-#[Group('feature')]
-#[Group('formrequest')]
 class FormRequestValidationTest extends BoardTestCase
 {
-    /**
-     * 이 테스트가 쓰는 게시판 slug 를 돌려줍니다.
-     *
-     * @return string 게시판 slug
-     */
     protected function getTestBoardSlug(): string
     {
         return 'form-request-validation';
     }
 
-    /**
-     * 이 테스트에 맞춘 게시판 속성을 반환합니다.
-     *
-     * @param  string  $slug  게시판 slug
-     * @return array 게시판 속성
-     */
     protected function getDefaultBoardAttributes(string $slug): array
     {
         return [
@@ -85,11 +74,6 @@ class FormRequestValidationTest extends BoardTestCase
         ];
     }
 
-    /**
-     * 테스트 환경을 준비합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -97,33 +81,16 @@ class FormRequestValidationTest extends BoardTestCase
         $this->grantUserRolePermissions(['posts.read', 'posts.write', 'comments.write', 'attachments.upload']);
     }
 
-    /**
-     * 게시글 작성 API 주소를 돌려줍니다.
-     *
-     * @return string API 주소
-     */
     private function postUrl(): string
     {
         return "/api/modules/sirsoft-board/boards/{$this->board->slug}/posts";
     }
 
-    /**
-     * 댓글 작성 API 주소를 돌려줍니다.
-     *
-     * @param  int  $postId  게시글 ID
-     * @return string API 주소
-     */
     private function commentUrl(int $postId): string
     {
         return "/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}/comments";
     }
 
-    /**
-     * 게시글 신고 API 주소를 돌려줍니다.
-     *
-     * @param  int  $postId  게시글 ID
-     * @return string API 주소
-     */
     private function reportUrl(int $postId): string
     {
         return "/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}/reports";
@@ -135,10 +102,6 @@ class FormRequestValidationTest extends BoardTestCase
 
     /**
      * title 누락 → 422
-     *
-     * @effects store_post_fails_without_title
-     *
-     * @return void 반환값 없음
      */
     public function test_store_post_fails_without_title(): void
     {
@@ -150,10 +113,6 @@ class FormRequestValidationTest extends BoardTestCase
 
     /**
      * content 누락 → 422
-     *
-     * @effects store_post_fails_without_content
-     *
-     * @return void 반환값 없음
      */
     public function test_store_post_fails_without_content(): void
     {
@@ -165,10 +124,6 @@ class FormRequestValidationTest extends BoardTestCase
 
     /**
      * title 최소 길이 미만 (1자) → 422
-     *
-     * @effects store_post_fails_with_title_too_short
-     *
-     * @return void 반환값 없음
      */
     public function test_store_post_fails_with_title_too_short(): void
     {
@@ -181,10 +136,6 @@ class FormRequestValidationTest extends BoardTestCase
 
     /**
      * content_mode 유효하지 않은 값 → 422
-     *
-     * @effects store_post_fails_with_invalid_content_mode
-     *
-     * @return void 반환값 없음
      */
     public function test_store_post_fails_with_invalid_content_mode(): void
     {
@@ -198,10 +149,6 @@ class FormRequestValidationTest extends BoardTestCase
 
     /**
      * 정상 데이터 → 201
-     *
-     * @effects store_post_succeeds_with_valid_data
-     *
-     * @return void 반환값 없음
      */
     public function test_store_post_succeeds_with_valid_data(): void
     {
@@ -218,10 +165,6 @@ class FormRequestValidationTest extends BoardTestCase
 
     /**
      * content 누락 → 422
-     *
-     * @effects store_comment_fails_without_content
-     *
-     * @return void 반환값 없음
      */
     public function test_store_comment_fails_without_content(): void
     {
@@ -235,10 +178,6 @@ class FormRequestValidationTest extends BoardTestCase
 
     /**
      * post_id 누락 → 422
-     *
-     * @effects store_comment_fails_without_post_id
-     *
-     * @return void 반환값 없음
      */
     public function test_store_comment_fails_without_post_id(): void
     {
@@ -250,10 +189,6 @@ class FormRequestValidationTest extends BoardTestCase
 
     /**
      * 비회원이 author_name 누락 → 422
-     *
-     * @effects store_comment_guest_fails_without_author_name
-     *
-     * @return void 반환값 없음
      */
     public function test_store_comment_guest_fails_without_author_name(): void
     {
@@ -269,10 +204,6 @@ class FormRequestValidationTest extends BoardTestCase
 
     /**
      * 비회원이 password 누락 → 422
-     *
-     * @effects store_comment_guest_fails_without_password
-     *
-     * @return void 반환값 없음
      */
     public function test_store_comment_guest_fails_without_password(): void
     {
@@ -288,10 +219,6 @@ class FormRequestValidationTest extends BoardTestCase
 
     /**
      * 비회원 정상 댓글 데이터 → 201
-     *
-     * @effects store_comment_guest_succeeds_with_valid_data
-     *
-     * @return void 반환값 없음
      */
     public function test_store_comment_guest_succeeds_with_valid_data(): void
     {
@@ -311,10 +238,6 @@ class FormRequestValidationTest extends BoardTestCase
 
     /**
      * reason_type 누락 → 422
-     *
-     * @effects store_report_fails_without_reason_type
-     *
-     * @return void 반환값 없음
      */
     public function test_store_report_fails_without_reason_type(): void
     {
@@ -329,10 +252,6 @@ class FormRequestValidationTest extends BoardTestCase
 
     /**
      * reason_detail 누락 → 422
-     *
-     * @effects store_report_fails_without_reason_detail
-     *
-     * @return void 반환값 없음
      */
     public function test_store_report_fails_without_reason_detail(): void
     {
@@ -347,10 +266,6 @@ class FormRequestValidationTest extends BoardTestCase
 
     /**
      * reason_type 유효하지 않은 값 → 422
-     *
-     * @effects store_report_fails_with_invalid_reason_type
-     *
-     * @return void 반환값 없음
      */
     public function test_store_report_fails_with_invalid_reason_type(): void
     {
@@ -366,10 +281,6 @@ class FormRequestValidationTest extends BoardTestCase
 
     /**
      * 정상 신고 데이터 → 201
-     *
-     * @effects store_report_succeeds_with_valid_data
-     *
-     * @return void 반환값 없음
      */
     public function test_store_report_succeeds_with_valid_data(): void
     {
@@ -389,10 +300,6 @@ class FormRequestValidationTest extends BoardTestCase
 
     /**
      * title 최소 길이 미만으로 수정 → 422
-     *
-     * @effects update_post_fails_with_title_too_short
-     *
-     * @return void 반환값 없음
      */
     public function test_update_post_fails_with_title_too_short(): void
     {
@@ -407,10 +314,6 @@ class FormRequestValidationTest extends BoardTestCase
 
     /**
      * 게시글 수정에 password 배열 주입 → 422 (string 규칙 차단)
-     *
-     * @effects post_update_rejects_array_password
-     *
-     * @return void 반환값 없음
      */
     public function test_post_update_rejects_array_password(): void
     {
@@ -432,10 +335,6 @@ class FormRequestValidationTest extends BoardTestCase
 
     /**
      * 댓글 삭제에 password 배열 주입 → 422 (string 규칙 차단)
-     *
-     * @effects comment_destroy_rejects_array_password
-     *
-     * @return void 반환값 없음
      */
     public function test_comment_destroy_rejects_array_password(): void
     {
@@ -452,10 +351,6 @@ class FormRequestValidationTest extends BoardTestCase
 
     /**
      * 댓글 삭제에 최소 길이(4) 미만 password → 422
-     *
-     * @effects comment_destroy_rejects_too_short_password
-     *
-     * @return void 반환값 없음
      */
     public function test_comment_destroy_rejects_too_short_password(): void
     {
@@ -473,10 +368,6 @@ class FormRequestValidationTest extends BoardTestCase
     /**
      * 회원 본인 댓글은 password 없이 삭제 가능 → 200
      * (password 는 nullable — 비회원 소유권 확인용으로만 요구)
-     *
-     * @effects member_comment_destroy_without_password_succeeds
-     *
-     * @return void 반환값 없음
      */
     public function test_member_comment_destroy_without_password_succeeds(): void
     {
@@ -498,10 +389,6 @@ class FormRequestValidationTest extends BoardTestCase
 
     /**
      * 게시글 삭제에 verification_token 배열 주입 → 422 (string 규칙 차단)
-     *
-     * @effects post_destroy_rejects_array_verification_token
-     *
-     * @return void 반환값 없음
      */
     public function test_post_destroy_rejects_array_verification_token(): void
     {
@@ -518,10 +405,6 @@ class FormRequestValidationTest extends BoardTestCase
 
     /**
      * 비회원 글은 올바른 password 로 삭제 가능 → 200
-     *
-     * @effects guest_post_destroy_with_valid_password_succeeds
-     *
-     * @return void 반환값 없음
      */
     public function test_guest_post_destroy_with_valid_password_succeeds(): void
     {

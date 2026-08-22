@@ -3,14 +3,10 @@
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Contracts\Extension\StorageInterface;
-use App\Extension\Helpers\StorageTransaction;
 use App\Extension\HookManager;
-use App\Helpers\InlineMediaPolicy;
-use App\Support\Files\StoredFileExtension;
 use App\Support\ImageResizer;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Modules\Sirsoft\Ecommerce\Enums\ReviewStatus;
@@ -70,19 +66,15 @@ class ProductReviewImageService
         // 필터 훅 - 파일 데이터 변형 (압축, 리사이즈 등 확장 포인트)
         $file = HookManager::applyFilters('sirsoft-ecommerce.review-image.filter_upload_file', $file);
 
-        $extension = StoredFileExtension::resolve($file, 'jpg');
-        $storedFilename = Str::uuid().'.'.$extension;
+        $storedFilename = Str::uuid().'.'.$file->getClientOriginalExtension();
         $path = "reviews/{$review->id}/{$storedFilename}";
 
         // 환경설정 > 업로드의 최대 가로/세로·품질 적용 (코어 설정이 모든 업로드 경로에 동일 적용)
         app(ImageResizer::class)->resizeInPlace($file->getRealPath(), $file->getMimeType());
 
-        // 공개 자산 디스크를 주입받았어도 「공개 디스크로 내보낼 확장자」 밖이면 모듈 기본 디스크에 저장한다.
-        $storage = $this->storageForUpload($extension);
+        $this->storage->put('images', $path, file_get_contents($file->getRealPath()));
 
-        $storage->put('images', $path, file_get_contents($file->getRealPath()));
-
-        $disk = $storage->getDisk();
+        $disk = $this->storage->getDisk();
 
         // 이미지 크기 정보 추출
         $width = null;
@@ -134,16 +126,13 @@ class ProductReviewImageService
     {
         HookManager::doAction('sirsoft-ecommerce.review-image.before_delete', $image);
 
-        // 레코드 삭제와 파일 삭제를 한 트랜잭션으로 묶고 파일은 커밋 뒤에 지운다 — 종전에는 파일을 먼저 지우고 레코드를
-        // 지워, 레코드 삭제가 실패하면 깨진 이미지가 남았다 (StorageTransaction, #883). 행 disk 기준
-        $result = DB::transaction(function () use ($image) {
-            $rowStorage = $this->storageForRow($image->disk);
-            if ($rowStorage->exists('images', $image->path)) {
-                StorageTransaction::deleteAfterCommit($rowStorage, 'images', $image->path);
-            }
+        // 스토리지에서 파일 삭제 — 행 disk 기준
+        $rowStorage = $this->storageForRow($image->disk);
+        if ($rowStorage->exists('images', $image->path)) {
+            $rowStorage->delete('images', $image->path);
+        }
 
-            return $this->repository->delete($image);
-        });
+        $result = $this->repository->delete($image);
 
         Log::info('리뷰 이미지 삭제 완료', ['image_id' => $image->id]);
 
@@ -214,9 +203,6 @@ class ProductReviewImageService
 
             return null;
         }
-
-        // 인라인 표시는 래스터 이미지만, 그 외(SVG 등)는 다운로드로 — 모든 응답에 nosniff (KVE-2026-2366)
-        InlineMediaPolicy::harden($response, $image->mime_type, $image->original_filename);
 
         return $response;
     }

@@ -146,24 +146,6 @@ if (file_exists($configCacheFile)) {
 }
 
 /*
-| 시작 때 지우는 것만으로는 부족하다 — 테스트가 도는 사이 같은 클론에서 확장을 반영하면
-| (`plugin:update`·`module:update`·`template:update` 는 config 캐시를 다시 굽는다) 그 뒤에 만들어지는
-| 테스트 앱이 캐시된 개발 config 로 부팅해 `.env.testing` 을 무시한다. 그러면 테스트가 개발 DB 에
-| 붙고 확장 저장소 디스크가 `storage/app` 을 가리킨다(2026-10-08 00:50 실측: 게시판 테스트 정리 쿼리가
-| 개발 DB 에서 실행됨, 2026-10-07 23:38 실측: GDPR 설정 테스트가 개발 사이트 설정 파일을 덮음).
-| 라우트 캐시(아래)와 같이 경로를 테스트 전용 위치로 돌려, 운영 캐시가 언제 다시 구워지든 읽지 않게 한다.
-| 자식 프로세스도 env 를 물려받으므로 같은 격리를 받는다.
-*/
-$testingConfigCache = 'storage/framework/testing/config.php';
-putenv('APP_CONFIG_CACHE='.$testingConfigCache);
-$_ENV['APP_CONFIG_CACHE'] = $testingConfigCache;
-$_SERVER['APP_CONFIG_CACHE'] = $testingConfigCache;
-if (file_exists(__DIR__.'/../'.$testingConfigCache)) {
-    // 테스트 안에서 config:cache 를 구운 잔재 — 다음 실행이 그 값으로 부팅하지 않게 지운다
-    unlink(__DIR__.'/../'.$testingConfigCache);
-}
-
-/*
 |--------------------------------------------------------------------------
 | 라우트 캐시 격리 (테스트 환경 보장)
 |--------------------------------------------------------------------------
@@ -192,60 +174,6 @@ putenv('APP_ROUTES_CACHE='.$testingRoutesCache);
 $_ENV['APP_ROUTES_CACHE'] = $testingRoutesCache;
 $_SERVER['APP_ROUTES_CACHE'] = $testingRoutesCache;
 
-/*
-|--------------------------------------------------------------------------
-| 패키지 매니페스트 캐시 격리 (테스트 환경 보장)
-|--------------------------------------------------------------------------
-|
-| `bootstrap/cache/packages.php` · `services.php` 도 라우트 캐시와 같이 **경로를 돌린다.**
-| 코어 업데이트 흐름은 이 두 파일을 지우고 다시 만드는 코드를 여럿 갖고 있고(spawn 직전 선정리,
-| `bootstrap/app.php` 의 업데이트 트리 자가 치유, `clearAllCaches()` 의 `package:discover`), 그
-| 코드를 태우는 테스트 가운데 몇은 `proc_open` 으로 **진짜 자식 프로세스**를 띄운다. 자식은 부모의
-| 테스트 격리(임시 base path·목)를 하나도 물려받지 못하고 env 만 물려받으므로, 경로를 env 로
-| 돌려 두는 것이 부모와 자식을 한 번에 격리하는 유일한 수단이다. 돌리지 않으면 테스트를 한 번
-| 돌릴 때마다 개발 클론의 실제 매니페스트가 지워지고 다시 만들어진다 — 오늘은 재생성 내용이 같아
-| 무해하지만, 그 사이 다른 프로세스가 부팅하면 매번 재빌드를 겪고, 테스트가 실제 파일을 건드리는
-| 구조 자체가 `.env` 삭제 사고와 같은 부류다.
-|
-| 자기 경로를 따로 쓰는 테스트(`CoreUpdateCommandStalePackageManifestTest` 등)는 여기 값을
-| 원값으로 보관·복원하므로 그대로 동작한다.
-|
-*/
-$testingManifestDir = __DIR__.'/../storage/framework/testing';
-if (! is_dir($testingManifestDir)) {
-    @mkdir($testingManifestDir, 0777, true);
-}
-foreach ([
-    'APP_PACKAGES_CACHE' => 'storage/framework/testing/packages.php',
-    'APP_SERVICES_CACHE' => 'storage/framework/testing/services.php',
-] as $manifestEnvKey => $manifestRelativePath) {
-    putenv($manifestEnvKey.'='.$manifestRelativePath);
-    $_ENV[$manifestEnvKey] = $manifestRelativePath;
-    $_SERVER[$manifestEnvKey] = $manifestRelativePath;
-}
-unset($testingManifestDir, $manifestEnvKey, $manifestRelativePath);
-
-/*
-|--------------------------------------------------------------------------
-| 캐시 스토어 격리 (테스트 환경 보장)
-|--------------------------------------------------------------------------
-|
-| 테스트 캐시는 프로세스 전용 `array` 로 고정한다. `phpunit.xml` 도 array 를 지정하지만
-| `php artisan test --env=testing` 은 `.env.testing` 을 부모에서 적재해 자식 프로세스에 실제
-| 환경변수로 넘기므로 그 값(`CACHE_STORE=file`)이 이긴다 — phpunit 의 `<env force>` 는
-| `$_ENV`·putenv 만 바꾸고 Laravel 이 먼저 읽는 `$_SERVER` 는 그대로다.
-|
-| file 스토어는 개발 사이트와 같은 `storage/framework/cache/data`·같은 접두사다. 개발 쪽에서
-| 확장을 설치·업데이트·활성화하면 확장 활성 목록(`ext.plugins.active_identifiers`, 24시간)과
-| 미들웨어 인덱스가 거기 캐시되고, 테스트가 그것을 읽어 테스트 DB 에 없는 플러그인을 활성으로
-| 본다. 그 플러그인 미들웨어가 요청에 붙는데 allowlist 밖이라 ServiceProvider 바인딩은 없어,
-| HTTP 를 타는 테스트가 전부 500 으로 실패했다(2026-09-30, 토스 결제 테스트 35건).
-|
-*/
-putenv('CACHE_STORE=array');
-$_ENV['CACHE_STORE'] = 'array';
-$_SERVER['CACHE_STORE'] = 'array';
-
 // Composer 오토로더 로드
 $loader = require __DIR__.'/../vendor/autoload.php';
 
@@ -260,10 +188,9 @@ define('G7_EXTENSION_AUTOLOAD_REGISTERED', true);
 | _bundled 디렉토리의 확장을 활성 디렉토리보다 먼저 등록(prepend)합니다.
 | 이를 통해 _bundled에서 직접 테스트를 실행할 수 있습니다.
 |
-| 실행 순서 (확장마다):
-| 1. _bundled PSR-4 addPsr4(prepend=true) → 우선 검색 (+ composer files)
-| 2. _bundled classmap (module.php/plugin.php) require_once → 선점
-|    진입 클래스가 자기 소스 클래스를 상속할 수 있으므로 PSR-4 등록 뒤에 읽는다 (#159)
+| 실행 순서:
+| 1. _bundled classmap (module.php/plugin.php) require_once → 선점
+| 2. _bundled PSR-4 addPsr4(prepend=true) → 우선 검색
 | 3. autoload-extensions.php → 활성 디렉토리는 후순위
 |
 */
@@ -283,6 +210,19 @@ if (is_dir($bundledModulesDir)) {
 
         // _bundled 식별자 기록 (classmap 중복 방지용)
         $bundledExtensionIdentifiers[] = $moduleDir;
+
+        // Classmap 선점 (module.php)
+        // class_exists 가드: artisan 초기 부팅에서 활성 디렉토리 버전이 로드되었을 수 있음
+        $modulePhp = $modulePath.'/module.php';
+        if (file_exists($modulePhp)) {
+            $parts = explode('-', $moduleDir);
+            $vendor = ucfirst($parts[0]);
+            $modName = isset($parts[1]) ? str_replace('_', '', ucwords($parts[1], '_')) : '';
+            $moduleClass = "Modules\\{$vendor}\\{$modName}\\Module";
+            if (! class_exists($moduleClass, false)) {
+                require_once $modulePhp;
+            }
+        }
 
         // composer.json에서 오토로드 정보 읽기
         $composerJson = $modulePath.'/composer.json';
@@ -312,20 +252,6 @@ if (is_dir($bundledModulesDir)) {
                 }
             }
         }
-
-        // Classmap 선점 (module.php) — PSR-4 등록 뒤에 읽는다: 진입 클래스가 자기 소스 클래스를 상속하면
-        // 그 전에는 부모를 못 찾아 부트스트랩이 죽는다 (#159)
-        // class_exists 가드: artisan 초기 부팅에서 활성 디렉토리 버전이 로드되었을 수 있음
-        $modulePhp = $modulePath.'/module.php';
-        if (file_exists($modulePhp)) {
-            $parts = explode('-', $moduleDir);
-            $vendor = ucfirst($parts[0]);
-            $modName = isset($parts[1]) ? str_replace('_', '', ucwords($parts[1], '_')) : '';
-            $moduleClass = "Modules\\{$vendor}\\{$modName}\\Module";
-            if (! class_exists($moduleClass, false)) {
-                require_once $modulePhp;
-            }
-        }
     }
 }
 
@@ -341,6 +267,19 @@ if (is_dir($bundledPluginsDir)) {
 
         // _bundled 식별자 기록 (classmap 중복 방지용)
         $bundledExtensionIdentifiers[] = $pluginDir;
+
+        // Classmap 선점 (plugin.php)
+        // class_exists 가드: artisan 초기 부팅에서 활성 디렉토리 버전이 로드되었을 수 있음
+        $pluginPhp = $pluginPath.'/plugin.php';
+        if (file_exists($pluginPhp)) {
+            $parts = explode('-', $pluginDir);
+            $vendor = ucfirst($parts[0]);
+            $plgName = isset($parts[1]) ? str_replace('_', '', ucwords($parts[1], '_')) : '';
+            $pluginClass = "Plugins\\{$vendor}\\{$plgName}\\Plugin";
+            if (! class_exists($pluginClass, false)) {
+                require_once $pluginPhp;
+            }
+        }
 
         // composer.json에서 오토로드 정보 읽기
         $composerJson = $pluginPath.'/composer.json';
@@ -368,20 +307,6 @@ if (is_dir($bundledPluginsDir)) {
                         require_once $absoluteFile;
                     }
                 }
-            }
-        }
-
-        // Classmap 선점 (plugin.php) — PSR-4 등록 뒤에 읽는다: 진입 클래스가 자기 소스 클래스를 상속하면
-        // 그 전에는 부모를 못 찾아 부트스트랩이 죽는다 (#159)
-        // class_exists 가드: artisan 초기 부팅에서 활성 디렉토리 버전이 로드되었을 수 있음
-        $pluginPhp = $pluginPath.'/plugin.php';
-        if (file_exists($pluginPhp)) {
-            $parts = explode('-', $pluginDir);
-            $vendor = ucfirst($parts[0]);
-            $plgName = isset($parts[1]) ? str_replace('_', '', ucwords($parts[1], '_')) : '';
-            $pluginClass = "Plugins\\{$vendor}\\{$plgName}\\Plugin";
-            if (! class_exists($pluginClass, false)) {
-                require_once $pluginPhp;
             }
         }
     }
@@ -507,18 +432,6 @@ foreach (['modules', 'plugins'] as $extensionType) {
                 foreach (require $psr4File as $prefix => $paths) {
                     if (! $isExtensionOwnSymbol($prefix)) {
                         $extensionVendorLoader->addPsr4($prefix, $paths);
-                    }
-                }
-            }
-
-            // PSR-0 으로만 등록하는 패키지도 있다(HTMLPurifier). 최적화하지 않은 오토로드 — 번들 vendor
-            // 압축본을 풀어 깐 vendor 가 그렇다 — 에서는 classmap 이 비어 있어, 이 맵을 읽지 않으면
-            // 그 패키지 클래스가 통째로 오토로드되지 않는다.
-            $psr0File = $vendorDir.'/composer/autoload_namespaces.php';
-            if (file_exists($psr0File)) {
-                foreach (require $psr0File as $prefix => $paths) {
-                    if (! $isExtensionOwnSymbol($prefix)) {
-                        $extensionVendorLoader->add($prefix, $paths);
                     }
                 }
             }

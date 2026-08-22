@@ -7,54 +7,12 @@ return [
         'inactive' => 'Inactive',
         'blocked' => 'Blocked',
         'withdrawn' => 'Withdrawn',
-        'pending_verification' => 'Pending verification',
-        'dormant' => 'Dormant',
-    ],
-
-    // Password policy (#736) — read by Enum label()
-    'password_expiry_policy' => [
-        'inherit' => 'Follow role and site settings',
-        'apply' => 'Apply',
-        'exempt' => 'Exempt',
-    ],
-    'password_expiry_scope' => [
-        'all' => 'All members',
-        'admin' => 'Administrators only',
-        'selected' => 'Selected roles and members only',
-    ],
-    'password_expiry_action' => [
-        'force' => 'Require change to sign in',
-        'remind' => 'Allow changing later',
-    ],
-    'password_change_reason' => [
-        'expired' => 'Password expired',
-        'admin_assigned' => 'Password set by an administrator',
-    ],
-    'password_change_source' => [
-        'self' => 'Changed by the member',
-        'reset' => 'Password reset',
-        'admin' => 'Set by an administrator',
-        'login_required' => 'Changed at sign-in',
-        'install' => 'Installation',
-        'register' => 'Registration',
-        'admin_create' => 'Created by an administrator',
-        'console' => 'Server terminal reset',
-    ],
-
-    // Password expiry target list (admin settings > security)
-    'password_expiry_target' => [
-        'admin' => 'Administrator',
-        'member' => 'Member',
-        'column_type' => 'Type',
-        'column_expires_due' => 'Expires on',
-        'column_expires_at' => 'Expired on',
     ],
 
     // Language labels
     'language' => [
         'ko' => '한국어',
         'en' => 'English',
-        'ja' => '日本語',
     ],
 
     // User management messages
@@ -85,12 +43,8 @@ return [
     'invalid_language' => 'Unsupported language.',
     'activity_log_success' => 'Activity log retrieved successfully.',
     'activity_log_failed' => 'Failed to retrieve activity log.',
-    'bulk_status_updated' => 'Status of :count user updated successfully.|Status of :count users updated successfully.',
+    'bulk_status_updated' => ':count user(s) status updated successfully.',
     'bulk_update_status_failed' => 'Failed to update user status in bulk.',
-    'bulk_roles_updated' => 'Changed roles of :count user. (:skipped skipped)|Changed roles of :count users. (:skipped skipped)',
-    'bulk_roles_updated_with_unchanged' => 'Changed roles of :count user. (:skipped skipped, :unchanged already up to date)|Changed roles of :count users. (:skipped skipped, :unchanged already up to date)',
-    'bulk_roles_failed' => 'Failed to change user roles in bulk.',
-    'bulk_roles_ceiling' => 'Nothing was changed because the selection includes a role with permissions you cannot grant.',
     'last_admin_role_cannot_remove' => 'Cannot remove the admin role because you are the only user with the admin role in the system.',
 
     // Avatar messages
@@ -119,9 +73,6 @@ return [
     'withdraw_admin_forbidden' => 'Administrator account cannot be withdrawn.',
     'withdraw_failed_unknown' => 'Withdrawal failed due to an unknown error.',
 
-    // Reason for targets excluded from a bulk status change
-    'bulk_status_out_of_scope' => 'Members outside your management scope cannot be changed.',
-
     // Validation messages
     'validation' => [
         'page_integer' => 'Page number must be an integer.',
@@ -149,10 +100,9 @@ return [
         'email_max' => 'Email must not exceed 255 characters.',
         'password_required' => 'Password is required.',
         'password_confirmed' => 'Password confirmation does not match.',
-        'password_min' => 'Password must be at least :min characters.',
+        'password_min' => 'Password must be at least 8 characters.',
         'current_password_required' => 'Current password is required.',
         'current_password_invalid' => 'Current password is incorrect.',
-        'password_expiry_policy_invalid' => 'Password expiry must be inherit, apply, or exempt.',
         'password_confirmation_required' => 'Password confirmation is required.',
         'language_required' => 'Please select a language.',
         'language_invalid' => 'Unsupported language.',
@@ -192,66 +142,5 @@ return [
         'search_keyword_required' => 'Please enter a keyword to search.',
         'exclude_user_id_uuid' => 'Exclude user ID must be a valid UUID.',
         'exclude_user_id_exists' => 'The specified user does not exist.',
-        // User list filters (#705)
-        'list_status_array' => 'The account status condition must be a list.',
-        'list_status_invalid' => 'Invalid account status.',
-        'list_role_ids_array' => 'The role condition must be a list.',
-        'list_role_ids_invalid' => 'The selected role does not exist.',
-        'list_admin_scope_invalid' => 'Invalid administrator condition.',
-        'list_lock_state_invalid' => 'Invalid account lock condition.',
-        'list_date_invalid' => 'Invalid date format.',
-        'list_never_logged_in_invalid' => 'The never-logged-in condition must be true or false.',
-        'list_status_changed_type_invalid' => 'Invalid status change type.',
-        'list_verified_invalid' => 'Invalid verification condition.',
-        'list_ext_filters_invalid' => 'Invalid extension filter format.',
-        'list_ext_filters_max' => 'Up to 20 extension filter conditions are allowed.',
-    ],
-    // Validation attribute names for the user list filters — read by UserListRequest::attributes() (#705)
-    'list_filter_attributes' => [
-        'status' => 'account status',
-        'role_ids' => 'role',
-        'admin_scope' => 'administrator',
-        'lock_state' => 'account lock',
-        'start_date' => 'sign-up start date',
-        'end_date' => 'sign-up end date',
-        'date_filter' => 'sign-up period',
-        'last_login_start' => 'last login start date',
-        'last_login_end' => 'last login end date',
-        'never_logged_in' => 'never logged in',
-        'dormant_start' => 'dormant start date',
-        'dormant_end' => 'dormant end date',
-        'status_changed_type' => 'status change type',
-        'status_changed_start' => 'status change start date',
-        'status_changed_end' => 'status change end date',
-        'language' => 'language',
-        'country' => 'country',
-        'email_verified' => 'email verification',
-        'identity_verified' => 'identity verification',
-        'ext_filters' => 'extension filter',
-        'filters' => 'search conditions',
-        'filter_field' => 'search field',
-        'filter_value' => 'search keyword',
-        'filter_operator' => 'search operator',
-        'sort_by' => 'sort field',
-        'sort_order' => 'sort order',
-    ],
-
-    // `user:reset-password` (server terminal password reset) output
-    'commands' => [
-        'reset_password' => [
-            'not_found' => 'Member not found: :email',
-            'no_source' => 'No new password. Use the G7_RESET_PASSWORD environment variable, --password-file or --generate, or run it in a terminal.',
-            'file_unreadable' => 'Cannot read the password file: :path',
-            'ask' => 'New password',
-            'ask_confirm' => 'Confirm new password',
-            'mismatch' => 'The two passwords do not match.',
-            'done' => 'Reset the password of :email.',
-            'unlocked' => 'Cleared failed sign-in attempts and the lock.',
-            'sessions_revoked' => 'Signed out of every device.',
-            'notified' => 'Sent the password change notification (per notification settings).',
-            'change_required' => 'The member must change the password at the next sign-in.',
-            'generated_once' => 'The password below will not be shown again — move it somewhere safe now.',
-            'failed' => 'Could not reset the password (nothing was changed): :reason',
-        ],
     ],
 ];

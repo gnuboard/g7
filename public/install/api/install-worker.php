@@ -75,9 +75,8 @@ while (ob_get_level() > 0) {
     ob_end_clean();
 }
 
-// 타임아웃 설정 — 작업 루프(runInstallationTasks)가 작업마다 같은 값으로 다시 건다.
-// 여기서는 첫 작업 전 준비 구간만 덮는다. 전체 설치 시간에는 제한이 없다.
-set_time_limit((int) INSTALLER_TASK_TIME_LIMIT);
+// 타임아웃 설정 (10분)
+set_time_limit(600);
 
 // 클라이언트 연결 끊김 시 즉시 워커 종료 (이슈 #319 부수 발견)
 // 폴링 풀백과 SSE 워커 동시 실행으로 인한 race condition 차단.
@@ -95,20 +94,6 @@ error_reporting(E_ALL);
 addLog('=== Install Worker SSE Started ===');
 addLog('Client IP: '.($_SERVER['REMOTE_ADDR'] ?? 'unknown'));
 
-// 설치 계획 검증 — 이 워커는 세션을 쓰지 않으므로(세션 잠금 방지) 요청자를 세션으로 확인할 수 없다.
-// 대신 소유 게이트를 통과한 install-process 만 쓸 수 있는 running 상태 + 계획 서명을 확인한다.
-// 서명이 없거나 어긋나면 어떤 작업도 실행하지 않는다.
-$planVerdict = installer_plan_verify(getInstallationState(), readInstallerRuntime());
-if ($planVerdict !== 'ok') {
-    addLog('=== SSE Worker rejected — install plan not verified ('.$planVerdict.') ===');
-    setProgressEmitter(new SseEmitter);
-    sendSSEEvent('aborted', [
-        'message' => lang('error_install_plan_unverified'),
-        'reason' => 'plan_unverified',
-    ]);
-    exit;
-}
-
 // 워커 lock 획득 — 다른 워커가 활동 중이면 진입 거부 (race 차단).
 // SSE 응답으로 거부 사유 전달 후 종료.
 $lockResult = acquireWorkerLock(15);
@@ -125,8 +110,8 @@ if (! $lockResult['acquired']) {
 $workerId = $lockResult['worker_id'];
 addLog('Worker lock acquired: '.$workerId.' (reason: '.$lockResult['reason'].')');
 
-// 워커 종료 처리 — lock 해제 + fatal(실행 시간 초과 등)이면 설치를 failed 로 기록하고 error 이벤트 송출
-register_shutdown_function('installerHandleWorkerShutdown', $workerId, 'sse');
+// 워커 종료 시 lock 자동 해제
+register_shutdown_function('releaseWorkerLock', $workerId);
 
 // SSE emitter 등록 후 task runner 실행
 setProgressEmitter(new SseEmitter($workerId));

@@ -2,13 +2,9 @@
 
 namespace Modules\Sirsoft\Ecommerce\Models;
 
-use App\Support\LocalizedValue;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Collection;
-use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 
 /**
  * 배송정책 모델
@@ -80,31 +76,6 @@ class ShippingPolicy extends Model
     }
 
     /**
-     * 클레임 회수지 관계
-     *
-     * 배송정책 × 클레임 유형(교환/반품)마다 한 건씩 등록된다.
-     *
-     * @return HasMany 클레임 회수지 모델과의 관계
-     */
-    public function claimAddresses(): HasMany
-    {
-        return $this->hasMany(ShippingPolicyClaimAddress::class, 'shipping_policy_id');
-    }
-
-    /**
-     * 특정 클레임 유형의 회수지를 반환합니다.
-     *
-     * @param  string|ClaimTypeEnum  $claimType  클레임 유형
-     * @return ShippingPolicyClaimAddress|null 회수지 (미등록이면 null)
-     */
-    public function getClaimAddress(string|ClaimTypeEnum $claimType): ?ShippingPolicyClaimAddress
-    {
-        $value = $claimType instanceof ClaimTypeEnum ? $claimType->value : $claimType;
-
-        return $this->claimAddresses->firstWhere('claim_type', ClaimTypeEnum::from($value));
-    }
-
-    /**
      * 목록 화면이 그리는 컬럼만 실은 국가별 설정 관계.
      *
      * 배송정책 목록과 상품 등록/수정의 배송정책 선택기는 국가 칩·배송방법·부과정책·배송비만
@@ -134,7 +105,7 @@ class ShippingPolicy extends Model
      * 같은 정책의 요약이 조회 경로에 따라 달라지지 않는다 — 목록은 비활성 배지를 그리려고
      * 비활성 행까지 싣기 때문에, 로더의 필터에 요약의 정확성을 맡길 수 없다.
      *
-     * @return Collection 활성 국가별 설정 컬렉션
+     * @return \Illuminate\Support\Collection 활성 국가별 설정 컬렉션
      */
     protected function resolveActiveCountrySettings()
     {
@@ -160,7 +131,7 @@ class ShippingPolicy extends Model
         $locale = $locale ?? app()->getLocale();
         $name = $this->name;
 
-        return LocalizedValue::pick($name, $locale) ?? '';
+        return $name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? $name[array_key_first($name)] ?? '';
     }
 
     /**
@@ -176,11 +147,6 @@ class ShippingPolicy extends Model
 
         if ($settings->isEmpty()) {
             return '';
-        }
-
-        // 배송 국가가 하나뿐이면 국가 코드를 붙이지 않는다 — 국내만 배송하는 쇼핑몰에 「KR: 」은 쓸모없는 표기다
-        if ($settings->count() === 1) {
-            return $settings->first()->getFeeSummary();
         }
 
         $summaries = $settings->map(function (ShippingPolicyCountrySetting $setting) {
@@ -293,8 +259,8 @@ class ShippingPolicy extends Model
     /**
      * 활성 정책 스코프
      *
-     * @param  Builder  $query
-     * @return Builder
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
     {
@@ -304,9 +270,9 @@ class ShippingPolicy extends Model
     /**
      * countrySettings 의 shipping_method 가 주어진 값 중 하나 이상에 매치되는 정책만 반환하는 스코프.
      *
-     * @param  Builder  $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @param  array<int, string>  $methods  필터링할 배송방법 코드 배열
-     * @return Builder
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeWithShippingMethods($query, array $methods)
     {
@@ -322,9 +288,9 @@ class ShippingPolicy extends Model
     /**
      * countrySettings 의 charge_policy 가 주어진 값 중 하나 이상에 매치되는 정책만 반환하는 스코프.
      *
-     * @param  Builder  $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @param  array<int, string>  $policies  필터링할 부과정책 코드 배열
-     * @return Builder
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeWithChargePolicies($query, array $policies)
     {
@@ -340,9 +306,9 @@ class ShippingPolicy extends Model
     /**
      * 다국어 정책명(name JSON 컬럼) 의 모든 활성 locale 에서 검색어를 LIKE 매칭하는 스코프.
      *
-     * @param  Builder  $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @param  string  $search  검색 키워드 (빈 문자열이면 노필터)
-     * @return Builder
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeSearchByName($query, string $search)
     {
@@ -365,10 +331,11 @@ class ShippingPolicy extends Model
     /**
      * 정렬 스코프
      *
-     * @param  Builder  $query
-     * @param  string  $sortBy  sort by
-     * @param  string  $sortOrder  sort order
-     * @return Builder
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder
+      *
+      * @param  string  $sortBy  sort by
+      * @param  string  $sortOrder  sort order
      */
     public function scopeOrderByField($query, string $sortBy = 'created_at', string $sortOrder = 'desc')
     {

@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Enums\AttachmentSourceType;
-use App\Helpers\InlineMediaPolicy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -63,8 +62,6 @@ class Attachment extends Model
 
     /**
      * 모델 부팅 시 해시 자동 생성
-     *
-     * @return void
      */
     protected static function boot(): void
     {
@@ -93,8 +90,6 @@ class Attachment extends Model
 
     /**
      * 다형성 관계 - 첨부 대상
-     *
-     * @return MorphTo
      */
     public function attachmentable(): MorphTo
     {
@@ -103,8 +98,6 @@ class Attachment extends Model
 
     /**
      * 업로더 관계
-     *
-     * @return BelongsTo
      */
     public function creator(): BelongsTo
     {
@@ -147,15 +140,13 @@ class Attachment extends Model
     }
 
     /**
-     * 인라인 표시 가능한 이미지 여부 확인
+     * 이미지 여부 확인
      *
-     * 스크립트를 품을 수 있는 SVG 는 이미지가 아닌 파일로 취급한다 (InlineMediaPolicy — KVE-2026-2366).
-     *
-     * @return bool 래스터 이미지 여부
+     * @return bool 이미지 여부
      */
     public function getIsImageAttribute(): bool
     {
-        return InlineMediaPolicy::isInlineImage($this->mime_type);
+        return str_starts_with($this->mime_type, 'image/');
     }
 
     /**

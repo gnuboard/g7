@@ -2,11 +2,7 @@
 
 namespace App\Extension\Storage;
 
-use App\Contracts\Extension\StreamingStorageInterface;
-use App\Exceptions\UnsafeStoragePathException;
-use App\Extension\Storage\Concerns\GuardsPublicDiskWrites;
-use App\Extension\Storage\Concerns\GuardsStoragePaths;
-use App\Extension\Storage\Concerns\ProvidesStreamingAccess;
+use App\Contracts\Extension\StorageInterface;
 use App\Extension\Storage\Concerns\ResolvesPublicUrl;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -17,11 +13,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  * 플러그인별로 격리된 파일 저장소를 제공합니다.
  * 경로 패턴: storage/app/plugins/{identifier}/{category}/{path}
  */
-class PluginStorageDriver implements StreamingStorageInterface
+class PluginStorageDriver implements StorageInterface
 {
-    use GuardsPublicDiskWrites;
-    use GuardsStoragePaths;
-    use ProvidesStreamingAccess;
     use ResolvesPublicUrl;
 
     /**
@@ -44,37 +37,24 @@ class PluginStorageDriver implements StreamingStorageInterface
     {
         $this->identifier = $identifier;
         $this->disk = $disk;
-        $this->homeDisk = $disk;
     }
 
     /**
      * 카테고리와 경로를 조합하여 전체 경로를 생성합니다.
      *
-     * 카테고리·경로 조각을 결합 전에 검사하고, 결합 결과가 `{identifier}/{category}`
-     * 하위인지 다시 확인합니다 (GuardsStoragePaths).
-     *
      * @param  string  $category  카테고리
      * @param  string  $path  상대 경로
      * @return string 전체 경로 ({identifier}/{category}/{path})
-     *
-     * @throws UnsafeStoragePathException 빈 카테고리, 순회·절대경로·인코딩 조각, 기준 밖 결과
      */
     private function resolvePath(string $category, string $path): string
     {
-        if ($category === '') {
-            // 빈 카테고리는 확장 루트를 가리킨다 — 다른 거부와 같이 보안 로그를 남긴다
-            $this->rejectStoragePath('empty_category', 'category', $category);
+        $basePath = "{$this->identifier}/{$category}";
+
+        if (empty($path)) {
+            return $basePath;
         }
 
-        $this->assertSafeRelativePath($category, 'category');
-        $this->assertSafeRelativePath($path, 'path');
-
-        $basePath = "{$this->identifier}/{$category}";
-        $fullPath = $path === '' ? $basePath : "{$basePath}/{$path}";
-
-        $this->assertResolvedWithinBase($fullPath, $basePath);
-
-        return $fullPath;
+        return "{$basePath}/{$path}";
     }
 
     /**
@@ -83,8 +63,6 @@ class PluginStorageDriver implements StreamingStorageInterface
      * 코어 update 의 `FilePermissionHelper::chownRecursiveDetailed` 가
      * `respectPreservationMarker=true` 로 호출되면 본 마커가 있는 디렉토리 서브트리
      * 전체를 chown 비대상으로 자동 skip → 시드 시점 owner/perms 영구 보존.
-     *
-     * @return void
      */
     private function ensurePreservationMarker(): void
     {
@@ -105,14 +83,9 @@ class PluginStorageDriver implements StreamingStorageInterface
     public function put(string $category, string $path, mixed $content): bool
     {
         $fullPath = $this->resolvePath($category, $path);
-
-        if ($this->refusesPublicDiskWrite($category, $fullPath)) {
-            return false;
-        }
-
         $this->ensurePreservationMarker();
 
-        return Storage::disk($this->disk)->put($fullPath, $content, $this->objectStorageWriteOptions($fullPath, $content));
+        return Storage::disk($this->disk)->put($fullPath, $content);
     }
 
     /**
@@ -174,22 +147,10 @@ class PluginStorageDriver implements StreamingStorageInterface
 
     /**
      * {@inheritDoc}
-     *
-     * 빈 디렉토리 인자는 인터페이스 계약대로 카테고리 루트를 지웁니다. 그보다 위(확장 루트·디스크 루트)는
-     * 지우지 않습니다 — 순회 경로는 resolvePath() 가 먼저 거부합니다.
-     *
-     * @throws UnsafeStoragePathException 디스크·확장 루트 대상 또는 안전하지 않은 경로
      */
     public function deleteDirectory(string $category, string $directory = ''): bool
     {
         $fullPath = $this->resolvePath($category, $directory);
-
-        $this->assertNotDestructiveOnRoot(
-            $fullPath,
-            [$this->identifier],
-            'deleteDirectory',
-            $category
-        );
 
         return Storage::disk($this->disk)->deleteDirectory($fullPath);
     }
@@ -214,18 +175,10 @@ class PluginStorageDriver implements StreamingStorageInterface
 
     /**
      * {@inheritDoc}
-     *
-     * 카테고리 전체를 지웁니다(deleteDirectory($category, '') 와 같음). 디스크·확장 루트는 지우지 않습니다.
-     *
-     * @throws UnsafeStoragePathException 디스크·확장 루트 대상
      */
     public function deleteAll(string $category): bool
     {
-        $fullPath = $this->resolvePath($category, '');
-
-        $this->assertNotDestructiveOnRoot($fullPath, [$this->identifier], 'deleteAll', $category);
-
-        return Storage::disk($this->disk)->deleteDirectory($fullPath);
+        return $this->deleteDirectory($category, '');
     }
 
     /**

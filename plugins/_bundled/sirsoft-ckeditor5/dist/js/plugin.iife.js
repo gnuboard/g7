@@ -1,1 +1,372 @@
-var SirsoftCkeditor5=function(G){"use strict";var Jt=Object.defineProperty;var Xt=(G,C,T)=>C in G?Jt(G,C,{enumerable:!0,configurable:!0,writable:!0,value:T}):G[C]=T;var be=(G,C,T)=>Xt(G,typeof C!="symbol"?C+"":C,T);const C=new Map;let T=!1;function ot(){return T}function Ce(e){T=e}const Y=new Map;function Q(e,t){const n=Y.get(e)??[];n.push(t),Y.set(e,n)}function Ee(e){(Y.get(e)??[]).forEach(t=>{try{t.stop()}catch{}}),Y.delete(e)}const rt=400,ke=1e4;function oe(e,t){const{name:n,locale:r,multilingual:o}=t;let a=t.seedPath??location.pathname,i=null,s=!1,f=null,c,l=0;const p=()=>{if(t.readExternal)return t.readExternal();const u=window.G7Core?.state?.getLocal?.()?.form;if(!u||!n)return;const w=o?u[n]?.[r]:u[n];return typeof w=="string"?w:void 0};c=a!==location.pathname&&t.seedValue!==void 0?t.seedValue:p();const g=d=>{location.pathname!==a&&(a=location.pathname,f=new Set([d]),c!==void 0&&f.add(c),i!==null&&f.add(i),i=null,s=!0,l=Date.now())},m=window.setInterval(()=>{let d;try{d=e.getData()}catch{window.clearInterval(m);return}g(d);const u=p();if(u===void 0){s&&Date.now()-l>ke&&(s=!1,f=null);return}if(s){if(f?.has(u)){Date.now()-l>ke&&(s=!1,f=null,c=u);return}if(u!==d){Ce(!0);try{e.setData(u)}finally{Ce(!1)}}s=!1,f=null,i=u,c=u;return}if(c=u,u===i||u===d){i=u;return}},rt);return{shouldEmit:()=>{if(!s)try{g(e.getData())}catch{}return!s},noteEmitted:d=>{i=d},stop:()=>window.clearInterval(m)}}const at="43.3.1",re="sirsoft-ckeditor5",ae=`dist/vendor/ckeditor5/${at}`,ie="ckeditor5-vendor-css";function se(){const e=window?.G7Core?.asset;if(!e||typeof e.plugin!="function")throw new Error("G7Core.asset is unavailable — core 7.0.10 or later is required to resolve bundled CKEditor5 assets");return e}function it(){return se().plugin(re,`${ae}/ckeditor5.umd.js`)}function ve(){return se().plugin(re,`${ae}/ckeditor5.css`)}function st(e){return se().plugin(re,`${ae}/translations/${e}.umd.js`)}const lt="ckeditor5-vendor-umd",ct=15e3,dt=2500,ut=50;let V=null;function J(){return typeof window.CKEDITOR?.ClassicEditor=="function"}function Se(){return typeof window.CKEDITOR_VERSION=="string"}function le(){return Array.from(document.querySelectorAll("script[src]")).filter(e=>(e.getAttribute("src")??"").toLowerCase().includes("ckeditor5.umd.js"))}function ft(e){return new Promise(t=>{let n=!1;const r=new Set,o=new Set;let a=null;const i=Date.now(),s=l=>{n||(n=!0,clearInterval(c),t(l))},f=l=>{r.has(l)||(r.add(l),l.addEventListener("load",()=>{J()&&s("ready")}),l.addEventListener("error",()=>{o.add(l),a=Date.now()}))},c=setInterval(()=>{if(J()){s("ready");return}le().forEach(f);const l=le().some(g=>!o.has(g)),p=Date.now();if(!l&&a!==null&&p-a>=dt){s("failed");return}p-i>=ct&&s(l?"timeout":"failed")},ut);e.forEach(f)})}async function pt(){const e=window?.G7Core?.asset?.loadScript;if(typeof e!="function")return!1;try{await e(it(),{id:lt},{label:"ckeditor5 UMD"})}catch(t){return console.warn("[ckeditor5] 편집기 본체를 불러오지 못했습니다:",t),!1}return J()}function Le(){return J()?Promise.resolve(!0):V||(V=(async()=>{if(Se())return console.warn("[ckeditor5] 편집기 본체가 두 번 실행되어 전역이 비었습니다 — 다시 싣지 않습니다."),!1;const e=le();if(e.length>0){const t=await ft(e);if(t==="ready")return!0;if(t==="timeout"||Se())return!1}return pt()})().finally(()=>{V=null}),V)}const gt="data-ck-unsafe-attribute-";function mt(e){const t=e?.editing?.view?.domConverter;if(!t||typeof t.setDomElementAttribute!="function")return;const n=t.setDomElementAttribute.bind(t);t.setDomElementAttribute=(r,o,a,i)=>{if(o!=="style"||!ht(t,r,a,i)){n(r,o,a,i);return}if(r.removeAttribute(`${gt}style`),a===""||a===null||a===void 0){r.removeAttribute("style");return}r.style.cssText=String(a)}}function ht(e,t,n,r){return!t?.style||typeof e.shouldRenderAttribute!="function"?!1:e.shouldRenderAttribute("style",n,String(t.tagName??"").toLowerCase())?!0:r?.shouldRenderUnsafeAttribute?.("style")===!0}const yt={ko:"한국어",en:"English",ja:"日本語",zh:"中文",fr:"Français",de:"Deutsch",es:"Español"};function _e(e){const t=window,n=t.G7Core?.state?.get?.()?.appConfig?.localeNames?.[e],r=t.G7Config?.appConfig?.localeNames?.[e],o=typeof n=="string"&&n?n:r;return typeof o=="string"&&o!==""?o:yt[e]??e}function wt(e,t,n){e.replaceChildren();const r=document.createElement("i");r.className="fas fa-globe ck5-lang-icon",e.appendChild(r);const o=document.createElement("span");if(o.textContent=_e(t),e.appendChild(o),n){const a=document.createElement("span");a.className="ck5-required",a.textContent="*",e.appendChild(a)}}const Ae="ckeditor5-editor:",Ie="layout-script:ckeditor5_script",bt=500,Ct=3e4;let X=null;function Pe(){X!==null&&(clearInterval(X),X=null)}function Et(){const e=window?.G7Core?.assets;if(typeof e?.clearFailure!="function"||typeof e?.getFailures!="function")return;const t=()=>e.getFailures()??[],n=()=>{t().some(o=>o?.id===Ie)&&e.clearFailure(Ie)};n(),Pe();const r=Date.now();X=setInterval(()=>{if(!t().some(a=>String(a?.id??"").startsWith(Ae))||Date.now()-r>=Ct){Pe();return}n()},bt)}function Z(e,t,n,r){const o=window?.G7Core?.assets?.notifyFailure;if(typeof o=="function"){o({id:e,label:t,retry:n,message:r}),e.startsWith(Ae)&&Et();return}console.warn(`[ckeditor5] 자산 로드 실패: ${t}`)}const Ge="data-readonly",$e="read-only";function xe(e,t){const n=e.getAttribute(Ge);return n==="true"?!0:n==="false"?!1:t}function kt(e,t){const n=e;!n||typeof n.enableReadOnlyMode!="function"||typeof n.disableReadOnlyMode!="function"||(t?n.enableReadOnlyMode($e):n.disableReadOnlyMode($e))}function vt(e,t){e.querySelectorAll("textarea").forEach(n=>{n.readOnly=t})}function St(e,t,n){let r=null;const o=()=>{const i=xe(e,n);if(i!==r){r=i;for(const s of t())kt(s,i);vt(e,i)}};if(o(),typeof MutationObserver>"u")return{stop:()=>{}};const a=new MutationObserver(o);return a.observe(e,{attributes:!0,attributeFilter:[Ge]}),{stop:()=>a.disconnect()}}const Lt="upload",_t=["jpeg","png","gif","webp"];function ce(e,t){const n=e?.response?.data,r=n?.error?.message??n?.message;return typeof r=="string"&&r!==""?r:t}function Me(e){return Te("sirsoft-ckeditor5.editor.upload_failed","Couldn't upload file: {{name}}.").replace("{{name}}",e)}function Ue(){return Te("sirsoft-ckeditor5.editor.upload_login_required","Sign in to upload images. Your draft is kept.")}function Te(e,t){const n=window?.G7Core?.t,r=typeof n=="function"?n(e):null;return typeof r=="string"&&r!==e?r:t}function de(e,t,n){const r=window?.G7Core?.t,o=typeof r=="function"?r(e,t):null;return typeof o=="string"&&o!==e?o:n}class At{constructor(t,n){be(this,"controller",new AbortController);be(this,"options");this.loader=t,this.options=typeof n=="string"?{legacyUrl:n}:n}async upload(){const t=this.options.target??null,n=window.G7Core?.contentMedia;return t&&n&&typeof n.upload=="function"?this.uploadByContract(t,n):this.uploadLegacy()}async uploadByContract(t,n){const r=await this.loader.file,o=Me(r?.name??"");if(!r)throw o;const a=n.validateFile(t,r);if(!a?.ok)throw de(a?.messageKey??"",a?.params,o);const i=this.options.getContent?.()??"";if(n.isAtLimit?.(i,t)===!0)throw de("core.content_media.client.limit_reached",{max:t.policy?.maxPerDocument??0},o);try{const s=await n.upload(t,r,{signal:this.controller.signal,onProgress:(f,c)=>{this.loader.uploadTotal=c,this.loader.uploaded=f}});if(typeof s?.url!="string"||s.url==="")throw o;return{default:s.url}}catch(s){throw typeof s=="string"?s:window.G7Core?.api?.isAnonymousUnauthorized?.(s)===!0?Ue():ce(s,de("core.content_media.client.upload_failed",void 0,o))}}async uploadLegacy(){const t=await this.loader.file,n=Me(t?.name??""),r=window.G7Core?.api;if(!t||typeof r?.post!="function")throw n;const o=new FormData;o.append(Lt,t);let a;try{a=await r.post(this.options.legacyUrl,o,{headers:{"Content-Type":"multipart/form-data"},signal:this.controller.signal,onUploadProgress:s=>{typeof s.total=="number"&&(this.loader.uploadTotal=s.total),this.loader.uploaded=s.loaded}})}catch(s){throw r.isAnonymousUnauthorized?.(s)===!0?Ue():ce(s,n)}const i=a?.url??a?.urls?.default;if(typeof i!="string"||i==="")throw ce({response:{data:a}},n);return{default:i}}abort(){this.controller.abort()}}function De(e){return function(n){const r=typeof e=="string"?{legacyUrl:e}:{...e,getContent:()=>typeof n.getData=="function"?n.getData():""};n.plugins.get("FileRepository").createUploadAdapter=o=>new At(o,r)}}const Oe=Object.freeze({video:"g7VideoUpload",audio:"g7AudioUpload"});function It(e){return e?.policy?["video","audio"].filter(t=>e.policy[t]?.enabled===!0):[]}function Pt(e,t){const n=t.replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");return e==="video"?`<video controls="controls" preload="metadata" src="${n}"></video>`:`<audio controls="controls" preload="metadata" src="${n}"></audio>`}function B(e,t,n){const r=window?.G7Core?.t,o=typeof r=="function"?r(e,t):null;return typeof o=="string"&&o!==e?o:n}async function Gt(e,t,n,r){const o=window?.G7Core?.contentMedia,a=window?.G7Core?.toast?.error??(()=>{});if(!o)return;const i=o.validateFile(t,r);if(!i?.ok||i.kind!==n){a(B(i?.messageKey??"core.content_media.client.kind_not_allowed",i?.params,"Not allowed."));return}const s=typeof e.getData=="function"?e.getData():"";if(o.isAtLimit?.(s,t)===!0){a(B("core.content_media.client.limit_reached",{max:t.policy?.maxPerDocument??0},"Too many media."));return}try{const f=await o.upload(t,r,{}),c=e.data.processor.toView(Pt(n,f.url)),l=e.data.toModel(c);e.model.insertContent(l)}catch(f){if(window?.G7Core?.api?.isAnonymousUnauthorized?.(f)===!0){a(B("sirsoft-ckeditor5.editor.upload_login_required",void 0,"Sign in to upload. Your draft is kept."));return}const c=f?.response?.data?.message;a(typeof c=="string"&&c!==""?c:B("core.content_media.client.upload_failed",void 0,"Upload failed."))}}function $t(e,t){return function(r){const o=window.CKEDITOR;if(!(!o?.FileDialogButtonView||t.length===0))for(const a of t){const i=e.policy?.[a]?.extensions??[],s=e.policy?.[a]?.mimeTypes??[],f=a==="video"?B("core.content_media.client.video_button",void 0,"Insert video"):B("core.content_media.client.audio_button",void 0,"Insert audio");r.ui.componentFactory.add(Oe[a],c=>{const l=new o.FileDialogButtonView(c);return l.set({acceptedType:[...i.map(p=>`.${p}`),...s].join(","),allowMultipleFiles:!1}),l.buttonView.set({label:f,withText:!0,tooltip:!0}),l.on("done",(p,g)=>{const m=Array.from(g??[])[0];m&&Gt(r,e,a,m)}),l})}}}const K="data-ckeditor5-fallback",ee=new WeakMap;function te(e,t,n,r){const o=window.G7Core;if(!o?.state?.setLocal||!e)return;n&&r&&o.state.getLocal?.()?.hasChanges!==!0&&o.state.setLocal({hasChanges:!0});const a={[`form.${e}_mode`]:"text"};if(typeof t=="string")a[`form.${e}`]=t;else for(const[i,s]of Object.entries(t))a[`form.${e}.${i}`]=s;o.state.setLocal(a,{render:!1,selfManaged:!0})}function ue(e){const{container:t,name:n,height:r,readOnly:o,placeholder:a,multilingual:i}=e;if(t.querySelector(`[${K}]`))return;t.innerHTML="";const s=e.trackChanges!==!1,f=i?e.locales??[]:[],c=e.activeLocale??f[0]??"",l=i?{...e.contentMap??{}}:{"":e.initialContent??""},p=document.createElement("textarea");p.setAttribute(K,"1"),p.name=n,p.readOnly=o,p.placeholder=a??"",p.style.cssText=["width:100%",`height:${r}px`,"padding:12px","border:1px solid #d1d5db","border-radius:6px","font-family:inherit","font-size:14px","line-height:1.6","resize:vertical","box-sizing:border-box"].join(";");let g=c;const m=new Map,d=()=>i?g:"";(i?f:[""]).forEach(w=>{const A=oe({getData:()=>w===d()?p.value:l[w]??"",setData:S=>{l[w]=S,w===d()&&(p.value=S)}},{name:n,locale:w,multilingual:i,seedPath:e.seedPath,seedValue:l[w]??""});m.set(w,A),t.id&&Q(t.id,A)});const u=()=>[...m.values()].every(w=>w.shouldEmit());if(i){const w=document.createElement("div");w.className="ckeditor5-locale-tabs";const A=()=>{w.querySelectorAll("button").forEach(S=>{const M=S.dataset.locale??"",I=M===g;S.classList.toggle("is-active",I);const P=(l[M]??"").trim()!=="",F=S.querySelector("[data-check]");F&&(F.style.display=P?"":"none")})};f.forEach((S,M)=>{const I=document.createElement("button");I.type="button",I.dataset.locale=S,M===0&&I.classList.add("is-default"),I.textContent=_e(S);const P=document.createElement("span");P.dataset.check="1",P.textContent="✓",P.style.display="none",I.appendChild(P),I.addEventListener("click",()=>{l[g]=p.value,g=S,p.value=l[S]??"",p.dataset.locale=S,u()&&te(n,l,!1,s),A()}),w.appendChild(I)}),t.appendChild(w),p.dataset.locale=g,p.value=l[g]??"",A(),p.addEventListener("input",()=>{l[g]=p.value,u()&&(m.get(g)?.noteEmitted(p.value),te(n,l,!0,s)),A()})}else p.value=l[""]??"",p.addEventListener("input",()=>{l[""]=p.value,u()&&(m.get("")?.noteEmitted(p.value),te(n,p.value,!0,s))});t.appendChild(p),ee.set(t,{multilingual:i,values:l,activeLocale:g,syncs:m}),te(n,i?l:l[""]??"",!1,s)}function xt(e){const t=ee.get(e);if(!t)return null;const n=e.querySelector(`textarea[${K}]`);return n&&(t.values[t.multilingual?n.dataset.locale??t.activeLocale:""]=n.value),t.multilingual?{...t.values}:t.values[""]??""}function Mt(e){return e.querySelector(`[${K}]`)?(ee.get(e)?.syncs.forEach(t=>t.stop()),e.innerHTML="",ee.delete(e),!0):!1}const Fe="data-ckeditor5-min-height",Ne="--ckeditor5-min-height",Ut="g7-ck-embed-preview",Tt="g7-ck-embed-preview__frame",Re={minimal:["bold","italic","underline","|","link","uploadImage","|","undo","redo"],standard:["heading","|","bold","italic","underline","strikethrough","|","alignment","|","link","blockQuote","|","bulletedList","numberedList","indent","outdent","|","insertTable","uploadImage","|","undo","redo"],full:["heading","|","fontSize","fontColor","fontBackgroundColor","|","bold","italic","underline","strikethrough","|","alignment","|","link","blockQuote","insertTable","uploadImage","mediaEmbed","horizontalLine","|","bulletedList","numberedList","indent","outdent","|","codeBlock","sourceEditing","|","undo","redo"]};function Dt(e){if(e==="en")return Promise.resolve();const t=`ckeditor5-translations-${e}`;if(document.getElementById(t))return Promise.resolve();const n=window?.G7Core?.asset?.loadScript;return new Promise(r=>{let o;try{o=st(e)}catch(i){console.warn("[ckeditor5] 번역 URL 을 만들지 못했습니다 (영어로 동작):",i),r();return}if(typeof n=="function"){n(o,{id:t},{label:`ckeditor5 translations: ${e}`,retries:1}).catch(i=>{console.warn(`[ckeditor5] 번역 로드 실패 (${e}) — 영어로 동작합니다:`,i)}).then(()=>r());return}const a=document.createElement("script");a.id=t,a.src=o,a.onload=()=>r(),a.onerror=()=>{console.warn(`[ckeditor5] 번역 로드 실패 (${e}) — 영어로 동작합니다.`),r()},document.head.appendChild(a)})}async function je(){if(document.getElementById(ie))return;const e=window?.G7Core?.asset?.loadStylesheet;let t;try{t=ve()}catch(n){console.warn("[ckeditor5] CSS URL 을 만들지 못했습니다:",n);return}if(typeof e!="function"){const n=document.createElement("link");n.id=ie,n.rel="stylesheet",n.href=t,document.head.appendChild(n);return}try{await e(t,{id:ie},{label:"ckeditor5 CSS"})}catch(n){console.warn("[ckeditor5] CSS 로드 실패:",n),Z("ckeditor5-css",D("editor.asset.style_label","편집기 스타일"),()=>je())}}async function fe(e,t,n,r,o){const a=xt(n);if(!await Le())throw new Error("[sirsoft-ckeditor5] 편집기 본체를 여전히 불러올 수 없습니다.");Mt(n);const i={...e,params:{...e.params??{},content:r?a??{}:a??""}};if(await Ye(i,t),!o)return;window.G7Core?.state?.setLocal?.({[`form.${o}_mode`]:"html"})}function D(e,t){const n=window?.G7Core?.t;if(typeof n!="function")return t;const r=`sirsoft-ckeditor5.${e}`,o=n(r);return typeof o=="string"&&o!==r?o:t}function Be(){const e=window.G7Core;return e?.locale?.supported?e.locale.supported():[localStorage.getItem("g7_locale")||"ko"]}function $(){return window.G7Core?.locale?.current?.()??localStorage.getItem("g7_locale")??"ko"}function Ot(e,t,n,r=!1){const o=[e.Essentials,e.Bold,e.Italic,e.Underline,e.Strikethrough,e.Link,e.Paragraph,e.Heading,e.BlockQuote,e.List,e.Alignment,e.Table,e.TableToolbar,e.TableProperties,e.TableCellProperties,e.Indent,e.IndentBlock,e.PasteFromOffice,e.GeneralHtmlSupport,e.Image,e.ImageResize,e.ImageStyle,e.ImageCaption,e.ImageToolbar];return t==="full"&&o.push(e.MediaEmbed,e.HorizontalLine,e.CodeBlock,e.SourceEditing,e.FontSize,e.FontColor,e.FontBackgroundColor),r&&t!=="full"&&o.push(e.MediaEmbed),n&&o.push(e.ImageUpload),o}function Ve(){return"/api/plugins/sirsoft-ckeditor5/upload"}function Ft(){try{return window?.G7Core?.contentPolicy?.editorConstraints?.()??null}catch{return null}}function Nt(e){return(e??[]).map(t=>({name:String(t.id),url:(t.patterns??[]).map(n=>{try{return new RegExp(n,"i")}catch{return null}}).filter(n=>n!==null),html:n=>{const r=n?.groups?.id??"",o=String(t.player_url??"").replace("{id}",encodeURIComponent(r)).replace(/"/g,"&quot;");return`<div class="${Ut}"><iframe src="${o}" class="${Tt}" allowfullscreen></iframe></div>`}})).filter(t=>t.url.length>0)}function Rt(e){let t=e;if(typeof t=="string"){const r=t.trim();if(r===""||r==="null"||r==="undefined"||r.startsWith("{{"))return null;try{t=JSON.parse(r)}catch{return null}}if(t==null||typeof t!="object")return null;const n=window?.G7Core?.contentMedia?.normalizeTarget;return typeof n=="function"?n(t)??null:null}function jt(e){const t={jpg:"jpeg",jpeg:"jpeg",png:"png",gif:"gif",webp:"webp",avif:"avif"},n=e.map(r=>t[String(r).toLowerCase()]).filter(r=>!!r);return Array.from(new Set(n))}async function ze(e){try{await e?.destroy?.()}catch{}}function qe(e,t){C.get(e)===t&&C.delete(e)}function Bt(e){let t=null;try{t=window?.G7Core?.AuthManager?.getInstance?.()?.getUser?.()??null}catch{t=null}return(t??e?._global?.currentUser??e?.currentUser)?.is_admin===!0}function Vt(e){const t=window?.G7Core?.toast?.error;if(typeof t!="function")return;let n;try{n=e?.plugins?.get?.("Notification")}catch{return}n?.on?.("show:warning",(r,o)=>{const a=typeof o?.message=="string"&&o.message!==""?o.message:typeof o?.title=="string"?o.title:"";a!==""&&t(a),r.stop()},{priority:"high"})}async function He(e,t){const n=window.CKEDITOR;if(!n)throw new Error("[sirsoft-ckeditor5] CKEDITOR 전역 객체를 찾을 수 없습니다. CDN 스크립트가 로드되었는지 확인하세요.");const r=Re[t.toolbar]||Re.standard,o=Ft(),a=o?.allowExternalEmbed===!0;let i=t.imageUpload?r:r.filter(u=>u!=="uploadImage");if(a&&!i.includes("mediaEmbed")){const u=i.indexOf("insertTable");i=[...i.slice(0,u+1),"mediaEmbed",...i.slice(u+1)]}o&&!a&&(i=i.filter(u=>u!=="mediaEmbed"));const s=It(t.mediaTarget??null),f=s.map(u=>Oe[u]),c=i.indexOf("uploadImage")>=0?i.indexOf("uploadImage"):i.indexOf("insertTable"),l=f.length>0?[...i.slice(0,c+1),...f,...i.slice(c+1)]:i,p={initialData:t.initialContent,plugins:Ot(n,t.toolbar,t.imageUpload,a),toolbar:{items:l},table:{contentToolbar:["tableColumn","tableRow","mergeTableCells","|","tableProperties","tableCellProperties"],tableProperties:{defaultProperties:{borderStyle:"solid",borderColor:"#d1d5db",borderWidth:"1px",alignment:"left"}},tableCellProperties:{defaultProperties:{borderStyle:"solid",borderColor:"#d1d5db",borderWidth:"1px",padding:"8px"}}},image:{toolbar:["imageStyle:inline","imageStyle:alignLeft","imageStyle:alignCenter","imageStyle:alignRight","|","toggleImageCaption","|","resizeImage"],resizeOptions:[{name:"resizeImage:original",label:"Original",value:null},{name:"resizeImage:25",label:"25%",value:"25"},{name:"resizeImage:50",label:"50%",value:"50"},{name:"resizeImage:75",label:"75%",value:"75"}],resizeUnit:"%",upload:{types:t.mediaTarget?jt(t.mediaTarget.policy?.image?.extensions??[]):[..._t]}},indentBlock:{offset:40,unit:"px"},link:{defaultProtocol:"https://",decorators:{openInNewTab:{mode:"automatic",callback:u=>u.startsWith("http://")||u.startsWith("https://"),attributes:{target:"_blank",rel:"noopener noreferrer"}}}},htmlSupport:{allow:[{name:/.*/,attributes:!0,classes:!0,styles:!0}],...o&&(o.forbidTags??[]).length>0?{disallow:[{name:new RegExp(`^(${o.forbidTags.map(u=>u.replace(/[^a-z0-9-]/gi,"")).join("|")})$`)}]}:{}},placeholder:t.placeholder,language:$()};o&&(p.mediaEmbed={previewsInData:!1,providers:[],extraProviders:Nt(o.providers??[])});const g=[mt];t.imageUpload&&g.push(t.mediaTarget?De({target:t.mediaTarget,legacyUrl:Ve()}):De(Ve())),s.length>0&&g.push($t(t.mediaTarget,s)),p.extraPlugins=g;const m=await n.ClassicEditor.create(e,p);Vt(m);const d=document.getElementById(t.containerId);return d&&(d.setAttribute(Fe,""),d.style.setProperty(Ne,`${t.height}px`)),t.readOnly&&m.enableReadOnlyMode("read-only"),m}function zt(e,t,n,r,o){const a=document.createElement("div");a.className="ckeditor5-locale-tabs";const i=new Map;t.forEach(c=>{const l=document.createElement("div");l.dataset.locale=c,c!==n&&(l.style.cssText="display:none;");const p=document.createElement("div");l.appendChild(p),i.set(c,p)});const s=()=>{o&&a.querySelectorAll("button").forEach(c=>{const l=c.dataset.locale;if(!l||c.classList.contains("is-active")){const d=c.querySelector(".ck5-check");d&&d.remove();return}const g=!!o(l)?.trim(),m=c.querySelector(".ck5-check");if(g&&!m){const d=document.createElement("i");d.className="fas fa-check ck5-check",c.appendChild(d)}else!g&&m&&m.remove()})},f=t[0];return t.forEach(c=>{const l=c===f,p=c===n,g=document.createElement("button");g.type="button",g.dataset.locale=c,g.className=[p?"is-active":"",l?"is-default":""].filter(Boolean).join(" "),wt(g,c,l),g.addEventListener("click",async()=>{a.querySelectorAll("button").forEach(m=>{const u=m.dataset.locale===c;m.classList.toggle("is-active",u)}),i.forEach((m,d)=>{const u=m.parentElement;u&&(u.style.display=d===c?"block":"none")}),r&&await r(c),s()}),a.appendChild(g)}),e.appendChild(a),i.forEach(c=>{c.parentElement&&e.appendChild(c.parentElement)}),{tabsEl:a,contentEls:i,updateCheckIcons:s}}function We(e,t,n,r,o=!0,a=null){if(ot())return;const i=window.G7Core;if(!i?.state?.setLocal)return;if(o&&i.state.getLocal?.()?.hasChanges!==!0&&i.state.setLocal({hasChanges:!0}),a&&a.scope==="global"){const c=r?`${a.path}.${t}`:a.path;window.G7Core?.state?.set?.({[c]:n});return}const s=a?.path??`form.${e}`,f={[`form.${e}_mode`]:"html"};r?f[`${s}.${t}`]=n:f[s]=n,i.state.setLocal(f,{debounce:300,debounceKey:`ckeditor-sync-${e}`,render:!1,selfManaged:!0})}function pe(e,t){const n=window.G7Core,r=typeof e.content=="string"?e.content:"";let a=r.startsWith("{{")&&r.endsWith("}}")?"":r;if(!a&&t){const s=(n?.state?.getLocal?.()??{})?.form?.[t];typeof s=="string"&&s&&(a=s)}return a}function ge(e,t){const n=window.G7Core;let r={};try{typeof e.content=="string"&&e.content.startsWith("{")&&!e.content.startsWith("{{")?r=JSON.parse(e.content):typeof e.content=="object"&&e.content!==null&&(r=e.content)}catch{r={}}if(Object.keys(r).length===0&&t){const a=(n?.state?.getLocal?.()??{})?.form?.[t];if(a&&typeof a=="object"&&!Array.isArray(a)?r=a:typeof a=="string"&&a&&(r={[$()]:a}),Object.keys(r).length===0){const i=n?.state?.get?.()??{},f=(i?._global?.selectedItem??i?.selectedItem)?.[t];f&&typeof f=="object"&&!Array.isArray(f)&&(r=f)}}return r}async function Ye(e,t){const n=e.params??{},r=n.name??"content",o=`ckeditor5-${r}`,a=location.pathname,i=n.multilingual===!0||n.multilingual==="true",s=i?"":pe(n,r),f=i?ge(n,r):{};Ee(o);const c=C.get(o);if(c&&c.size>0){const b=[];c.forEach(y=>{y&&typeof y.destroy=="function"&&b.push(y.destroy().catch(()=>{}))}),await Promise.allSettled(b),C.delete(o)}const l=document.getElementById(o);if(!l){console.warn(`[sirsoft-ckeditor5] 컨테이너 엘리먼트를 찾을 수 없습니다: #${o}`);return}je(),await Dt($());const g=window.G7Core?.state?.get()||{},m=g._global?.plugins?.["sirsoft-ckeditor5"]??g.plugins?.["sirsoft-ckeditor5"]??{},d=n.name??"content",u=n.multilingual===!0||n.multilingual==="true",w=n.readOnly===!0||n.readOnly==="true",A=()=>xe(l,w),S=n.imageUpload!==void 0?n.imageUpload===!0||n.imageUpload==="true":m.imageUpload===!0||m.imageUpload==="true",M=Rt(n.mediaUpload),I=M?M.policy?.image?.enabled===!0:S&&Bt(g),P=n.placeholder??"",F=n.height!==void 0?Number(n.height)||400:Number(m.editorHeight)||400,Ht=(n.toolbar!==void 0?n.toolbar:m.toolbar)??"standard",q=!(n.trackChanges===!1||n.trackChanges==="false"),Wt=n.writeScope==="global"?"global":"local",Xe=typeof n.writePath=="string"&&n.writePath.trim()!==""&&!n.writePath.includes("{{")?n.writePath.trim():null,x=Xe===null?null:{scope:Wt,path:Xe},ye=(b,y)=>{if(!x)return;const k=window.G7Core,h=x.scope==="global"?k?.state?.get?.():k?.state?.getLocal?.(),N=(y?`${x.path}.${b}`:x.path).split(".").reduce((R,L)=>R?.[L],h);return typeof N=="string"?N:void 0},Yt=(b,y)=>{if(x)return ye(b,y);const k=window.G7Core?.state?.getLocal?.()?.form,h=y?k?.[d]?.[b]:k?.[d];return typeof h=="string"?h:void 0},ne=(b,y,k,h)=>{if(location.pathname===a)return{value:k(),path:a};const v=Yt(b,y)??"";return v!==h?{value:v,path:location.pathname}:{value:v,path:a}};let Ze=u?ge(n,d):{};const Qt=await Le();if(!l.isConnected)return;if(Q(o,St(l,()=>C.get(o)?.values()??[],w)),!Qt){const b=u?Be():[],y=u?b.map(h=>{const v=ge(n,d);return{locale:h,...ne(h,!0,()=>v[h]??"",f[h]??"")}}):[{locale:"",...ne($(),!1,()=>pe(n,d),s)}],k={container:l,name:d,height:F,readOnly:A(),placeholder:P,trackChanges:q,multilingual:u,locales:u?b:void 0,activeLocale:$(),contentMap:u?Object.fromEntries(y.map(h=>[h.locale,h.value])):void 0,initialContent:u?void 0:y[0].value,seedPath:y.find(h=>h.path!==location.pathname)?.path};ue(k),Z(`ckeditor5-editor:${o}`,D("editor.asset.label","편집기"),()=>fe(e,t,l,k.multilingual,d),D("editor.asset.fallback_notice","편집기를 불러오지 못했습니다. 임시 입력창으로 전환했습니다. 작성한 내용은 그대로 저장됩니다."));return}const U=new Map;C.set(o,U);const Ke={placeholder:P,get readOnly(){return A()},imageUpload:I,height:F,toolbar:Ht,containerId:o,mediaTarget:M};if(u){const b=Be(),y=$(),k={current:new Map},h={current:()=>{}},v=async E=>{if(U.has(E))return;const H=k.current.get(E);if(!H)return;const et=ne(E,!0,()=>Ze[E]??"",f[E]??""),tt=et.value;try{const j=await He(H,{...Ke,initialContent:tt});if(!l.isConnected){await ze(j);return}U.set(E,j);let nt=!0;const we=oe(j,{name:d,locale:E,multilingual:!0,readExternal:x?()=>ye(E,!0):void 0,seedPath:et.path,seedValue:tt});if(Q(o,we),j.model.document.on("change:data",()=>{if(nt||!we.shouldEmit())return;const W=j.getData();we.noteEmitted(W),We(d,E,W,!0,q,x),h.current()}),nt=!1,d){const W=window.G7Core;(W?.state?.getLocal?.()??{}).form?.[`${d}_mode`]!=="html"&&W.state.setLocal({[`form.${d}_mode`]:"html"})}}catch(j){console.error(`[sirsoft-ckeditor5] 에디터 초기화 오류 (locale: ${E}):`,j)}},N=E=>{const H=U.get(E);return H?H.getData?.()??null:null},{contentEls:R,updateCheckIcons:L}=zt(l,b,y,v,N);if(k.current=R,h.current=L,await v(y),!l.isConnected){qe(o,U);return}if(!U.has(y)){C.delete(o),ue({container:l,name:d,height:F,readOnly:A(),placeholder:P,multilingual:!0,locales:b,activeLocale:y,contentMap:Ze,trackChanges:q}),Z(`ckeditor5-editor:${o}`,D("editor.asset.label","편집기"),()=>fe(e,t,l,!0,d),D("editor.asset.fallback_notice","편집기를 불러오지 못했습니다. 임시 입력창으로 전환했습니다. 작성한 내용은 그대로 저장됩니다."));return}setTimeout(()=>{b.filter(E=>E!==y).forEach(E=>{v(E)})},2e3)}else{const b=ne($(),!1,()=>pe(n,d),s),y=b.value,k=document.createElement("div");l.appendChild(k);try{const h=await He(k,{...Ke,initialContent:y});if(!l.isConnected){await ze(h),qe(o,U);return}const v=$();U.set(v,h);let N=!0;const R=oe(h,{name:d,locale:v,multilingual:!1,readExternal:x?()=>ye(v,!1):void 0,seedPath:b.path,seedValue:y});if(Q(o,R),h.model.document.on("change:data",()=>{if(N||!R.shouldEmit())return;const L=h.getData();R.noteEmitted(L),We(d,v,L,!1,q,x)}),N=!1,y){const L=h.getData();(!L||L.trim()==="")&&h.setData(y)}if(d){const L=window.G7Core;(L?.state?.getLocal?.()??{}).form?.[`${d}_mode`]!=="html"&&L.state.setLocal({[`form.${d}_mode`]:"html"})}}catch(h){console.error("[sirsoft-ckeditor5] 에디터 초기화 오류:",h),C.delete(o),ue({container:l,name:d,height:F,readOnly:A(),placeholder:P,multilingual:!1,activeLocale:$(),initialContent:y,trackChanges:q,seedPath:b.path}),Z(`ckeditor5-editor:${o}`,D("editor.asset.label","편집기"),()=>fe(e,t,l,!1,d),D("editor.asset.fallback_notice","편집기를 불러오지 못했습니다. 임시 입력창으로 전환했습니다. 작성한 내용은 그대로 저장됩니다."))}}}async function qt(e,t){const r=`ckeditor5-${e.params?.name??"content"}`;Ee(r);const o=C.get(r);if(!o||o.size===0)return;const a=[];o.forEach(s=>{s&&typeof s.destroy=="function"&&a.push(s.destroy().catch(f=>{console.warn("[sirsoft-ckeditor5] destroyEditor error:",f)}))}),await Promise.allSettled(a),C.delete(r);const i=document.getElementById(r);i&&(i.removeAttribute(Fe),i.style.removeProperty(Ne))}const _="sirsoft-ckeditor5",me="ckeditor5-content-styles";function Qe(){if(!document.getElementById(me)){const e=window?.G7Core?.asset;try{const t=ve();if(typeof e?.loadStylesheet=="function")e.loadStylesheet(t,{id:me},{label:"ckeditor5 content CSS"}).catch(n=>{console.warn("[ckeditor5] 본문 스타일 로드 실패:",n),window?.G7Core?.assets?.notifyFailure?.({id:"ckeditor5-content-css",label:"본문 스타일",retry:()=>Qe()})});else{const n=document.createElement("link");n.id=me,n.rel="stylesheet",n.href=t,document.head.appendChild(n)}}catch(t){console.warn("[ckeditor5] 본문 스타일 URL 을 만들지 못했습니다:",t)}}}const O={initEditor:Ye,destroyEditor:qt,injectContentCss:Qe},z=window.G7Core?.createLogger?.(`Plugin:${_}`)??{log:(...e)=>console.log(`[Plugin:${_}]`,...e),warn:(...e)=>console.warn(`[Plugin:${_}]`,...e),error:(...e)=>console.error(`[Plugin:${_}]`,...e)};function Je(e=!1){const t=window.G7Core?.getActionDispatcher?.();if(t)Object.entries(O).forEach(([n,r])=>{const o=`${_}.${n}`;t.registerHandler(o,r,{category:"plugin",source:_})}),z.log(`${Object.keys(O).length} handler(s) registered:`,Object.keys(O).map(n=>`${_}.${n}`));else if(e){let n=0;const r=50,o=()=>{const a=window.G7Core?.getActionDispatcher?.();a?(Object.entries(O).forEach(([i,s])=>{const f=`${_}.${i}`;a.registerHandler(f,s,{category:"plugin",source:_})}),z.log(`${Object.keys(O).length} handler(s) registered:`,Object.keys(O).map(i=>`${_}.${i}`))):(n++,n<=r?(z.warn(`ActionDispatcher not found, retrying... (${n}/${r})`),setTimeout(o,100)):z.error("Failed to register handlers: ActionDispatcher not available after maximum retries"))};o()}else z.warn("ActionDispatcher not found, handlers not registered")}function he(){if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>Je(!0));else{const e=!!window.G7Core?.getActionDispatcher?.();Je(!e)}}return he(),typeof window<"u"&&(window.__SirsoftCkeditor5={identifier:_,handlers:Object.keys(O),initPlugin:he}),G.initPlugin=he,Object.defineProperty(G,Symbol.toStringTag,{value:"Module"}),G}({});
+var SirsoftCkeditor5=function(F){"use strict";const E=new Map;let K=!1;function St(){return K}function tt(t){K=t}const T=new Map;function et(t,o){const e=T.get(t)??[];e.push(o),T.set(t,e)}function ot(t){(T.get(t)??[]).forEach(o=>{try{o.stop()}catch{}}),T.delete(t)}const vt=400,Et=1e4;function nt(t,o){const{name:e,locale:r,multilingual:n}=o;let a=location.pathname,c=null,d=!1,k=null,i=0;const l=()=>{const f=window.G7Core?.state?.getLocal?.()?.form;if(!f||!e)return;const g=n?f[e]?.[r]:f[e];return typeof g=="string"?g:void 0},s=window.setInterval(()=>{let u;try{u=t.getData()}catch{window.clearInterval(s);return}location.pathname!==a&&(a=location.pathname,c=null,d=!0,i=Date.now(),k=u);const f=l();if(f!==void 0){if(d){if(f===k){Date.now()-i>Et&&(d=!1,k=null);return}if(f!==u){tt(!0);try{t.setData(f)}finally{tt(!1)}}d=!1,k=null,c=f;return}if(f===c||f===u){c=f;return}}},vt);return{shouldEmit:()=>!d,noteEmitted:u=>{c=u},stop:()=>window.clearInterval(s)}}const xt="43.3.1",H="sirsoft-ckeditor5",q=`dist/vendor/ckeditor5/${xt}`,V="ckeditor5-vendor-css";function W(){const t=window?.G7Core?.asset;if(!t||typeof t.plugin!="function")throw new Error("G7Core.asset is unavailable — core 7.0.10 or later is required to resolve bundled CKEditor5 assets");return t}function Lt(){return W().plugin(H,`${q}/ckeditor5.umd.js`)}function rt(){return W().plugin(H,`${q}/ckeditor5.css`)}function $t(t){return W().plugin(H,`${q}/translations/${t}.umd.js`)}const j="data-ckeditor5-fallback",R=new WeakMap;function N(t,o,e,r){const n=window.G7Core;if(!n?.state?.setLocal||!t)return;e&&r&&n.state.getLocal?.()?.hasChanges!==!0&&n.state.setLocal({hasChanges:!0});const a={[`form.${t}_mode`]:"text"};if(typeof o=="string")a[`form.${t}`]=o;else for(const[c,d]of Object.entries(o))a[`form.${t}.${c}`]=d;n.state.setLocal(a,{render:!1,selfManaged:!0})}function Q(t){const{container:o,name:e,height:r,readOnly:n,placeholder:a,multilingual:c}=t;if(o.querySelector(`[${j}]`))return;o.innerHTML="";const d=t.trackChanges!==!1,k=c?t.locales??[]:[],i=t.activeLocale??k[0]??"",l=c?{...t.contentMap??{}}:{"":t.initialContent??""},s=document.createElement("textarea");s.setAttribute(j,"1"),s.name=e,s.readOnly=n,s.placeholder=a??"",s.style.cssText=["width:100%",`height:${r}px`,"padding:12px","border:1px solid #d1d5db","border-radius:6px","font-family:inherit","font-size:14px","line-height:1.6","resize:vertical","box-sizing:border-box"].join(";");let u=i;if(c){const f=document.createElement("div");f.className="ckeditor5-locale-tabs";const g=()=>{f.querySelectorAll("button").forEach(b=>{const G=b.dataset.locale??"",m=G===u;b.classList.toggle("is-active",m);const S=(l[G]??"").trim()!=="",v=b.querySelector("[data-check]");v&&(v.style.display=S?"":"none")})};k.forEach((b,G)=>{const m=document.createElement("button");m.type="button",m.dataset.locale=b,G===0&&m.classList.add("is-default"),m.textContent=b.toUpperCase();const S=document.createElement("span");S.dataset.check="1",S.textContent="✓",S.style.display="none",m.appendChild(S),m.addEventListener("click",()=>{l[u]=s.value,u=b,s.value=l[b]??"",s.dataset.locale=b,N(e,l,!1,d),g()}),f.appendChild(m)}),o.appendChild(f),s.dataset.locale=u,s.value=l[u]??"",g(),s.addEventListener("input",()=>{l[u]=s.value,N(e,l,!0,d),g()})}else s.value=l[""]??"",s.addEventListener("input",()=>{l[""]=s.value,N(e,s.value,!0,d)});o.appendChild(s),R.set(o,{multilingual:c,values:l,activeLocale:u}),N(e,c?l:l[""]??"",!1,d)}function It(t){const o=R.get(t);if(!o)return null;const e=t.querySelector(`textarea[${j}]`);return e&&(o.values[o.multilingual?e.dataset.locale??o.activeLocale:""]=e.value),o.multilingual?{...o.values}:o.values[""]??""}function Gt(t){return t.querySelector(`[${j}]`)?(t.innerHTML="",R.delete(t),!0):!1}const at="ckeditor5-dark-override",ct="ckeditor5-tab-style",lt={minimal:["bold","italic","underline","|","link","uploadImage","|","undo","redo"],standard:["heading","|","bold","italic","underline","strikethrough","|","alignment","|","link","blockQuote","|","bulletedList","numberedList","indent","outdent","|","insertTable","uploadImage","|","undo","redo"],full:["heading","|","fontSize","fontColor","fontBackgroundColor","|","bold","italic","underline","strikethrough","|","alignment","|","link","blockQuote","insertTable","uploadImage","mediaEmbed","horizontalLine","|","bulletedList","numberedList","indent","outdent","|","codeBlock","sourceEditing","|","undo","redo"]};function Mt(t){if(t==="en")return Promise.resolve();const o=`ckeditor5-translations-${t}`;if(document.getElementById(o))return Promise.resolve();const e=window?.G7Core?.asset?.loadScript;return new Promise(r=>{let n;try{n=$t(t)}catch(c){console.warn("[ckeditor5] 번역 URL 을 만들지 못했습니다 (영어로 동작):",c),r();return}if(typeof e=="function"){e(n,{id:o},{label:`ckeditor5 translations: ${t}`,retries:1}).catch(c=>{console.warn(`[ckeditor5] 번역 로드 실패 (${t}) — 영어로 동작합니다:`,c)}).then(()=>r());return}const a=document.createElement("script");a.id=o,a.src=n,a.onload=()=>r(),a.onerror=()=>{console.warn(`[ckeditor5] 번역 로드 실패 (${t}) — 영어로 동작합니다.`),r()},document.head.appendChild(a)})}async function it(){if(document.getElementById(V))return;const t=window?.G7Core?.asset?.loadStylesheet;let o;try{o=rt()}catch(e){console.warn("[ckeditor5] CSS URL 을 만들지 못했습니다:",e);return}if(typeof t!="function"){const e=document.createElement("link");e.id=V,e.rel="stylesheet",e.href=o,document.head.appendChild(e);return}try{await t(o,{id:V},{label:"ckeditor5 CSS"})}catch(e){console.warn("[ckeditor5] CSS 로드 실패:",e),D("ckeditor5-css",x("editor.asset.style_label","편집기 스타일"),()=>it())}}async function st(){if(window.CKEDITOR)return!0;const t=window?.G7Core?.asset?.loadScript;if(typeof t!="function")return!1;try{await t(Lt(),{id:"ckeditor5-vendor-umd"},{label:"ckeditor5 UMD"})}catch(o){return console.warn("[ckeditor5] 편집기 본체를 불러오지 못했습니다:",o),!1}return!!window.CKEDITOR}async function J(t,o,e,r,n){const a=It(e);if(!await st())throw new Error("[sirsoft-ckeditor5] 편집기 본체를 여전히 불러올 수 없습니다.");Gt(e);const c={...t,params:{...t.params??{},content:r?a??{}:a??""}};if(await mt(c,o),!n)return;window.G7Core?.state?.setLocal?.({[`form.${n}_mode`]:"html"})}function D(t,o,e,r){const n=window?.G7Core?.assets?.notifyFailure;if(typeof n=="function"){n({id:t,label:o,retry:e,message:r});return}console.warn(`[ckeditor5] 자산 로드 실패: ${o}`)}function x(t,o){const e=window?.G7Core?.t;if(typeof e!="function")return o;const r=`sirsoft-ckeditor5.${t}`,n=e(r);return typeof n=="string"&&n!==r?n:o}function zt(){if(document.getElementById(ct))return;const t=document.createElement("style");t.id=ct,t.textContent=`
+        /* 다국어 탭 컨테이너 */
+        .ckeditor5-locale-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            align-items: center;
+        }
+        /* 다국어 탭 버튼 - HtmlEditor 언어탭 스타일 */
+        .ckeditor5-locale-tabs button {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 9999px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 600;
+            line-height: 1;
+            transition: background 0.15s, color 0.15s, transform 0.15s, box-shadow 0.15s;
+        }
+        /* 비활성 - 기본언어 (blue) */
+        .ckeditor5-locale-tabs button.is-default {
+            background: #eff6ff;
+            color: #2563eb;
+        }
+        .ckeditor5-locale-tabs button.is-default:hover {
+            background: #dbeafe;
+        }
+        /* 비활성 - 비기본언어 (gray) */
+        .ckeditor5-locale-tabs button:not(.is-default) {
+            background: #f3f4f6;
+            color: #4b5563;
+        }
+        .ckeditor5-locale-tabs button:not(.is-default):hover {
+            background: #e5e7eb;
+        }
+        /* 활성 - 기본언어 */
+        .ckeditor5-locale-tabs button.is-active.is-default {
+            background: #3b82f6;
+            color: #ffffff;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            transform: scale(1.05);
+        }
+        /* 활성 - 비기본언어 */
+        .ckeditor5-locale-tabs button.is-active:not(.is-default) {
+            background: #6b7280;
+            color: #ffffff;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            transform: scale(1.05);
+        }
+        .ckeditor5-locale-tabs button .ck5-lang-icon {
+            font-size: 0.75rem;
+            line-height: 1;
+        }
+        .ckeditor5-locale-tabs button .ck5-required {
+            color: #ef4444;
+        }
+        .ckeditor5-locale-tabs button.is-active .ck5-required {
+            color: #fca5a5;
+        }
+        .ckeditor5-locale-tabs button .ck5-check {
+            color: #22c55e;
+        }
+        /* 다크 모드 - 비활성 기본언어 */
+        html.dark .ckeditor5-locale-tabs button.is-default {
+            background: rgba(59, 130, 246, 0.15);
+            color: #93c5fd;
+        }
+        html.dark .ckeditor5-locale-tabs button.is-default:hover {
+            background: rgba(59, 130, 246, 0.25);
+        }
+        /* 다크 모드 - 비활성 비기본언어 */
+        html.dark .ckeditor5-locale-tabs button:not(.is-default) {
+            background: #374151;
+            color: #d1d5db;
+        }
+        html.dark .ckeditor5-locale-tabs button:not(.is-default):hover {
+            background: #4b5563;
+        }
+        /* 다크 모드 - 활성 기본언어 */
+        html.dark .ckeditor5-locale-tabs button.is-active.is-default {
+            background: #2563eb;
+            color: #ffffff;
+        }
+        /* 다크 모드 - 활성 비기본언어 */
+        html.dark .ckeditor5-locale-tabs button.is-active:not(.is-default) {
+            background: #4b5563;
+            color: #ffffff;
+        }
+        html.dark .ckeditor5-locale-tabs button .ck5-check {
+            color: #4ade80;
+        }
+        /* 표 너비 인라인 스타일 무력화 - 컨테이너에 맞게 100% */
+        .ck-content figure.table { width: 100%; }
+        .ck-content figure.table table { width: 100%; }
+        /* 표 tr 배경색 초기화 */
+        .ck-content table tr { background-color: unset; }
+        /* 표 col 절대 px 너비 무력화 - 컨테이너에 맞게 비율로 */
+        .ck-content table col { width: auto !important; }
+        /* 표 정렬 보정: CKEditor5 기본 CSS의 margin-left:auto를 float으로 덮어씀 */
+        .ck-content figure.table[style*="float:left"],
+        .ck-content figure.table[style*="float: left"] {
+            margin-left: 0 !important;
+            margin-right: 1em !important;
+        }
+        .ck-content figure.table[style*="float:right"],
+        .ck-content figure.table[style*="float: right"] {
+            margin-left: 1em !important;
+            margin-right: 0 !important;
+        }
+        /* 이미지 캡션 - 라이트 모드 */
+        .ck-content .image > figcaption {
+            background-color: #f3f4f6;
+            color: #374151;
+            font-size: 0.875em;
+            padding: 4px 8px;
+            text-align: center;
+        }
+        /* 에디터 편집 영역 - 목록 마커 복원 (Tailwind preflight reset 대응) */
+        .ck.ck-editor__editable ul,
+        .ck-content ul {
+            list-style-type: disc;
+            padding-left: 2em;
+        }
+        .ck.ck-editor__editable ol,
+        .ck-content ol {
+            list-style-type: decimal;
+            padding-left: 2em;
+        }
+        .ck.ck-editor__editable ul ul,
+        .ck-content ul ul {
+            list-style-type: circle;
+            padding-left: 2em;
+        }
+        .ck.ck-editor__editable ul ul ul,
+        .ck-content ul ul ul {
+            list-style-type: square;
+            padding-left: 2em;
+        }
+        .ck.ck-editor__editable ol ol,
+        .ck-content ol ol {
+            list-style-type: lower-alpha;
+            padding-left: 2em;
+        }
+        .ck.ck-editor__editable ol ol ol,
+        .ck-content ol ol ol {
+            list-style-type: lower-roman;
+            padding-left: 2em;
+        }
+    `,document.head.appendChild(t)}function Ut(){return document.documentElement.classList.contains("dark")}function dt(){const t=document.getElementById(at);if(!Ut()){t&&t.remove();return}if(t)return;const o=document.createElement("style");o.id=at,o.textContent=`
+        /* CKEditor5 다크 모드 오버라이드 - CSS 변수 전역 적용 */
+        :root {
+            --ck-color-base-foreground: #1f2937;
+            --ck-color-base-background: #1f2937;
+            --ck-color-base-border: #374151;
+            --ck-color-text: #f3f4f6;
+            --ck-color-toolbar-background: #111827;
+            --ck-color-toolbar-border: #374151;
+            --ck-color-button-default-background: transparent;
+            --ck-color-button-default-hover-background: #374151;
+            --ck-color-button-default-active-background: #4b5563;
+            --ck-color-button-on-background: #374151;
+            --ck-color-button-on-hover-background: #4b5563;
+            --ck-color-focus-border: #3b82f6;
+            --ck-color-input-background: #1f2937;
+            --ck-color-input-text: #f3f4f6;
+            --ck-color-input-border: #374151;
+            --ck-color-panel-background: #1f2937;
+            --ck-color-panel-border: #374151;
+            --ck-color-list-button-hover-background: #374151;
+            --ck-color-list-button-on-background: #3b82f6;
+            --ck-color-list-button-on-color: #f3f4f6;
+            --ck-color-list-button-on-hover-background: #4b5563;
+            --ck-color-labeled-field-label-background: #1f2937;
+            --ck-color-link-default: #60a5fa;
+            --ck-color-link-selected-background: rgba(96, 165, 250, 0.1);
+            --ck-color-table-focused-cell-background: rgba(59, 130, 246, 0.1);
+        }
+        /* 에디터 본문 */
+        .ck.ck-editor__editable_inline {
+            background-color: #1f2937 !important;
+            color: #f3f4f6 !important;
+            border-color: #374151 !important;
+        }
+        /* 메인 툴바 */
+        .ck.ck-toolbar {
+            background-color: #111827 !important;
+            border-color: #374151 !important;
+        }
+        /* 모든 버튼 텍스트 */
+        .ck.ck-button,
+        .ck.ck-button .ck-button__label {
+            color: #f3f4f6 !important;
+        }
+        /* 모든 SVG 아이콘 (툴바, 드롭다운 화살표 포함) */
+        .ck.ck-icon,
+        .ck .ck-icon,
+        .ck.ck-button .ck-icon,
+        .ck.ck-dropdown__arrow {
+            color: #f3f4f6 !important;
+        }
+        .ck.ck-button:hover,
+        .ck.ck-button.ck-on {
+            background-color: #374151 !important;
+        }
+        /* 툴팁 (호버 시 버튼 설명) */
+        .ck.ck-tooltip .ck-tooltip__text {
+            background-color: #1f2937 !important;
+            color: #f3f4f6 !important;
+        }
+        /* 드롭다운 패널 / 리스트 / balloon 팝업 공통 */
+        .ck.ck-dropdown__panel,
+        .ck.ck-list,
+        .ck.ck-balloon-panel {
+            background-color: #1f2937 !important;
+            border-color: #374151 !important;
+        }
+        /* 리스트 아이템 */
+        .ck.ck-list__item .ck-button,
+        .ck.ck-list__item .ck-button .ck-button__label {
+            color: #f3f4f6 !important;
+        }
+        .ck.ck-list__item .ck-button:hover {
+            background-color: #374151 !important;
+        }
+        .ck.ck-list__item .ck-button.ck-disabled .ck-button__label {
+            color: #6b7280 !important;
+        }
+        /* 링크 팝업 / form */
+        .ck.ck-link-form,
+        .ck.ck-link-actions {
+            background-color: #1f2937 !important;
+            border-color: #374151 !important;
+        }
+        .ck.ck-input-text {
+            background-color: #111827 !important;
+            color: #f3f4f6 !important;
+            border-color: #374151 !important;
+        }
+        .ck.ck-labeled-field-view__label {
+            background-color: #1f2937 !important;
+            color: #9ca3af !important;
+        }
+        /* 테이블 속성/셀 속성 폼 */
+        .ck.ck-table-form,
+        .ck.ck-table-cell-properties-form,
+        .ck.ck-table-properties-form {
+            background-color: #1f2937 !important;
+            border-color: #374151 !important;
+        }
+        .ck.ck-table-form .ck-label,
+        .ck.ck-table-cell-properties-form .ck-label,
+        .ck.ck-table-properties-form .ck-label {
+            color: #d1d5db !important;
+        }
+        /* 색상 선택 패널 */
+        .ck.ck-color-table,
+        .ck.ck-color-grid {
+            background-color: #1f2937 !important;
+        }
+        .ck.ck-color-table .ck-color-table__remove-color,
+        .ck.ck-color-table .ck-color-table__remove-color .ck-button__label {
+            color: #f3f4f6 !important;
+        }
+        /* 헤딩/폰트 드롭다운 라벨 */
+        .ck.ck-heading_paragraph,
+        .ck.ck-heading_heading1,
+        .ck.ck-heading_heading2,
+        .ck.ck-heading_heading3 {
+            color: #f3f4f6 !important;
+        }
+        /* 이미지 캡션 */
+        .ck-content .image > figcaption {
+            background-color: #374151 !important;
+            color: #d1d5db !important;
+        }
+        /* 이미지 리사이즈 핸들 */
+        .ck-content .image.ck-widget_selected .ck-widget__resizer__handle {
+            background-color: #3b82f6 !important;
+            border-color: #1d4ed8 !important;
+        }
+        /* 이미지 정렬 툴바 아이콘 */
+        .ck.ck-toolbar .ck-button .ck-icon {
+            color: #f3f4f6 !important;
+        }
+        /* 이미지 선택 시 balloon toolbar (floating) */
+        .ck.ck-toolbar_floating {
+            background-color: #111827 !important;
+            border-color: #374151 !important;
+        }
+        /* 이미지 리사이즈 드롭다운 버튼 라벨 (25%, 50% 등) */
+        .ck.ck-dropdown .ck-button__label {
+            color: #f3f4f6 !important;
+        }
+        /* 이미지 리사이즈 드롭다운 내 선택 리스트 */
+        .ck.ck-resize-image-form,
+        .ck.ck-image-resize-form {
+            background-color: #1f2937 !important;
+            border-color: #374151 !important;
+            color: #f3f4f6 !important;
+        }
+        .ck.ck-resize-image-form .ck-label,
+        .ck.ck-image-resize-form .ck-label {
+            color: #d1d5db !important;
+        }
+        .ck.ck-resize-image-form .ck-input-text,
+        .ck.ck-image-resize-form .ck-input-text {
+            background-color: #111827 !important;
+            color: #f3f4f6 !important;
+            border-color: #374151 !important;
+        }
+        /* 표 안 에디터 내용 (다크 배경) */
+        .ck-content table tr {
+            background-color: unset;
+        }
+        .ck-content table td,
+        .ck-content table th {
+            border-color: #4b5563;
+            color: #f3f4f6 !important;
+        }
+        /* 표 col 절대 px 너비 무력화 */
+        .ck-content table col {
+            width: auto !important;
+        }
+        /* 목록 마커 색상 - 다크모드 */
+        .ck.ck-editor__editable ul,
+        .ck.ck-editor__editable ol {
+            color: #f3f4f6;
+        }
+        .ck.ck-editor__editable li::marker {
+            color: #d1d5db;
+        }
+    `,document.head.appendChild(o)}let I=null;function At(){I||(I=new MutationObserver(()=>{dt()}),I.observe(document.documentElement,{attributes:!0,attributeFilter:["class"]}))}function Pt(){I&&(I.disconnect(),I=null)}const Bt={ko:"한국어",en:"English",ja:"日本語",zh:"中文",fr:"Français",de:"Deutsch",es:"Español"};function Ot(t){return Bt[t]??t.toUpperCase()}function ut(){const t=window.G7Core;return t?.locale?.supported?t.locale.supported():[localStorage.getItem("g7_locale")||"ko"]}function L(){return window.G7Core?.locale?.current?.()??localStorage.getItem("g7_locale")??"ko"}function Tt(t,o,e){const r=[t.Essentials,t.Bold,t.Italic,t.Underline,t.Strikethrough,t.Link,t.Paragraph,t.Heading,t.BlockQuote,t.List,t.Alignment,t.Table,t.TableToolbar,t.TableProperties,t.TableCellProperties,t.Indent,t.IndentBlock,t.PasteFromOffice,t.GeneralHtmlSupport,t.Image,t.ImageResize,t.ImageStyle,t.ImageCaption,t.ImageToolbar];return o==="full"&&r.push(t.MediaEmbed,t.HorizontalLine,t.CodeBlock,t.SourceEditing,t.FontSize,t.FontColor,t.FontBackgroundColor),e&&r.push(t.ImageUpload,t.SimpleUploadAdapter),r}function jt(){return"/api/plugins/sirsoft-ckeditor5/upload"}function Nt(){const t=localStorage.getItem("auth_token");return t?{Authorization:`Bearer ${t}`}:{}}async function ft(t,o){const e=window.CKEDITOR;if(!e)throw new Error("[sirsoft-ckeditor5] CKEDITOR 전역 객체를 찾을 수 없습니다. CDN 스크립트가 로드되었는지 확인하세요.");const r=lt[o.toolbar]||lt.standard,n=o.imageUpload?r:r.filter(i=>i!=="uploadImage"),a={initialData:o.initialContent,plugins:Tt(e,o.toolbar,o.imageUpload),toolbar:{items:n},table:{contentToolbar:["tableColumn","tableRow","mergeTableCells","|","tableProperties","tableCellProperties"],tableProperties:{defaultProperties:{borderStyle:"solid",borderColor:"#d1d5db",borderWidth:"1px",alignment:"left"}},tableCellProperties:{defaultProperties:{borderStyle:"solid",borderColor:"#d1d5db",borderWidth:"1px",padding:"8px"}}},image:{toolbar:["imageStyle:inline","imageStyle:alignLeft","imageStyle:alignCenter","imageStyle:alignRight","|","toggleImageCaption","|","resizeImage"],resizeOptions:[{name:"resizeImage:original",label:"Original",value:null},{name:"resizeImage:25",label:"25%",value:"25"},{name:"resizeImage:50",label:"50%",value:"50"},{name:"resizeImage:75",label:"75%",value:"75"}],resizeUnit:"%"},indentBlock:{offset:40,unit:"px"},link:{defaultProtocol:"https://",decorators:{openInNewTab:{mode:"automatic",callback:i=>i.startsWith("http://")||i.startsWith("https://"),attributes:{target:"_blank",rel:"noopener noreferrer"}}}},htmlSupport:{allow:[{name:/.*/,attributes:!0,classes:!0,styles:!0}]},placeholder:o.placeholder,language:L()};o.imageUpload&&(a.simpleUpload={uploadUrl:jt(),headers:Nt()});const c=await e.ClassicEditor.create(t,a),d=`ckeditor5-height-style-${o.containerId}`,k=document.getElementById(d);if(k)k.textContent=`#${o.containerId} .ck-editor__editable { min-height: ${o.height}px !important; }`;else{const i=document.createElement("style");i.id=d,i.textContent=`#${o.containerId} .ck-editor__editable { min-height: ${o.height}px !important; }`,document.head.appendChild(i)}return o.readOnly&&c.enableReadOnlyMode("read-only"),c}function Dt(t,o,e,r,n){const a=document.createElement("div");a.className="ckeditor5-locale-tabs";const c=new Map;o.forEach(i=>{const l=document.createElement("div");l.dataset.locale=i,i!==e&&(l.style.cssText="display:none;");const s=document.createElement("div");l.appendChild(s),c.set(i,s)});const d=()=>{n&&a.querySelectorAll("button").forEach(i=>{const l=i.dataset.locale;if(!l||i.classList.contains("is-active")){const g=i.querySelector(".ck5-check");g&&g.remove();return}const u=!!n(l)?.trim(),f=i.querySelector(".ck5-check");if(u&&!f){const g=document.createElement("i");g.className="fas fa-check ck5-check",i.appendChild(g)}else!u&&f&&f.remove()})},k=o[0];return o.forEach(i=>{const l=i===k,s=i===e,u=document.createElement("button");u.type="button",u.dataset.locale=i,u.className=[s?"is-active":"",l?"is-default":""].filter(Boolean).join(" "),u.innerHTML=`<i class="fas fa-globe ck5-lang-icon"></i><span>${Ot(i)}</span>${l?'<span class="ck5-required">*</span>':""}`,u.addEventListener("click",async()=>{a.querySelectorAll("button").forEach(f=>{const b=f.dataset.locale===i;f.classList.toggle("is-active",b)}),c.forEach((f,g)=>{const b=f.parentElement;b&&(b.style.display=g===i?"block":"none")}),r&&await r(i),d()}),a.appendChild(u)}),t.appendChild(a),c.forEach(i=>{i.parentElement&&t.appendChild(i.parentElement)}),{tabsEl:a,contentEls:c,updateCheckIcons:d}}function kt(t,o,e,r,n=!0){if(St())return;const a=window.G7Core;if(!a?.state?.setLocal)return;n&&a.state.getLocal?.()?.hasChanges!==!0&&a.state.setLocal({hasChanges:!0});const c={[`form.${t}_mode`]:"html"};r?c[`form.${t}.${o}`]=e:c[`form.${t}`]=e,a.state.setLocal(c,{debounce:300,debounceKey:`ckeditor-sync-${t}`,render:!1,selfManaged:!0})}function gt(t,o){const e=window.G7Core,r=typeof t.content=="string"?t.content:"";let a=r.startsWith("{{")&&r.endsWith("}}")?"":r;if(!a&&o){const d=(e?.state?.getLocal?.()??{})?.form?.[o];typeof d=="string"&&d&&(a=d)}return a}function bt(t,o){const e=window.G7Core;let r={};try{typeof t.content=="string"&&t.content.startsWith("{")&&!t.content.startsWith("{{")?r=JSON.parse(t.content):typeof t.content=="object"&&t.content!==null&&(r=t.content)}catch{r={}}if(Object.keys(r).length===0&&o){const a=(e?.state?.getLocal?.()??{})?.form?.[o];if(a&&typeof a=="object"&&!Array.isArray(a)?r=a:typeof a=="string"&&a&&(r={[L()]:a}),Object.keys(r).length===0){const c=e?.state?.get?.()??{},k=(c?._global?.selectedItem??c?.selectedItem)?.[o];k&&typeof k=="object"&&!Array.isArray(k)&&(r=k)}}return r}async function mt(t,o){const e=t.params??{},n=`ckeditor5-${e.name??"content"}`;ot(n);const a=E.get(n);if(a&&a.size>0){const p=[];a.forEach(y=>{y&&typeof y.destroy=="function"&&p.push(y.destroy().catch(()=>{}))}),await Promise.allSettled(p),E.delete(n)}const c=document.getElementById(n);if(!c){console.warn(`[sirsoft-ckeditor5] 컨테이너 엘리먼트를 찾을 수 없습니다: #${n}`);return}it(),zt(),dt(),At(),await Mt(L());const k=window.G7Core?.state?.get()||{},i=k._global?.plugins?.["sirsoft-ckeditor5"]??k.plugins?.["sirsoft-ckeditor5"]??{},l=e.name??"content",s=e.multilingual===!0||e.multilingual==="true",u=e.readOnly===!0||e.readOnly==="true",f=e.imageUpload!==void 0?e.imageUpload===!0||e.imageUpload==="true":i.imageUpload===!0||i.imageUpload==="true",g=e.placeholder??"",b=e.height!==void 0?Number(e.height)||400:Number(i.editorHeight)||400,G=(e.toolbar!==void 0?e.toolbar:i.toolbar)??"standard",m=!(e.trackChanges===!1||e.trackChanges==="false");let S=s?bt(e,l):{};if(!await st()){const p={container:c,name:l,height:b,readOnly:u,placeholder:g,trackChanges:m,multilingual:s,locales:s?ut():void 0,activeLocale:L(),contentMap:s?bt(e,l):void 0,initialContent:s?void 0:gt(e,l)};Q(p),D(`ckeditor5-editor:${n}`,x("editor.asset.label","편집기"),()=>J(t,o,c,p.multilingual,l),x("editor.asset.fallback_notice","편집기를 불러오지 못했습니다. 임시 입력창으로 전환했습니다. 작성한 내용은 그대로 저장됩니다."));return}const v=new Map;E.set(n,v);const wt={placeholder:g,readOnly:u,imageUpload:f,height:b,toolbar:G,containerId:n};if(s){const p=ut(),y=L(),C={current:new Map},M={current:()=>{}},z=async h=>{if(v.has(h))return;const B=C.current.get(h);if(!B)return;const Ht=S[h]??"";try{const U=await ft(B,{...wt,initialContent:Ht});v.set(h,U);let _t=!0;const Z=nt(U,{name:l,locale:h,multilingual:!0});if(et(n,Z),U.model.document.on("change:data",()=>{if(_t||!Z.shouldEmit())return;const O=U.getData();Z.noteEmitted(O),kt(l,h,O,!0,m),M.current()}),_t=!1,l){const O=window.G7Core;(O?.state?.getLocal?.()??{}).form?.[`${l}_mode`]!=="html"&&O.state.setLocal({[`form.${l}_mode`]:"html"})}}catch(U){console.error(`[sirsoft-ckeditor5] 에디터 초기화 오류 (locale: ${h}):`,U)}},P=h=>{const B=v.get(h);return B?B.getData?.()??null:null},{contentEls:_,updateCheckIcons:Ct}=Dt(c,p,y,z,P);if(C.current=_,M.current=Ct,await z(y),!v.has(y)){E.delete(n),Q({container:c,name:l,height:b,readOnly:u,placeholder:g,multilingual:!0,locales:p,activeLocale:y,contentMap:S,trackChanges:m}),D(`ckeditor5-editor:${n}`,x("editor.asset.label","편집기"),()=>J(t,o,c,!0,l),x("editor.asset.fallback_notice","편집기를 불러오지 못했습니다. 임시 입력창으로 전환했습니다. 작성한 내용은 그대로 저장됩니다."));return}setTimeout(()=>{p.filter(h=>h!==y).forEach(h=>{z(h)})},2e3)}else{const p=gt(e,l),y=document.createElement("div");c.appendChild(y);try{const C=await ft(y,{...wt,initialContent:p}),M=L();v.set(M,C);let z=!0;const P=nt(C,{name:l,locale:M,multilingual:!1});if(et(n,P),C.model.document.on("change:data",()=>{if(z||!P.shouldEmit())return;const _=C.getData();P.noteEmitted(_),kt(l,M,_,!1,m)}),z=!1,p){const _=C.getData();(!_||_.trim()==="")&&C.setData(p)}if(l){const _=window.G7Core;(_?.state?.getLocal?.()??{}).form?.[`${l}_mode`]!=="html"&&_.state.setLocal({[`form.${l}_mode`]:"html"})}}catch(C){console.error("[sirsoft-ckeditor5] 에디터 초기화 오류:",C),E.delete(n),Q({container:c,name:l,height:b,readOnly:u,placeholder:g,multilingual:!1,activeLocale:L(),initialContent:p,trackChanges:m}),D(`ckeditor5-editor:${n}`,x("editor.asset.label","편집기"),()=>J(t,o,c,!1,l),x("editor.asset.fallback_notice","편집기를 불러오지 못했습니다. 임시 입력창으로 전환했습니다. 작성한 내용은 그대로 저장됩니다."))}}}async function Ft(t,o){const r=`ckeditor5-${t.params?.name??"content"}`;ot(r);const n=E.get(r);if(!n||n.size===0)return;const a=[];n.forEach(d=>{d&&typeof d.destroy=="function"&&a.push(d.destroy().catch(k=>{console.warn("[sirsoft-ckeditor5] destroyEditor error:",k)}))}),await Promise.allSettled(a),E.delete(r);const c=document.getElementById(`ckeditor5-height-style-${r}`);c&&c.remove(),E.size===0&&Pt()}const w="sirsoft-ckeditor5",X="ckeditor5-content-styles",pt="ckeditor5-content-styles-override";function ht(){if(!document.getElementById(X)){const t=window?.G7Core?.asset;try{const o=rt();if(typeof t?.loadStylesheet=="function")t.loadStylesheet(o,{id:X},{label:"ckeditor5 content CSS"}).catch(e=>{console.warn("[ckeditor5] 본문 스타일 로드 실패:",e),window?.G7Core?.assets?.notifyFailure?.({id:"ckeditor5-content-css",label:"본문 스타일",retry:()=>ht()})});else{const e=document.createElement("link");e.id=X,e.rel="stylesheet",e.href=o,document.head.appendChild(e)}}catch(o){console.warn("[ckeditor5] 본문 스타일 URL 을 만들지 못했습니다:",o)}}if(!document.getElementById(pt)){const t=document.createElement("style");t.id=pt,t.textContent=`
+            /* 이미지 캡션 - 다크모드 */
+            html.dark .ck-content .image > figcaption { color: hsl(0, 0%, 80%); background-color: hsl(0, 0%, 15%); }
+
+            /* CKEditor5 표 스타일 - 다크모드 */
+            html.dark .ck-content figure.table table { border-color: hsl(0, 0%, 35%); }
+            html.dark .ck-content figure.table table tr { background-color: unset; }
+            html.dark .ck-content figure.table table td, html.dark .ck-content figure.table table th { border-color: hsl(0, 0%, 30%); color: hsl(0, 0%, 90%); background-color: unset; }
+            html.dark .ck-content figure.table table th { background-color: hsl(215, 20%, 25%); }
+
+            /* figure.table 전체 너비 - prose와의 충돌 방지 */
+            .ck-content figure.table { display: table; width: 100%; margin: 1em 0; }
+            .ck-content figure.table table { width: 100%; }
+            .ck-content table tr { background-color: unset; }
+            .ck-content table col { width: auto !important; }
+
+            /* 표 정렬 보정 */
+            .ck-content figure.table[style*="float:left"],
+            .ck-content figure.table[style*="float: left"] { margin-left: 0 !important; margin-right: 1em !important; }
+            .ck-content figure.table[style*="float:right"],
+            .ck-content figure.table[style*="float: right"] { margin-left: 1em !important; margin-right: 0 !important; }
+
+            /* 이미지 인라인/정렬 - Tailwind preflight img:block 대응 */
+            .ck-content img { display: inline; margin: 0; max-width: 100%; }
+            .ck-content p:has(img) { line-height: 0; }
+            .ck-content p:has(img[style*="float"]) { overflow: hidden; }
+
+            /* 이미지 캡션 - 라이트 모드 */
+            .ck-content .image > figcaption { background-color: #f3f4f6; color: #374151; font-size: 0.875em; padding: 4px 8px; text-align: center; }
+
+            /* 목록 마커 및 들여쓰기 - Tailwind preflight reset 대응 */
+            .ck-content ul { list-style-type: disc; padding-left: 2em; }
+            .ck-content ol { list-style-type: decimal; padding-left: 2em; }
+            .ck-content ul ul { list-style-type: circle; padding-left: 2em; }
+            .ck-content ul ul ul { list-style-type: square; padding-left: 2em; }
+            .ck-content ol ol { list-style-type: lower-alpha; padding-left: 2em; }
+            .ck-content ol ol ol { list-style-type: lower-roman; padding-left: 2em; }
+        `,document.head.appendChild(t)}}const $={initEditor:mt,destroyEditor:Ft,injectContentCss:ht},A=window.G7Core?.createLogger?.(`Plugin:${w}`)??{log:(...t)=>console.log(`[Plugin:${w}]`,...t),warn:(...t)=>console.warn(`[Plugin:${w}]`,...t),error:(...t)=>console.error(`[Plugin:${w}]`,...t)};function yt(t=!1){const o=window.G7Core?.getActionDispatcher?.();if(o)Object.entries($).forEach(([e,r])=>{const n=`${w}.${e}`;o.registerHandler(n,r,{category:"plugin",source:w})}),A.log(`${Object.keys($).length} handler(s) registered:`,Object.keys($).map(e=>`${w}.${e}`));else if(t){let e=0;const r=50,n=()=>{const a=window.G7Core?.getActionDispatcher?.();a?(Object.entries($).forEach(([c,d])=>{const k=`${w}.${c}`;a.registerHandler(k,d,{category:"plugin",source:w})}),A.log(`${Object.keys($).length} handler(s) registered:`,Object.keys($).map(c=>`${w}.${c}`))):(e++,e<=r?(A.warn(`ActionDispatcher not found, retrying... (${e}/${r})`),setTimeout(n,100)):A.error("Failed to register handlers: ActionDispatcher not available after maximum retries"))};n()}else A.warn("ActionDispatcher not found, handlers not registered")}function Y(){if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>yt(!0));else{const t=!!window.G7Core?.getActionDispatcher?.();yt(!t)}}return Y(),typeof window<"u"&&(window.__SirsoftCkeditor5={identifier:w,handlers:Object.keys($),initPlugin:Y}),F.initPlugin=Y,Object.defineProperty(F,Symbol.toStringTag,{value:"Module"}),F}({});

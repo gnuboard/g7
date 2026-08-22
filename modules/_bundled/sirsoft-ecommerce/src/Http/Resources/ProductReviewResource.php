@@ -2,24 +2,15 @@
 
 namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
-use App\Helpers\PermissionHelper;
 use App\Http\Resources\BaseApiResource;
-use App\Models\User;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Enums\ReviewStatus;
-use Modules\Sirsoft\Ecommerce\Support\LocalizedText;
 
 /**
  * 상품 리뷰 리소스
  */
 class ProductReviewResource extends BaseApiResource
 {
-    /** 능력 → 권한 식별자 (행·목록 공용 — 라우트 reviews.update / reviews.delete 와 같다) */
-    private const ABILITY_MAP = [
-        'can_update' => 'sirsoft-ecommerce.reviews.update',
-        'can_delete' => 'sirsoft-ecommerce.reviews.delete',
-    ];
-
     /**
      * 리소스를 배열로 변환
      *
@@ -35,18 +26,11 @@ class ProductReviewResource extends BaseApiResource
             'user_id' => $this->user?->uuid,
 
             // 작성자 정보
-            // 이메일은 관리자 화면 응답과 본인 열람에만 싣는다 — 상품 리뷰 목록은 인증 없이
-            // 열리므로, 이메일을 그대로 실으면 구매자 주소록이 응답 본문으로 수집된다.
             'user' => $this->whenLoaded('user', fn () => [
                 'uuid' => $this->user->uuid,
                 'name' => $this->user->name,
-                'email' => $this->canExposeMemberEmail($request, $this->user->id) ? $this->user->email : null,
+                'email' => $this->user->email,
             ]),
-
-            // 작성자 표시 이름 — 회원 후기는 회원 이름, 회원·주문 없이 등록한 후기(다른 쇼핑몰에서 이관)는
-            // 저장된 이름 그대로(가린 이름이면 가린 채로). 그 후기는 `user`·`orderOption` 이 null 이다.
-            'author_name' => $this->resource->displayAuthorName(),
-            'is_imported' => $this->resource->isImported(),
 
             // 상품 정보
             'product' => $this->whenLoaded('product', fn () => [
@@ -66,8 +50,6 @@ class ProductReviewResource extends BaseApiResource
             // 내용
             'content' => $this->content,
             'content_mode' => $this->content_mode,
-            // 태그를 걷어 낸 한 줄 본문 — 목록 칸·미리보기 창처럼 글자로만 그리는 자리용
-            'content_plain' => $this->getContentPlain(),
 
             // 상태
             'status' => $this->status->value,
@@ -109,7 +91,7 @@ class ProductReviewResource extends BaseApiResource
             'reply_admin' => $this->whenLoaded('replyAdmin', fn () => [
                 'uuid' => $this->replyAdmin->uuid,
                 'name' => $this->replyAdmin->name,
-                'email' => $this->canExposeMemberEmail($request, $this->replyAdmin->id) ? $this->replyAdmin->email : null,
+                'email' => $this->replyAdmin->email,
             ]),
             'replied_at' => $this->formatDateTimeStringForUser($this->replied_at),
             'reply_updated_at' => $this->formatDateTimeStringForUser($this->reply_updated_at),
@@ -120,29 +102,6 @@ class ProductReviewResource extends BaseApiResource
 
             ...$this->resourceMeta($request),
         ];
-    }
-
-    /**
-     * 본문을 글자로만 그릴 자리에 쓸 문자열을 반환합니다.
-     *
-     * 텍스트 모드는 본문 그대로, HTML 모드는 태그를 걷어 내고 엔티티를 풀어 공백을 한 칸으로 줄인다.
-     *
-     * @return string 글자 본문
-     */
-    private function getContentPlain(): string
-    {
-        $content = (string) ($this->content ?? '');
-
-        if ($this->content_mode !== 'html') {
-            return $content;
-        }
-
-        // 문단·줄바꿈 경계의 글자가 붙어 버리지 않게 블록 태그 자리에만 공백을 남긴 뒤 걷어 낸다
-        // (굵게 같은 글자 안 태그에 공백을 넣으면 낱말이 쪼개진다)
-        $spaced = preg_replace('/<\/?(?:p|div|br|li|ul|ol|h[1-6]|tr|td|th|table|blockquote|pre|hr)\b[^>]*>/i', ' ', $content) ?? $content;
-        $text = html_entity_decode(strip_tags($spaced), ENT_QUOTES | ENT_HTML5, 'UTF-8');
-
-        return trim(preg_replace('/\s+/u', ' ', $text) ?? $text);
     }
 
     /**
@@ -164,7 +123,7 @@ class ProductReviewResource extends BaseApiResource
         if (is_array($optionName)) {
             $locale = app()->getLocale();
 
-            return LocalizedText::pick($optionName, $locale);
+            return $optionName[$locale] ?? $optionName[config('app.fallback_locale', 'ko')] ?? array_values($optionName)[0] ?? '';
         }
 
         return (string) $optionName;
@@ -177,33 +136,9 @@ class ProductReviewResource extends BaseApiResource
      */
     protected function abilityMap(): array
     {
-        return self::ABILITY_MAP;
-    }
-
-    /**
-     * 소유자 필드명을 반환합니다. (응답의 `is_owner` — 화면이 본인 리뷰에만 수정·삭제를 붙이는 근거)
-     *
-     * @return string|null 소유자 필드명
-     */
-    protected function ownerField(): ?string
-    {
-        return 'user_id';
-    }
-
-    /**
-     * 관리자 리뷰 목록 수준 능력 맵을 반환합니다. (행 능력과 같은 식별자)
-     *
-     * @param  User|null  $user  현재 사용자
-     * @return array<string, bool> 능력 불리언 맵
-     */
-    public static function collectionAbilities(?User $user): array
-    {
-        $abilities = [];
-
-        foreach (self::ABILITY_MAP as $key => $identifier) {
-            $abilities[$key] = PermissionHelper::check($identifier, $user);
-        }
-
-        return $abilities;
+        return [
+            'can_update' => 'sirsoft-ecommerce.reviews.update',
+            'can_delete' => 'sirsoft-ecommerce.reviews.delete',
+        ];
     }
 }

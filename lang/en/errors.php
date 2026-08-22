@@ -19,31 +19,12 @@ return [
         'message' => 'You do not have permission to access this page.',
     ],
 
-    // Blocked by Settings > Security > Access restriction (shared by the web 403 page and the API 403 JSON message)
-    'ip_restricted' => [
-        'title' => 'Access not allowed',
-        'message' => 'This area can only be accessed from allowed IP addresses. Please contact the site administrator if you need access.',
-        'client_ip' => 'Your IP · :ip',
-    ],
-
     '404' => [
         'title' => 'Page Not Found',
         'message' => 'The page you requested does not exist or has been moved.',
     ],
 
-    // Shared by 4xx responses without a dedicated page (429 too many requests, 419 session expired, 405 method not allowed, etc.)
-    '4xx' => [
-        'title' => 'Unable to Process the Request',
-        'message' => 'The request is invalid or not allowed. Please try again later.',
-    ],
-
     '500' => [
-        'title' => 'Server Error',
-        'message' => 'Something went wrong while processing your request. Please try again later.',
-    ],
-
-    // Shared by 5xx responses without a dedicated page (502, 504, etc.)
-    '5xx' => [
         'title' => 'Server Error',
         'message' => 'Something went wrong while processing your request. Please try again later.',
     ],

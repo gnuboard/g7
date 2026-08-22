@@ -62,7 +62,7 @@ HTTP/1.1 200
 ```json
 {
     "success": true,
-    "message": "발송 결과를 불러왔습니다.",
+    "message": "messages.success",
     "data": {
         "results": []
     }
@@ -163,7 +163,7 @@ HTTP/1.1 200
 ```json
 {
     "success": true,
-    "message": "발송 결과를 불러왔습니다.",
+    "message": "messages.success",
     "data": {
         "results": {
             "21": {

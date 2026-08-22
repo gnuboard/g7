@@ -3,8 +3,6 @@
 namespace App\Http\Resources;
 
 use App\Models\User;
-use App\Support\LayoutEmptyObjects;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 
 class LayoutVersionResource extends BaseApiResource
@@ -39,8 +37,7 @@ class LayoutVersionResource extends BaseApiResource
      */
     public function toArray(Request $request): array
     {
-        // 버전 비교 화면이 그대로 그리는 본문 — 원문을 빈 객체 보존 디코드한다. 캐스트를 쓰면 `{}`↔`[]` 가짜 차이가 보인다 (#758)
-        $content = $this->resource instanceof Model ? LayoutEmptyObjects::rawPreserving($this->resource) : $this->getValue('content', []);
+        $content = $this->getValue('content', []);
 
         $payload = [
             'id' => $this->getValue('id'),

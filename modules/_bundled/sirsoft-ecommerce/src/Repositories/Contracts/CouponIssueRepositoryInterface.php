@@ -82,15 +82,6 @@ interface CouponIssueRepositoryInterface
     public function getUserIssuedCountForCoupon(int $userId, int $couponId): int;
 
     /**
-     * 특정 사용자의 여러 쿠폰 발급 횟수를 한 번에 조회합니다.
-     *
-     * @param  int  $userId  사용자 ID
-     * @param  array<int, int>  $couponIds  쿠폰 ID 목록
-     * @return array<int, int> 쿠폰 ID => 발급 횟수 (발급 이력이 없는 쿠폰은 키가 없다)
-     */
-    public function getUserIssuedCountsForCoupons(int $userId, array $couponIds): array;
-
-    /**
      * 특정 사용자가 특정 쿠폰을 사용 완료(used_at 세팅)한 횟수를 조회합니다.
      *
      * per_user_limit 주문 단계 검증의 "과거 사용"(축1) 기준입니다.

@@ -2,12 +2,8 @@
 
 namespace App\Http\Requests\Layout;
 
-use App\Contracts\Repositories\LayoutRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
-use App\Enums\LayoutSourceType;
 use App\Extension\HookManager;
-use App\Http\Requests\Layout\Concerns\CompilesMarkupContent;
-use App\Http\Requests\Layout\Concerns\DecodesLayoutContentPreserving;
 use App\Rules\NoExternalUrls;
 use App\Rules\SafeLayoutExpressions;
 use App\Rules\ValidDataSourceMerge;
@@ -16,7 +12,6 @@ use App\Rules\ValidParentLayout;
 use App\Rules\ValidPermissionStructure;
 use App\Rules\ValidSlotStructure;
 use App\Rules\WhitelistedEndpoint;
-use App\Services\LayoutMarkupService;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Contracts\Validation\Validator;
@@ -31,9 +26,6 @@ use Illuminate\Validation\Rule;
  */
 class UpdateLayoutContentRequest extends FormRequest
 {
-    use CompilesMarkupContent;
-    use DecodesLayoutContentPreserving;
-
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
      *
@@ -55,21 +47,20 @@ class UpdateLayoutContentRequest extends FormRequest
      *
      * 또한, ValidParentLayout 규칙에서 template_id를 사용하므로
      * 라우트 파라미터에서 templateName을 가져와 template_id로 변환합니다.
-     *
-     * @return void
      */
     protected function prepareForValidation(): void
     {
-        // `format=markup` 이면 마크업을 프로덕션 컴파일해 JSON 배열로 바꾼다 — 그 뒤는 기존 규칙 그대로.
-        $this->compileMarkupContentIfRequested();
-
         $content = $this->input('content');
 
-        // content 가 JSON 문자열이거나 JSON 객체 본문이면 빈 객체 `{}` 를 보존해 다시 읽는다 (#758).
-        // 파싱 실패 시 원본 유지 (검증에서 'array' 규칙으로 실패 처리)
-        if ($this->input('format') !== 'markup' && $content !== null) {
-            $content = $this->decodeContentPreserving();
-            $this->merge(['content' => $content]);
+        // content가 JSON 문자열인 경우 배열로 변환
+        if (is_string($content)) {
+            $decoded = json_decode($content, true);
+
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                $this->merge(['content' => $decoded]);
+                $content = $decoded;
+            }
+            // JSON 파싱 실패 시 원본 유지 (검증에서 'array' 규칙으로 실패 처리)
         }
 
         // 편집기 응답의 상속/주입/partial 노드 + 편집기 전용 메타 제거.
@@ -160,14 +151,7 @@ class UpdateLayoutContentRequest extends FormRequest
             if (count($slotNames) === 1) {
                 $skeleton['slots'] = [$slotNames[0] => $maskedComponents];
             } elseif (count($slotNames) === 0) {
-                // 물려받아 제목·초기값만 바꾸는 화면(슬롯도 컴포넌트도 없음)에 빈 `content` 슬롯을 지어 넣지 않는다.
-                // 부모가 그 슬롯을 정의하지 않으면 「부모 레이아웃에 정의되지 않은 슬롯」 으로 저장이 막히고,
-                // 정의했다면 빈 슬롯이 부모 본문을 비운다(실측 2026-10-06: `admin_language_packs` 제목 변경 422).
-                if ($maskedComponents === []) {
-                    unset($skeleton['slots']);
-                } else {
-                    $skeleton['slots'] = ['content' => $maskedComponents];
-                }
+                $skeleton['slots'] = ['content' => $maskedComponents];
             } else {
                 $nextSlots = [];
                 foreach ($skeletonSlots as $slotName => $slotValue) {
@@ -253,72 +237,6 @@ class UpdateLayoutContentRequest extends FormRequest
     }
 
     /**
-     * 검증 통과분을 돌려주되 **보낸 쪽의 키 순서를 되살립니다**.
-     *
-     * Laravel 의 `validated()` 는 규칙을 적힌 순서대로 훑어 결과를 다시 쌓는다. 그래서 하위 키 규칙을
-     * 가진 섹션(`content.meta.seo` 등)은 저장 한 번에 자식 순서가 **규칙 순서로 재배열**되고, 일부
-     * 항목에만 있는 키를 앞에 둔 리스트는 순서가 뒤집혀 JSON 이 배열 대신 객체로 굳는다
-     * (실측: `globalHeaders` 가 `[2,3,0,1]` 로 변해 `{"2":{…}}` 가 됐다).
-     *
-     * 값은 검증 통과분 그대로 두고 **순서만** 원본에 맞춘다 — 규칙 순서에 의존하지 않게 되므로
-     * 새 규칙을 어디에 적든 저장이 문서를 재배열하지 않는다.
-     *
-     * @param  string|null  $key  점 표기 경로 (전체면 null)
-     * @param  mixed  $default  경로가 없을 때 값
-     * @return mixed 검증 통과분
-     */
-    public function validated($key = null, $default = null): mixed
-    {
-        // 검증은 빈 객체 표식을 배열로 낮춘 사본으로 했으므로 원문의 `{}` 자리를 먼저 되살린다 (#758)
-        $validated = $this->restoreValidatedContent(parent::validated($key, $default), $key);
-
-        if ($key !== null || ! is_array($validated) || ! isset($validated['content']) || ! is_array($validated['content'])) {
-            return $validated;
-        }
-
-        $original = $this->input('content');
-
-        if (is_array($original)) {
-            $validated['content'] = $this->restoreKeyOrder($validated['content'], $original);
-        }
-
-        return $validated;
-    }
-
-    /**
-     * 검증 통과분의 키 순서를 원본 순서로 되돌립니다 (값은 건드리지 않는다).
-     *
-     * 원본에 있던 키를 원본 순서대로 먼저 담고, 원본에 없던 키(규칙이 기본값을 넣은 자리)는 뒤에 붙인다.
-     * 리스트는 원본 인덱스 순으로 정렬한 뒤 다시 0..n 으로 매긴다 — 그래야 JSON 이 배열로 남는다.
-     *
-     * @param  mixed  $validated  검증 통과분
-     * @param  mixed  $original  요청이 보낸 원본
-     * @return mixed 순서를 맞춘 값
-     */
-    private function restoreKeyOrder(mixed $validated, mixed $original): mixed
-    {
-        if (! is_array($validated) || ! is_array($original)) {
-            return $validated;
-        }
-
-        $ordered = [];
-
-        foreach ($original as $k => $v) {
-            if (array_key_exists($k, $validated)) {
-                $ordered[$k] = $this->restoreKeyOrder($validated[$k], $v);
-            }
-        }
-
-        foreach ($validated as $k => $v) {
-            if (! array_key_exists($k, $ordered)) {
-                $ordered[$k] = $v;
-            }
-        }
-
-        return array_is_list($original) ? array_values($ordered) : $ordered;
-    }
-
-    /**
      * 요청에 적용할 검증 규칙
      *
      * extends 레이아웃과 standalone 레이아웃의 구조 차이를 고려합니다:
@@ -338,9 +256,6 @@ class UpdateLayoutContentRequest extends FormRequest
         $isBaseLayout = is_array($content) && isset($content['slots']) && is_array($content['slots']);
 
         $rules = [
-            // 본문 형식 — `json`(기본) | `markup`(`.g7.html` 문자열, 검증 전 컴파일)
-            'format' => ['nullable', 'string', 'in:json,markup'],
-
             // 낙관적 잠금 — 클라이언트가 로드한 시점의 lock_version 필수 전달
             // Service::updateLayout 가 현재 DB lock_version 과 비교해 불일치 시
             // ConcurrentModificationException 으로 409 반환
@@ -398,11 +313,6 @@ class UpdateLayoutContentRequest extends FormRequest
             // 메타데이터 (legacy - metadata 키 사용하는 경우)
             'content.metadata' => ['nullable', 'array'],
 
-            // 문서 루트 주석 — 소스 `<layout>` 의 주석이 컴파일 산출의 루트 `comment` 로 남는다.
-            // 미명시였던 동안 편집기 저장이 이 키를 조용히 떨궜다(레이아웃 문서 3건 보유).
-            // S19 ② 의 4벌 대조 게이트가 검출.
-            'content.comment' => ['nullable', 'string'],
-
             // 메타 정보 (title, description, auth_required 등)
             // 주의: content.meta 는 'array' 규칙 + 하위 키 일부 명시 조합이므로 Laravel validated()
             // 는 명시된 하위 키만 추출한다(미명시 키는 저장 시 누락). 엔진이 소비하는 meta 하위 키는
@@ -418,32 +328,6 @@ class UpdateLayoutContentRequest extends FormRequest
             // 에러 레이아웃 표식 — ErrorPageHandler 가 소비
             'content.meta.is_error_layout' => ['nullable', 'boolean'],
             'content.meta.error_code' => ['nullable', 'integer'],
-            // 저장하지 않은 변경 이탈 확인 — 엔진 LeaveGuard 가 소비({{식}} 문자열·$t: 문구)
-            'content.meta.leave_guard' => ['nullable', 'string'],
-            'content.meta.leave_message' => ['nullable', 'string'],
-            // 레이아웃 편집기 [기본 정보] 탭이 쓰는 키 — 메뉴 아이콘·편집기 트리 라벨(MetaForm, 라우트 트리·모달 후보 라벨이 소비)
-            'content.meta.icon' => ['nullable', 'string', 'max:255'],
-            'content.meta.editor_label' => ['nullable', 'string', 'max:255'],
-            // 작성 도구 표기(번들 JSON 의 `_` 접두 키) — 런타임은 쓰지 않지만 저장에서 떨어지면 다음 업데이트의 3-way 병합이
-            // 운영자가 meta 를 고친 것으로 본다
-            'content.meta._e2e_allow' => ['nullable', 'string'],
-            // 뒤로/앞으로 가기·새로고침 스크롤 복원 — 엔진 ScrollMemory 가 소비(편집기 페이지 설정 [스크롤] 탭이 씀).
-            // 하위 키까지 명시해야 validated() 가 보존한다.
-            'content.meta.scroll_restoration' => ['nullable', 'array'],
-            'content.meta.scroll_restoration.mode' => ['nullable', 'string', 'max:200'],
-            'content.meta.scroll_restoration.on_reload' => ['nullable', 'boolean'],
-            'content.meta.scroll_restoration.wait' => ['nullable', 'string', 'in:height,data'],
-            'content.meta.scroll_restoration.timeout_ms' => ['nullable', 'integer', 'min:0', 'max:60000'],
-            'content.meta.scroll_restoration.containers' => ['nullable', 'array'],
-            'content.meta.scroll_restoration.containers.*' => ['string', 'max:200'],
-            'content.meta.scroll_restoration.snapshot' => ['nullable', 'array'],
-            'content.meta.scroll_restoration.snapshot.enabled' => ['nullable', 'boolean'],
-            'content.meta.scroll_restoration.snapshot.ttl_seconds' => ['nullable', 'integer', 'min:0', 'max:86400'],
-            'content.meta.scroll_restoration.snapshot.revalidate' => ['nullable', 'boolean'],
-            'content.meta.scroll_restoration.snapshot.item_key' => ['nullable', 'string', 'max:100'],
-            // 스냅샷과 함께 되돌릴 진행 상태 경로(다음 쪽 번호 등) — 엔진 ScrollMemory 와 같은 형식만 받는다
-            'content.meta.scroll_restoration.snapshot.state' => ['nullable', 'array'],
-            'content.meta.scroll_restoration.snapshot.state.*' => ['string', 'max:200', 'regex:/^_(global|local)\.[A-Za-z0-9_$][\w$.]*$/'],
 
             // SEO 메타데이터
             // 주의: content.meta.seo 도 'array' 규칙 + 하위 키 일부 명시이므로 SEO 페이지 생성기가
@@ -461,10 +345,6 @@ class UpdateLayoutContentRequest extends FormRequest
             'content.meta.seo.toggle_setting' => ['nullable', 'string'],
             'content.meta.seo.vars' => ['nullable', 'array'],
             'content.meta.seo.extensions' => ['nullable', 'array'],
-            // 편집기 SEO 탭이 쓰고 서버가 읽는 키 — 편집기 공유 미리보기의 제목·설명 대체값(SeoOgPreviewService)·트위터 카드(SeoMetaResolver — 검색로봇 화면에도 나감)
-            'content.meta.seo.title' => ['nullable', 'string'],
-            'content.meta.seo.description' => ['nullable', 'string'],
-            'content.meta.seo.twitter' => ['nullable', 'array'],
 
             // 모달 컴포넌트 정의
             'content.modals' => ['nullable', 'array'],
@@ -515,21 +395,10 @@ class UpdateLayoutContentRequest extends FormRequest
             'content.permissions' => ['nullable', new ValidPermissionStructure],
 
             // 전역 헤더 (API 호출 시 자동 적용되는 HTTP 헤더)
-            //
-            // 주의: 하위 키를 명시한 **유일한 배열 섹션**이라, 여기 적히지 않은 키는 `validated()` 가
-            // 조용히 떨군다(다른 섹션은 통째 `array` 규칙이라 하위가 그대로 보존된다). `comment` 는
-            // 소스 `<match>` 앞의 `<!-- -->` 이 컴파일된 것으로, 이 줄이 없으면 **코드 편집기에서
-            // 아무것도 고치지 않고 저장만 해도 그 주석이 사라진다**(브라우저 실측 2026-09-11:
-            // `_user_base` 저장 후 주석 101 → 99). 컴파일러·역변환기는 양쪽 다 이 키를 지킨다.
-            // `comment` 규칙은 **반드시 `pattern` 뒤**에 둔다. `validated()` 는 규칙 순서대로 결과 배열을
-            // 쌓으므로, 일부 항목에만 있는 `comment` 를 먼저 두면 그 항목들이 앞으로 끌려와 목록 순서가
-            // 뒤집히고(`[2,3,0,1]`) JSON 이 배열 대신 객체로 굳는다. `pattern` 은 전 항목 필수라 먼저
-            // 돌면 0..n 순서가 잡히고, 뒤따르는 `comment` 는 이미 있는 자리에 얹힌다.
             'content.globalHeaders' => ['nullable', 'array'],
             'content.globalHeaders.*.pattern' => ['required', 'string'],
             'content.globalHeaders.*.headers' => ['required', 'array'],
             'content.globalHeaders.*.headers.*' => ['string'],
-            'content.globalHeaders.*.comment' => ['nullable', 'string'],
 
             // 전환 오버레이 설정 (페이지 전환 시 stale DOM 방지)
             'content.transition_overlay' => ['nullable'],
@@ -589,7 +458,6 @@ class UpdateLayoutContentRequest extends FormRequest
      * 의미상 사용자를 차단할 수 없는 background/websocket 데이터소스는 사전에 차단한다.
      *
      * @param  Validator  $validator  Laravel 검증기 인스턴스
-     * @return void
      */
     public function withValidator(Validator $validator): void
     {
@@ -631,39 +499,6 @@ class UpdateLayoutContentRequest extends FormRequest
                 }
             }
         });
-    }
-
-    /**
-     * 검증 문구의 필드 라벨 — 레이아웃 meta 의 편집기·이탈 확인·SEO 키
-     *
-     * @return array<string, string> 필드 키 => 라벨
-     */
-    public function attributes(): array
-    {
-        return [
-            'content.meta.icon' => __('validation.attributes.layout_meta_icon'),
-            'content.meta.editor_label' => __('validation.attributes.layout_meta_editor_label'),
-            'content.meta._e2e_allow' => __('validation.attributes.layout_meta_authoring_note'),
-            'content.meta.leave_guard' => __('validation.attributes.layout_meta_leave_guard'),
-            'content.meta.leave_message' => __('validation.attributes.layout_meta_leave_message'),
-            'content.meta.scroll_restoration' => __('validation.attributes.layout_meta_scroll_restoration'),
-            'content.meta.scroll_restoration.mode' => __('validation.attributes.layout_meta_scroll_restoration_mode'),
-            'content.meta.scroll_restoration.on_reload' => __('validation.attributes.layout_meta_scroll_restoration_on_reload'),
-            'content.meta.scroll_restoration.wait' => __('validation.attributes.layout_meta_scroll_restoration_wait'),
-            'content.meta.scroll_restoration.timeout_ms' => __('validation.attributes.layout_meta_scroll_restoration_timeout_ms'),
-            'content.meta.scroll_restoration.containers' => __('validation.attributes.layout_meta_scroll_restoration_containers'),
-            'content.meta.scroll_restoration.containers.*' => __('validation.attributes.layout_meta_scroll_restoration_containers'),
-            'content.meta.scroll_restoration.snapshot' => __('validation.attributes.layout_meta_scroll_restoration_snapshot'),
-            'content.meta.scroll_restoration.snapshot.enabled' => __('validation.attributes.layout_meta_scroll_restoration_snapshot_enabled'),
-            'content.meta.scroll_restoration.snapshot.ttl_seconds' => __('validation.attributes.layout_meta_scroll_restoration_snapshot_ttl_seconds'),
-            'content.meta.scroll_restoration.snapshot.revalidate' => __('validation.attributes.layout_meta_scroll_restoration_snapshot_revalidate'),
-            'content.meta.scroll_restoration.snapshot.item_key' => __('validation.attributes.layout_meta_scroll_restoration_snapshot_item_key'),
-            'content.meta.scroll_restoration.snapshot.state' => __('validation.attributes.layout_meta_scroll_restoration_snapshot_state'),
-            'content.meta.scroll_restoration.snapshot.state.*' => __('validation.attributes.layout_meta_scroll_restoration_snapshot_state'),
-            'content.meta.seo.title' => __('validation.attributes.layout_seo_title'),
-            'content.meta.seo.description' => __('validation.attributes.layout_seo_description'),
-            'content.meta.seo.twitter' => __('validation.attributes.layout_seo_twitter'),
-        ];
     }
 
     /**
@@ -755,29 +590,5 @@ class UpdateLayoutContentRequest extends FormRequest
             'content.transition_overlay.skeleton.iteration_count.min' => __('validation.layout.transition_overlay.skeleton.iteration_count.min'),
             'content.transition_overlay.skeleton.iteration_count.max' => __('validation.layout.transition_overlay.skeleton.iteration_count.max'),
         ];
-    }
-
-    /**
-     * 마크업 컴파일 문맥 — 라우트의 템플릿·레이아웃 행에서 소속 정보를 얻는다.
-     *
-     * @return array{0: string|null, 1: string|null, 2: string|null, 3: string}
-     */
-    protected function markupCompileTarget(): array
-    {
-        $templateName = (string) $this->route('templateName');
-        $name = (string) $this->route('name');
-        $template = $templateName !== '' ? app(TemplateRepositoryInterface::class)->findByIdentifier($templateName) : null;
-
-        if ($template === null) {
-            return [null, null, null, "{$name}.g7.html"];
-        }
-
-        $layout = app(LayoutRepositoryInterface::class)->findByName($template->id, $name);
-        $sourceKind = $layout?->source_type instanceof LayoutSourceType ? $layout->source_type->value : null;
-
-        // 다섯째 원소 — 저장본(미등록 템플릿 컴포넌트 허용 기준, #712)
-        $baseline = $layout !== null ? app(LayoutMarkupService::class)->decodeStoredContent((string) $layout->getRawOriginal('content')) : null;
-
-        return [$templateName, $sourceKind, $layout?->source_identifier ?? $templateName, "{$name}.g7.html", $baseline];
     }
 }

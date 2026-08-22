@@ -8,7 +8,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Div } from '../basic/Div';
 import { Button } from '../basic/Button';
-import { LinkButton } from '../../support/LinkButton';
 import { Span } from '../basic/Span';
 import { P } from '../basic/P';
 import { Icon } from '../basic/Icon';
@@ -50,7 +49,7 @@ interface MobileNavProps {
   /** 드로어 열림 상태 */
   isOpen: boolean;
   /** 닫기 콜백 */
-  onClose: (event?: Event | React.SyntheticEvent) => void;
+  onClose: () => void;
   /** 사이트 로고 URL */
   logo?: string;
   /** 사이트 이름 */
@@ -102,8 +101,7 @@ const MobileNav: React.FC<MobileNavProps> = ({
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        // 닫기 처리기가 엔진 액션 처리기일 수 있어 원본 이벤트를 넘긴다(빈 인자면 event.type 에서 TypeError).
-        onClose(e);
+        onClose();
       }
     };
 
@@ -144,20 +142,19 @@ const MobileNav: React.FC<MobileNavProps> = ({
       >
         {/* 헤더 */}
         <Div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
-          {/* 이름이 길면 이 칸이 줄어들고 이름은 한 줄 … — 닫기 단추는 제자리를 지킨다(#143). */}
-          <LinkButton href={'/'} onNavigate={() => { onClose(); navigate('/'); }} className="justify-start flex items-center gap-2 min-w-0 flex-1 cursor-pointer">
+          <Button onClick={() => { onClose(); navigate('/'); }} className="flex items-center gap-2 cursor-pointer">
             {logo ? (
-              <Img src={logo} alt={siteName} className="h-8 max-w-full object-contain object-left" />
+              <Img src={logo} alt={siteName} className="h-8" />
             ) : (
-              <Span className="text-xl font-bold text-gray-900 dark:text-white truncate">{siteName}</Span>
+              <Span className="text-xl font-bold text-gray-900 dark:text-white">{siteName}</Span>
             )}
-          </LinkButton>
+          </Button>
           <Button
             onClick={onClose}
-            className="shrink-0 p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-            aria-label={t('common.close_menu')}
+            className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            aria-label="메뉴 닫기"
           >
-            <Icon name="x" className="w-6 h-6 text-2xl leading-none" />
+            <Icon name="x" className="w-6 h-6" />
           </Button>
         </Div>
 
@@ -166,37 +163,35 @@ const MobileNav: React.FC<MobileNavProps> = ({
           <Div className="p-4 border-b border-gray-200 dark:border-gray-800">
             <Div className="flex items-center gap-3">
               {user.avatar ? (
-                <Img src={user.avatar} alt={user.name} className="w-12 h-12 shrink-0 rounded-full" />
+                <Img src={user.avatar} alt={user.name} className="w-12 h-12 rounded-full" />
               ) : (
-                <Div className="w-12 h-12 shrink-0 rounded-full bg-blue-600 dark:bg-blue-600 flex items-center justify-center text-white text-lg font-medium">
+                <Div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-white text-lg font-medium">
                   {(user.name || 'U').charAt(0).toUpperCase()}
                 </Div>
               )}
-              <Div className="min-w-0">
-                <P className="font-medium text-gray-900 dark:text-white truncate">{user.name}</P>
-                <LinkButton href={'/mypage'} onNavigate={() => { onClose(); navigate('/mypage'); }} className="text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
+              <Div>
+                <P className="font-medium text-gray-900 dark:text-white">{user.name}</P>
+                <Button onClick={() => { onClose(); navigate('/mypage'); }} className="text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
                   {t('common.mypage')}
-                </LinkButton>
+                </Button>
               </Div>
             </Div>
           </Div>
         ) : (
           <Div className="p-4 border-b border-gray-200 dark:border-gray-800">
             <Div className="flex gap-2">
-              <LinkButton
-                href={'/login'}
-                onNavigate={() => { onClose(); navigate('/login'); }}
+              <Button
+                onClick={() => { onClose(); navigate('/login'); }}
                 className="flex-1 py-2 text-center text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 rounded-lg cursor-pointer"
               >
                 {t('auth.login')}
-              </LinkButton>
-              <LinkButton
-                href={'/register'}
-                onNavigate={() => { onClose(); navigate('/register'); }}
+              </Button>
+              <Button
+                onClick={() => { onClose(); navigate('/register'); }}
                 className="flex-1 py-2 text-center text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer"
               >
                 {t('auth.register')}
-              </LinkButton>
+              </Button>
             </Div>
           </Div>
         )}
@@ -206,49 +201,45 @@ const MobileNav: React.FC<MobileNavProps> = ({
           <Ul className="space-y-1">
             {/* 기본 메뉴 */}
             <Li>
-              <LinkButton
-                href={'/'}
-                onNavigate={() => { onClose(); navigate('/'); }}
-                className="justify-start flex items-center gap-3 px-3 py-2 w-full text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg cursor-pointer"
+              <Button
+                onClick={() => { onClose(); navigate('/'); }}
+                className="flex items-center gap-3 px-3 py-2 w-full text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg cursor-pointer"
               >
                 <Icon name="home" className="w-5 h-5" />
                 {t('nav.home')}
-              </LinkButton>
+              </Button>
             </Li>
             <Li>
-              <LinkButton
-                href={'/popular'}
-                onNavigate={() => { onClose(); navigate('/popular'); }}
-                className="justify-start flex items-center gap-3 px-3 py-2 w-full text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg cursor-pointer"
+              <Button
+                onClick={() => { onClose(); navigate('/popular'); }}
+                className="flex items-center gap-3 px-3 py-2 w-full text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg cursor-pointer"
               >
                 <Span className="text-orange-500">🔥</Span>
                 {t('nav.popular')}
-              </LinkButton>
+              </Button>
             </Li>
             <Li>
-              <LinkButton
-                href={'/shop'}
-                onNavigate={() => { onClose(); navigate('/shop'); }}
-                className="justify-start flex items-center gap-3 px-3 py-2 w-full text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg cursor-pointer"
+              <Button
+                onClick={() => { onClose(); navigate('/shop'); }}
+                className="flex items-center gap-3 px-3 py-2 w-full text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg cursor-pointer"
               >
                 <Span>🛒</Span>
                 {t('nav.shop')}
-              </LinkButton>
+              </Button>
             </Li>
             <Li>
-              <LinkButton
-                href={'/cart'}
-                onNavigate={() => { onClose(); navigate('/cart'); }}
-                className="justify-start flex items-center gap-3 px-3 py-2 w-full text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg cursor-pointer"
+              <Button
+                onClick={() => { onClose(); navigate('/cart'); }}
+                className="flex items-center gap-3 px-3 py-2 w-full text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg cursor-pointer"
               >
                 <Icon name="shopping-cart" className="w-5 h-5" />
                 {t('nav.cart')}
                 {cartCount > 0 && (
-                  <Span className="ml-auto px-2 py-0.5 text-xs bg-blue-600 dark:bg-blue-600 text-white rounded-full">
+                  <Span className="ml-auto px-2 py-0.5 text-xs bg-blue-500 text-white rounded-full">
                     {cartCount}
                   </Span>
                 )}
-              </LinkButton>
+              </Button>
             </Li>
 
             {/* 구분선 */}
@@ -260,14 +251,13 @@ const MobileNav: React.FC<MobileNavProps> = ({
             </Li>
             {boards.map((board) => (
               <Li key={board.id}>
-                <LinkButton
-                  href={`/board/${board.slug}`}
-                  onNavigate={() => { onClose(); navigate(`/board/${board.slug}`); }}
-                  className="justify-start flex items-center gap-3 px-3 py-2 w-full text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg cursor-pointer"
+                <Button
+                  onClick={() => { onClose(); navigate(`/board/${board.slug}`); }}
+                  className="flex items-center gap-3 px-3 py-2 w-full text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg cursor-pointer"
                 >
                   {board.icon && <Span>{board.icon}</Span>}
-                  <Span className="min-w-0 truncate">{board.name}</Span>
-                </LinkButton>
+                  {board.name}
+                </Button>
               </Li>
             ))}
           </Ul>
@@ -276,15 +266,15 @@ const MobileNav: React.FC<MobileNavProps> = ({
         {/* 하단 링크 */}
         <Div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
           <Div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-            <LinkButton href={'/about'} onNavigate={() => { onClose(); navigate('/about'); }} className="hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer">
+            <Button onClick={() => { onClose(); navigate('/about'); }} className="hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer">
               {t('footer.about')}
-            </LinkButton>
-            <LinkButton href={'/terms'} onNavigate={() => { onClose(); navigate('/terms'); }} className="hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer">
+            </Button>
+            <Button onClick={() => { onClose(); navigate('/terms'); }} className="hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer">
               {t('footer.terms')}
-            </LinkButton>
-            <LinkButton href={'/privacy'} onNavigate={() => { onClose(); navigate('/privacy'); }} className="hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer">
+            </Button>
+            <Button onClick={() => { onClose(); navigate('/privacy'); }} className="hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer">
               {t('footer.privacy')}
-            </LinkButton>
+            </Button>
           </Div>
         </Div>
       </Div>

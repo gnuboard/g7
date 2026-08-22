@@ -1,12 +1,8 @@
 /**
- * 다음(카카오) 우편번호 SDK 확보 상태 판정
+ * 다음 우편번호 SDK 확보 상태 판정
  *
- * 이 SDK 는 라이브러리가 아니라 카카오가 운영하는 **서비스 SDK** 라 동봉할 수 없다.
- * 스크립트가 카카오 서버와 통신하므로 자체 호스팅해도 오프라인에서 동작하지 않는다.
- *
- * 다음 우편번호는 카카오 주소(`t1.kakaocdn.net`)와 생성자 `kakao.Postcode` 로 옮겨 간다. 새 SDK 는
- * `window.kakao`·`window.daum` 두 이름을 함께 정의하고, 옛 `daum.Postcode` 도 당분간 호환된다 — 그래서
- * 새 이름을 먼저 보고 옛 이름을 대체로 둔다(옛 주소를 싣는 템플릿 조각이 남아 있어도 동작한다).
+ * 이 SDK 는 라이브러리가 아니라 Daum 이 운영하는 **서비스 SDK** 라 동봉할 수 없다.
+ * 스크립트가 Daum 서버와 통신하므로 자체 호스팅해도 오프라인에서 동작하지 않는다.
  * 그래서 이 플러그인만은 외부 호스트 의존이 남으며, 대신 **못 불러왔을 때 주소를
  * 직접 입력할 수 있어야** 한다.
  *
@@ -18,34 +14,14 @@
  * @module postcodeSdk
  */
 
-/**
- * SDK 스크립트 URL (manifest `trusted_script_hosts` 로 선언한 호스트)
- *
- * 상수 이름은 플러그인 식별자(`sirsoft-daum_postcode`)처럼 그대로 둔다 — 값만 카카오 주소다.
- */
-export const DAUM_POSTCODE_SDK_URL = '//t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js';
+/** SDK 스크립트 URL (manifest `trusted_script_hosts` 로 선언한 호스트) */
+export const DAUM_POSTCODE_SDK_URL = '//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js';
 
 /** 레이아웃 확장이 삽입하는 스크립트 element id */
 export const DAUM_POSTCODE_SCRIPT_ID = 'daum_postcode_script';
 
 /** 자산 실패 안내의 식별자 */
 const FAILURE_ID = 'daum-postcode-sdk';
-
-/**
- * 같은 SDK 스크립트에 대해 코어 레이아웃 스크립트 로더가 따로 내는 실패 안내의 식별자.
- *
- * 코어 안내는 스크립트 id 원문(`daum_postcode_script`)을 이름으로 쓰고, 플러그인 안내와 겹치면 「2개 항목을
- * 불러오지 못했습니다. daum_postcode_script, 주소 검색」 묶음 문구가 되어 플러그인의 「주소를 직접 입력해 주세요」
- * 가 사라졌다(7.1.0 실측). 플러그인 안내의 재시도가 같은 SDK 를 다시 불러오므로 코어 쪽 안내는 걷는다.
- */
-const CORE_SCRIPT_FAILURE_ID = `layout-script:${DAUM_POSTCODE_SCRIPT_ID}`;
-
-/** 코어 안내가 플러그인 안내보다 늦게 올 수 있어 다시 살피는 간격(ms)과 최대 시간(ms) */
-const CORE_DUPLICATE_SWEEP_MS = 500;
-const CORE_DUPLICATE_SWEEP_LIMIT_MS = 30000;
-
-/** 코어 중복 안내를 걷는 타이머 */
-let coreDuplicateSweep: ReturnType<typeof setInterval> | null = null;
 
 /** SDK 확보를 기다리는 최대 시간(ms) — 코어 스크립트 로더의 재시도 예산과 맞춘다 */
 const DEFAULT_WAIT_MS = 12000;
@@ -60,7 +36,7 @@ const POLL_INTERVAL_MS = 100;
  * @param fallback 번역 엔진 부재 시 사용할 문구
  * @return string 번역된 문자열
  */
-export function t(key: string, fallback: string): string {
+function t(key: string, fallback: string): string {
     const translate = (window as any)?.G7Core?.t;
 
     if (typeof translate !== 'function') {
@@ -74,26 +50,12 @@ export function t(key: string, fallback: string): string {
 }
 
 /**
- * 쓸 수 있는 우편번호 생성자를 돌려줍니다 — `kakao.Postcode` 우선, 없으면 옛 `daum.Postcode`.
- *
- * `window.kakao` 는 카카오 지도 SDK 도 정의하므로(`kakao.maps`) 전역이 있다는 것만으로 확보로 보지 않고
- * `Postcode` 가 실제로 있는지 본다.
- *
- * @return 생성자 (없으면 null)
- */
-export function getPostcodeConstructor(): any {
-    const w = window as any;
-
-    return w.kakao?.Postcode ?? w.daum?.Postcode ?? null;
-}
-
-/**
  * SDK 가 지금 사용 가능한지 판정합니다.
  *
  * @return bool 사용 가능하면 true
  */
 export function isPostcodeSdkReady(): boolean {
-    return Boolean(getPostcodeConstructor());
+    return Boolean((window as any).daum?.Postcode);
 }
 
 /**
@@ -155,7 +117,7 @@ export async function reloadPostcodeSdk(): Promise<boolean> {
             await loadScript(
                 DAUM_POSTCODE_SDK_URL,
                 { id: DAUM_POSTCODE_SCRIPT_ID },
-                { label: 'postcode SDK' }
+                { label: 'daum postcode SDK' }
             );
         } else {
             await new Promise<void>((resolve, reject) => {
@@ -163,7 +125,7 @@ export async function reloadPostcodeSdk(): Promise<boolean> {
                 script.id = DAUM_POSTCODE_SCRIPT_ID;
                 script.src = DAUM_POSTCODE_SDK_URL;
                 script.onload = () => resolve();
-                script.onerror = () => reject(new Error('postcode SDK load failed'));
+                script.onerror = () => reject(new Error('daum postcode SDK load failed'));
                 document.head.appendChild(script);
             });
         }
@@ -172,56 +134,6 @@ export async function reloadPostcodeSdk(): Promise<boolean> {
     }
 
     return isPostcodeSdkReady();
-}
-
-/**
- * 코어가 같은 SDK 에 대해 낸 실패 안내를 걷습니다(플러그인 안내가 떠 있는 동안).
- *
- * 코어 레이아웃 스크립트 로더의 재시도가 끝나는 시점과 플러그인 대기가 끝나는 시점이 엇갈려, 코어 안내가
- * 먼저 와 있을 수도 나중에 올 수도 있다. 지금 한 번 걷고, 플러그인 안내가 해제될 때까지 짧게 다시 살핀다.
- *
- * @return void
- */
-function suppressCoreDuplicateNotice(): void {
-    const assets = (window as any)?.G7Core?.assets;
-
-    if (typeof assets?.clearFailure !== 'function') {
-        return;
-    }
-
-    const sweep = (): void => {
-        const failures: Array<{ id?: string }> = typeof assets.getFailures === 'function' ? assets.getFailures() : [];
-
-        if (failures.some((failure) => failure?.id === CORE_SCRIPT_FAILURE_ID)) {
-            assets.clearFailure(CORE_SCRIPT_FAILURE_ID);
-        }
-    };
-
-    sweep();
-    stopCoreDuplicateSweep();
-
-    const startedAt = Date.now();
-    coreDuplicateSweep = setInterval(() => {
-        if (Date.now() - startedAt >= CORE_DUPLICATE_SWEEP_LIMIT_MS) {
-            stopCoreDuplicateSweep();
-
-            return;
-        }
-
-        sweep();
-    }, CORE_DUPLICATE_SWEEP_MS);
-}
-
-/**
- * 코어 중복 안내 감시를 멈춥니다.
- *
- * @return void
- */
-function stopCoreDuplicateSweep(): void {
-    if (coreDuplicateSweep !== null) {
-        clearInterval(coreDuplicateSweep);
-        coreDuplicateSweep = null;
-    }
 }
 
 /**
@@ -256,8 +168,6 @@ export function notifyPostcodeSdkFailure(onRetry: () => void | Promise<void>): v
             await onRetry();
         },
     });
-
-    suppressCoreDuplicateNotice();
 }
 
 /**
@@ -266,6 +176,5 @@ export function notifyPostcodeSdkFailure(onRetry: () => void | Promise<void>): v
  * @return void
  */
 export function clearPostcodeSdkFailure(): void {
-    stopCoreDuplicateSweep();
     (window as any)?.G7Core?.assets?.clearFailure?.(FAILURE_ID);
 }

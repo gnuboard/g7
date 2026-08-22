@@ -7,16 +7,13 @@ declare(strict_types=1);
 namespace Plugins\Sirsoft\PayNhnkcp\Controllers;
 
 use App\Helpers\ResponseHelper;
-use App\Helpers\TimezoneHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
-use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderAddress;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
-use Plugins\Sirsoft\PayNhnkcp\Concerns\GuardsOrderScope;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\SanitizesPgResponse;
 use Plugins\Sirsoft\PayNhnkcp\Http\Requests\EscrowDeliveryRegisterRequest;
 use Plugins\Sirsoft\PayNhnkcp\Services\NhnKcpApiService;
@@ -29,7 +26,6 @@ use Plugins\Sirsoft\PayNhnkcp\Services\NhnKcpApiService;
  */
 class AdminEscrowDeliveryController extends AdminBaseController
 {
-    use GuardsOrderScope;
     use SanitizesPgResponse;
 
     private const ESCROW_DELIVERY_RESPONSE_KEYS = [
@@ -56,11 +52,6 @@ class AdminEscrowDeliveryController extends AdminBaseController
         '40' => '기타',
     ];
 
-    /**
-     * 의존성을 주입받습니다.
-     *
-     * @param  NhnKcpApiService  $apiService  NHN KCP API 서비스
-     */
     public function __construct(
         private readonly NhnKcpApiService $apiService,
     ) {
@@ -80,10 +71,6 @@ class AdminEscrowDeliveryController extends AdminBaseController
      */
     public function formData(string $orderNumber): JsonResponse
     {
-        if ($denied = $this->orderScopeDenial($orderNumber, 'sirsoft-ecommerce.orders.read')) {
-            return $denied;
-        }
-
         $payment = $this->findEscrowPayment($orderNumber);
 
         if (! $payment) {
@@ -106,14 +93,6 @@ class AdminEscrowDeliveryController extends AdminBaseController
 
         $meta = $payment->payment_meta ? json_decode($payment->payment_meta, true) : [];
         $escrowDelivery = $meta['escrow_delivery'] ?? null;
-        // 등록 시각은 UTC 로 저장돼 있다 — 결제조회 화면에는 보는 사람 시간대로 바꿔 내보낸다(저장값은 그대로)
-        if (is_array($escrowDelivery) && is_string($escrowDelivery['registered_at'] ?? null) && $escrowDelivery['registered_at'] !== '') {
-            try {
-                $escrowDelivery['registered_at'] = TimezoneHelper::toUserDateTimeString(Carbon::parse($escrowDelivery['registered_at'], 'UTC'));
-            } catch (\Throwable) {
-                // 해석할 수 없는 값은 원문 그대로 둔다
-            }
-        }
 
         return ResponseHelper::success('common.success', [
             'has_escrow_payment' => true,
@@ -146,10 +125,6 @@ class AdminEscrowDeliveryController extends AdminBaseController
      */
     public function register(EscrowDeliveryRegisterRequest $request, string $orderNumber): JsonResponse
     {
-        if ($denied = $this->orderScopeDenial($orderNumber, 'sirsoft-ecommerce.orders.update')) {
-            return $denied;
-        }
-
         $deliNumb = trim((string) $request->validated('deli_numb'));
         $deliCorp = trim((string) $request->validated('deli_corp'));
 
@@ -177,7 +152,6 @@ class AdminEscrowDeliveryController extends AdminBaseController
             $courierName = self::COURIER_CODES[$deliCorp];
             $meta = $payment->payment_meta ? json_decode($payment->payment_meta, true) : [];
             $meta['escrow_delivery'] = [
-                // audit:allow datetime-display-user-timezone reason: UTC 저장 — 표시 시 변환
                 'registered_at' => now()->toDateTimeString(),
                 'deli_numb' => $deliNumb,
                 'deli_corp' => $deliCorp,
@@ -219,12 +193,6 @@ class AdminEscrowDeliveryController extends AdminBaseController
         }
     }
 
-    /**
-     * 주문번호의 NHN KCP 에스크로 결제 레코드를 찾습니다.
-     *
-     * @param  string  $orderNumber  주문번호
-     * @return object|null 결제 레코드 (없으면 null)
-     */
     private function findEscrowPayment(string $orderNumber): ?object
     {
         // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그

@@ -18,7 +18,6 @@ import { describe, it, expect } from 'vitest';
 import identityModal from '../../layouts/partials/_identity_challenge_modal.json';
 import userBase from '../../layouts/_user_base.json';
 import identityChallengePage from '../../layouts/auth/identity_challenge.json';
-import { asArray, callbacksOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 type Node = {
   id?: string;
@@ -64,10 +63,10 @@ function walk(input: Node | Node[] | undefined, visit: (node: Node) => void): vo
 function collectActions(node: Node): Action[] {
   const out: Action[] = [];
   walk(node, (n) => {
-    if (asArray(n?.actions).length > 0) out.push(...asArray(n?.actions));
+    if (Array.isArray(n.actions)) out.push(...n.actions);
     if (n.events) {
       for (const ev of Object.values(n.events)) {
-        if (asArray(ev?.actions).length > 0) out.push(...asArray(ev?.actions));
+        if (Array.isArray(ev.actions)) out.push(...ev.actions);
       }
     }
   });
@@ -75,8 +74,8 @@ function collectActions(node: Node): Action[] {
 }
 
 function flattenSequence(action: Action): Action[] {
-  if (action.handler === 'sequence' && callbacksOf(action, 'actions').length > 0) {
-    return callbacksOf(action, 'actions') as Action[];
+  if (action.handler === 'sequence' && Array.isArray(action.params?.actions)) {
+    return action.params!.actions as Action[];
   }
   return [action];
 }
@@ -87,12 +86,12 @@ function deepFindActions(actions: Action[], predicate: (a: Action) => boolean): 
     if (!list) return;
     for (const a of list) {
       if (predicate(a)) result.push(a);
-      if (a.handler === 'sequence' && callbacksOf(a, 'actions').length > 0) {
-        visit(callbacksOf(a, 'actions') as Action[]);
+      if (a.handler === 'sequence' && Array.isArray(a.params?.actions)) {
+        visit(a.params!.actions as Action[]);
       }
-      if (asArray(a?.actions).length > 0) visit(asArray(a?.actions));
-      if (asArray(a?.onSuccess).length > 0) visit(asArray(a?.onSuccess));
-      if (asArray(a?.onError).length > 0) visit(asArray(a?.onError));
+      if (Array.isArray(a.actions)) visit(a.actions);
+      if (Array.isArray(a.onSuccess)) visit(a.onSuccess);
+      if (Array.isArray(a.onError)) visit(a.onError);
     }
   };
   visit(actions);
@@ -101,27 +100,15 @@ function deepFindActions(actions: Action[], predicate: (a: Action) => boolean): 
 
 describe('본인인증 공통 모달 (sirsoft-basic) — engine-v1.46.0', () => {
   describe('모달 파셜 구조', () => {
-    /**
-     * @scenario case=c01
-     * @effects user_identity_challenge_modal_contract
-     */
     it('id 가 identity-challenge-modal', () => {
       expect((identityModal as any).id).toBe('identity-challenge-modal');
     });
 
-    /**
-     * @scenario case=c02
-     * @effects user_identity_challenge_modal_contract
-     */
     it('Modal composite 컴포넌트', () => {
       expect((identityModal as any).type).toBe('composite');
       expect((identityModal as any).name).toBe('Modal');
     });
 
-    /**
-     * @scenario case=c03
-     * @effects user_identity_challenge_modal_contract
-     */
     it('backdrop/escape/closeButton 으로 자동 닫기 차단 (verify 또는 명시 cancel 만 허용)', () => {
       const props = (identityModal as any).props ?? {};
       expect(props.closeOnBackdropClick).toBe(false);
@@ -136,10 +123,6 @@ describe('본인인증 공통 모달 (sirsoft-basic) — engine-v1.46.0', () => 
       if (n.type === 'extension_point') slots.push(n);
     });
 
-    /**
-     * @scenario case=c04
-     * @effects user_identity_challenge_modal_contract
-     */
     it('외부 IDV 플러그인 진입점 (identity_provider_ui:provider) 단일 슬롯만 존재 — text_code/link 는 plain Div 로 이동', () => {
       // 외부 플러그인이 mode:replace 로 default 코어 UI 를 비워버리던 회귀(빈 모달)를 차단하기 위해
       // 코어 OTP/link UI 는 plain Div 로 이동했고, 외부 플러그인 진입점만 단일 슬롯으로 통합됨.
@@ -149,10 +132,6 @@ describe('본인인증 공통 모달 (sirsoft-basic) — engine-v1.46.0', () => 
       expect(slots.find((s) => s.name === 'identity_provider_ui:link')).toBeUndefined();
     });
 
-    /**
-     * @scenario case=c05
-     * @effects user_identity_challenge_modal_contract
-     */
     it('외부 provider 슬롯은 코어 mail/미지정 케이스에서 마운트되지 않는다 (if 가드)', () => {
       const slot = slots.find((s) => s.name === 'identity_provider_ui:provider');
       expect(slot).toBeDefined();
@@ -162,14 +141,11 @@ describe('본인인증 공통 모달 (sirsoft-basic) — engine-v1.46.0', () => 
       expect(slot!.if).toContain("'g7:core.mail'");
     });
 
-    /**
-     * @scenario case=c06
-     * @effects user_identity_challenge_modal_contract
-     */
     it('코어 OTP 입력 Div 는 코어 mail/미지정 + text_code 케이스에 if 가드로 노출된다', () => {
       const cores: Node[] = [];
       walk(identityModal as unknown as Node, (n) => {
         if (
+          n.type === 'basic' &&
           n.name === 'Div' &&
           typeof n.if === 'string' &&
           n.if.includes("'text_code'") &&
@@ -181,10 +157,6 @@ describe('본인인증 공통 모달 (sirsoft-basic) — engine-v1.46.0', () => 
       expect(cores.length).toBeGreaterThan(0);
     });
 
-    /**
-     * @scenario case=c07
-     * @effects user_identity_challenge_modal_contract
-     */
     it('재전송/확인 버튼 if 가드는 mail provider 인 경우에도 노출되어야 한다 (회귀: signup_before_submit 정책 provider_id NULL 시 코어 mail 인증에서 버튼 사라지던 버그)', () => {
       // IdentityPolicyService::resolveProviderId 가 NULL 정책에 default_provider (코어 mail) 를 채워 보내므로,
       // 모달의 재전송/확인 버튼이 !provider_id 조건만 쓰면 mail 인증 시 빈 모달이 됨. 가드 패턴은 반드시
@@ -192,6 +164,7 @@ describe('본인인증 공통 모달 (sirsoft-basic) — engine-v1.46.0', () => 
       const buttonsWithProviderGuard: Node[] = [];
       walk(identityModal as unknown as Node, (n) => {
         if (
+          n.type === 'basic' &&
           n.name === 'Button' &&
           typeof n.if === 'string' &&
           n.if.includes('_global.identityChallenge?.provider_id')
@@ -213,10 +186,6 @@ describe('본인인증 공통 모달 (sirsoft-basic) — engine-v1.46.0', () => 
       .flatMap(flattenSequence)
       .filter((a) => a.handler === 'apiCall');
 
-    /**
-     * @scenario case=c08
-     * @effects user_identity_challenge_modal_contract
-     */
     it('verify 엔드포인트 호출이 존재한다', () => {
       const verifyCalls = apiCallActions.filter((a) =>
         typeof a.target === 'string' && a.target.includes('/verify'),
@@ -224,17 +193,13 @@ describe('본인인증 공통 모달 (sirsoft-basic) — engine-v1.46.0', () => 
       expect(verifyCalls.length).toBeGreaterThanOrEqual(1);
     });
 
-    /**
-     * @scenario case=c09
-     * @effects user_identity_challenge_modal_contract
-     */
     it('verify onSuccess 안에 resolveIdentityChallenge(verified, token) 가 있다', () => {
       const verifyCall = apiCallActions.find((a) =>
         typeof a.target === 'string' && a.target.includes('/verify'),
       );
       expect(verifyCall).toBeDefined();
 
-      const resolves = deepFindActions(callbacksOf(verifyCall, 'onSuccess'), (a) =>
+      const resolves = deepFindActions(verifyCall!.onSuccess ?? [], (a) =>
         a.handler === 'resolveIdentityChallenge',
       );
       expect(resolves.length).toBeGreaterThanOrEqual(1);
@@ -243,15 +208,11 @@ describe('본인인증 공통 모달 (sirsoft-basic) — engine-v1.46.0', () => 
       expect(resolves[0].params?.token).toContain('verification_token');
     });
 
-    /**
-     * @scenario case=c10
-     * @effects user_identity_challenge_modal_contract
-     */
     it('verify onSuccess 가 closeModal 도 호출한다', () => {
       const verifyCall = apiCallActions.find((a) =>
         typeof a.target === 'string' && a.target.includes('/verify'),
       );
-      const closes = deepFindActions(callbacksOf(verifyCall, 'onSuccess'), (a) =>
+      const closes = deepFindActions(verifyCall!.onSuccess ?? [], (a) =>
         a.handler === 'closeModal',
       );
       expect(closes.length).toBeGreaterThanOrEqual(1);
@@ -275,7 +236,7 @@ describe('본인인증 공통 모달 (sirsoft-basic) — engine-v1.46.0', () => 
     function findCancelSequence(): Action | undefined {
       const sequences = deepFindActions(allActions, (a) => a.handler === 'sequence');
       return sequences.find((seq) => {
-        const inner = callbacksOf(seq, 'actions') as Action[];
+        const inner = (seq.params?.actions ?? []) as Action[];
         return inner.some(
           (a) =>
             a.handler === 'resolveIdentityChallenge' && a.params?.result === 'cancelled',
@@ -283,10 +244,6 @@ describe('본인인증 공통 모달 (sirsoft-basic) — engine-v1.46.0', () => 
       });
     }
 
-    /**
-     * @scenario case=c11
-     * @effects user_identity_challenge_modal_contract
-     */
     it('cancelled 통보 액션이 존재한다', () => {
       expect(cancelChain).toBeDefined();
     });
@@ -295,7 +252,7 @@ describe('본인인증 공통 모달 (sirsoft-basic) — engine-v1.46.0', () => 
     it('cancel sequence 의 첫 액션이 서버 cancel API 호출 — audit trail 정합', () => {
       const seq = findCancelSequence();
       expect(seq).toBeDefined();
-      const inner = callbacksOf(seq, 'actions') as Action[];
+      const inner = (seq!.params!.actions ?? []) as Action[];
       const apiCall = inner.find((a) => a.handler === 'apiCall');
       expect(apiCall).toBeDefined();
       // apiCall 표준: target 은 액션 top-level, params 안은 method/body 만
@@ -309,7 +266,7 @@ describe('본인인증 공통 모달 (sirsoft-basic) — engine-v1.46.0', () => 
     /** @effects modal_cancel_apiCall_skipped_when_challenge_id_absent */
     it('cancel apiCall 이 challenge 발급된 경우에만 호출 (if 가드)', () => {
       const seq = findCancelSequence();
-      const inner = callbacksOf(seq, 'actions') as Action[];
+      const inner = (seq!.params!.actions ?? []) as Action[];
       const apiCall = inner.find((a) => a.handler === 'apiCall');
       expect((apiCall as any).if).toContain('_global.identityChallenge?.challenge_id');
     });
@@ -317,9 +274,9 @@ describe('본인인증 공통 모달 (sirsoft-basic) — engine-v1.46.0', () => 
     /** @effects modal_cancel_apiCall_failure_does_not_block_modal_close */
     it('cancel apiCall 실패해도 모달 닫기는 진행 (onError suppress)', () => {
       const seq = findCancelSequence();
-      const inner = callbacksOf(seq, 'actions') as Action[];
+      const inner = (seq!.params!.actions ?? []) as Action[];
       const apiCall = inner.find((a) => a.handler === 'apiCall');
-      const onError = callbacksOf(apiCall, 'onError');
+      const onError = apiCall!.onError ?? [];
       expect(onError.length).toBeGreaterThanOrEqual(1);
       expect(onError[0].handler).toBe('suppress');
     });
@@ -327,7 +284,7 @@ describe('본인인증 공통 모달 (sirsoft-basic) — engine-v1.46.0', () => 
     /** @effects modal_cancel_sequence_order_is_apiCall_resolve_close */
     it('cancel sequence 가 [apiCall, resolveIdentityChallenge, closeModal] 순서', () => {
       const seq = findCancelSequence();
-      const inner = callbacksOf(seq, 'actions') as Action[];
+      const inner = (seq!.params!.actions ?? []) as Action[];
       const handlers = inner.map((a) => a.handler);
       expect(handlers).toEqual(['apiCall', 'resolveIdentityChallenge', 'closeModal']);
     });
@@ -341,10 +298,6 @@ describe('본인인증 공통 모달 (sirsoft-basic) — engine-v1.46.0', () => 
       && a.target.endsWith('/api/identity/challenges'),
     );
 
-    /**
-     * @scenario case=c12
-     * @effects user_identity_challenge_modal_contract
-     */
     it('재전송 버튼이 POST /api/identity/challenges 를 호출한다', () => {
       expect(challengeStarts.length).toBeGreaterThanOrEqual(1);
       expect(challengeStarts[0].params?.method).toBe('POST');
@@ -355,14 +308,10 @@ describe('본인인증 공통 모달 (sirsoft-basic) — engine-v1.46.0', () => 
      * 과거 onSuccess 안에서만 code 를 비웠으나, Input value 가 controlled 였음에도
      * onChange 미동작과 합쳐져 화면 초기화가 안 되는 회귀가 있었음.
      */
-    /**
-     * @scenario case=c13
-     * @effects user_identity_challenge_modal_contract
-     */
     it('재전송 sequence 의 첫 setState 가 identityChallenge.code 를 즉시 빈 문자열로 초기화한다', () => {
       const setStates = deepFindActions(allActions, (a) => a.handler === 'setState');
       const cooldownReset = setStates.find(
-        (s) => s.params && s.params['identityChallenge.resendCooldown'] === 60,
+        (s) => s.params && s.params['identityChallenge.resendCooldown'] === 30,
       );
       expect(cooldownReset).toBeDefined();
       expect(cooldownReset!.params!['identityChallenge.code']).toBe('');
@@ -387,28 +336,16 @@ describe('본인인증 공통 모달 (sirsoft-basic) — engine-v1.46.0', () => 
 
     const codeInput = findCodeInput();
 
-    /**
-     * @scenario case=c14
-     * @effects user_identity_challenge_modal_contract
-     */
     it('code Input 이 존재한다', () => {
       expect(codeInput).toBeDefined();
     });
 
-    /**
-     * @scenario case=c15
-     * @effects user_identity_challenge_modal_contract
-     */
     it('비표준 events 래퍼를 사용하지 않는다', () => {
       expect((codeInput as any).events).toBeUndefined();
     });
 
-    /**
-     * @scenario case=c16
-     * @effects user_identity_challenge_modal_contract
-     */
     it('onChange 가 setState(target=global) 로 identityChallenge.code 를 갱신한다', () => {
-      const actions = asArray((codeInput as any)?.actions);
+      const actions = (codeInput as any).actions ?? [];
       const onChange = actions.find((a: Action) => a.event === 'onChange');
       expect(onChange).toBeDefined();
       expect(onChange.handler).toBe('setState');
@@ -421,19 +358,11 @@ describe('본인인증 공통 모달 (sirsoft-basic) — engine-v1.46.0', () => 
     const allActions = collectActions(identityModal as unknown as Node);
     const setStates = deepFindActions(allActions, (a) => a.handler === 'setState');
 
-    /**
-     * @scenario case=c17
-     * @effects user_identity_challenge_modal_contract
-     */
     it('모든 setState 가 target=global 사용', () => {
       const wrongTarget = setStates.find((s) => (s.params?.target ?? 'local') !== 'global');
       expect(wrongTarget).toBeUndefined();
     });
 
-    /**
-     * @scenario case=c18
-     * @effects user_identity_challenge_modal_contract
-     */
     it('setState 키들이 identityChallenge.* dot notation 사용', () => {
       for (const s of setStates) {
         const params = s.params ?? {};
@@ -447,10 +376,6 @@ describe('본인인증 공통 모달 (sirsoft-basic) — engine-v1.46.0', () => 
   });
 
   describe('Base 레이아웃 마운트', () => {
-    /**
-     * @scenario case=c19
-     * @effects user_identity_challenge_modal_contract
-     */
     it('_user_base.json 의 modals 배열에 _identity_challenge_modal 이 포함되어 있다', () => {
       const modals = (userBase as any).modals ?? [];
       const found = modals.find(
@@ -464,17 +389,13 @@ describe('본인인증 공통 모달 (sirsoft-basic) — engine-v1.46.0', () => 
     const allActions = collectActions(identityChallengePage as unknown as Node);
     const apiCalls = deepFindActions(allActions, (a) => a.handler === 'apiCall');
 
-    /**
-     * @scenario case=c20
-     * @effects user_identity_challenge_modal_contract
-     */
     it('풀페이지 verify onSuccess 도 resolveIdentityChallenge { verified } 를 호출 (defaultLauncher 폴백 일관성)', () => {
       const verifyCall = apiCalls.find((a) =>
         typeof a.target === 'string' && a.target.includes('/verify'),
       );
       expect(verifyCall).toBeDefined();
 
-      const resolves = deepFindActions(callbacksOf(verifyCall, 'onSuccess'), (a) =>
+      const resolves = deepFindActions(verifyCall!.onSuccess ?? [], (a) =>
         a.handler === 'resolveIdentityChallenge' && a.params?.result === 'verified',
       );
       expect(resolves.length).toBeGreaterThanOrEqual(1);

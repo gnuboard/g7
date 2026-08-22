@@ -2,20 +2,18 @@
 /**
  * GDPR 플러그인 환경설정 레이아웃 구조 검증
  *
- * 6 카드 (운영자 작업 순서):
+ * 4 카드 (운영자 작업 순서):
  * 1. card_operator (운영 주체 + 정책 페이지)
  * 2. card_cookie_banner (배너 + 카테고리 + 정책버전)
  * 3. card_auto_blocking_policy (자동 차단 정책 — 차단 도메인 관리)
  * 4. card_necessary_storage (필수 저장 항목 허용목록 — 저장소·쿠키 3 스코프)
- * 5. card_annual_notice (개인정보 연간 통지 — 토글·채널·상한·서문)
- * 6. card_gdpr_notifications (알림 템플릿 — 채널 선택·템플릿 편집·기본값 복원)
  *
  * 마이페이지 동의 관리 카드는 GDPR Art.7(3) 대칭성 의무에 따라 플러그인 활성 시 항상 노출
  * — 운영자가 끌 수 있는 토글이 없으므로 관리자 설정 화면에 카드/필드가 존재하지 않는다.
  * auto_blocking 동작은 banner_enabled (쿠키 배너 노출) 와 단일 토글로 통합되어 별도 토글 없음.
  *
  * @scenario scope=sessionStorage, notation=exact, locked=locked_item, settings_state=populated, request=valid_item
- * @effects layout_renders_three_scope_cards, layout_uses_static_setstate_key_with_object_spread, layout_extracts_value_from_event_target_value, layout_error_key_prefix_matches_scope, layout_locked_chips_read_response_not_form_state, layout_provided_chips_read_response_not_form_state, layout_card_not_gated_behind_banner_toggle, layout_i18n_keys_exist_in_ko_and_en
+ * @effects layout_renders_three_scope_cards, layout_uses_static_setstate_key_with_object_spread, layout_extracts_value_from_event_target_value, layout_error_key_prefix_matches_scope, layout_locked_chips_read_response_not_form_state, layout_card_not_gated_behind_banner_toggle, layout_i18n_keys_exist_in_ko_and_en
  */
 
 import { describe, it, expect } from 'vitest';
@@ -25,24 +23,15 @@ import snapshotModal from '../../../layouts/admin/partials/_shared/_policy_versi
 import koLang from '../../../lang/ko.json';
 import enLang from '../../../lang/en.json';
 import { findById, type AnyNode } from './helpers';
-import { asArray, findByIdPrefix } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
-describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / auto_blocking_policy / necessary_storage / annual_notice / gdpr_notifications)', () => {
+describe('admin/plugin_settings.json — 4 카드 (operator / cookie_banner / auto_blocking_policy / necessary_storage)', () => {
     const root = layout as unknown as AnyNode;
 
     describe('레이아웃 메타데이터', () => {
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('layout_name이 "plugin_settings"이다', () => {
             expect((root as { layout_name?: string }).layout_name).toBe('plugin_settings');
         });
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('_admin_base를 상속한다', () => {
             expect((root as { extends?: string }).extends).toBe('_admin_base');
         });
@@ -51,10 +40,6 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
     describe('데이터 소스', () => {
         const dataSources = (root as { data_sources?: AnyNode[] }).data_sources ?? [];
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('gdprSettings 데이터소스가 정의되어 있다', () => {
             const ds = dataSources.find((d) => d.id === 'gdprSettings');
             expect(ds).toBeTruthy();
@@ -65,20 +50,12 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
     describe('상단 탭 스크롤 (TabNavigationScroll)', () => {
         const nav = findById(root, 'settings_tab_navigation');
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('TabNavigationScroll 컴포넌트가 존재한다', () => {
             expect(nav).toBeTruthy();
             expect(nav?.name).toBe('TabNavigationScroll');
         });
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
-        it('6 탭이 정의되어 있다 (operator / cookie_banner / auto_blocking_policy / necessary_storage / annual_notice / gdpr_notifications)', () => {
+        it('4 탭이 정의되어 있다 (operator / cookie_banner / auto_blocking_policy / necessary_storage)', () => {
             const tabs = (nav?.props as { tabs?: { id: string }[] })?.tabs ?? [];
             const ids = tabs.map((t) => t.id);
             expect(ids).toEqual([
@@ -86,15 +63,9 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
                 'card_cookie_banner',
                 'card_auto_blocking_policy',
                 'card_necessary_storage',
-                'card_annual_notice',
-                'card_gdpr_notifications',
             ]);
         });
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('enableScrollSpy: true (스크롤 시 활성 탭 자동 갱신)', () => {
             expect((nav?.props as { enableScrollSpy?: boolean })?.enableScrollSpy).toBe(true);
         });
@@ -106,48 +77,21 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             'card_cookie_banner',
             'card_auto_blocking_policy',
             'card_necessary_storage',
-            'card_annual_notice',
-            'card_gdpr_notifications',
         ];
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it.each(expectedCards)('카드 %s 가 존재한다', (cardId) => {
             expect(findById(root, cardId)).toBeTruthy();
         });
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
-        it('카드는 settings_main_content 의 직계 children 으로 6개 모두 배치', () => {
+        it('카드는 settings_main_content 의 직계 children 으로 4개 모두 배치', () => {
             const main = findById(root, 'settings_main_content');
-            const cardChildren = (asArray(main?.children) as AnyNode[]).filter((c) =>
+            const cardChildren = ((main?.children ?? []) as AnyNode[]).filter((c) =>
                 (c.id ?? '').startsWith('card_')
             );
             const cardIds = cardChildren.map((c) => c.id);
             expect(cardIds).toEqual(expectedCards);
         });
 
-        // 실측 2026-09-21 — 카드마다 겉 여백 규격이 갈려 상하 간격이 들쭉날쭉했다.
-        // 겉은 여백만(첫 카드 제외 mt-4), 안쪽 패딩은 본문 컨테이너(p-6)가 갖는다.
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
-        it.each(expectedCards)('카드 %s 는 겉에 패딩을 두지 않는다 (간격 규격 통일)', (cardId) => {
-            const className = (findById(root, cardId)?.props as { className?: string })?.className ?? '';
-            expect(className).not.toMatch(/\bp-6\b/);
-            expect(className).not.toMatch(/\bmb-4\b/);
-            if (cardId !== expectedCards[0]) expect(className).toContain('mt-4');
-        });
-
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it.each(expectedCards)('카드 %s 의 className은 라이트/다크 모드 + scroll-mt-32 포함', (cardId) => {
             const card = findById(root, cardId);
             const className = (card?.props as { className?: string })?.className ?? '';
@@ -159,10 +103,6 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
     });
 
     describe('제거된 카드는 더 이상 존재하지 않는다', () => {
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it.each([
             'card_dpo',
             'card_third_party',
@@ -181,10 +121,6 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(findById(root, oldCardId)).toBeNull();
         });
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('third_party_edit_modal 미존재 — modals 배열에 third_party_edit_modal partial 등록 없음', () => {
             const modals = (root as { modals?: Array<{ partial?: string }> }).modals ?? [];
             const partials = modals.map((m) => m.partial ?? '');
@@ -193,36 +129,12 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
     });
 
     describe('card_operator (운영 주체 + 정책 페이지)', () => {
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
-        it('legal_entity_name + data_storage_location + privacy_policy_url 3 필드 포함', () => {
+        it('legal_entity_name + data_storage_location + privacy_policy_slug 3 필드 포함', () => {
             const fields = findById(root, 'card_operator_fields');
-            const ids = (asArray(fields?.children) as AnyNode[]).map((c) => c.id);
+            const ids = ((fields?.children ?? []) as AnyNode[]).map((c) => c.id);
             expect(ids).toContain('field_legal_entity_name');
             expect(ids).toContain('field_data_storage_location');
-            expect(ids).toContain('field_privacy_policy_url');
-            // 1.0.x 의 슬러그 입력칸은 사라졌다 — 처리방침 주소를 운영자가 직접 적는다.
-            expect(ids).not.toContain('field_privacy_policy_slug');
-        });
-
-        /**
-         * @scenario surface=admin_update
-         * @effects admin_settings_field_binds_privacy_policy_url
-         */
-        it('처리방침 주소 입력칸은 privacy_policy_url 을 바인딩하고 라벨·힌트·예시 키가 ko/en 에 있다', () => {
-            const field = findById(root, 'field_privacy_policy_url');
-            const serialized = JSON.stringify(field);
-            expect(serialized).toContain('"name":"privacy_policy_url"');
-            expect(serialized).not.toContain('privacy_policy_slug');
-            for (const leaf of ['label', 'hint', 'placeholder']) {
-                expect(serialized).toContain(`sirsoft-gdpr.settings.fields.privacy_policy_url.${leaf}`);
-                const ko = (koLang as { settings?: { fields?: Record<string, Record<string, string>> } }).settings?.fields?.privacy_policy_url?.[leaf];
-                const en = (enLang as { settings?: { fields?: Record<string, Record<string, string>> } }).settings?.fields?.privacy_policy_url?.[leaf];
-                expect(typeof ko).toBe('string');
-                expect(typeof en).toBe('string');
-            }
+            expect(ids).toContain('field_privacy_policy_slug');
         });
     });
 
@@ -231,14 +143,10 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
      * 배치 필드가 `section-heading-md`(텍스트 스타일 전용, grid 미정의) 를 컨테이너
      * className 으로 사용해 col-span-* 자식이 무효화되고 컨트롤이 아래 줄로 밀려나던
      * 결함. 코드베이스 표준은 `grid-3col-responsive`(grid grid-cols-1 lg:grid-cols-3
-     * gap-4 items-start) — 처리방침 입력칸(현 field_privacy_policy_url)이 원래 이 클래스를 올바르게
+     * gap-4 items-start) — field_privacy_policy_slug 가 원래 이 클래스를 올바르게
      * 사용하고 있었다 (참조 패턴).
      */
     describe('필드 2단 배치 컨테이너 — grid-3col-responsive 사용 (section-heading-md 오용 회귀 가드)', () => {
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it.each([
             'field_legal_entity_name',
             'field_data_storage_location',
@@ -250,10 +158,6 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(className).toContain('grid-3col-responsive');
         });
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('section-heading-md 는 필드 2단 배치 컨테이너로 오용되지 않는다 (해당 4개 필드 컨테이너 한정 검증)', () => {
             // 카드 제목(H3)은 section-heading-md 를 정당하게 사용하므로(카드 제목 색상
             // 수정 회귀 가드 참조), 전체 레이아웃 문자열이 아니라 필드 컨테이너 4개만 검증한다.
@@ -271,10 +175,6 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
      * 표시되던 결함. 정상 카드 제목 색상은 section-heading-md(중립 톤).
      */
     describe('카드 제목 색상 — text-error-strong 오용 회귀 가드', () => {
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it.each(['card_operator_header', 'card_cookie_banner_header', 'card_auto_blocking_policy_header'])(
             '%s 의 H3 제목이 section-heading-md 를 사용한다 (에러 색상 아님)',
             (headerId) => {
@@ -285,10 +185,6 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             }
         );
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('차단 도메인 안내 박스(정보 톤)의 소제목도 에러 색상을 사용하지 않는다', () => {
             const box = findById(root, 'blocked_domains_warnings_box');
             const json = JSON.stringify(box);
@@ -303,10 +199,6 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
          * banner_enabled 와 무관하게 동의/철회 이력 존재 여부로만 판정된다
          * (mypage_privacy_tab.test.tsx "카드 표시 조건" 참조). 안내 문구를 실제 동작과
          * 불일치시키지 않도록 ko/en 양쪽 hint 를 고정한다.
-         */
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
          */
         it('banner_enabled hint 는 마이페이지 카드가 이 토글과 무관하게 항상 노출됨을 명시한다 (ko/en)', () => {
             const koHint = (koLang as { settings?: { fields?: { banner_enabled?: { hint?: string } } } }).settings
@@ -323,10 +215,6 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(enHint).not.toMatch(/MyPage.*activated together/);
         });
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('banner_enabled (쿠키 배너 노출 단일 토글) / banner_position 포함. auto_blocking_enabled 별도 토글 제거됨', () => {
             const fields = findById(root, 'card_cookie_banner_fields');
             const serialized = JSON.stringify(fields);
@@ -336,10 +224,6 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(serialized).not.toContain('field_auto_blocking_enabled');
         });
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('cookie_categories 섹션을 포함한다', () => {
             const sub = findById(root, 'subsection_cookie_categories');
             expect(sub).toBeTruthy();
@@ -349,12 +233,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
          * 카테고리 카드는 정보 패널이며 필수 여부는 CookieCategory enum 이 SSoT.
          * 운영자가 카드에서 required 값을 변경하는 위젯/액션은 존재하지 않는다.
          */
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('카테고리 카드 영역에 Toggle/setState(required) 위젯이 없다', () => {
-            const rows = findByIdPrefix(root, 'cookie_categories_rows');
+            const rows = findById(root, 'cookie_categories_rows_{{categoryIdx}}');
             const serialized = JSON.stringify(rows);
 
             expect(serialized).not.toContain('"name":"Toggle"');
@@ -362,12 +242,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(serialized).not.toContain('required: $event.target.checked');
         });
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('카테고리 카드 헤더에 「필수」/「선택」 배지가 required 값으로 분기 렌더된다', () => {
-            const rows = findByIdPrefix(root, 'cookie_categories_rows');
+            const rows = findById(root, 'cookie_categories_rows_{{categoryIdx}}');
             const serialized = JSON.stringify(rows);
 
             expect(serialized).toContain('category_required_badge');
@@ -383,13 +259,9 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
          * 운영자 admin UI 에서 4번째 카테고리 카드 + 도메인 차단 섹션 노출. legal_basis 축은
          * 운영자 의사결정에 불필요하여 제거됨 (정책 버전 snapshot 에는 보존).
          */
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('Phase 1: cookie_categories 영역에 functional 분기 (아이콘 + scope + tools) 존재', () => {
             // 실제 카테고리 카드는 cookie_categories_rows iteration 노드에 위치 (subsection 헤더 별개)
-            const rows = findByIdPrefix(root, 'cookie_categories_rows');
+            const rows = findById(root, 'cookie_categories_rows_{{categoryIdx}}');
             const serialized = JSON.stringify(rows);
 
             // 1. 카테고리 아이콘 분기 (fa-sliders / emerald 색상)
@@ -403,16 +275,12 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(serialized).toContain('cookie_categories.info.functional.tools');
         });
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('admin 카테고리 펼치기 영역에 legal_basis 축은 노출되지 않는다 (운영자 친화화 회귀 가드)', () => {
             // 운영자 admin 은 법령 근거를 결정하는 사람이 아니라 사이트 운영자.
             // 법령 인용 (ePrivacy Art.5(3) / GDPR Art.6(1)(a) 등) 은 운영자 의사결정에 불필요하여
             // 펼치기 영역에서 제거되었다. 정책 버전 snapshot 에 카테고리 본문이 영속되므로
             // 감사 자료는 그쪽에서 확인 가능.
-            const rows = findByIdPrefix(root, 'cookie_categories_rows');
+            const rows = findById(root, 'cookie_categories_rows_{{categoryIdx}}');
             const serialized = JSON.stringify(rows);
 
             expect(serialized).not.toContain('cookie_categories.info.necessary.legal_basis');
@@ -422,12 +290,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(serialized).not.toContain('cookie_categories.info.legal_basis_label');
         });
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('Phase 1: 도메인 차단 섹션의 카테고리 아이콘에 functional 분기 존재', () => {
-            const wrapper = findByIdPrefix(root, 'blocked_domains_taginputs');
+            const wrapper = findById(root, 'blocked_domains_taginputs_{{categoryIdx}}');
             const serialized = JSON.stringify(wrapper);
 
             // functional 카테고리 분기 (sliders 아이콘 + emerald 색상)
@@ -435,10 +299,6 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(serialized).toContain('"name":"sliders"');
         });
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('cookie_policy_version 필드는 배너 표시 설정 그룹에 통합되어 있고 별도 subsection 헤더는 없다', () => {
             // 정책 버전은 배너 메타데이터로 배너 토글·위치와 한 묶음
             expect(findById(root, 'field_cookie_policy_version')).toBeTruthy();
@@ -448,13 +308,9 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
     });
 
     describe('card_cookie_banner — 섹션 배치 순서 (운영자 의사결정 흐름)', () => {
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('배너 표시 → 카테고리 순서로 배치된다 (자동 차단 정책은 별도 카드로 이동)', () => {
             const fields = findById(root, 'card_cookie_banner_fields');
-            const childrenIds = (asArray(fields?.children) as AnyNode[])
+            const childrenIds = ((fields?.children ?? []) as AnyNode[])
                 .map((c) => c.id)
                 .filter((id): id is string => typeof id === 'string');
 
@@ -475,14 +331,10 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
     });
 
     describe('card_auto_blocking_policy — 자동 차단 정책 별도 카드', () => {
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('off_hint(배너 OFF분기) → subsection_blocked_domains(ON분기) 순서. 토글 노드 없음', () => {
             const fields = findById(root, 'card_auto_blocking_policy_fields');
             expect(fields).toBeTruthy();
-            const childrenIds = (asArray(fields?.children) as AnyNode[])
+            const childrenIds = ((fields?.children ?? []) as AnyNode[])
                 .map((c) => c.id)
                 .filter((id): id is string => typeof id === 'string');
 
@@ -497,10 +349,6 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
     });
 
     describe('card_auto_blocking_policy — F-02 추적 도메인 차단 섹션', () => {
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('subsection_blocked_domains 가 banner_enabled === true 가드로 보호된다 (쿠키 배너 OFF 시 본문 노출 안 함)', () => {
             const sub = findById(root, 'subsection_blocked_domains');
             expect(sub).toBeTruthy();
@@ -508,22 +356,17 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(sub?.if).toBe('{{_local.form?.banner_enabled === true}}');
         });
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('쿠키 배너 노출 OFF 시 안내 박스 — 한 줄 구조 + blue 좌측 색띠 시각 형태', () => {
             const offHint = findById(root, 'blocked_domains_off_hint');
             expect(offHint).toBeTruthy();
             // 단일 토글 통합 — banner_enabled OFF (= !banner_enabled) 일 때 안내 표시
-            expect(offHint?.if).toBe('{{gdprSettings !== undefined && !_local.form?.banner_enabled}}');
+            expect(offHint?.if).toBe('{{!_local.form?.banner_enabled}}');
             const serialized = JSON.stringify(offHint);
             // 안내 텍스트
             expect(serialized).toContain('blocked_domains.auto_blocking_off_hint');
             // ON 박스와 동일한 시각 형태 — blue 좌측 색띠 + circle-info
             expect(serialized).toContain('border-l-4');
-            // 왼쪽 파란 색띠 — 관리자 템플릿 CSS 에 `border-l-blue-500` 규칙이 없어 플러그인 CSS 의 접두 클래스로 둔다
-            expect(serialized).toContain('gdpr-accent-info');
+            expect(serialized).toContain('border-l-blue-500');
             expect(serialized).toContain('circle-info');
             // 한 줄 + 중간 정렬 (시맨틱 flex-center 로 통일 — #399)
             expect(serialized).toContain('flex-center');
@@ -535,10 +378,6 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(findById(root, 'blocked_domains_body')).toBeNull();
         });
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('안내 박스가 3 항목 (외부 폰트 분류 / 정책 버전 bump / 도메인 형식 FQDN 흡수) + 다크모드 가독 가능한 톤 + 좌측 색 띠 + 타이틀 강조 (검토 #8)', () => {
             const box = findById(root, 'blocked_domains_warnings_box');
             expect(box).toBeTruthy();
@@ -574,10 +413,6 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(serialized).toContain('circle-info');
         });
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('카탈로그 사용 토글은 단일 개념 통합 후 제거되었다 (banner_enabled 단일 토글로 일원화)', () => {
             // 옛 field_blocked_domains_default_catalog 토글 + 옛 field_auto_blocking_enabled
             // 토글 모두 banner_enabled (쿠키 배너 노출) 와 동일한 의미로 통합되어
@@ -591,12 +426,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(serialized).not.toContain('use_default_catalog');
         });
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('blocked_domains_taginputs iteration 이 cookie_categories 에서 necessary 제외하고 렌더', () => {
-            const wrapper = findByIdPrefix(root, 'blocked_domains_taginputs');
+            const wrapper = findById(root, 'blocked_domains_taginputs_{{categoryIdx}}');
             expect(wrapper).toBeTruthy();
             expect(wrapper?.iteration?.source).toBe(
                 "(_local.form?.cookie_categories ?? []).filter(c => c?.key !== 'necessary')"
@@ -604,12 +435,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(wrapper?.iteration?.item_var).toBe('category');
         });
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('TagInput 가 카테고리별 도메인 입력으로 사용되며 creatable=true 자유 입력 허용', () => {
-            const wrapper = findByIdPrefix(root, 'blocked_domains_taginputs');
+            const wrapper = findById(root, 'blocked_domains_taginputs_{{categoryIdx}}');
             const serialized = JSON.stringify(wrapper);
             // TagInput composite 사용
             expect(serialized).toContain('"name":"TagInput"');
@@ -621,12 +448,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(serialized).toContain('default_blocked_domains_preview');
         });
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('TagInput change 이벤트가 $event.target.value 에서 string 배열을 추출하여 form.blocked_domains 정적 키로 setState', () => {
-            const wrapper = findByIdPrefix(root, 'blocked_domains_taginputs');
+            const wrapper = findById(root, 'blocked_domains_taginputs_{{categoryIdx}}');
             const serialized = JSON.stringify(wrapper);
             // 정적 setState 키 — form.blocked_domains 만 사용 (CRITICAL 규정 준수)
             expect(serialized).toContain('"form.blocked_domains"');
@@ -640,12 +463,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(serialized).toContain('$event?.target?.value');
         });
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('카탈로그 도메인 일괄 추가 링크 미존재 — 신규 설치 시 카탈로그가 이미 기본값으로 채워져 있고, 카탈로그 갱신 빈도 낮음. 운영자가 의도적으로 제외한 도메인이 재추가되는 위험 회피 (검토 #9)', () => {
-            const wrapper = findByIdPrefix(root, 'blocked_domains_taginputs');
+            const wrapper = findById(root, 'blocked_domains_taginputs_{{categoryIdx}}');
             const serialized = JSON.stringify(wrapper);
             // 일괄 추가 링크 라벨/툴팁 키 사용 금지 (lang 키 자체 제거됨)
             expect(serialized).not.toContain('blocked_domains.add_catalog_link');
@@ -655,10 +474,6 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(serialized).toContain('default_blocked_domains_preview');
         });
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('FQDN 형식 안내가 안내 박스 안 3번째 항목(warning_domain_format)으로 흡수되고 외부 P 노드는 제거되었다 (검토 #8 옵션 B-원안)', () => {
             const sub = findById(root, 'subsection_blocked_domains');
             const serialized = JSON.stringify(sub);
@@ -672,12 +487,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(serialized).not.toContain('whitespace-pre-line');
         });
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('422 검증 에러 시 카테고리 카드 외곽이 빨간 테두리로 강조 + 카드 내부에 첫 잘못된 도메인 에러 메시지 Span 노출 (검토 #10 옵션 B — 카테고리 내 어느 인덱스든 매칭)', () => {
-            const wrapper = findByIdPrefix(root, 'blocked_domains_taginputs');
+            const wrapper = findById(root, 'blocked_domains_taginputs_{{categoryIdx}}');
             const serialized = JSON.stringify(wrapper);
             // 카드 외곽 동적 className — 카테고리 내 *어느 인덱스든* 에러 키가 있으면 true (some)
             expect(serialized).toContain("Object.keys(_local.errors ?? {}).some(k => k.startsWith('blocked_domains.' + category.key + '.'))");
@@ -691,10 +502,6 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(serialized).toContain('"form.blocked_domains"');
         });
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('footer_save_button onError 토스트가 422 응답의 첫 번째 검증 에러 메시지를 노출 + fallback 일반화 메시지 유지 (검토 #10 옵션 A 기반)', () => {
             const saveBtn = findById(root, 'footer_save_button');
             const serialized = JSON.stringify(saveBtn);
@@ -706,14 +513,10 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(serialized).toContain('"errors"');
         });
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it.each([
             ['field_legal_entity_name', 'legal_entity_name'],
             ['field_data_storage_location', 'data_storage_location'],
-            ['field_privacy_policy_url', 'privacy_policy_url'],
+            ['field_privacy_policy_slug', 'privacy_policy_slug'],
         ])('단일 Input 필드 %s — 422 검증 에러 시 빨간 테두리 + 필드 아래 에러 메시지 (검토 #10 옵션 X — 코어 _tab_general 단순 패턴)', (fieldId, formField) => {
             const wrapper = findById(root, fieldId);
             expect(wrapper).not.toBeNull();
@@ -728,10 +531,6 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(serialized).toContain('"form-error"');
         });
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('field_cookie_policy_version 는 Input 이 아닌 read-only 카드 — gdpr_policy_versions 테이블이 SSoT (옵션 C 정책 버전 자동 발행 + 운영자 수동 발행)', () => {
             const wrapper = findById(root, 'field_cookie_policy_version');
             expect(wrapper).not.toBeNull();
@@ -755,10 +554,6 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(serialized).not.toContain('sirsoft-gdpr.settings.policy_version.history_button');
         });
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('정책 버전 이력은 inline collapsible Table 로 노출 — _local.policyHistoryOpen 가드로 카드 본문 아래에서 펼침/닫힘 (모달 비사용)', () => {
             const wrapper = findById(root, 'field_cookie_policy_version');
             const serialized = JSON.stringify(wrapper);
@@ -787,10 +582,6 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
          * 두 위치를 모두 인식하는 fallback을 갖고 있어 동작 자체는 정상이었지만, 정석
          * 위치(actions가 액션 객체의 top-level)로 바로잡는다.
          */
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('이력 토글 버튼의 sequence handler 는 actions 를 top-level 에 둔다 (params 중첩 금지)', () => {
             const wrapper = findById(root, 'field_cookie_policy_version');
             const json = JSON.stringify(wrapper);
@@ -800,18 +591,10 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(json).not.toMatch(/"handler":"sequence","params":\{"actions":\[/);
         });
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('이력 표 컨테이너에 policy_version_history_table id 가 부여되어 E2E 로 펼침 여부를 검증할 수 있다', () => {
             expect(findById(root, 'policy_version_history_table')).toBeTruthy();
         });
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('정책 버전 발행 modal (publish modal) partial 이 modals 배열에 등록되어 있다 — 운영자 수동 발행 진입점', () => {
             const modals = (root as { modals?: Array<{ partial?: string }> }).modals ?? [];
             const partials = modals.map((m) => m.partial ?? '');
@@ -821,10 +604,6 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
         describe('정책 버전 발행 모달 (_policy_version_publish_modal.json) — 진행 상태 UX', () => {
             const modalText = JSON.stringify(publishModal);
 
-            /**
-             * @scenario surface=admin_show
-             * @effects admin_settings_layout_contract
-             */
             it('발행 버튼은 isPublishing 동안 spinner + "발행 중..." 라벨 노출 + 양쪽 버튼 disabled', () => {
                 // 피드백: 이전엔 closeModal 이 apiCall 앞에 있어 클릭 즉시 모달이 닫혀 사용자가
                 // 발행 진행 상태를 알 수 없었음. _local.isPublishing 플래그로 발행 중 시각 피드백 +
@@ -839,10 +618,6 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
                 expect(modalText).toContain('"disabled":"{{_local.isPublishing}}"');
             });
 
-            /**
-             * @scenario surface=admin_show
-             * @effects admin_settings_layout_contract
-             */
             it('closeModal 이 onSuccess 안으로 이동 — 발행 완료 후에만 모달 닫힘 (발행 실패 시 모달 유지하여 재시도 가능)', () => {
                 // 회귀 가드: 이전 패턴 (sequence 의 첫 액션 closeModal → 그 다음 apiCall) 은
                 // 발행 실패해도 모달이 닫혀버려 사용자가 처음부터 다시 열어야 했음. closeModal 을
@@ -856,10 +631,6 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             });
         });
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('정책 버전 가이드는 카드 hint 영역에 2줄 P 로 통합된다 (피드백: 토글/박스 제거)', () => {
             const box = findById(root, 'policy_version_guide_box');
             expect(box).not.toBeNull();
@@ -886,10 +657,6 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(serialized).not.toContain('guide_no_publish_');
         });
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('init_actions 에 _local.policyGuideOpen 키가 더 이상 존재하지 않는다 (토글 제거 회귀 가드)', () => {
             const initActions = (root as { init_actions?: Array<{ params?: Record<string, unknown> }> }).init_actions ?? [];
             const setStateAction = initActions.find((a) => (a as { handler?: string }).handler === 'setState');
@@ -899,10 +666,6 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(Object.keys(params ?? {})).not.toContain('policyGuideOpen');
         });
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('하단 저장 sequence 는 단순 save_success 토스트만 노출 — published_version 분기 / 정책 버전 refetch 제거 (수동 발행 모델)', () => {
             const btn = findById(root, 'footer_save_button');
             const serialized = JSON.stringify(btn);
@@ -914,10 +677,6 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(serialized).toContain('sirsoft-gdpr.settings.save_success');
         });
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('데이터소스 — gdprPolicyVersionCurrent (auto) + gdprPolicyVersionHistory (on demand)', () => {
             const dataSources = (root as { data_sources?: { id: string; auto_fetch?: boolean }[] }).data_sources ?? [];
             const ids = dataSources.map((d) => d.id);
@@ -931,10 +690,6 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
     });
 
     describe('마이페이지 동의 관리 카드 제거 (GDPR Art.7(3) 대칭성 의무)', () => {
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('card_mypage_data 카드는 존재하지 않는다 — 플러그인 활성 시 카드는 항상 노출이므로 운영자 토글 불필요', () => {
             expect(findById(root, 'card_mypage_data')).toBeNull();
             expect(findById(root, 'card_mypage_data_fields')).toBeNull();
@@ -950,10 +705,6 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
          */
         const layoutJson = JSON.stringify(root);
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('category_edit.required_locked_hint 키가 layout 어디에도 사용되지 않는다', () => {
             expect(layoutJson).not.toContain('category_edit.required_locked_hint');
             expect(layoutJson).not.toContain('required_locked_hint');
@@ -968,10 +719,6 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
          */
         const layoutJson = JSON.stringify(root);
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('카테고리 라벨 바인딩이 ?.ko / ?.en 고정 참조를 사용하지 않는다', () => {
             // 고정 locale 참조 패턴이 남아 있으면 안 됨
             expect(layoutJson).not.toMatch(/category\?\.label\?\.ko/);
@@ -980,10 +727,6 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(layoutJson).not.toMatch(/category\?\.description\?\.en/);
         });
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('카테고리 라벨/설명은 $localized() 헬퍼를 사용한다', () => {
             // category.label / category.description 은 $localized() 로 감싸 현재 locale 반영
             const labelMatches = layoutJson.match(/\$localized\(category\?\.label\)/g) ?? [];
@@ -995,10 +738,6 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(descMatches.length, '카테고리 설명에 $localized() 헬퍼가 2회 이상 사용됨').toBeGreaterThanOrEqual(2);
         });
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('카테고리 보조 라벨에 카탈로그 key 가 노출된다 (DB/코드 매핑 가독성)', () => {
             // 옵션 C 의 디버그/매핑 보조 정보 — (necessary), (analytics) 같은 key 표시 유지
             expect(layoutJson).toMatch(/\(\{\{category\?\.key \?\? ''\}\}\)/);
@@ -1006,10 +745,6 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
     });
 
     describe('제거된 DPO / 제3자 필드는 노출되지 않는다', () => {
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it.each([
             'field_dpo_name',
             'field_dpo_email',
@@ -1037,27 +772,15 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
     describe('작업 2: 정책 버전 snapshot 조회', () => {
         const layoutJson = JSON.stringify(layout);
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('gdprPolicyVersionSnapshot data_source 가 등록되어 있다', () => {
             expect(layoutJson).toContain('"id":"gdprPolicyVersionSnapshot"');
             expect(layoutJson).toContain('/api/plugins/sirsoft-gdpr/admin/policy-versions/{{_global.viewingPolicyVersion}}');
         });
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('snapshot 모달 partial 이 _shared 위치에 등록되어 있다', () => {
             expect(layoutJson).toContain('partials/_shared/_policy_version_snapshot_modal.json');
         });
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('현재 버전 v배지 옆에 본문 보기 Button 이 노출된다 (피드백 — 평문 + 명시 액션 분리)', () => {
             // v배지는 평문 Span (text 'v...' 으로 항상 표시), 본문 보기 Button 은 if 분기 + sequence
             expect(layoutJson).toContain('"text":"v{{gdprPolicyVersionCurrent?.data?.data?.version ?? \'?\'}}"');
@@ -1068,10 +791,6 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(layoutJson).toContain('snapshot_view_short');
         });
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('이력 표에 본문 컬럼이 추가되고 각 행에 본문 보기 Button 이 노출된다', () => {
             // Thead 에 snapshot_action 컬럼 헤더 추가
             expect(layoutJson).toContain('history.col.snapshot_action');
@@ -1079,10 +798,6 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(layoutJson).toContain('"viewingPolicyVersion":"{{row?.version}}"');
         });
 
-        /**
-         * @scenario surface=admin_show
-         * @effects admin_settings_layout_contract
-         */
         it('policy_version_guide_box wrapper 는 라벨 + hint 2줄 구조의 단순 Div (피드백: 토글/박스 제거)', () => {
             const box = findById(root, 'policy_version_guide_box');
             expect(box).not.toBeNull();
@@ -1091,7 +806,7 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(className).not.toContain('border');
             expect(className).not.toContain('rounded-lg');
             // 자식은 Label + 2개 P (hint + guide_body)
-            const children = asArray(box?.children) as Array<{ name?: string }>;
+            const children = (box?.children ?? []) as Array<{ name?: string }>;
             const names = children.map((c) => c.name);
             expect(names).toContain('Label');
             expect(names.filter((n) => n === 'P')).toHaveLength(2);
@@ -1118,19 +833,11 @@ describe('admin/plugin_settings.json — card_necessary_storage (필수 저장 �
     const root = layout as unknown as AnyNode;
     const SCOPES = ['localStorage', 'sessionStorage', 'cookie'] as const;
 
-    /**
-     * @scenario surface=admin_show
-     * @effects admin_settings_layout_contract
-     */
     it('카드와 안내 박스가 존재한다', () => {
         expect(findById(root, 'card_necessary_storage')).toBeTruthy();
         expect(findById(root, 'necessary_storage_warnings_box')).toBeTruthy();
     });
 
-    /**
-     * @scenario surface=admin_show
-     * @effects admin_settings_layout_contract
-     */
     it('저장소별 카드 3개가 순서대로 존재한다', () => {
         const wrapper = findById(root, 'necessary_storage_scope_cards');
         expect(wrapper).toBeTruthy();
@@ -1138,10 +845,6 @@ describe('admin/plugin_settings.json — card_necessary_storage (필수 저장 �
         expect(ids).toEqual(SCOPES.map((s) => `necessary_storage_card_${s}`));
     });
 
-    /**
-     * @scenario surface=admin_show
-     * @effects admin_settings_layout_contract
-     */
     it.each(SCOPES)('%s 카드의 TagInput 이 그 스코프의 폼 값과 추천 목록을 읽는다', (scope) => {
         const card = findById(root, `necessary_storage_card_${scope}`);
         const serialized = JSON.stringify(card);
@@ -1154,10 +857,6 @@ describe('admin/plugin_settings.json — card_necessary_storage (필수 저장 �
         expect(serialized).toContain(`default_necessary_allowlist_preview?.${scope}`);
     });
 
-    /**
-     * @scenario surface=admin_show
-     * @effects admin_settings_layout_contract
-     */
     it.each(SCOPES)('%s 카드의 change 액션이 정적 setState 키 + $event.target.value 를 쓴다', (scope) => {
         const card = findById(root, `necessary_storage_card_${scope}`);
         const serialized = JSON.stringify(card);
@@ -1172,10 +871,6 @@ describe('admin/plugin_settings.json — card_necessary_storage (필수 저장 �
         expect(serialized).toContain('"hasChanges":true');
     });
 
-    /**
-     * @scenario surface=admin_show
-     * @effects admin_settings_layout_contract
-     */
     it.each(SCOPES)('%s 카드가 422 에러를 그 스코프 키 접두사로 판정한다', (scope) => {
         const card = findById(root, `necessary_storage_card_${scope}`);
         const serialized = JSON.stringify(card);
@@ -1190,10 +885,6 @@ describe('admin/plugin_settings.json — card_necessary_storage (필수 저장 �
         expect(serialized).toContain('"form-error"');
     });
 
-    /**
-     * @scenario surface=admin_show
-     * @effects admin_settings_layout_contract
-     */
     it.each(SCOPES)('%s 카드의 잠금 칩 행이 응답의 잠금 집합을 읽고 편집 값에는 넣지 않는다', (scope) => {
         const lockedRow = findById(root, `necessary_storage_locked_${scope}`);
         expect(lockedRow).toBeTruthy();
@@ -1209,26 +900,6 @@ describe('admin/plugin_settings.json — card_necessary_storage (필수 저장 �
         expect(serialized).toContain('opacity-70');
     });
 
-    /** @effects layout_provided_chips_read_response_not_form_state */
-    it.each(SCOPES)('%s 카드의 확장 제공 칩 행이 응답의 제공 집합을 읽고 편집 값에는 넣지 않는다', (scope) => {
-        const providedRow = findById(root, `necessary_storage_provided_${scope}`);
-        expect(providedRow).toBeTruthy();
-        const serialized = JSON.stringify(providedRow);
-
-        // 제공 집합은 서버가 요청마다 계약 훅에서 모은 계산값이다 — 폼에 담기면 저장 요청에 실린다.
-        expect(serialized).toContain(`gdprSettings?.data?.settings?.necessary_storage_provided?.${scope}`);
-        expect(serialized).not.toContain('_local.form?.');
-        expect(serialized).toContain(`(gdprSettings?.data?.settings?.necessary_storage_provided?.${scope} ?? []).length > 0`);
-        expect(serialized).not.toContain('"TagInput"');
-        expect(serialized).toContain('cursor-not-allowed');
-        expect(serialized).toContain('necessary_storage_allowlist.provided_label');
-        expect(serialized).toContain('necessary_storage_allowlist.provided_hint');
-    });
-
-    /**
-     * @scenario surface=admin_show
-     * @effects admin_settings_layout_contract
-     */
     it('카드 본문이 banner_enabled 게이트 뒤에 있지 않다 (배너를 꺼도 저장 게이팅은 동작한다)', () => {
         const card = findById(root, 'card_necessary_storage');
         const serialized = JSON.stringify(card);
@@ -1236,10 +907,6 @@ describe('admin/plugin_settings.json — card_necessary_storage (필수 저장 �
         expect(serialized).not.toContain('banner_enabled');
     });
 
-    /**
-     * @scenario surface=admin_show
-     * @effects admin_settings_layout_contract
-     */
     it('카드가 쓰는 모든 $t: 키가 ko/en 양쪽에 존재한다', () => {
         const card = findById(root, 'card_necessary_storage');
         const serialized = JSON.stringify(card);
@@ -1262,10 +929,6 @@ describe('admin/plugin_settings.json — card_necessary_storage (필수 저장 �
         expect(missing).toEqual([]);
     });
 
-    /**
-     * @scenario surface=admin_show
-     * @effects admin_settings_layout_contract
-     */
     it('탭 라벨 키도 ko/en 양쪽에 존재한다', () => {
         const koNav = (koLang as { settings?: { nav?: Record<string, string> } }).settings?.nav ?? {};
         const enNav = (enLang as { settings?: { nav?: Record<string, string> } }).settings?.nav ?? {};
@@ -1276,50 +939,22 @@ describe('admin/plugin_settings.json — card_necessary_storage (필수 저장 �
 });
 
 /**
- * 정책 버전 snapshot 모달의 처리방침 링크.
- *
- * 1.0.x 는 스냅샷의 슬러그를 페이지 모듈 주소 규칙(`/page/{slug}`)으로 화면에서 조합했다(#509 에서
- * `/page/` 누락으로 404 가 났던 자리). 1.1.0 부터 운영자가 주소를 직접 적고, 서버 리소스가 스냅샷을
- * 읽어 `privacy_policy.url`(옛 슬러그 스냅샷은 그 시절 링크 경로로 푼 값)과 `legacy_slug` 를 내보낸다.
- * 화면은 그 주소를 그대로 href 로 쓰고 경로를 조합하지 않는다.
- *
- * @scenario surface=policy_snapshot
- * @effects snapshot_modal_links_resolved_privacy_policy_url, snapshot_modal_labels_legacy_slug_snapshot
+ * 이슈 #509 체크리스트 12번 회귀 테스트 — 정책 버전 snapshot 모달의 본문 페이지 링크가
+ * `/{{slug}}` 로 조합되어 페이지 모듈(sirsoft-page) 실제 URL 패턴 `/page/{slug}` 와
+ * 불일치, 클릭 시 404 발생하던 결함. 쿠키 배너의 '변경된 정책 본문 보기' 링크와
+ * 동일하게 `/page/{{slug}}` 로 조합되어야 한다.
  */
-describe('admin/partials/_shared/_policy_version_snapshot_modal.json — 처리방침 링크', () => {
+describe('admin/partials/_shared/_policy_version_snapshot_modal.json — 본문 페이지 링크', () => {
     const layoutJson = JSON.stringify(snapshotModal);
 
-    /**
-     * @scenario surface=admin_show
-     * @effects admin_settings_layout_contract
-     */
-    it('링크 href 는 서버가 푼 privacy_policy.url 을 그대로 쓴다 (화면에서 /page/ 를 조합하지 않는다)', () => {
-        expect(layoutJson).toContain(`"href":"{{gdprPolicyVersionSnapshot?.data?.data?.privacy_policy?.url ?? ''}}"`);
-        expect(layoutJson).not.toContain('/page/{{');
-        expect(layoutJson).not.toContain('snapshot?.privacy_policy_slug');
+    it('본문 페이지 링크 href 가 /page/{{slug}} 형식으로 조합된다 (페이지 모듈 URL 패턴 일치)', () => {
+        expect(layoutJson).toContain('"href":"/page/{{gdprPolicyVersionSnapshot?.data?.data?.snapshot?.privacy_policy_slug ?? \'\'}}"');
     });
 
-    /**
-     * @scenario surface=admin_show
-     * @effects admin_settings_layout_contract
-     */
-    it('옛 슬러그 스냅샷이면 이전 형식 안내를 보이고, 주소가 없으면 빈 안내를 보인다', () => {
-        expect(layoutJson).toContain('"if":"{{gdprPolicyVersionSnapshot?.data?.data?.privacy_policy?.legacy_slug}}"');
-        expect(layoutJson).toContain('sirsoft-gdpr.settings.policy_version.snapshot_modal.legacy_slug_note|slug=');
-        expect(layoutJson).toContain('"if":"{{!gdprPolicyVersionSnapshot?.data?.data?.privacy_policy?.url}}"');
-        expect(layoutJson).toContain('sirsoft-gdpr.settings.policy_version.snapshot_modal.no_policy_url');
-        for (const key of ['legacy_slug_note', 'no_policy_url']) {
-            const ko = (koLang as { settings?: { policy_version?: { snapshot_modal?: Record<string, string> } } }).settings?.policy_version?.snapshot_modal?.[key];
-            const en = (enLang as { settings?: { policy_version?: { snapshot_modal?: Record<string, string> } } }).settings?.policy_version?.snapshot_modal?.[key];
-            expect(typeof ko).toBe('string');
-            expect(typeof en).toBe('string');
-        }
+    it('href 에 /page/ 프리픽스 없이 슬러그만 조합하는 결함 패턴이 없다', () => {
+        expect(layoutJson).not.toContain('"href":"/{{gdprPolicyVersionSnapshot?.data?.data?.snapshot?.privacy_policy_slug}}"');
     });
 
-    /**
-     * @scenario surface=admin_show
-     * @effects admin_settings_layout_contract
-     */
     it('본문 페이지 링크는 새 탭(target=_blank) + noopener 로 연다', () => {
         expect(layoutJson).toContain('"target":"_blank"');
         expect(layoutJson).toContain('"rel":"noopener"');

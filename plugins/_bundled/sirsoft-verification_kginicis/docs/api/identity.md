@@ -43,11 +43,11 @@ _단건 응답: `data` 객체의 필드. 본인확인 record 가 없는 사용�
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | method | string | `"KG이니시스 본인확인"` | 본인확인 수단 표시 라벨 (Resource 고정 문자열) |
-| verified_at | string\|null | `"2026-07-01 14:22:10"` | 최종 본인확인 시각 — 보는 사람 시간대 (`Y-m-d H:i:s`). 재인증 이력이 있으면 `re_verified_at`, 없으면 최초 `verified_at` |
+| verified_at | string\|null | `"2026-07-01 14:22:10"` | 최종 본인확인 시각 (`Y-m-d H:i:s`). 재인증 이력이 있으면 `re_verified_at`, 없으면 최초 `verified_at` |
 | name_masked | string | `"홍**"` | 마스킹된 실명 (첫 글자 + 나머지 `*`) |
 | birthday_masked | string | `"1990-**-**"` | 마스킹된 생년월일 (연도 4자리만 노출) |
 | phone_masked | string | `"010-****-5678"` | 마스킹된 휴대폰 번호 (앞 3자리 + 뒤 4자리) |
-| is_adult | boolean | `true` | 성인 여부 (생년월일 기반 만 19세 이상 자동 계산값 — 한국 법상 나이라 한국 시간 날짜로 센다) |
+| is_adult | boolean | `true` | 성인 여부 (생년월일 기반 만 19세 이상 자동 계산값) |
 | is_foreigner | boolean | `false` | 외국인 여부 (이니시스 `isForeign`) |
 
 `di`/`ci`/`ci2` 등 동일인 식별값과 평문 PII 는 응답에 포함하지 않는다. `InicisIdentityResource` 는 `resourceMeta()` 를 spread 하지 않으므로 `is_owner`/`abilities` 메타도 포함되지 않는다.
@@ -78,9 +78,7 @@ HTTP/1.1 200
 
 **설명**
 
-로그인한 사용자가 마이페이지 본인인증 카드에서 자신의 KG이니시스 본인확인 정보(마스킹)를 조회하는 엔드포인트다. `AuthBaseController` 를 상속하므로 `auth:sanctum` 인증이 필수이며, 라우트에 `check.user_status` 미들웨어가 걸려 **활성 상태 사용자만** 호출할 수 있다(비활성·차단·휴면·탈퇴 사용자는 403). 조회 전용이며 부수 효과는 없다.
-
-종전 표기 `check.user_status:active` 의 `:active` 는 **아무 일도 하지 않았다** — 이 미들웨어는 파라미터를 받지 않고 Laravel 이 초과 인자를 조용히 버린다. "이 라우트만 active 로 좁혔다" 는 거짓 신호였으므로 제거했다(이슈 #636 S4). 통과 어휘는 미들웨어가 단독으로 소유하며, 라우트별로 상태 어휘를 갈라 두면 휴면 같은 상태를 더할 때 게이트 강도가 라우트마다 어긋난다.
+로그인한 사용자가 마이페이지 본인인증 카드에서 자신의 KG이니시스 본인확인 정보(마스킹)를 조회하는 엔드포인트다. `AuthBaseController` 를 상속하므로 `auth:sanctum` 인증이 필수이며, 라우트에 `check.user_status:active` 미들웨어가 걸려 **활성 상태 사용자만** 호출할 수 있다(정지/탈퇴 대기 사용자는 차단). 조회 전용이며 부수 효과는 없다.
 
 - **요청 파라미터 없음**: 대상은 항상 인증된 본인(`Auth::id()`)이며, 다른 사용자의 정보를 조회할 수 없다. 컨트롤러가 `InicisIdentityCardService::findForUser(Auth::id())` 로 본인 record 만 조회한다.
 - **미인증 사용자(record 없음)**: 아직 본인인증을 하지 않은 사용자는 `data: null` 로 응답한다(코어 표준 null 처리 — HTTP 200, `success: true`). 프론트는 `data` 가 `null` 인 경우 「본인인증 하기」 유도 UI 를, 값이 있으면 본인확인 카드를 렌더한다.
@@ -90,7 +88,7 @@ HTTP/1.1 200
   | 필드 | 타입 | 예시값 | 용도/설명 |
   | --- | --- | --- | --- |
   | method | string | `"KG이니시스 본인확인"` | 본인확인 수단 표시 라벨(고정 문자열). |
-  | verified_at | string\|null | `"2026-07-01 14:22:10"` | 최종 본인확인 시각 — 보는 사람 시간대(`Y-m-d H:i:s`). 재인증이 있었으면 `re_verified_at`, 없으면 최초 `verified_at`. |
+  | verified_at | string\|null | `"2026-07-01 14:22:10"` | 최종 본인확인 시각(`Y-m-d H:i:s`). 재인증이 있었으면 `re_verified_at`, 없으면 최초 `verified_at`. |
   | name_masked | string | `"홍**"` | 마스킹된 실명(첫 글자 + 나머지 `*`). |
   | birthday_masked | string | `"1990-**-**"` | 마스킹된 생년월일(연도만 노출). |
   | phone_masked | string | `"010-****-5678"` | 마스킹된 휴대폰 번호(앞 3 + 뒤 4자리). |
@@ -169,9 +167,6 @@ HTTP/1.1 200
 
 길이 상한을 두지 않는다 — 토큰 길이는 코어 발급 정책에 종속되므로, 여기서 상한을 정하면 정책이
 바뀔 때 사용자가 팝업 안에서 오류 화면을 보게 된다.
-
-형식이 틀린 쿼리(`?verification_token[]=x` 등)는 JSON 을 요구한 요청이면 422, 브라우저 요청이면 직전 페이지(Referer)·
-요청 Host 로 돌아가지 않고 사이트 주소의 같은 브리지 `?identity_error=UNKNOWN` 으로 이동해 본인확인 실패로 끝난다.
 
 **응답**: `200 text/html` — 데스크톱(`window.opener` 존재)은 부모창에 `postMessage` 후 창을 닫고,
 모바일은 `sessionStorage` 의 redirectStash 를 복원해 원래 페이지로 이동한다.

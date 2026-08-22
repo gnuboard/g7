@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product,effects] reason: |
+# audit:allow test-scenario-coverage reason: |
 #   cross product 자동 전개는 audit 실행 환경의 fallback YAML 파서가 nested axes 를 읽지 못해
 #   검출되지 않는다(다른 번들 시나리오와 동일 한계). 본 변경은 백엔드 전용(첨부 개수 불변조건)
 #   이며 PHPUnit Feature 테스트가 경로·경계 조합을 커버하고 green 이다.
@@ -34,15 +34,10 @@ effects:
   - existing_plus_new_over_limit_blocked
   - existing_plus_new_at_limit_passes
   - attachment_ids_path_counted_in_total
-  - non_default_collection_counted_in_limit  # post_attachments 등 예약 밖 컬렉션도 상한에 셈 (#883)
   - single_upload_repeat_blocked_at_limit
   - unlimited_board_not_restricted
   - limit_violation_returns_422_not_500
   - existing_over_limit_attachments_are_not_deleted
-  - direct_files_at_limit_pass_and_persist
-  - direct_files_over_limit_blocked
-  - single_upload_within_limit_passes
-  - update_attachment_ids_linked_on_user_path
 
 test_files:
   - modules/_bundled/sirsoft-board/tests/Feature/AttachmentLimitTest.php

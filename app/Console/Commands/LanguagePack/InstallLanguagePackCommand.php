@@ -2,8 +2,6 @@
 
 namespace App\Console\Commands\LanguagePack;
 
-use App\Console\Commands\Traits\LocalizesDescription;
-use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Services\LanguagePackService;
 use Illuminate\Console\Command;
 use Throwable;
@@ -17,9 +15,6 @@ use Throwable;
  */
 class InstallLanguagePackCommand extends Command
 {
-    use LocalizesDescription;
-    use ReportsLifecycleWarnings;
-
     /**
      * @var string
      */
@@ -27,6 +22,11 @@ class InstallLanguagePackCommand extends Command
         {identifier : 번들 식별자 또는 소스에 따른 식별자/URL}
         {--source=bundled : 설치 소스 (bundled|github|url)}
         {--no-activate : 설치 후 자동 활성화하지 않음}';
+
+    /**
+     * @var string
+     */
+    protected $description = '번들/GitHub/URL 소스에서 언어팩을 설치합니다.';
 
     /**
      * @param  LanguagePackService  $service  언어팩 Service
@@ -58,15 +58,16 @@ class InstallLanguagePackCommand extends Command
                 ),
             };
 
-            $this->info(__('language_packs.commands.install.done', [
-                'identifier' => $pack->identifier,
-                'version' => $pack->version,
-                'status' => $pack->status,
-            ]));
+            $this->info(sprintf(
+                '언어팩 설치 완료: %s v%s (status=%s)',
+                $pack->identifier,
+                $pack->version,
+                $pack->status,
+            ));
 
             return self::SUCCESS;
         } catch (Throwable $e) {
-            $this->error(__('language_packs.commands.install.failed', ['error' => $e->getMessage()]));
+            $this->error('언어팩 설치 실패: '.$e->getMessage());
 
             return self::FAILURE;
         }

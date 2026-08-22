@@ -2,8 +2,6 @@
 
 namespace App\Console\Commands\Extension;
 
-use App\Console\Commands\Traits\LocalizesDescription;
-use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Extension\ExtensionManager;
 use App\Extension\HookCacheManager;
 use App\Extension\ModuleManager;
@@ -12,9 +10,6 @@ use Illuminate\Console\Command;
 
 class UpdateAutoloadCommand extends Command
 {
-    use LocalizesDescription;
-    use ReportsLifecycleWarnings;
-
     /**
      * The name and signature of the console command.
      *
@@ -23,13 +18,14 @@ class UpdateAutoloadCommand extends Command
     protected $signature = 'extension:update-autoload';
 
     /**
-     * 확장 오토로드 캐시와 정적 훅 매핑 캐시를 다시 생성합니다.
+     * The console command description.
      *
-     * @param  ExtensionManager  $extensionManager  오토로드 파일 생성·런타임 재등록을 맡는 확장 관리자
-     * @param  HookCacheManager  $hookCacheManager  정적 훅 매핑 캐시 생성기
-     * @param  ModuleManager  $moduleManager  훅 캐시 생성을 위해 모듈을 적재하는 관리자
-     * @param  PluginManager  $pluginManager  훅 캐시 생성을 위해 플러그인을 적재하는 관리자
-     * @return int 종료 코드
+     * @var string
+     */
+    protected $description = '모듈과 플러그인의 오토로드 캐시 파일을 생성합니다 (bootstrap/cache/autoload-extensions.php)';
+
+    /**
+     * Execute the console command.
      */
     public function handle(
         ExtensionManager $extensionManager,
@@ -37,12 +33,12 @@ class UpdateAutoloadCommand extends Command
         ModuleManager $moduleManager,
         PluginManager $pluginManager,
     ): int {
-        $this->info(__('extensions.commands.update_autoload.generating'));
+        $this->info('확장 오토로드 파일을 생성합니다...');
 
         try {
             $extensionManager->generateAutoloadFile();
 
-            $this->info(__('extensions.commands.update_autoload.generated'));
+            $this->info('오토로드 파일이 성공적으로 생성되었습니다.');
             $this->line('  → bootstrap/cache/autoload-extensions.php');
 
             // 방금 생성한 PSR-4 매핑을 현재 프로세스의 ClassLoader 에 즉시 반영.
@@ -58,12 +54,12 @@ class UpdateAutoloadCommand extends Command
             $pluginManager->loadPlugins();
             $hookCacheManager->generate($moduleManager, $pluginManager);
 
-            $this->info(__('extensions.commands.update_autoload.hooks_cache_regenerated'));
+            $this->info('정적 훅 매핑 캐시가 재생성되었습니다.');
             $this->line('  → bootstrap/cache/hooks.php');
 
             return Command::SUCCESS;
         } catch (\Exception $e) {
-            $this->error(__('extensions.commands.update_autoload.failed', ['error' => $e->getMessage()]));
+            $this->error('오토로드 파일 생성 중 오류가 발생했습니다: '.$e->getMessage());
 
             return Command::FAILURE;
         }

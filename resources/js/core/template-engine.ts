@@ -31,7 +31,6 @@ import { createLogger } from './utils/Logger';
 import { webSocketManager } from './websocket/WebSocketManager';
 import { initializeG7CoreGlobals, initDevToolsAPI } from './template-engine/G7CoreGlobals';
 import { checkLayoutEditorMode } from './template-engine/layout-editor/hooks/useEditorMode';
-import { documentTitle } from './routing/DocumentTitle';
 import { loadScriptWithRetry } from './template-engine/networkResilience';
 // LayoutEditorChrome 은 정적 import 하지 않는다 — 편집기는 별도 lazy 번들
 // (layout-editor.min.js)로 분리되어 `/admin/layout-editor/*` 진입 시에만 로드된다.
@@ -147,14 +146,6 @@ let debugMode = false;
  * renderTemplate 완료 후 순차적으로 적용됨
  */
 const pendingDataUpdates: Array<{ data: Record<string, any>; options?: UpdateOptions }> = [];
-
-/**
- * 엔진 밖의 화면(오류 화면)이 루트 컨테이너를 차지해 React 루트를 내려놓은 상태인지 (engine-v1.79.0)
- *
- * 켜져 있는 동안 도착한 데이터 업데이트는 그릴 화면이 없으므로 버린다 — 큐에 남기면 다음 화면 렌더 뒤에
- * 떠난 화면의 `_local` 이 새 화면에 흘러든다. 다음 `renderTemplate` 이 시작하면 끈다.
- */
-let rootReleased = false;
 
 /**
  * 템플릿 메타데이터 로드
@@ -443,7 +434,7 @@ function loadLayoutEditorBundle(): Promise<any> {
       layoutEditorLoadPromise = null; // 재시도 가능하도록 초기화
       logger.error(`편집기 번들 로드 실패 (${src})`, error);
 
-      throw new Error(ErrorDisplay.text('core.errors.layout_editor_bundle_failed'));
+      throw new Error('편집기를 불러오지 못했습니다. 네트워크 상태를 확인한 뒤 다시 시도해 주세요.');
     }
 
     const chrome = (window as any).G7Core?.__LayoutEditorChrome;
@@ -452,7 +443,7 @@ function loadLayoutEditorBundle(): Promise<any> {
       layoutEditorLoadPromise = null;
       logger.error(`편집기 번들 로드됨 — 그러나 __LayoutEditorChrome 미노출 (${src})`);
 
-      throw new Error(ErrorDisplay.text('core.errors.layout_editor_init_failed'));
+      throw new Error('편집기를 불러왔으나 초기화하지 못했습니다. 페이지를 새로고침해 주세요.');
     }
 
     return chrome;
@@ -493,14 +484,6 @@ async function renderTemplate(options: RenderOptions): Promise<void> {
       throw new Error(`컨테이너를 찾을 수 없습니다: #${options.containerId}`);
     }
 
-    // 오류 화면이 비켜 준 컨테이너에 다시 그린다 — 오류 화면 DOM 을 걷고 새 루트를 만든다 (engine-v1.79.0)
-    if (rootReleased) {
-      rootReleased = false;
-      if (!state.reactRoot) {
-        container.replaceChildren();
-      }
-    }
-
     // 전역 변수 생성
     const globalVariables = createGlobalVariables();
 
@@ -537,17 +520,13 @@ async function renderTemplate(options: RenderOptions): Promise<void> {
           LayoutEditorChrome = await loadLayoutEditorBundle();
         } catch (loadError) {
           logger.error('레이아웃 편집기 번들 로드 실패', loadError);
-          // 오류 화면이 컨테이너를 덮기 전에 React 루트를 내려놓는다 — SPA 로 들어왔으면 살아 있는 루트 위에
-          // 덮이게 된다 (engine-v1.79.0, 같은 규칙)
-          releaseTemplateRoot();
           // 컨테이너에 직접 에러 화면 렌더 (CSS 의존성 없는 인라인 스타일)
           ErrorDisplay.render(options.containerId, {
-            // 문구는 화면 언어를 따른다(ErrorDisplay 내장 문구) — 편집기 화면이 뜨지 않은 상태라 번역 파일에 기대지 않는다.
-            title: ErrorDisplay.text('core.errors.layout_editor_load_failed'),
+            title: '레이아웃 편집기 로드 실패',
             message:
               loadError instanceof Error
                 ? loadError.message
-                : ErrorDisplay.text('core.errors.layout_editor_bundle_failed'),
+                : '편집기 번들을 불러오지 못했습니다.',
             icon: 'fas fa-triangle-exclamation',
             showStack: false,
             showReloadButton: true,
@@ -755,12 +734,6 @@ function updateTemplateData(data: Record<string, any>, options?: UpdateOptions):
       throw new Error('템플릿 엔진이 초기화되지 않았습니다.');
     }
 
-    // 오류 화면이 루트를 차지한 동안의 업데이트는 그릴 화면이 없다 — 큐에 남기지 않는다 (engine-v1.79.0)
-    if (rootReleased) {
-      logger.log('React 루트 반납 상태 - 데이터 업데이트 버림:', Object.keys(data));
-      return;
-    }
-
     // 렌더링 확인 - React가 준비되지 않았으면 큐에 저장
     if (!state.reactRoot || !state.currentLayoutJson) {
       logger.log('React 미준비 - 데이터 업데이트 큐잉:', Object.keys(data));
@@ -786,12 +759,9 @@ function updateTemplateData(data: Record<string, any>, options?: UpdateOptions):
     // → 아직 관측되지 않은(unconsumed) 슬롯만 누적 병합한다. 상세: localInitSlot.ts
     const mergedLocalInit = mergeLocalInitSlot(state.currentDataContext._localInit, data._localInit);
 
-    // 전역 변수는 기존 데이터 뒤에 둔다 (@since engine-v1.83.0) — 기존 컨텍스트는 첫 렌더 때 심은 전역 변수(`$locales` 등)를
-    // 이미 갖고 있어, 앞에 두면 옛 값이 새 값을 이겼다(언어팩 설치 직후 `reloadExtensionState` 가 활성 언어 목록을 바꿔도
-    // 새로고침 전까지 옛 목록). 전역 변수 키는 `createGlobalVariables` 만 만든다.
     state.currentDataContext = {
+      ...globalVariables,           // 전역 변수 (낮은 우선순위)
       ...state.currentDataContext,  // 기존 데이터
-      ...globalVariables,           // 전역 변수 (기존 데이터의 옛 전역 변수를 새 값으로)
       ...data,                       // 새 데이터 (높은 우선순위)
       _global: mergedGlobalState,   // _global은 명시적으로 깊은 병합된 값 사용
       _localInit: mergedLocalInit,  // _localInit은 소비 전이면 누적 병합된 값 사용
@@ -805,23 +775,6 @@ function updateTemplateData(data: Record<string, any>, options?: UpdateOptions):
     }
     if (mergedGlobalState._computed !== undefined) {
       state.currentDataContext._computed = mergedGlobalState._computed;
-    }
-
-    // 레이아웃 편집기 모드 — 재렌더 금지 (renderTemplate 의 편집기 분기와 대칭).
-    //
-    // 편집기 모드에서 `TemplateApp.init` 은 `renderTemplate({ layoutJson: { components: [] } })`
-    // 으로 부르고, renderTemplate 의 편집기 분기가 그 빈 배열 대신 LayoutEditorChrome 을
-    // 같은 reactRoot 에 렌더한다. 그래서 `state.currentLayoutJson.components` 는 **빈 배열**이다.
-    // 여기서 그대로 재렌더하면 같은 루트에 빈 트리를 커밋해 편집기를 통째로 제거한다 — 화면이
-    // 백지가 되고 예외도 콘솔 오류도 남지 않는다.
-    //
-    // renderTemplate 의 편집기 분기는 비동기(`loadLayoutEditorBundle`)라, 부팅 중 도착한
-    // setGlobalState 한 번이 그 커밋 뒤에 실행되면 발현하는 **경합**이다(간헐 재현).
-    // 데이터 병합은 위에서 이미 끝났으므로 여기서는 렌더만 건너뛴다 — 편집기 트리는
-    // 자기 상태를 스스로 관리하고 currentLayoutJson 에 의존하지 않는다.
-    if (typeof window !== 'undefined' && checkLayoutEditorMode(window.location.pathname)) {
-      logger.log('레이아웃 편집기 모드 — 재렌더 건너뜀 (편집기 트리 보존)');
-      return;
     }
 
     const components = state.currentLayoutJson.components || [];
@@ -962,48 +915,11 @@ function updateTemplateData(data: Record<string, any>, options?: UpdateOptions):
       });
     }
 
-    // 브라우저 탭 제목 — 받은 데이터로 다시 계산한다. 이 화면 레이아웃에 연결된 동안만 쓴다(앞 화면의 늦은 데이터 무시) (engine-v1.86.0)
-    try {
-      documentTitle.recompute(state.currentLayoutJson, state.currentDataContext);
-    } catch (titleError) {
-      logger.warn('탭 제목 계산 실패', titleError);
-    }
-
     logger.log('템플릿 데이터 업데이트 완료');
   } catch (error) {
     logger.error('템플릿 데이터 업데이트 실패', error);
     throw error;
   }
-}
-
-/**
- * React 루트만 내려놓습니다 — 엔진 밖의 화면이 루트 컨테이너를 덮어쓰기 직전에 부릅니다.
- *
- * 오류 화면(ErrorDisplay)은 컨테이너를 `innerHTML` 로 바꾼다. 루트를 그대로 두면 React 가 지워진 노드를
- * 계속 들고 있다가 다음 커밋(토스트 갱신 등)에서 `insertBefore`/`removeChild` NotFoundError 를 내고,
- * 렌더 오류 경계가 다시 그리기를 반복해 콘솔 오류가 수백 건 쌓인다(7.1.0 실측 — 제한 관리자가
- * 403 화면으로 SPA 이동할 때 198건 + React #185). 레지스트리·번역·디스패처·현재 레이아웃 등 엔진 상태는
- * 그대로 두며, 대기 중인 업데이트는 버리고, 다음 `renderTemplate` 이 새 루트를 만든다.
- *
- * @returns void
- * @since engine-v1.79.0
- */
-function releaseTemplateRoot(): void {
-  pendingDataUpdates.length = 0;
-
-  if (!state.reactRoot) {
-    return;
-  }
-
-  rootReleased = true;
-
-  try {
-    state.reactRoot.unmount();
-  } catch (error) {
-    logger.warn('React Root 반납 중 오류', error);
-  }
-
-  state.reactRoot = null;
 }
 
 /**
@@ -1021,9 +937,6 @@ function destroyTemplate(): void {
       state.reactRoot.unmount();
       state.reactRoot = null;
     }
-
-    // 루트 반납 표식도 거둔다 — 남기면 재초기화 뒤 첫 렌더 전 업데이트가 큐 대신 버려진다 (engine-v1.79.0)
-    rootReleased = false;
 
     // 상태 초기화
     state.templateId = null;
@@ -1102,9 +1015,6 @@ if (typeof window !== 'undefined') {
       bindingEngine: state.bindingEngine,
       actionDispatcher: state.actionDispatcher,
       templateMetadata: state.templateMetadata,
-      // 레이아웃 이탈 가드(meta.leave_guard)가 읽는다 (engine-v1.82.0)
-      currentLayoutJson: state.currentLayoutJson,
-      currentDataContext: state.currentDataContext,
     }),
     transitionManager,
     responsiveManager,
@@ -1124,7 +1034,6 @@ export {
   renderTemplate,
   updateTemplateData,
   destroyTemplate,
-  releaseTemplateRoot,
   getState,
   getActionDispatcher,
   LayoutLoader,

@@ -14,9 +14,9 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Schema;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Providers\BoardServiceProvider;
-use Modules\Sirsoft\Board\Tests\Concerns\RestoresBoardSettingsStorage;
 use Tests\TestCase;
 
 /**
@@ -31,10 +31,7 @@ use Tests\TestCase;
  */
 abstract class ModuleTestCase extends TestCase
 {
-    use DatabaseTransactions {
-        beginDatabaseTransaction as protected beginTransactionAfterSchema;
-    }
-    use RestoresBoardSettingsStorage;
+    use DatabaseTransactions;
 
     /**
      * 모듈 루트 경로를 반환합니다.
@@ -68,15 +65,10 @@ abstract class ModuleTestCase extends TestCase
 
     /**
      * 테스트 환경 설정
-     *
-     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
         parent::setUp();
-
-        // 설정 저장소(파일)는 트랜잭션 롤백이 닿지 않는다 — 시험 전 상태를 떠 두고 tearDown 에서 되돌린다 (#789 P17)
-        $this->snapshotBoardSettingsStorage();
 
         // 모듈 오토로드 등록 (테스트 환경)
         $this->registerModuleAutoload();
@@ -85,7 +77,6 @@ abstract class ModuleTestCase extends TestCase
         $this->app->register(BoardServiceProvider::class);
 
         // 모듈 마이그레이션 실행 (boards 테이블 등)
-        // 보통은 beginDatabaseTransaction() 이 트랜잭션 전에 이미 끝냈다 — 트랜잭션을 쓰지 않는 하위 클래스용 안전망
         $this->runModuleMigrationIfNeeded();
 
         // 모듈을 활성화 상태로 등록 (테스트 환경)
@@ -100,16 +91,6 @@ abstract class ModuleTestCase extends TestCase
         // 모듈 인스턴스 등록 + 훅 리스너 자동 등록이 누락된다.
         // 테스트 환경에서 module.php 가 선언한 getHookListeners() 의 리스너들을 수동 등록.
         $this->registerBundledModuleInstance();
-
-        // 번역 네임스페이스를 시험 대상 원본(_bundled)의 lang 으로 맞춘다 (쇼핑몰 시험 기반 클래스와 같은 처리)
-        $this->isolateModuleTranslations();
-
-        // 설정 미러(`g7_module_settings()` 가 읽는 config)를 이 테스트 시점의 모듈 설정으로 다시 채운다.
-        // 미러는 앱 부팅 때 「활성 모듈」만 싣는데, 같은 프로세스에서 코어 시험이 먼저 스키마를 새로 만들어
-        // 이 모듈의 등록 행이 없던 DB 로 부팅하면 미러가 비어 게시판 기본 권한(basic_defaults)이 빈다.
-        // 그러면 새 게시판 권한에 관리자 역할이 붙지 않아 게시판 생성이 권한 상승 상한 검사(403)에 걸린다
-        // (단독 실행은 통과하는 프로세스 순서 의존 실패 — 쇼핑몰 시험 기반 클래스와 같은 처리).
-        g7_refresh_module_settings_config('sirsoft-board');
 
         // 모듈 라우트를 수동으로 등록
         $this->registerModuleRoutes();
@@ -126,46 +107,17 @@ abstract class ModuleTestCase extends TestCase
     }
 
     /**
-     * 모듈 다국어 네임스페이스를 시험 대상 원본(_bundled)의 lang 디렉터리로 다시 등록합니다.
-     *
-     * 앱 부팅 때 등록되는 `sirsoft-board::` 경로는 활성 사본(`modules/sirsoft-board/src/lang`)이라, 원본에 새로 더한 키가
-     * 설치본 반영 전에는 원문 키로 나온다. 또 선행 시험이 활성 사본에서 읽은 그룹이 번역기에 남아 있으면 경로를 바꿔도
-     * 다시 읽지 않으므로, 읽어 둔 그룹도 비운다.
-     *
-     * @return void 반환값 없음
-     */
-    private function isolateModuleTranslations(): void
-    {
-        $langPath = $this->getModuleBasePath().'/src/lang';
-
-        if (is_dir($langPath)) {
-            $translator = $this->app['translator'];
-            $translator->addNamespace('sirsoft-board', $langPath);
-
-            // 이 모듈 네임스페이스로 이미 읽어 둔 그룹만 비운다 (다른 네임스페이스·런타임 추가 문구는 그대로)
-            $loaded = (fn () => $this->loaded)->call($translator);
-            unset($loaded['sirsoft-board']);
-            $translator->setLoaded($loaded);
-        }
-    }
-
-    /**
-     * tearDown 에 HookManager 상태·설정 저장소 복원.
-     *
-     * @return void 반환값 없음
+     * tearDown 에 HookManager 상태 복원.
      */
     protected function tearDown(): void
     {
         $this->restoreHookManager();
-        $this->restoreBoardSettingsStorage();
 
         parent::tearDown();
     }
 
     /**
      * HookManager static $hooks / $filters / $dispatching 를 스냅샷.
-     *
-     * @return void 반환값 없음
      */
     private function snapshotHookManager(): void
     {
@@ -179,8 +131,6 @@ abstract class ModuleTestCase extends TestCase
 
     /**
      * 스냅샷 시점으로 HookManager 복원.
-     *
-     * @return void 반환값 없음
      */
     private function restoreHookManager(): void
     {
@@ -197,44 +147,11 @@ abstract class ModuleTestCase extends TestCase
     }
 
     /**
-     * 첫 사용 때는 시드 없는 테스트 스키마(잔여 행만 정리한 상태)를 요구하고, 그 뒤에는 현재 상태를 받아들인다.
-     *
-     * 예전에는 프로세스 첫 테스트가 `migrate:fresh` 로 시드까지 지운 DB 에서 시작했다 — 같은 전제를 재사용 스키마에서 재현한다.
-     *
-     * @return string 요구 프로필(none-exact · any)
-     */
-    protected function requiredTestingSchema(): string
-    {
-        return static::$migrated ? 'any' : 'none-exact';
-    }
-
-    /**
-     * 스키마를 먼저 끝낸 뒤 시험 트랜잭션을 엽니다.
-     *
-     * Laravel 은 `parent::setUp()` 안(트레이트 초기화)에서 이 트랜잭션을 연다. 그 뒤 setUp 에서 프로세스 첫
-     * 시험의 `migrate:fresh` 를 돌리면 MySQL 이 DDL 마다 열린 트랜잭션을 암묵 커밋해, 첫 시험이 만든 행
-     * (기본 역할, 시더가 넣은 행 등)이 롤백되지 않고 테스트 DB 에 남았다. 마이그레이션 경로는 코어
-     * TestCase::setUpTraits() 가 이미 등록한 뒤라 스키마 구성은 종전과 같다.
-     *
-     * @return void 반환값 없음
-     */
-    public function beginDatabaseTransaction()
-    {
-        $this->runModuleMigrationIfNeeded();
-
-        $this->beginTransactionAfterSchema();
-    }
-
-    /**
-     * 첫 사용 표시 (프로세스당 한 번)
-     *
-     * 테스트 스키마는 코어 TestCase 가 트레이트 초기화 전에 맞춘다. 첫 사용 여부는 요구 프로필(requiredTestingSchema)이 읽는다.
+     * 모듈 마이그레이션 실행 (필요한 경우에만)
      *
      * 코어 테이블이 없으면 먼저 코어 마이그레이션을 실행하고,
      * 그 후 모듈 마이그레이션을 실행합니다.
      * static $migrated 플래그로 프로세스당 한 번만 실행합니다.
-     *
-     * @return void 반환값 없음
      */
     protected function runModuleMigrationIfNeeded(): void
     {
@@ -242,8 +159,18 @@ abstract class ModuleTestCase extends TestCase
             return;
         }
 
-        // 스키마는 코어 TestCase 의 테스트 스키마 판정(TestingSchemaCache)이 트레이트 초기화 전에 이미 맞췄다 —
-        // 첫 사용이면 시드 없는 상태(none-exact)로 정리돼 있다. 여기서는 첫 사용이 끝났다는 표시만 남긴다.
+        // 매 PHP process 첫 setUp 시 DB 를 완전 초기화 후 코어+모듈 마이그레이션을 처음부터
+        // 실행한다 (board 는 DatabaseTransactions 사용 — RefreshDatabase 가 아니므로 schema
+        // 자동 재구축 없음). 이전 process 의 부분 schema 잔재(예: 컬럼은 추가됐지만 migration
+        // record 누락) 로 인한 "Duplicate column" 등 충돌을 차단한다.
+        $this->artisan('migrate:fresh');
+
+        // 모듈 마이그레이션 실행 (코어 테이블 생성 후)
+        $this->artisan('migrate', [
+            '--path' => $this->getModuleBasePath().'/database/migrations',
+            '--realpath' => true,
+        ]);
+
         static::$migrated = true;
     }
 
@@ -254,8 +181,6 @@ abstract class ModuleTestCase extends TestCase
      * _bundled 는 메타데이터만 로드 (loadBundledModules) — 인스턴스/훅 미등록.
      * 테스트 환경에서는 _bundled 에서 직접 실행하므로 module.php 의
      * getHookListeners() 가 선언한 리스너들을 수동으로 등록해야 실제 부트 시점과 동일한 훅 흐름이 복원된다.
-     *
-     * @return void 반환값 없음
      */
     protected function registerBundledModuleInstance(): void
     {
@@ -300,8 +225,6 @@ abstract class ModuleTestCase extends TestCase
 
     /**
      * 모듈을 활성화 상태로 등록합니다.
-     *
-     * @return void 반환값 없음
      */
     protected function registerModuleAsActive(): void
     {
@@ -322,8 +245,6 @@ abstract class ModuleTestCase extends TestCase
 
     /**
      * 모듈 오토로드를 등록합니다.
-     *
-     * @return void 반환값 없음
      */
     protected function registerModuleAutoload(): void
     {
@@ -352,8 +273,6 @@ abstract class ModuleTestCase extends TestCase
 
     /**
      * 모듈 라우트를 등록합니다.
-     *
-     * @return void 반환값 없음
      */
     protected function registerModuleRoutes(): void
     {
@@ -364,17 +283,11 @@ abstract class ModuleTestCase extends TestCase
                 ->name('api.modules.sirsoft-board.')
                 ->middleware('api')
                 ->group($apiRoutesFile);
-
-            // 라우트 이름은 등록 뒤 `->name()` 으로 붙으므로 부팅 이후 추가한 라우트는 이름 색인에 없다.
-            // 색인을 다시 만들지 않으면 route()·서명 URL 발급(첨부 미리보기 서명 주소)이 RouteNotFound 로 실패한다.
-            Route::getRoutes()->refreshNameLookups();
         }
     }
 
     /**
      * 기본 역할들을 생성합니다.
-     *
-     * @return void 반환값 없음
      */
     protected function createDefaultRoles(): void
     {
@@ -399,7 +312,7 @@ abstract class ModuleTestCase extends TestCase
      * 관리자 역할을 가진 사용자를 생성합니다.
      *
      * @param  array  $permissions  추가 권한 목록
-     * @return User 요청한 권한을 가진 관리자
+     * @return User
      */
     protected function createAdminUser(array $permissions = []): User
     {
@@ -427,7 +340,7 @@ abstract class ModuleTestCase extends TestCase
     /**
      * 일반 사용자를 생성합니다.
      *
-     * @return User 일반 사용자
+     * @return User
      */
     protected function createUser(): User
     {
@@ -436,28 +349,5 @@ abstract class ModuleTestCase extends TestCase
         $user->roles()->attach($userRole->id);
 
         return $user;
-    }
-
-    /**
-     * user 역할에 한 게시판의 권한을 줍니다.
-     *
-     * 게시글 신고·반응 라우트는 그 게시판의 게시글 열람 권한(`permission:user,sirsoft-board.{slug}.posts.read`)을
-     * 요구한다. 게시판을 서비스가 아니라 모델로 바로 만드는 테스트에는 권한 행이 없으므로 여기서 만든다.
-     *
-     * @param  Board  $board  대상 게시판
-     * @param  array  $permissionKeys  권한 키 (예: ['posts.read'])
-     * @return void 반환값 없음
-     */
-    protected function grantUserRoleBoardPermissions(Board $board, array $permissionKeys = ['posts.read']): void
-    {
-        $userRole = Role::where('identifier', 'user')->first();
-
-        foreach ($permissionKeys as $key) {
-            $permission = Permission::firstOrCreate(
-                ['identifier' => "sirsoft-board.{$board->slug}.{$key}"],
-                ['name' => ['ko' => $key, 'en' => $key], 'type' => 'user']
-            );
-            $userRole->permissions()->syncWithoutDetaching([$permission->id]);
-        }
     }
 }

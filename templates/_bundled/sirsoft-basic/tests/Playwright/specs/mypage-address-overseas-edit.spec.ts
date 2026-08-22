@@ -86,11 +86,9 @@ test.describe('마이페이지 해외 배송지 수정', () => {
 
   test.beforeAll(() => {
     // 유저 화면 흐름이라 관리자 권한은 필요 없다 (인증만 필요).
-    token = issueToken();
+    token = issueToken('sirsoft-ecommerce.user.addresses.self');
   });
 
-  // @scenario step=edit_entry
-  // @effects overseas_edit_form_prefills_intl_fields
   test('T1 수정 진입 시 해외 도시/주/우편번호 입력칸에 저장값이 채워진다', async ({ page, request }) => {
     const addressName = `E2E 해외 ${Date.now()}`;
     await createOverseasAddress(request, token, addressName);
@@ -108,8 +106,6 @@ test.describe('마이페이지 해외 배송지 수정', () => {
     await expect(page.locator('input[name="intl_postal_code"]')).toHaveValue('10118');
   });
 
-  // @scenario step=save_untouched
-  // @effects overseas_edit_save_preserves_city_state_postal_code
   test('T2 도시/주/우편번호를 건드리지 않고 저장해도 값이 유지된다', async ({ page, request }) => {
     const addressName = `E2E 해외 보존 ${Date.now()}`;
     const addressId = await createOverseasAddress(request, token, addressName);
@@ -141,8 +137,6 @@ test.describe('마이페이지 해외 배송지 수정', () => {
     expect(saved.address_line_2).toBe('Suite 2000');
   });
 
-  // @scenario step=list_card
-  // @effects overseas_address_card_shows_full_address
   test('T3 목록 카드가 해외 주소를 전체 주소로 표시한다', async ({ page, request }) => {
     const addressName = `E2E 해외 표시 ${Date.now()}`;
     await createOverseasAddress(request, token, addressName);

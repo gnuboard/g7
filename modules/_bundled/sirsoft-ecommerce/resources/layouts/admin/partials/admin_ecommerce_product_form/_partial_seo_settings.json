@@ -1,5 +1,4 @@
 {
-    "comment": "상품 폼 — SEO 구획. 검색 결과에 실릴 제목·설명을 정한다. 대개 상품명·상세설명과 같으므로\n  「따라가기」를 기본으로 두고, 끄면 그 순간의 값을 옮겨 담아 거기서부터 손보게 한다.\n  아래 미리보기는 검색 결과에 어떻게 보일지를 그대로 흉내 낸 것이다.",
     "meta": {
         "is_partial": true,
         "description": "Product Form - SEO Settings Section"
@@ -13,22 +12,9 @@
     "children": [
         {
             "type": "basic",
-            "name": "Button",
-            "actions": [
-                {
-                    "comment": "구획 접기/펼치기",
-                    "type": "click",
-                    "handler": "setState",
-                    "params": {
-                        "target": "local",
-                        "ui.seoExpanded": "{{!_local.ui.seoExpanded}}"
-                    }
-                }
-            ],
+            "name": "Div",
             "props": {
-                "type": "button",
-                "className": "flex w-full justify-start text-left card-header",
-                "aria-expanded": "{{_local.ui.seoExpanded !== false}}"
+                "className": "card-header"
             },
             "children": [
                 {
@@ -52,7 +38,17 @@
                     "name": "Icon",
                     "props": {
                         "name": "chevron-down",
-                        "className": "admin-card-accordion-icon text-gray-500 dark:text-gray-400 transition-transform duration-200 {{_local.ui.seoExpanded !== false ? 'rotate-180' : ''}}"
+                        "className": "admin-card-accordion-icon transition-transform duration-200 {{_local.ui.seoExpanded !== false ? 'rotate-180' : ''}}"
+                    }
+                }
+            ],
+            "actions": [
+                {
+                    "type": "click",
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "ui.seoExpanded": "{{!_local.ui.seoExpanded}}"
                     }
                 }
             ]
@@ -85,11 +81,10 @@
                                 },
                                 {
                                     "id": "meta_title_synced",
-                                    "type": "basic",
-                                    "name": "Input",
                                     "if": "{{_local.form.seo_sync_title}}",
+                                    "type": "composite",
+                                    "name": "Input",
                                     "props": {
-                                        "aria-label": "$t:sirsoft-ecommerce.admin.product.fields.meta_title",
                                         "value": "{{$localized(_local.form.name) || ''}}",
                                         "disabled": true,
                                         "maxLength": 70,
@@ -98,18 +93,17 @@
                                 },
                                 {
                                     "id": "meta_title_custom",
+                                    "if": "{{!_local.form.seo_sync_title}}",
                                     "type": "composite",
                                     "name": "MultilingualInput",
-                                    "if": "{{!_local.form.seo_sync_title}}",
                                     "props": {
-                                        "ariaLabel": "$t:sirsoft-ecommerce.admin.product.fields.meta_title",
                                         "name": "meta_title",
                                         "layout": "tabs",
                                         "inputType": "text",
                                         "placeholder": "$t:sirsoft-ecommerce.admin.product.placeholders.meta_title",
                                         "maxLength": 70,
                                         "error": "{{_local.errors?.meta_title?.[0] ?? _local.errors?.['meta_title.ko']?.[0] ?? ''}}",
-                                        "disabled": "{{_computed.isReadOnly}}"
+                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
                                     }
                                 },
                                 {
@@ -140,7 +134,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-gray-500 dark:text-gray-400"
+                                                "className": "text-gray-400 dark:text-gray-500"
                                             },
                                             "text": "{{_local.form.seo_sync_title ? ($localized(_local.form.name) || '').length : ($localized(_local.form.meta_title) || '').length}}/70"
                                         }
@@ -157,35 +151,36 @@
                                         {
                                             "type": "basic",
                                             "name": "Checkbox",
-                                            "actions": [
-                                                {
-                                                    "comment": "상품명 따라가기 전환. 끌 때 상품명을 메타 제목으로 옮겨 담아 빈 칸에서 시작하지 않게 한다(조건이 뒤집기 전 값을 보므로 「켜져 있었다면」이 곧 「지금 끄는 중」이다)",
-                                                    "type": "change",
-                                                    "handler": "sequence",
-                                                    "actions": [
-                                                        {
-                                                            "handler": "setState",
-                                                            "params": {
-                                                                "target": "local",
-                                                                "form.seo_sync_title": "{{!_local.form.seo_sync_title}}",
-                                                                "hasChanges": true
-                                                            }
-                                                        },
-                                                        {
-                                                            "handler": "setState",
-                                                            "if": "{{!_local.form.seo_sync_title}}",
-                                                            "params": {
-                                                                "target": "local",
-                                                                "form.meta_title": "{{_local.form.name}}"
-                                                            }
-                                                        }
-                                                    ]
-                                                }
-                                            ],
                                             "props": {
                                                 "checked": "{{_local.form.seo_sync_title}}",
-                                                "disabled": "{{_computed.isReadOnly}}"
-                                            }
+                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "sequence",
+                                                    "params": {
+                                                        "actions": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "form.seo_sync_title": "{{!_local.form.seo_sync_title}}",
+                                                                    "hasChanges": "{{!!route?.itemCode}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "setState",
+                                                                "if": "{{!_local.form.seo_sync_title}}",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "form.meta_title": "{{_local.form.name}}"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                }
+                                            ]
                                         },
                                         {
                                             "type": "basic",
@@ -197,7 +192,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "props": {}
                         }
                     ]
                 },
@@ -220,11 +216,10 @@
                                 },
                                 {
                                     "id": "meta_desc_synced",
-                                    "type": "basic",
-                                    "name": "Textarea",
                                     "if": "{{_local.form.seo_sync_description}}",
+                                    "type": "composite",
+                                    "name": "Textarea",
                                     "props": {
-                                        "aria-label": "$t:sirsoft-ecommerce.admin.product.fields.meta_description",
                                         "value": "{{($localized(_local.form.description) || '').substring(0, 160)}}",
                                         "disabled": true,
                                         "rows": 3,
@@ -234,11 +229,10 @@
                                 },
                                 {
                                     "id": "meta_desc_custom",
+                                    "if": "{{!_local.form.seo_sync_description}}",
                                     "type": "composite",
                                     "name": "MultilingualInput",
-                                    "if": "{{!_local.form.seo_sync_description}}",
                                     "props": {
-                                        "ariaLabel": "$t:sirsoft-ecommerce.admin.product.fields.meta_description",
                                         "name": "meta_description",
                                         "layout": "tabs",
                                         "inputType": "textarea",
@@ -246,7 +240,7 @@
                                         "placeholder": "$t:sirsoft-ecommerce.admin.product.placeholders.meta_description",
                                         "maxLength": 160,
                                         "error": "{{_local.errors?.meta_description?.[0] ?? _local.errors?.['meta_description.ko']?.[0] ?? ''}}",
-                                        "disabled": "{{_computed.isReadOnly}}"
+                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
                                     }
                                 },
                                 {
@@ -277,35 +271,36 @@
                                         {
                                             "type": "basic",
                                             "name": "Checkbox",
-                                            "actions": [
-                                                {
-                                                    "comment": "상세설명 따라가기 전환 — 위 제목과 같은 방식이다",
-                                                    "type": "change",
-                                                    "handler": "sequence",
-                                                    "actions": [
-                                                        {
-                                                            "handler": "setState",
-                                                            "params": {
-                                                                "target": "local",
-                                                                "form.seo_sync_description": "{{!_local.form.seo_sync_description}}",
-                                                                "hasChanges": true
-                                                            }
-                                                        },
-                                                        {
-                                                            "handler": "setState",
-                                                            "if": "{{!_local.form.seo_sync_description}}",
-                                                            "params": {
-                                                                "target": "local",
-                                                                "form.meta_description": "{{_local.form.description}}"
-                                                            }
-                                                        }
-                                                    ]
-                                                }
-                                            ],
                                             "props": {
                                                 "checked": "{{_local.form.seo_sync_description}}",
-                                                "disabled": "{{_computed.isReadOnly}}"
-                                            }
+                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "sequence",
+                                                    "params": {
+                                                        "actions": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "form.seo_sync_description": "{{!_local.form.seo_sync_description}}",
+                                                                    "hasChanges": "{{!!route?.itemCode}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "setState",
+                                                                "if": "{{!_local.form.seo_sync_description}}",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "form.meta_description": "{{_local.form.description}}"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                }
+                                            ]
                                         },
                                         {
                                             "type": "basic",
@@ -317,7 +312,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "props": {}
                         }
                     ]
                 },
@@ -341,24 +337,23 @@
                                 {
                                     "type": "composite",
                                     "name": "TagInput",
-                                    "actions": [
-                                        {
-                                            "comment": "값 자체는 폼 자동 바인딩이 담는다 — 여기서는 변경 표시만 세운다(등록 진입에서는 애초에 전부 새 값이라 세우지 않는다)",
-                                            "type": "change",
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "local",
-                                                "hasChanges": true
-                                            }
-                                        }
-                                    ],
                                     "props": {
                                         "name": "meta_keywords",
                                         "placeholder": "$t:sirsoft-ecommerce.admin.product.placeholders.meta_keywords",
                                         "maxItems": 10,
                                         "creatable": true,
-                                        "disabled": "{{_computed.isReadOnly}}"
-                                    }
+                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                    },
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "hasChanges": "{{!!route?.itemCode}}"
+                                            }
+                                        }
+                                    ]
                                 },
                                 {
                                     "type": "basic",
@@ -368,7 +363,8 @@
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.seo.keywords_hint"
                                 }
-                            ]
+                            ],
+                            "props": {}
                         }
                     ]
                 },
@@ -383,22 +379,21 @@
                         {
                             "type": "basic",
                             "name": "Checkbox",
+                            "props": {
+                                "checked": "{{_local.form.use_main_image_for_og ?? true}}",
+                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                            },
                             "actions": [
                                 {
-                                    "comment": "대표 이미지를 공유 미리보기(og:image)로 쓸지 — 체크값 대신 지금 값을 뒤집는다(설정된 적 없으면 켜진 것으로 본다)",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
                                         "target": "local",
                                         "form.use_main_image_for_og": "{{!(_local.form.use_main_image_for_og ?? true)}}",
-                                        "hasChanges": true
+                                        "hasChanges": "{{!!route?.itemCode}}"
                                     }
                                 }
-                            ],
-                            "props": {
-                                "checked": "{{_local.form.use_main_image_for_og ?? true}}",
-                                "disabled": "{{_computed.isReadOnly}}"
-                            }
+                            ]
                         },
                         {
                             "type": "basic",
@@ -444,9 +439,9 @@
                             "children": [
                                 {
                                     "id": "seo_preview_image",
+                                    "if": "{{!!_local.form.images?.[0]?.download_url}}",
                                     "type": "basic",
                                     "name": "Img",
-                                    "if": "{{!!_local.form.images?.[0]?.download_url}}",
                                     "props": {
                                         "src": "{{_local.form.images?.[0]?.download_url}}",
                                         "alt": "OG Image",

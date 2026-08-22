@@ -8,8 +8,6 @@ interface PluginManagerInterface
 {
     /**
      * 모든 플러그인을 로드하고 초기화합니다.
-     *
-     * @return void 반환값 없음
      */
     public function loadPlugins(): void;
 
@@ -105,26 +103,15 @@ interface PluginManagerInterface
     public function getPluginInfo(string $pluginName): ?array;
 
     /**
-     * 설치·의존 판정용 플러그인 정보를 반환합니다 — 미설치 플러그인은 진입 파일을 실행하지 않고 manifest 만 읽습니다.
-     *
-     * @param  string  $pluginName  플러그인명
-     * @return array<string, mixed>|null 플러그인 정보 배열 또는 null
-     *
-     * @since 7.1.5
-     */
-    public function getPluginManifestInfo(string $pluginName): ?array;
-
-    /**
      * 플러그인의 레이아웃을 파일에서 다시 읽어 DB에 갱신합니다.
      *
      * @param  string  $pluginName  플러그인명
-     * @param  bool  $preserveModified  true(keep) 시 운영자가 고친 화면은 조각 단위로 병합(고친 부분 유지)
-     * @param  string|null  $backupPath  업데이트 백업 디렉토리 — 원본 본문이 없는 행의 비교 기준
-     * @return array{success: bool, layouts_refreshed: int, layout_sync?: array<string, mixed>} 갱신 결과 (layout_sync = 운영자 관련 행 보고)
+     * @param  bool  $preserveModified  true 시 사용자가 UI에서 수정한 레이아웃은 덮어쓰지 않음
+     * @return array{success: bool, layouts_refreshed: int} 갱신 결과 및 갱신된 레이아웃 개수
      *
      * @throws \Exception 플러그인을 찾을 수 없거나 레이아웃 갱신 실패 시
      */
-    public function refreshPluginLayouts(string $pluginName, bool $preserveModified = false, ?string $backupPath = null): array;
+    public function refreshPluginLayouts(string $pluginName, bool $preserveModified = false): array;
 
     /**
      * 플러그인 삭제 시 삭제될 데이터 정보를 반환합니다.

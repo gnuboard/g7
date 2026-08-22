@@ -32,11 +32,6 @@ class NicePaymentsApiService
     /** @var array<string, mixed> */
     private array $settings;
 
-    /**
-     * 플러그인 설정을 읽어 현재 모드의 MID·MerchantKey 와 에스크로 사용 여부를 준비합니다.
-     *
-     * @param  PluginSettingsService  $pluginSettingsService  플러그인 설정 서비스
-     */
     public function __construct(PluginSettingsService $pluginSettingsService)
     {
         $settings = $pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
@@ -51,12 +46,6 @@ class NicePaymentsApiService
         $this->useEscrow = (bool) ($settings['use_escrow'] ?? false);
     }
 
-    /**
-     * 운영 MID 에 SR 접두사가 없으면 붙여 돌려줍니다. (비어 있으면 빈 문자열)
-     *
-     * @param  string  $suffix  설정에 저장된 운영 MID (접두사 포함 여부 무관)
-     * @return string 접두사가 붙은 운영 MID (값이 없으면 빈 문자열)
-     */
     private static function buildLiveMid(string $suffix): string
     {
         $suffix = trim($suffix);
@@ -106,7 +95,6 @@ class NicePaymentsApiService
      *
      * @param  bool  $isTest  결제 당시 테스트 모드 여부
      * @param  string  $mid  결제 당시 MID
-     * @return void 반환값 없음
      */
     public function useStoredCredentials(bool $isTest, string $mid): void
     {
@@ -204,29 +192,6 @@ class NicePaymentsApiService
         $expected = bin2hex(hash('sha256', $tid.$this->mid.(string) $amt.$this->merchantKey, true));
 
         return hash_equals($expected, $signature);
-    }
-
-    /**
-     * PG 응답의 금액 값을 정수로 읽습니다. (숫자만으로 된 값만 인정)
-     *
-     * 나이스페이는 금액을 0 으로 채운 숫자 문자열(예: `000000030000`)이나 정수로 돌려준다.
-     * 비어 있거나 숫자가 아닌 값(소수·지수 표기·공백 포함 등)은 금액을 확인하지 못한 것으로 보고
-     * null 을 돌려준다 — 호출 측은 null 을 불일치로 취급해 결제를 반영하지 않는다.
-     *
-     * @param  mixed  $value  PG 응답의 금액 값 (`Amt`)
-     * @return int|null 금액 (확인할 수 없으면 null)
-     */
-    public static function parseAmount(mixed $value): ?int
-    {
-        if (is_int($value)) {
-            return $value >= 0 ? $value : null;
-        }
-
-        if (! is_string($value) || preg_match('/^[0-9]{1,15}$/', $value) !== 1) {
-            return null;
-        }
-
-        return (int) $value;
     }
 
     /**
@@ -352,9 +317,6 @@ class NicePaymentsApiService
     /**
      * 단건 거래 조회 API 호출
      *
-     * 응답은 `ResultCode`(조회 성공 '0000'), `TID`, `Status`('0' 승인 / '1' 취소 / '9' 거래 없음),
-     * `AuthCode`, `AuthDate` 를 담는다. 가상계좌는 입금이 끝나야 승인('0')으로 조회된다.
-     *
      * @param  string  $tid  조회할 거래번호
      * @return array PG 응답 데이터
      *
@@ -389,7 +351,6 @@ class NicePaymentsApiService
      * @param  string  $txTid  임시 거래번호 (TxTid)
      * @param  string  $authToken  인증 토큰
      * @param  int  $amt  결제 금액
-     * @return void 반환값 없음 (망취소 실패는 로그만 남기고 삼킨다)
      */
     public function sendNetCancel(string $netCancelUrl, string $txTid, string $authToken, int $amt): void
     {
@@ -428,8 +389,6 @@ class NicePaymentsApiService
      */
     public function generateEdiDate(): string
     {
-        // EdiDate 는 PG 통신값이다 — 나이스페이 사양의 시간대 확인 전까지 서버 시각 그대로 둔다(D7)
-        // audit:allow datetime-display-user-timezone reason: PG 통신값 — 시간대 사양 확인 후속(D7)
         return preg_replace('/[^0-9]/', '', now()->format('Y-m-d H:i:s')) ?? now()->format('YmdHis');
     }
 
@@ -448,11 +407,6 @@ class NicePaymentsApiService
         return bin2hex(hash('sha256', $ediDate.$this->mid.(string) $amt.$this->merchantKey, true));
     }
 
-    /**
-     * API 요청 서명에 쓸 EdiDate 를 만듭니다. (generateEdiDate 위임)
-     *
-     * @return string 14자리 숫자 문자열
-     */
     private function computeEdiDate(): string
     {
         return $this->generateEdiDate();

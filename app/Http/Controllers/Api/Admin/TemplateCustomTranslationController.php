@@ -11,7 +11,6 @@ use App\Http\Requests\TemplateCustomTranslation\UpdateCustomTranslationRequest;
 use App\Http\Resources\TemplateCustomTranslationResource;
 use App\Services\TemplateCustomTranslationService;
 use App\Services\TemplateService;
-use App\Support\SafeExceptionMessage;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -98,7 +97,7 @@ class TemplateCustomTranslationController extends AdminBaseController
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return $this->error('common.failed', 500, ['error' => SafeExceptionMessage::for($e, ['operation' => __METHOD__])]);
+            return $this->error('common.failed', 500, ['error' => $e->getMessage()]);
         }
     }
 
@@ -161,7 +160,7 @@ class TemplateCustomTranslationController extends AdminBaseController
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return $this->error('common.failed', 500, ['error' => SafeExceptionMessage::for($e, ['operation' => __METHOD__])]);
+            return $this->error('common.failed', 500, ['error' => $e->getMessage()]);
         }
     }
 
@@ -197,7 +196,7 @@ class TemplateCustomTranslationController extends AdminBaseController
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return $this->error('common.failed', 500, ['error' => SafeExceptionMessage::for($e, ['operation' => __METHOD__])]);
+            return $this->error('common.failed', 500, ['error' => $e->getMessage()]);
         }
     }
 
@@ -242,7 +241,7 @@ class TemplateCustomTranslationController extends AdminBaseController
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return $this->error('common.failed', 500, ['error' => SafeExceptionMessage::for($e, ['operation' => __METHOD__])]);
+            return $this->error('common.failed', 500, ['error' => $e->getMessage()]);
         }
     }
 }

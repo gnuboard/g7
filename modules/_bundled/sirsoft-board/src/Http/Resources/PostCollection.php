@@ -7,7 +7,6 @@ use App\Enums\TotalRelation;
 use App\Http\Resources\BaseApiCollection;
 use App\Support\Query\BoundedCount;
 use Illuminate\Http\Request;
-use Modules\Sirsoft\Board\Support\SecretThreadAccess;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 
 /**
@@ -34,7 +33,6 @@ class PostCollection extends BaseApiCollection
      * 전체 일반 게시글 수를 설정합니다.
      *
      * @param  BoundedCount  $total  전체 일반 게시글 수 + 정확도
-     * @return void
      */
     public function setTotalNormalPosts(BoundedCount $total): void
     {
@@ -45,7 +43,6 @@ class PostCollection extends BaseApiCollection
      * 정렬 방향을 설정합니다.
      *
      * @param  string  $direction  정렬 방향 (asc 또는 desc, 대소문자 무관)
-     * @return void
      */
     public function setOrderDirection(string $direction): void
     {
@@ -68,10 +65,6 @@ class PostCollection extends BaseApiCollection
 
         // 현재 페이지의 일반 게시글 시작 순번 계산
         $currentNumber = $this->calculateStartNumber($normalPostsTotal, $currentPage, $perPage, $isDescending);
-
-        // 비밀글 썸네일 판정(SecretContentGate)이 글마다 스레드를 따로 읽지 않게, 이 페이지의 비밀글
-        // 노드를 레벨당 1쿼리로 미리 채운다. 게이트는 전역 request() 로 판정하므로 같은 인스턴스에 채운다.
-        app(SecretThreadAccess::class)->prime($this->collection, request());
 
         $data = $this->collection->map(function ($post) use ($request, &$currentNumber, $isDescending) {
             $postData = (new PostResource($post))->toListArray($request);
@@ -343,8 +336,7 @@ class PostCollection extends BaseApiCollection
             'can_view_deleted' => $canManage,
             // 유저 화면에서 관리자 게시판 화면으로 진입 가능한지 여부 (Admin 타입 admin.manage 권한 보유자만 true).
             // 유저용 can_manage(게시판 매니저)와 다른, 관리자 화면 접근 게이트 전용 플래그.
-            // 관리자 게시판 화면(posts_index·post_detail·form)의 레이아웃 권한이 sirsoft-board.boards.read 라 그것도 있어야 링크가 열린다
-            'can_access_admin' => $this->checkBoardPermission($slug, 'admin.manage') && $this->checkModulePermission('boards', 'read'),
+            'can_access_admin' => $this->checkBoardPermission($slug, 'admin.manage'),
         ];
     }
 }

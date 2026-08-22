@@ -452,6 +452,23 @@
       "full": "Full",
       "icon": "Icon"
     },
+    "pr_user_reaction": {
+      "label": "My Reaction",
+      "like": "Like",
+      "funny": "Funny",
+      "agree": "Agree",
+      "thanks": "Thanks",
+      "wow": "Wow"
+    },
+    "pr_post_id": {
+      "label": "Post ID"
+    },
+    "pr_size": {
+      "label": "Size",
+      "sm": "SM",
+      "md": "MD",
+      "lg": "LG"
+    },
     "pi_label": {
       "label": "Label"
     },
@@ -660,44 +677,6 @@
       "label": "Dropdown Align",
       "left": "Left",
       "right": "Right"
-    },
-    "vc_today": {
-      "label": "Today"
-    },
-    "vc_yesterday": {
-      "label": "Yesterday"
-    },
-    "vc_max": {
-      "label": "Peak"
-    },
-    "vc_total": {
-      "label": "Total"
-    },
-    "vc_layout": {
-      "label": "Layout",
-      "row": "Row",
-      "column": "Column"
-    },
-    "rsc_scope": {
-      "label": "Search scope (recent searches)"
-    },
-    "rsc_result_path": {
-      "label": "Search results path (follow address)"
-    },
-    "rsc_button_text": {
-      "label": "Search button text"
-    },
-    "hdr_search_history_scope": {
-      "label": "Recent search scope"
-    },
-    "pr_title": {
-      "label": "Rail title"
-    },
-    "pr_icon": {
-      "label": "Title icon"
-    },
-    "pc_show_actions": {
-      "label": "Cart and wishlist buttons"
     }
   },
   "component": {
@@ -727,7 +706,6 @@
     "pagination": "Pagination",
     "search_bar": "Search Bar",
     "avatar": "Avatar",
-    "visitor_counter": "Visitor counter",
     "user_info": "User Info",
     "html_content": "HTML Content",
     "html_editor": "HTML Editor",
@@ -739,6 +717,7 @@
     "file_uploader": "File Uploader",
     "avatar_uploader": "Avatar Uploader",
     "social_login_buttons": "Social Login Buttons",
+    "post_reactions": "Post Reactions",
     "input": "Input",
     "textarea": "Textarea",
     "select": "Select",
@@ -752,12 +731,7 @@
     "header": "Site Header",
     "footer": "Site Footer",
     "theme_toggle": "Theme Toggle",
-    "notification_center": "Notification Center",
-    "recent_search_combobox": "Recent search box",
-    "product_rail": "Product Rail",
-    "chip_rows": "Category chip rows",
-    "mobile_buy_bar": "Mobile buy bar",
-    "bottom_sheet": "Bottom sheet"
+    "notification_center": "Notification Center"
   },
   "action": {
     "go_to_page": {
@@ -852,11 +826,6 @@
       "label": "Save guest order token",
       "param_token": "Order token",
       "param_order_number": "Order number",
-      "param_expires_at": "Expires at"
-    },
-    "save_secret_view_token": {
-      "label": "Save secret post view token",
-      "param_token": "View token",
       "param_expires_at": "Expires at"
     }
   },
@@ -1051,13 +1020,7 @@
     "user_base_default": "Default",
     "mobile_menu_open": "Mobile menu open",
     "gdpr_cookie_banner_visible": "Cookie banner visible",
-    "identity_challenge_inicis": "Identity verification modal (Inicis)",
-    "modal_filled": "Modal content filled",
-    "replies_expanded": "Replies expanded",
-    "validation_failed": "Validation failed",
-    "screen_filled": "Screen state filled",
-    "two_factor_challenge": "Two-factor challenge",
-    "comment_editing": "Comment being edited"
+    "identity_challenge_inicis": "Identity verification modal (Inicis)"
   },
   "cell_border": {
     "side_all": "All",
@@ -1122,6 +1085,7 @@
     "user": "User",
     "current_page": "Current page",
     "total_pages": "Total pages",
+    "reactions": "Reactions",
     "product": "Product",
     "author": "Author",
     "value": "Value",
@@ -1137,11 +1101,7 @@
     "footer_social_links": "Social Links",
     "footer_link_groups": "Link Groups",
     "notification_items": "Notification Items",
-    "notification_unread_count": "Unread Notification Count",
-    "visitor_today": "Visits today",
-    "visitor_yesterday": "Visits yesterday",
-    "visitor_max": "Peak visits",
-    "visitor_total": "Total visits"
+    "notification_unread_count": "Unread Notification Count"
   },
   "state_label": {
     "current_user": "Current user",
@@ -1165,7 +1125,6 @@
     "current_user": "Current User",
     "form_data": "Form Data",
     "form_meta": "Form Meta",
-    "content_media_target": "Content Media Upload Contract",
     "home_boards": "Home Boards",
     "mileage_balance": "Mileage Balance",
     "mileage_history": "Mileage History",
@@ -1173,8 +1132,6 @@
     "myComments": "My Comments",
     "myInquiries": "My Inquiries",
     "myPosts": "My Posts",
-    "myReactions": "My Reactions",
-    "myReports": "My Reports",
     "navigation": "Navigation",
     "newProducts": "New Products",
     "notification_unread_count": "Unread Notification Count",
@@ -1214,13 +1171,6 @@
     "userPosts": "User Posts",
     "userProfile": "User Profile",
     "user_notification_ws": "Notifications (Live)",
-    "wishlist": "Wishlist",
-    "scrap": "Scrap",
-    "visitor_summary": "Visitor summary",
-    "claimable": "Claimable items",
-    "claims": "Claim requests",
-    "claim": "Claim request",
-    "relatedProducts": "How about these?",
-    "reviewFeed": "All reviews"
+    "wishlist": "Wishlist"
   }
 }

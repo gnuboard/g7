@@ -1,176 +1,85 @@
 {
-    "comment": "검색 결과 좁히기 — 전체 탭에는 뜻이 없어(종류가 섞여 있다) 글·상품 탭에서만 나온다. 고를 수 있는 정렬도 탭마다 다르므로 상자를 나눠 두었다.",
-    "meta": {
-        "is_partial": true,
-        "description": "검색 필터 (게시글/상품 탭)"
-    },
-    "type": "basic",
-    "name": "Div",
-    "if": "{{(query?.type === 'posts' || query?.type === 'products') && query?.q}}",
-    "props": {
-        "className": "flex flex-wrap gap-2 mb-4"
-    },
-    "children": [
+  "meta": { "is_partial": true, "description": "검색 필터 (게시글/상품 탭)" },
+  "type": "basic",
+  "name": "Div",
+  "if": "{{(query?.type === 'posts' || query?.type === 'products') && query?.q}}",
+  "props": { "className": "flex flex-wrap gap-2 mb-4" },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Select",
+      "if": "{{query?.type === 'posts'}}",
+      "props": {
+        "name": "boardFilter",
+        "className": "w-40 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-gray-700 dark:text-gray-200 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer",
+        "value": "{{query?.board_slug ?? ''}}"
+      },
+      "children": [
+        { "type": "basic", "name": "Option", "props": { "value": "" }, "text": "$t:search.filter.all_boards" },
         {
-            "type": "basic",
-            "name": "Select",
-            "if": "{{query?.type === 'posts' && (_global.activeModules?.includes('sirsoft-board') ?? true)}}",
-            "actions": [
-                {
-                    "comment": "같은 검색 안에서 범위만 좁히는 이동이라 mergeQuery 로 검색어·탭·정렬을 승계한다. 결과 집합이 달라지므로 페이지·커서는 빈 값으로 지운다 — '전체 게시판'(빈 값)을 고르면 board_slug 키 자체가 주소에서 사라진다",
-                    "type": "change",
-                    "handler": "navigate",
-                    "params": {
-                        "path": "/search",
-                        "mergeQuery": true,
-                        "query": {
-                            "board_slug": "{{$event.target.value}}",
-                            "page": "",
-                            "cursor": ""
-                        }
-                    }
-                }
-            ],
-            "props": {
-                "name": "boardFilter",
-                "aria-label": "$t:nav.boards",
-                "className": "w-40 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-gray-700 dark:text-gray-200 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer",
-                "value": "{{query?.board_slug ?? ''}}",
-                "options": "{{[{ value: '', label: '$t:search.filter.all_boards' }].concat((searchResults?.data?.posts?.available_boards ?? []).map(board => ({ value: String(board?.slug ?? ''), label: board?.name })))}}"
-            }
-        },
-        {
-            "type": "basic",
-            "name": "Select",
-            "if": "{{query?.type === 'posts'}}",
-            "actions": [
-                {
-                    "comment": "같은 결과 집합의 순서만 바꾸는 이동이라 mergeQuery 로 검색어·탭·게시판필터를 승계한다. 순서가 바뀌면 지금 페이지의 내용이 달라지므로 페이지·커서는 빈 값으로 지운다",
-                    "type": "change",
-                    "handler": "navigate",
-                    "params": {
-                        "path": "/search",
-                        "mergeQuery": true,
-                        "query": {
-                            "sort": "{{$event.target.value}}",
-                            "page": "",
-                            "cursor": ""
-                        }
-                    }
-                }
-            ],
-            "props": {
-                "name": "sortBy",
-                "aria-label": "$t:common.sort_order",
-                "className": "w-32",
-                "value": "{{query?.sort ?? 'relevance'}}",
-                "options": [
-                    {
-                        "value": "relevance",
-                        "label": "$t:search.sort.relevance"
-                    },
-                    {
-                        "value": "latest",
-                        "label": "$t:search.sort.latest"
-                    },
-                    {
-                        "value": "popular",
-                        "label": "$t:search.sort.popular"
-                    }
-                ]
-            }
-        },
-        {
-            "comment": "품절 제외 — 상품 탭에서만. 결과 집합이 바뀌므로 페이지·커서를 비운다",
-            "type": "basic",
-            "name": "Label",
-            "if": "{{query?.type === 'products' && (_global.activeModules?.includes('sirsoft-ecommerce') ?? true)}}",
-            "props": {
-                "className": "flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Checkbox",
-                    "actions": [
-                        {
-                            "comment": "체크하면 1, 풀면 빈 값(주소에서 빠진다) — 쪽·커서는 비워 첫 쪽부터 다시 받는다",
-                            "type": "change",
-                            "handler": "navigate",
-                            "params": {
-                                "path": "/search",
-                                "mergeQuery": true,
-                                "query": {
-                                    "exclude_sold_out": "{{$event.target.checked ? '1' : ''}}",
-                                    "page": "",
-                                    "cursor": ""
-                                }
-                            }
-                        }
-                    ],
-                    "props": {
-                        "id": "search_exclude_sold_out",
-                        "name": "exclude_sold_out",
-                        "checked": "{{query?.exclude_sold_out === '1'}}",
-                        "autoBinding": false,
-                        "className": "w-4 h-4 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 rounded"
-                    }
-                },
-                {
-                    "type": "basic",
-                    "name": "Span",
-                    "text": "$t:shop.exclude_sold_out"
-                }
-            ]
-        },
-        {
-            "type": "basic",
-            "name": "Select",
-            "if": "{{query?.type === 'products' && (_global.activeModules?.includes('sirsoft-ecommerce') ?? true)}}",
-            "actions": [
-                {
-                    "comment": "같은 결과 집합의 순서만 바꾸는 이동이라 mergeQuery 로 검색어·탭·게시판필터를 승계한다. 순서가 바뀌면 지금 페이지의 내용이 달라지므로 페이지·커서는 빈 값으로 지운다",
-                    "type": "change",
-                    "handler": "navigate",
-                    "params": {
-                        "path": "/search",
-                        "mergeQuery": true,
-                        "query": {
-                            "sort": "{{$event.target.value}}",
-                            "page": "",
-                            "cursor": ""
-                        }
-                    }
-                }
-            ],
-            "props": {
-                "name": "sortBy",
-                "aria-label": "$t:common.sort_order",
-                "className": "w-32",
-                "value": "{{query?.sort ?? 'relevance'}}",
-                "options": [
-                    {
-                        "value": "relevance",
-                        "label": "$t:search.sort.relevance"
-                    },
-                    {
-                        "value": "latest",
-                        "label": "$t:search.sort.latest"
-                    },
-                    {
-                        "value": "price_asc",
-                        "label": "$t:search.sort.price_asc"
-                    },
-                    {
-                        "value": "price_desc",
-                        "label": "$t:search.sort.price_desc"
-                    },
-                    {
-                        "value": "popular",
-                        "label": "$t:search.sort.popular"
-                    }
-                ]
-            }
+          "type": "basic",
+          "name": "Option",
+          "iteration": { "source": "{{searchResults?.data?.posts?.available_boards ?? []}}", "item_var": "board" },
+          "props": { "value": "{{board?.slug}}" },
+          "text": "{{board?.name}}"
         }
-    ]
+      ],
+      "actions": [
+        {
+          "comment": "같은 검색 안에서 범위만 좁히는 이동이라 mergeQuery 로 검색어·탭·정렬을 승계한다. 결과 집합이 달라지므로 페이지·커서는 빈 값으로 지운다 — '전체 게시판'(빈 값)을 고르면 board_slug 키 자체가 주소에서 사라진다",
+          "type": "change",
+          "handler": "navigate",
+          "params": { "path": "/search", "mergeQuery": true, "query": { "board_slug": "{{$event.target.value}}", "page": "", "cursor": "" } }
+        }
+      ]
+    },
+    {
+      "type": "composite",
+      "name": "Select",
+      "if": "{{query?.type === 'posts'}}",
+      "props": {
+        "name": "sortBy",
+        "className": "w-32",
+        "value": "{{query?.sort ?? 'relevance'}}",
+        "options": [
+          { "value": "relevance", "label": "$t:search.sort.relevance" },
+          { "value": "latest", "label": "$t:search.sort.latest" },
+          { "value": "popular", "label": "$t:search.sort.popular" }
+        ]
+      },
+      "actions": [
+        {
+          "comment": "같은 결과 집합의 순서만 바꾸는 이동이라 mergeQuery 로 검색어·탭·게시판필터를 승계한다. 순서가 바뀌면 지금 페이지의 내용이 달라지므로 페이지·커서는 빈 값으로 지운다",
+          "type": "change",
+          "handler": "navigate",
+          "params": { "path": "/search", "mergeQuery": true, "query": { "sort": "{{$event.target.value}}", "page": "", "cursor": "" } }
+        }
+      ]
+    },
+    {
+      "type": "composite",
+      "name": "Select",
+      "if": "{{query?.type === 'products'}}",
+      "props": {
+        "name": "sortBy",
+        "className": "w-32",
+        "value": "{{query?.sort ?? 'relevance'}}",
+        "options": [
+          { "value": "relevance", "label": "$t:search.sort.relevance" },
+          { "value": "latest", "label": "$t:search.sort.latest" },
+          { "value": "price_asc", "label": "$t:search.sort.price_asc" },
+          { "value": "price_desc", "label": "$t:search.sort.price_desc" },
+          { "value": "popular", "label": "$t:search.sort.popular" }
+        ]
+      },
+      "actions": [
+        {
+          "comment": "같은 결과 집합의 순서만 바꾸는 이동이라 mergeQuery 로 검색어·탭·게시판필터를 승계한다. 순서가 바뀌면 지금 페이지의 내용이 달라지므로 페이지·커서는 빈 값으로 지운다",
+          "type": "change",
+          "handler": "navigate",
+          "params": { "path": "/search", "mergeQuery": true, "query": { "sort": "{{$event.target.value}}", "page": "", "cursor": "" } }
+        }
+      ]
+    }
+  ]
 }

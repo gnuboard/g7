@@ -3,34 +3,20 @@
 namespace App\Providers;
 
 use App\Benchmark\Axes\BatchAxisRunner;
-use App\Benchmark\Axes\BootAxisRunner;
 use App\Benchmark\Axes\ListAxisRunner;
 use App\Benchmark\Axes\ScreenAxisRunner;
 use App\Benchmark\Axes\WriteAxisRunner;
 use App\Console\Commands\BenchCommand;
-use App\Contracts\Analytics\ConversionRecorderInterface as AnalyticsConversionRecorderInterface;
-use App\Contracts\Analytics\DimensionRegistryInterface as AnalyticsDimensionRegistryInterface;
-use App\Contracts\Analytics\GoalRegistryInterface as AnalyticsGoalRegistryInterface;
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\ExtensionMiddlewareRegistryInterface;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Contracts\Extension\StorageInterface;
 use App\Contracts\Extension\TemplateManagerInterface;
 use App\Contracts\Repositories\ActivityLogRepositoryInterface;
-use App\Contracts\Repositories\Analytics\ActionNameRepositoryInterface as AnalyticsActionNameRepositoryInterface;
-use App\Contracts\Repositories\Analytics\ActionRepositoryInterface as AnalyticsActionRepositoryInterface;
-use App\Contracts\Repositories\Analytics\ArchiveRunRepositoryInterface as AnalyticsArchiveRunRepositoryInterface;
-use App\Contracts\Repositories\Analytics\BotHitRepositoryInterface as AnalyticsBotHitRepositoryInterface;
-use App\Contracts\Repositories\Analytics\CollectFailureRepositoryInterface as AnalyticsCollectFailureRepositoryInterface;
-use App\Contracts\Repositories\Analytics\ConversionRepositoryInterface as AnalyticsConversionRepositoryInterface;
-use App\Contracts\Repositories\Analytics\QueueStatsRepositoryInterface as AnalyticsQueueStatsRepositoryInterface;
-use App\Contracts\Repositories\Analytics\SaltRepositoryInterface as AnalyticsSaltRepositoryInterface;
-use App\Contracts\Repositories\Analytics\StatsRepositoryInterface as AnalyticsStatsRepositoryInterface;
-use App\Contracts\Repositories\Analytics\TableStatsRepositoryInterface as AnalyticsTableStatsRepositoryInterface;
-use App\Contracts\Repositories\Analytics\VisitRepositoryInterface as AnalyticsVisitRepositoryInterface;
 use App\Contracts\Repositories\AttachmentRepositoryInterface;
 use App\Contracts\Repositories\ConfigRepositoryInterface;
-use App\Contracts\Repositories\ExtensionUpdateJournalRepositoryInterface;
+use App\Contracts\Repositories\IdentityMessageDefinitionRepositoryInterface;
+use App\Contracts\Repositories\IdentityMessageTemplateRepositoryInterface;
 use App\Contracts\Repositories\IdentityPolicyRepositoryInterface;
 use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
 use App\Contracts\Repositories\LayoutExtensionRepositoryInterface;
@@ -38,18 +24,15 @@ use App\Contracts\Repositories\LayoutExtensionVersionRepositoryInterface;
 use App\Contracts\Repositories\LayoutPreviewRepositoryInterface;
 use App\Contracts\Repositories\LayoutRepositoryInterface;
 use App\Contracts\Repositories\LayoutVersionRepositoryInterface;
-use App\Contracts\Repositories\MemberNotificationRepositoryInterface;
 use App\Contracts\Repositories\MenuRepositoryInterface;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Contracts\Repositories\NotificationDefinitionRepositoryInterface;
-use App\Contracts\Repositories\NotificationDeliveryRepositoryInterface;
 use App\Contracts\Repositories\NotificationLogRepositoryInterface;
 use App\Contracts\Repositories\NotificationRepositoryInterface;
 use App\Contracts\Repositories\NotificationTemplateRepositoryInterface;
 use App\Contracts\Repositories\PasswordResetTokenRepositoryInterface;
 use App\Contracts\Repositories\PermissionRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
-use App\Contracts\Repositories\PrivacyManualRunRepositoryInterface;
 use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Contracts\Repositories\ScheduleHistoryRepositoryInterface;
 use App\Contracts\Repositories\ScheduleRepositoryInterface;
@@ -59,12 +42,10 @@ use App\Contracts\Repositories\TemplateCustomTranslationRepositoryInterface;
 use App\Contracts\Repositories\TemplateLayoutAttachmentRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Contracts\Repositories\UserConsentRepositoryInterface;
-use App\Contracts\Repositories\UserPasswordHistoryRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
-use App\Contracts\Repositories\UserSearchHistoryRepositoryInterface;
 use App\Contracts\UniqueIdServiceInterface;
+use App\Enums\DeactivationReason;
 use App\Extension\Cache\CoreCacheDriver;
-use App\Extension\Consent\ConsentManager;
 use App\Extension\CoreVersionChecker;
 use App\Extension\ExtensionManager;
 use App\Extension\ExtensionMiddlewareRegistry;
@@ -73,32 +54,16 @@ use App\Extension\HookListenerRegistrar;
 use App\Extension\HookManager;
 use App\Extension\IdentityVerification\IdentityVerificationManager;
 use App\Extension\IdentityVerification\Providers\MailIdentityProvider;
-use App\Extension\IncompatibleExtensionDeactivator;
-use App\Extension\Layout\LayoutRowSynchronizer;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\Storage\CoreStorageDriver;
-use App\Extension\Storage\StorageTransactionJournal;
-use App\Extension\Support\ExtensionStatusMemo;
-use App\Extension\Support\IntegrationReverseIndex;
-use App\Extension\Support\LifecycleWarnings;
 use App\Extension\TemplateManager;
 use App\Listeners\ExtensionCompatibilityAlertListener;
 use App\Listeners\Identity\EnforceIdentityPolicyListener;
 use App\Repositories\ActivityLogRepository;
-use App\Repositories\Analytics\ActionNameRepository as AnalyticsActionNameRepository;
-use App\Repositories\Analytics\ActionRepository as AnalyticsActionRepository;
-use App\Repositories\Analytics\ArchiveRunRepository as AnalyticsArchiveRunRepository;
-use App\Repositories\Analytics\BotHitRepository as AnalyticsBotHitRepository;
-use App\Repositories\Analytics\CollectFailureRepository as AnalyticsCollectFailureRepository;
-use App\Repositories\Analytics\ConversionRepository as AnalyticsConversionRepository;
-use App\Repositories\Analytics\QueueStatsRepository as AnalyticsQueueStatsRepository;
-use App\Repositories\Analytics\SaltRepository as AnalyticsSaltRepository;
-use App\Repositories\Analytics\StatsRepository as AnalyticsStatsRepository;
-use App\Repositories\Analytics\TableStatsRepository as AnalyticsTableStatsRepository;
-use App\Repositories\Analytics\VisitRepository as AnalyticsVisitRepository;
 use App\Repositories\AttachmentRepository;
-use App\Repositories\ExtensionUpdateJournalRepository;
+use App\Repositories\IdentityMessageDefinitionRepository;
+use App\Repositories\IdentityMessageTemplateRepository;
 use App\Repositories\IdentityPolicyRepository;
 use App\Repositories\IdentityVerificationLogRepository;
 use App\Repositories\JsonConfigRepository;
@@ -107,18 +72,15 @@ use App\Repositories\LayoutExtensionVersionRepository;
 use App\Repositories\LayoutPreviewRepository;
 use App\Repositories\LayoutRepository;
 use App\Repositories\LayoutVersionRepository;
-use App\Repositories\MemberNotificationRepository;
 use App\Repositories\MenuRepository;
 use App\Repositories\ModuleRepository;
 use App\Repositories\NotificationDefinitionRepository;
-use App\Repositories\NotificationDeliveryRepository;
 use App\Repositories\NotificationLogRepository;
 use App\Repositories\NotificationRepository;
 use App\Repositories\NotificationTemplateRepository;
 use App\Repositories\PasswordResetTokenRepository;
 use App\Repositories\PermissionRepository;
 use App\Repositories\PluginRepository;
-use App\Repositories\PrivacyManualRunRepository;
 use App\Repositories\RoleRepository;
 use App\Repositories\ScheduleHistoryRepository;
 use App\Repositories\ScheduleRepository;
@@ -128,32 +90,17 @@ use App\Repositories\TemplateCustomTranslationRepository;
 use App\Repositories\TemplateLayoutAttachmentRepository;
 use App\Repositories\TemplateRepository;
 use App\Repositories\UserConsentRepository;
-use App\Repositories\UserPasswordHistoryRepository;
 use App\Repositories\UserRepository;
-use App\Repositories\UserSearchHistoryRepository;
-use App\Services\Analytics\ConversionRecorder as AnalyticsConversionRecorder;
-use App\Services\Analytics\DimensionRegistry as AnalyticsDimensionRegistry;
-use App\Services\Analytics\GoalRegistry as AnalyticsGoalRegistry;
 use App\Services\AttachmentService;
 use App\Services\DriverRegistryService;
 use App\Services\LayoutExtensionService;
-use App\Services\NotificationRecipientCapability;
-use App\Services\PluginSettingsService;
 use App\Services\TemplateLayoutAttachmentService;
 use App\Services\TemplateService;
 use App\Services\UniqueIdService;
-use App\Support\CacheSelfHeal;
-use App\Support\Content\MediaSourceRoutes;
-use App\Support\CoreUpdateContext;
 use App\Support\ExtensionSettingsMirror;
-use App\Support\InstallerResidual;
 use App\Support\PrivilegedDatabaseAccounts;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Events\TransactionCommitted;
-use Illuminate\Database\Events\TransactionRolledBack;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
@@ -169,14 +116,7 @@ class CoreServiceProvider extends ServiceProvider
     private array $deferredDynamicListeners = [];
 
     /**
-     * 이번 부팅의 자동 비활성화 서비스 (모듈·플러그인·템플릿 공용).
-     */
-    private ?IncompatibleExtensionDeactivator $incompatibleExtensionDeactivator = null;
-
-    /**
      * 코어 서비스들을 등록합니다.
-     *
-     * @return void 반환값 없음
      */
     public function register(): void
     {
@@ -186,48 +126,7 @@ class CoreServiceProvider extends ServiceProvider
         $this->registerRepositoryBindings();
         $this->registerExtensionManagers();
         $this->registerBenchmarkAxes();
-
-        // 확장 오토로드 캐시 파일이 아예 없으면 지금(등록 단계) 다시 만든다. 뒤따르는 ModuleServiceProvider ·
-        // PluginServiceProvider 가 등록 단계에서 확장의 서비스 공급자를 올리는데, 그때 확장 클래스를 찾지 못하면
-        // 바인딩이 빠진 채 부팅돼 그 요청이 500 이 된다 — 부팅 단계의 복구로는 늦다 (7.1.6).
-        $this->healMissingExtensionAutoloadBeforeExtensionProviders();
         // ActivityLogManager 제거됨 — Monolog 채널(config/logging.php 'activity')로 대체
-    }
-
-    /**
-     * 확장 오토로드 캐시 파일이 없을 때, 확장 서비스 공급자가 등록되기 전에 다시 만듭니다.
-     *
-     * 파일이 있으면 아무것도 하지 않습니다(낡은 캐시 판정은 부팅 단계가 한다). 시험 환경·설치 전에는 하지 않습니다.
-     * 다시 만들려면 설치된 확장 목록을 DB 에서 읽어야 하므로, 실패하면(접속 불가 등) 조용히 넘어가 부팅 단계의
-     * 폴백에 맡깁니다.
-     *
-     * @return void 반환값 없음
-     */
-    private function healMissingExtensionAutoloadBeforeExtensionProviders(): void
-    {
-        if ($this->app->environment('testing')) {
-            return;
-        }
-
-        if (file_exists(base_path('bootstrap/cache/autoload-extensions.php'))) {
-            return;
-        }
-
-        if (! InstallerResidual::isInstallCompleted(base_path())) {
-            return;
-        }
-
-        try {
-            // 설치된 확장 목록은 모델로 읽는다. 모델의 DB 연결 해석기는 프레임워크가 부팅 단계에서 걸어 주므로,
-            // 등록 단계인 지금은 아직 비어 있다 — 부팅 단계가 할 일을 같은 값으로 먼저 해 둔다(다시 걸려도 같은 값이다).
-            if (Model::getConnectionResolver() === null) {
-                Model::setConnectionResolver($this->app['db']);
-            }
-
-            $this->app->make(ExtensionManager::class)->healStaleAutoload();
-        } catch (\Throwable $e) {
-            Log::warning('확장 오토로드 캐시 자기 복구 실패(등록 단계) — 부팅 단계가 폴백으로 이어 갑니다', ['error' => $e->getMessage()]);
-        }
     }
 
     /**
@@ -235,8 +134,6 @@ class CoreServiceProvider extends ServiceProvider
      *
      * 축이 늘어날 때 `g7:bench` 커맨드를 고치지 않고 여기에 실행기만 추가하면 되도록
      * 태그로 묶어 주입합니다. 실행기는 CLI 계측 시점에만 해석되므로 웹 요청 비용은 없습니다.
-     *
-     * @return void 반환값 없음
      */
     private function registerBenchmarkAxes(): void
     {
@@ -245,7 +142,6 @@ class CoreServiceProvider extends ServiceProvider
             ScreenAxisRunner::class,
             WriteAxisRunner::class,
             BatchAxisRunner::class,
-            BootAxisRunner::class,
         ], 'benchmark.axes');
 
         $this->app->when(BenchCommand::class)
@@ -257,37 +153,69 @@ class CoreServiceProvider extends ServiceProvider
      * Extension(모듈/플러그인) PSR-4 오토로드를 등록합니다.
      *
      * index.php 또는 artisan에서 이미 등록된 경우 스킵합니다.
-     * 진입점에서 등록되지 않은 부팅(기본 진입점을 거치지 않는 실행 스크립트 등)에서만 실행됩니다.
-     *
-     * @return void 반환값 없음
+     * 진입점에서 등록되지 않은 경우(예: queue worker)에만 실행됩니다.
      */
     private function registerExtensionAutoload(): void
     {
+        // 이미 진입점(index.php, artisan)에서 등록된 경우 스킵
+        if (defined('G7_EXTENSION_AUTOLOAD_REGISTERED')) {
+            return;
+        }
+
         $extensionAutoloadFile = base_path('bootstrap/cache/autoload-extensions.php');
 
         if (! file_exists($extensionAutoloadFile)) {
             return;
         }
 
-        // 진입점(index.php, artisan)이 이미 등록했어도 지문은 기억한다 — 확장 파일만 교체했을 때의 자기 복구
-        // (ExtensionManager::healStaleAutoload)가 이것을 기준으로 판정한다 (7.1.3)
+        $loader = require base_path('vendor/autoload.php');
         $extensionAutoloads = require $extensionAutoloadFile;
-        ExtensionManager::rememberRegisteredAutoload(is_array($extensionAutoloads) ? $extensionAutoloads : []);
 
-        // 이미 진입점(index.php, artisan)에서 등록된 경우 등록은 스킵
-        if (defined('G7_EXTENSION_AUTOLOAD_REGISTERED')) {
-            return;
+        // PSR-4 네임스페이스 등록
+        if (! empty($extensionAutoloads['psr4'])) {
+            foreach ($extensionAutoloads['psr4'] as $namespace => $paths) {
+                $paths = (array) $paths;
+                foreach ($paths as $path) {
+                    $absolutePath = base_path($path);
+                    if (is_dir($absolutePath)) {
+                        $loader->addPsr4($namespace, $absolutePath);
+                    }
+                }
+            }
         }
 
-        // 진입점과 같은 등록 함수에 맡긴다 — PSR-4·소스 classmap·진입 파일·files 에 더해 확장 vendor(제3자 패키지)와
-        // 그 중복 선언 가드까지 같은 경로를 탄다. 직접 등록하던 사본은 vendor_autoloads 를 빠뜨렸다 (#159).
-        ExtensionManager::registerExtensionAutoload(require base_path('vendor/autoload.php'), $extensionAutoloadFile);
+        // 확장 소스 classmap 등록 (FQCN → 절대경로) — findFile 파일시스템 스캔 제거 (lazy include).
+        if (! empty($extensionAutoloads['src_classmap'])) {
+            $absoluteClassmap = [];
+            foreach ($extensionAutoloads['src_classmap'] as $fqcn => $relPath) {
+                $absoluteClassmap[$fqcn] = base_path($relPath);
+            }
+            $loader->addClassMap($absoluteClassmap);
+        }
+
+        // Classmap 파일 로드 (module.php, plugin.php)
+        if (! empty($extensionAutoloads['classmap'])) {
+            foreach ($extensionAutoloads['classmap'] as $file) {
+                $absolutePath = base_path($file);
+                if (file_exists($absolutePath)) {
+                    require_once $absolutePath;
+                }
+            }
+        }
+
+        // Files 로드 (헬퍼 함수 등)
+        if (! empty($extensionAutoloads['files'])) {
+            foreach ($extensionAutoloads['files'] as $file) {
+                $absolutePath = base_path($file);
+                if (file_exists($absolutePath)) {
+                    require_once $absolutePath;
+                }
+            }
+        }
     }
 
     /**
      * Repository 인터페이스 바인딩을 등록합니다.
-     *
-     * @return void 반환값 없음
      */
     private function registerRepositoryBindings(): void
     {
@@ -297,8 +225,6 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->bind(LayoutExtensionRepositoryInterface::class, LayoutExtensionRepository::class);
         $this->app->bind(LayoutExtensionVersionRepositoryInterface::class, LayoutExtensionVersionRepository::class);
         $this->app->singleton(ConfigRepositoryInterface::class, JsonConfigRepository::class);
-        // 확장 업데이트 진행 기록 — 파일 기반, 끊긴 업데이트가 못 끝낸 업그레이드 스텝만 이어 돌게 한다
-        $this->app->bind(ExtensionUpdateJournalRepositoryInterface::class, ExtensionUpdateJournalRepository::class);
         $this->app->bind(LayoutPreviewRepositoryInterface::class, LayoutPreviewRepository::class);
         $this->app->bind(LayoutRepositoryInterface::class, LayoutRepository::class);
         $this->app->bind(LayoutVersionRepositoryInterface::class, LayoutVersionRepository::class);
@@ -306,7 +232,6 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->bind(ModuleRepositoryInterface::class, ModuleRepository::class);
         $this->app->bind(PermissionRepositoryInterface::class, PermissionRepository::class);
         $this->app->bind(PluginRepositoryInterface::class, PluginRepository::class);
-        $this->app->bind(PrivacyManualRunRepositoryInterface::class, PrivacyManualRunRepository::class);
         $this->app->bind(RoleRepositoryInterface::class, RoleRepository::class);
         $this->app->bind(ScheduleHistoryRepositoryInterface::class, ScheduleHistoryRepository::class);
         $this->app->bind(ScheduleRepositoryInterface::class, ScheduleRepository::class);
@@ -316,44 +241,19 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->bind(TemplateLayoutAttachmentRepositoryInterface::class, TemplateLayoutAttachmentRepository::class);
         $this->app->bind(UserConsentRepositoryInterface::class, UserConsentRepository::class);
         $this->app->bind(UserRepositoryInterface::class, UserRepository::class);
-        $this->app->bind(UserPasswordHistoryRepositoryInterface::class, UserPasswordHistoryRepository::class);
-        $this->app->bind(UserSearchHistoryRepositoryInterface::class, UserSearchHistoryRepository::class);
         $this->app->bind(NotificationDefinitionRepositoryInterface::class, NotificationDefinitionRepository::class);
         $this->app->bind(NotificationLogRepositoryInterface::class, NotificationLogRepository::class);
-        // 알림 수신자별 발송 기록 — 재시도·재예약 시 이미 보낸 수신자 건너뛰기 (#139)
-        $this->app->bind(NotificationDeliveryRepositoryInterface::class, NotificationDeliveryRepository::class);
         $this->app->bind(NotificationRepositoryInterface::class, NotificationRepository::class);
-        // 회원 알림함(관리자 전 회원 조회)은 사용자 스코프 저장소와 목적이 달라 별도 계약이다 (#524 §4.1)
-        $this->app->bind(MemberNotificationRepositoryInterface::class, MemberNotificationRepository::class);
         $this->app->bind(NotificationTemplateRepositoryInterface::class, NotificationTemplateRepository::class);
 
         // SEO Repository 바인딩
         $this->app->bind(SeoCacheStatRepositoryInterface::class, SeoCacheStatRepository::class);
 
-        // 방문자 통계 Repository 바인딩
-        // 솔트 저장소는 싱글톤이다 — 익명 모드에서 방문마다 그날 솔트를 찾는데,
-        // 요청 안에서 인스턴스가 새로 생기면 캐시가 매번 비어 DB 를 다시 읽는다.
-        $this->app->bind(AnalyticsActionNameRepositoryInterface::class, AnalyticsActionNameRepository::class);
-        $this->app->bind(AnalyticsVisitRepositoryInterface::class, AnalyticsVisitRepository::class);
-        $this->app->bind(AnalyticsActionRepositoryInterface::class, AnalyticsActionRepository::class);
-        $this->app->bind(AnalyticsConversionRepositoryInterface::class, AnalyticsConversionRepository::class);
-        $this->app->bind(AnalyticsBotHitRepositoryInterface::class, AnalyticsBotHitRepository::class);
-        $this->app->bind(AnalyticsStatsRepositoryInterface::class, AnalyticsStatsRepository::class);
-        $this->app->bind(AnalyticsTableStatsRepositoryInterface::class, AnalyticsTableStatsRepository::class);
-        $this->app->bind(AnalyticsQueueStatsRepositoryInterface::class, AnalyticsQueueStatsRepository::class);
-        $this->app->bind(AnalyticsArchiveRunRepositoryInterface::class, AnalyticsArchiveRunRepository::class);
-        $this->app->bind(AnalyticsCollectFailureRepositoryInterface::class, AnalyticsCollectFailureRepository::class);
-        $this->app->singleton(AnalyticsSaltRepositoryInterface::class, AnalyticsSaltRepository::class);
-
-        // 방문자 통계 확장 선언 등록부 — 요청(잡) 수명 동안 한 번만 모은다. 싱글톤으로 두면
-        // 큐 워커처럼 오래 사는 프로세스가 확장 활성·비활성 뒤에도 옛 선언을 계속 쓴다.
-        $this->app->scoped(AnalyticsGoalRegistryInterface::class, AnalyticsGoalRegistry::class);
-        $this->app->scoped(AnalyticsDimensionRegistryInterface::class, AnalyticsDimensionRegistry::class);
-        $this->app->bind(AnalyticsConversionRecorderInterface::class, AnalyticsConversionRecorder::class);
-
         // IdentityVerification Repository 바인딩
         $this->app->bind(IdentityVerificationLogRepositoryInterface::class, IdentityVerificationLogRepository::class);
         $this->app->bind(IdentityPolicyRepositoryInterface::class, IdentityPolicyRepository::class);
+        $this->app->bind(IdentityMessageDefinitionRepositoryInterface::class, IdentityMessageDefinitionRepository::class);
+        $this->app->bind(IdentityMessageTemplateRepositoryInterface::class, IdentityMessageTemplateRepository::class);
 
         // IdentityVerification Manager + 기본 MailProvider 등록
         $this->app->singleton(IdentityVerificationManager::class, function ($app) {
@@ -362,9 +262,6 @@ class CoreServiceProvider extends ServiceProvider
 
             return $manager;
         });
-
-        // 동의 제공자 매니저 — 확장은 `core.consent.registered_providers` 필터로 제공자를 등록한다 (#639)
-        $this->app->scoped(ConsentManager::class);
 
         // UniqueIdService 바인딩
         $this->app->singleton(UniqueIdServiceInterface::class, UniqueIdService::class);
@@ -389,36 +286,15 @@ class CoreServiceProvider extends ServiceProvider
             return new CoreCacheDriver(config('cache.default'));
         });
 
-        // 확장 선언 미들웨어 self-gate 인덱스 — 요청 내 인덱스 1회 빌드. scoped 라서 인덱스·해석 메모가
-        // 요청·큐 잡이 끝나면 버려진다(프로세스 수명이면 워커가 옛 인덱스를 붙잡는다, #860)
-        $this->app->scoped(ExtensionMiddlewareRegistryInterface::class, ExtensionMiddlewareRegistry::class);
-
-        // 알림 수신자 권한 판정 (수신자 수만큼 같은 권한을 재조회하지 않도록 요청·잡 수명 메모 → scoped).
-        // singleton 이면 큐 워커가 재시작될 때까지 메모가 남아, 권한을 뺏긴 사람도 관리자 링크를 계속
-        // 받는다. scoped 는 요청과 큐 잡이 끝날 때마다 비워진다(#599 validate).
-        $this->app->scoped(NotificationRecipientCapability::class);
+        // 확장 선언 미들웨어 self-gate 인덱스 (요청 내 인덱스 1회 빌드 → singleton)
+        $this->app->singleton(ExtensionMiddlewareRegistryInterface::class, ExtensionMiddlewareRegistry::class);
     }
 
     /**
      * 확장 매니저들을 등록합니다.
-     *
-     * @return void 반환값 없음
      */
     private function registerExtensionManagers(): void
     {
-        // 생명주기 부분 실패 경고 수집기 — 요청·명령 단위로 하나 (결과 warnings·CLI 종료코드 1·관리자 결과 창)
-        $this->app->scoped(LifecycleWarnings::class);
-
-        // 선택 연동 역맵 — 목록 행마다 「연동 중인 확장」을 실을 때 켜진 확장 조회를 요청·작업당 한 번으로 줄인다(7.1.4)
-        $this->app->scoped(IntegrationReverseIndex::class);
-
-        // 활성·설치 확장 목록 메모 — 부팅 경로가 요청마다 수십 번 읽는 목록을 저장소 조회 한 번으로 줄인다(#860)
-        $this->app->scoped(ExtensionStatusMemo::class);
-
-        // 플러그인 설정 서비스 — 요청 단위로 하나. 소비자마다 새로 만들면 같은 요청에서 설정 파일을 여러 번 읽고,
-        // 한 소비자가 저장한 값을 먼저 읽어 둔 다른 소비자가 모른다. scoped 라 큐 잡마다 새로 읽는다(#860)
-        $this->app->scoped(PluginSettingsService::class);
-
         // 확장 매니저 등록 (모듈/플러그인 공통 기능)
         $this->app->singleton(ExtensionManager::class, function ($app) {
             return new ExtensionManager(
@@ -438,9 +314,7 @@ class CoreServiceProvider extends ServiceProvider
                 $app->make(TemplateRepositoryInterface::class),
                 $app->make(PluginRepositoryInterface::class),
                 $app->make(LayoutRepositoryInterface::class),
-                $app->make(LayoutExtensionService::class),
-                $app->make(LayoutRowSynchronizer::class),
-                $app->make(LayoutExtensionRepositoryInterface::class)
+                $app->make(LayoutExtensionService::class)
             );
         });
 
@@ -454,9 +328,7 @@ class CoreServiceProvider extends ServiceProvider
                 $app->make(TemplateRepositoryInterface::class),
                 $app->make(ModuleRepositoryInterface::class),
                 $app->make(LayoutRepositoryInterface::class),
-                $app->make(LayoutExtensionService::class),
-                $app->make(LayoutRowSynchronizer::class),
-                $app->make(LayoutExtensionRepositoryInterface::class)
+                $app->make(LayoutExtensionService::class)
             );
         });
 
@@ -468,9 +340,7 @@ class CoreServiceProvider extends ServiceProvider
                 $app->make(LayoutRepositoryInterface::class),
                 $app->make(ModuleRepositoryInterface::class),
                 $app->make(PluginRepositoryInterface::class),
-                $app->make(LayoutExtensionService::class),
-                $app->make(LayoutRowSynchronizer::class),
-                $app->make(LayoutExtensionRepositoryInterface::class)
+                $app->make(LayoutExtensionService::class)
             );
         });
 
@@ -484,26 +354,13 @@ class CoreServiceProvider extends ServiceProvider
         // 디렉토리를 재스캔했다. 요청 단위 상태는 라우트 병합 열화 플래그 하나뿐이며
         // 그 플래그는 병합 진입 시 재설정되므로 공유해도 안전하다.
         $this->app->singleton(TemplateService::class);
-
-        // 트랜잭션 파일 보상 저널 (StorageTransaction) — 한 요청·잡 안의 트랜잭션 항목을 공유해야 롤백 때 되돌린다
-        $this->app->singleton(StorageTransactionJournal::class);
-
-        // 본문 미디어 서빙 라우트 레지스트리 — 확장 어댑터가 부팅 때 서빙 라우트 이름을 등록하고, 미디어 출처 허용 패턴이 이를 읽는다(#887).
-        // 등록은 부팅 때 한 번이라 프로세스 수명(singleton)이어야 큐 워커·다음 요청에서도 남는다
-        $this->app->singleton(MediaSourceRoutes::class);
     }
 
     /**
      * 코어 서비스들을 부트스트랩합니다.
-     *
-     * @return void 반환값 없음
      */
     public function boot(): void
     {
-        // 트랜잭션 파일 보상 — 롤백·커밋 이벤트로 저널을 정리한다 (환경 무관, .env 없는 설치 전에도 무해)
-        Event::listen(TransactionRolledBack::class, fn (TransactionRolledBack $event) => $this->app->make(StorageTransactionJournal::class)->handleRolledBack($event));
-        Event::listen(TransactionCommitted::class, fn (TransactionCommitted $event) => $this->app->make(StorageTransactionJournal::class)->handleCommitted($event));
-
         // 코어 훅 리스너 자동 발견 및 등록 (환경 무관)
         $this->registerCoreHookListeners();
 
@@ -520,22 +377,6 @@ class CoreServiceProvider extends ServiceProvider
             Log::error('Database connection invalid: using a privileged database account or missing credentials. Skipping extension loading.');
 
             return;
-        }
-
-        // 확장 파일만 교체했으면(설치 절차 없이) 확장 오토로드 캐시가 낡는다 — 지문이 다르면 Composer 없이 다시 만든다 (7.1.3)
-        if (! $this->app->environment('testing')) {
-            try {
-                $this->app->make(ExtensionManager::class)->healStaleAutoload();
-            } catch (\Throwable $e) {
-                Log::warning('확장 오토로드 캐시 자기 복구 실패 — 다음 요청이 다시 시도합니다', ['error' => $e->getMessage()]);
-            }
-
-            // 설정·라우트 캐시 파일이 없으면(서버 이전·배포 도구가 비움) 운영 중인 사이트의 웹 요청이 응답 뒤에 다시 만든다 (7.1.6)
-            try {
-                CacheSelfHeal::scheduleMissingConfigAndRouteCaches($this->app);
-            } catch (\Throwable $e) {
-                Log::warning('설정·라우트 캐시 자기 복구 예약 실패 — 다음 요청이 다시 시도합니다', ['error' => $e->getMessage()]);
-            }
         }
 
         // 콘솔 환경에서는 템플릿 로딩 건너뛰기 (성능 최적화)
@@ -572,10 +413,6 @@ class CoreServiceProvider extends ServiceProvider
             $this->detectRecoveredExtensions('templates');
         }
 
-        // 종류별 처리에서 의존 확장 때문에 막혔던 비호환 확장을 같은 부팅에서 다시 끈다(#153 — 예: 이커머스와 결제 플러그인이
-        // 함께 비호환이면 이커머스는 플러그인을 끈 뒤에야 끌 수 있다). 부팅 순서는 그대로 둔다.
-        $this->retryBlockedIncompatibleExtensions();
-
         // 동적 훅 리스너 일괄 실행 (registerDynamicHooks 메서드를 가진 리스너)
         $this->registerDeferredDynamicHooks();
 
@@ -596,10 +433,6 @@ class CoreServiceProvider extends ServiceProvider
      * `IdentityVerificationManager` 에 일괄 등록합니다.
      *
      * DB 에 저장되지 않으며, 매 요청 부팅 시 수집됩니다 (코드 계약).
-     *
-     * @param  ModuleManager  $moduleManager  활성 모듈 관리자
-     * @param  PluginManager  $pluginManager  활성 플러그인 관리자
-     * @return void 반환값 없음
      */
     private function collectDeclaredIdentityPurposes(ModuleManager $moduleManager, PluginManager $pluginManager): void
     {
@@ -669,12 +502,11 @@ class CoreServiceProvider extends ServiceProvider
     /**
      * 호환되지 않는 확장(모듈/플러그인)을 자동 비활성화합니다.
      *
-     * 판정·비활성화·결과 처리는 `IncompatibleExtensionDeactivator` 가 소유한다(#145 — 디스크보다 낮은 현재 버전 안전망,
-     * 끄지 못한 확장의 알림 제외, 캐시 재생성 묶기). 이 메서드는 업데이트 트리 가드 뒤 위임만 한다.
+     * 코어 버전 업데이트 후 기존 확장이 새 코어 버전과 호환되지 않는 경우
+     * 자동으로 비활성화하고 로그를 기록합니다.
      *
      * @param  ModuleManager|PluginManager  $manager  확장 매니저
      * @param  string  $type  확장 타입 (modules, plugins)
-     * @return void 반환값 없음
      */
     protected function validateAndDeactivateIncompatibleExtensions($manager, string $type): void
     {
@@ -697,31 +529,50 @@ class CoreServiceProvider extends ServiceProvider
             return;
         }
 
-        $this->incompatibleExtensionDeactivator()->deactivateIncompatibleExtensions($manager, $type);
-    }
+        $cache = $this->app->make(CacheInterface::class);
+        $cacheKey = CoreVersionChecker::getCacheKey($type);
 
-    /**
-     * 의존 확장 때문에 막혔던 비호환 확장을 같은 부팅에서 다시 끕니다 — 업데이트 진행 중에는 건너뛴다(판정과 같은 정책).
-     *
-     * @return void 반환값 없음
-     */
-    protected function retryBlockedIncompatibleExtensions(): void
-    {
-        if (self::isCoreUpdateInProgress()) {
+        // 캐시가 있으면 이미 검증된 것으로 간주
+        if ($cache->has($cacheKey)) {
             return;
         }
 
-        $this->incompatibleExtensionDeactivator()->retryBlocked();
-    }
+        $deactivated = [];
+        $activeMethod = $type === 'modules' ? 'getActiveModules' : 'getActivePlugins';
+        $deactivateMethod = $type === 'modules' ? 'deactivateModule' : 'deactivatePlugin';
 
-    /**
-     * 이번 부팅에서 쓸 자동 비활성화 서비스를 반환합니다 (모듈·플러그인·템플릿이 같은 인스턴스를 써 안전망 경고가 한 번만 남는다).
-     *
-     * @return IncompatibleExtensionDeactivator 자동 비활성화 서비스
-     */
-    protected function incompatibleExtensionDeactivator(): IncompatibleExtensionDeactivator
-    {
-        return $this->incompatibleExtensionDeactivator ??= $this->app->make(IncompatibleExtensionDeactivator::class);
+        foreach ($manager->$activeMethod() as $identifier => $extension) {
+            $requiredVersion = $extension->getRequiredCoreVersion();
+
+            if (! CoreVersionChecker::isCompatible($requiredVersion)) {
+                // 자동 비활성화: reason='incompatible_core' + 요구 버전 전달
+                // (수동 비활성화와 DB 레벨 구분 → UI 라벨링 / 알림 영속화 / 재호환 복구 판정)
+                $manager->$deactivateMethod(
+                    $identifier,
+                    false,
+                    DeactivationReason::IncompatibleCore->value,
+                    $requiredVersion
+                );
+                $deactivated[] = [
+                    'identifier' => $identifier,
+                    'required' => $requiredVersion,
+                ];
+
+                Log::warning(__('extensions.warnings.auto_deactivated'), [
+                    'type' => $type,
+                    'identifier' => $identifier,
+                    'required_version' => $requiredVersion,
+                    'core_version' => config('app.version'),
+                ]);
+            }
+        }
+
+        // 비활성화된 확장이 있으면 세션에 저장 (관리자 알림용)
+        if (! empty($deactivated)) {
+            $this->storeDeactivatedExtensionsAlert($type, $deactivated);
+        }
+
+        $cache->put($cacheKey, true, CoreVersionChecker::getCacheTtl());
     }
 
     /**
@@ -732,7 +583,6 @@ class CoreServiceProvider extends ServiceProvider
      * `ExtensionCompatibilityAlertListener` 가 대시보드 알림으로 표시합니다.
      *
      * @param  string  $type  확장 타입 (modules|plugins|templates)
-     * @return void 반환값 없음
      */
     protected function detectRecoveredExtensions(string $type): void
     {
@@ -777,28 +627,37 @@ class CoreServiceProvider extends ServiceProvider
     }
 
     /**
+     * 호환되지 않는 템플릿을 자동 비활성화합니다.
+     *
+     * 코어 버전 업데이트 후 템플릿이 새 코어 버전과 호환되지 않는 경우
+     * 자동으로 비활성화하고 로그를 기록합니다.
+     *
+     * @param  TemplateManager  $templateManager  템플릿 매니저
+     */
+    /**
      * 현재 프로세스가 코어 업데이트 중인지 판정합니다.
      *
-     * 판정은 `App\Support\CoreUpdateContext::isInProgress()` 가 단독으로 소유한다 — 같은
-     * 플래그가 확장 자동 비활성화 스킵 · 코어 버전의 env 우선 판독 · `bootstrap/app.php` 의
-     * 패키지 매니페스트 자가 치유를 함께 게이트하므로, 판정이 갈라지면 한 경로만 조용히
-     * 다르게 동작한다. 이 메서드는 기존 호출처(각 Manager)를 위한 위임으로 남는다.
+     * 판정 조건 (OR):
+     *   1. 환경변수 `G7_UPDATE_IN_PROGRESS=1` — 부모 CoreUpdateCommand 가 시작 시 설정,
+     *      spawn 자식에도 `$env` 로 전파
+     *   2. artisan command 이름이 `core:update` / `core:execute-upgrade-steps` — 1 이 전파되지
+     *      않은 극단 상황 대비 보조 판정
      *
-     * @return bool 업데이트 트리 안이면 true (version-based 자동 비활성화 스킵)
+     * 둘 중 하나라도 true 면 업데이트 컨텍스트로 간주하여 version-based 자동 비활성화 스킵.
      */
     public static function isCoreUpdateInProgress(): bool
     {
-        return CoreUpdateContext::isInProgress();
+        $envFlag = $_ENV['G7_UPDATE_IN_PROGRESS'] ?? $_SERVER['G7_UPDATE_IN_PROGRESS'] ?? getenv('G7_UPDATE_IN_PROGRESS');
+        if ($envFlag === '1' || $envFlag === 1 || $envFlag === true) {
+            return true;
+        }
+
+        $argv = $_SERVER['argv'] ?? [];
+        $command = $argv[1] ?? '';
+
+        return in_array($command, ['core:update', 'core:execute-upgrade-steps'], true);
     }
 
-    /**
-     * 호환되지 않는 템플릿을 자동 비활성화합니다.
-     *
-     * 판정·비활성화·결과 처리는 `IncompatibleExtensionDeactivator` 가 소유한다. 이 메서드는 업데이트 트리 가드 뒤 위임만 한다.
-     *
-     * @param  TemplateManager  $templateManager  템플릿 매니저
-     * @return void 반환값 없음
-     */
     protected function validateAndDeactivateIncompatibleTemplates(TemplateManager $templateManager): void
     {
         // 업데이트 중 자동 비활성화 스킵 (validateAndDeactivateIncompatibleExtensions 와 동일 사유)
@@ -806,7 +665,75 @@ class CoreServiceProvider extends ServiceProvider
             return;
         }
 
-        $this->incompatibleExtensionDeactivator()->deactivateIncompatibleTemplates($templateManager);
+        $cache = $this->app->make(CacheInterface::class);
+        $cacheKey = CoreVersionChecker::getCacheKey('templates');
+
+        // 캐시가 있으면 이미 검증된 것으로 간주
+        if ($cache->has($cacheKey)) {
+            return;
+        }
+
+        $deactivated = [];
+        $allTemplates = $templateManager->getAllTemplates();
+        $templateRepository = $this->app->make(TemplateRepositoryInterface::class);
+
+        foreach ($allTemplates as $identifier => $template) {
+            // 설치되고 활성화된 템플릿만 검증
+            $templateRecord = $templateRepository->findByIdentifier($identifier);
+            if (! $templateRecord || $templateRecord->status !== 'active') {
+                continue;
+            }
+
+            $requiredVersion = $template['g7_version'] ?? null;
+
+            if (! CoreVersionChecker::isCompatible($requiredVersion)) {
+                // 자동 비활성화: reason='incompatible_core' + 요구 버전 전달
+                $templateManager->deactivateTemplate(
+                    $identifier,
+                    DeactivationReason::IncompatibleCore->value,
+                    $requiredVersion
+                );
+                $deactivated[] = [
+                    'identifier' => $identifier,
+                    'required' => $requiredVersion,
+                ];
+
+                Log::warning(__('extensions.warnings.auto_deactivated'), [
+                    'type' => 'templates',
+                    'identifier' => $identifier,
+                    'required_version' => $requiredVersion,
+                    'core_version' => config('app.version'),
+                ]);
+            }
+        }
+
+        // 비활성화된 템플릿이 있으면 세션에 저장 (관리자 알림용)
+        if (! empty($deactivated)) {
+            $this->storeDeactivatedExtensionsAlert('templates', $deactivated);
+        }
+
+        $cache->put($cacheKey, true, CoreVersionChecker::getCacheTtl());
+    }
+
+    /**
+     * 비활성화된 확장 알림을 캐시에 저장합니다.
+     *
+     * 관리자 대시보드에서 비활성화된 확장에 대한 알림을 표시하기 위해
+     * 캐시에 정보를 저장합니다.
+     *
+     * @param  string  $type  확장 타입 (modules, plugins, templates)
+     * @param  array  $deactivated  비활성화된 확장 목록
+     */
+    protected function storeDeactivatedExtensionsAlert(string $type, array $deactivated): void
+    {
+        $cache = $this->app->make(CacheInterface::class);
+        $alerts = $cache->get('ext.compatibility_alerts', []);
+        $alerts[$type] = [
+            'deactivated' => $deactivated,
+            'core_version' => config('app.version'),
+            'timestamp' => now()->toIso8601String(),
+        ];
+        $cache->put('ext.compatibility_alerts', $alerts, 86400); // 24시간
     }
 
     /**
@@ -816,7 +743,6 @@ class CoreServiceProvider extends ServiceProvider
      * getAllSettings()를 호출하여 g7_settings.modules.{identifier}에 저장합니다.
      *
      * @param  ModuleManager  $moduleManager  모듈 매니저
-     * @return void 반환값 없음
      */
     protected function loadModuleSettingsToConfig(ModuleManager $moduleManager): void
     {
@@ -831,7 +757,6 @@ class CoreServiceProvider extends ServiceProvider
      * g7_settings.plugins.{identifier}에 저장합니다.
      *
      * @param  PluginManager  $pluginManager  플러그인 매니저
-     * @return void 반환값 없음
      */
     protected function loadPluginSettingsToConfig(PluginManager $pluginManager): void
     {
@@ -849,21 +774,12 @@ class CoreServiceProvider extends ServiceProvider
      *
      * SettingsServiceProvider::register()에서 코어 드라이버 Config은 이미 적용된 상태이므로,
      * 여기서는 플러그인 드라이버만 처리합니다.
-     *
-     * @return void 반환값 없음
      */
     protected function applyExtensionDriverConfigs(): void
     {
         try {
             $driverRegistry = $this->app->make(DriverRegistryService::class);
-            // 코어 설정 저장소 싱글톤이 같은 구현이면 그것을 쓴다 — 새로 만들면 설정 파일을 다시 읽는다(#860).
-            // 구현 클래스를 직접 바인딩해 둔 경우(교체·시험)는 그 바인딩을 따른다.
-            $configRepository = $this->app->bound(JsonConfigRepository::class)
-                ? $this->app->make(JsonConfigRepository::class)
-                : $this->app->make(ConfigRepositoryInterface::class);
-            if (! $configRepository instanceof JsonConfigRepository) {
-                $configRepository = $this->app->make(JsonConfigRepository::class);
-            }
+            $configRepository = $this->app->make(JsonConfigRepository::class);
 
             foreach ($driverRegistry->getCategories() as $category) {
                 $settingsKey = $driverRegistry->getSettingsKey($category);
@@ -915,13 +831,6 @@ class CoreServiceProvider extends ServiceProvider
 
     // registerActivityLogManager() 제거됨 — Monolog 채널(config/logging.php 'activity')로 대체
 
-    /**
-     * 코어 훅 리스너를 일괄 등록합니다.
-     *
-     * 캐시(bootstrap/cache/hooks.php)가 있으면 스캔 없이 등록하고, 없으면 디렉터리를 훑는다.
-     *
-     * @return void 반환값 없음
-     */
     private function registerCoreHookListeners(): void
     {
         // 캐시 우선: bootstrap/cache/hooks.php 가 있으면 스캔·리플렉션 없이 등록.
@@ -1007,7 +916,6 @@ class CoreServiceProvider extends ServiceProvider
      * 단일 코어 리스너를 HookManager에 등록합니다.
      *
      * @param  string  $listenerClass  리스너 클래스명
-     * @return void 반환값 없음
      */
     private function registerCoreHookListener(string $listenerClass): void
     {
@@ -1031,8 +939,6 @@ class CoreServiceProvider extends ServiceProvider
      * registerDynamicHooks() 메서드를 가진 리스너들의 동적 훅을 일괄 등록합니다.
      *
      * DB 접근이 필요하므로 boot() 후반부(DB 유효성 검증 후)에서 호출됩니다.
-     *
-     * @return void 반환값 없음
      */
     private function registerDeferredDynamicHooks(): void
     {
@@ -1056,8 +962,6 @@ class CoreServiceProvider extends ServiceProvider
      *
      * core.routes.filter_merged 필터를 통해 프리뷰 등 코어 시스템 라우트를
      * 모든 템플릿의 routes.json 응답에 자동 주입합니다.
-     *
-     * @return void 반환값 없음
      */
     private function registerSystemRouteFilters(): void
     {

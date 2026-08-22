@@ -18,13 +18,12 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLayoutEditor } from '../LayoutEditorContext';
+import type { RouteTreeNode } from '../LayoutEditorContext';
 import { useLayoutDocumentContext } from '../LayoutDocumentContext';
 import {
   useElementSelection,
   parseEditorPath,
   isContextMenuAllowed,
-  isEditableLockKind,
-  classifyLockKind,
 } from '../hooks/useElementSelection';
 import { useInsertionPoints, type InsertionPoint } from '../hooks/useInsertionPoints';
 import { useEditorHistory } from '../hooks/useEditorHistory';
@@ -36,7 +35,6 @@ import {
   type OverlayBox,
 } from '../utils/overlayGeometry';
 import {
-  collectAncestors,
   duplicateNode as duplicateNodeUtil,
   insertNode,
   removeNode,
@@ -77,7 +75,6 @@ import { findNodeByPath, patchNode, resolveBaseEditTarget } from '../utils/layou
 import { trackEditorPropertyPatch, trackEditorDocument } from '../devtools/editorTrackers';
 import { saveInjectedPropsToExtension } from '../utils/injectedPropsCrossSave';
 import { getControl, getComponentCapability } from '../spec/editorSpecLoader';
-import { propertyModalAriaLabel } from '../utils/propertyModalAriaLabel';
 import { getCanvasOverlay } from '../spec/canvasOverlayRegistry';
 import {
   type BindingCandidate,
@@ -302,16 +299,6 @@ export function EditorCanvasOverlay(props: EditorCanvasOverlayProps): React.Reac
       if (!pathIdx) return;
       const root: EditorNode = { children: liveDataRef.current.components };
       const node = findNodeByPath(root, pathIdx);
-      // 출처 잠금 가드 — 상속(base)·주입(extension) 노드는 인라인 편집해도 저장 시
-      // `stripInheritedNode` 가 통째로 폐기해 편집분이 조용히 사라진다. 진입 자체를 막고
-      // 「🔒 공통 레이아웃 편집」/「🔒 확장 편집」 어포던스로 유도한다.
-      const lockKind = classifyLockKind(
-        node,
-        state.editMode,
-        currentExtensionId,
-        collectAncestors(root, pathIdx),
-      );
-      if (!isEditableLockKind(lockKind)) return;
       const cls = inlineEdit.classify(node);
       if (!cls.editable) {
         trackEditorI18n({
@@ -354,7 +341,7 @@ export function EditorCanvasOverlay(props: EditorCanvasOverlayProps): React.Reac
         timestamp: Date.now(),
       });
     },
-    [frameEl, inlineEdit, state.editMode, currentExtensionId],
+    [frameEl, inlineEdit],
   );
 
   // 코어 placeholder 오버레이는 회수됨. 신규 노드 시각화는 템플릿의
@@ -1012,8 +999,6 @@ export function EditorCanvasOverlay(props: EditorCanvasOverlayProps): React.Reac
   // 컨텍스트 메뉴 — 복사 / 삭제
   const handleDuplicate = useCallback((): void => {
     if (!docCtx || !selection.selectedNode || !selectedPathIndexes) return;
-    // 출처 잠금 가드 — 사본도 `__source` 를 물고 가 저장 시 폐기된다(무반영 복제).
-    if (!isEditableLockKind(selection.selectedLockKind)) return;
     const dup = duplicateNodeUtil(selection.selectedNode);
     let nextComponentsCaptured: EditorNode[] = [];
     docCtx.patchLayout((current) => {
@@ -1026,13 +1011,10 @@ export function EditorCanvasOverlay(props: EditorCanvasOverlayProps): React.Reac
       return nextComponents;
     });
     history.push({ actionKind: 'insert', label: 'duplicate', snapshot: nextComponentsCaptured });
-  }, [docCtx, selection.selectedNode, selection.selectedLockKind, selectedPathIndexes, history]);
+  }, [docCtx, selection.selectedNode, selectedPathIndexes, history]);
 
   const handleDelete = useCallback((): void => {
     if (!docCtx || !selectedPathIndexes) return;
-    // 출처 잠금 가드 — 키보드 `Delete` 는 ⓘ 메뉴를 거치지 않아 무방비였다. 상속·주입 노드는
-    // 지워도 저장에 반영되지 않으므로(마스킹이 어차피 되살린다) 조작 자체를 막는다.
-    if (!isEditableLockKind(selection.selectedLockKind)) return;
     let nextComponentsCaptured: EditorNode[] = [];
     docCtx.patchLayout((current) => {
       const root: EditorNode = { children: current };
@@ -1169,12 +1151,9 @@ export function EditorCanvasOverlay(props: EditorCanvasOverlayProps): React.Reac
   // 잘라내기: 복사 후 선택 노드 삭제.
   const handleCut = useCallback((): void => {
     if (!selection.selectedNode) return;
-    // 출처 잠금 가드 — 잘라내기는 삭제를 동반하므로 같은 기준으로 막는다. `handleDelete`
-    // 안의 가드에만 기대면 "복사는 됐는데 원본이 남는" 어긋난 상태가 된다.
-    if (!isEditableLockKind(selection.selectedLockKind)) return;
     writeClipboard(selection.selectedNode);
     handleDelete();
-  }, [selection.selectedNode, selection.selectedLockKind, handleDelete]);
+  }, [selection.selectedNode, handleDelete]);
 
   // 붙여넣기: 버퍼 노드를 선택 노드의 **다음 형제**로 삽입(선택 없으면 루트 끝). 다른
   // 레이아웃으로 이동해도 sessionStorage 라 동작. duplicateNodeUtil 로 새 id 부여(중복 id 회피).
@@ -1368,8 +1347,6 @@ export function EditorCanvasOverlay(props: EditorCanvasOverlayProps): React.Reac
       // "구성" 이 중복되지 않도록 디바이스명만 — breakpointKeyLabel("모바일 구성")과 구분).
       const branchSeg = path.find(isResponsiveSegment) as { responsive: string } | undefined;
       const modalBranchLabel = branchSeg ? deviceLabelOf(branchSeg.responsive) : null;
-      // 창의 접근 가능한 이름 — 제목과 같은 요소 이름을 끼운다(인자 없이 풀면 「{name}」 원문, engine-v1.78.3).
-      const modalAriaLabel = propertyModalAriaLabel(editorAwareT, spec, node);
 
       // 반복 목록 안의 노드면 iteration 조상의 인덱스/행 변수를 데이터 칩 후보로 보강한다.
       // id 등 식별자 칸에서 `{{$idx}}`/`{{row.id}}` 를 골라 항목별 고유 식별자를 만들 수 있게 한다.
@@ -1456,7 +1433,7 @@ export function EditorCanvasOverlay(props: EditorCanvasOverlayProps): React.Reac
             if (id) {
               modal.open({
                 id,
-                ariaLabel: modalAriaLabel,
+                ariaLabel: editorAwareT('layout_editor.property_modal.title'),
                 width: 420,
                 draggable: true,
                 avoidRect,
@@ -1490,7 +1467,7 @@ export function EditorCanvasOverlay(props: EditorCanvasOverlayProps): React.Reac
             if (id) {
               modal.open({
                 id,
-                ariaLabel: modalAriaLabel,
+                ariaLabel: editorAwareT('layout_editor.property_modal.title'),
                 width: 420,
                 draggable: true,
                 avoidRect,
@@ -1517,7 +1494,7 @@ export function EditorCanvasOverlay(props: EditorCanvasOverlayProps): React.Reac
       // 올바른 노드 정체성을 갖게 한다(이전 노드 path 로 keying 되어 remount 누락되는 것 방지).
       propertyModalPathRef.current = path;
       const id = modal.open({
-        ariaLabel: modalAriaLabel,
+        ariaLabel: editorAwareT('layout_editor.property_modal.title'),
         width: 420,
         draggable: true,
         avoidRect,
@@ -1533,7 +1510,7 @@ export function EditorCanvasOverlay(props: EditorCanvasOverlayProps): React.Reac
       reopenPropertyModalRef.current = (latestNode: EditorNode) => {
         modal.open({
           id,
-          ariaLabel: modalAriaLabel,
+          ariaLabel: editorAwareT('layout_editor.property_modal.title'),
           width: 420,
           draggable: true,
           avoidRect,

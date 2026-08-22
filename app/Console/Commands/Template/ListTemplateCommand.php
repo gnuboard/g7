@@ -2,15 +2,12 @@
 
 namespace App\Console\Commands\Template;
 
-use App\Console\Commands\Traits\LocalizesDescription;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Extension\TemplateManager;
 use Illuminate\Console\Command;
 
 class ListTemplateCommand extends Command
 {
-    use LocalizesDescription;
-
     /**
      * The name and signature of the console command.
      */
@@ -20,10 +17,12 @@ class ListTemplateCommand extends Command
         {--hidden : 숨김(hidden=true) 템플릿도 함께 출력}';
 
     /**
+     * The console command description.
+     */
+    protected $description = '설치된 템플릿 목록을 조회합니다';
+
+    /**
      * 템플릿 관리자 및 리포지토리
-     *
-     * @param  TemplateManager  $templateManager  템플릿 관리자
-     * @param  TemplateRepositoryInterface  $templateRepository  템플릿 리포지토리
      */
     public function __construct(
         private TemplateManager $templateManager,
@@ -34,8 +33,6 @@ class ListTemplateCommand extends Command
 
     /**
      * Execute the console command.
-     *
-     * @return int 명령 종료 코드
      */
     public function handle(): int
     {
@@ -68,8 +65,6 @@ class ListTemplateCommand extends Command
 
         // 테이블 데이터 준비
         $tableData = [];
-        // 요약 집계용 원래 상태값 — 표시 문자열로 세면 한국어 「비활성」 에도 「활성」 이 들어 있어 잘못 센다(#137)
-        $rawStatuses = [];
 
         // 설치된 템플릿 추가
         foreach ($installedTemplates as $identifier => $template) {
@@ -99,7 +94,6 @@ class ListTemplateCommand extends Command
                 }
             }
 
-            $rawStatuses[] = $template['status'];
             $tableData[] = [
                 'identifier' => $identifier,
                 'name' => $template['name'],
@@ -127,7 +121,6 @@ class ListTemplateCommand extends Command
                     continue;
                 }
 
-                $rawStatuses[] = 'uninstalled';
                 $tableData[] = [
                     'identifier' => $identifier,
                     'name' => $template['name'],
@@ -159,11 +152,11 @@ class ListTemplateCommand extends Command
 
         // 요약 정보
         $totalCount = count($tableData);
-        $activeCount = count(array_filter($rawStatuses, fn ($status) => $status === 'active'));
-        $installedCount = count(array_filter($rawStatuses, fn ($status) => $status !== 'uninstalled'));
+        $activeCount = count(array_filter($tableData, fn ($t) => str_contains($t['status'], __('templates.status.active'))));
+        $installedCount = count(array_filter($tableData, fn ($t) => ! str_contains($t['status'], __('templates.commands.list.status.uninstalled'))));
 
         $this->newLine();
-        $this->info(trans_choice('templates.commands.list.summary', $totalCount, [
+        $this->info(__('templates.commands.list.summary', [
             'total' => $totalCount,
             'installed' => $installedCount,
             'active' => $activeCount,
@@ -174,9 +167,6 @@ class ListTemplateCommand extends Command
 
     /**
      * 상태 포맷팅
-     *
-     * @param  string  $status  템플릿 상태 값
-     * @return string 변환한 문자열
      */
     private function formatStatus(string $status): string
     {

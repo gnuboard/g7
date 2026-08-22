@@ -10,8 +10,6 @@ import { TemplateApp } from '../TemplateApp';
 import type { TemplateAppConfig } from '../TemplateApp';
 import { LayoutLoaderError } from '../template-engine/LayoutLoader';
 import { AuthManager } from '../auth/AuthManager';
-import { releaseTemplateRoot } from '../template-engine';
-import { ErrorDisplay } from '../template-engine/ErrorDisplay';
 
 // Mock ApiClient (AuthManager 의존성)
 const mockApiClient = {
@@ -43,8 +41,6 @@ vi.mock('../template-engine', () => ({
   initTemplateEngine: vi.fn().mockResolvedValue(undefined),
   renderTemplate: vi.fn().mockResolvedValue(undefined),
   destroyTemplate: vi.fn(),
-  releaseTemplateRoot: vi.fn(),
-  updateTemplateData: vi.fn(),
   getActionDispatcher: vi.fn().mockReturnValue(sharedActionDispatcher),
   getState: vi.fn().mockReturnValue({
     actionDispatcher: sharedActionDispatcher,
@@ -129,10 +125,6 @@ describe('TemplateApp - 401 자동 리다이렉트 (Issue #301)', () => {
     delete (window as any).G7Core;
   });
 
-  /**
-   * @scenario screen_takeover=none
-   * @effects unauthorized_layout_redirects_to_login_with_session_expired_reason
-   */
   it('토큰 보유 + 401 → admin 로그인 페이지로 reason=session_expired 부여하여 리다이렉트되어야 한다', () => {
     mockApiClient.getToken.mockReturnValueOnce('expired-admin-token');
 
@@ -157,10 +149,6 @@ describe('TemplateApp - 401 자동 리다이렉트 (Issue #301)', () => {
     );
   });
 
-  /**
-   * @scenario screen_takeover=none
-   * @effects unauthorized_layout_redirects_to_login_with_session_expired_reason
-   */
   it('토큰 보유 + user 템플릿 401 → user 로그인 페이지로 reason 부여 리다이렉트', () => {
     Object.defineProperty(window, 'location', {
       value: { href: '', pathname: '/board/free', search: '?p=2' },
@@ -189,10 +177,6 @@ describe('TemplateApp - 401 자동 리다이렉트 (Issue #301)', () => {
     );
   });
 
-  /**
-   * @scenario screen_takeover=none
-   * @effects custom_login_path_used_for_unauthorized_redirect
-   */
   it('AuthManager.updateConfig 로 커스텀 loginPath 설정 후 그 경로로 리다이렉트되어야 한다', () => {
     // user 템플릿의 커스텀 경로가 적용되려면 pathname 도 /admin 외 경로여야 함
     Object.defineProperty(window, 'location', {
@@ -224,10 +208,6 @@ describe('TemplateApp - 401 자동 리다이렉트 (Issue #301)', () => {
     );
   });
 
-  /**
-   * @scenario screen_takeover=none
-   * @effects anonymous_unauthorized_redirect_without_reason
-   */
   it('익명 사용자(토큰 미보유 + details.hadToken 없음) + 401 → reason 미부여 (정책: 익명 안내 토스트 차단)', () => {
     // 정책: 한 번도 로그인하지 않은 사용자에게 "세션 만료" 안내가 노출되는 것을 차단.
     // 가드는 (a) 현재 apiClient.getToken() 또는 (b) error.details.hadToken === true
@@ -253,10 +233,6 @@ describe('TemplateApp - 401 자동 리다이렉트 (Issue #301)', () => {
     expect(window.location.href).not.toContain('reason=');
   });
 
-  /**
-   * @scenario screen_takeover=none
-   * @effects unauthorized_layout_redirects_to_login_with_session_expired_reason
-   */
   it('토큰 만료(LayoutLoader 가 retry 후 토큰 제거 상태) + details.hadToken=true → reason=session_expired 부여', () => {
     // 회귀 차단 (Issue #301 후속): LayoutLoader 가 401 시 토큰을 자동 제거하고
     // 재시도하므로 가드 진입 시점에 apiClient.getToken() = null 이지만,
@@ -284,10 +260,6 @@ describe('TemplateApp - 401 자동 리다이렉트 (Issue #301)', () => {
     );
   });
 
-  /**
-   * @scenario screen_takeover=error_display
-   * @effects non_unauthorized_layout_failure_does_not_redirect
-   */
   it('LayoutLoaderError 의 status 가 401 이 아니면 리다이렉트하지 않아야 한다 (404, 500 등)', () => {
     const config: TemplateAppConfig = {
       templateId: 'sirsoft-admin_basic',
@@ -307,42 +279,6 @@ describe('TemplateApp - 401 자동 리다이렉트 (Issue #301)', () => {
     expect(window.location.href).toBe('');
   });
 
-  /**
-   * 오류 화면(ErrorDisplay)이 #app 을 덮기 전에 React 루트를 반납한다 — 그대로 두면 이후 토스트 갱신이
-   * 지워진 노드에 그려지며 NotFoundError 가 쌓인다(engine-v1.79.0, 7.1.0 실측). 401 은 이동이라 반납하지 않는다.
-   *
-   * @scenario screen_takeover=error_display
-   * @effects route_error_releases_root_before_error_screen
-   */
-  it('401 이 아닌 레이아웃 실패는 오류 화면을 그리기 전에 React 루트를 반납한다', () => {
-    app = new TemplateApp({ templateId: 'sirsoft-admin_basic', templateType: 'admin', locale: 'ko', debug: false });
-    const order: string[] = [];
-    vi.mocked(releaseTemplateRoot).mockImplementation(() => { order.push('release'); });
-    const renderSpy = vi.spyOn(ErrorDisplay, 'renderFromError').mockImplementation(() => { order.push('error-screen'); });
-
-    (app as any).showRouteError(new LayoutLoaderError('Forbidden', 'FETCH_FAILED', { status: 403 }));
-
-    expect(order).toEqual(['release', 'error-screen']);
-    renderSpy.mockRestore();
-  });
-
-  /**
-   * @scenario screen_takeover=none
-   * @effects unauthorized_layout_failure_does_not_release_root
-   */
-  it('401 레이아웃 실패(로그인 이동)는 React 루트를 반납하지 않는다', () => {
-    app = new TemplateApp({ templateId: 'sirsoft-admin_basic', templateType: 'admin', locale: 'ko', debug: false });
-    vi.mocked(releaseTemplateRoot).mockClear();
-
-    (app as any).showRouteError(new LayoutLoaderError('Unauthorized', 'FETCH_FAILED', { status: 401 }));
-
-    expect(releaseTemplateRoot).not.toHaveBeenCalled();
-  });
-
-  /**
-   * @scenario screen_takeover=error_display
-   * @effects non_unauthorized_layout_failure_does_not_redirect
-   */
   it('일반 Error(LayoutLoaderError 가 아닌)는 리다이렉트하지 않아야 한다', () => {
     const config: TemplateAppConfig = {
       templateId: 'sirsoft-admin_basic',
@@ -359,10 +295,6 @@ describe('TemplateApp - 401 자동 리다이렉트 (Issue #301)', () => {
     expect(window.location.href).toBe('');
   });
 
-  /**
-   * @scenario screen_takeover=none
-   * @effects admin_pathname_selects_admin_login
-   */
   it('templateId 가 admin 을 포함하지 않아도 pathname 이 /admin 이면 admin 로그인으로 가야 한다', () => {
     Object.defineProperty(window, 'location', {
       value: { href: '', pathname: '/admin/some/page', search: '' },
@@ -388,49 +320,6 @@ describe('TemplateApp - 401 자동 리다이렉트 (Issue #301)', () => {
 
     expect(window.location.href).toBe(
       `/admin/login?redirect=${encodeURIComponent('/admin/some/page')}&reason=session_expired`
-    );
-  });
-
-  /**
-   * #883 1단계(D2) — TemplateApp 이 ApiClient 에 거는 401 콜백은 「토큰을 실었던 요청이 거부됐다」 경우에만 불린다
-   * (토큰 없이 보낸 요청의 401 은 ApiClient 가 걸러 호출자에게 돌려준다 — ApiClient.anonymousUnauthorized.test.ts).
-   * 그래서 콜백 자체는 종전대로 토큰을 지우고 session_expired 로 로그인 화면에 보낸다(현행 유지).
-   *
-   * @scenario screen_takeover=none
-   * @effects token_rejected_callback_keeps_session_expired_redirect
-   */
-  it('초기화가 등록한 401 콜백은 토큰을 지우고 session_expired 로 로그인 화면에 보낸다(토큰을 실은 요청 전용)', async () => {
-    Object.defineProperty(window, 'location', {
-      value: { href: '', pathname: '/board/free/write', search: '' },
-      writable: true,
-      configurable: true,
-    });
-
-    // 초기화가 콜백 등록 단계까지 가도록 정적 자원 요청(라우트·번역 등)에 성공 응답을 준다
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-      ok: true,
-      status: 200,
-      statusText: 'OK',
-      headers: new Headers({ 'content-type': 'application/json' }),
-      json: async () => ({ success: true, data: {} }),
-      text: async () => '{}',
-    } as unknown as Response);
-
-    try {
-      app = new TemplateApp({ templateId: 'sirsoft-basic', templateType: 'user', locale: 'ko', debug: false });
-      await app.init().catch(() => undefined);
-    } finally {
-      fetchSpy.mockRestore();
-    }
-
-    expect(mockApiClient.setOnUnauthorized).toHaveBeenCalledTimes(1);
-    const onUnauthorized = mockApiClient.setOnUnauthorized.mock.calls[0][0] as () => void;
-
-    onUnauthorized();
-
-    expect(mockApiClient.removeToken).toHaveBeenCalled();
-    expect(window.location.href).toBe(
-      `/login?redirect=${encodeURIComponent('/board/free/write')}&reason=session_expired`
     );
   });
 });

@@ -1,6 +1,6 @@
 # Service-Repository 패턴
 
-> **백엔드 가이드** | [목차로 돌아가기](README.md)
+> **백엔드 가이드** | [목차로 돌아가기](index.md)
 
 ---
 
@@ -363,30 +363,29 @@ class ProductService
     }
 
     /**
-     * 사용자(공개) 상품 목록 조회
+     * 상품 목록 조회
      *
      * @param array $filters 검색 필터
-     * @param int $perPage 페이지당 개수
-     * @return LengthAwarePaginator
+     * @return Collection
      */
-    public function getPublicList(array $filters, int $perPage = 20): LengthAwarePaginator
+    public function getProducts(array $filters = []): Collection
     {
         // Before 훅 - 검색 조건 전처리
-        HookManager::doAction('sirsoft-ecommerce.product.before_public_list', $filters);
+        HookManager::doAction('sirsoft-ecommerce.product.before_list', $filters);
 
-        // 필터 훅 - 검색 조건 배열 변형 (쿼리 빌더가 아니다)
-        $filters = HookManager::applyFilters('sirsoft-ecommerce.product.filter_public_list_params', $filters);
+        // 필터 훅 - 검색 조건 변형
+        $filters = HookManager::applyFilters('sirsoft-ecommerce.product.filter_list_query', $filters);
 
-        $result = $this->repository->getPublicList($filters, $perPage);
+        $products = $this->productRepository->getAll($filters);
+
+        // 필터 훅 - 결과 데이터 변형
+        $products = HookManager::applyFilters('sirsoft-ecommerce.product.filter_list_result', $products, $filters);
 
         // After 훅 - 조회 후처리 (로깅, 캐싱 등)
-        HookManager::doAction('sirsoft-ecommerce.product.after_public_list', $result);
+        HookManager::doAction('sirsoft-ecommerce.product.after_list', $products, $filters);
 
-        return $result;
+        return $products;
     }
-
-    // 목록 쿼리 자체에 확장 조건을 더하는 표준은 조건 함수 등록 훅(`*.list_query_extensions`)이다 —
-    // docs/extension/hooks.md §목록 쿼리 확장 훅 표준
 
     /**
      * 상품 상세 조회
@@ -422,9 +421,6 @@ class ProductService
 3. Repository 호출     →  실제 데이터 작업
 4. After Action Hook   →  후처리, 알림, 캐시
 ```
-
-조회 결과 훅(`filter_*_result`)은 캐시를 읽은 뒤·사용자별 권한 후처리 뒤에 발행한다 — `remember()` 콜백 안에서 부르면 첫 요청의 결과가 공용 캐시에 남는다.
-리스너는 같은 타입의 새 값을 돌려주고, 캐시에서 꺼낸 모델은 복제본을 넘긴다. 상세: [훅 시스템 — 조회 결과 훅과 캐시](../extension/hooks.md#조회-결과-훅과-캐시)
 
 ### 훅 네이밍 규칙
 
@@ -613,7 +609,7 @@ public function bulkUpdateStatus(array $ids, string $status): int
 
 ### 상태 변경 타임스탬프 자동 설정
 
-상태에 딸린 타임스탬프의 짝은 **Enum 한 곳**(`UserStatus::transitionTimestamps()`)이 소유합니다. 호출부에서 `match` 를 펼치지 마십시오 — 상태를 하나 더할 때 그 `match` 를 쓴 자리를 전부 찾아 고쳐야 하고, 한 곳이라도 빠지면 새 상태의 시각 칸이 채워지지 않거나 낡은 칸이 남습니다:
+상태 변경 시 관련 타임스탬프를 `match` 표현식으로 자동 설정합니다:
 
 ```php
 // 상태 변경 감지 및 타임스탬프 자동 설정
@@ -621,14 +617,17 @@ $oldStatus = $user->status;
 $newStatus = $data['status'] ?? null;
 
 if ($newStatus && $newStatus !== $oldStatus) {
-    // 채울 칸과 비울 칸을 Enum 이 함께 돌려준다 (없는 상태는 빈 배열).
-    $data = array_merge($data, UserStatus::from($newStatus)->transitionTimestamps());
+    $newStatusEnum = UserStatus::from($newStatus);
+    $data = match ($newStatusEnum) {
+        UserStatus::Blocked => array_merge($data, ['blocked_at' => now()]),
+        UserStatus::Withdrawn => array_merge($data, ['withdrawn_at' => now()]),
+        UserStatus::Active => array_merge($data, ['blocked_at' => null, 'withdrawn_at' => null]),
+        UserStatus::Inactive => $data,  // 타임스탬프 변경 없음
+    };
 }
 
 $this->userRepository->update($user, $data);
 ```
-
-같은 표를 읽는 쓰기 경로는 다음과 같습니다 — 관리자 생성(`UserService::createUser()`), 수정(`updateUser()`), 일괄 상태 변경(`bulkUpdateStatus()`), 휴면 회원의 로그인 해제(`AuthService::restoreDormantAccount()`), 본인인증 완료 시 활성화(`ActivateUserOnIdentityVerified`). 짝 표를 바꿀 때는 이 경로 전부가 영향 범위입니다. 상태를 신설할 때는 `transitionTimestamps()` 의 `match` 에 갈래를 더하는 것으로 끝나고, **`default` 갈래가 있어 빠뜨린 상태가 500 을 내지 않습니다.**
 
 ### 상태 변경 시 토큰 자동 삭제
 
@@ -694,28 +693,30 @@ $query->orderBy("name->{$locale}", $sortOrder);
 
 #### 다국어 필드 fallback chain
 
-Model 의 `getLocalizedX()` / Resource 의 다국어 컬럼 출력 / Service 의 다국어 매핑 등에서 현재 locale 값을 반환할 때는 `App\Support\LocalizedValue::pick()` 을 사용합니다. 대체 순서는 요청 언어 → 사이트 기본 언어(환경설정 「기본 언어」, `app.site_locale`) → 영어 → (기본) 첫 값이고, 빈 문자열·공백만 있는 값은 건너뜁니다.
+Model 의 `getLocalizedX()` / Resource 의 다국어 컬럼 출력 / Service 의 다국어 매핑 등에서 현재 locale 값을 반환할 때는 `config('app.fallback_locale', 'ko')` 기반 fallback chain 을 사용합니다.
 
 ```php
-use App\Support\LocalizedValue;
-
-// ✅ DO: LocalizedValue::pick — 요청 언어 → 사이트 기본 언어 → en → 첫 값
+// ✅ DO: app.fallback_locale config 기반
 public function getLocalizedName(?string $locale = null): string
 {
-    return LocalizedValue::pick($this->name, $locale ?? app()->getLocale()) ?? '';
+    $locale = $locale ?? app()->getLocale();
+    if (! is_array($this->name)) {
+        return (string) $this->name;
+    }
+    return $this->name[$locale]
+        ?? $this->name[config('app.fallback_locale', 'ko')]
+        ?? (! empty($this->name) ? array_values($this->name)[0] : '')
+        ?? '';
 }
 
-// ✅ 첫 값까지 내려가지 않아야 하는 자리(메일 제목·본문 등)는 anyAsLast: false
-return LocalizedValue::pick($this->subject, $locale, anyAsLast: false) ?? '';
-
-// ❌ DON'T: fallback_locale 색인 · ko / en 하드코딩
+// ❌ DON'T: ko / en 하드코딩
 return $this->name[$locale]
-    ?? $this->name[config('app.fallback_locale', 'ko')]
     ?? $this->name['ko']
+    ?? $this->name['en']
     ?? '';
 ```
 
-`app.fallback_locale`(env `APP_FALLBACK_LOCALE`)은 번역 키(`__()`)의 대체 언어 전용이고 다국어 **값** 대체에는 쓰지 않습니다 — 한국어가 기본이 아닌 사이트에서 빈 값이 한국어로 채워지던 문제(#148)의 원인이었습니다. 화면 코드는 `G7Core.locale.pick(값)`·`$localized(값)` 를 씁니다. 새 직접 색인은 `tests/Unit/I18n/MultilingualValueFallbackGuardTest.php` 가 막습니다(값 표시가 아닌 동등 비교·필수 언어 검증·로케일별 생성은 허용 목록에 사유와 함께).
+운영자가 `APP_FALLBACK_LOCALE` 환경변수로 폴백 locale 을 변경할 수 있도록 보장하는 정합성 정책입니다.
 
 #### 다국어 라벨이 들어간 비즈니스 로직 (copy 접미사 등)
 
@@ -889,7 +890,7 @@ public function getAll(): Collection
 
 판정 기준은 단순하다. **꺼내는 값이 Model 이면 Eloquent, 컬렉션·배열이면 Support.** `*Keyed` 류 메서드 대부분은 평면 `id => Model` 맵이라 Eloquent 선언이 정당하고 실제로 지켜진다. 중첩 맵을 만들면서 옆 메서드의 평면 맵 선언을 복사하는 것이 전형적인 실수다.
 
-자동 검증이 이 불일치를 차단하지만, 정규식 기반이라 강등 여부를 의미적으로 판정하지는 못한다. 권위 있는 가드는 **저장소 단위 테스트**다 — 반환 타입을 바꾸거나 중첩 맵을 새로 만들 때는 `assertInstanceOf` / `assertNotInstanceOf` 로 외곽과 내부 항목의 타입을 함께 고정한다.
+정적 검사가 이 불일치를 차단하지만, 정규식 기반이라 강등 여부를 의미적으로 판정하지는 못한다. 권위 있는 가드는 **저장소 단위 테스트**다 — 반환 타입을 바꾸거나 중첩 맵을 새로 만들 때는 `assertInstanceOf` / `assertNotInstanceOf` 로 외곽과 내부 항목의 타입을 함께 고정한다.
 
 ### 목록의 eager load 는 목록이 직렬화하는 관계만
 
@@ -1107,7 +1108,7 @@ enum ConsentSource: string
 
 라벨은 **백엔드와 프론트 두 표면 모두**에 정의한다. 관리자 화면의 `$t:` 는 `resources/lang/{locale}.json` 에서 해석되므로 `lang/{locale}/messages.php` 만 채우면 화면에는 여전히 원시 키가 남는다. 치환 문법도 다르다 — 백엔드는 `:name`, 프론트 엔진(`TranslationEngine.replaceParams`)은 `{name}` / `{{name}}` 만 치환한다.
 
-어느 enum 이 어느 화면의 어휘인지는 의미 추론이 필요해 자동 검출이 어렵다. 확장별로 정합 테스트를 둔다 — 예: `ConsentSourceVocabularyParityTest` (기록 리터럴 ⊆ enum / 화면 옵션 = enum / ko·en × 백엔드·프론트 라벨 전수).
+어느 enum 이 어느 화면의 어휘인지는 의미 추론이 필요해 정적 검출이 어렵다(`coverage.json` 의 `filter-vocabulary-enum-parity` = `manual-only`). 확장별로 정합 테스트를 둔다 — 예: `ConsentSourceVocabularyParityTest` (기록 리터럴 ⊆ enum / 화면 옵션 = enum / ko·en × 백엔드·프론트 라벨 전수).
 
 ### 목록에 `last_page > 1` 이면 화면에도 페이저가 있어야 한다
 
@@ -1280,7 +1281,7 @@ $query->orderBy('created_at', 'desc')->orderBy('id', 'desc')->paginate($perPage)
 
 모듈/플러그인 프로파일은 **그 확장의 테스트 스위트에서** 검사한다. 확장 테이블은 그 스위트에서만 마이그레이션되므로 코어 스위트에 몰면 테이블이 없어 건너뛰고 초록인 채 미검사가 된다. 같은 이유로 "테이블이 없으면 skip" 도 하지 않고 실패로 보고한다.
 
-### 자동 검증 대상
+### 정적 검사 대상
 
 | 검출 대상 | 처리 |
 |---|---|
@@ -1604,7 +1605,7 @@ public function findOrFail(string $slug, int $id, ?int $postId = null): Comment
 | --- | --- |
 | 방어 위치 | Repository where 절 (SSoT) + Service 가 상위 ID 를 전달 |
 | 파라미터 형태 | **선택 파라미터**(`?int $postId = null`) — 필수화는 Interface breaking 이라 이 확장에 의존하는 확장을 전부 흔든다 |
-| 전달 누락 방지 | 컨트롤러가 라우트 파라미터를 실제로 소비하는지 자동 검증이 감시 (경고) |
+| 전달 누락 방지 | 컨트롤러가 라우트 파라미터를 실제로 소비하는지 정적 검사가 감시 (경고) |
 | 응답 코드 | 조회 실패이므로 404. 요청 본문 배열 항목의 스코프 위반은 422 (validation.md "배열 항목의 상위 스코프") |
 | 공통 추상화 | 도입하지 않는다 — 모듈마다 상위 키와 조회 경로가 다르고(`board_id`+`post_id` / `product_id` / `page_id` / `order_id`), 코어 표면이 늘면 확장 버전 제약 동기화가 연쇄된다 |
 
@@ -1673,23 +1674,14 @@ $data['depth'] = ($parent->depth ?? 0) + 1;
 값이 상한을 넘으면 조용히 깎지 말고 422 로 거절해야 한다.
 
 이 패턴은 리터럴과 설정 키를 잇는 의미 추론이 필요해 정적 검출이 어렵다
-(자동 검증 대상이 아니다).
+(`coverage.json` 의 `service-hardcoded-limit-vs-settings` = `not-applicable`).
 코드 리뷰에서 리터럴 상한을 볼 때마다 "이 값을 정하는 설정이 따로 있는가" 를 확인한다.
 
 ---
-
-## 입력 크기에 비례하는 메모리
-
-브라우저에서 잘 돌던 알고리즘을 PHP 로 옮길 때 시간 상한만 함께 오고 메모리 상한은 오지 않는다. PHP 배열은 원소당 수십 바이트라 (줄 수)² 크기 표는 2,350줄에서 약 150MB 이고, 운영 서버의 PHP 기본 `memory_limit` 은 128M 이다. 개발 머신에서는 통과하고 서버에서만 500 이 되며, 남는 것은 `Allowed memory size … exhausted` 한 줄뿐이다.
-
-- 카운트·길이만 쓰는 LCS/DP 는 두 행 DP 로 길이만 구한다. 추가 = 새 줄 − LCS, 삭제 = 옛 줄 − LCS 이므로 전체 표를 되짚어 얻는 숫자와 같다. 실제 줄을 그려야 하는 쪽(브라우저 diff 뷰)만 전체 표를 쓴다.
-- 브라우저 구현의 임계값을 옮겨 왔다면 그 임계에서의 PHP 메모리를 실측한다. 시간만 막는 임계가 있다.
-- "인접 버전 비교는 변경 영역이 작다" 같은 가정으로 최악 경로를 비워 두지 않는다. 앞뒤 공통 부분 트리밍은 양끝이 동시에 바뀌면 무력하고, 편집기가 `comment` 키를 떼어내는 첫 저장이 정확히 그 형태다.
-- 메모리 회귀 테스트는 `memory_get_peak_usage()` 증가량의 상한을 단언한다. 잠금 대상은 코어 `CalculatesJsonContentDiff`(레이아웃·레이아웃 확장 버전 변경량)이며 `tests/Unit/Repositories/Concerns/CalculatesJsonContentDiffTest.php` 가 상한과 참조 구현 동치를 함께 고정한다.
 
 ## 관련 문서
 
 - [컨트롤러 계층 구조](controllers.md) - Controller에서 Service 사용
 - [검증 로직 구현](validation.md) - FormRequest 검증 규칙
 - [DTO 사용 규칙](dto.md) - Service 가 반환하는 DTO 의 두 패턴 (Value Object / Data Carrier)
-- [README.md](README.md) - 백엔드 가이드 전체 목차
+- [index.md](index.md) - 백엔드 가이드 전체 목차

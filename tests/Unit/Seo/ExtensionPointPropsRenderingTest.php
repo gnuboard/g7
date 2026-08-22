@@ -34,8 +34,6 @@ class ExtensionPointPropsRenderingTest extends TestCase
      *
      * 하드코딩 config 로는 `html_content` 렌더 모드가 없어 #86 을 재현할 수 없으므로
      * RealWorldRenderingTest 와 동일하게 실제 설정을 사용합니다.
-     *
-     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -148,8 +146,6 @@ class ExtensionPointPropsRenderingTest extends TestCase
      * @scenario ep_site=board_post, injection=extension_active, nesting=direct_child, host_gate=if_true, content_kind=html_mode
      *
      * @effects ep_props_resolved_into_context
-     *
-     * @return void 반환값 없음
      */
     public function test_board_post_content_is_rendered_through_extension_point_props(): void
     {
@@ -175,8 +171,6 @@ class ExtensionPointPropsRenderingTest extends TestCase
      * @scenario ep_site=page, injection=extension_active, nesting=direct_child, host_gate=if_true, content_kind=html_mode
      *
      * @effects ep_props_resolved_into_context
-     *
-     * @return void 반환값 없음
      */
     public function test_page_content_is_rendered_through_extension_point_props(): void
     {
@@ -198,8 +192,6 @@ class ExtensionPointPropsRenderingTest extends TestCase
      * @scenario ep_site=product_detail, injection=extension_active, nesting=direct_child, host_gate=if_true, content_kind=html_mode
      *
      * @effects ep_props_resolved_into_context
-     *
-     * @return void 반환값 없음
      */
     public function test_product_description_is_rendered_through_extension_point_props(): void
     {
@@ -219,8 +211,6 @@ class ExtensionPointPropsRenderingTest extends TestCase
      * UT-2: 중첩된 extensionPointProps 표현식이 재귀적으로 평가됩니다.
      *
      * @effects nested_expression_resolved
-     *
-     * @return void 반환값 없음
      */
     public function test_nested_extension_point_props_are_resolved_recursively(): void
     {
@@ -258,8 +248,6 @@ class ExtensionPointPropsRenderingTest extends TestCase
      * 확장 비활성 시의 default 폴백(직접 표현식)이 곧 React 기준 출력이기 때문입니다.
      *
      * @effects ep_props_resolved_into_context, default_fallback_unchanged
-     *
-     * @return void 반환값 없음
      */
     public function test_injected_node_output_matches_direct_expression_node_output(): void
     {
@@ -299,8 +287,6 @@ class ExtensionPointPropsRenderingTest extends TestCase
      * @scenario ep_site=board_reply, injection=extension_active, nesting=inside_iteration, host_gate=if_true, content_kind=html_mode
      *
      * @effects iteration_scoped_ep_props
-     *
-     * @return void 반환값 없음
      */
     public function test_extension_point_inside_iteration_resolves_per_item(): void
     {
@@ -344,8 +330,6 @@ class ExtensionPointPropsRenderingTest extends TestCase
      * @scenario ep_site=board_post, injection=extension_active, nesting=grandchild, host_gate=if_true, content_kind=html_mode
      *
      * @effects subtree_inherits_ep_props
-     *
-     * @return void 반환값 없음
      */
     public function test_extension_point_props_are_inherited_by_descendants(): void
     {
@@ -379,8 +363,6 @@ class ExtensionPointPropsRenderingTest extends TestCase
      * UT-6: extensionPointProps 는 Extension Point 서브트리 밖으로 새지 않습니다.
      *
      * @effects sibling_isolated_from_ep_props
-     *
-     * @return void 반환값 없음
      */
     public function test_extension_point_props_do_not_leak_to_siblings(): void
     {
@@ -405,8 +387,6 @@ class ExtensionPointPropsRenderingTest extends TestCase
      * @scenario ep_site=product_common_info, injection=extension_active, nesting=direct_child, host_gate=if_false, content_kind=html_mode
      *
      * @effects host_gate_suppresses_subtree
-     *
-     * @return void 반환값 없음
      */
     public function test_extension_point_host_if_false_suppresses_subtree(): void
     {
@@ -433,8 +413,6 @@ class ExtensionPointPropsRenderingTest extends TestCase
      * @scenario ep_site=product_common_info, injection=extension_active, nesting=direct_child, host_gate=if_true, content_kind=html_mode
      *
      * @effects ep_props_resolved_into_context
-     *
-     * @return void 반환값 없음
      */
     public function test_product_common_info_renders_when_host_condition_is_true(): void
     {
@@ -461,8 +439,6 @@ class ExtensionPointPropsRenderingTest extends TestCase
      * @scenario ep_site=board_reply, injection=extension_active, nesting=direct_child, host_gate=if_true, content_kind=html_mode
      *
      * @effects ep_props_resolved_into_context
-     *
-     * @return void 반환값 없음
      */
     public function test_reply_content_is_rendered_outside_iteration(): void
     {
@@ -488,8 +464,6 @@ class ExtensionPointPropsRenderingTest extends TestCase
      * @scenario ep_site=board_post, injection=default_fallback, nesting=direct_child, host_gate=if_true, content_kind=html_mode
      *
      * @effects default_fallback_unchanged
-     *
-     * @return void 반환값 없음
      */
     public function test_default_fallback_without_extension_point_props_is_unchanged(): void
     {
@@ -515,8 +489,6 @@ class ExtensionPointPropsRenderingTest extends TestCase
      * @scenario ep_site=board_reply, injection=default_fallback, nesting=direct_child, host_gate=if_true, content_kind=html_mode
      *
      * @effects default_fallback_unchanged
-     *
-     * @return void 반환값 없음
      */
     public function test_reply_default_fallback_is_unchanged(): void
     {
@@ -539,8 +511,6 @@ class ExtensionPointPropsRenderingTest extends TestCase
      * @scenario ep_site=page, injection=default_fallback, nesting=direct_child, host_gate=if_true, content_kind=html_mode
      *
      * @effects default_fallback_unchanged
-     *
-     * @return void 반환값 없음
      */
     public function test_page_default_fallback_is_unchanged(): void
     {
@@ -563,8 +533,6 @@ class ExtensionPointPropsRenderingTest extends TestCase
      * @scenario ep_site=product_detail, injection=default_fallback, nesting=direct_child, host_gate=if_true, content_kind=html_mode
      *
      * @effects default_fallback_unchanged
-     *
-     * @return void 반환값 없음
      */
     public function test_product_default_fallback_is_unchanged(): void
     {
@@ -588,8 +556,6 @@ class ExtensionPointPropsRenderingTest extends TestCase
      * 노출될 위험이 있습니다.
      *
      * @effects callbacks_not_injected
-     *
-     * @return void 반환값 없음
      */
     public function test_extension_point_callbacks_are_not_injected_into_context(): void
     {
@@ -611,8 +577,6 @@ class ExtensionPointPropsRenderingTest extends TestCase
      * evaluate()(string 고정) 가 아니라 evaluateRaw()(mixed) 로 해석해야 합니다.
      *
      * @effects non_string_values_preserved
-     *
-     * @return void 반환값 없음
      */
     public function test_non_string_extension_point_prop_values_are_preserved(): void
     {
@@ -645,8 +609,6 @@ class ExtensionPointPropsRenderingTest extends TestCase
      * evaluateRaw() 만 null 을 그대로 보존해 폴백이 성립한다 — 이 단언이 두 API 를 가른다.
      *
      * @effects non_string_values_preserved
-     *
-     * @return void 반환값 없음
      */
     public function test_null_extension_point_prop_value_keeps_nullish_fallback(): void
     {
@@ -674,8 +636,6 @@ class ExtensionPointPropsRenderingTest extends TestCase
      * evaluate() 로 해석하면 배열이 JSON 문자열이 되어(valueToString) iteration 이 0건이 된다.
      *
      * @effects non_string_values_preserved
-     *
-     * @return void 반환값 없음
      */
     public function test_array_extension_point_prop_value_stays_iterable(): void
     {
@@ -718,8 +678,6 @@ class ExtensionPointPropsRenderingTest extends TestCase
      * 화면에 `false` 라는 글자를 노출한다.
      *
      * @effects non_string_values_preserved
-     *
-     * @return void 반환값 없음
      */
     public function test_boolean_false_extension_point_prop_is_not_stringified(): void
     {
@@ -747,8 +705,6 @@ class ExtensionPointPropsRenderingTest extends TestCase
      * @scenario ep_site=board_post, injection=extension_active, nesting=direct_child, host_gate=if_true, content_kind=plain_text_mode
      *
      * @effects ep_props_resolved_into_context
-     *
-     * @return void 반환값 없음
      */
     public function test_multi_binding_extension_point_prop_is_interpolated(): void
     {
@@ -778,8 +734,6 @@ class ExtensionPointPropsRenderingTest extends TestCase
      * @scenario ep_site=board_reply, injection=extension_active, nesting=direct_child, host_gate=if_true, content_kind=html_mode
      *
      * @effects ep_props_resolved_into_context
-     *
-     * @return void 반환값 없음
      */
     public function test_real_reply_layout_with_real_ckeditor_extension_renders_content(): void
     {
@@ -792,8 +746,8 @@ class ExtensionPointPropsRenderingTest extends TestCase
         $layout = json_decode(file_get_contents($layoutPath), true);
         $extension = json_decode(file_get_contents($extensionPath), true);
 
-        $host = $this->findNodeById($layout, 'reply_html_content_{{replyIndex}}');
-        $this->assertIsArray($host, 'reply_html_content_{{replyIndex}} extension_point 노드를 찾지 못했습니다(댓글별 data-ref 로 id 가 바뀌었는지 확인).');
+        $host = $this->findNodeById($layout, 'reply_html_content');
+        $this->assertIsArray($host, 'reply_html_content extension_point 노드를 찾지 못했습니다.');
         $this->assertSame('extension_point', $host['type'] ?? null);
 
         $node = $this->applyExtensionPoint(
@@ -816,8 +770,6 @@ class ExtensionPointPropsRenderingTest extends TestCase
      * @scenario ep_site=board_parent, injection=extension_active, nesting=direct_child, host_gate=if_true, content_kind=html_mode
      *
      * @effects ep_props_resolved_into_context
-     *
-     * @return void 반환값 없음
      */
     public function test_real_parent_post_layout_with_real_ckeditor_extension_renders_content(): void
     {
@@ -856,8 +808,6 @@ class ExtensionPointPropsRenderingTest extends TestCase
      * @scenario ep_site=board_post, injection=extension_active, nesting=direct_child, host_gate=if_true, content_kind=plain_text_mode
      *
      * @effects text_mode_content_escaped
-     *
-     * @return void 반환값 없음
      */
     public function test_text_mode_content_is_escaped_like_the_normal_screen(): void
     {
@@ -894,8 +844,6 @@ class ExtensionPointPropsRenderingTest extends TestCase
      * @scenario ep_site=board_post, injection=extension_active, nesting=direct_child, host_gate=if_true, content_kind=html_mode_with_dangerous_markup
      *
      * @effects html_mode_content_sanitized
-     *
-     * @return void 반환값 없음
      */
     public function test_html_mode_content_is_sanitized_before_output(): void
     {
@@ -938,8 +886,6 @@ class ExtensionPointPropsRenderingTest extends TestCase
      * @scenario ep_site=board_reply, injection=extension_active, nesting=direct_child, host_gate=if_true, content_kind=plain_text_mode
      *
      * @effects text_mode_content_escaped
-     *
-     * @return void 반환값 없음
      */
     public function test_reply_content_without_content_mode_is_escaped(): void
     {
@@ -966,8 +912,6 @@ class ExtensionPointPropsRenderingTest extends TestCase
      * @scenario ep_site=product_detail, injection=extension_active, nesting=direct_child, host_gate=if_true, content_kind=plain_text_mode
      *
      * @effects text_mode_content_escaped
-     *
-     * @return void 반환값 없음
      */
     public function test_product_description_in_text_mode_is_escaped(): void
     {
@@ -993,8 +937,6 @@ class ExtensionPointPropsRenderingTest extends TestCase
      * @scenario ep_site=product_detail, injection=extension_active, nesting=direct_child, host_gate=if_true, content_kind=html_mode_with_dangerous_markup
      *
      * @effects html_mode_content_sanitized
-     *
-     * @return void 반환값 없음
      */
     public function test_product_description_in_html_mode_is_sanitized(): void
     {
@@ -1025,8 +967,6 @@ class ExtensionPointPropsRenderingTest extends TestCase
      * @scenario ep_site=board_post, injection=default_fallback, nesting=direct_child, host_gate=if_true, content_kind=plain_text_mode
      *
      * @effects text_mode_content_escaped, default_fallback_unchanged
-     *
-     * @return void 반환값 없음
      */
     public function test_default_fallback_escapes_text_mode_content(): void
     {
@@ -1052,8 +992,6 @@ class ExtensionPointPropsRenderingTest extends TestCase
      * @scenario ep_site=board_post, injection=extension_active, nesting=direct_child, host_gate=if_true, content_kind=plain_text_mode
      *
      * @effects text_mode_content_escaped, subtree_inherits_ep_props
-     *
-     * @return void 반환값 없음
      */
     public function test_seam_real_extension_escapes_text_mode_post_body(): void
     {
@@ -1096,8 +1034,6 @@ class ExtensionPointPropsRenderingTest extends TestCase
      * @scenario ep_site=page, injection=extension_active, nesting=direct_child, host_gate=if_true, content_kind=html_mode
      *
      * @effects ordinary_formatting_survives_sanitization
-     *
-     * @return void 반환값 없음
      */
     public function test_sanitizer_keeps_ordinary_formatting_in_html_mode(): void
     {

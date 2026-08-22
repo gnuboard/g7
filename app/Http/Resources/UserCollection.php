@@ -18,7 +18,6 @@ class UserCollection extends BaseApiCollection
     protected function abilityMap(): array
     {
         return [
-            'can_read' => 'core.users.read',
             'can_create' => 'core.users.create',
             'can_update' => 'core.users.update',
             'can_delete' => 'core.users.delete',
@@ -115,7 +114,7 @@ class UserCollection extends BaseApiCollection
             return [
                 'uuid' => $user->uuid,
                 'name' => $user->name,
-                'email' => $this->canExposeMemberEmail(null, $user->id) ? $user->email : null,
+                'email' => $user->email,
             ];
         })->toArray();
     }

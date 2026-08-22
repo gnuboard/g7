@@ -80,187 +80,12 @@ function getInstallationState(): array
 }
 
 /**
- * 설치 소유권 필드 목록.
- *
- * generation 이 더 높은 쪽이 이긴다 — 설치 워커·heartbeat 처럼 generation 을 올리지 않는
- * 쓰기가 옛 사본을 저장해도 소유자 교체·설치 계획 서명이 되돌아가지 않게 한다.
- *
- * @return array<int, string> 소유권 필드 키
- */
-function installerOwnershipStateKeys(): array
-{
-    return ['owner_hash', 'owner_kind', 'recovery_hash', 'generation', 'drop_confirm', 'install_plan_sig', 'existing_db_action'];
-}
-
-/**
- * 디스크의 state.json 을 그대로 읽는다 (없거나 손상이면 null).
- *
- * @return array<string, mixed>|null 디스크 state
- */
-function installerReadStateFile(): ?array
-{
-    clearstatcache(true, STATE_PATH);
-
-    if (! is_file(STATE_PATH)) {
-        return null;
-    }
-
-    $decoded = json_decode((string) @file_get_contents(STATE_PATH), true);
-
-    return is_array($decoded) ? $decoded : null;
-}
-
-/**
- * state.json 쓰기를 프로세스 간 직렬화한다.
- *
- * 락 파일을 열 수 없으면(스토리지 부재 등) 락 없이 실행한다 — 쓰기 자체가 실패하며 기존 로그가 남는다.
- *
- * @param  callable(): bool  $callback  락 안에서 실행할 쓰기
- * @return bool 콜백 결과
- */
-function installerWithStateLock(callable $callback): bool
-{
-    // 재진입 — 이 프로세스가 이미 락을 쥐고 있으면 다시 잡지 않는다.
-    // 락 안의 쓰기가 fatal(실행 시간 초과 등)로 끊기면 finally 가 돌지 않아 락이 쥐어진 채
-    // shutdown 함수로 넘어간다. 거기서 상태를 저장하려고 새 핸들로 LOCK_EX 를 요청하면
-    // 같은 프로세스가 쥔 락을 기다리며 영원히 멈추고(Windows·Linux 공통), 그 뒤 다른 요청의
-    // 상태 쓰기(재연결 워커·재시도·중단)도 모두 같은 락에서 멈춘다.
-    if (isset($GLOBALS['g7_installer_held_locks']['state'])) {
-        return $callback();
-    }
-
-    $handle = @fopen(STATE_PATH.'.lock', 'c');
-    if ($handle === false) {
-        return $callback();
-    }
-
-    try {
-        flock($handle, LOCK_EX);
-        installerTrackHeldLock('state', $handle);
-
-        return $callback();
-    } finally {
-        installerUntrackHeldLock('state');
-        flock($handle, LOCK_UN);
-        fclose($handle);
-    }
-}
-
-/**
- * 이 프로세스가 쥐고 있는 파일 락을 기록한다.
- *
- * 락 구간이 fatal 로 끊기면 finally 가 실행되지 않으므로, shutdown 단계에서 이 기록을 보고
- * 재진입하거나(installerWithStateLock) 직접 풀 수 있게 한다(installerReleaseInterruptedLocks).
- *
- * @param  string  $name  락 이름 (state | log)
- * @param  resource  $handle  flock 을 쥔 파일 핸들
- * @return void 반환값 없음
- */
-function installerTrackHeldLock(string $name, $handle): void
-{
-    $GLOBALS['g7_installer_held_locks'][$name] = $handle;
-}
-
-/**
- * 락 기록을 지운다 (정상 해제 직전 호출).
- *
- * @param  string  $name  락 이름
- * @return void 반환값 없음
- */
-function installerUntrackHeldLock(string $name): void
-{
-    unset($GLOBALS['g7_installer_held_locks'][$name]);
-}
-
-/**
- * 끊긴 락 구간이 남긴 파일 락을 모두 푼다.
- *
- * shutdown 단계 전용 — 그 시점에 쥐어져 있는 락은 정상 흐름이 아니라 fatal 로 중간에
- * 끊긴 구간이 남긴 것이다. 풀지 않으면 이어지는 로그·상태 쓰기가 자기 락을 기다린다.
- *
- * @return int 푼 락 수
- */
-function installerReleaseInterruptedLocks(): int
-{
-    $held = $GLOBALS['g7_installer_held_locks'] ?? [];
-    $GLOBALS['g7_installer_held_locks'] = [];
-
-    $released = 0;
-    foreach ($held as $handle) {
-        if (is_resource($handle)) {
-            @flock($handle, LOCK_UN);
-            @fclose($handle);
-            $released++;
-        }
-    }
-
-    return $released;
-}
-
-/**
  * 설치 상태 저장
- *
- * 디스크 generation 이 메모리 사본보다 높으면 소유권 필드는 디스크 값을 유지한다.
  *
  * @param  array  $state  저장할 상태 배열
  * @return bool 저장 성공 여부
  */
 function saveInstallationState(array $state): bool
-{
-    return installerWithStateLock(static function () use ($state): bool {
-        $disk = installerReadStateFile();
-
-        if ($disk !== null && (int) ($disk['generation'] ?? 0) > (int) ($state['generation'] ?? 0)) {
-            foreach (installerOwnershipStateKeys() as $key) {
-                if (array_key_exists($key, $disk)) {
-                    $state[$key] = $disk[$key];
-                } else {
-                    unset($state[$key]);
-                }
-            }
-        }
-
-        return installerWriteStateFile($state);
-    });
-}
-
-/**
- * 설치 상태를 compare-and-swap 으로 저장한다.
- *
- * 디스크 generation 이 기대값과 같을 때만 generation+1 로 저장한다. 다르면 그 사이 다른
- * 상태변경 요청이 먼저 커밋한 것이므로 false (호출부는 409 로 응답).
- *
- * @param  array  $state  저장할 상태 배열
- * @param  int  $expectedGeneration  읽을 때의 generation
- * @return bool 저장 성공 여부 (충돌·쓰기 실패 시 false)
- */
-function saveInstallationStateCas(array $state, int $expectedGeneration): bool
-{
-    return installerWithStateLock(static function () use ($state, $expectedGeneration): bool {
-        $disk = installerReadStateFile();
-        $diskGeneration = $disk === null ? 0 : (int) ($disk['generation'] ?? 0);
-
-        if ($diskGeneration !== $expectedGeneration) {
-            $msg = "[installer-state] CAS 충돌: expected={$expectedGeneration}, disk={$diskGeneration}";
-            error_log($msg);
-            addLog($msg);
-
-            return false;
-        }
-
-        $state['generation'] = $expectedGeneration + 1;
-
-        return installerWriteStateFile($state);
-    });
-}
-
-/**
- * state.json 을 원자적으로 기록한다 (락·병합은 호출부 책임).
- *
- * @param  array  $state  저장할 상태 배열
- * @return bool 저장 성공 여부
- */
-function installerWriteStateFile(array $state): bool
 {
     // storage 디렉토리 존재 여부 확인 (생성하지 않음)
     $storageDir = BASE_PATH.'/storage';
@@ -405,33 +230,6 @@ if (! function_exists('redactInstallationStateSecrets')) {
     }
 }
 
-if (! function_exists('installer_site_language')) {
-    /**
-     * 설치되는 사이트의 기본 언어를 state 에서 정한다.
-     *
-     * `.env APP_LOCALE`·`APP_FAKER_LOCALE` 과 설정 `general.language` 가 모두 이 값을 쓴다.
-     * 세션(UI 언어)을 읽지 않는다 — SSE 워커·터미널 설치처럼 세션이 없는 실행 경로가 있어,
-     * 세션을 읽으면 실행 경로마다 결과가 달라진다(설정은 ko, .env 는 en 으로 어긋나던 결함).
-     *
-     * 우선순위: config.site_language(Step 3 숨김 필드·`--site-language`) → g7_locale(설치 UI 언어) → ko.
-     *
-     * @param  array<string, mixed>  $state  인스톨러 state
-     * @return string 지원 언어 코드
-     */
-    function installer_site_language(array $state): string
-    {
-        $supported = defined('SUPPORTED_LANGUAGES') ? array_keys(SUPPORTED_LANGUAGES) : ['ko', 'en'];
-
-        foreach ([$state['config']['site_language'] ?? null, $state['g7_locale'] ?? null] as $candidate) {
-            if (is_string($candidate) && in_array($candidate, $supported, true)) {
-                return $candidate;
-            }
-        }
-
-        return 'ko';
-    }
-}
-
 /**
  * 설치 완료 여부 확인
  *
@@ -548,36 +346,24 @@ function removeTaskCompleted(string $task): bool
  */
 function acquireWorkerLock(int $staleSeconds = 15): array
 {
-    $result = ['acquired' => false, 'worker_id' => null, 'reason' => 'busy'];
+    $state = getInstallationState();
+    $now = time();
 
-    // 읽기·확인·쓰기를 state 쓰기 락 안에서 한 번에 한다 — 따로 하면 두 워커(웹 SSE·폴링·터미널)가
-    // 같은 순간 둘 다 "비어 있음" 을 읽고 둘 다 잠금을 얻는다. 락 안이므로 쓰기는 installerWriteStateFile 로 직접.
-    installerWithStateLock(static function () use (&$result, $staleSeconds): bool {
-        $state = installerReadStateFile() ?? getInstallationState();
-        $now = time();
+    $activeId = $state['active_worker_id'] ?? null;
+    $lastHeartbeat = $state['last_heartbeat'] ?? 0;
 
-        $activeId = $state['active_worker_id'] ?? null;
-        $lastHeartbeat = $state['last_heartbeat'] ?? 0;
+    if ($activeId !== null && ($now - $lastHeartbeat) < $staleSeconds) {
+        return ['acquired' => false, 'worker_id' => null, 'reason' => 'busy'];
+    }
 
-        if ($activeId !== null && ($now - $lastHeartbeat) < $staleSeconds) {
-            return false;
-        }
+    $reason = $activeId !== null ? 'takeover_stale' : 'available';
+    $newWorkerId = bin2hex(random_bytes(8));
 
-        $reason = $activeId !== null ? 'takeover_stale' : 'available';
-        $newWorkerId = bin2hex(random_bytes(8));
+    $state['active_worker_id'] = $newWorkerId;
+    $state['last_heartbeat'] = $now;
+    saveInstallationState($state);
 
-        $state['active_worker_id'] = $newWorkerId;
-        $state['last_heartbeat'] = $now;
-
-        // 종전 동작과 같이 기록 실패가 실행을 막지는 않는다 — 실패는 installerWriteStateFile 이 로그로 남긴다.
-        installerWriteStateFile($state);
-
-        $result = ['acquired' => true, 'worker_id' => $newWorkerId, 'reason' => $reason];
-
-        return true;
-    });
-
-    return $result;
+    return ['acquired' => true, 'worker_id' => $newWorkerId, 'reason' => $reason];
 }
 
 /**
@@ -623,134 +409,6 @@ function releaseWorkerLock(string $workerId): void
     saveInstallationState($state);
 }
 
-/**
- * 워커 lock 을 쥔 워커가 있는지 — 상태 조회 응답의 worker_active.
- *
- * 워커는 끝날 때(shutdown) lock 을 푼다. running 인데 lock 이 비어 있으면 앞 워커가 끝났고
- * 이어 받을 워커가 없다는 뜻이라, SSE 화면은 새 워커로 다시 연결한다. lock 이 남아 있으면
- * 앞 워커가 아직 작업(외부 명령 실행 등)을 돌리고 있을 수 있어 같은 작업이 겹치지 않게 기다린다.
- * heartbeat 신선도는 보지 않는다 — 외부 명령을 기다리는 동안에는 heartbeat 가 갱신되지 않는다.
- *
- * @param  array<string, mixed>  $state  인스톨러 state
- * @return bool lock 보유 워커가 있으면 true
- */
-function installerHasActiveWorker(array $state): bool
-{
-    return isset($state['active_worker_id']) && $state['active_worker_id'] !== '';
-}
-
-/**
- * 데이터베이스를 건드리기 전에 도는 설치 작업 목록.
- *
- * 작업 순서는 고정이다(runInstallationTasks) — 이 다섯 작업 뒤의 db_cleanup 부터 DB 를 바꾼다.
- *
- * @return list<string> 작업 ID 목록
- */
-function installerPreDatabaseTaskIds(): array
-{
-    return ['composer_check', 'composer_install', 'env_update', 'key_generate', 'dependency_precheck'];
-}
-
-/**
- * 상태 초기화(reset) 때 「DB 는 자동으로 초기화되지 않는다」 안내가 필요한지.
- *
- * 이번 설치 시도에서 DB 작업(db_cleanup 이후)이 끝났거나, DB 작업에서 멈췄거나(실패·중단),
- * 그 작업을 알 수 없으면 true. 의존성 사전 검증 실패처럼 DB 를 건드리기 전에 멈춘 설치는 false.
- *
- * @param  array<string, mixed>  $state  초기화 직전 인스톨러 state
- * @return bool 안내가 필요하면 true
- */
-function installerResetNeedsDbNotice(array $state): bool
-{
-    $preDatabase = installerPreDatabaseTaskIds();
-    $isPreDatabase = static function ($taskKey) use ($preDatabase): bool {
-        if (! is_string($taskKey) || $taskKey === '') {
-            return false;
-        }
-        $taskId = explode(':', $taskKey, 2)[0];
-
-        return in_array($taskId, $preDatabase, true);
-    };
-
-    foreach ((array) ($state['completed_tasks'] ?? []) as $task) {
-        if (! $isPreDatabase($task)) {
-            return true;
-        }
-    }
-
-    $stoppedAt = $state['failed_task'] ?? null;
-    if (! is_string($stoppedAt) || $stoppedAt === '') {
-        $stoppedAt = $state['current_task'] ?? null;
-    }
-    if (is_string($stoppedAt) && $stoppedAt !== '' && ! $isPreDatabase($stoppedAt)) {
-        return true;
-    }
-
-    // 실패·중단인데 멈춘 작업을 모르고 DB 전 작업이 모두 끝나 있었다면, 다음 작업(db_cleanup)부터는 DB 를 바꾼다
-    $status = $state['installation_status'] ?? null;
-    if (in_array($status, ['failed', 'aborted', 'running'], true) && (! is_string($stoppedAt) || $stoppedAt === '')) {
-        return array_diff($preDatabase, (array) ($state['completed_tasks'] ?? [])) === [];
-    }
-
-    return false;
-}
-
-/**
- * db_cleanup 으로 무효화되는 task 인지 판정한다.
- *
- * db_cleanup 은 db_prefix 로 시작하는 테이블을 전부 DROP 한다. 따라서 "효과가 DB 행으로만
- * 남는" task 는 마커가 completed 로 남아 있어도 실제 결과물이 사라진 상태가 된다. 재개 시
- * runInstallationTasks() 는 completed 마커만 보고 건너뛰므로, 마커를 함께 제거하지 않으면
- * 그 확장은 파일만 있고 DB 등록은 없는 유령 상태로 설치가 끝난다.
- *
- * 회귀 (이슈 #599 후속): 1차 시도에서 sirsoft-board 가 db_cleanup 보다 먼저 설치·활성화된 뒤
- * 사용자가 재시도하면서 drop_tables 를 선택 → g7_modules 가 DROP 되어 board 행이 소멸.
- * 그러나 module_install:sirsoft-board 마커는 살아남아 재설치가 스킵됨 → 뒤이은 사용자 템플릿
- * 설치가 "필수 의존성 sirsoft-board (module)이 충족되지 않았습니다" 로 실패.
- *
- * 무효화 대상:
- *  - db_cleanup / db_migrate / db_seed — 스키마·시드 자체
- *  - {module,plugin,template,user_template}_{install,activate} — 확장 등록 행
- *  - language_pack_install — 언어팩 등록 행
- *  - create_settings_json / complete_flag / config_cache / route_cache / static_publish —
- *    DB 상태를 읽어 산출물을 만드는 마무리 단계
- *
- * 보존 대상 (파일시스템·환경 효과라 DROP 과 무관):
- *  - composer_check / composer_install / env_update / key_generate / dependency_precheck
- *
- * @param  string  $task  completed_tasks 항목 ("id" 또는 "id:target")
- */
-function isTaskInvalidatedByDbCleanup(string $task): bool
-{
-    // "module_install:sirsoft-board" → "module_install"
-    $taskId = strstr($task, ':', true);
-    if ($taskId === false) {
-        $taskId = $task;
-    }
-
-    static $invalidated = [
-        'db_cleanup' => true,
-        'db_migrate' => true,
-        'db_seed' => true,
-        'template_install' => true,
-        'template_activate' => true,
-        'module_install' => true,
-        'module_activate' => true,
-        'plugin_install' => true,
-        'plugin_activate' => true,
-        'user_template_install' => true,
-        'user_template_activate' => true,
-        'language_pack_install' => true,
-        'create_settings_json' => true,
-        'complete_flag' => true,
-        'config_cache' => true,
-        'route_cache' => true,
-        'static_publish' => true,
-    ];
-
-    return isset($invalidated[$taskId]);
-}
-
 function applyExistingDbActionStateGuard(array $state, string $newAction): array
 {
     // 다른 워커가 활성 진행 중이면 state 변경 금지 — race 회피.
@@ -767,9 +425,10 @@ function applyExistingDbActionStateGuard(array $state, string $newAction): array
         // drop_tables 는 "처음부터 다시" — DB 관련 task 마커 일괄 제거.
         // SSE 가 cleanup + migrate 일부 진행 후 끊긴 상태에서 폴링 재진입 케이스를
         // 커버하려면 이전 액션이 drop_tables 였더라도 다시 reset 해야 한다.
+        $resetTasks = ['db_cleanup', 'db_migrate', 'db_seed'];
         $state['completed_tasks'] = array_values(array_filter(
             $state['completed_tasks'] ?? [],
-            fn ($t) => ! isTaskInvalidatedByDbCleanup((string) $t)
+            fn ($t) => ! in_array($t, $resetTasks, true)
         ));
     } else {
         // 키 정규화 — completed_tasks 가 부재인 경우 빈 배열 보장
@@ -869,10 +528,8 @@ function addLogBatch(array $messages): bool
         return false;
     }
     flock($handle, LOCK_EX);
-    installerTrackHeldLock('log', $handle);
     $result = fwrite($handle, $entries);
     fflush($handle);
-    installerUntrackHeldLock('log');
     flock($handle, LOCK_UN);
     fclose($handle);
 
@@ -973,9 +630,8 @@ function _addLogInternal(string $message): bool
         return false;
     }
 
-    // 배타적 잠금 (fatal 로 끊기면 shutdown 단계에서 풀 수 있게 기록)
+    // 배타적 잠금
     flock($handle, LOCK_EX);
-    installerTrackHeldLock('log', $handle);
 
     // 쓰기
     $result = fwrite($handle, $logEntry);
@@ -984,7 +640,6 @@ function _addLogInternal(string $message): bool
     fflush($handle);
 
     // 잠금 해제 및 닫기
-    installerUntrackHeldLock('log');
     flock($handle, LOCK_UN);
     fclose($handle);
 

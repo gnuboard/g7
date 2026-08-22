@@ -42,7 +42,7 @@ import {
 import { deriveSampleRouteParams } from '../utils/sampleRouteParams';
 import { EDITOR_TRANSLATIONS_REFRESHED_EVENT } from '../hooks/useInlineEdit';
 import { buildSampleGlobalSeed } from '../sample-data/sampleGlobalChain';
-import { previewDollarGlobals, stripDollarGlobals } from '../sample-data/dollarGlobals';
+import { extractDollarGlobals, stripDollarGlobals } from '../sample-data/dollarGlobals';
 import { findNodeByPath, type EditorNode } from '../utils/layoutTreeUtils';
 import { limitIterationSourceToOne } from '../utils/iterationSampleLimit';
 import { buildBaseEditorComponents } from '../utils/baseEditorSlotMarkers';
@@ -55,11 +55,6 @@ import {
 import { trackPageState } from '../devtools/editorTrackers';
 import type { EditorStateItemSpec } from '../spec/specTypes';
 import { isAllowedScriptSrc, getTrustedScriptHosts } from '../../../support/scriptSrcPolicy';
-import { convertToCurrentMode } from '../../../support/assetUrl';
-import { buildModalEditParentContext, modalEditParentContext } from '../utils/modalEditParentContext';
-import { rescanPreviewMediaIsolation } from '../hooks/usePreviewMediaIsolation';
-import { PREVIEW_FRAME_CLASS, PREVIEW_VW_VAR } from '../utils/previewMediaIsolation/constants';
-import { applyBaseSlotStyle, removeBaseSlotStyle } from '../utils/editorRuntimeStyles';
 
 export interface PreviewCanvasProps {
   /** components.json 매니페스트 — Chrome 에서 fetch 해 주입 */
@@ -220,12 +215,6 @@ export function PreviewCanvas(props: PreviewCanvasProps = {}): React.ReactElemen
     isReady: assetsReady,
     error: assetsError,
   } = useEditorTemplateAssets(state.templateIdentifier, state.locale);
-
-  // 편집 대상 템플릿 CSS 가 들어오거나 기기 폭이 바뀌면 CSS 매체 격리가 새 시트를 다시 훑게 한다(#141).
-  // 이미 처리한 규칙은 건너뛰므로 반복 호출해도 결과가 같다.
-  useEffect(() => {
-    rescanPreviewMediaIsolation();
-  }, [assetsReady, deviceWidth]);
 
   // 편집기 캔버스 전용 코어 엔진 인스턴스 — 일반 사이트 렌더와 격리
   const bindingEngineRef = useRef<DataBindingEngine | null>(null);
@@ -495,11 +484,13 @@ export function PreviewCanvas(props: PreviewCanvasProps = {}): React.ReactElemen
     G7Core.t = (key: string, params?: Record<string, string | number>): string => {
       // 1) 편집 대상(격리 엔진) 우선. 미해석 시 translate 는 키를 그대로 반환(TranslationEngine:374).
       try {
-        // 인자 객체를 그대로 넘긴다 — `|k=v` 로 이어 붙이면 값의 `|`·`&`·`=` 에서 잘린다(engine-v1.80.1, 호스트 G7Core.t 와 같은 경로)
+        const paramsStr = params
+          ? '|' + Object.entries(params).map(([k, v]) => `${k}=${v}`).join('|')
+          : undefined;
         const editorResult = translationEngine.translate(
           key,
           { templateId: editorTemplateId, locale: editorLocale },
-          params,
+          paramsStr,
         );
         // 풀린 경우만 채택 — 미해석(키 그대로/`$t:` 잔존)이면 호스트로 폴백.
         // 빈 문자열은 의도된 번역으로 간주해 채택(fallback 미적용).
@@ -633,18 +624,9 @@ export function PreviewCanvas(props: PreviewCanvasProps = {}): React.ReactElemen
         );
         continue;
       }
-      // 실제로 싣는 주소는 런타임(TemplateApp.loadLayoutScript)과 같게 자산 주소 방식으로 바꾼다 — 레이아웃의
-      // `src` 는 확장자 형태로 굳어 있어, 확장자 붙은 주소를 웹서버가 가로채는 사이트에서는 그대로 실으면 404 다.
-      // 표식(`data-g7le-canvas-script`)은 레이아웃이 적은 원래 주소로 두어 같은 레이아웃의 재평가가 찾게 한다.
-      // 이미 실린 태그는 id 와 함께 주소(두 형태)로도 찾는다 — 편집기 플러그인의 자체 로더처럼 다른 id 로 같은
-      // 본체를 먼저 실은 경우 한 번 더 실으면 UMD 가 두 번 실행되어 첫 실행이 채운 전역을 덮는다.
-      const loadSrc = entry.src.startsWith('/') ? convertToCurrentMode(entry.src) : entry.src;
-      const sel = [
-        entry.id ? `script#${CSS.escape(entry.id)}` : null,
-        `script[data-g7le-canvas-script="${entry.src}"]`,
-        `script[src="${entry.src}"]`,
-        loadSrc !== entry.src ? `script[src="${loadSrc}"]` : null,
-      ].filter(Boolean).join(', ');
+      const sel = entry.id
+        ? `script#${CSS.escape(entry.id)}, script[data-g7le-canvas-script="${entry.src}"]`
+        : `script[data-g7le-canvas-script="${entry.src}"], script[src="${entry.src}"]`;
       const existing = window.document.querySelector(sel) as HTMLScriptElement | null;
       if (existing) {
         // 태그가 DOM 에 있어도 **로드 완료를 의미하지 않는다**. 본 effect 가
@@ -675,7 +657,7 @@ export function PreviewCanvas(props: PreviewCanvasProps = {}): React.ReactElemen
       loaders.push(
         new Promise<void>((resolve) => {
           const tag = window.document.createElement('script');
-          tag.src = loadSrc;
+          tag.src = entry.src;
           tag.async = false;
           if (entry.id) tag.id = entry.id;
           tag.setAttribute('data-g7le-canvas-script', entry.src);
@@ -922,16 +904,26 @@ export function PreviewCanvas(props: PreviewCanvasProps = {}): React.ReactElemen
   // 슬롯 영역 가시화 — 공통(base) 레이아웃 편집 모드에서 자식 콘텐츠가 삽입될
   // 슬롯 위치(`slot: "content"` 등, DynamicRenderer 가 `data-editor-slot` 으로 마킹)를 점선
   // 박스 + 라벨로 표시한다. base 단독 렌더에서 슬롯 컨테이너는 children 이 비어 0 높이로
-  // 찌부러져 위치를 알 수 없으므로 최소 높이도 함께 부여한다. 편집기 전용 규칙 —
+  // 찌부러져 위치를 알 수 없으므로 최소 높이도 함께 부여한다. 편집기 전용 <style> 주입 —
   // 저장 content·운영 렌더 영향 0. g7le-* 네임스페이스 + 표준 CSS 만 사용(라이브러리 비종속).
-  // <style> 요소를 만들지 않는다(엄격한 스타일 정책 호환): 규칙은 정적 상수를 런타임 시트로 붙이고,
-  // 번역 문구는 CSS 변수(`--g7le-slot-label`)로 넘긴다. DOM 접근은 헬퍼가 전역 document 로 한다
-  // (이 컴포넌트 스코프의 `document` 는 레이아웃 문서 변수라 쓰면 안 된다).
   useEffect(() => {
+    // 주의: 이 컴포넌트 스코프의 `document` 는 레이아웃 문서 변수(섀도잉)다 — DOM 접근은
+    // 반드시 window.document 로 한다(로딩 중 layout document 가 null 이라 크래시).
     if (typeof window === 'undefined' || state.editMode !== 'base') return;
-    applyBaseSlotStyle(t('layout_editor.preview.slot_area_label'));
+    const dom = window.document;
+    const STYLE_ID = 'g7le-base-slot-style';
+    if (dom.getElementById(STYLE_ID)) return;
+    const el = dom.createElement('style');
+    el.id = STYLE_ID;
+    const label = t('layout_editor.preview.slot_area_label');
+    el.textContent =
+      '.g7le-preview-frame [data-editor-slot]{position:relative;min-height:96px;outline:2px dashed #94a3b8;outline-offset:-2px;}' +
+      `.g7le-preview-frame [data-editor-slot]::after{content:'${label.replace(/'/g, "\\'")} · ' attr(data-editor-slot);` +
+      'position:absolute;top:8px;left:50%;transform:translateX(-50%);font-size:12px;line-height:1;color:#64748b;' +
+      'background:rgba(241,245,249,0.92);border:1px solid #cbd5e1;border-radius:9999px;padding:4px 12px;pointer-events:none;white-space:nowrap;}';
+    dom.head.appendChild(el);
     return () => {
-      removeBaseSlotStyle();
+      dom.getElementById(STYLE_ID)?.remove();
     };
   }, [state.editMode, t]);
 
@@ -1039,64 +1031,6 @@ export function PreviewCanvas(props: PreviewCanvasProps = {}): React.ReactElemen
     );
   }
 
-  // 루트 컴포넌트마다 넘기는 렌더 맥락 — 창 편집 모드의 창 노드에는 같은 맥락을 `$parent` 로도 넘긴다.
-  const rootRenderContext = {
-    // 반복 항목 편집 모드는 source 배열을 1개로 제한한 컨텍스트. 그 외 모드는
-    // dataContext 원본과 동일(dataContextForRender 가 폴백).
-    ...dataContextForRender,
-    // `$`-prefixed 엔진 전역($locale/$locales 등)을 렌더 컨텍스트 최상위로
-    // 끌어올린다(lift). 런타임 createGlobalVariables() 와 동일 위치 — 레이아웃은
-    // `options="{{$locales}}"` 처럼 최상위 전역을 직접 바인딩한다. 시드(editor-spec
-    // sampleGlobal)에 선언된 `$`-키를 PreviewCanvas 가 여기서 노출하지 않으면
-    // 로케일 선택 드롭다운 등이 빈 채로 렌더된다. dataContext 의 다른
-    // 명시 키(route/query 등)보다 먼저 펴서 충돌 시 그쪽이 이기게 둔다.
-    // `$locale` 은 표본 값이 아니라 콘텐츠 언어로 둔다 — 표본 값이 올라가면 식 안 `$t()` 가 콘텐츠 언어를 무시한다
-    // (engine-v1.78.3, previewDollarGlobals 참조).
-    ...previewDollarGlobals(isolatedGlobal, state.locale),
-    // `_global` 에서는 `$`-키를 제거(혼동 방지 — `_global.$locales` 는 어떤
-    // 바인딩도 읽지 않는 사구역). 일반 `_global.*` 키스페이스만 흘려보낸다.
-    _global: stripDollarGlobals(isolatedGlobal),
-    // `computed` 블록을 주입해 DynamicRenderer 가 `_local`/데이터소스 기반으로
-    // `_computed.*` 를 재계산하게 한다(런타임 TemplateApp 과 동일 — 미주입 시
-    // `_computed` 게이트 본체가 빈 렌더). 데이터소스(dataContext 의 id 키)·_local·
-    // _global 이 모두 computedContext 에 들어가므로 활성 상태 시드가 반영된다.
-    _computedDefinitions: computedDefinitions,
-    // 활성 페이지 상태의 `_local` 패치를 if 평가 컨텍스트에 반영한다.
-    // _localInit(force) 로 root 렌더러 초기 _local 을 설정하고, 동시에 dataContext._local
-    // 로도 흘려 표현식/if 가 그 값을 즉시 읽게 한다(예: profile-edit 의
-    // `{{_local?.isPasswordVerified}}` 분기). 활성 상태 없으면 키를 두지 않아 기존
-    // 동작(init_actions 기반 _local)을 보존한다.
-    ...(stateLocalInit
-      ? {
-          _localInit: stateLocalInit,
-          _local: {
-            ...((dataContext as { _local?: Record<string, unknown> })._local ?? {}),
-            ...((isolatedGlobal as { _local?: Record<string, unknown> })._local ?? {}),
-          },
-        }
-      : {}),
-    // route — 기본 sampleRouteParams 위에 활성 상태의 route 패치 적용
-    // null 값 키는 토큰 제거(신규 작성 모드 — `{{!route.id}}`).
-    route: applyRoutePatch(
-      {
-        ...(dataContext.route as Record<string, unknown> | undefined ?? {}),
-        ...sampleRouteParams,
-        path: state.selectedRoute?.path ?? '',
-      },
-      stateRoutePatch,
-    ),
-    // query — 편집기 평소 빈 객체 위에 활성 상태의 query 패치 머지(진입 맥락 변종).
-    query: {
-      ...((dataContext.query as Record<string, unknown> | undefined) ?? {}),
-      ...(stateQueryPatch ?? {}),
-    },
-  };
-  // 창 편집 모드의 창 노드가 받는 `$parent` — 런타임 openModal 이 레이아웃 맥락 스택에 쌓는 모양(`_local`, `_global`,
-  // `_computed`). computed 계산은 창 편집 모드에서만 한다.
-  const modalParentContext = state.editMode === 'modal'
-    ? buildModalEditParentContext(rootRenderContext, bindingEngineRef.current!)
-    : undefined;
-
   return (
     <div
       className="g7le-preview-canvas"
@@ -1141,7 +1075,7 @@ export function PreviewCanvas(props: PreviewCanvasProps = {}): React.ReactElemen
           // 가 편집기용 CSS 의 `.dark` 셀렉터를 이 마커로 치환해 서빙하므로, 프리뷰 프레임의 이
           // 마커만으로 다크가 켜지고 조상 html.dark 와 독립된다(라이트 토글 시 확실히 라이트).
           // document.documentElement 가 아니라 프리뷰 프레임에만 적용 → 편집기 chrome 비다크.
-          className={colorScheme === 'dark' ? `${PREVIEW_FRAME_CLASS} g7le-preview-dark` : PREVIEW_FRAME_CLASS}
+          className={colorScheme === 'dark' ? 'g7le-preview-frame g7le-preview-dark' : 'g7le-preview-frame'}
           data-testid="g7le-preview-frame"
           data-color-scheme={colorScheme}
           ref={(el) => {
@@ -1151,12 +1085,8 @@ export function PreviewCanvas(props: PreviewCanvasProps = {}): React.ReactElemen
           style={{
             width: deviceWidth,
             background: '#fff',
-            // 테두리는 border 가 아니라 box-shadow 로 그린다. 전역 `*{box-sizing:border-box}` 아래서
-            // border 는 내용 폭을 기기 폭보다 좁게 만든다(실측 390 → 389). CSS 매체 격리의 컨테이너
-            // 조건이 내용 폭으로 판정되므로, JS responsive 판정(기기 폭)과 경계에서 1~2px 어긋났다(#141).
-            boxShadow: '0 0 0 1px #cbd5e1, 0 1px 3px rgba(0,0,0,0.05)',
-            // 프레임 폭/100 — 미리보기 안 `vw` 를 이 값으로 바꿔 판정한다(usePreviewMediaIsolation)
-            [PREVIEW_VW_VAR as string]: `${deviceWidth / 100}px`,
+            border: '1px solid #cbd5e1',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
             minHeight: 400,
             position: 'relative',
             // frame 자체에 identity transform 을 부여해 `position: fixed` 자손
@@ -1192,10 +1122,55 @@ export function PreviewCanvas(props: PreviewCanvasProps = {}): React.ReactElemen
                 // 미사용)는 영향 없음 — scriptsReady 가 안정적이라 key 가 바뀌지 않는다.
                 key={`${component.id ?? `preview-${index}`}:t${translationsTick}${state.editMode === 'extension' ? `:s${scriptsReady ? 1 : 0}` : ''}`}
                 componentDef={component}
-                dataContext={rootRenderContext}
-                // 창 편집 모드에서 호스트 뒤에 덧붙인 창 노드에는 런타임처럼 창을 연 화면의 맥락을 `$parent` 로 넘긴다
-                // (런타임 openModal 이 `{_local, _global, _computed}` 를 쌓아 넘기는 것과 같게 — `{{$parent._local.*}}` 등을 읽는 창).
-                parentDataContext={modalEditParentContext(state.editMode, document?.modalContext, index, modalParentContext)}
+                dataContext={{
+                  // 반복 항목 편집 모드는 source 배열을 1개로 제한한 컨텍스트. 그 외 모드는
+                  // dataContext 원본과 동일(dataContextForRender 가 폴백).
+                  ...dataContextForRender,
+                  // `$`-prefixed 엔진 전역($locale/$locales 등)을 렌더 컨텍스트 최상위로
+                  // 끌어올린다(lift). 런타임 createGlobalVariables() 와 동일 위치 — 레이아웃은
+                  // `options="{{$locales}}"` 처럼 최상위 전역을 직접 바인딩한다. 시드(editor-spec
+                  // sampleGlobal)에 선언된 `$`-키를 PreviewCanvas 가 여기서 노출하지 않으면
+                  // 로케일 선택 드롭다운 등이 빈 채로 렌더된다. dataContext 의 다른
+                  // 명시 키(route/query 등)보다 먼저 펴서 충돌 시 그쪽이 이기게 둔다.
+                  ...extractDollarGlobals(isolatedGlobal),
+                  // `_global` 에서는 `$`-키를 제거(혼동 방지 — `_global.$locales` 는 어떤
+                  // 바인딩도 읽지 않는 사구역). 일반 `_global.*` 키스페이스만 흘려보낸다.
+                  _global: stripDollarGlobals(isolatedGlobal),
+                  // `computed` 블록을 주입해 DynamicRenderer 가 `_local`/데이터소스 기반으로
+                  // `_computed.*` 를 재계산하게 한다(런타임 TemplateApp 과 동일 — 미주입 시
+                  // `_computed` 게이트 본체가 빈 렌더). 데이터소스(dataContext 의 id 키)·_local·
+                  // _global 이 모두 computedContext 에 들어가므로 활성 상태 시드가 반영된다.
+                  _computedDefinitions: computedDefinitions,
+                  // 활성 페이지 상태의 `_local` 패치를 if 평가 컨텍스트에 반영한다.
+                  // _localInit(force) 로 root 렌더러 초기 _local 을 설정하고, 동시에 dataContext._local
+                  // 로도 흘려 표현식/if 가 그 값을 즉시 읽게 한다(예: profile-edit 의
+                  // `{{_local?.isPasswordVerified}}` 분기). 활성 상태 없으면 키를 두지 않아 기존
+                  // 동작(init_actions 기반 _local)을 보존한다.
+                  ...(stateLocalInit
+                    ? {
+                        _localInit: stateLocalInit,
+                        _local: {
+                          ...((dataContext as { _local?: Record<string, unknown> })._local ?? {}),
+                          ...((isolatedGlobal as { _local?: Record<string, unknown> })._local ?? {}),
+                        },
+                      }
+                    : {}),
+                  // route — 기본 sampleRouteParams 위에 활성 상태의 route 패치 적용
+                  // null 값 키는 토큰 제거(신규 작성 모드 — `{{!route.id}}`).
+                  route: applyRoutePatch(
+                    {
+                      ...(dataContext.route as Record<string, unknown> | undefined ?? {}),
+                      ...sampleRouteParams,
+                      path: state.selectedRoute?.path ?? '',
+                    },
+                    stateRoutePatch,
+                  ),
+                  // query — 편집기 평소 빈 객체 위에 활성 상태의 query 패치 머지(진입 맥락 변종).
+                  query: {
+                    ...((dataContext.query as Record<string, unknown> | undefined) ?? {}),
+                    ...(stateQueryPatch ?? {}),
+                  },
+                }}
                 translationContext={{ templateId: state.templateIdentifier, locale: state.locale }}
                 registry={componentRegistry}
                 bindingEngine={bindingEngineRef.current!}

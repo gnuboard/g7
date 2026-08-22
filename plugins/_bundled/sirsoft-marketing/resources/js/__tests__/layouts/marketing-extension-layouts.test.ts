@@ -21,7 +21,6 @@ import profileViewLayout from '../../../extensions/user-marketing-profile-view.j
 import formLayout from '../../../extensions/user-marketing-form.json';
 import detailLayout from '../../../extensions/user-marketing-detail.json';
 import pluginSettingsLayout from '../../../layouts/admin/plugin_settings.json';
-import { asArray } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 // ─────────────────────────────────────────────
 // 헬퍼
@@ -193,7 +192,7 @@ describe('user-marketing-register.json', () => {
     it('apiCall onSuccess에서 $response 없이 response.data를 사용한다', () => {
         const apiCalls = findActions(layout, 'apiCall');
         for (const action of apiCalls) {
-            const successActions = asArray(action?.onSuccess);
+            const successActions = Array.isArray(action.onSuccess) ? action.onSuccess : [];
             for (const cb of successActions) {
                 const paramsStr = JSON.stringify(cb.params ?? {});
                 expect(paramsStr).not.toContain('$response');
@@ -277,7 +276,7 @@ describe('user-marketing-profile.json', () => {
         const apiCalls = findActions(layout, 'apiCall');
         let found = false;
         for (const action of apiCalls) {
-            const successActions = asArray(action?.onSuccess);
+            const successActions = Array.isArray(action.onSuccess) ? action.onSuccess : [];
             for (const cb of successActions) {
                 if (cb.params?.marketingTermsPageData !== undefined && cb.params?.target === 'global') {
                     found = true;
@@ -384,7 +383,7 @@ describe('user-marketing-form.json', () => {
         const apiCalls = findActions(layout, 'apiCall');
         let found = false;
         for (const action of apiCalls) {
-            const successActions = asArray(action?.onSuccess);
+            const successActions = Array.isArray(action.onSuccess) ? action.onSuccess : [];
             for (const cb of successActions) {
                 if (cb.params?.marketingTermsPageData !== undefined) {
                     expect(cb.params.target).toBe('global');
@@ -494,9 +493,7 @@ describe('plugin_settings.json', () => {
 
     it('settings data_source onSuccess에서 form.channels를 local 상태에 저장한다', () => {
         const ds = layout.data_sources?.find((d: any) => d.id === 'settings');
-        // `onSuccess` 는 콜백 배열이고 그 안의 제어 핸들러가 하위 액션을 담는다 —
-        // 한 홉씩 짚으면 접힘·중첩 형태마다 깨지므로 이 파일의 트리 순회 헬퍼를 쓴다.
-        const actions = findActions(ds?.onSuccess, 'setState');
+        const actions = ds?.onSuccess?.actions ?? [];
         const localSetState = actions.find((a: any) =>
             a.params?.target === 'local' && a.params?.['form.channels'] !== undefined
         );
@@ -505,9 +502,7 @@ describe('plugin_settings.json', () => {
 
     it('settings data_source onSuccess에서 channels를 global 상태에 저장한다', () => {
         const ds = layout.data_sources?.find((d: any) => d.id === 'settings');
-        // `onSuccess` 는 콜백 배열이고 그 안의 제어 핸들러가 하위 액션을 담는다 —
-        // 한 홉씩 짚으면 접힘·중첩 형태마다 깨지므로 이 파일의 트리 순회 헬퍼를 쓴다.
-        const actions = findActions(ds?.onSuccess, 'setState');
+        const actions = ds?.onSuccess?.actions ?? [];
         const globalSetState = actions.find((a: any) =>
             a.params?.target === 'global' && a.params?.channels !== undefined
         );
@@ -548,7 +543,7 @@ describe('plugin_settings.json', () => {
         const deleteButtons = findAllRecursive(layout, (n: any) =>
             n.name === 'Button' &&
             n.if === '{{!channel.is_system}}' &&
-            JSON.stringify(asArray(n?.children)).includes('trash')
+            JSON.stringify(n.children ?? []).includes('trash')
         );
         expect(deleteButtons.length).toBeGreaterThan(0);
 
@@ -573,7 +568,7 @@ describe('plugin_settings.json', () => {
         const deleteButtons = findAllRecursive(layout, (n: any) =>
             n.name === 'Button' &&
             n.if === '{{!channel.is_system}}' &&
-            JSON.stringify(asArray(n?.children)).includes('trash')
+            JSON.stringify(n.children ?? []).includes('trash')
         );
         const deleteBtn = deleteButtons[0];
         const clickAction = deleteBtn.actions?.find((a: any) => a.type === 'click');

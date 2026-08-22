@@ -28,90 +28,36 @@ use Illuminate\Support\Facades\Log;
 class RouteCacheHelper
 {
     /**
-     * deferRebuilds() 중첩 깊이 — 0 보다 크면 rebuild() 는 대기 표시만 한다.
-     */
-    private static int $deferDepth = 0;
-
-    /**
-     * 묶는 동안 재생성 요청이 있었는지 여부.
-     */
-    private static bool $rebuildPending = false;
-
-    /**
-     * 콜백이 도는 동안의 재생성 요청을 모아 가장 바깥 호출이 끝날 때 한 번만 재생성합니다.
+     * 라우트 캐시를 비우고 즉시 재생성합니다.
      *
-     * 모듈·플러그인 비활성화는 1건마다 route:cache(일회용 앱 부팅)를 돌린다. 부팅 시 자동 비활성화 연쇄 17건에서
-     * MySQL 연결 151개가 고갈됐다(#145 F6). 여러 확장을 한꺼번에 바꾸는 경로는 이 래퍼로 감싼다.
-     * 예외가 나도 깊이는 복구하고, 대기 중인 재생성은 실행한다(이미 바뀐 라우트를 캐시에 반영해야 한다 — 낡은
-     * 라우트 캐시는 폴백이 없다).
-     *
-     * @param  callable  $callback  묶을 작업
-     * @return mixed 콜백 반환값
-     */
-    public static function deferRebuilds(callable $callback): mixed
-    {
-        self::$deferDepth++;
-
-        try {
-            return $callback();
-        } finally {
-            self::$deferDepth--;
-
-            if (self::$deferDepth === 0 && self::$rebuildPending) {
-                self::$rebuildPending = false;
-                self::rebuild();
-            }
-        }
-    }
-
-    /**
-     * 라우트 캐시를 다시 굽습니다 — 임시 파일에 다 구운 뒤 실제 파일과 바꿔 끼웁니다(`AtomicBootstrapCache`).
-     *
-     * `route:cache` 는 새 애플리케이션 인스턴스를 부팅해 라우트를 수집하므로, 방금 설치·활성화한 확장의
-     * 라우트도 함께 잡힌다. 굽는 동안 실제 파일은 그대로 남아 다른 요청이 계속 쓴다 — 종전처럼 먼저 지우면
-     * 그 사이 요청이 500 을 받았다(#882).
+     * `route:cache` 는 내부적으로 기존 캐시를 지운 뒤 새 애플리케이션 인스턴스를 부팅해
+     * 라우트를 수집하므로, 방금 설치·활성화한 확장의 라우트도 함께 잡힌다.
      *
      * 설치 미완료(installer 실행 전) 환경에서는 불완전한 부팅을 캐시에 박제할 수 있으므로
      * clear 만 수행한다. 테스트 환경은 캐시 생성이 격리를 깨므로 동일하게 스킵한다.
      *
      * 재생성 실패(직렬화 불가한 클로저 라우트, 권한/디스크 등)는 치명적이지 않다 —
-     * 실패하면 그때 route:clear 로 stale 캐시를 지워 다음 요청이 fresh 라우트로 안전하게 부팅된다.
+     * clear 로 stale 캐시는 이미 제거되어 다음 요청이 fresh 라우트로 안전하게 부팅된다.
      * 비어 있으면 느릴 뿐 정확하지만, 낡으면 방금 설치한 확장이 통째로 동작하지 않는다.
-     *
-     * deferRebuilds() 안에서는 대기 표시만 하고 즉시 돌아간다.
      *
      * @return void
      */
     public static function rebuild(): void
     {
-        if (self::$deferDepth > 0) {
-            self::$rebuildPending = true;
+        // 항상 stale 캐시부터 제거 (변경 반영 보장).
+        Artisan::call('route:clear');
 
-            return;
-        }
-
-        // 굽지 않는 환경(시험·설치 전)은 낡은 캐시만 지운다 (변경 반영 보장).
         if (app()->environment('testing') || ! self::isInstalled()) {
-            Artisan::call('route:clear');
-
             return;
         }
 
         try {
-            // 먼저 지우지 않는다 — 지운 뒤 굽는 1~2초 사이 다른 요청이 500(`routes-v7.php: No such file`)을 받았다(#882).
-            // 임시 파일에 다 구운 뒤 실제 파일과 바꿔 끼우고, 굽기가 실패하면 그때 낡은 캐시를 지운다.
-            //
             // `route:cache` 도 새 Application 을 부팅하며 전역 Container 인스턴스를 그 일회용 앱으로
             // 바꿔 놓는다(`config:cache` 와 동일). 되돌리지 않으면 이 뒤에 등록되는
             // `app()->terminating()` 이 종료되지 않는 앱에 걸려 실행되지 않는다 — 단독 실행
             // `core:execute-upgrade-steps` 가 라우트 재생성 뒤에 확장 캐시 버전을 올리므로 그
             // 재게시 예약이 그렇게 사라졌다 (2026-09-06 전수조사).
-            AtomicBootstrapCache::regenerate(
-                'APP_ROUTES_CACHE',
-                app()->getCachedRoutesPath(),
-                static fn () => ConfigCacheHelper::withPreservedContainer(static fn () => Artisan::call('route:cache')),
-                static fn () => Artisan::call('route:clear'),
-            );
+            ConfigCacheHelper::withPreservedContainer(static fn () => Artisan::call('route:cache'));
         } catch (\Throwable $e) {
             Log::warning('라우트 캐시 재생성 실패 (route:clear 로 stale 은 제거됨 — 다음 요청은 비캐시 부팅)', [
                 'error' => $e->getMessage(),

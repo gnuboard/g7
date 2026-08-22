@@ -47,7 +47,6 @@ class AdminBoardListPayloadTest extends ModuleTestCase
      * @return void
      *
      * @scenario endpoint=admin_list,role_assignment=unassigned
-     *
      * @effects admin_list_row_carries_created_at
      */
     public function test_admin_board_list_row_carries_created_at(): void
@@ -89,7 +88,6 @@ class AdminBoardListPayloadTest extends ModuleTestCase
      * @return void
      *
      * @scenario endpoint=admin_list,role_assignment=unassigned
-     *
      * @effects admin_list_omits_role_member_payload
      */
     public function test_admin_board_list_stays_pruned(): void

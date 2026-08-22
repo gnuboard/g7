@@ -28,8 +28,6 @@ return [
         'file_invalid' => 'The file is not valid.',
         'file_max' => 'The file size cannot exceed :max MB.',
         'file_extension_invalid' => 'This file type is not allowed. Allowed types: :extensions',
-        'file_mimetype_invalid' => 'The file content does not match an allowed type. Allowed types: :extensions',
-        'file_empty' => 'Empty (0-byte) files cannot be uploaded.',
         'files_required' => 'Please select files.',
         'files_array' => 'The files format is invalid.',
         'files_min' => 'Please select at least one file.',
@@ -66,35 +64,4 @@ return [
     'access_denied' => 'You do not have permission to access this attachment.',
     'update_denied' => 'You do not have permission to update this attachment.',
     'delete_denied' => 'You do not have permission to delete this attachment.',
-    // `attachments:prune-orphans` command output
-    'console' => [
-        'prune_orphans' => [
-            'disabled' => 'Skipped because automatic orphan attachment cleanup is turned off. (upload.orphan_cleanup_enabled = false)',
-            'retention_below_minimum' => 'Skipped cleanup because the orphan attachment retention period is less than 1 day.',
-            'dry_run' => 'Orphan attachments past retention (:days days): :count',
-            'done' => 'Deleted :deleted of :scanned orphan attachments past retention (:days days). (:failed failed)',
-        ],
-    ],
-    // Content media (images, video and audio inserted into the editor body) — core contract (#883, 7.1.5)
-    'content_media' => [
-        'kind' => [
-            'image' => 'Image',
-            'video' => 'Video',
-            'audio' => 'Audio',
-        ],
-        'validation' => [
-            'file_invalid' => 'The file is not valid.',
-            'kind_not_allowed' => 'This file type cannot be inserted into the content. Allowed: :allowed',
-            'extension_not_allowed' => ':kind files must be one of: :extensions.',
-            'file_too_large' => ':kind files may not be larger than :maxMB.',
-            'max_per_document_range' => 'The maximum per document must be between 1 and :max.',
-            'max_size_range' => 'The :kind size per file must be between 1 and :maxMB.',
-            'extension_not_candidate' => ':kind formats can only be chosen from: :extensions.',
-        ],
-        'errors' => [
-            'limit_exceeded' => 'The content contains :attempted media items. Up to :limit are allowed per document.',
-            'upload_failed' => 'Could not upload the content media.',
-            'not_found' => 'Content media not found.',
-        ],
-    ],
 ];

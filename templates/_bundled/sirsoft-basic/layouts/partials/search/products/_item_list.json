@@ -1,0 +1,87 @@
+{
+  "meta": { "is_partial": true, "description": "검색 결과 - 상품 아이템 (리스트형)" },
+  "type": "basic",
+  "name": "Button",
+  "props": { "className": "flex w-full text-left items-center gap-4 p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer" },
+  "actions": [{ "type": "click", "handler": "navigate", "params": { "path": "{{_global.shopBase}}/products/{{product.product_code ?? product.id}}" } }],
+  "children": [
+    {
+      "comment": "썸네일",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700" },
+      "children": [
+        {
+          "comment": "생산측(SearchProductsListener)은 thumbnail_url 키를 방출한다 — thumbnail 은 死키였다 (공개 #22 부수 정정)",
+          "type": "basic",
+          "name": "Img",
+          "if": "{{product.thumbnail_url}}",
+          "props": { "src": "{{product.thumbnail_url}}", "alt": "{{product.name}}", "className": "w-full h-full object-cover" }
+        },
+        {
+          "comment": "이미지가 없는 경우 플레이스홀더 (board 카드형 패턴 축소 미러)",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{!product.thumbnail_url}}",
+          "props": { "className": "w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-700" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": { "name": "image", "className": "text-gray-400 dark:text-gray-500" }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "상품 정보",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex-1 min-w-0" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex items-center gap-2 mb-1" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded" },
+              "text": "{{product.category_name}}"
+            },
+            {
+              "type": "composite",
+              "name": "HtmlContent",
+              "props": {
+                "content": "{{product.name_highlighted ?? product.name}}",
+                "className": "font-medium text-gray-900 dark:text-white truncate [&_mark]:bg-yellow-200 [&_mark]:dark:bg-yellow-500/40 [&_mark]:px-0.5 [&_mark]:rounded"
+              }
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex items-baseline gap-2" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "font-bold text-gray-900 dark:text-white" },
+              "text": "{{product.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.selling_price_formatted}}"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{product.discount_rate > 0}}",
+              "props": { "className": "text-sm text-gray-500 dark:text-gray-400 line-through" },
+              "text": "{{product.multi_currency_list_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.list_price_formatted}}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

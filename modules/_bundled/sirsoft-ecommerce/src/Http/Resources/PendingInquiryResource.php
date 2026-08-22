@@ -3,7 +3,6 @@
 namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
 use App\Http\Resources\BaseApiResource;
-use App\Support\LocalizedValue;
 use Illuminate\Http\Request;
 
 /**
@@ -47,6 +46,9 @@ class PendingInquiryResource extends BaseApiResource
 
         $locale = app()->getLocale();
 
-        return LocalizedValue::pick($snapshot, $locale) ?? '';
+        return $snapshot[$locale]
+            ?? $snapshot[config('app.fallback_locale', 'ko')]
+            ?? array_values($snapshot)[0]
+            ?? '';
     }
 }

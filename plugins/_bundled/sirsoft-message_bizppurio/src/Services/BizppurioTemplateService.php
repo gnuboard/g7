@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\MessageBizppurio\Services;
 
-use App\Helpers\TimezoneHelper;
 use App\Services\PluginSettingsService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
 use Plugins\Sirsoft\MessageBizppurio\Enums\BizppurioTemplateStatus;
@@ -88,21 +86,14 @@ class BizppurioTemplateService
                 'template_code' => $template->template_code,
                 'status' => $template->status->value,
                 'has_content' => (bool) $template->getAttribute('has_content'),
-                // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
                 'requested_at' => $template->requested_at?->toIso8601String(),
-                // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
                 'approved_at' => $template->approved_at?->toIso8601String(),
-                // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
                 'last_synced_at' => $template->last_synced_at?->toIso8601String(),
-                // 화면 표시용 — 보는 사람 날짜(ISO 를 잘라 쓰면 UTC 날짜가 보인다)
-                'requested_at_date_formatted' => TimezoneHelper::toUserDateString($template->requested_at),
-                'approved_at_date_formatted' => TimezoneHelper::toUserDateString($template->approved_at),
-                'last_synced_at_date_formatted' => TimezoneHelper::toUserDateString($template->last_synced_at),
                 'inspection_detail' => $template->inspection_detail,
                 'fallback_sms_enabled' => $template->fallback_sms_enabled,
                 'sms_body' => $template->sms_body,
                 // 본문 유무·미리보기는 모델이 판정한다 — 화면이 로케일 맵을 직접 훑으면 발송 게이트
-                // (hasSmsBody: 공백 제거 후 비교, 폴백은 LocalizedValue 대체 순서)와 규칙이 갈려
+                // (hasSmsBody: 공백 제거 후 비교, 폴백은 config('app.fallback_locale'))와 규칙이 갈려
                 // "화면엔 본문 있음 / 실제로는 미발송" 이 된다. 판정 한 벌만 둔다.
                 'has_sms_body' => $template->hasSmsBody(),
                 'sms_body_preview' => $template->getLocalizedSmsBody(),
@@ -441,14 +432,6 @@ class BizppurioTemplateService
                 ]);
 
                 continue;
-            } catch (ConnectionException $e) {
-                // 서버에 닿지 못한 경우도 이번 주기만 건너뛴다 — 놓치면 예약 명령이 예외로 끝난다.
-                Log::warning('[sirsoft-message_bizppurio] 템플릿 상태 일괄 조회 중 서버 연결 실패 — 이번 주기 건너뜀', [
-                    'sender_key' => $senderKey,
-                    'message' => $e->getMessage(),
-                ]);
-
-                continue;
             }
 
             foreach ($group as $row) {
@@ -482,8 +465,6 @@ class BizppurioTemplateService
      * kapi delete 는 status R + REG/REJ 에서만 허용된다(부록 A-4). 우리 상태가
      * draft/rejected 면 kapi 삭제를 시도하고, 그 외 상태(또는 kapi 삭제 실패)면 카카오측은
      * 그대로 두고 DB 행만 삭제한다 — 응답에 사유를 명시해 운영자가 알 수 있게 한다.
-     * 비즈뿌리오 서버에 닿지 못한 경우(ConnectionException)도 kapi 삭제 실패와 같이 다루고,
-     * 사유에는 연결 실패 안내를 적는다.
      *
      * @param  BizppurioTemplate  $template  대상 행
      * @return array{kakao_deleted: bool, kakao_skip_reason: string|null} 카카오측 삭제 여부·미삭제 사유
@@ -509,12 +490,6 @@ class BizppurioTemplateService
                 Log::warning('[sirsoft-message_bizppurio] 카카오측 템플릿 삭제 실패 — DB 행만 삭제', [
                     'template_code' => $template->template_code,
                     'result_code' => $e->getResultCode(),
-                    'message' => $e->getMessage(),
-                ]);
-            } catch (ConnectionException $e) {
-                $skipReason = __('sirsoft-message_bizppurio::messages.error.connection_failed');
-                Log::warning('[sirsoft-message_bizppurio] 카카오측 템플릿 삭제 중 서버 연결 실패 — DB 행만 삭제', [
-                    'template_code' => $template->template_code,
                     'message' => $e->getMessage(),
                 ]);
             }
@@ -651,14 +626,6 @@ class BizppurioTemplateService
             ]);
 
             return null;
-        } catch (ConnectionException $e) {
-            Log::warning('[sirsoft-message_bizppurio] 템플릿 상세 조회 중 서버 연결 실패 — 반려 사유를 저장하지 못했습니다', [
-                'sender_key' => $senderKey,
-                'template_code' => $templateCode,
-                'message' => $e->getMessage(),
-            ]);
-
-            return null;
         }
     }
 
@@ -737,7 +704,6 @@ class BizppurioTemplateService
      * kapi 응답이 성공(200)이 아니면 message 원문을 담아 예외를 던집니다.
      *
      * @param  array<string, mixed>  $response  kapi 응답
-     * @return void 반환값 없음
      *
      * @throws BizppurioApiException 실패 코드 시
      */

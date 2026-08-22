@@ -11,7 +11,6 @@
  */
 
 import type { ActionContext } from '../types';
-import { guestOrderAuthRequiredMessage, isGuestOrderAuthFailure } from '../utils/guestOrderAuth';
 
 const logger = ((window as any).G7Core?.createLogger?.('Ecom:ChangeShippingAddress')) ?? {
     log: (...args: unknown[]) => console.log('[Ecom:ChangeShippingAddress]', ...args),
@@ -73,17 +72,6 @@ export async function changeShippingAddressHandler(
     // 비회원은 탭이 없어 항상 직접 입력(manual) 취급. 회원만 saved/manual 분기.
     const mode = isGuest ? 'manual' : (globalState.changeAddressMode ?? 'saved');
 
-    // 저장된 배송지 탭에서 아무것도 고르지 않았으면 보내지 않는다 — address_id 없이 나가면 서버가
-    // 직접 입력 칸(받는 분·주소)을 요구해 422 로 막힌다. 화면은 적용 버튼을 잠그지만, 잠금을
-    // 거치지 않는 호출(다른 레이아웃·편집기)에서도 같은 판정이 되도록 여기서 한 번 더 막는다.
-    if (mode === 'saved' && !globalState.selectedAddressId) {
-        G7Core.toast?.error?.(
-            G7Core.t?.('mypage.order_detail.select_saved_address_required')
-            ?? '적용할 배송지를 선택해 주세요.'
-        );
-        return;
-    }
-
     // body 구성: 저장된 배송지 선택(saved) 이면 address_id, 직접 입력(manual)/비회원이면 editingShippingAddress 전체
     const body =
         mode === 'saved'
@@ -119,9 +107,7 @@ export async function changeShippingAddressHandler(
         logger.error('[changeShippingAddress] 실패:', error);
         G7Core.state.setLocal({ isSubmittingAddress: false });
 
-        // 비회원 주문 조회 토큰이 없거나 만료된 무토큰 401 — 로그인 화면으로 옮기지 않으므로 주문 조회를 다시 하라고 알린다(#883)
-        const errorMessage = (isGuestOrderAuthFailure(error) ? guestOrderAuthRequiredMessage() : null)
-            || error?.response?.data?.message
+        const errorMessage = error?.response?.data?.message
             || error?.data?.message
             || error?.message
             || '배송지 변경에 실패했습니다.';

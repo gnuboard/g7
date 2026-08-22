@@ -203,19 +203,14 @@ class Plugin extends AbstractPlugin
     public function getHookListeners(): array
     {
         return [
-            Listeners\ValidateRedirectUrlSettingsListener::class,
             Listeners\RegisterPgProviderListener::class,
             Listeners\PaymentRefundListener::class,
-            Listeners\VbankCloseListener::class,
-            Listeners\ClaimPaymentApproveListener::class,
-            Listeners\ClaimPaymentRefundListener::class,
             Listeners\CancelActivityLogListener::class,
             Listeners\RegisterEasyPayMethodsListener::class,
             Listeners\AdjustEcommercePaymentMethodsLayoutListener::class,
-            Listeners\ProvidePaymentMethodDisplayLabelListener::class,
+            Listeners\EnsureAdminOrderListTestBadgeLayoutListener::class,
             Listeners\EnsureAdminOrderDetailPaymentQueryLayoutListener::class,
-            // 스코프 강제 지점 원장 (core.permission.scope_enforcement_ledger 필터)
-            Listeners\OrderScopeLedgerListener::class,
+            Listeners\RestoreLayoutExtensionsAfterUpdateListener::class,
         ];
     }
 

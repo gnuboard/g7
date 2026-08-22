@@ -14,10 +14,6 @@ NHN KCP 표준결제(Standard Pay)를 `sirsoft-ecommerce` 에 연결하는 어�
 
 이 플러그인도 결제 상태 자체는 소유하지 않습니다 — 주문·결제 테이블은 `sirsoft-ecommerce`
 소유이고, 이 플러그인은 "그 상태를 KCP CLI/SOAP API 와 어떻게 주고받는가"만 책임집니다.
-
-날짜·시각은 DB·결제 메타에 UTC 로 저장하고, 관리자 결제조회 응답(`cancelled_at`·`refunded_at`·에스크로
-`registered_at`)에서만 보는 사람 시간대로 바꿉니다. KCP 규격값(가상계좌 `vcnt_expire_term`·요청 시각)과
-휴대폰 환불의 「같은 달」 판정은 PG·통신사 규칙이라 한국 시간으로 둡니다.
 <!-- @intent END -->
 
 ## 계층 지도
@@ -52,7 +48,7 @@ Listener (RegisterPgProviderListener 등)
 | `src/Listeners/` | 훅 리스너 | Repository 경유 (Model·DB 파사드 직접 접근 금지) |
 | `src/routes/` | 라우트 | 모든 라우트에 `name()` 필수 |
 | `upgrades/` | 업그레이드 스텝 | DB·설정 구조 변경 시 작성 (모듈/플러그인 전용) |
-| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan plugin:update sirsoft-pay_nhnkcp --force` (빌드 불필요) |
+| `resources/layouts/` | 레이아웃 JSON | `php artisan plugin:update sirsoft-pay_nhnkcp --force` (빌드 불필요) |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan plugin:build` → `php artisan plugin:update sirsoft-pay_nhnkcp --force` |
 | `resources/extensions/` | 다른 확장 레이아웃에 주입하는 조각 | `php artisan plugin:update sirsoft-pay_nhnkcp --force` |
 | `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan plugin:update sirsoft-pay_nhnkcp --force` |
@@ -60,9 +56,8 @@ Listener (RegisterPgProviderListener 등)
 | `config/` | 확장 config | 설정 기본값은 settings 스키마와 어긋나지 않게 |
 | `tests/` | 테스트 | 변경 범위만 필터 실행 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
-| `components.json` | 편집기 컴포넌트 선언 (레이아웃 작성자가 읽는 props 계약) | `php artisan plugin:update sirsoft-pay_nhnkcp --force` |
+| `components.json` | 편집기 컴포넌트 선언 (레이아웃 저작자가 읽는 props 계약) | `php artisan plugin:update sirsoft-pay_nhnkcp --force` |
 | `bin/` | 확장이 실행하는 외부 바이너리·인증서 | 교체 시 OS별 파일과 권한을 함께 확인 (비면 해당 기능 정지) |
-| `assets/icon.svg` | 확장 아이콘 (관리자 목록·설치 마법사 카드) | 정사각·100KB 이하·스크립트 없는 SVG — 교체 후 `php artisan plugin:update sirsoft-pay_nhnkcp --force` |
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 | `lang/` | 다국어 | 키 추가 시 ko·en 동시 반영 + 번들 ja 팩 동기화 |
 <!-- @generated:directory-map END -->

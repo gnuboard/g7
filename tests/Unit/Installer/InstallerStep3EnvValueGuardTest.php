@@ -25,11 +25,6 @@ use PHPUnit\Framework\TestCase;
  */
 class InstallerStep3EnvValueGuardTest extends TestCase
 {
-    /**
-     * 클래스 공통 준비 — 검사 대상 파일을 한 번 로드한다.
-     *
-     * @return void 반환값 없음
-     */
     public static function setUpBeforeClass(): void
     {
         require_once __DIR__.'/stubs/lang_stub.php';
@@ -47,11 +42,6 @@ class InstallerStep3EnvValueGuardTest extends TestCase
         require_once $projectRoot.'/public/install/includes/request-handler.php';
     }
 
-    /**
-     * 테스트 정리.
-     *
-     * @return void 반환값 없음
-     */
     protected function tearDown(): void
     {
         $_POST = [];
@@ -88,10 +78,6 @@ class InstallerStep3EnvValueGuardTest extends TestCase
      *
      * @param  string  $field  필드명
      * @param  string  $payload  주입 시도 값
-     *
-     * @effects step3_post_rejects_env_line_breaks_before_save
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     #[DataProvider('lineBreakFieldProvider')]
@@ -109,7 +95,7 @@ class InstallerStep3EnvValueGuardTest extends TestCase
     /**
      * 개행 주입 벡터 (필드 × CR/LF).
      *
-     * @return array<string, array{0: string, 1: string}> 테스트 데이터 세트
+     * @return array<string, array{0: string, 1: string}>
      */
     public static function lineBreakFieldProvider(): array
     {
@@ -125,10 +111,6 @@ class InstallerStep3EnvValueGuardTest extends TestCase
 
     /**
      * 스킴 없는 URL 은 거부된다.
-     *
-     * @effects step3_post_rejects_url_without_http_scheme
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function it_rejects_url_fields_without_an_http_scheme(): void
@@ -140,10 +122,6 @@ class InstallerStep3EnvValueGuardTest extends TestCase
 
     /**
      * 정상 값은 이 게이트에 걸리지 않는다 (회귀 방지).
-     *
-     * @effects step3_post_accepts_normal_env_values
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function it_accepts_normal_values(): void
@@ -161,10 +139,6 @@ class InstallerStep3EnvValueGuardTest extends TestCase
 
     /**
      * 값이 비어 있으면 URL 형태 검사는 건너뛴다 (선택 입력 보존).
-     *
-     * @effects step3_empty_app_url_reports_required_not_url_shape
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function it_skips_url_shape_check_for_empty_values(): void
@@ -174,8 +148,7 @@ class InstallerStep3EnvValueGuardTest extends TestCase
             'core_update_github_url' => '',
         ]);
 
-        // 사이트 URL 은 필수 항목이다(서버 검증) — 빈 값은 「필수」 오류이지 URL 형태 오류가 아니다.
-        $this->assertSame(lang('error_app_url_required'), $errors['app_url'] ?? null);
+        $this->assertArrayNotHasKey('app_url', $errors);
         $this->assertArrayNotHasKey('core_update_github_url', $errors);
     }
 }

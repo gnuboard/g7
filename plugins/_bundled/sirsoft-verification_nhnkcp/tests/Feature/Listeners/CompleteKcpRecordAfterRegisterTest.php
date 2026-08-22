@@ -10,7 +10,6 @@ use App\Extension\Cache\PluginCacheDriver;
 use App\Extension\HookManager;
 use App\Models\IdentityVerificationLog;
 use App\Models\User;
-use App\Services\IdentityTokenAcceptanceService;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Str;
 use Plugins\Sirsoft\VerificationNhnkcp\Identity\KcpIdentityProvider;
@@ -34,11 +33,6 @@ class CompleteKcpRecordAfterRegisterTest extends PluginTestCase
 
     private CacheInterface $cache;
 
-    /**
-     * 로그·식별 기록 저장소와 플러그인 도메인 캐시를 준비합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -52,13 +46,9 @@ class CompleteKcpRecordAfterRegisterTest extends PluginTestCase
     }
 
     /**
-     * 비로그인 가입 인증이 성공하면 회원 기록을 만들지 않고, 식별값 해시와 암호화한 개인정보만 캐시에 임시 보관하는지 확인합니다.
-     *
      * @scenario stage=verify,cache_state=present
      *
      * @effects guest_verify_stashes_pii_instead_of_record
-     *
-     * @return void 반환값 없음
      */
     public function test_guest_verification_stashes_pii_instead_of_creating_a_record(): void
     {
@@ -95,13 +85,9 @@ class CompleteKcpRecordAfterRegisterTest extends PluginTestCase
     }
 
     /**
-     * 가입 완료 뒤 리스너가 임시 보관분을 회원 식별 기록으로 확정하고, 인증 로그에 회원 ID 를 채우며 캐시를 비우는지 확인합니다.
-     *
      * @scenario stage=after_register,cache_state=present
      *
-     * @effects after_register_absorbs_stash_into_record, after_register_clears_stash, after_register_backfills_log_user_id
-     *
-     * @return void 반환값 없음
+     * @effects after_register_absorbs_stash_into_record
      */
     public function test_listener_absorbs_stash_backfills_user_and_clears_cache(): void
     {
@@ -109,7 +95,6 @@ class CompleteKcpRecordAfterRegisterTest extends PluginTestCase
         $this->stashPendingRecord($log->id);
         $user = User::factory()->create();
 
-        $this->acceptInRequest($token);
         HookManager::doAction('core.auth.after_register', $user, [
             'verification_token' => $token,
             'signup_stage' => 'after_create',
@@ -128,20 +113,16 @@ class CompleteKcpRecordAfterRegisterTest extends PluginTestCase
     }
 
     /**
-     * 코어 가입 가드가 토큰을 먼저 소비한 뒤에도 리스너가 기록을 확정하고 임시 보관분을 지우는지 확인합니다.
-     *
      * @scenario stage=after_register,cache_state=present
      *
      * @effects after_register_clears_stash
-     *
-     * @return void 반환값 없음
      */
     public function test_listener_processes_token_even_after_core_listener_consumed_it(): void
     {
         // 코어 가입 가드(priority 10)가 토큰을 소비한 뒤에도 본 listener 가 동작해야 한다.
         $log = $this->createVerifiedSignupLog($token = 'tok-consumed');
         $this->stashPendingRecord($log->id);
-        $this->acceptInRequest($token);
+        $this->logRepository->updateById($log->id, ['consumed_at' => now()]);
 
         $user = User::factory()->create();
 
@@ -155,20 +136,15 @@ class CompleteKcpRecordAfterRegisterTest extends PluginTestCase
     }
 
     /**
-     * 임시 보관분이 없으면 기록을 만들지 않되 가입 흐름은 예외 없이 이어지는지 확인합니다.
-     *
      * @scenario stage=after_register,cache_state=absent
      *
      * @effects missing_stash_logs_warning_without_breaking_registration
-     *
-     * @return void 반환값 없음
      */
     public function test_missing_stash_does_not_break_registration(): void
     {
         $log = $this->createVerifiedSignupLog($token = 'tok-no-stash');
         $user = User::factory()->create();
 
-        $this->acceptInRequest($token);
         HookManager::doAction('core.auth.after_register', $user, [
             'verification_token' => $token,
             'signup_stage' => 'after_create',
@@ -178,13 +154,9 @@ class CompleteKcpRecordAfterRegisterTest extends PluginTestCase
     }
 
     /**
-     * 가입 요청에 인증 토큰이 없으면 리스너가 아무것도 하지 않는지 확인합니다.
-     *
      * @scenario stage=after_register,cache_state=absent
      *
      * @effects missing_stash_logs_warning_without_breaking_registration
-     *
-     * @return void 반환값 없음
      */
     public function test_listener_noops_without_verification_token(): void
     {
@@ -196,13 +168,9 @@ class CompleteKcpRecordAfterRegisterTest extends PluginTestCase
     }
 
     /**
-     * 다른 수단(메일)의 인증 로그로 가입하면 임시 보관분이 있어도 KCP 식별 기록을 만들지 않는지 확인합니다.
-     *
      * @scenario stage=after_register,cache_state=present
      *
-     * @effects after_register_ignores_other_provider_logs
-     *
-     * @return void 반환값 없음
+     * @effects after_register_backfills_log_user_id
      */
     public function test_listener_ignores_logs_from_other_providers(): void
     {
@@ -210,7 +178,6 @@ class CompleteKcpRecordAfterRegisterTest extends PluginTestCase
         $this->stashPendingRecord($log->id);
         $user = User::factory()->create();
 
-        $this->acceptInRequest($token);
         HookManager::doAction('core.auth.after_register', $user, [
             'verification_token' => $token,
             'signup_stage' => 'after_create',
@@ -222,9 +189,8 @@ class CompleteKcpRecordAfterRegisterTest extends PluginTestCase
     /**
      * 인증 완료 상태의 가입 목적 로그를 만든다.
      *
-     * @param  string  $token  가입 요청에 실을 인증 토큰(verification_token)
+     * @param  string  $token  verification_token
      * @param  string  $providerId  provider 식별자
-     * @return IdentityVerificationLog 만든 인증 로그
      */
     private function createVerifiedSignupLog(string $token, string $providerId = KcpIdentityProvider::PROVIDER_ID): IdentityVerificationLog
     {
@@ -250,8 +216,6 @@ class CompleteKcpRecordAfterRegisterTest extends PluginTestCase
 
     /**
      * 인증 대기 상태의 비로그인 가입 challenge 로그를 만든다.
-     *
-     * @return IdentityVerificationLog 만든 challenge 로그
      */
     private function createPendingSignupLog(): IdentityVerificationLog
     {
@@ -277,8 +241,7 @@ class CompleteKcpRecordAfterRegisterTest extends PluginTestCase
     /**
      * verify 시점 캐시 임시 보관을 재현한다.
      *
-     * @param  string  $challengeId  임시 보관 키에 쓸 challenge UUID
-     * @return void 반환값 없음
+     * @param  string  $challengeId  challenge UUID
      */
     private function stashPendingRecord(string $challengeId): void
     {
@@ -295,18 +258,5 @@ class CompleteKcpRecordAfterRegisterTest extends PluginTestCase
             'is_foreigner' => false,
             'is_adult' => true,
         ], 900);
-    }
-
-    /**
-     * 같은 가입 요청에서 before_register 단계가 결과를 인정한 상태를 만듭니다 (1.1.4).
-     *
-     * 리스너는 소비 여부와 무관한 토큰 재조회 대신, 이 요청에서 인정(1회 소비)한 결과만 받는다.
-     *
-     * @param  string  $token  확인 토큰
-     * @return void 반환값 없음
-     */
-    private function acceptInRequest(string $token): void
-    {
-        app(IdentityTokenAcceptanceService::class)->accept($token, 'signup');
     }
 }

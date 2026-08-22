@@ -1,6 +1,6 @@
 # 라우트 네이밍 및 경로
 
-> **상위 문서**: [백엔드 가이드 인덱스](./README.md)
+> **상위 문서**: [백엔드 가이드 인덱스](./index.md)
 
 ---
 
@@ -15,7 +15,6 @@
 6. .js/.css/.json/.map 로 끝나는 라우트 = dualSuffix/dualSuffixSegment/dualAsset 매크로 필수
 7. catch-all 은 예약 프리픽스를 전수 제외 (가려진 라우트는 200 SPA 셸이라 단서가 없다)
 8. 조건부로만 열리는 라우트군의 게이트 = 그룹 미들웨어 단일 지점 (핸들러 개별 게이트 금지)
-9. 리다이렉트·콜백·제3자 전송·메일 링크의 절대 URL = SiteUrl::absolute() (url()·redirect('/x') 는 요청 Host 를 따른다)
 ```
 
 ---
@@ -26,9 +25,7 @@
 2. [URL 경로 규칙](#url-경로-규칙)
 3. [권한 체크](#권한-체크)
 4. [라우트 정의 예시](#라우트-정의-예시)
-5. [절대 URL 은 사이트 주소로 만든다](#절대-url-은-사이트-주소로-만든다)
-6. [라우트 캐시](#라우트-캐시)
-7. [개발 체크리스트](#개발-체크리스트)
+5. [개발 체크리스트](#개발-체크리스트)
 
 ---
 
@@ -146,6 +143,7 @@ URL 을 만드는 쪽도 문자열로 직접 조립하지 않는다. 서버는 `
 `resources/js/core/support/assetUrl.ts` 를 경유해야 현재 모드에 맞는 형태가 나온다. 두 구현은 동일 규칙을
 공유하므로 한쪽만 바꾸면 서버가 만든 URL 과 클라이언트가 만든 URL 이 어긋나 그 자산만 404 가 된다.
 
+자동 차단: 정적 검사 대상 (위반 시 차단). 면제는 인라인 주석
 `// audit:allow dynamic-route-static-extension reason: ...`.
 
 ### SPA catch-all 의 정적 확장자 제외
@@ -195,35 +193,6 @@ catch-all 은 그 뒤에 등록된 라우트를 **가린다**. Laravel 은 등�
 
 예약 프리픽스를 추가하는 확장·기능은 이 목록에 자기 프리픽스를 함께 넣는다. 스코프가 좁은 catch-all
 (`admin/` 하위만 받는 admin catch-all 등)은 애초에 다른 프리픽스를 삼키지 않으므로 대상이 아니다.
-
-### 끝·연속 슬래시는 301 로 정규형에 모은다
-
-Laravel 라우터는 `path()` 로 매칭하므로 `/admin/`·`/board//free` 도 catch-all 에 걸린다. 그러나 그 뒤의
-템플릿 라우트 판정·SEO 렌더·SEO 캐시 키·방문 통계는 요청 경로 문자열을 쓰는데, `getPathInfo()`·`getRequestUri()`
-는 끝 `/` 와 `//` 를 그대로 남긴다. 그대로 두면 같은 화면이 두 갈래가 된다(웹 서버에 따라 `/admin/` 이 404).
-
-그래서 화면 셸 라우트 두 묶음(admin catch-all · user catch-all)에 `canonical.path` 미들웨어를 붙인다.
-
-- **GET·HEAD 만** 이동한다. 다른 메서드는 통과한다.
-- 끝 `/` 를 떼고(루트 제외) 연속 `/` 를 하나로 줄인 주소로 **301** 한다. 쿼리스트링은 원문 그대로 붙인다(순서 보존).
-- 템플릿에 없는 주소도 먼저 이동하고, 이동한 곳에서 404 를 판정한다.
-- `public/` 아래 실제 디렉터리 경로는 건너뛴다(이동 루프 방지 — Apache `RewriteCond !-d` 와 같음).
-- 이동 주소는 사이트 주소 안에서만 만든다 — `//evil.com/` 같은 경로도 `https://<사이트>/evil.com` 으로 간다.
-- `/api/*`·확장 라우트·사이트맵은 대상이 아니다.
-
-**순서가 계약이다.** `canonical.path` 는 `canonical.host` 바로 뒤, 봇 기록(`analytics.bots`)·SEO(`seo`)·서버 통계
-(`analytics.fallback`)보다 **앞**에 둔다. 그래야 끝·연속 슬래시 주소가 그쪽에 닿지 않는다.
-
-```php
-Route::middleware(['canonical.host', 'canonical.path', 'template.dependencies:user', 'analytics.bots', 'seo', 'analytics.fallback'])
-```
-
-요청 경로를 문자열 비교·캐시 키로 쓸 때는 `getPathInfo()` 를 직접 쓰지 말고 `App\Support\RequestPath::normalize()`
-를 거친다. 미들웨어를 거치지 않는 경로(직접 호출·다른 라우트)에서도 같은 정규형을 쓰기 위해서다. 클라이언트 라우터도
-같은 규칙으로 주소창을 정규형으로 바꾼다([라우터 주소 정규화](../frontend/actions-handlers-navigation.md)).
-
-이 미들웨어로 Apache 와 nginx 의 동작이 같아졌다. Apache 는 `public/.htaccess` 의 끝 슬래시 301 규칙이 먼저
-처리하고, nginx 는 이 미들웨어가 처리한다. 연속 슬래시는 두 서버 모두 이 미들웨어가 처리한다.
 
 ### 디버그·개발 라우트는 그룹 단위로 게이트한다
 
@@ -437,48 +406,6 @@ Route::prefix('products')->group(function () {
 });
 ```
 
-### 요청 제한은 라우트마다 자기 키를 쓴다
-
-Laravel 의 `throttle:N,M` 은 비로그인 요청의 제한 키를 `sha1(domain|ip)` 하나로 만든다. 경로는 키에 들어가지 않으므로, 접두사 없는 `throttle:` 을 단 라우트는 **같은 형식의 다른 모든 라우트와 횟수를 공유**한다. 상한이 작은 엔드포인트(본인인증 확인 10/분)는 상한이 큰 라우트(`api/user/*` 600/분)를 치는 화면 로드 몇 번만으로 먼저 막힌다 — 예외도 로그도 없이 그 엔드포인트만 429 를 돌려주는 것이 유일한 증상이다.
-
-| ❌ 금지 | ✅ 올바른 사용 |
-|--------|---------------|
-| `'throttle:10,1'` (접두사 없음) | `'throttle:10,1,identity_verify'` — 세 번째 인자가 키 접두사 |
-| 여러 라우트가 같은 접두사를 공유 | 라우트마다 고유 접두사 (요청·확인·취소·상태 조회·콜백 각자) |
-| 응답 문구·상한 계산이 필요한데 접두사 인자로 해결 | `RateLimiter::for()` 명명 리미터 (`throttle:auth-login` 이 그 예) |
-
-상한과 접두사의 SSoT 는 라우트 정의 한 곳이고, API 레퍼런스는 그 값을 서술한다. 회귀 가드: `tests/Feature/Identity/IdentityVerifyThrottleIsolationTest.php` (공유 키를 상한 이상 선점해도 확인 요청이 429 가 아님 + 자기 상한은 그대로 걸림). 재현 경위와 리미터 카운터를 찾는 법은 [API 레퍼런스의 요청 제한 절](api/identity.md#공개-본인인증-엔드포인트의-요청-제한)에 정리돼 있다.
-
----
-
-## 절대 URL 은 사이트 주소로 만든다
-
-Laravel 의 `url()`·`route()`·`redirect('/x')`·`redirect()->back()` 과 FormRequest 의 기본 `failedValidation`(직전 화면으로 되돌림)은 절대 주소의 호스트를 **요청의 Host 헤더**(신뢰 프록시 뒤라면 `X-Forwarded-Host`)에서 가져온다. 화면 안 링크처럼 같은 요청에 되돌려 주는 주소라면 문제가 없지만, 그 주소가 사이트 밖으로 나가거나 나중에 다시 쓰이면 Host 를 바꿔 보낸 사람이 목적지를 정하게 된다 — 결제·본인인증 결과와 검증 토큰이 그 호스트로 전달된다.
-
-운영 환경의 신뢰 호스트 검사(`config/trustedhosts.php`)는 마지막 겹일 뿐이다. 사이트 주소의 **하위 도메인·www 쌍(`www.` 를 붙이거나 뗀 주소)·다른 포트**는 그 검사를 통과하므로, 그것만으로 이 경로를 막지 못한다.
-
-| ❌ 금지 (리다이렉트·콜백·제3자 전송·메일/알림 링크) | ✅ 올바른 사용 |
-|--------|---------------|
-| `redirect('/shop/orders')`, `redirect()->to('/x')` | `redirect(SiteUrl::absolute('/shop/orders'))` |
-| `redirect(ShopRedirectUrl::resolve($setting))` (설정값은 상대 경로일 수 있음) | `redirect(SiteUrl::absolute(ShopRedirectUrl::resolve($setting)))` |
-| PG·본인인증 제공자에 넘기는 `url('/plugins/x/callback')`·`route('x.callback')` | `SiteUrl::absolute('/plugins/x/callback')` |
-| 큐·메일·알림에서 `url('/mypage')` (큐 작업자는 `http://localhost` 로 만든다) | `SiteUrl::absolute('/mypage')` |
-| 웹 라우트(결제·본인인증 콜백, 결과 브리지, PG 서버 통보·웹훅)의 FormRequest 가 기본 `failedValidation` 을 그대로 씀 | 브라우저가 오는 주소면 `failedValidation` 에서 `HttpResponseException(redirect(SiteUrl::absolute($failUrl)))` 로 명시 이동, PG 서버가 부르는 주소면 `HttpResponseException(ResponseHelper::validationError($validator->errors()))` 로 422 (규칙이 빈 배열이라 검증이 실패할 수 없는 요청은 해당 없음) |
-| `return_url` 같은 입력 주소를 요청 Host 와 비교해 허용 | `SiteUrl::isSameOrigin($url)` 로 사이트 주소와 비교 |
-
-`App\Support\SiteUrl` 이 사이트 주소(`config('app.url')` — 환경설정에 사이트 주소가 있으면 그 값) 기준 절대 URL 의 단일 출처다.
-
-| 메서드 | 용도 |
-| --- | --- |
-| `SiteUrl::absolute($pathOrUrl)` | 상대 경로를 사이트 주소 기준 절대 URL 로. 이미 절대 URL 이면 그대로 |
-| `SiteUrl::forPath($pathAndQuery)` | 요청에서 꺼낸 경로·쿼리(`$request->getRequestUri()`)를 사이트 주소에 붙인 URL |
-| `SiteUrl::base()` · `SiteUrl::origin()` · `SiteUrl::hostWithPort()` | 사이트 주소(끝 `/` 제거)·출처(`scheme://host[:port]`)·호스트[:포트] |
-| `SiteUrl::isSameOrigin($url)` | 주어진 URL 이 사이트 주소와 같은 출처인지 |
-
-API 라우트(`api/*`)의 검증 오류는 Accept 헤더와 관계없이 JSON 으로 응답한다(`bootstrap/app.php` 의 `shouldRenderJsonWhen`) — 직전 화면으로 되돌아가는 응답이 생기지 않는다. 사이트 주소가 아닌 Host(하위 도메인·www 쌍·다른 포트·별칭)로 들어온 화면 요청은 사이트 주소로 이동한다(`CANONICAL_HOST_REDIRECT`, 기본 켜짐).
-
-요청 Host 를 의도적으로 쓰는 코드(예: 요청 Host 로 만든 주소를 사이트 주소와 비교하는 관리자 진단)는 해당 줄 위에 `// audit:allow request-host-absolute-url reason: …` 를 단다. 회귀 가드: audit 룰 `request-host-absolute-url`, 계약 테스트 `tests/Feature/Http/TrustedProxyContractTest.php`, 단위 테스트 `tests/Unit/Support/SiteUrlTest.php`.
-
 ---
 
 ## 라우트 캐시
@@ -499,25 +426,14 @@ API 라우트(`api/*`)의 검증 오류는 Accept 헤더와 관계없이 JSON �
 
 | 메서드 | 동작 |
 |--------|------|
-| `RouteCacheHelper::rebuild()` | 임시 파일에 다 구운 뒤 실제 파일과 바꿔 끼운다. 테스트 환경·설치 미완료는 비우기까지만 |
+| `RouteCacheHelper::rebuild()` | 비운 뒤 즉시 재생성. 테스트 환경·설치 미완료는 비우기까지만 |
 | `RouteCacheHelper::clear()` | 재생성 없이 비우기만 — 재생성이 부적절한 흐름 중간용 |
 
 `rebuild()` 는 `route:cache` 를 호출하며, 이 커맨드는 **새 애플리케이션을 부팅해** 라우트를
 수집한다. 방금 설치·활성화한 확장의 라우트가 함께 잡히려면 그 새 부팅이 바뀐 상태를 읽어야
 하므로, 굽기 전에 상태 캐시를 비워야 한다(아래 절). 재생성이 실패하면(직렬화
-불가한 클로저 라우트 등) 그때 낡은 캐시를 지운다 — 비어 있으면 느릴 뿐 정확하지만, 낡은 캐시는
+불가한 클로저 라우트 등) 비운 상태로 둔다 — 비어 있으면 느릴 뿐 정확하지만, 낡은 캐시는
 방금 설치한 확장을 통째로 없는 것으로 만든다.
-
-### 먼저 지우지 않는다 — 비는 순간 없이 바꿔 끼우기 (7.1.5)
-
-종전에는 `route:clear` 로 지운 뒤 `route:cache` 로 다시 구웠다. 굽는 1~2초 사이에 들어온 요청은
-`file_exists()` 를 통과한 뒤 `require` 직전에 파일이 지워져 500(`routes-v7.php: No such file`)을 받았다
-— 확장을 켜고 끄는 동안 다른 관리자가 화면을 열면 「초기화 실패 Failed to reload routes」로 멈췄다.
-이제 `App\Support\AtomicBootstrapCache` 가 굽는 동안만 출력 경로(`APP_ROUTES_CACHE`)를 같은 폴더의
-임시 파일로 돌리고, 다 구우면 `rename` 으로 바꿔 끼운다. 실제 파일은 굽는 내내 남아 다른 요청이 계속 쓴다.
-Windows 는 다른 요청이 그 순간 파일을 열고 있으면 `rename` 이 실패하므로 짧게 다시 시도한다.
-config 캐시(`ConfigCacheHelper`)·훅 캐시(`HookCacheManager`)·확장 오토로드(`ExtensionManager`)도
-같은 도우미를 쓴다. 관리자 「캐시 정리」·「최적화」도 두 헬퍼를 거친다.
 
 ### 갱신이 필요한 지점
 
@@ -525,16 +441,6 @@ config 캐시(`ConfigCacheHelper`)·훅 캐시(`HookCacheManager`)·확장 오�
 |------|------|
 | 확장 설치 / 활성화 / 비활성화 / 삭제 / 업데이트 | 확장 라우트 등록이 활성 목록에 게이트되어 있다 |
 | 코어 업데이트 · 업그레이드 스텝 | 코어 라우트 파일과 vendor 가 교체된다 |
-| **코어 설치 완료** | 인스톨러 `complete_flag` 직후 `route_cache` task (config 캐시와 나란히) |
-
-**코어 설치 완료가 별도 지점인 이유** — 설치 중의 확장 install·activate 도 `rebuild()` 를
-부르지만, 그 시점에는 `installer_completed` 가 아직 서지 않아 **clear 까지만** 수행된다
-(불완전한 부팅을 캐시에 박제하지 않으려는 정책). 완료 플래그 이후에는 재생성 트리거가
-확장 라이프사이클에만 묶여 있으므로, 인스톨러가 마무리 단계에서 직접 굽지 않으면
-**갓 설치한 사이트는 라우트 캐시가 빈 채로 시작한다.** 웹은 정상 동작하지만(매 요청
-라우트 파일 스캔 — 느릴 뿐) `php artisan test` 는 부모 부팅에서 확장 라우트 파일을
-실행하다 죽는다. 확장을 하나라도 설치·변경하면 그때 구워져 그 뒤로는 드러나지 않으므로
-노출 창이 좁다. 회귀 가드: `tests/Unit/Installer/InstallerFinalizeCacheTasksTest`.
 
 코어 업데이트처럼 파일 교체가 진행 중인 흐름에서는 **중간에 비우고 끝에서 재생성**한다.
 교체 중 상태를 캐시에 구우면 안 되기 때문이며, config 캐시가 같은 형태로 처리된다.
@@ -587,7 +493,7 @@ DB 상태 쓰기 → 상태 캐시 무효화 → 굽기(rebuild / 훅 캐시 재
 리스너를 떨군다. 대신 **상태 복원 직후**에 비우고, 그 뒤 훅 캐시를 다시 굽는다. 훅 캐시
 폴백은 파일 부재·손상에만 작동하므로 내용이 낡은 경우는 조용히 통과하기 때문이다.
 
-이 순서는 자동 검증으로 강제된다 — `rebuild()` 를 호출하는 수명주기 메서드를 리플렉션으로
+이 순서는 정적 검사로 강제된다 — `rebuild()` 를 호출하는 수명주기 메서드를 리플렉션으로
 도출해(개별 열거 금지) 각각에서 무효화가 앞서는지 확인한다.
 
 ### 캐시 안전한 라우트 작성
@@ -608,7 +514,7 @@ FQCN 정적 호출도 안전하다. 문제가 되는 것은 오토로드 경로�
 
 전역 함수 위반의 증상은 특히 추적하기 어렵다. `Call to undefined function` 500 이 나는데
 예외의 `file` 이 `laravel-serializable-closure://` 라 **원인 파일이 스택에 드러나지 않는다.**
-자동 검증이 라우트 파일의 함수 선언을 차단한다.
+정적 검사가 라우트 파일의 함수 선언을 차단한다.
 
 프로바이더의 `boot()` 에서 등록한 라우트가 폐기되는 이유는 별개다. `Router::setCompiledRoutes()`
 가 라우트 컬렉션을 **통째로 교체**하고 이 교체가 `booted` 콜백에서 일어나므로, 그보다 앞서

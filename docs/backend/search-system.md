@@ -141,7 +141,7 @@ SELECT 를 재작성하는 지점은 엔진이 쿼리를 **조립하는 자리 �
 
 `->query()` 콜백의 `orderBy` 는 Scout `Builder::$orders` 를 채우지 않으므로 엔진이 `_ft_score DESC` 를 항상 tiebreak 으로 덧붙인다. 즉 **검색 쿼리의 ORDER BY 에는 사실상 언제나 `_ft_score` 가 있다** — "이 경로는 스코어 정렬을 안 쓰니 괜찮다" 는 판단은 성립하지 않는다.
 
-자동 검증이 결과 소비 메서드 안의 SELECT·정렬 재작성을 차단한다.
+정적 검사가 결과 소비 메서드 안의 SELECT·정렬 재작성을 차단한다.
 
 ### 현재 FulltextSearchable 구현 모델
 
@@ -284,7 +284,7 @@ KeywordSearch::applyAny($query, ['name', 'description'], $keyword, 'and', 'searc
 갈라지면 "엔진이 돌려준 건수" 와 "화면이 보고하는 총 건수" 가 서로 다른 근거를 갖게 됩니다.
 상한에 걸려 잘린 경우 그 이상은 도달 불가이고 총 건수는 "이상" 으로 보고됩니다.
 
-이 의무는 자동 검증으로 강제할 수 없습니다 — 외부 엔진 코드는 이 저장소 밖입니다. 코어가 할 수
+이 의무는 정적 검사로 강제할 수 없습니다 — 외부 엔진 코드는 이 저장소 밖입니다. 코어가 할 수
 있는 것은 **값을 손에 쥐어 주는 것**까지이며, 그 값이 실제로 도달하는지는 계약 테스트가
 고정합니다.
 
@@ -325,14 +325,6 @@ HookManager::addFilter('core.search.like_operators', function (array $operators)
 성능 축이 문제가 되면 토큰 결합 방식이 아니라 전용 검색 엔진(`core.search.engine_drivers`
 훅으로 교체)으로 해결한다. 상한 COUNT 가 매칭 시간을 줄이지 못하는 이유와 실측치는
 [pagination.md](pagination.md) 참조.
-
-### 토큰 하나는 128 글자까지만 쓴다
-
-InnoDB 는 따옴표 구문 하나에 낱말이 128개를 넘으면 `191 Too many words in a FTS phrase`
-오류를 낸다. ngram 파서는 공백 없는 토큰을 글자 단위 n-gram 낱말로 쪼개므로(L 글자 → L-n+1
-낱말), 한글 130자를 붙여 쓴 검색어 하나가 목록 화면 전체를 500 으로 만든다.
-`sanitizeBooleanModeKeyword()` 는 토큰마다 앞 128 글자만 구문으로 쓴다
-(`ngram_token_size` 가 1 이어도 한도 안). 자른 앞부분 구문은 원래 토큰을 담은 문서도 그대로 찾는다.
 
 ---
 
@@ -497,9 +489,6 @@ HookManager::addFilter(SearchIndexMaintenanceManager::MAINTAINERS_FILTER, functi
 
 대상은 하드코딩하지 않고 `INFORMATION_SCHEMA` 에서 전수 수집하므로, 확장이 나중에 추가하는
 FULLTEXT 인덱스도 커맨드 수정 없이 포함됩니다.
-
-점검 결과의 측정값은 「찾은 행/점검한 행」 이며, 영어 문구는 점검한 행 수로 단·복수를 고릅니다
-(`1/1 row found itself` · `3/5 rows found themselves`).
 
 ```bash
 php artisan search:index                        # 활성 엔진의 인덱스 점검 (읽기 전용)

@@ -1,6 +1,6 @@
 # 템플릿 캐싱 전략
 
-> **관련 문서**: [cache-driver.md](./cache-driver.md) (공통 캐시 인터페이스 · 권장) | [template-basics.md](./template-basics.md) | [template-security.md](./template-security.md) | [README.md](./README.md)
+> **관련 문서**: [cache-driver.md](./cache-driver.md) (공통 캐시 인터페이스 · 권장) | [template-basics.md](./template-basics.md) | [template-security.md](./template-security.md) | [index.md](./index.md)
 
 > **⚠️ 중요**: 본 문서는 템플릿 캐싱의 **개념적 계층**을 설명합니다.
 > 실제 구현은 [`CacheInterface`](./cache-driver.md) 를 사용해야 하며, `Cache::` 파사드 직접 호출은 금지되었습니다.
@@ -463,7 +463,7 @@ class LayoutService
 
 `LayoutService`의 저장(`updateLayoutContent`) 및 버전 복원(`restoreVersion`) 메서드에서:
 
-1. **`clearDependentLayoutsCache()`** 호출 — 해당 레이아웃 + 이를 extends하는 자식 레이아웃의 병합 캐시 + `PublicLayoutController` 서빙 캐시(`layout.{identifier}.{name}.v{version}`)를 재귀적으로 무효화. 자식은 `template_layouts.extends` 칸 **또는** 본문 최상위 `extends` 가 부모 이름과 같은 행이다(`LayoutRepository::getChildrenByExtends()`) — 템플릿 자기 레이아웃은 설치·갱신 때 칸을 비우고 본문으로만 상속하므로, 칸만 보면 공통 레이아웃(`_user_base` 등)을 고쳐도 화면들의 병합 캐시가 남는다
+1. **`clearDependentLayoutsCache()`** 호출 — 해당 레이아웃 + 이를 extends하는 자식 레이아웃의 병합 캐시 + `PublicLayoutController` 서빙 캐시(`layout.{identifier}.{name}.v{version}`)를 재귀적으로 무효화
 2. **`ext.cache_version` 증가** (`$this->incrementExtensionCacheVersion()` — `ClearsTemplateCaches` 트레이트) — CDN/브라우저 HTTP 캐시 busting. `PublicLayoutController`가 `?v={version}` 기반 캐싱을 사용하므로, 버전 변경 시 브라우저가 새 URL로 인식하여 캐시를 우회합니다. 버전 키 쓰기는 반드시 트레이트를 경유합니다 — 캐시 드라이버에 직접 `put` 하면 스토어/네임스페이스가 어긋날 때 bump 가 읽기 경로에서 보이지 않습니다.
 
 ```php
@@ -556,4 +556,4 @@ $this->incrementExtensionCacheVersion();
 - [템플릿 기초](./template-basics.md) - 템플릿 타입, 메타데이터
 - [템플릿 보안](./template-security.md) - API 서빙, 화이트리스트
 - [템플릿 커맨드](./template-commands.md) - Artisan 커맨드
-- [확장 시스템 인덱스](./README.md) - 전체 문서 목록
+- [확장 시스템 인덱스](./index.md) - 전체 문서 목록

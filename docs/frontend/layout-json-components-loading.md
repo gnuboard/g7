@@ -26,68 +26,11 @@
 ✅ 자동: 표현식이 truthy일 때 blur 효과 적용 (표현식 문자열인 경우)
 ```
 
-### 받는 중 판정
-
-빈 안내·「조회 중」·카드 그리드 `loading` 처럼 **받는 중과 받은 뒤를 가르는 식**은 데이터소스 값이 `undefined` 인지로 가른다.
-엔진은 데이터소스 값(API 응답)에 `loading`·`error` 같은 표식을 싣지 않는다 — 흐림 판정(`blur_until_loaded`)도 같은 기준이다.
-
-```text
-❌ {{users?.loading}} · {{!users?.loading && …}}                        — 늘 거짓/참이라 받는 중을 가르지 못한다
-❌ {{(users?.data?.data ?? []).length === 0}}                           — 받기 전에도 참 → 받는 동안 「없음」이 보인다
-✅ {{users === undefined}}                                              — 받는 중
-✅ {{users !== undefined && (users?.data?.data ?? []).length === 0}}    — 받은 뒤 0건(받기 실패 null 포함)
-✅ emptyMessage="{{users === undefined ? '' : $t('common.no_data')}}"  — 표 빈 문구
-❌ {{!!users?.error}}                                                    — 값에 error 가 없다 → 늘 거짓
-✅ {{!!_dataSourceErrors?.users}}                                       — 받기 실패(값은 null)
-```
-
-- 화면 진입 때 받기에 실패하면 값은 `null` 이 된다(`fallback` 을 선언했으면 그 값). `=== undefined` 로 가르면 실패 때 받는 중으로 남지 않는다 — `== null`·`!users` 로 쓰지 않는다.
-- `sequence` 안에서 `refetch-data-source` 를 **기다린 뒤** `open-modal` 하는 창은 열린 동안 받는 중이 없다. 열렸는데 값이 없으면 받기 실패(engine-v1.81.2 부터 refetch 실패는 값 `null`, 그 전에는 값을 바꾸지 않음)이므로 `undefined` 로 가리지 않고 안내를 보인다.
-- 금액·「무료배송」처럼 받은 값이 있어야 뜻이 생기는 표기는 받은 응답이 있을 때만 그린다(`{{!!order?.data && …}}`).
-- 반환값 상태표: [G7Core.state.getDataSource](state-management-advanced.md#g7corestategetdatasourcedatasourceid). 정적 검사 대상(위반 시 차단).
-- **여러 소스를 읽는 조건은 소스마다 가른다.** 진행형 소스는 응답이 오는 대로 하나씩 반영되므로, 한 소스만 먼저 온 순간에도 참이 되면 잠깐 틀린 화면이 보인다.
-
-  ```text
-  ❌ {{settings?.data?.enabled === true && consent?.data?.done !== true}}                      — settings 만 먼저 오면 참(동의한 사람에게도 보임)
-  ✅ {{settings?.data?.enabled === true && consent !== undefined && consent?.data?.done !== true}}
-  ```
-
-- **로그인 사용자도 받는 데이터다.** `_global.currentUser` 는 회원이면 응답 전까지 `undefined`, 비회원이면 엔진이 실패 대체값(`[]`)을 넣는다. 비회원 분기는 `{{_global.currentUser !== undefined && !_global.currentUser?.uuid}}` 로 쓴다 — `{{!_global.currentUser?.uuid}}` 만으로 쓰면 회원에게 로그인 단추·비회원 입력란이 잠깐 보인다.
-- **계산값·폼 값도 같다.** `_computed.x` 가 받는 데이터로 만든 값이거나, 조건이 `_local.form`(소스의 `initLocal`)을 읽으면 그 소스로 가른다(`{{settings !== undefined && …}}`). 진행형 소스의 `initLocal` 은 받은 데이터를 그린 **다음 박자**에 들어온다 — 받은 데이터와 `initLocal` 값을 함께 보는 안내는 `initLocal` 로 받은 표지 키가 있을 때만 판단한다.
-- `?? 0` 으로 메운 숫자는 그 소스를 기다리는 `blur_until_loaded` 아래에 둔다 — 받기 전 「0」이 또렷이 보이지 않게.
-
-### 폼을 채우는 소스의 받기 실패
-
-설정·수정 폼을 데이터소스로 채우는 화면(`initLocal` 이 `form`·`…Form` 을 채움)은 받기에 실패하면 **본문 오류 화면**을 띄운다.
-오류 처리가 없으면 엔진은 토스트만 띄우고 화면을 그려, 빈 폼이나 `fallback` 기본값으로 선 폼을 그대로 저장해 실제 값을 덮어쓸 수 있다.
-`fallback` 을 선언한 소스는 실패가 성공으로 처리되어 `_dataSourceErrors` 에도 남지 않으므로 레이아웃 조건으로는 실패를 가를 수 없다 — 오류 처리기만이 실패를 안다.
-
-```text
-❌ <data-source id="settings" … initLocal="form"/>                      — 실패하면 빈 폼이 서고 저장 단추가 산다
-❌ <data-source id="settings" … initLocal="form"><fallback>…</fallback>  — 실패가 기본값 폼으로 보인다
-✅ <data-source id="settings" … initLocal="form">
-     <error-handling>
-       <on-code code="403"><show-error-page target="content"/></on-code>
-       <default><show-error-page target="content"/></default>
-     </error-handling>
-   </data-source>
-```
-
-- 첫 설치·빈 설정처럼 「값이 없음」이 정상인 경우는 서버가 기본값을 담은 **성공 응답**으로 준다 — 실패와 섞지 않는다.
-- 저장·주문·편집이 이어지는 폼 밖의 소스(레이아웃 편집기 본문, 주문서, 장바구니 등)도 같은 방식이다.
-- 정적 검사 대상(위반 시 차단).
-
 ### 사용법
 
 #### 1. Boolean 값 (기본)
 
 데이터 소스 로딩 중 또는 페이지 전환 중 blur 효과 적용:
-
-```html
-<data-grid data-ref="users_data_grid" :data-blur-until-loaded="true" data="{{users.data.data}}"/>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -104,12 +47,6 @@
 #### 2. 표현식 문자열 (engine-v1.5.0+)
 
 특정 상태 값에 따라 blur 효과 적용:
-
-```html
-<form data-ref="menu_form" data-blur-until-loaded="{{_global.isSaving}}" id="menu_form"/>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -131,14 +68,6 @@
 #### 3. 객체 형태 (engine-v1.6.0+)
 
 특정 데이터 소스에 따라 개별 컴포넌트의 blur 효과를 제어:
-
-```html
-<stat-card data-ref="stats_widget" data="{{dashboard_stats.data}}">
-  <blur-until-loaded sources="dashboard_stats"/>
-</stat-card>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -164,24 +93,6 @@
 
 **data_sources 사용 패턴**:
 
-```html
-<!-- 단일 데이터 소스 -->
-<div>
-  <blur-until-loaded sources="dashboard_stats"/>
-  본문
-</div>
-<!-- 다중 데이터 소스 (모든 소스가 로드되어야 blur 해제) -->
-<div>
-  <blur-until-loaded>
-    <item>users</item>
-    <item>roles</item>
-  </blur-until-loaded>
-  본문
-</div>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 // 단일 데이터 소스
 "blur_until_loaded": {
@@ -197,23 +108,6 @@
 ```
 
 **실제 사용 예시 (대시보드 위젯)**:
-
-```html
-<data-source id="dashboard_stats" endpoint="/api/admin/dashboard/stats" loading_strategy="progressive"/>
-<data-source id="dashboard_resources" endpoint="/api/admin/dashboard/resources" loading_strategy="progressive"/>
-<data-source id="dashboard_activities" endpoint="/api/admin/dashboard/activities" loading_strategy="progressive"/>
-<stat-card data-ref="stats_widget" data="{{dashboard_stats.data}}">
-  <blur-until-loaded sources="dashboard_stats"/>
-</stat-card>
-<div data-ref="resources_widget" class="rounded-xl p-4 bg-slate-100 dark:bg-slate-800">
-  <blur-until-loaded sources="dashboard_resources"/>
-</div>
-<div data-ref="activities_widget" class="rounded-xl p-4 bg-slate-100 dark:bg-slate-800">
-  <blur-until-loaded sources="dashboard_activities"/>
-</div>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -232,17 +126,17 @@
     },
     {
       "id": "resources_widget",
-      "type": "basic",
-      "name": "Div",
+      "type": "composite",
+      "name": "ResourceCard",
       "blur_until_loaded": { "enabled": true, "data_sources": "dashboard_resources" },
-      "props": { "className": "rounded-xl p-4 bg-slate-100 dark:bg-slate-800" }
+      "props": { "data": "{{dashboard_resources.data}}" }
     },
     {
       "id": "activities_widget",
-      "type": "basic",
-      "name": "Div",
+      "type": "composite",
+      "name": "ActivityList",
       "blur_until_loaded": { "enabled": true, "data_sources": "dashboard_activities" },
-      "props": { "className": "rounded-xl p-4 bg-slate-100 dark:bg-slate-800" }
+      "props": { "data": "{{dashboard_activities.data}}" }
     }
   ]
 }
@@ -257,7 +151,7 @@
 | `true` (boolean) | `blur_until_loaded: true` | 데이터 소스 로딩 중 또는 페이지 전환 중 blur |
 | `false` (boolean) | `blur_until_loaded: false` | blur 미적용 |
 | 표현식 문자열 | `"{{_global.isSaving}}"` | 표현식 결과가 truthy일 때 blur |
-| 객체 (engine-v1.6.0+) | `{ enabled: true, data_sources: "users" }` | 지정된 데이터 소스가 undefined일 때, 또는 앞 값을 둔 채 다시 받는 중일 때(같은 화면 쪽 넘김·검색 — engine-v1.82.0) blur |
+| 객체 (engine-v1.6.0+) | `{ enabled: true, data_sources: "users" }` | 지정된 데이터 소스가 undefined일 때 blur |
 
 ### Blur 적용 조건
 
@@ -386,12 +280,6 @@
 
 #### 1. 축약 (기본 opaque 스타일)
 
-```html
-<transition-overlay enabled/>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
     "transition_overlay": true,
@@ -400,12 +288,6 @@
 ```
 
 #### 2. 상세 설정
-
-```html
-<transition-overlay enabled style="blur"/>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -420,12 +302,6 @@
 #### 3. 타겟 컨테이너 지정
 
 특정 영역만 오버레이로 가리려면 `target`에 컴포넌트 ID를 지정합니다.
-
-```html
-<transition-overlay enabled target="main_content_area"/>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -447,20 +323,6 @@
 ### wait_for — 데이터소스 가드 (engine-v1.34.0+)
 
 `blocking` 데이터소스가 없는 페이지에서도 명시된 progressive 데이터소스가 fetch 완료될 때까지 오버레이가 표시되도록 한다. 베이스 레이아웃에 spinner 설정을 두고, 자식 레이아웃이 `wait_for` 만 추가하는 패턴이 권장된다.
-
-앞은 베이스 레이아웃(`_admin_base`), 뒤는 자식 레이아웃(`admin_settings` — `wait_for` 만 명시)이다.
-
-```html
-<transition-overlay enabled style="spinner" target="main_content">
-  <spinner component="PageLoading"/>
-</transition-overlay>
-
-<transition-overlay>
-  <wait-for>settings</wait-for>
-</transition-overlay>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 // 베이스 레이아웃 (_admin_base.json)
@@ -497,32 +359,12 @@
 
 - **트리거 1 — 페이지 진입**: handleRouteChange step 2.5 에서 `wait_for` 에 명시된 ID 중 progressive/blocking 데이터소스가 1개 이상 존재하면 오버레이 표시
 - **트리거 2 — 탭 전환/페이지네이션** (engine-v1.35.0+): `navigate replace:true` 로 `updateQueryParams` 경로에 진입할 때도 동일 조건으로 오버레이 표시. handleRouteChange 와 동일 정책으로 `wait_for` 검사 + 오버레이 호출
-- **해제** (engine-v1.82.0): 새 화면이 커밋되고 `wait_for` 에 명시한 소스가 모두 오면 걷는다. `wait_for` 가 없으면 커밋 직후 걷는다 — 다른 progressive·background 소스는 기다리지 않고 각 소스의 `blur_until_loaded`·`=== undefined` 조건이 받는 중을 보인다. 종전(engine-v1.81.2 이하)에는 모든 progressive·background 소스를 받을 때까지 그려진 화면 위에 남아 조작을 막았다.
-- **렌더 직전 한두 프레임**: 덮개 설정이 있는 화면은 레이아웃이 캐시돼 있어도 렌더 직전에 덮개를 붙였다가 커밋 뒤 걷는다(앞 화면 DOM 이 새 화면 커밋 전에 비치지 않게). 레이아웃 받기가 150ms 를 넘으면 그 사이에도 앞 화면 덮개 설정으로 덮개가 뜬다(engine-v1.81.2).
-- **받는 동안 앞 화면 입력 잠금** (engine-v1.82.0): 새 화면 폼을 blocking 응답의 initLocal 로 통째로 채우는 이동(같은 레이아웃의 글 수정 → 새 글 등)은 받는 동안 덮개 대상(`target` → `fallback_target`) 안의 앞 화면 내용에 `inert` 를 걸어 입력·포커스를 막고, 새 화면 렌더 뒤 푼다. 그 밖의 이동은 받는 동안 친 글자·포커스를 지킨다.
+- **해제**: 모든 progressive 데이터소스 fetch 완료 시 (hideTransitionOverlay 호출)
 - **존재하지 않는 ID**: 엔진이 자동 무시 (백엔드 검증과 별개로 런타임 안전 가드)
 
 #### 동적 target override (engine-v1.36.0+)
 
 `replace: true` navigate 의 `params.transition_overlay_target` 으로 호출별 target 을 override 할 수 있다. 탭 속 서브 탭(환경설정 > 알림 탭 > 채널 탭 등)에서 서브 탭 콘텐츠 영역에만 spinner 를 표시하고 싶을 때 사용.
-
-앞은 상위 탭 전환(베이스 `transition_overlay.target` = `settings_tab_content` 사용),
-뒤는 채널 서브 탭 전환(채널 콘텐츠 영역에만 spinner)이다.
-
-```html
-<on type="click">
-  <navigate path="/admin/settings" :replace="true">
-    <query tab="notification_definitions"/>
-  </navigate>
-</on>
-<on type="click">
-  <navigate path="/admin/settings" :replace="true" :mergeQuery="true" transition_overlay_target="notif_channel_content">
-    <query channel="{{ch.id}}"/>
-  </navigate>
-</on>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 // 상위 탭 전환: 베이스 transition_overlay.target 사용 (settings_tab_content)
@@ -547,42 +389,11 @@
 
 #### refetchDataSource 와의 관계
 
-`refetchDataSource` 핸들러로 단독 데이터를 다시 부르는 경우는 `wait_for` 트리거 대상이 아니다. 받는 동안의 표시는 컴포넌트 단위 `blur_until_loaded` 로 하되, **객체 형태(`data_sources`)는 걸리지 않는다** — 다시 받기는 엔진의 「받는 중」 표시를 세우지 않고(폴링마다 흐려지지 않게, [data-sources-advanced.md](data-sources-advanced.md)), 같은 경로 다시 받기는 앞 값을 둔 채 받아 값이 `undefined` 가 되지도 않는다. 조작이 받는 동안 켜고 끄는 값을 두고 표현식 형태로 읽는다:
+`refetchDataSource` 핸들러로 단독 데이터를 다시 부르는 경우는 `wait_for` 트리거 대상이 아니다. 이 경우 컴포넌트 단위 `blur_until_loaded` 의 객체 형태(`{ enabled: true, data_sources: ["xxx"] }`)로 처리한다 — 페이지 단위 vs 컴포넌트 단위의 역할 분리를 유지한다.
 
-```html
-<on type="click">
-  <sequence>
-    <set-state target="local" photoOnly="{{!_local.photoOnly}}" :listLoading="true"/>
-    <refetch-data-source dataSourceId="reviews" :sync="true"/>
-    <set-state target="local" :listLoading="false"/>
-  </sequence>
-</on>
-<div data-blur-until-loaded="{{_local.listLoading ?? false}}">…목록…</div>
-```
+`target` 지정 시 CSS `<style>` 태그를 `<head>`에 주입하여 타겟 요소에 `::after` 의사 요소로 오버레이를 생성합니다. 타겟 요소에 `position:relative; z-index:0`을 설정하여 명시적 stacking context를 생성하므로, `::after`가 타겟 내부에 갇히고 헤더/네비게이션 등 형제 요소를 절대 가리지 않습니다. `target` 미지정 시 `document.body`에 `position:fixed` div를 삽입하는 폴백 방식을 사용합니다.
 
-- `sequence` 가 필요하다 — 이벤트의 액션 배열은 서로 기다리지 않아, 나열만 하면 끄기가 응답 전에 돈다.
-- `sync: true` 가 필요하다 — 기본 다시 받기는 화면 반영을 뒤로 미뤄 끄기가 새 목록보다 먼저 그려진다.
-- 다시 받기는 실패해도 예외를 던지지 않으므로 끄기까지 간다. 같은 레이아웃 이동은 `_local` 을 유지하므로 초기화에서 그 값을 비운다.
-- 쿼리 갱신·같은 화면 이동(`navigate` + `mergeQuery`)으로 다시 받는 목록은 반대로 객체 형태가 걸린다. 그런 화면은 `wait_for` 로 덮개가 새 목록을 기다리게 하고, 덮개가 걷힌 뒤 커밋까지의 틈은 객체 형태 흐림으로 메운다.
-
-`target` 지정 시 문서에 런타임 CSS 규칙을 붙여 타겟 요소에 `::after` 의사 요소로 오버레이를 생성합니다. 타겟 요소에 `position:relative; z-index:0`을 설정하여 명시적 stacking context를 생성하므로, `::after`가 타겟 내부에 갇히고 헤더/네비게이션 등 형제 요소를 절대 가리지 않습니다. `target` 미지정 시 `document.body`에 `position:fixed` div를 삽입하는 폴백 방식을 사용합니다.
-
-> **핵심**: 규칙은 React 렌더 트리 밖(문서 수준)에 붙으므로, `renderTemplate()` 시 DOM 교체에도 소멸하지 않습니다. CSS 규칙은 셀렉터 기반으로 새로 렌더된 DOM에도 자동 적용됩니다.
-
-#### 규칙을 붙이는 방식 (engine-v1.91.0)
-
-덮개 규칙은 `<style>` 요소가 아니라 스크립트가 만든 스타일시트 객체(`document.adoptedStyleSheets`)로 붙습니다. `<style>` 요소는 엄격한 스타일 정책(`style-src 'self'`, `style-src-elem 'self'`)에서 적용되지 않아 덮개가 보이지 않기 때문입니다([콘텐츠 보안 정책](../backend/content-security-policy.md#1-무엇을-막는가)).
-
-| 덮개 | 규칙 묶음 키 | `<head>` 의 표식 요소 |
-| ---- | ------------ | --------------------- |
-| `opaque`·`blur`·`fade` (`target` 지정) | `g7-transition-overlay` | `<meta id="g7-transition-overlay" data-g7-runtime-style="adopted">` |
-| `skeleton`·`spinner` | `g7-skeleton-overlay-style` | `<meta id="g7-skeleton-overlay-style" data-g7-runtime-style="adopted">` |
-
-- **표식 요소**: 규칙이 붙어 있는 동안 `<head>` 에 같은 id 의 `<meta>` 가 있고, 덮개를 걷으면 함께 사라집니다. 스타일시트 객체는 DOM 에 보이지 않으므로, 덮개가 떠 있는지는 이 요소의 유무로 확인합니다(E2E: [e2e-testing.md](../testing/e2e-testing.md)).
-- **`target` 미지정 폴백**: `document.body` 에 붙는 `<div id="g7-transition-overlay">` 는 스타일 객체 대입으로 꾸미므로 정책과 무관합니다.
-- **기본 스피너**(`spinner.component` 미지정): 모양은 코어 정적 CSS(`g7-core.css`)의 `.g7-spinner-overlay`·`.g7-spinner` 클래스가 줍니다. 배경·스피너 색은 CSS 변수 `--g7-overlay-bg`·`--g7-spinner-color` 로 바꿉니다. 회전 애니메이션 이름은 `g7-spin` 입니다.
-- **구형 브라우저**: `document.adoptedStyleSheets` 를 지원하지 않으면 `<style id="{키}" data-g7-runtime-style="element">` 로 대신 붙입니다. 이 브라우저에서 스타일 정책을 강제하면 덮개가 표시되지 않습니다(화면 이동과 내용은 정상).
-- 확장이 같은 방식으로 실행 중 규칙을 붙이려면 `G7Core.style.setRules(key, css)` 를 씁니다([module-assets.md](../extension/module-assets.md#인라인-스타일을-쓰지-않습니다-코어-716)).
+> **핵심**: `<style>` 태그는 React 렌더 트리 외부(`<head>`)에 삽입되므로, `renderTemplate()` 시 DOM 교체에도 소멸하지 않습니다. CSS 규칙은 셀렉터 기반으로 새로 렌더된 DOM에도 자동 적용됩니다.
 
 ### 스타일 옵션
 
@@ -629,14 +440,6 @@
 `style: "skeleton"`을 지정하면, CSS 오버레이 대신 레이아웃 JSON의 컴포넌트 트리를 파싱하여 **동적 스켈레톤 UI**를 렌더링합니다.
 
 #### 설정 예시
-
-```html
-<transition-overlay enabled style="skeleton" target="main_content_area">
-  <skeleton component="PageSkeleton" animation="pulse" :iteration_count="5"/>
-</transition-overlay>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -715,14 +518,6 @@ interface SkeletonComponentProps {
 
 #### 설정 예시
 
-```html
-<transition-overlay enabled style="spinner" target="main_content_area">
-  <spinner component="PageLoading"/>
-</transition-overlay>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
     "transition_overlay": {
@@ -737,14 +532,6 @@ interface SkeletonComponentProps {
 ```
 
 #### 3단계 fallback chain (skeleton과 동일)
-
-```html
-<transition-overlay enabled style="spinner" target="mypage_tab_content" fallback-target="main_content_area">
-  <spinner component="PageLoading"/>
-</transition-overlay>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -815,22 +602,6 @@ interface LoadingComponentProps {
 
 ### 구조
 
-```html
-<form data-ref="user_form">
-  <on type="submit">
-    <action handler="submitForm"/>
-  </on>
-  <on event="mount">
-    <action handler="loadSavedData" target="{{_local.formId}}"/>
-  </on>
-  <on event="unmount">
-    <action handler="cleanup"/>
-  </on>
-</form>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "id": "user_form",
@@ -839,12 +610,14 @@ interface LoadingComponentProps {
   "lifecycle": {
     "onMount": [
       {
+        "type": "click",
         "handler": "loadSavedData",
-        "params": { "target": "{{_local.formId}}" }
+        "target": "{{_local.formId}}"
       }
     ],
     "onUnmount": [
       {
+        "type": "click",
         "handler": "cleanup"
       }
     ]
@@ -884,16 +657,6 @@ lifecycle 핸들러에서는 다음 데이터에 접근할 수 있습니다:
 
 ### 실제 사용 예시
 
-```html
-<div data-ref="analytics_wrapper">
-  <on event="mount">
-    <action handler="trackPageView" page="{{route.layout}}" userId="{{_global.user.id}}"/>
-  </on>
-</div>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "id": "analytics_wrapper",
@@ -902,6 +665,7 @@ lifecycle 핸들러에서는 다음 데이터에 접근할 수 있습니다:
   "lifecycle": {
     "onMount": [
       {
+        "type": "click",
         "handler": "trackPageView",
         "params": {
           "page": "{{route.layout}}",

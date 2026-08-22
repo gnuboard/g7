@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product,effects] reason: |
+# audit:allow test-scenario-coverage reason: |
 #   cross product 자동 전개는 audit 실행 환경의 fallback YAML 파서가 nested axes 를 읽지 못해
 #   검출되지 않는다(다른 번들 시나리오와 동일 한계). 본 변경은 백엔드 전용(검증 규칙 계층)
 #   이며 PHPUnit Feature 테스트가 화면·필드·경계 조합을 커버하고 green 이다.
@@ -25,7 +25,7 @@ description: |
     - 통화 정밀도: `ResolvesBaseCurrencyPrecision` trait 이 단건·벌크 공용 SSoT
     - 적립률 상한: `ValidatesMileageRate` trait
     - 옵션 가격 하한은 `min:0` — 단건 옵션 경로와 동일 경계여야 한다
-      (0원 상품 허용 이후 상품 본가·옵션 모두 하한 0 — tests/scenarios/zero-price-product.yaml)
+      (상품 본가는 `min:0.01`, 옵션은 0 허용이 기존 계약)
 
 axes:
   surface: [single_product, bulk_products, bulk_options, product_options]
@@ -48,7 +48,7 @@ effects:
   # E4 — 벌크 가격
   - bulk_price_respects_currency_precision
   - bulk_selling_price_cannot_exceed_list_price
-  - bulk_product_price_zero_allowed_negative_rejected
+  - bulk_product_price_zero_rejected
   - bulk_option_price_zero_allowed
   - bulk_valid_price_passes
   - bulk_partial_send_deferred_to_service

@@ -1,6 +1,5 @@
 {
     "$schema": "https://json.schemastore.org/package.json",
-    "name": "g7",
     "private": true,
     "type": "module",
     "scripts": {
@@ -38,7 +37,6 @@
         "jsdom": "^27.1.0",
         "laravel-vite-plugin": "^2.0.0",
         "tailwindcss": "^4.0.0",
-        "typescript": "^5.9.3",
         "vite": "^7.0.4",
         "vitest": "^4.1.8"
     },

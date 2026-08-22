@@ -6,7 +6,6 @@ use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use Exception;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 
 /**
@@ -16,11 +15,6 @@ use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
  */
 class EcommerceSettingsController extends PublicBaseController
 {
-    /**
-     * 쇼핑몰 설정 서비스를 주입받습니다.
-     *
-     * @param  EcommerceSettingsService  $settingsService  쇼핑몰 설정 서비스
-     */
     public function __construct(
         private EcommerceSettingsService $settingsService
     ) {}
@@ -42,7 +36,7 @@ class EcommerceSettingsController extends PublicBaseController
         try {
             $this->logApiUsage('settings.shipping');
 
-            $shippingSettings = $this->settingsService->getPublicCategorySettings('shipping');
+            $shippingSettings = $this->settingsService->getSettings('shipping');
 
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
@@ -52,12 +46,6 @@ class EcommerceSettingsController extends PublicBaseController
                 ]
             );
         } catch (Exception $e) {
-            Log::error('settings.shipping failed', [
-                'exception' => $e::class,
-                'message' => $e->getMessage(),
-                'file' => $e->getFile().':'.$e->getLine(),
-            ]);
-
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.settings.fetch_failed',
@@ -80,10 +68,7 @@ class EcommerceSettingsController extends PublicBaseController
         try {
             $this->logApiUsage('settings.payment');
 
-            $orderSettings = $this->settingsService->getPublicCategorySettings(
-                'order_settings',
-                $this->settingsService->getPublicPaymentSettings()
-            );
+            $orderSettings = $this->settingsService->getPublicPaymentSettings();
 
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
@@ -93,12 +78,6 @@ class EcommerceSettingsController extends PublicBaseController
                 ]
             );
         } catch (Exception $e) {
-            Log::error('settings.payment failed', [
-                'exception' => $e::class,
-                'message' => $e->getMessage(),
-                'file' => $e->getFile().':'.$e->getLine(),
-            ]);
-
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.settings.fetch_failed',
@@ -122,7 +101,7 @@ class EcommerceSettingsController extends PublicBaseController
         try {
             $this->logApiUsage('settings.review');
 
-            $reviewSettings = $this->settingsService->getPublicCategorySettings('review_settings');
+            $reviewSettings = $this->settingsService->getSettings('review_settings');
 
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
@@ -132,12 +111,6 @@ class EcommerceSettingsController extends PublicBaseController
                 ]
             );
         } catch (Exception $e) {
-            Log::error('settings.review failed', [
-                'exception' => $e::class,
-                'message' => $e->getMessage(),
-                'file' => $e->getFile().':'.$e->getLine(),
-            ]);
-
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.settings.fetch_failed',
@@ -158,11 +131,8 @@ class EcommerceSettingsController extends PublicBaseController
         try {
             $this->logApiUsage('settings.checkout');
 
-            $shippingSettings = $this->settingsService->getPublicCategorySettings('shipping');
-            $orderSettings = $this->settingsService->getPublicCategorySettings(
-                'order_settings',
-                $this->settingsService->getPublicPaymentSettings()
-            );
+            $shippingSettings = $this->settingsService->getSettings('shipping');
+            $orderSettings = $this->settingsService->getPublicPaymentSettings();
 
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
@@ -173,12 +143,6 @@ class EcommerceSettingsController extends PublicBaseController
                 ]
             );
         } catch (Exception $e) {
-            Log::error('settings.checkout failed', [
-                'exception' => $e::class,
-                'message' => $e->getMessage(),
-                'file' => $e->getFile().':'.$e->getLine(),
-            ]);
-
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.settings.fetch_failed',

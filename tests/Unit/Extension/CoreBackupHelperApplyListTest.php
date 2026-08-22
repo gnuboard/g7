@@ -4,7 +4,6 @@ namespace Tests\Unit\Extension;
 
 use App\Extension\Helpers\CoreBackupHelper;
 use Illuminate\Support\Facades\File;
-use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
@@ -22,11 +21,6 @@ class CoreBackupHelperApplyListTest extends TestCase
 
     private string $theirsPath; // _pending (theirs = 신 버전)
 
-    /**
-     * 테스트 환경을 준비합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -39,11 +33,6 @@ class CoreBackupHelperApplyListTest extends TestCase
         File::ensureDirectoryExists($this->theirsPath);
     }
 
-    /**
-     * 테스트가 남긴 상태를 정리합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function tearDown(): void
     {
         $root = dirname($this->basePath);
@@ -56,10 +45,6 @@ class CoreBackupHelperApplyListTest extends TestCase
 
     /**
      * base == theirs 인 파일은 적용 목록에서 제외됩니다 (코어 미변경 → 보존).
-     *
-     * @effects unchanged_file_is_excluded_from_apply_list
-     *
-     * @return void 반환값 없음
      */
     public function test_unchanged_file_is_excluded_from_apply_list(): void
     {
@@ -80,10 +65,6 @@ class CoreBackupHelperApplyListTest extends TestCase
 
     /**
      * base 에 없고 theirs 에만 있는 파일은 added 로 포함됩니다 (신규).
-     *
-     * @effects new_file_is_added_to_apply_list
-     *
-     * @return void 반환값 없음
      */
     public function test_new_file_is_added_to_apply_list(): void
     {
@@ -105,10 +86,6 @@ class CoreBackupHelperApplyListTest extends TestCase
 
     /**
      * size 가 다른 파일은 md5 계산 없이 changed 로 포함됩니다.
-     *
-     * @effects size_differing_file_is_changed
-     *
-     * @return void 반환값 없음
      */
     public function test_size_differing_file_is_changed(): void
     {
@@ -129,10 +106,6 @@ class CoreBackupHelperApplyListTest extends TestCase
 
     /**
      * size 는 같지만 내용(md5)이 다른 파일은 changed 로 포함됩니다.
-     *
-     * @effects same_size_different_content_file_is_changed
-     *
-     * @return void 반환값 없음
      */
     public function test_same_size_different_content_file_is_changed(): void
     {
@@ -153,10 +126,6 @@ class CoreBackupHelperApplyListTest extends TestCase
 
     /**
      * excludes 패턴에 매칭되는 파일은 목록에서 제외됩니다.
-     *
-     * @effects excluded_file_is_not_in_apply_list
-     *
-     * @return void 반환값 없음
      */
     public function test_excluded_file_is_not_in_apply_list(): void
     {
@@ -177,10 +146,6 @@ class CoreBackupHelperApplyListTest extends TestCase
 
     /**
      * protected_paths 하위 항목은 목록에서 제외됩니다.
-     *
-     * @effects protected_path_file_is_not_in_apply_list
-     *
-     * @return void 반환값 없음
      */
     public function test_protected_path_file_is_not_in_apply_list(): void
     {
@@ -212,12 +177,8 @@ class CoreBackupHelperApplyListTest extends TestCase
      * 반영되지 않는다. targets 에 더 구체적으로 명시된 경로는 상위 protected 를
      * 오버라이드해야 한다. 4종 확장(모듈/플러그인/템플릿/언어팩) 전수 검증.
      *
-     * @effects bundled_target_overrides_parent_protected_path
-     *
-     * @param  string  $domain  확장 도메인 디렉터리
-     * @return void 반환값 없음
+     * @dataProvider bundledDomainProvider
      */
-    #[DataProvider('bundledDomainProvider')]
     public function test_bundled_target_overrides_parent_protected_path(string $domain): void
     {
         $bundledTarget = "{$domain}/_bundled";
@@ -264,7 +225,7 @@ class CoreBackupHelperApplyListTest extends TestCase
     /**
      * 4종 번들 확장 도메인 (config/app.php 의 targets/protected_paths 실제 조합).
      *
-     * @return array<string, array{string}> 확장 도메인
+     * @return array<string, array{string}>
      */
     public static function bundledDomainProvider(): array
     {
@@ -281,10 +242,6 @@ class CoreBackupHelperApplyListTest extends TestCase
      *
      * `_bundled` 오버라이드는 "targets 가 protected 보다 더 구체적(하위)일 때"만
      * 적용된다. target == protected (예: storage) 는 제외가 정상.
-     *
-     * @effects target_equal_to_protected_is_still_excluded
-     *
-     * @return void 반환값 없음
      */
     public function test_target_equal_to_protected_is_still_excluded(): void
     {
@@ -304,10 +261,6 @@ class CoreBackupHelperApplyListTest extends TestCase
 
     /**
      * added 와 changed 가 섞여 있을 때 apply 목록이 정렬되어 둘 다 포함합니다.
-     *
-     * @effects apply_list_merges_added_and_changed_sorted
-     *
-     * @return void 반환값 없음
      */
     public function test_apply_list_merges_added_and_changed_sorted(): void
     {
@@ -330,10 +283,6 @@ class CoreBackupHelperApplyListTest extends TestCase
 
     /**
      * 단일 파일 target 도 3-way 판정을 받습니다 (변경 시 changed).
-     *
-     * @effects single_file_target_is_classified
-     *
-     * @return void 반환값 없음
      */
     public function test_single_file_target_is_classified(): void
     {
@@ -355,10 +304,6 @@ class CoreBackupHelperApplyListTest extends TestCase
     /**
      * theirs 의 symlink 는 적용 목록에서 제외되고 has_symlink 플래그가 켜집니다.
      * (링크 자체는 copyDirectory 의 별도 링크 처리 경로가 담당 — 목록 산출 대상 아님)
-     *
-     * @effects symlink_is_excluded_and_flagged
-     *
-     * @return void 반환값 없음
      */
     public function test_symlink_is_excluded_and_flagged(): void
     {
@@ -388,120 +333,7 @@ class CoreBackupHelperApplyListTest extends TestCase
     }
 
     /**
-     * skipPaths 에 든 번들 경로(정확 일치·하위 접두사)는 base 에 없어도 적용 목록에서 빠집니다 (#146).
-     *
-     * 3-way base 는 업데이트 직전 디스크 스냅샷이라, 운영자가 지운 번들이나 이번 판에 새로 든
-     * 번들이 모두 added 로 판정돼 통째로 배치되던 결함을 막는다.
-     *
-     * @effects skip_paths_exclude_unplaced_bundle_from_apply_list
-     *
-     * @return void 반환값 없음
-     */
-    public function test_skip_paths_exclude_unplaced_bundle_from_apply_list(): void
-    {
-        $this->writeTheirs('plugins/_bundled/sirsoft-gdpr/plugin.json', '{}');
-        $this->writeTheirs('plugins/_bundled/sirsoft-gdpr/src/Plugin.php', '<?php');
-        $this->writeTheirs('plugins/_bundled/sirsoft-board-x/plugin.json', '{}');
-        $this->writeTheirs('lang-packs/_bundled/g7-plugin-sirsoft-gdpr-ja/language-pack.json', '{}');
-
-        $result = CoreBackupHelper::computeApplyList(
-            $this->basePath,
-            $this->theirsPath,
-            ['plugins/_bundled', 'lang-packs/_bundled'],
-            [],
-            [],
-            ['plugins/_bundled/sirsoft-gdpr', 'lang-packs/_bundled/g7-plugin-sirsoft-gdpr-ja'],
-        );
-
-        $this->assertNotContains('plugins/_bundled/sirsoft-gdpr/plugin.json', $result['apply']);
-        $this->assertNotContains('plugins/_bundled/sirsoft-gdpr/src/Plugin.php', $result['apply']);
-        $this->assertNotContains('lang-packs/_bundled/g7-plugin-sirsoft-gdpr-ja/language-pack.json', $result['apply']);
-        // 접두사가 같은 다른 번들(sirsoft-board-x)은 영향 없음
-        $this->assertContains('plugins/_bundled/sirsoft-board-x/plugin.json', $result['apply']);
-        $this->assertSame(1, $result['added_count']);
-    }
-
-    /**
-     * skipPaths 는 경로 단위로만 매치합니다 — 다른 깊이의 같은 이름 폴더는 건너뛰지 않습니다.
-     *
-     * excludes 의 「/ 없는 항목 = 모든 깊이의 이름 매치」 규칙과 다르다는 점을 잠근다.
-     *
-     * @effects skip_paths_do_not_match_same_name_at_other_depth
-     *
-     * @return void 반환값 없음
-     */
-    public function test_skip_paths_do_not_match_same_name_at_other_depth(): void
-    {
-        $this->writeTheirs('plugins/_bundled/sirsoft-gdpr/plugin.json', '{}');
-        $this->writeTheirs('plugins/_bundled/other/sirsoft-gdpr/file.txt', 'x');
-        $this->writeTheirs('plugins/_bundled/sirsoft-gdpr-ext/plugin.json', '{}');
-
-        $result = CoreBackupHelper::computeApplyList(
-            $this->basePath,
-            $this->theirsPath,
-            ['plugins/_bundled'],
-            [],
-            [],
-            ['plugins/_bundled/sirsoft-gdpr'],
-        );
-
-        $this->assertNotContains('plugins/_bundled/sirsoft-gdpr/plugin.json', $result['apply']);
-        $this->assertContains('plugins/_bundled/other/sirsoft-gdpr/file.txt', $result['apply']);
-        $this->assertContains('plugins/_bundled/sirsoft-gdpr-ext/plugin.json', $result['apply']);
-    }
-
-    /**
-     * 롤백 manifest 도 같은 skipPaths 로 건너뛰어 적용 목록과 일치합니다 (#146 S4).
-     *
-     * @effects new_files_manifest_honors_skip_paths
-     *
-     * @return void 반환값 없음
-     */
-    public function test_new_files_manifest_honors_skip_paths(): void
-    {
-        $this->writeTheirs('plugins/_bundled/sirsoft-gdpr/plugin.json', '{}');
-        $this->writeTheirs('plugins/_bundled/sirsoft-totp/plugin.json', '{}');
-
-        $skip = ['plugins/_bundled/sirsoft-gdpr'];
-        CoreBackupHelper::writeNewFilesManifest(
-            $this->basePath,
-            $this->theirsPath,
-            ['plugins/_bundled'],
-            [],
-            [],
-            '7.1.1',
-            '7.1.2',
-            $skip,
-        );
-        $manifest = json_decode(File::get($this->basePath.DIRECTORY_SEPARATOR.'_new_files_manifest.json'), true);
-        $apply = CoreBackupHelper::computeApplyList($this->basePath, $this->theirsPath, ['plugins/_bundled'], [], [], $skip)['apply'];
-
-        $this->assertSame($apply, $manifest['new_files']);
-        $this->assertNotContains('plugins/_bundled/sirsoft-gdpr', $manifest['new_dirs']);
-        $this->assertContains('plugins/_bundled/sirsoft-totp', $manifest['new_dirs']);
-    }
-
-    /**
-     * theirs 쪽에만 파일을 씁니다.
-     *
-     * @param  string  $relative  상대 경로
-     * @param  string  $content  내용
-     * @return void 반환값 없음
-     */
-    private function writeTheirs(string $relative, string $content): void
-    {
-        $file = $this->theirsPath.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $relative);
-        File::ensureDirectoryExists(dirname($file));
-        File::put($file, $content);
-    }
-
-    /**
      * base·theirs 양쪽에 동일 파일을 씁니다.
-     *
-     * @param  string  $relative  상대 경로
-     * @param  string  $baseContent  base 쪽 내용
-     * @param  string  $theirsContent  theirs 쪽 내용
-     * @return void 반환값 없음
      */
     private function writeBoth(string $relative, string $baseContent, string $theirsContent): void
     {

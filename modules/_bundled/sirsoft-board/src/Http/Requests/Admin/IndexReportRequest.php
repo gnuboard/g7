@@ -3,7 +3,6 @@
 namespace Modules\Sirsoft\Board\Http\Requests\Admin;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Modules\Sirsoft\Board\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
 
 /**
  * 관리자 신고 목록 조회 요청 폼 검증
@@ -12,8 +11,6 @@ use Modules\Sirsoft\Board\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
  */
 class IndexReportRequest extends FormRequest
 {
-    use ProvidesFallbackRuleMessages;
-
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인합니다.
      *

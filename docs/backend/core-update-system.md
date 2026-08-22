@@ -9,8 +9,7 @@
 2. 마이그레이션 = 스키마 변경만, 데이터 백필/변환 = 업그레이드 스텝 (역할 분리 필수)
 3. 업데이트 실행 흐름: 11단계 (감지 → 다운로드 → 백업 → 적용 → 마이그레이션 → 동기화 → 업그레이드 → 마무리)
 4. 롤백: CoreBackupHelper로 백업 생성, 실패 시 자동 복원
-5. 부트스트랩 호환성 검증: 코어 버전 < 확장 g7_version 시 자동 비활성화 (1시간 캐시)
-6. vendor 를 교체한 뒤 새 프로세스를 띄우기 전에는 패키지 매니페스트를 비운다 (3계층 — 부모 선정리 / 자식 자가 치유 / 버전 판독 범위)
+5. 부트스트랩 호환성 검증: .env의 APP_VERSION < 확장 g7_version 시 자동 비활성화 (1시간 캐시)
 ```
 
 ---
@@ -28,7 +27,6 @@
 |----------|----------|----------|
 | **SSH/CLI 직접 실행** | 사용자 = 파일 소유자 → 모든 코어 파일 쓰기 가능 | ✅ 정상 사용 (권장) |
 | **웹 인스톨러 (`public/install/`)** | PHP-FPM 사용자 (www-data 등) — 권한 제한적 | ⚠️ vendor 번들 모드로만 신규 설치 가능. 코어 업데이트는 미지원 |
-| **터미널 설치 (`php g7-install`, 7.1.4)** | 실행한 셸 사용자 — root 면 `--web-user` 필수(끝나면 쓰기 폴더 소유권을 웹서버 계정으로 넘김) | ✅ 최초 설치·재설치(`--reinstall`). 설치 뒤 업데이트는 `core:update` |
 | **www-data 로 CLI 실행** | 코어 파일 소유자와 다를 수 있음 | ⚠️ 비권장 — 권한 거부 가능 |
 
 ### 권한 거부 발생 시 대처
@@ -74,7 +72,6 @@
 
 ```text
 1. CoreVersionChecker::getCoreVersion() → config('app.version') 읽기
-   (코어 업데이트 트리 안에서만 env APP_VERSION 우선 — CoreUpdateContext::isInProgress())
 2. CoreUpdateService::checkForUpdates() → GitHub API로 최신 릴리스 조회
 3. version_compare(current, latest) → 업데이트 가용 여부 판단
 4. 원격 CHANGELOG 캐시 → storage/app/temp/core_remote_changelog.md
@@ -122,21 +119,6 @@
 └─ Step 11: 마무리 (.env 버전 갱신, 캐시 클리어, _pending 삭제, 유지보수 해제)
 ```
 
-### 동시 실행 차단 (7.1.5+)
-
-`core:update` 는 시작하자마자(옵션 검사·유지보수 진입보다 앞) 코어 작업 잠금(`core-update`, 30분)을 잡는다. 두 곳에서 동시에 돌리면 먼저 끝난 쪽이 유지보수 모드를 풀어 교체 중인 사이트가 열리고 스텝이 두 번 돌던 문제를 막는다.
-
-| 상황 | 동작 |
-|---|---|
-| 다른 `core:update` 가 진행 중 | 「다른 코어 업데이트가 진행 중」 안내 후 실패 종료 — 직전 실행이 비정상 종료됐다면 잠금 만료(30분) 뒤 다시 실행 |
-| 잠금 저장소(캐시) 오류 | 「잠금 저장소를 쓸 수 없다」 안내 후 실패 종료 — 원본 오류는 error 로그에만 |
-| 진행 중 | 진행 콜백(30초 간격)·진행 막대 단계마다 잠금을 늘리고, 캐시 비우기 직후와 번들 일괄 업데이트 직전에는 바로 늘리거나 다시 잡는다(redis·memcached 의 flush 는 잠금까지 지운다) |
-
-- 자식 프로세스(`core:execute-upgrade-steps`, `core:execute-bundled-updates`)는 코어 잠금을 잡지 않는다 — 부모와 소유자가 달라 스스로 막힌다.
-- file 캐시의 잠금은 `storage/framework/cache/locks` 에 있어 `cache:clear` 가 지우지 않는다.
-- 번들 일괄 업데이트는 잠금 저장소 장애를 만나면 첫 항목에서 멈추고 남은 항목 수를 한 번 알린다(docs/extension/extension-update-system.md 「작업 잠금」).
-- 적용 시점: 업데이트를 실행하는 것은 **설치된(이전) 판의 명령**이다. 7.1.4 → 7.1.5 업데이트에는 이 차단이 없고, 7.1.5 에서 그다음 판으로 올릴 때부터 적용된다.
-
 ### Step 1: 업데이트 확인
 
 | 모드 | 동작 |
@@ -146,68 +128,16 @@
 | `--zip={path}` | 지정된 ZIP 파일을 추출하여 소스로 사용 (GitHub 스킵). 추출 후 `config/app.php` 에서 버전 자동 판별. ZIP 구조가 GitHub zipball 의 `owner-repo-hash/` 래퍼이든 평탄 루트이든 모두 지원 |
 | `--local` | 현재 코드베이스를 소스로 사용 (GitHub 스킵) |
 | `--force` | 버전 비교 스킵, 동일 버전이어도 강제 실행 |
-| `--yes`(`-y`) | 확인 질문에 「예」로 답하고 진행한다(7.1.6+). 터미널 없는 실행(배포 스크립트·스케줄러)은 이 옵션이 없으면 「`--yes` 를 붙이세요」 경고와 함께 종료 코드 1 로 끝난다. 번들 확장 일괄 업데이트의 선택 질문(레이아웃 전략·확장별 전략·검색 색인 재생성)은 기본값으로 진행한다. `--force` 와 뜻이 다르다 — `--force` 는 버전 비교를 건너뛰는 옵션이고 확인을 대신하지 않는다 |
 | `--vendor-mode=auto\|composer\|bundled` | vendor 설치 모드 지정 (기본 `auto` — composer 가능 시 composer, 불가 시 vendor-bundle.zip 추출). `bundled` 강제 시 공유 호스팅에서도 설치 가능 |
-| `--bundled-sources=none\|all\|식별자,…` | 설치되지 않았고 이 프로젝트에도 없는 공식 번들을 어떻게 할지 미리 정한다(7.1.1+). `none` 배치하지 않음, `all` 모두 배치, 식별자 목록은 그것만 배치(유형이 겹치면 `plugin:식별자`). 미지정 시 대화형은 묻고, 비대화형(`--force`·`--no-interaction`·응답 불가)은 `none`. 배포본에 없는 식별자·알 수 없는 유형은 유지보수 모드 전에 실패 |
 
 > `--source` / `--zip` / `--local` 은 **상호 배타적**입니다. 동시 지정 시 커맨드는 시작 전에 FAILURE(1) 로 종료됩니다.
-
-### 공식 번들 배치 판정 (7.1.1+)
-
-새 배포본에는 공식 번들(모듈·플러그인·템플릿과 그 언어팩)이 `{modules,plugins,templates,lang-packs}/_bundled/` 로 들어 있다. 7.1.0 까지는 Step 7 이 이 트리를 통째로 배치해, 설치하지 않은 번들과 운영자가 지운 번들이 업데이트마다 다시 깔렸다(공개 #146). 7.1.1 부터는 아래 규칙으로 **배치할 번들(P)** 과 **건너뛸 번들(U)** 을 먼저 정한다.
-
-| 구분 | 규칙 |
-| --- | --- |
-| 항상 갱신 | 설치된 번들(DB 행 존재, 상태 무관), 디스크에 이미 있는 번들, 그리고 이들의 **새 판 manifest** `dependencies` 추이 폐포 중 배포본에 있는 번들(의존성으로 배치) |
-| 운영자 선택 | 나머지(디스크에도 없고 설치되지도 않은 번들)는 [배치하지 않음 / 모두 배치 / 골라서 배치] 로 묻는다. 고른 번들의 의존 번들은 자동으로 함께 배치한다 |
-| 언어팩 | `scope=core` 팩은 항상 배치. 확장 팩은 대상 확장이 배치·설치되거나 팩 자신이 설치·디스크에 있을 때만 배치 |
-| 판정 밖 | 배포본 목록에 없는 사용자 자체 `_bundled/{id}` 는 판정 대상이 아니며 그대로 보존 |
-
-묻는 시점은 소스별로 가장 이르다. `--source`·`--local`·`--zip` 은 시작 확인 직후, **유지보수 모드를 켜기 전**에 묻는다(`--zip` 은 압축을 풀지 않고 목록만 읽으며, PHP zip 확장이 없으면 추출 직후로 미룬다). GitHub 에서 받는 경우만 Step 4 다운로드 직후 유지보수 중에 묻고, 질문 앞에 「사이트가 유지보수 중입니다」를 표시한다. 그 시점에 `--bundled-sources` 의 식별자가 배포본에 없으면 백업·파일 적용 전이므로 받은 배포본을 지우고 유지보수를 풀고 실패로 끝낸다.
-
-판정 결과는 `storage/app/core_update/bundled_sources.json` 에 남는다(미배치 목록·의존성으로 배치한 번들·고른 번들·해시). 관리자 목록 화면 안내와 `core:bundled-sources` 가 이 기록을 쓰며, 업데이트가 롤백되면 이전 기록으로 되돌린다. 완료 요약은 기존 설치 확장 업데이트, 의존성으로 배치한 번들(필요로 한 확장 표시), 고른 번들, 배치하지 않은 번들(나중에 배치하는 명령 안내)의 4구분으로 출력하고, 디스크에 있던 미설치 번들 갱신 수를 한 줄 덧붙인다.
-
-> **효력 시점**: Step 7 은 업데이트를 실행하는 쪽(이전 버전)의 코드로 돈다. 그래서 이 판정은 **7.1.1 로 올린 뒤의 업데이트부터** 적용되고, 7.1.0 → 7.1.1 업데이트는 7.1.0 코드가 돌려 지금까지처럼 모두 배치한다. 이미 깔린 쓰지 않는 번들은 `php artisan core:bundled-sources prune` 으로 정리한다(아래 「사후 관리 명령」).
-
-### PHP 확장 사전점검 (7.1.4+)
-
-새 배포본의 코어 요구 목록(`app/Support/Requirements/php-extensions.json` — 필수·선택 확장의 SSoT)을 읽어, 새 코어의 **필수**
-확장이 이 서버에 없으면 업데이트를 시작하지 않는다(공개 #151). 파일을 적용한 뒤에야 부팅이 깨지는 것보다 시작 전에 멈추는 편이 사이트가 온전하다.
-
-| 소스 | 판정 시점 | 미충족 시 |
-|------|----------|----------|
-| `--source` | 공식 번들 배치 판정 직후, 유지보수 모드 전 | 오류 출력 + FAILURE. 사이트·파일 변화 없음 |
-| `--zip` | 같은 시점 — zip 을 풀지 않고 목록 파일만 읽는다(읽지 못하면 추출 직후로 미룬다) | 같음 |
-| GitHub 다운로드 | Step 4 다운로드 직후(유지보수 중), 백업 전 | 받은 `_pending` 삭제 → 유지보수 해제 → 업데이트 로그 저장 → FAILURE (공식 번들 선택 오류와 같은 모양) |
-| `--local` | 판정하지 않음 (현재 코드 그대로) | — |
-
-- 새 배포본에 목록 파일이 없으면(이 체계 도입 전 판) 코어 판정은 건너뛰고 로그만 남긴다.
-- 같은 시점에 「이번에 함께 갱신될 설치된 번들 확장」의 새 `composer.json` `require.ext-*` 도 계산해 **경고만** 출력한다 — 확장 업데이트는 막지 않는다(번들 일괄 업데이트 단계도 `php_extension_missing` 생명주기 경고만 남긴다).
-- 판정은 JSON 만 읽는다. 새 배포본의 PHP 클래스를 `require` 하면 이미 로드된 같은 이름 클래스와 충돌하기 때문이다.
-- 서비스: `App\Services\Core\PhpRequirementPreflight`(`inspectDirectory`·`inspectZip`). 회귀: `tests/Feature/Console/CoreUpdatePhpRequirementPreflightTest.php`.
-
-### 사후 관리 명령: core:bundled-sources (7.1.1+)
-
-```bash
-php artisan core:bundled-sources list                         # 배포본 번들 × 디스크 × 설치 상태 표 + 기록 갱신
-php artisan core:bundled-sources place sirsoft-totp           # 그 번들 + 의존 번들 + 대상 언어팩을 _bundled 로 배치 (설치는 별도)
-php artisan core:bundled-sources prune                        # 정리 대상 미리보기 (삭제 없음)
-php artisan core:bundled-sources prune --force                # 실제 삭제
-php artisan core:bundled-sources prune --force --include-modified  # 배포본과 다른 파일이 있는 폴더도 삭제
-```
-
-- 배포본은 `--source`(디렉토리) > `--zip` > GitHub 의 현재 코어 버전 태그 순으로 고른다. 배포본의 코어 버전이 현재와 다르면 거부한다(다른 판 번들을 섞지 않음). GitHub 다운로드는 격리 디렉토리에 받고 끝나면 지운다.
-- `list` 는 배포본을 못 읽으면 같은 버전의 기록 파일로, 그것도 없으면 디스크·설치 상태만 경고와 함께 보인다.
-- `prune` 대상 = 배포본 번들 ∩ 디스크 − 설치됨 − 설치된 확장의 의존 대상 − 남는 번들의 의존 대상(반복 축소). 배포본과 md5 가 다르거나 배포본에 없는 파일이 있는 폴더는 「수정됨, 보존」과 다른 파일 목록을 출력하고 `--include-modified` 일 때만 지운다. 확장 언어팩은 팩이 미설치이고 대상 확장 소스가 정리되거나 이미 없을 때 함께 정리하며 core 팩은 대상이 아니다. 배포본 목록에 없는 사용자 자체 `_bundled/{id}` 는 어떤 경우에도 지우지 않는다. 정리한 번들은 미배치 안내에 다시 올리지 않는다.
-- 웹 인스톨러로 새로 설치한 사이트는 배포본의 번들을 그대로 두므로, 쓰지 않을 번들은 설치 뒤 `prune` 으로 정리한다.
 
 ### Step 4: 다운로드 및 추출
 
 ```text
-추출 (SafeArchiveExtractor, 7.1.3+):
-- ZipArchive (PHP zip 확장) 필수 — 없으면 추출 실패. unzip 명령 폴백 없음 (7.1.3 에서 제거)
-- 항목 이름의 \ 를 / 로 정규화한 뒤, 압축 밖 경로(..)·절대 경로·드라이브·UNC·널 문자·심볼릭 링크
-  항목이 하나라도 있으면 아무것도 풀지 않고 전체 거부
+추출 전략 (폴백 체인):
+1. ZipArchive (PHP zip 확장) → class_exists(ZipArchive::class)
+2. unzip CLI 명령어 → ZipArchive 미사용 시 폴백
 
 v접두사 자동 감지 (resolveGithubArchiveUrl):
 1. "v{version}" 태그로 HEAD 요청 시도 (예: v7.0.0-alpha.15)
@@ -238,9 +168,6 @@ v접두사 자동 감지 (resolveGithubArchiveUrl):
    - composer.json + composer.lock 의 MD5 비교 (_pending vs base_path)
    - 동일 → "composer 의존성 변경 없음 — 스킵" (Step 6 + Step 8 모두 스킵)
    - 변경됨 → composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
-   - 운영 vendor 의 개발용(require-dev) 패키지 감지 → 로그 기록
-     · 재설치 분기: "--no-dev vendor 로 교체합니다" (정보)
-     · 스킵 분기: "그대로 남습니다 … composer install --no-dev 실행 권장" (경고)
 
 3. Bundled 모드 (신규, 공유 호스팅 대응):
    - _pending/vendor-bundle.zip 무결성 검증 (SHA256)
@@ -287,10 +214,6 @@ v접두사 자동 감지 (resolveGithubArchiveUrl):
   `preserveLinkPaths: ['storage']` 화이트리스트로 링크/junction 을 보존 (#43, 아래 §참조)
 
 공통:
-- 미배치 공식 번들 건너뛰기(7.1.1+): 위 「공식 번들 배치 판정」의 U 경로(`plugins/_bundled/{id}` 등)를
-  증분·--prune·백업 부재 세 모드 모두에서 복사와 orphan 정리 양쪽에서 건너뛴다(skipPaths).
-  Step 6.5 의 3-way 산출과 롤백 manifest 도 같은 목록으로 건너뛰어 적용 목록과 일치시킨다.
-  excludes 의 「이름 매치(모든 깊이)」와 달리 경로가 같거나 그 하위일 때만 건너뛴다.
 - 자동 발견 폴백: targets 에 미등재된 source 최상위 항목도 스캔하여 적용
   (config('app.update.protected_paths') 와 config('app.update.excludes') 매치 시 스킵)
 - FilePermissionHelper::copyDirectory() 사용 → 원본 파일 권한 보존
@@ -342,27 +265,9 @@ v접두사 자동 감지 (resolveGithubArchiveUrl):
 
 > **단독 실행 안전성 (beta.6 이후)**: `core:execute-upgrade-steps` 는 HANDOFF 안내 또는 수동 복구 목적으로 운영자가 직접 호출되는 경로가 있다. 단독 실행 시 자식은 기본값으로 부모 Step 9 (`runMigrations` + `reloadCoreConfigAndResync`), Step 11 (`updateVersionInEnv` + `clearAllCaches`), Step 12 (번들 확장 일괄 업데이트) 를 자체적으로 수행해 단일 명령으로 업그레이드를 완결한다. 부모 `CoreUpdateCommand::spawnUpgradeStepsProcess()` 는 자식 명령 라인에 `--skip-migrations`, `--skip-resync`, `--skip-version-env`, `--skip-cache-clear`, `--skip-bundled-updates` 5개를 무조건 추가해 중복 회피한다 — 부모가 자식 종료 후 동일 단계를 직접 수행하기 때문이다.
 
-> **spawn 자식은 이전 버전의 config 캐시로 부팅한다**: 7.0.9 이하 부모는 Step 10(spawn) 전에 config 캐시를 비우지 않았다 — `clearAllCaches()` 는 Step 11 이다. 그래서 이전 버전 설치본에 `bootstrap/cache/config.php` 가 있으면(설치 마법사·설정 저장·확장 업데이트가 만든다) 자식은 그 캐시로 부팅하고, 자식의 `config('app.version')` 은 부모가 env 로 넘긴 `APP_VERSION={toVersion}` 이 아니라 캐시에 박힌 fromVersion 이다. 업데이트 흐름 안에서 "지금 프로세스의 코어 버전" 을 판정하는 코드는 `config('app.version')` 을 직접 읽지 않고 `CoreVersionChecker::getCoreVersion()`(env 우선, config 폴백)을 쓴다. `runUpgradeSteps()` 의 stale 메모리 가드가 config 만 읽던 시절에는 정상 spawn 자식을 stale 부모로 오판해 스텝이 0건인 릴리즈에서도 핸드오프로 중단됐다(7.0.9→7.0.10). 부모 in-process fallback 에서는 env 가 `.env` 의 fromVersion 이므로 가드는 그대로 발동한다.
+> **spawn 자식은 이전 버전의 config 캐시로 부팅한다**: 부모는 Step 10(spawn) 전에 config 캐시를 비우지 않는다 — `clearAllCaches()` 는 Step 11 이다. 그래서 이전 버전 설치본에 `bootstrap/cache/config.php` 가 있으면(설치 마법사·설정 저장·확장 업데이트가 만든다) 자식은 그 캐시로 부팅하고, 자식의 `config('app.version')` 은 부모가 env 로 넘긴 `APP_VERSION={toVersion}` 이 아니라 캐시에 박힌 fromVersion 이다. 업데이트 흐름 안에서 "지금 프로세스의 코어 버전" 을 판정하는 코드는 `config('app.version')` 을 직접 읽지 않고 `CoreVersionChecker::getCoreVersion()`(env 우선, config 폴백)을 쓴다. `runUpgradeSteps()` 의 stale 메모리 가드가 config 만 읽던 시절에는 정상 spawn 자식을 stale 부모로 오판해 스텝이 0건인 릴리즈에서도 핸드오프로 중단됐다(7.0.9→7.0.10). 부모 in-process fallback 에서는 env 가 `.env` 의 fromVersion 이므로 가드는 그대로 발동한다.
 >
 > 같은 이유로 자식이 `config('app.update.*')` 로 읽는 목록(쓰기 권한 디렉토리 등)도 캐시에 박힌 옛 목록이다 — 신버전이 항목을 추가해도 자식에게 보이지 않는다. 방어는 두 겹이다: ① 부모(7.0.10+)는 `spawnUpgradeStepsProcess()` 가 `proc_open` 직전에 `ConfigCacheHelper::clear()` 로 캐시를 비워 자식이 디스크 config + `.env` + spawn env 로 부팅하게 한다(캐시는 Step 11 이 다시 만든다). ② 자식(7.0.10+)은 이전 버전 부모가 캐시를 남겨 둔 경우를 위해, 캐시 파일이 있으면 `CoreUpdateService::freshDiskUpdateConfig()` 로 디스크의 `config/app.php` 를 직접 읽는다 — 캐시 부팅에서는 `.env` 도 로드되지 않으므로 그 안에서 `.env` 를 먼저 불변 로드한다(프로세스 env 의 `APP_VERSION` 은 덮어쓰지 않는다).
-
-#### spawn 전 캐시 정리 계약 (3계층)
-
-config 캐시와 같은 문제가 **패키지 매니페스트**(`bootstrap/cache/packages.php` · `services.php`)에도 있고, 이쪽은 결과가 더 무겁다. Laravel 의 `PackageManifest` 는 `packages.php` 가 있으면 stale 여부를 검사하지 않고 그대로 읽고, `ProviderRepository` 가 거기 등재된 eager provider 를 `new` 한다. Step 6/8 이 vendor 를 `--no-dev` 로 교체해도 두 파일은 Step 11 까지 이전 설치본의 것이 남으므로, 이전 설치본이 `composer install`(옵션 없음)로 깔린 개발용 설치였다면 자식은 새 vendor 에 없는 provider 를 찾다 **부팅 단계에서** 죽는다. 예외는 앱 로그가 열리기 전이라 남지 않고, 부모에게는 자식의 비정상 종료로만 보인다 (7.0.9 → 7.0.10 실사례).
-
-| 계층 | 위치 | 막는 실패 | 잠그는 테스트 |
-|------|------|-----------|--------------|
-| ① 부모 선정리 | `CoreUpdateCommand::spawnUpgradeStepsProcess()` 가 `proc_open` 직전 `PackageManifestCacheHelper::clear()`. 지우지 못한 파일이 있으면 그 경로를 업그레이드 로그에 경고로 남긴다 — 권한·소유권 불일치면 자식의 계층 ② 도 같은 이유로 실패해 증상은 제보와 같은 「Class not found」 인데, 이 경고가 원인을 가리키는 유일한 흔적이다 | 7.0.11+ 부모가 띄우는 자식의 부팅 실패 | `CoreUpdateCommandStalePackageManifestTest` |
-| ② 자식 자가 치유 | `bootstrap/app.php` 가 `G7_UPDATE_IN_PROGRESS=1`(또는 명령줄 SAPI 에서의 업데이트 argv)이면 두 파일을 스스로 삭제 | **이미 배포된** 7.0.9·7.0.10 부모 아래에서 도는 신버전 자식 — 그 부모 코드는 고칠 수 없다 | 같은 테스트 (플래그 유·무 대조군 포함) |
-| ③ 버전 판독 범위 | `CoreVersionChecker::getCoreVersion()` 의 env 우선은 `CoreUpdateContext::isInProgress()` 트리 안에서만 | 업데이트 **전에** 뜬 `php artisan serve`·큐 워커가 옛 `APP_VERSION` 을 물고 확장을 `incompatible_core` 로 끄는 것 | `CoreVersionCheckerEnvPriorityTest` · `CoreUpdateContextTest` |
-| ④ APP_VERSION 정합 | `bootstrap/app.php` 가 계층 ②와 같은 조건에서 `bootstrap/g7-update-env.php` 의 `g7_reconcile_update_app_version()` 을 불러, 프로세스 env 의 `APP_VERSION` 이 디스크 `.env` 값보다 낮으면 `$_ENV`·`$_SERVER`·`putenv` 를 디스크 값으로 **올린다**(낮추지 않는다 — 업그레이드 스텝 자식은 `.env` 보다 높은 toVersion 을 받는다) | **이미 배포된** 7.0.0~7.0.10 부모는 `.env` 만 바꾸고 자기 env 는 옛 버전으로 둔다. 그 env 를 물려받은 자식과 부모 안의 `config:cache` 일회용 앱이 옛 버전을 config/hooks 캐시에 구워, 업데이트 뒤 첫 프로세스가 새 코어를 요구하는 확장을 `incompatible_core` 로 끄던 것(공개 #145·#137) | `UpdateAppVersionReconcileTest` · `UpdateAppVersionReconcileProcessTest` |
-| ⑤ 자식 env 고정 | 번들 일괄 업데이트 자식·언어팩 단계 새 프로세스·훅 캐시 새 프로세스의 env 를 `UpdateChildEnv::build()` 로 만든다 — 업데이트 트리 안이면 `APP_VERSION=getCoreVersion()`·`G7_UPDATE_IN_PROGRESS=1` 을 명시(트리 밖은 상속 그대로) | 부모 env 에만 기대 옛 버전이 다시 캐시에 구워지는 것 | `BundledSpawnPinsAppVersionTest` |
-
-계층 ②·④는 `config:cache`/`route:cache` 가 만드는 in-process 일회용 앱에도 발동한다 — 그 부팅도 `bootstrap/app.php` 를 다시 require 하고 플래그를 상속하기 때문이다. 웹 요청·`queue:work`·운영자 셸은 플래그가 없어 no-op 이다.
-
-argv 채널은 명령줄 SAPI(`cli`·`phpdbg`)에서만 읽는다. CGI/FPM 은 `register_argc_argv=On` 이면 `$_SERVER['argv']` 를 쿼리스트링을 `+` 로 쪼갠 값으로 채우므로(`GET /?x+core:update` → `argv[1] === 'core:update'`), 그 게이트가 없으면 비인증 웹 요청이 요청마다 매니페스트를 지우고 다시 만들게 된다. env 플래그 채널은 웹 요청으로 주입할 수 없어 그대로 두며, 웹 요청 안에서 시작되는 업데이트 흐름은 그 플래그를 프로세스 안에서 세워 판정된다.
-
-계층 ③의 판정은 `App\Support\CoreUpdateContext` 가 단독으로 소유하고 `CoreServiceProvider::isCoreUpdateInProgress()` 가 그리로 위임한다. 자동 비활성화 로그의 `core_version` 도 같은 게터를 쓴다 — 로그가 `config('app.version')` 을 적고 판정은 env 로 하면 운영자가 보는 근거와 실제 판정이 어긋난다.
 
 #### 재실행 안내의 권한 분기 (핸드오프 catch)
 
@@ -383,19 +288,14 @@ spawn 자식이 실패(`proc_open` 미지원 · 비정상 종료 · silent skip)
 
 ```text
 1. .env의 APP_VERSION 갱신
-2. 캐시 클리어: config, cache, route, view (spawn 직전에도 config + 패키지 매니페스트 선정리)
+2. 캐시 클리어: config, cache, route, view
 3. bootstrap/cache 파일 삭제 (services.php, packages.php)
 4. php artisan package:discover 재실행
 5. php artisan extension:update-autoload (코어 업데이트로 _bundled 변경 가능)
 6. _pending 격리 디렉토리(core_{ts}) 루트째 삭제
 7. 성공 시 백업 삭제 (이후 `hotfix:rollback-stale-files` 는 대상이 없다)
 8. 유지보수 모드 해제
-9. 큐 워커 재시작 신호 (queue:restart)
 ```
-
-> 3~4 는 `PackageManifestCacheHelper::rebuild()` 한 호출이다 — spawn 직전 선정리(계층 ①)와 같은 삭제 로직을 공유한다.
->
-> 9 는 상주 큐 워커가 부팅 시점의 코어 코드·config 를 계속 쓰는 것을 막는다. 워커는 옛 코드로도 잡을 정상 처리하므로 오류가 나지 않고, 운영자가 손수 재시작할 때까지 조용히 어긋난 채 돈다. 핸드오프 cleanup 과 `core:execute-upgrade-steps` 단독 실행의 사후 단계도 같은 신호를 보낸다. 롤백 catch 는 제외다 — 백업으로 되돌린 옛 코드가 다시 도는 자리라 재기동시킬 이유가 없다.
 
 ### Step 12: _bundled 확장 일괄 업데이트 프롬프트 (인터랙티브)
 
@@ -413,16 +313,13 @@ spawn 자식이 실패(`proc_open` 미지원 · 비정상 종료 · silent skip)
    - 예외 확장 지정 여부 확인, yes 이면 다중 선택으로 전략 오버라이드
    - 매니페스트 JSON 직렬화 → `core:execute-bundled-updates` spawn 자식 실행
 6. 결과 요약 출력 (성공/실패 건수)
-7. 실패가 1건 이상이면 후처리(훅 캐시 재생성·소유권 복원·로그 정리)를 마친 뒤 경고 1줄 + 종료 코드 1
 
 --force 플래그가 코어 업데이트에 지정된 경우: 프롬프트 스킵 + 전역 overwrite 자동 적용 (CI 대응)
 ```
 
-> **종료 코드 (7.1.1 이후)**: 번들 확장 일괄 업데이트가 하나라도 실패하면 `core:update` 는 코어가 새 버전으로 반영된 상태에서도 종료 코드 `1` 을 반환한다(단독 실행한 `core:execute-upgrade-steps` 도 같다). 자동화 스크립트는 종료 코드 `1` 을 받으면 출력의 실패 항목을 확인한 뒤 해당 확장을 다시 업데이트한다. spawn 자식이 결과 줄을 남기지 못하고 비정상 종료하면 실패 1건으로 센다. 업데이트할 번들 확장이 없거나 모두 성공하면 종전대로 `0` 이다.
-
 > **spawn 위임의 배경 (beta.4 이후)**: 부모(`core:update`) 프로세스는 코어 업그레이드 *직전* 버전의 메모리 상태를 보유한다. 부모가 직접 `ModuleManager::updateModule()` 등을 호출하면 신버전 코어가 도입한 sync 메서드(예: `syncModuleIdentityPolicies` `@since beta.4`)가 메모리에 부재해 호출 자체가 누락된다. `executeBulkUpdate` 는 사용자 선택만 매니페스트로 직렬화한 뒤 `proc_open` 으로 `core:execute-bundled-updates` 를 spawn — 자식은 fresh PHP 프로세스라 디스크의 신버전 코어 코드를 메모리에 로드한 상태에서 update 메서드 호출. proc_open 미지원 환경에서는 in-process fallback 으로 안전 전환. 자식 stdout 은 부모 콘솔로 forwarding 하며, 종료 직전 `[BUNDLED-RESULT]` 표식 라인으로 결과 카운트를 회신한다.
 
-> **선언형 산출물 일괄 sync — `syncDeclarativeArtifacts`**: `ModuleManager::syncDeclarativeArtifacts(ModuleInterface)` / `PluginManager::syncDeclarativeArtifacts(PluginInterface)` 는 모듈/플러그인의 모든 declarative 데이터(역할·권한·메뉴·cleanup·IDV 정책·알림 정의 — 본인인증 알림 포함) 를 한 묶음으로 동기화하는 public 진입점이다. `installModule` / `updateModule` 트랜잭션이 내부적으로 호출하며, 코어 업그레이드 사후 보정(`Upgrade_7_0_0_beta_4` 등) 도 활성 모듈/플러그인을 순회하며 이 메서드를 호출해 일회성 회복을 수행한다. 각 sync 메서드는 helper 의 user_overrides 보존 패턴을 따르므로 정상 환경 재호출 무해 (멱등).
+> **선언형 산출물 일괄 sync — `syncDeclarativeArtifacts`**: `ModuleManager::syncDeclarativeArtifacts(ModuleInterface)` / `PluginManager::syncDeclarativeArtifacts(PluginInterface)` 는 모듈/플러그인의 모든 declarative 데이터(역할·권한·메뉴·cleanup·IDV 정책·IDV 메시지·알림 정의) 를 한 묶음으로 동기화하는 public 진입점이다. `installModule` / `updateModule` 트랜잭션이 내부적으로 호출하며, 코어 업그레이드 사후 보정(`Upgrade_7_0_0_beta_4` 등) 도 활성 모듈/플러그인을 순회하며 이 메서드를 호출해 일회성 회복을 수행한다. 각 sync 메서드는 helper 의 user_overrides 보존 패턴을 따르므로 정상 환경 재호출 무해 (멱등).
 
 ---
 
@@ -451,26 +348,6 @@ spawn 자식이 실패(`proc_open` 미지원 · 비정상 종료 · silent skip)
 4. 업데이트 로그 저장: storage/logs/core_update_failed_YYYYMMDD_HHMMSS.log
 5. 유지보수 모드 유지 (수동으로 php artisan up 필요)
 ```
-
-### 확정 뒤 실패 (복원하지 않는다, 7.1.6+)
-
-Step 11 에서 새 버전을 기록하고 백업을 지운 시점부터는 「확정」이다. 그 뒤의 마무리 단계(유지보수 해제 · 설정/라우트/훅 캐시 재생성 · 업데이트 기록 저장 · 번들 확장 일괄 업데이트 · 소유권 정리)에서 난 오류는 되돌릴 것이 없으므로 위 롤백 흐름을 타지 않는다.
-
-```text
-1. Exception 발생 (확정 뒤)
-2. 파일 복원 · 번들 배치 기록 되돌림 · 실패 보고서/실패 기록을 하지 않는다
-3. 안내: 「업데이트는 {버전} 으로 적용됐습니다. 마무리 단계({단계})에서 오류가 나 나머지를 끝내지 못했습니다: {오류}」
-4. 남은 일을 끝내는 명령 출력:
-   php artisan config:cache / route:cache / hooks:cache
-   php artisan {module|plugin|template}:update <identifier> --source=bundled
-5. 유지보수 모드가 아직 켜져 있으면 해제 (새 버전으로 사이트를 연다)
-6. 업데이트 기록을 아직 남기지 못했으면 성공 기록으로 남긴다 (실패 기록을 겹쳐 남기지 않는다)
-7. 종료 코드 1
-```
-
-종전에는 이 구간의 오류도 롤백 흐름으로 가, 이미 지운 백업을 대상으로 「백업에서 복원되었습니다」 라고 안내하고(복원 대상 0건), 번들 배치 기록을 업데이트 전 상태로 되돌리고, 성공 기록과 실패 기록을 둘 다 남겼다. 진행 막대를 만들기 전(확인 질문 이전)에 난 오류가 정의되지 않은 막대를 건드려 원래 오류를 가리던 것도 함께 고쳤다.
-
-확정 전 실패에서 백업 경로는 있는데 디렉토리가 없으면(직접 지웠거나 생성 도중 실패) 「복원할 백업이 없어 복원을 건너뜁니다」 로 알리고 복원을 시도하지 않는다.
 
 ### 롤백 실패 시
 
@@ -709,8 +586,6 @@ public function withCurrentStep(string $stepVersion): self  // 불변 복제
 
 ```php
 CoreVersionChecker::getCoreVersion()  // → config('app.version')
-                                      // (코어 업데이트 트리 안에서만 env APP_VERSION 우선
-                                      //  — CoreUpdateContext::isInProgress())
 ```
 
 ### 버전 갱신 (Step 11)
@@ -734,7 +609,7 @@ CoreUpdateService::updateVersionInEnv($version)
 
 ### 부트스트랩 호환성 자동 검증
 
-> 파일: `app/Providers/CoreServiceProvider.php` — `validateAndDeactivateIncompatibleExtensions()`, `validateAndDeactivateIncompatibleTemplates()` (업데이트 트리 가드 뒤 `app/Extension/IncompatibleExtensionDeactivator.php` 에 위임)
+> 파일: `app/Providers/CoreServiceProvider.php` — `validateAndDeactivateIncompatibleExtensions()`, `validateAndDeactivateIncompatibleTemplates()`
 
 **애플리케이션 부트(boot) 시마다** CoreServiceProvider가 모든 활성 확장의 `g7_version` 요구사항을 검증합니다.
 `config('app.version')`이 확장의 요구 버전을 충족하지 않으면 **해당 확장을 자동으로 비활성화**합니다.
@@ -747,16 +622,9 @@ CoreUpdateService::updateVersionInEnv($version)
 3. 캐시 없으면 → 모든 활성 확장 순회
 4. 각 확장의 g7_version (예: ">=7.0.0-beta.1") 확인
 5. Semver::satisfies(config('app.version'), $constraint) 실행
-6. 비호환이 1건 이상이면 안전망 판정: 현재 버전 < 디스크 config/app.php 의 기본값(CoreVersionDiskReader::shippedVersion())
-   → 아무것도 끄지 않고, config 캐시가 있으면 비우고, 경고(auto_deactivate_skipped_stale_version)를 남기고 캐시를 저장하지 않는다
-7. 아니면 → Manager::deactivateModule/Plugin/Template() 호출 (config·라우트 캐시 재생성은 묶어서 끝에 한 번)
-8. 실제로 꺼진 확장만 알림·경고(auto_deactivated)에 넣는다. 의존 확장 때문에 꺼지지 않은 확장은 auto_deactivate_blocked 경고만
-9. 꺼지지 않은 확장이 없을 때만 캐시 저장 (1시간 유효) — 있으면 다음 부팅이 다시 시도
+6. false 반환 시 → Manager::deactivateModule/Plugin/Template() 호출
+7. 캐시 저장 (1시간 유효)
 ```
-
-안전망이 막는 경우: 이전 버전 업데이터가 옛 버전 번호로 구운 config 캐시, 업데이트 전에 뜬 상주 프로세스의 옛 env. 다음 요청은 `.env` 로 부팅해 올바른 버전으로 다시 판정한다. 진짜 비호환(디스크 코드 버전으로도 맞지 않는 확장)은 그대로 끈다.
-
-콘솔 프로세스(크론·큐 워커)는 성능을 위해 템플릿을 불러오지 않지만, 모듈·플러그인 비활성화의 역의존성 검사(`TemplateRepository::findActiveByModuleDependency()`·`findActiveByPluginDependency()`)는 `TemplateManager::ensureLoaded()` 로 템플릿을 불러온 뒤 판정한다 — 템플릿이 쓰는 확장을 콘솔이 끄지 않는다.
 
 #### 주의사항
 
@@ -795,7 +663,7 @@ config('app.version') = env('APP_VERSION', 'config/app.php 기본값')
 |--------|---------|------|
 | `checkForUpdates()` | `(): array` | GitHub API로 최신 릴리스 조회 |
 | `getChangelog()` | `(?string $from, ?string $to): array` | CHANGELOG.md 파싱, 버전 범위 필터 |
-| `checkSystemRequirements()` | `(): array` | 추출 도구 검증 (ZipArchive — 7.1.3 부터 unzip 폴백 없음) |
+| `checkSystemRequirements()` | `(): array` | 추출 도구 검증 (ZipArchive/unzip) |
 | `validatePendingPath()` | `(): array` | _pending 디렉토리 존재/권한 확인 |
 
 ### 다운로드 및 소스 준비
@@ -842,8 +710,7 @@ config('app.version') = env('APP_VERSION', 'config/app.php 기본값')
 |--------|---------|------|
 | `runUpgradeSteps()` | `(string $from, string $to, ?Closure $onStep): void` | upgrades/ 자동 발견 + 실행 |
 | `updateVersionInEnv()` | `(string $version): void` | .env의 APP_VERSION 갱신 |
-| `clearAllCaches()` | `(): void` | config/cache/route/view 클리어 + 패키지 매니페스트 재생성(`PackageManifestCacheHelper::rebuild()`) |
-| `signalQueueRestart()` | `(): void` | 상주 큐 워커에 재시작 신호 (실패는 경고만 — 업데이트를 되돌리지 않는다) |
+| `clearAllCaches()` | `(): void` | config/cache/route/view 클리어 + package:discover |
 
 ### 유지보수 모드
 
@@ -865,13 +732,12 @@ config('app.version') = env('APP_VERSION', 'config/app.php 기본값')
 ### core:update
 
 ```bash
-php artisan core:update [--force] [--yes] [--no-backup] [--prune] [--no-maintenance] [--local] [--source={path}]
+php artisan core:update [--force] [--no-backup] [--prune] [--no-maintenance] [--local] [--source={path}]
 ```
 
 | 옵션 | 설명 |
 |------|------|
 | `--force` | 버전 비교 스킵, 동일 버전이어도 강제 업데이트 |
-| `--yes`(`-y`) | 확인 질문에 「예」로 답하고 진행 (터미널 없는 실행용, 7.1.6+) |
 | `--no-backup` | 백업 생성 스킵 (Step 5). 증분 적용 불가 → 전체 덮어쓰기로 회귀 |
 | `--prune` | 코어가 제거한 파일 정리 + targets 전체 덮어쓰기(기존 방식). 미지정 시 코어가 실제 변경/추가한 파일만 적용(3-way)하고 나머지는 보존 |
 | `--no-maintenance` | 유지보수 모드 스킵 (Step 3) |
@@ -880,7 +746,7 @@ php artisan core:update [--force] [--yes] [--no-backup] [--prune] [--no-maintena
 
 **종료 코드**:
 - `0` (SUCCESS): 업데이트 성공 또는 이미 최신 버전
-- `1` (FAILURE): 요건 미충족 또는 업데이트 실패. 7.1.1 이후에는 코어가 새 버전으로 반영됐어도 번들 확장 일괄 업데이트가 하나라도 실패하면 `1` (위 「종료 코드 (7.1.1 이후)」)
+- `1` (FAILURE): 요건 미충족 또는 업데이트 실패
 
 ### core:check-updates
 
@@ -941,8 +807,8 @@ php artisan core:check-updates
 ### 시스템 요건 검증
 
 ```text
-- ZipArchive (PHP zip 확장) 필요 — 7.1.3 부터 unzip 명령 폴백 없음
-- 미충족 시 커맨드 실패 (EXIT 1) + 안내 출력
+- ZipArchive 또는 unzip 명령어 중 하나 이상 필요
+- 미충족 시 커맨드 실패 (EXIT 1) + 사용 가능 방법 목록 출력
 ```
 
 ### _pending 검증
@@ -996,19 +862,6 @@ URL: https://example.com/{secret}
 → 쿠키 발급 → 유지보수 모드에서도 접근 가능
 ```
 
-### vendor 교체 구간의 응답 (7.1.5+)
-
-Step 8 은 운영 `vendor/` 를 비운 뒤 새 vendor 를 복사한다(수십 초). 유지보수 화면은 미들웨어(`MaintenanceModePage`)가 만드므로 이 구간에는 프레임워크를 실을 수 없다. `public/index.php` 가 vendor 를 싣기 전에 직접 최소 응답을 만든다.
-
-| 상황 | 응답 |
-|------|------|
-| `vendor/autoload.php` 없음 + 유지보수 표식(`storage/framework/down`) 있음 | 503 + `Retry-After`(down 파일의 `retry`, 없으면 60) + `Refresh`(down 파일의 `refresh`). API·JSON 요청은 `{"success":false,"message":…}` |
-| 유지보수 중 vendor 복사 도중 치명 오류(autoload 는 있으나 그것이 부르는 파일이 아직 없음) | 같은 503 — 유지보수 중에는 프레임워크 부팅 전 `display_errors` 를 끄고 종료 처리기가 치명 오류를 503 으로 바꾼다 |
-| `vendor/autoload.php` 없음 + 유지보수 아님 | 500 (일시 장애가 아니라 설치 손상 — `composer install` 또는 vendor 복구 필요). 오류 경로·스택은 본문에 싣지 않는다 |
-| 유지보수 중 + vendor 온전 | 진입점은 끼어들지 않는다 — 종전대로 유지보수 미들웨어의 다국어 화면·JSON |
-
-bypass 쿠키가 있는 관리자도 vendor 교체 구간에는 503 을 받는다(프레임워크가 없어 쿠키를 검증할 수 없다). Step 7(파일 적용)이 Step 8 보다 먼저 새 `public/index.php` 를 놓으므로, 이 처리가 없는 판에서 올리는 업데이트에도 그 업데이트의 vendor 교체 구간부터 적용된다.
-
 ### 해제
 
 ```text
@@ -1024,7 +877,7 @@ bypass 쿠키가 있는 관리자도 vendor 교체 구간에는 503 을 받는�
 | 항목 | 코어 | 모듈/플러그인 | 템플릿 |
 |------|------|-------------|--------|
 | **소스** | GitHub releases (zipball) | GitHub 또는 _bundled | GitHub 또는 _bundled |
-| **추출** | SafeArchiveExtractor (ZipArchive 필수, 위험 항목 전체 거부) | SafeArchiveExtractor (GitHub zip) / ExtensionPendingHelper | SafeArchiveExtractor (GitHub zip) / ExtensionPendingHelper |
+| **추출** | 폴백 체인 (ZipArchive → unzip) | ExtensionPendingHelper | ExtensionPendingHelper |
 | **백업** | CoreBackupHelper (선택) | ExtensionBackupHelper (선택) | ExtensionBackupHelper (선택) |
 | **유지보수 모드** | 전체 앱 down (secret 토큰) | 없음 | 없음 |
 | **Composer** | MD5 비교 → 변경 시만 실행 | 확장별 독립 vendor/ | 해당 없음 |

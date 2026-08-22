@@ -151,9 +151,6 @@
       "label": "아바타",
       "default_alt": "사용자 아바타"
     },
-    "visitor_counter": {
-      "label": "방문자 카운터"
-    },
     "user_info": {
       "label": "사용자 정보",
       "default_name": "사용자명"
@@ -164,6 +161,9 @@
     "product_image_viewer": {
       "label": "상품 이미지 뷰어",
       "default_alt": "상품 이미지"
+    },
+    "post_reactions": {
+      "label": "게시글 반응"
     },
     "group": {
       "design": "디자인",
@@ -177,25 +177,6 @@
     },
     "table": {
       "label": "표"
-    },
-    "product_rail": {
-      "label": "가로 상품 줄",
-      "default_title": "상품 줄 제목",
-      "default_body": "상품 카드를 여기에 넣으세요"
-    },
-    "chip_rows": {
-      "label": "분류 칩 줄",
-      "default_body": "분류 칩(링크)을 여기에 넣으세요"
-    },
-    "mobile_buy_bar": {
-      "label": "하단 구매바",
-      "default_price": "0원",
-      "default_primary": "주문하기"
-    },
-    "bottom_sheet": {
-      "label": "바텀시트",
-      "default_title": "시트 제목",
-      "default_body": "시트 내용을 여기에 넣으세요"
     }
   }
 }

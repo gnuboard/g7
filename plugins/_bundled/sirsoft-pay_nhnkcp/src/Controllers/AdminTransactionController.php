@@ -7,10 +7,8 @@ declare(strict_types=1);
 namespace Plugins\Sirsoft\PayNhnkcp\Controllers;
 
 use App\Helpers\ResponseHelper;
-use App\Helpers\TimezoneHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Services\PluginSettingsService;
-use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
@@ -18,7 +16,6 @@ use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
-use Plugins\Sirsoft\PayNhnkcp\Concerns\GuardsOrderScope;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\ResolvesEasyPayDisplay;
 
 /**
@@ -29,16 +26,10 @@ use Plugins\Sirsoft\PayNhnkcp\Concerns\ResolvesEasyPayDisplay;
  */
 class AdminTransactionController extends AdminBaseController
 {
-    use GuardsOrderScope;
     use ResolvesEasyPayDisplay;
 
     private const PLUGIN_IDENTIFIER = 'sirsoft-pay_nhnkcp';
 
-    /**
-     * 의존성을 주입받습니다.
-     *
-     * @param  PluginSettingsService  $pluginSettingsService  플러그인 설정 서비스
-     */
     public function __construct(
         private readonly PluginSettingsService $pluginSettingsService,
     ) {
@@ -59,10 +50,6 @@ class AdminTransactionController extends AdminBaseController
      */
     public function queryByOrder(string $orderNumber): JsonResponse
     {
-        if ($denied = $this->orderScopeDenial($orderNumber, 'sirsoft-ecommerce.orders.read')) {
-            return $denied;
-        }
-
         // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
         $payment = DB::table((new OrderPayment)->getTable().' as p')
             ->join((new Order)->getTable().' as o', 'o.id', '=', 'p.order_id')
@@ -122,8 +109,7 @@ class AdminTransactionController extends AdminBaseController
             'payment_status_variant' => $paymentStatus?->variant(),
             'cancelled_amount' => $cancelledAmount,
             'cancelled_amount_formatted' => ecommerce_format_price($cancelledAmount, $baseCurrency),
-            // 화면 값 — DB UTC 원문을 보는 사람 시간대로
-            'cancelled_at' => $this->toViewerDateTime($payment->cancelled_at ?? null),
+            'cancelled_at' => $payment->cancelled_at,
             'cancel_history' => $this->decodeJsonArray($payment->cancel_history ?? null),
             'refund_number' => $refund->refund_number ?? null,
             'refund_status' => $refundStatus?->value ?? ($refund->refund_status ?? null),
@@ -131,7 +117,7 @@ class AdminTransactionController extends AdminBaseController
             'refund_status_variant' => $refundStatus?->variant(),
             'refund_amount' => $refundAmount,
             'refund_amount_formatted' => ecommerce_format_price($refundAmount, $baseCurrency),
-            'refunded_at' => $this->toViewerDateTime($refund->refunded_at ?? null),
+            'refunded_at' => $refund->refunded_at ?? null,
             'refund_pg_transaction_id' => $refund->pg_transaction_id ?? null,
             '_base_pay_method_label' => $display['payment_method_label'],
             '_embedded_pg_provider' => $display['embedded_pg_provider'],
@@ -141,31 +127,6 @@ class AdminTransactionController extends AdminBaseController
         ]);
     }
 
-    /**
-     * DB 의 UTC 일시 문자열을 보는 사람 시간대 표시 문자열로 바꿉니다.
-     *
-     * @param  mixed  $value  UTC 일시 문자열 (DB 원문)
-     * @return string|null 표시용 일시 (값이 없거나 해석할 수 없으면 null)
-     */
-    private function toViewerDateTime(mixed $value): ?string
-    {
-        if (! is_string($value) || $value === '') {
-            return null;
-        }
-
-        try {
-            return TimezoneHelper::toUserDateTimeString(Carbon::parse($value, 'UTC'));
-        } catch (\Throwable) {
-            return null;
-        }
-    }
-
-    /**
-     * 주문의 가장 최근 환불 레코드를 찾습니다.
-     *
-     * @param  int  $orderId  주문 ID
-     * @return object|null 환불 레코드 (없으면 null)
-     */
     private function latestRefundForOrder(int $orderId): ?object
     {
         // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
@@ -199,10 +160,7 @@ class AdminTransactionController extends AdminBaseController
     }
 
     /**
-     * JSON 문자열 또는 배열 값을 배열로 풉니다.
-     *
-     * @param  mixed  $value  JSON 문자열·배열·null
-     * @return array<int|string, mixed> 배열 (풀 수 없으면 빈 배열)
+     * @return array<int|string, mixed>
      */
     private function decodeJsonArray(mixed $value): array
     {

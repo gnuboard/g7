@@ -7,8 +7,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Modules\Sirsoft\Board\Enums\PostStatus;
-use Modules\Sirsoft\Board\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
-use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
+use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Rules\BlockedKeywordsRule;
 use Modules\Sirsoft\Board\Rules\CommentValidationRule;
 use Modules\Sirsoft\Board\Rules\CooldownRule;
@@ -18,8 +17,6 @@ use Modules\Sirsoft\Board\Rules\CooldownRule;
  */
 class StoreCommentRequest extends FormRequest
 {
-    use ProvidesFallbackRuleMessages;
-
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
      *
@@ -34,8 +31,6 @@ class StoreCommentRequest extends FormRequest
      * 검증 전 데이터 준비
      *
      * route 파라미터를 검증 데이터에 merge합니다.
-     *
-     * @return void 반환값 없음
      */
     protected function prepareForValidation(): void
     {
@@ -52,7 +47,7 @@ class StoreCommentRequest extends FormRequest
     public function rules(): array
     {
         $slug = $this->route('slug');
-        $board = app(BoardRepositoryInterface::class)->findBySlug((string) $slug);
+        $board = Board::where('slug', $slug)->first();
 
         if (! $board) {
             return [];
@@ -86,8 +81,7 @@ class StoreCommentRequest extends FormRequest
             ],
             // depth는 서비스에서 자동 계산되므로 요청 데이터에서 받지 않음 (보안상 이유)
             'is_secret' => ['boolean'],
-            // 요청으로 지정할 수 있는 상태는 published 뿐 — 블라인드·복구는 관리자 전용 엔드포인트의 몫이다
-            'status' => ['nullable', 'string', Rule::in([PostStatus::Published->value])],
+            'status' => ['nullable', 'string', Rule::in(PostStatus::values())],
             // 비회원인 경우 author_name, password 필수
             'author_name' => [$isGuest ? 'required' : 'nullable', 'string', 'max:50'],
             'password' => [$isGuest ? 'required' : 'nullable', 'string', 'min:4', 'max:20'],
@@ -113,8 +107,6 @@ class StoreCommentRequest extends FormRequest
             'author_name.max' => __('sirsoft-board::validation.comment.author_name.max'),
             'password.required' => __('sirsoft-board::validation.comment.password.required'),
             'password.min' => __('sirsoft-board::validation.comment.password.min'),
-            // 상태 조작 거부 — 코어 기본 문구(「선택한 상태이(가) …」) 대신 게시글과 같은 꼴의 전용 문구
-            'status.in' => __('sirsoft-board::validation.comment.status.in'),
         ];
     }
 

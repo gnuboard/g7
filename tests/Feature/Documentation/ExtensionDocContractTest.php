@@ -878,7 +878,7 @@ class ExtensionDocContractTest extends TestCase
                 // getLayoutExtensions() 기본 구현은 위와 같은 디렉토리를 glob() 한 절대경로라
                 // 파일 목록과 100% 중복이다. 정규화 없이 실으면 같은 파일이 두 번(상대·절대) 나오고
                 // 로컬 머신 절대경로가 커밋되는 확장 저장소에 그대로 남는다.
-                // 템플릿은 'layout-extensions' 가 아니라 'template-overrides' 블록(확장 자신의 docs/layouts.md)이다 — dangling:allow 확장 루트 기준 파일명
+                // 템플릿은 'layout-extensions' 가 아니라 'template-overrides' 블록(docs/layouts.md)이다
                 // — 그 개념(오버라이드)이 모듈/플러그인의 발행과 반대 방향이라 문서 자리가 다르다.
                 $blockKey = $record['type'] === ExtensionInventory::TYPE_TEMPLATE ? 'template-overrides' : 'layout-extensions';
                 $block = $scaffolder->renderBlocks($ctx)[$blockKey] ?? '';
@@ -911,7 +911,7 @@ class ExtensionDocContractTest extends TestCase
 
             // getSettingsLayout() 은 getModulePath()/getPluginPath() 기준 절대경로를 돌려준다
             // (§레이아웃 확장과 같은 결함군) — relativeToExtension() 을 거치지 않으면 로컬 머신
-            // 절대경로가 그대로 커밋 문서(확장 자신의 docs/settings.md · README.md)에 실린다. — dangling:allow 확장 루트 기준 파일명
+            // 절대경로가 그대로 커밋 문서(docs/settings.md · README.md)에 실린다.
             $settingsLayout = $ctx['surface']['values']['getSettingsLayout'] ?? null;
             if (is_string($settingsLayout) && $settingsLayout !== '') {
                 $rendered = $scaffolder->renderBlocks($ctx);
@@ -1043,7 +1043,7 @@ class ExtensionDocContractTest extends TestCase
     /**
      * 확장 README 의 첫 화면이 이미지 배지가 아니라 H1 제목인지 단언합니다.
      *
-     * 설계 결정(2026-08-31): 확장 README 상단의 확장명은 shields.io 이미지 배지가 아니라 평범한
+     * PO 결정(2026-08-31): 확장 README 상단의 확장명은 shields.io 이미지 배지가 아니라 평범한
      * H1 마크다운 제목이다. 확장은 20개가 병렬로 존재하는 대등한 구성요소이고, 각자가 코어와
      * 같은 히어로 브랜딩을 받으면 "이 확장이 곧 독립 프로젝트" 라는 착시를 준다.
      *
@@ -1146,7 +1146,7 @@ class ExtensionDocContractTest extends TestCase
     /**
      * 진입 문서 3종의 제목이 「그누보드7 {확장명} {유형}」 을 담는지 단언합니다.
      *
-     * 설계 결정(2026-09-04): 확장 README 제목이 확장명뿐(`# 게시판`)이면 그 문서만 연 사람이
+     * PO 결정(2026-09-04): 확장 README 제목이 확장명뿐(`# 게시판`)이면 그 문서만 연 사람이
      * 이것이 그누보드7의 확장인지, 모듈인지 템플릿인지 알 수 없다. README · AGENTS.md ·
      * docs/README.md 는 제3자가 처음 여는 진입 문서이므로 셋 다 같은 제목을 쓴다.
      *

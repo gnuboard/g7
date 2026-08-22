@@ -148,15 +148,11 @@ git clone https://github.com/gnuboard/g7.git
 cd g7
 ```
 
-### 3단계: Composer 의존성 설치 (선택)
+### 3단계: Composer 의존성 설치
 
 ```bash
-composer install --no-dev --optimize-autoloader
+composer install
 ```
-
-> 이 단계는 생략해도 됩니다 — `vendor/` 가 없으면 설치 마법사가 운영용 구성(`--no-dev`)으로 자동 설치합니다.
->
-> 개발용 패키지가 포함되는 `composer install`(옵션 없음)의 결과를 운영 사이트에 그대로 쓰지 마세요. 이미 그렇게 설치했다면 위 명령을 한 번 더 실행하면 개발용 패키지만 제거됩니다.
 
 ### 4단계: 환경 설정 파일 생성
 
@@ -204,16 +200,14 @@ https://github.com/gnuboard/g7
 
 다운로드한 ZIP 파일을 원하는 위치에 압축 해제합니다.
 
-### 4단계: Composer 의존성 설치 (선택)
+### 4단계: Composer 의존성 설치
 
-터미널에서 압축 해제된 디렉토리로 이동한 후 실행합니다. 이 단계는 생략해도 됩니다 — `vendor/` 가 없으면 설치 마법사가 운영용 구성(`--no-dev`)으로 자동 설치합니다.
+터미널에서 압축 해제된 디렉토리로 이동한 후 실행합니다.
 
 ```bash
 cd g7-버전명
-composer install --no-dev --optimize-autoloader
+composer install
 ```
-
-> 개발용 패키지가 포함되는 `composer install`(옵션 없음)의 결과를 운영 사이트에 그대로 쓰지 마세요. 이미 그렇게 설치했다면 위 명령을 한 번 더 실행하면 개발용 패키지만 제거됩니다.
 
 ### 5단계: 환경 설정 파일 생성
 
@@ -295,7 +289,7 @@ unzip g7-release.zip
 
 # 압축 해제 결과 확인 — 루트 디렉토리가 g7이 아니면 이름 변경
 ls -la
-# (필요 시) mv g7-7.1.6 g7
+# (필요 시) mv g7-7.0.10 g7
 
 # ZIP 파일 정리 (선택)
 rm g7-release.zip
@@ -349,22 +343,12 @@ http://도메인/install
 |------|------|
 | 0. 환영 | 언어 선택 및 `storage` 권한 검증 — 권한 부족 시 인스톨러가 상대경로 기반 명령을 자동 안내 |
 | 1. 라이선스 | 동의 |
-| 2. 요구사항 | PHP 8.2+ 및 필수 확장 확인 + 권장 항목(OPcache · Composer 의존성 구성) 안내 |
+| 2. 요구사항 | PHP 8.2+ 및 필수 확장 확인 |
 | 3. 환경 설정 | DB 정보 + 관리자 계정 + **Vendor 설치 방식** 선택 |
 | 4. 확장 선택 | 템플릿/모듈/플러그인 선택 (의존성 자동 해결) |
 | 5. 설치 실행 | "설치 시작" 버튼 클릭 후 진행 상황 모니터링 |
 
 `.env` 파일 생성과 `storage` / `bootstrap/cache` / `public/build` 쓰기 권한 부여는 인스톨러가 환경(소유자 일치 여부 등)에 맞춰 Step 0 및 이후 단계에서 자동 안내하므로, 사전 SSH 작업으로 수행할 필요 없습니다.
-
-**Step 2 — Composer 의존성 구성 (선택 항목):**
-
-이미 `vendor/` 가 준비되어 있으면 설치 마법사는 그것을 그대로 씁니다. 이때 그 `vendor/` 가 개발용 패키지까지 포함한 설치(`composer install`, 옵션 없음)인지 확인해 알려 줍니다.
-
-- **운영용 구성 (개발용 패키지 없음)**: 권장 상태입니다. 조치가 필요 없습니다.
-- **개발용 패키지 N개 포함**: 설치는 그대로 진행됩니다. 운영에 사용할 서버라면 설치를 마친 뒤 프로젝트 루트에서 `composer install --no-dev --optimize-autoloader` 를 한 번 실행하세요. 그대로 두면 이후 코어 업데이트가 `vendor/` 를 교체할 때 이전 패키지 목록 캐시와 어긋나 업데이트가 중단될 수 있습니다.
-- **vendor 없음**: 설치 마법사가 운영용 구성으로 자동 설치하므로 조치가 필요 없습니다.
-
-이 항목은 설치를 차단하지 않습니다.
 
 **Step 3 — Vendor 설치 방식 선택:**
 
@@ -376,260 +360,11 @@ http://도메인/install
 설치 중 문제가 발생하면 아래 항목을 확인합니다.
 
 - [ ] `php -v` 출력이 8.2 이상인가? (Cafe24 관리자에서 PHP 버전 변경 가능)
-- [ ] `php -m` 출력에 필수 확장 16개([docs/requirements.md §1.4](docs/requirements.md#14-php-확장-모듈) — `pdo_mysql`, `mbstring`, `openssl`, `zip` 등)가 포함되어 있는가?
+- [ ] `php -m` 출력에 `pdo_mysql`, `mbstring`, `openssl`, `zip`이 포함되어 있는가?
 - [ ] `~/www`가 `g7/public/`를 올바르게 가리키는가? (`ls -la ~/www` 확인)
 - [ ] `vendor-bundle.zip`이 `~/g7/` 디렉토리에 존재하는가?
 - [ ] 웹 인스톨러 Step 3에서 "Vendor 설치 방식"을 **번들 Vendor 사용** 또는 **자동**으로 선택했는가?
 - [ ] DB 접속 정보(호스트/포트/계정)가 Cafe24 관리자 정보와 일치하는가?
-
----
-
-## 방법 5: 터미널 설치 (브라우저 없이)
-
-SSH 로 접속한 서버나 배포 스크립트에서 웹 설치 마법사와 같은 설치를 터미널로 진행합니다. 단계(언어 → 라이선스 → 요구사항 → 환경 설정 → 확장 선택 → 설치)와 검사 규칙은 웹 마법사와 같습니다. 소스 코드를 받는 1~3단계는 방법 1·3 과 같고, 웹 서버 설정은 설치 뒤에 해도 됩니다.
-
-### 대화형 설치
-
-프로젝트 루트에서 실행하면 웹 마법사와 같은 질문을 차례로 묻습니다. 비밀번호는 화면에 보이지 않게 입력받습니다.
-
-```bash
-cd /path/to/g7
-php g7-install
-```
-
-`vendor/` 가 준비되어 있으면 `php artisan core:install` 도 같은 설치를 실행합니다.
-
-> 요구사항 검사는 이 명령을 실행한 **터미널 PHP 의 설정**을 기준으로 합니다. 웹서버가 쓰는 PHP(PHP-FPM·Apache 모듈 등)는 `php.ini`·설치된 확장·`disable_functions` 가 다를 수 있으므로, 터미널 검사를 통과했더라도 설치 뒤 웹 화면에서 오류가 나면 웹서버 PHP 의 확장·설정을 따로 확인하세요.
-
-### 비대화형 설치 (자동화)
-
-옵션·환경변수·설정 파일만으로 끝까지 진행합니다. 입력 우선순위는 **명령줄 옵션 > 환경변수(`G7_INSTALL_*`) > 설정 파일(`--config=파일.json`) > 웹 마법사 기본값** 입니다.
-
-```bash
-export G7_INSTALL_DB_PASSWORD='DB 비밀번호'
-export G7_INSTALL_ADMIN_PASSWORD='관리자 비밀번호'
-
-php g7-install --no-interaction --accept-license \
-  --db-host=127.0.0.1 --db-database=g7 --db-username=g7 \
-  --app-name="내 사이트" --app-url=https://example.com \
-  --admin-email=admin@example.com --admin-name=관리자 \
-  --site-language=ko
-```
-
-- 비밀값(DB·관리자 비밀번호, GitHub 토큰)은 **명령줄 인자로 받지 않습니다**(프로세스 목록·셸 기록에 남기 때문). 환경변수(`G7_INSTALL_DB_PASSWORD`·`G7_INSTALL_ADMIN_PASSWORD`·`G7_INSTALL_DB_READ_PASSWORD`·`G7_INSTALL_GITHUB_TOKEN`) 또는 파일 옵션(`--db-password-file`·`--admin-password-file` 등, 파일 끝 개행 하나는 지웁니다)을 씁니다. 설정 파일(`--config`)에도 비밀값을 넣을 수 없습니다.
-- 확장은 `--admin-template`·`--user-template`·`--modules=a,b`·`--plugins=a,b`·`--language-packs=a,b` 로 고르고, `--all-extensions` 는 웹 마법사의 「전체 선택」과 같습니다. 고르지 않으면 웹 기본값(관리자 템플릿 첫 번째)을 쓰고, 필요한 의존 확장은 웹 마법사처럼 자동으로 채웁니다.
-- 접두사가 같은 기존 테이블이 있으면 `--drop-existing-tables` 를 줘야 진행합니다(삭제 대상은 그 접두사의 테이블뿐입니다).
-- 진행을 프로그램으로 읽으려면 `--output=json` 을 줍니다. 한 줄에 이벤트 하나(`{"event": …}`)를 냅니다. 설치 단계의 진행 이벤트(`connected`·`task_start`·`task_complete`·`log`·`completed`·`error`·`aborted`·`rollback_failed`)는 이름·필드가 웹 진행 화면과 같고, 그 앞 단계와 마무리는 터미널 전용 이벤트 `step`·`info`·`warning`·`requirements`·`extensions`·`reinstall`·`summary` 로 나옵니다.
-- 전체 옵션은 `php g7-install --help` 로 봅니다.
-
-### 옵션·환경변수 표
-
-같은 값을 명령줄 옵션, 환경변수, 설정 파일(`--config=파일.json`) 어느 쪽으로든 줄 수 있습니다(앞쪽이 우선). 켜고 끄는 옵션의 환경변수는 `1`/`0`(또는 `true`/`false`)로 줍니다. 「(비밀)」 행은 명령줄 값으로 받지 않고 환경변수나 파일 옵션으로만 받으며, 설정 파일에도 넣을 수 없습니다.
-
-| 옵션 | 환경변수 | 설정 파일 키 | 내용 |
-|------|----------|--------------|------|
-| `--locale` | `G7_INSTALL_LOCALE` | `locale` | 설치 화면 언어 `ko`·`en` |
-| `--accept-license` | `G7_INSTALL_ACCEPT_LICENSE` | `accept_license` | 라이선스 동의 (비대화형 필수) |
-| `--db-host` | `G7_INSTALL_DB_HOST` | `db_write_host` | DB 호스트 |
-| `--db-port` | `G7_INSTALL_DB_PORT` | `db_write_port` | DB 포트 |
-| `--db-database` | `G7_INSTALL_DB_DATABASE` | `db_write_database` | DB 이름 |
-| `--db-username` | `G7_INSTALL_DB_USERNAME` | `db_write_username` | DB 계정 (root 등 최고권한 계정 불가) |
-| `--db-password-file` | `G7_INSTALL_DB_PASSWORD` | — | (비밀) DB 비밀번호 |
-| `--db-prefix` | `G7_INSTALL_DB_PREFIX` | `db_prefix` | 테이블 접두사 |
-| `--use-read-db` | `G7_INSTALL_USE_READ_DB` | `use_read_db` | 읽기 전용 DB 사용 |
-| `--db-read-host` | `G7_INSTALL_DB_READ_HOST` | `db_read_host` | 읽기 DB 호스트 |
-| `--db-read-port` | `G7_INSTALL_DB_READ_PORT` | `db_read_port` | 읽기 DB 포트 |
-| `--db-read-database` | `G7_INSTALL_DB_READ_DATABASE` | `db_read_database` | 읽기 DB 이름 |
-| `--db-read-username` | `G7_INSTALL_DB_READ_USERNAME` | `db_read_username` | 읽기 DB 계정 |
-| `--db-read-password-file` | `G7_INSTALL_DB_READ_PASSWORD` | — | (비밀) 읽기 DB 비밀번호 |
-| `--drop-existing-tables` | `G7_INSTALL_DROP_EXISTING_TABLES` | `drop_existing_tables` | 같은 접두사의 기존 테이블 삭제 동의 |
-| `--app-name` | `G7_INSTALL_APP_NAME` | `app_name` | 사이트 이름 |
-| `--app-url` | `G7_INSTALL_APP_URL` | `app_url` | 사이트 주소 (터미널 설치는 필수) |
-| `--admin-email` | `G7_INSTALL_ADMIN_EMAIL` | `admin_email` | 관리자 이메일 |
-| `--admin-name` | `G7_INSTALL_ADMIN_NAME` | `admin_name` | 관리자 이름 |
-| `--admin-password-file` | `G7_INSTALL_ADMIN_PASSWORD` | — | (비밀) 관리자 비밀번호 (8바이트 이상) |
-| `--admin-language` | `G7_INSTALL_ADMIN_LANGUAGE` | `admin_language` | 관리자 언어 |
-| `--site-language` | `G7_INSTALL_SITE_LANGUAGE` | `site_language` | 사이트 기본 언어 |
-| `--core-pending-path` | `G7_INSTALL_CORE_PENDING_PATH` | `core_update_pending_path` | 코어 업데이트 임시 폴더 |
-| `--github-url` | `G7_INSTALL_GITHUB_URL` | `core_update_github_url` | 코어 업데이트 저장소 주소 |
-| `--github-token-file` | `G7_INSTALL_GITHUB_TOKEN` | — | (비밀) GitHub 토큰 |
-| `--asset-url-mode` | `G7_INSTALL_ASSET_URL_MODE` | `asset_url_mode` | 자산 주소 방식 `extension`·`extensionless` (생략하면 사이트에 직접 물어 정함) |
-| `--php-binary` | `G7_INSTALL_PHP_BINARY` | `php_binary` | PHP 실행 파일 (생략하고 기본 `php` 를 쓸 수 없으면 찾은 PHP 를 자동 선택) |
-| `--composer-binary` | `G7_INSTALL_COMPOSER_BINARY` | `composer_binary` | Composer 실행 파일 (생략하면 찾은 `composer.phar` 를 사용) |
-| `--vendor-mode` | `G7_INSTALL_VENDOR_MODE` | `vendor_mode` | 의존 패키지 설치 방식 `auto`·`composer`·`bundled` |
-| `--admin-template` | `G7_INSTALL_ADMIN_TEMPLATE` | `extensions.admin_templates` | 관리자 템플릿 (정확히 1개) |
-| `--user-template` | `G7_INSTALL_USER_TEMPLATE` | `extensions.user_templates` | 사용자 템플릿 (0~1개, `none` 가능) |
-| `--modules=a,b` | `G7_INSTALL_MODULES` | `extensions.modules` | 모듈 |
-| `--plugins=a,b` | `G7_INSTALL_PLUGINS` | `extensions.plugins` | 플러그인 |
-| `--language-packs=a,b` | `G7_INSTALL_LANGUAGE_PACKS` | `extensions.language_packs` | 언어팩 |
-| `--all-extensions` | `G7_INSTALL_ALL_EXTENSIONS` | `all_extensions` | 웹 마법사의 「전체 선택」 |
-| `--config` | `G7_INSTALL_CONFIG` | — | 설정 파일(JSON) 경로 |
-| `--output` | `G7_INSTALL_OUTPUT` | — | 출력 형식 `text`·`json` |
-| `--no-interaction` · `-n` | `G7_INSTALL_NO_INTERACTION` | — | 묻지 않고 진행 (터미널이 아니면 자동) |
-| `--resume` | `G7_INSTALL_RESUME` | — | 멈춘 터미널 설치 이어서 하기 |
-| `--reset-state` | `G7_INSTALL_RESET_STATE` | — | 남은 설치 진행 상태를 지우고 처음부터 (DB 는 그대로) |
-| `--takeover` | `G7_INSTALL_TAKEOVER` | — | 멈춘 웹 설치를 터미널로 넘겨받기 |
-| `--skip-if-installed` | `G7_INSTALL_SKIP_IF_INSTALLED` | — | 이미 설치됐으면 종료 코드 0 으로 끝내기 |
-| `--web-user` · `--web-group` | `G7_INSTALL_WEB_USER` · `G7_INSTALL_WEB_GROUP` | — | root 로 실행할 때 설치 뒤 소유권을 넘길 웹서버 계정·그룹 |
-| `--reinstall` | `G7_INSTALL_REINSTALL` | — | 설치된 사이트 다시 설치 |
-| `--delete-vendor` · `--delete-extensions` · `--delete-settings` · `--delete-uploads` | `G7_INSTALL_DELETE_VENDOR` · `G7_INSTALL_DELETE_EXTENSIONS` · `G7_INSTALL_DELETE_SETTINGS` · `G7_INSTALL_DELETE_UPLOADS` | — | 다시 설치할 때 함께 지울 대상 |
-
-### 종료 코드
-
-| 코드 | 뜻 |
-|------|----|
-| 0 | 설치 완료(경고 포함) · `--skip-if-installed` 로 이미 설치된 사이트를 건너뜀 |
-| 1 | 설치 작업 실패 · 재설치 초기화 실패 (`--resume` 으로 이어 설치) |
-| 2 | 입력·검증 오류 (아무것도 바꾸지 않음) |
-| 3 | 이미 설치된 사이트 |
-| 4 | 요구사항 미충족 |
-| 5 | 충돌 — 다른 터미널 설치 실행 중 · 웹 마법사가 진행 중인 설치 |
-| 6 | 사용자 중단 (Ctrl+C) — `--resume` 으로 이어 설치 |
-| 7 | root 로 실행했는데 `--web-user` 가 없음 |
-
-설치가 끝났는데 일부 선택 작업(언어팩·캐시·정적 파일 게시)이 실패하면 종료 코드 0 과 함께 `[g7-install-warnings]` 표식 줄과 경고 목록을 출력합니다.
-
-### 중단·재개와 웹 마법사와의 관계
-
-- 중간에 멈춘 터미널 설치는 `php g7-install --resume` 으로 이어 갑니다. 처음부터 다시 하려면 `--reset-state` 를 줍니다.
-- 웹 마법사로 진행 중인 설치는 덮어쓰지 않고 종료 코드 5 로 멈춥니다. 브라우저를 닫았고 이어서 터미널로 끝내려면 `--takeover` 를 줍니다(웹 설치 작업이 15초 안에 움직였으면 넘겨받지 않습니다). `--reset-state` 도 같은 규칙이라 웹 설치의 진행 상태는 `--takeover` 와 함께 줄 때만 지웁니다. 터미널 설치는 브라우저 복구 링크로 가져갈 수 없습니다.
-
-### root 로 실행할 때
-
-root 로 실행하면 설치가 만든 파일이 root 소유가 되어 웹서버가 쓰지 못하므로, 웹서버 계정을 지정해야 합니다.
-
-```bash
-sudo php g7-install --web-user=www-data   # 그룹이 다르면 --web-group=그룹
-```
-
-설치가 끝나면 쓰기가 필요한 폴더(`storage`·`bootstrap/cache` 등)의 소유권을 그 계정으로 넘기고, `.env` 는 그룹 읽기만 열어 둡니다. 소유권을 바꾸지 못하면 직접 실행할 명령을 출력합니다. Windows 에서는 이 옵션을 무시합니다.
-
-### 다시 설치하기
-
-설치된 사이트를 처음부터 다시 설치합니다. 지울 범위를 옵션으로 고릅니다.
-
-```bash
-php g7-install --reinstall --drop-existing-tables \
-  [--delete-vendor] [--delete-extensions] [--delete-settings] [--delete-uploads] \
-  [설치 옵션…]
-```
-
-- 항상 지우는 것: 설치 완료 표식, `.env` 의 `INSTALLER_COMPLETED` 줄(나머지 줄은 유지), 설치 진행 상태, 부트스트랩 캐시, 정적 게시 파일, 애플리케이션 파일 캐시(`storage/framework/cache/data`). 테이블은 설치 단계가 접두사가 같은 테이블만 지웁니다.
-- 확장을 남기면(`--delete-extensions` 없음) 남아 있는 설치본 버전이 그대로 쓰입니다(번들 새 버전이 아님). 업로드를 남기면 DB 가 비워져 고아 파일이 됩니다.
-- 설정을 남기면(`--delete-settings` 없음) 기존 `APP_KEY` 를 이어 써 남은 설정의 암호화 값을 계속 읽습니다.
-- 입력·DB 검사를 모두 통과한 뒤에만 지우고, 하나라도 지우지 못하면 설치를 시작하지 않습니다(종료 1). 대화형은 현재 `APP_URL` 을 그대로 입력해야 진행합니다.
-
-### 설치 뒤 터미널 운영 명령
-
-| 명령 | 용도 |
-|------|------|
-| `php artisan user:reset-password 이메일` | 메일 없이 관리자 비밀번호 재설정 (비밀번호는 `G7_RESET_PASSWORD`·`--password-file`·숨김 입력·`--generate`) |
-| `php artisan settings:get [키]` · `settings:set 키 값` | 환경설정 조회·지정 (관리자 화면 저장과 같은 검증, `--plugin=`·`--module=`) |
-| `php artisan module:install 식별자 --with-dependencies` | 의존 확장까지 함께 설치·활성화 (`plugin:install`·`template:install` 도 같음) |
-| `php artisan module:install 식별자 --with-language-packs=all` | 그 확장의 번들 언어팩을 함께 설치·활성화 (`plugin:install`·`template:install` 도 같음). 값은 `none`(기본, 설치 안 함) · `all`(관리자 설치 창에 보이는 후보 전부) · 쉼표로 나눈 언어팩 식별자(후보에 없는 식별자가 있으면 설치하지 않고 실패). 언어팩 설치는 확장 설치 뒤에 하며, 언어팩 하나가 실패해도 확장 설치는 되돌리지 않고 경고만 냅니다 |
-
-### Docker Compose 로 설치
-
-컨테이너를 처음 띄울 때 터미널 설치를 한 번 실행하고, 다시 띄울 때는 설치를 건너뛰는 구성입니다. 설치 단계(`install`)는 끝나면 멈추고, 웹 서버(`web`)는 설치 단계가 성공한 뒤에 뜹니다. 아래처럼 폴더를 만들고 소스를 `g7` 에 받습니다.
-
-```text
-mysite/
-├── compose.yaml
-├── docker/
-│   └── Dockerfile
-└── g7/          ← git clone https://github.com/gnuboard/g7.git g7
-```
-
-`docker/Dockerfile`:
-
-```dockerfile
-FROM php:8.3-apache
-
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends libzip-dev libpng-dev libjpeg62-turbo-dev libfreetype6-dev libicu-dev \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo_mysql zip gd intl \
-    && rm -rf /var/lib/apt/lists/*
-
-# 문서 루트를 public/ 으로, .htaccess 사용
-ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
-RUN sed -ri 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
-    && sed -ri 's!AllowOverride None!AllowOverride All!g' /etc/apache2/apache2.conf \
-    && a2enmod rewrite headers
-
-WORKDIR /var/www/html
-```
-
-`compose.yaml`:
-
-```yaml
-services:
-  db:
-    image: mysql:8.4
-    environment:
-      MYSQL_DATABASE: g7
-      MYSQL_USER: g7
-      MYSQL_PASSWORD: ${G7_DB_PASSWORD:?G7_DB_PASSWORD 를 설정하세요}
-      MYSQL_RANDOM_ROOT_PASSWORD: "yes"
-    volumes:
-      - db-data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
-      interval: 5s
-      retries: 30
-
-  # 한 번 실행되고 끝나는 설치 단계 — 이미 설치된 사이트면 건너뛰고 0 으로 끝난다
-  install:
-    build: ./docker
-    volumes:
-      - ./g7:/var/www/html
-    environment:
-      G7_INSTALL_DB_PASSWORD: ${G7_DB_PASSWORD}
-      G7_INSTALL_ADMIN_PASSWORD: ${G7_ADMIN_PASSWORD:?G7_ADMIN_PASSWORD 를 설정하세요}
-    entrypoint: ["php", "g7-install"]
-    command:
-      - --no-interaction
-      - --accept-license
-      - --skip-if-installed
-      - --web-user=www-data
-      - --vendor-mode=bundled
-      - --db-host=db
-      - --db-database=g7
-      - --db-username=g7
-      - --app-url=http://localhost:8080
-      - --admin-email=admin@example.com
-    depends_on:
-      db:
-        condition: service_healthy
-
-  web:
-    build: ./docker
-    ports:
-      - "8080:80"
-    volumes:
-      - ./g7:/var/www/html
-    depends_on:
-      install:
-        condition: service_completed_successfully
-
-volumes:
-  db-data:
-```
-
-```bash
-cd mysite
-cp g7/.env.example g7/.env
-export G7_DB_PASSWORD='DB 비밀번호'
-export G7_ADMIN_PASSWORD='관리자 비밀번호'
-docker compose up -d --build
-docker compose logs -f install   # 설치 진행 확인 — 끝나면 http://localhost:8080
-```
-
-- 설치 단계는 root 로 실행되므로 `--web-user=www-data` 로 쓰기 폴더의 소유권을 웹 서버 계정에 넘깁니다. 엔트리포인트를 셸 없이(`["php", "g7-install"]`) 적어 `docker compose stop` 의 종료 신호가 설치 프로세스에 바로 갑니다.
-- 다시 `docker compose up -d` 하거나 `down` 뒤에 올려도(DB 볼륨 `db-data` 와 `g7/` 폴더 유지) 설치 단계는 「이미 설치된 사이트입니다 — 설치를 건너뜁니다.」 로 0 을 내고 끝납니다.
-- 주소를 바꾸려면 `--app-url` 과 `ports` 를 함께 고칩니다. `--vendor-mode=bundled` 는 소스에 포함된 vendor 묶음을 쓰므로 컨테이너에 Composer 가 없어도 됩니다.
-
-자세한 내용은 [docs/backend/installer-cli.md](docs/backend/installer-cli.md) 를 봅니다.
 
 ---
 
@@ -652,65 +387,6 @@ docker compose logs -f install   # 설치 진행 확인 — 끝나면 http://loc
 
 설치 과정에서 문자 인코딩 관련 조치가 있었다면 `storage/logs/installation.log` 에
 `[env] whoami output was not UTF-8 — normalized` 형태로 기록됩니다.
-
-### 5단계 설치가 중간에 멈추거나 「설치 작업 프로세스가 중간에 종료되었습니다」가 표시되는 경우
-
-설치 마법사는 선택한 확장 수만큼 설치 작업을 한 요청 안에서 차례로 실행합니다.
-확장을 많이 고를수록 설치 요청 하나가 길어집니다(확장을 모두 고르면 10분을 넘길 수 있습니다).
-
-**PHP 실행 시간**: 설치 마법사는 작업을 시작할 때마다 실행 시간 제한(작업당 600초)을 다시 겁니다.
-작업 하나가 600초를 넘지 않는 한 전체 설치 시간에는 제한이 없습니다.
-(Windows 의 PHP 는 `max_execution_time` 을 실제 경과 시간으로 잽니다.)
-
-**웹 서버의 요청 시간 제한**: PHP 와 별도로 웹 서버가 긴 요청을 끊을 수 있습니다. 설치하는 동안만이라도 아래 값을 늘려 두세요.
-
-| 웹 서버 | 설정 | 기본값 | 권장 |
-| --- | --- | --- | --- |
-| nginx | `fastcgi_read_timeout` (PHP 응답 사이 대기 시간) | 60초 | 600초 이상 |
-| PHP-FPM | `request_terminate_timeout` (요청 전체 시간, 0 = 무제한) | 0 | 0 또는 3600 이상 |
-| Apache + mod_fcgid | `FcgidIOTimeout` / `FcgidBusyTimeout` | 40초 / 300초 | 600초 이상 / 3600 이상 |
-| Apache + mod_proxy_fcgi | `ProxyTimeout` (없으면 `Timeout`) | 60초 | 600초 이상 |
-| IIS (FastCGI) | `activityTimeout` / `requestTimeout` | 70초 / 90초 | 600 이상 / 3600 이상 |
-
-**멈췄을 때**: 실시간 스트리밍(SSE) 모드에서 연결만 끊기고 설치 작업 프로세스가 끝났으면 화면이 새 연결로 남은 작업을 이어 받습니다.
-설치 작업 프로세스가 비정상 종료되면(실시간 스트리밍·폴링 모드 모두) 화면이 실패 안내로 바뀝니다
-(진행이 90초 이상 없으면 「설치가 응답하지 않습니다」).
-이미 끝난 작업은 보존되므로 실패 화면의 **재시도** 를 누르면 끊긴 작업부터 이어서 설치합니다.
-원인은 `storage/logs/installation.log` 와 PHP 오류 로그(`Maximum execution time` 등)에서 확인할 수 있습니다.
-설치를 띄운 브라우저를 닫았다면 같은 브라우저로 `/install` 에 다시 접속하거나, 다른 브라우저에서 복구 토큰으로 소유권을 되찾은 뒤 이어서 진행합니다.
-
----
-
-## 설치 마법사 보안
-
-### 설치를 시작한 브라우저만 설치를 진행합니다
-
-설치 마법사의 3단계(설치 정보 입력)를 처음 통과한 브라우저가 그 설치의 소유자가 됩니다. 이후 설치 설정 저장·확장 선택·설치 시작·중단·초기화는 그 브라우저에서만 할 수 있고, 다른 브라우저로 `/install` 에 접속하면 「다른 세션에서 진행 중인 설치」 화면만 보입니다.
-
-- **복구 토큰**: 3단계를 통과하면 4·5단계 화면 위쪽에 `xxxx-xxxx-…` 형태의 복구 토큰이 표시됩니다. 설치 도중 브라우저를 닫거나 세션이 만료되어 설치를 이어갈 수 없게 되면, 다른 브라우저에서 이 토큰을 입력해 소유권을 되찾을 수 있습니다. 토큰은 한 번 쓰면 새 토큰으로 바뀌므로, 되찾은 뒤 화면에 표시되는 새 토큰을 다시 보관하세요.
-- **토큰을 잃어버렸다면**: 서버에서 `storage/installer-state.json` 을 삭제한 뒤 처음부터 다시 설치합니다.
-- 같은 브라우저를 계속 쓰는 동안에는 새로고침·재접속해도 토큰 없이 그대로 이어집니다.
-- DB 연결 테스트를 통과한 뒤 연결 설정(호스트·포트·DB·계정·비밀번호·테이블 접두사)을 바꾸면 3단계를 통과할 수 없습니다. 바꾼 설정으로 연결 테스트를 다시 하세요.
-- 기존 테이블 삭제는 연결 테스트 결과 화면에서 동의한 경우에만, 그 테스트 때 확인한 테이블 목록이 바뀌지 않았을 때만 수행됩니다. 조건이 맞지 않으면 삭제하지 않고 설치를 진행하며 설치 로그에 경고를 남깁니다.
-
-### 운영 서버에서는 설치 중 접근을 제한하세요
-
-위 보호는 애플리케이션 단의 1차 방어입니다. 인터넷에 공개된 서버에서 설치한다면 설치하는 동안 `/install` 경로를 설치자의 IP 나 관리망에서만 열어 두는 것을 권장합니다.
-
-```nginx
-# 설치하는 동안만 — 설치가 끝나면 이 블록을 지우거나 deny all 로 바꿉니다
-location ^~ /install {
-    allow 203.0.113.10;   # 설치자 IP
-    deny all;
-    try_files $uri $uri/ /install/index.php?$query_string;
-    location ~ \.php$ {
-        include snippets/fastcgi-php.conf;
-        fastcgi_pass php_upstream;
-    }
-}
-```
-
-설치가 끝나면 인스톨러는 자동으로 닫히지만(HTTP 410), 운영 환경에서는 웹 서버에서 `/install` 경로를 막거나 `public/install` 디렉토리를 삭제해 두는 것이 가장 안전합니다.
 
 ---
 
@@ -827,21 +503,9 @@ sudo php artisan core:update
 
 > 자신의 환경이 어느 쪽인지 확인하려면 `ls -l .env` 의 소유자(세 번째 컬럼) 가 명령줄 로그인 사용자와 일치하는지 보세요. 일치하면 `sudo` 없이 실행 가능합니다.
 
-#### 터미널 없이 실행할 때 (배포 스크립트·스케줄러)
+### 방법 3: 수동 ZIP 업그레이드 (PHP zip 확장 미설치 환경)
 
-`core:update` 는 진행하기 전에 확인을 묻습니다. 답을 받을 수 없는 실행(배포 스크립트, 스케줄러, `--no-interaction`)에서는 `--yes` 를 붙여야 진행합니다.
-
-```bash
-sudo php artisan core:update --yes
-```
-
-`--yes` 없이 실행하면 「확인이 필요한 작업이라 실행하지 않았습니다」 경고와 함께 종료 코드 1 로 끝납니다(7.1.6 이전 판은 아무 일도 하지 않고 종료 코드 0 으로 끝났습니다). `--force` 는 버전 비교를 건너뛰는 옵션이며 확인을 대신하지 않습니다. 확장 업데이트(`module:update`·`plugin:update`·`template:update`)와 삭제 명령도 같은 `--yes` 를 받습니다.
-
-### 방법 3: 수동 ZIP 업그레이드 (GitHub 에서 받기 어려운 환경)
-
-서버가 GitHub 에 연결할 수 없거나 특정 버전으로 올릴 때는 GitHub Release ZIP 을 직접 다운로드한 뒤 압축 해제 경로를 지정해 업그레이드합니다.
-
-> **이 방법도 PHP `zip` 확장이 필요합니다.** `zip` 은 필수 확장입니다([docs/requirements.md §1.4](docs/requirements.md#14-php-확장-모듈)). 7.1.3 부터 코어·확장 업데이트는 시스템 `unzip` 명령으로 대신 풀지 않고, 7.1.4 부터 코어 업데이트는 새 코어의 필수 PHP 확장이 서버에 없으면 `--source` 로 지정해도 시작하지 않습니다. `php -m` 에 `zip` 이 없으면 먼저 설치한 뒤 업데이트하세요.
+PHP `zip` 확장 또는 시스템 `unzip` 명령이 없는 서버에서는 GitHub Release ZIP 을 직접 다운로드한 뒤 압축 해제 경로를 지정해 업그레이드합니다.
 
 ```bash
 # 1. GitHub 릴리스 페이지에서 ZIP 다운로드 후 서버에 압축 해제
@@ -872,16 +536,6 @@ sudo php artisan core:update --source=/tmp/g7-new
 ### 권한/캐시 트러블슈팅
 
 업그레이드 도중 또는 직후 사이트가 응답하지 않는 경우, 다음을 확인합니다. 본 절의 `chmod`/`chown`/`chgrp` 명령은 POSIX 권한 모델 (Linux/macOS/BSD) 환경 전용이며, Windows 환경에서는 해당하지 않습니다.
-
-#### `.env` 를 고쳤는데 반영되지 않는 경우 (설치 잔여 파일)
-
-웹 설치는 진행 중 DB 접속 정보와 `APP_KEY` 를 `storage/installer/runtime.php` 에 잠깐 두고, 설치가 끝나면 `.env` 에 합친 뒤 지웁니다. 이 파일을 지우지 못한 채 설치가 끝난 사이트에서는 그 파일의 값이 `.env` 대신 쓰여, 서버를 옮기며 `.env` 의 DB 정보를 고쳐도 옛 DB 로 접속했습니다.
-
-- **7.1.6 이상**: 코어 업데이트가 이 파일의 값을 `.env` 로 옮기고 파일을 지웁니다(바꾼 것이 있으면 `.env.bak-7.1.6-<시각>` 사본을 남깁니다). 업데이트 뒤에는 `.env` 만 고치면 됩니다. 새로 설치할 때도 파일을 지우지 못하면 내용을 비웁니다. 터미널 설치는 완료 화면에 「설치 잔여 파일을 지우지 못했습니다」 라고 알립니다(웹 설치는 완료 화면을 보낸 뒤에 정리하므로 화면에 알리지 않습니다 — 아래 「확인」으로 살펴보세요).
-- **확인**: `ls storage/installer/` 에 `runtime.php` 가 있으면 남아 있는 것입니다.
-- **손으로 정리할 때**: 파일을 지우기 **전에** `.env` 의 `DB_WRITE_*` · `DB_PREFIX` · `APP_KEY` 가 채워져 있는지 확인하세요. `.env` 의 이 칸들이 비어 있고 `runtime.php` 로만 돌던 사이트는 파일만 지우면 접속하지 못합니다. 특히 `APP_KEY` 는 `runtime.php` 의 값을 그대로 옮겨야 합니다 — 키가 바뀌면 암호화해 저장한 설정과 로그인 세션을 읽지 못합니다.
-
-서버를 옮기는 전체 절차는 [서버 이전 안내](docs/backend/server-migration.md)를 참고하세요.
 
 #### `.env` 읽기 실패 (`Permission denied`)
 
@@ -949,34 +603,6 @@ TRUSTED_PROXIES=*
 방문자가 같은 IP 로 기록됩니다. 값 선택 기준과 도입 시 후속 조치는
 [docs/backend/reverse-proxy.md](docs/backend/reverse-proxy.md) 를 참고하세요.
 
-### 사이트 주소(APP_URL)와 허용 도메인
-
-`APP_URL` 은 **방문자가 실제로 접속하는 사이트 주소**여야 합니다(예: `https://www.example.com`).
-검색엔진용 화면의 대표 주소(canonical·og:url)와 그 화면을 채우는 내부 데이터 호출이 요청의 Host
-헤더가 아니라 이 값을 기준으로 만들어지기 때문입니다 — Host 헤더는 방문자가 위조할 수 있습니다.
-설치 뒤 도메인을 옮겼다면 `APP_URL` 도 함께 바꾸세요.
-
-운영 환경에서는 요청 Host 가 `APP_URL` 의 도메인(하위 도메인 포함)이 아니면 요청을 받지 않습니다.
-다른 도메인으로도 같은 사이트를 서빙한다면 콤마로 나열합니다.
-
-```dotenv
-# APP_URL 과 다른 도메인으로도 접속하는 경우에만 지정합니다.
-TRUSTED_HOSTS=example.org,www.example.org
-```
-
-도메인이 맞지 않아 사이트 전체가 열리지 않을 때의 비상 조치는 `TRUSTED_HOSTS_ENABLED=false` 이며,
-근본 해결은 `APP_URL` 을 실제 주소로 맞추거나 `TRUSTED_HOSTS` 에 추가하는 것입니다.
-
-허용 도메인 검사는 하위 도메인과 포트까지는 구분하지 않습니다. 그래서 `APP_URL` 이 아닌 주소
-(하위 도메인·다른 포트·`TRUSTED_HOSTS` 의 별칭 도메인)로 들어온 **화면 요청은 같은 경로의 `APP_URL`
-주소로 이동**합니다(301). 본인인증·결제가 사이트 주소 한 곳에서만 진행되도록 하기 위한 것이며,
-API·결제·본인인증 콜백·사이트맵·정적 파일은 이동하지 않습니다. 별칭 도메인을 각각 독립된 주소로
-보여줘야 한다면 다음 한 줄로 끌 수 있습니다.
-
-```dotenv
-CANONICAL_HOST_REDIRECT=false
-```
-
 ### `.env` 를 운영 기준값으로 삼기 (선택)
 
 기본 설계에서 **관리자 환경설정 화면이 운영 기준**입니다. 설치가 끝나면 메일·드라이버·디버그
@@ -1037,9 +663,7 @@ G7_ENV_PRIORITY=true
 
 | 프로세스 | 명령어 | 용도 |
 |---------|--------|------|
-| 큐 워커 | `php artisan queue:work {연결} --queue={큐,…}` | 비동기 작업 처리 — 환경설정 → 드라이버 → 「큐 워커」에 등록한 연결·큐마다(화면이 명령을 보여 줍니다). 큐 드라이버가 `sync` 면 필요 없음 |
-| 긴 작업 워커(등록 시) | `php artisan queue:work database-long --queue=long --timeout=3600` | 통계 재집계·익명화·개인정보 직권 실행. 「큐 워커」에 `database-long`(또는 `redis-long`) 연결과 `long` 큐를 등록했을 때만 |
-| 사이트맵 워커 | `php artisan queue:work {연결} --queue=sitemap --timeout=1800` | 사이트맵 생성 전용 큐 — 등록과 무관하게 큐 드라이버 연결에 잡이 쌓이므로 **워커를 1개만** 따로 띄웁니다(「큐 워커」 화면이 이 명령도 보여 줍니다). 띄우지 않으면 사이트맵이 만들어지지 않습니다. 큐 드라이버가 `sync` 면 필요 없음 |
+| 큐 워커 | `php artisan queue:work` | 비동기 작업 처리 |
 | WebSocket | `php artisan reverb:start` | 실시간 알림 |
 
 ### 스케줄러
@@ -1051,7 +675,5 @@ cron에 아래 항목을 등록합니다.
 ```
 
 웹 서버 계정(`www-data` · `nginx` · `apache` 등)으로 실행해야 합니다 — root 의 crontab 에 그대로 등록하면 매분 캐시 파일이 root 소유로 만들어져 웹 요청이 실패할 수 있습니다. `crontab -u www-data -e` 로 그 계정의 crontab 에 등록하면 `sudo -u` 없이 같은 줄을 씁니다. 「명령줄·cron 실행 계정」 절을 참고하세요.
-
-**등록하지 않으면** — 방문자 통계는 관리자가 통계 화면을 열거나 새로고침할 때 1분 간격으로 집계되어 숫자는 맞춰지지만(설정 「방문자 통계 → 보존 → 집계」에서 끌 수 있습니다), 어제 확정·오래된 데이터 정리·주간/월간 보고서 메일, 주문 자동취소·마일리지 적립 같은 확장의 예약 작업은 동작하지 않습니다. 통계 화면 상단과 수집 진단에 「스케줄러 미가동」 안내가 뜨면 cron 등록을 확인하세요.
 
 > 상세 내용은 [docs/requirements.md](docs/requirements.md)를 참조하세요.

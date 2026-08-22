@@ -15,12 +15,6 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  */
 class RegisterCurrencyAssignmentTest extends ModuleTestCase
 {
-    /**
-     * 가입 요청 본문을 만듭니다.
-     *
-     * @param  array  $overrides  덮어쓸 필드
-     * @return array 가입 요청 본문
-     */
     private function registerPayload(array $overrides = []): array
     {
         return array_merge([
@@ -33,15 +27,6 @@ class RegisterCurrencyAssignmentTest extends ModuleTestCase
         ], $overrides);
     }
 
-    /**
-     * 제출한 통화가 등록 통화면 그 값이 가입 직후 저장돼 있다.
-     *
-     * @scenario listener=register_assignment, queue=sync
-     *
-     * @effects derived_data_visible_in_same_request
-     *
-     * @return void 반환값 없음
-     */
     public function test_submitted_currency_is_persisted(): void
     {
         $response = $this->postJson('/api/auth/register', $this->registerPayload([
@@ -50,22 +35,13 @@ class RegisterCurrencyAssignmentTest extends ModuleTestCase
 
         $response->assertSuccessful();
 
-        $user = User::where('uuid', $response->json('data.user.uuid'))->firstOrFail();
+        $user = User::where('email', $response->json('data.user.email'))->firstOrFail();
         $this->assertSame(
             'USD',
             app(EcommerceUserProfileRepositoryInterface::class)->getPreferredCurrency($user->id)
         );
     }
 
-    /**
-     * 통화를 제출하지 않으면 로케일 추정(없으면 기본 통화)으로 가입 직후 부여된다.
-     *
-     * @scenario listener=register_assignment, queue=sync
-     *
-     * @effects derived_data_visible_in_same_request
-     *
-     * @return void 반환값 없음
-     */
     public function test_falls_back_to_locale_when_currency_omitted(): void
     {
         // 제출 통화 없음 → locale(en, 테스트 env supported_locales) 기반 추정 경로 작동.
@@ -76,20 +52,11 @@ class RegisterCurrencyAssignmentTest extends ModuleTestCase
 
         $response->assertSuccessful();
 
-        $user = User::where('uuid', $response->json('data.user.uuid'))->firstOrFail();
+        $user = User::where('email', $response->json('data.user.email'))->firstOrFail();
         $assigned = app(EcommerceUserProfileRepositoryInterface::class)->getPreferredCurrency($user->id);
         $this->assertNotNull($assigned);
     }
 
-    /**
-     * 등록되지 않은 통화를 강제로 보내면 422 로 거부한다.
-     *
-     * @scenario listener=register_assignment, queue=sync
-     *
-     * @effects derived_data_visible_in_same_request
-     *
-     * @return void 반환값 없음
-     */
     public function test_invalid_currency_is_rejected_422(): void
     {
         $response = $this->postJson('/api/auth/register', $this->registerPayload([

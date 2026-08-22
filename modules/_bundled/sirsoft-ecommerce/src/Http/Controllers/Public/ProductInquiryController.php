@@ -6,9 +6,7 @@ use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use Exception;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Exceptions\ProductInquiryOperationException;
-use Modules\Sirsoft\Ecommerce\Http\Controllers\Concerns\EnsuresPublicProduct;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Public\ProductInquiryListRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Public\StoreInquiryRequest;
 use Modules\Sirsoft\Ecommerce\Models\Product;
@@ -22,13 +20,6 @@ use Modules\Sirsoft\Ecommerce\Services\ProductInquiryService;
  */
 class ProductInquiryController extends PublicBaseController
 {
-    use EnsuresPublicProduct;
-
-    /**
-     * 상품 문의 서비스를 주입받습니다.
-     *
-     * @param  ProductInquiryService  $inquiryService  상품 문의 서비스
-     */
     public function __construct(
         private ProductInquiryService $inquiryService
     ) {}
@@ -42,9 +33,6 @@ class ProductInquiryController extends PublicBaseController
      */
     public function index(ProductInquiryListRequest $request, Product $product): JsonResponse
     {
-        // 숨김·삭제 상품의 문의는 열지 않는다 (상품 상세와 같은 판정)
-        $this->ensurePublicProduct($product);
-
         try {
             $this->logApiUsage('inquiry.index');
             $validated = $request->validated();
@@ -60,13 +48,6 @@ class ProductInquiryController extends PublicBaseController
                 $result
             );
         } catch (Exception $e) {
-            Log::error('inquiry.index failed', [
-                'exception' => $e::class,
-                'message' => $e->getMessage(),
-                'file' => $e->getFile().':'.$e->getLine(),
-                'product_id' => $product->id,
-            ]);
-
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.inquiries.fetch_failed',
@@ -84,9 +65,6 @@ class ProductInquiryController extends PublicBaseController
      */
     public function store(StoreInquiryRequest $request, Product $product): JsonResponse
     {
-        // 숨김·삭제 상품에는 문의를 받지 않는다 (본문 검증보다 먼저 막는 판정은 요청 클래스에 있다)
-        $this->ensurePublicProduct($product);
-
         try {
             $this->logApiUsage('inquiry.store');
             $inquiry = $this->inquiryService->createInquiry($product->id, $request->validated());
@@ -112,13 +90,6 @@ class ProductInquiryController extends PublicBaseController
                 ['reason' => __($e->getMessageKey(), $e->getMessageParams())]
             );
         } catch (Exception $e) {
-            Log::error('inquiry.store failed', [
-                'exception' => $e::class,
-                'message' => $e->getMessage(),
-                'file' => $e->getFile().':'.$e->getLine(),
-                'product_id' => $product->id,
-            ]);
-
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.inquiries.create_failed',

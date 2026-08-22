@@ -26,7 +26,6 @@
   "on_sale": "On Sale",
   "categories": "Categories",
   "total_count": "{{count}} products",
-  "total_count_one": "{{count}} product",
   "popular_products": "Popular Products",
   "new_products": "New Products",
   "recent_products": "Recently Viewed",
@@ -50,7 +49,6 @@
   "already_added_option": "This option has already been added.",
   "min_purchase_qty_notice": "Minimum {{qty}} items required",
   "max_purchase_qty_notice": "Maximum {{qty}} items allowed",
-  "max_purchase_qty_notice_one": "Maximum {{qty}} item allowed",
   "select_options_guide": "Please select options",
   "select_upper_option_first": "Select upper option first",
   "stock_count": "{{count}} in stock",
@@ -156,10 +154,8 @@
     "all": "All",
     "empty": "No products in this category.",
     "product_count": "{{count}} products",
-    "product_count_one": "{{count}} product",
     "select": "Select category",
-    "all_in": "All {{name}}",
-    "chips_label": "Product categories"
+    "all_in": "All {{name}}"
   },
   "filter": {
     "title": "Filter",
@@ -189,13 +185,11 @@
     "remove_from_wishlist": "Remove from Wishlist",
     "quick_view": "Quick View",
     "review_count": "{{count}} reviews",
-    "review_count_one": "{{count}} review",
     "rating": "Rating",
     "description": "Description",
     "return_policy": "Return Policy",
     "add_to_cart": "Add to Cart",
     "buy_now": "Buy Now",
-    "no_purchasable_option": "This product has no option available for purchase right now.",
     "sold_out": "Sold Out",
     "sold_out_suffix": "(Sold out)",
     "sold_out_option": "This option is sold out.",
@@ -246,10 +240,7 @@
     "sort_rating_high": "Highest Rating",
     "sort_rating_low": "Lowest Rating",
     "review_image_preview": "Review Image",
-    "review_image_open": "Enlarge review image {{n}}",
-    "review_image_open_more": "Enlarge review image {{n}} ({{count}} more)",
     "rating_out_of_5": "Out of 5 · {{total}} reviews",
-    "rating_out_of_5_one": "Out of 5 · {{total}} review",
     "filter_all": "All Options",
     "filter_all_rating": "All Ratings",
     "filter_rating_5": "⭐⭐⭐⭐⭐ 5 stars",
@@ -257,9 +248,7 @@
     "filter_rating_3": "⭐⭐⭐ 3 stars",
     "filter_rating_2": "⭐⭐ 2 stars",
     "filter_rating_1": "⭐ 1 star",
-    "filter_reset": "Reset Filters",
-    "category_path": "Category path",
-    "buy_sheet_title": "Choose options"
+    "filter_reset": "Reset Filters"
   },
   "cart": {
     "title": "Cart",
@@ -273,7 +262,6 @@
     "items_deleted": "Selected items have been deleted.",
     "option_updated": "Option has been updated.",
     "change_option": "Change Option",
-    "delete_item": "Remove item",
     "subtotal": "Subtotal",
     "option": "Option",
     "order_summary": "Order Summary",
@@ -282,7 +270,6 @@
     "product_amount": "Product Amount",
     "taxable_amount": "Taxable Amount",
     "tax_free_amount": "Tax-free Amount",
-    "zero_rated_amount": "Zero-rated Amount",
     "discount_total": "Discount",
     "coupon_discount": "Coupon Discount",
     "code_discount": "Code Discount",
@@ -309,8 +296,7 @@
       "confirm": "Confirm Delete",
       "message_single": "Are you sure you want to delete this item?",
       "message_multiple": "Are you sure you want to delete selected items?",
-      "count": "{{count}} items",
-      "count_one": "{{count}} item"
+      "count": "{{count}} items"
     },
     "option_modal": {
       "title": "Change Option",
@@ -333,8 +319,7 @@
     "min_qty_item": "The minimum purchase quantity is {{limit}}. (Requested: {{requested}})",
     "restricted_item": "This item is not available for your account to purchase.",
     "sold_out": "Sold Out",
-    "go_to_cart": "Go to Cart",
-    "checkout_with_count": "Checkout ({{count}})"
+    "go_to_cart": "Go to Cart"
   },
   "checkout": {
     "title": "Checkout",
@@ -420,14 +405,12 @@
     "submit": "Pay Now",
     "processing": "Processing...",
     "points_used": "Points Used",
-    "amount_before_points": "Amount before mileage",
     "discount_coupon": "Discount/Coupon",
     "discount_section_title": "Apply Discount/Coupon",
     "coupon_select": "Select Coupon",
     "coupon_select_placeholder": "Select a coupon",
     "coupon_no_available": "No coupons available",
     "coupon_available_count": "{{count}} coupons available",
-    "coupon_available_count_one": "{{count}} coupon available",
     "coupon_applicable": "Coupon available",
     "coupon_applied": "Coupon applied",
     "coupon_removed": "Coupon removed",
@@ -469,6 +452,8 @@
     "coupon_not_applied": "Some coupons could not be applied and were excluded. Please check the minimum order amount, usage limit, and combination rules.",
     "order_coupon": "Order Discount Coupon",
     "shipping_coupon": "Shipping Discount Coupon",
+    "exclusive_coupon_title": "Exclusive Coupon",
+    "exclusive_coupon_message": "Using an exclusive coupon will automatically remove other coupons. Do you want to continue?",
     "coupon_disabled_exclusive": "Cannot use with other coupons",
     "coupon_disabled_already_applied": "Already applied",
     "coupon_min_amount_not_met": "Minimum order amount not met",
@@ -488,19 +473,15 @@
     "save_address": "Save Address",
     "new_address_label": "New Address",
     "save_shipping_address_checkbox": "Save the entered shipping address",
-    "update_selected_address_checkbox": "Update the saved address with these changes",
     "vbank_payment": "Virtual Account",
     "vbank_payment_desc": "Pay after virtual account issued",
     "vbank_info": "A virtual account will be issued after order completion.",
     "vbank_due_notice": "Payment due: within {{days}} days",
-    "vbank_due_notice_one": "Payment due: within {{days}} day",
     "dbank_payment": "Bank Transfer",
     "dbank_payment_desc": "Direct transfer to designated account",
     "dbank_info": "Please select an account to transfer to.",
-    "no_payment_methods": "No payment method is available right now. Please contact the store.",
     "dbank_select_account": "Select bank account",
     "dbank_due_notice": "Payment due: within {{days}} days",
-    "dbank_due_notice_one": "Payment due: within {{days}} day",
     "dbank_no_accounts": "No bank accounts available.",
     "order_failed": "An error occurred while processing your order.",
     "payment_confirm_failed": "Payment confirmation failed. Please try again.",
@@ -513,8 +494,7 @@
     "refund_bank_select": "Select bank",
     "refund_bank_account_placeholder": "Account number (no hyphens)",
     "refund_bank_holder_placeholder": "Account holder",
-    "refund_bank_partial_notice": "If you fill in any one of the three fields, the others are required.",
-    "mileage_min_product_total": "Mileage can be used when the product total is {{amount}} or more."
+    "refund_bank_partial_notice": "If you fill in any one of the three fields, the others are required."
   },
   "order_complete": {
     "page_title": "Order Complete",
@@ -564,7 +544,6 @@
     "ordered_items": "Ordered Items",
     "order_items": "Order Items",
     "items_count": "{{count}} items",
-    "items_count_one": "{{count}} item",
     "shipping_address": "Shipping Address",
     "order_summary": "Order Summary",
     "subtotal": "Subtotal",
@@ -578,8 +557,7 @@
     "free": "Free",
     "save_shipping_address": "Save this address",
     "address_saved": "Address has been saved.",
-    "address_save_failed": "Failed to save address.",
-    "address_name_exists": "An address named \"Shipping Address\" is already saved, so it was not saved again. Check it in My Page › Addresses."
+    "address_save_failed": "Failed to save address."
   },
   "coupon_download": {
     "modal_title": "Download Coupons",
@@ -602,8 +580,7 @@
     "go_login": "Log In",
     "confirm_title": "Download Coupon",
     "confirm_message": "Would you like to download this coupon?",
-    "fetch_failed": "Failed to load coupon list.",
-    "download_all": "Download all"
+    "fetch_failed": "Failed to load coupon list."
   },
   "wishlist": {
     "title": "Wishlist",
@@ -639,46 +616,5 @@
   "guest_order_show": {
     "page_title": "Guest Order Detail",
     "back_to_lookup": "Back to Order Lookup"
-  },
-  "guest_claim_show": {
-    "page_title": "Guest Claim Detail",
-    "page_description": "Review the exchange, return, or cancellation/refund request filed for a guest order."
-  },
-  "guest_claim_apply": {
-    "page_title": "File a Guest Claim",
-    "page_description": "File an exchange, return, or cancellation/refund request for a guest order.",
-    "edit_page_title": "Edit Guest Claim"
-  },
-  "order_permission_denied": "You do not have permission to place orders. Please contact the seller.",
-  "related_products": "How about these?",
-  "product_rail": {
-    "roledescription": "product carousel"
-  },
-  "reviews": {
-    "title": "All Reviews",
-    "total_count": "{{count}} reviews",
-    "photo_only": "Photo reviews only",
-    "rating_filter": "Rating",
-    "rating_all": "All ratings",
-    "rating_n": "{{n}} stars",
-    "rating_one": "1 star",
-    "sort": {
-      "latest": "Newest",
-      "oldest": "Oldest",
-      "rating_high": "Highest rated",
-      "rating_low": "Lowest rated"
-    },
-    "empty": "There are no reviews yet.",
-    "empty_filtered": "No reviews match your filters.",
-    "total_count_one": "{{count}} review"
-  },
-  "exclude_sold_out": "Hide sold out",
-  "product_card": {
-    "add_to_cart": "Add to cart: {{name}}",
-    "wishlist": "Add to wishlist: {{name}}"
-  },
-  "quick_option": {
-    "title": "Choose options",
-    "view_detail": "View details"
   }
 }

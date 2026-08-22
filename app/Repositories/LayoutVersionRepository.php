@@ -6,19 +6,14 @@ use App\Contracts\Repositories\LayoutVersionRepositoryInterface;
 use App\Models\TemplateLayout;
 use App\Models\TemplateLayoutVersion;
 use App\Repositories\Concerns\CalculatesJsonContentDiff;
-use App\Support\LayoutEmptyObjects;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class LayoutVersionRepository implements LayoutVersionRepositoryInterface
 {
     use CalculatesJsonContentDiff;
 
-    /**
-     * @param  TemplateLayoutVersion  $model  버전 모델
-     */
     public function __construct(
         private TemplateLayoutVersion $model
     ) {}
@@ -33,11 +28,9 @@ class LayoutVersionRepository implements LayoutVersionRepositoryInterface
      * @param  int  $layoutId  레이아웃 ID
      * @param  array  $content  저장할 content 스냅샷 (이 버전이 담는 내용)
      * @param  array|null  $previousContent  직전 버전 content (변경 요약 기준). null 이면 변경 요약 0
-     * @param  int|null  $createdBy  저장자 ID (null 이면 현재 인증 사용자)
-     * @param  array<string, mixed>  $summaryExtra  계산된 변경 요약에 덧붙일 키 (예: 확장 업데이트 병합의 `source`·`applied`·`conflicts`)
      * @return TemplateLayoutVersion 생성된 버전
      */
-    public function saveVersion(int $layoutId, array $content, ?array $previousContent = null, ?int $createdBy = null, array $summaryExtra = []): TemplateLayoutVersion
+    public function saveVersion(int $layoutId, array $content, ?array $previousContent = null): TemplateLayoutVersion
     {
         $nextVersion = $this->getNextVersion($layoutId);
 
@@ -46,16 +39,11 @@ class LayoutVersionRepository implements LayoutVersionRepositoryInterface
             ? $this->calculateChanges($previousContent, $content)
             : ['added' => 0, 'removed' => 0, 'char_diff' => 0];
 
-        // 병합 출처 같은 부가 정보는 계산된 요약 뒤에 붙인다 — 재계산 커맨드가 카운트만 다시 쓰고 이 키는 보존한다.
-        $changesSummary = array_merge($changesSummary, $summaryExtra);
-
         return $this->model->create([
             'layout_id' => $layoutId,
             'version' => $nextVersion,
             'content' => $content,
             'changes_summary' => $changesSummary,
-            // 저장자 — 버전 목록의 「저장자」 표시 근거. 종전엔 기록하지 않아 항상 「알 수 없음」이었다.
-            'created_by' => $createdBy ?? Auth::id(),
         ]);
     }
 
@@ -119,23 +107,18 @@ class LayoutVersionRepository implements LayoutVersionRepositoryInterface
 
             // 2. 레이아웃 모델 조회 및 복원 직전 content 보관 (변경 요약 기준)
             $layout = TemplateLayout::findOrFail($layoutId);
-            // 버전 행·현재 행 모두 원문 그대로 읽는다 — 캐스트는 `{}` 를 `[]` 로 만들어 복원 한 번으로
-            // 본 행의 빈 객체가 사라진다 (#758)
-            $currentContent = LayoutEmptyObjects::rawPreserving($layout);
-            $restoredContent = LayoutEmptyObjects::rawPreserving($versionToRestore);
+            $currentContent = $layout->content;
 
-            // 3. 레이아웃을 복원할 content로 업데이트 — lock_version 도 올린다. 복원 직전 화면을 열어 둔
-            //    다른 편집기가 옛 lock 으로 저장하면 409 가 나야 복원 결과가 조용히 덮이지 않는다.
+            // 3. 레이아웃을 복원할 content로 업데이트
             $layout->update([
-                'content' => $restoredContent,
-                'lock_version' => ((int) ($layout->lock_version ?? 0)) + 1,
+                'content' => $versionToRestore->content,
             ]);
 
             // 4. 복원 결과를 새 버전으로 저장 — content 는 복원된 내용(versionToRestore),
             //    changes_summary 는 복원 직전(currentContent) 대비 변경이다. 따라서 복원으로
             //    내용이 줄면 "삭제", 늘면 "추가"로 정확히 기록된다(종전엔 content 로 복원 직전
             //    상태를 저장하고 방향도 거꾸로라, 복원인데 "추가"로 표기되던 결함 수정).
-            return $this->saveVersion($layoutId, $restoredContent, $currentContent);
+            return $this->saveVersion($layoutId, $versionToRestore->content, $currentContent);
         });
     }
 
@@ -201,12 +184,7 @@ class LayoutVersionRepository implements LayoutVersionRepositoryInterface
                     ? $this->calculateChanges($previousContent, $version->content ?? [])
                     : ['added' => 0, 'removed' => 0, 'char_diff' => 0];
 
-                // 카운트가 아닌 부가 키(확장 업데이트 병합의 source·applied·conflicts)는 다시 계산할 수 없으니 보존한다.
-                $existing = is_array($version->changes_summary) ? $version->changes_summary : [];
-                $summary = array_merge(array_diff_key($existing, array_flip(self::SUMMARY_COUNT_KEYS)), $summary);
-
                 $version->update(['changes_summary' => $summary]);
-                // layout-assoc-decode-ok: 변경 요약 건수 계산 전용 — 본문을 다시 쓰지 않는다
                 $previousContent = $version->content ?? [];
                 $updated++;
             }

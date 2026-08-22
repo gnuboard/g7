@@ -55,13 +55,10 @@ export interface ActionLog {
     startTime: number;
     endTime?: number;
     duration?: number;
-    /** `skipped` — 미리보기 모드에서 억제된 액션 (ActionDispatcher.executeAction) */
-    status: 'started' | 'success' | 'error' | 'skipped';
+    status: 'started' | 'success' | 'error';
     result?: any;
     error?: SerializedError;
     children?: ActionLog[];
-    /** 부가 정보 (예: `{ reason: 'preview_mode_suppressed' }`) */
-    metadata?: Record<string, any>;
 }
 
 /** 직렬화된 에러 */
@@ -197,8 +194,6 @@ export interface DiagnosticContext {
     websocket: WebSocketInfo;
     stateAtTime: (timestamp: number) => StateView | undefined;
     layoutHas: (prop: string, value: string) => boolean;
-    /** 현재 렌더 중인 레이아웃 JSON (DevTools 가 로드를 추적하지 못했으면 null) */
-    currentLayoutJson?: LayoutJsonData | null;
 }
 
 /** 진단 결과 */

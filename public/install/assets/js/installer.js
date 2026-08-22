@@ -96,20 +96,6 @@
         return window.INSTALLER_LANG && window.INSTALLER_LANG[key] ? window.INSTALLER_LANG[key] : key;
     }
 
-    /**
-     * 상태변경 API 요청 헤더 — 세션 CSRF 토큰을 싣는다.
-     *
-     * 설치 소유권은 서버가 세션으로 판정하므로 소유 토큰 원문은 보내지 않는다.
-     *
-     * @return {Object} fetch headers
-     */
-    function stateChangeHeaders() {
-        return {
-            'Content-Type': 'application/json',
-            'X-CSRF-Token': window.INSTALLER_CSRF || '',
-        };
-    }
-
     // =========================================================================
     // Step 1: 라이선스 동의 체크박스
     // =========================================================================
@@ -268,12 +254,9 @@
         const notExistsPaths = []; // mkdir 대상 (not_exists)
         const failedDirRelPaths = []; // 상대경로
         const notExistsRelPaths = []; // 상대경로 (not_exists)
-        // Windows ReadOnly 속성이 원인인 경로가 하나라도 있으면 attrib -R 안내를 함께 노출한다.
-        // (ReadOnly 는 ACL 이 아니라 파일 속성이라 icacls 로는 해소되지 않는다)
-        let hasWindowsReadOnly = false;
         if (!allDirsPassed) {
             // 계층적 디렉토리 에러 메시지 생성
-            let dirErrorHtml = `${lang('error_directory_permissions')}<ul class="u-mt-sm">`;
+            let dirErrorHtml = `${lang('error_directory_permissions')}<ul style="margin-top: 0.5rem;">`;
 
             Object.entries(data.directories.results)
                 .filter(([, info]) => !info.passed)
@@ -295,19 +278,6 @@
                         // not_writable, not_readable, subdirectory_issues 등 모두 chmod 대상
                         failedDirPaths.push(fullPath);
                         failedDirRelPaths.push(relPath);
-
-                        if (info.error_type === 'windows_readonly') {
-                            hasWindowsReadOnly = true;
-                        }
-                    }
-
-                    // 하위 디렉토리 중 ReadOnly 속성이 원인인 항목이 있는지 확인
-                    if (Array.isArray(info.failed_subdirectories)) {
-                        info.failed_subdirectories.forEach(subdir => {
-                            if (subdir && typeof subdir === 'object' && subdir.windows_readonly) {
-                                hasWindowsReadOnly = true;
-                            }
-                        });
                     }
                     dirErrorHtml += `<li>${path}`;
 
@@ -517,39 +487,6 @@
             );
         }
 
-        // 9-1. Composer 의존성 구성 카드 (권장 사항, 필수 아님)
-        // failedRequirements.push() 를 하지 않는다 — 개발용 패키지가 섞여 있어도 설치는 진행된다.
-        // vendor 자체가 없으면 마법사가 운영용 구성으로 자동 설치하므로 카드를 그리지 않는다.
-        if (data.vendor_dev_packages && data.vendor_dev_packages.vendor_exists) {
-            const vendorInfo = data.vendor_dev_packages;
-            let vendorStatusClass, vendorStatusText, vendorHint = '';
-            if (vendorInfo.dev === true) {
-                // 단순히 '개발용 포함' 만 보이면 이후 코어 업데이트가 깨진다는 실질이 전달되지 않는다.
-                vendorStatusClass = 'status-warning';
-                vendorStatusText = lang('vendor_dev_packages_detected_short')
-                    .replace(':count', (vendorInfo.packages || []).length);
-                vendorHint = lang('vendor_dev_packages_detected_warning')
-                    .replace(':count', (vendorInfo.packages || []).length);
-            } else if (vendorInfo.dev === false) {
-                vendorStatusClass = 'status-pass';
-                vendorStatusText = lang('vendor_dev_packages_none_short');
-            } else {
-                // installed.json 부재·형식 불명 — 확인 불가 (경고도 차단도 아님)
-                vendorStatusClass = 'status-pass';
-                vendorStatusText = lang('vendor_dev_packages_unknown');
-            }
-            html += renderSingleItemCard(
-                lang('vendor_dev_packages'),
-                vendorStatusClass,
-                vendorStatusText,
-                '',
-                false
-            );
-            if (vendorHint) {
-                html += `<p class="fix-guide-hint u-mt-075">${vendorHint}</p>`;
-            }
-        }
-
         // 10. 자산 URL 방식 카드 (안내 항목, 필수 아님)
         // 서버는 판정할 수 없으므로(loopback 이 vhost·프록시를 우회) "확인 중" 으로 먼저
         // 그리고 refreshAssetUrlModeCard() 가 브라우저 프로브 결과로 갱신한다.
@@ -595,7 +532,7 @@
                     const mkdirCommand = `mkdir -p ${notExistsPaths.join(' ')}`;
                     html += `<pre class="fix-command">${escapeHtml(mkdirCommand)}</pre>`;
                 }
-                html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
+                html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
                 html += '</div>';
                 html += `<p class="fix-guide-hint">${lang('or_relative_path')}</p>`;
                 html += '<div class="code-box">';
@@ -606,7 +543,7 @@
                     const relMkdirCommand = `mkdir -p ${notExistsRelPaths.join(' ')}`;
                     html += `<pre class="fix-command">${escapeHtml(relMkdirCommand)}</pre>`;
                 }
-                html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
+                html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
                 html += '</div>';
                 html += '</div>';
             }
@@ -633,25 +570,25 @@
                 html += `<p class="fix-guide-label">${lang('ownership_mismatch_option_group')}</p>`;
                 html += '<div class="code-box">';
                 html += `<pre class="fix-command">${escapeHtml(groupCommand)}</pre>`;
-                html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
+                html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
                 html += '</div>';
 
-                html += `<p class="fix-guide-label u-mt-md">${lang('ownership_mismatch_option_chown')}</p>`;
+                html += `<p class="fix-guide-label" style="margin-top: 1rem;">${lang('ownership_mismatch_option_chown')}</p>`;
                 html += '<div class="code-box">';
                 html += `<pre class="fix-command">${escapeHtml(`sudo chown -R ${webUser}:${webUser} ${mismatchPaths}`)}</pre>`;
-                html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
+                html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
                 html += '</div>';
 
-                html += `<p class="fix-guide-label u-mt-md">${lang('ownership_mismatch_option_777')}</p>`;
+                html += `<p class="fix-guide-label" style="margin-top: 1rem;">${lang('ownership_mismatch_option_777')}</p>`;
                 html += '<div class="code-box">';
                 html += `<pre class="fix-command">${escapeHtml(`chmod -R 777 ${mismatchPaths}`)}</pre>`;
-                html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
+                html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
                 html += '</div>';
 
                 const hintText = lang('ownership_mismatch_hint')
                     .replace(':owner', escapeHtml(owner))
                     .replace(':web_user', escapeHtml(webUser));
-                html += `<p class="fix-guide-hint u-mt-075">${hintText}</p>`;
+                html += `<p class="fix-guide-hint" style="margin-top: 0.75rem;">${hintText}</p>`;
                 html += '</div>';
             }
 
@@ -662,31 +599,17 @@
                 if (isWindows) {
                     const winDirPaths = failedDirPaths.map(p => p.replace(/\//g, '\\'));
                     const winDirCommands = winDirPaths.map(p => `icacls "${p}" /grant Everyone:(OI)(CI)F /T`);
-
-                    // ReadOnly 속성이 원인이면 icacls 로는 해소되지 않는다(ACL 이 아니라 파일 속성).
-                    // attrib -R 안내를 먼저 노출한다.
-                    if (hasWindowsReadOnly) {
-                        // 폴더 자체와 안쪽을 따로 푼다 — `attrib -R "<폴더>" /D /S` 는 폴더 자체만 풀고 안쪽은 읽기 전용으로 남긴다.
-                        const winRoCommands = winDirPaths.flatMap(p => [`attrib -R "${p}"`, `attrib -R "${p}\\*" /S /D`]);
-                        html += `<p class="fix-guide-label">${lang('permission_readonly_fix_guide')}</p>`;
-                        html += '<div class="code-box">';
-                        html += `<pre class="fix-command">${escapeHtml(winRoCommands.join('\n'))}</pre>`;
-                        html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
-                        html += '</div>';
-                        html += `<p class="fix-guide-hint">${lang('permission_readonly_hint')}</p>`;
-                    }
-
                     html += `<p class="fix-guide-label">${lang('permission_fix_guide')}</p>`;
                     html += '<div class="code-box">';
                     html += `<pre class="fix-command">${escapeHtml(winDirCommands.join('\n'))}</pre>`;
-                    html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
+                    html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
                     html += '</div>';
                     const winDirRelPaths = failedDirRelPaths.map(p => p.replace(/\//g, '\\'));
                     const winDirRelCommands = winDirRelPaths.map(p => `icacls "${p}" /grant Everyone:(OI)(CI)F /T`);
                     html += `<p class="fix-guide-hint">${lang('or_relative_path')}</p>`;
                     html += '<div class="code-box">';
                     html += `<pre class="fix-command">${escapeHtml(winDirRelCommands.join('\n'))}</pre>`;
-                    html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
+                    html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
                     html += '</div>';
                     html += `<p class="fix-guide-hint">${lang('permission_windows_hint')}</p>`;
                 } else {
@@ -695,12 +618,12 @@
                     html += `<p class="fix-guide-label">${lang('permission_fix_guide')}</p>`;
                     html += '<div class="code-box">';
                     html += `<pre class="fix-command">${escapeHtml(`chmod -R 755 ${dirPathList}`)}</pre>`;
-                    html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
+                    html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
                     html += '</div>';
                     html += `<p class="fix-guide-hint">${lang('or_relative_path')}</p>`;
                     html += '<div class="code-box">';
                     html += `<pre class="fix-command">${escapeHtml(`chmod -R 755 ${dirRelPathList}`)}</pre>`;
-                    html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
+                    html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
                     html += '</div>';
                 }
                 html += '</div>';
@@ -739,12 +662,12 @@
                 html += `<p class="fix-guide-label">${isWindows ? lang('required_files_fix_guide') : lang('required_files_fix_guide_combined')}</p>`;
                 html += '<div class="code-box">';
                 html += `<pre class="fix-command">${escapeHtml(fileFixCommand)}</pre>`;
-                html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
+                html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
                 html += '</div>';
                 html += `<p class="fix-guide-hint">${lang('or_relative_path')}</p>`;
                 html += '<div class="code-box">';
                 html += `<pre class="fix-command">${escapeHtml(fileFixRelCommand)}</pre>`;
-                html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
+                html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
                 html += '</div>';
                 html += '</div>';
             }
@@ -762,14 +685,14 @@
                     html += `<p class="fix-guide-label">${lang('permission_fix_guide')}</p>`;
                     html += '<div class="code-box">';
                     html += `<pre class="fix-command">${escapeHtml(winFileCommands.join('\n'))}</pre>`;
-                    html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
+                    html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
                     html += '</div>';
                     const winRelFilePaths = notWritableRelPaths.map(p => p.replace(/\//g, '\\'));
                     const winRelFileCommands = winRelFilePaths.map(p => `icacls "${p}" /grant Everyone:F`);
                     html += `<p class="fix-guide-hint">${lang('or_relative_path')}</p>`;
                     html += '<div class="code-box">';
                     html += `<pre class="fix-command">${escapeHtml(winRelFileCommands.join('\n'))}</pre>`;
-                    html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
+                    html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
                     html += '</div>';
                     html += `<p class="fix-guide-hint">${lang('permission_windows_hint')}</p>`;
                 } else {
@@ -778,12 +701,12 @@
                     html += `<p class="fix-guide-label">${lang('permission_fix_guide')}</p>`;
                     html += '<div class="code-box">';
                     html += `<pre class="fix-command">${escapeHtml(`chmod 644 ${filePathList}`)}</pre>`;
-                    html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
+                    html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
                     html += '</div>';
                     html += `<p class="fix-guide-hint">${lang('or_relative_path')}</p>`;
                     html += '<div class="code-box">';
                     html += `<pre class="fix-command">${escapeHtml(`chmod 644 ${relFilePathList}`)}</pre>`;
-                    html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
+                    html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
                     html += '</div>';
                 }
                 html += '</div>';
@@ -809,25 +732,25 @@
                 html += `<p class="fix-guide-label">${lang('ownership_mismatch_option_group')}</p>`;
                 html += '<div class="code-box">';
                 html += `<pre class="fix-command">${escapeHtml(fileGroupCommand)}</pre>`;
-                html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
+                html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
                 html += '</div>';
 
-                html += `<p class="fix-guide-label u-mt-md">${lang('ownership_mismatch_option_chown')}</p>`;
+                html += `<p class="fix-guide-label" style="margin-top: 1rem;">${lang('ownership_mismatch_option_chown')}</p>`;
                 html += '<div class="code-box">';
                 html += `<pre class="fix-command">${escapeHtml(`sudo chown ${fileWebUser}:${fileWebUser} ${mismatchFilePaths}`)}</pre>`;
-                html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
+                html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
                 html += '</div>';
 
-                html += `<p class="fix-guide-label u-mt-md">${lang('ownership_mismatch_option_666')}</p>`;
+                html += `<p class="fix-guide-label" style="margin-top: 1rem;">${lang('ownership_mismatch_option_666')}</p>`;
                 html += '<div class="code-box">';
                 html += `<pre class="fix-command">${escapeHtml(`chmod 666 ${mismatchFilePaths}`)}</pre>`;
-                html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
+                html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
                 html += '</div>';
 
                 const fileHintText = lang('ownership_mismatch_hint')
                     .replace(':owner', escapeHtml(fileOwner))
                     .replace(':web_user', escapeHtml(fileWebUser));
-                html += `<p class="fix-guide-hint u-mt-075">${fileHintText}</p>`;
+                html += `<p class="fix-guide-hint" style="margin-top: 0.75rem;">${fileHintText}</p>`;
                 html += '</div>';
             }
 
@@ -1121,7 +1044,7 @@
             const apiUrl = `${window.location.origin}${window.INSTALLER_BASE_URL}/api/check-configuration.php?action=test-db`;
             const response = await fetch(apiUrl, {
                 method: 'POST',
-                headers: stateChangeHeaders(),
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(dbData)
             });
 
@@ -1168,22 +1091,15 @@
                             <p class="db-existing-backup-label"><strong>${escapeHtml(lang('db_backup_guide'))}</strong></p>
                             <div class="code-box">
                                 <pre>${escapeHtml(backupCmd)}</pre>
-                                <button type="button" class="btn-copy" data-action="copyPermissionCommand">${escapeHtml(lang('copy_command'))}</button>
+                                <button type="button" class="btn-copy" onclick="copyPermissionCommand(this)">${escapeHtml(lang('copy_command'))}</button>
                             </div>
                             <label class="db-backup-confirm-checkbox">
-                                <input type="checkbox" id="db-backup-confirmed" data-action="onDbBackupConsentChange" data-event="change" ${alreadyConsented ? 'checked' : ''}>
+                                <input type="checkbox" id="db-backup-confirmed" onchange="onDbBackupConsentChange(this)" ${alreadyConsented ? 'checked' : ''}>
                                 ${escapeHtml(lang('db_backup_confirmed'))}
                             </label>
                         </div>
                     `;
                     window.__g7_existing_tables = info;
-                    // 서버가 발급한 삭제 확인 토큰 — 설치 시작 시 drop_tables 와 함께 제시해야
-                    // 삭제가 실행된다 (요청 본문의 액션 값만으로는 삭제되지 않음).
-                    if (result.drop_confirm) {
-                        sessionStorage.setItem('drop_confirm', result.drop_confirm);
-                    } else {
-                        sessionStorage.removeItem('drop_confirm');
-                    }
                     // FormValidator에 동의 요구 등록
                     if (typeof FormValidator !== 'undefined') {
                         FormValidator.setDbCleanupRequired(true);
@@ -1193,7 +1109,6 @@
                     // 빈 DB → 동의 요구 해제 + sessionStorage 정리
                     window.__g7_existing_tables = null;
                     sessionStorage.removeItem('existing_db_action');
-                    sessionStorage.removeItem('drop_confirm');
                     if (typeof FormValidator !== 'undefined') {
                         FormValidator.setDbCleanupRequired(false);
                         FormValidator.setDbCleanupConsented(false);
@@ -2097,13 +2012,6 @@
      * Step 3 폼 제출 이벤트 초기화
      */
     function initStep3FormSubmit() {
-        // 사이트 주소 기본값: 저장된 값이 없으면 운영자가 실제로 보고 있는 주소(앱 루트)로 채운다 —
-        // 서버가 아는 Host 는 프록시 뒤에서 내부 주소·http 일 수 있다.
-        const appUrlInput = document.getElementById('app_url');
-        if (appUrlInput && appUrlInput.dataset.autofill === '1') {
-            appUrlInput.value = getAppRootUrl();
-        }
-
         const form = document.getElementById('config-form');
         if (form) {
             form.addEventListener('submit', function(e) {
@@ -2130,20 +2038,6 @@
 
     /** 의존성에 의해 자동 선택된 확장 identifier 집합 */
     const autoSelectedSet = new Set();
-
-    /**
-     * 선택 연동(integrations)으로 자동 체크한 대상 — owner 식별자 → Set(대상 식별자).
-     *
-     * 연동은 「있으면 연동되고 없어도 동작한다」라서 의존성과 달리 해제를 막지 않고 「다음」도 막지 않는다.
-     * 사용자가 직접 고른 확장의 연동 대상만 한 단계 자동 체크한다(자동 체크된 확장의 연동은 따라가지 않는다).
-     */
-    const autoSelectedByIntegration = {};
-
-    /** 사용자가 직접 해제한 연동 자동 체크 대상 — 다시 자동 체크하지 않는다 */
-    const userDeselectedIntegrations = new Set();
-
-    /** 연동 자동 체크 대상 유형 — 템플릿은 단일 선택이라 안내만 한다 */
-    const INTEGRATION_SELECTABLE_TYPES = ['modules', 'plugins'];
 
     async function loadExtensions() {
         const form = document.getElementById('extension-form');
@@ -2317,22 +2211,13 @@
         else if (type === 'modules') iconClass = 'fa-cube';
         else if (type === 'plugins') iconClass = 'fa-plug';
 
-        // 확장이 아이콘을 동봉했으면 유형 글리프 대신 그 그림을 그린다.
-        // 서버(scan-extensions.php)가 검증기를 통과한 바이트만 data URI 로 보내지만,
-        // innerHTML 조립이라 여기서도 형태를 다시 검사한다 — 정규식이 따옴표·꺾쇠를
-        // 배제하므로 속성 탈출이 성립하지 않는다.
-        const DATA_URI_RE = /^data:image\/(svg\+xml|png|webp);base64,[A-Za-z0-9+/]+=*$/;
-        const iconHtml = (typeof item.icon_data_uri === 'string' && DATA_URI_RE.test(item.icon_data_uri))
-            ? '<img class="extension-card-icon-img" src="' + item.icon_data_uri + '" alt="" loading="lazy">'
-            : '<i class="fas ' + iconClass + '"></i>';
-
         const name = getLocalizedText(item.name) || item.identifier;
         const description = getLocalizedText(item.description);
         const version = item.version || '1.0.0';
         const author = item.author || '';
 
         // 의존성 표시 (identifier → name 변환, 모듈/플러그인 아이콘 추가)
-        let depsBlock = '';
+        let depsHtml = '';
         if (item.dependencies && item.dependencies.length > 0) {
             const depsText = item.dependencies.map(function(depId) {
                 const depInfo = findExtensionById(depId);
@@ -2340,23 +2225,8 @@
                 const depIcon = depInfo ? (depInfo.type === 'plugin' ? 'fa-plug' : 'fa-cube') : 'fa-cube';
                 return '<span class="dep-tag"><i class="fas ' + depIcon + '"></i> ' + escapeHtml(depName) + '</span>';
             }).join(' ');
-            depsBlock = '<div class="extension-card-dependencies">' +
-                '<span class="dep-label">' + (window.EXTENSION_LABELS?.dependencies || lang('dependencies')) + ':</span> ' + depsText + '</div>';
-        }
-
-        // 선택 연동 표시 (「연동: 게시판 · 쇼핑몰 …」, 번들 버전 미달 경고 포함)
-        const integrationsBlock = buildIntegrationsLineHtml(item);
-
-        const depsHtml = (depsBlock || integrationsBlock)
-            ? '<div class="extension-card-footer">' + depsBlock + integrationsBlock + '</div>'
-            : '';
-
-        // 서버에 없는 PHP 확장(composer.json require/suggest ext-*) — 필수가 없으면 고를 수 없게 끈다(#151)
-        const phpBlock = buildPhpExtensionNoticeHtml(item);
-        const blockedByPhp = hasMissingRequiredPhpExtensions(item);
-        if (blockedByPhp) {
-            card.classList.add('disabled');
-            card.dataset.phpBlocked = '1';
+            depsHtml = '<div class="extension-card-footer"><div class="extension-card-dependencies">' +
+                '<span class="dep-label">' + (window.EXTENSION_LABELS?.dependencies || lang('dependencies')) + ':</span> ' + depsText + '</div></div>';
         }
 
         // 선택 표시 아이콘 (단일 선택은 라디오, 다중 선택은 체크박스)
@@ -2366,7 +2236,7 @@
 
         card.innerHTML =
             '<div class="extension-card-header">' +
-                '<div class="extension-card-icon">' + iconHtml + '</div>' +
+                '<div class="extension-card-icon"><i class="fas ' + iconClass + '"></i></div>' +
                 '<div class="extension-card-info">' +
                     '<h4 class="extension-card-name">' + escapeHtml(name) + '</h4>' +
                     '<div class="extension-card-meta">v' + escapeHtml(version) + (author ? ' · ' + escapeHtml(author) : '') + '</div>' +
@@ -2374,119 +2244,13 @@
                 '<div class="extension-card-select">' + selectIcon + '</div>' +
             '</div>' +
             (description ? '<p class="extension-card-description">' + escapeHtml(description) + '</p>' : '') +
-            depsHtml + phpBlock;
+            depsHtml;
 
         card.addEventListener('click', function() {
-            if (blockedByPhp) return;
             toggleExtension(type, item.identifier, isSingleSelect);
         });
 
         return card;
-    }
-
-    /**
-     * 연동 대상 유형 키(scan-extensions 의 integrations_detailed.type)로 번들 항목을 찾습니다.
-     *
-     * @param {string} integrationType - modules | plugins | templates
-     * @param {string} identifier - 대상 식별자
-     * @returns {object|null} 번들 항목 또는 null
-     */
-    function findIntegrationTarget(integrationType, identifier) {
-        if (!extensionsData) return null;
-        const categories = integrationType === 'templates'
-            ? ['admin_templates', 'user_templates']
-            : [integrationType];
-        for (let i = 0; i < categories.length; i++) {
-            const found = (extensionsData[categories[i]] || []).find(function(e) { return e.identifier === identifier; });
-            if (found) return found;
-        }
-        return null;
-    }
-
-    /**
-     * 확장이 필수로 요구한 PHP 확장 중 서버에 없는 것이 있는지 판정합니다.
-     *
-     * @param {object} item - 확장 항목 (scan-extensions 의 missing_php_extensions 포함)
-     * @returns {boolean} 필수 PHP 확장이 하나라도 없으면 true
-     */
-    function hasMissingRequiredPhpExtensions(item) {
-        return !!(item && Array.isArray(item.missing_php_extensions) && item.missing_php_extensions.length > 0);
-    }
-
-    /**
-     * 카드의 PHP 확장 안내 HTML 을 만듭니다. (필수 없음 → 설치 불가, 권장 없음 → 경고만)
-     *
-     * @param {object} item - 확장 항목 (missing_php_extensions · suggested_missing 포함)
-     * @returns {string} HTML, 안내할 것이 없으면 빈 문자열
-     */
-    function buildPhpExtensionNoticeHtml(item) {
-        let html = '';
-
-        if (hasMissingRequiredPhpExtensions(item)) {
-            html += '<div class="extension-card-php-notice extension-card-php-blocked"><i class="fas fa-ban"></i> ' +
-                escapeHtml(lang('extension_php_missing_required').replace(':extensions', item.missing_php_extensions.join(', '))) +
-                '</div>';
-        }
-
-        const suggested = (item && item.suggested_missing && typeof item.suggested_missing === 'object') ? item.suggested_missing : {};
-        const suggestedNames = Object.keys(suggested);
-        if (suggestedNames.length > 0) {
-            const reasons = suggestedNames.map(function(n) { return suggested[n]; }).filter(Boolean).join(', ');
-            html += '<div class="extension-card-php-notice"><i class="fas fa-exclamation-triangle"></i> ' +
-                escapeHtml(lang('extension_php_missing_suggested')
-                    .replace(':extensions', suggestedNames.join(', '))
-                    .replace(':reason', reasons || suggestedNames.join(', '))) +
-                '</div>';
-        }
-
-        return html;
-    }
-
-    /**
-     * owner 카드의 「연동: …」 줄 HTML 을 만듭니다.
-     *
-     * - 템플릿 대상은 자동 체크하지 않으므로 「직접 선택」 안내를 붙인다.
-     * - 번들 버전이 선언한 제약에 못 미치면 「연동 버전 미달」을 붙인다(선택은 막지 않음).
-     *
-     * @param {object} item - 확장 항목 (integrations_detailed 포함)
-     * @returns {string} HTML, 연동 선언이 없으면 빈 문자열
-     */
-    function buildIntegrationsLineHtml(item) {
-        const list = (item && item.integrations_detailed) || [];
-        if (list.length === 0) return '';
-
-        const tags = list.map(function(it) {
-            if (!it || !it.id) return '';
-            const target = findIntegrationTarget(it.type, it.id);
-            const targetName = target ? (getLocalizedText(target.name) || it.id) : it.id;
-            const icon = it.type === 'plugins' ? 'fa-plug' : (it.type === 'templates' ? 'fa-palette' : 'fa-cube');
-            const isTemplate = it.type === 'templates';
-            const mismatch = !!(target && it.version && it.version !== '*' &&
-                !satisfiesVersionConstraint(target.version || '0.0.0', it.version));
-
-            let cls = 'integration-tag';
-            if (isTemplate) cls += ' integration-tag-template';
-            if (mismatch) cls += ' integration-version-mismatch';
-
-            let html = '<span class="' + cls + '" data-integration-type="' + escapeHtml(it.type) + '"' +
-                ' data-integration-id="' + escapeHtml(it.id) + '">' +
-                '<i class="fas ' + icon + '"></i> ' + escapeHtml(targetName);
-            if (isTemplate) {
-                html += ' <span class="integration-template-hint">(' + escapeHtml(lang('integration_template_hint')) + ')</span>';
-            }
-            if (mismatch) {
-                html += ' <span class="integration-version-warning">' +
-                    escapeHtml(lang('integration_version_mismatch')) + ' (' +
-                    escapeHtml(lang('dep_version_required')) + ': ' + escapeHtml(it.version) + ', ' +
-                    escapeHtml(lang('dep_version_available')) + ': ' + escapeHtml(target.version || '') + ')</span>';
-            }
-            html += '</span>';
-            return html;
-        }).join(' ');
-
-        return '<div class="extension-card-integrations">' +
-            '<span class="integration-label">' + escapeHtml(window.EXTENSION_LABELS?.integrations || lang('integrations')) + ':</span> ' +
-            tags + '</div>';
     }
 
     /**
@@ -2691,8 +2455,6 @@
                 );
                 if (card && card.classList.contains('disabled')) return;
             }
-            // 필수 PHP 확장이 없는 모듈·플러그인은 일괄 선택에서도 뺀다(#151)
-            if (hasMissingRequiredPhpExtensions(item)) return;
             ids.push(item.identifier);
         });
         return ids;
@@ -2811,8 +2573,6 @@
     window.toggleExtension = function(type, identifier, isSingleSelect, _isAutoSelect) {
         const card = document.querySelector('.extension-card[data-type="' + type + '"][data-identifier="' + identifier + '"]');
         if (!card) return;
-        // 필수 PHP 확장이 없는 확장은 직접 클릭·의존 자동 선택 어느 쪽으로도 고르지 않는다(#151)
-        if (card.dataset.phpBlocked === '1' && selectedExtensions[type].indexOf(identifier) === -1) return;
 
         const isCurrentlySelected = selectedExtensions[type].indexOf(identifier) !== -1;
         const isRequired = (type === 'admin_templates'); // 관리자 템플릿만 필수
@@ -2827,15 +2587,11 @@
             }
         }
 
-        // 이번 호출로 새로 선택되는가 — 사용자가 직접 고른 순간에만 연동 대상을 자동 체크한다
-        let becameSelected = false;
-
         if (isSingleSelect) {
             // 단일 선택 모드 — 이전 템플릿 해제 시 자동 선택 항목도 정리
             if (isCurrentlySelected && !isRequired) {
                 // 사용자 템플릿: 이미 선택된 항목 클릭 시 선택 해제
                 clearAutoSelectedByOwner(type, identifier);
-                clearIntegrationAutoSelectedByOwner(identifier);
                 selectedExtensions[type] = [];
                 card.classList.remove('selected');
                 const selectEl = card.querySelector('.extension-card-select');
@@ -2845,9 +2601,7 @@
                 const prevId = selectedExtensions[type][0];
                 if (prevId && prevId !== identifier) {
                     clearAutoSelectedByOwner(type, prevId);
-                    clearIntegrationAutoSelectedByOwner(prevId);
                 }
-                becameSelected = !isCurrentlySelected;
                 const allCards = document.querySelectorAll('.extension-card[data-type="' + type + '"]');
                 allCards.forEach(function(c) {
                     c.classList.remove('selected');
@@ -2868,14 +2622,7 @@
                 card.classList.add('selected');
                 const selectEl = card.querySelector('.extension-card-select');
                 if (selectEl) selectEl.innerHTML = '<i class="fas fa-check-square"></i>';
-                becameSelected = true;
             } else {
-                // 사용자가 연동 자동 체크 항목을 직접 해제했으면 기억해 다시 체크하지 않는다
-                if (!_isAutoSelect && isIntegrationAutoSelected(identifier)) {
-                    userDeselectedIntegrations.add(identifier);
-                }
-                forgetIntegrationAutoSelection(identifier);
-
                 // 해제 시 자동 선택 표시 제거
                 autoSelectedSet.delete(identifier);
                 removeAutoSelectedUI(identifier);
@@ -2883,15 +2630,7 @@
                 card.classList.remove('selected');
                 const selectEl = card.querySelector('.extension-card-select');
                 if (selectEl) selectEl.innerHTML = '<i class="far fa-square"></i>';
-
-                // 이 항목이 연동 owner 였다면 그 owner 가 자동 체크한 항목 중 다른 근거 없는 것을 해제
-                clearIntegrationAutoSelectedByOwner(identifier);
             }
-        }
-
-        // 사용자가 직접 고른 순간에만 연동 대상을 한 단계 자동 체크한다(D8 — 자동 선택은 연쇄하지 않음)
-        if (becameSelected && !_isAutoSelect) {
-            autoSelectIntegrations(type, identifier);
         }
 
         updateSelectionSummary();
@@ -2911,39 +2650,25 @@
         updateBulkToggleStates();
     };
 
-    /**
-     * 「Step 4 로 돌아가기」 등으로 다시 들어왔을 때 저장된 선택을 되살린다.
-     *
-     * Step 4 화면은 첫 방문에도 상태 파일 기본값(유형별 빈 배열)을 넘기므로, 하나라도 고른 항목이
-     * 있을 때만 복원으로 취급한다 — 빈 값으로 카드 렌더의 기본 선택(첫 관리자 템플릿)을 덮지 않는다.
-     * 지금 목록에 없는 식별자는 버리고, 관리자 템플릿이 비면 첫 항목으로 채운 뒤 카드 표시를 선택 상태에 맞춘다.
-     */
     function restoreSelectionState() {
-        var types = ['admin_templates', 'user_templates', 'modules', 'plugins', 'language_packs'];
-        var saved = window.INSTALLER_SELECTED_EXTENSIONS;
-        var hasSaved = !!saved && types.some(function(type) {
-            return Array.isArray(saved[type]) && saved[type].length > 0;
-        });
-
-        if (hasSaved) {
-            types.forEach(function(type) {
-                if (!Array.isArray(saved[type])) return;
-                var available = extensionsData
-                    ? (extensionsData[type] || []).map(function(item) { return item.identifier; })
-                    : null;
-                selectedExtensions[type] = saved[type].filter(function(identifier, idx, list) {
-                    return list.indexOf(identifier) === idx && (!available || available.indexOf(identifier) !== -1);
-                });
-            });
-            // 템플릿은 단일 선택이다
-            ['admin_templates', 'user_templates'].forEach(function(type) {
-                if (selectedExtensions[type].length > 1) {
-                    selectedExtensions[type] = selectedExtensions[type].slice(0, 1);
+        if (window.INSTALLER_SELECTED_EXTENSIONS) {
+            var saved = window.INSTALLER_SELECTED_EXTENSIONS;
+            ['admin_templates', 'user_templates', 'modules', 'plugins', 'language_packs'].forEach(function(type) {
+                if (saved[type] && Array.isArray(saved[type])) {
+                    selectedExtensions[type] = saved[type].slice();
                 }
+            });
+            Object.keys(selectedExtensions).forEach(function(type) {
+                selectedExtensions[type].forEach(function(identifier) {
+                    var card = document.querySelector('.extension-card[data-type="' + type + '"][data-identifier="' + identifier + '"]');
+                    if (card && !card.classList.contains('required')) {
+                        card.classList.add('selected');
+                    }
+                });
             });
         }
         if (extensionsData) {
-            types.forEach(function(type) {
+            ['admin_templates', 'user_templates', 'modules', 'plugins', 'language_packs'].forEach(function(type) {
                 var items = extensionsData[type] || [];
                 items.forEach(function(item) {
                     if (item.is_required && selectedExtensions[type].indexOf(item.identifier) === -1) {
@@ -2951,26 +2676,7 @@
                     }
                 });
             });
-            // 관리자 템플릿은 필수 — 비면 카드 렌더와 같은 기본(첫 항목)으로 채운다
-            var adminItems = extensionsData.admin_templates || [];
-            if (selectedExtensions.admin_templates.length === 0 && adminItems.length > 0) {
-                selectedExtensions.admin_templates = [adminItems[0].identifier];
-            }
         }
-        // 카드의 선택 표시(클래스·아이콘)를 선택 상태와 일치시킨다
-        types.forEach(function(type) {
-            var isSingleSelect = (type === 'admin_templates' || type === 'user_templates');
-            document.querySelectorAll('.extension-card[data-type="' + type + '"]').forEach(function(card) {
-                var isSelected = selectedExtensions[type].indexOf(card.dataset.identifier) !== -1;
-                card.classList.toggle('selected', isSelected);
-                var selectEl = card.querySelector('.extension-card-select');
-                if (selectEl) {
-                    selectEl.innerHTML = isSingleSelect
-                        ? (isSelected ? '<i class="fas fa-check-circle"></i>' : '<i class="far fa-circle"></i>')
-                        : (isSelected ? '<i class="fas fa-check-square"></i>' : '<i class="far fa-square"></i>');
-                }
-            });
-        });
         // 복원 후 언어팩 cascade 상태 동기화 (확장 선택 복원 결과 반영)
         applyLanguagePackCascadeState();
     }
@@ -3078,23 +2784,38 @@
             });
         });
 
-        // 추이적 의존성 자동 해결 — 서버와 같은 해석기(고정점 10회)가 정한 자동 포함 목록을 화면에 반영한다.
-        // 서버(확장 저장 API)도 같은 해석으로 의존 확장을 채우므로 화면과 저장 결과가 어긋나지 않는다.
-        const resolution = window.G7ExtensionResolver.resolveExtensionSelection(extensionsData, selectedExtensions);
-        resolution.auto_added.forEach((added) => {
-            const targetCat = added.category || idToCategory[added.identifier];
-            if (!targetCat || selectedExtensions[targetCat].includes(added.identifier)) return;
+        // 고정점(fixed-point)까지 반복 — 추이적 의존성 자동 해결
+        let changed = true;
+        let iteration = 0;
+        while (changed && iteration < 10) {
+            changed = false;
+            iteration++;
+            const missing = computeMissingDependencies();
+            if (missing.length === 0) break;
 
-            autoSelectedSet.add(added.identifier);
+            missing.forEach((m) => {
+                // 의존성 type을 카테고리로 매핑 (modules → modules, plugins → plugins)
+                // detailed에 타입이 없는 레거시인 경우 identifier 역인덱스에서 조회
+                let targetCat = null;
+                if (m.depType === 'modules') targetCat = 'modules';
+                else if (m.depType === 'plugins') targetCat = 'plugins';
+                else if (idToCategory[m.depIdentifier]) targetCat = idToCategory[m.depIdentifier];
 
-            // toggleExtension을 호출하여 selectedExtensions 배열 추가와 카드 UI
-            // (selected 클래스 + extension-card-select 아이콘)을 한 번에 동기화.
-            const isSingleSelect = (targetCat === 'admin_templates' || targetCat === 'user_templates');
-            window.toggleExtension(targetCat, added.identifier, isSingleSelect, true);
+                if (targetCat && !selectedExtensions[targetCat].includes(m.depIdentifier)) {
+                    // 자동 선택 추적
+                    autoSelectedSet.add(m.depIdentifier);
 
-            const owner = findExtensionById(added.required_by);
-            applyAutoSelectedUI(added.identifier, (owner && getLocalizedText(owner.name)) || added.required_by);
-        });
+                    // toggleExtension을 호출하여 selectedExtensions 배열 추가와 카드 UI
+                    // (selected 클래스 + extension-card-select 아이콘)을 한 번에 동기화.
+                    const isSingleSelect = (targetCat === 'admin_templates' || targetCat === 'user_templates');
+                    window.toggleExtension(targetCat, m.depIdentifier, isSingleSelect, true);
+
+                    // 자동 선택 시각적 표시 추가
+                    applyAutoSelectedUI(m.depIdentifier, m.ownerName);
+                    changed = true;
+                }
+            });
+        }
 
         updateSelectionSummary();
         validateExtensionSelection();
@@ -3269,233 +2990,6 @@
     }
 
     /**
-     * 식별자가 어떤 owner 의 연동으로 자동 체크된 상태인지 반환합니다.
-     *
-     * @param {string} identifier - 대상 식별자
-     * @returns {boolean}
-     */
-    function isIntegrationAutoSelected(identifier) {
-        return Object.keys(autoSelectedByIntegration).some(function(owner) {
-            return autoSelectedByIntegration[owner].has(identifier);
-        });
-    }
-
-    /**
-     * 대상을 모든 owner 의 연동 자동 체크 기록에서 지우고 「연동」 배지를 뗍니다.
-     *
-     * @param {string} identifier - 대상 식별자
-     */
-    function forgetIntegrationAutoSelection(identifier) {
-        Object.keys(autoSelectedByIntegration).forEach(function(owner) {
-            autoSelectedByIntegration[owner].delete(identifier);
-            if (autoSelectedByIntegration[owner].size === 0) delete autoSelectedByIntegration[owner];
-        });
-        removeIntegrationAutoUI(identifier);
-    }
-
-    /**
-     * 사용자가 고른 owner 의 연동 대상(모듈·플러그인)을 한 번 자동 체크합니다.
-     *
-     * - 대상 유형이 템플릿이면 자동 체크하지 않는다(단일 선택이라 사용자가 고른 템플릿이 바뀐다 — 카드에 안내만).
-     * - 번들 목록에 없거나, 이미 선택됐거나, 사용자가 전에 해제한 대상은 건드리지 않는다.
-     * - 자동 체크한 대상의 dependencies 는 뒤이은 autoSelectMissingDependencies() 가 채우고,
-     *   그 대상의 integrations 는 따라가지 않는다(toggleExtension 의 _isAutoSelect 경로).
-     * - 선택 검증·해제 잠금(validateExtensionSelection·computeDependents)에는 관여하지 않는다.
-     *
-     * @param {string} ownerType - owner 카테고리 (admin_templates·user_templates·modules·plugins)
-     * @param {string} ownerIdentifier - owner 식별자
-     * @returns {Array<string>} 이번에 자동 체크한 대상 식별자
-     */
-    function autoSelectIntegrations(ownerType, ownerIdentifier) {
-        if (!extensionsData) return [];
-        const owner = (extensionsData[ownerType] || []).find(function(e) { return e.identifier === ownerIdentifier; });
-        if (!owner) return [];
-
-        const ownerName = getLocalizedText(owner.name) || ownerIdentifier;
-        const picked = [];
-
-        (owner.integrations_detailed || []).forEach(function(it) {
-            if (!it || !it.id || it.id === ownerIdentifier) return;
-            if (INTEGRATION_SELECTABLE_TYPES.indexOf(it.type) === -1) return;
-
-            const targetCat = it.type;
-            const exists = (extensionsData[targetCat] || []).some(function(e) { return e.identifier === it.id; });
-            if (!exists) return;
-            if (selectedExtensions[targetCat].indexOf(it.id) !== -1) return;
-            if (userDeselectedIntegrations.has(it.id)) return;
-
-            window.toggleExtension(targetCat, it.id, false, true);
-            if (selectedExtensions[targetCat].indexOf(it.id) === -1) return; // 카드가 없어 선택되지 않음
-
-            if (!autoSelectedByIntegration[ownerIdentifier]) {
-                autoSelectedByIntegration[ownerIdentifier] = new Set();
-            }
-            autoSelectedByIntegration[ownerIdentifier].add(it.id);
-            applyIntegrationAutoUI(targetCat, it.id, ownerName);
-            picked.push(it.id);
-        });
-
-        return picked;
-    }
-
-    /**
-     * 대상이 계속 선택돼 있을 근거(제외 집합 밖의 선택된 확장이 연동·의존으로 가리킴)를 찾습니다.
-     *
-     * 우선순위: 의존 > 사용자가 직접 고른 확장의 연동 > 자동 체크된 확장의 연동.
-     *
-     * @param {string} identifier - 대상 식별자
-     * @param {Set<string>} excluded - 근거로 치지 않을 식별자 (해제되는 owner 등)
-     * @param {Set<string>} [alsoAuto] - 자동 체크된 것으로 볼 식별자 (기록을 옮기는 중인 후보)
-     * @returns {{kind: string, owner: object, ownerType: string}|null}
-     */
-    function findSelectionBasis(identifier, excluded, alsoAuto) {
-        const categories = ['admin_templates', 'user_templates', 'modules', 'plugins'];
-        let integrationBasis = null;
-        let autoIntegrationBasis = null;
-        for (let c = 0; c < categories.length; c++) {
-            const cat = categories[c];
-            const items = extensionsData[cat] || [];
-            for (let i = 0; i < items.length; i++) {
-                const item = items[i];
-                if (item.identifier === identifier || excluded.has(item.identifier)) continue;
-                if (selectedExtensions[cat].indexOf(item.identifier) === -1) continue;
-
-                const depends = (item.dependencies_detailed || []).some(function(d) { return d && d.identifier === identifier; });
-                if (depends) return { kind: 'dependency', owner: item, ownerType: cat };
-
-                const integrates = (item.integrations_detailed || []).some(function(it) {
-                    return it && it.id === identifier && INTEGRATION_SELECTABLE_TYPES.indexOf(it.type) !== -1;
-                });
-                if (!integrates) continue;
-                const basis = { kind: 'integration', owner: item, ownerType: cat };
-                if (isIntegrationAutoSelected(item.identifier) || autoSelectedSet.has(item.identifier) ||
-                    (alsoAuto && alsoAuto.has(item.identifier))) {
-                    if (!autoIntegrationBasis) autoIntegrationBasis = basis;
-                } else if (!integrationBasis) {
-                    integrationBasis = basis;
-                }
-            }
-        }
-        return integrationBasis || autoIntegrationBasis;
-    }
-
-    /**
-     * owner 를 해제할 때 그 owner 가 연동으로 자동 체크한 항목 중 다른 선택 근거가 없는 것만 해제합니다.
-     *
-     * 다른 근거 = 여전히 선택된 다른 확장이 그 항목을 의존하거나 연동으로 선언함. 함께 해제되는 항목끼리는
-     * 서로의 근거가 되지 않도록 고정점까지 반복한다. 남는 항목은 근거가 된 owner 로 기록을 옮긴다.
-     * 해제한 항목이 의존성으로 자동 선택해 둔 확장도 clearAutoSelectedByOwner() 로 함께 정리한다.
-     *
-     * @param {string} ownerIdentifier - 해제되는 owner 식별자
-     * @returns {Array<string>} 해제한 대상 식별자
-     */
-    function clearIntegrationAutoSelectedByOwner(ownerIdentifier) {
-        if (!extensionsData || !autoSelectedByIntegration[ownerIdentifier]) return [];
-
-        const candidates = Array.from(autoSelectedByIntegration[ownerIdentifier]);
-        delete autoSelectedByIntegration[ownerIdentifier];
-
-        const isSelected = function(id) {
-            return INTEGRATION_SELECTABLE_TYPES.some(function(t) { return selectedExtensions[t].indexOf(id) !== -1; });
-        };
-
-        // 남길 후보를 고정점까지 넓힌다 — 근거는 「후보 밖 선택 확장」 또는 「이미 남기기로 한 후보」만 인정한다.
-        // (게시판↔쇼핑몰처럼 서로를 연동으로 선언한 후보끼리 서로를 붙잡아 둘 다 남는 것을 막는다)
-        const kept = new Set();
-        let changed = true;
-        while (changed) {
-            changed = false;
-            candidates.forEach(function(id) {
-                if (kept.has(id) || !isSelected(id)) return;
-                const excluded = new Set([ownerIdentifier]);
-                candidates.forEach(function(c) { if (!kept.has(c)) excluded.add(c); });
-                if (isIntegrationAutoSelected(id) || findSelectionBasis(id, excluded)) {
-                    kept.add(id);
-                    changed = true;
-                }
-            });
-        }
-
-        const released = candidates.filter(function(id) { return !kept.has(id) && isSelected(id); });
-        const candidateSet = new Set(candidates);
-        const removed = new Set([ownerIdentifier].concat(released));
-
-        released.forEach(function(id) {
-            removeIntegrationAutoUI(id);
-            ['modules', 'plugins'].forEach(function(cat) {
-                const idx = selectedExtensions[cat].indexOf(id);
-                if (idx === -1) return;
-                selectedExtensions[cat].splice(idx, 1);
-                const card = document.querySelector('.extension-card[data-type="' + cat + '"][data-identifier="' + id + '"]');
-                if (card) {
-                    card.classList.remove('selected');
-                    const selectEl = card.querySelector('.extension-card-select');
-                    if (selectEl) selectEl.innerHTML = '<i class="far fa-square"></i>';
-                }
-                clearAutoSelectedByOwner(cat, id);
-            });
-            // 풀린 항목이 다른 항목의 연동 근거로 기록돼 있었다면(근거 이전) 그것도 같은 규칙으로 정리
-            clearIntegrationAutoSelectedByOwner(id);
-        });
-
-        // 남은 후보 — 근거가 연동이면 그 owner 로 기록·배지를 옮기고, 의존이면 연동 표시만 뗀다
-        candidates.forEach(function(id) {
-            if (removed.has(id) || isIntegrationAutoSelected(id)) return;
-            const basis = findSelectionBasis(id, removed, candidateSet);
-            if (basis && basis.kind === 'integration') {
-                if (!autoSelectedByIntegration[basis.owner.identifier]) {
-                    autoSelectedByIntegration[basis.owner.identifier] = new Set();
-                }
-                autoSelectedByIntegration[basis.owner.identifier].add(id);
-                removeIntegrationAutoUI(id);
-                const cat = INTEGRATION_SELECTABLE_TYPES.find(function(t) { return selectedExtensions[t].indexOf(id) !== -1; });
-                if (cat) applyIntegrationAutoUI(cat, id, getLocalizedText(basis.owner.name) || basis.owner.identifier);
-            } else {
-                removeIntegrationAutoUI(id);
-            }
-        });
-
-        return released;
-    }
-
-    /**
-     * 연동으로 자동 체크된 카드에 「연동」 배지와 CSS 클래스를 붙입니다(필수 의존성 배지와 다른 색).
-     *
-     * @param {string} type - 카드 카테고리 (modules·plugins)
-     * @param {string} identifier - 대상 식별자
-     * @param {string} ownerName - 연동을 선언한 확장 이름
-     */
-    function applyIntegrationAutoUI(type, identifier, ownerName) {
-        const card = document.querySelector('.extension-card[data-type="' + type + '"][data-identifier="' + identifier + '"]');
-        if (!card) return;
-        card.classList.add('integration-auto-selected');
-
-        const existing = card.querySelector('.integration-auto-badge');
-        if (existing) existing.remove();
-
-        const badge = document.createElement('span');
-        badge.className = 'integration-auto-badge';
-        badge.innerHTML = '<i class="fas fa-puzzle-piece"></i> ' +
-            escapeHtml(window.EXTENSION_LABELS?.integration_auto_badge_label || lang('integration_auto_badge_label')) +
-            ' <span class="integration-auto-badge-owner">(' + escapeHtml(ownerName) + ')</span>';
-        const infoEl = card.querySelector('.extension-card-info');
-        if (infoEl) infoEl.appendChild(badge);
-    }
-
-    /**
-     * 「연동」 자동 체크 표시를 제거합니다.
-     *
-     * @param {string} identifier - 대상 식별자
-     */
-    function removeIntegrationAutoUI(identifier) {
-        document.querySelectorAll('.extension-card[data-identifier="' + identifier + '"]').forEach(function(card) {
-            card.classList.remove('integration-auto-selected');
-            const badge = card.querySelector('.integration-auto-badge');
-            if (badge) badge.remove();
-        });
-    }
-
-    /**
      * 의존성 잠금으로 인해 선택 해제가 차단될 때 토스트 메시지를 표시합니다.
      *
      * @param {string} identifier - 해제 시도된 확장 식별자
@@ -3529,8 +3023,53 @@
      * @returns {boolean} 제약 조건 충족 여부
      */
     function satisfiesVersionConstraint(available, constraint) {
-        // 판정식은 서버와 공유하는 해석기(installer-extension-resolver.js)가 소유한다.
-        return window.G7ExtensionResolver.satisfiesVersionConstraint(available, constraint);
+        if (!constraint || constraint === '*') return true;
+
+        // 버전 문자열을 숫자 배열로 파싱
+        function parseVersion(v) {
+            const clean = v.replace(/^[v=]/, '');
+            const parts = clean.split('.').map(Number);
+            return [parts[0] || 0, parts[1] || 0, parts[2] || 0];
+        }
+
+        // 두 버전 비교: -1(a<b), 0(같음), 1(a>b)
+        function compareVersions(a, b) {
+            for (let i = 0; i < 3; i++) {
+                if (a[i] < b[i]) return -1;
+                if (a[i] > b[i]) return 1;
+            }
+            return 0;
+        }
+
+        const avail = parseVersion(available);
+
+        // 연산자 + 버전 분리
+        const match = constraint.match(/^([><=^~!]*)\s*(.+)$/);
+        if (!match) return true;
+
+        const op = match[1] || '>=';
+        const req = parseVersion(match[2]);
+        const cmp = compareVersions(avail, req);
+
+        switch (op) {
+            case '>=': return cmp >= 0;
+            case '>':  return cmp > 0;
+            case '<=': return cmp <= 0;
+            case '<':  return cmp < 0;
+            case '=':
+            case '==': return cmp === 0;
+            case '!=': return cmp !== 0;
+            case '^':
+                // ^1.2.3 → >=1.2.3, <2.0.0 (major 고정)
+                if (cmp < 0) return false;
+                return avail[0] === req[0];
+            case '~':
+                // ~1.2.3 → >=1.2.3, <1.3.0 (minor 고정)
+                if (cmp < 0) return false;
+                return avail[0] === req[0] && avail[1] === req[1];
+            default:
+                return cmp >= 0;
+        }
     }
 
     /**
@@ -3580,7 +3119,7 @@
         try {
             const response = await fetch(INSTALLER_BASE_URL + '/api/save-extensions.php', {
                 method: 'POST',
-                headers: stateChangeHeaders(),
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     ...selectedExtensions,
                     extension_names: extensionNames
@@ -3623,9 +3162,6 @@
     let eventSource = null; // deprecated (남아있는 외부 참조 호환용)
     let currentMonitor = null; // SSE/폴링 모니터 인스턴스
     let lastRollbackFailure = null;
-    // 마지막 실패가 데이터베이스 작업 전 단계(환경 설정·의존성 사전 검증)에서 멈췄는지 — showError() 가 정한다.
-    // 되돌아가기 확인 창이 이 값으로 DB 수동 정리 안내를 넣을지 정한다.
-    let lastFailureBeforeDatabase = false;
 
     /**
      * 저장된 확장 이름 가져오기 (state.json에서 로드된 데이터 사용)
@@ -3738,7 +3274,7 @@
         const backupCmd = `mysqldump -h ${dbHost} -u ${dbUser} -p --databases ${dbName} > backup_$(date +%Y%m%d_%H%M%S).sql`;
 
         const html = `
-            <div class="modal-backdrop" data-action="closeExistingTablesModal"></div>
+            <div class="modal-backdrop" onclick="closeExistingTablesModal()"></div>
             <div class="modal-content">
                 <h3 class="modal-title">⚠ ${escapeHtml(lang(titleKey))}</h3>
                 <div class="modal-body">
@@ -3755,10 +3291,10 @@
                     </label>
                 </div>
                 <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" data-action="closeExistingTablesModal">
+                    <button type="button" class="btn btn-secondary" onclick="closeExistingTablesModal()">
                         ${escapeHtml(lang('cancel'))}
                     </button>
-                    <button type="button" class="btn btn-danger" id="db-force-proceed-btn" disabled data-action="confirmDropTables">
+                    <button type="button" class="btn btn-danger" id="db-force-proceed-btn" disabled onclick="confirmDropTables()">
                         ${escapeHtml(lang('db_force_proceed_drop'))}
                     </button>
                 </div>
@@ -3841,28 +3377,10 @@
      * 가능 (응답 종료 시점에 한 번에 flush 되어도 onmessage 발화). timing 검증으로
      * 실제 streaming 가능성을 실증한다.
      *
-     * 첫 연결은 1차 이벤트만 늦게 도착해 간격이 임계보다 짧아질 수 있다(실측 0.94s·2.23s — 1.29s).
-     * 간격이 짧지만 두 이벤트가 함께 도착한 것은 아니면(버퍼 환경은 간격 ≈0) 한 번 더 잰다.
-     *
      * @param {number} timeoutMs probe 응답 대기 timeout (default 5000 — sleep 2s + 여유)
      * @returns {Promise<boolean>} 호환 여부
      */
-    async function detectSseCompatibility(timeoutMs = 5000) {
-        const BUFFERED_GAP_MS = 300;
-        const first = await probeSseStreamingOnce(timeoutMs);
-        if (first.compatible) return true;
-        if (first.gap === null || first.gap < BUFFERED_GAP_MS) return false;
-
-        return (await probeSseStreamingOnce(timeoutMs)).compatible;
-    }
-
-    /**
-     * sse-probe.php 에 한 번 연결해 두 probe 이벤트의 도착 간격을 잽니다.
-     *
-     * @param {number} timeoutMs probe 응답 대기 timeout
-     * @returns {Promise<{compatible: boolean, gap: number|null}>} 호환 여부와 도착 간격(ms, 두 이벤트를 다 받지 못하면 null)
-     */
-    function probeSseStreamingOnce(timeoutMs) {
+    function detectSseCompatibility(timeoutMs = 5000) {
         return new Promise((resolve) => {
             const probeUrl = `${window.location.origin}${window.INSTALLER_BASE_URL}/api/sse-probe.php`;
             const STREAMING_THRESHOLD_MS = 1500;
@@ -3870,13 +3388,13 @@
             let source = null;
             let phase1ClientTs = null;
 
-            const finish = (compatible, gap = null) => {
+            const finish = (compatible) => {
                 if (settled) return;
                 settled = true;
                 if (source) {
                     try { source.close(); } catch (e) { /* ignore */ }
                 }
-                resolve({ compatible, gap });
+                resolve(compatible);
             };
 
             try {
@@ -3895,7 +3413,7 @@
                     phase1ClientTs = Date.now();
                 } else if (payload.phase === 2 && phase1ClientTs !== null) {
                     const gap = Date.now() - phase1ClientTs;
-                    finish(gap >= STREAMING_THRESHOLD_MS, gap);
+                    finish(gap >= STREAMING_THRESHOLD_MS);
                 }
             });
 
@@ -3967,27 +3485,18 @@
             const saveConfigUrl = `${window.location.origin}${window.INSTALLER_BASE_URL}/api/install-process.php`;
 
             const existingDbAction = sessionStorage.getItem('existing_db_action') || 'skip';
-            const dropConfirm = existingDbAction === 'drop_tables'
-                ? (sessionStorage.getItem('drop_confirm') || '')
-                : '';
 
             const response = await fetch(saveConfigUrl, {
                 method: 'POST',
-                headers: stateChangeHeaders(),
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     config: configData,
                     installation_mode: installationMode,
                     existing_db_action: existingDbAction,
-                    drop_confirm: dropConfirm,
                 }),
             });
 
             const result = await response.json();
-
-            // 삭제 확인이 거부돼 삭제 없이 진행되는 경우 — 사용자에게 알린다
-            if (result.success && result.drop_confirm_rejected && result.warning) {
-                addLogMessage(result.warning);
-            }
 
             if (!result.success) {
                 if (result.env_required) {
@@ -4049,8 +3558,8 @@
                         data.message || lang('installation_error_occurred')
                     );
                     const errorDetail = data.error || null;
-                    const failedTaskId = data.task ? (data.target ? `${data.task}:${data.target}` : data.task) : null;
-                    showError(errorMessage, errorDetail, failedTaskId, data.message_key || null);
+                    const failedTaskId = data.task || null;
+                    showError(errorMessage, errorDetail, failedTaskId);
                 },
                 onConnectionTimeout: () => {
                     // SSE 모드에서 연결 timeout 시 — 사전 체크 통과 후의 예외 케이스라
@@ -4078,13 +3587,9 @@
                 currentMonitor = new MonitorNS.SseMonitor(callbacks, {
                     workerUrl: workerUrl,
                     connectionTimeoutMs: 5000,
-                    // 연결 수립 뒤 스트림이 끊기면 이 주소로 다음 할 일(이어 받기·실패·중단·완료·멈춤)을 정한다
-                    stateUrl: stateUrl,
                 });
             }
 
-            // 새 설치 진행 — 이전 실패 판정은 더 쓰지 않는다
-            lastFailureBeforeDatabase = false;
             currentMonitor.start();
         } catch (error) {
             showError(`${lang('installation_start_error')}: ${error.message}`);
@@ -4141,35 +3646,10 @@
         }
     }
 
-    // 화면에 붙이기를 기다리는 로그 메시지 큐
-    let pendingLogMessages = [];
-    let logFlushScheduled = false;
-
     /**
      * 로그 메시지 추가
-     *
-     * 모듈 설치처럼 작업 종료 시점에 수천 줄이 한꺼번에 도착하면, 줄마다 DOM 추가와
-     * scrollHeight 읽기(강제 레이아웃)·부드러운 스크롤 시작이 반복되어 브라우저가 멈춘다.
-     * 메시지는 큐에 모아 두고 프레임당 한 번만 붙이고 스크롤한다.
      */
     function addLogMessage(message) {
-        pendingLogMessages.push(message);
-
-        if (logFlushScheduled) return;
-        logFlushScheduled = true;
-        requestAnimationFrame(flushLogMessages);
-    }
-
-    /**
-     * 큐에 쌓인 로그 메시지를 한 번에 화면에 붙인다
-     */
-    function flushLogMessages() {
-        logFlushScheduled = false;
-
-        const messages = pendingLogMessages;
-        pendingLogMessages = [];
-        if (messages.length === 0) return;
-
         const logDiv = document.getElementById('install-log');
         if (!logDiv) return;
 
@@ -4179,14 +3659,10 @@
             placeholder.remove();
         }
 
-        const fragment = document.createDocumentFragment();
-        messages.forEach(message => {
-            const logEntry = document.createElement('div');
-            logEntry.className = 'log-entry';
-            logEntry.textContent = message;
-            fragment.appendChild(logEntry);
-        });
-        logDiv.appendChild(fragment);
+        const logEntry = document.createElement('div');
+        logEntry.className = 'log-entry';
+        logEntry.textContent = message;
+        logDiv.appendChild(logEntry);
 
         // 자동 스크롤
         logDiv.scrollTop = logDiv.scrollHeight;
@@ -4213,8 +3689,7 @@
         }
 
 
-        // 로그 메시지 추가 (한 번에 붙여 레이아웃 계산을 1회로 줄인다)
-        const fragment = document.createDocumentFragment();
+        // 로그 메시지 추가
         logs.forEach(log => {
             const logEntry = document.createElement('div');
             logEntry.className = 'log-entry';
@@ -4228,9 +3703,8 @@
                 logEntry.textContent = JSON.stringify(log);
             }
 
-            fragment.appendChild(logEntry);
+            logDiv.appendChild(logEntry);
         });
-        logDiv.appendChild(fragment);
 
         // 자동 스크롤
         logDiv.scrollTop = logDiv.scrollHeight;
@@ -4274,41 +3748,6 @@
             return `task-${task.id}-${task.target}`;
         }
         return `task-${task.id}`;
-    }
-
-    /**
-     * 의존 때문에 앞당겨 설치하는 항목의 「{이름}에 필요」 표시 문구 (#153).
-     *
-     * 확장 저장 시 해석기가 기록한 `install_pulled_by`(종류 경계를 넘어 앞당겨진 `카테고리:식별자` → 요구한 확장)를
-     * 설치 작업(*_install) 행에만 붙인다. 그룹 id 가 카테고리와 같다(admin_templates·modules·plugins·user_templates).
-     *
-     * @param {string} groupId 작업 그룹 id
-     * @param {Object} task 작업 객체 ({id, target})
-     * @returns {string|null} 표시 문구 (해당 없으면 null)
-     */
-    function getTaskRequiredByLabel(groupId, task) {
-        if (!task.target || !/_install$/.test(task.id)) return null;
-        const owners = (window.INSTALLER_PULLED_BY || {})[groupId + ':' + task.target];
-        if (!Array.isArray(owners) || owners.length === 0) return null;
-        const names = owners.map((key) => {
-            const id = String(key).slice(String(key).indexOf(':') + 1);
-            return getStoredExtensionName(id) || id;
-        });
-        return lang('task_required_by').replace(':names', names.join(', '));
-    }
-
-    /**
-     * 작업 키(`id` 또는 `id:target`)를 작업 객체로 나눈다 — state 의 failed_task 는 target 을 붙여 저장한다.
-     *
-     * @param {string|null} taskKey 작업 키
-     * @returns {{id: string, target: (string|null)}|null} 작업 객체
-     */
-    function splitTaskKey(taskKey) {
-        if (!taskKey) return null;
-        const sep = String(taskKey).indexOf(':');
-        return sep === -1
-            ? { id: String(taskKey), target: null }
-            : { id: String(taskKey).slice(0, sep), target: String(taskKey).slice(sep + 1) };
     }
 
     /**
@@ -4356,19 +3795,17 @@
             const tasksHtml = tasks.map(task => {
                 const taskDomId = getTaskDomId(task);
                 const taskName = getTaskDisplayName(task);
-                const requiredBy = getTaskRequiredByLabel(group.id, task);
                 return `
                     <div id="${taskDomId}" class="task-item task-pending" data-task-id="${task.id}" data-target="${task.target || ''}">
                         <span class="task-icon"><svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/></svg></span>
                         <span class="task-name">${escapeHtml(taskName)}</span>
-                        ${requiredBy ? `<span class="task-required-by">${escapeHtml(requiredBy)}</span>` : ''}
                     </div>
                 `;
             }).join('');
 
             return `
                 <div class="task-group" data-group-id="${group.id}">
-                    <div class="task-group-header" data-action="toggleTaskGroup" data-arg="${group.id}">
+                    <div class="task-group-header" onclick="toggleTaskGroup('${group.id}')">
                         <span class="task-group-toggle">▼</span>
                         <span class="task-group-label">${escapeHtml(groupLabel)}</span>
                         <span class="task-group-status status-pending">${lang('status_pending')}</span>
@@ -4452,7 +3889,7 @@
         // 경고 메시지 숨기기
         const warningAlert = document.getElementById('install-warning');
         if (warningAlert) {
-            installerHide(warningAlert);
+            warningAlert.style.display = 'none';
         }
 
         // 진행률 100% 설정 (wrapper는 숨기기 전에)
@@ -4504,14 +3941,10 @@
         // keepalive: 탭 닫힘에도 요청 유지. catch: 워커 재시작으로 인한
         // connection abort 를 에러로 표시하지 않는다 (의도된 동작).
         try {
-            // 하위 폴더 설치(/g7/install 등)에서도 맞도록 다른 API 호출처럼 INSTALLER_BASE_URL 기준으로 만든다.
-            fetch(`${window.location.origin}${window.INSTALLER_BASE_URL}/api/finalize-env.php`, {
+            fetch('/install/api/finalize-env.php', {
                 method: 'POST',
                 keepalive: true,
-                headers: {
-                    'X-Installer-Finalize': '1',
-                    'X-CSRF-Token': window.INSTALLER_CSRF || '',
-                },
+                headers: { 'X-Installer-Finalize': '1' },
             }).catch(() => { /* 의도된 abort */ });
         } catch (_) {
             // fetch 자체가 실패해도 무시 — runtime.php 가 보존되어 다음 부팅 시 앱 정상 동작
@@ -4526,10 +3959,9 @@
      *
      * @param {string} errorMessage 메인 오류 메시지
      * @param {string|null} errorDetail 상세 오류 메시지 (선택)
-     * @param {string|null} failedTaskId 실패한 작업 ID (선택, `id` 또는 `id:target`)
-     * @param {string|null} messageKey 실패 문구 키 (선택) — 사전 검증 실패면 「Step 4 로 돌아가기」를 앞세운다
+     * @param {string|null} failedTaskId 실패한 작업 ID (선택)
      */
-    function showError(errorMessage, errorDetail = null, failedTaskId = null, messageKey = null) {
+    function showError(errorMessage, errorDetail = null, failedTaskId = null) {
         installationCompleted = true; // 완료 플래그 설정 (beforeunload 경고 비활성화)
 
         // 대기 UI 숨기고 진행 카드 표시 (실패 경로 — 작업 목록/로그 노출)
@@ -4548,7 +3980,7 @@
         // 경고 메시지 숨기기
         const warningAlert = document.getElementById('install-warning');
         if (warningAlert) {
-            installerHide(warningAlert);
+            warningAlert.style.display = 'none';
         }
 
         // 토글 아이콘 보이기 및 카드 헤더 활성화
@@ -4573,18 +4005,18 @@
             // 현재 진행 중인 작업(task-active)에서 추출
             const activeTasks = document.querySelectorAll('.task-item.task-active');
             activeTasks.forEach(taskEl => {
-                if (!failedTaskId && taskEl.dataset.taskId) {
-                    // data 속성에서 작업 키 복원 (예: 'module_install:sirsoft-page')
-                    failedTaskId = taskEl.dataset.target
-                        ? `${taskEl.dataset.taskId}:${taskEl.dataset.target}`
-                        : taskEl.dataset.taskId;
+                if (!failedTaskId) {
+                    // task element의 ID에서 task ID 추출 (예: 'task-composer_install' -> 'composer_install')
+                    const taskId = taskEl.id.replace('task-', '');
+                    if (taskId) {
+                        failedTaskId = taskId;
+                    }
                 }
             });
         }
 
-        // Task ID를 번역된 이름으로 변환 — state 복원 경로는 `module_install:sirsoft-page` 처럼 target 을 붙여 온다
-        const failedTask = splitTaskKey(failedTaskId);
-        const failedTaskName = failedTask ? getTaskDisplayName(failedTask) : null;
+        // Task ID를 번역된 이름으로 변환
+        const failedTaskName = failedTaskId ? getTaskName(failedTaskId) : null;
 
         // 현재 진행 중인 작업(task-active)을 모두 실패로 표시
         const activeTasks = document.querySelectorAll('.task-item.task-active');
@@ -4598,22 +4030,6 @@
         const failureSection = document.getElementById('failure-section');
         const failureMessage = document.getElementById('failure-message');
         const failureTitle = failureSection?.querySelector('.result-title');
-
-        // 의존성 사전 검증 실패(순환·누락)는 재시도로 풀리지 않는다 — 「Step 4 로 돌아가기」를 주 버튼으로, 재시도는 보조로
-        const isPrecheckFailure = messageKey === 'dependency_precheck_failed';
-        // DB 작업(db_cleanup 부터) 전 단계에서 멈춘 실패 — 되돌아가기 확인 창에서 DB 수동 정리 안내를 뺀다.
-        // 목록은 서버 installerPreDatabaseTaskIds() 와 같다(작업 순서 고정).
-        const preDatabaseTasks = ['composer_check', 'composer_install', 'env_update', 'key_generate', 'dependency_precheck'];
-        lastFailureBeforeDatabase = isPrecheckFailure || (!!failedTask && preDatabaseTasks.includes(failedTask.id));
-        const backToExtensionsBtn = document.getElementById('back-to-extensions-btn');
-        const retryBtn = document.getElementById('retry-installation-btn');
-        if (backToExtensionsBtn) {
-            backToExtensionsBtn.classList.toggle('hidden', !isPrecheckFailure);
-        }
-        if (retryBtn) {
-            retryBtn.classList.toggle('btn-primary', !isPrecheckFailure);
-            retryBtn.classList.toggle('btn-secondary', isPrecheckFailure);
-        }
 
         if (failureSection) {
             // 타이틀에 실패 단계 추가
@@ -4633,23 +4049,22 @@
                     </div>
                 `;
 
-                // 상세 오류 (있을 경우만 - 아코디언 형식). 사전 검증 실패는 사유가 곧 해결 방법이라 펼쳐 둔다.
+                // 상세 오류 (있을 경우만 - 아코디언 형식)
                 if (errorDetail) {
                     const accordionId = 'error-detail-' + Date.now();
-                    const expanded = isPrecheckFailure;
                     messageHtml += `
                         <div class="failure-error-detail">
                             <button
                                 class="error-detail-toggle"
                                 type="button"
-                                aria-expanded="${expanded ? 'true' : 'false'}"
+                                aria-expanded="false"
                                 aria-controls="${accordionId}"
-                                data-action="toggleErrorDetail" data-arg="${accordionId}"
+                                onclick="toggleErrorDetail(this, '${accordionId}')"
                             >
                                 <span class="error-detail-toggle-icon">▶</span>
                                 <strong>${lang('view_error_details')}</strong>
                             </button>
-                            <div id="${accordionId}" class="error-detail-content${expanded ? ' show' : ''}">
+                            <div id="${accordionId}" class="error-detail-content">
                                 <pre class="error-stack">${escapeHtml(errorDetail)}</pre>
                             </div>
                         </div>
@@ -4699,7 +4114,7 @@
         // 경고 메시지 다시 표시
         const warningAlert = document.getElementById('install-warning');
         if (warningAlert) {
-            installerShow(warningAlert, 'block');
+            warningAlert.style.display = 'block';
         }
 
         // 모든 결과 섹션 숨기기
@@ -4726,9 +4141,6 @@
             installToggleIcon.classList.add('hidden');
         }
         if (logDiv) {
-            // 아직 큐에 남은 이전 로그를 먼저 붙여 구분선 앞뒤 순서를 지킨다
-            flushLogMessages();
-
             // 기존 로그 유지, 플레이스홀더만 제거
             const placeholder = logDiv.querySelector('.log-placeholder');
             if (placeholder) {
@@ -4766,38 +4178,6 @@
     }
 
     /**
-     * 완료 표식 뒤 마무리 작업(설정·라우트 캐시 굽기·정적 게시)이 끝날 때까지 기다린다.
-     *
-     * 폴링 워커는 브라우저와 무관하게 계속 돌므로, 새로고침 직후 완료 화면을 열면 finalize-env 가 상태 파일을 지워
-     * 워커가 lock lost 로 끝난다. 상태 갱신이 30초 멈추거나 90초가 지나면(워커가 사라진 경우) 그대로 진행한다.
-     *
-     * @param {object} state 상태 조회 응답
-     * @returns {Promise<object>} 마지막으로 받은 상태
-     */
-    async function waitForFinalTasks(state) {
-        const deadline = Date.now() + 90000;
-        let current = state;
-        let lastUpdated = state.last_updated;
-        let lastChangedAt = Date.now();
-
-        while (current.status === 'completed' && current.tasks_finished === false && Date.now() < deadline) {
-            if (Date.now() - lastChangedAt >= 30000) break;
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            try {
-                current = await fetchInstallationState();
-            } catch (e) {
-                break;
-            }
-            if (current.last_updated !== lastUpdated) {
-                lastUpdated = current.last_updated;
-                lastChangedAt = Date.now();
-            }
-        }
-
-        return current.status === 'completed' ? current : state;
-    }
-
-    /**
      * 재진입 감지 및 확인
      */
     async function checkAndStartInstallation() {
@@ -4806,9 +4186,9 @@
             const state = await fetchInstallationState();
 
 
-            // 설치가 이미 완료된 경우 — 마무리 작업이 도는 중이면 끝날 때까지 기다린 뒤 완료 화면(→ finalize-env)
+            // 설치가 이미 완료된 경우
             if (state.status === 'completed') {
-                showCompletionSection(await waitForFinalTasks(state));
+                showCompletionSection(state);
                 return;
             }
 
@@ -4832,8 +4212,7 @@
 
                 // ✅ showError() 호출 전에 먼저 task를 failed로 마크
                 if (failedTaskId) {
-                    const failedTask = splitTaskKey(failedTaskId);
-                    setTaskStatus(failedTask.id, 'failed', failedTask.target);
+                    setTaskStatus(failedTaskId, 'failed');
                 }
 
                 // 롤백 실패 정보 복원 (state.json에서 새로고침 후에도 표시)
@@ -4845,7 +4224,7 @@
                 }
 
                 // ✅ failedTaskId를 명시적으로 전달 (함수 내부에서 번역됨)
-                showError(errorMessage, errorDetail, failedTaskId, state.error_message_key || null);
+                showError(errorMessage, errorDetail, failedTaskId);
 
                 return;
             }
@@ -4863,12 +4242,12 @@
                 const abortUrl = `${window.location.origin}${window.INSTALLER_BASE_URL}/api/state-management.php?action=abort`;
                 fetch(abortUrl, {
                     method: 'POST',
-                    headers: stateChangeHeaders(),
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({})
                 }).then(() => {
 
                     // 상태를 다시 가져와서 중단 섹션 표시
-                    fetch(getStateApiUrl('get'))
+                    fetch(apiUrl)
                         .then(res => res.json())
                         .then(updatedState => {
                             showAbortedInstallationSection(updatedState);
@@ -4900,10 +4279,10 @@
         const modeCard = document.getElementById('installation-mode-card');
         const warning = document.getElementById('install-warning');
         const progressCard = document.getElementById('installation-progress-card');
-        installerShow(startSection);
+        if (startSection) startSection.style.display = '';
         if (modeCard) modeCard.style.display = '';
-        installerHide(warning);
-        installerHide(progressCard);
+        if (warning) warning.style.display = 'none';
+        if (progressCard) progressCard.style.display = 'none';
 
         // 모드 선택 라디오 활성화 (사전 체크 취소 후 재시도 가능하도록)
         document.querySelectorAll('input[name="installation_mode"]').forEach(input => {
@@ -4917,7 +4296,7 @@
      */
     function hideInstallationStartSection() {
         const startSection = document.getElementById('installation-start-section');
-        installerHide(startSection);
+        if (startSection) startSection.style.display = 'none';
 
         // 모드 선택 라디오 비활성화 (진행 중 변경 방지)
         document.querySelectorAll('input[name="installation_mode"]').forEach(input => {
@@ -4931,8 +4310,8 @@
     function showInstallationProgressSection() {
         const warning = document.getElementById('install-warning');
         const progressCard = document.getElementById('installation-progress-card');
-        installerShow(warning);
-        installerShow(progressCard);
+        if (warning) warning.style.display = '';
+        if (progressCard) progressCard.style.display = '';
     }
 
     /**
@@ -4969,7 +4348,7 @@
         // 경고 메시지 숨기기
         const warningAlert = document.getElementById('install-warning');
         if (warningAlert) {
-            installerHide(warningAlert);
+            warningAlert.style.display = 'none';
         }
 
         // 중단 섹션 표시
@@ -5065,37 +4444,16 @@
 
     /**
      * 설정 페이지로 이동 (확인 후)
-     *
-     * DB 작업 전 단계에서 멈춘 실패(의존성 사전 검증 등)면 확인 창에 DB 수동 정리 안내를 넣지 않는다.
      */
     async function goToSettingsWithConfirm() {
-        const confirmKey = lastFailureBeforeDatabase ? 'confirm_go_to_settings_before_db' : 'confirm_go_to_settings_simple';
-        await resetStateAndGoToExtensionSelection(confirmKey);
-    }
-
-    /**
-     * 확장 선택 단계(Step 4)로 돌아가기 (확인 후) — 의존성 사전 검증 실패 화면의 주 버튼.
-     *
-     * 데이터베이스를 건드리기 전에 멈춘 실패라 DB 수동 정리 안내 없이 확인하고, 고른 확장은 그대로 남는다.
-     */
-    async function goBackToExtensionSelection() {
-        await resetStateAndGoToExtensionSelection('confirm_back_to_extension_selection');
-    }
-
-    /**
-     * 확인 창을 띄운 뒤 설치 상태를 초기화하고 설치 마법사로 돌아간다(서버가 Step 4 로 보낸다).
-     *
-     * @param {string} confirmKey 확인 창 문구 키
-     */
-    async function resetStateAndGoToExtensionSelection(confirmKey) {
-        const confirmed = confirm(lang(confirmKey));
+        const confirmed = confirm(lang('confirm_go_to_settings_simple'));
 
         if (confirmed) {
             try {
                 // 상태 초기화 API 호출
                 const response = await fetch(getStateApiUrl('reset'), {
                     method: 'POST',
-                    headers: stateChangeHeaders(),
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({})
                 });
 
@@ -5141,10 +4499,7 @@
                     const apiUrl = `${window.location.origin}${window.INSTALLER_BASE_URL}/api/state-management.php?action=abort`;
 
                     // sendBeacon은 페이지 언로드 중에도 전송을 보장
-                    navigator.sendBeacon(apiUrl, new Blob(
-                        [JSON.stringify({ csrf_token: window.INSTALLER_CSRF || '' })],
-                        { type: 'application/json' }
-                    ));
+                    navigator.sendBeacon(apiUrl, new Blob([JSON.stringify({})], {type: 'application/json'}));
                 }
             });
 
@@ -5200,7 +4555,7 @@
             // Abort API 호출
             const response = await fetch(getStateApiUrl('abort'), {
                 method: 'POST',
-                headers: stateChangeHeaders()
+                headers: { 'Content-Type': 'application/json' }
             });
 
             const result = await response.json();
@@ -5274,7 +4629,7 @@
                 </svg>
                 ${lang('abort_installation')}
             `;
-            installerShow(abortBtn, 'flex');
+            abortBtn.style.display = 'flex';
         }
     }
 
@@ -5284,7 +4639,7 @@
     function hideAbortButton() {
         const abortBtn = document.getElementById('abort-installation-btn');
         if (abortBtn) {
-            installerHide(abortBtn);
+            abortBtn.style.display = 'none';
         }
     }
 
@@ -5615,25 +4970,21 @@
      * @return {string} SVG HTML 문자열
      */
     function getIconSvg(type, size = '20px', className = '') {
-        // 크기는 px 값만 쓴다 — 문자열 style 속성은 `style-src-attr 'none'` 에 막히므로 width/height 속성으로 낸다
-        const px = parseInt(size, 10) || 20;
-        // 종전 style 속성은 어떤 CSS 규칙보다 우선했다(그룹 안 16px 규칙 포함) — 같은 크기가 나오도록 크기 클래스를 붙인다
-        const sizeClass = px === 24 ? 'icon-px-24' : 'icon-px-20';
         const svgs = {
             completed: `
-                <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" width="${px}" height="${px}" class="${sizeClass} ${className}">
+                <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: ${size}; height: ${size};" class="${className}">
                     <circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
                     <path d="M6 10l3 3 5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
             `,
             failed: `
-                <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" width="${px}" height="${px}" class="${sizeClass} ${className}">
+                <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: ${size}; height: ${size};" class="${className}">
                     <circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
                     <path d="M7 7l6 6M13 7l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                 </svg>
             `,
             warning: `
-                <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" width="${px}" height="${px}" class="${sizeClass} ${className}">
+                <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: ${size}; height: ${size};" class="${className}">
                     <path d="M10 2L2 17h16L10 2z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" fill="none"/>
                     <path d="M10 8v4M10 14v.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                 </svg>
@@ -5697,7 +5048,6 @@
         window.abortInstallation = abortInstallation;
         window.resumeInstallationFromAborted = resumeInstallationFromAborted;
         window.goToSettingsWithConfirm = goToSettingsWithConfirm;
-        window.goBackToExtensionSelection = goBackToExtensionSelection;
 
         // Step 5: 파일 체크
         window.recheckFiles = recheckFiles;
@@ -5758,52 +5108,6 @@
      *
      * @param {HTMLButtonElement} btn 클릭된 복사 버튼
      */
-    /**
-     * 복구 토큰으로 설치 소유권 되찾기 (소유권 잠금 화면)
-     *
-     * @param {Event} event submit 이벤트
-     * @returns {boolean} 기본 폼 제출 방지용 false
-     */
-    async function submitRecoveryToken(event) {
-        if (event) event.preventDefault();
-
-        const input = document.getElementById('recovery-token-input');
-        const button = document.getElementById('recovery-submit-btn');
-        const resultBox = document.getElementById('recovery-result');
-        if (!input || !resultBox) return false;
-
-        const showResult = (message, isSuccess) => {
-            resultBox.textContent = message;
-            resultBox.classList.remove('hidden', 'alert-error', 'alert-success');
-            resultBox.classList.add(isSuccess ? 'alert-success' : 'alert-error');
-        };
-
-        if (button) button.disabled = true;
-
-        try {
-            const response = await fetch(getStateApiUrl('reclaim'), {
-                method: 'POST',
-                headers: stateChangeHeaders(),
-                body: JSON.stringify({ recovery_token: input.value }),
-            });
-            const result = await response.json();
-
-            if (result.success) {
-                showResult(result.message || lang('recovery_success'), true);
-                setTimeout(() => { window.location.href = `${window.INSTALLER_BASE_URL}/`; }, 1500);
-                return false;
-            }
-
-            showResult(result.message || lang('error_recovery_token_invalid'), false);
-        } catch (error) {
-            showResult(`${lang('error')}: ${error.message}`, false);
-        }
-
-        if (button) button.disabled = false;
-        return false;
-    }
-    window.submitRecoveryToken = submitRecoveryToken;
-
     function copyPermissionCommand(btn) {
         const pre = btn.previousElementSibling;
         if (!pre) return;
@@ -5924,8 +5228,8 @@
         const relCommandEl = document.getElementById('file-setup-command-relative');
         if (relCommands && relCommands.length > 0 && relHint && relBox && relCommandEl) {
             relCommandEl.textContent = relCommands.join(' && ');
-            installerShow(relHint);
-            installerShow(relBox);
+            relHint.style.display = '';
+            relBox.style.display = '';
         }
 
         // 섹션 표시

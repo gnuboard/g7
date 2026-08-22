@@ -1,11 +1,18 @@
 {
-    "comment": "게시판 목록 화면. 표가 아니라 카드 한 장이 게시판 하나이고, 카드 안에서 활성 전환까지 바로 한다. 검색·페이지는 전부 URL query 로 남겨 새로고침·뒤로가기에도 같은 화면이 나오게 한다",
     "version": "1.0.0",
     "layout_name": "admin_board_index",
+    "permissions": [
+        "sirsoft-board.boards.read"
+    ],
     "extends": "_admin_base",
     "meta": {
         "title": "$t:sirsoft-board.admin.board.index.title",
         "description": "$t:sirsoft-board.admin.board.index.description"
+    },
+    "transition_overlay": {
+        "wait_for": [
+            "boards"
+        ]
     },
     "data_sources": [
         {
@@ -30,18 +37,9 @@
                         "target": "content"
                     }
                 }
-            },
-            "comment": "목록 본체 — 페이지·검색어를 URL 에서 그대로 받아 서버 페이지네이션에 넘긴다. 화면에 머무는 동안 활성 토글·삭제가 이 소스를 다시 읽으므로 `refetchOnMount` 로 들어올 때도 최신을 보장한다"
+            }
         }
     ],
-    "permissions": [
-        "sirsoft-board.boards.read"
-    ],
-    "transition_overlay": {
-        "wait_for": [
-            "boards"
-        ]
-    },
     "slots": {
         "content": [
             {
@@ -65,6 +63,10 @@
                                 "id": "refresh_button",
                                 "type": "basic",
                                 "name": "Button",
+                                "props": {
+                                    "className": "btn-icon",
+                                    "aria-label": "$t:common.refresh"
+                                },
                                 "actions": [
                                     {
                                         "comment": "새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지/검색을 유지한다 (#75).",
@@ -77,11 +79,6 @@
                                         }
                                     }
                                 ],
-                                "props": {
-                                    "type": "button",
-                                    "className": "btn-icon",
-                                    "aria-label": "$t:common.refresh"
-                                },
                                 "children": [
                                     {
                                         "id": "refresh_icon",
@@ -95,125 +92,24 @@
                                 ]
                             },
                             {
-                                "id": "reorder_button",
-                                "type": "basic",
-                                "name": "Button",
-                                "if": "{{boards?.data?.abilities?.can_reorder && (boards?.data?.pagination?.total ?? 0) > 1}}",
-                                "actions": [
-                                    {
-                                        "comment": "순서 변경 창을 연다. 보고 있는 페이지·검색과 무관하게 **전체 게시판**(활성·비활성)을 지금 표시 순서로 새로 받아 창에\n              싣는다 — 서버는 전체 목록이 아니면 저장을 거부한다(그 사이 다른 관리자가 게시판을 만들거나 지우면 422).\n              창은 별도 컨텍스트라 페이지 `_local` 을 볼 수 없으므로 복사·삭제 창처럼 전역에 싣는다. 받은 순서를 원본으로도 남겨\n              바뀐 것이 없으면 저장을 잠근다",
-                                        "type": "click",
-                                        "handler": "sequence",
-                                        "actions": [
-                                            {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "reorderLoading": true
-                                                }
-                                            },
-                                            {
-                                                "handler": "apiCall",
-                                                "target": "/api/modules/sirsoft-board/admin/boards",
-                                                "auth_required": true,
-                                                "params": {
-                                                    "method": "GET",
-                                                    "body": {
-                                                        "per_page": 999,
-                                                        "sort_by": "display_order",
-                                                        "sort_order": "asc"
-                                                    }
-                                                },
-                                                "onSuccess": [
-                                                    {
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "global",
-                                                            "reorderLoading": false,
-                                                            "reorderSaving": false,
-                                                            "reorderError": null,
-                                                            "reorderItems": "{{(response?.data?.data ?? []).map(b => ({id: b.id, slug: b.slug, name: b.name, is_active: b.is_active}))}}",
-                                                            "reorderOriginal": "{{(response?.data?.data ?? []).map(b => ({id: b.id, slug: b.slug, name: b.name, is_active: b.is_active}))}}"
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "openModal",
-                                                        "target": "board_reorder_modal"
-                                                    }
-                                                ],
-                                                "onError": [
-                                                    {
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "global",
-                                                            "reorderLoading": false
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "toast",
-                                                        "params": {
-                                                            "type": "error",
-                                                            "message": "{{error.message}}"
-                                                        }
-                                                    }
-                                                ]
-                                            }
-                                        ]
-                                    }
-                                ],
-                                "props": {
-                                    "data-testid": "board-reorder-button",
-                                    "type": "button",
-                                    "className": "flex-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                                    "disabled": "{{_global.reorderLoading}}"
-                                },
-                                "children": [
-                                    {
-                                        "type": "basic",
-                                        "name": "Icon",
-                                        "if": "{{_global.reorderLoading}}",
-                                        "props": {
-                                            "name": "spinner",
-                                            "className": "spinner-sm"
-                                        }
-                                    },
-                                    {
-                                        "type": "basic",
-                                        "name": "Icon",
-                                        "if": "{{!_global.reorderLoading}}",
-                                        "props": {
-                                            "name": "fa-solid fa-arrow-down-short-wide",
-                                            "className": "text-base"
-                                        }
-                                    },
-                                    {
-                                        "type": "basic",
-                                        "name": "Span",
-                                        "text": "$t:sirsoft-board.admin.board.index.reorder.button"
-                                    }
-                                ]
-                            },
-                            {
                                 "id": "add_board_button",
                                 "type": "basic",
-                                "name": "A",
+                                "name": "Button",
+                                "props": {
+                                    "disabled": "{{boards?.data?.abilities?.can_create !== true}}",
+                                    "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                },
                                 "actions": [
                                     {
-                                        "comment": "새 게시판 만들기. 만들기를 취소하고 돌아왔을 때를 위해 목록 상태를 넘긴다",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
+                                            "path": "/admin/boards/create",
                                             "mergeQuery": true,
                                             "query": {}
                                         }
                                     }
                                 ],
-                                "props": {
-                                    "href": "/admin/boards/create",
-                                    "mergeQuery": true,
-                                    "disabled": "{{boards?.data?.abilities?.can_create !== true}}",
-                                    "className": "button flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors aria-disabled:opacity-50 aria-disabled:cursor-not-allowed"
-                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -252,9 +148,14 @@
                                         "id": "search_bar",
                                         "type": "composite",
                                         "name": "SearchBar",
+                                        "props": {
+                                            "name": "search",
+                                            "placeholder": "$t:sirsoft-board.admin.board.index.search_placeholder",
+                                            "value": "{{query.search || ''}}",
+                                            "className": "w-64"
+                                        },
                                         "actions": [
                                             {
-                                                "comment": "검색은 URL 로 남긴다 — 다른 query(per_page 등)는 두고 검색어만 갈아 끼우되 페이지는 1 로 되돌린다(3페이지에서 검색하면 결과가 없는 페이지에 떨어지므로)",
                                                 "type": "submit",
                                                 "handler": "navigate",
                                                 "params": {
@@ -266,13 +167,7 @@
                                                     }
                                                 }
                                             }
-                                        ],
-                                        "props": {
-                                            "name": "search",
-                                            "placeholder": "$t:sirsoft-board.admin.board.index.search_placeholder",
-                                            "value": "{{query.search || ''}}",
-                                            "className": "w-64"
-                                        }
+                                        ]
                                     }
                                 ]
                             },
@@ -281,24 +176,7 @@
                                 "type": "composite",
                                 "name": "CardGrid",
                                 "blur_until_loaded": true,
-                                "actions": [
-                                    {
-                                        "comment": "페이지 이동도 상태가 아니라 URL 로 남긴다 — 데이터소스가 `query.page` 를 읽으므로 이 이동 하나로 목록이 다시 채워진다",
-                                        "type": "change",
-                                        "event": "onPageChange",
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/admin/boards",
-                                            "mergeQuery": true,
-                                            "query": {
-                                                "page": "{{$args[0]}}"
-                                            }
-                                        }
-                                    }
-                                ],
                                 "props": {
-                                    "pageHref": "/admin/boards?page={page}",
-                                    "pageHrefMergeQuery": true,
                                     "data": "{{boards.data.data}}",
                                     "gridColumns": 1,
                                     "gap": 4,
@@ -372,16 +250,21 @@
                                                                     "id": "active_toggle",
                                                                     "type": "composite",
                                                                     "name": "Toggle",
+                                                                    "props": {
+                                                                        "checked": "{{row.is_active}}",
+                                                                        "name": "is_active",
+                                                                        "size": "sm",
+                                                                        "disabled": "{{row.abilities?.can_update !== true}}"
+                                                                    },
                                                                     "actions": [
                                                                         {
-                                                                            "comment": "카드에서 바로 활성/비활성을 뒤집는다. 보내는 값은 «지금의 반대」이고 토스트 문구도 뒤집기 «전» 값으로 고르므로 둘의 기준이 같다. 성공 후 목록을 동기로 다시 읽어 화면의 토글이 서버 값과 어긋난 채 남지 않게 한다",
                                                                             "type": "change",
                                                                             "handler": "sequence",
                                                                             "actions": [
                                                                                 {
                                                                                     "handler": "apiCall",
-                                                                                    "target": "/api/modules/sirsoft-board/admin/boards/{{row.slug}}",
                                                                                     "auth_required": true,
+                                                                                    "target": "/api/modules/sirsoft-board/admin/boards/{{row.slug}}",
                                                                                     "params": {
                                                                                         "method": "PUT",
                                                                                         "body": {
@@ -404,34 +287,60 @@
                                                                                             }
                                                                                         }
                                                                                     ],
-                                                                                    "onError": {
-                                                                                        "handler": "toast",
-                                                                                        "params": {
-                                                                                            "type": "error",
-                                                                                            "message": "{{error.message}}"
+                                                                                    "onError": [
+                                                                                        {
+                                                                                            "handler": "toast",
+                                                                                            "params": {
+                                                                                                "type": "error",
+                                                                                                "message": "{{error.message}}"
+                                                                                            }
                                                                                         }
-                                                                                    }
+                                                                                    ]
                                                                                 }
                                                                             ]
                                                                         }
-                                                                    ],
-                                                                    "props": {
-                                                                        "checked": "{{row.is_active}}",
-                                                                        "name": "is_active",
-                                                                        "ariaLabel": "$t:defer:common.item_enabled|name={{row.name}}",
-                                                                        "size": "sm",
-                                                                        "disabled": "{{row.abilities?.can_update !== true}}"
-                                                                    }
+                                                                    ]
                                                                 },
                                                                 {
                                                                     "id": "action_menu",
                                                                     "type": "composite",
                                                                     "name": "ActionMenu",
+                                                                    "props": {
+                                                                        "triggerLabel": "",
+                                                                        "triggerIconName": "ellipsis-h",
+                                                                        "position": "right",
+                                                                        "items": [
+                                                                            {
+                                                                                "id": "edit",
+                                                                                "label": "$t:sirsoft-board.admin.board.actions.edit",
+                                                                                "iconName": "pencil",
+                                                                                "disabled": "{{row.abilities?.can_update !== true}}"
+                                                                            },
+                                                                            {
+                                                                                "id": "manage_posts",
+                                                                                "label": "$t:sirsoft-board.admin.board.actions.manage_posts",
+                                                                                "iconName": "list"
+                                                                            },
+                                                                            {
+                                                                                "id": "copy",
+                                                                                "label": "$t:sirsoft-board.admin.board.actions.copy",
+                                                                                "iconName": "copy",
+                                                                                "disabled": "{{row.abilities?.can_create !== true}}"
+                                                                            },
+                                                                            {
+                                                                                "id": "delete",
+                                                                                "label": "$t:sirsoft-board.admin.board.actions.delete",
+                                                                                "iconName": "trash",
+                                                                                "variant": "danger",
+                                                                                "disabled": "{{row.abilities?.can_delete !== true}}"
+                                                                            }
+                                                                        ]
+                                                                    },
                                                                     "actions": [
                                                                         {
-                                                                            "comment": "카드 메뉴 네 갈래. 편집·글 관리는 그냥 이동이고, 복제·삭제는 대상 행을 전역에 실어 둔 «뒤» 모달을 연다 — 모달은 별도 컨텍스트라 반복 변수 `row` 를 볼 수 없기 때문이다",
                                                                             "event": "onItemClick",
                                                                             "handler": "switch",
+                                                                            "value": "{{$args[0]}}",
                                                                             "cases": {
                                                                                 "edit": {
                                                                                     "handler": "navigate",
@@ -453,10 +362,12 @@
                                                                                         "target": "global",
                                                                                         "modal_data": "{{row}}"
                                                                                     },
-                                                                                    "onSuccess": {
-                                                                                        "handler": "openModal",
-                                                                                        "target": "copy_confirm_modal"
-                                                                                    }
+                                                                                    "onSuccess": [
+                                                                                        {
+                                                                                            "handler": "openModal",
+                                                                                            "target": "copy_confirm_modal"
+                                                                                        }
+                                                                                    ]
                                                                                 },
                                                                                 "delete": {
                                                                                     "handler": "setState",
@@ -464,48 +375,16 @@
                                                                                         "target": "global",
                                                                                         "modal_data": "{{row}}"
                                                                                     },
-                                                                                    "onSuccess": {
-                                                                                        "handler": "openModal",
-                                                                                        "target": "delete_confirm_modal"
-                                                                                    }
+                                                                                    "onSuccess": [
+                                                                                        {
+                                                                                            "handler": "openModal",
+                                                                                            "target": "delete_confirm_modal"
+                                                                                        }
+                                                                                    ]
                                                                                 }
                                                                             }
                                                                         }
-                                                                    ],
-                                                                    "props": {
-                                                                        "triggerLabel": "",
-                                                                        "triggerIconName": "ellipsis-h",
-                                                                        "position": "right",
-                                                                        "items": [
-                                                                            {
-                                                                                "href": "/admin/boards/{{row.slug}}/edit",
-                                                                                "mergeQuery": true,
-                                                                                "id": "edit",
-                                                                                "label": "$t:sirsoft-board.admin.board.actions.edit",
-                                                                                "iconName": "pencil",
-                                                                                "disabled": "{{row.abilities?.can_update !== true}}"
-                                                                            },
-                                                                            {
-                                                                                "href": "/admin/board/{{row.slug}}",
-                                                                                "id": "manage_posts",
-                                                                                "label": "$t:sirsoft-board.admin.board.actions.manage_posts",
-                                                                                "iconName": "list"
-                                                                            },
-                                                                            {
-                                                                                "id": "copy",
-                                                                                "label": "$t:sirsoft-board.admin.board.actions.copy",
-                                                                                "iconName": "copy",
-                                                                                "disabled": "{{row.abilities?.can_create !== true}}"
-                                                                            },
-                                                                            {
-                                                                                "id": "delete",
-                                                                                "label": "$t:sirsoft-board.admin.board.actions.delete",
-                                                                                "iconName": "trash",
-                                                                                "variant": "danger",
-                                                                                "disabled": "{{row.abilities?.can_delete !== true}}"
-                                                                            }
-                                                                        ]
-                                                                    }
+                                                                    ]
                                                                 }
                                                             ]
                                                         }
@@ -598,7 +477,21 @@
                                             ]
                                         }
                                     ]
-                                }
+                                },
+                                "actions": [
+                                    {
+                                        "event": "onPageChange",
+                                        "type": "change",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/boards",
+                                            "mergeQuery": true,
+                                            "query": {
+                                                "page": "{{$args[0]}}"
+                                            }
+                                        }
+                                    }
+                                ]
                             }
                         ]
                     }
@@ -608,7 +501,6 @@
     },
     "modals": [
         {
-            "comment": "복제 확인 — 복제가 무엇을 가져오고 무엇을 빼는지(글·slug) 먼저 알린 뒤, 실제 복제는 생성 화면에 `copy_id` 를 달아 넘기는 것으로 끝난다. 이 모달 자체는 아무것도 저장하지 않는다",
             "id": "copy_confirm_modal",
             "type": "composite",
             "name": "Modal",
@@ -725,23 +617,26 @@
                                     "id": "copy_cancel_button",
                                     "type": "basic",
                                     "name": "Button",
+                                    "props": {
+                                        "className": "px-4 py-2 text-body font-medium bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 dark:focus:ring-gray-400"
+                                    },
+                                    "text": "$t:common.cancel",
                                     "actions": [
                                         {
                                             "type": "click",
                                             "handler": "closeModal",
                                             "target": "copy_confirm_modal"
                                         }
-                                    ],
-                                    "props": {
-                                        "type": "button",
-                                        "className": "px-4 py-2 text-body font-medium bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 dark:focus:ring-gray-400"
-                                    },
-                                    "text": "$t:common.cancel"
+                                    ]
                                 },
                                 {
                                     "id": "copy_confirm_button",
                                     "type": "basic",
                                     "name": "Button",
+                                    "props": {
+                                        "className": "px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.board.actions.copy",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -760,12 +655,7 @@
                                                 }
                                             }
                                         }
-                                    ],
-                                    "props": {
-                                        "type": "button",
-                                        "className": "px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-600 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-                                    },
-                                    "text": "$t:sirsoft-board.admin.board.actions.copy"
+                                    ]
                                 }
                             ]
                         }
@@ -774,7 +664,6 @@
             ]
         },
         {
-            "comment": "삭제 확인 — 남은 글 수에 따라 경고 등급과 문구가 갈린다(글이 있으면 error, 없으면 warning). 게시판 삭제는 글까지 함께 지우는 되돌릴 수 없는 동작이라 백업 안내를 함께 띄운다",
             "id": "delete_confirm_modal",
             "type": "composite",
             "name": "Modal",
@@ -807,7 +696,7 @@
                             "props": {
                                 "className": "text-gray-700 dark:text-gray-300"
                             },
-                            "text": "{{_global.modal_data.posts_count > 0 ? '$t:sirsoft-board.admin.modals.delete.with_posts_info|count=' + _global.modal_data.posts_count + '|posts_count=' + _global.modal_data.posts_count : '$t:sirsoft-board.admin.modals.delete.no_posts_info'}}"
+                            "text": "{{_global.modal_data.posts_count > 0 ? '$t:sirsoft-board.admin.modals.delete.with_posts_info|posts_count=' + _global.modal_data.posts_count : '$t:sirsoft-board.admin.modals.delete.no_posts_info'}}"
                         },
                         {
                             "id": "delete_main_alert",
@@ -840,17 +729,16 @@
                         {
                             "type": "basic",
                             "name": "Button",
+                            "props": {
+                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.isDeleting}}"
+                            },
                             "actions": [
                                 {
                                     "type": "click",
                                     "handler": "closeModal"
                                 }
                             ],
-                            "props": {
-                                "type": "button",
-                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{_global.isDeleting}}"
-                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -862,9 +750,12 @@
                         {
                             "type": "basic",
                             "name": "Button",
+                            "props": {
+                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white dark:text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.isDeleting}}"
+                            },
                             "actions": [
                                 {
-                                    "comment": "삭제 실행 — 진행 표시를 켜 두 번 눌리는 것을 막고, 성공하면 목록과 «관리자 메뉴」를 함께 다시 읽는다(게시판이 메뉴에 등재돼 있으면 사이드바에 유령 항목이 남기 때문)",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -877,11 +768,11 @@
                                         },
                                         {
                                             "handler": "apiCall",
-                                            "target": "/api/modules/sirsoft-board/admin/boards/{{_global.modal_data?.slug}}",
                                             "auth_required": true,
+                                            "target": "/api/modules/sirsoft-board/admin/boards/{{_global.modal_data?.slug}}",
                                             "params": {
                                                 "method": "DELETE",
-                                                "body": {}
+                                                "body": []
                                             },
                                             "onSuccess": [
                                                 {
@@ -943,11 +834,6 @@
                                     ]
                                 }
                             ],
-                            "props": {
-                                "type": "button",
-                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white dark:text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{_global.isDeleting}}"
-                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -962,432 +848,6 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "text": "{{_global.isDeleting ? '$t:sirsoft-board.common.deleting' : '$t:sirsoft-board.common.delete'}}"
-                                }
-                            ]
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "comment": "게시판 순서 변경 — 사용자 메뉴·게시판 목록 화면·관리자 목록·통합검색 게시판 선택칸이 이 순서를 따른다.\n      넓은 화면은 손잡이를 끌거나 ▲▼ 로, 좁은 화면은 ▲▼ 로만 옮긴다(끌기가 스크롤과 다투므로 손잡이를 숨긴다 — 반응 유형 카드와 같은 이유).\n      손잡이는 키보드 포커스를 받지 못해(끌기 엔진 한계) 낭독기에서 숨기고, 키보드 사용자는 ▲▼ 단추로 옮긴다.\n      비활성 게시판도 자리를 가진다 — 다시 켜면 정한 자리에 나온다. 그래서 흐린 글자와 「비활성」 배지로 함께 보인다",
-            "id": "board_reorder_modal",
-            "type": "composite",
-            "name": "Modal",
-            "actions": [
-                {
-                    "comment": "✕·Esc·바깥 클릭으로 닫아도 취소와 같다 — 저장하지 않고 작업본을 버린다",
-                    "type": "click",
-                    "event": "onClose",
-                    "handler": "sequence",
-                    "actions": [
-                        {
-                            "handler": "closeModal",
-                            "target": "board_reorder_modal"
-                        },
-                        {
-                            "handler": "setState",
-                            "params": {
-                                "target": "global",
-                                "reorderItems": null,
-                                "reorderOriginal": null,
-                                "reorderError": null
-                            }
-                        }
-                    ]
-                }
-            ],
-            "props": {
-                "title": "$t:sirsoft-board.admin.board.index.reorder.title",
-                "size": "md"
-            },
-            "children": [
-                {
-                    "id": "reorder_modal_content",
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "flex flex-col gap-3"
-                    },
-                    "children": [
-                        {
-                            "id": "reorder_description",
-                            "type": "basic",
-                            "name": "P",
-                            "props": {
-                                "className": "text-label"
-                            },
-                            "text": "$t:sirsoft-board.admin.board.index.reorder.description"
-                        },
-                        {
-                            "comment": "정렬 노드는 엔진이 자기 컨테이너로 그려 그 노드의 class·testid 가 빠진다 — 테두리·스크롤 영역은 바깥 래퍼가 맡는다. 높이 상한은 관리자 템플릿 safelist 에 있는 max-h-[70vh] (모듈 레이아웃의 임의값 클래스는 safelist 에 있어야 빌드된다)",
-                            "id": "reorder_list_frame",
-                            "type": "basic",
-                            "name": "Div",
-                            "props": {
-                                "data-testid": "board-reorder-list",
-                                "className": "max-h-[70vh] overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-700"
-                            },
-                            "children": [
-                                {
-                                    "id": "reorder_list",
-                                    "type": "basic",
-                                    "name": "Div",
-                                    "sortable": {
-                                        "source": "{{(_global.reorderItems ?? []).map((r, i) => ({...r, _idx: i}))}}",
-                                        "itemVar": "row",
-                                        "itemKey": "id",
-                                        "indexVar": "rIdx",
-                                        "strategy": "verticalList",
-                                        "handle": "[data-drag-handle]"
-                                    },
-                                    "itemTemplate": {
-                                        "type": "basic",
-                                        "name": "Div",
-                                        "props": {
-                                            "data-testid": "board-reorder-row-{{row.slug}}",
-                                            "className": "flex items-center gap-3 px-3 py-2 bg-white dark:bg-gray-800 {{row.is_active ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'}}"
-                                        },
-                                        "children": [
-                                            {
-                                                "type": "basic",
-                                                "name": "Div",
-                                                "props": {
-                                                    "data-testid": "board-reorder-drag-{{row.slug}}",
-                                                    "data-drag-handle": true,
-                                                    "aria-hidden": "true",
-                                                    "title": "{{$t('sirsoft-board.admin.board.index.reorder.drag_handle', { name: row.name })}}",
-                                                    "className": "hidden md:flex cursor-grab text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
-                                                },
-                                                "children": [
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Icon",
-                                                        "props": {
-                                                            "name": "fa-solid fa-grip-vertical",
-                                                            "className": "text-sm"
-                                                        }
-                                                    }
-                                                ]
-                                            },
-                                            {
-                                                "type": "basic",
-                                                "name": "Span",
-                                                "props": {
-                                                    "data-testid": "board-reorder-index-{{row.slug}}",
-                                                    "className": "w-6 text-right text-sm tabular-nums text-gray-500 dark:text-gray-400"
-                                                },
-                                                "text": "{{row._idx + 1}}"
-                                            },
-                                            {
-                                                "type": "basic",
-                                                "name": "Div",
-                                                "props": {
-                                                    "className": "flex flex-col md:flex-row md:items-center gap-0.5 md:gap-2 min-w-0 flex-1"
-                                                },
-                                                "children": [
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Span",
-                                                        "props": {
-                                                            "className": "truncate font-medium"
-                                                        },
-                                                        "text": "{{row.name}}"
-                                                    },
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Div",
-                                                        "props": {
-                                                            "className": "flex items-center gap-2"
-                                                        },
-                                                        "children": [
-                                                            {
-                                                                "comment": "슬러그 배지 — 목록 카드의 슬러그 배지와 같은 모양",
-                                                                "type": "composite",
-                                                                "name": "StatusBadge",
-                                                                "props": {
-                                                                    "data-testid": "board-reorder-slug-{{row.slug}}",
-                                                                    "status": "info",
-                                                                    "label": "{{row.slug}}",
-                                                                    "showIcon": false
-                                                                }
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Span",
-                                                                "if": "{{!row.is_active}}",
-                                                                "props": {
-                                                                    "data-testid": "board-reorder-inactive-{{row.slug}}",
-                                                                    "className": "px-1.5 py-0.5 text-xs rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
-                                                                },
-                                                                "text": "$t:sirsoft-board.admin.board.index.reorder.inactive"
-                                                            }
-                                                        ]
-                                                    }
-                                                ]
-                                            },
-                                            {
-                                                "type": "basic",
-                                                "name": "Button",
-                                                "actions": [
-                                                    {
-                                                        "comment": "위로 한 칸 — 두 자리를 맞바꾼다",
-                                                        "type": "click",
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "global",
-                                                            "reorderItems": "{{(_global.reorderItems ?? []).map((r, i, a) => i === row._idx - 1 ? a[row._idx] : (i === row._idx ? a[row._idx - 1] : r))}}",
-                                                            "reorderError": null
-                                                        }
-                                                    }
-                                                ],
-                                                "props": {
-                                                    "data-testid": "board-reorder-up-{{row.slug}}",
-                                                    "type": "button",
-                                                    "aria-label": "{{$t('sirsoft-board.admin.board.index.reorder.move_up', { name: row.name })}}",
-                                                    "className": "flex-center w-10 h-10 shrink-0 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors board-move-button disabled:cursor-not-allowed",
-                                                    "disabled": "{{_global.reorderSaving || row._idx === 0}}"
-                                                },
-                                                "children": [
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Icon",
-                                                        "props": {
-                                                            "name": "fa-solid fa-chevron-up",
-                                                            "className": "text-xs"
-                                                        }
-                                                    }
-                                                ]
-                                            },
-                                            {
-                                                "type": "basic",
-                                                "name": "Button",
-                                                "actions": [
-                                                    {
-                                                        "comment": "아래로 한 칸",
-                                                        "type": "click",
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "global",
-                                                            "reorderItems": "{{(_global.reorderItems ?? []).map((r, i, a) => i === row._idx ? a[row._idx + 1] : (i === row._idx + 1 ? a[row._idx] : r))}}",
-                                                            "reorderError": null
-                                                        }
-                                                    }
-                                                ],
-                                                "props": {
-                                                    "data-testid": "board-reorder-down-{{row.slug}}",
-                                                    "type": "button",
-                                                    "aria-label": "{{$t('sirsoft-board.admin.board.index.reorder.move_down', { name: row.name })}}",
-                                                    "className": "flex-center w-10 h-10 shrink-0 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors board-move-button disabled:cursor-not-allowed",
-                                                    "disabled": "{{_global.reorderSaving || row._idx === (_global.reorderItems ?? []).length - 1}}"
-                                                },
-                                                "children": [
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Icon",
-                                                        "props": {
-                                                            "name": "fa-solid fa-chevron-down",
-                                                            "className": "text-xs"
-                                                        }
-                                                    }
-                                                ]
-                                            }
-                                        ]
-                                    },
-                                    "actions": [
-                                        {
-                                            "comment": "끌어 놓은 결과를 그대로 새 순서로 삼는다(화면용 자리 번호 `_idx` 는 빼고 싣는다)",
-                                            "event": "onSortEnd",
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "reorderItems": "{{$sortedItems.map(r => ({id: r.id, slug: r.slug, name: r.name, is_active: r.is_active}))}}",
-                                                "reorderError": null
-                                            }
-                                        }
-                                    ],
-                                    "props": {
-                                        "className": "divide-y divide-gray-200 dark:divide-gray-700"
-                                    }
-                                }
-                            ]
-                        },
-                        {
-                            "comment": "저장이 422(그 사이 게시판 목록이 바뀜)로 거부되면 창을 닫지 않고 안내한다 — 창을 닫았다 다시 열면 새 목록을 받는다",
-                            "id": "reorder_error_box",
-                            "type": "basic",
-                            "name": "Div",
-                            "if": "{{!!_global.reorderError}}",
-                            "props": {
-                                "data-testid": "board-reorder-error",
-                                "role": "alert",
-                                "className": "rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-300"
-                            },
-                            "text": "{{_global.reorderError}}"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Div",
-                            "props": {
-                                "className": "modal-footer-buttons"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Button",
-                                    "actions": [
-                                        {
-                                            "comment": "취소 — 저장하지 않고 창의 작업본을 버린다",
-                                            "type": "click",
-                                            "handler": "sequence",
-                                            "actions": [
-                                                {
-                                                    "handler": "closeModal",
-                                                    "target": "board_reorder_modal"
-                                                },
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "reorderItems": null,
-                                                        "reorderOriginal": null,
-                                                        "reorderError": null
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    ],
-                                    "props": {
-                                        "data-testid": "board-reorder-cancel",
-                                        "type": "button",
-                                        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{_global.reorderSaving}}"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "text": "$t:sirsoft-board.admin.board.index.reorder.cancel"
-                                        }
-                                    ]
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Button",
-                                    "actions": [
-                                        {
-                                            "comment": "저장 — 지금 창의 순서를 전체 id 목록으로 보낸다. 요청 중에는 잠가 두 번 눌러도 한 번만 간다.\n                성공하면 창을 닫고 목록을 다시 읽는다(관리자 목록 기본 정렬도 이 순서다). 422 는 창 안에 사유를 남기고, 그 밖의 실패는 토스트로 알린다",
-                                            "type": "click",
-                                            "handler": "sequence",
-                                            "actions": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "reorderSaving": true,
-                                                        "reorderError": null
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "apiCall",
-                                                    "target": "/api/modules/sirsoft-board/admin/boards/order",
-                                                    "auth_required": true,
-                                                    "params": {
-                                                        "method": "PUT",
-                                                        "body": {
-                                                            "board_ids": "{{(_global.reorderItems ?? []).map(i => i.id)}}"
-                                                        }
-                                                    },
-                                                    "onSuccess": [
-                                                        {
-                                                            "handler": "setState",
-                                                            "params": {
-                                                                "target": "global",
-                                                                "reorderSaving": false,
-                                                                "reorderItems": null,
-                                                                "reorderOriginal": null
-                                                            }
-                                                        },
-                                                        {
-                                                            "handler": "closeModal",
-                                                            "target": "board_reorder_modal"
-                                                        },
-                                                        {
-                                                            "handler": "toast",
-                                                            "params": {
-                                                                "type": "success",
-                                                                "message": "{{response.message}}"
-                                                            }
-                                                        },
-                                                        {
-                                                            "handler": "refetchDataSource",
-                                                            "params": {
-                                                                "dataSourceId": "boards",
-                                                                "sync": true
-                                                            }
-                                                        }
-                                                    ],
-                                                    "onError": {
-                                                        "handler": "conditions",
-                                                        "conditions": [
-                                                            {
-                                                                "if": "{{error.status === 422}}",
-                                                                "then": {
-                                                                    "handler": "setState",
-                                                                    "params": {
-                                                                        "target": "global",
-                                                                        "reorderSaving": false,
-                                                                        "reorderError": "{{error.errors?.board_ids?.[0] ?? error.message}}"
-                                                                    }
-                                                                }
-                                                            },
-                                                            {
-                                                                "then": [
-                                                                    {
-                                                                        "handler": "setState",
-                                                                        "params": {
-                                                                            "target": "global",
-                                                                            "reorderSaving": false
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "handler": "toast",
-                                                                        "params": {
-                                                                            "type": "error",
-                                                                            "message": "{{error.message}}"
-                                                                        }
-                                                                    }
-                                                                ]
-                                                            }
-                                                        ]
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    ],
-                                    "props": {
-                                        "data-testid": "board-reorder-save",
-                                        "type": "button",
-                                        "lockRepeatClick": true,
-                                        "className": "flex-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{_global.reorderSaving || (_global.reorderItems ?? []).map(i => i.id).join(',') === (_global.reorderOriginal ?? []).map(i => i.id).join(',')}}"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Icon",
-                                            "if": "{{_global.reorderSaving}}",
-                                            "props": {
-                                                "name": "spinner",
-                                                "className": "spinner-sm"
-                                            }
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "text": "{{_global.reorderSaving ? '$t:sirsoft-board.admin.board.index.reorder.saving' : '$t:sirsoft-board.admin.board.index.reorder.save'}}"
-                                        }
-                                    ]
                                 }
                             ]
                         }

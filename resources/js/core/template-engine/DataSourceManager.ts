@@ -22,7 +22,6 @@ import { getErrorHandlingResolver } from '../error';
 import { getActionDispatcher } from './ActionDispatcher';
 import type { ErrorHandlingMap, OnErrorHandler, OnSuccessHandler, ErrorContext, SuccessContext, ErrorCondition } from '../types/ErrorHandling';
 import { createLogger } from '../utils/Logger';
-import { isSameOriginRequestUrl } from '../support/navPolicy';
 import { webSocketManager } from '../websocket/WebSocketManager';
 import type { G7DevToolsInterface } from './G7CoreGlobals';
 import type { GlobalHeaderRule } from './LayoutLoader';
@@ -689,15 +688,6 @@ export interface DataSourceResult {
    * 에러가 핸들러에 의해 처리되었는지 여부
    */
   errorHandled?: boolean;
-
-  /**
-   * 받기에 실패했지만 대신 돌려준 값의 출처 — `'last'` 같은 요청의 마지막 성공 값, `'fallback'` 선언한 fallback.
-   * 새로 받은 값이 아니므로 호출부는 이 값으로 initLocal·initGlobal 을 다시 심지 않는다(사용자가 바꾼 선택·입력을
-   * 예전 값으로 되돌리지 않게). 성공 응답이면 없다.
-   *
-   * @since engine-v1.82.0
-   */
-  kept?: 'last' | 'fallback';
 }
 
 /**
@@ -898,12 +888,6 @@ export class DataSourceManager {
   ): Record<string, string> {
     const result: Record<string, string> = {};
 
-    // 보안: 전역 헤더(비회원 주문 조회 토큰·비밀글 열람 토큰 등)는 같은 출처 요청에만 싣는다 —
-    // 패턴이 `*` 여도 교차 출처 데이터소스로 증표가 새지 않게, Bearer 와 같은 판정을 쓴다.
-    if (!isSameOriginRequestUrl(endpoint)) {
-      return result;
-    }
-
     for (const rule of this.globalHeaders) {
       if (this.matchesPattern(endpoint, rule.pattern)) {
         Object.entries(rule.headers).forEach(([key, value]) => {
@@ -1012,282 +996,6 @@ export class DataSourceManager {
    * @param localState _local 상태 (globalHeaders 표현식 평가용)
    * @returns 데이터 맵 (key: 데이터 소스 ID, value: 데이터)
    */
-  /**
-   * **마지막으로 성공한** 응답 (요청이 같은 것끼리).
-   *
-   * `fallback` 은 아직 한 번도 못 받았을 때 흰 화면을 막는 첫 그림이다. 이미 값을 받아 그리고 있는
-   * 요청이 폴링 한 번 실패했다고 fallback(0·빈 배열)으로 되돌아가면 화면이 거짓을 말한다 — 실시간
-   * 화면이 서버 오류 동안 「지금 0명」을 띄운 것이 그 예다(이슈 #682 §8 M4-T4).
-   *
-   * 매니저는 화면을 다시 그릴 때마다 새로 만들어지므로 인스턴스가 아니라 클래스에 둔다. 키에 주소와
-   * 파라미터를 함께 넣어, **같은 요청**이 다시 실패했을 때만 그 값을 지킨다 — 기간이나 화면이 바뀌면
-   * 다른 요청이므로 남은 값을 보여 주지 않는다.
-   */
-  private static readonly lastSuccessful = new Map<string, any>();
-
-  /**
-   * 마지막 값 보관 한도 — 화면을 오래 돌아다녀도 메모리가 무한정 늘지 않게 한다.
-   */
-  private static readonly LAST_SUCCESSFUL_LIMIT = 50;
-
-  /**
-   * 같은 요청인지 가리는 키를 만듭니다.
-   *
-   * 주소는 **식을 푼 경로**(`?` 앞)로 넣는다 (@since engine-v1.81.2) — 종전에는 식 원문
-   * (`/coupons/{{_global.issueHistoryCoupon?.id}}/issues`)을 넣어, 대상(전역·지역 상태)만 다른 주소가 같은 키가
-   * 됐다. 쿠폰 A 의 발급 내역을 받은 뒤 쿠폰 B 가 서버 오류로 실패하면 A 의 내역을 B 의 「마지막 값」으로 돌려주었다.
-   *
-   * 파라미터·쿼리 문자열은 종전처럼 식 원문(쿼리 인자는 `URLSearchParams` 라 늘 `{}`)으로 둔다 — 같은 주소에서 선택·
-   * 검색어·쪽·폴링 시각만 바뀐 요청(장바구니 선택 id, 직권 실행 폴링의 `since`)은 같은 자원의 갱신이라, 일시 실패 때
-   * fallback(빈 목록)으로 떨어뜨리지 않고 마지막 값을 지킨다.
-   *
-   * @param source 데이터 소스
-   * @param routeParams 라우트 파라미터
-   * @param queryParams 쿼리 파라미터
-   * @param globalState 요청에 쓴 _global 상태(주소 식을 풀 때만 쓴다)
-   * @param localState 요청에 쓴 _local 상태(주소 식을 풀 때만 쓴다)
-   * @returns 보관 키
-   */
-  private lastDataKey(
-    source: DataSource,
-    routeParams: Record<string, any> = {},
-    queryParams: URLSearchParams | Record<string, any> = {},
-    globalState?: Record<string, any>,
-    localState?: Record<string, any>,
-  ): string {
-    return [
-      source.id,
-      this.resolveRequestPath(source, routeParams, queryParams, globalState, localState),
-      JSON.stringify(source.params ?? {}),
-      JSON.stringify(routeParams ?? {}),
-      JSON.stringify(queryParams ?? {}),
-    ].join('|');
-  }
-
-  /**
-   * 요청할 주소의 경로(`?` 앞, 식을 푼 값)를 구합니다 — 「같은 대상」 판정의 기준.
-   *
-   * 같은 경로에서 파라미터·쿼리만 바뀐 요청(쪽·검색어·선택·폴링 시각)은 같은 자원의 갱신이고, 경로가 바뀌면
-   * (`/coupons/{{_global.coupon.id}}/issues` 의 대상 변경, 보유기간 대상의 축 변경) 다른 대상이다.
-   *
-   * @param source 데이터 소스
-   * @param routeParams 라우트 파라미터
-   * @param queryParams 쿼리 파라미터
-   * @param globalState 요청에 쓸 _global 상태
-   * @param localState 요청에 쓸 _local 상태
-   * @returns 주소 경로(식을 풀지 못하면 원문 경로)
-   * @since engine-v1.81.2
-   */
-  resolveRequestPath(
-    source: DataSource,
-    routeParams: Record<string, any> = {},
-    queryParams: URLSearchParams | Record<string, any> = {},
-    globalState?: Record<string, any>,
-    localState?: Record<string, any>,
-    isolatedState?: Record<string, any>,
-  ): string {
-    let endpoint: string = source.endpoint ?? '';
-    if (endpoint.includes('{{')) {
-      const context: Record<string, any> = {
-        route: routeParams ?? {},
-        query: queryParams instanceof URLSearchParams ? parseQueryParams(queryParams) : (queryParams ?? {}),
-      };
-      if (globalState) {
-        context._global = globalState;
-      }
-      if (localState) {
-        context._local = localState;
-      }
-      if (isolatedState) {
-        context._isolated = isolatedState;
-      }
-      try {
-        endpoint = resolveExpressionString(endpoint, context, { skipCache: true });
-      } catch {
-        // 식을 풀지 못하면 원문으로 — 같은 원문끼리만 같은 대상으로 본다
-      }
-    }
-
-    return endpoint.split('?')[0];
-  }
-
-  /**
-   * 성공한 응답을 마지막 값으로 기억합니다.
-   *
-   * @param source 데이터 소스
-   * @param data 받은 데이터
-   * @param routeParams 라우트 파라미터
-   * @param queryParams 쿼리 파라미터
-   * @param globalState 요청에 쓴 _global 상태
-   * @param localState 요청에 쓴 _local 상태
-   */
-  private rememberSuccess(
-    source: DataSource,
-    data: any,
-    routeParams?: Record<string, any>,
-    queryParams?: URLSearchParams | Record<string, any>,
-    globalState?: Record<string, any>,
-    localState?: Record<string, any>,
-  ): void {
-    const store = DataSourceManager.lastSuccessful;
-    const key = this.lastDataKey(source, routeParams, queryParams, globalState, localState);
-
-    store.delete(key);
-    store.set(key, data);
-
-    while (store.size > DataSourceManager.LAST_SUCCESSFUL_LIMIT) {
-      const oldest = store.keys().next();
-
-      if (oldest.done) {
-        break;
-      }
-
-      store.delete(oldest.value);
-    }
-  }
-
-  /**
-   * 데이터 소스 요청 실패를 로그에 남깁니다.
-   *
-   * 레이아웃이 그 실패를 `suppress` 로 처리했거나(비회원의 401, 연결이 끊긴 외부 서비스의 422 등),
-   * 토큰이 없어 요청을 보내지 않고 건너뛴 인증 필요 소스는 예정된 흐름이라 error 가 아닌 log 로 남긴다.
-   * 종전에는 디버그 모드 콘솔에 비회원 화면마다 「Auth required but not authenticated」 3건이 error 로
-   * 쌓였다(7.1.0 실측). 처리기가 없거나 화면에 알리는 처리기의 실패는 종전대로 error 다.
-   *
-   * @param message 로그 문구
-   * @param error 실패 원인
-   * @param handler 이 실패에 결정된 오류 처리기(없으면 null)
-   * @returns void
-   * @since engine-v1.79.0
-   */
-  private logFetchFailure(message: string, error: unknown, handler: { handler?: string } | null): void {
-    if (handler?.handler === 'suppress' || (error as any)?._authSkipped === true) {
-      logger.log(message, error);
-      return;
-    }
-
-    logger.error(message, error);
-  }
-
-  /**
-   * 요청이 실패했을 때 화면에 남길 데이터를 고릅니다.
-   *
-   * 권한 오류(401·403)는 마지막 값을 지키지 않고 지운다 — 보관 값은 계정을 가리지 않으므로, 같은
-   * 브라우저의 다른 탭에서 권한이 적은 계정으로 로그인하면 이전 계정이 보던 응답이 그대로 남았다
-   * (engine-v1.73.0). 서버 오류·네트워크 실패 때의 유지는 그대로다.
-   *
-   * @param source 데이터 소스
-   * @param routeParams 라우트 파라미터
-   * @param queryParams 쿼리 파라미터
-   * @param status 실패 응답의 HTTP 상태 코드
-   * @param globalState 요청에 쓴 _global 상태
-   * @param localState 요청에 쓴 _local 상태
-   * @returns 남길 데이터(`{ data }`), 남길 것이 없으면 null
-   */
-  private dataAfterFailure(
-    source: DataSource,
-    routeParams?: Record<string, any>,
-    queryParams?: URLSearchParams | Record<string, any>,
-    status?: number,
-    globalState?: Record<string, any>,
-    localState?: Record<string, any>,
-  ): { data: any; kept: 'last' | 'fallback' } | null {
-    const key = this.lastDataKey(source, routeParams, queryParams, globalState, localState);
-
-    if (status === 401 || status === 403) {
-      DataSourceManager.lastSuccessful.delete(key);
-    } else if (DataSourceManager.lastSuccessful.has(key)) {
-      return { data: DataSourceManager.lastSuccessful.get(key), kept: 'last' };
-    }
-
-    return source.fallback !== undefined ? { data: source.fallback, kept: 'fallback' } : null;
-  }
-
-  /**
-   * 데이터소스 오류 처리기(onError·errorHandling·errorCondition)의 실행 문맥에 더 실을 값.
-   *
-   * 작성/수정 겸용 화면이 404 를 주소로 가를 수 있게 `route`·`query` 를 싣는다 — 종전 문맥은
-   * `{ auth, error }` 뿐이라 그 판정을 확장 핸들러로 옮겨 우회해야 했다(#753).
-   *
-   * @param routeParams 라우트 파라미터
-   * @param queryParams 쿼리 파라미터
-   * @returns 실행 문맥에 더할 `{ route, query }`
-   * @since engine-v1.80.0
-   */
-  private errorHandlerExtraData(
-    routeParams?: Record<string, any>,
-    queryParams?: URLSearchParams,
-    routeGeneration?: number,
-  ): { route: Record<string, any>; query: Record<string, string | string[]>; __routeGeneration?: number } {
-    return {
-      route: routeParams ?? {},
-      query: queryParams ? parseQueryParams(queryParams) : {},
-      // 이 fetch 를 시작한 경로 세대 — 이동 뒤에 끝난 앞 화면 fetch 의 showErrorPage 가 새 화면을 덮지 않게 한다
-      ...(typeof routeGeneration === 'number' ? { __routeGeneration: routeGeneration } : {}),
-    };
-  }
-
-  /**
-   * 지금 경로 전환 세대 — TemplateApp 이 없으면(편집기 미리보기·단위 시험) undefined.
-   *
-   * @returns 경로 전환 세대
-   * @since engine-v1.80.1
-   */
-  private currentRouteGeneration(): number | undefined {
-    const generation = (typeof window !== 'undefined') ? (window as any).__templateApp?.getRouteChangeId?.() : undefined;
-    return typeof generation === 'number' ? generation : undefined;
-  }
-
-  /**
-   * fetch 를 시작한 경로 세대가 지났는지 — 그사이 다른 화면으로 옮겼으면(또는 옮기기 시작했으면) 그 응답은 앞 화면 것이다.
-   *
-   * 세대를 모르면(TemplateApp 없음) 지나지 않은 것으로 본다(종전과 같음).
-   *
-   * @param routeGeneration fetch 를 시작한 세대
-   * @returns 지났으면 true
-   * @since engine-v1.82.0
-   */
-  private isStaleRouteGeneration(routeGeneration: number | undefined): boolean {
-    if (typeof routeGeneration !== 'number') {
-      return false;
-    }
-    const now = this.currentRouteGeneration();
-
-    return typeof now === 'number' && now !== routeGeneration;
-  }
-
-  /**
-   * 데이터 소스 오류 처리기를 실행합니다 — 앞 화면의 늦은 실패는 실행하지 않는다.
-   *
-   * 화면을 옮긴 뒤에 끝난 앞 화면 fetch 의 오류 처리기(토스트·상태 쓰기·이동)가 새 화면에서 돌면 새 화면 상태를 덮거나
-   * 엉뚱한 안내를 띄운다(engine-v1.80.1 은 showErrorPage 만 세대를 봤다). 새 화면은 자기 fetch 로 다시 판정한다.
-   *
-   * @param resolver 오류 처리 해석기
-   * @param handler 실행할 처리기
-   * @param errorContext 오류 문맥
-   * @param routeParams 라우트 파라미터
-   * @param queryParams 쿼리 파라미터
-   * @param routeGeneration fetch 를 시작한 경로 세대
-   * @returns 실행 결과 (앞 화면 것이면 undefined)
-   * @since engine-v1.82.0
-   */
-  private executeErrorHandler(
-    resolver: ReturnType<typeof getErrorHandlingResolver>,
-    handler: any,
-    errorContext: ErrorContext,
-    routeParams: Record<string, any> | undefined,
-    queryParams: URLSearchParams | undefined,
-    routeGeneration: number | undefined,
-  ): Promise<any> {
-    if (this.isStaleRouteGeneration(routeGeneration)) {
-      logger.log('Data source error handler skipped — the route changed since the fetch started');
-
-      return Promise.resolve(undefined);
-    }
-
-    return resolver.execute(handler, errorContext, this.errorHandlerExtraData(routeParams, queryParams, routeGeneration));
-  }
-
   async fetchDataSources(
     sources: DataSource[],
     routeParams: Record<string, string> = {},
@@ -1296,7 +1004,6 @@ export class DataSourceManager {
     localState?: Record<string, any>,
   ): Promise<Record<string, any>> {
     const results: Record<string, any> = {};
-    const routeGeneration = this.currentRouteGeneration();
 
     // auto_fetch가 true인 데이터 소스만 처리 (websocket 타입 제외)
     //
@@ -1319,7 +1026,6 @@ export class DataSourceManager {
           const data = await this.fetchDataSource(source, routeParams, queryParams, globalState, localState);
           results[source.id] = data;
           this.dataCache.set(source.id, { data, timestamp: Date.now() });
-          this.rememberSuccess(source, data, routeParams, queryParams, globalState, localState);
 
           // errorCondition 체크: 200 응답이어도 조건 만족 시 에러로 처리
           const errorConditionCode = this.checkErrorCondition(source, data);
@@ -1338,7 +1044,7 @@ export class DataSourceManager {
 
             if (resolveResult.handler) {
               try {
-                await this.executeErrorHandler(resolver, resolveResult.handler, errorContext, routeParams, queryParams, routeGeneration);
+                await resolver.execute(resolveResult.handler, errorContext);
               } catch (handlerError) {
                 logger.error(`Error executing errorCondition handler for ${source.id}:`, handlerError);
               }
@@ -1361,12 +1067,14 @@ export class DataSourceManager {
                 data,
                 sourceId: source.id,
               };
-              await this.executeOnSuccessHandler(source.onSuccess, successContext, routeGeneration);
+              await this.executeOnSuccessHandler(source.onSuccess, successContext);
             } catch (handlerError) {
               logger.error(`Error executing onSuccess handler for ${source.id}:`, handlerError);
             }
           }
         } catch (error) {
+          logger.error(`Failed to fetch data source: ${source.id}`, error);
+
           // HTTP 에러 코드 추출
           const errorCode = (error as any)?.response?.status ||
                            (error as any)?.status ||
@@ -1391,22 +1099,19 @@ export class DataSourceManager {
             onError: source.onError,
           });
 
-          this.logFetchFailure(`Failed to fetch data source: ${source.id}`, error, resolveResult.handler);
-
           if (resolveResult.handler) {
             try {
-              await this.executeErrorHandler(resolver, resolveResult.handler, errorContext, routeParams, queryParams, routeGeneration);
+              await resolver.execute(resolveResult.handler, errorContext);
             } catch (handlerError) {
               logger.error(`Error executing error handler for ${source.id}:`, handlerError);
             }
           }
 
-          // 마지막으로 성공한 값이 있으면 그 값을 지키고(권한 오류면 지움), 없으면 fallback 으로 첫 그림을 그린다.
-          const kept = this.dataAfterFailure(source, routeParams, queryParams, errorCode, globalState, localState);
-          if (kept !== null) {
-            results[source.id] = kept.data;
-            this.dataCache.set(source.id, { data: kept.data, timestamp: Date.now() });
-            logger.log(`Keeping last data for ${source.id}`);
+          // fallback이 정의된 경우 렌더링용 데이터로 사용
+          if (source.fallback !== undefined) {
+            results[source.id] = source.fallback;
+            this.dataCache.set(source.id, { data: source.fallback, timestamp: Date.now() });
+            logger.log(`Using fallback data for ${source.id}`);
           }
 
           // 기존 onError 콜백도 호출 (호환성 유지)
@@ -1438,14 +1143,8 @@ export class DataSourceManager {
     queryParams: URLSearchParams = new URLSearchParams(),
     globalState?: Record<string, any>,
     localState?: Record<string, any>,
-    options?: { ignoreAutoFetch?: boolean; refetch?: boolean | ((source: DataSource) => boolean); isolatedState?: Record<string, any> },
+    options?: { ignoreAutoFetch?: boolean },
   ): Promise<DataSourceResult[]> {
-    const routeGeneration = this.currentRouteGeneration();
-    // 이 화면에서 이미 받은 소스를 다시 받는 호출인지 — 오류 처리기 문맥 `error.refetch` 로 싣는다 (engine-v1.82.0).
-    // 함수면 소스마다 판정한다(같은 호출 안에서도 이 화면에서 처음 받는 소스가 섞일 수 있다)
-    const isRefetchSource = (source: DataSource): boolean => (
-      typeof options?.refetch === 'function' ? options.refetch(source) === true : options?.refetch === true
-    );
     // 계약: WebSocket 소스는 fetch 대상이 아님 — 호출자가 사전 필터링해야 함 (engine-v1.32.5)
     // 내부 filter는 safety net으로 유지하되, 호출자가 필터를 누락하면 dev 모드에서 경고
     // (이전에는 silent filter로 인해 호출자의 인덱스 기반 매핑이 조용히 어긋나는 버그 발생)
@@ -1473,9 +1172,8 @@ export class DataSourceManager {
     const results = await Promise.all(
       targetSources.map(async (source): Promise<DataSourceResult> => {
         try {
-          const data = await this.fetchDataSource(source, routeParams, queryParams, globalState, localState, options?.isolatedState);
+          const data = await this.fetchDataSource(source, routeParams, queryParams, globalState, localState);
           this.dataCache.set(source.id, { data, timestamp: Date.now() });
-          this.rememberSuccess(source, data, routeParams, queryParams, globalState, localState);
 
           // errorCondition 체크: 200 응답이어도 조건 만족 시 에러로 처리
           const errorConditionCode = this.checkErrorCondition(source, data);
@@ -1484,7 +1182,6 @@ export class DataSourceManager {
               status: errorConditionCode,
               message: `Error condition matched for ${source.id}`,
               data: data,
-              refetch: isRefetchSource(source),
             };
 
             const resolver = getErrorHandlingResolver();
@@ -1500,13 +1197,13 @@ export class DataSourceManager {
               // blocking이 끝나야 #main_content가 마운트됨)
               // → 핸들러를 비동기로 실행하고 즉시 blocking 해제
               if (source.loading_strategy === 'blocking') {
-                this.executeErrorHandler(resolver, resolveResult.handler, errorContext, routeParams, queryParams, routeGeneration).catch((handlerError) => {
+                resolver.execute(resolveResult.handler, errorContext).catch((handlerError) => {
                   logger.error(`Error executing errorCondition handler for ${source.id}:`, handlerError);
                 });
                 errorHandled = true;
               } else {
                 try {
-                  await this.executeErrorHandler(resolver, resolveResult.handler, errorContext, routeParams, queryParams, routeGeneration);
+                  await resolver.execute(resolveResult.handler, errorContext);
                   errorHandled = true;
                 } catch (handlerError) {
                   logger.error(`Error executing errorCondition handler for ${source.id}:`, handlerError);
@@ -1541,7 +1238,7 @@ export class DataSourceManager {
                 data,
                 sourceId: source.id,
               };
-              await this.executeOnSuccessHandler(source.onSuccess, successContext, routeGeneration);
+              await this.executeOnSuccessHandler(source.onSuccess, successContext);
             } catch (handlerError) {
               logger.error(`Error executing onSuccess handler for ${source.id}:`, handlerError);
             }
@@ -1553,6 +1250,8 @@ export class DataSourceManager {
             data,
           };
         } catch (error) {
+          logger.error(`Failed to fetch data source: ${source.id}`, error);
+
           // HTTP 에러 코드 추출
           const errorCode = (error as any)?.response?.status ||
                            (error as any)?.status ||
@@ -1568,7 +1267,6 @@ export class DataSourceManager {
             errors: responseData?.errors,
             data: responseData,
             statusText: (error as any)?.response?.statusText,
-            refetch: isRefetchSource(source),
           };
 
           // ErrorHandlingResolver를 통해 핸들러 결정
@@ -1578,8 +1276,6 @@ export class DataSourceManager {
             onError: source.onError,
           });
 
-          this.logFetchFailure(`Failed to fetch data source: ${source.id}`, error, resolveResult.handler);
-
           let errorHandled = false;
 
           if (resolveResult.handler) {
@@ -1588,14 +1284,14 @@ export class DataSourceManager {
             // blocking이 끝나야 #main_content가 마운트됨)
             // → 핸들러를 비동기로 실행하고 즉시 blocking 해제
             if (source.loading_strategy === 'blocking') {
-              this.executeErrorHandler(resolver, resolveResult.handler, errorContext, routeParams, queryParams, routeGeneration).catch((handlerError) => {
+              resolver.execute(resolveResult.handler, errorContext).catch((handlerError) => {
                 logger.error(`Error executing error handler for ${source.id}:`, handlerError);
               });
               errorHandled = true;
             } else {
               try {
                 // 핸들러 실행
-                await this.executeErrorHandler(resolver, resolveResult.handler, errorContext, routeParams, queryParams, routeGeneration);
+                await resolver.execute(resolveResult.handler, errorContext);
                 errorHandled = true;
               } catch (handlerError) {
                 logger.error(`Error executing error handler for ${source.id}:`, handlerError);
@@ -1603,17 +1299,14 @@ export class DataSourceManager {
             }
           }
 
-          // 마지막으로 성공한 값이 있으면 그 값을 지키고(권한 오류면 지움), 없으면 fallback 으로 첫 그림을 그린다.
-          const kept = this.dataAfterFailure(source, routeParams, queryParams, errorCode, globalState, localState);
-          if (kept !== null) {
-            this.dataCache.set(source.id, { data: kept.data, timestamp: Date.now() });
-            logger.log(`Keeping last data for ${source.id}`);
-
+          // fallback이 정의된 경우 렌더링용 데이터로 사용
+          if (source.fallback !== undefined) {
+            this.dataCache.set(source.id, { data: source.fallback, timestamp: Date.now() });
+            logger.log(`Using fallback data for ${source.id}`);
             return {
               id: source.id,
               state: 'success',
-              data: kept.data,
-              kept: kept.kept,
+              data: source.fallback,
             };
           }
 
@@ -1650,7 +1343,6 @@ export class DataSourceManager {
     queryParams: URLSearchParams = new URLSearchParams(),
     onUpdate?: (sourceId: string, data: any) => void,
   ): void {
-    const routeGeneration = this.currentRouteGeneration();
     // auto_fetch가 true이고 loading_strategy가 background인 소스만 처리 (websocket 타입 제외)
     const backgroundSources = sources.filter(
       (source) => source.auto_fetch !== false && source.loading_strategy === 'background' && source.type !== 'websocket'
@@ -1661,7 +1353,6 @@ export class DataSourceManager {
       this.fetchDataSource(source, routeParams, queryParams)
         .then(async (data) => {
           this.dataCache.set(source.id, { data, timestamp: Date.now() });
-          this.rememberSuccess(source, data, routeParams, queryParams);
 
           // errorCondition 체크: 200 응답이어도 조건 만족 시 에러로 처리
           const errorConditionCode = this.checkErrorCondition(source, data);
@@ -1680,7 +1371,7 @@ export class DataSourceManager {
 
             if (resolveResult.handler) {
               try {
-                await this.executeErrorHandler(resolver, resolveResult.handler, errorContext, routeParams, queryParams, routeGeneration);
+                await resolver.execute(resolveResult.handler, errorContext);
               } catch (handlerError) {
                 logger.error(`Error executing errorCondition handler for ${source.id}:`, handlerError);
               }
@@ -1705,7 +1396,7 @@ export class DataSourceManager {
                 data,
                 sourceId: source.id,
               };
-              await this.executeOnSuccessHandler(source.onSuccess, successContext, routeGeneration);
+              await this.executeOnSuccessHandler(source.onSuccess, successContext);
             } catch (handlerError) {
               logger.error(`Error executing onSuccess handler for ${source.id}:`, handlerError);
             }
@@ -1716,6 +1407,8 @@ export class DataSourceManager {
           }
         })
         .catch(async (error) => {
+          logger.error(`Background fetch failed: ${source.id}`, error);
+
           // HTTP 에러 코드 추출
           const errorCode = (error as any)?.response?.status ||
                            (error as any)?.status ||
@@ -1740,26 +1433,21 @@ export class DataSourceManager {
             onError: source.onError,
           });
 
-          this.logFetchFailure(`Background fetch failed: ${source.id}`, error, resolveResult.handler);
-
           if (resolveResult.handler) {
             try {
-              await this.executeErrorHandler(resolver, resolveResult.handler, errorContext, routeParams, queryParams, routeGeneration);
+              await resolver.execute(resolveResult.handler, errorContext);
             } catch (handlerError) {
               logger.error(`Error executing error handler for ${source.id}:`, handlerError);
             }
           }
 
-          // 마지막으로 성공한 값이 있으면 그 값을 지키고(권한 오류면 지움), 없으면 fallback 으로 첫 그림을 그린다.
-          const kept = this.dataAfterFailure(source, routeParams, queryParams, errorCode);
-          if (kept !== null) {
-            this.dataCache.set(source.id, { data: kept.data, timestamp: Date.now() });
-            logger.log(`Keeping last data for ${source.id}`);
-
+          // fallback이 정의된 경우 렌더링용 데이터로 사용
+          if (source.fallback !== undefined) {
+            this.dataCache.set(source.id, { data: source.fallback, timestamp: Date.now() });
+            logger.log(`Using fallback data for ${source.id}`);
             if (onUpdate) {
-              onUpdate(source.id, kept.data);
+              onUpdate(source.id, source.fallback);
             }
-
             return;
           }
 
@@ -1786,11 +1474,10 @@ export class DataSourceManager {
     queryParams: URLSearchParams,
     globalState?: Record<string, any>,
     localState?: Record<string, any>,
-    isolatedState?: Record<string, any>,
   ): Promise<any> {
     switch (source.type) {
       case 'api':
-        return this.fetchApiDataSource(source, routeParams, queryParams, globalState, localState, isolatedState);
+        return this.fetchApiDataSource(source, routeParams, queryParams, globalState, localState);
       case 'static':
         return source.data;
       case 'route_params':
@@ -1810,7 +1497,6 @@ export class DataSourceManager {
    * @param queryParams 쿼리 파라미터
    * @param globalState _global 상태 (선택적)
    * @param localState _local 상태 (선택적, params 표현식에서 _local 접근 지원)
-   * @param isolatedState _isolated 상태 (선택적, 격리 상태 안 다시 받기의 식에서 접근, @since engine-v1.83.0)
    * @returns 데이터
    */
   private async fetchApiDataSource(
@@ -1819,7 +1505,6 @@ export class DataSourceManager {
     queryParams: URLSearchParams,
     globalState?: Record<string, any>,
     localState?: Record<string, any>,
-    isolatedState?: Record<string, any>,
   ): Promise<any> {
     // 샘플 모드 분기 — 편집기 부팅 시에만 옵션이 주입됨.
     // 일반 렌더 모드는 옵션 미주입이므로 이 분기에 진입하지 않아 기존 fetch 경로 100% 보존.
@@ -1850,11 +1535,6 @@ export class DataSourceManager {
     // sequence 내 setState local 후 refetchDataSource에서 {{_local.xxx}} 접근 지원
     if (localState) {
       expressionContext._local = localState;
-    }
-
-    // isolatedState가 전달된 경우 _isolated로 추가 (refetchDataSource 의 isolatedStateOverride, @since engine-v1.83.0)
-    if (isolatedState) {
-      expressionContext._isolated = isolatedState;
     }
 
     // endpoint의 {{...}} 표현식 치환 (RenderHelpers의 범용 함수 사용)
@@ -1942,9 +1622,7 @@ export class DataSourceManager {
       const hasToken = AuthManager.getInstance().isAuthenticated();
 
       // auth_mode: 'required'이고 토큰이 없으면 요청 스킵 (fallback 사용)
-      // 보내 봐야 무토큰 401 이 확실한 요청이다. engine-v1.88.2 부터 ApiClient 는 무토큰 401 에 로그인 이동을
-      // 하지 않지만, 요청 자체를 줄이려고 건너뛰기는 유지한다. optional 데이터소스의 무토큰 401(fetch 경로)은
-      // 이동 없이 errorHandling 체인(레이아웃 `on-code code="401"` 처리기)으로 간다.
+      // 토큰 없이 ApiClient로 요청하면 401 → onUnauthorized → 로그인 리다이렉트 발생
       if (authMode === 'required' && !hasToken) {
         logger.log(`[DataSourceManager] Skipping ${source.id}: auth_mode is 'required' but no token available`);
         if (devTools?.isEnabled()) {
@@ -2053,13 +1731,8 @@ export class DataSourceManager {
         let url = endpoint;
 
         // GET 요청인 경우 쿼리 스트링 생성
-        // 값이 없는(undefined·null) 파라미터는 싣지 않는다 — 그대로 넘기면 `page=undefined` 처럼 문자열로
-        // 나가 서버 검증이 422 로 거절한다(ApiClient 경로의 axios 는 이미 뺀다). @since engine-v1.79.0
         if (method === 'GET') {
-          const presentParams = Object.fromEntries(
-            Object.entries(params).filter(([, value]) => value !== undefined && value !== null),
-          );
-          const queryString = new URLSearchParams(presentParams).toString();
+          const queryString = new URLSearchParams(params).toString();
           url = queryString ? `${endpoint}?${queryString}` : endpoint;
         }
 
@@ -2317,21 +1990,11 @@ export class DataSourceManager {
    *
    * @param onSuccess onSuccess 핸들러 설정
    * @param successContext 성공 컨텍스트 (data, sourceId)
-   * @param routeGeneration fetch 를 시작한 경로 세대 — 그사이 화면을 옮겼으면 실행하지 않는다 (engine-v1.82.0)
    */
   private async executeOnSuccessHandler(
     onSuccess: OnSuccessHandler,
-    successContext: SuccessContext,
-    routeGeneration?: number
+    successContext: SuccessContext
   ): Promise<void> {
-    // 앞 화면의 늦은 응답 — 그 성공 처리(예: `setState local form=응답`)가 새 화면의 같은 키를 앞 대상 값으로 덮는다
-    // (글 수정 응답이 늦게 와 새 글 화면 폼에 앞 글이 들어감). 새 화면은 자기 fetch 로 채운다 (engine-v1.82.0)
-    if (this.isStaleRouteGeneration(routeGeneration)) {
-      logger.log(`onSuccess skipped for ${successContext.sourceId} — the route changed since the fetch started`);
-
-      return;
-    }
-
     // 옵션 주입된 dispatcher 우선 (편집기 격리 모드), 없으면 전역 호스트 dispatcher
     // (편집기 캔버스의 onSuccess setState 가 호스트 globalState
     //  를 변경해 호스트 #app 이 unmount 되는 결함 방지)

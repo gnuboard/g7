@@ -61,8 +61,5 @@
   },
   "layout_editor": {
     "$partial": "partial/layout_editor.json"
-  },
-  "claim": {
-    "$partial": "partial/claim.json"
   }
 }

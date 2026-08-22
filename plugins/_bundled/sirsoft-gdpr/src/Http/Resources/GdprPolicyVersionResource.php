@@ -32,7 +32,7 @@ class GdprPolicyVersionResource extends BaseApiResource
             'publisher' => $this->whenLoaded('createdBy', fn () => $this->createdBy !== null ? [
                 'uuid' => $this->createdBy->uuid,
                 'name' => $this->createdBy->name,
-                'email' => $this->canExposeMemberEmail($request, $this->createdBy->id) ? $this->createdBy->email : null,
+                'email' => $this->createdBy->email,
             ] : null),
         ];
     }

@@ -28,7 +28,7 @@ export interface ConfirmModalProps {
   /** 모달 열림 상태 */
   isOpen: boolean;
   /** 모달 닫기 핸들러 */
-  onClose: (event?: Event | React.SyntheticEvent) => void;
+  onClose: () => void;
   /** 모달 제목 (기본값: common.confirm) */
   title?: string;
   /** 확인 메시지 */
@@ -103,8 +103,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && isOpen && !isLoading) {
-        // 닫기 처리기가 엔진 액션 처리기일 수 있어 원본 이벤트를 넘긴다(Modal 의 Esc 처리와 같은 이유).
-        onClose(event);
+        onClose();
       }
     };
 
@@ -205,7 +204,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   const alertStyleMap: Record<ConfirmModalAlertType, { container: string; icon: string; title: string; text: string }> = {
     warning: {
       container: 'bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 dark:border-yellow-500',
-      icon: 'text-yellow-700 dark:text-yellow-400',
+      icon: 'text-yellow-600 dark:text-yellow-400',
       title: 'text-yellow-800 dark:text-yellow-300',
       text: 'text-yellow-700 dark:text-yellow-300',
     },
@@ -302,7 +301,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
           <Button
             onClick={handleClose}
             disabled={isLoading}
-            className="text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+            className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label={t('common.close_modal')}
           >
             <svg

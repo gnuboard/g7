@@ -4,10 +4,7 @@
       "page": "Page",
       "pageData": "Page Data",
       "pages": "Pages",
-      "versions": "Versions",
-      "attachmentSettings": "Attachment Settings",
-      "createAbility": "Create Permission Check",
-      "contentMediaTarget": "Content Media Upload Contract"
+      "versions": "Versions"
     }
   },
   "admin": {

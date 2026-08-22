@@ -1,5 +1,4 @@
 {
-    "comment": "상품 폼 — 쇼핑몰 연동 구획. 네이버·페이스북·구글 세 곳에 이 상품을 내보낼지와 얼마나 자주\n  보낼지를 정한다. 플랫폼마다 같은 얼개를 세 번 되풀이하며, 자격증명 같은 연동 자체의 설정은\n  이 폼이 아니라 연동 관리 화면에 있다(각 줄의 「관리」가 그리로 나간다).",
     "meta": {
         "is_partial": true,
         "description": "Product Form - Shopping Integration Section"
@@ -13,22 +12,9 @@
     "children": [
         {
             "type": "basic",
-            "name": "Button",
-            "actions": [
-                {
-                    "comment": "구획 접기/펼치기",
-                    "type": "click",
-                    "handler": "setState",
-                    "params": {
-                        "target": "local",
-                        "ui.shoppingIntegrationExpanded": "{{!_local.ui.shoppingIntegrationExpanded}}"
-                    }
-                }
-            ],
+            "name": "Div",
             "props": {
-                "type": "button",
-                "className": "flex w-full justify-start text-left card-header",
-                "aria-expanded": "{{_local.ui.shoppingIntegrationExpanded !== false}}"
+                "className": "card-header"
             },
             "children": [
                 {
@@ -52,7 +38,17 @@
                     "name": "Icon",
                     "props": {
                         "name": "chevron-down",
-                        "className": "admin-card-accordion-icon text-gray-500 dark:text-gray-400 transition-transform duration-200 {{_local.ui.shoppingIntegrationExpanded !== false ? 'rotate-180' : ''}}"
+                        "className": "admin-card-accordion-icon transition-transform duration-200 {{_local.ui.shoppingIntegrationExpanded !== false ? 'rotate-180' : ''}}"
+                    }
+                }
+            ],
+            "actions": [
+                {
+                    "type": "click",
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "ui.shoppingIntegrationExpanded": "{{!_local.ui.shoppingIntegrationExpanded}}"
                     }
                 }
             ]
@@ -87,15 +83,15 @@
                             "id": "naver_header",
                             "type": "basic",
                             "name": "Div",
+                            "props": {
+                                "className": "flex-between p-4 bg-gray-50 dark:bg-gray-800"
+                            },
                             "responsive": {
                                 "portable": {
                                     "props": {
                                         "className": "row-stack p-4 bg-gray-50 dark:bg-gray-800"
                                     }
                                 }
-                            },
-                            "props": {
-                                "className": "flex-between p-4 bg-gray-50 dark:bg-gray-800"
                             },
                             "children": [
                                 {
@@ -109,7 +105,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-center w-8 h-8 bg-green-700 dark:bg-green-700 rounded-lg justify-center"
+                                                "className": "flex-center w-8 h-8 bg-green-500 rounded-lg justify-center"
                                             },
                                             "children": [
                                                 {
@@ -135,6 +131,9 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
+                                    "props": {
+                                        "className": "flex-center gap-4"
+                                    },
                                     "responsive": {
                                         "portable": {
                                             "props": {
@@ -142,39 +141,13 @@
                                             }
                                         }
                                     },
-                                    "props": {
-                                        "className": "flex-center gap-4"
-                                    },
                                     "children": [
                                         {
-                                            "type": "basic",
+                                            "type": "composite",
                                             "name": "Select",
-                                            "actions": [
-                                                {
-                                                    "comment": "네이버 쇼핑 연동 켜기/끄기 — 켜면 아래 주기 설정이 열린다",
-                                                    "type": "change",
-                                                    "handler": "sirsoft-ecommerce.updateShoppingIntegration",
-                                                    "params": {
-                                                        "platform": "naver",
-                                                        "field": "enabled",
-                                                        "value": "{{$event.target.value}}"
-                                                    }
-                                                },
-                                                {
-                                                    "comment": "연동 켜기/끄기도 저장 대상이라 변경 표시를 세운다",
-                                                    "type": "change",
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "local",
-                                                        "hasChanges": true
-                                                    }
-                                                }
-                                            ],
                                             "props": {
                                                 "name": "naver_enabled",
-                                                "aria-label": "$t:sirsoft-ecommerce.admin.product.shopping_integration.naver.title",
                                                 "value": "{{_local.form.shopping_integrations?.naver?.enabled ?? 'disabled'}}",
-                                                "className": "w-28",
                                                 "options": [
                                                     {
                                                         "value": "disabled",
@@ -184,30 +157,53 @@
                                                         "value": "enabled",
                                                         "label": "$t:sirsoft-ecommerce.admin.product.shopping_integration.status.enabled"
                                                     }
-                                                ]
-                                            }
+                                                ],
+                                                "className": "w-28"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "sirsoft-ecommerce.updateShoppingIntegration",
+                                                    "params": {
+                                                        "platform": "naver",
+                                                        "field": "enabled",
+                                                        "value": "{{$event.target.value}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "hasChanges": "{{!!route?.itemCode}}"
+                                                    }
+                                                }
+                                            ]
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "A",
+                                            "name": "Button",
+                                            "props": {
+                                                "type": "button",
+                                                "className": "btn btn-ghost btn-sm"
+                                            },
                                             "actions": [
                                                 {
                                                     "comment": "audit:allow layout-list-context-navigate-merge-query 상품 폼에서 채널 연동 설정 화면으로 나가는 이동이다 — 상품 목록의 페이지·필터를 물려주지 않는다.",
                                                     "type": "click",
-                                                    "handler": "navigate"
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "/admin/ecommerce/integrations/naver"
+                                                    }
                                                 }
                                             ],
-                                            "props": {
-                                                "href": "/admin/ecommerce/integrations/naver",
-                                                "className": "button btn btn-ghost btn-sm"
-                                            },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "cog",
-                                                        "className": "text-base mr-1"
+                                                        "className": "w-4 h-4 mr-1"
                                                     }
                                                 },
                                                 {
@@ -259,9 +255,13 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Button",
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "{{(_local.form.shopping_integrations?.naver?.sync_interval ?? 'manual') === 'manual' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.manual",
                                                     "actions": [
                                                         {
-                                                            "comment": "수동 — 운영자가 연동 화면에서 눌러야 나간다",
                                                             "type": "click",
                                                             "handler": "sirsoft-ecommerce.updateShoppingIntegration",
                                                             "params": {
@@ -271,27 +271,25 @@
                                                             }
                                                         },
                                                         {
-                                                            "comment": "주기 변경도 저장 대상이라 변경 표시를 세운다(연동 값과 폼 표시는 담기는 자리가 달라 블록을 나눴다)",
                                                             "type": "click",
                                                             "handler": "setState",
                                                             "params": {
                                                                 "target": "local",
-                                                                "hasChanges": true
+                                                                "hasChanges": "{{!!route?.itemCode}}"
                                                             }
                                                         }
-                                                    ],
-                                                    "props": {
-                                                        "type": "button",
-                                                        "className": "{{(_local.form.shopping_integrations?.naver?.sync_interval ?? 'manual') === 'manual' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
-                                                    },
-                                                    "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.manual"
+                                                    ]
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "Button",
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "{{_local.form.shopping_integrations?.naver?.sync_interval === 'realtime' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.realtime",
                                                     "actions": [
                                                         {
-                                                            "comment": "실시간 — 값이 바뀔 때마다 보낸다(호출이 잦아 대형몰에서는 부담이 된다)",
                                                             "type": "click",
                                                             "handler": "sirsoft-ecommerce.updateShoppingIntegration",
                                                             "params": {
@@ -301,27 +299,25 @@
                                                             }
                                                         },
                                                         {
-                                                            "comment": "주기 변경도 저장 대상이라 변경 표시를 세운다(연동 값과 폼 표시는 담기는 자리가 달라 블록을 나눴다)",
                                                             "type": "click",
                                                             "handler": "setState",
                                                             "params": {
                                                                 "target": "local",
-                                                                "hasChanges": true
+                                                                "hasChanges": "{{!!route?.itemCode}}"
                                                             }
                                                         }
-                                                    ],
-                                                    "props": {
-                                                        "type": "button",
-                                                        "className": "{{_local.form.shopping_integrations?.naver?.sync_interval === 'realtime' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
-                                                    },
-                                                    "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.realtime"
+                                                    ]
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "Button",
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "{{_local.form.shopping_integrations?.naver?.sync_interval === '1h' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.1h",
                                                     "actions": [
                                                         {
-                                                            "comment": "1시간마다",
                                                             "type": "click",
                                                             "handler": "sirsoft-ecommerce.updateShoppingIntegration",
                                                             "params": {
@@ -331,27 +327,25 @@
                                                             }
                                                         },
                                                         {
-                                                            "comment": "주기 변경도 저장 대상이라 변경 표시를 세운다(연동 값과 폼 표시는 담기는 자리가 달라 블록을 나눴다)",
                                                             "type": "click",
                                                             "handler": "setState",
                                                             "params": {
                                                                 "target": "local",
-                                                                "hasChanges": true
+                                                                "hasChanges": "{{!!route?.itemCode}}"
                                                             }
                                                         }
-                                                    ],
-                                                    "props": {
-                                                        "type": "button",
-                                                        "className": "{{_local.form.shopping_integrations?.naver?.sync_interval === '1h' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
-                                                    },
-                                                    "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.1h"
+                                                    ]
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "Button",
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "{{_local.form.shopping_integrations?.naver?.sync_interval === '6h' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.6h",
                                                     "actions": [
                                                         {
-                                                            "comment": "6시간마다",
                                                             "type": "click",
                                                             "handler": "sirsoft-ecommerce.updateShoppingIntegration",
                                                             "params": {
@@ -361,27 +355,25 @@
                                                             }
                                                         },
                                                         {
-                                                            "comment": "주기 변경도 저장 대상이라 변경 표시를 세운다(연동 값과 폼 표시는 담기는 자리가 달라 블록을 나눴다)",
                                                             "type": "click",
                                                             "handler": "setState",
                                                             "params": {
                                                                 "target": "local",
-                                                                "hasChanges": true
+                                                                "hasChanges": "{{!!route?.itemCode}}"
                                                             }
                                                         }
-                                                    ],
-                                                    "props": {
-                                                        "type": "button",
-                                                        "className": "{{_local.form.shopping_integrations?.naver?.sync_interval === '6h' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
-                                                    },
-                                                    "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.6h"
+                                                    ]
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "Button",
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "{{_local.form.shopping_integrations?.naver?.sync_interval === '1d' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.1d",
                                                     "actions": [
                                                         {
-                                                            "comment": "하루에 한 번",
                                                             "type": "click",
                                                             "handler": "sirsoft-ecommerce.updateShoppingIntegration",
                                                             "params": {
@@ -391,20 +383,14 @@
                                                             }
                                                         },
                                                         {
-                                                            "comment": "주기 변경도 저장 대상이라 변경 표시를 세운다(연동 값과 폼 표시는 담기는 자리가 달라 블록을 나눴다)",
                                                             "type": "click",
                                                             "handler": "setState",
                                                             "params": {
                                                                 "target": "local",
-                                                                "hasChanges": true
+                                                                "hasChanges": "{{!!route?.itemCode}}"
                                                             }
                                                         }
-                                                    ],
-                                                    "props": {
-                                                        "type": "button",
-                                                        "className": "{{_local.form.shopping_integrations?.naver?.sync_interval === '1d' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
-                                                    },
-                                                    "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.1d"
+                                                    ]
                                                 }
                                             ]
                                         },
@@ -422,7 +408,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "clock",
-                                                        "className": "text-xs"
+                                                        "className": "w-3 h-3"
                                                     }
                                                 },
                                                 {
@@ -455,15 +441,15 @@
                             "id": "facebook_header",
                             "type": "basic",
                             "name": "Div",
+                            "props": {
+                                "className": "flex-between p-4 bg-gray-50 dark:bg-gray-800"
+                            },
                             "responsive": {
                                 "portable": {
                                     "props": {
                                         "className": "row-stack p-4 bg-gray-50 dark:bg-gray-800"
                                     }
                                 }
-                            },
-                            "props": {
-                                "className": "flex-between p-4 bg-gray-50 dark:bg-gray-800"
                             },
                             "children": [
                                 {
@@ -477,7 +463,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-center w-8 h-8 bg-blue-600 dark:bg-blue-600 rounded-lg justify-center"
+                                                "className": "flex-center w-8 h-8 bg-blue-600 rounded-lg justify-center"
                                             },
                                             "children": [
                                                 {
@@ -503,6 +489,9 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
+                                    "props": {
+                                        "className": "flex-center gap-4"
+                                    },
                                     "responsive": {
                                         "portable": {
                                             "props": {
@@ -510,39 +499,13 @@
                                             }
                                         }
                                     },
-                                    "props": {
-                                        "className": "flex-center gap-4"
-                                    },
                                     "children": [
                                         {
-                                            "type": "basic",
+                                            "type": "composite",
                                             "name": "Select",
-                                            "actions": [
-                                                {
-                                                    "comment": "페이스북 샵 연동 켜기/끄기 — 켜면 아래 주기 설정이 열린다",
-                                                    "type": "change",
-                                                    "handler": "sirsoft-ecommerce.updateShoppingIntegration",
-                                                    "params": {
-                                                        "platform": "facebook",
-                                                        "field": "enabled",
-                                                        "value": "{{$event.target.value}}"
-                                                    }
-                                                },
-                                                {
-                                                    "comment": "연동 켜기/끄기도 저장 대상이라 변경 표시를 세운다",
-                                                    "type": "change",
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "local",
-                                                        "hasChanges": true
-                                                    }
-                                                }
-                                            ],
                                             "props": {
                                                 "name": "facebook_enabled",
-                                                "aria-label": "$t:sirsoft-ecommerce.admin.product.shopping_integration.facebook.title",
                                                 "value": "{{_local.form.shopping_integrations?.facebook?.enabled ?? 'disabled'}}",
-                                                "className": "w-28",
                                                 "options": [
                                                     {
                                                         "value": "disabled",
@@ -552,30 +515,53 @@
                                                         "value": "enabled",
                                                         "label": "$t:sirsoft-ecommerce.admin.product.shopping_integration.status.enabled"
                                                     }
-                                                ]
-                                            }
+                                                ],
+                                                "className": "w-28"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "sirsoft-ecommerce.updateShoppingIntegration",
+                                                    "params": {
+                                                        "platform": "facebook",
+                                                        "field": "enabled",
+                                                        "value": "{{$event.target.value}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "hasChanges": "{{!!route?.itemCode}}"
+                                                    }
+                                                }
+                                            ]
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "A",
+                                            "name": "Button",
+                                            "props": {
+                                                "type": "button",
+                                                "className": "btn btn-ghost btn-sm"
+                                            },
                                             "actions": [
                                                 {
                                                     "comment": "audit:allow layout-list-context-navigate-merge-query 상품 폼에서 채널 연동 설정 화면으로 나가는 이동이다 — 상품 목록의 페이지·필터를 물려주지 않는다.",
                                                     "type": "click",
-                                                    "handler": "navigate"
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "/admin/ecommerce/integrations/facebook"
+                                                    }
                                                 }
                                             ],
-                                            "props": {
-                                                "href": "/admin/ecommerce/integrations/facebook",
-                                                "className": "button btn btn-ghost btn-sm"
-                                            },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "cog",
-                                                        "className": "text-base mr-1"
+                                                        "className": "w-4 h-4 mr-1"
                                                     }
                                                 },
                                                 {
@@ -627,9 +613,13 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Button",
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "{{(_local.form.shopping_integrations?.facebook?.sync_interval ?? 'manual') === 'manual' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.manual",
                                                     "actions": [
                                                         {
-                                                            "comment": "수동 — 운영자가 연동 화면에서 눌러야 나간다",
                                                             "type": "click",
                                                             "handler": "sirsoft-ecommerce.updateShoppingIntegration",
                                                             "params": {
@@ -639,27 +629,25 @@
                                                             }
                                                         },
                                                         {
-                                                            "comment": "주기 변경도 저장 대상이라 변경 표시를 세운다(연동 값과 폼 표시는 담기는 자리가 달라 블록을 나눴다)",
                                                             "type": "click",
                                                             "handler": "setState",
                                                             "params": {
                                                                 "target": "local",
-                                                                "hasChanges": true
+                                                                "hasChanges": "{{!!route?.itemCode}}"
                                                             }
                                                         }
-                                                    ],
-                                                    "props": {
-                                                        "type": "button",
-                                                        "className": "{{(_local.form.shopping_integrations?.facebook?.sync_interval ?? 'manual') === 'manual' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
-                                                    },
-                                                    "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.manual"
+                                                    ]
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "Button",
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "{{_local.form.shopping_integrations?.facebook?.sync_interval === 'realtime' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.realtime",
                                                     "actions": [
                                                         {
-                                                            "comment": "실시간 — 값이 바뀔 때마다 보낸다(호출이 잦아 대형몰에서는 부담이 된다)",
                                                             "type": "click",
                                                             "handler": "sirsoft-ecommerce.updateShoppingIntegration",
                                                             "params": {
@@ -669,27 +657,25 @@
                                                             }
                                                         },
                                                         {
-                                                            "comment": "주기 변경도 저장 대상이라 변경 표시를 세운다(연동 값과 폼 표시는 담기는 자리가 달라 블록을 나눴다)",
                                                             "type": "click",
                                                             "handler": "setState",
                                                             "params": {
                                                                 "target": "local",
-                                                                "hasChanges": true
+                                                                "hasChanges": "{{!!route?.itemCode}}"
                                                             }
                                                         }
-                                                    ],
-                                                    "props": {
-                                                        "type": "button",
-                                                        "className": "{{_local.form.shopping_integrations?.facebook?.sync_interval === 'realtime' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
-                                                    },
-                                                    "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.realtime"
+                                                    ]
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "Button",
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "{{_local.form.shopping_integrations?.facebook?.sync_interval === '1h' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.1h",
                                                     "actions": [
                                                         {
-                                                            "comment": "1시간마다",
                                                             "type": "click",
                                                             "handler": "sirsoft-ecommerce.updateShoppingIntegration",
                                                             "params": {
@@ -699,27 +685,25 @@
                                                             }
                                                         },
                                                         {
-                                                            "comment": "주기 변경도 저장 대상이라 변경 표시를 세운다(연동 값과 폼 표시는 담기는 자리가 달라 블록을 나눴다)",
                                                             "type": "click",
                                                             "handler": "setState",
                                                             "params": {
                                                                 "target": "local",
-                                                                "hasChanges": true
+                                                                "hasChanges": "{{!!route?.itemCode}}"
                                                             }
                                                         }
-                                                    ],
-                                                    "props": {
-                                                        "type": "button",
-                                                        "className": "{{_local.form.shopping_integrations?.facebook?.sync_interval === '1h' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
-                                                    },
-                                                    "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.1h"
+                                                    ]
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "Button",
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "{{_local.form.shopping_integrations?.facebook?.sync_interval === '6h' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.6h",
                                                     "actions": [
                                                         {
-                                                            "comment": "6시간마다",
                                                             "type": "click",
                                                             "handler": "sirsoft-ecommerce.updateShoppingIntegration",
                                                             "params": {
@@ -729,27 +713,25 @@
                                                             }
                                                         },
                                                         {
-                                                            "comment": "주기 변경도 저장 대상이라 변경 표시를 세운다(연동 값과 폼 표시는 담기는 자리가 달라 블록을 나눴다)",
                                                             "type": "click",
                                                             "handler": "setState",
                                                             "params": {
                                                                 "target": "local",
-                                                                "hasChanges": true
+                                                                "hasChanges": "{{!!route?.itemCode}}"
                                                             }
                                                         }
-                                                    ],
-                                                    "props": {
-                                                        "type": "button",
-                                                        "className": "{{_local.form.shopping_integrations?.facebook?.sync_interval === '6h' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
-                                                    },
-                                                    "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.6h"
+                                                    ]
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "Button",
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "{{_local.form.shopping_integrations?.facebook?.sync_interval === '1d' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.1d",
                                                     "actions": [
                                                         {
-                                                            "comment": "하루에 한 번",
                                                             "type": "click",
                                                             "handler": "sirsoft-ecommerce.updateShoppingIntegration",
                                                             "params": {
@@ -759,20 +741,14 @@
                                                             }
                                                         },
                                                         {
-                                                            "comment": "주기 변경도 저장 대상이라 변경 표시를 세운다(연동 값과 폼 표시는 담기는 자리가 달라 블록을 나눴다)",
                                                             "type": "click",
                                                             "handler": "setState",
                                                             "params": {
                                                                 "target": "local",
-                                                                "hasChanges": true
+                                                                "hasChanges": "{{!!route?.itemCode}}"
                                                             }
                                                         }
-                                                    ],
-                                                    "props": {
-                                                        "type": "button",
-                                                        "className": "{{_local.form.shopping_integrations?.facebook?.sync_interval === '1d' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
-                                                    },
-                                                    "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.1d"
+                                                    ]
                                                 }
                                             ]
                                         },
@@ -790,7 +766,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "clock",
-                                                        "className": "text-xs"
+                                                        "className": "w-3 h-3"
                                                     }
                                                 },
                                                 {
@@ -823,15 +799,15 @@
                             "id": "google_header",
                             "type": "basic",
                             "name": "Div",
+                            "props": {
+                                "className": "flex-between p-4 bg-gray-50 dark:bg-gray-800"
+                            },
                             "responsive": {
                                 "portable": {
                                     "props": {
                                         "className": "row-stack p-4 bg-gray-50 dark:bg-gray-800"
                                     }
                                 }
-                            },
-                            "props": {
-                                "className": "flex-between p-4 bg-gray-50 dark:bg-gray-800"
                             },
                             "children": [
                                 {
@@ -852,7 +828,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-red-600 dark:text-red-300 font-bold text-sm"
+                                                        "className": "text-red-500 dark:text-red-400 font-bold text-sm"
                                                     },
                                                     "text": "G"
                                                 }
@@ -871,6 +847,9 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
+                                    "props": {
+                                        "className": "flex-center gap-4"
+                                    },
                                     "responsive": {
                                         "portable": {
                                             "props": {
@@ -878,39 +857,13 @@
                                             }
                                         }
                                     },
-                                    "props": {
-                                        "className": "flex-center gap-4"
-                                    },
                                     "children": [
                                         {
-                                            "type": "basic",
+                                            "type": "composite",
                                             "name": "Select",
-                                            "actions": [
-                                                {
-                                                    "comment": "구글 쇼핑 연동 켜기/끄기 — 켜면 아래 주기 설정이 열린다",
-                                                    "type": "change",
-                                                    "handler": "sirsoft-ecommerce.updateShoppingIntegration",
-                                                    "params": {
-                                                        "platform": "google",
-                                                        "field": "enabled",
-                                                        "value": "{{$event.target.value}}"
-                                                    }
-                                                },
-                                                {
-                                                    "comment": "연동 켜기/끄기도 저장 대상이라 변경 표시를 세운다",
-                                                    "type": "change",
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "local",
-                                                        "hasChanges": true
-                                                    }
-                                                }
-                                            ],
                                             "props": {
                                                 "name": "google_enabled",
-                                                "aria-label": "$t:sirsoft-ecommerce.admin.product.shopping_integration.google.title",
                                                 "value": "{{_local.form.shopping_integrations?.google?.enabled ?? 'disabled'}}",
-                                                "className": "w-28",
                                                 "options": [
                                                     {
                                                         "value": "disabled",
@@ -920,30 +873,53 @@
                                                         "value": "enabled",
                                                         "label": "$t:sirsoft-ecommerce.admin.product.shopping_integration.status.enabled"
                                                     }
-                                                ]
-                                            }
+                                                ],
+                                                "className": "w-28"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "sirsoft-ecommerce.updateShoppingIntegration",
+                                                    "params": {
+                                                        "platform": "google",
+                                                        "field": "enabled",
+                                                        "value": "{{$event.target.value}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "hasChanges": "{{!!route?.itemCode}}"
+                                                    }
+                                                }
+                                            ]
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "A",
+                                            "name": "Button",
+                                            "props": {
+                                                "type": "button",
+                                                "className": "btn btn-ghost btn-sm"
+                                            },
                                             "actions": [
                                                 {
                                                     "comment": "audit:allow layout-list-context-navigate-merge-query 상품 폼에서 채널 연동 설정 화면으로 나가는 이동이다 — 상품 목록의 페이지·필터를 물려주지 않는다.",
                                                     "type": "click",
-                                                    "handler": "navigate"
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "/admin/ecommerce/integrations/google"
+                                                    }
                                                 }
                                             ],
-                                            "props": {
-                                                "href": "/admin/ecommerce/integrations/google",
-                                                "className": "button btn btn-ghost btn-sm"
-                                            },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "cog",
-                                                        "className": "text-base mr-1"
+                                                        "className": "w-4 h-4 mr-1"
                                                     }
                                                 },
                                                 {
@@ -995,9 +971,13 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Button",
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "{{(_local.form.shopping_integrations?.google?.sync_interval ?? 'manual') === 'manual' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.manual",
                                                     "actions": [
                                                         {
-                                                            "comment": "수동 — 운영자가 연동 화면에서 눌러야 나간다",
                                                             "type": "click",
                                                             "handler": "sirsoft-ecommerce.updateShoppingIntegration",
                                                             "params": {
@@ -1007,27 +987,25 @@
                                                             }
                                                         },
                                                         {
-                                                            "comment": "주기 변경도 저장 대상이라 변경 표시를 세운다(연동 값과 폼 표시는 담기는 자리가 달라 블록을 나눴다)",
                                                             "type": "click",
                                                             "handler": "setState",
                                                             "params": {
                                                                 "target": "local",
-                                                                "hasChanges": true
+                                                                "hasChanges": "{{!!route?.itemCode}}"
                                                             }
                                                         }
-                                                    ],
-                                                    "props": {
-                                                        "type": "button",
-                                                        "className": "{{(_local.form.shopping_integrations?.google?.sync_interval ?? 'manual') === 'manual' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
-                                                    },
-                                                    "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.manual"
+                                                    ]
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "Button",
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "{{_local.form.shopping_integrations?.google?.sync_interval === 'realtime' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.realtime",
                                                     "actions": [
                                                         {
-                                                            "comment": "실시간 — 값이 바뀔 때마다 보낸다(호출이 잦아 대형몰에서는 부담이 된다)",
                                                             "type": "click",
                                                             "handler": "sirsoft-ecommerce.updateShoppingIntegration",
                                                             "params": {
@@ -1037,27 +1015,25 @@
                                                             }
                                                         },
                                                         {
-                                                            "comment": "주기 변경도 저장 대상이라 변경 표시를 세운다(연동 값과 폼 표시는 담기는 자리가 달라 블록을 나눴다)",
                                                             "type": "click",
                                                             "handler": "setState",
                                                             "params": {
                                                                 "target": "local",
-                                                                "hasChanges": true
+                                                                "hasChanges": "{{!!route?.itemCode}}"
                                                             }
                                                         }
-                                                    ],
-                                                    "props": {
-                                                        "type": "button",
-                                                        "className": "{{_local.form.shopping_integrations?.google?.sync_interval === 'realtime' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
-                                                    },
-                                                    "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.realtime"
+                                                    ]
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "Button",
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "{{_local.form.shopping_integrations?.google?.sync_interval === '1h' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.1h",
                                                     "actions": [
                                                         {
-                                                            "comment": "1시간마다",
                                                             "type": "click",
                                                             "handler": "sirsoft-ecommerce.updateShoppingIntegration",
                                                             "params": {
@@ -1067,27 +1043,25 @@
                                                             }
                                                         },
                                                         {
-                                                            "comment": "주기 변경도 저장 대상이라 변경 표시를 세운다(연동 값과 폼 표시는 담기는 자리가 달라 블록을 나눴다)",
                                                             "type": "click",
                                                             "handler": "setState",
                                                             "params": {
                                                                 "target": "local",
-                                                                "hasChanges": true
+                                                                "hasChanges": "{{!!route?.itemCode}}"
                                                             }
                                                         }
-                                                    ],
-                                                    "props": {
-                                                        "type": "button",
-                                                        "className": "{{_local.form.shopping_integrations?.google?.sync_interval === '1h' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
-                                                    },
-                                                    "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.1h"
+                                                    ]
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "Button",
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "{{_local.form.shopping_integrations?.google?.sync_interval === '6h' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.6h",
                                                     "actions": [
                                                         {
-                                                            "comment": "6시간마다",
                                                             "type": "click",
                                                             "handler": "sirsoft-ecommerce.updateShoppingIntegration",
                                                             "params": {
@@ -1097,27 +1071,25 @@
                                                             }
                                                         },
                                                         {
-                                                            "comment": "주기 변경도 저장 대상이라 변경 표시를 세운다(연동 값과 폼 표시는 담기는 자리가 달라 블록을 나눴다)",
                                                             "type": "click",
                                                             "handler": "setState",
                                                             "params": {
                                                                 "target": "local",
-                                                                "hasChanges": true
+                                                                "hasChanges": "{{!!route?.itemCode}}"
                                                             }
                                                         }
-                                                    ],
-                                                    "props": {
-                                                        "type": "button",
-                                                        "className": "{{_local.form.shopping_integrations?.google?.sync_interval === '6h' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
-                                                    },
-                                                    "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.6h"
+                                                    ]
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "Button",
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "{{_local.form.shopping_integrations?.google?.sync_interval === '1d' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.1d",
                                                     "actions": [
                                                         {
-                                                            "comment": "하루에 한 번",
                                                             "type": "click",
                                                             "handler": "sirsoft-ecommerce.updateShoppingIntegration",
                                                             "params": {
@@ -1127,20 +1099,14 @@
                                                             }
                                                         },
                                                         {
-                                                            "comment": "주기 변경도 저장 대상이라 변경 표시를 세운다(연동 값과 폼 표시는 담기는 자리가 달라 블록을 나눴다)",
                                                             "type": "click",
                                                             "handler": "setState",
                                                             "params": {
                                                                 "target": "local",
-                                                                "hasChanges": true
+                                                                "hasChanges": "{{!!route?.itemCode}}"
                                                             }
                                                         }
-                                                    ],
-                                                    "props": {
-                                                        "type": "button",
-                                                        "className": "{{_local.form.shopping_integrations?.google?.sync_interval === '1d' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
-                                                    },
-                                                    "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.1d"
+                                                    ]
                                                 }
                                             ]
                                         },
@@ -1158,7 +1124,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "clock",
-                                                        "className": "text-xs"
+                                                        "className": "w-3 h-3"
                                                     }
                                                 },
                                                 {
@@ -1192,14 +1158,14 @@
                             "name": "Icon",
                             "props": {
                                 "name": "info-circle",
-                                "className": "text-base text-blue-500 dark:text-blue-400 mt-0.5 flex-shrink-0"
+                                "className": "w-4 h-4 text-blue-500 dark:text-blue-400 mt-0.5 flex-shrink-0"
                             }
                         },
                         {
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "ecommerce-tone-info-soft text-xs"
+                                "className": "text-info-soft"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.note"
                         }

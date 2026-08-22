@@ -11,13 +11,9 @@ use Modules\Sirsoft\Ecommerce\Database\Factories\OrderOptionFactory;
 use Modules\Sirsoft\Ecommerce\Enums\MileageTransactionTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderOptionSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
-use Modules\Sirsoft\Ecommerce\Enums\ProductTaxStatus;
 
 /**
  * 주문 옵션 모델
- *
- * @property int $quantity 이 행이 지금 가진 수량(분할로 떼어 낸 수량은 빠져 있음)
- * @property int $cancelled_quantity 이 행에서 취소로 떼어 낸 수량의 누적(이력 — 집계 감산항 아님)
  */
 class OrderOption extends Model
 {
@@ -34,11 +30,6 @@ class OrderOption extends Model
         'cancelled_quantity' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.cancelled_quantity', 'type' => 'number'],
     ];
 
-    /**
-     * 모델 팩토리를 반환합니다.
-     *
-     * @return OrderOptionFactory 주문 옵션 팩토리
-     */
     protected static function newFactory()
     {
         return OrderOptionFactory::new();
@@ -81,8 +72,6 @@ class OrderOption extends Model
         'subtotal_cash_equivalent_amount',
         'subtotal_tax_amount',
         'subtotal_tax_free_amount',
-        // 주문 시점 확정 과세 종류 (#612)
-        'tax_status',
         'subtotal_earned_points_amount',
         'product_snapshot',
         'option_snapshot',
@@ -130,7 +119,6 @@ class OrderOption extends Model
         'subtotal_cash_equivalent_amount' => 'decimal:2',
         'subtotal_tax_amount' => 'decimal:2',
         'subtotal_tax_free_amount' => 'decimal:2',
-        'tax_status' => ProductTaxStatus::class,
         'subtotal_earned_points_amount' => 'decimal:2',
         'product_name' => 'array',
         'product_option_name' => 'array',
@@ -275,81 +263,6 @@ class OrderOption extends Model
     public function isExchanged(): bool
     {
         return $this->source_type === OrderOptionSourceTypeEnum::EXCHANGE && $this->source_option_id !== null;
-    }
-
-    /**
-     * 이 주문상품에 확정된 과세 종류를 반환합니다.
-     *
-     * 주문 시점에 기록한 값(`tax_status` 컬럼, #612)을 쓰고, 그 컬럼이 없던 시절의 행은 상품 스냅샷의
-     * 과세 종류로 떨어진다. 둘 다 읽을 수 없으면 과세로 본다(「없으면 과세」 규약).
-     *
-     * @return ProductTaxStatus 확정 과세 종류
-     */
-    public function getEffectiveTaxStatus(): ProductTaxStatus
-    {
-        if ($this->tax_status instanceof ProductTaxStatus) {
-            return $this->tax_status;
-        }
-
-        $snapshotValue = $this->product_snapshot['tax_status'] ?? null;
-
-        return (is_string($snapshotValue) ? ProductTaxStatus::tryFrom($snapshotValue) : null)
-            ?? ProductTaxStatus::TAXABLE;
-    }
-
-    /**
-     * 주문 시점 스냅샷 기준 단가 정가를 구합니다.
-     *
-     * 옵션 스냅샷에 정가가 있으면 그 값을, 없으면 상품 정가에 옵션 조정액을 더한다 — 판매가가
-     * 조정액을 더해 저장되므로 정가도 같은 규칙이어야 한다(ProductOption::getListPrice,
-     * CalculationSnapshotPresenter 와 같은 식). 조정액을 빼먹으면 블루(+3,000) 옵션의 정가가
-     * 판매가보다 낮게 찍힌다(실측 2026-10-03: 정가 ¥4,000 / 판매가 ¥5,000).
-     *
-     * @return float|null 정가 (스냅샷에 정가 근거가 없으면 null)
-     */
-    public function getSnapshotListPrice(): ?float
-    {
-        return self::resolveListPriceFromSnapshots($this->option_snapshot ?? [], $this->product_snapshot ?? []);
-    }
-
-    /**
-     * 옵션·상품 스냅샷으로 단가 정가를 구합니다 — 주문 상품 정가 규칙의 단일 원천.
-     *
-     * 옵션 스냅샷 정가가 있으면 그 값, 없으면 상품 정가 + 옵션 조정액이다. 상품 정가도 없으면 null.
-     * 주문 상세 리소스(getSnapshotListPrice)와 클레임 비교 카드(CalculationSnapshotPresenter)가 함께 쓴다.
-     *
-     * @param  array  $optionSnapshot  옵션 스냅샷
-     * @param  array  $productSnapshot  상품 스냅샷
-     * @return float|null 정가 (근거가 없으면 null)
-     */
-    public static function resolveListPriceFromSnapshots(array $optionSnapshot, array $productSnapshot): ?float
-    {
-        if (isset($optionSnapshot['list_price'])) {
-            return (float) $optionSnapshot['list_price'];
-        }
-
-        $productListPrice = $productSnapshot['list_price'] ?? null;
-        if ($productListPrice === null) {
-            return null;
-        }
-
-        return (float) $productListPrice + (float) ($optionSnapshot['price_adjustment'] ?? 0);
-    }
-
-    /**
-     * 정가가 없으면 판매 단가(상품 판매가 + 옵션 조정액)로 대신한 단가 정가를 구합니다.
-     *
-     * 주문 상세가 정가 근거가 없을 때 판매 단가로 대신하는 것과 같은 규칙이다 — 클레임 비교 카드가 0 + 조정액을
-     * 정가로 쓰면 같은 주문의 두 화면 값이 갈린다.
-     *
-     * @param  array  $optionSnapshot  옵션 스냅샷
-     * @param  array  $productSnapshot  상품 스냅샷
-     * @return float 정가 또는 판매 단가
-     */
-    public static function resolveListOrUnitPriceFromSnapshots(array $optionSnapshot, array $productSnapshot): float
-    {
-        return self::resolveListPriceFromSnapshots($optionSnapshot, $productSnapshot)
-            ?? (float) ($productSnapshot['selling_price'] ?? 0) + (float) ($optionSnapshot['price_adjustment'] ?? 0);
     }
 
     /**

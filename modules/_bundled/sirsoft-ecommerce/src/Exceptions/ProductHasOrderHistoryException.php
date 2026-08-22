@@ -18,7 +18,7 @@ class ProductHasOrderHistoryException extends Exception
     public function __construct(int $count = 0, ?string $message = null)
     {
         parent::__construct(
-            $message ?? trans_choice('sirsoft-ecommerce::messages.products.has_order_history', $count)
+            $message ?? __('sirsoft-ecommerce::messages.products.has_order_history', ['count' => $count])
         );
     }
 }

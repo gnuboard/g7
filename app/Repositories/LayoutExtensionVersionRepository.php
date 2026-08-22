@@ -6,19 +6,14 @@ use App\Contracts\Repositories\LayoutExtensionVersionRepositoryInterface;
 use App\Models\LayoutExtension;
 use App\Models\TemplateLayoutExtensionVersion;
 use App\Repositories\Concerns\CalculatesJsonContentDiff;
-use App\Support\LayoutEmptyObjects;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class LayoutExtensionVersionRepository implements LayoutExtensionVersionRepositoryInterface
 {
     use CalculatesJsonContentDiff;
 
-    /**
-     * @param  TemplateLayoutExtensionVersion  $model  버전 모델
-     */
     public function __construct(
         private TemplateLayoutExtensionVersion $model
     ) {}
@@ -33,11 +28,9 @@ class LayoutExtensionVersionRepository implements LayoutExtensionVersionReposito
      * @param  int  $extensionId  레이아웃 확장 ID
      * @param  array  $content  저장할 content 스냅샷
      * @param  array|null  $previousContent  직전 버전 content (변경 요약 기준). null 이면 변경 요약 0
-     * @param  int|null  $createdBy  저장자 ID (null 이면 현재 인증 사용자)
-     * @param  array<string, mixed>  $summaryExtra  계산된 변경 요약에 덧붙일 키 (예: 확장 업데이트 병합의 `source`·`applied`·`conflicts`)
      * @return TemplateLayoutExtensionVersion 생성된 버전
      */
-    public function saveVersion(int $extensionId, array $content, ?array $previousContent = null, ?int $createdBy = null, array $summaryExtra = []): TemplateLayoutExtensionVersion
+    public function saveVersion(int $extensionId, array $content, ?array $previousContent = null): TemplateLayoutExtensionVersion
     {
         $nextVersion = $this->getNextVersion($extensionId);
 
@@ -46,16 +39,11 @@ class LayoutExtensionVersionRepository implements LayoutExtensionVersionReposito
             ? $this->calculateChanges($previousContent, $content)
             : ['added' => 0, 'removed' => 0, 'char_diff' => 0];
 
-        // 병합 출처 같은 부가 정보는 계산된 요약 뒤에 붙인다 — 재계산 커맨드가 카운트만 다시 쓰고 이 키는 보존한다.
-        $changesSummary = array_merge($changesSummary, $summaryExtra);
-
         return $this->model->create([
             'extension_id' => $extensionId,
             'version' => $nextVersion,
             'content' => $content,
             'changes_summary' => $changesSummary,
-            // 저장자 — 버전 목록의 「저장자」 표시 근거. 종전엔 기록하지 않아 항상 「알 수 없음」이었다.
-            'created_by' => $createdBy ?? Auth::id(),
         ]);
     }
 
@@ -175,19 +163,16 @@ class LayoutExtensionVersionRepository implements LayoutExtensionVersionReposito
 
             // 2. 확장 모델 조회 및 복원 직전 content 보관 (변경 요약 기준)
             $extension = LayoutExtension::findOrFail($extensionId);
-            // 원문 그대로 읽는다 — 캐스트는 `{}` 를 `[]` 로 만든다 (#758)
-            $currentContent = LayoutEmptyObjects::rawPreserving($extension);
-            $restoredContent = LayoutEmptyObjects::rawPreserving($versionToRestore);
+            $currentContent = $extension->content;
 
-            // 3. 확장을 복원할 content로 업데이트 — lock_version 도 올린다(레이아웃 본체와 동형).
+            // 3. 확장을 복원할 content로 업데이트
             $extension->update([
-                'content' => $restoredContent,
-                'lock_version' => ((int) ($extension->lock_version ?? 0)) + 1,
+                'content' => $versionToRestore->content,
             ]);
 
             // 4. 복원 결과를 새 버전으로 저장 — content 는 복원된 내용, changes_summary 는 복원
             //    직전(currentContent) 대비 변경(레이아웃 본체와 동일 — 복원으로 줄면 삭제, 늘면 추가).
-            return $this->saveVersion($extensionId, $restoredContent, $currentContent);
+            return $this->saveVersion($extensionId, $versionToRestore->content, $currentContent);
         });
     }
 }

@@ -11,7 +11,6 @@ use App\Seo\Contracts\SitemapContributorInterface;
 use App\Seo\SitemapFileStore;
 use App\Seo\SitemapGenerator;
 use App\Seo\SitemapManager;
-use App\Seo\SitemapProgress;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
@@ -134,7 +133,7 @@ class SitemapManagerTest extends TestCase
             $config ?? Mockery::spy(ConfigRepositoryInterface::class),
             $this->storage,
             $this->app->make(SitemapUrlRepositoryInterface::class),
-            $this->app->make(SitemapProgress::class),
+            $this->app->make(\App\Seo\SitemapProgress::class),
         );
     }
 
@@ -314,7 +313,7 @@ class SitemapManagerTest extends TestCase
             Mockery::spy(ConfigRepositoryInterface::class),
             $this->storage,
             $this->incrementalRepository(),
-            $this->app->make(SitemapProgress::class),
+            $this->app->make(\App\Seo\SitemapProgress::class),
         );
 
         $result = $manager->regenerate();
@@ -346,7 +345,7 @@ class SitemapManagerTest extends TestCase
             Mockery::spy(ConfigRepositoryInterface::class),
             $this->storage,
             $this->incrementalRepository(),
-            $this->app->make(SitemapProgress::class),
+            $this->app->make(\App\Seo\SitemapProgress::class),
         );
 
         $this->assertFalse($manager->regenerate()['success']);

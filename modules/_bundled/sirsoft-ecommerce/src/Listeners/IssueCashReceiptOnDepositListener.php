@@ -61,7 +61,6 @@ class IssueCashReceiptOnDepositListener implements HookListenerInterface
      * 기본 훅 핸들러 (HookListenerInterface 필수 메서드)
      *
      * @param  mixed  ...$args  훅 인자
-     * @return void 반환값 없음
      */
     public function handle(...$args): void
     {
@@ -71,11 +70,10 @@ class IssueCashReceiptOnDepositListener implements HookListenerInterface
     /**
      * 입금이 확인된 주문에 현금영수증을 발급합니다.
      *
-     * 두 훅의 인자 구성이 다르므로(after_payment_complete 는 주문과 스냅샷, after_deposit_recorded 는 주문,
-     * 금액, 기록 전 스냅샷) 첫 인자인 주문만 사용하고 나머지는 무시한다.
+     * 두 훅의 인자 수가 다르므로(after_deposit_recorded 는 $amount 를 추가로 넘긴다)
+     * 첫 인자만 사용하고 나머지는 무시한다.
      *
      * @param  Order  $order  입금이 확인된 주문
-     * @return void 반환값 없음
      */
     public function handleDeposit(Order $order): void
     {
@@ -102,8 +100,7 @@ class IssueCashReceiptOnDepositListener implements HookListenerInterface
 
             $receipt = $this->cashReceiptService->issue($order, $type, $identifier, $identifierType);
 
-            // 처리 중 행이 돌아왔다면 겹친 발급(다른 훅 경로·관리자)이 이미 진행 중이다 — 실패가 아니다.
-            if (! $receipt->isCompletedIssue() && ! $receipt->isInProgress()) {
+            if (! $receipt->isCompletedIssue()) {
                 Log::warning('IssueCashReceiptOnDepositListener: 자동 발급 실패 — 관리자 수동 발급 필요', [
                     'order_id' => $order->id,
                     'error_code' => $receipt->error_code,

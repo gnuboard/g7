@@ -2,9 +2,6 @@
 
 namespace Modules\Sirsoft\Ecommerce\DTO;
 
-use App\Support\LocalizedValue;
-use Modules\Sirsoft\Ecommerce\Enums\ProductTaxStatus;
-
 /**
  * 스냅샷 기반 가상 상품옵션 객체
  *
@@ -30,9 +27,6 @@ class SnapshotProductOption
 
     public string|array|null $option_name;
 
-    /** @var ProductTaxStatus|null 옵션에 지정한 과세 종류 (null = 상품 따름, 해석 불가도 null) — #612 */
-    public ?ProductTaxStatus $tax_status;
-
     /** @var float 상품 판매가 (ProductOption::getFinalPrice() = product.selling_price + price_adjustment) */
     private float $productSellingPrice;
 
@@ -50,9 +44,6 @@ class SnapshotProductOption
         $this->mileage_value = $snapshot['mileage_value'] ?? null;
         $this->mileage_type = $snapshot['mileage_type'] ?? null;
         $this->option_name = $snapshot['option_name'] ?? '';
-        $this->tax_status = is_string($snapshot['tax_status'] ?? null)
-            ? ProductTaxStatus::tryFrom($snapshot['tax_status'])
-            : null;
         $this->productSellingPrice = $productSellingPrice;
     }
 
@@ -86,7 +77,7 @@ class SnapshotProductOption
     public function getLocalizedOptionName(): string
     {
         if (is_array($this->option_name)) {
-            return LocalizedValue::pick($this->option_name) ?? '';
+            return $this->option_name[app()->getLocale()] ?? $this->option_name['ko'] ?? reset($this->option_name) ?: '';
         }
 
         return $this->option_name ?? '';

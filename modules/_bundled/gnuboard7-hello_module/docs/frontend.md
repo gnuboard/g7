@@ -5,16 +5,15 @@
 ## 레이아웃
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 4개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 3개 (루트: `resources/layouts`).
 
 | 그룹 | 개수 |
 |---|---|
-| `admin` | 3개 |
+| `admin` | 2개 |
 | `user` | 1개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
-| `admin_markup_demo` | `admin` | 화면 | - |
 | `admin_memo_form` | `admin` | 화면 | `_admin_base` |
 | `admin_memo_list` | `admin` | 화면 | `_admin_base` |
 | `user_memo_list` | `user` | 화면 | `_user_base` |
@@ -26,7 +25,7 @@
 | 레이아웃 | 그룹 | 무엇을 보여주는가 |
 |---|---|---|
 | `admin_memo_list` · `admin_memo_form` | `admin` | 관리자 목록·작성 화면의 최소 형태 (`_admin_base` 상속) |
-| `user_memo_list` | `user` | **모듈도 사용자 레이아웃을 가질 수 있다** (`_user_base` 상속) · **모듈 화면 SEO 선언 예시** (`meta.seo`) |
+| `user_memo_list` | `user` | **모듈도 사용자 레이아웃을 가질 수 있다** (`_user_base` 상속) |
 
 실제 도메인 모듈(게시판·이커머스)은 방문자 화면을 소유하지 않고 템플릿에 맡깁니다 — 템플릿마다
 디자인이 달라야 하기 때문입니다. 이 샘플의 `user_memo_list` 는 그 규칙의 예외가 아니라, 구조상
@@ -35,30 +34,9 @@
 모듈 레이아웃은 위치에 따라 등록 대상이 갈립니다 — `admin/` 하위는 Admin 템플릿에,
 `user/` 하위는 User 템플릿에 등록됩니다.
 
-`user_memo_list` 는 **모듈 소유 화면의 SEO 선언**도 보입니다. 템플릿 `_user_base` 의 기본값(SEO 끔)을
-이 화면의 `<meta>` 안 `<seo :enabled="true">` 가 덮어, 검색봇이 `/memos` 를 요청하면 제목·설명·og 태그와
-본문(메모 제목)이 담긴 HTML 을 받습니다. `<data-sources><item>memos</item></data-sources>` 로 고른 데이터 소스만
-봇 렌더 때 호출합니다. 라우트의 레이아웃 이름은 모듈 식별자가 붙은 전체 이름
-(`gnuboard7-hello_module.user_memo_list`)이고, 봇 캐시를 지울 때도 이 이름을 씁니다
-(`php artisan seo:clear --layout=gnuboard7-hello_module.user_memo_list`). 코어 7.1.4 이상에서 동작합니다.
-
 레이아웃 JSON 만 고쳤다면 빌드 없이
 `php artisan module:update gnuboard7-hello_module --force` 로 반영합니다.
 <!-- @intent END -->
-
-## 권한 게이트 (abilities)
-
-쓰기 UI 는 **응답의 `abilities` 로 잠그고**, 서버는 같은 권한으로 403 을 낸다. 서버만 막으면 사용자는 다 입력한 뒤에야
-거절당한다. 이 샘플은 그 최소 형태를 보인다(API 응답 필드는 [docs/api/memos.md](api/memos.md)).
-
-| 화면 | 근거 키 | 잠그는 것 |
-|---|---|---|
-| `admin_memo_list` | `memos.data.abilities.can_create`(컬렉션) | 「새 메모」 버튼 `disabled` + 이유 툴팁 |
-| `admin_memo_form`(생성) | `memoCreateAbility.data.abilities.can_create` — 목록 API 를 한 건만 받아 컬렉션 abilities 를 읽는다 | `_computed.isReadOnly` → 입력·저장 (응답이 없거나 실패하면 잠긴 쪽) · `_computed.readOnlyNoticeVisible` → 안내 문구 (응답이 권한 없음일 때만) |
-| `admin_memo_form`(수정) | `memoData.data.abilities.can_update`(단건 `resourceMeta`) | 같음 |
-
-- 응답이 오기 전에는 잠그지 않되(`!!data && …`) 저장 버튼은 응답 전에도 잠근다 — 응답 전 저장으로 우회하지 못하게.
-- 키 이름은 라우트 미들웨어와 같은 권한 식별자에서 나온다(`MemoCollection`·`MemoResource` 의 `abilityMap()`).
 
 ## 액션 핸들러
 
@@ -78,13 +56,7 @@ _등록하는 액션 핸들러가 없습니다._
 ## 전역 진입점
 
 <!-- @generated:frontend-entry START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-| 항목 | 값 |
-|---|---|
-| 엔트리 파일 | `resources/js/index.ts` |
-| 전역 객체 | **미노출** |
-| 재등록 진입점 | `initModule()` |
-
-이 엔트리는 액션 핸들러를 등록하지 않으므로 재등록 계약 대상이 아닙니다. 전역 객체는 외부에서 확장 존재를 확인하는 용도로만 남습니다.
+_프론트 엔트리포인트가 없습니다._
 <!-- @generated:frontend-entry END -->
 
 <!-- @intent START -->
@@ -99,12 +71,7 @@ _등록하는 액션 핸들러가 없습니다._
 ## 에셋
 
 <!-- @generated:assets START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-| 경로 | 구분 |
-|---|---|
-| `dist/js/hello-module.iife.js` | 빌드 산출물 (커밋 대상) |
-| `editor-spec.json` | 레이아웃 편집기 스펙 (manifest) |
-
-로딩 설정: `{"strategy":"global","priority":100,"dependencies":[]}`
+_프론트 에셋이 없습니다._
 <!-- @generated:assets END -->
 
 <!-- @intent START -->

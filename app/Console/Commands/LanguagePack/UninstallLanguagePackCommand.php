@@ -3,8 +3,6 @@
 namespace App\Console\Commands\LanguagePack;
 
 use App\Console\Commands\Traits\HasUnifiedConfirm;
-use App\Console\Commands\Traits\LocalizesDescription;
-use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Services\LanguagePackService;
 use Illuminate\Console\Command;
 use Throwable;
@@ -18,8 +16,6 @@ use Throwable;
 class UninstallLanguagePackCommand extends Command
 {
     use HasUnifiedConfirm;
-    use LocalizesDescription;
-    use ReportsLifecycleWarnings;
 
     /**
      * @var string
@@ -28,6 +24,11 @@ class UninstallLanguagePackCommand extends Command
         {identifier : 언어팩 식별자}
         {--cascade : 코어 팩 제거 시 동일 locale 의 module/plugin/template 팩도 inactive 로 강등}
         {--force : 확인 없이 즉시 제거}';
+
+    /**
+     * @var string
+     */
+    protected $description = '언어팩을 제거합니다.';
 
     /**
      * @param  LanguagePackService  $service  언어팩 Service
@@ -51,24 +52,24 @@ class UninstallLanguagePackCommand extends Command
 
         $pack = $this->service->findByIdentifier($identifier);
         if (! $pack) {
-            $this->error(__('language_packs.commands.uninstall.not_found', ['identifier' => $identifier]));
+            $this->error("언어팩을 찾을 수 없습니다: {$identifier}");
 
             return self::FAILURE;
         }
 
-        if (! $force && ! $this->unifiedConfirm(__('language_packs.commands.uninstall.confirm', ['identifier' => $identifier]), false)) {
-            $this->info(__('language_packs.commands.uninstall.cancelled'));
+        if (! $force && ! $this->unifiedConfirm("언어팩 '{$identifier}' 을(를) 제거하시겠습니까?", false)) {
+            $this->info('취소되었습니다.');
 
-            return $this->confirmAbortExitCode();
+            return self::SUCCESS;
         }
 
         try {
             $this->service->uninstall($pack, $cascade);
-            $this->info(__('language_packs.commands.uninstall.done', ['identifier' => $identifier]));
+            $this->info("언어팩 제거 완료: {$identifier}");
 
             return self::SUCCESS;
         } catch (Throwable $e) {
-            $this->error(__('language_packs.commands.uninstall.failed', ['error' => $e->getMessage()]));
+            $this->error('언어팩 제거 실패: '.$e->getMessage());
 
             return self::FAILURE;
         }

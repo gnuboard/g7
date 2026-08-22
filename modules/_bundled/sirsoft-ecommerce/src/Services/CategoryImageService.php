@@ -4,8 +4,6 @@ namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Contracts\Extension\StorageInterface;
 use App\Extension\HookManager;
-use App\Helpers\InlineMediaPolicy;
-use App\Support\Files\StoredFileExtension;
 use App\Support\ImageResizer;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
@@ -69,9 +67,7 @@ class CategoryImageService
         $file = HookManager::applyFilters('sirsoft-ecommerce.category-image.filter_upload_file', $file);
 
         // 저장 경로 생성 (category + 날짜별 디렉토리)
-        $extension = StoredFileExtension::resolve($file, 'jpg');
-        $storedFilename = Str::uuid().'.'.$extension;
-        // audit:allow datetime-display-user-timezone reason: 저장 경로(디렉터리 날짜) — 기계값
+        $storedFilename = Str::uuid().'.'.$file->getClientOriginalExtension();
         $datePath = date('Y/m/d');
         $path = "category/{$datePath}/{$storedFilename}";
 
@@ -79,13 +75,10 @@ class CategoryImageService
         // 환경설정 > 업로드의 최대 가로/세로·품질 적용 (코어 설정이 모든 업로드 경로에 동일 적용)
         app(ImageResizer::class)->resizeInPlace($file->getRealPath(), $file->getMimeType());
 
-        // 공개 자산 디스크를 주입받았어도 「공개 디스크로 내보낼 확장자」 밖이면 모듈 기본 디스크에 저장한다.
-        $storage = $this->storageForUpload($extension);
-
-        $storage->put('images', $path, file_get_contents($file->getRealPath()));
+        $this->storage->put('images', $path, file_get_contents($file->getRealPath()));
 
         // Disk 정보는 스토리지 드라이버에서 가져옴
-        $disk = $storage->getDisk();
+        $disk = $this->storage->getDisk();
 
         // 현재 컬렉션의 최대 sort_order 조회
         $maxSortOrder = $categoryId
@@ -203,9 +196,6 @@ class CategoryImageService
 
             return null;
         }
-
-        // 인라인 표시는 래스터 이미지만, 그 외(SVG 등)는 다운로드로 — 모든 응답에 nosniff (KVE-2026-2366)
-        InlineMediaPolicy::harden($response, $image->mime_type, $image->original_filename);
 
         return $response;
     }
@@ -325,7 +315,6 @@ class CategoryImageService
      *
      * @param  int  $categoryId  카테고리 ID
      * @param  string  $collection  컬렉션명
-     * @return void
      */
     protected function reorderAfterDelete(int $categoryId, string $collection): void
     {
@@ -359,7 +348,6 @@ class CategoryImageService
      * 카테고리 저장 실패 시 업로드된 이미지들을 정리하기 위해 사용됩니다.
      *
      * @param  array<int>  $imageIds  이미지 ID 배열
-     * @return void
      */
     public function rollbackUploadedImages(array $imageIds): void
     {

@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands\Module;
 
-use App\Console\Commands\Traits\LocalizesDescription;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Extension\ModuleManager;
 use Illuminate\Console\Command;
@@ -10,18 +9,18 @@ use Illuminate\Support\Facades\Log;
 
 class CheckModuleUpdatesCommand extends Command
 {
-    use LocalizesDescription;
-
     /**
      * The name and signature of the console command.
      */
     protected $signature = 'module:check-updates {identifier? : 특정 모듈만 확인 (선택)}';
 
     /**
-     * 모듈 관리자 및 리포지토리를 주입받는다.
-     *
-     * @param  ModuleManager  $moduleManager  모듈 관리자
-     * @param  ModuleRepositoryInterface  $moduleRepository  모듈 리포지토리
+     * The console command description.
+     */
+    protected $description = '모듈 업데이트를 확인합니다';
+
+    /**
+     * 모듈 관리자 및 리포지토리
      */
     public function __construct(
         private ModuleManager $moduleManager,
@@ -31,9 +30,7 @@ class CheckModuleUpdatesCommand extends Command
     }
 
     /**
-     * 모듈 업데이트를 확인한다 — 식별자를 주면 그 모듈만, 없으면 설치된 전부.
-     *
-     * @return int 종료 코드
+     * Execute the console command.
      */
     public function handle(): int
     {
@@ -62,7 +59,6 @@ class CheckModuleUpdatesCommand extends Command
      * 단일 모듈 업데이트를 확인합니다.
      *
      * @param  string  $identifier  모듈 식별자
-     * @return int 종료 코드
      */
     private function checkSingle(string $identifier): int
     {
@@ -102,8 +98,6 @@ class CheckModuleUpdatesCommand extends Command
 
     /**
      * 모든 설치된 모듈의 업데이트를 확인합니다.
-     *
-     * @return int 종료 코드
      */
     private function checkAll(): int
     {

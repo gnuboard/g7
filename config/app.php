@@ -118,13 +118,6 @@ return [
 
     'locale' => env('APP_LOCALE', 'ko'),
 
-    /*
-    | 사이트 기본 언어. `app.locale` 은 요청마다 `SetLocale` 미들웨어가 보는 사람의 언어로 덮으므로,
-    | 「누가 보든 같은 언어」가 필요한 자리(다국어 필드 필수 언어 · 관리자 다국어 입력의 필수 표시)는
-    | 이 값을 읽는다. 부팅 때 환경설정 「기본 언어」(general.language)로 채워진다.
-    */
-    'site_locale' => env('APP_LOCALE', 'ko'),
-
     'fallback_locale' => env('APP_FALLBACK_LOCALE', 'ko'),
 
     'faker_locale' => env('APP_FAKER_LOCALE', 'ko_KR'),
@@ -238,7 +231,7 @@ return [
     |
     */
 
-    'version' => env('APP_VERSION', '7.1.6'),
+    'version' => env('APP_VERSION', '7.0.10'),
 
     /*
     |--------------------------------------------------------------------------
@@ -252,20 +245,6 @@ return [
     */
 
     'installer_completed' => env('INSTALLER_COMPLETED', false),
-
-    /*
-    |--------------------------------------------------------------------------
-    | 캐시 파일 자기 복구
-    |--------------------------------------------------------------------------
-    |
-    | bootstrap/cache 의 확장 오토로드·훅·설정·라우트 캐시 파일이 없을 때 스스로 다시 만들지.
-    | 서버를 옮기거나 배포 도구가 디렉토리를 비워도 사이트가 멈추지 않게 하는 안전장치다.
-    | 훅·설정·라우트 캐시는 운영 환경(production, 디버그 꺼짐)의 웹 요청에서만 만든다.
-    | 캐시를 일부러 두지 않는 운영이라면 .env 에 G7_CACHE_SELF_HEAL=false 를 둔다.
-    |
-    */
-
-    'cache_self_heal' => (bool) env('G7_CACHE_SELF_HEAL', true),
 
     /*
     |--------------------------------------------------------------------------
@@ -291,7 +270,7 @@ return [
         'github_url' => env('G7_UPDATE_GITHUB_URL', 'https://github.com/gnuboard/g7'),
         'github_token' => env('G7_UPDATE_GITHUB_TOKEN', ''),
         'pending_path' => env('G7_UPDATE_PENDING_PATH') ?: storage_path('app/core_pending'),
-        'targets' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_TARGETS', 'app,bootstrap,config,database,docs,lang,lang-packs/_bundled,resources,routes,public,tests,upgrades,scripts,artisan,g7-install,composer.json,composer.json.default,composer.lock,package.json,package-lock.json,vite.config.js,vite.config.core.js,vite.config.editor.js,vite.config.devtools.js,vite.config.devdashboard.js,vitest.config.ts,playwright.config.ts,tsconfig.json,phpunit.xml,pint.json,.editorconfig,.gitattributes,.gitignore,README.md,README.ko.md,CHANGELOG.md,modules/_bundled,plugins/_bundled,templates/_bundled')))),
+        'targets' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_TARGETS', 'app,bootstrap,config,database,docs,lang,lang-packs/_bundled,resources,routes,public,tests,upgrades,scripts,artisan,composer.json,composer.json.default,composer.lock,package.json,package-lock.json,vite.config.js,vite.config.core.js,vite.config.editor.js,vite.config.devtools.js,vite.config.devdashboard.js,vitest.config.ts,playwright.config.ts,tsconfig.json,phpunit.xml,pint.json,.editorconfig,.gitattributes,.gitignore,README.md,README.ko.md,CHANGELOG.md,modules/_bundled,plugins/_bundled,templates/_bundled')))),
         // build/ext: 부트스트랩 리소스 정적 게시본(#122) — 각 서버가 재생성하는 로컬 파생물이라
         // 릴리즈 소스에 없다. 제외하지 않으면 --prune 업데이트가 orphan 으로 삭제해
         // 업데이트 완료까지 정적 fast path 가 불필요하게 끊긴다 (백업 대상에서도 제외).
@@ -340,13 +319,10 @@ return [
         // fast path 가 영구 꺼진다(사이트는 API 폴백으로 정상). 임시 산출물(사용자 데이터 아님)이므로
         // extension_backups 와 같은 근거로 chown 대상.
         //
-        // `storage/app/core_update`: 미배치 공식 번들 기록(`bundled_sources.json`, #146). sudo 업데이트가 root
-        // 소유로 쓰면 관리자 목록 안내 API(웹 계정)가 읽지 못하므로 업데이트 뒤 원래 소유자로 되돌린다.
-        //
         // 환경변수 `G7_UPDATE_RESTORE_OWNERSHIP` 로 공유 호스팅 등 축소 필요 시 재정의 가능.
         'restore_ownership' => array_filter(array_map('trim', explode(',', env(
             'G7_UPDATE_RESTORE_OWNERSHIP',
-            'storage/logs,storage/framework,storage/app/core_pending,storage/app/extension_backups,storage/app/core_backups,storage/app/core_update,bootstrap/cache,vendor,modules,modules/_pending,plugins,plugins/_pending,templates,templates/_pending,lang-packs,lang-packs/_pending,public/build/ext'
+            'storage/logs,storage/framework,storage/app/core_pending,storage/app/extension_backups,storage/app/core_backups,bootstrap/cache,vendor,modules,modules/_pending,plugins,plugins/_pending,templates,templates/_pending,lang-packs,lang-packs/_pending,public/build/ext'
         )))),
         // 7.0.0-beta.3+: 그룹 쓰기 권한 비대칭 정상화 대상.
         // sudo root 로 실행된 업데이트가 umask 022 로 신규 생성한 하위 디렉토리/파일이

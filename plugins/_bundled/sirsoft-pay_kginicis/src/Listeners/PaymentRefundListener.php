@@ -8,22 +8,11 @@ use App\Contracts\Extension\HookListenerInterface;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
-use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderPaymentRepositoryInterface;
-use Plugins\Sirsoft\PayKginicis\Concerns\SplitsInicisTax;
 use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
 
 class PaymentRefundListener implements HookListenerInterface
 {
-    use SplitsInicisTax;
-
     private const PG_PROVIDER_ID = 'kginicis';
-
-    /**
-     * @param  OrderPaymentRepositoryInterface  $orderPaymentRepository  주문 결제 Repository (과세 구분 소진액 기록)
-     */
-    public function __construct(
-        private readonly OrderPaymentRepositoryInterface $orderPaymentRepository,
-    ) {}
 
     /**
      * 구독할 훅 매핑을 반환합니다.
@@ -38,18 +27,6 @@ class PaymentRefundListener implements HookListenerInterface
                 'type' => 'filter',
                 'priority' => 10,
             ],
-            // 부분취소 지원 여부 선언(P-D7) — 결제사가 거절할 부분취소를 접수 단계에서 먼저 알린다.
-            'sirsoft-ecommerce.payment.supports_partial_cancel' => [
-                'method' => 'supportsPartialCancel',
-                'type' => 'filter',
-                'priority' => 10,
-            ],
-            // 입금 전에 취소된 주문의 가상계좌 발급 취소(P-D1) — 이커머스가 취소 커밋 뒤 부른다.
-            'sirsoft-ecommerce.payment.close_vbank' => [
-                'method' => 'closeVbank',
-                'type' => 'filter',
-                'priority' => 10,
-            ],
         ];
     }
 
@@ -57,43 +34,8 @@ class PaymentRefundListener implements HookListenerInterface
      * 기본 핸들러 (미사용 — 개별 메서드에서 처리)
      *
      * @param  mixed  ...$args  훅 인수
-     * @return void 반환값 없음
      */
     public function handle(...$args): void {}
-
-    /**
-     * 이 결제가 부분취소를 지원하는지 판정합니다. (P-D7)
-     *
-     * KG이니시스 취소 매뉴얼(https://manual.inicis.com/pay/cancel.html)의 제약:
-     * - 휴대폰 결제는 「당월 거래만 취소가 가능」하다 — 한국 시간으로 달이 바뀐 결제는 false(토스와 같은 판정).
-     * - 에스크로 결제는 배송등록 뒤 구매거절 절차로만 돌려줄 수 있어 일반 부분취소를 막는다.
-     * - 입금된 가상계좌는 `/v2/pg/partialRefund/vacct` 로 부분환불되므로 막지 않는다. 입금 전 가상계좌는 이커머스가 이미 막는다.
-     *
-     * @param  bool  $supported  현재까지의 판정
-     * @param  OrderPayment|null  $payment  결제행
-     * @return bool 부분취소 지원 여부
-     */
-    public function supportsPartialCancel(bool $supported, $payment = null): bool
-    {
-        if (! $supported || ! $payment instanceof OrderPayment || $payment->pg_provider !== self::PG_PROVIDER_ID) {
-            return $supported;
-        }
-
-        if ((bool) $payment->is_escrow) {
-            return false;
-        }
-
-        $method = $payment->payment_method instanceof \BackedEnum ? $payment->payment_method->value : (string) $payment->payment_method;
-        if ($method === 'phone' && $payment->paid_at !== null) {
-            // 휴대폰 결제 환불의 「같은 달」은 PG·통신사 정산 월 규칙이라 사이트·보는 사람 시간대가 아니라 한국 시간으로 판정한다(D4).
-            // audit:allow datetime-display-user-timezone reason: PG·통신사 정산 월 — Asia/Seoul 고정(D4)
-            return $payment->paid_at->copy()->timezone('Asia/Seoul')->format('Y-m')
-                // audit:allow datetime-display-user-timezone reason: PG·통신사 정산 월 — Asia/Seoul 고정(D4)
-                === now()->copy()->timezone('Asia/Seoul')->format('Y-m');
-        }
-
-        return true;
-    }
 
     /**
      * KG 이니시스 결제 환불을 처리합니다.
@@ -120,7 +62,6 @@ class PaymentRefundListener implements HookListenerInterface
         if (! $tid) {
             return [
                 'success' => false,
-                'handled' => true,
                 'error_code' => 'MISSING_TID',
                 'error_message' => __('sirsoft-pay_kginicis::messages.refund.missing_tid'),
                 'transaction_id' => null,
@@ -132,8 +73,7 @@ class PaymentRefundListener implements HookListenerInterface
 
             $cancelMsg = $reason ?? __('sirsoft-pay_kginicis::messages.refund.default_reason');
             // $refundAmount 는 코어가 결제 통화(order_currency)로 환산해 전달한 실환불액이다.
-            // 결제 통화 실환불액을 최소 단위로 반올림한다(P-D10) — 잘라 내면 소수 환산 주문에서 1원 적게 돌려준다(토스와 같은 규칙).
-            $cancelAmt = (int) round($refundAmount);
+            $cancelAmt = (int) $refundAmount;
             $payMethod = $payment->payment_meta['pay_method'] ?? 'Card';
 
             // 결제 통화 기준 누적·총액. paid_amount_local 과 mc_cancelled_amount[order_currency] 는
@@ -145,10 +85,6 @@ class PaymentRefundListener implements HookListenerInterface
             $isPartial = $previousCancelled > 0 || $cancelAmt < $paidAmount;
 
             $isCbt = $this->isCbtPayment($payment);
-            // 승인 때 과세 구분을 실은 결제의 부분취소만 같은 구분을 싣는다(#820). 가상계좌 환불 경로(/vacct)에는 필드가 없다.
-            $taxSplit = $isPartial && ! $isCbt && ! $payment->isVirtualAccount()
-                ? $this->resolvePartialTaxSplit($order, $payment, $cancelAmt)
-                : null;
             if ($isCbt) {
                 $this->useStoredCbtCredentials($apiService, $payment);
             } else {
@@ -168,20 +104,7 @@ class PaymentRefundListener implements HookListenerInterface
                     $isPartial ? $cancelAmt : null,
                     $cancelMsg,
                     $isPartial ? $totalAmount : null,
-                    // 가상계좌 환불계좌 — 없으면 PG 가 vbank 취소를 거절한다(P5).
-                    // 계좌의 정본은 결제행이며, 신청서에 적힌 계좌는 환불 실행 직전에
-                    // 코어(`AppliesRefundBankAccount`)가 이 행에 반영한다.
-                    $payment->isVirtualAccount() ? [
-                        'bank_code' => $payment->refund_bank_code,
-                        'account_number' => $payment->refund_bank_account,
-                        'holder' => $payment->refund_bank_holder,
-                    ] : null,
-                    $taxSplit,
                 );
-
-            if ($taxSplit !== null) {
-                $this->recordTaxFreeCancelledSafely($payment, $taxSplit['taxFree'], $tid);
-            }
 
             Log::info('KG Inicis: refund success', [
                 'order_id' => $order->id,
@@ -191,94 +114,24 @@ class PaymentRefundListener implements HookListenerInterface
 
             return [
                 'success' => true,
-                'handled' => true,
                 'error_code' => null,
                 'error_message' => null,
-                // 부분취소 응답의 회차 거래번호는 `prtcTid` 다(P-D11) — `tid` 는 원거래 번호라 회차를 구분하지 못한다.
-                'transaction_id' => $response['prtcTid'] ?? $response['refundTid'] ?? ($response['tid'] ?? $tid),
+                'transaction_id' => $response['refundTid'] ?? ($response['tid'] ?? $tid),
             ];
         } catch (\Exception $e) {
             Log::error('KG Inicis: refund failed', [
                 'order_id' => $order->id,
                 'tid' => $tid,
-                'cancel_amt' => (int) round($refundAmount),
+                'cancel_amt' => (int) $refundAmount,
                 'error' => $e->getMessage(),
             ]);
 
             return [
                 'success' => false,
-                'handled' => true,
                 'error_code' => 'PG_API_ERROR',
                 'error_message' => $e->getMessage(),
                 'transaction_id' => null,
             ];
-        }
-    }
-
-    /**
-     * 성립한 부분취소의 비과세분을 승인 표식의 소진액에 더해 저장합니다. 실패해도 환불 판정에 번지지 않게 합니다.
-     *
-     * 이 시점에 PG 취소는 이미 성립했다 — 저장 실패를 환불 실패로 돌려주면 재시도가 같은 금액을 한 번 더 취소하러 간다
-     * (토스 `syncCancelSnapshotSafely` 와 같은 판단). 소진액이 낡으면 다음 회차의 비과세 상한이 실제보다 커지므로 크게 남긴다.
-     *
-     * @param  OrderPayment  $payment  결제 레코드
-     * @param  int  $taxFree  이번 회차에 취소한 비과세 금액
-     * @param  string  $tid  원거래 번호 (로그 문맥)
-     * @return void 반환값 없음
-     */
-    private function recordTaxFreeCancelledSafely(OrderPayment $payment, int $taxFree, string $tid): void
-    {
-        try {
-            $this->orderPaymentRepository->savePendingChanges(
-                $payment->forceFill(['payment_meta' => $this->withTaxFreeCancelled($payment, $taxFree)]),
-            );
-        } catch (\Throwable $e) {
-            Log::error('KG Inicis: 비과세 소진액 기록 실패 — 취소는 성립, 다음 부분취소의 비과세 상한이 낡음', [
-                'order_payment_id' => $payment->id,
-                'tid' => $tid,
-                'tax_free' => $taxFree,
-                'error' => $e->getMessage(),
-            ]);
-        }
-    }
-
-    /**
-     * 자기 결제의 미입금 가상계좌를 발급 취소합니다. (P-D1)
-     *
-     * KG이니시스는 입금 전 가상계좌를 일반 취소 API(전액 `refund`)로 채번 취소한다(https://manual.inicis.com/rtpay/cancel.html).
-     * 입금 전이라 환불계좌는 싣지 않는다.
-     *
-     * @param  array  $result  결과 {handled, success, error_message}
-     * @param  Order  $order  취소된 주문
-     * @param  OrderPayment  $payment  결제행
-     * @param  int  $issuedAmount  발급 금액 (사용하지 않음 — 전액 취소)
-     * @return array 결과 (자기 결제면 handled=true)
-     */
-    public function closeVbank(array $result, Order $order, OrderPayment $payment, int $issuedAmount = 0): array
-    {
-        if ($payment->pg_provider !== self::PG_PROVIDER_ID) {
-            return $result;
-        }
-
-        $tid = trim((string) $payment->transaction_id);
-        if ($tid === '') {
-            return ['handled' => true, 'success' => false, 'error_message' => 'missing_tid'];
-        }
-
-        try {
-            $apiService = app(KgInicisApiService::class);
-            $this->useStoredStandardCredentials($apiService, $payment, $tid);
-            $apiService->cancelPayment($tid, (string) ($payment->payment_meta['pay_method'] ?? 'Vacct'), null, __('sirsoft-ecommerce::messages.vbank_close_reason'));
-
-            return ['handled' => true, 'success' => true, 'error_message' => null];
-        } catch (\Throwable $e) {
-            Log::warning('KG Inicis: 가상계좌 채번 취소 실패', [
-                'order_id' => $order->id,
-                'tid' => $tid,
-                'error' => $e->getMessage(),
-            ]);
-
-            return ['handled' => true, 'success' => false, 'error_message' => $e->getMessage()];
         }
     }
 
@@ -303,12 +156,6 @@ class PaymentRefundListener implements HookListenerInterface
         return (float) $payment->cancelled_amount;
     }
 
-    /**
-     * 해외 결제(CBT) 건인지 판정합니다.
-     *
-     * @param  OrderPayment  $payment  결제행
-     * @return bool 해외 결제면 true
-     */
     private function isCbtPayment(OrderPayment $payment): bool
     {
         $meta = $payment->payment_meta ?? [];
@@ -318,14 +165,6 @@ class PaymentRefundListener implements HookListenerInterface
             || strtoupper((string) ($meta['pay_method'] ?? '')) === 'CBT';
     }
 
-    /**
-     * 결제 시점의 표준 상점 자격증명으로 API 서비스를 맞춥니다.
-     *
-     * @param  KgInicisApiService  $apiService  KG이니시스 API 서비스
-     * @param  OrderPayment  $payment  결제행
-     * @param  string  $tid  거래번호
-     * @return void 반환값 없음
-     */
     private function useStoredStandardCredentials(KgInicisApiService $apiService, OrderPayment $payment, string $tid): void
     {
         $meta = $payment->payment_meta ?? [];
@@ -343,11 +182,6 @@ class PaymentRefundListener implements HookListenerInterface
 
     /**
      * 결제 시점에 사용된 표준 MID를 payment_meta/raw/TID 순서로 복원한다.
-     *
-     * @param  array  $meta  결제행 payment_meta
-     * @param  array  $raw  PG 원 응답
-     * @param  string  $tid  거래번호
-     * @return ?string 상점 아이디 (찾지 못하면 null)
      */
     private function resolvePaymentMid(array $meta, array $raw, string $tid): ?string
     {
@@ -371,13 +205,6 @@ class PaymentRefundListener implements HookListenerInterface
         return null;
     }
 
-    /**
-     * 결제 시점의 해외 결제(CBT) 자격증명으로 API 서비스를 맞춥니다.
-     *
-     * @param  KgInicisApiService  $apiService  KG이니시스 API 서비스
-     * @param  OrderPayment  $payment  결제행
-     * @return void 반환값 없음
-     */
     private function useStoredCbtCredentials(KgInicisApiService $apiService, OrderPayment $payment): void
     {
         $meta = $payment->payment_meta ?? [];

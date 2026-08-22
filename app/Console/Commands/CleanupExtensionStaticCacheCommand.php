@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Console\Commands\Traits\LocalizesDescription;
 use App\Services\ExtensionStaticCacheService;
 use Illuminate\Console\Command;
 
@@ -16,12 +15,15 @@ use Illuminate\Console\Command;
  */
 class CleanupExtensionStaticCacheCommand extends Command
 {
-    use LocalizesDescription;
-
     /**
      * The name and signature of the console command.
      */
     protected $signature = 'ext-static:cleanup';
+
+    /**
+     * The console command description.
+     */
+    protected $description = '오래된 부트스트랩 리소스 정적 게시 디렉토리(구 version)를 삭제합니다';
 
     /**
      * Execute the console command.
@@ -33,7 +35,7 @@ class CleanupExtensionStaticCacheCommand extends Command
     {
         $deleted = $service->cleanup();
 
-        $this->info(__('extensions.commands.ext_static_cleanup.done', ['count' => $deleted]));
+        $this->info("오래된 정적 게시 디렉토리 {$deleted}건이 삭제되었습니다.");
 
         return self::SUCCESS;
     }

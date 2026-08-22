@@ -13,27 +13,22 @@ use Modules\Sirsoft\Board\Enums\SecretMode;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Services\PostService;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
-use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 게시글 이전/다음 네비게이션 API 회귀 테스트 (이슈 #269)
  *
  * PostController::navigation() 이 어떤 상황에서도 500 응답을 내지 않고
  * graceful degradation 으로 `{prev, next}` 또는 404 만 반환하도록 보장합니다.
+ *
+ * @group board
+ * @group board-navigation
  */
-#[Group('board')]
-#[Group('board-navigation')]
 class PostNavigationTest extends ModuleTestCase
 {
     private string $boardSlug = 'nav-test';
 
     private Board $board;
 
-    /**
-     * 테스트 환경을 준비합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -56,8 +51,6 @@ class PostNavigationTest extends ModuleTestCase
     /**
      * navigation 라우트는 permission:user,posts.read 로 보호됩니다.
      * guest 역할에 해당 권한을 부여해 401 차단을 우회합니다.
-     *
-     * @return void 반환값 없음
      */
     private function ensureGuestCanReadPosts(): void
     {
@@ -89,11 +82,6 @@ class PostNavigationTest extends ModuleTestCase
         );
     }
 
-    /**
-     * 테스트가 남긴 상태를 정리합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function tearDown(): void
     {
         DB::table('board_posts')->where('board_id', $this->board->id)->delete();
@@ -103,10 +91,6 @@ class PostNavigationTest extends ModuleTestCase
 
     /**
      * 존재하지 않는 글 ID → 200 + 빈 값 (500 금지)
-     *
-     * @effects returns_empty_when_post_not_found
-     *
-     * @return void 반환값 없음
      */
     public function test_returns_empty_when_post_not_found(): void
     {
@@ -124,8 +108,6 @@ class PostNavigationTest extends ModuleTestCase
      * @scenario post_kind=notice
      *
      * @effects navigation_null_for_notice
-     *
-     * @return void 반환값 없음
      */
     public function test_returns_empty_for_notice_post(): void
     {
@@ -144,10 +126,6 @@ class PostNavigationTest extends ModuleTestCase
 
     /**
      * 일반글 양옆 글 없음 → 200 + 빈 값
-     *
-     * @effects returns_empty_when_no_adjacent_posts
-     *
-     * @return void 반환값 없음
      */
     public function test_returns_empty_when_no_adjacent_posts(): void
     {
@@ -166,10 +144,6 @@ class PostNavigationTest extends ModuleTestCase
      *
      * created_at DESC 정렬에서 prev는 created_at이 더 나중인 글(newer),
      * next는 created_at이 더 이전인 글(older).
-     *
-     * @effects returns_adjacent_posts_when_available
-     *
-     * @return void 반환값 없음
      */
     public function test_returns_adjacent_posts_when_available(): void
     {
@@ -197,8 +171,6 @@ class PostNavigationTest extends ModuleTestCase
      * @scenario post_kind=original
      *
      * @effects navigation_secret_included
-     *
-     * @return void 반환값 없음
      */
     public function test_secret_always_board_returns_real_prev_next(): void
     {
@@ -239,10 +211,6 @@ class PostNavigationTest extends ModuleTestCase
      * beta.2 의 500 경로는 getPost 내부의 PermissionHelper::checkScopeAccess 가 false 를
      * 반환하면서 AccessDeniedHttpException 을 throw 할 때 발생했습니다. 수정 코드가
      * getPost 호출을 실제로 제거했는지 spy 로 검증합니다.
-     *
-     * @effects controller_does_not_invoke_getpost
-     *
-     * @return void 반환값 없음
      */
     public function test_controller_does_not_invoke_getpost(): void
     {
@@ -259,10 +227,6 @@ class PostNavigationTest extends ModuleTestCase
     /**
      * 핵심 회귀 방지: getAdjacentPosts 가 예외를 던져도 Controller 는 500 이 아닌
      * 200 + 빈 값 을 반환하고 Log::warning 을 한 번 호출해야 합니다.
-     *
-     * @effects controller_degrades_gracefully_when_getadjacent_throws
-     *
-     * @return void 반환값 없음
      */
     public function test_controller_degrades_gracefully_when_getadjacent_throws(): void
     {
@@ -296,10 +260,6 @@ class PostNavigationTest extends ModuleTestCase
 
     /**
      * 정상 경로(예외 없음) 에서는 Log::warning 이 호출되지 않아야 합니다.
-     *
-     * @effects controller_does_not_log_warning_on_success
-     *
-     * @return void 반환값 없음
      */
     public function test_controller_does_not_log_warning_on_success(): void
     {
@@ -317,10 +277,6 @@ class PostNavigationTest extends ModuleTestCase
 
     /**
      * [A-1] 존재하지 않는 게시판은 404 또는 permission 단계의 401 을 반환해야 합니다 (500 금지).
-     *
-     * @effects returns_error_for_nonexistent_board
-     *
-     * @return void 반환값 없음
      */
     public function test_returns_error_for_nonexistent_board(): void
     {
@@ -332,10 +288,6 @@ class PostNavigationTest extends ModuleTestCase
 
     /**
      * [A-2] 비활성 게시판은 404 또는 permission 단계의 401 을 반환해야 합니다 (500 금지).
-     *
-     * @effects returns_error_for_inactive_board
-     *
-     * @return void 반환값 없음
      */
     public function test_returns_error_for_inactive_board(): void
     {
@@ -355,10 +307,6 @@ class PostNavigationTest extends ModuleTestCase
 
     /**
      * [B-1] order_direction=ASC 에서 prev 는 created_at 더 이전 글, next 는 더 나중 글이어야 합니다.
-     *
-     * @effects asc_order_flips_prev_next_direction
-     *
-     * @return void 반환값 없음
      */
     public function test_asc_order_flips_prev_next_direction(): void
     {
@@ -381,10 +329,6 @@ class PostNavigationTest extends ModuleTestCase
 
     /**
      * [D] 일반글 사이에 공지글이 끼어 있어도 navigation 은 공지를 건너뛰어야 합니다.
-     *
-     * @effects notice_posts_excluded_from_navigation
-     *
-     * @return void 반환값 없음
      */
     public function test_notice_posts_excluded_from_navigation(): void
     {
@@ -412,8 +356,6 @@ class PostNavigationTest extends ModuleTestCase
      * @scenario post_kind=original
      *
      * @effects navigation_blinded_excluded
-     *
-     * @return void 반환값 없음
      */
     public function test_non_published_posts_excluded_from_navigation(): void
     {
@@ -448,8 +390,6 @@ class PostNavigationTest extends ModuleTestCase
      * @scenario post_kind=original
      *
      * @effects navigation_boundary_null
-     *
-     * @return void 반환값 없음
      */
     public function test_oldest_post_has_no_next(): void
     {
@@ -467,10 +407,6 @@ class PostNavigationTest extends ModuleTestCase
 
     /**
      * [J-2] 가장 최신 글(DESC 정렬에서 prev 방향 끝)은 prev 가 null 이어야 합니다.
-     *
-     * @effects newest_post_has_no_prev
-     *
-     * @return void 반환값 없음
      */
     public function test_newest_post_has_no_prev(): void
     {
@@ -493,8 +429,6 @@ class PostNavigationTest extends ModuleTestCase
      * @scenario post_kind=original
      *
      * @effects navigation_limited_to_same_category
-     *
-     * @return void 반환값 없음
      */
     public function test_navigation_applies_current_post_category(): void
     {
@@ -522,8 +456,6 @@ class PostNavigationTest extends ModuleTestCase
      * @scenario post_kind=original
      *
      * @effects navigation_uncategorized_traverses_all
-     *
-     * @return void 반환값 없음
      */
     public function test_navigation_for_uncategorized_post_traverses_all(): void
     {
@@ -551,8 +483,6 @@ class PostNavigationTest extends ModuleTestCase
      * @scenario post_kind=reply
      *
      * @effects navigation_null_for_reply
-     *
-     * @return void 반환값 없음
      */
     public function test_navigation_returns_null_for_reply(): void
     {

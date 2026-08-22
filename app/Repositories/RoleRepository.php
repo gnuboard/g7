@@ -7,7 +7,6 @@ use App\Enums\ExtensionOwnerType;
 use App\Models\Role;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\DB;
 
 class RoleRepository implements RoleRepositoryInterface
 {
@@ -60,36 +59,6 @@ class RoleRepository implements RoleRepositoryInterface
     }
 
     /**
-     * 식별자 목록에 해당하는 역할들을 조회합니다 (없는 식별자는 건너뜁니다).
-     *
-     * @param  array<int, string>  $identifiers  역할 식별자 목록
-     * @return Collection<int, Role> 역할 컬렉션
-     */
-    public function getByIdentifiers(array $identifiers): Collection
-    {
-        if ($identifiers === []) {
-            return new Collection;
-        }
-
-        return Role::whereIn('identifier', array_values($identifiers))->get();
-    }
-
-    /**
-     * 역할 ID 목록을 식별자로 바꿉니다 (없는 ID 는 건너뜁니다).
-     *
-     * @param  array<int, int>  $ids  역할 ID 목록
-     * @return array<int, string> 역할 ID => 식별자
-     */
-    public function getIdentifiersByIds(array $ids): array
-    {
-        if ($ids === []) {
-            return [];
-        }
-
-        return Role::whereIn('id', array_values($ids))->pluck('identifier', 'id')->all();
-    }
-
-    /**
      * 식별자로 역할에 소속된 사용자들을 조회합니다.
      *
      * 역할이 없거나 소속 사용자가 없으면 빈 컬렉션을 반환합니다.
@@ -102,96 +71,6 @@ class RoleRepository implements RoleRepositoryInterface
         $role = Role::where('identifier', $identifier)->first();
 
         return $role ? $role->users()->get() : new Collection;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getUsersByIdentifiers(array $identifiers): Collection
-    {
-        $identifiers = array_values(array_filter(array_map(
-            static fn ($identifier) => is_string($identifier) ? trim($identifier) : '',
-            $identifiers,
-        ), static fn (string $identifier): bool => $identifier !== ''));
-
-        if ($identifiers === []) {
-            return new Collection;
-        }
-
-        // 권한까지 함께 싣는다 — 알림 수신자 루프는 사람마다 "이 화면을 열 수 있는가" 를 한 번씩
-        // 묻고(링크 승격 판정), 그 판정이 각자 역할·권한을 다시 조회하면 쿼리가 **수신자 수에
-        // 비례해** 늘어난다. 느려질 뿐 오류가 없어 드러나지도 않는다.
-        //
-        // 사용자 수는 줄일 수 없다(전원이 수신자다). 대신 권한 행은 권한 판정
-        // (`User::permissionGrants()`)이 읽는 컬럼만 싣는다 — 권한 행은 역할마다 수십~수백 건이고
-        // 다국어 JSON(name·description)을 싣고 있어, 전 컬럼을 읽으면 수신자 한 번 해석에 그 JSON
-        // 이 통째로 올라온다. 피벗 컬럼(scope_type 등)은 관계 정의의 withPivot 이 그대로 붙인다.
-        // 역할 행은 사람당 몇 건이고 수신자를 받은 확장이 역할 이름을 읽을 수 있어 좁히지 않는다.
-        $roles = Role::whereIn('identifier', $identifiers)
-            ->with([
-                'users.roles',
-                'users.roles.permissions' => fn ($query) => $query->select([
-                    'permissions.id',
-                    'permissions.identifier',
-                    'permissions.type',
-                ]),
-            ])
-            ->get();
-
-        // `flatMap()` 을 쓰지 않는다 — Eloquent 컬렉션의 `collapse()` 가 **베이스 컬렉션**을
-        // 돌려주어 이 메서드의 반환 타입과 어긋나고, 그 TypeError 를 수신자 해석의 try/catch 가
-        // 삼켜 **수신자 0명**이 된다(화면에도 응답에도 흔적이 없다).
-        $users = new Collection;
-
-        foreach ($roles as $role) {
-            foreach ($role->users as $user) {
-                $users->push($user);
-            }
-        }
-
-        // 두 역할에 함께 속한 사용자를 한 번만 담는다 — 그대로 두면 같은 사람에게 두 통이 간다.
-        return $users->unique('id')->values();
-    }
-
-    /**
-     * 여러 역할 식별자에 속한 사용자의 id 만 오름차순으로 조회합니다. (중복 제거, #139)
-     *
-     * 피벗(user_roles)과 역할 표만 조인한다 — 회원 행·권한 행을 읽지 않는다. 커서로 읽어 id 배열만 쌓는다.
-     *
-     * @param  array<int, string>  $identifiers  역할 식별자 목록
-     * @return array<int, int> 사용자 id (오름차순)
-     */
-    public function getUserIdsByIdentifiers(array $identifiers): array
-    {
-        $identifiers = array_values(array_filter(array_map(
-            static fn ($identifier) => is_string($identifier) ? trim($identifier) : '',
-            $identifiers,
-        ), static fn (string $identifier): bool => $identifier !== ''));
-
-        if ($identifiers === []) {
-            return [];
-        }
-
-        // 표 이름은 모델·관계에서 얻는다 — 하드코딩하면 표 이름이 바뀔 때 조용히 깨진다.
-        $role = new Role;
-        $roles = $role->getTable();
-        $relation = $role->users();
-        $pivot = $relation->getTable();
-        $userKey = $relation->getRelatedPivotKeyName();
-        $roleKey = $relation->getForeignPivotKeyName();
-
-        $ids = [];
-        foreach (DB::table($pivot)
-            ->join($roles, "{$roles}.id", '=', "{$pivot}.{$roleKey}")
-            ->whereIn("{$roles}.identifier", $identifiers)
-            ->select("{$pivot}.{$userKey}")
-            ->distinct()
-            ->orderBy("{$pivot}.{$userKey}")
-            ->cursor() as $row) {
-            $ids[] = (int) $row->{$userKey};
-        }
-
-        return $ids;
     }
 
     /**
@@ -279,7 +158,6 @@ class RoleRepository implements RoleRepositoryInterface
      * @param  Role  $role  역할 모델
      * @param  int  $permissionId  권한 ID
      * @param  array  $pivotData  피벗 테이블에 저장할 추가 데이터
-     * @return void 반환값 없음
      */
     public function attachPermission(Role $role, int $permissionId, array $pivotData = []): void
     {
@@ -347,16 +225,6 @@ class RoleRepository implements RoleRepositoryInterface
         // 활성화 상태 필터
         if (isset($filters['is_active'])) {
             $query->where('is_active', $filters['is_active']);
-        }
-
-        // 소유 구분 필터 — core·module·plugin 은 그 주체가 만든 역할, custom 은 관리자가 직접 만든 역할
-        // (extension_type 이 비어 있는 행). 목록의 「시스템」·「모듈」·「플러그인」 배지와 같은 기준이다.
-        if (! empty($filters['extension_type'])) {
-            if ($filters['extension_type'] === 'custom') {
-                $query->whereNull('extension_type');
-            } else {
-                $query->where('extension_type', $filters['extension_type']);
-            }
         }
 
         // 정렬 (코어/확장 소유 역할 먼저, 그 다음 사용자 생성 역할)

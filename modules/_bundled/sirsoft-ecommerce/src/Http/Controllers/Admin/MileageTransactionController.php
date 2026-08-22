@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Http\Controllers\Admin;
 
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Modules\Sirsoft\Ecommerce\DTO\MileageAdminDeductDto;
@@ -16,7 +17,6 @@ use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\UpdateMileageTransactionReques
 use Modules\Sirsoft\Ecommerce\Http\Resources\MileageTransactionCollection;
 use Modules\Sirsoft\Ecommerce\Http\Resources\MileageTransactionResource;
 use Modules\Sirsoft\Ecommerce\Services\UserMileageService;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * 관리자 마일리지 내역 관리 컨트롤러
@@ -90,8 +90,6 @@ class MileageTransactionController extends AdminBaseController
                 422,
                 ['general' => [$e->getMessage()]]
             );
-        } catch (AccessDeniedHttpException $e) {
-            return ResponseHelper::forbidden('auth.scope_denied');
         }
 
         return ResponseHelper::moduleSuccess(
@@ -123,8 +121,7 @@ class MileageTransactionController extends AdminBaseController
             $transaction = $this->mileageService->updateAdminTransaction(
                 $id,
                 $touchMemo ? ($data['memo'] ?? null) : null,
-                // 입력값 해석(날짜만이면 사이트 기준 그날 끝)은 수동 지급과 같은 규칙으로 Service 가 한다.
-                $touchExpiry && ! empty($data['expires_at']) ? (string) $data['expires_at'] : null,
+                $touchExpiry && ! empty($data['expires_at']) ? Carbon::parse($data['expires_at']) : null,
                 $touchMemo,
                 $touchExpiry,
             );
@@ -135,8 +132,6 @@ class MileageTransactionController extends AdminBaseController
                 422,
                 ['general' => [$e->getMessage()]]
             );
-        } catch (AccessDeniedHttpException $e) {
-            return ResponseHelper::forbidden('auth.scope_denied');
         }
 
         return ResponseHelper::moduleSuccess(
@@ -155,28 +150,13 @@ class MileageTransactionController extends AdminBaseController
     public function extendExpiry(ExtendMileageExpiryRequest $request): JsonResponse
     {
         $data = $request->validated();
-        // 회원 미지정이면 회원 제한 없이 고른 적립건 전부를 연장한다
-        $userId = ! empty($data['user_id'])
-            ? (int) $this->mileageService->resolveUserIdByUuid($data['user_id'])
-            : null;
+        $userId = (int) $this->mileageService->resolveUserIdByUuid($data['user_id']);
 
-        try {
-            $count = $this->mileageService->extendLotExpiry(
-                $userId,
-                array_map('intval', $data['lot_ids']),
-                (int) $data['days'],
-            );
-        } catch (MileageValidationException $e) {
-            // 탈퇴 회원 적립건 연장 거절 등 도메인 규칙 위반(7.1.1)
-            return ResponseHelper::moduleError(
-                'sirsoft-ecommerce',
-                'messages.mileage.validation_failed',
-                422,
-                ['general' => [$e->getMessage()]]
-            );
-        } catch (AccessDeniedHttpException $e) {
-            return ResponseHelper::forbidden('auth.scope_denied');
-        }
+        $count = $this->mileageService->extendLotExpiry(
+            $userId,
+            array_map('intval', $data['lot_ids']),
+            (int) $data['days'],
+        );
 
         return ResponseHelper::moduleSuccess(
             'sirsoft-ecommerce',
@@ -193,11 +173,7 @@ class MileageTransactionController extends AdminBaseController
      */
     public function linked(int $id): JsonResponse
     {
-        try {
-            $linked = $this->mileageService->getLinkedTransactions($id);
-        } catch (AccessDeniedHttpException $e) {
-            return ResponseHelper::forbidden('auth.scope_denied');
-        }
+        $linked = $this->mileageService->getLinkedTransactions($id);
         if ($linked === null) {
             return ResponseHelper::moduleError('sirsoft-ecommerce', 'messages.mileage.not_found', 404);
         }

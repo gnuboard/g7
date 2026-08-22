@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayKginicis\Http\Requests;
 
-use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
-use Plugins\Sirsoft\PayKginicis\Http\Requests\Concerns\RedirectsInvalidCallbackToFailUrl;
 
 /**
  * KG 이니시스 CBT 인증 콜백 요청 검증.
@@ -16,8 +14,6 @@ use Plugins\Sirsoft\PayKginicis\Http\Requests\Concerns\RedirectsInvalidCallbackT
  */
 class CbtCallbackRequest extends FormRequest
 {
-    use RedirectsInvalidCallbackToFailUrl;
-
     /**
      * authorize
      *
@@ -46,16 +42,5 @@ class CbtCallbackRequest extends FormRequest
             'paymethod' => ['nullable', 'string', 'max:50'],
             'selectedPaymentMethod' => ['nullable', 'string', 'max:50'],
         ];
-    }
-
-    /**
-     * 검증 실패를 기록하고 결제 실패 화면으로 보냅니다(Referer 를 따르지 않는다).
-     *
-     * @param  Validator  $validator  실패한 검증기
-     * @return void 반환값 없음
-     */
-    protected function failedValidation(Validator $validator): void
-    {
-        $this->redirectInvalidCallback($validator, 'KG Inicis: CbtCallbackRequest validation failed');
     }
 }

@@ -3,9 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Tests\Feature;
 
 use App\Extension\ExtensionManager;
-use Modules\Sirsoft\Ecommerce\Listeners\OrderActivityLogListener;
-use Modules\Sirsoft\Ecommerce\Models\Order;
-use Tests\PureTestCase;
+use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
  * 이커머스 모듈의 ActivityLog action 라벨 영역 분리 회귀 차단 (이슈 #317).
@@ -18,20 +16,11 @@ use Tests\PureTestCase;
  *
  * 5단계 매커니즘 자체의 동작 검증은 코어 ModuleActionLabelIsolationTest 가 담당.
  */
-class ActivityLogActionLabelTest extends PureTestCase
+class ActivityLogActionLabelTest extends ModuleTestCase
 {
-    /**
-     * 주문 활동 로그 리스너의 FQCN 이 ExtensionManager 에서 'sirsoft-ecommerce' 식별자로 해석된다.
-     *
-     * @scenario origin_type=module
-     *
-     * @effects extension_manager_resolves_modules_namespace_to_kebab_identifier
-     *
-     * @return void 반환값 없음
-     */
     public function test_listener_fqcn_resolves_to_ecommerce_identifier(): void
     {
-        $listenerClass = OrderActivityLogListener::class;
+        $listenerClass = \Modules\Sirsoft\Ecommerce\Listeners\OrderActivityLogListener::class;
         $this->assertTrue(class_exists($listenerClass));
         $this->assertSame(
             'sirsoft-ecommerce',
@@ -39,32 +28,14 @@ class ActivityLogActionLabelTest extends PureTestCase
         );
     }
 
-    /**
-     * 로그 대상 모델인 Order 의 FQCN 이 'sirsoft-ecommerce' 로 해석되어 loggable_type 으로 출처를 찾을 수 있다.
-     *
-     * @scenario origin_type=module, loggable_state=model_with_module_fqcn
-     *
-     * @effects extension_origin_resolved_from_loggable_type_fqcn
-     *
-     * @return void 반환값 없음
-     */
     public function test_loggable_model_fqcn_resolves_to_ecommerce_identifier(): void
     {
         $this->assertSame(
             'sirsoft-ecommerce',
-            ExtensionManager::resolveExtensionByFqcn(Order::class)
+            ExtensionManager::resolveExtensionByFqcn(\Modules\Sirsoft\Ecommerce\Models\Order::class)
         );
     }
 
-    /**
-     * 모듈 한국어 activity_log 언어 파일의 action 배열에 이커머스·클레임 전용 마지막 세그먼트 라벨이 비어 있지 않게 정의돼 있다.
-     *
-     * @scenario origin_type=module, module_lang_state=last_segment_defined, locale=ko
-     *
-     * @effects module_lang_action_labels_defined_for_module_origin
-     *
-     * @return void 반환값 없음
-     */
     public function test_module_lang_action_array_includes_module_specific_last_segments_ko(): void
     {
         $langFile = __DIR__.'/../../src/lang/ko/activity_log.php';
@@ -74,26 +45,13 @@ class ActivityLogActionLabelTest extends PureTestCase
         $this->assertArrayHasKey('action', $lang, '모듈 lang 에 action 배열이 신설되어야 함 (이슈 #317)');
 
         // 이커머스 specific 키들 — 코어 lang 에서 제거되었으므로 모듈 lang 에 정의 필수
-        // 클레임(S7) last segment — 코어 lang 에 없어 모듈 lang 이 유일 출처다.
-        $required = [
-            'confirm', 'partial_cancel', 'payment_complete', 'earn', 'use', 'change_option', 'update_quantity',
-            'status_change', 'option_status_change', 'update_amounts', 'execute', 'complete', 'refund',
-        ];
+        $required = ['confirm', 'partial_cancel', 'payment_complete', 'earn', 'use', 'change_option', 'update_quantity'];
         foreach ($required as $key) {
             $this->assertArrayHasKey($key, $lang['action'], "ko: action.{$key} 누락");
             $this->assertNotEmpty($lang['action'][$key], "ko: action.{$key} 라벨 비어있음");
         }
     }
 
-    /**
-     * 모듈 영어 activity_log 언어 파일의 action 배열에도 이커머스·클레임 전용 마지막 세그먼트 라벨이 비어 있지 않게 정의돼 있다.
-     *
-     * @scenario origin_type=module, module_lang_state=last_segment_defined, locale=en
-     *
-     * @effects module_lang_action_labels_defined_for_module_origin
-     *
-     * @return void 반환값 없음
-     */
     public function test_module_lang_action_array_includes_module_specific_last_segments_en(): void
     {
         $langFile = __DIR__.'/../../src/lang/en/activity_log.php';
@@ -102,11 +60,7 @@ class ActivityLogActionLabelTest extends PureTestCase
         $lang = require $langFile;
         $this->assertArrayHasKey('action', $lang, 'Module lang must define action array (#317)');
 
-        // 클레임(S7) last segment — 코어 lang 에 없어 모듈 lang 이 유일 출처다.
-        $required = [
-            'confirm', 'partial_cancel', 'payment_complete', 'earn', 'use', 'change_option', 'update_quantity',
-            'status_change', 'option_status_change', 'update_amounts', 'execute', 'complete', 'refund',
-        ];
+        $required = ['confirm', 'partial_cancel', 'payment_complete', 'earn', 'use', 'change_option', 'update_quantity'];
         foreach ($required as $key) {
             $this->assertArrayHasKey($key, $lang['action'], "en: action.{$key} missing");
             $this->assertNotEmpty($lang['action'][$key], "en: action.{$key} empty");

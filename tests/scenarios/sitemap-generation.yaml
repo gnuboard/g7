@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product,effects] reason: 이슈 #481(공개 #79) 사이트맵 생성 확장성 SSoT. 6축 cross product(216 조합)는 docblock 전수 @scenario 매핑이 비현실적이라 면제하고, 회귀 가드는 test_files(백엔드 PHPUnit + 레이아웃 Vitest + Playwright E2E)로 커버한다. 대용량 축(scale)은 scenario-scale-axis-required / job-generator-needs-scale-test 룰이 별도 강제(면제 대상 아님) — scale.cases[].assert 는 @scale 마킹으로 전수 커버.
+# audit:allow test-scenario-coverage reason: 이슈 #481(공개 #79) 사이트맵 생성 확장성 SSoT. 6축 cross product(216 조합)는 docblock 전수 @scenario 매핑이 비현실적이라 면제하고, 회귀 가드는 test_files(백엔드 PHPUnit + 레이아웃 Vitest + Playwright E2E)로 커버한다. 대용량 축(scale)은 scenario-scale-axis-required / job-generator-needs-scale-test 룰이 별도 강제(면제 대상 아님) — scale.cases[].assert 는 @scale 마킹으로 전수 커버.
 
 feature: sitemap_generation
 
@@ -35,7 +35,6 @@ effects:
   - child_split_at_threshold
   - stale_served_on_miss
   - job_unique_lock
-  - retry_window_covers_timeouts
   - async_dispatch_from_admin
   # ── 재생성 모드 (P2) ──
   - admin_regen_is_always_full
@@ -46,39 +45,13 @@ effects:
   - incremental_skips_rebalance
   # ── 다국어 (P1) ──
   - hreflang_bounded
-  # ── 기여자 배열 ↔ 지연 스트림 브리지 (P1) ──
-  - contributor_lazy_streams_array_urls
-  - contributor_array_materializes_lazy_urls
-  - contributor_lazy_defers_execution_until_iterated
-  - contributor_base_implements_contributor_interface
   # ── 진행상황 / 실시간 (P3) ──
   - progress_recorded_per_phase
   - progress_broadcast_when_reverb_on
   - progress_cached_when_reverb_off
   - polling_starts_only_when_reverb_off_and_running
   - polling_stops_on_completed
-  - polling_stops_when_progress_missing
-  - regenerate_toast_uses_server_message
-  - regenerate_button_shows_spinner_while_requesting
   - job_failure_marks_progress_failed
-  # ── 관리자 SEO 탭 E2E (설정 칸·재생성·상태 API·전환 오버레이) ──
-  - fields_mounted
-  - fields_persisted
-  - regenerate_is_async
-  - progress_visible
-  - status_endpoint
-  - sitemap_status_awaited_before_reveal
-  # ── 콘솔 커맨드 seo:generate-sitemap (큐 분기·모드 옵션) ──
-  - sitemap_command_dispatches_async_unless_queue_is_sync
-  - sitemap_command_runs_sync_when_queue_is_sync_or_forced
-  - sitemap_command_passes_mode_option_to_job
-  - sitemap_command_rebuild_option_forces_full_mode
-  - sitemap_command_rejects_invalid_mode_without_dispatch
-  # ── 동기 실행(--sync·sync 큐)의 중복 방지 잠금 (#161 F2) ──
-  - sitemap_sync_run_holds_job_unique_lock            # 큐 잡과 같은 잠금을 잡은 채 돌고 끝나면 푼다
-  - sitemap_sync_run_skips_while_job_holds_lock       # 큐 잡이 잠금을 쥐고 있으면 「이미 생성 중」 + 성공 종료
-  - sitemap_sync_run_releases_only_its_own_lock       # 실행 중 주인이 바뀐 잠금은 풀지 않는다
-  - sitemap_sync_run_fails_when_lock_store_errors     # 잠금 저장소 오류면 돌리지 않고 실패 종료
 
 # scale: 대용량 회귀 축. block-array of flow objects (내장 fallback 파서 제약 — flow 객체만 중첩 파싱)
 scale:

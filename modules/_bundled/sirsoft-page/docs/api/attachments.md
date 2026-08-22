@@ -21,7 +21,7 @@
 <!-- @generated:start:api.modules.sirsoft-page.admin.attachments.upload -->
 - **라우트명**: `api.modules.sirsoft-page.admin.attachments.upload`
 - **컨트롤러**: `Modules\Sirsoft\Page\Http\Controllers\Admin\PageAttachmentController@upload`
-- **인증/권한**: `auth:sanctum` + `permission:sirsoft-page.pages.create|sirsoft-page.pages.update,false` (OR)
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-page.pages.create`
 
 **요청 파라미터**
 
@@ -30,7 +30,7 @@
 | file | body | file | 예 | max: 첨부 최대 용량 설정(MB→KB 환산, 기본 10MB) · mimetypes: 허용 형식 설정 | 업로드 파일 (용량·형식 모두 페이지 모듈 환경설정이 SSoT) |
 | page_id | body | integer | 아니오 | min 1 | page 식별자 |
 | collection | body | string | 아니오 | max 100 | 첨부 컬렉션 그룹명 (첨부를 용도별로 묶는 키, 미지정 시 default) |
-| temp_key | body | string | 아니오 | UUID | 저장 전 임시 귀속 키(`page_id` 와 함께 생략하면 서버가 UUID 를 발급). 아직 저장되지 않은 페이지의 첨부를 임시로 묶어 두고, 이후 페이지 저장 시 이 키로 확정 귀속합니다 (`page_id` 미지정 시 사용) |
+| temp_key | body | string | 아니오 | max 64 | 저장 전 임시 귀속 키. 아직 저장되지 않은 페이지의 첨부를 임시로 묶어 두고, 이후 페이지 저장 시 이 키로 확정 귀속합니다 (`page_id` 미지정 시 사용) |
 
 **요청 예시**
 
@@ -57,7 +57,7 @@ Content-Disposition: form-data; name="collection"
 ------G7ExampleBoundary
 Content-Disposition: form-data; name="temp_key"
 
-5f0c3a3e-1b2c-4d5e-8f90-a1b2c3d4e5f6
+예시값
 ------G7ExampleBoundary--
 ```
 
@@ -114,144 +114,10 @@ _단건 응답: FileUploader 컴포넌트 규약에 맞춰 `data.data` 객체에
 
 <!-- @generated:end -->
 
-**설명** 페이지 첨부파일을 업로드합니다. `file`(필수)과 함께 이미 저장된 페이지에 귀속시키려면 `page_id`, 아직 저장 전이면 `temp_key`(임시 귀속 후 페이지 저장 시 `store`/`update` 의 `temp_key` 로 확정)를 보냅니다. `collection` 으로 첨부 그룹을 구분합니다. 응답은 FileUploader 컴포넌트 규약(`data.data`)에 맞춰 `PageAttachmentResource` 를 201 로 반환합니다. 권한은 `pages.create` 를 요구합니다. 7.1.0 부터 등록·수정 권한 중 하나만 있어도 됩니다. `page_id` 를 붙이면 그 페이지의 수정 권한과 담당 범위(스코프)를 서비스가 다시 확인하고, 밖이면 403(`auth.scope_denied`)입니다.
-
-허용 형식은 모듈 설정 `attachment.allowed_types`(MIME 목록)이며, **파일 내용(MIME)과 이름 확장자를 둘 다** 봅니다(1.2.3) — 이름 확장자 허용 목록은 같은 MIME 설정에서 파생하므로 새 설정은 없습니다. 내용은 PNG 이고 이름만 `.html` 인 파일은 422 입니다. 저장 파일의 확장자는 올린 이름이 아니라 파일 내용으로 정하고(`stored_filename`·`path`), 내려받는 이름은 `original_filename` 그대로입니다. 텍스트 계열(csv·md 등)은 `.txt` 로 저장됩니다. 다만 허용 형식에 이름 확장자를 알 수 없는 형식(확장자 표에 없는 MIME, `application/octet-stream`)이 하나라도 들어 있으면 이름 확장자는 보지 않고 내용만 봅니다 — 그 형식의 정상 파일이 이름 때문에 거부되지 않게 하기 위해서입니다. 저장 파일명은 어느 경우든 내용 기준입니다.
+**설명** 페이지 첨부파일을 업로드합니다. `file`(필수)과 함께 이미 저장된 페이지에 귀속시키려면 `page_id`, 아직 저장 전이면 `temp_key`(임시 귀속 후 페이지 저장 시 `store`/`update` 의 `temp_key` 로 확정)를 보냅니다. `collection` 으로 첨부 그룹을 구분합니다. 응답은 FileUploader 컴포넌트 규약(`data.data`)에 맞춰 `PageAttachmentResource` 를 201 로 반환합니다. 권한은 `pages.create` 를 요구합니다.
 
 업로드 정책(최대 개수 · 최대 용량 · 허용 형식)은 모듈 환경설정 `attachment.*` 가 SSoT 입니다. 용량은 `attachment.max_size_mb`(MB), 형식은 `attachment.allowed_types`(MIME 목록)로 판정하며, 형식 목록을 비우면 형식을 제한하지 않습니다(설정 키 자체가 없으면 모듈 기본 목록으로 폴백). 개수는 `attachment.max_count` 를 기준으로 **직접 업로드 · 임시 업로드(`temp_key`) 연결 · 이미 연결된 첨부** 를 합산해 판정하며, 초과 시 `422`(`errors.code = attachment_limit_exceeded`)를 반환하며, 안내 문구(`message`)는 허용 개수와 시도한 개수를 담아 응답 시점의 언어로 만들어집니다. 이 판정은 업로드 엔드포인트뿐 아니라 페이지 생성·수정 저장 시점에도 동일하게 적용됩니다. `max_count` 가 0 이면 개수를 제한하지 않습니다.
 
-
-### GET /api/modules/sirsoft-page/admin/attachments/settings
-
-- **라우트명**: `api.modules.sirsoft-page.admin.attachments.settings`
-- **컨트롤러**: `Modules\Sirsoft\Page\Http\Controllers\Admin\PageAttachmentController@settings`
-- **인증/권한**: `auth:sanctum` + `permission:sirsoft-page.pages.read`
-
-첨부 상한·허용 형식을 반환합니다. **신규 작성 화면에는 읽을 페이지 상세가 없어** 상한을
-실어 줄 봉투가 없으므로, 그 화면이 이 조회를 씁니다. 화면이 상한을 리터럴로 적으면 운영자가
-설정을 바꿔도 화면만 옛 값으로 남고, 서버가 거절할 때까지 아무 안내가 없습니다.
-
-요청 파라미터는 없습니다.
-
-**응답 필드**
-
-| 이름 | 타입 | 예시값 | 용도 |
-| --- | --- | --- | --- |
-| data.max_count | integer\|null | `5` | 첨부 개수 상한. `null` 이면 제한하지 않습니다(`attachment.max_count` 가 0 이하) |
-| data.max_size_mb | integer | `10` | 파일 1개 크기 상한 (MB) |
-| data.allowed_types | string[] | `["image/jpeg", "application/pdf"]` | 허용 MIME 목록. 서버 검증이 쓰는 값 그대로입니다 |
-| data.accept | string | `.jpg,.jpeg,.png,.gif,.webp,.pdf,.zip` | 파일 선택창 필터 문자열. MIME → 확장자 변환은 **서버에서 한 번만** 합니다 |
-
-**응답 예시 (200)**
-
-```json
-{
-  "success": true,
-  "message": "첨부 설정을 조회했습니다.",
-  "data": {
-    "max_count": 5,
-    "max_size_mb": 10,
-    "allowed_types": ["image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf", "application/zip"],
-    "accept": ".jpg,.jpeg,.png,.gif,.webp,.pdf,.zip"
-  }
-}
-```
-
-### POST /api/modules/sirsoft-page/admin/content-media
-<!-- @generated:start:api.modules.sirsoft-page.admin.content-media.upload -->
-- **라우트명**: `api.modules.sirsoft-page.admin.content-media.upload`
-- **컨트롤러**: `Modules\Sirsoft\Page\Http\Controllers\Admin\PageContentMediaController@upload`
-- **인증/권한**: `auth:sanctum` + `permission:admin,sirsoft-page.pages.create|sirsoft-page.pages.update,false` · `throttle:60,1`
-
-**요청 파라미터**
-
-| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
-| --- | --- | --- | --- | --- | --- |
-| file | body | file | 예 | 페이지 본문 미디어 정책 | 본문에 넣을 이미지·동영상·오디오. 형식은 파일 내용으로 판정 |
-| temp_key | body | string | 예 | UUID | 페이지 폼의 임시 키 — 저장 때 같은 키로 본문이 참조한 것만 잇는다 |
-
-**응답 필드** (`data` 내부): `data.id` · `data.hash`(12자) · `data.kind`(`image`·`video`·`audio`) · `data.url`(서명된 서빙 주소, 편집 중 미리보기)
-
-- 상태: `201` · `403` · `422` 정책 밖 파일·임시 키 없음·같은 임시 키 업로드가 문서당 최대 × 2 초과(`errors.code = content_media_limit_exceeded`)
-> **`data.content_media`** (1.2.2) — 편집기 확장점 `html_editor` 의 `mediaUpload` 로 넘길 본문 미디어 업로드 계약(받는 종류가 없으면 `null`). 화면은 `fields.temp_key` 에 폼 임시 키를 더한다.
-
-<!-- @generated:end -->
-
-> 업로드 계약을 받는 표준 길은 아래 `GET admin/content-media/target` 입니다(#887). `GET admin/attachments/settings` 응답의
-> `data.content_media` 는 같은 값을 계속 싣는 호환 별칭이며 폐기 예정입니다.
-
----
-
-### GET /api/modules/sirsoft-page/admin/content-media/target
-
-- **라우트명**: `api.modules.sirsoft-page.admin.content-media.target`
-- **컨트롤러**: `Modules\Sirsoft\Page\Http\Controllers\Admin\PageContentMediaController@target`
-- **인증/권한**: `auth:sanctum` + `permission:admin,sirsoft-page.pages.create|sirsoft-page.pages.update,false` · `throttle:600,1`
-
-편집기 본문 미디어 업로드 계약을 돌려주는 **표준 계약 엔드포인트**입니다(#887 — 모든 확장이 `…/content-media/target` 한 가지 길로
-계약을 냅니다, 코어 [본문 미디어 계약](../../../../../docs/extension/content-media.md)). 페이지 작성·수정 화면의 데이터 소스
-`contentMediaTarget` 이 읽어 `html_editor` 확장점의 `mediaUpload` 로 넘기고, 화면이 `fields.temp_key` 에 폼 임시 키를 더합니다.
-값은 페이지 모듈 설정 `content_media`(비면 첨부 정책으로 만든 대체 정책)이고, 동영상·오디오는 코어 「본문 콘텐츠」의 업로드 허용
-스위치가 켜졌을 때만 `enabled` 입니다. 권한은 업로드와 같습니다(등록·수정 어느 쪽이든).
-
-요청 파라미터는 없습니다.
-
-**응답 필드**
-
-| 이름 | 타입 | 예시값 | 용도 |
-| --- | --- | --- | --- |
-| data | object\|null | — | 업로드 계약. 지금 받는 종류가 하나도 없으면 `null` |
-| data.version | integer | `1` | 계약 형식 판 |
-| data.endpoint | string | `/api/modules/sirsoft-page/admin/content-media` | 업로드 주소(같은 출처 상대 경로) |
-| data.fileField | string | `file` | 파일 필드 이름 |
-| data.fields | object | `{}` | 함께 보낼 폼 필드 — 화면이 `temp_key` 를 더한다 |
-| data.headers | object | `{}` | 함께 보낼 헤더(허용 목록만) |
-| data.response | object | `{"urlPath": "data.url", "idPath": "data.id", "kindPath": "data.kind"}` | 업로드 응답에서 값을 읽는 점 경로 |
-| data.mediaUrlPattern | string | `/api/modules/sirsoft-page/pages/content-media/(?<hash>[A-Za-z0-9]{12})` | 서빙 주소 정규식 본문(문서당 개수 셀 때) |
-| data.policy | object | — | 종류별(`image`·`video`·`audio`) `enabled`·`maxSizeMb`·`extensions`·`mimeTypes` + `maxPerDocument` |
-
-- 상태: `200` · `401` · `403`(등록·수정 권한 없음 — 화면은 `null` 로 받아 편집기를 종전대로 띄운다)
-
-**응답 예시 (200)**
-
-```json
-{
-  "success": true,
-  "message": "본문 미디어 업로드 계약을 조회했습니다.",
-  "data": {
-    "version": 1,
-    "endpoint": "/api/modules/sirsoft-page/admin/content-media",
-    "fileField": "file",
-    "fields": {},
-    "headers": {},
-    "response": {"urlPath": "data.url", "idPath": "data.id", "kindPath": "data.kind"},
-    "mediaUrlPattern": "/api/modules/sirsoft-page/pages/content-media/(?<hash>[A-Za-z0-9]{12})",
-    "policy": {
-      "image": {"enabled": true, "maxSizeMb": 10, "extensions": ["jpg", "jpeg", "png", "gif", "webp"], "mimeTypes": ["image/jpeg", "image/png", "image/gif", "image/webp"]},
-      "video": {"enabled": false, "maxSizeMb": 10, "extensions": ["mp4", "webm", "ogv"], "mimeTypes": ["video/mp4", "video/webm", "video/ogg"]},
-      "audio": {"enabled": false, "maxSizeMb": 10, "extensions": ["mp3", "m4a", "ogg", "oga", "wav"], "mimeTypes": ["audio/mpeg", "audio/mp4", "audio/ogg", "audio/wav"]},
-      "maxPerDocument": 30
-    }
-  }
-}
-```
-
----
-
-### GET /api/modules/sirsoft-page/pages/content-media/{hash}
-<!-- @generated:start:api.modules.sirsoft-page.pages.content-media.show -->
-- **라우트명**: `api.modules.sirsoft-page.pages.content-media.show`
-- **컨트롤러**: `Modules\Sirsoft\Page\Http\Controllers\User\PublicPageContentMediaController@show`
-- **인증/권한**: `optional.sanctum` · `throttle:600,1` — 게이트는 「발행 또는 열람권(`sirsoft-page.pages.read`) 또는 서명」
-
-**요청 파라미터**: `hash`(path, `[A-Za-z0-9]{12}`) · `expires`·`signature`(query, 선택) · `Range`(header, 한 구간)
-
-**응답**: 파일 본문(그 행에 기록된 디스크에서 읽는다 — 기본 디스크를 바꾼 뒤에도 옛 행은 제자리에서 서빙, #887). 래스터 이미지는 inline, 동영상·오디오는 정책·코어 후보가 켜졌을 때 inline + `media-src 'self'` CSP, 그 밖에는 다운로드. `nosniff`·`Accept-Ranges: bytes`. 발행 페이지는 `Cache-Control: public, max-age=3600`, 미발행·임시 업로드는 `private, max-age=300`.
-
-- 상태: `200`·`206` · `403` · `404` · `416`
-<!-- @generated:end -->
-
----
 
 ### PATCH /api/modules/sirsoft-page/admin/attachments/reorder
 <!-- @generated:start:api.modules.sirsoft-page.admin.attachments.reorder -->
@@ -300,21 +166,20 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지�
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-page.pages.update`)이 없는 경우, 또는 대상 첨부 중 하나라도 담당 범위 밖(남이 올린 임시 첨부 포함)인 경우 (`auth.scope_denied`) |
-| 404 | Not Found | 대상 중 존재하지 않는 첨부 ID 가 있는 경우 (`첨부파일을 찾을 수 없습니다.`). 아무것도 바꾸지 않습니다 |
+| 403 | Forbidden | 요구 권한(`sirsoft-page.pages.update`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지). `order` 누락/배열 아님/빈 배열, 각 원소의 `id`(정수) 또는 `order`(0 이상 정수) 누락 |
 | 500 | Internal Server Error | 순서 갱신 중 예외 발생 시 `첨부파일 순서 변경에 실패했습니다.` (`error` 에 예외 메시지) |
 
 <!-- @generated:end -->
 
-**설명** 첨부파일 정렬 순서를 변경합니다. `order` 는 FileUploader 가 보내는 `[{id, order}]` 형태의 배열이며, 컨트롤러가 `[ID => order]` 매핑으로 변환해 `PageAttachmentService::reorder()` 에 전달합니다. 편집 화면에서 첨부 목록을 드래그로 재정렬할 때 사용합니다. 대상 중 하나라도 담당 범위 밖(남이 올린 임시 첨부 포함)이면 전체를 거부하고 403(`auth.scope_denied`)을, 없는 첨부 ID 가 섞이면 404 를 돌려주며 어느 경우에도 순서를 바꾸지 않습니다. 권한은 `pages.update` 를 요구합니다.
+**설명** 첨부파일 정렬 순서를 변경합니다. `order` 는 FileUploader 가 보내는 `[{id, order}]` 형태의 배열이며, 컨트롤러가 `[ID => order]` 매핑으로 변환해 `PageAttachmentService::reorder()` 에 전달합니다. 편집 화면에서 첨부 목록을 드래그로 재정렬할 때 사용합니다. 권한은 `pages.update` 를 요구합니다.
 
 
 ### DELETE /api/modules/sirsoft-page/admin/attachments/{id}
 <!-- @generated:start:api.modules.sirsoft-page.admin.attachments.destroy -->
 - **라우트명**: `api.modules.sirsoft-page.admin.attachments.destroy`
 - **컨트롤러**: `Modules\Sirsoft\Page\Http\Controllers\Admin\PageAttachmentController@destroy`
-- **인증/권한**: `auth:sanctum` + `permission:sirsoft-page.pages.create|sirsoft-page.pages.update,false` (OR)
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-page.pages.update`
 
 **요청 파라미터**
 
@@ -356,6 +221,6 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지�
 
 <!-- @generated:end -->
 
-**설명** 첨부파일을 삭제합니다. `{id}` 는 첨부파일 ID 입니다(라우트-모델 바인딩이 아닌 `int $id`). `PageAttachmentService::deleteAttachment()` 가 DB 레코드와 실제 저장 파일을 함께 정리합니다. 미존재 시 404 를 반환합니다. 부모 페이지가 액터의 담당 범위 밖이면 403(`auth.scope_denied`)이고, 아직 페이지에 연결되지 않은 임시 첨부(`page_id` 없음)는 올린 관리자만 지울 수 있어 다른 관리자에게는 같은 403 을 돌려줍니다(작성 화면에서 저장이 검증 오류로 실패한 뒤 이미 올라간 첨부를 빼는 경로). 권한은 `pages.update` 를 요구합니다. 7.1.0 부터 라우트는 등록·수정 권한 중 하나로 열고, 서비스가 갈라 판정합니다 — 아직 연결되지 않은 임시 첨부는 올린 사람만, 페이지에 연결된 첨부는 수정 권한 + 부모 페이지 스코프.
+**설명** 첨부파일을 삭제합니다. `{id}` 는 첨부파일 ID 입니다(라우트-모델 바인딩이 아닌 `int $id`). `PageAttachmentService::deleteAttachment()` 가 DB 레코드와 실제 저장 파일을 함께 정리합니다. 미존재 시 404 를 반환합니다. 권한은 `pages.update` 를 요구합니다.
 
 

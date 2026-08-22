@@ -109,7 +109,7 @@ WebSocket은 두 가지 endpoint를 가집니다:
 
 | Endpoint | 용도 | 사용 주체 | 예시 |
 |----------|------|---------|------|
-| 클라이언트 (외부) | 브라우저가 WebSocket 접속 | 브라우저 → Reverb (직접 또는 리버스 프록시 경유) | `example.com:443` (https) |
+| 클라이언트 (외부) | 브라우저가 WebSocket 접속 | 브라우저 → Reverb (직접 또는 리버스 프록시 경유) | `g7.dev:443` (https) |
 | 서버 (내부) | 백엔드가 broadcast HTTP API 호출 | Pusher SDK → Reverb (Laravel queue worker 내부) | `127.0.0.1:8080` (http) |
 
 **환경설정 → 드라이버 → 웹소켓**에서 두 endpoint를 분리 입력할 수 있습니다:
@@ -233,9 +233,7 @@ HookManager::broadcast("core.user.notifications.{$user->uuid}", 'notification.re
 ## 모듈/플러그인 채널 등록
 
 모듈/플러그인에서 WebSocket 채널이 필요한 경우 `getChannels()` 메서드를 오버라이드합니다.
-선언한 채널은 **활성** 확장일 때 채널 인증 요청(`/api/broadcasting/auth`)을 처리하면서 `Broadcast::channel()` 에 등록됩니다.
-
-> **등록 시점 (7.1.5)**: 채널 인가 콜백(코어 `routes/channels.php` + 활성 확장 `getChannels()`)은 부팅마다 등록하지 않고, 인증 라우트가 `Broadcast::auth()` 직전에 `BroadcastChannelRegistrar::ensureRegistered()` 로 브로드캐스터당 한 번 등록합니다. 부팅마다 `Broadcast::channel()` 을 부르면 그때마다 드라이버(reverb 면 Pusher 클라이언트)가 만들어졌기 때문입니다. 라우트 처리 안에서 부르므로 라우트 캐시와 무관하며, 웹소켓을 끈 사이트(`broadcasting.default === 'null'`)는 등록하지 않습니다. 인가 콜백을 직접 읽어야 하는 코드(시험 등)는 먼저 `ensureRegistered()` 를 부릅니다.
+`ModuleManager`/`PluginManager`가 로드 시 자동으로 `Broadcast::channel()`에 등록합니다.
 
 ### 모듈 예시
 
@@ -585,43 +583,14 @@ redirect_stderr=true
 stdout_logfile=/var/log/reverb.log
 
 [program:queue-worker]
-; 환경설정 → 드라이버 → 「큐 워커」에 등록한 연결·큐 그대로 (화면이 명령을 보여 준다)
-command=php /var/www/g7/artisan queue:work database --queue=default --sleep=3 --tries=3 --max-time=3600
+command=php /var/www/g7/artisan queue:work --sleep=3 --tries=3
 directory=/var/www/g7
 user=www-data
 autostart=true
 autorestart=true
 redirect_stderr=true
 stdout_logfile=/var/log/queue-worker.log
-
-[program:queue-worker-long]
-; 긴 작업 전용(등록 시) — 통계 재집계·익명화·개인정보 직권 실행. 반드시 *-long 연결 이름으로 띄운다
-; (같은 jobs 표라 `database --queue=long` 으로 띄우면 retry_after 90 이 적용돼 실행 중인 잡을 다시 집는다)
-command=php /var/www/g7/artisan queue:work database-long --queue=long --sleep=3 --tries=3 --timeout=3600 --max-time=7200
-directory=/var/www/g7
-user=www-data
-numprocs=1
-stopwaitsecs=3660
-autostart=true
-autorestart=true
-redirect_stderr=true
-stdout_logfile=/var/log/queue-worker-long.log
-
-[program:queue-worker-sitemap]
-; 사이트맵 생성 전용 큐 — 등록과 무관하게 큐 드라이버 연결의 sitemap 큐로 잡이 간다(「큐 워커」 화면에 명령이 나온다).
-; 동시 중복 생성을 막으려 워커는 1개만 둔다
-command=php /var/www/g7/artisan queue:work database --queue=sitemap --sleep=3 --tries=3 --max-time=3600 --timeout=1800
-directory=/var/www/g7
-user=www-data
-numprocs=1
-stopwaitsecs=1860
-autostart=true
-autorestart=true
-redirect_stderr=true
-stdout_logfile=/var/log/queue-worker-sitemap.log
 ```
-
-드라이버 탭을 저장하면 서버가 `queue:restart` 를 보낸다 — 워커는 지금 잡을 마치고 종료하며 Supervisor 가 새 설정으로 다시 띄운다. 큐 드라이버가 `sync` 면 워커가 필요 없다.
 
 ---
 

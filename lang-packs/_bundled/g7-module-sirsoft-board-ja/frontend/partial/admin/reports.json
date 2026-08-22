@@ -17,7 +17,7 @@
     "reporter_name": "通報者(最初)",
     "reported_at": "通報日時",
     "last_reported_at": "最近：{{date}}",
-    "first_reported_at_label": "初回",
+    "last_reported_at_label": "最近",
     "target_status": "対象ステータス",
     "status": "処理ステータス",
     "current_status": "現在のステータス"
@@ -197,8 +197,7 @@
       "rejected": "却下",
       "suspended": "投稿停止",
       "deleted": "削除",
-      "restored": "復元",
-      "report_cancelled": "通報キャンセル"
+      "restored": "復元"
     },
     "no_histories": "処理内容がありません。",
     "cancelled_badge": "キャンセル済み ({{cancelled_at}})",

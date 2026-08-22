@@ -15,7 +15,6 @@ use Modules\Sirsoft\Ecommerce\Enums\ProductSalesStatus;
 use Modules\Sirsoft\Ecommerce\Enums\ProductTaxStatus;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ResolvesBaseCurrencyPrecision;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ValidatesMileageRate;
-use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ValidatesTempKey;
 use Modules\Sirsoft\Ecommerce\Models\Brand;
 use Modules\Sirsoft\Ecommerce\Models\Category;
 use Modules\Sirsoft\Ecommerce\Models\Product;
@@ -28,19 +27,8 @@ use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
  */
 class StoreProductRequest extends FormRequest
 {
-    /**
-     * 상품 코드 허용 문자 — 영문·숫자·하이픈·밑줄.
-     *
-     * 상품 코드는 이미지 저장 폴더(`images/products/{코드}`)와 상품 주소에 그대로 쓰인다. `/`·`\\`·인코딩된 구분자·
-     * `.`/`..` 가 들어가면 저장소 경로 검사(KVE-2026-2349)에 걸려 이미지 업로드·복사·삭제가 실패하므로, 경로에 안전한
-     * 문자만 입력에서 받는다. 기본 채번(NanoID `0-9A-Z`)은 이 집합 안에 있다. 규칙 이전에 저장된 코드는 수정 요청이
-     * 코드를 바꿀 때만 이 규칙을 적용한다(UpdateProductRequest).
-     */
-    public const PRODUCT_CODE_PATTERN = '/^[A-Za-z0-9_-]+$/';
-
     use ResolvesBaseCurrencyPrecision;
     use ValidatesMileageRate;
-    use ValidatesTempKey;
 
     /**
      * 권한 확인
@@ -66,7 +54,7 @@ class StoreProductRequest extends FormRequest
         $rules = [
             // 기본 정보
             'name' => ['required', 'array', new LocaleRequiredTranslatable(maxLength: 200)],
-            'product_code' => ['required', 'string', 'max:50', 'regex:'.self::PRODUCT_CODE_PATTERN, Rule::unique(Product::class, 'product_code')],
+            'product_code' => ['required', 'string', 'max:50', Rule::unique(Product::class, 'product_code')],
             'sales_product_code' => ['nullable', 'string', 'max:50'],
             'sku' => ['nullable', 'string', 'max:100'],
 
@@ -78,10 +66,9 @@ class StoreProductRequest extends FormRequest
             // 브랜드
             'brand_id' => ['nullable', 'integer', Rule::exists(Brand::class, 'id')],
 
-            // 가격 (기본통화 기준 — 소수 통화는 소수 입력 허용). 0원 상품(증정·무료 체험)을 허용한다 —
-            // 0원 주문은 무료 결제수단으로 곧바로 결제완료가 된다
-            'list_price' => ['required', 'numeric', $priceRule, 'min:0'],
-            'selling_price' => ['required', 'numeric', $priceRule, 'min:0', 'lte:list_price'],
+            // 가격 (기본통화 기준 — 소수 통화는 소수 입력 허용)
+            'list_price' => ['required', 'numeric', $priceRule, 'min:0.01'],
+            'selling_price' => ['required', 'numeric', $priceRule, 'min:0.01', 'lte:list_price'],
 
             // 재고
             'stock_quantity' => ['required', 'integer', 'min:0'],
@@ -105,9 +92,7 @@ class StoreProductRequest extends FormRequest
 
             // 이미지 (별도 테이블)
             'thumbnail_hash' => ['nullable', 'string', 'max:64'],
-            'image_temp_key' => $this->tempKeyRules(),
-            // 본문 미디어 임시 키 — 설명 편집기가 올린 미디어를 저장 때 잇는다 (#883)
-            'content_media_temp_key' => ['nullable', 'string', 'uuid'],
+            'image_temp_key' => ['nullable', 'string', 'max:64'],
             'images' => ['nullable', 'array', 'max:'.ProductImageCollection::MAX_IMAGES_PER_COLLECTION],
             'images.*.id' => ['nullable', 'integer'],
             'images.*.hash' => ['nullable', 'string'],
@@ -148,8 +133,6 @@ class StoreProductRequest extends FormRequest
             'options.*.volume' => ['nullable', 'numeric', 'min:0'],
             'options.*.mileage_value' => ['nullable', 'numeric', 'min:0'],
             'options.*.mileage_type' => ['nullable', 'string', 'in:fixed,percent'],
-            // 옵션별 과세 종류 — 비우면(null) 상품 기본값을 따른다 (#612)
-            'options.*.tax_status' => ['nullable', Rule::enum(ProductTaxStatus::class)],
             'options.*.is_default' => ['nullable', 'boolean'],
             'options.*.is_active' => ['nullable', 'boolean'],
 
@@ -209,7 +192,6 @@ class StoreProductRequest extends FormRequest
             'name.required' => __('sirsoft-ecommerce::validation.product.name.required'),
             'product_code.required' => __('sirsoft-ecommerce::validation.product.product_code.required'),
             'product_code.unique' => __('sirsoft-ecommerce::validation.product.product_code.unique'),
-            'product_code.regex' => __('sirsoft-ecommerce::validation.product.product_code.regex'),
 
             // 가격
             'list_price.required' => __('sirsoft-ecommerce::validation.product.list_price.required'),
@@ -243,7 +225,6 @@ class StoreProductRequest extends FormRequest
             'options.*.list_price.required_with' => __('sirsoft-ecommerce::validation.product.options.list_price.required_with'),
             'options.*.selling_price.required_with' => __('sirsoft-ecommerce::validation.product.options.selling_price.required_with'),
             'options.*.stock_quantity.required_with' => __('sirsoft-ecommerce::validation.product.options.stock_quantity.required_with'),
-            'options.*.tax_status.enum' => __('sirsoft-ecommerce::validation.product.options.tax_status.in'),
 
             // 추가옵션 (선택지 누락/그룹명/추가금 — 영문 키 노출 방지)
             'additional_options.max' => __('sirsoft-ecommerce::validation.product.additional_options.max'),
@@ -276,7 +257,6 @@ class StoreProductRequest extends FormRequest
      * 단일 필드 rules 로 표현 불가한 검증을 after() 콜백으로 등록합니다.
      *
      * @param  Validator  $validator  Laravel validator 인스턴스
-     * @return void
      */
     public function withValidator(Validator $validator): void
     {
@@ -293,7 +273,6 @@ class StoreProductRequest extends FormRequest
      * restricted 인데 allowed_roles 가 비어 있으면 모순 데이터이므로 차단합니다.
      *
      * @param  Validator  $validator  Laravel validator 인스턴스
-     * @return void
      */
     protected function validatePurchaseRestrictionRoles(Validator $validator): void
     {
@@ -331,7 +310,6 @@ class StoreProductRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'content_media_temp_key' => __('sirsoft-ecommerce::validation.attributes.content_media_temp_key'),
             'name' => __('sirsoft-ecommerce::validation.product.attributes.name'),
             'product_code' => __('sirsoft-ecommerce::validation.product.attributes.product_code'),
             'list_price' => __('sirsoft-ecommerce::validation.product.attributes.list_price'),
@@ -342,21 +320,13 @@ class StoreProductRequest extends FormRequest
             'options.*.selling_price' => __('sirsoft-ecommerce::validation.product.attributes.option_selling_price'),
             'options.*.price_adjustment' => __('sirsoft-ecommerce::validation.product.attributes.option_price_adjustment'),
             'options.*.stock_quantity' => __('sirsoft-ecommerce::validation.product.attributes.option_stock_quantity'),
-            'options.*.tax_status' => __('sirsoft-ecommerce::validation.product.attributes.option_tax_status'),
             'options.*.option_name' => __('sirsoft-ecommerce::validation.product.attributes.option_name'),
             'options.*.option_code' => __('sirsoft-ecommerce::validation.product.attributes.option_code'),
-            'option_groups.*.name' => __('sirsoft-ecommerce::validation.product.attributes.option_group_name'),
-            'additional_options.*.name' => __('sirsoft-ecommerce::validation.product.attributes.additional_option_name'),
-            'additional_options.*.values.*.name' => __('sirsoft-ecommerce::validation.product.attributes.additional_option_value_name'),
-            'notice_items.*.name' => __('sirsoft-ecommerce::validation.product.attributes.notice_item_name'),
-            'notice_items.*.content' => __('sirsoft-ecommerce::validation.product.attributes.notice_item_content'),
         ];
     }
 
     /**
      * 데이터 전처리
-     *
-     * @return void
      */
     protected function prepareForValidation(): void
     {

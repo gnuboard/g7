@@ -5,7 +5,7 @@
         "ko": "Admin Basic",
         "en": "Admin Basic"
     },
-    "version": "1.1.7",
+    "version": "1.0.8",
     "license": "MIT",
     "description": {
         "ko": "그누보드7 기본 관리자 템플릿",
@@ -21,25 +21,11 @@
         "email": "contact@sirsoft.com",
         "url": "https://sirsoft.com"
     },
-    "release_date": "2026-11-15",
-    "g7_version": ">=7.1.6",
+    "release_date": "2026-05-15",
+    "g7_version": ">=7.0.10",
     "dependencies": {
         "modules": {},
         "plugins": {}
-    },
-    "necessary_storage": {
-        "localStorage": [
-            "g7_color_scheme",
-            "g7_admin_sidebar_collapsed",
-            "g7_filter_visibility_*",
-            "g7_filters_*",
-            "g7_columns_*",
-            "g7_view_mode_*"
-        ],
-        "sessionStorage": [
-            "g7_dismissed_warnings"
-        ],
-        "cookie": []
     },
     "assets": {
         "css": [
@@ -116,12 +102,12 @@
             "section"
         ]
     },
-    "scroll_restoration": {
-        "mode": "restore",
-        "on_reload": true,
-        "wait": "height",
-        "timeout_ms": 5000,
-        "containers": ["#right_content_area"]
+    "preview": {
+        "thumbnail": "preview/thumbnail.png",
+        "screenshots": [
+            "preview/screenshot1.png",
+            "preview/screenshot2.png"
+        ]
     },
     "error_config": {
         "layouts": {

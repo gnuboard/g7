@@ -12,10 +12,6 @@ import { startAuthHandler, resolveFailureMessage, MODAL_ID } from '../index';
 
 const CALL_URL = 'https://testcert.kcp.co.kr/certGateway.do';
 const NEXT_CALL_URL = 'https://testcert.kcp.co.kr/certGateway.do?next=1';
-/** 서버가 챌린지 payload 로 내려주는 사이트 origin — 결과 창 출처 검증 기준 */
-const SITE_ORIGIN = 'https://shop.example.test';
-/** 가장 최근에 연 인증 팝업 — 결과 메시지의 발신 창 */
-let lastPopup: unknown = null;
 
 interface SubmittedForm {
     action: string;
@@ -40,31 +36,7 @@ function nextChallengeId(): string {
 
 let currentChallengeId = 'challenge-0';
 
-/** 코어 API 클라이언트의 post 모의 — 재발급·취소 통보가 모두 여기로 온다 */
-let apiPost = vi.fn();
-
-/**
- * 새 거래 발급 응답을 정한다. 취소 통보 등 다른 요청은 성공으로 답한다.
- *
- * @param reissue 새 거래 발급 응답 (예외를 던지게 하려면 Error)
- */
-function answerReissue(reissue: Record<string, unknown> | Error): void {
-    apiPost.mockImplementation(async (url: string) => {
-        if (url !== '/api/identity/challenges') return { success: true };
-        if (reissue instanceof Error) throw reissue;
-
-        return reissue;
-    });
-}
-
-/** 새 거래 발급 요청만 골라낸다 */
-function reissueCalls(): Array<[string, Record<string, unknown>]> {
-    return (apiPost.mock.calls as unknown as Array<[string, Record<string, unknown>]>)
-        .filter(([url]) => url === '/api/identity/challenges');
-}
-
 function setupG7Core(): void {
-    apiPost = vi.fn(async () => ({ success: true }));
     dispatched = [];
     toasts = [];
     globalState = {
@@ -72,7 +44,7 @@ function setupG7Core(): void {
             provider_id: 'nhnkcp',
             purpose: 'signup',
             challenge_id: currentChallengeId,
-            public_payload: { call_url: CALL_URL, reg_cert_key: 'CERTKEY000000001', siteOrigin: SITE_ORIGIN },
+            public_payload: { call_url: CALL_URL, reg_cert_key: 'CERTKEY000000001' },
         },
     };
 
@@ -96,7 +68,7 @@ function setupG7Core(): void {
             return true;
         }),
         identity: { markDomainNoticeShown: vi.fn() },
-        api: { post: apiPost },
+        api: { getToken: () => null },
     };
 }
 
@@ -115,23 +87,14 @@ function captureFormSubmits(): void {
     };
 }
 
-/** 브리지가 부모 창으로 보내는 결과 메시지를 재현한다(사이트 origin·열린 팝업이 보낸 것으로). */
+/** 브리지가 부모 창으로 보내는 결과 메시지를 재현한다. */
 function emitBridgeResult(data: Record<string, unknown>): void {
-    const ev = new MessageEvent('message', {
-        data: { type: 'identity_result', ...data },
-        origin: SITE_ORIGIN,
-    });
-    Object.defineProperty(ev, 'source', { value: lastPopup });
-    window.dispatchEvent(ev);
-}
-
-/** 인증 팝업을 흉내 내고 마지막으로 연 팝업을 기억한다. */
-function openPopupStub(popup: { closed: boolean; close: () => void } = { closed: false, close: vi.fn() }) {
-    return vi.fn(() => {
-        lastPopup = popup;
-
-        return popup;
-    });
+    window.dispatchEvent(
+        new MessageEvent('message', {
+            data: { type: 'identity_result', ...data },
+            origin: window.location.origin,
+        }),
+    );
 }
 
 describe('인증 실패 후 흐름', () => {
@@ -140,7 +103,7 @@ describe('인증 실패 후 흐름', () => {
         setupG7Core();
         captureFormSubmits();
         window.sessionStorage.clear();
-        vi.stubGlobal('open', openPopupStub());
+        vi.stubGlobal('open', vi.fn(() => ({ closed: false, close: vi.fn() })));
     });
 
     afterEach(() => {
@@ -184,54 +147,30 @@ describe('인증 실패 후 흐름', () => {
         await startAuthHandler();
         emitBridgeResult({ identity_error: 'REMOTE_CALL_FAILED', challenge_id: currentChallengeId });
 
-        const fetchSpy = vi.fn();
-        vi.stubGlobal('fetch', fetchSpy as unknown as typeof fetch);
-        answerReissue({
-            success: true,
-            data: {
-                id: 'challenge-reissued',
-                expires_at: '2026-07-28T15:00:00+09:00',
-                public_payload: { call_url: NEXT_CALL_URL, reg_cert_key: 'CERTKEY000000002', siteOrigin: SITE_ORIGIN },
-            },
-        });
+        const fetchMock = vi.fn(async () => ({
+            ok: true,
+            json: async () => ({
+                success: true,
+                data: {
+                    id: 'challenge-reissued',
+                    expires_at: '2026-07-28T15:00:00+09:00',
+                    public_payload: { call_url: NEXT_CALL_URL, reg_cert_key: 'CERTKEY000000002' },
+                },
+            }),
+        }));
+        vi.stubGlobal('fetch', fetchMock as unknown as typeof fetch);
 
         await startAuthHandler();
 
-        // 코어 API 클라이언트로 보낸다 — Bearer·401·로케일은 코어가 맡고 raw fetch 는 쓰지 않는다
-        expect(fetchSpy).not.toHaveBeenCalled();
-        expect(reissueCalls()).toHaveLength(1);
-        expect(reissueCalls()[0][1]).toMatchObject({ purpose: 'signup', provider_id: 'nhnkcp' });
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+        expect(url).toBe('/api/identity/challenges');
+        expect(JSON.parse(String(init.body))).toMatchObject({ purpose: 'signup', provider_id: 'nhnkcp' });
 
         // 새 거래 정보로 표준창이 열려야 한다 (이전 거래키 재사용 금지)
         expect(submitted[submitted.length - 1].action).toBe(NEXT_CALL_URL);
         expect(submitted[submitted.length - 1].fields.reg_cert_key).toBe('CERTKEY000000002');
         expect(globalState.identityChallenge.challenge_id).toBe('challenge-reissued');
-    });
-
-    // @scenario environment=desktop,outcome=failed
-    // @effects reissue_sends_policy_key
-    it('재발급 요청은 정책 키를 승계해 정책이 지정한 수단으로 다시 발급받는다', async () => {
-        globalState.identityChallenge.policy_key = 'core.auth.signup_before_submit';
-        await startAuthHandler();
-        emitBridgeResult({ identity_error: 'REMOTE_CALL_FAILED', challenge_id: currentChallengeId });
-
-        answerReissue({
-            success: true,
-            data: {
-                id: 'challenge-reissued-policy',
-                expires_at: '2026-07-28T15:00:00+09:00',
-                public_payload: { call_url: NEXT_CALL_URL, reg_cert_key: 'CERTKEY000000003', siteOrigin: SITE_ORIGIN },
-            },
-        });
-
-        await startAuthHandler();
-
-        expect(reissueCalls()).toHaveLength(1);
-        expect(reissueCalls()[0][1]).toMatchObject({
-            purpose: 'signup',
-            provider_id: 'nhnkcp',
-            policy_key: 'core.auth.signup_before_submit',
-        });
     });
 
     /**
@@ -245,18 +184,22 @@ describe('인증 실패 후 흐름', () => {
         await startAuthHandler();
         emitBridgeResult({ identity_error: 'DUPLICATE' });
 
-        answerReissue({
-            success: true,
-            data: {
-                id: 'challenge-reissued-2',
-                expires_at: '2026-07-28T15:00:00+09:00',
-                public_payload: { call_url: NEXT_CALL_URL, reg_cert_key: 'CERTKEY000000003', siteOrigin: SITE_ORIGIN },
-            },
-        });
+        const fetchMock = vi.fn(async () => ({
+            ok: true,
+            json: async () => ({
+                success: true,
+                data: {
+                    id: 'challenge-reissued-2',
+                    expires_at: '2026-07-28T15:00:00+09:00',
+                    public_payload: { call_url: NEXT_CALL_URL, reg_cert_key: 'CERTKEY000000003' },
+                },
+            }),
+        }));
+        vi.stubGlobal('fetch', fetchMock as unknown as typeof fetch);
 
         await startAuthHandler();
 
-        expect(reissueCalls()).toHaveLength(1);
+        expect(fetchMock).toHaveBeenCalledTimes(1);
         expect(submitted[submitted.length - 1].fields.reg_cert_key).toBe('CERTKEY000000003');
     });
 
@@ -270,26 +213,30 @@ describe('인증 실패 후 흐름', () => {
     it('인증창을 닫았다가 다시 시작하면 새 거래를 발급받는다', async () => {
         vi.useFakeTimers();
         const popup = { closed: false, close: vi.fn() };
-        vi.stubGlobal('open', openPopupStub(popup));
+        vi.stubGlobal('open', vi.fn(() => popup));
 
         await startAuthHandler();
         popup.closed = true;
         vi.advanceTimersByTime(500);
         vi.useRealTimers();
 
-        answerReissue({
-            success: true,
-            data: {
-                id: 'challenge-reissued-3',
-                expires_at: '2026-07-28T15:00:00+09:00',
-                public_payload: { call_url: NEXT_CALL_URL, reg_cert_key: 'CERTKEY000000004', siteOrigin: SITE_ORIGIN },
-            },
-        });
-        vi.stubGlobal('open', openPopupStub());
+        const fetchMock = vi.fn(async () => ({
+            ok: true,
+            json: async () => ({
+                success: true,
+                data: {
+                    id: 'challenge-reissued-3',
+                    expires_at: '2026-07-28T15:00:00+09:00',
+                    public_payload: { call_url: NEXT_CALL_URL, reg_cert_key: 'CERTKEY000000004' },
+                },
+            }),
+        }));
+        vi.stubGlobal('fetch', fetchMock as unknown as typeof fetch);
+        vi.stubGlobal('open', vi.fn(() => ({ closed: false, close: vi.fn() })));
 
         await startAuthHandler();
 
-        expect(reissueCalls()).toHaveLength(1);
+        expect(fetchMock).toHaveBeenCalledTimes(1);
         expect(submitted[submitted.length - 1].fields.reg_cert_key).toBe('CERTKEY000000004');
         expect(globalState.identityChallenge.challenge_id).toBe('challenge-reissued-3');
     });
@@ -301,8 +248,10 @@ describe('인증 실패 후 흐름', () => {
         emitBridgeResult({ identity_error: 'REMOTE_CALL_FAILED', challenge_id: currentChallengeId });
         const submittedBefore = submitted.length;
 
-        // 4xx·5xx 는 API 클라이언트가 예외로 던진다
-        answerReissue(Object.assign(new Error('HTTP 422'), { response: { status: 422, data: { success: false } } }));
+        vi.stubGlobal(
+            'fetch',
+            vi.fn(async () => ({ ok: false, json: async () => ({ success: false }) })) as unknown as typeof fetch,
+        );
 
         await startAuthHandler();
 
@@ -312,23 +261,17 @@ describe('인증 실패 후 흐름', () => {
 });
 
 describe('실패 사유 안내 문구', () => {
-    // @scenario environment=desktop,outcome=failed
-    // @effects failure_notice_explains_reason_by_code
     it('우리말 안내가 준비된 사유는 다국어 키로 안내한다', () => {
         expect(resolveFailureMessage('NOT_ADULT')).toBe('$t:sirsoft-verification_nhnkcp.errors.not_adult');
         expect(resolveFailureMessage('9999')).toBe('$t:sirsoft-verification_nhnkcp.errors.cancelled');
     });
 
-    // @scenario environment=desktop,outcome=failed
-    // @effects failure_notice_explains_reason_by_code
     it('안내가 없는 KCP 코드는 코드와 원문을 그대로 보여준다', () => {
         expect(resolveFailureMessage('CS16', '거래등록이 올바르지 않습니다.')).toBe(
             '[CS16] 거래등록이 올바르지 않습니다.',
         );
     });
 
-    // @scenario environment=desktop,outcome=failed
-    // @effects failure_notice_explains_reason_by_code
     it('원문도 없으면 일반 실패 안내로 떨어진다', () => {
         expect(resolveFailureMessage('CS99')).toBe('$t:sirsoft-verification_nhnkcp.errors.verify_failed');
         expect(resolveFailureMessage('CS99', '   ')).toBe('$t:sirsoft-verification_nhnkcp.errors.verify_failed');
