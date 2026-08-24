@@ -1013,6 +1013,9 @@ class OrderCancellationService
         ]);
 
         // 취소 옵션 확정
+        // TODO(S6b): 관계 빌더 직접 update 는 저장소 우회다 —
+        // `OrderCancelOptionRepositoryInterface::bulkUpdateStatus()` 로 위임할 것.
+        // 정적 룰이 이 형태(`$model->relation()->update()`)를 검출하지 못해 표식으로 남긴다.
         $cancel->cancelOptions()->update([
             'option_status' => CancelOptionStatusEnum::COMPLETED,
             'completed_at' => $now,
@@ -1039,6 +1042,8 @@ class OrderCancellationService
         }
 
         // 환불 옵션 확정
+        // TODO(S6b): 위와 같은 저장소 우회. `OrderRefundOptionRepositoryInterface::bulkUpdateStatus()`
+        // 가 이미 있으므로(환불 신청 경로가 쓴다) 이 지점도 그리로 위임할 것.
         if ($refund) {
             $refund->refundOptions()->update([
                 'option_status' => RefundOptionStatusEnum::COMPLETED,

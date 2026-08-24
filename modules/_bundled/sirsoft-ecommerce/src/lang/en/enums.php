@@ -317,6 +317,7 @@ return [
     'exchange_status' => [
         'requested' => 'Exchange Requested',
         'payment_pending' => 'Exchange Payment Pending',
+        'paid' => 'Exchange Payment Completed',
         'approved' => 'Exchange Approved',
         'on_hold' => 'Exchange On Hold',
         'rejected' => 'Exchange Rejected',
@@ -334,6 +335,7 @@ return [
     'return_status' => [
         'requested' => 'Return Requested',
         'payment_pending' => 'Return Payment Pending',
+        'paid' => 'Return Payment Completed',
         'approved' => 'Return Approved',
         'on_hold' => 'Return On Hold',
         'rejected' => 'Return Rejected',

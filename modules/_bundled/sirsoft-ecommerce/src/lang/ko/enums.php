@@ -317,6 +317,7 @@ return [
     'exchange_status' => [
         'requested' => '교환신청',
         'payment_pending' => '교환결제대기',
+        'paid' => '교환결제완료',
         'approved' => '교환승인',
         'on_hold' => '교환보류',
         'rejected' => '교환반려',
@@ -334,6 +335,7 @@ return [
     'return_status' => [
         'requested' => '반품신청',
         'payment_pending' => '반품결제대기',
+        'paid' => '반품결제완료',
         'approved' => '반품승인',
         'on_hold' => '반품보류',
         'rejected' => '반품반려',

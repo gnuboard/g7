@@ -6,7 +6,7 @@ namespace Modules\Sirsoft\Ecommerce\Enums;
  * 교환 클레임 상태 Enum
  *
  * 교환 신청서(`ecommerce_order_exchanges.exchange_status`)와 신청 상품
- * (`ecommerce_order_exchange_options.option_status`)이 공유하는 세밀 상태 13종이다.
+ * (`ecommerce_order_exchange_options.option_status`)이 공유하는 세밀 상태 14종이다.
  * 원 주문옵션(`ecommerce_order_options.option_status`)에는 코스 상태
  * (`OrderStatusEnum::EXCHANGE_IN_PROGRESS` / `EXCHANGED`)만 기록되며,
  * 세밀 상태는 클레임 테이블에만 존재한다.
@@ -19,6 +19,7 @@ enum ExchangeStatusEnum: string
 {
     case REQUESTED = 'requested';                  // 교환신청
     case PAYMENT_PENDING = 'payment_pending';      // 교환결제대기
+    case PAID = 'paid';                            // 교환결제완료
     case APPROVED = 'approved';                    // 교환승인
     case ON_HOLD = 'on_hold';                      // 교환보류
     case REJECTED = 'rejected';                    // 교환반려
@@ -71,6 +72,7 @@ enum ExchangeStatusEnum: string
         return match ($this) {
             self::REQUESTED => 'secondary',
             self::PAYMENT_PENDING => 'warning',
+            self::PAID => 'success',
             self::APPROVED => 'info',
             self::ON_HOLD => 'dark',
             self::REJECTED => 'danger',
@@ -110,7 +112,7 @@ enum ExchangeStatusEnum: string
      */
     public static function withdrawableStatuses(): array
     {
-        return [self::REQUESTED, self::PAYMENT_PENDING, self::ON_HOLD];
+        return [self::REQUESTED, self::PAYMENT_PENDING, self::PAID, self::ON_HOLD];
     }
 
     /**
@@ -138,7 +140,8 @@ enum ExchangeStatusEnum: string
                 self::REJECTED,
                 self::WITHDRAWN,
             ],
-            self::PAYMENT_PENDING => [self::APPROVED, self::REJECTED, self::WITHDRAWN],
+            self::PAYMENT_PENDING => [self::PAID, self::APPROVED, self::REJECTED, self::WITHDRAWN],
+            self::PAID => [self::APPROVED, self::ON_HOLD, self::REJECTED, self::WITHDRAWN],
             self::ON_HOLD => [self::APPROVED, self::REJECTED, self::WITHDRAWN],
             self::APPROVED => [self::COLLECTION_READY],
             self::COLLECTION_READY => [self::COLLECTING],

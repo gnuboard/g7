@@ -24,6 +24,14 @@ class ClaimImage extends Model
 {
     use HasFactory;
 
+    /**
+     * 신청서 작성 중(미귀속) 첨부의 claimable_type 값 — claimable_id 는 주문 ID 다.
+     *
+     * 신청서가 만들어지기 전에 올린 이미지를 주문에 묶어 두는 임시 유형이며, 신청 접수 시
+     * 실제 클레임 유형으로 귀속된다.
+     */
+    public const PENDING_CLAIMABLE_TYPE = 'pending';
+
     protected static function newFactory()
     {
         return ClaimImageFactory::new();

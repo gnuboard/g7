@@ -29,6 +29,7 @@ use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\CategoryController as Publ
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\CategoryImageController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\CheckoutController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\EcommerceSettingsController as PublicEcommerceSettingsController;
+use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\GuestClaimController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\OrderController as PublicOrderController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\ProductController as PublicProductController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\ProductImageController;
@@ -38,6 +39,9 @@ use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\PublicCouponController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\WishlistController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Shop\PaymentConfigController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\User\CashReceiptController as UserCashReceiptController;
+use Modules\Sirsoft\Ecommerce\Http\Controllers\User\ClaimController as UserClaimController;
+use Modules\Sirsoft\Ecommerce\Http\Controllers\User\ClaimImageController;
+use Modules\Sirsoft\Ecommerce\Http\Controllers\User\ClaimPaymentController as UserClaimPaymentController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\User\OrderController as UserOrderController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\User\ProductInquiryController as UserProductInquiryController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\User\ProductReviewController as UserProductReviewController;
@@ -301,6 +305,53 @@ Route::prefix('guest/orders/{orderNumber}')
         // 발급취소는 제공하지 않는다 (관리자 전용).
         Route::post('/cash-receipt', [GuestCashReceiptController::class, 'issue'])
             ->name('guest.orders.cash-receipt.issue');
+
+        // ── 비회원 클레임(교환/반품/취소·환불) ─────────────────────────────
+        // 회원 경로와 같은 FormRequest·액션 본문을 쓴다(HandlesClaimActions). 주문은 토큰이 검증한 guest_order 만.
+        // GET /guest/orders/{orderNumber}/claimable-options - 클레임 가능 상품·유형·사유·설정
+        Route::get('/claimable-options', [GuestClaimController::class, 'claimableOptions'])
+            ->name('guest.orders.claimable-options');
+
+        // POST /guest/orders/{orderNumber}/claims/preview - 신청 미리보기 (배송비·차액·환불 예정액)
+        Route::post('/claims/preview', [GuestClaimController::class, 'preview'])
+            ->name('guest.orders.claims.preview');
+
+        // POST /guest/orders/{orderNumber}/exchanges - 교환 신청
+        Route::post('/exchanges', [GuestClaimController::class, 'storeExchange'])
+            ->name('guest.orders.exchanges.store');
+
+        // POST /guest/orders/{orderNumber}/returns - 반품 신청
+        Route::post('/returns', [GuestClaimController::class, 'storeReturn'])
+            ->name('guest.orders.returns.store');
+
+        // POST /guest/orders/{orderNumber}/refund-requests - 취소·환불 신청 (상태 자동 분기)
+        Route::post('/refund-requests', [GuestClaimController::class, 'storeRefund'])
+            ->name('guest.orders.refund-requests.store');
+
+        // GET /guest/orders/{orderNumber}/claims - 이 주문의 클레임 목록 (비회원 주문상세 섹션)
+        Route::get('/claims', [GuestClaimController::class, 'index'])
+            ->name('guest.orders.claims.index');
+
+        // 클레임 번호 단위 — GET 상세 / PATCH 수정(승인 전) / POST 철회
+        Route::get('/claims/{claimNumber}', [GuestClaimController::class, 'show'])
+            ->name('guest.orders.claims.show');
+        Route::patch('/claims/{claimNumber}', [GuestClaimController::class, 'update'])
+            ->name('guest.orders.claims.update');
+        Route::post('/claims/{claimNumber}/withdraw', [GuestClaimController::class, 'withdraw'])
+            ->name('guest.orders.claims.withdraw');
+
+        // 첨부 이미지 — POST 업로드(신청서 작성 중, 주문 스코프 · 신청서 미귀속) / DELETE 삭제
+        Route::post('/claims/images', [GuestClaimController::class, 'storeImage'])
+            ->name('guest.orders.claim-images.store');
+        Route::delete('/claims/images/{image}', [GuestClaimController::class, 'destroyImage'])
+            ->whereNumber('image')
+            ->name('guest.orders.claim-images.destroy');
+
+        // 추가결제 — POST 결제 시작 / POST PG 승인 콜백
+        Route::post('/claim-payments/{paymentNumber}/pay', [GuestClaimController::class, 'pay'])
+            ->name('guest.orders.claim-payments.pay');
+        Route::post('/claim-payments/{paymentNumber}/approve', [GuestClaimController::class, 'approve'])
+            ->name('guest.orders.claim-payments.approve');
     });
 
 // 회원/비회원 공유 주문 상세 조회 (optional.sanctum)
@@ -329,6 +380,13 @@ Route::post('orders/{orderNumber}/cancel-payment', [PublicOrderController::class
 Route::get('user/claim-reasons', [ClaimReasonController::class, 'userSelectableReasons'])
     ->middleware(['optional.sanctum', 'permission:user,sirsoft-ecommerce.user-orders.cancel'])
     ->name('user.claim-reasons.index');
+
+// 클레임 첨부 이미지 서빙 (한시 서명 URL / 신청자 본인 / 운영자 — 직접 URL 없음)
+// GET /api/modules/sirsoft-ecommerce/claim-image/{hash}
+Route::get('claim-image/{hash}', [ClaimImageController::class, 'download'])
+    ->where('hash', '[a-zA-Z0-9]{12}')
+    ->middleware('optional.sanctum')
+    ->name('claim-image.download');
 
 // PG 결제 클라이언트 설정 API (프론트엔드 SDK 키 조회)
 // GET /api/modules/sirsoft-ecommerce/payments/client-config/{provider} - PG사별 클라이언트 설정
@@ -440,6 +498,77 @@ Route::prefix('user')->middleware('auth:sanctum')->group(function () {
         Route::post('/{id}/cash-receipt', [UserCashReceiptController::class, 'issue'])
             ->whereNumber('id')
             ->name('user.orders.cash-receipt.issue');
+
+        // ── 클레임(교환/반품/취소·환불) 신청 — 주문 스코프 ─────────────────
+        // GET /api/modules/sirsoft-ecommerce/user/orders/{id}/claimable-options - 클레임 가능 상품·유형·사유·설정
+        Route::get('/{id}/claimable-options', [UserClaimController::class, 'claimableOptions'])
+            ->whereNumber('id')
+            ->middleware('permission:user,sirsoft-ecommerce.user-claims.read')
+            ->name('user.orders.claimable-options');
+
+        // POST /api/modules/sirsoft-ecommerce/user/orders/{id}/claims/preview - 신청 미리보기
+        Route::post('/{id}/claims/preview', [UserClaimController::class, 'preview'])
+            ->whereNumber('id')
+            ->middleware('permission:user,sirsoft-ecommerce.user-claims.request')
+            ->name('user.orders.claims.preview');
+
+        // POST /api/modules/sirsoft-ecommerce/user/orders/{id}/exchanges · /returns · /refund-requests - 신청 3종
+        Route::post('/{id}/exchanges', [UserClaimController::class, 'storeExchange'])
+            ->whereNumber('id')
+            ->middleware('permission:user,sirsoft-ecommerce.user-claims.request')
+            ->name('user.orders.exchanges.store');
+        Route::post('/{id}/returns', [UserClaimController::class, 'storeReturn'])
+            ->whereNumber('id')
+            ->middleware('permission:user,sirsoft-ecommerce.user-claims.request')
+            ->name('user.orders.returns.store');
+        Route::post('/{id}/refund-requests', [UserClaimController::class, 'storeRefund'])
+            ->whereNumber('id')
+            ->middleware('permission:user,sirsoft-ecommerce.user-claims.request')
+            ->name('user.orders.refund-requests.store');
+
+        // POST /api/modules/sirsoft-ecommerce/user/orders/{id}/claims/images - 첨부 업로드 (신청서 작성 중, 주문 스코프 · 신청서 미귀속)
+        Route::post('/{id}/claims/images', [ClaimImageController::class, 'store'])
+            ->whereNumber('id')
+            ->middleware('permission:user,sirsoft-ecommerce.user-claims.request')
+            ->name('user.orders.claim-images.store');
+    });
+
+    // 클레임 API (인증 사용자) — 신청 내역·상세·수정·철회·첨부 삭제·추가결제
+    // GET    /api/modules/sirsoft-ecommerce/user/claims?type=exchange|return|refund|cancel - 신청 내역 (유형 서브탭)
+    // GET    /api/modules/sirsoft-ecommerce/user/claims/{claimNumber} - 상세
+    // PATCH  /api/modules/sirsoft-ecommerce/user/claims/{claimNumber} - 수정 (승인 전 — 사유·상세·첨부·재발송지)
+    // POST   /api/modules/sirsoft-ecommerce/user/claims/{claimNumber}/withdraw - 철회
+    // DELETE /api/modules/sirsoft-ecommerce/user/claims/images/{image} - 첨부 삭제
+    Route::prefix('claims')->group(function () {
+        Route::get('/', [UserClaimController::class, 'index'])
+            ->middleware('permission:user,sirsoft-ecommerce.user-claims.read')
+            ->name('user.claims.index');
+
+        // 정적 경로(images)가 와일드카드({claimNumber}) 보다 먼저 정의되어야 한다.
+        Route::delete('/images/{image}', [ClaimImageController::class, 'destroy'])
+            ->whereNumber('image')
+            ->middleware('permission:user,sirsoft-ecommerce.user-claims.request')
+            ->name('user.claims.images.destroy');
+
+        Route::get('/{claimNumber}', [UserClaimController::class, 'show'])
+            ->middleware('permission:user,sirsoft-ecommerce.user-claims.read')
+            ->name('user.claims.show');
+        Route::patch('/{claimNumber}', [UserClaimController::class, 'update'])
+            ->middleware('permission:user,sirsoft-ecommerce.user-claims.request')
+            ->name('user.claims.update');
+        Route::post('/{claimNumber}/withdraw', [UserClaimController::class, 'withdraw'])
+            ->middleware('permission:user,sirsoft-ecommerce.user-claims.withdraw')
+            ->name('user.claims.withdraw');
+    });
+
+    // 클레임 추가결제 API (인증 사용자)
+    // POST /api/modules/sirsoft-ecommerce/user/claim-payments/{paymentNumber}/pay - 결제 시작 (결제 수단 확정)
+    // POST /api/modules/sirsoft-ecommerce/user/claim-payments/{paymentNumber}/approve - PG 승인 콜백
+    Route::prefix('claim-payments')->middleware('permission:user,sirsoft-ecommerce.user-claims.pay')->group(function () {
+        Route::post('/{paymentNumber}/pay', [UserClaimPaymentController::class, 'pay'])
+            ->name('user.claim-payments.pay');
+        Route::post('/{paymentNumber}/approve', [UserClaimPaymentController::class, 'approve'])
+            ->name('user.claim-payments.approve');
     });
 
     // 리뷰 API (인증 사용자)

@@ -150,6 +150,9 @@ _단건 응답: `data` 객체의 필드 (`GuestOrderResource` — 취소 후 갱
 | total_refunded_amount_formatted | string | `15,000원` | 누적 PG 환불 금액 표기 문자열 |
 | total_refunded_points_amount | number | `0` | 누적 마일리지 환불 금액 |
 | total_refunded_points_amount_formatted | string | `0원` | 누적 마일리지 환불 금액 표기 문자열 |
+| claim_additional_paid_total | number | `0` | 이 주문의 클레임(교환·반품) 추가결제 실수납 합계 — 결제 완료 건의 청구액에서 부분 환급을 뺀 값. 0원이면 화면에 노출하지 않는다 |
+| claim_additional_paid_total_formatted | string | `0원` | `claim_additional_paid_total` 표기 문자열 |
+| mc_claim_additional_paid_total | array | `[]` | 다통화 표기 맵 (통화 코드 => `{amount, formatted}`). 다통화 기록이 없으면 빈 배열 |
 | total_points_used_amount | number | `0` | 사용한 마일리지 금액 |
 | total_points_used_amount_formatted | string | `0원` | 사용 마일리지 표기 문자열 |
 | total_deposit_used_amount | number | `0` | 사용한 예치금 금액 |
@@ -760,3 +763,536 @@ _단건 응답: `data` 객체의 필드 (`GuestOrderResource` — 배송지 수�
 **상태코드 구분** 배송 전 상태가 아닌 등 도메인 규칙 위반은 422, 그 밖의 서버 내부 오류는 500 입니다. 500 응답에는 예외 원문이 실리지 않습니다.
 
 
+
+---
+
+## 비회원 클레임
+
+<a id="비회원-클레임"></a>
+
+비회원 주문의 교환/반품/취소·환불 신청 경로입니다. 모든 엔드포인트는 `guest/orders/{orderNumber}/…` 아래에 있고 `X-Guest-Order-Token` 헤더(비회원 주문 조회 `POST guest/orders/verify` 가 발급)가 필수이며, 토큰이 없거나 토큰의 주문과 `{orderNumber}` 가 다르면 존재 여부를 드러내지 않고 **404** 입니다(`VerifyGuestOrderToken`). 요청 파라미터·응답 형태는 회원 경로와 같으므로 각 항목은 회원 문서를 가리키고 비회원에서 다른 점만 적습니다 — 요청 본문은 [orders.md](orders.md#클레임-신청-주문-단위)·[claims.md](claims.md)·[claim-payments.md](claim-payments.md), 리소스 필드 표는 [claims.md](claims.md#claim-resource).
+
+비회원 공통 차이:
+
+- 신청자(`requested_by`)는 항상 `null`, `is_guest_request=true`.
+- 마일리지 결제(`payment_method=point`)는 열리지 않는다 — 422 `claim_point_payment_requires_member`. 신청 시점 결제에서 이 수단을 지정하면 **신청서를 만들기 전에** 거절되므로 거절된 요청은 신청서도 결제 건도 남기지 않는다. 수단을 생략하면 허용 목록에서 비회원이 쓸 수 있는 첫 수단으로 확정된다.
+- 첨부 업로드·귀속·삭제는 토큰 주문에 묶인 첨부만 가능하다. 다른 주문의 첨부 ID 는 `claim_image_not_found`.
+- 인증 오류는 401/403 이 아니라 전부 404 다.
+
+| 메서드 | URI | 라우트명 | 회원 대응 |
+| --- | --- | --- | --- |
+| GET | /api/modules/sirsoft-ecommerce/guest/orders/{orderNumber}/claimable-options | `api.modules.sirsoft-ecommerce.guest.orders.claimable-options` | `user.orders.claimable-options` |
+| POST | /api/modules/sirsoft-ecommerce/guest/orders/{orderNumber}/claims/preview | `api.modules.sirsoft-ecommerce.guest.orders.claims.preview` | `user.orders.claims.preview` |
+| POST | /api/modules/sirsoft-ecommerce/guest/orders/{orderNumber}/exchanges | `api.modules.sirsoft-ecommerce.guest.orders.exchanges.store` | `user.orders.exchanges.store` |
+| POST | /api/modules/sirsoft-ecommerce/guest/orders/{orderNumber}/returns | `api.modules.sirsoft-ecommerce.guest.orders.returns.store` | `user.orders.returns.store` |
+| POST | /api/modules/sirsoft-ecommerce/guest/orders/{orderNumber}/refund-requests | `api.modules.sirsoft-ecommerce.guest.orders.refund-requests.store` | `user.orders.refund-requests.store` |
+| GET | /api/modules/sirsoft-ecommerce/guest/orders/{orderNumber}/claims | `api.modules.sirsoft-ecommerce.guest.orders.claims.index` | (비회원 전용 형태) |
+| GET | /api/modules/sirsoft-ecommerce/guest/orders/{orderNumber}/claims/{claimNumber} | `api.modules.sirsoft-ecommerce.guest.orders.claims.show` | `user.claims.show` |
+| PATCH | /api/modules/sirsoft-ecommerce/guest/orders/{orderNumber}/claims/{claimNumber} | `api.modules.sirsoft-ecommerce.guest.orders.claims.update` | `user.claims.update` |
+| POST | /api/modules/sirsoft-ecommerce/guest/orders/{orderNumber}/claims/{claimNumber}/withdraw | `api.modules.sirsoft-ecommerce.guest.orders.claims.withdraw` | `user.claims.withdraw` |
+| POST | /api/modules/sirsoft-ecommerce/guest/orders/{orderNumber}/claims/images | `api.modules.sirsoft-ecommerce.guest.orders.claim-images.store` | `user.orders.claim-images.store` |
+| DELETE | /api/modules/sirsoft-ecommerce/guest/orders/{orderNumber}/claims/images/{image} | `api.modules.sirsoft-ecommerce.guest.orders.claim-images.destroy` | `user.claims.images.destroy` |
+| POST | /api/modules/sirsoft-ecommerce/guest/orders/{orderNumber}/claim-payments/{paymentNumber}/pay | `api.modules.sirsoft-ecommerce.guest.orders.claim-payments.pay` | `user.claim-payments.pay` |
+| POST | /api/modules/sirsoft-ecommerce/guest/orders/{orderNumber}/claim-payments/{paymentNumber}/approve | `api.modules.sirsoft-ecommerce.guest.orders.claim-payments.approve` | `user.claim-payments.approve` |
+
+---
+
+### GET /api/modules/sirsoft-ecommerce/guest/orders/{orderNumber}/claimable-options
+<!-- @generated:start:api.modules.sirsoft-ecommerce.guest.orders.claimable-options -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.guest.orders.claimable-options`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Public\GuestClaimController@claimableOptions`
+- **인증/권한**: 공개 + `X-Guest-Order-Token` 헤더 필수 (`VerifyGuestOrderToken`)
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| orderNumber | path | string | 예 | — | 주문번호 (토큰의 주문과 일치해야 한다) |
+| X-Guest-Order-Token | header | string | 예 | — | 비회원 주문 조회 토큰 |
+
+**요청 예시**
+
+```http
+GET /api/modules/sirsoft-ecommerce/guest/orders/20260823-0012/claimable-options HTTP/1.1
+Host: api.example.com
+Accept: application/json
+X-Guest-Order-Token: {GUEST_ORDER_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+회원 [`user.orders.claimable-options`](orders.md#get-apimodulessirsoft-ecommerceuserordersidclaimable-options) 와 같습니다. `settings.charge_payment_methods` 에 `point` 가 들어 있어도 비회원은 쓸 수 없습니다.
+
+**오류 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 404 | Not Found | 토큰 누락·무효·만료, 토큰의 주문과 주문번호 불일치, 주문 부재 (구분하지 않는다) |
+| 500 | Server Error | 조회 중 예기치 못한 오류 |
+
+<!-- @generated:end -->
+
+**설명** 비회원 주문 상세의 클레임 신청 화면을 여는 첫 호출입니다. 주문은 미들웨어가 토큰으로 확정한 것만 쓰고 경로의 주문번호로 다시 찾지 않습니다.
+
+---
+
+### POST /api/modules/sirsoft-ecommerce/guest/orders/{orderNumber}/claims/preview
+<!-- @generated:start:api.modules.sirsoft-ecommerce.guest.orders.claims.preview -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.guest.orders.claims.preview`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Public\GuestClaimController@preview`
+- **인증/권한**: 공개 + `X-Guest-Order-Token` 헤더 필수
+
+**요청 파라미터**
+
+회원 [`user.orders.claims.preview`](orders.md#post-apimodulessirsoft-ecommerceuserordersidclaimspreview) 와 같습니다 (`id` 대신 `orderNumber` path + 토큰 헤더).
+
+**요청 예시**
+
+```http
+POST /api/modules/sirsoft-ecommerce/guest/orders/20260823-0012/claims/preview HTTP/1.1
+Host: api.example.com
+Accept: application/json
+X-Guest-Order-Token: {GUEST_ORDER_TOKEN}
+Content-Type: application/json
+
+{
+    "type": "return",
+    "items": [ { "order_option_id": 310, "quantity": 1 } ],
+    "reason_code": "changed_mind",
+    "charge_method": "deduct_from_refund"
+}
+```
+
+**응답 필드** / **응답 예시**
+
+회원 미리보기와 동일합니다.
+
+**오류 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 404 | Not Found | 토큰·주문번호 불일치 |
+| 422 | Unprocessable Entity | 회원 미리보기와 같은 검증·자격 위반 |
+| 500 | Server Error | 계산 중 예기치 못한 오류 |
+
+<!-- @generated:end -->
+
+**설명** 수정 화면의 미리보기에서 `claim_number` 를 넘길 때, 그 신청서가 토큰 주문의 것이 아니면 제외 없이 계산됩니다(남의 신청서는 열리지 않는다).
+
+---
+
+### POST /api/modules/sirsoft-ecommerce/guest/orders/{orderNumber}/exchanges
+<!-- @generated:start:api.modules.sirsoft-ecommerce.guest.orders.exchanges.store -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.guest.orders.exchanges.store`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Public\GuestClaimController@storeExchange`
+- **인증/권한**: 공개 + `X-Guest-Order-Token` 헤더 필수
+
+**요청 파라미터** / **응답 필드**
+
+회원 [`user.orders.exchanges.store`](orders.md#post-apimodulessirsoft-ecommerceuserordersidexchanges) 와 같습니다. `payment_method=point` 는 422 이며, 이 거절은 **신청서가 만들어지기 전에** 일어나므로 거절된 요청은 신청서도 결제 건도 남기지 않습니다. `payment_method` 를 생략하면 허용 목록에서 비회원이 실제로 쓸 수 있는 첫 수단으로 확정됩니다(마일리지는 건너뜁니다).
+
+**요청 예시**
+
+```http
+POST /api/modules/sirsoft-ecommerce/guest/orders/20260823-0012/exchanges HTTP/1.1
+Host: api.example.com
+Accept: application/json
+X-Guest-Order-Token: {GUEST_ORDER_TOKEN}
+Content-Type: application/json
+
+{
+    "items": [ { "order_option_id": 310, "quantity": 1 } ],
+    "reason_code": "size_mismatch",
+    "charge_method": "pay_on_request",
+    "payment_method": "card"
+}
+```
+
+**오류 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 404 | Not Found | 토큰·주문번호 불일치 |
+| 422 | Unprocessable Entity | 회원 교환 신청과 같은 위반 + 비회원 마일리지 결제(`claim_point_payment_requires_member`) |
+| 500 | Server Error | 접수 중 예기치 못한 오류 |
+
+<!-- @generated:end -->
+
+**설명** 회원 교환 신청과 같은 흐름이며 `requested_by` 는 `null` 로 기록됩니다(201).
+
+---
+
+### POST /api/modules/sirsoft-ecommerce/guest/orders/{orderNumber}/returns
+<!-- @generated:start:api.modules.sirsoft-ecommerce.guest.orders.returns.store -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.guest.orders.returns.store`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Public\GuestClaimController@storeReturn`
+- **인증/권한**: 공개 + `X-Guest-Order-Token` 헤더 필수
+
+**요청 파라미터** / **응답 필드**
+
+회원 [`user.orders.returns.store`](orders.md#post-apimodulessirsoft-ecommerceuserordersidreturns) 와 같습니다.
+
+**요청 예시**
+
+```http
+POST /api/modules/sirsoft-ecommerce/guest/orders/20260823-0012/returns HTTP/1.1
+Host: api.example.com
+Accept: application/json
+X-Guest-Order-Token: {GUEST_ORDER_TOKEN}
+Content-Type: application/json
+
+{
+    "items": [ { "order_option_id": 310, "quantity": 1 } ],
+    "reason_code": "changed_mind",
+    "charge_method": "deduct_from_refund"
+}
+```
+
+**오류 응답**
+
+404 (토큰·주문번호 불일치) / 422 (회원 반품 신청과 같은 위반, 비회원 마일리지 결제) / 500.
+
+<!-- @generated:end -->
+
+**설명** 회원 반품 신청과 같은 흐름입니다(201).
+
+---
+
+### POST /api/modules/sirsoft-ecommerce/guest/orders/{orderNumber}/refund-requests
+<!-- @generated:start:api.modules.sirsoft-ecommerce.guest.orders.refund-requests.store -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.guest.orders.refund-requests.store`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Public\GuestClaimController@storeRefund`
+- **인증/권한**: 공개 + `X-Guest-Order-Token` 헤더 필수
+
+**요청 파라미터** / **응답 필드**
+
+회원 [`user.orders.refund-requests.store`](orders.md#post-apimodulessirsoft-ecommerceuserordersidrefund-requests) 와 같습니다 — `branch` + `claim`.
+
+**요청 예시**
+
+```http
+POST /api/modules/sirsoft-ecommerce/guest/orders/20260823-0012/refund-requests HTTP/1.1
+Host: api.example.com
+Accept: application/json
+X-Guest-Order-Token: {GUEST_ORDER_TOKEN}
+Content-Type: application/json
+
+{
+    "items": [ { "order_option_id": 310, "quantity": 1 } ],
+    "reason_code": "changed_mind"
+}
+```
+
+**오류 응답**
+
+404 (토큰·주문번호 불일치) / 422 (회원 취소·환불 신청과 같은 위반) / 500.
+
+<!-- @generated:end -->
+
+**설명** 즉시취소 분기는 기존 비회원 취소(`guest.orders.cancel`)와 같은 파이프라인을 타고 취소 이력을 돌려주며, 환불신청 분기는 운영자 승인을 기다리는 환불신청서를 접수합니다(201).
+
+---
+
+### GET /api/modules/sirsoft-ecommerce/guest/orders/{orderNumber}/claims
+<!-- @generated:start:api.modules.sirsoft-ecommerce.guest.orders.claims.index -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.guest.orders.claims.index`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Public\GuestClaimController@index`
+- **인증/권한**: 공개 + `X-Guest-Order-Token` 헤더 필수
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| orderNumber | path | string | 예 | — | 주문번호 |
+| X-Guest-Order-Token | header | string | 예 | — | 비회원 주문 조회 토큰 |
+
+**요청 예시**
+
+```http
+GET /api/modules/sirsoft-ecommerce/guest/orders/20260823-0012/claims HTTP/1.1
+Host: api.example.com
+Accept: application/json
+X-Guest-Order-Token: {GUEST_ORDER_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| order_number | string | `20260823-0012` | 주문번호 |
+| claims.exchange | array | — | 이 주문의 교환 신청서 ([ClaimResource](claims.md#claim-resource), 결제 블록 없음, 최신순) |
+| claims.return | array | — | 반품 신청서 |
+| claims.refund | array | — | 직접 환불신청서 |
+| claims.cancel | array | — | 취소 이력 |
+| counts.exchange | integer | `1` | 교환 건수 |
+| counts.return | integer | `0` | 반품 건수 |
+| counts.refund | integer | `0` | 환불신청 건수 |
+| counts.cancel | integer | `0` | 취소 건수 |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "신청 내역을 조회했습니다.",
+    "data": {
+        "order_number": "20260823-0012",
+        "claims": {
+            "exchange": [ { "claim_number": "EX20260823000003", "claim_type": "exchange", "status": "requested" } ],
+            "return": [],
+            "refund": [],
+            "cancel": []
+        },
+        "counts": { "exchange": 1, "return": 0, "refund": 0, "cancel": 0 }
+    }
+}
+```
+
+**오류 응답**
+
+404 (토큰·주문번호 불일치) / 500.
+
+<!-- @generated:end -->
+
+**설명** 비회원에게는 주문을 가로지르는 신청내역 목록이 없으므로(토큰이 주문 하나에 묶인다) 이 주문의 신청서를 유형별로 전부 돌려줍니다. 페이지네이션이 없는 이유는 한 주문의 신청 건수가 그 주문의 상품 수에 묶이기 때문입니다.
+
+---
+
+### GET /api/modules/sirsoft-ecommerce/guest/orders/{orderNumber}/claims/{claimNumber}
+<!-- @generated:start:api.modules.sirsoft-ecommerce.guest.orders.claims.show -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.guest.orders.claims.show`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Public\GuestClaimController@show`
+- **인증/권한**: 공개 + `X-Guest-Order-Token` 헤더 필수
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| orderNumber | path | string | 예 | — | 주문번호 |
+| claimNumber | path | string | 예 | — | 클레임 번호 (이 주문의 것만) |
+
+**요청 예시**
+
+```http
+GET /api/modules/sirsoft-ecommerce/guest/orders/20260823-0012/claims/RT20260823000007 HTTP/1.1
+Host: api.example.com
+Accept: application/json
+X-Guest-Order-Token: {GUEST_ORDER_TOKEN}
+```
+
+**응답 필드** / **응답 예시**
+
+회원 [`user.claims.show`](claims.md#get-apimodulessirsoft-ecommerceuserclaimsclaimnumber) 와 같습니다 (`data.claim`).
+
+**오류 응답**
+
+404 (토큰·주문번호 불일치, 신청서 부재, 다른 주문의 신청서) / 500.
+
+<!-- @generated:end -->
+
+**설명** 다른 주문의 토큰으로는 이 주문의 신청서에 닿을 수 없고, 같은 토큰이라도 다른 주문의 클레임 번호는 404 입니다.
+
+---
+
+### PATCH /api/modules/sirsoft-ecommerce/guest/orders/{orderNumber}/claims/{claimNumber}
+<!-- @generated:start:api.modules.sirsoft-ecommerce.guest.orders.claims.update -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.guest.orders.claims.update`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Public\GuestClaimController@update`
+- **인증/권한**: 공개 + `X-Guest-Order-Token` 헤더 필수
+
+**요청 파라미터** / **응답 필드**
+
+회원 [`user.claims.update`](claims.md#patch-apimodulessirsoft-ecommerceuserclaimsclaimnumber) 와 같습니다.
+
+**요청 예시**
+
+```http
+PATCH /api/modules/sirsoft-ecommerce/guest/orders/20260823-0012/claims/RT20260823000007 HTTP/1.1
+Host: api.example.com
+Accept: application/json
+X-Guest-Order-Token: {GUEST_ORDER_TOKEN}
+Content-Type: application/json
+
+{
+    "reason_detail": "박스가 찢어져 도착했습니다",
+    "add_image_ids": [11]
+}
+```
+
+**오류 응답**
+
+404 (토큰·주문번호 불일치, 신청서 부재) / 422 (회원 수정과 같은 위반) / 500.
+
+<!-- @generated:end -->
+
+**설명** 차액 정산으로 새 결제 건이 생기면 회원과 같이 응답 최상위에 `payment` + 결제 진입 4키가 실립니다. 비회원은 마일리지 결제를 쓸 수 없으므로 새 결제 건은 항상 PG 결제창으로 갑니다.
+
+---
+
+### POST /api/modules/sirsoft-ecommerce/guest/orders/{orderNumber}/claims/{claimNumber}/withdraw
+<!-- @generated:start:api.modules.sirsoft-ecommerce.guest.orders.claims.withdraw -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.guest.orders.claims.withdraw`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Public\GuestClaimController@withdraw`
+- **인증/권한**: 공개 + `X-Guest-Order-Token` 헤더 필수
+
+**요청 예시**
+
+```http
+POST /api/modules/sirsoft-ecommerce/guest/orders/20260823-0012/claims/RT20260823000007/withdraw HTTP/1.1
+Host: api.example.com
+Accept: application/json
+X-Guest-Order-Token: {GUEST_ORDER_TOKEN}
+```
+
+**응답 필드** / **응답 예시**
+
+회원 [`user.claims.withdraw`](claims.md#post-apimodulessirsoft-ecommerceuserclaimsclaimnumberwithdraw) 와 같습니다.
+
+**오류 응답**
+
+404 (토큰·주문번호 불일치, 신청서 부재) / 422 (철회 불가 상태, 추가결제 환급 실패) / 500.
+
+<!-- @generated:end -->
+
+**설명** 이미 낸 추가결제는 PG 로 환급됩니다(비회원은 마일리지 결제분이 없다).
+
+---
+
+### POST /api/modules/sirsoft-ecommerce/guest/orders/{orderNumber}/claims/images
+<!-- @generated:start:api.modules.sirsoft-ecommerce.guest.orders.claim-images.store -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.guest.orders.claim-images.store`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Public\GuestClaimController@storeImage`
+- **인증/권한**: 공개 + `X-Guest-Order-Token` 헤더 필수
+
+**요청 파라미터** (`multipart/form-data`)
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| orderNumber | path | string | 예 | — | 주문번호 |
+| image | body | file | 예 | `jpeg`·`png`·`jpg`·`gif`·`webp`, 최대 `claim.image_max_size_kb` KB | 첨부할 이미지 1장 |
+
+**요청 예시**
+
+```http
+POST /api/modules/sirsoft-ecommerce/guest/orders/20260823-0012/claims/images HTTP/1.1
+Host: api.example.com
+Accept: application/json
+X-Guest-Order-Token: {GUEST_ORDER_TOKEN}
+Content-Type: multipart/form-data; boundary=----g7
+
+------g7
+Content-Disposition: form-data; name="image"; filename="defect.jpg"
+Content-Type: image/jpeg
+
+(binary)
+------g7--
+```
+
+**응답 필드** / **응답 예시**
+
+회원 [`user.orders.claim-images.store`](orders.md#post-apimodulessirsoft-ecommerceuserordersidclaimsimages) 와 같습니다 (`claimable_type=pending`, `claimable_id` = 주문 ID).
+
+**오류 응답**
+
+404 (토큰·주문번호 불일치) / 422 (파일 검증, 장수 초과) / 500.
+
+<!-- @generated:end -->
+
+**설명** 임시 첨부는 토큰 주문에 묶이며 신청 시 `image_ids` 로 귀속됩니다(201). 회원이 올린 첨부와 달리 소유 회원이 없으므로 귀속·삭제 판정은 "같은 주문인가" 로만 합니다.
+
+---
+
+### DELETE /api/modules/sirsoft-ecommerce/guest/orders/{orderNumber}/claims/images/{image}
+<!-- @generated:start:api.modules.sirsoft-ecommerce.guest.orders.claim-images.destroy -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.guest.orders.claim-images.destroy`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Public\GuestClaimController@destroyImage`
+- **인증/권한**: 공개 + `X-Guest-Order-Token` 헤더 필수
+
+**요청 예시**
+
+```http
+DELETE /api/modules/sirsoft-ecommerce/guest/orders/20260823-0012/claims/images/9 HTTP/1.1
+Host: api.example.com
+Accept: application/json
+X-Guest-Order-Token: {GUEST_ORDER_TOKEN}
+```
+
+**응답 필드** / **응답 예시**
+
+회원 [`user.claims.images.destroy`](claims.md#delete-apimodulessirsoft-ecommerceuserclaimsimagesimage) 와 같습니다 (`data.deleted`).
+
+**오류 응답**
+
+404 (토큰·주문번호 불일치, 첨부 부재, 다른 주문의 첨부 — `claim_image_not_found`) / 500.
+
+<!-- @generated:end -->
+
+**설명** 토큰 주문에 묶인 첨부(임시 또는 이 주문 신청서 소속)만 지웁니다.
+
+---
+
+### POST /api/modules/sirsoft-ecommerce/guest/orders/{orderNumber}/claim-payments/{paymentNumber}/pay
+<!-- @generated:start:api.modules.sirsoft-ecommerce.guest.orders.claim-payments.pay -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.guest.orders.claim-payments.pay`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Public\GuestClaimController@pay`
+- **인증/권한**: 공개 + `X-Guest-Order-Token` 헤더 필수
+
+**요청 파라미터** / **응답 필드**
+
+회원 [`user.claim-payments.pay`](claim-payments.md#post-apimodulessirsoft-ecommerceuserclaim-paymentspaymentnumberpay) 와 같습니다. `payment_method=point` 는 422 `claim_point_payment_requires_member`.
+
+**요청 예시**
+
+```http
+POST /api/modules/sirsoft-ecommerce/guest/orders/20260823-0012/claim-payments/CP20260823000001/pay HTTP/1.1
+Host: api.example.com
+Accept: application/json
+X-Guest-Order-Token: {GUEST_ORDER_TOKEN}
+Content-Type: application/json
+
+{
+    "payment_method": "card"
+}
+```
+
+**오류 응답**
+
+404 (토큰·주문번호 불일치, 이 주문의 결제 건이 아님) / 422 (결제 대기 아님, 결제 수단 불허, 비회원 마일리지, 결제 연동 부재) / 500.
+
+<!-- @generated:end -->
+
+**설명** 결제 건은 토큰 주문의 신청서에 딸린 것만 열립니다. 응답의 `pg_payment_data.customer_*` 는 주문의 주문자 정보로 채워집니다.
+
+---
+
+### POST /api/modules/sirsoft-ecommerce/guest/orders/{orderNumber}/claim-payments/{paymentNumber}/approve
+<!-- @generated:start:api.modules.sirsoft-ecommerce.guest.orders.claim-payments.approve -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.guest.orders.claim-payments.approve`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Public\GuestClaimController@approve`
+- **인증/권한**: 공개 + `X-Guest-Order-Token` 헤더 필수
+
+**요청 파라미터** / **응답 필드**
+
+회원 [`user.claim-payments.approve`](claim-payments.md#post-apimodulessirsoft-ecommerceuserclaim-paymentspaymentnumberapprove) 와 같습니다.
+
+**요청 예시**
+
+```http
+POST /api/modules/sirsoft-ecommerce/guest/orders/20260823-0012/claim-payments/CP20260823000001/approve HTTP/1.1
+Host: api.example.com
+Accept: application/json
+X-Guest-Order-Token: {GUEST_ORDER_TOKEN}
+Content-Type: application/json
+
+{
+    "callback": { "paymentKey": "tviva2026...", "orderId": "CP20260823000001", "amount": 3000 }
+}
+```
+
+**오류 응답**
+
+404 (토큰·주문번호 불일치, 이 주문의 결제 건이 아님) / 422 (결제 연동 부재, PG 승인 실패, 금액 불일치) / 500.
+
+<!-- @generated:end -->
+
+**설명** 회원 승인과 같은 멱등 확정 흐름입니다. 결제창에서 돌아온 비회원 화면은 토큰을 잃지 않도록 결제창 진입 전 상태를 그대로 유지해야 합니다(토큰이 없으면 승인 호출이 404 가 된다).

@@ -87,6 +87,7 @@ return [
     'order_estimate_refund_failed' => '환불 예상금액 계산에 실패했습니다.',
     'order_create_failed' => '주문 생성에 실패했습니다.',
     'order_shipping_address_update_failed' => '배송지 변경 처리 중 오류가 발생했습니다.',
+    'user_address_not_found' => '배송지를 찾을 수 없습니다.',
 
     // 통화 관련
     'unknown_currency' => '지원하지 않는 통화입니다: :currency',
@@ -118,10 +119,24 @@ return [
     'claim_new_option_out_of_stock' => '교환할 옵션의 재고가 부족합니다.',
     'claim_redelivery_country_change_not_allowed' => '교환 재발송지는 주문 배송지와 같은 국가만 지정할 수 있습니다. (교환 해외배송 미지원)',
     'claim_refund_not_applicable' => '환불이 발생하지 않는 신청 건이라 환불신청서를 접수할 수 없습니다.',
+    'claim_not_editable' => '승인 이후에는 신청 내용을 수정할 수 없습니다. 철회 후 다시 신청해 주세요.',
+    'claim_refund_branch_mixed' => '즉시 취소할 수 있는 상품과 환불 신청이 필요한 상품을 한 번에 신청할 수 없습니다. 나누어 신청해 주세요.',
+    'claim_refund_not_requestable' => '현재 상품 상태(:status)에서는 취소·환불을 신청할 수 없습니다.',
+    'claim_payment_not_found' => '결제 건을 찾을 수 없습니다.',
+    'claim_payment_not_pending' => '결제 대기 상태가 아니라 결제를 진행할 수 없습니다.',
+    'claim_payment_not_required' => '이 신청서에는 결제할 청구액이 없습니다.',
+    'claim_payment_method_not_allowed' => '선택한 결제 수단은 클레임 추가결제에 사용할 수 없습니다.',
+    'claim_payment_provider_unavailable' => '클레임 추가결제를 승인할 수 있는 결제 연동이 없습니다. 관리자에게 문의해 주세요.',
+    'claim_payment_failed' => '결제 승인에 실패했습니다. (:error)',
+    'claim_payment_amount_mismatch' => '결제 승인 금액이 청구액과 일치하지 않습니다.',
+    'claim_payment_refund_failed' => '결제 환급에 실패했습니다. (:error)',
+    'claim_point_payment_requires_member' => '마일리지 결제는 회원만 이용할 수 있습니다.',
+    'claim_image_limit_exceeded' => '첨부 이미지는 최대 :max장까지 올릴 수 있습니다.',
+    'claim_image_not_found' => '첨부 이미지를 찾을 수 없습니다.',
 
     // 클레임 사유 관련
     'claim_reason_not_found' => '클레임 사유를 찾을 수 없습니다.',
-    'claim_reason_in_use' => '주문 취소에서 사용 중인 사유는 삭제할 수 없습니다. (사용 횟수: :count건)',
+    'claim_reason_in_use' => '이미 사용 중인 사유는 삭제할 수 없습니다. (사용 횟수: :count건)',
 
     // 배송유형 관련
     'shipping_type_not_found' => '배송유형을 찾을 수 없습니다.',

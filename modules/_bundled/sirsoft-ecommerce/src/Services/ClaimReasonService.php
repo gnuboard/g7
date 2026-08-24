@@ -6,10 +6,14 @@ use App\Extension\HookManager;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimReasonTypeEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\ClaimReasonException;
 use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimReasonRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderCancelRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderExchangeRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderReturnRepositoryInterface;
 
 /**
  * 클레임 사유 서비스
@@ -19,11 +23,38 @@ class ClaimReasonService
     /**
      * @param  ClaimReasonRepositoryInterface  $repository  클레임 사유 Repository
      * @param  OrderCancelRepositoryInterface  $orderCancelRepository  주문 취소 이력 Repository (사유 사용 중 여부 판정용)
+     * @param  OrderExchangeRepositoryInterface  $orderExchangeRepository  교환 신청서 Repository (교환 사유 사용량 집계용)
+     * @param  OrderReturnRepositoryInterface  $orderReturnRepository  반품 신청서 Repository (반품 사유 사용량 집계용)
+     * @param  OrderRefundRepositoryInterface  $orderRefundRepository  환불 신청서 Repository (환불 사유 사용량 집계용)
      */
     public function __construct(
         protected ClaimReasonRepositoryInterface $repository,
         protected OrderCancelRepositoryInterface $orderCancelRepository,
+        protected OrderExchangeRepositoryInterface $orderExchangeRepository,
+        protected OrderReturnRepositoryInterface $orderReturnRepository,
+        protected OrderRefundRepositoryInterface $orderRefundRepository,
     ) {}
+
+    /**
+     * 사유가 실제로 사용 중인 건수를 유형에 맞는 표 전수에서 셉니다.
+     *
+     * 환불 사유는 환불신청서와 즉시취소가 함께 쓰므로 두 표를 더한다.
+     *
+     * @param  ClaimReason  $reason  대상 사유
+     * @return int 사용 건수
+     */
+    protected function countUsage(ClaimReason $reason): int
+    {
+        $type = $reason->type instanceof ClaimReasonTypeEnum ? $reason->type : ClaimReasonTypeEnum::tryFrom((string) $reason->type);
+
+        return match ($type) {
+            ClaimReasonTypeEnum::EXCHANGE => $this->orderExchangeRepository->countByReasonCode($reason->code),
+            ClaimReasonTypeEnum::RETURN => $this->orderReturnRepository->countByReasonCode($reason->code),
+            ClaimReasonTypeEnum::REFUND => $this->orderRefundRepository->countByReasonCode($reason->code)
+                + $this->orderCancelRepository->countByCancelReasonType($reason->code),
+            default => $this->orderCancelRepository->countByCancelReasonType($reason->code),
+        };
+    }
 
     /**
      * 클레임 사유 목록 조회
@@ -272,8 +303,10 @@ class ClaimReasonService
             throw ClaimReasonException::notFound();
         }
 
-        // 주문에서 사용 중인지 확인
-        $usageCount = $this->orderCancelRepository->countByCancelReasonType($reason->code);
+        // 사용 중인지 확인 — 그 사유가 실제로 쓰이는 **모든** 표를 그 유형에 맞게 센다.
+        // 취소 한 표만 세면 교환·반품·환불 사유는 사용 중에도 삭제되고, 그 순간 해당 신청서 전건의
+        // 사유 라벨이 카탈로그를 잃어 원시 코드로 노출된다(오류도 경고도 없다).
+        $usageCount = $this->countUsage($reason);
 
         if ($usageCount > 0) {
             throw ClaimReasonException::inUse($usageCount);

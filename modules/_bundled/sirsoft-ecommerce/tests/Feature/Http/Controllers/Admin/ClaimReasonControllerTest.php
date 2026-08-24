@@ -5,6 +5,10 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Feature\Http\Controllers\Admin;
 use App\Models\Permission;
 use App\Models\User;
 use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
+use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
+use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
+use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
+use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -13,6 +17,8 @@ use PHPUnit\Framework\Attributes\Test;
  */
 class ClaimReasonControllerTest extends ModuleTestCase
 {
+    use BuildsClaimFlowOrders;
+
     protected User $adminUser;
 
     protected User $readOnlyUser;
@@ -170,6 +176,69 @@ class ClaimReasonControllerTest extends ModuleTestCase
             ->postJson($this->apiBase, $data);
 
         $response->assertForbidden();
+    }
+
+    #[Test]
+    public function destroy_is_blocked_while_an_exchange_or_return_still_uses_the_reason(): void
+    {
+        // 사용 중 판정이 취소 한 표만 세면 교환·반품·환불 사유는 사용 중에도 지워지고, 그 순간
+        // 해당 신청서 전건의 사유 라벨이 카탈로그를 잃어 원시 코드로 노출된다(오류·경고 없음).
+        $order = $this->deliveredClaimOrder();
+
+        $exchangeReason = $this->createReason(['type' => 'exchange', 'code' => 'in_use_exchange']);
+        $returnReason = $this->createReason(['type' => 'return', 'code' => 'in_use_return']);
+        $refundReason = $this->createReason(['type' => 'refund', 'code' => 'in_use_refund']);
+
+        OrderExchange::factory()->create(['order_id' => $order->id, 'reason_code' => $exchangeReason->code]);
+        OrderReturn::factory()->create(['order_id' => $order->id, 'reason_code' => $returnReason->code]);
+        OrderRefund::create([
+            'order_id' => $order->id,
+            'refund_number' => 'RF'.uniqid(),
+            'refund_status' => 'requested',
+            'refund_method' => 'pg',
+            'reason_code' => $refundReason->code,
+        ]);
+
+        foreach ([$exchangeReason, $returnReason, $refundReason] as $reason) {
+            $this->actingAs($this->adminUser)
+                ->deleteJson("{$this->apiBase}/{$reason->id}")
+                ->assertStatus(400) // 기존 `inUse` 계약 (취소 사유가 쓰이던 상태코드를 그대로 승계)
+                // 전용 키로 안내하는지 + 건수가 치환되는지 (원문 노출·키 교체 차단)
+                ->assertJsonPath('message', __('sirsoft-ecommerce::exceptions.claim_reason_in_use', ['count' => 1]))
+                // 안내가 취소 전용 서술로 되돌아가는 것을 막는다. 판정 모집단은 교환·반품·환불
+                // 전수인데 안내만 취소를 지목하면, 운영자는 안내받은 건수를 취소 이력에서 찾다가
+                // 0건을 보게 된다. 위 키 단언은 기대값도 같은 파일에서 읽으므로 이 되돌림을
+                // 잡지 못한다 — 어느 로케일로 렌더되든 걸리도록 3언어 어휘를 함께 본다.
+                ->assertJsonPath('message', fn ($m) => is_string($m)
+                    && ! str_contains($m, '취소')
+                    && ! str_contains($m, 'cancellation')
+                    && ! str_contains($m, 'キャンセル'));
+
+            $this->assertDatabaseHas('ecommerce_claim_reasons', ['id' => $reason->id]);
+        }
+
+        // 위 응답 단언은 요청이 렌더된 한 로케일만 본다. 원본 두 개를 직접 확인해 두면
+        // 렌더되지 않은 쪽이 취소 전용 서술로 되돌아가도 잡힌다.
+        $this->assertStringNotContainsString(
+            '취소',
+            trans('sirsoft-ecommerce::exceptions.claim_reason_in_use', ['count' => 1], 'ko')
+        );
+        $this->assertStringNotContainsString(
+            'cancellation',
+            trans('sirsoft-ecommerce::exceptions.claim_reason_in_use', ['count' => 1], 'en')
+        );
+    }
+
+    #[Test]
+    public function destroy_removes_a_reason_that_nothing_uses(): void
+    {
+        $reason = $this->createReason(['type' => 'exchange', 'code' => 'unused_exchange']);
+
+        $this->actingAs($this->adminUser)
+            ->deleteJson("{$this->apiBase}/{$reason->id}")
+            ->assertOk();
+
+        $this->assertDatabaseMissing('ecommerce_claim_reasons', ['id' => $reason->id]);
     }
 
     // ==================== Show ====================

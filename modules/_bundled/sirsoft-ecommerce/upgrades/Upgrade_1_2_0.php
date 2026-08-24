@@ -15,6 +15,13 @@ use App\Extension\AbstractUpgradeStep;
  *   2. 교환/반품 사유 카탈로그 시드
  *   3. claim 설정 카테고리 기본값 병합 (즉시취소 상태는 기존 값 승계)
  *   4. 배송지 스냅샷이 빈 구형 주문(1.0.0-beta.5 이전)의 배송지 백필
+ *   5. 클레임 채번 시퀀스 3종(교환·반품·클레임 추가결제) 시드
+ *
+ * 5 번이 여기 있는 이유 — 시퀀스는 위 문단이 말한 "선언형 산출물" 이 아니다. 권한/메뉴/알림은
+ * ModuleManager::syncDeclarativeArtifacts() 가 업데이트마다 다시 맞춰 주지만, 시퀀스는
+ * SequenceSeeder 가 만들고 그 시더는 ModuleManager::runModuleSeeders() 안에 있으며 그
+ * 메서드는 installModule() 에서만 불린다. 그래서 1.2.0 이 새로 도입한 시퀀스 타입은
+ * 신규 설치본에만 생기고 기존 설치본은 업그레이드해도 행이 없는 채로 남는다.
  *
  * 모든 비즈니스 로직은 data/1.2.0/migrations/ 로 격리(AbstractUpgradeStep 규약).
  *

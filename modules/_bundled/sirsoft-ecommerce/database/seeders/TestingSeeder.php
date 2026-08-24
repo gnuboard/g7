@@ -162,6 +162,10 @@ class TestingSeeder extends Seeder
             ['identifier' => 'sirsoft-ecommerce.user-orders.cancel', 'name' => ['ko' => '주문 취소', 'en' => 'Cancel Order']],
             ['identifier' => 'sirsoft-ecommerce.user-orders.confirm', 'name' => ['ko' => '구매확정', 'en' => 'Confirm Purchase']],
             ['identifier' => 'sirsoft-ecommerce.user-reviews.write', 'name' => ['ko' => '리뷰 작성', 'en' => 'Write Review']],
+            ['identifier' => 'sirsoft-ecommerce.user-claims.request', 'name' => ['ko' => '클레임 신청', 'en' => 'Request Claim']],
+            ['identifier' => 'sirsoft-ecommerce.user-claims.read', 'name' => ['ko' => '클레임 조회', 'en' => 'View Claims']],
+            ['identifier' => 'sirsoft-ecommerce.user-claims.withdraw', 'name' => ['ko' => '클레임 철회', 'en' => 'Withdraw Claim']],
+            ['identifier' => 'sirsoft-ecommerce.user-claims.pay', 'name' => ['ko' => '클레임 추가결제', 'en' => 'Pay Claim Charge']],
         ];
 
         $permissionIds = [];

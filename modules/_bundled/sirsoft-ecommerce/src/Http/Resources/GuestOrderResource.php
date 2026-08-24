@@ -6,6 +6,7 @@ use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
 use Modules\Sirsoft\Ecommerce\Models\OrderCashReceipt;
+use Modules\Sirsoft\Ecommerce\Services\ClaimPaymentService;
 use Modules\Sirsoft\Ecommerce\Support\ShippingPolicySnapshot;
 
 /**
@@ -43,6 +44,12 @@ class GuestOrderResource extends BaseApiResource
         $currencySnapshot = $this->resource->currency_snapshot ?? null;
         $this->withCurrencySnapshot($currencySnapshot);
 
+        // 클레임 추가결제 실수납 합계 — 결제 완료 건의 청구액에서 부분 환급을 뺀 값. 주문 1건당 집계 1회.
+        // 산정은 ClaimPaymentService 의 게터를 경유한다 — 같은 값을 리소스가 저장소에서 따로 집계하면
+        // 뒤에 이 합계의 정의가 바뀔 때(예: 환급 반영 범위) 두 곳이 갈린다. 단건 상세 전용이라
+        // 목록에서 행마다 해석되지 않는다(목록은 OrderListResource).
+        $claimPaid = app(ClaimPaymentService::class)->paidTotalForOrder($this->resource);
+
         // 결제 통화(order_currency) — 현금영수증 금액 표기 기준(구매자가 실제 낸 통화).
         $paymentCurrency = $this->currency
             ?: (data_get($this->currency_snapshot, 'order_currency') ?: $orderCurrency);
@@ -72,6 +79,12 @@ class GuestOrderResource extends BaseApiResource
             'total_refunded_amount_formatted' => $this->formatOrderCurrency($this->total_refunded_amount, $orderCurrency),
             'total_refunded_points_amount' => $this->roundToOrderCurrency($this->total_refunded_points_amount, $orderCurrency),
             'total_refunded_points_amount_formatted' => $this->formatOrderCurrency($this->total_refunded_points_amount, $orderCurrency),
+
+            // 클레임 추가결제 합계 (교환·반품 청구액의 실수납 합계 — 부분 환급 차감, 0원이면 화면 미표시)
+            // 주문 총 배송비와 분리해 표기한다(§2 해석 확정). ClaimPaymentService::paidTotalForOrder 가 SSoT.
+            'claim_additional_paid_total' => $this->roundToOrderCurrency($claimPaid['amount'], $orderCurrency),
+            'claim_additional_paid_total_formatted' => $this->formatOrderCurrency($claimPaid['amount'], $orderCurrency),
+            'mc_claim_additional_paid_total' => $this->formatStoredMultiCurrency($claimPaid['mc'] ?: null),
 
             // 마일리지/예치금 — 회원 OrderResource 와 동일 노출. 비회원 주문상세도 회원과 같은 결제정보 partial 을
             // 재사용하므로 사용/적립 마일리지를 동등하게 표시할 수 있도록 보강 (마일리지는 base_currency 단일 정산).

@@ -52,7 +52,7 @@ return new class extends Migration
                     ->comment('환불 발생 출처 ID');
             }
             if (! Schema::hasColumn($table, 'reason_code')) {
-                $blueprint->string('reason_code', 30)->nullable()->after('refund_method')
+                $blueprint->string('reason_code', 50)->nullable()->after('refund_method')
                     ->comment('환불 사유 코드 (ecommerce_claim_reasons.code, type=refund 참조)');
             }
             if (! Schema::hasColumn($table, 'reason_detail')) {
@@ -96,7 +96,20 @@ return new class extends Migration
                 $blueprint->foreign('requested_by', 'fk_rf_requested_by')
                     ->references('id')->on('users')->nullOnDelete();
             }
+            // 유저 클레임 목록의 기간 필터가 이 컬럼을 범위 조건으로 읽는다. 신규 교환·반품 테이블은
+            // 생성 시점에 같은 인덱스를 갖는데 기존 취소·환불 두 테이블에는 없어, 그 두 탭만 풀스캔이었다.
+            if (! Schema::hasIndex($table, 'ecommerce_order_refunds_created_at_index')) {
+                $blueprint->index('created_at', 'ecommerce_order_refunds_created_at_index');
+            }
         });
+
+        if (Schema::hasTable('ecommerce_order_cancels')) {
+            Schema::table('ecommerce_order_cancels', function (Blueprint $blueprint) {
+                if (! Schema::hasIndex('ecommerce_order_cancels', 'ecommerce_order_cancels_created_at_index')) {
+                    $blueprint->index('created_at', 'ecommerce_order_cancels_created_at_index');
+                }
+            });
+        }
 
         // order_cancel_id 는 유지하되 대체 컬럼을 주석으로 명시한다 (하위호환 이중 기록).
         if (DB::getDriverName() === 'mysql') {
@@ -198,8 +211,19 @@ return new class extends Migration
             });
         }
 
+        if (Schema::hasTable('ecommerce_order_cancels')) {
+            Schema::table('ecommerce_order_cancels', function (Blueprint $table) {
+                if (Schema::hasIndex('ecommerce_order_cancels', 'ecommerce_order_cancels_created_at_index')) {
+                    $table->dropIndex('ecommerce_order_cancels_created_at_index');
+                }
+            });
+        }
+
         if (Schema::hasTable('ecommerce_order_refunds')) {
             Schema::table('ecommerce_order_refunds', function (Blueprint $table) {
+                if (Schema::hasIndex('ecommerce_order_refunds', 'ecommerce_order_refunds_created_at_index')) {
+                    $table->dropIndex('ecommerce_order_refunds_created_at_index');
+                }
                 if (Schema::hasColumn('ecommerce_order_refunds', 'requested_by')) {
                     $table->dropForeign('fk_rf_requested_by');
                     $table->dropIndex('ecommerce_order_refunds_requested_by_index');

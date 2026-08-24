@@ -12,6 +12,7 @@ use Modules\Sirsoft\Ecommerce\DTO\MileageAdminDeductDto;
 use Modules\Sirsoft\Ecommerce\DTO\MileageAdminEarnDto;
 use Modules\Sirsoft\Ecommerce\Enums\MileageTransactionTypeEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\MileageValidationException;
+use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Models\MileageTransaction;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
@@ -1159,5 +1160,83 @@ class UserMileageService
         $snapshot = $order->currency_snapshot ?? [];
 
         return $snapshot['base_currency'] ?? $this->defaultCurrency();
+    }
+
+    /**
+     * 클레임 추가결제를 마일리지로 결제합니다. (FIFO 차감, claim_payment_id 멱등 축)
+     *
+     * 주문 시 사용(`ORDER_USE`)과 같은 거래 유형을 쓰되 `claim_payment_id` 로 결제 건에 묶는다 —
+     * 마일리지 내역 화면의 분류·배지가 기존 8종 어휘를 그대로 읽으므로 새 유형을 늘리지 않는다.
+     * 같은 결제 건으로 두 번 차감되지 않도록 호출부가 결제 건을 잠그고(findByPaymentNumberForUpdate)
+     * 결제 대기 상태에서만 부른다.
+     *
+     * @param  int  $userId  사용자 ID
+     * @param  int  $amount  차감액
+     * @param  string  $currency  통화 코드
+     * @param  ClaimPayment  $payment  클레임 추가결제 건
+     * @return MileageTransaction 생성된 사용 거래 (음수)
+     *
+     * @throws MileageValidationException 잔액 부족 시
+     */
+    public function deductForClaimPayment(int $userId, int $amount, string $currency, ClaimPayment $payment): MileageTransaction
+    {
+        return $this->consumeFifo(
+            $userId,
+            $amount,
+            $currency,
+            MileageTransactionTypeEnum::ORDER_USE,
+            ['order_id' => $payment->order_id, 'claim_payment_id' => $payment->id],
+            null,
+            null,
+        );
+    }
+
+    /**
+     * 클레임 추가결제의 마일리지를 환급합니다. (철회·반려 전액 환급 / 재발송지 수정 차액 부분 환급)
+     *
+     * 환급 누적이 결제액을 넘지 않도록 같은 결제 건의 기환급액(`sumRestoredForClaimPayment`)을
+     * 상한으로 삼는다 — 전액 환급을 두 번 부르면 두 번째는 0 이 되어 아무 일도 하지 않는다(멱등).
+     * 환급 lot 은 원본 만료를 승계하지 않고 신규 발행한다(취소 복원과 같은 정책).
+     *
+     * @param  int  $userId  사용자 ID
+     * @param  float  $amount  환급액
+     * @param  string  $currency  통화 코드
+     * @param  ClaimPayment  $payment  클레임 추가결제 건
+     * @return MileageTransaction|null 환급 거래 (환급할 몫이 없으면 null)
+     */
+    public function restoreForClaimPayment(int $userId, float $amount, string $currency, ClaimPayment $payment): ?MileageTransaction
+    {
+        $alreadyRestored = $this->ledger->sumRestoredForClaimPayment($payment->id);
+        $restorable = min($amount, max(0.0, (float) $payment->points_amount - $alreadyRestored));
+
+        if ($restorable <= 0) {
+            return null;
+        }
+
+        $expiresAt = $this->resolveEarnExpiry();
+
+        $tx = $this->ledger->createTransaction([
+            'user_id' => $userId,
+            'currency' => $currency,
+            'type' => MileageTransactionTypeEnum::REFUND_RESTORE->value,
+            'amount' => $restorable,
+            'remaining_amount' => $restorable,
+            'balance_after' => $this->ledger->getBalanceByCurrency($userId, $currency) + $restorable,
+            'order_id' => $payment->order_id,
+            'claim_payment_id' => $payment->id,
+            'expires_at' => $expiresAt,
+            'description' => __('sirsoft-ecommerce::activity_log.description.mileage_restore', ['amount' => ecommerce_format_price($restorable, $currency)]),
+        ]);
+
+        $this->cache->recalculateForUser($userId, $currency);
+
+        $this->logActivity('mileage.restore', [
+            'loggable' => $tx,
+            'description_key' => 'sirsoft-ecommerce::activity_log.description.mileage_restore',
+            'description_params' => ['amount' => ecommerce_format_price((int) $restorable, $currency)],
+            'properties' => ['order_id' => $payment->order_id, 'claim_payment_id' => $payment->id, 'currency' => $currency],
+        ]);
+
+        return $tx;
     }
 }

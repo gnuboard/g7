@@ -485,6 +485,9 @@ _단건 응답: `data` 객체의 필드._
 | total_refunded_amount_formatted | string | `¥0` | `total_refunded_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | total_refunded_points_amount | integer | `0` | 총 환불 포인트 |
 | total_refunded_points_amount_formatted | string | `¥0` | `total_refunded_points_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
+| claim_additional_paid_total | number | `0` | 이 주문의 클레임(교환·반품) 추가결제 실수납 합계 — 결제 완료 건의 청구액에서 부분 환급을 뺀 값. 주문 총 배송비와 분리해 표기하며 0원이면 화면에 노출하지 않는다 |
+| claim_additional_paid_total_formatted | string | `¥0` | `claim_additional_paid_total` 값의 주문 시점 통화 표기 문자열 |
+| mc_claim_additional_paid_total | array | `[]` | 다통화 표기 맵 (통화 코드 => `{amount, formatted}`). 다통화 기록이 없으면 빈 배열 |
 | total_product_coupon_discount_amount | integer | `3000` | 상품 쿠폰 할인 합계 |
 | total_product_coupon_discount_amount_formatted | string | `¥3,000` | `total_product_coupon_discount_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | total_order_coupon_discount_amount | integer | `0` | 주문 쿠폰 할인 합계 |
@@ -2232,6 +2235,9 @@ _단건 응답: `data` 객체의 필드._
 | total_refunded_amount_formatted | string | `0원` | `total_refunded_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | total_refunded_points_amount | integer | `0` | 총 환불 포인트 |
 | total_refunded_points_amount_formatted | string | `0원` | `total_refunded_points_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
+| claim_additional_paid_total | number | `0` | 이 주문의 클레임(교환·반품) 추가결제 실수납 합계 — 결제 완료 건의 청구액에서 부분 환급을 뺀 값. 주문 총 배송비와 분리해 표기하며 0원이면 화면에 노출하지 않는다 |
+| claim_additional_paid_total_formatted | string | `0원` | `claim_additional_paid_total` 값의 주문 시점 통화 표기 문자열 |
+| mc_claim_additional_paid_total | array | `[]` | 다통화 표기 맵 (통화 코드 => `{amount, formatted}`). 다통화 기록이 없으면 빈 배열 |
 | total_product_coupon_discount_amount | integer | `0` | 상품 쿠폰 할인 합계 |
 | total_product_coupon_discount_amount_formatted | string | `0원` | `total_product_coupon_discount_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | total_order_coupon_discount_amount | integer | `0` | 주문 쿠폰 할인 합계 |
@@ -3063,6 +3069,9 @@ _단건 응답: `data` 객체의 필드._
 | total_refunded_amount_formatted | string | `0원` | `total_refunded_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | total_refunded_points_amount | integer | `0` | 총 환불 포인트 |
 | total_refunded_points_amount_formatted | string | `0원` | `total_refunded_points_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
+| claim_additional_paid_total | number | `0` | 이 주문의 클레임(교환·반품) 추가결제 실수납 합계 — 결제 완료 건의 청구액에서 부분 환급을 뺀 값. 주문 총 배송비와 분리해 표기하며 0원이면 화면에 노출하지 않는다 |
+| claim_additional_paid_total_formatted | string | `0원` | `claim_additional_paid_total` 값의 주문 시점 통화 표기 문자열 |
+| mc_claim_additional_paid_total | array | `[]` | 다통화 표기 맵 (통화 코드 => `{amount, formatted}`). 다통화 기록이 없으면 빈 배열 |
 | total_product_coupon_discount_amount | integer | `0` | 상품 쿠폰 할인 합계 |
 | total_product_coupon_discount_amount_formatted | string | `0원` | `total_product_coupon_discount_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | total_order_coupon_discount_amount | integer | `0` | 주문 쿠폰 할인 합계 |
@@ -3244,3 +3253,555 @@ HTTP/1.1 200
 **설명** 주문번호(`orderNumber`)로 주문 상세를 조회하는 회원/비회원 공용 엔드포인트입니다. `optional.sanctum`으로 로그인 여부에 따라 분기하는데, 로그인 상태면 본인 회원 주문만 `OrderResource`로 반환하고 아니면 404(마이페이지 주문 목록으로 안내), 비로그인이면 `X-Guest-Order-Token`으로 비회원 주문을 매칭해 `GuestOrderResource`로 반환하고 실패 시 404(비회원 조회 폼으로 안내)합니다. 회원이 비회원 토큰을 들고 와도 회원 분기가 우선하며, 실패 사유는 모두 동일한 404로 처리해 정보 노출을 차단합니다. 결제 완료 후 주문번호 기반 주문 완료/상세 페이지에서 사용합니다.
 
 
+
+---
+
+## 클레임 신청 (주문 단위)
+
+<a id="클레임-신청-주문-단위"></a>
+
+주문 하나를 기준으로 교환/반품/취소·환불을 신청하는 회원 경로입니다. 응답 리소스의 필드 표(`ClaimResource` / `ClaimItemResource` / `ClaimPaymentResource` / `ClaimImageResource`)는 [claims.md](claims.md#claim-resource) 에 있고, 신청 뒤의 목록·상세·수정·철회는 [claims.md](claims.md), 추가결제는 [claim-payments.md](claim-payments.md), 비회원 경로는 [guest.md](guest.md#비회원-클레임) 에 있습니다.
+
+| 메서드 | URI | 라우트명 |
+| --- | --- | --- |
+| GET | /api/modules/sirsoft-ecommerce/user/orders/{id}/claimable-options | `api.modules.sirsoft-ecommerce.user.orders.claimable-options` |
+| POST | /api/modules/sirsoft-ecommerce/user/orders/{id}/claims/preview | `api.modules.sirsoft-ecommerce.user.orders.claims.preview` |
+| POST | /api/modules/sirsoft-ecommerce/user/orders/{id}/exchanges | `api.modules.sirsoft-ecommerce.user.orders.exchanges.store` |
+| POST | /api/modules/sirsoft-ecommerce/user/orders/{id}/returns | `api.modules.sirsoft-ecommerce.user.orders.returns.store` |
+| POST | /api/modules/sirsoft-ecommerce/user/orders/{id}/refund-requests | `api.modules.sirsoft-ecommerce.user.orders.refund-requests.store` |
+| POST | /api/modules/sirsoft-ecommerce/user/orders/{id}/claims/images | `api.modules.sirsoft-ecommerce.user.orders.claim-images.store` |
+
+공통 규칙:
+
+- `{id}` 는 주문 ID 이며 본인 주문이 아니면 존재 여부를 드러내지 않고 404 입니다.
+- 신청 대상 `items[]` 는 `order_option_id` + `quantity` 이고, 같은 옵션을 두 줄로 보내면 422 입니다. 수량은 진행 중인 다른 클레임이 잡아 둔 수량을 뺀 잔여(`available_quantity`) 이내여야 합니다(`claim_quantity_locked`).
+- 도메인 규칙 위반(신청 불가 상태·기간 경과·수량 잠금·사유 사용 불가·청구 방식 불허 등)은 422 로, 메시지는 해당 사유의 다국어 문구입니다. 그 밖의 서버 오류는 500 이며 예외 원문은 응답에 실리지 않습니다.
+
+---
+
+### GET /api/modules/sirsoft-ecommerce/user/orders/{id}/claimable-options
+<!-- @generated:start:api.modules.sirsoft-ecommerce.user.orders.claimable-options -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.user.orders.claimable-options`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\User\ClaimController@claimableOptions`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.user-claims.read`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| id | path | integer | 예 | — | 주문 ID |
+
+**요청 예시**
+
+```http
+GET /api/modules/sirsoft-ecommerce/user/orders/120/claimable-options HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| order_id | integer | `120` | 주문 ID |
+| order_number | string | `20260823-0012` | 주문번호 |
+| resolved_type | string\|null | `null` | 취소·환불 신청이 열리는 상품들의 분기 — 전부 즉시취소면 `cancel`, 전부 환불신청이면 `refund`, 섞여 있으면 `mixed`, 열린 상품이 없으면 `null` |
+| options[].option | object | — | 주문 옵션 (`OrderOptionResource`, 취소된 옵션은 제외) |
+| options[].available_quantity | integer | `1` | 지금 신청할 수 있는 잔여 수량 (옵션 수량 − 진행 중 클레임 점유 수량) |
+| options[].locked_quantity | integer | `0` | 진행 중인 교환·반품·환불신청이 잡아 둔 수량 |
+| options[].claimable_types | string[] | `["exchange","return"]` | 이 옵션에 열린 클레임 유형 (`exchange`, `return`, `refund`). 잔여 수량이 0 이면 빈 배열 |
+| options[].refund_branch | string\|null | `null` | 취소·환불 신청 시 분기 — 즉시취소 상태면 `cancel`, 환불신청 상태면 `refund`, 둘 다 아니면 `null` |
+| reasons.exchange | array | — | 교환 사유 카탈로그 (`ClaimReasonResource`). **`name` 은 다국어 맵**(`{"ko":…,"en":…}`)이고 화면에 그대로 쓸 문자열은 `localized_name` 이다 — `name` 을 라벨에 바인딩하면 객체가 그대로 찍힌다 |
+| reasons.return | array | — | 반품 사유 카탈로그 |
+| reasons.refund | array | — | 취소·환불 사유 카탈로그 |
+| settings.allowed_charge_methods | string[] | `["deduct_from_refund","pay_on_request"]` | 허용된 배송비 청구 방식 (환경설정 `claim.allowed_charge_methods`) |
+| settings.charge_payment_methods | string[] | `["card","point"]` | 추가결제에 쓸 수 있는 결제 수단 (환경설정 `claim.charge_payment_methods`) |
+| settings.max_images | integer | `5` | 신청서당 첨부 이미지 상한 (`claim.max_images`) |
+| settings.image_max_size_kb | integer | `5120` | 첨부 1장 크기 상한 KB (`claim.image_max_size_kb`) |
+| settings.request_period_days | integer | `7` | 배송완료 후 신청 가능 일수 (`claim.request_period_days`, 0 이면 제한 없음) |
+| settings.exchange_requestable_statuses | string[] | `["delivered","confirmed"]` | 교환 신청이 열리는 주문 옵션 상태 |
+| settings.return_requestable_statuses | string[] | `["delivered","confirmed"]` | 반품 신청이 열리는 주문 옵션 상태 |
+| settings.instant_cancel_statuses | string[] | `["pending_payment","payment_complete"]` | 취소·환불 신청이 즉시취소로 처리되는 상태 (`claim.instant_cancel_statuses`) |
+| settings.refund_request_statuses | string[] | `["preparing","shipping_ready"]` | 취소·환불 신청이 환불신청서(운영자 승인)로 접수되는 상태 (`claim.refund_request_statuses`) |
+| pending_images | array | — | 이 주문에 올려 둔 임시 첨부 ([ClaimImageResource](claims.md#claim-image-resource), `claimable_type=pending`) |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "신청 가능 상품을 조회했습니다.",
+    "data": {
+        "order_id": 120,
+        "order_number": "20260823-0012",
+        "resolved_type": null,
+        "options": [
+            {
+                "option": { "id": 310, "product_name": "반팔 티셔츠", "option_name": "화이트 / M", "quantity": 1, "option_status": "delivered" },
+                "available_quantity": 1,
+                "locked_quantity": 0,
+                "claimable_types": ["exchange", "return"],
+                "refund_branch": null
+            }
+        ],
+        "reasons": {
+            "exchange": [ { "code": "size_mismatch", "name": { "ko": "사이즈가 맞지 않음", "en": "Size Does Not Fit" }, "localized_name": "사이즈가 맞지 않음", "fault_type": "customer", "fault_type_label": "고객 귀책", "is_user_selectable": true, "sort_order": 1 } ],
+            "return": [ { "code": "changed_mind", "name": { "ko": "단순 변심", "en": "Changed Mind" }, "localized_name": "단순 변심", "fault_type": "customer", "fault_type_label": "고객 귀책", "is_user_selectable": true, "sort_order": 1 } ],
+            "refund": [ { "code": "changed_mind", "name": { "ko": "단순 변심", "en": "Changed Mind" }, "localized_name": "단순 변심", "fault_type": "customer", "fault_type_label": "고객 귀책", "is_user_selectable": true, "sort_order": 1 } ]
+        },
+        "settings": {
+            "allowed_charge_methods": ["deduct_from_refund", "pay_on_request", "pay_on_approval"],
+            "charge_payment_methods": ["card", "point"],
+            "max_images": 5,
+            "image_max_size_kb": 5120,
+            "request_period_days": 7,
+            "exchange_requestable_statuses": ["delivered", "confirmed"],
+            "return_requestable_statuses": ["delivered", "confirmed"],
+            "instant_cancel_statuses": ["pending_payment", "payment_complete"],
+            "refund_request_statuses": ["preparing", "shipping_ready"]
+        },
+        "pending_images": []
+    }
+}
+```
+
+**오류 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-claims.read`)이 없는 경우 |
+| 404 | Not Found | 주문이 없거나 본인 주문이 아닌 경우 |
+| 500 | Server Error | 조회 중 예기치 못한 오류 |
+
+<!-- @generated:end -->
+
+**설명** 클레임 신청 화면을 여는 첫 호출입니다. 주문의 각 상품에 어떤 클레임이 열려 있는지(`claimable_types`), 잔여 수량, 취소·환불 신청 시 즉시취소/환불신청 분기, 사유 카탈로그, 화면이 따라야 할 설정값, 작성 중 올려 둔 임시 첨부를 한 번에 돌려줍니다. 교환·반품이 진행 중인 상품은 옵션 상태가 코스 상태(`exchange_in_progress`/`return_in_progress`)라 `claimable_types` 가 비고, 직접 환불신청이 진행 중인 상품은 상태가 그대로라도 `locked_quantity` 만큼 잔여가 줄어듭니다. `resolved_type` 이 `mixed` 면 즉시취소 상품과 환불신청 상품을 한 신청에 섞을 수 없으므로 화면이 상품 선택을 분기별로 나눠야 합니다.
+
+---
+
+### POST /api/modules/sirsoft-ecommerce/user/orders/{id}/claims/preview
+<!-- @generated:start:api.modules.sirsoft-ecommerce.user.orders.claims.preview -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.user.orders.claims.preview`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\User\ClaimController@preview`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.user-claims.request`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| id | path | integer | 예 | — | 주문 ID |
+| type | body | string | 예 | `exchange`, `return`, `refund` | 미리보기할 클레임 유형 |
+| items | body | array | 예 | min 1, max 200 | 신청 대상 `[{order_option_id, quantity, new_product_option_id?, custom_options?}]` (`new_product_option_id` 는 교환 전용 — 없으면 동일 옵션 교환) |
+| reason_code | body | string | `type` 이 `exchange`·`return` 이면 예 | max 50 | 사유 코드. 귀책 구분이 회수·왕복 배송비의 부담 주체를 정하므로 교환·반품은 **필수**다(없으면 `reason_code` 필드 오류 422). `refund` 는 회수 배송이 없어 선택 |
+| charge_method | body | string | 아니오 | 환경설정 `claim.allowed_charge_methods` | 배송비 청구 방식 (교환·반품) |
+| refund_priority | body | string | 아니오 | `pg_first`, `points_first` | 환불 배분 우선순위 (미전달 시 `pg_first`) |
+| redelivery_address | body | object | 아니오 | — | (교환) 재발송지 — `zipcode`(max 20), `country_code`(2자). 배송비 재산정에만 쓰인다 |
+| claim_number | body | string | 아니오 | max 50 | 수정 화면의 미리보기면 자기 신청서 번호 — 그 신청서가 잡아 둔 수량·코스 상태를 판정에서 제외한다 |
+
+**요청 예시**
+
+```http
+POST /api/modules/sirsoft-ecommerce/user/orders/120/claims/preview HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "type": "return",
+    "items": [ { "order_option_id": 310, "quantity": 1 } ],
+    "reason_code": "changed_mind",
+    "charge_method": "pay_on_request"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+공통으로 `type` 이 실리고, 유형별로 형태가 다릅니다.
+
+_교환 (`type=exchange`)_
+
+| 필드 | 타입 | 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| shipping_fee | object | — | 배송비 산정 결과 (`fee`, `extra_fee`, `mc_fee`, `mode`, `claim_type`, `fault_type`, `charged`, `reason`, `redelivery_changed`, `groups`) |
+| adjustment | object | — | 교환으로 돌려주는 금액의 재계산 결과 (취소 미리보기와 같은 `AdjustmentResult` 형태) |
+| items | array | — | 상품별 교환 계획 (`order_option_id`, `quantity`, `is_option_change`, `new_product_option_id`, `unit_price`, `new_unit_price`, `price_difference`) |
+| price_difference | number | `0` | 옵션 차액 합계 (양수 추가 결제 / 음수 환불) |
+| additional_product_amount | number | `0` | 추가로 받을 상품 금액 |
+| refund_product_amount | number | `0` | 돌려줄 상품 금액 |
+| total_charge_amount | number | `6000` | 총 청구액 (배송비 + 추가 상품 금액) |
+| fault_type | string | `customer` | 사유의 귀책 구분 |
+| charge_method | string\|null | `pay_on_request` | 적용된 청구 방식 |
+| requires_payment | boolean | `true` | 신청 시 추가결제가 필요한지 (청구액 > 0 이고 결제형 청구 방식) |
+
+_반품 (`type=return`)_
+
+| 필드 | 타입 | 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| shipping_fee | object | — | 배송비 산정 결과 (위와 동일 형태) |
+| adjustment | object | — | 반품 환불 금액 재계산 결과 (`refund_amount`, `refund_points_amount`, `refund_total`, `shipping_difference`, `cancelled_items`, `refund_priority` …) |
+| fault_type | string | `customer` | 귀책 구분 |
+| charge_method | string\|null | `pay_on_request` | 적용된 청구 방식 |
+| total_charge_amount | number | `3000` | 총 청구액 (반품 배송비) |
+| requires_payment | boolean | `true` | 신청 시 추가결제가 필요한지 |
+
+_취소·환불 (`type=refund`)_
+
+| 필드 | 타입 | 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| branch | string | `cancel` | 이 상품들로 신청하면 타게 될 분기 (`cancel` 즉시취소 / `refund` 환불신청) |
+| adjustment | object | — | 환불 금액 재계산 결과 (취소 미리보기 `estimate-refund` 와 같은 형태) |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "신청 예상 금액을 계산했습니다.",
+    "data": {
+        "type": "return",
+        "shipping_fee": { "fee": 3000, "extra_fee": 0, "mode": "fixed", "claim_type": "return", "fault_type": "customer", "charged": true },
+        "adjustment": { "refund_amount": 29000, "refund_points_amount": 0, "refund_total": 29000, "refund_priority": "pg_first" },
+        "fault_type": "customer",
+        "charge_method": "pay_on_request",
+        "total_charge_amount": 3000,
+        "requires_payment": true
+    }
+}
+```
+
+**오류 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-claims.request`)이 없는 경우 |
+| 404 | Not Found | 주문이 없거나 본인 주문이 아닌 경우 |
+| 422 | Unprocessable Entity | 검증 위반, 신청 불가 상태(`claim_option_not_claimable`), 신청 기간 경과(`claim_request_period_expired`), 수량 잠금(`claim_quantity_locked`), 사유 사용 불가(`claim_reason_unavailable`), 청구 방식 불허(`claim_charge_method_not_allowed`), 즉시취소·환불신청 혼재(`claim_refund_branch_mixed`) |
+| 500 | Server Error | 계산 중 예기치 못한 오류 |
+
+<!-- @generated:end -->
+
+**설명** 신청 전에 배송비·차액·환불액을 미리 계산합니다. 미리보기는 신청과 **같은 자격 가드**를 탑니다 — 신청 불가 상태·기간·수량 잠금이면 신청과 같은 422 를 돌려주므로, 화면은 미리보기 성공을 "신청 가능" 의 근거로 써도 됩니다. 수정 화면에서는 `claim_number` 를 넘겨야 자기 신청서가 잡아 둔 수량과 코스 상태가 판정에서 빠집니다(안 넘기면 자기 신청서에 막혀 신청 불가로 나온다). 금액 계산의 기준은 서버이며 화면은 표시만 합니다.
+
+---
+
+### POST /api/modules/sirsoft-ecommerce/user/orders/{id}/exchanges
+<!-- @generated:start:api.modules.sirsoft-ecommerce.user.orders.exchanges.store -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.user.orders.exchanges.store`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\User\ClaimController@storeExchange`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.user-claims.request`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| id | path | integer | 예 | — | 주문 ID |
+| items | body | array | 예 | min 1, max 200 | 교환 대상 `[{order_option_id, quantity, new_product_option_id?, custom_options?}]` |
+| items.*.new_product_option_id | body | integer | 아니오 | 같은 상품의 옵션 | 교환받을 옵션 (미전달·`null` 이면 동일 옵션 교환) |
+| reason_code | body | string | 예 | `exchange` 유형의 활성·사용자 선택 가능 사유 | 교환 사유 |
+| reason_detail | body | string | 아니오 | max 1000 | 사유 상세 |
+| charge_method | body | string | 아니오 | 환경설정 `claim.allowed_charge_methods` | 배송비·차액 청구 방식. 청구액이 0 이면 무시 |
+| payment_method | body | string | 아니오 | 환경설정 `claim.charge_payment_methods` | `pay_on_request` 일 때 결제 수단 (`point` 는 회원만) |
+| refund_priority | body | string | 아니오 | `pg_first`, `points_first` | 옵션 차액이 음수일 때 환불 배분 우선순위 |
+| image_ids | body | integer[] | 아니오 | max = 환경설정 `claim.max_images`(기본 5) | 귀속시킬 임시 첨부 ID (이 주문에 올린 `pending` 첨부만). 상한은 운영자 설정을 그대로 따른다 |
+| redelivery_address | body | object | 아니오 | — | 재발송지 — `recipient_name`, `phone`, `zipcode`, `address1`, `address2`, `country_code`(원 배송지와 같은 국가만), `changed_by_user` |
+
+**요청 예시**
+
+```http
+POST /api/modules/sirsoft-ecommerce/user/orders/120/exchanges HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "items": [ { "order_option_id": 310, "quantity": 1, "new_product_option_id": 56 } ],
+    "reason_code": "size_mismatch",
+    "reason_detail": "한 치수 크게",
+    "charge_method": "pay_on_request",
+    "payment_method": "card",
+    "image_ids": [9]
+}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| claim | object | — | 접수된 교환 신청서 ([ClaimResource](claims.md#claim-resource), 결제 블록 포함) |
+| payment | object\|null | — | `pay_on_request` 로 청구액이 있으면 만들어진 결제 건 ([ClaimPaymentResource](claims.md#claim-payment-resource)), 아니면 `null` |
+| requires_pg_payment | boolean | `true` | 결제창을 열어야 하는지 (결제 건이 없거나 마일리지로 즉시 결제되면 `false`) |
+| pg_provider | string\|null | `sirsoft-kginicis` | (결제 건이 있을 때) PG provider id — 결제 진입 페이로드는 `sirsoft-` 접두를 붙인다(`ClaimPaymentResource.pg_provider` 는 접두 없는 raw id) |
+| pg_payment_handler | string\|null | `sirsoft-pay_kginicis.requestPayment` | (결제 건이 있을 때) 결제창 핸들러 |
+| pg_payment_data | object\|null | — | (결제 건이 있을 때) 결제창 파라미터 — [claim-payments.md](claim-payments.md) |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "신청이 접수되었습니다.",
+    "data": {
+        "claim": {
+            "claim_number": "EX20260823000003",
+            "claim_type": "exchange",
+            "status": "payment_pending",
+            "total_charge_amount": 8000,
+            "additional_product_amount": 2000,
+            "items": [ { "order_option_id": 310, "quantity": 1, "is_option_change": true, "new_option_label": "화이트 / L", "price_difference": 2000 } ],
+            "images": [ { "id": 9, "claimable_type": "exchange", "claimable_id": 17 } ],
+            "outstanding_amount": 8000,
+            "pending_payment": { "payment_number": "CP20260823000002" }
+        },
+        "payment": { "payment_number": "CP20260823000002", "payment_status": "pending", "total_amount": 8000 },
+        "requires_pg_payment": true,
+        "pg_provider": "sirsoft-kginicis",
+        "pg_payment_handler": "sirsoft-pay_kginicis.requestPayment",
+        "pg_payment_data": { "order_number": "CP20260823000002", "amount": 8000, "currency": "KRW", "claim_type": "exchange", "claim_number": "EX20260823000003" }
+    }
+}
+```
+
+**오류 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-claims.request`)이 없는 경우 |
+| 404 | Not Found | 주문이 없거나 본인 주문이 아닌 경우 |
+| 422 | Unprocessable Entity | 검증 위반(사유 코드 부재, 재발송지 국가 변경 등), 미리보기와 같은 자격 위반, 교환 옵션 무효·재고 부족(`exchange_target_option_invalid` / `exchange_target_out_of_stock`), 첨부 부재·장수 초과(`claim_image_not_found` / `claim_image_limit_exceeded`), 결제 수단 불허(`claim_payment_method_not_allowed`) |
+| 500 | Server Error | 접수 중 예기치 못한 오류 |
+
+<!-- @generated:end -->
+
+**설명** 교환을 접수합니다(201). 접수되는 순간 대상 상품 행은 `exchange_in_progress` 로 바뀌고(부분 수량이면 분할), 첨부(`image_ids`)는 이 신청서에 귀속됩니다. 청구액이 있고 청구 방식이 `pay_on_request` 면 결제 건을 만들고 신청서를 `payment_pending` 으로 옮기며 응답 최상위에 결제 진입 4키를 싣습니다 — `payment_method=point` 면 마일리지로 즉시 결제되어 `requires_pg_payment=false`, 신청서는 `paid`(결제완료)로 넘어갑니다(자동 승인이 켜져 있으면 이어서 `approved`). `pay_on_approval` 은 운영자 승인 시점에 결제 건이 만들어지고, `deduct_from_refund` 는 환불액에서 차감합니다. 재발송지 국가는 원 배송지와 같아야 하며(D14), 바꾸려면 신청을 철회하고 새로 넣습니다.
+
+---
+
+### POST /api/modules/sirsoft-ecommerce/user/orders/{id}/returns
+<!-- @generated:start:api.modules.sirsoft-ecommerce.user.orders.returns.store -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.user.orders.returns.store`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\User\ClaimController@storeReturn`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.user-claims.request`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| id | path | integer | 예 | — | 주문 ID |
+| items | body | array | 예 | min 1, max 200 | 반품 대상 `[{order_option_id, quantity}]` |
+| reason_code | body | string | 예 | `return` 유형의 활성·사용자 선택 가능 사유 | 반품 사유 |
+| reason_detail | body | string | 아니오 | max 1000 | 사유 상세 |
+| charge_method | body | string | 아니오 | 환경설정 `claim.allowed_charge_methods` | 반품 배송비 청구 방식. 청구액이 0 이면 무시 |
+| payment_method | body | string | 아니오 | 환경설정 `claim.charge_payment_methods` | `pay_on_request` 일 때 결제 수단 |
+| refund_priority | body | string | 아니오 | `pg_first`, `points_first` | 환불 배분 우선순위 |
+| image_ids | body | integer[] | 아니오 | max = 환경설정 `claim.max_images`(기본 5) | 귀속시킬 임시 첨부 ID |
+
+**요청 예시**
+
+```http
+POST /api/modules/sirsoft-ecommerce/user/orders/120/returns HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "items": [ { "order_option_id": 310, "quantity": 1 } ],
+    "reason_code": "changed_mind",
+    "charge_method": "deduct_from_refund"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+교환 신청과 같은 형태 — `claim`(반품 [ClaimResource](claims.md#claim-resource), 결제 블록 포함) + `payment` + 결제 진입 4키.
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "신청이 접수되었습니다.",
+    "data": {
+        "claim": {
+            "claim_number": "RT20260823000007",
+            "claim_type": "return",
+            "status": "requested",
+            "charge_method": "deduct_from_refund",
+            "claim_shipping_fee": 3000,
+            "total_charge_amount": 3000,
+            "requires_additional_payment": false,
+            "items": [ { "order_option_id": 310, "quantity": 1, "status": "requested" } ],
+            "payments": [],
+            "outstanding_amount": 3000,
+            "pending_payment": null,
+            "payment_entry": null
+        },
+        "payment": null,
+        "requires_pg_payment": false
+    }
+}
+```
+
+**오류 응답**
+
+교환 신청과 같습니다 (401 / 403 / 404 / 422 / 500). 반품은 옵션 변경이 없으므로 `exchange_target_*` 계열은 발생하지 않습니다.
+
+<!-- @generated:end -->
+
+**설명** 반품을 접수합니다(201). 대상 상품 행은 `return_in_progress` 로 바뀌고(부분 수량이면 분할), 반품 배송비는 사유의 귀책 구분과 배송정책(고정비/정책/없음)으로 산정됩니다. `deduct_from_refund` 면 환불 시 환불액에서 배송비를 빼고(`outstanding_amount` 는 남지만 결제 건은 만들지 않는다), `pay_on_request` 면 교환과 같은 결제 흐름을 탑니다. 회수(택배사·송장)는 운영자가 승인 뒤 진행하며 `collection_*` 필드로 드러납니다.
+
+---
+
+### POST /api/modules/sirsoft-ecommerce/user/orders/{id}/refund-requests
+<!-- @generated:start:api.modules.sirsoft-ecommerce.user.orders.refund-requests.store -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.user.orders.refund-requests.store`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\User\ClaimController@storeRefund`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.user-claims.request`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| id | path | integer | 예 | — | 주문 ID |
+| items | body | array | 예 | min 1, max 200 | 대상 `[{order_option_id, quantity}]` — 전부 같은 분기(즉시취소 또는 환불신청)여야 한다 |
+| reason_code | body | string | 예 | `refund` 유형의 활성·사용자 선택 가능 사유 | 취소·환불 사유 |
+| reason_detail | body | string | 아니오 | max 1000 | 사유 상세 |
+| refund_priority | body | string | 아니오 | `pg_first`, `points_first` | 환불 배분 우선순위 |
+| refund_bank | body | object | 아니오 | — | 무통장 주문의 환불 계좌 — `bank_code`(max 10), `account_number`(max 50), `holder`(max 50). 셋을 함께 보내거나 모두 생략 |
+| image_ids | body | integer[] | 아니오 | max = 환경설정 `claim.max_images`(기본 5) | 귀속시킬 임시 첨부 ID (환불신청 분기에서만 귀속) |
+
+**요청 예시**
+
+```http
+POST /api/modules/sirsoft-ecommerce/user/orders/120/refund-requests HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "items": [ { "order_option_id": 310, "quantity": 1 } ],
+    "reason_code": "changed_mind",
+    "reason_detail": "주문 착오"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| branch | string | `cancel` | 실제로 탄 분기 — `cancel`(즉시취소 완료) 또는 `refund`(환불신청서 접수, 운영자 승인 대기) |
+| claim | object | — | `branch=cancel` 이면 취소 이력(`claim_type=cancel`), `branch=refund` 면 환불신청서(`claim_type=refund`) — 둘 다 [ClaimResource](claims.md#claim-resource) |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "주문이 취소되었습니다.",
+    "data": {
+        "branch": "cancel",
+        "claim": {
+            "claim_number": "CN20260823000004",
+            "claim_type": "cancel",
+            "status": "completed",
+            "cancel_type": "full",
+            "refund_amount": 29000,
+            "refund_status": "completed",
+            "items": [ { "order_option_id": 310, "quantity": 1 } ],
+            "cancelled_at_formatted": "2026-08-23 13:41"
+        }
+    }
+}
+```
+
+**오류 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-claims.request`)이 없는 경우 |
+| 404 | Not Found | 주문이 없거나 본인 주문이 아닌 경우 |
+| 422 | Unprocessable Entity | 검증 위반, 취소·환불 신청 불가 상태(`claim_refund_not_requestable` — 배송완료 이후는 반품으로), 즉시취소·환불신청 상품 혼재(`claim_refund_branch_mixed`), 수량 잠금(`claim_quantity_locked`), 즉시취소 파이프라인의 거절(`order_cancel_failed` — 취소 불가 금액·재고 복원 실패 등) |
+| 500 | Server Error | 접수 중 예기치 못한 오류 |
+
+<!-- @generated:end -->
+
+**설명** 취소·환불 신청을 하나의 입구로 받아 상품 상태로 분기합니다(D2). 대상 상품이 전부 환경설정 `claim.instant_cancel_statuses`(기본 결제 전·결제완료)면 기존 취소 파이프라인으로 **즉시 취소·환불**하고 취소 이력을 돌려주며, 전부 `claim.refund_request_statuses`(기본 상품준비중·배송준비중)면 **환불신청서**(`refund_source_type=direct`)를 접수해 운영자 승인을 기다립니다(환경설정 `claim.auto_approve_refund_request` 가 켜져 있으면 바로 승인). 두 분기 상품이 섞이면 422 이므로 화면은 `claimable-options` 의 `refund_branch` 로 상품을 나눠 보냅니다. 환불신청서는 원 주문 옵션의 상태를 바꾸지 않는 대신 수량을 선점하므로, 같은 상품을 다시 신청하면 `claim_quantity_locked` 가 됩니다.
+
+---
+
+### POST /api/modules/sirsoft-ecommerce/user/orders/{id}/claims/images
+<!-- @generated:start:api.modules.sirsoft-ecommerce.user.orders.claim-images.store -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.user.orders.claim-images.store`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\User\ClaimImageController@store`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.user-claims.request`
+
+**요청 파라미터** (`multipart/form-data`)
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| id | path | integer | 예 | — | 주문 ID |
+| image | body | file | 예 | `jpeg`·`png`·`jpg`·`gif`·`webp`, 최대 환경설정 `claim.image_max_size_kb` KB | 첨부할 이미지 1장 (여러 장은 반복 호출) |
+
+**요청 예시**
+
+```http
+POST /api/modules/sirsoft-ecommerce/user/orders/120/claims/images HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: multipart/form-data; boundary=----g7
+
+------g7
+Content-Disposition: form-data; name="image"; filename="defect.jpg"
+Content-Type: image/jpeg
+
+(binary)
+------g7--
+```
+
+**응답 필드** (`data` 내부)
+
+[ClaimImageResource](claims.md#claim-image-resource) — `claimable_type` 은 `pending`, `claimable_id` 는 주문 ID.
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "이미지를 첨부했습니다.",
+    "data": {
+        "id": 9,
+        "hash": "a1B2c3D4e5F6",
+        "claimable_type": "pending",
+        "claimable_id": 120,
+        "original_name": "defect.jpg",
+        "mime_type": "image/jpeg",
+        "size": 183204,
+        "width": 800,
+        "height": 600,
+        "download_url": "/api/modules/sirsoft-ecommerce/claim-image/a1B2c3D4e5F6?expires=1787000000&signature=0f3c"
+    }
+}
+```
+
+**오류 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-claims.request`)이 없는 경우 |
+| 404 | Not Found | 주문이 없거나 본인 주문이 아닌 경우 |
+| 422 | Unprocessable Entity | 파일 누락·이미지가 아님·크기 초과(검증), 주문당 임시 첨부 장수 초과(`claim_image_limit_exceeded`) |
+| 500 | Server Error | 저장 중 예기치 못한 오류 |
+
+<!-- @generated:end -->
+
+**설명** 신청서를 만들기 전에 이미지를 먼저 올려 두는 2단계 업로드의 1단계입니다(201). 첨부는 주문에 임시로 묶이고(`pending`), 신청 시 `image_ids` 로 넘기면 그 신청서에 귀속됩니다. 귀속 전 첨부는 `claimable-options` 의 `pending_images` 로 다시 받을 수 있고, `DELETE user/claims/images/{image}` 로 지웁니다. 다른 주문에 올린 첨부를 이 주문의 신청에 붙이려 하면 `claim_image_not_found` 로 거절됩니다.

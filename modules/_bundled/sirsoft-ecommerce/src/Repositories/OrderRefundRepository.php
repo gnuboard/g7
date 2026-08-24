@@ -2,9 +2,14 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
+use App\Support\Query\PaginationLimits;
+use Carbon\Carbon;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
+use Modules\Sirsoft\Ecommerce\Models\OrderRefundOption;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundRepositoryInterface;
 
 /**
@@ -47,7 +52,7 @@ class OrderRefundRepository implements OrderRefundRepositoryInterface
             ->where('refund_source_type', $sourceType)
             ->where('refund_source_id', $sourceId)
             ->orderBy('id')
-            ->get();
+            ->get(); // audit:allow query-unbounded-get reason: 클레임 1건에서 파생된 환불신청서 목록 — 건수가 그 클레임의 처리 횟수에 묶인다
     }
 
     /**
@@ -69,5 +74,118 @@ class OrderRefundRepository implements OrderRefundRepositoryInterface
         }
 
         return $query->get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function findByNumber(string $refundNumber, array $relations = []): ?OrderRefund
+    {
+        return $this->model->newQuery()
+            ->with($relations)
+            ->where('refund_number', $refundNumber)
+            ->first();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function listByOrderId(int $orderId, array $relations = []): Collection
+    {
+        // 건수가 주문의 상품 수에 묶인다는 전제는 성립하지 않는다 — 이 조회에는 상태 필터가 없고
+        // 철회는 행을 남기므로(수량 잠금만 풀린다) 같은 주문에서 신청↔철회를 반복하면 계속 쌓인다.
+        // 그래서 코어 단일 해석의 결과 상한을 안전 상한으로 건다(실사용 건수는 그 훨씬 아래다).
+        $cap = PaginationLimits::resultCap('ecommerce.claims');
+
+        return $this->model->newQuery()
+            ->with($relations)
+            ->where('order_id', $orderId)
+            ->orderByDesc('id')
+            ->when($cap !== null, fn ($q) => $q->limit($cap))
+            ->get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function sumActiveDirectQuantityByOrderOption(int $orderOptionId, ?int $excludeRefundId = null): int
+    {
+        $finalValues = array_map(
+            fn (RefundStatusEnum $status) => $status->value,
+            RefundStatusEnum::finalStatuses(),
+        );
+
+        $liveDirectRefunds = $this->model->newQuery()
+            ->select('id')
+            ->where('refund_source_type', RefundSourceTypeEnum::DIRECT->value)
+            ->whereNotIn('refund_status', $finalValues);
+
+        if ($excludeRefundId !== null) {
+            $liveDirectRefunds->where('id', '!=', $excludeRefundId);
+        }
+
+        return (int) OrderRefundOption::query()
+            ->where('order_option_id', $orderOptionId)
+            ->whereIn('order_refund_id', $liveDirectRefunds)
+            ->sum('quantity');
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function paginateForUser(int $userId, array $filters = [], int $perPage = 20): LengthAwarePaginator
+    {
+        $query = $this->model->newQuery()
+            ->with(['refundOptions.orderOption', 'images', 'order'])
+            ->whereHas('order', fn ($q) => $q->where('user_id', $userId))
+            ->where('refund_source_type', '!=', RefundSourceTypeEnum::CANCEL->value);
+
+        if (! empty($filters['status'])) {
+            $query->where('refund_status', $filters['status']);
+        }
+
+        // 기간 필터 — whereDate 는 컬럼에 DATE() 를 씌워 인덱스를 못 쓰게 만든다.
+        // 같은 결과를 내는 범위 조건으로 바꿔 created_at 인덱스를 살린다
+        // (종료일은 그날 23:59:59.999999 까지 포함해야 whereDate 와 동일한 경계를 갖는다).
+        // 경계 해석은 저장소가 맡는다 — 요청이 문자열을 이어 붙이면 시각이 섞인 입력에서 규격 밖 값이 된다.
+        if (! empty($filters['from'])) {
+            $query->where('created_at', '>=', Carbon::parse($filters['from'])->startOfDay());
+        }
+
+        if (! empty($filters['to'])) {
+            $query->where('created_at', '<=', Carbon::parse($filters['to'])->endOfDay());
+        }
+
+        return $query->orderByDesc('id')->paginate($perPage, [(new OrderRefund)->getTable().'.*']);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function update(OrderRefund $refund, array $data): OrderRefund
+    {
+        $refund->update($data);
+
+        return $refund->refresh();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function findForUpdate(int $id): ?OrderRefund
+    {
+        return $this->model->newQuery()
+            ->lockForUpdate()
+            ->find($id);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function countByReasonCode(string $reasonCode): int
+    {
+        return $this->model->newQuery()
+            ->where('reason_code', $reasonCode)
+            ->count();
     }
 }

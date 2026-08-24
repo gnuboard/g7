@@ -86,4 +86,43 @@ class ClaimImageRepository implements ClaimImageRepositoryInterface
             ->where('claimable_id', $claimableId)
             ->delete();
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function listPendingByOrder(int $orderId): Collection
+    {
+        return $this->model->newQuery()
+            ->where('claimable_type', ClaimImage::PENDING_CLAIMABLE_TYPE)
+            ->where('claimable_id', $orderId)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function listByIds(array $ids): Collection
+    {
+        if ($ids === []) {
+            return new Collection;
+        }
+
+        return $this->model->newQuery()
+            ->whereIn('id', $ids)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function update(ClaimImage $image, array $data): ClaimImage
+    {
+        $image->update($data);
+
+        return $image->refresh();
+    }
 }

@@ -23,9 +23,9 @@ return new class extends Migration
             $table->foreignId('order_id')->comment('주문 FK')
                 ->constrained('ecommerce_orders')->cascadeOnDelete();
             $table->string('return_number', 50)->unique()->comment('고유 반품번호 (SequenceType::ORDER_RETURN, 접두사 RT)');
-            $table->string('return_status', 30)->comment('반품 상태 (ReturnStatusEnum 10종: requested ~ withdrawn)');
+            $table->string('return_status', 30)->comment('반품 상태 (ReturnStatusEnum 11종: requested ~ withdrawn)');
 
-            $table->string('reason_code', 30)->comment('반품 사유 코드 (ecommerce_claim_reasons.code, type=return 참조)');
+            $table->string('reason_code', 50)->comment('반품 사유 코드 (ecommerce_claim_reasons.code, type=return 참조 — 폭은 카탈로그 code 와 같아야 한다)');
             $table->text('reason_detail')->nullable()->comment('상세 사유 (기타 선택 시)');
             $table->string('fault_type', 20)->comment('귀책 구분 스냅샷 (ClaimReasonFaultTypeEnum: customer, seller, carrier)');
 

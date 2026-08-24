@@ -34,9 +34,13 @@ class ClaimReasonException extends Exception
     }
 
     /**
-     * 주문 취소 이력에서 사용 중이라 삭제할 수 없을 때
+     * 이미 사용 중이라 삭제할 수 없을 때
      *
-     * @param  int  $usageCount  해당 사유를 사용한 취소 이력 건수
+     * 사용량은 그 사유의 유형에 맞는 표 전수에서 센다(`ClaimReasonService::countUsage()`) — 교환·반품은
+     * 각 신청서, 환불은 환불신청서 + 즉시취소 합산이다. 취소 이력만 세던 시절의 서술을 남기면 운영자가
+     * 안내받은 건수를 취소 이력에서 찾지 못한다.
+     *
+     * @param  int  $usageCount  해당 사유를 사용 중인 건수
      * @return self 예외 인스턴스
      */
     public static function inUse(int $usageCount): self

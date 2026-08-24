@@ -153,8 +153,8 @@ class OrderExchangeService
      * 신청 화면이 옵션·수량·사유·재발송지를 바꿀 때마다 부르는 경로이며, 실제 신청
      * (`requestExchange`)이 기록할 값과 같은 산식을 쓴다.
      *
-     * 신청 자격(상태·수량·잠금) 가드는 여기 없다 — 미리보기 화면을 만드는 세션이 거절을 화면에
-     * 어떻게 보일지와 함께 정한다. 대상 해석은 `resolvePreviewItems()` 한 곳이라 그 지점만 바꾸면 된다.
+     * 신청 자격(상태·수량·잠금·기간) 가드는 신청과 같은 규칙으로 적용한다(`resolvePreviewItems()`) —
+     * 고객이 신청할 수 없는 조합의 금액을 본 뒤 [신청하기] 에서야 거절되지 않게 한다.
      *
      * @param  Order  $order  대상 주문
      * @param  array  $items  신청 대상 [{order_option_id, quantity, new_product_option_id?, custom_options?}]
@@ -162,6 +162,7 @@ class OrderExchangeService
      * @param  ClaimChargeMethodEnum|null  $chargeMethod  청구 방식 (청구 0원이면 null)
      * @param  RefundPriorityEnum  $refundPriority  환불 우선순위
      * @param  array|null  $redeliveryAddress  재발송지 (D14) [{country_code?, zipcode?, ...}]
+     * @param  int|null  $excludeExchangeId  수량 잠금 집계에서 뺄 교환 신청서 ID (수정 화면의 미리보기)
      * @return array{shipping_fee: ClaimShippingFee, adjustment: AdjustmentResult, items: array, price_difference: float, additional_product_amount: float, refund_product_amount: float, total_charge_amount: float, fault_type: ClaimReasonFaultTypeEnum, charge_method: ClaimChargeMethodEnum|null, requires_payment: bool} 미리보기 결과
      *
      * @throws OrderClaimException 사유 부재 / 대상 부재 / 신규 옵션 무효
@@ -173,9 +174,10 @@ class OrderExchangeService
         ?ClaimChargeMethodEnum $chargeMethod = null,
         RefundPriorityEnum $refundPriority = RefundPriorityEnum::PG_FIRST,
         ?array $redeliveryAddress = null,
+        ?int $excludeExchangeId = null,
     ): array {
         $reason = $this->resolveReason($reasonCode);
-        $plans = $this->planItems($this->resolvePreviewItems($order, $items), $items);
+        $plans = $this->planItems($this->resolvePreviewItems($order, $items, $excludeExchangeId), $items);
         $claimItems = $this->toClaimItemsFromPlans($plans);
 
         $shippingFee = $this->claimShippingFeeService->calculate(
@@ -931,15 +933,20 @@ class OrderExchangeService
      * 교환 사유를 해석합니다.
      *
      * @param  string  $reasonCode  사유 코드
+     * @param  bool  $userSelectableOnly  사용자 선택 가능 사유(`is_user_selectable`)로 제한할지 여부 (관리자 경로는 false)
      * @return ClaimReason 사유 모델
      *
      * @throws OrderClaimException 사유 부재·비활성
      */
-    protected function resolveReason(string $reasonCode): ClaimReason
+    protected function resolveReason(string $reasonCode, bool $userSelectableOnly = true): ClaimReason
     {
         $reason = $this->claimReasonRepository->findByCode($reasonCode, ClaimTypeEnum::EXCHANGE->value);
 
-        if (! $reason || ! $reason->is_active) {
+        // 사용자 경로는 화면에 노출되지 않는 사유(`is_user_selectable=false`)를 고를 수 없어야 한다.
+        // 접수 FormRequest 는 그 조건까지 게이트하는데 수정 요청은 신청서 유형을 몰라 규칙을 걸
+        // 수 없어, 판정을 여기로 모은다 — 없으면 판매자 귀책 전용 사유를 수정으로 지정해
+        // 반품·교환 배송비를 0 으로 만들 수 있다. 관리자 경로가 생기면 인자로 명시해 푼다.
+        if (! $reason || ! $reason->is_active || ($userSelectableOnly && ! $reason->is_user_selectable)) {
             throw OrderClaimException::reasonUnavailable();
         }
 
@@ -974,37 +981,39 @@ class OrderExchangeService
     }
 
     /**
-     * 미리보기의 신청 대상을 해석합니다. (자격 가드 없음 — 미리보기 화면 세션이 배선한다)
+     * 미리보기의 신청 대상을 해석합니다. (신청과 같은 자격 가드 — 상태·수량·잠금·기간)
+     *
+     * `requestExchange()` 가 주문을 잠근 뒤 하는 판정을 잠금 없이 같은 규칙으로 수행한다 — 고객이 신청할
+     * 수 없는 조합의 금액을 본 뒤 [신청하기] 에서야 거절되는 일을 막는다. 수정 화면의 미리보기는 자기
+     * 신청서가 잡아 둔 수량을 빼고 본다(`$excludeExchangeId`).
      *
      * @param  Order  $order  주문
      * @param  array  $items  신청 대상 [{order_option_id, quantity}]
+     * @param  int|null  $excludeExchangeId  집계에서 뺄 교환 신청서 ID (수정 중인 자기 자신)
      * @return array<int, array{option: OrderOption, quantity: int}> 주문옵션 ID => 해석 결과
      *
-     * @throws OrderClaimException 대상 부재
+     * @throws OrderClaimException 대상 부재·상태 불가·수량 오류·수량 잠금·기간 경과
      */
-    protected function resolvePreviewItems(Order $order, array $items): array
+    protected function resolvePreviewItems(Order $order, array $items, ?int $excludeExchangeId = null): array
     {
-        if (empty($items)) {
-            throw OrderClaimException::itemsRequired();
-        }
-
-        $order->loadMissing('options');
-
-        $resolved = [];
+        $normalized = [];
 
         foreach ($items as $item) {
-            $optionId = (int) ($item['order_option_id'] ?? 0);
-            $option = $order->options->firstWhere('id', $optionId);
-
-            if (! $option) {
-                throw OrderClaimException::optionNotFound();
-            }
-
-            $resolved[$optionId] = [
-                'option' => $option,
+            $normalized[] = [
+                'order_option_id' => (int) ($item['order_option_id'] ?? 0),
                 'quantity' => (int) ($item['quantity'] ?? $item['cancel_quantity'] ?? 0),
-            ];
+            ] + $item;
         }
+
+        $resolved = $this->claimQuantityGuard->resolveClaimItems(
+            $order,
+            $normalized,
+            ClaimTypeEnum::EXCHANGE,
+            $this->requestableStatusValues(),
+            $excludeExchangeId,
+        );
+
+        $this->assertWithinRequestPeriod($resolved);
 
         return $resolved;
     }
@@ -1127,11 +1136,24 @@ class OrderExchangeService
      *
      * @param  Order  $order  주문
      * @param  array|null  $input  재발송지 입력
+     * @param  array|null  $current  직전 재발송지 스냅샷 (승인 전 수정 — 보내지 않은 필드의 base)
      * @return array 재발송지 스냅샷
      */
-    protected function buildRedeliveryAddressSnapshot(Order $order, ?array $input): array
+    protected function buildRedeliveryAddressSnapshot(Order $order, ?array $input, ?array $current = null): array
     {
-        $base = $this->orderShippingAddressSnapshot($order);
+        $orderAddress = $this->orderShippingAddressSnapshot($order);
+
+        // 보내지 않은 필드의 base 는 **직전 스냅샷**이다. 주문 배송지를 base 로 쓰면 2회 연속
+        // 부분 수정에서 앞 수정이 조용히 되돌아간다(보낸 필드만 반영하는 계약이 깨진다).
+        $base = $orderAddress;
+
+        if ($current !== null) {
+            foreach (array_keys($orderAddress) as $field) {
+                if (array_key_exists($field, $current)) {
+                    $base[$field] = $current[$field];
+                }
+            }
+        }
 
         if (empty($input)) {
             return $base + ['changed_by_user' => false];
@@ -1147,9 +1169,11 @@ class OrderExchangeService
             }
         }
 
+        // 손댔는지는 언제나 **주문 배송지**와의 차이로 판정한다 — 직전 스냅샷과 비교하면
+        // 이미 바꾼 주소를 그대로 둔 수정이 '손대지 않음' 으로 뒤집힌다.
         $snapshot['changed_by_user'] = array_key_exists('changed_by_user', $input)
             ? (bool) $input['changed_by_user']
-            : $snapshot !== $base;
+            : $snapshot !== $orderAddress;
 
         return $snapshot;
     }
@@ -1273,7 +1297,7 @@ class OrderExchangeService
     }
 
     /**
-     * 신청 가능 기간을 검증합니다. (배송완료 시각 기준, 시각을 모르면 판정하지 않는다)
+     * 신청 가능 기간을 검증합니다. (배송완료 → 확정 → 마지막 변경 시각 순의 기산점)
      *
      * @param  array<int, array{option: OrderOption, quantity: int}>  $resolved  해석된 대상
      *
@@ -1281,20 +1305,26 @@ class OrderExchangeService
      */
     protected function assertWithinRequestPeriod(array $resolved): void
     {
-        $days = (int) $this->settingsService->getSetting('claim.request_period_days', 0);
+        $days = (int) $this->settingsService->getSetting('claim.request_period_days', 7);
 
         if ($days <= 0) {
             return;
         }
 
         foreach ($resolved as $entry) {
-            $deliveredAt = $entry['option']->delivered_at;
+            $option = $entry['option'];
 
-            if ($deliveredAt === null) {
+            // 기산점은 배송완료 시각이 정본이지만, `배송중 → 구매확정` 직접 전이가 허용되므로
+            // `delivered_at` 이 영영 null 인 옵션이 실재한다. 그것을 "판정 불가" 로 넘기면 기한 게이트가
+            // 그 옵션에 한해 영구히 열린 채가 된다. 확정 시각으로, 그마저 없으면(두 컬럼이 생기기 전
+            // 주문) 마지막 변경 시각으로 내려간다 — 어느 경우에도 창이 닫히고, 정상 신청은 막지 않는다.
+            $baseline = $option->delivered_at ?? $option->confirmed_at ?? $option->updated_at;
+
+            if ($baseline === null) {
                 continue;
             }
 
-            if ($deliveredAt->copy()->addDays($days)->isPast()) {
+            if ($baseline->copy()->addDays($days)->isPast()) {
                 throw OrderClaimException::requestPeriodExpired($days);
             }
         }
@@ -1619,7 +1649,7 @@ class OrderExchangeService
      *
      * 판정 규칙은 반품 서비스와 같다 — 끝난 상품(반려·철회·완료)은 빼고, 살아 있는 상품이
      * 없으면 끝난 상태가 하나로 모일 때 그것을 따라가며, 한 단계 이상 앞서 있으면 건너뛴 중간
-     * 단계를 차례로 거친다(`headerPathTo`). 교환은 13종이라 경로가 길다(회수 3 + 재발송 3).
+     * 단계를 차례로 거친다(`headerPathTo`). 교환은 14종이라 경로가 길다(회수 3 + 재발송 3).
      *
      * @param  OrderExchange  $exchange  교환 신청서
      * @param  int|null  $processedBy  처리 관리자 ID
@@ -2377,6 +2407,9 @@ class OrderExchangeService
     /**
      * 신청 계획을 계산기 공용 아이템 형태로 변환합니다.
      *
+     * `cancel_quantity` 키는 `OrderAdjustmentService` / `ClaimShippingFeeService` 가 공유하는 형태다 —
+     * 클레임 전용 키를 새로 만들면 두 계산기의 안분·조건부무료 재판정 경로를 다시 뚫어야 한다.
+     *
      * @param  array  $plans  신청 계획
      * @return array [{order_option_id, cancel_quantity}]
      */
@@ -2392,5 +2425,139 @@ class OrderExchangeService
         }
 
         return $normalized;
+    }
+
+    /**
+     * 승인 전 신청 내용을 수정합니다. (D13 사유·상세 사유 / D14 재발송지)
+     *
+     * 수정 가능 경계는 철회 경계와 같다(신청·결제대기·보류). 사유(귀책)나 재발송지(우편번호·국가)가 바뀌면
+     * 왕복 배송비를 접수와 같은 산식으로 재산정해 청구액을 갱신한다 — 옵션 차액은 상품이 불변이라 그대로다.
+     * 청구액이 0 에서 양수가 되면 청구 방식이 필요하므로 페이로드의 `charge_method` 를 함께 받는다.
+     *
+     * 이미 받은 추가결제와의 **차액 정산은 여기서 하지 않는다** — 호출부가 갱신된 신청서로
+     * `ClaimPaymentService::settleChargeDifference()` 를 부른다(결제 서비스가 이 서비스를 전이에 쓰므로
+     * 역방향 의존을 두지 않는다).
+     *
+     * @param  OrderExchange  $exchange  교환 신청서
+     * @param  array  $payload  수정 페이로드 (reason_code? / reason_detail? / redelivery_address? / charge_method?)
+     * @return OrderExchange 수정된 신청서
+     *
+     * @throws OrderClaimException 수정 불가 상태 / 사유 부재 / 국가 변경 / 청구 방식 부재·불허·차감 불가
+     */
+    public function updateRequest(OrderExchange $exchange, array $payload): OrderExchange
+    {
+        if (! $exchange->exchange_status->isWithdrawable()) {
+            throw OrderClaimException::notEditable();
+        }
+
+        return DB::transaction(function () use ($exchange, $payload) {
+            $locked = $this->exchangeRepository->findForUpdate($exchange->id) ?? $exchange;
+            $locked->load(['exchangeOptions', 'order.options', 'order.shippings', 'order.payment', 'order.shippingAddress']);
+            $order = $locked->order;
+
+            $updates = [];
+            $reason = null;
+
+            if (($payload['reason_code'] ?? null) !== null && $payload['reason_code'] !== '' && $payload['reason_code'] !== $locked->reason_code) {
+                $reason = $this->resolveReason((string) $payload['reason_code']);
+                $updates['reason_code'] = $reason->code;
+                $updates['fault_type'] = $reason->fault_type;
+            }
+
+            if (array_key_exists('reason_detail', $payload)) {
+                $updates['reason_detail'] = $payload['reason_detail'];
+            }
+
+            $redelivery = null;
+
+            if (! empty($payload['redelivery_address']) && is_array($payload['redelivery_address'])) {
+                $redelivery = $this->buildRedeliveryAddressSnapshot(
+                    $order,
+                    $payload['redelivery_address'],
+                    $locked->redelivery_address_snapshot,
+                );
+                $this->assertRedeliveryCountryUnchanged($order, $redelivery);
+                $updates['redelivery_address_snapshot'] = $redelivery;
+            }
+
+            $chargeMethod = array_key_exists('charge_method', $payload)
+                ? $this->normalizeChargeMethod($payload['charge_method'])
+                : $locked->charge_method;
+
+            if ($reason !== null || $redelivery !== null) {
+                $claimItems = [];
+
+                foreach ($locked->exchangeOptions as $item) {
+                    $claimItems[] = [
+                        'order_option_id' => (int) $item->order_option_id,
+                        'cancel_quantity' => (int) $item->exchange_quantity,
+                    ];
+                }
+
+                $shippingFee = $this->claimShippingFeeService->calculate(
+                    $order,
+                    ClaimTypeEnum::EXCHANGE,
+                    $claimItems,
+                    $reason?->fault_type ?? $locked->fault_type,
+                    $this->toFeeLegAddress($redelivery ?? $locked->redelivery_address_snapshot),
+                );
+
+                // 옵션 차액은 상품이 불변이라 접수값 그대로다 — 부호는 한쪽 컬럼만 채워져 있어 차로 복원된다.
+                $priceDifference = (float) $locked->additional_product_amount - (float) $locked->refund_product_amount;
+                $totalCharge = $shippingFee->fee + (float) $locked->additional_product_amount;
+
+                $this->assertChargeMethodUsable(
+                    $order,
+                    $claimItems,
+                    $shippingFee,
+                    $priceDifference,
+                    $totalCharge,
+                    $chargeMethod,
+                    RefundPriorityEnum::PG_FIRST,
+                );
+
+                $currencySnapshot = $order->currency_snapshot ?? [];
+
+                $updates['shipping_fee_mode'] = $shippingFee->mode;
+                $updates['claim_shipping_fee'] = $shippingFee->fee;
+                $updates['mc_claim_shipping_fee'] = $shippingFee->mcFee ?: null;
+                $updates['shipping_fee_snapshot'] = $shippingFee->toArray();
+                $updates['total_charge_amount'] = $totalCharge;
+                $updates['mc_total_charge_amount'] = $this->toMultiCurrency($totalCharge, $currencySnapshot);
+                $updates['charge_method'] = $totalCharge > 0 ? $chargeMethod : null;
+            } elseif (array_key_exists('charge_method', $payload) && (float) $locked->total_charge_amount > 0) {
+                $this->assertChargeMethodAllowed($chargeMethod);
+                $updates['charge_method'] = $chargeMethod;
+            }
+
+            if ($updates === []) {
+                return $locked;
+            }
+
+            return $this->exchangeRepository->update($locked, $updates)->fresh(['exchangeOptions']);
+        });
+    }
+
+    /**
+     * 청구 방식이 존재하고 운영자 허용 목록 안에 있는지만 검증합니다. (차감 성립성 제외)
+     *
+     * @param  ClaimChargeMethodEnum|null  $chargeMethod  청구 방식
+     *
+     * @throws OrderClaimException 부재·불허
+     */
+    protected function assertChargeMethodAllowed(?ClaimChargeMethodEnum $chargeMethod): void
+    {
+        if ($chargeMethod === null) {
+            throw OrderClaimException::chargeMethodRequired();
+        }
+
+        $allowed = (array) $this->settingsService->getSetting(
+            'claim.allowed_charge_methods',
+            ClaimChargeMethodEnum::values(),
+        );
+
+        if (! in_array($chargeMethod->value, $allowed, true)) {
+            throw OrderClaimException::chargeMethodNotAllowed();
+        }
     }
 }

@@ -1,0 +1,353 @@
+<?php
+
+namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Services;
+
+use App\Extension\HookManager;
+use Modules\Sirsoft\Ecommerce\DTO\CalculationInput;
+use Modules\Sirsoft\Ecommerce\DTO\CalculationItem;
+use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundOptionStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
+use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
+use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
+use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
+use Modules\Sirsoft\Ecommerce\Services\OrderRefundRequestService;
+use Modules\Sirsoft\Ecommerce\Tests\Concerns\AssertsClaimExceptions;
+use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
+use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+
+/**
+ * 취소·환불 신청 분기 서비스 테스트 (S5 · D2)
+ *
+ * 검증 축:
+ * - 분기 판정 — 즉시취소 가능 상태 / 환불신청 가능 상태 / 혼재 거절 / 대상 아님
+ * - 즉시취소 분기 — 기존 취소 파이프라인을 그대로 실행해 취소신청서·환불이 생긴다
+ * - 환불신청서 분기 — 출처 direct 환불신청서 + 상품 행이 REQUESTED 로 접수되고, 수량 잠금이 두 번째 신청을 막는다
+ * - 자동 승인 설정 / 철회 / 승인 전 수정 / 전이 게이트
+ */
+class OrderRefundRequestServiceTest extends ModuleTestCase
+{
+    use AssertsClaimExceptions;
+    use BuildsClaimFlowOrders;
+
+    protected OrderRefundRequestService $service;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->setupTestCurrencySettings();
+        $this->seedClaimReasons();
+        $this->service = app(OrderRefundRequestService::class);
+
+        // 즉시취소 분기는 PG 환불 훅을 타므로 성공으로 고정한다.
+        HookManager::addFilter('sirsoft-ecommerce.payment.refund', fn () => [
+            'success' => true,
+            'transaction_id' => 'TEST_REFUND_TXN',
+            'error_code' => null,
+            'error_message' => null,
+        ]);
+    }
+
+    protected function tearDown(): void
+    {
+        $this->clearTestCurrencySettings();
+        parent::tearDown();
+    }
+
+    /**
+     * 상품준비중(환불신청 가능) 상태의 주문을 만듭니다.
+     *
+     * @param  int  $quantity  수량
+     * @return Order 주문
+     */
+    protected function preparingOrder(int $quantity = 1): Order
+    {
+        $policy = $this->createClaimShippingPolicy();
+        $order = $this->createSingleItemClaimOrder(29000, $quantity, $policy);
+
+        return $this->moveOrderTo($this->attachPolicyShippings($order, $policy), OrderStatusEnum::PREPARING);
+    }
+
+    /**
+     * 주문 전량을 신청하는 페이로드를 만듭니다.
+     *
+     * @param  Order  $order  주문
+     * @param  int|null  $quantity  수량 (null 이면 전량)
+     * @return array 페이로드
+     */
+    protected function payload(Order $order, ?int $quantity = null): array
+    {
+        return [
+            'items' => [['order_option_id' => $order->options->first()->id, 'quantity' => $quantity ?? (int) $order->options->first()->quantity]],
+            'reason_code' => 'changed_mind',
+            'reason_detail' => '단순 변심',
+            'requested_by' => $order->user_id,
+        ];
+    }
+
+    // ================================================================
+    // 분기 판정
+    // ================================================================
+
+    public function test_payment_complete_items_resolve_to_the_cancel_branch(): void
+    {
+        $order = $this->paidClaimOrder();
+
+        $this->assertSame('cancel', $this->service->resolveBranch($order, $this->payload($order)['items']));
+    }
+
+    public function test_preparing_items_resolve_to_the_refund_branch(): void
+    {
+        $order = $this->preparingOrder();
+
+        $this->assertSame('refund', $this->service->resolveBranch($order, $this->payload($order)['items']));
+    }
+
+    public function test_delivered_items_are_not_refund_requestable(): void
+    {
+        $order = $this->deliveredClaimOrder();
+
+        $this->assertClaimException('claim_refund_not_requestable', fn () => $this->service->resolveBranch($order, $this->payload($order)['items']));
+    }
+
+    public function test_mixed_branches_are_rejected(): void
+    {
+        $policy = $this->createClaimShippingPolicy();
+        [$productA, $optionA] = $this->createClaimProduct(10000, $policy);
+        [$productB, $optionB] = $this->createClaimProduct(20000, $policy);
+        $order = $this->createClaimOrder(new CalculationInput(items: [
+            new CalculationItem(productId: $productA->id, productOptionId: $optionA->id, quantity: 1),
+            new CalculationItem(productId: $productB->id, productOptionId: $optionB->id, quantity: 1),
+        ]));
+        $order = $this->attachPolicyShippings($order, $policy);
+        $order->options[0]->forceFill(['option_status' => OrderStatusEnum::PAYMENT_COMPLETE])->save();
+        $order->options[1]->forceFill(['option_status' => OrderStatusEnum::PREPARING])->save();
+        $order = $order->fresh(['options']);
+
+        $this->assertClaimException('claim_refund_branch_mixed', fn () => $this->service->resolveBranch($order, [
+            ['order_option_id' => $order->options[0]->id, 'quantity' => 1],
+            ['order_option_id' => $order->options[1]->id, 'quantity' => 1],
+        ]));
+    }
+
+    public function test_an_unknown_option_is_rejected(): void
+    {
+        $order = $this->paidClaimOrder();
+
+        $this->assertClaimException('claim_option_not_found', fn () => $this->service->resolveBranch($order, [['order_option_id' => 999999, 'quantity' => 1]]));
+        $this->assertClaimException('claim_items_required', fn () => $this->service->resolveBranch($order, []));
+    }
+
+    public function test_instant_cancel_wins_when_both_lists_contain_the_same_status(): void
+    {
+        app(EcommerceSettingsService::class)->setSetting('claim.refund_request_statuses', [OrderStatusEnum::PAYMENT_COMPLETE->value, OrderStatusEnum::PREPARING->value]);
+        $order = $this->paidClaimOrder();
+
+        $this->assertSame('cancel', $this->service->branchForStatus(OrderStatusEnum::PAYMENT_COMPLETE));
+    }
+
+    // ================================================================
+    // 미리보기
+    // ================================================================
+
+    public function test_preview_returns_the_branch_and_the_refund_calculation(): void
+    {
+        $order = $this->preparingOrder();
+
+        $preview = $this->service->previewRefund($order, $this->payload($order)['items']);
+
+        $this->assertSame('refund', $preview['branch']);
+        $this->assertSame(29000.0, (float) $preview['adjustment']->getTotalRefundAmount());
+        $this->assertSame(0, OrderRefund::count());
+    }
+
+    public function test_preview_applies_the_quantity_lock_like_the_request(): void
+    {
+        $order = $this->preparingOrder(2);
+        $this->service->request($order, $this->payload($order, 2));
+
+        $this->assertClaimException('claim_quantity_locked', fn () => $this->service->previewRefund($order->fresh(['options']), $this->payload($order, 1)['items']));
+    }
+
+    public function test_preview_excludes_the_refund_request_being_edited_from_the_lock(): void
+    {
+        $order = $this->preparingOrder(2);
+        $result = $this->service->request($order, $this->payload($order, 2));
+
+        $preview = $this->service->previewRefund(
+            $order->fresh(['options']),
+            $this->payload($order, 2)['items'],
+            excludeRefundId: $result['refund']->id,
+        );
+
+        $this->assertSame('refund', $preview['branch']);
+        $this->assertSame(58000.0, (float) $preview['adjustment']->getTotalRefundAmount());
+    }
+
+    // ================================================================
+    // 즉시취소 분기
+    // ================================================================
+
+    public function test_cancel_branch_runs_the_cancellation_pipeline(): void
+    {
+        $order = $this->paidClaimOrder();
+
+        $result = $this->service->request($order, $this->payload($order));
+
+        $this->assertSame('cancel', $result['branch']);
+        $this->assertNull($result['refund']);
+        $this->assertInstanceOf(OrderCancel::class, $result['cancel']->orderCancel);
+        $this->assertSame(OrderStatusEnum::CANCELLED, $order->fresh()->order_status);
+        $this->assertSame(RefundSourceTypeEnum::CANCEL, $result['cancel']->orderRefund?->refund_source_type);
+        $this->assertSame('changed_mind', $result['cancel']->orderCancel->cancel_reason_type);
+    }
+
+    // ================================================================
+    // 환불신청서 분기
+    // ================================================================
+
+    public function test_refund_branch_files_a_direct_refund_request(): void
+    {
+        $order = $this->preparingOrder();
+        $fired = [];
+        HookManager::addAction('sirsoft-ecommerce.claim.refund.requested', function ($refund) use (&$fired) {
+            $fired[] = $refund->refund_number;
+        });
+
+        $result = $this->service->request($order, $this->payload($order));
+
+        $refund = $result['refund'];
+        $this->assertSame('refund', $result['branch']);
+        $this->assertNull($result['cancel']);
+        $this->assertSame(RefundSourceTypeEnum::DIRECT, $refund->refund_source_type);
+        $this->assertNull($refund->refund_source_id);
+        $this->assertSame(RefundStatusEnum::REQUESTED, $refund->refund_status);
+        $this->assertSame('changed_mind', $refund->reason_code);
+        $this->assertSame('단순 변심', $refund->reason_detail);
+        $this->assertSame($order->user_id, (int) $refund->requested_by);
+        $this->assertSame(29000.0, (float) $refund->refund_amount);
+        $this->assertCount(1, $refund->refundOptions);
+        $this->assertSame(RefundOptionStatusEnum::REQUESTED, $refund->refundOptions->first()->option_status);
+        $this->assertSame(1, (int) $refund->refundOptions->first()->quantity);
+        $this->assertSame([$refund->refund_number], $fired);
+        // 원 주문옵션은 판매 상태 그대로다 — 코스 상태가 없다.
+        $this->assertSame(OrderStatusEnum::PREPARING, $order->fresh()->options->first()->option_status);
+    }
+
+    public function test_refund_branch_locks_the_quantity_against_a_second_request(): void
+    {
+        $order = $this->preparingOrder(2);
+        $this->service->request($order, $this->payload($order, 2));
+
+        $this->assertClaimException('claim_quantity_locked', fn () => $this->service->request($order->fresh(['options']), $this->payload($order, 1)));
+
+        // 거절된 두 번째 신청은 신청서를 남기지 않아야 한다 — 가드가 행 생성 뒤에 있으면
+        // 사용자는 422 를 보는데 잠금만 더 늘어난 채 신청서가 쌓인다.
+        $this->assertSame(1, OrderRefund::where('order_id', $order->id)->count());
+    }
+
+    public function test_refund_branch_can_auto_approve_by_setting(): void
+    {
+        app(EcommerceSettingsService::class)->setSetting('claim.auto_approve_refund_request', true);
+        $order = $this->preparingOrder();
+        $approved = 0;
+        HookManager::addAction('sirsoft-ecommerce.claim.refund.approved', function () use (&$approved) {
+            $approved++;
+        });
+
+        $result = $this->service->request($order, $this->payload($order));
+
+        $this->assertSame(RefundStatusEnum::APPROVED, $result['refund']->refund_status);
+        $this->assertNotNull($result['refund']->approved_at);
+        $this->assertSame(1, $approved);
+    }
+
+    public function test_refund_branch_stores_the_refund_bank_when_given(): void
+    {
+        $order = $this->preparingOrder();
+
+        $result = $this->service->request($order, $this->payload($order) + [
+            'refund_bank' => ['bank_code' => '004', 'account_number' => '123-456', 'holder' => '홍길동'],
+        ]);
+
+        $this->assertSame('004', $result['refund']->refund_bank_code);
+        $this->assertSame('123-456', $result['refund']->refund_bank_account);
+        $this->assertSame('홍길동', $result['refund']->refund_bank_holder);
+    }
+
+    public function test_request_rejects_an_inactive_reason(): void
+    {
+        $order = $this->preparingOrder();
+
+        $this->assertClaimException('claim_reason_unavailable', fn () => $this->service->request($order, ['reason_code' => 'nope'] + $this->payload($order)));
+    }
+
+    // ================================================================
+    // 철회 / 수정 / 전이
+    // ================================================================
+
+    public function test_withdraw_closes_the_request_and_releases_the_quantity(): void
+    {
+        $order = $this->preparingOrder();
+        $refund = $this->service->request($order, $this->payload($order))['refund'];
+        $fired = 0;
+        HookManager::addAction('sirsoft-ecommerce.claim.refund.withdrawn', function () use (&$fired) {
+            $fired++;
+        });
+
+        $withdrawn = $this->service->withdraw($refund);
+
+        $this->assertSame(RefundStatusEnum::WITHDRAWN, $withdrawn->refund_status);
+        $this->assertNotNull($withdrawn->withdrawn_at);
+        $this->assertSame(RefundOptionStatusEnum::REJECTED, $withdrawn->refundOptions->first()->option_status);
+        $this->assertSame(1, $fired);
+        // 잠금이 풀려 같은 수량을 다시 신청할 수 있다.
+        $again = $this->service->request($order->fresh(['options']), $this->payload($order));
+        $this->assertSame(RefundStatusEnum::REQUESTED, $again['refund']->refund_status);
+    }
+
+    public function test_withdraw_is_blocked_after_approval(): void
+    {
+        $order = $this->preparingOrder();
+        $refund = $this->service->request($order, $this->payload($order))['refund'];
+        $this->service->transition($refund, RefundStatusEnum::APPROVED);
+
+        $this->assertClaimException('claim_not_withdrawable', fn () => $this->service->withdraw($refund->fresh()));
+    }
+
+    public function test_update_changes_the_reason_before_approval_only(): void
+    {
+        $order = $this->preparingOrder();
+        $refund = $this->service->request($order, $this->payload($order))['refund'];
+
+        $updated = $this->service->updateRequest($refund, ['reason_code' => 'defective_product', 'reason_detail' => '불량']);
+
+        $this->assertSame('defective_product', $updated->reason_code);
+        $this->assertSame('불량', $updated->reason_detail);
+        $this->assertSame('seller', $updated->fault_type->value);
+
+        $this->service->transition($updated, RefundStatusEnum::APPROVED);
+        $this->assertClaimException('claim_not_editable', fn () => $this->service->updateRequest($updated->fresh(), ['reason_detail' => 'x']));
+    }
+
+    public function test_transition_follows_the_refund_gate_and_refuses_completion(): void
+    {
+        $order = $this->preparingOrder();
+        $refund = $this->service->request($order, $this->payload($order))['refund'];
+
+        $this->assertClaimException('claim_completion_flow_required', fn () => $this->service->transition($refund, RefundStatusEnum::COMPLETED));
+
+        $held = $this->service->transition($refund, RefundStatusEnum::ON_HOLD);
+        $this->assertSame(RefundStatusEnum::ON_HOLD, $held->refund_status);
+        $this->assertNotNull($held->on_hold_at);
+
+        $adminId = $this->createAdminUser()->id;
+        $rejected = $this->service->transition($held, RefundStatusEnum::REJECTED, ['reject_reason' => '재고 확인 불가', 'processed_by' => $adminId]);
+        $this->assertSame('재고 확인 불가', $rejected->reject_reason);
+        $this->assertSame($adminId, (int) $rejected->processed_by);
+
+        $this->assertClaimException('claim_transition_not_allowed', fn () => $this->service->transition($rejected, RefundStatusEnum::APPROVED));
+    }
+}

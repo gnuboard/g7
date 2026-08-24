@@ -312,6 +312,7 @@ return [
     'exchange_status' => [
         'requested' => '交換申請',
         'payment_pending' => '交換決済待機',
+        'paid' => '交換決済完了',
         'approved' => '交換承認',
         'on_hold' => '交換保留',
         'rejected' => '交換却下',
@@ -327,6 +328,7 @@ return [
     'return_status' => [
         'requested' => '返品申請',
         'payment_pending' => '返品決済待機',
+        'paid' => '返品決済完了',
         'approved' => '返品承認',
         'on_hold' => '返品保留',
         'rejected' => '返品却下',

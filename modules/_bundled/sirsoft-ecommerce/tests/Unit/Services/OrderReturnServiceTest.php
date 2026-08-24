@@ -696,12 +696,32 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertClaimException('claim_request_period_expired', fn () => $this->service->requestReturn($order->fresh(['options', 'shippings', 'payment']), $this->payload($order)));
     }
 
-    public function test_request_allows_when_delivered_at_is_missing(): void
+    public function test_request_falls_back_to_confirmed_at_when_delivered_at_is_missing(): void
     {
+        // `배송중 → 구매확정` 직접 전이가 허용되므로 `delivered_at` 이 영영 null 인 옵션이 실재한다.
+        // 그것을 "판정 불가" 로 넘기면 기한 게이트가 그 옵션에 한해 영구히 열린 채가 된다.
         app(EcommerceSettingsService::class)->setSetting('claim.request_period_days', 1);
 
         $order = $this->deliveredOrder();
-        $order->options->first()->forceFill(['delivered_at' => null])->save();
+        $order->options->first()->forceFill([
+            'delivered_at' => null,
+            'confirmed_at' => now()->subDays(5),
+        ])->save();
+
+        $this->assertClaimException(
+            'claim_request_period_expired',
+            fn () => $this->service->requestReturn($order->fresh(['options', 'shippings', 'payment']), $this->payload($order)),
+        );
+    }
+
+    public function test_request_is_allowed_when_no_timestamp_is_stale(): void
+    {
+        // 두 시각이 모두 없는 구형 주문(컬럼이 생기기 전)은 마지막 변경 시각으로 내려간다 —
+        // 창은 닫히되 정상 신청은 막지 않는다.
+        app(EcommerceSettingsService::class)->setSetting('claim.request_period_days', 1);
+
+        $order = $this->deliveredOrder();
+        $order->options->first()->forceFill(['delivered_at' => null, 'confirmed_at' => null])->save();
 
         $return = $this->service->requestReturn(
             $order->fresh(['options', 'shippings', 'payment']),
@@ -2125,5 +2145,101 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertSame(OrderStatusEnum::DELIVERED, OrderReturnOption::find($itemA)->orderOption->option_status);
         $this->assertSame(OrderStatusEnum::RETURN_IN_PROGRESS, OrderReturnOption::find($itemB)->orderOption->option_status);
         $this->assertSame(ReturnStatusEnum::REQUESTED, $return->fresh()->return_status);
+    }
+
+    // ================================================================
+    // 미리보기 자격 가드 (S5) / 승인 전 수정 (D13)
+    // ================================================================
+
+    public function test_preview_rejects_an_item_that_is_not_in_a_requestable_status(): void
+    {
+        $order = $this->createSingleItemClaimOrder(29000, 1, $this->createClaimShippingPolicy());
+
+        $this->assertClaimException('claim_option_not_claimable', fn () => $this->service->previewReturn(
+            $order,
+            [['order_option_id' => $order->options->first()->id, 'quantity' => 1]],
+            'changed_mind',
+        ));
+    }
+
+    public function test_preview_rejects_a_quantity_locked_by_a_live_refund_request(): void
+    {
+        $order = $this->deliveredOrder(29000, 2);
+        $option = $order->options->first();
+        // 직접 환불신청은 원 주문옵션을 판매 상태 그대로 두므로 상태 가드가 아닌 수량 잠금이 막는다.
+        $this->makeDirectRefund($order, $option, 2);
+
+        $this->assertClaimException('claim_quantity_locked', fn () => $this->service->previewReturn(
+            $order->fresh(['options']),
+            [['order_option_id' => $option->id, 'quantity' => 1]],
+            'changed_mind',
+        ));
+    }
+
+    public function test_preview_excludes_the_return_being_edited_from_the_lock(): void
+    {
+        $order = $this->deliveredOrder(29000, 2);
+        $return = $this->service->requestReturn($order, $this->payload($order, quantity: 2));
+
+        $preview = $this->service->previewReturn(
+            $order->fresh(['options']),
+            [['order_option_id' => $order->options->first()->id, 'quantity' => 2]],
+            'changed_mind',
+            excludeReturnId: $return->id,
+        );
+
+        $this->assertSame(0.0, (float) $preview['total_charge_amount']);
+    }
+
+    public function test_preview_still_accepts_cancel_quantity_as_the_quantity_key(): void
+    {
+        $order = $this->deliveredOrder();
+
+        $preview = $this->service->previewReturn(
+            $order,
+            [['order_option_id' => $order->options->first()->id, 'cancel_quantity' => 1]],
+            'changed_mind',
+        );
+
+        $this->assertSame(29000.0, (float) $preview['adjustment']->getTotalRefundAmount());
+    }
+
+    public function test_update_request_recalculates_the_fee_when_the_reason_changes(): void
+    {
+        $policy = $this->createClaimShippingPolicy();
+        $order = $this->deliveredOrder(policy: $policy);
+        $this->setReturnFixedFee($policy, 3000);
+        $return = $this->service->requestReturn($order, $this->payload($order, chargeMethod: ClaimChargeMethodEnum::PAY_ON_REQUEST));
+        $this->assertSame(3000.0, (float) $return->total_charge_amount);
+
+        $updated = $this->service->updateRequest($return, ['reason_code' => 'defective_product']);
+
+        $this->assertSame(ClaimReasonFaultTypeEnum::SELLER, $updated->fault_type);
+        $this->assertSame(0.0, (float) $updated->total_charge_amount);
+        $this->assertNull($updated->charge_method);
+    }
+
+    public function test_update_request_requires_a_charge_method_when_the_charge_becomes_positive(): void
+    {
+        $policy = $this->createClaimShippingPolicy();
+        $order = $this->deliveredOrder(policy: $policy);
+        $this->setReturnFixedFee($policy, 3000);
+        $return = $this->service->requestReturn($order, $this->payload($order, 'defective_product'));
+        $this->assertNull($return->charge_method);
+
+        $this->assertClaimException('claim_charge_method_required', fn () => $this->service->updateRequest($return, ['reason_code' => 'changed_mind']));
+
+        $updated = $this->service->updateRequest($return->fresh(), ['reason_code' => 'changed_mind', 'charge_method' => 'pay_on_approval']);
+        $this->assertSame(3000.0, (float) $updated->total_charge_amount);
+        $this->assertSame(ClaimChargeMethodEnum::PAY_ON_APPROVAL, $updated->charge_method);
+    }
+
+    public function test_update_request_is_blocked_after_approval(): void
+    {
+        $order = $this->deliveredOrder();
+        $return = $this->service->requestReturn($order, $this->payload($order));
+        $approved = $this->service->transition($return, ReturnStatusEnum::APPROVED);
+
+        $this->assertClaimException('claim_not_editable', fn () => $this->service->updateRequest($approved, ['reason_detail' => 'x']));
     }
 }

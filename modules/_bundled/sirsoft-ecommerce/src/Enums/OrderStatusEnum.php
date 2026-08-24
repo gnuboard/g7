@@ -137,7 +137,7 @@ enum OrderStatusEnum: string
     /**
      * 클레임(교환/반품) 라이프사이클이 소유하는 코스 상태 목록을 반환합니다.
      *
-     * 세밀 상태(ExchangeStatusEnum 13종 / ReturnStatusEnum 10종)는 클레임 테이블에만
+     * 세밀 상태(ExchangeStatusEnum 14종 / ReturnStatusEnum 11종)는 클레임 테이블에만
      * 두고, 원 주문·주문옵션에는 이 4종만 기록한다. 진행 2종은 회수/재발송이 도는 동안,
      * 완료 2종은 터미널이다.
      *

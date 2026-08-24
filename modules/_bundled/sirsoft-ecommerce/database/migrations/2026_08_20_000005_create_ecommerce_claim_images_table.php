@@ -21,7 +21,7 @@ return new class extends Migration
     {
         Schema::create('ecommerce_claim_images', function (Blueprint $table) {
             $table->id()->comment('클레임 이미지 ID');
-            $table->string('claimable_type', 20)->comment('첨부 대상 유형 (ClaimTypeEnum: exchange, return, refund)');
+            $table->string('claimable_type', 20)->comment('첨부 대상 유형 (ClaimTypeEnum: exchange, return, refund / 신청 전 미귀속 임시값: pending)');
             $table->unsignedBigInteger('claimable_id')->comment('첨부 대상 ID');
             $table->string('hash', 12)->unique()->comment('URL용 고유 해시 (12자)');
             $table->string('disk', 50)->default('public')->comment('스토리지 디스크 (local, public, s3 등)');

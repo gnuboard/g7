@@ -464,7 +464,7 @@ return [
         'updated' => '클레임 사유가 수정되었습니다.',
         'deleted' => '클레임 사유가 삭제되었습니다.',
         'toggled' => '클레임 사유 상태가 변경되었습니다.',
-        'delete_failed_in_use' => '주문 취소에서 사용 중인 사유는 삭제할 수 없습니다. 비활성화를 권장합니다.',
+        'delete_failed_in_use' => '이미 사용 중인 사유는 삭제할 수 없습니다. 비활성화를 권장합니다.',
     ],
 
     // 클레임 공통 메시지
@@ -475,6 +475,21 @@ return [
             'payment_capacity' => '결제수단 잔여 한도가 한도입니다.',
             'reserved' => '진행 중인 다른 클레임이 선점한 금액만큼 한도가 줄었습니다.',
         ],
+        'payment_order_name' => ':type 추가결제 (:number)',
+        'claimable_retrieved' => '신청 가능 상품을 조회했습니다.',
+        'preview_success' => '신청 예상 금액을 계산했습니다.',
+        'requested' => '신청이 접수되었습니다.',
+        'cancelled_instantly' => '주문이 취소되었습니다.',
+        'list_retrieved' => '신청 내역을 조회했습니다.',
+        'retrieved' => '신청서를 조회했습니다.',
+        'updated' => '신청 내용이 수정되었습니다.',
+        'withdrawn' => '신청이 철회되었습니다.',
+        'image_uploaded' => '이미지를 첨부했습니다.',
+        'image_deleted' => '첨부 이미지를 삭제했습니다.',
+        'payment_started' => '결제를 시작합니다.',
+        'payment_completed' => '결제가 완료되었습니다.',
+        'settings_retrieved' => '클레임 설정을 조회했습니다.',
+        'operation_failed' => '클레임 처리 중 오류가 발생했습니다.',
     ],
 
     // 배송정책 메시지

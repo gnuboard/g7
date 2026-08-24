@@ -72,4 +72,32 @@ interface ClaimImageRepositoryInterface
      * @return int 삭제된 행 수
      */
     public function deleteByClaimable(string $claimableType, int $claimableId): int;
+
+    /**
+     * 주문에 매달린 미귀속(신청서 작성 중) 첨부를 조회합니다.
+     *
+     * 신청서가 만들어지기 전에 올린 이미지는 `claimable_type=pending` · `claimable_id=주문 ID` 로
+     * 주문에 묶어 둔다 — 업로더 없는 이미지가 어느 주문의 것인지 판정할 근거가 이것뿐이다(비회원).
+     *
+     * @param  int  $orderId  주문 ID
+     * @return Collection<int, ClaimImage> 미귀속 첨부 목록
+     */
+    public function listPendingByOrder(int $orderId): Collection;
+
+    /**
+     * ID 목록으로 첨부를 조회합니다.
+     *
+     * @param  array<int, int>  $ids  첨부 ID 목록
+     * @return Collection<int, ClaimImage> 첨부 목록
+     */
+    public function listByIds(array $ids): Collection;
+
+    /**
+     * 첨부를 수정합니다.
+     *
+     * @param  ClaimImage  $image  첨부
+     * @param  array  $data  수정 데이터
+     * @return ClaimImage 수정된 첨부
+     */
+    public function update(ClaimImage $image, array $data): ClaimImage;
 }

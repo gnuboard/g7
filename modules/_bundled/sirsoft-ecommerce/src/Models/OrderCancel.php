@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Modules\Sirsoft\Ecommerce\Enums\CancelStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\CancelTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 
 /**
  * 주문 취소 모델
@@ -130,5 +131,15 @@ class OrderCancel extends Model
             ->where('code', $this->cancel_reason_type)->first();
 
         return $reason ? $reason->getLocalizedName() : ($this->cancel_reason_type ?? '');
+    }
+
+    /**
+     * 통합 클레임 유형 (취소 이력은 클레임 목록·상세에서 `cancel` 로 노출된다)
+     *
+     * @return ClaimTypeEnum 클레임 유형
+     */
+    public function claimType(): ClaimTypeEnum
+    {
+        return ClaimTypeEnum::CANCEL;
     }
 }

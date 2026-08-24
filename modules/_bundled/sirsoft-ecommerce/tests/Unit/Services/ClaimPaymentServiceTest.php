@@ -1,0 +1,696 @@
+<?php
+
+namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Services;
+
+use App\Extension\HookManager;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimChargeMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimPaymentStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\MileageTransactionTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
+use Modules\Sirsoft\Ecommerce\Exceptions\OrderClaimException;
+use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
+use Modules\Sirsoft\Ecommerce\Models\MileageTransaction;
+use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
+use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
+use Modules\Sirsoft\Ecommerce\Services\ClaimPaymentService;
+use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
+use Modules\Sirsoft\Ecommerce\Services\OrderExchangeService;
+use Modules\Sirsoft\Ecommerce\Services\OrderReturnService;
+use Modules\Sirsoft\Ecommerce\Tests\Concerns\AssertsClaimExceptions;
+use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
+use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+
+/**
+ * 클레임 추가결제 서비스 테스트 (S5)
+ *
+ * 검증 축:
+ * - `payment_pending` 진입 — 신청 시점 결제만 결제 대기 건(CP)을 만들고 신청서를 결제대기로 옮긴다
+ * - 결제 실행 — 마일리지 FIFO 차감(claim_payment_id 멱등) / PG 결제창 파라미터(CP = order_number, 최소 화폐단위)
+ * - PG 승인 — 훅 계약(success / handled / 금액 대조 / 연동 부재) 과 재시도 멱등
+ * - 결제 확정 뒤 전이 — 승인 시점 결제는 항상 승인, 신청 시점 결제는 설정이 참일 때만 승인
+ * - 환급 — 철회 시 전액(마일리지 복원 · PG 환급 훅 + 멱등키), 재발송지 수정 차액의 부분 환급·추가 청구
+ * - 주문 합계 — 실수납 합계는 부분 환급을 뺀다
+ */
+class ClaimPaymentServiceTest extends ModuleTestCase
+{
+    use AssertsClaimExceptions;
+    use BuildsClaimFlowOrders;
+
+    protected ClaimPaymentService $service;
+
+    protected OrderReturnService $returnService;
+
+    protected OrderExchangeService $exchangeService;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->setupTestCurrencySettings();
+        $this->seedClaimReasons();
+        $this->service = app(ClaimPaymentService::class);
+        $this->returnService = app(OrderReturnService::class);
+        $this->exchangeService = app(OrderExchangeService::class);
+    }
+
+    protected function tearDown(): void
+    {
+        $this->clearTestCurrencySettings();
+        parent::tearDown();
+    }
+
+    // ================================================================
+    // 헬퍼
+    // ================================================================
+
+    /**
+     * 회수 배송비 3,000 원이 청구되는 반품을 접수합니다.
+     *
+     * @param  ClaimChargeMethodEnum  $method  청구 방식
+     * @param  Order|null  $order  주문 (없으면 새로 만든다)
+     * @return OrderReturn 접수된 반품 신청서
+     */
+    protected function requestedReturn(ClaimChargeMethodEnum $method = ClaimChargeMethodEnum::PAY_ON_REQUEST, ?Order $order = null): OrderReturn
+    {
+        $order ??= $this->deliveredClaimOrder();
+
+        return $this->returnService->requestReturn($order, [
+            'items' => [['order_option_id' => $order->options->first()->id, 'quantity' => 1]],
+            'reason_code' => 'changed_mind',
+            'charge_method' => $method,
+            'requested_by' => $order->user_id,
+        ]);
+    }
+
+    /**
+     * 왕복 배송비 6,000 원이 청구되는 교환을 접수합니다.
+     *
+     * @param  ClaimChargeMethodEnum  $method  청구 방식
+     * @return OrderExchange 접수된 교환 신청서
+     */
+    protected function requestedExchange(ClaimChargeMethodEnum $method = ClaimChargeMethodEnum::PAY_ON_REQUEST): OrderExchange
+    {
+        $order = $this->deliveredClaimOrder();
+
+        return $this->exchangeService->requestExchange($order, [
+            'items' => [['order_option_id' => $order->options->first()->id, 'quantity' => 1]],
+            'reason_code' => 'size_mismatch',
+            'charge_method' => $method,
+            'requested_by' => $order->user_id,
+        ]);
+    }
+
+    // ================================================================
+    // payment_pending 진입
+    // ================================================================
+
+    public function test_initiate_creates_a_pending_payment_and_moves_the_return_to_payment_pending(): void
+    {
+        $return = $this->requestedReturn();
+
+        $payment = $this->service->initiateForRequest($return, PaymentMethodEnum::CARD->value);
+
+        $this->assertInstanceOf(ClaimPayment::class, $payment);
+        $this->assertSame(ClaimPaymentStatusEnum::PENDING, $payment->payment_status);
+        $this->assertStringStartsWith('CP', $payment->payment_number);
+        $this->assertSame('return', $payment->payable_type);
+        $this->assertSame($return->id, (int) $payment->payable_id);
+        $this->assertSame($return->order_id, (int) $payment->order_id);
+        $this->assertSame(3000.0, (float) $payment->amount);
+        $this->assertSame(0.0, (float) $payment->points_amount);
+        $this->assertSame(ReturnStatusEnum::PAYMENT_PENDING, $return->fresh()->return_status);
+    }
+
+    public function test_initiate_does_nothing_for_deduct_from_refund(): void
+    {
+        $return = $this->requestedReturn(ClaimChargeMethodEnum::DEDUCT_FROM_REFUND);
+
+        $this->assertNull($this->service->initiateForRequest($return, null));
+        $this->assertSame(ReturnStatusEnum::REQUESTED, $return->fresh()->return_status);
+        $this->assertSame(0, ClaimPayment::count());
+    }
+
+    public function test_initiate_does_nothing_for_pay_on_approval_until_the_admin_approves(): void
+    {
+        $return = $this->requestedReturn(ClaimChargeMethodEnum::PAY_ON_APPROVAL);
+
+        $this->assertNull($this->service->initiateForRequest($return, null));
+        $this->assertSame(ReturnStatusEnum::REQUESTED, $return->fresh()->return_status);
+    }
+
+    public function test_initiate_does_nothing_when_the_charge_is_zero(): void
+    {
+        $order = $this->deliveredClaimOrder(returnFee: 0);
+        $return = $this->returnService->requestReturn($order, [
+            'items' => [['order_option_id' => $order->options->first()->id, 'quantity' => 1]],
+            'reason_code' => 'changed_mind',
+            'requested_by' => $order->user_id,
+        ]);
+
+        $this->assertNull($this->service->initiateForRequest($return, PaymentMethodEnum::CARD->value));
+    }
+
+    public function test_initiate_rejects_a_payment_method_outside_the_allowed_list(): void
+    {
+        app(EcommerceSettingsService::class)->setSetting('claim.charge_payment_methods', [PaymentMethodEnum::CARD->value]);
+        $return = $this->requestedReturn();
+
+        $this->assertClaimException('claim_payment_method_not_allowed', fn () => $this->service->initiateForRequest($return, PaymentMethodEnum::POINT->value));
+        $this->assertSame(ReturnStatusEnum::REQUESTED, $return->fresh()->return_status);
+    }
+
+    public function test_request_payment_on_approval_creates_the_pending_payment_at_approval_time(): void
+    {
+        $return = $this->requestedReturn(ClaimChargeMethodEnum::PAY_ON_APPROVAL);
+
+        $adminId = $this->createAdminUser()->id;
+        $payment = $this->service->requestPaymentOnApproval($return, $adminId);
+
+        $this->assertNotNull($payment);
+        $this->assertSame(3000.0, (float) $payment->getTotalAmount());
+        $this->assertSame(ReturnStatusEnum::PAYMENT_PENDING, $return->fresh()->return_status);
+        // 두 번 부르면 같은 결제 대기 건을 돌려준다.
+        $this->assertSame($payment->id, $this->service->requestPaymentOnApproval($return, $adminId)->id);
+        $this->assertSame(1, ClaimPayment::count());
+    }
+
+    public function test_request_payment_on_approval_never_creates_a_mileage_row_for_a_guest(): void
+    {
+        // 승인 시점 결제도 결제행을 만드는 경로다. 허용 목록의 첫 수단을 그대로 쓰면 마일리지를 앞에 둔
+        // 상점에서 비회원 신청서의 결제행이 `point` 로 만들어져, 그 건은 수단을 명시하지 않는 한
+        // 다시 열리지 않는다. 신청 시점 결제·차액 정산과 같은 이유로 신청자 자격을 보아야 한다.
+        app(EcommerceSettingsService::class)->setSetting('claim.charge_payment_methods', [
+            PaymentMethodEnum::POINT->value,
+            PaymentMethodEnum::CARD->value,
+        ]);
+
+        $return = $this->requestedReturn(ClaimChargeMethodEnum::PAY_ON_APPROVAL);
+        $return->forceFill(['requested_by' => null])->save();
+
+        $payment = $this->service->requestPaymentOnApproval($return->fresh(), $this->createAdminUser()->id);
+
+        $this->assertNotNull($payment);
+        $this->assertSame(
+            PaymentMethodEnum::CARD->value,
+            $payment->payment_method,
+            '비회원은 마일리지로 낼 수 없으므로 그가 쓸 수 있는 수단으로 결제행이 만들어져야 합니다.'
+        );
+        $this->assertSame(0.0, (float) $payment->points_amount);
+    }
+
+    // ================================================================
+    // 마일리지 결제
+    // ================================================================
+
+    public function test_pay_with_mileage_deducts_fifo_and_marks_the_payment_paid(): void
+    {
+        $return = $this->requestedReturn();
+        $this->grantMileage((int) $return->requested_by, 10000);
+        $payment = $this->service->initiateForRequest($return, PaymentMethodEnum::POINT->value);
+
+        $fired = [];
+        HookManager::addAction('sirsoft-ecommerce.claim.return.payment_completed', function ($claim, $paid) use (&$fired) {
+            $fired[] = [$claim->id, $paid->payment_number];
+        });
+
+        $result = $this->service->pay($payment, PaymentMethodEnum::POINT->value, (int) $return->requested_by);
+
+        $paid = $result['payment'];
+        $this->assertFalse($result['requires_pg_payment']);
+        $this->assertSame(ClaimPaymentStatusEnum::PAID, $paid->payment_status);
+        $this->assertSame(3000.0, (float) $paid->points_amount);
+        $this->assertSame(0.0, (float) $paid->amount);
+        $this->assertNull($paid->pg_provider);
+        $this->assertNotNull($paid->paid_at);
+
+        $use = MileageTransaction::where('claim_payment_id', $paid->id)->where('type', MileageTransactionTypeEnum::ORDER_USE->value)->first();
+        $this->assertNotNull($use);
+        $this->assertSame(-3000.0, (float) $use->amount);
+        $this->assertSame($return->order_id, (int) $use->order_id);
+        $this->assertSame([[$return->id, $paid->payment_number]], $fired);
+    }
+
+    public function test_pay_with_mileage_rejects_an_insufficient_balance_without_marking_paid(): void
+    {
+        $return = $this->requestedReturn();
+        $this->grantMileage((int) $return->requested_by, 1000);
+        $payment = $this->service->initiateForRequest($return, PaymentMethodEnum::POINT->value);
+
+        $this->assertClaimException('claim_payment_failed', fn () => $this->service->pay($payment, PaymentMethodEnum::POINT->value, (int) $return->requested_by));
+        $this->assertSame(ClaimPaymentStatusEnum::PENDING, $payment->fresh()->payment_status);
+        $this->assertSame(0, MileageTransaction::where('claim_payment_id', $payment->id)->count());
+    }
+
+    public function test_pay_with_mileage_requires_a_member(): void
+    {
+        $return = $this->requestedReturn();
+        $payment = $this->service->initiateForRequest($return, PaymentMethodEnum::POINT->value);
+
+        $this->assertClaimException('claim_point_payment_requires_member', fn () => $this->service->pay($payment, PaymentMethodEnum::POINT->value, null));
+    }
+
+    public function test_pay_rejects_a_payment_that_is_not_pending(): void
+    {
+        $return = $this->requestedReturn();
+        $this->grantMileage((int) $return->requested_by, 10000);
+        $payment = $this->service->initiateForRequest($return, PaymentMethodEnum::POINT->value);
+        $this->service->pay($payment, PaymentMethodEnum::POINT->value, (int) $return->requested_by);
+
+        $this->assertClaimException('claim_payment_not_pending', fn () => $this->service->pay($payment->fresh(), PaymentMethodEnum::POINT->value, (int) $return->requested_by));
+    }
+
+    // ================================================================
+    // PG 결제창 파라미터 / 승인
+    // ================================================================
+
+    public function test_pay_with_card_returns_the_pg_entry_with_the_cp_number_as_merchant_order_id(): void
+    {
+        $this->registerTestPgProvider();
+        $return = $this->requestedReturn();
+        $payment = $this->service->initiateForRequest($return, PaymentMethodEnum::CARD->value);
+
+        $result = $this->service->pay($payment, PaymentMethodEnum::CARD->value, (int) $return->requested_by);
+
+        $this->assertTrue($result['requires_pg_payment']);
+        $this->assertSame('sirsoft-testpg', $result['pg_provider']);
+        $this->assertSame('sirsoft-testpg.requestPayment', $result['pg_payment_handler']);
+        $data = $result['pg_payment_data'];
+        $this->assertSame($payment->payment_number, $data['order_number']);
+        $this->assertSame($payment->payment_number, $data['claim_payment_number']);
+        $this->assertSame(3000, $data['amount']);
+        $this->assertSame('KRW', $data['currency']);
+        $this->assertSame('return', $data['claim_type']);
+        $this->assertSame($return->return_number, $data['claim_number']);
+        $this->assertSame('홍길동', $data['customer_name']);
+        $this->assertSame(PaymentMethodEnum::CARD->value, $data['payment_method']);
+        $this->assertSame('testpg', $payment->fresh()->pg_provider);
+        $this->assertSame(ClaimPaymentStatusEnum::PENDING, $payment->fresh()->payment_status);
+    }
+
+    public function test_pay_switching_the_method_moves_the_amount_between_pg_and_points_columns(): void
+    {
+        $return = $this->requestedReturn();
+        $payment = $this->service->initiateForRequest($return, PaymentMethodEnum::CARD->value);
+        $this->grantMileage((int) $return->requested_by, 10000);
+
+        $result = $this->service->pay($payment, PaymentMethodEnum::POINT->value, (int) $return->requested_by);
+
+        $this->assertSame(ClaimPaymentStatusEnum::PAID, $result['payment']->payment_status);
+        $this->assertSame(3000.0, (float) $result['payment']->points_amount);
+        $this->assertSame(0.0, (float) $result['payment']->amount);
+    }
+
+    public function test_approve_confirms_the_payment_through_the_plugin_hook(): void
+    {
+        $this->registerTestPgProvider();
+        $captured = null;
+        $this->fakeClaimPaymentApprove(true, ['paid_amount' => 3000, 'raw_response' => ['ok' => true]], $captured);
+        $return = $this->requestedReturn();
+        $payment = $this->service->initiateForRequest($return, PaymentMethodEnum::CARD->value);
+
+        $paid = $this->service->approvePgPayment($payment, ['paymentKey' => 'pk_1', 'orderId' => $payment->payment_number, 'amount' => 3000]);
+
+        $this->assertSame(ClaimPaymentStatusEnum::PAID, $paid->payment_status);
+        $this->assertSame('TXN-'.$payment->payment_number, $paid->transaction_id);
+        $this->assertSame(['ok' => true], $paid->raw_response);
+        $this->assertNotNull($paid->paid_at);
+        $this->assertSame($payment->payment_number, $captured['payment']->payment_number);
+        $this->assertSame('pk_1', $captured['callback']['paymentKey']);
+    }
+
+    public function test_pg_failure_message_does_not_leak_the_provider_text_to_the_response(): void
+    {
+        // 이 예외는 비회원(비인증) 경로로도 나간다 — PG 원문은 상점 MID·내부 상태를 담을 수 있으므로
+        // 응답에는 코드만 싣고 원문은 로그·컬럼에만 남긴다.
+        $return = $this->requestedReturn();
+        $payment = $this->service->initiateForRequest($return, PaymentMethodEnum::CARD->value);
+
+        HookManager::addFilter('sirsoft-ecommerce.claim_payment.approve', fn () => [
+            'handled' => true, 'success' => false,
+            'error_code' => 'PG_DECLINED',
+            'error_message' => 'INICIS: 가맹점 MID(INIpayTest) 인증 실패 - 상점키 불일치',
+            'raw_response' => null, 'transaction_id' => null, 'paid_amount' => null,
+        ]);
+
+        try {
+            $this->service->approvePgPayment($payment, ['x' => 1]);
+            $this->fail('결제 실패 예외가 발생해야 합니다.');
+        } catch (OrderClaimException $e) {
+            $params = $e->getMessageParams();
+            $this->assertSame('PG_DECLINED', $params['error'] ?? null);
+            $this->assertStringNotContainsString('INIpayTest', (string) ($params['error'] ?? ''));
+        }
+    }
+
+    public function test_a_point_refund_without_a_resolvable_owner_is_not_marked_refunded(): void
+    {
+        // 환급 대상을 못 찾았는데 상태만 환급 완료로 옮기면 낸 돈이 사라진 채 장부만 정산된다.
+        $return = $this->requestedReturn();
+        $this->grantMileage((int) $return->requested_by, 10000);
+        $payment = $this->service->initiateForRequest($return, PaymentMethodEnum::POINT->value);
+        $this->service->pay($payment, PaymentMethodEnum::POINT->value, (int) $return->requested_by);
+
+        // 주문·신청자 어느 쪽으로도 환급 대상을 해석할 수 없는 상태를 만든다.
+        $return->forceFill(['requested_by' => null])->save();
+        Order::query()->whereKey($return->order_id)->update(['user_id' => null]);
+
+        $paid = $payment->fresh();
+
+        $this->assertClaimException('claim_payment_refund_failed', fn () => $this->service->refundPayment($paid, 1000.0, 'test'));
+        $this->assertSame(0.0, (float) $paid->fresh()->refunded_amount, '환급하지 못했는데 누적액이 올라가면 안 됩니다.');
+    }
+
+    public function test_approve_is_idempotent_for_a_replayed_callback(): void
+    {
+        $this->registerTestPgProvider();
+        $calls = 0;
+        HookManager::addFilter('sirsoft-ecommerce.claim_payment.approve', function (array $default, $payment) use (&$calls) {
+            $calls++;
+
+            return array_merge($default, ['handled' => true, 'success' => true, 'transaction_id' => 'TXN-ONCE']);
+        });
+        $return = $this->requestedReturn();
+        $payment = $this->service->initiateForRequest($return, PaymentMethodEnum::CARD->value);
+
+        $this->service->approvePgPayment($payment, []);
+        $again = $this->service->approvePgPayment($payment->fresh(), []);
+
+        $this->assertSame(1, $calls);
+        $this->assertSame(ClaimPaymentStatusEnum::PAID, $again->payment_status);
+        $this->assertSame(1, ClaimPayment::count());
+    }
+
+    public function test_approve_without_a_plugin_listener_is_rejected_and_leaves_the_payment_pending(): void
+    {
+        $this->registerTestPgProvider();
+        $return = $this->requestedReturn();
+        $payment = $this->service->initiateForRequest($return, PaymentMethodEnum::CARD->value);
+
+        $this->assertClaimException('claim_payment_provider_unavailable', fn () => $this->service->approvePgPayment($payment, []));
+        $this->assertSame(ClaimPaymentStatusEnum::PENDING, $payment->fresh()->payment_status);
+    }
+
+    public function test_approve_failure_records_the_pg_error_and_keeps_the_payment_pending(): void
+    {
+        $this->registerTestPgProvider();
+        $this->fakeClaimPaymentApprove(false);
+        $return = $this->requestedReturn();
+        $payment = $this->service->initiateForRequest($return, PaymentMethodEnum::CARD->value);
+
+        $this->assertClaimException('claim_payment_failed', fn () => $this->service->approvePgPayment($payment, []));
+
+        $fresh = $payment->fresh();
+        $this->assertSame(ClaimPaymentStatusEnum::PENDING, $fresh->payment_status);
+        $this->assertSame('DECLINED', $fresh->pg_error_code);
+        $this->assertSame('card declined', $fresh->pg_error_message);
+        $this->assertSame(ReturnStatusEnum::PAYMENT_PENDING, $return->fresh()->return_status);
+    }
+
+    public function test_approve_rejects_an_amount_that_differs_from_the_charge(): void
+    {
+        $this->registerTestPgProvider();
+        $this->fakeClaimPaymentApprove(true, ['paid_amount' => 2999]);
+        $return = $this->requestedReturn();
+        $payment = $this->service->initiateForRequest($return, PaymentMethodEnum::CARD->value);
+
+        $this->assertClaimException('claim_payment_amount_mismatch', fn () => $this->service->approvePgPayment($payment, []));
+        $this->assertSame(ClaimPaymentStatusEnum::PENDING, $payment->fresh()->payment_status);
+        $this->assertSame('AMOUNT_MISMATCH', $payment->fresh()->pg_error_code);
+    }
+
+    // ================================================================
+    // 결제 확정 뒤 전이
+    // ================================================================
+
+    public function test_pay_on_request_lands_in_paid_after_payment_unless_auto_approve_is_on(): void
+    {
+        // §4-2 paid 규약 — 자동 승인이 꺼져 있어도 수납이 끝난 건은 결제대기에 남지 않는다.
+        // 남으면 운영자가 미수납 건과 구분할 수 없다.
+        $return = $this->requestedReturn();
+        $this->grantMileage((int) $return->requested_by, 10000);
+        $payment = $this->service->initiateForRequest($return, PaymentMethodEnum::POINT->value);
+
+        $this->service->pay($payment, PaymentMethodEnum::POINT->value, (int) $return->requested_by);
+
+        $this->assertSame(ReturnStatusEnum::PAID, $return->fresh()->return_status);
+        $this->assertSame(0.0, $this->service->outstandingAmount($return->fresh()));
+    }
+
+    public function test_paid_claims_are_still_withdrawable_by_the_requester(): void
+    {
+        // paid 는 승인 전이므로 철회 경계 안이다 — 전이 게이트와 isWithdrawable() 이 갈리면
+        // 화면은 [철회] 를 보여 주는데 요청만 거부된다.
+        $return = $this->requestedReturn();
+        $this->grantMileage((int) $return->requested_by, 10000);
+        $payment = $this->service->initiateForRequest($return, PaymentMethodEnum::POINT->value);
+        $this->service->pay($payment, PaymentMethodEnum::POINT->value, (int) $return->requested_by);
+
+        $paid = $return->fresh();
+        $this->assertSame(ReturnStatusEnum::PAID, $paid->return_status);
+        $this->assertTrue($paid->return_status->isWithdrawable());
+        $this->assertTrue($paid->return_status->canTransitionTo(ReturnStatusEnum::WITHDRAWN));
+    }
+
+    public function test_pay_on_request_auto_approves_after_payment_when_the_setting_is_on(): void
+    {
+        app(EcommerceSettingsService::class)->setSetting('claim.auto_approve_after_payment', true);
+        $return = $this->requestedReturn();
+        $this->grantMileage((int) $return->requested_by, 10000);
+        $payment = $this->service->initiateForRequest($return, PaymentMethodEnum::POINT->value);
+
+        $this->service->pay($payment, PaymentMethodEnum::POINT->value, (int) $return->requested_by);
+
+        // 자동 승인이 켜져 있어도 paid 를 건너뛰지 않는다 — 도착지는 승인이되 경유지가 남는다.
+        $this->assertSame(ReturnStatusEnum::APPROVED, $return->fresh()->return_status);
+    }
+
+    public function test_pay_on_approval_always_approves_after_payment(): void
+    {
+        $return = $this->requestedReturn(ClaimChargeMethodEnum::PAY_ON_APPROVAL);
+        $this->grantMileage((int) $return->requested_by, 10000);
+        $payment = $this->service->requestPaymentOnApproval($return, $this->createAdminUser()->id);
+
+        $this->service->pay($payment, PaymentMethodEnum::POINT->value, (int) $return->requested_by);
+
+        $this->assertSame(ReturnStatusEnum::APPROVED, $return->fresh()->return_status);
+    }
+
+    public function test_exchange_payment_completion_fires_the_exchange_hook_and_can_auto_approve(): void
+    {
+        app(EcommerceSettingsService::class)->setSetting('claim.auto_approve_after_payment', true);
+        $exchange = $this->requestedExchange();
+        $this->grantMileage((int) $exchange->requested_by, 10000);
+        $payment = $this->service->initiateForRequest($exchange, PaymentMethodEnum::POINT->value);
+        $this->assertSame(ExchangeStatusEnum::PAYMENT_PENDING, $exchange->fresh()->exchange_status);
+
+        $fired = 0;
+        HookManager::addAction('sirsoft-ecommerce.claim.exchange.payment_completed', function () use (&$fired) {
+            $fired++;
+        });
+
+        $this->service->pay($payment, PaymentMethodEnum::POINT->value, (int) $exchange->requested_by);
+
+        $this->assertSame(1, $fired);
+        $this->assertSame(ExchangeStatusEnum::APPROVED, $exchange->fresh()->exchange_status);
+        $this->assertSame(6000.0, (float) $payment->fresh()->points_amount);
+    }
+
+    public function test_partial_payment_leaves_the_claim_in_payment_pending_without_firing_the_completion_hook(): void
+    {
+        $return = $this->requestedReturn();
+        $userId = (int) $return->requested_by;
+        $this->grantMileage($userId, 10000);
+        $payment = $this->service->initiateForRequest($return, PaymentMethodEnum::POINT->value);
+
+        // 결제 대기 건(3,000)을 만든 뒤 청구액만 5,000 으로 올린다 — 이 건을 결제해도 2,000 이 남는다.
+        $return->fresh()->forceFill(['total_charge_amount' => 5000, 'claim_shipping_fee' => 5000])->save();
+
+        $fired = 0;
+        HookManager::addAction('sirsoft-ecommerce.claim.return.payment_completed', function () use (&$fired) {
+            $fired++;
+        });
+
+        $this->service->pay($payment, PaymentMethodEnum::POINT->value, $userId);
+
+        $this->assertSame(ClaimPaymentStatusEnum::PAID, $payment->fresh()->payment_status);
+        $this->assertSame(2000.0, $this->service->outstandingAmount($return->fresh()));
+        $this->assertSame(ReturnStatusEnum::PAYMENT_PENDING, $return->fresh()->return_status);
+        $this->assertSame(0, $fired);
+    }
+
+    // ================================================================
+    // 환급
+    // ================================================================
+
+    public function test_refund_for_claim_restores_mileage_once_and_marks_the_payment_refunded(): void
+    {
+        $return = $this->requestedReturn();
+        $userId = (int) $return->requested_by;
+        $this->grantMileage($userId, 10000);
+        $payment = $this->service->initiateForRequest($return, PaymentMethodEnum::POINT->value);
+        $this->service->pay($payment, PaymentMethodEnum::POINT->value, $userId);
+
+        $processed = $this->service->refundPaymentsForClaim($return->fresh(), 'withdrawn');
+        $this->service->refundPaymentsForClaim($return->fresh(), 'withdrawn');
+
+        $this->assertCount(1, $processed);
+        $this->assertSame(ClaimPaymentStatusEnum::REFUNDED, $payment->fresh()->payment_status);
+        $this->assertSame(3000.0, (float) $payment->fresh()->refunded_amount);
+        $this->assertSame(1, MileageTransaction::where('claim_payment_id', $payment->id)->where('type', MileageTransactionTypeEnum::REFUND_RESTORE->value)->count());
+        $this->assertSame(10000.0, (float) MileageTransaction::where('user_id', $userId)->sum('remaining_amount'));
+    }
+
+    public function test_refund_for_claim_cancels_a_pending_payment_without_refunding(): void
+    {
+        $return = $this->requestedReturn();
+        $payment = $this->service->initiateForRequest($return, PaymentMethodEnum::CARD->value);
+
+        $processed = $this->service->refundPaymentsForClaim($return, 'withdrawn');
+
+        $this->assertCount(1, $processed);
+        $this->assertSame(ClaimPaymentStatusEnum::CANCELLED, $payment->fresh()->payment_status);
+    }
+
+    public function test_refund_for_claim_calls_the_pg_refund_hook_with_an_idempotency_key(): void
+    {
+        $this->registerTestPgProvider();
+        $this->fakeClaimPaymentApprove(true);
+        $calls = null;
+        $this->fakeClaimPaymentRefund(true, $calls);
+        $return = $this->requestedReturn();
+        $payment = $this->service->initiateForRequest($return, PaymentMethodEnum::CARD->value);
+        $this->service->approvePgPayment($payment, []);
+
+        $this->service->refundPaymentsForClaim($return->fresh(), 'rejected');
+
+        $this->assertCount(1, $calls);
+        $this->assertSame(3000.0, $calls[0]['amount']);
+        $this->assertSame('rejected', $calls[0]['reason']);
+        $this->assertSame(sprintf('g7-claimpay-%d-0', $payment->id), $calls[0]['key']);
+        $this->assertSame(ClaimPaymentStatusEnum::REFUNDED, $payment->fresh()->payment_status);
+    }
+
+    public function test_pg_refund_failure_is_raised_and_keeps_the_payment_paid(): void
+    {
+        $this->registerTestPgProvider();
+        $this->fakeClaimPaymentApprove(true);
+        $calls = null;
+        $this->fakeClaimPaymentRefund(false, $calls);
+        $return = $this->requestedReturn();
+        $payment = $this->service->initiateForRequest($return, PaymentMethodEnum::CARD->value);
+        $this->service->approvePgPayment($payment, []);
+
+        $this->assertClaimException('claim_payment_refund_failed', fn () => $this->service->refundPaymentsForClaim($return->fresh(), 'rejected'));
+        $this->assertSame(ClaimPaymentStatusEnum::PAID, $payment->fresh()->payment_status);
+        $this->assertSame('REFUND_DECLINED', $payment->fresh()->pg_error_code);
+    }
+
+    public function test_pg_refund_without_a_plugin_listener_is_rejected(): void
+    {
+        $this->registerTestPgProvider();
+        $this->fakeClaimPaymentApprove(true);
+        $return = $this->requestedReturn();
+        $payment = $this->service->initiateForRequest($return, PaymentMethodEnum::CARD->value);
+        $this->service->approvePgPayment($payment, []);
+
+        $this->assertClaimException('claim_payment_provider_unavailable', fn () => $this->service->refundPayment($payment->fresh()));
+    }
+
+    // ================================================================
+    // 차액 정산 (D14)
+    // ================================================================
+
+    public function test_settle_difference_refunds_the_decrease_partially_and_keeps_the_payment_paid(): void
+    {
+        $return = $this->requestedReturn();
+        $userId = (int) $return->requested_by;
+        $this->grantMileage($userId, 10000);
+        $payment = $this->service->initiateForRequest($return, PaymentMethodEnum::POINT->value);
+        $this->service->pay($payment, PaymentMethodEnum::POINT->value, $userId);
+
+        // 청구액이 3,000 → 1,000 으로 줄었다 (운영자 금액 수정과 같은 형태로 헤더만 바꾼다).
+        $return->fresh()->forceFill(['total_charge_amount' => 1000, 'claim_shipping_fee' => 1000])->save();
+
+        $result = $this->service->settleChargeDifference($return->fresh());
+
+        $this->assertNull($result);
+        $fresh = $payment->fresh();
+        $this->assertSame(ClaimPaymentStatusEnum::PAID, $fresh->payment_status);
+        $this->assertSame(2000.0, (float) $fresh->refunded_amount);
+        $this->assertSame(1000.0, $fresh->netPaidAmount());
+        $this->assertSame(2000.0, (float) MileageTransaction::where('claim_payment_id', $payment->id)->where('type', MileageTransactionTypeEnum::REFUND_RESTORE->value)->sum('amount'));
+        $this->assertSame(0.0, $this->service->outstandingAmount($return->fresh()));
+    }
+
+    public function test_settle_difference_creates_a_pending_payment_for_the_increase(): void
+    {
+        $return = $this->requestedReturn();
+        $userId = (int) $return->requested_by;
+        $this->grantMileage($userId, 10000);
+        $payment = $this->service->initiateForRequest($return, PaymentMethodEnum::POINT->value);
+        $this->service->pay($payment, PaymentMethodEnum::POINT->value, $userId);
+
+        $return->fresh()->forceFill(['total_charge_amount' => 5000, 'claim_shipping_fee' => 5000])->save();
+
+        $pending = $this->service->settleChargeDifference($return->fresh());
+
+        $this->assertNotNull($pending);
+        $this->assertSame(ClaimPaymentStatusEnum::PENDING, $pending->payment_status);
+        $this->assertSame(2000.0, $pending->getTotalAmount());
+        $this->assertSame(2000.0, $this->service->outstandingAmount($return->fresh()));
+        $this->assertSame(ClaimPaymentStatusEnum::PAID, $payment->fresh()->payment_status);
+    }
+
+    public function test_settle_difference_updates_an_unpaid_pending_payment_to_the_new_charge(): void
+    {
+        $return = $this->requestedReturn();
+        $pending = $this->service->initiateForRequest($return, PaymentMethodEnum::CARD->value);
+
+        $return->fresh()->forceFill(['total_charge_amount' => 4500, 'claim_shipping_fee' => 4500])->save();
+
+        $updated = $this->service->settleChargeDifference($return->fresh());
+
+        $this->assertSame($pending->id, $updated->id);
+        $this->assertSame(4500.0, (float) $updated->amount);
+        $this->assertSame(1, ClaimPayment::count());
+    }
+
+    public function test_settle_difference_cancels_the_pending_payment_when_the_charge_drops_to_zero(): void
+    {
+        $return = $this->requestedReturn();
+        $pending = $this->service->initiateForRequest($return, PaymentMethodEnum::CARD->value);
+
+        $return->fresh()->forceFill(['total_charge_amount' => 0, 'claim_shipping_fee' => 0, 'charge_method' => null])->save();
+
+        $this->assertNull($this->service->settleChargeDifference($return->fresh()));
+        $this->assertSame(ClaimPaymentStatusEnum::CANCELLED, $pending->fresh()->payment_status);
+    }
+
+    // ================================================================
+    // 주문 합계
+    // ================================================================
+
+    public function test_order_paid_total_sums_net_paid_amounts_across_claims(): void
+    {
+        $order = $this->deliveredClaimOrder(quantity: 2);
+        $userId = (int) $order->user_id;
+        $this->grantMileage($userId, 20000);
+
+        $first = $this->returnService->requestReturn($order, [
+            'items' => [['order_option_id' => $order->options->first()->id, 'quantity' => 1]],
+            'reason_code' => 'changed_mind',
+            'charge_method' => ClaimChargeMethodEnum::PAY_ON_REQUEST,
+            'requested_by' => $userId,
+        ]);
+        $payment = $this->service->initiateForRequest($first, PaymentMethodEnum::POINT->value);
+        $this->service->pay($payment, PaymentMethodEnum::POINT->value, $userId);
+
+        $this->assertSame(3000.0, $this->service->paidTotalForOrder($order)['amount']);
+
+        $this->service->refundPayment($payment->fresh(), 1000);
+
+        $this->assertSame(2000.0, $this->service->paidTotalForOrder($order)['amount']);
+    }
+}

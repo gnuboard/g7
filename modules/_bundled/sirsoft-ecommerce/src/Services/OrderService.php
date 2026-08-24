@@ -32,7 +32,8 @@ class OrderService
     public function __construct(
         protected OrderRepositoryInterface $repository,
         protected UserAddressRepositoryInterface $userAddressRepository,
-        protected StockService $stockService
+        protected StockService $stockService,
+        protected ClaimAttachmentService $claimAttachmentService,
     ) {}
 
     /**
@@ -368,9 +369,27 @@ class OrderService
         // 현금영수증 이력은 결제(order_payment_id)를 참조하므로 결제보다 먼저 삭제한다.
         $order->cashReceipts()->delete();
         $order->payment()->delete();
+
+        // 클레임 계열도 명시적으로 지운다. 주문옵션을 먼저 지우면 교환·반품·환불의 **상품 행만**
+        // FK CASCADE 로 사라지고 금액을 든 신청서 헤더가 상품 0개로 남는다(주문은 soft-delete 라
+        // 헤더까지 내려가는 CASCADE 는 발화하지 않는다). 첨부는 주문 FK 가 없어 신청서를 지워도
+        // 파일과 행이 남으므로 먼저 정리하고, 평문으로 저장되는 환불 계좌도 이때 함께 사라진다.
+        // 첨부 대상은 신청서가 사라지기 **전에** 모아 두고, 파일 삭제는 DB 정리가 끝난 뒤에 한다 —
+        // 파일 삭제는 되돌릴 수 없어, 중간 단계가 실패하면 주문은 살아 있는데 그 주문의 첨부만
+        // 전멸한 상태가 남는다.
+        $claimImages = $this->claimAttachmentService->imagesForOrder($order);
+
+        $order->claimPayments()->delete();
+        $order->exchanges()->delete();
+        $order->returns()->delete();
+        $order->cancels()->delete();
+        $order->refunds()->delete();
+
         $order->options()->delete();
 
         $result = $this->repository->delete($order);
+
+        $this->claimAttachmentService->deleteImages($claimImages);
 
         // 삭제 후 훅
         HookManager::doAction('sirsoft-ecommerce.order.after_delete', $order);

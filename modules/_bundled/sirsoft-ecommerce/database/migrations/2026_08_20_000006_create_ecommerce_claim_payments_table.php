@@ -38,6 +38,9 @@ return new class extends Migration
             $table->text('pg_error_message')->nullable()->comment('PG 오류 메시지');
             $table->mediumText('raw_response')->nullable()->comment('PG 원본 응답 JSON');
             $table->timestamp('paid_at')->nullable()->comment('결제 완료 시각');
+            // 재발송지 수정(D14)으로 청구액이 줄면 이미 받은 결제에서 차액만 돌려준다 — 부분 환급은 상태가 아니라 누적액으로 기록한다.
+            $table->decimal('refunded_amount', 12, 2)->default(0)->comment('부분 환급 누적액 (차액 환불 — 전액 환급은 payment_status=refunded)');
+            $table->timestamp('refunded_at')->nullable()->comment('마지막 환급 시각');
             $table->timestamps();
 
             $table->index(['payable_type', 'payable_id'], 'ecommerce_claim_payments_payable_index');

@@ -87,6 +87,7 @@ return [
     'order_estimate_refund_failed' => 'Failed to calculate the estimated refund amount.',
     'order_create_failed' => 'Failed to create the order.',
     'order_shipping_address_update_failed' => 'Failed to update the shipping address.',
+    'user_address_not_found' => 'The address could not be found.',
 
     // Currency related
     'unknown_currency' => 'Unsupported currency: :currency',
@@ -118,10 +119,24 @@ return [
     'claim_new_option_out_of_stock' => 'The selected exchange option is out of stock.',
     'claim_redelivery_country_change_not_allowed' => 'The exchange redelivery address must be in the same country as the order shipping address. (International exchange is not supported.)',
     'claim_refund_not_applicable' => 'A refund request cannot be created because this claim does not produce a refund.',
+    'claim_not_editable' => 'The request can no longer be edited after approval. Withdraw it and submit a new request.',
+    'claim_refund_branch_mixed' => 'Items eligible for instant cancellation and items that require a refund request cannot be submitted together. Please submit them separately.',
+    'claim_refund_not_requestable' => 'A cancellation or refund cannot be requested for an item in the :status state.',
+    'claim_payment_not_found' => 'The payment could not be found.',
+    'claim_payment_not_pending' => 'The payment is not pending, so it cannot be processed.',
+    'claim_payment_not_required' => 'There is no charge to pay for this request.',
+    'claim_payment_method_not_allowed' => 'The selected payment method cannot be used for claim charges.',
+    'claim_payment_provider_unavailable' => 'No payment integration can approve claim charges. Please contact the administrator.',
+    'claim_payment_failed' => 'Payment approval failed. (:error)',
+    'claim_payment_amount_mismatch' => 'The approved payment amount does not match the charge.',
+    'claim_payment_refund_failed' => 'The payment refund failed. (:error)',
+    'claim_point_payment_requires_member' => 'Only members can pay with mileage.',
+    'claim_image_limit_exceeded' => 'You can attach up to :max images.',
+    'claim_image_not_found' => 'The attached image could not be found.',
 
     // Claim Reason related
     'claim_reason_not_found' => 'Claim reason not found.',
-    'claim_reason_in_use' => 'Cannot delete a reason in use by order cancellations. (Used :count times)',
+    'claim_reason_in_use' => 'Cannot delete a reason that is already in use. (Used :count times)',
 
     // Shipping Type related
     'shipping_type_not_found' => 'Shipping type not found.',

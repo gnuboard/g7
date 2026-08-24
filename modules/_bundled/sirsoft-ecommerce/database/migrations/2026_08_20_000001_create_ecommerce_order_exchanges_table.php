@@ -24,10 +24,10 @@ return new class extends Migration
             $table->foreignId('order_id')->comment('주문 FK')
                 ->constrained('ecommerce_orders')->cascadeOnDelete();
             $table->string('exchange_number', 50)->unique()->comment('고유 교환번호 (SequenceType::EXCHANGE, 접두사 EX)');
-            $table->string('exchange_status', 30)->comment('교환 상태 (ExchangeStatusEnum 13종: requested ~ withdrawn)');
+            $table->string('exchange_status', 30)->comment('교환 상태 (ExchangeStatusEnum 14종: requested ~ withdrawn)');
 
             // 사유 / 귀책
-            $table->string('reason_code', 30)->comment('교환 사유 코드 (ecommerce_claim_reasons.code, type=exchange 참조)');
+            $table->string('reason_code', 50)->comment('교환 사유 코드 (ecommerce_claim_reasons.code, type=exchange 참조 — 폭은 카탈로그 code 와 같아야 한다)');
             $table->text('reason_detail')->nullable()->comment('상세 사유 (기타 선택 시)');
             $table->string('fault_type', 20)->comment('귀책 구분 스냅샷 (ClaimReasonFaultTypeEnum: customer, seller, carrier)');
 

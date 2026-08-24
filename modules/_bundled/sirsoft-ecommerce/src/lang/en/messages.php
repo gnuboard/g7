@@ -460,7 +460,7 @@ return [
         'updated' => 'Claim reason has been updated.',
         'deleted' => 'Claim reason has been deleted.',
         'toggled' => 'Claim reason status has been changed.',
-        'delete_failed_in_use' => 'Cannot delete a reason in use by order cancellations. We recommend deactivating it instead.',
+        'delete_failed_in_use' => 'Cannot delete a reason that is already in use. We recommend deactivating it instead.',
     ],
 
     // Claim Common Messages
@@ -471,6 +471,21 @@ return [
             'payment_capacity' => 'The remaining payment method capacity is the binding limit.',
             'reserved' => 'The limit was reduced by amounts reserved by other in-progress claims.',
         ],
+        'payment_order_name' => ':type additional charge (:number)',
+        'claimable_retrieved' => 'Claimable items retrieved.',
+        'preview_success' => 'Claim estimate calculated.',
+        'requested' => 'Your request has been submitted.',
+        'cancelled_instantly' => 'The order has been cancelled.',
+        'list_retrieved' => 'Claim history retrieved.',
+        'retrieved' => 'Claim retrieved.',
+        'updated' => 'The request has been updated.',
+        'withdrawn' => 'The request has been withdrawn.',
+        'image_uploaded' => 'Image attached.',
+        'image_deleted' => 'Attached image deleted.',
+        'payment_started' => 'Payment started.',
+        'payment_completed' => 'Payment completed.',
+        'settings_retrieved' => 'Claim settings retrieved.',
+        'operation_failed' => 'An error occurred while processing the claim.',
     ],
 
     // Shipping Policy Messages

@@ -5,19 +5,20 @@ namespace Modules\Sirsoft\Ecommerce\Http\Requests\User;
 use App\Helpers\ResponseHelper;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimChargeMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundPriorityEnum;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ResolvesClaimOrder;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ValidatesClaimPaymentMethod;
 use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
 use Modules\Sirsoft\Ecommerce\Models\Order;
-use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Rules\ExchangeRedeliveryCountryUnchanged;
+use Modules\Sirsoft\Ecommerce\Services\ClaimAttachmentService;
 
 /**
- * 교환 신청 요청 (회원)
+ * 교환 신청 요청 (회원 · 비회원 공용)
  *
  * 마이페이지 주문상세에서 사용자가 교환을 신청할 때 쓴다. 신청 자격(상태·수량·잠금)과
  * 신규 옵션의 유효성은 서비스(`OrderExchangeService::requestExchange`)가 주문을 잠근 뒤
@@ -25,15 +26,13 @@ use Modules\Sirsoft\Ecommerce\Rules\ExchangeRedeliveryCountryUnchanged;
  * 국가 불변**(교환 해외배송 미지원)만 본다 — 자격 판정을 여기서 복제하면 잠금 밖에서 읽은 값으로
  * 통과시킨 뒤 서비스가 거절하는 두 벌의 규칙이 된다.
  *
- * 비회원 경로(`guest/orders/{orderNumber}/exchanges`)는 소유권 판정만 다르므로 같은 규칙
- * 집합(`rules()`)을 재사용하고, 주문 해석을 HMAC 토큰 기준으로 바꾼다.
- *
- * audit:allow api-doc-coverage 라우트·컨트롤러가 아직 없어(`POST user/orders/{id}/exchanges` 는 S5 소유)
- * 문서화할 엔드포인트가 생기지 않았다 — 엔드포인트를 배선하는 세션이 `api:docgen` 으로 함께 문서화한다.
+ * 비회원 경로(`guest/orders/{orderNumber}/exchanges`)는 소유권 판정만 다르므로 같은 클래스가 받는다 —
+ * 주문 해석(회원 ID / HMAC 토큰)은 `ResolvesClaimOrder` 가 흡수한다.
  */
 class StoreExchangeRequest extends FormRequest
 {
-    protected ?Order $order = null;
+    use ResolvesClaimOrder;
+    use ValidatesClaimPaymentMethod;
 
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
@@ -53,7 +52,7 @@ class StoreExchangeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'items' => ['required', 'array', 'min:1'],
+            'items' => ['required', 'array', 'min:1', 'max:200'],
             'items.*.order_option_id' => ['required', 'integer'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
             // null/미전송 = 동일상품 교환 (D29 기본값). 같은 상품 소속 여부는 서비스가 판정한다.
@@ -69,7 +68,10 @@ class StoreExchangeRequest extends FormRequest
             ],
             'reason_detail' => ['nullable', 'string', 'max:1000'],
             'charge_method' => ['nullable', 'string', Rule::in(ClaimChargeMethodEnum::values())],
-            'refund_priority' => ['sometimes', 'string', Rule::in(RefundPriorityEnum::values())],
+            'payment_method' => $this->paymentMethodRules(),
+            'refund_priority' => ['nullable', 'string', Rule::in(RefundPriorityEnum::values())],
+            'image_ids' => ['nullable', 'array', 'max:'.$this->maxImages()],
+            'image_ids.*' => ['integer'],
             'redelivery_address' => ['nullable', 'array'],
             'redelivery_address.recipient_name' => ['nullable', 'string', 'max:50'],
             'redelivery_address.phone' => ['nullable', 'string', 'max:20'],
@@ -107,6 +109,10 @@ class StoreExchangeRequest extends FormRequest
             'reason_code.exists' => __('sirsoft-ecommerce::validation.claims.reason_code.exists'),
             'reason_detail.max' => __('sirsoft-ecommerce::validation.claims.reason_detail.max'),
             'charge_method.in' => __('sirsoft-ecommerce::validation.claims.charge_method.in'),
+            'payment_method.in' => __('sirsoft-ecommerce::validation.claims.payment_method.in'),
+            'image_ids.array' => __('sirsoft-ecommerce::validation.claims.image_ids.array'),
+            'image_ids.max' => __('sirsoft-ecommerce::validation.claims.image_ids.max'),
+            'image_ids.*.integer' => __('sirsoft-ecommerce::validation.claims.image_ids.integer'),
             'redelivery_address.array' => __('sirsoft-ecommerce::validation.claims.redelivery_address.array'),
             'redelivery_address.country_code.size' => __('sirsoft-ecommerce::validation.claims.redelivery_address.country_code_size'),
             'redelivery_address.changed_by_user.boolean' => __('sirsoft-ecommerce::validation.claims.redelivery_address.changed_by_user_boolean'),
@@ -121,17 +127,9 @@ class StoreExchangeRequest extends FormRequest
     protected function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator) {
-            $order = $this->resolveOrder();
-
             // 소유권 위반은 존재 여부와 같은 404 로 답한다 — 다른 회원의 주문 번호를 짚어
-            // "있지만 네 것이 아니다" 를 알려 주지 않는다 (취소 요청과 같은 계약).
-            if (! $order || $order->user_id !== Auth::id()) {
-                abort(ResponseHelper::moduleError(
-                    'sirsoft-ecommerce',
-                    'exceptions.order_not_found',
-                    404
-                ));
-            }
+            // "있지만 네 것이 아니다" 를 알려 주지 않는다 (취소 요청과 같은 계약). 비회원 경로는 토큰이 소유권이다.
+            $order = $this->assertOrderOwnership();
 
             $this->validateItemsBelongToOrder($validator, $order);
         });
@@ -180,48 +178,9 @@ class StoreExchangeRequest extends FormRequest
     }
 
     /**
-     * 라우트의 주문을 해석합니다. (1회 조회 후 보관)
-     *
-     * 다른 주문 FormRequest 와 같이 검증 단계에서 처음 불린다 — 재발송지 국가 규칙은 클로저로
-     * 이 메서드를 받아 규칙이 실제로 실행될 때 해석하고, `withValidator` 가 같은 결과를 재사용한다.
-     * 배송지는 규칙이 곧바로 읽으므로 Repository 가 한 번에 싣는다(지연 로드 없음).
-     * 주문이 없으면 null — 존재·소유권 판정은 `withValidator` 가 한다.
-     *
-     * @return Order|null 주문
-     */
-    protected function resolveOrder(): ?Order
-    {
-        if ($this->order !== null) {
-            return $this->order;
-        }
-
-        $orderId = (int) $this->route('id');
-
-        if ($orderId <= 0) {
-            return null;
-        }
-
-        return $this->order = app(OrderRepositoryInterface::class)->findWithShippingAddress($orderId);
-    }
-
-    /**
-     * 검증된 주문을 반환합니다.
-     *
-     * 검증을 통과한 요청에서만 부른다 — `withValidator` 가 주문 부재를 404 로 끝내므로 그 뒤에는
-     * 항상 주문이 있다. 검증 전에 부르면 해석을 수행한다.
-     *
-     * @return Order 주문
-     */
-    public function getOrder(): Order
-    {
-        return $this->order ?? $this->resolveOrder()
-            ?? abort(ResponseHelper::moduleError('sirsoft-ecommerce', 'exceptions.order_not_found', 404));
-    }
-
-    /**
      * 서비스에 넘길 신청 페이로드를 반환합니다.
      *
-     * `requested_by` 는 인증 주체에서 채운다 — 요청 본문이 신청자를 지정하게 두면 다른
+     * `requested_by` 는 인증 주체에서 채운다(비회원 경로는 null) — 요청 본문이 신청자를 지정하게 두면 다른
      * 회원 명의의 신청이 된다.
      *
      * @return array 신청 페이로드
@@ -239,7 +198,42 @@ class StoreExchangeRequest extends FormRequest
                 ? RefundPriorityEnum::from($validated['refund_priority'])
                 : RefundPriorityEnum::PG_FIRST,
             'redelivery_address' => $validated['redelivery_address'] ?? null,
-            'requested_by' => Auth::id(),
+            'requested_by' => $this->requesterId(),
         ];
+    }
+
+    /**
+     * 귀속할 미귀속 첨부 ID 목록을 반환합니다.
+     *
+     * @return array<int, int> 첨부 ID 목록
+     */
+    public function imageIds(): array
+    {
+        return array_map('intval', (array) ($this->validated('image_ids') ?? []));
+    }
+
+    /**
+     * 신청 시점 결제 수단을 반환합니다. (미지정이면 null — 서비스가 허용 목록의 첫 수단을 쓴다)
+     *
+     * @return string|null 결제 수단
+     */
+    public function paymentMethod(): ?string
+    {
+        $method = $this->validated('payment_method');
+
+        return $method !== null && $method !== '' ? (string) $method : null;
+    }
+
+    /**
+     * 첨부 장수 상한을 반환합니다. (설정 단일 출처)
+     *
+     * 리터럴을 두면 운영자가 `claim.max_images` 를 바꿨을 때 화면 안내와 실제 거절선이 갈린다 —
+     * 상한을 낮추면 요청 게이트가 놓치고 서비스가 뒤늦게 거절하고, 올리면 게이트가 먼저 막는다.
+     *
+     * @return int 첨부 장수 상한
+     */
+    protected function maxImages(): int
+    {
+        return app(ClaimAttachmentService::class)->maxImages();
     }
 }

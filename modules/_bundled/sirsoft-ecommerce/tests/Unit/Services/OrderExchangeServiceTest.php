@@ -49,7 +49,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 검증 축:
  * - 신청 — 동일상품/옵션변경, 저가·동가·고가 3분기의 차액·청구액, 신규 옵션 유효성·재고, 코스 상태
  *   진입(전량/부분 분할), 수량 잠금(D15), 청구 방식 규칙, 회수지·재발송지 스냅샷(D14 3축)
- * - 전이 — ExchangeStatusEnum 13종 게이트 전 케이스, 승인 시 신규 재고 차감, 시각 기록, 상품 단위 전이
+ * - 전이 — ExchangeStatusEnum 14종 게이트 전 케이스, 승인 시 신규 재고 차감, 시각 기록, 상품 단위 전이
  * - 재발송 — 후속 주문옵션 생성(금액 승계·정체 교체), 배송 행 복제, 도착 처리
  * - 복귀 — 반려·철회 시 상품옵션 단위 복귀, 재고 불변
  * - 완료 — D26: 건별 원 옵션 재고 복구, 저가 교환 차액 환불신청서, 설정이 동작을 바꾸지 않음
@@ -716,6 +716,41 @@ class OrderExchangeServiceTest extends ModuleTestCase
             $order->fresh(['options', 'shippings', 'payment']),
             $this->payload($order)
         ));
+    }
+
+    public function test_request_falls_back_to_confirmed_at_when_delivered_at_is_missing(): void
+    {
+        // `배송중 → 구매확정` 직접 전이가 허용되므로 `delivered_at` 이 영영 null 인 옵션이 실재한다.
+        // 그것을 "판정 불가" 로 넘기면 기한 게이트가 그 옵션에 한해 영구히 열린 채가 된다.
+        app(EcommerceSettingsService::class)->setSetting('claim.request_period_days', 1);
+
+        $order = $this->deliveredOrder();
+        $order->options->first()->forceFill([
+            'delivered_at' => null,
+            'confirmed_at' => now()->subDays(5),
+        ])->save();
+
+        $this->assertClaimException('claim_request_period_expired', fn () => $this->service->requestExchange(
+            $order->fresh(['options', 'shippings', 'payment']),
+            $this->payload($order)
+        ));
+    }
+
+    public function test_request_is_allowed_when_no_timestamp_is_stale(): void
+    {
+        // 두 시각이 모두 없는 구형 주문(컴럼이 생기기 전)은 마지막 변경 시각으로 내려간다 —
+        // 창은 닫히되 정상 신청은 막지 않는다.
+        app(EcommerceSettingsService::class)->setSetting('claim.request_period_days', 1);
+
+        $order = $this->deliveredOrder();
+        $order->options->first()->forceFill(['delivered_at' => null, 'confirmed_at' => null])->save();
+
+        $exchange = $this->service->requestExchange(
+            $order->fresh(['options', 'shippings', 'payment']),
+            $this->payload($order)
+        );
+
+        $this->assertSame(ExchangeStatusEnum::REQUESTED, $exchange->exchange_status);
     }
 
     // ================================================================
@@ -2319,5 +2354,155 @@ class OrderExchangeServiceTest extends ModuleTestCase
         // 완료 뒤 — 후속 행이 승계했고, 금액은 원 행과 같다.
         $after = $adjustmentService->preview($order->fresh(['options', 'shippings', 'payment']), $cancelB);
         $this->assertSame(10000.0, (float) $after->getTotalRefundAmount());
+    }
+
+    // ================================================================
+    // 미리보기 자격 가드 (S5) / 승인 전 수정 (D13 · D14)
+    // ================================================================
+
+    public function test_preview_rejects_an_item_that_is_not_in_a_requestable_status(): void
+    {
+        $order = $this->createSingleItemClaimOrder(29000, 1, $this->createClaimShippingPolicy());
+
+        $this->assertClaimException('claim_option_not_claimable', fn () => $this->service->previewExchange(
+            $order,
+            [['order_option_id' => $order->options->first()->id, 'quantity' => 1]],
+            'size_mismatch',
+        ));
+    }
+
+    public function test_preview_rejects_a_quantity_locked_by_a_live_refund_request(): void
+    {
+        $order = $this->deliveredOrder(29000, 2);
+        $option = $order->options->first();
+        // 직접 환불신청은 원 주문옵션을 판매 상태 그대로 두므로 상태 가드가 아닌 수량 잠금이 막는다.
+        $this->makeDirectRefund($order, $option, 2);
+
+        $this->assertClaimException('claim_quantity_locked', fn () => $this->service->previewExchange(
+            $order->fresh(['options']),
+            [['order_option_id' => $option->id, 'quantity' => 1]],
+            'size_mismatch',
+        ));
+    }
+
+    public function test_preview_excludes_the_exchange_being_edited_from_the_lock(): void
+    {
+        $order = $this->deliveredOrder(29000, 2);
+        $exchange = $this->service->requestExchange($order, $this->payload($order, quantity: 2));
+
+        $preview = $this->service->previewExchange(
+            $order->fresh(['options']),
+            [['order_option_id' => $order->options->first()->id, 'quantity' => 2]],
+            'size_mismatch',
+            excludeExchangeId: $exchange->id,
+        );
+
+        $this->assertSame(2, $preview['items'][0]['quantity']);
+    }
+
+    public function test_preview_rejects_a_request_after_the_request_period(): void
+    {
+        app(EcommerceSettingsService::class)->setSetting('claim.request_period_days', 3);
+        $order = $this->deliveredOrder();
+        $order->options->first()->forceFill(['delivered_at' => now()->subDays(10)])->save();
+
+        $this->assertClaimException('claim_request_period_expired', fn () => $this->service->previewExchange(
+            $order->fresh(['options']),
+            [['order_option_id' => $order->options->first()->id, 'quantity' => 1]],
+            'size_mismatch',
+        ));
+    }
+
+    public function test_update_request_recalculates_the_fee_when_the_reason_changes(): void
+    {
+        $policy = $this->createClaimShippingPolicy();
+        $order = $this->deliveredOrder(policy: $policy);
+        $this->setExchangeFixedFee($policy, 6000);
+        $exchange = $this->service->requestExchange($order, $this->payload($order, chargeMethod: ClaimChargeMethodEnum::PAY_ON_REQUEST));
+        $this->assertSame(6000.0, (float) $exchange->total_charge_amount);
+
+        // 판매자 귀책 사유로 바꾸면 왕복 배송비가 0 이 되고 청구 방식도 의미를 잃는다.
+        $updated = $this->service->updateRequest($exchange, ['reason_code' => 'defective_product', 'reason_detail' => '불량']);
+
+        $this->assertSame('defective_product', $updated->reason_code);
+        $this->assertSame(ClaimReasonFaultTypeEnum::SELLER, $updated->fault_type);
+        $this->assertSame(0.0, (float) $updated->claim_shipping_fee);
+        $this->assertSame(0.0, (float) $updated->total_charge_amount);
+        $this->assertNull($updated->charge_method);
+        $this->assertSame('불량', $updated->reason_detail);
+    }
+
+    public function test_update_request_changes_the_redelivery_address_and_keeps_the_country(): void
+    {
+        $order = $this->deliveredOrder();
+        $exchange = $this->service->requestExchange($order, $this->payload($order));
+
+        $updated = $this->service->updateRequest($exchange, [
+            'redelivery_address' => ['zipcode' => '63000', 'address1' => '제주 서귀포시 1', 'changed_by_user' => true],
+        ]);
+
+        $this->assertSame('63000', $updated->redelivery_address_snapshot['zipcode']);
+        $this->assertSame('KR', $updated->redelivery_address_snapshot['country_code']);
+        $this->assertTrue($updated->redelivery_address_snapshot['changed_by_user']);
+
+        $this->assertClaimException('claim_redelivery_country_change_not_allowed', fn () => $this->service->updateRequest($updated, [
+            'redelivery_address' => ['country_code' => 'JP'],
+        ]));
+    }
+
+    public function test_update_request_keeps_the_previous_partial_edit_when_another_field_is_patched(): void
+    {
+        $order = $this->deliveredOrder();
+        $exchange = $this->service->requestExchange($order, $this->payload($order));
+
+        $first = $this->service->updateRequest($exchange, [
+            'redelivery_address' => ['zipcode' => '63000', 'address1' => '제주 서귀포시 1'],
+        ]);
+
+        // 두 번째 수정은 수령인만 보낸다 — 앞서 바꾼 우편번호·주소가 주문 배송지로 되돌아가면 안 된다.
+        $second = $this->service->updateRequest($first, [
+            'redelivery_address' => ['recipient_name' => '김철수'],
+        ]);
+
+        $this->assertSame('김철수', $second->redelivery_address_snapshot['recipient_name']);
+        $this->assertSame('63000', $second->redelivery_address_snapshot['zipcode']);
+        $this->assertSame('제주 서귀포시 1', $second->redelivery_address_snapshot['address1']);
+        $this->assertTrue($second->redelivery_address_snapshot['changed_by_user']);
+    }
+
+    public function test_update_request_requires_a_charge_method_when_the_charge_becomes_positive(): void
+    {
+        $policy = $this->createClaimShippingPolicy();
+        $order = $this->deliveredOrder(policy: $policy);
+        $this->setExchangeFixedFee($policy, 6000);
+        // 판매자 귀책으로 접수해 청구 0원 — 청구 방식 없음
+        $exchange = $this->service->requestExchange($order, $this->payload($order, 'defective_product'));
+        $this->assertNull($exchange->charge_method);
+
+        $this->assertClaimException('claim_charge_method_required', fn () => $this->service->updateRequest($exchange, ['reason_code' => 'size_mismatch']));
+
+        $updated = $this->service->updateRequest($exchange->fresh(), ['reason_code' => 'size_mismatch', 'charge_method' => 'pay_on_request']);
+        $this->assertSame(6000.0, (float) $updated->total_charge_amount);
+        $this->assertSame(ClaimChargeMethodEnum::PAY_ON_REQUEST, $updated->charge_method);
+    }
+
+    public function test_update_request_is_blocked_after_approval(): void
+    {
+        $order = $this->deliveredOrder();
+        $exchange = $this->service->requestExchange($order, $this->payload($order));
+        $approved = $this->service->transition($exchange, ExchangeStatusEnum::APPROVED);
+
+        $this->assertClaimException('claim_not_editable', fn () => $this->service->updateRequest($approved, ['reason_detail' => 'x']));
+    }
+
+    public function test_update_request_without_changes_returns_the_exchange_untouched(): void
+    {
+        $order = $this->deliveredOrder();
+        $exchange = $this->service->requestExchange($order, $this->payload($order));
+
+        $same = $this->service->updateRequest($exchange, []);
+
+        $this->assertSame($exchange->id, $same->id);
+        $this->assertSame($exchange->updated_at->toIso8601String(), $same->updated_at->toIso8601String());
     }
 }

@@ -38,6 +38,18 @@ interface ClaimReasonRepositoryInterface
     public function findByCode(string $code, string $type = 'refund'): ?ClaimReason;
 
     /**
+     * 유형 안에서 여러 코드를 한 번에 조회 (목록 표기용 묶음 조회)
+     *
+     * 활성 여부로 거르지 않는다 — 이미 접수된 신청서의 사유가 나중에 비활성화되어도 그 신청서의
+     * 라벨은 계속 보여야 하므로, 단건 게터(`findByCode`)와 같은 모집단을 유지한다.
+     *
+     * @param  string  $type  사유 유형
+     * @param  array<int, string>  $codes  사유 코드 목록
+     * @return Collection<int, ClaimReason> 조회된 사유 목록
+     */
+    public function findByCodes(string $type, array $codes): Collection;
+
+    /**
      * 클레임 사유 생성
      *
      * @param  array  $data  사유 데이터

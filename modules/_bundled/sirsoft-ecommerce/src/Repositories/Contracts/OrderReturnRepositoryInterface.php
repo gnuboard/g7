@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories\Contracts;
 
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
 
@@ -95,4 +96,26 @@ interface OrderReturnRepositoryInterface
      * @return int 해당 사유를 사용한 신청 건수
      */
     public function countByReasonCode(string $reasonCode): int;
+
+    /**
+     * 회원의 신청서를 페이지네이션 조회합니다. (최신순)
+     *
+     * @param  int  $userId  회원 ID
+     * @param  array  $filters  필터 (status / from / to)
+     * @param  int  $perPage  페이지당 건수
+     * @return LengthAwarePaginator 페이지네이션 결과
+     */
+    public function paginateForUser(int $userId, array $filters = [], int $perPage = 20): LengthAwarePaginator;
+
+    /**
+     * 수정 중인 반품 신청서가 이 주문옵션을 코스 상태로 옮기기 전의 원 상태를 반환합니다.
+     *
+     * 승인 전 수정 화면의 미리보기에서 상태 가드가 자기 신청서의 코스 상태에 막히지 않도록
+     * 쓴다 — 활성(비터미널) 상품 행이 박제한 `original_option_status` 를 돌려준다.
+     *
+     * @param  int  $exchangeId  반품 신청서 ID
+     * @param  int  $orderOptionId  주문옵션 ID
+     * @return string|null 원 상태 값 (이 신청서의 활성 상품 행이 없으면 null)
+     */
+    public function findOriginalOptionStatus(int $returnId, int $orderOptionId): ?string;
 }

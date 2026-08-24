@@ -24,4 +24,18 @@ class OrderRefundOptionRepository implements OrderRefundOptionRepositoryInterfac
     {
         return $this->model->create($data);
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function bulkUpdateStatus(int $refundId, string $status, ?int $processedBy = null): int
+    {
+        return $this->model->newQuery()
+            ->where('order_refund_id', $refundId)
+            ->update([
+                'option_status' => $status,
+                'processed_by' => $processedBy,
+                'updated_at' => now(),
+            ]);
+    }
 }

@@ -125,9 +125,10 @@ class OrderReturnService
      * @param  string  $reasonCode  반품 사유 코드
      * @param  ClaimChargeMethodEnum|null  $chargeMethod  청구 방식 (청구 0원이면 null)
      * @param  RefundPriorityEnum  $refundPriority  환불 우선순위
+     * @param  int|null  $excludeReturnId  수량 잠금 집계에서 뺄 반품 신청서 ID (수정 화면의 미리보기)
      * @return array{shipping_fee: ClaimShippingFee, adjustment: AdjustmentResult, fault_type: ClaimReasonFaultTypeEnum, charge_method: ClaimChargeMethodEnum|null, total_charge_amount: float, requires_payment: bool} 미리보기 결과
      *
-     * @throws OrderClaimException 사유 부재
+     * @throws OrderClaimException 사유 부재 / 신청 자격 위반
      */
     public function previewReturn(
         Order $order,
@@ -135,9 +136,21 @@ class OrderReturnService
         string $reasonCode,
         ?ClaimChargeMethodEnum $chargeMethod = null,
         RefundPriorityEnum $refundPriority = RefundPriorityEnum::PG_FIRST,
+        ?int $excludeReturnId = null,
     ): array {
         $reason = $this->resolveReason($reasonCode);
-        $claimItems = $this->toClaimItems($items);
+
+        // 신청과 같은 자격 가드(상태·수량·잠금·기간) — 신청할 수 없는 조합의 금액을 보여 주지 않는다.
+        $resolved = $this->claimQuantityGuard->resolveClaimItems(
+            $order,
+            $this->normalizeItemQuantities($items),
+            ClaimTypeEnum::RETURN,
+            $this->requestableStatusValues(),
+            null,
+            $excludeReturnId,
+        );
+        $this->assertWithinRequestPeriod($resolved);
+        $claimItems = $this->toClaimItemsFromResolved($resolved);
 
         $shippingFee = $this->claimShippingFeeService->calculate(
             $order,
@@ -871,15 +884,20 @@ class OrderReturnService
      * 반품 사유를 해석합니다.
      *
      * @param  string  $reasonCode  사유 코드
+     * @param  bool  $userSelectableOnly  사용자 선택 가능 사유(`is_user_selectable`)로 제한할지 여부 (관리자 경로는 false)
      * @return ClaimReason 사유 모델
      *
      * @throws OrderClaimException 사유 부재·비활성
      */
-    protected function resolveReason(string $reasonCode): ClaimReason
+    protected function resolveReason(string $reasonCode, bool $userSelectableOnly = true): ClaimReason
     {
         $reason = $this->claimReasonRepository->findByCode($reasonCode, ClaimTypeEnum::RETURN->value);
 
-        if (! $reason || ! $reason->is_active) {
+        // 사용자 경로는 화면에 노출되지 않는 사유(`is_user_selectable=false`)를 고를 수 없어야 한다.
+        // 접수 FormRequest 는 그 조건까지 게이트하는데 수정 요청은 신청서 유형을 몰라 규칙을 걸
+        // 수 없어, 판정을 여기로 모은다 — 없으면 판매자 귀책 전용 사유를 수정으로 지정해
+        // 반품·교환 배송비를 0 으로 만들 수 있다. 관리자 경로가 생기면 인자로 명시해 푼다.
+        if (! $reason || ! $reason->is_active || ($userSelectableOnly && ! $reason->is_user_selectable)) {
             throw OrderClaimException::reasonUnavailable();
         }
 
@@ -972,8 +990,9 @@ class OrderReturnService
     /**
      * 신청 가능 기간을 검증합니다.
      *
-     * 기준은 배송완료 시각(`delivered_at`)이다. 배송완료 시각이 없는 상품은 기간 판정을
-     * 하지 않는다 — 시각을 모르는 것을 "지났다" 로 읽으면 정상 신청이 막힌다.
+     * 기산점은 배송완료 시각(`delivered_at`)이 정본이고, 없으면 확정 시각(`confirmed_at`) →
+     * 마지막 변경 시각(`updated_at`) 순으로 내려간다. 세 시각이 모두 없을 때만 판정하지
+     * 않는다 — 상세한 이유는 아래 기산점 주석 참조.
      *
      * @param  array<int, array{option: OrderOption, quantity: int}>  $resolved  해석된 대상
      *
@@ -981,20 +1000,26 @@ class OrderReturnService
      */
     protected function assertWithinRequestPeriod(array $resolved): void
     {
-        $days = (int) $this->settingsService->getSetting('claim.request_period_days', 0);
+        $days = (int) $this->settingsService->getSetting('claim.request_period_days', 7);
 
         if ($days <= 0) {
             return;
         }
 
         foreach ($resolved as $entry) {
-            $deliveredAt = $entry['option']->delivered_at;
+            $option = $entry['option'];
 
-            if ($deliveredAt === null) {
+            // 기산점은 배송완료 시각이 정본이지만, `배송중 → 구매확정` 직접 전이가 허용되므로
+            // `delivered_at` 이 영영 null 인 옵션이 실재한다. 그것을 "판정 불가" 로 넘기면 기한 게이트가
+            // 그 옵션에 한해 영구히 열린 채가 된다. 확정 시각으로, 그마저 없으면(두 컬럼이 생기기 전
+            // 주문) 마지막 변경 시각으로 내려간다 — 어느 경우에도 창이 닫히고, 정상 신청은 막지 않는다.
+            $baseline = $option->delivered_at ?? $option->confirmed_at ?? $option->updated_at;
+
+            if ($baseline === null) {
                 continue;
             }
 
-            if ($deliveredAt->copy()->addDays($days)->isPast()) {
+            if ($baseline->copy()->addDays($days)->isPast()) {
                 throw OrderClaimException::requestPeriodExpired($days);
             }
         }
@@ -1592,23 +1617,19 @@ class OrderReturnService
     // ───────────────────────────────────────────────
 
     /**
-     * 신청 페이로드를 계산기 공용 아이템 형태로 변환합니다.
+     * 신청 페이로드의 수량 키를 가드가 읽는 `quantity` 로 정규화합니다. (`cancel_quantity` 호환)
      *
-     * `cancel_quantity` 키는 `OrderAdjustmentService` / `ClaimShippingFeeService` 가 공유하는
-     * 형태다 — 클레임 전용 키를 새로 만들면 두 계산기의 안분·조건부무료 재판정 경로를
-     * 다시 뚫어야 한다.
-     *
-     * @param  array  $items  [{order_option_id, quantity}]
-     * @return array [{order_option_id, cancel_quantity}]
+     * @param  array  $items  [{order_option_id, quantity|cancel_quantity}]
+     * @return array [{order_option_id, quantity}]
      */
-    protected function toClaimItems(array $items): array
+    protected function normalizeItemQuantities(array $items): array
     {
         $normalized = [];
 
         foreach ($items as $item) {
             $normalized[] = [
                 'order_option_id' => (int) ($item['order_option_id'] ?? 0),
-                'cancel_quantity' => (int) ($item['quantity'] ?? $item['cancel_quantity'] ?? 0),
+                'quantity' => (int) ($item['quantity'] ?? $item['cancel_quantity'] ?? 0),
             ];
         }
 
@@ -1617,6 +1638,9 @@ class OrderReturnService
 
     /**
      * 해석된 대상을 계산기 공용 아이템 형태로 변환합니다.
+     *
+     * `cancel_quantity` 키는 `OrderAdjustmentService` / `ClaimShippingFeeService` 가 공유하는 형태다 —
+     * 클레임 전용 키를 새로 만들면 두 계산기의 안분·조건부무료 재판정 경로를 다시 뚫어야 한다.
      *
      * @param  array<int, array{option: OrderOption, quantity: int}>  $resolved  해석된 대상
      * @return array [{order_option_id, cancel_quantity}]
@@ -1633,5 +1657,95 @@ class OrderReturnService
         }
 
         return $normalized;
+    }
+
+    /**
+     * 승인 전 신청 내용을 수정합니다. (D13 사유·상세 사유)
+     *
+     * 수정 가능 경계는 철회 경계와 같다(신청·결제대기·보류). 사유(귀책)가 바뀌면 회수 배송비를 접수와 같은
+     * 산식으로 재산정해 청구액을 갱신한다. 청구액이 0 에서 양수가 되면 청구 방식이 필요하므로 페이로드의
+     * `charge_method` 를 함께 받는다. 이미 받은 추가결제와의 차액 정산은 호출부가
+     * `ClaimPaymentService::settleChargeDifference()` 로 한다(교환과 같은 분담).
+     *
+     * @param  OrderReturn  $return  반품 신청서
+     * @param  array  $payload  수정 페이로드 (reason_code? / reason_detail? / charge_method?)
+     * @return OrderReturn 수정된 신청서
+     *
+     * @throws OrderClaimException 수정 불가 상태 / 사유 부재 / 청구 방식 부재·불허·차감 불가
+     */
+    public function updateRequest(OrderReturn $return, array $payload): OrderReturn
+    {
+        if (! $return->return_status->isWithdrawable()) {
+            throw OrderClaimException::notEditable();
+        }
+
+        return DB::transaction(function () use ($return, $payload) {
+            $locked = $this->returnRepository->findForUpdate($return->id) ?? $return;
+            $locked->load(['returnOptions', 'order.options', 'order.shippings', 'order.payment']);
+            $order = $locked->order;
+
+            $updates = [];
+            $reason = null;
+
+            if (($payload['reason_code'] ?? null) !== null && $payload['reason_code'] !== '' && $payload['reason_code'] !== $locked->reason_code) {
+                $reason = $this->resolveReason((string) $payload['reason_code']);
+                $updates['reason_code'] = $reason->code;
+                $updates['fault_type'] = $reason->fault_type;
+            }
+
+            if (array_key_exists('reason_detail', $payload)) {
+                $updates['reason_detail'] = $payload['reason_detail'];
+            }
+
+            $chargeMethod = array_key_exists('charge_method', $payload)
+                ? $this->normalizeChargeMethod($payload['charge_method'])
+                : $locked->charge_method;
+
+            if ($reason !== null) {
+                $claimItems = [];
+
+                foreach ($locked->returnOptions as $item) {
+                    $claimItems[] = [
+                        'order_option_id' => (int) $item->order_option_id,
+                        'cancel_quantity' => (int) $item->return_quantity,
+                    ];
+                }
+
+                $shippingFee = $this->claimShippingFeeService->calculate(
+                    $order,
+                    ClaimTypeEnum::RETURN,
+                    $claimItems,
+                    $reason->fault_type,
+                );
+
+                $this->assertChargeMethodUsable($order, $claimItems, $shippingFee, $chargeMethod, RefundPriorityEnum::PG_FIRST);
+
+                $updates['shipping_fee_mode'] = $shippingFee->mode;
+                $updates['claim_shipping_fee'] = $shippingFee->fee;
+                $updates['mc_claim_shipping_fee'] = $shippingFee->mcFee ?: null;
+                $updates['shipping_fee_snapshot'] = $shippingFee->toArray();
+                $updates['total_charge_amount'] = $shippingFee->fee;
+                $updates['mc_total_charge_amount'] = $shippingFee->mcFee ?: null;
+                $updates['charge_method'] = $shippingFee->fee > 0 ? $chargeMethod : null;
+            } elseif (array_key_exists('charge_method', $payload) && (float) $locked->total_charge_amount > 0) {
+                if ($chargeMethod === null) {
+                    throw OrderClaimException::chargeMethodRequired();
+                }
+
+                $allowed = (array) $this->settingsService->getSetting('claim.allowed_charge_methods', ClaimChargeMethodEnum::values());
+
+                if (! in_array($chargeMethod->value, $allowed, true)) {
+                    throw OrderClaimException::chargeMethodNotAllowed();
+                }
+
+                $updates['charge_method'] = $chargeMethod;
+            }
+
+            if ($updates === []) {
+                return $locked;
+            }
+
+            return $this->returnRepository->update($locked, $updates)->fresh(['returnOptions']);
+        });
     }
 }

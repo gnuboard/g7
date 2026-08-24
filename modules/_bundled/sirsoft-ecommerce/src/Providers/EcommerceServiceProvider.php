@@ -115,6 +115,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\TempOrderRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\UserAddressRepository;
 use Modules\Sirsoft\Ecommerce\Seo\EcommerceSitemapContributor;
 use Modules\Sirsoft\Ecommerce\Services\CategoryImageService;
+use Modules\Sirsoft\Ecommerce\Services\ClaimAttachmentService;
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
@@ -156,6 +157,7 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         CategoryImageService::class => 'images',
         ProductImageService::class => 'images',
         ProductReviewImageService::class => 'images',
+        ClaimAttachmentService::class => 'images',
     ];
 
     /**

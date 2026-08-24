@@ -27,14 +27,15 @@ class ClaimEnumsTest extends ModuleTestCase
     // ExchangeStatusEnum
     // ========================================
 
-    public function test_exchange_status_has_13_cases(): void
+    public function test_exchange_status_has_14_cases(): void
     {
         $values = ExchangeStatusEnum::values();
 
-        $this->assertCount(13, $values);
+        $this->assertCount(14, $values);
         $this->assertSame([
             'requested',
             'payment_pending',
+            'paid',
             'approved',
             'on_hold',
             'rejected',
@@ -65,6 +66,8 @@ class ClaimEnumsTest extends ModuleTestCase
         // 승인 전까지만 신청자가 철회할 수 있다 — 승인 이후는 회수 절차가 시작된다.
         $this->assertTrue(ExchangeStatusEnum::REQUESTED->isWithdrawable());
         $this->assertTrue(ExchangeStatusEnum::PAYMENT_PENDING->isWithdrawable());
+        // 결제완료도 승인 전이다 — 철회는 전액 환급을 동반한다(§4-2 paid 규약 ⓒ).
+        $this->assertTrue(ExchangeStatusEnum::PAID->isWithdrawable());
         $this->assertTrue(ExchangeStatusEnum::ON_HOLD->isWithdrawable());
 
         $this->assertFalse(ExchangeStatusEnum::APPROVED->isWithdrawable());
@@ -96,6 +99,8 @@ class ClaimEnumsTest extends ModuleTestCase
         $this->assertTrue(ExchangeStatusEnum::PAYMENT_PENDING->canTransitionTo(ExchangeStatusEnum::WITHDRAWN));
         $this->assertTrue(ExchangeStatusEnum::PAYMENT_PENDING->canTransitionTo(ExchangeStatusEnum::REJECTED));
         $this->assertTrue(ExchangeStatusEnum::PAYMENT_PENDING->canTransitionTo(ExchangeStatusEnum::APPROVED));
+        // 결제 확정의 도착지 — 자동승인 on/off 를 가리지 않고 항상 여기를 거친다.
+        $this->assertTrue(ExchangeStatusEnum::PAYMENT_PENDING->canTransitionTo(ExchangeStatusEnum::PAID));
 
         $this->assertFalse(ExchangeStatusEnum::PAYMENT_PENDING->canTransitionTo(ExchangeStatusEnum::COLLECTION_READY));
     }
@@ -126,7 +131,7 @@ class ClaimEnumsTest extends ModuleTestCase
     }
 
     /**
-     * 상태 13종의 허용 간선을 **행 단위 등식**으로 고정한다 (§4-2 전이표).
+     * 상태 14종의 허용 간선을 **행 단위 등식**으로 고정한다 (§4-2 전이표).
      *
      * 개별 셀만 짚으면 그 행에 간선이 새로 늘어나도 red 가 되지 않는다 — 단계를 건너뛰는 통로가
      * 조용히 열려도 재고·정산 근거가 사라진 채 통과한다. 표 전체를 한 벌로 적어 그 사각을 없앤다.
@@ -142,7 +147,14 @@ class ClaimEnumsTest extends ModuleTestCase
                 ExchangeStatusEnum::WITHDRAWN,
             ],
             ExchangeStatusEnum::PAYMENT_PENDING->value => [
+                ExchangeStatusEnum::PAID,
                 ExchangeStatusEnum::APPROVED,
+                ExchangeStatusEnum::REJECTED,
+                ExchangeStatusEnum::WITHDRAWN,
+            ],
+            ExchangeStatusEnum::PAID->value => [
+                ExchangeStatusEnum::APPROVED,
+                ExchangeStatusEnum::ON_HOLD,
                 ExchangeStatusEnum::REJECTED,
                 ExchangeStatusEnum::WITHDRAWN,
             ],
@@ -229,11 +241,12 @@ class ClaimEnumsTest extends ModuleTestCase
     // ReturnStatusEnum
     // ========================================
 
-    public function test_return_status_has_10_cases_without_redelivery(): void
+    public function test_return_status_has_11_cases_without_redelivery(): void
     {
         $values = ReturnStatusEnum::values();
 
-        $this->assertCount(10, $values);
+        $this->assertCount(11, $values);
+        $this->assertContains('paid', $values);
         $this->assertNotContains('redelivery_ready', $values);
         $this->assertNotContains('redelivering', $values);
         $this->assertNotContains('redelivered', $values);
@@ -248,6 +261,7 @@ class ClaimEnumsTest extends ModuleTestCase
     public function test_return_status_withdrawable_boundary_is_approval(): void
     {
         $this->assertTrue(ReturnStatusEnum::REQUESTED->isWithdrawable());
+        $this->assertTrue(ReturnStatusEnum::PAID->isWithdrawable());
         $this->assertTrue(ReturnStatusEnum::ON_HOLD->isWithdrawable());
         $this->assertFalse(ReturnStatusEnum::APPROVED->isWithdrawable());
         $this->assertFalse(ReturnStatusEnum::COLLECTED->isWithdrawable());
@@ -261,6 +275,7 @@ class ClaimEnumsTest extends ModuleTestCase
         $this->assertTrue(ReturnStatusEnum::PAYMENT_PENDING->canTransitionTo(ReturnStatusEnum::WITHDRAWN));
         $this->assertTrue(ReturnStatusEnum::PAYMENT_PENDING->canTransitionTo(ReturnStatusEnum::REJECTED));
         $this->assertTrue(ReturnStatusEnum::PAYMENT_PENDING->canTransitionTo(ReturnStatusEnum::APPROVED));
+        $this->assertTrue(ReturnStatusEnum::PAYMENT_PENDING->canTransitionTo(ReturnStatusEnum::PAID));
 
         // 결제 대기에서 회수로 바로 건너뛸 수는 없다 (승인을 거쳐야 한다).
         $this->assertFalse(ReturnStatusEnum::PAYMENT_PENDING->canTransitionTo(ReturnStatusEnum::COLLECTION_READY));
@@ -338,7 +353,7 @@ class ClaimEnumsTest extends ModuleTestCase
     public function test_return_status_allowed_transitions_match_the_lifecycle_table(): void
     {
         // 교환 축(test_exchange_status_allowed_transitions_match_the_lifecycle_table)과 같은 형태로
-        // 10행 전수를 행 등식으로 고정한다. 개별 케이스들이 approved·회수 3단계·터미널 3종 7행만
+        // 11행 전수를 행 등식으로 고정한다. 개별 케이스들이 approved·회수 3단계·터미널 3종 7행만
         // 고정하고 있어 requested·payment_pending·on_hold 3행은 간선이 늘어도 red 가 나지 않았다.
         $expected = [
             ReturnStatusEnum::REQUESTED->value => [
@@ -349,7 +364,14 @@ class ClaimEnumsTest extends ModuleTestCase
                 ReturnStatusEnum::WITHDRAWN,
             ],
             ReturnStatusEnum::PAYMENT_PENDING->value => [
+                ReturnStatusEnum::PAID,
                 ReturnStatusEnum::APPROVED,
+                ReturnStatusEnum::REJECTED,
+                ReturnStatusEnum::WITHDRAWN,
+            ],
+            ReturnStatusEnum::PAID->value => [
+                ReturnStatusEnum::APPROVED,
+                ReturnStatusEnum::ON_HOLD,
                 ReturnStatusEnum::REJECTED,
                 ReturnStatusEnum::WITHDRAWN,
             ],
@@ -418,15 +440,35 @@ class ClaimEnumsTest extends ModuleTestCase
         $this->assertContains('withdrawn', $values);
     }
 
-    public function test_refund_status_transition_gate_is_homomorphic_with_claims(): void
+    public function test_refund_status_transition_table_is_pinned_row_by_row(): void
     {
-        $this->assertTrue(RefundStatusEnum::REQUESTED->canTransitionTo(RefundStatusEnum::APPROVED));
-        $this->assertTrue(RefundStatusEnum::REQUESTED->canTransitionTo(RefundStatusEnum::WITHDRAWN));
-        $this->assertTrue(RefundStatusEnum::APPROVED->canTransitionTo(RefundStatusEnum::COMPLETED));
-        $this->assertTrue(RefundStatusEnum::PROCESSING->canTransitionTo(RefundStatusEnum::ON_HOLD));
+        // 교환(14종)·반품(11종)은 행 등식으로 전수 고정돼 있는데 환불축만 샘플 6셀이었다 — 간선을
+        // 지우거나 더해도 green 이 나는 상태였다. 같은 강도로 맞춘다.
+        $expected = [
+            'requested' => ['approved', 'on_hold', 'rejected', 'withdrawn'],
+            'on_hold' => ['approved', 'rejected', 'withdrawn'],
+            'approved' => ['processing', 'completed', 'on_hold'],
+            'processing' => ['completed', 'on_hold'],
+            'completed' => [],
+            'rejected' => [],
+            'withdrawn' => [],
+        ];
 
-        $this->assertFalse(RefundStatusEnum::APPROVED->canTransitionTo(RefundStatusEnum::WITHDRAWN));
-        $this->assertFalse(RefundStatusEnum::COMPLETED->canTransitionTo(RefundStatusEnum::APPROVED));
+        $this->assertSame(
+            count($expected),
+            count(RefundStatusEnum::cases()),
+            '환불 상태가 늘거나 줄었습니다 — 전이표 기대값을 함께 갱신해야 이 테스트가 의미를 갖습니다.',
+        );
+
+        foreach (RefundStatusEnum::cases() as $status) {
+            $this->assertArrayHasKey($status->value, $expected, "전이표에 없는 상태: {$status->value}");
+
+            $this->assertEqualsCanonicalizing(
+                $expected[$status->value],
+                array_map(fn (RefundStatusEnum $s) => $s->value, $status->allowedTransitions()),
+                "환불 상태 `{$status->value}` 의 전이 목록이 기대와 다릅니다.",
+            );
+        }
     }
 
     public function test_refund_status_withdrawn_is_final(): void

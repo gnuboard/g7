@@ -10,9 +10,15 @@ use Modules\Sirsoft\Ecommerce\DTO\CalculationItem;
 use Modules\Sirsoft\Ecommerce\Enums\ChargePolicyEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundOptionStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
+use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
+use Modules\Sirsoft\Ecommerce\Models\OrderRefundOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderShipping;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Models\ProductOption;
@@ -293,5 +299,48 @@ trait BuildsClaimAdjustmentOrders
         }
 
         return $items;
+    }
+
+    /**
+     * 직접 환불신청서(출처 direct)를 만듭니다. (수량 잠금 테스트의 제3축 — 원 주문옵션 상태 불변)
+     *
+     * @param  Order  $order  주문
+     * @param  OrderOption  $option  주문 옵션
+     * @param  int  $quantity  신청 수량
+     * @param  RefundStatusEnum  $status  환불신청서 상태
+     * @param  RefundSourceTypeEnum  $source  발생 출처
+     * @return OrderRefund 환불신청서
+     */
+    protected function makeDirectRefund(
+        Order $order,
+        OrderOption $option,
+        int $quantity,
+        RefundStatusEnum $status = RefundStatusEnum::REQUESTED,
+        RefundSourceTypeEnum $source = RefundSourceTypeEnum::DIRECT,
+    ): OrderRefund {
+        $refund = OrderRefund::create([
+            'order_id' => $order->id,
+            'refund_source_type' => $source,
+            'refund_number' => 'RF-TEST-'.uniqid(),
+            'refund_status' => $status,
+            'refund_method' => RefundMethodEnum::PG,
+            'refund_amount' => 0,
+            'refund_points_amount' => 0,
+            'refund_shipping_amount' => 0,
+        ]);
+
+        OrderRefundOption::create([
+            'order_refund_id' => $refund->id,
+            'order_id' => $order->id,
+            'order_option_id' => $option->id,
+            'option_status' => RefundOptionStatusEnum::REQUESTED,
+            'quantity' => $quantity,
+            'unit_price' => (float) $option->unit_price,
+            'subtotal_amount' => (float) $option->unit_price * $quantity,
+            'discount_amount' => 0,
+            'refund_amount' => 0,
+        ]);
+
+        return $refund;
     }
 }

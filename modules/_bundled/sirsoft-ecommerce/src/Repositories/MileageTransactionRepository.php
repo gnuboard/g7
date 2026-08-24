@@ -508,4 +508,26 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
 
         return $map[$category] ?? [];
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function existsRestoreForClaimPayment(int $claimPaymentId): bool
+    {
+        return MileageTransaction::query()
+            ->where('claim_payment_id', $claimPaymentId)
+            ->where('type', MileageTransactionTypeEnum::REFUND_RESTORE->value)
+            ->exists();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function sumRestoredForClaimPayment(int $claimPaymentId): float
+    {
+        return (float) MileageTransaction::query()
+            ->where('claim_payment_id', $claimPaymentId)
+            ->where('type', MileageTransactionTypeEnum::REFUND_RESTORE->value)
+            ->sum('amount');
+    }
 }

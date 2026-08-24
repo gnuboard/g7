@@ -5,6 +5,8 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Services;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderCancellationException;
 use Modules\Sirsoft\Ecommerce\Models\Order;
@@ -384,5 +386,79 @@ class ClaimQuantityGuardTest extends ModuleTestCase
         );
 
         $this->assertSame(OrderStatusEnum::DELIVERED, $option->fresh()->option_status);
+    }
+
+    public function test_locked_quantity_counts_a_live_direct_refund_request(): void
+    {
+        $order = $this->createSingleItemClaimOrder(29000, 3);
+        $option = $order->options->first();
+
+        $this->makeDirectRefund($order, $option, 2);
+
+        // 직접 환불신청서는 원 주문옵션을 판매 상태 그대로 두므로 수량 합산 가드만이 이중 신청을 막는다.
+        $this->assertSame(2, $this->guard->lockedQuantity($option->id));
+        $this->assertSame(1, $this->guard->availableQuantity($option));
+    }
+
+    public function test_locked_quantity_ignores_a_finished_direct_refund_request(): void
+    {
+        $order = $this->createSingleItemClaimOrder(29000, 3);
+        $option = $order->options->first();
+
+        $this->makeDirectRefund($order, $option, 2, RefundStatusEnum::WITHDRAWN);
+        $this->makeDirectRefund($order, $option, 1, RefundStatusEnum::REJECTED);
+
+        $this->assertSame(0, $this->guard->lockedQuantity($option->id));
+    }
+
+    public function test_locked_quantity_ignores_refund_requests_from_other_sources(): void
+    {
+        $order = $this->createSingleItemClaimOrder(29000, 3);
+        $option = $order->options->first();
+
+        // 취소·반품·교환 발 환불신청서의 원 주문옵션은 이미 취소·코스 상태라 이 축에서 세지 않는다.
+        $this->makeDirectRefund($order, $option, 2, RefundStatusEnum::REQUESTED, RefundSourceTypeEnum::CANCEL);
+        $this->makeDirectRefund($order, $option, 1, RefundStatusEnum::REQUESTED, RefundSourceTypeEnum::RETURN);
+
+        $this->assertSame(0, $this->guard->lockedQuantity($option->id));
+    }
+
+    public function test_locked_quantity_sums_all_three_claim_axes(): void
+    {
+        $order = $this->createSingleItemClaimOrder(29000, 5);
+        $option = $order->options->first();
+
+        $this->makeReturn($order, $option, 1);
+        $this->makeExchange($order, $option, 1);
+        $this->makeDirectRefund($order, $option, 2);
+
+        $this->assertSame(4, $this->guard->lockedQuantity($option->id));
+        $this->assertSame(1, $this->guard->availableQuantity($option));
+    }
+
+    public function test_locked_quantity_excludes_the_direct_refund_being_edited(): void
+    {
+        $order = $this->createSingleItemClaimOrder(29000, 3);
+        $option = $order->options->first();
+
+        $refund = $this->makeDirectRefund($order, $option, 2);
+
+        $this->assertSame(0, $this->guard->lockedQuantity($option->id, null, null, $refund->id));
+        $this->assertSame(3, $this->guard->availableQuantity($option, null, null, $refund->id));
+    }
+
+    public function test_resolve_rejects_a_quantity_locked_by_a_direct_refund_request(): void
+    {
+        $order = $this->createSingleItemClaimOrder(29000, 3);
+        $option = $order->options->first();
+
+        $this->makeDirectRefund($order, $option, 2);
+
+        $this->assertClaimException('claim_quantity_locked', fn () => $this->guard->resolveClaimItems(
+            $order,
+            [['order_option_id' => $option->id, 'quantity' => 2]],
+            ClaimTypeEnum::RETURN,
+            [OrderStatusEnum::PAYMENT_COMPLETE->value],
+        ));
     }
 }

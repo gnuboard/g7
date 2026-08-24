@@ -246,4 +246,20 @@ interface MileageTransactionRepositoryInterface
      * @return int 삭제된 행 수
      */
     public function deleteForUser(int $userId): int;
+
+    /**
+     * 클레임 추가결제 건의 마일리지 환급 거래가 이미 있는지 확인합니다. (환급 멱등 축)
+     *
+     * @param  int  $claimPaymentId  클레임 추가결제 ID
+     * @return bool 환급 거래가 있으면 true
+     */
+    public function existsRestoreForClaimPayment(int $claimPaymentId): bool;
+
+    /**
+     * 클레임 추가결제 건의 마일리지 환급 누적액(양수)을 반환합니다.
+     *
+     * @param  int  $claimPaymentId  클레임 추가결제 ID
+     * @return float 환급 누적액
+     */
+    public function sumRestoredForClaimPayment(int $claimPaymentId): float;
 }

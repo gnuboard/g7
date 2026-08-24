@@ -1910,6 +1910,7 @@ return [
         'items' => [
             'required' => 'Please select the items to request.',
             'array' => 'Items must be an array.',
+            'max' => 'You can request up to :max items at a time.',
             'order_option_id_required' => 'Please specify the order item to request.',
             'quantity_required' => 'Please enter the requested quantity.',
             'quantity_min' => 'The requested quantity must be at least 1.',
@@ -1931,6 +1932,36 @@ return [
             'country_code_size' => 'The redelivery country code must be 2 characters.',
             'country_code_unchanged' => 'The exchange redelivery address must be in the same country as the order shipping address. (International exchange is not supported.)',
             'changed_by_user_boolean' => 'The redelivery edited flag must be true or false.',
+        ],
+        'type' => [
+            'required' => 'Please specify the claim type.',
+            'in' => 'Unsupported claim type.',
+        ],
+        'status' => [
+            'in' => 'That status does not exist for the selected claim type.',
+        ],
+        'payment_method' => [
+            'in' => 'The selected payment method cannot be used for claim charges.',
+        ],
+        'image_ids' => [
+            'array' => 'The attached image list must be an array.',
+            'max' => 'You can specify up to :max images at once.',
+            'integer' => 'The attached image ID must be a number.',
+        ],
+        'refund_bank' => [
+            'array' => 'The refund account must be an object with bank, account number and holder.',
+            'incomplete' => 'Please enter the bank, account number and account holder together.',
+        ],
+        'image' => [
+            'required' => 'Please select an image to attach.',
+            'file' => 'The file is not valid.',
+            'image' => 'Only image files can be attached.',
+            'mimes' => 'Supported image formats: jpeg, png, jpg, gif, webp',
+            'max' => 'The image size must be :maxKB or less.',
+        ],
+        'callback' => [
+            'required' => 'Payment approval information is missing.',
+            'array' => 'The payment approval information format is invalid.',
         ],
     ],
 

@@ -83,6 +83,24 @@ class ClaimReasonRepository implements ClaimReasonRepositoryInterface
     /**
      * {@inheritDoc}
      */
+    public function findByCodes(string $type, array $codes): Collection
+    {
+        $codes = array_values(array_unique(array_filter(array_map('strval', $codes), fn (string $c) => $c !== '')));
+
+        if ($codes === []) {
+            return new Collection;
+        }
+
+        // 결과 크기는 요청 페이지의 서로 다른 사유 코드 수에 묶인다 (per_page 상한 이하).
+        return $this->model->newQuery()
+            ->where('type', $type)
+            ->whereIn('code', $codes)
+            ->get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function create(array $data): ClaimReason
     {
         return $this->model->create($data);

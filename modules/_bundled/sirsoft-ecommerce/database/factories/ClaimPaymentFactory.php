@@ -44,6 +44,8 @@ class ClaimPaymentFactory extends Factory
             'pg_error_message' => null,
             'raw_response' => null,
             'paid_at' => null,
+            'refunded_amount' => 0,
+            'refunded_at' => null,
         ];
     }
 

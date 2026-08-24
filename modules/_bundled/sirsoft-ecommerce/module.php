@@ -2406,6 +2406,15 @@ class Module extends AbstractModule
                     // '보호' 로 만들어 실패 방향을 안전한 쪽으로 뒤집는다. `cash-receipt` 가 리터럴
                     // 세그먼트라 구조적으로 `verify` 와 매칭될 수 없다.
                     'api.modules.sirsoft-ecommerce.guest.orders.cash-receipt.*',
+                    // 클레임(교환/반품/취소·환불) 하위 전체 — 신청·미리보기·목록·상세·수정·철회·첨부·추가결제.
+                    // glob 으로 이 서브트리의 기본값을 '보호' 로 둔다(향후 추가 라우트 포함).
+                    'api.modules.sirsoft-ecommerce.guest.orders.claimable-options',
+                    'api.modules.sirsoft-ecommerce.guest.orders.claims.*',
+                    'api.modules.sirsoft-ecommerce.guest.orders.exchanges.*',
+                    'api.modules.sirsoft-ecommerce.guest.orders.returns.*',
+                    'api.modules.sirsoft-ecommerce.guest.orders.refund-requests.*',
+                    'api.modules.sirsoft-ecommerce.guest.orders.claim-images.*',
+                    'api.modules.sirsoft-ecommerce.guest.orders.claim-payments.*',
                 ],
             ],
         ];

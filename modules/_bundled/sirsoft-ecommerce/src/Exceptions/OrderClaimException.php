@@ -307,6 +307,172 @@ class OrderClaimException extends Exception
     }
 
     /**
+     * 신청서를 찾지 못했습니다. (번호 해석 실패 / 소유권 위반 — 존재 여부를 구분해 알리지 않는다)
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function claimNotFound(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_not_found');
+    }
+
+    /**
+     * 승인 이후라 신청 내용을 수정할 수 없습니다. (D13)
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function notEditable(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_not_editable');
+    }
+
+    /**
+     * 선택 상품의 상태가 즉시취소·환불신청 두 분기에 걸쳐 있어 한 신청서로 접수할 수 없습니다. (D2)
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function refundBranchMixed(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_refund_branch_mixed');
+    }
+
+    /**
+     * 취소·환불 대상이 아닌 상품입니다. (즉시취소 가능 상태도, 환불신청 가능 상태도 아님)
+     *
+     * @param  string  $statusLabel  현재 상품 상태 라벨
+     * @return self 예외 인스턴스
+     */
+    public static function refundNotRequestable(string $statusLabel): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_refund_not_requestable', [
+            'status' => $statusLabel,
+        ]);
+    }
+
+    /**
+     * 결제 건을 찾지 못했습니다.
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function paymentNotFound(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_payment_not_found');
+    }
+
+    /**
+     * 결제 대기 상태가 아니라 결제를 진행할 수 없습니다.
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function paymentNotPending(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_payment_not_pending');
+    }
+
+    /**
+     * 이 신청서에는 결제할 청구액이 없습니다.
+     *
+     * 현재 호출부가 없다. 지정 소비처는 관리자 승인 경로(S6a)로, 승인 시 `outstandingAmount() === 0`
+     * 을 확인하고 청구액이 없는 신청서에 결제를 요구하는 호출을 이 예외로 거절한다. 그 배선 전까지
+     * 미사용으로 남겨 두되, 소비처 없이 방치되지 않도록 담당을 계획서 §7 S6a 셀에 기재해 두었다.
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function paymentNotRequired(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_payment_not_required');
+    }
+
+    /**
+     * 선택한 결제 수단은 클레임 추가결제에 허용되지 않습니다. (`claim.charge_payment_methods`)
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function paymentMethodNotAllowed(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_payment_method_not_allowed');
+    }
+
+    /**
+     * 결제 승인을 처리할 PG 연동이 없습니다. (클레임 결제 승인 훅을 구현한 결제 플러그인 부재)
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function paymentProviderUnavailable(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_payment_provider_unavailable');
+    }
+
+    /**
+     * PG 결제 승인에 실패했습니다.
+     *
+     * @param  string  $error  PG 가 돌려준 사유
+     * @return self 예외 인스턴스
+     */
+    public static function paymentFailed(string $error): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_payment_failed', [
+            'error' => $error,
+        ]);
+    }
+
+    /**
+     * PG 가 승인한 금액이 청구액과 다릅니다.
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function paymentAmountMismatch(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_payment_amount_mismatch');
+    }
+
+    /**
+     * 결제 환급에 실패했습니다.
+     *
+     * @param  string  $error  PG 가 돌려준 사유
+     * @return self 예외 인스턴스
+     */
+    public static function paymentRefundFailed(string $error): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_payment_refund_failed', [
+            'error' => $error,
+        ]);
+    }
+
+    /**
+     * 마일리지 결제는 회원만 할 수 있습니다.
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function pointPaymentRequiresMember(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_point_payment_requires_member');
+    }
+
+    /**
+     * 첨부 이미지가 최대 장수를 넘었습니다.
+     *
+     * @param  int  $max  최대 장수
+     * @return self 예외 인스턴스
+     */
+    public static function imageLimitExceeded(int $max): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_image_limit_exceeded', [
+            'max' => $max,
+        ]);
+    }
+
+    /**
+     * 첨부 이미지를 찾지 못했습니다. (이 주문·신청서 소속이 아닌 첨부 포함)
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function imageNotFound(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_image_not_found');
+    }
+
+    /**
      * 다국어 메시지 키를 반환합니다.
      *
      * @return string 다국어 메시지 키

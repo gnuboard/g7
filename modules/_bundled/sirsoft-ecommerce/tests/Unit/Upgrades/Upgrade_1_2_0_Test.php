@@ -327,4 +327,53 @@ class Upgrade_1_2_0_Test extends ModuleTestCase
         $this->assertSame(2, $claim['max_images'], '운영자 저장값이 보존되어야 합니다.');
         $this->assertSame(['preparing'], $claim['instant_cancel_statuses']);
     }
+
+    #[Test]
+    public function 기존_설치본에_없던_클레임_시퀀스_3종을_시드한다(): void
+    {
+        // 1.1.1 설치본 재현 — 교환·반품·클레임결제 시퀀스는 그 버전에 존재하지 않았다.
+        // 시더는 설치 시에만 돌므로 업그레이드가 이 행들을 만들지 않으면 영영 없다.
+        DB::table('ecommerce_sequences')
+            ->whereIn('type', ['exchange', 'order_return', 'claim_payment'])
+            ->delete();
+
+        $this->runUpgrade();
+
+        foreach ([
+            'exchange' => 'EX',
+            'order_return' => 'RT',
+            'claim_payment' => 'CP',
+        ] as $type => $prefix) {
+            $row = DB::table('ecommerce_sequences')->where('type', $type)->first();
+
+            $this->assertNotNull(
+                $row,
+                "{$type} 시퀀스가 없으면 그 유형의 채번이 SequenceNotFoundException 으로 전부 실패합니다."
+            );
+            $this->assertSame($prefix, $row->prefix);
+            $this->assertSame('timestamp', $row->algorithm);
+        }
+    }
+
+    #[Test]
+    public function 이미_존재하는_클레임_시퀀스의_채번_상태는_보존한다(): void
+    {
+        // current_value 는 운영 중 증가하는 counter 다 — 재실행이 이것을 되돌리면
+        // 이미 발급된 번호를 다시 발급하게 된다.
+        DB::table('ecommerce_sequences')
+            ->where('type', 'claim_payment')
+            ->update(['current_value' => 20260824143522, 'prefix' => 'CP']);
+
+        $this->runUpgrade();
+
+        $row = DB::table('ecommerce_sequences')->where('type', 'claim_payment')->first();
+
+        $this->assertNotNull($row);
+        $this->assertSame(20260824143522, (int) $row->current_value, '기존 채번 상태를 덮어쓰면 안 됩니다.');
+        $this->assertSame(
+            1,
+            DB::table('ecommerce_sequences')->where('type', 'claim_payment')->count(),
+            '재실행이 중복 행을 만들면 안 됩니다.'
+        );
+    }
 }

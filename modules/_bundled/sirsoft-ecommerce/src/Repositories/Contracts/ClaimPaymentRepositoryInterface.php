@@ -80,4 +80,41 @@ interface ClaimPaymentRepositoryInterface
      * @return ClaimPayment|null 추가결제 (없으면 null)
      */
     public function findForUpdate(int $id): ?ClaimPayment;
+
+    /**
+     * 결제 대상의 결제 대기 건을 조회합니다. (최신 1건)
+     *
+     * @param  string  $payableType  결제 대상 유형
+     * @param  int  $payableId  결제 대상 ID
+     * @return ClaimPayment|null 결제 대기 건
+     */
+    public function findPendingByPayable(string $payableType, int $payableId): ?ClaimPayment;
+
+    /**
+     * 결제 대상의 실수납 건(결제 완료 + 환급 잔액 > 0)을 조회합니다. (오래된 순)
+     *
+     * @param  string  $payableType  결제 대상 유형
+     * @param  int  $payableId  결제 대상 ID
+     * @return Collection<int, ClaimPayment> 실수납 건
+     */
+    public function listPaidByPayable(string $payableType, int $payableId): Collection;
+
+    /**
+     * 주문의 클레임 추가결제 실수납 합계(부분 환급 차감)를 반환합니다.
+     *
+     * 주문 상세 Resource 의 `claim_additional_paid_total` 의 SSoT 다 — 결제 완료 건의 청구 총액에서
+     * 부분 환급 누적액을 뺀 값이며, 전액 환급 건은 0 으로 센다.
+     *
+     * @param  int  $orderId  주문 ID
+     * @return array{amount: float, mc: array<string, float>} 기준통화 합계 + 다통화 합계
+     */
+    public function sumNetPaidByOrder(int $orderId): array;
+
+    /**
+     * 결제번호로 잠금 조회합니다. (결제 확정·환급의 경합 직렬화)
+     *
+     * @param  string  $paymentNumber  결제번호
+     * @return ClaimPayment|null 잠금된 결제 건
+     */
+    public function findByPaymentNumberForUpdate(string $paymentNumber): ?ClaimPayment;
 }

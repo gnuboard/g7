@@ -8,24 +8,27 @@ use Modules\Sirsoft\Ecommerce\Exceptions\OrderClaimException;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderExchangeRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderReturnRepositoryInterface;
 
 /**
  * 클레임 수량 잠금 가드 (D15)
  *
  * "활성 클레임(철회·반려·완료 이전)에 묶인 수량은 다른 클레임·취소 신청 대상이 아니다" 를
- * 한 곳에서 판정한다. 교환과 반품이 같은 주문옵션을 두고 경합하므로 유형별로 나누지 않고
- * 두 축을 함께 센다 — 한쪽만 세면 교환 진행 중인 수량으로 반품이 접수된다.
+ * 한 곳에서 판정한다. 교환·반품·직접 환불신청이 같은 주문옵션을 두고 경합하므로 유형별로
+ * 나누지 않고 세 축을 함께 센다 — 한쪽만 세면 교환 진행 중인 수량으로 반품이 접수된다.
  *
  * ## 잠금이 두 겹인 이유
  *
- * 신청이 접수되면 그 수량은 곧바로 코스 상태(`exchange_in_progress`/`return_in_progress`)로
+ * 교환·반품 신청이 접수되면 그 수량은 곧바로 코스 상태(`exchange_in_progress`/`return_in_progress`)로
  * 분할되므로, 남은 행의 수량 자체가 이미 줄어든다. 그런데 그것만으로는 충분하지 않다:
  *
  *  1. 신청 가능 상태 목록(`claim.*_requestable_statuses`)은 운영자 설정이라 취소 가능 상태와
  *     겹칠 수 있고, 겹치면 같은 상품에 취소와 반품이 동시에 걸린다.
  *  2. 취소 경로(`OrderCancellationService`)는 옵션 상태를 `CANCELLED` 인지만 보고 코스 상태를
  *     보지 않는다 — 가드가 없으면 반품 진행 중인 수량이 취소로 빠져나간다.
+ *  3. 직접 환불신청(`refund_source_type=direct`)은 원 주문옵션을 판매 상태 그대로 둔 채
+ *     수량만 선점한다 — 코스 상태가 없으므로 수량 합산 가드만이 이중 신청을 막는다.
  *
  * 그래서 **코스 상태 가드**(진행 중인 상품은 다른 클레임·취소 대상 아님)와 **수량 합산
  * 가드**(활성 클레임 수량만큼 잔여를 깎음)를 함께 적용한다. 어느 쪽도 예외나 로그를 남기지
@@ -48,10 +51,12 @@ class ClaimQuantityGuard
     /**
      * @param  OrderExchangeRepositoryInterface  $exchangeRepository  교환 신청서 Repository
      * @param  OrderReturnRepositoryInterface  $returnRepository  반품 신청서 Repository
+     * @param  OrderRefundRepositoryInterface  $refundRepository  환불신청서 Repository (직접 환불신청 축)
      */
     public function __construct(
         protected OrderExchangeRepositoryInterface $exchangeRepository,
         protected OrderReturnRepositoryInterface $returnRepository,
+        protected OrderRefundRepositoryInterface $refundRepository,
     ) {}
 
     /**
@@ -60,15 +65,18 @@ class ClaimQuantityGuard
      * @param  int  $orderOptionId  주문옵션 ID
      * @param  int|null  $excludeExchangeId  집계에서 뺄 교환 신청서 ID (수정 중인 자기 자신)
      * @param  int|null  $excludeReturnId  집계에서 뺄 반품 신청서 ID (수정 중인 자기 자신)
+     * @param  int|null  $excludeRefundId  집계에서 뺄 직접 환불신청서 ID (수정 중인 자기 자신)
      * @return int 활성 클레임 점유 수량
      */
     public function lockedQuantity(
         int $orderOptionId,
         ?int $excludeExchangeId = null,
         ?int $excludeReturnId = null,
+        ?int $excludeRefundId = null,
     ): int {
         return $this->exchangeRepository->sumActiveQuantityByOrderOption($orderOptionId, $excludeExchangeId)
-            + $this->returnRepository->sumActiveQuantityByOrderOption($orderOptionId, $excludeReturnId);
+            + $this->returnRepository->sumActiveQuantityByOrderOption($orderOptionId, $excludeReturnId)
+            + $this->refundRepository->sumActiveDirectQuantityByOrderOption($orderOptionId, $excludeRefundId);
     }
 
     /**
@@ -77,14 +85,16 @@ class ClaimQuantityGuard
      * @param  OrderOption  $option  주문옵션
      * @param  int|null  $excludeExchangeId  집계에서 뺄 교환 신청서 ID
      * @param  int|null  $excludeReturnId  집계에서 뺄 반품 신청서 ID
+     * @param  int|null  $excludeRefundId  집계에서 뺄 직접 환불신청서 ID
      * @return int 신청 가능 잔여 수량 (0 이상)
      */
     public function availableQuantity(
         OrderOption $option,
         ?int $excludeExchangeId = null,
         ?int $excludeReturnId = null,
+        ?int $excludeRefundId = null,
     ): int {
-        $locked = $this->lockedQuantity($option->id, $excludeExchangeId, $excludeReturnId);
+        $locked = $this->lockedQuantity($option->id, $excludeExchangeId, $excludeReturnId, $excludeRefundId);
 
         return max(0, (int) $option->quantity - $locked);
     }
@@ -98,6 +108,7 @@ class ClaimQuantityGuard
      * @param  array<string>  $requestableStatusValues  신청 가능 주문옵션 상태 값 목록 (설정)
      * @param  int|null  $excludeExchangeId  집계에서 뺄 교환 신청서 ID
      * @param  int|null  $excludeReturnId  집계에서 뺄 반품 신청서 ID
+     * @param  int|null  $excludeRefundId  집계에서 뺄 직접 환불신청서 ID
      * @return array<int, array{option: OrderOption, quantity: int}> 주문옵션 ID => 해석 결과
      *
      * @throws OrderClaimException 대상 부재·상태 불가·수량 오류·수량 잠금
@@ -109,6 +120,7 @@ class ClaimQuantityGuard
         array $requestableStatusValues,
         ?int $excludeExchangeId = null,
         ?int $excludeReturnId = null,
+        ?int $excludeRefundId = null,
     ): array {
         if (empty($items)) {
             throw OrderClaimException::itemsRequired();
@@ -133,16 +145,12 @@ class ClaimQuantityGuard
                 throw OrderClaimException::quantityInvalid();
             }
 
-            $statusValue = $option->option_status instanceof OrderStatusEnum
-                ? $option->option_status->value
-                : (string) $option->option_status;
+            $statusValue = $this->statusValueForGate($option, $excludeExchangeId, $excludeReturnId);
 
             if (! in_array($statusValue, $requestableStatusValues, true)) {
                 throw OrderClaimException::optionNotClaimable(
                     $claimType,
-                    $option->option_status instanceof OrderStatusEnum
-                        ? $option->option_status->label()
-                        : $statusValue,
+                    OrderStatusEnum::tryFrom($statusValue)?->label() ?? $statusValue,
                 );
             }
 
@@ -150,7 +158,7 @@ class ClaimQuantityGuard
                 throw OrderClaimException::quantityInvalid();
             }
 
-            $available = $this->availableQuantity($option, $excludeExchangeId, $excludeReturnId);
+            $available = $this->availableQuantity($option, $excludeExchangeId, $excludeReturnId, $excludeRefundId);
 
             if ($quantity > $available) {
                 throw OrderClaimException::quantityLocked($quantity, $available);
@@ -182,7 +190,11 @@ class ClaimQuantityGuard
             $option = $order->options->firstWhere('id', (int) ($item['order_option_id'] ?? 0));
 
             if (! $option) {
-                continue; // 대상 부재는 취소 경로 자신의 검증(cancel_option_not_found)이 판정한다.
+                // 판정 대상을 못 찾으면 통과시키지 않는다 — 이 가드는 진행 중인 교환·반품 수량이
+                // 취소로 빠져나가 이중 환불되는 것을 막는 자리라, 대상 부재를 "잠기지 않음" 으로 읽으면
+                // 막으려던 것이 그대로 통과한다. 형제 `resolveClaimItems()` 도 같은 상황에서 차단한다.
+                // (정상 경로에서는 호출부가 먼저 대상 존재를 검증하므로 여기 도달하지 않는다.)
+                throw OrderClaimException::optionNotFound();
             }
 
             if ($course = $this->resolveClaimCourseStatus($option->option_status)) {
@@ -264,5 +276,45 @@ class ClaimQuantityGuard
         }
 
         return $enum;
+    }
+
+    /**
+     * 상태 가드에 쓸 주문옵션 상태 값을 결정합니다.
+     *
+     * 승인 전 수정 화면의 미리보기(`$excludeExchangeId`/`$excludeReturnId`)에서는 그 신청서가
+     * 이 옵션을 이미 코스 상태(`exchange_in_progress`/`return_in_progress`)로 옮겨 두었다 —
+     * 현재 상태로 대조하면 자기 신청서에 막혀 "신청 불가" 가 되므로, 신청서가 접수 시점에
+     * 박제한 원 상태(`original_option_status`)로 판정한다. 수량 합산 가드가 같은 신청서를
+     * 집계에서 빼는 것과 같은 축의 제외다. 직접 환불신청은 코스 상태를 만들지 않으므로
+     * 이 완화가 필요 없다.
+     *
+     * @param  OrderOption  $option  주문옵션
+     * @param  int|null  $excludeExchangeId  수정 중인 교환 신청서 ID
+     * @param  int|null  $excludeReturnId  수정 중인 반품 신청서 ID
+     * @return string 판정에 쓸 상태 값
+     */
+    protected function statusValueForGate(OrderOption $option, ?int $excludeExchangeId, ?int $excludeReturnId): string
+    {
+        $current = $option->option_status instanceof OrderStatusEnum
+            ? $option->option_status->value
+            : (string) $option->option_status;
+
+        if ($excludeExchangeId !== null && $current === OrderStatusEnum::EXCHANGE_IN_PROGRESS->value) {
+            $original = $this->exchangeRepository->findOriginalOptionStatus($excludeExchangeId, (int) $option->id);
+
+            if ($original !== null) {
+                return $original;
+            }
+        }
+
+        if ($excludeReturnId !== null && $current === OrderStatusEnum::RETURN_IN_PROGRESS->value) {
+            $original = $this->returnRepository->findOriginalOptionStatus($excludeReturnId, (int) $option->id);
+
+            if ($original !== null) {
+                return $original;
+            }
+        }
+
+        return $current;
     }
 }

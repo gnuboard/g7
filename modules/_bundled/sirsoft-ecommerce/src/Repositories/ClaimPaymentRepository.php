@@ -82,14 +82,13 @@ class ClaimPaymentRepository implements ClaimPaymentRepositoryInterface
      */
     public function sumPaidAmount(string $payableType, int $payableId): float
     {
-        $row = $this->model->newQuery()
+        // 부분 환급(재발송지 수정 차액)을 뺀 실수납 잔액을 합산한다 — 상태만 보면 환급된 차액이 수납으로 남는다.
+        return (float) $this->model->newQuery()
             ->where('payable_type', $payableType)
             ->where('payable_id', $payableId)
             ->where('payment_status', ClaimPaymentStatusEnum::PAID->value)
-            ->selectRaw('COALESCE(SUM(amount), 0) as pg_total, COALESCE(SUM(points_amount), 0) as points_total')
-            ->first();
-
-        return (float) ($row?->pg_total ?? 0) + (float) ($row?->points_total ?? 0);
+            ->get()
+            ->sum(fn (ClaimPayment $payment) => $payment->netPaidAmount());
     }
 
     /**
@@ -100,5 +99,77 @@ class ClaimPaymentRepository implements ClaimPaymentRepositoryInterface
         return $this->model->newQuery()
             ->lockForUpdate()
             ->find($id);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function findPendingByPayable(string $payableType, int $payableId): ?ClaimPayment
+    {
+        return $this->model->newQuery()
+            ->where('payable_type', $payableType)
+            ->where('payable_id', $payableId)
+            ->where('payment_status', ClaimPaymentStatusEnum::PENDING->value)
+            ->orderByDesc('id')
+            ->first();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function listPaidByPayable(string $payableType, int $payableId): Collection
+    {
+        return $this->model->newQuery()
+            ->where('payable_type', $payableType)
+            ->where('payable_id', $payableId)
+            ->where('payment_status', ClaimPaymentStatusEnum::PAID->value)
+            ->orderBy('id')
+            ->get()
+            ->filter(fn (ClaimPayment $payment) => $payment->netPaidAmount() > 0)
+            ->values();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function sumNetPaidByOrder(int $orderId): array
+    {
+        $payments = $this->model->newQuery()
+            ->where('order_id', $orderId)
+            ->where('payment_status', ClaimPaymentStatusEnum::PAID->value)
+            ->get();
+
+        $total = 0.0;
+        $mc = [];
+
+        foreach ($payments as $payment) {
+            $net = $payment->netPaidAmount();
+
+            if ($net <= 0) {
+                continue;
+            }
+
+            $total += $net;
+
+            // 다통화 금액은 결제 시점 동결값이라 부분 환급 비율만큼 줄여 합산한다.
+            $ratio = $payment->getTotalAmount() > 0 ? $net / $payment->getTotalAmount() : 0;
+
+            foreach ((array) ($payment->mc_amount ?? []) as $code => $amount) {
+                $mc[$code] = (float) ($mc[$code] ?? 0) + ((float) $amount * $ratio);
+            }
+        }
+
+        return ['amount' => $total, 'mc' => $mc];
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function findByPaymentNumberForUpdate(string $paymentNumber): ?ClaimPayment
+    {
+        return $this->model->newQuery()
+            ->lockForUpdate()
+            ->where('payment_number', $paymentNumber)
+            ->first();
     }
 }

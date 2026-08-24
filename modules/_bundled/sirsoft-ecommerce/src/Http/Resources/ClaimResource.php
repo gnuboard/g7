@@ -1,0 +1,270 @@
+<?php
+
+namespace Modules\Sirsoft\Ecommerce\Http\Resources;
+
+use App\Http\Resources\BaseApiResource;
+use Illuminate\Http\Request;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
+use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
+use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\MasksRefundBankAccount;
+use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
+use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
+use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
+use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
+
+/**
+ * 클레임 신청서 리소스 (교환·반품·환불·취소 공용 — 유저 목록·상세·비회원 공용)
+ *
+ * 네 유형의 헤더를 같은 모양(`claim_number` / `claim_type` / `status` / `items` / `images`)으로 정규화한다 —
+ * 목록의 서브탭과 상세의 유형 분기 partial 이 하나의 데이터 형태를 읽는다(§5-1-1). 유형 고유 축
+ * (교환의 재발송지·차액, 반품·교환의 회수 송장, 환불의 환불액·수단)은 있을 때만 싣는다.
+ *
+ * 결제 블록(`payments` / `outstanding_amount` / `payment_entry`)은 상세 응답에서 `withPaymentBlock()` 으로
+ * 주입한다 — 목록 행마다 결제 건을 조회하지 않는다.
+ */
+class ClaimResource extends BaseApiResource
+{
+    use HasMultiCurrencyPrices;
+    use MasksRefundBankAccount;
+
+    /**
+     * 상세 응답에 실을 결제 블록 (목록에서는 null)
+     */
+    protected ?array $paymentBlock = null;
+
+    /**
+     * 부모가 주입한 사유 라벨 맵 (`"{유형}:{코드}" => 라벨`, 단건 경로에서는 null)
+     *
+     * @var array<string, string>|null
+     */
+    protected ?array $reasonLabels = null;
+
+    /**
+     * 결제 블록을 주입합니다.
+     *
+     * @param  array|null  $block  `UserClaimService::paymentBlock()` 결과
+     * @return static 자기 자신
+     */
+    public function withPaymentBlock(?array $block): static
+    {
+        $this->paymentBlock = $block;
+
+        return $this;
+    }
+
+    /**
+     * 사유 라벨 맵을 주입합니다. (목록에서 부모가 한 번에 해석해 내려보낸다)
+     *
+     * 모델의 `getReasonLabel()`/`getRefundReasonLabel()` 은 관계가 아니라 **행마다 독립 쿼리**다
+     * (`ClaimReason::where(type, code)->first()`, 캐시 계층 없음). 단건 상세에서는 1회지만 목록에서는
+     * 행 수만큼 늘어난다 — `ClaimPaymentResource` 의 통화 스냅샷과 같은 구조라 처방도 같다:
+     * 부모가 주입하면 그것을 쓰고, 주입이 없으면(단건 경로) 종전처럼 스스로 해석한다.
+     *
+     * @param  array<string, string>|null  $labels  `"{유형}:{코드}" => 라벨` 맵
+     * @return static 자기 자신
+     */
+    public function withReasonLabels(?array $labels): static
+    {
+        $this->reasonLabels = $labels;
+
+        return $this;
+    }
+
+    /**
+     * 사유 라벨을 해석합니다. (주입 우선 → 없으면 모델 게터)
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund|OrderCancel  $claim  신청서
+     * @param  ClaimTypeEnum  $type  클레임 유형
+     * @return string 사유 라벨
+     */
+    protected function resolveReasonLabel(OrderExchange|OrderReturn|OrderRefund|OrderCancel $claim, ClaimTypeEnum $type): string
+    {
+        $code = $claim instanceof OrderCancel
+            ? ($claim->cancel_reason_type ?? '')
+            : ($claim->reason_code ?? '');
+
+        // 취소 이력의 사유는 환불 카탈로그에서 읽는다(`OrderCancel::getRefundReasonLabel()` 과 같은 축).
+        $catalogType = $claim instanceof OrderCancel ? ClaimTypeEnum::REFUND->value : $type->value;
+
+        if ($this->reasonLabels !== null) {
+            return $this->reasonLabels[$catalogType.':'.$code] ?? $code;
+        }
+
+        return $claim instanceof OrderCancel ? $claim->getRefundReasonLabel() : $claim->getReasonLabel();
+    }
+
+    /**
+     * 리소스를 배열로 변환
+     *
+     * @param  Request  $request  요청
+     * @return array<string, mixed> 응답 배열
+     */
+    public function toArray(Request $request): array
+    {
+        $claim = $this->resource;
+        $type = $claim->claimType();
+        $order = $this->whenLoaded('order', fn () => $this->order, null);
+        $currency = $this->orderCurrencyCode ?: ($claim->currency_code ?? ($order ? $this->resolveOrderBaseCurrencyCode($order) : null));
+        // 주문에 스냅샷이 없어도 `[]` 로 내려보낸다 — 자식 리소스는 `null` 을 "부모가 주입하지 않았다" 로 읽어
+        // 스스로 `loadMissing('order')` 를 태우는데, 그렇게 되읽어 봐야 값은 같고 결제 건 수만큼 쿼리만 는다.
+        // 소비 지점은 `['exchange_rates'][...] ?? null` 하나뿐이라 `[]` 와 `null` 의 표기 결과는 동일하다.
+        $snapshot = $this->currencySnapshot ?? $order?->currency_snapshot ?? [];
+        $this->withOrderCurrency($currency)->withCurrencySnapshot($snapshot);
+
+        [$numberField, $statusField] = match ($type) {
+            ClaimTypeEnum::EXCHANGE => ['exchange_number', 'exchange_status'],
+            ClaimTypeEnum::RETURN => ['return_number', 'return_status'],
+            ClaimTypeEnum::REFUND => ['refund_number', 'refund_status'],
+            ClaimTypeEnum::CANCEL => ['cancel_number', 'cancel_status'],
+        };
+
+        $status = $claim->{$statusField};
+        $items = $this->itemsRelation($claim);
+
+        $data = [
+            'id' => $claim->id,
+            'claim_number' => $claim->{$numberField},
+            'claim_type' => $type->value,
+            'claim_type_label' => $type->label(),
+            'order_id' => $claim->order_id,
+            'order_number' => $order?->order_number,
+            'status' => $status instanceof \BackedEnum ? $status->value : $status,
+            'status_label' => $status instanceof \BackedEnum ? $status->label() : null,
+            'status_variant' => $status instanceof \BackedEnum && method_exists($status, 'variant') ? $status->variant() : null,
+            'is_final' => method_exists($claim, 'isFinal') ? $claim->isFinal() : true,
+            'is_withdrawable' => method_exists($claim, 'isWithdrawable') ? $claim->isWithdrawable() : false,
+            // 수정 가능 경계 = 철회 경계 (D13 — 승인 전)
+            'is_editable' => $type !== ClaimTypeEnum::CANCEL && method_exists($claim, 'isWithdrawable') && $claim->isWithdrawable(),
+            'reason_code' => $claim->reason_code ?? $claim->cancel_reason_type ?? null,
+            'reason_label' => $this->resolveReasonLabel($claim, $type),
+            'reason_detail' => $claim->reason_detail ?? $claim->cancel_reason ?? null,
+            'fault_type' => $claim->fault_type?->value ?? null,
+            'fault_type_label' => $claim->fault_type?->label() ?? null,
+            'reject_reason' => $claim->reject_reason ?? null,
+            'requested_by' => $claim->requested_by ?? $claim->cancelled_by ?? null,
+            'is_guest_request' => method_exists($claim, 'isGuestRequest') ? $claim->isGuestRequest() : ($claim->cancelled_by === null),
+            'currency_code' => $currency,
+            'items' => ClaimItemResource::collection($items)->each(
+                fn ($r) => $r->withOrderCurrency($currency)->withCurrencySnapshot($snapshot)
+            ),
+            'images' => $claim instanceof OrderCancel ? [] : ClaimImageResource::collection($this->whenLoaded('images', fn () => $this->images, [])),
+            'requested_at' => $claim->created_at?->toIso8601String(), // audit:allow datetime-display-user-timezone reason: paired with *_formatted user-tz field
+            'requested_at_formatted' => $this->formatDateTimeStringForUser($claim->created_at),
+            'approved_at_formatted' => $this->formatDateTimeStringForUser($claim->approved_at ?? null),
+            'rejected_at_formatted' => $this->formatDateTimeStringForUser($claim->rejected_at ?? null),
+            'withdrawn_at_formatted' => $this->formatDateTimeStringForUser($claim->withdrawn_at ?? null),
+            'completed_at_formatted' => $this->formatDateTimeStringForUser($claim->completed_at ?? $claim->refunded_at ?? $claim->cancelled_at ?? null),
+        ];
+
+        if ($claim instanceof OrderExchange || $claim instanceof OrderReturn) {
+            $data += [
+                'charge_method' => $claim->charge_method?->value,
+                'charge_method_label' => $claim->charge_method?->label(),
+                'shipping_fee_mode' => $claim->shipping_fee_mode?->value,
+                'claim_shipping_fee' => $this->roundToOrderCurrency((float) $claim->claim_shipping_fee, $currency),
+                'claim_shipping_fee_formatted' => $this->formatOrderCurrency((float) $claim->claim_shipping_fee, $currency),
+                'mc_claim_shipping_fee' => $this->formatStoredMultiCurrency($claim->mc_claim_shipping_fee),
+                'shipping_fee_snapshot' => $claim->shipping_fee_snapshot,
+                'total_charge_amount' => $this->roundToOrderCurrency((float) $claim->total_charge_amount, $currency),
+                'total_charge_amount_formatted' => $this->formatOrderCurrency((float) $claim->total_charge_amount, $currency),
+                'mc_total_charge_amount' => $this->formatStoredMultiCurrency($claim->mc_total_charge_amount),
+                'requires_additional_payment' => $claim->requiresAdditionalPayment(),
+                'return_address_snapshot' => $claim->return_address_snapshot,
+                'collection_carrier_id' => $claim->collection_carrier_id,
+                'collection_carrier_name' => $this->whenLoaded('collectionCarrier', fn () => $this->collectionCarrier?->getLocalizedName(), null),
+                'collection_tracking_number' => $claim->collection_tracking_number,
+                // 추적 URL 은 배송사 템플릿에서 만든다 — 화면이 규칙을 재조립하면 주문 배송 조회와
+                // 두 벌이 된다(형제 `OrderShippingResource` 는 같은 빌더를 쓴다).
+                'collection_tracking_url' => $this->whenLoaded('collectionCarrier', fn () => $claim->collection_tracking_number
+                    ? $this->collectionCarrier?->buildTrackingUrl((string) $claim->collection_tracking_number)
+                    : null, null),
+                'collection_completed_at_formatted' => $this->formatDateTimeStringForUser($claim->collection_completed_at),
+            ];
+        }
+
+        if ($claim instanceof OrderExchange) {
+            $data += [
+                'additional_product_amount' => $this->roundToOrderCurrency((float) $claim->additional_product_amount, $currency),
+                'additional_product_amount_formatted' => $this->formatOrderCurrency((float) $claim->additional_product_amount, $currency),
+                'refund_product_amount' => $this->roundToOrderCurrency((float) $claim->refund_product_amount, $currency),
+                'refund_product_amount_formatted' => $this->formatOrderCurrency((float) $claim->refund_product_amount, $currency),
+                'redelivery_address_snapshot' => $claim->redelivery_address_snapshot,
+                'redelivery_carrier_id' => $claim->redelivery_carrier_id,
+                'redelivery_carrier_name' => $this->whenLoaded('redeliveryCarrier', fn () => $this->redeliveryCarrier?->getLocalizedName(), null),
+                'redelivery_tracking_number' => $claim->redelivery_tracking_number,
+                'redelivery_tracking_url' => $this->whenLoaded('redeliveryCarrier', fn () => $claim->redelivery_tracking_number
+                    ? $this->redeliveryCarrier?->buildTrackingUrl((string) $claim->redelivery_tracking_number)
+                    : null, null),
+                'redelivered_at_formatted' => $this->formatDateTimeStringForUser($claim->redelivered_at),
+            ];
+        }
+
+        if ($claim instanceof OrderRefund) {
+            $data += [
+                'refund_source_type' => $claim->refund_source_type?->value,
+                'refund_method' => $claim->refund_method?->value,
+                'refund_method_label' => $claim->refund_method?->label(),
+                'refund_amount' => $this->roundToOrderCurrency((float) $claim->refund_amount, $currency),
+                'refund_amount_formatted' => $this->formatOrderCurrency((float) $claim->refund_amount, $currency),
+                'refund_points_amount' => $this->roundToOrderCurrency((float) $claim->refund_points_amount, $currency),
+                'refund_points_amount_formatted' => $this->formatOrderCurrency((float) $claim->refund_points_amount, $currency),
+                'refund_shipping_amount' => $this->roundToOrderCurrency((float) $claim->refund_shipping_amount, $currency),
+                'refund_shipping_amount_formatted' => $this->formatOrderCurrency((float) $claim->refund_shipping_amount, $currency),
+                'refund_total' => $this->roundToOrderCurrency((float) $claim->refund_amount + (float) $claim->refund_points_amount, $currency),
+                'refund_total_formatted' => $this->formatOrderCurrency((float) $claim->refund_amount + (float) $claim->refund_points_amount, $currency),
+                'mc_refund_amount' => $this->formatStoredMultiCurrency($claim->mc_refund_amount),
+                'refund_bank_code' => $claim->refund_bank_code,
+                'refund_bank_account' => $this->refundBankAccountForViewer($claim->refund_bank_account),
+                'refund_bank_holder' => $this->refundBankHolderForViewer($claim->refund_bank_holder),
+                'refunded_at_formatted' => $this->formatDateTimeStringForUser($claim->refunded_at),
+            ];
+        }
+
+        if ($claim instanceof OrderCancel) {
+            $refund = $this->whenLoaded('refund', fn () => $this->refund, null);
+
+            $data += [
+                'cancel_type' => $claim->cancel_type?->value,
+                'cancel_type_label' => $claim->cancel_type?->label(),
+                'refund_amount' => $refund ? $this->roundToOrderCurrency((float) $refund->refund_amount, $currency) : null,
+                'refund_amount_formatted' => $refund ? $this->formatOrderCurrency((float) $refund->refund_amount, $currency) : null,
+                'refund_points_amount' => $refund ? $this->roundToOrderCurrency((float) $refund->refund_points_amount, $currency) : null,
+                'refund_status' => $refund?->refund_status?->value,
+                'refund_status_label' => $refund?->refund_status?->label(),
+                'cancelled_at_formatted' => $this->formatDateTimeStringForUser($claim->cancelled_at),
+            ];
+        }
+
+        if ($this->paymentBlock !== null) {
+            $data['payments'] = ClaimPaymentResource::collection($this->paymentBlock['payments'])->each(
+                fn ($r) => $r->withOrderCurrency($currency)->withCurrencySnapshot($snapshot)
+            );
+            $data['outstanding_amount'] = $this->roundToOrderCurrency((float) $this->paymentBlock['outstanding_amount'], $currency);
+            $data['outstanding_amount_formatted'] = $this->formatOrderCurrency((float) $this->paymentBlock['outstanding_amount'], $currency);
+            $data['pending_payment'] = $this->paymentBlock['pending_payment']
+                ? (new ClaimPaymentResource($this->paymentBlock['pending_payment']))->withOrderCurrency($currency)->withCurrencySnapshot($snapshot)
+                : null;
+            $data['payment_entry'] = $this->paymentBlock['payment_entry'];
+        }
+
+        return $data;
+    }
+
+    /**
+     * 유형별 상품 행 관계를 반환합니다. (미로드면 빈 컬렉션)
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund|OrderCancel  $claim  신청서
+     * @return iterable 상품 행
+     */
+    protected function itemsRelation(OrderExchange|OrderReturn|OrderRefund|OrderCancel $claim): iterable
+    {
+        $relation = match (true) {
+            $claim instanceof OrderExchange => 'exchangeOptions',
+            $claim instanceof OrderReturn => 'returnOptions',
+            $claim instanceof OrderRefund => 'refundOptions',
+            default => 'cancelOptions',
+        };
+
+        return $claim->relationLoaded($relation) ? $claim->{$relation} : [];
+    }
+}

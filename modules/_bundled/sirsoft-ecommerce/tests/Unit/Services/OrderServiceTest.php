@@ -14,6 +14,7 @@ use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\UserAddressRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Services\ClaimAttachmentService;
 use Modules\Sirsoft\Ecommerce\Services\OrderService;
 use Modules\Sirsoft\Ecommerce\Services\StockService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
@@ -40,7 +41,8 @@ class OrderServiceTest extends ModuleTestCase
         $this->service = new OrderService(
             $this->mockRepository,
             $mockUserAddressRepository,
-            app(StockService::class)
+            app(StockService::class),
+            app(ClaimAttachmentService::class),
         );
     }
 

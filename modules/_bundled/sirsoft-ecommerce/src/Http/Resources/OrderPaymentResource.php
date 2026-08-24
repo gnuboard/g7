@@ -6,6 +6,7 @@ use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
+use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\MasksRefundBankAccount;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 
 /**
@@ -14,6 +15,7 @@ use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 class OrderPaymentResource extends BaseApiResource
 {
     use HasMultiCurrencyPrices;
+    use MasksRefundBankAccount;
 
     /**
      * 리소스를 배열로 변환
@@ -86,11 +88,13 @@ class OrderPaymentResource extends BaseApiResource
             'deposit_due_at_formatted' => $this->formatDateTimeStringForUser($this->deposit_due_at),
 
             // 환불 계좌 — 주문 시 입력된 계좌. 관리자 취소 모달이 이 값을 프리필하고,
-            // PG 환불(refundReceiveAccount 구성)이 같은 컬럼을 읽는다.
+            // PG 환불(refundReceiveAccount 구성)이 같은 컬럼을 읽으므로 운영자에게는 원문을 준다.
+            // 구매자 응답(회원 주문상세·비회원 주문상세)에는 마스킹된 값만 나간다 — 클레임 응답이
+            // 가리는 것과 같은 규칙이어야 한 쪽이 다른 쪽의 우회로가 되지 않는다.
             'refund_bank_code' => $this->refund_bank_code,
             'refund_bank_name' => $this->refund_bank_name,
-            'refund_bank_account' => $this->refund_bank_account,
-            'refund_bank_holder' => $this->refund_bank_holder,
+            'refund_bank_account' => $this->refundBankAccountForViewer($this->refund_bank_account),
+            'refund_bank_holder' => $this->refundBankHolderForViewer($this->refund_bank_holder),
 
             // 현금영수증 (cash_receipt_identifier 는 마스킹 값 — 원본/암호문은 노출하지 않는다)
             'is_cash_receipt_requested' => (bool) $this->is_cash_receipt_requested,

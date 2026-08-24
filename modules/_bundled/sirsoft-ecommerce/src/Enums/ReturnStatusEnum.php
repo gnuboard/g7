@@ -6,8 +6,8 @@ namespace Modules\Sirsoft\Ecommerce\Enums;
  * 반품 클레임 상태 Enum
  *
  * 반품 신청서(`ecommerce_order_returns.return_status`)와 신청 상품
- * (`ecommerce_order_return_options.option_status`)이 공유하는 세밀 상태 10종이다.
- * 교환 상태 13종에서 재발송 3종(redelivery_ready / redelivering / redelivered)을
+ * (`ecommerce_order_return_options.option_status`)이 공유하는 세밀 상태 11종이다.
+ * 교환 상태 14종에서 재발송 3종(redelivery_ready / redelivering / redelivered)을
  * 제외한 형태이며, 회수 도착(COLLECTED)에서 곧바로 완료(COMPLETED)로 이어진다.
  *
  * 라벨은 유형 접두를 포함한 정확 명칭("반품신청" 등)이며, 유저·관리자 화면이
@@ -17,6 +17,7 @@ enum ReturnStatusEnum: string
 {
     case REQUESTED = 'requested';                  // 반품신청
     case PAYMENT_PENDING = 'payment_pending';      // 반품결제대기
+    case PAID = 'paid';                            // 반품결제완료
     case APPROVED = 'approved';                    // 반품승인
     case ON_HOLD = 'on_hold';                      // 반품보류
     case REJECTED = 'rejected';                    // 반품반려
@@ -66,6 +67,7 @@ enum ReturnStatusEnum: string
         return match ($this) {
             self::REQUESTED => 'secondary',
             self::PAYMENT_PENDING => 'warning',
+            self::PAID => 'success',
             self::APPROVED => 'info',
             self::ON_HOLD => 'dark',
             self::REJECTED => 'danger',
@@ -102,7 +104,7 @@ enum ReturnStatusEnum: string
      */
     public static function withdrawableStatuses(): array
     {
-        return [self::REQUESTED, self::PAYMENT_PENDING, self::ON_HOLD];
+        return [self::REQUESTED, self::PAYMENT_PENDING, self::PAID, self::ON_HOLD];
     }
 
     /**
@@ -130,7 +132,8 @@ enum ReturnStatusEnum: string
                 self::REJECTED,
                 self::WITHDRAWN,
             ],
-            self::PAYMENT_PENDING => [self::APPROVED, self::REJECTED, self::WITHDRAWN],
+            self::PAYMENT_PENDING => [self::PAID, self::APPROVED, self::REJECTED, self::WITHDRAWN],
+            self::PAID => [self::APPROVED, self::ON_HOLD, self::REJECTED, self::WITHDRAWN],
             self::ON_HOLD => [self::APPROVED, self::REJECTED, self::WITHDRAWN],
             self::APPROVED => [self::COLLECTION_READY],
             self::COLLECTION_READY => [self::COLLECTING],

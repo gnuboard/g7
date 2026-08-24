@@ -7,6 +7,7 @@ use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
 use Modules\Sirsoft\Ecommerce\Models\OrderCashReceipt;
+use Modules\Sirsoft\Ecommerce\Services\ClaimPaymentService;
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 use Modules\Sirsoft\Ecommerce\Support\ShippingPolicySnapshot;
 
@@ -30,6 +31,12 @@ class OrderResource extends BaseApiResource
         // 주문 시점 통화 스냅샷 — 소수 자릿수를 현재 설정이 아닌 주문 시점 값으로 고정 (공개 #91 후속).
         $currencySnapshot = $this->resource->currency_snapshot ?? null;
         $this->withCurrencySnapshot($currencySnapshot);
+
+        // 클레임 추가결제 실수납 합계 — 결제 완료 건의 청구액에서 부분 환급을 뺀 값. 주문 1건당 집계 1회.
+        // 산정은 ClaimPaymentService 의 게터를 경유한다 — 같은 값을 리소스가 저장소에서 따로 집계하면
+        // 뒤에 이 합계의 정의가 바뀔 때(예: 환급 반영 범위) 두 곳이 갈린다. 단건 상세 전용이라
+        // 목록에서 행마다 해석되지 않는다(목록은 OrderListResource).
+        $claimPaid = app(ClaimPaymentService::class)->paidTotalForOrder($this->resource);
 
         // 결제 통화(order_currency) — 유저가 선택·결제한 통화. base 통화와 다를 때 화면에 함께 표기한다.
         $paymentCurrency = $this->currency
@@ -84,6 +91,12 @@ class OrderResource extends BaseApiResource
             'total_refunded_amount_formatted' => $this->formatOrderCurrency($this->total_refunded_amount, $orderCurrency),
             'total_refunded_points_amount' => $this->roundToOrderCurrency($this->total_refunded_points_amount, $orderCurrency),
             'total_refunded_points_amount_formatted' => $this->formatOrderCurrency($this->total_refunded_points_amount, $orderCurrency),
+
+            // 클레임 추가결제 합계 (교환·반품 청구액의 실수납 합계 — 부분 환급 차감, 0원이면 화면 미표시)
+            // 주문 총 배송비와 분리해 표기한다(§2 해석 확정). ClaimPaymentService::paidTotalForOrder 가 SSoT.
+            'claim_additional_paid_total' => $this->roundToOrderCurrency($claimPaid['amount'], $orderCurrency),
+            'claim_additional_paid_total_formatted' => $this->formatOrderCurrency($claimPaid['amount'], $orderCurrency),
+            'mc_claim_additional_paid_total' => $this->formatStoredMultiCurrency($claimPaid['mc'] ?: null),
 
             // 할인 상세
             'total_product_coupon_discount_amount' => $this->roundToOrderCurrency($this->total_product_coupon_discount_amount, $orderCurrency),
