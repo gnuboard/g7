@@ -287,6 +287,48 @@ foreach ($config['categories'] as $cat) { ... }
 - `permissions.json` → `{scope}.{target}.permissions.translations` 필터 (3-레벨 트리: module/categories/permissions)
 - 기타 → `seed.{target}.{entity}.translations` 필터 (단순 entity 시드)
 
+### 복원 경로의 언어팩 병합
+
+[기본값 복원](알림 템플릿·본인인증 메시지)은 위 시딩 필터가 아니라 자체 기본값 필터
+(`core.notification.filter_default_definitions` / `core.identity.filter_default_message_definitions`)를
+탄다. 복원 기본값에는 **활성 언어팩 seed 로케일이 반드시 병합**되어야 한다 — 병합하지 않으면
+복원이 팩이 주입해 둔 로케일(ja 등)을 config 의 ko/en 만으로 대체해 영구 소실시키며,
+오류도 로그도 남지 않는다. 코어 서비스(NotificationTemplateService·IdentityMessageTemplateService)가
+필터 적용 후 시딩과 같은 주입기(SSoT)로 병합하며, 정적 검사(테스트)가 이 계약을 고정한다.
+
+시딩 필터의 페이로드는 **발화 주체의 원형 키를 보존**해야 한다 — 코어 알림 시더는 config
+원형(연관 배열, 키가 곧 type), 본인인증은 복합 키(`mail.purpose.signup` 등)가 매칭 키다.
+키를 버리고 리스트로 만들면 주입기가 전 항목을 스킵해 팩 로케일이 오류 없이 주입되지 않는다.
+알림 주입기는 두 형태(문자열 키 우선, 없으면 type 필드)를 수용한다.
+
+### 사용자 수정 보존 판정과 시딩 컨텍스트
+
+언어팩 병합·제거의 사용자 수정 보존 판정은 운영자 수정의 실제 기록 형식인 **dot-path 항목**
+(`user_overrides` 의 `"{컬럼}.{로케일}"`)을 기준으로 한다. 컬럼 전체 항목(`"subject"`)은 시더
+재실행의 컬럼 보호 선언이며 팩 병합을 막지 않는다 — 막으면 팩 업데이트가 자기 로케일 번역을
+갱신하지 못한다.
+
+이를 위해 두 가지가 함께 지켜져야 한다:
+
+- 다국어 JSON 컬럼을 추적하는 모델은 `translatableTrackableFields` 를 선언한다 — 미선언 시
+  운영자 수정이 컬럼 전체 항목으로 기록되어 로케일 단위 보존이 불가능해진다.
+- 언어팩 주입·제거처럼 시스템이 수행하는 저장은 시딩 컨텍스트(`user_overrides.seeding` 바인딩)
+  안에서 실행한다 — 바인딩 없이 저장하면 주입 자체가 "사용자 수정"으로 오인 기록되어 이후
+  시더 재실행의 컬럼 갱신이 영구히 얼어붙는다.
+
+### 실패한 업데이트의 상태 복원
+
+`language-pack:update` 가 설치 트랜잭션 이후(활성화 단계)에 실패하면 팩 상태를 이전 상태로
+복원한다. 복원하지 않으면 active 였던 팩이 installed 로 방치되어 해당 로케일의 백엔드 번역이
+안내 없이 기본 로케일로 폴백된다.
+
+### 같은 프로세스 활성화와 필터 인스턴스
+
+시더 번역 필터 클로저는 boot 시점의 injector→registry **인스턴스**를 캡처한다. 활성 팩 목록
+캐시를 갱신할 때는 싱글톤을 유지한 채 `LanguagePackRegistry::invalidate()` 로 내부 캐시만
+비운다 — `forgetInstance` 로 바인딩을 교체하면 캡처된 구 인스턴스의 stale 캐시가 남아, 같은
+프로세스에서 활성화된 신규 팩이 시더 필터에 보이지 않는다(오류 없이 해당 로케일만 미주입).
+
 ### IDV 도메인 lang pack 커버리지
 
 `config/core.php` 의 본인인증 SSoT 4개 블록 중 lang pack seed 대상은 1개:

@@ -107,6 +107,7 @@ return [
             'message_type' => 'メッセージタイプ',
             'emphasize_type' => '強調タイプ',
             'template_content' => '本文',
+            'comment' => '審査担当者への伝達事項',
             'preview_message' => 'プレビュー文言',
             'category_code' => 'カテゴリ',
             'security_flag' => 'セキュリティテンプレート',

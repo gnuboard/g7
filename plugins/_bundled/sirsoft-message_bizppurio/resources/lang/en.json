@@ -105,7 +105,7 @@
     }
   },
   "template": {
-    "tab_guide": "Compose an alimtalk template per notification and request inspection. Once Kakao approves it, alimtalk is sent automatically. SMS fallback and SMS-only delivery are also configured here.",
+    "tab_guide": "Open [Edit] on each notification to write the alimtalk template and the SMS body together and request review. Alimtalk is sent automatically after Kakao approval; fallback SMS and SMS-only sending are configured in the same window.",
     "status": {
       "unwritten": "Not composed",
       "draft": "Draft",
@@ -137,7 +137,11 @@
       "sms_only": "SMS only",
       "sms_body_prefix": "Body:",
       "sms_body_missing": "No SMS body",
-      "btn_edit_sms": "Edit SMS body"
+      "btn_edit_sms": "Edit SMS body",
+      "sms_label": "SMS",
+      "on": "On",
+      "off": "Off",
+      "alimtalk_disabled": "Sending off"
     },
     "form": {
       "modal_title": "Alimtalk Template — {name}",
@@ -199,6 +203,9 @@
       "btn_remove_quick_reply": "Remove quick reply",
       "btn_save": "Save",
       "btn_save_request": "Save & request inspection",
+      "request_comment": "Note to reviewer",
+      "request_comment_placeholder": "e.g. #{name}=Jane Doe, #{order_number}=20260823-0001",
+      "request_comment_hint": "Sent to the Kakao reviewer together with the inspection request (optional, up to 500 characters). Kakao review guidelines ask for an example value per body variable, so listing them here reduces rejections. It is not stored — it is only sent when you request inspection.",
       "saved_toast": "Notification template saved.",
       "requested_toast": "Inspection requested. Alimtalk delivery starts once approved."
     },
@@ -217,6 +224,18 @@
     "rejection": {
       "modal_title": "Rejection Reasons — {name}",
       "btn_close": "Close"
+    },
+    "approval": {
+      "approved": "Approved",
+      "not_approved": "Not approved"
+    },
+    "section": {
+      "alimtalk_title": "Alimtalk template",
+      "sms_title": "SMS",
+      "alimtalk_enabled": "Send alimtalk",
+      "locked_hint": "Templates under review or already approved cannot be edited. Press [Cancel request] or [Edit (cancel approval)] first.",
+      "saved_toast": "Notification template saved.",
+      "loading": "Loading template…"
     }
   },
   "manage": {

@@ -1858,7 +1858,9 @@
       "types": {
         "welcome": "Welcome",
         "reset_password": "Password Reset",
-        "password_changed": "Password Changed"
+        "password_changed": "Password Changed",
+        "sitemap_regenerated": "Sitemap Regeneration Complete",
+        "sitemap_regenerate_failed": "Sitemap Regeneration Failed"
       },
       "channels_label": "Channels:",
       "edit_modal": {

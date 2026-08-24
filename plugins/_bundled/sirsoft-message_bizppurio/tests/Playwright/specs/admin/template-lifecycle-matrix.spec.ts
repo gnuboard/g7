@@ -1,14 +1,18 @@
 /**
  * E2E 정밀 점검 매트릭스: 비즈뿌리오 알림 템플릿 라이프사이클 (#597 §6.3)
  *
- * @scenario bizppurio_tab_integration_e2e, bizppurio_compose_modal_e2e, bizppurio_manage_round_trip_e2e
+ * @scenario bizppurio_tab_integration_e2e, bizppurio_edit_modal_e2e, bizppurio_compose_modal_e2e, bizppurio_manage_round_trip_e2e
  * @effects bizppurio_tab_replaces_sms_and_alimtalk_tabs, tab_visible_when_any_of_tab_channels_active,
- *          row_footer_shows_status_badge_and_lifecycle_actions, compose_modal_switches_conditional_fields_by_type,
+ *          row_footer_shows_status_summary_only, approval_badge_two_tier, edit_modal_hosts_alimtalk_and_sms_sections,
+ *          core_modal_hides_editor_for_hidden_template_editor_channel, unified_save_chain_alimtalk_then_core_recipients,
+ *          compose_modal_switches_conditional_fields_by_type,
  *          manage_screen_lists_db_rows_with_merge_query_round_trip, sms_modal_edits_body_per_locale_tab,
  *          upload_in_progress_locks_save_buttons_not_cancel, manage_row_actions_match_row_footer_visibility,
- *          sms_body_presence_and_preview_resolved_by_server
+ *          sms_body_presence_and_preview_resolved_by_server, inspection_request_carries_reviewer_comment
  *
  * 계획서 §6.3 이 요구한 7대 축(T1~T7) + 선택 축(T8~T10) + 회귀 축(R1~R6)을 브라우저에서 실측한다.
+ * PO 결정(2026-08-23, 계획서 §18)으로 알림톡 작성·SMS 본문 편집은 행 하단 버튼/별도 모달이 아니라
+ * 코어 [편집] 모달 안의 섹션으로 통합됐다 — 모달 진입은 언제나 행의 [편집] 이고, 저장은 하단 [저장] 하나다.
  * 이 매트릭스는 라운드 1~4 동안 "수행 증거 없음" 으로 남아 있었고, 그 근본 원인은 플러그인
  * package.json 에 실행 진입점(test:e2e)이 없었다는 것이다 — 라운드 5 에서 진입점을 만들고
  * 매트릭스를 spec 으로 고정해 다음 라운드부터는 명령 하나로 재실측된다.
@@ -71,7 +75,7 @@ function dialog(page: Page) {
     return page.getByRole('dialog');
 }
 
-/** 모달 안의 저장 버튼(신규/수정 공통 — if 로 하나만 렌더된다) */
+/** 편집 모달 푸터의 통합 [저장](코어 [저장]은 hidden_template_editor 게이트로 숨는다 — 하나만 렌더된다) */
 function modalSave(page: Page) {
     return dialog(page).getByRole('button', { name: '저장', exact: true });
 }
@@ -94,12 +98,18 @@ async function seedTemplate(page: Page, wanted = 'welcome'): Promise<string> {
             Accept: 'application/json',
             Authorization: `Bearer ${token}`,
         };
+        // 카테고리 코드는 kapi 실조회 목록에 있는 값이어야 한다 — 편집 모달의 카테고리 셀렉트는
+        // 목록에 없는 값을 빈 값으로 정규화하므로(실측: 더미 코드 '001001' 이 실자격증명 환경에서
+        // 비워져 저장이 422 "카테고리 필수"), 목록이 있으면 첫 코드를, 없으면(자격증명 미설정) 더미를 쓴다.
+        const catRes = await fetch('/api/plugins/sirsoft-message_bizppurio/admin/alimtalk-templates/categories', { headers });
+        const catJson = catRes.ok ? await catRes.json() : null;
+        const firstCategory = catJson?.data?.categories?.[0]?.code;
         const content = {
             templateName: '매트릭스 측정용',
             templateMessageType: 'BA',
             templateEmphasizeType: 'NONE',
             templateContent: '초기 본문 #{site_name}',
-            categoryCode: '001001',
+            categoryCode: typeof firstCategory === 'string' && firstCategory ? firstCategory : '001001',
         };
 
         const listRes = await fetch('/api/plugins/sirsoft-message_bizppurio/admin/templates?per_page=50', { headers });
@@ -109,6 +119,19 @@ async function seedTemplate(page: Page, wanted = 'welcome'): Promise<string> {
         // (§13.1) 다른 행을 만들어 테스트 간 간섭을 없앤다.
         const existing = rows.find((r: { notification_type?: string; status?: string }) =>
             r.notification_type === wantedType && r.status === 'draft');
+
+        // 유효 자격증명 환경에서는 10c 의 [저장 후 검수 신청]이 실제로 성립해 행이 requested 로 남는다 —
+        // 다음 실행이 같은 행을 다시 쓰려면 신청을 취소해 draft 로 되돌린다(kapi cancel_request 실호출).
+        const requested = rows.find((r: { notification_type?: string; status?: string }) =>
+            r.notification_type === wantedType && r.status === 'requested');
+        if (!existing && requested) {
+            await fetch(`/api/plugins/sirsoft-message_bizppurio/admin/templates/${requested.id}/cancel-request`, { method: 'POST', headers });
+            await fetch(`/api/plugins/sirsoft-message_bizppurio/admin/templates/${requested.id}`, {
+                method: 'PUT', headers, body: JSON.stringify({ content }),
+            });
+
+            return requested.notification_type as string;
+        }
 
         if (existing) {
             await fetch(`/api/plugins/sirsoft-message_bizppurio/admin/templates/${existing.id}`, {
@@ -128,22 +151,35 @@ async function seedTemplate(page: Page, wanted = 'welcome'): Promise<string> {
 }
 
 /**
- * 시드된 행의 수정 모달을 연다.
+ * 알림 행의 코어 [편집] 버튼(그 행 카드 안의 것)을 찾는다.
+ *
+ * 행 카드는 유형 코드(welcome 등)를 font-mono 텍스트로 그린다 — 그 텍스트에서 가장 가까운
+ * "[편집] 버튼을 품은 조상" 이 행 카드다. 목록 순서 의존(first())을 없애 테스트 간 간섭을 막는다.
+ */
+function rowEditButton(page: Page, type: string) {
+    return page.getByText(type, { exact: true })
+        .locator('xpath=ancestor::*[.//button[normalize-space()="편집"]][1]')
+        .getByRole('button', { name: '편집', exact: true })
+        .first();
+}
+
+/**
+ * 알림 행의 코어 [편집] 모달을 열고 플러그인 섹션 루트(알림톡 템플릿 + 문자 SMS)를 돌려준다.
  *
  * @param page  페이지
+ * @param type  알림 유형 코드(없으면 첫 행)
  */
-async function openEditModal(page: Page) {
+async function openEditModal(page: Page, type?: string) {
     await page.goto(SETTINGS_URL);
     await page.waitForLoadState('networkidle', { timeout: 30_000 });
 
-    // 행 컨테이너 id 는 모든 행이 공유하므로 유형으로 특정할 수 없다. 목록 순서는 재조회
-    // 후에도 동일하므로, 같은 테스트 안에서 first() 는 항상 같은 행을 연다 — 저장→새로고침→
-    // 재오픈 왕복 비교에는 그것으로 충분하다. (테스트 간 간섭은 알림 유형 분리로 막는다.)
-    const edit = page.getByRole('button', { name: '수정', exact: true }).first();
+    const edit = type ? rowEditButton(page, type) : page.getByRole('button', { name: '편집', exact: true }).first();
     await expect(edit).toBeVisible({ timeout: 20_000 });
     await edit.click();
-    const modal = dialog(page).locator('[id^="bizppurio_tpl_modal_body"]').first();
+    const modal = dialog(page).locator('#bizppurio_tpl_sections');
     await expect(modal).toBeVisible({ timeout: 15_000 });
+    // 작성 폼은 draft/rejected 에서만 열린다 — 시드 행은 draft 이므로 본문 textarea 가 보여야 한다
+    await expect(modal.locator('textarea[name="bz_template_content"]')).toBeVisible({ timeout: 15_000 });
 
     return modal;
 }
@@ -195,6 +231,13 @@ test.describe('T1 진입/표시', () => {
         const rowCount = await rows.count();
         evidence('1b 행 하단 블록 수', rowCount);
         expect(rowCount).toBeGreaterThan(0);
+
+        // 행 하단은 상태 요약만 — 버튼 0 + 승인 2단 배지(승인됨 | 미승인 (세부))
+        const footerButtons = await rows.locator('button').count();
+        const badges = (await rows.allInnerTexts()).map((t) => (t.match(/승인됨|미승인\s*\([^)]+\)/) ?? [''])[0]);
+        evidence('1b 행 하단 버튼 수 / 배지', { footerButtons, badges });
+        expect(footerButtons).toBe(0);
+        expect(badges.every((b) => b.length > 0)).toBe(true);
 
         const content = await page.locator('#notif_channel_content').innerText();
         const rawKeys = (content.match(/\$t:|sirsoft-message_bizppurio\./g) ?? []).length;
@@ -255,9 +298,23 @@ test.describe('T2·T3 입력', () => {
         await authenticatePage(page, messagingManageToken);
         await openBizppurioTab(page);
 
-        await page.getByRole('button', { name: '알림톡 템플릿 작성' }).first().click();
-        const modal = dialog(page).locator('[id^="bizppurio_tpl_modal_body"]').first();
-        await expect(modal).toBeVisible({ timeout: 15_000 });
+        await seedTemplate(page, 'welcome');
+        const modal = await openEditModal(page, 'welcome');
+
+        // 2c: 코어 제목/본문 입력은 숨고(hidden_template_editor) 플러그인 섹션 2종이 그 자리를 채운다
+        const coreHidden = {
+            subjectInputs: await dialog(page).locator('#template_subject_input').count(),
+            bodyInputs: await dialog(page).locator('#template_body_input').count(),
+            previewButtons: await dialog(page).getByRole('button', { name: '미리보기', exact: true }).count(),
+            alimtalkSection: await dialog(page).locator('#bizppurio_tpl_alimtalk_section').count(),
+            smsSection: await dialog(page).locator('#bizppurio_tpl_sms_section').count(),
+            saveButtons: await dialog(page).getByRole('button', { name: '저장', exact: true }).count(),
+        };
+        evidence('2c 코어 입력 숨김 / 섹션 2종 / 저장 버튼 수', coreHidden);
+        expect(coreHidden.subjectInputs + coreHidden.bodyInputs + coreHidden.previewButtons).toBe(0);
+        expect(coreHidden.alimtalkSection).toBe(1);
+        expect(coreHidden.smsSection).toBe(1);
+        expect(coreHidden.saveButtons, '저장은 하나여야 한다(코어 저장은 숨김)').toBe(1);
 
         const name = await modal.locator('input[name="bz_template_name"]').inputValue();
         evidence('2a 템플릿명 프리필', name);
@@ -303,9 +360,8 @@ test.describe('T2·T3 입력', () => {
     test('3a 버튼 3회 추가 + 1회 삭제 → 카운트 정합, 5개 도달 시 추가 잠김', async ({ page, messagingManageToken }) => {
         await authenticatePage(page, messagingManageToken);
         await openBizppurioTab(page);
-        await page.getByRole('button', { name: '알림톡 템플릿 작성' }).first().click();
-        const modal = dialog(page).locator('[id^="bizppurio_tpl_modal_body"]').first();
-        await expect(modal).toBeVisible({ timeout: 15_000 });
+        await seedTemplate(page, 'welcome');
+        const modal = await openEditModal(page, 'welcome');
 
         const addBtn = modal.getByRole('button', { name: '버튼 추가' });
         const rowCount = () => modal.getByPlaceholder('버튼명', { exact: false }).count();
@@ -360,7 +416,7 @@ test.describe('T4 제출/응답 + T10 경계', () => {
         const results: Record<string, number> = {};
         const typed: Record<string, number> = {};
         for (const len of [999, 1000, 1001]) {
-            const modal = await openEditModal(page);
+            const modal = await openEditModal(page, 'reset_password');
 
             const ta = modal.locator('textarea[name="bz_template_content"]');
             await ta.fill('가'.repeat(len));
@@ -387,10 +443,13 @@ test.describe('T4 제출/응답 + T10 경계', () => {
     });
 
     test('10c [저장] 더블클릭 시 요청이 1회만 나간다', async ({ page, messagingManageToken }) => {
+        // 유효 자격증명 환경에서는 kapi 실호출(add·request·cancel_request·delete) 4회 + 고정 대기 7초가
+        // 한 테스트에 들어가므로 기본 30초를 넘긴다(실측 31.3초). 판정 축이 시간은 아니다.
+        test.setTimeout(90_000);
         await authenticatePage(page, messagingManageToken);
         await openBizppurioTab(page);
         await seedTemplate(page, 'password_changed');
-        const modal = await openEditModal(page);
+        const modal = await openEditModal(page, 'password_changed');
         await modal.locator('textarea[name="bz_template_content"]').fill('중복 제출 테스트 #{site_name}');
 
         let saves = 0;
@@ -418,13 +477,40 @@ test.describe('T4 제출/응답 + T10 경계', () => {
         //    판정 축은 "요청 수" 가 아니라 **중복 신청 0** 이다. 클라이언트 if 가드는
         //    setState 반영 전에 두 번째 click 이 디스패치되면 뚫린다(실측). 실제 방어는
         //    서버의 원자 선점(claimForInspection)이며, 두 번째 신청은 422 로 거부된다.
-        const modal2 = await openEditModal(page);
+        const modal2 = await openEditModal(page, 'password_changed');
         await modal2.locator('textarea[name="bz_template_content"]').fill('중복 신청 테스트 #{site_name}');
+        // 검수자 전달 의견(PO 결정 2026-08-23 §18.7) — 신청 요청 본문의 comment 로 실려야 한다.
+        const REVIEW_COMMENT = '변수 예시: #{site_name}=G7 데모 사이트';
+        await modal2.locator('textarea[name="bz_request_comment"]').fill(REVIEW_COMMENT);
+        const requestBodies: string[] = [];
+        page.on('request', (r) => {
+            if (r.method() === 'POST' && /\/admin\/templates\/\d+\/request$/.test(r.url())) requestBodies.push(r.postData() ?? '');
+        });
         await dialog(page).getByRole('button', { name: '저장 후 검수 신청', exact: true })
             .first().click({ clickCount: 2, delay: 30 });
         await page.waitForTimeout(4_000);
         evidence('10c 저장후신청 더블클릭', { 신청요청수: requests, 신청성공수: okRequests });
         expect(okRequests, '중복 검수 신청이 성립하면 카카오측 중복 등록이 된다').toBeLessThanOrEqual(1);
+        evidence('10c 신청 comment 전달', { 본문수: requestBodies.length, comment일치: requestBodies.filter((b) => b.includes(REVIEW_COMMENT)).length });
+        expect(requestBodies.length, '검수 신청 요청이 관측되지 않았다').toBeGreaterThan(0);
+        for (const body of requestBodies) expect(JSON.parse(body).comment, '신청 본문의 comment').toBe(REVIEW_COMMENT);
+
+        // 정리: 유효 자격증명 환경에서는 신청이 실제로 성립한다 — 신청 취소 후 행을 지워
+        // 카카오측에 측정용 템플릿이 남지 않게 한다(자격증명 미설정 환경에서는 둘 다 no-op 에 가깝다).
+        const cleanup = await page.evaluate(async () => {
+            const headers = { Accept: 'application/json', Authorization: `Bearer ${localStorage.getItem('auth_token') ?? ''}` };
+            const list = await (await fetch('/api/plugins/sirsoft-message_bizppurio/admin/templates?per_page=50', { headers })).json();
+            const row = (list?.data?.templates ?? []).find((r: { notification_type?: string }) => r.notification_type === 'password_changed');
+            if (!row) return { row: null };
+            let cancel: number | null = null;
+            if (row.status === 'requested') {
+                cancel = (await fetch(`/api/plugins/sirsoft-message_bizppurio/admin/templates/${row.id}/cancel-request`, { method: 'POST', headers })).status;
+            }
+            const del = (await fetch(`/api/plugins/sirsoft-message_bizppurio/admin/templates/${row.id}`, { method: 'DELETE', headers })).status;
+
+            return { row: row.id, status: row.status, cancel, del };
+        });
+        evidence('10c 정리(신청 취소 + 삭제)', cleanup);
     });
 });
 
@@ -441,7 +527,7 @@ test.describe('T6·T7 영속성·컨텍스트 격리', () => {
             page.evaluate(() => ((window as any).G7Core?.state?.get?.()?.bz_tpl_modal?.id ?? (window as any).G7Core?.state?.getGlobal?.()?.bz_tpl_modal?.id) ?? null);
 
         const body = `영속성 확인 ${'가'.repeat(5)} #{site_name} !@#$%^&*() 🎉`;
-        let modal = await openEditModal(page);
+        let modal = await openEditModal(page, 'welcome');
         const targetId = await openedId();
         evidence('6a 측정 대상 행 id', targetId);
         expect(targetId, '수정 모달이 연 행의 id 를 읽지 못했다').not.toBeNull();
@@ -450,7 +536,7 @@ test.describe('T6·T7 영속성·컨텍스트 격리', () => {
         const beforeSave = await page.evaluate(() => {
             const g = (window as any).G7Core?.state?.get?.() ?? {};
             const m = g.bz_tpl_modal ?? {};
-            return { id: m.id ?? null, len: (m.content?.templateContent ?? '').length, modals: document.querySelectorAll('[id^="bizppurio_tpl_modal_body"]').length };
+            return { id: m.id ?? null, len: (m.content?.templateContent ?? '').length, modals: document.querySelectorAll('#bizppurio_tpl_sections').length };
         });
         evidence('6a 저장 직전 전역 상태', beforeSave);
 
@@ -474,7 +560,7 @@ test.describe('T6·T7 영속성·컨텍스트 격리', () => {
         expect(stored, '이모지·특수문자·#{var} 가 섞인 본문이 그대로 저장되어야 한다').toBe(body);
 
         // ② 새로고침 후 화면이 그 값을 복원하는가 (영속성 UI 축)
-        modal = await openEditModal(page);
+        modal = await openEditModal(page, 'welcome');
         const reopenedId = await openedId();
         const restored = await modal.locator('textarea[name="bz_template_content"]').inputValue();
         const expected = reopenedId === targetId
@@ -509,15 +595,16 @@ test.describe('T6·T7 영속성·컨텍스트 격리', () => {
         evidence('7a 탭 왕복 전/후 쿼리', { before, after });
         expect(after).toContain('channel=alimtalk');
 
-        // 7b: 모달에 값을 넣고 저장 없이 닫은 뒤 다시 열면 이전 입력이 남지 않는다
-        const modal = dialog(page).locator('[id^="bizppurio_tpl_modal_body"]').first();
-        await page.getByRole('button', { name: '알림톡 템플릿 작성' }).first().click();
+        // 7b: 모달에 값을 넣고 저장 없이 닫은 뒤 다시 열면 이전 입력이 남지 않는다(마운트 시 재시딩)
+        await seedTemplate(page, 'welcome');
+        const modal = dialog(page).locator('#bizppurio_tpl_sections');
+        await rowEditButton(page, 'welcome').click();
         await expect(modal).toBeVisible({ timeout: 15_000 });
         await modal.locator('textarea[name="bz_template_content"]').fill('이월되면 안 되는 값');
         await dialog(page).getByRole('button', { name: '취소', exact: true }).first().click();
         await expect(modal).toBeHidden({ timeout: 10_000 });
 
-        await page.getByRole('button', { name: '알림톡 템플릿 작성' }).first().click();
+        await rowEditButton(page, 'welcome').click();
         await expect(modal).toBeVisible({ timeout: 15_000 });
         const reopened = await modal.locator('textarea[name="bz_template_content"]').inputValue();
         evidence('7b 재오픈 시 이전 값 잔존', reopened.includes('이월되면 안 되는 값'));
@@ -558,6 +645,26 @@ test.describe('T8 3면 패리티·다크·로케일', () => {
             // 면이 존재하면 통합 탭 어휘가 있어야 하고, 개별 채널 탭은 없어야 한다.
             if (visible && tabs.length > 0) {
                 expect(tabs.join('|')).not.toContain('알림톡');
+            }
+
+            // 8c: 그 면의 코어 [편집] 모달에도 섹션 2종이 주입되고 코어 본문 입력은 숨는다(3면 공유 1본)
+            if (rows > 0) {
+                await page.getByRole('button', { name: '편집', exact: true }).first().click();
+                const sections = dialog(page).locator('#bizppurio_tpl_sections');
+                await expect(sections).toBeVisible({ timeout: 15_000 });
+                const prefix = url.includes('/boards/') ? 'board_' : 'ecommerce_';
+                const measured = {
+                    alimtalk: await dialog(page).locator('#bizppurio_tpl_alimtalk_section').count(),
+                    sms: await dialog(page).locator('#bizppurio_tpl_sms_section').count(),
+                    coreBody: await dialog(page).locator(`#${prefix}template_body_input`).count(),
+                    saveButtons: await dialog(page).getByRole('button', { name: '저장', exact: true }).count(),
+                };
+                evidence(`8c ${face} 편집 모달 섹션`, measured);
+                expect(measured.alimtalk).toBe(1);
+                expect(measured.sms).toBe(1);
+                expect(measured.coreBody).toBe(0);
+                expect(measured.saveButtons).toBe(1);
+                await dialog(page).getByRole('button', { name: '취소', exact: true }).first().click();
             }
             expect(errors).toHaveLength(0);
         });
@@ -616,9 +723,8 @@ test.describe('라운드5 신규 축 — 업로드 가드·관리 라벨·SMS �
     test('U1 업로드 진행 중 저장 계열 버튼이 잠기고 취소는 열려 있다', async ({ page, messagingManageToken }) => {
         await authenticatePage(page, messagingManageToken);
         await openBizppurioTab(page);
-        await page.getByRole('button', { name: '알림톡 템플릿 작성' }).first().click();
-        const modal = dialog(page).locator('[id^="bizppurio_tpl_modal_body"]').first();
-        await expect(modal).toBeVisible({ timeout: 15_000 });
+        await seedTemplate(page, 'welcome');
+        const modal = await openEditModal(page, 'welcome');
         await modal.getByRole('button', { name: '이미지', exact: true }).click();
 
         // 업로드 응답을 붙잡아 in-flight 상태를 만든다(네트워크 지연 재현).

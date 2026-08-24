@@ -16,14 +16,20 @@ use App\Contracts\Extension\HookListenerInterface;
  * (NotificationSyncHelper::syncTemplate), cleanupStaleTemplates 의 definedChannels 에 우리
  * 채널이 포함되므로 재시딩·업데이트에도 삭제되지 않는다. 코어·모듈 파일은 수정하지 않는다.
  *
- * 구독 훅(3영역, 정의 배열을 넘기는 필터):
+ * 구독 훅(정의 배열을 넘기는 필터 4종):
  * - seed.notifications.translations                     (코어 — config/core.php)
  * - seed.sirsoft-board.notifications.translations       (게시판)
  * - seed.sirsoft-ecommerce.notifications.translations   (이커머스)
+ * - core.notification.filter_default_definitions        (코어 [기본값 복원] 경로 —
+ *   NotificationTemplateService::getDefaultTemplateData). 시딩 3훅과 같은 증강을 적용해야
+ *   우리가 시드한 sms·alimtalk 행의 [기본값 복원]이 "기본 템플릿 데이터를 찾을 수 없습니다" 로
+ *   끝나지 않는다 — 시드 출처와 복원 출처가 같은 함수여야 한다(#597 §18.7 C2 실측 결함).
+ *   게시판·이커머스가 자기 정의를 이 필터에 보태는 priority 20 뒤(50)에 돌아야 모듈 정의도
+ *   증강된다.
  *
  * 배열 형태 차이:
  * - 코어: 연관 배열 `['welcome' => [...], ...]` (키가 type)
- * - 모듈: 순차 배열 `[['type' => 'order_confirmed', ...], ...]`
+ * - 모듈·기본값 복원 경로: 순차 배열 `[['type' => 'order_confirmed', ...], ...]`
  * 둘 다 각 정의 값에 대해 동일하게 채널을 증강하고 키/순서는 보존한다.
  *
  * 증강 대상 = 회원(사용자) 대상 알림(결정 E). 관리자 전용(수신자가 role:admin 뿐인) 알림은
@@ -54,6 +60,7 @@ class SeedChannelTemplatesListener implements HookListenerInterface
             'seed.notifications.translations',
             'seed.sirsoft-board.notifications.translations',
             'seed.sirsoft-ecommerce.notifications.translations',
+            'core.notification.filter_default_definitions',
         ] as $hook) {
             $hooks[$hook] = [
                 'method' => 'augment',

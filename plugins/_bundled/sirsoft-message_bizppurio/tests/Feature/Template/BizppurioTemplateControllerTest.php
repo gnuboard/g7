@@ -610,6 +610,46 @@ class BizppurioTemplateControllerTest extends PluginTestCase
     }
 
     /**
+     * 검수자 전달 의견(comment)은 선택 입력이며 kapi request 로만 전달된다 (#597 §18.7 — PO 결정 2026-08-23).
+     *
+     * 500자 초과는 FormRequest 가 kapi 호출 전에 422 로 끊고(행 상태 불변), 유효한 의견은
+     * `template/request` 의 comment 로 원문 그대로 실린다.
+     *
+     * @effects inspection_request_carries_reviewer_comment
+     */
+    public function test_검수_신청의_comment는_kapi_request에_실리고_500자를_넘으면_422다(): void
+    {
+        Http::fake(['kapi.ppurio.com/*' => Http::response(['code' => '200', 'message' => 'ok'])]);
+        $this->seedKakaoSettings();
+        $this->definition();
+        $template = BizppurioTemplate::create([
+            'notification_type' => 'welcome',
+            'status' => 'draft',
+            'content' => $this->baseContent(),
+        ]);
+        $user = $this->adminWith([self::MANAGE]);
+
+        $this->postJson(self::BASE.'/'.$template->id.'/request', ['comment' => str_repeat('가', 501)], $this->authHeaders($user))
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('comment');
+        $this->assertSame(BizppurioTemplateStatus::Draft, $template->fresh()->status, '검증 실패는 kapi 호출 전에 끝나야 한다(선점 없음).');
+        Http::assertNothingSent();
+
+        $this->postJson(self::BASE.'/'.$template->id.'/request', ['comment' => '변수 예시: #{name}=홍길동'], $this->authHeaders($user))
+            ->assertOk()
+            ->assertJsonPath('data.template.status', 'requested');
+
+        Http::assertSent(function ($request) {
+            if (parse_url($request->url(), PHP_URL_PATH) !== '/v3/kakao/template/request') {
+                return false;
+            }
+            $this->assertSame('변수 예시: #{name}=홍길동', $request->data()['comment'] ?? null);
+
+            return true;
+        });
+    }
+
+    /**
      * @scenario content_variant=ad_image, transition=draft_to_requested
      *
      * @effects image_requires_image_url, first_request_calls_add_then_request_with_full_content_payload

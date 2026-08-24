@@ -105,7 +105,7 @@
     }
   },
   "template": {
-    "tab_guide": "알림별로 알림톡 템플릿을 작성해 검수를 신청하세요. 카카오 승인 후 알림톡이 자동 발송되며, 대체 SMS·SMS 단독 발송도 이 화면에서 설정합니다.",
+    "tab_guide": "각 알림의 [편집]에서 알림톡 템플릿과 문자(SMS) 본문을 함께 작성하고 검수를 신청하세요. 카카오 승인 후 알림톡이 자동 발송되며, 대체 SMS·SMS 단독 발송도 같은 창에서 설정합니다.",
     "status": {
       "unwritten": "미작성",
       "draft": "작성중",
@@ -137,7 +137,11 @@
       "sms_only": "SMS 단독",
       "sms_body_prefix": "본문:",
       "sms_body_missing": "SMS 본문 미설정",
-      "btn_edit_sms": "SMS 본문 편집"
+      "btn_edit_sms": "SMS 본문 편집",
+      "sms_label": "문자(SMS)",
+      "on": "사용",
+      "off": "미사용",
+      "alimtalk_disabled": "발송 사용 안 함"
     },
     "form": {
       "modal_title": "알림톡 템플릿 — {name}",
@@ -199,6 +203,9 @@
       "btn_remove_quick_reply": "바로연결 삭제",
       "btn_save": "저장",
       "btn_save_request": "저장 후 검수 신청",
+      "request_comment": "검수자 전달 의견",
+      "request_comment_placeholder": "예: #{name}=홍길동, #{order_number}=20260823-0001",
+      "request_comment_hint": "검수 신청 시 카카오 검수자에게 함께 전달됩니다(선택, 500자 이내). 카카오 심사 가이드는 본문 변수마다 예시값을 요구하므로 변수별 예시값을 적어 두면 반려를 줄일 수 있습니다. 저장되지 않으며 신청할 때만 전송됩니다.",
       "saved_toast": "알림 템플릿을 저장했습니다.",
       "requested_toast": "검수를 신청했습니다. 승인되면 알림톡 발송이 시작됩니다."
     },
@@ -217,6 +224,18 @@
     "rejection": {
       "modal_title": "반려 사유 — {name}",
       "btn_close": "닫기"
+    },
+    "approval": {
+      "approved": "승인됨",
+      "not_approved": "미승인"
+    },
+    "section": {
+      "alimtalk_title": "알림톡 템플릿",
+      "sms_title": "문자(SMS)",
+      "alimtalk_enabled": "알림톡 발송 사용",
+      "locked_hint": "검수중이거나 승인된 템플릿은 내용을 수정할 수 없습니다. 수정하려면 [신청 취소] 또는 [수정 (승인 취소)]를 먼저 누르세요.",
+      "saved_toast": "알림 템플릿을 저장했습니다.",
+      "loading": "템플릿 내용을 불러오는 중…"
     }
   },
   "manage": {

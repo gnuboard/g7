@@ -12,6 +12,7 @@ use Plugins\Sirsoft\MessageBizppurio\Exceptions\BizppurioApiException;
 use Plugins\Sirsoft\MessageBizppurio\Exceptions\BizppurioTemplateStateException;
 use Plugins\Sirsoft\MessageBizppurio\Http\Requests\BizppurioTemplateImageRequest;
 use Plugins\Sirsoft\MessageBizppurio\Http\Requests\BizppurioTemplateListRequest;
+use Plugins\Sirsoft\MessageBizppurio\Http\Requests\RequestBizppurioInspectionRequest;
 use Plugins\Sirsoft\MessageBizppurio\Http\Requests\StoreBizppurioTemplateRequest;
 use Plugins\Sirsoft\MessageBizppurio\Http\Requests\UpdateBizppurioDeliveryRequest;
 use Plugins\Sirsoft\MessageBizppurio\Http\Requests\UpdateBizppurioTemplateRequest;
@@ -164,10 +165,11 @@ class BizppurioTemplateController extends AdminBaseController
     /**
      * 검수를 신청합니다 (채번 → kapi add/update → request → status=requested).
      *
+     * @param  RequestBizppurioInspectionRequest  $request  검수자 전달 의견(comment, 선택 ≤500)
      * @param  int  $id  템플릿 PK
      * @return JsonResponse data.template 에 갱신된 행
      */
-    public function requestInspection(int $id): JsonResponse
+    public function requestInspection(RequestBizppurioInspectionRequest $request, int $id): JsonResponse
     {
         $template = $this->service->find($id);
         if ($template === null) {
@@ -176,7 +178,7 @@ class BizppurioTemplateController extends AdminBaseController
 
         return $this->guardLifecycle(fn () => ResponseHelper::success(
             'sirsoft-message_bizppurio::messages.template.requested',
-            ['template' => $this->detailRow($this->service->requestInspection($template))],
+            ['template' => $this->detailRow($this->service->requestInspection($template, $request->comment()))],
         ));
     }
 

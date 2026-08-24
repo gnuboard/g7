@@ -132,6 +132,7 @@ return [
             'message_type' => 'message type',
             'emphasize_type' => 'emphasis type',
             'template_content' => 'body',
+            'comment' => 'reviewer comment',
             'preview_message' => 'preview message',
             'category_code' => 'category',
             'security_flag' => 'secure template flag',

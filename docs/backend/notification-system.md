@@ -611,6 +611,49 @@ user_id 없는 비회원(주문자 이메일/이름만 보유)도 회원과 동�
 - 중복 제거 키는 네임스페이스 분리: 회원 `user:{id}` / 비회원 `guest:{이메일 해시}` — null-id 게스트가 하나로 뭉개지지 않습니다.
 - `exclude_trigger_user` 는 회원(user_id) 기준이라 게스트 수신자를 깨뜨리지 않습니다.
 
+### 채널 메타의 화면 표시 키 (hidden_tab · tab_channels · tab_label_key · hidden_template_editor)
+
+확장이 `core.notification.filter_available_channels` 훅으로 등록하는 채널 메타는 임의 필드를 보존해 프론트(`availableChannels` 데이터소스)까지 그대로 도달한다. 관리자 알림 설정 화면(코어 `admin_settings` · 게시판 `admin_board_settings` · 이커머스 `admin_ecommerce_settings`)은 다음 범용 키를 해석한다. 특정 확장 이름을 알지 못하며, 키가 없으면 종전과 동일하게 동작한다.
+
+| 키 | 타입 | 효과 |
+| --- | --- | --- |
+| `hidden_tab` | bool | 채널 서브탭만 숨긴다. 채널 토글 카드·발송 축은 그대로 |
+| `tab_channels` | string[] | 이 채널의 탭이 대표하는 채널 id 목록. 목록 중 하나라도 활성 저장이면 탭을 노출한다(여러 채널을 하나의 탭으로 묶을 때) |
+| `tab_label_key` | string | 탭 라벨용 프론트 lang 키(`$t` 해석). 카드 라벨(`name_key`)과 분리 |
+| `hidden_template_editor` | bool | 알림 템플릿 [편집] 모달에서 코어의 언어탭·제목·본문·클릭 URL·변수 안내·[미리보기]·코어 [저장]을 숨긴다. 그 채널의 본문 규격이 코어 템플릿과 달라 확장이 편집기와 저장을 대신할 때 선언한다. 수신자 규칙·[취소]는 남는다 |
+
+`hidden_template_editor` 를 선언한 확장은 편집 모달의 확장 지점 두 곳에 자기 UI 를 주입한다(3면 공통 이름 — extension_point 파일 1본으로 세 화면에 주입된다).
+
+| extension_point | 위치 | props |
+| --- | --- | --- |
+| `notification_template_form_sections` | 수신자 규칙 다음, 코어 언어탭 앞 | `definition` · `template` · `channel` · `modalId` · `stateKey`(면별 코어 모달 상태 키) · `saveEndpoint`(코어 채널 템플릿 PUT) · `refetchDataSourceId`(면별 알림 정의 목록) |
+| `notification_template_form_footer_actions` | [취소] 와 코어 [저장] 사이 | 위와 동일 |
+
+확장은 이 props 만으로 코어 저장 계약을 이행한다 — 코어 엔드포인트·상태 키를 리터럴로 적지 않는다. 코어 채널 템플릿의 수신자 규칙은 `_global?.[extensionPointProps.stateKey]?.recipients` 로 읽어 바뀐 경우에만 `saveEndpoint` 로 PUT 한다(매번 PUT 하면 코어가 행을 "사용자 수정" 으로 표시한다). 선례: `plugins/_bundled/sirsoft-message_bizppurio/resources/extensions/notification_template_form_*.json`. 행 하단 확장 지점 `notification_definition_row_footer`(props `definition` · `activeChannel`)는 상태 요약 같은 읽기 전용 UI 용이다.
+
+### 정의 타입 라벨의 공급처
+
+관리자 알림 설정 화면의 정의 목록 제목은 DB `name` 컬럼이 아니라 프론트 다국어 키
+`admin.settings.notification_definitions.types.{type}` 로 렌더된다. 이 키의 공급처는 정의 소유자를 따른다.
+
+| 정의 소유 | 라벨 위치 |
+| --- | --- |
+| 코어 (`config/core.php` `notification_definitions`) | admin 템플릿 `lang/partial/{ko,en}/admin.json` 의 `settings.notification_definitions.types` (ja 는 템플릿 언어팩) |
+| 모듈 | 각 모듈의 알림 설정 화면과 lang 이 담당 |
+
+키가 없으면 예외도 경고도 없이 원시 키 문자열이 화면 제목으로 그대로 노출된다. 코어 정의를
+추가하는 변경은 반드시 admin 템플릿 라벨(ko·en)과 템플릿 언어팩(ja)을 함께 추가해야 하며,
+코어 정의 전수 ↔ 템플릿 라벨 패리티는 정적 검사(테스트)가 자동 대조한다.
+
+## 채널 템플릿을 시드하는 확장의 [기본값 복원] 의무
+
+확장이 시딩 필터(`seed.notifications.translations` 등)로 자기 채널의 템플릿 행을 알림 정의에 끼워 넣으면, 같은 증강을
+`core.notification.filter_default_definitions` 에도 걸어야 한다. 관리자 화면의 [기본값 복원]은
+`NotificationTemplateService::getDefaultTemplateData()` 가 이 필터를 통과시킨 정의 배열에서 해당 채널의 template 을 찾아
+복원하므로, 시드 출처와 복원 출처가 같은 함수가 아니면 그 채널 행의 복원은 "기본 템플릿 데이터를 찾을 수 없습니다" 로 끝난다
+(시드는 되는데 복원만 안 되는 상태라 오류 로그도 남지 않는다). 모듈이 자기 정의를 이 필터에 보태는 priority(20) 뒤에서 돌아야
+모듈 정의도 증강된다. 선례: `plugins/_bundled/sirsoft-message_bizppurio/src/Listeners/SeedChannelTemplatesListener.php`.
+
 ### 채널별 비회원 발송 허용 (allow_guest)
 
 채널이 비회원 발송을 허용하는지는 `config/notification.php` 채널 메타의 `allow_guest` 로 선언합니다.

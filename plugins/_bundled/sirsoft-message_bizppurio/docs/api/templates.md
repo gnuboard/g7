@@ -672,6 +672,7 @@ Content-Type: application/json
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | id | path | integer | 예 | 숫자만 | 템플릿 PK |
+| comment | body | string | 아니오 | 500자 이내 (앞뒤 공백 제거, 비어 있으면 미전달) | 검수자 전달 의견 — kapi `template/request` 의 comment 로 그대로 실린다. 행에는 저장하지 않는다 |
 
 **요청 예시**
 
@@ -679,7 +680,12 @@ Content-Type: application/json
 POST /api/plugins/sirsoft-message_bizppurio/admin/templates/4/request HTTP/1.1
 Host: api.example.com
 Accept: application/json
+Content-Type: application/json
 Authorization: Bearer {YOUR_TOKEN}
+
+{
+    "comment": "변수 예시: #{name}=홍길동, #{order_number}=20260823-0001"
+}
 ```
 
 **응답 필드** (`data.template` — 상세 객체, `GET /admin/templates/{id}` 와 동일)
@@ -710,7 +716,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-message_bizppurio.messaging.manage`)이 없는 경우 |
 | 404 | Not Found | `{id}` 에 해당하는 템플릿이 없는 경우 |
-| 422 | Unprocessable Entity | content 미작성 / 신청 불가 상태(draft·rejected 외) / kapi 실패(`errors.bizppurio_message`·`errors.result_code`) / 발신프로필 키(sender_key) 미설정 / 템플릿 코드 채번 실패 |
+| 422 | Unprocessable Entity | comment 500자 초과 / content 미작성 / 신청 불가 상태(draft·rejected 외) / kapi 실패(`errors.bizppurio_message`·`errors.result_code`) / 발신프로필 키(sender_key) 미설정 / 템플릿 코드 채번 실패 |
 
 **설명**
 
@@ -720,6 +726,9 @@ Authorization: Bearer {YOUR_TOKEN}
 add 성공 시점에만 template_code 를 행에 확정하므로, add 자체가 실패하면 다음 시도에서 다시 채번부터 진행된다.
 `draft`/`rejected` 상태에서만 신청할 수 있으며(requested 는 이미 검수중, approved 는 승인 취소 먼저),
 content 미작성이면 422 를 반환한다. 성공 시 `inspection_detail` 은 초기화된다.
+요청 본문의 `comment`(선택, ≤500)는 ③ 의 kapi request 에 검수자 전달 의견으로 그대로 실리며 행에는 저장하지 않는다 —
+카카오 심사 가이드가 본문 변수마다 요구하는 '예시 텍스트' 를 검수자에게 전할 유일한 통로다(kapi `template/add` 에는
+예시 필드가 없다). 500자 초과는 kapi 호출 전에 422 로 끝나므로 행 상태와 선점은 바뀌지 않는다.
 
 
 ### POST /api/plugins/sirsoft-message_bizppurio/admin/templates/{id}/cancel-request

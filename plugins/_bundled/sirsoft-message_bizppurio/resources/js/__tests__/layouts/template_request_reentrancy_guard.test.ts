@@ -12,7 +12,7 @@
  * 디스패치 시점의 동기 검사라 리렌더를 기다리지 않는다.
  *
  * 이 테스트는 신청 체인을 포함하는 모든 click 액션이 재진입 가드(if)를
- * 보유하는지 4개 산출 파일 전수로 고정한다. 가드가 한 파일에서라도 빠지면
+ * 보유하는지 산출 파일 전수(편집 모달 푸터 1본 + 관리 화면)로 고정한다. 가드가 한 파일에서라도 빠지면
  * 그 면에서만 중복 신청이 재발한다.
  *
  * 실행 검증은 §6.3 10c 브라우저 실측이 담당한다. 라운드 5 실측 결과를 여기 남긴다:
@@ -36,10 +36,9 @@ import { describe, it, expect } from 'vitest';
 const BASE = path.resolve(__dirname, '../../../..');
 
 const FILES = [
-    'resources/extensions/notification_tab_core.json',
-    'resources/extensions/notification_tab_board.json',
-    'resources/extensions/notification_tab_ecommerce.json',
-    'resources/extensions/notification_row_footer.json',
+    // 3면 공유 1본 — 코어 [편집] 모달 푸터에 주입되는 통합 저장/검수 신청 버튼(PO 결정 2026-08-23)
+    'resources/extensions/notification_template_form_footer_actions.json',
+    // 플러그인 관리 화면의 자기 모달
     'resources/layouts/admin/plugin_settings.json',
 ];
 
@@ -113,8 +112,8 @@ describe('검수 신청 체인 재진입 가드 (#597 10c)', () => {
     const all = FILES.flatMap(collectRequestClickActions);
 
     it('신청 체인을 포함한 click 액션이 산출 파일 전체에서 수집된다 (0건이면 아래 단언은 공회전한다)', () => {
-        // 모달 저장 후 신청(신규/수정) ×4파일 + row footer 신청 + 관리 화면 행 신청
-        expect(all.length).toBeGreaterThanOrEqual(6);
+        // 편집 모달 푸터 [저장 후 검수 신청] 1 + 관리 화면(모달 저장 후 신청 신규/수정 + 행 신청)
+        expect(all.length).toBeGreaterThanOrEqual(3);
     });
 
     it.each(FILES)('%s 의 신청 체인 click 액션은 모두 재진입 if 가드를 갖는다', (file) => {
@@ -172,9 +171,11 @@ describe('저장 체인 재진입 가드 (#597 라운드 5 §6.3 10c 실측 파�
             if (!node || typeof node !== 'object') return;
             if (Array.isArray(node)) { node.forEach(walk); return; }
             const n = node as Record<string, any>;
+            // 관리 화면 모달: text=form.btn_save / 편집 모달 푸터(통합 저장): 자식 Span 이 $t:common.save
             const isSave = n.name === 'Button'
-                && typeof n.text === 'string'
-                && n.text.endsWith('sirsoft-message_bizppurio.template.form.btn_save');
+                && ((typeof n.text === 'string' && n.text.endsWith('sirsoft-message_bizppurio.template.form.btn_save'))
+                    || (Array.isArray(n.children) && JSON.stringify(n.children).includes('$t:common.save')
+                        && JSON.stringify(n.props ?? {}).includes('bz_tpl_modal')));
             if (isSave && Array.isArray(n.actions)) {
                 for (const a of n.actions) {
                     if (a?.type === 'click') found.push({ file, ifExpr: a.if });
@@ -188,14 +189,15 @@ describe('저장 체인 재진입 가드 (#597 라운드 5 §6.3 10c 실측 파�
         return found;
     };
 
-    it('저장 버튼의 click 액션이 4개 산출 파일 전수에서 재진입 가드를 보유한다', () => {
+    it('저장 버튼의 click 액션이 산출 파일 전수에서 재진입 가드를 보유한다', () => {
         const all = FILES.flatMap(collectSaveClickActions);
-        // 3면 오버레이 + 관리 화면 = 4면 × (신규/수정) 2버튼
-        expect(all.length, '저장 버튼 click 액션 수').toBe(8);
+        // 편집 모달 푸터 통합 [저장] 1 + 관리 화면 모달 (신규/수정) 2버튼
+        expect(all.length, '저장 버튼 click 액션 수').toBe(3);
 
         for (const a of all) {
+            // 편집 모달 푸터의 통합 [저장]은 isSaving 가드에 상세 GET 완료 전 가드(loading)를 AND 로 더 단다 — 포함 판정
             expect(a.ifExpr, `${a.file}: 저장 체인에 재진입 가드(if)가 없다 — 더블 클릭 시 중복 저장`)
-                .toBe(GUARD);
+                .toContain(GUARD.slice(2, -2));
         }
     });
 });

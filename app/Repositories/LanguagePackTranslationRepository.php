@@ -41,29 +41,37 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
      */
     public function applySeedFromPack(LanguagePack $pack, array $seedBundle): array
     {
-        $audit = [];
-        $locale = $pack->locale;
+        // 팩 주입은 시딩 컨텍스트다 — 바인딩 없이 저장하면 UserOverridesAwareBuilder 가
+        // 주입 자체를 "사용자 수정"으로 오인해 user_overrides 를 오염시키고, 그 선언이
+        // 이후 시더 재실행의 컬럼 갱신을 영구히 얼린다 (#597 에서 실측·교정).
+        app()->instance('user_overrides.seeding', true);
+        try {
+            $audit = [];
+            $locale = $pack->locale;
 
-        if (! empty($seedBundle['permissions'])) {
-            $this->applyByIdentifier(Permission::class, $pack, $seedBundle['permissions'], $locale, ['name', 'description'], 'identifier', $audit);
-        }
-        if (! empty($seedBundle['roles'])) {
-            $this->applyByIdentifier(Role::class, $pack, $seedBundle['roles'], $locale, ['name', 'description'], 'identifier', $audit);
-        }
-        if (! empty($seedBundle['menus']) && $pack->scope !== LanguagePackScope::Plugin->value) {
-            $this->applyByIdentifier(Menu::class, $pack, $seedBundle['menus'], $locale, ['name'], 'slug', $audit);
-        }
-        if (! empty($seedBundle['notifications'])) {
-            $this->applyNotifications($pack, $seedBundle['notifications'], $locale, $audit);
-        }
-        if (! empty($seedBundle['identity_messages'])) {
-            $this->applyIdentityMessages($pack, $seedBundle['identity_messages'], $locale, $audit);
-        }
-        if (! empty($seedBundle['manifest'])) {
-            $this->applyManifest($pack, $seedBundle['manifest'], $locale, $audit);
-        }
+            if (! empty($seedBundle['permissions'])) {
+                $this->applyByIdentifier(Permission::class, $pack, $seedBundle['permissions'], $locale, ['name', 'description'], 'identifier', $audit);
+            }
+            if (! empty($seedBundle['roles'])) {
+                $this->applyByIdentifier(Role::class, $pack, $seedBundle['roles'], $locale, ['name', 'description'], 'identifier', $audit);
+            }
+            if (! empty($seedBundle['menus']) && $pack->scope !== LanguagePackScope::Plugin->value) {
+                $this->applyByIdentifier(Menu::class, $pack, $seedBundle['menus'], $locale, ['name'], 'slug', $audit);
+            }
+            if (! empty($seedBundle['notifications'])) {
+                $this->applyNotifications($pack, $seedBundle['notifications'], $locale, $audit);
+            }
+            if (! empty($seedBundle['identity_messages'])) {
+                $this->applyIdentityMessages($pack, $seedBundle['identity_messages'], $locale, $audit);
+            }
+            if (! empty($seedBundle['manifest'])) {
+                $this->applyManifest($pack, $seedBundle['manifest'], $locale, $audit);
+            }
 
-        return $audit;
+            return $audit;
+        } finally {
+            app()->forgetInstance('user_overrides.seeding');
+        }
     }
 
     /**
@@ -73,6 +81,23 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
      * @return array<int, array<string, mixed>> 감사 로그 항목
      */
     public function stripLocaleFromPack(LanguagePack $pack): array
+    {
+        // applySeedFromPack 과 동일 — 제거도 시딩 컨텍스트 (user_overrides 오염 차단)
+        app()->instance('user_overrides.seeding', true);
+        try {
+            return $this->stripLocaleFromPackBody($pack);
+        } finally {
+            app()->forgetInstance('user_overrides.seeding');
+        }
+    }
+
+    /**
+     * stripLocaleFromPack 의 본문 (시딩 바인딩 하에서 실행).
+     *
+     * @param  LanguagePack  $pack  비활성화된 언어팩
+     * @return array<int, array<string, mixed>> 감사 로그 항목
+     */
+    private function stripLocaleFromPackBody(LanguagePack $pack): array
     {
         $audit = [];
         $locale = $pack->locale;
@@ -402,7 +427,7 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
             }
 
             $hasLocaleKey = array_key_exists($locale, $current);
-            $isOverridden = isset($overrides[$column]);
+            $isOverridden = $this->isColumnLocaleOverridden($overrides, $column, $locale);
 
             if ($hasLocaleKey && $isOverridden) {
                 $audit[] = [
@@ -413,6 +438,7 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
                     'locale' => $locale,
                     'reason' => 'user_overrides',
                 ];
+
                 continue;
             }
 
@@ -443,7 +469,7 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
                 continue;
             }
 
-            if (isset($overrides[$column])) {
+            if ($this->isColumnLocaleOverridden($overrides, $column, $locale)) {
                 $audit[] = [
                     'action' => 'preserved',
                     'table' => $row->getTable(),
@@ -452,6 +478,7 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
                     'locale' => $locale,
                     'reason' => 'user_overrides',
                 ];
+
                 continue;
             }
 
@@ -463,5 +490,28 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
         if ($changed) {
             $row->saveQuietly();
         }
+    }
+
+    /**
+     * 해당 컬럼·로케일이 운영자 수정(user_overrides)으로 보존 대상인지 판정합니다.
+     *
+     * 운영자 수정의 실제 기록 형식은 dot-path 리스트(`"{column}.{locale}"` —
+     * HasUserOverrides 의 updating 이벤트가 기록, beta.4 가 레거시 항목을 dot-path 로
+     * 전환)이므로 그 형식만 본다. 종전의 `isset($overrides[$column])` 판정은 어떤
+     * 생산자도 쓰지 않는 연관 형식을 전제해 항상 false 였고, 그 결과 활성화/비활성화가
+     * 운영자 수정 번역을 오류 없이 덮어쓰거나 제거했다 (#597 에서 발견·교정).
+     *
+     * 컬럼 전체 항목(`"subject"` 등)은 의도적으로 보존 사유로 보지 않는다 — 그 형식은
+     * 시더 재실행(syncFromUpgrade)의 컬럼 보호 선언이며, 팩 병합까지 차단하면 팩
+     * 업데이트가 자기 로케일 번역을 갱신하지 못하게 된다 (종전에도 차단된 적 없음).
+     *
+     * @param  array<int, string>  $overrides  user_overrides 리스트
+     * @param  string  $column  다국어 JSON 컬럼명
+     * @param  string  $locale  대상 로케일
+     * @return bool 보존 대상 여부
+     */
+    protected function isColumnLocaleOverridden(array $overrides, string $column, string $locale): bool
+    {
+        return in_array($column.'.'.$locale, $overrides, true);
     }
 }

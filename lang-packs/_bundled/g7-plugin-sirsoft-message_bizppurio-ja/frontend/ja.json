@@ -105,7 +105,7 @@
     }
   },
   "template": {
-    "tab_guide": "通知ごとにアラームトークテンプレートを作成して審査を申請してください。カカオ承認後にアラームトークが自動送信され、代替SMS・SMS単独送信もこの画面で設定します。",
+    "tab_guide": "各通知の[編集]でアラームトークのテンプレートとSMS本文をまとめて作成し、審査を申請してください。カカオの承認後にアラームトークが自動送信され、代替SMS・SMS単独送信も同じ画面で設定します。",
     "status": {
       "unwritten": "未作成",
       "draft": "作成中",
@@ -137,7 +137,11 @@
       "sms_only": "SMS単独",
       "sms_body_prefix": "本文:",
       "sms_body_missing": "SMS本文未設定",
-      "btn_edit_sms": "SMS本文を編集"
+      "btn_edit_sms": "SMS本文を編集",
+      "sms_label": "SMS",
+      "on": "使用",
+      "off": "未使用",
+      "alimtalk_disabled": "送信停止中"
     },
     "form": {
       "modal_title": "アラームトークテンプレート — {name}",
@@ -199,6 +203,9 @@
       "btn_remove_quick_reply": "クイックリプライ削除",
       "btn_save": "保存",
       "btn_save_request": "保存して審査申請",
+      "request_comment": "審査担当者への伝達事項",
+      "request_comment_placeholder": "例: #{name}=山田太郎, #{order_number}=20260823-0001",
+      "request_comment_hint": "審査申請時にカカオの審査担当者へ一緒に送られます（任意・500文字以内）。カカオの審査ガイドは本文の変数ごとに例示値を求めるため、変数ごとの例を書いておくと差し戻しを減らせます。保存はされず、申請時にのみ送信されます。",
       "saved_toast": "通知テンプレートを保存しました。",
       "requested_toast": "審査を申請しました。承認されるとアラームトーク送信が開始されます。"
     },
@@ -217,6 +224,18 @@
     "rejection": {
       "modal_title": "却下理由 — {name}",
       "btn_close": "閉じる"
+    },
+    "approval": {
+      "approved": "承認済み",
+      "not_approved": "未承認"
+    },
+    "section": {
+      "alimtalk_title": "アラームトークテンプレート",
+      "sms_title": "SMS",
+      "alimtalk_enabled": "アラームトーク送信を使用",
+      "locked_hint": "審査中または承認済みのテンプレートは内容を変更できません。変更するには先に[申請取消]または[編集（承認取消）]を押してください。",
+      "saved_toast": "通知テンプレートを保存しました。",
+      "loading": "テンプレートを読み込み中…"
     }
   },
   "manage": {

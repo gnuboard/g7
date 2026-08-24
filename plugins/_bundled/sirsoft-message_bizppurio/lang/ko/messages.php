@@ -132,6 +132,7 @@ return [
             'message_type' => '메시지 유형',
             'emphasize_type' => '강조 유형',
             'template_content' => '본문',
+            'comment' => '검수자 전달 의견',
             'preview_message' => '미리보기 문구',
             'category_code' => '카테고리',
             'security_flag' => '보안 템플릿 여부',

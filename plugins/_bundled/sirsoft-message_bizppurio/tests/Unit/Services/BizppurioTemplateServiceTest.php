@@ -733,4 +733,56 @@ class BizppurioTemplateServiceTest extends PluginTestCase
 
         app()->setLocale('ko');
     }
+
+    /**
+     * 검수자 전달 의견은 kapi request 의 comment 로만 실린다 (#597 §18.7 — PO 결정 2026-08-23).
+     *
+     * 카카오 심사 가이드가 요구하는 변수 '예시 텍스트' 를 전할 유일한 통로가 request comment 다.
+     * 등록(add) 페이로드에는 섞이지 않고, 행에도 남지 않는다.
+     *
+     * @effects inspection_request_carries_reviewer_comment
+     */
+    public function test_검수_신청의_comment는_kapi_request에만_실린다(): void
+    {
+        Http::fake([self::KAPI => Http::response($this->kapiResponse())]);
+        $template = $this->row();
+
+        $this->makeService()->requestInspection($template, '  변수 예시: #{name}=홍길동, #{order_number}=20260823-0001  ');
+
+        Http::assertSent(function ($request) {
+            if (parse_url($request->url(), PHP_URL_PATH) !== '/v3/kakao/template/request') {
+                return false;
+            }
+            $this->assertSame('변수 예시: #{name}=홍길동, #{order_number}=20260823-0001', $request->data()['comment'] ?? null, '앞뒤 공백만 제거하고 원문 그대로 싣는다.');
+
+            return true;
+        });
+        Http::assertSent(function ($request) {
+            if (parse_url($request->url(), PHP_URL_PATH) !== '/v3/kakao/template/add') {
+                return false;
+            }
+            $this->assertArrayNotHasKey('comment', $request->data(), 'comment 는 등록(add) 페이로드에 섞이지 않는다.');
+
+            return true;
+        });
+    }
+
+    /**
+     * @effects inspection_request_carries_reviewer_comment
+     */
+    public function test_검수_신청의_comment가_공백이면_kapi_request에_comment_키를_싣지_않는다(): void
+    {
+        Http::fake([self::KAPI => Http::response($this->kapiResponse())]);
+
+        $this->makeService()->requestInspection($this->row(), '   ');
+
+        Http::assertSent(function ($request) {
+            if (parse_url($request->url(), PHP_URL_PATH) !== '/v3/kakao/template/request') {
+                return false;
+            }
+            $this->assertArrayNotHasKey('comment', $request->data(), '공백만 있는 의견은 미전달 — 클라이언트가 빈 comment 를 생략한다.');
+
+            return true;
+        });
+    }
 }

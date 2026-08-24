@@ -1648,7 +1648,7 @@
                             "type": "composite",
                             "name": "Select",
                             "props": {
-                              "className": "w-40 text-sm",
+                              "className": "w-40 text-sm flex-shrink-0",
                               "value": "{{query.bz_status ?? ''}}",
                               "options": "{{[{value: '', label: $t('sirsoft-message_bizppurio.manage.filter_all')}, ...['draft','requested','approved','rejected','stopped','blocked','dormant'].map(s => ({value: s, label: $t('sirsoft-message_bizppurio.template.status.' + s)}))]}}"
                             },
@@ -1677,13 +1677,20 @@
                                   }
                                 ]
                               }
-                            ]
+                            ],
+                            "responsive": {
+                              "portable": {
+                                "props": {
+                                  "className": "flex-1 min-w-0 text-sm"
+                                }
+                              }
+                            }
                           },
                           {
                             "type": "basic",
                             "name": "Input",
                             "props": {
-                              "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 w-56",
+                              "className": "flex-1 min-w-0 px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100",
                               "placeholder": "$t:sirsoft-message_bizppurio.manage.search_placeholder",
                               "value": "{{_local.bzSearchDraft ?? (query.bz_search ?? '')}}"
                             },
@@ -1696,14 +1703,21 @@
                                   "bzSearchDraft": "{{$event.target.value}}"
                                 }
                               }
-                            ]
+                            ],
+                            "responsive": {
+                              "portable": {
+                                "props": {
+                                  "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100"
+                                }
+                              }
+                            }
                           },
                           {
                             "type": "basic",
                             "name": "Button",
                             "props": {
                               "type": "button",
-                              "className": "text-xs font-medium px-2.5 py-1 rounded-md whitespace-nowrap flex-shrink-0 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                              "className": "btn btn-primary whitespace-nowrap flex-shrink-0"
                             },
                             "actions": [
                               {
@@ -1737,7 +1751,7 @@
                           }
                         ],
                         "props": {
-                          "className": "flex-center gap-2 flex-wrap"
+                          "className": "flex-center gap-2 flex-wrap flex-1 min-w-0"
                         }
                       },
                       {
@@ -1745,7 +1759,8 @@
                         "name": "Button",
                         "props": {
                           "type": "button",
-                          "className": "text-xs font-medium px-2.5 py-1 rounded-md whitespace-nowrap flex-shrink-0 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                          "aria-label": "$t:sirsoft-message_bizppurio.templates.list.refresh",
+                          "className": "btn-icon flex-shrink-0"
                         },
                         "actions": [
                           {
@@ -1756,7 +1771,17 @@
                             }
                           }
                         ],
-                        "text": "$t:sirsoft-message_bizppurio.templates.list.refresh"
+                        "comment": "새로고침 — 코어 관리자 목록 관례(btn-icon + 회전 아이콘)와 통일 (PO 지시 2026-08-24).",
+                        "children": [
+                          {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                              "name": "fas fa-arrows-rotate",
+                              "className": "text-base"
+                            }
+                          }
+                        ]
                       }
                     ],
                     "props": {
@@ -1776,105 +1801,125 @@
                     "name": "Div",
                     "children": [
                       {
+                        "id": "bz_manage_list_header",
                         "type": "basic",
-                        "name": "Table",
+                        "name": "Div",
+                        "comment": "데스크톱 grid 헤더 — portable 에서는 카드가 자기 서술이므로 숨긴다 (PO 지시 2026-08-24 모바일 카드뷰).",
                         "props": {
-                          "className": "w-full text-left"
+                          "className": "grid grid-cols-12 gap-2 px-4 py-2.5 bg-gray-50 dark:bg-gray-900 text-xs font-medium text-gray-500 dark:text-gray-400"
+                        },
+                        "responsive": {
+                          "portable": {
+                            "props": {
+                              "className": "hidden"
+                            }
+                          }
                         },
                         "children": [
                           {
                             "type": "basic",
-                            "name": "Thead",
+                            "name": "Div",
                             "props": {
-                              "className": "bg-gray-50 dark:bg-gray-900"
+                              "className": "col-span-3"
+                            },
+                            "text": "$t:sirsoft-message_bizppurio.manage.columns.notification"
+                          },
+                          {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                              "className": "col-span-2"
+                            },
+                            "text": "$t:sirsoft-message_bizppurio.manage.columns.owner"
+                          },
+                          {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                              "className": "col-span-1"
+                            },
+                            "text": "$t:sirsoft-message_bizppurio.manage.columns.status"
+                          },
+                          {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                              "className": "col-span-1"
+                            },
+                            "text": "$t:sirsoft-message_bizppurio.manage.columns.sms"
+                          },
+                          {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                              "className": "col-span-1"
+                            },
+                            "text": "$t:sirsoft-message_bizppurio.manage.columns.requested_at"
+                          },
+                          {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                              "className": "col-span-1"
+                            },
+                            "text": "$t:sirsoft-message_bizppurio.manage.columns.synced_at"
+                          },
+                          {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                              "className": "col-span-3 text-right"
+                            },
+                            "text": "$t:sirsoft-message_bizppurio.manage.columns.actions"
+                          }
+                        ]
+                      },
+                      {
+                        "id": "bz_manage_list_rows",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{(bizppurio_templates_list?.data?.templates ?? []).length > 0}}",
+                        "props": {
+                          "className": "divide-y divide-gray-100 dark:divide-gray-700"
+                        },
+                        "children": [
+                          {
+                            "type": "basic",
+                            "name": "Div",
+                            "comment": "반복 노드에는 responsive 를 두지 않는다(저장소 관례 — 실측상 반복 노드 위 오버라이드는 화면 전환에 반영되지 않아, 클래스·responsive 는 내부 래퍼가 담당한다. 2026-08-24 Chrome 실측).",
+                            "iteration": {
+                              "source": "{{bizppurio_templates_list?.data?.templates ?? []}}",
+                              "item_var": "bzRow",
+                              "index_var": "bzRowIdx"
                             },
                             "children": [
                               {
                                 "type": "basic",
-                                "name": "Tr",
-                                "children": [
-                                  {
-                                    "type": "basic",
-                                    "name": "Th",
-                                    "props": {
-                                      "className": "px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400"
-                                    },
-                                    "text": "$t:sirsoft-message_bizppurio.manage.columns.notification"
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Th",
-                                    "props": {
-                                      "className": "px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400"
-                                    },
-                                    "text": "$t:sirsoft-message_bizppurio.manage.columns.owner"
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Th",
-                                    "props": {
-                                      "className": "px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400"
-                                    },
-                                    "text": "$t:sirsoft-message_bizppurio.manage.columns.status"
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Th",
-                                    "props": {
-                                      "className": "px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400"
-                                    },
-                                    "text": "$t:sirsoft-message_bizppurio.manage.columns.sms"
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Th",
-                                    "props": {
-                                      "className": "px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400"
-                                    },
-                                    "text": "$t:sirsoft-message_bizppurio.manage.columns.requested_at"
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Th",
-                                    "props": {
-                                      "className": "px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400"
-                                    },
-                                    "text": "$t:sirsoft-message_bizppurio.manage.columns.synced_at"
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Th",
-                                    "props": {
-                                      "className": "px-4 py-2.5 text-right text-xs font-medium text-gray-500 dark:text-gray-400"
-                                    },
-                                    "text": "$t:sirsoft-message_bizppurio.manage.columns.actions"
-                                  }
-                                ]
-                              }
-                            ]
-                          },
-                          {
-                            "type": "basic",
-                            "name": "Tbody",
-                            "if": "{{(bizppurio_templates_list?.data?.templates ?? []).length > 0}}",
-                            "children": [
-                              {
-                                "type": "basic",
-                                "name": "Tr",
-                                "iteration": {
-                                  "source": "{{bizppurio_templates_list?.data?.templates ?? []}}",
-                                  "item_var": "bzRow",
-                                  "index_var": "bzRowIdx"
-                                },
+                                "name": "Div",
+                                "comment": "행 — 데스크톱 grid 12열, portable 에서 카드(flex-wrap: 이름 전폭 → 배지 줄 → 메타 줄 → 액션 전폭).",
                                 "props": {
-                                  "className": "border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                                  "className": "grid grid-cols-12 gap-2 px-4 py-3 items-center hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                                },
+                                "responsive": {
+                                  "portable": {
+                                    "props": {
+                                      "className": "flex flex-wrap gap-2 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                                    }
+                                  }
                                 },
                                 "children": [
                                   {
                                     "type": "basic",
-                                    "name": "Td",
+                                    "name": "Div",
                                     "props": {
-                                      "className": "px-4 py-3 text-sm text-gray-700 dark:text-gray-200"
+                                      "className": "col-span-3"
+                                    },
+                                    "responsive": {
+                                      "portable": {
+                                        "props": {
+                                          "className": "w-full"
+                                        }
+                                      }
                                     },
                                     "children": [
                                       {
@@ -1892,22 +1937,45 @@
                                         "props": {
                                           "className": "text-xs text-gray-400 dark:text-gray-500"
                                         }
+                                      },
+                                      {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "comment": "카드 메타 줄 — 데스크톱에서 별도 열인 소속·신청일·동기화일을 portable 카드에서 한 줄로 요약.",
+                                        "props": {
+                                          "className": "hidden"
+                                        },
+                                        "responsive": {
+                                          "portable": {
+                                            "props": {
+                                              "className": "text-xs text-gray-400 dark:text-gray-500 mt-1"
+                                            }
+                                          }
+                                        },
+                                        "text": "{{$t('sirsoft-message_bizppurio.manage.owner.' + (bzRow.definition_extension_type ?? 'core'))}} {{(bzRow.definition_extension_type ?? 'core') === 'core' ? '' : ('(' + (bzRow.definition_extension_identifier ?? '') + ')')}} · {{$t('sirsoft-message_bizppurio.manage.columns.requested_at')}} {{(bzRow.requested_at ?? '').slice(0, 10) || '-'}} · {{$t('sirsoft-message_bizppurio.manage.columns.synced_at')}} {{(bzRow.last_synced_at ?? '').slice(0, 10) || '-'}}"
                                       }
                                     ]
                                   },
                                   {
                                     "type": "basic",
-                                    "name": "Td",
+                                    "name": "Div",
                                     "props": {
-                                      "className": "px-4 py-3 text-sm text-gray-700 dark:text-gray-200"
+                                      "className": "col-span-2 text-sm text-gray-700 dark:text-gray-200"
+                                    },
+                                    "responsive": {
+                                      "portable": {
+                                        "props": {
+                                          "className": "hidden"
+                                        }
+                                      }
                                     },
                                     "text": "{{$t('sirsoft-message_bizppurio.manage.owner.' + (bzRow.definition_extension_type ?? 'core'))}} {{(bzRow.definition_extension_type ?? 'core') === 'core' ? '' : ('(' + (bzRow.definition_extension_identifier ?? '') + ')')}}"
                                   },
                                   {
                                     "type": "basic",
-                                    "name": "Td",
+                                    "name": "Div",
                                     "props": {
-                                      "className": "px-4 py-3 text-sm text-gray-700 dark:text-gray-200"
+                                      "className": "col-span-1"
                                     },
                                     "children": [
                                       {
@@ -1922,33 +1990,64 @@
                                   },
                                   {
                                     "type": "basic",
-                                    "name": "Td",
+                                    "name": "Div",
                                     "props": {
-                                      "className": "px-4 py-3 text-sm text-gray-700 dark:text-gray-200"
+                                      "className": "col-span-1"
                                     },
-                                    "text": "{{bzRow.sms_only ? $t('sirsoft-message_bizppurio.manage.sms_only') : (bzRow.fallback_sms_enabled ? $t('sirsoft-message_bizppurio.manage.sms_fallback') : '-')}}"
+                                    "comment": "SMS 발송 모드 배지 — 단독/대체(초록), 미사용(회색). 행 하단 상태 배지와 같은 규칙(PO 지시 2026-08-23).",
+                                    "children": [
+                                      {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                          "className": "{{'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ' + ((bzRow.sms_only || bzRow.fallback_sms_enabled) ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300')}}"
+                                        },
+                                        "text": "{{bzRow.sms_only ? $t('sirsoft-message_bizppurio.manage.sms_only') : (bzRow.fallback_sms_enabled ? $t('sirsoft-message_bizppurio.manage.sms_fallback') : $t('sirsoft-message_bizppurio.template.row.off'))}}"
+                                      }
+                                    ]
                                   },
                                   {
                                     "type": "basic",
-                                    "name": "Td",
+                                    "name": "Div",
                                     "props": {
-                                      "className": "px-4 py-3 text-sm text-gray-700 dark:text-gray-200 tabular-nums"
+                                      "className": "col-span-1 text-sm text-gray-700 dark:text-gray-200 tabular-nums"
+                                    },
+                                    "responsive": {
+                                      "portable": {
+                                        "props": {
+                                          "className": "hidden"
+                                        }
+                                      }
                                     },
                                     "text": "{{(bzRow.requested_at ?? '').slice(0, 10) || '-'}}"
                                   },
                                   {
                                     "type": "basic",
-                                    "name": "Td",
+                                    "name": "Div",
                                     "props": {
-                                      "className": "px-4 py-3 text-sm text-gray-700 dark:text-gray-200 tabular-nums"
+                                      "className": "col-span-1 text-sm text-gray-700 dark:text-gray-200 tabular-nums"
+                                    },
+                                    "responsive": {
+                                      "portable": {
+                                        "props": {
+                                          "className": "hidden"
+                                        }
+                                      }
                                     },
                                     "text": "{{(bzRow.last_synced_at ?? '').slice(0, 10) || '-'}}"
                                   },
                                   {
                                     "type": "basic",
-                                    "name": "Td",
+                                    "name": "Div",
                                     "props": {
-                                      "className": "px-4 py-3"
+                                      "className": "col-span-3"
+                                    },
+                                    "responsive": {
+                                      "portable": {
+                                        "props": {
+                                          "className": "w-full pt-1"
+                                        }
+                                      }
                                     },
                                     "children": [
                                       {
@@ -2072,7 +2171,8 @@
                                                               "description": "",
                                                               "imageUrl": ""
                                                             }
-                                                          }
+                                                          },
+                                                          "request_comment": ""
                                                         }
                                                       }
                                                     },
@@ -2540,7 +2640,7 @@
                       }
                     ],
                     "props": {
-                      "className": "admin-card overflow-x-auto p-0"
+                      "className": "admin-card p-0 overflow-hidden"
                     }
                   },
                   {
@@ -3421,7 +3521,7 @@
                 }
               ],
               "props": {
-                "className": "space-y-1.5"
+                "className": "space-y-2"
               },
               "if": "{{_global.bz_tpl_modal?.content?.templateEmphasizeType === 'ITEM_LIST'}}"
             },
@@ -3654,7 +3754,7 @@
                     "index_var": "buttonsIdx"
                   },
                   "props": {
-                    "className": "p-2.5 rounded-lg border border-gray-200 dark:border-gray-700 space-y-1.5"
+                    "className": "p-3 rounded-lg border border-gray-200 dark:border-gray-700 space-y-2"
                   },
                   "children": [
                     {
@@ -3866,7 +3966,7 @@
                 }
               ],
               "props": {
-                "className": "space-y-1.5"
+                "className": "space-y-2"
               }
             },
             {
@@ -3919,7 +4019,7 @@
                     "index_var": "quickRepliesIdx"
                   },
                   "props": {
-                    "className": "p-2.5 rounded-lg border border-gray-200 dark:border-gray-700 space-y-1.5"
+                    "className": "p-3 rounded-lg border border-gray-200 dark:border-gray-700 space-y-2"
                   },
                   "children": [
                     {
@@ -4131,8 +4231,71 @@
                 }
               ],
               "props": {
-                "className": "space-y-1.5"
+                "className": "space-y-2"
               }
+            },
+            {
+              "id": "bz_manage_request_comment",
+              "type": "basic",
+              "name": "Div",
+              "comment": "검수자 전달 의견 — kapi template/request 의 comment(≤500). 카카오 심사 가이드가 요구하는 변수 예시값 등을 검수자에게 전할 유일한 통로(PO 결정 2026-08-23 §18.7). 신청 시에만 전송되며 행에 저장되지 않는다.",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "text-secondary block text-xs font-medium mb-1"
+                      },
+                      "text": "$t:sirsoft-message_bizppurio.template.form.request_comment"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "{{(_global.bz_tpl_modal?.request_comment ?? '').length}}/500",
+                      "props": {
+                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                      }
+                    }
+                  ],
+                  "props": {
+                    "className": "flex-between"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Textarea",
+                  "props": {
+                    "name": "bz_request_comment",
+                    "rows": 3,
+                    "maxLength": 500,
+                    "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100",
+                    "placeholder": "$t:sirsoft-message_bizppurio.template.form.request_comment_placeholder",
+                    "value": "{{_global.bz_tpl_modal?.request_comment ?? ''}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "bz_tpl_modal.request_comment": "{{$event.target.value}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                  },
+                  "text": "$t:sirsoft-message_bizppurio.template.form.request_comment_hint"
+                }
+              ]
             }
           ]
         },
@@ -4354,7 +4517,10 @@
                             "auth_required": true,
                             "target": "/api/plugins/sirsoft-message_bizppurio/admin/templates/{{response.data?.template?.id}}/request",
                             "params": {
-                              "method": "POST"
+                              "method": "POST",
+                              "body": {
+                                "comment": "{{_global.bz_tpl_modal?.request_comment ?? ''}}"
+                              }
                             },
                             "onSuccess": [
                               {
@@ -4452,7 +4618,10 @@
                             "auth_required": true,
                             "target": "/api/plugins/sirsoft-message_bizppurio/admin/templates/{{_global.bz_tpl_modal?.id}}/request",
                             "params": {
-                              "method": "POST"
+                              "method": "POST",
+                              "body": {
+                                "comment": "{{_global.bz_tpl_modal?.request_comment ?? ''}}"
+                              }
                             },
                             "onSuccess": [
                               {

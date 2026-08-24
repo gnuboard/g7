@@ -193,14 +193,17 @@ class BizppurioTemplateService
      * - template_code 가 없으면(최초) 자체 채번 후 kapi add, 있으면(재신청) kapi update.
      *   add 성공 시점에만 template_code 를 행에 확정하므로, add 자체가 실패하면 다음
      *   시도에서 다시 채번부터 진행된다.
+     * - 검수자 전달 의견(comment)은 kapi request 에만 싣고 행에 저장하지 않는다 — 카카오 심사
+     *   가이드가 요구하는 변수 '예시 텍스트' 를 전할 유일한 통로다(PO 결정 2026-08-23, §18.7).
      *
      * @param  BizppurioTemplate  $template  대상 행
+     * @param  string|null  $comment  검수자 전달 의견 (≤500, 비어 있으면 미전달)
      * @return BizppurioTemplate 갱신된 행 (status=requested)
      *
      * @throws BizppurioTemplateStateException 신청 불가 상태·content 미작성
      * @throws BizppurioApiException kapi 실패 (사유 원문 보존)
      */
-    public function requestInspection(BizppurioTemplate $template): BizppurioTemplate
+    public function requestInspection(BizppurioTemplate $template, ?string $comment = null): BizppurioTemplate
     {
         if (! is_array($template->content) || $template->content === []) {
             throw new BizppurioTemplateStateException(
@@ -248,7 +251,11 @@ class BizppurioTemplateService
                 $this->assertSuccess($this->kakao->updateTemplate($payload));
             }
 
-            $this->assertSuccess($this->kakao->requestInspection($senderKey, (string) $template->template_code));
+            $this->assertSuccess($this->kakao->requestInspection(
+                $senderKey,
+                (string) $template->template_code,
+                trim((string) $comment),
+            ));
         } catch (\Throwable $e) {
             // 선점 해제: kapi 미완료 상태로 requested 가 남지 않도록 원래 상태로 복귀.
             $this->templates->update($template, ['status' => $originalStatus->value]);
