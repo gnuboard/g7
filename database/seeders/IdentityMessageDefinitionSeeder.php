@@ -72,20 +72,25 @@ class IdentityMessageDefinitionSeeder extends Seeder
      * `extension_type='core'` / `extension_identifier='core'` 자동 주입.
      * `variables: '__common__'` 마커는 commonVariables() 로 expand.
      *
-     * @return array<int, array<string, mixed>>
+     * @return array<string, array<string, mixed>> config 복합 키('mail.purpose.signup' 등) => 정의
      */
     private function getDefaultDefinitions(): array
     {
         $messages = config('core.identity_messages', []);
         $result = [];
 
-        foreach ($messages as $data) {
+        foreach ($messages as $key => $data) {
             if (($data['variables'] ?? null) === '__common__') {
                 $data['variables'] = $this->commonVariables();
             }
             $data['extension_type'] = 'core';
             $data['extension_identifier'] = 'core';
-            $result[] = $data;
+            // config 복합 키('mail.purpose.signup' 등)를 보존 — 언어팩 주입 필터
+            // (seed.identity_messages.translations)가 이 키로 seed 를 매칭한다.
+            // 리스트로 만들면 전 항목이 매칭 불가로 스킵되어 팩 로케일이 오류 없이
+            // 주입되지 않는다 (#597 에서 실측·교정 — IdentityMessageTemplateService
+            // ::loadCoreMessageDefinitions 의 동형 보존과 짝을 이룬다).
+            $result[$key] = $data;
         }
 
         return $result;

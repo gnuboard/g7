@@ -1862,7 +1862,9 @@
       "types": {
         "welcome": "会員登録ウェルカム",
         "reset_password": "パスワード再設定",
-        "password_changed": "パスワード変更通知"
+        "password_changed": "パスワード変更通知",
+        "sitemap_regenerated": "サイトマップ再生成完了",
+        "sitemap_regenerate_failed": "サイトマップ再生成失敗"
       },
       "channels_label": "チャネル:",
       "edit_modal": {

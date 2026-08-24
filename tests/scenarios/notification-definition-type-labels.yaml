@@ -1,0 +1,27 @@
+feature: 코어 알림 정의 타입 ↔ 관리자 화면 라벨 패리티
+
+description: |
+  관리자 알림 설정 화면의 정의 목록 제목은 DB name 이 아니라 프론트 다국어 키
+  admin.settings.notification_definitions.types.{type} 로 렌더된다. 이 네임스페이스의
+  코어 소유분은 admin 템플릿(sirsoft-admin_basic)의 lang/partial/{ko,en}/admin.json 이
+  공급한다(모듈 소유 타입은 각 모듈 화면·lang 담당, ja 는 템플릿 언어팩 담당).
+
+  키가 없으면 예외·경고 없이 원시 키 문자열이 제목으로 그대로 노출된다
+  (실사례: #481 이 sitemap_regenerated / sitemap_regenerate_failed 정의를 config 에만
+  추가하고 템플릿 라벨을 누락 — 2026-08-24 제보). config/core.php 의 코어 정의
+  전수를 양 로케일 라벨과 자동 대조해 재발을 차단한다.
+
+axes:
+  locale: [ko, en]
+
+effects:
+  - core_definition_types_have_admin_template_labels
+
+test_files:
+  - tests/Unit/Notifications/NotificationDefinitionTypeLabelParityTest.php
+
+validation:
+  manual: |
+    /admin/settings?tab=notification_definitions 의 메일·사이트내 알림 탭에서 각 행 제목이
+    번역 문구로 표시되는지(원시 admin.settings.* 키 노출 0) 브라우저 실측. ja locale 은
+    g7-template-sirsoft-admin_basic-ja 팩 활성 상태에서 동일 확인.

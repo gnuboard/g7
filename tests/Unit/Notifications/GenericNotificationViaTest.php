@@ -313,7 +313,7 @@ class GenericNotificationViaTest extends TestCase
     /**
      * 사용 가능한 채널 목록에 없는 채널(비활성 확장이 제공하던 채널)은 via() 가 제외한다.
      *
-     * 회귀: 메시징 확장이 비활성이면 그 확장의 채널(sms/alimtalk)이 getAvailableChannels()
+     * 회귀: 비즈뿌리오 등 확장이 비활성이면 그 확장의 채널(sms/alimtalk)이 getAvailableChannels()
      * 에서 빠진다. 하지만 저장된 채널 설정·템플릿은 남아 있어, via() 가 available 목록을 확인하지
      * 않으면 죽은 채널을 발송 후보로 넣고 "건너뜀" 로그까지 남긴다. available 목록에 없는 채널은
      * 로그 없이 제외되어야 한다 (채널 지정 경로).

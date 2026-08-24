@@ -1862,7 +1862,9 @@
       "types": {
         "welcome": "회원가입 환영",
         "reset_password": "비밀번호 재설정",
-        "password_changed": "비밀번호 변경 알림"
+        "password_changed": "비밀번호 변경 알림",
+        "sitemap_regenerated": "사이트맵 재생성 완료",
+        "sitemap_regenerate_failed": "사이트맵 재생성 실패"
       },
       "channels_label": "채널:",
       "edit_modal": {

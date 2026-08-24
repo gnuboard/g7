@@ -1,0 +1,202 @@
+{
+  "target_layout": "admin_ecommerce_settings",
+  "comment": "[이커머스 면 — notification_tab_core.json 과 동일 패턴, target/컴포넌트 id 만 이커머스 전용] 알림 설정 '비즈뿌리오' 통합 탭 오버레이(#597 §3.3, 제품 결정 2026-08-23 개정). ① 탭 상단 상태 배너(문제 있을 때만: readiness/테스트 모드) + 안내 박스 ② 요약 데이터소스 bizppurioTemplates(GET templates/map)는 탭 진입 시 init_actions 로 조회 — 행 하단 상태 요약(notification_row_footer.json)과 [편집] 모달 섹션(notification_template_form_sections.json)이 공유한다 ③ 작성 셀렉트용 카테고리·발신프로필 데이터소스. 알림톡 작성/검수/SMS 본문 편집 UI 는 코어 [편집] 모달에 주입되므로 이 오버레이는 더 이상 모달을 등록하지 않는다.",
+  "data_sources": [
+    {
+      "id": "bizppurioTemplates",
+      "comment": "행 라이프사이클 표시용 요약 맵(notification_type 키). auto_fetch:false — 설정 페이지 전 탭 자동 호출 방지, 비즈뿌리오 탭 진입 시 init_actions 로 조회.",
+      "type": "api",
+      "endpoint": "/api/plugins/sirsoft-message_bizppurio/admin/templates/map",
+      "method": "GET",
+      "auto_fetch": false,
+      "auth_required": true,
+      "fallback": {
+        "data": {
+          "templates": {}
+        }
+      }
+    },
+    {
+      "id": "bizppurioCategories",
+      "comment": "작성 모달 카테고리 셀렉트(kapi category/all 위임). 모달 열 때만 조회. 자격증명 미설정 422 는 suppress + fallback.",
+      "type": "api",
+      "endpoint": "/api/plugins/sirsoft-message_bizppurio/admin/alimtalk-templates/categories",
+      "method": "GET",
+      "auto_fetch": false,
+      "auth_required": true,
+      "errorHandling": {
+        "default": {
+          "handler": "suppress"
+        }
+      },
+      "fallback": {
+        "data": {
+          "categories": [],
+          "load_failed": true
+        }
+      }
+    },
+    {
+      "id": "bizppurioProfiles",
+      "comment": "작성 모달 발신프로필 참고 셀렉트(kapi profile/use 위임). 모달 열 때만 조회. 실패는 suppress + fallback.",
+      "type": "api",
+      "endpoint": "/api/plugins/sirsoft-message_bizppurio/admin/alimtalk-templates/profiles",
+      "method": "GET",
+      "auto_fetch": false,
+      "auth_required": true,
+      "errorHandling": {
+        "default": {
+          "handler": "suppress"
+        }
+      },
+      "fallback": {
+        "data": {
+          "profiles": [],
+          "load_failed": true
+        }
+      }
+    }
+  ],
+  "injections": [
+    {
+      "target_id": "ecommerce_notif_channel_content",
+      "position": "prepend_child",
+      "comment": "비즈뿌리오 탭 상단 상태 배너. 문제 있을 때만 노출(정상=배너 없음). readiness 미충족 🔴 설정하기 / is_test_mode 🟡 테스트 모드. 탭 정체성은 query.channel==='alimtalk'.",
+      "components": [
+        {
+          "id": "bizppurio_ecommerce_status_banner",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{['sms','alimtalk'].includes(query.channel ?? '') && (((availableChannels?.data?.channels ?? []).find(c => c.id === (query.channel))?.readiness?.ready === false) || ((availableChannels?.data?.channels ?? []).find(c => c.id === (query.channel))?.is_test_mode === true))}}",
+          "props": {
+            "className": "mt-4 mb-3 space-y-2"
+          },
+          "children": [
+            {
+              "id": "bizppurio_ecommerce_banner_not_ready",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{(availableChannels?.data?.channels ?? []).find(c => c.id === (query.channel))?.readiness?.ready === false}}",
+              "props": {
+                "className": "flex-between gap-3 p-3 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "fas fa-circle-exclamation",
+                        "size": "sm",
+                        "className": "text-red-600 dark:text-red-400"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:sirsoft-message_bizppurio.banner.not_ready",
+                      "props": {
+                        "className": "text-sm text-red-800 dark:text-red-200"
+                      }
+                    }
+                  ],
+                  "props": {
+                    "className": "flex-center gap-2"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "type": "button",
+                    "className": "text-xs font-medium px-3 py-1.5 rounded-md bg-red-600 text-white hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 whitespace-nowrap"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "navigate",
+                      "params": {
+                        "path": "/admin/plugins/sirsoft-message_bizppurio/settings"
+                      }
+                    }
+                  ],
+                  "text": "$t:sirsoft-message_bizppurio.banner.setup_action"
+                }
+              ]
+            },
+            {
+              "id": "bizppurio_ecommerce_banner_test_mode",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{(availableChannels?.data?.channels ?? []).find(c => c.id === (query.channel))?.is_test_mode === true}}",
+              "props": {
+                "className": "flex-center gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "fas fa-flask",
+                    "size": "sm",
+                    "className": "text-amber-600 dark:text-amber-400"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-message_bizppurio.banner.test_mode",
+                  "props": {
+                    "className": "text-sm text-amber-800 dark:text-amber-200"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "bizppurio_ecommerce_alimtalk_guide",
+          "comment": "비즈뿌리오 탭 상시 안내 박스 — 알림톡 템플릿을 시스템에서 작성→검수 신청→승인 후 발송됨을 안내. alimtalk 탭 정체성일 때만.",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{(query.channel) === 'alimtalk'}}",
+          "props": {
+            "className": "flex items-center gap-2 mt-3 mb-1 p-3 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "fas fa-circle-info",
+                "size": "sm",
+                "className": "text-blue-500 dark:text-blue-400 flex-shrink-0"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:sirsoft-message_bizppurio.template.tab_guide",
+              "props": {
+                "className": "text-sm text-blue-800 dark:text-blue-200"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "init_actions": [
+    {
+      "comment": "비즈뿌리오 탭 진입 시 요약 맵 조회(행 라이프사이클 표시용). 다른 탭에선 자동 호출 안 됨(auto_fetch:false).",
+      "handler": "refetchDataSource",
+      "params": {
+        "dataSourceId": "bizppurioTemplates"
+      }
+    }
+  ],
+  "priority": 320
+}
