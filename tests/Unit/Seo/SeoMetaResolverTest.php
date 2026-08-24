@@ -4,7 +4,9 @@ namespace Tests\Unit\Seo;
 
 use App\Seo\ExpressionEvaluator;
 use App\Seo\SeoMetaResolver;
+use App\Services\SettingsService;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
 
 /**
@@ -1482,6 +1484,88 @@ class SeoMetaResolverTest extends TestCase
         $this->assertNotNull($json);
         $this->assertStringContainsString('"offers"', $json);
         $this->assertStringContainsString('@context', $json);
+    }
+
+    // ── og:image 사이트 기본값 폴백 (공개 이슈 #22) ──────────────
+
+    /**
+     * getOgDefaultImageUrl 이 지정 값을 돌려주도록 SettingsService 를 스텁합니다.
+     *
+     * @param  string|null  $url  기본 OG 이미지 URL
+     */
+    private function stubOgDefaultImage(?string $url): void
+    {
+        $mock = \Mockery::mock(SettingsService::class);
+        $mock->shouldReceive('getOgDefaultImageUrl')->andReturn($url);
+        $this->app->instance(SettingsService::class, $mock);
+    }
+
+    /**
+     * 레이아웃 og.image 선언이 있으면 사이트 기본값을 쓰지 않아야 합니다 (선언 우선).
+     *
+     * @scenario image_chain=layout_declared, setting_state=saved
+     *
+     * @effects layout_declaration_wins_over_site_default
+     */
+    public function test_og_image_declaration_wins_over_site_default(): void
+    {
+        $this->stubOgDefaultImage('/storage/settings/site-default.png');
+
+        $result = $this->resolver->resolveOgData(
+            ['og' => ['image' => '/storage/posts/declared.jpg']],
+            [],
+            'Fallback Title',
+            'Fallback Description'
+        );
+
+        $this->assertStringContainsString('/storage/posts/declared.jpg', $result['image']);
+        $this->assertStringNotContainsString('site-default', $result['image']);
+    }
+
+    /**
+     * 선언이 빈 값이면 사이트 기본 OG 이미지로 폴백하고 secure_url 도 파생되어야 합니다.
+     *
+     * @scenario image_chain=site_default, setting_state=saved
+     *
+     * @effects empty_declaration_falls_back_to_site_default
+     */
+    public function test_og_image_falls_back_to_site_default_and_derives_secure_url(): void
+    {
+        // absoluteUrl 은 부팅 시점 URL 루트를 쓰므로 강제 지정으로 고정한다
+        URL::forceRootUrl('https://shop.example.com');
+        URL::forceScheme('https');
+        $this->stubOgDefaultImage('/storage/settings/site-default.png');
+
+        try {
+            $result = $this->resolver->resolveOgData(['og' => []], [], 'T', 'D');
+        } finally {
+            URL::forceRootUrl(null);
+            URL::forceScheme(null);
+        }
+
+        $this->assertSame('https://shop.example.com/storage/settings/site-default.png', $result['image']);
+        $this->assertSame(
+            $result['image'],
+            $result['image_secure_url'],
+            'secure_url 은 폴백 적용 후의 image 를 기준으로 파생되어야 합니다.'
+        );
+    }
+
+    /**
+     * 선언도 기본값도 없으면 image 가 빈 값이어야 합니다 (태그 미출력).
+     *
+     * @scenario image_chain=none, setting_state=absent
+     *
+     * @effects no_image_emits_nothing
+     */
+    public function test_og_image_empty_when_no_declaration_and_no_default(): void
+    {
+        $this->stubOgDefaultImage(null);
+
+        $result = $this->resolver->resolveOgData(['og' => []], [], 'T', 'D');
+
+        $this->assertSame('', $result['image']);
+        $this->assertSame('', $result['image_secure_url']);
     }
 
     /**

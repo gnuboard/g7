@@ -98,12 +98,15 @@ class SyncDatabaseTranslationsTest extends TestCase
     public function test_case_b_skips_locale_when_user_overrides_registered(): void
     {
         // Permission 은 HasUserOverrides 미사용이므로 Role 로 검증 (Role/Menu/Notification 모두 동일 정책)
+        // user_overrides 는 실제 생산 형식(운영자 수정 시 updating 이벤트가 기록하는
+        // dot-path 리스트 "{column}.{locale}")으로 둔다 — 과거 픽스처는 어떤 생산자도
+        // 쓰지 않는 연관 형식이라 보존 판정 결함(isset 사문)을 green 으로 가렸다.
         $role = Role::query()->create([
             'identifier' => 'test_role_b',
             'name' => ['ko' => '바', 'en' => 'Bar', 'ja' => '사용자수정'],
             'description' => ['ko' => 'D', 'en' => 'D'],
             'is_active' => true,
-            'user_overrides' => ['name' => ['updated_at' => now()->toIso8601String()]],
+            'user_overrides' => ['name.ja'],
         ]);
 
         $pack = $this->setupPackWithPermissionsSeed([
@@ -167,12 +170,13 @@ class SyncDatabaseTranslationsTest extends TestCase
 
     public function test_deactivate_preserves_locale_when_user_overrides_registered(): void
     {
+        // dot-path 리스트 = 실제 생산 형식 (test_case_b 주석 참조)
         $role = Role::query()->create([
             'identifier' => 'test_role_zed',
             'name' => ['ko' => '제드', 'en' => 'Zed', 'ja' => '사용자수정ja'],
             'description' => ['ko' => '', 'en' => ''],
             'is_active' => true,
-            'user_overrides' => ['name' => ['updated_at' => now()->toIso8601String()]],
+            'user_overrides' => ['name.ja'],
         ]);
 
         $pack = $this->setupPackWithPermissionsSeed([

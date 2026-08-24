@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Models;
 use App\Casts\AsUnicodeJson;
 use App\Extension\HookManager;
 use App\Search\Contracts\FulltextSearchable;
+use App\Support\HtmlImageExtractor;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -93,6 +94,7 @@ class Product extends Model implements FulltextSearchable
         'common_info_id',
         'description',
         'description_mode',
+        'content_thumbnail_url',
         'meta_title',
         'meta_description',
         'meta_keywords',
@@ -132,6 +134,67 @@ class Product extends Model implements FulltextSearchable
         'display_status' => ProductDisplayStatus::class,
         'tax_status' => ProductTaxStatus::class,
     ];
+
+    /**
+     * 모델 이벤트 등록
+     *
+     * 설명 첫 내부 이미지 URL 캐시(content_thumbnail_url)는 저장 시점에만 계산한다 —
+     * 목록 쿼리는 description 을 SELECT 하지 않으므로 조회 시점 파싱이 불가하다.
+     * 시더·테스트의 Product::create() 직접 호출까지 커버되는 유일 지점이 모델
+     * saving 이벤트다 (공개 이슈 #22 동종 — board 와 동형).
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (Product $product) {
+            if ($product->exists
+                && ! $product->isDirty('description')
+                && ! $product->isDirty('description_mode')) {
+                return;
+            }
+
+            // text 모드 설명은 이스케이프 렌더(이미지 미표시) — 캐시하지 않는다
+            if ($product->description_mode !== 'html') {
+                $product->content_thumbnail_url = null;
+
+                return;
+            }
+
+            // description 은 다국어 JSON — 기본 로케일 우선, 없으면 배열 순서대로
+            // 첫 내부 이미지가 나올 때까지 시도 (레거시 평문 문자열도 수용)
+            $extracted = null;
+            $candidates = [];
+            $description = $product->description;
+            $htmls = is_array($description)
+                ? array_values(array_filter(
+                    [$description[config('app.locale')] ?? null, ...array_values($description)],
+                    fn ($html) => is_string($html) && $html !== ''
+                ))
+                : (is_string($description) && $description !== '' ? [$description] : []);
+
+            foreach ($htmls as $html) {
+                $candidates = array_merge($candidates, HtmlImageExtractor::candidates($html));
+                $extracted ??= HtmlImageExtractor::firstInternal($html);
+
+                if ($extracted !== null) {
+                    break;
+                }
+            }
+
+            // 확장이 후보를 대체(CDN prefix 승격 등)하거나 차단(null)할 수 있는 필터 훅.
+            // 특정 에디터 확장에 의존하지 않는다 — 페이로드는 일반 HTML 파싱 결과뿐이다.
+            $value = HookManager::applyFilters(
+                'sirsoft-ecommerce.product.filter_content_thumbnail',
+                $extracted,
+                $product,
+                $candidates
+            );
+
+            // 필터 반환값 방어 — 비문자열/빈 값/컬럼 상한 초과는 null(후보 없음)로 강등
+            $product->content_thumbnail_url = is_string($value) && $value !== '' && mb_strlen($value) <= 1000
+                ? $value
+                : null;
+        });
+    }
 
     /**
      * 이 상품의 옵션 관계 (color/size 등 가변 옵션 정의).
@@ -190,13 +253,15 @@ class Product extends Model implements FulltextSearchable
             $thumbnailImage = $this->images->firstWhere('is_thumbnail', true)
                 ?? $this->images->first();
 
-            return $thumbnailImage?->download_url;
+            // 상품 이미지가 없으면 설명 첫 내부 이미지 캐시로 폴백 (공개 이슈 #22 동종).
+            // 추가 쿼리 없음 — 이미 로드된 속성 읽기만 (쿼리 수 잠금 테스트 준수)
+            return $thumbnailImage?->download_url ?? ($this->content_thumbnail_url ?: null);
         }
 
         $thumbnailImage = $this->images()->where('is_thumbnail', true)->first()
             ?? $this->images()->first();
 
-        return $thumbnailImage?->download_url;
+        return $thumbnailImage?->download_url ?? ($this->content_thumbnail_url ?: null);
     }
 
     /**

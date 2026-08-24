@@ -1423,6 +1423,8 @@
       "og_image_default_width": "OG 画像 デフォルト横幅 (px)",
       "og_image_default_height": "OG 画像 デフォルト高さ (px)",
       "og_image_default_size_hint": "サムネイルの実際のサイズが不明な場合のデフォルト値です。Facebookは推奨 1200×630、最小 200×200。",
+      "og_image_default": "既定の共有画像",
+      "og_image_default_desc": "画面ごとの共有画像がない場合に使用するサイト既定の画像です。リンク共有時のプレビューカードに表示されます。",
       "twitter_default_card": "Twitterカード デフォルト タイプ",
       "twitter_default_card_hint": "大きい画像のカードは summary_large_image、小さいカードは summary を推奨します。",
       "twitter_default_site": "Twitter サイト ハンドル",
@@ -1860,7 +1862,9 @@
       "types": {
         "welcome": "会員登録ウェルカム",
         "reset_password": "パスワード再設定",
-        "password_changed": "パスワード変更通知"
+        "password_changed": "パスワード変更通知",
+        "sitemap_regenerated": "サイトマップ再生成完了",
+        "sitemap_regenerate_failed": "サイトマップ再生成失敗"
       },
       "channels_label": "チャネル:",
       "edit_modal": {

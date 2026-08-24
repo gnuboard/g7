@@ -4,6 +4,13 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.7] - 2026-08-24
+
+### Added
+
+- 환경설정 SEO 탭의 기본 공유 이미지(og:image) 라벨·설명 번역을 추가했습니다.
+- 알림 설정 화면의 「사이트맵 재생성 완료」・「사이트맵 재생성 실패」 알림 이름 번역을 추가했습니다.
+
 ## [1.0.6] - 2026-08-22
 
 ### Added

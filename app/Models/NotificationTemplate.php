@@ -28,6 +28,20 @@ class NotificationTemplate extends Model
     ];
 
     /**
+     * 다국어 JSON 컬럼 — 운영자 수정을 dot-path(`"subject.ja"` 등) sub-key 단위로 기록.
+     *
+     * 미선언 시 수정이 컬럼 전체 항목(`"subject"`)으로 기록되어 시더 재실행이 컬럼을
+     * 통째로 얼리고(다른 로케일 갱신·신규 팩 로케일 추가 불가), 언어팩 병합의
+     * 사용자 수정 보존(Case B)도 로케일 단위로 판정할 수 없다 (#597 에서 교정).
+     *
+     * @var array<int, string>
+     */
+    protected array $translatableTrackableFields = [
+        'subject',
+        'body',
+    ];
+
+    /**
      * 모델 이벤트 등록 — 템플릿 변경 시 알림 정의 캐시 자동 삭제.
      */
     protected static function booted(): void
@@ -111,13 +125,6 @@ class NotificationTemplate extends Model
     }
 
     /**
-     * 특정 채널의 템플릿 조회.
-     *
-     * @param Builder $query
-     * @param string $channel
-     * @return Builder
-     */
-    /**
      * 수신자 규칙이 설정되어 있는지 확인합니다.
      *
      * @return bool
@@ -127,6 +134,13 @@ class NotificationTemplate extends Model
         return ! empty($this->recipients);
     }
 
+    /**
+     * 특정 채널의 템플릿 조회.
+     *
+     * @param  Builder  $query
+     * @param  string  $channel
+     * @return Builder
+     */
     public function scopeByChannel(Builder $query, string $channel): Builder
     {
         return $query->where('channel', $channel);

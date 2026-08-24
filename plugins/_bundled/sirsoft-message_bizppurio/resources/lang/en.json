@@ -1,0 +1,304 @@
+{
+  "name": "Bizppurio Messaging",
+  "description": "Bizppurio SMS/LMS and Kakao Alimtalk delivery plugin.",
+  "settings": {
+    "title": "Bizppurio Messaging Settings",
+    "description": "Manage Bizppurio integration and delivery settings.",
+    "save": "Save",
+    "saving": "Saving...",
+    "save_success": "Settings saved.",
+    "save_failed": "Failed to save settings.",
+    "test_mode": {
+      "label": "Test Mode",
+      "hint": "In test mode, messages are sent to the Bizppurio test domain. Turn it off to send via the production domain.",
+      "account_notice": "We recommend using separate Bizppurio accounts for testing and production."
+    },
+    "live_mode_warning_title": "Sending to production",
+    "live_mode_warning_body": "Test mode is off — real customers will receive messages and delivery costs will be billed. Keep test mode on during inspection.",
+    "sections": {
+      "api": {
+        "title": "API Integration",
+        "description": "Credentials shared by the sending system and the Kakao management system."
+      },
+      "sending": {
+        "title": "Sending Settings",
+        "description": "Sender information used for SMS and alimtalk delivery."
+      }
+    },
+    "fields": {
+      "bizppurio_id": {
+        "label": "Bizppurio ID",
+        "hint": "The Bizppurio account ID used for both sending and Kakao management."
+      },
+      "password": {
+        "label": "Bizppurio Module Password",
+        "hint": "Enter the Bizppurio module password. (Bizppurio console > Module integration settings > Change module password)"
+      },
+      "connection_check": {
+        "label": "Connection Check",
+        "hint": "Verify that the saved ID and password are valid. (Applies after saving)",
+        "button": "Check Connection",
+        "checking": "Checking...",
+        "success": "Authentication verified. The ID and password are correct.",
+        "failed": "Authentication check failed.",
+        "unsaved_changes": "Please save your changes first."
+      },
+      "api_key": {
+        "label": "API Key",
+        "hint": "Request the API key from Bizppurio customer support along with your account ID."
+      },
+      "sender_number": {
+        "label": "Sender Number",
+        "hint": "The sender phone number used for SMS and alimtalk delivery."
+      },
+      "sender_key": {
+        "label": "Alimtalk Sender Profile Key",
+        "hint": "The 40-character sender profile key used for alimtalk delivery and template requests."
+      }
+    },
+    "report": {
+      "section_title": "Report Receiving",
+      "hint": "Bizppurio pushes delivery results (URL PUSH) to this address after sending. Register the address below with the Bizppurio business team (or the report settings in the console).",
+      "note": "Once registered, delivery results are recorded automatically. Before registration, only the send request is confirmed and final results are not updated.",
+      "copy": "Copy",
+      "copied": "Report receiving address copied to clipboard."
+    },
+    "tabs": {
+      "connection": "Settings",
+      "templates": "Notification Templates"
+    },
+    "preparation": {
+      "intro": "To send SMS and Kakao alimtalk, complete the preparations below in the Bizppurio console first.",
+      "sms_label": "SMS/LMS",
+      "sms_sender": "Register a sender number.",
+      "kakao_label": "Kakao Alimtalk",
+      "kakao_channel": "Create a KakaoTalk business channel and register a sender profile.",
+      "kakao_template": "Alimtalk templates are composed and submitted for inspection in the admin notification settings (Bizppurio tab).",
+      "kakao_apikey": "Request an API key from customer support.",
+      "console_link": "Open Bizppurio Console"
+    }
+  },
+  "channels": {
+    "bizppurio_tab": "Bizppurio"
+  },
+  "binding": {
+    "variables_hint": "Available variables (click to insert at the cursor)"
+  },
+  "banner": {
+    "not_ready": "Required delivery settings are not complete.",
+    "setup_action": "Set up",
+    "test_mode": "Test mode — no real messages are sent."
+  },
+  "dispatch_result": {
+    "column_header": "SMS/Alimtalk Result",
+    "inspection_label": "Test",
+    "low_balance": "Low balance",
+    "fallback": "SMS fallback {status}",
+    "detail_title": "SMS/Alimtalk Delivery Result",
+    "channel_label": "Channel: {channel}",
+    "sent_content_label": "Sent content",
+    "sent_content_hint": "Alimtalk is sent with the approved template content, which may differ from the body above."
+  },
+  "editor": {
+    "data_source": {
+      "dispatch_results": "Bizppurio dispatch results"
+    }
+  },
+  "template": {
+    "tab_guide": "Open [Edit] on each notification to write the alimtalk template and the SMS body together and request review. Alimtalk is sent automatically after Kakao approval; fallback SMS and SMS-only sending are configured in the same window.",
+    "status": {
+      "unwritten": "Not composed",
+      "draft": "Draft",
+      "requested": "Under inspection",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "stopped": "Stopped",
+      "blocked": "Blocked",
+      "dormant": "Dormant"
+    },
+    "row": {
+      "alimtalk_label": "Alimtalk",
+      "requested_on": "Requested {date}",
+      "synced_on": "Synced {date}",
+      "alimtalk_enabled": "Enabled",
+      "btn_view_reason": "View reason",
+      "btn_compose": "Compose alimtalk template",
+      "btn_edit": "Edit",
+      "btn_edit_approved": "Edit (cancel approval)",
+      "btn_request": "Request inspection",
+      "btn_cancel_request": "Cancel request",
+      "btn_release": "Release dormant",
+      "btn_refresh": "Refresh",
+      "requested_toast": "Inspection requested.",
+      "cancel_request_toast": "Inspection request cancelled.",
+      "released_toast": "Dormant state released.",
+      "synced_toast": "Kakao inspection status synchronized.",
+      "fallback_sms": "SMS fallback",
+      "sms_only": "SMS only",
+      "sms_body_prefix": "Body:",
+      "sms_body_missing": "No SMS body",
+      "btn_edit_sms": "Edit SMS body",
+      "sms_label": "SMS",
+      "on": "On",
+      "off": "Off",
+      "alimtalk_disabled": "Sending off"
+    },
+    "form": {
+      "modal_title": "Alimtalk Template — {name}",
+      "rejected_banner": "This template was rejected. Review the reasons below, edit, and request inspection again.",
+      "sender_profile": "Sender profile",
+      "sender_profile_placeholder": "Select a sender profile (reference)",
+      "sender_profile_hint": "Inspection requests use the sender profile key saved in the plugin settings.",
+      "category": "Category",
+      "category_placeholder": "Select a category",
+      "name": "Template name",
+      "message_type": "Message type",
+      "templateMessageType_options": {
+        "BA": "Basic",
+        "EX": "Extra info",
+        "AD": "Channel add",
+        "MI": "Mixed"
+      },
+      "emphasize_type": "Emphasis type",
+      "templateEmphasizeType_options": {
+        "NONE": "None",
+        "TEXT": "Text",
+        "IMAGE": "Image",
+        "ITEM_LIST": "Item list"
+      },
+      "emphasize_title": "Emphasis title",
+      "emphasize_subtitle": "Emphasis subtitle",
+      "image": "Image",
+      "image_hint": "jpg/png · up to 500KB · width ≥500px · 2:1 ratio (the URL is filled automatically after upload)",
+      "image_uploading": "Uploading image...",
+      "image_upload_failed": "Failed to upload the image.",
+      "content": "Body",
+      "extra": "Extra info",
+      "header": "Header",
+      "header_hint": "Optional header shown above the body (up to 16 characters)",
+      "buttons": "Buttons (up to 5)",
+      "button_add": "Add button",
+      "button_name": "Button name (up to 14 chars)",
+      "quick_replies": "Quick replies (up to 10)",
+      "quick_reply_add": "Add quick reply",
+      "link_mo": "Mobile link (required)",
+      "link_pc": "PC link (optional)",
+      "link_and": "Android scheme (required)",
+      "link_ios": "iOS scheme (required)",
+      "tel_number": "Phone number (required)",
+      "plugin_id": "Plugin ID (required)",
+      "item_highlight": "Item highlight (optional)",
+      "hl_title": "Highlight title",
+      "hl_description": "Highlight description",
+      "hl_image_url": "Thumbnail image URL (optional)",
+      "item_list": "Items (2–10)",
+      "item_list_hint": "At least 2 and up to 10 items. (title ≤6 chars, description ≤23 chars)",
+      "item_add": "Add item",
+      "item_title": "Title",
+      "item_description": "Description",
+      "item_summary": "Summary (price info)",
+      "summary_description": "Summary value (≤14 chars)",
+      "btn_remove_item": "Remove item",
+      "btn_remove_button": "Remove button",
+      "btn_remove_quick_reply": "Remove quick reply",
+      "btn_save": "Save",
+      "btn_save_request": "Save & request inspection",
+      "request_comment": "Note to reviewer",
+      "request_comment_placeholder": "e.g. #{name}=Jane Doe, #{order_number}=20260823-0001",
+      "request_comment_hint": "Sent to the Kakao reviewer together with the inspection request (optional, up to 500 characters). Kakao review guidelines ask for an example value per body variable, so listing them here reduces rejections. It is not stored — it is only sent when you request inspection.",
+      "saved_toast": "Notification template saved.",
+      "requested_toast": "Inspection requested. Alimtalk delivery starts once approved."
+    },
+    "sms": {
+      "modal_title": "SMS Body — {name}",
+      "hint": "This body is shared by SMS fallback and SMS-only delivery. #{variables} are substituted at send time.",
+      "btn_save": "Save",
+      "saved_toast": "SMS body saved."
+    },
+    "cancel_approval": {
+      "modal_title": "Cancel Approval",
+      "warning": "Cancelling approval of '{name}' immediately stops alimtalk delivery for this notification. (SMS fallback and SMS-only delivery continue per the SMS settings.) Alimtalk resumes only after you edit, request inspection again, and get approved.",
+      "btn_confirm": "Cancel approval & edit",
+      "done_toast": "Approval cancelled. Edit and request inspection again."
+    },
+    "rejection": {
+      "modal_title": "Rejection Reasons — {name}",
+      "btn_close": "Close"
+    },
+    "approval": {
+      "approved": "Approved",
+      "not_approved": "Not approved"
+    },
+    "section": {
+      "alimtalk_title": "Alimtalk template",
+      "sms_title": "SMS",
+      "alimtalk_enabled": "Send alimtalk",
+      "locked_hint": "Templates under review or already approved cannot be edited. Press [Cancel request] or [Edit (cancel approval)] first.",
+      "saved_toast": "Notification template saved.",
+      "loading": "Loading template…"
+    }
+  },
+  "manage": {
+    "guide": "Manage the Bizppurio template status of every notification at a glance. Composing and requesting inspection work the same as in the notification settings screen.",
+    "filter_all": "All statuses",
+    "search_placeholder": "Search by notification name/type",
+    "btn_search": "Search",
+    "total_count": "Total {count}",
+    "btn_compose": "Compose",
+    "btn_edit": "Edit",
+    "btn_delete": "Delete",
+    "empty": "No Bizppurio notification templates yet.",
+    "empty_hint": "Templates appear here once you compose an alimtalk template or configure SMS in the admin notification settings (Bizppurio tab).",
+    "sms_only": "Only",
+    "sms_fallback": "Fallback",
+    "owner": {
+      "core": "Core",
+      "module": "Module",
+      "plugin": "Plugin"
+    },
+    "columns": {
+      "notification": "Notification",
+      "owner": "Owner",
+      "status": "Alimtalk Status",
+      "sms": "SMS",
+      "requested_at": "Requested",
+      "synced_at": "Synced",
+      "actions": "Actions"
+    },
+    "delete": {
+      "modal_title": "Delete Template",
+      "warning": "Delete the Bizppurio template settings of '{name}'. The Kakao-side template is deleted together only when it is in a deletable state (registered/rejected).",
+      "btn_confirm": "Delete",
+      "done_with_kakao": "Template deleted. (including the Kakao-side template)",
+      "done_db_only": "Template settings deleted. The Kakao-side template remains due to its state."
+    }
+  },
+  "templates": {
+    "readiness": {
+      "title": "The settings below are required to use alimtalk templates",
+      "go_settings": "Go to settings",
+      "missing_label": "Missing items",
+      "api_key_missing": "Kakao management API key",
+      "sender_key_missing": "Alimtalk sender profile key",
+      "note": "Enter the items above in the Settings tab to compose templates and request inspection. Real delivery requires turning off test mode and an approved template."
+    },
+    "list": {
+      "refresh": "Refresh"
+    },
+    "link_type": {
+      "WL": "Web link",
+      "AL": "App link",
+      "DS": "Delivery tracking",
+      "BK": "Bot keyword",
+      "MD": "Message forward",
+      "AC": "Add channel",
+      "BC": "Consult talk",
+      "BT": "Bot transfer",
+      "TN": "Call",
+      "MP": "Map",
+      "P1": "Secure image",
+      "P2": "Personal info",
+      "P3": "One-click pay"
+    }
+  }
+}

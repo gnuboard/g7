@@ -31,6 +31,17 @@ class IdentityMessageTemplate extends Model
     ];
 
     /**
+     * 다국어 JSON 컬럼 — 운영자 수정을 dot-path(`"subject.ja"` 등) sub-key 단위로 기록.
+     * (NotificationTemplate 과 동형 — 미선언의 결과는 그쪽 주석 참조, #597 에서 교정)
+     *
+     * @var array<int, string>
+     */
+    protected array $translatableTrackableFields = [
+        'subject',
+        'body',
+    ];
+
+    /**
      * 활동 로그 추적 필드.
      *
      * @var array<string, array<string, string>>

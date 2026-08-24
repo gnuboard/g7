@@ -1,0 +1,797 @@
+{
+  "extension_point": "notification_template_form_footer_actions",
+  "comment": "코어 알림 템플릿 [편집] 모달 푸터에 주입되는 통합 저장 버튼(제품 결정 2026-08-23 — 저장은 하나로). 채널 메타 hidden_template_editor 로 코어 [저장]/[미리보기]가 숨겨진 자리에서, [저장] 한 번으로 ① 알림톡 템플릿(draft/rejected 만 내용 갱신) + 발송 설정·SMS 본문 ② 수신자 규칙이 바뀐 경우에만 코어 채널 템플릿을 순차 저장한다(앞 단계 실패 시 중단). [저장 후 검수 신청]은 알림톡 본문이 있고 수정 가능한 상태에서만 노출된다 — 카카오 검수는 알림톡 템플릿만 대상이며 SMS 는 검수 없이 즉시 반영된다. 더블클릭 재진입은 click if + disabled 로 막고, 중복 검수 신청의 SSoT 는 서버 원자 선점이다.",
+  "priority": 320,
+  "components": [
+    {
+      "id": "bizppurio_tpl_footer_actions",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{extensionPointProps.channel === 'alimtalk'}}",
+      "props": {
+        "className": "flex gap-2"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "if": "{{(['draft', 'rejected'].includes(_global.bz_tpl_modal?.status ?? 'draft')) && ((_global.bz_tpl_modal?.content?.templateContent ?? '').trim() !== '') && ((_global.bz_tpl_modal?.notification_type === extensionPointProps.definition?.type) && !(_global.bz_tpl_modal?.loading ?? false))}}",
+          "props": {
+            "type": "button",
+            "className": "text-sm px-4 py-2 rounded-md bg-teal-600 text-white hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600 disabled:opacity-50 disabled:cursor-not-allowed",
+            "disabled": "{{(_global.bz_tpl_modal?.isSaving ?? false) || (_global.bz_tpl_upload?.uploading ?? false) || !((_global.bz_tpl_modal?.notification_type === extensionPointProps.definition?.type) && !(_global.bz_tpl_modal?.loading ?? false))}}"
+          },
+          "text": "$t:sirsoft-message_bizppurio.template.form.btn_save_request",
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "if": "{{!(_global.bz_tpl_modal?.isSaving ?? false) && ((_global.bz_tpl_modal?.notification_type === extensionPointProps.definition?.type) && !(_global.bz_tpl_modal?.loading ?? false))}}",
+              "params": {
+                "actions": [
+                  {
+                    "handler": "setState",
+                    "params": {
+                      "target": "global",
+                      "bz_tpl_modal.isSaving": true,
+                      "bz_tpl_modal.error": null,
+                      "bz_tpl_modal.errors": null,
+                      "bz_sms_modal.isSaving": true
+                    }
+                  },
+                  {
+                    "comment": "① 행 없음 + 본문 입력 → POST(생성). 검수 신청은 생성 응답의 id 로 이어간다.",
+                    "handler": "apiCall",
+                    "auth_required": true,
+                    "target": "/api/plugins/sirsoft-message_bizppurio/admin/templates",
+                    "if": "{{!(_global.bz_tpl_modal?.id) && ((_global.bz_tpl_modal?.content?.templateContent ?? '').trim() !== '')}}",
+                    "params": {
+                      "method": "POST",
+                      "body": {
+                        "notification_type": "{{_global.bz_tpl_modal?.notification_type}}",
+                        "content": "{{_global.bz_tpl_modal?.content}}",
+                        "alimtalk_enabled": "{{!!(_global.bz_tpl_modal?.alimtalk_enabled ?? true)}}",
+                        "fallback_sms_enabled": "{{!!(_global.bz_sms_modal?.fallback_sms_enabled)}}",
+                        "sms_only": "{{!!(_global.bz_sms_modal?.sms_only)}}",
+                        "sms_body": "{{Object.assign({}, _global.bz_sms_modal?.body)}}"
+                      }
+                    },
+                    "onSuccess": [
+                      {
+                        "handler": "apiCall",
+                        "auth_required": true,
+                        "target": "/api/plugins/sirsoft-message_bizppurio/admin/templates/{{response.data?.template?.id}}/request",
+                        "params": {
+                          "method": "POST",
+                          "body": {
+                            "comment": "{{_global.bz_tpl_modal?.request_comment ?? ''}}"
+                          }
+                        },
+                        "onSuccess": [
+                          {
+                            "comment": "수신자 규칙 변경 시에만: 코어 채널 템플릿 PUT(코어 모달의 저장 계약과 동일 엔드포인트/본문 — subject·body 는 숨겨진 값 그대로).",
+                            "handler": "apiCall",
+                            "auth_required": true,
+                            "target": "{{extensionPointProps.saveEndpoint}}",
+                            "if": "{{(JSON.stringify(_global?.[extensionPointProps.stateKey]?.recipients ?? []) !== JSON.stringify(_global?.[extensionPointProps.stateKey]?.template?.recipients ?? []))}}",
+                            "params": {
+                              "method": "PUT",
+                              "body": {
+                                "subject": "{{_global?.[extensionPointProps.stateKey]?.template?.subject}}",
+                                "body": "{{_global?.[extensionPointProps.stateKey]?.template?.body}}",
+                                "click_url": "{{_global?.[extensionPointProps.stateKey]?.template?.click_url ?? null}}",
+                                "recipients": "{{_global?.[extensionPointProps.stateKey]?.recipients ?? []}}"
+                              }
+                            },
+                            "onSuccess": [
+                              {
+                                "handler": "setState",
+                                "params": {
+                                  "target": "global",
+                                  "bz_tpl_modal.isSaving": false,
+                                  "bz_sms_modal.isSaving": false
+                                }
+                              },
+                              {
+                                "handler": "refetchDataSource",
+                                "params": {
+                                  "dataSourceId": "bizppurioTemplates"
+                                }
+                              },
+                              {
+                                "handler": "refetchDataSource",
+                                "params": {
+                                  "dataSourceId": "{{extensionPointProps.refetchDataSourceId}}"
+                                }
+                              },
+                              {
+                                "handler": "toast",
+                                "params": {
+                                  "message": "$t:sirsoft-message_bizppurio.template.form.requested_toast",
+                                  "type": "success"
+                                }
+                              },
+                              {
+                                "handler": "closeModal"
+                              }
+                            ],
+                            "onError": [
+                              {
+                                "handler": "setState",
+                                "params": {
+                                  "target": "global",
+                                  "bz_tpl_modal.isSaving": false,
+                                  "bz_sms_modal.isSaving": false,
+                                  "bz_tpl_modal.error": "{{error.errors?.bizppurio_message ?? error.message}}",
+                                  "bz_tpl_modal.errors": "{{(error.errors && typeof error.errors === 'object' && !error.errors.bizppurio_message) ? error.errors : null}}"
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "comment": "수신자 규칙 변경 없음: 코어 PUT 없이 마무리.",
+                            "handler": "sequence",
+                            "if": "{{!(JSON.stringify(_global?.[extensionPointProps.stateKey]?.recipients ?? []) !== JSON.stringify(_global?.[extensionPointProps.stateKey]?.template?.recipients ?? []))}}",
+                            "params": {
+                              "actions": [
+                                {
+                                  "handler": "setState",
+                                  "params": {
+                                    "target": "global",
+                                    "bz_tpl_modal.isSaving": false,
+                                    "bz_sms_modal.isSaving": false
+                                  }
+                                },
+                                {
+                                  "handler": "refetchDataSource",
+                                  "params": {
+                                    "dataSourceId": "bizppurioTemplates"
+                                  }
+                                },
+                                {
+                                  "handler": "refetchDataSource",
+                                  "params": {
+                                    "dataSourceId": "{{extensionPointProps.refetchDataSourceId}}"
+                                  }
+                                },
+                                {
+                                  "handler": "toast",
+                                  "params": {
+                                    "message": "$t:sirsoft-message_bizppurio.template.form.requested_toast",
+                                    "type": "success"
+                                  }
+                                },
+                                {
+                                  "handler": "closeModal"
+                                }
+                              ]
+                            }
+                          }
+                        ],
+                        "onError": [
+                          {
+                            "handler": "setState",
+                            "params": {
+                              "target": "global",
+                              "bz_tpl_modal.isSaving": false,
+                              "bz_sms_modal.isSaving": false,
+                              "bz_tpl_modal.error": "{{error.errors?.bizppurio_message ?? error.message}}",
+                              "bz_tpl_modal.errors": "{{(error.errors && typeof error.errors === 'object' && !error.errors.bizppurio_message) ? error.errors : null}}"
+                            }
+                          }
+                        ]
+                      }
+                    ],
+                    "onError": [
+                      {
+                        "handler": "setState",
+                        "params": {
+                          "target": "global",
+                          "bz_tpl_modal.isSaving": false,
+                          "bz_sms_modal.isSaving": false,
+                          "bz_tpl_modal.error": "{{error.errors?.bizppurio_message ?? error.message}}",
+                          "bz_tpl_modal.errors": "{{(error.errors && typeof error.errors === 'object' && !error.errors.bizppurio_message) ? error.errors : null}}"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "comment": "② 행 있음 + draft/rejected + 본문 입력 → PUT(내용 갱신).",
+                    "handler": "apiCall",
+                    "auth_required": true,
+                    "target": "/api/plugins/sirsoft-message_bizppurio/admin/templates/{{_global.bz_tpl_modal?.id}}",
+                    "if": "{{!!(_global.bz_tpl_modal?.id) && (['draft', 'rejected'].includes(_global.bz_tpl_modal?.status ?? 'draft')) && ((_global.bz_tpl_modal?.content?.templateContent ?? '').trim() !== '')}}",
+                    "params": {
+                      "method": "PUT",
+                      "body": {
+                        "content": "{{_global.bz_tpl_modal?.content}}",
+                        "alimtalk_enabled": "{{!!(_global.bz_tpl_modal?.alimtalk_enabled ?? true)}}",
+                        "fallback_sms_enabled": "{{!!(_global.bz_sms_modal?.fallback_sms_enabled)}}",
+                        "sms_only": "{{!!(_global.bz_sms_modal?.sms_only)}}",
+                        "sms_body": "{{Object.assign({}, _global.bz_sms_modal?.body)}}"
+                      }
+                    },
+                    "onSuccess": [
+                      {
+                        "handler": "apiCall",
+                        "auth_required": true,
+                        "target": "/api/plugins/sirsoft-message_bizppurio/admin/templates/{{_global.bz_tpl_modal?.id}}/request",
+                        "params": {
+                          "method": "POST",
+                          "body": {
+                            "comment": "{{_global.bz_tpl_modal?.request_comment ?? ''}}"
+                          }
+                        },
+                        "onSuccess": [
+                          {
+                            "comment": "수신자 규칙 변경 시에만: 코어 채널 템플릿 PUT(코어 모달의 저장 계약과 동일 엔드포인트/본문 — subject·body 는 숨겨진 값 그대로).",
+                            "handler": "apiCall",
+                            "auth_required": true,
+                            "target": "{{extensionPointProps.saveEndpoint}}",
+                            "if": "{{(JSON.stringify(_global?.[extensionPointProps.stateKey]?.recipients ?? []) !== JSON.stringify(_global?.[extensionPointProps.stateKey]?.template?.recipients ?? []))}}",
+                            "params": {
+                              "method": "PUT",
+                              "body": {
+                                "subject": "{{_global?.[extensionPointProps.stateKey]?.template?.subject}}",
+                                "body": "{{_global?.[extensionPointProps.stateKey]?.template?.body}}",
+                                "click_url": "{{_global?.[extensionPointProps.stateKey]?.template?.click_url ?? null}}",
+                                "recipients": "{{_global?.[extensionPointProps.stateKey]?.recipients ?? []}}"
+                              }
+                            },
+                            "onSuccess": [
+                              {
+                                "handler": "setState",
+                                "params": {
+                                  "target": "global",
+                                  "bz_tpl_modal.isSaving": false,
+                                  "bz_sms_modal.isSaving": false
+                                }
+                              },
+                              {
+                                "handler": "refetchDataSource",
+                                "params": {
+                                  "dataSourceId": "bizppurioTemplates"
+                                }
+                              },
+                              {
+                                "handler": "refetchDataSource",
+                                "params": {
+                                  "dataSourceId": "{{extensionPointProps.refetchDataSourceId}}"
+                                }
+                              },
+                              {
+                                "handler": "toast",
+                                "params": {
+                                  "message": "$t:sirsoft-message_bizppurio.template.form.requested_toast",
+                                  "type": "success"
+                                }
+                              },
+                              {
+                                "handler": "closeModal"
+                              }
+                            ],
+                            "onError": [
+                              {
+                                "handler": "setState",
+                                "params": {
+                                  "target": "global",
+                                  "bz_tpl_modal.isSaving": false,
+                                  "bz_sms_modal.isSaving": false,
+                                  "bz_tpl_modal.error": "{{error.errors?.bizppurio_message ?? error.message}}",
+                                  "bz_tpl_modal.errors": "{{(error.errors && typeof error.errors === 'object' && !error.errors.bizppurio_message) ? error.errors : null}}"
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "comment": "수신자 규칙 변경 없음: 코어 PUT 없이 마무리.",
+                            "handler": "sequence",
+                            "if": "{{!(JSON.stringify(_global?.[extensionPointProps.stateKey]?.recipients ?? []) !== JSON.stringify(_global?.[extensionPointProps.stateKey]?.template?.recipients ?? []))}}",
+                            "params": {
+                              "actions": [
+                                {
+                                  "handler": "setState",
+                                  "params": {
+                                    "target": "global",
+                                    "bz_tpl_modal.isSaving": false,
+                                    "bz_sms_modal.isSaving": false
+                                  }
+                                },
+                                {
+                                  "handler": "refetchDataSource",
+                                  "params": {
+                                    "dataSourceId": "bizppurioTemplates"
+                                  }
+                                },
+                                {
+                                  "handler": "refetchDataSource",
+                                  "params": {
+                                    "dataSourceId": "{{extensionPointProps.refetchDataSourceId}}"
+                                  }
+                                },
+                                {
+                                  "handler": "toast",
+                                  "params": {
+                                    "message": "$t:sirsoft-message_bizppurio.template.form.requested_toast",
+                                    "type": "success"
+                                  }
+                                },
+                                {
+                                  "handler": "closeModal"
+                                }
+                              ]
+                            }
+                          }
+                        ],
+                        "onError": [
+                          {
+                            "handler": "setState",
+                            "params": {
+                              "target": "global",
+                              "bz_tpl_modal.isSaving": false,
+                              "bz_sms_modal.isSaving": false,
+                              "bz_tpl_modal.error": "{{error.errors?.bizppurio_message ?? error.message}}",
+                              "bz_tpl_modal.errors": "{{(error.errors && typeof error.errors === 'object' && !error.errors.bizppurio_message) ? error.errors : null}}"
+                            }
+                          }
+                        ]
+                      }
+                    ],
+                    "onError": [
+                      {
+                        "handler": "setState",
+                        "params": {
+                          "target": "global",
+                          "bz_tpl_modal.isSaving": false,
+                          "bz_sms_modal.isSaving": false,
+                          "bz_tpl_modal.error": "{{error.errors?.bizppurio_message ?? error.message}}",
+                          "bz_tpl_modal.errors": "{{(error.errors && typeof error.errors === 'object' && !error.errors.bizppurio_message) ? error.errors : null}}"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "flex-center gap-2 text-sm px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+            "disabled": "{{(_global.bz_tpl_modal?.isSaving ?? false) || (_global.bz_tpl_upload?.uploading ?? false) || !((_global.bz_tpl_modal?.notification_type === extensionPointProps.definition?.type) && !(_global.bz_tpl_modal?.loading ?? false))}}"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "if": "{{(_global.bz_tpl_modal?.isSaving ?? false)}}",
+              "props": {
+                "name": "spinner",
+                "className": "animate-spin text-sm"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "{{(_global.bz_tpl_modal?.isSaving ?? false) ? '$t:common.saving' : '$t:common.save'}}"
+            }
+          ],
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "if": "{{!(_global.bz_tpl_modal?.isSaving ?? false) && ((_global.bz_tpl_modal?.notification_type === extensionPointProps.definition?.type) && !(_global.bz_tpl_modal?.loading ?? false))}}",
+              "params": {
+                "actions": [
+                  {
+                    "handler": "setState",
+                    "params": {
+                      "target": "global",
+                      "bz_tpl_modal.isSaving": true,
+                      "bz_tpl_modal.error": null,
+                      "bz_tpl_modal.errors": null,
+                      "bz_sms_modal.isSaving": true
+                    }
+                  },
+                  {
+                    "comment": "① 행 없음 + 본문 입력 → POST(생성). 검수 신청은 생성 응답의 id 로 이어간다.",
+                    "handler": "apiCall",
+                    "auth_required": true,
+                    "target": "/api/plugins/sirsoft-message_bizppurio/admin/templates",
+                    "if": "{{!(_global.bz_tpl_modal?.id) && ((_global.bz_tpl_modal?.content?.templateContent ?? '').trim() !== '')}}",
+                    "params": {
+                      "method": "POST",
+                      "body": {
+                        "notification_type": "{{_global.bz_tpl_modal?.notification_type}}",
+                        "content": "{{_global.bz_tpl_modal?.content}}",
+                        "alimtalk_enabled": "{{!!(_global.bz_tpl_modal?.alimtalk_enabled ?? true)}}",
+                        "fallback_sms_enabled": "{{!!(_global.bz_sms_modal?.fallback_sms_enabled)}}",
+                        "sms_only": "{{!!(_global.bz_sms_modal?.sms_only)}}",
+                        "sms_body": "{{Object.assign({}, _global.bz_sms_modal?.body)}}"
+                      }
+                    },
+                    "onSuccess": [
+                      {
+                        "comment": "수신자 규칙 변경 시에만: 코어 채널 템플릿 PUT(코어 모달의 저장 계약과 동일 엔드포인트/본문 — subject·body 는 숨겨진 값 그대로).",
+                        "handler": "apiCall",
+                        "auth_required": true,
+                        "target": "{{extensionPointProps.saveEndpoint}}",
+                        "if": "{{(JSON.stringify(_global?.[extensionPointProps.stateKey]?.recipients ?? []) !== JSON.stringify(_global?.[extensionPointProps.stateKey]?.template?.recipients ?? []))}}",
+                        "params": {
+                          "method": "PUT",
+                          "body": {
+                            "subject": "{{_global?.[extensionPointProps.stateKey]?.template?.subject}}",
+                            "body": "{{_global?.[extensionPointProps.stateKey]?.template?.body}}",
+                            "click_url": "{{_global?.[extensionPointProps.stateKey]?.template?.click_url ?? null}}",
+                            "recipients": "{{_global?.[extensionPointProps.stateKey]?.recipients ?? []}}"
+                          }
+                        },
+                        "onSuccess": [
+                          {
+                            "handler": "setState",
+                            "params": {
+                              "target": "global",
+                              "bz_tpl_modal.isSaving": false,
+                              "bz_sms_modal.isSaving": false
+                            }
+                          },
+                          {
+                            "handler": "refetchDataSource",
+                            "params": {
+                              "dataSourceId": "bizppurioTemplates"
+                            }
+                          },
+                          {
+                            "handler": "refetchDataSource",
+                            "params": {
+                              "dataSourceId": "{{extensionPointProps.refetchDataSourceId}}"
+                            }
+                          },
+                          {
+                            "handler": "toast",
+                            "params": {
+                              "message": "$t:sirsoft-message_bizppurio.template.section.saved_toast",
+                              "type": "success"
+                            }
+                          },
+                          {
+                            "handler": "closeModal"
+                          }
+                        ],
+                        "onError": [
+                          {
+                            "handler": "setState",
+                            "params": {
+                              "target": "global",
+                              "bz_tpl_modal.isSaving": false,
+                              "bz_sms_modal.isSaving": false,
+                              "bz_tpl_modal.error": "{{error.errors?.bizppurio_message ?? error.message}}",
+                              "bz_tpl_modal.errors": "{{(error.errors && typeof error.errors === 'object' && !error.errors.bizppurio_message) ? error.errors : null}}"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "comment": "수신자 규칙 변경 없음: 코어 PUT 없이 마무리.",
+                        "handler": "sequence",
+                        "if": "{{!(JSON.stringify(_global?.[extensionPointProps.stateKey]?.recipients ?? []) !== JSON.stringify(_global?.[extensionPointProps.stateKey]?.template?.recipients ?? []))}}",
+                        "params": {
+                          "actions": [
+                            {
+                              "handler": "setState",
+                              "params": {
+                                "target": "global",
+                                "bz_tpl_modal.isSaving": false,
+                                "bz_sms_modal.isSaving": false
+                              }
+                            },
+                            {
+                              "handler": "refetchDataSource",
+                              "params": {
+                                "dataSourceId": "bizppurioTemplates"
+                              }
+                            },
+                            {
+                              "handler": "refetchDataSource",
+                              "params": {
+                                "dataSourceId": "{{extensionPointProps.refetchDataSourceId}}"
+                              }
+                            },
+                            {
+                              "handler": "toast",
+                              "params": {
+                                "message": "$t:sirsoft-message_bizppurio.template.section.saved_toast",
+                                "type": "success"
+                              }
+                            },
+                            {
+                              "handler": "closeModal"
+                            }
+                          ]
+                        }
+                      }
+                    ],
+                    "onError": [
+                      {
+                        "handler": "setState",
+                        "params": {
+                          "target": "global",
+                          "bz_tpl_modal.isSaving": false,
+                          "bz_sms_modal.isSaving": false,
+                          "bz_tpl_modal.error": "{{error.errors?.bizppurio_message ?? error.message}}",
+                          "bz_tpl_modal.errors": "{{(error.errors && typeof error.errors === 'object' && !error.errors.bizppurio_message) ? error.errors : null}}"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "comment": "② 행 있음 + draft/rejected + 본문 입력 → PUT(내용 갱신).",
+                    "handler": "apiCall",
+                    "auth_required": true,
+                    "target": "/api/plugins/sirsoft-message_bizppurio/admin/templates/{{_global.bz_tpl_modal?.id}}",
+                    "if": "{{!!(_global.bz_tpl_modal?.id) && (['draft', 'rejected'].includes(_global.bz_tpl_modal?.status ?? 'draft')) && ((_global.bz_tpl_modal?.content?.templateContent ?? '').trim() !== '')}}",
+                    "params": {
+                      "method": "PUT",
+                      "body": {
+                        "content": "{{_global.bz_tpl_modal?.content}}",
+                        "alimtalk_enabled": "{{!!(_global.bz_tpl_modal?.alimtalk_enabled ?? true)}}",
+                        "fallback_sms_enabled": "{{!!(_global.bz_sms_modal?.fallback_sms_enabled)}}",
+                        "sms_only": "{{!!(_global.bz_sms_modal?.sms_only)}}",
+                        "sms_body": "{{Object.assign({}, _global.bz_sms_modal?.body)}}"
+                      }
+                    },
+                    "onSuccess": [
+                      {
+                        "comment": "수신자 규칙 변경 시에만: 코어 채널 템플릿 PUT(코어 모달의 저장 계약과 동일 엔드포인트/본문 — subject·body 는 숨겨진 값 그대로).",
+                        "handler": "apiCall",
+                        "auth_required": true,
+                        "target": "{{extensionPointProps.saveEndpoint}}",
+                        "if": "{{(JSON.stringify(_global?.[extensionPointProps.stateKey]?.recipients ?? []) !== JSON.stringify(_global?.[extensionPointProps.stateKey]?.template?.recipients ?? []))}}",
+                        "params": {
+                          "method": "PUT",
+                          "body": {
+                            "subject": "{{_global?.[extensionPointProps.stateKey]?.template?.subject}}",
+                            "body": "{{_global?.[extensionPointProps.stateKey]?.template?.body}}",
+                            "click_url": "{{_global?.[extensionPointProps.stateKey]?.template?.click_url ?? null}}",
+                            "recipients": "{{_global?.[extensionPointProps.stateKey]?.recipients ?? []}}"
+                          }
+                        },
+                        "onSuccess": [
+                          {
+                            "handler": "setState",
+                            "params": {
+                              "target": "global",
+                              "bz_tpl_modal.isSaving": false,
+                              "bz_sms_modal.isSaving": false
+                            }
+                          },
+                          {
+                            "handler": "refetchDataSource",
+                            "params": {
+                              "dataSourceId": "bizppurioTemplates"
+                            }
+                          },
+                          {
+                            "handler": "refetchDataSource",
+                            "params": {
+                              "dataSourceId": "{{extensionPointProps.refetchDataSourceId}}"
+                            }
+                          },
+                          {
+                            "handler": "toast",
+                            "params": {
+                              "message": "$t:sirsoft-message_bizppurio.template.section.saved_toast",
+                              "type": "success"
+                            }
+                          },
+                          {
+                            "handler": "closeModal"
+                          }
+                        ],
+                        "onError": [
+                          {
+                            "handler": "setState",
+                            "params": {
+                              "target": "global",
+                              "bz_tpl_modal.isSaving": false,
+                              "bz_sms_modal.isSaving": false,
+                              "bz_tpl_modal.error": "{{error.errors?.bizppurio_message ?? error.message}}",
+                              "bz_tpl_modal.errors": "{{(error.errors && typeof error.errors === 'object' && !error.errors.bizppurio_message) ? error.errors : null}}"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "comment": "수신자 규칙 변경 없음: 코어 PUT 없이 마무리.",
+                        "handler": "sequence",
+                        "if": "{{!(JSON.stringify(_global?.[extensionPointProps.stateKey]?.recipients ?? []) !== JSON.stringify(_global?.[extensionPointProps.stateKey]?.template?.recipients ?? []))}}",
+                        "params": {
+                          "actions": [
+                            {
+                              "handler": "setState",
+                              "params": {
+                                "target": "global",
+                                "bz_tpl_modal.isSaving": false,
+                                "bz_sms_modal.isSaving": false
+                              }
+                            },
+                            {
+                              "handler": "refetchDataSource",
+                              "params": {
+                                "dataSourceId": "bizppurioTemplates"
+                              }
+                            },
+                            {
+                              "handler": "refetchDataSource",
+                              "params": {
+                                "dataSourceId": "{{extensionPointProps.refetchDataSourceId}}"
+                              }
+                            },
+                            {
+                              "handler": "toast",
+                              "params": {
+                                "message": "$t:sirsoft-message_bizppurio.template.section.saved_toast",
+                                "type": "success"
+                              }
+                            },
+                            {
+                              "handler": "closeModal"
+                            }
+                          ]
+                        }
+                      }
+                    ],
+                    "onError": [
+                      {
+                        "handler": "setState",
+                        "params": {
+                          "target": "global",
+                          "bz_tpl_modal.isSaving": false,
+                          "bz_sms_modal.isSaving": false,
+                          "bz_tpl_modal.error": "{{error.errors?.bizppurio_message ?? error.message}}",
+                          "bz_tpl_modal.errors": "{{(error.errors && typeof error.errors === 'object' && !error.errors.bizppurio_message) ? error.errors : null}}"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "comment": "③ 본문 미입력(SMS 만 설정) 또는 내용 잠금 상태(검수중/승인 등) → delivery upsert(발송 설정·SMS 본문만, 행 없으면 draft 생성).",
+                    "handler": "apiCall",
+                    "auth_required": true,
+                    "target": "/api/plugins/sirsoft-message_bizppurio/admin/templates/delivery/{{_global.bz_tpl_modal?.notification_type}}",
+                    "if": "{{!((_global.bz_tpl_modal?.content?.templateContent ?? '').trim() !== '') || (!!(_global.bz_tpl_modal?.id) && !(['draft', 'rejected'].includes(_global.bz_tpl_modal?.status ?? 'draft')))}}",
+                    "params": {
+                      "method": "PUT",
+                      "body": {
+                        "alimtalk_enabled": "{{!!(_global.bz_tpl_modal?.alimtalk_enabled ?? true)}}",
+                        "fallback_sms_enabled": "{{!!(_global.bz_sms_modal?.fallback_sms_enabled)}}",
+                        "sms_only": "{{!!(_global.bz_sms_modal?.sms_only)}}",
+                        "sms_body": "{{Object.assign({}, _global.bz_sms_modal?.body)}}"
+                      }
+                    },
+                    "onSuccess": [
+                      {
+                        "comment": "수신자 규칙 변경 시에만: 코어 채널 템플릿 PUT(코어 모달의 저장 계약과 동일 엔드포인트/본문 — subject·body 는 숨겨진 값 그대로).",
+                        "handler": "apiCall",
+                        "auth_required": true,
+                        "target": "{{extensionPointProps.saveEndpoint}}",
+                        "if": "{{(JSON.stringify(_global?.[extensionPointProps.stateKey]?.recipients ?? []) !== JSON.stringify(_global?.[extensionPointProps.stateKey]?.template?.recipients ?? []))}}",
+                        "params": {
+                          "method": "PUT",
+                          "body": {
+                            "subject": "{{_global?.[extensionPointProps.stateKey]?.template?.subject}}",
+                            "body": "{{_global?.[extensionPointProps.stateKey]?.template?.body}}",
+                            "click_url": "{{_global?.[extensionPointProps.stateKey]?.template?.click_url ?? null}}",
+                            "recipients": "{{_global?.[extensionPointProps.stateKey]?.recipients ?? []}}"
+                          }
+                        },
+                        "onSuccess": [
+                          {
+                            "handler": "setState",
+                            "params": {
+                              "target": "global",
+                              "bz_tpl_modal.isSaving": false,
+                              "bz_sms_modal.isSaving": false
+                            }
+                          },
+                          {
+                            "handler": "refetchDataSource",
+                            "params": {
+                              "dataSourceId": "bizppurioTemplates"
+                            }
+                          },
+                          {
+                            "handler": "refetchDataSource",
+                            "params": {
+                              "dataSourceId": "{{extensionPointProps.refetchDataSourceId}}"
+                            }
+                          },
+                          {
+                            "handler": "toast",
+                            "params": {
+                              "message": "$t:sirsoft-message_bizppurio.template.section.saved_toast",
+                              "type": "success"
+                            }
+                          },
+                          {
+                            "handler": "closeModal"
+                          }
+                        ],
+                        "onError": [
+                          {
+                            "handler": "setState",
+                            "params": {
+                              "target": "global",
+                              "bz_tpl_modal.isSaving": false,
+                              "bz_sms_modal.isSaving": false,
+                              "bz_tpl_modal.error": "{{error.errors?.bizppurio_message ?? error.message}}",
+                              "bz_tpl_modal.errors": "{{(error.errors && typeof error.errors === 'object' && !error.errors.bizppurio_message) ? error.errors : null}}"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "comment": "수신자 규칙 변경 없음: 코어 PUT 없이 마무리.",
+                        "handler": "sequence",
+                        "if": "{{!(JSON.stringify(_global?.[extensionPointProps.stateKey]?.recipients ?? []) !== JSON.stringify(_global?.[extensionPointProps.stateKey]?.template?.recipients ?? []))}}",
+                        "params": {
+                          "actions": [
+                            {
+                              "handler": "setState",
+                              "params": {
+                                "target": "global",
+                                "bz_tpl_modal.isSaving": false,
+                                "bz_sms_modal.isSaving": false
+                              }
+                            },
+                            {
+                              "handler": "refetchDataSource",
+                              "params": {
+                                "dataSourceId": "bizppurioTemplates"
+                              }
+                            },
+                            {
+                              "handler": "refetchDataSource",
+                              "params": {
+                                "dataSourceId": "{{extensionPointProps.refetchDataSourceId}}"
+                              }
+                            },
+                            {
+                              "handler": "toast",
+                              "params": {
+                                "message": "$t:sirsoft-message_bizppurio.template.section.saved_toast",
+                                "type": "success"
+                              }
+                            },
+                            {
+                              "handler": "closeModal"
+                            }
+                          ]
+                        }
+                      }
+                    ],
+                    "onError": [
+                      {
+                        "handler": "setState",
+                        "params": {
+                          "target": "global",
+                          "bz_tpl_modal.isSaving": false,
+                          "bz_sms_modal.isSaving": false,
+                          "bz_tpl_modal.error": "{{error.errors?.bizppurio_message ?? error.message}}",
+                          "bz_tpl_modal.errors": "{{(error.errors && typeof error.errors === 'object' && !error.errors.bizppurio_message) ? error.errors : null}}"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -2368,13 +2368,11 @@ class Module extends AbstractModule
                 ? (str_starts_with($imageRaw, 'http') ? $imageRaw : url($imageRaw))
                 : '';
 
+            // thumbnail_width/height 는 어떤 Resource 도 방출하지 않는 死키였다 — 값 공급이
+            // 불가능한 축이므로 제거하고 크기 메타는 코어 기본값 폴백에 맡긴다 (공개 #22 부수 정리)
             return array_filter([
                 'type' => 'product',
                 'image' => $image,
-                'image_width' => isset($product['thumbnail_width']) && (int) $product['thumbnail_width'] > 0
-                    ? (int) $product['thumbnail_width'] : null,
-                'image_height' => isset($product['thumbnail_height']) && (int) $product['thumbnail_height'] > 0
-                    ? (int) $product['thumbnail_height'] : null,
                 'image_alt' => $name,
                 'extra' => $extra,
             ], fn ($v) => $v !== null && $v !== '' && $v !== []);

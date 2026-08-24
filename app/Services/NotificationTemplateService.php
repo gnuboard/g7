@@ -7,6 +7,7 @@ use App\Contracts\Repositories\NotificationDefinitionRepositoryInterface;
 use App\Contracts\Repositories\NotificationTemplateRepositoryInterface;
 use App\Extension\HookManager;
 use App\Models\NotificationTemplate;
+use App\Services\LanguagePack\LanguagePackSeedInjector;
 use Illuminate\Database\Eloquent\Collection;
 
 class NotificationTemplateService
@@ -33,6 +34,7 @@ class NotificationTemplateService
         private readonly NotificationTemplateRepositoryInterface $templateRepository,
         private readonly NotificationDefinitionRepositoryInterface $definitionRepository,
         private readonly CacheInterface $cache,
+        private readonly LanguagePackSeedInjector $seedInjector,
     ) {}
 
     /**
@@ -189,6 +191,11 @@ class NotificationTemplateService
             ['type' => $type, 'channel' => $channel]
         );
 
+        // 활성 언어팩 seed 로케일 병합 — 시딩(seed.notifications.translations)과 같은 SSoT.
+        // 이 병합이 없으면 [기본값 복원]이 팩이 주입해 둔 로케일(ja 등)을 config 의
+        // ko/en 만으로 대체해 영구 소실시킨다 (2026-08-23 실사례 — #597 보완 실측).
+        $definitions = $this->mergeLanguagePackLocalesIntoDefaults($definitions);
+
         foreach ($definitions as $def) {
             if ($def['type'] === $type) {
                 foreach ($def['templates'] as $tpl) {
@@ -205,6 +212,36 @@ class NotificationTemplateService
         }
 
         return [];
+    }
+
+    /**
+     * 기본 정의 배열에 활성 언어팩 seed 로케일을 병합합니다.
+     *
+     * 코어 소유 정의는 활성 코어 팩(injectNotifications), 확장 소유 정의는
+     * 해당 확장의 활성 모듈/플러그인 팩(injectExtensionNotifications)이 공급한다.
+     * definition type 은 전역 고유(UNIQUE)이므로 확장별 호출이 다른 확장의
+     * 정의에 오병합될 여지는 없다.
+     *
+     * @param  array<int, array<string, mixed>>  $definitions  type 필드를 포함한 기본 정의 배열
+     * @return array<int, array<string, mixed>> 활성 팩 로케일이 병합된 정의 배열
+     */
+    private function mergeLanguagePackLocalesIntoDefaults(array $definitions): array
+    {
+        $definitions = $this->seedInjector->injectNotifications($definitions);
+
+        $extensionIdentifiers = [];
+        foreach ($definitions as $def) {
+            $identifier = is_array($def) ? ($def['extension_identifier'] ?? null) : null;
+            if (is_string($identifier) && $identifier !== '' && $identifier !== 'core') {
+                $extensionIdentifiers[$identifier] = true;
+            }
+        }
+
+        foreach (array_keys($extensionIdentifiers) as $identifier) {
+            $definitions = $this->seedInjector->injectExtensionNotifications($definitions, $identifier);
+        }
+
+        return $definitions;
     }
 
     /**

@@ -9,17 +9,19 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 
 /**
- * `core.language_packs.after_activate` / `after_deactivate` 액션 훅을 받아 DB JSON 다국어
+ * `core.language_packs.activated` / `deactivated` 액션 훅을 받아 DB JSON 다국어
  * 컬럼을 동기화하는 thin Listener (G7 표준 HookManager::doAction → addAction 메커니즘).
  *
  * 영속/도메인 책임은 모두 LanguagePackTranslationRepository 에 위임. 본 클래스는 seed 파일
  * 로딩 + Repository 호출 + 감사 로그 라우팅만 수행합니다.
  *
- * 정책 (계획서 §6.6, §9.4):
+ * 정책 (계획서 §6.6, §9.4) — 보존 판정은 운영자 수정의 실제 기록 형식인 dot-path
+ * 항목(`"{컬럼}.{로케일}"`, HasUserOverrides updating 이벤트가 기록)을 기준으로 한다:
  *  - Case A: 기존 row 의 다국어 JSON 에 해당 locale 키 부재 → 추가
- *  - Case B: locale 키 존재 + user_overrides 에 컬럼 등록 → 건너뜀 (사용자 수정 보존)
- *  - Case C: locale 키 존재 + user_overrides 미등록 → 시드 값으로 덮어쓰기
- *  - 비활성화/제거 시: user_overrides 등록 locale 은 JSON 에서 제거하지 않음
+ *  - Case B: locale 키 존재 + user_overrides 에 `컬럼.로케일` 등록 → 건너뜀 (사용자 수정 보존)
+ *  - Case C: locale 키 존재 + 해당 dot-path 미등록 → 시드 값으로 덮어쓰기
+ *    (컬럼 전체 항목 `"subject"` 등은 시더 재실행 보호 선언이라 팩 병합을 막지 않는다)
+ *  - 비활성화/제거 시: user_overrides 에 `컬럼.로케일` 등록된 locale 은 JSON 에서 제거하지 않음
  */
 // audit:allow listener-must-implement-hooklistenerinterface reason: LanguagePackServiceProvider 가 HookManager::addAction 으로 직접 등록하는 명시 등록 패턴 (auto-discovery 대상 아님)
 class SyncDatabaseTranslations

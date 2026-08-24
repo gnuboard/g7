@@ -1,0 +1,42 @@
+feature: 페이지 og:image 본문 첫 이미지 공급
+
+description: |
+  공개 이슈 #22 동종 — 페이지는 og:image 를 공급할 경로가 전무했다(본문·첨부·수동
+  어느 경로로도 불가). 저장 시 본문(다국어 JSON) 첫 내부 이미지 URL 을
+  pages.content_thumbnail_url 에 캐시하고, PublicPageResource 가 방출해 페이지 표시
+  레이아웃(page/show.json)의 og.image / structured_data.image 가 소비한다.
+  별건 #11(og:description 死키 excerpt)도 seo_meta.description 으로 정렬했다.
+
+axes:
+  image_source: [content_internal_only, content_external_only, none]
+  locale_content: [default_locale, other_locale_only]
+
+exclusions:
+  - { image_source: content_external_only, locale_content: other_locale_only, reason: "외부 제외 판정은 로케일 무관 (전 로케일 순회 후 null) — default_locale 대표 조합으로 검증" }
+  - { image_source: none, locale_content: other_locale_only, reason: "이미지 없음은 로케일 구분이 성립하지 않는다 (전 로케일 빈 결과)" }
+
+sub_flows:
+  - id: backfill
+    description: 1.1.0 업그레이드 스텝이 기존 페이지를 chunkById 백필 (다국어 JSON 파싱 동결 사본)
+    effects:
+      - backfill_fills_legacy_pages
+      - backfill_idempotent_second_run
+  - id: recompute
+    description: content/content_mode 변경 시에만 saving 이벤트가 재계산 (버전 롤백 경로 포함)
+    effects:
+      - recompute_on_content_change
+      - filter_hook_can_override_or_block
+      - version_restore_recomputes_cache
+
+effects:
+  - content_image_fills_page_og
+  - other_locale_image_used_when_default_has_none
+  - external_only_content_yields_null
+  - public_resource_emits_thumbnail_key
+  - bot_page_renders_og_image_meta
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Unit/Models/PageContentThumbnailTest.php
+  - modules/_bundled/sirsoft-page/tests/Feature/User/PageContentThumbnailResourceTest.php
+  - modules/_bundled/sirsoft-page/tests/Feature/Upgrade/PageContentThumbnailBackfillTest.php
+  - modules/_bundled/sirsoft-page/tests/Playwright/specs/user/page-og-image.spec.ts

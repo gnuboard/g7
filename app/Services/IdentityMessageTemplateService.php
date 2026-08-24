@@ -7,6 +7,7 @@ use App\Contracts\Repositories\IdentityMessageTemplateRepositoryInterface;
 use App\Extension\HookManager;
 use App\Models\IdentityMessageDefinition;
 use App\Models\IdentityMessageTemplate;
+use App\Services\LanguagePack\LanguagePackSeedInjector;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Auth;
 
@@ -37,6 +38,7 @@ class IdentityMessageTemplateService
         private readonly IdentityMessageTemplateRepositoryInterface $repository,
         private readonly IdentityMessageDefinitionService $definitionService,
         private readonly CacheInterface $cache,
+        private readonly LanguagePackSeedInjector $seedInjector,
     ) {}
 
     /**
@@ -271,11 +273,19 @@ class IdentityMessageTemplateService
     {
         $coreDefinitions = $this->loadCoreMessageDefinitions();
 
-        return HookManager::applyFilters(
+        $definitions = HookManager::applyFilters(
             'core.identity.filter_default_message_definitions',
             $coreDefinitions,
             []
         );
+
+        // 활성 언어팩 seed 로케일 병합 — 시딩(seed.identity_messages.translations)과 같은 SSoT.
+        // 이 병합이 없으면 [기본값 복원]이 팩이 주입해 둔 로케일(ja 등)을 config 의
+        // ko/en 만으로 대체해 영구 소실시킨다 (notification 쪽 실사례의 동형 — #597 보완 실측).
+        // injectIdentityMessages 는 string 키('mail.purpose.signup' 등)로 seed 를 매칭하므로
+        // loadCoreMessageDefinitions 가 config 키를 보존해 넘긴다. 확장 리스너가 정수 키로
+        // append 한 항목은 seed 에 매칭되지 않아 그대로 통과한다.
+        return $this->seedInjector->injectIdentityMessages($definitions);
     }
 
     /**
@@ -292,13 +302,14 @@ class IdentityMessageTemplateService
         $common = $this->commonVariables();
         $result = [];
 
-        foreach ($messages as $data) {
+        foreach ($messages as $key => $data) {
             if (($data['variables'] ?? null) === '__common__') {
                 $data['variables'] = $common;
             }
             $data['extension_type'] = 'core';
             $data['extension_identifier'] = 'core';
-            $result[] = $data;
+            // config 키('mail.provider_default' 등)를 보존 — 언어팩 seed 매칭 키와 동일 (collectDefaultDefinitions 참조)
+            $result[$key] = $data;
         }
 
         return $result;

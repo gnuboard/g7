@@ -12,9 +12,25 @@
       "props": { "className": "w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700" },
       "children": [
         {
+          "comment": "생산측(SearchProductsListener)은 thumbnail_url 키를 방출한다 — thumbnail 은 死키였다 (공개 #22 부수 정정)",
           "type": "basic",
           "name": "Img",
-          "props": { "src": "{{product.thumbnail}}", "alt": "{{product.name}}", "className": "w-full h-full object-cover" }
+          "if": "{{product.thumbnail_url}}",
+          "props": { "src": "{{product.thumbnail_url}}", "alt": "{{product.name}}", "className": "w-full h-full object-cover" }
+        },
+        {
+          "comment": "이미지가 없는 경우 플레이스홀더 (board 카드형 패턴 축소 미러)",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{!product.thumbnail_url}}",
+          "props": { "className": "w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-700" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": { "name": "image", "className": "text-gray-400 dark:text-gray-500" }
+            }
+          ]
         }
       ]
     },

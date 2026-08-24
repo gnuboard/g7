@@ -62,7 +62,7 @@ class PostRepository implements PostRepositoryInterface
         // 목록 전용 컬럼: content(본문 HTML) 제외 → content_preview로 대체
         $listColumns = [
             'id', 'board_id', 'user_id', 'parent_id', 'category',
-            'title', 'author_name', 'content_mode',
+            'title', 'author_name', 'content_mode', 'content_thumbnail_url',
             'is_notice', 'is_secret', 'status', 'depth',
             'view_count', 'comments_count', 'replies_count', 'attachments_count',
             'trigger_type', 'ip_address', 'created_at', 'updated_at', 'deleted_at',

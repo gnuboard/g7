@@ -1,0 +1,195 @@
+{
+  "extension_point": "notification_definition_row_footer",
+  "comment": "알림 설정 '비즈뿌리오' 통합 탭의 각 알림 행 하단 상태 요약(제품 결정 2026-08-23 — 버튼 없음, 조작은 코어 [편집] 모달로 일원화). activeChannel==='alimtalk'(통합 탭 정체성)일 때만 노출. 요약 데이터는 bizppurioTemplates(각 탭 오버레이가 등록·조회, GET templates/map)에서 def.type 으로 읽는다. 1줄: 알림톡 승인 2단 배지 + 신청/동기화일 + 발송 사용 여부 / 2줄: 문자(SMS) 대체·단독 사용 여부 + 본문 미리보기.",
+  "priority": 320,
+  "components": [
+    {
+      "id": "bizppurio_row_lifecycle",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{extensionPointProps.activeChannel === 'alimtalk'}}",
+      "props": {
+        "className": "mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 space-y-2"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex-center flex-wrap gap-2"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "fas fa-comment-dots",
+                "className": "text-sm text-teal-600 dark:text-teal-400 flex-shrink-0"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-sm font-medium text-gray-700 dark:text-gray-200 flex-shrink-0"
+              },
+              "text": "$t:sirsoft-message_bizppurio.template.row.alimtalk_label"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "comment": "승인 여부 2단 배지(제품 결정 2026-08-23): 1차 = 승인됨/미승인, 2차(괄호) = 세부 상태(미작성·작성중·검수중·반려·휴면·중지·차단). approved 는 세부 없이 단독 표기.",
+              "props": {
+                "className": "{{'inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium flex-shrink-0 ' + ((((bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]) && (bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.has_content)) ? bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.status : 'unwritten') === 'approved' ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200' : (((bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]) && (bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.has_content)) ? bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.status : 'unwritten') === 'requested' ? 'bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-200' : (((bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]) && (bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.has_content)) ? bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.status : 'unwritten') === 'rejected' ? 'bg-red-100 dark:bg-red-800 text-red-700 dark:text-red-100' : ((((bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]) && (bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.has_content)) ? bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.status : 'unwritten') === 'stopped' || (((bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]) && (bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.has_content)) ? bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.status : 'unwritten') === 'blocked') ? 'border border-red-400 dark:border-red-500 text-red-600 dark:text-red-400' : (((bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]) && (bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.has_content)) ? bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.status : 'unwritten') === 'dormant' ? 'bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-200' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300')}}"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "{{$t('sirsoft-message_bizppurio.template.approval.' + ((((bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]) && (bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.has_content)) ? bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.status : 'unwritten') === 'approved' ? 'approved' : 'not_approved'))}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{(((bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]) && (bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.has_content)) ? bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.status : 'unwritten') !== 'approved'}}",
+                  "props": {
+                    "className": "font-normal opacity-80"
+                  },
+                  "text": "{{'(' + $t('sirsoft-message_bizppurio.template.status.' + (((bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]) && (bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.has_content)) ? bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.status : 'unwritten')) + ')'}}"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.requested_at}}",
+              "props": {
+                "className": "text-xs text-gray-500 dark:text-gray-400"
+              },
+              "text": "$t:sirsoft-message_bizppurio.template.row.requested_on|date={{(bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.requested_at ?? '').slice(5, 10)}}"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.last_synced_at}}",
+              "props": {
+                "className": "text-xs text-gray-500 dark:text-gray-400"
+              },
+              "text": "$t:sirsoft-message_bizppurio.template.row.synced_on|date={{(bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.last_synced_at ?? '').slice(5, 10)}}"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{(bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.has_content === true) && (bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.alimtalk_enabled === false)}}",
+              "props": {
+                "className": "text-xs px-1.5 py-0.5 rounded border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400"
+              },
+              "text": "$t:sirsoft-message_bizppurio.template.row.alimtalk_disabled"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex-center flex-wrap gap-2"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "fas fa-comment-sms",
+                "className": "text-sm text-gray-500 dark:text-gray-400 flex-shrink-0"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-sm font-medium text-gray-700 dark:text-gray-200 flex-shrink-0"
+              },
+              "text": "$t:sirsoft-message_bizppurio.template.row.sms_label"
+            },
+            {
+              "id": "bizppurio_row_sms_fallback",
+              "type": "basic",
+              "name": "Div",
+              "comment": "fallback_sms 상태 배지 — 사용(초록)/미사용(회색). 문구 대신 배지(제품 결정 2026-08-23, 행의 활성·기본·승인 배지와 일관).",
+              "props": {
+                "className": "flex-center gap-1 flex-shrink-0"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-xs text-gray-500 dark:text-gray-400"
+                  },
+                  "text": "$t:sirsoft-message_bizppurio.template.row.fallback_sms"
+                },
+                {
+                  "id": "bizppurio_row_sms_fallback_badge",
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "{{'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium flex-shrink-0 ' + ((bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.fallback_sms_enabled) ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300')}}"
+                  },
+                  "text": "{{$t('sirsoft-message_bizppurio.template.row.' + ((bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.fallback_sms_enabled) ? 'on' : 'off'))}}"
+                }
+              ]
+            },
+            {
+              "id": "bizppurio_row_sms_only",
+              "type": "basic",
+              "name": "Div",
+              "comment": "sms_only 상태 배지 — 사용(초록)/미사용(회색). 문구 대신 배지(제품 결정 2026-08-23, 행의 활성·기본·승인 배지와 일관).",
+              "props": {
+                "className": "flex-center gap-1 flex-shrink-0"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-xs text-gray-500 dark:text-gray-400"
+                  },
+                  "text": "$t:sirsoft-message_bizppurio.template.row.sms_only"
+                },
+                {
+                  "id": "bizppurio_row_sms_only_badge",
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "{{'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium flex-shrink-0 ' + ((bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.sms_only) ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300')}}"
+                  },
+                  "text": "{{$t('sirsoft-message_bizppurio.template.row.' + ((bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.sms_only) ? 'on' : 'off'))}}"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.has_sms_body === true}}",
+              "props": {
+                "className": "text-xs text-gray-500 dark:text-gray-400 truncate max-w-md"
+              },
+              "text": "{{$t('sirsoft-message_bizppurio.template.row.sms_body_prefix') + ' ' + (bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.sms_body_preview ?? '')}}"
+            },
+            {
+              "id": "bizppurio_row_sms_body_missing",
+              "type": "basic",
+              "name": "Span",
+              "comment": "본문 미설정 = 값 없음 — '발송 사용 안 함' 칩과 같은 외곽선 스타일.",
+              "if": "{{bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.has_sms_body !== true}}",
+              "props": {
+                "className": "text-xs px-1.5 py-0.5 rounded border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 flex-shrink-0"
+              },
+              "text": "$t:sirsoft-message_bizppurio.template.row.sms_body_missing"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1129,6 +1129,7 @@ return [
         'maintenance_mode' => 'メンテナンスモード',
         'asset_url_mode' => 'アセットURL方式',
         'site_logo' => 'サイトロゴ',
+        'og_image_default' => '既定の共有画像',
         'bot_user_agents' => 'ボット User-Agent 一覧',
         'bot_detection_enabled' => 'ボット検出の使用',
         'bot_detection_library_enabled' => 'ボット検出ライブラリの使用',

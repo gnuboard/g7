@@ -34,11 +34,38 @@ class LanguagePackServiceTest extends TestCase
      *
      * @return void
      */
+    /** 실번들 케이스가 삭제하는 실 설치본의 백업 경로 (테스트 종료 시 복원). */
+    private ?string $protectedRealInstallDir = null;
+
     protected function setUp(): void
     {
         parent::setUp();
         $this->service = $this->app->make(LanguagePackService::class);
+
+        // 실번들(g7-core-ja) 케이스들은 활성 설치본 디렉토리를 만들고 cleanup 에서 삭제한다.
+        // DB 는 RefreshDatabase 로 격리되지만 파일 시스템은 실 저장소를 공유하므로,
+        // 개발 환경에 이미 설치된 실 설치본이 있으면 백업해 두고 tearDown 에서 복원한다
+        // (미보호 시 실환경 팩이 files_missing 드리프트에 빠진다 — 2026-08-24 실측).
+        $realDir = base_path('lang-packs/g7-core-ja');
+        if (File::isDirectory($realDir)) {
+            $backup = base_path('lang-packs/.test-backup-g7-core-ja');
+            File::deleteDirectory($backup);
+            File::moveDirectory($realDir, $backup);
+            $this->protectedRealInstallDir = $backup;
+        }
         $this->registry = $this->app->make(LanguagePackRegistry::class);
+    }
+
+    protected function tearDown(): void
+    {
+        if ($this->protectedRealInstallDir !== null) {
+            $realDir = base_path('lang-packs/g7-core-ja');
+            File::deleteDirectory($realDir);
+            File::moveDirectory($this->protectedRealInstallDir, $realDir);
+            $this->protectedRealInstallDir = null;
+        }
+
+        parent::tearDown();
     }
 
     /**
@@ -1083,6 +1110,75 @@ class LanguagePackServiceTest extends TestCase
             $this->assertNull($items->firstWhere('status', LanguagePackStatus::Active->value));
         } finally {
             File::deleteDirectory($path);
+        }
+    }
+
+    /**
+     * 회귀 가드 — performUpdate 중 설치 트랜잭션이 status 를 installed 로 기록한 뒤
+     * (활성화 단계 이전/도중) 실패하면, catch 의 상태 복원이 Updating 만 보던 탓에
+     * active 였던 팩이 installed 로 방치됐다. 파일은 백업으로 원상 복원되므로
+     * 상태도 이전 상태(active)로 복원되어야 한다 — 방치되면 해당 로케일의 백엔드
+     * 번역이 통째로 폴백되는데 오류도 로그도 없다 (#597 보완 실측에서 유사 상태 실측).
+     *
+     * @scenario vector=update_failure_after_install_transaction, actor_permission=cli_system
+     *
+     * @effects failed_update_restores_previous_active_status
+     */
+    public function test_failed_update_restores_previous_active_status(): void
+    {
+        $identifier = 'test-update-restore-ja';
+        $bundledDir = base_path('lang-packs/_bundled/'.$identifier);
+        File::ensureDirectoryExists($bundledDir);
+        File::put($bundledDir.'/language-pack.json', json_encode(['identifier' => $identifier]));
+
+        try {
+            $pack = LanguagePack::query()->create([
+                'identifier' => $identifier,
+                'vendor' => 'test',
+                'scope' => LanguagePackScope::Core->value,
+                'target_identifier' => null,
+                'locale' => 'ja',
+                'locale_name' => 'Japanese',
+                'locale_native_name' => '日本語',
+                'text_direction' => 'ltr',
+                'version' => '1.0.0',
+                'status' => LanguagePackStatus::Active->value,
+                'is_protected' => false,
+                'manifest' => [],
+                'source_type' => 'bundled',
+            ]);
+
+            // Laravel partialMock 은 생성자를 건너뛰어 readonly 의존성이 미초기화되므로,
+            // 생성자 인자를 컨테이너에서 구성해 넘기는 Mockery partial 을 사용한다.
+            $ctorArgs = array_map(
+                static fn (\ReflectionParameter $param) => app($param->getType()->getName()),
+                (new \ReflectionClass(LanguagePackService::class))->getConstructor()->getParameters()
+            );
+            $service = \Mockery::mock(LanguagePackService::class, $ctorArgs)->makePartial();
+            $service->shouldReceive('installFromBundled')
+                ->once()
+                ->andReturnUsing(function () use ($pack) {
+                    // 설치 트랜잭션이 성공적으로 installed 를 기록한 직후 실패하는 상황 재현
+                    $pack->newQuery()->whereKey($pack->id)
+                        ->update(['status' => LanguagePackStatus::Installed->value]);
+
+                    throw new \RuntimeException('activate step failed (재현)');
+                });
+
+            try {
+                $service->performUpdate($pack->fresh(), true);
+                $this->fail('installFromBundled 실패가 전파되어야 한다');
+            } catch (\RuntimeException $e) {
+                // 예상된 실패 — 상태 복원만 검증
+            }
+
+            $this->assertSame(
+                LanguagePackStatus::Active->value,
+                $pack->fresh()->status,
+                '실패한 update 는 이전 상태(active)를 복원해야 한다 — installed 로 방치되면 해당 로케일 번역이 조용히 폴백된다'
+            );
+        } finally {
+            File::deleteDirectory($bundledDir);
         }
     }
 }

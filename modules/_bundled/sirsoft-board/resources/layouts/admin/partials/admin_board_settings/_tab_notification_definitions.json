@@ -140,7 +140,7 @@
           "type": "basic",
           "name": "Button",
           "iteration": {
-            "source": "{{(availableChannels?.data?.channels ?? []).filter(c => c.source === 'core' ? (_local.form?.notifications?.channels ?? []).find(nc => nc.id === c.id)?.is_active !== false : (_local.form?.notifications?.channels ?? []).find(nc => nc.id === c.id)?.is_active === true)}}",
+            "source": "{{(availableChannels?.data?.channels ?? []).filter(c => c.hidden_tab !== true && (c.source === 'core' ? (_local.form?.notifications?.channels ?? []).find(nc => nc.id === c.id)?.is_active !== false : (c.tab_channels ?? [c.id]).filter(tc => (_local.form?.notifications?.channels ?? []).find(nc => nc.id === tc)?.is_active === true).length > 0))}}",
             "item_var": "ch",
             "index_var": "chIdx"
           },
@@ -160,7 +160,7 @@
             {
               "type": "basic",
               "name": "Span",
-              "text": "{{ch.name ?? ch.id}}"
+              "text": "{{ch.tab_label_key ? $t(ch.tab_label_key) : (ch.name ?? ch.id)}}"
             }
           ],
           "actions": [
