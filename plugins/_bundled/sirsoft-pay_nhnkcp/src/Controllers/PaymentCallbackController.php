@@ -15,8 +15,11 @@ use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\PaymentAmountMismatchException;
 use Modules\Sirsoft\Ecommerce\Helpers\DeviceDetector;
+use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
+use Modules\Sirsoft\Ecommerce\Support\ClaimPaymentCallback;
+use Plugins\Sirsoft\PayNhnkcp\Concerns\HandlesClaimPaymentCallbacks;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\IssuesReceiptCookie;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\PreventsReplayCallback;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\RecordsPaymentWindowClosure;
@@ -38,6 +41,7 @@ use Plugins\Sirsoft\PayNhnkcp\Support\ShopRedirectUrl;
  */
 class PaymentCallbackController
 {
+    use HandlesClaimPaymentCallbacks;
     use IssuesReceiptCookie;
     use PreventsReplayCallback;
     use RecordsPaymentWindowClosure;
@@ -167,6 +171,15 @@ class PaymentCallbackController
             // Do not mutate order state from a non-success browser result alone; the
             // authenticated close-report path records real window closures.
 
+            // 클레임 추가결제(CP 채번)는 체크아웃이 아니라 신청서 상세로 돌려보낸다.
+            if (ClaimPayment::isClaimPaymentNumber($ordrIdxx)) {
+                $claimRedirect = $this->redirectClaimWindowFailure($ordrIdxx, $isCancelled ? null : $resCd);
+
+                if ($claimRedirect !== null) {
+                    return $claimRedirect;
+                }
+            }
+
             // 사용자 취소는 오류 없이 체크아웃으로 복귀
             if ($isCancelled) {
                 return redirect($this->resolveFailUrl());
@@ -174,7 +187,9 @@ class PaymentCallbackController
 
             return redirect($this->resolveFailUrl([
                 'error' => $resCd,
-                'message' => $resMsg,
+                // 결제 건을 못 찾은 CP 콜백이 여기까지 떨어질 수 있다. PG 원문은 상점 사이트코드·내부
+                // 상태를 담고 이 경로는 비인증 브라우저 리다이렉트이므로, CP 번호일 때는 코드만 싣는다.
+                'message' => ClaimPayment::isClaimPaymentNumber($ordrIdxx) ? null : $resMsg,
                 'orderId' => $ordrIdxx,
             ]));
         }
@@ -186,6 +201,25 @@ class PaymentCallbackController
         $approvedTno = null;
         $approvedAmtForCancel = 0;
         $callbackLock = null;
+
+        // 클레임 추가결제(CP 채번)는 주문이 아니다 — 주문 분기를 태우면 order_not_found 로 끝난다.
+        // 승인은 모듈 위임(필터 발화 → 이 플러그인의 승인 리스너)이고, 승인 금액 불일치는 KCP
+        // 승인이 확정된 뒤의 거절이므로 취소 API 로 보상한다.
+        if (ClaimPayment::isClaimPaymentNumber($ordrIdxx)) {
+            $claimPayment = $this->findClaimPayment($ordrIdxx);
+
+            if (! $claimPayment) {
+                Log::error('KCP: claim payment not found', ['ordr_idxx' => $ordrIdxx]);
+
+                return redirect($this->resolveFailUrl(['error' => 'claim_payment_not_found', 'orderId' => $ordrIdxx]));
+            }
+
+            return ClaimPaymentCallback::approveAndRedirect(
+                $claimPayment,
+                $validated + ['cust_ip' => $custIp],
+                fn () => $this->cancelClaimApprovalQuietly($claimPayment, $goodMny),
+            );
+        }
 
         try {
             // 2단계: 주문 조회

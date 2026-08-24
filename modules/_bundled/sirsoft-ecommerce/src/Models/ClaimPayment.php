@@ -25,9 +25,35 @@ class ClaimPayment extends Model
 {
     use HasFactory;
 
+    /**
+     * 결제번호(CP 채번) 접두사
+     *
+     * `SequenceType::CLAIM_PAYMENT` 의 prefix 와 같은 값이다. 결제 플러그인 콜백이
+     * 주문번호 자리에 실려 온 값이 클레임 결제 건인지 판별하는 계약 접두사이므로,
+     * 채번 쪽을 바꾸면 이 상수와 판별 헬퍼(`isClaimPaymentNumber`)도 함께 바꿔야 한다.
+     *
+     * @var string
+     */
+    public const NUMBER_PREFIX = 'CP';
+
     protected static function newFactory()
     {
         return ClaimPaymentFactory::new();
+    }
+
+    /**
+     * 주문번호 자리에 실린 값이 클레임 결제번호(CP 채번)인지 판별합니다.
+     *
+     * 결제 플러그인의 PG 콜백은 merchant_order_id 하나로 주문과 클레임 결제를 모두 받으므로,
+     * 이 판별이 참이면 `Order` 가 아니라 `ClaimPayment` 로 되찾아야 한다. 주문번호는 숫자로
+     * 시작하는 채번(TIMESTAMP 계열)이라 접두사가 겹치지 않는다.
+     *
+     * @param  string  $number  PG 콜백의 merchant_order_id 값
+     * @return bool 클레임 결제번호이면 true
+     */
+    public static function isClaimPaymentNumber(string $number): bool
+    {
+        return str_starts_with($number, self::NUMBER_PREFIX);
     }
 
     /**

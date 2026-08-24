@@ -127,6 +127,7 @@ return [
     'claim_payment_not_required' => '이 신청서에는 결제할 청구액이 없습니다.',
     'claim_payment_method_not_allowed' => '선택한 결제 수단은 클레임 추가결제에 사용할 수 없습니다.',
     'claim_payment_provider_unavailable' => '클레임 추가결제를 승인할 수 있는 결제 연동이 없습니다. 관리자에게 문의해 주세요.',
+    'claim_payment_currency_unavailable' => '주문의 결제 통화 정보를 확인할 수 없어 결제를 진행할 수 없습니다. 관리자에게 문의해 주세요.',
     'claim_payment_failed' => '결제 승인에 실패했습니다. (:error)',
     'claim_payment_amount_mismatch' => '결제 승인 금액이 청구액과 일치하지 않습니다.',
     'claim_payment_refund_failed' => '결제 환급에 실패했습니다. (:error)',

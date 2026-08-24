@@ -7,6 +7,12 @@ return [
     'errors' => [
         'payment_failed' => '결제 처리에 실패했습니다. 잠시 후 다시 시도해 주세요.',
     ],
+    'claim' => [
+        'invalid_callback' => '클레임 결제 승인에 필요한 콜백 파라미터(paymentKey, orderId, amount)가 없습니다.',
+        'order_id_mismatch' => '콜백의 주문번호가 승인 대상 클레임 결제번호와 일치하지 않습니다.',
+        'deposit_not_supported' => '클레임 추가결제는 입금 대기 방식(가상계좌)을 지원하지 않습니다.',
+        'amount_mismatch_cancel_reason' => '클레임 결제 승인 금액 불일치에 따른 자동 취소',
+    ],
     'refund' => [
         'missing_payment_key' => '토스페이먼츠 결제 키가 존재하지 않아 환불 처리할 수 없습니다.',
         'default_reason' => '고객 요청에 의한 취소',

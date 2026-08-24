@@ -7,6 +7,12 @@ return [
     'errors' => [
         'payment_failed' => 'Payment could not be completed. Please try again in a moment.',
     ],
+    'claim' => [
+        'invalid_callback' => 'The callback parameters required to approve the claim payment (paymentKey, orderId, amount) are missing.',
+        'order_id_mismatch' => 'The callback order id does not match the claim payment number being approved.',
+        'deposit_not_supported' => 'Claim additional payments do not support deposit-pending methods (virtual account).',
+        'amount_mismatch_cancel_reason' => 'Automatically cancelled due to a claim payment approval amount mismatch',
+    ],
     'refund' => [
         'missing_payment_key' => 'Cannot process refund: TossPayments payment key not found.',
         'default_reason' => 'Cancelled by customer request',

@@ -289,6 +289,109 @@ class ClaimPaymentServiceTest extends ModuleTestCase
         $this->assertSame(ClaimPaymentStatusEnum::PENDING, $payment->fresh()->payment_status);
     }
 
+    public function test_pay_with_card_is_rejected_when_the_order_has_no_currency_snapshot(): void
+    {
+        // 진입 금액과 승인 대조 금액은 같은 해석기(`resolvePaymentCharge`)를 써야 한다 — 스냅샷을
+        // 못 읽으면 대조는 닫히는데 진입만 현재 상점 설정으로 미끄러지면, 결제창은 열리고 승인
+        // 확정 **뒤에** 금액 불일치로 거절되어 망취소 보상이 필요해진다.
+        $this->registerTestPgProvider();
+        $return = $this->requestedReturn();
+        $payment = $this->service->initiateForRequest($return, PaymentMethodEnum::CARD->value);
+        $payment->order->update(['currency_snapshot' => null]);
+
+        $this->assertClaimException(
+            'claim_payment_currency_unavailable',
+            fn () => $this->service->pay($payment->fresh(), PaymentMethodEnum::CARD->value, (int) $return->requested_by)
+        );
+    }
+
+    public function test_initiate_for_request_rejects_before_creating_the_payment_row_when_the_currency_snapshot_is_unreadable(): void
+    {
+        // 거절이 상태 변경 **뒤로** 밀리면 접수는 이미 커밋된 뒤라, 사용자는 422 를 받는데 신청서는
+        // 결제대기로 옮겨지고 낼 수 없는 결제행이 남는다 — 스스로 되돌릴 수 없는 상태가 된다.
+        $this->registerTestPgProvider();
+        $return = $this->requestedReturn();
+        $return->order->update(['currency_snapshot' => null]);
+
+        $this->assertClaimException(
+            'claim_payment_currency_unavailable',
+            fn () => $this->service->initiateForRequest($return->fresh(), PaymentMethodEnum::CARD->value)
+        );
+
+        $this->assertSame(ReturnStatusEnum::REQUESTED, $return->fresh()->return_status);
+        $this->assertSame(0, ClaimPayment::query()->count());
+    }
+
+    public function test_request_payment_on_approval_rejects_before_creating_the_payment_row_when_the_currency_snapshot_is_unreadable(): void
+    {
+        // 결제행을 만드는 세 경로(`initiateForRequest`·`requestPaymentOnApproval`·`settleChargeDifference`)는
+        // 같은 기준을 써야 한다 — 한 곳만 빠지면 그 경로가 조용한 우회로가 된다.
+        $this->registerTestPgProvider();
+        $return = $this->requestedReturn(ClaimChargeMethodEnum::PAY_ON_APPROVAL);
+        $return->order->update(['currency_snapshot' => null]);
+
+        $this->assertClaimException(
+            'claim_payment_currency_unavailable',
+            fn () => $this->service->requestPaymentOnApproval($return->fresh(), $this->createAdminUser()->id)
+        );
+
+        $this->assertSame(ReturnStatusEnum::REQUESTED, $return->fresh()->return_status);
+        $this->assertSame(0, ClaimPayment::query()->count());
+    }
+
+    public function test_pay_leaves_the_payment_row_untouched_when_the_currency_snapshot_is_unreadable(): void
+    {
+        // 수단 확정 가드와 같은 규율 — 거절되는 요청이 결제행을 바꿔 놓으면 안 된다.
+        $this->registerTestPgProvider();
+        app(EcommerceSettingsService::class)->setSetting('claim.charge_payment_methods', [
+            PaymentMethodEnum::CARD->value,
+            PaymentMethodEnum::BANK->value,
+        ]);
+        $return = $this->requestedReturn();
+        $payment = $this->service->initiateForRequest($return, PaymentMethodEnum::CARD->value);
+        $payment->order->update(['currency_snapshot' => null]);
+
+        $this->assertClaimException(
+            'claim_payment_currency_unavailable',
+            fn () => $this->service->pay($payment->fresh(), PaymentMethodEnum::BANK->value, (int) $return->requested_by)
+        );
+
+        $this->assertSame(PaymentMethodEnum::CARD->value, $payment->fresh()->payment_method);
+    }
+
+    public function test_settle_charge_difference_rejects_instead_of_returning_an_unusable_entry_when_the_snapshot_is_unreadable(): void
+    {
+        // 수정 경로가 조용히 `pg_payment_data: null` 을 200 으로 돌려주면 화면은 결제창을 열 수 없는데
+        // 오류도 없다 — 진입 액션 셋이 같은 입력에 같은 결말을 내야 한다.
+        $this->registerTestPgProvider();
+        $return = $this->requestedReturn();
+        $payment = $this->service->initiateForRequest($return, PaymentMethodEnum::CARD->value);
+        $payment->order->update(['currency_snapshot' => null]);
+        $return->fresh()->update(['total_charge_amount' => 9000]);
+
+        $this->assertClaimException(
+            'claim_payment_currency_unavailable',
+            fn () => $this->service->settleChargeDifference($return->fresh())
+        );
+
+        $this->assertSame('3000.00', (string) $payment->fresh()->amount);
+    }
+
+    public function test_payment_payload_omits_the_pg_entry_when_the_currency_snapshot_is_unreadable(): void
+    {
+        // 신청서 상세(읽기 경로)는 예외를 던지지 않는다 — 청구는 그대로 남아 있으므로
+        // `requires_pg_payment` 는 참으로 두되 진입 파라미터를 만들지 않아 결제창이 열리지 않게 한다.
+        $this->registerTestPgProvider();
+        $return = $this->requestedReturn();
+        $payment = $this->service->initiateForRequest($return, PaymentMethodEnum::CARD->value);
+        $payment->order->update(['currency_snapshot' => null]);
+
+        $payload = $this->service->buildPaymentPayload($payment->fresh());
+
+        $this->assertTrue($payload['requires_pg_payment']);
+        $this->assertNull($payload['pg_payment_data']);
+    }
+
     public function test_pay_switching_the_method_moves_the_amount_between_pg_and_points_columns(): void
     {
         $return = $this->requestedReturn();
@@ -568,8 +671,32 @@ class ClaimPaymentServiceTest extends ModuleTestCase
         $this->assertCount(1, $calls);
         $this->assertSame(3000.0, $calls[0]['amount']);
         $this->assertSame('rejected', $calls[0]['reason']);
-        $this->assertSame(sprintf('g7-claimpay-%d-0', $payment->id), $calls[0]['key']);
+        $this->assertSame(sprintf('g7-claimpay-%d-0-300000', $payment->id), $calls[0]['key']);
         $this->assertSame(ClaimPaymentStatusEnum::REFUNDED, $payment->fresh()->payment_status);
+    }
+
+    public function test_pg_refund_idempotency_key_changes_when_a_failed_refund_is_retried_with_another_amount(): void
+    {
+        $this->registerTestPgProvider();
+        $this->fakeClaimPaymentApprove(true);
+        $calls = null;
+        $this->fakeClaimPaymentRefund(false, $calls);
+        $return = $this->requestedReturn();
+        $payment = $this->service->initiateForRequest($return, PaymentMethodEnum::CARD->value);
+        $this->service->approvePgPayment($payment, []);
+
+        // 부분환급 A(1,000)가 PG 에서 거절되면 누적액은 그대로다 — 다른 금액 B(2,000)로 재시도할 때
+        // 키가 같으면 계약("같은 키의 재요청은 한 번만 처리")대로 B 가 A 로 접힌다. 키 재료에
+        // 이번 환급액이 들어 있어 두 시도의 키가 달라야 하고, 같은 금액의 재시도는 같은 키여야 한다.
+        $this->assertClaimException('claim_payment_refund_failed', fn () => $this->service->refundPayment($payment->fresh(), 1000.0, 'first'));
+        $this->assertClaimException('claim_payment_refund_failed', fn () => $this->service->refundPayment($payment->fresh(), 2000.0, 'retry'));
+        $this->assertClaimException('claim_payment_refund_failed', fn () => $this->service->refundPayment($payment->fresh(), 2000.0, 'retry-same'));
+
+        $this->assertCount(3, $calls);
+        $this->assertNotSame($calls[0]['key'], $calls[1]['key']);
+        $this->assertSame($calls[1]['key'], $calls[2]['key']);
+        $this->assertSame(sprintf('g7-claimpay-%d-0-100000', $payment->id), $calls[0]['key']);
+        $this->assertSame(sprintf('g7-claimpay-%d-0-200000', $payment->id), $calls[1]['key']);
     }
 
     public function test_pg_refund_failure_is_raised_and_keeps_the_payment_paid(): void

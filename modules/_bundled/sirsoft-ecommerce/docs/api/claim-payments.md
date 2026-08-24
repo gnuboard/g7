@@ -112,7 +112,7 @@ Content-Type: application/json
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-claims.pay`)이 없는 경우 |
 | 404 | Not Found | 결제번호가 없거나 본인 신청서의 결제 건이 아닌 경우 (`claim_payment_not_found` — 두 경우를 구분하지 않는다) |
-| 422 | Unprocessable Entity | `payment_method` 가 허용 목록 밖인 경우(검증), 결제 대기 상태가 아닌 건(`claim_payment_not_pending`), 결제 수단 불허(`claim_payment_method_not_allowed`), 마일리지 잔액 부족(`insufficient_points`), 결제 연동 부재(`claim_payment_provider_unavailable`) |
+| 422 | Unprocessable Entity | `payment_method` 가 허용 목록 밖인 경우(검증), 결제 대기 상태가 아닌 건(`claim_payment_not_pending`), 결제 수단 불허(`claim_payment_method_not_allowed`), 마일리지 잔액 부족(`insufficient_points`), 결제 연동 부재(`claim_payment_provider_unavailable`), 주문의 거래 시점 통화 스냅샷을 읽을 수 없어 결제 통화 기준을 세울 수 없는 경우(`claim_payment_currency_unavailable` — 아래 "결제 플러그인 연동 계약" 절 참조). 이 거절은 결제행을 고치기 **전에** 나므로 수단·금액이 바뀐 채 남지 않습니다 |
 | 500 | Server Error | 결제 시작 중 예기치 못한 오류 (`클레임 처리 중 오류가 발생했습니다.`) |
 
 <!-- @generated:end -->
@@ -209,6 +209,13 @@ Content-Type: application/json
 두 필터 모두 리스너 등록 시 `'type' => 'filter'` 를 명시해야 합니다 — 빠뜨리면 반환값이 버려져
 승인·환급이 조용히 실패합니다.
 
+**승인 멱등은 플러그인의 의무입니다.** 승인 엔드포인트는 클라이언트가 호출하므로 같은 결제 건의
+승인 요청이 동시에 두 번 도달할 수 있고, 서버(모듈)는 확정 **후**의 재호출만 걸러낼 뿐 검사–확정
+사이의 동시 승인에는 방어가 없습니다 (`transaction_id` UNIQUE 는 서로 다른 행의 중복만 막습니다).
+플러그인은 같은 `payment_number`(PG merchant_order_id)의 승인이 PG 쪽에서 한 번만 청구되도록
+해야 합니다 — 국내 PG 는 동일 주문번호 중복 승인을 PG 서버가 거절하는 것이 표준 동작이며, 그
+전제가 성립하지 않는 PG 라면 플러그인이 자체 잠금·중복 검사를 두어야 합니다.
+
 ### `sirsoft-ecommerce.claim_payment.approve`
 
 | 인자 | 타입 | 설명 |
@@ -232,16 +239,47 @@ Content-Type: application/json
 | --- | --- | --- |
 | `$result` | array | 아래 반환 스키마의 기본값 |
 | `$payment` | `ClaimPayment` | 환급 대상 결제 건 |
-| `$amount` | float | 환급액. 주문 통화와 결제 통화가 다르고 결제 건에 그 통화의 동결 금액(`mc_amount`)이 있으면 서버가 비례 환산해 넘깁니다. **동결 금액이 없으면(스냅샷 이전에 만들어진 구형 결제 건 등) 환산 없이 기준 통화 금액이 그대로 넘어갑니다** — 승인 축(`paid_amount`)과 달리 이 축은 서버가 단위를 보장하지 못하므로, 플러그인은 `$payment->currency_code` 로 단위를 확인하십시오 |
+| `$amount` | float | 환급액, **결제 통화**(주문 통화 스냅샷의 `order_currency`) 기준입니다. 기준 통화와 다르고 결제 건에 그 통화의 동결 금액(`mc_amount`)이 있으면 서버가 비례 환산해 넘깁니다. **동결 금액이 없으면(스냅샷 이전에 만들어진 구형 결제 건 등) 환산 없이 기준 통화 금액이 그대로 넘어갑니다.** `$payment->currency_code` 는 신청 시점 **기준 통화**라 환산이 일어난 경우와 어긋나므로 단위 판별에 쓰지 마십시오 — 같은 통화의 청구 총액은 `ClaimPaymentService::resolvePaymentCurrencyTotal($payment)`, 환급 누적액은 `::resolveRefundedPaymentCurrencyTotal($payment)` 로 받습니다(부분/전액 취소 판정의 단일 출처) |
 | `$reason` | string\|null | 환급 사유 |
-| `$idempotencyKey` | string | `g7-claimpay-{결제건ID}-{누적환급액×100}` 형식. 같은 키의 재요청은 PG 쪽에서 한 번만 처리되어야 합니다 |
+| `$idempotencyKey` | string | `g7-claimpay-{결제건ID}-{환급 전 누적액×100}-{이번 환급액×100}` 형식 (금액 두 축은 기준통화 기준). 같은 키의 재요청은 PG 쪽에서 한 번만 처리되어야 합니다. 이번 환급액이 재료에 들어 있으므로, 실패한 환급을 다른 금액으로 재시도하면 키가 바뀌어 새 요청으로 처리됩니다 |
 
 | 반환 키 | 타입 | 설명 |
 | --- | --- | --- |
 | `handled` | bool | 승인 필터와 같은 의미 |
-| `success` | bool | 환급 성공 여부. `false` 면 서버가 `claim_payment_refund_failed` 로 거절합니다. **앞선 철회·차액 정산은 되돌아가지 않습니다** — 그 단계는 자기 트랜잭션으로 이미 커밋된 뒤이고, PG 호출을 트랜잭션 안에 넣지 않는 것이 이 모듈의 원칙이라 두 단계를 한 트랜잭션으로 묶지 않습니다. 따라서 환급이 실패하면 신청서는 철회 상태로, 결제 건은 `paid` 로 남아 운영자 개입이 필요합니다. 결제 건이 여러 개면 앞서 성공한 환급도 유지됩니다 |
+| `success` | bool | 환급 성공 여부. `false` 면 서버가 `claim_payment_refund_failed` 로 거절합니다. **앞선 철회·차액 정산은 되돌아가지 않습니다** — 그 단계는 자기 트랜잭션으로 이미 커밋된 뒤이고, **클레임 결제 경로는** PG 호출을 트랜잭션 밖에 두는 설계라 두 단계를 한 트랜잭션으로 묶지 않습니다. 이것은 이 경로의 설계이지 모듈 전체의 원칙이 아닙니다 — 주문 취소 경로(`payment.refund` 필터)는 반대로 트랜잭션 안에서 PG 환불을 부르고 실패 시 롤백합니다. 이 필터는 트랜잭션 밖에서만 호출됩니다. 따라서 환급이 실패하면 신청서는 철회 상태로, 결제 건은 `paid` 로 남아 운영자 개입이 필요합니다. 결제 건이 여러 개면 앞서 성공한 환급도 유지됩니다 |
 | `transaction_id` | string\|null | 환급 거래 ID. **현재 모듈은 이 값을 저장하지 않습니다**(환급 거래 ID 컬럼 없음) — 돌려주어도 무방하나 대사에 쓰이지 않습니다. 환급 멱등의 축은 위 `$idempotencyKey` 인자입니다 |
 | `error_code` / `error_message` | string\|null | 실패 사유 |
 
 콜백 경로도 함께 확장해야 합니다 — 결제번호가 `CP` 로 시작하면 주문이 아니라 `ClaimPayment` 로
 되찾아야 하며, 주문번호로 `Order` 를 찾는 기존 분기를 그대로 태우면 클레임 결제 콜백이 실패합니다.
+클레임 결제창은 주문 결제와 같은 진입 계약(`pg_payment_data`)으로 열리므로, PG 가 돌아오는 곳도
+주문 결제와 같은 플러그인 콜백 엔드포인트입니다. 확장 지점은 세 갈래입니다.
+
+1. **판별** — 주문번호 자리의 값이 클레임 결제인지는 `ClaimPayment::isClaimPaymentNumber($number)`
+   로 판별하고, `ClaimPaymentRepositoryInterface::findByPaymentNumber()` 로 되찾습니다.
+2. **승인 위임** — 콜백 컨트롤러는 PG 승인을 직접 수행하지 말고
+   `ClaimPaymentService::approvePgPayment($payment, $callbackParams)` 에 위임합니다. 그 안에서 위
+   `claim_payment.approve` 필터가 발화하므로, 플러그인의 승인 구현은 필터 리스너 **한 곳**이면
+   서버 콜백 경로와 API 승인 경로(`claim-payments/{no}/approve`)를 모두 받칩니다. 실패는
+   `OrderClaimException` 으로 옵니다 — 승인 금액 불일치(`claim_payment_amount_mismatch`)처럼 PG
+   승인이 확정된 뒤의 거절은 플러그인이 망취소 등으로 보상해야 합니다.
+3. **복귀** — 처리 후 브라우저는 주문 완료 화면이 아니라 신청서 상세로 돌려보냅니다.
+   `Modules\Sirsoft\Ecommerce\Support\ClaimPaymentRedirect::success($payment)` /
+   `::fail($payment, $errorCode)` 가 회원(`/mypage/claims/{번호}`)·비회원(상점 경로의
+   `guest/claims/{번호}`)을 구분해 주소를 만듭니다. 쿼리 계약은 성공 `?claim_payment=success`,
+   실패 `?claim_payment=failed&error={code}`, 사용자가 결제창을 스스로 닫은 중단은
+   `?claim_payment=cancelled`(`::cancelled($payment)` — 오류 안내 없이 재시도만 열어 둡니다) 입니다.
+
+결제창 진입 **전** 검증 지점(서명 발급·승인키 발급처럼 주문을 조회해 금액을 대조하는 엔드포인트)도
+같은 판별로 분기해야 결제창 자체가 열립니다. 클레임 결제 건의 기대 청구액은
+`ClaimPaymentService::resolvePaymentCharge($payment)` (`{minor_unit_amount, currency}`, 결제 통화
+최소 화폐단위)로 대조합니다 — 주문 결제의 `resolveOrderPaymentChargeAmount()` 에 대응하는 값입니다.
+이 메서드는 거래 시점 통화 스냅샷을 읽을 수 없으면 `null` 을 돌려줍니다. 그때는 **거절하십시오** —
+현재 상점 설정으로 미끄러지면 소수 자릿수·절사 규칙이 달라져 청구액 자체가 바뀝니다(0 자리 통화가
+2 자리로 읽히면 100 배). 서버도 같은 판정으로 닫습니다: 결제 진입(`claim-payments/{no}/pay`)이
+`claim_payment_currency_unavailable` 로 거절하고 진입 파라미터(`pg_payment_data`)를 만들지 않으므로,
+정상 경로에서는 결제창이 열린 뒤 승인 확정 단계에서 금액 불일치가 나는 일이 없습니다.
+
+클레임 결제는 즉시 확정되는 수단만 지원합니다 — 가상계좌처럼 입금 대기를 거치는 수단은 클레임
+결제 상태 모델에 대기 상태가 없으므로, 플러그인은 그런 승인 응답을 성공으로 돌려주지 말고
+발급을 취소(망취소 등)한 뒤 실패로 반환해야 합니다.

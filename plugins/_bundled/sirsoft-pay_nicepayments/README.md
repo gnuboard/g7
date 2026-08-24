@@ -80,6 +80,15 @@ https://your-domain.com/plugins/sirsoft-pay_nicepayments/payment/vbank-notify
 → CancelActivityLogListener 가 PG 응답 시각·취소 TID를 활동 로그에 기록
 ```
 
+### 클레임 추가결제 (취소/반품/교환)
+
+쇼핑몰 모듈의 클레임 추가결제(결제번호 `CP` 채번)는 `sirsoft-ecommerce.claim_payment.approve` /
+`sirsoft-ecommerce.claim_payment.refund` 필터로 승인·환급되며, 이 플러그인이 두 필터를 구현합니다.
+결제번호가 `CP` 로 시작하는 콜백은 주문이 아니라 클레임 결제 건으로 처리되고, 완료 후 신청서
+상세 화면으로 돌아갑니다. 인자·반환 키·멱등 규칙 등 계약의 단일 출처는 쇼핑몰 모듈
+`docs/api/claim-payments.md` 의 "결제 플러그인 연동 계약 (필터 훅)" 절입니다 — 이 문서에는
+계약을 복제해 적지 않습니다.
+
 배송비가 포함된 주문은 전체취소 시 배송비도 함께 환불 레코드에 반영되고, 쿠폰이 적용된 주문은 실결제금액(쿠폰 차감 후) 이 PG cancelAmt 로 전달됩니다. 부분취소 시 쿠폰 최소 주문금액 조건을 더 이상 충족하지 못하면 코어가 취소 자체를 거부 (422) 하여 PG 호출이 발생하지 않습니다. 가상계좌 입금 완료 건은 환불 계좌 정보가 필요해 일반 취소 API 가 아닌 별도 어드민 환불 계좌 API 경로로 처리됩니다.
 
 ## 가용 훅 (Hook)

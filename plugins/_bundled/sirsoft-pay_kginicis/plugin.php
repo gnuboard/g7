@@ -363,6 +363,8 @@ class Plugin extends AbstractPlugin
             Listeners\RegisterPgProviderListener::class,
             Listeners\RegisterCashReceiptProviderListener::class,
             Listeners\PaymentRefundListener::class,
+            Listeners\ClaimPaymentApproveListener::class,
+            Listeners\ClaimPaymentRefundListener::class,
             Listeners\CancelActivityLogListener::class,
             Listeners\RegisterEasyPayMethodsListener::class,
             Listeners\AdjustEcommercePaymentMethodsLayoutListener::class,

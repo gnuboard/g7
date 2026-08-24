@@ -243,6 +243,8 @@ class Plugin extends AbstractPlugin
             Listeners\RegisterTossPaymentMethodsListener::class,
             Listeners\RegisterCashReceiptProviderListener::class,
             Listeners\PaymentRefundListener::class,
+            Listeners\ClaimPaymentApproveListener::class,
+            Listeners\ClaimPaymentRefundListener::class,
             Listeners\ValidateTossSettingsListener::class,
             Listeners\RestoreLayoutExtensionsAfterUpdateListener::class,
         ];

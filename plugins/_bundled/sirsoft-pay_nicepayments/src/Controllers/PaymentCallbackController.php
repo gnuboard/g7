@@ -20,9 +20,13 @@ use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\PaymentAmountMismatchException;
 use Modules\Sirsoft\Ecommerce\Helpers\DeviceDetector;
+use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
+use Modules\Sirsoft\Ecommerce\Support\ClaimPaymentCallback;
+use Modules\Sirsoft\Ecommerce\Support\ClaimPaymentRedirect;
+use Plugins\Sirsoft\PayNicepayments\Concerns\HandlesClaimPaymentCallbacks;
 use Plugins\Sirsoft\PayNicepayments\Concerns\IssuesReceiptCookie;
 use Plugins\Sirsoft\PayNicepayments\Concerns\PreventsReplayCallback;
 use Plugins\Sirsoft\PayNicepayments\Concerns\RecordsPaymentWindowClosure;
@@ -44,6 +48,7 @@ use Plugins\Sirsoft\PayNicepayments\Support\UrlHelper;
  */
 class PaymentCallbackController
 {
+    use HandlesClaimPaymentCallbacks;
     use IssuesReceiptCookie;
     use PreventsReplayCallback;
     use RecordsPaymentWindowClosure;
@@ -180,6 +185,16 @@ class PaymentCallbackController
                 'ip' => $request->ip(),
             ]);
 
+            // 클레임 추가결제(CP 채번)는 체크아웃이 아니라 신청서 상세로 돌려보낸다. 인증 단계
+            // 실패는 사용자 취소와 구분할 수 없어 주문 경로처럼 오류 안내 없이 복귀시킨다.
+            if ($moid !== '' && ClaimPayment::isClaimPaymentNumber($moid)) {
+                $claimPayment = $this->findClaimPayment($moid);
+
+                if ($claimPayment) {
+                    return redirect(ClaimPaymentRedirect::cancelled($claimPayment));
+                }
+            }
+
             return redirect($this->resolveFailUrl([]));
         }
 
@@ -204,6 +219,22 @@ class PaymentCallbackController
                 'ip' => $request->ip(),
             ]);
 
+            // 클레임 추가결제(CP 채번)는 주문이 아니다 — 주문 완료 화면으로 보내면 결제번호를
+            // 주문번호로 읽어 빈 화면이 뜨고, 영수증 쿠키도 존재하지 않는 주문 앞으로 발급된다.
+            if (ClaimPayment::isClaimPaymentNumber($moid)) {
+                $claimPayment = $this->findClaimPayment($moid);
+
+                if ($claimPayment !== null) {
+                    return redirect(ClaimPaymentRedirect::success($claimPayment));
+                }
+
+                // 결제 건을 못 찾아도 주문 경로로 흘려보내지 않는다 — CP 번호를 주문번호로 실은
+                // 완료 화면과 영수증 쿠키가 나가는 것이 애초에 이 분기가 막으려던 결함이다.
+                Log::error('NicePayments: claim payment not found on duplicate authCallback', ['moid' => $moid]);
+
+                return redirect($this->resolveFailUrl(['error' => 'claim_payment_not_found']));
+            }
+
             $this->queueReceiptCookie($moid);
 
             return redirect($this->resolveSuccessUrl($moid));
@@ -227,6 +258,25 @@ class PaymentCallbackController
             Log::error('NicePayments: signature verification failed', ['moid' => $moid, 'ip' => $request->ip()]);
 
             return redirect($this->resolveFailUrl(['error' => 'signature_mismatch', 'orderId' => $moid]));
+        }
+
+        // 클레임 추가결제(CP 채번)는 주문이 아니다 — 주문 분기를 태우면 order_not_found 로 끝난다.
+        // 승인은 모듈 위임(필터 발화 → 이 플러그인의 승인 리스너)이고, 승인 금액 불일치는 승인이
+        // 확정된 뒤의 거절이므로 망취소로 보상한다.
+        if (ClaimPayment::isClaimPaymentNumber($moid)) {
+            $claimPayment = $this->findClaimPayment($moid);
+
+            if (! $claimPayment) {
+                Log::error('NicePayments: claim payment not found', ['moid' => $moid]);
+
+                return redirect($this->resolveFailUrl(['error' => 'claim_payment_not_found', 'orderId' => $moid]));
+            }
+
+            return ClaimPaymentCallback::approveAndRedirect(
+                $claimPayment,
+                $validated,
+                fn () => $this->apiService->sendNetCancel($netCancelUrl, $txTid, $authToken, $amt),
+            );
         }
 
         try {
@@ -601,6 +651,35 @@ class PaymentCallbackController
             return response()->json(['error' => __('sirsoft-pay_nicepayments::messages.errors.invalid_request')], 429);
         }
         RateLimiter::hit($rateLimitKey, 60);
+
+        // 클레임 추가결제(CP 채번)는 주문이 아니다 — 결제 건 기준으로 같은 강도의 검증을 적용한다.
+        if (ClaimPayment::isClaimPaymentNumber($moid)) {
+            $claimError = $this->validateClaimSignDataContext($request, $moid, $amt);
+
+            if ($claimError !== null) {
+                return $claimError;
+            }
+
+            $mid = trim($this->apiService->getMid());
+
+            if ($mid === '') {
+                Log::error('NicePayments: claim SignData rejected because MID is not configured', [
+                    'payment_number' => $moid,
+                    'is_test_mode' => $this->apiService->isTestMode(),
+                ]);
+
+                return response()->json(['error' => __('sirsoft-pay_nicepayments::messages.errors.invalid_request')], 422);
+            }
+
+            $ediDate = $this->apiService->generateEdiDate();
+            $signData = $this->apiService->generateSignData($ediDate, $amt);
+
+            return response()->json([
+                'ediDate' => $ediDate,
+                'signData' => $signData,
+                'mid' => $mid,
+            ]);
+        }
 
         // 주문 금액 검증: 클라이언트가 임의 금액으로 SignData를 요청하는 조작 방지
         $order = $this->orderService->findByOrderNumber($moid);

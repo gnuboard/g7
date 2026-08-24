@@ -55,4 +55,11 @@ return [
         'not_expirable' => '満了処理できない決済です。',
         'not_cvs' => 'コンビニ・仮想口座決済ではありません。',
     ],
+    'claim' => [
+        'invalid_callback' => 'クレーム決済承認に必要なコールバックパラメーターがありません。',
+        'window_failed' => '決済ウィンドウ認証が完了していません。',
+        'auth_url_invalid' => '承認要求アドレスがKGイニシスの許可リストにありません。',
+        'deposit_not_supported' => 'クレーム追加決済は入金待機方式(仮想口座)をサポートしていません。',
+        'compensation_cancel_reason' => 'クレーム決済承認拒否に伴う自動キャンセル',
+    ],
 ];

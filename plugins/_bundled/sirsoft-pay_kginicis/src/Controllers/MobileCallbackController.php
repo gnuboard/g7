@@ -10,8 +10,11 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\PaymentAmountMismatchException;
+use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
+use Modules\Sirsoft\Ecommerce\Support\ClaimPaymentCallback;
+use Plugins\Sirsoft\PayKginicis\Concerns\HandlesClaimPaymentCallbacks;
 use Plugins\Sirsoft\PayKginicis\Concerns\IssuesReceiptCookie;
 use Plugins\Sirsoft\PayKginicis\Concerns\PreventsReplayCallback;
 use Plugins\Sirsoft\PayKginicis\Concerns\ResolvesEasyPaySelection;
@@ -33,6 +36,7 @@ use Plugins\Sirsoft\PayKginicis\Support\ShopRedirectUrl;
  */
 class MobileCallbackController
 {
+    use HandlesClaimPaymentCallbacks;
     use IssuesReceiptCookie;
     use PreventsReplayCallback;
     use ResolvesEasyPaySelection;
@@ -135,6 +139,15 @@ class MobileCallbackController
                 'is_user_cancel' => $isUserCancel,
             ]);
 
+            // 클레임 추가결제(CP 채번)는 체크아웃이 아니라 신청서 상세로 돌려보낸다.
+            if (ClaimPayment::isClaimPaymentNumber($moid)) {
+                $claimRedirect = $this->redirectClaimWindowFailure($moid, $isUserCancel ? null : $pStatus);
+
+                if ($claimRedirect !== null) {
+                    return $claimRedirect;
+                }
+            }
+
             // 사용자가 결제창을 직접 닫은 취소는 오류 모달 없이 체크아웃으로 조용히 복귀
             if ($isUserCancel) {
                 return redirect($this->resolveFailUrl());
@@ -142,7 +155,8 @@ class MobileCallbackController
 
             return redirect($this->resolveFailUrl([
                 'error' => $pStatus,
-                'message' => $pMesg,
+                // PC 콜백과 같은 이유 — 결제 건을 못 찾은 CP 콜백에는 PG 원문을 싣지 않는다.
+                'message' => ClaimPayment::isClaimPaymentNumber($moid) ? null : $pMesg,
                 'orderId' => $moid,
             ]));
         }
@@ -171,6 +185,25 @@ class MobileCallbackController
             ]);
 
             return redirect($this->resolveFailUrl(['error' => 'req_url_invalid', 'orderId' => $moid]));
+        }
+
+        // 클레임 추가결제(CP 채번)는 주문이 아니다 — 주문 분기를 태우면 order_not_found 로 끝난다.
+        // 승인은 모듈 위임(필터 발화 → 이 플러그인의 승인 리스너)이고, 승인 금액 불일치는 승인이
+        // 확정된 뒤의 거절이므로 취소 API 로 보상한다 (모바일 경로에는 망취소 URL 이 없다).
+        if (ClaimPayment::isClaimPaymentNumber($moid)) {
+            $payment = $this->findClaimPayment($moid);
+
+            if (! $payment) {
+                Log::error('KG Inicis mobile: claim payment not found', ['P_OID' => $moid]);
+
+                return redirect($this->resolveFailUrl(['error' => 'claim_payment_not_found', 'orderId' => $moid]));
+            }
+
+            return ClaimPaymentCallback::approveAndRedirect(
+                $payment,
+                $validated,
+                fn () => $this->cancelClaimApprovalQuietly($payment),
+            );
         }
 
         // Approve 성공 후 후속 처리 실패 시 PG 측 자동 cancel 을 위한 추적 변수.

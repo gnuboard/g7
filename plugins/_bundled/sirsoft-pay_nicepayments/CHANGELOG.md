@@ -4,6 +4,16 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.3] - 2026-08-24
+
+### Added
+
+- 쇼핑몰 취소/반품/교환 신청의 추가결제(클레임 결제)를 지원합니다. 신청서의 배송비·상품 차액 결제가 주문 결제와 같은 결제창으로 진행되고, 신청 철회·반려 시 자동으로 환급됩니다.
+
+### Changed
+
+- 쇼핑몰(sirsoft-ecommerce) 모듈 최소 버전을 1.2.0 으로 상향했습니다.
+
 ## [1.0.2] - 2026-08-19
 
 ### Security

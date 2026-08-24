@@ -15,6 +15,14 @@ return [
         'vbank_completed_requires_bank_info' => 'Refund account information is required for completed virtual account deposits. Please process the refund through the admin API.',
         'invalid_refund_amount' => 'The refund amount is invalid. (requested: :amount KRW)',
     ],
+    'claim' => [
+        'invalid_callback' => 'The callback parameters required to approve the claim payment are missing.',
+        'window_failed' => 'The payment window authentication did not complete.',
+        'mid_mismatch' => 'The callback merchant ID (MID) does not match the configured value.',
+        'signature_mismatch' => 'The callback signature verification failed.',
+        'deposit_not_supported' => 'Claim additional payments do not support deposit-pending methods (virtual account).',
+        'invalid_refund_amount' => 'The refund amount is invalid.',
+    ],
     'refund' => [
         'missing_tid' => 'Cannot process refund: transaction ID (TID) is missing.',
         'default_reason' => 'Buyer refund request',

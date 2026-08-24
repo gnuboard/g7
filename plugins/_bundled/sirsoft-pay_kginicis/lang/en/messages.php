@@ -17,6 +17,13 @@ return [
         'courier_required' => 'Please select a courier.',
         'default_confirmer' => 'Administrator',
     ],
+    'claim' => [
+        'invalid_callback' => 'The callback parameters required to approve the claim payment are missing.',
+        'window_failed' => 'The payment window authentication did not complete.',
+        'auth_url_invalid' => 'The authorization URL is not in the KG Inicis whitelist.',
+        'deposit_not_supported' => 'Claim additional payments do not support deposit-pending methods (virtual account).',
+        'compensation_cancel_reason' => 'Automatically cancelled after the claim payment approval was rejected',
+    ],
     'refund' => [
         'missing_tid' => 'Cannot process refund: transaction ID (TID) is missing.',
         'default_reason' => 'Buyer refund request',

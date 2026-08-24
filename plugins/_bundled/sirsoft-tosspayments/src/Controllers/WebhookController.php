@@ -8,6 +8,7 @@ use App\Services\PluginSettingsService;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
+use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Plugins\Sirsoft\Tosspayments\Concerns\PreventsReplayCallback;
 use Plugins\Sirsoft\Tosspayments\Http\Requests\DepositWebhookRequest;
@@ -155,6 +156,18 @@ class WebhookController
             'orderId' => $orderId,
             'status' => $pgStatus,
         ]);
+
+        // 클레임 추가결제(CP 채번)는 주문이 아니다 — 주문 조회 분기를 그대로 태우면 정상 동작마다
+        // `order not found` warning 이 남아 운영자 로그에서 결함으로 읽힌다. 이 핸들러는 상태
+        // 동기화 로깅 전용이라 클레임 결제 건에 대해 별도로 반영할 상태가 없으므로 그대로 종결한다.
+        if (ClaimPayment::isClaimPaymentNumber($orderId)) {
+            Log::info('TossPayments: payment-status webhook - claim payment (no order lookup)', [
+                'payment_number' => $orderId,
+                'toss_status' => $pgStatus,
+            ]);
+
+            return $this->plain('OK');
+        }
 
         $order = $this->orderService->findByOrderNumber($orderId);
 

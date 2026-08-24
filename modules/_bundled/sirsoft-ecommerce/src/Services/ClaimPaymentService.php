@@ -62,7 +62,8 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderReturnRepositoryInterf
  * 서버가 확정하지 못하는 상태를 조용히 통과시키지 않는다. 마일리지 결제는 모듈 안에서 끝난다.
  *
  * 멱등 축: `payment_number` / `transaction_id` UNIQUE, 마일리지는 `claim_payment_id`, PG 환급은
- * `g7-claimpay-{id}-{누적환급액}` 멱등키.
+ * `g7-claimpay-{id}-{누적환급액}-{이번환급액}` 멱등키. 승인의 이중 **청구** 방지는 모듈이 아니라
+ * 결제 플러그인 몫이다(같은 `payment_number` 재승인을 PG 쪽에서 한 번으로 접는다 — 계약 문서 참조).
  */
 class ClaimPaymentService
 {
@@ -123,6 +124,13 @@ class ClaimPaymentService
             : $this->resolvePaymentMethod($paymentMethod);
         $this->assertPaymentMethodAvailableToRequester($method, $requestedBy);
 
+        // 접수 직후 결제 진입도 같은 순서를 지킨다 — 통화 기준을 못 세우는 주문에서 결제행을 먼저
+        // 만들면, 뒤이은 진입 거절이 결제대기로 옮겨진 신청서와 낼 수 없는 결제행을 남긴다.
+        if ($method !== PaymentMethodEnum::POINT->value) {
+            $claim->loadMissing('order');
+            $this->assertClaimPaymentCurrencyResolvable($claim->order);
+        }
+
         $payment = $this->createPendingPayment($claim, $method, (float) $claim->total_charge_amount);
 
         $this->transitionClaim($claim, 'payment_pending');
@@ -157,12 +165,20 @@ class ClaimPaymentService
         // 신청 시점 결제·차액 정산과 같은 게이트를 탄다 — 허용 목록의 첫 수단을 그대로 쓰면
         // 마일리지를 앞에 둔 상점에서 비회원 신청서의 결제행이 `point` 로 만들어져, 그 건은
         // 수단을 명시하지 않는 한 다시 열리지 않는다. 결제행을 만드는 세 경로가 같은 기준을 써야 한다.
-        $payment = $this->paymentRepository->findPendingByPayable($claim->claimType()->value, $claim->id)
-            ?? $this->createPendingPayment(
-                $claim,
-                $this->resolveDefaultPaymentMethodFor($claim->requested_by === null ? null : (int) $claim->requested_by),
-                $outstanding,
-            );
+        $payment = $this->paymentRepository->findPendingByPayable($claim->claimType()->value, $claim->id);
+
+        if ($payment === null) {
+            $method = $this->resolveDefaultPaymentMethodFor($claim->requested_by === null ? null : (int) $claim->requested_by);
+
+            // 통화 기준도 같은 이유로 결제행 앞에서 본다 — 미루면 승인 시도가 결제대기로 옮긴
+            // 신청서와 낼 수 없는 결제행을 남긴다(`initiateForRequest()`·`settleChargeDifference()` 동형).
+            if ($method !== PaymentMethodEnum::POINT->value) {
+                $claim->loadMissing('order');
+                $this->assertClaimPaymentCurrencyResolvable($claim->order);
+            }
+
+            $payment = $this->createPendingPayment($claim, $method, $outstanding);
+        }
 
         if ($this->claimStatus($claim) !== 'payment_pending') {
             $this->transitionClaim($claim, 'payment_pending', ['processed_by' => $processedBy]);
@@ -198,6 +214,13 @@ class ClaimPaymentService
         // 그 상태의 상세 응답이 실제로 낼 수 없는 수단을 안내한다.
         $this->assertPaymentMethodAvailableToRequester($method, $userId);
 
+        // 통화 기준도 같은 이유로 결제행 앞에서 본다 — 아래에서 파라미터를 만들지 못해 거절하면
+        // 수단만 바뀐 행이 남는다. 마일리지는 PG 진입 파라미터를 쓰지 않으므로 대상이 아니다.
+        if ($method !== PaymentMethodEnum::POINT->value) {
+            $payment->loadMissing('order');
+            $this->assertClaimPaymentCurrencyResolvable($payment->order);
+        }
+
         if ($method !== $payment->payment_method) {
             $payment = $this->paymentRepository->update($payment, [
                 'payment_method' => $method,
@@ -217,7 +240,15 @@ class ClaimPaymentService
             ];
         }
 
-        return ['payment' => $payment] + $this->buildPaymentPayload($payment);
+        $payload = $this->buildPaymentPayload($payment);
+
+        // 결제 진입 액션은 파라미터를 만들지 못한 상태를 200 으로 돌려주지 않는다 — 화면은
+        // 결제창을 열 수 없는데 오류도 없어 원인이 드러나지 않는다.
+        if ($payload['requires_pg_payment'] && $payload['pg_payment_data'] === null) {
+            throw OrderClaimException::paymentCurrencyUnavailable();
+        }
+
+        return ['payment' => $payment] + $payload;
     }
 
     /**
@@ -246,10 +277,21 @@ class ClaimPaymentService
             ];
         }
 
-        $charge = $this->currencyService->resolveSnapshotPaymentCharge(
-            (float) $payment->amount,
-            $order?->currency_snapshot ?? [],
-        );
+        // 진입 금액은 승인 대조와 **같은 해석기**를 쓴다 — 스냅샷을 못 읽을 때 대조는 닫히는데
+        // 진입만 현재 상점 설정으로 미끄러지면 두 값이 갈라진다(0 자리 통화가 2 자리로 읽혀
+        // 100 배가 된 금액으로 결제창이 열리고, 승인 확정 뒤에 불일치로 거절된다).
+        // 읽기 경로(신청서 상세)도 이 메서드를 부르므로 여기서는 예외를 던지지 않고 진입
+        // 파라미터만 비운다 — 청구는 남아 있으므로 `requires_pg_payment` 는 참 그대로다.
+        $charge = $this->resolvePaymentCharge($payment);
+
+        if ($charge === null) {
+            return [
+                'requires_pg_payment' => true,
+                'pg_provider' => "sirsoft-{$provider}",
+                'pg_payment_handler' => $this->resolvePgPaymentHandler($provider),
+                'pg_payment_data' => null,
+            ];
+        }
 
         $shippingAddress = $order?->shippingAddress;
         $claimNumber = $claim instanceof OrderExchange ? $claim->exchange_number : $claim?->return_number;
@@ -295,10 +337,14 @@ class ClaimPaymentService
     public function approvePgPayment(ClaimPayment $payment, array $callback): ClaimPayment
     {
         // 여기서 잡는 행 잠금은 최신 행을 읽기 위한 것이지 동시 승인을 직렬화하는 장치가 아니다 —
-        // 트랜잭션이 곧바로 커밋되므로 아래 검사–확정 구간에는 잠금이 남지 않는다. 이중 청구를 막는
-        // 실제 축은 `transaction_id` UNIQUE 이며(같은 승인 응답은 두 번 저장되지 못한다), PG 재승인
-        // 호출은 순차라 `isPaid()` 조기 반환이 정상 경로를 덮는다. 잠금을 승인 확정까지 늘리면
-        // 외부 PG 호출이 트랜잭션 안에 들어가 응답을 기다리는 동안 행이 잠긴다.
+        // 트랜잭션이 곧바로 커밋되므로 아래 검사–확정 구간에는 잠금이 남지 않는다. 그 구간에는
+        // 모듈 쪽 방어가 없다: `transaction_id` UNIQUE 는 서로 다른 행이 같은 거래를 갖는 것만
+        // 막고(같은 행에 두 번 update 되는 것은 못 막으며, 필터가 null 을 돌려주면 NULL 중복이라
+        // 아무것도 막지 않는다), 이 메서드는 클라이언트가 부르는 엔드포인트에서 호출되므로 동시
+        // 승인 요청은 순차가 아니다. 이중 **청구** 방지는 결제 플러그인의 몫이다 — 계약
+        // (docs/api/claim-payments.md "결제 플러그인 연동 계약")이 같은 `payment_number` 의 재승인을
+        // PG 쪽에서 한 번으로 접는 멱등을 요구한다. 잠금을 승인 확정까지 늘리지 않는 이유는
+        // 외부 PG 호출이 트랜잭션 안에 들어가 응답을 기다리는 동안 행이 잠기기 때문이다.
         $locked = DB::transaction(function () use ($payment) {
             return $this->paymentRepository->findByPaymentNumberForUpdate($payment->payment_number) ?? $payment;
         });
@@ -467,8 +513,9 @@ class ClaimPaymentService
     {
         // 승인 경로와 같은 형태다 — 잠금은 최신 행을 읽는 용도이고, 중복 환급을 막는 축은
         // 누적 환급액(`refunded_amount`)으로 잔액을 다시 계산하는 것과 PG 멱등키
-        // `g7-claimpay-{id}-{누적환급액}` 이다. 같은 금액을 두 번 보내면 PG 가 같은 키로 받아
-        // 한 번만 처리한다. 잠금을 PG 호출까지 늘리지 않는 이유도 승인과 같다.
+        // `g7-claimpay-{id}-{누적환급액}-{이번환급액}` 이다. 같은 금액을 두 번 보내면 PG 가 같은
+        // 키로 받아 한 번만 처리하고, 실패 후 다른 금액으로 재시도하면 키가 바뀌어 새 요청으로
+        // 처리된다. 잠금을 PG 호출까지 늘리지 않는 이유도 승인과 같다.
         $locked = DB::transaction(function () use ($payment) {
             return $this->paymentRepository->findByPaymentNumberForUpdate($payment->payment_number) ?? $payment;
         });
@@ -575,10 +622,19 @@ class ClaimPaymentService
             return null;
         }
 
+        $newMethod = null;
+
         if ($pending === null) {
             // 신규 결제행도 생성 전에 신청자 자격을 본다 — 허용 목록의 첫 수단이 마일리지인 상점에서
             // 비회원 신청서의 차액 결제행이 `point` 로 만들어지면 그 건은 다시 열리지 않는다.
             $newMethod = $this->resolveDefaultPaymentMethodFor($claim->requested_by === null ? null : (int) $claim->requested_by);
+        }
+
+        // 수정 경로도 결제행을 건드리기 전에 통화 기준을 본다 — 여기서 미루면 신청서 수정과 차액
+        // 정산은 커밋된 뒤라, 진입 파라미터만 비어 돌아가 화면이 결제창을 열 수 없는데 오류도 없다.
+        if (($pending?->payment_method ?? $newMethod) !== PaymentMethodEnum::POINT->value) {
+            $claim->loadMissing('order');
+            $this->assertClaimPaymentCurrencyResolvable($claim->order);
         }
 
         $payment = $pending !== null
@@ -835,18 +891,24 @@ class ClaimPaymentService
      */
     protected function executePgRefund(ClaimPayment $payment, float $amount, ?string $reason): void
     {
-        $payment->loadMissing('order');
-        $snapshot = $payment->order?->currency_snapshot ?? [];
-        $orderCurrency = $snapshot['order_currency'] ?? $payment->currency_code;
-
         // PG 실환급액은 결제 통화여야 한다 — 결제 시점 동결 환율(mc_amount)로 비례 환산한다.
-        $localAmount = $amount;
+        // 환산 조건 판정은 `resolvePaymentCurrencyTotal()` 이 단일 출처다 (플러그인도 같은 값을
+        // 부분취소 판정에 쓰므로, 여기서 따로 판정하면 두 쪽이 갈라진다).
+        $baseTotal = $payment->getTotalAmount();
+        $localAmount = $baseTotal > 0
+            ? round($this->resolvePaymentCurrencyTotal($payment) * ($amount / $baseTotal), 2)
+            : $amount;
 
-        if ($orderCurrency !== $payment->currency_code && isset($payment->mc_amount[$orderCurrency]) && $payment->getTotalAmount() > 0) {
-            $localAmount = round((float) $payment->mc_amount[$orderCurrency] * ($amount / $payment->getTotalAmount()), 2);
-        }
-
-        $idempotencyKey = sprintf('g7-claimpay-%d-%d', $payment->id, (int) round((float) $payment->refunded_amount * 100));
+        // 키 재료에 이번 환급액을 포함한다 — 결제건 ID + 환급 전 누적액만으로는 "부분환급 A 가
+        // PG 실패(누적액 미변경)한 뒤 다른 금액 B 로 재시도" 가 같은 키를 받아, 계약("같은 키의
+        // 재요청은 PG 쪽에서 한 번만 처리")대로면 B 가 A 로 접힌다. 같은 금액의 재시도는 같은
+        // 키를 유지해 PG 쪽 중복 처리를 막는다. 금액은 기준통화(누적액과 같은 단위) ×100 정수.
+        $idempotencyKey = sprintf(
+            'g7-claimpay-%d-%d-%d',
+            $payment->id,
+            (int) round((float) $payment->refunded_amount * 100),
+            (int) round($amount * 100),
+        );
 
         $result = HookManager::applyFilters(
             'sirsoft-ecommerce.claim_payment.refund',
@@ -896,6 +958,117 @@ class ClaimPaymentService
     }
 
     /**
+     * 이 주문으로 결제 통화 기준을 세울 수 있는지 판정합니다.
+     *
+     * 청구액이 아니라 **기준의 존재**만 본다 — 그래서 결제 건이 아직 없는 접수·수정 시점에도
+     * 같은 판정을 앞당겨 쓸 수 있다. `resolvePaymentCharge()` 의 null 조건과 단일 출처다.
+     *
+     * @param  Order|null  $order  결제 건이 딸린 주문
+     * @return bool 결제 통화 기준을 세울 수 있는지 여부
+     */
+    public function canResolvePaymentCurrency(?Order $order): bool
+    {
+        return ! empty($order?->currency_snapshot);
+    }
+
+    /**
+     * 결제행을 만들거나 고치기 **전에** 결제 통화 기준을 세울 수 있는지 검증합니다.
+     *
+     * 기준을 못 세우면 결제창 진입 파라미터를 만들 수 없으므로 그 결제는 어차피 실패한다. 그때
+     * 거절을 상태 변경 **뒤로** 미루면 사용자는 422 를 받는데 결제행과 `payment_pending` 전이는
+     * 남아, 낼 수 없는 청구가 걸린 신청서가 된다 (같은 이유로 수단 확정 가드도 앞에 둔다 —
+     * `pay()` 주석 참조).
+     *
+     * @param  Order|null  $order  결제 건이 딸린 주문
+     *
+     * @throws OrderClaimException 통화 기준 부재
+     */
+    public function assertClaimPaymentCurrencyResolvable(?Order $order): void
+    {
+        if (! $this->canResolvePaymentCurrency($order)) {
+            throw OrderClaimException::paymentCurrencyUnavailable();
+        }
+    }
+
+    /**
+     * 거래 시점 통화 스냅샷 기준의 결제 통화 청구액을 반환합니다.
+     *
+     * 결제창 진입(`pg_payment_data.amount`)·승인 금액 대조(`paid_amount`)와 같은 기준이며, 결제
+     * 플러그인의 결제창 진입 전 검증 지점(서명 발급·승인키 발급 등)이 클라이언트가 보낸 금액을
+     * 대조할 때 쓰라고 공개한다 — 주문 결제의 `resolveOrderPaymentChargeAmount` 에 대응하는
+     * 클레임 결제 축이다.
+     *
+     * @param  ClaimPayment  $payment  결제 건
+     * @return array{minor_unit_amount: int, currency: string}|null 결제 통화 청구액 (스냅샷을 읽을 수 없으면 null)
+     */
+    public function resolvePaymentCharge(ClaimPayment $payment): ?array
+    {
+        $payment->loadMissing('order');
+
+        if (! $this->canResolvePaymentCurrency($payment->order)) {
+            return null;
+        }
+
+        $charge = $this->currencyService->resolveSnapshotPaymentCharge(
+            (float) $payment->amount,
+            $payment->order->currency_snapshot,
+        );
+
+        return [
+            'minor_unit_amount' => (int) $charge['minor_unit_amount'],
+            'currency' => (string) $charge['currency'],
+        ];
+    }
+
+    /**
+     * 결제 통화 기준의 청구 총액을 반환합니다.
+     *
+     * `claim_payment.refund` 필터가 받는 `$amount` 와 **같은 통화**의 총액이다. 결제 플러그인은
+     * 이 값으로 이번 환급이 부분취소인지(잔액 전액인지) 판정한다 — PG 취소 API 는 대부분
+     * 부분/전액을 다른 파라미터로 요구하므로 그 판정이 틀리면 잔액이 통째로 취소된다.
+     *
+     * 환산 조건(주문 통화 ≠ 기준통화 · 동결 환산액 보유)을 플러그인마다 다시 구현하면 모듈이
+     * 조건을 바꿀 때 사본들이 조용히 어긋난다. 그래서 이 판정은 여기가 단일 출처다.
+     *
+     * @param  ClaimPayment  $payment  결제 건
+     * @return float 결제 통화 기준 총액 (환산할 수 없으면 기준통화 총액)
+     */
+    public function resolvePaymentCurrencyTotal(ClaimPayment $payment): float
+    {
+        $payment->loadMissing('order');
+        $snapshot = $payment->order?->currency_snapshot ?? [];
+        $orderCurrency = $snapshot['order_currency'] ?? $payment->currency_code;
+        $baseTotal = $payment->getTotalAmount();
+
+        if ($orderCurrency !== $payment->currency_code && isset($payment->mc_amount[$orderCurrency]) && $baseTotal > 0) {
+            return (float) $payment->mc_amount[$orderCurrency];
+        }
+
+        return $baseTotal;
+    }
+
+    /**
+     * 결제 통화 기준의 환급 누적액을 반환합니다.
+     *
+     * 누적액(`refunded_amount`)은 기준통화로 적재되므로, 결제 통화 총액에 대한 비율로 환산한다 —
+     * 모듈이 이번 환급액을 넘길 때 쓰는 비례식과 같다.
+     *
+     * @param  ClaimPayment  $payment  결제 건
+     * @return float 결제 통화 기준 환급 누적액
+     */
+    public function resolveRefundedPaymentCurrencyTotal(ClaimPayment $payment): float
+    {
+        $refunded = (float) $payment->refunded_amount;
+        $baseTotal = $payment->getTotalAmount();
+
+        if ($refunded <= 0 || $baseTotal <= 0) {
+            return 0.0;
+        }
+
+        return round($this->resolvePaymentCurrencyTotal($payment) * ($refunded / $baseTotal), 2);
+    }
+
+    /**
      * 거래 시점 통화 스냅샷 기준의 청구액(최소 화폐단위)을 반환합니다.
      *
      * @param  ClaimPayment  $payment  결제 건
@@ -903,17 +1076,7 @@ class ClaimPaymentService
      */
     protected function expectedMinorUnitAmount(ClaimPayment $payment): ?int
     {
-        $payment->loadMissing('order');
-        $snapshot = $payment->order?->currency_snapshot;
-
-        if (empty($snapshot)) {
-            return null;
-        }
-
-        return (int) $this->currencyService->resolveSnapshotPaymentCharge(
-            (float) $payment->amount,
-            $snapshot,
-        )['minor_unit_amount'];
+        return $this->resolvePaymentCharge($payment)['minor_unit_amount'] ?? null;
     }
 
     /**

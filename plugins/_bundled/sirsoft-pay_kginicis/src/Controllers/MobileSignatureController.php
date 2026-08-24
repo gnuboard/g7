@@ -6,7 +6,9 @@ namespace Plugins\Sirsoft\PayKginicis\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\RateLimiter;
+use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
+use Plugins\Sirsoft\PayKginicis\Concerns\HandlesClaimPaymentCallbacks;
 use Plugins\Sirsoft\PayKginicis\Concerns\ValidatesCbtOrderContext;
 use Plugins\Sirsoft\PayKginicis\Concerns\ValidatesTimestampFreshness;
 use Plugins\Sirsoft\PayKginicis\Http\Requests\MobileSignatureRequest;
@@ -14,6 +16,7 @@ use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
 
 class MobileSignatureController
 {
+    use HandlesClaimPaymentCallbacks;
     use ValidatesCbtOrderContext;
     use ValidatesTimestampFreshness;
 
@@ -78,6 +81,11 @@ class MobileSignatureController
 
     private function validateOrderContext(MobileSignatureRequest $request, string $oid, int $price): ?JsonResponse
     {
+        // 클레임 추가결제(CP 채번)는 주문이 아니다 — 결제 건 기준으로 같은 강도의 검증을 적용한다.
+        if (ClaimPayment::isClaimPaymentNumber($oid)) {
+            return $this->validateClaimPaymentContext($request, $oid, $price);
+        }
+
         $order = $this->orderService->findByOrderNumber($oid);
         if (! $order) {
             return response()->json([
@@ -129,6 +137,6 @@ class MobileSignatureController
 
     private function rateLimitKey(MobileSignatureRequest $request, string $oid): string
     {
-        return 'sirsoft-pay_kginicis:mobile-signature:' . sha1($request->ip() . '|' . $oid);
+        return 'sirsoft-pay_kginicis:mobile-signature:'.sha1($request->ip().'|'.$oid);
     }
 }

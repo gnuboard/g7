@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.4] - 2026-08-24
+
+### Added
+
+- 클레임 추가결제(취소/반품/교환 시 추가 결제) 안내·오류 문구의 일본어 번역을 추가했습니다 — 일본어 로케일에서 클레임 결제 승인·환급 실패 안내가 한국어로 보이던 공백이 해소됩니다.
+
 ## [1.0.3] - 2026-08-19
 
 ### Added

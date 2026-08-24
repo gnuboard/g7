@@ -3,6 +3,13 @@
 declare(strict_types=1);
 
 return [
+    'claim' => [
+        'invalid_callback' => '클레임 결제 승인에 필요한 콜백 파라미터가 없습니다.',
+        'window_failed' => '결제창 인증이 완료되지 않았습니다.',
+        'currency_not_supported' => 'NHN KCP 클레임 결제는 KRW 결제만 지원합니다.',
+        'deposit_not_supported' => '클레임 추가결제는 입금 대기 방식(가상계좌)을 지원하지 않습니다.',
+        'compensation_cancel_reason' => '클레임 결제 승인 거절에 따른 자동 취소',
+    ],
     'refund' => [
         'missing_tid' => '거래번호(tno)가 없어 환불을 진행할 수 없습니다.',
         'default_reason' => '구매자 환불 요청',

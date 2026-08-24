@@ -19,4 +19,10 @@ return [
     'errors' => [
         'payment_failed' => '決済処理に失敗しました。しばらく後に再度お試しください。',
     ],
+    'claim' => [
+        'invalid_callback' => 'クレーム決済承認に必要なコールバックパラメータ(paymentKey, orderId, amount)がありません。',
+        'order_id_mismatch' => 'コールバックの注文番号が承認対象クレーム決済番号と一致しません。',
+        'deposit_not_supported' => 'クレーム追加決済は入金待機方式(仮想口座)をサポートしていません。',
+        'amount_mismatch_cancel_reason' => 'クレーム決済承認金額不一致による自動キャンセル',
+    ],
 ];

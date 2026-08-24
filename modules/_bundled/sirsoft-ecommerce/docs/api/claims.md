@@ -494,7 +494,7 @@ Content-Type: application/json
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-claims.request`)이 없는 경우 |
 | 404 | Not Found | 번호에 해당하는 신청서가 없거나 본인 신청서가 아닌 경우 (`claim_not_found`) |
-| 422 | Unprocessable Entity | 검증 위반, 승인 뒤라 수정 불가(`claim_not_editable` — 취소 이력도 동일), 사유 사용 불가(`claim_reason_unavailable`), 청구 방식 불허(`claim_charge_method_not_allowed`), 재발송지 국가 변경(`claim_redelivery_country_change_not_allowed`), 첨부 부재·타 신청서 소속(`claim_image_not_found`), 첨부 장수 초과(`claim_image_limit_exceeded`) |
+| 422 | Unprocessable Entity | 검증 위반, 승인 뒤라 수정 불가(`claim_not_editable` — 취소 이력도 동일), 사유 사용 불가(`claim_reason_unavailable`), 청구 방식 불허(`claim_charge_method_not_allowed`), 재발송지 국가 변경(`claim_redelivery_country_change_not_allowed`), 첨부 부재·타 신청서 소속(`claim_image_not_found`), 첨부 장수 초과(`claim_image_limit_exceeded`), 주문의 거래 시점 통화 스냅샷을 읽을 수 없어 차액 결제의 결제 통화 기준을 세울 수 없는 경우(`claim_payment_currency_unavailable`) |
 | 500 | Server Error | 수정 처리 중 예기치 못한 오류 |
 
 <!-- @generated:end -->

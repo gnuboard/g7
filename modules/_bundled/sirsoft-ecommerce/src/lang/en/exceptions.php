@@ -127,6 +127,7 @@ return [
     'claim_payment_not_required' => 'There is no charge to pay for this request.',
     'claim_payment_method_not_allowed' => 'The selected payment method cannot be used for claim charges.',
     'claim_payment_provider_unavailable' => 'No payment integration can approve claim charges. Please contact the administrator.',
+    'claim_payment_currency_unavailable' => 'The payment currency of this order cannot be determined, so the payment cannot proceed. Please contact the administrator.',
     'claim_payment_failed' => 'Payment approval failed. (:error)',
     'claim_payment_amount_mismatch' => 'The approved payment amount does not match the charge.',
     'claim_payment_refund_failed' => 'The payment refund failed. (:error)',

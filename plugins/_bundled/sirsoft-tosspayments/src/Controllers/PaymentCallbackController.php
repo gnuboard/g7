@@ -11,8 +11,12 @@ use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\PaymentAmountMismatchException;
 use Modules\Sirsoft\Ecommerce\Helpers\DeviceDetector;
+use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
+use Modules\Sirsoft\Ecommerce\Support\ClaimPaymentCallback;
+use Modules\Sirsoft\Ecommerce\Support\ClaimPaymentRedirect;
 use Plugins\Sirsoft\Tosspayments\Http\Requests\FailCallbackRequest;
 use Plugins\Sirsoft\Tosspayments\Http\Requests\SuccessCallbackRequest;
 use Plugins\Sirsoft\Tosspayments\Services\TossPaymentsApiService;
@@ -79,6 +83,11 @@ class PaymentCallbackController
         $paymentKey = $validated['paymentKey'];
         $orderId = $validated['orderId'];
         $pgAmount = $validated['amount'];
+
+        // 클레임 추가결제(CP 채번)는 주문이 아니다 — 주문 분기를 태우면 order_not_found 로 끝난다.
+        if (ClaimPayment::isClaimPaymentNumber($orderId)) {
+            return $this->handleClaimPaymentSuccess($orderId, $validated);
+        }
 
         try {
             // 1. 주문 조회 (주문번호 기반)
@@ -176,6 +185,21 @@ class PaymentCallbackController
             'orderId' => $orderId,
         ]);
 
+        // 클레임 추가결제는 실패해도 결제 대기 상태로 남아 신청서 상세에서 재시도한다 —
+        // 주문의 failPayment 에 대응하는 상태 전이가 없으므로 기록은 로그로 충분하다.
+        if ($orderId && ClaimPayment::isClaimPaymentNumber($orderId)) {
+            $payment = $this->claimPaymentRepository()->findByPaymentNumber($orderId);
+
+            if ($payment) {
+                // 사용자가 결제창을 스스로 닫은 중단은 실패가 아니다 — 오류 안내 없이 복귀.
+                return $code === 'PAY_PROCESS_CANCELED'
+                    ? redirect(ClaimPaymentRedirect::cancelled($payment))
+                    : redirect(ClaimPaymentRedirect::fail($payment, $code));
+            }
+
+            return redirect($this->resolveFailUrl(['error' => $code, 'orderId' => $orderId]));
+        }
+
         if ($orderId) {
             $order = $this->orderService->findByOrderNumber($orderId);
 
@@ -189,6 +213,69 @@ class PaymentCallbackController
             'message' => $message,
             'orderId' => $orderId,
         ]));
+    }
+
+    /**
+     * 클레임 추가결제(CP 채번) 성공 콜백을 처리합니다.
+     *
+     * PG 승인은 직접 수행하지 않고 모듈의 `approvePgPayment()` 에 위임한다 — 그 안에서
+     * `claim_payment.approve` 필터가 발화해 이 플러그인의 승인 리스너가 Confirm 을 수행하므로,
+     * 서버 콜백 경로와 API 승인 경로가 같은 구현을 탄다.
+     *
+     * @param  string  $paymentNumber  클레임 결제번호 (CP 채번)
+     * @param  array<string, mixed>  $callback  검증된 콜백 파라미터
+     * @return RedirectResponse 신청서 상세로 리다이렉트
+     */
+    private function handleClaimPaymentSuccess(string $paymentNumber, array $callback): RedirectResponse
+    {
+        $payment = $this->claimPaymentRepository()->findByPaymentNumber($paymentNumber);
+
+        if (! $payment) {
+            Log::error('TossPayments: claim payment not found', ['orderId' => $paymentNumber]);
+
+            return redirect($this->resolveFailUrl(['error' => 'claim_payment_not_found', 'orderId' => $paymentNumber]));
+        }
+
+        // 승인 금액 불일치는 토스 Confirm 이 확정된 뒤의 거절이다 — 취소로 보상하지 않으면
+        // 화면은 실패인데 PG 는 청구된 채 남는다.
+        return ClaimPaymentCallback::approveAndRedirect(
+            $payment,
+            $callback,
+            fn () => $this->cancelClaimConfirmation($payment, (string) ($callback['paymentKey'] ?? '')),
+        );
+    }
+
+    /**
+     * 모듈 거절로 실패 처리된 클레임 결제의 토스 승인을 취소합니다. (보상 — 실패해도 흐름은 지속)
+     *
+     * @param  ClaimPayment  $payment  결제 건
+     * @param  string  $paymentKey  토스 결제 키
+     */
+    private function cancelClaimConfirmation(ClaimPayment $payment, string $paymentKey): void
+    {
+        if ($paymentKey === '') {
+            return;
+        }
+
+        try {
+            $this->apiService->cancelPayment($paymentKey, __('sirsoft-tosspayments::messages.claim.amount_mismatch_cancel_reason'));
+        } catch (\Exception $e) {
+            Log::error('TossPayments: claim payment compensation cancel failed', [
+                'payment_number' => $payment->payment_number,
+                'payment_key' => $paymentKey,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * 클레임 결제 Repository 를 가져옵니다.
+     *
+     * @return ClaimPaymentRepositoryInterface 클레임 결제 Repository
+     */
+    private function claimPaymentRepository(): ClaimPaymentRepositoryInterface
+    {
+        return app(ClaimPaymentRepositoryInterface::class);
     }
 
     /**

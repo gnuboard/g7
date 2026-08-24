@@ -3573,7 +3573,7 @@ Content-Type: application/json
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-claims.request`)이 없는 경우 |
 | 404 | Not Found | 주문이 없거나 본인 주문이 아닌 경우 |
-| 422 | Unprocessable Entity | 검증 위반(사유 코드 부재, 재발송지 국가 변경 등), 미리보기와 같은 자격 위반, 교환 옵션 무효·재고 부족(`exchange_target_option_invalid` / `exchange_target_out_of_stock`), 첨부 부재·장수 초과(`claim_image_not_found` / `claim_image_limit_exceeded`), 결제 수단 불허(`claim_payment_method_not_allowed`) |
+| 422 | Unprocessable Entity | 검증 위반(사유 코드 부재, 재발송지 국가 변경 등), 미리보기와 같은 자격 위반, 교환 옵션 무효·재고 부족(`exchange_target_option_invalid` / `exchange_target_out_of_stock`), 첨부 부재·장수 초과(`claim_image_not_found` / `claim_image_limit_exceeded`), 결제 수단 불허(`claim_payment_method_not_allowed`), 청구가 발생하는데 주문의 거래 시점 통화 스냅샷을 읽을 수 없어 결제 통화 기준을 세울 수 없는 경우(`claim_payment_currency_unavailable` — 신청 시점 결제 진입이 실패할 건이므로 **결제행을 만들기 전에** 거절합니다) |
 | 500 | Server Error | 접수 중 예기치 못한 오류 |
 
 <!-- @generated:end -->

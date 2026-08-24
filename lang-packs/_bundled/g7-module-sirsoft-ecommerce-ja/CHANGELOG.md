@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.1.4] - 2026-08-24
+
+### Added
+
+- 주문의 결제 통화 정보를 확인할 수 없어 클레임 추가결제를 진행할 수 없을 때 표시되는 안내 문구의 일본어 번역을 추가했습니다.
+
 ## [1.1.3] - 2026-08-22
 
 ### Added

@@ -4,6 +4,7 @@ namespace Plugins\Sirsoft\Tosspayments\Tests\Feature\Controllers;
 
 use App\Models\User;
 use App\Services\PluginSettingsService;
+use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderPaymentFactory;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
@@ -25,6 +26,8 @@ use Plugins\Sirsoft\Tosspayments\Tests\PluginTestCase;
 class WebhookControllerTest extends PluginTestCase
 {
     private const DEPOSIT_URL = '/plugins/sirsoft-tosspayments/webhook/deposit';
+
+    private const PAYMENT_STATUS_URL = '/plugins/sirsoft-tosspayments/webhook/payment-status';
 
     private const SECRET = 'wsec_test_secret_value';
 
@@ -233,5 +236,33 @@ class WebhookControllerTest extends PluginTestCase
         $order->refresh();
         // WAITING_DEPOSIT 가 아니므로 completePayment 하지 않는다
         $this->assertNotSame(OrderStatusEnum::PAYMENT_COMPLETE, $order->order_status);
+    }
+
+    /**
+     * 클레임 추가결제(CP 채번) 건의 상태변경 웹훅은 주문을 조회하지 않는다.
+     *
+     * 토스는 클레임 결제의 승인·취소에도 PAYMENT_STATUS_CHANGED 를 보내는데, `orderId` 가
+     * CP 결제번호라 주문 분기를 그대로 태우면 정상 동작마다 `order not found` warning 이
+     * 남는다 — 운영자 로그에서 결함으로 읽히므로 CP 는 자기 경로로 종결시킨다.
+     */
+    public function test_payment_status_webhook_with_a_claim_payment_number_does_not_look_up_an_order(): void
+    {
+        $this->mockPluginSettings();
+
+        Log::spy();
+
+        $response = $this->postJson(self::PAYMENT_STATUS_URL, [
+            'eventType' => 'PAYMENT_STATUS_CHANGED',
+            'data' => [
+                'orderId' => 'CP20260824-120000123',
+                'status' => 'CANCELED',
+                'paymentKey' => 'pk_claim_ws_1',
+            ],
+        ]);
+
+        $response->assertOk();
+        $this->assertSame('OK', $response->getContent());
+
+        Log::shouldNotHaveReceived('warning');
     }
 }

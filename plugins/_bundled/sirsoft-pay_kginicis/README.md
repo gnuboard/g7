@@ -233,6 +233,15 @@ CBT 승인 이후 로컬 후속 처리에 실패하면 CBT 전용 취소 API로 
 
 `sirsoft-ecommerce.payment.refund` 필터를 통해 이커머스 환불 요청을 KG 이니시스 취소/부분취소 API로 연결합니다.
 
+### 클레임 추가결제 (취소/반품/교환)
+
+쇼핑몰 모듈의 클레임 추가결제(결제번호 `CP` 채번)는 `sirsoft-ecommerce.claim_payment.approve` /
+`sirsoft-ecommerce.claim_payment.refund` 필터로 승인·환급되며, 이 플러그인이 두 필터를 구현합니다.
+결제번호가 `CP` 로 시작하는 콜백은 주문이 아니라 클레임 결제 건으로 처리되고, 완료 후 신청서
+상세 화면으로 돌아갑니다. 인자·반환 키·멱등 규칙 등 계약의 단일 출처는 쇼핑몰 모듈
+`docs/api/claim-payments.md` 의 "결제 플러그인 연동 계약 (필터 훅)" 절입니다 — 이 문서에는
+계약을 복제해 적지 않습니다.
+
 ## 보안 및 운영 참고
 
 - 운영 도메인의 `APP_URL`을 HTTPS 절대 URL로 정확히 설정하세요.

@@ -404,6 +404,21 @@ class OrderClaimException extends Exception
     }
 
     /**
+     * 거래 시점 통화 스냅샷을 읽을 수 없어 청구액을 확정하지 못했습니다.
+     *
+     * 스냅샷이 없으면 소수 자릿수·절사 규칙·환산 분모가 현재 상점 설정으로 미끄러져 청구액
+     * 자체가 달라진다(0 자리 통화가 2 자리로 읽히면 100 배가 된다). 승인 대조가 그 상태를
+     * 거절하므로, 결제창 진입도 같은 판정으로 닫는다 — 열어 두면 PG 승인이 확정된 **뒤**에
+     * 금액 불일치로 거절되어 망취소 보상이 필요해진다.
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function paymentCurrencyUnavailable(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_payment_currency_unavailable');
+    }
+
+    /**
      * PG 결제 승인에 실패했습니다.
      *
      * @param  string  $error  PG 가 돌려준 사유

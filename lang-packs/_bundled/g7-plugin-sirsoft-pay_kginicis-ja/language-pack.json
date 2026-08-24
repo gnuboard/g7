@@ -12,7 +12,7 @@
         "en": "G7 plugin (sirsoft-pay_kginicis) Japanese language pack (bundled)",
         "ja": "G7 プラグイン (sirsoft-pay_kginicis) 日本語 言語パック(バンドル)"
     },
-    "version": "1.1.1",
+    "version": "1.1.2",
     "license": "MIT",
     "scope": "plugin",
     "target_identifier": "sirsoft-pay_kginicis",
