@@ -112,7 +112,7 @@ class LanguagePackSeedInjector
             }
 
             foreach ($definitions as $defIdx => $def) {
-                $type = $def['type'] ?? null;
+                $type = $this->resolveDefinitionType($defIdx, $def);
                 if (! $type || ! isset($seed[$type])) {
                     continue;
                 }
@@ -166,7 +166,7 @@ class LanguagePackSeedInjector
                 continue;
             }
             foreach ($definitions as $defIdx => $def) {
-                $type = $def['type'] ?? null;
+                $type = $this->resolveDefinitionType($defIdx, $def);
                 if (! $type || ! isset($seed[$type])) {
                     continue;
                 }
@@ -721,5 +721,31 @@ class LanguagePackSeedInjector
         $config['categories'] = $categories;
 
         return $config;
+    }
+
+    /**
+     * 정의 배열 항목에서 알림 type 을 해석합니다.
+     *
+     * 코어 시더(`loadConfigSeed('core.notification_definitions', ...)`)는 config 원형
+     * (연관 배열 — 키가 곧 type, 항목에 type 필드 없음)을 그대로 필터에 넘기고,
+     * 확장 시더(ModuleManager/PluginManager)와 [기본값 복원] 경로는 각 항목에 type
+     * 필드를 포함한 리스트를 넘긴다. 양쪽 형태를 모두 수용한다 —
+     * 문자열 키가 있으면 그것이 type 이고, 아니면 항목의 type 필드를 본다.
+     * (형태 불일치 시 예외 없이 전 항목이 스킵되어 ja 가 조용히 주입되지 않는
+     * 회귀가 있었다 — 2026-08-24 #597 보완 실측. NotificationSeedInjectionTest 가 고정.)
+     *
+     * @param  int|string  $defIdx  정의 배열의 키
+     * @param  mixed  $def  정의 항목
+     * @return string|null 해석된 type (해석 불가 시 null)
+     */
+    private function resolveDefinitionType(int|string $defIdx, mixed $def): ?string
+    {
+        if (is_string($defIdx) && $defIdx !== '') {
+            return $defIdx;
+        }
+
+        $type = is_array($def) ? ($def['type'] ?? null) : null;
+
+        return is_string($type) && $type !== '' ? $type : null;
     }
 }

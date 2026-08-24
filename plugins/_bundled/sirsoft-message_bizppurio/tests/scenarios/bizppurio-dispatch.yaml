@@ -1,0 +1,66 @@
+feature: 비즈뿌리오 발송 파이프라인 — DB 승인 스냅샷 소스 전환 (#597)
+
+description: |
+  알림톡 발송 본문·요소의 출처를 카카오 실시간 조회에서 bizppurio_templates 의
+  승인 스냅샷(approved_content)으로, SMS 본문을 코어 알림 템플릿에서 sms_body 로 전환한다.
+
+  핵심 동작:
+    - 알림톡 게이트: 행 존재 + alimtalk_enabled + is_active + sms_only 아님 + status=approved +
+      approved_content 존재. 불충족 시 NotificationSendSkippedException(이력 "실패" 기록 —
+      이슈 #28 계약 유지). 발송 시점 카카오 조회 없음.
+    - 본문 변환: 스냅샷(등록 페이로드 필드명) → 발송 규격(AlimtalkPayloadMapper —
+      buttons[].linkMo→button[].url_mobile 등 대응표 고정) + #{var} 치환.
+    - 대체 SMS: fallback_sms_enabled + sms_body 있을 때만 resend/recontent 병합
+      (비즈뿌리오 위임 — G7 레벨 재발송 없음, 현행 유지).
+    - SMS 채널: 행 존재 + is_active + sms_body 비어있지 않음이면 발송(sms_only 무관 —
+      sms_only 는 알림톡을 끄는 플래그지 SMS 를 켜는 플래그가 아니다).
+
+axes:
+  template_state: [approved, unapproved, disabled, row_missing]
+  fallback_sms: [on, off]
+  sms_only: [on, off]
+  recipient: [member, guest]
+
+exclusions:
+  - { template_state: [unapproved, disabled, row_missing], fallback_sms: on, reason: "알림톡이 스킵되면 payload 자체가 없어 resend 병합 지점이 없다 — fallback 축은 approved 에서만 유효" }
+  - { sms_only: on, template_state: [unapproved, disabled, row_missing], reason: "이미 알림톡이 스킵되는 상태라 sms_only 의 추가 차단 효과를 관측할 수 없다 — sms_only 의 게이트 효과는 approved 에서만 유효" }
+  - { sms_only: on, fallback_sms: on, reason: "sms_only 가 알림톡을 차단하면 그 알림톡 payload 에 resend 를 병합할 지점이 사라진다 — 위 첫 exclusion 과 같은 사유가 approved 안에서 반복된다" }
+  - { template_state: [unapproved, disabled, row_missing], recipient: guest, reason: "게이트가 수신자 해석(mobile / data.recipient_phone)보다 먼저 차단하므로 스킵 경로에서는 recipient 축이 관측되지 않는다 — 수신자 분기는 알림톡이 실제 발송되는 approved 에서만 유효" }
+  - { sms_only: on, recipient: guest, reason: "동일 — sms_only 스킵도 수신자 해석 이전 지점이다" }
+
+effects:
+  # 알림톡 게이트
+  - alimtalk_skipped_when_row_missing
+  - alimtalk_skipped_when_not_approved
+  - alimtalk_skipped_when_alimtalk_disabled
+  - alimtalk_skipped_when_row_inactive
+  - alimtalk_skipped_when_snapshot_missing
+  - alimtalk_skipped_when_sms_only_selected
+  - no_kapi_call_at_dispatch_time
+  # 본문·요소
+  - snapshot_content_substituted_with_notification_data
+  - snapshot_buttons_mapped_to_dispatch_button_fields
+  - dispatch_uses_row_template_code
+  # 대체 SMS
+  - fallback_on_merges_resend_recontent_from_sms_body
+  - fallback_on_with_empty_sms_body_skips_merge
+  - fallback_off_has_no_resend
+  # SMS 채널
+  - sms_body_is_dispatch_source_not_core_template
+  - sms_skipped_when_body_empty_or_row_missing
+  - sms_dispatches_regardless_of_sms_only_flag
+  - sms_lms_split_by_body_bytes_with_definition_label_subject
+  # 로케일 (§14.3 — sms_body 는 로케일 맵, 수신자 로케일로 렌더)
+  - sms_body_rendered_in_recipient_locale
+  # 이력·수신자
+  - pending_dispatch_row_created_with_channel_and_user
+  - guest_phone_resolved_from_data_recipient_phone
+  - skip_exception_uses_human_readable_type_label
+
+test_files:
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Services/AlimtalkChannelDriverTest.php
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Services/SmsChannelDriverTest.php
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Services/AlimtalkPayloadMapperTest.php
+
+audit:
+  status: codified

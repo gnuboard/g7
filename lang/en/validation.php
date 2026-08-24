@@ -1272,6 +1272,7 @@ return [
         'maintenance_mode' => 'maintenance mode',
         'asset_url_mode' => 'asset URL mode',
         'site_logo' => 'site logo',
+        'og_image_default' => 'default share image',
         // SEO settings (additional)
         'bot_user_agents' => 'bot user agents',
         'bot_detection_enabled' => 'bot detection',

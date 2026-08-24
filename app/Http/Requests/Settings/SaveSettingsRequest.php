@@ -97,6 +97,20 @@ class SaveSettingsRequest extends FormRequest
             ]);
         }
 
+        // 사이트 기본 OG 이미지도 동일하게 첨부 객체 배열 → 정수 ID 배열로 정규화
+        $ogImageDefault = $this->input('seo.og_image_default');
+
+        if (is_array($ogImageDefault)) {
+            $this->merge([
+                'seo' => array_merge($this->input('seo', []), [
+                    'og_image_default' => array_map(
+                        fn ($item) => is_array($item) ? ($item['id'] ?? $item) : $item,
+                        $ogImageDefault
+                    ),
+                ]),
+            ]);
+        }
+
         // GeoIP 토글 필드: 신규 필드라 초기값이 settings에 없을 수 있음.
         // Toggle 컴포넌트가 undefined → true 전환 시 비표준 타입을 보낼 수 있으므로
         // boolean으로 명시 캐스팅하여 Laravel boolean 검증 호환 보장.
@@ -243,6 +257,8 @@ class SaveSettingsRequest extends FormRequest
             'seo.bot_detection_enabled' => ['nullable', 'boolean'],
             'seo.bot_detection_library_enabled' => ['nullable', 'boolean'],
             'seo.og_default_site_name' => ['nullable', 'string', 'max:200'],
+            'seo.og_image_default' => ['nullable', 'array'],
+            'seo.og_image_default.*' => ['integer', Rule::exists(Attachment::class, 'id')],
             'seo.og_image_default_width' => ['nullable', 'integer', 'min:'.config('core.settings_limits.seo_og_image_default_width_min', 0), 'max:'.config('core.settings_limits.seo_og_image_default_width_max', 8000)],
             'seo.og_image_default_height' => ['nullable', 'integer', 'min:'.config('core.settings_limits.seo_og_image_default_height_min', 0), 'max:'.config('core.settings_limits.seo_og_image_default_height_max', 8000)],
             'seo.twitter_default_card' => ['nullable', 'string', Rule::in(['summary', 'summary_large_image', 'app', 'player', ''])],
@@ -915,6 +931,7 @@ class SaveSettingsRequest extends FormRequest
             'general.maintenance_mode' => __('validation.attributes.maintenance_mode'),
             'general.asset_url_mode' => __('validation.attributes.asset_url_mode'),
             'general.site_logo' => __('validation.attributes.site_logo'),
+            'seo.og_image_default' => __('validation.attributes.og_image_default'),
             // mail
             'mail.mailer' => __('validation.attributes.mailer'),
             'mail.host' => __('validation.attributes.smtp_host'),
