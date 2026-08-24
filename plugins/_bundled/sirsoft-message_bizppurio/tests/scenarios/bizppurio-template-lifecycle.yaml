@@ -16,7 +16,7 @@ description: |
       승인 전이 시 content 를 approved_content 로 동결(발송 SSoT), 반려 시 comments 저장
     - 화면: 3면(코어/게시판/이커머스) '비즈뿌리오' 통합 탭(sms 탭 숨김 + tab_channels 규칙)
       행 하단 상태 요약(승인 2단 배지) + 코어 [편집] 모달에 녹인 알림톡·SMS 섹션(통합 저장,
-      4×4 유형) + 플러그인 관리 화면(DB 목록). PO 결정 2026-08-23: 별도 작성/SMS 모달 폐지
+      4×4 유형) + 플러그인 관리 화면(DB 목록). 제품 결정 2026-08-23: 별도 작성/SMS 모달 폐지
 
   axis 설계 노트:
     - content_variant 는 카카오 메시지유형×강조유형의 대표 변형 4종이다 — 유형별 조건부
@@ -75,7 +75,7 @@ effects:
   - approval_transition_freezes_content_into_approved_content
   - rejection_transition_stores_comments_detail
   - manual_sync_updates_single_row
-  # 화면 (S5 — PO 결정 2026-08-23: 편집 모달 통합)
+  # 화면 (S5 — 제품 결정 2026-08-23: 편집 모달 통합)
   - bizppurio_tab_replaces_sms_and_alimtalk_tabs
   - tab_visible_when_any_of_tab_channels_active
   - row_footer_shows_status_summary_only
@@ -85,7 +85,7 @@ effects:
   - unified_save_chain_alimtalk_then_core_recipients
   - compose_modal_switches_conditional_fields_by_type
   - manage_screen_lists_db_rows_with_merge_query_round_trip
-  # 관리 목록 반응형 (PO 지시 2026-08-24) — portable 카드 전환 + 도구줄 btn 계열 통일
+  # 관리 목록 반응형 (제품 결정 2026-08-24) — portable 카드 전환 + 도구줄 btn 계열 통일
   - manage_list_mobile_card_view_and_unified_toolbar
   - sms_modal_saves_body_via_delivery_upsert
   - sms_modal_edits_body_per_locale_tab

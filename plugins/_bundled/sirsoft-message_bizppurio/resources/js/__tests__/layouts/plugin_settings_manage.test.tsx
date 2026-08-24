@@ -159,7 +159,7 @@ describe('manage — 행 액션(알림 설정 탭 행 하단과 동일 엔드포
 
     /**
      * 관리 화면(bzRow)과 코어 [편집] 모달 섹션(_global.bz_tpl_modal)의 노출 조건을 같은 상태
-     * 집합에 **실제로 태워** 대조한다(PO 결정 2026-08-23 — 행 하단 버튼 폐지, 섹션이 SSoT).
+     * 집합에 **실제로 태워** 대조한다(제품 결정 2026-08-23 — 행 하단 버튼 폐지, 섹션이 SSoT).
      *
      * 문자열 동일성 단언은 두 면의 식이 실제로 같은 결과를 내는지 증명하지 못한다 — 두 식을
      * 각자의 컨텍스트로 평가해 상태별 결과가 일치하는지를 본다.
@@ -375,7 +375,7 @@ describe('manage 모달 — 이미지 업로드 배선·SMS 언어 탭 (#597 §1
     });
 });
 
-describe('manage 모달 — 검수자 전달 의견 (#597 §18.7, PO 결정 2026-08-23)', () => {
+describe('manage 모달 — 검수자 전달 의견 (#597 §18.7, 제품 결정 2026-08-23)', () => {
     const composeModal = findById(modalRoot, 'modal_bizppurio_template') as AnyNode;
     const sectionsRoot = { children: (sections as { components?: AnyNode[] }).components ?? [] } as AnyNode;
     const collectHandlers = (node: unknown, acc: AnyNode[] = []): AnyNode[] => {
@@ -411,7 +411,7 @@ describe('manage 모달 — 검수자 전달 의견 (#597 §18.7, PO 결정 2026
         for (const r of rowReqs) expect((r.params as { body?: unknown }).body).toBeUndefined();
     });
 
-    it('바로연결 블록(헤더+목록) 바로 뒤 형제로 놓이고, 라벨+[바로연결 추가] flex 행 안에 끼지 않는다 (회귀: PO 화면 지적 2026-08-23)', () => {
+    it('바로연결 블록(헤더+목록) 바로 뒤 형제로 놓이고, 라벨+[바로연결 추가] flex 행 안에 끼지 않는다 (회귀: 화면 검수 지적 2026-08-23)', () => {
         const ancestorsOf = (root: AnyNode, id: string, anc: AnyNode[] = []): AnyNode[] | null => {
             for (const c of (root.children as AnyNode[] | undefined) ?? []) {
                 if (c.id === id) return anc.concat(root);
@@ -452,7 +452,7 @@ describe('manage 모달 — 검수자 전달 의견 (#597 §18.7, PO 결정 2026
     });
 });
 
-describe('manage — 목록 SMS 열은 상태 배지 (행 하단과 같은 규칙, PO 지시 2026-08-23)', () => {
+describe('manage — 목록 SMS 열은 상태 배지 (행 하단과 같은 규칙, 제품 결정 2026-08-23)', () => {
     // iteration(bzRow) 안이라 정적 id 를 둘 수 없다 — 텍스트 식으로 찾는다
     const badge = findAllByName(manageView, 'Span').find((n) => String(n.text).includes("manage.sms_fallback') : $t('sirsoft-message_bizppurio.template.row.off')")) as AnyNode;
     const evalCell = (expr: string, row: Record<string, unknown>): unknown => {
@@ -475,7 +475,7 @@ describe('manage — 목록 SMS 열은 상태 배지 (행 하단과 같은 규�
     });
 });
 
-describe('manage — 목록 모바일 카드 전환 + 도구줄 버튼 일관성 (PO 지시 2026-08-24)', () => {
+describe('manage — 목록 모바일 카드 전환 + 도구줄 버튼 일관성 (제품 결정 2026-08-24)', () => {
     const header = findById(manageView, 'bz_manage_list_header') as AnyNode;
     const rowsWrap = findById(manageView, 'bz_manage_list_rows') as AnyNode;
     const findIterationRow = (n: AnyNode | null): AnyNode | null => {

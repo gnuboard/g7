@@ -610,7 +610,7 @@ class BizppurioTemplateControllerTest extends PluginTestCase
     }
 
     /**
-     * 검수자 전달 의견(comment)은 선택 입력이며 kapi request 로만 전달된다 (#597 §18.7 — PO 결정 2026-08-23).
+     * 검수자 전달 의견(comment)은 선택 입력이며 kapi request 로만 전달된다 (#597 §18.7 — 제품 결정 2026-08-23).
      *
      * 500자 초과는 FormRequest 가 kapi 호출 전에 422 로 끊고(행 상태 불변), 유효한 의견은
      * `template/request` 의 comment 로 원문 그대로 실린다.

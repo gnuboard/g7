@@ -5,7 +5,7 @@
 // (§14.2 T7) — 리터럴 비교는 조건을 잘못 고쳐도 기대값을 함께 고치면 green 이라 회귀를
 // 잡지 못한다.
 /**
- * 알림 설정 '비즈뿌리오' 통합 탭 — [편집] 모달 통합 UI 구조 검증 (#597, PO 결정 2026-08-23)
+ * 알림 설정 '비즈뿌리오' 통합 탭 — [편집] 모달 통합 UI 구조 검증 (#597, 제품 결정 2026-08-23)
  *
  * @effects row_footer_shows_status_summary_only, approval_badge_two_tier, edit_modal_hosts_alimtalk_and_sms_sections,
  *          unified_save_chain_alimtalk_then_core_recipients, compose_modal_switches_conditional_fields_by_type,
@@ -239,7 +239,7 @@ describe('lifecycle UI — 행 하단은 상태 요약만 (버튼 0)', () => {
         expect(raw).not.toContain('.slice(0, 40)');
     });
 
-    it('SMS 상태 3종은 문구가 아니라 배지다 — 사용=초록/미사용=회색(승인 배지와 같은 모양), 본문 미설정=외곽선 칩 (PO 지시 2026-08-23)', () => {
+    it('SMS 상태 3종은 문구가 아니라 배지다 — 사용=초록/미사용=회색(승인 배지와 같은 모양), 본문 미설정=외곽선 칩 (제품 결정 2026-08-23)', () => {
         const APPROVED_SET = 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200';
         const GRAY_SET = 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300';
         for (const [id, field] of [['bizppurio_row_sms_fallback_badge', 'fallback_sms_enabled'], ['bizppurio_row_sms_only_badge', 'sms_only']] as const) {
@@ -613,7 +613,7 @@ describe('lifecycle UI — 통합 [저장] 체인 (푸터 액션)', () => {
     });
 });
 
-describe('lifecycle UI — 검수자 전달 의견 입력란 (#597 §18.7, PO 결정 2026-08-23)', () => {
+describe('lifecycle UI — 검수자 전달 의견 입력란 (#597 §18.7, 제품 결정 2026-08-23)', () => {
     const editor = findById(sectionsRoot, 'bizppurio_tpl_editor') as AnyNode;
     const block = findById(editor, 'bizppurio_tpl_request_comment') as AnyNode;
 
@@ -661,7 +661,7 @@ describe('lifecycle UI — 검수자 전달 의견 입력란 (#597 §18.7, PO �
         return null;
     };
 
-    it('바로연결 블록(헤더+목록) 바로 뒤 형제로 놓이고, 라벨+[바로연결 추가] flex 행 안에 끼지 않는다 (회귀: PO 화면 지적 2026-08-23)', () => {
+    it('바로연결 블록(헤더+목록) 바로 뒤 형제로 놓이고, 라벨+[바로연결 추가] flex 행 안에 끼지 않는다 (회귀: 화면 검수 지적 2026-08-23)', () => {
         const chain = ancestorsOf(editor, 'bizppurio_tpl_request_comment') as AnyNode[];
         expect(chain).toBeTruthy();
         const parent = chain[chain.length - 1];

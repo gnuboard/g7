@@ -1,6 +1,6 @@
 {
   "target_layout": "admin_ecommerce_settings",
-  "comment": "[이커머스 면 — notification_tab_core.json 과 동일 패턴, target/컴포넌트 id 만 이커머스 전용] 알림 설정 '비즈뿌리오' 통합 탭 오버레이(#597 §3.3, PO 결정 2026-08-23 개정). ① 탭 상단 상태 배너(문제 있을 때만: readiness/테스트 모드) + 안내 박스 ② 요약 데이터소스 bizppurioTemplates(GET templates/map)는 탭 진입 시 init_actions 로 조회 — 행 하단 상태 요약(notification_row_footer.json)과 [편집] 모달 섹션(notification_template_form_sections.json)이 공유한다 ③ 작성 셀렉트용 카테고리·발신프로필 데이터소스. 알림톡 작성/검수/SMS 본문 편집 UI 는 코어 [편집] 모달에 주입되므로 이 오버레이는 더 이상 모달을 등록하지 않는다.",
+  "comment": "[이커머스 면 — notification_tab_core.json 과 동일 패턴, target/컴포넌트 id 만 이커머스 전용] 알림 설정 '비즈뿌리오' 통합 탭 오버레이(#597 §3.3, 제품 결정 2026-08-23 개정). ① 탭 상단 상태 배너(문제 있을 때만: readiness/테스트 모드) + 안내 박스 ② 요약 데이터소스 bizppurioTemplates(GET templates/map)는 탭 진입 시 init_actions 로 조회 — 행 하단 상태 요약(notification_row_footer.json)과 [편집] 모달 섹션(notification_template_form_sections.json)이 공유한다 ③ 작성 셀렉트용 카테고리·발신프로필 데이터소스. 알림톡 작성/검수/SMS 본문 편집 UI 는 코어 [편집] 모달에 주입되므로 이 오버레이는 더 이상 모달을 등록하지 않는다.",
   "data_sources": [
     {
       "id": "bizppurioTemplates",

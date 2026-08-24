@@ -735,7 +735,7 @@ class BizppurioTemplateServiceTest extends PluginTestCase
     }
 
     /**
-     * 검수자 전달 의견은 kapi request 의 comment 로만 실린다 (#597 §18.7 — PO 결정 2026-08-23).
+     * 검수자 전달 의견은 kapi request 의 comment 로만 실린다 (#597 §18.7 — 제품 결정 2026-08-23).
      *
      * 카카오 심사 가이드가 요구하는 변수 '예시 텍스트' 를 전할 유일한 통로가 request comment 다.
      * 등록(add) 페이로드에는 섞이지 않고, 행에도 남지 않는다.

@@ -221,7 +221,7 @@ describe('A-2 결과 컬럼 주입 — 렌더', () => {
     });
 
     it('검수 모드 발송 건은 상태 라벨(발송중) 대신 검수 라벨을 렌더한다', async () => {
-        // is_test_mode=true 이면 status='sent'(발송중)이어도 검수 라벨로 대체 표시한다(PO 확정 —
+        // is_test_mode=true 이면 status='sent'(발송중)이어도 검수 라벨로 대체 표시한다(제품 결정 —
         // "발송중" 문구 자체가 검수 모드에서는 오해 소지라 배지 병기가 아니라 라벨 교체).
         const utils = createLayoutTest(buildProbe(), { componentRegistry: registry as any, locale: 'ko' });
         utils.mockApi('notificationLogs', { response: logs([4]) });

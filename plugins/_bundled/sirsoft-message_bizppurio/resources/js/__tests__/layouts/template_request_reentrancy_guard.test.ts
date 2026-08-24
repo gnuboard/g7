@@ -36,7 +36,7 @@ import { describe, it, expect } from 'vitest';
 const BASE = path.resolve(__dirname, '../../../..');
 
 const FILES = [
-    // 3면 공유 1본 — 코어 [편집] 모달 푸터에 주입되는 통합 저장/검수 신청 버튼(PO 결정 2026-08-23)
+    // 3면 공유 1본 — 코어 [편집] 모달 푸터에 주입되는 통합 저장/검수 신청 버튼(제품 결정 2026-08-23)
     'resources/extensions/notification_template_form_footer_actions.json',
     // 플러그인 관리 화면의 자기 모달
     'resources/layouts/admin/plugin_settings.json',

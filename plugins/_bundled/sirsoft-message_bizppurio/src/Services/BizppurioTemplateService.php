@@ -194,7 +194,7 @@ class BizppurioTemplateService
      *   add 성공 시점에만 template_code 를 행에 확정하므로, add 자체가 실패하면 다음
      *   시도에서 다시 채번부터 진행된다.
      * - 검수자 전달 의견(comment)은 kapi request 에만 싣고 행에 저장하지 않는다 — 카카오 심사
-     *   가이드가 요구하는 변수 '예시 텍스트' 를 전할 유일한 통로다(PO 결정 2026-08-23, §18.7).
+     *   가이드가 요구하는 변수 '예시 텍스트' 를 전할 유일한 통로다(제품 결정 2026-08-23, §18.7).
      *
      * @param  BizppurioTemplate  $template  대상 행
      * @param  string|null  $comment  검수자 전달 의견 (≤500, 비어 있으면 미전달)

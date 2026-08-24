@@ -8,7 +8,7 @@ description: |
 
   키가 없으면 예외·경고 없이 원시 키 문자열이 제목으로 그대로 노출된다
   (실사례: #481 이 sitemap_regenerated / sitemap_regenerate_failed 정의를 config 에만
-  추가하고 템플릿 라벨을 누락 — 2026-08-24 PO 제보). config/core.php 의 코어 정의
+  추가하고 템플릿 라벨을 누락 — 2026-08-24 제보). config/core.php 의 코어 정의
   전수를 양 로케일 라벨과 자동 대조해 재발을 차단한다.
 
 axes:

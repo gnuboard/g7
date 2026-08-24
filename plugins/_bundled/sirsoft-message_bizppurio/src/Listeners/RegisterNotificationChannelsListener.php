@@ -271,7 +271,7 @@ class RegisterNotificationChannelsListener implements HookListenerInterface
      *  - alimtalk.tab_channels: 이 목록 중 하나라도 활성 저장이면 탭을 노출한다.
      *  - alimtalk.tab_label_key: 탭 라벨용 프론트 lang 키($t 해석 — 카드 라벨(name)과 분리).
      *  - alimtalk.hidden_template_editor: 코어 알림 템플릿 [편집] 모달의 제목/본문 입력·미리보기·
-     *    코어 [저장]을 숨긴다(PO 결정 2026-08-23). 알림톡 본문은 카카오 규격(#{var}, 유형별 필드)이라
+     *    코어 [저장]을 숨긴다(제품 결정 2026-08-23). 알림톡 본문은 카카오 규격(#{var}, 유형별 필드)이라
      *    코어 본문과 다른 편집기가 필요하고, 그 편집기·통합 저장은 플러그인이 같은 모달의
      *    extension_point(notification_template_form_sections / _footer_actions)에 주입한다.
      *    코어 채널 템플릿 행(제목/본문)은 발송에 쓰이지 않으므로 숨겨도 동작 손실이 없다.

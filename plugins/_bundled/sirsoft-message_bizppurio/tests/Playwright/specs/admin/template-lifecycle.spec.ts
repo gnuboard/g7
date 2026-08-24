@@ -14,7 +14,7 @@
  *  4. 플러그인 관리 화면 — 상태 필터가 URL(bz_status)에 보존되는 목록 왕복(mergeQuery)
  *
  * 카카오 API(kapi) 실호출이 필요한 검수 신청·동기화 경로는 브라우저 E2E 범위 밖이다
- * (자격증명·실검수 필요 — PHPUnit 이 Http::fake 로 전수 가드, 실연동은 PO 수행 단계).
+ * (자격증명·실검수 필요 — PHPUnit 이 Http::fake 로 전수 가드, 실연동은 별도 수행 단계).
  *
  * 계획서 §6.2 의 "작성→신청→(kapi mock 승인)→발송 배지" 왕복 축을 여기에 두지 않은 이유는
  * 구조적이다: kapi 호출은 서버(PHP)에서 서버로 나가고, Playwright 의 route 가로채기는
@@ -82,7 +82,7 @@ test.describe('비즈뿌리오 통합 탭 (코어 알림 설정)', () => {
     await expect(firstRow.getByText(/승인됨|미승인/).first()).toBeVisible();
     await expect(firstRow.getByText('대체 SMS', { exact: false }).first()).toBeVisible();
     await expect(firstRow.getByText('SMS 단독', { exact: false }).first()).toBeVisible();
-    // SMS 사용 여부는 문구("대체 SMS: 미사용")가 아니라 배지(사용/미사용)로 렌더된다 (PO 지시 2026-08-23)
+    // SMS 사용 여부는 문구("대체 SMS: 미사용")가 아니라 배지(사용/미사용)로 렌더된다 (제품 결정 2026-08-23)
     expect(await firstRow.locator('span.rounded', { hasText: /^(사용|미사용)$/ }).count()).toBeGreaterThanOrEqual(2);
     expect(await firstRow.getByText(/대체 SMS:|SMS 단독:/).count()).toBe(0);
     expect(await rows.locator('button').count()).toBe(0);
@@ -117,7 +117,7 @@ test.describe('비즈뿌리오 통합 탭 (코어 알림 설정)', () => {
     await expect(modal.locator('textarea[name="bz_template_content"]')).toBeVisible();
 
     // 검수자 전달 의견 입력란은 바로연결 블록 아래 한 줄을 통째로 차지한다
-    // (회귀: 라벨+[바로연결 추가] flex 행 안에 끼어 라벨이 세로로 찌그러짐 — PO 화면 지적 2026-08-23)
+    // (회귀: 라벨+[바로연결 추가] flex 행 안에 끼어 라벨이 세로로 찌그러짐 — 화면 검수 지적 2026-08-23)
     const commentBox = modal.locator('textarea[name="bz_request_comment"]');
     await expect(commentBox).toBeVisible();
     const [quickAddBox, commentBounds, bodyBox] = await Promise.all([
@@ -170,7 +170,7 @@ test.describe('비즈뿌리오 알림 템플릿 관리 (플러그인 설정)', (
 
     await expect(manageView).toBeVisible({ timeout: 30_000 });
 
-    // 목록 SMS 열은 평문(단독/대체/-)이 아니라 상태 배지(단독·대체=초록, 미사용=회색) — 행 하단과 같은 규칙 (PO 지시 2026-08-23)
+    // 목록 SMS 열은 평문(단독/대체/-)이 아니라 상태 배지(단독·대체=초록, 미사용=회색) — 행 하단과 같은 규칙 (제품 결정 2026-08-23)
     await expect(manageView.locator('span.rounded', { hasText: /^(단독|대체|미사용)$/ }).first()).toBeVisible({ timeout: 15_000 });
 
     // 상태 필터 변경 → URL bz_status 반영 (mergeQuery — tab 파라미터 유지)

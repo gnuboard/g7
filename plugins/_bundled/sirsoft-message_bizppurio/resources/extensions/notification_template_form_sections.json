@@ -1,6 +1,6 @@
 {
   "extension_point": "notification_template_form_sections",
-  "comment": "코어 알림 템플릿 [편집] 모달 본문에 주입되는 비즈뿌리오 섹션(PO 결정 2026-08-23 — 행 하단 별도 버튼/모달 폐지, 편집 모달 통합). 3면(코어/게시판/이커머스)이 같은 extension_point 를 노출하므로 파일 1본으로 공유한다. ① 알림톡 템플릿: 승인 2단 배지 + 상태 액션(새로고침/신청 취소/승인 취소 후 수정/휴면 해제) + 작성 폼(draft/rejected) 또는 잠금 요약 ② 문자(SMS): 대체/단독 토글 + 로케일별 본문(검수 대상 아님). 저장은 notification_template_form_footer_actions 의 통합 [저장]이 담당한다. 상태는 _global.bz_tpl_modal / bz_sms_modal / bz_tpl_ui / bz_tpl_upload 에 담고 섹션 마운트(lifecycle.onMount) 시 요약 맵(bizppurioTemplates)으로 시딩한다. 코어 제목/본문 입력은 채널 메타 hidden_template_editor 로 코어 모달이 스스로 숨긴다.",
+  "comment": "코어 알림 템플릿 [편집] 모달 본문에 주입되는 비즈뿌리오 섹션(제품 결정 2026-08-23 — 행 하단 별도 버튼/모달 폐지, 편집 모달 통합). 3면(코어/게시판/이커머스)이 같은 extension_point 를 노출하므로 파일 1본으로 공유한다. ① 알림톡 템플릿: 승인 2단 배지 + 상태 액션(새로고침/신청 취소/승인 취소 후 수정/휴면 해제) + 작성 폼(draft/rejected) 또는 잠금 요약 ② 문자(SMS): 대체/단독 토글 + 로케일별 본문(검수 대상 아님). 저장은 notification_template_form_footer_actions 의 통합 [저장]이 담당한다. 상태는 _global.bz_tpl_modal / bz_sms_modal / bz_tpl_ui / bz_tpl_upload 에 담고 섹션 마운트(lifecycle.onMount) 시 요약 맵(bizppurioTemplates)으로 시딩한다. 코어 제목/본문 입력은 채널 메타 hidden_template_editor 로 코어 모달이 스스로 숨긴다.",
   "priority": 320,
   "components": [
     {
@@ -195,7 +195,7 @@
                     {
                       "type": "basic",
                       "name": "Span",
-                      "comment": "승인 여부 2단 배지(PO 결정 2026-08-23): 1차 = 승인됨/미승인, 2차(괄호) = 세부 상태(미작성·작성중·검수중·반려·휴면·중지·차단). approved 는 세부 없이 단독 표기.",
+                      "comment": "승인 여부 2단 배지(제품 결정 2026-08-23): 1차 = 승인됨/미승인, 2차(괄호) = 세부 상태(미작성·작성중·검수중·반려·휴면·중지·차단). approved 는 세부 없이 단독 표기.",
                       "props": {
                         "className": "{{'inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium flex-shrink-0 ' + ((((_global.bz_tpl_modal?.id) && (_global.bz_tpl_modal?.has_content)) ? (_global.bz_tpl_modal?.status ?? 'draft') : 'unwritten') === 'approved' ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200' : (((_global.bz_tpl_modal?.id) && (_global.bz_tpl_modal?.has_content)) ? (_global.bz_tpl_modal?.status ?? 'draft') : 'unwritten') === 'requested' ? 'bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-200' : (((_global.bz_tpl_modal?.id) && (_global.bz_tpl_modal?.has_content)) ? (_global.bz_tpl_modal?.status ?? 'draft') : 'unwritten') === 'rejected' ? 'bg-red-100 dark:bg-red-800 text-red-700 dark:text-red-100' : ((((_global.bz_tpl_modal?.id) && (_global.bz_tpl_modal?.has_content)) ? (_global.bz_tpl_modal?.status ?? 'draft') : 'unwritten') === 'stopped' || (((_global.bz_tpl_modal?.id) && (_global.bz_tpl_modal?.has_content)) ? (_global.bz_tpl_modal?.status ?? 'draft') : 'unwritten') === 'blocked') ? 'border border-red-400 dark:border-red-500 text-red-600 dark:text-red-400' : (((_global.bz_tpl_modal?.id) && (_global.bz_tpl_modal?.has_content)) ? (_global.bz_tpl_modal?.status ?? 'draft') : 'unwritten') === 'dormant' ? 'bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-200' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300')}}"
                       },
@@ -2404,7 +2404,7 @@
                   "id": "bizppurio_tpl_request_comment",
                   "type": "basic",
                   "name": "Div",
-                  "comment": "검수자 전달 의견 — kapi template/request 의 comment(≤500). 카카오 심사 가이드가 요구하는 변수 예시값 등을 검수자에게 전할 유일한 통로(PO 결정 2026-08-23 §18.7). 신청 시에만 전송되며 행에 저장되지 않는다.",
+                  "comment": "검수자 전달 의견 — kapi template/request 의 comment(≤500). 카카오 심사 가이드가 요구하는 변수 예시값 등을 검수자에게 전할 유일한 통로(제품 결정 2026-08-23 §18.7). 신청 시에만 전송되며 행에 저장되지 않는다.",
                   "children": [
                     {
                       "type": "basic",

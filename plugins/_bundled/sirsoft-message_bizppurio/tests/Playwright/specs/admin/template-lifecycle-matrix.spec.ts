@@ -11,7 +11,7 @@
  *          sms_body_presence_and_preview_resolved_by_server, inspection_request_carries_reviewer_comment
  *
  * 계획서 §6.3 이 요구한 7대 축(T1~T7) + 선택 축(T8~T10) + 회귀 축(R1~R6)을 브라우저에서 실측한다.
- * PO 결정(2026-08-23, 계획서 §18)으로 알림톡 작성·SMS 본문 편집은 행 하단 버튼/별도 모달이 아니라
+ * 제품 결정(2026-08-23, 계획서 §18)으로 알림톡 작성·SMS 본문 편집은 행 하단 버튼/별도 모달이 아니라
  * 코어 [편집] 모달 안의 섹션으로 통합됐다 — 모달 진입은 언제나 행의 [편집] 이고, 저장은 하단 [저장] 하나다.
  * 이 매트릭스는 라운드 1~4 동안 "수행 증거 없음" 으로 남아 있었고, 그 근본 원인은 플러그인
  * package.json 에 실행 진입점(test:e2e)이 없었다는 것이다 — 라운드 5 에서 진입점을 만들고
@@ -479,7 +479,7 @@ test.describe('T4 제출/응답 + T10 경계', () => {
         //    서버의 원자 선점(claimForInspection)이며, 두 번째 신청은 422 로 거부된다.
         const modal2 = await openEditModal(page, 'password_changed');
         await modal2.locator('textarea[name="bz_template_content"]').fill('중복 신청 테스트 #{site_name}');
-        // 검수자 전달 의견(PO 결정 2026-08-23 §18.7) — 신청 요청 본문의 comment 로 실려야 한다.
+        // 검수자 전달 의견(제품 결정 2026-08-23 §18.7) — 신청 요청 본문의 comment 로 실려야 한다.
         const REVIEW_COMMENT = '변수 예시: #{site_name}=G7 데모 사이트';
         await modal2.locator('textarea[name="bz_request_comment"]').fill(REVIEW_COMMENT);
         const requestBodies: string[] = [];

@@ -7,7 +7,7 @@
 #   TokenCheckEndpointTest, 저장 시 토큰 캐시 무효화는 실제 훅 체인(core.plugin_settings.
 #   after_save) + 실제 CacheInterface 로 InvalidateTokenOnSettingsSaveListenerTest 가,
 #   verifyCredentials/describeFailure 는 BizppurioTokenServiceTest 가 각각 관찰한다.
-#   런타임 Playwright spec 은 계획서 §9 방침에 따라 실연동 검증(PO 직접 수행, 인증·발송
+#   런타임 Playwright spec 은 계획서 §9 방침에 따라 실연동 검증(직접 수행, 인증·발송
 #   환경 필요) 단계에서 최초 도입하며, 그 시점에 @scenario/@effects docblock 완전 매핑을
 #   추가한다. 그때까지 매니페스트는 명세로 유지한다.
 

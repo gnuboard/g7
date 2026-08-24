@@ -7,7 +7,7 @@ namespace Plugins\Sirsoft\MessageBizppurio\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * 알림톡 템플릿 검수 신청 요청 검증 (#597 §18.7 — PO 결정 2026-08-23).
+ * 알림톡 템플릿 검수 신청 요청 검증 (#597 §18.7 — 제품 결정 2026-08-23).
  *
  * 카카오 심사 가이드는 템플릿 변수마다 '예시 텍스트' 를 요구하지만 kapi `template/add` 에는
  * 예시 필드가 없다. 검수자에게 무언가를 전달할 유일한 통로가 `template/request` 의

@@ -5,7 +5,7 @@
 #   GuestPhoneExtractListenerTest(6) + ChannelRegistrationHookTest(4, 실제 훅 체인).
 #   프론트 변경 없음(레이아웃 JSON/컴포넌트 미변경) → frontend-change-requires-e2e 비대상이라
 #   Playwright spec 은 이번 Phase 미도입. 실발송 왕복(실제 API·webhook)은 계획서 §9 방침대로
-#   PO 직접 수행하는 실연동 검증 단계에서 spec 최초 도입하며, 그때 @scenario/@effects 를 매핑한다.
+#   직접 수행하는 실연동 검증 단계에서 spec 최초 도입하며, 그때 @scenario/@effects 를 매핑한다.
 
 feature: 비즈뿌리오 문자 채널 등록 + 자동발송 (Phase 3)
 

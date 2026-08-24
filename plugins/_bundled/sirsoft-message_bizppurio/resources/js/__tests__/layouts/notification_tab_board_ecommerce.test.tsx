@@ -11,7 +11,7 @@
  * 반대로 데이터소스 id 는 치환 없이도 3면 동일해야 한다 — notification_row_footer.json 과
  * notification_template_form_sections.json(전역 매칭, 3면 공유 1본)이 이 이름들을 공유 참조하기 때문이다.
  * 편집 UI(작성 폼·SMS·저장)는 코어 [편집] 모달의 extension_point 에 주입되는 공유 1본이라
- * 면 패리티 대상이 아니다(PO 결정 2026-08-23).
+ * 면 패리티 대상이 아니다(제품 결정 2026-08-23).
   *
  * 세 오버레이가 전문 동일하다는 것이 board/ecommerce 면의 화면 효과를 떠받치는 근거다 —
  * core 면에서 단언한 것들(탭 통합·행 하단 UI·업로드 잠금·SMS 언어 탭)이 두 면에도 있다는
@@ -70,7 +70,7 @@ const normalizedCore = JSON.stringify(stripComments(coreOverlay));
 /** 3면 공유 이름(치환 없이 동일해야 하는 축) */
 const SHARED_DATA_SOURCE_IDS = ['bizppurioTemplates', 'bizppurioCategories', 'bizppurioProfiles'];
 // 모달·전역 상태(bz_*)는 오버레이가 아니라 3면 공유 1본(notification_template_form_sections.json /
-// _footer_actions.json)이 소유한다(PO 결정 2026-08-23 — 편집 모달 통합). 오버레이는 모달을 등록하지 않는다.
+// _footer_actions.json)이 소유한다(제품 결정 2026-08-23 — 편집 모달 통합). 오버레이는 모달을 등록하지 않는다.
 
 describe.each(FIXTURES)('$label 오버레이 — 3면 패리티', ({ label, overlay, targetLayout, targetId, idPrefix }) => {
     it(`target_layout=${targetLayout} 이고 extension_point 키가 없다(overlay 전용)`, () => {

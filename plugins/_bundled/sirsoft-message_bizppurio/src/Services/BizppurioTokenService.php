@@ -15,7 +15,7 @@ use Plugins\Sirsoft\MessageBizppurio\Exceptions\BizppurioApiException;
  *
  * `/v1/token` 을 Basic 인증(계정:암호 Base64)으로 호출해 Bearer 토큰을 발급받고,
  * 확장 도메인 캐시(CacheInterface)에 저장한다. 토큰 유효 시간은 24시간이나, 만료
- * 경계 재발급 리스크를 피하기 위해 23시간 TTL 로 캐시한다(PO 결정, 계획서 §5).
+ * 경계 재발급 리스크를 피하기 위해 23시간 TTL 로 캐시한다(제품 결정, 계획서 §5).
  *
  * 발송 응답이 3002(토큰무효)/3005(인증정보무효)를 반환하면 캐시를 forget 하고
  * 1회 재발급한다(BizppurioApiClient 가 재시도 트리거). CacheInterface 는
