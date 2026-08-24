@@ -137,6 +137,9 @@ class BizppurioTemplateRepository implements BizppurioTemplateRepositoryInterfac
      * 설정성 테이블 예외). 요약에 불필요한 대형 JSON(content/approved_content)은 제외하되,
      * 반려 사유(inspection_detail)는 행 UI 의 [사유 보기]가 소비하므로 포함한다.
      *
+     * 행 수는 알림 정의 수(notification_type UNIQUE)에 묶인다 — 코어·확장이 선언한 알림
+     * 개수만큼만 존재하는 설정성 테이블이므로 상한 없는 get() 이 데이터 증가에 비례하지 않는다.
+     *
      * @return Collection<int, BizppurioTemplate> 요약 컬럼만 실린 행 컬렉션
      */
     public function allSummaries(): Collection
@@ -152,6 +155,9 @@ class BizppurioTemplateRepository implements BizppurioTemplateRepositoryInterfac
 
     /**
      * 특정 상태의 행 전체를 조회합니다 (동기화 커맨드 대상 선별).
+     *
+     * allSummaries() 와 같은 근거로 상한을 두지 않는다 — 알림 정의 수에 묶인 설정성 테이블의
+     * 부분집합이다.
      *
      * @param  string  $status  BizppurioTemplateStatus value
      * @return Collection<int, BizppurioTemplate>

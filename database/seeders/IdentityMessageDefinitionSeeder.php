@@ -72,7 +72,7 @@ class IdentityMessageDefinitionSeeder extends Seeder
      * `extension_type='core'` / `extension_identifier='core'` 자동 주입.
      * `variables: '__common__'` 마커는 commonVariables() 로 expand.
      *
-     * @return array<int, array<string, mixed>>
+     * @return array<string, array<string, mixed>> config 복합 키('mail.purpose.signup' 등) => 정의
      */
     private function getDefaultDefinitions(): array
     {
