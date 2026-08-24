@@ -1,0 +1,96 @@
+# Webhook API 레퍼런스
+
+> **소유**: plugin `sirsoft-message_bizppurio` · **생성**: `php artisan api:docgen` (실측 기반). @generated 블록은 재생성 시 갱신되며, 사람이 작성한 설명은 보존됩니다.
+
+---
+
+## TL;DR (5초 요약)
+
+```text
+1. 이 문서는 실제 API 호출로 실측한 Webhook 엔드포인트 레퍼런스입니다
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
+4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
+5. 설명(TODO) 칸은 사람이 채웁니다
+```
+
+---
+
+
+### POST /api/plugins/sirsoft-message_bizppurio/webhook
+<!-- @generated:start:api.plugins.sirsoft-message_bizppurio.webhook -->
+- **라우트명**: `api.plugins.sirsoft-message_bizppurio.webhook`
+- **컨트롤러**: `Plugins\Sirsoft\MessageBizppurio\Controllers\BizppurioWebhookController@handle`
+- **인증/권한**: 공개 (인증 불필요)
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| DEVICE | body | string | 아니오 | max 20 | 발송 메시지 유형(SMS/LMS/MMS/AT 등 비즈뿌리오 코드) |
+| CMSGID | body | string | 아니오 | max 64 | 비즈뿌리오 메시지 키(발송 요청 시 채번된 식별자) |
+| MSGID | body | string | 아니오 | max 64 | 비즈뿌리오 내부 메시지 ID |
+| PHONE | body | string | 아니오 | max 20 | 수신 전화번호 |
+| MEDIA | body | string | 아니오 | max 10 | 실제 발송된 매체 유형(대체발송 시 요청 유형과 다를 수 있음) |
+| RESULT | body | string | 예 | max 10 | 발송 결과 코드 — ResultCodeResolver 가 성공/실패와 사유로 해석 |
+| REFKEY | body | string | 예 | max 32 | 발송 시 G7 이 부여한 참조 키 — 이 값으로 bizppurio_dispatches 행을 찾는다 |
+| TELRES | body | string | 아니오 | max 10 | 대체발송(문자) 결과 코드 |
+| KAORES | body | string | 아니오 | max 10 | 알림톡 발송 결과 코드 |
+
+**요청 예시**
+
+```http
+POST /api/plugins/sirsoft-message_bizppurio/webhook HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Content-Type: application/json
+
+{
+    "DEVICE": "예시값",
+    "CMSGID": "예시값",
+    "MSGID": "예시값",
+    "PHONE": "010-1234-5678",
+    "MEDIA": "예시값",
+    "RESULT": "예시값",
+    "REFKEY": "예시값",
+    "TELRES": "예시값",
+    "KAORES": "예시값"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+이 엔드포인트는 `data` 를 반환하지 않는다. 비즈뿌리오 URL PUSH 규약상 수신 사실만 알리면 되므로,
+성공·실패와 무관하게 `success: true` + 수신 확인 메시지만 담은 200 봉투를 돌려준다.
+리포트 해석 결과(성공/실패·사유)는 `bizppurio_dispatches` 행에 기록되며 응답에는 싣지 않는다.
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+Content-Type: application/json
+
+{
+    "success": true,
+    "message": "발송 결과 리포트를 수신했습니다."
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+
+<!-- @generated:end -->
+
+**설명**
+
+비즈뿌리오가 문자·알림톡 발송 결과를 URL PUSH 로 통보하는 리포트 수신 엔드포인트다. 운영자가 이 주소를 비즈뿌리오에 등록하면(환경설정 화면의 리포트 수신 주소), 발송 후 결과가 이 엔드포인트로 전송된다.
+
+- **인증**: 코어 토큰/IDV 미들웨어를 라우트 레벨에서 제외하고, 인증을 IP 화이트리스트로 대체한다. 화이트리스트 밖 IP 는 403. IP 화이트리스트는 `plugin.php::getMiddleware()` 에서 이 라우트명(`api.plugins.sirsoft-message_bizppurio.webhook`)으로 self-gate 선언하며, 코어 게이트가 요청 시점에 부착한다(라우트 파일 직접 부착 아님).
+- **처리**: `REFKEY` 로 발송 이력을 조회한다. 없으면(위조/미매칭) 200 으로 흡수한다. 이미 리포트가 반영된 이력(`reported_at` 존재)이면 replay 로 판정해 멱등 처리한다. 그 외에는 `RESULT` 코드를 분류(성공/실패/잔액부족)해 상태를 전이하고 `media`·`fallback_status`·`raw_payload`·`reported_at` 을 기록한다.
+- **잔액부족**: `RESULT` 가 9070(문자)/7436(알림톡)이면 이력을 실패로 뒤집고 관리자에게 자체 알림을 1회 발송한다.
+- 응답은 항상 200 이다(비즈뿌리오가 실패 응답을 재전송하지 않도록). replay 멱등이 중복 처리를 막는다.
+
+

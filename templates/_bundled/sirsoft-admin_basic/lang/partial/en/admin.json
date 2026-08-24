@@ -1419,6 +1419,8 @@
       "og_image_default_width": "OG Image Default Width (px)",
       "og_image_default_height": "OG Image Default Height (px)",
       "og_image_default_size_hint": "Default values when thumbnail size is unknown. Facebook recommends 1200×630, minimum 200×200.",
+      "og_image_default": "Default Share Image",
+      "og_image_default_desc": "Site-wide fallback image used when a page has no share image of its own. Shown in link preview cards.",
       "twitter_default_card": "Twitter Card Default Type",
       "twitter_default_card_hint": "Use summary_large_image for large image cards, summary for compact ones.",
       "twitter_default_site": "Twitter Site Handle",
@@ -1856,7 +1858,9 @@
       "types": {
         "welcome": "Welcome",
         "reset_password": "Password Reset",
-        "password_changed": "Password Changed"
+        "password_changed": "Password Changed",
+        "sitemap_regenerated": "Sitemap Regeneration Complete",
+        "sitemap_regenerate_failed": "Sitemap Regeneration Failed"
       },
       "channels_label": "Channels:",
       "edit_modal": {

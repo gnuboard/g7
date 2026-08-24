@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.1.2] - 2026-08-24
+
+### Fixed
+
+- 첫 화면 소개 문구의 제품명이 한국어로 표시되던 문제를 수정했습니다.
+
 ## [1.1.1] - 2026-08-19
 
 ### Added

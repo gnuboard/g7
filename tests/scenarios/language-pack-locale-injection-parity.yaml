@@ -1,0 +1,43 @@
+feature: 언어팩 로케일 주입·복원 일관성 (#597 보완 실측 후속)
+
+description: |
+  활성 언어팩 seed 의 로케일(ja 등)이 시더 필터와 [기본값 복원] 양쪽에서 같은 SSoT 로
+  병합되는지 고정한다.
+
+  배경 (2026-08-24 #597 보완 실측에서 실측·확정):
+    - [기본값 복원] 경로(core.notification.filter_default_definitions /
+      core.identity.filter_default_message_definitions)가 언어팩 주입에 참여하지 않아,
+      복원을 누르면 팩이 주입해 둔 로케일이 config 의 ko/en 만으로 대체되어 영구 소실됐다
+      (실사례: 2026-08-23 복원 실측이 welcome ja 를 지움 — 오류·로그 없음).
+    - 시더 필터(seed.notifications.translations)의 주입기가 리스트+type 형태만 읽어,
+      코어 시더의 실제 페이로드(config 원형 — 연관 배열, 항목에 type 없음)에서는
+      전 항목이 스킵되어 주입이 오류 없이 전면 불능이었다. identity 축은 시더가
+      config 복합 키를 버리고 리스트로 넘겨 같은 방식으로 전면 불능이었다.
+    - 커밋 전 점검(같은 날)에서 추가 확정: 7.0.9 업그레이드 스텝이 활성 팩마다
+      활성화 훅을 재발화해 기존 설치본의 소실분을 병합 복구한다(upgrade_resync 축).
+      이 백필의 안전 전제인 사용자 수정 보존은 dot-path(`"컬럼.로케일"`) 판정으로
+      정합화했고(종전 isset 판정은 사문), 주입 저장의 user_overrides 오염(시더 동결
+      유발)과 같은 프로세스 활성화의 시더 필터 stale(캡처 인스턴스 캐시)도 함께 교정.
+
+axes:
+  domain: [notification, identity]
+  entry: [seeder_filter, reset_default, upgrade_resync]
+
+effects:
+  - seeder_filter_injects_active_pack_locales
+  - seeder_filter_injects_ja_for_real_seeder_payload
+  - reset_default_data_includes_lang_pack_locales
+  - identity_reset_default_preserves_lang_pack_locales
+  - upgrade_resync_restores_wiped_pack_locales
+  - upgrade_resync_restores_wiped_identity_locales
+
+test_files:
+  - tests/Feature/LanguagePack/NotificationSeedInjectionTest.php
+  - tests/Feature/LanguagePack/IdentitySeedInjectionTest.php
+  - tests/Feature/Upgrades/Upgrade709LangPackResyncTest.php
+
+validation:
+  automated: "php artisan test --filter='NotificationSeedInjectionTest|IdentitySeedInjectionTest|Upgrade709LangPackResyncTest|SyncDatabaseTranslationsTest'"
+  manual: |
+    관리자 알림 설정에서 언어팩이 번역을 제공하는 템플릿(예: welcome)에 [기본값 복원] 실행 후,
+    일본어 화면에서 제목·본문 번역이 유지되는지 확인한다.

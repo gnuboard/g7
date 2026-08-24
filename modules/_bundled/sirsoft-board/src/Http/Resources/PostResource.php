@@ -303,7 +303,8 @@ class PostResource extends BaseApiResource
      * 썸네일 URL을 관계 로딩 상태에 따라 반환합니다.
      *
      * thumbnailAttachment(경량 hasOne) 우선, attachments(전체) fallback.
-     * 둘 다 미로딩 시 null 반환 (lazy loading 방지).
+     * 첨부에서 URL 을 얻지 못한 모든 경우 본문 첫 내부 이미지 캐시
+     * (content_thumbnail_url)로 폴백하고, 그것도 없으면 null (공개 이슈 #22).
      *
      * @return string|null 썸네일 URL
      */
@@ -312,9 +313,13 @@ class PostResource extends BaseApiResource
         // 비밀글은 썸네일 URL 자체를 방출하지 않는다 — 서빙은 이미 차단되어 이미지가 보이지는
         // 않지만, URL 에 실린 첨부 해시가 목록·상세 응답으로 나가 있었다(KVE-2026-1894).
         // 판정은 첨부 목록과 같은 SecretContentGate(SSoT)를 쓴다. 필드는 남기고 값만 가린다.
+        // 본문 캐시 폴백도 반드시 이 게이트 뒤 — 에디터 이미지는 공개 hash 서빙이라
+        // 첨부와 달리 서빙측 차단이 없어, 이 게이트가 유일한 차단선이다.
         if ($this->is_secret && ! $this->canViewSecretContent(request())) {
             return null;
         }
+
+        $url = null;
 
         // 목록용 경량 관계 우선 — slug를 직접 전달하여 Board::find() N+1 방지
         if ($this->relationLoaded('thumbnailAttachment') && $this->thumbnailAttachment) {
@@ -322,18 +327,15 @@ class PostResource extends BaseApiResource
             $slug = request()->route('slug') ?? ($this->relationLoaded('board') ? $this->board?->slug : null);
 
             if ($slug && $attachment->hash) {
-                return $attachment->previewUrlForSlug($slug);
+                $url = $attachment->previewUrlForSlug($slug);
             }
-
-            return null;
+        } elseif ($this->relationLoaded('attachments')) {
+            // 상세 페이지 등에서 attachments가 로딩된 경우 fallback
+            $url = $this->getThumbnailUrl();
         }
 
-        // 상세 페이지 등에서 attachments가 로딩된 경우 fallback
-        if ($this->relationLoaded('attachments')) {
-            return $this->getThumbnailUrl();
-        }
-
-        return null;
+        // 이미지 첨부가 없을 때만 본문 첫 내부 이미지 캐시 폴백 (첨부 우선 정책)
+        return $url ?? ($this->content_thumbnail_url ?: null);
     }
 
     /**

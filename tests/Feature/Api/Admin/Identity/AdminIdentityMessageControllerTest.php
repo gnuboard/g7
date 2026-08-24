@@ -104,7 +104,10 @@ class AdminIdentityMessageControllerTest extends TestCase
 
         $template->refresh();
         $this->assertSame('운영자 제목', $template->subject['ko']);
-        $this->assertContains('subject', $template->user_overrides ?? []);
+        // subject/body 는 translatableTrackableFields — 수정이 dot-path sub-key 단위로
+        // 기록되어야 시더 재실행·언어팩 병합이 수정된 로케일만 보존한다 (#597 교정)
+        $this->assertContains('subject.ko', $template->user_overrides ?? []);
+        $this->assertContains('subject.en', $template->user_overrides ?? []);
         $this->assertFalse($template->is_default, '운영자 편집 후 is_default 가 false 로 전환되어야 합니다.');
     }
 

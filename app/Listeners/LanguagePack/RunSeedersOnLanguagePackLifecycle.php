@@ -112,11 +112,13 @@ class RunSeedersOnLanguagePackLifecycle
      */
     private function refreshRegistry(): void
     {
-        // Singleton 캐시된 registry/injector 가 stale 활성 팩 목록을 들고 있을 수 있으므로 forget
-        $this->app->forgetInstance(LanguagePackRegistry::class);
-        $this->app->forgetInstance(LanguagePackSeedInjector::class);
-
+        // boot 시점에 등록된 seed 필터 클로저들은 injector→registry "인스턴스"를 캡처하고 있다.
+        // forgetInstance 로 바인딩을 교체하면 캡처된 구 인스턴스의 stale 캐시(활성 팩 목록)가
+        // 그대로 남아, 같은 프로세스에서 활성화된 신규 팩이 코어 시더의 번역 필터에 보이지
+        // 않는다 (오류 없이 해당 로케일만 미주입). 싱글톤을 유지한 채 내부 캐시만 무효화해
+        // 캡처된 참조에도 전파한다 (#597 에서 실측·교정).
         $registry = $this->app->make(LanguagePackRegistry::class);
+        $registry->invalidate();
         config([
             'app.supported_locales' => $registry->getActiveCoreLocales(),
             'app.locale_names' => $registry->getLocaleNames(),

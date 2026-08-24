@@ -1271,6 +1271,7 @@ _단건 응답: `data` 객체의 필드._
 | title | string | `이용약관` | 제목 |
 | content | string | `<h2 style="font-size: 1.25rem; font-w…` | 본문 내용 |
 | content_mode | string | `html` | 본문 형식 (html, text) |
+| content_thumbnail_url | string \| null | `null` | 본문 첫 내부 이미지 URL 캐시 — 페이지 표시 레이아웃의 공유 미리보기(og:image)가 소비한다. html 모드에서 본문에 내부 이미지가 있으면 채워지고, 외부 주소 이미지·text 모드·이미지 없음이면 `null` (1.1.0+) |
 | is_preview | boolean | `false` | preview 여부 |
 | published_at | string | `2026-07-08 10:44:43` | published 일시 |
 | seo_meta | null | `null` | SEO 메타 정보 (title, description, keywords) |

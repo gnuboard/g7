@@ -4,6 +4,16 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.1.2] - 2026-08-24
+
+### Changed
+
+- sirsoft-page 최소 버전을 1.1.0 으로 상향했습니다 (페이지 공유 이미지 연동).
+
+### Fixed
+
+- 페이지 공유 미리보기의 이미지(og:image)와 설명(og:description)이 채워지도록 페이지 표시 화면의 공유 정보 연결을 정비했습니다. (#22 @abc101 님께서 제보해주셨습니다.)
+
 ## [1.1.1] - 2026-08-19
 
 ### Added

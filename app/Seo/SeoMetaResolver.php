@@ -4,6 +4,7 @@ namespace App\Seo;
 
 use App\Seo\Concerns\LocalizesSeoValues;
 use App\Seo\Concerns\SubstitutesSeoVariables;
+use App\Services\SettingsService;
 
 class SeoMetaResolver
 {
@@ -515,6 +516,19 @@ class SeoMetaResolver
         $title = $this->stripHtml($this->safeEval($og['title'] ?? '', $context)) ?: $fallbackTitle;
         $description = $this->stripHtml($this->safeEval($og['description'] ?? '', $context)) ?: $fallbackDescription;
         $image = $this->absoluteUrl($this->safeEval($og['image'] ?? '', $context));
+
+        // 사이트 기본 OG 이미지 폴백 (공개 이슈 #22) — 도메인 콘텐츠 폴백(본문 캐시)은
+        // 각 모듈 레이아웃/훅 바인딩이 공급하므로 코어는 사이트 기본값 한 단만 담당한다.
+        // 체인: 레이아웃 선언(도메인 캐시 포함) → 사이트 기본 이미지 → 빈 값(태그 미출력).
+        // secure_url 파생은 반드시 이 폴백 적용 후의 $image 기준이어야 한다.
+        if ($image === '') {
+            $defaultImage = app(SettingsService::class)->getOgDefaultImageUrl();
+
+            if (is_string($defaultImage) && $defaultImage !== '') {
+                $image = $this->absoluteUrl($defaultImage);
+            }
+        }
+
         $secureUrl = isset($og['image_secure_url'])
             ? $this->absoluteUrl($this->safeEval($og['image_secure_url'], $context))
             : ($image !== '' && str_starts_with($image, 'https://') ? $image : '');
