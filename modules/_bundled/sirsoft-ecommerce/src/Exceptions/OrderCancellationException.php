@@ -9,6 +9,10 @@ use Exception;
  *
  * 취소 불가 상태, 취소 옵션 부재/중복, 취소 수량 오류, 환불 금액 오류,
  * PG 환불 실패 등 주문 취소·환불 라이프사이클에서 발생하는 비즈니스 예외입니다.
+ *
+ * 다국어 키를 함께 보관할 수 있다 — 클레임 도메인 예외(`OrderClaimException`)를 이 예외로
+ * 바꿔 던지는 지점이 있어서, 키를 버리면 회원·비회원 면이 사유를 잃고 뭉뚱그린 안내만 남는다.
+ * 키는 선택 사항이며(기본 null) 기존 호출부는 그대로 동작한다.
  */
 class OrderCancellationException extends Exception
 {
@@ -16,9 +20,34 @@ class OrderCancellationException extends Exception
      * 생성자
      *
      * @param  string  $message  다국어 처리된 예외 메시지
+     * @param  string|null  $messageKey  다국어 키 (없으면 호출부가 자기 기본 키를 쓴다)
+     * @param  array<string, mixed>  $messageParams  메시지 치환 파라미터
      */
-    public function __construct(string $message)
-    {
+    public function __construct(
+        string $message,
+        protected ?string $messageKey = null,
+        protected array $messageParams = [],
+    ) {
         parent::__construct($message);
+    }
+
+    /**
+     * 다국어 메시지 키를 반환합니다.
+     *
+     * @return string|null 메시지 키 (보관하지 않았으면 null)
+     */
+    public function getMessageKey(): ?string
+    {
+        return $this->messageKey;
+    }
+
+    /**
+     * 메시지 치환 파라미터를 반환합니다.
+     *
+     * @return array<string, mixed> 치환 파라미터
+     */
+    public function getMessageParams(): array
+    {
+        return $this->messageParams;
     }
 }

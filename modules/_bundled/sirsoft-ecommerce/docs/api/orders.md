@@ -1360,6 +1360,8 @@ HTTP/1.1 200
 
 **설명** 관리자가 특정 주문(`order`)의 선택 옵션(`items`) 취소 시 예상 환불 금액을 실제 취소 없이 미리 계산합니다. `auth:sanctum` + `sirsoft-ecommerce.orders.update` 권한이 필요하며, `Admin\OrderController@estimateRefund`가 `OrderCancellationService::previewRefund()`로 환불 예상값을 반환합니다. `refund_priority`에 따라 PG 우선/포인트 우선 환불 배분 결과가 달라집니다. 취소 화면에서 "환불 예정 금액"을 관리자에게 미리 보여주는 용도입니다.
 
+교환·반품·환불 신청으로 **클레임 코스에 들어간 상품**이 `items` 에 섞이면 `422` 입니다 — 미리보기와 실행(`DELETE /admin/orders/{order}`)이 같은 가드를 쓰므로 "미리보기는 되는데 실행만 막히는" 비대칭이 없습니다. 사유는 `errors.detail` 에 실립니다(`claim_option_in_course` / `claim_quantity_locked` — 관리자 전용 면의 조치 근거).
+
 
 ### GET /api/modules/sirsoft-ecommerce/admin/orders/{order}/logs
 <!-- @generated:start:api.modules.sirsoft-ecommerce.admin.orders.logs -->
@@ -2755,6 +2757,8 @@ HTTP/1.1 200
 <!-- @generated:end -->
 
 **설명** 회원이 마이페이지에서 본인 주문(`id`)의 선택 옵션(`items`) 취소 시 예상 환불 금액을 실제 취소 없이 미리 계산합니다. `auth:sanctum` + `sirsoft-ecommerce.user-orders.cancel` 권한이 필요하며, `User\OrderController@estimateRefund`가 `OrderCancellationService::previewRefund()`로 환불 예상값을 반환합니다. `refund_priority`에 따라 PG 우선/포인트 우선 환불 배분 결과가 달라집니다. 취소 확정 전 "환불 예정 금액"을 회원에게 안내하는 용도입니다.
+
+교환·반품·환불 신청으로 **클레임 코스에 들어간 상품**이 `items` 에 섞이면 `422` 이며, `message` 에 그 사유가 그대로 실립니다(`claim_option_in_course` / `claim_quantity_locked` — 관리자 면과 같은 키). 미리보기가 성공하면 그 조합은 취소 실행도 가능하다는 뜻입니다.
 
 
 ### POST /api/modules/sirsoft-ecommerce/user/orders/{id}/options/{optionId}/confirm

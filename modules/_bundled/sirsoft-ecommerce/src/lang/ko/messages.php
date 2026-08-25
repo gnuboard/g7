@@ -497,6 +497,12 @@ return [
         'option_status_processed' => '신청 상품 상태 변경을 처리했습니다.',
         'tracking_saved' => '운송장 정보를 저장했습니다.',
         'images_cleared' => '첨부 이미지를 모두 삭제했습니다.',
+        'amounts_updated' => '금액을 수정했습니다.',
+        'cancellable_retrieved' => '취소 가능 금액을 산정했습니다.',
+        'refund_executed' => '환불을 실행했습니다.',
+        'refund_execute_failed' => '환불 실행에 실패했습니다.',
+        'completion_preview_retrieved' => '완료 처리 요약을 계산했습니다.',
+        'refund_request_created' => '환불신청서를 접수했습니다.',
     ],
 
     // 배송정책 메시지

@@ -200,6 +200,61 @@ class OrderClaimException extends Exception
     }
 
     /**
+     * 종결된 신청서의 금액 수정을 시도했을 때 (완료·반려·철회 이후)
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function amountsNotEditable(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_amounts_not_editable');
+    }
+
+    /**
+     * 환불 실행 대상이 아닌 환불 레코드일 때 (취소 발 환불 — 취소 파이프라인 소유)
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function refundNotExecutable(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_refund_not_executable');
+    }
+
+    /**
+     * 이미 실행됐거나 실행 중인 환불의 재실행을 시도했을 때 (더블클릭 등 — 409)
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function refundAlreadyExecuted(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_refund_already_executed');
+    }
+
+    /**
+     * 환불액이 취소 가능 금액(D19)을 초과할 때 (저장·실행 공통 422)
+     *
+     * @param  string  $requested  요청 환불액 (통화 포맷 문자열)
+     * @param  string  $cancellable  취소 가능 금액 (통화 포맷 문자열)
+     * @return self 예외 인스턴스
+     */
+    public static function refundExceedsCancellable(string $requested, string $cancellable): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_refund_exceeds_cancellable', [
+            'requested' => $requested,
+            'cancellable' => $cancellable,
+        ]);
+    }
+
+    /**
+     * 비회원 주문의 환불액에 마일리지 환불을 실었을 때 (마일리지 원장은 회원 전용)
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function refundPointsRequireMember(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_refund_points_requires_member');
+    }
+
+    /**
      * 회수 송장 정보가 불완전할 때 (택배사/송장번호 중 한쪽만 입력)
      *
      * @return self 예외 인스턴스

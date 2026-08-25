@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
+use Carbon\Carbon;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefundOption;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundOptionRepositoryInterface;
 
@@ -28,14 +29,25 @@ class OrderRefundOptionRepository implements OrderRefundOptionRepositoryInterfac
     /**
      * {@inheritDoc}
      */
-    public function bulkUpdateStatus(int $refundId, string $status, ?int $processedBy = null): int
+    public function bulkUpdateStatus(int $refundId, string $status, ?int $processedBy = null, ?Carbon $completedAt = null): int
     {
+        $updates = [
+            'option_status' => $status,
+            'updated_at' => now(),
+        ];
+
+        // 처리자·완료 시각은 값이 주어졌을 때만 기입한다 — 원값을 무조건 덮어쓰면
+        // 처리자 미상 호출이 이미 기록된 상세 행의 처리자를 NULL 로 지운다.
+        if ($processedBy !== null) {
+            $updates['processed_by'] = $processedBy;
+        }
+
+        if ($completedAt !== null) {
+            $updates['completed_at'] = $completedAt;
+        }
+
         return $this->model->newQuery()
             ->where('order_refund_id', $refundId)
-            ->update([
-                'option_status' => $status,
-                'processed_by' => $processedBy,
-                'updated_at' => now(),
-            ]);
+            ->update($updates);
     }
 }

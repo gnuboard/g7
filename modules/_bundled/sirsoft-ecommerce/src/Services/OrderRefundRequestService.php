@@ -9,6 +9,7 @@ use Modules\Sirsoft\Ecommerce\DTO\AdjustmentResult;
 use Modules\Sirsoft\Ecommerce\DTO\CancellationResult;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundOptionStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundPriorityEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
@@ -48,6 +49,7 @@ class OrderRefundRequestService
      * @param  OrderCancellationService  $cancellationService  취소 서비스 (즉시취소 분기·환불 미리보기)
      * @param  ClaimQuantityGuard  $claimQuantityGuard  수량 잠금 가드
      * @param  RefundExecutionService  $refundExecutionService  환불 실행 공용 서비스 (수단·안분 규칙)
+     * @param  CancellableAmountCalculator  $cancellableCalculator  취소 가능 금액 산정기 (D19 — 저장·실행 가드)
      * @param  SequenceService  $sequenceService  채번 서비스
      * @param  EcommerceSettingsService  $settingsService  설정 서비스
      * @param  CurrencyConversionService  $currencyService  통화 변환 서비스
@@ -60,6 +62,7 @@ class OrderRefundRequestService
         protected OrderCancellationService $cancellationService,
         protected ClaimQuantityGuard $claimQuantityGuard,
         protected RefundExecutionService $refundExecutionService,
+        protected CancellableAmountCalculator $cancellableCalculator,
         protected SequenceService $sequenceService,
         protected EcommerceSettingsService $settingsService,
         protected CurrencyConversionService $currencyService,
@@ -168,7 +171,10 @@ class OrderRefundRequestService
 
         return [
             'branch' => $branch,
-            'adjustment' => $this->cancellationService->previewRefund($order, $this->toCancelItems($resolved), $refundPriority),
+            // 클레임 잠금 재검사(guardClaimLock)를 끈다 — 위 resolveClaimItems 가 자기 신청서 제외
+            // (excludeRefundId)까지 반영한 같은 가드를 이미 통과했다. 켜 두면 수정 미리보기가
+            // 자기 신청서의 잠금에 막힌다.
+            'adjustment' => $this->cancellationService->previewRefund($order, $this->toCancelItems($resolved), $refundPriority, guardClaimLock: false),
         ];
     }
 
@@ -242,7 +248,8 @@ class OrderRefundRequestService
             );
 
             $cancelItems = $this->toCancelItems($resolved);
-            $adjustment = $this->cancellationService->previewRefund($lockedOrder, $cancelItems, $refundPriority);
+            // resolveClaimItems 가 잠금 가드를 이미 통과했다 (미리보기와 같은 이유로 재검사 생략).
+            $adjustment = $this->cancellationService->previewRefund($lockedOrder, $cancelItems, $refundPriority, guardClaimLock: false);
             $currencySnapshot = $lockedOrder->currency_snapshot ?? [];
 
             $refund = $this->refundRepository->create([
@@ -334,6 +341,305 @@ class OrderRefundRequestService
         }
 
         return $this->refundRepository->update($refund, $updates);
+    }
+
+    /**
+     * 관리자가 환불신청서의 환불액을 수정합니다. (D18 — 저장 축)
+     *
+     * PG 환불액·마일리지 환불액을 수단별로 받고, 상한은 취소 가능 금액(D19)이다 — 초과는
+     * 저장·실행 모두 422 로 차단한다. 취소 발(`cancel`) 환불은 취소 파이프라인 산출값이라
+     * 수정 대상이 아니다.
+     *
+     * @param  OrderRefund  $refund  환불신청서
+     * @param  array  $amounts  수정값 (refund_amount? / refund_points_amount? / refund_method?)
+     * @param  int|null  $processedBy  처리 관리자 ID
+     * @return OrderRefund 갱신된 환불신청서
+     *
+     * @throws OrderClaimException 수정 불가 상태 / 음수 / D19 상한 초과 / 비회원 마일리지
+     */
+    public function updateAmounts(OrderRefund $refund, array $amounts, ?int $processedBy = null): OrderRefund
+    {
+        $refundId = (int) $refund->id;
+
+        // 잠금은 D19 상한을 읽기 전에 잡는다 — 접수 경로와 같은 규율이다. 축이 둘이다:
+        // ⓐ 신청서 행 — 같은 신청서를 두 운영자가 동시에 수정하는 read-modify-write 차단,
+        // ⓑ 주문 행 — 상한의 ③ 축은 "다른 미실행 클레임의 저장 금액 합" 이라 주문 전역
+        //    집계다. 자기 행만 잠그면 같은 주문의 서로 다른 두 신청서가 서로 다른 행을
+        //    잠그고 나란히 통과해 합계가 D19 를 넘긴 채로 저장된다. 직렬화 지점은 주문
+        //    행이며, 형제 `executeRefund()` · 접수 경로와 같다(잠금 순서도 신청서 → 주문).
+        return DB::transaction(function () use ($refundId, $amounts, $processedBy) {
+            $refund = $this->refundRepository->findForUpdate($refundId);
+
+            if (! $refund instanceof OrderRefund) {
+                throw OrderClaimException::claimNotFound();
+            }
+
+            if ($refund->refund_source_type === RefundSourceTypeEnum::CANCEL) {
+                throw OrderClaimException::refundNotExecutable();
+            }
+
+            if ($refund->refund_status === RefundStatusEnum::PROCESSING || $refund->refund_status->isFinal()) {
+                throw OrderClaimException::amountsNotEditable();
+            }
+
+            $refund->loadMissing('order');
+            $order = $this->orderRepository->findForUpdate($refund->order_id) ?? $refund->order;
+
+            $updates = $this->normalizeRefundAmountUpdates($order, $refund, $amounts);
+
+            $finalAmount = (float) ($updates['refund_amount'] ?? $refund->refund_amount);
+            $finalPoints = (float) ($updates['refund_points_amount'] ?? $refund->refund_points_amount);
+
+            $this->assertWithinCancellable($order, $refund, $finalAmount + $finalPoints);
+
+            if ($updates === []) {
+                return $refund;
+            }
+
+            if ($processedBy !== null) {
+                $updates['processed_by'] = $processedBy;
+            }
+
+            return $this->refundRepository->update($refund, $updates);
+        });
+    }
+
+    /**
+     * 승인된 환불신청서의 환불을 실행합니다. ('환불하기' — D18·D26·S6b)
+     *
+     * 실행 본문에 금액이 실려 있으면 저장과 같은 검증을 거쳐 먼저 반영한다 — D18 의
+     * "[환불하기]는 화면에 입력된 값으로 실행한다(저장 없이 실행 가능)". 실행 직전에 취소 가능
+     * 금액(D19)을 같은 식으로 재계산해 동시 처리를 차단하고, 한 트랜잭션 안에서 다음을 수행한다:
+     *
+     * 1. (직접 환불신청) 선점만 하던 수량을 취소 상태로 분할·전이 — `OrderCancellationService`
+     *    의 분할 규칙 한 벌을 재사용한다. 재고 복원(설정 준수)·쿠폰 조건 소멸 복원 동반
+     * 2. PG 환불 실행 + 주문 환불 누적(`total_refunded_amount`)·결제행 취소 누적
+     *    (`RefundExecutionService::execute` — 클레임 환불 누적의 단일 지점, §4-3-1)
+     * 3. 사용 마일리지 환급 (`order_refund_id` 멱등 축)
+     * 4. 환불신청서·상품 행 완료 확정 — PG 경로는 `executePgRefund` 가 완료를 찍고,
+     *    비-PG 경로(무통장·마일리지 전액)는 여기서 확정한다 (운영자의 [환불하기]가 곧
+     *    수동 송금 완료 선언이다)
+     *
+     * PG 훅 실행이 트랜잭션 안에 있는 것은 취소 파이프라인과 같은 관례다 — 실패 예외가
+     * 누적·분할을 함께 롤백한다.
+     *
+     * 이미 실행됐거나 실행 중인 건의 재실행(더블클릭)은 `claim_refund_already_executed` 로
+     * 거절한다 — 컨트롤러가 이 사유만 409 로 바꾼다.
+     *
+     * @param  OrderRefund  $refund  환불신청서 (승인 상태)
+     * @param  array  $overrides  실행 시점 금액 (refund_amount? / refund_points_amount? / refund_method?)
+     * @param  int|null  $processedBy  처리 관리자 ID
+     * @return OrderRefund 실행 완료된 환불신청서
+     *
+     * @throws OrderClaimException 실행 불가 출처·상태 / D19 상한 초과 / 재실행
+     * @throws OrderCancellationException PG 환불 실패
+     */
+    public function executeRefund(OrderRefund $refund, array $overrides = [], ?int $processedBy = null): OrderRefund
+    {
+        if ($refund->refund_source_type === RefundSourceTypeEnum::CANCEL) {
+            throw OrderClaimException::refundNotExecutable();
+        }
+
+        $refundId = $refund->id;
+
+        $executed = DB::transaction(function () use ($refundId, $overrides, $processedBy) {
+            // 잠금 후 상태를 다시 판정한다 — 동시 실행 두 건 중 나중 것이 완료 상태를 보고 물러난다.
+            $refund = $this->refundRepository->findForUpdate($refundId);
+
+            if (! $refund) {
+                throw OrderClaimException::claimNotFound();
+            }
+
+            if (in_array($refund->refund_status, [RefundStatusEnum::PROCESSING, RefundStatusEnum::COMPLETED], true)) {
+                throw OrderClaimException::refundAlreadyExecuted();
+            }
+
+            if ($refund->refund_status !== RefundStatusEnum::APPROVED) {
+                throw OrderClaimException::transitionNotAllowed(
+                    $refund->refund_status->label(),
+                    RefundStatusEnum::COMPLETED->label(),
+                );
+            }
+
+            $order = $this->orderRepository->findForUpdate($refund->order_id) ?? $refund->order;
+            $order->load(['options', 'shippings', 'payment', 'payments']);
+
+            // D18 — 실행 본문의 금액을 저장과 같은 검증으로 반영 (저장 없이 실행 가능)
+            $updates = $this->normalizeRefundAmountUpdates($order, $refund, $overrides);
+
+            if ($updates !== []) {
+                $refund = $this->refundRepository->update($refund, $updates);
+            }
+
+            $amount = (float) $refund->refund_amount;
+            $points = (float) $refund->refund_points_amount;
+
+            // 실행 직전 D19 재계산 가드 — 저장 시점과 같은 식 (동시 처리 차단)
+            $this->assertWithinCancellable($order, $refund, $amount + $points);
+
+            $refund->loadMissing('refundOptions');
+
+            $items = [];
+            foreach ($refund->refundOptions as $option) {
+                $items[] = [
+                    'order_option_id' => $option->order_option_id,
+                    'cancel_quantity' => (int) $option->quantity,
+                ];
+            }
+
+            $couponRestore = null;
+
+            if ($refund->refund_source_type === RefundSourceTypeEnum::DIRECT && $items !== []) {
+                // 직접 환불신청 — 선점만 하던 수량이 이 시점에 판매 흐름에서 실제로 빠진다.
+                // 재계산은 쿠폰 조건 소멸 복원 대상을 판정하기 위한 것이며, 환불 금액의 정본은
+                // 신청서 저장값(수정 반영분)이다. 잠금 가드 재검사는 끈다 — 이 수량을 잡고 있는
+                // 것이 바로 이 신청서다.
+                $couponRestore = $this->cancellationService->previewRefund($order, $items, RefundPriorityEnum::PG_FIRST, guardClaimLock: false);
+                $this->cancellationService->cancelOptionQuantitiesForClaim($order, $items, $refund->reason_code);
+            }
+
+            $result = new AdjustmentResult(
+                refundAmount: $amount,
+                refundPointsAmount: $points,
+                restoredCouponIssueIds: $couponRestore?->restoredCouponIssueIds ?? [],
+                mcRefundAmount: $refund->mc_refund_amount ?? [],
+            );
+
+            // 환불 실행 — PG 훅 + 주문 환불 누적 + 결제행 취소 누적 (클레임 누적의 단일 지점)
+            $this->refundExecutionService->execute(
+                $order,
+                $refund,
+                $result,
+                $refund->reason_code,
+                executePg: $refund->refund_method === RefundMethodEnum::PG && $amount > 0,
+            );
+
+            if ($refund->refund_source_type === RefundSourceTypeEnum::DIRECT && $items !== []) {
+                // D7 — 취소·환불은 즉시 복구 (`stock_restore_on_cancel` 설정 준수는 restoreStock 내부).
+                $this->refundExecutionService->restoreStock($order, $items);
+                $this->refundExecutionService->restoreCoupons($order, $couponRestore);
+            }
+
+            // 사용 마일리지 환급 — order_refund_id 멱등 축 (재시도에도 lot 은 한 번만 발행)
+            $this->refundExecutionService->restoreMileage($order, $result, null, $refund);
+
+            // 완료 확정 — PG 경로는 executePgRefund 가 이미 COMPLETED 를 찍었다.
+            $fresh = $this->refundRepository->findById($refund->id) ?? $refund;
+            $finalUpdates = ['processed_by' => $processedBy ?? $fresh->processed_by];
+
+            if ($fresh->refund_status !== RefundStatusEnum::COMPLETED) {
+                $finalUpdates['refund_status'] = RefundStatusEnum::COMPLETED;
+                $finalUpdates['refunded_at'] = Carbon::now();
+            }
+
+            $updated = $this->refundRepository->update($fresh, $finalUpdates);
+
+            $this->refundOptionRepository->bulkUpdateStatus(
+                $updated->id,
+                RefundOptionStatusEnum::COMPLETED->value,
+                $processedBy,
+                Carbon::now(),
+            );
+
+            return $updated->fresh(['refundOptions']);
+        });
+
+        HookManager::doAction(
+            'sirsoft-ecommerce.claim.refund.status_changed',
+            $executed,
+            RefundStatusEnum::APPROVED->value,
+            RefundStatusEnum::COMPLETED->value,
+        );
+        HookManager::doAction('sirsoft-ecommerce.claim.refund.completed', $executed);
+
+        return $executed;
+    }
+
+    /**
+     * 환불액 수정값을 검증하고 갱신 배열로 정규화합니다. (저장·실행 공용)
+     *
+     * D19 상한 검증은 호출부 책임이다 — 저장은 최종값으로 한 번, 실행은 반영 후 실행 직전에
+     * 한 번 검사한다(두 지점이 같은 식을 쓰는 것이 D19 의 계약이고, 여기 넣으면 실행 경로가
+     * 같은 검사를 두 번 한다).
+     *
+     * @param  Order  $order  주문 (통화 스냅샷·회원 판정)
+     * @param  OrderRefund  $refund  환불신청서
+     * @param  array  $amounts  수정값 (refund_amount? / refund_points_amount? / refund_method?)
+     * @return array<string, mixed> 갱신 배열 (다통화 재계산 포함)
+     *
+     * @throws OrderClaimException 음수 / 알 수 없는 환불 수단 / 비회원 마일리지
+     */
+    protected function normalizeRefundAmountUpdates(Order $order, OrderRefund $refund, array $amounts): array
+    {
+        $updates = [];
+        $currencySnapshot = $order->currency_snapshot ?? [];
+
+        if (array_key_exists('refund_amount', $amounts) && $amounts['refund_amount'] !== null) {
+            $amount = (float) $amounts['refund_amount'];
+
+            if ($amount < 0) {
+                throw OrderClaimException::amountInvalid();
+            }
+
+            $updates['refund_amount'] = $amount;
+            // 다통화 표기도 함께 움직인다 — 환율은 주문 currency_snapshot 의 동결 환율이다.
+            $updates['mc_refund_amount'] = ! empty($currencySnapshot)
+                ? $this->currencyService->convertToMultiCurrencyWithSnapshot($amount, $currencySnapshot)
+                : null;
+        }
+
+        if (array_key_exists('refund_points_amount', $amounts) && $amounts['refund_points_amount'] !== null) {
+            $points = (float) $amounts['refund_points_amount'];
+
+            if ($points < 0) {
+                throw OrderClaimException::amountInvalid();
+            }
+
+            // 마일리지 원장은 회원 전용이다 — 비회원 주문에 실으면 환급 대상이 없어 장부만 어긋난다.
+            if ($points > 0 && $order->user_id === null) {
+                throw OrderClaimException::refundPointsRequireMember();
+            }
+
+            $updates['refund_points_amount'] = $points;
+            $updates['mc_refund_points_amount'] = $points > 0 && ! empty($currencySnapshot)
+                ? $this->currencyService->convertToMultiCurrencyWithSnapshot($points, $currencySnapshot)
+                : null;
+        }
+
+        if (array_key_exists('refund_method', $amounts) && $amounts['refund_method'] !== null && $amounts['refund_method'] !== '') {
+            $method = $amounts['refund_method'] instanceof RefundMethodEnum
+                ? $amounts['refund_method']
+                : RefundMethodEnum::tryFrom((string) $amounts['refund_method']);
+
+            if ($method === null) {
+                throw OrderClaimException::amountInvalid();
+            }
+
+            $updates['refund_method'] = $method;
+        }
+
+        return $updates;
+    }
+
+    /**
+     * 요청 환불 총액이 취소 가능 금액(D19) 이내인지 검증합니다. (저장·실행 공용 가드)
+     *
+     * @param  Order  $order  주문
+     * @param  OrderRefund  $refund  환불신청서 (선점 집계에서 자기 자신 제외)
+     * @param  float  $requested  요청 환불 총액 (PG + 마일리지, 기본 통화)
+     *
+     * @throws OrderClaimException D19 상한 초과
+     */
+    protected function assertWithinCancellable(Order $order, OrderRefund $refund, float $requested): void
+    {
+        $cancellable = $this->cancellableCalculator->calculateForRefund($order, $refund);
+
+        if (! $cancellable->allows($requested)) {
+            throw OrderClaimException::refundExceedsCancellable(
+                ecommerce_format_price($requested, $cancellable->currency),
+                ecommerce_format_price($cancellable->amount, $cancellable->currency),
+            );
+        }
     }
 
     /**

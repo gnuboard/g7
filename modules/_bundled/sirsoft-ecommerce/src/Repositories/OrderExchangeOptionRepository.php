@@ -61,6 +61,25 @@ class OrderExchangeOptionRepository implements OrderExchangeOptionRepositoryInte
     /**
      * {@inheritDoc}
      */
+    public function listOptionIdsByExchangeIds(array $exchangeIds): array
+    {
+        if ($exchangeIds === []) {
+            return [];
+        }
+
+        $map = [];
+
+        // 소속 판정에 필요한 두 컬럼만 읽는다 — 결과 크기가 요청에 실린 신청서 수에 묶인다.
+        foreach ($this->model->newQuery()->whereIn('order_exchange_id', $exchangeIds)->get(['id', 'order_exchange_id']) as $row) {
+            $map[(int) $row->order_exchange_id][] = (int) $row->id;
+        }
+
+        return $map;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function bulkUpdateStatus(int $exchangeId, string $status, array $optionIds = []): int
     {
         $query = $this->model->newQuery()

@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Feature\Http\Controllers\User;
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
@@ -357,6 +358,7 @@ class UserOrderControllerTest extends ModuleTestCase
      * 화면은 `?with_items=1` 로 켠다.
      *
      * @scenario surface=my_page_list,option_profile=multiple
+     *
      * @effects my_page_list_default_is_representative_only
      */
     public function test_기본_목록은_대표_아이템_1건과_개수만_싣는다(): void
@@ -386,6 +388,7 @@ class UserOrderControllerTest extends ModuleTestCase
      * 깨지면 주문마다 상품 한 줄만 남는다.
      *
      * @scenario surface=my_page_list,option_profile=multiple
+     *
      * @effects my_page_list_enumerates_every_item_when_requested
      */
     public function test_with_items_1_이면_아이템을_전부_싣는다(): void
@@ -414,6 +417,7 @@ class UserOrderControllerTest extends ModuleTestCase
      * 페이로드를 줄이려다 쿼리를 늘리는 맞바꿈이 된다.
      *
      * @scenario surface=my_page_list,option_profile=multiple
+     *
      * @effects my_page_list_option_query_count_is_constant
      */
     public function test_아이템_조회_쿼리수가_주문수에_비례하지_않는다(): void
@@ -433,7 +437,7 @@ class UserOrderControllerTest extends ModuleTestCase
 
         $measure = function (): int {
             $count = 0;
-            \Illuminate\Support\Facades\DB::listen(function ($query) use (&$count) {
+            DB::listen(function ($query) use (&$count) {
                 if (str_contains($query->sql, 'ecommerce_order_options')) {
                     $count++;
                 }
@@ -465,6 +469,7 @@ class UserOrderControllerTest extends ModuleTestCase
      * null 로 정규화하면 오타 파라미터가 "미지정" 으로 통과해 호출자가 잘못을 알 수 없다.
      *
      * @scenario surface=my_page_list,option_profile=multiple
+     *
      * @effects my_page_list_rejects_unparseable_with_items
      */
     public function test_with_items_에_해석불가한_값이_오면_422(): void
@@ -565,6 +570,34 @@ class UserOrderControllerTest extends ModuleTestCase
             ->assertJsonPath('data.pagination.current_page', 2)
             ->assertJsonPath('data.pagination.per_page', 5)
             ->assertJsonPath('data.pagination.total', 15);
+    }
+
+    /**
+     * 주문 목록 pagination 은 `paginationMeta()` 표준 계약을 싣는다.
+     *
+     * 손조립 블록은 `from`/`to`/`has_more_pages` 를 빠뜨렸고, 저장소가 상한형으로 바뀌면
+     * `total_relation`/`total_is_exact` 까지 통째로 빠져 잘린 총 건수가 정확한 값처럼 나간다.
+     * 기존 4키는 그대로 남으므로 이 단언은 계약 확대만 고정한다.
+     */
+    public function test_주문_목록_페이지네이션_표준_계약(): void
+    {
+        $user = $this->createUser();
+        $this->actingAs($user);
+
+        Order::factory()->count(15)->forUser($user)->pendingPayment()->create();
+
+        $response = $this->getJson('/api/modules/sirsoft-ecommerce/user/orders?per_page=5&page=2');
+
+        $response->assertStatus(200)
+            // 기존 4키 보존
+            ->assertJsonPath('data.pagination.current_page', 2)
+            ->assertJsonPath('data.pagination.last_page', 3)
+            ->assertJsonPath('data.pagination.per_page', 5)
+            ->assertJsonPath('data.pagination.total', 15)
+            // 손조립이 빠뜨렸던 3키
+            ->assertJsonPath('data.pagination.from', 6)
+            ->assertJsonPath('data.pagination.to', 10)
+            ->assertJsonPath('data.pagination.has_more_pages', true);
     }
 
     /**

@@ -1918,6 +1918,25 @@ return [
             'custom_options_array' => 'Custom option inputs must be an array.',
             'id_integer' => 'The claim item row ID must be a number.',
             'not_in_claim' => 'The request contains an item that does not belong to this claim.',
+            'not_in_order' => 'The request contains an item that does not belong to this order.',
+            'prohibited_with_refund' => 'The refund-request context and the selected-item context cannot be used together. Send only one of them.',
+        ],
+        // Admin amount updates (D18)
+        'amounts' => [
+            'numeric' => 'The amount must be a number.',
+            'min' => 'The amount must be at least 0.',
+            'prohibited' => 'The request contains a field that cannot be modified for this claim type.',
+        ],
+        'refund_method' => [
+            'in' => 'The selected refund method is not available.',
+        ],
+        // Completion modal preview (D26)
+        'preview_claims' => [
+            'required' => 'Select the claims to preview.',
+            'array' => 'The claims list must be an array.',
+            'max' => 'You can preview up to :max claims at once.',
+            'id_required' => 'Specify the claim ID.',
+            'id_integer' => 'The claim ID must be a number.',
         ],
         'reason_code' => [
             'required' => 'Please select a reason.',

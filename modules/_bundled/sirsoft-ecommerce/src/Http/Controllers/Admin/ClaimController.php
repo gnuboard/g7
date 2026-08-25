@@ -8,17 +8,23 @@ use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
+use Modules\Sirsoft\Ecommerce\Exceptions\OrderCancellationException;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderClaimException;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Traits\MapsClaimErrors;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\BulkClaimOptionStatusRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\BulkClaimStatusRequest;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\CancellableAmountRequest;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\ClaimCompletionPreviewRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\ClaimListRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\ClaimTrackingRequest;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\ExecuteRefundRequest;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\UpdateClaimAmountsRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\UpdateClaimStatusRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\UploadClaimImageRequest;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ClaimAdminCollection;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ClaimImageResource;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ClaimResource;
+use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
@@ -212,6 +218,188 @@ class ClaimController extends AdminBaseController
             return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             return $this->claimServerError('admin-option-status', $e);
+        }
+    }
+
+    /**
+     * 신청서 금액을 수정합니다. (D18 — 교환·반품: 배송비·청구방식·메모 / 환불: 환불액·환불수단)
+     *
+     * 환불액의 상한은 취소 가능 금액(D19)이며 초과는 저장·실행 모두 422 다.
+     *
+     * @param  UpdateClaimAmountsRequest  $request  금액 수정 요청
+     * @param  string  $claimType  유형 세그먼트 (exchanges/returns/refunds)
+     * @param  int  $id  신청서 ID
+     * @return JsonResponse 수정 결과 응답
+     */
+    public function updateAmounts(UpdateClaimAmountsRequest $request, string $claimType, int $id): JsonResponse
+    {
+        $type = $this->claimTypeOf($claimType);
+        $claim = $this->adminClaimService->findForTransition($type, $id);
+
+        if (! $claim) {
+            return $this->claimNotFound();
+        }
+
+        try {
+            $this->adminClaimService->updateAmounts($claim, $request->amounts(), Auth::id());
+
+            return ResponseHelper::moduleSuccess(
+                'sirsoft-ecommerce',
+                'messages.claims.amounts_updated',
+                ['claim' => $this->detailResource($this->adminClaimService->findForDetail($type, $id))]
+            );
+        } catch (OrderClaimException $e) {
+            return $this->claimDomainError($e);
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
+        } catch (Exception $e) {
+            return $this->claimServerError('admin-update-amounts', $e);
+        }
+    }
+
+    /**
+     * 주문의 취소 가능 금액(D19)을 조회합니다. (환불 상세·주문상세 환불 모달 공용)
+     *
+     * @param  CancellableAmountRequest  $request  조회 요청 (refund_id 또는 items 문맥)
+     * @param  Order  $order  대상 주문
+     * @return JsonResponse 산정 결과 응답
+     */
+    public function cancellableAmount(CancellableAmountRequest $request, Order $order): JsonResponse
+    {
+        try {
+            $result = $this->adminClaimService->cancellableAmountForOrder(
+                $order,
+                $request->refundId(),
+                $request->items(),
+            );
+
+            if ($result === null) {
+                return $this->claimNotFound();
+            }
+
+            return ResponseHelper::moduleSuccess(
+                'sirsoft-ecommerce',
+                'messages.claims.cancellable_retrieved',
+                ['cancellable' => $result->toArray()]
+            );
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
+        } catch (Exception $e) {
+            return $this->claimServerError('admin-cancellable-amount', $e);
+        }
+    }
+
+    /**
+     * 승인된 환불신청서의 환불을 실행합니다. ('환불하기' — D18·D19)
+     *
+     * 이미 실행됐거나 실행 중인 건(더블클릭)은 409, D19 상한 초과·상태 위반은 422,
+     * PG 환불 거절은 422 + 조치 근거(`detail`)다.
+     *
+     * @param  ExecuteRefundRequest  $request  실행 요청 (본문 금액은 선택)
+     * @param  int  $id  환불신청서 ID
+     * @return JsonResponse 실행 결과 응답
+     */
+    public function executeRefund(ExecuteRefundRequest $request, int $id): JsonResponse
+    {
+        $claim = $this->adminClaimService->findForTransition(ClaimTypeEnum::REFUND, $id);
+
+        if (! $claim instanceof OrderRefund) {
+            return $this->claimNotFound();
+        }
+
+        try {
+            $this->adminClaimService->executeRefund($claim, $request->overrides(), Auth::id());
+
+            return ResponseHelper::moduleSuccess(
+                'sirsoft-ecommerce',
+                'messages.claims.refund_executed',
+                ['claim' => $this->detailResource($this->adminClaimService->findForDetail(ClaimTypeEnum::REFUND, $id))]
+            );
+        } catch (OrderClaimException $e) {
+            // 재실행(더블클릭)만 409 — 충돌이지 입력 오류가 아니다. 화면은 새로고침을 안내한다.
+            if ($e->getMessageKey() === 'sirsoft-ecommerce::exceptions.claim_refund_already_executed') {
+                $messageKey = $e->getMessageKey();
+
+                return ResponseHelper::error($messageKey, 409);
+            }
+
+            return $this->claimDomainError($e);
+        } catch (OrderCancellationException $e) {
+            // PG 환불 거절 — 관리자 전용 면의 errors 페이로드는 조치 근거로 허용된다 (취소 경로 선례).
+            return ResponseHelper::moduleError(
+                'sirsoft-ecommerce',
+                'messages.claims.refund_execute_failed',
+                422,
+                ['detail' => $e->getMessage()]
+            );
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
+        } catch (Exception $e) {
+            return $this->claimServerError('admin-execute-refund', $e);
+        }
+    }
+
+    /**
+     * 완료 처리 모달의 미리보기 요약을 조회합니다. (D26 — 3개 진입점 공용 모달의 SSoT)
+     *
+     * @param  ClaimCompletionPreviewRequest  $request  미리보기 요청
+     * @return JsonResponse 미리보기 응답
+     */
+    public function completionPreview(ClaimCompletionPreviewRequest $request): JsonResponse
+    {
+        try {
+            $preview = $this->adminClaimService->completionPreview(
+                $request->claimType(),
+                $request->claims(),
+                $request->createRefundRequest(),
+            );
+
+            return ResponseHelper::moduleSuccess(
+                'sirsoft-ecommerce',
+                'messages.claims.completion_preview_retrieved',
+                $preview
+            );
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
+        } catch (Exception $e) {
+            return $this->claimServerError('admin-completion-preview', $e);
+        }
+    }
+
+    /**
+     * 완료된 신청서에 환불신청서를 수동 접수합니다. (D26 — 완료 시 접수하지 않은 건)
+     *
+     * 전부 접수됐으면 `claim_refund_request_exists`, 환불 대상이 없으면
+     * `claim_refund_not_applicable` — 화면은 두 사유를 구분해 안내한다.
+     *
+     * @param  string  $claimType  유형 세그먼트 (exchanges/returns)
+     * @param  int  $id  신청서 ID
+     * @return JsonResponse 접수 결과 응답
+     */
+    public function storeRefundRequest(string $claimType, int $id): JsonResponse
+    {
+        $type = $this->claimTypeOf($claimType);
+        $claim = $this->adminClaimService->findForTransition($type, $id);
+
+        if (! $claim instanceof OrderExchange && ! $claim instanceof OrderReturn) {
+            return $this->claimNotFound();
+        }
+
+        try {
+            $refund = $this->adminClaimService->createRefundRequestForCompleted($claim, Auth::id());
+
+            return ResponseHelper::moduleSuccess(
+                'sirsoft-ecommerce',
+                'messages.claims.refund_request_created',
+                ['refund' => (new ClaimResource($refund))->withAdminFields()],
+                201
+            );
+        } catch (OrderClaimException $e) {
+            return $this->claimDomainError($e);
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
+        } catch (Exception $e) {
+            return $this->claimServerError('admin-refund-request', $e);
         }
     }
 

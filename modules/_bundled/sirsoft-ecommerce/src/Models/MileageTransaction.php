@@ -30,6 +30,7 @@ class MileageTransaction extends Model
         'order_option_id',
         'order_cancel_id',
         'claim_payment_id',
+        'order_refund_id',
         'source_transaction_id',
         'granted_by',
         'description',
@@ -49,6 +50,7 @@ class MileageTransaction extends Model
         return [
             'type' => MileageTransactionTypeEnum::class,
             'claim_payment_id' => 'integer',
+            'order_refund_id' => 'integer',
             'amount' => 'decimal:2',
             'remaining_amount' => 'decimal:2',
             'balance_after' => 'decimal:2',

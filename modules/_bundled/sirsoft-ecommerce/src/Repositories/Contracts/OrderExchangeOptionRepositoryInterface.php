@@ -46,6 +46,17 @@ interface OrderExchangeOptionRepositoryInterface
     public function listByExchangeId(int $exchangeId, array $relations = []): Collection;
 
     /**
+     * 여러 교환 신청서의 상품 행 ID 를 신청서별로 묶어 한 번에 조회합니다.
+     *
+     * 다건 요청(완료 미리보기)의 소속 검증용이다. 행마다 `exists` 를 걸면 신청서 수 ×
+     * 상품 수만큼 쿼리가 나가므로 한 번에 읽어 메모리에서 판정한다.
+     *
+     * @param  array<int, int>  $exchangeIds  교환 신청서 ID 목록
+     * @return array<int, array<int, int>> 신청서 ID => 상품 행 ID 목록
+     */
+    public function listOptionIdsByExchangeIds(array $exchangeIds): array;
+
+    /**
      * 교환 신청서의 신청 상품 상태를 일괄 변경합니다.
      *
      * @param  int  $exchangeId  교환 신청서 ID

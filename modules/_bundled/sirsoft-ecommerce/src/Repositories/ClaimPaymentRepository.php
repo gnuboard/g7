@@ -84,11 +84,12 @@ class ClaimPaymentRepository implements ClaimPaymentRepositoryInterface
     public function sumPaidAmount(string $payableType, int $payableId): float
     {
         // 부분 환급(재발송지 수정 차액)을 뺀 실수납 잔액을 합산한다 — 상태만 보면 환급된 차액이 수납으로 남는다.
+        // 실수납 판정(netPaidAmount)이 행 단위 규칙이라 DB 집계로 내리지 않는다.
         return (float) $this->model->newQuery()
             ->where('payable_type', $payableType)
             ->where('payable_id', $payableId)
             ->where('payment_status', ClaimPaymentStatusEnum::PAID->value)
-            ->get()
+            ->get() // audit:allow query-unbounded-get reason: 한 신청서의 결제 건 목록 — 건수가 그 신청서의 청구 횟수(운영자 금액 수정·재청구)에 묶인다
             ->sum(fn (ClaimPayment $payment) => $payment->netPaidAmount());
     }
 
@@ -148,10 +149,11 @@ class ClaimPaymentRepository implements ClaimPaymentRepositoryInterface
      */
     public function sumNetPaidByOrder(int $orderId): array
     {
+        // 다통화 안분(부분 환급 비율 × 결제 시점 동결 mc 맵)이 행 단위 계산이라 DB 집계로 내리지 않는다.
         $payments = $this->model->newQuery()
             ->where('order_id', $orderId)
             ->where('payment_status', ClaimPaymentStatusEnum::PAID->value)
-            ->get();
+            ->get(); // audit:allow query-unbounded-get reason: 한 주문의 결제 완료 건 목록 — 건수가 그 주문의 클레임 신청·재청구 횟수에 묶인다
 
         $total = 0.0;
         $mc = [];

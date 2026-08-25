@@ -3,16 +3,21 @@
 namespace Modules\Sirsoft\Ecommerce\Tests\Concerns;
 
 use App\Extension\HookManager;
+use Modules\Sirsoft\Ecommerce\Database\Factories\ProductOptionFactory;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimChargeMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimReasonFaultTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\MileageTransactionTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
 use Modules\Sirsoft\Ecommerce\Models\MileageTransaction;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderAddress;
+use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderShipping;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
+use Modules\Sirsoft\Ecommerce\Services\OrderExchangeService;
 
 /**
  * 클레임 신청 흐름 테스트용 주문 조립 헬퍼 (S5)
@@ -260,5 +265,87 @@ trait BuildsClaimFlowOrders
                 'KRW' => ['rate' => 1, 'decimal_places' => 0, 'rounding_unit' => '1', 'rounding_method' => 'floor'],
             ],
         ];
+    }
+
+    /**
+     * 결제 통화가 기본 통화와 다른 배송완료 주문을 만듭니다. (다통화 잔여 한도 축)
+     *
+     * D19 의 수단별 잔여는 결제 통화 원값(`remaining_local`)과 기본 통화 환산값
+     * (`remaining_base`)을 함께 싣는다. 두 값이 같은 KRW 단일 통화 주문만으로는
+     * 화면이 어느 쪽을 읽든 통과하므로 단위 오류가 드러나지 않는다.
+     *
+     * @param  float  $rate  기본 통화 1단위당 결제 통화 환율 (기본 0.001 = 1 USD ↔ 1,000 KRW)
+     * @param  float  $paidLocal  결제 통화 실청구액
+     * @return Order 배송완료 주문 (결제행 통화 USD)
+     */
+    protected function foreignPaidClaimOrder(float $rate = 0.001, float $paidLocal = 50): Order
+    {
+        return $this->deliveredClaimOrder(
+            orderOverrides: ['currency_snapshot' => [
+                'base_currency' => 'KRW',
+                'order_currency' => 'USD',
+                'base_unit' => 1,
+                'exchange_rates' => [
+                    'KRW' => ['rate' => 1, 'decimal_places' => 0, 'rounding_unit' => '1', 'rounding_method' => 'floor'],
+                    'USD' => ['rate' => $rate, 'decimal_places' => 2, 'rounding_unit' => '0.01', 'rounding_method' => 'floor'],
+                ],
+            ]],
+            paymentOverrides: [
+                'currency' => 'USD',
+                'paid_amount_local' => $paidLocal,
+                'paid_amount_base' => $paidLocal / $rate,
+            ],
+        );
+    }
+
+    /**
+     * 저가 옵션으로 교환해 재발송완료까지 진행한 교환을 만듭니다. (완료 직전 — 환불 차액 有)
+     *
+     * D19 ① 축의 교환 분기는 재계산 산출물이 아니라 신청 시점 동결값(`refund_product_amount`)을
+     * 정본으로 삼는다. 그 값이 살아 있는 픽스처가 있어야 교환 발 환불신청서의 산정·실행을 잴 수 있다.
+     *
+     * 왕복 배송비는 '환불금 차감'이다 — 차액에서 배송비를 빼는 접수 산식(`deducted_shipping_fee`)이
+     * 교환 발 환불신청서의 정상 형태이고, 차액이 배송비보다 커야 접수가 성립한다.
+     *
+     * @param  int  $priceAdjustment  교환 대상 옵션의 가격 조정 (음수 = 저가)
+     * @return array{0: Order, 1: OrderExchange} 주문 + 교환 (REDELIVERED)
+     */
+    protected function redeliveredLowerPricedExchange(int $priceAdjustment = -10000): array
+    {
+        $order = $this->deliveredClaimOrder();
+        $service = app(OrderExchangeService::class);
+
+        $newOption = ProductOptionFactory::new()
+            ->forProduct($order->options->first()->product)
+            ->create([
+                'price_adjustment' => $priceAdjustment,
+                'stock_quantity' => 100,
+                'is_default' => false,
+                'is_active' => true,
+            ]);
+
+        $exchange = $service->requestExchange($order, [
+            'items' => [[
+                'order_option_id' => $order->options->first()->id,
+                'quantity' => 1,
+                'new_product_option_id' => $newOption->id,
+            ]],
+            'reason_code' => 'size_mismatch',
+            'charge_method' => ClaimChargeMethodEnum::DEDUCT_FROM_REFUND,
+        ]);
+
+        foreach ([
+            ExchangeStatusEnum::APPROVED,
+            ExchangeStatusEnum::COLLECTION_READY,
+            ExchangeStatusEnum::COLLECTING,
+            ExchangeStatusEnum::COLLECTED,
+            ExchangeStatusEnum::REDELIVERY_READY,
+            ExchangeStatusEnum::REDELIVERING,
+            ExchangeStatusEnum::REDELIVERED,
+        ] as $step) {
+            $exchange = $service->transition($exchange, $step);
+        }
+
+        return [$order->fresh(['options', 'shippings', 'payments']), $exchange->fresh(['exchangeOptions'])];
     }
 }

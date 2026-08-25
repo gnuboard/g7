@@ -106,6 +106,105 @@ class CancellableAmountCalculator
             ->calculate($order, $adjustment, $refundPriority)
             ->getTotalRefundAmount();
 
+        return $this->assembleFromDomain($order, $domainRefundable, $excludeClaims, $refundPriority);
+    }
+
+    /**
+     * 환불신청서 1건의 취소 가능 금액을 산정합니다. (D18 저장·환불 실행 가드 공용)
+     *
+     * "저장 시점과 실행 직전 두 번 같은 식으로 재계산한다" 의 그 '같은 식'이다 — 환불액 수정
+     * API 와 환불 실행 API, 그리고 환불 상세 화면(`cancellable-amount?refund_id=`)이 모두 이
+     * 메서드를 읽는다. 선점(③) 집계에서 자기 자신은 반드시 빠진다 — 자기 금액을 스스로 빼면
+     * 한도가 0 이 되어 정당한 환불이 막힌다.
+     *
+     * 출처별 ① 축:
+     * - `direct`: 신청 상품으로 취소 재계산 (취소·환불 신청과 같은 산식)
+     * - `return`: 원 반품의 회수배송비·청구방식을 실은 반품 재계산 (완료 접수와 같은 산식)
+     * - `exchange`: 교환이 동결한 차액 순액(`refund_product_amount`)에서 다른 환불신청서가 이미
+     *   접수한 몫을 뺀 잔여 — 교환 차액은 재계산 산출물이 아니라 신청 시점 동결값이 정본이다
+     * - 출처 소실·취소 발(`cancel`): 저장된 환불액 자체를 상한으로 삼는다 (②·③ 축은 그대로 작동)
+     *
+     * @param  Order  $order  대상 주문
+     * @param  OrderRefund  $refund  환불신청서
+     * @param  RefundPriorityEnum  $refundPriority  환불 우선순위
+     * @return CancellableAmount 산정 결과
+     */
+    public function calculateForRefund(
+        Order $order,
+        OrderRefund $refund,
+        RefundPriorityEnum $refundPriority = RefundPriorityEnum::PG_FIRST,
+    ): CancellableAmount {
+        $order->loadMissing(['options', 'shippings', 'payments']);
+        $refund->loadMissing('refundOptions');
+
+        $excludeClaims = [ClaimTypeEnum::REFUND->value => [$refund->id]];
+
+        $items = [];
+        foreach ($refund->refundOptions as $option) {
+            $items[] = [
+                'order_option_id' => $option->order_option_id,
+                'cancel_quantity' => (int) $option->quantity,
+            ];
+        }
+
+        if ($refund->refund_source_type === RefundSourceTypeEnum::DIRECT && $items !== []) {
+            return $this->calculate($order, $items, ClaimTypeEnum::REFUND, null, $excludeClaims, $refundPriority);
+        }
+
+        if ($refund->refund_source_type === RefundSourceTypeEnum::RETURN && $items !== []) {
+            $sourceReturn = $refund->refund_source_id !== null
+                ? $this->returnRepository->findById($refund->refund_source_id)
+                : null;
+
+            if ($sourceReturn !== null) {
+                $excludeClaims[ClaimTypeEnum::RETURN->value] = [$sourceReturn->id];
+
+                $adjustment = new ReturnAdjustment(
+                    returnItems: $items,
+                    collectionFee: (int) round((float) $sourceReturn->claim_shipping_fee),
+                    chargeMethod: $sourceReturn->charge_method,
+                );
+
+                return $this->calculate($order, $items, ClaimTypeEnum::RETURN, $adjustment, $excludeClaims, $refundPriority);
+            }
+        }
+
+        if ($refund->refund_source_type === RefundSourceTypeEnum::EXCHANGE && $refund->refund_source_id !== null) {
+            $sourceExchange = $this->exchangeRepository->findById($refund->refund_source_id);
+
+            if ($sourceExchange !== null) {
+                $domainRefundable = max(
+                    0.0,
+                    (float) $sourceExchange->refund_product_amount
+                        - $this->filedExchangeRefundTotal($sourceExchange, $refund->id),
+                );
+
+                return $this->assembleFromDomain($order, $domainRefundable, $excludeClaims, $refundPriority);
+            }
+        }
+
+        // 출처 소실(원 신청서 삭제)·취소 발 — 재계산 근거가 없으므로 저장된 환불액을 상한으로 둔다.
+        // 결제수단 잔여(②)·선점(③) 축은 그대로 작동해 초과 실행을 막는다.
+        $domainRefundable = (float) $refund->refund_amount + (float) $refund->refund_points_amount;
+
+        return $this->assembleFromDomain($order, $domainRefundable, $excludeClaims, $refundPriority);
+    }
+
+    /**
+     * ① 축 값에 ②·③ 축을 얹어 산정 결과를 조립합니다.
+     *
+     * @param  Order  $order  대상 주문
+     * @param  float  $domainRefundable  ① 도메인 환불 대상 금액
+     * @param  array<string, array<int>>  $excludeClaims  선점 계산 제외 클레임
+     * @param  RefundPriorityEnum  $refundPriority  환불 우선순위
+     * @return CancellableAmount 산정 결과
+     */
+    protected function assembleFromDomain(
+        Order $order,
+        float $domainRefundable,
+        array $excludeClaims,
+        RefundPriorityEnum $refundPriority,
+    ): CancellableAmount {
         // ② 결제수단 잔여 한도.
         [$paymentCapacity, $methods] = $this->resolvePaymentCapacity($order);
 
@@ -349,13 +448,14 @@ class CancellableAmountCalculator
      * 완료된 환불도 포함한다 — 그 돈은 이미 나가 ② 축(결제수단 잔여)에서 빠져 있다.
      *
      * @param  OrderExchange  $exchange  교환 신청서
+     * @param  int|null  $excludeRefundId  집계에서 뺄 환불신청서 ID (실행·수정 중인 자기 자신)
      * @return float 접수된 차액 총액
      */
-    protected function filedExchangeRefundTotal(OrderExchange $exchange): float
+    protected function filedExchangeRefundTotal(OrderExchange $exchange, ?int $excludeRefundId = null): float
     {
         return (float) $this->refundRepository
             ->listBySource(RefundSourceTypeEnum::EXCHANGE->value, $exchange->id)
-            ->reject(fn (OrderRefund $refund) => in_array(
+            ->reject(fn (OrderRefund $refund) => $refund->id === $excludeRefundId || in_array(
                 $refund->refund_status,
                 [RefundStatusEnum::REJECTED, RefundStatusEnum::WITHDRAWN],
                 true,
@@ -471,6 +571,21 @@ class CancellableAmountCalculator
      * @param  Order  $order  대상 주문
      * @return string 기본 통화 코드
      */
+    /**
+     * 되돌릴 대상이 없는 주문의 0 상한 결과를 반환합니다.
+     *
+     * 통화 해석은 이 클래스가 소유한다 — 호출부가 `currency_snapshot` 을 직접 읽으면
+     * 스냅샷 없는 주문에서만 `currency: null` 이 나가, 같은 엔드포인트가 조건에 따라
+     * 통화 코드를 주기도 안 주기도 하는 비대칭이 된다.
+     *
+     * @param  Order  $order  대상 주문
+     * @return CancellableAmount 0 상한 결과
+     */
+    public function emptyFor(Order $order): CancellableAmount
+    {
+        return new CancellableAmount(currency: $this->resolveBaseCurrency($order));
+    }
+
     protected function resolveBaseCurrency(Order $order): string
     {
         $snapshot = $order->currency_snapshot ?? [];

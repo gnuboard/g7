@@ -338,6 +338,15 @@ class OrderController extends AdminBaseController
                 'messages.orders.estimate_refund_success',
                 $result->toPreviewArray()
             );
+        } catch (OrderCancellationException $e) {
+            // 클레임 수량 잠금 등 도메인 거절 — 실행(cancelOrder)과 같은 422 로 미리보기/실행 비대칭을 없앤다.
+            // detail 은 조치 근거다 — 관리자 전용 면의 errors 페이로드는 진단 정보로 허용된다.
+            return ResponseHelper::moduleError(
+                'sirsoft-ecommerce',
+                'messages.orders.estimate_refund_failed',
+                422,
+                ['detail' => $e->getMessage()]
+            );
         } catch (AccessDeniedHttpException $e) {
             return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {

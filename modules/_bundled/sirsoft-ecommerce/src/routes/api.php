@@ -1489,18 +1489,29 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         Route::post('/{order}/cash-receipt/reissue', [CashReceiptController::class, 'reissue'])
             ->middleware('permission:admin,sirsoft-ecommerce.orders.update')
             ->name('admin.orders.cash-receipt.reissue');
+
+        // 취소 가능 금액 산정 (D19 — 환불 상세 화면·주문상세 환불 모달 공용)
+        // GET /api/modules/sirsoft-ecommerce/admin/orders/{order}/cancellable-amount
+        Route::get('/{order}/cancellable-amount', [AdminClaimController::class, 'cancellableAmount'])
+            ->middleware('permission:admin,sirsoft-ecommerce.claims.read')
+            ->name('admin.claims.cancellable-amount');
     });
 
     // 클레임(취소/반품/교환) 관리 API
     // GET    /api/modules/sirsoft-ecommerce/admin/claims - 통합 목록 (유형 서브탭 + 건수 뱃지)
     // POST   /api/modules/sirsoft-ecommerce/admin/claims/bulk-status - 일괄 전이 (부분 성공 계약)
+    // POST   /api/modules/sirsoft-ecommerce/admin/claims/completion-preview - 완료 처리 모달 미리보기 (D26)
     // GET    /api/modules/sirsoft-ecommerce/admin/{claimType}/{id} - 상세 (exchanges/returns/refunds)
     // PATCH  /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/status - 단건 전이 (완료 시 completion 필수)
+    // PUT    /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/amounts - 금액 수정 (D18)
     // POST   /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/images - 운영자 대리 첨부
     // DELETE /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/images - 첨부 일괄 정리
     // PATCH  /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/options/bulk-status - 상품 단위 일괄 전이 (교환·반품)
+    // POST   /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/refund-request - 환불신청서 수동 접수 (교환·반품, D26)
     // PUT    /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/collection-tracking - 회수 송장 (교환·반품)
     // PUT    /api/modules/sirsoft-ecommerce/admin/exchanges/{id}/redelivery-tracking - 재발송 송장 (교환)
+    // POST   /api/modules/sirsoft-ecommerce/admin/refunds/{id}/execute - 환불 실행 (D18·D19)
+    // GET    /api/modules/sirsoft-ecommerce/admin/orders/{order}/cancellable-amount - 취소 가능 금액 (D19, orders 그룹에 등록)
     Route::prefix('claims')->group(function () {
         Route::get('/', [AdminClaimController::class, 'index'])
             ->middleware('permission:admin,sirsoft-ecommerce.claims.read')
@@ -1509,6 +1520,10 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         Route::post('/bulk-status', [AdminClaimController::class, 'bulkStatus'])
             ->middleware('permission:admin,sirsoft-ecommerce.claims.update-status')
             ->name('admin.claims.bulk-status');
+
+        Route::post('/completion-preview', [AdminClaimController::class, 'completionPreview'])
+            ->middleware('permission:admin,sirsoft-ecommerce.claims.update-status')
+            ->name('admin.claims.completion-preview');
     });
 
     // 유형 스코프 세그먼트(`{claimType}`)의 어휘는 ClaimTypeEnum::adminPathSegments() 가 단일
@@ -1525,6 +1540,11 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
                 ->whereNumber('id')
                 ->middleware('permission:admin,sirsoft-ecommerce.claims.update-status')
                 ->name('admin.claims.status');
+
+            Route::put('/{id}/amounts', [AdminClaimController::class, 'updateAmounts'])
+                ->whereNumber('id')
+                ->middleware('permission:admin,sirsoft-ecommerce.claims.update-amounts')
+                ->name('admin.claims.amounts');
 
             Route::post('/{id}/images', [AdminClaimController::class, 'storeImage'])
                 ->whereNumber('id')
@@ -1550,6 +1570,11 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
                 ->whereNumber('id')
                 ->middleware('permission:admin,sirsoft-ecommerce.claims.update-status')
                 ->name('admin.claims.collection-tracking');
+
+            Route::post('/{id}/refund-request', [AdminClaimController::class, 'storeRefundRequest'])
+                ->whereNumber('id')
+                ->middleware('permission:admin,sirsoft-ecommerce.claims.update-status')
+                ->name('admin.claims.refund-request');
         });
 
     // 재발송 송장 (교환 전용)
@@ -1558,6 +1583,13 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         ->whereNumber('id')
         ->middleware('permission:admin,sirsoft-ecommerce.claims.update-status')
         ->name('admin.claims.redelivery-tracking');
+
+    // 환불 실행 ('환불하기' — 승인된 환불신청서 전용, D18·D19)
+    // POST /api/modules/sirsoft-ecommerce/admin/refunds/{id}/execute
+    Route::post('refunds/{id}/execute', [AdminClaimController::class, 'executeRefund'])
+        ->whereNumber('id')
+        ->middleware('permission:admin,sirsoft-ecommerce.claims.execute-refund')
+        ->name('admin.claims.refunds.execute');
 
     // 리뷰 관리 API (관리자)
     // GET    /api/modules/sirsoft-ecommerce/admin/reviews - 리뷰 목록 조회

@@ -500,6 +500,64 @@ class UserMileageService
     }
 
     /**
+     * 클레임 환불 실행 시 사용 마일리지를 환급합니다. (order_refund_id 멱등, 신규 lot)
+     *
+     * 취소 발 복원(`restoreForCancel`)과 같은 정책(신규 lot, 복원 시점 + expiry_days)이며
+     * 멱등 축만 다르다 — 클레임 환불(교환·반품·직접 환불신청)은 OrderCancel 이 없어
+     * 환불 레코드(`order_refund_id`)가 멱등 기준이다. 같은 환불의 실행이 재시도되어도
+     * 환급 lot 은 한 번만 발행된다.
+     *
+     * @param  int  $userId  사용자 ID
+     * @param  int  $orderId  주문 ID
+     * @param  int  $orderRefundId  주문 환불 ID (멱등 기준)
+     * @param  float  $amount  환급액
+     * @param  string  $currency  통화 코드
+     * @return MileageTransaction|null 환급 거래 (이미 환급됐거나 0원이면 null)
+     */
+    public function restoreForRefund(int $userId, int $orderId, int $orderRefundId, float $amount, string $currency): ?MileageTransaction
+    {
+        if ($this->ledger->existsRestoreForRefund($orderRefundId)) {
+            return null;
+        }
+
+        if ($amount <= 0) {
+            return null;
+        }
+
+        $expiresAt = $this->resolveEarnExpiry();
+
+        $tx = $this->ledger->createTransaction([
+            'user_id' => $userId,
+            'currency' => $currency,
+            // 환불 발 환급이므로 '환불 복원' 이다 — 취소 발과 같은 타입을 쓰면 원장 라벨이
+            // "주문취소 복원" 으로 나가 실제 사유와 어긋난다. 멱등 판정(existsRestoreForRefund)은
+            // 두 타입을 모두 받으므로 축은 그대로다.
+            'type' => MileageTransactionTypeEnum::REFUND_RESTORE->value,
+            'amount' => $amount,
+            'remaining_amount' => $amount,
+            'balance_after' => $this->ledger->getBalanceByCurrency($userId, $currency) + $amount,
+            'order_id' => $orderId,
+            'order_refund_id' => $orderRefundId,
+            'expires_at' => $expiresAt,
+            'description' => __('sirsoft-ecommerce::activity_log.description.mileage_restore', ['amount' => ecommerce_format_price($amount, $currency)]),
+        ]);
+
+        // 원 사용 거래에 동일 order_refund_id 역주입 — 환급 ↔ 원 사용 거래 연결 (취소 축과 대칭)
+        $this->ledger->linkUsageToRefund($orderId, $orderRefundId);
+
+        $this->cache->recalculateForUser($userId, $currency);
+
+        $this->logActivity('mileage.restore', [
+            'loggable' => $tx,
+            'description_key' => 'sirsoft-ecommerce::activity_log.description.mileage_restore',
+            'description_params' => ['amount' => ecommerce_format_price((int) $amount, $currency)],
+            'properties' => ['order_id' => $orderId, 'order_refund_id' => $orderRefundId, 'currency' => $currency],
+        ]);
+
+        return $tx;
+    }
+
+    /**
      * 결제 실패/결제창 닫기로 인한 주문 취소 시 사용 마일리지를 복원합니다.
      *
      * 정식 주문취소(OrderCancel 레코드 + 환불 정산)와 달리, 결제 완료 전 주문이

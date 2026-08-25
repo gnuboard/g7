@@ -331,15 +331,21 @@ class RefundExecutionService
     /**
      * 마일리지를 복원합니다.
      *
-     * 멱등 축이 mileage_transactions.order_cancel_id 라 현재는 취소 발 복원만 받는다.
-     * 클레임 발 복원은 그 멱등 축을 정하는 세션(S3/S4)이 인자를 넓힌다.
+     * 멱등 축은 두 갈래다 — 취소 발 복원은 `order_cancel_id`, 클레임 환불 실행(S6b)의 사용
+     * 마일리지 환급은 `order_refund_id`. 복원 리스너가 취소 축을 우선 해석하므로 두 축을
+     * 동시에 넘기지 않는다.
      *
      * @param  Order  $order  주문
      * @param  AdjustmentResult  $result  계산 결과
-     * @param  OrderCancel|null  $orderCancel  취소 레코드 (복원 멱등 기준)
+     * @param  OrderCancel|null  $orderCancel  취소 레코드 (취소 발 복원 멱등 기준)
+     * @param  OrderRefund|null  $orderRefund  환불 레코드 (클레임 환불 실행 멱등 기준)
      */
-    public function restoreMileage(Order $order, AdjustmentResult $result, ?OrderCancel $orderCancel = null): void
-    {
+    public function restoreMileage(
+        Order $order,
+        AdjustmentResult $result,
+        ?OrderCancel $orderCancel = null,
+        ?OrderRefund $orderRefund = null,
+    ): void {
         // 실제 차감이 일어난 주문만 복원한다. 결제수단별 차감 시점이 payment_complete 인데
         // 결제 전 취소되어 마일리지가 차감된 적 없는 주문(is_mileage_deducted=false)은 복원 대상이 아니다.
         // 가드가 없으면 사용 의도(total_points_used_amount)만으로 신규 lot 이 발행되어 유령 적립이 발생한다.
@@ -353,7 +359,8 @@ class RefundExecutionService
                     'sirsoft-ecommerce.mileage.restore',
                     $result->refundPointsAmount,
                     $order,
-                    $orderCancel?->id
+                    $orderCancel?->id,
+                    $orderRefund?->id
                 );
             } catch (\Exception $e) {
                 Log::warning('마일리지 복원 실패', [

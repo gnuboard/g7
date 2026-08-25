@@ -454,4 +454,40 @@ class GuestClaimApiTest extends ModuleTestCase
             __('sirsoft-ecommerce::exceptions.claim_not_found'),
         );
     }
+
+    // ================================================================
+    // 취소 미리보기 비대칭 해소 (S3 2차 PO 확정 ② — 비회원 면)
+    // ================================================================
+
+    /**
+     * 클레임 코스에 잠긴 상품은 비회원 취소 미리보기도 422 다.
+     *
+     * 회원 축과 같은 이유다 — `previewRefund()` 기본 가드가 세 면에 새 422 경로를 만들었는데
+     * 비회원 컨트롤러는 관리자와 다른 메시지 키(`order_cancel_failed`)를 쓴다. 이 면을
+     * 단언하지 않으면 매핑이 끊겨도 회귀가 초록으로 남는다.
+     */
+    public function test_estimate_refund_is_422_for_items_locked_by_a_claim_course(): void
+    {
+        [$order, $token] = $this->guestOrderWithToken();
+
+        $this->postJson($this->base($order).'/returns', [
+            'items' => $this->items($order),
+            'reason_code' => 'changed_mind',
+            'charge_method' => 'deduct_from_refund',
+        ], ['X-Guest-Order-Token' => $token])->assertStatus(201);
+
+        $response = $this->postJson($this->base($order).'/estimate-refund', [
+            'items' => [['order_option_id' => $order->options->first()->id, 'cancel_quantity' => 1]],
+        ], ['X-Guest-Order-Token' => $token]);
+
+        $response->assertStatus(422);
+
+        // 비회원도 회원·관리자와 같은 사유를 받는다 — 세 면이 같은 키를 쓴다.
+        $this->assertSame(
+            __('sirsoft-ecommerce::exceptions.claim_option_in_course', [
+                'status' => OrderStatusEnum::RETURN_IN_PROGRESS->label(),
+            ]),
+            $response->json('message'),
+        );
+    }
 }

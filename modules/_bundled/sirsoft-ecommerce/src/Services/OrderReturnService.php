@@ -617,17 +617,33 @@ class OrderReturnService
      *
      * 배송비를 수정하면 총 청구액과 다통화 표기가 함께 움직여야 한다 — 한쪽만 고치면
      * 화면의 청구액과 실제 청구 근거가 갈린다. 산정 근거 스냅샷에는 수정 사실을 남긴다.
+     * 접수 시 청구 0원이던 신청서의 상향은 청구 방식(`charge_method`)을 함께 실어야 한다 —
+     * 허용 목록(`claim.allowed_charge_methods`) 검증을 동반한다.
      *
      * @param  OrderReturn  $return  반품 신청서
-     * @param  array  $amounts  수정값 (claim_shipping_fee / admin_memo)
+     * @param  array  $amounts  수정값 (claim_shipping_fee / charge_method / admin_memo)
      * @param  int|null  $processedBy  처리 관리자 ID
      * @return OrderReturn 갱신된 신청서
      *
-     * @throws OrderClaimException 금액이 음수일 때
+     * @throws OrderClaimException 종결 신청서 / 금액 음수 / 청구 방식 부재·불허
      */
     public function updateAmounts(OrderReturn $return, array $amounts, ?int $processedBy = null): OrderReturn
     {
+        // 종결(완료·반려·철회) 신청서의 금액은 이미 정산 근거로 소비됐다 — 수정하면 장부와 어긋난다.
+        if ($return->isFinal()) {
+            throw OrderClaimException::amountsNotEditable();
+        }
+
         $updates = [];
+
+        // 청구 방식을 함께 받는다 (D18 — 접수 시 청구 0원이던 신청서의 상향 경로).
+        $chargeMethod = $return->charge_method;
+
+        if (array_key_exists('charge_method', $amounts) && $amounts['charge_method'] !== null && $amounts['charge_method'] !== '') {
+            $chargeMethod = $this->normalizeChargeMethod($amounts['charge_method']);
+            $this->assertChargeMethodAllowedForAmounts($chargeMethod);
+            $updates['charge_method'] = $chargeMethod;
+        }
 
         if (array_key_exists('claim_shipping_fee', $amounts)) {
             $fee = (float) $amounts['claim_shipping_fee'];
@@ -637,8 +653,8 @@ class OrderReturnService
             }
 
             // 청구 방식이 없는 신청서(접수 시 청구 0원)의 청구액을 양수로 올리면 결제할 수 없는 청구가
-            // 남는다 — 청구 방식을 함께 정하는 경로(금액 수정 API)가 아니면 거절한다.
-            if ($fee > 0 && $return->charge_method === null) {
+            // 남는다 — 이 요청이 청구 방식을 함께 실었으면 그 값으로 판정한다.
+            if ($fee > 0 && $chargeMethod === null) {
                 throw OrderClaimException::chargeMethodRequired();
             }
 
@@ -676,15 +692,40 @@ class OrderReturnService
             $updates['admin_memo'] = $amounts['admin_memo'];
         }
 
-        if ($processedBy !== null) {
-            $updates['processed_by'] = $processedBy;
-        }
-
+        // 빈 페이로드 판정은 처리자를 넣기 전에 한다 — 뒤에 두면 관리자 경로가 항상
+        // processed_by 를 실으므로 이 가드가 사문이 되어 무의미한 UPDATE 가 나간다.
         if ($updates === []) {
             return $return;
         }
 
+        if ($processedBy !== null) {
+            $updates['processed_by'] = $processedBy;
+        }
+
         return $this->returnRepository->update($return, $updates);
+    }
+
+    /**
+     * 금액 수정이 실은 청구 방식이 운영자 허용 목록에 있는지 검증합니다. (교환과 동형)
+     *
+     * 신청 경로의 `assertChargeMethodUsable` 과 같은 허용 목록(`claim.allowed_charge_methods`)을
+     * 읽는다 — 목록 밖 방식이 금액 수정으로 들어오면 신청 화면이 감춘 방식이 우회로가 된다.
+     * 차감 가능 여부(deduct) 판정은 신청 시점 검증 소관이라 여기서 반복하지 않는다.
+     *
+     * @param  ClaimChargeMethodEnum  $chargeMethod  청구 방식
+     *
+     * @throws OrderClaimException 허용 목록 밖 방식
+     */
+    protected function assertChargeMethodAllowedForAmounts(ClaimChargeMethodEnum $chargeMethod): void
+    {
+        $allowed = (array) $this->settingsService->getSetting(
+            'claim.allowed_charge_methods',
+            ClaimChargeMethodEnum::values(),
+        );
+
+        if (! in_array($chargeMethod->value, $allowed, true)) {
+            throw OrderClaimException::chargeMethodNotAllowed();
+        }
     }
 
     // ───────────────────────────────────────────────
@@ -874,6 +915,89 @@ class OrderReturnService
 
             return $refund;
         });
+    }
+
+    /**
+     * 완료 처리 시 접수될 환불신청서 금액을 미리 계산합니다. (완료 모달 미리보기 — DB 변경 없음)
+     *
+     * 재계산 기준은 완료 실행(`completeReturn`)과 동일하다 — "이미 완료된 상품 + 이번 라운드
+     * 대상 상품" 전체다. 이번 라운드 몫만 계산하면 분할 완료에서 모달 금액과 실제 접수액이 갈린다.
+     *
+     * @param  OrderReturn  $return  반품 신청서
+     * @param  array<int, int>  $itemIds  이번 라운드 완료 대상 신청 상품 행 ID 목록 (빈 배열이면 전체)
+     * @return array{completable_item_ids: array<int, int>, already_filed: bool, blocked_reason: string|null, refund_amount: float, refund_points_amount: float, deducted_shipping_fee: float, coupon_restore: bool, fully_completed: bool} 미리보기 결과
+     */
+    public function previewCompletion(OrderReturn $return, array $itemIds = []): array
+    {
+        $return->loadMissing(['returnOptions', 'order']);
+        $order = $return->order;
+        $order?->loadMissing(['options', 'shippings', 'payment']);
+
+        $targets = array_values(array_filter(
+            $this->resolveItems($return, $itemIds),
+            fn (OrderReturnOption $item) => $item->option_status->canTransitionTo(ReturnStatusEnum::COMPLETED)
+                && ! $item->option_status->isFinal(),
+        ));
+
+        $claimItems = $this->completedClaimItems($return);
+
+        foreach ($targets as $item) {
+            $claimItems[] = [
+                'order_option_id' => $item->order_option_id,
+                'cancel_quantity' => (int) $item->return_quantity,
+            ];
+        }
+
+        $alreadyFiled = $return->refund_id !== null;
+
+        if ($order === null || $claimItems === []) {
+            // 접수할 상품이 없다 — 교환 미리보기와 같은 두 사유 구분을 반품도 낸다(S5 인계 9).
+            // 사유를 비워 두면 응답이 `applicable: true` + `refund_amount: 0` 이 되어 모달은
+            // '0원 접수' 를 예고하는데 실제 접수는 completionItemsInvalid() 로 422 가 된다.
+            return [
+                'completable_item_ids' => array_map(fn (OrderReturnOption $item) => (int) $item->id, $targets),
+                'already_filed' => $alreadyFiled,
+                'blocked_reason' => $alreadyFiled ? 'claim_refund_request_exists' : 'claim_refund_not_applicable',
+                'refund_amount' => 0.0,
+                'refund_points_amount' => 0.0,
+                'deducted_shipping_fee' => 0.0,
+                'coupon_restore' => false,
+                'fully_completed' => false,
+            ];
+        }
+
+        $adjustment = new ReturnAdjustment(
+            returnItems: $claimItems,
+            collectionFee: (int) round((float) $return->claim_shipping_fee),
+            chargeMethod: $return->charge_method,
+        );
+
+        $result = $this->adjustmentService->calculate($order, $adjustment);
+
+        // 가정 완료 후 전건 완료 여부 — 살아 있는(비종결) 상품이 전부 대상에 들어왔는가.
+        $targetIds = array_map(fn (OrderReturnOption $item) => (int) $item->id, $targets);
+        $fullyCompleted = $return->returnOptions->every(
+            fn (OrderReturnOption $item) => $item->option_status === ReturnStatusEnum::COMPLETED
+                || $item->option_status->isFinal()
+                || in_array((int) $item->id, $targetIds, true)
+        );
+
+        // 차감 배송비는 재계산 결과의 배송비 차이(shippingDifference — 배송비 재판정 축)가 아니라
+        // 신청서가 동결한 회수배송비다 — '환불금 차감' 방식일 때 그 몫이 환불액에서 이미 빠져 있다.
+        $deductedFee = $return->charge_method === ClaimChargeMethodEnum::DEDUCT_FROM_REFUND
+            ? (float) $return->claim_shipping_fee
+            : 0.0;
+
+        return [
+            'completable_item_ids' => $targetIds,
+            'already_filed' => $alreadyFiled,
+            'blocked_reason' => $alreadyFiled ? 'claim_refund_request_exists' : null,
+            'refund_amount' => (float) $result->refundAmount,
+            'refund_points_amount' => (float) $result->refundPointsAmount,
+            'deducted_shipping_fee' => $deductedFee,
+            'coupon_restore' => $fullyCompleted && $result->restoredCouponIssueIds !== [],
+            'fully_completed' => $fullyCompleted,
+        ];
     }
 
     // ───────────────────────────────────────────────

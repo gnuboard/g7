@@ -144,7 +144,7 @@ return new class extends Migration
     }
 
     /**
-     * 마일리지 거래에 클레임 추가결제 멱등 축을 추가합니다.
+     * 마일리지 거래에 클레임 멱등 축 2종(추가결제 환급 · 클레임 환불 발 환급)을 추가합니다.
      */
     private function extendMileageTransactions(): void
     {
@@ -155,6 +155,13 @@ return new class extends Migration
                 $blueprint->unsignedBigInteger('claim_payment_id')->nullable()->after('order_cancel_id')
                     ->comment('관련 클레임 추가결제 ID (마일리지 결제/환급 멱등 기준)');
             }
+            // 클레임 환불 실행(S6b)의 사용 마일리지 환급 멱등 축 — 취소 발 복원의 order_cancel_id 와
+            // 같은 역할을 클레임 발 환불에서 담당한다. 이 브랜치가 처음 도입하는 미공개 마이그레이션이라
+            // 별도 마이그레이션 없이 제자리에 추가한다 (§4-9 미릴리스 제자리 정정 선례).
+            if (! Schema::hasColumn($table, 'order_refund_id')) {
+                $blueprint->unsignedBigInteger('order_refund_id')->nullable()->after('claim_payment_id')
+                    ->comment('관련 주문 환불 ID (클레임 환불 실행의 사용 마일리지 환급 멱등 기준)');
+            }
         });
 
         Schema::table($table, function (Blueprint $blueprint) use ($table) {
@@ -164,6 +171,13 @@ return new class extends Migration
             if (! $this->hasForeignKey($table, 'fk_mt_claim_payment_id')) {
                 $blueprint->foreign('claim_payment_id', 'fk_mt_claim_payment_id')
                     ->references('id')->on('ecommerce_claim_payments')->nullOnDelete();
+            }
+            if (! Schema::hasIndex($table, 'ecommerce_mileage_trx_order_refund_index')) {
+                $blueprint->index('order_refund_id', 'ecommerce_mileage_trx_order_refund_index');
+            }
+            if (! $this->hasForeignKey($table, 'fk_mt_order_refund_id')) {
+                $blueprint->foreign('order_refund_id', 'fk_mt_order_refund_id')
+                    ->references('id')->on('ecommerce_order_refunds')->nullOnDelete();
             }
         });
     }
@@ -197,6 +211,11 @@ return new class extends Migration
                     $table->dropForeign('fk_mt_claim_payment_id');
                     $table->dropIndex('ecommerce_mileage_trx_claim_payment_index');
                     $table->dropColumn('claim_payment_id');
+                }
+                if (Schema::hasColumn('ecommerce_mileage_transactions', 'order_refund_id')) {
+                    $table->dropForeign('fk_mt_order_refund_id');
+                    $table->dropIndex('ecommerce_mileage_trx_order_refund_index');
+                    $table->dropColumn('order_refund_id');
                 }
             });
         }

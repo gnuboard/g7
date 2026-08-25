@@ -2,6 +2,8 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Repositories;
 
+use App\Models\User;
+use Carbon\Carbon;
 use Modules\Sirsoft\Ecommerce\Database\Factories\ClaimImageFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\ClaimPaymentFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderExchangeFactory;
@@ -11,13 +13,26 @@ use Modules\Sirsoft\Ecommerce\Database\Factories\OrderOptionFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderReturnFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderReturnOptionFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\ShippingPolicyClaimAddressFactory;
+use Modules\Sirsoft\Ecommerce\Enums\CancelOptionStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\CancelStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\CancelTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundOptionStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
+use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
+use Modules\Sirsoft\Ecommerce\Models\OrderCancelOption;
+use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
+use Modules\Sirsoft\Ecommerce\Models\OrderRefundOption;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimImageRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderCancelOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderExchangeOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderExchangeRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderReturnOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderReturnRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingPolicyClaimAddressRepositoryInterface;
@@ -352,5 +367,172 @@ class ClaimRepositoriesTest extends ModuleTestCase
         $this->assertSame(1, $repo->deleteByPolicyAndType($policyId, ClaimTypeEnum::RETURN->value));
         $this->assertNull($repo->findByPolicyAndType($policyId, ClaimTypeEnum::RETURN->value));
         $this->assertNotNull($repo->findByPolicyAndType($policyId, ClaimTypeEnum::EXCHANGE->value));
+    }
+
+    // ========================================
+    // 취소·환불 옵션 저장소 (S6b 신설 — 저장소 우회 해소분)
+    // ========================================
+
+    public function test_cancel_option_repository_bulk_status_update_records_completion(): void
+    {
+        $repo = app(OrderCancelOptionRepositoryInterface::class);
+        $order = OrderFactory::new()->create();
+        $orderOption = OrderOptionFactory::new()->create(['order_id' => $order->id]);
+
+        $cancel = OrderCancel::create([
+            'order_id' => $order->id,
+            'cancel_number' => 'CN-TEST-'.uniqid(),
+            'cancel_type' => CancelTypeEnum::PARTIAL,
+            'cancel_reason_type' => 'etc',
+            'items_snapshot' => [],
+            'shipping_snapshot' => [],
+            'cancel_status' => CancelStatusEnum::REQUESTED,
+        ]);
+        $other = OrderCancel::create([
+            'order_id' => $order->id,
+            'cancel_number' => 'CN-TEST-'.uniqid(),
+            'cancel_type' => CancelTypeEnum::PARTIAL,
+            'cancel_reason_type' => 'etc',
+            'items_snapshot' => [],
+            'shipping_snapshot' => [],
+            'cancel_status' => CancelStatusEnum::REQUESTED,
+        ]);
+
+        $target = OrderCancelOption::create([
+            'order_cancel_id' => $cancel->id,
+            'order_id' => $order->id,
+            'order_option_id' => $orderOption->id,
+            'option_status' => CancelOptionStatusEnum::REQUESTED,
+            'cancel_quantity' => 1,
+            'original_quantity' => 1,
+            'unit_price' => 1000,
+            'subtotal_amount' => 1000,
+        ]);
+        $untouched = OrderCancelOption::create([
+            'order_cancel_id' => $other->id,
+            'order_id' => $order->id,
+            'order_option_id' => $orderOption->id,
+            'option_status' => CancelOptionStatusEnum::REQUESTED,
+            'cancel_quantity' => 1,
+            'original_quantity' => 1,
+            'unit_price' => 1000,
+            'subtotal_amount' => 1000,
+        ]);
+
+        $operator = User::factory()->create();
+
+        $completedAt = Carbon::now();
+        $affected = $repo->bulkUpdateStatus(
+            $cancel->id,
+            CancelOptionStatusEnum::COMPLETED->value,
+            $operator->id,
+            $completedAt,
+        );
+
+        $this->assertSame(1, $affected);
+
+        $target->refresh();
+        $this->assertSame((int) $operator->id, (int) $target->processed_by);
+        $this->assertSame(CancelOptionStatusEnum::COMPLETED, $target->option_status);
+        $this->assertNotNull($target->completed_at);
+
+        // 다른 취소의 상세 행은 건드리지 않는다 — WHERE 키가 헤더 관계와 같아야 한다.
+        $this->assertSame(CancelOptionStatusEnum::REQUESTED, $untouched->refresh()->option_status);
+    }
+
+    public function test_refund_option_repository_bulk_status_update_sets_completed_at_only_when_given(): void
+    {
+        $repo = app(OrderRefundOptionRepositoryInterface::class);
+        $order = OrderFactory::new()->create();
+        $orderOption = OrderOptionFactory::new()->create(['order_id' => $order->id]);
+
+        $refund = OrderRefund::create([
+            'order_id' => $order->id,
+            'refund_source_type' => RefundSourceTypeEnum::DIRECT,
+            'refund_number' => 'RF-TEST-'.uniqid(),
+            'refund_status' => RefundStatusEnum::REQUESTED,
+            'refund_method' => RefundMethodEnum::PG,
+            'refund_amount' => 0,
+            'refund_points_amount' => 0,
+            'refund_shipping_amount' => 0,
+        ]);
+
+        $option = OrderRefundOption::create([
+            'order_refund_id' => $refund->id,
+            'order_id' => $order->id,
+            'order_option_id' => $orderOption->id,
+            'option_status' => RefundOptionStatusEnum::REQUESTED,
+            'quantity' => 1,
+            'unit_price' => 1000,
+            'subtotal_amount' => 1000,
+            'discount_amount' => 0,
+            'refund_amount' => 0,
+        ]);
+
+        $operator = User::factory()->create();
+        $option->update(['processed_by' => $operator->id]);
+
+        // 처리자·완료 시각 미전달(반려·철회 경로) — 기존 값을 지우지 않는다.
+        $this->assertSame(1, $repo->bulkUpdateStatus($refund->id, RefundOptionStatusEnum::REJECTED->value));
+        $option->refresh();
+        $this->assertNull($option->completed_at);
+        $this->assertSame((int) $operator->id, (int) $option->processed_by);
+
+        // 처리자·완료 시각 전달(환불 실행 경로) — 그때만 기입한다.
+        $another = User::factory()->create();
+        $this->assertSame(1, $repo->bulkUpdateStatus(
+            $refund->id,
+            RefundOptionStatusEnum::COMPLETED->value,
+            $another->id,
+            Carbon::now(),
+        ));
+
+        $option->refresh();
+        $this->assertSame(RefundOptionStatusEnum::COMPLETED, $option->option_status);
+        $this->assertSame((int) $another->id, (int) $option->processed_by);
+        $this->assertNotNull($option->completed_at);
+    }
+
+    // ========================================
+    // 완료 미리보기 다건 스코프용 묶음 조회 (S6b 3차 보강)
+    // ========================================
+
+    public function test_exchange_option_repository_lists_option_ids_grouped_by_claim(): void
+    {
+        $repo = app(OrderExchangeOptionRepositoryInterface::class);
+        $first = OrderExchangeFactory::new()->create();
+        $second = OrderExchangeFactory::new()->create();
+        $orphan = OrderExchangeFactory::new()->create();
+
+        $a = OrderExchangeOptionFactory::new()->create(['order_exchange_id' => $first->id]);
+        $b = OrderExchangeOptionFactory::new()->create(['order_exchange_id' => $first->id]);
+        $c = OrderExchangeOptionFactory::new()->create(['order_exchange_id' => $second->id]);
+        OrderExchangeOptionFactory::new()->create(['order_exchange_id' => $orphan->id]);
+
+        $map = $repo->listOptionIdsByExchangeIds([$first->id, $second->id]);
+
+        // 신청서별로 묶여야 한다 — 합집합으로 돌려주면 교차 배치가 검증을 통과한다.
+        $this->assertEqualsCanonicalizing([$a->id, $b->id], $map[$first->id]);
+        $this->assertSame([$c->id], $map[$second->id]);
+        $this->assertArrayNotHasKey($orphan->id, $map);
+
+        $this->assertSame([], $repo->listOptionIdsByExchangeIds([]));
+    }
+
+    public function test_return_option_repository_lists_option_ids_grouped_by_claim(): void
+    {
+        $repo = app(OrderReturnOptionRepositoryInterface::class);
+        $first = OrderReturnFactory::new()->create();
+        $second = OrderReturnFactory::new()->create();
+
+        $a = OrderReturnOptionFactory::new()->create(['order_return_id' => $first->id]);
+        $b = OrderReturnOptionFactory::new()->create(['order_return_id' => $second->id]);
+
+        $map = $repo->listOptionIdsByReturnIds([$first->id, $second->id]);
+
+        $this->assertSame([$a->id], $map[$first->id]);
+        $this->assertSame([$b->id], $map[$second->id]);
+
+        $this->assertSame([], $repo->listOptionIdsByReturnIds([]));
     }
 }

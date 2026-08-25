@@ -4,11 +4,14 @@ namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
 use App\Http\Resources\BaseApiCollection;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Modules\Sirsoft\Ecommerce\Services\UserClaimService;
 
 /**
  * 클레임 신청서 목록 컬렉션 (유저 신청내역 — 유형 서브탭 단위 페이지네이션)
+ *
+ * pagination 블록은 `paginationMeta()` 표준을 쓴다 — 손조립하면 `from`/`to`/`has_more_pages`
+ * 가 빠지고, 저장소가 `BoundedPaginator` 로 바뀔 때 `total_relation`/`total_is_exact` 가 통째로
+ * 빠져 잘린 총 건수가 정확한 값처럼 나간다 (형제 3종과 동형 — pagination.md).
  */
 class ClaimCollection extends BaseApiCollection
 {
@@ -22,19 +25,13 @@ class ClaimCollection extends BaseApiCollection
     {
         $reasonLabels = $this->resolveReasonLabels();
 
-        return [
+        return array_merge([
             // $this->collection 원소는 이미 ClaimResource 로 래핑되어 있다 ($collects 자동 추론) — 다시 감싸면
             // resource 가 ClaimResource 자신이 되어 toArray 의 모델 타입 판정이 TypeError 로 죽는다.
             'data' => $this->collection
                 ->map(fn (ClaimResource $claim) => $claim->withReasonLabels($reasonLabels)->toArray($request))
                 ->toArray(),
-            'pagination' => $this->resource instanceof LengthAwarePaginator ? [
-                'current_page' => $this->resource->currentPage(),
-                'last_page' => $this->resource->lastPage(),
-                'per_page' => $this->resource->perPage(),
-                'total' => $this->resource->total(),
-            ] : null,
-        ];
+        ], $this->paginationMeta());
     }
 
     /**

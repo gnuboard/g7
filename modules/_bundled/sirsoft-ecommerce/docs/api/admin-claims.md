@@ -10,9 +10,9 @@
 ```text
 1. 목록은 유형 서브탭 단위 — type 파라미터(기본 exchange)로 한 유형만 받고, counts 로 4유형 건수 뱃지를 함께 준다
 2. 유형 스코프 경로는 /admin/{exchanges|returns|refunds}/{id} — 취소(cancel)는 목록에만 있고 상세·전이 대상이 아니다
-3. 상태 쓰기 어휘는 유형별 adminAssignableValues() — requested/paid/withdrawn 직접 지정 불가 (환불은 approved/on_hold/rejected 만)
-4. 완료 전이(status=completed)는 completion 객체 필수 — create_refund_request 는 필수, restore_stock_by_item 은 선택 (D26 — 기본값 없음)
-5. 미수납 청구가 남은 승인: pay_on_approval 은 결제 요청으로 우회(payment_requested=true), pay_on_request 는 422 로 거절
+3. 상태 쓰기 어휘는 유형별 adminAssignableValues() — requested/paid/withdrawn 직접 지정 불가 (환불은 approved/on_hold/rejected 만). 미수납 승인은 pay_on_approval 결제 요청 우회 / pay_on_request 422
+4. 완료 전이(status=completed)는 completion 객체 필수 — 모달이 실행 전에 보여줄 값은 claims/completion-preview 가 SSoT (D26)
+5. 금액 수정({claimType}/{id}/amounts)·환불 실행(refunds/{id}/execute)의 상한은 취소 가능 금액(D19) — 초과는 저장·실행 모두 422, 재실행은 409, 근거는 orders/{order}/cancellable-amount 가 같은 식으로 답한다
 ```
 
 ## 인증·권한
@@ -21,8 +21,10 @@
 
 | 권한 | 대상 |
 | --- | --- |
-| `sirsoft-ecommerce.claims.read` | 목록·상세 조회 |
-| `sirsoft-ecommerce.claims.update-status` | 전이(단건·일괄·상품 단위)·송장·첨부 |
+| `sirsoft-ecommerce.claims.read` | 목록·상세 조회·취소 가능 금액 |
+| `sirsoft-ecommerce.claims.update-status` | 전이(단건·일괄·상품 단위)·송장·첨부·완료 미리보기·환불신청서 수동 접수 |
+| `sirsoft-ecommerce.claims.update-amounts` | 금액 수정 (D18) |
+| `sirsoft-ecommerce.claims.execute-refund` | 환불 실행 ('환불하기') |
 
 ## 엔드포인트 목록
 
@@ -39,6 +41,11 @@
 | PATCH | /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/options/bulk-status | `api.modules.sirsoft-ecommerce.admin.claims.options.bulk-status` (교환·반품만) |
 | PUT | /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/collection-tracking | `api.modules.sirsoft-ecommerce.admin.claims.collection-tracking` (교환·반품만) |
 | PUT | /api/modules/sirsoft-ecommerce/admin/exchanges/{id}/redelivery-tracking | `api.modules.sirsoft-ecommerce.admin.claims.redelivery-tracking` (교환만) |
+| PUT | /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/amounts | `api.modules.sirsoft-ecommerce.admin.claims.amounts` |
+| POST | /api/modules/sirsoft-ecommerce/admin/claims/completion-preview | `api.modules.sirsoft-ecommerce.admin.claims.completion-preview` (교환·반품만) |
+| POST | /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/refund-request | `api.modules.sirsoft-ecommerce.admin.claims.refund-request` (교환·반품만) |
+| POST | /api/modules/sirsoft-ecommerce/admin/refunds/{id}/execute | `api.modules.sirsoft-ecommerce.admin.claims.refunds.execute` (환불만) |
+| GET | /api/modules/sirsoft-ecommerce/admin/orders/{order}/cancellable-amount | `api.modules.sirsoft-ecommerce.admin.claims.cancellable-amount` |
 
 오류 응답의 두 형태(요청 검증 422 는 `errors` 동반 / 도메인 거절 422 는 `message` 만)는
 [claims.md](claims.md#오류-응답의-두-형태-422) 와 같은 계약입니다.
@@ -355,3 +362,281 @@
 ```
 
 **오류**: `404` 신청서 부재.
+
+---
+
+### PUT /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/amounts
+
+신청서 금액을 수정합니다 (D18). 유형에 따라 받는 축이 다르며, 다른 유형의 축을 보내면
+요청 검증 `422`(`errors` 동반)로 명시 거절합니다 — 조용히 버리지 않습니다.
+
+**권한**: `sirsoft-ecommerce.claims.update-amounts`
+
+**본문 파라미터 — 교환·반품** (`exchanges`/`returns`)
+
+| 파라미터 | 타입 | 필수 | 설명 |
+| --- | --- | --- | --- |
+| claim_shipping_fee | number | 아니오 | 클레임 배송비 (min 0 — 반품 편도 / 교환 왕복). 총 청구액·다통화 표기가 함께 다시 계산되고, 산정 근거 스냅샷에 `admin_adjusted` 가 남는다 |
+| charge_method | string | 아니오* | 청구 방식 (`pay_on_request`/`pay_on_approval`/`deduct_from_refund`) — 허용 목록 `claim.allowed_charge_methods` 로 게이트 |
+| admin_memo | string | 아니오 | 관리자 메모 (max 2000 — 보낸 요청만 갱신) |
+
+\* 접수 시 청구 0원(청구 방식 없음)이던 신청서의 배송비를 양수로 올릴 때는 `charge_method` 를
+함께 실어야 합니다 — 없으면 `422` `claim_charge_method_required` (결제할 수 없는 청구가 남는
+것을 막는다). 반대로 청구액이 0 이 되면 청구 방식은 자동으로 비워집니다.
+
+**본문 파라미터 — 환불신청서** (`refunds` — 취소 발 `refund_source_type=cancel` 은 수정 불가 422)
+
+| 파라미터 | 타입 | 필수 | 설명 |
+| --- | --- | --- | --- |
+| refund_amount | number | 아니오 | PG 환불액 (min 0, 기본 통화) — 다통화 표기는 주문 스냅샷 환율로 재계산 |
+| refund_points_amount | number | 아니오 | 마일리지 환불액 (min 0) — 비회원 주문은 `422` `claim_refund_points_requires_member` |
+| refund_method | string | 아니오 | 환불 수단 (`pg`/`bank`/`points`) |
+
+환불액의 합(`refund_amount + refund_points_amount`)은 **취소 가능 금액(D19)** 을 넘을 수
+없습니다 — 초과는 `422` `claim_refund_exceeds_cancellable` (저장·실행 모두 같은 식으로 재계산).
+
+**응답 예시 (200)**
+
+```json
+{
+  "success": true,
+  "message": "금액을 수정했습니다.",
+  "data": {
+    "claim": {
+      "id": 12,
+      "claim_type": "refund",
+      "claim_number": "RF-20260825-0007",
+      "refund_amount": 15000,
+      "refund_points_amount": 3000,
+      "refund_method": "pg",
+      "refund_status": "approved",
+      "processed_by": 3
+    }
+  }
+}
+```
+
+**오류**
+
+| 코드 | 키 | 조건 |
+| --- | --- | --- |
+| 404 | `claim_not_found` | 신청서 부재 |
+| 422 | `claim_amounts_not_editable` | 종결(취소·완료·반려·철회) 신청서 / 환불신청서가 `processing` |
+| 422 | `claim_refund_not_executable` | 취소 발(`refund_source_type=cancel`) 환불신청서 — 취소 파이프라인 산출값이라 이 API 로 고칠 수 없다 |
+| 422 | `claim_amount_invalid` | 음수 금액 / 알 수 없는 환불 수단 |
+| 422 | `claim_charge_method_required` | 청구 0원 신청서의 배송비를 올리면서 청구 방식을 함께 보내지 않음 |
+| 422 | `claim_refund_exceeds_cancellable` | 환불액 합이 취소 가능 금액(D19) 초과 |
+| 422 | `claim_refund_points_requires_member` | 비회원 주문에 마일리지 환불액 지정 |
+| 422 | (검증) | 다른 유형의 축을 보냄 (`errors` 에 필드별 사유) |
+
+수정 전후 금액과 작업자는 `sirsoft-ecommerce.claim.{type}.amounts_updated` 훅으로 발행되어
+활동 로그의 기록 근거가 됩니다.
+
+---
+
+### GET /api/modules/sirsoft-ecommerce/admin/orders/{order}/cancellable-amount
+
+주문의 취소 가능 금액(D19)을 산정합니다 — 환불 상세 화면의 근거 표와 주문상세 환불 모달이
+공용으로 씁니다. 서버는 환불 저장·실행 직전에 **같은 식**으로 재계산하므로, 이 응답이 보여준
+한도와 실행 가드의 한도는 같은 값입니다.
+
+```text
+amount = max(0, min(domain_refundable, payment_capacity) − reserved)
+```
+
+**권한**: `sirsoft-ecommerce.claims.read`
+
+**쿼리 파라미터**
+
+| 파라미터 | 타입 | 필수 | 설명 |
+| --- | --- | --- | --- |
+| refund_id | integer | 아니오 | 환불신청서 문맥 — 그 신청서의 출처별 산식(직접=취소 재계산 / 반품=반품 재계산 / 교환=동결 차액 잔여)으로 계산하고 선점 집계에서 **자기 자신을 제외**한다. 다른 주문의 신청서면 `404` |
+| items[] | object[] | 아니오 | 대상 아이템 `[{order_option_id, cancel_quantity}]` (max 200) — 주문 소속이 아닌 옵션은 `422` `claims.items.not_in_order` |
+
+둘 다 없으면 미취소 옵션 전량 기준으로 계산합니다. 두 문맥은 **배타**입니다 — 함께 보내면
+`422` (`refund_id` 필드에 `claims.items.prohibited_with_refund`) 입니다. 한쪽을 조용히
+버리면 화면은 선택 상품 기준이라 믿는 자리에 신청서 기준 한도가 표시되기 때문입니다.
+빈 값(`?refund_id=`)은 보내지 않은 것으로 취급합니다.
+
+**응답 예시 (200)**
+
+```json
+{
+  "success": true,
+  "message": "취소 가능 금액을 산정했습니다.",
+  "data": {
+    "cancellable": {
+      "amount": 24000,
+      "domain_refundable": 29000,
+      "payment_capacity": 29000,
+      "reserved": 5000,
+      "binding": "reserved",
+      "binding_label_key": "sirsoft-ecommerce::messages.claims.cancellable_binding.reserved",
+      "methods": [
+        {"type": "payment", "payment_id": 88, "method": "card", "currency": "KRW", "remaining_local": 29000, "remaining_base": 29000}
+      ],
+      "reserved_claims": [
+        {"type": "refund", "id": 12, "number": "RF20260825000003", "amount": 5000}
+      ],
+      "currency": "KRW",
+      "mc_amount": {"KRW": 24000}
+    }
+  }
+}
+```
+
+`binding` 은 한도를 정한 축입니다 (`domain_refundable`/`payment_capacity`/`reserved`).
+`methods` 는 수단별 잔여 한도(결제 통화 원값 `remaining_local` 병기 — D18 화면의 수단별 한도),
+`reserved_claims` 는 선점 근거(진행 중인 다른 클레임)입니다.
+
+---
+
+### POST /api/modules/sirsoft-ecommerce/admin/refunds/{id}/execute
+
+승인된 환불신청서의 환불을 실행합니다 ('환불하기' — D18). 본문에 금액이 실려 있으면 저장과
+같은 검증을 거쳐 **화면에 입력된 값으로 실행**합니다(저장 없이 실행 가능). 취소 발
+(`refund_source_type=cancel`) 환불은 취소 파이프라인 소유라 실행 대상이 아닙니다(`422`).
+
+한 트랜잭션에서 수행됩니다: (직접 환불신청서) 선점 수량의 취소 분할·전이 + 재고 복원(설정
+준수) + 쿠폰 조건 소멸 복원 → PG 환불 + 주문 환불 누적(`total_refunded_amount`)·결제행 취소
+누적 → 사용 마일리지 환급(`order_refund_id` 멱등) → 신청서·상품 행 완료 확정. 비-PG 환불
+수단(무통장·마일리지 전액)은 PG 호출 없이 완료로 확정됩니다 — 운영자의 [환불하기]가 곧 수동
+송금 완료 선언입니다.
+
+**권한**: `sirsoft-ecommerce.claims.execute-refund`
+
+**본문 파라미터** (전부 선택 — 없으면 저장된 환불액으로 실행)
+
+| 파라미터 | 타입 | 필수 | 설명 |
+| --- | --- | --- | --- |
+| refund_amount | number | 아니오 | PG 환불액 (min 0) |
+| refund_points_amount | number | 아니오 | 마일리지 환불액 (min 0 — 비회원 주문 422) |
+| refund_method | string | 아니오 | 환불 수단 (`pg`/`bank`/`points`) |
+
+**응답 예시 (200)**
+
+```json
+{
+  "success": true,
+  "message": "환불을 실행했습니다.",
+  "data": {
+    "claim": { "id": 12, "claim_number": "RF20260825000003", "status": "completed", "refunded_at": "2026-08-25T14:02:11+09:00", "...": "ClaimResource 전체" }
+  }
+}
+```
+
+**오류**
+
+| 코드 | 사유 |
+| --- | --- |
+| `404` | 환불신청서 부재 |
+| `409` | 이미 실행됐거나 실행 중 (`claim_refund_already_executed` — 더블클릭). 화면은 새로고침을 안내한다 |
+| `422` | 승인 전 상태(`claim_transition_not_allowed`) / 취소 발 환불(`claim_refund_not_executable`) / D19 상한 초과(`claim_refund_exceeds_cancellable` — 실행 직전 재계산 가드) / PG 환불 거절(`errors.detail` 에 PG 사유 — 관리자 전용 면의 조치 근거) |
+
+---
+
+### POST /api/modules/sirsoft-ecommerce/admin/claims/completion-preview
+
+완료 처리 모달의 미리보기 요약을 계산합니다 (D26). 세 진입점(목록 일괄·상품 단위·상세 버튼)이
+여는 **같은 모달**이 실행 전에 보여주는 값 — 건별 환불 예정액·재고 복구/폐기 건수·적립 차감·
+쿠폰 복원 여부 — 의 SSoT 입니다. DB 를 변경하지 않습니다.
+
+**권한**: `sirsoft-ecommerce.claims.update-status`
+
+**본문 파라미터**
+
+| 파라미터 | 타입 | 필수 | 설명 |
+| --- | --- | --- | --- |
+| claim_type | string | 예 | 유형 (`exchange`/`return` — 완료 모달은 교환·반품 전용) |
+| create_refund_request | boolean | 예 | 모달의 환불신청서 라디오 선택 상태 (지금 접수 / 접수하지 않음) |
+| claims[] | object[] | 예 | 대상 신청서 (1~100건) |
+| claims[].id | integer | 예 | 신청서 ID |
+| claims[].item_ids[] | integer[] | 아니오 | 이번 라운드 완료 대상 상품 행 (없으면 전체 — 상품 단위 진입점만 보낸다) |
+| claims[].restore_stock_by_item | object | 아니오 | 상품 행 ID → 재고 복구 체크 상태 맵 |
+
+**응답 예시 (200)**
+
+```json
+{
+  "success": true,
+  "message": "완료 처리 요약을 계산했습니다.",
+  "data": {
+    "claims": [
+      {
+        "id": 31,
+        "claim_number": "RT20260825000007",
+        "completable_item_ids": [55],
+        "completable_item_count": 1,
+        "has_stock_restore_target": true,
+        "stock_restore_count": 1,
+        "stock_discard_count": 0,
+        "earn_recovery": true,
+        "coupon_restore": false,
+        "refund": {
+          "applicable": true,
+          "already_filed": false,
+          "blocked_reason": null,
+          "refund_amount": 26000,
+          "refund_points_amount": 0,
+          "deducted_shipping_fee": 3000
+        }
+      }
+    ],
+    "skipped": [{"id": 999999, "message": "해당 신청서를 찾을 수 없습니다."}],
+    "totals": {"claim_count": 1, "completable_item_count": 1, "refund_amount_total": 26000, "refund_points_amount_total": 0}
+  }
+}
+```
+
+- `has_stock_restore_target` 은 요청의 체크 상태 기준입니다 — 모달이 "함께 실행되는 처리" 에
+  재고 복구를 보여줄지의 근거이며, 실제 복구는 완료 실행이 이번 라운드 대상만 수행합니다.
+- `refund.applicable` 은 `create_refund_request=true` 이고 접수가 성립할 때만 참입니다.
+  접수가 성립하지 않는 사유는 `blocked_reason` 으로 구분합니다 — `claim_refund_request_exists`
+  (이미 접수됨) / `claim_refund_not_applicable`(환불 대상 없음 — 동일가 교환·순추가 신청서,
+  완료 가능·완료된 상품이 하나도 없는 반품 등). **교환·반품 두 유형 모두** 이 구분을 냅니다 —
+  사유 없이 `applicable: true` + `refund_amount: 0` 으로 답하면 모달은 '0원 접수' 를 예고하는데
+  실제 접수는 `422` 가 되어 미리보기와 실행이 갈립니다.
+- 교환의 환불 예정액은 **완료됐다고 가정한 상품**까지 포함해 접수 산식과 같은 식으로
+  계산합니다 — 모달 금액과 실제 접수액이 갈리지 않습니다.
+
+**오류**
+
+| 코드 | 키 | 조건 |
+| --- | --- | --- |
+| 403 | — | `sirsoft-ecommerce.claims.update-status` 없음 |
+| 422 | `claims.type.in` | `claim_type` 이 `exchange`/`return` 이 아님 (환불·취소는 각자 다른 파이프라인이 소유) |
+| 422 | `claims.preview_claims.required` | `claims` 누락 또는 빈 배열 |
+| 422 | `claims.preview_claims.max` | `claims` 가 100건 초과 |
+| 422 | `claims.items.max` | 한 신청서의 `item_ids` 가 200건 초과 |
+| 422 | `claims.items.not_in_claim` | `item_ids` 에 그 신청서 소속이 아닌 상품 행 ID 포함 |
+| 422 | `claims.completion.create_refund_request_required` | `create_refund_request` 누락 (기본값 없음 — D26) |
+
+존재하지 않는 신청서 ID 는 오류가 아니라 `data.skipped[]` 로 보고합니다 — 목록 일괄 선택과
+실제 조회 사이의 시차를 모달이 그대로 안내할 수 있게 하기 위해서입니다. 다만 그 신청서에
+`item_ids` 를 함께 실으면 소속 검증이 먼저 걸려 `422` 가 됩니다.
+
+---
+
+### POST /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/refund-request
+
+완료 시 접수하지 않은 신청서의 환불신청서를 수동 접수합니다 (D26 — 교환·반품). 반품은
+신청서당 1건(완료된 상품 전체), 교환은 완료 라운드마다 접수할 수 있어 "완료됐으나 아직
+접수되지 않은 저가 상품" 을 모아 1건으로 접수합니다.
+
+**권한**: `sirsoft-ecommerce.claims.update-status`
+
+**응답 예시 (201)**
+
+```json
+{
+  "success": true,
+  "message": "환불신청서를 접수했습니다.",
+  "data": {
+    "refund": { "id": 12, "claim_number": "RF20260825000003", "claim_type": "refund", "status": "requested", "...": "ClaimResource 전체" }
+  }
+}
+```
+
+**오류**: `404` 부재 / `422` 완료된 상품 없음(`claim_completion_items_invalid`) · 전부
+접수됨(`claim_refund_request_exists`) · 환불 대상 없음(`claim_refund_not_applicable`) —
+화면은 두 사유를 구분해 안내합니다.

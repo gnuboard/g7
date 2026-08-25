@@ -493,6 +493,12 @@ return [
         'option_status_processed' => 'The item status change has been processed.',
         'tracking_saved' => 'Tracking information saved.',
         'images_cleared' => 'All attached images have been deleted.',
+        'amounts_updated' => 'The amounts have been updated.',
+        'cancellable_retrieved' => 'The cancellable amount has been calculated.',
+        'refund_executed' => 'The refund has been executed.',
+        'refund_execute_failed' => 'Failed to execute the refund.',
+        'completion_preview_retrieved' => 'The completion summary has been calculated.',
+        'refund_request_created' => 'The refund request has been created.',
     ],
 
     // Shipping Policy Messages

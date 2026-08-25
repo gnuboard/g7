@@ -771,4 +771,69 @@ class UserClaimApiTest extends ModuleTestCase
             __('sirsoft-ecommerce::exceptions.claim_not_found'),
         );
     }
+
+    // ================================================================
+    // 취소 미리보기 비대칭 해소 (S3 2차 PO 확정 ② — 회원 면)
+    // ================================================================
+
+    /**
+     * 클레임 코스에 잠긴 상품은 회원 취소 미리보기도 422 다.
+     *
+     * `previewRefund()` 의 클레임 가드가 기본 적용되면서 회원 면에도 새 422 경로가 생겼다.
+     * 관리자 면만 단언하면 이 컨트롤러의 매핑(`OrderCancellationException` → 422)이
+     * 끊겨도 회귀가 초록으로 남는다 — 세 면이 각각 다른 메시지 키를 쓰기 때문에 더 그렇다.
+     */
+    public function test_estimate_refund_is_422_for_items_locked_by_a_claim_course(): void
+    {
+        $order = $this->myDeliveredOrder();
+
+        $this->actingAs($this->user)
+            ->postJson($this->base()."/orders/{$order->id}/returns", [
+                'items' => $this->items($order),
+                'reason_code' => 'changed_mind',
+                'charge_method' => 'deduct_from_refund',
+            ])
+            ->assertStatus(201);
+
+        // 반품 접수로 코스 상태가 된 상품 — 미리보기도 실행과 같은 가드를 통과해야 한다.
+        $response = $this->actingAs($this->user)
+            ->postJson($this->base()."/orders/{$order->id}/estimate-refund", [
+                'items' => [['order_option_id' => $order->options->first()->id, 'cancel_quantity' => 1]],
+            ]);
+
+        $response->assertStatus(422);
+
+        // 사유가 뭉뚱그려지지 않는다 — 고객은 "무엇 때문에 막혔는지" 를 안내받아야 한다.
+        $this->assertSame(
+            __('sirsoft-ecommerce::exceptions.claim_option_in_course', [
+                'status' => OrderStatusEnum::RETURN_IN_PROGRESS->label(),
+            ]),
+            $response->json('message'),
+        );
+    }
+
+    public function test_claim_list_pagination_carries_the_pagination_meta_contract(): void
+    {
+        $order = $this->myDeliveredOrder();
+
+        app(UserClaimService::class)->requestReturn($order, [
+            'items' => $this->items($order),
+            'reason_code' => 'changed_mind',
+            'charge_method' => 'deduct_from_refund',
+            'requested_by' => $this->user->id,
+        ]);
+
+        $response = $this->actingAs($this->user)->getJson($this->base().'/claims?type=return');
+
+        $response->assertOk()
+            // 기존 4키는 그대로 유지된다 (계약 축소 금지).
+            ->assertJsonStructure(['data' => ['pagination' => [
+                'current_page', 'last_page', 'per_page', 'total',
+                // 손조립을 표준 헬퍼로 바꾸며 확대된 3키 — 되돌아가면 여기서 red 가 된다.
+                'from', 'to', 'has_more_pages',
+            ]]]);
+
+        $this->assertSame(1, $response->json('data.pagination.total'));
+        $this->assertFalse($response->json('data.pagination.has_more_pages'));
+    }
 }

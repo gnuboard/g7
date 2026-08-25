@@ -61,6 +61,25 @@ class OrderReturnOptionRepository implements OrderReturnOptionRepositoryInterfac
     /**
      * {@inheritDoc}
      */
+    public function listOptionIdsByReturnIds(array $returnIds): array
+    {
+        if ($returnIds === []) {
+            return [];
+        }
+
+        $map = [];
+
+        // 소속 판정에 필요한 두 컬럼만 읽는다 — 결과 크기가 요청에 실린 신청서 수에 묶인다.
+        foreach ($this->model->newQuery()->whereIn('order_return_id', $returnIds)->get(['id', 'order_return_id']) as $row) {
+            $map[(int) $row->order_return_id][] = (int) $row->id;
+        }
+
+        return $map;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function bulkUpdateStatus(int $returnId, string $status, array $optionIds = []): int
     {
         $query = $this->model->newQuery()

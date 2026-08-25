@@ -213,16 +213,32 @@ class OrderCancellationService
     /**
      * 환불 예상금액을 미리 계산합니다. (DB 변경 없음)
      *
+     * 취소 실행(`executeCancellation`)과 같은 클레임 수량 잠금 가드를 기본 적용한다 —
+     * 미리보기는 통과하고 실행만 422 가 되면 운영자·구매자는 보이는 금액을 근거로 실행을
+     * 눌러야 거절을 안다(미리보기 가능/실행 차단 비대칭 해소). 취소·환불 신청 경로
+     * (`OrderRefundRequestService`)는 자기 신청서 제외까지 반영한 같은 가드를 이미 통과한 뒤
+     * 이 메서드를 부르므로 `$guardClaimLock=false` 로 재검사를 끈다 — 여기서 다시 걸면
+     * 수정 미리보기가 자기 신청서의 잠금에 막힌다.
+     *
      * @param  Order  $order  대상 주문
      * @param  array  $cancelItems  취소 대상 [{order_option_id, cancel_quantity}]
      * @param  RefundPriorityEnum  $refundPriority  환불 우선순위
+     * @param  bool  $guardClaimLock  클레임 수량 잠금 가드 적용 여부
      * @return AdjustmentResult 계산 결과
+     *
+     * @throws OrderCancellationException 클레임 코스·수량 잠금 위반 (가드 적용 시)
      */
     public function previewRefund(
         Order $order,
         array $cancelItems,
         RefundPriorityEnum $refundPriority = RefundPriorityEnum::PG_FIRST,
+        bool $guardClaimLock = true,
     ): AdjustmentResult {
+        if ($guardClaimLock) {
+            $order->loadMissing('options');
+            $this->validateNotLockedByClaim($order, $cancelItems);
+        }
+
         $adjustment = CancellationAdjustment::fromArray($cancelItems);
 
         return $this->adjustmentService->preview($order, $adjustment, $refundPriority);
@@ -450,7 +466,9 @@ class OrderCancellationService
         try {
             $this->claimQuantityGuard->assertNotLockedForCancellation($order, $cancelItems);
         } catch (OrderClaimException $e) {
-            throw new OrderCancellationException($e->getMessage());
+            // 키·치환 파라미터를 함께 넘긴다 — 버리면 미리보기 422 가 회원·비회원 면에서
+            // 사유를 잃고 뭉뚱그린 안내만 남는다 (실행 경로는 관리자 면이라 원문을 쓴다).
+            throw new OrderCancellationException($e->getMessage(), $e->getMessageKey(), $e->getMessageParams());
         }
     }
 
@@ -660,6 +678,29 @@ class OrderCancellationService
     // ───────────────────────────────────────────────
     // ③-c. OrderOption 상태 변경 + 수량 분할
     // ───────────────────────────────────────────────
+
+    /**
+     * 클레임(직접 환불신청) 실행이 확정한 수량을 취소 상태로 분할·전이합니다. (S6b)
+     *
+     * 직접 환불신청서(`refund_source_type=direct`)는 접수 시점에 주문옵션을 판매 상태 그대로
+     * 두고 수량만 선점한다(`ClaimQuantityGuard`) — 환불 실행 시점에 그 수량이 판매 흐름에서
+     * 실제로 빠져나가야 하며, 분할·상태 전이 규칙은 취소 경로와 같은 한 벌이어야 한다.
+     * 그래서 이 서비스의 분할 로직(`updateOrderOptions`)을 그대로 재사용한다.
+     *
+     * 취소 파이프라인(`executeCancellation`)과 달리 주문 합계·배송행 재계산과 취소신청서 기록은
+     * 하지 않는다 — 클레임 환불은 `total_paid_amount` 를 덮어쓰지 않고 환불 누적
+     * (`RefundExecutionService::execute`)으로만 장부를 맞추는 회계 모델이다(§4-3-1 S2a 역기재).
+     *
+     * @param  Order  $order  대상 주문 (options 로드 상태)
+     * @param  array  $cancelItems  대상 [{order_option_id, cancel_quantity}]
+     * @param  string|null  $reason  취소 사유 코드
+     */
+    public function cancelOptionQuantitiesForClaim(Order $order, array $cancelItems, ?string $reason): void
+    {
+        $order->loadMissing('options');
+
+        $this->updateOrderOptions($order, $cancelItems, $reason);
+    }
 
     /**
      * 주문 옵션 상태를 변경하고 수량을 분할합니다.
@@ -1012,15 +1053,13 @@ class OrderCancellationService
             'cancelled_at' => $now,
         ]);
 
-        // 취소 옵션 확정
-        // TODO(S6b): 관계 빌더 직접 update 는 저장소 우회다 —
-        // `OrderCancelOptionRepositoryInterface::bulkUpdateStatus()` 로 위임할 것.
-        // 정적 룰이 이 형태(`$model->relation()->update()`)를 검출하지 못해 표식으로 남긴다.
-        $cancel->cancelOptions()->update([
-            'option_status' => CancelOptionStatusEnum::COMPLETED,
-            'completed_at' => $now,
-            'processed_by' => $processedBy,
-        ]);
+        // 취소 옵션 확정 (Repository 위임 — S6b 에서 관계 빌더 직접 update 우회를 해소)
+        $this->orderCancelOptionRepository->bulkUpdateStatus(
+            $cancel->id,
+            CancelOptionStatusEnum::COMPLETED->value,
+            $processedBy,
+            $now,
+        );
 
         // 환불 레코드 확정 (PG 환불 이미 처리된 경우 제외)
         if ($refund && ! $refund->refund_status->isFinal()) {
@@ -1041,15 +1080,14 @@ class OrderCancellationService
             }
         }
 
-        // 환불 옵션 확정
-        // TODO(S6b): 위와 같은 저장소 우회. `OrderRefundOptionRepositoryInterface::bulkUpdateStatus()`
-        // 가 이미 있으므로(환불 신청 경로가 쓴다) 이 지점도 그리로 위임할 것.
+        // 환불 옵션 확정 (Repository 위임 — S6b 에서 관계 빌더 직접 update 우회를 해소)
         if ($refund) {
-            $refund->refundOptions()->update([
-                'option_status' => RefundOptionStatusEnum::COMPLETED,
-                'completed_at' => $now,
-                'processed_by' => $processedBy,
-            ]);
+            $this->orderRefundOptionRepository->bulkUpdateStatus(
+                $refund->id,
+                RefundOptionStatusEnum::COMPLETED->value,
+                $processedBy,
+                $now,
+            );
         }
     }
 }

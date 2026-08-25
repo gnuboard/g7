@@ -2,14 +2,18 @@
 
 namespace Modules\Sirsoft\Ecommerce\Services;
 
+use App\Extension\HookManager;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Modules\Sirsoft\Ecommerce\DTO\CancellableAmount;
 use Modules\Sirsoft\Ecommerce\DTO\ClaimCompletionOptions;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimChargeMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderClaimException;
+use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
@@ -44,6 +48,7 @@ class AdminClaimService
      * @param  OrderReturnService  $returnService  반품 서비스
      * @param  OrderRefundRequestService  $refundRequestService  환불신청 서비스
      * @param  ClaimPaymentService  $paymentService  클레임 추가결제 서비스
+     * @param  CancellableAmountCalculator  $cancellableCalculator  취소 가능 금액 산정기 (D19)
      * @param  OrderExchangeRepositoryInterface  $exchangeRepository  교환 Repository
      * @param  OrderReturnRepositoryInterface  $returnRepository  반품 Repository
      * @param  OrderRefundRepositoryInterface  $refundRepository  환불 Repository
@@ -54,6 +59,7 @@ class AdminClaimService
         protected OrderReturnService $returnService,
         protected OrderRefundRequestService $refundRequestService,
         protected ClaimPaymentService $paymentService,
+        protected CancellableAmountCalculator $cancellableCalculator,
         protected OrderExchangeRepositoryInterface $exchangeRepository,
         protected OrderReturnRepositoryInterface $returnRepository,
         protected OrderRefundRepositoryInterface $refundRepository,
@@ -391,6 +397,309 @@ class AdminClaimService
         return $claim instanceof OrderExchange
             ? $this->exchangeService->completeExchange($claim, $itemIds, $completion, $processedBy)
             : $this->returnService->completeReturn($claim, $itemIds, $completion, $processedBy);
+    }
+
+    // ───────────────────────────────────────────────
+    // 금액 수정 / 취소 가능 금액 / 환불 실행 (S6b)
+    // ───────────────────────────────────────────────
+
+    /**
+     * 관리자가 신청서 금액을 수정합니다. (D18 — 유형 분기 + 수정 전후 훅)
+     *
+     * 교환·반품은 배송비·청구방식·메모 축, 환불신청서는 환불액·환불수단 축이다. 수정 전후
+     * 금액과 작업자는 `claim.{type}.amounts_updated` 훅으로 나간다 — 활동 로그(S7)가
+     * "수정 전 → 후" 를 기록할 근거다(D18).
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
+     * @param  array  $amounts  수정값 (유형별 FormRequest 가 게이트한 키만)
+     * @param  int|null  $processedBy  처리 관리자 ID
+     * @return OrderExchange|OrderReturn|OrderRefund 갱신된 신청서
+     *
+     * @throws OrderClaimException 수정 불가 상태·금액·청구 방식·D19 상한 위반
+     */
+    public function updateAmounts(
+        OrderExchange|OrderReturn|OrderRefund $claim,
+        array $amounts,
+        ?int $processedBy = null,
+    ): OrderExchange|OrderReturn|OrderRefund {
+        $before = $this->amountSnapshot($claim);
+
+        $updated = match (true) {
+            $claim instanceof OrderExchange => $this->exchangeService->updateAmounts($claim, $amounts, $processedBy),
+            $claim instanceof OrderReturn => $this->returnService->updateAmounts($claim, $amounts, $processedBy),
+            default => $this->refundRequestService->updateAmounts($claim, $amounts, $processedBy),
+        };
+
+        $after = $this->amountSnapshot($updated);
+
+        if ($before !== $after) {
+            $hookType = match (true) {
+                $claim instanceof OrderExchange => ClaimTypeEnum::EXCHANGE->value,
+                $claim instanceof OrderReturn => ClaimTypeEnum::RETURN->value,
+                default => ClaimTypeEnum::REFUND->value,
+            };
+
+            HookManager::doAction(
+                "sirsoft-ecommerce.claim.{$hookType}.amounts_updated",
+                $updated,
+                $before,
+                $after,
+                $processedBy,
+            );
+        }
+
+        return $updated;
+    }
+
+    /**
+     * 주문의 취소 가능 금액(D19)을 산정합니다. (환불 상세·주문상세 환불 모달 공용)
+     *
+     * `$refundId` 가 있으면 그 환불신청서의 문맥(출처별 ① 축 + 자기 제외 선점)으로,
+     * 없으면 전달된 아이템(미지정 시 미취소 옵션 전량)으로 산정한다.
+     *
+     * @param  Order  $order  대상 주문
+     * @param  int|null  $refundId  환불신청서 ID (환불 상세 문맥)
+     * @param  array  $items  대상 아이템 [{order_option_id, cancel_quantity}] (주문 문맥)
+     * @return CancellableAmount|null 산정 결과 (환불신청서가 없거나 주문 소속이 아니면 null)
+     */
+    public function cancellableAmountForOrder(Order $order, ?int $refundId = null, array $items = []): ?CancellableAmount
+    {
+        if ($refundId !== null) {
+            $refund = $this->refundRepository->findById($refundId, ['refundOptions']);
+
+            // 중첩 스코프 — 다른 주문의 환불신청서는 없는 것으로 답한다 (교차 접근 404).
+            if (! $refund || (int) $refund->order_id !== (int) $order->id) {
+                return null;
+            }
+
+            return $this->cancellableCalculator->calculateForRefund($order, $refund);
+        }
+
+        if ($items === []) {
+            $order->loadMissing('options');
+
+            foreach ($order->options as $option) {
+                if ($option->option_status === OrderStatusEnum::CANCELLED) {
+                    continue;
+                }
+
+                $items[] = [
+                    'order_option_id' => $option->id,
+                    'cancel_quantity' => (int) $option->quantity,
+                ];
+            }
+        }
+
+        if ($items === []) {
+            // 전 옵션이 취소된 주문 — 되돌릴 대상이 없으므로 0 상한으로 답한다 (재계산 호출 없이).
+            // 통화는 계산기가 해석한다 — 스냅샷을 직접 읽으면 이 경로만 null 이 나간다.
+            return $this->cancellableCalculator->emptyFor($order);
+        }
+
+        return $this->cancellableCalculator->calculate($order, $items, ClaimTypeEnum::REFUND);
+    }
+
+    /**
+     * 승인된 환불신청서의 환불을 실행합니다. ('환불하기' — 위임)
+     *
+     * @param  OrderRefund  $refund  환불신청서
+     * @param  array  $overrides  실행 시점 금액 (refund_amount? / refund_points_amount? / refund_method?)
+     * @param  int|null  $processedBy  처리 관리자 ID
+     * @return OrderRefund 실행 완료된 환불신청서
+     *
+     * @throws OrderClaimException 실행 불가 출처·상태 / D19 상한 초과 / 재실행
+     */
+    public function executeRefund(OrderRefund $refund, array $overrides = [], ?int $processedBy = null): OrderRefund
+    {
+        return $this->refundRequestService->executeRefund($refund, $overrides, $processedBy);
+    }
+
+    /**
+     * 완료 처리 모달의 미리보기 요약을 만듭니다. (D26 — `POST admin/claims/completion-preview`)
+     *
+     * 실행 전에 "함께 실행되는 처리"(환불 예정액·재고 복구·적립 차감·쿠폰 복원)를 건별로
+     * 답한다 — 모달이 보여주는 값의 SSoT 다. '재고 복구 대상 유무' 는
+     * `ClaimCompletionOptions::hasStockRestoreTarget()` 로 판정한다(요청 기준 — 미리보기의
+     * 질문과 정확히 같다. 완료 실행 경로는 이 메서드를 쓰면 안 된다 — DTO docblock 참조).
+     *
+     * @param  ClaimTypeEnum  $type  클레임 유형 (교환·반품)
+     * @param  array<int, array{id: int, item_ids?: array<int, int>, restore_stock_by_item?: array<int|string, bool>}>  $claims  대상 신청서 목록
+     * @param  bool  $createRefundRequest  환불신청서 접수 선택 상태 (모달 라디오)
+     * @return array{claims: array<int, array>, skipped: array<int, array{id: int, message: string}>, totals: array{claim_count: int, completable_item_count: int, refund_amount_total: float, refund_points_amount_total: float}} 미리보기 결과
+     */
+    public function completionPreview(ClaimTypeEnum $type, array $claims, bool $createRefundRequest): array
+    {
+        $rows = [];
+        $skipped = [];
+        $completableTotal = 0;
+        $refundTotal = 0.0;
+        $pointsTotal = 0.0;
+
+        foreach ($claims as $entry) {
+            $id = (int) ($entry['id'] ?? 0);
+            $claim = $this->findForTransition($type, $id);
+
+            if (! $claim instanceof OrderExchange && ! $claim instanceof OrderReturn) {
+                $skipped[] = [
+                    'id' => $id,
+                    'message' => __('sirsoft-ecommerce::exceptions.claim_not_found'),
+                ];
+
+                continue;
+            }
+
+            $claim->loadMissing('order');
+
+            $itemIds = array_map('intval', (array) ($entry['item_ids'] ?? []));
+
+            $restoreByItem = [];
+            foreach ((array) ($entry['restore_stock_by_item'] ?? []) as $itemId => $restore) {
+                $restoreByItem[(int) $itemId] = (bool) $restore;
+            }
+
+            $completion = new ClaimCompletionOptions(
+                restoreStockByItem: $restoreByItem,
+                createRefundRequest: $createRefundRequest,
+            );
+
+            if ($claim instanceof OrderReturn) {
+                $preview = $this->returnService->previewCompletion($claim, $itemIds);
+                $completableIds = $preview['completable_item_ids'];
+
+                $refund = [
+                    // 사유 판정은 뿌리(previewCompletion)가 소유한다 — 교환 분기와 같은 결이다.
+                    // 여기서 already_filed 만 보고 되짚으면 '접수할 상품 없음' 이 사유 없는
+                    // 0원 접수 예고로 나가 실제 접수(422)와 갈린다.
+                    'applicable' => $createRefundRequest && $preview['blocked_reason'] === null,
+                    'already_filed' => $preview['already_filed'],
+                    'blocked_reason' => $preview['blocked_reason'],
+                    'refund_amount' => $preview['refund_amount'],
+                    'refund_points_amount' => $preview['refund_points_amount'],
+                    'deducted_shipping_fee' => $preview['deducted_shipping_fee'],
+                ];
+                $couponRestore = $preview['coupon_restore'];
+            } else {
+                $completableIds = $this->completableExchangeItemIds($claim, $itemIds);
+                $refundPreview = $this->exchangeService->previewRefundRequest($claim, $completableIds);
+
+                $refund = [
+                    'applicable' => $createRefundRequest && $refundPreview['refundable'],
+                    'already_filed' => $refundPreview['blocked_reason'] === 'claim_refund_request_exists',
+                    'blocked_reason' => $refundPreview['blocked_reason'],
+                    'refund_amount' => $refundPreview['refund_amount'],
+                    'refund_points_amount' => $refundPreview['refund_points_amount'],
+                    'deducted_shipping_fee' => $refundPreview['deducted_shipping_fee'],
+                ];
+                // 교환 완료는 주문 재계산·쿠폰 복원을 하지 않는다 (completeExchange docblock).
+                $couponRestore = false;
+            }
+
+            $restoreCount = count(array_filter(
+                $completableIds,
+                fn (int $itemId) => $completion->shouldRestoreStock($itemId),
+            ));
+
+            $rows[] = [
+                'id' => $claim->id,
+                'claim_number' => $this->claimNumberOf($claim),
+                'completable_item_ids' => $completableIds,
+                'completable_item_count' => count($completableIds),
+                'has_stock_restore_target' => $completion->hasStockRestoreTarget(),
+                'stock_restore_count' => $restoreCount,
+                'stock_discard_count' => max(0, count($completableIds) - $restoreCount),
+                'earn_recovery' => $claim->order?->user_id !== null && $completableIds !== [],
+                'coupon_restore' => $couponRestore,
+                'refund' => $refund,
+            ];
+
+            $completableTotal += count($completableIds);
+
+            if ($refund['applicable']) {
+                $refundTotal += (float) $refund['refund_amount'];
+                $pointsTotal += (float) $refund['refund_points_amount'];
+            }
+        }
+
+        return [
+            'claims' => $rows,
+            'skipped' => $skipped,
+            'totals' => [
+                'claim_count' => count($rows),
+                'completable_item_count' => $completableTotal,
+                'refund_amount_total' => $refundTotal,
+                'refund_points_amount_total' => $pointsTotal,
+            ],
+        ];
+    }
+
+    /**
+     * 완료된 신청서에 환불신청서를 수동 접수합니다. (D26 후속 접수 — 유형 위임)
+     *
+     * @param  OrderExchange|OrderReturn  $claim  신청서
+     * @param  int|null  $processedBy  처리 관리자 ID
+     * @return OrderRefund 생성된 환불신청서
+     *
+     * @throws OrderClaimException 완료 상품 부재 / 이미 접수 / 환불 대상 없음
+     */
+    public function createRefundRequestForCompleted(OrderExchange|OrderReturn $claim, ?int $processedBy = null): OrderRefund
+    {
+        return $claim instanceof OrderExchange
+            ? $this->exchangeService->createRefundRequestForCompleted($claim, $processedBy)
+            : $this->returnService->createRefundRequestForCompleted($claim, $processedBy);
+    }
+
+    /**
+     * 완료 전이가 가능한 교환 신청 상품 행 ID 를 고릅니다. (미리보기 전용)
+     *
+     * 완료 실행(`completeExchange`)의 대상 필터와 같은 조건이다 — 게이트가 갈리면 모달이
+     * 보여준 건수와 실제 완료 건수가 달라진다.
+     *
+     * @param  OrderExchange  $claim  교환 신청서
+     * @param  array<int, int>  $itemIds  요청 대상 (빈 배열이면 전체)
+     * @return array<int, int> 완료 가능 상품 행 ID
+     */
+    protected function completableExchangeItemIds(OrderExchange $claim, array $itemIds): array
+    {
+        $claim->loadMissing('exchangeOptions');
+
+        $ids = [];
+
+        foreach ($claim->exchangeOptions as $item) {
+            if ($itemIds !== [] && ! in_array((int) $item->id, $itemIds, true)) {
+                continue;
+            }
+
+            if ($item->option_status->canTransitionTo(ExchangeStatusEnum::COMPLETED)
+                && ! $item->option_status->isFinal()) {
+                $ids[] = (int) $item->id;
+            }
+        }
+
+        return $ids;
+    }
+
+    /**
+     * 금액 수정 훅에 실을 금액 스냅샷을 만듭니다. (수정 전/후 비교 근거)
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
+     * @return array<string, mixed> 금액 스냅샷
+     */
+    protected function amountSnapshot(OrderExchange|OrderReturn|OrderRefund $claim): array
+    {
+        if ($claim instanceof OrderRefund) {
+            return [
+                'refund_amount' => (float) $claim->refund_amount,
+                'refund_points_amount' => (float) $claim->refund_points_amount,
+                'refund_method' => $claim->refund_method?->value,
+            ];
+        }
+
+        return [
+            'claim_shipping_fee' => (float) $claim->claim_shipping_fee,
+            'total_charge_amount' => (float) $claim->total_charge_amount,
+            'charge_method' => $claim->charge_method?->value,
+            'admin_memo' => $claim->admin_memo,
+        ];
     }
 
     // ───────────────────────────────────────────────

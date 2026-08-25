@@ -516,6 +516,97 @@ class ClaimControllerTest extends ModuleTestCase
     }
 
     // ================================================================
+    // 완료 페이로드(`completion`) 계약 — 3진입점 동형 (D26)
+    // ================================================================
+
+    /**
+     * 일괄 전이 진입점도 같은 `completion` 페이로드를 받고 같은 효과를 낸다.
+     *
+     * D26 은 "세 진입점이 모두 같은 모달을 연다" 가 핵심이라 셋이 **하나의 계약**을 써야 한다.
+     * 단건(`status`)과 상품 단위(`options/bulk-status`)만 단언돼 있어 일괄(`claims/bulk-status`)의
+     * 완료 축이 빠져도 전 스위트가 green 이었다 — 그 경로만 페이로드를 무시해도 드러나지 않는다.
+     */
+    public function test_bulk_status_completed_honors_the_same_completion_payload(): void
+    {
+        $return = $this->moveReturnToCollected($this->makeReturn());
+        $item = $return->fresh('returnOptions')->returnOptions->first();
+
+        $this->actingAs($this->admin)->postJson($this->base().'/claims/bulk-status', [
+            'type' => 'return',
+            'ids' => [$return->id],
+            'status' => 'completed',
+            'completion' => [
+                'restore_stock_by_item' => [$item->id => true],
+                'create_refund_request' => true,
+            ],
+        ])->assertOk()
+            ->assertJsonPath('data.succeeded.0', $return->id);
+
+        // '지금 접수' 를 골랐으므로 환불신청서가 1건 생긴다 — 단건 경로와 같은 결과다.
+        $fresh = $return->fresh();
+        $this->assertSame(ReturnStatusEnum::COMPLETED, $fresh->return_status);
+        $this->assertNotNull($fresh->refund_id);
+        $this->assertSame(1, OrderRefund::query()->where('order_id', $return->order_id)->count());
+    }
+
+    /**
+     * 일괄 전이도 '접수하지 않음' 을 그대로 존중한다 (자동 접수 금지 — D26).
+     */
+    public function test_bulk_status_completed_without_refund_request_creates_no_order_refund(): void
+    {
+        $return = $this->moveReturnToCollected($this->makeReturn());
+        $item = $return->fresh('returnOptions')->returnOptions->first();
+
+        $this->actingAs($this->admin)->postJson($this->base().'/claims/bulk-status', [
+            'type' => 'return',
+            'ids' => [$return->id],
+            'status' => 'completed',
+            'completion' => [
+                'restore_stock_by_item' => [$item->id => false],
+                'create_refund_request' => false,
+            ],
+        ])->assertOk()
+            ->assertJsonPath('data.succeeded.0', $return->id);
+
+        $this->assertSame(0, OrderRefund::query()->where('order_id', $return->order_id)->count());
+        $this->assertNull($return->fresh()->refund_id);
+    }
+
+    /**
+     * 완료 전이인데 `completion` 페이로드가 없으면 세 진입점 모두 422 다.
+     *
+     * 기본값 하드코딩 금지(D26)의 계약면이다 — 한 경로만 옵션을 임의 기본값으로 채우면
+     * 운영자가 고르지 않은 재고 복구·환불 접수가 조용히 실행된다.
+     */
+    public function test_every_completion_entry_point_requires_the_completion_payload(): void
+    {
+        $single = $this->moveReturnToCollected($this->makeReturn());
+        $bulk = $this->moveReturnToCollected($this->makeReturn());
+        $option = $this->moveReturnToCollected($this->makeReturn());
+        $optionItem = $option->fresh('returnOptions')->returnOptions->first();
+
+        $this->actingAs($this->admin)->patchJson($this->base()."/returns/{$single->id}/status", [
+            'status' => 'completed',
+        ])->assertStatus(422);
+
+        $this->actingAs($this->admin)->postJson($this->base().'/claims/bulk-status', [
+            'type' => 'return',
+            'ids' => [$bulk->id],
+            'status' => 'completed',
+        ])->assertStatus(422);
+
+        $this->actingAs($this->admin)->patchJson($this->base()."/returns/{$option->id}/options/bulk-status", [
+            'items' => [$optionItem->id],
+            'status' => 'completed',
+        ])->assertStatus(422);
+
+        // 셋 다 거절됐으므로 어느 신청서도 완료로 넘어가지 않았다.
+        $this->assertSame(ReturnStatusEnum::COLLECTED, $single->fresh()->return_status);
+        $this->assertSame(ReturnStatusEnum::COLLECTED, $bulk->fresh()->return_status);
+        $this->assertSame(ReturnStatusEnum::COLLECTED, $option->fresh()->return_status);
+    }
+
+    // ================================================================
     // 송장
     // ================================================================
 

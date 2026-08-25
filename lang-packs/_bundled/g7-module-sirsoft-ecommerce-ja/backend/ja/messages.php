@@ -1178,5 +1178,11 @@ return [
         'option_status_processed' => '申請商品のステータス変更を処理しました。',
         'tracking_saved' => '送り状情報を保存しました。',
         'images_cleared' => '添付画像をすべて削除しました。',
+        'amounts_updated' => '金額を修正しました。',
+        'cancellable_retrieved' => 'キャンセル可能金額を算定しました。',
+        'refund_executed' => '返金を実行しました。',
+        'refund_execute_failed' => '返金の実行に失敗しました。',
+        'completion_preview_retrieved' => '完了処理の要約を計算しました。',
+        'refund_request_created' => '返金申請書を受け付けました。',
     ],
 ];

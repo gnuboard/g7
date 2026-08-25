@@ -726,18 +726,34 @@ class OrderExchangeService
      * 관리자가 청구 금액을 수정합니다. (D18 의 클레임 청구액 축)
      *
      * 왕복 배송비를 수정하면 총 청구액(배송비 + 추가 차액)과 다통화 표기가 함께 움직인다.
-     * 옵션 차액은 신청 시점 단가 차이라 여기서 고치지 않는다.
+     * 옵션 차액은 신청 시점 단가 차이라 여기서 고치지 않는다. 접수 시 청구 0원이던 신청서의
+     * 상향은 청구 방식(`charge_method`)을 함께 실어야 한다 — 허용 목록
+     * (`claim.allowed_charge_methods`) 검증을 동반한다.
      *
      * @param  OrderExchange  $exchange  교환 신청서
-     * @param  array  $amounts  수정값 (claim_shipping_fee / admin_memo)
+     * @param  array  $amounts  수정값 (claim_shipping_fee / charge_method / admin_memo)
      * @param  int|null  $processedBy  처리 관리자 ID
      * @return OrderExchange 갱신된 신청서
      *
-     * @throws OrderClaimException 금액이 음수일 때
+     * @throws OrderClaimException 종결 신청서 / 금액 음수 / 청구 방식 부재·불허
      */
     public function updateAmounts(OrderExchange $exchange, array $amounts, ?int $processedBy = null): OrderExchange
     {
+        // 종결(완료·반려·철회) 신청서의 금액은 이미 정산 근거로 소비됐다 — 수정하면 장부와 어긋난다.
+        if ($exchange->isFinal()) {
+            throw OrderClaimException::amountsNotEditable();
+        }
+
         $updates = [];
+
+        // 청구 방식을 함께 받는다 (D18 — 접수 시 청구 0원이던 신청서의 상향 경로).
+        $chargeMethod = $exchange->charge_method;
+
+        if (array_key_exists('charge_method', $amounts) && $amounts['charge_method'] !== null && $amounts['charge_method'] !== '') {
+            $chargeMethod = $this->normalizeChargeMethod($amounts['charge_method']);
+            $this->assertChargeMethodAllowedForAmounts($chargeMethod);
+            $updates['charge_method'] = $chargeMethod;
+        }
 
         if (array_key_exists('claim_shipping_fee', $amounts)) {
             $fee = (float) $amounts['claim_shipping_fee'];
@@ -753,8 +769,8 @@ class OrderExchangeService
             $totalCharge = $fee + (float) $exchange->additional_product_amount;
 
             // 청구 방식이 없는 신청서(접수 시 청구 0원)의 청구액을 양수로 올리면 결제할 수 없는 청구가
-            // 남는다 — 청구 방식을 함께 정하는 경로(금액 수정 API)가 아니면 거절한다.
-            if ($totalCharge > 0 && $exchange->charge_method === null) {
+            // 남는다 — 이 요청이 청구 방식을 함께 실었으면 그 값으로 판정한다.
+            if ($totalCharge > 0 && $chargeMethod === null) {
                 throw OrderClaimException::chargeMethodRequired();
             }
 
@@ -777,15 +793,40 @@ class OrderExchangeService
             $updates['admin_memo'] = $amounts['admin_memo'];
         }
 
-        if ($processedBy !== null) {
-            $updates['processed_by'] = $processedBy;
-        }
-
+        // 빈 페이로드 판정은 처리자를 넣기 전에 한다 — 뒤에 두면 관리자 경로가 항상
+        // processed_by 를 실으므로 이 가드가 사문이 되어 무의미한 UPDATE 가 나간다.
         if ($updates === []) {
             return $exchange;
         }
 
+        if ($processedBy !== null) {
+            $updates['processed_by'] = $processedBy;
+        }
+
         return $this->exchangeRepository->update($exchange, $updates);
+    }
+
+    /**
+     * 금액 수정이 실은 청구 방식이 운영자 허용 목록에 있는지 검증합니다. (반품과 동형)
+     *
+     * 신청 경로의 `assertChargeMethodUsable` 과 같은 허용 목록(`claim.allowed_charge_methods`)을
+     * 읽는다 — 목록 밖 방식이 금액 수정으로 들어오면 신청 화면이 감춘 방식이 우회로가 된다.
+     * 차감 가능 여부(deduct) 판정은 신청 시점 검증 소관이라 여기서 반복하지 않는다.
+     *
+     * @param  ClaimChargeMethodEnum  $chargeMethod  청구 방식
+     *
+     * @throws OrderClaimException 허용 목록 밖 방식
+     */
+    protected function assertChargeMethodAllowedForAmounts(ClaimChargeMethodEnum $chargeMethod): void
+    {
+        $allowed = (array) $this->settingsService->getSetting(
+            'claim.allowed_charge_methods',
+            ClaimChargeMethodEnum::values(),
+        );
+
+        if (! in_array($chargeMethod->value, $allowed, true)) {
+            throw OrderClaimException::chargeMethodNotAllowed();
+        }
     }
 
     // ───────────────────────────────────────────────
@@ -2089,6 +2130,109 @@ class OrderExchangeService
     }
 
     /**
+     * 환불신청서 접수 시 실릴 금액 구성을 계산합니다. (접수·미리보기 공용 산식)
+     *
+     * 접수액은 신청 시점에 동결한 순액(`refund_product_amount`)을 넘지 못한다. 고가·저가가 섞인
+     * 신청서는 차액을 **합계로 상계**해(D29) 청구·환불 중 한쪽 컬럼만 채우므로, 상품별 음수 차액만
+     * 더하면 상계로 사라진 양수 차액만큼 더 나간다 — 순추가 신청서(동결 순액 0)는 고객이 이미
+     * 그 차액을 청구받았으므로 접수 자체가 성립하지 않는다. 앞선 라운드가 접수한 몫을 빼서
+     * 라운드 합계도 순액을 넘지 않게 한다.
+     *
+     * @param  Order  $order  주문
+     * @param  OrderExchange  $exchange  교환 신청서
+     * @param  array<int, OrderExchangeOption>  $eligible  접수 대상 상품 행
+     * @param  Collection<int, OrderRefund>  $liveRefunds  살아 있는 환불신청서 목록
+     * @return array{raw_refundable: float, refundable: float, deducted_fee: float, refund_amount: float, pg_refund: float, points_refund: float}|null 구성 (환불액이 0 이하면 null — 다음 라운드 합산 대상)
+     */
+    protected function composeRefundRequestAmounts(
+        Order $order,
+        OrderExchange $exchange,
+        array $eligible,
+        Collection $liveRefunds,
+    ): ?array {
+        $rawRefundable = 0.0;
+
+        foreach ($eligible as $item) {
+            $rawRefundable += -(float) $item->price_difference;
+        }
+
+        $netRemaining = max(0.0, (float) $exchange->refund_product_amount - $this->filedRefundTotal($liveRefunds));
+        $refundable = min($rawRefundable, $netRemaining);
+
+        $feeRemaining = $exchange->charge_method === ClaimChargeMethodEnum::DEDUCT_FROM_REFUND
+            ? max(0.0, (float) $exchange->claim_shipping_fee - $this->feeAlreadyDeducted($liveRefunds))
+            : 0.0;
+        $deductedFee = min($feeRemaining, $refundable);
+        $refundAmount = $refundable - $deductedFee;
+
+        if ($refundAmount <= 0) {
+            return null;
+        }
+
+        [$pgRefund, $pointsRefund] = $this->splitRefundByPaymentCapacity($order, $refundAmount);
+
+        return [
+            'raw_refundable' => $rawRefundable,
+            'refundable' => $refundable,
+            'deducted_fee' => $deductedFee,
+            'refund_amount' => $refundAmount,
+            'pg_refund' => $pgRefund,
+            'points_refund' => $pointsRefund,
+        ];
+    }
+
+    /**
+     * 완료 처리·수동 접수 전에 환불신청서에 실릴 금액을 미리 계산합니다. (완료 모달 미리보기 — DB 변경 없음)
+     *
+     * `$assumeCompletedItemIds` 는 아직 완료되지 않았지만 이번 완료 라운드에 포함될 상품 행이다 —
+     * 모달은 실행 전에 "지금 접수하면 얼마가 실리는가" 를 보여야 하므로 그 상품들이 완료됐다고
+     * 가정하고 접수 산식(`composeRefundRequestAmounts`)을 그대로 돌린다.
+     *
+     * @param  OrderExchange  $exchange  교환 신청서
+     * @param  array<int, int>  $assumeCompletedItemIds  완료됐다고 가정할 신청 상품 행 ID 목록
+     * @return array{refundable: bool, blocked_reason: string|null, refund_amount: float, refund_points_amount: float, deducted_shipping_fee: float} 미리보기 결과
+     */
+    public function previewRefundRequest(OrderExchange $exchange, array $assumeCompletedItemIds = []): array
+    {
+        $exchange->loadMissing(['exchangeOptions', 'order']);
+        $order = $exchange->order;
+
+        $liveRefunds = $this->liveRefundRequests($exchange);
+        $eligible = $this->refundableItemsNotYetRequested($exchange, $liveRefunds, $assumeCompletedItemIds);
+
+        $blocked = fn (string $reason) => [
+            'refundable' => false,
+            'blocked_reason' => $reason,
+            'refund_amount' => 0.0,
+            'refund_points_amount' => 0.0,
+            'deducted_shipping_fee' => 0.0,
+        ];
+
+        if ($order === null) {
+            return $blocked('claim_refund_not_applicable');
+        }
+
+        if ($eligible === []) {
+            // 접수·수동 접수 경로의 두 거절 사유와 같은 구분 — 화면이 구분해 안내한다 (S5 인계 9).
+            return $blocked($liveRefunds->isNotEmpty() ? 'claim_refund_request_exists' : 'claim_refund_not_applicable');
+        }
+
+        $composition = $this->composeRefundRequestAmounts($order, $exchange, $eligible, $liveRefunds);
+
+        if ($composition === null) {
+            return $blocked('claim_refund_not_applicable');
+        }
+
+        return [
+            'refundable' => true,
+            'blocked_reason' => null,
+            'refund_amount' => $composition['pg_refund'],
+            'refund_points_amount' => $composition['points_refund'],
+            'deducted_shipping_fee' => $composition['deducted_fee'],
+        ];
+    }
+
+    /**
      * 이 교환에서 접수된 환불신청서 중 살아 있는 것(반려·철회 제외)을 반환합니다.
      *
      * 교환은 `refund_id` 역참조가 없어 발생 출처 축(`refund_source_type=exchange`)으로 되짚는다.
@@ -2112,19 +2256,42 @@ class OrderExchangeService
     /**
      * 완료됐지만 아직 살아 있는 환불신청서에 담기지 않은 저가 상품 행을 반환합니다.
      *
+     * `$assumeCompletedItemIds` 가 있으면 그 상품 행이 완료됐다고 가정하고 후보에 합친다 —
+     * 완료 모달 미리보기(`previewRefundRequest`)가 실행 전에 "지금 접수하면 무엇이 실리는가" 를
+     * 물을 때만 쓰며, 완료 가능 판정(전이 게이트·비종결)은 완료 경로와 같은 조건이다.
+     *
      * @param  OrderExchange  $exchange  교환 신청서 (exchangeOptions 로드됨)
      * @param  Collection<int, OrderRefund>  $liveRefunds  살아 있는 환불신청서 목록
+     * @param  array<int, int>  $assumeCompletedItemIds  완료됐다고 가정할 신청 상품 행 ID 목록
      * @return array<int, OrderExchangeOption> 접수 대상 상품 행
      */
-    protected function refundableItemsNotYetRequested(OrderExchange $exchange, Collection $liveRefunds): array
-    {
+    protected function refundableItemsNotYetRequested(
+        OrderExchange $exchange,
+        Collection $liveRefunds,
+        array $assumeCompletedItemIds = [],
+    ): array {
         $requestedOptionIds = $liveRefunds
             ->flatMap(fn (OrderRefund $refund) => $refund->refundOptions->pluck('order_option_id'))
             ->map(fn ($id) => (int) $id)
             ->all();
 
+        $candidates = $this->completedItems($exchange);
+
+        if ($assumeCompletedItemIds !== []) {
+            $assumeIds = array_map('intval', $assumeCompletedItemIds);
+
+            foreach ($exchange->exchangeOptions as $item) {
+                if (in_array((int) $item->id, $assumeIds, true)
+                    && $item->option_status !== ExchangeStatusEnum::COMPLETED
+                    && $item->option_status->canTransitionTo(ExchangeStatusEnum::COMPLETED)
+                    && ! $item->option_status->isFinal()) {
+                    $candidates[] = $item;
+                }
+            }
+        }
+
         return array_values(array_filter(
-            $this->completedItems($exchange),
+            $candidates,
             fn (OrderExchangeOption $item) => (float) $item->price_difference < 0
                 && ! in_array((int) $item->order_option_id, $requestedOptionIds, true),
         ));
@@ -2234,33 +2401,21 @@ class OrderExchangeService
                 : OrderClaimException::refundNotApplicable();
         }
 
-        $rawRefundable = 0.0;
-
-        foreach ($completed as $item) {
-            $rawRefundable += -(float) $item->price_difference;
-        }
-
-        // 접수액은 신청 시점에 동결한 순액(`refund_product_amount`)을 넘지 못한다. 고가·저가가 섞인
-        // 신청서는 차액을 **합계로 상계**해(D29) 청구·환불 중 한쪽 컬럼만 채우므로, 상품별 음수 차액만
-        // 더하면 상계로 사라진 양수 차액만큼 더 나간다 — 순추가 신청서(동결 순액 0)는 고객이 이미
-        // 그 차액을 청구받았으므로 접수 자체가 성립하지 않는다. 앞선 라운드가 접수한 몫을 빼서
-        // 라운드 합계도 순액을 넘지 않게 한다.
-        $netRemaining = max(0.0, (float) $exchange->refund_product_amount - $this->filedRefundTotal($liveRefunds));
-        $refundable = min($rawRefundable, $netRemaining);
-
-        $feeRemaining = $exchange->charge_method === ClaimChargeMethodEnum::DEDUCT_FROM_REFUND
-            ? max(0.0, (float) $exchange->claim_shipping_fee - $this->feeAlreadyDeducted($liveRefunds))
-            : 0.0;
-        $deductedFee = min($feeRemaining, $refundable);
-        $refundAmount = $refundable - $deductedFee;
+        $composition = $this->composeRefundRequestAmounts($order, $exchange, $completed, $liveRefunds);
 
         // 이번 라운드 차액이 남은 배송비에 못 미치면 접수하지 않는다 — 그 상품은 접수되지 않은 채로
         // 남아 다음 라운드에 합산되고, 배송비는 그때 한 번에 차감된다.
-        if ($refundAmount <= 0) {
+        if ($composition === null) {
             throw OrderClaimException::refundNotApplicable();
         }
 
-        [$pgRefund, $pointsRefund] = $this->splitRefundByPaymentCapacity($order, $refundAmount);
+        [
+            'raw_refundable' => $rawRefundable,
+            'refundable' => $refundable,
+            'deducted_fee' => $deductedFee,
+            'pg_refund' => $pgRefund,
+            'points_refund' => $pointsRefund,
+        ] = $composition;
 
         $currencySnapshot = $order->currency_snapshot ?? [];
 

@@ -1,0 +1,867 @@
+<?php
+
+namespace Modules\Sirsoft\Ecommerce\Tests\Feature\Admin;
+
+use App\Extension\HookManager;
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
+use Modules\Sirsoft\Ecommerce\DTO\ClaimCompletionOptions;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimChargeMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\MileageTransactionTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundOptionStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
+use Modules\Sirsoft\Ecommerce\Models\MileageTransaction;
+use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
+use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
+use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageTransactionRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Services\OrderExchangeService;
+use Modules\Sirsoft\Ecommerce\Services\OrderRefundRequestService;
+use Modules\Sirsoft\Ecommerce\Services\OrderReturnService;
+use Modules\Sirsoft\Ecommerce\Services\UserMileageService;
+use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
+use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+
+/**
+ * 관리자 환불 실행 API Feature 테스트 (S6b)
+ *
+ * 검증 축:
+ * - 실행 — 직접 환불신청서(옵션 분할·취소 + 누적) / 반품 발 환불(옵션 불변 + 누적) / 비-PG 완료 확정
+ * - D18 — 실행 본문 금액 반영 (PG 훅이 수정값을 받는지)
+ * - D19 — 상한 초과 422 (실행 직전 재계산 가드) + `cancellable-amount` 3축 응답·자기 제외·교차 접근 404
+ * - 멱등 — 재실행 409 (더블클릭) + 사용 마일리지 환급 order_refund_id 멱등
+ * - 게이트 — 취소 발 환불 422 / 미승인 422 / 권한 403
+ * - 취소 미리보기 비대칭 해소 — 클레임 진행 중 상품의 estimate-refund 422
+ */
+class ClaimRefundExecutionTest extends ModuleTestCase
+{
+    use BuildsClaimFlowOrders;
+
+    protected User $admin;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->setupTestCurrencySettings();
+        $this->seedClaimReasons();
+        $this->admin = $this->createAdminUser([
+            'sirsoft-ecommerce.claims.read',
+            'sirsoft-ecommerce.claims.update-status',
+            'sirsoft-ecommerce.claims.update-amounts',
+            'sirsoft-ecommerce.claims.execute-refund',
+            'sirsoft-ecommerce.orders.update',
+        ]);
+    }
+
+    protected function tearDown(): void
+    {
+        $this->clearTestCurrencySettings();
+        parent::tearDown();
+    }
+
+    protected function base(): string
+    {
+        return '/api/modules/sirsoft-ecommerce/admin';
+    }
+
+    /**
+     * PG 환불 훅을 성공으로 고정하고 호출 금액을 기록합니다.
+     *
+     * @param  array|null  $calls  호출 기록 (참조)
+     */
+    protected function fakePgRefund(?array &$calls = null): void
+    {
+        $calls = [];
+
+        HookManager::addFilter('sirsoft-ecommerce.payment.refund', function ($default, $order, $payment, $amount) use (&$calls) {
+            $calls[] = ['amount' => $amount];
+
+            return ['success' => true, 'transaction_id' => 'PGTXN-'.count($calls), 'error_code' => null, 'error_message' => null];
+        });
+    }
+
+    /**
+     * 승인된 직접 환불신청서를 만듭니다. (상품준비중 주문 — D2 환불신청 분기 상태)
+     *
+     * @param  float  $amount  PG 환불액
+     * @param  float  $points  마일리지 환불액
+     * @return array{0: Order, 1: OrderRefund} 주문 + 환불신청서
+     */
+    protected function approvedDirectRefund(float $amount = 10000, float $points = 0, array $orderOverrides = []): array
+    {
+        $order = $this->deliveredClaimOrder(orderOverrides: $orderOverrides);
+        $order = $this->moveOrderTo($order, OrderStatusEnum::PREPARING);
+
+        $refund = $this->makeDirectRefund($order, $order->options->first(), 1, RefundStatusEnum::APPROVED);
+        $refund->update([
+            'refund_amount' => $amount,
+            'refund_points_amount' => $points,
+            'refund_method' => $points > 0 && $amount <= 0 ? RefundMethodEnum::POINTS : RefundMethodEnum::PG,
+            'reason_code' => 'changed_mind',
+        ]);
+
+        return [$order, $refund->fresh(['refundOptions'])];
+    }
+
+    /**
+     * 완료 처리로 환불신청서가 접수된 반품을 만들고 승인까지 진행합니다.
+     *
+     * @return array{0: Order, 1: OrderReturn, 2: OrderRefund} 주문 + 반품 + 승인된 환불신청서
+     */
+    protected function approvedReturnRefund(): array
+    {
+        $order = $this->deliveredClaimOrder();
+
+        $return = app(OrderReturnService::class)->requestReturn($order, [
+            'items' => [['order_option_id' => $order->options->first()->id, 'quantity' => 1]],
+            'reason_code' => 'changed_mind',
+            'charge_method' => ClaimChargeMethodEnum::DEDUCT_FROM_REFUND,
+        ]);
+
+        $service = app(OrderReturnService::class);
+        $return = $service->transition($return, ReturnStatusEnum::APPROVED);
+        $return = $service->transition($return, ReturnStatusEnum::COLLECTION_READY);
+        $return = $service->transition($return, ReturnStatusEnum::COLLECTING);
+        $return = $service->transition($return, ReturnStatusEnum::COLLECTED);
+
+        $return = $service->completeReturn($return, [], new ClaimCompletionOptions(
+            restoreStockByItem: [],
+            createRefundRequest: true,
+        ));
+
+        $refund = OrderRefund::findOrFail($return->refund_id);
+        $refund = app(OrderRefundRequestService::class)->transition($refund, RefundStatusEnum::APPROVED);
+
+        return [$order, $return, $refund];
+    }
+
+    /**
+     * 저가 교환을 완료해 차액 환불신청서를 접수하고 승인까지 진행합니다.
+     *
+     * D19 ① 축의 교환 분기(동결 차액 − 이미 접수된 몫)와 자기 제외를 재는 유일한 픽스처다.
+     *
+     * @return array{0: Order, 1: OrderExchange, 2: OrderRefund} 주문 + 교환 + 승인된 환불신청서
+     */
+    protected function approvedExchangeRefund(): array
+    {
+        [$order, $exchange] = $this->redeliveredLowerPricedExchange();
+
+        $exchange = app(OrderExchangeService::class)->completeExchange(
+            $exchange,
+            [],
+            new ClaimCompletionOptions(restoreStockByItem: [], createRefundRequest: true),
+        );
+
+        $refund = OrderRefund::query()
+            ->where('refund_source_type', RefundSourceTypeEnum::EXCHANGE->value)
+            ->where('refund_source_id', $exchange->id)
+            ->firstOrFail();
+
+        $refund = app(OrderRefundRequestService::class)->transition($refund, RefundStatusEnum::APPROVED);
+
+        return [$order->fresh(['options', 'payments']), $exchange, $refund->fresh(['refundOptions'])];
+    }
+
+    // ================================================================
+    // 환불 실행 — 직접 환불신청서
+    // ================================================================
+
+    public function test_execute_completes_an_approved_direct_refund_and_cancels_the_option_quantity(): void
+    {
+        $this->fakePgRefund($calls);
+        [$order, $refund] = $this->approvedDirectRefund(10000);
+
+        $response = $this->actingAs($this->admin)
+            ->postJson($this->base()."/refunds/{$refund->id}/execute");
+
+        $response->assertStatus(200);
+
+        $refund->refresh();
+        $this->assertSame(RefundStatusEnum::COMPLETED, $refund->refund_status);
+        $this->assertNotNull($refund->refunded_at);
+        $this->assertNotNull($refund->pg_transaction_id);
+        $this->assertSame(
+            RefundOptionStatusEnum::COMPLETED,
+            $refund->refundOptions()->first()->option_status,
+        );
+
+        // 직접 환불신청 — 선점만 하던 수량이 실행 시점에 취소 상태로 빠진다.
+        $option = $order->options->first()->fresh();
+        $this->assertSame(OrderStatusEnum::CANCELLED, $option->option_status);
+        $this->assertSame(1, (int) $option->cancelled_quantity);
+
+        // 클레임 환불 누적 — total_paid_amount 는 불변, total_refunded_amount 만 쌓인다 (§4-3-1).
+        $freshOrder = $order->fresh();
+        $this->assertSame(10000.0, (float) $freshOrder->total_refunded_amount);
+        $this->assertSame((float) $order->total_paid_amount, (float) $freshOrder->total_paid_amount);
+        $this->assertSame(10000.0, (float) $freshOrder->payment->fresh()->cancelled_amount);
+
+        $this->assertCount(1, $calls);
+        $this->assertSame(10000.0, (float) $calls[0]['amount']);
+    }
+
+    public function test_execute_uses_the_request_body_amounts(): void
+    {
+        $this->fakePgRefund($calls);
+        [, $refund] = $this->approvedDirectRefund(20000);
+
+        $response = $this->actingAs($this->admin)
+            ->postJson($this->base()."/refunds/{$refund->id}/execute", [
+                'refund_amount' => 15000,
+            ]);
+
+        $response->assertStatus(200);
+
+        // D18 — [환불하기]는 화면에 입력된 값으로 실행한다 (저장 없이 실행 가능).
+        $this->assertSame(15000.0, (float) $refund->fresh()->refund_amount);
+        $this->assertSame(15000.0, (float) $calls[0]['amount']);
+    }
+
+    public function test_execute_rejects_amounts_exceeding_the_cancellable_limit(): void
+    {
+        $this->fakePgRefund($calls);
+        [, $refund] = $this->approvedDirectRefund(10000);
+
+        $response = $this->actingAs($this->admin)
+            ->postJson($this->base()."/refunds/{$refund->id}/execute", [
+                'refund_amount' => 999999,
+            ]);
+
+        $response->assertStatus(422);
+        $this->assertSame(RefundStatusEnum::APPROVED, $refund->fresh()->refund_status);
+        $this->assertCount(0, $calls);
+    }
+
+    public function test_execute_twice_is_a_409_conflict(): void
+    {
+        $this->fakePgRefund();
+        [, $refund] = $this->approvedDirectRefund(10000);
+
+        $this->actingAs($this->admin)
+            ->postJson($this->base()."/refunds/{$refund->id}/execute")
+            ->assertStatus(200);
+
+        $this->actingAs($this->admin)
+            ->postJson($this->base()."/refunds/{$refund->id}/execute")
+            ->assertStatus(409);
+
+        // 재실행이 누적을 다시 쌓지 않는다.
+        $this->assertSame(10000.0, (float) $refund->fresh()->order->total_refunded_amount);
+    }
+
+    public function test_execute_rejects_a_cancel_sourced_refund(): void
+    {
+        $order = $this->deliveredClaimOrder();
+        $refund = $this->makeDirectRefund($order, $order->options->first(), 1, RefundStatusEnum::APPROVED, RefundSourceTypeEnum::CANCEL);
+
+        $this->actingAs($this->admin)
+            ->postJson($this->base()."/refunds/{$refund->id}/execute")
+            ->assertStatus(422);
+    }
+
+    public function test_execute_requires_an_approved_refund(): void
+    {
+        $order = $this->deliveredClaimOrder();
+        $refund = $this->makeDirectRefund($order, $order->options->first(), 1, RefundStatusEnum::REQUESTED);
+
+        $this->actingAs($this->admin)
+            ->postJson($this->base()."/refunds/{$refund->id}/execute")
+            ->assertStatus(422);
+    }
+
+    public function test_execute_requires_the_execute_refund_permission(): void
+    {
+        [, $refund] = $this->approvedDirectRefund(10000);
+
+        $reader = $this->createAdminUser(['sirsoft-ecommerce.claims.read']);
+
+        $this->actingAs($reader)
+            ->postJson($this->base()."/refunds/{$refund->id}/execute")
+            ->assertStatus(403);
+    }
+
+    public function test_execute_refunds_used_mileage_with_the_refund_idempotency_axis(): void
+    {
+        [$order, $refund] = $this->approvedDirectRefund(0, 3000, [
+            'total_points_used_amount' => 5000,
+            'is_mileage_deducted' => true,
+        ]);
+
+        $this->actingAs($this->admin)
+            ->postJson($this->base()."/refunds/{$refund->id}/execute")
+            ->assertStatus(200);
+
+        $restored = MileageTransaction::query()->where('order_refund_id', $refund->id)->get();
+        $this->assertCount(1, $restored);
+        $this->assertSame(3000.0, (float) $restored->first()->amount);
+        // 원장 라벨은 사유를 따라간다 — 환불 발 환급을 '주문취소 복원' 으로 기록하면
+        // 마이페이지 마일리지 내역이 있지도 않은 주문취소를 가리킨다.
+        $this->assertSame(
+            MileageTransactionTypeEnum::REFUND_RESTORE->value,
+            $restored->first()->type->value,
+        );
+
+        // order_refund_id 멱등 — 같은 환불의 환급 재시도는 lot 을 다시 발행하지 않는다.
+        $again = app(UserMileageService::class)->restoreForRefund(
+            $order->user_id,
+            $order->id,
+            $refund->id,
+            3000,
+            'KRW',
+        );
+        $this->assertNull($again);
+        $this->assertSame(1, MileageTransaction::query()->where('order_refund_id', $refund->id)->count());
+    }
+
+    // ================================================================
+    // 환불 실행 — 반품 발 환불신청서
+    // ================================================================
+
+    public function test_execute_of_a_return_sourced_refund_accumulates_without_touching_options(): void
+    {
+        $this->fakePgRefund($calls);
+        [$order, , $refund] = $this->approvedReturnRefund();
+
+        $expectedAmount = (float) $refund->refund_amount;
+        $this->assertGreaterThan(0, $expectedAmount);
+
+        $this->actingAs($this->admin)
+            ->postJson($this->base()."/refunds/{$refund->id}/execute")
+            ->assertStatus(200);
+
+        $refund->refresh();
+        $this->assertSame(RefundStatusEnum::COMPLETED, $refund->refund_status);
+
+        // 반품 발 환불 — 상품은 완료 시점에 이미 RETURNED 로 닫혔고, 실행은 돈만 움직인다.
+        $this->assertSame(OrderStatusEnum::RETURNED, $order->options->first()->fresh()->option_status);
+        $this->assertSame($expectedAmount, (float) $order->fresh()->total_refunded_amount);
+        $this->assertSame($expectedAmount, (float) $calls[0]['amount']);
+    }
+
+    // ================================================================
+    // 취소 가능 금액 (D19)
+    // ================================================================
+
+    public function test_cancellable_amount_returns_the_three_axes_with_methods(): void
+    {
+        $order = $this->deliveredClaimOrder();
+
+        $response = $this->actingAs($this->admin)
+            ->getJson($this->base()."/orders/{$order->id}/cancellable-amount");
+
+        $response->assertStatus(200)
+            ->assertJsonStructure(['data' => ['cancellable' => [
+                'amount', 'domain_refundable', 'payment_capacity', 'reserved',
+                'binding', 'binding_label_key', 'methods', 'reserved_claims', 'currency', 'mc_amount',
+            ]]]);
+
+        $this->assertGreaterThan(0, (float) $response->json('data.cancellable.amount'));
+        $this->assertSame([], $response->json('data.cancellable.reserved_claims'));
+    }
+
+    public function test_cancellable_amount_reserves_other_pending_refunds(): void
+    {
+        $order = $this->deliveredClaimOrder(quantity: 2);
+        $other = $this->makeDirectRefund($order, $order->options->first(), 1, RefundStatusEnum::APPROVED);
+        $other->update(['refund_amount' => 5000]);
+
+        $response = $this->actingAs($this->admin)
+            ->getJson($this->base()."/orders/{$order->id}/cancellable-amount");
+
+        $response->assertStatus(200);
+        $this->assertSame(5000.0, (float) $response->json('data.cancellable.reserved'));
+    }
+
+    public function test_cancellable_amount_with_refund_context_excludes_itself_from_the_reserve(): void
+    {
+        [, $refund] = $this->approvedDirectRefund(10000);
+
+        $response = $this->actingAs($this->admin)
+            ->getJson($this->base()."/orders/{$refund->order_id}/cancellable-amount?refund_id={$refund->id}");
+
+        $response->assertStatus(200);
+
+        // 자기 자신은 선점 집계에서 빠진다 — 남아 있으면 자기 금액을 스스로 빼 한도가 줄어든다.
+        $this->assertSame(0.0, (float) $response->json('data.cancellable.reserved'));
+        $this->assertGreaterThanOrEqual(10000.0, (float) $response->json('data.cancellable.amount'));
+    }
+
+    public function test_cancellable_amount_for_an_exchange_sourced_refund_excludes_its_own_filing(): void
+    {
+        [$order, $exchange, $refund] = $this->approvedExchangeRefund();
+
+        $filed = (float) $refund->refund_amount + (float) $refund->refund_points_amount;
+        $this->assertGreaterThan(0, $filed, '접수된 차액이 이 축의 전제다.');
+
+        $response = $this->actingAs($this->admin)
+            ->getJson($this->base()."/orders/{$order->id}/cancellable-amount?refund_id={$refund->id}");
+
+        $response->assertStatus(200);
+
+        // ① 축은 교환이 동결한 차액이고, 자기 접수분은 빼지 않는다 — 빼면 한도가 0 이 되어
+        // 정당한 환불이 스스로에게 막힌다.
+        $this->assertSame(
+            (float) $exchange->refund_product_amount,
+            (float) $response->json('data.cancellable.domain_refundable'),
+        );
+        $this->assertGreaterThanOrEqual($filed, (float) $response->json('data.cancellable.amount'));
+    }
+
+    public function test_execute_of_an_exchange_sourced_refund_accumulates_without_touching_options(): void
+    {
+        $this->fakePgRefund($calls);
+        [$order, , $refund] = $this->approvedExchangeRefund();
+
+        $expectedAmount = (float) $refund->refund_amount;
+        $this->assertGreaterThan(0, $expectedAmount);
+
+        $this->actingAs($this->admin)
+            ->postJson($this->base()."/refunds/{$refund->id}/execute")
+            ->assertStatus(200);
+
+        $refund->refresh();
+        $this->assertSame(RefundStatusEnum::COMPLETED, $refund->refund_status);
+
+        // 교환 발 환불 — 원 상품은 교환 완료 시점에 이미 닫혔고 실행은 돈만 움직인다.
+        $this->assertSame(OrderStatusEnum::EXCHANGED, $order->options->first()->fresh()->option_status);
+        $this->assertSame($expectedAmount, (float) $order->fresh()->total_refunded_amount);
+        $this->assertSame($expectedAmount, (float) $calls[0]['amount']);
+    }
+
+    public function test_cancellable_amount_is_404_for_a_refund_of_another_order(): void
+    {
+        [, $refund] = $this->approvedDirectRefund(10000);
+        $otherOrder = $this->deliveredClaimOrder();
+
+        $this->actingAs($this->admin)
+            ->getJson($this->base()."/orders/{$otherOrder->id}/cancellable-amount?refund_id={$refund->id}")
+            ->assertStatus(404);
+    }
+
+    // ================================================================
+    // 금액 수정 (D18) — 환불 축
+    // ================================================================
+
+    public function test_amounts_updates_the_refund_amounts_within_the_cancellable_limit(): void
+    {
+        [, $refund] = $this->approvedDirectRefund(10000);
+
+        $response = $this->actingAs($this->admin)
+            ->putJson($this->base()."/refunds/{$refund->id}/amounts", [
+                'refund_amount' => 8000,
+                'refund_method' => RefundMethodEnum::BANK->value,
+            ]);
+
+        $response->assertStatus(200);
+
+        $refund->refresh();
+        $this->assertSame(8000.0, (float) $refund->refund_amount);
+        $this->assertSame(RefundMethodEnum::BANK, $refund->refund_method);
+    }
+
+    /**
+     * 금액 수정이 D19 ③ 축의 직렬화 지점인 주문 행을 잠그는지 (4차 `/validate-plan`)
+     *
+     * 상한의 ③ 축은 "다른 미실행 클레임의 저장 금액 합" 이라 주문 전역 집계다. 자기
+     * 신청서 행만 잠그면 같은 주문의 서로 다른 두 신청서가 서로 다른 행을 잠그고 나란히
+     * 통과해 합계가 D19 를 넘긴 채로 저장된다 — 형제 `executeRefund()` · 접수 경로와 같은
+     * 직렬화 지점(주문 행)을 쓰는지가 이 축의 유일한 관측 가능 신호다.
+     */
+    public function test_amounts_locks_the_order_row_for_the_cancellable_aggregate(): void
+    {
+        [, $refund] = $this->approvedDirectRefund(10000);
+
+        $ordersTable = DB::getTablePrefix().(new Order)->getTable();
+        $orderLocks = [];
+
+        DB::listen(function ($query) use (&$orderLocks, $ordersTable) {
+            $sql = strtolower($query->sql);
+
+            if (str_contains($sql, 'for update') && str_contains($sql, '`'.$ordersTable.'`')) {
+                $orderLocks[] = $query->sql;
+            }
+        });
+
+        $this->actingAs($this->admin)
+            ->putJson($this->base()."/refunds/{$refund->id}/amounts", ['refund_amount' => 8000])
+            ->assertStatus(200);
+
+        $this->assertNotSame(
+            [],
+            $orderLocks,
+            '금액 수정이 주문 행을 잠그지 않았다 — 같은 주문의 두 신청서를 동시에 상향하면 D19 상한을 함께 넘긴다.',
+        );
+    }
+
+    public function test_amounts_rejects_a_refund_amount_exceeding_the_cancellable_limit(): void
+    {
+        [, $refund] = $this->approvedDirectRefund(10000);
+
+        $this->actingAs($this->admin)
+            ->putJson($this->base()."/refunds/{$refund->id}/amounts", ['refund_amount' => 999999])
+            ->assertStatus(422);
+
+        $this->assertSame(10000.0, (float) $refund->fresh()->refund_amount);
+    }
+
+    public function test_amounts_rejects_mileage_refunds_for_guest_orders(): void
+    {
+        [$order, $refund] = $this->approvedDirectRefund(10000);
+        $order->forceFill(['user_id' => null])->save();
+
+        $this->actingAs($this->admin)
+            ->putJson($this->base()."/refunds/{$refund->id}/amounts", ['refund_points_amount' => 1000])
+            ->assertStatus(422);
+    }
+
+    /**
+     * 실행 경로도 비회원 마일리지 환급을 거절한다 (fail-closed — §4-10-6 ①).
+     *
+     * 저장과 실행은 같은 정규화기를 지나지만 저장 축만 단언돼 있었다. 실행이 본문 금액을
+     * 다른 경로로 받게 되면 그 순간 장부만 정산되는 결함이 회귀 없이 지나간다 —
+     * 마일리지 원장은 회원 전용이라 환급 대상 자체가 없다.
+     */
+    public function test_execute_rejects_mileage_refunds_for_guest_orders(): void
+    {
+        [$order, $refund] = $this->approvedDirectRefund(10000);
+        $order->forceFill(['user_id' => null])->save();
+
+        $this->actingAs($this->admin)
+            ->postJson($this->base()."/refunds/{$refund->id}/execute", ['refund_points_amount' => 1000])
+            ->assertStatus(422);
+
+        // 거절됐으므로 신청서는 승인 상태 그대로다 — 가드가 쓰기보다 앞선다.
+        $this->assertSame(RefundStatusEnum::APPROVED, $refund->fresh()->refund_status);
+    }
+
+    public function test_amounts_prohibits_shipping_fee_fields_on_the_refund_type(): void
+    {
+        [, $refund] = $this->approvedDirectRefund(10000);
+
+        $this->actingAs($this->admin)
+            ->putJson($this->base()."/refunds/{$refund->id}/amounts", ['claim_shipping_fee' => 1000])
+            ->assertStatus(422);
+    }
+
+    public function test_amounts_requires_the_update_amounts_permission(): void
+    {
+        [, $refund] = $this->approvedDirectRefund(10000);
+
+        $reader = $this->createAdminUser(['sirsoft-ecommerce.claims.read']);
+
+        $this->actingAs($reader)
+            ->putJson($this->base()."/refunds/{$refund->id}/amounts", ['refund_amount' => 1])
+            ->assertStatus(403);
+    }
+
+    // ================================================================
+    // 취소 미리보기 비대칭 해소 (S3 2차 PO 확정 ②)
+    // ================================================================
+
+    public function test_estimate_refund_is_422_for_items_locked_by_a_claim_course(): void
+    {
+        $order = $this->deliveredClaimOrder();
+
+        app(OrderReturnService::class)->requestReturn($order, [
+            'items' => [['order_option_id' => $order->options->first()->id, 'quantity' => 1]],
+            'reason_code' => 'changed_mind',
+            'charge_method' => ClaimChargeMethodEnum::DEDUCT_FROM_REFUND,
+        ]);
+
+        // 반품 접수로 코스 상태(return_in_progress)가 된 상품 — 실행뿐 아니라 미리보기도 422 다.
+        $option = $order->options()->first();
+
+        $this->actingAs($this->admin)
+            ->postJson($this->base()."/orders/{$order->id}/estimate-refund", [
+                'items' => [['order_option_id' => $option->id, 'cancel_quantity' => 1]],
+            ])
+            ->assertStatus(422);
+    }
+
+    // ================================================================
+    // 취소 가능 금액 — 다통화 · 권한 · 문맥 배타 · 한도 축 (3차 /validate-plan 보강)
+    // ================================================================
+
+    public function test_cancellable_amount_reports_the_payment_currency_remaining_separately_from_the_base(): void
+    {
+        $order = $this->foreignPaidClaimOrder(rate: 0.001, paidLocal: 50);
+
+        $response = $this->actingAs($this->admin)
+            ->getJson($this->base()."/orders/{$order->id}/cancellable-amount");
+
+        $response->assertStatus(200);
+
+        $payment = collect($response->json('data.cancellable.methods'))
+            ->firstWhere('type', 'payment');
+
+        $this->assertNotNull($payment, '결제행 수단 항목이 있어야 이 축을 잴 수 있다.');
+
+        // 결제 통화 원값과 기본 통화 환산값은 서로 다른 숫자다 — 화면이 혼용하면 단위가 틀린다.
+        $this->assertSame('USD', $payment['currency']);
+        $this->assertSame(50.0, (float) $payment['remaining_local']);
+        $this->assertSame(50000.0, (float) $payment['remaining_base']);
+
+        // 합계(② 축)는 기본 통화 기준이다.
+        $this->assertSame(50000.0, (float) $response->json('data.cancellable.payment_capacity'));
+        $this->assertSame('KRW', $response->json('data.cancellable.currency'));
+    }
+
+    public function test_cancellable_amount_requires_the_claims_read_permission(): void
+    {
+        $order = $this->deliveredClaimOrder();
+
+        // 주문 권한만 가진 운영자 — D19 는 클레임 도메인 산정이라 claims.read 가 게이트다.
+        $outsider = $this->createAdminUser(['sirsoft-ecommerce.orders.update']);
+
+        $this->actingAs($outsider)
+            ->getJson($this->base()."/orders/{$order->id}/cancellable-amount")
+            ->assertStatus(403);
+    }
+
+    public function test_cancellable_amount_rejects_the_refund_context_together_with_items(): void
+    {
+        [$order, $refund] = $this->approvedDirectRefund(10000);
+        $option = $order->options->first();
+
+        // 두 문맥은 배타다 — 함께 오면 items 가 조용히 버려지므로 422 로 막는다.
+        $this->actingAs($this->admin)
+            ->getJson($this->base()."/orders/{$order->id}/cancellable-amount?refund_id={$refund->id}"
+                ."&items[0][order_option_id]={$option->id}&items[0][cancel_quantity]=1")
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('refund_id');
+    }
+
+    public function test_cancellable_amount_accepts_items_when_the_refund_context_is_blank(): void
+    {
+        $order = $this->deliveredClaimOrder();
+        $option = $order->options->first();
+
+        // 쿼리 스트링의 빈 값은 "보내지 않은 것" 이다 — 여기서 422 가 나면 상품 기준 조회가 막힌다.
+        $this->actingAs($this->admin)
+            ->getJson($this->base()."/orders/{$order->id}/cancellable-amount?refund_id="
+                ."&items[0][order_option_id]={$option->id}&items[0][cancel_quantity]=1")
+            ->assertStatus(200);
+    }
+
+    public function test_cancellable_amount_scopes_the_requested_items_to_the_order(): void
+    {
+        $order = $this->deliveredClaimOrder();
+        $otherOrder = $this->deliveredClaimOrder();
+        $foreignOption = $otherOrder->options->first();
+
+        // 남의 주문 옵션 ID 로 이 주문의 한도를 묻는 교차 접근은 422 다.
+        $this->actingAs($this->admin)
+            ->getJson($this->base()."/orders/{$order->id}/cancellable-amount"
+                ."?items[0][order_option_id]={$foreignOption->id}&items[0][cancel_quantity]=1")
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('items.0.order_option_id');
+    }
+
+    public function test_cancellable_amount_reports_the_reserved_axis_as_binding(): void
+    {
+        $order = $this->deliveredClaimOrder(quantity: 2);
+
+        // 선점이 도메인·결제 한도보다 크면 ③ 축이 한도를 정한다.
+        $other = $this->makeDirectRefund($order, $order->options->first(), 2, RefundStatusEnum::APPROVED);
+        $other->update(['refund_amount' => 999000]);
+
+        $response = $this->actingAs($this->admin)
+            ->getJson($this->base()."/orders/{$order->id}/cancellable-amount");
+
+        $response->assertStatus(200);
+        $this->assertSame('reserved', $response->json('data.cancellable.binding'));
+        $this->assertSame(0.0, (float) $response->json('data.cancellable.amount'));
+    }
+
+    public function test_cancellable_amount_reports_the_payment_axis_as_binding(): void
+    {
+        // 결제 잔여가 도메인 환불 대상보다 작으면 ② 축이 한도를 정한다.
+        $order = $this->deliveredClaimOrder(paymentOverrides: ['paid_amount_local' => 100, 'paid_amount_base' => 100]);
+
+        $response = $this->actingAs($this->admin)
+            ->getJson($this->base()."/orders/{$order->id}/cancellable-amount");
+
+        $response->assertStatus(200);
+        $this->assertSame('payment_capacity', $response->json('data.cancellable.binding'));
+        $this->assertSame(100.0, (float) $response->json('data.cancellable.amount'));
+    }
+
+    public function test_cancellable_amount_answers_a_fully_cancelled_order_with_the_base_currency(): void
+    {
+        $order = $this->deliveredClaimOrder();
+        $order->options()->update(['option_status' => OrderStatusEnum::CANCELLED->value]);
+
+        $response = $this->actingAs($this->admin)
+            ->getJson($this->base()."/orders/{$order->id}/cancellable-amount");
+
+        $response->assertStatus(200);
+        $this->assertSame(0.0, (float) $response->json('data.cancellable.amount'));
+
+        // 되돌릴 대상이 없어도 통화는 답한다 — 이 경로만 null 이면 같은 엔드포인트가 단위를 잃는다.
+        $this->assertSame('KRW', $response->json('data.cancellable.currency'));
+    }
+
+    // ================================================================
+    // 환불 실행 — 혼합 수단 · 처리자 보존 · 원장 연결 (3차 /validate-plan 보강)
+    // ================================================================
+
+    public function test_execute_splits_a_mixed_pg_and_mileage_refund(): void
+    {
+        $this->fakePgRefund($calls);
+        [$order, $refund] = $this->approvedDirectRefund(7000, 3000, [
+            'total_points_used_amount' => 5000,
+            'is_mileage_deducted' => true,
+        ]);
+
+        $this->actingAs($this->admin)
+            ->postJson($this->base()."/refunds/{$refund->id}/execute")
+            ->assertStatus(200);
+
+        // PG 에는 PG 몫만 청구한다 — 합계를 넘기면 마일리지 몫이 두 번 나간다.
+        $this->assertSame(7000.0, (float) $calls[0]['amount']);
+
+        // 마일리지 몫은 원장으로만 환급된다.
+        $restored = MileageTransaction::query()->where('order_refund_id', $refund->id)
+            ->where('type', MileageTransactionTypeEnum::REFUND_RESTORE->value)->get();
+        $this->assertCount(1, $restored);
+        $this->assertSame(3000.0, (float) $restored->first()->amount);
+
+        $this->assertSame(RefundStatusEnum::COMPLETED, $refund->fresh()->refund_status);
+
+        // 두 수단은 각자의 누적 컬럼으로 간다 — 합산해 한쪽에 실으면 단위가 섞인다.
+        $order = $order->fresh();
+        $this->assertSame(7000.0, (float) $order->total_refunded_amount);
+        $this->assertSame(3000.0, (float) $order->total_refunded_points_amount);
+    }
+
+    public function test_execute_links_the_mileage_restore_to_the_original_usage_transaction(): void
+    {
+        [$order, $refund] = $this->approvedDirectRefund(0, 3000, [
+            'total_points_used_amount' => 5000,
+            'is_mileage_deducted' => true,
+        ]);
+
+        $usage = MileageTransaction::create([
+            'user_id' => $order->user_id,
+            'currency' => 'KRW',
+            'type' => MileageTransactionTypeEnum::ORDER_USE->value,
+            'amount' => -5000,
+            'remaining_amount' => 0,
+            'balance_after' => 0,
+            'order_id' => $order->id,
+        ]);
+
+        $this->actingAs($this->admin)
+            ->postJson($this->base()."/refunds/{$refund->id}/execute")
+            ->assertStatus(200);
+
+        // 원 사용 거래에 환불 축이 역주입돼야 환급 ↔ 사용이 연결 거래로 묶인다 (취소 축과 대칭).
+        $this->assertSame($refund->id, (int) $usage->fresh()->order_refund_id);
+
+        $restore = MileageTransaction::query()->where('order_refund_id', $refund->id)
+            ->where('type', MileageTransactionTypeEnum::REFUND_RESTORE->value)->firstOrFail();
+
+        $linked = app(MileageTransactionRepositoryInterface::class)->getLinkedTransactions($restore);
+        $this->assertTrue(
+            $linked->contains(fn (MileageTransaction $tx) => (int) $tx->id === (int) $usage->id),
+            '환급 거래의 연결 거래에 원 사용 거래가 보여야 한다.',
+        );
+    }
+
+    public function test_execute_preserves_the_option_processed_by_when_none_is_given(): void
+    {
+        $this->fakePgRefund();
+        [, $refund] = $this->approvedDirectRefund(10000);
+
+        $refund->refundOptions()->update(['processed_by' => $this->admin->id]);
+
+        // 서비스 직접 호출 — 처리자 미상 경로에서도 상세 행의 기존 처리자는 지워지지 않는다.
+        app(OrderRefundRequestService::class)->executeRefund($refund, [], null);
+
+        $this->assertSame(
+            (int) $this->admin->id,
+            (int) $refund->refundOptions()->first()->fresh()->processed_by,
+        );
+    }
+
+    // ================================================================
+    // 금액 수정 — 상태 게이트 2분기 (3차 /validate-plan 보강)
+    // ================================================================
+
+    public function test_amounts_rejects_a_cancel_sourced_refund(): void
+    {
+        $order = $this->deliveredClaimOrder();
+        $refund = $this->makeDirectRefund(
+            $order,
+            $order->options->first(),
+            1,
+            RefundStatusEnum::APPROVED,
+            RefundSourceTypeEnum::CANCEL,
+        );
+
+        // 취소 파이프라인 산출값이라 이 API 로 고치면 실환불과 어긋난다 — 실행과 같은 강도로 막는다.
+        $this->actingAs($this->admin)
+            ->putJson($this->base()."/refunds/{$refund->id}/amounts", ['refund_amount' => 1000])
+            ->assertStatus(422);
+
+        $this->assertSame(0.0, (float) $refund->fresh()->refund_amount);
+    }
+
+    public function test_amounts_rejects_a_processing_refund(): void
+    {
+        [, $refund] = $this->approvedDirectRefund(10000);
+        $refund->update(['refund_status' => RefundStatusEnum::PROCESSING]);
+
+        // 환불신청서는 종결 전이라도 PROCESSING 이면 금액이 이미 실행 근거로 소비됐다.
+        $this->actingAs($this->admin)
+            ->putJson($this->base()."/refunds/{$refund->id}/amounts", ['refund_amount' => 1000])
+            ->assertStatus(422);
+
+        $this->assertSame(10000.0, (float) $refund->fresh()->refund_amount);
+    }
+
+    // ================================================================
+    // 취소 미리보기 — 사유 전달 · 수량 잠금 (3차 /validate-plan 보강)
+    // ================================================================
+
+    public function test_estimate_refund_reports_the_reason_detail_for_admins(): void
+    {
+        $order = $this->deliveredClaimOrder();
+
+        app(OrderReturnService::class)->requestReturn($order, [
+            'items' => [['order_option_id' => $order->options->first()->id, 'quantity' => 1]],
+            'reason_code' => 'changed_mind',
+            'charge_method' => ClaimChargeMethodEnum::DEDUCT_FROM_REFUND,
+        ]);
+
+        $response = $this->actingAs($this->admin)
+            ->postJson($this->base()."/orders/{$order->id}/estimate-refund", [
+                'items' => [['order_option_id' => $order->options->first()->id, 'cancel_quantity' => 1]],
+            ]);
+
+        $response->assertStatus(422);
+
+        // 관리자 면은 사유 원문을 errors.detail 로 받는다 — 회원·비회원의 사유 키와 짝인 계약이다.
+        $this->assertNotEmpty($response->json('errors.detail'));
+    }
+
+    public function test_estimate_refund_is_422_for_items_locked_by_a_pending_refund_quantity(): void
+    {
+        $order = $this->deliveredClaimOrder(quantity: 2);
+        $option = $order->options->first();
+
+        // 코스 상태가 아니라 수량 잠금으로 막히는 축 — 이미 잠긴 수량까지 합쳐 요청한다.
+        $this->makeDirectRefund($order, $option, 2, RefundStatusEnum::APPROVED);
+
+        $this->actingAs($this->admin)
+            ->postJson($this->base()."/orders/{$order->id}/estimate-refund", [
+                'items' => [['order_option_id' => $option->id, 'cancel_quantity' => 2]],
+            ])
+            ->assertStatus(422);
+    }
+}

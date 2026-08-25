@@ -570,6 +570,8 @@ _단건 응답: `data` 객체의 필드 (`AdjustmentResult::toPreviewArray()` �
 
 **설명** 비회원이 취소를 확정하기 전에 특정 옵션(`items`) 취소 시 예상 환불 금액을 미리 계산해 보여줍니다. 조회 토큰(`X-Guest-Order-Token`)으로 주문 소유권이 검증되며, `OrderController@estimateRefund`가 `OrderCancellationService::previewRefund()`로 실제 취소를 수행하지 않고 환불 예상값만 반환합니다. `refund_priority`에 따라 PG 우선/포인트 우선 환불 배분 결과가 달라집니다. 비회원 주문 취소 화면에서 "환불 예정 금액"을 미리 안내하는 용도입니다.
 
+교환·반품·환불 신청으로 **클레임 코스에 들어간 상품**이 `items` 에 섞이면 `422` 이며, `message` 에 그 사유가 그대로 실립니다(`claim_option_in_course` / `claim_quantity_locked` — 회원·관리자 면과 같은 키). 미리보기가 성공하면 그 조합은 취소 실행도 가능하다는 뜻입니다.
+
 
 ### POST /api/modules/sirsoft-ecommerce/guest/orders/{orderNumber}/options/{optionId}/confirm
 <!-- @generated:start:api.modules.sirsoft-ecommerce.guest.orders.confirm-option -->

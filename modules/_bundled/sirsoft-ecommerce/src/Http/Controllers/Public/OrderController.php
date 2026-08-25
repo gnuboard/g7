@@ -351,6 +351,12 @@ class OrderController extends PublicBaseController
                 'sirsoft-ecommerce::messages.order.estimate_refund_success',
                 $result->toPreviewArray()
             );
+        } catch (OrderCancellationException $e) {
+            // 클레임 수량 잠금 등 도메인 거절 — 취소 실행과 같은 422 로 미리보기/실행 비대칭을 없앤다.
+            // 사유 키가 실려 오면 그대로 안내한다(관리자 면과 같은 근거) — 없으면 일반 실패 키다.
+            $messageKey = $e->getMessageKey() ?? 'sirsoft-ecommerce::exceptions.order_cancel_failed';
+
+            return ResponseHelper::error($messageKey, 422, null, $e->getMessageParams());
         } catch (Exception $e) {
             Log::error('비회원 환불 예상금액 계산 실패', [
                 'order_number' => $request->getOrder()->order_number,
