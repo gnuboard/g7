@@ -3,6 +3,8 @@
 namespace Tests\Unit\Installer;
 
 use InvalidArgumentException;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ValidationApi;
@@ -17,6 +19,8 @@ use ValidationApi;
  *  - escapeEnvValue 개행 라인 주입
  *  - PDO DSN 파라미터 주입
  */
+#[RunClassInSeparateProcess]
+#[PreserveGlobalState(false)]
 class InstallerSecurityHardeningTest extends TestCase
 {
     private static bool $loaded = false;

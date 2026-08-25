@@ -7,6 +7,7 @@ use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Extension\Helpers\GithubHelper;
 use App\Rules\ValidExtensionIdentifier;
 use App\Support\ConfigCacheHelper;
+use App\Support\ExecutionEnvironment;
 use Composer\Autoload\ClassLoader;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
@@ -1160,9 +1161,13 @@ PHP;
 
         // 인스톨러(install-worker.php)와 동일한 환경변수 구성
         // 웹 서버 환경에서는 COMPOSER_HOME, TEMP 등이 없거나 쓰기 불가능할 수 있음
+        // `getenv` 도 호스팅이 막는 목록에 흔히 들어간다. 여기까지 왔다면 스폰은 가능한
+        // 환경이지만 두 함수의 차단 여부는 독립이므로(목록은 함수 단위다) 따로 판정한다 —
+        // 막힌 채로 부르면 이 요청이 `Error` 로 끝나고, 그 자리는 확장 설치의 마지막 단계다.
         $env = [];
+        $canReadEnv = ExecutionEnvironment::hasFunction('getenv');
         foreach (['PATH', 'SystemRoot', 'TEMP', 'TMP', 'APPDATA', 'LOCALAPPDATA', 'USERPROFILE'] as $key) {
-            $value = getenv($key);
+            $value = $canReadEnv ? getenv($key) : ($_SERVER[$key] ?? $_ENV[$key] ?? false);
             if ($value !== false) {
                 $env[$key] = $value;
             }
@@ -1241,15 +1246,23 @@ PHP;
             }
         }
 
-        // 2. PATH에서 composer 검색
-        $whichCommand = PHP_OS_FAMILY === 'Windows' ? ['where', 'composer'] : ['which', 'composer'];
-        $process = new Process($whichCommand);
-        $process->run();
+        // 2. PATH에서 composer 검색.
+        //
+        // 탐색 자체가 서브프로세스를 띄우므로 스폰 가용성을 먼저 판정한다. Symfony Process 는
+        // `proc_open` 부재 시 `LogicException` 을 던지고, 그것은 `RuntimeException` 이 아니라
+        // 호출부(runComposerInstallAt)의 catch 를 **통과해 나간다** — 그러면 확장 설치가
+        // 「의존성을 못 깔았다」가 아니라 정체불명의 예외로 중단된다. 판정은
+        // ExecutionEnvironment 가 SSoT (function_exists + disable_functions 를 함께 본다).
+        if ($this->canSpawnProcess()) {
+            $whichCommand = PHP_OS_FAMILY === 'Windows' ? ['where', 'composer'] : ['which', 'composer'];
+            $process = new Process($whichCommand);
+            $process->run();
 
-        if ($process->isSuccessful()) {
-            $path = trim(explode("\n", trim($process->getOutput()))[0]);
-            if (! empty($path)) {
-                return $path;
+            if ($process->isSuccessful()) {
+                $path = trim(explode("\n", trim($process->getOutput()))[0]);
+                if (! empty($path)) {
+                    return $path;
+                }
             }
         }
 
@@ -1260,6 +1273,33 @@ PHP;
         }
 
         throw new \RuntimeException(__('exceptions.vendor.composer_binary_not_found'));
+    }
+
+    /**
+     * 이 환경에서 서브프로세스를 띄울 수 있는지 판정합니다.
+     *
+     * 테스트가 「스폰 불가 호스팅」을 재현하기 위한 이음매다 — `disable_functions` 는
+     * PHP_INI_SYSTEM 이라 런타임에 바꿀 수 없으므로, 그 환경을 단위 테스트로 잠그려면
+     * 판정을 덮어쓸 수 있는 지점이 필요하다.
+     *
+     * @return bool 서브프로세스 스폰 가능 여부
+     */
+    protected function canSpawnProcess(): bool
+    {
+        return ExecutionEnvironment::hasFunction('proc_open');
+    }
+
+    /**
+     * 이 환경에서 셸 명령을 실행할 수 있는지 판정합니다.
+     *
+     * `exec` 와 `proc_open` 은 `disable_functions` 에서 **별개 항목**이므로 따로 판정한다 —
+     * 한쪽만 막은 호스팅에서 다른 쪽 판정을 재사용하면 그 자리가 다시 치명 지점이 된다.
+     *
+     * @return bool 셸 명령 실행 가능 여부
+     */
+    protected function canRunShellCommand(): bool
+    {
+        return ExecutionEnvironment::hasFunction('exec');
     }
 
     /**
@@ -1372,6 +1412,9 @@ PHP;
         $escapedZip = escapeshellarg($zipPath);
         $escapedDir = escapeshellarg($extractDir);
 
+        // audit:allow hosting-blocked-function-requires-guard 가드는 전략 체인의 진입점이 갖는다 —
+        // buildExtractionStrategies() 가 isUnzipAvailable() 이 참일 때만 이 전략을 목록에 넣고,
+        // 그 판정이 hasFunction('exec') 을 먼저 본다. 파일 단위로 보는 룰에는 안 보인다.
         exec("unzip -o {$escapedZip} -d {$escapedDir} 2>&1", $output, $exitCode);
 
         if ($exitCode !== 0) {
@@ -1389,6 +1432,13 @@ PHP;
      */
     public function isUnzipAvailable(): bool
     {
+        // 탐색 자체가 `exec` 다 — 차단 호스팅에서 가드 없이 부르면 이 요청이 `Error` 로
+        // 끝난다. 「없다」로 답하면 추출 전략 체인의 ZipArchive 갈래가 그대로 쓰인다
+        // (`extractWithUnzip` 은 이 판정이 참일 때만 호출된다 — buildExtractionStrategies).
+        if (! $this->canRunShellCommand()) {
+            return false;
+        }
+
         exec('which unzip 2>/dev/null', $output, $exitCode);
 
         return $exitCode === 0;

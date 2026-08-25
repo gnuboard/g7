@@ -2,6 +2,8 @@
 
 namespace Tests\Unit\Installer;
 
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -9,6 +11,8 @@ use PHPUnit\Framework\TestCase;
  *
  * .gitkeep, .gitignore 등 Git 추적 파일이 삭제되지 않는지 검증합니다.
  */
+#[RunClassInSeparateProcess]
+#[PreserveGlobalState(false)]
 class DeleteDirectoryTest extends TestCase
 {
     /**

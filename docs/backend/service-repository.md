@@ -1055,7 +1055,7 @@ foreach ($this->resolveSortSpec($filters, self::SORTABLE_COLUMNS, 'created_at') 
 }
 ```
 
-`repository-sort-column-whitelist` 룰은 **정렬 컬럼 변수 자체를 인자로 받는** `in_array`/`match`/`array_key_exists` 또는 `resolveSortSpec` 만 화이트리스트로 인정한다.
+정적 검사는 **정렬 컬럼 변수 자체를 인자로 받는** `in_array`/`match`/`array_key_exists` 또는 `resolveSortSpec` 만 화이트리스트로 인정한다.
 
 ### 화면 정렬 옵션은 게이트의 부분집합이어야 한다
 
@@ -1108,7 +1108,7 @@ enum ConsentSource: string
 
 라벨은 **백엔드와 프론트 두 표면 모두**에 정의한다. 관리자 화면의 `$t:` 는 `resources/lang/{locale}.json` 에서 해석되므로 `lang/{locale}/messages.php` 만 채우면 화면에는 여전히 원시 키가 남는다. 치환 문법도 다르다 — 백엔드는 `:name`, 프론트 엔진(`TranslationEngine.replaceParams`)은 `{name}` / `{{name}}` 만 치환한다.
 
-어느 enum 이 어느 화면의 어휘인지는 의미 추론이 필요해 정적 검출이 어렵다(`coverage.json` 의 `filter-vocabulary-enum-parity` = `manual-only`). 확장별로 정합 테스트를 둔다 — 예: `ConsentSourceVocabularyParityTest` (기록 리터럴 ⊆ enum / 화면 옵션 = enum / ko·en × 백엔드·프론트 라벨 전수).
+어느 enum 이 어느 화면의 어휘인지는 의미 추론이 필요해 정적 검출로는 잡히지 않는다 — 코드 리뷰에서 확인한다. 확장별로 정합 테스트를 둔다 — 예: `ConsentSourceVocabularyParityTest` (기록 리터럴 ⊆ enum / 화면 옵션 = enum / ko·en × 백엔드·프론트 라벨 전수).
 
 ### 목록에 `last_page > 1` 이면 화면에도 페이저가 있어야 한다
 
@@ -1674,7 +1674,7 @@ $data['depth'] = ($parent->depth ?? 0) + 1;
 값이 상한을 넘으면 조용히 깎지 말고 422 로 거절해야 한다.
 
 이 패턴은 리터럴과 설정 키를 잇는 의미 추론이 필요해 정적 검출이 어렵다
-(`coverage.json` 의 `service-hardcoded-limit-vs-settings` = `not-applicable`).
+(정적 검출 대상이 아니다 — 코드 리뷰에서 확인한다).
 코드 리뷰에서 리터럴 상한을 볼 때마다 "이 값을 정하는 설정이 따로 있는가" 를 확인한다.
 
 ---

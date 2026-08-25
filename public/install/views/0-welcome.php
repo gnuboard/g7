@@ -3,9 +3,7 @@
  * Step 0: 환영 화면 (언어 선택)
  *
  * POST 처리는 index.php에서 수행됩니다.
- *
  */
-
 $selectedLang = getCurrentLanguage();
 
 // Storage 폴더 권한 체크 (재귀 체크 포함)
@@ -16,28 +14,20 @@ $storageResult = $storageCheck['results']['storage'] ?? null;
 
 <div class="welcome-wrapper">
     <div class="installer-container" id="welcome-step">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-            <h1 class="installer-title" style="margin-bottom: 0;">
-                <?= lang('welcome_title') ?>
-            </h1>
-            <button
-                id="theme-toggle-btn"
-                class="theme-toggle"
-                type="button"
-                aria-label="<?= lang('toggle_theme') ?>"
-                title="<?= lang('toggle_theme') ?>"
-                style="margin: 0;"
-            >
-                <span id="theme-toggle-icon">🌙</span>
-            </button>
-        </div>
+        <?php /* 테마 토글은 상단 막대(index.php)가 소유한다 — 10차가 그 막대를 Step 0 에도
+                 내면서 이 화면 자체의 토글과 id 가 겹쳤다. getElementById 는 앞선 하나만
+                 잡으므로 여기 있던 버튼은 눌러도 반응하지 않고 아이콘도 🌙 로 고정됐다
+                 (중복 id 라 HTML 도 무효였다) — 11차 #C11. */ ?>
+        <h1 class="installer-title">
+            <?= lang('welcome_title') ?>
+        </h1>
 
         <p class="installer-description">
             <?= lang('welcome_desc') ?>
         </p>
 
         <!-- Storage 권한 체크 경고 (권한 없을 시만 표시) -->
-        <?php if (!$storagePermissionPassed && $storageResult): ?>
+        <?php if (! $storagePermissionPassed && $storageResult) { ?>
         <div class="alert alert-error" id="permission-warning">
             <div class="alert-header">
                 <div class="alert-icon">
@@ -55,7 +45,7 @@ $storageResult = $storageCheck['results']['storage'] ?? null;
                     } else {
                         echo lang('storage_permission_required');
                     }
-                    ?>
+            ?>
                 </h3>
             </div>
             <p class="alert-message">
@@ -74,43 +64,43 @@ $storageResult = $storageCheck['results']['storage'] ?? null;
                 } else {
                     echo lang('storage_permission_failed');
                 }
-                ?>
+            ?>
             </p>
             <div class="alert-details">
                 <?php
-                    $storagePath = BASE_PATH . '/storage';
-                    $relativeStorage = './storage';
-                ?>
-                <?php if ($storageResult['error_type'] === 'not_exists'): ?>
+                $storagePath = BASE_PATH.'/storage';
+            $relativeStorage = './storage';
+            ?>
+                <?php if ($storageResult['error_type'] === 'not_exists') { ?>
                     <!-- 디렉토리 미존재: mkdir 명령어 안내 -->
                     <p class="fix-guide-label"><?= lang('directory_create_guide') ?></p>
                     <div class="code-box">
-                        <?php if (isWindows()): ?>
-                            <pre class="fix-command"><?= htmlspecialchars('mkdir "' . str_replace('/', '\\', $storagePath) . '"') ?></pre>
-                        <?php else: ?>
-                            <pre class="fix-command"><?= htmlspecialchars('mkdir -p ' . $storagePath) ?></pre>
-                        <?php endif; ?>
+                        <?php if (isWindows()) { ?>
+                            <pre class="fix-command"><?= htmlspecialchars('mkdir "'.str_replace('/', '\\', $storagePath).'"') ?></pre>
+                        <?php } else { ?>
+                            <pre class="fix-command"><?= htmlspecialchars('mkdir -p '.$storagePath) ?></pre>
+                        <?php } ?>
                         <button class="btn-copy" onclick="copyWelcomeCommand(this)"><?= lang('copy_command') ?></button>
                     </div>
                     <p class="fix-guide-hint"><?= lang('or_relative_path') ?></p>
                     <div class="code-box">
-                        <?php if (isWindows()): ?>
-                            <pre class="fix-command"><?= htmlspecialchars('mkdir "' . str_replace('/', '\\', $relativeStorage) . '"') ?></pre>
-                        <?php else: ?>
-                            <pre class="fix-command"><?= htmlspecialchars('mkdir -p ' . $relativeStorage) ?></pre>
-                        <?php endif; ?>
+                        <?php if (isWindows()) { ?>
+                            <pre class="fix-command"><?= htmlspecialchars('mkdir "'.str_replace('/', '\\', $relativeStorage).'"') ?></pre>
+                        <?php } else { ?>
+                            <pre class="fix-command"><?= htmlspecialchars('mkdir -p '.$relativeStorage) ?></pre>
+                        <?php } ?>
                         <button class="btn-copy" onclick="copyWelcomeCommand(this)"><?= lang('copy_command') ?></button>
                     </div>
-                <?php elseif ($storageResult['error_type'] === 'ownership_mismatch'): ?>
+                <?php } elseif ($storageResult['error_type'] === 'ownership_mismatch') { ?>
                     <?php
-                        $webUser = $storageResult['web_server_user'] ?? 'www-data';
-                        $owner = $storageResult['owner'] ?? 'unknown';
-                        // 그룹 쓰기 비트(020) 이미 설정되어 있으면 chmod 생략 (예: 775 → chgrp만)
-                        $storagePermsOctal = octdec($storageResult['permissions'] ?? '755');
-                        $storageGroupWritable = ($storagePermsOctal & 0020) !== 0;
-                        $groupCommand = $storageGroupWritable
-                            ? "sudo chgrp -R {$webUser} {$storagePath}"
-                            : "sudo chgrp -R {$webUser} {$storagePath} && sudo chmod -R 775 {$storagePath}";
+                    $webUser = $storageResult['web_server_user'] ?? 'www-data';
+                    $owner = $storageResult['owner'] ?? 'unknown';
+                    // 그룹 쓰기 비트(020) 이미 설정되어 있으면 chmod 생략 (예: 775 → chgrp만)
+                    $storagePermsOctal = octdec($storageResult['permissions'] ?? '755');
+                    $storageGroupWritable = ($storagePermsOctal & 0020) !== 0;
+                    $groupCommand = $storageGroupWritable
+                        ? "sudo chgrp -R {$webUser} {$storagePath}"
+                        : "sudo chgrp -R {$webUser} {$storagePath} && sudo chmod -R 775 {$storagePath}";
                     ?>
                     <!-- 소유권 불일치: 3가지 해결 옵션 제시 (공유 그룹 권장 > 소유자 변경 > 777) -->
                     <p class="fix-guide-label"><?= lang('ownership_mismatch_option_group') ?></p>
@@ -129,34 +119,34 @@ $storageResult = $storageCheck['results']['storage'] ?? null;
                         <button class="btn-copy" onclick="copyWelcomeCommand(this)"><?= lang('copy_command') ?></button>
                     </div>
                     <p class="fix-guide-hint" style="margin-top: 0.75rem;"><?= lang('ownership_mismatch_hint', ['owner' => htmlspecialchars($owner), 'web_user' => htmlspecialchars($webUser)]) ?></p>
-                <?php elseif (in_array($storageResult['error_type'], ['not_writable', 'not_readable', 'subdirectory_issues'])): ?>
-                    <?php if (isWindows()): ?>
+                <?php } elseif (in_array($storageResult['error_type'], ['not_writable', 'not_readable', 'subdirectory_issues'])) { ?>
+                    <?php if (isWindows()) { ?>
                         <!-- Windows: icacls 명령어 안내 -->
                         <p class="fix-guide-label"><?= lang('permission_fix_guide') ?></p>
                         <div class="code-box">
-                            <pre class="fix-command"><?= htmlspecialchars('icacls "' . str_replace('/', '\\', $storagePath) . '" /grant Everyone:(OI)(CI)F /T') ?></pre>
+                            <pre class="fix-command"><?= htmlspecialchars('icacls "'.str_replace('/', '\\', $storagePath).'" /grant Everyone:(OI)(CI)F /T') ?></pre>
                             <button class="btn-copy" onclick="copyWelcomeCommand(this)"><?= lang('copy_command') ?></button>
                         </div>
                         <p class="fix-guide-hint"><?= lang('or_relative_path') ?></p>
                         <div class="code-box">
-                            <pre class="fix-command"><?= htmlspecialchars('icacls "' . str_replace('/', '\\', $relativeStorage) . '" /grant Everyone:(OI)(CI)F /T') ?></pre>
+                            <pre class="fix-command"><?= htmlspecialchars('icacls "'.str_replace('/', '\\', $relativeStorage).'" /grant Everyone:(OI)(CI)F /T') ?></pre>
                             <button class="btn-copy" onclick="copyWelcomeCommand(this)"><?= lang('copy_command') ?></button>
                         </div>
                         <p class="fix-guide-hint"><?= lang('permission_windows_hint') ?></p>
-                    <?php else: ?>
+                    <?php } else { ?>
                         <!-- Linux/Mac: chmod 755 단일 명령어 (chown 의존성 제거) -->
                         <p class="fix-guide-label"><?= lang('permission_fix_guide') ?></p>
                         <div class="code-box">
-                            <pre class="fix-command"><?= htmlspecialchars('chmod -R 755 ' . $storagePath) ?></pre>
+                            <pre class="fix-command"><?= htmlspecialchars('chmod -R 755 '.$storagePath) ?></pre>
                             <button class="btn-copy" onclick="copyWelcomeCommand(this)"><?= lang('copy_command') ?></button>
                         </div>
                         <p class="fix-guide-hint"><?= lang('or_relative_path') ?></p>
                         <div class="code-box">
-                            <pre class="fix-command"><?= htmlspecialchars('chmod -R 755 ' . $relativeStorage) ?></pre>
+                            <pre class="fix-command"><?= htmlspecialchars('chmod -R 755 '.$relativeStorage) ?></pre>
                             <button class="btn-copy" onclick="copyWelcomeCommand(this)"><?= lang('copy_command') ?></button>
                         </div>
-                    <?php endif; ?>
-                <?php endif; ?>
+                    <?php } ?>
+                <?php } ?>
                 <div class="permission-details">
                     <span class="permission-label"><?= lang('current_owner') ?>:</span>
                     <span class="permission-badge badge-current"><?= htmlspecialchars($storageResult['owner'] ?? lang('unknown')) ?></span>
@@ -167,7 +157,7 @@ $storageResult = $storageCheck['results']['storage'] ?? null;
                 </div>
             </div>
         </div>
-        <?php endif; ?>
+        <?php } ?>
 
         <!-- 세션 쿠키 차단 경고 배너 (round-trip 검증 실패 시 JS 가 표시) -->
         <div id="session-cookie-blocked-banner"
@@ -179,7 +169,7 @@ $storageResult = $storageCheck['results']['storage'] ?? null;
                 <button type="button"
                         onclick="document.getElementById('session-cookie-blocked-banner').style.display='none';"
                         class="btn-close"
-                        aria-label="<?= lang('session_cookie_blocked_dismiss') ?>"
+                        aria-label="<?= htmlspecialchars(lang('session_cookie_blocked_dismiss')) ?>"
                         style="background:transparent;border:0;cursor:pointer;font-size:1.25rem;">×</button>
             </div>
             <p><?= lang('session_cookie_blocked_description') ?></p>
@@ -188,7 +178,7 @@ $storageResult = $storageCheck['results']['storage'] ?? null;
                 <li><?= lang('session_cookie_blocked_remedy_2') ?></li>
                 <li><?= lang('session_cookie_blocked_remedy_3') ?></li>
             </ol>
-            <p style="font-size:0.85rem;opacity:0.75;"><?= lang('session_cookie_blocked_technical_detail') ?></p>
+            <p class="alert-technical-detail"><?= lang('session_cookie_blocked_technical_detail') ?></p>
         </div>
 
         <!-- 언어 선택 및 다음 버튼 폼 -->
@@ -201,27 +191,27 @@ $storageResult = $storageCheck['results']['storage'] ?? null;
                     <select name="language"
                             id="language-select"
                             class="form-select">
-                        <?php foreach (SUPPORTED_LANGUAGES as $code => $label): ?>
-                        <option value="<?= $code ?>" <?= $selectedLang === $code ? 'selected' : '' ?>>
+                        <?php foreach (SUPPORTED_LANGUAGES as $code => $label) { ?>
+                        <option value="<?= htmlspecialchars($code) ?>" <?= $selectedLang === $code ? 'selected' : '' ?>>
                             <?= htmlspecialchars($label) ?>
                         </option>
-                        <?php endforeach; ?>
+                        <?php } ?>
                     </select>
                 </div>
             </div>
 
             <div class="btn-group">
-                <?php if (!$storagePermissionPassed): ?>
+                <?php if (! $storagePermissionPassed) { ?>
                     <!-- 권한 없을 때: 다시 확인 버튼 -->
                     <button type="button" onclick="recheckPermission()" class="btn btn-secondary" id="recheck-btn">
                         <?= lang('recheck_permission') ?>
                     </button>
-                <?php else: ?>
+                <?php } else { ?>
                     <!-- 권한 있을 때: 설치하기 버튼 -->
                     <button type="submit" class="btn btn-primary" id="install-btn">
                         <?= lang('install') ?>
                     </button>
-                <?php endif; ?>
+                <?php } ?>
             </div>
         </form>
     </div>
@@ -300,7 +290,7 @@ function recheckPermission() {
     const originalText = btn.textContent;
 
     btn.disabled = true;
-    btn.textContent = '<?= lang('permission_checking') ?>';
+    btn.textContent = <?= installerJsString(lang('permission_checking')) ?>;
 
     // 페이지 새로고침 (권한이 변경되었을 수 있으므로)
     setTimeout(function() {
@@ -315,7 +305,7 @@ function copyWelcomeCommand(btn) {
     const command = btn.previousElementSibling.textContent;
     navigator.clipboard.writeText(command).then(function() {
         const originalText = btn.textContent;
-        btn.textContent = '<?= lang('copied') ?>';
+        btn.textContent = <?= installerJsString(lang('copied')) ?>;
         setTimeout(function() { btn.textContent = originalText; }, 2000);
     });
 }

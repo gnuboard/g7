@@ -38,6 +38,11 @@ if (! function_exists('readInstallerRuntime')) {
             return null;
         }
 
+        // runtime.php 는 PHP 파일이라 OPcache 가 캐시한다. 직전 요청이 갱신한 파일을
+        // opcache.revalidate_freq(기본 2초) 창 안에서 다시 읽으면 stale 버전이 include 된다 —
+        // 요청 간격이 0초인 단계별 실행에서 갱신 직후의 토큰·비밀번호 purge 가 보이지 않는다.
+        installerInvalidateRuntimeOpcache();
+
         $data = @include INSTALLER_RUNTIME_PATH;
 
         return is_array($data) ? $data : null;
@@ -63,10 +68,19 @@ if (! function_exists('writeInstallerRuntime')) {
 
         $php = "<?php\n\nreturn ".var_export($data, true).";\n";
 
-        $tmp = INSTALLER_RUNTIME_PATH.'.tmp';
+        // 임시 파일 이름에 pid+uniqid 를 붙이고 rename **전에** 0600 을 건다 (11차 #A7).
+        //
+        // 이 파일은 DB·관리자 비밀번호와 stepwise 토큰을 담는다(R3 — 비밀은 0600 채널로만).
+        // 고정 이름 `.tmp` 를 기본 umask 로 만들면 그 비밀이 예측 가능한 경로에 0644 로 잠깐
+        // 존재해 같은 호스트의 다른 계정이 폴링해 읽을 수 있고, 동시 두 요청이 같은 tmp 를
+        // 쓰면 한쪽의 rename 이 다른 쪽 내용을 확정해 클라이언트가 받은 토큰과 파일 속
+        // 토큰이 어긋난다. 상태 파일 쓰기(installer-state.php)가 이미 같은 규칙을 쓴다.
+        $tmp = INSTALLER_RUNTIME_PATH.'.tmp.'.getmypid().'.'.uniqid('', true);
         if (@file_put_contents($tmp, $php, LOCK_EX) === false) {
             return false;
         }
+
+        @chmod($tmp, 0600);
 
         // atomic rename
         if (! @rename($tmp, INSTALLER_RUNTIME_PATH)) {
@@ -76,8 +90,24 @@ if (! function_exists('writeInstallerRuntime')) {
         }
 
         @chmod(INSTALLER_RUNTIME_PATH, 0600);
+        installerInvalidateRuntimeOpcache();
 
         return true;
+    }
+}
+
+if (! function_exists('installerInvalidateRuntimeOpcache')) {
+    /**
+     * runtime.php 의 OPcache 항목을 버린다 (갱신 직후 같은 프로세스 풀의 다음 요청이 새 내용을 읽도록).
+     *
+     * opcache.restrict_api 등으로 호출이 막힌 환경에서는 조용히 건너뛴다 — 그 환경은
+     * revalidate 창만큼 늦게 반영될 뿐 파괴적이지 않다.
+     */
+    function installerInvalidateRuntimeOpcache(): void
+    {
+        if (function_exists('opcache_invalidate')) {
+            @opcache_invalidate(INSTALLER_RUNTIME_PATH, true);
+        }
     }
 }
 
@@ -113,6 +143,56 @@ if (! function_exists('generateAppKeyInline')) {
     }
 }
 
+if (! function_exists('backupExistingEnvFile')) {
+    /**
+     * 기존 `.env` 를 `.env.bak.{timestamp}` 로 1회 보존한다.
+     *
+     * finalize 는 `.env.example` 을 기반으로 `.env` 를 **재생성**해 전면 대체한다.
+     * 그래서 운영자가 이미 넣어 둔 값(메일·큐·레디스·서드파티 키)은 템플릿에 없는 한
+     * 통째로 사라지는데, 되돌릴 사본이 아무 데도 남지 않는다. 쓰기 직전에 원본을 한 벌
+     * 남겨 두면 재설치·복구 시 그 값을 되찾을 수 있다.
+     *
+     * 백업 자체가 실패해도 설치를 막지 않는다 — 이 함수는 안전망일 뿐이고, 실패는
+     * 호출자가 로그로 남길 수 있도록 null 로 알린다.
+     *
+     * @param  string|null  $envPath  대상 `.env` 경로 (기본: BASE_PATH/.env)
+     * @return string|null 생성된 백업 파일 경로. 원본 부재·백업 실패 시 null
+     */
+    function backupExistingEnvFile(?string $envPath = null): ?string
+    {
+        $envPath ??= BASE_PATH.'/.env';
+
+        if (! is_file($envPath)) {
+            return null;
+        }
+
+        $content = @file_get_contents($envPath);
+        if ($content === false) {
+            return null;
+        }
+
+        // 같은 초에 두 번 호출돼도 서로 덮어쓰지 않도록 접미사를 붙여 빈 이름을 찾는다.
+        $base = $envPath.'.bak.'.date('Ymd_His');
+        $candidate = $base;
+        for ($i = 1; $i <= 50 && file_exists($candidate); $i++) {
+            $candidate = $base.'_'.$i;
+        }
+
+        if (file_exists($candidate)) {
+            return null;
+        }
+
+        if (@file_put_contents($candidate, $content, LOCK_EX) === false) {
+            return null;
+        }
+
+        // 원본과 같은 비밀을 담으므로 소유자만 읽도록 조인다.
+        @chmod($candidate, 0600);
+
+        return $candidate;
+    }
+}
+
 if (! function_exists('mergeRuntimeIntoEnv')) {
     /**
      * runtime 배열을 .env 문자열에 머지하여 반환한다.
@@ -133,11 +213,11 @@ if (! function_exists('mergeRuntimeIntoEnv')) {
         // DB 자격증명 치환 — state.config 결손 안전망
         $write = $runtime['db']['write'] ?? null;
         if (is_array($write)) {
-            $envContent = replaceEnvLine($envContent, 'DB_WRITE_HOST', serializeEnvValue((string) ($write['host'] ?? '')));
-            $envContent = replaceEnvLine($envContent, 'DB_WRITE_PORT', serializeEnvValue((string) ($write['port'] ?? '')));
-            $envContent = replaceEnvLine($envContent, 'DB_WRITE_DATABASE', serializeEnvValue((string) ($write['database'] ?? '')));
-            $envContent = replaceEnvLine($envContent, 'DB_WRITE_USERNAME', serializeEnvValue((string) ($write['username'] ?? '')));
-            $envContent = replaceEnvLine($envContent, 'DB_WRITE_PASSWORD', serializeEnvValue((string) ($write['password'] ?? '')));
+            $envContent = replaceEnvLine($envContent, 'DB_WRITE_HOST', escapeEnvLineValue((string) ($write['host'] ?? '')));
+            $envContent = replaceEnvLine($envContent, 'DB_WRITE_PORT', escapeEnvLineValue((string) ($write['port'] ?? '')));
+            $envContent = replaceEnvLine($envContent, 'DB_WRITE_DATABASE', escapeEnvLineValue((string) ($write['database'] ?? '')));
+            $envContent = replaceEnvLine($envContent, 'DB_WRITE_USERNAME', escapeEnvLineValue((string) ($write['username'] ?? '')));
+            $envContent = replaceEnvLine($envContent, 'DB_WRITE_PASSWORD', escapeEnvValue((string) ($write['password'] ?? '')));
         }
 
         // Read DB — runtime 에 read 키가 있을 때(use_read_db=true)만 명시 기록한다.
@@ -146,11 +226,11 @@ if (! function_exists('mergeRuntimeIntoEnv')) {
         // (이슈 #63)
         $read = $runtime['db']['read'] ?? null;
         if (is_array($read)) {
-            $envContent = replaceEnvLine($envContent, 'DB_READ_HOST', serializeEnvValue((string) ($read['host'] ?? '')));
-            $envContent = replaceEnvLine($envContent, 'DB_READ_PORT', serializeEnvValue((string) ($read['port'] ?? '')));
-            $envContent = replaceEnvLine($envContent, 'DB_READ_DATABASE', serializeEnvValue((string) ($read['database'] ?? '')));
-            $envContent = replaceEnvLine($envContent, 'DB_READ_USERNAME', serializeEnvValue((string) ($read['username'] ?? '')));
-            $envContent = replaceEnvLine($envContent, 'DB_READ_PASSWORD', serializeEnvValue((string) ($read['password'] ?? '')));
+            $envContent = replaceEnvLine($envContent, 'DB_READ_HOST', escapeEnvLineValue((string) ($read['host'] ?? '')));
+            $envContent = replaceEnvLine($envContent, 'DB_READ_PORT', escapeEnvLineValue((string) ($read['port'] ?? '')));
+            $envContent = replaceEnvLine($envContent, 'DB_READ_DATABASE', escapeEnvLineValue((string) ($read['database'] ?? '')));
+            $envContent = replaceEnvLine($envContent, 'DB_READ_USERNAME', escapeEnvLineValue((string) ($read['username'] ?? '')));
+            $envContent = replaceEnvLine($envContent, 'DB_READ_PASSWORD', escapeEnvValue((string) ($read['password'] ?? '')));
         } else {
             $envContent = replaceEnvLine($envContent, 'DB_READ_HOST', '');
             $envContent = replaceEnvLine($envContent, 'DB_READ_PORT', '');
@@ -160,7 +240,7 @@ if (! function_exists('mergeRuntimeIntoEnv')) {
         }
 
         if (isset($runtime['db']['prefix'])) {
-            $envContent = replaceEnvLine($envContent, 'DB_PREFIX', serializeEnvValue((string) $runtime['db']['prefix']));
+            $envContent = replaceEnvLine($envContent, 'DB_PREFIX', escapeEnvLineValue((string) $runtime['db']['prefix']));
         }
 
         // APP_KEY 치환
@@ -196,6 +276,30 @@ if (! function_exists('escapeEnvValue')) {
     }
 }
 
+if (! function_exists('escapeEnvLineValue')) {
+    /**
+     * .env 라인 값 안전화 (functions.php 의 동일 함수 polyfill).
+     *
+     * 따옴표가 필요 없는 값은 원문 그대로, 그 외에는 escapeEnvValue() 로 넘긴다.
+     *
+     * @param  string  $value  원본 값
+     * @return string .env 라인에 그대로 이어 붙일 수 있는 값
+     */
+    function escapeEnvLineValue(string $value): string
+    {
+        // 빈 값은 빈 라인(`KEY=`)으로 — 따옴표를 씌우면 기존 `.env` 표기가 바뀐다.
+        if ($value === '') {
+            return '';
+        }
+
+        if (preg_match('#^[A-Za-z0-9_.\-/:@]+$#', $value) === 1) {
+            return $value;
+        }
+
+        return escapeEnvValue($value);
+    }
+}
+
 if (! function_exists('replaceEnvLine')) {
     /**
      * .env 문자열에서 특정 키의 라인을 치환한다.
@@ -213,7 +317,13 @@ if (! function_exists('replaceEnvLine')) {
         $line = $key.'='.$value;
         $pattern = '/^'.preg_quote($key, '/').'=.*$/m';
 
-        $replaced = preg_replace($pattern, $line, $envContent, 1, $count);
+        // 치환문자열이 아니라 **콜백**으로 넘긴다. preg_replace 는 두 번째 인자를 치환 규칙으로
+        // 해석하므로 값 안의 `$1`·`${1}`·`\1`·`\\` 가 역참조/escape 로 먹혀 값이 조용히 변형된다:
+        //   - `a$1b\c` 로 설정한 DB 비밀번호가 `.env` 에 `ab\c` 로 기록되어 설치는 "성공" 으로
+        //     끝나고 첫 부팅에서만 인증 실패로 드러난다
+        //   - escapeEnvValue() 가 만든 `\\` 가 `\` 로 붕괴해 escape 자체가 무력화된다
+        // 콜백 반환값은 치환 규칙 해석을 거치지 않으므로 두 경로가 함께 닫힌다.
+        $replaced = preg_replace_callback($pattern, static fn (): string => $line, $envContent, 1, $count);
 
         if ($count === 0) {
             return rtrim($envContent)."\n".$line."\n";
@@ -272,6 +382,24 @@ if (! function_exists('buildInstallerRuntimeFromState')) {
         // 기존 runtime 의 값이 유실되지 않아야 한다 (유실 시 db_seed 재실행 불가).
         if (isset($existing['admin']) && is_array($existing['admin'])) {
             $runtime['admin'] = $existing['admin'];
+        }
+
+        // GitHub 접속 토큰도 state.config 에 기록되지 않으므로(비밀 5종) 여기서 이송·보존한다.
+        // 소비는 env_create / create_settings_json 태스크 — 세션이 유실된 재개 경로에서도
+        // 기존 runtime 의 값이 남아 있어야 프라이빗 저장소 설정이 사라지지 않는다.
+        $githubToken = (string) ($stateConfig['core_update_github_token'] ?? '');
+        if ($githubToken === '') {
+            $githubToken = (string) ($existing['core_update']['github_token'] ?? '');
+        }
+        if ($githubToken !== '') {
+            $runtime['core_update'] = ['github_token' => $githubToken];
+        }
+
+        // 인스톨러 내부 섹션(단계별 실행 토큰 등)도 보존한다 — env_update 태스크가 runtime 을
+        // 다시 만들 때 토큰이 사라지면 그 다음 태스크 요청이 전부 거부된다. 이 섹션은
+        // mergeRuntimeIntoEnv 의 화이트리스트 밖이라 .env 로는 새어나가지 않는다.
+        if (isset($existing['installer']) && is_array($existing['installer'])) {
+            $runtime['installer'] = $existing['installer'];
         }
 
         // Read 커넥션은 use_read_db 플래그가 켜진 경우에만 포함한다 (판정 SSoT).

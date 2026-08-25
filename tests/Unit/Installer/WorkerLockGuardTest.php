@@ -2,7 +2,10 @@
 
 namespace Tests\Unit\Installer;
 
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\CleansTemporaryBasePath;
 
 /**
  * 워커 동시 실행 방지 lock/heartbeat 가드 회귀 테스트
@@ -20,11 +23,25 @@ use PHPUnit\Framework\TestCase;
  *
  * 본 테스트는 헬퍼 자체의 결정론적 동작만 검증. 실제 두 PHP 프로세스 동시 실행은
  * 매뉴얼 시나리오 검증 영역.
+ *
+ * 프로세스 격리가 필요한 이유: 이 클래스는 상태 파일 경로를 BASE_PATH 로 직접 계산하는데,
+ * 구현은 STATE_PATH(최초 require 시점의 BASE_PATH 로 고정된 별도 상수)를 쓴다. 다른 인스톨러
+ * 테스트가 BASE_PATH 는 temp 로, STATE_PATH 는 자기 temp 로 따로 define 하면 아래 skip 가드는
+ * (BASE_PATH 만 보므로) 통과시키는데 두 상수가 가리키는 파일이 갈라져 단언이 무너진다.
+ * 그래서 실행 여부·결과가 어떤 클래스와 한 프로세스에 묶이느냐에 좌우됐다 — 같은 9개 테스트가
+ * 조합에 따라 green / skip / error 로 갈렸고, 스코프 필터 실행에서는 lock 회귀가 조용히
+ * 검사되지 않았다. 메서드마다 새 프로세스에서 돌려 상수 충돌 자체를 없앤다.
  */
+#[RunTestsInSeparateProcesses]
+#[PreserveGlobalState(false)]
 class WorkerLockGuardTest extends TestCase
 {
+    use CleansTemporaryBasePath;
+
     private string $tempBase = '';
+
     private string $stateFile = '';
+
     private string $skipReason = '';
 
     protected function setUp(): void
@@ -40,26 +57,26 @@ class WorkerLockGuardTest extends TestCase
         if (defined('BASE_PATH')) {
             $resolved = realpath((string) BASE_PATH) ?: (string) BASE_PATH;
             if (strpos($resolved, $tempPrefix) !== 0) {
-                $this->skipReason = 'BASE_PATH (' . $resolved . ') 가 시스템 temp 하위가 아님 — '
-                    . '다른 Installer 테스트의 BASE_PATH 정의가 선행됨. 실제 installer-state.json 파괴 방지를 위해 skip. '
-                    . '격리 실행: php vendor/bin/phpunit --filter=WorkerLockGuardTest';
+                $this->skipReason = 'BASE_PATH ('.$resolved.') 가 시스템 temp 하위가 아님 — '
+                    .'다른 Installer 테스트의 BASE_PATH 정의가 선행됨. 실제 installer-state.json 파괴 방지를 위해 skip. '
+                    .'격리 실행: php vendor/bin/phpunit --filter=WorkerLockGuardTest';
                 $this->markTestSkipped($this->skipReason);
             }
             $this->tempBase = (string) BASE_PATH;
         } else {
-            $this->tempBase = sys_get_temp_dir() . '/g7-worker-lock-test-' . bin2hex(random_bytes(4));
+            $this->tempBase = sys_get_temp_dir().'/g7-worker-lock-test-'.bin2hex(random_bytes(4));
             define('BASE_PATH', $this->tempBase);
         }
 
-        if (! is_dir($this->tempBase . '/storage')) {
-            @mkdir($this->tempBase . '/storage', 0755, true);
+        if (! is_dir($this->tempBase.'/storage')) {
+            @mkdir($this->tempBase.'/storage', 0755, true);
         }
 
-        $this->stateFile = BASE_PATH . '/storage/installer-state.json';
+        $this->stateFile = BASE_PATH.'/storage/installer-state.json';
         @file_put_contents($this->stateFile, json_encode(['installation_status' => 'pending']));
 
-        require_once dirname(__DIR__, 3) . '/public/install/includes/config.php';
-        require_once dirname(__DIR__, 3) . '/public/install/includes/installer-state.php';
+        require_once dirname(__DIR__, 3).'/public/install/includes/config.php';
+        require_once dirname(__DIR__, 3).'/public/install/includes/installer-state.php';
     }
 
     protected function tearDown(): void
@@ -170,7 +187,7 @@ class WorkerLockGuardTest extends TestCase
 
         // 다른 worker 가 takeover
         $state = json_decode(file_get_contents($this->stateFile), true);
-        $newWorkerId = 'taker-' . bin2hex(random_bytes(4));
+        $newWorkerId = 'taker-'.bin2hex(random_bytes(4));
         $state['active_worker_id'] = $newWorkerId;
         file_put_contents($this->stateFile, json_encode($state));
 
@@ -192,5 +209,4 @@ class WorkerLockGuardTest extends TestCase
         $this->assertSame('available', $second['reason']);
         $this->assertNotSame($first['worker_id'], $second['worker_id']);
     }
-
 }

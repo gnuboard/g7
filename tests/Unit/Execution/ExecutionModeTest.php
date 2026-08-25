@@ -7,6 +7,10 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * 실행 모드 열거형 단위 테스트.
+ *
+ * 커버 축: execution_mode_choice auto·subprocess·inprocess·invalid
+ *
+ * @effects execution_mode_enum_has_exactly_three_cases, execution_mode_unknown_value_falls_back_to_auto
  */
 class ExecutionModeTest extends TestCase
 {

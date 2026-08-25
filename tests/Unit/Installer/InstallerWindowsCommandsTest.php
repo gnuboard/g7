@@ -2,13 +2,20 @@
 
 namespace Tests\Unit\Installer;
 
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 
 /**
  * 인스톨러 Windows 명령어 대응 테스트
  *
  * functions.php의 isWindows(), getEnvCopyCommand(), getPermissionFixCommand() 헬퍼 함수를 테스트합니다.
+ *
+ * @effects installer_permission_command_covers_both_os_branches
  */
+#[RunClassInSeparateProcess]
+#[PreserveGlobalState(false)]
 class InstallerWindowsCommandsTest extends TestCase
 {
     /**
@@ -199,5 +206,59 @@ class InstallerWindowsCommandsTest extends TestCase
         $this->assertArrayHasKey('directory_create_guide', $enTranslations, 'en.php에 directory_create_guide 키가 없습니다');
         $this->assertNotEmpty($koTranslations['directory_create_guide']);
         $this->assertNotEmpty($enTranslations['directory_create_guide']);
+    }
+
+    /**
+     * 두 OS 분기를 **같은 프로세스에서** 태운다 (11차 #D16).
+     *
+     * 종전에는 `if (isWindows())` 로 갈라져 그 머신의 분기 하나만 평가됐다 — Windows 에서
+     * 돌리면 `chmod` 계열이, Linux 에서 돌리면 `icacls` 계열이 한 번도 실행되지 않았고,
+     * Windows 전용 두 테스트는 Linux 에서 통째로 skip 이라 「skip 0」이라는 수치도 측정 OS
+     * 한정이었다. 판정을 OS 인자로 받는 함수로 분리해 양쪽을 고정한다.
+     *
+     * @return array<string, array{0: string, 1: string, 2: bool, 3: array<int, string>, 4: array<int, string>}>
+     */
+    public static function permissionCommandCases(): array
+    {
+        return [
+            'windows ownership' => ['/var/www/storage', 'ownership', true,
+                ['icacls', '(OI)(CI)F', '/T', '\\var\\www'], ['chmod', '/var/www/storage']],
+            'windows file' => ['/var/www/.env', 'file', true,
+                ['icacls', 'Everyone:F'], ['/T', 'chmod']],
+            'posix ownership' => ['/var/www/storage', 'ownership', false,
+                ['chmod -R 755 /var/www/storage'], ['icacls']],
+            'posix file' => ['/var/www/.env', 'file', false,
+                ['chmod 644 /var/www/.env'], ['icacls', '-R']],
+        ];
+    }
+
+    #[DataProvider('permissionCommandCases')]
+    public function test_permission_fix_command_covers_both_os_branches(
+        string $path,
+        string $mode,
+        bool $isWindows,
+        array $expected,
+        array $forbidden,
+    ): void {
+        $command = installerPermissionFixCommandFor($path, $mode, $isWindows);
+
+        foreach ($expected as $needle) {
+            $this->assertStringContainsString($needle, $command, $mode.'/'.($isWindows ? 'win' : 'posix'));
+        }
+
+        foreach ($forbidden as $needle) {
+            $this->assertStringNotContainsString($needle, $command, $mode.'/'.($isWindows ? 'win' : 'posix'));
+        }
+    }
+
+    /**
+     * 공개 진입점이 그 판정을 실제로 지나는가 — 지나지 않으면 위 표가 사문이 된다.
+     */
+    public function test_public_entry_point_delegates_to_the_os_aware_judgment(): void
+    {
+        $this->assertSame(
+            installerPermissionFixCommandFor('/var/www/storage', 'ownership', isWindows()),
+            getPermissionFixCommand('/var/www/storage', 'ownership'),
+        );
     }
 }

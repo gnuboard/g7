@@ -42,18 +42,42 @@ final class ExecutionEnvironment
      * 반환하지만, 방어적으로 `disable_functions` 목록 대조도 함께 수행한다
      * (EnvironmentDetector::hasProcOpen 이 써 온 판정과 동일).
      *
+     * 두 축 모두 **대소문자를 정규화**한다. PHP 함수명은 대소문자를 가리지 않으므로
+     * `disable_functions = Proc_Open` 같은 표기도 실제로는 차단이고, 원문 그대로
+     * 비교하면 그 대조는 어떤 입력에도 참이 되지 않아 "방어적으로 함께 수행" 이라는
+     * 선언이 사문이 된다.
+     *
      * @param  string  $function  판정할 함수명 (예: 'shell_exec')
+     * @param  string|null  $disabledList  `disable_functions` 문자열 (테스트 주입용, 기본: ini 값).
+     *                                     `disable_functions` 는 PHP_INI_SYSTEM 이라 런타임에
+     *                                     바꿀 수 없다 — 목록 대조 규칙을 실제로 잠그려면
+     *                                     이 자리로 넣는 수밖에 없다.
      * @return bool 호출 가능 여부
      */
-    public static function hasFunction(string $function): bool
+    public static function hasFunction(string $function, ?string $disabledList = null): bool
     {
-        if (! function_exists($function)) {
+        if ($disabledList === null && ! function_exists($function)) {
             return false;
         }
 
-        $disabled = array_map('trim', explode(',', (string) ini_get('disable_functions')));
+        $normalized = strtolower(trim($function));
 
-        return ! in_array($function, $disabled, true);
+        // `ini_get` 자신이 차단된 환경이 있다 (`check-configuration.php` 의 판정이 이미 그
+        // 전제 위에 서 있다). 그 환경에서 이 줄을 무가드로 부르면 **가드 판정 SSoT 가 첫
+        // 호출에서 치명 종료**하고, 그것을 쓰는 인스톨러는 첫 화면조차 뜨지 않는다 — 즉
+        // 「가드가 있어서 안전하다」고 선언한 모든 지점이 동시에 무너진다.
+        // 목록을 못 읽으면 빈 목록으로 본다: 위의 `function_exists` 가 이미 주 판정이고
+        // (PHP 8 은 차단 함수를 함수 테이블에서 제거한다) 이 대조는 그 뒤의 방어일 뿐이다.
+        if ($disabledList === null) {
+            $disabledList = function_exists('ini_get') ? (string) ini_get('disable_functions') : '';
+        }
+
+        $disabled = array_map(
+            static fn (string $fn): string => strtolower(trim($fn)),
+            explode(',', $disabledList),
+        );
+
+        return ! in_array($normalized, $disabled, true);
     }
 
     /**
@@ -82,7 +106,7 @@ final class ExecutionEnvironment
      * @param  string  $binary  PHP 바이너리 경로 (기본 'php')
      * @param  callable|null  $validator  바이너리 검증 콜백 (기본: PhpBinaryResolver::validate)
      * @param  callable|null  $hasFunction  함수 가용성 판정 콜백 (기본: self::hasFunction)
-     * @return array{status: string, version: string|null, message: string} status 는 'valid'|'invalid'|'unavailable'
+     * @return array{status: string, version: string|null, sapi: string|null, message: string, message_key: string, message_params: array<string, string>} status 는 'valid'|'invalid'|'unavailable'
      */
     public static function probePhpBinary(
         string $binary = 'php',
@@ -97,7 +121,10 @@ final class ExecutionEnvironment
             return [
                 'status' => 'unavailable',
                 'version' => null,
+                'sapi' => null,
                 'message' => 'exec unavailable — PHP binary probe skipped',
+                'message_key' => 'php_probe_exec_unavailable',
+                'message_params' => [],
             ];
         }
 
@@ -108,14 +135,23 @@ final class ExecutionEnvironment
             return [
                 'status' => 'unavailable',
                 'version' => null,
+                'sapi' => null,
                 'message' => 'PHP binary probe failed: '.$e->getMessage(),
+                'message_key' => 'php_probe_failed',
+                'message_params' => [],
             ];
         }
 
+        // `message` 는 하위호환(로그·개발 편의)으로 남기고, 화면에 노출되는 사유는
+        // `message_key` 로 넘긴다 — 소비처가 자기 로케일로 번역한다. 키가 없는 주입 스텁도
+        // 계약을 유지하도록 빈 문자열로 채운다.
         return [
             'status' => ($result['valid'] ?? false) ? 'valid' : 'invalid',
             'version' => $result['version'] ?? null,
+            'sapi' => $result['sapi'] ?? null,
             'message' => $result['message'] ?? '',
+            'message_key' => (string) ($result['message_key'] ?? ''),
+            'message_params' => is_array($result['message_params'] ?? null) ? $result['message_params'] : [],
         ];
     }
 
@@ -127,13 +163,16 @@ final class ExecutionEnvironment
      * - 함수 전부 가용 + PHP probe `invalid` → 공통 경로 자동 탐색(autoDetect) 폴백.
      *   후보 발견 → `subprocess` (그 바이너리를 판정 결과에 기록) / 전부 실패 → `inprocess`
      *   (PATH 에 php 가 없고 비표준 경로에만 있는 호스팅을 in-process 로 오판하지 않는다)
-     * - 함수 전부 가용 + PHP probe `valid` 또는 `unavailable`(불확실) → `subprocess`
+     * - 함수 전부 가용 + PHP probe `valid` 인데 SAPI 가 비-CLI(fpm·cgi) → 같은 자동 탐색으로
+     *   CLI 후보를 먼저 찾는다. 찾으면 그 바이너리로 `subprocess`, CLI 후보가 없으면 지정
+     *   바이너리를 그대로 쓴다 (php-cgi 로만 동작하던 환경을 새로 막지 않는다)
+     * - 함수 전부 가용 + PHP probe `valid`(CLI) 또는 `unavailable`(불확실) → `subprocess`
      *
      * @param  string  $phpBinary  probe 대상 PHP 바이너리 (Laravel 측은 config('process.php_binary') 전달)
      * @param  callable|null  $validator  바이너리 검증 콜백 (테스트 주입용)
      * @param  callable|null  $hasFunction  함수 가용성 판정 콜백 (테스트 주입용)
      * @param  callable|null  $autoDetector  대체 바이너리 탐색 콜백 (테스트 주입용, 기본: PhpBinaryResolver::autoDetect)
-     * @return array{mode: string, blocked_functions: array<int, string>, php_binary: string, php_probe: array{status: string, version: string|null, message: string}} 판정 결과와 근거
+     * @return array{mode: string, blocked_functions: array<int, string>, php_binary: string, php_probe: array{status: string, version: string|null, sapi: string|null, message: string, message_key: string, message_params: array<string, string>}} 판정 결과와 근거
      */
     public static function detect(
         string $phpBinary = 'php',
@@ -157,16 +196,27 @@ final class ExecutionEnvironment
                 'php_probe' => [
                     'status' => 'unavailable',
                     'version' => null,
+                    'sapi' => null,
                     'message' => 'subprocess functions blocked — probe skipped',
+                    'message_key' => 'php_probe_functions_blocked',
+                    'message_params' => [],
                 ],
             ];
         }
 
         $probe = self::probePhpBinary($phpBinary, $validator, $hasFunction);
 
+        // `php-fpm --version` · `php-cgi --version` 은 CLI 와 똑같이 정상 종료하고 같은 형태로
+        // 버전을 찍으므로 probe 는 valid 로 본다. 그러나 그 바이너리는 artisan 을 받지 못해
+        // 판정(subprocess)과 실행(전 태스크 실패)이 어긋난다 — 자동 탐색 경로는 CLI 우선 정렬로
+        // 닫혔지만 운영자가 **명시**한 경로는 그대로였다. 같은 폴백으로 CLI 후보를 먼저 찾는다.
+        $configuredIsNotCli = $probe['status'] === 'valid'
+            && $probe['sapi'] !== null
+            && $probe['sapi'] !== 'cli';
+
         // 지정 바이너리가 명확히 실패해도 다른 경로의 PHP 가 성립할 수 있다 —
         // 공통 경로 자동 탐색으로 한 번 더 확인한 뒤에만 inprocess 로 판정한다.
-        if ($probe['status'] === 'invalid') {
+        if ($probe['status'] === 'invalid' || $configuredIsNotCli) {
             try {
                 $found = $autoDetector();
             } catch (\Throwable) {
@@ -176,16 +226,26 @@ final class ExecutionEnvironment
             if (is_array($found) && $found !== []) {
                 $first = $found[0];
 
-                return [
-                    'mode' => self::MODE_SUBPROCESS,
-                    'blocked_functions' => [],
-                    'php_binary' => (string) ($first['path'] ?? $phpBinary),
-                    'php_probe' => [
-                        'status' => 'valid',
-                        'version' => $first['version'] ?? null,
-                        'message' => 'auto-detected PHP binary: '.($first['path'] ?? ''),
-                    ],
-                ];
+                // 비-CLI 를 대체하려는 경우에만 후보의 SAPI 를 따진다 — CLI 후보가 하나도 없으면
+                // 운영자가 지정한 바이너리를 그대로 둔다(php-cgi 로만 동작하던 환경을 새로 막지 않는다).
+                // autoDetect() 는 CLI 우선 정렬이므로 첫 후보가 비-CLI 면 CLI 는 없는 것이다.
+                $candidateIsCli = ($first['sapi'] ?? null) === 'cli';
+
+                if (! $configuredIsNotCli || $candidateIsCli) {
+                    return [
+                        'mode' => self::MODE_SUBPROCESS,
+                        'blocked_functions' => [],
+                        'php_binary' => (string) ($first['path'] ?? $phpBinary),
+                        'php_probe' => [
+                            'status' => 'valid',
+                            'version' => $first['version'] ?? null,
+                            'sapi' => $first['sapi'] ?? null,
+                            'message' => 'auto-detected PHP binary: '.($first['path'] ?? ''),
+                            'message_key' => 'php_probe_auto_detected',
+                            'message_params' => ['path' => (string) ($first['path'] ?? '')],
+                        ],
+                    ];
+                }
             }
         }
 

@@ -36,6 +36,7 @@ final class OpcacheStatus
     public static function probe(?callable $extensionLoaded = null, ?callable $iniGet = null): array
     {
         $extensionLoaded ??= static fn (string $name): bool => extension_loaded($name);
+        // audit:allow hosting-blocked-function-requires-guard 아래 try/catch(Throwable) 가 「확인 불가」(enabled=null)로 떨어뜨린다
         $iniGet ??= static fn (string $key) => ini_get($key);
 
         if (! $extensionLoaded(self::EXTENSION_NAME)) {

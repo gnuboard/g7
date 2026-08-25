@@ -2,7 +2,10 @@
 
 namespace Tests\Unit\Installer;
 
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\CleansTemporaryBasePath;
 
 /**
  * 인스톨러 런타임 헬퍼 단위 테스트
@@ -11,10 +14,19 @@ use PHPUnit\Framework\TestCase;
  * 인스톨러는 Laravel 외부에서 동작하므로 BASE_PATH 상수와 헬퍼 인클루드를
  * 테스트 setUp 단계에서 직접 처리한다.
  *
+ * 메서드마다 새 프로세스에서 돈다 (R7) — 다른 인스톨러 테스트가 실 저장소 루트를 BASE_PATH 로
+ * 먼저 define 하면 아래 skip 가드가 26 메서드를 통째로 건너뛰어 커버리지가 조용히 사라진다.
+ *
  * @see https://github.com/gnuboard/g7/issues/23
+ *
+ * @effects installer_runtime_helpers_behave_as_contracted
  */
+#[RunTestsInSeparateProcesses]
+#[PreserveGlobalState(false)]
 class InstallerRuntimeHelperTest extends TestCase
 {
+    use CleansTemporaryBasePath;
+
     private string $tempBase = '';
 
     private string $skipReason = '';
@@ -312,13 +324,14 @@ ENV;
 
         $merged = mergeRuntimeIntoEnv($envContent, $runtime);
 
-        // 값은 전부 serializeEnvValue 를 지나 따옴표로 감싸진다 (개행 주입 차단 관문 일원화).
-        $this->assertStringContainsString('DB_WRITE_HOST="real-host.example.com"', $merged);
-        $this->assertStringContainsString('DB_WRITE_PORT="3307"', $merged);
-        $this->assertStringContainsString('DB_WRITE_DATABASE="real_db"', $merged);
-        $this->assertStringContainsString('DB_WRITE_USERNAME="real_user"', $merged);
+        // 안전 문자셋 값은 `.env` 표기를 바꾸지 않고 원문으로 남는다(escapeEnvLineValue) —
+        // 그 밖의 값만 관문(serializeEnvValue)을 지나 따옴표로 감싸고, 개행·NUL 은 거부된다.
+        $this->assertStringContainsString('DB_WRITE_HOST=real-host.example.com', $merged);
+        $this->assertStringContainsString('DB_WRITE_PORT=3307', $merged);
+        $this->assertStringContainsString('DB_WRITE_DATABASE=real_db', $merged);
+        $this->assertStringContainsString('DB_WRITE_USERNAME=real_user', $merged);
         $this->assertStringContainsString('DB_WRITE_PASSWORD="real_pass"', $merged);
-        $this->assertStringContainsString('DB_PREFIX="real_"', $merged);
+        $this->assertStringContainsString('DB_PREFIX=real_', $merged);
 
         // Read 라인도 write 와 동기화되어 치환되어야 함
         $this->assertStringNotContainsString('DB_WRITE_HOST=127.0.0.1', $merged);
@@ -351,10 +364,10 @@ ENV;
         $this->assertStringContainsString("DB_READ_HOST=\n", $merged);
         $this->assertStringContainsString("DB_READ_DATABASE=\n", $merged);
         $this->assertStringContainsString("DB_READ_USERNAME=\n", $merged);
-        $this->assertStringNotContainsString('DB_READ_HOST="w-host"', $merged);
-        $this->assertStringNotContainsString('DB_READ_DATABASE="wdb"', $merged);
+        $this->assertStringNotContainsString('DB_READ_HOST=w-host', $merged);
+        $this->assertStringNotContainsString('DB_READ_DATABASE=wdb', $merged);
         // write 라인은 정상 기록
-        $this->assertStringContainsString('DB_WRITE_HOST="w-host"', $merged);
+        $this->assertStringContainsString('DB_WRITE_HOST=w-host', $merged);
     }
 
     public function test_merge_uses_separate_read_when_specified(): void
@@ -370,8 +383,8 @@ ENV;
 
         $merged = mergeRuntimeIntoEnv($envContent, $runtime);
 
-        $this->assertStringContainsString('DB_READ_HOST="r-host"', $merged);
-        $this->assertStringContainsString('DB_READ_DATABASE="rdb"', $merged);
+        $this->assertStringContainsString('DB_READ_HOST=r-host', $merged);
+        $this->assertStringContainsString('DB_READ_DATABASE=rdb', $merged);
     }
 
     public function test_merge_appends_db_lines_when_absent_from_template(): void
@@ -393,8 +406,8 @@ ENV;
         $merged = mergeRuntimeIntoEnv($envContent, $runtime);
 
         // .env.example 에 라인이 없는 비표준 케이스 — 끝에 추가
-        $this->assertStringContainsString('DB_WRITE_HOST="h"', $merged);
-        $this->assertStringContainsString('DB_WRITE_DATABASE="d"', $merged);
+        $this->assertStringContainsString('DB_WRITE_HOST=h', $merged);
+        $this->assertStringContainsString('DB_WRITE_DATABASE=d', $merged);
     }
 
     public function test_merge_preserves_db_lines_when_runtime_has_no_db(): void
@@ -436,6 +449,40 @@ ENV;
         // db/app.key 는 정상 기록 (화이트리스트가 좁아지지 않았음을 함께 고정)
         $this->assertStringContainsString('DB_WRITE_PASSWORD="dbpw"', $merged);
         $this->assertStringContainsString('APP_KEY=base64:', $merged);
+    }
+
+    /**
+     * 단계별 실행 토큰(installer 섹션)은 runtime 재구성에서 보존된다 — env_update 태스크가
+     * runtime 을 다시 만들 때 토큰이 사라지면 그 다음 태스크 요청이 전부 거부된다.
+     */
+    public function test_build_runtime_preserves_installer_section(): void
+    {
+        writeInstallerRuntime([
+            'app' => ['key' => generateAppKeyInline()],
+            'installer' => ['stepwise_token' => 'abc123'],
+        ]);
+
+        $built = buildInstallerRuntimeFromState([
+            'db_write_host' => 'localhost',
+            'db_write_database' => 'g7',
+            'db_write_username' => 'root',
+        ]);
+
+        $this->assertSame('abc123', $built['installer']['stepwise_token'] ?? null);
+    }
+
+    /**
+     * R3 — installer 섹션(토큰)은 .env 로 새어나가지 않는다 (화이트리스트 머지).
+     */
+    public function test_merge_runtime_into_env_never_writes_installer_section(): void
+    {
+        $merged = mergeRuntimeIntoEnv("APP_KEY=\n", [
+            'app' => ['key' => 'base64:'.base64_encode(str_repeat('k', 32))],
+            'installer' => ['stepwise_token' => 'secret-token-value'],
+        ]);
+
+        $this->assertStringNotContainsString('secret-token-value', $merged);
+        $this->assertStringNotContainsString('stepwise', $merged);
     }
 
     public function test_merge_escapes_password_with_special_characters(): void

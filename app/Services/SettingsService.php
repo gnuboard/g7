@@ -1329,6 +1329,7 @@ class SettingsService
             'cpu_info' => $this->safeSystemProbe('cpu_info', fn () => $this->getCpuInfo(), __('common.unknown')),
             'memory_usage' => $this->safeSystemProbe('memory_usage', fn () => $this->getMemoryUsage(), $this->unknownUsage()),
             'disk_usage' => $this->safeSystemProbe('disk_usage', fn () => $this->getDiskUsage(), $this->unknownUsage()),
+            // audit:allow hosting-blocked-function-requires-guard safeSystemProbe 가 Throwable 을 잡아 「확인 불가」로 떨어뜨린다 (아래 두 줄 동일)
             'php_memory_limit' => $this->safeSystemProbe('php_memory_limit', fn () => ini_get('memory_limit'), __('common.unknown')),
             'max_execution_time' => $this->safeSystemProbe('max_execution_time', fn () => ini_get('max_execution_time').__('settings.seconds'), __('common.unknown')),
             'upload_max_filesize' => $this->safeSystemProbe('upload_max_filesize', fn () => ini_get('upload_max_filesize'), __('common.unknown')),

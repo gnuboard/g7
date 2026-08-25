@@ -214,23 +214,27 @@
 <script>
 // Step 4 번역 키 전달
 window.EXTENSION_LABELS = {
-    version: <?= installer_json_encode(lang('version')) ?>,
-    select: <?= installer_json_encode(lang('select')) ?>,
-    selected: <?= installer_json_encode(lang('selected')) ?>,
-    dependencies: <?= installer_json_encode(lang('dependencies')) ?>,
-    admin_template_required: <?= installer_json_encode(lang('admin_template_required')) ?>,
-    saving: <?= installer_json_encode(lang('saving')) ?>,
-    save_failed: <?= installer_json_encode(lang('save_failed')) ?>,
-    next: <?= installer_json_encode(lang('next')) ?>,
-    extension_load_failed: <?= installer_json_encode(lang('extension_load_failed')) ?>,
-    dep_auto_badge_label: <?= installer_json_encode(lang('dep_auto_badge_label')) ?>,
-    dep_lock_message: <?= installer_json_encode(lang('dep_lock_message')) ?>,
-    dep_version_required: <?= installer_json_encode(lang('dep_version_required')) ?>,
-    dep_version_available: <?= installer_json_encode(lang('dep_version_available')) ?>,
-    language_pack_disabled_by_extension: <?= installer_json_encode(lang('language_pack_disabled_by_extension')) ?>,
-    language_pack_scope_core: <?= installer_json_encode(lang('language_pack_scope_core')) ?>,
-    language_pack_scope_module: <?= installer_json_encode(lang('language_pack_scope_module')) ?>,
-    language_pack_scope_plugin: <?= installer_json_encode(lang('language_pack_scope_plugin')) ?>,
-    language_pack_scope_template: <?= installer_json_encode(lang('language_pack_scope_template')) ?>
+    version: <?= installerJsString(lang('version')) ?>,
+    select: <?= installerJsString(lang('select')) ?>,
+    selected: <?= installerJsString(lang('selected')) ?>,
+    dependencies: <?= installerJsString(lang('dependencies')) ?>,
+    admin_template_required: <?= installerJsString(lang('admin_template_required')) ?>,
+    saving: <?= installerJsString(lang('saving')) ?>,
+    save_failed: <?= installerJsString(lang('save_failed')) ?>,
+    next: <?= installerJsString(lang('next')) ?>,
+    extension_load_failed: <?= installerJsString(lang('extension_load_failed')) ?>,
+    <?php /* 19차 S-4 — 서버가 갈라 낸 스캔 실패 3사유. 키가 없으면 화면이 「HTTP 500」만 그린다. */ ?>
+    scan_directory_listing_unavailable: <?= installerJsString(lang('scan_directory_listing_unavailable')) ?>,
+    no_admin_template_error: <?= installerJsString(lang('no_admin_template_error')) ?>,
+    scan_failed_see_log: <?= installerJsString(lang('scan_failed_see_log')) ?>,
+    dep_auto_badge_label: <?= installerJsString(lang('dep_auto_badge_label')) ?>,
+    dep_lock_message: <?= installerJsString(lang('dep_lock_message')) ?>,
+    dep_version_required: <?= installerJsString(lang('dep_version_required')) ?>,
+    dep_version_available: <?= installerJsString(lang('dep_version_available')) ?>,
+    language_pack_disabled_by_extension: <?= installerJsString(lang('language_pack_disabled_by_extension')) ?>,
+    language_pack_scope_core: <?= installerJsString(lang('language_pack_scope_core')) ?>,
+    language_pack_scope_module: <?= installerJsString(lang('language_pack_scope_module')) ?>,
+    language_pack_scope_plugin: <?= installerJsString(lang('language_pack_scope_plugin')) ?>,
+    language_pack_scope_template: <?= installerJsString(lang('language_pack_scope_template')) ?>
 };
 </script>

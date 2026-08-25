@@ -3,6 +3,7 @@
 namespace Tests\Unit\Installer;
 
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
  * 폴링 모드 응답 즉시 flush 회귀 테스트 (PHP 8.5 + mod_fcgid/Apache)
@@ -19,8 +20,10 @@ use PHPUnit\Framework\TestCase;
  *
  * SSE 분기 (install-worker.php) 는 동일 환경에서 정상 작동하는데, 그 분기는 다음
  * 처리를 명시한다:
+ *
  *   @ini_set('output_buffering', 'off')
  *   @ini_set('zlib.output_compression', false)
+ *
  *   @apache_setenv('no-gzip', 1)
  *   while (ob_get_level() > 0) ob_end_clean();
  *
@@ -30,17 +33,21 @@ use PHPUnit\Framework\TestCase;
  */
 class PollingResponseFlushTest extends TestCase
 {
+    use ScansPhpSourceFunctions;
+
     private string $sourcePath;
+
     private string $source;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->sourcePath = dirname(__DIR__, 3) . '/public/install/api/install-process.php';
+        $this->sourcePath = dirname(__DIR__, 3).'/public/install/api/install-process.php';
         $this->assertFileExists($this->sourcePath, 'install-process.php 가 존재해야 한다.');
 
-        $this->source = (string) file_get_contents($this->sourcePath);
+        // 주석을 지운 뒤 대조한다 — 원문에는 주석 처리된 배선도 글자로 남아, 원문 대조는 「그 배선이 살아 있다」를 증명하지 못한다 (12차 메타 검사 ①).
+        $this->source = $this->stripComments((string) file_get_contents($this->sourcePath));
         $this->assertNotSame('', $this->source);
     }
 
@@ -52,7 +59,7 @@ class PollingResponseFlushTest extends TestCase
             '/@?ini_set\(\s*[\'"]zlib\.output_compression[\'"]\s*,\s*(false|[\'"]\s*off\s*[\'"]|0)\s*\)/i',
             $pollingBranch,
             '폴링 분기는 echo 이전에 zlib.output_compression 을 비활성화해야 한다 — '
-            . 'PHP 8.5 + mod_deflate/zlib 환경에서 Content-Length 와 wire body 불일치로 fetch 가 hang.'
+            .'PHP 8.5 + mod_deflate/zlib 환경에서 Content-Length 와 wire body 불일치로 fetch 가 hang.'
         );
     }
 
@@ -64,7 +71,7 @@ class PollingResponseFlushTest extends TestCase
             '/@?ini_set\(\s*[\'"]output_buffering[\'"]\s*,\s*[\'"]\s*off\s*[\'"]\s*\)/i',
             $pollingBranch,
             '폴링 분기는 echo 이전에 output_buffering ini 를 off 로 설정해야 한다 — '
-            . 'php.ini output_buffering 이 활성화된 SAPI 환경에서 응답 즉시 송신 보장.'
+            .'php.ini output_buffering 이 활성화된 SAPI 환경에서 응답 즉시 송신 보장.'
         );
     }
 
@@ -76,7 +83,7 @@ class PollingResponseFlushTest extends TestCase
             '/apache_setenv\(\s*[\'"]no-gzip[\'"]\s*,\s*1\s*\)/i',
             $pollingBranch,
             '폴링 분기는 echo 이전에 apache_setenv(no-gzip, 1) 를 호출해야 한다 — '
-            . 'Apache mod_deflate 가 응답을 압축하면 Content-Length 가 무력화됨.'
+            .'Apache mod_deflate 가 응답을 압축하면 Content-Length 가 무력화됨.'
         );
     }
 
@@ -88,9 +95,9 @@ class PollingResponseFlushTest extends TestCase
             '/str_repeat\(\s*[\'"]\s*[\'"]\s*,\s*(6553[6-9]|65[6-9]\d{2}|6[6-9]\d{3}|[789]\d{4}|[1-9]\d{5,})\s*\)/',
             $pollingBranch,
             '폴링 분기는 echo 직후 65536 바이트 이상의 padding(str_repeat(공백)) 을 출력해야 한다 — '
-            . 'mod_fcgid (FcgidOutputBufferSize default 64KB) 가 응답을 즉시 flush 하도록 강제. '
-            . '워커가 10분간 인라인 실행되는 동안 install-process.php 응답이 클라이언트에 도달하지 못해 '
-            . 'PollingMonitor 가 시작조차 못 하는 회귀를 차단.'
+            .'mod_fcgid (FcgidOutputBufferSize default 64KB) 가 응답을 즉시 flush 하도록 강제. '
+            .'워커가 10분간 인라인 실행되는 동안 install-process.php 응답이 클라이언트에 도달하지 못해 '
+            .'PollingMonitor 가 시작조차 못 하는 회귀를 차단.'
         );
     }
 
@@ -182,7 +189,7 @@ class PollingResponseFlushTest extends TestCase
     private function extractPollingBranch(): string
     {
         $start = strpos($this->source, "if (\$installationMode === 'polling')");
-        $this->assertNotFalse($start, "폴링 분기 if 문을 찾을 수 없습니다.");
+        $this->assertNotFalse($start, '폴링 분기 if 문을 찾을 수 없습니다.');
 
         // 매칭되는 닫는 중괄호 찾기
         $braceStart = strpos($this->source, '{', $start);

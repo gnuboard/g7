@@ -2,7 +2,11 @@
 
 namespace Tests\Unit\Installer;
 
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
  * 인스톨러 include 파일의 로드 순서 독립성 회귀 가드 (이슈 #465 후속).
@@ -29,9 +33,15 @@ use PHPUnit\Framework\TestCase;
  * 별도 프로세스로 실행하는 이유: 함수 선언은 프로세스 전역이라 PHPUnit 프로세스
  * 안에서 두 파일을 로드하면 다른 Installer 테스트를 오염시킨다. 실제 fatal 여부를
  * 관측하려면 격리된 PHP 프로세스에서 로드해야 한다.
+ *
+ * @effects installer_includes_are_load_order_independent
  */
+#[RunClassInSeparateProcess]
+#[PreserveGlobalState(false)]
 class InstallerIncludeOrderTest extends TestCase
 {
+    use ScansPhpSourceFunctions;
+
     private string $projectRoot = '';
 
     protected function setUp(): void
@@ -150,11 +160,10 @@ class InstallerIncludeOrderTest extends TestCase
      * 단위 테스트는 함수를 직접 호출하므로 이 축을 잡지 못한다 — 엔드포인트의 조립
      * 계층을 재현해야만 검출된다.
      *
-     * @dataProvider endpointChainProvider
-     *
      * @param  array<int, string>  $chain  엔드포인트의 top-level require 순서
      * @param  array<int, string>  $requiredFunctions  그 엔드포인트가 호출하는 함수들
      */
+    #[DataProvider('endpointChainProvider')]
     public function test_endpoint_require_chain_defines_all_functions_it_calls(
         string $endpoint,
         array $chain,
@@ -224,7 +233,7 @@ class InstallerIncludeOrderTest extends TestCase
                     'escapeEnvValue',
                 ],
             ],
-            'state-management.php (reset / abort)' => [
+            'state-management.php (reset / abort / skip_task)' => [
                 'state-management.php',
                 [
                     'public/install/includes/config.php',
@@ -239,6 +248,46 @@ class InstallerIncludeOrderTest extends TestCase
                     'getInstallationState',
                     'rollbackCurrentTask',
                     'executeSeedTruncate',
+                    'markInstallationTaskSkipped',
+                    'installerSkippableTaskIds',
+                ],
+            ],
+            'run-task.php (단계별 실행 — 요청 1개 = 태스크 1개)' => [
+                'run-task.php',
+                [
+                    'public/install/includes/config.php',
+                    'public/install/includes/functions.php',
+                    'public/install/includes/installer-state.php',
+                    'public/install/includes/installer-runtime.php',
+                    'public/install/includes/progress-emitter.php',
+                    'public/install/includes/task-runner.php',
+                ],
+                [
+                    'runNextInstallationTask',
+                    'buildInstallationTaskList',
+                    'installerRunArtisan',
+                    'installerEffectiveExecutionMode',
+                    'installerCoerceVendorModeForExecution',
+                    'acquireWorkerLock',
+                    'releaseWorkerLock',
+                    'readInstallerRuntime',
+                    'executeMigrateRollback',
+                ],
+            ],
+            'install-process.php (실행 모드 판정 동반)' => [
+                'install-process.php',
+                [
+                    'public/install/includes/config.php',
+                    'public/install/includes/session.php',
+                    'public/install/includes/installer-state.php',
+                    'public/install/includes/functions.php',
+                    'public/install/includes/installer-runtime.php',
+                    'public/install/includes/execution-mode.php',
+                ],
+                [
+                    'installerResolveExecutionMode',
+                    'installerCoerceVendorModeForExecution',
+                    'installerNormalizeExecutionMode',
                 ],
             ],
             'finalize-env.php' => [
@@ -305,8 +354,9 @@ class InstallerIncludeOrderTest extends TestCase
         $functionsPath = $this->projectRoot.'/public/install/includes/functions.php';
         $runtimePath = $this->projectRoot.'/public/install/includes/installer-runtime.php';
 
-        $functionsSource = (string) file_get_contents($functionsPath);
-        $runtimeSource = (string) file_get_contents($runtimePath);
+        // 주석을 지운 뒤 대조한다 — 원문에는 주석 처리된 배선도 글자로 남아, 원문 대조는 「그 배선이 살아 있다」를 증명하지 못한다 (12차 메타 검사 ①).
+        $functionsSource = $this->stripComments((string) file_get_contents($functionsPath));
+        $runtimeSource = $this->stripComments((string) file_get_contents($runtimePath));
 
         // installer-runtime.php 가 선언하는 함수 목록 추출
         preg_match_all('/^\s*function\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/m', $runtimeSource, $m);

@@ -16,6 +16,19 @@
 
 declare(strict_types=1);
 
+// installerHasFunction 의 출처 (전이 의존 금지, R4 취지). 최상위 실행문이 없고 BASE_PATH
+// 를 자체 역산하므로 config 보다 앞에 와도 안전하다.
+require_once __DIR__.'/../includes/execution-mode.php';
+
+// 오류 텍스트가 응답 본문에 섞이지 않게 한다 (20차 #13 · 21차 N4). 이 진입점은 아래에서
+// Content-Length 를 세워 fire-and-forget 응답을 보내므로, include 체인·가드에서 warning
+// 한 줄만 나와도 실제 바이트 수와 어긋나 응답 계약이 깨진다 — **include 체인보다 앞**
+// 이어야 한다 (뒤에 두면 그 체인의 warning 창이 그대로 남는다).
+if (installerHasFunction('ini_set')) {
+    @ini_set('display_errors', '0');
+}
+error_reporting(E_ALL);
+
 require_once __DIR__.'/../includes/config.php';
 require_once __DIR__.'/../includes/functions.php';
 require_once __DIR__.'/../includes/installer-runtime.php';
@@ -27,19 +40,69 @@ require_once __DIR__.'/_guard.php';
 // 먼저 생성하므로 자가 차단 회귀가 발생한다 (이슈 #371).
 installer_guard_finalize_or_410();
 
+// 완료 표식 기록 + runtime.php·상태 파일 삭제는 인스톨러에서 가장 되돌릴 수 없는 동작이다.
+// 위 가드는 「이미 finalize 됐는가」만 보므로, 「끝난 설치가 맞는가」·「이 창이 주인인가」는
+// 여기서 따로 판정한다 (11차 #A1). 판정 자체는 execution-mode.php 가 소유한다.
+$finalizeState = getInstallationState();
+$finalizeBody = json_decode((string) file_get_contents('php://input'), true);
+$finalizeRejection = installerCrossOriginRejection($_SERVER) ?? installerFinalizeRejection(
+    is_array($finalizeState) ? $finalizeState : [],
+    (string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'),
+    (string) ($_SERVER['HTTP_X_INSTALLER_TOKEN'] ?? ((is_array($finalizeBody) ? ($finalizeBody['token'] ?? null) : null) ?? '')),
+    (string) (readInstallerRuntime()['installer']['stepwise_token'] ?? ''),
+    // 「상태 파일이 사라졌다」는 파일을 직접 보고 판정한다 (13차 D10) — getInstallationState() 는
+    // 부재 시 기본 상태를 돌려주므로 반환값만으로는 부재를 알 수 없다.
+    is_file(STATE_PATH),
+);
+
+if ($finalizeRejection !== null) {
+    http_response_code($finalizeRejection['status']);
+    header('Content-Type: application/json; charset=utf-8');
+    echo installer_json_encode([
+        'success' => false,
+        'message' => lang($finalizeRejection['message_key']),
+        'message_key' => $finalizeRejection['message_key'],
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 // ---------------------------------------------------------------------------
 // 1. 응답을 즉시 송출하여 브라우저가 완료 UI 를 유지할 수 있게 한다.
 // ---------------------------------------------------------------------------
 
+// 이 엔드포인트는 `session.php` 를 require 하지 않고 include 체인에도 `session_start()` 가
+// 없으므로 이 분기는 현재 도달하지 않는다 (17차 #B8). 지우지 않는 이유는 둘이다 — 세션이
+// 생기면 곧바로 필요한 방어이고, 제거 자체가 동작 변경이기 때문이다(저장소 선례).
+// 다음 라운드가 「finalize 는 세션 잠금을 푼다」로 오독하지 않도록 사실을 여기 남긴다.
 if (session_status() === PHP_SESSION_ACTIVE) {
     session_write_close();
 }
 
-ignore_user_abort(true);
+// 호스팅이 막았을 수 있는 함수는 호출 전에 가용성을 본다 (13차 환경#1) — `@` 는 Error 를
+// 삼키지 않으므로, 막힌 환경에서 무가드로 부르면 여기서 치명 종료해 .env 머지가 통째로 사라진다.
+if (installerHasFunction('ignore_user_abort')) {
+    ignore_user_abort(true);
+}
+
+// 출력 버퍼 / 압축 비활성화 — 형제 `install-process.php` 의 폴링 fire-and-forget 과 동일 (17차 #B3).
+// php.ini `output_buffering` 또는 `zlib.output_compression` 이 켜진 SAPI 에서는 아래
+// `Content-Length` 와 압축 후 실제 바이트 수가 어긋나 chunked 로 전환되거나 본문이 즉시
+// 송신되지 않는다 — `.env` 머지는 서버에서 끝나는데 브라우저의 완료 화면만 멈춘다.
+// echo 이전에 모두 비활성화해야 한다.
+if (installerHasFunction('ini_set')) {
+    @ini_set('output_buffering', 'off');
+    @ini_set('zlib.output_compression', false);
+}
+if (function_exists('apache_setenv')) {
+    @apache_setenv('no-gzip', 1);
+}
 
 $accepted = installer_json_encode(['accepted' => true]);
 
 header('Content-Type: application/json; charset=utf-8');
+// Nginx 리버스 프록시가 응답을 버퍼링하면 fire-and-forget 이 성립하지 않는다 (SSE 형제 2곳과 동일).
+header('X-Accel-Buffering: no');
+header('Cache-Control: no-store');
 header('Content-Length: '.strlen($accepted));
 header('Connection: close');
 
@@ -49,9 +112,7 @@ if (function_exists('fastcgi_finish_request')) {
     fastcgi_finish_request();
 } else {
     // cli-server (artisan serve) / Apache mod_php 폴백
-    while (ob_get_level() > 0) {
-        @ob_end_flush();
-    }
+    installerDiscardOutputBuffers(true);
     @flush();
 }
 
@@ -91,6 +152,20 @@ try {
     // 변경하지 않으므로, 인스톨러 안내 단계의 권한 (chgrp www-data + chmod 664) 이
     // 그대로 유지된다. 추가 보안 강화는 Step 6 완료 화면 안내 + INSTALL.md 운영
     // 가이드에 위임.
+    // 쓰기 직전 원본 보존 (13차 #D8).
+    //
+    // `.env` 는 `.env.example` 템플릿에서 새로 만들어져 **통째로 대체**된다 — 운영자가 설치
+    // 전에 넣어 둔 값(메일·큐·레디스·서드파티 키)은 설치가 **성공해도** 사라지고 되돌릴 방법이
+    // 없다. 쓰기는 부모 디렉토리 쓰기 권한을 요구하지 않으려고 rename 이 아닌 제자리 쓰기라
+    // (바로 위 주석), 보존은 이 사본으로만 가능하다.
+    //
+    // 보존 실패는 설치 실패가 아니다 — 헬퍼가 null 을 돌려주면 기록만 남기고 그대로 진행한다.
+    $envBackupPath = backupExistingEnvFile();
+
+    if ($envBackupPath !== null) {
+        addLog('[finalize-env] 기존 .env 를 보존했습니다: '.$envBackupPath);
+    }
+
     if (@file_put_contents($envPath, $envContent, LOCK_EX) === false) {
         $lastError = error_get_last();
         addLog(sprintf(
@@ -133,13 +208,51 @@ try {
         addLog('[finalize-env] runtime.php 삭제 완료');
     }
 
+    // 설정 캐시 무효화 — PO 결정(13차 D7/E2).
+    //
+    // 마지막 태스크 `config_cache` 는 `.env` 머지 **이전**에 돈다. 그 시점의 config 는
+    // `InstallerRuntimeServiceProvider` 가 runtime.php 에서 주입한 값이고, Laravel 의
+    // `config:cache` 는 전체 부팅(ServiceProvider boot 포함)을 거친 config 를 그대로
+    // `var_export` 하므로 **DB 비밀번호가 평문으로 캐시 파일에 복제**된다. 덤으로 그
+    // 캐시에는 `app.installer_completed=false` 가 박혀 모듈·플러그인 라우트 프로바이더가
+    // 매 요청 조기 return 한다. 그런데 그 캐시를 갱신하는 지점이 어디에도 없었다.
+    //
+    // 선택은 「굽지 않는다」가 아니라 「끝날 때 지운다」다 — 태스크를 목록에서 빼면 진행
+    // 화면·매니페스트의 계약이 함께 바뀐다. 굽는 것은 그대로 두고, 여기서 지운다.
+    //
+    // Artisan 을 부르지 않는다. `config:clear` 의 실질이 이 파일 삭제이므로, 명령을 실행할
+    // 수 없는 무CLI 환경에서도 파일 삭제만으로 같은 효과가 난다. 재생성도 하지 않는다 —
+    // 다음 요청이 머지된 `.env` 를 읽어 스스로 만든다.
+    //
+    // 위치는 `.env` 쓰기 성공 **뒤**, runtime.php 를 지우는 이 정리 구간이다. 앞에 두면
+    // 그 뒤의 부팅이 다시 캐시를 만들 여지가 있다.
+    //
+    // 삭제 실패는 설치를 중단시키지 않는다 — 기록만 남긴다.
+    $configCachePath = BASE_PATH.'/bootstrap/cache/config.php';
+
+    if (file_exists($configCachePath)) {
+        if (@unlink($configCachePath) === false) {
+            addLog(sprintf(
+                '[finalize-env] bootstrap/cache/config.php 삭제 FAILED: path=%s, last_error=%s. '
+                .'설치 이전 값이 박힌 설정 캐시가 잔존 — 수동으로 이 파일을 지우거나 `php artisan config:clear` 를 권장.',
+                $configCachePath,
+                (error_get_last()['message'] ?? 'unknown'),
+            ));
+        } else {
+            addLog('[finalize-env] bootstrap/cache/config.php 삭제 완료 (다음 요청이 .env 로 재생성)');
+        }
+    }
+
     // state.json 삭제 — setInstallationCompleteSSE 가 본 단계로 위임함
     // (finalize 가 generateEnvContent() 호출 시 state.config 가 필요했기 때문)
     //
     // 삭제 실패 또는 DELETE_INSTALLER_AFTER_COMPLETE=false 로 파일이 남는 모든 경로에서는
     // 비밀 필드를 제거한 뒤 재저장한다 (이슈 #465). .env 머지가 이미 성공한 뒤이므로
     // state.config 가 더 이상 필요하지 않아 순서상 안전하다.
-    $stateFilePath = BASE_PATH.'/storage/installer-state.json';
+    // 경로 리터럴을 두 곳에 두면 STATE_PATH 를 먼저 정의하는 진입점(테스트 하네스)이나
+    // 배치가 달라졌을 때 finalize 만 조용히 다른 파일을 지운다 — session.php 가 10차에
+    // 같은 이유로 리터럴을 걷어냈다 (11차 #A11).
+    $stateFilePath = STATE_PATH;
     $stateDeleted = false;
 
     if (defined('DELETE_INSTALLER_AFTER_COMPLETE') && DELETE_INSTALLER_AFTER_COMPLETE) {
@@ -153,6 +266,10 @@ try {
             } else {
                 $stateDeleted = true;
                 addLog('[finalize-env] state.json 삭제 완료');
+            }
+            // 워커 lock 판정용 파일(acquireWorkerLock 의 flock 대상) — 상태 파일과 함께 치운다
+            if (is_file($stateFilePath.'.lock')) {
+                @unlink($stateFilePath.'.lock');
             }
         } else {
             $stateDeleted = true;

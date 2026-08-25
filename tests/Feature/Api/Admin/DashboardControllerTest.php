@@ -17,6 +17,10 @@ use Tests\TestCase;
  * DashboardController 테스트
  *
  * 대시보드 API 엔드포인트를 테스트합니다.
+ *
+ * 커버 축: shell_exec_guard_surface dashboard_cpu·dashboard_memory / measurement_result measured·not_measurable
+ *
+ * @effects resources_probe_failure_returns_null_percentage_not_zero
  */
 class DashboardControllerTest extends TestCase
 {

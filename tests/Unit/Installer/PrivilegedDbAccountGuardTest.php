@@ -4,6 +4,8 @@ namespace Tests\Unit\Installer;
 
 use App\Support\PrivilegedDatabaseAccounts;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -19,6 +21,8 @@ use PHPUnit\Framework\TestCase;
  *  - 인스톨러가 코어와 같은 판정 SSoT 를 공유하는지 (목록 이원화 차단)
  *  - 다국어 키 존재 및 :username 치환 동작 (ko/en)
  */
+#[RunClassInSeparateProcess]
+#[PreserveGlobalState(false)]
 class PrivilegedDbAccountGuardTest extends TestCase
 {
     public static function setUpBeforeClass(): void

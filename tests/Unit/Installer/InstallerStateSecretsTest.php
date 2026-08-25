@@ -2,7 +2,10 @@
 
 namespace Tests\Unit\Installer;
 
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\CleansTemporaryBasePath;
 
 /**
  * 인스톨러 state.json 비밀 잔존 결함 회귀 테스트 (이슈 #465)
@@ -20,8 +23,12 @@ use PHPUnit\Framework\TestCase;
  *
  * @see https://github.com/gnuboard/dev-g7/issues/465
  */
+#[RunClassInSeparateProcess]
+#[PreserveGlobalState(false)]
 class InstallerStateSecretsTest extends TestCase
 {
+    use CleansTemporaryBasePath;
+
     private string $skipReason = '';
 
     protected function setUp(): void
@@ -100,14 +107,42 @@ class InstallerStateSecretsTest extends TestCase
         $this->assertSame('read-host', $safe['db_read_host']);
     }
 
-    public function test_installer_secret_config_keys_covers_four_secrets(): void
+    public function test_installer_secret_config_keys_covers_every_password_input(): void
     {
         $keys = installerSecretConfigKeys();
 
         $this->assertEqualsCanonicalizing(
-            ['db_write_password', 'db_read_password', 'admin_password', 'admin_password_confirm'],
+            [
+                'db_write_password',
+                'db_read_password',
+                'admin_password',
+                'admin_password_confirm',
+                // GitHub PAT — Step 3 의 password 입력이고 프라이빗 저장소 접근 권한을 갖는다.
+                // state.json 은 0664 이고 설치 실패·중단 시 무기한 잔존하므로 평문 보관처로 부적합.
+                'core_update_github_token',
+            ],
             $keys,
         );
+    }
+
+    /**
+     * GitHub 접속 토큰은 state.json(0664) 이 아니라 runtime.php(0600) 로 이송된다.
+     */
+    public function test_github_token_is_stripped_from_state_and_carried_by_runtime(): void
+    {
+        $config = [
+            'db_write_host' => 'localhost',
+            'core_update_github_url' => 'https://github.com/gnuboard/g7',
+            'core_update_github_token' => 'ghp_secret_value',
+        ];
+
+        $safe = sanitizeConfigForState($config);
+
+        $this->assertArrayNotHasKey('core_update_github_token', $safe);
+        $this->assertSame('https://github.com/gnuboard/g7', $safe['core_update_github_url'], 'URL 은 비밀이 아니다');
+
+        $runtime = buildInstallerRuntimeFromState($config);
+        $this->assertSame('ghp_secret_value', $runtime['core_update']['github_token'] ?? null);
     }
 
     /**

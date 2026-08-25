@@ -535,7 +535,7 @@ $viewData = HookManager::applyFilters('core.seo.filter_view_data', $viewData, [
 
 ### 도메인 스키마 ownership — seoOgDefaults / seoTwitterDefaults / seoStructuredData
 
-모듈/플러그인은 `AbstractModule` / `AbstractPlugin` 의 다음 메서드를 오버라이드하여 자기 도메인의 OG/Twitter/JSON-LD 를 owned 한다. 레이아웃 JSON 직접 선언은 페이지별 override 가 꼭 필요할 때만 사용 (도메인 스키마는 모듈로 이전 — `seo-domain-schema-in-layout` 정적 검사가 자동 차단).
+모듈/플러그인은 `AbstractModule` / `AbstractPlugin` 의 다음 메서드를 오버라이드하여 자기 도메인의 OG/Twitter/JSON-LD 를 owned 한다. 레이아웃 JSON 직접 선언은 페이지별 override 가 꼭 필요할 때만 사용 (도메인 스키마는 모듈로 이전 — 정적 검사가 자동 차단).
 
 ```php
 class EcommerceModule extends AbstractModule
@@ -598,7 +598,7 @@ class EcommerceSitemapContributor extends AbstractSitemapContributor
     public function getIdentifier(): string { return 'sirsoft-ecommerce'; }
 
     // 한 건씩 yield — 1.4M 배열을 메모리에 만들지 않음. 쿼리는 Repository 의
-    // stream*ForSitemap() 위임(lazyById, service-direct-data-access 규율).
+    // stream*ForSitemap() 위임(lazyById — Service 직접 데이터 접근 금지 규율).
     // 리소스 단위 증분(SitemapIndexer) 매칭을 위해 resource_type/resource_id 를 함께 emit.
     public function getUrlsLazy(): iterable
     {
@@ -707,7 +707,7 @@ sitemap/_tmp/              생성 중 임시 디렉토리 (커밋 시 정리)
 
 - **테이블**: `resource_type`/`resource_id`/`loc`/`loc_hash`(=`sha256(loc)`)/`lastmod`/`changefreq`/`priority`/`contributor`/`is_visible`. unique 는 `(resource_type, resource_id, loc_hash)` — `loc string(2048)` utf8mb4 는 InnoDB 키 길이(3072 byte)를 초과하므로 ascii 64 해시로 identity 를 유지합니다(상세: docs/database-guide.md).
 - **Repository**: `SitemapUrlRepositoryInterface`(`upsertForResource`=delete-후-insert 멱등 / `removeForResource` / `streamVisible`(lazyById) / `countVisible` / `replaceAllForContributor`). `SeoServiceProvider` 가 singleton 바인딩.
-- **인덱서**: `SitemapIndexer::indexResource($type,$model,$entries)` / `deindexResource($type,$model)` — 리스너가 직접 모델/DB 를 만지지 않고 이 서비스를 경유합니다(`service-direct-data-access` 규율). 제3자 확장은 filter 훅 `sitemap.index.collect_for_resource` 로 리소스→entries 를 가공/추가할 수 있습니다(docs/extension/hooks.md).
+- **인덱서**: `SitemapIndexer::indexResource($type,$model,$entries)` / `deindexResource($type,$model)` — 리스너가 직접 모델/DB 를 만지지 않고 이 서비스를 경유합니다(Service 직접 데이터 접근 금지 규율). 제3자 확장은 filter 훅 `sitemap.index.collect_for_resource` 로 리소스→entries 를 가공/추가할 수 있습니다(docs/extension/hooks.md).
 - **리스너**: 모듈 SEO 리스너가 `after_create/update/delete` 에서 공개상태를 판정해 index/deindex 하고 `GenerateSitemapJob::dispatch()`(유니크 락 디바운스)를 겁니다. 리소스 단위 증분에서 자식 파일 URL 수가 임계 미만으로 줄어드는 것(5000→4999)은 감안하며, 균등 재분배(리밸런싱)는 full 재생성 때만 합니다.
 
 ## 재생성 모드 (SitemapGenerationMode)

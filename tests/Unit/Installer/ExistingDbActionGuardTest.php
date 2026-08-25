@@ -2,7 +2,10 @@
 
 namespace Tests\Unit\Installer;
 
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\CleansTemporaryBasePath;
 
 /**
  * existing_db_action 변경 시 db_cleanup 재실행 보장 회귀 테스트
@@ -18,18 +21,22 @@ use PHPUnit\Framework\TestCase;
  * 수정 가드: 사용자가 'drop_tables' 로 새로 동의하면 (이전과 다르면)
  *           db_cleanup 마커를 completed_tasks 에서 제거하여 재실행 보장.
  */
+#[RunClassInSeparateProcess]
+#[PreserveGlobalState(false)]
 class ExistingDbActionGuardTest extends TestCase
 {
+    use CleansTemporaryBasePath;
+
     protected function setUp(): void
     {
         parent::setUp();
 
         if (! defined('BASE_PATH')) {
-            define('BASE_PATH', sys_get_temp_dir() . '/g7-existing-db-action-test-' . bin2hex(random_bytes(4)));
-            mkdir(BASE_PATH . '/storage', 0755, true);
+            define('BASE_PATH', sys_get_temp_dir().'/g7-existing-db-action-test-'.bin2hex(random_bytes(4)));
+            mkdir(BASE_PATH.'/storage', 0755, true);
         }
 
-        require_once dirname(__DIR__, 3) . '/public/install/includes/installer-state.php';
+        require_once dirname(__DIR__, 3).'/public/install/includes/installer-state.php';
     }
 
     public function test_drop_tables_resets_db_cleanup_when_previous_was_skip(): void
@@ -80,17 +87,41 @@ class ExistingDbActionGuardTest extends TestCase
         $this->assertContains('composer_check', $guarded['completed_tasks']); // db 외 task 보존
     }
 
-    public function test_drop_tables_resets_db_seed_marker_too(): void
+    /**
+     * 계약 변경 (G2, 2026-08-22): db_seed 까지 끝난 DB 는 인스톨러의 설치물이다 — 그 뒤의
+     * 재시도(확장 단계 실패 → 재시도/건너뛰기)에서 마커를 지우면 db_cleanup 이 설치물 테이블을
+     * 다시 DROP 하고, 확장 완료 마커는 남아 템플릿 행만 사라진 채 "완료" 된다 (실측: g7_templates 빈 설치).
+     * 종전 테스트(test_drop_tables_resets_db_seed_marker_too)는 그 파괴를 계약으로 고정하고 있었다.
+     */
+    public function test_drop_tables_preserves_markers_once_db_stage_completed(): void
     {
         $state = [
-            'completed_tasks' => ['db_cleanup', 'db_migrate', 'db_seed'],
+            'existing_db_action' => 'drop_tables',
+            'completed_tasks' => ['db_cleanup', 'db_migrate', 'db_seed', 'template_install:sirsoft-admin_basic'],
+        ];
+
+        $guarded = applyExistingDbActionStateGuard($state, 'drop_tables');
+
+        $this->assertContains('db_cleanup', $guarded['completed_tasks']);
+        $this->assertContains('db_migrate', $guarded['completed_tasks']);
+        $this->assertContains('db_seed', $guarded['completed_tasks']);
+        $this->assertContains('template_install:sirsoft-admin_basic', $guarded['completed_tasks']);
+    }
+
+    /**
+     * 시딩이 끝나기 전(마이그레이션만 완료) 의 재시도는 종전대로 처음부터 다시 한다 —
+     * 이 구간에는 아직 확장 설치물이 없어 재DROP 이 파괴적이지 않다.
+     */
+    public function test_drop_tables_resets_markers_while_seed_incomplete(): void
+    {
+        $state = [
+            'completed_tasks' => ['db_cleanup', 'db_migrate'],
         ];
 
         $guarded = applyExistingDbActionStateGuard($state, 'drop_tables');
 
         $this->assertNotContains('db_cleanup', $guarded['completed_tasks']);
         $this->assertNotContains('db_migrate', $guarded['completed_tasks']);
-        $this->assertNotContains('db_seed', $guarded['completed_tasks']);
     }
 
     public function test_skip_does_not_reset_anything(): void
@@ -178,6 +209,31 @@ class ExistingDbActionGuardTest extends TestCase
         // worker 가 죽었으므로 reset 진행 (기존 의도된 동작)
         $this->assertNotContains('db_cleanup', $guarded['completed_tasks']);
         $this->assertNotContains('db_migrate', $guarded['completed_tasks']);
+    }
+
+    /**
+     * 회귀(9차 #M6): 점유자가 스스로 선언한 유효 시간을 이 가드도 존중한다.
+     *
+     * `worker_stale_after` 는 오래 도는 태스크(마이그레이션·vendor 추출)를 위해 요청이
+     * 자기 시간 예산을 lock 에 알리는 값이다. lock 획득(acquireWorkerLock)은 그 선언을
+     * 존중하는데 이 가드만 15초로 고정하면, 아직 도는 워커를 죽은 것으로 보고 그 워커의
+     * db_* 완료 마커를 지운다 → 다음 요청이 db_cleanup 을 다시 뽑아 **방금 만든 테이블을
+     * DROP** 한다. 두 판정은 같은 함수를 써야 한다.
+     */
+    public function test_drop_tables_respects_declared_worker_stale_window(): void
+    {
+        $state = [
+            'existing_db_action' => 'drop_tables',
+            'completed_tasks' => ['db_cleanup', 'db_migrate'],
+            'active_worker_id' => 'abc123',
+            'last_heartbeat' => time() - 60,   // 15초 기준으로는 stale
+            'worker_stale_after' => 180,       // 그러나 점유자는 180초를 선언했다 (stepwise)
+        ];
+
+        $guarded = applyExistingDbActionStateGuard($state, 'drop_tables');
+
+        $this->assertContains('db_cleanup', $guarded['completed_tasks'], '살아 있는 워커의 완료 마커를 지우면 그 워커가 만든 테이블이 다시 DROP 된다');
+        $this->assertContains('db_migrate', $guarded['completed_tasks']);
     }
 
     /**

@@ -3,6 +3,8 @@
 namespace Tests\Unit\Installer;
 
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -16,12 +18,19 @@ use PHPUnit\Framework\TestCase;
  *  - 상수 MAX_DB_PREFIX_LENGTH 가 6 으로 정의됨 (자동명 최대 58자 + 6 = 64)
  *  - 경계: 6자 이하 통과 / 7자 이상 거부
  *  - 가장 긴 자동 생성 인덱스명(58자)이 허용 최대 prefix 와 합쳐 64자를 넘지 않음
+ *
+ * 이 클래스는 config.php 를 require 해 `BASE_PATH` 를 **실 저장소 루트**로 정의한다 —
+ * 본문에 define 이 없어도 결과는 같다. 격리 없이 돌면 같은 프로세스의 다른 인스톨러
+ * 테스트가 R7 안전가드(temp 하위가 아니면 skip)에 걸려 통째로 건너뛰어지고, 종료 코드는
+ * 0 이라 초록으로 보인다.
  */
+#[RunClassInSeparateProcess]
+#[PreserveGlobalState(false)]
 class DbPrefixLengthGuardTest extends TestCase
 {
     public static function setUpBeforeClass(): void
     {
-        require_once dirname(__DIR__, 3) . '/public/install/includes/config.php';
+        require_once dirname(__DIR__, 3).'/public/install/includes/config.php';
     }
 
     public function test_max_db_prefix_length_constant_is_defined_as_six(): void

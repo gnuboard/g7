@@ -2,6 +2,8 @@
 
 namespace Tests\Unit\Installer;
 
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -11,6 +13,8 @@ use PHPUnit\Framework\TestCase;
  * 케이스를 사전 감지하기 위한 endpoint. set 으로 세션에 nonce 저장 후 verify 로
  * 같은 세션에서 nonce 가 복원되는지 확인.
  */
+#[RunClassInSeparateProcess]
+#[PreserveGlobalState(false)]
 class SessionProbeTest extends TestCase
 {
     private static bool $loaded = false;
@@ -21,21 +25,21 @@ class SessionProbeTest extends TestCase
             return;
         }
 
-        require_once __DIR__ . '/stubs/lang_stub.php';
+        require_once __DIR__.'/stubs/lang_stub.php';
 
         $projectRoot = dirname(__DIR__, 3);
         if (! defined('BASE_PATH')) {
             define('BASE_PATH', $projectRoot);
         }
         if (! defined('STATE_PATH')) {
-            define('STATE_PATH', sys_get_temp_dir() . '/g7-session-probe-test-' . bin2hex(random_bytes(4)) . '.json');
+            define('STATE_PATH', sys_get_temp_dir().'/g7-session-probe-test-'.bin2hex(random_bytes(4)).'.json');
         }
         if (! defined('SESSION_PROBE_LIBRARY')) {
             define('SESSION_PROBE_LIBRARY', true);
         }
 
-        require_once $projectRoot . '/public/install/includes/functions.php';
-        require_once $projectRoot . '/public/install/api/session-probe.php';
+        require_once $projectRoot.'/public/install/includes/functions.php';
+        require_once $projectRoot.'/public/install/api/session-probe.php';
 
         self::$loaded = true;
     }

@@ -7,6 +7,7 @@ use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
  * 설치 로그 기록 시 UTF-8 정규화(scrub) 회귀 테스트.
@@ -34,6 +35,8 @@ use PHPUnit\Framework\TestCase;
 #[PreserveGlobalState(false)]
 class AddLogUtf8ScrubTest extends TestCase
 {
+    use ScansPhpSourceFunctions;
+
     private static string $sharedBase = '';
 
     private static string $skipReason = '';
@@ -262,9 +265,10 @@ class AddLogUtf8ScrubTest extends TestCase
     #[Test]
     public function sse_emitter_source_routes_through_guarded_encoder(): void
     {
-        $source = (string) file_get_contents(
+        // 주석을 지운 뒤 대조한다 — 원문에는 주석 처리된 배선도 글자로 남아, 원문 대조는 「그 배선이 살아 있다」를 증명하지 못한다 (12차 메타 검사 ①).
+        $source = $this->stripComments((string) file_get_contents(
             dirname(__DIR__, 3).'/public/install/includes/progress-emitter.php'
-        );
+        ));
 
         // SseEmitter 클래스 본문 추출
         $classStart = strpos($source, 'class SseEmitter');

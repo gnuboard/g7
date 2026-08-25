@@ -376,7 +376,20 @@ TypeScript 테스트는 `// @scenario` / `// @effects` 주석 동일 사용.
 | `@effects x + y + z` | 효과 1개 `"x + y + z"` — x·y·z 는 미등록 |
 | `@scenario a + b + c` (`=` 없음) | 빈 조합 `{}` — 아무것도 커버하지 않음 |
 
-그렇게 만들어진 마커는 **어떤 조합도 커버하지 못하는 죽은 마커**다. 게다가 cross product 대조는 "매니페스트가 요구하는 항목이 마커에 있는가" 만 보고 마커 쪽에 생긴 쓰레기 항목은 무시하므로, 구분자를 틀려도 전 게이트가 조용히 통과한다 — 실제로 36건이 그렇게 쌓였다.
+그렇게 만들어진 마커는 **어떤 조합도 커버하지 못하는 죽은 마커**다. 게다가 cross product 대조는 "매니페스트가 요구하는 항목이 마커에 있는가" 만 보고 마커 쪽에 생긴 쓰레기 항목은 무시하므로, 구분자를 틀려도 전 게이트가 조용히 통과한다 — 실제로 33건이 그렇게 쌓였다.
+
+#### 평문 요약(`커버 축:`)은 마커가 아니다
+
+클래스가 여러 축 값을 걸친다는 서술은 마커로 적을 수 없다 — 파서에 그런 문법이 없어 `=[a|b]` 같은 표기는 축 값이 통째로 버려진다. 그래서 저장소는 그 서술을 **평문 한 줄**로 내린다:
+
+```php
+ * 커버 축: task_outcome done·failed_db·failed_extension / resume_point first_pending·retry_after_failure
+```
+
+이 줄은 사람이 읽는 요약이며 **어떤 도구도 해석하지 않는다.** 그래서 두 가지를 지킨다.
+
+- 여기에 적은 이름이 매니페스트 `axes` 와 같아야 할 의무는 없다(대조되지 않는다). 다만 다르면 다음 사람이 "이 축은 이미 덮여 있다" 로 오독하므로, 매니페스트에 있는 축이면 **같은 이름**을 쓴다.
+- 커버리지의 근거는 언제나 `@scenario` / `@effects` 와 매니페스트다. 평문 요약이 늘어난다고 커버리지가 늘지 않는다.
 
 항목이 여럿이면 `, ` 로 적고, 파일/클래스 레벨의 **요약**이라면 마커 토큰을 걷어내 평문으로 내린다. 파일 레벨에 effects 목록을 몰아 적으면 그 메서드가 하나도 없어도 "언급됨" 으로 집계되어 커버리지가 부풀고, 메서드 삭제가 무증상 green 이 된다 — 마커는 test 에만 둔다.
 
@@ -424,12 +437,12 @@ TypeScript 테스트는 `// @scale ...` 라인 주석 동일 사용.
 
 **강제 룰 2종** (자동 차단):
 
-| 룰 | 대상 | 검출 |
+| 규율 | 대상 | 검출 |
 |----|------|------|
-| `scenario-scale-axis-required` | `tests/scenarios/**/*.yaml` | batch/generation 매니페스트(test_files 에 `/Jobs/`·`Generator` 또는 tags `[batch]`/`[generation]`)인데 scale 축 없음 / n<100000 / assert 미커버 |
-| `job-generator-needs-scale-test` | `app/Jobs/**`·`**/*Generator.php` | 소스 변경 시 그 클래스를 언급하고 scale 축을 가진 매니페스트가 없음 |
+| 규모 축 필수 | `tests/scenarios/**/*.yaml` | batch/generation 매니페스트(test_files 에 `/Jobs/`·`Generator` 또는 tags `[batch]`/`[generation]`)인데 scale 축 없음 / n<100000 / assert 미커버 |
+| 볼륨 의존 클래스의 규모 테스트 | `app/Jobs/**`·`**/*Generator.php` | 소스 변경 시 그 클래스를 언급하고 scale 축을 가진 매니페스트가 없음 |
 
-- `*Command.php` 는 흔하고 볼륨 비의존이라 `job-generator-needs-scale-test` 대상에서 제외한다. 배치 커맨드는 매니페스트 `tags: [batch]` + `scenario-scale-axis-required` 로 커버한다.
+- `*Command.php` 는 흔하고 볼륨 비의존이라 두 번째 검사 대상에서 제외한다. 배치 커맨드는 매니페스트 `tags: [batch]` + 규모 축으로 커버한다.
 - 면제: 매니페스트 헤더 `# audit:allow scenario-scale-axis-required reason: ...` / 소스 헤더 `// audit:allow job-generator-needs-scale-test <사유>`.
 
 ### 작성 절차

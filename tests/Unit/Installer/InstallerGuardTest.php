@@ -2,7 +2,11 @@
 
 namespace Tests\Unit\Installer;
 
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\CleansTemporaryBasePath;
+use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
  * 인스톨러 진입 가드 회귀 테스트
@@ -18,8 +22,13 @@ use PHPUnit\Framework\TestCase;
  * installer_is_completed() 의 결정론적 판정 결과만 검증한다.
  * 410 응답 본문은 PoC 매뉴얼 검증 영역.
  */
+#[RunClassInSeparateProcess]
+#[PreserveGlobalState(false)]
 class InstallerGuardTest extends TestCase
 {
+    use CleansTemporaryBasePath;
+    use ScansPhpSourceFunctions;
+
     private static string $tempBase = '';
 
     private static string $skipReason = '';
@@ -224,7 +233,8 @@ class InstallerGuardTest extends TestCase
 
         $this->assertFileExists($path, 'state-management.php 가 존재해야 한다');
 
-        return (string) file_get_contents($path);
+        // 주석을 지운 뒤 대조한다 — 원문에는 주석 처리된 배선도 글자로 남아, 원문 대조는 「그 배선이 살아 있다」를 증명하지 못한다 (12차 메타 검사 ①).
+        return $this->stripComments((string) file_get_contents($path));
     }
 
     public function test_state_management_loads_guard_file(): void

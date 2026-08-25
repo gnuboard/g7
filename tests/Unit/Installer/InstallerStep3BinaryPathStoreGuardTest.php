@@ -3,6 +3,8 @@
 namespace Tests\Unit\Installer;
 
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -21,6 +23,8 @@ use PHPUnit\Framework\TestCase;
  *
  * @effects step3_post_rejects_disallowed_binary_paths_before_save
  */
+#[RunClassInSeparateProcess]
+#[PreserveGlobalState(false)]
 class InstallerStep3BinaryPathStoreGuardTest extends TestCase
 {
     public static function setUpBeforeClass(): void
@@ -33,6 +37,11 @@ class InstallerStep3BinaryPathStoreGuardTest extends TestCase
         }
         if (! defined('SUPPORTED_LANGUAGES')) {
             define('SUPPORTED_LANGUAGES', ['ko' => '한국어', 'en' => 'English']);
+        }
+        // config.php 를 require 하면 BASE_PATH 가 실 저장소 루트로 박히므로 이 클래스가 쓰는
+        // 상수만 같은 값으로 세운다 (SUPPORTED_LANGUAGES 와 같은 이유).
+        if (! defined('MAX_APP_NAME_LENGTH')) {
+            define('MAX_APP_NAME_LENGTH', 100);
         }
 
         require_once $projectRoot.'/public/install/includes/functions.php';

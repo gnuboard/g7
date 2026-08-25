@@ -22,6 +22,10 @@ use Tests\TestCase;
 
 /**
  * DashboardService 단위 테스트
+ *
+ * 커버 축: shell_exec_guard_surface dashboard_cpu·dashboard_memory / measurement_result measured·not_measurable
+ *
+ * @effects get_system_resources_isolates_failing_cpu_probe, get_system_resources_isolates_failing_memory_probe, get_system_resources_isolates_failing_disk_probe
  */
 class DashboardServiceTest extends TestCase
 {

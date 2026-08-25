@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\ExecutionEnvironment;
 use App\Support\PrivilegedDatabaseAccounts;
 
 /**
@@ -181,6 +182,13 @@ function handleStep3Post(string $currentLang, array &$formData, array &$errors):
         validateDbUsername($formData['db_read_username'] ?? '', 'db_read_username', $errors);
     }
 
+    // 사이트명 길이 — 이 값은 `.env` 의 APP_NAME 과 설정의 site_name 으로 그대로 흘러가
+    // 설치 직후 관리자·사용자 화면의 입력이 된다. 화면의 maxlength 는 거들 수 있으므로
+    // 서버가 같은 상한을 다시 강제한다.
+    if (mb_strlen((string) ($formData['app_name'] ?? '')) > MAX_APP_NAME_LENGTH) {
+        $errors['app_name'] = lang('error_app_name_too_long', ['max' => MAX_APP_NAME_LENGTH]);
+    }
+
     // 관리자 정보 검증
     if (empty($formData['admin_email']) || ! filter_var($formData['admin_email'], FILTER_VALIDATE_EMAIL)) {
         $errors['admin_email'] = lang('error_admin_email_invalid');
@@ -205,6 +213,28 @@ function handleStep3Post(string $currentLang, array &$formData, array &$errors):
     if ($phpBinary !== 'php' && ! installer_binary_path_shape_ok($phpBinary)) {
         $errors['php_binary'] = lang('error_php_binary_path_not_allowed', ['path' => $phpBinary]);
     }
+
+    // 운영자가 **직접 지정한** 경로가 CLI 가 아니면 저장하지 않는다 (13차 보안#7 ②).
+    // `php-fpm --version` · `php-cgi --version` 은 CLI 와 똑같이 정상 종료하고 같은 형태로
+    // 버전을 찍으므로 형태·버전 검사로는 구분되지 않는다 — 그런데 그 바이너리는 artisan 을
+    // 받지 못해 설치 태스크가 전부 실패한다. 종전에는 화면에 경고만 띄우고 그 값을 그대로
+    // state 에 박았다. 자동 탐색 경로(입력을 비워 둔 경우)는 코어 판정이 CLI 후보를 먼저
+    // 고르므로 이 검사의 대상이 아니다 — php-cgi 로만 동작하던 환경을 새로 막지 않는다.
+    if (! isset($errors['php_binary']) && $phpBinary !== 'php') {
+        require_once __DIR__.'/execution-mode.php';
+        installerEnsureExecutionEnvironmentLoaded();
+
+        $probe = ExecutionEnvironment::probePhpBinary($phpBinary);
+        $probedSapi = $probe['sapi'] ?? null;
+
+        if (($probe['status'] ?? '') === 'valid' && is_string($probedSapi) && $probedSapi !== 'cli') {
+            $errors['php_binary'] = lang('error_php_binary_not_cli_rejected', [
+                'path' => $phpBinary,
+                'sapi' => $probedSapi,
+            ]);
+        }
+    }
+
     $formData['php_binary'] = $phpBinary;
 
     $composerBinary = trim($formData['composer_binary'] ?? '');
@@ -225,7 +255,35 @@ function handleStep3Post(string $currentLang, array &$formData, array &$errors):
     if (! in_array($vendorMode, ['auto', 'composer', 'bundled'], true)) {
         $vendorMode = 'auto';
     }
-    $formData['vendor_mode'] = $vendorMode;
+
+    // 실행 모드 (auto|subprocess|inprocess, 기본 auto — D33). 저장되는 것은 "선택" 이고
+    // auto 는 감지 결과를 박지 않는다 (A-0 ①). inprocess 가 유효하면 composer 는 성립하지
+    // 않으므로 Vendor 설치 방식을 bundled 로 고정한다 (A-4) — 화면이 보내는 값만 믿지
+    // 않고 저장 시점에 다시 판정한다 (R9: 모드가 관여하는 지점은 모드를 읽는다).
+    require_once __DIR__.'/execution-mode.php';
+
+    $formData['execution_mode'] = installerNormalizeExecutionMode($formData['execution_mode'] ?? 'auto');
+
+    // 명시 선택은 성립 여부를 저장 시점에 검사한다 (A-4 대칭). 화면이 고를 수 없게 막는 것만으로는
+    // 부족하다 — 재감지 요청이 조용히 실패한 뒤·Step 3 저장과 설치 시작 사이에 환경이 바뀐 뒤·
+    // 개발자 도구로 disabled 를 지운 뒤에는 서버가 유일한 판정자다. 여기서 막지 않으면 실패가
+    // 설치 중반(태스크 실행)에야 드러나고, 그때의 복구는 롤백/재시도다.
+    if ($formData['execution_mode'] !== 'auto') {
+        $executionRejection = installerExecutionModeRejection(
+            $formData['execution_mode'],
+            installerDetectExecutionMode($phpBinary !== '' ? $phpBinary : 'php'),
+        );
+
+        if ($executionRejection !== null) {
+            $errors['execution_mode'] = lang($executionRejection);
+        }
+    }
+
+    $executionResolution = installerResolveExecutionMode([
+        'execution_mode' => $formData['execution_mode'],
+        'php_binary' => $phpBinary,
+    ]);
+    $formData['vendor_mode'] = installerCoerceVendorModeForExecution($vendorMode, $executionResolution['mode']);
 
     // 자산 URL 방식 (이슈 #486) — Step 3 의 브라우저 프로브가 채운 hidden 필드.
     // 정적 최적화 블록이 있는 서버는 확장자 붙은 동적 응답이 PHP 에 도달하지 못하므로
@@ -261,16 +319,28 @@ function handleStep3Post(string $currentLang, array &$formData, array &$errors):
         }
     }
 
-    // 코어 업데이트 _pending 경로 검증 (입력된 경우만)
+    // 코어 업데이트 _pending 경로 검증 (입력된 경우만) — 검사 버튼(check-core-pending-path)과
+    // **같은 규칙**이어야 한다 (21차 #21-4). 종전에는 저장 경로만 `..`/NUL 거부·Windows
+    // 절대경로 인식·stat 진단 억제가 전부 빠져 있었다: Windows 절대경로(`D:\pending`)를
+    // 상대경로로 오인해 검사 버튼이 초록을 준 경로와 다른 경로를 검증했고, open_basedir
+    // 환경에서는 무억제 stat 의 warning 이 redirect 헤더보다 먼저 나가 화면이 Step 3 에
+    // 고착됐다(상태는 이미 Step 4 로 넘어간 뒤라 새로고침해야만 풀린다).
     $corePendingPath = trim($formData['core_update_pending_path'] ?? '');
     if ($corePendingPath !== '') {
-        // 절대 경로 변환
-        $absolutePath = str_starts_with($corePendingPath, '/')
-            ? $corePendingPath
-            : BASE_PATH.'/'.$corePendingPath;
+        $hasParentSegment = preg_match('#(^|[/\\\\])\.\.([/\\\\]|$)#', $corePendingPath) === 1;
 
-        if (file_exists($absolutePath) && ! is_dir($absolutePath)) {
-            $errors['core_update_pending_path'] = lang('error_core_pending_not_directory');
+        if ($hasParentSegment || str_contains($corePendingPath, "\0")) {
+            $errors['core_update_pending_path'] = lang('error_core_pending_path_invalid');
+        } else {
+            // 절대 경로 변환 — 검사 버튼과 같은 판정 (POSIX `/` + Windows 드라이브 문자)
+            $absolutePath = (str_starts_with($corePendingPath, '/') || preg_match('#^[A-Za-z]:[/\\\\]#', $corePendingPath) === 1)
+                ? $corePendingPath
+                : BASE_PATH.'/'.$corePendingPath;
+
+            // 운영자 임의 경로라 open_basedir 밖이 정상 시나리오 — 판정은 옳고 진단만 억제 (20차 #9 규칙)
+            if (@file_exists($absolutePath) && ! @is_dir($absolutePath)) {
+                $errors['core_update_pending_path'] = lang('error_core_pending_not_directory');
+            }
         }
     }
 
@@ -295,10 +365,20 @@ function handleStep3Post(string $currentLang, array &$formData, array &$errors):
         // read 필드 정리(이슈 #63 2단계 방어) 도 sanitizeConfigForState 가 함께 수행.
         $safeFormData = sanitizeConfigForState($formData);
 
-        updateStepStatus(3, 4, [
-            'config' => $safeFormData,
-            'installation_status' => 'ready',
-        ]);
+        // 진행 이력 상태(running/failed/aborted)는 되감지 않는다 (21차 #21-9 ①) — 다른 탭의
+        // 재저장이 failed 를 ready 로 덮으면 [다시 시도]가 신규 설치로 둔갑해 완료 마커·
+        // 롤백 기준선·실패 로그가 소거된다. 판정은 installerConfigSaveStatusPatch 가 소유한다.
+        //
+        // 읽기-판정-쓰기 전체를 상태 잠금 안에서 수행한다 (22차 N-2) — 잠금 밖이면 읽기와
+        // 쓰기 사이에 워커가 running 으로 전이한 것을 이 저장이 되덮는 경합 창이 남는다.
+        // 같은 라운드의 reset(state-management)이 지킨 규율과 동일하다.
+        installerWithStateLock(static function () use ($safeFormData): void {
+            $currentLifecycleStatus = getInstallationState()['installation_status'] ?? null;
+
+            updateStepStatus(3, 4, [
+                'config' => $safeFormData,
+            ] + installerConfigSaveStatusPatch(is_string($currentLifecycleStatus) ? $currentLifecycleStatus : null));
+        });
 
         redirectToStep(4);
     }

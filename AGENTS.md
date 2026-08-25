@@ -403,12 +403,14 @@ catch-all shadow 는 보호처럼 보인다는 점이 위험하다. 가려진 �
 
 | 금지 | 올바른 사용 |
 |------|------------|
-| 웹 도달 코드(컨트롤러·서비스·인스톨러·예약 작업)에서 `proc_open`/`exec` 로 `php artisan …` 을 직접 스폰 | `App\Execution\CommandRunner` 경유 — `CommandRunnerResolver::resolve()->run($command, $params)` (모드 결정: 명시 인자 > `system.execution_mode` > `ExecutionEnvironment::detect()`) |
+| 웹 도달 코드(컨트롤러·서비스·인스톨러·예약 작업)에서 `proc_open`/`exec` 로 `php artisan …` 을 직접 스폰 | `App\Execution\CommandRunner` 경유 — `CommandRunnerResolver::resolve()->run($command, $params)` (모드 결정: 명시 인자 > `system.execution_mode` > `ExecutionEnvironment::detect()`). **인스톨러는 Laravel 부팅 전이라 이 클래스를 부를 수 없다** — `installerRunArtisan($command, $parameters)` 단일 지점을 쓴다 ([execution-mode.md](docs/backend/execution-mode.md) §4.1) |
 | `function_exists('proc_open')` 등으로 실행 함수 가용성을 직접 판정 | `ExecutionEnvironment::hasFunction()` — `function_exists` + `disable_functions` 를 함께 본다 (인스톨러도 같은 클래스를 `require_once` 로 공유) |
+| 호스팅이 차단할 수 있는 함수(`exec`·`proc_open`·`putenv`·`disk_free_space`·`opcache_*` 등)를 가드 없이 **호출** | 호출 전에 `ExecutionEnvironment::hasFunction()` 으로 판정하고 대체 경로를 둔다. `@` 는 가드가 아니다 — PHP 8 은 차단 함수를 함수 테이블에서 제거하므로 그 호출은 `Error`(치명)이고 `@` 는 진단 억제일 뿐이다. 가드가 진입점에 있는 형태는 정상이며 그 자리에 면제 표식을 남긴다 |
+| 확장 vendor 를 `_pending` 소스에서만 `VendorResolver` 로 구성 | 설치·업데이트 **양쪽**이 resolver 를 경유한다. `_bundled` 소스 설치(웹 인스톨러의 정상 경로)와 `--force` 재설치가 빠지면 `--vendor-mode=bundled` 가 무시되고 raw composer 만 남아, composer 를 실행할 수 없는 호스팅에서 vendor 가 빈 확장이 「설치 완료」로 남는다(DB 에는 `bundled` 로 기록되고 이후 업데이트만 그 모드를 상속한다) |
 | `php artisan schema:dump` 산출물(`database/schema/*.sql`) 커밋 | 마이그레이션만 커밋 — `migrate` 가 덤프를 발견하면 `mysql` 바이너리를 스폰한다 |
 | 허용값이 닫힌 설정 키(`system.execution_mode`·`general.asset_url_mode`)의 허용값 규칙을 한쪽 FormRequest 에만 부착 | `EnumeratedSettingValues` 표 하나를 벌크(`SaveSettingsRequest`)·단건(`UpdateSettingRequest`) 양쪽이 공유 — 한쪽만 검사하면 다른 쪽이 우회로가 되어 임의 문자열이 설정 파일에 남는다 |
 
-불확실할 때의 기본값은 subprocess 다(기본값 불변) — inprocess 는 스폰 불가가 확인된 환경에서만 고른다. 정적 검사가 직접 스폰과 `schema:dump` 산출물을 차단한다. 아직 러너로 옮기지 못한 기존 스폰 지점은 `// audit:allow web-artisan-spawn-requires-runner <사유>` 표식을 남기며, 표식이 곧 이관 대상 목록이다. 정적 검사는 `function_exists` 직접 판정도 차단하며, 아직 옮기지 못한 지점은 `// audit:allow execution-function-availability-via-ssot <사유>` 표식을 남긴다. 허용값 표 공유는 코드 리뷰에서 확인한다. 상세: [execution-mode.md](docs/backend/execution-mode.md).
+불확실할 때의 기본값은 subprocess 다(기본값 불변) — inprocess 는 스폰 불가가 확인된 환경에서만 고른다. 정적 검사가 직접 스폰과 `schema:dump` 산출물을 차단한다. 아직 러너로 옮기지 못한 기존 스폰 지점은 `// audit:allow web-artisan-spawn-requires-runner <사유>` 표식을 남기며, 표식이 곧 이관 대상 목록이다. 정적 검사는 `function_exists` 직접 판정도 차단하며, 아직 옮기지 못한 지점은 `// audit:allow execution-function-availability-via-ssot <사유>` 표식을 남긴다. 정적 검사는 **무가드 호출** 축도 함께 본다 — 실행 함수 가용성 판정과는 다른 축이며, `artisan` 이 아닌 것을 무가드로 스폰하는 곳(`exec('which unzip')` 등)이 그 자리다. 대상에는 런타임 ini 접근(`ini_get`·`ini_set`)과 진단 채널(`error_log`)도 들어간다 — 셋 다 응답 봉투가 서기 전에 불려서, 막히면 첫 화면이 백지가 된다. 짝이 있는 함수는 함께 본다(`ini_set` 만 다루고 `ini_get` 을 빼면 그 자리가 사각이다). 아직 가드를 두지 못한 지점은 `// audit:allow hosting-blocked-function-requires-guard <사유>` 표식을 남긴다. 허용값 표 공유는 코드 리뷰에서 확인한다. 확장 vendor 의 설치·업데이트 대칭은 테스트가 소스 계약으로 고정한다. 상세: [execution-mode.md](docs/backend/execution-mode.md) · [vendor-bundle.md](docs/extension/vendor-bundle.md).
 
 ### 목록 컨텍스트 왕복 (list context round-trip)
 
@@ -1583,6 +1585,7 @@ php artisan migrate:rollback
 | `app/Seo/**` | [seo-system.md](docs/backend/seo-system.md) |
 | `app/Benchmark/**`, `config/benchmark.php` | [benchmark.md](docs/backend/benchmark.md) |
 | `app/Execution/**`, `app/Support/ExecutionEnvironment.php`, `app/Http/Requests/Settings/EnumeratedSettingValues.php` | [execution-mode.md](docs/backend/execution-mode.md) |
+| `public/install/**` | [execution-mode.md](docs/backend/execution-mode.md) §4.1 (인스톨러는 Artisan 을 `installerRunArtisan()` 단일 지점으로만 실행 — 직접 스폰 금지) |
 
 ---
 

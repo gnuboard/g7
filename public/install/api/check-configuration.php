@@ -2,6 +2,7 @@
 
 use App\Support\ExecutionEnvironment;
 use App\Support\OpcacheStatus;
+use App\Support\PhpBinaryResolver;
 use App\Support\PrivilegedDatabaseAccounts;
 
 /**
@@ -18,6 +19,8 @@ use App\Support\PrivilegedDatabaseAccounts;
 // 한쪽만 고치면 다른 쪽이 우회로가 되므로 의존성 없는 공용 파일로 두고 양쪽에서 로드한다.
 require_once __DIR__.'/../includes/utf8.php';
 require_once __DIR__.'/../includes/binary-path-policy.php';
+// 실행 모드 판정 헬퍼 — Step 3 의 실행 방식 선택란이 같은 판정을 본다 (D33)
+require_once __DIR__.'/../includes/execution-mode.php';
 
 /**
  * 검증 API 클래스
@@ -36,6 +39,39 @@ class ValidationApi
         $method = $_SERVER['REQUEST_METHOD'];
         $action = $_GET['action'] ?? ($method === 'GET' ? 'requirements' : null);
 
+        // 설치 창에는 인증이 없다 (13차 보안#6·보안#7). 그 사이 `test-db` 는 임의 host:port 로
+        // 나가는 접속 프록시이고 `test-php-binary` 는 임의 절대경로를 `--version` 으로 실행한다 —
+        // 정상 설치에는 몇 번이면 충분하므로 창당 호출 수에 상한을 둔다. 상한 판정은
+        // execution-mode.php 가 소유하고, 기록에 실패하면 통과시킨다(정상 설치를 막지 않는다).
+        $rateLimitedBuckets = [
+            'test-db' => 'probe_db',
+            'test-php-binary' => 'probe_binary',
+            'test-composer' => 'probe_binary',
+            'detect-php' => 'probe_binary',
+            'detect-execution-mode' => 'probe_binary',
+        ];
+
+        if (isset($rateLimitedBuckets[$action]) && installerProbeRateLimitExceeded($rateLimitedBuckets[$action])) {
+            http_response_code(429);
+            echo installer_json_encode([
+                'success' => false,
+                'message' => lang('error_probe_rate_limited'),
+                'message_key' => 'error_probe_rate_limited',
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        // 세션에 쓰지 않는 액션은 잠금을 먼저 놓는다 (17차 #B2). 이 액션들은 외부 바이너리를
+        // 타임아웃 없이 스폰하거나(`detect-php`·`test-composer`·`test-php-binary`) 요구사항
+        // 전수를 훑는데, PHP 기본 세션 핸들러는 스크립트 종료까지 세션 파일을 배타 잠근다 —
+        // 쥔 채로 오래 돌면 같은 세션의 다른 요청과 새로고침이 `session_start()` 에서 줄을 선다.
+        //
+        // `test-db` 는 제외한다 — 결과를 `$_SESSION['db_*_tested']` 에 기록하므로 닫으면
+        // 그 쓰기가 유실된다. 그쪽은 세션이 **필요한** 유일한 액션이다.
+        if ($action !== 'test-db' && session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
+
         try {
             // action에 따라 적절한 메서드 호출
             match ($action) {
@@ -44,6 +80,7 @@ class ValidationApi
                 'detect-php' => $this->detectPhpBinaries(),
                 'test-php-binary' => $this->testPhpBinary(),
                 'test-composer' => $this->testComposer(),
+                'detect-execution-mode' => $this->detectExecutionMode(),
                 'check-core-pending-path' => $this->checkCorePendingPath(),
                 default => $this->error400('Invalid action parameter'),
             };
@@ -58,6 +95,9 @@ class ValidationApi
     private function setJsonHeaders(): void
     {
         header('Content-Type: application/json; charset=utf-8');
+        // 진단 결과는 절대 캐시되지 않아야 한다 (17차 #B5) — 운영자가 권한·확장을 고치고
+        // 다시 검사해도 중간 프록시·브라우저 휴리스틱이 옛 「실패」를 되돌려 줄 수 있다.
+        header('Cache-Control: no-store');
     }
 
     /**
@@ -79,6 +119,7 @@ class ValidationApi
             'required_files' => $this->checkRequiredFiles(),
             'https' => $this->checkHttps(),
             'opcache' => $this->checkOpcache(),
+            'php_limits' => $this->checkPhpLimits(),
             'asset_url_mode' => $this->checkAssetUrlMode(),
         ];
 
@@ -177,15 +218,35 @@ class ValidationApi
 
             // 권한 검증
             $privileges = checkDatabasePrivileges($pdo, $database, $isReadDb);
+            $dbTypeLabel = $isReadDb ? 'Read' : 'Write';
+            $privilegeWarning = null;
 
-            // 권한 부족 확인
-            if (! $privileges['has_all'] && ! empty($privileges['missing'])) {
+            // 「확인 불가」는 차단하지 않는다 (PO 결정 §16.26.4 #2) — SHOW GRANTS 거부·롤 전개
+            // 실패 환경에서 권한이 실재해도 설치가 원리상 불가능해지던 거짓 차단(20차 #6)의 수정.
+            // 실제 부족은 설치 중 해당 단계가 사유와 함께 잡는다 (실패 화면 기정비).
+            if (! empty($privileges['indeterminate'])) {
+                $privilegeWarning = lang('warning_db_privileges_indeterminate', ['type' => $dbTypeLabel]);
+            } elseif (! $privileges['has_all'] && ! empty($privileges['missing'])) {
+                // 해석이 확정된 부족만 차단한다.
                 $missingPrivs = implode(', ', $privileges['missing']);
-                $dbTypeLabel = $isReadDb ? 'Read' : 'Write';
 
                 throw new Exception(
                     lang('error_db_privileges_insufficient_detail', ['type' => $dbTypeLabel, 'missing' => $missingPrivs])
                 );
+            }
+
+            // DB 서버 버전 하한 안내 (20차 #7 — 차단 아님). 조회 실패는 안내 대상이 아니다.
+            $dbServerNotice = null;
+            try {
+                $serverVersionNotice = installerDbServerVersionNotice((string) $pdo->getAttribute(PDO::ATTR_SERVER_VERSION));
+                if ($serverVersionNotice !== null) {
+                    $dbServerNotice = lang('warning_db_server_version_low', [
+                        'server' => $serverVersionNotice['server'],
+                        'minimum' => $serverVersionNotice['minimum'],
+                    ]);
+                }
+            } catch (PDOException $versionProbeFailure) {
+                $dbServerNotice = null;
             }
 
             // 연결 및 권한 검증 성공 플래그 (Write/Read 구분)
@@ -214,7 +275,10 @@ class ValidationApi
                     'has_all' => $privileges['has_all'],
                     'found' => $privileges['found'],
                     'required' => $privileges['required'],
+                    'indeterminate' => (bool) ($privileges['indeterminate'] ?? false),
                 ],
+                'privilege_warning' => $privilegeWarning,
+                'db_server_notice' => $dbServerNotice,
                 'existing_tables' => $existingTables,
             ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         } catch (PDOException $e) {
@@ -230,10 +294,18 @@ class ValidationApi
             // 에러 로깅
             logInstallationError(lang('error_db_connection_failed', ['error' => $e->getMessage()]), $e);
 
-            // 에러 응답 (200 OK + success: false)
+            // 에러 응답 (200 OK + success: false).
+            // 예외 원문은 싣지 않는다 (13차 보안#6) — 이 엔드포인트는 인증 없이 임의
+            // host:port 로 접속을 시도할 수 있어, 원문을 그대로 돌려주면 내부망 포트 상태와
+            // DB 서버 버전·자격증명 존재 여부를 알려 주는 오라클이 된다. 대신 조치가 갈리는
+            // 만큼만 분류해 사유 키로 돌려준다. 원문은 위 logInstallationError 가 남긴다.
             echo installer_json_encode([
                 'success' => false,
-                'message' => lang('error_db_connection_failed_detail', ['type' => ($isReadDb ? 'Read' : 'Write'), 'error' => $e->getMessage()]),
+                'message' => lang('error_db_connection_failed_detail', [
+                    'type' => ($isReadDb ? 'Read' : 'Write'),
+                    'error' => lang($this->classifyDbConnectionFailure($e)),
+                ]),
+                'message_key' => $this->classifyDbConnectionFailure($e),
                 'type' => $type ?? 'write',
             ], JSON_UNESCAPED_UNICODE);
         } catch (Exception $e) {
@@ -258,6 +330,40 @@ class ValidationApi
                 'type' => $type ?? 'write',
             ], JSON_UNESCAPED_UNICODE);
         }
+    }
+
+    /**
+     * DB 연결 실패를 조치가 갈리는 만큼만 분류한다 (13차 보안#6).
+     *
+     * 운영자에게 필요한 것은 "무엇을 고쳐야 하는가" 지 드라이버 원문이 아니다. 그리고 이
+     * 엔드포인트는 인증이 없으므로 원문을 그대로 돌려주면 임의 host:port 의 상태를 읽는
+     * 오라클이 된다 — 분류하면 정상 운영자에게 필요한 정보는 유지되고 열거 가치는 사라진다.
+     *
+     * @param  PDOException  $e  연결 예외
+     * @return string 사유 다국어 키
+     */
+    private function classifyDbConnectionFailure(PDOException $e): string
+    {
+        $driverCode = (int) ($e->errorInfo[1] ?? 0);
+        $sqlState = (string) ($e->getCode() ?: '');
+
+        if (in_array($driverCode, [1045, 1698], true) || $sqlState === '28000') {
+            return 'error_db_failure_credentials';
+        }
+
+        if ($driverCode === 1049 || $sqlState === '42000') {
+            return 'error_db_failure_unknown_database';
+        }
+
+        if (in_array($driverCode, [2002, 2003, 2005, 2006], true)) {
+            return 'error_db_failure_unreachable';
+        }
+
+        if ($driverCode === 1044) {
+            return 'error_db_failure_denied';
+        }
+
+        return 'error_db_failure_generic';
     }
 
     // ========================================
@@ -294,6 +400,20 @@ class ValidationApi
     {
         $requiredExtensions = REQUIRED_EXTENSIONS;
         $optionalExtensions = defined('OPTIONAL_EXTENSIONS') ? OPTIONAL_EXTENSIONS : [];
+
+        // `zip` 은 이 환경이 in-process 로 떨어질 때만 필수다 (13차 환경#4 ②).
+        // in-process 는 Vendor 설치 방식이 bundled 로 고정되고(A-4) 그 묶음은 ZipArchive 로
+        // 푼다 — 그런데 종전 요구사항 목록에는 zip 이 필수에도 선택에도 없었다. 그 결과
+        // Step 2 가 「CLI 없이 설치 진행」 파랑 + passed=true 로 통과시킨 뒤 번들 설치기가
+        // 정지했다. subprocess 로 떨어지는 환경은 composer 경로가 있으므로 필수가 아니다.
+        // 감지는 PHP 바이너리 probe 를 포함하므로 요청당 한 번만 돈다 (installerDetectExecutionMode 의 정적 캐시).
+        $inprocess = installerDetectExecutionMode('php')['mode'] === ExecutionEnvironment::MODE_INPROCESS;
+        if ($inprocess && ! in_array('zip', $requiredExtensions, true)) {
+            $requiredExtensions[] = 'zip';
+            $optionalExtensions = array_values(array_diff($optionalExtensions, ['zip']));
+        } elseif (! $inprocess && ! in_array('zip', $optionalExtensions, true) && ! in_array('zip', $requiredExtensions, true)) {
+            $optionalExtensions[] = 'zip';
+        }
 
         $installed = [];
         $allRequiredPassed = true;
@@ -338,15 +458,38 @@ class ValidationApi
     private function checkDiskSpace(): array
     {
         $minSpaceMb = MIN_DISK_SPACE_MB;
+
+        // `disk_free_space` 는 cPanel/CloudLinux/Imunify 의 표준 차단 목록에 `exec` 와 나란히
+        // 들어간다 — 이 안이 지원하려는 바로 그 호스팅이다. PHP 8 부터 `disable_functions` 는
+        // 함수를 함수 테이블에서 **제거**하므로 `@` 가 Error 를 막지 못하고, 그 Error 는
+        // handleRequest() 의 최상위 catch 로 흘러 요구사항 목록이 **통째로** 안 뜬다.
+        //
+        // 확인 불가는 차단하지 않는다 — checkOpcache 가 쓰는 3상태(`enabled === null`)와 같은
+        // 규칙이다. 값을 모른다는 사실만 알리고 설치는 계속한다.
+        if (! installerHasFunction('disk_free_space')) {
+            return [
+                'required' => true,
+                'min_mb' => $minSpaceMb,
+                'current_mb' => null,
+                'unknown' => true,
+                'passed' => true,
+                'message' => lang('error_disk_space_unknown'),
+            ];
+        }
+
         $freeSpaceBytes = @disk_free_space(BASE_PATH);
 
-        // disk_free_space() 실패 시
+        // disk_free_space() 실패 시 — 「확인 불가」는 위의 차단 갈래(함수 부재)와 **같은 판정**
+        // 이어야 한다 (21차 #21-6). NFS/CIFS 마운트·일부 컨테이너 볼륨은 함수가 있어도 false
+        // 를 돌려주는데, 종전에는 이 갈래만 passed=false 라 화면이 빨강+차단으로 증폭했다 —
+        // 디스크는 넉넉한데 설치가 원리상 진행 불가가 되는 거짓 차단(20차 #6 과 같은 형태).
         if ($freeSpaceBytes === false) {
             return [
                 'required' => true,
                 'min_mb' => $minSpaceMb,
-                'current_mb' => 0,
-                'passed' => false,
+                'current_mb' => null,
+                'unknown' => true,
+                'passed' => true,
                 'message' => lang('error_disk_space_unknown'),
             ];
         }
@@ -354,10 +497,25 @@ class ValidationApi
         $freeSpaceMb = round($freeSpaceBytes / 1024 / 1024, 2);
         $passed = $freeSpaceMb >= $minSpaceMb;
 
+        // 차단 기준(500MB)과 실사용(약 700MB — docs/requirements.md §9)의 간극 안내
+        // (21차 #21-7, PO 결정 §16.27.1 #3 — 차단 기준은 유지하고 경고만 덧붙인다).
+        // 종전에는 여유 600MB 서버가 초록으로 통과하고 설치 중반에 디스크가 차서
+        // 엉뚱한 오류(composer 쓰기 실패·PDO 예외)로 죽었다.
+        $recommendedMb = RECOMMENDED_DISK_SPACE_MB;
+        $lowHeadroom = $passed && $freeSpaceMb < $recommendedMb;
+
+        // 경고 문구는 message 에 합성하지 않고 별도 필드로 낸다 (22차 N-5) — 카드 값 슬롯은
+        // 짧은 라벨 계약(OPcache 카드와 같은 규칙)이라 문단이 들어가면 배지를 밀어낸다.
+        // 화면은 값 슬롯을 GB 로 유지하고 이 문구를 카드 아래 안내로 그린다.
         return [
             'required' => true,
             'min_mb' => $minSpaceMb,
+            'recommended_mb' => $recommendedMb,
             'current_mb' => $freeSpaceMb,
+            'low_headroom' => $lowHeadroom,
+            'headroom_message' => $lowHeadroom
+                ? lang('warning_disk_space_low_headroom', ['recommended' => $recommendedMb.'MB'])
+                : null,
             'passed' => $passed,
             'message' => $passed
                 ? lang('success_disk_space_detail', ['current' => $freeSpaceMb, 'min' => $minSpaceMb])
@@ -405,7 +563,7 @@ class ValidationApi
             'all_passed' => $check['all_passed'],
             'message' => $check['all_passed']
                 ? lang('success_directories_writable')
-                : lang('error_directory_not_writable_detail', ['permissions' => REQUIRED_DIRECTORY_PERMISSIONS_DISPLAY]),
+                : lang('error_directory_not_writable_detail'),
         ];
     }
 
@@ -516,12 +674,9 @@ class ValidationApi
      */
     private function checkHttps(): array
     {
-        $isHttps = isset($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) === 'on';
-
-        // HTTP_X_FORWARDED_PROTO 헤더도 확인 (프록시 환경)
-        if (! $isHttps && isset($_SERVER['HTTP_X_FORWARDED_PROTO'])) {
-            $isHttps = strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https';
-        }
+        // 판정은 세션 쿠키 설정과 같은 함수를 쓴다 (13차 환경#17) — 두 벌로 두었더니
+        // 한쪽만 프록시를 고려해, TLS 종단이 앞단인 배치에서 secure 쿠키가 붙지 않았다.
+        $isHttps = installerRequestIsHttps($_SERVER);
 
         $forwardedHeaders = $this->detectForwardedHeaders();
         $behindProxy = $forwardedHeaders !== [];
@@ -606,6 +761,62 @@ class ValidationApi
     }
 
     /**
+     * 실행 예산(메모리·시간) 확인 (정보 — 설치를 차단하지 않음)
+     *
+     * 종전에는 요구사항 목록에 이 두 값이 **하나도 없었다** (13차 환경#8). 128M 공유호스팅
+     * 에서 in-process 부팅 + migrate + seed 는 죽는데, 그 사실을 설치 전에 알 방법이 없어
+     * 운영자는 요구사항을 전부 통과하고서 중간에 멈추는 설치를 만난다.
+     *
+     * 차단하지 않는 이유: 두 값 모두 실행 중 조정될 수 있고(`ini_set`·`set_time_limit`),
+     * 값이 낮다고 반드시 실패하지도 않는다. 그리고 `ini_get` 자체가 막힌 환경이 있으므로
+     * 「확인 불가」 3상태를 함께 둔다 — checkOpcache 와 같은 규칙이다.
+     *
+     * @return array{required: bool, memory_limit: string|null, memory_limit_bytes: int|null, recommended_memory_mb: int, max_execution_time: string|null, open_basedir: string|null, message: string}
+     */
+    private function checkPhpLimits(): array
+    {
+        // 실행 경로의 실제 요구와 같은 값이어야 한다 (20차 #1, PO 결정 §16.26.4 #3) —
+        // subprocess 는 `-d memory_limit=512M`, in-process 는 512M 상향을 시도한다.
+        // 종전 256M 은 그보다 낮아, 256~512M 호스트가 화면을 초록으로 지나고 설치 중반
+        // OOM 을 만났다. 세 선언의 등치는 InstallerMemoryBudgetTest 가 잠근다.
+        $recommendedMemoryMb = 512;
+
+        if (! installerHasFunction('ini_get')) {
+            return [
+                'required' => false,
+                'memory_limit' => null,
+                'memory_limit_bytes' => null,
+                'recommended_memory_mb' => $recommendedMemoryMb,
+                'max_execution_time' => null,
+                'open_basedir' => null,
+                'message' => lang('php_limits_unknown'),
+            ];
+        }
+
+        $memoryLimit = trim((string) ini_get('memory_limit'));
+        $maxExecutionTime = trim((string) ini_get('max_execution_time'));
+        $memoryBytes = installerParseByteSize($memoryLimit);
+        // open_basedir 상태 노출 (20차 #10) — 이 제한은 detect-php·경로 검사·시스템 temp 접근의
+        // 실패 원인이 되는데 종전에는 서버가 읽지도 화면이 보여주지도 않아 원인 단서가 없었다.
+        $openBasedir = trim((string) ini_get('open_basedir'));
+
+        return [
+            'required' => false,
+            'memory_limit' => $memoryLimit !== '' ? $memoryLimit : null,
+            // -1 은 무제한이다 — 바이트 값이 아니라 상태이므로 그대로 싣는다.
+            'memory_limit_bytes' => $memoryBytes,
+            'recommended_memory_mb' => $recommendedMemoryMb,
+            'max_execution_time' => $maxExecutionTime !== '' ? $maxExecutionTime : null,
+            'open_basedir' => $openBasedir !== '' ? $openBasedir : null,
+            'message' => lang('php_limits_detail', [
+                'memory' => $memoryLimit !== '' ? $memoryLimit : '-',
+                'time' => $maxExecutionTime !== '' ? $maxExecutionTime : '-',
+                'recommended' => $recommendedMemoryMb.'M',
+            ]).($openBasedir !== '' ? ' '.lang('php_limits_open_basedir') : ''),
+        ];
+    }
+
+    /**
      * 자산 URL 방식 항목 정의 (권장 사항 — 설치를 차단하지 않음)
      *
      * 판정 자체는 **서버가 할 수 없다.** 서버에서 자기 APP_URL 로 curl 하면 loopback 이
@@ -639,11 +850,18 @@ class ValidationApi
      */
     private function checkDisabledFunctions(): array
     {
-        $detection = ExecutionEnvironment::detect('php');
+        // 감지는 캐시를 거친다 — 본체에 PHP 바이너리 probe 가 들어 있어 이 화면에서 가장 비싼
+        // 연산이고, 바로 위 항목(ext-zip 편입)이 이미 같은 감지를 돌렸다. 종전에는 여기서
+        // 캐시를 우회해 두 번 돌았고, 「요청당 한 번」이라는 바로 위의 주석과 어긋났다.
+        // 두 판정이 갈라질 여지도 함께 없어진다.
+        $detection = installerDetectExecutionMode('php');
         $requiredFunctions = ExecutionEnvironment::SUBPROCESS_FUNCTIONS;
         $disabled = $detection['blocked_functions'];
 
-        $bundleAvailable = file_exists(BASE_PATH.'/vendor-bundle.zip');
+        // 「번들이 있다」가 아니라 「번들을 쓸 수 있다」를 본다 (13차 환경#4) — 푸는 데
+        // ZipArchive 가 필요하고 공식 php 도커 이미지에는 ext-zip 이 기본으로 없다.
+        // 판정은 installerVendorBundleUsable() 단일 지점이 소유한다.
+        $bundleAvailable = $detection['bundle_available'] ?? installerVendorBundleUsable();
 
         if ($detection['mode'] === ExecutionEnvironment::MODE_SUBPROCESS) {
             $status = 'pass';
@@ -656,14 +874,9 @@ class ValidationApi
             $message = lang('error_no_cli_and_no_bundle');
         }
 
-        // 판정 근거 (정보 카드가 그대로 표시한다 — W1)
-        $reasons = [];
-        if ($disabled !== []) {
-            $reasons[] = lang('execution_mode_reason_functions', ['functions' => implode(', ', $disabled)]);
-        }
-        if ($disabled === [] && ($detection['php_probe']['status'] ?? '') === 'invalid') {
-            $reasons[] = lang('execution_mode_reason_php_probe');
-        }
+        // 판정 근거 (정보 카드가 그대로 표시한다 — W1). 문장 생성은 execution-mode.php 가
+        // 단일 출처다 — 같은 판정을 두 벌로 쓰면 W1 카드와 Step 3 감지 API 의 문장이 갈린다.
+        $reasons = installerExecutionModeReasons($detection);
 
         return [
             'required' => true,
@@ -701,33 +914,110 @@ class ValidationApi
             ];
         }
 
-        $output = [];
-        $returnCode = -1;
-        exec('php --version 2>&1', $output, $returnCode);
-
-        if ($returnCode === 0 && ! empty($output)) {
-            $outputStr = implode("\n", $output);
-            if (preg_match('/PHP\s+(\d+\.\d+\.\d+)/', $outputStr, $matches)) {
-                $cliVersion = $matches[1];
-            }
-        }
+        // 경로 기본값·형태 규칙은 execution-mode 헬퍼가 SSoT 다. probe 도 코어와 공유한다 —
+        // 여기서 exec + 버전 정규식을 다시 쓰면 SAPI 판정 같은 개선이 이 사본에만 빠진다.
+        $cliPath = installerDetectionPhpBinary('')['binary'];
+        $probe = ExecutionEnvironment::probePhpBinary($cliPath);
+        $cliVersion = $probe['version'];
+        $cliSapi = $probe['sapi'];
 
         // 메이저.마이너 버전 비교 (패치 차이는 무시)
         $webMajorMinor = implode('.', array_slice(explode('.', $webVersion), 0, 2));
         $cliMajorMinor = $cliVersion ? implode('.', array_slice(explode('.', $cliVersion), 0, 2)) : null;
         $matched = $cliMajorMinor !== null && $webMajorMinor === $cliMajorMinor;
 
+        // 버전이 같아도 **설정이 같다는 뜻은 아니다** (13차 환경#7). 멀티 PHP 패널에서 웹은
+        // ea-php83, PATH 의 php 는 시스템 php83 인데 php.ini 가 달라 pdo_mysql 이 CLI 에만
+        // 없는 조합이 흔하다 — 그 조합에서 요구사항은 전부 초록인데 마이그레이션만 실패한다.
+        // 그래서 CLI 쪽 확장 목록·메모리 상한을 함께 조회해 REQUIRED_EXTENSIONS 와 대조한다.
+        $cliRuntime = $this->probeCliRuntime($cliPath);
+        $cliMissingExtensions = [];
+        // 상수는 config.php 가 정의한다 — 이 클래스만 로드하는 진입점(라이브러리 모드)에서는
+        // 없을 수 있으므로 그 경우 대조를 건너뛴다.
+        if (is_array($cliRuntime['extensions'] ?? null) && defined('REQUIRED_EXTENSIONS')) {
+            $loaded = array_map('strtolower', $cliRuntime['extensions']);
+            foreach (REQUIRED_EXTENSIONS as $extension) {
+                if (! in_array(strtolower($extension), $loaded, true)) {
+                    $cliMissingExtensions[] = $extension;
+                }
+            }
+        }
+
+        $message = $cliVersion === null
+            ? lang('php_cli_version_unknown')
+            : ($matched
+                ? lang('php_cli_version_matched', ['web' => $webVersion, 'cli' => $cliVersion])
+                : lang('php_cli_version_mismatch', ['web' => $webVersion, 'cli' => $cliVersion]));
+
+        if ($cliMissingExtensions !== []) {
+            // 확장 누락은 버전 일치 여부보다 앞선 사실이다 — 이 문구가 최종 안내가 된다.
+            $message = lang('php_cli_extensions_missing', ['extensions' => implode(', ', $cliMissingExtensions)]);
+        }
+
         return [
             'required' => false,
             'web_version' => $webVersion,
             'cli_version' => $cliVersion,
             'cli_path' => $cliPath,
+            // PATH 의 php 가 CLI 가 아닐 수 있다 (fpm/cgi 도 `--version` 은 정상 종료한다).
+            // 그 사실을 응답에 남겨야 "버전은 맞는데 전 태스크가 실패" 를 설명할 수 있다.
+            'cli_sapi' => $cliSapi,
+            'cli_missing_extensions' => $cliMissingExtensions,
+            'cli_memory_limit' => $cliRuntime['memory_limit'] ?? null,
             'matched' => $matched,
-            'message' => $cliVersion === null
-                ? lang('php_cli_version_unknown')
-                : ($matched
-                    ? lang('php_cli_version_matched', ['web' => $webVersion, 'cli' => $cliVersion])
-                    : lang('php_cli_version_mismatch', ['web' => $webVersion, 'cli' => $cliVersion])),
+            'message' => $message,
+        ];
+    }
+
+    /**
+     * CLI 바이너리의 런타임 설정을 조회한다 (13차 환경#7).
+     *
+     * `--version` 은 버전만 알려 준다. 같은 버전이라도 웹 SAPI 와 CLI 가 서로 다른 php.ini
+     * 를 읽는 배치(cPanel/Plesk 멀티 PHP, EA-PHP)가 표준이므로, 실제 확장 로드 상태와 메모리
+     * 상한을 그 바이너리에게 직접 묻는다.
+     *
+     * `-r` 로 넘기는 코드는 **고정 리터럴**이다 — 요청 입력이 섞이지 않으므로 실행 바이너리
+     * 형태 정책(binary-path-policy)만 지키면 된다.
+     *
+     * @param  string  $binary  PHP 바이너리 경로
+     * @return array{version: string|null, extensions: array<int, string>|null, memory_limit: string|null}
+     */
+    private function probeCliRuntime(string $binary): array
+    {
+        $empty = ['version' => null, 'extensions' => null, 'memory_limit' => null];
+
+        if (! ExecutionEnvironment::hasFunction('exec')) {
+            return $empty;
+        }
+
+        if ($binary !== 'php' && ! installer_binary_path_shape_ok($binary)) {
+            return $empty;
+        }
+
+        // json-encode:allow — 이 인스톨러의 출력이 아니라 `php -r` 로 넘길 **별도 프로세스의
+        // 소스 문자열**이다. 그 프로세스에는 인스톨러 헬퍼가 로드되어 있지 않다.
+        $code = "echo json_encode(['v' => PHP_VERSION, 'e' => get_loaded_extensions(), 'm' => ini_get('memory_limit')]);";
+        $command = escapeshellarg($binary).' -r '.escapeshellarg($code).' 2>&1';
+
+        $output = [];
+        $returnCode = -1;
+        @exec($command, $output, $returnCode);
+
+        if ($returnCode !== 0) {
+            return $empty;
+        }
+
+        // 일부 환경은 경고 한 줄을 먼저 찍는다 — JSON 은 마지막 줄에 있다.
+        $decoded = json_decode(trim((string) end($output)), true);
+
+        if (! is_array($decoded) || ! is_array($decoded['e'] ?? null)) {
+            return $empty;
+        }
+
+        return [
+            'version' => is_string($decoded['v'] ?? null) ? $decoded['v'] : null,
+            'extensions' => array_values(array_filter($decoded['e'], 'is_string')),
+            'memory_limit' => is_string($decoded['m'] ?? null) ? $decoded['m'] : null,
         ];
     }
 
@@ -757,7 +1047,7 @@ class ValidationApi
             $checkedPaths[] = PHP_BINARY;
             $result = $this->validatePhpPath(PHP_BINARY);
             if ($result['valid']) {
-                $found[] = ['path' => PHP_BINARY, 'version' => $result['version']];
+                $found[] = ['path' => PHP_BINARY, 'version' => $result['version'], 'sapi' => $result['sapi'] ?? null];
             }
         }
 
@@ -767,12 +1057,15 @@ class ValidationApi
                 continue;
             }
             $checkedPaths[] = $path;
-            if (! file_exists($path)) {
+            // 후보는 문서루트 **밖** 시스템 경로다 — open_basedir 환경에서 이 stat 은
+            // warning 을 내며 false 를 돌려준다. 판정(건너뜀)은 그대로 옳으므로 진단만
+            // 억제한다 (20차 #8). 억제하지 않으면 그 텍스트가 JSON 본문을 오염시킨다.
+            if (! @file_exists($path)) {
                 continue;
             }
             $result = $this->validatePhpPath($path);
             if ($result['valid']) {
-                $found[] = ['path' => $path, 'version' => $result['version']];
+                $found[] = ['path' => $path, 'version' => $result['version'], 'sapi' => $result['sapi'] ?? null];
             }
         }
 
@@ -781,7 +1074,7 @@ class ValidationApi
         if (! in_array('php', $checkedPaths, true)) {
             $result = $this->validatePhpPath('php');
             if ($result['valid']) {
-                $found[] = ['path' => 'php', 'version' => $result['version']];
+                $found[] = ['path' => 'php', 'version' => $result['version'], 'sapi' => $result['sapi'] ?? null];
                 $defaultPhpAvailable = true;
             }
         } else {
@@ -794,6 +1087,11 @@ class ValidationApi
             }
         }
 
+        // CLI 후보를 앞으로 보낸다 — 화면이 첫 후보를 입력란에 자동으로 채우므로(3-configuration.php),
+        // 정렬하지 않으면 웹 SAPI 바이너리(PHP_BINARY 는 mod_php/FPM 에서 그 자신이다)가 그대로
+        // 실행 경로로 굳는다. 그 바이너리는 artisan 을 받지 못해 전 태스크가 실패한다.
+        $found = $this->orderPhpBinaryCandidates($found);
+
         // Composer 자동 감지 (감지된 PHP 중 첫 번째로 검증)
         $phpForComposer = ! empty($found) ? $found[0]['path'] : 'php';
         $composerResult = $this->detectComposerBinary($phpForComposer);
@@ -805,6 +1103,20 @@ class ValidationApi
             'composer' => $composerResult,
             'message' => empty($found) ? lang('no_php_detected') : lang('php_detected_count', ['count' => count($found)]),
         ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * 감지된 PHP 후보를 CLI 우선으로 정렬한다 (코어 정렬 규칙 공유).
+     *
+     * 순수 함수로 떼어 둔다 — 탐색은 실제 프로세스를 스폰하므로 개발 환경에서는 CLI 후보만
+     * 나오고, 정렬을 지워도 탐색 경로 테스트는 통과한다.
+     *
+     * @param  array<int, array{path: string, version: string|null, sapi: string|null}>  $found
+     * @return array<int, array{path: string, version: string|null, sapi: string|null}>
+     */
+    private function orderPhpBinaryCandidates(array $found): array
+    {
+        return PhpBinaryResolver::sortCliFirst($found);
     }
 
     /**
@@ -821,8 +1133,9 @@ class ValidationApi
             return ['found' => true, 'path' => 'composer', 'version' => $result['version']];
         }
 
-        // 2. 프로젝트 루트의 composer.phar
-        $pharPath = realpath(__DIR__.'/../../..').'/composer.phar';
+        // 2. 프로젝트 루트의 composer.phar.
+        // `realpath` 가 막힌 환경 (13차 환경#1) — BASE_PATH 로 대체한다(같은 값을 가리킨다).
+        $pharPath = (installerHasFunction('realpath') ? (realpath(__DIR__.'/../../..') ?: BASE_PATH) : BASE_PATH).'/composer.phar';
         if (file_exists($pharPath)) {
             $result = $this->validateComposerPath($pharPath, $phpPath);
             if ($result['valid']) {
@@ -831,7 +1144,7 @@ class ValidationApi
         }
 
         // 3. 현재 디렉토리(public/install/api)의 composer.phar
-        $localPhar = realpath(__DIR__).'/composer.phar';
+        $localPhar = (installerHasFunction('realpath') ? (realpath(__DIR__) ?: __DIR__) : __DIR__).'/composer.phar';
         if (file_exists($localPhar)) {
             $result = $this->validateComposerPath($localPhar, $phpPath);
             if ($result['valid']) {
@@ -917,9 +1230,13 @@ class ValidationApi
             ? $path
             : BASE_PATH.DIRECTORY_SEPARATOR.$path;
 
-        $resolved = @realpath($candidatePath);
+        // `realpath` 가 막혀 있으면 정규화 없이 판정한다 (13차 환경#1) — 위에서 상위 경로
+        // 세그먼트(`..`)와 NUL 을 이미 거부했으므로 traversal 방어는 그대로 성립한다.
+        $resolved = installerHasFunction('realpath') ? @realpath($candidatePath) : $candidatePath;
 
-        if ($resolved === false || ! is_dir($resolved)) {
+        // 운영자가 임의 절대경로를 입력하는 칸이라 open_basedir 밖 입력이 정상 시나리오다 —
+        // stat 의 판정(false)은 옳고 warning 만 억제한다 (20차 #9, 위 realpath 와 같은 규칙).
+        if ($resolved === false || ! @is_dir($resolved)) {
             // 존재 여부/타입 차이를 응답으로 분기하지 않고 단일 메시지로 통일하여
             // 임의 경로 enumeration 신호 차단.
             echo installer_json_encode([
@@ -930,12 +1247,14 @@ class ValidationApi
             return;
         }
 
-        $writable = is_writable($resolved);
+        $writable = @is_writable($resolved);
         echo installer_json_encode([
             'success' => $writable,
             'message' => $writable
                 ? lang('success_core_pending_path')
-                : lang('error_core_pending_not_writable'),
+                // 이 키는 :path 자리표시자를 갖는다 — 치환값 없이 부르면 운영자 화면에
+                // `디렉토리(:path)에 …` 가 그대로 나가 어느 경로인지가 사라진다.
+                : lang('error_core_pending_not_writable', ['path' => $resolved]),
         ], JSON_UNESCAPED_UNICODE);
     }
 
@@ -971,6 +1290,58 @@ class ValidationApi
     }
 
     /**
+     * POST ?action=detect-execution-mode
+     * Step 3 실행 방식 선택란의 감지 결과 (D33 · W2)
+     *
+     * 운영자가 입력한 php_binary 기준으로 환경을 다시 감지해 — auto 가 어느 모드로
+     * 떨어지는지, subprocess 를 고를 수 있는지(막혀 있으면 그 사유), inprocess 에서
+     * 설치가 성립하는지(동봉 묶음 존재) — 화면이 배지와 안내를 그릴 재료를 돌려준다.
+     * 판정 본체는 ExecutionEnvironment 가 SSoT 이고, 이 값은 표시용이다 — 저장 시점
+     * (request-handler) 과 설치 시작 시점(install-process) 이 각각 다시 판정한다.
+     */
+    private function detectExecutionMode(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->error400('POST method required');
+        }
+
+        $input = json_decode((string) file_get_contents('php://input'), true);
+        // 경로 정규화와 「되돌렸는가」 판정은 execution-mode.php 가 소유한다 (§4.1 판정 SSoT).
+        $resolvedBinary = installerDetectionPhpBinary((string) (is_array($input) ? ($input['php_binary'] ?? 'php') : 'php'));
+        $phpBinary = $resolvedBinary['binary'];
+        $binarySubstituted = $resolvedBinary['substituted'];
+
+        $detection = installerDetectExecutionMode($phpBinary);
+        $subprocessBlocked = $detection['mode'] === ExecutionEnvironment::MODE_INPROCESS;
+
+        echo installer_json_encode([
+            'success' => true,
+            'detected_mode' => $detection['mode'],
+            'php_binary' => $detection['php_binary'],
+            'php_binary_substituted' => $binarySubstituted,
+            'blocked_functions' => $detection['blocked_functions'],
+            'php_probe' => $detection['php_probe'],
+            'bundle_available' => $detection['bundle_available'],
+            // 화면의 「고를 수 있는가」는 **저장 게이트와 같은 판정**을 쓴다 (19차 S-6).
+            //
+            // 종전에는 `mode !== inprocess` 였다. 그런데 저장 게이트
+            // (`installerExecutionModeRejection`)는 **필수 함수가 막혔을 때만** subprocess 를
+            // 거부하고, PHP probe 실패는 일부러 막지 않는다(A-0 ③ — 자동 탐색 폴백이 남아 있고
+            // 그 불확실은 subprocess 로 둔다). 그래서 exec 은 되는데 지정 php 경로 probe 만
+            // 실패하는 서버에서, 서버는 그 선택을 **받아들이는데** 화면이 카드를 잠갔다 —
+            // A-4 가 없앤 비대칭(화면과 저장이 다른 규칙)의 역방향이다.
+            'subprocess_selectable' => installerExecutionModeRejection(
+                ExecutionEnvironment::MODE_SUBPROCESS,
+                $detection
+            ) === null,
+            'reasons' => installerExecutionModeReasons($detection),
+            'message' => $subprocessBlocked
+                ? lang('execution_mode_detected_inprocess')
+                : lang('execution_mode_detected_subprocess'),
+        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
      * PHP 바이너리 경로 유효성 검증 헬퍼
      *
      * @param  string  $path  PHP 바이너리 경로
@@ -978,6 +1349,14 @@ class ValidationApi
      */
     private function validatePhpPath(string $path): array
     {
+        // 이 판정은 `{binary} --version` 을 실제로 돌려서 내린다 — 실행 함수가 막힌 환경
+        // (= 이 안이 지원하려는 대표 환경)에서 가드 없이 부르면 `exec()` 자체가 정의되지 않아
+        // Error 가 나고, 라우터의 catch 가 그 개발자 원문을 화면에 띄운다 (10차 #M5).
+        // 가용성 판정은 코어와 공유하는 SSoT 가 소유한다(disable_functions 까지 본다).
+        if (! ExecutionEnvironment::hasFunction('exec')) {
+            return ['valid' => false, 'version' => null, 'sapi' => null, 'message' => lang('error_binary_probe_unavailable')];
+        }
+
         if (empty($path)) {
             return ['valid' => false, 'version' => null, 'message' => lang('error_php_path_empty')];
         }
@@ -990,34 +1369,35 @@ class ValidationApi
             return ['valid' => false, 'version' => null, 'message' => lang('error_php_binary_path_not_allowed', ['path' => $path])];
         }
 
-        $command = escapeshellarg($path).' --version 2>&1';
-        $output = [];
-        $returnCode = -1;
-        exec($command, $output, $returnCode);
+        // 실행·파싱은 코어와 공유한다 (PhpBinaryResolver::validate) — 사본을 두면 SAPI 판정처럼
+        // 코어에서 닫은 결함이 이 경로에만 남는다. `php-fpm --version` · `php-cgi --version` 은
+        // CLI 와 똑같이 정상 종료하고 같은 형태로 버전을 찍으므로, 구분은 SAPI 뿐이다.
+        $probe = PhpBinaryResolver::validate($path);
+        $version = $probe['version'];
+        $sapi = $probe['sapi'];
 
-        if ($returnCode !== 0) {
-            return ['valid' => false, 'version' => null, 'message' => lang('error_php_exec_failed', ['path' => $path])];
-        }
-
-        $outputStr = implode("\n", $output);
-        if (preg_match('/PHP\s+(\d+\.\d+\.\d+)/', $outputStr, $matches)) {
-            $version = $matches[1];
-            if (version_compare($version, MIN_PHP_VERSION, '>=')) {
-                return [
-                    'valid' => true,
-                    'version' => $version,
-                    'message' => lang('success_php_binary_version', ['path' => $path, 'version' => $version]),
-                ];
-            }
-
+        if (! $probe['valid']) {
             return [
                 'valid' => false,
                 'version' => $version,
-                'message' => lang('error_php_version_too_low', ['path' => $path, 'version' => $version, 'min' => MIN_PHP_VERSION]),
+                'sapi' => $sapi,
+                'message' => $version !== null
+                    ? lang('error_php_version_too_low', ['path' => $path, 'version' => $version, 'min' => MIN_PHP_VERSION])
+                    : lang('error_php_exec_failed', ['path' => $path]),
             ];
         }
 
-        return ['valid' => false, 'version' => null, 'message' => lang('error_php_version_parse_failed')];
+        // 비-CLI 는 막지 않는다 — php-cgi 로만 동작하던 환경을 새로 차단하지 않는다는
+        // 코어 판정(ExecutionEnvironment::detect)과 같은 기준이다. 대신 사실을 알린다:
+        // 이 바이너리는 artisan 을 받지 못해 설치 태스크가 전부 실패한다.
+        return [
+            'valid' => true,
+            'version' => $version,
+            'sapi' => $sapi,
+            'message' => ($sapi !== null && $sapi !== 'cli')
+                ? lang('warning_php_binary_not_cli', ['path' => $path, 'version' => (string) $version, 'sapi' => $sapi])
+                : lang('success_php_binary_version', ['path' => $path, 'version' => (string) $version]),
+        ];
     }
 
     /**
@@ -1029,6 +1409,11 @@ class ValidationApi
      */
     private function validateComposerPath(string $composerPath, string $phpPath = 'php'): array
     {
+        // PHP 경로 판정과 같은 이유의 가드 (10차 #M5) — 이 함수도 `--version` 을 실제로 돌린다.
+        if (! ExecutionEnvironment::hasFunction('exec')) {
+            return ['valid' => false, 'version' => null, 'message' => lang('error_binary_probe_unavailable')];
+        }
+
         // 빈 문자열이면 시스템 기본 composer 사용
         $effectivePath = $composerPath ?: 'composer';
 
@@ -1190,11 +1575,17 @@ class ValidationApi
         }
 
         // 에러 응답
+        //
+        // `message` 는 화면이 **제목**으로 그리는 자리다 — 예외 원문을 그대로 실으면
+        // 「Call to undefined function exec()」 같은 개발자 문구가 설치 화면의 안내가 된다
+        // (§12.0 W3: 진행·안내 문구는 사람 말). 원문은 진단 상세(`details`)에만 싣고,
+        // 제목은 번역된 일반 문구로 고정한다. 로그에는 예외가 그대로 남는다(위 logInstallationError).
         http_response_code(500);
         echo installer_json_encode([
             'success' => false,
             'error' => 'Internal Server Error',
-            'message' => $e->getMessage(),
+            'message' => lang('error_unexpected_exception'),
+            'message_key' => 'error_unexpected_exception',
             'details' => $e->getMessage(),
         ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         exit;
@@ -1209,6 +1600,16 @@ class ValidationApi
 $checkConfigurationLibraryMode = defined('CHECK_CONFIGURATION_LIBRARY') && constant('CHECK_CONFIGURATION_LIBRARY');
 
 if (! $checkConfigurationLibraryMode) {
+    // 오류 텍스트가 JSON 본문에 섞이지 않게 한다 (20차 #13 · 21차 N4) — **include 체인·가드보다
+    // 앞**. 이 파일의 detect-php 는 문서루트 밖 후보 경로를 stat 하므로 open_basedir 환경에서
+    // warning 발생이 정상 시나리오다 (#8) — 그 텍스트가 본문 앞에 붙으면 클라이언트의
+    // response.json() 이 throw 해 PHP 자동 감지가 사유 없이 무동작이 된다.
+    // installerHasFunction 은 파일 상단의 execution-mode.php require 가 이미 정의했다.
+    if (installerHasFunction('ini_set')) {
+        @ini_set('display_errors', '0');
+    }
+    error_reporting(E_ALL);
+
     // 필수 파일 로드 (config.php가 BASE_PATH를 정의함)
     require_once __DIR__.'/../includes/config.php';
     require_once __DIR__.'/../includes/session.php';

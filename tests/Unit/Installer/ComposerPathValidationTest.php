@@ -3,6 +3,8 @@
 namespace Tests\Unit\Installer;
 
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ValidationApi;
@@ -19,6 +21,8 @@ use ValidationApi;
  *  - 빈 입력 (시스템 기본 'composer' / 'php') → 통과 (실행은 환경 의존)
  *  - 정상 .phar 경로 + 잘못된 phpPath → exec 도달 전 차단
  */
+#[RunClassInSeparateProcess]
+#[PreserveGlobalState(false)]
 class ComposerPathValidationTest extends TestCase
 {
     private static bool $loaded = false;

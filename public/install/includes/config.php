@@ -8,7 +8,12 @@
 
 // 프로젝트 루트 경로 (public/install/includes에서 3단계 상위)
 if (! defined('BASE_PATH')) {
-    define('BASE_PATH', realpath(dirname(__DIR__, 3)) ?: dirname(__DIR__, 3));
+    // `realpath` 도 호스팅이 막을 수 있는 함수다 (13차 환경#1). 이 줄은 인스톨러가 실행하는
+    // 사실상 첫 코드라, 막힌 환경에서 무가드로 부르면 어떤 봉투도 서기 전에 치명 종료한다 —
+    // 운영자에게는 백지만 남는다. 정규화는 못 해도 조립 경로로 설치는 진행된다.
+    define('BASE_PATH', function_exists('realpath')
+        ? (realpath(dirname(__DIR__, 3)) ?: dirname(__DIR__, 3))
+        : dirname(__DIR__, 3));
 }
 
 // UTF-8 정규화 / JSON 출력 헬퍼 (의존성 0 — 가장 먼저 로드)
@@ -43,6 +48,14 @@ if (! defined('MIN_PHP_VERSION')) {
 if (! defined('REQUIRED_EXTENSIONS')) {
     define('REQUIRED_EXTENSIONS', [
         'pdo',
+        // 드라이버까지 본다 — `pdo` 만 검사하면 pdo_mysql 이 없는 환경이 요구사항을 통과한 뒤
+        // DB 연결 테스트에서야 "could not find driver" 로 막힌다. G7 은 MySQL/MariaDB 만
+        // 지원하므로 이 드라이버는 구동 자체의 전제다 (docs/requirements.md §1.4 「필수」).
+        //
+        // 근거 표기 정정 (17차): 종전 주석은 「13차 환경#21」을 인용했으나 그 번호는 계획서에도
+        // 히스토리에도 없다. 존재하지 않는 근거는 다음 감사가 이 항목을 「기록 없는 변경」으로
+        // 되돌리게 만든다 — 실제 근거는 위 규정 문서다.
+        'pdo_mysql',
         'mbstring',
         'openssl',
         'tokenizer',
@@ -75,12 +88,26 @@ if (! defined('MIN_DISK_SPACE_MB')) {
     define('MIN_DISK_SPACE_MB', 500);
 }
 
+// 실사용 권장 여유 (docs/requirements.md §9 — 코어+기본 확장 실사용 약 700MB).
+// 차단 기준(MIN_DISK_SPACE_MB)은 유지하고, 이 값 미만이면 경고만 덧붙인다
+// (21차 #21-7, PO 결정 — 기존 통과 환경을 막지 않는다).
+if (! defined('RECOMMENDED_DISK_SPACE_MB')) {
+    define('RECOMMENDED_DISK_SPACE_MB', 700);
+}
+
 // DB 테이블 접두사 최대 길이.
 // MySQL identifier 한도(64자) 안에서 자동 생성 인덱스명이 안전하도록 제한한다.
 // 가장 긴 자동 생성 인덱스명(접두사 제외)이 58자이므로 58 + 6 = 64 로 정확히 한도에 맞는다.
 // 7자 이상 접두사는 일부 인덱스명이 65자가 되어 마이그레이션이 실패한다.
 if (! defined('MAX_DB_PREFIX_LENGTH')) {
     define('MAX_DB_PREFIX_LENGTH', 6);
+}
+
+// 사이트명 길이 상한 — 이 값은 `.env` 의 APP_NAME 과 설정의 site_name 으로 그대로
+// 흘러가 설치 직후 관리자·사용자 화면의 입력이 된다. 인스톨러 자신은 이 값을 화면에
+// 그리지 않지만, 상한이 없으면 그 뒤의 모든 면이 상한 없는 문자열을 받게 된다.
+if (! defined('MAX_APP_NAME_LENGTH')) {
+    define('MAX_APP_NAME_LENGTH', 100);
 }
 
 // 디렉토리 권한 설정 (8진수)
@@ -157,7 +184,25 @@ if (! defined('DEFAULT_INSTALL_CONFIG')) {
         // - composer: 강제 composer 실행
         // - bundled: 강제 vendor-bundle.zip 추출 (공유 호스팅 환경)
         'vendor_mode' => 'auto',
+
+        // 실행 모드 (auto|subprocess|inprocess) — Step 3 선택란의 기본값 (D33)
+        // - auto: 환경을 감지해 정한다 (ExecutionEnvironment)
+        // - subprocess: 항상 `php artisan` 을 별도 프로세스로 실행
+        // - inprocess: 웹 요청 안에서 Laravel 을 부팅해 실행 (CLI 없는 호스팅)
+        // 어휘 SSoT 는 코어 App\Execution\ExecutionMode 이고, 여기에는 기본값만 둔다.
+        'execution_mode' => 'auto',
     ]);
+}
+
+// 진행 기록에서 「명령 원문」을 가려내는 표식 (§12.0 W3 — 진행 기록은 사람 말로 쓴다)
+//
+// 진행 기록(storage/logs/installation.log)은 SSE·폴링·단계별 실행 세 모드가 공유하는 단일
+// 채널이라, 채널 자체를 나누면 세 모드의 재생 경로가 전부 갈라진다. 대신 줄에 표식을 붙여
+// **화면이** 분류한다 — 로그 파일에는 그대로 남아 진단이 보존되고, 화면에서는 「자세히」
+// 접기 영역으로 들어간다. 서버와 화면이 같은 리터럴을 써야 하므로 회귀 테스트가 두 소스를
+// 대조한다(InstallerCommandOutputChannelTest).
+if (! defined('INSTALLER_COMMAND_OUTPUT_PREFIX')) {
+    define('INSTALLER_COMMAND_OUTPUT_PREFIX', '[cmd] ');
 }
 
 // 설치 단계별 파일 매핑
@@ -225,16 +270,27 @@ if (! defined('DELETE_INSTALLER_AFTER_COMPLETE')) {
 // 클래스를 못 본 채 require 로 내려가는데, BASE_PATH 를 임시 디렉토리로 바꿔 두는
 // 인스톨러 단위 테스트에서는 그 경로에 app/Support 가 없어 fatal 이 된다.
 // 순수 인스톨러 실행 시에는 등록된 오토로더가 없어 false 를 반환하므로 require 가 그대로 돈다.
-if (! class_exists('App\\Support\\PrivilegedDatabaseAccounts')) {
-    require_once BASE_PATH.'/app/Support/PrivilegedDatabaseAccounts.php';
+// 경로는 execution-mode.php 의 로더와 같은 규칙으로 찾는다: 판정 클래스는 이 인스톨러와 같은
+// 코드 트리에 있으므로 BASE_PATH(설치 대상 루트, 테스트에서는 temp)가 아니라 이 파일 위치를
+// 기준으로 삼고, 트리 밖에 복제된 경우만 BASE_PATH 로 폴백한다. 두 지점이 서로 다른 규칙을
+// 쓰면 같은 클래스를 서로 다른 파일에서 찾게 된다.
+//
+// 이 블록의 네 클래스는 **같은 규칙**을 쓴다 — 일부만 BASE_PATH 직접 조립으로 남기면
+// 다음 사람이 어느 쪽을 따라야 할지 알 수 없고, 오토로더가 없고 BASE_PATH 가 코드 트리
+// 밖을 가리키는 조합에서 그 일부만 fatal 이 된다.
+$g7SharedClassRoot = dirname(__DIR__, 3);
+if (! is_file($g7SharedClassRoot.'/app/Support/ExecutionEnvironment.php')) {
+    $g7SharedClassRoot = BASE_PATH;
 }
-if (! class_exists('App\\Support\\OpcacheStatus')) {
-    require_once BASE_PATH.'/app/Support/OpcacheStatus.php';
+foreach ([
+    'App\\Support\\PrivilegedDatabaseAccounts' => '/app/Support/PrivilegedDatabaseAccounts.php',
+    'App\\Support\\OpcacheStatus' => '/app/Support/OpcacheStatus.php',
+    // 실행 모드 판정 SSoT — PhpBinaryResolver 는 ExecutionEnvironment 의 probe 위임 대상이라 함께 로드
+    'App\\Support\\PhpBinaryResolver' => '/app/Support/PhpBinaryResolver.php',
+    'App\\Support\\ExecutionEnvironment' => '/app/Support/ExecutionEnvironment.php',
+] as $g7SharedClass => $g7SharedClassFile) {
+    if (! class_exists($g7SharedClass)) {
+        require_once $g7SharedClassRoot.$g7SharedClassFile;
+    }
 }
-// 실행 모드 판정 SSoT — PhpBinaryResolver 는 ExecutionEnvironment 의 probe 위임 대상이라 함께 로드
-if (! class_exists('App\\Support\\PhpBinaryResolver')) {
-    require_once BASE_PATH.'/app/Support/PhpBinaryResolver.php';
-}
-if (! class_exists('App\\Support\\ExecutionEnvironment')) {
-    require_once BASE_PATH.'/app/Support/ExecutionEnvironment.php';
-}
+unset($g7SharedClassRoot, $g7SharedClass, $g7SharedClassFile);

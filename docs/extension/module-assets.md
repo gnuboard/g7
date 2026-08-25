@@ -509,13 +509,13 @@ GET /api/plugins/bundle.css?v={version}
 
 ### 병합 규율
 
-| 규율 | 내용 | 정적 검사 |
+| 규율 | 내용 | 검증 방법 |
 |------|------|---------|
 | priority 순서 | manifest `loading.priority` 오름차순만. 확장 이름 하드코딩 금지 | (선언형) |
-| `\n;\n` 구분자 | IIFE 사이는 `\n;\n`(JS)/`\n`(CSS). 미사용 시 ASI 붕괴 → 전체 파싱 에러 | `extension-bundle-concat-separator` |
+| `\n;\n` 구분자 | IIFE 사이는 `\n;\n`(JS)/`\n`(CSS). 미사용 시 ASI 붕괴 → 전체 파싱 에러 | 정적 검사 |
 | 소스맵 | prod strip, dev 는 개별 에셋 서빙 절대 URL 로 rewrite | - |
-| same-origin | 번들 URL 은 `/api/...` 만 (CDN 금지 — gdpr preblocker 자기차단 방지) | `extension-bundle-url-same-origin` |
-| 절대경로 게터 | `getBuiltAssetAbsolutePaths()` 사용. `base_path("modules"\|"plugins")` 직접 조립 금지. 소실 판정만 선언 축 게터 `getDeclaredAssetAbsolutePaths()` | `extension-bundle-asset-path-getter` |
+| same-origin | 번들 URL 은 `/api/...` 만 (CDN 금지 — gdpr preblocker 자기차단 방지) | 정적 검사 |
+| 절대경로 게터 | `getBuiltAssetAbsolutePaths()` 사용. `base_path("modules"\|"plugins")` 직접 조립 금지. 소실 판정만 선언 축 게터 `getDeclaredAssetAbsolutePaths()` | 정적 검사 |
 | 확장별 try/catch | 파일 읽기 실패 시 해당 확장만 skip, 나머지 병합 지속 | (메모리+회귀테스트) |
 | CSS url() | 상대 `url()`·`@import` 참조는 그 확장의 절대 자산 URL 로 **치환**해 병합. 병합본의 주소는 어느 확장의 dist 디렉토리도 아니라 상대 해석이 반드시 어긋난다 | (계약 테스트) |
 | 디스크 캐시 fail-soft | 캐시 쓰기 실패는 **500 이 아니다** — 메모리 병합 결과를 그대로 200 으로 서빙 | (계약 테스트) |

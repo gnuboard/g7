@@ -97,6 +97,7 @@ use App\Services\LayoutExtensionService;
 use App\Services\TemplateLayoutAttachmentService;
 use App\Services\TemplateService;
 use App\Services\UniqueIdService;
+use App\Support\ExecutionEnvironment;
 use App\Support\ExtensionSettingsMirror;
 use App\Support\PrivilegedDatabaseAccounts;
 use Illuminate\Support\Facades\Config;
@@ -647,7 +648,13 @@ class CoreServiceProvider extends ServiceProvider
      */
     public static function isCoreUpdateInProgress(): bool
     {
-        $envFlag = $_ENV['G7_UPDATE_IN_PROGRESS'] ?? $_SERVER['G7_UPDATE_IN_PROGRESS'] ?? getenv('G7_UPDATE_IN_PROGRESS');
+        // `getenv` 는 `??` 사슬의 **꼬리**다 — 앞의 두 항이 폴백이라는 판정은 성립하지 않는다.
+        // 업데이트 중이 아닌 정상 요청에서는 앞의 두 항이 언제나 비어 있으므로 이 호출은
+        // **매 부팅마다** 평가된다. `getenv` 가 차단된 호스팅에서는 `Error` 로 부팅이 죽는다.
+        // 인스톨러의 in-process 실행도 이 프로바이더를 부팅하므로 G2 경로다 (16차 A-1).
+        $envFlag = $_ENV['G7_UPDATE_IN_PROGRESS']
+            ?? $_SERVER['G7_UPDATE_IN_PROGRESS']
+            ?? (ExecutionEnvironment::hasFunction('getenv') ? getenv('G7_UPDATE_IN_PROGRESS') : false);
         if ($envFlag === '1' || $envFlag === 1 || $envFlag === true) {
             return true;
         }
