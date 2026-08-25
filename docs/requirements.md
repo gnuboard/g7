@@ -138,8 +138,8 @@ stat -c '%a %U:%G' storage
 
 ```bash
 # 인스톨러 완료 후 운영자가 1회 실행
-sudo chown -R $USER:www-data storage bootstrap/cache vendor modules plugins templates
-sudo chmod -R 775 storage bootstrap/cache vendor modules plugins templates
+sudo chown -R $USER:www-data storage bootstrap/cache vendor modules plugins templates public/build
+sudo chmod -R 775 storage bootstrap/cache vendor modules plugins templates public/build
 ```
 
 추가로 php-fpm / systemd 의 umask 를 `002` 로 설정하면 cron·composer·수동 SSH artisan 등 외부 프로세스도 동일 권한으로 파일을 만든다.
@@ -154,7 +154,7 @@ sudo chmod -R 775 storage bootstrap/cache vendor modules plugins templates
 **방식 B/C (단일 소유자)**:
 
 ```bash
-sudo chmod -R 755 storage bootstrap/cache vendor modules plugins templates
+sudo chmod -R 755 storage bootstrap/cache vendor modules plugins templates public/build
 ```
 
 그룹 쓰기 비트가 없으므로 코어 자동 umask 동조는 발동하지 않는다 (운영자 의도 존중). 추가 설정 불필요.

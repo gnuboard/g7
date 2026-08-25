@@ -231,7 +231,7 @@ return [
     |
     */
 
-    'version' => env('APP_VERSION', '7.0.9'),
+    'version' => env('APP_VERSION', '7.0.10'),
 
     /*
     |--------------------------------------------------------------------------
@@ -271,7 +271,10 @@ return [
         'github_token' => env('G7_UPDATE_GITHUB_TOKEN', ''),
         'pending_path' => env('G7_UPDATE_PENDING_PATH') ?: storage_path('app/core_pending'),
         'targets' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_TARGETS', 'app,bootstrap,config,database,docs,lang,lang-packs/_bundled,resources,routes,public,tests,upgrades,artisan,composer.json,composer.json.default,composer.lock,package.json,package-lock.json,vite.config.js,vite.config.core.js,vite.config.editor.js,vite.config.devtools.js,vitest.config.ts,playwright.config.ts,tsconfig.json,phpunit.xml,pint.json,.editorconfig,.gitattributes,.gitignore,README.md,README.ko.md,CHANGELOG.md,modules/_bundled,plugins/_bundled,templates/_bundled')))),
-        'excludes' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_EXCLUDES', 'node_modules,.git,bootstrap/cache')))),
+        // build/ext: 부트스트랩 리소스 정적 게시본(#122) — 각 서버가 재생성하는 로컬 파생물이라
+        // 릴리즈 소스에 없다. 제외하지 않으면 --prune 업데이트가 orphan 으로 삭제해
+        // 업데이트 완료까지 정적 fast path 가 불필요하게 끊긴다 (백업 대상에서도 제외).
+        'excludes' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_EXCLUDES', 'node_modules,.git,bootstrap/cache,build/ext')))),
         // applyUpdate 의 "신규 최상위 항목 자동 발견" 폴백이 절대 덮어쓰면 안 되는 경로 목록.
         // 런타임 데이터(`storage`), 로컬 환경(`.env*`), 별도 파이프라인 산출물(`vendor`),
         // 개발 도구 메타(`.git`, `.claude`, `.codex`, `.agents`, `.serena` 등) 를 보호한다.
@@ -309,10 +312,15 @@ return [
         // 백업 내부 모듈 storage 에 `.preserve-ownership` 마커가 있으면 그 서브트리만
         // 자동 skip 되어 부작용 없음.
         //
+        // `public/build/ext`: 부트스트랩 리소스 정적 게시본(#122) — sudo update 종료 시
+        // terminating 게시가 root 소유 버전 디렉토리를 만들면 이후 php-fpm 의 재게시·GC 가
+        // Permission denied 로 실패해 정적 fast path 가 영구 꺼진다(사이트는 API 폴백으로 정상).
+        // 임시 산출물(사용자 데이터 아님)이므로 extension_backups 와 같은 근거로 chown 대상.
+        //
         // 환경변수 `G7_UPDATE_RESTORE_OWNERSHIP` 로 공유 호스팅 등 축소 필요 시 재정의 가능.
         'restore_ownership' => array_filter(array_map('trim', explode(',', env(
             'G7_UPDATE_RESTORE_OWNERSHIP',
-            'storage/logs,storage/framework,storage/app/core_pending,storage/app/extension_backups,storage/app/core_backups,bootstrap/cache,vendor,modules,modules/_pending,plugins,plugins/_pending,templates,templates/_pending,lang-packs,lang-packs/_pending'
+            'storage/logs,storage/framework,storage/app/core_pending,storage/app/extension_backups,storage/app/core_backups,bootstrap/cache,vendor,modules,modules/_pending,plugins,plugins/_pending,templates,templates/_pending,lang-packs,lang-packs/_pending,public/build/ext'
         )))),
         // 7.0.0-beta.3+: 그룹 쓰기 권한 비대칭 정상화 대상.
         // sudo root 로 실행된 업데이트가 umask 022 로 신규 생성한 하위 디렉토리/파일이
@@ -341,9 +349,11 @@ return [
         //
         // 자식 디렉토리(예: plugins/sirsoft-*)는 syncGroupWritability 가 재귀 순회하여
         // 자동 정상화되므로 상위 루트만 지정하면 충분. 환경변수로 재정의 가능.
+        //  - public/build/ext: 정적 게시본(#122) — php-fpm 이 재게시/GC 를 수행하므로
+        //    restore_ownership 과 같은 근거로 g+w 정상화 대상.
         'restore_ownership_group_writable' => array_filter(array_map('trim', explode(',', env(
             'G7_UPDATE_RESTORE_OWNERSHIP_GROUP_WRITABLE',
-            'storage/logs,storage/framework,storage/app/core_pending,storage/app/extension_backups,storage/app/core_backups,bootstrap/cache,vendor,modules,modules/_pending,plugins,plugins/_pending,templates,templates/_pending,lang-packs,lang-packs/_pending'
+            'storage/logs,storage/framework,storage/app/core_pending,storage/app/extension_backups,storage/app/core_backups,bootstrap/cache,vendor,modules,modules/_pending,plugins,plugins/_pending,templates,templates/_pending,lang-packs,lang-packs/_pending,public/build/ext'
         )))),
 
         // spawn 자식 프로세스 실패 시 동작 모드.

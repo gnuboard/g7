@@ -9,7 +9,7 @@
 
 | 카테고리 | 문서 수 | 링크 상태 |
 |----------|---------|----------|
-| [백엔드](backend/) | 35개 | 정상 |
+| [백엔드](backend/) | 36개 | 정상 |
 | [프론트엔드](frontend/) | 51개 | 정상 |
 | [확장 시스템](extension/) | 31개 | 정상 |
 | 공통 | 20개 | 정상 |
@@ -125,7 +125,7 @@ G7 이 제공하는 REST API 의 엔드포인트별 요청 파라미터·응답 
 <!-- AUTO-GENERATED-START: docs-readme-full-list -->
 ## 카테고리별 전체 문서 목록
 
-### 백엔드 (35개)
+### 백엔드 (36개)
 
 | 문서 | 제목 |
 |------|------|
@@ -161,6 +161,7 @@ G7 이 제공하는 REST API 의 엔드포인트별 요청 파라미터·응답 
 | [service-provider.md](backend/service-provider.md) | 서비스 프로바이더 안전성 |
 | [service-repository.md](backend/service-repository.md) | Service-Repository 패턴 |
 | [settings-multilingual-enrichment.md](backend/settings-multilingual-enrichment.md) | Settings 카탈로그 다국어 자동 보강 |
+| [static-asset-publishing.md](backend/static-asset-publishing.md) | 부트스트랩 리소스 정적 게시 (Static Asset Publishing) |
 | [translatable-seeders.md](backend/translatable-seeders.md) | 다국어 시더 인터페이스 (Translatable Seeders) |
 | [user-overrides.md](backend/user-overrides.md) | 사용자 수정 보존 (HasUserOverrides Trait) |
 | [validation.md](backend/validation.md) | 검증 (Validation) |

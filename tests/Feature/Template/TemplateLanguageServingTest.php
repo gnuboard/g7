@@ -155,6 +155,9 @@ class TemplateLanguageServingTest extends TestCase
      */
     public function test_cache_control_header_is_set(): void
     {
+        // public max-age 는 프로덕션 정책 (dev 는 no-cache 환경 분기, #122 작업 C)
+        app()['env'] = 'production';
+
         $response = $this->getJson('/api/templates/sirsoft-admin_basic/lang/ko.json');
 
         $response->assertStatus(200);
@@ -164,6 +167,44 @@ class TemplateLanguageServingTest extends TestCase
         $cacheControl = $response->headers->get('Cache-Control');
         $this->assertStringContainsString('max-age=3600', $cacheControl);
         $this->assertStringContainsString('public', $cacheControl);
+    }
+
+    /**
+     * lang If-None-Match 일치 시 304 (조건부 캐시 — #122 작업 C)
+     */
+    public function test_language_returns_304_with_matching_etag(): void
+    {
+        app()['env'] = 'production';
+
+        $first = $this->getJson('/api/templates/sirsoft-admin_basic/lang/ko.json');
+        $first->assertStatus(200);
+        $etag = $first->headers->get('ETag');
+        $this->assertNotNull($etag);
+
+        $second = $this->getJson(
+            '/api/templates/sirsoft-admin_basic/lang/ko.json',
+            ['If-None-Match' => $etag]
+        );
+
+        $second->assertStatus(304);
+        $this->assertSame('', $second->getContent());
+    }
+
+    /**
+     * 개발 환경에서 lang 은 no-cache (파일 수정 즉시 반영 — F10)
+     *
+     * @scenario publish_state=unpublished, environment=dev, trigger=manual_command, process_user=web
+     */
+    public function test_language_no_cache_in_development(): void
+    {
+        app()['env'] = 'local';
+
+        $response = $this->getJson('/api/templates/sirsoft-admin_basic/lang/ko.json');
+
+        $response->assertStatus(200);
+        $cacheControl = (string) $response->headers->get('Cache-Control');
+        $this->assertStringContainsString('no-cache', $cacheControl);
+        $this->assertStringNotContainsString('max-age=3600', $cacheControl);
     }
 
     /**

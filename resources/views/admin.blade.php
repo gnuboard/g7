@@ -63,6 +63,11 @@
                 // 미주입 시 클라이언트가 항상 `v0` 으로 호출 → `template:cache-clear` 가 v 와일드카드를
                 // 처리하지 못해 캐시가 영구 stale 되는 결함이 발생.
                 cache_version: {{ (int) ($extensionCacheVersion ?? 0) }},
+                @if(($staticExtBase = \App\Support\AssetUrl::staticExtBase()) !== null)
+                // 정적 게시(bake) 베이스 — 게이트(프로덕션·kill-switch·게시 완료) 통과 시에만
+                // 주입된다. 프론트 로더가 routes/lang/components 를 이 경로에서 우선 수신 (#122).
+                staticBase: '{{ $staticExtBase }}',
+                @endif
                 // 자산 URL 모드 — 'extension'(기본) | 'extensionless'.
                 // 정적 최적화 블록이 동적 응답을 가로채는 서버에서 확장자 없는 형태로 전환.
                 // 부트스트랩 자가 복구가 런타임에 뒤집으므로 최상위 키로 노출한다.

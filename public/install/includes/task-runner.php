@@ -1576,6 +1576,27 @@ if (! function_exists('optimizeConfigCacheSSE')) {
     }
 }
 
+if (! function_exists('publishStaticCacheSSE')) {
+    /**
+     * 설치 완료 직후 부트스트랩 리소스 정적 게시(bake)를 최초 수행한다 (#122).
+     *
+     * 이 지점이 없으면 첫 방문자가 blade 자가 치유(1회 API 폴백)를 겪는다.
+     * best_effort — 실패해도 설치는 완료 처리한다(사이트는 API 폴백으로 정상).
+     *
+     * @return array 태스크 실행 결과
+     */
+    function publishStaticCacheSSE(): array
+    {
+        return executeArtisanCommandSSE(
+            artisanCommand: 'ext-static:publish --force',
+            taskId: 'static_publish',
+            taskNameKey: 'task_static_publish',
+            successMsgKey: 'log_static_publish_success',
+            errorMsgKey: 'error_static_publish_failed'
+        );
+    }
+}
+
 if (! function_exists('createSettingsJsonSSE')) {
     function createSettingsJsonSSE(): array
     {
@@ -1859,6 +1880,9 @@ if (! function_exists('runInstallationTasks')) {
             // complete_flag(installer_completed=true) 이후에 config 캐시를 최초 생성해야
             // 설치가 config:cache 켜진 상태로 시작한다. best_effort — 실패해도 설치는 완료.
             $tasks[] = ['id' => 'config_cache', 'function' => 'optimizeConfigCacheSSE', 'best_effort' => true];
+            // 부트스트랩 리소스 정적 게시(bake) 최초 수행 — 없으면 첫 방문자가
+            // 자가 치유(1회 API 폴백)를 겪는다. best_effort — 실패해도 설치는 완료.
+            $tasks[] = ['id' => 'static_publish', 'function' => 'publishStaticCacheSSE', 'best_effort' => true];
 
             foreach ($tasks as $task) {
                 if (checkAbortStatusSSE()) {

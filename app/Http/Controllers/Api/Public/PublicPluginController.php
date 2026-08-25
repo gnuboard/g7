@@ -139,9 +139,9 @@ class PublicPluginController extends PublicBaseController
      * 폴백한다(무손실 보존 디그레이드).
      *
      * @param  string  $identifier  플러그인 식별자
-     * @return JsonResponse 컴포넌트 정의 응답
+     * @return JsonResponse|Response 컴포넌트 정의 응답 (If-None-Match 일치 시 304)
      */
-    public function serveComponents(string $identifier): JsonResponse
+    public function serveComponents(string $identifier): JsonResponse|Response
     {
         $this->logApiUsage('plugins.components', ['identifier' => $identifier]);
 

@@ -94,6 +94,9 @@
         /** 모드 전환을 이미 시도했는지 (L1 — 페이지 수명당 1회) */
         modeSwitched: false,
 
+        /** 정적 게시 URL → API URL 전환을 이미 시도했는지 (#122 F15 — 페이지 수명당 1회) */
+        staticRecovered: false,
+
         /**
          * 정적 <script> 로드 실패 시 동적 재시도를 시작한다.
          *
@@ -112,6 +115,20 @@
                 console.error(LABEL + ' Failed to load after ' + MAX_ATTEMPTS + ' attempts: ' + src);
                 bootstrap.failed = true;
                 bootstrap.renderFallback('network');
+                return;
+            }
+
+            // 정적 게시(bake) URL 실패 → 종전 API URL 로 즉시 1회 전환 (#122 F15).
+            // GC 된 구버전 자산을 참조하는 캐시된 HTML 등 서빙 시점 404 를 복구한다.
+            // 기존 예산(attempt)을 그대로 소비한다 (L2).
+            var legacy = (bootstrap.staticRecovered || !assetUrl || !assetUrl.staticToLegacy)
+                ? null
+                : assetUrl.staticToLegacy(src);
+            if (legacy && legacy !== src) {
+                bootstrap.staticRecovered = true;
+                console.warn(LABEL + ' Static asset failed, retrying with API URL: ' + legacy);
+
+                bootstrap.replaceScript(legacy, attempt);
                 return;
             }
 

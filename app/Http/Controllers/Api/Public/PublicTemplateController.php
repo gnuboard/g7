@@ -35,9 +35,9 @@ class PublicTemplateController extends PublicBaseController
      * 템플릿 라우트 정보 조회 (활성화된 모듈의 routes 포함)
      *
      * @param  string  $identifier  템플릿 식별자 (vendor-name 형식)
-     * @return JsonResponse 라우트 정보 응답
+     * @return JsonResponse|Response 라우트 정보 응답 (`?v` 명시 + If-None-Match 일치 시 304)
      */
-    public function getRoutes(string $identifier): JsonResponse
+    public function getRoutes(string $identifier): JsonResponse|Response
     {
         // API 사용량 기록
         $this->logApiUsage('templates.routes', ['identifier' => $identifier]);
@@ -101,6 +101,15 @@ class PublicTemplateController extends PublicBaseController
             return $this->error(__('templates.errors.invalid_cache_data'), 500);
         }
 
+        // 버전 키드 URL(`?v` 명시)은 bump 시 URL 자체가 바뀌므로 조건부 공개 캐시가 안전하다.
+        // 무버전 요청(핸드셰이크 폴백 등)은 종전대로 캐시 헤더 없이 신선 응답 (#122 작업 D).
+        // 열화 스냅샷은 공개 캐시 금지 — 서버측 캐시 회피(#493)와 동일 규율로, 같은 `?v`
+        // URL 에 public max-age 가 붙으면 브라우저/CDN 이 열화 응답을 1시간 박제한다
+        // (버전은 이미 올라간 뒤라 스스로 회복되지 않음. 정적 게시의 열화 제외와 대칭).
+        if ($rawVersion !== null && ! $this->templateService->lastRouteMergeWasDegraded()) {
+            return $this->successWithCache('templates.messages.routes_retrieved', $routesData['data'], 3600);
+        }
+
         return $this->success(
             __('templates.messages.routes_retrieved'),
             $routesData['data']
@@ -145,9 +154,9 @@ class PublicTemplateController extends PublicBaseController
      * 컴포넌트 정의 파일 서빙
      *
      * @param  string  $identifier  템플릿 식별자
-     * @return JsonResponse 컴포넌트 정의 응답
+     * @return JsonResponse|Response 컴포넌트 정의 응답 (If-None-Match 일치 시 304)
      */
-    public function serveComponents(string $identifier): JsonResponse
+    public function serveComponents(string $identifier): JsonResponse|Response
     {
         // API 사용량 기록
         $this->logApiUsage('templates.components', ['identifier' => $identifier]);
@@ -244,9 +253,9 @@ class PublicTemplateController extends PublicBaseController
      *
      * @param  string  $identifier  템플릿 식별자
      * @param  string  $locale  로케일 (ko, en 등)
-     * @return JsonResponse 다국어 데이터 응답
+     * @return JsonResponse|Response 다국어 데이터 응답 (If-None-Match 일치 시 304)
      */
-    public function serveLanguage(string $identifier, string $locale): JsonResponse
+    public function serveLanguage(string $identifier, string $locale): JsonResponse|Response
     {
         // API 사용량 기록
         $this->logApiUsage('templates.language', [

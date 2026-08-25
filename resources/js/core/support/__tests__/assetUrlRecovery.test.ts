@@ -20,6 +20,7 @@ import {
     getAssetUrlMode,
     setAssetUrlMode,
     convertToCurrentMode,
+    staticToLegacy,
 } from '../assetUrl';
 
 /**
@@ -157,6 +158,147 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
             for (const url of cases) {
                 expect(convertToCurrentMode(url)).toBe(url);
             }
+        });
+    });
+
+    describe('정적 게시 역변환 — blade 인라인 복구기와 TS 구현 동등성 (#122 F15)', () => {
+        /**
+         * blade 파샬의 인라인 `staticToLegacy` 를 추출해 TS `staticToLegacy` 와 대조한다.
+         * 역변환 규칙은 서버측 `AssetUrl` 의 정적 게시 트리 규약과 1:1 이어야 하며,
+         * 두 사본이 갈라지면 태그 계층의 서빙 시점 404 복구가 그 자산만 조용히 죽는다.
+         *
+         * @effects static_asset_tag_recovers_to_api_url
+         */
+        function loadInlineStaticToLegacy(): (url: string) => string | null {
+            const bladePath = resolve(__dirname, '../../../../views/partials/asset-url-recovery.blade.php');
+            const source = readFileSync(bladePath, 'utf-8');
+
+            const start = source.indexOf('function staticToLegacy(url) {');
+            expect(start, 'blade 파샬에서 staticToLegacy 를 찾지 못했다').toBeGreaterThan(-1);
+
+            let depth = 0;
+            let end = start;
+            for (let i = source.indexOf('{', start); i < source.length; i += 1) {
+                if (source[i] === '{') depth += 1;
+                else if (source[i] === '}') {
+                    depth -= 1;
+                    if (depth === 0) {
+                        end = i + 1;
+                        break;
+                    }
+                }
+            }
+
+            // eslint-disable-next-line no-new-func
+            return new Function(
+                `${source.slice(start, end)}\nreturn staticToLegacy;`,
+            )() as (url: string) => string | null;
+        }
+
+        const staticCases = [
+            '/build/ext/1234/templates/sirsoft-basic/assets/css/components.css',
+            '/build/ext/1234/templates/sirsoft-basic/assets/js/components.iife.js',
+            '/build/ext/1234/bundles/modules.js',
+            '/build/ext/1234/bundles/plugins.css',
+            '/build/ext/1234/templates/sirsoft-basic/routes.json',
+            '/build/ext/1234/templates/sirsoft-basic/components.json',
+            '/build/ext/1234/templates/sirsoft-basic/lang/ko.json',
+        ];
+
+        it('모든 정적 게시 URL 에서 두 구현의 결과가 동일하다', () => {
+            const inline = loadInlineStaticToLegacy();
+
+            for (const url of staticCases) {
+                expect(inline(url), `blade 인라인 역변환기가 ${url} 을 변환하지 못했다`).not.toBeNull();
+                expect(inline(url), `역변환 규칙 드리프트: ${url}`).toBe(staticToLegacy(url));
+            }
+        });
+
+        it('정적 게시 경로가 아닌 URL 은 두 구현 모두 변환하지 않는다', () => {
+            const inline = loadInlineStaticToLegacy();
+
+            for (const url of ['/build/core/template-engine.min.js', '/api/templates/t/routes.json', '']) {
+                expect(inline(url)).toBeNull();
+                expect(staticToLegacy(url)).toBeNull();
+            }
+        });
+    });
+
+    describe('정적 게시 역변환 × 자산 URL 모드 (#122 F15 — 확장자 404 서버)', () => {
+        /**
+         * 확장자 형태를 404 로 돌려주는 서버(#486 의 대상)에서는 역변환 결과인
+         * `/api/…/style.css` 가 **다시** 404 다. `recoverStylesheet` 는 링크당 1회만
+         * 교체하므로, 그 한 번이 서빙 불가능한 형태로 끝나면 `toExtensionless` 가
+         * 실행될 기회 없이 CSS 가 영구히 붙지 않는다. `<script>` 는 재시도 예산이
+         * 남아 다음 시도에서 자연 복구되지만 `<link>` 는 예산이 1회다.
+         *
+         * @effects static_asset_tag_recovers_to_api_url
+         */
+        function loadPartialApi(): any {
+            const bladePath = resolve(__dirname, '../../../../views/partials/asset-url-recovery.blade.php');
+            const source = readFileSync(bladePath, 'utf-8');
+
+            // 파샬 상단 blade 주석이 태그 리터럴을 본문에 담고 있어, 맨 앞부터 찾으면
+            // 주석 속 리터럴을 먼저 잡는다. 주석 종료(`--}}`) 뒤에서 실제 태그를 찾는다.
+            const afterComment = source.indexOf('--}}');
+            const open = source.indexOf('<script>', afterComment === -1 ? 0 : afterComment);
+            const close = source.indexOf('</script>', open);
+            expect(open, 'blade 파샬에서 스크립트 태그를 찾지 못했다').toBeGreaterThan(-1);
+            expect(close, 'blade 파샬에서 스크립트 종료 태그를 찾지 못했다').toBeGreaterThan(open);
+
+            // blade echo(`{{ ... }}`)는 JS 가 아니므로 리터럴로 치환한다
+            const js = source.slice(open + '<script>'.length, close).replace(/{{[^}]*}}/g, '1234');
+
+            // eslint-disable-next-line no-new-func
+            new Function(js)();
+
+            return (globalThis as any).window.__g7AssetUrl;
+        }
+
+        const staticHref = '/build/ext/1234/templates/sirsoft-basic/assets/css/components.css';
+
+        beforeEach(() => {
+            (globalThis as any).window.__g7AssetUrl = undefined;
+            (globalThis as any).window.__g7AssetUrlMode = undefined;
+        });
+
+        it('확장자 모드에서는 확장자 형태 API URL 로 교체한다', () => {
+            const api = loadPartialApi();
+
+            const link = document.createElement('link');
+            link.setAttribute('href', staticHref);
+            api.recoverStylesheet(link);
+
+            expect(link.getAttribute('href')).toBe(
+                '/api/templates/assets/sirsoft-basic/css/components.css?v=1234',
+            );
+        });
+
+        it('extensionless 모드에서는 확장자 없는 형태까지 도달한다', () => {
+            (globalThis as any).window.__g7AssetUrlMode = MODE_EXTENSIONLESS;
+            const api = loadPartialApi();
+
+            const link = document.createElement('link');
+            link.setAttribute('href', staticHref);
+            api.recoverStylesheet(link);
+
+            expect(
+                link.getAttribute('href'),
+                '확장자 형태로 끝나면 그 서버가 다시 404 를 돌려주고 재시도 예산은 이미 소진된다',
+            ).toBe('/api/templates/assets/sirsoft-basic?file=css%2Fcomponents.css&v=1234');
+        });
+
+        it('교체는 링크당 1회로 유지된다 (L1)', () => {
+            const api = loadPartialApi();
+
+            const link = document.createElement('link');
+            link.setAttribute('href', staticHref);
+            api.recoverStylesheet(link);
+
+            const first = link.getAttribute('href');
+            api.recoverStylesheet(link);
+
+            expect(link.getAttribute('href')).toBe(first);
         });
     });
 

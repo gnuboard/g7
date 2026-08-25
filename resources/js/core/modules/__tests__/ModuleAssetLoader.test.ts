@@ -22,6 +22,84 @@ describe('ModuleAssetLoader', () => {
             .forEach(el => el.remove());
     });
 
+    describe('loadBundle 정적 게시 폴백 (#122)', () => {
+        /**
+         * @effects bundle_script_static_miss_falls_back_to_api
+         */
+        it('정적 번들 JS 실패 시 레거시 API URL 로 전환한다', async () => {
+            const requested: string[] = [];
+
+            const appendSpy = vi.spyOn(document.head, 'appendChild').mockImplementation(((node: any) => {
+                if (node.tagName === 'SCRIPT') {
+                    requested.push(node.getAttribute('src'));
+
+                    if (requested.length === 1) {
+                        // 정적 fast path 미스 (게시 디렉토리 GC / 파일 소실)
+                        queueMicrotask(() => node.onerror?.(new Event('error')));
+                    } else {
+                        queueMicrotask(() => node.onload?.());
+                    }
+                }
+                return node;
+            }) as any);
+
+            await loader.loadBundle('module', '/build/ext/1787637589/bundles/modules.js', null);
+
+            expect(requested).toEqual([
+                '/build/ext/1787637589/bundles/modules.js',
+                '/api/modules/bundle.js?v=1787637589',
+            ]);
+            appendSpy.mockRestore();
+        });
+
+        it('정적 번들 CSS 실패 시 레거시 API URL 로 전환한다', async () => {
+            const hrefs: string[] = [];
+            let appendedLink: any = null;
+
+            const appendSpy = vi.spyOn(document.head, 'appendChild').mockImplementation(((node: any) => {
+                if (node.tagName === 'LINK') {
+                    appendedLink = node;
+                    hrefs.push(node.getAttribute('href'));
+                    // 정적 fast path 미스 — 1회차 onerror
+                    queueMicrotask(() => node.onerror?.(new Event('error')));
+                }
+                return node;
+            }) as any);
+
+            const done = loader.loadBundle('module', null, '/build/ext/1787637589/bundles/modules.css');
+
+            // 1회차 onerror 처리(마이크로태스크) 후 — 같은 link 의 href 가 레거시로 교체돼야 한다
+            await Promise.resolve();
+            await Promise.resolve();
+
+            expect(hrefs[0]).toBe('/build/ext/1787637589/bundles/modules.css');
+            expect(appendedLink?.getAttribute('href')).toBe('/api/modules/bundle.css?v=1787637589');
+
+            // 레거시 로드 성공 → resolve
+            appendedLink?.onload?.(new Event('load'));
+            await done;
+
+            appendSpy.mockRestore();
+        });
+
+        it('정적 경로가 아닌 번들 URL 은 종전 재시도 계약 그대로다', async () => {
+            const requested: string[] = [];
+
+            const appendSpy = vi.spyOn(document.head, 'appendChild').mockImplementation(((node: any) => {
+                if (node.tagName === 'SCRIPT') {
+                    requested.push(node.getAttribute('src'));
+                    queueMicrotask(() => node.onload?.());
+                }
+                return node;
+            }) as any);
+
+            await loader.loadBundle('plugin', '/api/plugins/bundle.js?v=7', null);
+
+            expect(requested).toEqual(['/api/plugins/bundle.js?v=7']);
+            appendSpy.mockRestore();
+        });
+    });
+
     describe('loadActiveExtensionAssets', () => {
         it('JS 에셋을 priority 오름차순으로 DOM에 append한다 (실행 순서 보장)', async () => {
             const appendOrder: string[] = [];

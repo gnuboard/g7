@@ -4,6 +4,7 @@ namespace App\Extension\Traits;
 
 use App\Contracts\Extension\CacheInterface;
 use App\Extension\Cache\CoreCacheDriver;
+use App\Services\ExtensionStaticCacheService;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -48,6 +49,12 @@ trait ClearsTemplateCaches
                 'error' => $e->getMessage(),
             ]);
         }
+
+        // 부트스트랩 리소스 정적 게시(bake) 예약 — 모든 bump 호출부(수명주기 전체)가
+        // 이 단일 지점을 경유하므로 재게시 트리거 누락이 구조적으로 불가능하다 (#122).
+        // terminating 시점에 프로세스당 1회, 실행 시점의 최종 버전으로 게시된다
+        // (연속 bump 자연 병합). 실패해도 사이트는 API 폴백으로 정상.
+        ExtensionStaticCacheService::schedulePublishOnTerminate();
     }
 
     /**

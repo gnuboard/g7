@@ -322,6 +322,110 @@ export function layoutPreviewUrl(token: string): string {
 }
 
 /**
+ * 정적 게시(bake) 베이스 경로를 반환합니다 (#122).
+ *
+ * blade 가 게이트(프로덕션 + kill-switch + 게시 완료) 통과 시에만
+ * `window.G7Config.staticBase` (`/build/ext/{v}`) 를 주입한다. 부재 시 null —
+ * 소비자는 종전 API URL 로 직행한다.
+ *
+ * @returns 정적 베이스 경로 또는 null
+ * @since engine-v1.61.0
+ */
+export function extStaticBase(): string | null {
+    const base = (globalThis as any)?.G7Config?.staticBase;
+
+    return typeof base === 'string' && base !== '' ? base.replace(/\/+$/, '') : null;
+}
+
+/**
+ * 정적 게시 베이스에 담긴 캐시 버전을 반환합니다.
+ *
+ * @returns 버전 숫자 또는 null (베이스 부재/형식 불일치)
+ * @since engine-v1.61.0
+ */
+export function extStaticVersion(): number | null {
+    const base = extStaticBase();
+    if (!base) return null;
+
+    const match = base.match(/\/(\d+)$/);
+
+    return match ? Number(match[1]) : null;
+}
+
+/**
+ * 정적 게시본 내 파일의 URL 을 생성합니다 (#122).
+ *
+ * `forVersion` 을 주면 그 버전 디렉토리를 조합한다 — 핸드셰이크 재로드처럼
+ * 페이지 렌더 시점과 다른 버전을 요구하는 경우다. 그 버전이 아직 미게시면
+ * 404 가 나고, 호출부의 `fetchStaticFirst` 가 legacy API 로 폴백한다.
+ *
+ * 서버측 `App\Support\AssetUrl`(정적 게시 트리 규약)과 경로 규칙 1:1 —
+ * 실파일 확장자를 그대로 쓰므로 dualSuffix 접미사 규칙은 적용하지 않는다.
+ *
+ * @param path 게시 트리 상대 경로 (예: `templates/{id}/routes.json`)
+ * @param forVersion 명시 버전 (생략 시 페이지 렌더 버전)
+ * @returns 정적 URL 또는 null (staticBase 미주입)
+ * @since engine-v1.61.0
+ */
+export function extStaticUrl(path: string, forVersion?: number): string | null {
+    const base = extStaticBase();
+    if (!base) return null;
+
+    const normalizedPath = path.replace(/^\/+/, '');
+
+    if (forVersion !== undefined && forVersion > 0 && forVersion !== extStaticVersion()) {
+        return `${base.replace(/\/\d+$/, '')}/${forVersion}/${normalizedPath}`;
+    }
+
+    return `${base}/${normalizedPath}`;
+}
+
+/**
+ * 실패한 정적 게시 URL 을 종전 API URL 로 역변환합니다 (#122 F15).
+ *
+ * blade 인라인 복구기(`partials/asset-url-recovery.blade.php` 의 `staticToLegacy`)와
+ * **동일 규칙**이어야 한다 — 드리프트는 `assetUrlRecovery.test.ts` 의 대조 케이스가 잡는다.
+ * 변환 대상이 아니면(정적 게시 경로가 아니면) null. `/build/core/**` 등 다른 정적
+ * 파일은 대상이 아니다.
+ *
+ * @param url 실패한 URL
+ * @returns 종전 API URL 또는 null
+ * @since engine-v1.61.0
+ */
+export function staticToLegacy(url: string): string | null {
+    if (!url) return null;
+
+    const origin = (globalThis as any)?.location?.origin;
+    const relative = origin && url.startsWith(origin) ? url.slice(origin.length) : url;
+
+    const match = relative.match(/^\/build\/ext\/(\d+)\/(.+)$/);
+    if (!match) return null;
+
+    const version = match[1];
+    const rest = match[2].split('?')[0];
+
+    const templateAssetMatch = rest.match(/^templates\/([^/]+)\/assets\/(.+)$/);
+    if (templateAssetMatch) {
+        return `/api/templates/assets/${templateAssetMatch[1]}/${templateAssetMatch[2]}?v=${version}`;
+    }
+
+    const bundleMatch = rest.match(/^bundles\/(modules|plugins)\.(js|css)$/);
+    if (bundleMatch) {
+        return `/api/${bundleMatch[1]}/bundle.${bundleMatch[2]}?v=${version}`;
+    }
+
+    const templateFetchMatch = rest.match(/^templates\/([^/]+)\/(routes\.json|components\.json|lang\/([a-zA-Z-]+)\.json)$/);
+    if (templateFetchMatch) {
+        const [, identifier, kind] = templateFetchMatch;
+        const suffixless = kind.replace(/\.json$/, '');
+
+        return `/api/templates/${identifier}/${suffixless}.json?v=${version}`;
+    }
+
+    return null;
+}
+
+/**
  * 서버가 확장자 형태로 만들어 내려준 URL 을 **현재 모드**에 맞게 변환합니다.
  *
  * `G7Config.bundleUrls` / `moduleAssets` / `pluginAssets` 는 서버 렌더 시점에

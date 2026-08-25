@@ -1457,6 +1457,9 @@ class ComponentHtmlMapper
                 // 표현식 해석: 문자열/숫자는 evaluate, 배열/객체는 evaluateRaw
                 $resolved = $evaluator->evaluateRaw($value, $context);
                 $data[$key] = $resolved;
+            } elseif ($this->isSwitchDefinition($value)) {
+                // $switch 선언적 분기 (React resolveObject 와 동일 위치에서 해석)
+                $data[$key] = $this->resolveSwitchValue($value, $context, $evaluator);
             } elseif (is_array($value)) {
                 // 중첩 객체 (예: socialLinks): 재귀적으로 해석
                 $data[$key] = $this->resolveAllPropsRecursive($value, $context, $evaluator);
@@ -1482,11 +1485,78 @@ class ComponentHtmlMapper
         foreach ($values as $k => $v) {
             if (is_string($v) && str_contains($v, '{{')) {
                 $result[$k] = $evaluator->evaluateRaw($v, $context);
+            } elseif ($this->isSwitchDefinition($v)) {
+                $result[$k] = $this->resolveSwitchValue($v, $context, $evaluator);
             } elseif (is_array($v)) {
                 $result[$k] = $this->resolveAllPropsRecursive($v, $context, $evaluator);
             } else {
                 $result[$k] = $v;
             }
+        }
+
+        return $result;
+    }
+
+    /**
+     * 값이 `$switch` 선언적 분기 객체인지 판정합니다.
+     *
+     * React `DataBindingEngine.isSwitchExpression` 과 동일 — `$switch` 와 `$cases`
+     * 키를 모두 가진 객체(연관 배열)만 해당한다.
+     *
+     * @param  mixed  $value  판정 대상 값
+     * @return bool $switch 정의 여부
+     */
+    private function isSwitchDefinition(mixed $value): bool
+    {
+        return is_array($value)
+            && array_key_exists('$switch', $value)
+            && array_key_exists('$cases', $value);
+    }
+
+    /**
+     * `$switch` 선언적 분기 객체를 해석합니다.
+     *
+     * React `DataBindingEngine.resolveSwitch` 와 동일 의미론 (engine-v1.56.0 패리티):
+     * ① `$switch` 키 표현식을 평가해 문자열 키로 정규화(trim, 실패 시 빈 문자열)
+     * ② `$cases` 에서 키 일치 값 선택, 없으면 `$default`, 그것도 없으면 null(React undefined)
+     * ③ 결과가 `{{}}` 포함 문자열이면 재해석, 객체면 재귀 해석(중첩 $switch 포함)
+     *
+     * 레이아웃 최상위 `computed` 의 $switch 는 `SeoRenderer::resolveComputedSwitch` 가
+     * 별도 처리한다 — 이 메서드는 노드 props 값 축 담당.
+     *
+     * @param  array  $definition  $switch 정의 { "$switch", "$cases", "$default"? }
+     * @param  array  $context  데이터 컨텍스트
+     * @param  ExpressionEvaluator  $evaluator  표현식 평가기
+     * @return mixed 해석된 값 (매칭·기본값 모두 없으면 null)
+     */
+    private function resolveSwitchValue(array $definition, array $context, ExpressionEvaluator $evaluator): mixed
+    {
+        try {
+            $keyValue = trim((string) $evaluator->evaluate((string) ($definition['$switch'] ?? ''), $context));
+        } catch (\Throwable) {
+            $keyValue = '';
+        }
+
+        $cases = is_array($definition['$cases'] ?? null) ? $definition['$cases'] : [];
+
+        if ($keyValue !== '' && array_key_exists($keyValue, $cases)) {
+            $result = $cases[$keyValue];
+        } elseif (array_key_exists('$default', $definition)) {
+            $result = $definition['$default'];
+        } else {
+            return null;
+        }
+
+        if (is_string($result)) {
+            return str_contains($result, '{{') ? $evaluator->evaluate($result, $context) : $result;
+        }
+
+        if ($this->isSwitchDefinition($result)) {
+            return $this->resolveSwitchValue($result, $context, $evaluator);
+        }
+
+        if (is_array($result)) {
+            return $this->resolveAllPropsRecursive($result, $context, $evaluator);
         }
 
         return $result;
@@ -1686,6 +1756,12 @@ class ComponentHtmlMapper
 
             if (! in_array($htmlAttr, $this->allowedAttrs)) {
                 continue;
+            }
+
+            // $switch 선언적 분기 객체 (engine-v1.56.0 React 패리티) — 해석하지 않으면
+            // 배열이라는 이유로 속성이 조용히 사라진다 (예외·경고 없음)
+            if ($this->isSwitchDefinition($value)) {
+                $value = $this->resolveSwitchValue($value, $context, $evaluator);
             }
 
             if (is_string($value)) {

@@ -730,7 +730,12 @@ class SeoRenderer implements SeoRendererInterface
         foreach ($cssPaths as $cssPath) {
             // dist/ 접두사 제거 (서빙 경로에서는 dist가 자동 추가됨)
             $servePath = preg_replace('#^dist/#', '', $cssPath);
-            $urls[] = AssetUrl::templateAsset($templateIdentifier, $servePath);
+
+            // 정적 게시본(bake) 경로 금지 — 이 URL 은 SeoCacheManager(`seo.page.*`,
+            // 키에 cache_version 미포함)에 캐시된 HTML 에 박제되는데, 정적 디렉토리는
+            // GC 가 현재+직전 1개만 보존해 캐시 수명 안에 404 가 될 수 있다. SEO HTML 은
+            // asset-url-recovery 파샬도 없어 자가 복구가 불가하므로 무버전 API URL 고정.
+            $urls[] = AssetUrl::templateAsset($templateIdentifier, $servePath, allowStatic: false);
         }
 
         return $urls;
@@ -953,6 +958,11 @@ class SeoRenderer implements SeoRendererInterface
      *
      * 프론트엔드 TemplateApp이 레이아웃 레벨 initLocal/initGlobal을 상태에 적용하는 것과
      * 동일하게, 각 값의 {{}} 표현식을 해석해 반환합니다.
+     *
+     * **데이터소스 레벨 `initLocal` 옵션은 의도적으로 처리하지 않는다** (2026-08-25 확정) —
+     * 그 옵션을 쓰는 화면(장바구니·주문서·프로필 수정·게시판 작성 폼 등)은 인증·인터랙션
+     * 화면이라 봇 렌더 가치가 없다. 봇 노출이 필요한 상태 시드는 레이아웃 최상위
+     * `initLocal`/`state` 를 사용한다 (docs/backend/seo-system.md 지원 노드 키 표 참조).
      *
      * @param  mixed  $block  초기 상태 블록 (키 → 값)
      * @param  array  $context  현재 컨텍스트 (route, query 등 포함)

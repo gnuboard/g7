@@ -10,6 +10,7 @@
 3. 접두사로 캐시 키 격리: g7:core:{key}, g7:module.{id}:{key}, g7:plugin.{id}:{key}
 4. TTL은 g7_core_settings('cache.*')로 중앙 관리 (하드코딩 금지)
 5. Service 생성자에서 CacheInterface 타입힌트하면 자동 주입
+6. 쓰기 실패는 fail-soft — put/forget/putMany 는 false, remember 는 콜백 결과 반환 + 경고 로그 (캐시는 최적화라 페이지를 죽이지 않는다)
 ```
 
 ---

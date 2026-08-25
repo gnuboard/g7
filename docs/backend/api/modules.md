@@ -2302,7 +2302,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
+**설명** 모듈 컴포넌트 매니페스트(`GET /api/modules/{identifier}/components.json`)의 확장자 없는 이중 모드 변형입니다. 응답·캐시·폴백 동작이 확장자 형태와 동일하며, `.json` 주소를 가로채는 정적 파일 최적화 서버 설정에서 프론트가 이 형태로 자동 전환합니다 (자산 URL 이중 모드).
 
 
 ### GET /api/modules/{identifier}/components.json
@@ -2373,7 +2373,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 모듈의 컴포넌트 정의 파일(components.json)을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않습니다. 편집 모드 부팅 시 ComponentRegistry 가 활성 확장 매니페스트를 네임스페이스 병합하기 위해 fetch 하며, 구버전 모듈처럼 파일이 없으면 빈 components 로 폴백합니다. 응답은 1시간 캐시됩니다. 모듈 미존재 시 404.
+**설명** 모듈의 컴포넌트 정의 파일(components.json)을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않습니다. 편집 모드 부팅 시 ComponentRegistry 가 활성 확장 매니페스트를 네임스페이스 병합하기 위해 fetch 하며, 구버전 모듈처럼 파일이 없으면 빈 components 로 폴백합니다. 조건부 캐시가 적용됩니다 — 응답에 ETag 가 부착되며 `If-None-Match` 일치 시 본문 없는 `304` 를 반환하고, Cache-Control 은 프로덕션 `public, max-age=3600` / 그 외 환경 `no-cache` 로 분기합니다. 모듈 미존재 시 404.
 
 
 ### GET /api/modules/{identifier}/editor-spec
