@@ -125,6 +125,7 @@ return [
     'claim_payment_not_found' => 'The payment could not be found.',
     'claim_payment_not_pending' => 'The payment is not pending, so it cannot be processed.',
     'claim_payment_not_required' => 'There is no charge to pay for this request.',
+    'claim_payment_outstanding' => 'The request cannot be approved because an outstanding charge remains. Please approve it again after the payment is completed.',
     'claim_payment_method_not_allowed' => 'The selected payment method cannot be used for claim charges.',
     'claim_payment_provider_unavailable' => 'No payment integration can approve claim charges. Please contact the administrator.',
     'claim_payment_currency_unavailable' => 'The payment currency of this order cannot be determined, so the payment cannot proceed. Please contact the administrator.',

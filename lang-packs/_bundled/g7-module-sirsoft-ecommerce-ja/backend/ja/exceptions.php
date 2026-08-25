@@ -116,6 +116,7 @@ return [
     'claim_payment_not_found' => '決済情報が見つかりません。',
     'claim_payment_not_pending' => '決済待ちのステータスではないため、決済を進められません。',
     'claim_payment_not_required' => 'この申請には決済する請求額がありません。',
+    'claim_payment_outstanding' => '未収納の請求額が残っているため承認できません。決済完了後に再度承認してください。',
     'claim_payment_method_not_allowed' => '選択した決済手段はクレーム追加決済に使用できません。',
     'claim_payment_provider_unavailable' => 'クレーム追加決済を承認できる決済連携がありません。管理者にお問い合わせください。',
     'claim_payment_failed' => '決済承認に失敗しました。(:error)',

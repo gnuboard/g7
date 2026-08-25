@@ -10,6 +10,7 @@ use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefundOption;
+use Modules\Sirsoft\Ecommerce\Repositories\Concerns\FiltersAdminClaimList;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundRepositoryInterface;
 
 /**
@@ -17,6 +18,8 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundRepositoryInterf
  */
 class OrderRefundRepository implements OrderRefundRepositoryInterface
 {
+    use FiltersAdminClaimList;
+
     /**
      * @param  OrderRefund  $model  주문 환불 모델
      */
@@ -157,6 +160,61 @@ class OrderRefundRepository implements OrderRefundRepositoryInterface
         }
 
         return $query->orderByDesc('id')->paginate($perPage, [(new OrderRefund)->getTable().'.*']);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function paginateForAdmin(array $filters = [], int $perPage = 20): LengthAwarePaginator
+    {
+        // 환불 헤더에는 `items_snapshot` 이 없어 상품 요약을 상품 행 → 주문옵션에서 만든다.
+        // 취소 발 환불은 유저 목록과 같은 이유로 뺀다 — 취소 서브탭과 이중 노출된다.
+        $query = $this->model->newQuery()
+            ->with(['order', 'refundOptions.orderOption'])
+            ->where('refund_source_type', '!=', RefundSourceTypeEnum::CANCEL->value);
+
+        $this->applyAdminClaimFilters($query, $filters);
+
+        // 컬럼도 목록(`ClaimAdminListResource`)이 실제로 읽는 것만 명시한다 — 계산 스냅샷
+        // JSON 과 환불 계좌·PG 원문 같은 민감 컬럼은 목록 SELECT 에 싣지 않는다.
+        return $query->orderByDesc('id')->paginate($perPage, [
+            'id', 'order_id', 'refund_number', 'refund_status', 'requested_by',
+            'reason_code', 'fault_type', 'refund_source_type',
+            'refund_amount', 'refund_points_amount', 'created_at', 'refunded_at',
+        ]);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function countForAdmin(array $filters = []): int
+    {
+        $query = $this->model->newQuery()
+            ->where('refund_source_type', '!=', RefundSourceTypeEnum::CANCEL->value);
+
+        $this->applyAdminClaimFilters($query, $filters);
+
+        return $query->count();
+    }
+
+    /**
+     * 관리자 목록 필터의 컬럼 대응표를 반환합니다.
+     *
+     * 환불 신청서에는 청구 방식 축이 없다 — 청구는 교환·반품의 추가결제 축이다.
+     *
+     * @return array{status: string, number: string, requester: string, reason: string, fault: ?string, charge: ?string, items_relation: string} 컬럼 대응표
+     */
+    protected function adminClaimColumns(): array
+    {
+        return [
+            'status' => 'refund_status',
+            'number' => 'refund_number',
+            'requester' => 'requested_by',
+            'reason' => 'reason_code',
+            'fault' => 'fault_type',
+            'charge' => null,
+            'items_relation' => 'refundOptions',
+        ];
     }
 
     /**

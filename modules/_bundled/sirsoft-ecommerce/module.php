@@ -2354,6 +2354,21 @@ class Module extends AbstractModule
                 'description' => '대시보드 판매 현황 집계',
                 'enabled_config' => 'sirsoft-ecommerce.dashboard.scheduler_enabled',
             ],
+            [
+                'command' => 'sirsoft-ecommerce:prune-pending-claim-images',
+                'schedule' => 'daily',
+                'description' => '신청으로 이어지지 않은 클레임 임시 첨부 자동 삭제',
+                // 귀속된 첨부는 유형 값이 바뀌어 대상에서 빠지므로 오탐 여지가 없다.
+                // 운영 데이터가 아니므로 별도 토글 없이 상시 동작한다 (보존기간은 커맨드 옵션).
+                'enabled_config' => null,
+            ],
+            [
+                'command' => 'sirsoft-ecommerce:cancel-orphan-claim-payments',
+                'schedule' => 'daily',
+                'description' => '종결된 신청서에 남은 클레임 결제 대기 건 자동 취소',
+                // 살아 있는 신청서의 결제 대기 건은 커맨드가 스스로 건너뛴다 (별도 토글 없음).
+                'enabled_config' => null,
+            ],
         ];
     }
 

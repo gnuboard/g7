@@ -142,4 +142,14 @@ class OrderCancel extends Model
     {
         return ClaimTypeEnum::CANCEL;
     }
+
+    /**
+     * 최종(터미널) 상태 여부를 반환합니다.
+     *
+     * @return bool 최종 상태이면 true
+     */
+    public function isFinal(): bool
+    {
+        return $this->cancel_status->isFinal();
+    }
 }

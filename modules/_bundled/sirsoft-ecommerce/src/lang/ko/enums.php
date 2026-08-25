@@ -47,6 +47,7 @@ return [
         'products' => '상품 목록',
         'orders' => '주문 목록',
         'customers' => '고객 목록',
+        'claims' => '취소/반품/교환 목록',
     ],
     'date_type' => [
         'created_at' => '등록일',

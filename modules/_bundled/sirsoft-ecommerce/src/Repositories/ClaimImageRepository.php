@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Sirsoft\Ecommerce\Models\ClaimImage;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimImageRepositoryInterface;
@@ -97,6 +98,19 @@ class ClaimImageRepository implements ClaimImageRepositoryInterface
             ->where('claimable_id', $orderId)
             ->orderBy('sort_order')
             ->orderBy('id')
+            ->get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function listPendingOlderThan(Carbon $cutoff, int $limit): Collection
+    {
+        return $this->model->newQuery()
+            ->where('claimable_type', ClaimImage::PENDING_CLAIMABLE_TYPE)
+            ->where('created_at', '<', $cutoff)
+            ->orderBy('id')
+            ->limit($limit)
             ->get();
     }
 

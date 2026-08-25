@@ -5,7 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Enums;
 /**
  * 클레임 유형 Enum
  *
- * 교환/반품/환불/취소 4종을 횡단으로 다루는 지점(관리자 통합 목록의 UNION 쿼리,
+ * 교환/반품/환불/취소 4종을 횡단으로 다루는 지점(유저·관리자 목록의 유형 서브탭,
  * 배송비 산정, 공용 첨부·추가결제의 다형 참조)이 공유하는 유형 축이다.
  */
 enum ClaimTypeEnum: string
@@ -81,6 +81,36 @@ enum ClaimTypeEnum: string
     public function isPayable(): bool
     {
         return in_array($this, [self::EXCHANGE, self::RETURN], true);
+    }
+
+    /**
+     * 관리자 라우트 경로 세그먼트(`exchanges`/`returns`/`refunds`)를 유형으로 해석합니다.
+     *
+     * 취소는 관리자 유형 스코프 라우트가 없다(전이·상세 대상이 아님 — 취소 이력은
+     * 주문 상세 소관). 라우트의 `whereIn` 제약과 이 매핑이 단일 출처를 이뤄야 하므로
+     * 세그먼트 목록은 `adminPathSegments()` 에서 파생한다.
+     *
+     * @param  string  $segment  경로 세그먼트
+     * @return self|null 유형 (해석 불가 시 null)
+     */
+    public static function fromAdminPathSegment(string $segment): ?self
+    {
+        return match ($segment) {
+            'exchanges' => self::EXCHANGE,
+            'returns' => self::RETURN,
+            'refunds' => self::REFUND,
+            default => null,
+        };
+    }
+
+    /**
+     * 관리자 유형 스코프 라우트가 허용하는 경로 세그먼트 목록을 반환합니다.
+     *
+     * @return array<string> 경로 세그먼트 목록
+     */
+    public static function adminPathSegments(): array
+    {
+        return ['exchanges', 'returns', 'refunds'];
     }
 
     /**

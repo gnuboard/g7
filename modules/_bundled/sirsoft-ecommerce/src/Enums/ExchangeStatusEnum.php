@@ -183,6 +183,36 @@ enum ExchangeStatusEnum: string
     }
 
     /**
+     * 관리자 상태 변경(단건·일괄·상품 단위)에서 직접 지정할 수 있는 상태 목록을 반환합니다.
+     *
+     * 제외 3종은 각각 소유 경로가 따로 있다 — 신청(REQUESTED)은 접수만이 만들고,
+     * 결제완료(PAID)는 결제 확정(`ClaimPaymentService::confirmPaid`)만이 만들며,
+     * 철회(WITHDRAWN)는 신청자 행위(`withdraw()`)다. 직접 지정을 열면 결제 없이 결제완료가
+     * 되거나 신청자가 하지 않은 철회가 기록된다. 결제대기(PAYMENT_PENDING)는 지정 가능하되
+     * 관리자 경로가 `requestPaymentOnApproval()` 로 우회해 결제 건 생성과 짝을 맞춘다.
+     * 상태 **필터**는 이 목록이 아니라 values() 전체를 쓴다 — 조회는 전 상태가 대상이다.
+     *
+     * @return array<self> 관리자 지정 가능 상태 목록
+     */
+    public static function adminAssignableStatuses(): array
+    {
+        return array_values(array_filter(
+            self::cases(),
+            fn (self $case) => ! in_array($case, [self::REQUESTED, self::PAID, self::WITHDRAWN], true),
+        ));
+    }
+
+    /**
+     * 관리자 지정 가능 상태 값 배열을 반환합니다.
+     *
+     * @return array<string> 관리자 지정 가능 상태 값 배열
+     */
+    public static function adminAssignableValues(): array
+    {
+        return array_map(fn ($case) => $case->value, self::adminAssignableStatuses());
+    }
+
+    /**
      * 프론트엔드용 옵션 배열을 반환합니다.
      *
      * @return array<array{value: string, label: string}> 셀렉트 옵션 배열

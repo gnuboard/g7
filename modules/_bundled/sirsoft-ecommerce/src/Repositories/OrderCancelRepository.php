@@ -7,6 +7,7 @@ use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
+use Modules\Sirsoft\Ecommerce\Repositories\Concerns\FiltersAdminClaimList;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderCancelRepositoryInterface;
 
 /**
@@ -14,6 +15,8 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderCancelRepositoryInterf
  */
 class OrderCancelRepository implements OrderCancelRepositoryInterface
 {
+    use FiltersAdminClaimList;
+
     /**
      * @param  OrderCancel  $model  주문 취소 모델
      */
@@ -105,5 +108,57 @@ class OrderCancelRepository implements OrderCancelRepositoryInterface
         }
 
         return $query->orderByDesc('id')->paginate($perPage, [(new OrderCancel)->getTable().'.*']);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function paginateForAdmin(array $filters = [], int $perPage = 20): LengthAwarePaginator
+    {
+        // 취소는 환불 정보 표기를 위해 `refund` 를 함께 싣는다. 상품 요약은 헤더
+        // `items_snapshot` 이 담당한다 (목록 응답의 하위 컬렉션 규율).
+        $query = $this->model->newQuery()->with(['order', 'refund']);
+
+        $this->applyAdminClaimFilters($query, $filters);
+
+        // 컬럼도 목록(`ClaimAdminListResource`)이 실제로 읽는 것만 명시한다 — 배송
+        // 스냅샷 JSON 과 사유 상세 텍스트는 상세 화면 소관이다.
+        return $query->orderByDesc('id')->paginate($perPage, [
+            'id', 'order_id', 'cancel_number', 'cancel_type', 'cancel_status',
+            'cancel_reason_type', 'cancelled_by', 'items_snapshot', 'created_at', 'cancelled_at',
+        ]);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function countForAdmin(array $filters = []): int
+    {
+        $query = $this->model->newQuery();
+
+        $this->applyAdminClaimFilters($query, $filters);
+
+        return $query->count();
+    }
+
+    /**
+     * 관리자 목록 필터의 컬럼 대응표를 반환합니다.
+     *
+     * 취소에는 귀책·청구 축이 없고, 신청자·사유 컬럼명이 다른 세 유형과 다르다
+     * (`cancelled_by` / `cancel_reason_type`).
+     *
+     * @return array{status: string, number: string, requester: string, reason: string, fault: ?string, charge: ?string, items_relation: string} 컬럼 대응표
+     */
+    protected function adminClaimColumns(): array
+    {
+        return [
+            'status' => 'cancel_status',
+            'number' => 'cancel_number',
+            'requester' => 'cancelled_by',
+            'reason' => 'cancel_reason_type',
+            'fault' => null,
+            'charge' => null,
+            'items_relation' => 'cancelOptions',
+        ];
     }
 }

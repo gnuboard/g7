@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimPaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
@@ -112,6 +113,19 @@ class ClaimPaymentRepository implements ClaimPaymentRepositoryInterface
             ->where('payment_status', ClaimPaymentStatusEnum::PENDING->value)
             ->orderByDesc('id')
             ->first();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function listPendingOlderThan(Carbon $cutoff, int $limit): Collection
+    {
+        return $this->model->newQuery()
+            ->where('payment_status', ClaimPaymentStatusEnum::PENDING->value)
+            ->where('created_at', '<', $cutoff)
+            ->orderBy('id')
+            ->limit($limit)
+            ->get();
     }
 
     /**

@@ -47,6 +47,7 @@ return [
         'products' => 'Products',
         'orders' => 'Orders',
         'customers' => 'Customers',
+        'claims' => 'Claims',
     ],
     'date_type' => [
         'created_at' => 'Created Date',

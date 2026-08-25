@@ -486,6 +486,13 @@ return [
         'payment_completed' => 'Payment completed.',
         'settings_retrieved' => 'Claim settings retrieved.',
         'operation_failed' => 'An error occurred while processing the claim.',
+        // Admin claim API
+        'status_updated' => 'The claim status has been updated.',
+        'payment_requested' => 'An additional charge has been requested. The claim will be approved after the payment is completed.',
+        'bulk_status_processed' => 'The bulk status change has been processed.',
+        'option_status_processed' => 'The item status change has been processed.',
+        'tracking_saved' => 'Tracking information saved.',
+        'images_cleared' => 'All attached images have been deleted.',
     ],
 
     // Shipping Policy Messages

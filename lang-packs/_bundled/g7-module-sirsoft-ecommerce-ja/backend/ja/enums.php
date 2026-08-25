@@ -24,6 +24,7 @@ return [
         'products' => '商品一覧',
         'orders' => '注文一覧',
         'customers' => '顧客一覧',
+        'claims' => 'キャンセル/返品/交換一覧',
     ],
     'date_type' => [
         'created_at' => '登録日',

@@ -490,6 +490,13 @@ return [
         'payment_completed' => '결제가 완료되었습니다.',
         'settings_retrieved' => '클레임 설정을 조회했습니다.',
         'operation_failed' => '클레임 처리 중 오류가 발생했습니다.',
+        // 관리자 클레임 API
+        'status_updated' => '신청 상태가 변경되었습니다.',
+        'payment_requested' => '추가결제를 요청했습니다. 결제 완료 후 승인 처리됩니다.',
+        'bulk_status_processed' => '일괄 상태 변경을 처리했습니다.',
+        'option_status_processed' => '신청 상품 상태 변경을 처리했습니다.',
+        'tracking_saved' => '운송장 정보를 저장했습니다.',
+        'images_cleared' => '첨부 이미지를 모두 삭제했습니다.',
     ],
 
     // 배송정책 메시지

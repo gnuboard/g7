@@ -97,6 +97,23 @@ interface OrderRefundRepositoryInterface
     public function paginateForUser(int $userId, array $filters = [], int $perPage = 20): LengthAwarePaginator;
 
     /**
+     * 관리자 목록을 페이지네이션 조회합니다. (최신순, 취소 발 환불 제외 — 취소 서브탭이 담당)
+     *
+     * @param  array  $filters  필터 (statuses / from / to / fault_types / reason_code / requester_type / search_field / search_keyword)
+     * @param  int  $perPage  페이지당 건수
+     * @return LengthAwarePaginator 페이지네이션 결과
+     */
+    public function paginateForAdmin(array $filters = [], int $perPage = 20): LengthAwarePaginator;
+
+    /**
+     * 관리자 목록 필터 기준 건수를 셉니다. (서브탭 뱃지, 취소 발 환불 제외)
+     *
+     * @param  array  $filters  필터 (paginateForAdmin 과 동일 계약)
+     * @return int 건수
+     */
+    public function countForAdmin(array $filters = []): int;
+
+    /**
      * 환불신청서를 수정합니다.
      *
      * @param  OrderRefund  $refund  환불신청서

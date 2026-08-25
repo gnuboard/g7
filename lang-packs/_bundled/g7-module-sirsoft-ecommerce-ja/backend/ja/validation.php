@@ -1773,6 +1773,8 @@ return [
             'quantity_min' => '申請数量は1以上である必要があります。',
             'new_product_option_id_integer' => '交換するオプション ID は数字である必要があります。',
             'custom_options_array' => 'カスタムオプションの入力値は配列形式である必要があります。',
+            'id_integer' => '申請商品行IDは数字である必要があります。',
+            'not_in_claim' => 'この申請書に属さない商品が含まれています。',
         ],
         'reason_code' => [
             'required' => '申請理由を選択してください。',
@@ -1819,6 +1821,58 @@ return [
         'callback' => [
             'required' => '決済承認情報がありません。',
             'array' => '決済承認情報の形式が正しくありません。',
+        ],
+        'statuses' => [
+            'array' => 'ステータスフィルタは配列形式である必要があります。',
+        ],
+        'search_field' => [
+            'in' => 'サポートされていない検索項目です。',
+        ],
+        'search_keyword' => [
+            'max' => '検索語は:max文字以内で入力してください。',
+        ],
+        'fault_types' => [
+            'array' => '帰責フィルタは配列形式である必要があります。',
+            'prohibited' => 'この種別には帰責フィルタを使用できません。',
+            'in' => 'サポートされていない帰責区分です。',
+        ],
+        'charge_methods' => [
+            'array' => '請求方法フィルタは配列形式である必要があります。',
+            'prohibited' => 'この種別には請求方法フィルタを使用できません。',
+            'in' => 'サポートされていない請求方法です。',
+        ],
+        'requester_type' => [
+            'in' => '会員区分は member または guest である必要があります。',
+        ],
+        'admin_status' => [
+            'required' => '変更するステータスを選択してください。',
+            'in' => 'この種別では指定できないステータスです。',
+        ],
+        'reject_reason' => [
+            'max' => '差戻し理由は:max文字以内で入力してください。',
+        ],
+        'admin_memo' => [
+            'max' => '管理者メモは:max文字以内で入力してください。',
+        ],
+        'ids' => [
+            'required' => '対象の申請書を選択してください。',
+            'array' => '申請書IDリストは配列形式である必要があります。',
+            'min' => '対象の申請書を1件以上選択してください。',
+            'max' => '一度に処理できる申請書は最大:max件です。',
+            'integer' => '申請書IDは数字である必要があります。',
+        ],
+        'completion' => [
+            'required_if' => '完了処理には完了オプション(在庫復元・返金申請書の受付)が必要です。',
+            'array' => '完了オプションはオブジェクト形式である必要があります。',
+            'restore_stock_by_item_array' => '在庫復元の選択は商品行ごとのマップである必要があります。',
+            'restore_stock_by_item_boolean' => '在庫復元の選択値は true/false である必要があります。',
+            'create_refund_request_required' => '返金申請書の受付有無を選択してください。',
+            'create_refund_request_boolean' => '返金申請書の受付有無は true/false である必要があります。',
+        ],
+        'tracking' => [
+            'carrier_id_integer' => '配送会社IDは数字である必要があります。',
+            'carrier_id_exists' => '登録されていない配送会社です。',
+            'tracking_number_max' => '送り状番号は:max文字以内で入力してください。',
         ],
     ],
     'user_address' => [

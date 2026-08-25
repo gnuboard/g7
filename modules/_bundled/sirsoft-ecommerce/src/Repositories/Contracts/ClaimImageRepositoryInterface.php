@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories\Contracts;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Sirsoft\Ecommerce\Models\ClaimImage;
 
@@ -83,6 +84,18 @@ interface ClaimImageRepositoryInterface
      * @return Collection<int, ClaimImage> 미귀속 첨부 목록
      */
     public function listPendingByOrder(int $orderId): Collection;
+
+    /**
+     * 기준 시각보다 오래된 미귀속(pending) 첨부를 조회합니다. (정리 배치용, 오래된 순)
+     *
+     * 귀속된 첨부는 `claimable_type` 이 클레임 유형 값으로 바뀌므로 이 조회에 걸리지 않는다 —
+     * 걸리는 것은 신청으로 이어지지 않은 채 보존 기간이 지난 임시 업로드뿐이다.
+     *
+     * @param  Carbon  $cutoff  기준 시각 (이보다 오래된 것만)
+     * @param  int  $limit  최대 건수
+     * @return Collection<int, ClaimImage> 미귀속 첨부 목록
+     */
+    public function listPendingOlderThan(Carbon $cutoff, int $limit): Collection;
 
     /**
      * ID 목록으로 첨부를 조회합니다.

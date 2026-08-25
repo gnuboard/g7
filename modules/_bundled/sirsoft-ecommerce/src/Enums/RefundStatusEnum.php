@@ -132,11 +132,36 @@ enum RefundStatusEnum: string
     /**
      * 모든 값 배열을 반환합니다.
      *
-     * @return array
+     * @return array 상태 값 배열
      */
     public static function values(): array
     {
         return array_column(self::cases(), 'value');
+    }
+
+    /**
+     * 관리자 상태 변경에서 직접 지정할 수 있는 상태 목록을 반환합니다.
+     *
+     * 승인·보류·반려 3종만 열린다. 신청(REQUESTED)은 접수만이 만들고, 철회(WITHDRAWN)는
+     * 신청자 행위(`withdraw()`)이며, 처리중(PROCESSING)·완료(COMPLETED)는 환불 **실행**
+     * (`RefundExecutionService`)의 소유라 상태 변경 경로로 열면 돈이 움직이지 않은 채
+     * 환불완료가 기록된다. 상태 **필터**는 values() 전체를 쓴다.
+     *
+     * @return array<self> 관리자 지정 가능 상태 목록
+     */
+    public static function adminAssignableStatuses(): array
+    {
+        return [self::APPROVED, self::ON_HOLD, self::REJECTED];
+    }
+
+    /**
+     * 관리자 지정 가능 상태 값 배열을 반환합니다.
+     *
+     * @return array<string> 관리자 지정 가능 상태 값 배열
+     */
+    public static function adminAssignableValues(): array
+    {
+        return array_map(fn ($case) => $case->value, self::adminAssignableStatuses());
     }
 
     /**

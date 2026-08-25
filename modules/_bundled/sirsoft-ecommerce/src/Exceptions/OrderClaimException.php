@@ -372,15 +372,30 @@ class OrderClaimException extends Exception
     /**
      * 이 신청서에는 결제할 청구액이 없습니다.
      *
-     * 현재 호출부가 없다. 지정 소비처는 관리자 승인 경로(S6a)로, 승인 시 `outstandingAmount() === 0`
-     * 을 확인하고 청구액이 없는 신청서에 결제를 요구하는 호출을 이 예외로 거절한다. 그 배선 전까지
-     * 미사용으로 남겨 두되, 소비처 없이 방치되지 않도록 담당을 계획서 §7 S6a 셀에 기재해 두었다.
+     * 소비처는 관리자 결제 요청 경로(`AdminClaimService::requestPayment()`)다 — 청구액이 없는
+     * 신청서에 결제대기 전이를 요구하는 호출을 이 예외로 거절한다.
      *
      * @return self 예외 인스턴스
      */
     public static function paymentNotRequired(): self
     {
         return new self('sirsoft-ecommerce::exceptions.claim_payment_not_required');
+    }
+
+    /**
+     * 미수납 청구액이 남아 있어 승인할 수 없습니다.
+     *
+     * 소비처는 관리자 승인 경로(`AdminClaimService::transition()`)다 — 미수납 건을 승인하면
+     * 결제 확정 경로(`confirmPaid()`)가 다시 옮길 상태가 없어 청구액이 회수되지 않은 채
+     * 신청이 진행된다. 승인 시점 결제(`pay_on_approval`)는 승인 시도가 결제 요청으로
+     * 우회되므로 이 예외에 도달하지 않고, 신청 시점 결제(`pay_on_request`)의 미수납 건만
+     * 여기서 거절된다.
+     *
+     * @return self 예외 인스턴스
+     */
+    public static function paymentOutstanding(): self
+    {
+        return new self('sirsoft-ecommerce::exceptions.claim_payment_outstanding');
     }
 
     /**

@@ -668,6 +668,51 @@ class ClaimPaymentService
         return $count;
     }
 
+    /**
+     * 보존 기간이 지난 고아 결제 대기 건을 정리합니다. (정리 배치 전용)
+     *
+     * 취소 대상은 **종결된 신청서(반려·철회·완료)에 남았거나 신청서 자체가 사라진** 결제
+     * 대기 건뿐이다 — 살아 있는 신청서(결제대기 등)의 대기 건은 사용자가 아직 결제할 수
+     * 있는 유일한 통로라, 결제창 이탈 후 며칠이 지나도 건드리지 않는다. 종결 경로가 대기
+     * 건을 함께 취소하지 못한 채 끝난 건(프로세스 중단 등)이 이 배치의 대상이다.
+     *
+     * @param  int  $days  보존 기간(일)
+     * @param  int  $limit  한 번에 처리할 최대 건수
+     * @param  bool  $dryRun  실제 취소 없이 대상 건수만 셀지 여부
+     * @return array{scanned: int, cancelled: int, skipped_active: int} 처리 결과
+     */
+    public function reapOrphanedPendingPayments(int $days, int $limit, bool $dryRun = false): array
+    {
+        $targets = $this->paymentRepository->listPendingOlderThan(now()->subDays($days), $limit);
+
+        $result = ['scanned' => $targets->count(), 'cancelled' => 0, 'skipped_active' => 0];
+
+        foreach ($targets as $payment) {
+            $claim = $this->resolveClaim($payment);
+
+            if ($claim !== null && ! $claim->isFinal()) {
+                $result['skipped_active']++;
+
+                continue;
+            }
+
+            if (! $dryRun) {
+                $this->paymentRepository->update($payment, ['payment_status' => ClaimPaymentStatusEnum::CANCELLED]);
+
+                Log::info('[claim.payment] 고아 결제 대기 건 취소', [
+                    'claim_payment_id' => $payment->id,
+                    'payment_number' => $payment->payment_number,
+                    'payable_type' => $payment->payable_type,
+                    'payable_id' => $payment->payable_id,
+                ]);
+            }
+
+            $result['cancelled']++;
+        }
+
+        return $result;
+    }
+
     // ───────────────────────────────────────────────
     // 조회
     // ───────────────────────────────────────────────
@@ -696,6 +741,9 @@ class ClaimPaymentService
 
     /**
      * 신청서의 미수납 청구액을 반환합니다. (청구액 − 실수납액)
+     *
+     * 관리자 목록의 `ClaimAdminListResource::outstandingFromLoadedPayments()` 가 이 식의
+     * eager 판(행당 쿼리 없이 로드된 컬렉션 합산)이다 — 식을 바꾸면 그쪽도 함께 고칠 것.
      *
      * @param  OrderExchange|OrderReturn  $claim  신청서
      * @return float 미수납 청구액 (0 이상)

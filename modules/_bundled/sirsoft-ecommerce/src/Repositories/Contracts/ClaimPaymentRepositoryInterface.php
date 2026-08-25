@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories\Contracts;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 
@@ -89,6 +90,15 @@ interface ClaimPaymentRepositoryInterface
      * @return ClaimPayment|null 결제 대기 건
      */
     public function findPendingByPayable(string $payableType, int $payableId): ?ClaimPayment;
+
+    /**
+     * 기준 시각보다 오래된 결제 대기 건을 조회합니다. (정리 배치용, 오래된 순)
+     *
+     * @param  Carbon  $cutoff  기준 시각 (이보다 오래된 것만)
+     * @param  int  $limit  최대 건수
+     * @return Collection<int, ClaimPayment> 결제 대기 건 목록
+     */
+    public function listPendingOlderThan(Carbon $cutoff, int $limit): Collection;
 
     /**
      * 결제 대상의 실수납 건(결제 완료 + 환급 잔액 > 0)을 조회합니다. (오래된 순)

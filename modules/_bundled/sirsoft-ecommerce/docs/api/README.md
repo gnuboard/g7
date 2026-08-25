@@ -4,11 +4,12 @@
 > 아래 표는 자동 생성됩니다. 각 문서를 열면 엔드포인트별 파라미터·응답·예시를 볼 수 있습니다.
 
 <!-- @generated:start:api-readme-index -->
-- **문서 수**: 36 · **엔드포인트 수**: 266
+- **문서 수**: 37 · **엔드포인트 수**: 275
 
 | 문서 | 도메인 | 엔드포인트 |
 | --- | --- | --- |
 | [addresses.md](addresses.md) | `addresses` | 6 |
+| [admin-claims.md](admin-claims.md) | `admin-claims` | 9 |
 | [brands.md](brands.md) | `brands` | 6 |
 | [cart.md](cart.md) | `cart` | 11 |
 | [categories.md](categories.md) | `categories` | 14 |

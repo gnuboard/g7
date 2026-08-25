@@ -1,11 +1,13 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\AdminUserCurrencyController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\AdminUserShippingCountryController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\BrandController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\CashReceiptController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\CategoryController;
+use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ClaimController as AdminClaimController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ClaimReasonController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\CouponController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\DashboardController;
@@ -1488,6 +1490,74 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
             ->middleware('permission:admin,sirsoft-ecommerce.orders.update')
             ->name('admin.orders.cash-receipt.reissue');
     });
+
+    // 클레임(취소/반품/교환) 관리 API
+    // GET    /api/modules/sirsoft-ecommerce/admin/claims - 통합 목록 (유형 서브탭 + 건수 뱃지)
+    // POST   /api/modules/sirsoft-ecommerce/admin/claims/bulk-status - 일괄 전이 (부분 성공 계약)
+    // GET    /api/modules/sirsoft-ecommerce/admin/{claimType}/{id} - 상세 (exchanges/returns/refunds)
+    // PATCH  /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/status - 단건 전이 (완료 시 completion 필수)
+    // POST   /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/images - 운영자 대리 첨부
+    // DELETE /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/images - 첨부 일괄 정리
+    // PATCH  /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/options/bulk-status - 상품 단위 일괄 전이 (교환·반품)
+    // PUT    /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/collection-tracking - 회수 송장 (교환·반품)
+    // PUT    /api/modules/sirsoft-ecommerce/admin/exchanges/{id}/redelivery-tracking - 재발송 송장 (교환)
+    Route::prefix('claims')->group(function () {
+        Route::get('/', [AdminClaimController::class, 'index'])
+            ->middleware('permission:admin,sirsoft-ecommerce.claims.read')
+            ->name('admin.claims.index');
+
+        Route::post('/bulk-status', [AdminClaimController::class, 'bulkStatus'])
+            ->middleware('permission:admin,sirsoft-ecommerce.claims.update-status')
+            ->name('admin.claims.bulk-status');
+    });
+
+    // 유형 스코프 세그먼트(`{claimType}`)의 어휘는 ClaimTypeEnum::adminPathSegments() 가 단일
+    // 출처다 — FormRequest 의 세그먼트 해석(fromAdminPathSegment)과 같은 목록을 공유한다.
+    Route::whereIn('claimType', ClaimTypeEnum::adminPathSegments())
+        ->prefix('{claimType}')
+        ->group(function () {
+            Route::get('/{id}', [AdminClaimController::class, 'show'])
+                ->whereNumber('id')
+                ->middleware('permission:admin,sirsoft-ecommerce.claims.read')
+                ->name('admin.claims.show');
+
+            Route::patch('/{id}/status', [AdminClaimController::class, 'updateStatus'])
+                ->whereNumber('id')
+                ->middleware('permission:admin,sirsoft-ecommerce.claims.update-status')
+                ->name('admin.claims.status');
+
+            Route::post('/{id}/images', [AdminClaimController::class, 'storeImage'])
+                ->whereNumber('id')
+                ->middleware('permission:admin,sirsoft-ecommerce.claims.update-status')
+                ->name('admin.claims.images.store');
+
+            Route::delete('/{id}/images', [AdminClaimController::class, 'destroyImages'])
+                ->whereNumber('id')
+                ->middleware('permission:admin,sirsoft-ecommerce.claims.update-status')
+                ->name('admin.claims.images.clear');
+        });
+
+    // 상품 단위 전이·회수 송장은 교환·반품 축에만 있다 (환불은 상품 회수·개별 상품 전이가 없음).
+    Route::whereIn('claimType', ['exchanges', 'returns'])
+        ->prefix('{claimType}')
+        ->group(function () {
+            Route::patch('/{id}/options/bulk-status', [AdminClaimController::class, 'bulkOptionStatus'])
+                ->whereNumber('id')
+                ->middleware('permission:admin,sirsoft-ecommerce.claims.update-status')
+                ->name('admin.claims.options.bulk-status');
+
+            Route::put('/{id}/collection-tracking', [AdminClaimController::class, 'updateCollectionTracking'])
+                ->whereNumber('id')
+                ->middleware('permission:admin,sirsoft-ecommerce.claims.update-status')
+                ->name('admin.claims.collection-tracking');
+        });
+
+    // 재발송 송장 (교환 전용)
+    // PUT /api/modules/sirsoft-ecommerce/admin/exchanges/{id}/redelivery-tracking
+    Route::put('exchanges/{id}/redelivery-tracking', [AdminClaimController::class, 'updateRedeliveryTracking'])
+        ->whereNumber('id')
+        ->middleware('permission:admin,sirsoft-ecommerce.claims.update-status')
+        ->name('admin.claims.redelivery-tracking');
 
     // 리뷰 관리 API (관리자)
     // GET    /api/modules/sirsoft-ecommerce/admin/reviews - 리뷰 목록 조회

@@ -2,7 +2,7 @@
 
 > **소유**: 모듈 `sirsoft-ecommerce` · **생성**: `php artisan api:docgen` (실측 기반).
 > 이 문서는 회원의 클레임(교환/반품/취소·환불) 신청내역 엔드포인트와, 클레임 응답 리소스의 공통 필드 표를 다룹니다.
-> 주문 단위 신청 경로(`user/orders/{id}/…`)는 [orders.md](orders.md#클레임-신청-주문-단위), 비회원 경로는 [guest.md](guest.md), 추가결제는 [claim-payments.md](claim-payments.md), 첨부 서빙은 [claim-image.md](claim-image.md) 를 보세요.
+> 주문 단위 신청 경로(`user/orders/{id}/…`)는 [orders.md](orders.md#클레임-신청-주문-단위), 비회원 경로는 [guest.md](guest.md), 추가결제는 [claim-payments.md](claim-payments.md), 첨부 서빙은 [claim-image.md](claim-image.md), 관리자 경로는 [admin-claims.md](admin-claims.md) 를 보세요.
 
 ## TL;DR (5초 요약)
 

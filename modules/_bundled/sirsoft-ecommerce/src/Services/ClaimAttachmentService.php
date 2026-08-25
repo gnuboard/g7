@@ -281,18 +281,46 @@ class ClaimAttachmentService
     }
 
     /**
-     * 주문에 딸린 모든 클레임 첨부를 파일까지 삭제합니다.
+     * 보존 기간이 지난 미귀속(pending) 첨부를 정리합니다. (정리 배치 전용)
      *
-     * 주문 삭제 경로가 부르는 정리 지점이다. 첨부는 `claimable_type` + `claimable_id` 로만 주문에
-     * 매여 있어(주문 FK 없음) 신청서를 지워도 파일과 행이 남는다 — 그래서 신청서별로 훑고
-     * 신청으로 이어지지 않은 임시 첨부(`pending`)까지 함께 정리한다.
+     * 신청으로 이어지지 않은 임시 업로드만 대상이다 — 귀속된 첨부는 `claimable_type` 이
+     * 클레임 유형 값으로 바뀌어 조회에 걸리지 않고, 보존 기간 이내의 미귀속 첨부는 아직
+     * 작성 중인 신청서의 것일 수 있어 남긴다. 건별 실패는 나머지를 막지 않는다
+     * (상품 임시 이미지 정리 `ProductImageService::pruneTempUploads()` 와 동형).
      *
-     * @param  Order  $order  주문
-     * @return int 삭제된 첨부 수
+     * @param  int  $days  보존 기간(일)
+     * @param  int  $limit  한 번에 처리할 최대 건수
+     * @param  bool  $dryRun  실제 삭제 없이 대상 건수만 셀지 여부
+     * @return array{scanned: int, deleted: int, failed: int} 처리 결과
      */
-    public function deleteForOrder(Order $order): int
+    public function prunePendingUploads(int $days, int $limit, bool $dryRun = false): array
     {
-        return $this->deleteImages($this->imagesForOrder($order));
+        $targets = $this->repository->listPendingOlderThan(now()->subDays($days), $limit);
+
+        $result = ['scanned' => $targets->count(), 'deleted' => 0, 'failed' => 0];
+
+        if ($dryRun) {
+            return $result;
+        }
+
+        foreach ($targets as $image) {
+            try {
+                if ($this->delete($image)) {
+                    $result['deleted']++;
+                } else {
+                    $result['failed']++;
+                }
+            } catch (Throwable $e) {
+                $result['failed']++;
+
+                Log::warning('[claim.image] 임시 첨부 정리 실패', [
+                    'claim_image_id' => $image->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return $result;
     }
 
     /**

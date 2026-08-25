@@ -10,6 +10,7 @@ use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturnOption;
+use Modules\Sirsoft\Ecommerce\Repositories\Concerns\FiltersAdminClaimList;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderReturnRepositoryInterface;
 
 /**
@@ -17,6 +18,8 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderReturnRepositoryInterf
  */
 class OrderReturnRepository implements OrderReturnRepositoryInterface
 {
+    use FiltersAdminClaimList;
+
     /**
      * @param  OrderReturn  $model  반품 신청서 모델
      */
@@ -174,6 +177,56 @@ class OrderReturnRepository implements OrderReturnRepositoryInterface
         }
 
         return $query->orderByDesc('id')->paginate($perPage, [(new OrderReturn)->getTable().'.*']);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function paginateForAdmin(array $filters = [], int $perPage = 20): LengthAwarePaginator
+    {
+        // 목록이 직렬화하는 것만 싣는다 — `order` 와 미수납 판정용 `claimPayments`.
+        // 상품 요약은 헤더 `items_snapshot` 이 담당한다 (목록 응답의 하위 컬렉션 규율).
+        $query = $this->model->newQuery()->with(['order', 'claimPayments']);
+
+        $this->applyAdminClaimFilters($query, $filters);
+
+        // 컬럼도 목록(`ClaimAdminListResource`)이 실제로 읽는 것만 명시한다 — 주소·배송비
+        // 스냅샷 JSON, 반려 사유, 관리자 메모 등은 상세(`ClaimResource`) 소관이다.
+        return $query->orderByDesc('id')->paginate($perPage, [
+            'id', 'order_id', 'return_number', 'return_status', 'requested_by',
+            'reason_code', 'fault_type', 'charge_method', 'total_charge_amount',
+            'currency_code', 'items_snapshot', 'created_at', 'completed_at',
+        ]);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function countForAdmin(array $filters = []): int
+    {
+        $query = $this->model->newQuery();
+
+        $this->applyAdminClaimFilters($query, $filters);
+
+        return $query->count();
+    }
+
+    /**
+     * 관리자 목록 필터의 컬럼 대응표를 반환합니다.
+     *
+     * @return array{status: string, number: string, requester: string, reason: string, fault: ?string, charge: ?string, items_relation: string} 컬럼 대응표
+     */
+    protected function adminClaimColumns(): array
+    {
+        return [
+            'status' => 'return_status',
+            'number' => 'return_number',
+            'requester' => 'requested_by',
+            'reason' => 'reason_code',
+            'fault' => 'fault_type',
+            'charge' => 'charge_method',
+            'items_relation' => 'returnOptions',
+        ];
     }
 
     /**

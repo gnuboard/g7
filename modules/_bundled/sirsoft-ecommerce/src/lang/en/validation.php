@@ -1916,6 +1916,8 @@ return [
             'quantity_min' => 'The requested quantity must be at least 1.',
             'new_product_option_id_integer' => 'The exchange option ID must be a number.',
             'custom_options_array' => 'Custom option inputs must be an array.',
+            'id_integer' => 'The claim item row ID must be a number.',
+            'not_in_claim' => 'The request contains an item that does not belong to this claim.',
         ],
         'reason_code' => [
             'required' => 'Please select a reason.',
@@ -1962,6 +1964,59 @@ return [
         'callback' => [
             'required' => 'Payment approval information is missing.',
             'array' => 'The payment approval information format is invalid.',
+        ],
+        // Admin claim API (list filters, transitions, tracking)
+        'statuses' => [
+            'array' => 'The status filter must be an array.',
+        ],
+        'search_field' => [
+            'in' => 'Unsupported search field.',
+        ],
+        'search_keyword' => [
+            'max' => 'The search keyword may not be longer than :max characters.',
+        ],
+        'fault_types' => [
+            'array' => 'The fault type filter must be an array.',
+            'prohibited' => 'The fault type filter cannot be used for this claim type.',
+            'in' => 'Unsupported fault type.',
+        ],
+        'charge_methods' => [
+            'array' => 'The charge method filter must be an array.',
+            'prohibited' => 'The charge method filter cannot be used for this claim type.',
+            'in' => 'Unsupported charge method.',
+        ],
+        'requester_type' => [
+            'in' => 'The requester type must be member or guest.',
+        ],
+        'admin_status' => [
+            'required' => 'Please select a status to assign.',
+            'in' => 'That status cannot be assigned for this claim type.',
+        ],
+        'reject_reason' => [
+            'max' => 'The reject reason may not be longer than :max characters.',
+        ],
+        'admin_memo' => [
+            'max' => 'The admin memo may not be longer than :max characters.',
+        ],
+        'ids' => [
+            'required' => 'Please select the claims to process.',
+            'array' => 'The claim ID list must be an array.',
+            'min' => 'Please select at least one claim.',
+            'max' => 'You can process up to :max claims at a time.',
+            'integer' => 'The claim ID must be a number.',
+        ],
+        'completion' => [
+            'required_if' => 'Completion requires the completion options (stock restore and refund request).',
+            'array' => 'The completion options must be an object.',
+            'restore_stock_by_item_array' => 'The stock restore selection must be a per-item map.',
+            'restore_stock_by_item_boolean' => 'The stock restore selection value must be true or false.',
+            'create_refund_request_required' => 'Please choose whether to create a refund request.',
+            'create_refund_request_boolean' => 'The refund request flag must be true or false.',
+        ],
+        'tracking' => [
+            'carrier_id_integer' => 'The carrier ID must be a number.',
+            'carrier_id_exists' => 'The carrier is not registered.',
+            'tracking_number_max' => 'The tracking number may not be longer than :max characters.',
         ],
     ],
 

@@ -40,6 +40,26 @@ class ClaimResource extends BaseApiResource
     protected ?array $reasonLabels = null;
 
     /**
+     * 관리자 확장 필드 포함 여부 (유저 응답 형태는 불변)
+     */
+    protected bool $withAdminFields = false;
+
+    /**
+     * 관리자 확장 필드(관리자 메모·처리자·신청자명)를 응답에 덧붙입니다.
+     *
+     * 유저 응답의 기존 키는 바꾸지 않고 **추가만** 한다 — 같은 리소스를 유저·관리자 화면이
+     * 공유하므로 형태를 바꾸면 유저 화면이 조용히 깨진다.
+     *
+     * @return static 자기 자신
+     */
+    public function withAdminFields(): static
+    {
+        $this->withAdminFields = true;
+
+        return $this;
+    }
+
+    /**
      * 결제 블록을 주입합니다.
      *
      * @param  array|null  $block  `UserClaimService::paymentBlock()` 결과
@@ -232,6 +252,16 @@ class ClaimResource extends BaseApiResource
                 'refund_status' => $refund?->refund_status?->value,
                 'refund_status_label' => $refund?->refund_status?->label(),
                 'cancelled_at_formatted' => $this->formatDateTimeStringForUser($claim->cancelled_at),
+            ];
+        }
+
+        if ($this->withAdminFields) {
+            $data += [
+                'admin_memo' => $claim->admin_memo ?? null,
+                'processed_by' => $claim->processed_by ?? null,
+                // 신청자 표기는 주문자명이다 — 클레임 테이블의 신청자 축은 회원 ID 뿐이라
+                // 비회원 신청 건은 이름을 주문에서만 가져올 수 있다 (목록 검색 축과 동일 근거).
+                'requester_name' => $order?->orderer_name,
             ];
         }
 

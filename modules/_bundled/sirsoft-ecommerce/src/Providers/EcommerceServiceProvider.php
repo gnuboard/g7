@@ -6,12 +6,14 @@ use App\Extension\BaseModuleServiceProvider;
 use App\Seo\SitemapGenerator;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Modules\Sirsoft\Ecommerce\Console\Commands\AggregateEcommerceStatsCommand;
+use Modules\Sirsoft\Ecommerce\Console\Commands\CancelOrphanClaimPaymentsCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\CancelPendingPaymentOrdersCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\EarnMileageCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\ExpireMileageCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\NotifyExpiringMileageCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\PruneExpiredCartsCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\PruneExpiredTempOrdersCommand;
+use Modules\Sirsoft\Ecommerce\Console\Commands\PrunePendingClaimImagesCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\PruneTempProductImagesCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\ReconcileMileageBalanceCommand;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
@@ -222,12 +224,14 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
      */
     protected array $commands = [
         AggregateEcommerceStatsCommand::class,
+        CancelOrphanClaimPaymentsCommand::class,
         CancelPendingPaymentOrdersCommand::class,
         EarnMileageCommand::class,
         ExpireMileageCommand::class,
         NotifyExpiringMileageCommand::class,
         PruneExpiredCartsCommand::class,
         PruneExpiredTempOrdersCommand::class,
+        PrunePendingClaimImagesCommand::class,
         PruneTempProductImagesCommand::class,
         ReconcileMileageBalanceCommand::class,
     ];

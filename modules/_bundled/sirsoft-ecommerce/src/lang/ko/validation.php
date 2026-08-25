@@ -1916,6 +1916,8 @@ return [
             'quantity_min' => '신청 수량은 1 이상이어야 합니다.',
             'new_product_option_id_integer' => '교환할 옵션 ID 는 숫자여야 합니다.',
             'custom_options_array' => '커스텀 옵션 입력값은 배열 형태여야 합니다.',
+            'id_integer' => '신청 상품 행 ID 는 숫자여야 합니다.',
+            'not_in_claim' => '이 신청서에 속하지 않은 상품이 포함되어 있습니다.',
         ],
         'reason_code' => [
             'required' => '신청 사유를 선택해 주세요.',
@@ -1962,6 +1964,59 @@ return [
         'callback' => [
             'required' => '결제 승인 정보가 없습니다.',
             'array' => '결제 승인 정보 형식이 올바르지 않습니다.',
+        ],
+        // 관리자 클레임 API (목록 필터·전이·송장)
+        'statuses' => [
+            'array' => '상태 필터는 배열 형태여야 합니다.',
+        ],
+        'search_field' => [
+            'in' => '지원하지 않는 검색 항목입니다.',
+        ],
+        'search_keyword' => [
+            'max' => '검색어는 :max자 이하로 입력해 주세요.',
+        ],
+        'fault_types' => [
+            'array' => '귀책 필터는 배열 형태여야 합니다.',
+            'prohibited' => '이 유형에는 귀책 필터를 사용할 수 없습니다.',
+            'in' => '지원하지 않는 귀책 구분입니다.',
+        ],
+        'charge_methods' => [
+            'array' => '청구 방식 필터는 배열 형태여야 합니다.',
+            'prohibited' => '이 유형에는 청구 방식 필터를 사용할 수 없습니다.',
+            'in' => '지원하지 않는 청구 방식입니다.',
+        ],
+        'requester_type' => [
+            'in' => '회원구분은 member 또는 guest 여야 합니다.',
+        ],
+        'admin_status' => [
+            'required' => '변경할 상태를 선택해 주세요.',
+            'in' => '이 유형에서 지정할 수 없는 상태입니다.',
+        ],
+        'reject_reason' => [
+            'max' => '반려 사유는 :max자 이하로 입력해 주세요.',
+        ],
+        'admin_memo' => [
+            'max' => '관리자 메모는 :max자 이하로 입력해 주세요.',
+        ],
+        'ids' => [
+            'required' => '대상 신청서를 선택해 주세요.',
+            'array' => '신청서 ID 목록은 배열 형태여야 합니다.',
+            'min' => '대상 신청서를 1건 이상 선택해 주세요.',
+            'max' => '한 번에 처리할 수 있는 신청서는 최대 :max건입니다.',
+            'integer' => '신청서 ID 는 숫자여야 합니다.',
+        ],
+        'completion' => [
+            'required_if' => '완료 처리에는 완료 옵션(재고 복구·환불신청서 접수)이 필요합니다.',
+            'array' => '완료 옵션은 객체 형태여야 합니다.',
+            'restore_stock_by_item_array' => '재고 복구 선택은 상품 행별 맵이어야 합니다.',
+            'restore_stock_by_item_boolean' => '재고 복구 선택 값은 true/false 여야 합니다.',
+            'create_refund_request_required' => '환불신청서 접수 여부를 선택해 주세요.',
+            'create_refund_request_boolean' => '환불신청서 접수 여부는 true/false 여야 합니다.',
+        ],
+        'tracking' => [
+            'carrier_id_integer' => '택배사 ID 는 숫자여야 합니다.',
+            'carrier_id_exists' => '등록되지 않은 택배사입니다.',
+            'tracking_number_max' => '운송장 번호는 :max자 이하로 입력해 주세요.',
         ],
     ],
 

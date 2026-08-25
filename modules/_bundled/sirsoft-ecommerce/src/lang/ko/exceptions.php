@@ -125,6 +125,7 @@ return [
     'claim_payment_not_found' => '결제 건을 찾을 수 없습니다.',
     'claim_payment_not_pending' => '결제 대기 상태가 아니라 결제를 진행할 수 없습니다.',
     'claim_payment_not_required' => '이 신청서에는 결제할 청구액이 없습니다.',
+    'claim_payment_outstanding' => '미수납 청구액이 남아 있어 승인할 수 없습니다. 결제 완료 후 다시 승인해 주세요.',
     'claim_payment_method_not_allowed' => '선택한 결제 수단은 클레임 추가결제에 사용할 수 없습니다.',
     'claim_payment_provider_unavailable' => '클레임 추가결제를 승인할 수 있는 결제 연동이 없습니다. 관리자에게 문의해 주세요.',
     'claim_payment_currency_unavailable' => '주문의 결제 통화 정보를 확인할 수 없어 결제를 진행할 수 없습니다. 관리자에게 문의해 주세요.',

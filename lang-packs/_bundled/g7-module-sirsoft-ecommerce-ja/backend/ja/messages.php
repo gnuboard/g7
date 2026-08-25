@@ -1172,5 +1172,11 @@ return [
         'payment_completed' => '決済が完了しました。',
         'settings_retrieved' => 'クレーム設定を照会しました。',
         'operation_failed' => 'クレーム処理中にエラーが発生しました。',
+        'status_updated' => '申請ステータスが変更されました。',
+        'payment_requested' => '追加決済を要請しました。決済完了後に承認処理されます。',
+        'bulk_status_processed' => '一括ステータス変更を処理しました。',
+        'option_status_processed' => '申請商品のステータス変更を処理しました。',
+        'tracking_saved' => '送り状情報を保存しました。',
+        'images_cleared' => '添付画像をすべて削除しました。',
     ],
 ];
