@@ -6,7 +6,7 @@
  * ~500KB 중복 / 부트 ~1.3s 연장이 발생했다. blade 주입 cache_version 시드가
  * 이를 제거했음을 실브라우저에서 잠근다.
  *
- * @scenario publish_state=published, environment=production, trigger=lifecycle
+ * @scenario publish_state=published, environment=production, trigger=lifecycle, process_user=web
  * @effects no_duplicate_boot_requests, versioned_boot_urls
  */
 import { test, expect, type Page } from '@playwright/test';

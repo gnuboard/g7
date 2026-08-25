@@ -46,6 +46,9 @@ class ExtensionStaticCacheService
     /** terminating 게시 예약 플래그 (프로세스당 1회) */
     private static bool $publishScheduled = false;
 
+    /** 테스트 전용 — root 프로세스 판정 오버라이드 (null = 실판정) */
+    private static ?bool $rootProcessForTesting = null;
+
     /** isPublished 요청당 메모이즈 (version => 존재 여부) */
     private array $publishedMemo = [];
 
@@ -184,6 +187,18 @@ class ExtensionStaticCacheService
             return;
         }
 
+        // root 프로세스(sudo 코어 업데이트 등)에서는 예약하지 않는다 — 게시가 만드는
+        // 캐시 락 샤드 디렉토리(storage/framework/cache/data/xx)와 병합 번들
+        // (storage/app/ext-bundles)이 root 소유로 남아, 이후 웹 프로세스의 캐시
+        // 쓰기가 그 샤드에 해시되는 순간 Permission denied 로 죽는다 (실사례:
+        // sudo 업데이트 직후 전면 500). normalizeOwnership 은 게시 트리(build/ext)만
+        // 다루므로 storage 측 부수 산출물은 회피가 정답이다. 게시는 다음 웹 렌더의
+        // 자가 치유(웹 계정)가 수행하고, 명시적 `ext-static:publish` 커맨드는 이
+        // 게이트를 거치지 않는다 (운영자 책임 — 규정 문서 §6).
+        if (self::isRootProcess()) {
+            return;
+        }
+
         self::$publishScheduled = true;
 
         app()->terminating(static function (): void {
@@ -209,6 +224,33 @@ class ExtensionStaticCacheService
     public static function resetPublishScheduleForTesting(): void
     {
         self::$publishScheduled = false;
+        self::$rootProcessForTesting = null;
+    }
+
+    /**
+     * 테스트 전용 — root 프로세스 판정을 강제합니다 (null 로 실판정 복귀).
+     *
+     * @param  bool|null  $isRoot  강제할 판정값
+     */
+    public static function fakeRootProcessForTesting(?bool $isRoot): void
+    {
+        self::$rootProcessForTesting = $isRoot;
+    }
+
+    /**
+     * 현재 프로세스가 root(euid 0)로 실행 중인지 판정합니다.
+     *
+     * posix 확장이 없는 환경(Windows, 함수 비활성 호스팅)은 root 아님으로 본다.
+     *
+     * @return bool root 실행 여부
+     */
+    private static function isRootProcess(): bool
+    {
+        if (self::$rootProcessForTesting !== null) {
+            return self::$rootProcessForTesting;
+        }
+
+        return function_exists('posix_geteuid') && posix_geteuid() === 0;
     }
 
     /**

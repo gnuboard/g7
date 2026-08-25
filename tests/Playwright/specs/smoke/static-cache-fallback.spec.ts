@@ -8,7 +8,7 @@
  * env 가드 — 대상 사이트가 정적 게시 미적용(비프로덕션/kill-switch/미게시)이면
  * staticBase 미주입으로 skip 된다 (첫 방문이 자가 치유를 예약하므로 워밍 1회 수행).
  *
- * @scenario publish_state=partial, environment=production, trigger=self_heal
+ * @scenario publish_state=partial, environment=production, trigger=self_heal, process_user=web
  * @effects static_first_fetch_falls_back_to_api_on_miss, fallback_is_observable_via_console_warn
  */
 import { test, expect, type Page } from '@playwright/test';
@@ -33,7 +33,7 @@ async function probeStaticBase(page: Page): Promise<string | null> {
 
 test.describe('정적 게시 fast path + 폴백 (#122)', () => {
   /**
-   * @scenario publish_state=published, environment=production, trigger=self_heal
+   * @scenario publish_state=published, environment=production, trigger=self_heal, process_user=web
    * @effects versioned_boot_urls
    */
   test('@smoke 정적 URL 로 부트 리소스를 수신한다 (static-first)', async ({ page }) => {

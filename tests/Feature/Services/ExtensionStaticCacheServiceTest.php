@@ -92,7 +92,7 @@ class ExtensionStaticCacheServiceTest extends TestCase
     /**
      * 활성 템플릿 0개(설치 직전)여도 예외 없이 빈 게시가 성립한다.
      *
-     * @scenario publish_state=unpublished, environment=production, trigger=manual_command
+     * @scenario publish_state=unpublished, environment=production, trigger=manual_command, process_user=web
      */
     public function test_publishes_empty_tree_when_no_active_templates(): void
     {
@@ -239,7 +239,7 @@ class ExtensionStaticCacheServiceTest extends TestCase
     /**
      * 멱등 — 게시 완료 상태에서 재호출은 skip (기존 게시물 유지), force 는 재게시.
      *
-     * @scenario publish_state=published, environment=production, trigger=manual_command
+     * @scenario publish_state=published, environment=production, trigger=manual_command, process_user=web
      *
      * @effects publish_is_idempotent_until_forced
      */
@@ -264,7 +264,7 @@ class ExtensionStaticCacheServiceTest extends TestCase
     /**
      * 쓰기 단계 실패 시 예외를 삼키고 false + tmp 잔존물 정리 + manifest 부재.
      *
-     * @scenario publish_state=partial, environment=production, trigger=lifecycle
+     * @scenario publish_state=partial, environment=production, trigger=lifecycle, process_user=web
      *
      * @effects write_failure_cleans_tmp_and_falls_back
      */
@@ -326,7 +326,7 @@ class ExtensionStaticCacheServiceTest extends TestCase
     /**
      * kill-switch(core.static_cache.enabled=false) — 게시 자체가 중단된다.
      *
-     * @scenario publish_state=unpublished, environment=production, trigger=kill_switch
+     * @scenario publish_state=unpublished, environment=production, trigger=kill_switch, process_user=web
      *
      * @effects kill_switch_disables_publish_and_gate
      */
@@ -343,7 +343,7 @@ class ExtensionStaticCacheServiceTest extends TestCase
     /**
      * terminating 트리거 — 비프로덕션(testing)에서는 예약되지 않는다.
      *
-     * @scenario publish_state=unpublished, environment=dev, trigger=lifecycle
+     * @scenario publish_state=unpublished, environment=dev, trigger=lifecycle, process_user=web
      *
      * @effects terminating_publish_gated_to_production
      */
@@ -359,7 +359,7 @@ class ExtensionStaticCacheServiceTest extends TestCase
     /**
      * terminating 트리거 — 프로덕션에서는 종료 시점의 현재 버전으로 게시된다.
      *
-     * @scenario publish_state=unpublished, environment=production, trigger=lifecycle
+     * @scenario publish_state=unpublished, environment=production, trigger=lifecycle, process_user=web
      *
      * @effects terminating_publish_uses_final_version_after_burst
      */
@@ -379,6 +379,34 @@ class ExtensionStaticCacheServiceTest extends TestCase
     }
 
     /**
+     * root 프로세스(sudo CLI)에서는 terminating 게시가 예약되지 않는다.
+     *
+     * root 로 게시하면 캐시 락 샤드 디렉토리(`storage/framework/cache/data/xx`)와
+     * 병합 번들(`storage/app/ext-bundles`)이 root 소유로 남고, 이후 웹 프로세스의
+     * 캐시 쓰기가 그 샤드에 해시되는 순간 Permission denied 로 죽는다
+     * (실사례: sudo 코어 업데이트 직후 전면 500). 게시는 다음 웹 렌더의
+     * 자가 치유(웹 계정)가 수행한다.
+     *
+     * @scenario publish_state=unpublished, environment=production, trigger=lifecycle, process_user=root_cli
+     *
+     * @effects root_cli_defers_publish_to_web_self_heal
+     */
+    public function test_terminating_publish_not_scheduled_for_root_process(): void
+    {
+        app()['env'] = 'production';
+        ExtensionStaticCacheService::fakeRootProcessForTesting(true);
+
+        try {
+            ExtensionStaticCacheService::schedulePublishOnTerminate();
+            $this->app->terminate();
+
+            $this->assertDirectoryDoesNotExist($this->service()->baseDir());
+        } finally {
+            ExtensionStaticCacheService::fakeRootProcessForTesting(null);
+        }
+    }
+
+    /**
      * terminating 게시 예약 플래그는 콜백 실행 시점에 리셋된다.
      *
      * 요청마다 앱 인스턴스를 새로 만드는 장수 프로세스(Octane 류)에서는 static 플래그만
@@ -386,7 +414,7 @@ class ExtensionStaticCacheServiceTest extends TestCase
      * 않은 채 플래그만 true 라 그 워커에서 영구 미게시가 되고, `AssetUrl` 자가 치유도
      * 같은 플래그를 쓰므로 복구 경로가 없다. FPM(요청=프로세스)에서는 무영향.
      *
-     * @scenario publish_state=published, environment=production, trigger=lifecycle
+     * @scenario publish_state=published, environment=production, trigger=lifecycle, process_user=web
      *
      * @effects terminating_schedule_rearms_after_execution
      */
@@ -409,7 +437,7 @@ class ExtensionStaticCacheServiceTest extends TestCase
      * 게시 디렉토리가 스스로 압축을 선언해야 종전 API 대비 전송량 회귀가 없다
      * (실측: lang/ko.json 524,915B 비압축 전송). nginx 는 규정 문서의 gzip 스니펫이 담당한다.
      *
-     * @scenario publish_state=published, environment=production, trigger=manual_command
+     * @scenario publish_state=published, environment=production, trigger=manual_command, process_user=web
      *
      * @effects published_htaccess_declares_compression
      */

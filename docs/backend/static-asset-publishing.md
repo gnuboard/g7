@@ -75,7 +75,7 @@ public/build/ext/{cache_version}/
 
 - **웹 프로세스 계정의 `public/build` 쓰기 권한**: 게시의 정상 주체는 terminating 훅/자가 치유 = php-fpm(웹 계정)이다. 시스템 요구사항의 그룹 공유(방식 A) 구성이라면 `public/build` 도 같은 원칙(g+w + 공용 그룹)을 적용한다. 게시 코드가 디렉토리를 0775 로 생성하므로 umask 동조 환경에서 그룹 쓰기가 유지된다.
 - **설치 시**: 설치기 완료 단계가 `ext-static:publish --force` 를 best-effort 로 실행한다 — 설치기는 웹 요청 컨텍스트에서 돌므로 산출물은 웹 계정 소유가 되어 이후 재게시와 자연 정합한다. 실패해도 설치는 완료되고 첫 방문의 자가 치유가 재시도한다.
-- **sudo 코어 업데이트 시**: 업데이트가 root 로 실행되면 종료 시점의 terminating 게시가 root 소유 산출물을 만들 수 있다. 이는 코어 업데이트의 소유권 복원(`app.update.restore_ownership`) **이후**에 일어나므로, 게시 서비스가 직접 방어한다 — root 로 실행된 게시는 완료 직후 부모 디렉토리(`public/build`) 소유권을 산출물에 상속시킨다. `public/build/ext` 는 소유권 복원·그룹 쓰기 정상화 목록에도 포함되어 있다.
+- **sudo 코어 업데이트 시**: 업데이트가 root 로 실행되면 종료 시점(소유권 복원 `app.update.restore_ownership` **이후**)에 도는 terminating 게시가 root 소유 산출물을 만들 수 있다. 산출물은 게시 트리만이 아니다 — 게시는 캐시 락(`storage/framework/cache/data/xx` 샤드 디렉토리 신설)과 병합 번들 빌드(`storage/app/ext-bundles`)까지 **간접적으로 쓴다**. root 소유 캐시 샤드가 남으면 이후 웹 프로세스의 캐시 쓰기가 그 샤드에 해시되는 순간 Permission denied 로 죽어 전면 500 이 된다(7.0.10 업그레이드 실사례). 따라서 **root 프로세스에서는 terminating 자동 게시를 예약하지 않고** 다음 웹 렌더의 자가 치유(웹 계정)에 위임한다. 명시적 `ext-static:publish` 는 root 로도 실행 가능하며 게시 트리(`public/build/ext`)는 부모 소유권 상속으로 정상화되지만, storage 측 간접 산출물의 소유권은 운영자 책임이다 — sudo 로 수동 게시했다면 `storage`/`bootstrap/cache` 의 그룹 쓰기(`chgrp -R {웹그룹}` + `chmod -R g+w`)를 확인한다.
 - **코어 업데이트의 orphan 정리**: 게시본은 릴리즈 소스에 없는 로컬 파생물이므로 `app.update.excludes` 에 `build/ext` 로 등록되어 있다 — `--prune` 업데이트가 orphan 으로 삭제하지 않고, 백업 대상에서도 제외된다.
 
 권한 문제로 게시가 계속 실패하는 환경(공유 호스팅 등)에서는 `G7_STATIC_CACHE=false` 로 기능을 끄면 경고 로그도 남지 않는다.

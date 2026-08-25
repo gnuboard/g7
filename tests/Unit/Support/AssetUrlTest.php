@@ -223,7 +223,7 @@ class AssetUrlTest extends TestCase
      * 정적 게이트 3조건 — 프로덕션 + enabled + 게시 완료(manifest) 를 전부
      * 통과해야만 base 가 반환된다.
      *
-     * @scenario publish_state=unpublished, environment=production, trigger=self_heal
+     * @scenario publish_state=unpublished, environment=production, trigger=self_heal, process_user=web
      *
      * @effects static_gate_requires_manifest, kill_switch_disables_publish_and_gate
      */
@@ -261,7 +261,7 @@ class AssetUrlTest extends TestCase
      * 태그 계층 파일 단위 게이트 — manifest 는 있어도 그 자산의 실파일이 없으면
      * 그 자산만 종전 API URL 로 방출된다 (나머지는 정적 URL).
      *
-     * @scenario publish_state=partial, environment=production, trigger=manual_command
+     * @scenario publish_state=partial, environment=production, trigger=manual_command, process_user=web
      *
      * @effects tag_layer_checks_individual_file_existence
      */
@@ -373,7 +373,7 @@ class AssetUrlTest extends TestCase
     /**
      * base null(게이트 미통과) 이면 기존 URL 과 바이트 동일해야 한다 (호출부 무변경 계약).
      *
-     * @scenario publish_state=unpublished, environment=dev, trigger=kill_switch
+     * @scenario publish_state=unpublished, environment=dev, trigger=kill_switch, process_user=web
      */
     public function test_게이트_미통과시_종전_ur_l_바이트_동일(): void
     {

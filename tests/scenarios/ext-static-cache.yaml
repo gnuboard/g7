@@ -23,12 +23,22 @@ axes:
   publish_state: [published, unpublished, partial]
   environment: [production, dev]
   trigger: [lifecycle, self_heal, manual_command, kill_switch]
+  # 실행 주체(uid) 축 — sudo CLI(root)와 웹 계정이 갈리는 파일 산출물 기능의 필수 축.
+  # 7.0.10 업그레이드 실사례: root terminating 게시가 캐시 락 샤드를 root 소유로 남겨
+  # 웹 캐시 쓰기가 전면 500. 이 축이 없어 24축 매트릭스가 그 조합을 못 잡았다.
+  process_user: [web, root_cli]
 
 exclusions:
   - { environment: dev, publish_state: published, reason: "dev 는 staticBase 미주입 — 게시 상태와 무관하게 전 리소스 API 직행" }
   - { environment: dev, publish_state: partial, reason: "동일 — dev 는 정적 경로 자체가 없다" }
   - { trigger: kill_switch, publish_state: published, reason: "kill-switch off 는 게이트에서 base 자체를 차단 — 게시 상태 무관" }
   - { trigger: kill_switch, publish_state: partial, reason: "동일" }
+  - { process_user: root_cli, trigger: self_heal, reason: "자가 치유는 웹 렌더 경로 전용 — root 웹 프로세스는 존재하지 않는 구성" }
+  - { process_user: root_cli, environment: dev, reason: "dev 는 게시 자체가 무의미 (terminating 게이트가 프로덕션 한정)" }
+  - { process_user: root_cli, trigger: kill_switch, reason: "kill-switch 는 uid 판정 이전의 선행 게이트 — uid 무관" }
+  - { process_user: root_cli, trigger: manual_command, reason: "명시적 ext-static:publish 는 root 게이트 밖 (운영자 책임 — 규정 §6). 게시 로직 자체는 web 축 케이스가 검증" }
+  - { process_user: root_cli, publish_state: published, reason: "root 게이트는 게시 상태 판정 이전에 위치 — 상태와 직교, 대표 조합(unpublished×lifecycle)으로 고정" }
+  - { process_user: root_cli, publish_state: partial, reason: "동일 — 상태 직교" }
 
 effects:
   - published_lang_matches_api_payload
@@ -59,6 +69,7 @@ effects:
   - terminating_schedule_rearms_after_execution
   - published_htaccess_declares_compression
   - bundle_script_static_miss_falls_back_to_api
+  - root_cli_defers_publish_to_web_self_heal
 
 test_files:
   - tests/Feature/Services/ExtensionStaticCacheServiceTest.php
