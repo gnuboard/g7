@@ -2189,6 +2189,56 @@ class CoreUpdateService
     }
 
     /**
+     * root 로 실행된 업데이트가 종료된 뒤, 런타임 쓰기 디렉토리의 소유권을 정상화합니다.
+     *
+     * `restoreOwnership()` 은 흐름 **중간**의 한 단계라, 그 이후에 일어나는 캐시
+     * 쓰기(버전 bump·상태/훅 캐시 재생성·키 인덱스 갱신·번들 빌드)가 root 소유
+     * 파일을 새로 만든다. 그 파일들이 남으면 웹 프로세스의 캐시 쓰기가 Permission
+     * denied 로 죽어 전면 500 이 된다 (실사례: 7.0.9→7.0.10 sudo 업데이트 —
+     * 치명점은 모든 remember 가 갱신하는 캐시 키 인덱스 파일).
+     *
+     * 따라서 이 메서드는 **흐름의 마지막**(restoreUpgradeLogOwnership 과 같은
+     * 지점)에서 호출되어, 대상 디렉토리 자신의 소유자(웹 쓰기 소유)를 기준으로
+     * 내용물을 재귀 정상화하고 그룹 쓰기를 동기화한다. 과거 업데이트가 남긴
+     * root 잔재도 함께 정리된다 (재귀 전체 대상).
+     *
+     * 비-root 프로세스는 chown 자체가 불가능하고 필요도 없으므로 즉시 no-op.
+     * 기준 디렉토리 자체가 root 소유(비정상 배포)면 상속 근거가 없어 스킵한다.
+     */
+    public function normalizeRuntimeOwnershipAfterRootRun(): void
+    {
+        if (! function_exists('chown') || ! function_exists('posix_geteuid') || posix_geteuid() !== 0) {
+            return;
+        }
+
+        $targets = [
+            storage_path('framework/cache'),
+            base_path('bootstrap/cache'),
+            storage_path('app/ext-bundles'),
+        ];
+
+        foreach ($targets as $dir) {
+            if (! is_dir($dir)) {
+                continue;
+            }
+
+            $owner = @fileowner($dir);
+            $group = @filegroup($dir);
+
+            if ($owner === false || $owner === 0) {
+                Log::channel('upgrade')->warning('런타임 소유권 정상화 스킵 — 기준 디렉토리가 root/판독불가 소유', [
+                    'dir' => $dir,
+                ]);
+
+                continue;
+            }
+
+            FilePermissionHelper::chownRecursive($dir, $owner, $group);
+            FilePermissionHelper::syncGroupWritability($dir);
+        }
+    }
+
+    /**
      * 업데이트 경로의 소유권을 스냅샷 기준으로 복원합니다.
      *
      * sudo 로 실행된 외부 프로세스(composer install, package:discover,

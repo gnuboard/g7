@@ -593,6 +593,10 @@ class CoreUpdateCommand extends Command
             // fallback(spawn 실패)로 부모가 upgrade step 을 직접 실행한 경우, 부모가 만든
             // upgrade 로그가 root 로 남는다 — 모든 로그 쓰기가 끝난 이 시점에 정합한다.
             $this->restoreUpgradeLogOwnership();
+            // root 업데이트가 종료 시점까지 만든 캐시/번들 산출물 소유권 정상화 —
+            // restoreOwnership(흐름 중간) 이후의 root 쓰기가 웹 캐시 쓰기를 죽이는
+            // 전면 500 차단 (7.0.9→7.0.10 실사례)
+            app(CoreUpdateService::class)->normalizeRuntimeOwnershipAfterRootRun();
 
             return Command::SUCCESS;
 
@@ -677,6 +681,10 @@ class CoreUpdateCommand extends Command
             }
 
             $this->restoreUpgradeLogOwnership();
+            // root 업데이트가 종료 시점까지 만든 캐시/번들 산출물 소유권 정상화 —
+            // restoreOwnership(흐름 중간) 이후의 root 쓰기가 웹 캐시 쓰기를 죽이는
+            // 전면 500 차단 (7.0.9→7.0.10 실사례)
+            app(CoreUpdateService::class)->normalizeRuntimeOwnershipAfterRootRun();
 
             return Command::SUCCESS;
 
@@ -772,6 +780,10 @@ class CoreUpdateCommand extends Command
             }
 
             $this->restoreUpgradeLogOwnership();
+            // root 업데이트가 종료 시점까지 만든 캐시/번들 산출물 소유권 정상화 —
+            // restoreOwnership(흐름 중간) 이후의 root 쓰기가 웹 캐시 쓰기를 죽이는
+            // 전면 500 차단 (7.0.9→7.0.10 실사례)
+            app(CoreUpdateService::class)->normalizeRuntimeOwnershipAfterRootRun();
 
             return Command::FAILURE;
         }

@@ -206,6 +206,7 @@ class ExecuteUpgradeStepsCommand extends Command
             ]);
 
             $this->restoreUpgradeLogOwnership();
+            $service->normalizeRuntimeOwnershipAfterRootRun();
 
             return UpgradeHandoffException::EXIT_CODE;
         } catch (\Throwable $e) {
@@ -217,6 +218,7 @@ class ExecuteUpgradeStepsCommand extends Command
             $this->error($e->getMessage());
 
             $this->restoreUpgradeLogOwnership();
+            $service->normalizeRuntimeOwnershipAfterRootRun();
 
             return self::FAILURE;
         }
@@ -278,6 +280,10 @@ class ExecuteUpgradeStepsCommand extends Command
         }
 
         $this->restoreUpgradeLogOwnership();
+        // 단독 실행(sudo core:execute-upgrade-steps)이 만든 캐시/번들 root 산출물
+        // 소유권 정상화 — spawn 자식 모드에서도 무해(멱등)하며, 부모(CoreUpdateCommand)
+        // 종료부의 동일 호출이 부모 측 후속 쓰기를 담당한다
+        $service->normalizeRuntimeOwnershipAfterRootRun();
 
         return self::SUCCESS;
     }
