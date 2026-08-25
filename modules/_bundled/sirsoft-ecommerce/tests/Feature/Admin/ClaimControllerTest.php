@@ -238,7 +238,7 @@ class ClaimControllerTest extends ModuleTestCase
 
         $response->assertOk()
             ->assertJsonPath('data.claim.claim_number', $return->return_number)
-            ->assertJsonPath('data.claim.requester_name', $return->order->orderer_name)
+            ->assertJsonPath('data.claim.requester_name', $return->order->getOrdererName())
             ->assertJsonPath('data.claim.outstanding_amount', 0);
 
         // 관리자 확장 필드는 추가만 된다 — 유저 응답 키는 그대로 존재한다.

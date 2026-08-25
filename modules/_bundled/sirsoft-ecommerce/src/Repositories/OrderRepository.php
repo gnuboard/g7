@@ -15,12 +15,20 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Modules\Sirsoft\Ecommerce\Enums\CancelStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderAddress;
+use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
+use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
+use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
+use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
 use Modules\Sirsoft\Ecommerce\Models\OrderShipping;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
 
@@ -338,6 +346,10 @@ class OrderRepository implements OrderRepositoryInterface
             $this->applyClaimFilter($query, $filters['claim_exchange_status'], 'exchange');
         }
 
+        // 클레임 기준 필터 (D22) — 클레임 신청서 테이블 기준 whereExists 서브쿼리.
+        // 위 레거시 필터(claim_*_status 단수형)는 옵션 상태 기반의 기존 계약이라 그대로 둔다.
+        $this->applyClaimCriteriaFilters($query, $filters);
+
         // 결제수단 필터
         if (! empty($filters['payment_method'])) {
             $methods = is_array($filters['payment_method'])
@@ -430,7 +442,7 @@ class OrderRepository implements OrderRepositoryInterface
             columns: self::LIST_COLUMNS,
             sort: $sort,
             perPage: $perPage,
-            relations: [
+            relations: array_merge([
                 'user',
                 $withItems ? 'options' : 'firstOption',
                 'shippingAddress',
@@ -438,17 +450,22 @@ class OrderRepository implements OrderRepositoryInterface
                 // 목록은 대표 배송 1건의 표시 정보만 그린다. 택배사 이름까지 함께 로드해야
                 // Resource 가 행마다 carrier 를 다시 조회하지 않는다.
                 'firstShipping.carrier',
-            ],
-            withCount: $withItems ? [] : [
-                // "외 N건" 표기용 전체 옵션 수.
-                'options',
-                // 부분취소 뱃지 판정용 — 취소 옵션이 있으면서 남은 옵션도 있는 상태.
-                // 컬렉션을 순회하지 않고 DB 집계 두 개로 같은 판정을 얻는다.
-                'options as cancelled_options_count' => fn ($optionQuery) => $optionQuery->where(
-                    'option_status',
-                    OrderStatusEnum::CANCELLED->value,
-                ),
-            ],
+                // 클레임 요약(D22)은 '클레임' 컬럼을 켠 요청만 싣는다 — 화면이 그리지 않는
+                // 하위 컬렉션을 목록에 무조건 실으면 안 된다 (공개 #76 규율).
+            ], ! empty($filters['with_claim_summary']) ? $this->claimSummaryRelations() : []),
+            withCount: array_merge(
+                $withItems ? [] : [
+                    // "외 N건" 표기용 전체 옵션 수.
+                    'options',
+                    // 부분취소 뱃지 판정용 — 취소 옵션이 있으면서 남은 옵션도 있는 상태.
+                    // 컬렉션을 순회하지 않고 DB 집계 두 개로 같은 판정을 얻는다.
+                    'options as cancelled_options_count' => fn ($optionQuery) => $optionQuery->where(
+                        'option_status',
+                        OrderStatusEnum::CANCELLED->value,
+                    ),
+                ],
+                ! empty($filters['with_claim_summary']) ? $this->claimSummaryCounts() : [],
+            ),
             resultCap: PaginationLimits::resultCap('admin.orders'),
         );
     }
@@ -740,6 +757,172 @@ class OrderRepository implements OrderRepositoryInterface
                 $q->whereIn('option_status', $filteredStatuses);
             }
         });
+    }
+
+    /**
+     * 클레임 기준 필터를 적용합니다. (D22 — 클레임 신청서 테이블 기준)
+     *
+     * 유형별 whereExists 서브쿼리로 구성한다 — 1:N 조인은 원 행을 부풀려 총 건수·페이지
+     * 경계를 깨뜨린다. 축 구성:
+     *
+     * - 상태 집합이 명시된 유형만 대상으로 하고(하나도 없으면 4유형 전부), 여러 유형은
+     *   OR 로 잇는다 — "체크한 상태 중 하나라도 해당하는 클레임이 있는 주문".
+     * - 귀책·신청일 축은 같은 서브쿼리에 함께 건다 — 그 조건을 전부 만족하는 클레임
+     *   한 건이 존재해야 한다. 취소 테이블에는 귀책 컬럼이 없어 귀책 필터가 지정되면
+     *   취소 유형은 매칭 대상에서 빠진다.
+     * - `claim_presence`: any=존재 / none=부재(그룹 전체 NOT) / active=미종결 상태 한정.
+     * - 환불 축은 취소 발(`refund_source_type=cancel`) 신청서를 제외한다 — 취소 축이
+     *   대표한다 (관리자 클레임 목록·주문 스코프 내역과 동일 규칙).
+     *
+     * @param  Builder  $query  주문 목록 쿼리
+     * @param  array  $filters  요청 필터
+     */
+    protected function applyClaimCriteriaFilters(Builder $query, array $filters): void
+    {
+        $presence = $filters['claim_presence'] ?? null;
+
+        $statusSets = array_filter([
+            'exchange' => array_values((array) ($filters['claim_exchange_statuses'] ?? [])),
+            'return' => array_values((array) ($filters['claim_return_statuses'] ?? [])),
+            'refund' => array_values((array) ($filters['claim_refund_statuses'] ?? [])),
+            'cancel' => array_values((array) ($filters['claim_cancel_types'] ?? [])),
+        ]);
+        $faults = array_values((array) ($filters['claim_fault_types'] ?? []));
+        $from = $filters['claim_requested_from'] ?? null;
+        $to = $filters['claim_requested_to'] ?? null;
+
+        if ($presence === null && $statusSets === [] && $faults === [] && empty($from) && empty($to)) {
+            return;
+        }
+
+        $types = $statusSets === [] ? ['exchange', 'return', 'refund', 'cancel'] : array_keys($statusSets);
+
+        if ($faults !== []) {
+            $types = array_values(array_diff($types, ['cancel']));
+        }
+
+        if ($types === []) {
+            // 귀책 필터 + 취소 유형만 지정된 조합 — 매칭 가능한 유형이 없다.
+            // 빈 whereIn 은 `0 = 1` 로 컴파일된다.
+            $query->whereIn($query->getModel()->getKeyName(), []);
+
+            return;
+        }
+
+        $group = function ($q) use ($types, $statusSets, $faults, $from, $to, $presence) {
+            foreach ($types as $index => $type) {
+                $q->{$index === 0 ? 'whereExists' : 'orWhereExists'}(
+                    fn ($sub) => $this->claimExistsSubquery($sub, $type, $statusSets[$type] ?? [], $faults, $from, $to, $presence === 'active')
+                );
+            }
+        };
+
+        $presence === 'none' ? $query->whereNot($group) : $query->where($group);
+    }
+
+    /**
+     * 한 클레임 유형의 존재 서브쿼리를 구성합니다.
+     *
+     * 취소 축의 상태 어휘는 전이 상태가 아니라 취소 유형(전체/부분 — `cancel_type`)이다.
+     * 취소는 즉시 파이프라인이라 전이 상태 2종(신청/완료)이 화면 구분 축이 되지 못하고,
+     * 확정 시안(§6-4-2)의 칩도 부분취소/전체취소다. 진행 중(active) 판정만 `cancel_status`
+     * 를 본다.
+     *
+     * @param  \Illuminate\Database\Query\Builder  $sub  EXISTS 서브쿼리 빌더
+     * @param  string  $type  클레임 유형 (exchange|return|refund|cancel)
+     * @param  array<int, string>  $statuses  상태(취소는 유형) 어휘 집합
+     * @param  array<int, string>  $faults  귀책 집합
+     * @param  string|null  $from  신청일 시작
+     * @param  string|null  $to  신청일 종료
+     * @param  bool  $activeOnly  미종결 상태만 매칭할지 여부 (claim_presence=active)
+     */
+    protected function claimExistsSubquery($sub, string $type, array $statuses, array $faults, ?string $from, ?string $to, bool $activeOnly): void
+    {
+        $ordersTable = $this->model->getTable();
+
+        [$table, $statusColumn, $finalValues] = match ($type) {
+            'exchange' => [
+                (new OrderExchange)->getTable(),
+                'exchange_status',
+                array_map(fn ($s) => $s->value, ExchangeStatusEnum::finalStatuses()),
+            ],
+            'return' => [
+                (new OrderReturn)->getTable(),
+                'return_status',
+                array_map(fn ($s) => $s->value, ReturnStatusEnum::finalStatuses()),
+            ],
+            'refund' => [
+                (new OrderRefund)->getTable(),
+                'refund_status',
+                array_map(fn ($s) => $s->value, RefundStatusEnum::finalStatuses()),
+            ],
+            'cancel' => [
+                (new OrderCancel)->getTable(),
+                'cancel_type',
+                [CancelStatusEnum::COMPLETED->value],
+            ],
+        };
+
+        $sub->from($table)
+            ->selectRaw('1')
+            ->whereColumn($table.'.order_id', $ordersTable.'.id');
+
+        if ($statuses !== []) {
+            $sub->whereIn($table.'.'.$statusColumn, $statuses);
+        }
+
+        if ($type === 'refund') {
+            OrderRefund::applyNonCancelOrigin($sub, $table);
+        }
+
+        if ($type !== 'cancel' && $faults !== []) {
+            $sub->whereIn($table.'.fault_type', $faults);
+        }
+
+        $this->applyDateRangeFilter($sub, $table.'.created_at', $from, $to);
+
+        if ($activeOnly) {
+            $activeColumn = $type === 'cancel' ? 'cancel_status' : $statusColumn;
+            $sub->whereNotIn($table.'.'.$activeColumn, $finalValues);
+        }
+    }
+
+    /**
+     * 클레임 요약('클레임' 컬럼 — D22) 표시용 eager load 관계를 반환합니다.
+     *
+     * 목록 행은 유형별 최신 상태 배지와 건수만 그린다 — 배지가 실제로 읽는 컬럼만
+     * 좁혀 싣는다. 환불 축은 취소 발 신청서를 제외한다 (필터 축과 동일 규칙).
+     *
+     * @return array<string, \Closure> 관계명 => 제약 클로저
+     */
+    protected function claimSummaryRelations(): array
+    {
+        return [
+            'exchanges' => fn ($q) => $q->select(['id', 'order_id', 'exchange_number', 'exchange_status', 'created_at'])->orderByDesc('id'),
+            'returns' => fn ($q) => $q->select(['id', 'order_id', 'return_number', 'return_status', 'created_at'])->orderByDesc('id'),
+            'refunds' => fn ($q) => OrderRefund::applyNonCancelOrigin(
+                $q->select(['id', 'order_id', 'refund_number', 'refund_status', 'refund_source_type', 'created_at'])
+            )->orderByDesc('id'),
+            'cancels' => fn ($q) => $q->select(['id', 'order_id', 'cancel_number', 'cancel_status', 'cancel_type', 'created_at'])->orderByDesc('id'),
+        ];
+    }
+
+    /**
+     * 클레임 요약(D22)의 유형별 건수 집계를 반환합니다.
+     *
+     * 건수는 DB 집계로 얻는다 — 적재된 컬렉션의 길이를 세면 목록 행마다 하위 컬렉션의
+     * 크기에 결과가 묶인다. 환불 축은 관계 제약과 같은 규칙(취소 발 제외)을 쓴다.
+     *
+     * @return array<string, \Closure|string> withCount 별칭 => 제약 클로저
+     */
+    protected function claimSummaryCounts(): array
+    {
+        return [
+            'exchanges',
+            'returns',
+            'refunds' => fn ($q) => OrderRefund::applyNonCancelOrigin($q),
+            'cancels',
+        ];
     }
 
     /**

@@ -47,6 +47,15 @@
 | user_id | query | integer | 아니오 | — | user 식별자 |
 | orderer_uuid | query | uuid | 아니오 | — | 특정 회원의 주문만 조회하는 주문자 UUID 필터 (회원 검색 연동용) |
 | member_type | query | string | 아니오 | `member`, `guest` | 회원 구분 필터 (member 회원 주문 / guest 비회원 주문) |
+| claim_presence | query | string | 아니오 | `none`, `any`, `active` | 클레임 유무 필터 (D22) — none 클레임 없음 / any 클레임 있음 / active 미종결 클레임 있음. 아래 클레임 축(상태·귀책·신청일)과 조합하면 그 조건의 클레임 기준으로 판정 |
+| claim_exchange_statuses | query | array | 아니오 | ExchangeStatusEnum 값 배열 | 교환 상태 필터 — 해당 상태의 교환 신청서가 있는 주문 (여러 유형의 상태 집합은 OR 로 조합) |
+| claim_return_statuses | query | array | 아니오 | ReturnStatusEnum 값 배열 | 반품 상태 필터 |
+| claim_refund_statuses | query | array | 아니오 | RefundStatusEnum 값 배열 | 환불 상태 필터 — 취소 발(`refund_source_type=cancel`) 신청서만 제외 (취소 축이 대표). 출처가 기록되지 않은 구형 신청서(`refund_source_type=null`)는 직접 환불로 보아 포함 |
+| claim_cancel_types | query | array | 아니오 | `full`, `partial` | 취소 필터 — 어휘는 전이 상태가 아니라 **취소 유형**(전체/부분, CancelTypeEnum)이다. 취소는 즉시 파이프라인이라 상태 2종(신청/완료)이 화면 구분 축이 되지 못한다 |
+| claim_fault_types | query | array | 아니오 | `customer`, `seller`, `carrier` | 귀책 필터 — 같은 클레임 행에 함께 적용. 취소 테이블에는 귀책 축이 없어 귀책 지정 시 취소 유형은 매칭에서 제외 |
+| claim_requested_from | query | date | 아니오 | — | 클레임 신청일 범위 시작 (해당 범위에 접수된 클레임이 있는 주문) |
+| claim_requested_to | query | date | 아니오 | after_or_equal:claim_requested_from | 클레임 신청일 범위 종료 |
+| with_claim_summary | query | boolean | 아니오 | — | 행별 `claim_summary`(유형별 최신 상태 배지) 포함 여부 — '클레임' 컬럼을 켠 화면만 요청 (미요청 시 직렬화 안 함) |
 | sort_by | query | string | 아니오 | `ordered_at`, `paid_at`, `total_amount`, `shipped_at` | 정렬 기준 필드명 (그 외 값은 422). `shipped_at` 은 배송 테이블 기준 — `desc` 는 주문별 **가장 늦은** 발송일, `asc` 는 **가장 이른** 발송일로 정렬하며 발송 이력이 없는 주문도 목록에 남는다 |
 | sort_order | query | string | 아니오 | `asc`, `desc` | 정렬 방향 (asc 오름차순 / desc 내림차순) |
 | per_page | query | integer | 아니오 | min 10, max 100 | 페이지당 항목 수 |
@@ -104,6 +113,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | address | object | `{"orderer_name":"연정훈","recipient_name":"소정훈","recipient_c…` | 배송지 요약 (주문자명·수령인명·배송국가 코드/현지화명) |
 | payment | object | `{"payment_method":"dbank","payment_method_label":"무통장입금"}` | 결제 요약 (결제수단 값·현지화 라벨) |
 | shipping | object | `{"shipping_type":null,"shipping_type_label":null,"shippin…` | 배송 요약 (배송유형·배송방법 라벨·택배사명·송장번호, 첫 번째 배송 기준) |
+| claim_summary | array | `[{"type":"return","type_label":"반품","count":2,"latest_cla…` | 유형별 최신 상태 배지 배열 (D22 — `with_claim_summary=1` 요청에만 직렬화). 항목: `{type, type_label, count, latest_claim_number, status, status_label, status_variant}` — 접수 건이 있는 유형만 실리고, 환불 축은 취소 발 신청서를 제외 |
 | is_owner | boolean | `false` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
 | abilities | object | `{"can_read":true,"can_update":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 

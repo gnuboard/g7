@@ -516,6 +516,8 @@ return [
         'bulk_toggled' => ':count shipping policies status have been changed.',
         'set_default_success' => 'Default shipping policy has been set.',
         'api_test_done' => 'Calculation API test call completed.',
+        'claim_settings_retrieved' => 'Claim shipping settings retrieved successfully.',
+        'claim_settings_updated' => 'Claim shipping settings have been saved.',
         'fee_summary' => [
             'free' => 'Free Shipping',
             'fixed' => 'Shipping: :fee',

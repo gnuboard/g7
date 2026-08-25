@@ -55,7 +55,7 @@ class ClaimAdminListResource extends ClaimResource
             'claim_type_label' => $type->label(),
             'order_id' => $claim->order_id,
             'order_number' => $order?->order_number,
-            'requester_name' => $order?->orderer_name,
+            'requester_name' => $order?->getOrdererName(),
             'requested_by' => $claim->requested_by ?? $claim->cancelled_by ?? null,
             'is_guest_request' => method_exists($claim, 'isGuestRequest') ? $claim->isGuestRequest() : ($claim->cancelled_by === null),
             'status' => $status instanceof \BackedEnum ? $status->value : $status,

@@ -261,7 +261,7 @@ class ClaimResource extends BaseApiResource
                 'processed_by' => $claim->processed_by ?? null,
                 // 신청자 표기는 주문자명이다 — 클레임 테이블의 신청자 축은 회원 ID 뿐이라
                 // 비회원 신청 건은 이름을 주문에서만 가져올 수 있다 (목록 검색 축과 동일 근거).
-                'requester_name' => $order?->orderer_name,
+                'requester_name' => $order?->getOrdererName(),
             ];
         }
 

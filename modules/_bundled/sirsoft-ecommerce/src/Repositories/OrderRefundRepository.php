@@ -139,9 +139,11 @@ class OrderRefundRepository implements OrderRefundRepositoryInterface
     public function paginateForUser(int $userId, array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
         $query = $this->model->newQuery()
-            ->with(['refundOptions.orderOption', 'images', 'order'])
-            ->whereHas('order', fn ($q) => $q->where('user_id', $userId))
-            ->where('refund_source_type', '!=', RefundSourceTypeEnum::CANCEL->value);
+            ->with(['refundOptions.orderOption', 'images', 'order.shippingAddress'])
+            ->whereHas('order', fn ($q) => $q->where('user_id', $userId));
+
+        // 취소 발 제외 — 출처 미상(NULL) 행은 직접 환불로 본다 (판정 단일 출처)
+        OrderRefund::applyNonCancelOrigin($query);
 
         if (! empty($filters['status'])) {
             $query->where('refund_status', $filters['status']);
@@ -170,8 +172,9 @@ class OrderRefundRepository implements OrderRefundRepositoryInterface
         // 환불 헤더에는 `items_snapshot` 이 없어 상품 요약을 상품 행 → 주문옵션에서 만든다.
         // 취소 발 환불은 유저 목록과 같은 이유로 뺀다 — 취소 서브탭과 이중 노출된다.
         $query = $this->model->newQuery()
-            ->with(['order', 'refundOptions.orderOption'])
-            ->where('refund_source_type', '!=', RefundSourceTypeEnum::CANCEL->value);
+            ->with(['order.shippingAddress', 'refundOptions.orderOption']);
+
+        OrderRefund::applyNonCancelOrigin($query);
 
         $this->applyAdminClaimFilters($query, $filters);
 
@@ -189,8 +192,9 @@ class OrderRefundRepository implements OrderRefundRepositoryInterface
      */
     public function countForAdmin(array $filters = []): int
     {
-        $query = $this->model->newQuery()
-            ->where('refund_source_type', '!=', RefundSourceTypeEnum::CANCEL->value);
+        $query = $this->model->newQuery();
+
+        OrderRefund::applyNonCancelOrigin($query);
 
         $this->applyAdminClaimFilters($query, $filters);
 

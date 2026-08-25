@@ -23,6 +23,9 @@
   "sirsoft-ecommerce-orders": {
     "name": "注文管理"
   },
+  "sirsoft-ecommerce-claims": {
+    "name": "キャンセル/返品/交換管理"
+  },
   "sirsoft-ecommerce-promotion-coupons": {
     "name": "クーポン管理"
   },

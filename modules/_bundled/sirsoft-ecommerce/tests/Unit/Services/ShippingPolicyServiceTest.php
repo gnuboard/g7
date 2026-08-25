@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Queue;
 use Mockery;
 use Modules\Sirsoft\Ecommerce\Enums\ChargePolicyEnum;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingPolicyClaimAddressRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingPolicyRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\ShippingPolicyService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
@@ -29,7 +30,10 @@ class ShippingPolicyServiceTest extends ModuleTestCase
         Queue::fake();
 
         $this->mockRepository = Mockery::mock(ShippingPolicyRepositoryInterface::class);
-        $this->service = new ShippingPolicyService($this->mockRepository);
+        $this->service = new ShippingPolicyService(
+            $this->mockRepository,
+            Mockery::mock(ShippingPolicyClaimAddressRepositoryInterface::class),
+        );
     }
 
     protected function tearDown(): void

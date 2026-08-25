@@ -46,6 +46,7 @@
 | POST | /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/refund-request | `api.modules.sirsoft-ecommerce.admin.claims.refund-request` (교환·반품만) |
 | POST | /api/modules/sirsoft-ecommerce/admin/refunds/{id}/execute | `api.modules.sirsoft-ecommerce.admin.claims.refunds.execute` (환불만) |
 | GET | /api/modules/sirsoft-ecommerce/admin/orders/{order}/cancellable-amount | `api.modules.sirsoft-ecommerce.admin.claims.cancellable-amount` |
+| GET | /api/modules/sirsoft-ecommerce/admin/orders/{order}/claims | `api.modules.sirsoft-ecommerce.admin.claims.order-claims` |
 
 오류 응답의 두 형태(요청 검증 422 는 `errors` 동반 / 도메인 거절 422 는 `message` 만)는
 [claims.md](claims.md#오류-응답의-두-형태-422) 와 같은 계약입니다.
@@ -488,6 +489,116 @@ amount = max(0, min(domain_refundable, payment_capacity) − reserved)
 `binding` 은 한도를 정한 축입니다 (`domain_refundable`/`payment_capacity`/`reserved`).
 `methods` 는 수단별 잔여 한도(결제 통화 원값 `remaining_local` 병기 — D18 화면의 수단별 한도),
 `reserved_claims` 는 선점 근거(진행 중인 다른 클레임)입니다.
+
+---
+
+### GET /api/modules/sirsoft-ecommerce/admin/orders/{order}/claims
+
+주문 스코프 클레임 내역을 그룹 구조로 조회합니다 (D20 — 주문상세 '클레임 내역' 섹션).
+응답은 유형 서브탭 뱃지용 `counts` 와, **신청서가 상품 배열을 품는 그룹 구조**의 `claims`
+(전 유형 평면 배열, 신청 역순) 하나입니다 — 화면이 `claim_type` 으로 서브탭을 거르고,
+PC 는 1열 `rowSpan={items.length}` 병합·모바일은 신청서 단위 카드를 **같은 응답**으로
+그립니다 (별도 데이터소스 없음).
+
+**권한**: `sirsoft-ecommerce.claims.read`
+
+**요청 파라미터**: 없음 (주문 스코프 전량 — 결과 상한은 코어 `resultCap('ecommerce.claims')`)
+
+**요청 예시**
+
+```http
+GET /api/modules/sirsoft-ecommerce/admin/orders/1024/claims HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드**
+
+- `counts` — `{exchange, return, refund, cancel}` 유형별 건수. 환불 축은 취소 발
+  (`refund_source_type=cancel`) 신청서만 제외합니다 — 취소 축이 그 건을 대표합니다
+  (관리자 목록·비회원 주문상세 섹션과 같은 규칙). 출처가 기록되지 않은 구형 신청서
+  (`refund_source_type=null`)는 직접 환불로 보아 포함합니다.
+- `claims[]` — [claims.md](claims.md#공통-리소스) 의 ClaimResource 상세 표현에 관리자
+  확장 필드(`requester_name`·`admin_memo`·`processed_by`)와 아래 두 축을 더한 형태:
+  - `detail_url` — [클레임 신청서 조회하기] 새 창 진입 경로 (`/admin/ecommerce/claims/{claim_number}`).
+    **취소는 상세 라우트가 없어 `null`** — 취소 이력은 이 섹션이 종착입니다.
+  - `items[].amount` / `amount_formatted` / `amount_type` — 네 유형의 금액 축을 한 컬럼으로
+    그리기 위한 정규화 값. 출처는 교환=옵션 차액 소계, 반품·취소=대상 금액(단가×수량),
+    환불=행 환불액입니다.
+    **`amount` 는 언제나 크기(0 이상)이고 방향은 `amount_type` 이 단독으로 나릅니다** —
+    `charge`(추가 청구) / `refund`(환불·대상 금액) / `none`(0원). 저가 교환처럼 차액이 음수인
+    경우에도 `amount` 는 양수이고 `amount_type` 이 `refund` 가 됩니다. 화면은 유형 분기 없이
+    `amount_type` 으로 색·부호를 그리면 됩니다. `amount` 의 소수 자릿수는 주문 통화 스냅샷이
+    정합니다(0자리 통화는 정수). 부호가 필요하면 원본 필드
+    (`price_difference`·`subtotal_amount`·`refund_amount`)를 읽으세요 — 그대로 남습니다.
+    배송비는 신청서 단위 축이라 행에 안분하지 않습니다 — 신청서 레벨 `claim_shipping_fee`/
+    `total_charge_amount` 를 함께 읽으세요.
+
+**응답 예시 (200)**
+
+```json
+{
+  "success": true,
+  "message": "신청 내역을 조회했습니다.",
+  "data": {
+    "counts": {"exchange": 1, "return": 0, "refund": 0, "cancel": 1},
+    "claims": [
+      {
+        "id": 4,
+        "claim_number": "EX20260825-000004",
+        "claim_type": "exchange",
+        "status": "collecting",
+        "status_label": "교환회수중",
+        "requested_at_formatted": "2026-08-25 10:12",
+        "requester_name": "김지은",
+        "reason_label": "단순 변심",
+        "fault_type": "customer",
+        "reject_reason": null,
+        "detail_url": "/admin/ecommerce/claims/EX20260825-000004",
+        "claim_shipping_fee": 6000,
+        "total_charge_amount": 9000,
+        "items": [
+          {
+            "product_name": "프리미엄 코튼 티셔츠",
+            "product_option_name": "차콜/M",
+            "quantity": 1,
+            "original_quantity": 2,
+            "unit_price": 29000,
+            "new_option_label": "블랙/L",
+            "new_unit_price": 32000,
+            "price_difference": 3000,
+            "amount": 3000,
+            "amount_formatted": "3,000원",
+            "amount_type": "charge",
+            "status": "collecting",
+            "status_label": "교환회수중"
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "claim_number": "CL20260825-000002",
+        "claim_type": "cancel",
+        "status": "completed",
+        "status_label": "취소완료",
+        "detail_url": null,
+        "items": [
+          {"product_name": "소프트 터치 니트", "quantity": 1, "amount": 45000, "amount_type": "refund"}
+        ]
+      }
+    ]
+  }
+}
+```
+
+**오류**
+
+| 코드 | 키 | 조건 |
+| --- | --- | --- |
+| 403 | `auth.permission_denied` | `claims.read` 권한 없음 |
+| 403 | `auth.scope_denied` | 권한은 있으나 열람 스코프 밖의 주문인 경우 |
+| 404 | — | 주문 부재 (라우트 모델 바인딩) |
 
 ---
 

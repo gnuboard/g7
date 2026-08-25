@@ -9,6 +9,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use Modules\Sirsoft\Ecommerce\Enums\ChargePolicyEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimShippingFeeModeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingApiAuthType;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingApiHttpMethod;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingApiRequestField;
@@ -101,6 +102,11 @@ class StoreShippingPolicyRequest extends FormRequest
             'country_settings.*.extra_fee_settings.*.region' => ['nullable', 'string', 'max:100'],
             'country_settings.*.extra_fee_multiply' => ['nullable', 'boolean'],
 
+            // 클레임 배송비 (S6c — 미전송 항목은 Service 가 기존 값을 승계한다)
+            'country_settings.*.claim_fee_mode' => ['nullable', Rule::enum(ClaimShippingFeeModeEnum::class)],
+            'country_settings.*.return_fixed_fee' => ['nullable', 'numeric', 'min:0'],
+            'country_settings.*.exchange_fixed_fee' => ['nullable', 'numeric', 'min:0'],
+
             // 사용여부
             'country_settings.*.is_active' => ['required', 'boolean'],
         ];
@@ -149,6 +155,11 @@ class StoreShippingPolicyRequest extends FormRequest
             'country_settings.*.ranges.tiers.array' => __('sirsoft-ecommerce::validation.shipping_policy.ranges.tiers_required'),
             'country_settings.*.extra_fee_settings.*.zipcode.required' => __('sirsoft-ecommerce::validation.shipping_policy.extra_fee.zipcode_format'),
             'country_settings.*.extra_fee_settings.*.fee.min' => __('sirsoft-ecommerce::validation.extra_fee_template.fee_min'),
+            'country_settings.*.claim_fee_mode.Illuminate\Validation\Rules\Enum' => __('sirsoft-ecommerce::validation.shipping_policy.claim_settings.claim_fee_mode.enum'),
+            'country_settings.*.return_fixed_fee.numeric' => __('sirsoft-ecommerce::validation.shipping_policy.claim_settings.fee.numeric'),
+            'country_settings.*.return_fixed_fee.min' => __('sirsoft-ecommerce::validation.shipping_policy.claim_settings.fee.min'),
+            'country_settings.*.exchange_fixed_fee.numeric' => __('sirsoft-ecommerce::validation.shipping_policy.claim_settings.fee.numeric'),
+            'country_settings.*.exchange_fixed_fee.min' => __('sirsoft-ecommerce::validation.shipping_policy.claim_settings.fee.min'),
             'is_active.required' => __('sirsoft-ecommerce::validation.shipping_policy.is_active_required'),
         ];
     }

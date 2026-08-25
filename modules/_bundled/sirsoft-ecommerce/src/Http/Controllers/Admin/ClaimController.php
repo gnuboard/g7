@@ -24,6 +24,7 @@ use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\UploadClaimImageRequest;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ClaimAdminCollection;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ClaimImageResource;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ClaimResource;
+use Modules\Sirsoft\Ecommerce\Http\Resources\OrderClaimHistoryResource;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
@@ -286,6 +287,49 @@ class ClaimController extends AdminBaseController
             return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             return $this->claimServerError('admin-cancellable-amount', $e);
+        }
+    }
+
+    /**
+     * 주문 스코프 클레임 내역을 그룹 구조로 조회합니다. (D20 — 주문상세 '클레임 내역' 섹션)
+     *
+     * 응답은 유형 서브탭 뱃지용 `counts` 와, 신청서가 상품 배열을 품는 그룹 구조의
+     * `claims` (전 유형 평면 배열, 신청 역순)다 — 화면이 `claim_type` 으로 서브탭을 거르고
+     * PC 는 1열 rowspan 병합, 모바일은 카드 묶음을 같은 응답으로 그린다(별도 데이터소스
+     * 없음). 취소 발(`refund_source_type=cancel`) 환불신청서는 취소 서브탭이 대표하므로
+     * 환불 축에서 제외한다 — 조회 자체가 관리자 목록·유저 주문상세 섹션과 같은
+     * `UserClaimService::listForOrder()` 단일 출처다.
+     *
+     * @param  Order  $order  대상 주문
+     * @return JsonResponse 그룹 응답 (`counts` + `claims`)
+     */
+    public function orderClaims(Order $order): JsonResponse
+    {
+        try {
+            $byType = $this->userClaimService->listForOrder($order);
+            $reasonLabels = $this->userClaimService->reasonLabelsFor($byType);
+
+            $claims = collect($byType)
+                ->flatMap(fn ($list) => $list)
+                ->sortByDesc(fn ($claim) => [$claim->created_at?->getTimestamp() ?? 0, $claim->id])
+                ->values()
+                ->map(fn ($claim) => (new OrderClaimHistoryResource($claim))
+                    ->withAdminFields()
+                    ->withReasonLabels($reasonLabels)
+                    ->toArray(request()));
+
+            return ResponseHelper::moduleSuccess(
+                'sirsoft-ecommerce',
+                'messages.claims.list_retrieved',
+                [
+                    'counts' => collect($byType)->map(fn ($list) => $list->count())->toArray(),
+                    'claims' => $claims->toArray(),
+                ]
+            );
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
+        } catch (Exception $e) {
+            return $this->claimServerError('admin-order-claims', $e);
         }
     }
 

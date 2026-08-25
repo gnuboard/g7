@@ -2774,6 +2774,18 @@ class Module extends AbstractModule
                         'permission' => 'sirsoft-ecommerce.orders.read',
                     ],
                     [
+                        // 클레임 관리 화면 (D16/D20 계열 — 주문 관리 직후 배치)
+                        'name' => [
+                            'ko' => '취소/반품/교환 관리',
+                            'en' => 'Claims',
+                        ],
+                        'slug' => 'sirsoft-ecommerce-claims',
+                        'url' => '/admin/ecommerce/claims',
+                        'icon' => 'fas fa-right-left',
+                        'order' => 8,
+                        'permission' => 'sirsoft-ecommerce.claims.read',
+                    ],
+                    [
                         'name' => [
                             'ko' => '쿠폰 관리',
                             'en' => 'Coupons',
@@ -2781,7 +2793,7 @@ class Module extends AbstractModule
                         'slug' => 'sirsoft-ecommerce-promotion-coupons',
                         'url' => '/admin/ecommerce/promotion-coupons',
                         'icon' => 'fas fa-ticket-alt',
-                        'order' => 8,
+                        'order' => 9,
                         'permission' => 'sirsoft-ecommerce.promotion-coupon.read',
                     ],
                     [
@@ -2792,7 +2804,7 @@ class Module extends AbstractModule
                         'slug' => 'sirsoft-ecommerce-shipping-policies',
                         'url' => '/admin/ecommerce/shipping-policies',
                         'icon' => 'fas fa-truck',
-                        'order' => 9,
+                        'order' => 10,
                         'permission' => 'sirsoft-ecommerce.shipping-policies.read',
                     ],
                     [
@@ -2803,7 +2815,7 @@ class Module extends AbstractModule
                         'slug' => 'sirsoft-ecommerce-reviews',
                         'url' => '/admin/ecommerce/reviews',
                         'icon' => 'fas fa-star',
-                        'order' => 10,
+                        'order' => 11,
                         'permission' => 'sirsoft-ecommerce.reviews.read',
                     ],
                     [
@@ -2814,7 +2826,7 @@ class Module extends AbstractModule
                         'slug' => 'sirsoft-ecommerce-mileage-transactions',
                         'url' => '/admin/ecommerce/mileage-transactions',
                         'icon' => 'fas fa-coins',
-                        'order' => 11,
+                        'order' => 12,
                         'permission' => 'sirsoft-ecommerce.mileage.read',
                     ],
                 ],

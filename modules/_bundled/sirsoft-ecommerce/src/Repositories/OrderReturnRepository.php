@@ -157,7 +157,7 @@ class OrderReturnRepository implements OrderReturnRepositoryInterface
     public function paginateForUser(int $userId, array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
         $query = $this->model->newQuery()
-            ->with(['returnOptions.orderOption', 'images', 'order', 'collectionCarrier'])
+            ->with(['returnOptions.orderOption', 'images', 'order.shippingAddress', 'collectionCarrier'])
             ->whereHas('order', fn ($q) => $q->where('user_id', $userId));
 
         if (! empty($filters['status'])) {
@@ -186,7 +186,7 @@ class OrderReturnRepository implements OrderReturnRepositoryInterface
     {
         // 목록이 직렬화하는 것만 싣는다 — `order` 와 미수납 판정용 `claimPayments`.
         // 상품 요약은 헤더 `items_snapshot` 이 담당한다 (목록 응답의 하위 컬렉션 규율).
-        $query = $this->model->newQuery()->with(['order', 'claimPayments']);
+        $query = $this->model->newQuery()->with(['order.shippingAddress', 'claimPayments']);
 
         $this->applyAdminClaimFilters($query, $filters);
 

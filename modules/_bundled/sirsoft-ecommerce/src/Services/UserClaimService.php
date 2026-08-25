@@ -442,12 +442,12 @@ class UserClaimService
             // 정상 동작한 결과로 상품명·옵션명·썸네일이 오류 없이 전부 null 이 된다(회원 목록·상세는 싣는다).
             // 관계 목록은 회원 목록(저장소 `paginateForUser`)과 같아야 한다 — 하나라도 빠지면 그 필드가
             // 오류 없이 전 행 null 이 된다(`order_number`·회수/재발송 배송사명).
-            ClaimTypeEnum::EXCHANGE->value => $this->exchangeRepository->listByOrderId($order->id, ['exchangeOptions.orderOption', 'images', 'order', 'collectionCarrier', 'redeliveryCarrier']),
-            ClaimTypeEnum::RETURN->value => $this->returnRepository->listByOrderId($order->id, ['returnOptions.orderOption', 'images', 'order', 'collectionCarrier']),
-            ClaimTypeEnum::REFUND->value => $this->refundRepository->listByOrderId($order->id, ['refundOptions.orderOption', 'images', 'order'])
+            ClaimTypeEnum::EXCHANGE->value => $this->exchangeRepository->listByOrderId($order->id, ['exchangeOptions.orderOption', 'images', 'order.shippingAddress', 'collectionCarrier', 'redeliveryCarrier']),
+            ClaimTypeEnum::RETURN->value => $this->returnRepository->listByOrderId($order->id, ['returnOptions.orderOption', 'images', 'order.shippingAddress', 'collectionCarrier']),
+            ClaimTypeEnum::REFUND->value => $this->refundRepository->listByOrderId($order->id, ['refundOptions.orderOption', 'images', 'order.shippingAddress'])
                 ->filter(fn (OrderRefund $refund) => $refund->refund_source_type !== RefundSourceTypeEnum::CANCEL)
                 ->values(),
-            ClaimTypeEnum::CANCEL->value => $this->cancelRepository->listByOrderId($order->id, ['cancelOptions.orderOption', 'refund', 'order']),
+            ClaimTypeEnum::CANCEL->value => $this->cancelRepository->listByOrderId($order->id, ['cancelOptions.orderOption', 'refund', 'order.shippingAddress']),
         ];
     }
 

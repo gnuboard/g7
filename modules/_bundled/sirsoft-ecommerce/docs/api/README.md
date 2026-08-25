@@ -4,12 +4,12 @@
 > 아래 표는 자동 생성됩니다. 각 문서를 열면 엔드포인트별 파라미터·응답·예시를 볼 수 있습니다.
 
 <!-- @generated:start:api-readme-index -->
-- **문서 수**: 37 · **엔드포인트 수**: 280
+- **문서 수**: 37 · **엔드포인트 수**: 283
 
 | 문서 | 도메인 | 엔드포인트 |
 | --- | --- | --- |
 | [addresses.md](addresses.md) | `addresses` | 6 |
-| [admin-claims.md](admin-claims.md) | `admin-claims` | 14 |
+| [admin-claims.md](admin-claims.md) | `admin-claims` | 15 |
 | [brands.md](brands.md) | `brands` | 6 |
 | [cart.md](cart.md) | `cart` | 11 |
 | [categories.md](categories.md) | `categories` | 14 |
@@ -42,7 +42,7 @@
 | [settings.md](settings.md) | `settings` | 10 |
 | [shipping-carriers.md](shipping-carriers.md) | `shipping-carriers` | 7 |
 | [shipping-country.md](shipping-country.md) | `shipping-country` | 2 |
-| [shipping-policies.md](shipping-policies.md) | `shipping-policies` | 11 |
+| [shipping-policies.md](shipping-policies.md) | `shipping-policies` | 13 |
 | [users.md](users.md) | `users` | 2 |
 | [wishlist.md](wishlist.md) | `wishlist` | 3 |
 

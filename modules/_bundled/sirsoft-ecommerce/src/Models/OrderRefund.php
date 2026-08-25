@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Models;
 
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -140,6 +141,33 @@ class OrderRefund extends Model
         }
 
         return $modelClass::find($this->refund_source_id);
+    }
+
+    /**
+     * 취소 발이 아닌 환불신청서만 남기는 조건을 쿼리에 겁니다.
+     *
+     * 취소 발(`refund_source_type=cancel`) 환불은 취소 축이 대표하므로 환불 축에서 뺀다.
+     * 그런데 `!= 'cancel'` 하나로 쓰면 **출처 미상 행이 함께 사라진다** — SQL 3치 논리에서
+     * `NULL != 'cancel'` 은 UNKNOWN 이라 행이 걸러지기 때문이다. 1.2.0 백필 스텝은
+     * `order_cancel_id` 가 없는 구형 환불을 의도적으로 NULL 로 남기므로 그런 행은 실재하고,
+     * 그것들은 취소 발이 아니라 **출처를 모르는 직접 환불**이다. 배제하면 목록·요약·존재
+     * 판정에서 통째로 사라져 그 주문이 "클레임 없음" 으로 오분류된다.
+     *
+     * 같은 술어를 쓰는 지점이 여럿(유저 목록·관리자 목록·건수·주문 목록 필터·요약 관계·요약
+     * 집계)이라 한 곳이라도 빠지면 그 경로만 조용히 다르게 동작한다 — 판정을 여기 한 곳에 둔다.
+     *
+     * @param  Builder|\Illuminate\Database\Query\Builder  $query  대상 쿼리
+     * @param  string|null  $table  컬럼 한정자로 쓸 테이블명 (서브쿼리에서 필요)
+     * @return Builder|\Illuminate\Database\Query\Builder 조건이 적용된 쿼리
+     */
+    public static function applyNonCancelOrigin($query, ?string $table = null)
+    {
+        $column = ($table !== null ? $table.'.' : '').'refund_source_type';
+
+        return $query->where(
+            fn ($q) => $q->where($column, '!=', RefundSourceTypeEnum::CANCEL->value)
+                ->orWhereNull($column)
+        );
     }
 
     /**

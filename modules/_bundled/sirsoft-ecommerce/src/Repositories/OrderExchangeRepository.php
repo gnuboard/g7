@@ -152,7 +152,7 @@ class OrderExchangeRepository implements OrderExchangeRepositoryInterface
     public function paginateForUser(int $userId, array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
         $query = $this->model->newQuery()
-            ->with(['exchangeOptions.orderOption', 'images', 'order', 'collectionCarrier', 'redeliveryCarrier'])
+            ->with(['exchangeOptions.orderOption', 'images', 'order.shippingAddress', 'collectionCarrier', 'redeliveryCarrier'])
             ->whereHas('order', fn ($q) => $q->where('user_id', $userId));
 
         if (! empty($filters['status'])) {
@@ -182,7 +182,7 @@ class OrderExchangeRepository implements OrderExchangeRepositoryInterface
         // 목록이 직렬화하는 것만 싣는다 — `order`(주문번호·주문자명·통화 스냅샷)와
         // 미수납 판정용 `claimPayments`. 상품 요약은 헤더 `items_snapshot` 이 담당하므로
         // 상품 행·이미지 관계는 싣지 않는다 (목록 응답의 하위 컬렉션 규율).
-        $query = $this->model->newQuery()->with(['order', 'claimPayments']);
+        $query = $this->model->newQuery()->with(['order.shippingAddress', 'claimPayments']);
 
         $this->applyAdminClaimFilters($query, $filters);
 

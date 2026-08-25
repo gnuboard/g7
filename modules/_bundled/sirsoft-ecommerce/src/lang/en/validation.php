@@ -818,6 +818,32 @@ return [
         'orderer_uuid' => [
             'uuid' => 'Orderer UUID format is invalid.',
         ],
+        // Claim criteria filters (D22)
+        'claim_presence' => [
+            'in' => 'Claim presence filter must be one of none, any or active.',
+        ],
+        'claim_statuses' => [
+            'array' => 'Claim status filter must be an array.',
+            'in' => 'Please select a valid claim status.',
+        ],
+        'claim_cancel_types' => [
+            'array' => 'Cancellation type filter must be an array.',
+            'in' => 'Please select a valid cancellation type.',
+        ],
+        'claim_fault_types' => [
+            'array' => 'Fault type filter must be an array.',
+            'in' => 'Please select a valid fault type.',
+        ],
+        'claim_requested_from' => [
+            'date' => 'Claim requested start date must be a valid date.',
+        ],
+        'claim_requested_to' => [
+            'date' => 'Claim requested end date must be a valid date.',
+            'after_or_equal' => 'Claim requested end date must be on or after the start date.',
+        ],
+        'with_claim_summary' => [
+            'boolean' => 'Claim summary flag must be true or false.',
+        ],
         // Sorting and pagination
         'sort_by' => [
             'in' => 'Please select a valid sort field.',
@@ -1014,6 +1040,30 @@ return [
     'shipping_policy' => [
         'name' => [
             'required' => 'Please enter the shipping policy name.',
+        ],
+        // Claim settings (collection addresses + per-country claim fees - S6c)
+        'claim_settings' => [
+            'country_code' => [
+                'required' => 'Please enter the country code.',
+                'distinct' => 'Country codes are duplicated.',
+                'exists' => 'The country code does not exist in this shipping policy\'s country settings.',
+            ],
+            'claim_fee_mode' => [
+                'required' => 'Please select the claim shipping fee mode.',
+                'enum' => 'Please select a valid claim shipping fee mode.',
+            ],
+            'fee' => [
+                'numeric' => 'Claim shipping fee must be a number.',
+                'min' => 'Claim shipping fee must be 0 or greater.',
+            ],
+            'recipient_name' => [
+                'required' => 'Please enter the collection address recipient name.',
+                'max' => 'Collection address recipient name may not exceed 100 characters.',
+            ],
+            'address1' => [
+                'required' => 'Please enter the collection address.',
+                'max' => 'Collection address may not exceed 255 characters.',
+            ],
         ],
         'ids_required' => 'Please select shipping policies to update.',
         'ids_array' => 'Shipping policy IDs must be an array.',

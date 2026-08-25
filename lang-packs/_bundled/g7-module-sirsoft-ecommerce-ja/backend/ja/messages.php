@@ -453,6 +453,8 @@ return [
             'extra_fee' => '追加送料（島部）',
         ],
         'api_test_done' => '計算 API テスト呼び出しを完了しました。',
+        'claim_settings_retrieved' => 'クレーム配送設定を照会しました。',
+        'claim_settings_updated' => 'クレーム配送設定が保存されました。',
     ],
     'admin' => [
         'order' => [

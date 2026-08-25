@@ -795,6 +795,8 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     // PATCH  /api/modules/sirsoft-ecommerce/admin/shipping-policies/{id}/toggle-active - 사용여부 토글
     // DELETE /api/modules/sirsoft-ecommerce/admin/shipping-policies/bulk - 일괄 삭제
     // PATCH  /api/modules/sirsoft-ecommerce/admin/shipping-policies/bulk-toggle-active - 일괄 사용여부 변경
+    // GET    /api/modules/sirsoft-ecommerce/admin/shipping-policies/{id}/claim-settings - 클레임 설정 조회 (회수지+국가별 클레임 배송비)
+    // PUT    /api/modules/sirsoft-ecommerce/admin/shipping-policies/{id}/claim-settings - 클레임 설정 수정
     Route::prefix('shipping-policies')->group(function () {
         Route::get('/', [ShippingPolicyController::class, 'index'])
             ->middleware('permission:admin,sirsoft-ecommerce.shipping-policies.read')
@@ -848,6 +850,19 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
             ->middleware('permission:admin,sirsoft-ecommerce.shipping-policies.update')
             ->whereNumber('id')
             ->name('admin.shipping-policies.set-default');
+
+        // 클레임 설정 (회수지 + 국가별 클레임 배송비 — S6c)
+        // GET /api/modules/sirsoft-ecommerce/admin/shipping-policies/{id}/claim-settings
+        // PUT /api/modules/sirsoft-ecommerce/admin/shipping-policies/{id}/claim-settings
+        Route::get('/{id}/claim-settings', [ShippingPolicyController::class, 'claimSettings'])
+            ->middleware('permission:admin,sirsoft-ecommerce.shipping-policies.read')
+            ->whereNumber('id')
+            ->name('admin.shipping-policies.claim-settings.show');
+
+        Route::put('/{id}/claim-settings', [ShippingPolicyController::class, 'updateClaimSettings'])
+            ->middleware('permission:admin,sirsoft-ecommerce.shipping-policies.update')
+            ->whereNumber('id')
+            ->name('admin.shipping-policies.claim-settings.update');
     });
 
     // 배송사 관리 API
@@ -1495,6 +1510,12 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         Route::get('/{order}/cancellable-amount', [AdminClaimController::class, 'cancellableAmount'])
             ->middleware('permission:admin,sirsoft-ecommerce.claims.read')
             ->name('admin.claims.cancellable-amount');
+
+        // 주문 스코프 클레임 내역 (D20 — 주문상세 '클레임 내역' 섹션, 유형별 건수 + 그룹 응답)
+        // GET /api/modules/sirsoft-ecommerce/admin/orders/{order}/claims
+        Route::get('/{order}/claims', [AdminClaimController::class, 'orderClaims'])
+            ->middleware('permission:admin,sirsoft-ecommerce.claims.read')
+            ->name('admin.claims.order-claims');
     });
 
     // 클레임(취소/반품/교환) 관리 API
@@ -1512,6 +1533,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     // PUT    /api/modules/sirsoft-ecommerce/admin/exchanges/{id}/redelivery-tracking - 재발송 송장 (교환)
     // POST   /api/modules/sirsoft-ecommerce/admin/refunds/{id}/execute - 환불 실행 (D18·D19)
     // GET    /api/modules/sirsoft-ecommerce/admin/orders/{order}/cancellable-amount - 취소 가능 금액 (D19, orders 그룹에 등록)
+    // GET    /api/modules/sirsoft-ecommerce/admin/orders/{order}/claims - 주문 스코프 클레임 내역 (D20, orders 그룹에 등록)
     Route::prefix('claims')->group(function () {
         Route::get('/', [AdminClaimController::class, 'index'])
             ->middleware('permission:admin,sirsoft-ecommerce.claims.read')

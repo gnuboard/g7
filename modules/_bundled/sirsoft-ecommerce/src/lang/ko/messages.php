@@ -520,6 +520,8 @@ return [
         'bulk_toggled' => ':count개 배송정책의 사용여부가 변경되었습니다.',
         'set_default_success' => '기본 배송정책이 설정되었습니다.',
         'api_test_done' => '계산 API 테스트 호출을 완료했습니다.',
+        'claim_settings_retrieved' => '클레임 배송 설정을 조회했습니다.',
+        'claim_settings_updated' => '클레임 배송 설정이 저장되었습니다.',
         'fee_summary' => [
             'free' => '무료배송',
             'fixed' => '배송비: :fee',
