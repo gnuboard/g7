@@ -523,6 +523,9 @@ Authorization: Bearer {YOUR_TOKEN}
   확장 필드(`requester_name`·`admin_memo`·`processed_by`)와 아래 두 축을 더한 형태:
   - `detail_url` — [클레임 신청서 조회하기] 새 창 진입 경로 (`/admin/ecommerce/claims/{claim_number}`).
     **취소는 상세 라우트가 없어 `null`** — 취소 이력은 이 섹션이 종착입니다.
+    origin 없이 앱 내 경로만 싣습니다. 이 경로 규칙(회원·비회원·관리자 3종)은 클레임
+    결제 콜백 리다이렉트와 클레임 알림 링크도 함께 쓰므로 서버가 한 곳에서 만듭니다 —
+    응답 값을 화면에서 다시 조립하지 마세요.
   - `items[].amount` / `amount_formatted` / `amount_type` — 네 유형의 금액 축을 한 컬럼으로
     그리기 위한 정규화 값. 출처는 교환=옵션 차액 소계, 반품·취소=대상 금액(단가×수량),
     환불=행 환불액입니다.

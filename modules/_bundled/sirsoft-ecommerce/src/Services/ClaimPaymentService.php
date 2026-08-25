@@ -67,6 +67,15 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderReturnRepositoryInterf
  */
 class ClaimPaymentService
 {
+    /** 결제 대기 건 취소 사유 — 신청서가 종결되어 함께 정리 */
+    public const CANCEL_REASON_CLAIM_FINALIZED = 'claim_finalized';
+
+    /** 결제 대기 건 취소 사유 — 청구액 재산정으로 대기 건이 불필요해짐 */
+    public const CANCEL_REASON_CHARGE_SETTLED = 'charge_settled';
+
+    /** 결제 대기 건 취소 사유 — 보존 기간이 지난 고아 건을 배치가 정리 */
+    public const CANCEL_REASON_ORPHAN_REAPED = 'orphan_reaped';
+
     /**
      * @param  ClaimPaymentRepositoryInterface  $paymentRepository  클레임 결제 Repository
      * @param  OrderExchangeRepositoryInterface  $exchangeRepository  교환 신청서 Repository
@@ -482,9 +491,7 @@ class ClaimPaymentService
 
         foreach ($this->listForClaim($claim) as $payment) {
             if ($payment->isPending()) {
-                $processed[] = $this->paymentRepository->update($payment, [
-                    'payment_status' => ClaimPaymentStatusEnum::CANCELLED,
-                ]);
+                $processed[] = $this->cancelPending($payment, $claim, self::CANCEL_REASON_CLAIM_FINALIZED);
 
                 continue;
             }
@@ -652,15 +659,18 @@ class ClaimPaymentService
      * 신청서의 결제 대기 건을 취소합니다.
      *
      * @param  OrderExchange|OrderReturn  $claim  신청서
+     * @param  string  $reason  취소 사유 (활동 로그 properties 에 원값으로 남는다)
      * @return int 취소한 건수
      */
-    public function cancelPendingPayments(OrderExchange|OrderReturn $claim): int
-    {
+    public function cancelPendingPayments(
+        OrderExchange|OrderReturn $claim,
+        string $reason = self::CANCEL_REASON_CHARGE_SETTLED,
+    ): int {
         $count = 0;
 
         foreach ($this->listForClaim($claim) as $payment) {
             if ($payment->isPending()) {
-                $this->paymentRepository->update($payment, ['payment_status' => ClaimPaymentStatusEnum::CANCELLED]);
+                $this->cancelPending($payment, $claim, $reason);
                 $count++;
             }
         }
@@ -697,7 +707,7 @@ class ClaimPaymentService
             }
 
             if (! $dryRun) {
-                $this->paymentRepository->update($payment, ['payment_status' => ClaimPaymentStatusEnum::CANCELLED]);
+                $this->cancelPending($payment, $claim, self::CANCEL_REASON_ORPHAN_REAPED);
 
                 Log::info('[claim.payment] 고아 결제 대기 건 취소', [
                     'claim_payment_id' => $payment->id,
@@ -791,7 +801,37 @@ class ClaimPaymentService
     // ───────────────────────────────────────────────
 
     /**
-     * 결제 확정 뒤 훅 발화와 신청서 전이를 수행합니다.
+     * 결제 대기 건 하나를 취소하고 취소 훅을 발화합니다. (취소 3경로 공용 단일 지점)
+     *
+     * 취소 사유는 유형 세그먼트를 훅 이름에 넣지 않고 인자로 싣는다 — 고아 정리 배치는
+     * 신청서가 이미 사라진 건도 취소하므로 유형을 항상 알 수 없다. 유형을 아는 호출부는
+     * `$claim` 을 넘기고, 모르는 호출부는 null 을 넘긴다.
+     *
+     * 취소 대상은 언제나 **미수납 대기 행**이라 돈이 오간 사건이 아니다. 그래도 이력에
+     * 남기는 이유는, 청구액 재산정(`settleChargeDifference`)처럼 사람이 부른 경로가 섞여
+     * 있어 "왜 결제 요청이 사라졌는가" 를 운영자가 되짚을 통로가 필요하기 때문이다.
+     *
+     * @param  ClaimPayment  $payment  취소할 결제 대기 건
+     * @param  OrderExchange|OrderReturn|null  $claim  신청서 (해석 불가 시 null)
+     * @param  string  $reason  취소 사유 (`CANCEL_REASON_*`)
+     * @return ClaimPayment 취소된 결제 건
+     */
+    protected function cancelPending(
+        ClaimPayment $payment,
+        OrderExchange|OrderReturn|null $claim,
+        string $reason,
+    ): ClaimPayment {
+        $cancelled = $this->paymentRepository->update($payment, [
+            'payment_status' => ClaimPaymentStatusEnum::CANCELLED,
+        ]);
+
+        HookManager::doAction('sirsoft-ecommerce.claim.payment_cancelled', $cancelled, $claim, $reason);
+
+        return $cancelled;
+    }
+
+    /**
+     * 결제 확정 뒤 신청서 전이와 훅 발화를 수행합니다.
      *
      * 청구액이 전액 수납되면 자동 승인 여부와 무관하게 **`paid`(결제완료)를 경유**한다(미수납 잔액이
      * 남아 있으면 결제대기에 머문다 — 화면은 상태 라벨이 아니라 `outstanding_amount` 로 판정한다). 종전에는
@@ -821,25 +861,33 @@ class ClaimPaymentService
             return $payment;
         }
 
+        // 상태 전이가 훅보다 **먼저**다. 이 훅의 소비자는 알림·활동 로그이고 둘 다 신청서의
+        // 현재 상태를 읽는다 — 훅을 앞세우면 정상 경로에서도 리스너가 보는 상태가 언제나
+        // `payment_pending` 이라 '결제완료' 를 통지하면서 결제대기라고 적게 된다. 문서
+        // (`docs/api/claim-payments.md` 결제 확정 절)도 "옮겨지고 … 훅이 발행됩니다" 로
+        // 이 순서를 계약으로 공표한다.
+        //
+        // 전이는 결제대기 건에서만 일어난다. 이미 `paid` 인 건의 차액을 마저 수납한 경우처럼
+        // 전이할 것이 없어도 훅은 발화한다 — 청구액이 다시 전액 수납됐다는 사실은 같기 때문이다.
+        if ($this->claimStatus($claim) === 'payment_pending') {
+            try {
+                // 전이 결과를 되받는다 — 훅 인자가 전이 전 인스턴스면 소비자가 읽는 상태가
+                // 여전히 `payment_pending` 이라 순서를 바꾼 의미가 사라진다.
+                $claim = $this->transitionClaim($claim, 'paid');
+            } catch (OrderClaimException $e) {
+                // 결제는 확정됐는데 상태만 못 옮겼다 — 상태를 조용히 앞당기지 않고 운영자에게 남긴다.
+                // 훅도 발화하지 않는다: 결제대기에 머문 신청서에 '결제 완료' 를 통지하면 고객이
+                // 받은 안내와 화면 상태가 어긋난다(잔액이 남은 분할 수납을 미발화로 막는 것과 같은 이유).
+                Log::info('[claim.payment] 결제 확정 전이 거절 — 결제대기 유지', [
+                    'payment_number' => $payment->payment_number,
+                    'reason' => $e->getMessageKey(),
+                ]);
+
+                return $payment;
+            }
+        }
+
         HookManager::doAction('sirsoft-ecommerce.claim.'.$claim->claimType()->value.'.payment_completed', $claim, $payment);
-
-        // 상태 전이는 결제대기 건에서만 일어난다. 이미 `paid` 인 건의 차액을 마저 수납한 경우처럼
-        // 전이할 것이 없어도 위 훅은 발화한다 — 청구액이 다시 전액 수납됐다는 사실은 같기 때문이다.
-        if ($this->claimStatus($claim) !== 'payment_pending') {
-            return $payment;
-        }
-
-        try {
-            $this->transitionClaim($claim, 'paid');
-        } catch (OrderClaimException $e) {
-            // 결제는 확정됐는데 상태만 못 옮겼다 — 상태를 조용히 앞당기지 않고 운영자에게 남긴다.
-            Log::info('[claim.payment] 결제 확정 전이 거절 — 결제대기 유지', [
-                'payment_number' => $payment->payment_number,
-                'reason' => $e->getMessageKey(),
-            ]);
-
-            return $payment;
-        }
 
         $shouldApprove = $claim->charge_method === ClaimChargeMethodEnum::PAY_ON_APPROVAL
             || (bool) $this->settingsService->getSetting('claim.auto_approve_after_payment', false);

@@ -10,6 +10,7 @@ use Modules\Sirsoft\Ecommerce\Benchmark\OrderCreationBenchmark;
 use Modules\Sirsoft\Ecommerce\Database\Seeders\ClaimReasonSeeder;
 use Modules\Sirsoft\Ecommerce\Database\Seeders\SequenceSeeder;
 use Modules\Sirsoft\Ecommerce\Database\Seeders\ShippingCarrierSeeder;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Http\Middleware\DetectDevice;
 use Modules\Sirsoft\Ecommerce\Http\Middleware\ResolveShippingCountry;
@@ -20,6 +21,9 @@ use Modules\Sirsoft\Ecommerce\Listeners\AssignDefaultShippingCountryOnRegisterLi
 use Modules\Sirsoft\Ecommerce\Listeners\CategoryActivityLogListener;
 use Modules\Sirsoft\Ecommerce\Listeners\CategoryTreeCacheListener;
 use Modules\Sirsoft\Ecommerce\Listeners\Ckeditor5ReferenceSourcesListener;
+use Modules\Sirsoft\Ecommerce\Listeners\ClaimActivityLogListener;
+use Modules\Sirsoft\Ecommerce\Listeners\ClaimNotificationDataListener;
+use Modules\Sirsoft\Ecommerce\Listeners\ClaimStatusNotificationListener;
 use Modules\Sirsoft\Ecommerce\Listeners\CouponActivityLogListener;
 use Modules\Sirsoft\Ecommerce\Listeners\CouponRestoreListener;
 use Modules\Sirsoft\Ecommerce\Listeners\CouponUseListener;
@@ -1402,7 +1406,7 @@ class Module extends AbstractModule
      */
     public function getNotificationDefinitions(): array
     {
-        return [
+        return array_merge([
             $this->orderConfirmedDefinition(),
             $this->orderPendingDepositDefinition(),
             $this->orderShippedDefinition(),
@@ -1413,7 +1417,7 @@ class Module extends AbstractModule
             $this->inquiryReceivedDefinition(),
             $this->inquiryRepliedDefinition(),
             $this->mileageExpiringSoonDefinition(),
-        ];
+        ], $this->claimNotificationDefinitions());
     }
 
     /**
@@ -2219,6 +2223,517 @@ class Module extends AbstractModule
         ];
     }
 
+    // ───────────────────────────────────────────────
+    // 클레임 알림 정의 (§4-8 — 고객 가시 상태 전수 29종)
+    // ───────────────────────────────────────────────
+
+    /**
+     * 클레임 알림 정의 29종을 만듭니다.
+     *
+     * 유형(교환·반품·환불) × 고객 가시 상태의 곱이며, 목록의 정본은
+     * `ClaimStatusNotificationListener::notifiableStatuses()` 다 — 알림 훅을 발화하는
+     * 쪽과 정의를 만드는 쪽이 서로 다른 목록을 들면 발화되는데 정의가 없는(=조용히
+     * 아무 일도 일어나지 않는) 상태가 생긴다. 여기서 그 목록을 그대로 읽어 쓴다.
+     *
+     * 29종의 본문 구조는 같고 문구만 다르므로 정의를 한 벌씩 손으로 적지 않는다 —
+     * 같은 마크업을 29번 복제하면 메일 서식을 한 번 고칠 때 29곳을 고쳐야 하고,
+     * 그중 하나만 빠져도 그 알림만 다른 모양으로 나간다.
+     *
+     * @return array<int, array<string, mixed>> 알림 정의 목록
+     */
+    private function claimNotificationDefinitions(): array
+    {
+        $definitions = [];
+        $phrases = $this->claimNotificationPhrases();
+
+        foreach ($this->claimNotificationTypeWords() as $claimType => $words) {
+            foreach (ClaimStatusNotificationListener::notifiableStatuses()[$claimType] as $key) {
+                $definitions[] = $this->claimNotificationDefinition($claimType, $key, $words, $phrases[$key]);
+            }
+        }
+
+        $definitions[] = $this->claimWithdrawnDefinition();
+
+        return $definitions;
+    }
+
+    /**
+     * 클레임 유형별 표기 낱말을 반환합니다.
+     *
+     * 영어는 문장 중간(소문자)과 제목(대문자)이 달라 두 벌을 둔다.
+     *
+     * @return array<string, array{ko: string, en: string, en_lower: string}> 유형 값 => 낱말
+     */
+    private function claimNotificationTypeWords(): array
+    {
+        return [
+            ClaimTypeEnum::EXCHANGE->value => ['ko' => '교환', 'en' => 'Exchange', 'en_lower' => 'exchange'],
+            ClaimTypeEnum::RETURN->value => ['ko' => '반품', 'en' => 'Return', 'en_lower' => 'return'],
+            ClaimTypeEnum::REFUND->value => ['ko' => '환불', 'en' => 'Refund', 'en_lower' => 'refund'],
+        ];
+    }
+
+    /**
+     * 상태별 문구 조각을 반환합니다.
+     *
+     * `:type` 은 유형 낱말(한국어 / 영어 소문자), `:Type` 은 영어 제목용 대문자로 치환된다.
+     * `rows` 는 메일 본문 표에 덧붙는 행이며 `*` 가 기본, 유형 키가 있으면 그 유형만 덮는다
+     * (예: 보류 안내 메모는 교환·반품에만 있는 컬럼이라 환불에서는 행 자체를 빼야 빈칸이
+     * 남지 않는다).
+     *
+     * @return array<string, array<string, mixed>> 상태 키 => 문구 조각
+     */
+    private function claimNotificationPhrases(): array
+    {
+        $collectionRows = [
+            ['ko' => '회수 택배사', 'en' => 'Collection Carrier', 'var' => 'collection_carrier_name'],
+            ['ko' => '회수 운송장 번호', 'en' => 'Collection Tracking No.', 'var' => 'collection_tracking_number'],
+        ];
+        $redeliveryRows = [
+            ['ko' => '재발송 택배사', 'en' => 'Redelivery Carrier', 'var' => 'redelivery_carrier_name'],
+            ['ko' => '재발송 운송장 번호', 'en' => 'Redelivery Tracking No.', 'var' => 'redelivery_tracking_number'],
+        ];
+
+        return [
+            'requested' => [
+                'name' => ['ko' => ':type 신청 접수', 'en' => ':Type Request Received'],
+                'description' => ['ko' => ':type 신청이 접수되면 고객에게 발송', 'en' => 'Sent to the customer when a :type request is received'],
+                'heading' => ['ko' => ':type 신청이 접수되었습니다', 'en' => ':Type Request Received'],
+                'lead' => [
+                    'ko' => '{name}님, :type 신청이 접수되었습니다. 검토 후 처리 결과를 안내드리겠습니다.',
+                    'en' => 'Dear {name}, your :type request has been received. We will let you know once it has been reviewed.',
+                ],
+                'summary' => [
+                    'ko' => '{name}님, :type 신청({claim_number})이 접수되었습니다.',
+                    'en' => '{name}, your :type request ({claim_number}) has been received.',
+                ],
+                'rows' => ['*' => [['ko' => '신청 사유', 'en' => 'Reason', 'var' => 'reason_label']]],
+            ],
+            'payment_requested' => [
+                'name' => ['ko' => ':type 추가결제 요청', 'en' => ':Type Additional Payment Requested'],
+                'description' => ['ko' => ':type 추가 청구액이 발생해 결제가 필요할 때 고객에게 발송', 'en' => 'Sent to the customer when an additional payment is required to proceed with the :type'],
+                'heading' => ['ko' => ':type 추가금 결제를 요청드립니다', 'en' => 'Additional Payment Required'],
+                'lead' => [
+                    'ko' => '{name}님, :type 처리를 위한 추가 금액이 발생했습니다. 아래 금액을 결제해 주시면 처리가 이어집니다.',
+                    'en' => 'Dear {name}, an additional payment is required to proceed with your :type. Your request will continue once the payment is completed.',
+                ],
+                'summary' => [
+                    'ko' => '{name}님, :type 신청({claim_number})의 미결제 금액은 {outstanding_amount} 입니다.',
+                    'en' => '{name}, the outstanding amount for your :type request ({claim_number}) is {outstanding_amount}.',
+                ],
+                'rows' => ['*' => [
+                    ['ko' => '총 청구 금액', 'en' => 'Total Amount Due', 'var' => 'charge_amount'],
+                    ['ko' => '미결제 금액', 'en' => 'Outstanding Amount', 'var' => 'outstanding_amount'],
+                ]],
+            ],
+            'payment_completed' => [
+                'name' => ['ko' => ':type 추가결제 완료', 'en' => ':Type Additional Payment Completed'],
+                'description' => ['ko' => ':type 추가결제가 완료되면 고객에게 발송', 'en' => 'Sent to the customer when the additional payment for the :type is completed'],
+                'heading' => ['ko' => ':type 추가금 결제가 완료되었습니다', 'en' => 'Additional Payment Completed'],
+                'lead' => [
+                    'ko' => '{name}님, :type 추가금 결제가 확인되었습니다. 이어서 처리해 드리겠습니다.',
+                    'en' => 'Dear {name}, we have confirmed the additional payment for your :type. We will proceed with your request.',
+                ],
+                'summary' => [
+                    'ko' => '{name}님, :type 신청({claim_number})의 추가 결제({paid_amount})가 완료되었습니다.',
+                    'en' => '{name}, the additional payment ({paid_amount}) for your :type request ({claim_number}) has been completed.',
+                ],
+                'rows' => ['*' => [['ko' => '결제 금액', 'en' => 'Paid Amount', 'var' => 'paid_amount']]],
+            ],
+            'approved' => [
+                'name' => ['ko' => ':type 승인', 'en' => ':Type Approved'],
+                'description' => ['ko' => ':type 신청이 승인되면 고객에게 발송', 'en' => 'Sent to the customer when the :type request is approved'],
+                'heading' => ['ko' => ':type 신청이 승인되었습니다', 'en' => 'Your :Type Request Has Been Approved'],
+                'lead' => [
+                    'ko' => '{name}님, :type 신청이 승인되었습니다. 다음 단계가 진행되면 다시 안내드리겠습니다.',
+                    'en' => 'Dear {name}, your :type request has been approved. We will notify you as it progresses.',
+                ],
+                'summary' => [
+                    'ko' => '{name}님, :type 신청({claim_number})이 승인되었습니다.',
+                    'en' => '{name}, your :type request ({claim_number}) has been approved.',
+                ],
+                'rows' => ['*' => []],
+            ],
+            'on_hold' => [
+                'name' => ['ko' => ':type 보류', 'en' => ':Type On Hold'],
+                'description' => ['ko' => ':type 처리가 보류되면 고객에게 발송', 'en' => 'Sent to the customer when the :type request is put on hold'],
+                'heading' => ['ko' => ':type 처리가 보류되었습니다', 'en' => 'Your :Type Request Is On Hold'],
+                'lead' => [
+                    'ko' => '{name}님, :type 처리가 일시 보류되었습니다. 확인이 끝나는 대로 다시 안내드리겠습니다.',
+                    'en' => 'Dear {name}, your :type request has been put on hold. We will contact you once the review is complete.',
+                ],
+                'summary' => [
+                    'ko' => '{name}님, :type 신청({claim_number}) 처리가 보류되었습니다.',
+                    'en' => '{name}, your :type request ({claim_number}) has been put on hold.',
+                ],
+                // 보류 안내 메모(`admin_memo`)는 교환·반품 신청서에만 있는 컬럼이다.
+                'rows' => [
+                    '*' => [['ko' => '보류 안내', 'en' => 'Note', 'var' => 'admin_memo']],
+                    'refund' => [],
+                ],
+            ],
+            'rejected' => [
+                'name' => ['ko' => ':type 반려', 'en' => ':Type Rejected'],
+                'description' => ['ko' => ':type 신청이 반려되면 고객에게 발송', 'en' => 'Sent to the customer when the :type request is rejected'],
+                'heading' => ['ko' => ':type 신청이 반려되었습니다', 'en' => 'Your :Type Request Has Been Rejected'],
+                'lead' => [
+                    'ko' => '{name}님, :type 신청이 반려되었습니다. 자세한 사유는 아래를 확인해 주세요.',
+                    'en' => 'Dear {name}, your :type request has been rejected. Please see the reason below.',
+                ],
+                'summary' => [
+                    'ko' => '{name}님, :type 신청({claim_number})이 반려되었습니다. 사유: {reject_reason}',
+                    'en' => '{name}, your :type request ({claim_number}) has been rejected. Reason: {reject_reason}',
+                ],
+                'rows' => ['*' => [['ko' => '반려 사유', 'en' => 'Reason for Rejection', 'var' => 'reject_reason']]],
+            ],
+            'collection_ready' => [
+                'name' => ['ko' => ':type 회수 준비', 'en' => ':Type Collection Being Arranged'],
+                'description' => ['ko' => ':type 상품 회수 준비가 시작되면 고객에게 발송', 'en' => 'Sent to the customer when collection of the :type items is being arranged'],
+                'heading' => ['ko' => '회수를 준비하고 있습니다', 'en' => 'Collection Is Being Arranged'],
+                'lead' => [
+                    'ko' => '{name}님, :type 상품 회수를 준비하고 있습니다. 회수가 시작되면 다시 안내드리겠습니다.',
+                    'en' => 'Dear {name}, we are arranging the collection of your :type items. We will let you know when it starts.',
+                ],
+                'summary' => [
+                    'ko' => '{name}님, :type 신청({claim_number})의 상품 회수를 준비하고 있습니다.',
+                    'en' => '{name}, collection for your :type request ({claim_number}) is being arranged.',
+                ],
+                'rows' => ['*' => []],
+            ],
+            'collecting' => [
+                'name' => ['ko' => ':type 회수중', 'en' => ':Type Collection In Progress'],
+                'description' => ['ko' => ':type 상품 회수가 시작되면 고객에게 발송', 'en' => 'Sent to the customer when collection of the :type items has started'],
+                'heading' => ['ko' => '회수가 시작되었습니다', 'en' => 'Collection Has Started'],
+                'lead' => [
+                    'ko' => '{name}님, :type 상품 회수가 시작되었습니다. 아래 운송장으로 진행 상황을 확인하실 수 있습니다.',
+                    'en' => 'Dear {name}, collection of your :type items has started. You can track it with the number below.',
+                ],
+                'summary' => [
+                    'ko' => '{name}님, :type 신청({claim_number})의 상품 회수가 시작되었습니다.',
+                    'en' => '{name}, collection for your :type request ({claim_number}) has started.',
+                ],
+                'rows' => ['*' => $collectionRows],
+            ],
+            'collected' => [
+                'name' => ['ko' => ':type 회수 완료', 'en' => ':Type Items Collected'],
+                'description' => ['ko' => ':type 상품 회수가 완료되면 고객에게 발송', 'en' => 'Sent to the customer when the :type items have been collected'],
+                'heading' => ['ko' => '회수가 완료되었습니다', 'en' => 'Items Have Been Collected'],
+                'lead' => [
+                    'ko' => '{name}님, :type 상품이 회수되었습니다. 검수 후 다음 단계를 진행합니다.',
+                    'en' => 'Dear {name}, your :type items have been collected. We will proceed after inspection.',
+                ],
+                'summary' => [
+                    'ko' => '{name}님, :type 신청({claim_number})의 상품이 회수되었습니다.',
+                    'en' => '{name}, the items for your :type request ({claim_number}) have been collected.',
+                ],
+                'rows' => ['*' => []],
+            ],
+            'redelivery_ready' => [
+                'name' => ['ko' => ':type 재발송 준비', 'en' => ':Type Redelivery Being Prepared'],
+                'description' => ['ko' => ':type 상품 재발송 준비가 시작되면 고객에게 발송', 'en' => 'Sent to the customer when redelivery of the :type items is being prepared'],
+                'heading' => ['ko' => '재발송을 준비하고 있습니다', 'en' => 'Redelivery Is Being Prepared'],
+                'lead' => [
+                    'ko' => '{name}님, :type 상품 재발송을 준비하고 있습니다. 발송이 시작되면 다시 안내드리겠습니다.',
+                    'en' => 'Dear {name}, we are preparing to send your :type items. We will let you know when they ship.',
+                ],
+                'summary' => [
+                    'ko' => '{name}님, :type 신청({claim_number})의 재발송을 준비하고 있습니다.',
+                    'en' => '{name}, redelivery for your :type request ({claim_number}) is being prepared.',
+                ],
+                'rows' => ['*' => []],
+            ],
+            'redelivering' => [
+                'name' => ['ko' => ':type 재발송 시작', 'en' => ':Type Redelivery Shipped'],
+                'description' => ['ko' => ':type 상품 재발송이 시작되면 고객에게 발송', 'en' => 'Sent to the customer when the :type items have been shipped back'],
+                'heading' => ['ko' => '재발송이 시작되었습니다', 'en' => 'Redelivery Has Shipped'],
+                'lead' => [
+                    'ko' => '{name}님, :type 상품이 발송되었습니다. 아래 운송장으로 배송 상황을 확인하실 수 있습니다.',
+                    'en' => 'Dear {name}, your :type items have been shipped. You can track the delivery with the number below.',
+                ],
+                'summary' => [
+                    'ko' => '{name}님, :type 신청({claim_number})의 상품이 발송되었습니다.',
+                    'en' => '{name}, the items for your :type request ({claim_number}) have been shipped.',
+                ],
+                'rows' => ['*' => $redeliveryRows],
+            ],
+            'redelivered' => [
+                'name' => ['ko' => ':type 재발송 도착', 'en' => ':Type Redelivery Delivered'],
+                'description' => ['ko' => ':type 재발송 상품이 도착하면 고객에게 발송', 'en' => 'Sent to the customer when the redelivered :type items have arrived'],
+                'heading' => ['ko' => '재발송 상품이 도착했습니다', 'en' => 'Your Items Have Arrived'],
+                'lead' => [
+                    'ko' => '{name}님, :type 상품이 배송 완료되었습니다.',
+                    'en' => 'Dear {name}, your :type items have been delivered.',
+                ],
+                'summary' => [
+                    'ko' => '{name}님, :type 신청({claim_number})의 상품이 배송 완료되었습니다.',
+                    'en' => '{name}, the items for your :type request ({claim_number}) have been delivered.',
+                ],
+                'rows' => ['*' => $redeliveryRows],
+            ],
+            'completed' => [
+                'name' => ['ko' => ':type 완료', 'en' => ':Type Completed'],
+                'description' => ['ko' => ':type 처리가 완료되면 고객에게 발송', 'en' => 'Sent to the customer when the :type has been completed'],
+                'heading' => ['ko' => ':type 처리가 완료되었습니다', 'en' => 'Your :Type Has Been Completed'],
+                'lead' => [
+                    'ko' => '{name}님, :type 처리가 완료되었습니다. 이용해 주셔서 감사합니다.',
+                    'en' => 'Dear {name}, your :type has been completed. Thank you for shopping with us.',
+                ],
+                'summary' => [
+                    'ko' => '{name}님, :type 신청({claim_number}) 처리가 완료되었습니다.',
+                    'en' => '{name}, your :type request ({claim_number}) has been completed.',
+                ],
+                'rows' => [
+                    '*' => [],
+                    'refund' => [
+                        ['ko' => '환불 금액', 'en' => 'Refund Amount', 'var' => 'refund_amount'],
+                        ['ko' => '환불 수단', 'en' => 'Refund Method', 'var' => 'refund_method_label'],
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * 클레임 알림 치환 변수의 설명 사전을 반환합니다.
+     *
+     * 운영자가 템플릿 편집기에서 보게 되는 안내문이다.
+     *
+     * @return array<string, string> 변수 키 => 설명
+     */
+    private function claimNotificationVariableDescriptions(): array
+    {
+        return [
+            'name' => '수신자 이름',
+            'app_name' => '사이트 이름',
+            'claim_number' => '클레임 신청번호',
+            'claim_type_label' => '클레임 유형 (교환/반품/환불)',
+            'order_number' => '주문번호',
+            'status_label' => '현재 진행 상태',
+            'claim_url' => '신청서 상세 URL (비회원은 비회원 주문 조회 화면)',
+            'site_url' => '사이트 URL',
+            'reason_label' => '신청 사유',
+            'charge_amount' => '총 청구 금액',
+            'outstanding_amount' => '미결제 금액',
+            'paid_amount' => '결제 완료 금액',
+            'reject_reason' => '반려 사유',
+            'admin_memo' => '보류 안내 메모',
+            'collection_carrier_name' => '회수 택배사',
+            'collection_tracking_number' => '회수 운송장 번호',
+            'redelivery_carrier_name' => '재발송 택배사',
+            'redelivery_tracking_number' => '재발송 운송장 번호',
+            'refund_amount' => '환불 금액',
+            'refund_method_label' => '환불 수단',
+            'requester_name' => '신청자 이름',
+        ];
+    }
+
+    /**
+     * 클레임 알림 정의 한 건을 만듭니다.
+     *
+     * @param  string  $claimType  클레임 유형 값 (exchange|return|refund)
+     * @param  string  $key  알림 키 (requested|approved|…)
+     * @param  array{ko: string, en: string, en_lower: string}  $words  유형 낱말
+     * @param  array<string, mixed>  $phrase  상태별 문구 조각
+     * @return array<string, mixed> 알림 정의
+     */
+    private function claimNotificationDefinition(string $claimType, string $key, array $words, array $phrase): array
+    {
+        $rows = $phrase['rows'][$claimType] ?? $phrase['rows']['*'] ?? [];
+        $baseRows = [
+            ['ko' => '신청번호', 'en' => 'Claim No.', 'var' => 'claim_number'],
+            ['ko' => '주문번호', 'en' => 'Order No.', 'var' => 'order_number'],
+            ['ko' => '진행 상태', 'en' => 'Status', 'var' => 'status_label'],
+        ];
+        $allRows = array_merge($baseRows, $rows);
+
+        return [
+            'type' => $claimType.'_'.$key,
+            'hook_prefix' => 'sirsoft-ecommerce',
+            'name' => $this->claimNotificationText($phrase['name'], $words),
+            'description' => $this->claimNotificationText($phrase['description'], $words),
+            'channels' => ['mail', 'database'],
+            'hooks' => [ClaimStatusNotificationListener::NOTIFY_HOOK_PREFIX.$claimType.'.notify_'.$key],
+            'variables' => $this->claimNotificationVariables($allRows),
+            'templates' => [
+                [
+                    'channel' => 'mail',
+                    'recipients' => [['type' => 'trigger_user']],
+                    'subject' => [
+                        'ko' => '[{app_name}] '.$this->claimNotificationText($phrase['heading'], $words)['ko'].' (신청번호: {claim_number})',
+                        'en' => '[{app_name}] '.$this->claimNotificationText($phrase['heading'], $words)['en'].' (Claim #{claim_number})',
+                    ],
+                    'body' => [
+                        'ko' => $this->claimNotificationMailBody(
+                            'ko',
+                            $this->claimNotificationText($phrase['heading'], $words)['ko'],
+                            $this->claimNotificationText($phrase['lead'], $words)['ko'],
+                            $allRows,
+                            '신청 내역 보기'
+                        ),
+                        'en' => $this->claimNotificationMailBody(
+                            'en',
+                            $this->claimNotificationText($phrase['heading'], $words)['en'],
+                            $this->claimNotificationText($phrase['lead'], $words)['en'],
+                            $allRows,
+                            'View Claim Details'
+                        ),
+                    ],
+                ],
+                [
+                    'channel' => 'database',
+                    'recipients' => [['type' => 'trigger_user']],
+                    'subject' => $this->claimNotificationText($phrase['heading'], $words),
+                    'body' => $this->claimNotificationText($phrase['summary'], $words),
+                    'click_url' => '{claim_url}',
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * 클레임 철회 관리자 알림 정의를 만듭니다.
+     *
+     * 신청자가 스스로 철회한 사실을 그 신청자에게 되돌려 보낼 이유가 없다 — 알아야 하는
+     * 쪽은 운영자다. 유형 3종이 이 정의 하나를 공유하며 유형은 본문 변수로 실린다.
+     *
+     * @return array<string, mixed> 알림 정의
+     */
+    private function claimWithdrawnDefinition(): array
+    {
+        $rows = [
+            ['ko' => '신청번호', 'en' => 'Claim No.', 'var' => 'claim_number'],
+            ['ko' => '클레임 유형', 'en' => 'Claim Type', 'var' => 'claim_type_label'],
+            ['ko' => '주문번호', 'en' => 'Order No.', 'var' => 'order_number'],
+            ['ko' => '신청자', 'en' => 'Requester', 'var' => 'requester_name'],
+        ];
+
+        return [
+            'type' => 'claim_withdrawn',
+            'hook_prefix' => 'sirsoft-ecommerce',
+            'name' => ['ko' => '클레임 철회 알림', 'en' => 'Claim Withdrawn Notification'],
+            'description' => ['ko' => '고객이 교환·반품·환불 신청을 철회하면 관리자에게 발송', 'en' => 'Sent to admins when a customer withdraws an exchange, return, or refund request'],
+            'channels' => ['mail', 'database'],
+            'hooks' => [ClaimStatusNotificationListener::WITHDRAWN_HOOK],
+            'variables' => $this->claimNotificationVariables($rows),
+            'templates' => [
+                [
+                    'channel' => 'mail',
+                    'recipients' => [['type' => 'role', 'value' => 'admin', 'exclude_trigger_user' => true]],
+                    'subject' => [
+                        'ko' => '[{app_name}] 클레임 신청이 철회되었습니다 (신청번호: {claim_number})',
+                        'en' => '[{app_name}] A claim request has been withdrawn (Claim #{claim_number})',
+                    ],
+                    'body' => [
+                        'ko' => $this->claimNotificationMailBody(
+                            'ko',
+                            '클레임 신청이 철회되었습니다',
+                            '{name}님, 고객이 {claim_type_label} 신청을 철회했습니다.',
+                            $rows,
+                            '클레임 관리 바로가기'
+                        ),
+                        'en' => $this->claimNotificationMailBody(
+                            'en',
+                            'A Claim Request Has Been Withdrawn',
+                            'Dear {name}, a customer has withdrawn their {claim_type_label} request.',
+                            $rows,
+                            'Go to Claim Management'
+                        ),
+                    ],
+                ],
+                [
+                    'channel' => 'database',
+                    'recipients' => [['type' => 'role', 'value' => 'admin', 'exclude_trigger_user' => true]],
+                    'subject' => ['ko' => '클레임 신청 철회', 'en' => 'Claim Request Withdrawn'],
+                    'body' => [
+                        'ko' => '{requester_name}님이 {claim_type_label} 신청({claim_number})을 철회했습니다.',
+                        'en' => '{requester_name} withdrew their {claim_type_label} request ({claim_number}).',
+                    ],
+                    'click_url' => '{claim_url}',
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * 문구 조각의 유형 낱말을 치환합니다.
+     *
+     * @param  array{ko: string, en: string}  $text  문구 조각
+     * @param  array{ko: string, en: string, en_lower: string}  $words  유형 낱말
+     * @return array{ko: string, en: string} 치환된 문구
+     */
+    private function claimNotificationText(array $text, array $words): array
+    {
+        return [
+            'ko' => strtr($text['ko'], [':type' => $words['ko'], ':Type' => $words['ko']]),
+            'en' => strtr($text['en'], [':Type' => $words['en'], ':type' => $words['en_lower']]),
+        ];
+    }
+
+    /**
+     * 본문 표에 쓰인 변수 목록을 만듭니다.
+     *
+     * 표에 없더라도 모든 클레임 알림이 공통으로 제공하는 변수(수신자·사이트·상세 URL)는
+     * 항상 포함한다 — 운영자가 템플릿을 고칠 때 쓸 수 있는 값이기 때문이다.
+     *
+     * @param  array<int, array{ko: string, en: string, var: string}>  $rows  본문 표 행
+     * @return array<int, array{key: string, description: string}> 변수 목록
+     */
+    private function claimNotificationVariables(array $rows): array
+    {
+        $descriptions = $this->claimNotificationVariableDescriptions();
+        $keys = ['name', 'app_name', 'claim_type_label', 'claim_url', 'site_url'];
+
+        foreach ($rows as $row) {
+            $keys[] = $row['var'];
+        }
+
+        $variables = [];
+
+        foreach (array_unique($keys) as $key) {
+            $variables[] = ['key' => $key, 'description' => $descriptions[$key] ?? $key];
+        }
+
+        return $variables;
+    }
+
+    /**
+     * 클레임 알림 메일 본문 HTML 을 만듭니다.
+     *
+     * 주문 알림과 같은 서식(제목 밑줄 · 회색 정보 상자 · CTA 버튼 · 발신 안내)을 쓴다 —
+     * 같은 상점에서 온 메일이 알림마다 다른 모양이면 수신자가 사칭 메일과 구분하기 어렵다.
+     *
+     * @param  string  $locale  로케일 (ko|en — 본문 글꼴과 발신 안내 문구가 갈린다)
+     * @param  string  $heading  제목
+     * @param  string  $lead  머리말
+     * @param  array<int, array{ko: string, en: string, var: string}>  $rows  정보 상자 행
+     * @param  string  $buttonText  CTA 버튼 문구
+     * @return string 메일 본문 HTML
+     */
+    private function claimNotificationMailBody(string $locale, string $heading, string $lead, array $rows, string $buttonText): string
+    {
+        $isKo = $locale === 'ko';
+        $fontFamily = $isKo ? '\'Malgun Gothic\',sans-serif' : 'Arial,sans-serif';
+
+        $rowsHtml = '';
+        foreach ($rows as $row) {
+            $label = $isKo ? $row['ko'] : $row['en'];
+            $rowsHtml .= '<p style="margin:5px 0"><strong>'.$label.':</strong> {'.$row['var'].'}</p>';
+        }
+
+        return '<div style="font-family:'.$fontFamily.';max-width:600px;margin:0 auto;padding:20px">'
+            .'<h2 style="color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px">'.$heading.'</h2>'
+            .'<p style="color:#555;line-height:1.6">'.$lead.'</p>'
+            .'<div style="background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0">'
+            .$rowsHtml
+            .'</div>'
+            .$this->notificationButton($buttonText, '{claim_url}')
+            .'<hr style="border:none;border-top:1px solid #eee;margin:20px 0">'
+            .'<p style="color:#999;font-size:12px">'
+            .($isKo ? '본 메일은 {app_name}에서 발송되었습니다.' : 'This email was sent from {app_name}.')
+            .'</p>'
+            .'</div>';
+    }
+
     /**
      * 이메일용 CTA 버튼 HTML 을 반환합니다.
      *
@@ -2248,6 +2763,7 @@ class Module extends AbstractModule
             CouponActivityLogListener::class,
             ShippingPolicyActivityLogListener::class,
             CategoryActivityLogListener::class,
+            ClaimActivityLogListener::class,
             EcommerceAdminActivityLogListener::class,
             EcommerceUserActivityLogListener::class,
             ActivityLogDescriptionResolver::class,
@@ -2269,7 +2785,9 @@ class Module extends AbstractModule
             AssignDefaultShippingCountryOnRegisterListener::class,
             UserMileageCleanupListener::class,
             EcommerceNotificationDataListener::class,
+            ClaimNotificationDataListener::class,
             OrderStatusNotificationListener::class,
+            ClaimStatusNotificationListener::class,
             InjectAppConfigDeviceListener::class,
             IssueCashReceiptOnDepositListener::class,
             PurgeCashReceiptIdentifierListener::class,

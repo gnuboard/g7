@@ -504,8 +504,9 @@ class OrderReturnService
 
         $succeeded = [];
         $skipped = [];
+        $changes = [];
 
-        DB::transaction(function () use ($items, $target, $processedBy, &$succeeded, &$skipped) {
+        DB::transaction(function () use ($items, $target, $processedBy, &$succeeded, &$skipped, &$changes) {
             foreach ($items as $item) {
                 // 끝난 상품(반려·철회·완료)은 전이 게이트가 막지 못한다 — 자기 전이는 언제나 참이라
                 // 이미 반려된 상품에 반려를 다시 지시하면 상태·처리자가 다시 쓰인다. 건너뛰고 보고한다
@@ -534,10 +535,18 @@ class OrderReturnService
                     continue;
                 }
 
+                $previousStatus = $item->option_status;
+
                 $updatedItem = $this->returnOptionRepository->update($item, [
                     'option_status' => $target,
                     'processed_by' => $processedBy ?? $item->processed_by,
                 ]);
+
+                $changes[] = [
+                    'option_id' => $item->id,
+                    'previous' => $previousStatus->value,
+                    'new' => $target->value,
+                ];
 
                 // 반려·철회된 상품은 그 즉시 원 주문옵션을 되돌린다 — 신청서 단위 반려가
                 // 하는 일을 상품 단위로 적용하는 것이다(2026-08-22 PO 확정 ⑤). 미루면 그
@@ -551,7 +560,23 @@ class OrderReturnService
             }
         });
 
-        $this->syncHeaderFromOptions($return->fresh(['returnOptions']), $processedBy);
+        $fresh = $return->fresh(['returnOptions']);
+
+        // 상품 단위 전이는 헤더 전이와 다른 사실이다 — 상품 상태가 갈리면 헤더는 움직이지
+        // 않으므로(`syncHeaderFromOptions` 는 살아 있는 상품이 한 상태로 모일 때만 옮긴다)
+        // 이 훅이 없으면 운영자가 한 상태 변경이 아무 데도 남지 않는다. 헤더가 따라 움직이면
+        // 그 전이는 `status_changed` 가 따로 낸다(이중 기록이 아니라 층이 다른 두 사실).
+        if ($changes !== []) {
+            HookManager::doAction(
+                'sirsoft-ecommerce.claim.return.option_status_changed',
+                $fresh,
+                $changes,
+                $target->value,
+                $processedBy,
+            );
+        }
+
+        $this->syncHeaderFromOptions($fresh, $processedBy);
 
         return ['succeeded' => $succeeded, 'skipped' => $skipped];
     }

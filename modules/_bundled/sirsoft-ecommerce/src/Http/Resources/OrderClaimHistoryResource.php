@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\ResourceCollection;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
+use Modules\Sirsoft\Ecommerce\Support\ClaimUrl;
 
 /**
  * 주문 스코프 클레임 내역 리소스 (D20 — 관리자 주문상세 '클레임 내역' 섹션)
@@ -68,7 +69,7 @@ class OrderClaimHistoryResource extends ClaimResource
             return null;
         }
 
-        return '/admin/ecommerce/claims/'.$claimNumber;
+        return ClaimUrl::adminDetail($claimNumber);
     }
 
     /**

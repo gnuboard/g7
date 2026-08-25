@@ -435,7 +435,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
      * 경로는 비회원 주문 조회 라우트(templates/sirsoft-basic/routes.json) 및
      * OrderController::showByOrderNumber 의 비회원 redirect_to 와 동일하게 유지한다.
      */
-    private const GUEST_ORDER_LOOKUP_SUFFIX = 'guest/orders';
+    public const GUEST_ORDER_LOOKUP_SUFFIX = 'guest/orders';
 
     /**
      * 주문 알림 데이터 배열을 구성합니다.

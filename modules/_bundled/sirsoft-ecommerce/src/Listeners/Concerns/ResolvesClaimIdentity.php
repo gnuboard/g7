@@ -1,0 +1,90 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\Sirsoft\Ecommerce\Listeners\Concerns;
+
+use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
+use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
+use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
+use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
+
+/**
+ * 클레임 신청서 3종의 공통 식별 축(번호·유형·상태)을 해석합니다.
+ *
+ * 교환·반품·환불은 번호와 상태 컬럼 이름이 각각 다르다(`exchange_number`/`exchange_status`
+ * 등). 이 매핑을 소비 지점마다 다시 적으면 유형이 늘거나 컬럼명이 바뀔 때 한 곳만 낡고,
+ * 그 지점의 응답·로그에서만 값이 조용히 null 이 된다. 알림·활동 로그 두 리스너가 같은
+ * 매핑을 쓰므로 여기에 모은다.
+ */
+trait ResolvesClaimIdentity
+{
+    /**
+     * 신청서의 클레임 번호를 반환합니다.
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
+     * @return string|null 클레임 번호 (미채번 시 null)
+     */
+    protected function claimNumberOf(OrderExchange|OrderReturn|OrderRefund $claim): ?string
+    {
+        return match (true) {
+            $claim instanceof OrderExchange => $claim->exchange_number,
+            $claim instanceof OrderReturn => $claim->return_number,
+            default => $claim->refund_number,
+        };
+    }
+
+    /**
+     * 신청서의 현재 상태 Enum 을 반환합니다.
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
+     * @return \BackedEnum|null 상태 Enum
+     */
+    protected function claimStatusOf(OrderExchange|OrderReturn|OrderRefund $claim): ?\BackedEnum
+    {
+        $status = match (true) {
+            $claim instanceof OrderExchange => $claim->exchange_status,
+            $claim instanceof OrderReturn => $claim->return_status,
+            default => $claim->refund_status,
+        };
+
+        return $status instanceof \BackedEnum ? $status : null;
+    }
+
+    /**
+     * 신청서의 현재 상태 값을 반환합니다.
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
+     * @return string|null 상태 값
+     */
+    protected function claimStatusValue(OrderExchange|OrderReturn|OrderRefund $claim): ?string
+    {
+        $status = $this->claimStatusOf($claim);
+
+        return $status?->value;
+    }
+
+    /**
+     * 신청서의 현재 상태 라벨(현재 로케일)을 반환합니다.
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
+     * @return string 상태 라벨 (해석 불가 시 빈 문자열)
+     */
+    protected function claimStatusLabel(OrderExchange|OrderReturn|OrderRefund $claim): string
+    {
+        $status = $this->claimStatusOf($claim);
+
+        return $status !== null && method_exists($status, 'label') ? $status->label() : '';
+    }
+
+    /**
+     * 신청서의 클레임 유형을 반환합니다.
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
+     * @return ClaimTypeEnum 클레임 유형
+     */
+    protected function claimTypeOf(OrderExchange|OrderReturn|OrderRefund $claim): ClaimTypeEnum
+    {
+        return $claim->claimType();
+    }
+}

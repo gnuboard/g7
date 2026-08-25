@@ -166,6 +166,19 @@ notification_definitions 레코드:
 
 **데이터 추출**: `{hookPrefix}.notification.extract_data` Filter 훅으로 수신자와 데이터를 추출합니다.
 
+### 상태별 알림은 상태마다 고유 훅이 필요하다
+
+`NotificationHookListener` 는 정의의 `hooks` 에 적힌 이름을 **그대로** 구독한다 — 그 훅이 발화하면 그 훅에 묶인 정의가 **전부** 발송된다. 그래서 여러 상태를 하나의 전이 훅(`*.status_changed` 등)에 묶으면, 어떤 상태로 옮겨도 그 훅에 묶인 알림이 한꺼번에 나간다.
+
+| ❌ 금지 | ✅ 올바른 사용 |
+|--------|---------------|
+| 상태 N종의 정의를 공통 전이 훅 하나에 묶기 | 상태마다 고유한 알림 전용 훅(`{도메인}.notify_{상태}` 등)을 두고 매핑 리스너가 전이 훅을 받아 그 하나만 발화 |
+| 매핑 기준을 재조회한 모델의 현재 상태로 삼기 | 발화 측이 넘긴 **전이 시점 목표 상태**(스칼라)로 판정 — 리스너는 큐로 디스패치되고 워커가 모델을 PK 로 재조회하므로, 큐가 밀린 사이 또 전이되면 엉뚱한 알림이 나간다 |
+| 발화 목록과 정의 목록을 각각 손으로 유지 | 한쪽을 정본으로 두고 다른 쪽이 읽게 한다 — 갈라지면 **발화되는데 정의가 없거나(무음) 정의만 있고 아무도 발화하지 않는다(사문)** |
+| 같은 사실을 알리는 도메인 훅과 알림 훅을 둘 다 정의에 묶기 | 알림 소스는 하나로 — 두 훅이 같은 순간에 발화하는 경로가 있으면 같은 고객이 두 통을 받는다 |
+
+발화 측이 이 규칙을 따른 예: 주문 축은 `order.after_status_change` 를 `OrderStatusNotificationListener` 가 받아 `order.after_ship` 등 순수 알림 훅으로 옮기고, 정의는 그 알림 훅에만 묶는다.
+
 ### 큐 워커에서의 사용자/로케일 컨텍스트
 
 알림 발송 리스너는 기본적으로 큐로 디스패치되며, 큐 워커는 별도 프로세스라 `Auth::user()`/`App::getLocale()`이 모두 리셋됩니다. 그러나 G7은 디스패치 시점의 컨텍스트를 자동 복원하므로 다음이 보장됩니다:
@@ -300,6 +313,8 @@ return [
 | inquiry_replied | sirsoft-ecommerce.product_inquiry.after_reply | mail, database |
 
 > `new_order_admin` 의 `order.after_admin_notify` 훅은 결제수단별로 발화 시점이 다르다. `OrderProcessingService` 가 무통장/비-PG/0원 주문은 주문 생성 시점에, 카드(PG) 주문은 결제완료(`completePayment`) 시점에 1회 발화한다. 카드 주문은 생성 시점이 `pending_order`(결제 전)라 그 시점 발송 시 결제 미완료/이탈 주문에 오발송된다. `order_pending_deposit` 는 무통장 한정으로 `EcommerceNotificationDataListener` 가 dbank 외 결제수단을 빈 결과로 게이팅한다.
+>
+> 위 표는 주문·문의 축만 담은 발췌다. 이커머스 정의의 정본은 `module.php::getNotificationDefinitions()` 이며, 여기에 마일리지 소멸 예정 1종과 클레임(교환·반품·환불) 상태별 29종이 더 있다. 클레임 29종은 유형 × 고객 가시 상태의 곱이라 표로 옮기면 곧 낡으므로 옮기지 않는다 — 목록과 훅 이름은 `ClaimStatusNotificationListener::notifiableStatuses()` 를 읽는다.
 
 **발송 리스너**: `EcommerceNotificationListener` (방식 A — 직접 호출)
 

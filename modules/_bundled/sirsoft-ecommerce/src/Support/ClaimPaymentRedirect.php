@@ -21,11 +21,16 @@ use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
  */
 final class ClaimPaymentRedirect
 {
-    /** 회원 신청서 상세 주소 템플릿 */
-    public const MEMBER_DETAIL_URL = '/mypage/claims/{claimNumber}';
+    /**
+     * 회원 신청서 상세 주소 템플릿
+     *
+     * 값은 `ClaimUrl` 이 소유한다 — 이 상수는 기존 소비 지점(결제 플러그인 4종)의
+     * 참조를 끊지 않기 위한 별칭이며, 주소 규칙을 바꿀 때는 `ClaimUrl` 만 고친다.
+     */
+    public const MEMBER_DETAIL_URL = ClaimUrl::MEMBER_DETAIL;
 
     /** 비회원 신청서 상세 주소 템플릿 (`{shopBase}` 는 상점 기준 경로로 치환) */
-    public const GUEST_DETAIL_URL = '{shopBase}/guest/claims/{claimNumber}';
+    public const GUEST_DETAIL_URL = ClaimUrl::GUEST_DETAIL;
 
     /**
      * 결제 성공 후 돌아갈 신청서 상세 주소를 반환합니다.
@@ -98,13 +103,11 @@ final class ClaimPaymentRedirect
         $isGuest = $order !== null && $order->user_id === null;
 
         if ($claimNumber === null || $claimNumber === '') {
-            $path = $isGuest ? (ShopPathResolver::base() ?: '/') : '/mypage/claims';
+            $path = $isGuest ? (ShopPathResolver::base() ?: '/') : ClaimUrl::MEMBER_LIST;
         } else {
-            $template = $isGuest ? self::GUEST_DETAIL_URL : self::MEMBER_DETAIL_URL;
-            $path = strtr($template, [
-                '{shopBase}' => ShopPathResolver::base(),
-                '{claimNumber}' => $claimNumber,
-            ]);
+            $path = $isGuest
+                ? ClaimUrl::guestDetail($claimNumber)
+                : ClaimUrl::memberDetail($claimNumber);
         }
 
         $queryString = http_build_query($query);

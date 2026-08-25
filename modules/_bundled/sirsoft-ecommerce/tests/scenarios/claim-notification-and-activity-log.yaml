@@ -1,0 +1,122 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 이 없어 fallback YAML 파서가
+#   nested axes 를 null 로 읽어 expandCases 가 throw 한다(형제 시나리오
+#   order-status-notification.yaml 과 동일 한계). 아래 effects ↔ test_files 의
+#   테스트 메서드가 1:1 대응하며, 브라우저 축(E2E)은 S15 가 spec 을 얹을 때 채운다.
+feature: 클레임 알림 29종 + 활동 로그 (S7 / §4-8)
+
+description: |
+  교환·반품·환불 신청서의 고객 가시 상태 전이 전수(29종)에 알림을 붙이고, 같은 훅에서
+  활동 로그를 남긴다.
+
+  핵심 동작:
+    - 도메인 훅(claim.{type}.requested / status_changed)을 ClaimStatusNotificationListener 가
+      상태별 알림 전용 훅(claim.{type}.notify_{상태})으로 매핑 발화한다.
+      알림 정의 한 건은 훅 하나에 묶이므로 상태마다 고유 훅이 필요하다.
+    - 철회는 신청자가 아니라 관리자에게 간다(claim.notify_withdrawn — 유형 3종 공용 1건).
+    - 환불 `processing`(PG 요청 중)과 미전이 재호출은 아무것도 발화하지 않는다.
+    - 매핑·기록 기준은 전이 시점에 캡처된 목표 상태다(큐 지연 중 재전이 안전성).
+    - ClaimNotificationDataListener 가 29종 공용 치환 변수와 수신자 컨텍스트를 만든다.
+      회원=trigger_user_id / 비회원=코어 표준 키 guest_recipient.
+      비회원 링크는 상세가 아니라 비회원 주문 조회 화면이다(메일에는 조회 토큰이 없다).
+    - 금액은 주문 통화 스냅샷으로 환산해 포맷한다.
+    - ClaimActivityLogListener 가 접수·전이·금액 수정·환불 실행·추가결제·첨부를 기록한다.
+      전이는 status_changed 한 축으로만 남긴다(구체 훅 이중 구독 시 한 전이가 두 줄).
+    - 상품 단위 전이(D25)는 헤더와 층이 다른 사실이라 자기 훅으로 따로 남긴다 —
+      상품 상태가 갈리면 헤더가 움직이지 않아 그 줄이 없으면 흔적이 전혀 남지 않는다.
+    - 결제 대기 건 취소(신청서 종결·청구액 재산정·고아 정리 3경로)도 기록한다.
+      고아 정리는 신청서가 이미 사라진 건도 취소하므로 훅에 유형 세그먼트를 두지 않는다.
+    - P5: payment_completed 훅은 신청서를 `paid` 로 옮긴 **뒤에** 발화한다.
+
+axes:
+  claim_type:
+    - exchange       # 고객 가시 상태 13
+    - return         # 고객 가시 상태 10
+    - refund         # 고객 가시 상태 5 (processing 제외)
+  event:
+    - requested
+    - payment_requested        # payment_pending 진입 (교환·반품)
+    - payment_completed        # paid 진입 (교환·반품)
+    - approved
+    - on_hold
+    - rejected
+    - collection_ready         # 교환·반품
+    - collecting               # 교환·반품
+    - collected                # 교환·반품
+    - redelivery_ready         # 교환
+    - redelivering             # 교환
+    - redelivered              # 교환
+    - completed
+    - withdrawn                # 관리자 수신 1종으로 수렴
+    - processing               # 환불 전용 — 알림 대상 아님
+  requester:
+    - member                   # trigger_user_id
+    - guest                    # guest_recipient
+  channel:
+    - mail
+    - database
+  # 활동 로그 전용 축 — 상품 단위 전이(D25)에서 헤더가 따라 움직이는지가 이력 줄 수를 가른다.
+  item_transition_outcome:
+    - header_follows          # 상품 줄 + 헤더 줄 (층이 다른 두 사실)
+    - header_stays            # 상품 줄만 (상품 상태가 갈린 조합)
+    - nothing_moved           # 줄 없음 (전이가 건너뛰어짐)
+
+exclusions:
+  - { claim_type: refund, event: payment_requested, reason: "환불신청서는 추가 청구 축이 없다" }
+  - { claim_type: refund, event: payment_completed, reason: "환불신청서는 추가 청구 축이 없다" }
+  - { claim_type: refund, event: collection_ready, reason: "환불은 회수 단계가 없다" }
+  - { claim_type: refund, event: collecting, reason: "환불은 회수 단계가 없다" }
+  - { claim_type: refund, event: collected, reason: "환불은 회수 단계가 없다" }
+  - { claim_type: refund, event: redelivery_ready, reason: "재발송은 교환 전용" }
+  - { claim_type: refund, event: redelivering, reason: "재발송은 교환 전용" }
+  - { claim_type: refund, event: redelivered, reason: "재발송은 교환 전용" }
+  - { claim_type: return, event: redelivery_ready, reason: "재발송은 교환 전용" }
+  - { claim_type: return, event: redelivering, reason: "재발송은 교환 전용" }
+  - { claim_type: return, event: redelivered, reason: "재발송은 교환 전용" }
+  - { claim_type: exchange, event: processing, reason: "processing 은 환불신청서 전용 상태" }
+  - { claim_type: return, event: processing, reason: "processing 은 환불신청서 전용 상태" }
+
+effects:
+  # 정의 계약 (Unit — ClaimNotificationDefinitionsTest)
+  - twenty_nine_claim_notification_definitions_exist
+  - definition_hooks_match_listener_mapping_one_to_one
+  - every_claim_definition_has_mail_and_database_templates_in_ko_and_en
+  - every_template_placeholder_is_declared_as_a_variable
+  - customer_notifications_target_trigger_user_and_withdrawal_targets_admins
+  # 매핑 (Feature — ClaimStatusNotificationTest)
+  - request_fires_only_the_requested_notification_hook
+  - transition_fires_only_the_mapped_notification_hook
+  - withdrawal_fires_admin_hook_and_no_customer_hook
+  - non_customer_visible_status_fires_nothing
+  - unchanged_status_recall_fires_nothing
+  - mapping_follows_captured_target_not_current_model_state
+  # 데이터·수신자 (Unit — ClaimNotificationDataListenerTest)
+  - member_claim_routes_to_trigger_user_and_links_to_mypage_detail
+  - guest_claim_uses_core_guest_recipient_key_and_lookup_screen
+  - payment_request_data_carries_charge_and_outstanding_amounts
+  - admin_withdrawal_data_links_to_admin_screen_and_defers_recipient_name
+  - non_claim_notification_types_pass_through_untouched
+  # 활동 로그 (Unit — ClaimActivityLogListenerTest)
+  - request_writes_one_activity_row_with_the_claim_number
+  - service_transition_writes_exactly_one_status_change_row
+  - status_change_records_the_captured_target
+  - amount_edits_are_recorded_in_the_core_changes_shape
+  - amount_edits_with_no_effective_change_record_no_changes
+  - item_level_transition_is_recorded_even_when_the_header_does_not_move
+  - item_level_transition_that_moves_the_header_records_both_facts
+  - item_level_call_that_moves_nothing_records_nothing
+  - pending_claim_payment_cancellation_is_recorded_with_its_reason
+  - pending_payment_cancelled_by_the_reaper_is_recorded_without_a_claim
+  # 훅 순서 (Unit — ClaimPaymentServiceTest)
+  - payment_completion_hook_sees_the_claim_already_moved_to_paid
+  - partial_payment_does_not_fire_the_completion_hook
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Notifications/ClaimNotificationDefinitionsTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Notifications/ClaimStatusNotificationTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/ClaimNotificationDataListenerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/ClaimActivityLogListenerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ClaimPaymentServiceTest.php
+
+validation:
+  audit_rule: test-scenario-coverage

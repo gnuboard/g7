@@ -6,6 +6,7 @@ use App\Extension\Helpers\NotificationSyncHelper;
 use App\Extension\ModuleManager;
 use App\Models\NotificationDefinition;
 use App\Models\NotificationTemplate;
+use Modules\Sirsoft\Ecommerce\Listeners\ClaimStatusNotificationListener;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
@@ -41,7 +42,15 @@ class EcommerceNotificationDefinitionsTest extends ModuleTestCase
     {
         $definitions = $this->getModuleDefinitions();
 
-        $this->assertCount(count($this->expectedTypes), $definitions);
+        // 클레임 알림(§4-8)은 유형 × 고객 가시 상태의 곱이라 여기에 다시 열거하지 않는다 —
+        // 두 벌이 되면 한쪽만 늘어난 채로 통과한다. 그 집합의 전수 검증은
+        // ClaimNotificationDefinitionsTest 가 담당하고, 여기서는 개수만 합산한다.
+        $claimCount = 1; // claim_withdrawn (관리자 수신)
+        foreach (ClaimStatusNotificationListener::notifiableStatuses() as $keys) {
+            $claimCount += count($keys);
+        }
+
+        $this->assertCount(count($this->expectedTypes) + $claimCount, $definitions);
 
         $types = array_column($definitions, 'type');
         foreach ($this->expectedTypes as $expected) {

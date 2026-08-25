@@ -52,6 +52,13 @@ return [
         'admin_deduct' => 'Admin Deduct',
         'extend_expiry' => 'Expiry Extended',
         'adjust' => 'Earning Edited',
+        // Claims (exchange / return / refund / additional payment / attachment)
+        'request' => 'Request Received',
+        'option_status_change' => 'Item Status Change',
+        'update_amounts' => 'Amounts Updated',
+        'complete' => 'Completed',
+        'refund' => 'Refunded',
+        'execute' => 'Executed',
     ],
 
     'description' => [
@@ -219,6 +226,25 @@ return [
         'mileage_admin_deduct' => 'Admin deducted mileage (:amount)',
         'mileage_extend_expiry' => 'Mileage expiry extended (:days days)',
         'mileage_adjust' => 'Mileage earning edited (:amount)',
+
+        // Claims (exchange / return / refund) — status values live in properties, the text carries identifiers only
+        'claim_exchange_request' => 'Exchange request received (:claim_number)',
+        'claim_return_request' => 'Return request received (:claim_number)',
+        'claim_refund_request' => 'Refund request received (:claim_number)',
+        'claim_exchange_status_change' => 'Exchange request status changed (:claim_number)',
+        'claim_return_status_change' => 'Return request status changed (:claim_number)',
+        'claim_refund_status_change' => 'Refund request status changed (:claim_number)',
+        'claim_exchange_option_status_change' => 'Exchange request item status changed (:claim_number, :count item(s))',
+        'claim_return_option_status_change' => 'Return request item status changed (:claim_number, :count item(s))',
+        'claim_exchange_update_amounts' => 'Exchange request amounts updated (:claim_number)',
+        'claim_return_update_amounts' => 'Return request amounts updated (:claim_number)',
+        'claim_refund_update_amounts' => 'Refund request amounts updated (:claim_number)',
+        'claim_refund_execute' => 'Refund executed (:claim_number)',
+        'claim_payment_complete' => 'Claim additional payment completed (:payment_number)',
+        'claim_payment_refund' => 'Claim additional payment refunded (:payment_number)',
+        'claim_payment_cancel' => 'Claim additional payment request cancelled (:payment_number)',
+        'claim_image_upload' => 'Claim attachment uploaded (:original_name)',
+        'claim_image_delete' => 'Claim attachment deleted (:original_name)',
     ],
 
     // ChangeDetector field labels
@@ -316,5 +342,13 @@ return [
         'option_name' => 'Option Name',
         'sku' => 'SKU',
         'price_adjustment' => 'Price Adjustment',
+
+        // Claim amount edits (D18)
+        'claim_shipping_fee' => 'Claim Shipping Fee',
+        'total_charge_amount' => 'Total Amount Due',
+        'charge_method' => 'Charge Method',
+        'refund_amount' => 'Refund Amount',
+        'refund_points_amount' => 'Refunded Mileage',
+        'refund_method' => 'Refund Method',
     ],
 ];

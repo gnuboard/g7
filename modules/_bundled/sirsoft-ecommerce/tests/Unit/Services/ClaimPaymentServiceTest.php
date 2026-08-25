@@ -600,6 +600,29 @@ class ClaimPaymentServiceTest extends ModuleTestCase
         $this->assertSame(6000.0, (float) $payment->fresh()->points_amount);
     }
 
+    /**
+     * P5 (17차 `/validate-plan`) — 훅 소비자(알림·활동 로그)는 신청서 상태를 읽는다.
+     *
+     * 훅이 전이보다 앞서면 정상 경로에서도 리스너가 보는 상태가 언제나 `payment_pending`
+     * 이라 '결제완료' 를 통지하면서 결제대기라고 적게 된다. `docs/api/claim-payments.md`
+     * 도 "옮겨지고 … 훅이 발행됩니다" 로 이 순서를 계약으로 공표한다.
+     */
+    public function test_payment_completion_hook_sees_the_claim_already_moved_to_paid(): void
+    {
+        $return = $this->requestedReturn();
+        $this->grantMileage((int) $return->requested_by, 10000);
+        $payment = $this->service->initiateForRequest($return, PaymentMethodEnum::POINT->value);
+
+        $observed = [];
+        HookManager::addAction('sirsoft-ecommerce.claim.return.payment_completed', function ($claim) use (&$observed) {
+            $observed[] = $claim->return_status->value;
+        });
+
+        $this->service->pay($payment, PaymentMethodEnum::POINT->value, (int) $return->requested_by);
+
+        $this->assertSame([ReturnStatusEnum::PAID->value], $observed);
+    }
+
     public function test_partial_payment_leaves_the_claim_in_payment_pending_without_firing_the_completion_hook(): void
     {
         $return = $this->requestedReturn();

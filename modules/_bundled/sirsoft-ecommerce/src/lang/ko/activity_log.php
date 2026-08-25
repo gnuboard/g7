@@ -53,6 +53,13 @@ return [
         'admin_deduct' => '관리자 차감',
         'extend_expiry' => '유효기간 연장',
         'adjust' => '적립건 수정',
+        // 클레임 (교환/반품/환불/추가결제/첨부)
+        'request' => '신청 접수',
+        'option_status_change' => '상품 단위 상태 변경',
+        'update_amounts' => '금액 수정',
+        'complete' => '완료',
+        'refund' => '환급',
+        'execute' => '실행',
     ],
 
     'description' => [
@@ -219,6 +226,25 @@ return [
         'mileage_admin_deduct' => '관리자 마일리지 차감 (:amount)',
         'mileage_extend_expiry' => '마일리지 유효기간 연장 (:days일)',
         'mileage_adjust' => '마일리지 적립건 수정 (:amount)',
+
+        // 클레임 (교환/반품/환불) — 상태 값은 properties 에 남기고 문구에는 식별자만 담는다
+        'claim_exchange_request' => '교환 신청 접수 (:claim_number)',
+        'claim_return_request' => '반품 신청 접수 (:claim_number)',
+        'claim_refund_request' => '환불 신청 접수 (:claim_number)',
+        'claim_exchange_status_change' => '교환 신청서 상태 변경 (:claim_number)',
+        'claim_return_status_change' => '반품 신청서 상태 변경 (:claim_number)',
+        'claim_refund_status_change' => '환불 신청서 상태 변경 (:claim_number)',
+        'claim_exchange_option_status_change' => '교환 신청서 상품 단위 상태 변경 (:claim_number · :count건)',
+        'claim_return_option_status_change' => '반품 신청서 상품 단위 상태 변경 (:claim_number · :count건)',
+        'claim_exchange_update_amounts' => '교환 신청서 금액 수정 (:claim_number)',
+        'claim_return_update_amounts' => '반품 신청서 금액 수정 (:claim_number)',
+        'claim_refund_update_amounts' => '환불 신청서 금액 수정 (:claim_number)',
+        'claim_refund_execute' => '환불 실행 (:claim_number)',
+        'claim_payment_complete' => '클레임 추가결제 완료 (:payment_number)',
+        'claim_payment_refund' => '클레임 추가결제 환급 (:payment_number)',
+        'claim_payment_cancel' => '클레임 추가결제 대기 취소 (:payment_number)',
+        'claim_image_upload' => '클레임 첨부 업로드 (:original_name)',
+        'claim_image_delete' => '클레임 첨부 삭제 (:original_name)',
     ],
 
     // ChangeDetector 필드 라벨
@@ -316,5 +342,13 @@ return [
         'option_name' => '옵션명',
         'sku' => 'SKU',
         'price_adjustment' => '가격 조정',
+
+        // 클레임 금액 수정 (D18)
+        'claim_shipping_fee' => '클레임 배송비',
+        'total_charge_amount' => '총 청구 금액',
+        'charge_method' => '청구 방식',
+        'refund_amount' => '환불 금액',
+        'refund_points_amount' => '환불 마일리지',
+        'refund_method' => '환불 수단',
     ],
 ];

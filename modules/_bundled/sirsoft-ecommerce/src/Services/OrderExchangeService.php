@@ -555,8 +555,9 @@ class OrderExchangeService
 
         $succeeded = [];
         $skipped = [];
+        $changes = [];
 
-        DB::transaction(function () use ($exchange, $items, $target, $processedBy, &$succeeded, &$skipped) {
+        DB::transaction(function () use ($exchange, $items, $target, $processedBy, &$succeeded, &$skipped, &$changes) {
             foreach ($items as $item) {
                 // 끝난 상품(반려·철회·완료)은 전이 게이트가 막지 못한다 — 자기 전이는 언제나 참이라
                 // 이미 반려된 상품에 반려를 다시 지시하면 그 상품의 부수효과가 한 번 더 돈다.
@@ -585,6 +586,8 @@ class OrderExchangeService
                     continue;
                 }
 
+                $previousStatus = $item->option_status;
+
                 try {
                     $this->transitionItem($exchange, $item, $target, $processedBy);
                 } catch (OrderClaimException $e) {
@@ -595,11 +598,33 @@ class OrderExchangeService
                     continue;
                 }
 
+                $changes[] = [
+                    'option_id' => $item->id,
+                    'previous' => $previousStatus->value,
+                    'new' => $target->value,
+                ];
+
                 $succeeded[] = $item->id;
             }
         });
 
-        $this->syncHeaderFromOptions($exchange->fresh(['exchangeOptions']), $processedBy);
+        $fresh = $exchange->fresh(['exchangeOptions']);
+
+        // 상품 단위 전이는 헤더 전이와 다른 사실이다 — 상품 상태가 갈리면 헤더는 움직이지
+        // 않으므로(`syncHeaderFromOptions` 는 살아 있는 상품이 한 상태로 모일 때만 옮긴다)
+        // 이 훅이 없으면 운영자가 한 상태 변경이 아무 데도 남지 않는다. 헤더가 따라 움직이면
+        // 그 전이는 `status_changed` 가 따로 낸다(이중 기록이 아니라 층이 다른 두 사실).
+        if ($changes !== []) {
+            HookManager::doAction(
+                'sirsoft-ecommerce.claim.exchange.option_status_changed',
+                $fresh,
+                $changes,
+                $target->value,
+                $processedBy,
+            );
+        }
+
+        $this->syncHeaderFromOptions($fresh, $processedBy);
 
         return ['succeeded' => $succeeded, 'skipped' => $skipped];
     }

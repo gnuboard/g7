@@ -1,0 +1,229 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\Sirsoft\Ecommerce\Listeners;
+
+use App\Contracts\Extension\HookListenerInterface;
+use App\Extension\HookManager;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
+use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
+use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
+use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
+
+/**
+ * 클레임 상태전이 알림 매핑 리스너 (§4-8 — 고객 가시 상태 전수 29종)
+ *
+ * 교환·반품·환불 서비스가 발화하는 도메인 훅(`claim.{type}.requested`,
+ * `claim.{type}.status_changed`)을 받아 알림 전용 훅(`claim.{type}.notify_{status}`)
+ * 으로 매핑 발화한다. 주문 축의 `OrderStatusNotificationListener` 와 같은 구조다.
+ *
+ * ## 왜 도메인 훅에 알림 정의를 직접 붙이지 않는가
+ *
+ * 알림 정의 한 건은 훅 이름 하나에 묶인다(`NotificationHookListener::registerDynamicHooks`).
+ * `status_changed` 는 모든 전이에서 발화하므로 여기에 13종 정의를 묶으면 어떤 전이에서든
+ * 13통이 한꺼번에 나간다. 그래서 상태마다 고유한 알림 훅이 하나씩 필요하다.
+ * `claim.{type}.approved` 같은 기존 구체 훅은 일부 상태에만 있고(승인·반려·철회·완료)
+ * 활동 로그도 함께 구독하는 도메인 훅이라, 알림 축은 `notify_` 접두 훅으로 분리한다.
+ *
+ * ## 매핑 기준은 전이 시점에 캡처된 목표 상태다
+ *
+ * 이 리스너는 자동발견으로 큐 디스패치되고 워커가 신청서를 PK 로 재조회한다. 큐가 밀린
+ * 사이 신청서가 또 전이되면 모델의 현재 상태는 "지금" 값이라 엉뚱한 알림이 나간다.
+ * 그래서 매핑은 발화 측이 넘긴 스칼라 목표 상태로만 판정한다(주문 축 N1 과 동일).
+ *
+ * ## 철회는 관리자 수신 1종으로 모은다
+ *
+ * 신청자가 스스로 철회한 사실을 그 신청자에게 되돌려 보낼 이유가 없다 — 알아야 하는 쪽은
+ * 운영자다. 유형 3종이 같은 알림(`claim_withdrawn`)을 쓰며 유형은 본문 변수로 실린다.
+ */
+class ClaimStatusNotificationListener implements HookListenerInterface
+{
+    /** 알림 전용 훅 접두 (도메인 훅과 구분) */
+    public const NOTIFY_HOOK_PREFIX = 'sirsoft-ecommerce.claim.';
+
+    /** 철회 알림(관리자 수신) 훅 — 유형 구분 없이 한 종 */
+    public const WITHDRAWN_HOOK = 'sirsoft-ecommerce.claim.notify_withdrawn';
+
+    /**
+     * 구독할 훅 목록을 반환합니다.
+     *
+     * @return array<string, array{method: string, priority: int}> 훅 매핑
+     */
+    public static function getSubscribedHooks(): array
+    {
+        return [
+            'sirsoft-ecommerce.claim.exchange.requested' => ['method' => 'handleExchangeRequested', 'priority' => 10],
+            'sirsoft-ecommerce.claim.return.requested' => ['method' => 'handleReturnRequested', 'priority' => 10],
+            'sirsoft-ecommerce.claim.refund.requested' => ['method' => 'handleRefundRequested', 'priority' => 10],
+            'sirsoft-ecommerce.claim.exchange.status_changed' => ['method' => 'handleStatusChange', 'priority' => 10],
+            'sirsoft-ecommerce.claim.return.status_changed' => ['method' => 'handleStatusChange', 'priority' => 10],
+            'sirsoft-ecommerce.claim.refund.status_changed' => ['method' => 'handleStatusChange', 'priority' => 10],
+        ];
+    }
+
+    /**
+     * 기본 핸들러 (getSubscribedHooks 의 method 매핑을 사용하므로 미사용).
+     *
+     * @param  mixed  ...$args  훅 인수
+     */
+    public function handle(...$args): void {}
+
+    /**
+     * 알림을 보낼 상태 목록을 유형별로 반환합니다. (§4-8 전수 29종의 정본)
+     *
+     * 값은 `notify_{상태}` 훅과 알림 정의 `{유형}_{알림키}` 의 접미가 된다. 상태 값과
+     * 알림 키가 다른 둘(`payment_pending` → `payment_requested`, `paid` →
+     * `payment_completed`)은 화면 라벨이 아니라 고객이 받는 안내의 성격을 따랐다.
+     *
+     * @return array<string, array<string, string>> 유형 값 => (상태 값 => 알림 키 접미)
+     */
+    public static function notifiableStatuses(): array
+    {
+        return [
+            ClaimTypeEnum::EXCHANGE->value => [
+                ExchangeStatusEnum::REQUESTED->value => 'requested',
+                ExchangeStatusEnum::PAYMENT_PENDING->value => 'payment_requested',
+                ExchangeStatusEnum::PAID->value => 'payment_completed',
+                ExchangeStatusEnum::APPROVED->value => 'approved',
+                ExchangeStatusEnum::ON_HOLD->value => 'on_hold',
+                ExchangeStatusEnum::REJECTED->value => 'rejected',
+                ExchangeStatusEnum::COLLECTION_READY->value => 'collection_ready',
+                ExchangeStatusEnum::COLLECTING->value => 'collecting',
+                ExchangeStatusEnum::COLLECTED->value => 'collected',
+                ExchangeStatusEnum::REDELIVERY_READY->value => 'redelivery_ready',
+                ExchangeStatusEnum::REDELIVERING->value => 'redelivering',
+                ExchangeStatusEnum::REDELIVERED->value => 'redelivered',
+                ExchangeStatusEnum::COMPLETED->value => 'completed',
+            ],
+            ClaimTypeEnum::RETURN->value => [
+                ReturnStatusEnum::REQUESTED->value => 'requested',
+                ReturnStatusEnum::PAYMENT_PENDING->value => 'payment_requested',
+                ReturnStatusEnum::PAID->value => 'payment_completed',
+                ReturnStatusEnum::APPROVED->value => 'approved',
+                ReturnStatusEnum::ON_HOLD->value => 'on_hold',
+                ReturnStatusEnum::REJECTED->value => 'rejected',
+                ReturnStatusEnum::COLLECTION_READY->value => 'collection_ready',
+                ReturnStatusEnum::COLLECTING->value => 'collecting',
+                ReturnStatusEnum::COLLECTED->value => 'collected',
+                ReturnStatusEnum::COMPLETED->value => 'completed',
+            ],
+            // 환불신청서의 `processing`(PG 요청 중)은 고객에게 알릴 사건이 아니다 —
+            // 몇 초 뒤 `completed` 나 `on_hold` 로 갈리며 그 결과만 통지한다.
+            ClaimTypeEnum::REFUND->value => [
+                RefundStatusEnum::REQUESTED->value => 'requested',
+                RefundStatusEnum::APPROVED->value => 'approved',
+                RefundStatusEnum::ON_HOLD->value => 'on_hold',
+                RefundStatusEnum::REJECTED->value => 'rejected',
+                RefundStatusEnum::COMPLETED->value => 'completed',
+            ],
+        ];
+    }
+
+    /**
+     * 유형·상태에 대응하는 알림 전용 훅 이름을 반환합니다.
+     *
+     * @param  string  $claimType  클레임 유형 값 (exchange|return|refund)
+     * @param  string  $status  전이 목표 상태 값
+     * @return string|null 알림 훅 이름 (알림 대상이 아니면 null)
+     */
+    public static function notifyHookFor(string $claimType, string $status): ?string
+    {
+        $suffix = self::notifiableStatuses()[$claimType][$status] ?? null;
+
+        return $suffix === null ? null : self::NOTIFY_HOOK_PREFIX.$claimType.'.notify_'.$suffix;
+    }
+
+    /**
+     * 교환 신청 접수 훅을 알림 훅으로 옮깁니다.
+     *
+     * @param  OrderExchange  $exchange  접수된 교환 신청서
+     */
+    public function handleExchangeRequested(OrderExchange $exchange): void
+    {
+        $this->fireNotify(ClaimTypeEnum::EXCHANGE->value, ExchangeStatusEnum::REQUESTED->value, $exchange);
+    }
+
+    /**
+     * 반품 신청 접수 훅을 알림 훅으로 옮깁니다.
+     *
+     * @param  OrderReturn  $return  접수된 반품 신청서
+     */
+    public function handleReturnRequested(OrderReturn $return): void
+    {
+        $this->fireNotify(ClaimTypeEnum::RETURN->value, ReturnStatusEnum::REQUESTED->value, $return);
+    }
+
+    /**
+     * 환불 신청 접수 훅을 알림 훅으로 옮깁니다.
+     *
+     * @param  OrderRefund  $refund  접수된 환불 신청서
+     */
+    public function handleRefundRequested(OrderRefund $refund): void
+    {
+        $this->fireNotify(ClaimTypeEnum::REFUND->value, RefundStatusEnum::REQUESTED->value, $refund);
+    }
+
+    /**
+     * 클레임 상태전이를 알림 훅으로 매핑 발화합니다.
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund  $claim  전이된 신청서
+     * @param  string|null  $previous  전이 전 상태 값
+     * @param  string|null  $target  전이 시점에 캡처한 목표 상태 값 (매핑 기준)
+     */
+    public function handleStatusChange(
+        OrderExchange|OrderReturn|OrderRefund $claim,
+        ?string $previous = null,
+        ?string $target = null,
+    ): void {
+        if ($target === null || $target === $previous) {
+            return;
+        }
+
+        $type = $claim->claimType()->value;
+
+        // 철회는 유형 구분 없이 관리자 수신 1종으로 모은다.
+        if ($this->isWithdrawnStatus($type, $target)) {
+            HookManager::doAction(self::WITHDRAWN_HOOK, $claim);
+
+            return;
+        }
+
+        $this->fireNotify($type, $target, $claim);
+    }
+
+    /**
+     * 목표 상태가 철회인지 판정합니다.
+     *
+     * @param  string  $claimType  클레임 유형 값
+     * @param  string  $target  목표 상태 값
+     * @return bool 철회면 true
+     */
+    private function isWithdrawnStatus(string $claimType, string $target): bool
+    {
+        return $target === match ($claimType) {
+            ClaimTypeEnum::EXCHANGE->value => ExchangeStatusEnum::WITHDRAWN->value,
+            ClaimTypeEnum::RETURN->value => ReturnStatusEnum::WITHDRAWN->value,
+            default => RefundStatusEnum::WITHDRAWN->value,
+        };
+    }
+
+    /**
+     * 매핑된 알림 훅이 있으면 발화합니다.
+     *
+     * @param  string  $claimType  클레임 유형 값
+     * @param  string  $status  상태 값
+     * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
+     */
+    private function fireNotify(string $claimType, string $status, OrderExchange|OrderReturn|OrderRefund $claim): void
+    {
+        $hook = self::notifyHookFor($claimType, $status);
+
+        if ($hook !== null) {
+            HookManager::doAction($hook, $claim);
+        }
+    }
+}
