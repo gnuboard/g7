@@ -1,0 +1,90 @@
+feature: ext-static-cache
+
+description: |
+  부트스트랩 리소스 정적 게시(bake) — 공개 #122.
+
+  초기 부트스트랩 리소스(다국어 병합·컴포넌트 정의·라우트·확장 번들·템플릿 dist
+  에셋)를 캐시 버전 디렉토리(`public/build/ext/{v}/`)에 실파일로 게시해 웹서버가
+  rewrite 전에 직접 서빙한다. 병합 입력이 바뀌는 수명주기 이벤트마다
+  `incrementExtensionCacheVersion()` 단일 지점의 terminating 예약으로 재게시되고,
+  누락 시 blade 렌더의 자가 치유가 보충한다. 미게시/부분게시/GC 직후에는 프론트
+  fetch 계층(fetchStaticFirst)과 태그 계층(asset-url-recovery 파샬)이 종전 API 로
+  폴백한다.
+
+  핵심 동작:
+    - 게시 원자성: {v}.tmp 쓰기 → rename → manifest 마지막 기록 (manifest 존재 = 완료)
+    - 서빙 게이트 3조건: 프로덕션 + core.static_cache.enabled + 게시 완료
+    - 태그 계층은 개별 파일 file_exists 까지 확인 후 정적 URL 방출
+    - blade 주입 cache_version 시드로 stale localStorage 이중 로드 제거 (작업 A)
+    - components.json `?v` 부착 + 버전 키드 manifestCache (작업 B)
+    - 폴백 API 품질: ETag/304 + 환경 분기 (작업 C·D)
+
+axes:
+  publish_state: [published, unpublished, partial]
+  environment: [production, dev]
+  trigger: [lifecycle, self_heal, manual_command, kill_switch]
+
+exclusions:
+  - { environment: dev, publish_state: published, reason: "dev 는 staticBase 미주입 — 게시 상태와 무관하게 전 리소스 API 직행" }
+  - { environment: dev, publish_state: partial, reason: "동일 — dev 는 정적 경로 자체가 없다" }
+  - { trigger: kill_switch, publish_state: published, reason: "kill-switch off 는 게이트에서 base 자체를 차단 — 게시 상태 무관" }
+  - { trigger: kill_switch, publish_state: partial, reason: "동일" }
+
+effects:
+  - published_lang_matches_api_payload
+  - published_routes_has_success_envelope
+  - published_tree_excludes_inactive_extensions
+  - published_tree_excludes_sourcemaps
+  - identifier_outside_pattern_rejected
+  - publish_is_idempotent_until_forced
+  - write_failure_cleans_tmp_and_falls_back
+  - cleanup_keeps_current_and_previous_versions
+  - kill_switch_disables_publish_and_gate
+  - terminating_publish_gated_to_production
+  - terminating_publish_uses_final_version_after_burst
+  - static_gate_requires_manifest
+  - tag_layer_checks_individual_file_existence
+  - static_first_fetch_falls_back_to_api_on_miss
+  - fallback_is_observable_via_console_warn
+  - static_asset_tag_recovers_to_api_url
+  - no_duplicate_boot_requests
+  - versioned_boot_urls
+  - handshake_reload_preserved_on_version_mismatch
+  - manifest_cache_keys_are_version_scoped
+  - fallback_api_serves_etag_304
+  - fallback_api_no_cache_in_dev
+  - degraded_snapshot_gets_no_public_cache
+  - seo_html_never_references_gc_target_static_path
+  - static_miss_skips_spa_catch_all
+  - terminating_schedule_rearms_after_execution
+  - published_htaccess_declares_compression
+  - bundle_script_static_miss_falls_back_to_api
+
+test_files:
+  - tests/Feature/Services/ExtensionStaticCacheServiceTest.php
+  - tests/Feature/Api/Public/PublicComponentsCachingTest.php
+  - tests/Feature/Template/PublicTemplateControllerTest.php
+  - tests/Feature/Template/TemplateAssetServingTest.php
+  - tests/Feature/Template/TemplateLanguageServingTest.php
+  - tests/Feature/Api/Public/LayoutServingTest.php
+  - tests/Feature/Http/BuildPathCatchAllExclusionTest.php
+  - tests/Unit/Support/AssetUrlTest.php
+  - tests/Unit/Seo/SeoRendererStaticAssetBypassTest.php
+  - resources/js/core/__tests__/TemplateApp.cacheVersionSeed.test.ts
+  - resources/js/core/support/__tests__/fetchStaticFirst.test.ts
+  - resources/js/core/support/__tests__/assetUrlRecovery.test.ts
+  - resources/js/core/template-engine/__tests__/ComponentRegistry.manifestVersion.test.ts
+  - resources/js/core/modules/__tests__/ModuleAssetLoader.test.ts
+  - tests/Playwright/specs/smoke/bootstrap-request-dedup.spec.ts
+  - tests/Playwright/specs/smoke/static-cache-fallback.spec.ts
+
+notes: |
+  리소스 5종(lang/components/routes/번들/dist)은 축이 아니라 effects 로 커버한다 —
+  게시·게이트·폴백은 리소스 무관 공통 메커니즘이고, 리소스별 형상 차이는
+  published_* effects (payload/봉투/소스맵 제외) 가 각각 단언한다.
+  environment=dev 축은 PHPUnit(환경 분기 케이스)과 AssetUrl 게이트 단위가 담당한다 —
+  E2E 대상 사이트(g7_2.dev)는 production 이라 dev 축을 브라우저로 실측할 수 없다.
+  trigger=lifecycle 의 실기기 검증(확장 비활성/활성 → 재게시 → 새 staticBase)은
+  Chrome MCP 매트릭스 T10a~T10d 가 수행한다 (원상 복구 의무 포함).
+  publish_state=partial 은 태그 계층(개별 file_exists 게이트)과 fetch 계층
+  (fetchStaticFirst 404 폴백) 양쪽에서 단위/브라우저로 커버된다.

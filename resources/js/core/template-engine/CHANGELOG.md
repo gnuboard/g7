@@ -5,6 +5,26 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.61.0] - 2026-08-25
+
+### Added
+
+#### 부트스트랩 리소스 정적 게시(bake) 우선 로더 + API 폴백 (#122)
+
+- 서버가 병합 결과물(routes/lang/components)을 캐시 버전 디렉토리(`/build/ext/{v}/…`)에 실파일로 게시하면, blade 가 `window.G7Config.staticBase` 를 주입하고 프론트 로더가 그 정적 경로를 **우선** 시도한다. 정적 응답이 `!ok`(부분 게시·GC 직후 404 포함)이거나 네트워크 실패면 **즉시** 종전 API URL 로 폴백한다 (`fetchStaticFirst` — legacy 측은 기존 `fetchWithRetry` 네트워크 복원력 유지, 폴백 발생은 console.warn 1줄로 관측 가능).
+- `assetUrl.ts` 에 `extStaticBase()`/`extStaticVersion()`/`extStaticUrl()`/`staticToLegacy()` 추가 — 서버측 `AssetUrl` 의 게시 트리 규약과 경로 규칙 1:1. `staticBase` 미주입(비프로덕션/kill-switch/미게시)이면 전 리소스가 종전 API 직행으로, 기존 동작과 바이트 동일하다.
+- 소비자 전환: TemplateApp routes(초기 burst + 핸드셰이크 재로드 — 재로드는 새 버전 정적 경로 조합, 미게시 시 legacy 폴백) · TranslationEngine lang(`bustCache` 재로드는 목적상 legacy 직행) · ComponentRegistry components(편집기 v0 경로는 legacy 유지).
+- 태그 계층 자가 복구: `asset-url-recovery` 파샬에 `staticToLegacy` 역변환 추가 — 실패한 `/build/ext/{v}/…` 태그 자산(`<link>`/`<script>`)을 종전 `/api/…` URL 로 1회 전환한다 (GC 된 구버전 자산을 참조하는 캐시된 HTML 방어, `/build/core/**` 는 계속 변환 제외, 단방향 1회·자동 reload 금지 불변식 유지).
+- `ModuleAssetLoader` 확장 병합 번들(JS/CSS)도 동일 폴백 — 정적 번들 URL 은 1회만 시도하고 미스 시 `staticToLegacy` + `convertToCurrentMode` 로 종전 API URL 에 합류한다 (JS 는 기존 재시도 예산을 레거시에서 이어가고, CSS 는 같은 `<link>` 의 href 를 1회 교체). 종전에는 같은 정적 URL 만 재시도해 게시본 소실 시 확장 핸들러가 조용히 전부 미등록되었다.
+- 그 역변환 결과는 언제나 확장자 형태이므로, 확장자 없는 형태로 이미 확정된 모드에서는 결과를 다시 `toExtensionless` 로 넘긴다. 확장자 주소를 가로채는 서버(자산 URL 이중 모드의 대상)에서 CSS `<link>` 는 교체 예산이 1회뿐이라, 그 한 번이 확장자 형태로 끝나면 스타일이 영구히 붙지 않았다 (`<script>` 는 재시도 예산이 남아 다음 시도에서 모드 전환 분기가 발동하므로 영향 없음).
+
+### Fixed
+
+#### stale 캐시버전 재방문의 부트 이중 로드 (#122)
+
+- localStorage `g7_cache_version` 이 stale 이면 첫 burst 가 구버전 `?v` 로 나가고, config 핸드셰이크가 routes 재로드 + lang(ko·en) `_=` 버스터 재다운로드를 유발했다 (~500KB 중복, 부트 ~1.3s 연장). blade 는 이미 현재 버전을 `G7Config.cache_version` 으로 주입하고 있었으므로, TemplateApp 의 캐시 버전 시드를 **blade 주입값 우선**(부재 시 localStorage 폴백)으로 교체하고, 핸드셰이크 재로드 판정 기준을 "이번 burst 가 실제 사용한 버전" 으로 바꿨다. 렌더~부트 사이 bump 는 종전대로 핸드셰이크가 복구한다.
+- `ComponentRegistry.loadComponents()` 에 옵셔널 `cacheVersion` 파라미터를 추가해 components.json 요청에 `?v` 를 부착하고, 정적 manifestCache 키에 버전을 포함해 확장 라이프사이클 전후의 stale 매니페스트 교차 오염을 막았다 (편집기 경로는 버전 미전달 — v0 캐시 키 + 무버전 URL 하위 호환).
+
 ## [engine-v1.60.6] - 2026-08-22
 
 ### Fixed

@@ -61,6 +61,7 @@
 | [service-provider.md](service-provider.md) | 서비스 프로바이더 안전성 | DB 접근 전 .env 파일 존재 확인 필수 |
 | [service-repository.md](service-repository.md) | Service-Repository 패턴 | RepositoryInterface 주입 필수 (구체 클래스 직접 주입 금지) |
 | [settings-multilingual-enrichment.md](settings-multilingual-enrichment.md) | Settings 카탈로그 다국어 자동 보강 | settings JSON 의 다국어 카탈로그 라벨(_cached_name 등)은 카탈... |
+| [static-asset-publishing.md](static-asset-publishing.md) | 부트스트랩 리소스 정적 게시 (Static Asset Publishing) | 게시물: public/build/ext/{cache_version}/ — 수명주기 이... |
 | [translatable-seeders.md](translatable-seeders.md) | 다국어 시더 인터페이스 (Translatable Seeders) | 다국어 JSON 컬럼(name 등)을 시드하는 확장 entity 시더는 Transla... |
 | [user-overrides.md](user-overrides.md) | 사용자 수정 보존 (HasUserOverrides Trait) | 모델에 `use HasUserOverrides;` + `protected array ... |
 | [validation.md](validation.md) | 검증 (Validation) | 필수: FormRequest에서 검증 (Service에 검증 로직 배치 금지) |

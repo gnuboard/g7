@@ -31,8 +31,9 @@ import { createLogger, Logger } from './utils/Logger';
 import { webSocketManager } from './websocket/WebSocketManager';
 import { getModuleAssetLoader, parseModuleAssetsFromConfig, parsePluginAssetsFromConfig, parseBundleUrlsFromConfig } from './modules';
 import { SystemBannerManager } from './template-engine/SystemBannerManager';
-import { fetchWithRetry, installUnloadGuard, isDocumentUnloading } from './template-engine/networkResilience';
-import { suffixed } from './support/assetUrl';
+import { installUnloadGuard, isDocumentUnloading } from './template-engine/networkResilience';
+import { suffixed, extStaticUrl } from './support/assetUrl';
+import { fetchStaticFirst } from './support/fetchStaticFirst';
 import { resetLocalInitTracking } from './template-engine/localInitSlot';
 /**
  * DevTools 추적 - G7DevToolsCore.getInstance() 직접 호출 대신 G7Core.devTools를 사용합니다.
@@ -456,8 +457,13 @@ export class TemplateApp {
             const componentRegistry = ComponentRegistry.getInstance();
             const authManager = AuthManager.getInstance();
 
-            // 저장된 캐시 버전 로드 (초기 API 호출에 사용)
-            const storedCacheVersion = this.loadCacheVersionFromStorage() || 0;
+            // 캐시 버전 시드 — blade 주입값(현재 렌더와 동일 버전) 우선, 부재 시 localStorage 폴백.
+            // localStorage 만 보면 stale 버전으로 첫 burst 가 나가고 config 핸드셰이크가
+            // routes + lang 을 통째로 재로드하는 이중 로드가 발생한다 (#122, @since engine-v1.61.0)
+            const injectedCacheVersion =
+                typeof window !== 'undefined' ? Number((window as any).G7Config?.cache_version) || 0 : 0;
+            const storedCacheVersion =
+                injectedCacheVersion > 0 ? injectedCacheVersion : this.loadCacheVersionFromStorage() || 0;
 
             const [_, __, routesData, ___, templateConfig] = await Promise.all([
                 // 템플릿 엔진 초기화 (다국어 파일 병렬 로드)
@@ -471,11 +477,16 @@ export class TemplateApp {
                 // ComponentRegistry 로딩 (components.json)
                 componentRegistry.loadComponents(
                     this.config.templateId,
-                    this.config.templateType
+                    this.config.templateType,
+                    storedCacheVersion
                 ),
                 // routes.json 로딩 (저장된 캐시 버전 사용)
-                // 네트워크 일시 실패(응답 없음)에만 재시도한다. HTTP 에러는 아래 체인이 종전대로 throw.
-                fetchWithRetry(
+                // 정적 게시본(bake) 우선 — miss 면 즉시 종전 API 로 폴백 (#122).
+                // legacy 측은 네트워크 일시 실패(응답 없음)에만 재시도. HTTP 에러는 아래 체인이 종전대로 throw.
+                fetchStaticFirst(
+                    storedCacheVersion > 0
+                        ? extStaticUrl(`templates/${this.config.templateId}/routes.json`, storedCacheVersion)
+                        : null,
                     suffixed(`/api/templates/${this.config.templateId}/routes`, 'json', storedCacheVersion > 0 ? storedCacheVersion : null),
                     { label: 'routes.json' }
                 )
@@ -526,7 +537,9 @@ export class TemplateApp {
 
             // 확장 기능 캐시 버전 저장 (모듈/플러그인 활성화 시 갱신됨)
             if (templateConfig?.cache_version !== undefined) {
-                const previousVersion = this.loadCacheVersionFromStorage();
+                // 재로드 판정 기준은 "이번 burst 가 실제 사용한 버전" — stale localStorage 와
+                // 비교하면 blade 시드로 이미 최신 URL 을 쓴 경우에도 재로드가 발화한다 (#122)
+                const previousVersion = storedCacheVersion > 0 ? storedCacheVersion : null;
                 this.extensionCacheVersion = templateConfig.cache_version;
                 this.saveCacheVersionToStorage(this.extensionCacheVersion);
                 logger.log('Extension cache version:', this.extensionCacheVersion);
@@ -535,7 +548,10 @@ export class TemplateApp {
                 if (previousVersion !== null && previousVersion !== this.extensionCacheVersion) {
                     logger.log('Cache version changed, reloading routes...');
                     // routes.json을 새 캐시 버전으로 다시 로드
-                    const newRoutesData = await fetchWithRetry(
+                    // 재로드는 **새 버전** 정적 경로를 조합한다 — 아직 미게시면 404 →
+                    // fetchStaticFirst 가 legacy 로 즉시 폴백 (#122)
+                    const newRoutesData = await fetchStaticFirst(
+                        extStaticUrl(`templates/${this.config.templateId}/routes.json`, this.extensionCacheVersion),
                         suffixed(`/api/templates/${this.config.templateId}/routes`, 'json', this.extensionCacheVersion),
                         { label: 'routes.json (reload)' }
                     )

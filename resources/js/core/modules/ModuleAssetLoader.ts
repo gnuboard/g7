@@ -8,7 +8,7 @@
 
 import { createLogger } from '../utils/Logger';
 import { loadScriptWithRetry } from '../template-engine/networkResilience';
-import { convertToCurrentMode } from '../support/assetUrl';
+import { convertToCurrentMode, staticToLegacy } from '../support/assetUrl';
 
 const logger = createLogger('ModuleAssetLoader');
 
@@ -204,6 +204,18 @@ export class ModuleAssetLoader {
             };
 
             link.onerror = () => {
+                // 정적 게시(bake) URL 미스 → 종전 API URL 로 1회 전환 (#122).
+                // 게시 디렉토리는 GC(현재+직전 1개 보존) 대상이라, 캐시된 HTML 의 구버전
+                // 정적 URL 이 404 가 될 수 있다 — fetchStaticFirst 와 동일한 즉시 폴백.
+                const legacy = staticToLegacy(link.getAttribute('href') ?? url);
+
+                if (legacy !== null && link.dataset.g7StaticFallback !== '1') {
+                    link.dataset.g7StaticFallback = '1';
+                    logger.warn(`Bundle CSS static miss, falling back to API: ${key} (${url} -> ${legacy})`);
+                    link.href = convertToCurrentMode(legacy);
+                    return;
+                }
+
                 logger.warn(`Failed to load bundle CSS: ${key} (${url})`);
                 resolve();
             };
@@ -240,7 +252,25 @@ export class ModuleAssetLoader {
             return existingPromise;
         }
 
-        const loadPromise = loadScriptWithRetry(url, { id: elementId }, { label: `bundle JS: ${key}` })
+        // 정적 게시(bake) URL 이면 1회만 시도하고, 미스 시 종전 API URL 로 전환해 기존
+        // 재시도 예산을 이어간다 (#122 — fetchStaticFirst 와 동형: 정적 1 + 레거시 재시도).
+        // 게시 디렉토리는 GC(현재+직전 1개 보존) 대상이라 캐시된 HTML 의 구버전 정적
+        // URL 이 404 가 될 수 있고, 같은 정적 URL 재시도는 그 상태를 복구하지 못한다.
+        const legacyUrl = staticToLegacy(url);
+        const attempt = legacyUrl !== null
+            ? loadScriptWithRetry(url, { id: elementId }, { label: `bundle JS: ${key}`, retries: 0 })
+                .catch(() => {
+                    logger.warn(`Bundle JS static miss, falling back to API: ${key} (${url} -> ${legacyUrl})`);
+
+                    return loadScriptWithRetry(
+                        convertToCurrentMode(legacyUrl),
+                        { id: elementId },
+                        { label: `bundle JS: ${key}` }
+                    );
+                })
+            : loadScriptWithRetry(url, { id: elementId }, { label: `bundle JS: ${key}` });
+
+        const loadPromise = attempt
             .then(() => {
                 logger.log(`Bundle JS loaded: ${key}`);
                 const script = document.getElementById(elementId);

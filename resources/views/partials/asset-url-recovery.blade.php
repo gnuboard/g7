@@ -20,6 +20,19 @@
     L3 자동 location.reload() 금지.
     L5 서버 설정은 건드리지 않는다 (미인증 클라이언트의 전역 설정 변경 금지).
     L7 localStorage 캐시는 cache_version 을 키에 포함하고 TTL 을 둔다.
+
+    ## 정적 게시(bake) 역변환 (#122 F15)
+
+    `/build/ext/{v}/…` 정적 게시본을 참조하는 태그 자산이 서빙 시점에 404 가 되면
+    (브라우저에 캐시된 구 HTML 이 GC 된 구버전 자산을 참조하는 등) 종전 `/api/…`
+    URL 로 1회 전환한다. `/build/core/**` 는 실물 정적 파일이라 계속 변환 제외.
+    역변환 규칙은 `resources/js/core/support/assetUrl.ts::staticToLegacy` 와 1:1 —
+    드리프트는 `assetUrlRecovery.test.ts` 의 대조 케이스가 잡는다.
+
+    역변환 결과는 언제나 확장자 형태이므로, 이미 확장자 없는 형태로 확정된 모드에서는
+    그 결과를 다시 `toExtensionless` 로 넘긴다. 그러지 않으면 위 배경의 서버에서
+    404 를 404 로 바꾸는 셈이고, CSS `<link>` 는 교체 예산이 1회라 두 번째 기회가 없다
+    (`<script>` 는 재시도 예산이 남아 다음 시도에서 모드 전환 분기가 발동한다).
 --}}
 <script>
 (function () {
@@ -84,6 +97,52 @@
         var suffixed = path.match(/^(\/api\/.+)\.(json|js|css)$/);
         if (suffixed) {
             return suffixed[1] + (query ? '?' + query : '');
+        }
+
+        return null;
+    }
+
+    /**
+     * 실패한 정적 게시(bake) URL 을 종전 API URL 로 역변환한다 (#122 F15).
+     *
+     * `resources/js/core/support/assetUrl.ts::staticToLegacy` 와 **동일 규칙**이어야
+     * 한다 — 드리프트는 `assetUrlRecovery.test.ts` 의 대조 케이스가 잡는다.
+     * 변환 대상이 아니면(정적 게시 경로가 아니면) null. `/build/core/**` 등
+     * 다른 정적 파일은 대상이 아니다.
+     *
+     * @param url 실패한 URL
+     * @returns 종전 API URL 또는 null
+     */
+    function staticToLegacy(url) {
+        if (!url) return null;
+
+        var origin = window.location && window.location.origin;
+        if (origin && url.indexOf(origin) === 0) {
+            url = url.slice(origin.length);
+        }
+
+        var match = url.match(/^\/build\/ext\/(\d+)\/(.+)$/);
+        if (!match) return null;
+
+        var version = match[1];
+        var rest = match[2].split('?')[0];
+
+        var templateAsset = rest.match(/^templates\/([^/]+)\/assets\/(.+)$/);
+        if (templateAsset) {
+            // audit:allow asset-url-builder-required reason: 코어 번들 로드 전 인라인 복구기 —
+            // import 불가라 규칙 사본을 직접 조립한다. 드리프트는 assetUrlRecovery.test.ts 대조가 잠근다.
+            return '/api/templates/assets/' + templateAsset[1] + '/' + templateAsset[2] + '?v=' + version;
+        }
+
+        var bundle = rest.match(/^bundles\/(modules|plugins)\.(js|css)$/);
+        if (bundle) {
+            return '/api/' + bundle[1] + '/bundle.' + bundle[2] + '?v=' + version;
+        }
+
+        var templateFetch = rest.match(/^templates\/([^/]+)\/(routes\.json|components\.json|lang\/([a-zA-Z-]+)\.json)$/);
+        if (templateFetch) {
+            return '/api/templates/' + templateFetch[1] + '/' +
+                templateFetch[2].replace(/\.json$/, '') + '.json?v=' + version;
         }
 
         return null;
@@ -157,7 +216,26 @@
         if (!link || link.getAttribute('data-g7-recovered') === '1') return;
         link.setAttribute('data-g7-recovered', '1');
 
-        var converted = toExtensionless(link.getAttribute('href') || '');
+        var href = link.getAttribute('href') || '';
+
+        // 정적 게시(bake) URL 실패 → 종전 API URL 로 1회 전환 (#122 F15).
+        // 모드 전환과 무관한 폴백이므로 switchToExtensionless 를 호출하지 않는다.
+        var legacy = staticToLegacy(href);
+        if (legacy) {
+            // 역변환 결과는 언제나 **확장자 형태**다. 그런데 이 파샬이 존재하는 이유가
+            // 바로 "확장자 형태를 404 로 돌려주는 서버"(#486)이므로, 그런 서버에서는
+            // 이 교체가 404 를 404 로 바꿀 뿐이다. 교체는 링크당 1회(L1)라 두 번째
+            // 기회가 없어 CSS 가 영구히 붙지 않는다 — 이미 확장자 없는 형태로
+            // 확정된 모드면 한 번의 교체로 서빙 가능한 형태까지 보낸다.
+            if (window.__g7AssetUrlMode === MODE_EXTENSIONLESS) {
+                legacy = toExtensionless(legacy) || legacy;
+            }
+
+            link.href = legacy;
+            return;
+        }
+
+        var converted = toExtensionless(href);
         if (!converted) return;
 
         switchToExtensionless();
@@ -169,6 +247,7 @@
     window.__g7AssetUrl = {
         MODE_EXTENSIONLESS: MODE_EXTENSIONLESS,
         toExtensionless: toExtensionless,
+        staticToLegacy: staticToLegacy,
         switchToExtensionless: switchToExtensionless,
         restoreCachedMode: restoreCachedMode,
         recoverStylesheet: recoverStylesheet

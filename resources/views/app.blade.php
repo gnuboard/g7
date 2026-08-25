@@ -60,6 +60,11 @@
                 // 확장 캐시 버전 SSoT — 클라이언트 fetch (`?v=`) 동반 필수.
                 // 자세한 설명은 admin.blade.php 참조.
                 cache_version: {{ (int) ($extensionCacheVersion ?? 0) }},
+                @if(($staticExtBase = \App\Support\AssetUrl::staticExtBase()) !== null)
+                // 정적 게시(bake) 베이스 — 게이트(프로덕션·kill-switch·게시 완료) 통과 시에만
+                // 주입된다. 프론트 로더가 routes/lang/components 를 이 경로에서 우선 수신 (#122).
+                staticBase: '{{ $staticExtBase }}',
+                @endif
                 // 자산 URL 모드 — 'extension'(기본) | 'extensionless'.
                 // 정적 최적화 블록(location ~* \.(js|css|json)$)이 동적 응답을 가로채는
                 // 서버에서 확장자 없는 형태로 전환한다. 부트스트랩 자가 복구가 실패 시

@@ -1070,6 +1070,14 @@ if (isset($_GET['ajax_action'])) {
                                     <span>확장 번들 정리</span>
                                     <span class="text-[10px] opacity-60">(ext-bundles:cleanup)</span>
                                 </button>
+                                <button onclick="runCommand('ext-static:publish --force')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>정적 게시 재생성</span>
+                                    <span class="text-[10px] opacity-60">(ext-static:publish)</span>
+                                </button>
+                                <button onclick="runCommand('ext-static:cleanup')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>정적 게시 정리</span>
+                                    <span class="text-[10px] opacity-60">(ext-static:cleanup)</span>
+                                </button>
                                 <button onclick="runCommand('seo:prune-stats')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>SEO 캐시 통계 정리</span>
                                     <span class="text-[10px] opacity-60">(seo:prune-stats)</span>

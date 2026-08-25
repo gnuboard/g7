@@ -280,6 +280,7 @@ return [
     'task_create_settings_json' => 'Creating Settings Files',
     'task_complete_flag' => 'Finalizing Installation',
     'task_config_cache' => 'Building Configuration Cache',
+    'task_static_publish' => 'Publishing Static Bootstrap Resources',
     'task_unknown' => 'Unknown Task',
 
     // Task Group Names
@@ -382,10 +383,12 @@ return [
     // Error Messages - Worker (Cache)
     'error_cache_clear_failed' => 'Cache clearing failed',
     'error_config_cache_failed' => 'Configuration cache build failed',
+    'error_static_publish_failed' => 'Static bootstrap resource publishing failed (site still works via API fallback)',
 
     // Log Messages - Worker (Cache)
     'log_cache_clear_success' => 'Cache clearing completed',
     'log_config_cache_success' => 'Configuration cache built',
+    'log_static_publish_success' => 'Static bootstrap resources published',
 
     // Error Messages - Worker (Settings JSON)
     'error_settings_json_failed' => 'Settings file creation failed',

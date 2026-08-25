@@ -97259,7 +97259,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
+**설명** 템플릿 컴포넌트 정의(`GET /api/templates/{identifier}/components.json`)의 확장자 없는 이중 모드 변형입니다. 응답·캐시·폴백 동작이 확장자 형태와 동일하며, `.json` 주소를 가로채는 정적 파일 최적화 서버 설정에서 프론트가 이 형태로 자동 전환합니다 (자산 URL 이중 모드).
 
 
 ### GET /api/templates/{identifier}/components.json
@@ -97327,7 +97327,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 템플릿의 컴포넌트 정의(components.json)를 서빙하는 공개 엔드포인트입니다(TemplateService::getComponentsFilePath). 프론트엔드 렌더 엔진 부팅에 사용하며 1시간 캐시됩니다. 인증이 필요 없습니다.
+**설명** 템플릿의 컴포넌트 정의(components.json)를 서빙하는 공개 엔드포인트입니다(TemplateService::getComponentsFilePath). 프론트엔드 렌더 엔진 부팅에 사용합니다. 조건부 캐시가 적용됩니다 — 응답에 ETag 가 부착되며 `If-None-Match` 일치 시 본문 없는 `304` 를 반환하고, Cache-Control 은 프로덕션 `public, max-age=3600` / 그 외 환경 `no-cache`(파일 수정 즉시 반영)로 분기합니다. 정적 게시본(`/build/ext/{v}/…`)이 있으면 프론트는 그 정적 파일을 우선 수신하며, 본 API 는 미게시/부분게시/GC 직후의 **폴백 경로**입니다. 인증이 필요 없습니다.
 
 
 ### GET /api/templates/{identifier}/config
@@ -189484,7 +189484,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
+**설명** 템플릿 다국어(`GET /api/templates/{identifier}/lang/{locale}.json`)의 확장자 없는 이중 모드 변형입니다. 응답·캐시·폴백 동작이 확장자 형태와 동일하며, `.json` 주소를 가로채는 정적 파일 최적화 서버 설정에서 프론트가 이 형태로 자동 전환합니다 (자산 URL 이중 모드).
 
 
 ### GET /api/templates/{identifier}/lang/{locale}.json
@@ -189539,7 +189539,7 @@ _이 엔드포인트는 `success`/`message`/`data` 봉투를 사용하지 않습
 
 <!-- @generated:end -->
 
-**설명** 활성 템플릿의 다국어 파일(lang/{locale}.json)을 활성화된 모듈의 다국어 데이터와 병합해 서빙하는 공개 엔드포인트입니다(TemplateService::getLanguageDataWithModules). 지원하지 않는 로케일/파일 부재 시 404이며 1시간 캐시됩니다. 인증이 필요 없습니다.
+**설명** 활성 템플릿의 다국어 파일(lang/{locale}.json)을 활성화된 모듈의 다국어 데이터와 병합해 서빙하는 공개 엔드포인트입니다(TemplateService::getLanguageDataWithModules). 지원하지 않는 로케일/파일 부재 시 404입니다. 조건부 캐시가 적용됩니다 — 응답에 ETag 가 부착되며 `If-None-Match` 일치 시 본문 없는 `304` 를 반환하고, Cache-Control 은 프로덕션 `public, max-age=3600` / 그 외 환경 `no-cache` 로 분기합니다. 정적 게시본(`/build/ext/{v}/…`)이 있으면 프론트는 그 정적 파일을 우선 수신하며, 본 API 는 미게시/부분게시/GC 직후의 **폴백 경로**입니다. 인증이 필요 없습니다.
 
 
 ### GET /api/templates/{identifier}/layout-attachments/{attachment}/file
@@ -189705,7 +189705,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
+**설명** 템플릿 라우트(`GET /api/templates/{identifier}/routes.json`)의 확장자 없는 이중 모드 변형입니다. 응답·캐시·폴백 동작이 확장자 형태와 동일하며, `.json` 주소를 가로채는 정적 파일 최적화 서버 설정에서 프론트가 이 형태로 자동 전환합니다 (자산 URL 이중 모드).
 
 
 ### GET /api/templates/{identifier}/routes.json
@@ -189773,6 +189773,6 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 템플릿의 라우트 정의(routes.json)를 활성화된 모듈의 라우트와 병합해 서빙하는 공개 엔드포인트입니다(TemplateService::getRoutesDataWithModules). 프론트엔드 라우팅 부팅에 사용하며 `v` query로 캐시를 무효화하고 1시간 캐시됩니다. 인증이 필요 없습니다.
+**설명** 템플릿의 라우트 정의(routes.json)를 활성화된 모듈의 라우트와 병합해 서빙하는 공개 엔드포인트입니다(TemplateService::getRoutesDataWithModules). 프론트엔드 라우팅 부팅에 사용합니다. 캐시 헤더는 **`v` 쿼리를 명시한 요청에만** 적용됩니다 — 버전 키드 URL 은 확장 변경 시 URL 자체가 바뀌므로 ETag + `If-None-Match` 304 + Cache-Control(프로덕션 `public, max-age=3600` / 그 외 `no-cache`)이 안전하고, 무버전 요청(핸드셰이크 폴백)은 종전대로 캐시 헤더 없이 신선 응답합니다. 단 라우트 병합이 열화 상태(확장 업데이트 진행 중 등)면 `v` 명시 요청이어도 공개 캐시 헤더를 부여하지 않습니다 — 열화 응답이 브라우저/CDN 에 1시간 박제되는 것을 막습니다(서버측 캐시 회피와 동일 규율). 정적 게시본(`/build/ext/{v}/…`)이 있으면 프론트는 그 정적 파일을 우선 수신하며, 본 API 는 미게시/부분게시/GC 직후의 **폴백 경로**입니다. 인증이 필요 없습니다.
 
 

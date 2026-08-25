@@ -449,6 +449,8 @@ GET /api/modules/assets/{identifier}/{path}
 
 활성 모듈/플러그인이 늘어날수록 개별 IIFE JS/CSS 요청이 선형 증가한다. 이를 줄이기 위해 코어는 타입별(모듈/플러그인)로 활성 `global` 에셋을 서버에서 하나의 번들로 병합해 서빙한다. 각 확장 IIFE 는 자체 클로저에서 자가등록(레지스트리 + 핸들러/리스너)을 수행하므로, priority 순으로 이어붙여 단일 `<script>` 로 실행해도 등록 동작은 동일하다.
 
+> 프로덕션에서는 이 병합 산출물의 사본이 정적 게시본(`public/build/ext/{v}/bundles/`)으로 함께 게시되어 웹서버가 직접 서빙할 수 있다 — [static-asset-publishing.md](../backend/static-asset-publishing.md) 참조. 번들의 생성·정렬·구분자 규율은 계속 본 문서가 소유한다.
+
 ### 서빙 엔드포인트
 
 ```

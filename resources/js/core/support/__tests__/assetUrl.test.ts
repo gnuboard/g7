@@ -95,19 +95,24 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             );
         });
 
-        it('ComponentRegistry.ts:250 components.json', () => {
+        it('ComponentRegistry loadManifest components.json (버전 있음/없음 — #122 작업 B)', () => {
+            // 편집기 경로(버전 미전달)는 무버전 URL 유지 (서버가 현재 버전 폴백 — #588)
             expect(suffixed('/api/templates/sirsoft-basic/components', 'json')).toBe(
                 '/api/templates/sirsoft-basic/components.json',
             );
+            // 런타임 경로는 캐시 버전 부착 (stale 매니페스트 방지)
+            expect(suffixed('/api/templates/sirsoft-basic/components', 'json', 7)).toBe(
+                '/api/templates/sirsoft-basic/components.json?v=7',
+            );
         });
 
-        it('TemplateApp.ts:2810 config.json + 캐시버스트 쿼리', () => {
+        it('TemplateApp config.json + 캐시버스트 쿼리', () => {
             expect(suffixed('/api/templates/sirsoft-basic/config', 'json', null, '_=1699999999')).toBe(
                 '/api/templates/sirsoft-basic/config.json?_=1699999999',
             );
         });
 
-        it('LayoutLoader.ts:750,752 레이아웃 / 미리보기', () => {
+        it('LayoutLoader 레이아웃 / 미리보기', () => {
             expect(layoutUrl('sirsoft-basic', 'home', 7)).toBe('/api/layouts/sirsoft-basic/home.json?v=7');
             expect(layoutPreviewUrl('abc-def')).toBe('/api/layouts/preview/abc-def.json');
         });
