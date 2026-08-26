@@ -127,4 +127,12 @@ interface ClaimPaymentRepositoryInterface
      * @return ClaimPayment|null 잠금된 결제 건
      */
     public function findByPaymentNumberForUpdate(string $paymentNumber): ?ClaimPayment;
+
+    /**
+     * 클레임 추가결제에 그 결제수단이 기록돼 있는지 확인합니다. (관리자 목록 청구 결제수단 어휘의 마지막 근거)
+     *
+     * @param  string  $method  결제수단
+     * @return bool 기록 존재 여부
+     */
+    public function hasRecordedPaymentMethod(string $method): bool;
 }

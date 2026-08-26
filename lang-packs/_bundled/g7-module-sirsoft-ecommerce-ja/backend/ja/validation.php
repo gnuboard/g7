@@ -1257,13 +1257,9 @@ return [
             'min' => '注文金額は 0 以上である必要があります。',
         ],
     ],
-    // 公開アセットディスク (コアカタログ照会による検証)
     'public_asset_disk_invalid' => '有効な公開アセットディスクを選択してください。',
-
     'attributes' => [
-        // 公開アセットストレージ
         'basic_info.public_asset_disk' => '公開アセットディスク',
-
         'basic_info' => '基本情報',
         'basic_info.shop_name' => 'ショップ名',
         'basic_info.route_path' => 'ルートパス',
@@ -1938,6 +1934,21 @@ return [
             'carrier_id_integer' => '配送会社IDは数字である必要があります。',
             'carrier_id_exists' => '登録されていない配送会社です。',
             'tracking_number_max' => '送り状番号は:max文字以内で入力してください。',
+        ],
+        'min_amount' => [
+            'numeric' => '最小金額は数字である必要があります。',
+        ],
+        'max_amount' => [
+            'numeric' => '最大金額は数字である必要があります。',
+            'gte' => '最大金額は最小金額以上である必要があります。',
+        ],
+        'currency_code' => [
+            'in' => '使用されたことのない通貨です。',
+        ],
+        'charge_payment_methods' => [
+            'array' => '請求決済方法フィルターは配列である必要があります。',
+            'prohibited' => 'このタイプは請求決済方法フィルターを使用できません。',
+            'in' => '使用されたことのない請求決済方法です。',
         ],
     ],
     'user_address' => [

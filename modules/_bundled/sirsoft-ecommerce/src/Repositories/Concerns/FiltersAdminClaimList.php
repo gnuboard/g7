@@ -25,7 +25,16 @@ trait FiltersAdminClaimList
      * 지원하지 않는 축은 키를 null 로 둔다 — 그 축의 필터 입력은 FormRequest 가
      * `prohibited` 로 이미 거절하므로 여기서는 적용을 건너뛰기만 하면 된다.
      *
-     * @return array{status: string, number: string, requester: string, reason: string, fault: ?string, charge: ?string, items_relation: string} 컬럼 대응표
+     * 금액 축은 컬럼 하나로 표현되지 않는다 — 유형마다 무엇이 "그 행의 금액" 인지가 다르고
+     * (교환·반품 = 청구액 / 환불·취소 = 환불액 + 환불 마일리지), 취소는 자기 테이블에 금액
+     * 컬럼이 아예 없어 환불 관계를 거친다. 그래서 합산 대상 컬럼 목록(`amount_columns`)과
+     * 경유 관계(`amount_relation`)를 따로 선언한다. 목록 화면의 '금액' 컬럼이 그리는 값과
+     * 같은 것을 걸러야 운영자가 "보이는 금액으로 거른다" 고 믿을 수 있다.
+     *
+     * 통화도 마찬가지다 — 교환·반품은 자기 `currency_code` 를, 환불·취소는 주문의 `currency`
+     * 를 본다(`currency` 가 null 이면 주문 조인).
+     *
+     * @return array{status: string, number: string, requester: string, reason: string, fault: ?string, charge: ?string, items_relation: string, amount_columns: array<int, string>, amount_relation: ?string, currency: ?string, charge_payment_relation: ?string} 컬럼 대응표
      */
     abstract protected function adminClaimColumns(): array;
 
@@ -33,7 +42,7 @@ trait FiltersAdminClaimList
      * 관리자 목록 필터를 쿼리에 적용합니다.
      *
      * @param  Builder  $query  대상 쿼리
-     * @param  array  $filters  필터 (statuses / from / to / fault_types / charge_methods / reason_code / requester_type / search_field / search_keyword)
+     * @param  array  $filters  필터 (statuses / from / to / fault_types / charge_methods / reason_code / requester_type / search_field / search_keyword / min_amount / max_amount / currency_code / charge_payment_methods)
      */
     protected function applyAdminClaimFilters(Builder $query, array $filters): void
     {
@@ -71,7 +80,94 @@ trait FiltersAdminClaimList
             $query->whereNull($columns['requester']);
         }
 
+        $this->applyAdminClaimAmountRange($query, $filters, $columns);
+        $this->applyAdminClaimCurrency($query, $filters, $columns);
+
+        if (! empty($filters['charge_payment_methods']) && $columns['charge_payment_relation'] !== null) {
+            $query->whereHas(
+                $columns['charge_payment_relation'],
+                fn ($q) => $q->whereIn('payment_method', (array) $filters['charge_payment_methods'])
+            );
+        }
+
         $this->applyAdminClaimSearch($query, $filters, $columns);
+    }
+
+    /**
+     * 금액 범위 필터를 쿼리에 적용합니다.
+     *
+     * 합산 컬럼이 둘 이상이면 raw 비교가 불가피하다. 컬럼명은 대응표(코드 상수)에서만 오고
+     * 값은 바인딩으로 넘기며, 식별자는 그래머의 `wrap()` 이 감싼다 — 테이블명·별칭을 문자열로
+     * 조립하지 않는다.
+     *
+     * @param  Builder  $query  대상 쿼리
+     * @param  array  $filters  필터
+     * @param  array  $columns  컬럼 대응표
+     */
+    protected function applyAdminClaimAmountRange(Builder $query, array $filters, array $columns): void
+    {
+        $min = $filters['min_amount'] ?? null;
+        $max = $filters['max_amount'] ?? null;
+
+        if ($min === null && $max === null) {
+            return;
+        }
+
+        $amountColumns = $columns['amount_columns'] ?? [];
+
+        if ($amountColumns === []) {
+            return;
+        }
+
+        $apply = function (Builder $scoped) use ($amountColumns, $min, $max): void {
+            $grammar = $scoped->getQuery()->getGrammar();
+            $expression = count($amountColumns) === 1
+                ? $grammar->wrap($amountColumns[0])
+                : '('.implode(' + ', array_map(fn ($c) => $grammar->wrap($c), $amountColumns)).')';
+
+            if ($min !== null) {
+                $scoped->whereRaw("{$expression} >= ?", [$min]);
+            }
+
+            if ($max !== null) {
+                $scoped->whereRaw("{$expression} <= ?", [$max]);
+            }
+        };
+
+        // 취소는 자기 테이블에 금액이 없어 환불 관계를 거친다 — 환불이 아직 없는 취소 건은
+        // 금액으로 거를 대상이 아니므로 whereHas 가 자연히 제외한다.
+        if (($columns['amount_relation'] ?? null) !== null) {
+            $query->whereHas($columns['amount_relation'], $apply);
+
+            return;
+        }
+
+        $apply($query);
+    }
+
+    /**
+     * 통화 필터를 쿼리에 적용합니다.
+     *
+     * @param  Builder  $query  대상 쿼리
+     * @param  array  $filters  필터
+     * @param  array  $columns  컬럼 대응표
+     */
+    protected function applyAdminClaimCurrency(Builder $query, array $filters, array $columns): void
+    {
+        $code = $filters['currency_code'] ?? null;
+
+        if ($code === null || $code === '') {
+            return;
+        }
+
+        if (($columns['currency'] ?? null) !== null) {
+            $query->where($columns['currency'], $code);
+
+            return;
+        }
+
+        // 자기 통화 컬럼이 없는 유형(환불·취소)은 주문의 결제 통화가 근거다.
+        $query->whereHas('order', fn ($q) => $q->where('currency', $code));
     }
 
     /**

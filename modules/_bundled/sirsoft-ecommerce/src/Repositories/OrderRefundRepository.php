@@ -218,6 +218,12 @@ class OrderRefundRepository implements OrderRefundRepositoryInterface
             'fault' => 'fault_type',
             'charge' => null,
             'items_relation' => 'refundOptions',
+            // 목록 '금액' 컬럼이 그리는 값과 같다 (환불액 + 환불 마일리지).
+            'amount_columns' => ['refund_amount', 'refund_points_amount'],
+            'amount_relation' => null,
+            // 환불 테이블에는 통화 컬럼이 없다 — 주문의 결제 통화가 근거다.
+            'currency' => null,
+            'charge_payment_relation' => null,
         ];
     }
 

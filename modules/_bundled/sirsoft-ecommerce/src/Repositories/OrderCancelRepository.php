@@ -159,6 +159,11 @@ class OrderCancelRepository implements OrderCancelRepositoryInterface
             'fault' => null,
             'charge' => null,
             'items_relation' => 'cancelOptions',
+            // 취소는 자기 테이블에 금액 컬럼이 없다 — 목록도 환불 관계에서 가져온다.
+            'amount_columns' => ['refund_amount', 'refund_points_amount'],
+            'amount_relation' => 'refund',
+            'currency' => null,
+            'charge_payment_relation' => null,
         ];
     }
 }

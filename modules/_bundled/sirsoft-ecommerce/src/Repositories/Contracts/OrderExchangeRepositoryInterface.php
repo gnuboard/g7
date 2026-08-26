@@ -137,4 +137,12 @@ interface OrderExchangeRepositoryInterface
      * @return string|null 원 상태 값 (이 신청서의 활성 상품 행이 없으면 null)
      */
     public function findOriginalOptionStatus(int $exchangeId, int $orderOptionId): ?string;
+
+    /**
+     * 교환 신청서에 그 통화가 기록돼 있는지 확인합니다. (관리자 목록 통화 필터 어휘의 마지막 근거)
+     *
+     * @param  string  $code  통화 코드
+     * @return bool 기록 존재 여부
+     */
+    public function hasRecordedCurrency(string $code): bool;
 }

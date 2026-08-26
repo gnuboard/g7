@@ -18,6 +18,8 @@
       "brands": "브랜드 목록",
       "carriers": "택배사 목록",
       "categories": "카테고리 목록",
+      "claim_reasons": "취소/반품/교환 사유",
+      "claims": "취소/반품/교환 목록",
       "commonInfos": "공통정보 목록",
       "common_infos": "공통정보 목록",
       "copy_source": "복사 원본",
@@ -82,6 +84,9 @@
     },
     "order": {
       "$partial": "partial/ko/admin/order.json"
+    },
+    "claim": {
+      "$partial": "partial/ko/admin/claim.json"
     },
     "main_banner": {
       "$partial": "partial/ko/admin/main_banner.json"

@@ -2057,6 +2057,21 @@ return [
         'requester_type' => [
             'in' => '회원구분은 member 또는 guest 여야 합니다.',
         ],
+        'min_amount' => [
+            'numeric' => '최소 금액은 숫자여야 합니다.',
+        ],
+        'max_amount' => [
+            'numeric' => '최대 금액은 숫자여야 합니다.',
+            'gte' => '최대 금액은 최소 금액보다 크거나 같아야 합니다.',
+        ],
+        'currency_code' => [
+            'in' => '사용된 적 없는 통화입니다.',
+        ],
+        'charge_payment_methods' => [
+            'array' => '청구 결제수단 필터는 배열이어야 합니다.',
+            'prohibited' => '이 유형에는 청구 결제수단 필터를 사용할 수 없습니다.',
+            'in' => '사용된 적 없는 청구 결제수단입니다.',
+        ],
         'admin_status' => [
             'required' => '변경할 상태를 선택해 주세요.',
             'in' => '이 유형에서 지정할 수 없는 상태입니다.',

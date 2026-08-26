@@ -1,0 +1,99 @@
+{
+  "title": "취소/반품/교환 관리",
+  "description": "교환·반품·환불·취소 신청서를 조회하고 처리합니다",
+  "subtab": {
+    "exchange": "교환",
+    "return": "반품",
+    "refund": "환불",
+    "cancel": "취소"
+  },
+  "filter": {
+    "date": "신청일",
+    "start_date": "시작일",
+    "end_date": "종료일",
+    "date_quick": {
+      "today": "오늘",
+      "week": "일주일",
+      "1_month": "1개월",
+      "3_months": "3개월",
+      "6_months": "6개월",
+      "1_year": "1년"
+    },
+    "claim_status": "상태",
+    "fault_type": "귀책",
+    "charge_method": "청구",
+    "reason": "사유",
+    "reason_all": "전체",
+    "amount": "금액",
+    "min_amount": "최소 금액",
+    "max_amount": "최대 금액",
+    "currency_all": "전체",
+    "charge_payment_method": "청구 결제수단",
+    "requester_type": "회원 구분",
+    "requester_type_option": {
+      "all": "전체",
+      "member": "회원",
+      "guest": "비회원"
+    },
+    "detail_title": "상세검색"
+  },
+  "search": {
+    "placeholder": "검색어를 입력하세요...",
+    "field": {
+      "claim_number": "클레임번호",
+      "order_number": "주문번호",
+      "requester": "신청자",
+      "product_name": "상품명"
+    },
+    "edit_search": "검색 편집",
+    "preset_manage": "프리셋 관리",
+    "column_select": "컬럼 선택",
+    "detail_search": "상세검색"
+  },
+  "preset": {
+    "label": "검색 프리셋",
+    "applied": "{{name}} 프리셋이 적용되었습니다.",
+    "save_title": "프리셋 저장"
+  },
+  "modal": {
+    "preset_save": {
+      "title": "프리셋 저장",
+      "description": "현재 검색 조건을 프리셋으로 저장합니다.",
+      "placeholder": "프리셋 이름을 입력하세요",
+      "save": "저장"
+    },
+    "preset_manage": {
+      "title": "프리셋 관리",
+      "description": "검색 프리셋을 관리합니다.",
+      "add_new": "새 프리셋 추가",
+      "empty": "저장된 프리셋이 없습니다."
+    },
+    "preset_edit": {
+      "title": "프리셋 수정"
+    },
+    "preset_delete": {
+      "title": "프리셋 삭제",
+      "confirm": "'{{name}}' 프리셋을 삭제하시겠습니까?"
+    }
+  },
+  "action": {
+    "search": "검색",
+    "reset": "초기화",
+    "save_preset": "프리셋 저장",
+    "cancel": "취소",
+    "edit": "수정",
+    "delete": "삭제"
+  },
+  "column": {
+    "requested_at": "신청일",
+    "claim_number": "클레임번호",
+    "order_number": "주문번호",
+    "item": "신청상품",
+    "requester": "신청자",
+    "status": "상태",
+    "reason": "사유",
+    "fault_type": "귀책",
+    "amount": "금액",
+    "completed_at": "완료일"
+  }
+}

@@ -188,4 +188,12 @@ class ClaimPaymentRepository implements ClaimPaymentRepositoryInterface
             ->where('payment_number', $paymentNumber)
             ->first();
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function hasRecordedPaymentMethod(string $method): bool
+    {
+        return $this->model->newQuery()->where('payment_method', $method)->exists();
+    }
 }

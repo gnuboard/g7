@@ -78,23 +78,11 @@
               "actions": [
                 {
                   "type": "change",
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "_local",
-                        "visibleFilters": "{{(_local.visibleFilters || []).includes('date') ? (_local.visibleFilters || []).filter(f => f !== 'date') : [...(_local.visibleFilters || []), 'date']}}"
-                      }
-                    },
-                    {
-                      "handler": "saveToLocalStorage",
-                      "params": {
-                        "key": "g7_order_filter_visible_filters",
-                        "value": "{{(_local.visibleFilters || []).includes('date') ? (_local.visibleFilters || []).filter(f => f !== 'date') : [...(_local.visibleFilters || []), 'date']}}"
-                      }
-                    }
-                  ]
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "visibleFilters": "{{(_local.visibleFilters || []).includes('date') ? (_local.visibleFilters || []).filter(f => f !== 'date') : [...(_local.visibleFilters || []), 'date']}}"
+                  }
                 }
               ]
             },
@@ -453,23 +441,11 @@
               "actions": [
                 {
                   "type": "change",
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "_local",
-                        "visibleFilters": "{{(_local.visibleFilters || []).includes('orderStatus') ? (_local.visibleFilters || []).filter(f => f !== 'orderStatus') : [...(_local.visibleFilters || []), 'orderStatus']}}"
-                      }
-                    },
-                    {
-                      "handler": "saveToLocalStorage",
-                      "params": {
-                        "key": "g7_order_filter_visible_filters",
-                        "value": "{{(_local.visibleFilters || []).includes('orderStatus') ? (_local.visibleFilters || []).filter(f => f !== 'orderStatus') : [...(_local.visibleFilters || []), 'orderStatus']}}"
-                      }
-                    }
-                  ]
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "visibleFilters": "{{(_local.visibleFilters || []).includes('orderStatus') ? (_local.visibleFilters || []).filter(f => f !== 'orderStatus') : [...(_local.visibleFilters || []), 'orderStatus']}}"
+                  }
                 }
               ]
             },
@@ -764,23 +740,11 @@
               "actions": [
                 {
                   "type": "change",
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "_local",
-                        "visibleFilters": "{{(_local.visibleFilters || []).includes('deliveryMethod') ? (_local.visibleFilters || []).filter(f => f !== 'deliveryMethod') : [...(_local.visibleFilters || []), 'deliveryMethod']}}"
-                      }
-                    },
-                    {
-                      "handler": "saveToLocalStorage",
-                      "params": {
-                        "key": "g7_order_filter_visible_filters",
-                        "value": "{{(_local.visibleFilters || []).includes('deliveryMethod') ? (_local.visibleFilters || []).filter(f => f !== 'deliveryMethod') : [...(_local.visibleFilters || []), 'deliveryMethod']}}"
-                      }
-                    }
-                  ]
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "visibleFilters": "{{(_local.visibleFilters || []).includes('deliveryMethod') ? (_local.visibleFilters || []).filter(f => f !== 'deliveryMethod') : [...(_local.visibleFilters || []), 'deliveryMethod']}}"
+                  }
                 }
               ]
             },
@@ -874,23 +838,11 @@
               "actions": [
                 {
                   "type": "change",
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "_local",
-                        "visibleFilters": "{{(_local.visibleFilters || []).includes('paymentMethod') ? (_local.visibleFilters || []).filter(f => f !== 'paymentMethod') : [...(_local.visibleFilters || []), 'paymentMethod']}}"
-                      }
-                    },
-                    {
-                      "handler": "saveToLocalStorage",
-                      "params": {
-                        "key": "g7_order_filter_visible_filters",
-                        "value": "{{(_local.visibleFilters || []).includes('paymentMethod') ? (_local.visibleFilters || []).filter(f => f !== 'paymentMethod') : [...(_local.visibleFilters || []), 'paymentMethod']}}"
-                      }
-                    }
-                  ]
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "visibleFilters": "{{(_local.visibleFilters || []).includes('paymentMethod') ? (_local.visibleFilters || []).filter(f => f !== 'paymentMethod') : [...(_local.visibleFilters || []), 'paymentMethod']}}"
+                  }
                 }
               ]
             },
@@ -984,23 +936,11 @@
               "actions": [
                 {
                   "type": "change",
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "_local",
-                        "visibleFilters": "{{(_local.visibleFilters || []).includes('category') ? (_local.visibleFilters || []).filter(f => f !== 'category') : [...(_local.visibleFilters || []), 'category']}}"
-                      }
-                    },
-                    {
-                      "handler": "saveToLocalStorage",
-                      "params": {
-                        "key": "g7_order_filter_visible_filters",
-                        "value": "{{(_local.visibleFilters || []).includes('category') ? (_local.visibleFilters || []).filter(f => f !== 'category') : [...(_local.visibleFilters || []), 'category']}}"
-                      }
-                    }
-                  ]
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "visibleFilters": "{{(_local.visibleFilters || []).includes('category') ? (_local.visibleFilters || []).filter(f => f !== 'category') : [...(_local.visibleFilters || []), 'category']}}"
+                  }
                 }
               ]
             },
@@ -1156,23 +1096,11 @@
               "actions": [
                 {
                   "type": "change",
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "_local",
-                        "visibleFilters": "{{(_local.visibleFilters || []).includes('price') ? (_local.visibleFilters || []).filter(f => f !== 'price') : [...(_local.visibleFilters || []), 'price']}}"
-                      }
-                    },
-                    {
-                      "handler": "saveToLocalStorage",
-                      "params": {
-                        "key": "g7_order_filter_visible_filters",
-                        "value": "{{(_local.visibleFilters || []).includes('price') ? (_local.visibleFilters || []).filter(f => f !== 'price') : [...(_local.visibleFilters || []), 'price']}}"
-                      }
-                    }
-                  ]
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "visibleFilters": "{{(_local.visibleFilters || []).includes('price') ? (_local.visibleFilters || []).filter(f => f !== 'price') : [...(_local.visibleFilters || []), 'price']}}"
+                  }
                 }
               ]
             },
@@ -1299,23 +1227,11 @@
               "actions": [
                 {
                   "type": "change",
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "_local",
-                        "visibleFilters": "{{(_local.visibleFilters || []).includes('country') ? (_local.visibleFilters || []).filter(f => f !== 'country') : [...(_local.visibleFilters || []), 'country']}}"
-                      }
-                    },
-                    {
-                      "handler": "saveToLocalStorage",
-                      "params": {
-                        "key": "g7_order_filter_visible_filters",
-                        "value": "{{(_local.visibleFilters || []).includes('country') ? (_local.visibleFilters || []).filter(f => f !== 'country') : [...(_local.visibleFilters || []), 'country']}}"
-                      }
-                    }
-                  ]
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "visibleFilters": "{{(_local.visibleFilters || []).includes('country') ? (_local.visibleFilters || []).filter(f => f !== 'country') : [...(_local.visibleFilters || []), 'country']}}"
+                  }
                 }
               ]
             },
@@ -1416,23 +1332,11 @@
               "actions": [
                 {
                   "type": "change",
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "_local",
-                        "visibleFilters": "{{(_local.visibleFilters || []).includes('device') ? (_local.visibleFilters || []).filter(f => f !== 'device') : [...(_local.visibleFilters || []), 'device']}}"
-                      }
-                    },
-                    {
-                      "handler": "saveToLocalStorage",
-                      "params": {
-                        "key": "g7_order_filter_visible_filters",
-                        "value": "{{(_local.visibleFilters || []).includes('device') ? (_local.visibleFilters || []).filter(f => f !== 'device') : [...(_local.visibleFilters || []), 'device']}}"
-                      }
-                    }
-                  ]
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "visibleFilters": "{{(_local.visibleFilters || []).includes('device') ? (_local.visibleFilters || []).filter(f => f !== 'device') : [...(_local.visibleFilters || []), 'device']}}"
+                  }
                 }
               ]
             },
@@ -1559,23 +1463,11 @@
               "actions": [
                 {
                   "type": "change",
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "_local",
-                        "visibleFilters": "{{(_local.visibleFilters || []).includes('shippingPolicy') ? (_local.visibleFilters || []).filter(f => f !== 'shippingPolicy') : [...(_local.visibleFilters || []), 'shippingPolicy']}}"
-                      }
-                    },
-                    {
-                      "handler": "saveToLocalStorage",
-                      "params": {
-                        "key": "g7_order_filter_visible_filters",
-                        "value": "{{(_local.visibleFilters || []).includes('shippingPolicy') ? (_local.visibleFilters || []).filter(f => f !== 'shippingPolicy') : [...(_local.visibleFilters || []), 'shippingPolicy']}}"
-                      }
-                    }
-                  ]
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "visibleFilters": "{{(_local.visibleFilters || []).includes('shippingPolicy') ? (_local.visibleFilters || []).filter(f => f !== 'shippingPolicy') : [...(_local.visibleFilters || []), 'shippingPolicy']}}"
+                  }
                 }
               ]
             },
@@ -1643,23 +1535,11 @@
               "actions": [
                 {
                   "type": "change",
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "_local",
-                        "visibleFilters": "{{(_local.visibleFilters || []).includes('shippingFee') ? (_local.visibleFilters || []).filter(f => f !== 'shippingFee') : [...(_local.visibleFilters || []), 'shippingFee']}}"
-                      }
-                    },
-                    {
-                      "handler": "saveToLocalStorage",
-                      "params": {
-                        "key": "g7_order_filter_visible_filters",
-                        "value": "{{(_local.visibleFilters || []).includes('shippingFee') ? (_local.visibleFilters || []).filter(f => f !== 'shippingFee') : [...(_local.visibleFilters || []), 'shippingFee']}}"
-                      }
-                    }
-                  ]
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "visibleFilters": "{{(_local.visibleFilters || []).includes('shippingFee') ? (_local.visibleFilters || []).filter(f => f !== 'shippingFee') : [...(_local.visibleFilters || []), 'shippingFee']}}"
+                  }
                 }
               ]
             },
@@ -1774,23 +1654,11 @@
               "actions": [
                 {
                   "type": "change",
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "_local",
-                        "visibleFilters": "{{(_local.visibleFilters || []).includes('orderer') ? (_local.visibleFilters || []).filter(f => f !== 'orderer') : [...(_local.visibleFilters || []), 'orderer']}}"
-                      }
-                    },
-                    {
-                      "handler": "saveToLocalStorage",
-                      "params": {
-                        "key": "g7_order_filter_visible_filters",
-                        "value": "{{(_local.visibleFilters || []).includes('orderer') ? (_local.visibleFilters || []).filter(f => f !== 'orderer') : [...(_local.visibleFilters || []), 'orderer']}}"
-                      }
-                    }
-                  ]
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "visibleFilters": "{{(_local.visibleFilters || []).includes('orderer') ? (_local.visibleFilters || []).filter(f => f !== 'orderer') : [...(_local.visibleFilters || []), 'orderer']}}"
+                  }
                 }
               ]
             },
@@ -1934,23 +1802,11 @@
               "actions": [
                 {
                   "type": "change",
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "_local",
-                        "visibleFilters": "{{(_local.visibleFilters || []).includes('memberType') ? (_local.visibleFilters || []).filter(f => f !== 'memberType') : [...(_local.visibleFilters || []), 'memberType']}}"
-                      }
-                    },
-                    {
-                      "handler": "saveToLocalStorage",
-                      "params": {
-                        "key": "g7_order_filter_visible_filters",
-                        "value": "{{(_local.visibleFilters || []).includes('memberType') ? (_local.visibleFilters || []).filter(f => f !== 'memberType') : [...(_local.visibleFilters || []), 'memberType']}}"
-                      }
-                    }
-                  ]
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "visibleFilters": "{{(_local.visibleFilters || []).includes('memberType') ? (_local.visibleFilters || []).filter(f => f !== 'memberType') : [...(_local.visibleFilters || []), 'memberType']}}"
+                  }
                 }
               ]
             },
@@ -2144,9 +2000,9 @@
       "id": "search_row_wrapper",
       "type": "basic",
       "name": "Div",
-      "comment": "검색 영역 - 검색 필드와 버튼 영역 분리",
+      "comment": "검색 영역 - 검색 필드와 버튼 영역 분리. `flex flex-col` 은 기준 display 다 — 빼면 md:flex-row 가 방향만 정하고 요소는 block 으로 남아 검색행과 버튼행이 두 줄로 갈린다 (#408 시맨틱 치환 때 사라졌던 회귀, 2026-08-26 복원).",
       "props": {
-        "className": "md:flex-row md:items-center"
+        "className": "flex flex-col md:flex-row md:items-center gap-3"
       },
       "children": [
         {

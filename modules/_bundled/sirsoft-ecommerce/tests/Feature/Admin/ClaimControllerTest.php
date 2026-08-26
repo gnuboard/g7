@@ -20,6 +20,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
 use Modules\Sirsoft\Ecommerce\Models\ShippingCarrier;
 use Modules\Sirsoft\Ecommerce\Services\ClaimAttachmentService;
+use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\OrderExchangeService;
 use Modules\Sirsoft\Ecommerce\Services\OrderReturnService;
 use Modules\Sirsoft\Ecommerce\Services\UserClaimService;
@@ -195,6 +196,285 @@ class ClaimControllerTest extends ModuleTestCase
 
         // 환불에는 청구 방식 축이 없다.
         $this->actingAs($this->admin)->getJson($this->base().'/claims?type=refund&charge_methods[]=pay_on_request')
+            ->assertStatus(422);
+    }
+
+    /**
+     * @effects amount_range_reads_the_column_the_list_amount_shows, max_amount_alone_is_a_valid_combination
+     */
+    public function test_list_filters_by_amount_range_per_type(): void
+    {
+        // 금액 축은 목록 '금액' 컬럼이 그리는 값과 같아야 한다 — 유형마다 근거 컬럼이 다르다.
+        $cheap = $this->makeExchange();
+        $cheap->update(['total_charge_amount' => 3000]);
+        $pricey = $this->makeExchange();
+        $pricey->update(['total_charge_amount' => 30000]);
+
+        $this->actingAs($this->admin)->getJson($this->base().'/claims?type=exchange&min_amount=10000')
+            ->assertOk()
+            ->assertJsonCount(1, 'data.data')
+            ->assertJsonPath('data.data.0.claim_number', $pricey->exchange_number);
+
+        $this->actingAs($this->admin)->getJson($this->base().'/claims?type=exchange&max_amount=10000')
+            ->assertOk()
+            ->assertJsonCount(1, 'data.data')
+            ->assertJsonPath('data.data.0.claim_number', $cheap->exchange_number);
+
+        // 최대 < 최소 는 결과가 늘 비는 조합이라 게이트가 막는다 (빈 목록으로 위장하지 않게).
+        $this->actingAs($this->admin)->getJson($this->base().'/claims?type=exchange&min_amount=5000&max_amount=1000')
+            ->assertStatus(422);
+    }
+
+    public function test_refund_amount_range_sums_pg_and_mileage(): void
+    {
+        // 환불은 '환불액 + 환불 마일리지' 가 목록 금액이다 — 한쪽만 보면 합계로 거른 결과와 어긋난다.
+        $order = $this->deliveredClaimOrder();
+        $refund = OrderRefund::create([
+            'order_id' => $order->id,
+            'refund_number' => 'RF-AMOUNT-1',
+            'refund_status' => 'requested',
+            'refund_method' => 'pg',
+            'refund_amount' => 4000,
+            'refund_points_amount' => 3000,
+            'items_snapshot' => [],
+        ]);
+
+        // 합 7,000 — PG 금액(4,000)만 보면 걸리지 않는 구간으로 검증한다.
+        $this->actingAs($this->admin)->getJson($this->base().'/claims?type=refund&min_amount=5000')
+            ->assertOk()
+            ->assertJsonCount(1, 'data.data')
+            ->assertJsonPath('data.data.0.claim_number', $refund->refund_number);
+
+        $this->actingAs($this->admin)->getJson($this->base().'/claims?type=refund&max_amount=6999')
+            ->assertOk()
+            ->assertJsonCount(0, 'data.data');
+    }
+
+    public function test_cancel_amount_range_reads_the_linked_refund(): void
+    {
+        // 취소는 자기 테이블에 금액이 없다 — 목록과 같은 근거(연결된 환불)로 걸러야 한다.
+        $order = $this->deliveredClaimOrder();
+        $cancel = OrderCancel::create([
+            'order_id' => $order->id,
+            'cancel_number' => 'CL-AMOUNT-1',
+            'cancel_type' => CancelTypeEnum::FULL,
+            'cancel_status' => CancelStatusEnum::COMPLETED,
+            'cancel_reason_type' => 'change_of_mind',
+            'items_snapshot' => [],
+        ]);
+        OrderRefund::create([
+            'order_id' => $order->id,
+            'order_cancel_id' => $cancel->id,
+            'refund_number' => 'RF-CANCEL-1',
+            'refund_status' => 'completed',
+            'refund_method' => 'pg',
+            'refund_amount' => 12000,
+            'refund_points_amount' => 0,
+            'items_snapshot' => [],
+        ]);
+
+        $this->actingAs($this->admin)->getJson($this->base().'/claims?type=cancel&min_amount=10000')
+            ->assertOk()
+            ->assertJsonCount(1, 'data.data')
+            ->assertJsonPath('data.data.0.claim_number', $cancel->cancel_number);
+
+        $this->actingAs($this->admin)->getJson($this->base().'/claims?type=cancel&max_amount=9999')
+            ->assertOk()
+            ->assertJsonCount(0, 'data.data');
+    }
+
+    /**
+     * @effects amount_range_reads_the_column_the_list_amount_shows
+     */
+    public function test_list_filters_by_currency(): void
+    {
+        $exchange = $this->makeExchange();
+
+        $this->actingAs($this->admin)->getJson($this->base().'/claims?type=exchange&currency_code='.$exchange->currency_code)
+            ->assertOk()
+            ->assertJsonCount(1, 'data.data');
+
+        // 등록되지 않은 통화는 빈 목록이 아니라 422 다 — 오타가 "결과 없음" 으로 위장하지 않게.
+        $this->actingAs($this->admin)->getJson($this->base().'/claims?type=exchange&currency_code=ZZZ')
+            ->assertStatus(422);
+    }
+
+    /**
+     * 이 필터가 거르는 값은 거래 시점에 동결된 통화다. 운영자가 그 통화를 설정에서 내려도
+     * 그 값으로 기록된 신청서는 남으므로, 게이트가 현재 등록분만 받으면 그 신청서는 어떤
+     * 필터 조합으로도 도달 불가가 되고 그 통화가 실린 URL 은 목록 전체를 422 로 만든다.
+     *
+     * @effects currency_gate_accepts_codes_recorded_on_claims_even_when_settings_dropped_them, currency_gate_rejects_codes_never_used
+     */
+    public function test_list_accepts_currency_that_was_removed_from_settings(): void
+    {
+        $settings = app(EcommerceSettingsService::class);
+
+        $currencies = collect($settings->getSetting('language_currency.currencies', []));
+        $baseCode = $settings->getSetting('language_currency.default_currency');
+
+        // 기본 통화가 아닌 등록 통화 하나를 골라 실제로 내린다 (기본 통화는 내려지지 않는다).
+        $target = $currencies->pluck('code')->filter()->first(fn ($code) => $code !== $baseCode);
+        $this->assertNotNull($target, '테스트 환경에 기본 통화 외 등록 통화가 필요하다.');
+
+        // 내리기 전에는 당연히 통과한다 — 뒤 단언이 "원래 되던 것" 을 재확인하는 게 아님을 고정한다.
+        $this->actingAs($this->admin)->getJson($this->base().'/claims?type=exchange&currency_code='.$target)
+            ->assertOk();
+
+        $settings->saveSettings([
+            'language_currency' => [
+                'default_currency' => $baseCode,
+                'currencies' => $currencies->reject(fn ($c) => ($c['code'] ?? null) === $target)->values()->all(),
+            ],
+        ]);
+
+        // 내려간 것이 맞는지 먼저 확인한다 (설정이 안 바뀌었으면 아래 단언은 무의미하다).
+        $this->assertNotContains(
+            $target,
+            collect($settings->getSetting('language_currency.currencies', []))->pluck('code')->all(),
+            '대상 통화가 등록 목록에서 내려가야 한다.'
+        );
+        $this->assertContains(
+            $target,
+            (array) $settings->getSetting('language_currency.removed_default_currencies', []),
+            '내린 통화는 removed_default_currencies 에 기록돼야 한다.'
+        );
+
+        // 내려간 뒤에도 게이트를 통과한다 (결과가 0건인 것과 422 는 다르다).
+        $this->actingAs($this->admin)->getJson($this->base().'/claims?type=exchange&currency_code='.$target)
+            ->assertOk();
+
+        // 한 번도 등록된 적 없는 코드는 여전히 거절한다.
+        $this->actingAs($this->admin)->getJson($this->base().'/claims?type=exchange&currency_code=ZZZ')
+            ->assertStatus(422);
+    }
+
+    /**
+     * tombstone(`removed_default_currencies`)은 **기본 제공 통화**의 삭제만 남긴다. 운영자가
+     * 직접 추가한 통화를 내리면 설정에 아무 흔적도 남지 않으므로, 설정 어휘만 보는 게이트는
+     * 그 통화로 동결된 신청서를 다시 도달 불가로 만든다. 마지막 근거는 실제로 기록된 값이다.
+     *
+     * @effects currency_gate_accepts_codes_recorded_on_claims_even_when_settings_dropped_them, currency_gate_rejects_codes_never_used
+     */
+    public function test_list_accepts_currency_the_admin_added_and_then_removed(): void
+    {
+        $settings = app(EcommerceSettingsService::class);
+
+        $baseCode = $settings->getSetting('language_currency.default_currency');
+        $currencies = collect($settings->getSetting('language_currency.currencies', []));
+        $this->assertNotContains('GBP', $currencies->pluck('code')->all(), 'GBP 는 기본 제공 통화가 아니어야 한다.');
+
+        // 운영자가 직접 추가한 통화 (defaults.json 밖 — tombstone 대상이 아니다)
+        $added = array_merge((array) $currencies->first(), ['code' => 'GBP', 'is_default' => false]);
+        $settings->saveSettings([
+            'language_currency' => [
+                'default_currency' => $baseCode,
+                'currencies' => $currencies->push($added)->values()->all(),
+            ],
+        ]);
+
+        // 그 통화로 신청서가 동결된다.
+        $exchange = $this->makeExchange();
+        $exchange->currency_code = 'GBP';
+        $exchange->save();
+
+        // 운영자가 그 통화를 다시 내린다.
+        $settings->saveSettings([
+            'language_currency' => [
+                'default_currency' => $baseCode,
+                'currencies' => $currencies->reject(fn ($c) => ($c['code'] ?? null) === 'GBP')->values()->all(),
+            ],
+        ]);
+
+        $this->assertNotContains(
+            'GBP',
+            collect($settings->getSetting('language_currency.currencies', []))->pluck('code')->all(),
+            '추가했던 통화가 내려가야 한다.'
+        );
+        $this->assertNotContains(
+            'GBP',
+            (array) $settings->getSetting('language_currency.removed_default_currencies', []),
+            '관리자 추가 통화는 tombstone 되지 않는다 — 이 테스트의 전제다.'
+        );
+
+        // 설정 어느 곳에도 남지 않았지만, 그 값으로 기록된 신청서가 있으므로 도달 가능해야 한다.
+        $this->actingAs($this->admin)
+            ->getJson($this->base().'/claims?type=exchange&currency_code=GBP')
+            ->assertOk()
+            ->assertJsonCount(1, 'data.data')
+            ->assertJsonPath('data.data.0.claim_number', $exchange->exchange_number);
+
+        // 어디에도 쓰인 적 없는 코드는 여전히 거절한다 (오타가 "결과 없음" 으로 위장하지 않는다).
+        $this->actingAs($this->admin)->getJson($this->base().'/claims?type=exchange&currency_code=ZZZ')
+            ->assertStatus(422);
+    }
+
+    /**
+     * 청구 결제수단도 통화와 같은 규칙이다 — 설정 어휘를 벗어난 값은 실제 기록이 있을 때만
+     * 통과한다. 길이만 검사하면 오타가 조용히 0건으로 통과해 필터가 걸린 것처럼 보인다.
+     *
+     * @effects charge_payment_gate_accepts_methods_recorded_on_claim_payments, charge_payment_gate_rejects_methods_never_used
+     */
+    public function test_list_gates_charge_payment_method_by_settings_then_records(): void
+    {
+        // 설정 어휘(`claim.charge_payment_methods` = card/point)는 그대로 통과한다.
+        $this->actingAs($this->admin)
+            ->getJson($this->base().'/claims?type=exchange&charge_payment_methods[]=card')
+            ->assertOk();
+
+        // 설정에도 없고 기록도 없는 값은 거절한다.
+        $this->actingAs($this->admin)
+            ->getJson($this->base().'/claims?type=exchange&charge_payment_methods[]=never_used_method')
+            ->assertStatus(422);
+
+        // 같은 값으로 추가결제가 기록되면 도달 가능해진다 (운영자가 수단을 내린 뒤에도 남는 건).
+        $exchange = $this->makeExchange();
+        ClaimPayment::create([
+            'payable_type' => ClaimTypeEnum::EXCHANGE->value,
+            'payable_id' => $exchange->id,
+            'order_id' => $exchange->order_id,
+            'payment_number' => 'CP-GATE-1',
+            'payment_method' => 'never_used_method',
+            'payment_status' => 'pending',
+            'amount' => 3000,
+            'currency_code' => $exchange->currency_code,
+        ]);
+
+        $this->actingAs($this->admin)
+            ->getJson($this->base().'/claims?type=exchange&charge_payment_methods[]=never_used_method')
+            ->assertOk()
+            ->assertJsonCount(1, 'data.data')
+            ->assertJsonPath('data.data.0.claim_number', $exchange->exchange_number);
+    }
+
+    public function test_list_filters_by_charge_payment_method(): void
+    {
+        $paid = $this->makeExchange();
+        ClaimPayment::create([
+            'payable_type' => ClaimTypeEnum::EXCHANGE->value,
+            'payable_id' => $paid->id,
+            'order_id' => $paid->order_id,
+            'payment_number' => 'CP-FILTER-1',
+            'payment_method' => 'card',
+            'payment_status' => 'pending',
+            'amount' => 6000,
+            'currency_code' => $paid->currency_code,
+        ]);
+        $this->makeExchange();
+
+        $this->actingAs($this->admin)
+            ->getJson($this->base().'/claims?type=exchange&charge_payment_methods[]=card')
+            ->assertOk()
+            ->assertJsonCount(1, 'data.data')
+            ->assertJsonPath('data.data.0.claim_number', $paid->exchange_number);
+
+        // 추가결제가 성립하지 않는 유형에는 축 자체가 없다.
+        $this->actingAs($this->admin)
+            ->getJson($this->base().'/claims?type=refund&charge_payment_methods[]=card')
+            ->assertStatus(422);
+
+        $this->actingAs($this->admin)
+            ->getJson($this->base().'/claims?type=cancel&charge_payment_methods[]=card')
             ->assertStatus(422);
     }
 

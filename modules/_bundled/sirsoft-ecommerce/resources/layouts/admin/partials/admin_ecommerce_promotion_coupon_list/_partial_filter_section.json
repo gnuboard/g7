@@ -48,23 +48,11 @@
               "actions": [
                 {
                   "type": "change",
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "_local",
-                        "visibleFilters": "{{(_local.visibleFilters || []).includes('targetType') ? (_local.visibleFilters || []).filter(f => f !== 'targetType') : [...(_local.visibleFilters || []), 'targetType']}}"
-                      }
-                    },
-                    {
-                      "handler": "saveToLocalStorage",
-                      "params": {
-                        "key": "g7_coupon_filter_visible_filters",
-                        "value": "{{(_local.visibleFilters || []).includes('targetType') ? (_local.visibleFilters || []).filter(f => f !== 'targetType') : [...(_local.visibleFilters || []), 'targetType']}}"
-                      }
-                    }
-                  ]
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "visibleFilters": "{{(_local.visibleFilters || []).includes('targetType') ? (_local.visibleFilters || []).filter(f => f !== 'targetType') : [...(_local.visibleFilters || []), 'targetType']}}"
+                  }
                 }
               ]
             },
@@ -260,23 +248,11 @@
               "actions": [
                 {
                   "type": "change",
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "_local",
-                        "visibleFilters": "{{(_local.visibleFilters || []).includes('issueStatus') ? (_local.visibleFilters || []).filter(f => f !== 'issueStatus') : [...(_local.visibleFilters || []), 'issueStatus']}}"
-                      }
-                    },
-                    {
-                      "handler": "saveToLocalStorage",
-                      "params": {
-                        "key": "g7_coupon_filter_visible_filters",
-                        "value": "{{(_local.visibleFilters || []).includes('issueStatus') ? (_local.visibleFilters || []).filter(f => f !== 'issueStatus') : [...(_local.visibleFilters || []), 'issueStatus']}}"
-                      }
-                    }
-                  ]
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "visibleFilters": "{{(_local.visibleFilters || []).includes('issueStatus') ? (_local.visibleFilters || []).filter(f => f !== 'issueStatus') : [...(_local.visibleFilters || []), 'issueStatus']}}"
+                  }
                 }
               ]
             },
@@ -434,23 +410,11 @@
               "actions": [
                 {
                   "type": "change",
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "_local",
-                        "visibleFilters": "{{(_local.visibleFilters || []).includes('createdAt') ? (_local.visibleFilters || []).filter(f => f !== 'createdAt') : [...(_local.visibleFilters || []), 'createdAt']}}"
-                      }
-                    },
-                    {
-                      "handler": "saveToLocalStorage",
-                      "params": {
-                        "key": "g7_coupon_filter_visible_filters",
-                        "value": "{{(_local.visibleFilters || []).includes('createdAt') ? (_local.visibleFilters || []).filter(f => f !== 'createdAt') : [...(_local.visibleFilters || []), 'createdAt']}}"
-                      }
-                    }
-                  ]
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "visibleFilters": "{{(_local.visibleFilters || []).includes('createdAt') ? (_local.visibleFilters || []).filter(f => f !== 'createdAt') : [...(_local.visibleFilters || []), 'createdAt']}}"
+                  }
                 }
               ]
             },
@@ -481,7 +445,7 @@
                       "name": "Icon",
                       "props": {
                         "name": "calendar",
-                        "className": "w-4 h-4 text-gray-400 dark:text-gray-500"
+                        "className": "text-base text-gray-400 dark:text-gray-500"
                       }
                     },
                     {
@@ -725,23 +689,11 @@
               "actions": [
                 {
                   "type": "change",
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "_local",
-                        "visibleFilters": "{{(_local.visibleFilters || []).includes('benefitAmount') ? (_local.visibleFilters || []).filter(f => f !== 'benefitAmount') : [...(_local.visibleFilters || []), 'benefitAmount']}}"
-                      }
-                    },
-                    {
-                      "handler": "saveToLocalStorage",
-                      "params": {
-                        "key": "g7_coupon_filter_visible_filters",
-                        "value": "{{(_local.visibleFilters || []).includes('benefitAmount') ? (_local.visibleFilters || []).filter(f => f !== 'benefitAmount') : [...(_local.visibleFilters || []), 'benefitAmount']}}"
-                      }
-                    }
-                  ]
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "visibleFilters": "{{(_local.visibleFilters || []).includes('benefitAmount') ? (_local.visibleFilters || []).filter(f => f !== 'benefitAmount') : [...(_local.visibleFilters || []), 'benefitAmount']}}"
+                  }
                 }
               ]
             },
@@ -876,23 +828,11 @@
               "actions": [
                 {
                   "type": "change",
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "_local",
-                        "visibleFilters": "{{(_local.visibleFilters || []).includes('issueMethod') ? (_local.visibleFilters || []).filter(f => f !== 'issueMethod') : [...(_local.visibleFilters || []), 'issueMethod']}}"
-                      }
-                    },
-                    {
-                      "handler": "saveToLocalStorage",
-                      "params": {
-                        "key": "g7_coupon_filter_visible_filters",
-                        "value": "{{(_local.visibleFilters || []).includes('issueMethod') ? (_local.visibleFilters || []).filter(f => f !== 'issueMethod') : [...(_local.visibleFilters || []), 'issueMethod']}}"
-                      }
-                    }
-                  ]
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "visibleFilters": "{{(_local.visibleFilters || []).includes('issueMethod') ? (_local.visibleFilters || []).filter(f => f !== 'issueMethod') : [...(_local.visibleFilters || []), 'issueMethod']}}"
+                  }
                 }
               ]
             },
@@ -1088,23 +1028,11 @@
               "actions": [
                 {
                   "type": "change",
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "_local",
-                        "visibleFilters": "{{(_local.visibleFilters || []).includes('issueCondition') ? (_local.visibleFilters || []).filter(f => f !== 'issueCondition') : [...(_local.visibleFilters || []), 'issueCondition']}}"
-                      }
-                    },
-                    {
-                      "handler": "saveToLocalStorage",
-                      "params": {
-                        "key": "g7_coupon_filter_visible_filters",
-                        "value": "{{(_local.visibleFilters || []).includes('issueCondition') ? (_local.visibleFilters || []).filter(f => f !== 'issueCondition') : [...(_local.visibleFilters || []), 'issueCondition']}}"
-                      }
-                    }
-                  ]
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "visibleFilters": "{{(_local.visibleFilters || []).includes('issueCondition') ? (_local.visibleFilters || []).filter(f => f !== 'issueCondition') : [...(_local.visibleFilters || []), 'issueCondition']}}"
+                  }
                 }
               ]
             },
@@ -1338,23 +1266,11 @@
               "actions": [
                 {
                   "type": "change",
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "_local",
-                        "visibleFilters": "{{(_local.visibleFilters || []).includes('minOrderAmount') ? (_local.visibleFilters || []).filter(f => f !== 'minOrderAmount') : [...(_local.visibleFilters || []), 'minOrderAmount']}}"
-                      }
-                    },
-                    {
-                      "handler": "saveToLocalStorage",
-                      "params": {
-                        "key": "g7_coupon_filter_visible_filters",
-                        "value": "{{(_local.visibleFilters || []).includes('minOrderAmount') ? (_local.visibleFilters || []).filter(f => f !== 'minOrderAmount') : [...(_local.visibleFilters || []), 'minOrderAmount']}}"
-                      }
-                    }
-                  ]
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "visibleFilters": "{{(_local.visibleFilters || []).includes('minOrderAmount') ? (_local.visibleFilters || []).filter(f => f !== 'minOrderAmount') : [...(_local.visibleFilters || []), 'minOrderAmount']}}"
+                  }
                 }
               ]
             },
@@ -1427,23 +1343,11 @@
               "actions": [
                 {
                   "type": "change",
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "_local",
-                        "visibleFilters": "{{(_local.visibleFilters || []).includes('validPeriod') ? (_local.visibleFilters || []).filter(f => f !== 'validPeriod') : [...(_local.visibleFilters || []), 'validPeriod']}}"
-                      }
-                    },
-                    {
-                      "handler": "saveToLocalStorage",
-                      "params": {
-                        "key": "g7_coupon_filter_visible_filters",
-                        "value": "{{(_local.visibleFilters || []).includes('validPeriod') ? (_local.visibleFilters || []).filter(f => f !== 'validPeriod') : [...(_local.visibleFilters || []), 'validPeriod']}}"
-                      }
-                    }
-                  ]
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "visibleFilters": "{{(_local.visibleFilters || []).includes('validPeriod') ? (_local.visibleFilters || []).filter(f => f !== 'validPeriod') : [...(_local.visibleFilters || []), 'validPeriod']}}"
+                  }
                 }
               ]
             },
@@ -1467,7 +1371,7 @@
                   "name": "Icon",
                   "props": {
                     "name": "calendar",
-                    "className": "w-4 h-4 text-gray-400 dark:text-gray-500"
+                    "className": "text-base text-gray-400 dark:text-gray-500"
                   }
                 },
                 {
@@ -1543,23 +1447,11 @@
               "actions": [
                 {
                   "type": "change",
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "_local",
-                        "visibleFilters": "{{(_local.visibleFilters || []).includes('issuePeriod') ? (_local.visibleFilters || []).filter(f => f !== 'issuePeriod') : [...(_local.visibleFilters || []), 'issuePeriod']}}"
-                      }
-                    },
-                    {
-                      "handler": "saveToLocalStorage",
-                      "params": {
-                        "key": "g7_coupon_filter_visible_filters",
-                        "value": "{{(_local.visibleFilters || []).includes('issuePeriod') ? (_local.visibleFilters || []).filter(f => f !== 'issuePeriod') : [...(_local.visibleFilters || []), 'issuePeriod']}}"
-                      }
-                    }
-                  ]
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "visibleFilters": "{{(_local.visibleFilters || []).includes('issuePeriod') ? (_local.visibleFilters || []).filter(f => f !== 'issuePeriod') : [...(_local.visibleFilters || []), 'issuePeriod']}}"
+                  }
                 }
               ]
             },
@@ -1583,7 +1475,7 @@
                   "name": "Icon",
                   "props": {
                     "name": "calendar",
-                    "className": "w-4 h-4 text-gray-400 dark:text-gray-500"
+                    "className": "text-base text-gray-400 dark:text-gray-500"
                   }
                 },
                 {
@@ -1666,23 +1558,11 @@
               "actions": [
                 {
                   "type": "change",
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "_local",
-                        "visibleFilters": "{{(_local.visibleFilters || []).includes('creator') ? (_local.visibleFilters || []).filter(f => f !== 'creator') : [...(_local.visibleFilters || []), 'creator']}}"
-                      }
-                    },
-                    {
-                      "handler": "saveToLocalStorage",
-                      "params": {
-                        "key": "g7_coupon_filter_visible_filters",
-                        "value": "{{(_local.visibleFilters || []).includes('creator') ? (_local.visibleFilters || []).filter(f => f !== 'creator') : [...(_local.visibleFilters || []), 'creator']}}"
-                      }
-                    }
-                  ]
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "visibleFilters": "{{(_local.visibleFilters || []).includes('creator') ? (_local.visibleFilters || []).filter(f => f !== 'creator') : [...(_local.visibleFilters || []), 'creator']}}"
+                  }
                 }
               ]
             },
@@ -1770,7 +1650,7 @@
                       "name": "Icon",
                       "props": {
                         "name": "xmark",
-                        "className": "w-4 h-4"
+                        "className": "text-base"
                       }
                     }
                   ],
@@ -2030,7 +1910,7 @@
                   "name": "Icon",
                   "props": {
                     "name": "{{_local.showDetailFilter ? 'chevron-up' : 'chevron-down'}}",
-                    "className": "w-4 h-4"
+                    "className": "text-base"
                   }
                 }
               ],
@@ -2127,7 +2007,7 @@
                       "name": "Icon",
                       "props": {
                         "name": "sliders",
-                        "className": "w-4 h-4"
+                        "className": "text-base"
                       }
                     },
                     {
@@ -2300,7 +2180,7 @@
                   "name": "Icon",
                   "props": {
                     "name": "sliders",
-                    "className": "w-4 h-4"
+                    "className": "text-base"
                   }
                 },
                 {

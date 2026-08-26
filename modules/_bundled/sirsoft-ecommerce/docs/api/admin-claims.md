@@ -74,6 +74,10 @@
 | charge_methods[] | string[] | 아니오 | 청구 방식 필터 (`pay_on_request`/`pay_on_approval`/`deduct_from_refund`) — `type=cancel`/`refund` 에는 사용 불가(422) |
 | reason_code | string | 아니오 | 사유 코드 (max 50 — 취소는 `cancel_reason_type` 대조) |
 | requester_type | string | 아니오 | 회원구분 (`member`/`guest`) |
+| min_amount | numeric | 아니오 | 금액 하한 (min 0). 근거 컬럼은 유형마다 다르며 **목록 `amount` 컬럼이 그리는 값과 같다** — 교환·반품은 총 청구액, 환불은 환불액 + 환불 마일리지, 취소는 연결된 환불신청서의 같은 합계 |
+| max_amount | numeric | 아니오 | 금액 상한 (min 0). `min_amount` 를 **함께 보낸 경우에만** 그 값 이상이어야 한다(422) — 상한만 거는 조합은 정상이다 |
+| currency_code | string | 아니오 | 통화 필터(max 10). 어휘는 상점 설정의 **등록 통화(`language_currency.currencies[].code`) + 운영자가 내린 기본 제공 통화(`language_currency.removed_default_currencies`)** 이고, 그 밖의 코드는 **그 유형의 신청서에 실제로 기록돼 있을 때만** 통과한다(교환·반품은 자기 `currency_code`, 환불·취소는 주문의 결제 통화). 거르는 값이 거래 시점에 동결된 통화라 설정에서 내려간 통화도 계속 조회할 수 있어야 하며, 관리자가 직접 추가했다 삭제한 통화는 설정에 흔적이 남지 않으므로 기록이 마지막 근거다. 어디에도 쓰인 적 없는 코드는 422 |
+| charge_payment_methods[] | string[] | 아니오 | 청구 결제수단 필터 — 추가결제(`ecommerce_claim_payments.payment_method`)가 성립하는 `type=exchange`/`return` 에만 있다. `type=cancel`/`refund` 에는 사용 불가(422). 어휘는 클레임 설정 `claim.charge_payment_methods` 이며, 그 밖의 값은 통화와 같은 규칙으로 **실제 추가결제 기록이 있을 때만** 통과한다(운영자가 수단을 내려도 그 수단으로 청구된 건은 남는다). 쓰인 적 없는 값은 422 |
 | page | integer | 아니오 | 페이지 (min 1, 상한은 코어 `PaginationLimits::maxPage('ecommerce.claims')`) |
 | per_page | integer | 아니오 | 페이지당 건수 (1~100, 기본 20) |
 

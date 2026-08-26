@@ -12,6 +12,11 @@ use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderExchangeRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderReturnRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 
 /**
  * 관리자 클레임 목록 조회 요청 (유형 서브탭 단위)
@@ -61,6 +66,23 @@ class ClaimListRequest extends FormRequest
             'charge_methods.*' => ['string', Rule::in(ClaimChargeMethodEnum::values())],
             'reason_code' => ['nullable', 'string', 'max:50'],
             'requester_type' => ['nullable', 'in:member,guest'],
+            // 금액은 목록 '금액' 컬럼이 그리는 값과 같은 축이다 — 유형마다 근거 컬럼이 다르지만
+            // (교환·반품 = 청구액 / 환불·취소 = 환불액 + 환불 마일리지) 운영자에게는 한 축이다.
+            'min_amount' => ['nullable', 'numeric', 'min:0'],
+            // gte 는 최소 금액이 실제로 들어왔을 때만 건다 — 무조건 걸면 "최대 금액만" 거르는
+            // 정상 조합이 422 가 되고, 화면에는 직전 목록이 그대로 남는다.
+            'max_amount' => array_filter([
+                'nullable',
+                'numeric',
+                'min:0',
+                $this->filled('min_amount') ? 'gte:min_amount' : null,
+            ]),
+            'currency_code' => $this->currencyRules($type),
+            // 청구 결제수단은 추가결제가 성립하는 유형에만 있다 — 환불·취소는 청구 자체가 없다.
+            'charge_payment_methods' => in_array($type, [ClaimTypeEnum::CANCEL, ClaimTypeEnum::REFUND], true)
+                ? ['prohibited']
+                : ['nullable', 'array'],
+            'charge_payment_methods.*' => $this->chargePaymentMethodRules(),
             'page' => array_filter([
                 'nullable',
                 'integer',
@@ -91,12 +113,144 @@ class ClaimListRequest extends FormRequest
             'charge_methods.prohibited' => __('sirsoft-ecommerce::validation.claims.charge_methods.prohibited'),
             'charge_methods.*.in' => __('sirsoft-ecommerce::validation.claims.charge_methods.in'),
             'requester_type.in' => __('sirsoft-ecommerce::validation.claims.requester_type.in'),
+            'min_amount.numeric' => __('sirsoft-ecommerce::validation.claims.min_amount.numeric'),
+            'max_amount.numeric' => __('sirsoft-ecommerce::validation.claims.max_amount.numeric'),
+            'max_amount.gte' => __('sirsoft-ecommerce::validation.claims.max_amount.gte'),
+            'currency_code.in' => __('sirsoft-ecommerce::validation.claims.currency_code.in'),
+            'charge_payment_methods.*.in' => __('sirsoft-ecommerce::validation.claims.charge_payment_methods.in'),
+            'charge_payment_methods.array' => __('sirsoft-ecommerce::validation.claims.charge_payment_methods.array'),
+            'charge_payment_methods.prohibited' => __('sirsoft-ecommerce::validation.claims.charge_payment_methods.prohibited'),
             'page.integer' => __('sirsoft-ecommerce::validation.orders.page.integer'),
             'page.min' => __('sirsoft-ecommerce::validation.orders.page.min'),
             'per_page.integer' => __('sirsoft-ecommerce::validation.orders.per_page.integer'),
             'per_page.min' => __('sirsoft-ecommerce::validation.orders.per_page.min'),
             'per_page.max' => __('sirsoft-ecommerce::validation.orders.per_page.max'),
         ];
+    }
+
+    /**
+     * 통화 코드 검증 규칙을 반환합니다. (설정 어휘 → 실제 기록값 순서)
+     *
+     * 코드를 열거하지 않는다 — 상점이 통화를 추가·삭제하면 화면 선택지와 게이트가 함께
+     * 움직여야 하고, 갈라지면 화면에 보이는 통화가 422 를 받는다.
+     *
+     * 설정 어휘만 보면 반대 방향으로 깨진다. 이 필터가 거르는 값은 **거래 시점에 동결된
+     * 통화**(교환·반품은 자기 `currency_code`, 환불·취소는 주문의 `currency`)라, 운영자가
+     * 그 통화를 설정에서 내려도 그 값으로 기록된 신청서는 그대로 남는다. 게이트가 설정
+     * 어휘만 받으면 그 신청서는 **어떤 필터 조합으로도 도달 불가**가 되고, 그 통화가 실린
+     * 북마크·뒤로가기 URL 은 목록 전체를 422 로 만든다.
+     *
+     * tombstone(`removed_default_currencies`)만으로는 절반만 막힌다 — 그 기록은
+     * **기본 제공 통화**의 삭제만 남기고(보충 병합이 되살리지 않게 하려는 용도),
+     * 운영자가 직접 추가한 통화를 삭제하면 아무 흔적도 남지 않는다. 그래서 마지막 근거는
+     * 설정이 아니라 **실제로 기록된 값**이다.
+     *
+     * 한 번도 쓰인 적 없는 코드는 여전히 거절한다 — 오타가 "결과 없음" 으로 위장하지
+     * 않게 하려는 원래 의도는 그대로다. 데이터 조회는 설정 어휘를 벗어난 값에서만 일어난다.
+     *
+     * @param  ClaimTypeEnum  $type  조회 유형
+     * @return array<int, mixed> 검증 규칙
+     */
+    private function currencyRules(ClaimTypeEnum $type): array
+    {
+        $rules = ['nullable', 'string', 'max:10'];
+        $code = (string) $this->input('currency_code', '');
+
+        if ($code === '') {
+            return $rules;
+        }
+
+        $allowed = $this->settingCurrencies();
+
+        if (! in_array($code, $allowed, true) && $this->currencyRecorded($code, $type)) {
+            $allowed[] = $code;
+        }
+
+        $rules[] = Rule::in($allowed);
+
+        return $rules;
+    }
+
+    /**
+     * 설정이 아는 통화 코드를 반환합니다. (등록 통화 + 내린 기본 제공 통화)
+     *
+     * @return array<int, string> 통화 코드
+     */
+    private function settingCurrencies(): array
+    {
+        $settings = app(EcommerceSettingsService::class);
+
+        $registered = collect($settings->getSetting('language_currency.currencies', []))
+            ->pluck('code');
+
+        // 운영자가 내린 기본 제공 통화 — 과거 신청서가 이 값으로 동결돼 있을 수 있다.
+        $removed = collect($settings->getSetting('language_currency.removed_default_currencies', []))
+            ->filter(fn ($code) => is_string($code));
+
+        return $registered
+            ->merge($removed)
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * 그 유형의 신청서에 실제로 기록된 통화인지 확인합니다.
+     *
+     * 저장소가 거르는 컬럼과 같은 것을 본다 — 교환·반품은 자기 `currency_code`,
+     * 환불·취소는 주문의 `currency`. 판정 근거가 갈리면 게이트를 통과한 값이 저장소에서는
+     * 다른 뜻이 되어 "통과했는데 늘 0건" 이 된다.
+     *
+     * @param  string  $code  통화 코드
+     * @param  ClaimTypeEnum  $type  조회 유형
+     * @return bool 기록 존재 여부
+     */
+    private function currencyRecorded(string $code, ClaimTypeEnum $type): bool
+    {
+        return match ($type) {
+            ClaimTypeEnum::EXCHANGE => app(OrderExchangeRepositoryInterface::class)->hasRecordedCurrency($code),
+            ClaimTypeEnum::RETURN => app(OrderReturnRepositoryInterface::class)->hasRecordedCurrency($code),
+            default => app(OrderRepositoryInterface::class)->hasRecordedCurrency($code),
+        };
+    }
+
+    /**
+     * 청구 결제수단 검증 규칙을 반환합니다. (설정 어휘 → 실제 기록값 순서)
+     *
+     * 통화 축과 같은 규칙이다. 어휘를 열거하지 않고 클레임 설정
+     * (`claim.charge_payment_methods`)을 읽되, 운영자가 나중에 수단을 내려도 그 수단으로
+     * 기록된 추가결제는 남으므로 실제 기록값을 마지막 근거로 둔다. 길이만 검사하면
+     * 오타가 조용히 "결과 없음" 으로 통과해 필터가 걸린 것처럼 보인다.
+     *
+     * @return array<int, mixed> 항목 검증 규칙
+     */
+    private function chargePaymentMethodRules(): array
+    {
+        $rules = ['string', 'max:50'];
+
+        $allowed = collect(app(EcommerceSettingsService::class)->getSetting('claim.charge_payment_methods', []))
+            ->filter(fn ($m) => is_string($m))
+            ->values()
+            ->all();
+
+        // 설정 어휘를 벗어난 값만 기록을 조회한다 — 정상 조합에는 추가 쿼리가 없다.
+        $submitted = collect((array) $this->input('charge_payment_methods', []))
+            ->filter(fn ($m) => is_string($m) && $m !== '')
+            ->unique()
+            ->reject(fn ($m) => in_array($m, $allowed, true));
+
+        $payments = $submitted->isEmpty() ? null : app(ClaimPaymentRepositoryInterface::class);
+
+        foreach ($submitted as $method) {
+            if ($payments->hasRecordedPaymentMethod($method)) {
+                $allowed[] = $method;
+            }
+        }
+
+        $rules[] = Rule::in($allowed);
+
+        return $rules;
     }
 
     /**
@@ -145,6 +299,10 @@ class ClaimListRequest extends FormRequest
             'charge_methods' => $validated['charge_methods'] ?? null,
             'reason_code' => $validated['reason_code'] ?? null,
             'requester_type' => $validated['requester_type'] ?? null,
+            'min_amount' => $validated['min_amount'] ?? null,
+            'max_amount' => $validated['max_amount'] ?? null,
+            'currency_code' => $validated['currency_code'] ?? null,
+            'charge_payment_methods' => $validated['charge_payment_methods'] ?? null,
         ];
     }
 
@@ -165,6 +323,12 @@ class ClaimListRequest extends FormRequest
             'search_field' => $validated['search_field'] ?? null,
             'search_keyword' => $validated['search_keyword'] ?? null,
             'requester_type' => $validated['requester_type'] ?? null,
+            // 금액·통화는 유형마다 근거 컬럼이 다르지만 "그 행의 금액" 이라는 한 축이라
+            // 다른 탭 건수에도 같은 뜻으로 적용된다. 청구 결제수단은 교환·반품에만 있는
+            // 축이라 뺀다 — 넣으면 환불·취소 탭 건수가 항상 0 이 된다.
+            'min_amount' => $validated['min_amount'] ?? null,
+            'max_amount' => $validated['max_amount'] ?? null,
+            'currency_code' => $validated['currency_code'] ?? null,
         ];
     }
 

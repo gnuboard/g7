@@ -101,6 +101,9 @@
       "save_button": "保存",
       "saved": "会員の配送国が変更されました。",
       "save_failed": "会員の配送国の変更に失敗しました。"
+    },
+    "claim": {
+      "$partial": "partial/admin/claim.json"
     }
   },
   "user": {
@@ -138,6 +141,8 @@
       "brands": "ブランド一覧",
       "carriers": "配送業者一覧",
       "categories": "カテゴリー一覧",
+      "claim_reasons": "キャンセル·返品·交換理由",
+      "claims": "キャンセル·返品·交換一覧",
       "commonInfos": "共通情報一覧",
       "common_infos": "共通情報一覧",
       "copy_source": "コピー元",

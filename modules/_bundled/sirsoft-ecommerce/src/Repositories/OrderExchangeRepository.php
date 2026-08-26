@@ -222,6 +222,10 @@ class OrderExchangeRepository implements OrderExchangeRepositoryInterface
             'fault' => 'fault_type',
             'charge' => 'charge_method',
             'items_relation' => 'exchangeOptions',
+            'amount_columns' => ['total_charge_amount'],
+            'amount_relation' => null,
+            'currency' => 'currency_code',
+            'charge_payment_relation' => 'claimPayments',
         ];
     }
 
@@ -248,5 +252,13 @@ class OrderExchangeRepository implements OrderExchangeRepositoryInterface
         return $row->original_option_status instanceof OrderStatusEnum
             ? $row->original_option_status->value
             : (string) $row->original_option_status;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function hasRecordedCurrency(string $code): bool
+    {
+        return $this->model->newQuery()->where('currency_code', $code)->exists();
     }
 }

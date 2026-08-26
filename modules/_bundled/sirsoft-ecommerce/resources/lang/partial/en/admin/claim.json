@@ -1,0 +1,99 @@
+{
+  "title": "Claim Management",
+  "description": "Browse and process exchange, return, refund and cancellation requests",
+  "subtab": {
+    "exchange": "Exchange",
+    "return": "Return",
+    "refund": "Refund",
+    "cancel": "Cancellation"
+  },
+  "filter": {
+    "date": "Requested",
+    "start_date": "Start date",
+    "end_date": "End date",
+    "date_quick": {
+      "today": "Today",
+      "week": "1 week",
+      "1_month": "1 month",
+      "3_months": "3 months",
+      "6_months": "6 months",
+      "1_year": "1 year"
+    },
+    "claim_status": "Status",
+    "fault_type": "Fault",
+    "charge_method": "Charge",
+    "reason": "Reason",
+    "reason_all": "All",
+    "amount": "Amount",
+    "min_amount": "Min amount",
+    "max_amount": "Max amount",
+    "currency_all": "All",
+    "charge_payment_method": "Charge method",
+    "requester_type": "Member type",
+    "requester_type_option": {
+      "all": "All",
+      "member": "Member",
+      "guest": "Guest"
+    },
+    "detail_title": "Detailed search"
+  },
+  "search": {
+    "placeholder": "Enter a keyword...",
+    "field": {
+      "claim_number": "Claim no.",
+      "order_number": "Order no.",
+      "requester": "Requester",
+      "product_name": "Product name"
+    },
+    "edit_search": "Edit filters",
+    "preset_manage": "Manage presets",
+    "column_select": "Select columns",
+    "detail_search": "Detailed search"
+  },
+  "preset": {
+    "label": "Search presets",
+    "applied": "The {{name}} preset has been applied.",
+    "save_title": "Save preset"
+  },
+  "modal": {
+    "preset_save": {
+      "title": "Save preset",
+      "description": "Save the current search conditions as a preset.",
+      "placeholder": "Enter a preset name",
+      "save": "Save"
+    },
+    "preset_manage": {
+      "title": "Manage presets",
+      "description": "Manage your search presets.",
+      "add_new": "Add a preset",
+      "empty": "No presets have been saved."
+    },
+    "preset_edit": {
+      "title": "Edit preset"
+    },
+    "preset_delete": {
+      "title": "Delete preset",
+      "confirm": "Delete the '{{name}}' preset?"
+    }
+  },
+  "action": {
+    "search": "Search",
+    "reset": "Reset",
+    "save_preset": "Save preset",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete"
+  },
+  "column": {
+    "requested_at": "Requested",
+    "claim_number": "Claim no.",
+    "order_number": "Order no.",
+    "item": "Items",
+    "requester": "Requester",
+    "status": "Status",
+    "reason": "Reason",
+    "fault_type": "Fault",
+    "amount": "Amount",
+    "completed_at": "Completed"
+  }
+}

@@ -1081,4 +1081,12 @@ class OrderRepository implements OrderRepositoryInterface
             resultCap: PaginationLimits::resultCap('admin.activity_logs'),
         );
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function hasRecordedCurrency(string $code): bool
+    {
+        return $this->model->newQuery()->where('currency', $code)->exists();
+    }
 }

@@ -224,4 +224,12 @@ interface OrderRepositoryInterface
      * @return LengthAwarePaginator 페이지네이션된 활동 로그
      */
     public function getActivityLogsForOrder(Order $order, array $filters = []): LengthAwarePaginator;
+
+    /**
+     * 주문에 그 결제 통화가 기록돼 있는지 확인합니다. (환불·취소 목록 통화 필터 어휘의 마지막 근거)
+     *
+     * @param  string  $code  통화 코드
+     * @return bool 기록 존재 여부
+     */
+    public function hasRecordedCurrency(string $code): bool;
 }

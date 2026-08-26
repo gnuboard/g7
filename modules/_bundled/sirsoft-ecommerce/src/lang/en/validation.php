@@ -2057,6 +2057,21 @@ return [
         'requester_type' => [
             'in' => 'The requester type must be member or guest.',
         ],
+        'min_amount' => [
+            'numeric' => 'The minimum amount must be a number.',
+        ],
+        'max_amount' => [
+            'numeric' => 'The maximum amount must be a number.',
+            'gte' => 'The maximum amount must be greater than or equal to the minimum amount.',
+        ],
+        'currency_code' => [
+            'in' => 'That currency has never been used.',
+        ],
+        'charge_payment_methods' => [
+            'array' => 'The charge payment method filter must be an array.',
+            'prohibited' => 'The charge payment method filter cannot be used for this claim type.',
+            'in' => 'That charge payment method has never been used.',
+        ],
         'admin_status' => [
             'required' => 'Please select a status to assign.',
             'in' => 'That status cannot be assigned for this claim type.',

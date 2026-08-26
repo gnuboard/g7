@@ -1,0 +1,99 @@
+{
+  "title": "キャンセル·返品·交換管理",
+  "description": "交換·返品·返金·キャンセル申請書を確認して処理します",
+  "subtab": {
+    "exchange": "交換",
+    "return": "返品",
+    "refund": "返金",
+    "cancel": "キャンセル"
+  },
+  "filter": {
+    "date": "申請日",
+    "start_date": "開始日",
+    "end_date": "終了日",
+    "date_quick": {
+      "today": "今日",
+      "week": "1週間",
+      "1_month": "1ヶ月",
+      "3_months": "3ヶ月",
+      "6_months": "6ヶ月",
+      "1_year": "1年"
+    },
+    "claim_status": "ステータス",
+    "fault_type": "帰責",
+    "charge_method": "請求",
+    "reason": "理由",
+    "reason_all": "すべて",
+    "requester_type": "会員区分",
+    "requester_type_option": {
+      "all": "すべて",
+      "member": "会員",
+      "guest": "非会員"
+    },
+    "detail_title": "詳細検索",
+    "amount": "金額",
+    "min_amount": "最小金額",
+    "max_amount": "最大金額",
+    "currency_all": "すべて",
+    "charge_payment_method": "請求決済方法"
+  },
+  "search": {
+    "placeholder": "検索ワードを入力してください...",
+    "field": {
+      "claim_number": "クレーム番号",
+      "order_number": "注文番号",
+      "requester": "申請者",
+      "product_name": "商品名"
+    },
+    "edit_search": "検索編集",
+    "preset_manage": "プリセット管理",
+    "column_select": "カラム選択",
+    "detail_search": "詳細検索"
+  },
+  "preset": {
+    "label": "検索プリセット",
+    "applied": "{{name}}プリセットが適用されました。",
+    "save_title": "プリセット保存"
+  },
+  "modal": {
+    "preset_save": {
+      "title": "プリセット保存",
+      "description": "現在の検索条件をプリセットとして保存します。",
+      "placeholder": "プリセット名を入力してください",
+      "save": "保存"
+    },
+    "preset_manage": {
+      "title": "プリセット管理",
+      "description": "検索プリセットを管理します。",
+      "add_new": "新しいプリセットを追加",
+      "empty": "保存されたプリセットがありません。"
+    },
+    "preset_edit": {
+      "title": "プリセット編集"
+    },
+    "preset_delete": {
+      "title": "プリセット削除",
+      "confirm": "'{{name}}'プリセットを削除しますか?"
+    }
+  },
+  "action": {
+    "search": "検索",
+    "reset": "初期化",
+    "save_preset": "プリセット保存",
+    "cancel": "キャンセル",
+    "edit": "編集",
+    "delete": "削除"
+  },
+  "column": {
+    "requested_at": "申請日",
+    "claim_number": "クレーム番号",
+    "order_number": "注文番号",
+    "item": "申請商品",
+    "requester": "申請者",
+    "status": "ステータス",
+    "reason": "理由",
+    "fault_type": "帰責",
+    "amount": "金額",
+    "completed_at": "完了日"
+  }
+}

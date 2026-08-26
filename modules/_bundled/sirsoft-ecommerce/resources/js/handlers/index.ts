@@ -158,7 +158,6 @@ import {
 import {
     buildOrderColumnsHandler,
     toggleArrayValueHandler,
-    toggleVisibleFilterHandler,
     syncOrderSelectionHandler,
     handleOrderRowActionHandler,
     processOrderBulkActionHandler,
@@ -386,7 +385,6 @@ export const handlerMap = {
     // ===== 주문관리 =====
     buildOrderColumns: buildOrderColumnsHandler,
     toggleArrayValue: toggleArrayValueHandler,
-    toggleVisibleFilter: toggleVisibleFilterHandler,
     syncOrderSelection: syncOrderSelectionHandler,
     handleOrderRowAction: handleOrderRowActionHandler,
     processOrderBulkAction: processOrderBulkActionHandler,
