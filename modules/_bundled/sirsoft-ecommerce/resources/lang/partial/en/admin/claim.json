@@ -1,6 +1,104 @@
 {
   "title": "Claim Management",
   "description": "Browse and process exchange, return, refund and cancellation requests",
+  "detail": {
+    "title": "Claim Detail",
+    "description": "Review and process the progress and history of a claim request",
+    "claim_number": "Claim No.",
+    "claim_type": "Type",
+    "requested_at": "Requested",
+    "requester": "Requester",
+    "view_order": "View Order",
+    "tabs": {
+      "claim_info": "Claim Info",
+      "shipping_info": "Shipping",
+      "activity_log": "Activity Log"
+    },
+    "progress": {
+      "title": "Progress"
+    },
+    "items": {
+      "title": "Requested Items",
+      "empty": "No requested items.",
+      "price_difference": "Difference {{amount}}",
+      "columns": {
+        "product": "Product",
+        "quantity": "Qty",
+        "amount": "Amount",
+        "status": "Status"
+      },
+      "bulk_no_selection": "Select the items to change.",
+      "bulk_no_status_selected": "Select the status to change to.",
+      "bulk_not_supported": "This claim type does not support per-item status changes.",
+      "bulk_success": "Item status changes have been processed.",
+      "bulk_error": "Failed to change item statuses."
+    },
+    "completion": {
+      "title": "Completion",
+      "description": "Move {{count}} requested item(s) to completed. Stock restoration and refund request options are chosen on the next screen.",
+      "action": "Complete"
+    },
+    "shipping": {
+      "title": "Shipping",
+      "collection_title": "Collection",
+      "redelivery_title": "Redelivery",
+      "redelivery_not_applicable": "This claim type has no redelivery step.",
+      "return_address_label": "Collection address",
+      "redelivery_address_label": "Redelivery address",
+      "address_differs": "Different address",
+      "changed_by_user": "Changed by customer",
+      "collected_at": "Collected {{at}}",
+      "redelivered_at": "Redelivered {{at}}",
+      "carrier_placeholder": "Carrier",
+      "tracking_placeholder": "Tracking number",
+      "save": "Save",
+      "track": "Track",
+      "tracking_incomplete": "Enter both the carrier and the tracking number.",
+      "tracking_saved": "Tracking information has been saved.",
+      "tracking_error": "Failed to save the tracking information."
+    },
+    "reason": {
+      "title": "Reason",
+      "reason_label": "Reason",
+      "fault_type_label": "Fault",
+      "reject_reason_label": "Rejection reason",
+      "no_detail": "No detailed reason was provided.",
+      "images_label": "Attachments"
+    },
+    "memo": {
+      "title": "Admin Memo",
+      "placeholder": "Internal processing notes (not shown to the customer)",
+      "save": "Save memo",
+      "saved": "The admin memo has been saved.",
+      "error": "Failed to save the admin memo.",
+      "not_supported": "Refund requests do not store an admin memo."
+    },
+    "activity_log": {
+      "title": "Activity Log",
+      "empty": "No activity logs.",
+      "system": "System",
+      "per_page": "Per page",
+      "per_page_option": "{{count}}",
+      "sort": {
+        "label": "Sort",
+        "date_desc": "Newest first",
+        "date_asc": "Oldest first"
+      },
+      "columns": {
+        "date": "Date",
+        "actor": "Actor",
+        "event": "Event"
+      },
+      "changes": {
+        "field": "Field",
+        "before": "Before",
+        "after": "After"
+      },
+      "actor_action": {
+        "view_member": "View member"
+      }
+    }
+  },
   "subtab": {
     "exchange": "Exchange",
     "return": "Return",

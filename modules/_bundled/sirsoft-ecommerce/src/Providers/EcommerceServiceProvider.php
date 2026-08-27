@@ -25,6 +25,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\BrandRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\CartRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\CategoryImageRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\CategoryRepository;
+use Modules\Sirsoft\Ecommerce\Repositories\ClaimActivityLogRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\ClaimImageRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\ClaimPaymentRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\ClaimReasonRepository;
@@ -32,6 +33,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\BrandRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CartRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CategoryImageRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CategoryRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimActivityLogRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimImageRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimReasonRepositoryInterface;
@@ -176,6 +178,7 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         CouponRepositoryInterface::class => CouponRepository::class,
         EcommerceStatRepositoryInterface::class => EcommerceStatRepository::class,
         ExtraFeeTemplateRepositoryInterface::class => ExtraFeeTemplateRepository::class,
+        ClaimActivityLogRepositoryInterface::class => ClaimActivityLogRepository::class,
         ClaimImageRepositoryInterface::class => ClaimImageRepository::class,
         ClaimPaymentRepositoryInterface::class => ClaimPaymentRepository::class,
         OrderCancelRepositoryInterface::class => OrderCancelRepository::class,

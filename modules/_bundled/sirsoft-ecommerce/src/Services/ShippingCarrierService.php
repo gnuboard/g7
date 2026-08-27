@@ -78,6 +78,32 @@ class ShippingCarrierService
     }
 
     /**
+     * 활성 배송사 Select 옵션 배열을 반환합니다.
+     *
+     * 배송사 목록 엔드포인트(`admin/shipping-carriers/active`)와 클레임 상세 응답이 같은
+     * 형태를 그린다 — 클레임 상세 화면은 `claims.read` 라우트인데 그 엔드포인트는
+     * `settings.read` 게이트라, 화면이 직접 부르면 클레임 권한만 가진 운영자(기본 역할
+     * `manager`)에게만 403 이 되어 택배사 드롭다운이 조용히 빈다. 그 화면은 이미 열려
+     * 있는 상세 응답으로 값을 나르고, 형태는 이 메서드 하나가 정한다.
+     *
+     * @param  string|null  $type  배송사 유형 필터
+     * @return array<int, array{value: int, label: string, code: string|null, type: string|null, tracking_url: string|null}> Select 옵션 배열
+     */
+    public function getActiveCarrierOptions(?string $type = null): array
+    {
+        return $this->getActiveCarriers($type)
+            ->map(fn ($carrier) => [
+                'value' => $carrier->id,
+                'label' => $carrier->getLocalizedName(),
+                'code' => $carrier->code,
+                'type' => $carrier->type,
+                'tracking_url' => $carrier->tracking_url,
+            ])
+            ->values()
+            ->toArray();
+    }
+
+    /**
      * 배송사 생성
      *
      * @param  array  $data  배송사 데이터

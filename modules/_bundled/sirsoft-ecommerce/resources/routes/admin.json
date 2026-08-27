@@ -233,6 +233,20 @@
       }
     },
     {
+      "path": "*/admin/ecommerce/claims/:claimNumber",
+      "layout": "admin_ecommerce_claim_detail",
+      "auth_required": true,
+      "permission": "sirsoft-ecommerce.claims.read",
+      "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.claim.detail.title",
+        "breadcrumb": [
+          { "label": "$t:sirsoft-ecommerce.admin.menu.ecommerce", "path": "/admin/ecommerce" },
+          { "label": "$t:sirsoft-ecommerce.admin.claim.title", "path": "/admin/ecommerce/claims" },
+          { "label": "$t:sirsoft-ecommerce.admin.claim.detail.title" }
+        ]
+      }
+    },
+    {
       "path": "*/admin/ecommerce/reviews",
       "layout": "admin_ecommerce_product_review_index",
       "auth_required": true,

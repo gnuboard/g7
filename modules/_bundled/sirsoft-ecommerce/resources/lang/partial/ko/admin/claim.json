@@ -1,6 +1,104 @@
 {
   "title": "취소/반품/교환 관리",
   "description": "교환·반품·환불·취소 신청서를 조회하고 처리합니다",
+  "detail": {
+    "title": "취소/반품/교환 상세",
+    "description": "신청서의 진행 상황과 처리 이력을 확인하고 처리합니다",
+    "claim_number": "클레임번호",
+    "claim_type": "유형",
+    "requested_at": "신청일",
+    "requester": "신청자",
+    "view_order": "원 주문 보기",
+    "tabs": {
+      "claim_info": "신청 정보",
+      "shipping_info": "배송 정보",
+      "activity_log": "활동 로그"
+    },
+    "progress": {
+      "title": "진행 단계"
+    },
+    "items": {
+      "title": "신청상품",
+      "empty": "신청 상품이 없습니다.",
+      "price_difference": "차액 {{amount}}",
+      "columns": {
+        "product": "상품",
+        "quantity": "수량",
+        "amount": "금액",
+        "status": "상태"
+      },
+      "bulk_no_selection": "변경할 상품을 선택해주세요.",
+      "bulk_no_status_selected": "변경할 상태를 선택해주세요.",
+      "bulk_not_supported": "이 유형은 상품 단위 상태 변경을 지원하지 않습니다.",
+      "bulk_success": "신청 상품 상태 변경을 처리했습니다.",
+      "bulk_error": "신청 상품 상태 변경에 실패했습니다."
+    },
+    "completion": {
+      "title": "완료 처리",
+      "description": "신청 상품 {{count}}건을 완료 상태로 전환합니다. 재고 복구와 환불신청서 접수 방식은 다음 화면에서 고릅니다.",
+      "action": "완료 처리"
+    },
+    "shipping": {
+      "title": "배송 정보",
+      "collection_title": "회수",
+      "redelivery_title": "재발송",
+      "redelivery_not_applicable": "이 유형에는 재발송 단계가 없습니다.",
+      "return_address_label": "회수지",
+      "redelivery_address_label": "재발송지",
+      "address_differs": "배송지 다름",
+      "changed_by_user": "고객이 수정함",
+      "collected_at": "회수완료 {{at}}",
+      "redelivered_at": "재발송완료 {{at}}",
+      "carrier_placeholder": "택배사",
+      "tracking_placeholder": "송장번호",
+      "save": "저장",
+      "track": "배송조회",
+      "tracking_incomplete": "택배사와 송장번호를 함께 입력해주세요.",
+      "tracking_saved": "운송장 정보를 저장했습니다.",
+      "tracking_error": "운송장 정보를 저장하지 못했습니다."
+    },
+    "reason": {
+      "title": "신청 사유",
+      "reason_label": "사유",
+      "fault_type_label": "귀책",
+      "reject_reason_label": "반려 사유",
+      "no_detail": "상세 사유가 입력되지 않았습니다.",
+      "images_label": "첨부 이미지"
+    },
+    "memo": {
+      "title": "관리자 메모",
+      "placeholder": "내부 처리 메모를 입력하세요 (고객에게 노출되지 않습니다)",
+      "save": "메모 저장",
+      "saved": "관리자 메모를 저장했습니다.",
+      "error": "관리자 메모를 저장하지 못했습니다.",
+      "not_supported": "환불신청서에는 관리자 메모를 저장할 수 없습니다."
+    },
+    "activity_log": {
+      "title": "활동 로그",
+      "empty": "활동 로그가 없습니다.",
+      "system": "시스템",
+      "per_page": "표시 개수",
+      "per_page_option": "{{count}}개",
+      "sort": {
+        "label": "정렬",
+        "date_desc": "최신순",
+        "date_asc": "오래된순"
+      },
+      "columns": {
+        "date": "일시",
+        "actor": "작업자",
+        "event": "내용"
+      },
+      "changes": {
+        "field": "항목",
+        "before": "이전",
+        "after": "이후"
+      },
+      "actor_action": {
+        "view_member": "회원 정보 보기"
+      }
+    }
+  },
   "subtab": {
     "exchange": "교환",
     "return": "반품",

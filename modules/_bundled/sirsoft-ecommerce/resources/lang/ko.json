@@ -18,6 +18,8 @@
       "brands": "브랜드 목록",
       "carriers": "택배사 목록",
       "categories": "카테고리 목록",
+      "claim_detail": "취소/반품/교환 상세",
+      "claim_logs": "취소/반품/교환 활동 로그",
       "claim_reasons": "취소/반품/교환 사유",
       "claims": "취소/반품/교환 목록",
       "commonInfos": "공통정보 목록",

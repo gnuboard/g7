@@ -499,6 +499,7 @@ return [
         'refund_execute_failed' => 'Failed to execute the refund.',
         'completion_preview_retrieved' => 'The completion summary has been calculated.',
         'refund_request_created' => 'The refund request has been created.',
+        'logs_retrieved' => 'Activity logs retrieved successfully.',
     ],
 
     // Shipping Policy Messages

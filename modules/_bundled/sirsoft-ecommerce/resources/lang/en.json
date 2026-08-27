@@ -18,6 +18,8 @@
       "brands": "Brands",
       "carriers": "Carriers",
       "categories": "Categories",
+      "claim_detail": "Claim Detail",
+      "claim_logs": "Claim Activity Logs",
       "claim_reasons": "Claim Reasons",
       "claims": "Claims",
       "commonInfos": "Common Infos",

@@ -1245,6 +1245,36 @@ class OrderExchangeService
     }
 
     /**
+     * 재발송지가 주문 배송지와 다른지 판정합니다. (D14 — 상세 화면 '배송지 다름' 뱃지)
+     *
+     * 두 뱃지는 서로 다른 사실을 말한다 — 이쪽은 "최종 재발송지가 주문 배송지와 다른가"이고,
+     * `changed_by_user` 는 "고객이 신청서에서 손댔는가"다. 운영자가 나중에 주소를 되돌리면
+     * 값은 같아지지만 손댄 사실은 남으므로 둘을 한 뱃지로 합치지 않는다.
+     *
+     * 판정은 저장된 두 주소의 비교로 도출한다 — 별도 컬럼을 만들지 않는다.
+     *
+     * @param  OrderExchange  $exchange  교환 신청서
+     * @return bool 주문 배송지와 다르면 true (재발송지 스냅샷·주문이 없으면 false)
+     */
+    public function redeliveryAddressDiffersFromOrder(OrderExchange $exchange): bool
+    {
+        $snapshot = $exchange->redelivery_address_snapshot;
+        $order = $exchange->order;
+
+        if (! is_array($snapshot) || $order === null) {
+            return false;
+        }
+
+        foreach ($this->orderShippingAddressSnapshot($order) as $field => $value) {
+            if (($snapshot[$field] ?? null) !== $value) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * 주문 배송지를 재발송지 스냅샷 형태로 반환합니다.
      *
      * @param  Order  $order  주문

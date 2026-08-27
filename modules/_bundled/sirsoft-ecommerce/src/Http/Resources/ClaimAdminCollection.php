@@ -6,6 +6,7 @@ use App\Http\Resources\BaseApiCollection;
 use App\Http\Resources\Traits\HasAbilityCheck;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Services\UserClaimService;
+use Modules\Sirsoft\Ecommerce\Support\ClaimAdminAbilities;
 
 /**
  * 관리자 클레임 목록 컬렉션 (유형 서브탭 단위 페이지네이션 + 유형별 건수)
@@ -41,15 +42,14 @@ class ClaimAdminCollection extends BaseApiCollection
     /**
      * 컬렉션 레벨 능력(can_*) 매핑을 반환합니다.
      *
+     * 매핑 자체는 `ClaimAdminAbilities` 가 단일 출처다 — 상세 응답도 같은 축을 그리므로
+     * 여기에 사본을 두면 같은 권한의 운영자에게 화면마다 다른 버튼이 보이게 된다.
+     *
      * @return array<string, string> 능력 매핑
      */
     protected function abilityMap(): array
     {
-        return [
-            'can_update_status' => 'sirsoft-ecommerce.claims.update-status',
-            'can_update_amounts' => 'sirsoft-ecommerce.claims.update-amounts',
-            'can_execute_refund' => 'sirsoft-ecommerce.claims.execute-refund',
-        ];
+        return ClaimAdminAbilities::map();
     }
 
     /**

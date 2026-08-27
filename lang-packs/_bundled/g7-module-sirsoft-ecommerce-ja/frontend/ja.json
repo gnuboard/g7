@@ -141,6 +141,8 @@
       "brands": "ブランド一覧",
       "carriers": "配送業者一覧",
       "categories": "カテゴリー一覧",
+      "claim_detail": "キャンセル·返品·交換の詳細",
+      "claim_logs": "キャンセル·返品·交換のアクティビティログ",
       "claim_reasons": "キャンセル·返品·交換理由",
       "claims": "キャンセル·返品·交換一覧",
       "commonInfos": "共通情報一覧",

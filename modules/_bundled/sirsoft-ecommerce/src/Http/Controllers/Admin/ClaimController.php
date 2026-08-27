@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Http\Controllers\Admin;
 
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
+use App\Http\Resources\ActivityLogResource;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -16,6 +17,7 @@ use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\BulkClaimStatusRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\CancellableAmountRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\ClaimCompletionPreviewRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\ClaimListRequest;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\ClaimLogsRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\ClaimTrackingRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\ExecuteRefundRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\UpdateClaimAmountsRequest;
@@ -31,7 +33,9 @@ use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
 use Modules\Sirsoft\Ecommerce\Services\AdminClaimService;
 use Modules\Sirsoft\Ecommerce\Services\ClaimAttachmentService;
+use Modules\Sirsoft\Ecommerce\Services\ShippingCarrierService;
 use Modules\Sirsoft\Ecommerce\Services\UserClaimService;
+use Modules\Sirsoft\Ecommerce\Support\ClaimAdminAbilities;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
@@ -50,11 +54,13 @@ class ClaimController extends AdminBaseController
      * @param  AdminClaimService  $adminClaimService  관리자 클레임 오케스트레이션 서비스
      * @param  UserClaimService  $userClaimService  클레임 공용 서비스 (결제 블록 조립 재사용)
      * @param  ClaimAttachmentService  $attachmentService  클레임 첨부 서비스
+     * @param  ShippingCarrierService  $carrierService  배송사 서비스 (상세 화면 송장 택배사 선택지)
      */
     public function __construct(
         protected AdminClaimService $adminClaimService,
         protected UserClaimService $userClaimService,
         protected ClaimAttachmentService $attachmentService,
+        protected ShippingCarrierService $carrierService,
     ) {}
 
     /**
@@ -102,12 +108,76 @@ class ClaimController extends AdminBaseController
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
                 'messages.claims.retrieved',
-                ['claim' => $this->detailResource($claim)]
+                $this->detailPayload($claim)
             );
         } catch (AccessDeniedHttpException $e) {
             return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             return $this->claimServerError('admin-show', $e);
+        }
+    }
+
+    /**
+     * 클레임 번호로 신청서 상세를 조회합니다. (관리자 상세 화면의 진입 경로)
+     *
+     * 상세 화면 라우트는 번호 기반(§5-3)이고 유형별 API 는 `(유형, id)` 기반이다. 화면이
+     * 번호에서 유형을 추측하면 채번 접두 규칙의 두 번째 출처가 되므로(접두는 운영자가
+     * 바꿀 수 있다) 해석은 서버가 한다.
+     *
+     * @param  string  $claimNumber  클레임 번호
+     * @return JsonResponse 상세 응답
+     */
+    public function showByNumber(string $claimNumber): JsonResponse
+    {
+        try {
+            $resolved = $this->adminClaimService->findForDetailByNumber($claimNumber);
+
+            if ($resolved === null) {
+                return $this->claimNotFound();
+            }
+
+            return ResponseHelper::moduleSuccess(
+                'sirsoft-ecommerce',
+                'messages.claims.retrieved',
+                $this->detailPayload($resolved['claim'])
+            );
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
+        } catch (Exception $e) {
+            return $this->claimServerError('admin-show-by-number', $e);
+        }
+    }
+
+    /**
+     * 신청서 한 건의 활동 로그를 조회합니다. (상세 화면 활동 로그 섹션)
+     *
+     * 신청서 자신뿐 아니라 그 신청서의 추가결제·첨부에 남은 로그까지 한 목록으로 합친다 —
+     * 운영자에게는 셋이 같은 신청서의 이력이다.
+     *
+     * @param  ClaimLogsRequest  $request  조회 요청 (페이지 크기·정렬)
+     * @param  string  $claimNumber  클레임 번호
+     * @return JsonResponse 활동 로그 응답
+     */
+    public function logs(ClaimLogsRequest $request, string $claimNumber): JsonResponse
+    {
+        try {
+            $resolved = $this->adminClaimService->findForDetailByNumber($claimNumber);
+
+            if ($resolved === null) {
+                return $this->claimNotFound();
+            }
+
+            $logs = $this->adminClaimService->activityLogs($resolved['claim'], $request->getFilters());
+
+            return ResponseHelper::moduleSuccess(
+                'sirsoft-ecommerce',
+                'messages.claims.logs_retrieved',
+                ActivityLogResource::collection($logs)->response()->getData(true)
+            );
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
+        } catch (Exception $e) {
+            return $this->claimServerError('admin-claim-logs', $e);
         }
     }
 
@@ -588,6 +658,41 @@ class ClaimController extends AdminBaseController
     protected function claimTypeOf(string $claimType): ClaimTypeEnum
     {
         return ClaimTypeEnum::fromAdminPathSegment($claimType) ?? ClaimTypeEnum::EXCHANGE;
+    }
+
+    /**
+     * 상세 응답 페이로드를 조립합니다. (신청서 + 능력 + 완료 기본값 + 진행단계)
+     *
+     * `abilities` 와 `complete_defaults` 는 목록 응답이 이미 나르는 축이고, 상세 화면도
+     * 같은 버튼(상태 전이·금액 수정·환불 실행)과 같은 모달(D26)을 그린다. 상세가 그 값을
+     * 설정 엔드포인트에서 읽으면 `settings.read` 게이트에 막혀 클레임 권한만 가진 운영자
+     * (기본 역할 `manager`)에게만 403 이 되고, 상점이 꺼 둔 기본값이 조용히 계약 기본값으로
+     * 되돌아간다 — 목록이 이 통로를 택한 것과 같은 근거다.
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
+     * @return array<string, mixed> 상세 응답 페이로드
+     */
+    protected function detailPayload(OrderExchange|OrderReturn|OrderRefund $claim): array
+    {
+        return [
+            'claim' => $this->detailResource($claim),
+            // 유형 스코프 API 의 경로 세그먼트. 화면이 `claim_type + 's'` 로 조립하면 그 조립이
+            // 세그먼트 규칙의 두 번째 출처가 된다 — 규칙이 바뀌어도 오류 없이 404 만 남는다.
+            'claim_path_segment' => $claim->claimType()->adminPathSegment(),
+            'abilities' => ClaimAdminAbilities::forUser(Auth::user()),
+            'complete_defaults' => $this->adminClaimService->completionDefaults(),
+            'progress_steps' => $this->adminClaimService->progressSteps($claim),
+            // '배송지 다름' 뱃지의 근거 (D14). 저장된 두 주소의 비교로 도출하므로 화면이
+            // 주소 필드를 다시 대조하지 않는다 — 대조 규칙이 두 곳에 생기면 한쪽만 바뀐다.
+            'redelivery_address_differs' => $this->adminClaimService->redeliveryAddressDiffers($claim),
+            // 회수·재발송 송장의 택배사 선택지. 배송사 엔드포인트는 `settings.read` 게이트라
+            // 이 화면(`claims.read`)이 직접 부르면 클레임 권한만 가진 운영자에게만 403 이 되고
+            // 드롭다운이 빈 채로 열린다 — 송장을 저장할 수 없게 되므로 이 응답이 통로다.
+            // 환불에는 회수·재발송 축이 없어 빈 배열이다 (그리지 않는 값을 싣지 않는다).
+            'carriers' => $claim instanceof OrderRefund
+                ? []
+                : $this->carrierService->getActiveCarrierOptions(),
+        ];
     }
 
     /**

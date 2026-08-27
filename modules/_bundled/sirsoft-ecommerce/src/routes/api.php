@@ -1520,6 +1520,8 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
 
     // 클레임(취소/반품/교환) 관리 API
     // GET    /api/modules/sirsoft-ecommerce/admin/claims - 통합 목록 (유형 서브탭 + 건수 뱃지)
+    // GET    /api/modules/sirsoft-ecommerce/admin/claims/{claimNumber} - 번호 기반 상세 (관리자 상세 화면 진입)
+    // GET    /api/modules/sirsoft-ecommerce/admin/claims/{claimNumber}/logs - 활동 로그 (신청서 + 추가결제 + 첨부)
     // POST   /api/modules/sirsoft-ecommerce/admin/claims/bulk-status - 일괄 전이 (부분 성공 계약)
     // POST   /api/modules/sirsoft-ecommerce/admin/claims/completion-preview - 완료 처리 모달 미리보기 (D26)
     // GET    /api/modules/sirsoft-ecommerce/admin/{claimType}/{id} - 상세 (exchanges/returns/refunds)
@@ -1546,6 +1548,21 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         Route::post('/completion-preview', [AdminClaimController::class, 'completionPreview'])
             ->middleware('permission:admin,sirsoft-ecommerce.claims.update-status')
             ->name('admin.claims.completion-preview');
+
+        // 번호 기반 상세 — 관리자 상세 화면(`/admin/ecommerce/claims/{claimNumber}`)의 진입 경로.
+        // 정적 경로(bulk-status/completion-preview)보다 **뒤에** 정의해야 그 둘이 먼저 잡힌다
+        // (유저 `claims/images` 와 같은 규율). 채번 접두는 운영자가 바꿀 수 있으므로 세그먼트에
+        // 형식 제약을 걸지 않는다 — 유형 해석은 서버(`AdminClaimService::findForDetailByNumber()`)가 한다.
+        // 활동 로그는 상세와 같은 번호 축을 쓴다 — 상세 화면의 두 데이터소스가 같은 URL
+        // 파라미터(`route.claimNumber`)만 읽으면 되므로, 로그 조회가 상세 응답의 도착을
+        // 기다리지 않는다. 정적 경로보다 뒤, 와일드카드 상세보다 **앞**에 둔다.
+        Route::get('/{claimNumber}/logs', [AdminClaimController::class, 'logs'])
+            ->middleware('permission:admin,sirsoft-ecommerce.claims.read')
+            ->name('admin.claims.logs');
+
+        Route::get('/{claimNumber}', [AdminClaimController::class, 'showByNumber'])
+            ->middleware('permission:admin,sirsoft-ecommerce.claims.read')
+            ->name('admin.claims.show-by-number');
     });
 
     // 유형 스코프 세그먼트(`{claimType}`)의 어휘는 ClaimTypeEnum::adminPathSegments() 가 단일

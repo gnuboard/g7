@@ -1,9 +1,18 @@
 /**
- * 관리자 클레임(교환/반품/환불/취소) 목록 핸들러 — S8b
+ * 관리자 클레임(교환/반품/환불/취소) 목록·상세 핸들러 — S8b(목록) · S9a(상세)
  *
  * 목록 본체가 쓰는 두 갈래를 담는다:
  *  - 일괄 상태 변경: 확인 모달 → `POST admin/claims/bulk-status` (부분 성공 계약)
  *  - 완료 처리 모달 (D26): 세 진입점 공용 — 미리보기(`completion-preview`) → 실행
+ *
+ * 상세 화면이 쓰는 갈래는 셋이다:
+ *  - 상품 단위 일괄 전이 (D25): `PATCH admin/{세그먼트}/{id}/options/bulk-status`
+ *  - 회수·재발송 송장 저장: `PUT .../collection-tracking` · `PUT exchanges/{id}/redelivery-tracking`
+ *  - 관리자 메모 저장: `PUT .../amounts` (메모는 금액 수정 엔드포인트가 함께 받는 축이다)
+ *
+ * 유형 스코프 경로 세그먼트(`exchanges`/`returns`/`refunds`)는 **서버가 준 값**만 쓴다 —
+ * `claim_type + 's'` 로 조립하면 그 조립이 세그먼트 규칙의 두 번째 출처가 되고, 규칙이
+ * 바뀌어도 오류 없이 404 만 나는 URL 이 만들어진다.
  *
  * 완료 처리 모달의 상태는 전부 `_global.claimComplete*` 에 둔다. 모달 partial 하나를
  * 목록·상세·완료 버튼 세 지점이 공유해야 하므로(D26), 모달이 특정 화면의 데이터소스를
@@ -45,6 +54,17 @@ interface ClaimCompleteExecute {
     method: 'POST' | 'PATCH';
     /** 본문에 함께 실을 고정 값 (일괄은 `{type, ids}`, 상품 단위는 `{item_ids}` 등) */
     body?: Record<string, unknown>;
+    /**
+     * 성공 후 다시 읽을 데이터소스 id (생략 시 목록 `claims`).
+     *
+     * 진입점마다 화면이 다르므로 여는 쪽이 알려준다 — 모달이 특정 화면의 데이터소스 이름을
+     * 알고 있으면 나머지 진입점에서 그 재조회가 조용히 아무 일도 하지 않는다.
+     *
+     * 한 화면이 여러 소스를 그리면 배열로 준다 — 상세는 신청서와 활동 로그 둘이다.
+     */
+    refetch?: string | string[];
+    /** 성공 후 되돌릴 로컬 상태 (생략 시 목록의 선택·상태 셀렉트) */
+    clearLocal?: Record<string, unknown>;
 }
 
 /** 완료 처리 모달의 초기 선택값 (설정 `claim.complete_defaults`) */
@@ -147,6 +167,29 @@ export function clearClaimCompleteTimersHandler(): void {
     waiters.forEach((waiter) => waiter(false));
 
     previewGeneration += 1;
+}
+
+/**
+ * 상세 화면이 처리 후 다시 읽어야 하는 데이터소스.
+ *
+ * 상태 전이·송장·메모는 신청서만 바꾸는 것이 아니라 **활동 로그도 남긴다**. 신청서만
+ * 다시 읽으면 헤더·진행단계는 갱신되는데 활동 로그 섹션만 옛 목록으로 남아, 운영자는
+ * 방금 자기가 한 처리가 이력에 없는 것으로 본다 — 오류도 경고도 남지 않는다(실측).
+ */
+const DETAIL_REFETCH_SOURCES = ['claim', 'claim_logs'];
+
+/**
+ * 데이터소스를 다시 읽습니다. (하나 또는 여럿)
+ *
+ * @param sources 데이터소스 id (문자열 또는 배열)
+ */
+function refetchSources(sources: string | string[]): void {
+    const G7Core = core();
+    if (!G7Core) return;
+
+    (Array.isArray(sources) ? sources : [sources]).forEach((dataSourceId) => {
+        G7Core.dispatch?.({ handler: 'refetchDataSource', params: { dataSourceId } });
+    });
 }
 
 /** 유형별 상태 라벨 키 접두사 — 확인 모달의 라벨 해석에 쓴다. */
@@ -620,11 +663,16 @@ export async function executeClaimCompletionHandler(
             throw new Error(response?.message ?? 'completion failed');
         }
 
+        // 재조회·정리 대상은 여는 쪽이 정한다 — 목록에서 열면 목록을, 상세에서 열면 상세를
+        // 다시 읽는다. 여기에 화면 이름을 박으면 나머지 진입점의 화면이 옛 값을 그린 채 남는다.
+        const refetchTargets = context.execute.refetch ?? 'claims';
+        const clearLocal = context.execute.clearLocal ?? { selectedItems: [], bulkClaimStatus: '' };
+
         G7Core.toast?.success?.(t('sirsoft-ecommerce.admin.claim.complete.success', '완료 처리를 반영했습니다.'));
         reportBulkSkips(response?.data);
         resetClaimCompleteState();
-        G7Core.state.setLocal?.({ selectedItems: [], bulkClaimStatus: '' });
-        G7Core.dispatch?.({ handler: 'refetchDataSource', params: { dataSourceId: 'claims' } });
+        G7Core.state.setLocal?.(clearLocal);
+        refetchSources(refetchTargets);
     } catch (error: any) {
         logger.error('[executeClaimCompletion] 완료 처리 실패:', error);
         G7Core.toast?.error?.(
@@ -722,6 +770,369 @@ export async function buildClaimBulkConfirmDataHandler(
     });
 
     G7Core.modal?.open?.('modal_claim_bulk_confirm');
+}
+
+/** 상세 화면의 신청 상품 행 (필요한 축만) */
+interface ClaimDetailItemRow {
+    id: number;
+    product_name?: string | null;
+    option_name?: string | null;
+    quantity?: number | null;
+}
+
+/** 상세 화면 액션이 공통으로 넘기는 신청서 식별 축 */
+interface ClaimDetailTarget {
+    /** 유형 스코프 경로 세그먼트 (서버가 준 `claim_path_segment`) */
+    pathSegment?: string;
+    /** 신청서 ID */
+    claimId?: number | string | null;
+}
+
+/**
+ * 유형 스코프 API 의 기본 경로를 만듭니다.
+ *
+ * 세그먼트는 서버가 준 값을 그대로 쓴다 — 화면이 유형 값에서 조립하면 그 조립이 세그먼트
+ * 규칙의 두 번째 출처가 되고, 규칙이 바뀌어도 오류 없이 404 만 나는 URL 이 만들어진다.
+ *
+ * @param target 신청서 식별 축
+ * @returns 기본 경로 (식별 축이 비면 null)
+ */
+function claimScopedBase(target: ClaimDetailTarget): string | null {
+    const segment = (target.pathSegment ?? '').trim();
+    const claimId = target.claimId;
+
+    if (!segment || claimId === undefined || claimId === null || claimId === '') {
+        return null;
+    }
+
+    return `/api/modules/sirsoft-ecommerce/admin/${segment}/${claimId}`;
+}
+
+/**
+ * 상세 화면의 신청 상품 행에서 완료 모달의 상품 표기를 만듭니다.
+ *
+ * @param rows 신청 상품 행
+ * @param itemIds 이번 라운드 대상 행 ID (비면 전체)
+ * @returns 상품 표기 (없으면 null)
+ */
+function detailItemLabel(rows: ClaimDetailItemRow[], itemIds: number[]): string | null {
+    const targets = itemIds.length > 0
+        ? rows.filter((row) => itemIds.includes(Number(row.id)))
+        : rows;
+
+    const label = targets
+        .map((row) => row.product_name)
+        .filter((name): name is string => typeof name === 'string' && name !== '')
+        .join(', ');
+
+    return label === '' ? null : label;
+}
+
+/**
+ * 클레임 상세의 [완료 처리] 버튼에서 완료 처리 모달을 엽니다. (D26 — 진입점 ③)
+ *
+ * 신청서 단위 진입점이므로 `item_ids` 를 싣지 않는다 — 생략하면 서버가 그 신청서의 완료
+ * 가능 상품 전체를 대상으로 본다. 목록·상품 단위와 **같은 모달 파일**을 연다.
+ *
+ * @param action 액션 객체 (params)
+ * @param _context 액션 컨텍스트
+ */
+export async function openClaimDetailCompleteHandler(
+    action: ActionWithParams<{
+        pathSegment?: string;
+        claimType?: string;
+        claimId?: number | string | null;
+        claimNumber?: string | null;
+        requesterName?: string | null;
+        rows?: ClaimDetailItemRow[];
+        completeDefaults?: ClaimCompleteDefaults;
+    }>,
+    _context?: ActionContext,
+): Promise<void> {
+    const G7Core = core();
+    if (!G7Core) return;
+
+    const params = action.params ?? {};
+    const base = claimScopedBase(params);
+
+    if (base === null) {
+        logger.warn('[openClaimDetailComplete] 신청서 식별 축이 없습니다.');
+
+        return;
+    }
+
+    await openClaimCompleteModal({
+        claimType: params.claimType ?? '',
+        targets: [{
+            id: Number(params.claimId),
+            claim_number: params.claimNumber ?? null,
+            requester_name: params.requesterName ?? null,
+            item_label: detailItemLabel(params.rows ?? [], []),
+        }],
+        defaults: params.completeDefaults ?? {},
+        execute: {
+            url: `${base}/status`,
+            method: 'PATCH',
+            refetch: DETAIL_REFETCH_SOURCES,
+            clearLocal: { selectedClaimItems: [], itemBulkStatus: '' },
+        },
+    });
+}
+
+/**
+ * 신청 상품 단위 일괄 전이를 실행합니다. (D25 — 상세 화면 신청상품 일괄 변경 바)
+ *
+ * 완료 전이는 곧바로 실행하지 않고 완료 처리 모달을 연다 (D26 — 진입점 ②). 그쪽은 체크한
+ * 상품만 이번 라운드 대상이므로 `item_ids` 를 함께 싣는다 — 생략하면 서버가 그 신청서의
+ * 완료 가능 상품 전체를 대상으로 본다.
+ *
+ * 그 외 전이는 부분 성공 계약이다 — 게이트에 막힌 상품은 건너뛰고 사유와 함께 보고된다.
+ *
+ * @param action 액션 객체 (params)
+ * @param _context 액션 컨텍스트
+ */
+export async function executeClaimItemBulkStatusHandler(
+    action: ActionWithParams<{
+        pathSegment?: string;
+        claimType?: string;
+        claimId?: number | string | null;
+        claimNumber?: string | null;
+        requesterName?: string | null;
+        itemIds?: Array<number | string>;
+        status?: string;
+        rows?: ClaimDetailItemRow[];
+        completeDefaults?: ClaimCompleteDefaults;
+    }>,
+    _context?: ActionContext,
+): Promise<void> {
+    const G7Core = core();
+    if (!G7Core) return;
+
+    const params = action.params ?? {};
+    const claimType = params.claimType ?? '';
+    const status = params.status ?? '';
+    const itemIds = (params.itemIds ?? []).map((id) => Number(id));
+    const rows = params.rows ?? [];
+    const base = claimScopedBase(params);
+
+    if (base === null) {
+        logger.warn('[executeClaimItemBulkStatus] 신청서 식별 축이 없습니다.');
+
+        return;
+    }
+
+    // 상품 단위 전이는 교환·반품에만 있다 — 환불에는 상품 회수·개별 상품 전이 축이 없다.
+    if (claimType !== 'exchange' && claimType !== 'return') {
+        G7Core.toast?.warning?.(
+            t('sirsoft-ecommerce.admin.claim.detail.items.bulk_not_supported', '이 유형은 상품 단위 상태 변경을 지원하지 않습니다.'),
+        );
+
+        return;
+    }
+
+    if (itemIds.length === 0) {
+        G7Core.toast?.warning?.(
+            t('sirsoft-ecommerce.admin.claim.detail.items.bulk_no_selection', '변경할 상품을 선택해주세요.'),
+        );
+
+        return;
+    }
+
+    if (!status) {
+        G7Core.toast?.warning?.(
+            t('sirsoft-ecommerce.admin.claim.detail.items.bulk_no_status_selected', '변경할 상태를 선택해주세요.'),
+        );
+
+        return;
+    }
+
+    if (status === 'completed') {
+        await openClaimCompleteModal({
+            claimType,
+            targets: [{
+                id: Number(params.claimId),
+                claim_number: params.claimNumber ?? null,
+                requester_name: params.requesterName ?? null,
+                item_label: detailItemLabel(rows, itemIds),
+                item_ids: itemIds,
+            }],
+            defaults: params.completeDefaults ?? {},
+            execute: {
+                url: `${base}/options/bulk-status`,
+                method: 'PATCH',
+                body: { items: itemIds },
+                refetch: DETAIL_REFETCH_SOURCES,
+                clearLocal: { selectedClaimItems: [], itemBulkStatus: '' },
+            },
+        });
+
+        return;
+    }
+
+    try {
+        const response = await G7Core.api.patch(`${base}/options/bulk-status`, {
+            items: itemIds,
+            status,
+        });
+
+        if (response?.success === false) {
+            throw new Error(response?.message ?? 'option bulk status failed');
+        }
+
+        const data = response?.data ?? {};
+
+        G7Core.toast?.success?.(
+            t('sirsoft-ecommerce.admin.claim.detail.items.bulk_success', '신청 상품 상태 변경을 처리했습니다.', {
+                succeeded: (data.succeeded ?? []).length,
+                skipped: (data.skipped ?? []).length,
+            }),
+        );
+        reportBulkSkips(data);
+
+        G7Core.state.setLocal?.({ selectedClaimItems: [], itemBulkStatus: '' });
+        refetchSources(DETAIL_REFETCH_SOURCES);
+    } catch (error: any) {
+        logger.error('[executeClaimItemBulkStatus] 상품 단위 전이 실패:', error);
+        G7Core.toast?.error?.(
+            serverMessageOf(error)
+            ?? t('sirsoft-ecommerce.admin.claim.detail.items.bulk_error', '신청 상품 상태 변경에 실패했습니다.'),
+        );
+        throw error;
+    }
+}
+
+/**
+ * 회수·재발송 운송장을 저장합니다. (상세 화면 배송 정보 섹션)
+ *
+ * 택배사와 송장번호는 함께 입력해야 한다 — 하나만 보내면 서버가 `claim_tracking_incomplete`
+ * 로 거절하므로, 왕복을 돌기 전에 화면에서 먼저 알린다. 회수준비중·재발송준비중이면 저장이
+ * 다음 상태로의 전이를 함께 일으키므로 성공 후 상세를 다시 읽는다.
+ *
+ * @param action 액션 객체 (params)
+ * @param _context 액션 컨텍스트
+ */
+export async function saveClaimTrackingHandler(
+    action: ActionWithParams<{
+        pathSegment?: string;
+        claimId?: number | string | null;
+        kind?: 'collection' | 'redelivery';
+        carrierId?: number | string | null;
+        trackingNumber?: string | null;
+    }>,
+    _context?: ActionContext,
+): Promise<void> {
+    const G7Core = core();
+    if (!G7Core) return;
+
+    const params = action.params ?? {};
+    const base = claimScopedBase(params);
+
+    if (base === null) {
+        logger.warn('[saveClaimTracking] 신청서 식별 축이 없습니다.');
+
+        return;
+    }
+
+    const carrierId = params.carrierId === undefined || params.carrierId === null || params.carrierId === ''
+        ? null
+        : Number(params.carrierId);
+    const trackingNumber = (params.trackingNumber ?? '').trim();
+
+    if ((carrierId === null) !== (trackingNumber === '')) {
+        G7Core.toast?.warning?.(
+            t('sirsoft-ecommerce.admin.claim.detail.shipping.tracking_incomplete', '택배사와 송장번호를 함께 입력해주세요.'),
+        );
+
+        return;
+    }
+
+    const isRedelivery = params.kind === 'redelivery';
+    const savingKey = isRedelivery ? 'isSavingRedelivery' : 'isSavingCollection';
+    const url = isRedelivery ? `${base}/redelivery-tracking` : `${base}/collection-tracking`;
+
+    G7Core.state.setLocal?.({ [savingKey]: true });
+
+    try {
+        const response = await G7Core.api.put(url, {
+            carrier_id: carrierId,
+            tracking_number: trackingNumber === '' ? null : trackingNumber,
+        });
+
+        if (response?.success === false) {
+            throw new Error(response?.message ?? 'tracking save failed');
+        }
+
+        G7Core.toast?.success?.(
+            t('sirsoft-ecommerce.admin.claim.detail.shipping.tracking_saved', '운송장 정보를 저장했습니다.'),
+        );
+        refetchSources(DETAIL_REFETCH_SOURCES);
+    } catch (error: any) {
+        logger.error('[saveClaimTracking] 운송장 저장 실패:', error);
+        G7Core.toast?.error?.(
+            serverMessageOf(error)
+            ?? t('sirsoft-ecommerce.admin.claim.detail.shipping.tracking_error', '운송장 정보를 저장하지 못했습니다.'),
+        );
+        throw error;
+    } finally {
+        // 실패해도 버튼은 되살린다 — 그러지 않으면 한 번 실패한 뒤로 저장 자체를 못 한다.
+        G7Core.state.setLocal?.({ [savingKey]: false });
+    }
+}
+
+/**
+ * 관리자 메모를 저장합니다. (상세 화면 신청 정보 섹션)
+ *
+ * 메모는 금액 수정 엔드포인트(D18)가 함께 받는 축이라 게이트도 `claims.update-amounts` 다.
+ * 환불신청서에는 저장 컬럼이 없어 서버가 그 필드를 거절하므로 화면도 입력을 그리지 않는다.
+ *
+ * @param action 액션 객체 (params)
+ * @param _context 액션 컨텍스트
+ */
+export async function saveClaimAdminMemoHandler(
+    action: ActionWithParams<{
+        pathSegment?: string;
+        claimId?: number | string | null;
+        adminMemo?: string | null;
+    }>,
+    _context?: ActionContext,
+): Promise<void> {
+    const G7Core = core();
+    if (!G7Core) return;
+
+    const params = action.params ?? {};
+    const base = claimScopedBase(params);
+
+    if (base === null) {
+        logger.warn('[saveClaimAdminMemo] 신청서 식별 축이 없습니다.');
+
+        return;
+    }
+
+    G7Core.state.setLocal?.({ isSavingMemo: true });
+
+    try {
+        const response = await G7Core.api.put(`${base}/amounts`, {
+            admin_memo: params.adminMemo ?? '',
+        });
+
+        if (response?.success === false) {
+            throw new Error(response?.message ?? 'admin memo save failed');
+        }
+
+        G7Core.toast?.success?.(
+            t('sirsoft-ecommerce.admin.claim.detail.memo.saved', '관리자 메모를 저장했습니다.'),
+        );
+        refetchSources(DETAIL_REFETCH_SOURCES);
+    } catch (error: any) {
+        logger.error('[saveClaimAdminMemo] 관리자 메모 저장 실패:', error);
+        G7Core.toast?.error?.(
+            serverMessageOf(error)
+            ?? t('sirsoft-ecommerce.admin.claim.detail.memo.error', '관리자 메모를 저장하지 못했습니다.'),
+        );
+        throw error;
+    } finally {
+        G7Core.state.setLocal?.({ isSavingMemo: false });
+    }
 }
 
 /**

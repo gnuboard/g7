@@ -1,0 +1,270 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Claim Detail - Reason / Attachments / Admin Memo (2 columns) — S9a"
+  },
+  "id": "claim_reason_row",
+  "type": "basic",
+  "name": "Div",
+  "comment": "신청사유(+첨부) 와 관리자 메모를 2단으로 둔다 (§6-4). 섹션이 아니라 `#section_claim_info` 안의 블록이므로 `data-section-id` 를 갖지 않는다 — scrollSpy 가 탭 없는 섹션 id 를 잡으면 활성 탭이 어긋난다.",
+  "props": {
+    "className": "grid grid-cols-1 md:grid-cols-2 gap-6 mt-6"
+  },
+  "children": [
+    {
+      "id": "claim_reason_card",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "admin-card"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H2",
+          "props": {
+            "className": "text-lg font-bold text-gray-900 dark:text-gray-100 mb-6"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.claim.detail.reason.title"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex justify-between text-sm py-1.5"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-secondary"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.claim.detail.reason.reason_label"
+            },
+            {
+              "id": "cr_001_reason_label",
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-gray-900 dark:text-gray-100"
+              },
+              "text": "{{claim?.data?.claim?.reason_label ?? '-'}}"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex justify-between text-sm py-1.5"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-secondary"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.claim.detail.reason.fault_type_label"
+            },
+            {
+              "id": "cr_002_fault_type",
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-gray-900 dark:text-gray-100"
+              },
+              "text": "{{claim?.data?.claim?.fault_type_label ?? '-'}}"
+            }
+          ]
+        },
+        {
+          "id": "cr_003_reject_reason_row",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{!!claim?.data?.claim?.reject_reason}}",
+          "props": {
+            "className": "flex justify-between text-sm py-1.5"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-secondary"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.claim.detail.reason.reject_reason_label"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-red-600 dark:text-red-400 text-right"
+              },
+              "text": "{{claim?.data?.claim?.reject_reason ?? ''}}"
+            }
+          ]
+        },
+        {
+          "id": "cr_004_reason_detail",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "mt-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap min-h-16"
+          },
+          "text": "{{claim?.data?.claim?.reason_detail ?? '$t:sirsoft-ecommerce.admin.claim.detail.reason.no_detail'}}"
+        },
+        {
+          "id": "cr_005_images_block",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{(claim?.data?.claim?.images ?? []).length > 0}}",
+          "props": {
+            "className": "mt-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "text-label-subtle mb-2"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.claim.detail.reason.images_label"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex flex-wrap gap-2"
+              },
+              "children": [
+                {
+                  "id": "cr_006_image_{{imageIdx}}",
+                  "type": "basic",
+                  "name": "A",
+                  "iteration": {
+                    "source": "{{claim?.data?.claim?.images ?? []}}",
+                    "item_var": "image",
+                    "index_var": "imageIdx"
+                  },
+                  "comment": "첨부는 한시 서명 URL 로만 서빙된다 — 새 창으로 열어 상세 화면을 잃지 않게 한다.",
+                  "props": {
+                    "href": "{{image.download_url}}",
+                    "target": "_blank",
+                    "rel": "noopener noreferrer",
+                    "className": "block"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Img",
+                      "props": {
+                        "src": "{{image.download_url}}",
+                        "alt": "{{image.original_name ?? ''}}",
+                        "className": "w-20 h-20 rounded object-cover border border-gray-200 dark:border-gray-700"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "claim_memo_card",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "admin-card"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H2",
+          "props": {
+            "className": "text-lg font-bold text-gray-900 dark:text-gray-100 mb-6"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.claim.detail.memo.title"
+        },
+        {
+          "id": "cm_001_memo_unavailable",
+          "type": "basic",
+          "name": "P",
+          "comment": "환불신청서에는 관리자 메모 컬럼이 없다 — 응답은 언제나 null 이고 저장 경로도 그 값을 거절한다. 입력을 그려 두면 운영자가 적은 내용이 오류 없이 버려진다.",
+          "if": "{{(claim?.data?.claim?.claim_type ?? '') === 'refund'}}",
+          "props": {
+            "className": "text-sm text-secondary"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.claim.detail.memo.not_supported"
+        },
+        {
+          "id": "cm_002_memo_editor",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{['exchange', 'return'].includes(claim?.data?.claim?.claim_type ?? '')}}",
+          "children": [
+            {
+              "id": "cm_003_memo_textarea",
+              "type": "basic",
+              "name": "Textarea",
+              "props": {
+                "name": "adminMemo",
+                "rows": 6,
+                "maxLength": 2000,
+                "placeholder": "$t:sirsoft-ecommerce.admin.claim.detail.memo.placeholder",
+                "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
+                "value": "{{_local.adminMemo ?? ''}}",
+                "disabled": "{{claim?.data?.abilities?.can_update_amounts !== true}}"
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "adminMemo": "{{$event.target.value}}"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex justify-end mt-3"
+              },
+              "children": [
+                {
+                  "id": "cm_004_memo_save",
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "type": "button",
+                    "className": "btn btn-primary",
+                    "disabled": "{{claim?.data?.abilities?.can_update_amounts !== true || _local.isSavingMemo === true}}"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.claim.detail.memo.save",
+                  "actions": [
+                    {
+                      "comment": "메모는 금액 수정 엔드포인트(D18)가 함께 받는 축이라 게이트도 `claims.update-amounts` 다 — 버튼 활성 조건을 상태 전이 권한으로 잡으면 그 권한만 가진 운영자에게 버튼은 살아 있고 저장만 403 이 된다.",
+                      "type": "click",
+                      "handler": "sirsoft-ecommerce.saveClaimAdminMemo",
+                      "params": {
+                        "pathSegment": "{{claim?.data?.claim_path_segment ?? ''}}",
+                        "claimId": "{{claim?.data?.claim?.id ?? null}}",
+                        "adminMemo": "{{_local.adminMemo ?? ''}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

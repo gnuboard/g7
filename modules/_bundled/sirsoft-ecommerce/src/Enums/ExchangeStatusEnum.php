@@ -224,4 +224,40 @@ enum ExchangeStatusEnum: string
             'label' => $case->label(),
         ], self::cases());
     }
+
+    /**
+     * 정상 진행 순서(해피 패스)를 반환합니다. (상세 화면 진행단계 스텝퍼 — §6-4)
+     *
+     * 보류·반려·철회는 이 순서에 없다 — 흐름을 따라가는 단계가 아니라 흐름을 멈추는
+     * 사건이라 스텝퍼는 그 셋을 이탈 단계로 따로 그린다. 결제 두 단계는 청구액이 있는
+     * 건에서만 지나가므로, 실제로 그릴지는 신청서를 아는 쪽(`AdminClaimService`)이 정한다.
+     *
+     * @return array<self> 진행 순서
+     */
+    public static function progressSequence(): array
+    {
+        return [
+            self::REQUESTED,
+            self::PAYMENT_PENDING,
+            self::PAID,
+            self::APPROVED,
+            self::COLLECTION_READY,
+            self::COLLECTING,
+            self::COLLECTED,
+            self::REDELIVERY_READY,
+            self::REDELIVERING,
+            self::REDELIVERED,
+            self::COMPLETED,
+        ];
+    }
+
+    /**
+     * 진행 순서에 속하지 않는 이탈 상태인지 반환합니다. (보류·반려·철회)
+     *
+     * @return bool 이탈 상태이면 true
+     */
+    public function isOffProgressPath(): bool
+    {
+        return ! in_array($this, self::progressSequence(), true);
+    }
 }

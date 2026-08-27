@@ -503,6 +503,7 @@ return [
         'refund_execute_failed' => '환불 실행에 실패했습니다.',
         'completion_preview_retrieved' => '완료 처리 요약을 계산했습니다.',
         'refund_request_created' => '환불신청서를 접수했습니다.',
+        'logs_retrieved' => '활동 로그를 조회했습니다.',
     ],
 
     // 배송정책 메시지

@@ -9,7 +9,7 @@
 
 ```text
 1. 목록은 유형 서브탭 단위 — type 파라미터(기본 exchange)로 한 유형만 받고, counts 로 4유형 건수 뱃지를 함께 준다
-2. 유형 스코프 경로는 /admin/{exchanges|returns|refunds}/{id} — 취소(cancel)는 목록에만 있고 상세·전이 대상이 아니다
+2. 유형 스코프 경로는 /admin/{exchanges|returns|refunds}/{id} — 취소(cancel)는 목록에만 있고 상세·전이 대상이 아니다. 관리자 상세 화면은 번호로 들어온다: /admin/claims/{claimNumber}(+/logs) 가 유형을 해석하고 화면이 쓰는 봉투(세그먼트·능력·완료 기본값·진행단계·택배사)를 함께 준다
 3. 상태 쓰기 어휘는 유형별 adminAssignableValues() — requested/paid/withdrawn 직접 지정 불가 (환불은 approved/on_hold/rejected 만). 미수납 승인은 pay_on_approval 결제 요청 우회 / pay_on_request 422
 4. 완료 전이(status=completed)는 completion 객체 필수 — 모달이 실행 전에 보여줄 값은 claims/completion-preview 가 SSoT (D26)
 5. 금액 수정({claimType}/{id}/amounts)·환불 실행(refunds/{id}/execute)의 상한은 취소 가능 금액(D19) — 초과는 저장·실행 모두 422, 재실행은 409, 근거는 orders/{order}/cancellable-amount 가 같은 식으로 답한다
@@ -34,6 +34,8 @@
 | --- | --- | --- |
 | GET | /api/modules/sirsoft-ecommerce/admin/claims | `api.modules.sirsoft-ecommerce.admin.claims.index` |
 | POST | /api/modules/sirsoft-ecommerce/admin/claims/bulk-status | `api.modules.sirsoft-ecommerce.admin.claims.bulk-status` |
+| GET | /api/modules/sirsoft-ecommerce/admin/claims/{claimNumber} | `api.modules.sirsoft-ecommerce.admin.claims.show-by-number` |
+| GET | /api/modules/sirsoft-ecommerce/admin/claims/{claimNumber}/logs | `api.modules.sirsoft-ecommerce.admin.claims.logs` |
 | GET | /api/modules/sirsoft-ecommerce/admin/{claimType}/{id} | `api.modules.sirsoft-ecommerce.admin.claims.show` |
 | PATCH | /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/status | `api.modules.sirsoft-ecommerce.admin.claims.status` |
 | POST | /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/images | `api.modules.sirsoft-ecommerce.admin.claims.images.store` |
@@ -184,6 +186,82 @@
 | requester_name | string\|null | `홍길동` | 신청자 표기 (주문자명) |
 
 **응답**: `200` `data.claim` — 위 구조 / `404` 부재.
+
+---
+
+### GET /api/modules/sirsoft-ecommerce/admin/claims/{claimNumber}
+
+클레임 번호로 신청서 상세를 조회합니다. 관리자 상세 화면
+(`/admin/ecommerce/claims/{claimNumber}`)의 진입 경로이며, 번호에서 유형을 읽어내는 해석은
+서버가 합니다 — 채번 접두는 운영자가 바꿀 수 있어 화면이 추측하면 규칙의 두 번째 출처가
+됩니다. 취소(`CN…`)는 관리자 상세 화면이 없어 `404` 입니다(취소 이력은 주문 상세가 담당).
+
+`data.claim` 은 유형 스코프 상세(`GET {claimType}/{id}`)와 같은 표현이고, 그 위에 상세 화면이
+쓰는 봉투 축이 더해집니다. 이 봉투가 그 값들의 전달 통로인 이유는 게이트 폭입니다 — 설정
+조회와 배송사 목록은 `sirsoft-ecommerce.settings.read` 게이트라, 클레임 권한만 가진 관리자
+(기본 역할 `manager`)가 화면에서 직접 부르면 403 이 되어 값이 조용히 빕니다.
+
+**권한**: `sirsoft-ecommerce.claims.read`
+
+**봉투 필드** (`data` 직속)
+
+| 필드 | 타입 | 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| claim | object | — | 신청서 상세 ([ClaimResource](claims.md#claim-resource) + 관리자 확장 필드 + 교환·반품 결제 블록) |
+| claim_path_segment | string\|null | `exchanges` | 유형 스코프 API 의 경로 세그먼트. 화면이 상태 전이·송장·금액 요청 URL 을 만들 때 쓴다 |
+| abilities | object | `{"can_update_status": true, …}` | 화면 컨트롤 게이팅. 목록 응답과 **같은 매핑**이다 (`can_update_status` / `can_update_amounts` / `can_execute_refund`) |
+| complete_defaults | object | `{"create_refund_request": true, "restore_stock": true}` | 완료 처리 모달(D26)의 **초기 선택값**. 설정 `claim.complete_defaults` — 완료 처리를 자동으로 수행하지 않는다 |
+| progress_steps | array | — | 진행단계 스텝퍼 (아래) |
+| redelivery_address_differs | boolean\|null | `false` | 최종 재발송지가 주문 배송지와 다른가. 저장된 두 주소의 비교로 도출하며 별도 컬럼이 없다. 재발송 축이 없는 유형은 `null` — `false`(같다)와 구분된다 |
+| carriers | array | `[{"value": 3, "label": "CJ대한통운", …}]` | 회수·재발송 송장의 택배사 선택지. 형태는 `admin/shipping-carriers/active` 와 같다. 환불은 회수·재발송 축이 없어 빈 배열 |
+
+**progress_steps 항목**
+
+| 필드 | 타입 | 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| value | string | `collecting` | 상태 값 (유형별 상태 Enum) |
+| label | string | `교환회수중` | 상태 라벨 (표시 시점 로케일) |
+| state | string | `current` | `done` 지나감 / `current` 현재 / `upcoming` 남음 / `off_path` 이탈(보류·반려·철회) |
+
+순서는 유형별 상태 Enum 이 소유합니다(교환 11칸 · 반품 8칸 · 환불 4칸이 최대). 두 가지가
+그 순서를 신청서에 맞게 추립니다:
+
+- **결제 두 칸**(`payment_pending`/`paid`)은 **결제형 청구**(신청 시 결제·승인 후 결제)에서만
+  실립니다. 청구액이 있어도 환불금 차감이면 결제 창이 열리지 않으므로 그 두 칸이 빠집니다 —
+  금액만 보면 배송비 차감 건에 영영 지나가지 않는 칸이 남습니다.
+- **보류·반려·철회**는 순서 안에 없습니다. 흐름을 따라가는 단계가 아니라 멈추는 사건이라
+  마지막에 `state: "off_path"` 칸 하나로 붙고, 그때 순서 안에는 `current` 가 없습니다.
+
+도달 지점은 현재 상태의 위치와 신청서가 박아 둔 시각(승인·회수도착·재발송도착·완료) 중 더
+나아간 쪽입니다 — 이탈 상태에서는 현재 상태만으로 어디까지 갔는지 알 수 없기 때문입니다.
+
+**응답**: `200` `data` — 위 구조 / `404` 부재·취소 유형.
+
+---
+
+### GET /api/modules/sirsoft-ecommerce/admin/claims/{claimNumber}/logs
+
+신청서 한 건의 활동 로그를 조회합니다. 신청서 자신뿐 아니라 그 신청서의 **추가결제·첨부**에
+남은 로그까지 한 목록으로 합칩니다 — 운영자에게는 셋이 같은 신청서의 이력입니다.
+
+상세와 같은 번호 축을 쓰므로, 상세 화면의 두 데이터소스가 같은 URL 파라미터만 읽습니다
+(로그 조회가 상세 응답의 도착을 기다리지 않습니다).
+
+**권한**: `sirsoft-ecommerce.claims.read`
+
+**쿼리 파라미터**
+
+| 파라미터 | 타입 | 필수 | 설명 |
+| --- | --- | --- | --- |
+| per_page | integer | 아니오 | 페이지당 건수 (1~100, 기본 10) |
+| sort_order | string | 아니오 | 정렬 (`asc` / `desc` — 기본 `desc`) |
+
+**응답**: `200` — 코어 `ActivityLogResource` 컬렉션(페이지네이션 동반). 항목 구조는
+[활동 로그 시스템](../../../../docs/backend/activity-log.md) 과 같습니다 / `404` 부재 /
+`422` 어휘 밖 정렬.
+
+첨부 삭제 로그는 그 첨부 행이 이미 지워졌으므로 이 목록에 실리지 않습니다 — 로그 자체는
+`properties` 스냅샷과 함께 `activity_logs` 에 남습니다.
 
 ---
 

@@ -1,6 +1,104 @@
 {
   "title": "キャンセル·返品·交換管理",
   "description": "交換·返品·返金·キャンセル申請書を確認して処理します",
+  "detail": {
+    "title": "キャンセル·返品·交換の詳細",
+    "description": "申請書の進行状況と処理履歴を確認して処理します",
+    "claim_number": "クレーム番号",
+    "claim_type": "種類",
+    "requested_at": "申請日",
+    "requester": "申請者",
+    "view_order": "元の注文を見る",
+    "tabs": {
+      "claim_info": "申請情報",
+      "shipping_info": "配送情報",
+      "activity_log": "アクティビティログ"
+    },
+    "progress": {
+      "title": "進行段階"
+    },
+    "items": {
+      "title": "申請商品",
+      "empty": "申請商品がありません。",
+      "price_difference": "差額 {{amount}}",
+      "columns": {
+        "product": "商品",
+        "quantity": "数量",
+        "amount": "金額",
+        "status": "状態"
+      },
+      "bulk_no_selection": "変更する商品を選択してください。",
+      "bulk_no_status_selected": "変更する状態を選択してください。",
+      "bulk_not_supported": "この種類は商品単位の状態変更に対応していません。",
+      "bulk_success": "申請商品の状態変更を処理しました。",
+      "bulk_error": "申請商品の状態変更に失敗しました。"
+    },
+    "completion": {
+      "title": "完了処理",
+      "description": "申請商品 {{count}}件を完了状態に切り替えます。在庫の復元と返金申請書の受付方法は次の画面で選びます。",
+      "action": "完了処理"
+    },
+    "shipping": {
+      "title": "配送情報",
+      "collection_title": "回収",
+      "redelivery_title": "再発送",
+      "redelivery_not_applicable": "この種類には再発送の段階がありません。",
+      "return_address_label": "回収先",
+      "redelivery_address_label": "再発送先",
+      "address_differs": "配送先が異なります",
+      "changed_by_user": "お客様が変更",
+      "collected_at": "回収完了 {{at}}",
+      "redelivered_at": "再発送完了 {{at}}",
+      "carrier_placeholder": "配送会社",
+      "tracking_placeholder": "送り状番号",
+      "save": "保存",
+      "track": "配送照会",
+      "tracking_incomplete": "配送会社と送り状番号を一緒に入力してください。",
+      "tracking_saved": "送り状情報を保存しました。",
+      "tracking_error": "送り状情報を保存できませんでした。"
+    },
+    "reason": {
+      "title": "申請理由",
+      "reason_label": "理由",
+      "fault_type_label": "責任区分",
+      "reject_reason_label": "却下理由",
+      "no_detail": "詳細な理由は入力されていません。",
+      "images_label": "添付画像"
+    },
+    "memo": {
+      "title": "管理者メモ",
+      "placeholder": "内部処理メモを入力してください(お客様には表示されません)",
+      "save": "メモを保存",
+      "saved": "管理者メモを保存しました。",
+      "error": "管理者メモを保存できませんでした。",
+      "not_supported": "返金申請書には管理者メモを保存できません。"
+    },
+    "activity_log": {
+      "title": "アクティビティログ",
+      "empty": "アクティビティログがありません。",
+      "system": "システム",
+      "per_page": "表示件数",
+      "per_page_option": "{{count}}件",
+      "sort": {
+        "label": "並び替え",
+        "date_desc": "新しい順",
+        "date_asc": "古い順"
+      },
+      "columns": {
+        "date": "日時",
+        "actor": "担当者",
+        "event": "内容"
+      },
+      "changes": {
+        "field": "項目",
+        "before": "変更前",
+        "after": "変更後"
+      },
+      "actor_action": {
+        "view_member": "会員情報を見る"
+      }
+    }
+  },
   "subtab": {
     "exchange": "交換",
     "return": "返品",

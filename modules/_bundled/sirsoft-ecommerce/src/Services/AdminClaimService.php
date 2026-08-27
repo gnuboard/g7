@@ -18,6 +18,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimActivityLogRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderCancelRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderExchangeRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundRepositoryInterface;
@@ -51,6 +52,8 @@ class AdminClaimService
      * @param  CancellableAmountCalculator  $cancellableCalculator  취소 가능 금액 산정기 (D19)
      * @param  CurrencyConversionService  $currencyService  통화 변환·표기 서비스 (완료 미리보기 금액 표기)
      * @param  EcommerceSettingsService  $settingsService  이커머스 설정 서비스 (완료 처리 기본값 — D26)
+     * @param  UserClaimService  $userClaimService  클레임 공용 서비스 (클레임 번호 해석 재사용)
+     * @param  ClaimActivityLogRepositoryInterface  $activityLogRepository  클레임 활동 로그 Repository
      * @param  OrderExchangeRepositoryInterface  $exchangeRepository  교환 Repository
      * @param  OrderReturnRepositoryInterface  $returnRepository  반품 Repository
      * @param  OrderRefundRepositoryInterface  $refundRepository  환불 Repository
@@ -64,6 +67,8 @@ class AdminClaimService
         protected CancellableAmountCalculator $cancellableCalculator,
         protected CurrencyConversionService $currencyService,
         protected EcommerceSettingsService $settingsService,
+        protected UserClaimService $userClaimService,
+        protected ClaimActivityLogRepositoryInterface $activityLogRepository,
         protected OrderExchangeRepositoryInterface $exchangeRepository,
         protected OrderReturnRepositoryInterface $returnRepository,
         protected OrderRefundRepositoryInterface $refundRepository,
@@ -162,8 +167,10 @@ class AdminClaimService
     public function findForDetail(ClaimTypeEnum $type, int $id): OrderExchange|OrderReturn|OrderRefund|null
     {
         return match ($type) {
+            // 주문 배송지는 재발송지 뱃지 판정(D14)이 읽는다 — 미로드로 두면 상세 1회당
+            // 지연 로드 쿼리가 하나 더 붙는다.
             ClaimTypeEnum::EXCHANGE => $this->exchangeRepository->findById($id, [
-                'exchangeOptions.orderOption', 'images', 'order', 'collectionCarrier', 'redeliveryCarrier',
+                'exchangeOptions.orderOption', 'images', 'order.shippingAddress', 'collectionCarrier', 'redeliveryCarrier',
             ]),
             ClaimTypeEnum::RETURN => $this->returnRepository->findById($id, [
                 'returnOptions.orderOption', 'images', 'order', 'collectionCarrier', 'refund',
@@ -173,6 +180,229 @@ class AdminClaimService
             ]),
             ClaimTypeEnum::CANCEL => null,
         };
+    }
+
+    /**
+     * 클레임 번호로 상세 신청서를 조회합니다. (관리자 상세 화면의 진입 경로)
+     *
+     * 관리자 상세 라우트는 번호 기반(`/admin/ecommerce/claims/{claimNumber}`)이고 유형별
+     * API 는 `(유형, id)` 기반이다 — 번호에서 유형을 읽어내는 해석은
+     * `UserClaimService::resolveByNumber()` 가 이미 갖고 있으므로 그것을 쓴다. 여기서
+     * 채번 접두를 다시 해석하면 채번 규칙의 두 번째 출처가 된다(접두는 운영자가 바꿀 수 있다).
+     *
+     * 취소(`cancel`)는 상세 화면이 없다 — 취소 이력은 주문 상세(D20)가 담당하므로
+     * 번호가 해석되어도 상세로는 `null` 을 돌려준다.
+     *
+     * @param  string  $claimNumber  클레임 번호
+     * @return array{type: ClaimTypeEnum, claim: OrderExchange|OrderReturn|OrderRefund}|null 해석 결과 (없으면 null)
+     */
+    public function findForDetailByNumber(string $claimNumber): ?array
+    {
+        $resolved = $this->userClaimService->resolveByNumber($claimNumber);
+
+        if ($resolved === null) {
+            return null;
+        }
+
+        $claim = $this->findForDetail($resolved['type'], (int) $resolved['claim']->getKey());
+
+        return $claim === null ? null : ['type' => $resolved['type'], 'claim' => $claim];
+    }
+
+    /**
+     * 신청서 한 건의 활동 로그를 조회합니다. (신청서 + 추가결제 + 첨부)
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
+     * @param  array{per_page?: int, sort_order?: string}  $filters  조회 필터
+     * @return LengthAwarePaginator 활동 로그
+     */
+    public function activityLogs(OrderExchange|OrderReturn|OrderRefund $claim, array $filters = []): LengthAwarePaginator
+    {
+        return $this->activityLogRepository->paginateForClaim($claim, $filters);
+    }
+
+    /**
+     * 상세 화면의 진행단계 스텝퍼 데이터를 만듭니다. (§6-4 `#section_claim_info`)
+     *
+     * 순서는 유형별 상태 Enum 이 소유하고(`progressSequence()`), 여기서는 이 신청서에서
+     * 실제로 지나가는 단계만 남긴다:
+     *
+     * - 결제 두 단계(`payment_pending`/`paid`)는 청구액이 있는 건에서만 그린다 — 청구가
+     *   없는 건에 결제 칸을 세워 두면 끝나도 영영 지나가지 않는 칸이 남는다.
+     * - 보류·반려·철회는 순서에 없다. 흐름을 따라가는 단계가 아니라 멈추는 사건이라
+     *   마지막에 이탈 칸 하나로 따로 붙인다.
+     *
+     * 도달 지점은 현재 상태의 위치와 신청서가 박아 둔 시각(승인·회수도착·재발송도착·완료)
+     * 중 더 나아간 쪽으로 잡는다 — 보류처럼 순서 밖 상태에서는 현재 상태만으로 어디까지
+     * 갔는지 알 수 없어 화면이 실제보다 앞 단계에 멈춰 있는 것처럼 보인다.
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
+     * @return array<int, array{value: string, label: string, state: string}> 진행 단계
+     */
+    public function progressSteps(OrderExchange|OrderReturn|OrderRefund $claim): array
+    {
+        $sequence = $this->progressSequenceFor($claim);
+        $current = $this->progressStatusOf($claim);
+        $reached = $this->reachedProgressIndex($claim, $sequence, $current);
+        $offPath = $current !== null && $current->isOffProgressPath();
+
+        $steps = [];
+
+        foreach ($sequence as $index => $case) {
+            $steps[] = [
+                'value' => $case->value,
+                'label' => $case->label(),
+                'state' => match (true) {
+                    // 이탈 상태에서는 순서 안에 '현재' 칸이 없다 — 멈춘 지점까지는 지나간 것이다.
+                    $offPath => $index <= $reached ? 'done' : 'upcoming',
+                    $index < $reached => 'done',
+                    $index === $reached => 'current',
+                    default => 'upcoming',
+                },
+            ];
+        }
+
+        // 이탈 상태는 순서 밖이라 마지막 칸으로 붙인다 — 그래야 "어디서 멈췄는가" 와
+        // "왜 멈췄는가" 가 한 줄에서 함께 읽힌다.
+        if ($offPath) {
+            $steps[] = [
+                'value' => $current->value,
+                'label' => $current->label(),
+                'state' => 'off_path',
+            ];
+        }
+
+        return $steps;
+    }
+
+    /**
+     * 재발송지가 주문 배송지와 다른지 판정합니다. (D14 — '배송지 다름' 뱃지)
+     *
+     * 교환이 아닌 유형에는 재발송 축이 없어 `null` 이다 — `false`(같다)와 구분해야 화면이
+     * "비교할 것이 없다" 와 "비교했더니 같다" 를 뒤섞지 않는다.
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
+     * @return bool|null 다르면 true, 같으면 false, 재발송 축이 없으면 null
+     */
+    public function redeliveryAddressDiffers(OrderExchange|OrderReturn|OrderRefund $claim): ?bool
+    {
+        return $claim instanceof OrderExchange
+            ? $this->exchangeService->redeliveryAddressDiffersFromOrder($claim)
+            : null;
+    }
+
+    /**
+     * 유형별 진행 순서를 이 신청서에 맞게 추립니다.
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
+     * @return array<int, ExchangeStatusEnum|ReturnStatusEnum|RefundStatusEnum> 진행 순서
+     */
+    protected function progressSequenceFor(OrderExchange|OrderReturn|OrderRefund $claim): array
+    {
+        if ($claim instanceof OrderRefund) {
+            return RefundStatusEnum::progressSequence();
+        }
+
+        $sequence = $claim instanceof OrderExchange
+            ? ExchangeStatusEnum::progressSequence()
+            : ReturnStatusEnum::progressSequence();
+
+        $paymentStages = ['payment_pending', 'paid'];
+
+        // 결제 두 단계는 **결제형 청구**(신청 시 결제·승인 후 결제)에서만 지나간다. 청구액이
+        // 있어도 환불금 차감이면 결제 창이 열리지 않으므로, 금액이 아니라 청구 방식을 본다 —
+        // 금액만 보면 반품 배송비 차감 건에 영영 지나가지 않는 결제 칸 두 개가 남는다.
+        if ($claim->requiresAdditionalPayment()) {
+            return array_values($sequence);
+        }
+
+        // 다만 판정은 **지금** 값으로 하는데 신청서는 이미 그 칸에 서 있을 수 있다 — 결제
+        // 대기·결제 완료에서 운영자가 청구를 없애면(왕복 배송비 면제 등) 현재 상태가 순서
+        // 밖으로 밀려 도달 인덱스가 0 으로 접히고, 스텝퍼가 '신청 접수' 를 현재 칸으로
+        // 그린다. 지나간 칸을 지우는 것은 이 추림의 목적이 아니므로 그때는 남긴다.
+        if (in_array($this->progressStatusOf($claim)?->value, $paymentStages, true)) {
+            return array_values($sequence);
+        }
+
+        return array_values(array_filter(
+            $sequence,
+            fn ($case) => ! in_array($case->value, $paymentStages, true),
+        ));
+    }
+
+    /**
+     * 신청서의 현재 상태 Enum 을 반환합니다.
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
+     * @return ExchangeStatusEnum|ReturnStatusEnum|RefundStatusEnum|null 현재 상태
+     */
+    protected function progressStatusOf(OrderExchange|OrderReturn|OrderRefund $claim): ExchangeStatusEnum|ReturnStatusEnum|RefundStatusEnum|null
+    {
+        $status = match (true) {
+            $claim instanceof OrderExchange => $claim->exchange_status,
+            $claim instanceof OrderReturn => $claim->return_status,
+            default => $claim->refund_status,
+        };
+
+        if ($status instanceof ExchangeStatusEnum || $status instanceof ReturnStatusEnum || $status instanceof RefundStatusEnum) {
+            return $status;
+        }
+
+        if (! is_string($status)) {
+            return null;
+        }
+
+        return match (true) {
+            $claim instanceof OrderExchange => ExchangeStatusEnum::tryFrom($status),
+            $claim instanceof OrderReturn => ReturnStatusEnum::tryFrom($status),
+            default => RefundStatusEnum::tryFrom($status),
+        };
+    }
+
+    /**
+     * 진행 순서에서 도달한 칸의 인덱스를 구합니다.
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
+     * @param  array<int, ExchangeStatusEnum|ReturnStatusEnum|RefundStatusEnum>  $sequence  진행 순서
+     * @param  ExchangeStatusEnum|ReturnStatusEnum|RefundStatusEnum|null  $current  현재 상태
+     * @return int 도달 인덱스 (신청 접수는 언제나 0)
+     */
+    protected function reachedProgressIndex(
+        OrderExchange|OrderReturn|OrderRefund $claim,
+        array $sequence,
+        ExchangeStatusEnum|ReturnStatusEnum|RefundStatusEnum|null $current,
+    ): int {
+        $indexOf = static function (string $value) use ($sequence): int {
+            foreach ($sequence as $index => $case) {
+                if ($case->value === $value) {
+                    return $index;
+                }
+            }
+
+            return -1;
+        };
+
+        $reached = 0;
+
+        if ($current !== null) {
+            $reached = max($reached, $indexOf($current->value));
+        }
+
+        // 신청서가 박아 둔 시각은 그 단계를 실제로 지났다는 증거다 — 이탈 상태에서도 남는다.
+        $stamps = [
+            'approved' => $claim->approved_at ?? null,
+            'collected' => $claim instanceof OrderRefund ? null : ($claim->collection_completed_at ?? null),
+            'redelivered' => $claim instanceof OrderExchange ? ($claim->redelivered_at ?? null) : null,
+            'completed' => $claim instanceof OrderRefund ? ($claim->refunded_at ?? null) : ($claim->completed_at ?? null),
+        ];
+
+        foreach ($stamps as $value => $stamp) {
+            if ($stamp !== null) {
+                $reached = max($reached, $indexOf($value));
+            }
+        }
+
+        return max(0, $reached);
     }
 
     /**

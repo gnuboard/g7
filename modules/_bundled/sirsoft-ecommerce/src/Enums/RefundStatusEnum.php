@@ -176,4 +176,32 @@ enum RefundStatusEnum: string
             'label' => $case->label(),
         ], self::cases());
     }
+
+    /**
+     * 정상 진행 순서(해피 패스)를 반환합니다. (상세 화면 진행단계 스텝퍼 — §6-4)
+     *
+     * 환불은 회수·재발송 단계가 없고 결제 단계도 없다 — 청구가 아니라 지급이라
+     * 신청 → 승인 → 처리 중 → 완료 넷뿐이다. 보류·반려·철회는 이탈 상태다.
+     *
+     * @return array<self> 진행 순서
+     */
+    public static function progressSequence(): array
+    {
+        return [
+            self::REQUESTED,
+            self::APPROVED,
+            self::PROCESSING,
+            self::COMPLETED,
+        ];
+    }
+
+    /**
+     * 진행 순서에 속하지 않는 이탈 상태인지 반환합니다. (보류·반려·철회)
+     *
+     * @return bool 이탈 상태이면 true
+     */
+    public function isOffProgressPath(): bool
+    {
+        return ! in_array($this, self::progressSequence(), true);
+    }
 }

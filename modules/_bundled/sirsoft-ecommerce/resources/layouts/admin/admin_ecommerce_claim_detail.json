@@ -1,0 +1,388 @@
+{
+    "version": "1.0.0",
+    "layout_name": "admin_ecommerce_claim_detail",
+    "permissions": [
+        "sirsoft-ecommerce.claims.read"
+    ],
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.claim.detail.title",
+        "description": "$t:sirsoft-ecommerce.admin.claim.detail.description"
+    },
+    "computed": {
+        "claimDetailTabs": "{{[{ id: 'claim_info', label: $t('sirsoft-ecommerce.admin.claim.detail.tabs.claim_info') }, ...(['exchange', 'return'].includes(claim?.data?.claim?.claim_type ?? '') ? [{ id: 'shipping_info', label: $t('sirsoft-ecommerce.admin.claim.detail.tabs.shipping_info') }] : []), { id: 'activity_log', label: $t('sirsoft-ecommerce.admin.claim.detail.tabs.activity_log') }]}}"
+    },
+    "state": {
+        "activeClaimTab": "claim_info",
+        "selectedClaimItems": [],
+        "itemBulkStatus": "",
+        "adminMemo": "",
+        "isSavingMemo": false,
+        "collectionCarrierId": "",
+        "collectionTrackingNumber": "",
+        "isSavingCollection": false,
+        "redeliveryCarrierId": "",
+        "redeliveryTrackingNumber": "",
+        "isSavingRedelivery": false,
+        "logsPage": 1,
+        "logsPerPage": 10,
+        "logsSort": "date_desc"
+    },
+    "transition_overlay": {
+        "wait_for": [
+            "claim"
+        ]
+    },
+    "data_sources": [
+        {
+            "id": "claim",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.claim_detail",
+            "comment": "번호 기반 진입이다 — 유형 스코프 API 는 `(유형, id)` 를 받지만 화면 라우트는 번호(§5-3)이고, 번호에서 유형을 읽어내는 것은 채번 규칙(운영자가 바꿀 수 있다)을 아는 서버의 일이다. 응답은 신청서 외에 능력·완료 기본값·진행단계·택배사 선택지를 함께 나른다 — 그 넷을 각자의 엔드포인트에서 읽으면 게이트가 이 화면(`claims.read`)보다 좁아, 클레임 권한만 가진 운영자(기본 역할 manager)에게만 403 이 되어 값이 조용히 빈다.",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/claims/{{route.claimNumber}}",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "blocking",
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                },
+                "404": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                },
+                "default": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
+            "initLocal": {
+                "adminMemo": "{{data.claim?.admin_memo ?? ''}}",
+                "collectionCarrierId": "{{data.claim?.collection_carrier_id ? String(data.claim.collection_carrier_id) : ''}}",
+                "collectionTrackingNumber": "{{data.claim?.collection_tracking_number ?? ''}}",
+                "redeliveryCarrierId": "{{data.claim?.redelivery_carrier_id ? String(data.claim.redelivery_carrier_id) : ''}}",
+                "redeliveryTrackingNumber": "{{data.claim?.redelivery_tracking_number ?? ''}}"
+            }
+        },
+        {
+            "id": "claim_logs",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.claim_logs",
+            "comment": "상세와 같은 번호 축을 읽는다 — 상세 응답이 도착해야 유형·id 를 알 수 있는 형태였다면 이 조회가 그 응답을 기다려야 하고, 기다리는 동안 활동 로그 섹션이 빈 채로 열린다.",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/claims/{{route.claimNumber}}/logs",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "background",
+            "params": {
+                "per_page": "{{_local.logsPerPage ?? 10}}",
+                "page": "{{_local.logsPage ?? 1}}",
+                "sort_order": "{{_local.logsSort === 'date_asc' ? 'asc' : 'desc'}}"
+            }
+        }
+    ],
+    "init_actions": [
+        {
+            "comment": "폼 시드는 데이터소스 `initLocal` 이 담당한다 — 여기서는 응답과 무관한 화면 상태만 되돌린다(이탈 후 복귀 시 앞 신청서의 선택이 남지 않게).",
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "activeClaimTab": "claim_info",
+                "selectedClaimItems": [],
+                "itemBulkStatus": "",
+                "isSavingMemo": false,
+                "isSavingCollection": false,
+                "isSavingRedelivery": false,
+                "logsPage": 1,
+                "logsPerPage": 10,
+                "logsSort": "date_desc"
+            }
+        }
+    ],
+    "modals": [
+        {
+            "comment": "완료 처리 모달은 목록·상세·상품 단위 세 진입점이 파일 하나를 공유한다 (D26). 복제하면 한 곳만 고쳐졌을 때 나머지 두 경로가 조용히 옛 규칙으로 남는다 — 모달은 `_global.claimComplete*` 계약만 읽으므로 이 화면의 데이터소스에 의존하지 않는다.",
+            "partial": "partials/admin_ecommerce_claim_list/_modal_claim_complete.json"
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "claim_detail_wrapper",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "admin-page-content"
+                },
+                "children": [
+                    {
+                        "id": "claim_detail_header_section",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "mb-6"
+                        },
+                        "children": [
+                            {
+                                "id": "cd_page_header",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "page-header-padded"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "id": "cd_001_page_title",
+                                                "type": "basic",
+                                                "name": "H1",
+                                                "props": {
+                                                    "className": "page-title"
+                                                },
+                                                "text": "$t:sirsoft-ecommerce.admin.claim.detail.title"
+                                            },
+                                            {
+                                                "id": "cd_002_header_meta",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "page-description flex-center gap-2 flex-wrap"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-secondary"
+                                                        },
+                                                        "text": "$t:sirsoft-ecommerce.admin.claim.detail.claim_number:"
+                                                    },
+                                                    {
+                                                        "id": "cd_003_claim_number",
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "font-medium text-gray-900 dark:text-gray-100"
+                                                        },
+                                                        "text": "{{claim?.data?.claim?.claim_number ?? ''}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-gray-300 dark:text-gray-600"
+                                                        },
+                                                        "text": "|"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-secondary"
+                                                        },
+                                                        "text": "$t:sirsoft-ecommerce.admin.claim.detail.claim_type:"
+                                                    },
+                                                    {
+                                                        "id": "cd_004_claim_type",
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "font-medium text-gray-900 dark:text-gray-100"
+                                                        },
+                                                        "text": "{{claim?.data?.claim?.claim_type_label ?? ''}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-gray-300 dark:text-gray-600"
+                                                        },
+                                                        "text": "|"
+                                                    },
+                                                    {
+                                                        "id": "cd_005_status_badge",
+                                                        "type": "composite",
+                                                        "name": "Badge",
+                                                        "props": {
+                                                            "variant": "{{claim?.data?.claim?.status_variant ?? 'default'}}"
+                                                        },
+                                                        "text": "{{claim?.data?.claim?.status_label ?? ''}}"
+                                                    },
+                                                    {
+                                                        "id": "cd_006_guest_badge",
+                                                        "type": "composite",
+                                                        "name": "Badge",
+                                                        "if": "{{claim?.data?.claim?.is_guest_request === true}}",
+                                                        "props": {
+                                                            "variant": "secondary"
+                                                        },
+                                                        "text": "$t:sirsoft-ecommerce.admin.claim.column.guest_badge"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-gray-300 dark:text-gray-600"
+                                                        },
+                                                        "text": "|"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-secondary"
+                                                        },
+                                                        "text": "$t:sirsoft-ecommerce.admin.claim.detail.requested_at:"
+                                                    },
+                                                    {
+                                                        "id": "cd_007_requested_at",
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "font-medium text-gray-900 dark:text-gray-100"
+                                                        },
+                                                        "text": "{{claim?.data?.claim?.requested_at_formatted ?? ''}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-gray-300 dark:text-gray-600"
+                                                        },
+                                                        "text": "|"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-secondary"
+                                                        },
+                                                        "text": "$t:sirsoft-ecommerce.admin.claim.detail.requester:"
+                                                    },
+                                                    {
+                                                        "id": "cd_008_requester",
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "font-medium text-gray-900 dark:text-gray-100"
+                                                        },
+                                                        "text": "{{claim?.data?.claim?.requester_name ?? '-'}}"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "page-actions"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "cd_009_order_link_button",
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "if": "{{!!claim?.data?.claim?.order_number}}",
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "btn btn-outline"
+                                                },
+                                                "text": "$t:sirsoft-ecommerce.admin.claim.detail.view_order",
+                                                "actions": [
+                                                    {
+                                                        "comment": "원 주문은 이 목록 클러스터 밖이다 — 새 창으로 열어 지금 보던 신청서를 잃지 않게 한다.",
+                                                        "type": "click",
+                                                        "handler": "openWindow",
+                                                        "params": {
+                                                            "path": "/admin/ecommerce/orders/{{claim.data.claim.order_number}}"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "cd_010_list_button",
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "btn btn-outline"
+                                                },
+                                                "text": "$t:sirsoft-ecommerce.common.list",
+                                                "actions": [
+                                                    {
+                                                        "comment": "목록 복귀는 보던 조건 그대로다 — 검색어·필터·페이지·유형 서브탭을 URL 에서 승계한다.",
+                                                        "type": "click",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/ecommerce/claims",
+                                                            "mergeQuery": true,
+                                                            "query": {}
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "claim_tab_navigation",
+                                "type": "composite",
+                                "name": "TabNavigationScroll",
+                                "comment": "탭 배열과 섹션 존재는 **같은 조건**으로 분기한다 (D17-①) — 탭만 남기면 스크롤 대상이 없어 클릭이 무반응이 되고, 섹션만 남기면 scrollSpy 가 없는 탭 id 를 활성화하려다 무시된다. 배송 축의 조건식은 `_partial_claim_shipping.json` 의 `if` 와 문자 그대로 같다. 결제 정보·환불 실행 탭은 그 섹션을 만드는 세션(S9b)이 **탭과 함께** 더한다 — 지금 탭만 세워 두면 그 사이 클릭이 아무 일도 하지 않는다. 모바일 대응 코드는 없다: 컴포넌트가 768px 미만에서 Select 로 자체 전환한다.",
+                                "props": {
+                                    "activeTabId": "{{_local.activeClaimTab ?? 'claim_info'}}",
+                                    "enableScrollSpy": true,
+                                    "scrollSpyOffset": 120,
+                                    "sectionIdPrefix": "section_",
+                                    "tabs": "{{_computed.claimDetailTabs ?? []}}"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "change",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "activeClaimTab": "{{$event.value}}"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "claim_tab_content_area",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "tab-content"
+                        },
+                        "children": [
+                            {
+                                "partial": "partials/admin_ecommerce_claim_detail/_partial_claim_items.json"
+                            },
+                            {
+                                "partial": "partials/admin_ecommerce_claim_detail/_partial_claim_shipping.json"
+                            },
+                            {
+                                "partial": "partials/admin_ecommerce_claim_detail/_partial_claim_activity_log.json"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

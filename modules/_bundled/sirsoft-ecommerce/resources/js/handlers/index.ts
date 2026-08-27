@@ -179,6 +179,10 @@ import {
     setClaimCompleteRefundRequestHandler,
     executeClaimCompletionHandler,
     clearClaimCompleteTimersHandler,
+    openClaimDetailCompleteHandler,
+    executeClaimItemBulkStatusHandler,
+    saveClaimTrackingHandler,
+    saveClaimAdminMemoHandler,
 } from './claimHandlers';
 
 // 상품 목록 핸들러
@@ -416,6 +420,10 @@ export const handlerMap = {
     setClaimCompleteRefundRequest: setClaimCompleteRefundRequestHandler,
     executeClaimCompletion: executeClaimCompletionHandler,
     clearClaimCompleteTimers: clearClaimCompleteTimersHandler,
+    openClaimDetailComplete: openClaimDetailCompleteHandler,
+    executeClaimItemBulkStatus: executeClaimItemBulkStatusHandler,
+    saveClaimTracking: saveClaimTrackingHandler,
+    saveClaimAdminMemo: saveClaimAdminMemoHandler,
 
     // ===== 상품 목록 =====
     handleProductRowAction: handleProductRowActionHandler,

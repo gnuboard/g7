@@ -1,0 +1,170 @@
+feature: 관리자 클레임 상세 골격 (#599 S9a — D17·D14·D24·D25·D26)
+
+description: |
+  목록의 클레임번호가 가리키던 화면을 만든다. 셸(섹션 탭 + scrollSpy) · 신청 정보(진행단계 ·
+  신청상품 일괄 변경 · 완료 처리 카드 · 사유/메모) · 배송 정보(회수·재발송 통합) · 활동 로그
+  넷이다. 이 화면에서 조용히 깨지는 지점은 일곱이다.
+
+  ① **탭 배열과 섹션 존재가 다른 조건으로 갈리면** 탭은 보이는데 클릭이 아무 일도 하지
+     않거나(섹션 없음), scrollSpy 가 없는 탭 id 를 활성화하려다 무시된다(탭 없음). 어느
+     쪽도 예외·로그를 남기지 않는다 (D17-①). 그래서 배송 축의 조건식을 셸의 탭 배열과
+     섹션 `if` 가 **문자 그대로** 공유한다.
+
+  ② **회수·재발송을 두 섹션으로 나누면** 탭이 하나 더 생기고, 재발송이 없는 반품에서 빈
+     탭이 남는다 (D17-②). 한 카드 안의 두 항목이며, 반품에는 '해당 없음' 안내가 그 자리를
+     지킨다 — 통째로 빼면 운영자가 '아직 안 보이는 것' 과 '해당 없음' 을 구분할 수 없다.
+
+  ③ **유형 스코프 경로 세그먼트를 화면이 조립하면**(`claim_type + 's'`) 그 조립이 세그먼트
+     규칙의 두 번째 출처가 된다. 규칙이 바뀌어도 오류 없이 404 만 나는 URL 이 만들어지므로
+     서버가 준 `claim_path_segment` 만 쓴다.
+
+  ④ **화면이 읽는 데이터소스의 게이트가 이 화면의 라우트 권한보다 좁으면** 그 권한 조합의
+     운영자에게만 값이 조용히 빈다. 완료 처리 기본값(설정)과 택배사 목록은 둘 다
+     `settings.read` 게이트라, 상세 응답이 그 값의 통로다 — 전권 계정에서는 재현되지 않는다.
+
+  ⑤ **진행단계 순서를 화면이 다시 적으면** 상태가 늘어도 화면만 낡은 채로 남는다. 순서는
+     상태 Enum 의 지식이고, 결제 두 칸은 **결제형 청구**에서만 지나간다 — 금액만 보면 반품
+     배송비 차감 건에 영영 지나가지 않는 칸 두 개가 남는다. 보류·반려·철회는 흐름을 따라가는
+     단계가 아니라 멈추는 사건이라 순서 밖의 이탈 칸으로 붙인다.
+
+  ⑥ **완료 처리 모달을 복제하면** 세 진입점 중 한 곳만 고쳐졌을 때 나머지 둘이 조용히 옛
+     규칙으로 남는다 (D26). 상세는 목록이 소유한 파일을 그대로 참조하고, 대상·실행 경로·
+     재조회 대상은 여는 쪽이 넘긴다 — 성공 후 다시 읽을 데이터소스까지 모달이 알고 있으면
+     나머지 진입점의 화면이 옛 값을 그린 채 남는다.
+
+  ⑦ **재발송지 뱃지 2종을 하나로 합치면** "값이 다르다" 와 "고객이 손댔다" 를 구분할 수 없다
+     (D14). 운영자가 나중에 주소를 되돌리면 값은 같아지지만 손댄 사실은 남는다.
+
+# axis 의미:
+#   claim_type — 탭 배열·섹션 존재·상품 단위 전이 가능 여부·메모 저장 가능 여부·진행단계
+#                순서가 전부 여기서 갈린다. 취소(cancel)는 관리자 상세 화면이 없다 —
+#                취소 이력은 주문 상세(D20, S9c)가 담당한다.
+#   claim_stage — 진행단계가 그리는 모양이 갈리는 축. `in_progress` 는 순서 안의 한 칸이
+#                 현재이고, `off_path` 는 순서 밖(보류·반려·철회)이라 현재 칸이 없다,
+#                 `final` 은 완료 처리 카드가 사라지는 지점이다.
+axes:
+  claim_type: [exchange, return, refund]
+  claim_stage: [in_progress, off_path, final]
+
+exclusions:
+  - { claim_type: refund, claim_stage: final, reason: "환불의 완료는 환불 실행(S9b)이 옮기는 상태라 이 세션의 화면에 그 전이 지점이 없다" }
+
+effects:
+  # 라우트·셸 배선
+  - claim_detail_route_registered
+  - claim_detail_response_carries_screen_context
+  - claim_detail_datasources_within_route_permission
+  - claim_logs_independent_of_detail_response
+  - claim_detail_list_return_preserves_context
+  - detail_unknown_number_shows_error_page
+  - detail_header_and_sections_render
+  # 섹션 탭 ↔ 섹션 동시 분기 (D17-①)
+  - claim_detail_tabs_match_sections
+  - claim_detail_tabs_read_computed_with_prefix
+  - claim_detail_shipping_condition_identical
+  - claim_detail_section_id_prefix_matches
+  - claim_detail_defers_payment_tab_to_owner_session
+  - claim_reason_block_is_not_a_section
+  - detail_tab_click_scrolls_to_section
+  - detail_scroll_syncs_active_tab
+  - detail_tabs_collapse_to_select_on_mobile
+  # 배송 통합 (D17-②) · 재발송지 뱃지 (D14)
+  - claim_shipping_single_section_two_blocks
+  - claim_shipping_two_blocks_in_one_card
+  - claim_shipping_section_absent_for_refund
+  - claim_shipping_redelivery_not_applicable_shown
+  - claim_shipping_redelivery_marked_not_applicable
+  - claim_redelivery_two_badges_distinct
+  - claim_redelivery_changed_by_user_badge_alone
+  - claim_redelivery_address_differs_badge_alone
+  - claim_carrier_options_come_from_detail_response
+  - claim_collection_tracking_saved
+  - claim_redelivery_tracking_saved
+  - claim_tracking_requires_both_fields
+  - claim_tracking_allows_clearing_both
+  - claim_tracking_restores_button_on_failure
+  # 진행단계 스텝퍼
+  - claim_progress_steps_come_from_server
+  - claim_progress_stepper_renders_server_steps
+  - claim_progress_payment_stages_follow_charge_method
+  - claim_progress_off_path_stage_appended
+  # 신청상품 일괄 변경 (D24·D25)
+  - claim_item_status_vocabulary_matches_gate
+  - claim_items_grid_declares_selection_scope
+  - claim_item_bulk_bar_absent_for_refund
+  - claim_item_bulk_bar_absent_for_refund_render
+  - claim_item_bulk_status_uses_server_path_segment
+  - claim_item_bulk_status_requires_identity
+  - claim_item_bulk_status_guards_empty_selection
+  - claim_item_bulk_status_guards_missing_status
+  - claim_item_bulk_status_rejects_refund
+  - claim_items_grid_renders_server_formatted_amounts
+  - claim_items_grid_hides_zero_difference
+  - claim_items_grid_marks_option_change_by_flag
+  # 완료 처리 모달 공유 (D26 — 진입점 ②·③)
+  - claim_complete_modal_shared_not_copied
+  - claim_completion_card_opens_shared_modal
+  - claim_completion_card_hidden_when_final
+  - claim_detail_completion_opens_shared_modal
+  - claim_detail_completion_patches_single_claim
+  - claim_detail_completion_seeds_settings_defaults
+  - claim_item_completion_opens_shared_modal
+  - claim_item_completion_scopes_to_checked_items
+  - claim_completion_refetches_opener_datasource
+  # 사유·관리자 메모
+  - claim_reject_reason_row_conditional
+  - claim_admin_memo_input_absent_for_refund
+  - claim_admin_memo_input_seeded_from_response
+  - claim_admin_memo_saved
+  - claim_admin_memo_restores_button_on_failure
+  # 활동 로그
+  - claim_logs_merge_claim_payment_and_attachment
+  - claim_logs_scoped_to_one_claim
+  - claim_logs_honour_sort_and_page_size
+  - claim_logs_reject_out_of_vocabulary_sort
+  - claim_detail_refetches_claim_and_logs
+  # 공통 규약
+  - claim_detail_never_assembles_path_segment
+  - claim_detail_amounts_use_server_formatting
+  - claim_detail_binding_braces_are_sane
+  - claim_detail_if_conditions_are_single_bindings
+  - claim_detail_i18n_keys_resolve_in_both_locales
+  - claim_detail_handler_fallback_keys_resolve
+  - detail_controls_gated_by_write_abilities
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminClaimDetail.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminClaimDetailRender.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/claimDetailHandlers.test.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/ClaimDetailScreenTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/admin-claim-detail.spec.ts
+
+notes: |
+  **결제 정보·환불 실행 탭은 이 세션의 범위 밖이다.** 그 섹션을 만드는 세션(S9b)이 탭과
+  섹션을 **함께** 더한다 — 지금 탭만 세워 두면 그 사이 클릭이 아무 일도 하지 않는다.
+  구조 테스트가 그 부재를 단언하므로, S9b 가 탭을 더하면서 섹션을 빠뜨리면 red 가 된다.
+
+  완료 처리 모달의 세 진입점 중 이 세션이 둘(신청서 내 상품 일괄 · 상세 [완료 처리])을 더해
+  D26 의 공유 계약이 처음으로 세 지점에서 성립한다. 모달 partial 은 목록 세션(S8b)이 소유한
+  파일 그대로이며 복제본이 없다는 것을 구조 테스트가 파일 부재로 단언한다.
+
+  관리자 메모의 저장 경로는 금액 수정 엔드포인트(`PUT {claimType}/{id}/amounts`, D18)다 —
+  메모가 그 요청이 받는 축이기 때문이고, 게이트도 `claims.update-amounts` 다. 버튼 활성
+  조건을 상태 전이 권한으로 잡으면 그 권한만 가진 운영자에게 버튼은 살아 있고 저장만
+  403 이 된다. 환불신청서에는 저장 컬럼 자체가 없어 입력을 그리지 않는다.
+
+  **브라우저 실측의 선행 조건**: 상세를 열려면 신청서 한 건이 필요한데
+  `playwright:seed-ecommerce` 의 클레임 축이 아직 stub 이다(계획서 이월 5). spec 은 목록
+  API 로 신청서를 발견해 진행하고, 한 건도 없으면 그 사실을 드러내며 건너뛴다 — 없는
+  데이터를 있는 척 단언하지 않는다. 시드가 생기면 그 분기가 저절로 사라진다.
+
+  **실측이 만든 세 effect**. `claim_detail_tabs_read_computed_with_prefix` 는 computed 값이
+  `_computed.` 접두로만 읽힌다는 사실에서 나온다 — 맨 이름으로 읽으면 표현식이 `undefined`
+  가 되고 `?? []` 폴백이 그 사실을 덮어, 섹션 탭이 **한 칸도 그려지지 않는데 오류는 나지
+  않는다**. `claim_items_grid_marks_option_change_by_flag` 는 서버가 옵션 변경이 아닌 행에도
+  `new_unit_price_formatted` 를 원 값으로 폴백해 채운다는 사실에서 나온다 — 값의 존재로
+  분기하면 동일 옵션 교환에 교환 대상이 지정된 것처럼 보인다.
+  `claim_detail_refetches_claim_and_logs` 는 상태 전이·송장·메모가 활동 로그도 남기기
+  때문이다 — 신청서만 다시 읽으면 헤더는 갱신되는데 활동 로그 섹션만 옛 목록으로 남아
+  운영자는 방금 자기가 한 처리가 이력에 없는 것으로 본다. 셋 다 오류를 남기지 않아
+  구조·렌더 테스트를 통과했고 브라우저에서만 드러났다.

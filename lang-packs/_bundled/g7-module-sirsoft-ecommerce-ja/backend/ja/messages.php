@@ -1186,5 +1186,6 @@ return [
         'refund_execute_failed' => '返金の実行に失敗しました。',
         'completion_preview_retrieved' => '完了処理の要約を計算しました。',
         'refund_request_created' => '返金申請書を受け付けました。',
+        'logs_retrieved' => 'アクティビティログを取得しました。',
     ],
 ];
