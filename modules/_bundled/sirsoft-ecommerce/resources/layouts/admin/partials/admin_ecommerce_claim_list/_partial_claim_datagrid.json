@@ -1,0 +1,451 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Claim List - DataGrid Section (S8b)"
+  },
+  "type": "basic",
+  "name": "Div",
+  "children": [
+    {
+      "id": "claim_table_header_bar",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex-between flex-wrap gap-3 mb-4"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "comment": "좌측: 총 건수",
+          "props": {
+            "className": "flex-center gap-3"
+          },
+          "children": [
+            {
+              "id": "d_001_total_count",
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-label"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.claim.datagrid.total_count|count={{claims?.data?.pagination?.total ?? 0}}"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "comment": "우측: 페이지당 건수. 정렬 셀렉트는 두지 않는다 — 목록 게이트(`Admin\\ClaimListRequest`)에 정렬 파라미터가 없어, 옵션을 만들면 화면에만 있고 저장소가 모르는 축이 된다.",
+          "props": {
+            "className": "flex-center gap-2"
+          },
+          "children": [
+            {
+              "id": "d_002_per_page_select",
+              "type": "composite",
+              "name": "Select",
+              "props": {
+                "name": "perPage",
+                "className": "w-24",
+                "value": "{{_local.perPage ?? '20'}}",
+                "options": [
+                  { "value": "10", "label": "10" },
+                  { "value": "20", "label": "20" },
+                  { "value": "50", "label": "50" },
+                  { "value": "100", "label": "100" }
+                ]
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "perPage": "{{$event.target.value}}"
+                      }
+                    },
+                    {
+                      "comment": "페이지 크기 변경은 같은 목록을 다시 부르는 것이다 — 걸어둔 필터·유형 서브탭을 유지하고 페이지만 1로 되돌린다.",
+                      "handler": "navigate",
+                      "params": {
+                        "path": "/admin/ecommerce/claims",
+                        "mergeQuery": true,
+                        "query": {
+                          "per_page": "{{$event.target.value}}",
+                          "page": 1
+                        },
+                        "replace": true,
+                        "transition_overlay_target": "claim_datagrid__body"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "claim_datagrid_card",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "p-0 md:p-0"
+      },
+      "children": [
+        {
+          "id": "claim_datagrid",
+          "type": "composite",
+          "name": "DataGrid",
+          "comment": "DataGrid 의 id 가 전환 오버레이 대상(`claim_datagrid__body`)의 앞자리를 정한다 — 셸의 `named_actions.searchClaims` 와 이 파일의 페이지·페이지크기 이동이 같은 이름을 가리킨다.",
+          "props": {
+            "columns": [
+              {
+                "field": "requested_at",
+                "header": "$t:sirsoft-ecommerce.admin.claim.column.requested_at",
+                "width": "140px",
+                "sortable": false,
+                "required": true,
+                "cellChildren": [
+                  {
+                    "type": "basic",
+                    "name": "Span",
+                    "text": "{{row.requested_at_formatted ?? '-'}}"
+                  }
+                ]
+              },
+              {
+                "field": "claim_number",
+                "header": "$t:sirsoft-ecommerce.admin.claim.column.claim_number",
+                "width": "160px",
+                "sortable": false,
+                "required": true,
+                "cellChildren": [
+                  {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                      "className": "font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline"
+                    },
+                    "text": "{{row.claim_number}}",
+                    "actions": [
+                      {
+                        "type": "click",
+                        "handler": "navigate",
+                        "params": {
+                          "path": "/admin/ecommerce/claims/{{row.claim_number}}",
+                          "mergeQuery": true,
+                          "query": {}
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "field": "order_number",
+                "header": "$t:sirsoft-ecommerce.admin.claim.column.order_number",
+                "width": "150px",
+                "sortable": false,
+                "required": false,
+                "cellChildren": [
+                  {
+                    "type": "basic",
+                    "name": "Span",
+                    "if": "{{!row.order_number}}",
+                    "props": {
+                      "className": "text-gray-500 dark:text-gray-400"
+                    },
+                    "text": "-"
+                  },
+                  {
+                    "type": "basic",
+                    "name": "A",
+                    "if": "{{!!row.order_number}}",
+                    "props": {
+                      "className": "hover:underline text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer",
+                      "href": "{{'/admin/ecommerce/orders/' + row.order_number}}",
+                      "target": "_blank"
+                    },
+                    "text": "{{row.order_number}}"
+                  }
+                ]
+              },
+              {
+                "field": "item_summary",
+                "header": "$t:sirsoft-ecommerce.admin.claim.column.item",
+                "width": "auto",
+                "sortable": false,
+                "required": false,
+                "cellChildren": [
+                  {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                      "className": "stack-flush gap-0.5 min-w-0"
+                    },
+                    "children": [
+                      {
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                          "className": "font-medium truncate"
+                        },
+                        "children": [
+                          {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{row.item_summary?.product_name ?? '-'}}"
+                          },
+                          {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{(row.item_summary?.item_count ?? 0) > 1}}",
+                            "props": {
+                              "className": "text-gray-500 dark:text-gray-400 font-normal ml-1"
+                            },
+                            "text": "$t:defer:sirsoft-ecommerce.admin.claim.column.item_more|count={{(row.item_summary?.item_count ?? 1) - 1}}"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{(row.item_summary?.total_quantity ?? 0) > 0}}",
+                        "props": {
+                          "className": "text-tertiary text-xs"
+                        },
+                        "text": "$t:defer:sirsoft-ecommerce.admin.claim.column.item_quantity|count={{row.item_summary?.total_quantity ?? 0}}"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "field": "requester_name",
+                "header": "$t:sirsoft-ecommerce.admin.claim.column.requester",
+                "width": "130px",
+                "sortable": false,
+                "required": false,
+                "cellChildren": [
+                  {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                      "className": "stack-flush gap-0.5 min-w-0"
+                    },
+                    "children": [
+                      {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                          "className": "truncate block"
+                        },
+                        "text": "{{row.requester_name ?? '-'}}"
+                      },
+                      {
+                        "type": "basic",
+                        "name": "Span",
+                        "if": "{{row.is_guest_request}}",
+                        "props": {
+                          "className": "text-xs text-gray-500 dark:text-gray-400"
+                        },
+                        "text": "$t:sirsoft-ecommerce.admin.claim.column.guest_badge"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "field": "status",
+                "header": "$t:sirsoft-ecommerce.admin.claim.column.status",
+                "width": "120px",
+                "sortable": false,
+                "required": true,
+                "cellChildren": [
+                  {
+                    "type": "composite",
+                    "name": "StatusBadge",
+                    "props": {
+                      "status": "{{row.status_variant ?? 'default'}}",
+                      "label": "{{row.status_label ?? row.status}}",
+                      "showIcon": false
+                    }
+                  }
+                ]
+              },
+              {
+                "field": "reason_label",
+                "header": "$t:sirsoft-ecommerce.admin.claim.column.reason",
+                "width": "130px",
+                "sortable": false,
+                "required": false,
+                "cellChildren": [
+                  {
+                    "type": "basic",
+                    "name": "Span",
+                    "text": "{{row.reason_label ?? row.reason_code ?? '-'}}"
+                  }
+                ]
+              },
+              {
+                "field": "fault_type",
+                "header": "$t:sirsoft-ecommerce.admin.claim.column.fault_type",
+                "width": "100px",
+                "sortable": false,
+                "required": false,
+                "cellChildren": [
+                  {
+                    "type": "basic",
+                    "name": "Span",
+                    "text": "{{row.fault_type_label ?? '-'}}"
+                  }
+                ]
+              },
+              {
+                "field": "amount",
+                "header": "$t:sirsoft-ecommerce.admin.claim.column.amount",
+                "width": "140px",
+                "sortable": false,
+                "required": false,
+                "comment": "금액 표기는 서버가 준 `*_formatted` 만 쓴다 — 통화 기호·자릿수를 화면에서 조립하면 기본 통화가 원이 아닌 상점에서 단위만 틀린 금액이 나간다. 어느 필드가 실리는지는 유형이 정하므로(교환·반품=청구액 / 환불·취소=환불 합계) 행이 가진 필드로 분기한다.",
+                "cellChildren": [
+                  {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                      "className": "stack-flush gap-0.5"
+                    },
+                    "children": [
+                      {
+                        "type": "basic",
+                        "name": "Span",
+                        "if": "{{row.total_charge_amount_formatted != null}}",
+                        "props": {
+                          "className": "font-medium"
+                        },
+                        "text": "{{row.total_charge_amount_formatted}}"
+                      },
+                      {
+                        "type": "basic",
+                        "name": "Span",
+                        "comment": "미수납 판정은 상태 라벨이 아니라 잔액으로 한다 — 분할 수납 건은 결제대기 라벨 그대로다.",
+                        "if": "{{(row.outstanding_amount ?? 0) > 0}}",
+                        "props": {
+                          "className": "text-xs text-red-600 dark:text-red-400"
+                        },
+                        "text": "$t:defer:sirsoft-ecommerce.admin.claim.column.outstanding_short|amount={{row.outstanding_amount_formatted}}"
+                      },
+                      {
+                        "type": "basic",
+                        "name": "Span",
+                        "if": "{{row.refund_total_formatted != null}}",
+                        "props": {
+                          "className": "font-medium"
+                        },
+                        "text": "{{row.refund_total_formatted}}"
+                      },
+                      {
+                        "type": "basic",
+                        "name": "Span",
+                        "if": "{{row.total_charge_amount_formatted == null && row.refund_total_formatted == null}}",
+                        "props": {
+                          "className": "text-gray-500 dark:text-gray-400"
+                        },
+                        "text": "-"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "field": "completed_at",
+                "header": "$t:sirsoft-ecommerce.admin.claim.column.completed_at",
+                "width": "140px",
+                "sortable": false,
+                "required": false,
+                "cellChildren": [
+                  {
+                    "type": "basic",
+                    "name": "Span",
+                    "text": "{{row.completed_at_formatted ?? '-'}}"
+                  }
+                ]
+              }
+            ],
+            "data": "{{claims?.data?.data ?? []}}",
+            "loading": "{{claims?.loading}}",
+            "selectable": "{{(query.type ?? 'exchange') !== 'cancel' && claims?.data?.abilities?.can_update_status === true}}",
+            "selectionScope": "page",
+            "selectedIds": "{{_local.selectedItems ?? []}}",
+            "showColumnSelector": false,
+            "selectedCountText": "",
+            "visibleColumns": "{{_local.visibleColumns}}",
+            "columnSelectorId": "admin_claim_list_columns",
+            "responsiveBreakpoint": 768,
+            "emptyMessage": "$t:sirsoft-ecommerce.admin.claim.message.no_claims",
+            "pagination": true,
+            "serverSidePagination": true,
+            "serverCurrentPage": "{{claims?.data?.pagination?.current_page ?? 1}}",
+            "serverTotalPages": "{{claims?.data?.pagination?.last_page ?? null}}",
+            "serverHasMorePages": "{{claims?.data?.pagination?.has_more_pages ?? false}}",
+            "pageSize": 20,
+            "alwaysShowPagination": true,
+            "rowActions": [
+              {
+                "id": "view_detail",
+                "label": "$t:sirsoft-ecommerce.admin.claim.action.view_detail",
+                "iconName": "eye"
+              }
+            ]
+          },
+          "actions": [
+            {
+              "event": "onSelectionChange",
+              "type": "change",
+              "handler": "setState",
+              "params": {
+                "target": "_local",
+                "selectedItems": "{{$args[0]}}"
+              }
+            },
+            {
+              "event": "onPageChange",
+              "type": "change",
+              "handler": "navigate",
+              "params": {
+                "path": "/admin/ecommerce/claims",
+                "mergeQuery": true,
+                "query": {
+                  "page": "{{$args[0]}}"
+                },
+                "replace": true,
+                "transition_overlay_target": "claim_datagrid__body"
+              }
+            },
+            {
+              "event": "onRowAction",
+              "type": "action",
+              "handler": "switch",
+              "cases": {
+                "view_detail": {
+                  "handler": "navigate",
+                  "params": {
+                    "path": "/admin/ecommerce/claims/{{$args[1].claim_number}}",
+                    "mergeQuery": true,
+                    "query": {}
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

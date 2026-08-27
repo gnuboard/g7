@@ -148,6 +148,7 @@
       }
     ],
     "counts": {"exchange": 3, "return": 5, "refund": 1, "cancel": 8},
+    "complete_defaults": {"create_refund_request": true, "restore_stock": true},
     "abilities": {"can_update_status": true, "can_update_amounts": true, "can_execute_refund": true},
     "pagination": {"current_page": 1, "per_page": 20, "from": 1, "to": 5, "has_more_pages": false, "last_page": 1, "total": 5}
   }
@@ -156,6 +157,11 @@
 
 `counts` 는 유형 공통 필터(기간·검색·회원구분)만 반영합니다 — 상태·귀책·청구 필터는 유형마다
 어휘가 달라 다른 탭 건수에 적용할 수 없습니다.
+
+`complete_defaults` 는 완료 처리 모달의 **초기 선택값**입니다(설정 `claim.complete_defaults`).
+설정 조회 엔드포인트는 `sirsoft-ecommerce.settings.read` 게이트라 클레임 권한만 가진 관리자에게는
+열리지 않으므로, 이 목록 응답이 그 값의 전달 통로입니다. 설정이 비어 있어도 두 키는 항상 실립니다
+(계약 기본값 = 둘 다 `true`). 초기 선택값일 뿐이며 완료 처리를 자동으로 수행하지 않습니다.
 
 ---
 
@@ -683,6 +689,7 @@ Authorization: Bearer {YOUR_TOKEN}
       {
         "id": 31,
         "claim_number": "RT20260825000007",
+        "currency_code": "KRW",
         "completable_item_ids": [55],
         "completable_item_count": 1,
         "has_stock_restore_target": true,
@@ -695,19 +702,50 @@ Authorization: Bearer {YOUR_TOKEN}
           "already_filed": false,
           "blocked_reason": null,
           "refund_amount": 26000,
+          "refund_amount_formatted": "26,000원",
           "refund_points_amount": 0,
-          "deducted_shipping_fee": 3000
+          "refund_points_amount_formatted": "0원",
+          "deducted_shipping_fee": 3000,
+          "deducted_shipping_fee_formatted": "3,000원"
         }
       }
     ],
     "skipped": [{"id": 999999, "message": "해당 신청서를 찾을 수 없습니다."}],
-    "totals": {"claim_count": 1, "completable_item_count": 1, "refund_amount_total": 26000, "refund_points_amount_total": 0}
+    "totals": {
+      "claim_count": 1,
+      "completable_item_count": 1,
+      "refund_amount_total": 26000,
+      "refund_points_amount_total": 0,
+      "currency_code": "KRW",
+      "refund_amount_total_formatted": "26,000원",
+      "refund_points_amount_total_formatted": "0원",
+      "deducted_shipping_fee_total": 3000,
+      "deducted_shipping_fee_total_formatted": "3,000원"
+    }
   }
 }
 ```
 
-- `has_stock_restore_target` 은 요청의 체크 상태 기준입니다 — 모달이 "함께 실행되는 처리" 에
-  재고 복구를 보여줄지의 근거이며, 실제 복구는 완료 실행이 이번 라운드 대상만 수행합니다.
+- 금액은 원시값과 표기 문자열(`*_formatted`)을 함께 싣습니다. 표기 통화는 신청서의 통화
+  (교환·반품 `currency_code`)이고, 없으면 주문 스냅샷의 기준 통화입니다 — 소수 자릿수·절사도
+  스냅샷이 정합니다(행마다 `currency_code` 로 확인할 수 있습니다). `totals` 의 표기 합계는
+  대상이 **한 통화로 모일 때만** 나오며, 여러 통화가 섞이면 `totals.currency_code` 와 두
+  `*_formatted` 가 `null` 입니다 — 화면은 그때 합계 표기를 접고 건별 금액만 보여줍니다.
+- `totals.deducted_shipping_fee_total` 은 이번 라운드에 **실제로 접수되는** 신청서
+  (`refund.applicable`)의 회수배송비 차감 합계입니다 — 완료 처리 모달의 "함께 실행되는 처리"
+  요약이 이 값을 그립니다. `create_refund_request=false` 면 접수가 없으므로 0 이고 표기는
+  `null` 입니다.
+- `has_stock_restore_target` 은 요청의 체크 상태 기준으로 "이 신청서에 재고를 복구할 상품이
+  하나라도 있는가" 를 답합니다. 실제 복구는 완료 실행이 이번 라운드 대상만 수행합니다.
+  완료 처리 모달의 "함께 실행되는 처리" 요약은 이 값이 아니라 건수
+  (`stock_restore_count` / `stock_discard_count`)를 그리고, 그 줄의 노출은
+  `completable_item_count` 합이 0 보다 큰지로 판정합니다 — 전건을 해제해도 "0복구 N폐기" 가
+  남아야 폐기 예고가 화면에서 사라지지 않기 때문입니다. `has_stock_restore_target` 은 목록
+  모달이 소비하지 않으며, 신청서 단위로 재고 축을 접을지 판단해야 하는 화면(상세)이 쓰는 값입니다.
+- 재고 맵(`claims[].restore_stock_by_item`)의 키는 **상품 행 ID** 이고, 그 목록은 이 응답의
+  `completable_item_ids` 에만 있습니다. 없는 키는 '복구 안 함' 으로 읽으므로, 상품 행을 아직
+  모르는 첫 호출은 빈 맵으로 보내고 응답을 받은 뒤 실제 체크 상태로 한 번 더 호출해야
+  요약이 화면의 체크와 일치합니다.
 - `refund.applicable` 은 `create_refund_request=true` 이고 접수가 성립할 때만 참입니다.
   접수가 성립하지 않는 사유는 `blocked_reason` 으로 구분합니다 — `claim_refund_request_exists`
   (이미 접수됨) / `claim_refund_not_applicable`(환불 대상 없음 — 동일가 교환·순추가 신청서,

@@ -13,6 +13,7 @@ use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
+use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\OrderExchangeService;
 use Modules\Sirsoft\Ecommerce\Services\OrderReturnService;
@@ -614,5 +615,212 @@ class ClaimCompletionPreviewTest extends ModuleTestCase
             ])
             ->assertStatus(422)
             ->assertJsonValidationErrors('claims');
+    }
+
+    // ================================================================
+    // 완료 처리 미리보기 — 금액 표기 (S8b)
+    //
+    // 모달이 그리는 금액은 통화 기호·자릿수를 화면에서 조립할 수 없다 — 기본 통화가 원이
+    // 아닌 상점에서 값은 맞고 단위만 틀린 금액이 나가는데, 오류도 경고도 남지 않는다.
+    // 표기는 모듈의 통화 포맷터가 단일 출처이고, 표기 통화는 신청서(거래 시점)가 정한다.
+    // 합계는 대상이 한 통화로 모일 때만 낸다.
+    // ================================================================
+
+    /**
+     * @scenario claim_type=return, completion_choice=file_now
+     *
+     * @effects amounts_render_from_server_formatted_only
+     */
+    public function test_completion_preview_carries_formatted_amounts_from_the_currency_formatter(): void
+    {
+        [, $return] = $this->collectedReturn();
+        $itemId = $return->returnOptions->first()->id;
+        $formatter = app(CurrencyConversionService::class);
+
+        $response = $this->actingAs($this->admin)
+            ->postJson($this->base().'/claims/completion-preview', [
+                'claim_type' => 'return',
+                'create_refund_request' => true,
+                'claims' => [[
+                    'id' => $return->id,
+                    'restore_stock_by_item' => [$itemId => true],
+                ]],
+            ]);
+
+        $response->assertStatus(200);
+
+        $row = $response->json('data.claims.0');
+        $this->assertSame('KRW', $row['currency_code']);
+        // 표기의 단일 출처는 모듈 포맷터다 — 서비스가 문자열을 손으로 조립하면 여기서 갈린다.
+        $this->assertSame(
+            $formatter->formatPrice(26000.0, 'KRW'),
+            $row['refund']['refund_amount_formatted']
+        );
+        $this->assertSame(
+            $formatter->formatPrice(0.0, 'KRW'),
+            $row['refund']['refund_points_amount_formatted']
+        );
+        $this->assertSame(
+            $formatter->formatPrice(3000.0, 'KRW'),
+            $row['refund']['deducted_shipping_fee_formatted']
+        );
+        // 숫자만 내보내면 화면이 기호를 붙이게 된다 — 표기 문자열은 숫자와 달라야 한다.
+        $this->assertNotSame('26000', $row['refund']['refund_amount_formatted']);
+
+        // 대상이 한 통화로 모이면 합계도 표기한다.
+        $this->assertSame('KRW', $response->json('data.totals.currency_code'));
+        $this->assertSame(
+            $formatter->formatPrice(26000.0, 'KRW'),
+            $response->json('data.totals.refund_amount_total_formatted')
+        );
+    }
+
+    /**
+     * @scenario claim_type=exchange, completion_choice=file_now
+     *
+     * @effects amounts_render_from_server_formatted_only
+     */
+    public function test_completion_preview_formats_amounts_in_the_claim_currency_not_a_fixed_one(): void
+    {
+        // 거래 시점 통화가 원이 아닌 신청서 — 표기가 원으로 고정돼 있으면 여기서 드러난다.
+        [, $return] = $this->collectedReturn();
+        $return->forceFill(['currency_code' => 'USD'])->saveQuietly();
+
+        $response = $this->actingAs($this->admin)
+            ->postJson($this->base().'/claims/completion-preview', [
+                'claim_type' => 'return',
+                'create_refund_request' => true,
+                'claims' => [['id' => $return->id]],
+            ]);
+
+        $response->assertStatus(200);
+
+        $formatter = app(CurrencyConversionService::class);
+        $this->assertSame('USD', $response->json('data.claims.0.currency_code'));
+        $this->assertSame(
+            $formatter->formatPrice(26000.0, 'USD'),
+            $response->json('data.claims.0.refund.refund_amount_formatted')
+        );
+        $this->assertNotSame(
+            $formatter->formatPrice(26000.0, 'KRW'),
+            $response->json('data.claims.0.refund.refund_amount_formatted')
+        );
+    }
+
+    /**
+     * @scenario claim_type=return, completion_choice=file_later
+     *
+     * @effects completion_total_omitted_when_nothing_is_filed
+     */
+    public function test_completion_preview_omits_the_total_when_the_choice_files_nothing(): void
+    {
+        // '접수하지 않음' 이면 합계에 기여한 통화가 없다 — 0원을 특정 통화로 단정해 표기하지 않는다.
+        [, $return] = $this->collectedReturn();
+
+        $response = $this->actingAs($this->admin)
+            ->postJson($this->base().'/claims/completion-preview', [
+                'claim_type' => 'return',
+                'create_refund_request' => false,
+                'claims' => [['id' => $return->id]],
+            ]);
+
+        $response->assertStatus(200);
+
+        $this->assertNull($response->json('data.totals.currency_code'));
+        $this->assertNull($response->json('data.totals.refund_amount_total_formatted'));
+    }
+
+    /**
+     * 통화가 섞이면 합계 표기를 내지 않는다 (§6-4-1 — 모달이 건수만 안내).
+     *
+     * 숫자를 더하면 값은 맞고 단위만 없는 금액이 되는데 화면에는 정상 합계로 보인다. 그래서
+     * 서버가 `currency_code: null` 로 알리고 화면이 표기를 접는다. 원값 합계는 남긴다 —
+     * 건수·차감 여부 같은 파생 판정이 그 값을 쓴다.
+     *
+     * @scenario claim_type=exchange, completion_choice=file_later
+     *
+     * @effects mixed_currency_total_falls_back_to_count_only
+     */
+    public function test_completion_preview_drops_total_formatting_when_currencies_are_mixed(): void
+    {
+        [, $krwReturn] = $this->collectedReturn();
+        [, $usdReturn] = $this->collectedReturn();
+        $usdReturn->forceFill(['currency_code' => 'USD'])->saveQuietly();
+
+        $response = $this->actingAs($this->admin)
+            ->postJson($this->base().'/claims/completion-preview', [
+                'claim_type' => 'return',
+                'create_refund_request' => true,
+                'claims' => [['id' => $krwReturn->id], ['id' => $usdReturn->id]],
+            ]);
+
+        $response->assertStatus(200);
+
+        // 행 단위 표기는 각자의 거래 시점 통화를 그대로 따른다.
+        $currencies = collect($response->json('data.claims'))->pluck('currency_code')->sort()->values();
+        $this->assertSame(['KRW', 'USD'], $currencies->all());
+
+        // 합계 축만 접힌다 — 세 표기가 함께 비어야 화면이 한 곳만 보고 분기하지 않는다.
+        $this->assertNull($response->json('data.totals.currency_code'));
+        $this->assertNull($response->json('data.totals.refund_amount_total_formatted'));
+        $this->assertNull($response->json('data.totals.deducted_shipping_fee_total_formatted'));
+
+        // 원값은 유지된다 — 표기만 접는 것이지 계산을 버리는 것이 아니다.
+        $this->assertGreaterThan(0, $response->json('data.totals.refund_amount_total'));
+        $this->assertSame(2, $response->json('data.totals.claim_count'));
+    }
+
+    /**
+     * 모달의 '함께 실행되는 처리' 가 회수배송비 차감을 알린다 (§6-4-1) — 그 값도 화면이
+     * 조립하지 않고 응답의 표기 문자열을 그대로 그린다.
+     *
+     * @scenario claim_type=return, completion_choice=file_now
+     *
+     * @effects collection_fee_shown_in_completion_summary
+     */
+    public function test_completion_preview_totals_the_deducted_collection_fee(): void
+    {
+        [, $return] = $this->collectedReturn();
+        $formatter = app(CurrencyConversionService::class);
+
+        $response = $this->actingAs($this->admin)
+            ->postJson($this->base().'/claims/completion-preview', [
+                'claim_type' => 'return',
+                'create_refund_request' => true,
+                'claims' => [['id' => $return->id]],
+            ]);
+
+        $response->assertStatus(200);
+
+        $this->assertSame(3000.0, (float) $response->json('data.totals.deducted_shipping_fee_total'));
+        $this->assertSame(
+            $formatter->formatPrice(3000.0, 'KRW'),
+            $response->json('data.totals.deducted_shipping_fee_total_formatted')
+        );
+    }
+
+    /**
+     * 이번 라운드에 접수되지 않으면 그 차감도 이번에 일어나지 않는다 — 요약이 실행과
+     * 갈리지 않도록 합계를 0 으로 두고 표기를 내지 않는다.
+     *
+     * @scenario claim_type=return, completion_choice=file_later
+     *
+     * @effects collection_fee_shown_in_completion_summary
+     */
+    public function test_completion_preview_omits_the_collection_fee_when_nothing_is_filed(): void
+    {
+        [, $return] = $this->collectedReturn();
+
+        $response = $this->actingAs($this->admin)
+            ->postJson($this->base().'/claims/completion-preview', [
+                'claim_type' => 'return',
+                'create_refund_request' => false,
+                'claims' => [['id' => $return->id]],
+            ]);
+
+        $response->assertStatus(200);
+
+        $this->assertSame(0.0, (float) $response->json('data.totals.deducted_shipping_fee_total'));
+        $this->assertNull($response->json('data.totals.deducted_shipping_fee_total_formatted'));
     }
 }

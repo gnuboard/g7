@@ -82,7 +82,8 @@
     "save_preset": "Save preset",
     "cancel": "Cancel",
     "edit": "Edit",
-    "delete": "Delete"
+    "delete": "Delete",
+    "view_detail": "View detail"
   },
   "column": {
     "requested_at": "Requested",
@@ -94,6 +95,73 @@
     "reason": "Reason",
     "fault_type": "Fault",
     "amount": "Amount",
-    "completed_at": "Completed"
+    "completed_at": "Completed",
+    "item_more": "+{{count}} more",
+    "item_quantity": "Qty {{count}}",
+    "guest_badge": "Guest",
+    "outstanding_short": "Unpaid {{amount}}"
+  },
+  "datagrid": {
+    "total_count": "{{count}} total"
+  },
+  "message": {
+    "no_claims": "No claims found."
+  },
+  "bulk": {
+    "selected_count": "{{count}} selected",
+    "status_placeholder": "Target status",
+    "apply": "Apply",
+    "apply_full": "Apply to selected",
+    "no_selection": "Select the claims to change.",
+    "no_status_selected": "Select the status to change to.",
+    "cancel_not_transitionable": "Cancellations are not subject to bulk status changes.",
+    "confirm_title": "Bulk status change",
+    "confirm_message": "Change the status of {{count}} selected claim(s).",
+    "confirm_type_label": "Type",
+    "confirm_status_label": "Target status",
+    "confirm_count_label": "Targets",
+    "confirm_count_value": "{{count}} claim(s)",
+    "confirm_cancel": "Cancel",
+    "confirm_apply": "Change",
+    "success": "The bulk status change has been processed.",
+    "result_summary": "{{succeeded}} succeeded · {{requested}} payment requested · {{skipped}} skipped",
+    "skipped_notice": "{{count}} claim(s) were not processed. First reason: {{reason}}",
+    "error": "The bulk status change failed."
+  },
+  "complete": {
+    "title_exchange": "Complete exchange",
+    "title_return": "Complete return",
+    "title_generic": "Complete claims",
+    "description": "Move {{count}} selected claim(s) to completed. Review how each one is handled.",
+    "col_claim_number": "Claim no.",
+    "col_item": "Items",
+    "col_refund": "Refund due",
+    "col_restore_stock": "Restore stock",
+    "restore_all": "Restore all",
+    "discard_note": "Unchecked claims are completed without restoring stock (treated as discarded).",
+    "item_count": "{{count}} item(s)",
+    "refund_section": "Refund request",
+    "refund_now": "File now",
+    "refund_now_desc": "Creates {{count}} request(s) on completion",
+    "refund_now_desc_amount": "Creates {{count}} request(s) totalling {{amount}} on completion",
+    "refund_later": "Do not file",
+    "refund_later_desc": "File later via [File refund request] or the order detail refund modal.",
+    "blocked_exists": "A refund request has already been filed.",
+    "blocked_not_applicable": "There is nothing to refund.",
+    "summary_label": "Runs together with this",
+    "summary_transition": "{{count}} status transition(s)",
+    "summary_stock": "{{restore}} restored / {{discard}} discarded",
+    "summary_shipping": "Collection fee deducted",
+    "summary_shipping_amount": "Collection fee deducted {{amount}}",
+    "summary_earn": "Reward points reversal",
+    "summary_coupon": "Coupon restore",
+    "summary_none": "Nothing else runs with this.",
+    "skipped_notice": "{{count}} claim(s) could not be found and are excluded.",
+    "no_target": "There is no claim that can be completed.",
+    "cancel": "Cancel",
+    "submit": "Complete {{count}} claim(s)",
+    "preview_error": "Could not load the completion summary.",
+    "success": "The completion has been applied.",
+    "error": "The completion failed."
   }
 }

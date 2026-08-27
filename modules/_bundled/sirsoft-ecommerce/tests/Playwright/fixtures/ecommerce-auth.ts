@@ -12,7 +12,7 @@
  */
 import { test as base } from '@playwright/test';
 // 6단계 상위 = 코어 루트의 fixtures/auth.ts
-import { issueToken, authenticatePage } from '../../../../../../tests/Playwright/fixtures/auth';
+import { issueToken, issueScopedToken, authenticatePage } from '../../../../../../tests/Playwright/fixtures/auth';
 
 type EcommerceAuthFixtures = {
   /** 이커머스 환경설정 권한 보유 토큰 */
@@ -25,6 +25,12 @@ type EcommerceAuthFixtures = {
   userToken: string;
   /** 구매자 토큰 (마이페이지 — 주문조회·취소요청 등. 관리자 권한 없음) */
   customerToken: string;
+  /** 클레임 목록 조회 전용 토큰 (일괄 전이 게이팅 검증용 — 전이 권한 없음) */
+  claimsReadToken: string;
+  /** 클레임 목록 조회 + 상태 전이 토큰 */
+  claimsManageToken: string;
+  /** 클레임 조회 + 전이만 가진 토큰 (설정 권한 없음 — 기본 역할 manager 와 같은 폭) */
+  claimsScopedManageToken: string;
   /** 주문 조회 전용 권한 토큰 (읽기만 — 수정 게이팅 검증용) */
   ordersReadToken: string;
   /** 회원 토큰 (마이페이지 주문상세·리뷰 등. 관리자 권한 없음) */
@@ -71,6 +77,20 @@ export const test = base.extend<EcommerceAuthFixtures>({
   customerToken: async ({}, use) => {
     // 마이페이지 이용자 — 자기 주문만 다루므로 관리자 권한이 필요 없다.
     await use(issueToken());
+  },
+  claimsReadToken: async ({}, use) => {
+    // 권한 경계 자체를 검증하는 토큰이므로 `issueScopedToken` 이다 — `issueToken` 은 사이트
+    // admin 역할을 함께 붙여 전 권한을 주므로(실측: `can_update_status: true`), 그 토큰으로
+    // "권한이 없으면 잠긴다" 를 단언하면 게이트가 아니라 다른 사정(응답 도착 전 상태)으로
+    // 잠긴 컨트롤을 보고 초록이 된다.
+    await use(issueScopedToken('sirsoft-ecommerce.claims.read'));
+  },
+  claimsManageToken: async ({}, use) => {
+    await use(issueToken('sirsoft-ecommerce.claims.read', 'sirsoft-ecommerce.claims.update-status'));
+  },
+  claimsScopedManageToken: async ({}, use) => {
+    // 기본 역할 `manager` 와 같은 권한 폭 — 클레임은 되고 설정은 안 되는 운영자다.
+    await use(issueScopedToken('sirsoft-ecommerce.claims.read', 'sirsoft-ecommerce.claims.update-status'));
   },
   ordersReadToken: async ({}, use) => {
     await use(issueToken('sirsoft-ecommerce.orders.read'));

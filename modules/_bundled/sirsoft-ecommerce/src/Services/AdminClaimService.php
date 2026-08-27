@@ -49,6 +49,8 @@ class AdminClaimService
      * @param  OrderRefundRequestService  $refundRequestService  환불신청 서비스
      * @param  ClaimPaymentService  $paymentService  클레임 추가결제 서비스
      * @param  CancellableAmountCalculator  $cancellableCalculator  취소 가능 금액 산정기 (D19)
+     * @param  CurrencyConversionService  $currencyService  통화 변환·표기 서비스 (완료 미리보기 금액 표기)
+     * @param  EcommerceSettingsService  $settingsService  이커머스 설정 서비스 (완료 처리 기본값 — D26)
      * @param  OrderExchangeRepositoryInterface  $exchangeRepository  교환 Repository
      * @param  OrderReturnRepositoryInterface  $returnRepository  반품 Repository
      * @param  OrderRefundRepositoryInterface  $refundRepository  환불 Repository
@@ -60,6 +62,8 @@ class AdminClaimService
         protected OrderRefundRequestService $refundRequestService,
         protected ClaimPaymentService $paymentService,
         protected CancellableAmountCalculator $cancellableCalculator,
+        protected CurrencyConversionService $currencyService,
+        protected EcommerceSettingsService $settingsService,
         protected OrderExchangeRepositoryInterface $exchangeRepository,
         protected OrderReturnRepositoryInterface $returnRepository,
         protected OrderRefundRepositoryInterface $refundRepository,
@@ -109,6 +113,40 @@ class AdminClaimService
             ClaimTypeEnum::RETURN->value => $this->returnRepository->countForAdmin($sharedFilters),
             ClaimTypeEnum::REFUND->value => $this->refundRepository->countForAdmin($sharedFilters),
             ClaimTypeEnum::CANCEL->value => $this->cancelRepository->countForAdmin($sharedFilters),
+        ];
+    }
+
+    /**
+     * 완료 처리 모달의 초기 선택값을 반환합니다. (D26 — `claim.complete_defaults`)
+     *
+     * 목록 응답이 이 값을 나른다. 설정 엔드포인트(`admin/settings`)는 `settings.read` 게이트인데
+     * 클레임 화면의 라우트는 `claims.read` 라, 모달이 설정 응답에서 직접 읽으면 클레임 권한만
+     * 가진 운영자(기본 역할 `manager`)에게는 403 이 되어 기본값이 조용히 도달하지 않는다 —
+     * 상점이 재고 복구를 꺼 두어도 그 운영자의 모달만 켜진 채 열리고 그대로 실행된다.
+     *
+     * 설정이 비어 있어도 두 키를 항상 채운다 — 화면이 "값이 없는 경우" 를 따로 분기하면
+     * 그 분기가 계약 기본값의 두 번째 출처가 된다.
+     *
+     * @return array{create_refund_request: bool, restore_stock: bool} 초기 선택값
+     */
+    public function completionDefaults(): array
+    {
+        $defaults = (array) ($this->settingsService->getSetting('claim.complete_defaults') ?? []);
+
+        // 형제 `claim.*` 불리언 설정과 같은 강도로 캐스팅한다 — `!== false` 는 `0`·`'0'`·
+        // `'false'` 를 참으로 읽어, 운영자가 꺼 둔 값이 켜진 채 모달에 도달한다. 무너지는
+        // 방향이 "끈 것을 켜진 것으로" 라 재고 복구·환불신청서가 의도 없이 실행된다.
+        return [
+            'create_refund_request' => filter_var(
+                $defaults['create_refund_request'] ?? true,
+                FILTER_VALIDATE_BOOLEAN,
+                FILTER_NULL_ON_FAILURE
+            ) ?? true,
+            'restore_stock' => filter_var(
+                $defaults['restore_stock'] ?? true,
+                FILTER_VALIDATE_BOOLEAN,
+                FILTER_NULL_ON_FAILURE
+            ) ?? true,
         ];
     }
 
@@ -522,10 +560,14 @@ class AdminClaimService
      * `ClaimCompletionOptions::hasStockRestoreTarget()` 로 판정한다(요청 기준 — 미리보기의
      * 질문과 정확히 같다. 완료 실행 경로는 이 메서드를 쓰면 안 된다 — DTO docblock 참조).
      *
+     * 금액은 원시값과 함께 표기 문자열(`*_formatted`)을 싣는다 — 모달이 통화 기호·자릿수를
+     * 조립하면 기본 통화가 원이 아닌 상점에서 단위만 틀린 금액이 나간다. 표기 통화는 거래
+     * 시점 스냅샷이 정하며, 합계는 대상이 한 통화로 모일 때만 낸다.
+     *
      * @param  ClaimTypeEnum  $type  클레임 유형 (교환·반품)
      * @param  array<int, array{id: int, item_ids?: array<int, int>, restore_stock_by_item?: array<int|string, bool>}>  $claims  대상 신청서 목록
      * @param  bool  $createRefundRequest  환불신청서 접수 선택 상태 (모달 라디오)
-     * @return array{claims: array<int, array>, skipped: array<int, array{id: int, message: string}>, totals: array{claim_count: int, completable_item_count: int, refund_amount_total: float, refund_points_amount_total: float}} 미리보기 결과
+     * @return array{claims: array<int, array>, skipped: array<int, array{id: int, message: string}>, totals: array{claim_count: int, completable_item_count: int, refund_amount_total: float, refund_points_amount_total: float, currency_code: string|null, refund_amount_total_formatted: string|null, refund_points_amount_total_formatted: string|null, deducted_shipping_fee_total: float, deducted_shipping_fee_total_formatted: string|null}} 미리보기 결과
      */
     public function completionPreview(ClaimTypeEnum $type, array $claims, bool $createRefundRequest): array
     {
@@ -534,6 +576,9 @@ class AdminClaimService
         $completableTotal = 0;
         $refundTotal = 0.0;
         $pointsTotal = 0.0;
+        $shippingTotal = 0.0;
+        /** @var array<string, array|null> $totalCurrencies 합계에 실제로 기여한 통화 → 스냅샷 */
+        $totalCurrencies = [];
 
         foreach ($claims as $entry) {
             $id = (int) ($entry['id'] ?? 0);
@@ -549,6 +594,13 @@ class AdminClaimService
             }
 
             $claim->loadMissing('order');
+
+            // 표기 통화는 거래 시점에 동결된 값이다 — 신청서 자신의 통화(교환·반품 컬럼)를
+            // 우선하고, 없으면 주문 스냅샷의 기준 통화로 폴백한다. 자릿수·절사 규칙도
+            // 스냅샷이 SSoT 이므로 포맷에 함께 넘긴다 (현재 설정을 보면 그 통화가 삭제된
+            // 뒤 자릿수가 폴백 2자리로 바뀌어 과거 금액 표기가 흔들린다).
+            $currency = $claim->currency_code ?: $this->orderBaseCurrencyOf($claim->order);
+            $snapshot = is_array($claim->order?->currency_snapshot) ? $claim->order->currency_snapshot : null;
 
             $itemIds = array_map('intval', (array) ($entry['item_ids'] ?? []));
 
@@ -599,9 +651,16 @@ class AdminClaimService
                 fn (int $itemId) => $completion->shouldRestoreStock($itemId),
             ));
 
+            $refund += [
+                'refund_amount_formatted' => $this->currencyService->formatPrice((float) $refund['refund_amount'], $currency, $snapshot),
+                'refund_points_amount_formatted' => $this->currencyService->formatPrice((float) $refund['refund_points_amount'], $currency, $snapshot),
+                'deducted_shipping_fee_formatted' => $this->currencyService->formatPrice((float) $refund['deducted_shipping_fee'], $currency, $snapshot),
+            ];
+
             $rows[] = [
                 'id' => $claim->id,
                 'claim_number' => $this->claimNumberOf($claim),
+                'currency_code' => $currency,
                 'completable_item_ids' => $completableIds,
                 'completable_item_count' => count($completableIds),
                 'has_stock_restore_target' => $completion->hasStockRestoreTarget(),
@@ -617,8 +676,16 @@ class AdminClaimService
             if ($refund['applicable']) {
                 $refundTotal += (float) $refund['refund_amount'];
                 $pointsTotal += (float) $refund['refund_points_amount'];
+                $shippingTotal += (float) $refund['deducted_shipping_fee'];
+                $totalCurrencies[$currency] = $snapshot;
             }
         }
+
+        // 합계는 통화가 하나로 모일 때만 표기한다. 여러 통화가 섞인 선택에서 숫자를 그대로
+        // 더하면 값은 맞고 단위만 없는 금액이 되는데, 화면에는 정상적인 합계로 보인다 —
+        // 그럴 때 `currency_code` 를 null 로 내보내 화면이 합계 표기를 접게 한다.
+        $totalCurrency = count($totalCurrencies) === 1 ? (string) array_key_first($totalCurrencies) : null;
+        $totalSnapshot = $totalCurrency !== null ? $totalCurrencies[$totalCurrency] : null;
 
         return [
             'claims' => $rows,
@@ -628,8 +695,51 @@ class AdminClaimService
                 'completable_item_count' => $completableTotal,
                 'refund_amount_total' => $refundTotal,
                 'refund_points_amount_total' => $pointsTotal,
+                'currency_code' => $totalCurrency,
+                'refund_amount_total_formatted' => $totalCurrency === null
+                    ? null
+                    : $this->currencyService->formatPrice($refundTotal, $totalCurrency, $totalSnapshot),
+                'refund_points_amount_total_formatted' => $totalCurrency === null
+                    ? null
+                    : $this->currencyService->formatPrice($pointsTotal, $totalCurrency, $totalSnapshot),
+                // 회수배송비 차감 합계 — 모달의 '함께 실행되는 처리' 가 그린다 (§6-4-1). 이번
+                // 라운드에 실제로 접수되는 신청서(`applicable`)만 더하므로 '접수하지 않음' 을
+                // 고르면 0 이 되고 화면은 그 항목을 접는다.
+                'deducted_shipping_fee_total' => $shippingTotal,
+                'deducted_shipping_fee_total_formatted' => $totalCurrency === null
+                    ? null
+                    : $this->currencyService->formatPrice($shippingTotal, $totalCurrency, $totalSnapshot),
             ],
         ];
+    }
+
+    /**
+     * 주문 스냅샷의 기준 통화 코드를 반환합니다. (없으면 현재 기본 통화)
+     *
+     * 방어적 폴백이며 현재 스키마에서는 도달하지 않는다 — `order_exchanges.currency_code` ·
+     * `order_returns.currency_code` 가 NOT NULL(기본값 보유)이라 호출부의 `?:` 좌변이 항상
+     * 참이다. 컬럼이 nullable 로 바뀌는 날을 대비해 남겨 둔다.
+     *
+     * 리소스 계층의 `HasMultiCurrencyPrices::resolveOrderBaseCurrencyCode()` 와 **같은 규칙이
+     * 아니다.** 스냅샷 `base_currency` 를 우선하는 1단계는 같지만, 그 뒤 폴백이 다르다 —
+     * 트레이트는 ① 선언된 기본 통화가 통화 목록에 실재할 때만 채택 ② 없으면 `is_default`
+     * 통화 ③ 마지막에 선언값의 3단인데, 여기서 부르는 `CurrencyConversionService::
+     * getDefaultCurrency()` 는 선언값을 그대로 돌려주는 1단이다. 삭제된 통화를 가리키는
+     * 설정에서 두 값이 갈리므로, 이 폴백이 실제로 도달하게 되면 그때 트레이트와 동형으로
+     * 맞추거나 판정을 공용 지점으로 올린다.
+     *
+     * @param  Order|null  $order  주문
+     * @return string 기준 통화 코드
+     */
+    protected function orderBaseCurrencyOf(?Order $order): string
+    {
+        $snapshot = $order?->currency_snapshot;
+
+        if (is_array($snapshot) && ! empty($snapshot['base_currency'])) {
+            return (string) $snapshot['base_currency'];
+        }
+
+        return $this->currencyService->getDefaultCurrency();
     }
 
     /**

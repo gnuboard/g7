@@ -5,7 +5,6 @@
         "sirsoft-ecommerce.claims.read"
     ],
     "extends": "_admin_base",
-    "_comment": "S8a 는 필터 섹션까지를 소유한다. 유형 서브탭·일괄 변경 바·DataGrid·완료 처리 모달(D26)은 S8b 가 `list_body_placeholder` 자리에 얹는다 — 그때 이 주석과 자리표시 노드를 함께 걷어낸다.",
     "meta": {
         "title": "$t:sirsoft-ecommerce.admin.claim.title",
         "description": "$t:sirsoft-ecommerce.admin.claim.description"
@@ -55,7 +54,10 @@
             "faultType",
             "chargeMethod",
             "reasonCode"
-        ]
+        ],
+        "selectedItems": [],
+        "bulkClaimStatus": "",
+        "perPage": "20"
     },
     "transition_overlay": {
         "wait_for": [
@@ -147,24 +149,6 @@
     ],
     "init_actions": [
         {
-            "handler": "loadFromLocalStorage",
-            "params": {
-                "key": "g7_claim_visible_columns",
-                "stateKey": "visibleColumns",
-                "defaultValue": [
-                    "requested_at",
-                    "claim_number",
-                    "order_number",
-                    "item_summary",
-                    "requester_name",
-                    "status",
-                    "reason_label",
-                    "fault_type",
-                    "amount"
-                ]
-            }
-        },
-        {
             "comment": "URL 이 필터 상태의 단일 근거다 — 새로고침·뒤로가기·프리셋 링크 어느 경로로 들어와도 화면이 같은 조건을 그린다.",
             "handler": "setState",
             "params": {
@@ -185,7 +169,8 @@
                         "maxAmount": "{{query.max_amount || ''}}",
                         "currencyCode": "{{query.currency_code || ''}}",
                         "chargePaymentMethods": "{{query['charge_payment_methods[]'] || []}}"
-                    }
+                    },
+                    "perPage": "{{['10','20','50','100'].includes(String(query.per_page ?? '')) ? String(query.per_page) : '20'}}"
                 }
             }
         },
@@ -449,23 +434,101 @@
                         ]
                     },
                     {
+                        "id": "claim_type_subtabs",
+                        "type": "composite",
+                        "name": "TabNavigation",
+                        "comment": "유형 서브탭. 건수 뱃지는 응답의 `counts` 를 그대로 그린다 — 유형 공통 필터(기간·검색·회원구분)만 반영된 값이라 \"그 탭으로 넘어가면 몇 건이 보이는가\" 를 답한다.",
+                        "props": {
+                            "tabs": [
+                                {
+                                    "id": "exchange",
+                                    "label": "$t:sirsoft-ecommerce.admin.claim.subtab.exchange",
+                                    "badge": "{{claims?.data?.counts?.exchange ?? 0}}"
+                                },
+                                {
+                                    "id": "return",
+                                    "label": "$t:sirsoft-ecommerce.admin.claim.subtab.return",
+                                    "badge": "{{claims?.data?.counts?.return ?? 0}}"
+                                },
+                                {
+                                    "id": "refund",
+                                    "label": "$t:sirsoft-ecommerce.admin.claim.subtab.refund",
+                                    "badge": "{{claims?.data?.counts?.refund ?? 0}}"
+                                },
+                                {
+                                    "id": "cancel",
+                                    "label": "$t:sirsoft-ecommerce.admin.claim.subtab.cancel",
+                                    "badge": "{{claims?.data?.counts?.cancel ?? 0}}"
+                                }
+                            ],
+                            "activeTabId": "{{query.type ?? 'exchange'}}",
+                            "variant": "default",
+                            "className": "mb-4"
+                        },
+                        "actions": [
+                            {
+                                "event": "onTabChange",
+                                "type": "change",
+                                "handler": "sequence",
+                                "params": {
+                                    "actions": [
+                                        {
+                                            "comment": "일괄 상태 어휘는 유형이 정한다 — 앞 유형에서 고른 값을 그대로 들고 넘어가면 그 상태는 새 유형의 어휘에 없어 [일괄 적용] 이 요청 전체를 422 로 만든다. 선택도 함께 비운다 — DataGrid 의 `selectionScope: \"page\"` 는 지금 페이지에 없는 id 만 버리는데, `id` 는 유형마다 다른 테이블의 기본키(`order_exchanges`/`order_returns`/`order_refunds`)라 값이 겹치면 앞 유형에서 고른 선택이 살아남아 운영자가 체크한 적 없는 다른 유형의 신청서가 대상이 된다. 페이지 크기도 함께 되돌린다 — 아래 이동이 `per_page` 를 URL 에서 떨구므로 서버는 기본값 20 으로 응답하는데, 셀렉트만 앞 유형의 값을 붙들고 있으면 화면이 실제와 다른 페이지 크기를 가리킨다.",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "_local",
+                                                "selectedItems": [],
+                                                "bulkClaimStatus": "",
+                                                "perPage": "20"
+                                            }
+                                        },
+                                        {
+                                            "comment": "audit:allow layout-list-context-navigate-merge-query 유형 전환은 의도적 리셋이다 — 유형마다 상태·귀책·청구 어휘가 달라 앞 유형의 `statuses[]` 가 따라오면 목록 전체가 422 가 된다(실측). `type` 만 갈아끼운다.",
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "/admin/ecommerce/claims",
+                                                "query": {
+                                                    "type": "{{$args[0]}}"
+                                                },
+                                                "replace": true,
+                                                "transition_overlay_target": "claim_datagrid__body"
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    },
+                    {
                         "partial": "partials/admin_ecommerce_claim_list/_partial_filter_section.json"
                     },
                     {
-                        "id": "list_body_placeholder",
+                        "id": "claim_data_table_section",
                         "type": "basic",
                         "name": "Div",
-                        "comment": "S8b 자리 — 유형 서브탭 + 일괄 변경 바 + DataGrid(claim_datagrid) 가 여기에 들어온다. 그때 이 노드는 사라진다.",
                         "props": {
-                            "className": "admin-card mt-4 p-6 text-center text-gray-500 dark:text-gray-400"
+                            "className": "mt-6"
                         },
-                        "text": "$t:common.loading"
+                        "children": [
+                            {
+                                "partial": "partials/admin_ecommerce_claim_list/_partial_bulk_action_section.json"
+                            },
+                            {
+                                "partial": "partials/admin_ecommerce_claim_list/_partial_claim_datagrid.json"
+                            }
+                        ]
                     }
                 ]
             }
         ]
     },
     "modals": [
+        {
+            "partial": "partials/admin_ecommerce_claim_list/_modal_bulk_confirm.json"
+        },
+        {
+            "partial": "partials/admin_ecommerce_claim_list/_modal_claim_complete.json"
+        },
         {
             "partial": "partials/admin_ecommerce_claim_list/_modal_preset_manage.json"
         },

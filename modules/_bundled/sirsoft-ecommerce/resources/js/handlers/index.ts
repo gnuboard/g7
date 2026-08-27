@@ -169,6 +169,18 @@ import {
     loadVisibleFiltersHandler,
 } from './orderHandlers';
 
+// 관리자 클레임 목록 핸들러 (S8b)
+import {
+    buildClaimBulkConfirmDataHandler,
+    executeClaimBulkActionHandler,
+    openClaimCompleteModalHandler,
+    toggleClaimCompleteStockHandler,
+    toggleClaimCompleteStockAllHandler,
+    setClaimCompleteRefundRequestHandler,
+    executeClaimCompletionHandler,
+    clearClaimCompleteTimersHandler,
+} from './claimHandlers';
+
 // 상품 목록 핸들러
 import { handleProductRowActionHandler } from './productListHandlers';
 
@@ -394,6 +406,16 @@ export const handlerMap = {
     saveVisibleColumns: saveVisibleColumnsHandler,
     loadVisibleColumns: loadVisibleColumnsHandler,
     loadVisibleFilters: loadVisibleFiltersHandler,
+
+    // ===== 관리자 클레임 목록 (S8b) =====
+    buildClaimBulkConfirmData: buildClaimBulkConfirmDataHandler,
+    executeClaimBulkAction: executeClaimBulkActionHandler,
+    openClaimCompleteModal: openClaimCompleteModalHandler,
+    toggleClaimCompleteStock: toggleClaimCompleteStockHandler,
+    toggleClaimCompleteStockAll: toggleClaimCompleteStockAllHandler,
+    setClaimCompleteRefundRequest: setClaimCompleteRefundRequestHandler,
+    executeClaimCompletion: executeClaimCompletionHandler,
+    clearClaimCompleteTimers: clearClaimCompleteTimersHandler,
 
     // ===== 상품 목록 =====
     handleProductRowAction: handleProductRowActionHandler,

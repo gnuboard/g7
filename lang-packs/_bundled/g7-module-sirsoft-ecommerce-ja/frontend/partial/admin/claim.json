@@ -82,7 +82,8 @@
     "save_preset": "プリセット保存",
     "cancel": "キャンセル",
     "edit": "編集",
-    "delete": "削除"
+    "delete": "削除",
+    "view_detail": "詳細を見る"
   },
   "column": {
     "requested_at": "申請日",
@@ -94,6 +95,73 @@
     "reason": "理由",
     "fault_type": "帰責",
     "amount": "金額",
-    "completed_at": "完了日"
+    "completed_at": "完了日",
+    "item_more": "他{{count}}件",
+    "item_quantity": "数量{{count}}",
+    "guest_badge": "非会員",
+    "outstanding_short": "未収{{amount}}"
+  },
+  "datagrid": {
+    "total_count": "全{{count}}件"
+  },
+  "message": {
+    "no_claims": "申請内訳がありません。"
+  },
+  "bulk": {
+    "selected_count": "選択{{count}}件",
+    "status_placeholder": "変更するステータス",
+    "apply": "一括適用",
+    "apply_full": "選択項目を一括適用",
+    "no_selection": "変更する申請書を選択してください。",
+    "no_status_selected": "変更するステータスを選択してください。",
+    "cancel_not_transitionable": "キャンセルは一括ステータス変更の対象ではありません。",
+    "confirm_title": "一括ステータス変更",
+    "confirm_message": "選択した{{count}}件のステータスを変更します。",
+    "confirm_type_label": "種別",
+    "confirm_status_label": "変更するステータス",
+    "confirm_count_label": "対象件数",
+    "confirm_count_value": "{{count}}件",
+    "confirm_cancel": "キャンセル",
+    "confirm_apply": "変更",
+    "success": "一括ステータス変更を処理しました。",
+    "result_summary": "成功{{succeeded}}件 · 決済リクエスト{{requested}}件 · スキップ{{skipped}}件",
+    "skipped_notice": "{{count}}件は処理されませんでした。最初の理由: {{reason}}",
+    "error": "一括ステータス変更に失敗しました。"
+  },
+  "complete": {
+    "title_exchange": "交換完了処理",
+    "title_return": "返品完了処理",
+    "title_generic": "完了処理",
+    "description": "選択した{{count}}件を完了ステータスに切り替えます。処理方法を件別にご確認ください。",
+    "col_claim_number": "申請番号",
+    "col_item": "商品",
+    "col_refund": "返金予定",
+    "col_restore_stock": "在庫復元",
+    "restore_all": "全件復元",
+    "discard_note": "解除した件は在庫を復元せず廃棄として処理します。",
+    "item_count": "{{count}}点の商品",
+    "refund_section": "返金申請書",
+    "refund_now": "今すぐ受付",
+    "refund_now_desc": "完了と同時に{{count}}件作成",
+    "refund_now_desc_amount": "完了と同時に{{count}}件(合計{{amount}})作成",
+    "refund_later": "受け付けない",
+    "refund_later_desc": "後で[返金申請書の受付]または注文詳細の返金モーダルで処理します。",
+    "blocked_exists": "すでに受け付けた返金申請書があります。",
+    "blocked_not_applicable": "返金対象がありません。",
+    "summary_label": "同時に実行される処理",
+    "summary_transition": "ステータス遷移{{count}}件",
+    "summary_stock": "在庫{{restore}}件復元 / {{discard}}件廃棄",
+    "summary_shipping": "回収送料の差し引き",
+    "summary_shipping_amount": "回収送料の差し引き {{amount}}",
+    "summary_earn": "付与予定ポイントの控除",
+    "summary_coupon": "クーポン復元",
+    "summary_none": "同時に実行される処理はありません。",
+    "skipped_notice": "{{count}}件は照会できないため対象から除外されます。",
+    "no_target": "完了処理できる申請書がありません。",
+    "cancel": "キャンセル",
+    "submit": "{{count}}件を完了処理",
+    "preview_error": "完了処理の要約を読み込めませんでした。",
+    "success": "完了処理を反映しました。",
+    "error": "完了処理に失敗しました。"
   }
 }

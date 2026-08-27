@@ -72,7 +72,9 @@ class ClaimController extends AdminBaseController
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
                 'messages.claims.list_retrieved',
-                (new ClaimAdminCollection($claims))->withCounts($counts)
+                (new ClaimAdminCollection($claims))
+                    ->withCounts($counts)
+                    ->withCompleteDefaults($this->adminClaimService->completionDefaults())
             );
         } catch (AccessDeniedHttpException $e) {
             return ResponseHelper::forbidden('auth.scope_denied');

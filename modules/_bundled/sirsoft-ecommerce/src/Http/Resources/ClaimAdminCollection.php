@@ -32,6 +32,13 @@ class ClaimAdminCollection extends BaseApiCollection
     protected ?array $counts = null;
 
     /**
+     * 완료 처리 모달의 초기 선택값 (`AdminClaimService::completionDefaults()` 결과)
+     *
+     * @var array<string, bool>|null
+     */
+    protected ?array $completeDefaults = null;
+
+    /**
      * 컬렉션 레벨 능력(can_*) 매핑을 반환합니다.
      *
      * @return array<string, string> 능력 매핑
@@ -59,6 +66,23 @@ class ClaimAdminCollection extends BaseApiCollection
     }
 
     /**
+     * 완료 처리 모달(D26)의 초기 선택값을 주입합니다.
+     *
+     * 이 목록 응답이 그 값의 전달 통로다 — 설정 엔드포인트는 `settings.read` 게이트라
+     * 클레임 권한만 가진 운영자에게 도달하지 않는다 (`AdminClaimService::completionDefaults()`
+     * docblock 참조).
+     *
+     * @param  array<string, bool>|null  $defaults  초기 선택값
+     * @return static 자기 자신
+     */
+    public function withCompleteDefaults(?array $defaults): static
+    {
+        $this->completeDefaults = $defaults;
+
+        return $this;
+    }
+
+    /**
      * 리소스를 배열로 변환
      *
      * @param  Request  $request  요청
@@ -73,6 +97,7 @@ class ClaimAdminCollection extends BaseApiCollection
                 ->map(fn (ClaimAdminListResource $claim) => $claim->withReasonLabels($reasonLabels)->toArray($request))
                 ->toArray(),
             'counts' => $this->counts,
+            'complete_defaults' => $this->completeDefaults,
             'abilities' => $this->resolveAbilitiesFromMap($this->abilityMap(), $request->user()),
         ], $this->paginationMeta());
     }

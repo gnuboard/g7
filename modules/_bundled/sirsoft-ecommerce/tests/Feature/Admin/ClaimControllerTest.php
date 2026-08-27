@@ -506,6 +506,80 @@ class ClaimControllerTest extends ModuleTestCase
         $this->actingAs($noPermission)->getJson($this->base().'/claims')->assertForbidden();
     }
 
+    /**
+     * 완료 처리 모달(D26)의 초기 선택값은 목록 응답이 나른다.
+     *
+     * 설정 엔드포인트(`admin/settings`)는 `settings.read` 게이트인데 이 화면의 라우트는
+     * `claims.read` 다 — 기본 역할 `manager` 는 클레임 권한만 갖고 설정 권한이 없어, 모달이
+     * 설정 응답에서 기본값을 읽으면 그 운영자에게만 조용히 도달하지 않는다. 그러면 상점이
+     * 재고 복구를 꺼 두어도 모달은 켜진 채 열리고 그대로 실행된다(오류 없음).
+     *
+     * @effects completion_defaults_reach_claims_read_operator
+     */
+    public function test_list_carries_completion_defaults_for_a_claims_scoped_operator(): void
+    {
+        app(EcommerceSettingsService::class)->setSetting('claim.complete_defaults', [
+            'create_refund_request' => false,
+            'restore_stock' => false,
+        ]);
+
+        // `$this->admin` 은 클레임 권한 2종만 가진 운영자다 — 설정 권한이 없다.
+        $this->actingAs($this->admin)->getJson($this->base().'/claims?type=return')
+            ->assertOk()
+            ->assertJsonPath('data.complete_defaults.create_refund_request', false)
+            ->assertJsonPath('data.complete_defaults.restore_stock', false);
+    }
+
+    /**
+     * 설정이 비어 있어도 계약 기본값(둘 다 참)이 실린다 — 화면이 형태를 분기하지 않게.
+     *
+     * @effects completion_defaults_reach_claims_read_operator
+     */
+    public function test_list_completion_defaults_fall_back_to_the_contract_defaults(): void
+    {
+        app(EcommerceSettingsService::class)->setSetting('claim.complete_defaults', []);
+
+        $this->actingAs($this->admin)->getJson($this->base().'/claims')
+            ->assertOk()
+            ->assertJsonPath('data.complete_defaults.create_refund_request', true)
+            ->assertJsonPath('data.complete_defaults.restore_stock', true);
+    }
+
+    /**
+     * 불리언이 아닌 저장값도 형제 `claim.*` 설정과 같은 강도로 해석된다.
+     *
+     * 설정 저장 경로에는 이 키를 불리언으로 강제하는 규칙이 없다(단건 저장은 `present` 뿐이고
+     * 정규화도 불리언을 캐스팅하지 않는다). 느슨하게 읽으면 무너지는 방향이 "끈 것을 켜진
+     * 것으로" 라, 운영자가 꺼 둔 재고 복구·환불신청서가 의도 없이 실행된다.
+     *
+     * @effects completion_defaults_reach_claims_read_operator
+     */
+    public function test_list_completion_defaults_coerce_non_boolean_stored_values(): void
+    {
+        foreach ([['0', '0'], [0, 0], ['false', 'false']] as [$createRefund, $restoreStock]) {
+            app(EcommerceSettingsService::class)->setSetting('claim.complete_defaults', [
+                'create_refund_request' => $createRefund,
+                'restore_stock' => $restoreStock,
+            ]);
+
+            $this->actingAs($this->admin)->getJson($this->base().'/claims?type=return')
+                ->assertOk()
+                ->assertJsonPath('data.complete_defaults.create_refund_request', false)
+                ->assertJsonPath('data.complete_defaults.restore_stock', false);
+        }
+
+        // 해석할 수 없는 값은 계약 기본값(참)으로 떨어진다 — 오타가 조용히 기능을 끄지 않게.
+        app(EcommerceSettingsService::class)->setSetting('claim.complete_defaults', [
+            'create_refund_request' => 'yes-please',
+            'restore_stock' => 'yes-please',
+        ]);
+
+        $this->actingAs($this->admin)->getJson($this->base().'/claims?type=return')
+            ->assertOk()
+            ->assertJsonPath('data.complete_defaults.create_refund_request', true)
+            ->assertJsonPath('data.complete_defaults.restore_stock', true);
+    }
+
     // ================================================================
     // 상세
     // ================================================================

@@ -82,7 +82,8 @@
     "save_preset": "프리셋 저장",
     "cancel": "취소",
     "edit": "수정",
-    "delete": "삭제"
+    "delete": "삭제",
+    "view_detail": "상세 보기"
   },
   "column": {
     "requested_at": "신청일",
@@ -94,6 +95,73 @@
     "reason": "사유",
     "fault_type": "귀책",
     "amount": "금액",
-    "completed_at": "완료일"
+    "completed_at": "완료일",
+    "item_more": "외 {{count}}건",
+    "item_quantity": "수량 {{count}}",
+    "guest_badge": "비회원",
+    "outstanding_short": "미수납 {{amount}}"
+  },
+  "datagrid": {
+    "total_count": "총 {{count}}건"
+  },
+  "message": {
+    "no_claims": "신청 내역이 없습니다."
+  },
+  "bulk": {
+    "selected_count": "선택 {{count}}건",
+    "status_placeholder": "변경할 상태",
+    "apply": "일괄 적용",
+    "apply_full": "선택 항목 일괄 적용",
+    "no_selection": "변경할 신청서를 선택해주세요.",
+    "no_status_selected": "변경할 상태를 선택해주세요.",
+    "cancel_not_transitionable": "취소는 일괄 상태 변경 대상이 아닙니다.",
+    "confirm_title": "일괄 상태 변경",
+    "confirm_message": "선택한 {{count}}건의 상태를 변경합니다.",
+    "confirm_type_label": "유형",
+    "confirm_status_label": "변경할 상태",
+    "confirm_count_label": "대상 건수",
+    "confirm_count_value": "{{count}}건",
+    "confirm_cancel": "취소",
+    "confirm_apply": "변경",
+    "success": "일괄 상태 변경을 처리했습니다.",
+    "result_summary": "성공 {{succeeded}}건 · 결제 요청 {{requested}}건 · 건너뜀 {{skipped}}건",
+    "skipped_notice": "{{count}}건은 처리되지 않았습니다. 첫 사유: {{reason}}",
+    "error": "일괄 상태 변경에 실패했습니다."
+  },
+  "complete": {
+    "title_exchange": "교환완료 처리",
+    "title_return": "반품완료 처리",
+    "title_generic": "완료 처리",
+    "description": "선택한 {{count}}건을 완료 상태로 전환합니다. 처리 방식을 건별로 확인하세요.",
+    "col_claim_number": "신청번호",
+    "col_item": "상품",
+    "col_refund": "환불 예정",
+    "col_restore_stock": "재고 복구",
+    "restore_all": "전체 복구",
+    "discard_note": "해제한 건은 재고를 복구하지 않고 폐기로 처리합니다.",
+    "item_count": "{{count}}개 상품",
+    "refund_section": "환불신청서",
+    "refund_now": "지금 접수",
+    "refund_now_desc": "완료와 동시에 {{count}}건 생성",
+    "refund_now_desc_amount": "완료와 동시에 {{count}}건(합계 {{amount}}) 생성",
+    "refund_later": "접수하지 않음",
+    "refund_later_desc": "이후 [환불신청서 접수] 또는 주문상세 환불 모달로 처리합니다.",
+    "blocked_exists": "이미 접수된 환불신청서가 있습니다.",
+    "blocked_not_applicable": "환불 대상이 없습니다.",
+    "summary_label": "함께 실행되는 처리",
+    "summary_transition": "상태 전이 {{count}}건",
+    "summary_stock": "재고 {{restore}}복구 / {{discard}}폐기",
+    "summary_shipping": "회수배송비 차감",
+    "summary_shipping_amount": "회수배송비 차감 {{amount}}",
+    "summary_earn": "적립 차감",
+    "summary_coupon": "쿠폰 복원",
+    "summary_none": "추가로 실행되는 처리가 없습니다.",
+    "skipped_notice": "{{count}}건은 조회되지 않아 대상에서 제외됩니다.",
+    "no_target": "완료 처리할 수 있는 신청서가 없습니다.",
+    "cancel": "취소",
+    "submit": "{{count}}건 완료 처리",
+    "preview_error": "완료 처리 요약을 불러오지 못했습니다.",
+    "success": "완료 처리를 반영했습니다.",
+    "error": "완료 처리에 실패했습니다."
   }
 }

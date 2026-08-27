@@ -1,0 +1,143 @@
+feature: 관리자 클레임 목록 본체와 완료 처리 모달 (#599 S8b — D26)
+
+description: |
+  S8a 가 놓은 셸의 자리표시 노드 자리에 유형 서브탭 · 일괄 상태 변경 바 · DataGrid ·
+  완료 처리 모달(D26)을 얹는다. 이 화면에서 조용히 깨지는 지점은 여섯이다.
+
+  ① 일괄 상태 어휘가 유형마다 다르다(교환 11 / 반품 8 / 환불 3). 게이트
+     (`BulkClaimStatusRequest::assignableStatuses()`)의 부분집합이면 운영자가 지정할 수
+     있어야 할 상태가 화면에서 사라지고, 초과집합이면 그 값을 고른 순간 요청 전체가 422 가
+     되면서 목록은 그대로 남아 실패가 보이지 않는다. 유형을 바꾼 뒤 앞 유형에서 고른 값이
+     남아 있어도 같은 422 다 — 그래서 탭 전환이 그 선택을 비운다.
+
+  ② 완료 전이는 곧바로 실행되면 안 된다(D26 — 자동 접수 금지). 재고 복구 여부와 환불신청서
+     접수 여부를 운영자가 고르기 전에 상태가 바뀌면 그 선택 기회 자체가 사라지고, 접수된
+     환불신청서는 되돌리는 절차가 따로 필요해진다.
+
+  ③ 완료 처리 모달은 세 진입점(목록 일괄 · 신청서 내 상품 일괄 · 상세 [완료 처리])이
+     파일 하나를 공유해야 한다. 모달이 특정 화면의 데이터소스를 읽으면 나머지 두 진입점에서
+     그 바인딩이 비어 표가 통째로 사라지는데, 오류는 나지 않는다.
+
+  ④ 미리보기와 실행의 페이로드 모양이 다르다. 미리보기는 신청서마다 재고 맵을 나눠 싣고,
+     실행은 전 신청서의 상품 행 ID 를 `completion.restore_stock_by_item` 한 맵에 모은다.
+     같은 객체를 재사용하면 서버가 체크를 읽지 못해 전건이 재고 복구 없이 폐기로 처리된다
+     (복구·폐기 어느 쪽도 활동 로그에 남지 않으므로 사후에 구분할 근거가 없다).
+
+  ⑤ 금액을 화면이 조립하면 기본 통화가 원이 아닌 상점에서 값은 맞고 단위만 틀린 금액이
+     나간다. 목록 행과 완료 모달 모두 서버가 준 `*_formatted` 만 그린다 — 그 표기의 통화는
+     거래 시점 스냅샷이 정하고, 합계는 대상이 한 통화로 모일 때만 낸다.
+
+  ⑥ 선택은 화면 밖 상태에 남는다. 페이지·필터를 바꿔 목록에서 빠진 행의 선택이 살아 있으면
+     일괄 처리가 운영자가 보지도 체크하지도 않은 행을 대상으로 삼는다.
+
+# axis 의미:
+#   claim_type       — 상태 어휘·일괄 바 노출·선택 가능 여부·금액 필드가 전부 여기서 갈린다.
+#   completion_choice — D26 의 핵심 선택. `not_applicable` 은 완료가 아닌 전이(승인·반려 등)로,
+#                       확인 모달 경로를 탄다. `file_now`/`file_later` 는 완료 처리 모달의
+#                       환불신청서 라디오이며, 그 값이 실행 본문까지 도달해야 한다.
+#
+#   일괄 결과(성공·결제 요청 우회·건너뜀)와 재고 체크(전건·일부·없음)는 유형과 직교하지 않고
+#   같은 코드 경로를 지나므로 축으로 세지 않고 effects 로 고정한다 — 축으로 곱하면 화면이
+#   실제로 갈라지지 않는 조합이 수백 개 생긴다.
+axes:
+  claim_type: [exchange, return, refund, cancel]
+  completion_choice: [file_now, file_later, not_applicable]
+
+exclusions:
+  - { claim_type: refund, completion_choice: file_now, reason: "완료 처리 모달은 교환·반품 전용이다 — 환불의 완료는 환불 실행이 옮기는 상태라 목록에서 지정할 수 없다" }
+  - { claim_type: refund, completion_choice: file_later, reason: "동일" }
+  - { claim_type: cancel, completion_choice: file_now, reason: "취소는 일괄 전이 대상 자체가 아니다 — 게이트의 `type` 어휘에 없다" }
+  - { claim_type: cancel, completion_choice: file_later, reason: "동일" }
+
+effects:
+  # 셸 배선 (본체가 자리표시를 대체한다)
+  - list_body_replaces_placeholder
+  - subtabs_render_above_filter_card
+  - completion_modal_registered_once
+  # 유형 서브탭
+  - subtab_switch_resets_type_scoped_filters
+  - subtab_switch_clears_bulk_status
+  # 일괄 상태 변경 바
+  - bulk_bar_absent_for_cancel
+  - bulk_status_vocabulary_matches_request_gate
+  - bulk_controls_gated_by_update_status_ability
+  - bulk_bar_has_no_uncontracted_tracking_inputs
+  # 부분 성공 계약
+  - skipped_claims_reported_separately
+  - payment_requested_counted_separately
+  # 완료 처리 (D26)
+  - completion_opens_modal_never_executes_directly
+  - settings_seed_initial_choice_only
+  - completion_defaults_reach_claims_read_operator
+  - completion_modal_reads_only_shared_global_contract
+  - completion_modal_has_per_claim_and_header_stock_toggles
+  - completion_modal_boolean_inputs_disable_autobinding
+  - completion_modal_title_follows_claim_type
+  - completion_preview_reflects_seeded_stock_choice
+  - stock_toggle_expands_to_item_rows
+  - refund_radio_refreshes_preview
+  - refund_request_radio_offers_both_choices
+  - refund_request_choice_reaches_server
+  - completion_payload_merges_item_maps
+  - execution_targets_only_previewed_claims
+  - submit_disabled_without_targets
+  - blocked_reasons_shown_separately
+  - skipped_claims_reported_in_modal
+  - iteration_row_ids_are_index_scoped
+  # 선택 범위
+  - selection_scope_declared_page
+  - selection_closed_for_cancel_subtab
+  # 컬럼 표시 영속 (2차 F5 이월 — SSoT 하나)
+  - visible_columns_single_persistence_owner
+  - column_selector_and_datagrid_share_state
+  - column_selector_matches_datagrid_columns
+  # 금액 표기
+  - amounts_render_from_server_formatted_only
+  - unpaid_badge_reads_outstanding_amount_not_status_label
+  - mixed_currency_total_falls_back_to_count_only
+  - collection_fee_shown_in_completion_summary
+  - page_size_control_restores_from_url
+  # 정렬·전환 오버레이
+  - no_sort_control_without_repository_support
+  - transition_overlay_targets_datagrid_body
+  # 목록 컨텍스트 왕복
+  - list_context_preserved_across_cluster_navigation
+  - completion_total_omitted_when_nothing_is_filed
+  # 미리보기 응답 경합 (4차)
+  - stale_preview_response_never_overwrites_current_selection
+  - reopened_modal_ignores_previous_session_preview
+  - rapid_toggles_collapse_into_one_preview_request
+  - closing_the_modal_cancels_pending_preview
+  # 유형 축 선택 승계 · 체크 즉시 반영 (5차)
+  - subtab_switch_clears_carried_selection
+  - completion_modal_stock_toggle_reflects_immediately
+  # i18n
+  - new_labels_present_in_all_three_dictionaries
+  - defer_translation_only_inside_repeat_context
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminClaimListBody.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminClaimListBodyRender.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/claimHandlers.test.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/ClaimCompletionPreviewTest.php
+  # 완료 기본값이 `claims.read` 운영자에게 도달하는 축은 이 파일이 고정한다 — 등재하지 않으면
+  # 그 마킹이 어느 매니페스트에도 계상되지 않아, 지워도 커버리지가 초록으로 남는다.
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/ClaimControllerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/admin-claim-list.spec.ts
+
+notes: |
+  세 진입점 중 이 세션이 소유하는 것은 목록 일괄 하나다. 나머지 둘(신청서 내 상품 일괄 ·
+  상세 [완료 처리])은 상세 화면(S9)이 만들며, 그때 이 모달 partial 을 복제하지 않고
+  `sirsoft-ecommerce.openClaimCompleteModal` 에 대상과 실행 경로(`execute`)를 넘겨 연다.
+  모달이 `_global.claimComplete*` 계약만 읽는 것이 그 공유를 가능하게 하는 조건이고,
+  구조·렌더 테스트가 그 조건을 고정한다.
+
+  `create_refund_request=false` 경로에서 `order_refunds` 가 생기지 않는다는 축은 서비스
+  계층(S3 `OrderReturnServiceTest` 완료 절)이 이미 DB 로 단언한다. 이 세션이 더하는 것은
+  그 선택이 **화면에서 요청 본문까지 도달하는가** 이고, 핸들러 테스트가 그 지점을 본다 —
+  둘을 한 파일에서 다시 재현하면 같은 계약이 두 벌이 된다.
+
+  일괄 전이 바에 택배사·송장 입력을 두지 않은 것은 축소가 아니라 계약이다. §6-4 와이어프레임은
+  주문 목록의 바를 그대로 옮겨 그렸지만, 클레임 일괄 전이 엔드포인트는 그 두 값을 받지 않고
+  (회수·재발송 송장은 신청서마다 회수지가 달라 `PUT {claimType}/{id}/collection-tracking`
+  으로 건별 처리한다), 컨트롤만 두면 운영자가 입력한 값이 조용히 버려진다.
