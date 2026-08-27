@@ -1139,14 +1139,29 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-_이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지만). 컨트롤러가 `success('module.uninstall_success')` 를 데이터 인자 없이 호출합니다._
+| 이름 | 타입 | 예시 | 용도 |
+| --- | --- | --- | --- |
+| preserved_backups | array | `[{"directory":"custom","archive":"…/extension-custom-backups/…"}]` | 삭제 전에 보관한 운영자 소유 디렉토리의 사본 목록. 보관 대상이 없으면 빈 배열 |
+| preserved_backups[].directory | string | `custom` | 보관된 디렉토리 이름 |
+| preserved_backups[].archive | string | `storage/app/extension-custom-backups/{identifier}-{Ymd_His}/custom` | 사본이 놓인 절대 경로 |
+
+> 운영자가 `custom/` 에 넣은 파일은 확장 삭제와 함께 사라지지만, 삭제 직전에 사본이
+> 보관됩니다. 이 필드가 그 경로를 알리는 유일한 통로이므로 화면에 노출해야 합니다.
 
 **응답 예시**
 
 ```json
 {
     "success": true,
-    "message": "모듈이 성공적으로 제거되었습니다."
+    "message": "모듈이 성공적으로 제거되었습니다.",
+    "data": {
+        "preserved_backups": [
+            {
+                "directory": "custom",
+                "archive": "/var/www/g7/storage/app/extension-custom-backups/sirsoft-board-20260825_231500/custom"
+            }
+        ]
+    }
 }
 ```
 

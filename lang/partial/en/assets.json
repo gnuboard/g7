@@ -1,0 +1,8 @@
+{
+  "load_failed": "Could not load {label}.",
+  "load_failed_multiple": "Could not load {count} items.",
+  "retry": "Retry",
+  "retrying": "Retrying...",
+  "close": "Close",
+  "retry_failed": "The retry failed. Please try again in a moment."
+}

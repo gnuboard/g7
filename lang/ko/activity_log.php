@@ -244,6 +244,9 @@ return [
         'template_install_from_file' => '파일에서 템플릿 설치',
         'template_install_from_github' => 'GitHub에서 템플릿 설치',
         'template_refresh_layouts' => '템플릿 레이아웃 갱신 (:template_name)',
+        'custom_asset_save' => '커스텀 자산 저장 (:identifier — :path)',
+        'custom_asset_upload' => '커스텀 자산 업로드 (:identifier — :path)',
+        'custom_asset_delete' => '커스텀 자산 삭제 (:identifier — :path)',
 
         // 코어 업데이트
         'core_update_check' => '코어 업데이트 확인',

@@ -55,6 +55,22 @@ import {
 } from '../hooks/useControllableState';
 import { triggerModalParentUpdate } from './ParentContextProvider';
 import { IdentityGuardInterceptor, IDENTITY_REDIRECT_STASH_KEY } from '../identity/IdentityGuardInterceptor';
+import { loadScriptWithRetry, loadStylesheetWithRetry } from './networkResilience';
+import {
+  templateAsset,
+  templateAssetDir,
+  moduleAsset,
+  pluginAsset,
+  convertToCurrentMode,
+} from '../support/assetUrl';
+import {
+  notifyAssetFailure,
+  drainExternalAssetFailures,
+  clearAssetFailure,
+  clearAllAssetFailures,
+  getAssetFailures,
+  retryAssetFailures,
+} from '../assets/AssetFailureNotice';
 
 const logger = createLogger('G7CoreGlobals');
 
@@ -855,6 +871,86 @@ function initLayoutEditorStub(G7Core: any): void {
   };
 
   logger.log('전역 객체 window.G7Core.layoutEditor 예약 접수함(stub) 노출됨');
+}
+
+/**
+ * 자산 URL·자산 실패 안내 API 초기화
+ *
+ * 확장(모듈·플러그인·템플릿)의 IIFE 번들은 코어의 `assetUrl.ts` 를 import 할 수 없다
+ * — 별도 번들이라 모듈 그래프가 이어지지 않는다. 그래서 확장이 자기 동봉 자산의 URL 을
+ * 만들려면 `/api/plugins/assets/...` 를 **문자열로 조립**하는 수밖에 없었는데, 그러면
+ * 자산 URL 이중 모드(확장자 없는 서버)에서 그 자산만 404 가 된다.
+ *
+ * `G7Core.asset.*` 이 그 seam 이다 — 서버측 `AssetUrl` 과 같은 규약으로 URL 을 만든다.
+ * `G7Core.assets.*` 는 그 자산을 끝내 못 불러왔을 때의 안내·재시도 표면이다.
+ *
+ * @param G7Core 전역 객체
+ * @return void
+ * @since engine-v1.62.0
+ */
+function initAssetUrlAPI(G7Core: any): void {
+  /**
+   * 확장 자산 URL 생성기.
+   *
+   * 템플릿은 서버가 `dist/` 를 자동 부가하므로 `path` 에 `dist/` 를 포함하지 않는다
+   * (모듈·플러그인은 확장 루트 기준이라 `dist/` 를 직접 포함 — 서버측과 동일한 비대칭).
+   */
+  G7Core.asset = {
+    /** 템플릿 자산 URL (`dist/` 이하 경로) */
+    template: (identifier: string, path: string, version?: number | string | null): string =>
+      templateAsset(identifier, path, version),
+    /**
+     * 템플릿 자산 **디렉토리** URL — AMD 로더·워커처럼 디렉토리 접두에 파일명을
+     * 이어 붙이는 소비자용. 확장자 없는 모드에서 404 일 수 있으므로 폴백이 필요하다.
+     */
+    templateDir: (identifier: string, path: string): string => templateAssetDir(identifier, path),
+    /** 모듈 자산 URL (모듈 루트 기준 경로) */
+    module: (identifier: string, path: string, version?: number | string | null): string =>
+      moduleAsset(identifier, path, version),
+    /** 플러그인 자산 URL (플러그인 루트 기준 경로) */
+    plugin: (identifier: string, path: string, version?: number | string | null): string =>
+      pluginAsset(identifier, path, version),
+    /** 서버가 확장자 형태로 굳혀 내려준 URL 을 현재 모드로 보정 */
+    convertToCurrentMode: (url: string): string => convertToCurrentMode(url),
+    /**
+     * 재시도 계층을 갖춘 스크립트 로더.
+     *
+     * 확장이 자기 자산을 런타임에 직접 로드할 때 쓴다. 확장 번들이 코어 모듈을
+     * import 할 수 없어 각자 `document.createElement('script')` 를 쓰면, 코어가
+     * 갖춘 재시도·실패 표면화 계층이 그 경로에만 없게 된다.
+     */
+    loadScript: (
+      url: string,
+      attrs?: Record<string, string>,
+      options?: Record<string, unknown>
+    ): Promise<void> => loadScriptWithRetry(url, attrs, options as any),
+    /** 재시도 계층을 갖춘 스타일시트 로더 */
+    loadStylesheet: (
+      url: string,
+      attrs?: Record<string, string>,
+      options?: Record<string, unknown>
+    ): Promise<void> => loadStylesheetWithRetry(url, attrs, options as any),
+  };
+
+  /**
+   * 자산 로드 실패 안내.
+   *
+   * 실패를 화면에 표면화하지 않으면 사용자에게는 "빈 자리" 로만 나타나고, 자체 서버
+   * 로그에도 흔적이 남지 않아 운영자가 원인을 특정할 수 없다.
+   */
+  G7Core.assets = {
+    notifyFailure: notifyAssetFailure,
+    clearFailure: clearAssetFailure,
+    clearAll: clearAllAssetFailures,
+    getFailures: getAssetFailures,
+    retryAll: retryAssetFailures,
+  };
+
+  // 서버가 심은 템플릿 externals 는 엔진보다 먼저 평가되므로 실패가 대기열에 쌓여 있다.
+  // 여기서 비우지 않으면 아이콘 폰트·글꼴 실패가 화면에 영영 드러나지 않는다.
+  drainExternalAssetFailures();
+
+  logger.log('전역 객체 window.G7Core.asset / window.G7Core.assets 노출됨');
 }
 
 /**
@@ -3148,6 +3244,7 @@ export function initializeG7CoreGlobals(deps: G7CoreDependencies): void {
   // 레이아웃 편집기 확장점 예약 접수함(편집기 lazy 로드 전 템플릿 등록을 큐에 보존)
   initLayoutEditorStub(G7Core);
   initCoreAPIs(G7Core, deps);
+  initAssetUrlAPI(G7Core);
   initTranslationAPI(G7Core, deps);
   initHelperAPIs(G7Core, deps);
   initDispatchAPI(G7Core);

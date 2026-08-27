@@ -228,8 +228,7 @@ public function restoreVersion(int $layoutId, int $version): TemplateLayout
     {
       "id": "fontawesome",
       "type": "style",
-      "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css",
-      "preconnect": "https://cdnjs.cloudflare.com"
+      "asset": "vendor/font-awesome/6.4.0/css/all.inlined.css"
     }
   ]
 }
@@ -249,15 +248,31 @@ public function restoreVersion(int $layoutId, int $version): TemplateLayout
 
 ### 외부 리소스 (externals)
 
-`externals`는 admin/user 템플릿에 공통 적용되는 선택 필드입니다. 최초 HTML 문서에 정적으로 필요한 외부 스타일, 웹폰트, 스크립트, 리소스 힌트를 선언합니다. `external_styles`는 사용하지 않습니다.
+`externals`는 admin/user 템플릿에 공통 적용되는 선택 필드입니다. 최초 HTML 문서에 정적으로 필요한 스타일, 웹폰트, 스크립트, 리소스 힌트를 선언합니다. `external_styles`는 사용하지 않습니다.
+
+자산을 가리키는 방법은 `asset`과 `url` 두 가지이며, 항목마다 **하나를 고릅니다**.
+
+- `asset` — 템플릿이 **자체 제공**하는 파일의 `dist/` 이하 경로. 구동 에셋은 자체 제공이 원칙이므로 이쪽이 기본입니다.
+- `url` — 절대 URL. 자체 제공이 불가능한 외부 서비스에만 씁니다.
+
+```json
+{
+    "type": "style",
+    "id": "font-awesome",
+    "asset": "vendor/font-awesome/6.4.0/css/all.inlined.css"
+}
+```
+
+구동에 필요한 에셋을 제3자 CDN에서 실시간으로 받으면, 그 도달 실패는 예외도 로그도 남기지 않고 화면 기능만 사라집니다. 폐쇄망·방화벽·광고차단기 환경에서 재현되며 자체 서버 로그에 흔적이 없어 운영자가 원인을 특정할 수 없습니다. 라이브러리·웹폰트·아이콘은 `dist/vendor/{lib}/{version}/`에 동봉하고 `asset`으로 가리킵니다.
 
 | 속성 | 타입 | 필수 | 적용 type | 허용값/형식 | 렌더링/동작 |
 |---|---:|---:|---|---|---|
 | `id` | string | 권장 | all | 영문/숫자/`-`/`_` | HTML `id` 속성 |
 | `type` | string | 필수 | all | `style`, `webfont`, `script`, `preconnect`, `dns-prefetch`, `preload`, `modulepreload` | 출력 태그와 위치 결정 |
-| `url` | string | 필수 | all | `https://...` | link 계열은 `href`, script는 `src` |
-| `preconnect` | string | 선택 | `style`, `webfont`, `script`, `preload`, `modulepreload` | `https://cdn.example.com` | 리소스보다 먼저 `<link rel="preconnect">` 출력, 중복 제거 |
-| `crossorigin` | boolean/string | 선택 | `style`, `webfont`, `script`, `preconnect`, `preload`, `modulepreload` | `true`, `anonymous`, `use-credentials` | `true`는 `anonymous`로 정규화 |
+| `asset` | string | `url`과 택일 | `preconnect`·`dns-prefetch` 제외 | `dist/` 이하 상대 경로 (`vendor/font-awesome/6.4.0/css/all.inlined.css`). `/`로 시작 금지, `..` 금지, `A-Za-z0-9._-/`만 허용 | 자산 URL 이중 모드와 정적 게시를 반영한 same-origin URL로 해석. `url`보다 우선하며, 둘 다 선언하면 `url`은 무시되고 경고가 남는다 |
+| `url` | string | `asset`과 택일 | all | `https://...` 또는 `/`로 시작하는 same-origin 경로 | link 계열은 `href`, script는 `src` |
+| `preconnect` | string | 선택 | `style`, `webfont`, `script`, `preload`, `modulepreload` | `https://cdn.example.com` | 리소스보다 먼저 `<link rel="preconnect">` 출력, 중복 제거. **same-origin 항목에서는 무시** |
+| `crossorigin` | boolean/string | 선택 | `style`, `webfont`, `script`, `preconnect`, `preload`, `modulepreload` | `true`, `anonymous`, `use-credentials` | `true`는 `anonymous`로 정규화. **same-origin 항목에서는 무시** |
 | `integrity` | string | 선택 | `style`, `webfont`, `script`, `preload`, `modulepreload` | SRI hash | HTML `integrity` |
 | `referrerpolicy` | string | 선택 | `style`, `webfont`, `script`, `preload`, `modulepreload` | 표준 referrer policy | HTML `referrerpolicy` |
 | `media` | string | 선택 | `style`, `webfont` | CSS media query | stylesheet link의 `media` |
@@ -551,6 +566,27 @@ Body: { "layout_strategy": "apply_new" }
 필수: 템플릿 수정/개발은 _bundled 디렉토리에서만 작업 (활성 디렉토리 직접 수정 금지)
 필수: _bundled 작업 완료 후 반영/검증은 업데이트 프로세스 사용
 ```
+
+### `custom/` 은 운영자 자리입니다 — 저작자가 선점하지 않습니다
+
+`templates/{identifier}/custom/` 은 **사이트 운영자**가 자기 CSS·JS 를 덧붙이는 자리입니다.
+확장 교체(업데이트·재설치)가 이 디렉토리만은 보존하므로, 운영자가 넣은 파일은 템플릿을
+업데이트해도 살아남습니다.
+
+그래서 템플릿 저작자는 `_bundled` 에 `custom/` 을 담아 배포하지 않습니다. 보존 계층은
+"덮어쓰지 않음" 이라, 저작자가 담은 파일은 이미 `custom/` 을 가진 사이트에서 **영영
+반영되지 않는 상태**가 됩니다. 저작자의 기본 스타일은 `src/styles/` 에 두고 빌드에
+포함시킵니다.
+
+| 대상 | 자리 | 빌드 | 업데이트 시 |
+|---|---|---|---|
+| 저작자 기본 스타일 | `src/styles/` | 필요 | 새 배포본으로 교체 |
+| 저작자 동봉 구동 자산 | `dist/vendor/{lib}/{version}/` | 불필요 | 새 배포본으로 교체 |
+| **운영자 추가 CSS·JS** | **`custom/`** | **불필요** | **보존** |
+
+운영자가 `dist/` 를 직접 고치는 것은 방법이 아닙니다 — 다음 빌드와 다음 업데이트에
+사라집니다. 로드 순서·`custom/assets.json` 선언 형식·외부 URL 등록 규칙은
+[module-assets.md 「사용자 추가 에셋」](module-assets.md) 을 참조하세요.
 
 ### 개발 워크플로우
 

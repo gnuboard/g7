@@ -1,0 +1,87 @@
+feature: 사용자 추가 에셋 (확장 custom/ 디렉토리)
+
+description: |
+  운영자가 자기 CSS·JS·정적 파일을 덧붙일 자리를 각 확장이 제공한다.
+
+  종전에는 그런 자리가 없어, CSS 한 줄을 더하려면 확장 소스를 고치고 빌드해야 했고 —
+  그렇게 넣은 파일은 다음 확장 업데이트에 통째로 사라졌다(확장 교체가 활성 디렉토리를
+  전부 갈아끼운다).
+
+  핵심 동작:
+    - 규약 스캔(custom/*.css·*.js) 또는 선언 파일(custom/assets.json) 로 목록을 만든다
+    - 확장 병합 번들 뒤에 로드해 운영자 재정의가 성립한다
+    - 확장 교체의 두 경로(rename · 제자리 동기화 폴백) 모두에서 보존된다
+    - 템플릿 custom 은 확장 자산과 같은 메커니즘으로 정적 게시된다 (상대 url() 성립 조건)
+    - 운영자가 파일을 고치면 그것을 감지해 확장 캐시 버전을 올려 재게시를 예약한다
+    - 모듈·플러그인 custom 은 개별 자산 게시 대상이 아니라 파일 서명 + API 서빙을 쓴다
+    - 운영자가 화면(레이아웃 편집기)에서 직접 넣고 고칠 수 있다 (별도 권한으로 가드)
+    - `?custom=off` 로 다시 열면 서버가 목록을 비운다 — 자기 CSS 에 갇히지 않기 위한 탈출구
+
+coverage_strategy: pairwise
+
+axes:
+  custom_source: [none, convention_scan, assets_json, assets_json_broken]
+  custom_asset: [css, js, static_file, external_url]
+
+exclusions:
+  - { custom_source: none, custom_asset: css, reason: "출처가 없으면 자산 종류 축이 성립하지 않는다" }
+  - { custom_source: none, custom_asset: js, reason: "동일" }
+  - { custom_source: none, custom_asset: static_file, reason: "동일" }
+  - { custom_source: none, custom_asset: external_url, reason: "동일" }
+  - { custom_source: convention_scan, custom_asset: external_url, reason: "외부 URL 은 assets.json 선언에서만 허용 (D14)" }
+  - { custom_source: assets_json_broken, custom_asset: js, reason: "깨진 선언은 종류와 무관하게 빈 목록" }
+  - { custom_source: assets_json_broken, custom_asset: static_file, reason: "동일" }
+  - { custom_source: assets_json_broken, custom_asset: external_url, reason: "동일" }
+
+effects:
+  - custom_asset_loaded_after_extension_bundles
+  - custom_assets_json_declaration_overrides_convention_scan
+  - custom_broken_declaration_yields_empty_list_without_scan_fallback
+  - custom_dir_survives_extension_update
+  - custom_dir_survives_inplace_sync_fallback
+  - custom_dir_archived_on_uninstall
+  - custom_backup_path_surfaced_in_admin_ui
+  - custom_asset_url_busts_on_file_change
+  - custom_asset_cascade_order_module_plugin_template
+  - custom_script_execution_order_matches_declaration
+  - custom_external_url_allowed_only_from_declaration
+  - inactive_extension_custom_not_served
+  - custom_path_traversal_blocked
+  - custom_disallowed_extension_blocked
+  - custom_asset_containment_base_matches_serving_root
+  - custom_asset_published_with_extension_assets
+  - custom_assets_disabled_by_request_parameter
+
+test_files:
+  - tests/Unit/Support/CustomAssetsTest.php
+  - tests/Feature/View/CustomAssetInjectionTest.php
+  - tests/Feature/Extension/CustomAssetPreservationTest.php
+  - resources/js/core/__tests__/ModuleAssetLoader.customAssets.test.ts
+  - tests/Playwright/specs/custom-assets.spec.ts
+  - tests/Feature/Extension/VendoredAssetServingTest.php
+  - tests/Feature/Extension/BundledExtensionNoExternalAssetTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-uninstall-preserved-backups.test.tsx
+
+sub_flows:
+  - id: custom_manage_surface
+    description: |
+      운영자가 화면에서 직접 넣고 고치는 경로(권한·API·편집기 모달)는 축이 다르므로
+      별도 매니페스트가 다룬다 — `tests/scenarios/custom-asset-management.yaml`.
+      여기 축(출처 × 자산 종류)과 교차시키면 서로 무관한 조합이 곱해진다.
+  - id: custom_extension_type_variants
+    description: |
+      확장 타입(template / module / plugin)은 해석기가 같은 코드로 다루고 서빙 경로만
+      다르다. 타입별 경로 해석은 VendoredAssetServingTest 가 직접 잠근다.
+  - id: custom_override_wins
+    description: |
+      운영자 custom CSS 가 확장 병합 번들 CSS 보다 뒤에 적용된다.
+
+      브라우저 실측(E2E)이 **이기는 근거**까지 단언한다 — 번들 규칙은 `@layer` 안,
+      custom 은 레이어 밖이라 순서와 무관하게 이긴다. custom 끼리는 모두 레이어 밖·
+      같은 specificity 라 순수하게 소스 순서로 갈린다. 근거가 바뀌면(번들이 레이어를
+      걷어내면) 그 단언이 red 가 된다.
+  - id: custom_lifecycle_transitions
+    description: |
+      확장 수명주기 전이(설치 · 배치 · 비활성 · 재활성 · 업데이트 · 삭제 · 복원)에서
+      custom 자산의 적용/미적용이 상태와 일치한다. 자동화하려면 라이브 사이트에
+      확장을 설치·삭제해야 하므로 Chrome MCP 매트릭스(계획서 §19, T12)로 수행한다.

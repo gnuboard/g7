@@ -18,7 +18,9 @@ describe('ModuleAssetLoader', () => {
 
     afterEach(() => {
         vi.restoreAllMocks();
-        document.head.querySelectorAll('[id^="module-js-"],[id^="module-css-"],[id^="ext-bundle-js-"],[id^="ext-bundle-css-"]')
+        // head 뿐 아니라 문서 전체를 훑는다 — appendChild 를 가로채는 테스트는 노드를
+        // body 에 붙이므로, head 만 치우면 다음 테스트의 "이미 로드됨" 가드에 걸린다.
+        document.querySelectorAll('[id^="module-js-"],[id^="module-css-"],[id^="ext-bundle-js-"],[id^="ext-bundle-css-"]')
             .forEach(el => el.remove());
     });
 
@@ -54,32 +56,35 @@ describe('ModuleAssetLoader', () => {
 
         it('정적 번들 CSS 실패 시 레거시 API URL 로 전환한다', async () => {
             const hrefs: string[] = [];
-            let appendedLink: any = null;
 
+            // 정적 1회차는 실패, 그 다음 시도는 성공시킨다.
+            // 단언 대상은 element 동일성이 아니라 **요청된 URL 의 순서**다 — 재시도 로더가
+            // 시도마다 새 <link> 를 만드는 것은 구현이고, 계약은 "정적 미스 → 레거시" 다.
             const appendSpy = vi.spyOn(document.head, 'appendChild').mockImplementation(((node: any) => {
                 if (node.tagName === 'LINK') {
-                    appendedLink = node;
                     hrefs.push(node.getAttribute('href'));
-                    // 정적 fast path 미스 — 1회차 onerror
-                    queueMicrotask(() => node.onerror?.(new Event('error')));
+                    document.body.appendChild(node);
+
+                    const isFirstAttempt = hrefs.length === 1;
+                    queueMicrotask(() => {
+                        if (isFirstAttempt) {
+                            node.onerror?.(new Event('error'));
+                        } else {
+                            node.onload?.(new Event('load'));
+                        }
+                    });
                 }
                 return node;
             }) as any);
 
-            const done = loader.loadBundle('module', null, '/build/ext/1787637589/bundles/modules.css');
+            try {
+                await loader.loadBundle('module', null, '/build/ext/1787637589/bundles/modules.css');
 
-            // 1회차 onerror 처리(마이크로태스크) 후 — 같은 link 의 href 가 레거시로 교체돼야 한다
-            await Promise.resolve();
-            await Promise.resolve();
-
-            expect(hrefs[0]).toBe('/build/ext/1787637589/bundles/modules.css');
-            expect(appendedLink?.getAttribute('href')).toBe('/api/modules/bundle.css?v=1787637589');
-
-            // 레거시 로드 성공 → resolve
-            appendedLink?.onload?.(new Event('load'));
-            await done;
-
-            appendSpy.mockRestore();
+                expect(hrefs[0]).toBe('/build/ext/1787637589/bundles/modules.css');
+                expect(hrefs[1]).toBe('/api/modules/bundle.css?v=1787637589');
+            } finally {
+                appendSpy.mockRestore();
+            }
         });
 
         it('정적 경로가 아닌 번들 URL 은 종전 재시도 계약 그대로다', async () => {

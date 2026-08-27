@@ -203,6 +203,11 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
             '/build/ext/1234/templates/sirsoft-basic/routes.json',
             '/build/ext/1234/templates/sirsoft-basic/components.json',
             '/build/ext/1234/templates/sirsoft-basic/lang/ko.json',
+            // 운영자 추가 에셋 — 모듈·플러그인도 `{type}/{id}/assets/**` 로 게시된다.
+            // 이 케이스가 없으면 한 타입만 역변환하는 드리프트가 잡히지 않는다.
+            '/build/ext/1234/templates/sirsoft-basic/assets/custom/custom.css',
+            '/build/ext/1234/modules/sirsoft-page/assets/custom/10-override.css',
+            '/build/ext/1234/plugins/sirsoft-gdpr/assets/custom/custom.js',
         ];
 
         it('모든 정적 게시 URL 에서 두 구현의 결과가 동일하다', () => {

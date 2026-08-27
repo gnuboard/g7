@@ -485,7 +485,10 @@ class SeoRenderer implements SeoRendererInterface
 
         // stylesheets: 템플릿 자체 CSS + seo-config.json 선언 stylesheets 병합
         $templateCssUrls = $this->getTemplateCssUrls($templateIdentifier);
-        $configStylesheets = $seoTemplateConfig['stylesheets'] ?? [];
+        $configStylesheets = $this->resolveConfigStylesheets(
+            $seoTemplateConfig['stylesheets'] ?? [],
+            $templateIdentifier
+        );
         $allStylesheets = array_merge($templateCssUrls, $configStylesheets);
 
         $viewData = [
@@ -698,6 +701,42 @@ class SeoRenderer implements SeoRendererInterface
                 'error' => $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * `seo-config.json` 의 stylesheets 선언을 실제 URL 로 해석합니다.
+     *
+     * 절대 URL(`http://`·`https://`·`//`)이나 `/` 로 시작하는 경로는 그대로 쓴다.
+     * 그 외 값은 **템플릿이 자체 제공하는 자산의 `dist/` 이하 경로**로 보고 자산 URL 을
+     * 만든다 — 봇이 보는 화면도 사용자 화면과 같은 자산을 같은 origin 에서 받아야 한다.
+     *
+     * 정적 게시 경로는 쓰지 않는다(`allowStatic: false`). SEO 페이지는 캐시에 오래
+     * 남는데, 정적 게시본은 GC(현재+직전 1개 보존) 대상이라 캐시된 HTML 이 사라진
+     * 버전 디렉토리를 가리키게 된다.
+     *
+     * @param  array<int, mixed>  $stylesheets  선언 목록
+     * @param  string  $templateIdentifier  템플릿 식별자
+     * @return array<int, string> 해석된 URL 목록
+     */
+    private function resolveConfigStylesheets(array $stylesheets, string $templateIdentifier): array
+    {
+        $resolved = [];
+
+        foreach ($stylesheets as $stylesheet) {
+            if (! is_string($stylesheet) || $stylesheet === '') {
+                continue;
+            }
+
+            if (preg_match('#^(https?:)?//#i', $stylesheet) === 1 || str_starts_with($stylesheet, '/')) {
+                $resolved[] = $stylesheet;
+
+                continue;
+            }
+
+            $resolved[] = AssetUrl::templateAsset($templateIdentifier, $stylesheet, null, false);
+        }
+
+        return $resolved;
     }
 
     /**

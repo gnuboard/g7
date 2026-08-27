@@ -21,10 +21,14 @@ trait CollectsTemplateExternals
      *
      * template.json의 externals 배열만 사용하며 legacy key fallback은 제공하지 않습니다.
      *
+     * 항목이 `asset`(템플릿이 자체 제공하는 `dist/` 이하 경로)을 선언하면 식별자와
+     * 캐시 버전으로 자산 URL 을 만든다 — 그래서 둘을 함께 받는다.
+     *
      * @param  string|null  $templateIdentifier  템플릿 식별자
+     * @param  int|string|null  $version  캐시 무효화 버전 (`asset` 항목의 `?v`)
      * @return array<int, array<string, mixed>>
      */
-    private function collectTemplateExternals(?string $templateIdentifier): array
+    private function collectTemplateExternals(?string $templateIdentifier, int|string|null $version = null): array
     {
         if (empty($templateIdentifier)) {
             return [];
@@ -37,7 +41,7 @@ trait CollectsTemplateExternals
                 return [];
             }
 
-            return TemplateExternals::normalize($template['externals']);
+            return TemplateExternals::normalize($template['externals'], $templateIdentifier, $version);
         } catch (\Exception $e) {
             Log::warning('Failed to collect template externals: '.$e->getMessage());
 

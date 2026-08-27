@@ -88,7 +88,7 @@ class BuildCoreCommand extends Command
         // 감시 모드: 엔진 번들 + 편집기 번들(layout-editor.min.js)을 각각 vite --watch 로
         // 병렬 감시한다. (기존 dev 서버는 코어 lib 를 빌드하지 않으므로 사용 불가)
         if ($watchMode) {
-            $this->info('👀 파일 감시 모드로 코어 빌드 시작 (템플릿 엔진 + 레이아웃 편집기)');
+            $this->info('👀 파일 감시 모드로 코어 빌드 시작 (템플릿 엔진 + 레이아웃 편집기 + DevTools + 개발 대시보드 CSS)');
             $this->line('   Ctrl+C로 종료할 수 있습니다.');
 
             return $this->runWatchBundles($projectPath);
@@ -125,7 +125,17 @@ class BuildCoreCommand extends Command
             return $devtoolsResult;
         }
 
-        $this->info('✅ 코어 빌드 완료 (템플릿 엔진 + 레이아웃 편집기 + DevTools)');
+        // ── 4) 개발 대시보드 CSS (자체 제공 — 종전 Tailwind Play CDN 대체) ──
+        $this->info('🔨 코어 빌드 시작 (개발 대시보드 CSS)'.($productionMode ? ' (프로덕션)' : ''));
+        $dashboardResult = $this->runNpmCommand(['npm', 'run', 'build:core-devdashboard'], $projectPath, true, $buildEnv);
+
+        if ($dashboardResult !== Command::SUCCESS) {
+            $this->error('❌ 개발 대시보드 CSS 빌드 실패');
+
+            return $dashboardResult;
+        }
+
+        $this->info('✅ 코어 빌드 완료 (템플릿 엔진 + 레이아웃 편집기 + DevTools + 개발 대시보드 CSS)');
         $this->showEngineBuildResults($projectPath);
         $this->incrementExtensionCacheVersion();
 
@@ -140,11 +150,14 @@ class BuildCoreCommand extends Command
      */
     private function runWatchBundles(string $projectPath): int
     {
-        // 엔진 + 편집기 + DevTools 번들을 각각 vite --watch 로 병렬 감시
+        // 엔진 + 편집기 + DevTools + 개발 대시보드 CSS 를 각각 vite --watch 로 병렬 감시.
+        // 1회 빌드가 굽는 산출물과 같은 집합이어야 한다 — 한쪽만 빠지면 감시 모드에서
+        // 그 산출물만 조용히 stale 해진다.
         $bundles = [
             'engine' => ['npm', 'run', 'build:core-watch'],
             'editor' => ['npm', 'run', 'build:core-editor-watch'],
             'devtools' => ['npm', 'run', 'build:core-devtools-watch'],
+            'dashboard' => ['npm', 'run', 'build:core-devdashboard-watch'],
         ];
 
         /** @var array<string, Process> $processes */

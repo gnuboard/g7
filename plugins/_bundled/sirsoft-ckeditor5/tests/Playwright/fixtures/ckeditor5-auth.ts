@@ -17,6 +17,8 @@ type Ckeditor5AuthFixtures = {
   uploadsManageToken: string;
   /** 업로드 조회만 가능한 토큰 (삭제 403 경계 검증용) */
   uploadsReadOnlyToken: string;
+  /** 에디터가 실린 작성 화면 진입용 토큰 (자산 실패 폴백 검증) */
+  editorToken: string;
 };
 
 export const test = base.extend<Ckeditor5AuthFixtures>({
@@ -27,6 +29,11 @@ export const test = base.extend<Ckeditor5AuthFixtures>({
   // 부여하고 admin 은 전체 권한을 보유하므로, 그 토큰으로는 삭제가 통과해 403 대신 404 가 온다.
   uploadsReadOnlyToken: async ({}, use) => {
     await use(issueScopedToken('admin.access', 'sirsoft-ckeditor5.uploads.read'));
+  },
+  // 자산 실패 폴백은 권한 경계가 아니라 편집기 마운트를 보는 검증이므로 admin 역할을
+  // 함께 받는 `issueToken` 으로 충분하다 (게시글 작성 화면 전체가 열려야 한다).
+  editorToken: async ({}, use) => {
+    await use(issueToken('sirsoft-board.posts.create'));
   },
 });
 

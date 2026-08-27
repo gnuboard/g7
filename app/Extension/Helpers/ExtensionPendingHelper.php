@@ -22,6 +22,21 @@ class ExtensionPendingHelper
     ];
 
     /**
+     * 확장 교체 시 보존할 최상위 디렉토리명 목록
+     *
+     * `custom/` 은 운영자가 자기 CSS·JS·정적 파일을 두는 자리다. 확장이 소유한 것이
+     * 아니므로 새 배포본으로 덮어써서는 안 된다 — 덮어쓰면 업데이트할 때마다 운영자가
+     * 넣은 파일이 사라지고, 그 사실이 어디에도 남지 않는다(파일이 조용히 없어질 뿐이다).
+     *
+     * 보존은 **교체 경로 둘 다**에서 성립해야 한다: 디렉토리 rename 경로와, 하위 트리에
+     * 열린 핸들이 있을 때의 제자리 동기화 폴백. 한쪽만 고치면 Windows 잠금 상황에서만
+     * 조용히 사라진다.
+     */
+    public const PRESERVED_DIRECTORIES = [
+        'custom',
+    ];
+
+    /**
      * _pending 또는 _bundled 디렉토리에서 확장 메타데이터를 로드합니다.
      *
      * @param  string  $basePath  확장 타입의 기본 경로 (예: base_path('modules'))
@@ -162,6 +177,9 @@ class ExtensionPendingHelper
 
         try {
             self::copyDirectoryWithProgress($sourcePath, $tempPath, $sourcePath, $onProgress);
+
+            // 운영자 소유 디렉토리를 새 트리로 옮겨 심는다 (교체 전에 해 둬야 원본이 살아 있다)
+            self::carryOverPreservedDirectories($targetPath, $tempPath, $onProgress);
         } catch (\Exception $e) {
             // 복사 실패 시 임시 디렉토리 정리 후 예외 전파
             if (File::isDirectory($tempPath)) {
@@ -379,13 +397,47 @@ class ExtensionPendingHelper
         }
 
         $staleFailures = [];
-        self::removeStaleEntries($source, $dest, $staleFailures);
+        self::removeStaleEntries($source, $dest, $staleFailures, true);
 
         if (! empty($staleFailures)) {
             Log::warning('확장 제자리 교체: 일부 잔존 파일을 삭제하지 못했습니다 (다음 교체 시 재시도)', [
                 'dest' => $dest,
                 'failed' => $staleFailures,
             ]);
+        }
+    }
+
+    /**
+     * 운영자 소유 디렉토리를 기존 활성 디렉토리에서 새 트리로 옮겨 심습니다.
+     *
+     * 새 배포본에 같은 이름의 디렉토리가 있으면 **그것을 치우고** 기존 것을 심는다 —
+     * `custom/` 은 확장이 소유하지 않는 자리이므로, 확장이 그 자리에 무언가를 담아
+     * 배포했더라도 운영자 파일이 우선한다(그런 배포 자체를 정적 검사가 막는다).
+     *
+     * @param  string  $existingPath  기존 활성 디렉토리
+     * @param  string  $stagingPath  새 배포본이 복사된 임시 디렉토리
+     * @param  \Closure|null  $onProgress  진행 콜백
+     */
+    private static function carryOverPreservedDirectories(
+        string $existingPath,
+        string $stagingPath,
+        ?\Closure $onProgress = null
+    ): void {
+        foreach (self::PRESERVED_DIRECTORIES as $name) {
+            $from = $existingPath.DIRECTORY_SEPARATOR.$name;
+
+            if (! File::isDirectory($from)) {
+                continue;
+            }
+
+            $to = $stagingPath.DIRECTORY_SEPARATOR.$name;
+
+            if (File::isDirectory($to)) {
+                File::deleteDirectory($to);
+            }
+
+            $onProgress?->__invoke(null, "운영자 파일 보존: {$name}/");
+            self::copyDirectoryWithProgress($from, $to, $from, $onProgress);
         }
     }
 
@@ -550,7 +602,7 @@ class ExtensionPendingHelper
      * @param  string  $dest  활성 디렉토리
      * @param  array  $failures  삭제 실패 경로 수집 (참조)
      */
-    private static function removeStaleEntries(string $source, string $dest, array &$failures): void
+    private static function removeStaleEntries(string $source, string $dest, array &$failures, bool $isRoot = false): void
     {
         if (! is_dir($dest)) {
             return;
@@ -559,6 +611,11 @@ class ExtensionPendingHelper
         $items = new \FilesystemIterator($dest, \FilesystemIterator::SKIP_DOTS);
 
         foreach ($items as $item) {
+            // 운영자 소유 디렉토리는 소스에 없어도 정리 대상이 아니다 (확장 루트에서만 판정)
+            if ($isRoot && $item->isDir() && in_array($item->getBasename(), self::PRESERVED_DIRECTORIES, true)) {
+                continue;
+            }
+
             $counterpart = $source.DIRECTORY_SEPARATOR.$item->getBasename();
 
             if ($item->isDir()) {
@@ -627,14 +684,85 @@ class ExtensionPendingHelper
      *
      * @param  string  $basePath  확장 타입의 기본 경로
      * @param  string  $identifier  확장 식별자
+     * @return array<int, array{directory: string, archive: string}> 보관된 운영자 디렉토리 목록
      */
-    public static function deleteExtensionDirectory(string $basePath, string $identifier): void
+    public static function deleteExtensionDirectory(string $basePath, string $identifier): array
     {
         $targetPath = $basePath.DIRECTORY_SEPARATOR.$identifier;
 
-        if (File::isDirectory($targetPath)) {
-            File::deleteDirectory($targetPath);
+        if (! File::isDirectory($targetPath)) {
+            return [];
         }
+
+        $archived = self::archivePreservedDirectories($targetPath, $identifier);
+
+        File::deleteDirectory($targetPath);
+
+        return $archived;
+    }
+
+    /**
+     * 삭제 전에 운영자 소유 디렉토리를 보관합니다.
+     *
+     * 확장을 삭제하면 그 안의 `custom/` 도 함께 사라진다 — 운영자가 넣은 파일이므로
+     * 되돌릴 방법 없이 없어지면 안 된다. 교체(업데이트)는 보존이 답이지만 삭제는
+     * "확장을 없앤다" 는 명시적 의사이므로 막지 않고, 대신 사본을 남기고 그 사실을
+     * 기록한다.
+     *
+     * 보관 실패가 삭제를 막지는 않는다 — 삭제는 운영자가 요청한 동작이다.
+     *
+     * @param  string  $targetPath  삭제 대상 확장 디렉토리
+     * @param  string  $identifier  확장 식별자
+     * @return array<int, array{directory: string, archive: string}> 보관에 성공한 디렉토리 목록
+     */
+    private static function archivePreservedDirectories(string $targetPath, string $identifier): array
+    {
+        $archived = [];
+
+        foreach (self::PRESERVED_DIRECTORIES as $name) {
+            $source = $targetPath.DIRECTORY_SEPARATOR.$name;
+
+            if (! File::isDirectory($source) || self::isEmptyDirectory($source)) {
+                continue;
+            }
+
+            $archivePath = storage_path(
+                'app'.DIRECTORY_SEPARATOR.'extension-custom-backups'
+                .DIRECTORY_SEPARATOR.$identifier.'-'.date('Ymd_His')
+                .DIRECTORY_SEPARATOR.$name
+            );
+
+            try {
+                self::copyDirectoryWithProgress($source, $archivePath, $source, null);
+
+                Log::info('확장 삭제: 운영자 파일을 보관했습니다', [
+                    'identifier' => $identifier,
+                    'directory' => $name,
+                    'archive' => $archivePath,
+                ]);
+
+                $archived[] = ['directory' => $name, 'archive' => $archivePath];
+            } catch (\Throwable $e) {
+                Log::warning('확장 삭제: 운영자 파일 보관에 실패했습니다 (삭제는 계속합니다)', [
+                    'identifier' => $identifier,
+                    'directory' => $name,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return $archived;
+    }
+
+    /**
+     * 디렉토리가 비어 있는지 판정합니다.
+     *
+     * @param  string  $path  대상 디렉토리
+     * @return bool 비어 있으면 true
+     */
+    private static function isEmptyDirectory(string $path): bool
+    {
+        return ! (new \FilesystemIterator($path, \FilesystemIterator::SKIP_DOTS))->valid();
     }
 
     /**

@@ -2,8 +2,12 @@
 
 namespace Tests\Feature\Services;
 
+use App\Contracts\Repositories\ModuleRepositoryInterface;
+use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Enums\ExtensionStatus;
+use App\Models\Module;
+use App\Models\Plugin;
 use App\Models\Template;
 use App\Services\ExtensionBundleService;
 use App\Services\ExtensionStaticCacheService;
@@ -71,9 +75,71 @@ class ExtensionStaticCacheServiceTest extends TestCase
         File::deleteDirectory(public_path('build/ext'));
     }
 
+    /**
+     * 게시 실패 시 어느 분기에서 멈췄는지 보여 줍니다.
+     *
+     * `publishCurrent()` 는 여러 사유로 **조용히 false** 를 돌려준다(kill-switch·락 미획득·
+     * 게시 중 예외). 단언 메시지가 "false is true" 뿐이면 그중 무엇인지 알 수 없어, 간헐적
+     * 실패를 만났을 때 재현부터 다시 해야 한다.
+     *
+     * @param  ExtensionStaticCacheService  $svc  대상 서비스
+     * @return string 진단 문자열
+     */
+    private function publishDiagnostics(ExtensionStaticCacheService $svc): string
+    {
+        $v = ExtensionStaticCacheService::getExtensionCacheVersion();
+        $lock = Cache::lock('ext-static.publish.'.$v, 1);
+        $free = $lock->get();
+        if ($free) {
+            $lock->release();
+        }
+        $store = config('cache.default');
+
+        return sprintf(
+            'enabled=%s version=%d expected=%d lockFree=%s store=%s published=%s baseDir=%s',
+            var_export($svc->isEnabled(), true), $v, self::VERSION, var_export($free, true),
+            $store, var_export($svc->isPublished($v), true), $svc->baseDir()
+        );
+    }
+
     private function service(): ExtensionStaticCacheService
     {
         return app(ExtensionStaticCacheService::class);
+    }
+
+    /**
+     * 활성 모듈·플러그인 행을 만듭니다.
+     *
+     * 레포지토리를 모킹하지 않는다 — 게시에는 번들 서비스 등 같은 레포지토리를 쓰는 다른
+     * 소비자가 있어, 인터페이스를 통째로 대체하면 그쪽이 끊겨 게시 자체가 실패한다.
+     * `RefreshDatabase` 라 행은 테스트마다 비어 있으므로 실제 설치본에 좌우되지도 않는다.
+     *
+     * @param  array<int, string>  $modules  활성 모듈 식별자
+     * @param  array<int, string>  $plugins  활성 플러그인 식별자
+     */
+    private function createActiveExtensions(array $modules, array $plugins): void
+    {
+        foreach ($modules as $identifier) {
+            Module::create([
+                'identifier' => $identifier,
+                'vendor' => explode('-', $identifier)[0],
+                'name' => ['ko' => '테스트 모듈', 'en' => 'Test Module'],
+                'version' => '1.0.0',
+                'status' => ExtensionStatus::Active->value,
+                'description' => ['ko' => '테스트', 'en' => 'Test'],
+            ]);
+        }
+
+        foreach ($plugins as $identifier) {
+            Plugin::create([
+                'identifier' => $identifier,
+                'vendor' => explode('-', $identifier)[0],
+                'name' => ['ko' => '테스트 플러그인', 'en' => 'Test Plugin'],
+                'version' => '1.0.0',
+                'status' => ExtensionStatus::Active->value,
+                'description' => ['ko' => '테스트', 'en' => 'Test'],
+            ]);
+        }
     }
 
     private function createActiveTemplate(string $identifier = 'sirsoft-admin_basic', string $type = 'admin'): Template
@@ -98,7 +164,7 @@ class ExtensionStaticCacheServiceTest extends TestCase
     {
         $service = $this->service();
 
-        $this->assertTrue($service->publishCurrent());
+        $this->assertTrue($service->publishCurrent(), $this->publishDiagnostics($service));
         $this->assertTrue($service->isPublished(self::VERSION));
         $this->assertFileExists($service->versionDir(self::VERSION).'/manifest.json');
         $this->assertFileExists($service->versionDir(self::VERSION).'/.htaccess');
@@ -114,7 +180,7 @@ class ExtensionStaticCacheServiceTest extends TestCase
         $this->createActiveTemplate();
 
         $service = $this->service();
-        $this->assertTrue($service->publishCurrent());
+        $this->assertTrue($service->publishCurrent(), $this->publishDiagnostics($service));
 
         $publishedPath = $service->versionDir(self::VERSION).'/templates/sirsoft-admin_basic/lang/ko.json';
         $this->assertFileExists($publishedPath);
@@ -140,7 +206,7 @@ class ExtensionStaticCacheServiceTest extends TestCase
         $this->createActiveTemplate();
 
         $service = $this->service();
-        $this->assertTrue($service->publishCurrent());
+        $this->assertTrue($service->publishCurrent(), $this->publishDiagnostics($service));
 
         $publishedPath = $service->versionDir(self::VERSION).'/templates/sirsoft-admin_basic/routes.json';
         $this->assertFileExists($publishedPath);
@@ -156,6 +222,89 @@ class ExtensionStaticCacheServiceTest extends TestCase
     }
 
     /**
+     * 활성 모듈·플러그인의 운영자 소유 디렉토리(`custom/`)도 게시된다.
+     *
+     * 모듈·플러그인 빌드 산출물은 **병합 번들**로만 게시되는데 `custom/` 은 그 번들에
+     * 들어가지 않는다. 게시하지 않으면 확장 자산 중 이것만 요청마다 PHP 를 거치고,
+     * CSS 내부 상대 `url()` 이 해석되지 않는다 — 이 축이 빠지면 같은 기능이 확장 타입에
+     * 따라 다르게 동작하고 그 이유가 화면에 드러나지 않는다.
+     *
+     * @effects custom_asset_published_for_all_extension_types
+     */
+    public function test_publishes_active_module_and_plugin_custom_assets(): void
+    {
+        $this->createActiveTemplate();
+
+        $module = 'g7test-publish_module';
+        $plugin = 'g7test-publish_plugin';
+
+        $fixtures = [
+            base_path("modules/{$module}/custom") => 'modules/'.$module,
+            base_path("plugins/{$plugin}/custom") => 'plugins/'.$plugin,
+        ];
+
+        foreach (array_keys($fixtures) as $dir) {
+            File::ensureDirectoryExists($dir.'/fonts');
+            File::put($dir.'/custom.css', "body { background-image: url('./fonts/x.woff2'); }");
+            File::put($dir.'/fonts/x.woff2', 'font');
+            File::put($dir.'/notes.txt', 'not an asset');
+        }
+
+        // 활성 목록은 레포지토리가 판정한다 — 실제 설치본에 의존하면 이 저장소 상태에 따라
+        // 단언이 공허하게 통과한다.
+        $this->createActiveExtensions([$module], [$plugin]);
+
+        try {
+            $service = $this->service();
+            $this->assertTrue($service->publishCurrent(), $this->publishDiagnostics($service));
+
+            $versionDir = $service->versionDir(self::VERSION);
+
+            foreach ($fixtures as $root) {
+                $this->assertFileExists($versionDir."/{$root}/assets/custom/custom.css");
+                $this->assertFileExists($versionDir."/{$root}/assets/custom/fonts/x.woff2");
+
+                // 허용 확장자 화이트리스트는 타입과 무관하게 같아야 한다
+                $this->assertFileDoesNotExist($versionDir."/{$root}/assets/custom/notes.txt");
+            }
+        } finally {
+            File::deleteDirectory(base_path("modules/{$module}"));
+            File::deleteDirectory(base_path("plugins/{$plugin}"));
+        }
+    }
+
+    /**
+     * 비활성 확장의 custom 은 게시하지 않는다.
+     *
+     * 자산 서빙이 활성 확장에만 응답하므로, 게시해 봐야 아무도 참조하지 않는 사본이
+     * 버전 디렉토리마다 쌓인다.
+     *
+     * @effects custom_asset_published_for_all_extension_types
+     */
+    public function test_inactive_module_custom_is_absent_from_published_tree(): void
+    {
+        $this->createActiveTemplate();
+
+        $module = 'g7test-inactive_module';
+        $dir = base_path("modules/{$module}/custom");
+        File::ensureDirectoryExists($dir);
+        File::put($dir.'/custom.css', '/* operator */');
+
+        // 활성 행을 만들지 않는다 — 비활성(미설치) 상태 그대로.
+
+        try {
+            $service = $this->service();
+            $this->assertTrue($service->publishCurrent(), $this->publishDiagnostics($service));
+
+            $this->assertFileDoesNotExist(
+                $service->versionDir(self::VERSION)."/modules/{$module}/assets/custom/custom.css"
+            );
+        } finally {
+            File::deleteDirectory(base_path("modules/{$module}"));
+        }
+    }
+
+    /**
      * components.json 사본과 dist 에셋이 게시되고 `*.map` 은 제외된다.
      *
      * @effects published_tree_excludes_sourcemaps
@@ -165,7 +314,7 @@ class ExtensionStaticCacheServiceTest extends TestCase
         $this->createActiveTemplate();
 
         $service = $this->service();
-        $this->assertTrue($service->publishCurrent());
+        $this->assertTrue($service->publishCurrent(), $this->publishDiagnostics($service));
 
         $templateDir = $service->versionDir(self::VERSION).'/templates/sirsoft-admin_basic';
 
@@ -201,7 +350,7 @@ class ExtensionStaticCacheServiceTest extends TestCase
         ]);
 
         $service = $this->service();
-        $this->assertTrue($service->publishCurrent());
+        $this->assertTrue($service->publishCurrent(), $this->publishDiagnostics($service));
 
         $this->assertDirectoryExists($service->versionDir(self::VERSION).'/templates/sirsoft-admin_basic');
         $this->assertDirectoryDoesNotExist($service->versionDir(self::VERSION).'/templates/sirsoft-basic');
@@ -228,7 +377,7 @@ class ExtensionStaticCacheServiceTest extends TestCase
         ]);
 
         $service = $this->service();
-        $this->assertTrue($service->publishCurrent());
+        $this->assertTrue($service->publishCurrent(), $this->publishDiagnostics($service));
 
         $templatesDir = $service->versionDir(self::VERSION).'/templates';
         $this->assertDirectoryExists($templatesDir.'/sirsoft-admin_basic');
@@ -246,13 +395,13 @@ class ExtensionStaticCacheServiceTest extends TestCase
     public function test_publish_is_idempotent_and_force_republishes(): void
     {
         $service = $this->service();
-        $this->assertTrue($service->publishCurrent());
+        $this->assertTrue($service->publishCurrent(), $this->publishDiagnostics($service));
 
         // 게시 후 심은 마커가 skip 재호출에서 살아남으면 재게시가 없었다는 증거
         $marker = $service->versionDir(self::VERSION).'/idempotency-marker';
         File::put($marker, 'x');
 
-        $this->assertTrue($service->publishCurrent());
+        $this->assertTrue($service->publishCurrent(), $this->publishDiagnostics($service));
         $this->assertFileExists($marker);
 
         // force 재게시는 디렉토리를 새로 만든다 → 마커 소실
@@ -281,6 +430,8 @@ class ExtensionStaticCacheServiceTest extends TestCase
         $service = new ExtensionStaticCacheService(
             $mock,
             app(TemplateRepositoryInterface::class),
+            app(ModuleRepositoryInterface::class),
+            app(PluginRepositoryInterface::class),
             app(ExtensionBundleService::class),
             app(LanguagePackService::class),
         );
@@ -303,7 +454,7 @@ class ExtensionStaticCacheServiceTest extends TestCase
     public function test_cleanup_keeps_current_and_previous_only(): void
     {
         $service = $this->service();
-        $this->assertTrue($service->publishCurrent());
+        $this->assertTrue($service->publishCurrent(), $this->publishDiagnostics($service));
 
         // 과거 버전 3개 + 고아 tmp 시뮬레이션
         foreach ([100, 200, 300] as $old) {
@@ -445,7 +596,7 @@ class ExtensionStaticCacheServiceTest extends TestCase
     {
         $service = $this->service();
 
-        $this->assertTrue($service->publishCurrent());
+        $this->assertTrue($service->publishCurrent(), $this->publishDiagnostics($service));
 
         $htaccess = File::get($service->versionDir(self::VERSION).'/.htaccess');
 

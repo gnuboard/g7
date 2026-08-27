@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Contracts\Repositories\ModuleRepositoryInterface;
+use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Exceptions\StaticCachePublishException;
 use App\Extension\Helpers\FilePermissionHelper;
@@ -9,6 +11,7 @@ use App\Extension\Traits\ClearsTemplateCaches;
 use App\Helpers\ResponseHelper;
 use App\Models\Template;
 use App\Rules\AllowedTemplateFileType;
+use App\Support\CustomAssets;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
@@ -55,6 +58,8 @@ class ExtensionStaticCacheService
     public function __construct(
         private TemplateService $templateService,
         private TemplateRepositoryInterface $templateRepository,
+        private ModuleRepositoryInterface $moduleRepository,
+        private PluginRepositoryInterface $pluginRepository,
         private ExtensionBundleService $bundleService,
         private LanguagePackService $languagePackService,
     ) {}
@@ -312,6 +317,8 @@ class ExtensionStaticCacheService
 
             $this->publishBundles($tmp, $version, $files);
 
+            $this->publishExtensionCustomAssets($tmp, $files);
+
             // 원자적 스왑 — force 재게시 시 기존 디렉토리를 비켜낸 뒤 rename
             if (File::isDirectory($final)) {
                 File::deleteDirectory($final);
@@ -341,9 +348,14 @@ class ExtensionStaticCacheService
 
             return true;
         } catch (\Throwable $e) {
+            // 예외 종류와 발생 위치까지 남긴다. 메시지만으로는 파일시스템 오류인지 병합
+            // 오류인지 구분되지 않아, 운영자도 개발자도 재현부터 다시 해야 한다 —
+            // 게시 실패는 사이트를 멈추지 않고 폴백으로 넘어가므로 이 로그가 유일한 흔적이다.
             Log::warning('부트스트랩 리소스 정적 게시 실패 — API 폴백으로 동작합니다', [
                 'version' => $version,
+                'exception' => $e::class,
                 'error' => $e->getMessage(),
+                'at' => $e->getFile().':'.$e->getLine(),
             ]);
             File::deleteDirectory($tmp);
 
@@ -443,18 +455,43 @@ class ExtensionStaticCacheService
             $files,
             $tmp
         );
+
+        // 5. 운영자 소유 디렉토리(`custom/`) 사본
+        //
+        // 게시하지 않으면 이 자산만 API 경로에 남는데, 그 경로에서는 CSS 내부 상대
+        // `url()` 이 해석되지 않는다 — `?file=` 형태는 기준 URL 이 `/api/templates/assets/`
+        // 라 `url('./font.woff2')` 가 그 디렉토리를 가리키고, 확장자 형태는 정적 최적화
+        // 서버가 먼저 가로챈다(그래서 `extensionless` 모드가 존재한다). 즉 정적 확장자
+        // URL 은 **public 아래 실제 파일일 때만** 200 이 되므로, 문서가 안내하는
+        // "폰트·이미지를 custom/ 에 두고 상대 경로로 참조" 를 성립시키는 방법은 게시뿐이다.
+        //
+        // 갱신 축은 확장 자산과 동일하다 — 운영자가 파일을 고치면 `CustomAssets` 가
+        // 그것을 감지해 `ext.cache_version` 을 올리고, 그 단일 지점이 재게시까지 예약한다.
+        $this->publishDistAssets(
+            base_path("templates/{$identifier}/".CustomAssets::DIRECTORY),
+            $templateDir.DIRECTORY_SEPARATOR.'assets'.DIRECTORY_SEPARATOR.CustomAssets::DIRECTORY,
+            $files,
+            $tmp,
+            excludeCustom: false
+        );
     }
 
     /**
      * 템플릿 dist 디렉토리를 재귀 복사합니다 (허용 확장자만, 소스맵 제외).
      *
-     * @param  string  $sourceDir  원본 dist 절대 경로
+     * @param  string  $sourceDir  원본 절대 경로 (dist 또는 custom)
      * @param  string  $targetDir  게시 대상 절대 경로
      * @param  array<string>  $files  기록된 상대 경로 누적 (참조)
      * @param  string  $tmp  tmp 루트 (상대 경로 계산용)
+     * @param  bool  $excludeCustom  원본 안의 `custom/` 하위를 건너뛸지 (dist 원본에서만 참)
      */
-    private function publishDistAssets(string $sourceDir, string $targetDir, array &$files, string $tmp): void
-    {
+    private function publishDistAssets(
+        string $sourceDir,
+        string $targetDir,
+        array &$files,
+        string $tmp,
+        bool $excludeCustom = true
+    ): void {
         $realSource = realpath($sourceDir);
 
         if ($realSource === false || ! is_dir($realSource)) {
@@ -486,8 +523,31 @@ class ExtensionStaticCacheService
             }
 
             $relative = substr($realFile, strlen($realSource) + 1);
+
+            // dist 원본에서는 `custom/` 하위를 건너뛴다 — 운영자 파일은 자기 원본
+            // 루트로 따로 게시되므로, dist 를 통해 한 번 더 실리면 같은 파일이 두 경로에
+            // 놓여 어느 쪽이 유효한지가 갈린다. custom 원본으로 호출될 때는 끄고 들어온다
+            // (그러지 않으면 `custom/custom/…` 이 조용히 누락된다).
+            if ($excludeCustom && $this->isCustomAssetPath($relative)) {
+                continue;
+            }
+
             $this->copyFile($realFile, $targetDir.DIRECTORY_SEPARATOR.$relative, $files, $tmp);
         }
+    }
+
+    /**
+     * 상대 경로가 운영자 소유 디렉토리(`custom/`) 소속인지 판정합니다.
+     *
+     * @param  string  $relative  게시 원본 기준 상대 경로
+     * @return bool custom 소속이면 true
+     */
+    private function isCustomAssetPath(string $relative): bool
+    {
+        $normalized = str_replace(DIRECTORY_SEPARATOR, '/', $relative);
+
+        return $normalized === CustomAssets::DIRECTORY
+            || str_starts_with($normalized, CustomAssets::DIRECTORY.'/');
     }
 
     /**
@@ -514,6 +574,59 @@ class ExtensionStaticCacheService
                     $tmp.DIRECTORY_SEPARATOR.'bundles'.DIRECTORY_SEPARATOR."{$plural}.{$kind}",
                     $files,
                     $tmp
+                );
+            }
+        }
+    }
+
+    /**
+     * 활성 모듈·플러그인의 운영자 소유 디렉토리(`custom/`)를 게시합니다.
+     *
+     * 모듈·플러그인의 빌드 산출물은 **병합 번들**로만 게시되는데, `custom/` 은 그 번들에
+     * 들어가지 않는다(운영자 파일은 번들보다 뒤에 따로 로드되어야 재정의가 성립한다).
+     * 그래서 게시하지 않으면 확장 자산 중 이것만 요청마다 PHP 를 거치고, 무엇보다
+     * CSS 내부 상대 `url()` 이 해석되지 않는다 — `?file=` 형태는 기준 URL 이
+     * `/api/modules/assets/` 라 `url('./font.woff2')` 가 그 디렉토리를 가리키고,
+     * 확장자 형태는 정적 최적화 서버가 먼저 가로챈다. 정적 확장자 URL 은 **public 아래
+     * 실제 파일일 때만** 200 이 되므로 게시가 유일한 방법이다 (템플릿과 같은 사유).
+     *
+     * **활성 확장만** 게시한다. 자산 서빙이 활성 확장에만 응답하므로, 비활성 확장의 파일을
+     * 게시해 봐야 아무도 참조하지 않는 사본이 버전 디렉토리마다 쌓일 뿐이다.
+     *
+     * @param  string  $tmp  tmp 디렉토리 절대 경로
+     * @param  array<string>  $files  기록된 상대 경로 누적 (참조)
+     */
+    private function publishExtensionCustomAssets(string $tmp, array &$files): void
+    {
+        // 활성 목록은 **레포지토리**에서 읽는다. 매니저(`getActiveModules()`)는 확장을
+        // 실제로 적재하는 부작용이 있어, 게시 중에 그 부작용을 끌어들이면 게시가 확장
+        // 부팅 상태에 좌우된다. 같은 메서드가 템플릿을 `templateRepository->getActive()`
+        // 로 세는 것과 대칭이다.
+        $sources = [
+            'modules' => $this->moduleRepository->getActiveModuleIdentifiers(),
+            'plugins' => $this->pluginRepository->getActivePluginIdentifiers(),
+        ];
+
+        foreach ($sources as $root => $identifiers) {
+            foreach ($identifiers as $identifier) {
+                $identifier = (string) $identifier;
+
+                if (! preg_match(self::IDENTIFIER_PATTERN, $identifier)) {
+                    Log::warning('정적 게시 제외 — 식별자 패턴 불일치', [
+                        'type' => $root,
+                        'identifier' => $identifier,
+                    ]);
+
+                    continue;
+                }
+
+                $this->publishDistAssets(
+                    base_path("{$root}/{$identifier}/".CustomAssets::DIRECTORY),
+                    $tmp.DIRECTORY_SEPARATOR.$root.DIRECTORY_SEPARATOR.$identifier
+                        .DIRECTORY_SEPARATOR.'assets'.DIRECTORY_SEPARATOR.CustomAssets::DIRECTORY,
+                    $files,
+                    $tmp,
+                    excludeCustom: false
                 );
             }
         }

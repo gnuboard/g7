@@ -1592,3 +1592,81 @@ describe('G7Core.state.getIsolated/setIsolated API', () => {
     });
   });
 });
+
+/**
+ * G7Core.asset / G7Core.assets — 확장이 자기 자산을 다루는 seam
+ *
+ * 확장 IIFE 번들은 코어의 `assetUrl.ts` 를 import 할 수 없다. 이 seam 이 없으면 확장은
+ * URL 을 문자열로 조립하는 수밖에 없고, 그러면 확장자를 정적 location 이 가로채는
+ * 서버에서 그 자산만 404 가 된다 — 지금 CDN 이 죽었을 때와 같은 증상이다.
+ */
+describe('G7CoreGlobals - 자산 API', () => {
+  let G7Core: any;
+
+  beforeEach(() => {
+    delete (window as any).G7Core;
+    (window as any).G7Config = {};
+    initializeG7CoreGlobals(createMockDependencies());
+    G7Core = (window as any).G7Core;
+  });
+
+  afterEach(() => {
+    delete (window as any).G7Core;
+    delete (window as any).G7Config;
+  });
+
+  /**
+   * @scenario asset_class=vendored
+   * @effects runtime_asset_served_same_origin
+   */
+  it('확장 타입별 자산 URL 생성기를 노출한다', () => {
+    expect(typeof G7Core.asset.template).toBe('function');
+    expect(typeof G7Core.asset.module).toBe('function');
+    expect(typeof G7Core.asset.plugin).toBe('function');
+    expect(typeof G7Core.asset.templateDir).toBe('function');
+    expect(typeof G7Core.asset.convertToCurrentMode).toBe('function');
+  });
+
+  it('플러그인 자산 URL 은 same-origin API 경로다', () => {
+    const url = G7Core.asset.plugin('sirsoft-ckeditor5', 'dist/vendor/ckeditor5/43.3.1/ckeditor5.umd.js');
+
+    expect(url.startsWith('/api/plugins/assets/sirsoft-ckeditor5')).toBe(true);
+    expect(url).not.toMatch(/^https?:/);
+  });
+
+  it('템플릿 자산 URL 은 dist/ 를 포함하지 않는다 (서버가 자동 부가)', () => {
+    const url = G7Core.asset.template('sirsoft-basic', 'vendor/font-awesome/6.4.0/css/all.inlined.css');
+
+    expect(url).toContain('vendor/font-awesome/6.4.0/css/all.inlined.css');
+    expect(url).not.toContain('/dist/');
+  });
+
+  it('디렉토리 URL 은 뒤에 파일 경로를 이어 붙일 수 있는 형태다 (AMD 로더용)', () => {
+    const dir = G7Core.asset.templateDir('sirsoft-admin_basic', 'vendor/monaco-editor/0.54.0/vs');
+
+    expect(dir.endsWith('/vs')).toBe(true);
+    expect(dir).not.toContain('?file=');
+  });
+
+  it('재시도 로더를 함께 노출한다 (확장이 자기 자산을 직접 로드할 때)', () => {
+    expect(typeof G7Core.asset.loadScript).toBe('function');
+    expect(typeof G7Core.asset.loadStylesheet).toBe('function');
+  });
+
+  /**
+   * @scenario asset_class=vendored, outcome=failed
+   * @effects failed_asset_shows_retry_notice
+   */
+  it('자산 실패 안내 API 를 노출한다', () => {
+    expect(typeof G7Core.assets.notifyFailure).toBe('function');
+    expect(typeof G7Core.assets.clearFailure).toBe('function');
+    expect(typeof G7Core.assets.getFailures).toBe('function');
+    expect(typeof G7Core.assets.retryAll).toBe('function');
+
+    G7Core.assets.notifyFailure({ id: 'probe', label: '탐침' });
+    expect(G7Core.assets.getFailures().map((f: any) => f.id)).toEqual(['probe']);
+
+    G7Core.assets.clearAll();
+    expect(G7Core.assets.getFailures()).toEqual([]);
+  });
+});

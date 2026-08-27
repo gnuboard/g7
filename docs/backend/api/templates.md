@@ -1088,7 +1088,14 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-_이 엔드포인트는 `data` 를 반환하지 않습니다 (`data`: `null`, 성공 메시지만)._
+| 이름 | 타입 | 예시 | 용도 |
+| --- | --- | --- | --- |
+| preserved_backups | array | `[{"directory":"custom","archive":"…/extension-custom-backups/…"}]` | 삭제 전에 보관한 운영자 소유 디렉토리의 사본 목록. 보관 대상이 없으면 빈 배열 |
+| preserved_backups[].directory | string | `custom` | 보관된 디렉토리 이름 |
+| preserved_backups[].archive | string | `storage/app/extension-custom-backups/{identifier}-{Ymd_His}/custom` | 사본이 놓인 절대 경로 |
+
+> 운영자가 `custom/` 에 넣은 파일은 확장 삭제와 함께 사라지지만, 삭제 직전에 사본이
+> 보관됩니다. 이 필드가 그 경로를 알리는 유일한 통로이므로 화면에 노출해야 합니다.
 
 **응답 예시**
 
@@ -1096,7 +1103,14 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (`data`: `null`, �
 {
     "success": true,
     "message": "템플릿이 성공적으로 제거되었습니다.",
-    "data": null
+    "data": {
+        "preserved_backups": [
+            {
+                "directory": "custom",
+                "archive": "/var/www/g7/storage/app/extension-custom-backups/sirsoft-basic-20260825_231500/custom"
+            }
+        ]
+    }
 }
 ```
 
@@ -97374,7 +97388,7 @@ _단건 응답: `data` 객체의 필드._
 | error_config | object | `{"layouts":{"401":"errors\/401","403":"errors\/403","404"…` | 에러 표시 설정 객체 |
 | github_url | string | `https://github.com/gnuboard/g7-templa…` | GitHub 저장소 URL |
 | github_changelog_url | string | `https://github.com/gnuboard/g7-templa…` | GitHub 변경 내역 URL |
-| externals | array | `[{"id":"fontawesome","type":"style","url":"https:\/\/cdnj…` | 외부 의존 라이브러리 목록 (번들에서 제외되고 전역에서 해석) |
+| externals | array | `[{"id":"fontawesome","type":"style","url":"\/api\/templat…` | 외부 의존 라이브러리 목록 (번들에서 제외되고 전역에서 해석) |
 | cache_version | integer | `1784000969` | 에셋 캐시 무효화 버전 (번들 URL 파일명에 포함) |
 
 **응답 예시**
@@ -97519,20 +97533,17 @@ HTTP/1.1 200
             {
                 "id": "fontawesome",
                 "type": "style",
-                "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css",
-                "preconnect": "https://cdnjs.cloudflare.com"
+                "url": "/api/templates/assets/sirsoft-admin_basic?file=vendor%2Ffont-awesome%2F6.4.0%2Fcss%2Fall.inlined.css&v=1785848038"
             },
             {
                 "id": "pretendard",
                 "type": "webfont",
-                "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css",
-                "preconnect": "https://cdn.jsdelivr.net",
-                "crossorigin": "anonymous"
+                "url": "/api/templates/assets/sirsoft-admin_basic?file=vendor%2Fpretendard%2F1.3.9%2Fpretendard-variable.css&v=1785848038"
             },
             {
                 "id": "flag-icons",
                 "type": "style",
-                "url": "https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css"
+                "url": "/api/templates/assets/sirsoft-admin_basic?file=vendor%2Fflag-icons%2F7.2.3%2Fcss%2Fflag-icons.min.css&v=1785848038"
             }
         ],
         "cache_version": 1785848038

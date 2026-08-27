@@ -206,6 +206,9 @@ return [
         'activity_log_index' => 'アクティビティログ一覧の閲覧',
         'activity_log_delete' => 'アクティビティログ削除 (ID: :log_id)',
         'activity_log_bulk_delete' => 'アクティビティログ一括削除 (:count件)',
+        'custom_asset_save' => 'カスタム資産保存 (:identifier — :path)',
+        'custom_asset_upload' => 'カスタム資産アップロード (:identifier — :path)',
+        'custom_asset_delete' => 'カスタム資産削除 (:identifier — :path)',
     ],
     'fields' => [
         'name' => '名前',
