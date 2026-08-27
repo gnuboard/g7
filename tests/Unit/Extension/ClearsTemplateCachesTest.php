@@ -7,6 +7,7 @@ use App\Enums\ExtensionStatus;
 use App\Extension\Cache\PluginCacheDriver;
 use App\Extension\Traits\ClearsTemplateCaches;
 use App\Models\Template;
+use App\Services\ExtensionStaticCacheService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
@@ -284,5 +285,40 @@ class ClearsTemplateCachesTest extends TestCase
         $newVersion = ClearsTemplateCaches::getExtensionCacheVersion();
         $this->assertGreaterThan(0, $newVersion);
         $this->assertLessThanOrEqual(time(), $newVersion);
+    }
+
+    /**
+     * 버전 **재생성** 경로도 정적 게시를 예약한다 (D1).
+     *
+     * 회귀 가드: `incrementExtensionCacheVersion()` 에만 예약이 있고 재생성 경로에는
+     * 없었다. 그래서 `cache:clear` 후 첫 호출자가 CLI 면 포인터만 새 버전으로 점프하고
+     * 산출물은 옛 버전에 남았다 — "캐시 버전 갱신 → 게시" 단일 지점 규율의 유일한 구멍.
+     * 스케줄 GC 가 바로 그 첫 호출자라 매일 재현됐다.
+     *
+     * @effects regenerate_path_schedules_publish
+     */
+    public function test_regenerate_path_schedules_static_publish(): void
+    {
+        $this->app['env'] = 'production';
+        ExtensionStaticCacheService::resetPublishScheduleForTesting();
+        ExtensionStaticCacheService::fakeRootProcessForTesting(false);
+        Cache::forget('g7:core:ext.static.publish_failure');
+
+        // 키 부재 → getExtensionCacheVersion 이 재생성 경로를 탄다.
+        Cache::forget('g7:core:ext.cache_version');
+
+        $this->assertFalse(
+            ExtensionStaticCacheService::isPublishScheduledForTesting(),
+            '사전 조건 오염 — 예약 플래그가 이미 서 있다'
+        );
+
+        ClearsTemplateCaches::getExtensionCacheVersion();
+
+        $this->assertTrue(
+            ExtensionStaticCacheService::isPublishScheduledForTesting(),
+            '재생성 경로가 게시를 예약하지 않았다 — 포인터만 점프하고 산출물이 옛 버전에 남는다'
+        );
+
+        ExtensionStaticCacheService::resetPublishScheduleForTesting();
     }
 }

@@ -105,6 +105,66 @@ describe('ModuleAssetLoader', () => {
         });
     });
 
+    /**
+     * 사용자 추가 에셋(`custom/`)의 정적 게시 폴백 (#122 R2/W9).
+     *
+     * 스타일(`type: 'style'`) 축은 형제 파일 `ModuleAssetLoader.customAssets.test.ts`
+     * 가 세 확장 타입 전부에 대해 이미 고정하고 있다. 여기 남기는 것은 그 파일이 덮지
+     * 않는 **스크립트 축**뿐이다 — 스타일은 `loadStylesheetWithRetry`, 스크립트는
+     * `loadScriptWithRetry` 로 서로 다른 로더를 타므로 한쪽의 통과가 다른 쪽의 근거가
+     * 되지 않는다.
+     */
+    describe('loadCustomAssets 정적 게시 폴백 — script 축 (#122 R2/W9)', () => {
+        afterEach(() => {
+            delete (window as any).G7Config;
+            document.querySelectorAll('[id^="g7-custom-"]').forEach(el => el.remove());
+        });
+
+        /**
+         * @effects custom_asset_static_miss_falls_back_to_api
+         */
+        it('정적 게시 JS 미스 시 레거시 API URL 로 전환한다', async () => {
+            (window as any).G7Config = {
+                customAssets: [
+                    {
+                        id: 'custom:modules:sirsoft-board:custom.js',
+                        type: 'script',
+                        url: '/build/ext/42/modules/sirsoft-board/assets/custom/custom.js',
+                    },
+                ],
+            };
+
+            const urls: string[] = [];
+            const appendSpy = vi.spyOn(document.head, 'appendChild').mockImplementation(((node: any) => {
+                if (node.tagName === 'SCRIPT') {
+                    urls.push(node.getAttribute('src'));
+                    document.body.appendChild(node);
+
+                    const failed = urls.length === 1;
+                    queueMicrotask(() => {
+                        if (failed) {
+                            node.onerror?.(new Event('error'));
+                        } else {
+                            node.onload?.(new Event('load'));
+                        }
+                    });
+                }
+                return node;
+            }) as any);
+
+            try {
+                await loader.loadCustomAssets();
+
+                expect(urls).toEqual([
+                    '/build/ext/42/modules/sirsoft-board/assets/custom/custom.js',
+                    '/api/modules/assets/sirsoft-board/custom/custom.js?v=42',
+                ]);
+            } finally {
+                appendSpy.mockRestore();
+            }
+        });
+    });
+
     describe('loadActiveExtensionAssets', () => {
         it('JS 에셋을 priority 오름차순으로 DOM에 append한다 (실행 순서 보장)', async () => {
             const appendOrder: string[] = [];

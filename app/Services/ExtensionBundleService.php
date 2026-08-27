@@ -40,6 +40,13 @@ class ExtensionBundleService
     private const BUNDLE_DISK = 'ext-bundles';
 
     /**
+     * 원자적 쓰기 임시 파일(`*.tmp.{pid}`)을 잔존물로 보는 나이 (초).
+     *
+     * pid 는 재사용되므로 "그 pid 가 살아 있는가" 로는 진행 중 여부를 판정할 수 없다.
+     */
+    private const TEMP_BUNDLE_STALE_SECONDS = 600;
+
+    /**
      * 서비스 주입
      *
      * @param  ModuleManager  $moduleManager  모듈 매니저
@@ -236,20 +243,104 @@ class ExtensionBundleService
             return '';
         }
 
-        $storage = $this->bundleStorage();
         $relativeName = $this->bundleFileName($type, $kind, $version);
 
-        // 비프로덕션은 캐시하지 않고 임시 파일로 매번 build → rebuild 즉시 반영
-        if (! app()->environment('production')) {
-            return $this->writeAtomically($storage, $relativeName, $content, cache: false);
-        }
+        // 디스크 캐시는 **최적화**다 — 쓰기 실패가 공개 엔드포인트의 500 이 되면 안 된다.
+        // `ext-bundles` 디스크는 `throw => true` 라 권한 문제(uid 독점 0700 등)에서
+        // `UnableToWriteFile` 이 그대로 올라오고, 그러면 모든 확장의 프론트엔드 JS/CSS 가
+        // 통째로 나가지 못한다. 병합 결과는 이미 메모리에 있으므로 그것을 그대로 응답하면
+        // 화면은 정상이다 (커밋 63a30ab29 의 AbstractCacheDriver fail-soft 와 같은 원칙).
+        try {
+            $storage = $this->bundleStorage();
 
-        // 프로덕션: 동일 version 캐시가 있으면 그대로 사용
-        if ($storage->exists('', $relativeName)) {
-            return $storage->getBasePath('').'/'.$relativeName;
-        }
+            // 비프로덕션은 캐시하지 않고 임시 파일로 매번 build → rebuild 즉시 반영
+            if (! app()->environment('production')) {
+                return $this->writeAtomically($storage, $relativeName, $content, cache: false);
+            }
 
-        return $this->writeAtomically($storage, $relativeName, $content, cache: true);
+            // 프로덕션: 동일 version 캐시가 있으면 그대로 사용
+            if ($storage->exists('', $relativeName)) {
+                return $storage->getBasePath('').'/'.$relativeName;
+            }
+
+            return $this->writeAtomically($storage, $relativeName, $content, cache: true);
+        } catch (\Throwable $e) {
+            Log::warning('확장 번들 디스크 캐시 실패 — 메모리 병합 결과로 서빙합니다', [
+                'type' => $type,
+                'kind' => $kind,
+                'version' => $version,
+                'error' => $e->getMessage(),
+            ]);
+
+            return '';
+        }
+    }
+
+    /**
+     * 번들을 서빙할 때 쓸 병합 결과를 반환합니다 (디스크 캐시 실패 시 메모리 폴백용).
+     *
+     * @param  string  $type  'module' | 'plugin'
+     * @param  string  $kind  'js' | 'css'
+     * @return string 병합 결과 (없으면 빈 문자열)
+     */
+    public function buildBundleContent(string $type, string $kind): string
+    {
+        return $kind === 'css'
+            ? $this->buildCssBundle($type)
+            : $this->buildJsBundle($type);
+    }
+
+    /**
+     * 해당 타입에서 프론트엔드 에셋을 **선언한** 활성 확장 수를 반환합니다.
+     *
+     * "선언이 0 이라 빈 번들" (정상)과 "선언은 있는데 병합 결과가 0" (장애 — 배포 중
+     * `dist` 가 잠깐 비었거나 경로가 어긋났다)을 구분하는 유일한 근거다. 구분하지 않으면
+     * 후자가 빈 200 으로 나가고, 프론트는 404 도 오류도 받지 못한 채 한참 뒤
+     * "Unknown action handler" 로 죽는다.
+     *
+     * 판정은 **kind 별**이다 — js 만 선언한 확장이 있는 상태에서 css 번들이 비는 것은
+     * 정상이므로, 그 경우까지 장애로 보면 정상 구성이 503 이 된다.
+     *
+     * 근거는 manifest 의 `assets.{kind}.output` **선언**이며 산출물 파일의 존재를 보지
+     * 않는다. `getOrderedGlobalAssetPaths()` / `hasAssets()` / `getBuiltAssetPaths()` 는
+     * 전부 `file_exists()` 게이트를 타므로, 그 경로로 세면 "dist 가 잠깐 빔" 이 곧
+     * "선언 0" 이 되어 **막으려던 바로 그 상태가 정상(빈 200)으로 판정된다.** 선언과
+     * 산출은 다른 축이고, 이 메서드가 재는 것은 선언 축이다.
+     *
+     * @param  string  $type  'module' | 'plugin'
+     * @param  string  $kind  'js' | 'css'
+     * @return int 해당 kind 의 에셋을 선언한 활성 확장 수
+     */
+    public function countAssetDeclaringExtensions(string $type, string $kind): int
+    {
+        try {
+            $extensions = $type === 'plugin'
+                ? $this->pluginManager->getActivePlugins()
+                : $this->moduleManager->getActiveModules();
+
+            $declared = 0;
+
+            foreach ($extensions as $extension) {
+                // global 전략만 번들 대상 — 병합 대상 모집단과 동일한 필터를 쓴다
+                if (($extension->getAssetLoadingConfig()['strategy'] ?? 'global') !== 'global') {
+                    continue;
+                }
+
+                if (! empty($extension->getAssets()[$kind]['output'] ?? null)) {
+                    $declared++;
+                }
+            }
+
+            return $declared;
+        } catch (\Throwable $e) {
+            Log::warning('확장 에셋 선언 수 집계 실패', [
+                'type' => $type,
+                'kind' => $kind,
+                'error' => $e->getMessage(),
+            ]);
+
+            return 0;
+        }
     }
 
     /**
@@ -271,6 +362,17 @@ class ExtensionBundleService
                 continue;
             }
 
+            // 원자적 쓰기의 임시 파일(`{type}.{v}.{kind}.tmp.{pid}`)은 번들 파일 패턴에
+            // 맞지 않아 GC 대상에서 통째로 빠져 있었다 — rename 이 실패한 만큼 영구
+            // 잔존한다(실측 560개). 나이 가드를 붙여 진행 중인 쓰기는 건드리지 않는다.
+            if ($this->isStaleTempBundleFile($name, $storage)) {
+                if ($storage->delete('', $name)) {
+                    $deleted++;
+                }
+
+                continue;
+            }
+
             if ($this->isBundleFile($name) && $storage->delete('', $name)) {
                 $deleted++;
             }
@@ -280,7 +382,34 @@ class ExtensionBundleService
     }
 
     /**
+     * 파일명이 **오래된** 원자적 쓰기 임시 파일인지 판정합니다.
+     *
+     * 진행 중인 쓰기를 파괴하지 않도록 나이 가드를 둔다 — pid 는 재사용되므로 "그 pid 가
+     * 살아 있는가" 로는 판정할 수 없다.
+     *
+     * @param  string  $name  파일명
+     * @param  CoreStorageDriver  $storage  번들 디스크 스토리지
+     * @return bool 삭제 대상 여부
+     */
+    private function isStaleTempBundleFile(string $name, CoreStorageDriver $storage): bool
+    {
+        if (! preg_match('/^(module|plugin)\.\d+\.(js|css)\.tmp\.\d+$/', $name)) {
+            return false;
+        }
+
+        $mtime = @filemtime($storage->getBasePath('').'/'.$name);
+
+        // 나이를 읽지 못하면 남긴다 — 진행 중인 쓰기를 지우는 쪽이 더 나쁘다.
+        return $mtime !== false && (time() - $mtime) > self::TEMP_BUNDLE_STALE_SECONDS;
+    }
+
+    /**
      * 번들 캐시 파일을 삭제합니다(cache-clear 커맨드용).
+     *
+     * **현재 버전은 보존한다** — `cleanupStaleBundles()` 와 같은 정책이다. 현재 버전까지
+     * 지우면 같은 순간 서빙 중인 웹 요청이 "존재함" 판정 직후 `filemtime()` 에서 500 을
+     * 낸다(bump 직후 TOCTOU). 캐시 파일은 없으면 다음 요청이 다시 만들므로, 지우는 것의
+     * 이득은 없고 그 창의 500 만 남는다.
      *
      * @param  string|null  $type  'module' | 'plugin' 지정 시 해당 타입만, null 이면 전체
      * @return int 삭제된 파일 수
@@ -288,12 +417,18 @@ class ExtensionBundleService
     public function clearBundles(?string $type = null): int
     {
         $storage = $this->bundleStorage();
+        $currentVersion = $this->getCurrentVersion();
         $deleted = 0;
 
         foreach ($storage->files('', '') as $file) {
             $name = basename($file);
 
             if ($name === '.gitignore' || ! $this->isBundleFile($name)) {
+                continue;
+            }
+
+            // 현재 버전 보존 (cleanupStaleBundles 와 동형 — 정책이 갈라지면 한쪽이 창을 연다)
+            if ($this->matchesVersion($name, $currentVersion)) {
                 continue;
             }
 

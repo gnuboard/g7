@@ -193,7 +193,7 @@ class TemplateLanguageServingTest extends TestCase
     /**
      * 개발 환경에서 lang 은 no-cache (파일 수정 즉시 반영 — F10)
      *
-     * @scenario publish_state=unpublished, environment=dev, trigger=manual_command, process_user=web
+     * @scenario publish_state=unpublished, artifact_integrity=intact, filesystem_writable=writable, environment=dev, trigger=manual_command, process_user=web
      */
     public function test_language_no_cache_in_development(): void
     {

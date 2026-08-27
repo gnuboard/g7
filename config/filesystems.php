@@ -76,12 +76,22 @@ return [
 
         // 확장(모듈/플러그인) 프론트엔드 IIFE/CSS 번들 병합 결과 캐시.
         // ExtensionBundleService 가 version-in-path 파일명으로 저장/서빙한다.
+        //
+        // `permissions` 선언이 없으면 Flysystem 이 디스크 인스턴스화 시점에 root 를
+        // `0700` 으로 만든다. 그러면 **먼저 touch 한 프로세스가 독점**한다 — CLI 가 먼저면
+        // 이후 php-fpm 의 쓰기가 `UnableToWriteFile` 로 죽고, `throw => true` 라 그 예외가
+        // 공개 번들 엔드포인트의 500 으로 그대로 나간다. 디스크 생성 시점이 유일한 예방
+        // 지점이므로 여기서 그룹 쓰기를 열어 둔다 (실패 시 fail-soft 는 서비스가 담당).
         'ext-bundles' => [
             'driver' => 'local',
             'root' => storage_path('app/ext-bundles'),
             'serve' => false,
             'throw' => true,
             'report' => false,
+            'permissions' => [
+                'file' => ['public' => 0664, 'private' => 0664],
+                'dir' => ['public' => 0775, 'private' => 0775],
+            ],
         ],
 
         'public' => [

@@ -1223,7 +1223,23 @@ php artisan plugin:build sirsoft-payment --active       # 활성 디렉토리에
 
 > **빌드 원칙**: 기본값은 `_bundled` 디렉토리. 빌드 결과물은 빌드 경로 내에만 남음.
 
-`_bundled` 의 `dist/`(코어는 `public/build/core/`)는 Git 추적되는 배포 산출물이다 (`*.map` 만 ignore). src 변경 시 커밋 dist 를 `--production` 으로 동반 재빌드한다 — 신규 소스 리터럴이 dist 에 없으면 stale 빌드이며, 정적 검사가 이를 검출한다. 커밋 dist 에 `//# sourceMappingURL=` 참조를 남기지 않는다 — `.map` 은 배포본에 존재하지 않아 브라우저 개발자 도구에서 404 를 유발한다. 코어 3번들 재빌드는 `core:build --production` (`--full` 은 앱 번들 전용 — `public/build` 를 비워 코어 3번들을 지운다).
+`_bundled` 의 `dist/`(코어는 `public/build/core/`)는 Git 추적되는 배포 산출물이다 (`*.map` 만 ignore). src 변경 시 커밋 dist 를 `--production` 으로 동반 재빌드한다 — 신규 소스 리터럴이 dist 에 없으면 stale 빌드이며, 정적 검사가 이를 검출한다. 커밋 dist 에 `//# sourceMappingURL=` 참조를 남기지 않는다 — `.map` 은 배포본에 존재하지 않아 브라우저 개발자 도구에서 404 를 유발한다. 코어 3번들 재빌드는 `core:build --production`.
+
+### 빌드는 자기 산출물만 교체한다 (`emptyOutDir`)
+
+모든 vite config 는 `build.emptyOutDir: false` 를 **명시**한다. 기본값 `true` 는 산출물 디렉토리를 통째로 비우는데, 그 디렉토리에는 vite 가 만들지 않는 서빙 자산이 함께 산다.
+
+| 함께 지워지던 것 | 결과 |
+|---|---|
+| `public/build/core/` 3번들 | 폴백이 없다 — `template-engine.min.js` 는 동기 classic 스크립트라 소실 = **사이트 부팅 불가**, 안내 화면조차 렌더되지 않는다 |
+| `public/build/ext/{v}/` 게시본 | 이미 배달된 HTML 의 immutable URL 이 404. 재게시로 새 버전이 생겨도 **그 URL 은 복구되지 않는다** |
+| 확장 `dist/vendor/` | 확장이 동봉한 구동 제3자 자산 소실 (자체 제공 원칙 위반) |
+
+소실은 예외도 서버 로그도 남기지 않는다 — 브라우저 404 로만 나타나므로 운영자에게는 흔적이 없다. 잔존하는 구 해시 산출물은 `manifest.json`(또는 고정 파일명)이 선택하므로 참조되지 않는 사표이고, 정리 책임은 빌드 커맨드가 진다.
+
+빌드 커맨드의 산출물 정리는 **활성 디렉토리를 건너뛴다.** 정리는 빌드 *전에* 돌므로 웹이 서빙 중인 `dist/` 를 비우면 빌드 완료까지가 통째로 서빙 공백이 되고, 빌드가 실패하면 빈 채로 남는다. 정리 대상은 `_bundled` / `_pending` 소스 디렉토리뿐이다.
+
+정적 검사가 모든 vite config 의 명시 선언을 강제한다 (기본값 의존 금지 — 규약이 코드에 남지 않으면 다음 편집자가 같은 결함을 재도입한다).
 > 활성 디렉토리 반영은 `update` 커맨드로만 수행. `--watch` 모드는 실시간 개발용으로 활성 디렉토리를 자동 사용.
 
 ---

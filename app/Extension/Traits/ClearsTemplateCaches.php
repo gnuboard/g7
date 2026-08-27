@@ -109,6 +109,17 @@ trait ClearsTemplateCaches
             ]);
         }
 
+        // 재생성도 bump 다 — 게시를 예약한다. `incrementExtensionCacheVersion()` 과
+        // 동형화해 "캐시 버전 갱신 → 게시" 가 **모든 경로**에서 성립하게 한다 (#122).
+        //
+        // 이 경로가 빠져 있던 동안 `cache:clear` 후 첫 호출자가 CLI 면 포인터만 새 버전으로
+        // 점프하고 산출물은 옛 버전에 남았다. 스케줄 GC(`ext-static:cleanup`)가 바로 그
+        // 첫 호출자라, cleanup 첫 줄의 `getExtensionCacheVersion()` 이 실존하지 않는 새
+        // 버전을 만들어 내고 보존 대상이 `[없는 새 버전, 실존 최신 1개]` 가 되어 **진짜
+        // 직전 버전이 삭제**됐다 (매일 04:28 재현). CLI 는 terminating 예약이 그대로
+        // 유효하므로 커맨드 종료 시점에 게시가 수행된다.
+        ExtensionStaticCacheService::schedulePublishOnTerminate();
+
         return $newVersion;
     }
 

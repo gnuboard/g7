@@ -586,7 +586,7 @@ class TemplateAssetServingTest extends TestCase
     /**
      * 개발 환경에서 components.json 은 no-cache (파일 수정 즉시 반영 — F10)
      *
-     * @scenario publish_state=unpublished, environment=dev, trigger=self_heal, process_user=web
+     * @scenario publish_state=unpublished, artifact_integrity=intact, filesystem_writable=writable, environment=dev, trigger=self_heal, process_user=web
      *
      * @effects fallback_api_no_cache_in_dev
      */

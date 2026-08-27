@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\Public\SitemapController;
 use App\Seo\TemplateRouteResolver;
+use App\Support\StaticExtensionPattern;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -35,7 +36,7 @@ Route::prefix('admin')
             }
 
             return view('admin');
-        })->where('any', '(?!.*\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)).*');
+        })->where('any', StaticExtensionPattern::catchAllExclusion());
     });
 
 // Sitemap XML 라우트
@@ -56,5 +57,5 @@ Route::middleware(['template.dependencies:user', 'seo'])
             }
 
             return view('app');
-        })->where('any', '(?!admin)(?!api)(?!plugins)(?!.*\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)).*');
+        })->where('any', '(?!admin)(?!api)(?!plugins)'.StaticExtensionPattern::catchAllExclusion());
     });

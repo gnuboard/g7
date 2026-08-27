@@ -501,6 +501,27 @@ GET /api/plugins/bundle.css?v={version}
 | 절대경로 게터 | `getBuiltAssetAbsolutePaths()` 사용. `base_path("modules"\|"plugins")` 직접 조립 금지 | `extension-bundle-asset-path-getter` |
 | 확장별 try/catch | 파일 읽기 실패 시 해당 확장만 skip, 나머지 병합 지속 | (메모리+회귀테스트) |
 | CSS url() | 상대경로 url() 을 가진 CSS 는 번들 제외(개별 폴백) | - |
+| 디스크 캐시 fail-soft | 캐시 쓰기 실패는 **500 이 아니다** — 메모리 병합 결과를 그대로 200 으로 서빙 | (계약 테스트) |
+| 빈 번들 판정 | 선언 0개면 빈 200, 선언은 있는데 결과가 0이면 **503** | (계약 테스트) |
+
+### 디스크 캐시 실패와 빈 번들 (응답 계약)
+
+번들 디스크 캐시는 **최적화**다. `ext-bundles` 디스크는 `throw => true` 라 권한 문제(먼저 touch 한 프로세스가 `0700` 으로 독점하는 경우 등)에서 `UnableToWriteFile` 이 그대로 올라오는데, 그것이 공개 엔드포인트의 500 이 되면 **모든 확장의 프론트엔드 JS/CSS 가 통째로 나가지 못한다.** 병합 결과는 이미 메모리에 있으므로 그것을 그대로 응답한다(코어 캐시 드라이버의 fail-soft 와 같은 원칙). 예방 지점은 디스크 선언이다 — `config/filesystems.php` 의 `ext-bundles` 에 `permissions`(dir `0775` / file `0664`)를 선언해 Flysystem 이 root 를 `0700` 으로 만들지 않게 한다.
+
+빈 번들은 두 가지를 구분해야 한다.
+
+| 상태 | 판정 | 응답 |
+|---|---|---|
+| 에셋을 선언한 활성 확장이 0개 | 정상 | 빈 200 |
+| 선언은 있는데 병합 결과가 0 | 장애 (배포 중 `dist` 가 잠깐 빔, 경로 어긋남) | **503** + `Log::error` |
+
+구분하지 않으면 후자가 빈 200 으로 나가고, 프론트는 404 도 오류도 받지 못한 채 한참 뒤 "Unknown action handler" 로 죽는다 — 그 시점에는 원인이 번들이라는 사실이 화면에도 로그에도 남아 있지 않다. 판정은 **kind 별**이다(js 만 선언한 확장이 있는 상태에서 css 번들이 비는 것은 정상).
+
+"선언" 의 근거는 manifest 의 `assets.{kind}.output` 이며 **산출물 파일의 존재를 보지 않는다.** 병합 경로가 쓰는 게터들(`getOrderedGlobalAssetPaths()` · `hasAssets()` · `getBuiltAssetPaths()`)은 모두 `file_exists()` 로 거르므로, 그 경로로 선언 수를 세면 "`dist` 가 잠깐 빔" 이 곧 "선언 0" 이 되어 **막으려던 상태가 정상(빈 200)으로 판정된다.** 선언과 산출은 다른 축이고, 이 판정이 재는 것은 선언 축이다.
+
+두 판정은 모듈·플러그인 컨트롤러가 **공유하는 단일 지점**(`ServesExtensionBundles::bundleResponse()`)에 둔다. 각자 구현하면 한쪽만 고쳐진 채 다른 쪽이 옛 동작으로 남는다.
+
+`clearBundles()`(cache-clear 커맨드)는 **현재 버전을 보존**한다 — `cleanupStaleBundles()` 와 같은 정책이다. 현재 버전까지 지우면 같은 순간 서빙 중인 요청이 "존재함" 판정 직후 `filemtime()` 에서 500 을 낸다. 원자적 쓰기의 임시 파일(`*.tmp.{pid}`)도 GC 대상이되 10분 나이 가드를 받는다(pid 는 재사용되므로 생사로는 진행 여부를 판정할 수 없다).
 
 ### 캐시 stale 관리
 

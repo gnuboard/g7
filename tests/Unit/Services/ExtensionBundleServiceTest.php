@@ -100,9 +100,72 @@ class ExtensionBundleServiceTest extends TestCase
         return $ext;
     }
 
+    /**
+     * 에셋 **매니페스트 선언**(`getAssets()`)을 노출하는 가짜 확장 인스턴스를 만든다.
+     *
+     * 산출물 경로(`getBuiltAssetAbsolutePaths`)는 존재하지 않는 파일을 가리킨다 —
+     * "선언은 있는데 산출물이 없다"(dist 소실) 상태를 그대로 재현하기 위해서다.
+     *
+     * @param  string  $identifier  확장 식별자
+     * @param  int  $priority  로딩 우선순위
+     * @param  array<string, mixed>  $assets  매니페스트 assets 선언
+     * @param  string  $strategy  로딩 전략
+     */
+    private function fakeExtensionWithAssets(string $identifier, int $priority, array $assets, string $strategy = 'global'): object
+    {
+        $ext = Mockery::mock();
+        $ext->shouldReceive('hasAssets')->andReturn($assets !== []);
+        $ext->shouldReceive('getIdentifier')->andReturn($identifier);
+        $ext->shouldReceive('getAssetLoadingConfig')->andReturn([
+            'strategy' => $strategy,
+            'priority' => $priority,
+            'dependencies' => [],
+        ]);
+        $ext->shouldReceive('getAssets')->andReturn($assets);
+        $ext->shouldReceive('getBuiltAssetAbsolutePaths')->andReturn(
+            array_map(fn () => $this->fixtureDir.'/missing-'.$identifier.'.out', $assets)
+        );
+
+        return $ext;
+    }
+
     private function service(): ExtensionBundleService
     {
         return new ExtensionBundleService($this->moduleManager, $this->pluginManager);
+    }
+
+    /**
+     * 선언 수는 **매니페스트 기준**이다 — 산출물 파일 존재 여부와 무관하다 (E2).
+     *
+     * 이 값이 "실제로 병합된 확장 수" 로 계산되면 dist 가 통째로 비어 있을 때
+     * `기대 0 = 결과 0` 이 되어 장애가 정상(빈 200)으로 위장된다. 실측 A/B: dist 를
+     * 비우면 수정 전 `modules/bundle/js` 가 빈 200, 수정 후 503 이다.
+     *
+     * @effects asset_declaration_count_reads_manifest_not_built_files
+     */
+    public function test_counts_asset_declaring_extensions_from_manifest_not_built_output(): void
+    {
+        $this->moduleManager->shouldReceive('getActiveModules')->andReturn([
+            'ext-js' => $this->fakeExtensionWithAssets('ext-js', 10, ['js' => ['output' => 'dist/js/ext-js.iife.js']]),
+            'ext-both' => $this->fakeExtensionWithAssets('ext-both', 20, [
+                'js' => ['output' => 'dist/js/ext-both.iife.js'],
+                'css' => ['output' => 'dist/css/ext-both.css'],
+            ]),
+            'ext-none' => $this->fakeExtensionWithAssets('ext-none', 30, []),
+            // 병합 대상 모집단과 같은 필터 — global 전략이 아니면 세지 않는다
+            'ext-layout' => $this->fakeExtensionWithAssets('ext-layout', 40, [
+                'js' => ['output' => 'dist/js/ext-layout.iife.js'],
+            ], 'layout'),
+        ]);
+
+        $service = $this->service();
+
+        $this->assertSame(2, $service->countAssetDeclaringExtensions('module', 'js'));
+        $this->assertSame(1, $service->countAssetDeclaringExtensions('module', 'css'));
+
+        // 산출물은 하나도 존재하지 않는다 → 병합 결과는 빈 문자열.
+        // "선언 > 0 && 결과 0" 이 곧 컨트롤러의 503 조건이다.
+        $this->assertSame('', $service->getBundleFilePath('module', 'js', 12345));
     }
 
     public function test_orders_global_assets_by_priority_ascending(): void
@@ -322,6 +385,69 @@ class ExtensionBundleServiceTest extends TestCase
         $this->assertSame(1, $deleted);
         $this->assertFileDoesNotExist($bundleDir.'/module.100.js');
         $this->assertFileExists($bundleDir.'/plugin.100.js');
+    }
+
+    /**
+     * clearBundles 는 **현재 버전을 보존**한다 (E3).
+     *
+     * 현재 버전까지 지우면 같은 순간 서빙 중인 웹 요청이 "존재함" 판정 직후
+     * `filemtime()` 에서 500 을 낸다(bump 직후 TOCTOU). `cleanupStaleBundles` 와
+     * 정책이 갈라져 있던 것이 원인이었다.
+     *
+     * @effects clear_bundles_preserves_current_version
+     */
+    public function test_clear_bundles_preserves_current_version(): void
+    {
+        $bundleDir = storage_path('app/ext-bundles');
+        File::ensureDirectoryExists($bundleDir);
+
+        $current = $this->service()->getCurrentVersion();
+        File::put($bundleDir."/module.{$current}.js", 'current');
+        File::put($bundleDir.'/module.100.js', 'old');
+
+        $deleted = $this->service()->clearBundles('module');
+
+        $this->assertSame(1, $deleted);
+        $this->assertFileExists(
+            $bundleDir."/module.{$current}.js",
+            '현재 버전이 삭제됐다 — 서빙 중인 요청이 filemtime 에서 500 을 낸다'
+        );
+        $this->assertFileDoesNotExist($bundleDir.'/module.100.js');
+    }
+
+    /**
+     * GC 는 원자적 쓰기의 임시 파일(`*.tmp.{pid}`)도 정리한다 — 단 나이 가드를 지킨다 (E4).
+     *
+     * 종전에는 이 파일명이 번들 파일 패턴에 맞지 않아 GC 대상에서 통째로 빠졌고,
+     * rename 이 실패한 만큼 영구 잔존했다(실측 560개).
+     *
+     * @effects cleanup_removes_stale_atomic_write_temp_files
+     */
+    public function test_cleanup_removes_stale_temp_bundle_files_only(): void
+    {
+        $bundleDir = storage_path('app/ext-bundles');
+        File::ensureDirectoryExists($bundleDir);
+
+        $fresh = $bundleDir.'/module.200.js.tmp.11111';
+        $stale = $bundleDir.'/module.200.js.tmp.22222';
+        File::put($fresh, 'writing now');
+        File::put($stale, 'orphan');
+        touch($stale, time() - 3600);
+        clearstatcache();
+
+        $this->moduleManager->shouldReceive('getActiveModules')->andReturn([]);
+
+        try {
+            $deleted = $this->service()->cleanupStaleBundles(200);
+
+            $this->assertFileExists($fresh, '진행 중인 쓰기의 임시 파일이 삭제됐다');
+            $this->assertFileDoesNotExist($stale, '고아 임시 파일이 정리되지 않았다 — 영구 누적된다');
+            $this->assertSame(1, $deleted);
+        } finally {
+            // 번들 디렉토리는 테스트 간 공유된다 — 남기면 형제 케이스의 삭제 건수가 틀어진다.
+            @unlink($fresh);
+            @unlink($stale);
+        }
     }
 
     public function test_plugin_bundle_orders_by_priority_gdpr_first_when_lowest(): void

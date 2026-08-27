@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Http;
 
+use App\Support\StaticExtensionPattern;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Tests\TestCase;
@@ -41,5 +42,58 @@ class BuildPathCatchAllExclusionTest extends TestCase
         $route = app('router')->getRoutes()->match(Request::create('/some-page', 'GET'));
 
         $this->assertContains('GET', $route->methods());
+    }
+
+    /**
+     * 에셋 서빙이 허용하는 **모든** 확장자가 catch-all 에서 제외된다 (R1).
+     *
+     * 회귀 가드: 제외 목록이 라우트 파일에 손으로 적혀 있던 동안 `mjs` · `webp` · `otf`
+     * 세 가지가 빠져 있었다. 없는 `.mjs` 가 SPA 셸 HTML 200 을 받으면 브라우저는 그것을
+     * 스크립트로 파싱하다 죽는데, 응답이 성공이라 `onerror` 가 발화하지 않아 태그 복구기도
+     * 뜨지 않는다. `.json` 이 무사했던 것은 lookahead 에 끝 앵커가 없어 `.js` 에 부분일치한
+     * **우연**이었을 뿐이다. 이제 목록은 화이트리스트에서 파생되므로 우연에 기대지 않는다.
+     *
+     * @effects static_miss_returns_404_for_every_servable_extension
+     */
+    public function test_모든_서빙_확장자가_catch_all_에서_제외된다(): void
+    {
+        $extensions = StaticExtensionPattern::servedExtensions();
+
+        $this->assertNotEmpty($extensions, '모집단이 비었다 — 검사가 공허하게 통과한다');
+
+        // 과거에 빠져 있던 세 가지가 모집단에 실제로 포함되는지 먼저 고정한다.
+        foreach (['mjs', 'webp', 'otf'] as $regressed) {
+            $this->assertContains($regressed, $extensions, "{$regressed} 가 모집단에서 빠졌다");
+        }
+
+        foreach ($extensions as $extension) {
+            $path = "/build/ext/1787637589/templates/sirsoft-basic/assets/missing.{$extension}";
+
+            try {
+                app('router')->getRoutes()->match(Request::create($path, 'GET'));
+                $this->fail(".{$extension} 미스가 SPA catch-all 에 매칭됐다 — HTML 200 이 나간다");
+            } catch (NotFoundHttpException) {
+                $this->addToAssertionCount(1);
+            }
+        }
+    }
+
+    /**
+     * admin catch-all 도 같은 제외 목록을 쓴다 — 두 목록이 갈라지지 않는다.
+     *
+     * @effects admin_catch_all_shares_static_exclusion
+     */
+    public function test_admin_catch_all_도_같은_제외_목록을_쓴다(): void
+    {
+        foreach (StaticExtensionPattern::servedExtensions() as $extension) {
+            $path = "/admin/build/missing.{$extension}";
+
+            try {
+                app('router')->getRoutes()->match(Request::create($path, 'GET'));
+                $this->fail("admin: .{$extension} 미스가 catch-all 에 매칭됐다");
+            } catch (NotFoundHttpException) {
+                $this->addToAssertionCount(1);
+            }
+        }
     }
 }
