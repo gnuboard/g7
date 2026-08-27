@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Public;
 
 use App\Http\Controllers\Api\Base\PublicBaseController;
+use App\Http\Controllers\Concerns\ServesExtensionBundles;
 use App\Http\Requests\Public\Module\ServeModuleAssetRequest;
 use App\Services\ExtensionBundleService;
 use App\Services\ModuleService;
@@ -17,6 +18,8 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
  */
 class PublicModuleController extends PublicBaseController
 {
+    use ServesExtensionBundles;
+
     public function __construct(
         private readonly ModuleService $moduleService,
         private readonly ExtensionBundleService $bundleService
@@ -27,9 +30,10 @@ class PublicModuleController extends PublicBaseController
     /**
      * 활성 모듈 프론트엔드 IIFE 병합 번들(JS)을 서빙합니다.
      *
-     * 활성 global 모듈 에셋이 없으면 빈 200 응답(text/javascript)을 반환한다
-     * (프론트는 빈 스크립트 로드로 무해). 그 외에는 병합 파일을 fileResponse 로
-     * 서빙(ETag/304/환경별 Cache-Control 재사용).
+     * 병합 파일을 fileResponse 로 서빙한다(ETag/304/환경별 Cache-Control 재사용).
+     * 디스크 캐시가 실패하면 메모리 병합 결과로 200 을 낸다(캐시는 최적화일 뿐이다).
+     * 에셋을 선언한 활성 확장이 0개면 빈 200, 선언은 있는데 결과가 비면 503 —
+     * 판정은 ServesExtensionBundles::bundleResponse() 단일 지점.
      *
      * @return BinaryFileResponse|Response 병합 JS 파일 응답 또는 빈 응답
      */
@@ -37,14 +41,7 @@ class PublicModuleController extends PublicBaseController
     {
         $this->logApiUsage('modules.bundle', ['kind' => 'js']);
 
-        $version = $this->bundleService->getCurrentVersion();
-        $path = $this->bundleService->getBundleFilePath('module', 'js', $version);
-
-        if ($path === '') {
-            return response('', 200)->header('Content-Type', 'text/javascript');
-        }
-
-        return $this->fileResponse($path, 'text/javascript', 31536000);
+        return $this->bundleResponse($this->bundleService, 'module', 'js', 'text/javascript');
     }
 
     /**
@@ -56,14 +53,7 @@ class PublicModuleController extends PublicBaseController
     {
         $this->logApiUsage('modules.bundle', ['kind' => 'css']);
 
-        $version = $this->bundleService->getCurrentVersion();
-        $path = $this->bundleService->getBundleFilePath('module', 'css', $version);
-
-        if ($path === '') {
-            return response('', 200)->header('Content-Type', 'text/css');
-        }
-
-        return $this->fileResponse($path, 'text/css', 31536000);
+        return $this->bundleResponse($this->bundleService, 'module', 'css', 'text/css');
     }
 
     /**

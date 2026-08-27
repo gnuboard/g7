@@ -135,11 +135,51 @@ class BuildCoreCommand extends Command
             return $dashboardResult;
         }
 
+        $this->pruneStaleSourceMaps($productionMode);
+
         $this->info('✅ 코어 빌드 완료 (템플릿 엔진 + 레이아웃 편집기 + DevTools + 개발 대시보드 CSS)');
         $this->showEngineBuildResults($projectPath);
         $this->incrementExtensionCacheVersion();
 
         return Command::SUCCESS;
+    }
+
+    /**
+     * 프로덕션 빌드 후 `public/build/core/` 에 남은 소스맵을 제거합니다.
+     *
+     * 프로덕션 빌드는 `G7_BUILD_SOURCEMAP=0` 으로 맵을 **만들지 않을 뿐**, 이전 개발 빌드가
+     * 남긴 맵을 지우지는 않는다. 그 디렉토리는 웹루트라 남아 있는 맵은 웹서버가 그대로
+     * 서빙하고, 맵에는 원본 코드 전문(`sourcesContent`)이 담긴다 — 확장자 화이트리스트가
+     * 막아 주는 확장 에셋과 달리 이 경로는 정적 서빙이라 통과한다.
+     *
+     * 종전에는 루트 `npm run build` 의 `emptyOutDir` 이 디렉토리를 통째로 비우면서 이 맵들을
+     * 함께 지웠다. 그 동작은 서빙 중인 코어 번들·게시본까지 지우는 결함이라 껐으므로(#122),
+     * 소스맵 정리 책임을 빌드 커맨드가 명시적으로 넘겨받는다.
+     *
+     * @param  bool  $productionMode  프로덕션 빌드 여부
+     */
+    private function pruneStaleSourceMaps(bool $productionMode): void
+    {
+        if (! $productionMode) {
+            // 로컬 빌드는 디버깅을 위해 맵을 의도적으로 생성한다 — 지우면 그 목적이 사라진다.
+            return;
+        }
+
+        $removed = [];
+
+        foreach (glob(public_path('build/core').DIRECTORY_SEPARATOR.'*.map') ?: [] as $map) {
+            if (@unlink($map)) {
+                $removed[] = basename($map);
+
+                continue;
+            }
+
+            $this->warn('   ⚠️  소스맵 삭제 실패 (수동 제거 필요): '.$map);
+        }
+
+        if ($removed !== []) {
+            $this->line('   🧹 잔존 소스맵 제거: '.implode(', ', $removed));
+        }
     }
 
     /**
@@ -222,6 +262,7 @@ class BuildCoreCommand extends Command
         );
 
         if ($result === Command::SUCCESS && ! $watchMode) {
+            $this->pruneStaleSourceMaps($productionMode);
             $this->info('✅ 코어 빌드 완료 (전체)');
             $this->showFullBuildResults($projectPath);
             $this->incrementExtensionCacheVersion();

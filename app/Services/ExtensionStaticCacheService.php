@@ -2,10 +2,12 @@
 
 namespace App\Services;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Exceptions\StaticCachePublishException;
+use App\Extension\Cache\CoreCacheDriver;
 use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\Traits\ClearsTemplateCaches;
 use App\Helpers\ResponseHelper;
@@ -46,6 +48,24 @@ class ExtensionStaticCacheService
     /** 로케일 패턴 — 경로 세그먼트 화이트리스트 */
     private const LOCALE_PATTERN = '/^[a-z]{2}(?:[-_][A-Za-z0-9]{2,8})?$/';
 
+    /** 게시 작업 디렉토리(.tmp/.old)를 미완료 잔존물로 보는 나이 (초) — 게시 락 TTL 300 의 2배 */
+    private const WORK_DIR_STALE_SECONDS = 600;
+
+    /** 게시 실패 마커 캐시 키 */
+    private const FAILURE_MARKER_KEY = 'ext.static.publish_failure';
+
+    /** 실패 마커 TTL (초) — 이 창 안에서는 같은 버전의 재예약을 억제한다 */
+    private const FAILURE_MARKER_TTL = 300;
+
+    /** 게시 트리 디렉토리 권한 — umask 무력화 대상 */
+    private const PUBLISH_DIR_MODE = 0775;
+
+    /** 게시 트리 디렉토리 rename 시도 횟수 (일시 거부 흡수) */
+    private const RENAME_ATTEMPTS = 3;
+
+    /** rename 재시도 간 대기 (마이크로초) — 실측 표본은 전부 1회 재시도로 해소됐다 */
+    private const RENAME_RETRY_DELAY_US = 200_000;
+
     /** terminating 게시 예약 플래그 (프로세스당 1회) */
     private static bool $publishScheduled = false;
 
@@ -85,9 +105,35 @@ class ExtensionStaticCacheService
             return true;
         }
 
-        $lock = Cache::lock(self::LOCK_PREFIX.$version, 300);
+        // 락 미획득은 두 상황이고 조치가 다르다.
+        //
+        //  (a) 다른 프로세스가 게시 중 (정상)  — `get()` 이 예외 없이 false.
+        //      건너뛰는 것이 옳은 동작이므로 마커를 남기지 않는다. 남기면 정상적인 동시
+        //      요청 경합이 실패로 집계돼 대시보드에 거짓 장애 알림이 뜬다.
+        //  (b) 캐시 저장소가 락을 제공하지 못함 (장애) — `Cache::lock()`/`get()` 이 던진다
+        //      (락 미지원 드라이버, 파일 캐시 디렉토리 권한 불일치 등). 이 경우 게시는
+        //      매 요청 조용히 스킵되므로 사유를 마커에 남겨 진단 표면까지 도달시킨다.
+        try {
+            $lock = Cache::lock(self::LOCK_PREFIX.$version, 300);
+            $acquired = $lock->get();
+        } catch (\Throwable $e) {
+            Log::warning('정적 게시 락 획득 불가 — 캐시 저장소를 확인하세요', [
+                'version' => $version,
+                'store' => config('cache.default'),
+                'error' => $e->getMessage(),
+            ]);
 
-        if (! $lock->get()) {
+            self::recordFailure($version, 'lock_unavailable', $e->getMessage());
+
+            return false;
+        }
+
+        if (! $acquired) {
+            Log::debug('정적 게시 락 미획득 — 이번 호출은 건너뜁니다', [
+                'version' => $version,
+                'store' => config('cache.default'),
+            ]);
+
             return false;
         }
 
@@ -142,10 +188,16 @@ class ExtensionStaticCacheService
         foreach (File::directories($base) as $dir) {
             $name = basename($dir);
 
-            // 미완료 tmp 잔존물은 무조건 제거 대상 (rename 전 실패 흔적)
-            if (str_ends_with($name, '.tmp')) {
-                File::deleteDirectory($dir);
-                $deleted++;
+            // 진행 중 게시의 작업 디렉토리(`{v}.tmp`)와 스왑 대기분(`{v}.old`)은 나이로
+            // 가른다 — 락은 **버전별**이라 서로 다른 버전의 게시가 동시에 진행될 수 있고,
+            // 나이 무관 삭제는 그 순간 살아 있는 남의 tmp 를 파괴한다. 게시 락 TTL 이
+            // 300초이므로 그 두 배를 미완료 판정 기준으로 삼는다.
+            if (str_ends_with($name, '.tmp') || str_ends_with($name, '.old')) {
+                if (! $this->isStaleWorkDirectory($dir)) {
+                    continue;
+                }
+
+                $deleted += $this->deleteVersionDirectory($dir) ? 1 : 0;
 
                 continue;
             }
@@ -155,25 +207,77 @@ class ExtensionStaticCacheService
             }
         }
 
-        // 현재 버전과, 현재를 제외한 최신 1개(직전) 보존
-        $keep = [$current];
+        // 현재 버전과, 현재를 제외한 최신 1개(직전) 보존.
+        //
+        // 현재 버전 디렉토리가 **실존하지 않으면** 그 자리를 보존 슬롯으로 쓰지 않는다 —
+        // 없는 것을 보존해 봐야 슬롯 하나를 버리는 셈이고, 그만큼 실존 버전이 한 개 더
+        // 지워진다. 그 경우 "실존하는 최신 2개" 를 보존한다. 게시는 GC 시점 이후
+        // (terminating)에 수행되므로 "포인터는 새 버전인데 산출물은 아직 없음" 은
+        // 정상 상태이며, 브라우저에 배달된 직전 HTML 은 여전히 옛 버전 URL 을 참조한다.
+        $keep = File::isDirectory($this->versionDir($current)) ? [$current] : [];
         $others = array_keys($versions);
         rsort($others);
         foreach ($others as $v) {
-            if ($v !== $current) {
-                $keep[] = $v;
+            if (in_array($v, $keep, true)) {
+                continue;
+            }
+
+            $keep[] = $v;
+
+            if (count($keep) >= 2) {
                 break;
             }
         }
 
         foreach ($versions as $v => $dir) {
             if (! in_array($v, $keep, true)) {
-                File::deleteDirectory($dir);
-                $deleted++;
+                $deleted += $this->deleteVersionDirectory($dir) ? 1 : 0;
             }
         }
 
         return $deleted;
+    }
+
+    /**
+     * 게시 작업 디렉토리(`.tmp` / `.old`)가 미완료 잔존물로 판정될 만큼 오래됐는지 봅니다.
+     *
+     * 나이를 읽지 못하는 경우(권한·경합으로 `filemtime` 실패)는 **삭제하지 않는다** —
+     * 진행 중인 게시를 파괴하는 쪽이 잔존물을 한 주기 더 남기는 쪽보다 나쁘다.
+     *
+     * @param  string  $dir  검사할 작업 디렉토리 절대 경로
+     * @return bool 삭제 대상 여부
+     */
+    private function isStaleWorkDirectory(string $dir): bool
+    {
+        $mtime = @filemtime($dir);
+
+        if ($mtime === false) {
+            return false;
+        }
+
+        return (time() - $mtime) > self::WORK_DIR_STALE_SECONDS;
+    }
+
+    /**
+     * 게시 디렉토리를 삭제하고 성공 여부를 반환합니다.
+     *
+     * 반환값을 검사하지 않으면 소유권 불일치로 삭제가 실패해도 "N개 삭제" 로 보고되어,
+     * 구버전·고아 tmp 가 무한 누적되는 동안 운영자에게는 정상으로 보인다.
+     *
+     * @param  string  $dir  삭제할 디렉토리 절대 경로
+     * @return bool 삭제 성공 여부
+     */
+    private function deleteVersionDirectory(string $dir): bool
+    {
+        if (File::deleteDirectory($dir)) {
+            return true;
+        }
+
+        Log::warning('정적 게시 디렉토리 삭제 실패 — 잔존물이 누적됩니다 (소유권/권한 확인 필요)', [
+            'path' => $dir,
+        ]);
+
+        return false;
     }
 
     /**
@@ -204,6 +308,20 @@ class ExtensionStaticCacheService
             return;
         }
 
+        // 신선한 실패 마커가 있으면 예약하지 않는다 (백오프).
+        //
+        // 쓰기 불가 환경(게시 트리 소유권 불일치 등)에서는 게시가 **매 요청** 실패하는데,
+        // 실패 전까지 전 로케일 lang 병합 + 전 템플릿 dist 복사를 이미 다 헛돈 뒤다.
+        // 사이트는 API 폴백으로 살아 있어 아무도 눈치채지 못한 채 모든 프로덕션 요청이
+        // 그 비용을 낸다. 마커 TTL 창당 1회로 억제한다.
+        //
+        // 억제 대상은 **같은 버전**뿐이다. 버전이 오르면 그 버전은 아직 한 번도 시도된
+        // 적이 없으므로, 이전 버전의 마커로 막으면 "버전 갱신 → 게시" 규율(D1)이 TTL
+        // 창(최대 300초) 동안 도로 끊긴다.
+        if (self::hasFreshFailureMarker(self::getExtensionCacheVersion())) {
+            return;
+        }
+
         self::$publishScheduled = true;
 
         app()->terminating(static function (): void {
@@ -224,12 +342,120 @@ class ExtensionStaticCacheService
     }
 
     /**
+     * 테스트 전용 — terminating 예약 플래그의 현재 값을 반환합니다.
+     *
+     * 게시 예약은 부수효과가 `app()->terminating()` 콜백 등록뿐이라 밖에서 관측할 방법이
+     * 없다. "예약했는가" 를 단언하려면 이 플래그가 유일한 통로다.
+     *
+     * @return bool 예약 여부
+     */
+    public static function isPublishScheduledForTesting(): bool
+    {
+        return self::$publishScheduled;
+    }
+
+    /**
      * 테스트 격리용 — terminating 예약 플래그를 초기화합니다.
      */
     public static function resetPublishScheduleForTesting(): void
     {
         self::$publishScheduled = false;
         self::$rootProcessForTesting = null;
+    }
+
+    /**
+     * 최근 게시 실패 마커를 반환합니다 (없으면 null).
+     *
+     * 진단 표면(`ext-static:status`, 대시보드 알림)이 읽는 유일한 통로다 — 게시 실패는
+     * 사이트를 멈추지 않고 API 폴백으로 넘어가므로, 이 마커가 없으면 정상 운영 환경에서
+     * 실패를 확인할 방법이 로그뿐이다.
+     *
+     * @return array{version:int, at:string, reason:string, count:int, message:string}|null 실패 마커
+     */
+    public static function failureMarker(): ?array
+    {
+        try {
+            $marker = self::markerCache()->get(self::FAILURE_MARKER_KEY);
+        } catch (\Throwable) {
+            // 마커 저장소 자체가 불능인 환경 — best-effort 다 (아래 recordFailure 주석 참조)
+            return null;
+        }
+
+        return is_array($marker) ? $marker : null;
+    }
+
+    /**
+     * 게시 실패를 마커에 기록합니다 (연속 실패 횟수 누적).
+     *
+     * best-effort 다 — 마커를 쓰지 못하는 환경(캐시 저장소 자체가 불능)이 실재하며,
+     * 그 경우 백오프는 걸리지 않는다. 다만 in-process `$publishScheduled` 가드는 그대로
+     * 유효하므로 한 요청 안에서 반복되지는 않는다.
+     *
+     * @param  int  $version  실패한 확장 캐시 버전
+     * @param  string  $reason  실패 사유 코드 (`parent_not_writable` / `write_failed` / `lock_unavailable`)
+     * @param  string  $message  진단용 원문 메시지
+     */
+    private static function recordFailure(int $version, string $reason, string $message): void
+    {
+        try {
+            $previous = self::failureMarker();
+            $count = ($previous !== null && ($previous['version'] ?? null) === $version)
+                ? (int) ($previous['count'] ?? 0) + 1
+                : 1;
+
+            self::markerCache()->put(self::FAILURE_MARKER_KEY, [
+                'version' => $version,
+                'at' => now()->toIso8601String(),
+                'reason' => $reason,
+                'count' => $count,
+                'message' => $message,
+            ], self::FAILURE_MARKER_TTL);
+        } catch (\Throwable $e) {
+            Log::debug('정적 게시 실패 마커 기록 실패 (백오프 미적용)', ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * 게시 성공 시 실패 마커를 제거합니다.
+     */
+    private static function clearFailureMarker(): void
+    {
+        try {
+            self::markerCache()->forget(self::FAILURE_MARKER_KEY);
+        } catch (\Throwable) {
+            // 마커 제거 실패는 무해하다 — TTL 로 자연 만료된다
+        }
+    }
+
+    /**
+     * 지정 버전에 대한 TTL 창 안의 실패 마커가 존재하는지 판정합니다 (백오프 게이트).
+     *
+     * 버전을 한정하지 않으면 bump 직후의 새 버전이 이전 버전의 마커로 억제된다 —
+     * 아직 한 번도 시도되지 않은 버전을 실패로 취급하는 셈이다.
+     *
+     * @param  int  $version  판정할 확장 캐시 버전
+     * @return bool 해당 버전의 신선한 실패 마커 존재 여부
+     */
+    private static function hasFreshFailureMarker(int $version): bool
+    {
+        $marker = self::failureMarker();
+
+        return $marker !== null && ($marker['version'] ?? null) === $version;
+    }
+
+    /**
+     * 실패 마커용 캐시 드라이버를 반환합니다.
+     *
+     * 캐시 버전 키와 **같은 스토어**를 쓴다 — 마커를 쓰는 쪽(게시)과 읽는 쪽(진단 커맨드·
+     * 대시보드 알림)이 다른 스토어를 가리키면 실패가 기록돼도 화면에는 영영 뜨지 않는다.
+     * `ClearsTemplateCaches::extensionCacheStore()` 는 프로세스 1회 메모이즈된 고정 스토어라
+     * settings 로드 타이밍에 좌우되지 않는다.
+     *
+     * @return CacheInterface 코어 네임스페이스 캐시 드라이버
+     */
+    private static function markerCache(): CacheInterface
+    {
+        return new CoreCacheDriver(self::extensionCacheStore());
     }
 
     /**
@@ -300,10 +526,19 @@ class ExtensionStaticCacheService
         $base = $this->baseDir();
         $tmp = $base.DIRECTORY_SEPARATOR.$version.'.tmp';
         $final = $this->versionDir($version);
+        $old = $final.'.old';
+        $swapped = false;
+
+        // 프리플라이트 — 게시 트리를 만들 수 없는 환경이면 병합을 시작하기 전에 끊는다.
+        // 전 로케일 lang 병합 + 전 템플릿 dist 복사를 다 헛돈 뒤 mkdir 에서 실패하는
+        // 것과, 시작 전에 사유를 남기고 끊는 것은 비용이 전혀 다르다.
+        if (! $this->ensurePublishRootWritable($version)) {
+            return false;
+        }
 
         try {
             File::deleteDirectory($tmp);
-            File::ensureDirectoryExists($tmp, 0775);
+            $this->makeDirectory($tmp);
 
             $files = [];
 
@@ -319,18 +554,36 @@ class ExtensionStaticCacheService
 
             $this->publishExtensionCustomAssets($tmp, $files);
 
-            // 원자적 스왑 — force 재게시 시 기존 디렉토리를 비켜낸 뒤 rename
-            if (File::isDirectory($final)) {
-                File::deleteDirectory($final);
+            // 원자적 스왑 — 기존 디렉토리를 **먼저 지우지 않는다.** 삭제 후 rename 사이의
+            // 창에서는 이미 배달된 HTML 이 참조하는 CSS/JS/폰트가 전부 404 가 되고, 폰트는
+            // 복구기가 없다. 대신 `.old` 로 비켜낸 뒤 rename 하고, 성공을 확인한 다음에
+            // `.old` 를 지운다. 중간 실패 시 `.old` 를 제자리로 되돌린다.
+            File::deleteDirectory($old);
+
+            if (File::isDirectory($final) && ! $this->renameDirectory($final, $old)) {
+                throw new StaticCachePublishException("Failed to move aside publish directory: {$final} -> {$old}");
             }
 
-            if (! @rename($tmp, $final)) {
+            $swapped = File::isDirectory($old);
+
+            if (! $this->renameDirectory($tmp, $final)) {
+                // 새 디렉토리를 앉히지 못했다 — 비켜낸 기존 버전을 즉시 되돌린다.
+                if ($swapped && $this->renameDirectory($old, $final)) {
+                    $swapped = false;
+                }
+
                 throw new StaticCachePublishException("Failed to rename publish directory: {$tmp} -> {$final}");
             }
 
             // manifest 는 rename 후 마지막 기록 — 존재 = 게시 완료
             $this->writeManifest($final, $version, $files);
             unset($this->publishedMemo[$version]);
+
+            // 새 버전이 완성된 뒤에만 구버전을 치운다 (여기까지 오면 404 창이 없다)
+            if ($swapped) {
+                File::deleteDirectory($old);
+                $swapped = false;
+            }
 
             // sudo/root CLI 게시 대응 — terminating 게시는 코어 업데이트의
             // restoreOwnership **이후**(프로세스 종료 시)에 실행되므로, root 소유로
@@ -340,6 +593,8 @@ class ExtensionStaticCacheService
 
             // 인라인 GC (현재 + 직전 1개 보존)
             $this->cleanup();
+
+            self::clearFailureMarker();
 
             Log::info('부트스트랩 리소스 정적 게시 완료', [
                 'version' => $version,
@@ -357,10 +612,218 @@ class ExtensionStaticCacheService
                 'error' => $e->getMessage(),
                 'at' => $e->getFile().':'.$e->getLine(),
             ]);
+
+            // 정리 대상은 **실제 존재하는 쪽**이다. rename 이 이미 성공했다면 `$tmp` 는
+            // 존재하지 않으므로 그것만 지우는 종전 코드는 no-op 이었고, manifest 기록이
+            // 실패한 경우 manifest 없는 완성 디렉토리가 영구 잔존했다 —
+            // `isPublished()` 가 영원히 false 라 요청마다 지웠다 만들기를 반복한다.
             File::deleteDirectory($tmp);
+
+            if (! File::isDirectory($final.DIRECTORY_SEPARATOR)
+                || ! is_file($final.DIRECTORY_SEPARATOR.self::MANIFEST_FILE)) {
+                File::deleteDirectory($final);
+            }
+
+            // 비켜낸 기존 버전이 남아 있으면 제자리로 되돌린다 — 되돌리지 못하면
+            // `.old` 로 둔 채 나이 가드가 붙은 GC 에 맡긴다(즉시 삭제하지 않는다).
+            if ($swapped && ! File::isDirectory($final)) {
+                $this->renameDirectory($old, $final);
+            }
+
+            unset($this->publishedMemo[$version]);
+
+            self::recordFailure($version, 'write_failed', $e->getMessage());
 
             return false;
         }
+    }
+
+    /**
+     * 게시 루트(`public/build/ext`)를 만들 수 있고 쓸 수 있는지 확인합니다.
+     *
+     * 부모(`public/build`)가 다른 계정 소유 + `g-w` 면 웹 프로세스는 `ext` 를 **mkdir 조차
+     * 하지 못한다.** 그 경우 최초 게시가 CLI 로 강제되고, 그 순간 트리 소유권이 CLI 계정으로
+     * 고정되어 이후 웹 재게시가 영구 실패한다 (제보 본건).
+     *
+     * @param  int  $version  게시 대상 버전 (실패 마커 기록용)
+     * @return bool 게시를 진행해도 되는지 여부
+     */
+    private function ensurePublishRootWritable(int $version): bool
+    {
+        $base = $this->baseDir();
+
+        if (! File::isDirectory($base)) {
+            // 게시 루트가 아직 없으면 만든다. 검사 대상은 `public/build` 고정이 아니라
+            // **실재하는 최근접 조상**이다 — `public/build` 자체가 없는 환경(신규 설치,
+            // 테스트 격리 public 경로)에서 부모 존재를 요구하면 정상 상황을 실패로 만든다.
+            $ancestor = $this->nearestExistingAncestor($base);
+
+            if ($ancestor === null || ! is_writable($ancestor)) {
+                $this->failPreflight(
+                    $version,
+                    $ancestor ?? dirname($base),
+                    '게시 루트를 만들 상위 디렉토리에 쓸 수 없습니다'
+                );
+
+                return false;
+            }
+
+            // 조상이 쓰기 가능해도 mkdir 은 실패할 수 있다 — 경로 중간이 **파일**이거나
+            // 경합으로 사라지는 경우다. `ensureDirectoryExists` 는 그 실패를 예외로
+            // 던지는데, 이 프리플라이트는 `publishVersion` 의 try 블록 **밖**에서 돌므로
+            // 잡지 않으면 예외가 호출자에게 그대로 새어 나간다 — 게시 실패는 사이트를
+            // 멈추지 않는다는 계약이 그 지점에서 깨진다.
+            try {
+                $this->makeDirectory($base);
+            } catch (\Throwable $e) {
+                $this->failPreflight($version, $base, '게시 루트를 만들지 못했습니다: '.$e->getMessage());
+
+                return false;
+            }
+        }
+
+        clearstatcache(true, $base);
+
+        if (! File::isDirectory($base) || ! is_writable($base)) {
+            $this->failPreflight($version, $base, '게시 루트에 쓸 수 없습니다');
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * 경로에서 위로 올라가며 실재하는 첫 디렉토리를 찾습니다.
+     *
+     * @param  string  $path  기준 경로
+     * @return string|null 실재하는 최근접 조상 (루트까지 없으면 null)
+     */
+    private function nearestExistingAncestor(string $path): ?string
+    {
+        $current = dirname($path);
+
+        while (! File::isDirectory($current)) {
+            $parent = dirname($current);
+
+            if ($parent === $current) {
+                return null;
+            }
+
+            $current = $parent;
+        }
+
+        return $current;
+    }
+
+    /**
+     * 프리플라이트 실패를 로그 + 실패 마커에 남깁니다.
+     *
+     * @param  int  $version  게시 대상 버전
+     * @param  string  $path  쓰기 불가로 판정된 경로
+     * @param  string  $summary  사람이 읽는 요약
+     */
+    private function failPreflight(int $version, string $path, string $summary): void
+    {
+        $detail = sprintf(
+            '%s (%s, owner=%s, perms=%s, process_user=%s)',
+            $summary,
+            $path,
+            (string) (@fileowner($path) ?: 'unknown'),
+            File::exists($path) ? substr(sprintf('%o', @fileperms($path)), -4) : 'absent',
+            self::currentProcessUser(),
+        );
+
+        Log::warning('부트스트랩 리소스 정적 게시 프리플라이트 실패 — API 폴백으로 동작합니다', [
+            'version' => $version,
+            'path' => $path,
+            'reason' => 'parent_not_writable',
+            'detail' => $detail,
+        ]);
+
+        self::recordFailure($version, 'parent_not_writable', $detail);
+    }
+
+    /**
+     * 현재 프로세스의 실행 계정명을 반환합니다 (진단용, 미지원 환경은 'unknown').
+     *
+     * @return string 계정명 또는 uid 문자열
+     */
+    public static function currentProcessUser(): string
+    {
+        if (! function_exists('posix_geteuid')) {
+            return 'unknown';
+        }
+
+        $uid = posix_geteuid();
+
+        if (function_exists('posix_getpwuid')) {
+            $info = @posix_getpwuid($uid);
+
+            if (is_array($info) && isset($info['name'])) {
+                return (string) $info['name'];
+            }
+        }
+
+        return (string) $uid;
+    }
+
+    /**
+     * 게시 트리 디렉토리를 만들고 umask 와 무관하게 권한·소유권을 정합화합니다.
+     *
+     * `File::ensureDirectoryExists($dir, 0775)` 의 mode 인자는 **umask 로 깎인다** —
+     * umask 022 환경에서는 0755 가 되어 웹 계정(그룹 공유)이 쓸 수 없다. 명시 `chmod` 로
+     * umask 를 무력화하고, 부모 소유권을 상속시켜 CLI 계정 고정을 막는다.
+     * (선례: `CoreUpdateService::ensureWritableDirectories`)
+     *
+     * @param  string  $dir  생성할 디렉토리 절대 경로
+     */
+    private function makeDirectory(string $dir): void
+    {
+        File::ensureDirectoryExists($dir, self::PUBLISH_DIR_MODE);
+
+        // ensureDirectoryExists 의 mode 는 umask 로 깎이므로 명시 chmod 로 확정한다.
+        @chmod($dir, self::PUBLISH_DIR_MODE);
+
+        FilePermissionHelper::inheritOwnershipFromParent($dir);
+    }
+
+    /**
+     * 게시 트리의 디렉토리 rename 을 유한 재시도와 함께 수행합니다.
+     *
+     * 갓 쓰여진 파일이 든 디렉토리의 rename 은 **목적지가 비어 있는데도** 첫 시도가
+     * 거부될 수 있다. 실측(4표본): 실패 순간 `$final` 은 부재였고 `.old` 스왑도
+     * 관여하지 않았는데 `rename` 이 false 를 돌려줬으며, 상태를 바꾸지 않고 그대로
+     * 다시 호출하면 전부 성공했다(즉시 1건 / 200ms 후 3건, 1,200ms 까지 간 표본 0).
+     * 운영 환경에서도 같은 사유의 게시 실패가 관측됐다 — 재시도 한 번이면 성공했을
+     * 게시가 실패 마커와 대시보드 알림까지 올라간다.
+     *
+     * 특정 OS 로 분기하지 않는다. 이 거부는 파일시스템·스토리지 계층(네트워크 마운트,
+     * 스냅샷, 백신·인덱서 등)이면 어디서든 성립하는 조건이고, 분기를 두면 그 플랫폼
+     * 밖에서 같은 실패가 조용히 남는다. 재시도가 불필요한 환경에서는 첫 시도가
+     * 성공하므로 비용이 0 이다.
+     *
+     * 성공하지 못하면 false 를 돌려주며 **실패 계약은 종전 그대로다** — 호출부가
+     * `.old` 롤백과 예외를 그대로 수행한다.
+     *
+     * @param  string  $from  원본 경로
+     * @param  string  $to  목적지 경로
+     * @return bool rename 성공 여부
+     */
+    private function renameDirectory(string $from, string $to): bool
+    {
+        for ($attempt = 1; $attempt <= self::RENAME_ATTEMPTS; $attempt++) {
+            if (@rename($from, $to)) {
+                return true;
+            }
+
+            if ($attempt < self::RENAME_ATTEMPTS) {
+                usleep(self::RENAME_RETRY_DELAY_US);
+                clearstatcache();
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -373,19 +836,38 @@ class ExtensionStaticCacheService
      */
     private function normalizeOwnership(): void
     {
-        if (! function_exists('chown') || ! function_exists('posix_geteuid') || posix_geteuid() !== 0) {
+        $base = $this->baseDir();
+
+        if (! File::isDirectory($base)) {
             return;
         }
 
-        $parent = dirname($this->baseDir());
-        $owner = @fileowner($parent);
-        $group = @filegroup($parent);
+        // ① root 갈래 — 소유권을 부모 기준으로 되돌린다 (sudo CLI 게시 대응).
+        if (function_exists('chown') && function_exists('posix_geteuid') && posix_geteuid() === 0) {
+            $parent = dirname($base);
+            $owner = @fileowner($parent);
+            $group = @filegroup($parent);
 
-        if ($owner === false || $owner === 0) {
-            return;
+            if ($owner !== false && $owner !== 0) {
+                FilePermissionHelper::chownRecursive($base, $owner, $group);
+            }
         }
 
-        FilePermissionHelper::chownRecursive($this->baseDir(), $owner, $group);
+        // ② 항상 실행 갈래 — 비-root CLI 계정(`deploy` 등)으로 게시한 경우를 덮는다.
+        //
+        // 종전에는 root 가 아니면 즉시 no-op 이었다. 그러나 실제 제보는 **비-root CLI 계정
+        // ≠ 웹 계정** 이었다: CLI 가 최초 게시하면서 트리가 `0755 deploy:deploy` 로 굳고,
+        // 이후 웹(php-fpm)의 재게시가 영구 실패한 채 로그 warning 만 남았다.
+        //
+        // chgrp 로 부모 그룹을 상속시키고 트리에 `g+w` 를 승격하면 그룹을 공유하는 웹
+        // 계정이 재게시할 수 있다. 비-root 에서 `@chown` 은 실패해도 무해하고(false 반환),
+        // `chgrp`(자기가 속한 그룹으로) 와 `chmod g+w`(자기 소유 파일)는 성립한다.
+        //
+        // 한계: 이 방식은 CLI 계정과 웹 계정이 **그룹을 공유**할 때만 성립한다. 공유하지
+        // 않는 환경은 프리플라이트가 실패 마커를 남기고 진단 표면(`ext-static:status`,
+        // 대시보드 알림)이 그 사실을 운영자에게 전달한다 — 규정 문서 §6 참조.
+        FilePermissionHelper::inheritOwnershipFromParent($base);
+        FilePermissionHelper::syncGroupWritabilityDetailed($base, force: true);
     }
 
     /**
@@ -658,7 +1140,7 @@ class ExtensionStaticCacheService
      */
     private function writeJson(string $absolutePath, mixed $data, array &$files, string $tmp): void
     {
-        File::ensureDirectoryExists(dirname($absolutePath), 0775);
+        $this->makeDirectory(dirname($absolutePath));
 
         $json = json_encode($data, ResponseHelper::JSON_ENCODE_OPTIONS);
 
@@ -666,9 +1148,7 @@ class ExtensionStaticCacheService
             throw new StaticCachePublishException("Failed to encode JSON payload: {$absolutePath}");
         }
 
-        if (File::put($absolutePath, $json) === false) {
-            throw new StaticCachePublishException("Failed to write file: {$absolutePath}");
-        }
+        $this->putVerified($absolutePath, $json);
 
         $files[] = $this->relativePath($absolutePath, $tmp);
     }
@@ -683,10 +1163,22 @@ class ExtensionStaticCacheService
      */
     private function copyFile(string $source, string $target, array &$files, string $tmp): void
     {
-        File::ensureDirectoryExists(dirname($target), 0775);
+        $this->makeDirectory(dirname($target));
 
         if (! File::copy($source, $target)) {
             throw new StaticCachePublishException("Failed to copy file: {$source} -> {$target}");
+        }
+
+        // 복사도 절단될 수 있다 — 디스크 풀/quota 에서 `copy()` 는 true 를 반환하면서
+        // 짧은 파일을 남긴다. 크기 대조로 그 자리에서 잡는다.
+        clearstatcache(true, $target);
+        $expected = @filesize($source);
+        $actual = @filesize($target);
+
+        if ($expected !== false && $actual !== $expected) {
+            throw new StaticCachePublishException(
+                "Truncated copy: {$target} ({$actual} of {$expected} bytes)"
+            );
         }
 
         $files[] = $this->relativePath($target, $tmp);
@@ -715,9 +1207,7 @@ class ExtensionStaticCacheService
 
         HTACCESS;
 
-        if (File::put($tmp.DIRECTORY_SEPARATOR.'.htaccess', $content) === false) {
-            throw new StaticCachePublishException('Failed to write .htaccess');
-        }
+        $this->putVerified($tmp.DIRECTORY_SEPARATOR.'.htaccess', $content);
 
         $files[] = '.htaccess';
     }
@@ -739,8 +1229,40 @@ class ExtensionStaticCacheService
 
         $json = json_encode($manifest, ResponseHelper::JSON_ENCODE_OPTIONS);
 
-        if ($json === false || File::put($finalDir.DIRECTORY_SEPARATOR.self::MANIFEST_FILE, $json) === false) {
-            throw new StaticCachePublishException('Failed to write manifest');
+        if ($json === false) {
+            throw new StaticCachePublishException('Failed to encode manifest');
+        }
+
+        $this->putVerified($finalDir.DIRECTORY_SEPARATOR.self::MANIFEST_FILE, $json);
+    }
+
+    /**
+     * 파일을 기록하고 **기록된 바이트 수를 검증**합니다.
+     *
+     * `File::put()` 은 실패 시에만 `false` 를 돌려주는 게 아니다 — 디스크 풀·quota 초과에서는
+     * 쓴 만큼의 짧은 `int` 를 반환하며 성공한 것처럼 보인다. `=== false` 검사만 하면 그
+     * **절단된 JSON 이 200 으로 서빙**되고, 프론트의 `fetchStaticFirst` 는 `response.ok` 만
+     * 보므로 폴백하지 않은 채 `response.json()` 이 던져 부팅 전체가 실패한다. 3층 폴백이
+     * 유일하게 개입하지 못하는 경로라, 여기서 잡지 못하면 다른 어디서도 잡히지 않는다.
+     *
+     * @param  string  $absolutePath  기록 대상 절대 경로
+     * @param  string  $contents  기록할 내용
+     *
+     * @throws StaticCachePublishException 쓰기 실패 또는 바이트 수 불일치
+     */
+    private function putVerified(string $absolutePath, string $contents): void
+    {
+        $expected = strlen($contents);
+        $written = File::put($absolutePath, $contents);
+
+        if ($written === false) {
+            throw new StaticCachePublishException("Failed to write file: {$absolutePath}");
+        }
+
+        if ($written !== $expected) {
+            throw new StaticCachePublishException(
+                "Truncated write: {$absolutePath} ({$written} of {$expected} bytes)"
+            );
         }
     }
 

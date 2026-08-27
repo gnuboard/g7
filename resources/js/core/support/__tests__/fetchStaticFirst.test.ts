@@ -13,10 +13,29 @@ import { fetchStaticFirst } from '../fetchStaticFirst';
 import { extStaticUrl, extStaticVersion, staticToLegacy } from '../assetUrl';
 
 function ok(body: unknown = {}): Response {
+    const text = JSON.stringify(body);
+
     return {
         ok: true,
         status: 200,
+        statusText: 'OK',
+        headers: new Headers({ 'Content-Type': 'application/json' }),
+        text: async () => text,
         json: async () => body,
+    } as unknown as Response;
+}
+
+/**
+ * 200 인데 본문이 잘린 응답 — 디스크 풀/quota 로 절단된 게시본이 서빙되는 상황.
+ */
+function truncated(raw: string): Response {
+    return {
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        headers: new Headers({ 'Content-Type': 'application/json' }),
+        text: async () => raw,
+        json: async () => JSON.parse(raw),
     } as unknown as Response;
 }
 
@@ -48,6 +67,36 @@ describe('fetchStaticFirst (#122)', () => {
         expect(response.ok).toBe(true);
         expect(fetchMock).toHaveBeenCalledTimes(1);
         expect(String(fetchMock.mock.calls[0][0])).toContain('/build/ext/7/');
+    });
+
+    it('정적 200 이어도 본문이 손상 JSON 이면 legacy 로 폴백한다 (#122 A1)', async () => {
+        // 디스크 풀/quota 로 절단된 게시본은 웹서버가 **정상 200** 으로 서빙한다.
+        // `response.ok` 만 보고 돌려주면 호출부의 `.json()` 이 던지는데 그 지점에는
+        // 폴백이 없어 부팅 전체가 실패한다 — 3층 폴백이 개입 못 하던 유일한 경로.
+        fetchMock.mockImplementation((url: string) =>
+            Promise.resolve(
+                String(url).includes('/build/ext/')
+                    ? truncated('{"messages":{"a":"b"')
+                    : ok({ from: 'legacy' })
+            )
+        );
+
+        const response = await fetchStaticFirst('/build/ext/7/templates/t/lang/ko.json', '/api/templates/t/lang/ko.json');
+
+        await expect(response.json()).resolves.toEqual({ from: 'legacy' });
+        expect(fetchMock).toHaveBeenCalledTimes(2);
+        expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('malformed JSON'));
+    });
+
+    it('정적 200 + 온전한 JSON 은 본문이 그대로 소비된다 (검증이 본문을 삼키지 않는다)', async () => {
+        // 검증을 위해 body 를 읽으므로, 읽고 나서 호출부가 다시 소비할 수 있어야 한다.
+        // (Response body 는 1회용 스트림이라 그대로 돌려주면 호출부에서 빈다.)
+        fetchMock.mockResolvedValue(ok({ from: 'static', nested: { a: 1 } }));
+
+        const response = await fetchStaticFirst('/build/ext/7/templates/t/routes.json', '/api/templates/t/routes.json');
+
+        await expect(response.json()).resolves.toEqual({ from: 'static', nested: { a: 1 } });
+        expect(fetchMock).toHaveBeenCalledTimes(1);
     });
 
     it('정적 404 이면 legacy 로 1회 폴백하고 warn 을 남긴다', async () => {

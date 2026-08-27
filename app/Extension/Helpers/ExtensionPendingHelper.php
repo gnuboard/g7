@@ -344,6 +344,11 @@ class ExtensionPendingHelper
         ?\Closure $onProgress = null
     ): void {
         File::ensureDirectoryExists($dest, 0775);
+        // 디렉토리도 부모 소유권을 상속시킨다 — 파일만 `copyFile` 로 상속시키면 sudo 로
+        // 실행된 설치/업데이트가 만든 **디렉토리**가 root 소유로 남아, 이후 웹 프로세스의
+        // 쓰기가 그 디렉토리에서 막힌다. 형제 구현 `ExtensionBackupHelper::
+        // copyDirectoryWithProgress` 는 이미 같은 방어를 갖고 있다 (계층 불균형 해소).
+        FilePermissionHelper::inheritOwnershipFromParent($dest);
         $items = new \FilesystemIterator($source, \FilesystemIterator::SKIP_DOTS);
 
         foreach ($items as $item) {
@@ -384,6 +389,7 @@ class ExtensionPendingHelper
     private static function syncDirectoryContents(string $source, string $dest, ?\Closure $onProgress = null): void
     {
         File::ensureDirectoryExists($dest, 0775);
+        FilePermissionHelper::inheritOwnershipFromParent($dest);
 
         $failed = [];
         self::overlayDirectory($source, $dest, $source, $onProgress, $failed);
@@ -458,6 +464,9 @@ class ExtensionPendingHelper
         array &$failed
     ): void {
         File::ensureDirectoryExists($dest, 0775);
+        // 제자리 동기화 폴백 경로도 동일 방어 — rename 경로만 고치면 파일 잠금으로
+        // 이 경로로 떨어진 교체에서만 소유권이 조용히 어긋난다.
+        FilePermissionHelper::inheritOwnershipFromParent($dest);
         $items = new \FilesystemIterator($source, \FilesystemIterator::SKIP_DOTS);
 
         foreach ($items as $item) {
