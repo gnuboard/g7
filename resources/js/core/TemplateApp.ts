@@ -31,8 +31,13 @@ import { createLogger, Logger } from './utils/Logger';
 import { webSocketManager } from './websocket/WebSocketManager';
 import { getModuleAssetLoader, parseModuleAssetsFromConfig, parsePluginAssetsFromConfig, parseBundleUrlsFromConfig } from './modules';
 import { SystemBannerManager } from './template-engine/SystemBannerManager';
-import { installUnloadGuard, isDocumentUnloading } from './template-engine/networkResilience';
-import { suffixed, extStaticUrl } from './support/assetUrl';
+import {
+    installUnloadGuard,
+    isDocumentUnloading,
+    loadScriptWithRetry,
+} from './template-engine/networkResilience';
+import { notifyAssetFailure, clearAssetFailure } from './assets/AssetFailureNotice';
+import { suffixed, extStaticUrl, convertToCurrentMode } from './support/assetUrl';
 import { fetchStaticFirst } from './support/fetchStaticFirst';
 import { resetLocalInitTracking } from './template-engine/localInitSlot';
 /**
@@ -245,6 +250,14 @@ export class TemplateApp {
     private globalStateListeners: Set<(state: GlobalState) => void> = new Set();
     /** 현재 진행 중인 라우트 변경 요청 ID (새 요청 시 이전 요청 무시용) */
     private currentRouteChangeId: number = 0;
+    /**
+     * 재시도까지 실패한 레이아웃 스크립트 id 집합.
+     *
+     * 실패를 어딘가에 남기지 않으면 그 스크립트가 등록하는 핸들러가 전부 미등록이어도
+     * 화면에는 "버튼이 안 눌린다" 로만 나타난다. `ModuleAssetLoader` 의 `failedJsAssets`
+     * 와 같은 역할이다.
+     */
+    private failedLayoutScripts: Set<string> = new Set();
     /** 현재 레이아웃의 데이터 소스 정의 (if 조건으로 필터링된 결과 — refetch용) */
     private currentDataSources: any[] = [];
     /**
@@ -776,12 +789,18 @@ export class TemplateApp {
             // bundleUrls 부재 시 개별 로딩 폴백 (회귀 안전)
             if (!bundleUrls) {
                 await this.loadExtensionAssetsIndividually();
+                await moduleAssetLoader.loadCustomAssets();
+
                 return;
             }
 
             // 모듈 번들 → 플러그인 번들 순서 (gdpr 는 플러그인 번들 내 최상단)
             await moduleAssetLoader.loadBundle('module', bundleUrls.moduleJs, bundleUrls.moduleCss);
             await moduleAssetLoader.loadBundle('plugin', bundleUrls.pluginJs, bundleUrls.pluginCss);
+
+            // 운영자가 덧붙인 자산은 **마지막**에 붙인다 — CSS 는 나중에 온 규칙이 이기므로,
+            // 확장 번들보다 뒤에 와야 재정의가 성립한다.
+            await moduleAssetLoader.loadCustomAssets();
 
             logger.log('Extension bundle assets loaded successfully');
         } catch (error) {
@@ -2067,28 +2086,7 @@ export class TemplateApp {
                 continue;
             }
 
-            // 스크립트 동적 로드 (Promise로 래핑)
-            const loadPromise = new Promise<void>((resolve, reject) => {
-                const scriptEl = document.createElement('script');
-                scriptEl.src = script.src;
-                scriptEl.id = script.id;
-                scriptEl.async = script.async ?? true;
-
-                scriptEl.onload = () => {
-                    logger.log(`Script loaded successfully: ${script.id}`);
-                    resolve();
-                };
-
-                scriptEl.onerror = () => {
-                    logger.warn(`Failed to load script: ${script.id} (${script.src})`);
-                    // 스크립트 로드 실패는 경고만 출력하고 계속 진행
-                    resolve();
-                };
-
-                document.head.appendChild(scriptEl);
-            });
-
-            loadPromises.push(loadPromise);
+            loadPromises.push(this.loadLayoutScript(script));
         }
 
         // 모든 스크립트 로드 완료 대기
@@ -2096,6 +2094,66 @@ export class TemplateApp {
             await Promise.all(loadPromises);
             logger.log(`All scripts loaded: ${scripts.filter(s => !document.getElementById(s.id) || loadPromises.length > 0).map(s => s.id).join(', ')}`);
         }
+    }
+
+    /**
+     * 레이아웃 스크립트 1건을 로드합니다 (재시도 + 실패 표면화).
+     *
+     * 종전에는 `onerror` 에서 `resolve()` 로 삼켜, 실패가 로그 한 줄 말고는 어디에도
+     * 남지 않았다. 그 스크립트가 등록하는 핸들러가 전부 미등록이 되어도 사용자에게는
+     * "버튼이 안 눌린다" 로만 나타났다. 같은 저장소의 `ModuleAssetLoader.loadJS` 는
+     * 이미 재시도 + 실패 목록 계층을 갖고 있다 — 이 경로만 그 계층이 없었다.
+     *
+     * `convertToCurrentMode` 를 거치는 이유: 레이아웃 JSON 의 `src` 는 확장자 형태로
+     * 굳어 있는데, 확장자를 정적 location 이 가로채는 서버(자산 URL 이중 모드)에서는
+     * 그 형태가 404 다. 서버가 굳혀 내려준 다른 자산 URL 들과 같은 보정을 받아야 한다.
+     *
+     * 실패해도 reject 하지 않는다 — 한 스크립트의 실패가 나머지 스크립트 로드를 막지
+     * 않는다는 기존 계약을 유지한다. 대신 `failedLayoutScripts` 와 안내 배너로 표면화한다.
+     *
+     * @param script 스크립트 정의
+     * @returns Promise<void> 성공·실패 모두 resolve
+     */
+    private async loadLayoutScript(script: LayoutScript): Promise<void> {
+        const url = script.src.startsWith('/') ? convertToCurrentMode(script.src) : script.src;
+
+        try {
+            await loadScriptWithRetry(
+                url,
+                { id: script.id },
+                { label: `layout-script:${script.id}` }
+            );
+
+            this.failedLayoutScripts.delete(script.id);
+            clearAssetFailure(`layout-script:${script.id}`);
+            logger.log(`Script loaded successfully: ${script.id}`);
+        } catch (error) {
+            this.failedLayoutScripts.add(script.id);
+            logger.warn(`Failed to load script after retries: ${script.id} (${url})`, error);
+
+            notifyAssetFailure({
+                id: `layout-script:${script.id}`,
+                label: script.id,
+                retry: async () => {
+                    document.getElementById(script.id)?.remove();
+                    await loadScriptWithRetry(
+                        url,
+                        { id: script.id },
+                        { label: `layout-script:${script.id}` }
+                    );
+                    this.failedLayoutScripts.delete(script.id);
+                },
+            });
+        }
+    }
+
+    /**
+     * 끝내 로드하지 못한 레이아웃 스크립트 id 목록을 돌려줍니다.
+     *
+     * @returns 실패한 스크립트 id 배열
+     */
+    public getFailedLayoutScripts(): string[] {
+        return Array.from(this.failedLayoutScripts);
     }
 
     /**

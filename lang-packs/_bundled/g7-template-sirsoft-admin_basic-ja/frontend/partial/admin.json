@@ -738,7 +738,10 @@
       "no_modified_layouts": "修正されたレイアウトがありません。",
       "modified_layouts_list_title": "保持される修正レイアウト ({{count}}個)",
       "modified_layouts_keep_notice": "上記のレイアウトはアップデート後も現在の内容が保持されます。",
-      "modified_layouts_check_failed": "編集の確認ができませんでした。ネットワークの状態を確認してからもう一度試すか、安全に「編集を保持」を選択してください。"
+      "modified_layouts_check_failed": "編集の確認ができませんでした。ネットワークの状態を確認してからもう一度試すか、安全に「編集を保持」を選択してください。",
+      "preserved_title": "管理者ファイルコピー保存",
+      "preserved_desc": "削除前に custom/ ディレクトリのコピーを以下のパスに保存しました。拡張を再度インストール後、custom/ に移動することでそのまま再利用できます。",
+      "uninstall_done_title": "モジュール削除完了"
     },
     "tabs": {
       "file_upload": "ファイル アップロード",
@@ -944,7 +947,10 @@
       "no_modified_layouts": "編集されたレイアウトがありません。",
       "modified_layouts_list_title": "維持される編集レイアウト（{{count}}個）",
       "modified_layouts_keep_notice": "上記のレイアウトはアップデート後も現在の内容が維持されます。",
-      "modified_layouts_check_failed": "編集の確認ができませんでした。ネットワークの状態を確認してからもう一度試すか、安全に「編集を保持」を選択してください。"
+      "modified_layouts_check_failed": "編集の確認ができませんでした。ネットワークの状態を確認してからもう一度試すか、安全に「編集を保持」を選択してください。",
+      "preserved_title": "管理者ファイルコピー保存",
+      "preserved_desc": "削除前に custom/ ディレクトリのコピーを以下のパスに保存しました。拡張を再度インストール後、custom/ に移動することでそのまま再利用できます。",
+      "uninstall_done_title": "プラグイン削除完了"
     },
     "tabs": {
       "file_upload": "ファイルアップロード",
@@ -2213,7 +2219,10 @@
         "lines": "行",
         "chars": "文字"
       },
-      "modified_layouts_check_failed": "編集の確認ができませんでした。ネットワークの状態を確認してからもう一度試すか、安全に「編集を保持」を選択してください。"
+      "modified_layouts_check_failed": "編集の確認ができませんでした。ネットワークの状態を確認してからもう一度試すか、安全に「編集を保持」を選択してください。",
+      "preserved_title": "管理者ファイルコピー保存",
+      "preserved_desc": "削除前に custom/ ディレクトリのコピーを以下のパスに保存しました。拡張を再度インストール後、custom/ に移動することでそのまま再利用できます。",
+      "uninstall_done_title": "テンプレート削除完了"
     },
     "tabs_install": {
       "file_upload": "ファイルアップロード",

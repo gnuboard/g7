@@ -534,7 +534,8 @@ if (isset($_GET['ajax_action'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ config('app.name', '그누보드7') }}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    {{-- 스타일: 자체 빌드 CSS (종전 Tailwind Play CDN 대체 — 외부 도달 실패 시 화면이 무너졌다) --}}
+    <link rel="stylesheet" href="{{ asset('build/core/dev-dashboard.css') }}">
     <style>
         .card-hover { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         .card-hover:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3); }

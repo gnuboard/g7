@@ -5,6 +5,55 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.63.1] - 2026-08-27
+
+### Fixed
+
+#### 정적 게시 미스에서 운영자 추가 자산이 복구되지 않던 문제 (#123)
+
+- `staticToLegacy()` 가 세 확장 타입을 모두 역변환한다 — 종전에는 `templates/{id}/assets/**` 만 처리했다. 모듈·플러그인의 `custom/**` 도 같은 형태(`{type}/{id}/assets/**`)로 게시되는데 그 규칙이 없어, 게시본이 GC(현재+직전 1개 보존)로 사라지면 되돌릴 주소를 만들지 못했다. blade 인라인 복구기(`partials/asset-url-recovery.blade.php`)도 동형으로 갱신했다 — 두 구현이 갈리면 코어 번들 로드 전 경로만 조용히 다르게 동작한다.
+- `ModuleAssetLoader.loadCustomAssets()` 가 정적 → 종전 API 폴백 계층을 갖는다. 형제 경로(`loadBundleCss`)는 이미 갖고 있었고 이 경로만 비어 있었다: 정적 URL 이 404 가 확정된 뒤에도 같은 URL 을 3회 재시도할 뿐이라 복구가 원리상 불가능했고, 화면은 정상 렌더되면서 운영자가 덧붙인 스타일만 조용히 빠졌다.
+- 자산 실패 배너의 [다시 시도]가 **복구 가능한 주소**를 다시 부른다. 종전에는 정적 미스로 실패한 경우에도 원본 정적 URL 을 넘겨, 버튼은 있는데 눌러도 구조적으로 항상 실패했다.
+
+## [engine-v1.63.0] - 2026-08-26
+
+### Added
+
+#### 서버가 심은 템플릿 externals 의 로드 실패 표면화 (#123)
+
+- `drainExternalAssetFailures()` 신설 — 템플릿 `externals`(아이콘 폰트 CSS·웹폰트·부팅 스크립트)는 서버가 HTML 에 직접 심으므로 엔진 번들보다 먼저 평가된다. 실패해도 자바스크립트에는 아무 신호가 오지 않아, engine-v1.62.0 이 세운 실패 표면화 계층이 **이 경로만 통째로 비어 있었다**: 아이콘 58개가 0×0 으로 사라진 화면이 배너도 로그도 없이 남았고(아이콘만으로 조작하는 버튼이 있는 화면에서는 곧 조작 불능), 자체 서버 로그에도 흔적이 없어 운영자가 원인을 특정할 수 없었다. 이제 각 태그의 `onerror` 가 부트스트랩 대기열에 쌓이고, 엔진이 뜨면 그 대기열을 배너로 흘려보낸 뒤 이후 실패용 sink 를 건다. 배너의 [다시 시도]는 해당 태그를 캐시 무효화 쿼리와 함께 다시 심어 복구되면 배너를 해제한다.
+- 힌트(`preload`/`preconnect`/`dns-prefetch`)는 대상에서 제외한다 — 실패해도 화면 기능이 사라지지 않으므로, 여기까지 알리면 안내가 잡음이 되어 정작 조작 불능을 만드는 실패가 묻힌다.
+
+#### 커스텀 자산 관리가 모듈·플러그인까지 확장 (#123)
+
+- 편집기 [커스텀 자산] 모달이 **대상 선택기**를 갖는다 — 편집 중인 템플릿과 활성 모듈·플러그인을 오간다. 같은 기능이 확장 타입에 따라 화면에서 되고 안 되면 운영자는 그 이유를 알 수 없고, 모듈·플러그인 `custom/` 은 그동안 FTP 말고 경로가 없었다.
+- 관리 API 가 확장 공통 엔드포인트(`/api/admin/extensions/{type}/{id}/custom-assets`)로 재편됐다. 타입별로 나누면 같은 검증·문서·테스트가 세 벌로 갈리고, 그중 하나만 약해지면 그 경로가 조용한 우회로가 된다.
+- 대상을 바꾸면 이전 확장의 선택·초안을 버린다. 남겨 두면 A 확장에서 열어 둔 본문을 B 확장에 저장하게 되고, 경로가 유효하면 서버는 정상 200 으로 받아들인다.
+
+### Changed
+
+#### 레이아웃 편집기 번들 로드의 재시도 계층 + 실패 문구 정리 (#123)
+
+- `loadLayoutEditorBundle()` 이 `loadScriptWithRetry` 를 쓴다 — 이 경로만 재시도 계층이 없어(원시 `<script>` + `onerror` 1회), 일시적 네트워크 유실 한 번에 편집기가 통째로 열리지 않았다. 다른 모든 자산 경로(레이아웃 스크립트·확장 병합 번들·CSS)가 이미 이 로더를 쓰고 있었다.
+- 실패 화면 문구에서 번들 경로를 걷어냈다. 종전에는 `편집기 번들 로드 실패: /build/core/layout-editor.min.js` 처럼 내부 배치 구조가 그대로 노출됐는데, 사용자가 고칠 수 있는 정보가 아니다. 경로는 콘솔 로그로만 남기고, 화면에는 다음 행동(네트워크 확인 · 새로고침)을 안내한다.
+
+## [engine-v1.62.0] - 2026-08-25
+
+### Added
+
+#### 구동 자산 자체 제공 seam + 로드 실패 표면화 (#123)
+
+- `networkResilience.loadStylesheetWithRetry()` 신설 — `loadScriptWithRetry` 와 동형(3시도·지수 백오프·재시도 전 element 제거·**최종 실패 시 reject**). CSS 경로만 이 계층이 없어 실패가 통째로 무음이었다: `onerror` 를 아예 걸지 않거나 `resolve()` 로 삼켜, 스타일이 붙지 않은 화면(아이콘 소실·본문 서식 붕괴)이 오류 없이 남았다.
+- `G7Core.asset.{template,templateDir,module,plugin,convertToCurrentMode,loadScript,loadStylesheet}` 신설 — 확장 IIFE 번들은 코어의 `assetUrl.ts` 를 import 할 수 없어 URL 을 문자열로 조립하는 수밖에 없었고, 그 조립은 자산 URL 이중 모드(확장자를 정적 location 이 가로채는 서버)에서 그 자산만 404 로 만든다.
+- `templateAssetDir()` — AMD 로더·워커처럼 **디렉토리 접두에 파일명을 이어 붙이는** 소비자용. 정적 게시본이 있으면 그 실경로를 우선하고(모드와 무관하게 하위 파일이 해석된다), 없으면 확장자 형태 API 경로를 돌려준다. 확장자를 가로채는 서버에서는 후자가 404 이므로 소비자가 폴백을 갖춰야 한다.
+- `G7Core.assets.{notifyFailure,clearFailure,clearAll,getFailures,retryAll}` + `assets/AssetFailureNotice.ts` — 자산 로드 실패를 사용자에게 알리고 재시도를 제공한다. **호스트 컴포넌트에 의존하지 않고 DOM 에 직접 주입**한다: Toast·Modal 은 베이스 레이아웃이 마운트한 호스트가 있어야 뜨는데, 독립 레이아웃(`extends` 없음 — 예: `admin_login.json`)에는 그 호스트가 없고 자산 실패는 바로 그런 화면에서도 알려야 한다. 테마 색은 일괄 문자열(cssText)이 아니라 개별 프로퍼티로도 못 박는다 — 파서가 모르는 선언 하나로 전체가 버려지는 환경에서 배너가 배경 없이 뜨면 안내로서 기능하지 못한다.
+- `ModuleAssetLoader.loadCustomAssets()` + `parseCustomAssetsFromConfig()` — 운영자가 확장 `custom/` 에 덧붙인 자산을 확장 병합 번들 **뒤**에 로드한다. CSS 는 나중에 온 규칙이 이기므로 앞에 붙이면 운영자의 재정의가 확장 스타일에 밀린다.
+
+### Changed
+
+- `TemplateApp.loadLayoutScripts` — ① same-origin 경로에 `convertToCurrentMode` 적용(종전 미적용: 확장자를 가로채는 서버에서 자체 제공 자산이 404) ② `loadScriptWithRetry` 로 교체 ③ 최종 실패를 `failedLayoutScripts` 에 기록하고 안내 배너로 표면화. "한 스크립트의 실패가 나머지 로드를 막지 않는다" 는 기존 계약은 유지한다.
+- `ModuleAssetLoader` 의 `loadCSS`/`loadBundleCss` 가 재시도 계층을 갖는다. 최종 실패는 `failedCssAssets` 와 안내 배너에 남기되 **throw 하지 않는다** — 스타일이 없어도 화면은 동작하므로 한 확장의 CSS 실패로 나머지 확장 로드를 중단시키지 않는다. 병합 CSS 의 정적 게시 미스 폴백은 종전 "같은 `<link>` 의 href 1회 교체"(재시도 예산 없음)에서 레거시 URL 에 대한 정규 재시도로 바뀌었다.
+
 ## [engine-v1.61.0] - 2026-08-25
 
 ### Added

@@ -264,9 +264,13 @@ class AssetUrl
      * @param  int|string|null  $version  캐시 무효화 버전 (null 이면 미부착)
      * @return string 생성된 URL
      */
-    public static function moduleAsset(string $identifier, string $path, int|string|null $version = null): string
-    {
-        return self::asset('modules', $identifier, $path, $version);
+    public static function moduleAsset(
+        string $identifier,
+        string $path,
+        int|string|null $version = null,
+        bool $allowStatic = false
+    ): string {
+        return self::extensionStaticOrApi('modules', $identifier, $path, $version, $allowStatic);
     }
 
     /**
@@ -277,9 +281,52 @@ class AssetUrl
      * @param  int|string|null  $version  캐시 무효화 버전 (null 이면 미부착)
      * @return string 생성된 URL
      */
-    public static function pluginAsset(string $identifier, string $path, int|string|null $version = null): string
-    {
-        return self::asset('plugins', $identifier, $path, $version);
+    public static function pluginAsset(
+        string $identifier,
+        string $path,
+        int|string|null $version = null,
+        bool $allowStatic = false
+    ): string {
+        return self::extensionStaticOrApi('plugins', $identifier, $path, $version, $allowStatic);
+    }
+
+    /**
+     * 모듈·플러그인 자산의 정적 게시본 우선 URL 을 만듭니다.
+     *
+     * 정적 분기가 **기본 꺼짐**인 것이 템플릿과 다른 점이고, 그것이 의도다. 모듈·플러그인의
+     * 빌드 산출물은 개별 파일로 게시되지 않고 **병합 번들**로만 게시되므로, 그 경로에
+     * 존재 검사를 걸어 봐야 언제나 실패하는 파일시스템 조회만 늘어난다. 개별 게시 대상은
+     * 운영자 소유 디렉토리(`custom/`) 하나뿐이라 그 호출부만 켜서 쓴다.
+     *
+     * @param  string  $root  `modules` | `plugins`
+     * @param  string  $identifier  확장 식별자
+     * @param  string  $path  확장 루트 기준 파일 경로
+     * @param  int|string|null  $version  캐시 무효화 버전
+     * @param  bool  $allowStatic  정적 게시본 우선 여부
+     * @return string 생성된 URL
+     */
+    private static function extensionStaticOrApi(
+        string $root,
+        string $identifier,
+        string $path,
+        int|string|null $version,
+        bool $allowStatic
+    ): string {
+        // 게이트는 템플릿과 동일하다 — 프로덕션·kill-switch·게시 완료·개별 파일 존재를
+        // `staticTagUrl` 이 확인하고, 버전이 현재 게시본과 다르면 정적 분기를 건너뛴다.
+        if ($allowStatic) {
+            $base = self::staticExtBase();
+
+            if ($base !== null && ($version === null || $base === '/build/ext/'.$version)) {
+                $static = self::staticTagUrl($root.'/'.$identifier.'/assets/'.ltrim($path, '/'));
+
+                if ($static !== null) {
+                    return $static;
+                }
+            }
+        }
+
+        return self::asset($root, $identifier, $path, $version);
     }
 
     /**

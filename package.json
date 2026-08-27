@@ -17,7 +17,9 @@
         "test:coverage": "vitest run --coverage",
         "test:e2e": "playwright test",
         "test:e2e:smoke": "playwright test --grep @smoke",
-        "test:e2e:ui": "playwright test --ui"
+        "test:e2e:ui": "playwright test --ui",
+        "build:core-devdashboard": "vite build --config vite.config.devdashboard.js",
+        "build:core-devdashboard-watch": "vite build --config vite.config.devdashboard.js --watch"
     },
     "devDependencies": {
         "@laravel/echo-react": "^2.2.6",

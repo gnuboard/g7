@@ -269,6 +269,22 @@ return [
                 ],
             ],
             [
+                'identifier' => 'core.extensions',
+                'name' => ['ko' => '확장 공통', 'en' => 'Extension Common'],
+                'description' => ['ko' => '모듈·플러그인·템플릿에 공통으로 적용되는 권한', 'en' => 'Permissions that apply across modules, plugins and templates'],
+                'category' => 'extensions',
+                'order' => 5.5,
+                'type' => 'admin',
+                'permissions' => [
+                    // 확장 타입을 가리지 않는 단일 권한이다. 타입별로 쪼개면 운영자가 셋을 모두
+                    // 부여해야 하고, "모듈 CSS 는 되는데 템플릿 CSS 는 안 되는" 상태가 실질적
+                    // 의미 없이 생긴다. 레이아웃 편집 권한과는 분리한다 — 여기서 올린 스크립트는
+                    // 그 레이아웃 한 장이 아니라 사이트 전 화면에서 실행되므로, 레이아웃을 고칠
+                    // 수 있다는 것이 곧 그 권한이 될 수 없다.
+                    ['identifier' => 'core.extensions.custom_assets.manage', 'type' => 'admin', 'name' => ['ko' => '커스텀 자산 관리', 'en' => 'Manage Custom Assets'], 'description' => ['ko' => '모듈·플러그인·템플릿에 운영자 CSS·JS·폰트·이미지를 추가하거나 수정할 수 있습니다. 추가한 스크립트는 사이트 전체에서 실행되므로 레이아웃 편집과 별도로 부여합니다.', 'en' => 'Can add or edit operator CSS/JS/fonts/images on modules, plugins and templates. Added scripts run across the whole site, so this is granted separately from layout editing.'], 'order' => 1],
+                ],
+            ],
+            [
                 'identifier' => 'core.permissions',
                 'name' => ['ko' => '권한 관리', 'en' => 'Permission Management'],
                 'description' => ['ko' => '역할 및 권한 관리 권한', 'en' => 'Role and permission management permissions'],

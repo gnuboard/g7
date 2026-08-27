@@ -179,6 +179,38 @@ export function templateAsset(identifier: string, path: string, version?: number
 }
 
 /**
+ * 템플릿 자산 **디렉토리** URL 을 생성합니다.
+ *
+ * AMD 로더나 웹 워커처럼 "디렉토리 접두에 파일명을 이어 붙이는" 소비자를 위한 것이다
+ * (예: Monaco 의 `paths.vs`). 그런 소비자에게는 확장자 없는 모드의 `?file=` 쿼리 형태를
+ * 줄 수 없다 — 뒤에 `/editor/editor.main.js` 를 이어 붙이면 쿼리 값 안에 경로가 들어간
+ * 엉뚱한 URL 이 된다.
+ *
+ * 그래서 우선순위가 다르다:
+ *  1. 정적 게시본이 있으면 그 경로 — 웹서버가 직접 서빙하는 **실제 디렉토리**라
+ *     자산 URL 모드와 무관하게 하위 파일이 그대로 해석된다.
+ *  2. 없으면 확장자 형태의 API 경로. 확장자를 가로채는 서버에서는 이 경로가 404 이므로
+ *     **소비자가 폴백을 갖춰야 한다** (Monaco 는 textarea 폴백을 갖는다).
+ *
+ * @param identifier 템플릿 식별자
+ * @param path `dist/` 이하 디렉토리 경로 (예: `vendor/monaco-editor/0.54.0/vs`)
+ * @returns 디렉토리 URL (뒤에 `/` 는 붙이지 않는다)
+ * @since engine-v1.62.0
+ */
+export function templateAssetDir(identifier: string, path: string): string {
+    const normalizedPath = path.replace(/^\/+/, '').replace(/\/+$/, '');
+    const id = encodeURIComponent(identifier);
+
+    const staticUrl = extStaticUrl(`templates/${identifier}/assets/${normalizedPath}`);
+
+    if (staticUrl !== null) {
+        return staticUrl;
+    }
+
+    return `/api/templates/assets/${id}/${normalizedPath}`;
+}
+
+/**
  * 모듈 자산 URL 을 생성합니다.
  *
  * 모듈은 모듈 루트 기준이라 `path` 에 `dist/` 를 직접 포함한다 (템플릿과 비대칭).
@@ -404,9 +436,15 @@ export function staticToLegacy(url: string): string | null {
     const version = match[1];
     const rest = match[2].split('?')[0];
 
-    const templateAssetMatch = rest.match(/^templates\/([^/]+)\/assets\/(.+)$/);
-    if (templateAssetMatch) {
-        return `/api/templates/assets/${templateAssetMatch[1]}/${templateAssetMatch[2]}?v=${version}`;
+    // 세 확장 타입이 같은 형태로 게시된다 — 템플릿은 `dist/**`, 모듈·플러그인은
+    // 운영자의 `custom/**` 이 각각 `{type}/{id}/assets/**` 로 실린다. 한 타입만 역변환하면
+    // 나머지 타입의 게시본이 GC 로 사라졌을 때 복구 경로가 없어, 화면은 정상인데 그 확장의
+    // 자산만 조용히 빠진다.
+    const extensionAssetMatch = rest.match(/^(templates|modules|plugins)\/([^/]+)\/assets\/(.+)$/);
+    if (extensionAssetMatch) {
+        const [, type, identifier, assetPath] = extensionAssetMatch;
+
+        return `/api/${type}/assets/${identifier}/${assetPath}?v=${version}`;
     }
 
     const bundleMatch = rest.match(/^bundles\/(modules|plugins)\.(js|css)$/);

@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [0.1.1] - 2026-08-25
+
+### Added
+
+- 아이콘(Font Awesome)을 템플릿에 함께 담아 외부 CDN 없이 동작합니다.
+
 ## [0.1.0] - 2026-07-01
 
 ### Changed

@@ -433,4 +433,116 @@ class ModuleAssetServingTest extends TestCase
         // Assert: 200 서빙이 아니어야 한다 (검증 실패 → 리다이렉트)
         $this->assertNotSame(200, $browser->getStatusCode());
     }
+
+    /**
+     * 운영자가 넣은 `custom/` 자산도 서빙된다.
+     *
+     * 모듈 자산 경로는 확장 루트 기준이라 `custom/` 이 별도 분기 없이 해석된다
+     * (템플릿만 `dist/` 하드코딩이라 분기가 필요했다). 그 사실을 실제 HTTP 로 고정한다 —
+     * 서비스 반환값만 보면 라우트·FormRequest 게이트를 통과하는지가 남는다.
+     *
+     * @scenario custom_source=convention_scan, custom_asset=css
+     *
+     * @effects custom_asset_loaded_after_extension_bundles
+     */
+    public function test_serves_operator_custom_css_from_active_module(): void
+    {
+        // Arrange
+        mkdir($this->testModulePath.'/custom', 0755, true);
+        file_put_contents($this->testModulePath.'/custom/custom.css', '.operator { color: red; }');
+
+        // Act
+        $response = $this->get('/api/modules/assets/test-module/custom/custom.css');
+
+        // Assert
+        $response->assertStatus(200);
+        $this->assertTrue(
+            str_starts_with($response->headers->get('Content-Type'), 'text/css'),
+            'Content-Type should start with text/css'
+        );
+
+        // BinaryFileResponse 는 스트리밍이라 본문이 버퍼에 없다 — 어떤 파일을 서빙했는지로
+        // 확인한다. dist/ 의 동명 파일이 아니라 custom/ 의 파일이어야 한다.
+        $served = $response->baseResponse->getFile()->getRealPath();
+        $this->assertSame(
+            realpath($this->testModulePath.'/custom/custom.css'),
+            $served,
+            'custom/ 의 파일이 서빙되어야 한다'
+        );
+    }
+
+    /**
+     * 비활성 모듈의 `custom/` 은 서빙되지 않는다.
+     *
+     * 비활성 확장의 자산이 계속 응답하면 "껐는데 스타일이 남아 있다" 가 된다.
+     *
+     * @scenario custom_source=convention_scan
+     *
+     * @effects inactive_extension_custom_not_served
+     */
+    public function test_returns_404_for_custom_asset_of_inactive_module(): void
+    {
+        // Arrange
+        mkdir($this->testModulePath.'/custom', 0755, true);
+        file_put_contents($this->testModulePath.'/custom/custom.css', '.operator { color: red; }');
+
+        $this->activeModule->update(['status' => ExtensionStatus::Inactive->value]);
+
+        // Act
+        $response = $this->get('/api/modules/assets/test-module/custom/custom.css');
+
+        // Assert
+        $response->assertStatus(404);
+    }
+
+    /**
+     * `custom/` 도 확장자 화이트리스트를 그대로 받는다 — 신규 확장자를 열지 않는다.
+     *
+     * @scenario custom_source=convention_scan, custom_asset=static_file
+     *
+     * @effects custom_disallowed_extension_blocked
+     */
+    public function test_blocks_disallowed_file_type_under_custom(): void
+    {
+        // Arrange
+        mkdir($this->testModulePath.'/custom', 0755, true);
+        file_put_contents($this->testModulePath.'/custom/notes.txt', 'not an asset');
+
+        // Act
+        $response = $this->getJson('/api/modules/assets/test-module/custom/notes.txt');
+
+        // Assert: FormRequest 의 확장자 게이트가 거부한다 (422)
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('path');
+        $this->assertStringNotContainsString('not an asset', $response->getContent());
+    }
+
+    /**
+     * `custom/` 자산도 ETag 로 304 를 돌려준다 — 운영자 파일이라고 캐시 계약이 다르지 않다.
+     *
+     * @scenario custom_source=convention_scan, custom_asset=css
+     *
+     * @effects custom_asset_url_busts_on_file_change
+     */
+    public function test_returns_304_for_custom_asset_when_etag_matches(): void
+    {
+        // Arrange
+        mkdir($this->testModulePath.'/custom', 0755, true);
+        file_put_contents($this->testModulePath.'/custom/custom.css', '.operator { color: red; }');
+
+        $first = $this->get('/api/modules/assets/test-module/custom/custom.css');
+        $first->assertStatus(200);
+
+        $etag = $first->headers->get('ETag');
+        $this->assertNotNull($etag, 'custom 자산에도 ETag 가 있어야 한다');
+
+        // Act
+        $second = $this->get(
+            '/api/modules/assets/test-module/custom/custom.css',
+            ['If-None-Match' => $etag]
+        );
+
+        // Assert
+        $second->assertStatus(304);
+    }
 }

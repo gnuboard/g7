@@ -12,7 +12,7 @@
         "role", "aria-label", "aria-describedby", "data-testid", "style"
     ],
     "stylesheets": [
-        "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        "vendor/font-awesome/6.4.0/css/all.inlined.css"
     ],
     "self_closing": ["img", "input", "hr", "br"],
     "seo_overrides": {

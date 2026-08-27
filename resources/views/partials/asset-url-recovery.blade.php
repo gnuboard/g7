@@ -127,11 +127,12 @@
         var version = match[1];
         var rest = match[2].split('?')[0];
 
-        var templateAsset = rest.match(/^templates\/([^/]+)\/assets\/(.+)$/);
-        if (templateAsset) {
+        // 세 확장 타입이 같은 형태로 게시된다 (템플릿 dist/**, 모듈·플러그인 custom/**).
+        var extensionAsset = rest.match(/^(templates|modules|plugins)\/([^/]+)\/assets\/(.+)$/);
+        if (extensionAsset) {
             // audit:allow asset-url-builder-required reason: 코어 번들 로드 전 인라인 복구기 —
             // import 불가라 규칙 사본을 직접 조립한다. 드리프트는 assetUrlRecovery.test.ts 대조가 잠근다.
-            return '/api/templates/assets/' + templateAsset[1] + '/' + templateAsset[2] + '?v=' + version;
+            return '/api/' + extensionAsset[1] + '/assets/' + extensionAsset[2] + '/' + extensionAsset[3] + '?v=' + version;
         }
 
         var bundle = rest.match(/^bundles\/(modules|plugins)\.(js|css)$/);

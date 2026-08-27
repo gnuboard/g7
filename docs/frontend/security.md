@@ -203,12 +203,15 @@ HTML을 렌더링해야 하는 경우 (게시판 본문, 상품 설명 등) **�
 
 레이아웃의 `scripts[].src` 와 `data_sources[].endpoint` 는 기본적으로 **same-origin 절대 경로**(`/` 로 시작)만 허용합니다. `//`(protocol-relative)·scheme 포함 외부 URL 은 원격 코드 로드 경로이므로 런타임 스크립트 로더가 차단합니다.
 
-일부 확장은 외부 CDN 스크립트를 정당하게 사용합니다(예: CKEditor5 → `cdn.ckeditor.com`, Daum 우편번호 → `t1.daumcdn.net`). 이런 확장은 자신의 manifest 에 신뢰 호스트를 **선언**하고, 코어가 활성 확장 전수에서 이 목록을 집계해 `window.G7Config.trustedScriptHosts` 로 노출합니다. 런타임 로더·저장측 검증·정적 검사는 모두 이 목록에 속한 호스트만 예외로 허용합니다.
+구동에 필요한 자산은 확장이 함께 담아 자체 제공하는 것이 원칙입니다. 자체 제공이 불가능한 경우 — 라이브러리가 아니라 그 회사 서버와 통신하는 **서비스 SDK**(예: Daum 우편번호 → `t1.daumcdn.net`) — 에만 외부 호스트를 씁니다. 이런 확장은 자신의 manifest 에 신뢰 호스트를 **선언**하고, 코어가 활성 확장 전수에서 이 목록을 집계해 `window.G7Config.trustedScriptHosts` 로 노출합니다. 런타임 로더·저장측 검증·정적 검사는 모두 이 목록에 속한 호스트만 예외로 허용합니다.
 
 ```json
 // 확장 manifest (module.json / plugin.json / template.json)
 {
-  "trusted_script_hosts": ["cdn.ckeditor.com"]
+  "trusted_script_hosts": ["t1.daumcdn.net"],
+  "trusted_script_hosts_reason": {
+    "t1.daumcdn.net": "Daum 이 운영하는 서비스 SDK 라 자체 호스팅해도 동작하지 않는다."
+  }
 }
 ```
 

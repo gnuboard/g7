@@ -13,6 +13,7 @@ use App\Enums\ExtensionStatus;
 use App\Enums\LayoutSourceType;
 use App\Extension\Cache\CoreCacheDriver;
 use App\Extension\Helpers\ExtensionBackupHelper;
+use App\Extension\Helpers\ExtensionInstallRollbackHelper;
 use App\Extension\Helpers\ExtensionPendingHelper;
 use App\Extension\Helpers\ExtensionStatusGuard;
 use App\Extension\Helpers\GithubHelper;
@@ -425,6 +426,12 @@ class TemplateManager implements TemplateManagerInterface
             );
         }
 
+        // 검증(2단계)은 복사된 활성 디렉토리를 읽어야 해서 복사보다 뒤에 온다. 그래서 검증이
+        // 실패하면 방금 만든 활성 디렉토리가 고아로 남는다 — DB 행이 없어 목록에도 뜨지 않고
+        // 오류도 남지 않은 채 디스크만 점유한다. 이번 호출이 만든 것이면 되돌린다.
+        $rollbackActivePath = $this->templatesPath.DIRECTORY_SEPARATOR.$templateName;
+        $rollbackDirExisted = File::isDirectory($rollbackActivePath);
+
         // 1. _pending/_bundled에서 활성 디렉토리로 복사 (활성 디렉토리에 없는 경우)
         // force=true 시 활성 디렉토리가 있어도 원본으로 덮어씀 (불완전 설치 복구)
         $onProgress?->__invoke('copy', '파일 복사 중...');
@@ -435,79 +442,90 @@ class TemplateManager implements TemplateManagerInterface
         // 2. 검증
         $onProgress?->__invoke('validate', '검증 중...');
 
-        return DB::transaction(function () use ($templateName, $onProgress) {
-            $template = $this->getTemplate($templateName);
-            if (! $template) {
-                throw new \Exception(__('templates.errors.not_found', ['template' => $templateName]));
-            }
+        try {
+            return DB::transaction(function () use ($templateName, $onProgress) {
+                $template = $this->getTemplate($templateName);
+                if (! $template) {
+                    throw new \Exception(__('templates.errors.not_found', ['template' => $templateName]));
+                }
 
-            // 의존성 확인
-            $this->checkDependencies($template);
+                // 의존성 확인
+                $this->checkDependencies($template);
 
-            // SEO 설정 검증 (설치 전 seo-config.json 유효성 검사)
-            $this->validateSeoConfig($templateName);
+                // SEO 설정 검증 (설치 전 seo-config.json 유효성 검사)
+                $this->validateSeoConfig($templateName);
 
-            // 레이아웃 검증 (설치 전 모든 레이아웃 파일 유효성 검사)
-            $this->validateLayouts($templateName);
+                // 레이아웃 검증 (설치 전 모든 레이아웃 파일 유효성 검사)
+                $this->validateLayouts($templateName);
 
-            // name과 description 다국어 변환 (역호환성)
-            $name = $this->convertToMultilingual($template['name']);
-            $description = $this->convertToMultilingual($template['description'] ?? '');
+                // name과 description 다국어 변환 (역호환성)
+                $name = $this->convertToMultilingual($template['name']);
+                $description = $this->convertToMultilingual($template['description'] ?? '');
 
-            // 활성 언어팩의 manifest seed(ja 등)를 name/description 다국어 필드에 주입
-            $manifest = HookManager::applyFilters(
-                "template.{$templateName}.manifest.translations",
-                ['name' => $name, 'description' => $description]
+                // 활성 언어팩의 manifest seed(ja 등)를 name/description 다국어 필드에 주입
+                $manifest = HookManager::applyFilters(
+                    "template.{$templateName}.manifest.translations",
+                    ['name' => $name, 'description' => $description]
+                );
+                $name = $manifest['name'] ?? $name;
+                $description = $manifest['description'] ?? $description;
+
+                // 3. DB 등록
+                $onProgress?->__invoke('db', 'DB 등록 중...');
+
+                // 템플릿 레코드 생성 또는 업데이트
+                $templateRecord = $this->templateRepository->updateOrCreate(
+                    ['identifier' => $templateName],
+                    [
+                        'vendor' => $template['vendor'],
+                        'name' => $name,
+                        'version' => $template['version'],
+                        'type' => $template['type'],
+                        'description' => $description,
+                        'github_url' => $template['github_url'] ?? null,
+                        'metadata' => $template['metadata'] ?? null,
+                        'status' => ExtensionStatus::Inactive->value,
+                        'created_by' => Auth::id(),
+                        'updated_by' => Auth::id(),
+                    ]
+                );
+
+                // 4. 레이아웃 등록
+                $onProgress?->__invoke('layout', '레이아웃 등록 중...');
+
+                // 레이아웃 JSON 파일 일괄 등록
+                $this->registerLayouts($templateName, $templateRecord->id);
+
+                // 모듈 레이아웃 오버라이드 등록
+                $this->registerLayoutOverrides($templateName, $templateRecord->id);
+
+                // Extension 오버라이드 등록 (모듈/플러그인 Extension 커스터마이징)
+                $this->registerExtensionOverrides($templateName, $templateRecord->id);
+
+                // 에러 레이아웃 검증 (레이아웃 등록 후 수행)
+                $this->validateErrorLayouts($templateName, $template);
+
+                // 템플릿 상태 캐시 무효화
+                self::invalidateTemplateStatusCache();
+
+                // 확장 캐시 버전 증가 (프론트엔드가 새로운 캐시로 요청하도록)
+                $this->incrementExtensionCacheVersion();
+
+                // 훅 발행: 템플릿 설치 완료
+                HookManager::doAction('core.templates.installed', $templateName);
+
+                return true;
+            });
+        } catch (\Throwable $e) {
+            ExtensionInstallRollbackHelper::removeIfCreatedByThisInstall(
+                $rollbackActivePath,
+                $rollbackDirExisted,
+                $templateName,
+                'template',
             );
-            $name = $manifest['name'] ?? $name;
-            $description = $manifest['description'] ?? $description;
 
-            // 3. DB 등록
-            $onProgress?->__invoke('db', 'DB 등록 중...');
-
-            // 템플릿 레코드 생성 또는 업데이트
-            $templateRecord = $this->templateRepository->updateOrCreate(
-                ['identifier' => $templateName],
-                [
-                    'vendor' => $template['vendor'],
-                    'name' => $name,
-                    'version' => $template['version'],
-                    'type' => $template['type'],
-                    'description' => $description,
-                    'github_url' => $template['github_url'] ?? null,
-                    'metadata' => $template['metadata'] ?? null,
-                    'status' => ExtensionStatus::Inactive->value,
-                    'created_by' => Auth::id(),
-                    'updated_by' => Auth::id(),
-                ]
-            );
-
-            // 4. 레이아웃 등록
-            $onProgress?->__invoke('layout', '레이아웃 등록 중...');
-
-            // 레이아웃 JSON 파일 일괄 등록
-            $this->registerLayouts($templateName, $templateRecord->id);
-
-            // 모듈 레이아웃 오버라이드 등록
-            $this->registerLayoutOverrides($templateName, $templateRecord->id);
-
-            // Extension 오버라이드 등록 (모듈/플러그인 Extension 커스터마이징)
-            $this->registerExtensionOverrides($templateName, $templateRecord->id);
-
-            // 에러 레이아웃 검증 (레이아웃 등록 후 수행)
-            $this->validateErrorLayouts($templateName, $template);
-
-            // 템플릿 상태 캐시 무효화
-            self::invalidateTemplateStatusCache();
-
-            // 확장 캐시 버전 증가 (프론트엔드가 새로운 캐시로 요청하도록)
-            $this->incrementExtensionCacheVersion();
-
-            // 훅 발행: 템플릿 설치 완료
-            HookManager::doAction('core.templates.installed', $templateName);
-
-            return true;
-        });
+            throw $e;
+        }
     }
 
     /**
@@ -731,12 +749,20 @@ class TemplateManager implements TemplateManagerInterface
      *
      * @param  string  $templateName  제거할 템플릿명 (identifier)
      * @param  \Closure|null  $onProgress  진행 콜백 (?string $step, string $message)
+     * @param  array<int, array{directory: string, archive: string}>|null  $preservedBackups
+     *                                                                                        삭제 전에 보관한 운영자 소유 디렉토리(`custom/`)의 사본 경로가 담기는 out 파라미터.
+     *                                                                                        운영자에게 "지웠지만 사본은 여기 있다" 를 알리기 위한 것이므로 호출부가 노출해야 한다.
      * @return bool 제거 성공 여부
      *
      * @throws \Exception 템플릿을 찾을 수 없을 때
      */
-    public function uninstallTemplate(string $templateName, ?\Closure $onProgress = null): bool
-    {
+    public function uninstallTemplate(
+        string $templateName,
+        ?\Closure $onProgress = null,
+        ?array &$preservedBackups = null,
+    ): bool {
+        $preservedBackups = [];
+
         // 1. 캐시 삭제
         $onProgress?->__invoke('cache', '캐시 삭제 중...');
 
@@ -782,7 +808,10 @@ class TemplateManager implements TemplateManagerInterface
             $onProgress?->__invoke('files', '파일 삭제 중...');
 
             // 활성 템플릿 디렉토리 전체 삭제 (_pending/_bundled에 원본 보존되므로 재설치 가능)
-            ExtensionPendingHelper::deleteExtensionDirectory($this->templatesPath, $templateName);
+            $preservedBackups = ExtensionPendingHelper::deleteExtensionDirectory(
+                $this->templatesPath,
+                $templateName
+            );
 
             // 메모리에서 템플릿 제거
             unset($this->templates[$templateName]);

@@ -397,10 +397,19 @@ class PluginController extends AdminBaseController
             $pluginName = $validated['plugin_name'];
             $deleteData = $validated['delete_data'] ?? false;
 
-            $result = $this->pluginService->uninstallPlugin($pluginName, $deleteData, $uninstallFailureReason);
+            $result = $this->pluginService->uninstallPlugin(
+                $pluginName,
+                $deleteData,
+                $uninstallFailureReason,
+                $preservedBackups
+            );
 
             if ($result) {
-                return $this->success('plugins.uninstall_success');
+                // 운영자가 넣은 `custom/` 은 삭제 전에 사본을 남긴다 — 그 경로를 응답에 실어
+                // 알리지 않으면 로그를 뒤지지 않는 한 사본의 존재를 알 수 없다.
+                return $this->success('plugins.uninstall_success', [
+                    'preserved_backups' => $preservedBackups ?? [],
+                ]);
             } else {
                 return $this->error('plugins.uninstall_failed', 400, null, [
                     'error' => $uninstallFailureReason ?? __('plugins.errors.unknown_error'),

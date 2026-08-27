@@ -200,7 +200,7 @@ location ~* \.(js|css|json)$ { expires max; access_log off; }
 ## 코어 API 레퍼런스
 
 <!-- @generated:start:api-readme-index -->
-- **문서 수**: 36 · **엔드포인트 수**: 319
+- **문서 수**: 36 · **엔드포인트 수**: 324
 
 | 문서 | 도메인 | 엔드포인트 |
 | --- | --- | --- |
@@ -213,7 +213,7 @@ location ~* \.(js|css|json)$ { expires max; access_log off; }
 | [changelog.md](changelog.md) | `changelog` | 1 |
 | [core-update.md](core-update.md) | `core-update` | 2 |
 | [dashboard.md](dashboard.md) | `dashboard` | 5 |
-| [extensions.md](extensions.md) | `extensions` | 3 |
+| [extensions.md](extensions.md) | `extensions` | 8 |
 | [identity.md](identity.md) | `identity` | 27 |
 | [language-packs.md](language-packs.md) | `language-packs` | 15 |
 | [layouts.md](layouts.md) | `layouts` | 2 |

@@ -3,7 +3,7 @@
   "mode": "replace",
   "scripts": [
     {
-      "src": "https://cdn.ckeditor.com/ckeditor5/43.3.1/ckeditor5.umd.js",
+      "src": "/api/plugins/assets/sirsoft-ckeditor5/dist/vendor/ckeditor5/43.3.1/ckeditor5.umd.js",
       "id": "ckeditor5_script"
     }
   ],

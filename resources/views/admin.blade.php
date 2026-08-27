@@ -47,6 +47,10 @@
                 moduleAssets: @json($moduleAssets ?? []),
                 pluginAssets: @json($pluginAssets ?? []),
                 bundleUrls: @json($bundleUrls ?? null),
+                customAssets: @json($customAssets ?? []),
+                {{-- 이번 렌더가 `?custom=off` 로 자산을 껐는지. URL 은 SPA 부팅이 다시 쓰면서
+                     쿼리를 잃을 수 있으므로, 화면은 URL 이 아니라 **서버가 실제로 한 일**을 본다. --}}
+                customAssetsDisabled: @json($customAssetsDisabled ?? false),
                 activeModules: @json($activeModulesMeta ?? []),
                 activePlugins: @json($activePluginsMeta ?? []),
                 trustedScriptHosts: @json($trustedScriptHosts ?? []),

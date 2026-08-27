@@ -41,7 +41,7 @@
 | [service-provider.md](docs/backend/service-provider.md) | 서비스 프로바이더 안전성 | DB 접근 전 .env 파일 존재 확인 필수 |
 | [service-repository.md](docs/backend/service-repository.md) | Service-Repository 패턴 | RepositoryInterface 주입 필수 (구체 클래스 직접 주입 금지) |
 | [settings-multilingual-enrichment.md](docs/backend/settings-multilingual-enrichment.md) | Settings 카탈로그 다국어 자동 보강 | settings JSON 의 다국어 카탈로그 라벨(_cached_name 등)은 카탈로그 빌드 시점에 보강 |
-| [static-asset-publishing.md](docs/backend/static-asset-publishing.md) | 부트스트랩 리소스 정적 게시 (Static Asset Publishing) | 게시물: public/build/ext/{cache_version}/ — 수명주기 이벤트마다 termi... |
+| [static-asset-publishing.md](docs/backend/static-asset-publishing.md) | 부트스트랩 리소스 정적 게시 (Static Asset Publishing) | 게시물: public/build/ext/{cache_version}/ — 수명주기 이벤트와 운영자 cu... |
 | [translatable-seeders.md](docs/backend/translatable-seeders.md) | 다국어 시더 인터페이스 (Translatable Seeders) | 다국어 JSON 컬럼(name 등)을 시드하는 확장 entity 시더는 TranslatableSeede... |
 | [user-overrides.md](docs/backend/user-overrides.md) | 사용자 수정 보존 (HasUserOverrides Trait) | 모델에 `use HasUserOverrides;` + `protected array $trackable... |
 | [validation.md](docs/backend/validation.md) | 검증 (Validation) | 필수: FormRequest에서 검증 (Service에 검증 로직 배치 금지) |
@@ -153,7 +153,7 @@
 
 | 대상 | 진입점 | 문서/엔드포인트 |
 |------|--------|----------------|
-| 코어 | [docs/backend/api/README.md](docs/backend/api/README.md) | 36 / 319 |
+| 코어 | [docs/backend/api/README.md](docs/backend/api/README.md) | 36 / 324 |
 
 
 ### 확장 API 레퍼런스 (14개 확장, 자동 스캔)
@@ -415,6 +415,31 @@ Icon 은 `<i>` 글리프라 박스 크기가 곧 `font-size` 다. `w-N h-N` 은 
 이 결함군은 예외도 오류도 남기지 않는다 — 약한 경로가 정상 응답을 내보내는 것이 유일한 증상이다. secret 게이트 재적용·hash 서빙 게이트·rank 대칭·URL 판정 3층 동형·정적 bulk 스코프 재적용·가드 선행·형제 메서드 가드 패리티·abilityMap prefix 정합은 의미 판정 영역이라 정적 검사가 일부만 덮으므로, 부모 변경·하위 서빙·등급 경로·URL 검증 지점을 건드릴 때 코드 리뷰에서 대칭성을 확인한다.
 
 > 상세: [validation.md](docs/backend/validation.md), [service-repository.md](docs/backend/service-repository.md), [frontend/security.md](docs/frontend/security.md)
+
+### 확장·템플릿 구동 에셋은 자체 제공한다
+
+브라우저가 화면을 그리기 위해 제3자 CDN 에 도달해야 하면, 그 도달 실패는 **예외도 로그도 남기지 않고 화면 기능만 조용히 사라진다.** 폐쇄망·방화벽·광고차단기에서 재현되며 자체 서버 로그에 흔적이 없어 운영자가 원인을 특정할 수 없다.
+
+| ❌ 금지 | ✅ 올바른 사용 |
+|--------|---------------|
+| 구동 자산(js/css/웹폰트)을 외부 CDN 에서 실시간 로드 | 확장이 `dist/vendor/{lib}/{version}/` 에 동봉하고 same-origin 서빙 |
+| `trusted_script_hosts` 만 선언하고 사유는 생략 | `trusted_script_hosts_reason` 에 호스트별 사유 동반 — 자체 제공이 원칙이고 예외는 근거가 코드에 남는다 |
+| 자산 URL 을 문자열로 조립 (`'/api/plugins/assets/'+id+'/…'`) | `G7Core.asset.{template,module,plugin}` — 확장자를 정적 location 이 가로채는 서버에서 조립 URL 만 404 가 된다 |
+| AMD 로더·워커에 `G7Core.asset.template()` 결과를 base 로 전달 | `G7Core.asset.templateDir()` — 쿼리 형태(`?file=`)는 뒤에 파일명을 이어 붙일 수 없다. 확장자 없는 모드에서 404 일 수 있으므로 **소비자가 폴백을 갖춘다** |
+| CSS 로드에 `onerror` 미설치 또는 `resolve()` 로 삼킴 | `loadStylesheetWithRetry` — 아이콘만으로 조작하는 버튼이 있는 화면에서 스타일 소실은 곧 조작 불능이다 |
+| 자산 실패를 `console.error` 한 줄로 끝냄 | `G7Core.assets.notifyFailure({id,label,retry})` — 사용자가 사실을 알고 조치할 수 있어야 한다 |
+| 편집기·코드편집기 확보 실패 시 빈 컨테이너를 남김 | 평문 입력(textarea) 폴백 + 저장 계약 유지(`{name}_mode='text'`) + 재시도 시 입력 내용 승계 |
+| 확장 `dist/`·`src/` 에 운영자 CSS 를 둠 | 확장 디렉토리 안의 **`custom/`** — 빌드 불필요, 확장 교체가 보존 |
+| 번들 확장이 `custom/` 을 담아 배포 | `dist/vendor/` 에 담는다. `custom/` 은 운영자 소유라 보존 계층이 덮어쓰지 않아 **저작자 파일이 영영 반영되지 않는다** |
+| 사용자 추가 에셋 URL 을 `ext.cache_version` 으로 무효화 | 파일 서명(수정 시각) — 확장 캐시 버전은 운영자가 파일을 고쳤다고 오르지 않는다 |
+| `custom/` 보존을 rename 경로에만 적용 | 교체 **두 경로 모두**(rename · 제자리 동기화 폴백) — 한쪽만 고치면 Windows 잠금 상황에서만 조용히 사라진다 |
+
+동봉 자산은 배포 산출물이므로 `sourceMappingURL` 참조를 남기지 않는다(`.map` 은 gitignore 대상이라 404 가 된다). 인라인 여부는 "없으면 조작 불능인가" 로 가른다 — 아이콘 폰트는 인라인, 글꼴·장식 아이콘은 파일 분리(자산 URL 이 쿼리 형태가 되는 서버에서 CSS 내부 상대 `url()` 이 해석되지 않는 조합이 남는다).
+
+사용자 추가 에셋(`custom/`)은 **출처에 의존하지 않는 서술자**로 해석하고 `core.assets.custom_assets` 필터 훅을 해석기 끝에 둔다. 소비자(뷰 컴포저·프론트 로더·서빙)가 출처를 보면, 나중에 다른 출처(템플릿 환경설정의 화면 입력 등)가 붙을 때 평행 경로가 생기고 "운영자 CSS 가 어디서 오는가" 의 SSoT 가 둘로 갈린다.
+
+> 상세: [module-assets.md](docs/extension/module-assets.md) "사용자 추가 에셋", [static-asset-publishing.md](docs/backend/static-asset-publishing.md)
+> 정적 검사가 외부 자산 URL 과 번들 확장의 `custom/` 배포를 차단한다. 서술자 형태와 교체 2경로 보존은 테스트가 잠근다.
 
 ### 목록 응답의 하위 컬렉션
 

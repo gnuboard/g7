@@ -473,6 +473,17 @@
                     "className": "{{_local.errors?.['shipping.zipcode'] ? 'w-28 px-4 py-2 border-2 border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-28 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white'}}",
                     "readOnly": false
                   },
+                  "comment": "주소 검색 SDK 를 못 불러오면 이 칸은 편집 가능 상태로 열린다(플러그인 폴백). 그때 사용자가 친 값이 상태로 가려면 이 change 액션이 있어야 한다 — 평소에는 openPostcode 가 shipping.* 를 직접 써서 넣으므로 없어도 드러나지 않지만, 폴백 상황에서는 결제 버튼이 이 값을 요구해 영영 비활성이 된다.",
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "shipping.zipcode": "{{$event.target.value}}"
+                      }
+                    }
+                  ],
                   "responsive": {
                     "portable": {
                       "props": {
@@ -562,6 +573,17 @@
                 "className": "{{_local.errors?.['shipping.address'] ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white'}}",
                 "readOnly": false
               },
+              "comment": "주소 검색 SDK 를 못 불러오면 이 칸은 편집 가능 상태로 열린다(플러그인 폴백). 그때 사용자가 친 값이 상태로 가려면 이 change 액션이 있어야 한다 — 평소에는 openPostcode 가 shipping.* 를 직접 써서 넣으므로 없어도 드러나지 않지만, 폴백 상황에서는 결제 버튼이 이 값을 요구해 영영 비활성이 된다.",
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "shipping.address": "{{$event.target.value}}"
+                  }
+                }
+              ],
               "responsive": {
                 "portable": {
                   "props": {

@@ -43,13 +43,12 @@ Service → doAction('hook.name') → ActivityLogListener → Log::channel('acti
 ## 2. 코어 훅 (CoreActivityLogListener)
 
 **파일**: `app/Listeners/CoreActivityLogListener.php`
-**총 66훅** (스냅샷 캡처용 before 훅 포함)
+**총 66훅**
 
-### User (9훅)
+### User (8훅)
 
 | 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
 |---------|----------------|-------------|---------|----------|
-| `core.user.before_update` | `captureUserSnapshot` | _(스냅샷 캡처)_ | - | - |
 | `core.user.after_create` | `handleUserAfterCreate` | `user.create` | Admin | User |
 | `core.user.after_update` | `handleUserAfterUpdate` | `user.update` | Admin | User |
 | `core.user.after_delete` | `handleUserAfterDelete` | `user.delete` | Admin | User |
@@ -59,7 +58,7 @@ Service → doAction('hook.name') → ActivityLogListener → Log::channel('acti
 | `core.user.after_search` | `handleUserAfterSearch` | `user.search` | Admin | - |
 | `sirsoft-core.user.after_bulk_update` | `handleUserAfterBulkUpdate` | `user.bulk_update` | Admin | - |
 
-### Auth (6훅)
+### Auth (9훅)
 
 | 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
 |---------|----------------|-------------|---------|----------|
@@ -69,23 +68,34 @@ Service → doAction('hook.name') → ActivityLogListener → Log::channel('acti
 | `core.auth.forgot_password` | `handleAuthForgotPassword` | `auth.forgot_password` | User | - |
 | `core.auth.reset_password` | `handleAuthResetPassword` | `auth.reset_password` | User | - |
 | `core.auth.record_consents` | `handleAuthRecordConsents` | `auth.record_consents` | User | User |
+| `core.auth.login_failed` | `handleAuthLoginFailed` | `auth.login_failed` | User | - |
+| `core.auth.account_locked` | `handleAuthAccountLocked` | `auth.account_locked` | User | User |
+| `core.auth.account_unlocked` | `handleAuthAccountUnlocked` | `auth.account_unlocked` | User | User |
 
-### Role (6훅, 스냅샷 포함)
+### Identity (3훅)
+
+본인인증(IDV) 훅은 DTO(`VerificationChallenge`/`VerificationResult`)를 인자로 받으므로 `sync => true` 로 등록된다 — 큐 직렬화 대상에 POPO 가 포함되지 않아 큐로 넘기면 `null` 이 전달된다.
 
 | 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
 |---------|----------------|-------------|---------|----------|
-| `core.role.before_update` | `captureRoleSnapshot` | _(스냅샷 캡처)_ | - | - |
+| `core.identity.after_request` | `handleIdentityRequested` | `identity.request` | User | - |
+| `core.identity.after_verify` | `handleIdentityVerified` | `identity.verify` / `identity.verify_failed` | User | - |
+| `core.identity.challenge_expired` | `handleIdentityExpired` | `identity.expired` | User | - |
+
+### Role (5훅)
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
 | `core.role.after_create` | `handleRoleAfterCreate` | `role.create` | Admin | Role |
 | `core.role.after_update` | `handleRoleAfterUpdate` | `role.update` | Admin | Role |
 | `core.role.after_delete` | `handleRoleAfterDelete` | `role.delete` | Admin | Role |
 | `core.role.after_sync_permissions` | `handleRoleAfterSyncPermissions` | `role.sync_permissions` | Admin | Role |
 | `core.role.after_toggle_status` | `handleRoleAfterToggleStatus` | `role.toggle_status` | Admin | Role |
 
-### Menu (7훅, 스냅샷 포함)
+### Menu (6훅)
 
 | 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
 |---------|----------------|-------------|---------|----------|
-| `core.menu.before_update` | `captureMenuSnapshot` | _(스냅샷 캡처)_ | - | - |
 | `core.menu.after_create` | `handleMenuAfterCreate` | `menu.create` | Admin | Menu |
 | `core.menu.after_update` | `handleMenuAfterUpdate` | `menu.update` | Admin | Menu |
 | `core.menu.after_delete` | `handleMenuAfterDelete` | `menu.delete` | Admin | Menu |
@@ -100,11 +110,10 @@ Service → doAction('hook.name') → ActivityLogListener → Log::channel('acti
 | `core.settings.after_save` | `handleSettingsAfterSave` | `settings.save` | Admin | - |
 | `core.settings.after_set` | `handleSettingsAfterSet` | `settings.set` | Admin | - |
 
-### Schedule (7훅, 스냅샷 포함)
+### Schedule (6훅)
 
 | 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
 |---------|----------------|-------------|---------|----------|
-| `core.schedule.before_update` | `captureScheduleSnapshot` | _(스냅샷 캡처)_ | - | - |
 | `core.schedule.after_create` | `handleScheduleAfterCreate` | `schedule.create` | Admin | Schedule |
 | `core.schedule.after_update` | `handleScheduleAfterUpdate` | `schedule.update` | Admin | Schedule |
 | `core.schedule.after_delete` | `handleScheduleAfterDelete` | `schedule.delete` | Admin | Schedule |
@@ -151,6 +160,14 @@ Service → doAction('hook.name') → ActivityLogListener → Log::channel('acti
 | `core.templates.after_uninstall` | `handleTemplateAfterUninstall` | `template.uninstall` | Admin | - |
 | `core.templates.after_version_update` | `handleTemplateAfterVersionUpdate` | `template.version_update` | Admin | - |
 | `core.templates.after_refresh_layouts` | `handleTemplateAfterRefreshLayouts` | `template.refresh_layouts` | Admin | - |
+
+### Extension 공통 (1훅)
+
+템플릿·모듈·플러그인 세 타입이 같은 훅을 공유한다 (권한도 `core.extensions.custom_assets.manage` 하나다).
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `core.custom_assets.after_change` | `handleCustomAssetAfterChange` | `custom_asset.{save\|upload\|delete}` | Admin | 운영자 CSS·JS 는 사이트 전 화면에서 실행되므로 변경 이력이 남아야 한다 |
 
 ### Layout (2훅)
 

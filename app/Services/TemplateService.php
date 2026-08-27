@@ -16,6 +16,7 @@ use App\Extension\Helpers\GithubHelper;
 use App\Extension\Helpers\ZipInstallHelper;
 use App\Extension\HookManager;
 use App\Extension\Traits\ResolvesLanguageFragments;
+use App\Support\CustomAssets;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
@@ -432,19 +433,26 @@ class TemplateService
      *
      * @param  string  $identifier  제거할 템플릿 식별자
      * @param  bool  $deleteData  템플릿 관련 데이터 삭제 여부
+     * @param  array<int, array{directory: string, archive: string}>|null  $preservedBackups
+     *                                                                                        삭제 전에 보관한 운영자 소유 디렉토리(`custom/`)의 사본 경로가 담기는 out 파라미터
      * @return array|null 제거된 템플릿 정보 또는 null
      *
      * @throws ValidationException 제거 실패 시
      */
-    public function uninstallTemplate(string $identifier, bool $deleteData = false): ?array
-    {
+    public function uninstallTemplate(
+        string $identifier,
+        bool $deleteData = false,
+        ?array &$preservedBackups = null,
+    ): ?array {
+        $preservedBackups = [];
+
         HookManager::doAction('core.templates.before_uninstall', $identifier, $deleteData);
 
         try {
             // 제거 전 템플릿 정보 보존
             $templateInfo = $this->templateManager->getTemplateInfo($identifier);
 
-            $result = $this->templateManager->uninstallTemplate($identifier);
+            $result = $this->templateManager->uninstallTemplate($identifier, null, $preservedBackups);
 
             if ($result) {
                 HookManager::doAction('core.templates.after_uninstall', $identifier, $templateInfo, $deleteData);
@@ -660,7 +668,13 @@ class TemplateService
         $safePath = $this->sanitizePath($path);
 
         // 3. 파일 경로 구성
-        $filePath = base_path("templates/{$identifier}/dist/{$safePath}");
+        //
+        // 템플릿 자산은 `dist/` 이하가 기본이지만, 운영자 소유 디렉토리(`custom/`)만은
+        // 그 밖에 있다 — 빌드 산출물이 아니라 사람이 넣은 파일이고, 확장 교체가
+        // 보존하는 대상이라 빌드 디렉토리에 둘 수 없다.
+        $filePath = str_starts_with($safePath, CustomAssets::DIRECTORY.'/')
+            ? base_path("templates/{$identifier}/{$safePath}")
+            : base_path("templates/{$identifier}/dist/{$safePath}");
 
         // 4. 파일 존재 확인
         if (! file_exists($filePath) || ! is_file($filePath)) {

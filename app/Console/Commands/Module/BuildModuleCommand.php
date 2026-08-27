@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Module;
 
+use App\Console\Commands\Concerns\PrunesBuildOutput;
 use App\Extension\ModuleManager;
 use App\Extension\Traits\ClearsTemplateCaches;
 use App\Extension\Traits\GeneratesComponentManifest;
@@ -13,6 +14,7 @@ class BuildModuleCommand extends Command
 {
     use ClearsTemplateCaches;
     use GeneratesComponentManifest;
+    use PrunesBuildOutput;
 
     /**
      * The name and signature of the console command.
@@ -189,6 +191,14 @@ class BuildModuleCommand extends Command
             $this->info("🔨 빌드 시작: {$identifier}".($productionMode ? ' (프로덕션)' : ''));
         }
 
+        // 이전 산출물 정리 (동봉 vendor 는 보존 — vite emptyOutDir 대체)
+        if (! $watchMode) {
+            $removed = $this->pruneBuildOutput($buildPath);
+
+            if ($removed !== []) {
+                $this->line('   🧹 이전 산출물 정리: '.implode(', ', $removed));
+            }
+        }
         // 빌드 실행 (감시 모드에는 소스맵 억제를 주입하지 않는다 — 개발 중 디버깅 필요)
         $result = $this->runNpmCommand(
             $buildCommand,

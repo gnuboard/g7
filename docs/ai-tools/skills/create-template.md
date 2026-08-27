@@ -54,6 +54,8 @@
 | `vitest.config.ts` | Vitest 테스트 설정 |
 | `tsconfig.json` | TypeScript 설정 |
 
+구동 에셋은 템플릿이 자체 제공한다. `template.json` 의 `externals` 는 제3자 CDN 주소(`url`)가 아니라 동봉 파일의 상대 경로(`asset`)로 선언하고, 라이브러리는 `dist/vendor/{lib}/{version}/` 에 원본 라이선스 파일과 함께 담는다. CDN 에 도달하지 못하는 환경에서는 아이콘·글꼴이 오류 표시 없이 사라져 화면이 조작 불능이 되기 때문이다. 자체 호스팅이 성립하지 않는 서비스 SDK 만 예외이며, 그때는 manifest 에 신뢰 호스트와 그 사유를 함께 선언한다. 상세: [template-basics.md](../../extension/template-basics.md) "외부 리소스 (externals)".
+
 ## 생성되는 디렉토리
 
 - `src/components/basic/` — 기본 컴포넌트 (Div, Button, Input 등)

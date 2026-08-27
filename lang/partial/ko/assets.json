@@ -1,0 +1,8 @@
+{
+  "load_failed": "{label}을(를) 불러오지 못했습니다.",
+  "load_failed_multiple": "{count}개 항목을 불러오지 못했습니다.",
+  "retry": "다시 시도",
+  "retrying": "다시 시도 중...",
+  "close": "닫기",
+  "retry_failed": "다시 시도했지만 실패했습니다. 잠시 후 다시 시도해 주세요."
+}
