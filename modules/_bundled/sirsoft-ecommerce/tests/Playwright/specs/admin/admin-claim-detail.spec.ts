@@ -46,23 +46,45 @@ async function discoverClaim(
   token: string,
 ): Promise<DiscoveredClaim | null> {
   for (const claimType of ['exchange', 'return', 'refund']) {
-    const response = await request.get(
-      `/api/modules/sirsoft-ecommerce/admin/claims?type=${claimType}&per_page=1`,
-      { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } },
-    );
+    const found = await discoverClaimOfType(request, token, claimType);
 
-    if (!response.ok()) {
-      continue;
-    }
-
-    const row = (await response.json())?.data?.data?.[0];
-
-    if (row?.claim_number) {
-      return { claimNumber: row.claim_number, claimType };
+    if (found) {
+      return found;
     }
   }
 
   return null;
+}
+
+/**
+ * 특정 유형의 신청서 한 건을 찾습니다.
+ *
+ * 유형이 정하는 축(환불 실행 섹션 등)을 보는 테스트는 이쪽을 쓴다 — `discoverClaim` 은
+ * 교환을 먼저 고르므로, 교환이 한 건이라도 있으면 환불 축이 영영 건너뛰어진다(그 자리에서
+ * skip 이 나므로 실패로도 드러나지 않는다).
+ *
+ * @param request Playwright API 요청 컨텍스트
+ * @param token 인증 토큰
+ * @param claimType 클레임 유형
+ * @returns 발견한 신청서 (없으면 null)
+ */
+async function discoverClaimOfType(
+  request: import('@playwright/test').APIRequestContext,
+  token: string,
+  claimType: string,
+): Promise<DiscoveredClaim | null> {
+  const response = await request.get(
+    `/api/modules/sirsoft-ecommerce/admin/claims?type=${claimType}&per_page=1`,
+    { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } },
+  );
+
+  if (!response.ok()) {
+    return null;
+  }
+
+  const row = (await response.json())?.data?.data?.[0];
+
+  return row?.claim_number ? { claimNumber: row.claim_number, claimType } : null;
 }
 
 /**
@@ -262,5 +284,134 @@ test.describe('관리자 클레임 상세 골격 (#599 S9a)', () => {
     if (await collectionSave.count()) {
       await expect(collectionSave).toBeDisabled();
     }
+  });
+
+  /**
+   * 결제 정보 탭은 유형과 무관하게 있고, 그 안의 금액은 전부 서버가 표기한 문자열이다 —
+   * 원 주문의 결제 정보는 `orders.read` 게이트라 화면이 직접 부르면 클레임 권한만 가진
+   * 운영자에게만 탭이 비는데, 전권 계정에서는 재현되지 않는다.
+   */
+  // @scenario claim_type=exchange, cancellable=absent
+  // @effects detail_payment_tab_reveals_order_amounts
+  test('결제 정보 탭을 누르면 원 주문의 금액 행이 드러난다', async ({ page, request, claimsManageToken }) => {
+    const claim = await discoverClaim(request, claimsManageToken);
+    test.skip(
+      claim === null,
+      '클레임 신청서가 한 건도 없다 — `playwright:seed-ecommerce` 클레임 시드(계획서 이월 4) 선행',
+    );
+
+    await authenticatePage(page, claimsManageToken);
+    await page.goto(DETAIL_URL(claim!.claimNumber));
+    await waitForDetail(page);
+
+    // 탭은 전 유형에 있다 — 섹션도 같은 조건으로 함께 선다 (D17-①).
+    const paymentTab = page.locator('[role="tab"][data-tab-id="payment_info"], [role="tab"]', {
+      hasText: /결제 정보|Payment/,
+    }).first();
+    await expect(paymentTab).toBeVisible({ timeout: 30_000 });
+    await paymentTab.click();
+
+    const section = page.locator('[data-section-id="payment_info"]');
+    await expect(section).toHaveCount(1);
+
+    // 정산 블록은 결제 정보 섹션 안의 별도 카드다 — 주문이 얼마를 받았는가와 이 신청서가
+    // 얼마를 청구·환불하는가를 한 합계로 읽히게 두지 않는다.
+    await expect(page.locator('#claim_settlement_card')).toHaveCount(1);
+
+    // 금액 표기는 서버가 만든다 — 화면이 기호를 붙였다면 원문 키나 조립 잔재가 남는다.
+    const sectionText = await section.innerText();
+    expect(sectionText).not.toContain('sirsoft-ecommerce.admin.claim.detail');
+    expect(sectionText).not.toContain('undefined');
+  });
+
+  /**
+   * 환불 실행은 환불신청서에만 있는 축이다 — 다른 유형에 탭이 서면 클릭이 아무 일도 하지
+   * 않거나 누를 수 있는 컨트롤이 언제나 실패한다.
+   */
+  // @scenario claim_type=refund, cancellable=present
+  // @effects detail_refund_execute_tab_present_only_for_refund
+  test('환불 실행 탭과 섹션이 환불신청서에서만 선다', async ({ page, request, claimsManageToken }) => {
+    // 환불 축을 보는 테스트다 — 교환을 먼저 고르는 발견 순서를 쓰면 교환이 한 건이라도
+    // 있을 때 이 축이 영영 확인되지 않는다. 환불이 없으면 교환·반품 쪽 부재를 확인한다.
+    const claim =
+      (await discoverClaimOfType(request, claimsManageToken, 'refund'))
+      ?? (await discoverClaim(request, claimsManageToken));
+    test.skip(
+      claim === null,
+      '클레임 신청서가 한 건도 없다 — `playwright:seed-ecommerce` 클레임 시드(계획서 이월 4) 선행',
+    );
+
+    await authenticatePage(page, claimsManageToken);
+    await page.goto(DETAIL_URL(claim!.claimNumber));
+    await waitForDetail(page);
+
+    const isRefund = claim!.claimType === 'refund';
+    const section = page.locator('[data-section-id="refund_execute"]');
+
+    await expect(section).toHaveCount(isRefund ? 1 : 0);
+
+    // 탭 배열과 섹션 존재는 같은 조건이다 — 한쪽만 서면 클릭이 무반응이 된다.
+    const tabIds = await page.locator('[role="tab"]').allInnerTexts();
+    expect(tabIds.some((label) => /환불 실행|Refund execution/.test(label))).toBe(isRefund);
+
+    if (!isRefund) {
+      return;
+    }
+
+    // 세 축과 최종 금액은 서버가 산정하고 서버가 표기한다 (D19).
+    await expect(page.locator('#cre_cancellable_card')).toBeVisible({ timeout: 30_000 });
+    const cancellableText = await page.locator('#cre_cancellable_card').innerText();
+    expect(cancellableText).not.toContain('sirsoft-ecommerce.admin.claim.detail');
+  });
+
+  /**
+   * 환불은 되돌릴 수 없는 처리라 [환불하기]가 곧바로 실행하지 않는다. 확인 모달이 예고하는
+   * 값은 지금 입력된 값이어야 한다 — 모달은 부모 화면의 `_local` 을 해석하지 못하므로 여는
+   * 핸들러가 전역 문맥으로 넘긴 값을 읽는다.
+   *
+   * 실행은 하지 않는다 — 재고·마일리지·PG 까지 되돌리기 어려운 처리라 열림과 예고값까지만
+   * 본다 (S9a 가 완료 처리 모달에 대해 세운 규율과 같다).
+   */
+  // @scenario claim_type=refund, cancellable=present
+  // @effects detail_refund_execute_confirm_modal_opens
+  test('[환불하기] 는 곧바로 실행하지 않고 확인 모달을 연다', async ({ page, request, claimsManageToken }) => {
+    const claim = await discoverClaimOfType(request, claimsManageToken, 'refund');
+    test.skip(
+      claim === null,
+      '환불신청서가 한 건도 없다 — 환불 실행 섹션은 그 유형에만 있다',
+    );
+
+    await authenticatePage(page, claimsManageToken);
+    await page.goto(DETAIL_URL(claim!.claimNumber));
+    await waitForDetail(page);
+
+    const executeButton = page.locator('#cre_014_execute_button');
+    await expect(executeButton).toHaveCount(1);
+
+    if (await executeButton.isDisabled()) {
+      // 실행 권한이 없는 토큰이면 게이팅이 정답이다 — 그 사실을 단언하고 끝낸다.
+      return;
+    }
+
+    // 실행 요청이 나가면 실패다 — 확인 모달을 거치지 않고 실행했다는 뜻이다.
+    let executed = false;
+    page.on('request', (req) => {
+      if (req.url().includes('/admin/refunds/') && req.url().endsWith('/execute')) {
+        executed = true;
+      }
+    });
+
+    await executeButton.click();
+
+    await expect(page.locator('#crm_005_total')).toBeVisible({ timeout: 15_000 });
+    expect(executed).toBe(false);
+
+    // 모달이 예고하는 합계는 화면의 입력값에서 온다 — 비어 있으면 문맥이 도달하지 않은 것이다.
+    const total = (await page.locator('#crm_005_total').innerText()).trim();
+    expect(total.length).toBeGreaterThan(0);
+    expect(total).not.toContain('undefined');
+
+    await page.locator('#crm_007_cancel').click();
+    await expect(page.locator('#crm_005_total')).toHaveCount(0);
   });
 });

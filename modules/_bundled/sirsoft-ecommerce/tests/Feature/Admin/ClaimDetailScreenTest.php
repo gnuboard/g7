@@ -2,12 +2,14 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Feature\Admin;
 
+use App\Extension\HookManager;
 use App\Models\ActivityLog;
 use App\Models\User;
 use Modules\Sirsoft\Ecommerce\DTO\ClaimCompletionOptions;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimChargeMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\ClaimImage;
@@ -20,6 +22,7 @@ use Modules\Sirsoft\Ecommerce\Services\AdminClaimService;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\OrderExchangeService;
 use Modules\Sirsoft\Ecommerce\Services\OrderReturnService;
+use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
 use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
@@ -658,6 +661,392 @@ class ClaimDetailScreenTest extends ModuleTestCase
             [],
             new ClaimCompletionOptions(restoreStockByItem: [], createRefundRequest: true),
         );
+    }
+
+    // ================================================================
+    // 결제 정보 · 정산 · 환불 실행 봉투 (S9b — D17-③·D18·D19)
+    // ================================================================
+
+    /**
+     * 주문 상세 엔드포인트는 `orders.read` 게이트다 — 결제 정보 섹션이 그것을 직접 부르면
+     * 클레임 권한만 가진 운영자에게만 403 이 되어 탭이 통째로 빈다. 봉투가 통로다.
+     *
+     * @scenario claim_type=exchange, cancellable=absent
+     *
+     * @effects claim_payment_reads_detail_envelope_only
+     */
+    public function test_detail_carries_order_payment_context_to_a_claim_only_operator(): void
+    {
+        $exchange = $this->makeExchange();
+
+        // 주문 상세는 이 운영자에게 닫혀 있다.
+        $this->actingAs($this->admin)
+            ->getJson($this->base().'/orders/'.$exchange->order_id)
+            ->assertForbidden();
+
+        $response = $this->actingAs($this->admin)
+            ->getJson($this->base().'/claims/'.$exchange->exchange_number)
+            ->assertOk();
+
+        $order = $response->json('data.order');
+
+        $this->assertIsArray($order);
+        $this->assertNotEmpty($order['payments'], '결제수단 카드가 그릴 결제행이 없다');
+        // 금액은 서버가 표기한다 — 화면이 기호를 붙이면 기본 통화가 원이 아닌 상점에서
+        // 값은 맞고 단위만 틀린 금액이 나간다.
+        foreach ([
+            'subtotal_amount_formatted',
+            'total_shipping_amount_formatted',
+            'total_paid_amount_formatted',
+            'total_tax_amount_formatted',
+            'total_vat_amount_formatted',
+        ] as $key) {
+            $this->assertArrayHasKey($key, $order);
+        }
+    }
+
+    /**
+     * 이 화면은 주문 옵션·배송·주소를 그리지 않는다 — 그리지 않는 하위 컬렉션을 실으면
+     * 상세 한 번을 여는 것만으로 응답이 부풀고, 미로드 관계가 직렬화 시점에 터진다.
+     *
+     * @effects claim_payment_order_context_is_pruned
+     */
+    public function test_detail_order_context_carries_only_what_the_payment_section_draws(): void
+    {
+        $return = $this->makeReturn();
+
+        $order = $this->actingAs($this->admin)
+            ->getJson($this->base().'/claims/'.$return->return_number)
+            ->assertOk()
+            ->json('data.order');
+
+        foreach (['options', 'shippings', 'shipping_address', 'billing_address', 'cancels', 'user'] as $key) {
+            $this->assertArrayNotHasKey($key, $order, "결제 정보 섹션이 그리지 않는 `{$key}` 가 실렸다");
+        }
+    }
+
+    /**
+     * 환불 예정액은 헤더 컬럼이 아니라 완료 시점 재계산 결과다 — 완료 처리 모달과 **같은**
+     * 경로에서 나와야 상세와 모달이 같은 신청서에 대해 다른 금액을 말하지 않는다.
+     *
+     * @scenario claim_type=return, cancellable=absent
+     *
+     * @effects claim_settlement_preview_comes_from_server
+     */
+    public function test_detail_settlement_matches_the_completion_preview(): void
+    {
+        $return = $this->makeReturn();
+
+        $settlement = $this->actingAs($this->admin)
+            ->getJson($this->base().'/claims/'.$return->return_number)
+            ->assertOk()
+            ->json('data.settlement');
+
+        $preview = app(OrderReturnService::class)->previewCompletion($return->refresh());
+
+        $this->assertNotNull($settlement);
+        $this->assertSame((float) $preview['refund_amount'], (float) $settlement['refund_amount']);
+        $this->assertSame($preview['blocked_reason'], $settlement['blocked_reason']);
+        $this->assertArrayHasKey('refund_amount_formatted', $settlement);
+    }
+
+    /**
+     * 교환 정산도 완료 처리 모달과 같은 숫자여야 한다.
+     *
+     * 완료 미리보기는 '지금 완료 처리하면' 을 전제로 완료 가정 상품을 넘긴다. 상세가 그
+     * 인자를 빼고 부르면 아직 완료된 상품이 없는 교환에서 후보가 통째로 비어 환불 예정액이
+     * 0 원 + '환불 대상 없음' 으로 나가는데, 같은 신청서의 완료 모달은 실제 차액을 예고한다.
+     * 값이 그럴듯해 오류가 남지 않으므로 두 화면을 나란히 놓기 전에는 드러나지 않는다.
+     *
+     * @scenario claim_type=exchange, cancellable=absent
+     *
+     * @effects claim_settlement_preview_comes_from_server
+     */
+    public function test_detail_settlement_matches_the_completion_preview_for_an_exchange(): void
+    {
+        [, $exchange] = $this->redeliveredLowerPricedExchange();
+
+        $this->assertGreaterThan(
+            0,
+            (float) $exchange->refund_product_amount,
+            '저가 교환의 동결 차액이 이 픽스처의 전제다.',
+        );
+
+        $settlement = $this->actingAs($this->admin)
+            ->getJson($this->base().'/claims/'.$exchange->exchange_number)
+            ->assertOk()
+            ->json('data.settlement');
+
+        $preview = $this->actingAs($this->admin)
+            ->postJson($this->base().'/claims/completion-preview', [
+                'claim_type' => 'exchange',
+                'create_refund_request' => true,
+                'claims' => [['id' => $exchange->id]],
+            ])
+            ->assertOk()
+            ->json('data.claims.0.refund');
+
+        $this->assertNotNull($settlement);
+        $this->assertSame((float) $preview['refund_amount'], (float) $settlement['refund_amount']);
+        $this->assertSame((float) $preview['refund_points_amount'], (float) $settlement['refund_points_amount']);
+        $this->assertSame((float) $preview['deducted_shipping_fee'], (float) $settlement['deducted_shipping_fee']);
+        $this->assertSame($preview['blocked_reason'], $settlement['blocked_reason']);
+    }
+
+    /**
+     * 환불신청서는 자기 금액이 헤더 컬럼이라 이 블록이 필요 없다 — 실으면 화면이 같은 값을
+     * 두 자리에서 다르게 그린다.
+     *
+     * @scenario claim_type=refund, cancellable=present
+     *
+     * @effects claim_settlement_blocks_split_by_type
+     */
+    public function test_detail_settlement_is_null_for_a_refund_request(): void
+    {
+        $return = $this->moveReturnToCompleted($this->makeReturn());
+        $refund = $return->refresh()->refund;
+
+        $this->assertNotNull($refund, '반품 완료가 환불신청서를 만들지 않았다');
+
+        $this->actingAs($this->admin)
+            ->getJson($this->base().'/claims/'.$refund->refund_number)
+            ->assertOk()
+            ->assertJsonPath('data.settlement', null)
+            ->assertJsonPath('data.charge_methods', []);
+    }
+
+    /**
+     * 허용 어휘는 운영자 설정이 정하고 그 조회는 `settings.read` 게이트다 — 화면이 셋을 다시
+     * 적으면 상점이 막아 둔 방식이 선택 가능해지고 저장이 422 가 된다.
+     *
+     * @scenario claim_type=exchange, cancellable=absent
+     *
+     * @effects claim_charge_method_options_come_from_detail_response
+     */
+    public function test_detail_charge_methods_honour_the_shop_allow_list(): void
+    {
+        // 신청은 기본 허용 목록으로 접수하고, 그 뒤 상점이 목록을 좁힌다 — 운영 중 설정을
+        // 바꾸는 것이 이 축의 실제 모습이며 접수된 신청서는 그대로 남는다.
+        $exchange = $this->makeExchange();
+
+        app(EcommerceSettingsService::class)->setSetting('claim.allowed_charge_methods', [
+            ClaimChargeMethodEnum::DEDUCT_FROM_REFUND->value,
+        ]);
+
+        $options = $this->actingAs($this->admin)
+            ->getJson($this->base().'/claims/'.$exchange->exchange_number)
+            ->assertOk()
+            ->json('data.charge_methods');
+
+        $this->assertSame(['deduct_from_refund'], array_column($options, 'value'));
+        $this->assertNotEmpty($options[0]['label']);
+    }
+
+    /**
+     * 환불 수단 어휘는 Enum 이 소유한다 — 화면이 셋을 다시 적으면 수단이 늘어도 화면만
+     * 낡은 채로 남는다. 다른 유형에는 그 축이 없다.
+     *
+     * @scenario claim_type=refund, cancellable=present
+     *
+     * @effects claim_refund_method_options_come_from_detail_response
+     */
+    public function test_detail_refund_methods_are_present_only_for_a_refund_request(): void
+    {
+        $return = $this->moveReturnToCompleted($this->makeReturn());
+        $refund = $return->refresh()->refund;
+
+        $methods = $this->actingAs($this->admin)
+            ->getJson($this->base().'/claims/'.$refund->refund_number)
+            ->assertOk()
+            ->json('data.refund_methods');
+
+        $this->assertSame(RefundMethodEnum::values(), array_column($methods, 'value'));
+
+        $this->actingAs($this->admin)
+            ->getJson($this->base().'/claims/'.$return->refresh()->return_number)
+            ->assertOk()
+            ->assertJsonPath('data.refund_methods', []);
+    }
+
+    /**
+     * 수단별 잔여의 라벨은 결제수단 카탈로그가 정한다.
+     *
+     * PG 플러그인이 등록하는 확장 수단(`nhnkcp_naverpay` 등)은 `PaymentMethodEnum` 에 case 가
+     * 없다 — enum 만 보고 해석하면 원시 ID 가 화면에 그대로 나간다. 같은 화면 위쪽 결제 카드는
+     * 카탈로그를 거쳐 '네이버페이' 를 그리므로, 한 화면의 두 자리가 같은 수단을 다른 말로
+     * 부르게 된다(값이 있어 오류는 남지 않는다).
+     *
+     * @scenario claim_type=refund, cancellable=present
+     *
+     * @effects claim_cancellable_method_label_from_catalog
+     */
+    public function test_detail_cancellable_method_label_comes_from_the_payment_method_catalog(): void
+    {
+        HookManager::addFilter(
+            'sirsoft-ecommerce.settings.filter_available_payment_methods',
+            fn (array $methods) => array_merge($methods, [[
+                'id' => 'nhnkcp_naverpay',
+                'name' => ['ko' => '네이버페이', 'en' => 'Naver Pay'],
+                'description' => ['ko' => '', 'en' => ''],
+                'icon' => 'credit-card',
+                'source' => 'plugin:sirsoft-pay_nhnkcp',
+                'defaults' => [
+                    'pg_provider' => 'nhnkcp',
+                    'pg_locked' => true,
+                    'needs_pg' => true,
+                    'refund_method' => 'pg',
+                    'is_active' => true,
+                ],
+            ]])
+        );
+
+        $return = $this->moveReturnToCompleted($this->makeReturn());
+        $refund = $return->refresh()->refund;
+
+        // 확장 수단으로 결제된 주문 — payment_method 에 enum 캐스트가 없는 이유가 이것이다.
+        $refund->order->payments()->update(['payment_method' => 'nhnkcp_naverpay']);
+
+        $methods = $this->actingAs($this->admin)
+            ->getJson($this->base().'/claims/'.$refund->refund_number)
+            ->assertOk()
+            ->json('data.cancellable.methods');
+
+        $payment = collect($methods)->firstWhere('method', 'nhnkcp_naverpay');
+
+        $this->assertNotNull($payment, '확장 수단 결제행이 수단별 잔여에 실려야 이 축이 성립한다.');
+        $this->assertSame(
+            app(PaymentMethodResolver::class)->label('nhnkcp_naverpay'),
+            $payment['method_label'],
+            '수단 라벨의 SSoT 는 결제수단 카탈로그다 — enum 폴백만 보면 원시 ID 가 나간다.',
+        );
+        $this->assertNotSame('nhnkcp_naverpay', $payment['method_label']);
+    }
+
+    /**
+     * 취소 가능 금액의 표기 자릿수는 거래 시점 스냅샷이 정한다.
+     *
+     * 운영자가 그 통화의 자릿수를 바꾸거나 통화를 지우면 현재 설정만 읽는 표기는 함께
+     * 움직인다 — 과거 주문의 금액 표기가 조용히 달라진다. 금액 계산은 스냅샷을 쓰는데
+     * 표기만 현재 설정을 따라가면 같은 화면 안에서 근거가 갈린다.
+     *
+     * @scenario claim_type=refund, cancellable=present
+     *
+     * @effects claim_cancellable_formatting_uses_the_order_currency_snapshot
+     */
+    public function test_detail_cancellable_formatting_honours_the_order_currency_snapshot(): void
+    {
+        $return = $this->moveReturnToCompleted($this->makeReturn());
+        $refund = $return->refresh()->refund;
+        $order = $refund->order;
+
+        // 거래 시점에 2자리로 박제된 통화. 현재 설정의 그 통화는 0자리(반올림 단위 1)라,
+        // 스냅샷을 읽지 않으면 소수점이 사라져 과거 주문의 표기가 조용히 바뀐다.
+        $code = $order->currency_code ?: 'KRW';
+        $order->forceFill([
+            'currency_snapshot' => [
+                'base_currency' => $code,
+                'exchange_rates' => [$code => ['rate' => 1, 'decimal_places' => 2]],
+            ],
+        ])->save();
+
+        $formatted = $this->actingAs($this->admin)
+            ->getJson($this->base().'/claims/'.$refund->refund_number)
+            ->assertOk()
+            ->json('data.cancellable.amount_formatted');
+
+        $this->assertNotNull($formatted);
+        $this->assertStringContainsString(
+            '.',
+            (string) $formatted,
+            '박제된 자릿수가 표기에 반영되지 않았다 — 스냅샷이 아니라 현재 설정을 읽고 있다.',
+        );
+    }
+
+    /**
+     * 취소 가능 금액은 성격이 다른 세 상한의 최솟값이다 (D19) — 최종 금액만으로는 왜 그
+     * 금액인지 알 수 없고, 한도를 정한 축에 따라 운영자의 조치가 갈린다.
+     *
+     * @scenario claim_type=refund, cancellable=present
+     *
+     * @effects claim_cancellable_axes_come_from_server
+     */
+    public function test_detail_carries_the_cancellable_amount_with_its_three_axes(): void
+    {
+        $return = $this->moveReturnToCompleted($this->makeReturn());
+        $refund = $return->refresh()->refund;
+
+        $cancellable = $this->actingAs($this->admin)
+            ->getJson($this->base().'/claims/'.$refund->refund_number)
+            ->assertOk()
+            ->json('data.cancellable');
+
+        $this->assertIsArray($cancellable);
+        foreach ([
+            'amount', 'amount_formatted',
+            'domain_refundable', 'domain_refundable_formatted',
+            'payment_capacity', 'payment_capacity_formatted',
+            'reserved', 'reserved_formatted',
+            'binding', 'binding_label', 'methods', 'reserved_claims',
+        ] as $key) {
+            $this->assertArrayHasKey($key, $cancellable);
+        }
+
+        // 라벨 키는 백엔드 네임스페이스라 레이아웃이 해석할 수 없다 — 표시 문자열이 함께 온다.
+        $this->assertNotSame($cancellable['binding_label_key'], $cancellable['binding_label']);
+
+        // 이 문맥은 그 환불신청서 자신을 선점 집계에서 뺀다 — 빼지 않으면 자기 금액만큼
+        // 한도가 줄어 실행이 언제나 상한 초과가 된다.
+        $this->assertSame(
+            [],
+            array_values(array_filter(
+                $cancellable['reserved_claims'],
+                fn (array $entry) => (int) $entry['id'] === (int) $refund->id && $entry['type'] === 'refund'
+            )),
+        );
+    }
+
+    /**
+     * 다른 유형에는 환불 실행 축이 없다 — 실으면 화면이 그리지 않는 산정을 매 상세 조회마다
+     * 돌린다.
+     *
+     * @scenario claim_type=exchange, cancellable=absent
+     *
+     * @effects claim_refund_execute_section_absent_for_non_refund
+     */
+    public function test_detail_omits_the_cancellable_amount_for_non_refund_types(): void
+    {
+        $exchange = $this->makeExchange();
+
+        $this->actingAs($this->admin)
+            ->getJson($this->base().'/claims/'.$exchange->exchange_number)
+            ->assertOk()
+            ->assertJsonPath('data.cancellable', null);
+    }
+
+    /**
+     * 상세 봉투와 형제 엔드포인트가 같은 지점에서 표기를 만든다 — 갈리면 같은 산정이 두
+     * 화면에서 다른 문자열로 나간다.
+     *
+     * @scenario claim_type=refund, cancellable=present
+     *
+     * @effects claim_cancellable_payload_is_identical_across_endpoints
+     */
+    public function test_cancellable_endpoint_and_detail_envelope_return_the_same_payload(): void
+    {
+        $return = $this->moveReturnToCompleted($this->makeReturn());
+        $refund = $return->refresh()->refund;
+
+        $fromDetail = $this->actingAs($this->admin)
+            ->getJson($this->base().'/claims/'.$refund->refund_number)
+            ->assertOk()
+            ->json('data.cancellable');
+
+        $fromEndpoint = $this->actingAs($this->admin)
+            ->getJson($this->base().'/orders/'.$refund->order_id.'/cancellable-amount?refund_id='.$refund->id)
+            ->assertOk()
+            ->json('data.cancellable');
+
+        $this->assertSame($fromDetail, $fromEndpoint);
     }
 
     /**

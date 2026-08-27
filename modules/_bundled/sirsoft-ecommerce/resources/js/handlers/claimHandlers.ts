@@ -1135,6 +1135,274 @@ export async function saveClaimAdminMemoHandler(
     }
 }
 
+/** 환불 실행 엔드포인트 — 유형 스코프가 아니라 환불신청서 ID 축이다 */
+const REFUND_EXECUTE_URL = '/api/modules/sirsoft-ecommerce/admin/refunds';
+
+/** 환불 실행 확인 모달이 읽는 문맥 (모달은 부모 화면의 `_local` 을 해석하지 못한다) */
+interface ClaimRefundExecuteContext {
+    /** 환불신청서 ID */
+    claimId: number;
+    /** 클레임 번호 (모달 안내 문구) */
+    claimNumber: string;
+    /** 표기 통화 코드 (서버가 준 값 — 화면이 기호를 만들지 않는다) */
+    currencyCode: string;
+    /** PG 환불액 */
+    refundAmount: number;
+    /** 마일리지 환불액 */
+    refundPointsAmount: number;
+    /** 환불 수단 값 */
+    refundMethod: string;
+    /** 환불 수단 라벨 (서버가 준 선택지에서 해석) */
+    refundMethodLabel: string;
+}
+
+/**
+ * 입력 문자열을 금액으로 해석합니다.
+ *
+ * 빈 문자열은 "보내지 않음" 이고 `0` 은 "0원으로 고침" 이다 — 둘을 뭉뚱그리면 운영자가
+ * 비워 둔 칸이 0 저장으로 나가 저장된 금액이 조용히 지워진다.
+ *
+ * @param value 입력 값
+ * @returns 숫자 (해석 불가·빈 값이면 null)
+ */
+function amountOrNull(value: unknown): number | null {
+    if (value === undefined || value === null || value === '') {
+        return null;
+    }
+
+    const parsed = Number(value);
+
+    return Number.isFinite(parsed) ? parsed : null;
+}
+
+/**
+ * 신청서 금액을 저장합니다. (D18 — `PUT {유형}/{id}/amounts`)
+ *
+ * 유형마다 받는 축이 다르고 다른 유형의 축을 보내면 서버가 422 로 명시 거절한다 — 화면도
+ * 그 유형의 축만 싣는다. 보내지 않은 키는 갱신되지 않으므로 **비어 있는 칸은 빼고** 보낸다:
+ * 빈 칸을 0 으로 바꿔 보내면 운영자가 손대지 않은 금액이 지워진다.
+ *
+ * 청구가 0 이던 신청서의 배송비를 올릴 때는 청구 방식이 함께 있어야 한다 — 없으면 서버가
+ * `claim_charge_method_required` 로 거절하며, 그 사유는 토스트로 그대로 전달된다.
+ *
+ * @param action 액션 객체 (params)
+ * @param _context 액션 컨텍스트
+ */
+export async function saveClaimAmountsHandler(
+    action: ActionWithParams<{
+        pathSegment?: string;
+        claimId?: number | string | null;
+        claimType?: string;
+        claimShippingFee?: string | number | null;
+        chargeMethod?: string | null;
+        refundAmount?: string | number | null;
+        refundPointsAmount?: string | number | null;
+        refundMethod?: string | null;
+    }>,
+    _context?: ActionContext,
+): Promise<void> {
+    const G7Core = core();
+    if (!G7Core) return;
+
+    const params = action.params ?? {};
+    const base = claimScopedBase(params);
+
+    if (base === null) {
+        logger.warn('[saveClaimAmounts] 신청서 식별 축이 없습니다.');
+
+        return;
+    }
+
+    const body: Record<string, unknown> = {};
+
+    if (params.claimType === 'refund') {
+        const refundAmount = amountOrNull(params.refundAmount);
+        const pointsAmount = amountOrNull(params.refundPointsAmount);
+        const method = (params.refundMethod ?? '').trim();
+
+        if (refundAmount !== null) body.refund_amount = refundAmount;
+        if (pointsAmount !== null) body.refund_points_amount = pointsAmount;
+        if (method !== '') body.refund_method = method;
+    } else {
+        const shippingFee = amountOrNull(params.claimShippingFee);
+        const chargeMethod = (params.chargeMethod ?? '').trim();
+
+        if (shippingFee !== null) body.claim_shipping_fee = shippingFee;
+        if (chargeMethod !== '') body.charge_method = chargeMethod;
+    }
+
+    if (Object.keys(body).length === 0) {
+        G7Core.toast?.warning?.(
+            t('sirsoft-ecommerce.admin.claim.detail.settlement.nothing_to_save', '저장할 금액이 없습니다.'),
+        );
+
+        return;
+    }
+
+    G7Core.state.setLocal?.({ isSavingAmounts: true });
+
+    try {
+        const response = await G7Core.api.put(`${base}/amounts`, body);
+
+        if (response?.success === false) {
+            throw new Error(response?.message ?? 'claim amounts save failed');
+        }
+
+        G7Core.toast?.success?.(
+            t('sirsoft-ecommerce.admin.claim.detail.settlement.saved', '금액을 저장했습니다.'),
+        );
+        // 금액 수정은 총 청구액·환불 예정액·취소 가능 금액을 함께 바꾸고 활동 로그도 남긴다 —
+        // 상세만 다시 읽으면 활동 로그 섹션이 옛 목록으로 남는다 (S9a 가 잡은 결함과 같은 축).
+        refetchSources(DETAIL_REFETCH_SOURCES);
+    } catch (error: any) {
+        logger.error('[saveClaimAmounts] 금액 저장 실패:', error);
+        G7Core.toast?.error?.(
+            serverMessageOf(error)
+            ?? t('sirsoft-ecommerce.admin.claim.detail.settlement.error', '금액을 저장하지 못했습니다.'),
+        );
+        throw error;
+    } finally {
+        // 실패해도 버튼은 되살린다 — 그러지 않으면 한 번 실패한 뒤로 저장 자체를 못 한다.
+        G7Core.state.setLocal?.({ isSavingAmounts: false });
+    }
+}
+
+/**
+ * 환불 실행 확인 모달을 엽니다. (D18 — 진입 지점)
+ *
+ * 모달은 부모 화면과 다른 컨텍스트라 `_local` 표현식을 해석하지 못한다. 그래서 **지금 입력된
+ * 값**을 전역 문맥으로 넘겨, 모달이 예고하는 값과 실행이 싣는 본문이 같은 하나를 읽게 한다 —
+ * 모달이 제 사본을 만들면 그 둘이 갈리고, 화면이 예고한 것과 다른 금액이 나간다.
+ *
+ * @param action 액션 객체 (params)
+ * @param _context 액션 컨텍스트
+ */
+export async function openClaimRefundExecuteHandler(
+    action: ActionWithParams<{
+        pathSegment?: string;
+        claimId?: number | string | null;
+        claimNumber?: string | null;
+        currencyCode?: string | null;
+        refundAmount?: string | number | null;
+        refundPointsAmount?: string | number | null;
+        refundMethod?: string | null;
+        refundMethods?: Array<{ value?: string; label?: string }>;
+    }>,
+    _context?: ActionContext,
+): Promise<void> {
+    const G7Core = core();
+    if (!G7Core) return;
+
+    const params = action.params ?? {};
+    const claimId = Number(params.claimId);
+
+    if (!Number.isFinite(claimId) || claimId <= 0) {
+        logger.warn('[openClaimRefundExecute] 환불신청서 ID 가 없습니다.');
+
+        return;
+    }
+
+    const method = (params.refundMethod ?? '').trim();
+    const methodLabel = (params.refundMethods ?? [])
+        .find((option) => option?.value === method)?.label ?? method;
+
+    const context: ClaimRefundExecuteContext = {
+        claimId,
+        claimNumber: params.claimNumber ?? '',
+        currencyCode: params.currencyCode ?? '',
+        refundAmount: amountOrNull(params.refundAmount) ?? 0,
+        refundPointsAmount: amountOrNull(params.refundPointsAmount) ?? 0,
+        refundMethod: method,
+        refundMethodLabel: methodLabel,
+    };
+
+    G7Core.state.set({ claimRefundExecuteContext: context, isProcessing: false });
+    G7Core.modal?.open?.('modal_claim_refund_execute');
+}
+
+/**
+ * 환불을 실행합니다. (D18 — `POST admin/refunds/{id}/execute`)
+ *
+ * 본문 금액은 모달이 보여준 문맥 그대로다 — 저장하지 않고도 화면에 입력된 값으로 실행할 수
+ * 있는 것이 이 엔드포인트의 계약이며, 상한(D19)은 서버가 실행 직전에 다시 계산해 막는다.
+ *
+ * 재실행(더블클릭)은 409 다 — 입력 오류가 아니라 충돌이므로 새로고침을 안내하고, 실제로
+ * 상세를 다시 읽어 운영자가 확정된 상태를 보게 한다.
+ *
+ * @param _action 액션 객체
+ * @param _context 액션 컨텍스트
+ */
+export async function executeClaimRefundHandler(
+    _action: ActionWithParams,
+    _context?: ActionContext,
+): Promise<void> {
+    const G7Core = core();
+    if (!G7Core) return;
+
+    const context: ClaimRefundExecuteContext | null = G7Core.state.get()?.claimRefundExecuteContext ?? null;
+
+    if (!context?.claimId) {
+        G7Core.toast?.error?.(
+            t('sirsoft-ecommerce.admin.claim.detail.refund_execute.error', '환불을 실행하지 못했습니다.'),
+        );
+
+        return;
+    }
+
+    // 페이지의 [환불하기] 는 이 플래그로 잠금을 선언한다 — 세우는 쪽이 없으면 화면이 잠금을
+    // 약속해 놓고 실제로는 잠그지 않는다 (형제 `saveClaimAmounts` 와 같은 형태).
+    G7Core.state.setLocal?.({ isExecutingRefund: true });
+
+    try {
+        const body: Record<string, unknown> = {
+            refund_amount: context.refundAmount,
+            refund_points_amount: context.refundPointsAmount,
+        };
+
+        if (context.refundMethod !== '') {
+            body.refund_method = context.refundMethod;
+        }
+
+        const response = await G7Core.api.post(`${REFUND_EXECUTE_URL}/${context.claimId}/execute`, body);
+
+        if (response?.success === false) {
+            throw new Error(response?.message ?? 'refund execution failed');
+        }
+
+        G7Core.toast?.success?.(
+            t('sirsoft-ecommerce.admin.claim.detail.refund_execute.executed', '환불을 실행했습니다.'),
+        );
+
+        G7Core.state.set({ claimRefundExecuteContext: null });
+        refetchSources(DETAIL_REFETCH_SOURCES);
+    } catch (error: any) {
+        const status = error?.response?.status ?? error?.status ?? null;
+
+        if (status === 409) {
+            // 충돌이지 입력 오류가 아니다 — 이미 확정된 상태를 보여 주는 것이 조치다.
+            G7Core.toast?.warning?.(
+                serverMessageOf(error)
+                ?? t(
+                    'sirsoft-ecommerce.admin.claim.detail.refund_execute.conflict',
+                    '이미 실행됐거나 실행 중입니다. 새로고침 후 다시 확인해주세요.',
+                ),
+            );
+            refetchSources(DETAIL_REFETCH_SOURCES);
+        } else {
+            logger.error('[executeClaimRefund] 환불 실행 실패:', error);
+            G7Core.toast?.error?.(
+                serverMessageOf(error)
+                ?? t('sirsoft-ecommerce.admin.claim.detail.refund_execute.error', '환불을 실행하지 못했습니다.'),
+            );
+        }
+
+        throw error;
+    } finally {
+        // 실패해도 잠금은 풀린다 — 그러지 않으면 한 번 실패한 뒤로 실행 자체를 못 한다.
+        G7Core.state.setLocal?.({ isExecutingRefund: false });
+    }
+}
+
 /**
  * 목록 행에서 완료 처리 모달의 대상 한 건을 만듭니다.
  *

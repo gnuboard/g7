@@ -985,6 +985,8 @@ class OrderReturnService
                 'blocked_reason' => $alreadyFiled ? 'claim_refund_request_exists' : 'claim_refund_not_applicable',
                 'refund_amount' => 0.0,
                 'refund_points_amount' => 0.0,
+                'refund_product_amount' => 0.0,
+                'refund_shipping_amount' => 0.0,
                 'deducted_shipping_fee' => 0.0,
                 'coupon_restore' => false,
                 'fully_completed' => false,
@@ -1019,6 +1021,12 @@ class OrderReturnService
             'blocked_reason' => $alreadyFiled ? 'claim_refund_request_exists' : null,
             'refund_amount' => (float) $result->refundAmount,
             'refund_points_amount' => (float) $result->refundPointsAmount,
+            // 환불 예정액의 가산 두 축 — 합계만 내려주면 화면이 '왜 이 금액인가' 를 말할 수
+            // 없고, 화면이 역산하면 같은 금액의 두 번째 출처가 된다. 재계산이 이미 만든 값을
+            // 그대로 싣는다 (상품 = 재계산 전후 소계 차 / 배송비 = 배송비 재판정 차).
+            'refund_product_amount' => (float) (($result->originalSnapshot['subtotal_amount'] ?? 0)
+                - ($result->recalculatedSnapshot['subtotal_amount'] ?? 0)),
+            'refund_shipping_amount' => (float) $result->shippingDifference,
             'deducted_shipping_fee' => $deductedFee,
             'coupon_restore' => $fullyCompleted && $result->restoredCouponIssueIds !== [],
             'fully_completed' => $fullyCompleted,

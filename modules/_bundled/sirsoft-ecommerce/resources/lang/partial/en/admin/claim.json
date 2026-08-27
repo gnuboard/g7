@@ -12,7 +12,9 @@
     "tabs": {
       "claim_info": "Claim Info",
       "shipping_info": "Shipping",
-      "activity_log": "Activity Log"
+      "activity_log": "Activity Log",
+      "payment_info": "Payment",
+      "refund_execute": "Refund execution"
     },
     "progress": {
       "title": "Progress"
@@ -96,6 +98,70 @@
       },
       "actor_action": {
         "view_member": "View member"
+      }
+    },
+    "payment": {
+      "no_payment": "This order has no payment record."
+    },
+    "settlement": {
+      "title": "Settlement for this claim",
+      "claim_shipping_fee_exchange": "Round-trip shipping fee",
+      "claim_shipping_fee_return": "Collection shipping fee",
+      "additional_product_amount": "Additional product amount",
+      "refund_product_amount": "Refundable product amount",
+      "charge_method": "Charge method",
+      "charge_method_placeholder": "Select a charge method",
+      "total_charge_amount": "Total charge",
+      "outstanding_amount": "Outstanding",
+      "save": "Save amounts",
+      "saved": "The amounts have been saved.",
+      "error": "Could not save the amounts.",
+      "nothing_to_save": "There is no amount to save.",
+      "payments_title": "Additional payments",
+      "preview_title": "Refund expected on completion",
+      "blocked_already_filed": "A refund request has already been filed for this claim.",
+      "blocked_not_applicable": "There is nothing to file a refund request for.",
+      "expected_refund": "Expected refund",
+      "expected_refund_points": "Expected mileage refund",
+      "deducted_shipping_fee": "Collection fee deducted",
+      "fee_basis_no_policy": "No shipping policy could be resolved, so this was treated as 0. Please check the shipping policy settings.",
+      "fee_basis_api_fallback": "This shop uses an external rate API, so the base shipping fee was used.",
+      "fee_basis_live_policy": "No order-time snapshot exists, so the current rate table was used - changing the rate table changes this amount.",
+      "earn_recovery": "Pending points",
+      "earn_recovery_yes": "Recovered on completion",
+      "refund_method": "Refund method",
+      "refund_amount": "PG refund",
+      "refund_points_amount": "Mileage refund",
+      "refund_shipping_amount": "Shipping refund",
+      "refund_total": "Refund total",
+      "refunded_at": "Refunded at"
+    },
+    "refund_execute": {
+      "cancellable_title": "Cancellable amount",
+      "domain_refundable": "(1) Refundable amount",
+      "payment_capacity": "(2) Remaining payment capacity",
+      "reserved": "(3) Reserved by in-progress claims",
+      "amount": "Cancellable amount",
+      "unavailable": "The cancellable amount could not be calculated.",
+      "edit_title": "Adjust refund amounts",
+      "pg_amount": "PG refund",
+      "points_amount": "Mileage refund",
+      "limit_hint": "Up to {{amount}}",
+      "points_hint": "Available for member orders only.",
+      "method_limit_hint": "{{method}} remaining {{amount}}",
+      "method": "Refund method",
+      "total": "Refund total",
+      "exceeds": "The amount exceeds the cancellable limit.",
+      "save": "Save amounts",
+      "execute": "Refund",
+      "executed": "The refund has been executed.",
+      "error": "Could not execute the refund.",
+      "conflict": "It has already been executed or is in progress. Refresh and check again.",
+      "modal": {
+        "title": "Confirm refund execution",
+        "description": "The refund for claim {{number}} will be executed.",
+        "warning": "A refund cannot be undone. Please check the amounts and the refund method.",
+        "confirm": "Refund"
       }
     }
   },

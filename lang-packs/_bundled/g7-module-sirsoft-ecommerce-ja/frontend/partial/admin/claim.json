@@ -12,7 +12,9 @@
     "tabs": {
       "claim_info": "申請情報",
       "shipping_info": "配送情報",
-      "activity_log": "アクティビティログ"
+      "activity_log": "アクティビティログ",
+      "payment_info": "決済情報",
+      "refund_execute": "返金実行"
     },
     "progress": {
       "title": "進行段階"
@@ -97,6 +99,70 @@
       "actor_action": {
         "view_member": "会員情報を見る"
       }
+    },
+    "payment": {
+      "no_payment": "この注文には決済件がありません。"
+    },
+    "settlement": {
+      "title": "このクレームの決済",
+      "claim_shipping_fee_exchange": "往復配送料",
+      "claim_shipping_fee_return": "回収配送料",
+      "additional_product_amount": "追加商品金額",
+      "refund_product_amount": "返金商品金額",
+      "charge_method": "請求方式",
+      "charge_method_placeholder": "請求方式を選択",
+      "total_charge_amount": "合計請求額",
+      "outstanding_amount": "未収納額",
+      "save": "金額を保存",
+      "saved": "金額を保存しました。",
+      "error": "金額を保存できませんでした。",
+      "nothing_to_save": "保存する金額がありません。",
+      "payments_title": "追加決済件",
+      "preview_title": "完了時に返金予定",
+      "blocked_already_filed": "この申請書の返金申請書は既に受け付けられています。",
+      "blocked_not_applicable": "完了処理で受け付ける返金対象がありません。",
+      "expected_refund": "返金予定額",
+      "expected_refund_points": "返金予定マイレージ",
+      "deducted_shipping_fee": "回収配送料差引",
+      "earn_recovery": "積立予定",
+      "earn_recovery_yes": "完了時に差引",
+      "refund_method": "返金方法",
+      "refund_amount": "PG返金額",
+      "refund_points_amount": "マイレージ返金額",
+      "refund_shipping_amount": "返金配送料",
+      "refund_total": "返金合計",
+      "refunded_at": "返金完了日",
+      "fee_basis_no_policy": "配送ポリシーを解析できず、0円で処理しました。配送ポリシー設定を確認してください。",
+      "fee_basis_api_fallback": "外部料金APIを使用している店舗のため、基本配送料で算出しました。",
+      "fee_basis_live_policy": "注文時点のスナップショットがないため、現在の料金表で算出しました — 料金表を変更するとこの金額も変わります。"
+    },
+    "refund_execute": {
+      "cancellable_title": "キャンセル可能金額の算定",
+      "domain_refundable": "① 返金対象金額",
+      "payment_capacity": "② 決済方法残余枠",
+      "reserved": "③ 進行中クレーム先制額",
+      "amount": "キャンセル可能金額",
+      "unavailable": "キャンセル可能金額を算定できませんでした。",
+      "edit_title": "返金金額修正",
+      "pg_amount": "PG返金額",
+      "points_amount": "マイレージ返金額",
+      "limit_hint": "キャンセル可能金額{{amount}}以内",
+      "points_hint": "会員注文にのみ指定できます。",
+      "method": "返金方法",
+      "total": "最終返金合計",
+      "exceeds": "キャンセル可能金額を超えました。",
+      "save": "金額を保存",
+      "execute": "返金する",
+      "executed": "返金を実行しました。",
+      "error": "返金を実行できませんでした。",
+      "conflict": "既に実行されたか実行中です。更新後もう一度ご確認ください。",
+      "modal": {
+        "title": "返金実行確認",
+        "description": "{{number}}申請書の返金を実行します。",
+        "warning": "返金は取り消すことができません。金額と返金方法をご確認ください。",
+        "confirm": "返金する"
+      },
+      "method_limit_hint": "{{method}} 残高 {{amount}}"
     }
   },
   "subtab": {

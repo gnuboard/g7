@@ -12,7 +12,9 @@
     "tabs": {
       "claim_info": "신청 정보",
       "shipping_info": "배송 정보",
-      "activity_log": "활동 로그"
+      "activity_log": "활동 로그",
+      "payment_info": "결제 정보",
+      "refund_execute": "환불 실행"
     },
     "progress": {
       "title": "진행 단계"
@@ -96,6 +98,70 @@
       },
       "actor_action": {
         "view_member": "회원 정보 보기"
+      }
+    },
+    "payment": {
+      "no_payment": "이 주문에는 결제 건이 없습니다."
+    },
+    "settlement": {
+      "title": "이 클레임의 정산",
+      "claim_shipping_fee_exchange": "왕복 배송비",
+      "claim_shipping_fee_return": "회수 배송비",
+      "additional_product_amount": "추가 상품 금액",
+      "refund_product_amount": "환불 상품 금액",
+      "charge_method": "청구 방식",
+      "charge_method_placeholder": "청구 방식 선택",
+      "total_charge_amount": "총 청구액",
+      "outstanding_amount": "미수납액",
+      "save": "금액 저장",
+      "saved": "금액을 저장했습니다.",
+      "error": "금액을 저장하지 못했습니다.",
+      "nothing_to_save": "저장할 금액이 없습니다.",
+      "payments_title": "추가결제 건",
+      "preview_title": "완료 시 환불 예정",
+      "blocked_already_filed": "이 신청서의 환불신청서는 이미 접수됐습니다.",
+      "blocked_not_applicable": "완료 처리로 접수할 환불 대상이 없습니다.",
+      "expected_refund": "환불 예정액",
+      "expected_refund_points": "환불 예정 마일리지",
+      "deducted_shipping_fee": "회수배송비 차감",
+      "fee_basis_no_policy": "배송정책을 해석하지 못해 0원으로 처리했습니다. 배송정책 설정을 확인해주세요.",
+      "fee_basis_api_fallback": "외부 요금 API 를 쓰는 상점이라 기본 배송비로 산정했습니다.",
+      "fee_basis_live_policy": "주문 시점 스냅샷이 없어 현재 요금표로 산정했습니다 — 요금표를 바꾸면 이 금액도 바뀝니다.",
+      "earn_recovery": "적립 예정",
+      "earn_recovery_yes": "완료 시 차감",
+      "refund_method": "환불 수단",
+      "refund_amount": "PG 환불액",
+      "refund_points_amount": "마일리지 환불액",
+      "refund_shipping_amount": "환불 배송비",
+      "refund_total": "환불 합계",
+      "refunded_at": "환불 완료일"
+    },
+    "refund_execute": {
+      "cancellable_title": "취소 가능 금액 산정",
+      "domain_refundable": "① 환불 대상 금액",
+      "payment_capacity": "② 결제수단 잔여 한도",
+      "reserved": "③ 진행 중 클레임 선점액",
+      "amount": "취소 가능 금액",
+      "unavailable": "취소 가능 금액을 산정하지 못했습니다.",
+      "edit_title": "환불 금액 수정",
+      "pg_amount": "PG 환불액",
+      "points_amount": "마일리지 환불액",
+      "limit_hint": "취소 가능 금액 {{amount}} 이내",
+      "points_hint": "회원 주문에만 지정할 수 있습니다.",
+      "method_limit_hint": "{{method}} 잔여 {{amount}}",
+      "method": "환불 수단",
+      "total": "최종 환불 합계",
+      "exceeds": "취소 가능 금액을 초과했습니다.",
+      "save": "금액 저장",
+      "execute": "환불하기",
+      "executed": "환불을 실행했습니다.",
+      "error": "환불을 실행하지 못했습니다.",
+      "conflict": "이미 실행됐거나 실행 중입니다. 새로고침 후 다시 확인해주세요.",
+      "modal": {
+        "title": "환불 실행 확인",
+        "description": "{{number}} 신청서의 환불을 실행합니다.",
+        "warning": "환불은 되돌릴 수 없습니다. 금액과 환불 수단을 확인해주세요.",
+        "confirm": "환불하기"
       }
     }
   },

@@ -183,6 +183,9 @@ import {
     executeClaimItemBulkStatusHandler,
     saveClaimTrackingHandler,
     saveClaimAdminMemoHandler,
+    saveClaimAmountsHandler,
+    openClaimRefundExecuteHandler,
+    executeClaimRefundHandler,
 } from './claimHandlers';
 
 // 상품 목록 핸들러
@@ -424,6 +427,9 @@ export const handlerMap = {
     executeClaimItemBulkStatus: executeClaimItemBulkStatusHandler,
     saveClaimTracking: saveClaimTrackingHandler,
     saveClaimAdminMemo: saveClaimAdminMemoHandler,
+    saveClaimAmounts: saveClaimAmountsHandler,
+    openClaimRefundExecute: openClaimRefundExecuteHandler,
+    executeClaimRefund: executeClaimRefundHandler,
 
     // ===== 상품 목록 =====
     handleProductRowAction: handleProductRowActionHandler,

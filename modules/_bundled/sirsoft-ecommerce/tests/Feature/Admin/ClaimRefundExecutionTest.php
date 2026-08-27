@@ -205,6 +205,14 @@ class ClaimRefundExecutionTest extends ModuleTestCase
         $this->assertSame(10000.0, (float) $calls[0]['amount']);
     }
 
+    /**
+     * [환불하기] 는 저장 없이도 화면에 입력된 값으로 실행한다 (D18) — 모달이 예고한 금액과
+     * 실제로 나가는 금액이 같아야 "예고 = 실행" 이 성립한다.
+     *
+     * @scenario claim_type=refund, cancellable=present
+     *
+     * @effects claim_refund_execute_uses_request_body_amounts
+     */
     public function test_execute_uses_the_request_body_amounts(): void
     {
         $this->fakePgRefund($calls);
@@ -222,6 +230,14 @@ class ClaimRefundExecutionTest extends ModuleTestCase
         $this->assertSame(15000.0, (float) $calls[0]['amount']);
     }
 
+    /**
+     * 상한 초과는 서버가 막는다 — 화면의 초과 안내는 예고일 뿐 가드가 아니다. 저장과 실행
+     * 사이에 다른 클레임이 선점한 금액까지 반영해 실행 직전에 다시 판정한다.
+     *
+     * @scenario claim_type=refund, cancellable=present
+     *
+     * @effects claim_refund_execute_rejects_over_the_cancellable_limit
+     */
     public function test_execute_rejects_amounts_exceeding_the_cancellable_limit(): void
     {
         $this->fakePgRefund($calls);
@@ -237,6 +253,13 @@ class ClaimRefundExecutionTest extends ModuleTestCase
         $this->assertCount(0, $calls);
     }
 
+    /**
+     * 재실행은 입력 오류가 아니라 충돌이다 — 확정된 상태를 다시 읽어 보여 주는 것이 조치다.
+     *
+     * @scenario claim_type=refund, cancellable=present
+     *
+     * @effects claim_refund_execute_twice_is_a_conflict
+     */
     public function test_execute_twice_is_a_409_conflict(): void
     {
         $this->fakePgRefund();
@@ -322,6 +345,13 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     // 환불 실행 — 반품 발 환불신청서
     // ================================================================
 
+    /**
+     * 실행은 주문의 누적 환불에 더해진다 (§4-3-1) — 관리자 결제 정보의 환불 행이 그 값을 읽는다.
+     *
+     * @scenario claim_type=refund, cancellable=present
+     *
+     * @effects claim_refund_execute_accumulates_order_refund_totals
+     */
     public function test_execute_of_a_return_sourced_refund_accumulates_without_touching_options(): void
     {
         $this->fakePgRefund($calls);

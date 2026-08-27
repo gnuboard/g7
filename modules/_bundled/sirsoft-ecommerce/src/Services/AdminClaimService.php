@@ -10,6 +10,7 @@ use Modules\Sirsoft\Ecommerce\Enums\ClaimChargeMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderClaimException;
@@ -58,6 +59,7 @@ class AdminClaimService
      * @param  OrderReturnRepositoryInterface  $returnRepository  반품 Repository
      * @param  OrderRefundRepositoryInterface  $refundRepository  환불 Repository
      * @param  OrderCancelRepositoryInterface  $cancelRepository  취소 Repository
+     * @param  PaymentMethodResolver  $paymentMethodResolver  결제수단 카탈로그 해석기 (라벨 SSoT)
      */
     public function __construct(
         protected OrderExchangeService $exchangeService,
@@ -73,6 +75,7 @@ class AdminClaimService
         protected OrderReturnRepositoryInterface $returnRepository,
         protected OrderRefundRepositoryInterface $refundRepository,
         protected OrderCancelRepositoryInterface $cancelRepository,
+        protected PaymentMethodResolver $paymentMethodResolver,
     ) {}
 
     // ───────────────────────────────────────────────
@@ -168,15 +171,17 @@ class AdminClaimService
     {
         return match ($type) {
             // 주문 배송지는 재발송지 뱃지 판정(D14)이 읽는다 — 미로드로 두면 상세 1회당
-            // 지연 로드 쿼리가 하나 더 붙는다.
+            // 지연 로드 쿼리가 하나 더 붙는다. 주문 결제행은 결제 정보 섹션(D17-③)이
+            // 결제수단 카드로 그린다 — 주문상세 엔드포인트는 `orders.read` 게이트라 이
+            // 화면이 직접 부를 수 없고, 봉투가 그 통로다.
             ClaimTypeEnum::EXCHANGE => $this->exchangeRepository->findById($id, [
-                'exchangeOptions.orderOption', 'images', 'order.shippingAddress', 'collectionCarrier', 'redeliveryCarrier',
+                'exchangeOptions.orderOption', 'images', 'order.shippingAddress', 'order.payments', 'collectionCarrier', 'redeliveryCarrier',
             ]),
             ClaimTypeEnum::RETURN => $this->returnRepository->findById($id, [
-                'returnOptions.orderOption', 'images', 'order', 'collectionCarrier', 'refund',
+                'returnOptions.orderOption', 'images', 'order.payments', 'collectionCarrier', 'refund',
             ]),
             ClaimTypeEnum::REFUND => $this->refundRepository->findById($id, [
-                'refundOptions.orderOption', 'images', 'order',
+                'refundOptions.orderOption', 'images', 'order.payments',
             ]),
             ClaimTypeEnum::CANCEL => null,
         };
@@ -765,6 +770,195 @@ class AdminClaimService
         }
 
         return $this->cancellableCalculator->calculate($order, $items, ClaimTypeEnum::REFUND);
+    }
+
+    /**
+     * 취소 가능 금액 산정 결과를 화면 응답용 배열로 만듭니다. (D19 근거 표)
+     *
+     * 표기 문자열은 여기서만 만든다 — 화면이 통화 기호·자릿수를 조립하면 기본 통화가 원이
+     * 아닌 상점에서 값은 맞고 단위만 틀린 금액이 나가고, 두 소비처(환불 상세의 근거 표 ·
+     * 주문상세 환불 모달)가 각자 조립하면 같은 숫자가 화면마다 다르게 보인다.
+     *
+     * 자릿수는 거래 시점 스냅샷이 SSoT 다 — 수단별 잔여의 결제 통화 표기(`remaining_local`)도
+     * 같은 스냅샷으로 포맷한다(스냅샷은 통화별 자릿수를 담는다).
+     *
+     * @param  CancellableAmount  $cancellable  산정 결과
+     * @return array 화면 응답용 배열 (원시값 + `*_formatted` + 한도 축 라벨)
+     */
+    public function cancellablePayload(CancellableAmount $cancellable): array
+    {
+        $snapshot = $cancellable->currencySnapshot;
+        $base = $cancellable->currency ?: $this->currencyService->getDefaultCurrency();
+        $format = fn (float $amount, ?string $code = null): string => $this->currencyService->formatPrice(
+            $amount,
+            $code ?: $base,
+            $snapshot,
+        );
+
+        $payload = $cancellable->toArray();
+
+        $payload['amount_formatted'] = $format($cancellable->amount);
+        $payload['domain_refundable_formatted'] = $format($cancellable->domainRefundable);
+        $payload['payment_capacity_formatted'] = $format($cancellable->paymentCapacity);
+        $payload['reserved_formatted'] = $format($cancellable->reserved);
+        // 라벨 키는 백엔드 네임스페이스라 레이아웃이 해석할 수 없다 — 표시 문자열을 함께 싣는다.
+        $payload['binding_label'] = __($cancellable->bindingLabelKey());
+
+        $payload['methods'] = array_map(function (array $method) use ($format, $base): array {
+            $code = (string) ($method['currency'] ?? $base);
+
+            return $method + [
+                'method_label' => $this->paymentMethodLabel($method),
+                'remaining_base_formatted' => $format((float) ($method['remaining_base'] ?? 0)),
+                'remaining_local_formatted' => $format((float) ($method['remaining_local'] ?? 0), $code),
+            ];
+        }, $cancellable->methods);
+
+        $payload['reserved_claims'] = array_map(fn (array $claim): array => $claim + [
+            'amount_formatted' => $format((float) ($claim['amount'] ?? 0)),
+            'type_label' => ClaimTypeEnum::tryFrom((string) ($claim['type'] ?? ''))?->label()
+                ?? (string) ($claim['type'] ?? ''),
+        ], $cancellable->reservedClaims);
+
+        return $payload;
+    }
+
+    /**
+     * 수단별 잔여 항목의 표시 라벨을 해석합니다.
+     *
+     * 마일리지는 결제행이 없는 주문 컬럼 원장이라 결제수단 어휘에 없다 — 그 항목만 별도
+     * 라벨을 쓴다(해석 실패로 `mileage` 원시값이 화면에 그대로 나가지 않게).
+     *
+     * @param  array  $method  수단별 잔여 항목
+     * @return string 표시 라벨
+     */
+    protected function paymentMethodLabel(array $method): string
+    {
+        if (($method['type'] ?? null) === CancellableAmount::METHOD_MILEAGE) {
+            return __('sirsoft-ecommerce::messages.claims.cancellable_method.mileage');
+        }
+
+        $value = (string) ($method['method'] ?? '');
+
+        // 라벨 해석의 SSoT 는 결제수단 카탈로그다 — PG 플러그인이 등록하는 확장 수단은
+        // `PaymentMethodEnum` 에 case 가 없어(OrderPayment 의 캐스트 미부여 사유와 같은 축)
+        // enum 만 보면 원시 ID 가 그대로 화면에 나가고, 같은 화면의 결제 카드는 카탈로그를
+        // 거치므로 한 수단이 두 자리에서 다른 말로 불린다.
+        return $this->paymentMethodResolver->label($value);
+    }
+
+    /**
+     * 청구 방식 선택지를 반환합니다. (D18 — 상세 화면 금액 수정)
+     *
+     * 허용 목록은 운영자 설정(`claim.allowed_charge_methods`)이 정하는데 그 설정 조회는
+     * `settings.read` 게이트다 — 클레임 권한만 가진 운영자가 화면에서 직접 부르면 403 이
+     * 되어 셀렉트가 빈 채로 열리고 청구 방식을 고를 수 없다. 상세 봉투가 그 통로다.
+     *
+     * @return array<int, array{value: string, label: string}> 선택지
+     */
+    public function chargeMethodOptions(): array
+    {
+        $allowed = (array) $this->settingsService->getSetting(
+            'claim.allowed_charge_methods',
+            ClaimChargeMethodEnum::values()
+        );
+
+        return array_values(array_map(
+            fn (ClaimChargeMethodEnum $case): array => ['value' => $case->value, 'label' => $case->label()],
+            array_filter(
+                ClaimChargeMethodEnum::cases(),
+                fn (ClaimChargeMethodEnum $case): bool => in_array($case->value, $allowed, true)
+            )
+        ));
+    }
+
+    /**
+     * 환불 수단 선택지를 반환합니다. (D18 — 환불 실행 섹션)
+     *
+     * 어휘는 `RefundMethodEnum` 이 소유한다 — 화면이 셋을 다시 적으면 수단이 늘어도 화면만
+     * 낡은 채로 남는다.
+     *
+     * @return array<int, array{value: string, label: string}> 선택지
+     */
+    public function refundMethodOptions(): array
+    {
+        return array_values(array_map(
+            fn (RefundMethodEnum $case): array => ['value' => $case->value, 'label' => $case->label()],
+            RefundMethodEnum::cases()
+        ));
+    }
+
+    /**
+     * 신청서의 '이 클레임의 정산' 블록 데이터를 만듭니다. (§6-4 `#section_payment_info`)
+     *
+     * 교환·반품의 환불 예정액은 헤더에 컬럼이 없다 — 완료 시점의 주문 재계산 결과라 저장된
+     * 값이 아니다. 그 값의 SSoT 는 완료 미리보기 경로(`previewCompletion` /
+     * `previewRefundRequest`)이고, 완료 처리 모달이 보여주는 숫자와 같은 곳에서 나와야
+     * 상세와 모달이 같은 신청서에 대해 서로 다른 금액을 말하지 않는다.
+     *
+     * 환불신청서는 자기 금액이 헤더 컬럼이므로(`refund_amount` 등) 이 블록이 필요 없다 —
+     * `null` 을 돌려주어 화면이 그 자리를 그리지 않게 한다.
+     *
+     * 단건 상세 전용이다 — 목록 응답의 행마다 부르면 주문 재계산이 행 수만큼 돈다.
+     *
+     * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
+     * @return array{refund_amount: float, refund_amount_formatted: string, refund_points_amount: float, refund_points_amount_formatted: string, deducted_shipping_fee: float, deducted_shipping_fee_formatted: string, refund_product_amount: float|null, refund_product_amount_formatted: string|null, refund_shipping_amount: float|null, refund_shipping_amount_formatted: string|null, blocked_reason: string|null, already_filed: bool, earn_recovery: bool, currency_code: string}|null 정산 근거 (환불신청서는 null)
+     */
+    public function settlementFor(OrderExchange|OrderReturn|OrderRefund $claim): ?array
+    {
+        if ($claim instanceof OrderRefund) {
+            return null;
+        }
+
+        $claim->loadMissing('order');
+
+        // 완료 가정 상품을 먼저 정한다 — 이 블록은 '지금 완료 처리하면' 을 예고하는 자리이고,
+        // 완료 처리 모달도 같은 목록을 넘겨 부른다. 교환에서 이 인자를 빼면 후보가 이미 완료된
+        // 상품뿐이라, 아직 완료 건이 없는 신청서의 예정액이 0 원 + '환불 대상 없음' 으로 나가는데
+        // 같은 신청서의 모달은 실제 차액을 예고한다 (반품은 previewCompletion 이 스스로 전량을
+        // 대상으로 삼아 이 갈림이 없다).
+        $completableIds = $claim instanceof OrderReturn
+            ? []
+            : $this->completableExchangeItemIds($claim, []);
+
+        $preview = $claim instanceof OrderReturn
+            ? $this->returnService->previewCompletion($claim)
+            : $this->exchangeService->previewRefundRequest($claim, $completableIds);
+
+        // 표기 통화·자릿수는 거래 시점에 동결된 값이다 (완료 미리보기와 같은 규칙).
+        $currency = $claim->currency_code ?: $this->orderBaseCurrencyOf($claim->order);
+        $snapshot = is_array($claim->order?->currency_snapshot) ? $claim->order->currency_snapshot : null;
+        $format = fn (float $amount): string => $this->currencyService->formatPrice($amount, $currency, $snapshot);
+
+        if ($claim instanceof OrderReturn) {
+            $completableIds = $preview['completable_item_ids'];
+        }
+
+        return [
+            'refund_amount' => (float) $preview['refund_amount'],
+            'refund_amount_formatted' => $format((float) $preview['refund_amount']),
+            'refund_points_amount' => (float) $preview['refund_points_amount'],
+            'refund_points_amount_formatted' => $format((float) $preview['refund_points_amount']),
+            'deducted_shipping_fee' => (float) $preview['deducted_shipping_fee'],
+            'deducted_shipping_fee_formatted' => $format((float) $preview['deducted_shipping_fee']),
+            // 반품은 환불 예정액의 가산 두 축을 함께 낸다 — 합계와 차감만 있으면 산식이 닫히지
+            // 않아 운영자가 그 금액의 근거를 화면에서 읽을 수 없다. 교환은 옵션 차액이 이미
+            // 별도 행이라 그 축이 없다(null 로 두어 화면이 그 자리를 그리지 않게 한다).
+            'refund_product_amount' => isset($preview['refund_product_amount'])
+                ? (float) $preview['refund_product_amount'] : null,
+            'refund_product_amount_formatted' => isset($preview['refund_product_amount'])
+                ? $format((float) $preview['refund_product_amount']) : null,
+            'refund_shipping_amount' => isset($preview['refund_shipping_amount'])
+                ? (float) $preview['refund_shipping_amount'] : null,
+            'refund_shipping_amount_formatted' => isset($preview['refund_shipping_amount'])
+                ? $format((float) $preview['refund_shipping_amount']) : null,
+            'blocked_reason' => $preview['blocked_reason'],
+            'already_filed' => (bool) ($preview['already_filed']
+                ?? ($preview['blocked_reason'] === 'claim_refund_request_exists')),
+            // 적립 차감은 회원 주문의 완료 대상이 있을 때만 일어난다 (완료 미리보기와 같은 판정).
+            'earn_recovery' => $claim->order?->user_id !== null && $completableIds !== [],
+            'currency_code' => $currency,
+        ];
     }
 
     /**

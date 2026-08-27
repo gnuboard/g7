@@ -224,6 +224,9 @@ class CancellableAmountCalculator
             reservedClaims: $reservedClaims,
             currency: $this->resolveBaseCurrency($order),
             mcAmount: $this->convertToMultiCurrency($order, $amount),
+            // 표기 자릿수·절사 규칙은 거래 시점 스냅샷이 SSoT 다 — 운영자가 그 통화를 지우면
+            // 현재 설정에서 사라져 폴백 2자리가 걸리고, 0자리 통화의 과거 금액 표기가 흔들린다.
+            currencySnapshot: $this->currencySnapshotOf($order),
         );
     }
 
@@ -583,7 +586,23 @@ class CancellableAmountCalculator
      */
     public function emptyFor(Order $order): CancellableAmount
     {
-        return new CancellableAmount(currency: $this->resolveBaseCurrency($order));
+        return new CancellableAmount(
+            currency: $this->resolveBaseCurrency($order),
+            currencySnapshot: $this->currencySnapshotOf($order),
+        );
+    }
+
+    /**
+     * 주문 시점 통화 스냅샷을 반환합니다. (없으면 null)
+     *
+     * @param  Order  $order  대상 주문
+     * @return array<string, mixed>|null 통화 스냅샷
+     */
+    protected function currencySnapshotOf(Order $order): ?array
+    {
+        $snapshot = $order->currency_snapshot ?? null;
+
+        return is_array($snapshot) && $snapshot !== [] ? $snapshot : null;
     }
 
     protected function resolveBaseCurrency(Order $order): string

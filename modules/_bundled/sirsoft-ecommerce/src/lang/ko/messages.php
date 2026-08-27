@@ -475,6 +475,11 @@ return [
             'payment_capacity' => '결제수단 잔여 한도가 한도입니다.',
             'reserved' => '진행 중인 다른 클레임이 선점한 금액만큼 한도가 줄었습니다.',
         ],
+        // 수단별 잔여 한도의 표시 라벨 (D19) — 마일리지는 결제행이 없는 주문 컬럼 원장이라
+        // 결제수단 어휘(PaymentMethodEnum)에 없다. 라벨이 없으면 원시값이 화면에 나간다.
+        'cancellable_method' => [
+            'mileage' => '마일리지',
+        ],
         'payment_order_name' => ':type 추가결제 (:number)',
         'claimable_retrieved' => '신청 가능 상품을 조회했습니다.',
         'preview_success' => '신청 예상 금액을 계산했습니다.',

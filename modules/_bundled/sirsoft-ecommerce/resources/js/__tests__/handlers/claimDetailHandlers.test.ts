@@ -21,6 +21,9 @@ import {
     executeClaimItemBulkStatusHandler,
     saveClaimTrackingHandler,
     saveClaimAdminMemoHandler,
+    saveClaimAmountsHandler,
+    openClaimRefundExecuteHandler,
+    executeClaimRefundHandler,
     executeClaimCompletionHandler,
 } from '../../handlers/claimHandlers';
 
@@ -588,5 +591,377 @@ describe('관리자 메모 저장', () => {
         ).rejects.toThrow();
 
         expect(mockG7Core.state.setLocal).toHaveBeenCalledWith({ isSavingMemo: false });
+    });
+});
+
+describe('금액 저장 (D18)', () => {
+    /**
+     * 유형마다 받는 축이 다르고 다른 유형의 축을 보내면 서버가 422 로 명시 거절한다.
+     *
+     * @scenario claim_type=exchange, cancellable=absent
+     * @effects claim_amounts_send_only_the_axes_of_this_type
+     */
+    it('교환은 배송비·청구방식만 싣는다', async () => {
+        await saveClaimAmountsHandler(
+            {
+                handler: 'sirsoft-ecommerce.saveClaimAmounts',
+                params: {
+                    ...DETAIL_TARGET,
+                    claimShippingFee: '6000',
+                    chargeMethod: 'pay_on_request',
+                    // 환불 축을 함께 넘겨도 교환 요청에는 실리지 않아야 한다.
+                    refundAmount: '24000',
+                    refundMethod: 'pg',
+                },
+            },
+            mockContext,
+        );
+
+        const [url, body] = lastCall('put');
+        expect(url).toBe(`${BASE}/exchanges/31/amounts`);
+        expect(body).toEqual({ claim_shipping_fee: 6000, charge_method: 'pay_on_request' });
+    });
+
+    /**
+     * @scenario claim_type=refund, cancellable=present
+     * @effects claim_amounts_send_only_the_axes_of_this_type
+     */
+    it('환불신청서는 환불액·마일리지·수단만 싣는다', async () => {
+        await saveClaimAmountsHandler(
+            {
+                handler: 'sirsoft-ecommerce.saveClaimAmounts',
+                params: {
+                    pathSegment: 'refunds',
+                    claimType: 'refund',
+                    claimId: 12,
+                    refundAmount: '24000',
+                    refundPointsAmount: '0',
+                    refundMethod: 'pg',
+                    claimShippingFee: '6000',
+                },
+            },
+            mockContext,
+        );
+
+        const [url, body] = lastCall('put');
+        expect(url).toBe(`${BASE}/refunds/12/amounts`);
+        expect(body).toEqual({ refund_amount: 24000, refund_points_amount: 0, refund_method: 'pg' });
+    });
+
+    /**
+     * 빈 칸은 "보내지 않음" 이고 `0` 은 "0원으로 고침" 이다 — 둘을 뭉뚱그리면 운영자가
+     * 비워 둔 칸이 0 저장으로 나가 저장된 금액이 조용히 지워진다.
+     *
+     * @effects claim_amounts_blank_input_is_not_zero
+     */
+    it('비어 있는 칸은 본문에 실리지 않는다', async () => {
+        await saveClaimAmountsHandler(
+            {
+                handler: 'sirsoft-ecommerce.saveClaimAmounts',
+                params: { ...DETAIL_TARGET, claimShippingFee: '', chargeMethod: 'deduct_from_refund' },
+            },
+            mockContext,
+        );
+
+        const [, body] = lastCall('put');
+        expect(body).toEqual({ charge_method: 'deduct_from_refund' });
+    });
+
+    /**
+     * 보낼 것이 없으면 왕복을 돌지 않는다 — 빈 본문은 서버가 "아무것도 갱신하지 않음" 으로
+     * 처리해 성공 토스트만 뜨고 아무 일도 일어나지 않는다.
+     *
+     * @effects claim_amounts_no_request_when_nothing_changed
+     */
+    it('보낼 값이 하나도 없으면 요청하지 않는다', async () => {
+        await saveClaimAmountsHandler(
+            {
+                handler: 'sirsoft-ecommerce.saveClaimAmounts',
+                params: { ...DETAIL_TARGET, claimShippingFee: '', chargeMethod: '' },
+            },
+            mockContext,
+        );
+
+        expect(mockG7Core.api.put).not.toHaveBeenCalled();
+        expect(mockG7Core.toast.warning).toHaveBeenCalled();
+    });
+
+    /**
+     * 금액 수정은 총 청구액·환불 예정액·취소 가능 금액을 함께 바꾸고 활동 로그도 남긴다 —
+     * 상세만 다시 읽으면 활동 로그 섹션이 옛 목록으로 남는다.
+     *
+     * @effects claim_amounts_refetch_detail_and_logs
+     */
+    it('저장 후 신청서와 활동 로그를 함께 다시 읽는다', async () => {
+        await saveClaimAmountsHandler(
+            {
+                handler: 'sirsoft-ecommerce.saveClaimAmounts',
+                params: { ...DETAIL_TARGET, claimShippingFee: '6000' },
+            },
+            mockContext,
+        );
+
+        const refetched = mockG7Core.dispatch.mock.calls
+            .filter(([action]: any[]) => action.handler === 'refetchDataSource')
+            .map(([action]: any[]) => action.params.dataSourceId);
+
+        expect(refetched).toEqual(['claim', 'claim_logs']);
+    });
+
+    /**
+     * @effects claim_amounts_restore_button_on_failure
+     */
+    it('저장이 실패해도 진행 플래그가 내려간다', async () => {
+        mockG7Core.api.put.mockRejectedValueOnce(new Error('boom'));
+
+        await expect(
+            saveClaimAmountsHandler(
+                {
+                    handler: 'sirsoft-ecommerce.saveClaimAmounts',
+                    params: { ...DETAIL_TARGET, claimShippingFee: '6000' },
+                },
+                mockContext,
+            ),
+        ).rejects.toThrow();
+
+        expect(mockG7Core.state.setLocal).toHaveBeenCalledWith({ isSavingAmounts: false });
+    });
+});
+
+describe('환불 실행 (D18·D19)', () => {
+    /** 상세 화면의 환불 실행 진입 파라미터 */
+    const REFUND_TARGET = {
+        pathSegment: 'refunds',
+        claimId: 12,
+        claimNumber: 'RF20260827000012',
+        currencyCode: 'KRW',
+        refundAmount: '24000',
+        refundPointsAmount: '1000',
+        refundMethod: 'pg',
+        refundMethods: [
+            { value: 'pg', label: 'PG사 환불' },
+            { value: 'bank', label: '무통장 환불' },
+        ],
+    };
+
+    /**
+     * 실행 중에는 페이지의 [환불하기] 가 잠긴다.
+     *
+     * 결제 partial 의 버튼이 `_local.isExecutingRefund` 로 잠금을 선언해 두었으므로 그 값을
+     * 세우는 쪽이 있어야 선언이 사실이 된다 — 형제 `saveClaimAmounts` 와 같은 형태(시작 시
+     * true, finally 에서 false)다. 세우는 곳이 없으면 화면은 잠금을 약속해 놓고 실제로는
+     * 잠그지 않으며, 그 사실이 어느 테스트에도 걸리지 않는다.
+     *
+     * @scenario claim_type=refund, cancellable=present
+     * @effects claim_refund_execute_locks_page_button_while_running
+     */
+    it('실행 중 페이지 버튼 잠금 플래그를 세우고 끝나면 내린다', async () => {
+        mockGlobalState.claimRefundExecuteContext = {
+            claimId: 12,
+            pathSegment: 'refunds',
+            refundAmount: 24000,
+            refundPointsAmount: 1000,
+            refundMethod: 'pg',
+        };
+
+        await executeClaimRefundHandler(
+            { handler: 'sirsoft-ecommerce.executeClaimRefund', params: {} },
+            mockContext,
+        );
+
+        expect(mockG7Core.state.setLocal).toHaveBeenCalledWith({ isExecutingRefund: true });
+        expect(mockG7Core.state.setLocal).toHaveBeenCalledWith({ isExecutingRefund: false });
+    });
+
+    /**
+     * @effects claim_refund_execute_locks_page_button_while_running
+     */
+    it('실행이 실패해도 페이지 버튼 잠금이 풀린다', async () => {
+        mockGlobalState.claimRefundExecuteContext = {
+            claimId: 12,
+            pathSegment: 'refunds',
+            refundAmount: 24000,
+            refundPointsAmount: 0,
+            refundMethod: 'pg',
+        };
+        mockG7Core.api.post.mockRejectedValueOnce(new Error('boom'));
+
+        await expect(
+            executeClaimRefundHandler(
+                { handler: 'sirsoft-ecommerce.executeClaimRefund', params: {} },
+                mockContext,
+            ),
+        ).rejects.toThrow();
+
+        expect(mockG7Core.state.setLocal).toHaveBeenCalledWith({ isExecutingRefund: false });
+    });
+
+    /**
+     * 모달은 부모 화면과 다른 컨텍스트라 `_local` 을 해석하지 못한다 — 여는 핸들러가 지금
+     * 입력된 값을 전역 문맥으로 넘겨야 모달이 예고하는 값과 실행 본문이 같아진다.
+     *
+     * @scenario claim_type=refund, cancellable=present
+     * @effects claim_refund_execute_seeds_modal_context
+     */
+    it('확인 모달에 지금 입력된 값을 그대로 넘긴다', async () => {
+        await openClaimRefundExecuteHandler(
+            { handler: 'sirsoft-ecommerce.openClaimRefundExecute', params: REFUND_TARGET },
+            mockContext,
+        );
+
+        expect(mockGlobalState.claimRefundExecuteContext).toEqual({
+            claimId: 12,
+            claimNumber: 'RF20260827000012',
+            currencyCode: 'KRW',
+            refundAmount: 24000,
+            refundPointsAmount: 1000,
+            refundMethod: 'pg',
+            refundMethodLabel: 'PG사 환불',
+        });
+        expect(mockG7Core.modal.open).toHaveBeenCalledWith('modal_claim_refund_execute');
+    });
+
+    /**
+     * 환불은 되돌릴 수 없는 처리다 — 식별 축이 없으면 모달을 열지 않는다.
+     *
+     * @effects claim_refund_execute_requires_identity
+     */
+    it('환불신청서 ID 가 없으면 모달을 열지 않는다', async () => {
+        await openClaimRefundExecuteHandler(
+            { handler: 'sirsoft-ecommerce.openClaimRefundExecute', params: { ...REFUND_TARGET, claimId: null } },
+            mockContext,
+        );
+
+        expect(mockG7Core.modal.open).not.toHaveBeenCalled();
+    });
+
+    /**
+     * 화면에 입력된 값으로 실행하는 것이 이 엔드포인트의 계약이다 (저장 없이 실행 가능) —
+     * 본문이 저장값으로 나가면 운영자가 방금 고친 금액이 조용히 무시된다.
+     *
+     * @scenario claim_type=refund, cancellable=present
+     * @effects claim_refund_execute_body_carries_edited_amounts
+     */
+    it('실행 본문이 모달이 예고한 값 그대로 나간다', async () => {
+        mockGlobalState.claimRefundExecuteContext = {
+            claimId: 12,
+            claimNumber: 'RF20260827000012',
+            currencyCode: 'KRW',
+            refundAmount: 24000,
+            refundPointsAmount: 1000,
+            refundMethod: 'pg',
+            refundMethodLabel: 'PG사 환불',
+        };
+        mockG7Core.api.post.mockResolvedValueOnce({ success: true, data: { claim: {} } });
+
+        await executeClaimRefundHandler({ handler: 'sirsoft-ecommerce.executeClaimRefund' }, mockContext);
+
+        const [url, body] = lastCall('post');
+        // 실행은 유형 스코프가 아니라 환불신청서 ID 축이다.
+        expect(url).toBe(`${BASE}/refunds/12/execute`);
+        expect(body).toEqual({ refund_amount: 24000, refund_points_amount: 1000, refund_method: 'pg' });
+    });
+
+    /**
+     * 재실행(더블클릭)은 충돌이지 입력 오류가 아니다 — 확정된 상태를 보여 주는 것이 조치다.
+     *
+     * @scenario claim_type=refund, cancellable=present
+     * @effects claim_refund_execute_conflict_refetches_detail
+     */
+    it('409 는 경고와 함께 상세를 다시 읽는다', async () => {
+        mockGlobalState.claimRefundExecuteContext = {
+            claimId: 12,
+            claimNumber: 'RF20260827000012',
+            currencyCode: 'KRW',
+            refundAmount: 24000,
+            refundPointsAmount: 0,
+            refundMethod: 'pg',
+            refundMethodLabel: 'PG사 환불',
+        };
+        mockG7Core.api.post.mockRejectedValueOnce({
+            response: { status: 409, data: { message: '이미 환불이 실행되었습니다.' } },
+        });
+
+        await expect(
+            executeClaimRefundHandler({ handler: 'sirsoft-ecommerce.executeClaimRefund' }, mockContext),
+        ).rejects.toBeTruthy();
+
+        expect(mockG7Core.toast.warning).toHaveBeenCalledWith('이미 환불이 실행되었습니다.');
+        expect(mockG7Core.toast.error).not.toHaveBeenCalled();
+
+        const refetched = mockG7Core.dispatch.mock.calls
+            .filter(([action]: any[]) => action.handler === 'refetchDataSource')
+            .map(([action]: any[]) => action.params.dataSourceId);
+
+        expect(refetched).toEqual(['claim', 'claim_logs']);
+    });
+
+    /**
+     * 상한 초과는 서버가 실행 직전에 다시 계산해 막는다 — 사유는 서버 문구를 그대로 전한다
+     * (다국어 키는 유한해서 PG 가 돌려준 사유를 담지 못한다).
+     *
+     * @scenario claim_type=refund, cancellable=present
+     * @effects claim_refund_execute_surfaces_server_reason
+     */
+    it('422 는 서버 사유를 그대로 알린다', async () => {
+        mockGlobalState.claimRefundExecuteContext = {
+            claimId: 12,
+            claimNumber: 'RF20260827000012',
+            currencyCode: 'KRW',
+            refundAmount: 99000,
+            refundPointsAmount: 0,
+            refundMethod: 'pg',
+            refundMethodLabel: 'PG사 환불',
+        };
+        mockG7Core.api.post.mockRejectedValueOnce({
+            response: { status: 422, data: { message: '취소 가능 금액을 초과했습니다.' } },
+        });
+
+        await expect(
+            executeClaimRefundHandler({ handler: 'sirsoft-ecommerce.executeClaimRefund' }, mockContext),
+        ).rejects.toBeTruthy();
+
+        expect(mockG7Core.toast.error).toHaveBeenCalledWith('취소 가능 금액을 초과했습니다.');
+    });
+
+    /**
+     * 실행 성공은 신청서와 활동 로그를 함께 바꾼다 — 하나만 갱신하면 나머지가 옛 값으로 남고
+     * 오류가 없어 운영자는 그것을 사실로 읽는다.
+     *
+     * @effects claim_refund_execute_refetches_detail_and_logs
+     */
+    it('실행 후 신청서와 활동 로그를 함께 다시 읽고 문맥을 비운다', async () => {
+        mockGlobalState.claimRefundExecuteContext = {
+            claimId: 12,
+            claimNumber: 'RF20260827000012',
+            currencyCode: 'KRW',
+            refundAmount: 24000,
+            refundPointsAmount: 0,
+            refundMethod: 'pg',
+            refundMethodLabel: 'PG사 환불',
+        };
+        mockG7Core.api.post.mockResolvedValueOnce({ success: true, data: { claim: {} } });
+
+        await executeClaimRefundHandler({ handler: 'sirsoft-ecommerce.executeClaimRefund' }, mockContext);
+
+        const refetched = mockG7Core.dispatch.mock.calls
+            .filter(([action]: any[]) => action.handler === 'refetchDataSource')
+            .map(([action]: any[]) => action.params.dataSourceId);
+
+        expect(refetched).toEqual(['claim', 'claim_logs']);
+        expect(mockGlobalState.claimRefundExecuteContext).toBeNull();
+    });
+
+    /**
+     * 문맥 없이 확인 버튼이 눌리는 경로(모달 재진입 등)에서 요청을 보내지 않는다 — 되돌릴
+     * 수 없는 처리라 "무엇을 실행하는지" 가 확정되지 않으면 실행하지 않는다.
+     *
+     * @effects claim_refund_execute_requires_seeded_context
+     */
+    it('문맥이 없으면 요청하지 않는다', async () => {
+        await executeClaimRefundHandler({ handler: 'sirsoft-ecommerce.executeClaimRefund' }, mockContext);
+
+        expect(mockG7Core.api.post).not.toHaveBeenCalled();
+        expect(mockG7Core.toast.error).toHaveBeenCalled();
     });
 });

@@ -48,6 +48,7 @@ class CancellableAmount
      * @param  array<int, array>  $reservedClaims  선점 근거 [{type, id, number, amount}]
      * @param  string|null  $currency  기본 통화 코드
      * @param  array<string, mixed>  $mcAmount  다통화 표기 {통화코드 => 금액}
+     * @param  array<string, mixed>|null  $currencySnapshot  주문 시점 통화 스냅샷 (표기 자릿수·절사 규칙의 SSoT)
      */
     public function __construct(
         public float $amount = 0,
@@ -59,6 +60,7 @@ class CancellableAmount
         public array $reservedClaims = [],
         public ?string $currency = null,
         public array $mcAmount = [],
+        public ?array $currencySnapshot = null,
     ) {}
 
     /**

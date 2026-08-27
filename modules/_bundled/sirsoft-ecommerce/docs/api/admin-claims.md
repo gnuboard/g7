@@ -214,6 +214,40 @@
 | progress_steps | array | — | 진행단계 스텝퍼 (아래) |
 | redelivery_address_differs | boolean\|null | `false` | 최종 재발송지가 주문 배송지와 다른가. 저장된 두 주소의 비교로 도출하며 별도 컬럼이 없다. 재발송 축이 없는 유형은 `null` — `false`(같다)와 구분된다 |
 | carriers | array | `[{"value": 3, "label": "CJ대한통운", …}]` | 회수·재발송 송장의 택배사 선택지. 형태는 `admin/shipping-carriers/active` 와 같다. 환불은 회수·재발송 축이 없어 빈 배열 |
+| order | object\|null | — | 결제 정보 섹션(D17-③)이 그리는 **원 주문의 결제 축**. 주문 상세 엔드포인트는 `orders.read` 게이트라 이 화면이 직접 부르면 클레임 권한만 가진 관리자에게만 403 이 되어 탭이 통째로 빈다. 이 화면이 실제로 그리는 축만 실린다 (아래) |
+| settlement | object\|null | — | '이 클레임의 정산' 의 **완료 시 환불 예정**. 교환·반품에만 있고 환불신청서는 `null`(자기 금액이 헤더 컬럼이다). 값은 완료 처리 모달의 미리보기와 **같은 경로**에서 나온다 (아래) |
+| charge_methods | array | `[{"value": "pay_on_request", "label": "신청 시 결제"}]` | 청구 방식 선택지 (D18). 허용 목록은 설정 `claim.allowed_charge_methods` 가 정하고 그 조회는 `settings.read` 게이트다. 환불신청서는 빈 배열 |
+| refund_methods | array | `[{"value": "pg", "label": "PG사 환불"}]` | 환불 수단 선택지 (`RefundMethodEnum`). 환불신청서에만 있고 그 밖은 빈 배열 |
+| cancellable | object\|null | — | 취소 가능 금액 산정 결과 (D19). 환불신청서에만 있으며 **그 신청서 문맥**(자기 자신을 선점 집계에서 제외)으로 계산한다. 형태는 [cancellable-amount](#get-apimodulessirsoft-ecommerceadminordersordercancellable-amount) 응답의 `cancellable` 과 동일하다 — 두 응답이 같은 지점에서 만들어진다 |
+
+**order 축** (`data.order`)
+
+결제 정보 섹션이 그리는 축과 주문 식별·통화 축만 싣습니다 — 주문 옵션·배송·주소는 이 화면이
+그리지 않으므로 실리지 않습니다.
+
+| 필드 | 설명 |
+| --- | --- |
+| order_status · is_partially_cancelled | 적립예정 행의 노출 조건 |
+| id · order_number | 주문 식별. 결제 정보 섹션은 읽지 않으며, 이 봉투를 소비하는 화면이 원 주문을 가리킬 때 쓴다 |
+| base_currency · payment_currency · is_cross_currency | 주문 레벨 통화. 결제 통화 병기 여부는 결제행 단위(`payments[].is_cross_currency`)가 판정하므로 결제 카드는 이 세 값을 읽지 않는다 |
+| payments | 결제수단 카드 ([OrderPaymentResource](orders.md)) |
+| subtotal_amount_formatted · total_shipping_amount_formatted · total_discount_amount(_formatted) · total_product_coupon_discount_amount(_formatted) · total_code_discount_amount(_formatted) · total_points_used_amount(_formatted) · total_deposit_used_amount(_formatted) · total_paid_amount_formatted | 금액 행 세트 |
+| total_cancelled_amount(_formatted) · total_refunded_amount(_formatted) · total_refunded_points_amount(_formatted) | 누적 취소·환불 블록. 환불 두 행은 **클레임 발 환불에서만** 0 을 넘는다 (취소 발은 취소금액 행이 담당) |
+| total_tax_amount_formatted · total_vat_amount_formatted · total_earned_points_amount | 과세·부가세·적립예정 |
+
+**settlement 축** (`data.settlement`)
+
+| 필드 | 타입 | 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| refund_amount / refund_amount_formatted | number / string | `55000` / `55,000원` | 지금 완료 처리하면 접수될 환불 예정액 |
+| refund_points_amount / refund_points_amount_formatted | number / string | `0` / `0원` | 환불 예정 마일리지 |
+| deducted_shipping_fee / deducted_shipping_fee_formatted | number / string | `3000` / `3,000원` | 환불금 차감 방식일 때 환불액에서 이미 빠진 회수배송비 |
+| refund_product_amount / refund_product_amount_formatted | number\|null / string\|null | `41000` / `41,000원` | 환불 예정액의 상품 몫 (반품만 — 교환은 `null`). 합계만으로는 그 금액의 근거를 알 수 없어 가산 축을 함께 낸다 |
+| refund_shipping_amount / refund_shipping_amount_formatted | number\|null / string\|null | `0` / `0원` | 환불 예정액의 배송비 몫 (반품만 — 교환은 `null`) |
+| blocked_reason | string\|null | `claim_refund_request_exists` | 접수 불가 사유. `claim_refund_request_exists` 이미 접수됨 / `claim_refund_not_applicable` 환불 대상 없음 — 둘은 뜻이 달라 화면이 구분해 알린다 |
+| already_filed | boolean | `false` | 이 신청서에 살아 있는 환불신청서가 있는지 |
+| earn_recovery | boolean | `true` | 완료 시 적립 예정이 차감되는지 (회원 주문 + 완료 대상 존재) |
+| currency_code | string | `KRW` | 표기 통화 (거래 시점 동결) |
 
 **progress_steps 항목**
 
@@ -556,16 +590,21 @@ amount = max(0, min(domain_refundable, payment_capacity) − reserved)
   "data": {
     "cancellable": {
       "amount": 24000,
+      "amount_formatted": "24,000원",
       "domain_refundable": 29000,
+      "domain_refundable_formatted": "29,000원",
       "payment_capacity": 29000,
+      "payment_capacity_formatted": "29,000원",
       "reserved": 5000,
+      "reserved_formatted": "5,000원",
       "binding": "reserved",
       "binding_label_key": "sirsoft-ecommerce::messages.claims.cancellable_binding.reserved",
+      "binding_label": "진행 중인 다른 클레임이 선점한 금액만큼 한도가 줄었습니다.",
       "methods": [
-        {"type": "payment", "payment_id": 88, "method": "card", "currency": "KRW", "remaining_local": 29000, "remaining_base": 29000}
+        {"type": "payment", "payment_id": 88, "method": "card", "method_label": "신용카드", "currency": "KRW", "remaining_local": 29000, "remaining_base": 29000, "remaining_local_formatted": "29,000원", "remaining_base_formatted": "29,000원"}
       ],
       "reserved_claims": [
-        {"type": "refund", "id": 12, "number": "RF20260825000003", "amount": 5000}
+        {"type": "refund", "type_label": "환불", "id": 12, "number": "RF20260825000003", "amount": 5000, "amount_formatted": "5,000원"}
       ],
       "currency": "KRW",
       "mc_amount": {"KRW": 24000}
@@ -577,6 +616,13 @@ amount = max(0, min(domain_refundable, payment_capacity) − reserved)
 `binding` 은 한도를 정한 축입니다 (`domain_refundable`/`payment_capacity`/`reserved`).
 `methods` 는 수단별 잔여 한도(결제 통화 원값 `remaining_local` 병기 — D18 화면의 수단별 한도),
 `reserved_claims` 는 선점 근거(진행 중인 다른 클레임)입니다.
+
+금액의 표기 문자열(`*_formatted`)과 라벨(`binding_label` · `method_label` · `type_label`)은
+서버가 만듭니다 — 통화 기호와 소수 자릿수는 설정과 **거래 시점 스냅샷**이 정하므로 화면이
+조립하면 기본 통화가 원이 아닌 상점에서 값은 맞고 단위만 틀린 금액이 나갑니다. `binding_label_key`
+는 백엔드 네임스페이스 키라 화면이 해석할 수 없어 표시 문자열을 함께 싣습니다. 이 페이로드는
+클레임 상세 응답의 `data.cancellable` 과 **같은 지점**에서 만들어져 두 화면이 같은 문자열을
+봅니다.
 
 ---
 

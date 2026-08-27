@@ -63,7 +63,6 @@ effects:
   - claim_detail_tabs_read_computed_with_prefix
   - claim_detail_shipping_condition_identical
   - claim_detail_section_id_prefix_matches
-  - claim_detail_defers_payment_tab_to_owner_session
   - claim_reason_block_is_not_a_section
   - detail_tab_click_scrolls_to_section
   - detail_scroll_syncs_active_tab
@@ -140,9 +139,9 @@ test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/admin-claim-detail.spec.ts
 
 notes: |
-  **결제 정보·환불 실행 탭은 이 세션의 범위 밖이다.** 그 섹션을 만드는 세션(S9b)이 탭과
-  섹션을 **함께** 더한다 — 지금 탭만 세워 두면 그 사이 클릭이 아무 일도 하지 않는다.
-  구조 테스트가 그 부재를 단언하므로, S9b 가 탭을 더하면서 섹션을 빠뜨리면 red 가 된다.
+  **결제 정보·환불 실행 탭은 이 세션의 범위 밖이었고 S9b 가 섹션과 함께 더했다.** 그 축의
+  커버리지는 별도 매니페스트(`admin-claim-detail-payment.yaml`)가 소유한다 — 이 매니페스트의
+  `claim_detail_tabs_match_sections` 는 두 세션의 탭·섹션을 함께 세는 축으로 남는다.
 
   완료 처리 모달의 세 진입점 중 이 세션이 둘(신청서 내 상품 일괄 · 상세 [완료 처리])을 더해
   D26 의 공유 계약이 처음으로 세 지점에서 성립한다. 모달 partial 은 목록 세션(S8b)이 소유한

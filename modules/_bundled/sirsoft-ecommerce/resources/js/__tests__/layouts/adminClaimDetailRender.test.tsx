@@ -27,6 +27,7 @@ import {
 import itemsSection from '../../../layouts/admin/partials/admin_ecommerce_claim_detail/_partial_claim_items.json';
 import shippingSection from '../../../layouts/admin/partials/admin_ecommerce_claim_detail/_partial_claim_shipping.json';
 import reasonBlock from '../../../layouts/admin/partials/admin_ecommerce_claim_detail/_partial_claim_reason.json';
+import paymentSection from '../../../layouts/admin/partials/admin_ecommerce_claim_detail/_partial_claim_payment.json';
 
 type Node = Record<string, any>;
 
@@ -178,6 +179,17 @@ beforeEach(() => {
             )
           )
         )
+      )
+    )
+  );
+
+  // 환불 수단 라디오 — 이 테스트가 보는 축은 '서버가 준 선택지를 그렸는가' 와 게이팅뿐이다.
+  registry.register('composite', 'RadioGroup', ({ id, options, value, disabled }: any) =>
+    React.createElement(
+      'div',
+      { id, 'data-testid': 'claim-refund-method', 'data-value': value, 'data-disabled': String(!!disabled) },
+      (options ?? []).map((option: any, index: number) =>
+        React.createElement('span', { key: index, 'data-value': option.value }, option.label)
       )
     )
   );
@@ -566,5 +578,361 @@ describe('사유·관리자 메모 (2단)', () => {
     );
     expect(document.getElementById('cr_003_reject_reason_row')).not.toBeNull();
     rejected.cleanup();
+  });
+});
+
+describe('결제 정보 · 환불 실행 섹션 — 유형별 렌더 (S9b · D17-③·D18·D19)', () => {
+  /**
+   * 결제 정보 섹션이 읽는 주문 축. 값은 전부 서버가 표기한 문자열이다 — 화면이 기호를
+   * 붙이면 기본 통화가 원이 아닌 상점에서 값은 맞고 단위만 틀린 금액이 나간다.
+   */
+  const ORDER_CONTEXT = {
+    id: 1024,
+    order_number: '20260827-0001',
+    order_status: 'delivered',
+    is_partially_cancelled: false,
+    base_currency: 'KRW',
+    payment_currency: 'KRW',
+    is_cross_currency: false,
+    payments: [
+      {
+        payment_number: 'PAY20260827000001',
+        payment_type_label: '주문결제',
+        payment_method: 'card',
+        payment_method_label: '신용카드',
+        payment_status: 'paid',
+        payment_status_label: '결제완료',
+        payment_status_variant: 'success',
+        account_info: null,
+        is_cross_currency: false,
+        payment_currency: 'KRW',
+        requested_at_formatted: '2026-08-20 10:00',
+        paid_at_formatted: '2026-08-20 10:01',
+        due_date_formatted: null,
+        paid_amount_formatted: '68,000원',
+        event_discount_amount: 0,
+        event_discount_amount_formatted: '0원',
+        referral_discount_amount: 0,
+        referral_discount_amount_formatted: '0원',
+      },
+    ],
+    subtotal_amount_formatted: '68,000원',
+    total_shipping_amount_formatted: '3,000원',
+    total_discount_amount: 0,
+    total_discount_amount_formatted: '0원',
+    total_points_used_amount: 0,
+    total_points_used_amount_formatted: '0원',
+    total_deposit_used_amount: 0,
+    total_deposit_used_amount_formatted: '0원',
+    total_paid_amount_formatted: '71,000원',
+    total_cancelled_amount: 0,
+    total_cancelled_amount_formatted: '0원',
+    total_refunded_amount: 29000,
+    total_refunded_amount_formatted: '29,000원',
+    total_refunded_points_amount: 0,
+    total_refunded_points_amount_formatted: '0원',
+    total_tax_amount_formatted: '64,545원',
+    total_vat_amount_formatted: '6,455원',
+    total_earned_points_amount: 0,
+  };
+
+  /** 취소 가능 금액 산정 결과 (D19) — 세 축과 한도를 정한 축이 함께 온다 */
+  const CANCELLABLE = {
+    amount: 24000,
+    amount_formatted: '24,000원',
+    domain_refundable: 29000,
+    domain_refundable_formatted: '29,000원',
+    payment_capacity: 29000,
+    payment_capacity_formatted: '29,000원',
+    reserved: 5000,
+    reserved_formatted: '5,000원',
+    binding: 'reserved',
+    binding_label_key: 'sirsoft-ecommerce::messages.claims.cancellable_binding.reserved',
+    binding_label: '진행 중인 다른 클레임이 선점한 금액만큼 한도가 줄었습니다.',
+    currency: 'KRW',
+    methods: [
+      {
+        type: 'payment',
+        payment_id: 88,
+        method: 'card',
+        method_label: '신용카드',
+        currency: 'KRW',
+        remaining_local: 29000,
+        remaining_base: 29000,
+        remaining_local_formatted: '29,000원',
+        remaining_base_formatted: '29,000원',
+      },
+    ],
+    reserved_claims: [
+      { type: 'refund', type_label: '환불', id: 12, number: 'RF20260825000003', amount: 5000, amount_formatted: '5,000원' },
+    ],
+    mc_amount: { KRW: 24000 },
+  };
+
+  /**
+   * 환불신청서 상세 응답을 만든다.
+   *
+   * @param envelope 봉투 축 덮어쓰기
+   * @returns 데이터소스 응답
+   */
+  function refundResponse(envelope: Node = {}) {
+    return claimResponse(
+      {
+        claim_type: 'refund',
+        claim_type_label: '환불',
+        claim_number: 'RF20260827000012',
+        status: 'approved',
+        status_label: '환불승인',
+        refund_method: 'pg',
+        refund_method_label: 'PG사 환불',
+        refund_amount: 24000,
+        refund_amount_formatted: '24,000원',
+        refund_points_amount: 0,
+        refund_points_amount_formatted: '0원',
+        refund_shipping_amount: 0,
+        refund_shipping_amount_formatted: '0원',
+        refund_total: 24000,
+        refund_total_formatted: '24,000원',
+        refunded_at_formatted: null,
+        currency_code: 'KRW',
+        items: [],
+      },
+      {
+        claim_path_segment: 'refunds',
+        carriers: [],
+        redelivery_address_differs: null,
+        abilities: { can_update_status: true, can_update_amounts: true, can_execute_refund: true },
+        order: ORDER_CONTEXT,
+        settlement: null,
+        charge_methods: [],
+        refund_methods: [
+          { value: 'pg', label: 'PG사 환불' },
+          { value: 'bank', label: '무통장 환불' },
+          { value: 'points', label: '마일리지 환불' },
+        ],
+        cancellable: CANCELLABLE,
+        ...envelope,
+      },
+    );
+  }
+
+  /**
+   * 교환 상세 응답에 결제 정보 축을 얹는다.
+   *
+   * @param envelope 봉투 축 덮어쓰기
+   * @returns 데이터소스 응답
+   */
+  function exchangeWithPayment(envelope: Node = {}) {
+    return claimResponse(
+      {
+        charge_method: 'pay_on_request',
+        charge_method_label: '신청 시 결제',
+        claim_shipping_fee: 6000,
+        claim_shipping_fee_formatted: '6,000원',
+        additional_product_amount: 3000,
+        additional_product_amount_formatted: '3,000원',
+        refund_product_amount: 0,
+        refund_product_amount_formatted: '0원',
+        total_charge_amount: 9000,
+        total_charge_amount_formatted: '9,000원',
+        outstanding_amount: 0,
+        outstanding_amount_formatted: '0원',
+        currency_code: 'KRW',
+        payments: [],
+      },
+      {
+        order: ORDER_CONTEXT,
+        settlement: {
+          refund_amount: 0,
+          refund_amount_formatted: '0원',
+          refund_points_amount: 0,
+          refund_points_amount_formatted: '0원',
+          deducted_shipping_fee: 0,
+          deducted_shipping_fee_formatted: '0원',
+          blocked_reason: 'claim_refund_not_applicable',
+          already_filed: false,
+          earn_recovery: false,
+          currency_code: 'KRW',
+        },
+        charge_methods: [
+          { value: 'pay_on_request', label: '신청 시 결제' },
+          { value: 'deduct_from_refund', label: '환불금 차감' },
+        ],
+        refund_methods: [],
+        cancellable: null,
+        ...envelope,
+      },
+    );
+  }
+
+  /**
+   * 환불 실행은 환불신청서에만 있는 축이다 — 교환·반품에 그리면 누를 수 있는 컨트롤이
+   * 언제나 실패한다.
+   *
+   * @scenario claim_type=exchange, claim_stage=in_progress
+   * @effects claim_refund_execute_section_absent_for_non_refund
+   */
+  it('교환 유형에서는 환불 실행 섹션이 렌더되지 않는다', async () => {
+    const utils = await renderProbe(paymentSection as Node, exchangeWithPayment());
+
+    expect(document.querySelector('#section_payment_info')).not.toBeNull();
+    expect(document.querySelector('#section_refund_execute')).toBeNull();
+
+    utils.cleanup();
+  });
+
+  /**
+   * 환불에는 청구 축이 없고 교환·반품에는 환불 실행 축이 없다 — 정산 블록도 같은 축으로
+   * 갈린다.
+   *
+   * @scenario claim_type=refund, cancellable=present
+   * @effects claim_settlement_blocks_split_by_type
+   */
+  it('환불 유형에서는 환불 실행 섹션과 환불 요약이 렌더된다', async () => {
+    const utils = await renderProbe(paymentSection as Node, refundResponse());
+
+    expect(document.querySelector('#section_refund_execute')).not.toBeNull();
+    expect(document.querySelector('#cst_refund_block')).not.toBeNull();
+    expect(document.querySelector('#cst_charge_block')).toBeNull();
+    expect(screen.getByText('24,000원', { selector: '#cst_012_refund_total > *' })).toBeInTheDocument();
+
+    utils.cleanup();
+  });
+
+  /**
+   * 세 축과 최종 금액은 서버가 산정하고 서버가 표기한다 — 화면이 다시 더하면 실행 가드가
+   * 쓰는 값과 화면이 예고하는 값이 갈린다.
+   *
+   * @scenario claim_type=refund, cancellable=present
+   * @effects claim_cancellable_axes_come_from_server
+   */
+  it('취소 가능 금액 3축·합계·한도 사유가 서버 값 그대로 렌더된다', async () => {
+    const utils = await renderProbe(paymentSection as Node, refundResponse());
+
+    expect(document.querySelector('#cre_001_domain_refundable')?.textContent).toContain('29,000원');
+    expect(document.querySelector('#cre_002_payment_capacity')?.textContent).toContain('29,000원');
+    expect(document.querySelector('#cre_004_reserved')?.textContent).toContain('5,000원');
+    expect(document.querySelector('#cre_006_cancellable_amount')?.textContent).toBe('24,000원');
+    expect(document.querySelector('#cre_007_binding_label')?.textContent).toBe(
+      '진행 중인 다른 클레임이 선점한 금액만큼 한도가 줄었습니다.',
+    );
+    // 선점 근거 — 어느 신청서가 얼마를 잡고 있는지 보이지 않으면 한도가 줄어든 이유를
+    // 운영자가 확인할 방법이 없다.
+    expect(document.querySelector('#cre_005_reserved_claim_0')?.textContent).toContain('RF20260825000003');
+
+    utils.cleanup();
+  });
+
+  /**
+   * 산정 불가와 "0원" 은 다른 사실이다 — 뭉뚱그리면 운영자가 되돌릴 것이 없다고 읽는다.
+   *
+   * @scenario claim_type=refund, cancellable=absent
+   * @effects claim_cancellable_unavailable_distinguished_from_zero
+   */
+  it('취소 가능 금액이 없으면 산정 불가 안내만 렌더된다', async () => {
+    const utils = await renderProbe(paymentSection as Node, refundResponse({ cancellable: null }));
+
+    expect(document.querySelector('#cre_000_cancellable_unavailable')).not.toBeNull();
+    expect(document.querySelector('#cre_cancellable_body')).toBeNull();
+    expect(document.querySelector('#cre_006_cancellable_amount')).toBeNull();
+
+    utils.cleanup();
+  });
+
+  /**
+   * 결제 카드는 원 주문의 결제 사실이다 — 값은 전부 상세 봉투가 나른 서버 표기다.
+   *
+   * @scenario claim_type=exchange, claim_stage=in_progress
+   * @effects claim_payment_reads_detail_envelope_only
+   */
+  it('결제 카드가 상세 봉투의 주문 금액 표기를 그대로 그린다', async () => {
+    const utils = await renderProbe(paymentSection as Node, exchangeWithPayment());
+
+    expect(document.querySelector('#cp_001_order_amount_0')?.textContent).toContain('68,000원');
+    expect(document.querySelector('#cp_002_final_amount_0')?.textContent).toBe('71,000원');
+    // 클레임 발 환불이 누적되면 그 행이 비로소 렌더된다 (§4-3-1).
+    expect(document.querySelector('#cp_004_refunded_amount_0')?.textContent).toContain('29,000원');
+    expect(document.querySelector('#cp_000_no_payment')).toBeNull();
+
+    utils.cleanup();
+  });
+
+  /**
+   * 결제행이 없는 주문(전액 할인 등)에서 카드가 통째로 사라지면 운영자는 "아직 안 불러왔다"
+   * 와 "결제 건이 없다" 를 구분할 수 없다.
+   *
+   * @effects claim_payment_shows_empty_notice
+   */
+  it('결제 건이 없으면 안내가 렌더된다', async () => {
+    const utils = await renderProbe(
+      paymentSection as Node,
+      exchangeWithPayment({ order: { ...ORDER_CONTEXT, payments: [] } }),
+    );
+
+    expect(document.querySelector('#cp_000_no_payment')).not.toBeNull();
+    expect(document.querySelector('#cp_001_order_amount_0')).toBeNull();
+
+    utils.cleanup();
+  });
+
+  /**
+   * 접수 불가 사유 둘은 뜻이 다르다 — 이미 접수됐거나(다른 신청서가 맡았다), 애초에 환불
+   * 대상이 없다. 감추면 0원 예고가 정상으로 보인다.
+   *
+   * @scenario claim_type=return, cancellable=absent
+   * @effects claim_settlement_blocked_reason_shown
+   */
+  it('완료 시 환불 예정 블록이 접수 불가 사유를 구분해 알린다', async () => {
+    const notApplicable = await renderProbe(paymentSection as Node, exchangeWithPayment());
+    expect(document.querySelector('#cst_008_blocked_notice')?.textContent).toBe(
+      'sirsoft-ecommerce.admin.claim.detail.settlement.blocked_not_applicable',
+    );
+    notApplicable.cleanup();
+
+    const alreadyFiled = await renderProbe(
+      paymentSection as Node,
+      exchangeWithPayment({
+        settlement: {
+          refund_amount: 0,
+          refund_amount_formatted: '0원',
+          refund_points_amount: 0,
+          refund_points_amount_formatted: '0원',
+          deducted_shipping_fee: 0,
+          deducted_shipping_fee_formatted: '0원',
+          blocked_reason: 'claim_refund_request_exists',
+          already_filed: true,
+          earn_recovery: false,
+          currency_code: 'KRW',
+        },
+      }),
+    );
+    expect(document.querySelector('#cst_008_blocked_notice')?.textContent).toBe(
+      'sirsoft-ecommerce.admin.claim.detail.settlement.blocked_already_filed',
+    );
+    alreadyFiled.cleanup();
+  });
+
+  /**
+   * 금액 수정 게이트는 `claims.update-amounts` 다 — 그 권한이 없으면 입력이 잠긴다.
+   * 버튼만 잠그고 입력을 열어 두면 운영자가 고친 값이 저장되지 않은 채 화면에만 남는다.
+   *
+   * @scenario claim_type=refund, cancellable=present
+   * @effects claim_amount_controls_gate_on_update_amounts
+   */
+  it('금액 수정 권한이 없으면 환불액 입력이 잠긴다', async () => {
+    const utils = await renderProbe(
+      paymentSection as Node,
+      refundResponse({
+        abilities: { can_update_status: true, can_update_amounts: false, can_execute_refund: true },
+      }),
+    );
+
+    expect(document.querySelector('#cre_008_pg_amount')).toBeDisabled();
+    expect(document.querySelector('#cre_009_points_amount')).toBeDisabled();
+    expect(document.querySelector('#cre_013_save_amounts')).toBeDisabled();
+    // 실행 게이트는 다른 권한이다 — 한쪽으로 묶으면 다른 쪽이 열리거나 잠긴다.
+    expect(document.querySelector('#cre_014_execute_button')).not.toBeDisabled();
+
+    utils.cleanup();
   });
 });

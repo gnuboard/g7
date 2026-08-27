@@ -10,7 +10,7 @@
         "description": "$t:sirsoft-ecommerce.admin.claim.detail.description"
     },
     "computed": {
-        "claimDetailTabs": "{{[{ id: 'claim_info', label: $t('sirsoft-ecommerce.admin.claim.detail.tabs.claim_info') }, ...(['exchange', 'return'].includes(claim?.data?.claim?.claim_type ?? '') ? [{ id: 'shipping_info', label: $t('sirsoft-ecommerce.admin.claim.detail.tabs.shipping_info') }] : []), { id: 'activity_log', label: $t('sirsoft-ecommerce.admin.claim.detail.tabs.activity_log') }]}}"
+        "claimDetailTabs": "{{[{ id: 'claim_info', label: $t('sirsoft-ecommerce.admin.claim.detail.tabs.claim_info') }, ...(['exchange', 'return'].includes(claim?.data?.claim?.claim_type ?? '') ? [{ id: 'shipping_info', label: $t('sirsoft-ecommerce.admin.claim.detail.tabs.shipping_info') }] : []), { id: 'payment_info', label: $t('sirsoft-ecommerce.admin.claim.detail.tabs.payment_info') }, ...((claim?.data?.claim?.claim_type ?? '') === 'refund' ? [{ id: 'refund_execute', label: $t('sirsoft-ecommerce.admin.claim.detail.tabs.refund_execute') }] : []), { id: 'activity_log', label: $t('sirsoft-ecommerce.admin.claim.detail.tabs.activity_log') }]}}"
     },
     "state": {
         "activeClaimTab": "claim_info",
@@ -24,6 +24,13 @@
         "redeliveryCarrierId": "",
         "redeliveryTrackingNumber": "",
         "isSavingRedelivery": false,
+        "claimShippingFee": "",
+        "chargeMethod": "",
+        "isSavingAmounts": false,
+        "refundAmount": "",
+        "refundPointsAmount": "",
+        "refundMethod": "",
+        "isExecutingRefund": false,
         "logsPage": 1,
         "logsPerPage": 10,
         "logsSort": "date_desc"
@@ -69,7 +76,12 @@
                 "collectionCarrierId": "{{data.claim?.collection_carrier_id ? String(data.claim.collection_carrier_id) : ''}}",
                 "collectionTrackingNumber": "{{data.claim?.collection_tracking_number ?? ''}}",
                 "redeliveryCarrierId": "{{data.claim?.redelivery_carrier_id ? String(data.claim.redelivery_carrier_id) : ''}}",
-                "redeliveryTrackingNumber": "{{data.claim?.redelivery_tracking_number ?? ''}}"
+                "redeliveryTrackingNumber": "{{data.claim?.redelivery_tracking_number ?? ''}}",
+                "claimShippingFee": "{{data.claim?.claim_shipping_fee === undefined || data.claim?.claim_shipping_fee === null ? '' : String(data.claim.claim_shipping_fee)}}",
+                "chargeMethod": "{{data.claim?.charge_method ?? ''}}",
+                "refundAmount": "{{data.claim?.refund_amount === undefined || data.claim?.refund_amount === null ? '' : String(data.claim.refund_amount)}}",
+                "refundPointsAmount": "{{data.claim?.refund_points_amount === undefined || data.claim?.refund_points_amount === null ? '' : String(data.claim.refund_points_amount)}}",
+                "refundMethod": "{{data.claim?.refund_method ?? ''}}"
             }
         },
         {
@@ -101,6 +113,8 @@
                 "isSavingMemo": false,
                 "isSavingCollection": false,
                 "isSavingRedelivery": false,
+                "isSavingAmounts": false,
+                "isExecutingRefund": false,
                 "logsPage": 1,
                 "logsPerPage": 10,
                 "logsSort": "date_desc"
@@ -111,6 +125,10 @@
         {
             "comment": "완료 처리 모달은 목록·상세·상품 단위 세 진입점이 파일 하나를 공유한다 (D26). 복제하면 한 곳만 고쳐졌을 때 나머지 두 경로가 조용히 옛 규칙으로 남는다 — 모달은 `_global.claimComplete*` 계약만 읽으므로 이 화면의 데이터소스에 의존하지 않는다.",
             "partial": "partials/admin_ecommerce_claim_list/_modal_claim_complete.json"
+        },
+        {
+            "comment": "환불 실행 확인 모달 (D18). 실행은 되돌릴 수 없는 처리라 화면이 예고한 값과 실행값이 같아야 한다 — 모달은 부모 화면의 `_local` 을 해석하지 못하므로(별도 컨텍스트) 여는 핸들러가 지금 입력된 값을 `_global.claimRefundExecuteContext` 로 넘기고, 모달 표시와 실행 본문이 그 하나를 함께 읽는다(모달이 제 사본을 들면 그 둘이 갈린다).",
+            "partial": "partials/admin_ecommerce_claim_detail/_modal_claim_refund_execute.json"
         }
     ],
     "slots": {
@@ -375,6 +393,9 @@
                             },
                             {
                                 "partial": "partials/admin_ecommerce_claim_detail/_partial_claim_shipping.json"
+                            },
+                            {
+                                "partial": "partials/admin_ecommerce_claim_detail/_partial_claim_payment.json"
                             },
                             {
                                 "partial": "partials/admin_ecommerce_claim_detail/_partial_claim_activity_log.json"

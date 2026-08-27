@@ -27,6 +27,7 @@ use Modules\Sirsoft\Ecommerce\Http\Resources\ClaimAdminCollection;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ClaimImageResource;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ClaimResource;
 use Modules\Sirsoft\Ecommerce\Http\Resources\OrderClaimHistoryResource;
+use Modules\Sirsoft\Ecommerce\Http\Resources\OrderResource;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
@@ -353,7 +354,9 @@ class ClaimController extends AdminBaseController
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
                 'messages.claims.cancellable_retrieved',
-                ['cancellable' => $result->toArray()]
+                // 표기 조립은 서비스가 소유한다 — 상세 봉투(`detailPayload`)와 같은 지점을
+                // 쓰지 않으면 같은 산정이 두 화면에서 다른 문자열로 나간다.
+                ['cancellable' => $this->adminClaimService->cancellablePayload($result)]
             );
         } catch (AccessDeniedHttpException $e) {
             return ResponseHelper::forbidden('auth.scope_denied');
@@ -692,7 +695,105 @@ class ClaimController extends AdminBaseController
             'carriers' => $claim instanceof OrderRefund
                 ? []
                 : $this->carrierService->getActiveCarrierOptions(),
+            // 결제 정보 섹션(D17-③)이 그리는 원 주문의 결제 카드·금액 행 세트. 주문 상세
+            // 엔드포인트는 `orders.read` 게이트라 이 화면(`claims.read`)이 직접 부르면
+            // 클레임 권한만 가진 운영자에게만 403 이 되어 결제 정보 탭이 통째로 빈다.
+            'order' => $claim->order ? $this->orderPaymentContext($claim->order) : null,
+            // '이 클레임의 정산' 블록의 환불 예정액 — 헤더 컬럼이 아니라 완료 시점 재계산
+            // 결과라 완료 미리보기와 **같은 경로**에서 나온다. 환불신청서는 자기 금액이
+            // 헤더 컬럼이라 null 이다.
+            'settlement' => $this->adminClaimService->settlementFor($claim),
+            // 청구 방식 어휘는 운영자 설정(`claim.allowed_charge_methods`)이 정하고 그 조회는
+            // `settings.read` 게이트다 — 완료 기본값·택배사와 같은 이유로 봉투가 나른다.
+            'charge_methods' => $claim instanceof OrderRefund
+                ? []
+                : $this->adminClaimService->chargeMethodOptions(),
+            // 환불 수단 어휘 — 환불 실행 섹션의 라디오. 다른 유형에는 그 축이 없다.
+            'refund_methods' => $claim instanceof OrderRefund
+                ? $this->adminClaimService->refundMethodOptions()
+                : [],
+            // 취소 가능 금액 산정 근거 (D19). 별도 엔드포인트(`orders/{order}/cancellable-amount`)
+            // 도 같은 값을 주지만 그 조회는 상세 응답의 도착을 기다려야 주문 id 를 알 수 있어,
+            // 기다리는 동안 환불 실행 섹션이 빈 채로 열린다 — 한 왕복으로 함께 싣는다.
+            'cancellable' => $claim instanceof OrderRefund && $claim->order
+                ? $this->cancellablePayloadForRefund($claim)
+                : null,
         ];
+    }
+
+    /**
+     * 결제 정보 섹션이 실제로 그리는 주문 축만 골라 담습니다. (D17-③)
+     *
+     * 값은 `OrderResource` 가 만든다 — 금액 표기·통화 판정을 여기서 다시 적으면 같은 주문이
+     * 주문 상세와 클레임 상세에서 다른 문자열로 보인다. 다만 **그 결과를 통째로 싣지는
+     * 않는다**: 이 화면은 주문 옵션·배송·주소를 그리지 않으므로, 실으면 그 화면이 쓰지도
+     * 않는 하위 컬렉션이 응답에 실리고 미로드 관계가 직렬화 시점에 터진다.
+     *
+     * 목록은 결제 카드와 금액 행이 읽는 축 + 주문 식별 축(`id`·`order_number`)과 통화 축
+     * (`base_currency`·`payment_currency`·`is_cross_currency`)이다. 뒤의 다섯은 지금 화면이
+     * 읽지 않는다 — 통화 병기는 결제행 단위(`payments[].is_cross_currency`)가 판정하고, 식별
+     * 축은 이 봉투를 소비할 다음 화면(주문 링크·원장 대조)을 위해 남긴다. 스칼라라서 '봉투는
+     * 창고가 아니다' 가 겨냥하는 하위 컬렉션·미로드 관계와는 성질이 다르다.
+     * `_partial_claim_payment.json` 을 고칠 때 함께 본다.
+     *
+     * @param  Order  $order  원 주문
+     * @return array 결제 정보 섹션이 읽는 주문 축
+     */
+    protected function orderPaymentContext(Order $order): array
+    {
+        $order->loadMissing('payments');
+
+        return array_intersect_key(
+            (new OrderResource($order))->toArray(request()),
+            array_flip([
+                'id',
+                'order_number',
+                'order_status',
+                'is_partially_cancelled',
+                'base_currency',
+                'payment_currency',
+                'is_cross_currency',
+                'payments',
+                'subtotal_amount_formatted',
+                'total_shipping_amount_formatted',
+                'total_discount_amount',
+                'total_discount_amount_formatted',
+                'total_product_coupon_discount_amount',
+                'total_product_coupon_discount_amount_formatted',
+                'total_code_discount_amount',
+                'total_code_discount_amount_formatted',
+                'total_points_used_amount',
+                'total_points_used_amount_formatted',
+                'total_deposit_used_amount',
+                'total_deposit_used_amount_formatted',
+                'total_paid_amount_formatted',
+                'total_cancelled_amount',
+                'total_cancelled_amount_formatted',
+                'total_refunded_amount',
+                'total_refunded_amount_formatted',
+                'total_refunded_points_amount',
+                'total_refunded_points_amount_formatted',
+                'total_tax_amount_formatted',
+                'total_vat_amount_formatted',
+                'total_earned_points_amount',
+            ])
+        );
+    }
+
+    /**
+     * 환불신청서 문맥의 취소 가능 금액 페이로드를 만듭니다. (D19 — 상세 봉투)
+     *
+     * 산정도 표기도 서비스가 소유한다 — 컨트롤러가 표기를 조립하면 형제 엔드포인트
+     * (`cancellableAmount()`)와 같은 숫자가 다르게 보인다.
+     *
+     * @param  OrderRefund  $refund  환불신청서
+     * @return array|null 산정 결과 (해석 불가 시 null)
+     */
+    protected function cancellablePayloadForRefund(OrderRefund $refund): ?array
+    {
+        $result = $this->adminClaimService->cancellableAmountForOrder($refund->order, (int) $refund->id);
+
+        return $result === null ? null : $this->adminClaimService->cancellablePayload($result);
     }
 
     /**

@@ -31,6 +31,8 @@ import shell from '../../../layouts/admin/admin_ecommerce_claim_detail.json';
 import itemsSection from '../../../layouts/admin/partials/admin_ecommerce_claim_detail/_partial_claim_items.json';
 import shippingSection from '../../../layouts/admin/partials/admin_ecommerce_claim_detail/_partial_claim_shipping.json';
 import reasonBlock from '../../../layouts/admin/partials/admin_ecommerce_claim_detail/_partial_claim_reason.json';
+import paymentSection from '../../../layouts/admin/partials/admin_ecommerce_claim_detail/_partial_claim_payment.json';
+import refundExecuteModal from '../../../layouts/admin/partials/admin_ecommerce_claim_detail/_modal_claim_refund_execute.json';
 import activityLog from '../../../layouts/admin/partials/admin_ecommerce_claim_detail/_partial_claim_activity_log.json';
 import adminRoutes from '../../../routes/admin.json';
 
@@ -44,11 +46,16 @@ const DETAIL_FILES: Array<[string, Node]> = [
   ['items', itemsSection as Node],
   ['shipping', shippingSection as Node],
   ['reason', reasonBlock as Node],
+  ['payment', paymentSection as Node],
+  ['refund_execute_modal', refundExecuteModal as Node],
   ['activity_log', activityLog as Node],
 ];
 
 /** 배송 축의 분기 조건 — 셸의 탭 배열과 섹션 `if` 가 **문자 그대로** 공유해야 한다 (D17-①) */
 const SHIPPING_CONDITION = "['exchange', 'return'].includes(claim?.data?.claim?.claim_type ?? '')";
+
+/** 환불 실행 축의 분기 조건 — 배송 축과 같은 규율 (D17-①) */
+const REFUND_CONDITION = "(claim?.data?.claim?.claim_type ?? '') === 'refund'";
 
 /**
  * 서브트리의 모든 노드를 훑는다. (children 뿐 아니라 props/actions 안쪽까지)
@@ -271,6 +278,8 @@ describe('상세 셸 — 라우트·데이터소스·모달 (S9a)', () => {
   it('완료 처리 모달은 목록이 소유한 파일을 그대로 참조한다', () => {
     expect(((shell as Node).modals as Node[]).map((m) => m.partial)).toEqual([
       'partials/admin_ecommerce_claim_list/_modal_claim_complete.json',
+      // 환불 실행 확인 모달은 이 화면만 여는 진입점이라 상세가 소유한다 (D18).
+      'partials/admin_ecommerce_claim_detail/_modal_claim_refund_execute.json',
     ]);
     expect(
       fs.existsSync(
@@ -282,10 +291,12 @@ describe('상세 셸 — 라우트·데이터소스·모달 (S9a)', () => {
     ).toBe(false);
   });
 
-  it('탭 콘텐츠 영역이 세 partial 을 순서대로 싣는다', () => {
+  it('탭 콘텐츠 영역이 네 partial 을 순서대로 싣는다', () => {
     expect((byId(shell, 'claim_tab_content_area').children as Node[]).map((n) => n.partial)).toEqual([
       'partials/admin_ecommerce_claim_detail/_partial_claim_items.json',
       'partials/admin_ecommerce_claim_detail/_partial_claim_shipping.json',
+      // 결제 정보와 환불 실행은 같은 금액 축을 보는 한 파일이다 (§5-2 파일 목록).
+      'partials/admin_ecommerce_claim_detail/_partial_claim_payment.json',
       'partials/admin_ecommerce_claim_detail/_partial_claim_activity_log.json',
     ]);
   });
@@ -312,7 +323,7 @@ describe('섹션 탭 ↔ 섹션 존재 동시 분기 (D17-①)', () => {
    *
    * @effects claim_detail_tabs_match_sections
    */
-  it('탭 id 세 종과 섹션 id 세 종이 1:1 이다', () => {
+  it('탭 id 다섯 종과 섹션 id 다섯 종이 1:1 이다', () => {
     const tabIds = [...tabsExpression.matchAll(/id:\s*'([a-z_]+)'/g)].map((m) => m[1]);
     const sectionIds = DETAIL_FILES.flatMap(([, node]) =>
       collect(node, (n) => typeof n.props?.['data-section-id'] === 'string').map(
@@ -320,7 +331,13 @@ describe('섹션 탭 ↔ 섹션 존재 동시 분기 (D17-①)', () => {
       ),
     );
 
-    expect(tabIds).toEqual(['claim_info', 'shipping_info', 'activity_log']);
+    expect(tabIds).toEqual([
+      'claim_info',
+      'shipping_info',
+      'payment_info',
+      'refund_execute',
+      'activity_log',
+    ]);
     expect([...sectionIds].sort()).toEqual([...tabIds].sort());
   });
 
@@ -347,14 +364,26 @@ describe('섹션 탭 ↔ 섹션 존재 동시 분기 (D17-①)', () => {
   });
 
   /**
-   * 결제 정보·환불 실행 탭은 그 섹션을 만드는 세션(S9b)이 **탭과 함께** 더한다 — 지금 탭만
-   * 세워 두면 그 사이 클릭이 아무 일도 하지 않는다.
+   * 결제 정보는 유형과 무관하게 그린다 — 원 주문의 결제 사실은 네 유형 모두에 있다.
+   * 환불 실행은 환불신청서에만 있는 축이라 조건이 붙고, 그 조건은 섹션 `if` 와 **문자
+   * 그대로** 같아야 한다 (D17-①).
    *
-   * @effects claim_detail_defers_payment_tab_to_owner_session
+   * @scenario claim_type=refund, cancellable=present
+   * @effects claim_detail_refund_execute_condition_identical
    */
-  it('아직 섹션이 없는 결제·환불 실행 탭을 미리 세워 두지 않았다', () => {
-    expect(tabsExpression).not.toContain('payment_info');
-    expect(tabsExpression).not.toContain('refund_execute');
+  it('결제 탭은 무조건, 환불 실행 탭은 환불 유형에서만 세워진다', () => {
+    // 결제 정보 탭에는 조건이 붙지 않는다 — 조건부 항목만 스프레드로 들어간다.
+    expect(tabsExpression).toContain(
+      "{ id: 'payment_info', label: $t('sirsoft-ecommerce.admin.claim.detail.tabs.payment_info') }",
+    );
+    expect(tabsExpression).toContain(REFUND_CONDITION);
+
+    const refundSection = collect(
+      paymentSection,
+      (n) => n.props?.['data-section-id'] === 'refund_execute',
+    )[0];
+
+    expect(refundSection.if).toBe(`{{${REFUND_CONDITION}}}`);
   });
 
   /**
@@ -573,6 +602,372 @@ describe('전 상세 레이아웃 공통 규약', () => {
       expect(n.if).toMatch(/^\{\{[\s\S]*\}\}$/);
       expect(n.if.slice(2, -2)).not.toContain('}}');
     });
+  });
+});
+
+describe('결제 정보 — 주문상세 정본 동형 (D17-③)', () => {
+  /** 주문상세 결제 정보 정본 — 이 화면의 행 마크업이 그대로 따라야 할 원본 */
+  const orderPaymentInfo: Node = JSON.parse(
+    fs.readFileSync(
+      path.join(
+        MODULE_ROOT,
+        'resources/layouts/admin/partials/admin_ecommerce_order_detail/_partial_payment_info.json',
+      ),
+      'utf8',
+    ),
+  );
+
+  /**
+   * 결제수단 카드 — 정본 복제 대상은 이 카드다. '이 클레임의 정산' 은 같은 섹션 안에 있지만
+   * 신설 블록이고(§6-4 "별도 블록"), 환불 실행은 다른 섹션이다.
+   */
+  const paymentInfoSection = byId(paymentSection, 'claim_payment_card');
+
+  /**
+   * 서브트리에서 금액 행(`flex justify-between`)의 className 집합을 모은다.
+   *
+   * @param node 시작 노드
+   * @returns className 집합
+   */
+  const rowClasses = (node: unknown): Set<string> =>
+    new Set(
+      collect(
+        node,
+        (n) => typeof n.props?.className === 'string' && n.props.className.includes('flex justify-between'),
+      ).map((n) => n.props.className as string),
+    );
+
+  /**
+   * 행 마크업이 갈리면 같은 주문이 두 화면에서 다르게 보인다 — 눈으로는 알아채기 어렵고
+   * 오류도 남지 않는다. 정본이 쓰는 행 클래스 밖의 형태를 이 섹션에 새로 만들지 않는다.
+   *
+   * @effects claim_payment_rows_match_order_detail_source
+   */
+  it('결제 정보 섹션의 금액 행이 정본의 행 클래스만 쓴다', () => {
+    const source = rowClasses(orderPaymentInfo);
+    const mine = [...rowClasses(paymentInfoSection)];
+
+    expect(mine.length).toBeGreaterThan(0);
+    expect(mine.filter((cls) => !source.has(cls))).toEqual([]);
+  });
+
+  /**
+   * 행 마크업이 같아도 **라벨이 다르면** 같은 주문의 같은 행이 두 화면에서 다른 말로 보인다
+   * (실측이 잡은 결함 — 정본은 "과세 금액"·"부가세 (VAT)"·"적립예정 포인트" 인데 이 화면은
+   * "과세금액"·"부가세"·"적립예정" 이었다). 값이 같아 오류가 남지 않고, 두 화면을 나란히
+   * 열어 보지 않으면 드러나지 않는다.
+   *
+   * 그래서 라벨 키를 복제하지 않고 **정본이 쓰는 키를 그대로** 읽는다 — 정본의 문구가 바뀌면
+   * 이 화면도 함께 바뀐다. 이 카드에만 있는 축(결제 건 없음 안내)만 예외다.
+   *
+   * @effects claim_payment_labels_reuse_order_detail_keys
+   */
+  it('결제 정보 카드가 정본의 라벨 키를 그대로 읽는다', () => {
+    const keysOf = (node: unknown): string[] =>
+      strings(node).flatMap((value) => [...value.matchAll(/\$t:(sirsoft-ecommerce\.[A-Za-z0-9_.]+)/g)]
+        .map((m) => m[1].replace(/\.$/, '')));
+
+    const source = new Set(keysOf(orderPaymentInfo));
+    /** 이 카드에만 있는 축 — 정본에는 결제행이 없을 때의 안내 자체가 없다 */
+    const OWN_KEYS = new Set(['sirsoft-ecommerce.admin.claim.detail.payment.no_payment']);
+
+    const drifted = [...new Set(keysOf(paymentInfoSection))]
+      .filter((key) => !source.has(key) && !OWN_KEYS.has(key));
+
+    expect(drifted).toEqual([]);
+  });
+
+  /**
+   * 주문 상세 엔드포인트는 `orders.read` 게이트다 — 이 화면(`claims.read`)이 직접 부르면
+   * 클레임 권한만 가진 운영자에게만 403 이 되어 결제 정보 탭이 통째로 빈다.
+   *
+   * @scenario claim_type=return, claim_stage=in_progress
+   * @effects claim_payment_reads_detail_envelope_only
+   */
+  it('결제 정보가 상세 봉투의 주문 축만 읽는다', () => {
+    const values = strings(paymentInfoSection);
+
+    expect(values.some((v) => v.includes('claim?.data?.order?.'))).toBe(true);
+    expect(values.filter((v) => v.includes('/admin/orders'))).toEqual([]);
+    expect(values.filter((v) => v.includes('order_detail'))).toEqual([]);
+  });
+
+  /**
+   * 결제행이 없는 주문(전액 할인 등)에서 카드가 통째로 사라지면 운영자는 "아직 안 불러왔다"
+   * 와 "결제 건이 없다" 를 구분할 수 없다.
+   *
+   * @effects claim_payment_shows_empty_notice
+   */
+  it('결제 건이 없을 때의 안내가 있다', () => {
+    expect(byId(paymentSection, 'cp_000_no_payment').if).toBe(
+      '{{(claim?.data?.order?.payments ?? []).length === 0}}',
+    );
+  });
+
+  /**
+   * 환불 두 행은 클레임 발 환불에서만 0 을 넘는다 (§4-3-1) — 실행 후 이 행이 렌더되는 것이
+   * `total_refunded_amount` 누적의 화면 쪽 증거다.
+   *
+   * @scenario claim_type=refund, cancellable=present
+   * @effects claim_payment_renders_refund_rows_after_execution
+   */
+  it('누적 환불 두 행이 주문 집계를 읽는다', () => {
+    expect(byId(paymentSection, 'cp_004_refunded_amount_{{payIdx}}').if).toBe(
+      '{{(claim?.data?.order?.total_refunded_amount ?? 0) > 0}}',
+    );
+    expect(byId(paymentSection, 'cp_005_refunded_points_{{payIdx}}').if).toBe(
+      '{{(claim?.data?.order?.total_refunded_points_amount ?? 0) > 0}}',
+    );
+  });
+});
+
+describe('이 클레임의 정산 (D18)', () => {
+  /**
+   * 환불 예정액은 합계다 — 가산 두 축이 없으면 산식이 닫히지 않아 운영자가 그 금액의 근거를
+   * 화면에서 읽을 수 없다. 두 행은 서버가 재계산으로 만든 값을 그대로 읽는다(화면이 역산하면
+   * 같은 금액의 두 번째 출처가 된다). 교환은 서버가 null 을 주어 그 자리를 그리지 않는다.
+   *
+   * @scenario claim_type=return, cancellable=absent
+   * @effects claim_settlement_breaks_down_the_expected_refund
+   */
+  it('환불 예정액의 가산 두 축을 서버 값 그대로 그린다', () => {
+    const product = byId(paymentSection, 'cst_008a_refund_target_amount');
+    const shipping = byId(paymentSection, 'cst_008b_refund_shipping_amount');
+
+    expect(product.children[1].text).toBe(
+      "{{claim?.data?.settlement?.refund_product_amount_formatted ?? ''}}",
+    );
+    expect(shipping.children[1].text).toBe(
+      "{{claim?.data?.settlement?.refund_shipping_amount_formatted ?? ''}}",
+    );
+
+    // 교환은 서버가 null 을 준다 — 조건이 없으면 빈 행이 남는다.
+    expect(product.if).toContain('refund_product_amount_formatted != null');
+    expect(shipping.if).toContain('refund_shipping_amount_formatted != null');
+
+    // 화면이 합산·역산하면 두 번째 출처가 된다.
+    const raw = JSON.stringify([product, shipping]);
+    expect(raw).not.toMatch(/reduce\(|Number\(|toLocaleString/);
+  });
+
+  /**
+   * 서버는 배송정책을 해석하지 못하면 예외 대신 0원 + 사유로 처리하고 로그만 남긴다 — 그
+   * 사유가 화면에 없으면 정책을 지운 상점에서 청구액이 조용히 0원이 되고 운영자는 '청구 없음'
+   * 으로 읽는다. 근거는 신청서가 동결한 스냅샷에서만 읽는다.
+   *
+   * @scenario claim_type=exchange, cancellable=absent
+   * @effects claim_shipping_fee_basis_is_visible
+   */
+  it('배송비가 왜 이 금액인지의 근거를 스냅샷에서 읽어 알린다', () => {
+    const note = byId(paymentSection, 'cst_002b_fee_basis_note');
+
+    expect(note.if).toContain('shipping_fee_snapshot');
+    expect(note.if).toContain('no_shipping_policy');
+    expect(note.if).toContain('api_fallback');
+    expect(note.if).toContain('live_policy');
+
+    const text = note.children[0].text;
+    expect(text).toContain('settlement.fee_basis_no_policy');
+    expect(text).toContain('settlement.fee_basis_api_fallback');
+    expect(text).toContain('settlement.fee_basis_live_policy');
+  });
+
+  /**
+   * 허용 어휘는 운영자 설정이 정하고 그 조회는 `settings.read` 게이트다 — 화면이 셋을 다시
+   * 적으면 상점이 막아 둔 방식이 선택 가능해지고 저장이 422 가 된다.
+   *
+   * @effects claim_charge_method_options_come_from_detail_response
+   */
+  it('청구 방식 셀렉트가 상세 응답의 목록을 읽는다', () => {
+    expect(byId(paymentSection, 'cst_003_charge_method').props.options).toBe(
+      '{{claim?.data?.charge_methods ?? []}}',
+    );
+  });
+
+  /**
+   * 금액 수정 게이트는 `claims.update-amounts` 다 — 상태 전이 권한으로 잡으면 그 권한만 가진
+   * 운영자에게 버튼은 살아 있고 저장만 403 이 된다.
+   *
+   * @effects claim_amount_controls_gate_on_update_amounts
+   */
+  it.each([
+    ['cst_001_shipping_fee_input', 'disabled'],
+    ['cst_003_charge_method', 'disabled'],
+    ['cre_008_pg_amount', 'disabled'],
+    ['cre_009_points_amount', 'disabled'],
+    ['cre_010_refund_method', 'disabled'],
+  ])('%s 가 금액 수정 권한으로 게이팅된다', (nodeId, prop) => {
+    expect(byId(paymentSection, nodeId).props[prop]).toContain('can_update_amounts');
+  });
+
+  /**
+   * 환불 예정액은 헤더 컬럼이 아니라 완료 시점 재계산 결과다 — 화면이 다시 계산하면 완료
+   * 처리 모달이 보여 주는 숫자와 갈린다.
+   *
+   * @scenario claim_type=return, claim_stage=in_progress
+   * @effects claim_settlement_preview_comes_from_server
+   */
+  it('완료 시 환불 예정이 서버가 준 정산 축을 읽는다', () => {
+    expect(byId(paymentSection, 'cst_preview_block').if).toBe('{{!!claim?.data?.settlement}}');
+    expect(byId(paymentSection, 'cst_009_expected_refund').children[1].text).toBe(
+      "{{claim?.data?.settlement?.refund_amount_formatted ?? ''}}",
+    );
+  });
+
+  /**
+   * 접수 불가 사유 둘은 뜻이 다르다 — 이미 접수됐거나(다른 신청서가 맡았다), 애초에 환불
+   * 대상이 없다. 감추면 0원 예고가 정상으로 보인다.
+   *
+   * @effects claim_settlement_blocked_reason_shown
+   */
+  it('접수 불가 사유를 두 가지로 구분해 알린다', () => {
+    const notice = byId(paymentSection, 'cst_008_blocked_notice');
+
+    expect(notice.text).toContain('claim_refund_request_exists');
+    expect(notice.text).toContain('blocked_already_filed');
+    expect(notice.text).toContain('blocked_not_applicable');
+  });
+
+  /**
+   * 환불신청서에는 청구 축이 없고 교환·반품에는 환불 실행 축이 없다 — 반대로 그리면 누를
+   * 수 있는 컨트롤이 언제나 실패한다.
+   *
+   * @scenario claim_type=refund, cancellable=present
+   * @effects claim_settlement_blocks_split_by_type
+   */
+  it('정산 블록이 유형별로 갈린다', () => {
+    expect(byId(paymentSection, 'cst_charge_block').if).toBe(`{{${SHIPPING_CONDITION}}}`);
+    expect(byId(paymentSection, 'cst_refund_block').if).toBe(`{{${REFUND_CONDITION}}}`);
+  });
+});
+
+describe('환불 실행 — 취소 가능 금액과 실행 (D18·D19)', () => {
+  /**
+   * 세 축과 최종 금액은 서버가 산정하고 서버가 표기한다 — 화면이 더하거나 기호를 붙이면
+   * 실행 가드가 쓰는 값과 화면이 예고하는 값이 갈린다.
+   *
+   * @scenario claim_type=refund, cancellable=present
+   * @effects claim_cancellable_axes_come_from_server
+   */
+  it('취소 가능 금액 3축과 합계가 서버 표기를 그대로 그린다', () => {
+    const expected: Array<[string, string]> = [
+      ['cre_001_domain_refundable', 'domain_refundable_formatted'],
+      ['cre_002_payment_capacity', 'payment_capacity_formatted'],
+      ['cre_004_reserved', 'reserved_formatted'],
+    ];
+
+    expected.forEach(([nodeId, field]) => {
+      expect(byId(paymentSection, nodeId).children[1].text).toBe(
+        `{{claim?.data?.cancellable?.${field} ?? ''}}`,
+      );
+    });
+
+    expect(byId(paymentSection, 'cre_006_cancellable_amount').text).toBe(
+      "{{claim?.data?.cancellable?.amount_formatted ?? ''}}",
+    );
+  });
+
+  /**
+   * 입력 옆의 수단별 잔여는 좌측 산정 카드와 **같은 서버 필드**를 읽어야 한다. 화면이 다시
+   * 더하거나 골라 만들면 같은 금액의 두 번째 출처가 되어, 한쪽만 바뀌었을 때 한 화면 안에서
+   * 두 숫자가 갈린다 — 값이 같아 보이는 동안은 오류도 남지 않는다.
+   *
+   * @scenario claim_type=refund, cancellable=present
+   * @effects claim_refund_input_shows_per_method_remaining
+   */
+  it('환불액 입력 옆의 수단별 잔여가 산정 카드와 같은 서버 필드를 읽는다', () => {
+    const cases: Array<[string, string, string]> = [
+      ['cre_015_pg_method_limit_{{pgIdx}}', 'payment', 'pgCapacity'],
+      ['cre_016_points_method_limit_{{ptIdx}}', 'mileage', 'ptCapacity'],
+    ];
+
+    cases.forEach(([nodeId, type, itemVar]) => {
+      const node = byId(paymentSection, nodeId);
+
+      expect(node.iteration?.source).toBe(
+        `{{(claim?.data?.cancellable?.methods ?? []).filter(m => m.type === '${type}')}}`,
+      );
+      expect(node.iteration?.item_var).toBe(itemVar);
+      expect(node.text).toContain(`${itemVar}.method_label`);
+      expect(node.text).toContain(`${itemVar}.remaining_base_formatted`);
+    });
+
+    // 화면이 잔여를 다시 만들지 않는다 — 합산·재계산이 들어오면 그 순간 두 번째 출처가 된다.
+    cases.forEach(([nodeId]) => {
+      const text = byId(paymentSection, nodeId).text ?? '';
+
+      expect(text).not.toMatch(/reduce\(|Number\(|\.map\(/);
+    });
+  });
+
+  /**
+   * 산정 불가와 "0원" 은 다른 사실이다 — 뭉뚱그리면 운영자가 되돌릴 것이 없다고 읽는다.
+   *
+   * @effects claim_cancellable_unavailable_distinguished_from_zero
+   */
+  it('취소 가능 금액을 산정하지 못한 경우를 따로 알린다', () => {
+    expect(byId(paymentSection, 'cre_000_cancellable_unavailable').if).toBe('{{!claim?.data?.cancellable}}');
+    expect(byId(paymentSection, 'cre_cancellable_body').if).toBe('{{!!claim?.data?.cancellable}}');
+  });
+
+  /**
+   * 어휘는 서버가 준 목록만 쓴다 — 화면이 셋을 다시 적으면 수단이 늘어도 화면만 낡은 채로
+   * 남는다.
+   *
+   * @effects claim_refund_method_options_come_from_detail_response
+   */
+  it('환불 수단 라디오가 상세 응답의 목록을 읽는다', () => {
+    const radio = byId(paymentSection, 'cre_010_refund_method');
+
+    expect(radio.props.options).toBe('{{claim?.data?.refund_methods ?? []}}');
+    // 자동바인딩은 값 경로를 폼 상태에 맡긴다 — 로컬 상태를 읽는 이 화면에서는 끈다.
+    expect(radio.props.autoBinding).toBe(false);
+    expect(radio.props.value).toBe("{{_local.refundMethod ?? ''}}");
+  });
+
+  /**
+   * 환불은 되돌릴 수 없는 처리라 곧바로 실행하지 않는다 — 버튼이 실행 핸들러를 직접 부르면
+   * 오클릭 한 번이 곧 환불이다.
+   *
+   * @scenario claim_type=refund, cancellable=present
+   * @effects claim_refund_execute_requires_confirm_modal
+   */
+  it('[환불하기] 가 확인 모달을 거친다', () => {
+    const button = byId(paymentSection, 'cre_014_execute_button');
+    const action = (button.actions as Node[])[0];
+
+    expect(action.handler).toBe('sirsoft-ecommerce.openClaimRefundExecute');
+    expect(button.props.disabled).toContain('can_execute_refund');
+    // 실행 게이트는 금액 수정과 다른 권한이다 — 한쪽으로 묶으면 다른 쪽이 열리거나 잠긴다.
+    expect(button.props.disabled).not.toContain('can_update_amounts');
+  });
+
+  /**
+   * 모달은 부모 화면과 다른 컨텍스트라 `_local` 표현식을 해석하지 못한다 — 그대로 두면
+   * 값이 비어 보이는데 오류는 나지 않는다.
+   *
+   * @effects claim_refund_modal_does_not_read_parent_local
+   */
+  it('확인 모달이 부모 화면의 `_local` 을 읽지 않는다', () => {
+    strings(refundExecuteModal).forEach((value) => {
+      expect(value).not.toContain('_local.');
+    });
+    expect(strings(refundExecuteModal).some((v) => v.includes('_global.claimRefundExecuteContext'))).toBe(
+      true,
+    );
+  });
+
+  /**
+   * 저장과 실행은 다른 처리이며 게이트도 다르다 — 승인 직후 금액만 고쳐 두고 실행은 나중에
+   * 하는 운영이 성립한다.
+   *
+   * @effects claim_refund_save_and_execute_are_separate
+   */
+  it('금액 저장과 환불 실행이 서로 다른 액션이다', () => {
+    expect((byId(paymentSection, 'cre_013_save_amounts').actions as Node[])[0].handler).toBe(
+      'sirsoft-ecommerce.saveClaimAmounts',
+    );
+    expect(byId(paymentSection, 'cre_013_save_amounts').props.disabled).toContain('can_update_amounts');
   });
 });
 

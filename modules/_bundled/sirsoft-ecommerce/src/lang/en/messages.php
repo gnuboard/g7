@@ -471,6 +471,11 @@ return [
             'payment_capacity' => 'The remaining payment method capacity is the binding limit.',
             'reserved' => 'The limit was reduced by amounts reserved by other in-progress claims.',
         ],
+        // Display label for the per-method remaining capacity (D19). Mileage has no payment row —
+        // it is an order-column ledger, so it is absent from the payment method vocabulary.
+        'cancellable_method' => [
+            'mileage' => 'Mileage',
+        ],
         'payment_order_name' => ':type additional charge (:number)',
         'claimable_retrieved' => 'Claimable items retrieved.',
         'preview_success' => 'Claim estimate calculated.',
