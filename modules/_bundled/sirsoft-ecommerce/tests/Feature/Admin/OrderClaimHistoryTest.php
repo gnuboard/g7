@@ -77,6 +77,9 @@ class OrderClaimHistoryTest extends ModuleTestCase
         return $return;
     }
 
+    /**
+     * @effects order_claims_response_groups_items_under_each_request
+     */
     public function test_order_claims_returns_grouped_structure_with_counts(): void
     {
         $order = OrderFactory::new()->create();
@@ -196,6 +199,9 @@ class OrderClaimHistoryTest extends ModuleTestCase
         $this->assertSame(10000, $returnRow['items'][0]['amount']);
     }
 
+    /**
+     * @effects order_claims_response_detail_url_null_for_cancel
+     */
     public function test_order_claims_detail_url_is_claim_path_except_cancel(): void
     {
         $order = OrderFactory::new()->create();
@@ -252,6 +258,9 @@ class OrderClaimHistoryTest extends ModuleTestCase
         $this->actingAs($noPermission)->getJson($this->url($order))->assertForbidden();
     }
 
+    /**
+     * @effects order_claims_response_amount_carries_magnitude_only
+     */
     public function test_low_price_exchange_reports_refund_direction_without_negative_amount(): void
     {
         // 저가 교환(차액 음수)은 방향이 환불이다. 부호를 amount 에 남기면 같은 `refund`

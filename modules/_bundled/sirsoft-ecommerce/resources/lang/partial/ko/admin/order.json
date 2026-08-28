@@ -148,96 +148,33 @@
       "confirm": "확인"
     },
     "claim_history": {
-      "title": "클레임내역",
-      "tabs": {
-        "refund": "환불내역",
-        "return": "반품내역",
-        "exchange": "교환내역"
+      "title": "클레임 내역",
+      "readonly_badge": "조회 전용",
+      "subtabs": {
+        "exchange": "교환",
+        "return": "반품",
+        "cancel": "취소",
+        "refund": "환불"
       },
-      "view_refund_management": "환불관리에서 보기",
-      "view_return_management": "반품관리에서 보기",
-      "view_exchange_management": "교환관리에서 보기",
-      "empty": {
-        "refund": "환불 내역이 없습니다",
-        "return": "반품 내역이 없습니다",
-        "exchange": "교환 내역이 없습니다"
-      },
-      "sort": {
-        "label": "정렬",
-        "request_date_desc": "신청일시 최근순"
-      },
-      "per_page": "페이지당",
-      "items_count": "{{count}}개",
+      "empty": "접수된 건이 없습니다.",
+      "unavailable": "클레임 내역을 불러오지 못했습니다.",
       "columns": {
-        "request_date": "신청일시",
-        "refund_number": "환불번호",
-        "return_number": "반품번호",
-        "exchange_number": "교환번호",
-        "product_info": "상품정보",
-        "amount_info": "금액정보",
+        "claim_number": "신청번호",
+        "product": "상품",
         "quantity": "수량",
-        "refund_method": "환불수단",
-        "refund_status": "환불상태",
-        "return_status": "반품상태",
-        "exchange_status": "교환상태",
-        "refund_reason": "환불사유",
-        "return_reason": "반품사유",
-        "exchange_reason": "교환사유"
+        "amount": "금액",
+        "status": "상태"
       },
-      "amount": {
-        "actual_price": "실제 가격",
-        "expected_refund": "환불 예상",
-        "actual_refund": "실 환불",
-        "return_request": "반품신청",
-        "original_order": "원주문",
-        "order_quantity": "주문",
-        "difference": "차액"
-      },
-      "method": {
-        "direct_refund": "직접 환불",
-        "deposit": "예치금"
-      },
-      "status": {
-        "refund_rejected": "환불반려",
-        "refund_hold": "환불보류",
-        "refund_approved": "환불승인",
-        "refund_completed": "환불완료",
-        "return_requested": "반품접수",
-        "return_pickup_in_progress": "반품회수중",
-        "return_pickup_completed": "반품회수도착",
-        "return_completed": "반품완료",
-        "exchange_requested": "교환접수",
-        "exchange_shipping": "교환배송",
-        "exchange_completed": "교환완료"
-      },
-      "delivery": {
-        "carrier": "배송사",
-        "tracking_number": "송장번호",
-        "pickup_carrier": "회수 배송사",
-        "pickup_tracking": "회수 송장번호",
-        "shipping_carrier": "발송 배송사",
-        "shipping_tracking": "발송 송장번호",
-        "pickup_fee": "회수배송료",
-        "round_trip_fee": "왕복배송료"
-      },
-      "reason": {
-        "customer_fault": "고객귀책",
-        "seller_fault": "판매자귀책",
-        "simple_change": "단순변심",
-        "wrong_color": "색상 다름",
-        "defect": "초기불량",
-        "defective_product": "상품불량",
-        "color_change": "색상 변경",
-        "size_exchange": "사이즈교환"
-      },
-      "product": {
-        "original_product": "원상품",
-        "exchange_product": "교환상품",
-        "same_product": "동일상품교환",
-        "same_product_exchange": "동일상품교환",
-        "size": "사이즈",
-        "color": "색상",
-        "capacity": "용량"
+      "reject_reason": "반려 사유",
+      "shipping_fee": "왕복배송비",
+      "total_charge": "총 청구액",
+      "original_product": "원상품",
+      "exchange_product": "교환상품",
+      "view_detail": "클레임 신청서 조회하기",
+      "amount_type": {
+        "charge": "추가 청구",
+        "refund": "환불",
+        "none": "-"
       }
     },
     "payment_info": {
@@ -278,6 +215,7 @@
       "refunded_amount": "환불금액",
       "refund_status": "환불상태",
       "refund_points_amount": "마일리지 환불",
+      "claim_additional_paid": "클레임 추가결제 합계",
       "payment_currency": "결제 통화: {{currency}}",
       "charged_in_payment_currency": "결제 통화 {{currency}} {{amount}} 청구"
     },

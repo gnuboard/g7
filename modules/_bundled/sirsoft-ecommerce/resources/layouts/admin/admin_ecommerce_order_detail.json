@@ -9,7 +9,14 @@
     "title": "$t:sirsoft-ecommerce.admin.order.detail.title",
     "description": "$t:sirsoft-ecommerce.admin.order.detail.description"
   },
-  "computed": [],
+  "computed": {
+    "_comment_orderDetailTabs": "탭 배열과 섹션 존재는 같은 조건으로 함께 분기한다 (D17-①). '클레임 내역' 은 접수 건이 없어도 섹션이 남으므로(빈 유형 안내가 그 자리다) 탭도 상시 존재하고, 뱃지 숫자만 응답을 따라간다.",
+    "orderDetailTabs": "{{[{ id: 'order_info', label: $t('sirsoft-ecommerce.admin.order.detail.tabs.order_info') }, { id: 'payment_info', label: $t('sirsoft-ecommerce.admin.order.detail.tabs.payment_info') }, { id: 'claim_history', label: $t('sirsoft-ecommerce.admin.order.detail.tabs.claim_history') + ((orderClaims?.data?.claims ?? []).length > 0 ? ' (' + (orderClaims?.data?.claims ?? []).length + ')' : '') }, { id: 'activity_log', label: $t('sirsoft-ecommerce.admin.order.detail.tabs.activity_log') }]}}",
+    "_comment_claimHistoryTypes": "유형 서브탭 4종 (D20). 뱃지 숫자는 서버가 준 counts 를 그대로 읽는다 — 화면이 claims 배열을 다시 세면 상한이 걸린 응답에서 두 값이 갈린다.",
+    "claimHistoryTypes": "{{['exchange', 'return', 'cancel', 'refund'].map(t => ({ value: t, label: $t('sirsoft-ecommerce.admin.order.detail.claim_history.subtabs.' + t), count: orderClaims?.data?.counts?.[t] ?? 0 }))}}",
+    "_comment_claimHistoryRows": "서브탭 필터는 화면이 claim_type 으로 거른다 (S6c 판정 ⑤ — 서버는 전 유형 평면 배열 하나를 신청 역순으로 내려준다). 별도 데이터소스를 만들지 않으므로 서브탭 전환에 재조회가 없다.",
+    "claimHistoryRows": "{{(orderClaims?.data?.claims ?? []).filter(c => c.claim_type === (_local.claimHistoryType ?? 'exchange'))}}"
+  },
   "state": {
     "selectedProducts": [],
     "selectAll": false,
@@ -17,6 +24,7 @@
     "batchCarrierId": "",
     "batchTrackingNumber": "",
     "activeOrderTab": "order_info",
+    "claimHistoryType": "exchange",
     "expandedCashReceiptHistory": []
   },
   "transition_overlay": {
@@ -106,6 +114,29 @@
       }
     },
     {
+      "id": "orderClaims",
+      "comment": "주문 스코프 클레임 내역 (D20 — 유형 서브탭 뱃지용 counts + 신청서가 상품 배열을 품는 그룹 구조). 이 게이트(claims.read)는 화면 라우트 권한(orders.read)보다 좁다 — 클레임 권한이 없는 운영자에게는 403 이므로 suppress 로 전파를 끊고 fallback 의 unavailable 로 '못 불러왔다' 를 섹션이 말한다. 화면 전체를 오류 페이지로 떨어뜨리거나 '접수된 건 없음' 으로 뭉뚱그리지 않는다. transition_overlay 에는 넣지 않는다 — 한 섹션이 주문 화면 전체의 진입을 막아서는 안 된다.",
+      "label_key": "$t:sirsoft-ecommerce.editor.data_source.orderClaims",
+      "type": "api",
+      "endpoint": "/api/modules/sirsoft-ecommerce/admin/orders/{{route.orderNumber}}/claims",
+      "method": "GET",
+      "auto_fetch": true,
+      "auth_required": true,
+      "fallback": {
+        "data": {
+          "counts": {},
+          "claims": [],
+          "unavailable": true
+        }
+      },
+      "errorHandling": {
+        "403": {
+          "comment": "클레임 열람 권한이 없는 주문 담당자에게는 정상적인 응답이다 — 상위(레이아웃) errorHandling 으로 전파되면 주문 화면 전체가 오류 페이지가 된다.",
+          "handler": "suppress"
+        }
+      }
+    },
+    {
       "id": "refundReasons",
       "label_key": "$t:sirsoft-ecommerce.editor.data_source.refundReasons",
       "type": "api",
@@ -124,6 +155,7 @@
       "params": {
         "target": "local",
         "activeOrderTab": "order_info",
+        "claimHistoryType": "exchange",
         "selectedProducts": [],
         "selectAll": false,
         "batchOrderStatus": "",
@@ -356,20 +388,7 @@
                   "enableScrollSpy": true,
                   "scrollSpyOffset": 120,
                   "sectionIdPrefix": "section_",
-                  "tabs": [
-                    {
-                      "id": "order_info",
-                      "label": "$t:sirsoft-ecommerce.admin.order.detail.tabs.order_info"
-                    },
-                    {
-                      "id": "payment_info",
-                      "label": "$t:sirsoft-ecommerce.admin.order.detail.tabs.payment_info"
-                    },
-                    {
-                      "id": "activity_log",
-                      "label": "$t:sirsoft-ecommerce.admin.order.detail.tabs.activity_log"
-                    }
-                  ]
+                  "tabs": "{{_computed.orderDetailTabs ?? []}}"
                 },
                 "actions": [
                   {
@@ -394,6 +413,9 @@
               },
               {
                 "partial": "partials/admin_ecommerce_order_detail/_partial_payment_info.json"
+              },
+              {
+                "partial": "partials/admin_ecommerce_order_detail/_partial_claim_history.json"
               },
               {
                 "partial": "partials/admin_ecommerce_order_detail/_partial_activity_log.json"

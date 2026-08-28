@@ -149,96 +149,33 @@
     },
     "claim_history": {
       "title": "クレーム履歴",
-      "tabs": {
-        "refund": "返金履歴",
-        "return": "返品履歴",
-        "exchange": "交換履歴"
-      },
-      "view_refund_management": "返金管理で表示",
-      "view_return_management": "返品管理で表示",
-      "view_exchange_management": "交換管理で表示",
-      "empty": {
-        "refund": "返金履歴がありません",
-        "return": "返品履歴がありません",
-        "exchange": "交換履歴がありません"
-      },
-      "sort": {
-        "label": "並べ替え",
-        "request_date_desc": "申請日時 最新順"
-      },
-      "per_page": "ページあたり",
-      "items_count": "{{count}}個",
       "columns": {
-        "request_date": "申請日時",
-        "refund_number": "返金番号",
-        "return_number": "返品番号",
-        "exchange_number": "交換番号",
-        "product_info": "商品情報",
-        "amount_info": "金額情報",
         "quantity": "数量",
-        "refund_method": "返金方法",
-        "refund_status": "返金ステータス",
-        "return_status": "返品ステータス",
-        "exchange_status": "交換ステータス",
-        "refund_reason": "返金理由",
-        "return_reason": "返品理由",
-        "exchange_reason": "交換理由"
+        "claim_number": "申請番号",
+        "product": "商品",
+        "amount": "金額",
+        "status": "ステータス"
       },
-      "amount": {
-        "actual_price": "実価格",
-        "expected_refund": "返金予定額",
-        "actual_refund": "実返金額",
-        "return_request": "返品申請",
-        "original_order": "元注文",
-        "order_quantity": "注文",
-        "difference": "差額"
+      "readonly_badge": "閲覧専用",
+      "subtabs": {
+        "exchange": "交換",
+        "return": "返品",
+        "cancel": "キャンセル",
+        "refund": "返金"
       },
-      "method": {
-        "direct_refund": "直接返金",
-        "deposit": "預かり金"
+      "unavailable": "クレーム履歴を読み込めませんでした。",
+      "reject_reason": "却下理由",
+      "shipping_fee": "往復送料",
+      "total_charge": "合計請求額",
+      "original_product": "元の商品",
+      "exchange_product": "交換商品",
+      "view_detail": "クレーム申請書を確認する",
+      "amount_type": {
+        "charge": "追加請求",
+        "refund": "返金",
+        "none": "-"
       },
-      "status": {
-        "refund_rejected": "返金却下",
-        "refund_hold": "返金保留",
-        "refund_approved": "返金承認",
-        "refund_completed": "返金完了",
-        "return_requested": "返品受付",
-        "return_pickup_in_progress": "返品回収中",
-        "return_pickup_completed": "返品回収到着",
-        "return_completed": "返品完了",
-        "exchange_requested": "交換受付",
-        "exchange_shipping": "交換配送",
-        "exchange_completed": "交換完了"
-      },
-      "delivery": {
-        "carrier": "配送業者",
-        "tracking_number": "送り状番号",
-        "pickup_carrier": "回収配送業者",
-        "pickup_tracking": "回収送り状番号",
-        "shipping_carrier": "発送配送業者",
-        "shipping_tracking": "発送送り状番号",
-        "pickup_fee": "回収配送料",
-        "round_trip_fee": "往復配送料"
-      },
-      "reason": {
-        "customer_fault": "顧客責任",
-        "seller_fault": "販売者責任",
-        "simple_change": "単純変心",
-        "wrong_color": "色が異なる",
-        "defect": "初期不良",
-        "defective_product": "商品不良",
-        "color_change": "色変更",
-        "size_exchange": "サイズ交換"
-      },
-      "product": {
-        "original_product": "元商品",
-        "exchange_product": "交換商品",
-        "same_product": "同一商品交換",
-        "same_product_exchange": "同一商品交換",
-        "size": "サイズ",
-        "color": "色",
-        "capacity": "容量"
-      }
+      "empty": "受け付けた件がありません。"
     },
     "payment_info": {
       "title": "決済情報",
@@ -279,7 +216,8 @@
       "refund_status": "返金ステータス",
       "refund_points_amount": "マイレージ返金",
       "payment_currency": "決済通貨: {{currency}}",
-      "charged_in_payment_currency": "決済通貨 {{currency}} {{amount}} 請求"
+      "charged_in_payment_currency": "決済通貨 {{currency}} {{amount}} 請求",
+      "claim_additional_paid": "クレーム追加決済合計"
     },
     "activity_log": {
       "title": "アクティビティログ",

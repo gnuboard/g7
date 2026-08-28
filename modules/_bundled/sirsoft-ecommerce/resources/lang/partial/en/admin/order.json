@@ -297,95 +297,32 @@
     },
     "claim_history": {
       "title": "Claim History",
-      "tabs": {
-        "refund": "Refund History",
-        "return": "Return History",
-        "exchange": "Exchange History"
+      "readonly_badge": "Read-only",
+      "subtabs": {
+        "exchange": "Exchange",
+        "return": "Return",
+        "cancel": "Cancellation",
+        "refund": "Refund"
       },
-      "view_refund_management": "View in Refund Management",
-      "view_return_management": "View in Return Management",
-      "view_exchange_management": "View in Exchange Management",
-      "empty": {
-        "refund": "No refund history",
-        "return": "No return history",
-        "exchange": "No exchange history"
-      },
-      "sort": {
-        "label": "Sort",
-        "request_date_desc": "Request Date (Latest)"
-      },
-      "per_page": "Per Page",
-      "items_count": "{{count}} items",
+      "empty": "No claims have been submitted.",
+      "unavailable": "Could not load the claim history.",
       "columns": {
-        "request_date": "Request Date",
-        "refund_number": "Refund No.",
-        "return_number": "Return No.",
-        "exchange_number": "Exchange No.",
-        "product_info": "Product Info",
-        "amount_info": "Amount Info",
+        "claim_number": "Request No.",
+        "product": "Product",
         "quantity": "Qty",
-        "refund_method": "Refund Method",
-        "refund_status": "Refund Status",
-        "return_status": "Return Status",
-        "exchange_status": "Exchange Status",
-        "refund_reason": "Refund Reason",
-        "return_reason": "Return Reason",
-        "exchange_reason": "Exchange Reason"
+        "amount": "Amount",
+        "status": "Status"
       },
-      "amount": {
-        "actual_price": "Actual Price",
-        "expected_refund": "Expected Refund",
-        "actual_refund": "Actual Refund",
-        "return_request": "Return Request",
-        "original_order": "Original Order",
-        "order_quantity": "Order",
-        "difference": "Difference"
-      },
-      "method": {
-        "direct_refund": "Direct Refund",
-        "deposit": "Deposit"
-      },
-      "status": {
-        "refund_rejected": "Refund Rejected",
-        "refund_hold": "Refund Hold",
-        "refund_approved": "Refund Approved",
-        "refund_completed": "Refund Completed",
-        "return_requested": "Return Requested",
-        "return_pickup_in_progress": "Pickup In Progress",
-        "return_pickup_completed": "Pickup Completed",
-        "return_completed": "Return Completed",
-        "exchange_requested": "Exchange Requested",
-        "exchange_shipping": "Exchange Shipping",
-        "exchange_completed": "Exchange Completed"
-      },
-      "delivery": {
-        "carrier": "Carrier",
-        "tracking_number": "Tracking No.",
-        "pickup_carrier": "Pickup Carrier",
-        "pickup_tracking": "Pickup Tracking No.",
-        "shipping_carrier": "Shipping Carrier",
-        "shipping_tracking": "Shipping Tracking No.",
-        "pickup_fee": "Pickup Fee",
-        "round_trip_fee": "Round Trip Fee"
-      },
-      "reason": {
-        "customer_fault": "Customer",
-        "seller_fault": "Seller",
-        "simple_change": "Simple Change of Mind",
-        "wrong_color": "Wrong Color",
-        "defect": "Defect",
-        "defective_product": "Defective Product",
-        "color_change": "Color Change",
-        "size_exchange": "Size Exchange"
-      },
-      "product": {
-        "original_product": "Original Product",
-        "exchange_product": "Exchange Product",
-        "same_product": "Same Product Exchange",
-        "same_product_exchange": "Same Product Exchange",
-        "size": "Size",
-        "color": "Color",
-        "capacity": "Capacity"
+      "reject_reason": "Rejection reason",
+      "shipping_fee": "Round-trip shipping fee",
+      "total_charge": "Total charge",
+      "original_product": "Original",
+      "exchange_product": "Exchange",
+      "view_detail": "View claim request",
+      "amount_type": {
+        "charge": "Additional charge",
+        "refund": "Refund",
+        "none": "-"
       }
     },
     "payment_info": {
@@ -426,6 +363,7 @@
       "refunded_amount": "Refunded Amount",
       "refund_status": "Refund Status",
       "refund_points_amount": "Mileage Refund",
+      "claim_additional_paid": "Claim additional payments",
       "payment_currency": "Payment currency: {{currency}}",
       "charged_in_payment_currency": "Charged {{amount}} in {{currency}}"
     },

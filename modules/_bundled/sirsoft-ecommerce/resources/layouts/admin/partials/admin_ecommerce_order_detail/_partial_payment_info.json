@@ -655,6 +655,34 @@
                       ]
                     },
                     {
+                      "id": "claim_additional_paid_row_{{payIdx}}",
+                      "type": "basic",
+                      "name": "Div",
+                      "comment": "클레임(교환·반품) 추가결제 실수납 합계 (D20 · §2 해석 확정). 원 주문서 총 배송비에 합산하지 않고 별도 표기하며, 합계 0원이면 행 자체를 렌더하지 않는다. 서버 필드는 claim_additional_paid_total 하나이고 표기는 claim_additional_paid_total_formatted 를 그대로 쓴다 — 화면이 통화 기호를 붙이면 기본 통화가 다른 상점에서 단위만 틀린 금액이 나간다.",
+                      "if": "{{(order.data?.claim_additional_paid_total ?? 0) > 0}}",
+                      "props": {
+                        "className": "flex justify-between text-sm border-t border-blue-200 dark:border-blue-800"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-blue-600 dark:text-blue-400 font-medium"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.claim_additional_paid"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-blue-600 dark:text-blue-400 font-medium"
+                          },
+                          "text": "+{{order.data?.claim_additional_paid_total_formatted}}"
+                        }
+                      ]
+                    },
+                    {
                       "type": "basic",
                       "name": "Hr",
                       "props": {

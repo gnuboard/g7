@@ -410,10 +410,20 @@ describe('admin_ecommerce_order_detail.json (메인 레이아웃)', () => {
             expect(carriersDs).toBeDefined();
         });
 
-        it('computed 속성이 비어있다 (합계는 백엔드 필드 사용)', () => {
+        it('computed 가 금액을 계산하지 않는다 (합계는 백엔드 필드 사용)', () => {
             const layout = mainLayout as any;
             expect(layout.computed).toBeDefined();
-            expect(Object.keys(layout.computed)).toHaveLength(0);
+
+            // 이 단언이 지키는 계약은 "computed 가 없다" 가 아니라 **화면이 금액을 만들지
+            // 않는다** 다. 통화 기호·자릿수·합계를 화면이 조립하면 기본 통화가 다른 상점에서
+            // 값은 맞고 단위만 틀린 금액이 나가고, 서버 집계와 갈려도 오류가 남지 않는다.
+            // S9c 가 더한 세 항목(탭 배열 · 유형 서브탭 · 서브탭 필터)은 표시 축이고 금액을
+            // 건드리지 않는다 — 형제 화면(admin_ecommerce_claim_detail)의 탭 배열도 같은 형태다.
+            for (const [key, expression] of Object.entries(layout.computed) as Array<[string, string]>) {
+                if (key.startsWith('_comment_')) continue;
+
+                expect(`${key}: ${expression}`).not.toMatch(/_amount|_fee|_total|toLocaleString|reduce\(/);
+            }
         });
 
         it('modals에 등록된 모달 partial 집합이 정확히 일치한다', () => {

@@ -36,6 +36,7 @@
       "identityProviders": "본인인증 제공자",
       "notice_templates": "상품정보고시 템플릿",
       "order": "주문",
+      "orderClaims": "주문 클레임 내역",
       "order_logs": "주문 로그",
       "orders": "주문 목록",
       "paymentSettings": "결제 환경설정",

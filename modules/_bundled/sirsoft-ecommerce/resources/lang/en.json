@@ -36,6 +36,7 @@
       "identityProviders": "Identity Providers",
       "notice_templates": "Notice Templates",
       "order": "Order",
+      "orderClaims": "Order Claim History",
       "order_logs": "Order Logs",
       "orders": "Orders",
       "paymentSettings": "Payment Settings",
