@@ -31,6 +31,8 @@ effects:
   - no_third_party_request_on_page_load
   - vendored_asset_survives_rebuild
   - vendored_asset_declared_path_exists_on_disk
+  - vendored_asset_version_matches_declaration
+  - vendored_editor_mounts_without_fallback
   - template_external_asset_field_resolves_to_asset_url
   - template_external_same_origin_ignores_preconnect_and_crossorigin
   - template_external_invalid_url_is_logged_not_silently_dropped
@@ -59,6 +61,7 @@ test_files:
   - plugins/_bundled/sirsoft-ckeditor5/resources/js/__tests__/layouts/html-editor-fallback.test.tsx
   - plugins/_bundled/sirsoft-daum_postcode/resources/js/__tests__/postcode-fallback.test.ts
   - templates/_bundled/sirsoft-admin_basic/__tests__/components/CodeEditor.fallback.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/code-editor-monaco-vendored-version.spec.ts
   - tests/Playwright/specs/self-hosted-assets.spec.ts
   - plugins/_bundled/sirsoft-ckeditor5/tests/Playwright/specs/editor-fallback.spec.ts
 
@@ -71,5 +74,11 @@ sub_flows:
       브라우저 점검 매트릭스가 그 변종을 맡는다.
   - id: multilingual_editor_fallback
     description: 다국어 탭 × textarea 폴백 — 탭 전환 시 현재 값 커밋, form.content 는 로케일 맵 유지
+  - id: vendored_version_ssot
+    description: |
+      동봉 자산의 버전은 확장 안 다섯 곳(dist/vendor 디렉토리 · 의존성 핀 · 복사 스크립트
+      경로 · 소스 *_VERSION 상수 · 테스트 어서션)에 중복 기재된다. 조합으로 enumerate 하지
+      않는다 — 어긋남 자체가 결함이라 축이 아니라 불변식이다. 정적 검사가 기재 간 수렴을,
+      브라우저 spec 이 그 버전 경로가 실제로 200 으로 응답하는지를 맡는다.
   - id: bot_render_path
     description: seo.blade.php 봇 렌더 경로에서도 자산이 same-origin 이어야 한다
