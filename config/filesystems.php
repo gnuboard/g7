@@ -1,5 +1,20 @@
 <?php
 
+/*
+|--------------------------------------------------------------------------
+| 확장 저장 루트 (modules / plugins 디스크)
+|--------------------------------------------------------------------------
+|
+| 테스트에서는 운영 데이터와 격리된 경로를 쓴다. 격리가 없으면 테스트가 실제
+| `storage/app/modules/{id}/settings/*.json` 을 덮어써 운영 설정이 사라진다.
+|
+| 이 값이 확장 저장 위치의 단일 출처다. 각 확장이 `app()->runningUnitTests()` 로
+| 같은 분기를 자기 안에 복사해 두면 한 곳만 빠뜨려도 그 확장의 테스트가 조용히
+| 운영 파일을 건드린다 — 분기는 여기 한 곳에만 둔다.
+|
+*/
+$extensionStorageRoot = env('APP_ENV') === 'testing' ? 'framework/testing' : 'app';
+
 return [
 
     /*
@@ -44,7 +59,7 @@ return [
 
         'modules' => [
             'driver' => 'local',
-            'root' => storage_path('app/modules'),
+            'root' => storage_path($extensionStorageRoot.'/modules'),
             'serve' => false,
             'throw' => true,
             'report' => false,
@@ -52,7 +67,7 @@ return [
 
         'plugins' => [
             'driver' => 'local',
-            'root' => storage_path('app/plugins'),
+            'root' => storage_path($extensionStorageRoot.'/plugins'),
             'serve' => false,
             'throw' => true,
             'report' => false,

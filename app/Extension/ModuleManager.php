@@ -44,6 +44,7 @@ use App\Models\Template;
 use App\Providers\CoreServiceProvider;
 use App\Services\LayoutExtensionService;
 use App\Support\AssetUrl;
+use App\Support\ExtensionStoragePath;
 use App\Support\RouteCacheHelper;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Artisan;
@@ -1791,7 +1792,7 @@ class ModuleManager implements ModuleManagerInterface
         }
 
         $identifier = $module->getIdentifier();
-        $settingsDir = storage_path('app/modules/'.$identifier.'/settings');
+        $settingsDir = ExtensionStoragePath::module($identifier, 'settings');
 
         // 이미 환경설정 디렉토리가 있고 파일이 있으면 스킵 (재설치 시 덮어쓰기 방지)
         if (File::isDirectory($settingsDir) && count(File::files($settingsDir)) > 0) {
@@ -1915,7 +1916,7 @@ class ModuleManager implements ModuleManagerInterface
      */
     protected function deleteModuleStorage(ModuleInterface $module): void
     {
-        $moduleStoragePath = storage_path('app/modules/'.$module->getIdentifier());
+        $moduleStoragePath = ExtensionStoragePath::module($module->getIdentifier());
 
         if (! File::isDirectory($moduleStoragePath)) {
             Log::info('삭제할 모듈 스토리지 디렉토리가 없습니다.', [
@@ -2000,7 +2001,7 @@ class ModuleManager implements ModuleManagerInterface
 
         // 5. 스토리지 디렉토리 1-depth 용량 조회
         $storageInfo = $this->getStorageDirectoriesInfo(
-            storage_path('app/modules/'.$identifier)
+            ExtensionStoragePath::module($identifier)
         );
 
         // 6. Composer vendor 디렉토리 정보 조회

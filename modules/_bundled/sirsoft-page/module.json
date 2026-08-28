@@ -11,7 +11,7 @@
         "ko": "정적 페이지(정보/정책/안내) 관리 모듈",
         "en": "Static page (info/policy/guide) management module"
     },
-    "g7_version": ">=7.0.9",
+    "g7_version": ">=7.0.10",
     "dependencies": {
         "modules": {},
         "plugins": {}

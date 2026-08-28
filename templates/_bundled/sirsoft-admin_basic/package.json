@@ -65,6 +65,7 @@
         "@monaco-editor/react": "^4.7.0",
         "browser-image-compression": "2.0.2",
         "chart.js": "^4.5.1",
+        "dompurify": "^3.3.1",
         "flag-icons": "7.2.3",
         "monaco-editor": "0.54.0",
         "react-chartjs-2": "^5.3.1",

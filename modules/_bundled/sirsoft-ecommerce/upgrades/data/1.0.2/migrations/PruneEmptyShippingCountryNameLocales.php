@@ -4,6 +4,7 @@ namespace App\Upgrades\Data\Ext\Modules\SirsoftEcommerce\V1_0_2\Migrations;
 
 use App\Extension\Upgrade\DataMigration;
 use App\Extension\UpgradeContext;
+use App\Support\ExtensionStoragePath;
 use Illuminate\Support\Facades\File;
 
 /**
@@ -130,10 +131,6 @@ class PruneEmptyShippingCountryNameLocales implements DataMigration
      */
     private function settingsFilePath(): string
     {
-        $base = app()->runningUnitTests()
-            ? 'framework/testing/modules/'
-            : 'app/modules/';
-
-        return storage_path($base.self::MODULE_IDENTIFIER.'/settings/shipping.json');
+        return ExtensionStoragePath::module(self::MODULE_IDENTIFIER, 'settings').'/shipping.json';
     }
 }

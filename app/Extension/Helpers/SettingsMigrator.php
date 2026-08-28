@@ -2,6 +2,7 @@
 
 namespace App\Extension\Helpers;
 
+use App\Support\ExtensionStoragePath;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
@@ -406,10 +407,10 @@ class SettingsMigrator
     private function getSettingsDir(): string
     {
         if ($this->type === 'module') {
-            return storage_path('app/modules/'.$this->identifier.'/settings');
+            return ExtensionStoragePath::module($this->identifier, 'settings');
         }
 
-        return storage_path('app/plugins/'.$this->identifier.'/settings');
+        return ExtensionStoragePath::plugin($this->identifier, 'settings');
     }
 
     /**

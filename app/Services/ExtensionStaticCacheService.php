@@ -60,6 +60,22 @@ class ExtensionStaticCacheService
     /** 게시 트리 디렉토리 권한 — umask 무력화 대상 */
     private const PUBLISH_DIR_MODE = 0775;
 
+    /**
+     * 게시 루트 확보 실패 사유 → 운영자가 읽는 요약.
+     *
+     * 키는 `FilePermissionHelper::ensureWritableDirectory()` 가 돌려주는 사유다. 사유마다
+     * 고쳐야 할 대상이 다르므로(상위 디렉토리 / 그 자리의 파일 / 대상 자신) 한 문장으로
+     * 뭉뚱그리지 않는다 — 뭉뚱그리면 실패 마커만 보고는 무엇을 고쳐야 할지 알 수 없다.
+     *
+     * @var array<string, string>
+     */
+    private const PREFLIGHT_FAILURE_SUMMARIES = [
+        'ancestor_not_writable' => '게시 루트를 만들 상위 디렉토리에 쓸 수 없습니다',
+        'occupied_by_file' => '게시 루트 자리를 같은 이름의 파일이 차지하고 있습니다',
+        'create_failed' => '게시 루트를 만들지 못했습니다',
+        'not_writable' => '게시 루트에 쓸 수 없습니다',
+    ];
+
     /** 게시 트리 디렉토리 rename 시도 횟수 (일시 거부 흡수) */
     private const RENAME_ATTEMPTS = 3;
 
@@ -650,70 +666,17 @@ class ExtensionStaticCacheService
      */
     private function ensurePublishRootWritable(int $version): bool
     {
-        $base = $this->baseDir();
-
-        if (! File::isDirectory($base)) {
-            // 게시 루트가 아직 없으면 만든다. 검사 대상은 `public/build` 고정이 아니라
-            // **실재하는 최근접 조상**이다 — `public/build` 자체가 없는 환경(신규 설치,
-            // 테스트 격리 public 경로)에서 부모 존재를 요구하면 정상 상황을 실패로 만든다.
-            $ancestor = $this->nearestExistingAncestor($base);
-
-            if ($ancestor === null || ! is_writable($ancestor)) {
-                $this->failPreflight(
-                    $version,
-                    $ancestor ?? dirname($base),
-                    '게시 루트를 만들 상위 디렉토리에 쓸 수 없습니다'
-                );
-
-                return false;
-            }
-
-            // 조상이 쓰기 가능해도 mkdir 은 실패할 수 있다 — 경로 중간이 **파일**이거나
-            // 경합으로 사라지는 경우다. `ensureDirectoryExists` 는 그 실패를 예외로
-            // 던지는데, 이 프리플라이트는 `publishVersion` 의 try 블록 **밖**에서 돌므로
-            // 잡지 않으면 예외가 호출자에게 그대로 새어 나간다 — 게시 실패는 사이트를
-            // 멈추지 않는다는 계약이 그 지점에서 깨진다.
-            try {
-                $this->makeDirectory($base);
-            } catch (\Throwable $e) {
-                $this->failPreflight($version, $base, '게시 루트를 만들지 못했습니다: '.$e->getMessage());
-
-                return false;
-            }
+        // 확보는 코어 공통 프리미티브가 맡는다 — 검사 대상은 `public/build` 고정이 아니라
+        // **실재하는 최근접 상위**이고(`public/build` 자체가 없는 신규 설치·테스트 격리 public
+        // 경로에서 부모 존재를 요구하면 정상 상황을 실패로 만든다), 생성 실패는 예외가 아니라
+        // 사유로 올라온다. 실패 정책(프리플라이트 실패 마커 + API 폴백)은 이 자리가 정한다.
+        if (FilePermissionHelper::ensureWritableDirectory($this->baseDir(), self::PUBLISH_DIR_MODE, $failure)) {
+            return true;
         }
 
-        clearstatcache(true, $base);
+        $this->failPreflight($version, $failure['path'], self::PREFLIGHT_FAILURE_SUMMARIES[$failure['reason']]);
 
-        if (! File::isDirectory($base) || ! is_writable($base)) {
-            $this->failPreflight($version, $base, '게시 루트에 쓸 수 없습니다');
-
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * 경로에서 위로 올라가며 실재하는 첫 디렉토리를 찾습니다.
-     *
-     * @param  string  $path  기준 경로
-     * @return string|null 실재하는 최근접 조상 (루트까지 없으면 null)
-     */
-    private function nearestExistingAncestor(string $path): ?string
-    {
-        $current = dirname($path);
-
-        while (! File::isDirectory($current)) {
-            $parent = dirname($current);
-
-            if ($parent === $current) {
-                return null;
-            }
-
-            $current = $parent;
-        }
-
-        return $current;
+        return false;
     }
 
     /**
@@ -771,10 +734,12 @@ class ExtensionStaticCacheService
     /**
      * 게시 트리 디렉토리를 만들고 umask 와 무관하게 권한·소유권을 정합화합니다.
      *
-     * `File::ensureDirectoryExists($dir, 0775)` 의 mode 인자는 **umask 로 깎인다** —
-     * umask 022 환경에서는 0755 가 되어 웹 계정(그룹 공유)이 쓸 수 없다. 명시 `chmod` 로
-     * umask 를 무력화하고, 부모 소유권을 상속시켜 CLI 계정 고정을 막는다.
-     * (선례: `CoreUpdateService::ensureWritableDirectories`)
+     * 게시 파일마다 호출되는 뜨거운 경로라 쓰기 가능 여부를 매번 재판정하지 않는다 — 그 판정은
+     * 게시 시작 전 `ensurePublishRootWritable()` 이 루트에서 한 번 수행한다. 여기서는 생성만
+     * 하고, 실패는 **예외로 남긴다**: 호출부(`writeJson`/`copyFile`)가 게시 전체를 중단시키는
+     * 계약이 그 예외에 걸려 있다.
+     *
+     * 권한 정합화는 코어 공통 프리미티브에 위임한다 (umask 무력화 + POSIX setgid + 소유권 상속).
      *
      * @param  string  $dir  생성할 디렉토리 절대 경로
      */
@@ -782,10 +747,7 @@ class ExtensionStaticCacheService
     {
         File::ensureDirectoryExists($dir, self::PUBLISH_DIR_MODE);
 
-        // ensureDirectoryExists 의 mode 는 umask 로 깎이므로 명시 chmod 로 확정한다.
-        @chmod($dir, self::PUBLISH_DIR_MODE);
-
-        FilePermissionHelper::inheritOwnershipFromParent($dir);
+        FilePermissionHelper::hardenDirectory($dir, self::PUBLISH_DIR_MODE);
     }
 
     /**

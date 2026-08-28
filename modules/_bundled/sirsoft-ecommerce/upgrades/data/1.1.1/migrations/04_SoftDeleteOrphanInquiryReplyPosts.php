@@ -4,6 +4,7 @@ namespace App\Upgrades\Data\Ext\Modules\SirsoftEcommerce\V1_1_1\Migrations;
 
 use App\Extension\Upgrade\DataMigration;
 use App\Extension\UpgradeContext;
+use App\Support\ExtensionStoragePath;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
@@ -102,7 +103,7 @@ class SoftDeleteOrphanInquiryReplyPosts implements DataMigration
         $boardIds = [];
 
         // ① 설정 파일의 board_slug → boards.id 해석
-        $settingsPath = storage_path('app/modules/sirsoft-ecommerce/settings/inquiry.json');
+        $settingsPath = ExtensionStoragePath::module('sirsoft-ecommerce', 'settings').'/inquiry.json';
 
         if (File::exists($settingsPath) && Schema::hasTable(self::BOARDS_TABLE)) {
             $settings = json_decode(File::get($settingsPath), true);

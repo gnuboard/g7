@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Plugins\Sirsoft\PayNhnkcp\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
+use App\Support\ExtensionStoragePath;
 
 class RegisterPgProviderListener implements HookListenerInterface
 {
@@ -139,7 +140,7 @@ class RegisterPgProviderListener implements HookListenerInterface
 
     private function isNhnKcpDefaultPg(): bool
     {
-        $path = storage_path('app/modules/sirsoft-ecommerce/settings/order_settings.json');
+        $path = ExtensionStoragePath::module('sirsoft-ecommerce', 'settings').'/order_settings.json';
 
         if (! file_exists($path)) {
             return false;

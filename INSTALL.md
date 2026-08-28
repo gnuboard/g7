@@ -379,6 +379,23 @@ http://도메인/install
 
 > 사용자 페이지는 사용자 템플릿이 설치되어 있어야 접근할 수 있습니다. 인스톨러에서 사용자 템플릿을 함께 설치하거나, 관리자 페이지에서 템플릿을 먼저 설치해 주세요.
 
+### 파일 권한 (설치 후 확인)
+
+POSIX 권한 모델 (Linux/macOS/BSD) 환경에서 웹 서버 실행 계정이 쓸 수 있어야 하는 위치는 다음과 같습니다. Windows 환경에서는 해당하지 않습니다.
+
+| 위치 | 필요한 이유 |
+|------|------------|
+| `storage/` · `bootstrap/cache` | 애플리케이션 동작에 항상 필요 (로그·캐시·세션·업로드·런타임 캐시) |
+| `modules/` · `plugins/` · `templates/` · `public/build` | 관리자 화면에서 확장(모듈/플러그인/템플릿)을 설치·업데이트·삭제할 때 필요 |
+
+```bash
+sudo chown -R www-data:www-data storage bootstrap/cache modules plugins templates public/build
+```
+
+**`vendor/` 에는 쓰기 권한이 필요하지 않습니다.** 확장의 `vendor/` 는 설치·업데이트 시점에만 기록되며, 애플리케이션이 동작하면서 만드는 런타임 캐시는 모두 `storage/` 아래에 기록됩니다. 명령줄로 설치·업데이트를 수행한다면 그 계정만 쓸 수 있으면 됩니다.
+
+전체 권한 모델(그룹 공유 방식 A / 소유자 통일 방식 B / ACL 방식 C 와 umask 운영)은 [docs/requirements.md](docs/requirements.md) "파일 권한 및 umask 운영 방식" 절을 참고하세요.
+
 ---
 
 ## 업그레이드

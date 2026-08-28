@@ -11,7 +11,7 @@
         "ko": "게시판 관리를 위한 모듈",
         "en": "Module for board management"
     },
-    "g7_version": ">=7.0.9",
+    "g7_version": ">=7.0.10",
     "dependencies": {
         "modules": {},
         "plugins": {}
