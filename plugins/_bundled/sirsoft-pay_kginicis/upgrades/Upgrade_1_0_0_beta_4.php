@@ -6,6 +6,7 @@ namespace Plugins\Sirsoft\PayKginicis\Upgrades;
 
 use App\Contracts\Extension\UpgradeStepInterface;
 use App\Extension\UpgradeContext;
+use App\Support\ExtensionStoragePath;
 use Illuminate\Support\Facades\File;
 
 /**
@@ -37,8 +38,6 @@ use Illuminate\Support\Facades\File;
  */
 class Upgrade_1_0_0_beta_4 implements UpgradeStepInterface
 {
-    private const ECOMMERCE_SETTINGS_PATH = 'app/modules/sirsoft-ecommerce/settings/order_settings.json';
-
     private const EASY_PAY_IDS = [
         'kginicis_samsung_pay',
         'kginicis_naverpay',
@@ -48,7 +47,9 @@ class Upgrade_1_0_0_beta_4 implements UpgradeStepInterface
 
     public function run(UpgradeContext $context): void
     {
-        $path = storage_path(self::ECOMMERCE_SETTINGS_PATH);
+        // 이커머스 모듈의 주문설정 저장 경로. 절대 경로는 코어 해석기가 디스크 root 를 기준으로
+        // 조립한다 — 확장마다 경로를 직접 조립하면 테스트 환경에서 운영 설정 파일을 건드린다.
+        $path = ExtensionStoragePath::module('sirsoft-ecommerce', 'settings').'/order_settings.json';
 
         if (! File::exists($path)) {
             $context->logger->info('[v1.0.0-beta.4] 이커머스 order_settings.json 없음 — 첫 진입 시 자동 생성되므로 skip');

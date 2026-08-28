@@ -3,6 +3,7 @@
 namespace Tests\Unit\Extension;
 
 use App\Extension\PluginManager;
+use App\Support\ExtensionStoragePath;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Mockery;
@@ -26,7 +27,7 @@ class PluginManagerSettingsTest extends TestCase
     {
         parent::setUp();
 
-        $this->testSettingsDir = storage_path('app/plugins/test-init-plugin/settings');
+        $this->testSettingsDir = ExtensionStoragePath::plugin('test-init-plugin', 'settings');
         $this->testDefaultsDir = sys_get_temp_dir().'/g7_test_defaults_'.uniqid();
 
         // 테스트용 디렉토리 정리

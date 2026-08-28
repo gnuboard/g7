@@ -11,7 +11,7 @@
         "ko": "토스페이먼츠 결제 게이트웨이 (통합결제창 연동)",
         "en": "TossPayments gateway (integrated payment window)"
     },
-    "g7_version": ">=7.0.0",
+    "g7_version": ">=7.0.10",
     "dependencies": {
         "modules": {
             "sirsoft-ecommerce": ">=1.1.0"

@@ -13,7 +13,7 @@
         "ko": "NHN KCP 결제 게이트웨이 (Standard Pay 연동)",
         "en": "NHN KCP payment gateway (Standard Pay integration)"
     },
-    "g7_version": ">=7.0.5",
+    "g7_version": ">=7.0.10",
     "dependencies": {
         "modules": {
             "sirsoft-ecommerce": ">=1.1.0"

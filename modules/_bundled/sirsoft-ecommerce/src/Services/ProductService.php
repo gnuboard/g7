@@ -2,8 +2,10 @@
 
 namespace Modules\Sirsoft\Ecommerce\Services;
 
+use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\HookManager;
 use App\Search\SearchPagePolicy;
+use App\Support\ExtensionStoragePath;
 use App\Support\Query\BoundedCount;
 use App\Support\Query\BoundedPage;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -11,6 +13,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Enums\SequenceType;
 use Modules\Sirsoft\Ecommerce\Exceptions\OptionHasOrderHistoryException;
 use Modules\Sirsoft\Ecommerce\Exceptions\ProductHasOrderHistoryException;
@@ -53,6 +56,25 @@ class ProductService
      * HTMLPurifier 인스턴스 (지연 생성)
      */
     protected ?\HTMLPurifier $purifier = null;
+
+    /**
+     * 이 모듈의 식별자
+     */
+    private const MODULE_IDENTIFIER = 'sirsoft-ecommerce';
+
+    /**
+     * HTMLPurifier 정의 캐시 디렉토리 권한
+     *
+     * 0775 인 이유: CLI(스케줄러/큐)와 웹(php-fpm)이 같은 캐시를 공유해야 한다. 그룹 쓰기가
+     * 없으면 먼저 만든 프로세스가 상대를 잠근다. `Cache.SerializerPermissions` 로 HTMLPurifier 가
+     * 만드는 하위 디렉토리에도 전파되며, `.ser` 파일에는 `$chmod & 0666` 이 적용되어 0664 가 된다.
+     */
+    private const PURIFIER_CACHE_DIR_MODE = 0775;
+
+    /**
+     * 정의 캐시 비활성 통지를 프로세스당 1회만 남기기 위한 플래그
+     */
+    private static bool $purifierCacheWarned = false;
 
     /**
      * 시스템 기본통화 코드 조회
@@ -1330,12 +1352,7 @@ class ProductService
         }
 
         if ($this->purifier === null) {
-            $config = \HTMLPurifier_Config::createDefault();
-            $config->set('HTML.Allowed', 'p,br,strong,em,b,i,u,s,ul,ol,li,a[href|target],img[src|alt|width|height],h1,h2,h3,h4,h5,h6,table,tr,td,th,thead,tbody,tfoot,caption,colgroup,col,blockquote,pre,code,div,span[style],hr');
-            $config->set('CSS.AllowedProperties', 'color,background-color,font-size,font-weight,text-align,text-decoration,margin,padding,border,width,height');
-            $config->set('Attr.AllowedFrameTargets', ['_blank']);
-            $config->set('URI.AllowedSchemes', ['http' => true, 'https' => true, 'mailto' => true]);
-            $this->purifier = new \HTMLPurifier($config);
+            $this->purifier = $this->createPurifier();
         }
 
         foreach ($data['description'] as $locale => $content) {
@@ -1345,6 +1362,113 @@ class ProductService
         }
 
         return $data;
+    }
+
+    /**
+     * HTMLPurifier 인스턴스를 생성합니다.
+     *
+     * 정의 캐시 경로를 `storage/` 아래로 강제합니다. 지정하지 않으면 HTMLPurifier 는 자기 설치
+     * 폴더(`{module}/vendor/ezyang/htmlpurifier/library/.../DefinitionCache/Serializer/`)에 캐시를
+     * 쓰는데, 배포본의 vendor 를 읽기 전용으로 두는 서버에서는 그 쓰기가 `E_USER_WARNING` 을 내고
+     * Laravel 이 이를 `ErrorException` 으로 승격시켜 상품 등록/수정이 매번 500 이 됩니다 (공개 #125).
+     * 캐시는 설정 해시당 1회만 기록되므로 쓰기 불가 환경에서는 캐시가 영영 생기지 않아 모든 요청이
+     * 실패합니다.
+     *
+     * 캐시 디렉토리를 확보하지 못하면 정의 캐시만 끄고(`Cache.DefinitionImpl = null`) 정화는 그대로
+     * 수행합니다 — 캐시는 성능 장치이고 정화는 보안 장치라, 캐시 실패가 보안 장치를 건너뛰게
+     * 만들어서는 안 됩니다.
+     *
+     * @return \HTMLPurifier 설정이 적용된 인스턴스
+     */
+    protected function createPurifier(): \HTMLPurifier
+    {
+        $cachePath = $this->resolvePurifierCachePath($failure);
+
+        if ($cachePath === null && ! self::$purifierCacheWarned) {
+            self::$purifierCacheWarned = true;
+
+            // `error` 로 남기는 이유: G7 출하 기본값(config/settings/defaults.json)의 `log_level` 이
+            // `error` 라, `warning` 으로 남기면 기본 설치 상태에서는 이 통지가 로그 파일에 아예
+            // 기록되지 않는다. 저장은 성공하므로 사용자 피해는 없지만, 캐시를 못 쓰는 상태가
+            // 흔적 없이 영구히 유지되어 운영자가 조치할 근거를 얻지 못한다.
+            Log::error('HTMLPurifier 정의 캐시 디렉토리를 사용할 수 없어 캐시 없이 동작합니다', [
+                'module' => self::MODULE_IDENTIFIER,
+                'expected_path' => $this->purifierCacheDirectory(),
+                // 사유마다 고쳐야 할 대상이 다르다 — 상위 디렉토리 권한 / 그 자리를 차지한 파일 /
+                // 대상 자신의 권한. 사유 없이 경로만 남기면 운영자가 어디를 볼지 알 수 없다.
+                'reason' => $failure['reason'] ?? 'unknown',
+                'blocking_path' => $failure['path'] ?? $this->purifierCacheDirectory(),
+                'impact' => '상품 설명(HTML) 정화가 요청마다 정의를 다시 계산합니다. 해당 디렉토리의 쓰기 권한을 확인하세요.',
+            ]);
+        }
+
+        return new \HTMLPurifier($this->buildPurifierConfig($cachePath));
+    }
+
+    /**
+     * HTMLPurifier 설정을 조립합니다.
+     *
+     * @param  string|null  $cachePath  정의 캐시 디렉토리 절대 경로 (null 이면 캐시 비활성)
+     * @return \HTMLPurifier_Config 조립된 설정
+     */
+    protected function buildPurifierConfig(?string $cachePath): \HTMLPurifier_Config
+    {
+        $config = \HTMLPurifier_Config::createDefault();
+        $config->set('HTML.Allowed', 'p,br,strong,em,b,i,u,s,ul,ol,li,a[href|target],img[src|alt|width|height],h1,h2,h3,h4,h5,h6,table,tr,td,th,thead,tbody,tfoot,caption,colgroup,col,blockquote,pre,code,div,span[style],hr');
+        $config->set('CSS.AllowedProperties', 'color,background-color,font-size,font-weight,text-align,text-decoration,margin,padding,border,width,height');
+        $config->set('Attr.AllowedFrameTargets', ['_blank']);
+        $config->set('URI.AllowedSchemes', ['http' => true, 'https' => true, 'mailto' => true]);
+
+        if ($cachePath === null) {
+            $config->set('Cache.DefinitionImpl', null);
+
+            return $config;
+        }
+
+        $config->set('Cache.SerializerPath', $cachePath);
+        // HTMLPurifier 가 `{경로}/HTML` 하위 디렉토리와 `.ser` 파일을 만들 때 쓰는 권한.
+        // 기본값 0755 는 CLI 가 먼저 만들면 웹 계정이 못 쓴다.
+        $config->set('Cache.SerializerPermissions', self::PURIFIER_CACHE_DIR_MODE);
+
+        return $config;
+    }
+
+    /**
+     * 정의 캐시 디렉토리를 확보하고 절대 경로를 반환합니다.
+     *
+     * 디렉토리가 이미 있는데 쓰기 불가라면 요청 경로에서 권한을 고치려 들지 않고 null 을
+     * 돌려줍니다 — 호출측이 캐시를 끄고 정화는 그대로 수행합니다.
+     *
+     * 확보 자체(경고를 내지 않는 생성 · umask 무력화 · POSIX setgid · 소유권 상속 · 쓰기 판정)는
+     * 코어 공통 프리미티브가 맡습니다. 그 프리미티브는 예외도 PHP 경고도 내지 않으므로, 이 수정이
+     * 막으려던 500 이 확보 실패 지점에서 다시 나는 일이 없습니다.
+     *
+     * @param  array{reason: string, path: string}|null  $failure  out — 확보 실패 사유와 그 대상 경로
+     * @return string|null 사용 가능한 절대 경로. 확보 실패 시 null
+     */
+    protected function resolvePurifierCachePath(?array &$failure = null): ?string
+    {
+        $dir = $this->purifierCacheDirectory();
+
+        return FilePermissionHelper::ensureWritableDirectory($dir, self::PURIFIER_CACHE_DIR_MODE, $failure)
+            ? $dir
+            : null;
+    }
+
+    /**
+     * 정의 캐시 디렉토리의 절대 경로 (존재 여부와 무관한 순수 계산).
+     *
+     * 경로는 코어 해석기가 `modules` 디스크 root 를 단일 출처로 삼아 조립합니다.
+     * `getStorageBasePath('cache')` 를 경유하지 않는 이유는 그 반환값이 `Storage::disk()->path()`
+     * 위임이라, 확장이 카테고리 디스크를 비로컬(S3 등)로 오버라이드하면 파일시스템 경로가 아니게
+     * 되기 때문입니다 — HTMLPurifier 는 `file_put_contents` 로 쓰므로 반드시 로컬 절대 경로여야
+     * 합니다.
+     *
+     * @return string 절대 경로
+     */
+    protected function purifierCacheDirectory(): string
+    {
+        return ExtensionStoragePath::module(self::MODULE_IDENTIFIER, 'cache/htmlpurifier');
     }
 
     /**

@@ -6,6 +6,7 @@ use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Enums\ExtensionStatus;
+use App\Extension\Helpers\FilePermissionHelper;
 use App\Models\Module;
 use App\Models\Plugin;
 use App\Models\Template;
@@ -1204,16 +1205,31 @@ class ExtensionStaticCacheServiceTest extends TestCase
         );
 
         // ① 디렉토리 생성은 umask 를 무력화하는 명시 chmod 를 거친다.
+        //
+        // 정합화 구현은 코어 공통 프리미티브(`FilePermissionHelper::hardenDirectory`)로 옮겼다.
+        // 검사도 그 위임을 따라가야 한다 — 옮겨간 뒤에도 이 클래스의 소스 리터럴만 보면 실제로
+        // 도는 코드가 아닌 **죽은 자리**를 지키게 되어 가드가 공허해진다.
         $makeDirectory = $this->methodBody($source, 'makeDirectory');
         $this->assertNotSame('', $makeDirectory, 'makeDirectory 를 소스에서 찾지 못했다 — 검사가 공허하다');
         $this->assertStringContainsString(
-            '@chmod($dir, self::PUBLISH_DIR_MODE)',
+            'FilePermissionHelper::hardenDirectory($dir, self::PUBLISH_DIR_MODE)',
             $makeDirectory,
+            '게시 디렉토리 정합화가 공통 프리미티브를 거치지 않는다 — umask/소유권 규율이 이 클래스에서 갈라진다'
+        );
+
+        $helperSource = (string) file_get_contents(
+            (new \ReflectionClass(FilePermissionHelper::class))->getFileName()
+        );
+        $harden = $this->methodBody($helperSource, 'hardenDirectory');
+        $this->assertNotSame('', $harden, 'hardenDirectory 를 소스에서 찾지 못했다 — 검사가 공허하다');
+        $this->assertStringContainsString(
+            '@chmod($path, $mode)',
+            $harden,
             'ensureDirectoryExists 의 mode 는 umask 로 깎인다 — 명시 chmod 가 없으면 0755 로 굳는다'
         );
         $this->assertStringContainsString(
-            'FilePermissionHelper::inheritOwnershipFromParent($dir)',
-            $makeDirectory
+            'static::inheritOwnershipFromParent($path)',
+            $harden
         );
 
         // ② 정합화는 root 갈래와 항상-실행 갈래를 모두 갖는다.

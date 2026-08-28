@@ -416,6 +416,25 @@ Icon 은 `<i>` 글리프라 박스 크기가 곧 `font-size` 다. `w-N h-N` 은 
 
 > 상세: [validation.md](docs/backend/validation.md), [service-repository.md](docs/backend/service-repository.md), [frontend/security.md](docs/frontend/security.md)
 
+### 제3자 라이브러리는 쓰기 경로를 지정받는다
+
+제3자 라이브러리는 캐시·임시파일 경로를 설정하지 않으면 **자기 설치 폴더**(vendor 안)나 시스템 temp 에 쓴다. 표준 Laravel 배포는 웹서버에 `storage/` 와 `bootstrap/cache` 만 쓰기 권한을 주므로 그 쓰기는 실패하는데, 실패가 예외가 아니라 PHP 경고라 Laravel `HandleExceptions` 가 `ErrorException` 으로 승격시켜 요청이 500 이 된다. 해시당 1회만 기록하는 라이브러리라면 캐시가 영영 생기지 않아 **매 요청이 같은 실패를 반복**한다 — 개발 머신에서는 vendor 가 쓰기 가능해 한 번 성공하고 끝나므로 재현되지 않는다 (공개 #125).
+
+| ❌ 금지 | ✅ 올바른 사용 |
+|--------|---------------|
+| 제3자 라이브러리를 기본 설정 그대로 인스턴스화 | 캐시·임시파일 경로를 `ExtensionStoragePath::module($id, 'cache/…')` 로 명시 — 기본값은 **라이브러리 자기 설치 폴더**다 |
+| 쓰기 경로만 지정하고 디렉토리 생성은 라이브러리에 맡김 | `FilePermissionHelper::ensureWritableDirectory()` 로 **먼저 확보한다** — 라이브러리는 대개 하위 디렉토리만 만들고, base 가 없으면 경고만 내고 끝난다 |
+| 확보 절차(억제 생성·chmod·setgid·소유권·쓰기 판정)를 호출부가 자기 안에 복사 | 코어 프리미티브 한 곳에서 수행 — 사본은 서로 다른 하드닝을 갖고 갈라진다(실제로 억제 mkdir·setgid·`clearstatcache` 가 사본마다 한쪽씩 빠져 있었다) |
+| 확장 저장 경로를 `storage_path('app/modules/…')` 로 직접 조립 | `ExtensionStoragePath::{module,plugin}()` — 디스크 root 가 단일 출처이고 테스트 환경을 인지하므로, 확장이 `runningUnitTests()` 분기를 복사하지 않는다. 복사본은 한 곳만 빠뜨려도 그 확장의 테스트가 **운영 설정 파일을 덮어쓴다** |
+| 캐시 쓰기 실패를 그대로 500 으로 흘림 | 캐시는 성능 장치다 — 확보 실패 시 캐시만 끄고 본래 기능은 계속한다. **정화·검증 자체를 건너뛰는 폴백은 금지** |
+| 폴백 통지를 `Log::warning` 으로 남김 | `Log::error` — 출하 기본 로그 수준(`config/settings/defaults.json` 의 `log_level`)이 `error` 라 `warning` 은 기본 설치 상태에서 파일에 기록되지 않는다. 기능은 성공하므로 그 통지가 유일한 흔적이다 |
+
+확보 프리미티브는 **예외도 PHP 경고도 내지 않는다** — `File::ensureDirectoryExists()` 는 `mkdir()` 을 억제 없이 부르므로 생성 실패가 `E_WARNING` → `ErrorException` 으로 승격되어, 막으려던 500 이 다른 줄에서 그대로 난다. 실패는 `bool` 과 사유(`occupied_by_file` / `ancestor_not_writable` / `create_failed` / `not_writable`)로 올라오고, 그 사유를 통지에 실어 운영자가 고칠 대상을 지목한다.
+
+경로는 `ExtensionStoragePath` 가 해석한다. `getBasePath('cache')` 는 `Storage::disk()->path()` 위임이라 비로컬 디스크(S3 등)에서 파일시스템 경로가 아니게 되는데, 그러면 라이브러리가 상대경로를 CWD 기준으로 해석해 **조용히 엉뚱한 곳에 쓴다** — 지금 결함보다 나쁘다. 대부분의 정의 캐시는 `file_put_contents` 로 쓰는 로컬 전용 장치다.
+
+> 상세: [storage-driver.md](docs/extension/storage-driver.md) "제3자 라이브러리에 절대 경로를 넘길 때", [service-repository.md](docs/backend/service-repository.md) "서비스가 제3자 라이브러리를 붙일 때"
+
 ### 확장·템플릿 구동 에셋은 자체 제공한다
 
 브라우저가 화면을 그리기 위해 제3자 CDN 에 도달해야 하면, 그 도달 실패는 **예외도 로그도 남기지 않고 화면 기능만 조용히 사라진다.** 폐쇄망·방화벽·광고차단기에서 재현되며 자체 서버 로그에 흔적이 없어 운영자가 원인을 특정할 수 없다.

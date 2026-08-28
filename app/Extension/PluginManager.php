@@ -45,6 +45,7 @@ use App\Providers\CoreServiceProvider;
 use App\Services\DriverRegistryService;
 use App\Services\LayoutExtensionService;
 use App\Support\AssetUrl;
+use App\Support\ExtensionStoragePath;
 use App\Support\RouteCacheHelper;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Artisan;
@@ -2610,7 +2611,7 @@ class PluginManager implements PluginManagerInterface
     protected function initializePluginSettings(PluginInterface $plugin): void
     {
         $identifier = $plugin->getIdentifier();
-        $settingsDir = storage_path("app/plugins/{$identifier}/settings");
+        $settingsDir = ExtensionStoragePath::plugin($identifier, 'settings');
         $settingsPath = $settingsDir.'/setting.json';
 
         // 이미 설정 파일이 존재하면 스킵 (재설치 시 기존 설정 유지)
@@ -2691,7 +2692,7 @@ class PluginManager implements PluginManagerInterface
     protected function deletePluginSettingsDirectory(PluginInterface $plugin): void
     {
         $identifier = $plugin->getIdentifier();
-        $pluginStorageDir = storage_path("app/plugins/{$identifier}");
+        $pluginStorageDir = ExtensionStoragePath::plugin($identifier);
 
         if (File::isDirectory($pluginStorageDir)) {
             File::deleteDirectory($pluginStorageDir);
@@ -2761,7 +2762,7 @@ class PluginManager implements PluginManagerInterface
 
         // 5. 스토리지 디렉토리 1-depth 용량 조회
         $storageInfo = $this->getStorageDirectoriesInfo(
-            storage_path('app/plugins/'.$identifier)
+            ExtensionStoragePath::plugin($identifier)
         );
 
         // 6. Composer vendor 디렉토리 정보 조회
