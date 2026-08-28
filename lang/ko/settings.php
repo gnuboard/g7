@@ -206,4 +206,19 @@ return [
         'source_vendor_missing' => '소스 디렉토리에 vendor가 없습니다. composer install이 실행되지 않았을 수 있습니다.',
         'composer_failed_with_output' => 'composer install 실행에 실패했습니다.:output',
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | 신뢰 프록시 진단 (#124)
+    |--------------------------------------------------------------------------
+    |
+    | 값 편집은 .env 전용이다 — 화면에는 읽기 전용 진단만 노출한다.
+    |
+    */
+
+    'trusted_proxy' => [
+        'alert_title' => '신뢰 프록시가 설정되지 않았습니다',
+        'alert_message' => '프록시 헤더(:headers)를 받고 있으나 신뢰 프록시가 설정되지 않아, 모든 방문자가 같은 주소(:ip)로 기록되고 있습니다. .env 에 TRUSTED_PROXIES 를 지정하세요. 상세: https://github.com/gnuboard/g7/blob/main/docs/backend/reverse-proxy.md',
+    ],
+
 ];

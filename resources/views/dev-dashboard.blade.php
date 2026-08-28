@@ -1083,6 +1083,10 @@ if (isset($_GET['ajax_action'])) {
                                     <span>정적 게시 점검</span>
                                     <span class="text-[10px] opacity-60">(ext-static:status)</span>
                                 </button>
+                                <button onclick="runCommand('trusted-proxy:status')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>신뢰 프록시 점검</span>
+                                    <span class="text-[10px] opacity-60">(trusted-proxy:status)</span>
+                                </button>
                                 <button onclick="runCommand('seo:prune-stats')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>SEO 캐시 통계 정리</span>
                                     <span class="text-[10px] opacity-60">(seo:prune-stats)</span>

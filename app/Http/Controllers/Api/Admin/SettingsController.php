@@ -15,6 +15,7 @@ use App\Services\DriverConnectionTester;
 use App\Services\DriverRegistryService;
 use App\Services\OutboundProxyTester;
 use App\Services\SettingsService;
+use App\Support\TrustedProxyDiagnostic;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
@@ -148,6 +149,23 @@ class SettingsController extends AdminBaseController
 
             return $this->error('common.error_occurred', 500, $e->getMessage());
         }
+    }
+
+    /**
+     * 신뢰 프록시(리버스 프록시) 설정 진단 결과를 조회합니다 (#124).
+     *
+     * 읽기 전용이다 — 값 편집 엔드포인트는 두지 않는다. 이 값은 "앱이 프록시 없이 도달
+     * 가능한가" 라는 배포 구조 지식이 있어야 정할 수 있고, 웹에서 편집 가능해지면 관리자
+     * 계정 탈취가 곧 X-Forwarded-For 위조 경로가 된다. 편집은 `.env` 전용이다.
+     *
+     * 판정 대상은 관리자 브라우저의 **실제 요청**이므로 현재 요청을 그대로 쓴다.
+     * 입력을 받지 않는 읽기 전용 조회라 FormRequest 를 두지 않는다.
+     *
+     * @return JsonResponse 진단 결과 JSON 응답
+     */
+    public function trustedProxy(): JsonResponse
+    {
+        return $this->success('common.success', TrustedProxyDiagnostic::forRequest(request()));
     }
 
     /**

@@ -13,6 +13,7 @@ use App\Http\View\Composers\TemplateComposer;
 use App\Http\View\Composers\UserTemplateComposer;
 use App\Listeners\ExtensionCompatibilityAlertListener;
 use App\Listeners\StaticPublishFailureAlertListener;
+use App\Listeners\TrustedProxyAlertListener;
 use App\Notifications\NotificationChannelManager;
 use App\Services\ChannelReadinessService;
 use App\Services\GeoIpService;
@@ -145,12 +146,14 @@ class AppServiceProvider extends ServiceProvider
      * 등록 대상:
      * - `ExtensionCompatibilityAlertListener` — 코어 호환성으로 자동 비활성화/재호환된 확장
      * - `StaticPublishFailureAlertListener` — 부트스트랩 리소스 정적 게시 실패 (#122)
+     * - `TrustedProxyAlertListener` — 프록시 헤더 수신 중 신뢰 프록시 미설정 (#124)
      */
     private function registerCoreHookListeners(): void
     {
         $listenerClasses = [
             ExtensionCompatibilityAlertListener::class,
             StaticPublishFailureAlertListener::class,
+            TrustedProxyAlertListener::class,
         ];
 
         foreach ($listenerClasses as $listenerClass) {

@@ -235,6 +235,7 @@ return [
     // HTTPS Messages
     'https_enabled' => 'HTTPS is enabled (recommended)',
     'https_disabled' => 'HTTPS is disabled. We recommend using HTTPS for security.',
+    'https_behind_proxy' => 'This site appears to be running behind a reverse proxy. Unless TRUSTED_PROXIES is set in .env after installation, the site address and visitor IP will be recognized from the proxy instead of the real visitor. (https://github.com/gnuboard/g7/blob/main/docs/backend/reverse-proxy.md)',
 
     // OPcache Messages
     'opcache_enabled' => 'OPcache is enabled (recommended)',

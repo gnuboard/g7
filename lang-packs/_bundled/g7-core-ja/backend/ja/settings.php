@@ -174,4 +174,10 @@ return [
         'source_vendor_missing' => 'ソースディレクトリに vendor がありません。composer install が実行されていない可能性があります。',
         'composer_failed_with_output' => 'composer install 実行に失敗しました。:output',
     ],
+
+    'trusted_proxy' => [
+        'alert_title' => '信頼するプロキシが設定されていません',
+        'alert_message' => 'プロキシヘッダー(:headers)を受信していますが、信頼するプロキシが設定されていないため、すべての訪問者が同じアドレス(:ip)として記録されています。.env に TRUSTED_PROXIES を指定してください。詳細: https://github.com/gnuboard/g7/blob/main/docs/backend/reverse-proxy.md',
+    ],
+
 ];

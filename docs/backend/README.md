@@ -55,6 +55,7 @@
 | [notification-system.md](notification-system.md) | 알림 시스템 (Notification System) | GenericNotification 범용 클래스 1개로 모든 알림 처리 (개별 클래스... |
 | [pagination.md](pagination.md) | 대용량 목록 페이지네이션 (Pagination) | 총 건수만 상한을 받는다 — 상한 이하면 정확, 초과면 "이상"(total_relat... |
 | [response-helper.md](response-helper.md) | API 응답 규칙 (ResponseHelper) | 모든 API 응답은 ResponseHelper 사용 |
+| [reverse-proxy.md](reverse-proxy.md) | 리버스 프록시 환경 (Reverse Proxy) | 프록시 뒤에서는 요청이 스스로 스킴·IP 를 증명하지 못한다 — 신뢰할 프록시를 지정... |
 | [routing.md](routing.md) | 라우트 네이밍 및 경로 | 모든 라우트는 name() 필수: ->name('api.users.index') |
 | [search-system.md](search-system.md) | Scout 검색 엔진 시스템 (Search System) | Laravel Scout + DatabaseFulltextEngine: MySQL F... |
 | [seo-system.md](seo-system.md) | SEO 페이지 생성기 시스템 (SEO Page Generator) | SeoMiddleware: 봇 요청 감지 → ?locale= 파라미터 해석 → Seo... |

@@ -1654,6 +1654,7 @@
     "template_info": "Template Info",
     "templates": "Templates",
     "tokenValidation": "Token Validation",
+    "trustedProxy": "Trusted proxy diagnostic",
     "user": "User",
     "users": "Users"
   }

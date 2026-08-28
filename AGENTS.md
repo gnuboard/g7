@@ -6,7 +6,7 @@
 
 <!-- AUTO-GENERATED-START: docs-quick-reference -->
 
-### 백엔드 [backend/](docs/backend/) (35개)
+### 백엔드 [backend/](docs/backend/) (36개)
 
 | 문서 | 설명 | TL;DR 핵심 |
 |------|------|-----------|
@@ -35,6 +35,7 @@
 | [notification-system.md](docs/backend/notification-system.md) | 알림 시스템 (Notification System) | GenericNotification 범용 클래스 1개로 모든 알림 처리 (개별 클래스 불필요) |
 | [pagination.md](docs/backend/pagination.md) | 대용량 목록 페이지네이션 (Pagination) | 총 건수만 상한을 받는다 — 상한 이하면 정확, 초과면 "이상"(total_relation=at_least) |
 | [response-helper.md](docs/backend/response-helper.md) | API 응답 규칙 (ResponseHelper) | 모든 API 응답은 ResponseHelper 사용 |
+| [reverse-proxy.md](docs/backend/reverse-proxy.md) | 리버스 프록시 환경 (Reverse Proxy) | 프록시 뒤에서는 요청이 스스로 스킴·IP 를 증명하지 못한다 — 신뢰할 프록시를 지정해야 한다 |
 | [routing.md](docs/backend/routing.md) | 라우트 네이밍 및 경로 | 모든 라우트는 name() 필수: ->name('api.users.index') |
 | [search-system.md](docs/backend/search-system.md) | Scout 검색 엔진 시스템 (Search System) | Laravel Scout + DatabaseFulltextEngine: MySQL FULLTEXT + ... |
 | [seo-system.md](docs/backend/seo-system.md) | SEO 페이지 생성기 시스템 (SEO Page Generator) | SeoMiddleware: 봇 요청 감지 → ?locale= 파라미터 해석 → SeoRenderer가 ... |
@@ -153,7 +154,7 @@
 
 | 대상 | 진입점 | 문서/엔드포인트 |
 |------|--------|----------------|
-| 코어 | [docs/backend/api/README.md](docs/backend/api/README.md) | 36 / 324 |
+| 코어 | [docs/backend/api/README.md](docs/backend/api/README.md) | 36 / 325 |
 
 
 ### 확장 API 레퍼런스 (14개 확장, 자동 스캔)
@@ -459,6 +460,28 @@ Icon 은 `<i>` 글리프라 박스 크기가 곧 `font-size` 다. `w-N h-N` 은 
 
 > 상세: [module-assets.md](docs/extension/module-assets.md) "사용자 추가 에셋", [static-asset-publishing.md](docs/backend/static-asset-publishing.md)
 > 정적 검사가 외부 자산 URL 과 번들 확장의 `custom/` 배포를 차단한다. 서술자 형태와 교체 2경로 보존은 테스트가 잠근다.
+
+### 프록시 뒤 요청은 스킴·IP 를 스스로 증명하지 않는다
+
+TLS 가 앞단에서 종단되고 앱에는 HTTP 로 전달되는 구성(AWS ALB, CloudFront, Cloudflare, nginx/Apache 리버스 프록시, ngrok)에서 신뢰할 프록시가 지정되지 않으면 Laravel 은 `X-Forwarded-*` 를 전부 무시한다. 요청 객체가 평문 HTTP 로 인식되어 `asset()`/`url()` 이 `http://` 를 만들고(HTTPS 페이지에서 혼합 콘텐츠로 차단 → **사이트 전체 백지**), `$request->ip()` 가 프록시 IP 가 되어 통보 IP 화이트리스트·rate limit·IP 기록·GeoIP 가 동시에 무너진다.
+
+| ❌ 금지 | ✅ 올바른 사용 |
+|--------|---------------|
+| `bootstrap/app.php` 에서 `trustProxies(at: env('TRUSTED_PROXIES'))` | `config/trustedproxy.php` 의 `'proxies' => env('TRUSTED_PROXIES')` — `withMiddleware` 클로저는 `.env` 로드 전에 평가되어 `env()` 가 항상 `null` 이다(오류 없이 no-op) |
+| 신뢰 프록시를 `'*'` 로 하드코딩 | env opt-in — 앱이 직접 노출된 환경에서 `X-Forwarded-For` 위조로 기록 IP·IP 제한이 조작된다 |
+| `$middleware->trustHosts()` 호출 | 호출 자체가 모든 설치처에서 Host 검증을 켠다(미등록 호스트 400) — opt-in 원칙 위반 |
+| IP 화이트리스트·rate limit·IP 기록을 `$request->ip()` 로 두면서 프록시 구성을 문서화하지 않음 | 그 기능이 프록시 신뢰 설정에 의존한다는 사실을 문서에 남긴다 |
+| 절대 URL 이 필요한 곳에서 요청 스킴 의존(`url()`/`asset()`)과 설정 앵커(`config('app.url')`)를 혼용 | 외부 시스템에 등록·전송되는 URL(PG 콜백·webhook 안내)은 설정 앵커, 화면 자산은 요청 기준 |
+| 진단 판정을 "HTTPS 인식 실패" 로 세움 | `X-Forwarded-* 수신 중 AND 신뢰 프록시 미설정` — HTTP 전용 사이트가 프록시 뒤에 있으면 **화면은 완전히 정상 렌더되면서** webhook 403·IP 왜곡만 계속된다. HTTPS 기준 판정은 그 구성에서 침묵한다 |
+| 같은 판정을 노출면(대시보드·환경설정·설치 마법사·커맨드)마다 다시 작성 | `App\Support\TrustedProxyDiagnostic` 단일 판정 — 면마다 조건을 복제하면 한 곳만 어긋나도 서로 다른 답을 내놓는다 |
+| 신뢰 프록시 값을 관리자 화면에서 편집 가능하게 제공 | 읽기 전용 진단만. ① 프록시 뒤에서는 그 화면 자체가 뜨지 않는 것이 이 결함이라 정작 필요한 순간에 도달 불가(잠금 역설) ② 웹 편집이 가능해지면 관리자 계정 탈취가 곧 XFF 위조 경로가 된다 |
+
+이 결함군은 서버 로그에 흔적을 남기지 않는다. 브라우저 콘솔의 차단 로그와 "모든 방문자가 같은 IP" 라는 데이터 상태만이 증상이며, 설치 마법사는 `X-Forwarded-Proto` 를 읽어 "HTTPS 정상" 이라고 보고하므로 운영자에게는 원인 추적 단서가 없다.
+
+`**` 는 Laravel 내장 미들웨어에서 `*` 과 같은 코드 경로를 타므로 "모든 프록시 신뢰" 가 아니다. 프록시가 여러 단인 구성에서는 체인의 모든 프록시 IP·CIDR 를 나열해야 최초 클라이언트 IP 가 해석된다.
+
+> 상세: [reverse-proxy.md](docs/backend/reverse-proxy.md)
+> `config/trustedproxy.php` 의 키 계약, 신뢰/미신뢰 분기, 쿠키 Secure 자동 판정, `bootstrap/app.php` 로의 `env()` 함정 재유입 차단은 테스트가 잠근다. `url()`/`asset()`/`$request->ip()` 는 정상 사용례가 다수라 정적 금지 규칙을 두지 않는다.
 
 ### 목록 응답의 하위 컬렉션
 
