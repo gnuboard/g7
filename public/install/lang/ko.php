@@ -235,6 +235,7 @@ return [
     // HTTPS 메시지
     'https_enabled' => 'HTTPS가 활성화되어 있습니다. (권장)',
     'https_disabled' => 'HTTPS가 비활성화되어 있습니다. 보안을 위해 HTTPS 사용을 권장합니다.',
+    'https_behind_proxy' => '리버스 프록시 뒤에서 구동 중인 것으로 보입니다. 설치 후 .env 에 TRUSTED_PROXIES 를 지정하지 않으면 접속 주소와 방문자 IP 가 프록시 기준으로 인식됩니다. (https://github.com/gnuboard/g7/blob/main/docs/backend/reverse-proxy.md)',
 
     // OPcache 메시지
     'opcache_enabled' => 'OPcache가 활성화되어 있습니다. (권장)',

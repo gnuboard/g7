@@ -504,6 +504,13 @@ class ValidationApi
 
     /**
      * HTTPS 사용 여부 확인
+     *
+     * 이 검사는 저장소에서 유일하게 X-Forwarded-Proto 를 실제로 읽는 지점이었다. 그래서
+     * 설치 마법사는 "HTTPS 정상" 이라고 보고하는데 그 직후 앱은 http:// 절대 URL 을 만드는
+     * 비대칭이 있었다 — 운영자 입장에서 원인 추적이 사실상 불가능한 조합이다 (#124).
+     *
+     * 프록시 헤더가 감지되면 신뢰 프록시 설정이 필요하다는 안내를 결과에 덧붙인다.
+     * 설치를 차단하지는 않는다 (HTTPS 항목이 `required = false` 인 기존 정책과 동일).
      */
     private function checkHttps(): array
     {
@@ -514,13 +521,57 @@ class ValidationApi
             $isHttps = strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https';
         }
 
+        $forwardedHeaders = $this->detectForwardedHeaders();
+        $behindProxy = $forwardedHeaders !== [];
+
+        $message = $isHttps
+            ? lang('https_enabled')
+            : lang('https_disabled');
+
+        // HTTP 전용 사이트가 프록시 뒤에 있는 구성도 대상이다 — 화면은 정상 렌더되지만
+        // 방문자 IP·결제 통보 수신은 그대로 어긋난다. HTTPS 여부로 가르지 않는다.
+        if ($behindProxy) {
+            $message .= ' '.lang('https_behind_proxy');
+        }
+
         return [
             'required' => false, // HTTPS는 선택 사항
             'enabled' => $isHttps,
-            'message' => $isHttps
-                ? lang('https_enabled')
-                : lang('https_disabled'),
+            'behind_proxy' => $behindProxy,
+            'forwarded_headers' => $forwardedHeaders,
+            'message' => $message,
         ];
+    }
+
+    /**
+     * 수신 중인 X-Forwarded-* 계열 헤더 이름 목록을 반환합니다 (#124).
+     *
+     * 설치 마법사는 순수 PHP 영역이라 Laravel 헬퍼를 쓸 수 없다. 목록은
+     * App\Support\TrustedProxyDiagnostic::FORWARDED_HEADERS 와 같은 집합을 유지한다.
+     *
+     * @return array<int, string> 수신 중인 헤더 이름 목록
+     */
+    private function detectForwardedHeaders(): array
+    {
+        $headers = [
+            'X-Forwarded-For' => 'HTTP_X_FORWARDED_FOR',
+            'X-Forwarded-Proto' => 'HTTP_X_FORWARDED_PROTO',
+            'X-Forwarded-Host' => 'HTTP_X_FORWARDED_HOST',
+            'X-Forwarded-Port' => 'HTTP_X_FORWARDED_PORT',
+            'X-Forwarded-Prefix' => 'HTTP_X_FORWARDED_PREFIX',
+            'X-Forwarded-Aws-Elb' => 'HTTP_X_FORWARDED_AWS_ELB',
+            'Forwarded' => 'HTTP_FORWARDED',
+        ];
+
+        $present = [];
+
+        foreach ($headers as $name => $serverKey) {
+            if (isset($_SERVER[$serverKey])) {
+                $present[] = $name;
+            }
+        }
+
+        return $present;
     }
 
     /**

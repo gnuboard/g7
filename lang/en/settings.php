@@ -206,4 +206,19 @@ return [
         'source_vendor_missing' => 'No vendor directory in source. composer install may not have been executed.',
         'composer_failed_with_output' => 'composer install failed.:output',
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Trusted Proxy Diagnostic (#124)
+    |--------------------------------------------------------------------------
+    |
+    | The value is edited in .env only — the screen shows a read-only diagnostic.
+    |
+    */
+
+    'trusted_proxy' => [
+        'alert_title' => 'Trusted proxies are not configured',
+        'alert_message' => 'Proxy headers (:headers) are being received but no trusted proxy is configured, so every visitor is recorded with the same address (:ip). Set TRUSTED_PROXIES in .env. Details: https://github.com/gnuboard/g7/blob/main/docs/backend/reverse-proxy.md',
+    ],
+
 ];

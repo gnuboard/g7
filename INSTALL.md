@@ -557,6 +557,24 @@ sudo php artisan hotfix:rollback-stale-files --prune
 
 프로덕션 환경에서는 HTTPS를 사용해야 합니다. `.env` 파일에서 `APP_URL`을 `https://`로 설정하세요.
 
+`APP_URL` 은 명령줄 실행·큐 워커·메일 발송처럼 **요청이 없는 맥락**에서 절대 URL 을 만들 때의
+기준입니다. 웹 요청에서 만들어지는 절대 URL(화면 자산, 콜백 주소 등)은 `APP_URL` 이 아니라
+**요청 자체의 스킴과 호스트**를 따릅니다.
+
+따라서 TLS 를 앞단에서 처리하고 사이트에는 HTTP 로 전달하는 구성(AWS ALB, CloudFront,
+Cloudflare, nginx 리버스 프록시, ngrok)에서는 `APP_URL` 만 `https://` 로 두어서는 부족합니다.
+사이트가 접속 주소와 방문자 IP 를 올바르게 인식하려면 `.env` 에 `TRUSTED_PROXIES` 를 함께
+지정해야 합니다.
+
+```dotenv
+# 프록시 뒤에서 구동하는 경우에만 지정합니다 (미설정이 기본값).
+TRUSTED_PROXIES=*
+```
+
+지정하지 않으면 화면이 표시되지 않거나(혼합 콘텐츠 차단), 결제 통보가 수신되지 않고, 모든
+방문자가 같은 IP 로 기록됩니다. 값 선택 기준과 도입 시 후속 조치는
+[docs/backend/reverse-proxy.md](docs/backend/reverse-proxy.md) 를 참고하세요.
+
 ### `.env` 권한 강화 (선택)
 
 `.env` 는 DB 비밀번호와 `APP_KEY` 등 평문 자격증명을 포함합니다. 인스톨러는 설치 직후 `.env` 의 권한을 임의로 변경하지 않으므로, 운영자가 환경에 맞춰 직접 강화 권한을 적용할 수 있습니다.

@@ -1124,6 +1124,82 @@ HTTP/1.1 200
 서버 실행 환경 정보를 한 번에 조회합니다. OS/웹서버/PHP/DB/Laravel/코어 버전, CPU·메모리·디스크 사용량, PHP 주요 설정값(memory_limit·max_execution_time·upload_max_filesize), 주요 경로, PHP 확장 로드 상태, DB 연결 구성 요약 등을 포함합니다. 관리자 시스템 정보 화면과 요구사항 점검용 진단 데이터로 사용됩니다.
 
 
+### GET /api/admin/settings/trusted-proxy
+<!-- @generated:start:api.admin.settings.trusted-proxy -->
+- **라우트명**: `api.admin.settings.trusted-proxy`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\SettingsController@trustedProxy`
+- **인증/권한**: `auth:sanctum` + `permission:core.settings.read`
+
+**요청 파라미터**
+
+_요청 파라미터 없음._
+
+**요청 예시**
+
+```http
+GET /api/admin/settings/trusted-proxy HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| forwarded_headers | array | `["X-Forwarded-For","X-Forwarded-Proto"]` | 이 요청이 수신 중인 `X-Forwarded-*` 계열 헤더 이름 목록. 비어 있으면 앞단에 프록시가 없는 직접 노출 구성이다 |
+| trusted_configured | boolean | `false` | `TRUSTED_PROXIES` 가 지정되어 있는지. 빈 문자열은 미설정과 같게 판정된다 |
+| configured_proxies | string\|null | `null` | 지정된 신뢰 프록시 값 (미설정이면 `null`) |
+| is_secure | boolean\|null | `false` | 요청이 HTTPS 로 인식되었는지. 요청이 없는 맥락에서는 `null` |
+| client_ip | string\|null | `10.0.0.5` | 방문자 IP 로 인식된 값. 신뢰 프록시가 없으면 프록시 자신의 주소가 된다 |
+| remote_addr | string\|null | `10.0.0.5` | 직전 호출 IP(`REMOTE_ADDR`). `client_ip` 와 같으면서 `forwarded_headers` 가 비어 있지 않으면 모든 방문자가 한 사람으로 기록되고 있는 상태다 |
+| status | string | `warning` | 진단 결과. `warning`(프록시 헤더 수신 중 + 신뢰 프록시 미설정) / `ok` / `not_applicable`(요청이 없는 맥락) |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "성공적으로 처리되었습니다.",
+    "data": {
+        "forwarded_headers": [
+            "X-Forwarded-For",
+            "X-Forwarded-Proto"
+        ],
+        "trusted_configured": false,
+        "configured_proxies": null,
+        "is_secure": false,
+        "client_ip": "10.0.0.5",
+        "remote_addr": "10.0.0.5",
+        "status": "warning"
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.settings.read`)이 없는 경우 |
+
+<!-- @generated:end -->
+
+**설명**
+
+리버스 프록시 뒤에서 구동 중인지, 그리고 신뢰할 프록시가 지정되어 있는지를 진단합니다. **읽기 전용이며 대응하는 쓰기 엔드포인트가 없습니다** — 값은 `.env` 의 `TRUSTED_PROXIES` 로만 변경합니다.
+
+판정식은 "HTTPS 인식 실패" 가 아니라 `forwarded_headers 가 비어 있지 않음 AND trusted_configured 가 거짓` 입니다. HTTP 전용 사이트가 프록시 뒤에 있는 구성에서는 혼합 콘텐츠 차단이 없어 화면이 정상으로 보이지만, 방문자 IP 기록·통보 IP 화이트리스트·로그인 시도 제한은 그대로 어긋나기 때문입니다.
+
+같은 판정을 관리자 대시보드 알림, 환경설정 > 고급 화면, 설치 마법사, `php artisan trusted-proxy:status` 가 공유합니다. 설정 방법과 도입 시 후속 조치는 [reverse-proxy.md](../reverse-proxy.md) 를 참고하세요.
+
+
 ### POST /api/admin/settings/test-driver
 <!-- @generated:start:api.admin.settings.test-driver -->
 - **라우트명**: `api.admin.settings.test-driver`

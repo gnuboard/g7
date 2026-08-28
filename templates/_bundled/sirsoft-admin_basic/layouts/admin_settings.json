@@ -127,6 +127,27 @@
       }
     },
     {
+      "id": "trustedProxy",
+      "label_key": "$t:editor.data_source.trustedProxy",
+      "type": "api",
+      "endpoint": "/api/admin/settings/trusted-proxy",
+      "method": "GET",
+      "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'advanced'}}",
+      "auto_fetch": true,
+      "auth_required": true,
+      "fallback": {
+        "data": {
+          "forwarded_headers": [],
+          "trusted_configured": false,
+          "configured_proxies": null,
+          "is_secure": null,
+          "client_ip": null,
+          "remote_addr": null,
+          "status": "not_applicable"
+        }
+      }
+    },
+    {
       "id": "appKey",
       "label_key": "$t:editor.data_source.appKey",
       "type": "api",

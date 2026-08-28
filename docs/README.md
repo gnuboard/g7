@@ -9,7 +9,7 @@
 
 | 카테고리 | 문서 수 | 링크 상태 |
 |----------|---------|----------|
-| [백엔드](backend/) | 36개 | 정상 |
+| [백엔드](backend/) | 37개 | 정상 |
 | [프론트엔드](frontend/) | 51개 | 정상 |
 | [확장 시스템](extension/) | 31개 | 정상 |
 | 공통 | 20개 | 정상 |
@@ -125,7 +125,7 @@ G7 이 제공하는 REST API 의 엔드포인트별 요청 파라미터·응답 
 <!-- AUTO-GENERATED-START: docs-readme-full-list -->
 ## 카테고리별 전체 문서 목록
 
-### 백엔드 (36개)
+### 백엔드 (37개)
 
 | 문서 | 제목 |
 |------|------|
@@ -155,6 +155,7 @@ G7 이 제공하는 REST API 의 엔드포인트별 요청 파라미터·응답 
 | [pagination.md](backend/pagination.md) | 대용량 목록 페이지네이션 (Pagination) |
 | [README.md](backend/README.md) | 백엔드 개발 가이드 |
 | [response-helper.md](backend/response-helper.md) | API 응답 규칙 (ResponseHelper) |
+| [reverse-proxy.md](backend/reverse-proxy.md) | 리버스 프록시 환경 (Reverse Proxy) |
 | [routing.md](backend/routing.md) | 라우트 네이밍 및 경로 |
 | [search-system.md](backend/search-system.md) | Scout 검색 엔진 시스템 (Search System) |
 | [seo-system.md](backend/seo-system.md) | SEO 페이지 생성기 시스템 (SEO Page Generator) |

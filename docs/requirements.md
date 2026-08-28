@@ -293,11 +293,16 @@ Composer 설치 방식을 선택할 때만 필요하다.
 | 환경 | 요구사항 |
 |------|---------|
 | 프로덕션 | **HTTPS 필수** |
+| 앞단 종단 구성 (ALB·CloudFront·Cloudflare·nginx·ngrok) | HTTPS + `.env` 의 `TRUSTED_PROXIES` 지정 |
 
 - 설치 단계에서는 HTTPS 여부를 경고로 안내하며 설치를 차단하지 않는다. 정책상 필수라는
   선언은 유지하되, 자동으로 강제되지는 않으므로 운영자가 직접 확인해야 한다
 - Laravel Reverb WebSocket도 `wss://` 프로토콜 사용 (`REVERB_SCHEME=https`)
-- Sanctum 세션 인증 시 `SESSION_SECURE_COOKIE=true` 설정 권장
+- Sanctum 세션 인증 시 `SESSION_SECURE_COOKIE=true` 설정 권장. 미설정 시 요청 스킴으로
+  자동 판정되므로, 앞단 종단 구성에서는 `TRUSTED_PROXIES` 가 지정되어야 그 판정이 맞는다
+- TLS 를 앞단에서 종단하고 앱에는 HTTP 로 전달하는 구성에서는 `APP_URL` 을 `https://` 로
+  두는 것만으로 부족하다. 신뢰할 프록시를 지정하지 않으면 화면 표시·결제 통보 수신·IP 기록이
+  어긋난다 — [backend/reverse-proxy.md](backend/reverse-proxy.md)
 
 ---
 

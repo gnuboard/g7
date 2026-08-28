@@ -654,6 +654,9 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::get('/', [AdminSettingsController::class, 'index'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.index');
         Route::post('/', [AdminSettingsController::class, 'store'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.store');
         Route::get('system-info', [AdminSettingsController::class, 'systemInfo'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.system-info');
+        // 읽기 전용 진단 (#124). 값 편집 엔드포인트는 두지 않는다 — 편집은 .env 전용.
+        // `{key}` 와일드카드보다 먼저 등록해야 그 라우트에 흡수되지 않는다.
+        Route::get('trusted-proxy', [AdminSettingsController::class, 'trustedProxy'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.trusted-proxy');
         Route::get('app-key', [AdminSettingsController::class, 'getAppKey'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.app-key');
         Route::post('regenerate-app-key', [AdminSettingsController::class, 'regenerateAppKey'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.regenerate-app-key');
         Route::post('clear-cache', [AdminSettingsController::class, 'clearCache'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.clear-cache');
