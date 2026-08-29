@@ -458,7 +458,7 @@ function extractDependenciesDetailedFromJson(array $data): array
     $rawDeps = $data['dependencies'] ?? [];
     $detailed = [];
 
-    if (!is_array($rawDeps)) {
+    if (! is_array($rawDeps)) {
         return $detailed;
     }
 
@@ -519,7 +519,7 @@ try {
     // Admin 템플릿 필수 검증
     if (empty($templates['admin'])) {
         http_response_code(400);
-        echo json_encode([
+        echo installer_json_encode([
             'success' => false,
             'error' => 'no_admin_template',
             'error_message' => 'Admin template is required but not found. Please ensure at least one admin template exists in the templates/_bundled directory.',
@@ -528,7 +528,7 @@ try {
     }
 
     // 결과 반환
-    echo json_encode([
+    echo installer_json_encode([
         'success' => true,
         'data' => [
             'admin_templates' => $templates['admin'],
@@ -541,7 +541,7 @@ try {
 
 } catch (Throwable $e) {
     http_response_code(500);
-    echo json_encode([
+    echo installer_json_encode([
         'success' => false,
         'error' => $e->getMessage(),
     ], JSON_UNESCAPED_UNICODE);

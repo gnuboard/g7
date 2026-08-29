@@ -692,6 +692,10 @@ ini_set(\'zlib.output_compression\', \'off\');
 
     // 설치 진행 중단 감지
     'error_installation_stuck' => '설치가 응답하지 않습니다. 서버 워커가 명령 실행 중 멈췄을 수 있습니다. 새로고침하거나 재시도하세요. 문제가 반복되면 storage/logs/installation.log 를 확인해주세요.',
+    // 서버가 본문 없는 응답을 돌려준 경우 (gnuboard/g7#62)
+    'error_empty_server_response' => '서버가 빈 응답을 반환했습니다. 서버 설정이나 계정 이름·경로에 사용된 문자로 인해 응답이 만들어지지 못했을 수 있습니다. storage/logs/installation.log 를 확인해주세요.',
+    'error_invalid_server_response' => '서버 응답을 해석할 수 없습니다. 응답에 오류 메시지나 경고문이 섞였을 수 있습니다. storage/logs/installation.log 를 확인해주세요.',
+    'error_polling_response_invalid' => '설치 진행 상황을 읽어오지 못했습니다. 서버가 올바른 형식의 응답을 반환하지 않고 있습니다. storage/logs/installation.log 를 확인한 뒤 다시 시도해주세요.',
     'extension_load_failed' => '확장 기능 목록을 불러오는데 실패했습니다.',
     'no_admin_template_error' => '관리자 템플릿이 필요하지만 찾을 수 없습니다. templates 디렉토리에 최소 1개 이상의 관리자 템플릿이 있는지 확인해주세요.',
     'selection_summary' => '선택 요약',

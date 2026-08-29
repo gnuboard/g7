@@ -692,6 +692,10 @@ Firewalls or proxies may be blocking long-lived HTTP connections.',
 
     // Installation stuck detection
     'error_installation_stuck' => 'Installation has stopped responding. The server worker may be stuck running a command. Please refresh and retry. If the problem persists, check storage/logs/installation.log.',
+    // Server returned a response with no body (gnuboard/g7#62)
+    'error_empty_server_response' => 'The server returned an empty response. The response may have failed to build because of the server configuration or characters used in the account name or path. Please check storage/logs/installation.log.',
+    'error_invalid_server_response' => 'The server response could not be parsed. It may contain an error message or warning mixed into the output. Please check storage/logs/installation.log.',
+    'error_polling_response_invalid' => 'Could not read the installation progress. The server is not returning a correctly formatted response. Please check storage/logs/installation.log and try again.',
     'extension_load_failed' => 'Failed to load extension list.',
     'no_admin_template_error' => 'Admin template is required but not found. Please ensure at least one admin template exists in the templates directory.',
     'selection_summary' => 'Selection Summary',

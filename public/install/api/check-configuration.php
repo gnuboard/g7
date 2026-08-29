@@ -15,6 +15,7 @@ use App\Support\PrivilegedDatabaseAccounts;
 
 // 실행 바이너리 경로 허용 형태 정책 — 인스톨러 API 와 설치 워커가 같은 규칙을 공유한다.
 // 한쪽만 고치면 다른 쪽이 우회로가 되므로 의존성 없는 공용 파일로 두고 양쪽에서 로드한다.
+require_once __DIR__.'/../includes/utf8.php';
 require_once __DIR__.'/../includes/binary-path-policy.php';
 
 /**
@@ -87,7 +88,7 @@ class ValidationApi
         $requirements['is_windows'] = isWindows();
 
         // JSON 응답 반환
-        echo json_encode($requirements, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        echo installer_json_encode($requirements, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
     }
 
     /**
@@ -102,7 +103,7 @@ class ValidationApi
         // POST 메서드만 허용
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             http_response_code(405);
-            echo json_encode([
+            echo installer_json_encode([
                 'success' => false,
                 'message' => lang('api_method_not_allowed'),
             ], JSON_UNESCAPED_UNICODE);
@@ -204,7 +205,7 @@ class ValidationApi
             }
 
             // 성공 응답
-            echo json_encode([
+            echo installer_json_encode([
                 'success' => true,
                 'message' => $message,
                 'type' => $type,
@@ -229,7 +230,7 @@ class ValidationApi
             logInstallationError(lang('error_db_connection_failed', ['error' => $e->getMessage()]), $e);
 
             // 에러 응답 (200 OK + success: false)
-            echo json_encode([
+            echo installer_json_encode([
                 'success' => false,
                 'message' => lang('error_db_connection_failed_detail', ['type' => ($isReadDb ? 'Read' : 'Write'), 'error' => $e->getMessage()]),
                 'type' => $type ?? 'write',
@@ -250,7 +251,7 @@ class ValidationApi
             logInstallationError(lang('error_db_test_failed'), $e);
 
             // 에러 응답 (200 OK + success: false)
-            echo json_encode([
+            echo installer_json_encode([
                 'success' => false,
                 'message' => $e->getMessage(),
                 'type' => $type ?? 'write',
@@ -774,7 +775,7 @@ class ValidationApi
         $phpForComposer = ! empty($found) ? $found[0]['path'] : 'php';
         $composerResult = $this->detectComposerBinary($phpForComposer);
 
-        echo json_encode([
+        echo installer_json_encode([
             'success' => ! empty($found),
             'binaries' => $found,
             'default_php_available' => $defaultPhpAvailable,
@@ -833,7 +834,7 @@ class ValidationApi
 
         $result = $this->validatePhpPath($path);
 
-        echo json_encode([
+        echo installer_json_encode([
             'success' => $result['valid'],
             'version' => $result['version'],
             'message' => $result['message'],
@@ -856,7 +857,7 @@ class ValidationApi
 
         $result = $this->validateComposerPath($composerPath, $phpPath);
 
-        echo json_encode([
+        echo installer_json_encode([
             'success' => $result['valid'],
             'version' => $result['version'],
             'message' => $result['message'],
@@ -871,7 +872,7 @@ class ValidationApi
     {
         $path = $_GET['path'] ?? '';
         if (empty($path)) {
-            echo json_encode(['success' => false, 'message' => lang('error_path_required')], JSON_UNESCAPED_UNICODE);
+            echo installer_json_encode(['success' => false, 'message' => lang('error_path_required')], JSON_UNESCAPED_UNICODE);
 
             return;
         }
@@ -881,7 +882,7 @@ class ValidationApi
         // 상대경로 부모 추적이 필요한 시나리오가 없다.
         $hasParentSegment = preg_match('#(^|[/\\\\])\.\.([/\\\\]|$)#', $path) === 1;
         if ($hasParentSegment || str_contains($path, "\0")) {
-            echo json_encode([
+            echo installer_json_encode([
                 'success' => false,
                 'message' => lang('error_core_pending_path_invalid'),
             ], JSON_UNESCAPED_UNICODE);
@@ -898,7 +899,7 @@ class ValidationApi
         if ($resolved === false || ! is_dir($resolved)) {
             // 존재 여부/타입 차이를 응답으로 분기하지 않고 단일 메시지로 통일하여
             // 임의 경로 enumeration 신호 차단.
-            echo json_encode([
+            echo installer_json_encode([
                 'success' => false,
                 'message' => lang('error_core_pending_path_invalid'),
             ], JSON_UNESCAPED_UNICODE);
@@ -907,7 +908,7 @@ class ValidationApi
         }
 
         $writable = is_writable($resolved);
-        echo json_encode([
+        echo installer_json_encode([
             'success' => $writable,
             'message' => $writable
                 ? lang('success_core_pending_path')
@@ -1147,7 +1148,7 @@ class ValidationApi
     private function error400(string $message): void
     {
         http_response_code(400);
-        echo json_encode([
+        echo installer_json_encode([
             'success' => false,
             'error' => 'Bad Request',
             'message' => $message,
@@ -1167,7 +1168,7 @@ class ValidationApi
 
         // 에러 응답
         http_response_code(500);
-        echo json_encode([
+        echo installer_json_encode([
             'success' => false,
             'error' => 'Internal Server Error',
             'message' => $e->getMessage(),

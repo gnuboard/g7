@@ -11,6 +11,7 @@ use App\Seo\Contracts\SeoCacheManagerInterface;
 use App\Support\ConfigCacheHelper;
 use App\Support\ExtensionSettingsMirror;
 use App\Support\OpcacheStatus;
+use App\Support\ProcessOutputEncoding;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -1496,7 +1497,10 @@ class SettingsService
         if (PHP_OS_FAMILY === 'Windows') {
             $output = @shell_exec('powershell -NoProfile -NonInteractive -Command "(Get-CimInstance Win32_Processor | Select-Object -First 1).Name" 2>&1');
             if ($output) {
-                $name = trim($output);
+                // 2>&1 로 합쳐진 오류 문장은 시스템 코드페이지(한국어 Windows = CP949)로 출력된다.
+                // 정규화하지 않으면 이 값이 시스템 정보 API 응답에 실려 JsonResponse 직렬화가
+                // Malformed UTF-8 로 500 을 낸다 (gnuboard/g7#62 와 동형).
+                $name = trim(ProcessOutputEncoding::normalize($output));
                 if ($name !== '' && ! str_contains(strtolower($name), 'error')) {
                     return $name;
                 }
@@ -1504,7 +1508,7 @@ class SettingsService
 
             $output = @shell_exec('wmic cpu get name 2>&1');
             if ($output) {
-                $lines = explode("\n", trim($output));
+                $lines = explode("\n", trim(ProcessOutputEncoding::normalize($output)));
                 if (isset($lines[1]) && trim($lines[1]) !== '') {
                     return trim($lines[1]);
                 }
