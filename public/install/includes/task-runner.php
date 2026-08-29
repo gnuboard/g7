@@ -578,14 +578,15 @@ if (! function_exists('installComposerDependenciesSSE')) {
             $line = fgets($pipes[1]);
             if ($line !== false) {
                 $line = trim($line);
-                // composer stdout 이 시스템 코드페이지(Windows CP949 등)로 출력하거나
-                // 진행바(\r 갱신)가 non-blocking 읽기와 겹쳐 임의 바이트 경계에서 잘리면
-                // invalid UTF-8 바이트가 섞인다. SSE 응답(progress-emitter 의 json_encode)과
-                // 폴링 응답(state-management) 양쪽이 무력화되지 않도록 로그 전송 전 정규화한다.
+                // composer stdout 은 시스템 코드페이지(Windows CP949 등)로 출력되고,
+                // 진행바 갱신이 non-blocking 읽기와 겹치면 임의 바이트 경계에서 잘려
+                // invalid UTF-8 바이트가 섞인다. SSE 응답(progress-emitter)과
+                // 폴링 응답(state-management) 양쪽이 무력화되지 않도록 전송 전 정규화한다.
+                //
+                // 정규화는 복원 가능한 코드페이지 출력(한글 경로·메시지)을 먼저 되살리므로,
+                // 이전의 mb_scrub 단독 처리와 달리 한글이 U+FFFD 로 훼손되지 않는다.
                 // (gnuboard/g7#62 — addLog 최종 방어와 이중 안전망)
-                if ($line !== '' && ! mb_check_encoding($line, 'UTF-8')) {
-                    $line = mb_scrub($line, 'UTF-8');
-                }
+                $line = installer_utf8_normalize($line);
                 if (! empty($line)) {
                     sendSSEEvent('log', ['message' => $line]);
                 }
@@ -1685,7 +1686,7 @@ if (! function_exists('createSettingsJsonSSE')) {
                 ];
                 $data = array_merge($data, $settings);
 
-                $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+                $json = installer_json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
                 $filePath = $settingsDir.'/'.$category.'.json';
 
                 file_put_contents($filePath, $json, LOCK_EX);

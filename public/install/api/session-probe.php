@@ -64,10 +64,10 @@ $sessionProbeLibraryMode = defined('SESSION_PROBE_LIBRARY') && constant('SESSION
 
 if (! $sessionProbeLibraryMode) {
     // 정식 진입점 — config / session / functions / guard 로드
-    require_once __DIR__ . '/../includes/config.php';
-    require_once __DIR__ . '/../includes/session.php';
-    require_once __DIR__ . '/../includes/functions.php';
-    require_once __DIR__ . '/_guard.php';
+    require_once __DIR__.'/../includes/config.php';
+    require_once __DIR__.'/../includes/session.php';
+    require_once __DIR__.'/../includes/functions.php';
+    require_once __DIR__.'/_guard.php';
     installer_guard_or_410();
 
     header('Content-Type: application/json; charset=utf-8');
@@ -75,18 +75,18 @@ if (! $sessionProbeLibraryMode) {
 
     if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
         http_response_code(405);
-        echo json_encode(['error' => 'GET method required'], JSON_UNESCAPED_UNICODE);
+        echo installer_json_encode(['error' => 'GET method required'], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
     $action = $_GET['action'] ?? '';
 
     if ($action === 'set') {
-        echo json_encode(sessionProbeSet(), JSON_UNESCAPED_UNICODE);
+        echo installer_json_encode(sessionProbeSet(), JSON_UNESCAPED_UNICODE);
     } elseif ($action === 'verify') {
-        echo json_encode(sessionProbeVerify(), JSON_UNESCAPED_UNICODE);
+        echo installer_json_encode(sessionProbeVerify(), JSON_UNESCAPED_UNICODE);
     } else {
         http_response_code(400);
-        echo json_encode(['error' => 'Invalid action — use ?action=set or ?action=verify'], JSON_UNESCAPED_UNICODE);
+        echo installer_json_encode(['error' => 'Invalid action — use ?action=set or ?action=verify'], JSON_UNESCAPED_UNICODE);
     }
 }

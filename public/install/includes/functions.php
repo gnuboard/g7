@@ -7,6 +7,9 @@
  * 공통 유틸리티 함수를 제공합니다.
  */
 
+// UTF-8 정규화 / JSON 출력 헬퍼 (js_escape · getWebServerUser 가 사용)
+require_once __DIR__.'/utf8.php';
+
 /**
  * HTML 이스케이프 함수
  *
@@ -31,9 +34,12 @@ if (! function_exists('e')) {
  */
 function js_escape(mixed $value): string
 {
-    $json = json_encode($value, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE);
+    $json = installer_json_encode(
+        $value,
+        JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE
+    );
 
-    if ($json === false) {
+    if ($json === '') {
         return '""';
     }
 
@@ -571,6 +577,8 @@ function showStepFileNotFoundError(int $currentStep): void
  */
 function getDatabaseFieldHash(array $config, string $prefix): string
 {
+    // json-encode:allow — 캐시 키 계산용 md5 입력, 응답으로 나가지 않는다.
+    // 플래그를 바꾸면 해시값이 달라져 "필드가 바뀌었다" 는 오판이 생기므로 그대로 둔다.
     return md5(json_encode([
         $config["{$prefix}_host"] ?? '',
         $config["{$prefix}_port"] ?? '',
@@ -716,17 +724,22 @@ function getWebServerUser(): ?string
     }
 
     // 2. exec('whoami')
+    //
+    // whoami 는 UTF-8 이 아니라 그 명령을 실행한 콘솔의 코드페이지로 출력한다.
+    // 한국어 Windows(OEM 949)에서 계정명에 한글이 있으면 invalid UTF-8 바이트가 들어오고,
+    // 그 값이 응답에 실리면 json_encode 가 false 를 반환해 빈 본문(HTTP 200)이 나간다
+    // (gnuboard/g7#62). 반환 전에 반드시 정규화한다.
     if (function_exists('exec')) {
         $user = @exec('whoami');
         if (! empty($user)) {
-            return trim($user);
+            return installer_normalize_process_output(trim($user), 'whoami');
         }
     }
 
     // 3. 환경변수
     $envUser = getenv('USER') ?: getenv('APACHE_RUN_USER') ?: null;
     if (! empty($envUser)) {
-        return $envUser;
+        return installer_normalize_process_output($envUser, 'env:USER');
     }
 
     return null;
@@ -748,7 +761,7 @@ function getWebServerGroup(): ?string
 
     $envGroup = getenv('APACHE_RUN_GROUP') ?: null;
     if (! empty($envGroup)) {
-        return $envGroup;
+        return installer_normalize_process_output($envGroup, 'env:APACHE_RUN_GROUP');
     }
 
     return null;
