@@ -55,7 +55,7 @@ describe('CodeEditor Monaco 폴백', () => {
 
         const [{ paths }] = loaderState.config.mock.calls[0] as any[];
 
-        expect(paths.vs).toContain('vendor/monaco-editor/0.54.0/vs');
+        expect(paths.vs).toContain('vendor/monaco-editor/0.56.0/vs');
         expect(paths.vs).not.toMatch(/^https?:/);
     });
 

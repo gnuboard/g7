@@ -1087,6 +1087,10 @@ if (isset($_GET['ajax_action'])) {
                                     <span>신뢰 프록시 점검</span>
                                     <span class="text-[10px] opacity-60">(trusted-proxy:status)</span>
                                 </button>
+                                <button onclick="runCommand('security:audit-dependencies')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>의존성 취약점 점검</span>
+                                    <span class="text-[10px] opacity-60">(security:audit-dependencies)</span>
+                                </button>
                                 <button onclick="runCommand('seo:prune-stats')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>SEO 캐시 통계 정리</span>
                                     <span class="text-[10px] opacity-60">(seo:prune-stats)</span>
@@ -1565,13 +1569,41 @@ if (isset($_GET['ajax_action'])) {
             }
         }
 
-        async function runArtisanCommand(command, stepName) {
+        /** 화면이 커맨드 응답을 기다리는 기본 시간 (ms) */
+        const DEFAULT_COMMAND_TIMEOUT = 60000;
+
+        /**
+         * 기본 대기 시간 안에 끝나지 않는 커맨드의 개별 대기 시간 (ms).
+         *
+         * 잠금파일 전수를 레지스트리에 물어보는 점검처럼, 실행 자체가 기본 대기 시간에
+         * 근접하거나 넘는 커맨드가 있다. 화면이 먼저 포기하면 운영자에게는 타임아웃만
+         * 남고 결과가 도달하지 않는다 — 서버에서는 점검이 정상 수행 중인데도 화면만
+         * 보면 "점검이 실패했다" 로 읽힌다.
+         */
+        const COMMAND_TIMEOUTS = {
+            'security:audit-dependencies': 300000,
+        };
+
+        /**
+         * 커맨드 문자열에서 대기 시간을 정한다. 옵션은 무시하고 커맨드 이름으로만 찾는다.
+         *
+         * @param {string} command 실행할 Artisan 커맨드 (옵션 포함 가능)
+         * @returns {number} 대기 시간 (ms)
+         */
+        function resolveCommandTimeout(command) {
+            const name = String(command).trim().split(/\s+/)[0];
+
+            return COMMAND_TIMEOUTS[name] ?? DEFAULT_COMMAND_TIMEOUT;
+        }
+
+        async function runArtisanCommand(command, stepName, timeoutMs = null) {
+            const limit = timeoutMs ?? resolveCommandTimeout(command);
+
             try {
                 const url = `${window.location.pathname}?ajax_action=artisan&command=${encodeURIComponent(command)}`;
 
-                // 타임아웃 설정 (60초)
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 60000);
+                const timeoutId = setTimeout(() => controller.abort(), limit);
 
                 const response = await fetch(url, { signal: controller.signal });
                 clearTimeout(timeoutId);
@@ -1585,7 +1617,7 @@ if (isset($_GET['ajax_action'])) {
                 return { ...result, stepName };
             } catch (error) {
                 if (error.name === 'AbortError') {
-                    return { success: false, output: '⏱️ 타임아웃 (60초 초과)', stepName };
+                    return { success: false, output: `⏱️ 타임아웃 (${Math.round(limit / 1000)}초 초과)`, stepName };
                 }
                 return { success: false, output: '❌ ' + error.message, stepName };
             }

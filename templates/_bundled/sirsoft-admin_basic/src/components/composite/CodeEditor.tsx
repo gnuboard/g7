@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Editor, { Monaco, loader } from '@monaco-editor/react';
 import type * as monaco from 'monaco-editor';
+import { getJSONLanguageDefaults } from '../../config/monaco.config';
 
 /** 동봉한 Monaco 버전 (`dist/vendor/monaco-editor/{VERSION}/`) */
-const MONACO_VERSION = '0.54.0';
+const MONACO_VERSION = '0.56.0';
 
 /** 이 템플릿 식별자 */
 const TEMPLATE_ID = 'sirsoft-admin_basic';
@@ -72,7 +73,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
 
     // JSON 스키마 검증 설정
     if (language === 'json') {
-      monacoInstance.languages.json.jsonDefaults.setDiagnosticsOptions({
+      getJSONLanguageDefaults(monacoInstance)?.setDiagnosticsOptions({
         validate: true,
         schemaValidation: 'error',
         allowComments: false,

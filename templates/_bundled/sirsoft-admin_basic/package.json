@@ -12,7 +12,7 @@
     "scripts": {
         "vendor:font-awesome": "node scripts/vendor-inline-css.mjs node_modules/@fortawesome/fontawesome-free/css/all.min.css dist/vendor/font-awesome/6.4.0/webfonts dist/vendor/font-awesome/6.4.0/css/all.inlined.css",
         "vendor:flag-icons": "node scripts/vendor-copy.mjs node_modules/flag-icons dist/vendor/flag-icons/7.2.3 css/flag-icons.min.css flags LICENSE",
-        "vendor:monaco": "node scripts/vendor-copy.mjs node_modules/monaco-editor dist/vendor/monaco-editor/0.54.0 min/vs=vs LICENSE ThirdPartyNotices.txt",
+        "vendor:monaco": "node scripts/vendor-copy.mjs node_modules/monaco-editor dist/vendor/monaco-editor/0.56.0 min/vs=vs LICENSE ThirdPartyNotices.txt",
         "vendor:browser-image-compression": "node scripts/vendor-copy.mjs node_modules/browser-image-compression dist/vendor/browser-image-compression/2.0.2 dist/browser-image-compression.js=browser-image-compression.js LICENSE",
         "safelist": "node scripts/extract-safelist.cjs",
         "prebuild": "npm run safelist",
@@ -67,7 +67,7 @@
         "chart.js": "^4.5.1",
         "dompurify": "^3.3.1",
         "flag-icons": "7.2.3",
-        "monaco-editor": "0.54.0",
+        "monaco-editor": "0.56.0",
         "react-chartjs-2": "^5.3.1",
         "react-select": "^5.10.2",
         "yet-another-react-lightbox": "^3.27.0"
