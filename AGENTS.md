@@ -102,13 +102,14 @@
 | [handlers.md](docs/frontend/templates/sirsoft-basic/handlers.md) | sirsoft-basic 핸들러 | setTheme/initTheme: 다크/라이트 모드 전환 (admin과 동일 키 공유) |
 | [layouts.md](docs/frontend/templates/sirsoft-basic/layouts.md) | sirsoft-basic 레이아웃 | 베이스: _user_base.json (헤더 + 푸터 + 모바일 네비 + 콘텐츠 슬롯) |
 
-### 확장 시스템 [extension/](docs/extension/) (30개)
+### 확장 시스템 [extension/](docs/extension/) (31개)
 
 | 문서 | 설명 | TL;DR 핵심 |
 |------|------|-----------|
 | [cache-driver.md](docs/extension/cache-driver.md) | 캐시 드라이버 시스템 (CacheInterface) | 모든 캐시 저장은 CacheInterface 사용 (Cache:: 직접 호출 금지) |
 | [changelog-rules.md](docs/extension/changelog-rules.md) | Changelog 규칙 (Changelog Rules) | 확장/코어 버전 업 시 CHANGELOG.md에 변경사항 기록 필수 (미기록 시 버전 업 불가) |
 | [editor-spec.md](docs/extension/editor-spec.md) | 편집기 스펙 (editor-spec.json) | editor-spec.json = 편집기 팔레트/스타일 컨트롤/중첩 규칙/샘플 데이터/레시피의 선언 (... |
+| [extension-documentation.md](docs/extension/extension-documentation.md) | 확장 개발자 문서 (Extension Documentation) | 확장마다 AGENTS.md(개발자·에이전트용) + README.md(사람용) + docs/(상세) 를 갖는다 |
 | [extension-manager.md](docs/extension/extension-manager.md) | ExtensionManager (확장 관리자) | composer.json 수정 없음 - 런타임 오토로드 방식 사용 |
 | [extension-update-system.md](docs/extension/extension-update-system.md) | 확장 업데이트 시스템 (Extension Update System) | 업데이트 감지 우선순위: GitHub > _bundled (2단계, _pending 미참여) |
 | [hooks.md](docs/extension/hooks.md) | 훅 시스템 (Hook System) | Action 훅: doAction() - 부가 작업 (로그, 알림, 캐시) |
@@ -460,6 +461,32 @@ Icon 은 `<i>` 글리프라 박스 크기가 곧 `font-size` 다. `w-N h-N` 은 
 
 > 상세: [module-assets.md](docs/extension/module-assets.md) "사용자 추가 에셋", [static-asset-publishing.md](docs/backend/static-asset-publishing.md)
 > 정적 검사가 외부 자산 URL 과 번들 확장의 `custom/` 배포를 차단한다. 서술자 형태와 교체 2경로 보존은 테스트가 잠근다.
+
+### 확장은 자기 개발자 문서를 소유한다
+
+`docs/api/**` 는 "엔드포인트가 무엇을 받고 무엇을 돌려주는가" 만 답한다. 확장을 고치려는 쪽이 실제로 묻는 것은 그 앞이다 — **왜 이렇게 설계됐는가 / 어디를 확장해야 하는가 / 무엇을 건드리면 안 되는가.** 그 답이 코드 안에만 있으면 매번 `src/` 전체를 훑어 구조를 재발견하게 되고, 확장이 발행하는 훅은 확장점인데도 사실상 비공개가 된다.
+
+확장마다 `AGENTS.md`(고치는 쪽) · `README.md`(도입·운영 쪽) · `docs/**`(상세)를 두고, 코드에서 실측되는 표는 `php artisan ext:docgen` 이 유지한다.
+
+| ❌ 금지 | ✅ 올바른 사용 |
+|--------|---------------|
+| 확장 표면(훅·라우트·권한·모델·레이아웃·핸들러)을 바꾸고 그 확장 문서를 그대로 둠 | 같은 작업 단위에 `ext:docgen --scope={type}:{id}` 재실행 + 낡은 서술 정정 |
+| 자동 생성 블록(`@generated:*`) 안쪽을 손으로 고침 | 생성기가 교체하는 자리다 — 코드를 고치거나 블록 **밖**에 서술한다 |
+| 생성기에 파괴적 재생성 플래그(`--force`)를 추가 | 기본 동작이 "블록 안쪽 교체" 다. 사람 서술이 소실될 경로를 만들지 않는다 |
+| 문서에 없는 블록 키를 생성기가 임의 위치에 주입 | 누락으로 보고하고 사람이 마커 자리를 정한다 (문서 구조는 사람 소유) |
+| 필수 문서·섹션·블록 목록을 검사 스크립트에 복제 | `ExtensionDocScaffolder::DOCUMENTS` 단일 SSoT — 스크립트는 `ext:docgen --check --json` 을 소비한다 |
+| `TODO:` 마커를 추측으로 채움 | 코드 근거를 읽어 서술한다 — 다섯 자리(의도·흐름·금지패턴·사용방법·트러블슈팅)는 생성기가 채울 수 없는 **왜** 다 |
+| `5. 수정 시 동반 의무` 에 코어 횡단 규정을 전부 나열 | 그 확장에 **실제로 걸리는 것만** 추린다 — 전부 적으면 정작 걸리는 항목이 묻힌다 |
+| 신규 확장을 문서 없이 스캐폴딩 | `php artisan ext:docgen --scope={type}:{id} --init` 으로 골격을 함께 만든다 — 없으면 21번째 확장부터 다시 문서 없이 태어난다 |
+| 확장 문서를 활성 디렉토리에서 작성 | `_bundled` 에서만 작성하고 update 커맨드로 반영 (문서만이면 빌드 불필요) |
+| 확장이 훅을 추가할 때 코어 문서를 고침 | 훅 집계는 그 확장의 `docs/extension-points.md` 소유 — 코어에는 총계와 링크만 |
+
+이 결함군은 오류를 남기지 않는다. 문서가 코드와 어긋난 채로 계속 읽히는 것이 유일한 증상이며, 훅 이름이 어긋나면 그 확장을 잡으려던 쪽이 **잡히지 않는 훅을 구독**하게 된다(예외도 경고도 없이 리스너가 호출되지 않을 뿐이다).
+
+mermaid 문법 오류는 GitHub 렌더 시점에만 드러난다. 구조 검사가 잡을 수 있는 것은 선언된 다이어그램 종류·빈 본문·괄호 균형까지이므로, 새 형식은 실제 렌더를 눈으로 확인한다.
+
+> 상세: [extension-documentation.md](docs/extension/extension-documentation.md)
+> 정적 검사가 확장 표면 변경 시 문서 미동반과 미채움 마커 잔존을 검출한다. 생성기의 비파괴 계약(블록 밖 손실 0 · 재실행 멱등 · 미존재 키 미주입)과 필수 문서·섹션·블록 목록은 테스트가 잠근다.
 
 ### 의존성 감사 신호는 거짓일 수 있다
 
@@ -1388,6 +1415,7 @@ php artisan migrate:rollback
 
 | 수정 대상 파일 패턴 | 작업 전 필수 참조 |
 | ------------------- | ------------------ |
+| `(modules\|plugins\|templates)/_bundled/{id}/**` (그 확장의 소스 전반) | 그 확장의 `AGENTS.md` · `docs/README.md` — 설계 의도·디렉토리 지도·확장점·**수정 시 동반 의무**·금지 패턴. 수정 후 표면이 바뀌었으면 `php artisan ext:docgen --scope={type}:{id}` ([extension-documentation.md](docs/extension/extension-documentation.md)) |
 | `app/Http/Controllers/**` | [controllers.md](docs/backend/controllers.md), [api-documentation.md](docs/backend/api-documentation.md) |
 | `app/Services/**` | [service-repository.md](docs/backend/service-repository.md) |
 | `app/Http/Requests/**` | [validation.md](docs/backend/validation.md) |

@@ -11,7 +11,7 @@
 |----------|---------|----------|
 | [백엔드](backend/) | 37개 | 정상 |
 | [프론트엔드](frontend/) | 51개 | 정상 |
-| [확장 시스템](extension/) | 31개 | 정상 |
+| [확장 시스템](extension/) | 32개 | 정상 |
 | 공통 | 20개 | 정상 |
 | [AI 도구](ai-tools/) | - | 정상 |
 
@@ -223,13 +223,14 @@ G7 이 제공하는 REST API 의 엔드포인트별 요청 파라미터·응답 
 | [handlers.md](frontend/handlers.md) | sirsoft-basic 핸들러 |
 | [layouts.md](frontend/layouts.md) | sirsoft-basic 레이아웃 |
 
-### 확장 시스템 (31개)
+### 확장 시스템 (32개)
 
 | 문서 | 제목 |
 |------|------|
 | [cache-driver.md](extension/cache-driver.md) | 캐시 드라이버 시스템 (CacheInterface) |
 | [changelog-rules.md](extension/changelog-rules.md) | Changelog 규칙 (Changelog Rules) |
 | [editor-spec.md](extension/editor-spec.md) | 편집기 스펙 (editor-spec.json) |
+| [extension-documentation.md](extension/extension-documentation.md) | 확장 개발자 문서 (Extension Documentation) |
 | [extension-manager.md](extension/extension-manager.md) | ExtensionManager (확장 관리자) |
 | [extension-update-system.md](extension/extension-update-system.md) | 확장 업데이트 시스템 (Extension Update System) |
 | [hooks.md](extension/hooks.md) | 훅 시스템 (Hook System) |
