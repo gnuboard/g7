@@ -149,6 +149,11 @@ class ExtensionDocScaffolder
             'blocks' => [
                 '레이아웃 목록' => 'layouts',
                 '라우트 매핑' => 'layout-map',
+                // 템플릿의 `extensions/{module-identifier}/*.json` 은 그 모듈/플러그인이
+                // 발행한 레이아웃 확장 조각을 이 템플릿이 오버라이드한 것이다(모듈/플러그인
+                // 쪽 `resources/extensions/` 와는 반대 방향 — 발행이 아니라 대체). 모듈/플러그인
+                // 문서의 `docs/extension-points.md` 는 템플릿에 존재하지 않아 자리가 없었다.
+                '확장 오버라이드' => 'template-overrides',
             ],
         ],
         'docs/handlers.md' => [
@@ -538,6 +543,7 @@ class ExtensionDocScaffolder
             'hooks-subscribed' => $this->renderHooksSubscribed($ctx),
             'listeners' => $this->renderListeners($ctx),
             'layout-extensions' => $this->renderLayoutExtensions($ctx),
+            'template-overrides' => $this->renderLayoutExtensions($ctx),
             'middleware' => $this->renderMiddleware($ctx),
             'channels' => $this->renderChannels($ctx),
             'schedules' => $this->renderSchedules($ctx),
@@ -963,6 +969,7 @@ class ExtensionDocScaffolder
                 ['제공 컴포넌트', (string) $frontend['components']['total'].'개', $this->docLink($ctx, 'docs/components.md', '제공 컴포넌트')],
                 ['레이아웃', (string) count($frontend['layouts']).'개', $this->docLink($ctx, 'docs/layouts.md', '레이아웃 목록')],
                 ['전용 핸들러', (string) count($frontend['handlers']['names']).'개', $this->docLink($ctx, 'docs/handlers.md', '템플릿 전용 핸들러')],
+                ['확장 오버라이드', (string) count($frontend['layoutExtensions']).'개', $this->docLink($ctx, 'docs/layouts.md', '확장 오버라이드')],
             ];
         }
 
@@ -1250,23 +1257,37 @@ class ExtensionDocScaffolder
     {
         $files = $ctx['frontend']['layoutExtensions'];
         $declared = $ctx['surface']['values']['getLayoutExtensions'] ?? [];
+        // 템플릿의 `extensions/{module-identifier}/*.json` 은 그 모듈/플러그인이 발행한
+        // 조각을 이 템플릿이 대체하는 것이지, 모듈/플러그인처럼 밖으로 발행하는 것이 아니다.
+        $isTemplate = ($ctx['record']['type'] ?? null) === ExtensionInventory::TYPE_TEMPLATE;
 
         if ($files === [] && ! is_array($declared)) {
-            return $this->none('레이아웃 확장이 없습니다.');
+            return $this->none($isTemplate ? '오버라이드하는 레이아웃 확장 조각이 없습니다.' : '레이아웃 확장이 없습니다.');
         }
 
         if ($files === [] && $declared === []) {
-            return $this->none('레이아웃 확장이 없습니다.');
+            return $this->none($isTemplate ? '오버라이드하는 레이아웃 확장 조각이 없습니다.' : '레이아웃 확장이 없습니다.');
         }
+
+        $known = array_flip($files);
 
         $rows = [];
         foreach ($files as $file) {
-            $rows[] = [$this->code($file), '다른 확장/템플릿 레이아웃에 주입되는 조각'];
+            $rows[] = [$this->code($file), $isTemplate ? '모듈/플러그인 확장 조각을 대체하는 오버라이드' : '다른 확장/템플릿 레이아웃에 주입되는 조각'];
         }
 
+        // `getLayoutExtensions()` 기본 구현(AbstractModule/AbstractPlugin)은 위 파일 목록과
+        // 같은 디렉토리를 glob() 한 절대경로라 100% 중복이다. 확장-상대 경로로 정규화한 뒤
+        // 이미 실린 파일은 건너뛰고, 확장이 오버라이드해 다른 대상을 선언한 경우만 싣는다.
         if (is_array($declared)) {
             foreach ($declared as $key => $value) {
-                $rows[] = [$this->code(is_string($key) ? $key : (string) $value), '`getLayoutExtensions()` 선언'];
+                $raw = is_string($key) ? $key : (is_string($value) ? $value : (string) $value);
+                $rel = $this->relativeToExtension($ctx, $raw);
+                if (isset($known[$rel])) {
+                    continue;
+                }
+                $known[$rel] = true;
+                $rows[] = [$this->code($rel), '`getLayoutExtensions()` 선언'];
             }
         }
 
@@ -1372,7 +1393,11 @@ class ExtensionDocScaffolder
 
         $rows = [];
         foreach ($definitions as $key => $definition) {
-            $name = is_string($key) ? $key : (is_array($definition) ? ($definition['key'] ?? $definition['event'] ?? '-') : (string) $definition);
+            // getNotificationDefinitions() 의 표준 계약(AbstractModule/AbstractPlugin 소비처인
+            // NotificationSyncHelper 기준)은 리스트 배열 + 각 원소의 'type' 키다. 'key'/'event'
+            // 는 어떤 확장도 쓰지 않아, 문자열 키가 아닌 한(list 배열이면 전부 정수 키) 이 표는
+            // 항상 '-' 만 찍고 있었다.
+            $name = is_string($key) ? $key : (is_array($definition) ? ($definition['type'] ?? $definition['key'] ?? $definition['event'] ?? '-') : (string) $definition);
             $channels = is_array($definition) ? ($definition['channels'] ?? null) : null;
 
             $rows[] = [
@@ -1590,7 +1615,7 @@ class ExtensionDocScaffolder
             $extra[] = '기본값 파일: '.$this->code($this->relativeToExtension($ctx, $defaultsPath));
         }
         if (is_string($layout) && $layout !== '') {
-            $extra[] = '설정 화면 레이아웃: '.$this->code($layout);
+            $extra[] = '설정 화면 레이아웃: '.$this->code($this->relativeToExtension($ctx, $layout));
         }
 
         if ($extra !== []) {
@@ -1624,7 +1649,7 @@ class ExtensionDocScaffolder
             $layout = $ctx['surface']['values']['getSettingsLayout'] ?? null;
 
             if (is_string($layout) && $layout !== '') {
-                return '관리자 설정 화면이 있습니다 (레이아웃: '.$this->code($layout).'). 설정 항목은 화면에서 확인하세요.'
+                return '관리자 설정 화면이 있습니다 (레이아웃: '.$this->code($this->relativeToExtension($ctx, $layout)).'). 설정 항목은 화면에서 확인하세요.'
                     .(is_string($route) && $route !== '' ? ' 경로: '.$this->code($route) : '');
             }
 

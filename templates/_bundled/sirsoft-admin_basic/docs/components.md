@@ -1,35 +1,122 @@
-# sirsoft-admin_basic 컴포넌트
+# Admin Basic — 컴포넌트
 
-> **템플릿 식별자**: `sirsoft-admin_basic` (type: admin, v0.2.14)
-> **관련 문서**: [핸들러](./handlers.md) | [레이아웃](./layouts.md) | [컴포넌트 Props 레퍼런스](../../component-props.md)
+> 템플릿이 제공하는 컴포넌트 · 진입점: [AGENTS.md](../AGENTS.md)
 
----
+## 제공 컴포넌트
 
-## TL;DR (5초 요약)
+<!-- @generated:components START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
+컴포넌트 125개 (루트: `src/components`).
+
+| 분류 | 개수 |
+|---|---|
+| `basic` | 39개 |
+| `composite` | 80개 |
+| `layout` | 5개 |
+| `modals` | 1개 |
+<!-- @generated:components END -->
+
+<!-- @intent START -->
+세 분류(basic/composite/layout)는 "얼마나 많이 조합됐는가"로 나뉩니다 — basic 은 HTML 태그를
+그대로 래핑(`Div`→`<div>`)한 최소 단위, composite 는 basic 을 여러 개 조합해 UI 패턴을 캡슐화한
+것(`DataGrid`가 `Table`+`Pagination`+정렬 로직을 감싸는 식), layout 은 페이지 구조 자체(Grid/
+Flex/Container)를 정의합니다. 레이아웃 JSON 저작자는 이 구분을 몰라도 되지만("HTML 태그
+직접 사용 금지" 규정만 지키면 됨), 컴포넌트를 새로 추가하는 쪽은 이 구분에 맞는 디렉토리
+(`src/components/{basic,composite,layout}/`)에 넣어야 `components.json` 카탈로그와
+`editor-spec.json` 팔레트 분류가 어긋나지 않습니다.
+
+위 개수는 코드에서 실측되므로 시간이 지나면 달라집니다 — 이 문서에 구체적인 개수를 하드코딩해
+적지 않습니다(과거 버전 문서가 37/66/8 로 적었다가 실제로는 39/80/5+modals 1 이 되어 있었던
+사례가 있습니다). 정확한 전체 목록·Props 는 [component-props.md](../../../../docs/frontend/component-props.md)
+· [component-props-composite.md](../../../../docs/frontend/component-props-composite.md) 를
+따라갑니다 — 이 문서는 "이 템플릿에서만" 유효한 계약(필수 컴포넌트·AdminSidebar·SlotContainer)
+만 다룹니다.
+<!-- @intent END -->
+
+## 필수 컴포넌트 (모듈 호환성)
+
+모듈 개발자가 아래 컴포넌트만 사용하면 **다른 Admin 템플릿으로 교체해도 화면이 깨지지
+않습니다**. 목록의 SSoT 는 `config/template.php` 의 `required_admin_components` 이며, 아래
+표는 그 값을 그대로 옮긴 것입니다(코드가 SSoT — 표와 설정이 어긋나면 설정이 맞습니다).
+
+| 분류 | 컴포넌트 |
+|---|---|
+| Basic (27개) | `A`, `Button`, `Checkbox`, `Div`, `Form`, `H1`, `H2`, `H3`, `Icon`, `Img`, `Input`, `Label`, `Li`, `Nav`, `P`, `Section`, `Select`, `Span`, `Svg`, `Table`, `Tbody`, `Td`, `Textarea`, `Th`, `Thead`, `Tr`, `Ul` |
+| Composite (8개) | `Alert`, `Badge`, `Card`, `DataTable`, `FormField`, `Modal`, `PageHeader`, `Pagination` |
 
 ```text
-1. Basic 37개: HTML 래핑 (Div, Button, Input, Select, Form, A, H1~H4, Table 등)
-2. Composite 66개: UI 패턴 캡슐화 (DataGrid, Modal, PageHeader, Card, FileUploader 등)
-3. Layout 8개: 페이지 구조 (Container, Grid, Flex, SectionLayout, ThreeColumnLayout 등)
-4. 모듈은 필수 컴포넌트(27 basic + 15 composite)만 사용 → 모든 Admin 템플릿 호환 보장
-5. components.json에 등록 필수, Props는 이 문서 + component-props.md 참조
+✅ 필수 컴포넌트 목록에 있는 것만 사용 (다른 Admin 템플릿 호환 보장)
+✅ 템플릿의 베이스 레이아웃(`_admin_base`)을 extends
+❌ 이 템플릿에만 있는 커스텀 컴포넌트 사용 금지
 ```
 
----
+기본은 `validate_on_install: false` — 설치 시 필수 컴포넌트 검증은 기본적으로 수행되지 않고
+경고에 그칩니다(`block_on_failure: false`). 검증을 강제하려면 두 설정을 함께 켭니다.
 
-## 목차
+## AdminSidebar 상세
 
-1. [컴포넌트 개요](#컴포넌트-개요)
-2. [Basic Components (37개)](#basic-components-37개)
-3. [Composite Components (66개)](#composite-components-66개)
-4. [Layout Components (8개)](#layout-components-8개)
-5. [필수 컴포넌트 (모듈 호환성)](#필수-컴포넌트-모듈-호환성)
-6. [모듈 개발자 가이드](#모듈-개발자-가이드)
-7. [템플릿 개발자 가이드](#템플릿-개발자-가이드)
+계층형 관리자 메뉴를 그리는 컴포넌트로, 데이터 소스로 받은 메뉴 트리를 그대로 넘기면 됩니다.
 
----
+```typescript
+interface MenuItem {
+  id: string | number;
+  name: string | { ko: string; en: string };
+  slug: string;
+  url?: string | null;
+  icon?: string;              // FontAwesome 클래스 (예: "fas fa-home")
+  children?: MenuItem[];
+  is_active?: boolean;
+  module_id?: number | null;  // 모듈이 등록한 메뉴인지 식별
+}
 
-## 컴포넌트 개요
+interface AdminSidebarProps {
+  logo?: string;
+  logoAlt?: string;
+  menu: MenuItem[];           // 필수
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
+  className?: string;
+  currentLocale?: string;     // 미지정 시 G7Core.locale.current() 자동 사용
+  id?: string;                // 레이아웃 편집기 코어 일괄 ID
+}
+```
+
+아이콘은 `Icon` 컴포넌트(IconName enum)가 아니라 `I` 컴포넌트 + FontAwesome 클래스 문자열로
+렌더링됩니다 — 메뉴 API 가 `icon` 필드를 이미 `"fas fa-home"` 형태 클래스 문자열로 내려주기
+때문입니다. 새 메뉴 아이콘을 추가할 때 `Icon name="home"` 식으로 쓰면 렌더되지 않습니다.
+
+## SlotContainer 상세
+
+동적 슬롯 렌더링 컨테이너입니다 — 다른 컴포넌트가 `slot` prop 으로 자신이 속할 슬롯 ID 를
+표현식으로 지정하면(예: `"{{_local.isVisible ? 'basic_filters' : 'detail_filters'}}"`), 그
+표현식이 상태 변화에 따라 재평가되어 컴포넌트가 슬롯 사이를 동적으로 이동합니다.
+
+```typescript
+interface SlotContainerProps {
+  slotId: string;    // 필수 — 렌더링할 슬롯 ID
+  className?: string;
+}
+```
+
+```json
+{ "id": "category_filter", "type": "basic", "name": "Div", "slot": "{{_local.isVisible ? 'basic_filters' : 'detail_filters'}}", "slotOrder": 1, "children": [] }
+```
+
+```json
+{ "id": "basic_filters_container", "type": "composite", "name": "SlotContainer", "props": { "slotId": "basic_filters" } }
+```
+
+## 이관 원문 상세
+
+> 아래는 코어 `docs/frontend/templates/sirsoft-admin_basic/components.md` 에 있던 원문을
+> 이 문서로 옮긴 것입니다(#601). 이관 시점 그대로 보존하되, **코드가 SSoT 인 값과 어긋나는
+> 부분에는 정정 주석**을 달았습니다 — 실측 총계는 위 「제공 컴포넌트」 블록이, 필수 컴포넌트
+> 목록은 `config/template.php` 의 `required_admin_components` 가 SSoT 입니다.
+
+### 컴포넌트 개요
+
+> **정정(#601)**: 아래 개수는 이관 시점(2026-03) 문서 값입니다. 코드 실측은 basic 39 · composite 80 ·
+> layout 5 · modals 1 = **125종**이며 위 「제공 컴포넌트」 블록이 SSoT 입니다. 아래 목록에 없는
+> 컴포넌트가 있을 수 있습니다.
 
 | 타입 | 개수 | 설명 |
 |------|------|------|
@@ -43,11 +130,13 @@
 
 ---
 
-## Basic Components (37개)
+### Basic Components (37개)
+
+> **정정(#601)**: 제목의 개수는 이관 시점 문서 값입니다(코드 실측 39종). 목록 자체는 원문 그대로입니다.
 
 HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic 컴포넌트는 `className`, `children` props를 공통으로 지원합니다.
 
-### 텍스트/링크
+#### 텍스트/링크
 
 | 컴포넌트 | 설명 | 주요 Props | 바인딩 |
 |----------|------|-----------|--------|
@@ -62,7 +151,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | `Pre` | 서식 유지 텍스트 래퍼 | - | - |
 | `Code` | 인라인 코드 래퍼 | - | - |
 
-### 컨테이너
+#### 컨테이너
 
 | 컴포넌트 | 설명 | 주요 Props | 바인딩 |
 |----------|------|-----------|--------|
@@ -72,7 +161,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | `Form` | 폼 컨테이너 (자동 바인딩 지원) | - | - |
 | `Fragment` | React.Fragment — iterator에서 DOM 래퍼 없이 사용 | - | - |
 
-### 폼 입력
+#### 폼 입력
 
 | 컴포넌트 | 설명 | 주요 Props | 바인딩 |
 |----------|------|-----------|--------|
@@ -85,7 +174,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | `FileInput` | 파일 입력 (검증 포함) | accept, maxSize, onChange, onError, buttonText, placeholder, disabled | - |
 | `Button` | 버튼 | variant (`primary`\|`secondary`\|`danger`\|`success`), size (`sm`\|`md`\|`lg`) | - |
 
-### 테이블
+#### 테이블
 
 | 컴포넌트 | 설명 |
 |----------|------|
@@ -97,7 +186,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | `Th` | 테이블 헤더 셀 |
 | `Td` | 테이블 데이터 셀 |
 
-### 리스트
+#### 리스트
 
 | 컴포넌트 | 설명 |
 |----------|------|
@@ -105,7 +194,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | `Ol` | 순서 있는 리스트 |
 | `Li` | 리스트 아이템 |
 
-### 미디어/아이콘
+#### 미디어/아이콘
 
 | 컴포넌트 | 설명 | 주요 Props |
 |----------|------|-----------|
@@ -116,11 +205,13 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 
 ---
 
-## Composite Components (66개)
+### Composite Components (66개)
+
+> **정정(#601)**: 제목의 개수는 이관 시점 문서 값입니다(코드 실측 80종). 목록 자체는 원문 그대로입니다.
 
 기본 컴포넌트를 조합하여 UI 패턴을 캡슐화한 복합 컴포넌트입니다.
 
-### 데이터 표시
+#### 데이터 표시
 
 | 컴포넌트 | 설명 | 주요 Props |
 |----------|------|-----------|
@@ -133,7 +224,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | `EmptyState` | 데이터 없음 상태 표시 | title, description, iconName, illustrationSrc, ... |
 | `HtmlContent` | HTML 안전 렌더링 (DOMPurify XSS 방지) | content, isHtml, purifyConfig, text |
 
-### 폼/입력
+#### 폼/입력
 
 | 컴포넌트 | 설명 | 주요 Props |
 |----------|------|-----------|
@@ -152,14 +243,14 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | `FileUploader` | 파일 업로드 (드래그앤드롭, 이미지 압축) | attachmentableType, attachmentableId, collection, maxFiles, maxSize, ... |
 | `IconSelect` | 아이콘 선택 드롭다운 | value, onChange, options, placeholder, searchPlaceholder, ... |
 
-### 에디터
+#### 에디터
 
 | 컴포넌트 | 설명 | 주요 Props |
 |----------|------|-----------|
 | `HtmlEditor` | HTML/텍스트 편집기 (편집/미리보기 토글) | content, onChange, isHtml, onHtmlModeChange, previewMode, ... |
 | `CodeEditor` | JSON 코드 편집기 (Monaco Editor) | value, onChange, language, height, readOnly, ... |
 
-### 네비게이션
+#### 네비게이션
 
 | 컴포넌트 | 설명 | 주요 Props |
 |----------|------|-----------|
@@ -169,7 +260,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | `ActionMenu` | 드롭다운 액션 메뉴 | items, triggerLabel, triggerIconName, position, style |
 | `Dropdown` | 드롭다운 메뉴 | label, items, onItemClick, position, style |
 
-### 모달/다이얼로그
+#### 모달/다이얼로그
 
 | 컴포넌트 | 설명 | 주요 Props |
 |----------|------|-----------|
@@ -180,7 +271,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | `Toast` | 토스트 알림 | toasts, position, onRemove |
 | `Alert` | 알림 메시지 | type, message, dismissible, onDismiss |
 
-### 관리자 UI
+#### 관리자 UI
 
 | 컴포넌트 | 설명 | 주요 Props |
 |----------|------|-----------|
@@ -195,7 +286,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | `LanguageSelector` | 언어 선택 드롭다운 | availableLocales, languageText, apiEndpoint, onLanguageChange, inline |
 | `PageTransitionIndicator` | 페이지 전환 로딩 표시 | style |
 
-### 레이아웃 편집
+#### 레이아웃 편집
 
 | 컴포넌트 | 설명 | 주요 Props |
 |----------|------|-----------|
@@ -205,7 +296,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | `LayoutWarnings` | 레이아웃 경고 표시 | warnings |
 | `VersionList` | 버전 목록 아이템 | versions, selectedId, onSelect |
 
-### 확장 관리
+#### 확장 관리
 
 | 컴포넌트 | 설명 | 주요 Props |
 |----------|------|-----------|
@@ -213,7 +304,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | `ExtensionBadge` | 확장 섹션 뱃지 (identifier로 이름 자동 조회) | type, identifier, name, installedModules, installedPlugins, ... |
 | `ProductCard` | 상품 카드 (이미지, 제목, 가격, 액션) | imageUrl, imageAlt, title, subtitle, description, ... |
 
-### 고급 기능
+#### 고급 기능
 
 | 컴포넌트 | 설명 | 주요 Props |
 |----------|------|-----------|
@@ -233,7 +324,9 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 
 ---
 
-## Layout Components (8개)
+### Layout Components (8개)
+
+> **정정(#601)**: 제목의 개수는 이관 시점 문서 값입니다(코드 실측 5종). 목록 자체는 원문 그대로입니다.
 
 페이지 구조를 정의하는 레이아웃 컴포넌트입니다.
 
@@ -250,11 +343,11 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 
 ---
 
-## 필수 컴포넌트 (모듈 호환성)
+### 필수 컴포넌트 (모듈 호환성)
 
 모듈 개발자가 이 컴포넌트들만 사용하면 **모든 Admin 템플릿에서 동작이 보장**됩니다.
 
-### 필수 Basic (27개)
+#### 필수 Basic (27개)
 
 | 카테고리 | 컴포넌트 |
 |----------|----------|
@@ -265,7 +358,12 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | 리스트 | `Ul`, `Li` |
 | 미디어 | `Icon`, `Img`, `Svg` |
 
-### 필수 Composite (15개)
+#### 필수 Composite (15개)
+
+> **정정(#601)**: 아래 표는 `config/template.php` 의 `required_admin_components` 와 일치하지 않습니다 —
+> 실제 필수 Composite 는 위 「필수 컴포넌트 (모듈 호환성)」 절의 8종(`Alert` `Badge` `Card`
+> `DataTable` `FormField` `Modal` `PageHeader` `Pagination`)이며 설정 파일이 SSoT 입니다.
+> 아래 목록은 이관 시점 문서를 보존한 것이므로 필수 여부의 근거로 쓰지 않습니다.
 
 | 카테고리 | 컴포넌트 | 설명 |
 |----------|----------|------|
@@ -285,7 +383,10 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | | `AdminSidebar` | 관리자 사이드바 |
 | | `SlotContainer` | 동적 슬롯 렌더링 |
 
-### 설정 파일
+#### 설정 파일
+
+> **정정(#601)**: 아래 PHP 스니펫은 이관 시점 값입니다. 현재 `config/template.php` 의 실제 배열은 위
+> 「필수 컴포넌트 (모듈 호환성)」 절의 표(Basic 27 + Composite 8)와 일치합니다.
 
 필수 컴포넌트 목록은 `config/template.php`에 정의:
 
@@ -300,9 +401,9 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 
 ---
 
-## 모듈 개발자 가이드
+### 모듈 개발자 가이드
 
-### 핵심 원칙
+#### 핵심 원칙
 
 ```text
 ✅ 필수 컴포넌트 목록에 있는 컴포넌트만 사용
@@ -310,7 +411,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 ❌ 특정 템플릿에만 존재하는 커스텀 컴포넌트 사용 금지
 ```
 
-### 레이아웃 작성 예시
+#### 레이아웃 작성 예시
 
 ```json
 {
@@ -335,11 +436,11 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 
 ---
 
-## 템플릿 개발자 가이드
+### 템플릿 개발자 가이드
 
 Admin 타입 템플릿 개발 시 필수 컴포넌트를 반드시 구현해야 합니다.
 
-### 구현 체크리스트
+#### 구현 체크리스트
 
 ```text
 □ DataGrid - 정렬, 필터링, 페이지네이션 지원
@@ -358,18 +459,18 @@ Admin 타입 템플릿 개발 시 필수 컴포넌트를 반드시 구현해야 
 □ AdminSidebar - 계층형 메뉴, 다국어 지원
 ```
 
-### Props 인터페이스 일관성
+#### Props 인터페이스 일관성
 
 모든 Admin 템플릿은 동일한 Props 인터페이스를 구현해야 합니다. 상세 Props는 다음 문서를 참조:
 
-- [컴포넌트 Props 레퍼런스 (Basic)](../../component-props.md)
-- [컴포넌트 Props 레퍼런스 (Composite)](../../component-props-composite.md)
+- [컴포넌트 Props 레퍼런스 (Basic)](../../../../docs/frontend/component-props.md)
+- [컴포넌트 Props 레퍼런스 (Composite)](../../../../docs/frontend/component-props-composite.md)
 
 ---
 
-## AdminSidebar 상세
+### AdminSidebar 상세
 
-### MenuItem 인터페이스
+#### MenuItem 인터페이스
 
 ```typescript
 interface MenuItem {
@@ -383,7 +484,7 @@ interface MenuItem {
 }
 ```
 
-### AdminSidebarProps
+#### AdminSidebarProps
 
 ```typescript
 interface AdminSidebarProps {
@@ -397,14 +498,14 @@ interface AdminSidebarProps {
 }
 ```
 
-### 아이콘 처리
+#### 아이콘 처리
 
 ```text
 ✅ I 컴포넌트 + FontAwesome 클래스 (<I className="fas fa-home w-5 h-5" />)
 ❌ Icon 컴포넌트 + IconName enum (금지 — API가 FontAwesome 클래스 문자열 직접 제공)
 ```
 
-### 레이아웃 JSON 사용 예시
+#### 레이아웃 JSON 사용 예시
 
 ```json
 {
@@ -433,9 +534,9 @@ interface AdminSidebarProps {
 
 ---
 
-## SlotContainer 상세
+### SlotContainer 상세
 
-### SlotContainerProps
+#### SlotContainerProps
 
 ```typescript
 interface SlotContainerProps {
@@ -444,7 +545,7 @@ interface SlotContainerProps {
 }
 ```
 
-### 슬롯 시스템 동작
+#### 슬롯 시스템 동작
 
 ```text
 1. slot 속성 컴포넌트 → SlotContext에 등록
@@ -452,7 +553,7 @@ interface SlotContainerProps {
 3. 상태 변화 시 slot 표현식 재평가로 동적 이동
 ```
 
-### 사용 예시
+#### 사용 예시
 
 ```json
 {
@@ -476,11 +577,11 @@ interface SlotContainerProps {
 
 ---
 
-## 관련 문서
+### 관련 문서
 
-- [sirsoft-admin_basic 핸들러](./handlers.md)
-- [sirsoft-admin_basic 레이아웃](./layouts.md)
-- [sirsoft-basic 컴포넌트](../sirsoft-basic/components.md)
-- [컴포넌트 개발 규칙](../../components.md)
-- [컴포넌트 Props 레퍼런스](../../component-props.md)
-- [컴포넌트 Props 레퍼런스 - Composite](../../component-props-composite.md)
+- [sirsoft-admin_basic 핸들러](handlers.md)
+- [sirsoft-admin_basic 레이아웃](layouts.md)
+- [sirsoft-basic 컴포넌트](../../../../docs/frontend/templates/sirsoft-basic/components.md)
+- [컴포넌트 개발 규칙](../../../../docs/frontend/components.md)
+- [컴포넌트 Props 레퍼런스](../../../../docs/frontend/component-props.md)
+- [컴포넌트 Props 레퍼런스 - Composite](../../../../docs/frontend/component-props-composite.md)

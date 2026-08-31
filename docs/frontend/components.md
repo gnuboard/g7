@@ -29,10 +29,12 @@
 
 | 템플릿 식별자 | 컴포넌트 | 핸들러 | 레이아웃 |
 |--------------|---------|--------|--------|
-| `sirsoft-admin_basic` | [components.md](templates/sirsoft-admin_basic/components.md) | [handlers.md](templates/sirsoft-admin_basic/handlers.md) | [layouts.md](templates/sirsoft-admin_basic/layouts.md) |
 | `sirsoft-basic` | [components.md](templates/sirsoft-basic/components.md) | [handlers.md](templates/sirsoft-basic/handlers.md) | [layouts.md](templates/sirsoft-basic/layouts.md) |
 
 <!-- AUTO-GENERATED-END: frontend-template-reference -->
+
+> `sirsoft-admin_basic` 은 문서를 그 템플릿이 직접 소유합니다 — [templates/_bundled/sirsoft-admin_basic/docs/](../../templates/_bundled/sirsoft-admin_basic/docs/README.md).
+> 템플릿별 문서 위치는 [templates/README.md](templates/README.md) 를 따릅니다.
 
 ---
 
@@ -153,7 +155,7 @@ import { Icon, IconName } from '../basic/Icon';
 - [g7core-api.md](g7core-api.md) - G7Core 전역 API 레퍼런스
 - [레이아웃 JSON 스키마](./layout-json.md) - 컴포넌트를 레이아웃 JSON에서 사용하는 방법
 - [데이터 바인딩](./data-binding.md) - props에서 데이터 바인딩 사용법
-- [sirsoft-admin_basic 컴포넌트](./templates/sirsoft-admin_basic/components.md) - Admin 컴포넌트 목록 (111개)
+- [sirsoft-admin_basic 컴포넌트](../../templates/_bundled/sirsoft-admin_basic/docs/components.md) - Admin 컴포넌트 목록
 - [sirsoft-basic 컴포넌트](./templates/sirsoft-basic/components.md) - User 컴포넌트 목록 (58개)
 - [다크 모드](./dark-mode.md) - 컴포넌트 다크 모드 지원 가이드
 - [상태 관리](./state-management.md) - 전역/로컬 상태 관리 및 동기화 패턴

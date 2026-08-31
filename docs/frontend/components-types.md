@@ -1,7 +1,7 @@
 # 컴포넌트 타입별 개발 규칙
 
 > **메인 문서**: [components.md](components.md)
-> **관련 문서**: [layout-json-components.md](layout-json-components.md) | [sirsoft-admin_basic 컴포넌트](templates/sirsoft-admin_basic/components.md)
+> **관련 문서**: [layout-json-components.md](layout-json-components.md) | [sirsoft-admin_basic 컴포넌트](../../templates/_bundled/sirsoft-admin_basic/docs/components.md)
 
 ---
 
@@ -452,5 +452,5 @@ export const Container: React.FC<ContainerProps> = ({ children }) => (
 - [컴포넌트 개발 규칙 인덱스](components.md)
 - [컴포넌트 패턴](components-patterns.md)
 - [컴포넌트 고급 기능](components-advanced.md)
-- [sirsoft-admin_basic 컴포넌트](templates/sirsoft-admin_basic/components.md)
+- [sirsoft-admin_basic 컴포넌트](../../templates/_bundled/sirsoft-admin_basic/docs/components.md)
 - [sirsoft-basic 컴포넌트](templates/sirsoft-basic/components.md)

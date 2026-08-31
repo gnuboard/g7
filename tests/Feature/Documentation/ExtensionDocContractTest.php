@@ -37,24 +37,15 @@ class ExtensionDocContractTest extends TestCase
      */
     private const DOC_BACKLOG = [
         'module/gnuboard7-hello_module',
-        'module/sirsoft-board',
         'module/sirsoft-ecommerce',
         'module/sirsoft-page',
         'plugin/gnuboard7-hello_plugin',
         'plugin/sirsoft-ckeditor5',
         'plugin/sirsoft-daum_postcode',
-        'plugin/sirsoft-gdpr',
         'plugin/sirsoft-marketing',
         'plugin/sirsoft-message_bizppurio',
-        'plugin/sirsoft-pay_kginicis',
-        'plugin/sirsoft-pay_nhnkcp',
-        'plugin/sirsoft-pay_nicepayments',
-        'plugin/sirsoft-tosspayments',
-        'plugin/sirsoft-verification_kginicis',
-        'plugin/sirsoft-verification_nhnkcp',
         'template/gnuboard7-hello_admin_template',
         'template/gnuboard7-hello_user_template',
-        'template/sirsoft-admin_basic',
         'template/sirsoft-basic',
     ];
 
@@ -66,7 +57,7 @@ class ExtensionDocContractTest extends TestCase
      * 늘리려면 이 숫자를 올리는 **눈에 보이는 행위**를 거치게 합니다. 집필이 진행되면 이
      * 숫자도 함께 내려갑니다 (백로그는 줄어들기만 하므로 상한도 단조 감소한다).
      */
-    private const DOC_BACKLOG_CEILING = 20;
+    private const DOC_BACKLOG_CEILING = 11;
 
     /**
      * `_bundled` 스캔이 번들 확장 전수를 발견하는지 확인합니다.
@@ -910,6 +901,58 @@ class ExtensionDocContractTest extends TestCase
                     $ctx['frontend']['layoutExtensions'],
                     "{$record['id']}: {$extRoot}/ 가 실재하는데 레이아웃 확장 조각이 수집되지 않았습니다.",
                 );
+
+                // getLayoutExtensions() 기본 구현은 위와 같은 디렉토리를 glob() 한 절대경로라
+                // 파일 목록과 100% 중복이다. 정규화 없이 실으면 같은 파일이 두 번(상대·절대) 나오고
+                // 로컬 머신 절대경로가 커밋되는 확장 저장소에 그대로 남는다.
+                // 템플릿은 'layout-extensions' 가 아니라 'template-overrides' 블록(docs/layouts.md)이다
+                // — 그 개념(오버라이드)이 모듈/플러그인의 발행과 반대 방향이라 문서 자리가 다르다.
+                $blockKey = $record['type'] === ExtensionInventory::TYPE_TEMPLATE ? 'template-overrides' : 'layout-extensions';
+                $block = $scaffolder->renderBlocks($ctx)[$blockKey] ?? '';
+                $this->assertNotSame('', $block, "{$record['id']}: {$blockKey} 블록이 렌더되지 않았습니다.");
+                $this->assertStringNotContainsString(
+                    str_replace('\\', '/', $record['path']),
+                    str_replace('\\', '/', $block),
+                    "{$record['id']}: 레이아웃 확장 표에 로컬 절대경로가 남아 있습니다.",
+                );
+                $rowCount = substr_count($block, "\n| `");
+                $this->assertSame(
+                    count($ctx['frontend']['layoutExtensions']),
+                    $rowCount,
+                    "{$record['id']}: 레이아웃 확장 표 행 수가 실제 파일 수와 다릅니다 (중복 행 의심).",
+                );
+            }
+
+            // getNotificationDefinitions() 의 표준 계약은 리스트 배열 + 원소별 'type' 키다
+            // (NotificationSyncHelper::sync() 소비 형태). 'key'/'event' 로 읽으면 정수 인덱스
+            // 배열에서 이름을 못 찾아 모든 행이 '-' 로 찍힌다 — 표가 있으나 마나 해진다.
+            $declaredNotifications = $ctx['surface']['values']['getNotificationDefinitions'] ?? [];
+            if (is_array($declaredNotifications) && $declaredNotifications !== []) {
+                $notificationsBlock = $scaffolder->renderBlocks($ctx)['notifications'] ?? '';
+                $this->assertStringNotContainsString(
+                    "\n| `-` |",
+                    $notificationsBlock,
+                    "{$record['id']}: 알림 정의 표의 알림 키가 비어 있습니다 ('type' 필드 매핑 확인).",
+                );
+            }
+
+            // getSettingsLayout() 은 getModulePath()/getPluginPath() 기준 절대경로를 돌려준다
+            // (§레이아웃 확장과 같은 결함군) — relativeToExtension() 을 거치지 않으면 로컬 머신
+            // 절대경로가 그대로 커밋 문서(docs/settings.md · README.md)에 실린다.
+            $settingsLayout = $ctx['surface']['values']['getSettingsLayout'] ?? null;
+            if (is_string($settingsLayout) && $settingsLayout !== '') {
+                $rendered = $scaffolder->renderBlocks($ctx);
+                // record['path'] 는 Symfony Finder 산출물(슬래시)과 코드 조립 문자열(백슬래시)이
+                // 섞인 혼합 구분자다 — 양쪽을 슬래시로 정규화하지 않으면 정규화된 needle 이
+                // 정규화되지 않은 haystack 안의 진짜 누출을 놓친다.
+                $needle = str_replace('\\', '/', $record['path']);
+                foreach (['settings-schema', 'settings-summary'] as $settingsBlockKey) {
+                    $this->assertStringNotContainsString(
+                        $needle,
+                        str_replace('\\', '/', $rendered[$settingsBlockKey] ?? ''),
+                        "{$record['id']}: {$settingsBlockKey} 블록에 로컬 절대경로가 남아 있습니다.",
+                    );
+                }
             }
         }
 

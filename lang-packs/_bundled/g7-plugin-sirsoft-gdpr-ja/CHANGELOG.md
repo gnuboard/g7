@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.2] - 2026-08-31
+
+### Added
+
+- 동의 이력의 출처 "会員退会"(회원탈퇴) 일본어 라벨 추가
+
 ## [1.0.1] - 2026-08-10
 
 ### Added

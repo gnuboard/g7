@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.4] - 2026-08-31
+
+### Fixed
+
+- 회원탈퇴로 자동 철회된 동의 이력이 관리자 「GDPR 동의 이력」 화면의 출처 필터로 걸러지지 않던 문제를 수정했습니다.
+
 ## [1.0.3] - 2026-08-19
 
 ### Fixed

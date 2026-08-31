@@ -242,6 +242,6 @@ AdminSidebar, AdminHeader, AdminFooter, PageHeader, DataGrid, CodeEditor, Dynami
 
 - [sirsoft-basic 핸들러](./handlers.md)
 - [sirsoft-basic 레이아웃](./layouts.md)
-- [sirsoft-admin_basic 컴포넌트](../sirsoft-admin_basic/components.md)
+- [sirsoft-admin_basic 컴포넌트](../../../../templates/_bundled/sirsoft-admin_basic/docs/components.md)
 - [컴포넌트 개발 규칙](../../components.md)
 - [컴포넌트 Props 레퍼런스](../../component-props.md)

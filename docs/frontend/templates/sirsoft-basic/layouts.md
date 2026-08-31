@@ -642,6 +642,6 @@ _user_base.json
 
 - [sirsoft-basic 컴포넌트](./components.md)
 - [sirsoft-basic 핸들러](./handlers.md)
-- [sirsoft-admin_basic 레이아웃](../sirsoft-admin_basic/layouts.md)
+- [sirsoft-admin_basic 레이아웃](../../../../templates/_bundled/sirsoft-admin_basic/docs/layouts.md)
 - [레이아웃 JSON 스키마](../../layout-json.md)
 - [레이아웃 상속](../../layout-json-inheritance.md)

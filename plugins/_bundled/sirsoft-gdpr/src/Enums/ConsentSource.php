@@ -17,6 +17,7 @@ namespace Plugins\Sirsoft\Gdpr\Enums;
  * - register: 회원가입 시 동의 (GdprAuthConsentListener)
  * - mypage: 마이페이지 동의 관리에서 변경
  * - mypage_renew_all: 정책 개정 후 마이페이지에서 일괄 재동의 (GdprConsentService::renewAll)
+ * - withdraw: 회원탈퇴 시 활성 동의 일괄 철회 (GdprConsentService::revokeAllOnWithdraw)
  */
 enum ConsentSource: string
 {
@@ -25,6 +26,7 @@ enum ConsentSource: string
     case Register = 'register';
     case Mypage = 'mypage';
     case MypageRenewAll = 'mypage_renew_all';
+    case Withdraw = 'withdraw';
 
     /**
      * 사용자 친화 라벨을 반환합니다.

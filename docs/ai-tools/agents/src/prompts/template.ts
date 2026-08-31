@@ -173,7 +173,7 @@ global.window = {
 - docs/frontend/template-development.md
 - docs/extension/template-basics.md
 - docs/extension/template-commands.md
-- docs/frontend/templates/sirsoft-admin_basic/components.md
+- templates/_bundled/sirsoft-admin_basic/docs/components.md
 - docs/frontend/templates/sirsoft-basic/components.md
 
 ## 테스트 실행

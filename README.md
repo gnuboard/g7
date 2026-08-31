@@ -1,13 +1,9 @@
 <p align="center">English | <a href="README.ko.md">한국어</a></p>
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Gnuboard7-그누보드7-000000?style=for-the-badge&labelColor=0066FF&logoColor=white" height="200" alt="Gnuboard7 (그누보드7)">
-</p>
+# Gnuboard7
 
-<p align="center">
-  <strong>A modern, extensible CMS platform built with Laravel + React</strong><br>
-  The next generation of Gnuboard — Korea's most widely used open-source CMS
-</p>
+**A modern, extensible CMS platform built with Laravel + React**
+The next generation of Gnuboard — Korea's most widely used open-source CMS
 
 <p align="center">
   <a href="#"><img src="https://img.shields.io/badge/version-7.0.10-blue" alt="Version"></a>

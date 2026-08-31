@@ -47,7 +47,7 @@
 | [user-overrides.md](docs/backend/user-overrides.md) | 사용자 수정 보존 (HasUserOverrides Trait) | 모델에 `use HasUserOverrides;` + `protected array $trackable... |
 | [validation.md](docs/backend/validation.md) | 검증 (Validation) | 필수: FormRequest에서 검증 (Service에 검증 로직 배치 금지) |
 
-### 프론트엔드 [frontend/](docs/frontend/) (50개)
+### 프론트엔드 [frontend/](docs/frontend/) (47개)
 
 | 문서 | 설명 | TL;DR 핵심 |
 |------|------|-----------|
@@ -95,9 +95,6 @@
 | [tailwind-safelist.md](docs/frontend/tailwind-safelist.md) | Tailwind Safelist 가이드 | Tailwind는 빌드 시 사용된 클래스만 CSS에 포함 |
 | [template-development.md](docs/frontend/template-development.md) | 템플릿 개발 가이드라인 | 디렉토리: templates/[vendor-template]/ (예: sirsoft-admin_basic) |
 | [template-handlers.md](docs/frontend/template-handlers.md) | 템플릿 전용 핸들러 | setLocale: 앱 언어 변경 — 엔진 빌트인 (ActionDispatcher) |
-| [components.md](docs/frontend/templates/sirsoft-admin_basic/components.md) | sirsoft-admin_basic 컴포넌트 | Basic 37개: HTML 래핑 (Div, Button, Input, Select, Form, A, ... |
-| [handlers.md](docs/frontend/templates/sirsoft-admin_basic/handlers.md) | sirsoft-admin_basic 핸들러 | setLocale: 앱 언어 변경 (locale 파라미터) |
-| [layouts.md](docs/frontend/templates/sirsoft-admin_basic/layouts.md) | sirsoft-admin_basic 레이아웃 | 베이스: _admin_base.json (사이드바 + 헤더 + 콘텐츠 슬롯) |
 | [components.md](docs/frontend/templates/sirsoft-basic/components.md) | sirsoft-basic 컴포넌트 | Basic 26개: HTML 래핑 (Div, Button, Input, Select, Form, A, ... |
 | [handlers.md](docs/frontend/templates/sirsoft-basic/handlers.md) | sirsoft-basic 핸들러 | setTheme/initTheme: 다크/라이트 모드 전환 (admin과 동일 키 공유) |
 | [layouts.md](docs/frontend/templates/sirsoft-basic/layouts.md) | sirsoft-basic 레이아웃 | 베이스: _user_base.json (헤더 + 푸터 + 모바일 네비 + 콘텐츠 슬롯) |
@@ -178,6 +175,23 @@
 | `sirsoft-tosspayments` | 플러그인 | [docs/api/](plugins/_bundled/sirsoft-tosspayments/docs/api/README.md) | 2 / 4 |
 | `sirsoft-verification_kginicis` | 플러그인 | [docs/api/](plugins/_bundled/sirsoft-verification_kginicis/docs/api/README.md) | 2 / 3 |
 | `sirsoft-verification_nhnkcp` | 플러그인 | [docs/api/](plugins/_bundled/sirsoft-verification_nhnkcp/docs/api/README.md) | 1 / 1 |
+
+
+### 확장 개발자 문서 (9개 확장, 자동 스캔)
+
+> 확장을 수정하기 전에 읽는 문서. 설계 의도 · 디렉토리 지도 · 확장점(발행/구독 훅) · 수정 시 동반 의무 · 금지 패턴을 담는다. `php artisan ext:docgen` 이 실측 부분을 유지하며, 이 표는 `{modules,plugins,templates}/_bundled/*/docs/README.md` 를 패턴 스캔해 자동 편입된다(확장명 하드코딩 없음).
+
+| 확장 | 유형 | 에이전트 가이드 | 문서 목차 | 실측 집계 |
+|------|------|----------------|----------|----------|
+| `sirsoft-board` | 모듈 | [AGENTS.md](modules/_bundled/sirsoft-board/AGENTS.md) | [docs/](modules/_bundled/sirsoft-board/docs/README.md) | 훅 90 · 라우트 80 · 모델 9 · 레이아웃 46 |
+| `sirsoft-gdpr` | 플러그인 | [AGENTS.md](plugins/_bundled/sirsoft-gdpr/AGENTS.md) | [docs/](plugins/_bundled/sirsoft-gdpr/docs/README.md) | 훅 2 · 라우트 15 · 모델 3 · 레이아웃 4 |
+| `sirsoft-pay_kginicis` | 플러그인 | [AGENTS.md](plugins/_bundled/sirsoft-pay_kginicis/AGENTS.md) | [docs/](plugins/_bundled/sirsoft-pay_kginicis/docs/README.md) | 훅 6 · 라우트 35 · 모델 0 · 레이아웃 1 |
+| `sirsoft-pay_nhnkcp` | 플러그인 | [AGENTS.md](plugins/_bundled/sirsoft-pay_nhnkcp/AGENTS.md) | [docs/](plugins/_bundled/sirsoft-pay_nhnkcp/docs/README.md) | 훅 8 · 라우트 16 · 모델 0 · 레이아웃 1 |
+| `sirsoft-pay_nicepayments` | 플러그인 | [AGENTS.md](plugins/_bundled/sirsoft-pay_nicepayments/AGENTS.md) | [docs/](plugins/_bundled/sirsoft-pay_nicepayments/docs/README.md) | 훅 5 · 라우트 15 · 모델 0 · 레이아웃 1 |
+| `sirsoft-tosspayments` | 플러그인 | [AGENTS.md](plugins/_bundled/sirsoft-tosspayments/AGENTS.md) | [docs/](plugins/_bundled/sirsoft-tosspayments/docs/README.md) | 훅 4 · 라우트 4 · 모델 0 · 레이아웃 1 |
+| `sirsoft-verification_kginicis` | 플러그인 | [AGENTS.md](plugins/_bundled/sirsoft-verification_kginicis/AGENTS.md) | [docs/](plugins/_bundled/sirsoft-verification_kginicis/docs/README.md) | 훅 3 · 라우트 2 · 모델 2 · 레이아웃 1 |
+| `sirsoft-verification_nhnkcp` | 플러그인 | [AGENTS.md](plugins/_bundled/sirsoft-verification_nhnkcp/AGENTS.md) | [docs/](plugins/_bundled/sirsoft-verification_nhnkcp/docs/README.md) | 훅 0 · 라우트 2 · 모델 2 · 레이아웃 1 |
+| `sirsoft-admin_basic` | 템플릿 | [AGENTS.md](templates/_bundled/sirsoft-admin_basic/AGENTS.md) | [docs/](templates/_bundled/sirsoft-admin_basic/docs/README.md) | 훅 0 · 라우트 29 · 모델 0 · 레이아웃 145 |
 
 
 <!-- AUTO-GENERATED-END: docs-quick-reference -->

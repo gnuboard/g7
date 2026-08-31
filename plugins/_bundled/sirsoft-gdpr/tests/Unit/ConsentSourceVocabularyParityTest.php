@@ -17,6 +17,7 @@ use Plugins\Sirsoft\Gdpr\Enums\ConsentSource;
  *
  * DB·라우트에 의존하지 않는 정적 검사이므로 `Tests\TestCase` 가 아니라 순수 TestCase 를 상속합니다.
  */
+// audit:allow test-extension-base-class reason: 파일 내용·enum 값만 비교하는 순수 정적 검사 — DB/라우트/오토로드 부팅이 필요 없어 PluginTestCase 상속 시 불필요한 부팅 비용만 늘어난다
 class ConsentSourceVocabularyParityTest extends TestCase
 {
     /** 플러그인 루트 경로 */
@@ -36,9 +37,14 @@ class ConsentSourceVocabularyParityTest extends TestCase
         $declared = ConsentSource::allValues();
 
         // 실제 기록 지점 — source:/'source' =>/'last_source' => 인자로 넘어가는 리터럴
+        //
+        // Repository 도 포함한다 — GdprUserConsentRepository::revokeAllForUser() 가
+        // Service 를 거치지 않고 직접 'last_source' => 리터럴을 UPDATE 쿼리에 싣는다.
+        // 이 파일이 빠져 있으면 그 리터럴은 어떤 축으로도 검사되지 않는다.
         $sources = [
             'src/Listeners/GdprAuthConsentListener.php',
             'src/Services/GdprConsentService.php',
+            'src/Repositories/GdprUserConsentRepository.php',
             'src/Http/Controllers/User/GdprConsentController.php',
         ];
 

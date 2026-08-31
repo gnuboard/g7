@@ -1144,7 +1144,7 @@ id prop 사용: scrollIntoView 등 DOM selector로 접근해야 할 때 필수 �
 
 - [컴포넌트 개발 규칙](components.md) - basic, composite, layout 컴포넌트
 - [레이아웃 JSON 스키마](layout-json.md) - 컴포넌트를 레이아웃 JSON에서 사용하는 방법
-- [sirsoft-admin_basic 컴포넌트](templates/sirsoft-admin_basic/components.md) - Admin 컴포넌트 목록 (111개)
+- [sirsoft-admin_basic 컴포넌트](../../templates/_bundled/sirsoft-admin_basic/docs/components.md) - Admin 컴포넌트 목록
 - [sirsoft-basic 컴포넌트](templates/sirsoft-basic/components.md) - User 컴포넌트 목록 (58개)
 - [에디터 컴포넌트](editors.md) - HtmlEditor, CodeEditor 상세 가이드
 - [데이터 바인딩](data-binding.md) - `{{}}` 표현식, `$t:` 다국어

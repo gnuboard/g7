@@ -22,10 +22,12 @@
 <!-- AUTO-GENERATED-START: frontend-template-handlers -->
 | 템플릿 식별자 | 핸들러 문서 | TL;DR 핵심 |
 |--------------|-----------|----------|
-| `sirsoft-admin_basic` | [handlers.md](templates/sirsoft-admin_basic/handlers.md) | setLocale: 앱 언어 변경 (locale 파라미터) |
 | `sirsoft-basic` | [handlers.md](templates/sirsoft-basic/handlers.md) | setTheme/initTheme: 다크/라이트 모드 전환 (admin과 동일 키 공유) |
 
 <!-- AUTO-GENERATED-END: frontend-template-handlers -->
+
+> `sirsoft-admin_basic` 은 문서를 그 템플릿이 직접 소유합니다 — [templates/_bundled/sirsoft-admin_basic/docs/](../../templates/_bundled/sirsoft-admin_basic/docs/README.md).
+> 템플릿별 문서 위치는 [templates/README.md](templates/README.md) 를 따릅니다.
 
 ---
 
@@ -55,5 +57,5 @@
 - [액션 핸들러 개요](actions-handlers.md)
 - [템플릿 개발 가이드](template-development.md)
 - [다크 모드 지원](dark-mode.md)
-- [sirsoft-admin_basic 컴포넌트](templates/sirsoft-admin_basic/components.md)
+- [sirsoft-admin_basic 컴포넌트](../../templates/_bundled/sirsoft-admin_basic/docs/components.md)
 - [sirsoft-basic 컴포넌트](templates/sirsoft-basic/components.md)

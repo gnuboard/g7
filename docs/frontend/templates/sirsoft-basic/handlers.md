@@ -428,4 +428,4 @@ setLocale은 엔진 레벨(ActionDispatcher) 빌트인 — 별도 등록 불필�
 - [액션 핸들러 개요](../../actions-handlers.md)
 - [sirsoft-basic 컴포넌트](./components.md)
 - [sirsoft-basic 레이아웃](./layouts.md)
-- [sirsoft-admin_basic 핸들러](../sirsoft-admin_basic/handlers.md)
+- [sirsoft-admin_basic 핸들러](../../../../templates/_bundled/sirsoft-admin_basic/docs/handlers.md)

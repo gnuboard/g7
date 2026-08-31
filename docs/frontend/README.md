@@ -40,7 +40,6 @@
 
 | 템플릿 식별자 | 컴포넌트 | 핸들러 | 레이아웃 |
 |--------------|---------|--------|--------|
-| `sirsoft-admin_basic` | [components.md](templates/sirsoft-admin_basic/components.md) | [handlers.md](templates/sirsoft-admin_basic/handlers.md) | [layouts.md](templates/sirsoft-admin_basic/layouts.md) |
 | `sirsoft-basic` | [components.md](templates/sirsoft-basic/components.md) | [handlers.md](templates/sirsoft-basic/handlers.md) | [layouts.md](templates/sirsoft-basic/layouts.md) |
 
 ### 컴포넌트 개발
