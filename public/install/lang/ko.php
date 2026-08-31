@@ -914,6 +914,20 @@ ini_set(\'zlib.output_compression\', \'off\');
     'permission_windows_hint' => '※ Windows 환경에서는 관리자 권한으로 명령 프롬프트(cmd)를 열고 실행하세요. 또는 폴더 속성 → 보안 탭에서 권한을 설정할 수 있습니다.',
     'directory_create_guide' => '아래 명령어를 실행하여 누락된 디렉토리를 생성하세요:',
 
+    // 권한 안내 무쉘 판본 (W7) — 쉘을 쓸 수 없는 FTP 전용 계정용 조작 절차.
+    // 소유자 변경(chown) 안내는 이 판본에 넣지 않는다 (보안 결정) — 퍼미션 값 안내로 한정한다.
+    'permission_guide_ftp_summary' => 'FTP 프로그램으로 바꾸기',
+    'permission_guide_shell_summary' => '명령어로 바꾸기 (SSH 가 있는 경우)',
+    'permission_guide_ftp_step_connect' => 'FTP 로 접속해 :path 을(를) 찾습니다.',
+    'permission_guide_ftp_step_open' => '해당 항목에서 마우스 오른쪽 → 파일 권한(속성)을 엽니다.',
+    'permission_guide_ftp_step_value_directory' => '숫자 값에 :value 를 입력하고 "하위 폴더에 적용" 을 켭니다.',
+    'permission_guide_ftp_step_value_file' => '숫자 값에 :value 를 입력합니다.',
+    'permission_guide_ftp_step_value_windows' => '폴더 속성 → 보안 탭에서 웹 서버 계정(IIS_IUSRS)에 "수정" 권한을 허용하고 하위 항목에 적용합니다.',
+    'permission_guide_ftp_step_repeat' => '나머지 항목(:paths)에도 똑같이 합니다.',
+    'permission_guide_ftp_step_recheck' => '아래 [다시 검사] 를 누릅니다.',
+    'permission_guide_ftp_fallback' => '그래도 쓰기 권한이 생기지 않으면 :value 를 넣어 보세요. 웹 서버가 파일 소유자와 다른 계정으로 도는 호스팅에서는 :primary 로 소유자에게만 쓰기 권한이 생깁니다.',
+    'permission_guide_ftp_note_windows' => '※ Windows 서버는 숫자 권한 값을 쓰지 않습니다. FTP 프로그램에 권한 항목이 없다면 호스팅 제어판의 파일 관리자에서 같은 설정을 찾을 수 있습니다.',
+
     // 디렉토리명 (Step 2)
     'dir_bootstrap_cache' => '부트스트랩 캐시 디렉토리',
     'dir_vendor' => '패키지 디렉토리',

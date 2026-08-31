@@ -2,6 +2,8 @@
 
 namespace Tests\Unit\Installer;
 
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -22,6 +24,8 @@ use Tests\TestCase;
  * PHPUnit 으로 재현할 수 없으므로(실제 부분 쓰기를 일으킬 수단이 없다) 소스 계약으로
  * 잠근다 — 형제 축(`InstallerDisabledFunctionResilienceTest`)과 같은 방식이다.
  */
+#[RunClassInSeparateProcess]
+#[PreserveGlobalState(false)]
 class PartialWriteDetectionContractTest extends TestCase
 {
     /**
@@ -161,7 +165,7 @@ class PartialWriteDetectionContractTest extends TestCase
     private function uncheckedWriteLines(string $file): array
     {
         // 줄 종결자만 자른다 — `\R` 은 `u` 수식자 없이 바이트 모드라 0x85(NEL)를
-        // 개행으로 읽어 한글을 글자 한가운데서 쪼갠다 (CLAUDE.md 「한글 텍스트를
+        // 개행으로 읽어 한글을 글자 한가운데서 쪼갠다 (저장소 규약 「한글 텍스트를
         // 정규식으로 자를 때」).
         $lines = preg_split('~\r\n|\r|\n~', (string) file_get_contents($file)) ?: [];
         $offenders = [];

@@ -193,7 +193,7 @@
     # (`playwright-report`·`test-results`)이 그 사이로 열려 있었다. 그 안에는 인증 상태가
     # 담긴 trace·스크린샷이 들어간다. 도출 규칙과 실제 트리의 일치는 계약 테스트가 고정한다.
     <IfModule mod_alias.c>
-        RedirectMatch 403 (?i)/(\.git|app|bootstrap|config|database|deploy|docs|lang|lang-packs|modules|node_modules|playwright-report|plugins|resources|routes|storage|templates|test-results|tests|upgrades|vendor)/
+        RedirectMatch 403 (?i)/(\.git|app|bootstrap|config|database|deploy|docs|lang|lang-packs|modules|node_modules|playwright-report|plugins|resources|routes|scripts|storage|templates|test-results|tests|upgrades|vendor)/
     </IfModule>
 
     # 확장자 목록은 **배포 페이로드의 실제 최상위 파일**에서 도출한다 (손으로 유지하지 않는다).

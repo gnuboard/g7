@@ -6,6 +6,11 @@
  */
 $selectedLang = getCurrentLanguage();
 
+// 안내를 내기 전에 PHP `chmod()` 로 직접 권한 부여를 시도한다 (B-8).
+// 성공하면 아래 검사가 통과해 안내 화면 자체가 나오지 않는다 — 쉘이 없는 계정에서는
+// 이것이 유일한 자동 복구 수단이다. 실패는 무해하다(안내가 그대로 나온다).
+installerRepairPermissions(['storage']);
+
 // Storage 폴더 권한 체크 (재귀 체크 포함)
 $storageCheck = checkDirectoryPermissions(['storage' => false]);
 $storagePermissionPassed = $storageCheck['all_passed'];
@@ -120,6 +125,24 @@ $storageResult = $storageCheck['results']['storage'] ?? null;
                     </div>
                     <p class="fix-guide-hint" style="margin-top: 0.75rem;"><?= lang('ownership_mismatch_hint', ['owner' => htmlspecialchars($owner), 'web_user' => htmlspecialchars($webUser)]) ?></p>
                 <?php } elseif (in_array($storageResult['error_type'], ['not_writable', 'not_readable', 'subdirectory_issues'])) { ?>
+                    <?php
+                    // W7 — 이 화면을 보는 사람의 다수는 SSH 를 쓸 수 없다. FTP 조작 절차가
+                    // 기본 판본(펼침)이고 명령어는 접힌 보조 판본이다.
+                    $ftpGuide = installerFtpPermissionGuide([$relativeStorage], true, isWindows());
+                    ?>
+                    <details class="permission-guide" open>
+                        <summary class="permission-guide-summary"><?= lang('permission_guide_ftp_summary') ?></summary>
+                        <ol class="permission-guide-steps">
+                            <?php foreach ($ftpGuide['steps'] as $step) { ?>
+                                <li><?= htmlspecialchars($step) ?></li>
+                            <?php } ?>
+                        </ol>
+                        <?php if ($ftpGuide['note'] !== '') { ?>
+                            <p class="permission-guide-note"><?= htmlspecialchars($ftpGuide['note']) ?></p>
+                        <?php } ?>
+                    </details>
+                    <details class="permission-guide">
+                        <summary class="permission-guide-summary"><?= lang('permission_guide_shell_summary') ?></summary>
                     <?php if (isWindows()) { ?>
                         <!-- Windows: icacls 명령어 안내 -->
                         <p class="fix-guide-label"><?= lang('permission_fix_guide') ?></p>
@@ -146,6 +169,7 @@ $storageResult = $storageCheck['results']['storage'] ?? null;
                             <button class="btn-copy" onclick="copyWelcomeCommand(this)"><?= lang('copy_command') ?></button>
                         </div>
                     <?php } ?>
+                    </details>
                 <?php } ?>
                 <div class="permission-details">
                     <span class="permission-label"><?= lang('current_owner') ?>:</span>

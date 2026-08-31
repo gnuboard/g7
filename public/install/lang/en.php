@@ -913,6 +913,20 @@ Firewalls or proxies may be blocking long-lived HTTP connections.',
     'permission_windows_hint' => '※ On Windows, open Command Prompt (cmd) as Administrator and run the command. Alternatively, you can set permissions via folder Properties → Security tab.',
     'directory_create_guide' => 'Run the following command to create the missing directories:',
 
+    // Shell-free permission guidance (W7) — the FTP-client procedure for accounts without a shell.
+    // Ownership change (chown) is deliberately absent from this version; it is limited to permission values.
+    'permission_guide_ftp_summary' => 'Change it with an FTP client',
+    'permission_guide_shell_summary' => 'Change it with a command (if you have SSH)',
+    'permission_guide_ftp_step_connect' => 'Connect over FTP and locate :path.',
+    'permission_guide_ftp_step_open' => 'Right-click the item and open File permissions (Properties).',
+    'permission_guide_ftp_step_value_directory' => 'Enter :value as the numeric value and turn on "Apply to subdirectories".',
+    'permission_guide_ftp_step_value_file' => 'Enter :value as the numeric value.',
+    'permission_guide_ftp_step_value_windows' => 'Open folder Properties → Security and allow "Modify" for the web server account (IIS_IUSRS), applying it to child items.',
+    'permission_guide_ftp_step_repeat' => 'Repeat for the remaining items (:paths).',
+    'permission_guide_ftp_step_recheck' => 'Press [Check again] below.',
+    'permission_guide_ftp_fallback' => 'If write access still is not granted, try :value. On hosting where the web server runs as a different account than the file owner, :primary grants write access to the owner only.',
+    'permission_guide_ftp_note_windows' => '※ Windows servers do not use numeric permission values. If your FTP client has no permission dialog, the same setting is usually available in your hosting control panel file manager.',
+
     // Directory names (Step 2)
     'dir_bootstrap_cache' => 'Bootstrap cache directory',
     'dir_vendor' => 'Packages directory',

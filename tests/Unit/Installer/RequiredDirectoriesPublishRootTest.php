@@ -2,6 +2,8 @@
 
 namespace Tests\Unit\Installer;
 
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -13,6 +15,8 @@ use PHPUnit\Framework\TestCase;
  * 않은 채 설치를 진행하고, 마지막 단계의 정적 게시가 `parent_not_writable` 로 실패한 뒤 대시보드에
  * 「초기 화면 파일 생성 실패」 알림이 뜬다 (7.0.10 신규 설치에서 실제 발생).
  */
+#[RunClassInSeparateProcess]
+#[PreserveGlobalState(false)]
 class RequiredDirectoriesPublishRootTest extends TestCase
 {
     public static function setUpBeforeClass(): void

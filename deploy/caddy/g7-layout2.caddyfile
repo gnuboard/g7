@@ -190,7 +190,7 @@ example.com {
 	#     `file_server` 가 그 파일을 그대로 낸다 — 형제 Apache 는 `RedirectMatch` 가 경로 전 구간을 보고,
 	#     nginx 는 숨김 파일 location 이 먼저 잡아 같은 요청을 막는다. 조치는 (g7_delegate)
 	#     의 `file_server` 를 `file_server { hide .* }` 로 바꾸는 것이다(경로 어느 구간의
-	#     점 이름이든 404). 이 조각은 실측하지 않는 서버라(PO 결정 2026-08-27, 미실측
+	#     점 이름이든 404). 이 조각은 실측하지 않는 서버라(프로젝트 결정 2026-08-27, 미실측
 	#     서버는 규칙을 바꾸지 않고 문서만 넓힌다) 규칙은 그대로 두고, 첫 배포 시 아래
 	#     「확인 목록」의 `/.htaccess` · `/build/.vite/manifest.json` 항목으로 판별한다 —
 	#     내용이 보이면 그 조치를 넣는다. 그 두 파일은 비밀이 아니지만(규칙 원문·빌드
@@ -252,7 +252,7 @@ example.com {
 	#     인용하고 있었다 — 문서에 틀린 형태를 인용하면 그 자체가 위반이다(§16.54.9).
 	#     Caddy 에서 같은 것을 하려면 matcher 를 하나 더 세워 `not` 으로 묶어야
 	#     하는데, **이 파일은 지시어 고정 순서를 모른다고 스스로 선언**하고 있어 matcher
-	#     추가가 이 규칙의 평가 시점을 바꾸는지 잴 수 없다. PO 결정(2026-08-27)에 따라 이
+	#     추가가 이 규칙의 평가 시점을 바꾸는지 잴 수 없다. 프로젝트 결정(2026-08-27)에 따라 이
 	#     서버는 실측하지 않고 문서만 보강하므로 **한계로 남긴다.**
 	#
 	#     **알려진 한계 ③(역슬래시).** ②의 판정을 `//` 로 넓히더라도 `/\` 형태는 그대로
@@ -277,7 +277,7 @@ example.com {
 	redir @g7_public /{re.g7public.1} 301
 
 	# (4) 민감 디렉토리 — 위임으로 흡수한다(위 「주」 참조).
-	@g7_dirs path_regexp g7dirs ^/(\.git|app|bootstrap|config|database|deploy|docs|lang|lang-packs|modules|node_modules|playwright-report|plugins|resources|routes|storage|templates|test-results|tests|upgrades|vendor)(/|$)
+	@g7_dirs path_regexp g7dirs ^/(\.git|app|bootstrap|config|database|deploy|docs|lang|lang-packs|modules|node_modules|playwright-report|plugins|resources|routes|scripts|storage|templates|test-results|tests|upgrades|vendor)(/|$)
 	handle @g7_dirs {
 		import g7_delegate
 	}

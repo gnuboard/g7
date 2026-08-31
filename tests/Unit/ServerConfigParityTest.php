@@ -1526,7 +1526,7 @@ class ServerConfigParityTest extends TestCase
      * (`public/.htaccess` · `public/build/.vite/manifest.json`) — `@g7_hidden` 의 `respond` 가
      * 지시어 고정 순서에서 (7) 의 `handle` 뒤로 밀리면 `file_server` 가 그 파일을 그대로
      * 낸다. 형제 Apache 는 `RedirectMatch` 가 경로 전 구간을 보고, nginx 는 `location ~ /\.`
-     * 이 먼저 잡아 같은 요청을 막는다. 규칙은 PO 선례(미실측 서버는 문서만 넓힌다)에 따라
+     * 이 먼저 잡아 같은 요청을 막는다. 규칙은 프로젝트 선례(미실측 서버는 문서만 넓힌다)에 따라
      * 바꾸지 않으므로, 한계와 조치(`file_server { hide .* }`)가 조각에 적혀 있는가를 잰다
      * (13차 G3 라운드 W4-4).
      *

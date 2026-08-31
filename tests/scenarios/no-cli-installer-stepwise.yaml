@@ -42,7 +42,7 @@ axes:
   runner_strategy: [subprocess, inprocess_no_vendor, inprocess, override]
   endpoint_guard: [general, finalize_allowed, finalize_unexpected, missing]
   php_binary_source: [detected_autodetect, configured]              # D35
-  task: [composer, key_generate, env, dependency_precheck, db_cleanup, db_migrate, db_seed, template, user_template, module, plugin, language_pack, settings, cache, complete_flag, config_cache]   # 태스크 종류 (목록 순서는 test_task_list_order_keys_and_skippable_flags 가 고정). 11차 #C2 — 살아 있는 태스크 4종(key_generate·dependency_precheck·db_cleanup·user_template)이 축에 없어 롤백 디스패치·수동 복구 안내의 모집단에서 빠져 있었다
+  task: [composer, key_generate, env, dependency_precheck, db_cleanup, db_migrate, db_seed, template, user_template, module, plugin, language_pack, settings, cache, complete_flag, config_cache, static_publish]   # 태스크 종류 (목록 순서는 test_task_list_order_keys_and_skippable_flags 가 고정). 11차 #C2 — 살아 있는 태스크 4종(key_generate·dependency_precheck·db_cleanup·user_template)이 축에 없어 롤백 디스패치·수동 복구 안내의 모집단에서 빠져 있었다. static_publish 는 부트스트랩 리소스 정적 게시 태스크로, 목록 SSoT 로 옮겨진 뒤에도 이 축에 없어 접기 표와 어긋나 있었다
   # G3 회차 16 W6 — 종전 마킹이 쓰던 이름을 선언으로 올린다 (선언 = 마킹, 제품 결정). 값은 실제 마킹에서 도출.
   probe_key_source: [producer_sources]                              # PHP 프로브 메시지 키 사전의 모집단 출처
   locale: [ko, en]                                                  # 프로브 키가 해석돼야 하는 기본 로케일
@@ -147,6 +147,9 @@ effects:
   - installer_task_display_name_is_operator_facing
   - installer_runtime_opcache_is_invalidated_on_write
   - installer_task_key_renders_as_operator_facing_name
+  # develop 합류분 — 최선노력 태스크가 실패했을 때의 사용자 안내가 태스크 이름과
+  # 사유를 함께 부른다 (InstallerBestEffortMessageTest 가 잰다).
+  - installer_best_effort_message_names_the_task
   - installer_abort_log_routes_task_key_through_display_name
   - installer_test_defining_base_path_declares_process_isolation
   - stepwise_endpoint_wraps_uncaught_errors_in_a_json_envelope
@@ -435,6 +438,10 @@ test_files:
   # 18차 라운드 — 관리자 시더의 환경변수 3통로 (13차 수정에 회귀 장치가 0 이었다)
   - tests/Feature/Installer/AdminSeederEnvChannelTest.php
   - resources/js/installer/__tests__/installation-monitor-busy-log-tail.test.ts
+  # develop 합류분 — `task_outcome: best_effort_failed` 갈래의 사용자 안내 문구를 재는
+  # 유일한 테스트다. 마커는 달려 있었으나 어느 매니페스트도 이 파일을 몰라, 지워도
+  # 우는 게이트가 없었다 (리베이스 4차).
+  - tests/Unit/Installer/InstallerBestEffortMessageTest.php
 
 # 화면(W1~W3 라이트/다크 · Step 3 선택란 · Step 5 라디오 고정 · 새로고침 재개 · 건너뛰기 버튼)은
 # P0 격리 환경(http://localhost:8090, disable_functions 프로필) 브라우저 실측으로 판정한다 —

@@ -16,7 +16,7 @@ use Throwable;
  * `setUp()` 의 `createApplication()` 에서 `QueryException` 이 난다.
  *
  * 그런데 이 저장소의 리허설 DB 는 계획서가 P0 설치 리허설용으로 지정한 것과 **같은 스키마**라
- * (`.claude/plans` 인계 메모: "PHPUnit 과 리허설을 동시에 돌리지 말 것"), 리허설이 `-Fresh` 로
+ * (인계 메모: "PHPUnit 과 리허설을 동시에 돌리지 말 것"), 리허설이 `-Fresh` 로
  * 스키마를 비운 직후에 테스트를 돌리면 그 축이 통째로 붉어진다. 실패 메시지는
  * "Table 'g7_modules' doesn't exist" 라 **코드 결함처럼 보이고**, 진짜 회귀와 구분되지 않는다.
  *

@@ -575,7 +575,7 @@ test_files:
   # (effects 검사는 위 `audit:allow` 로 면제돼 있으므로 이 목록이 유일한 통로다).
   #   · extension_asset_services_share_one_containment
   #   · server_guide_keys_exist_for_every_branch — 인스톨러 다국어는 코어 lang 과 별개
-  #     채널이라 /validate-i18n 스코프 밖이고, 서버별 안내 키는 동적으로 조립되므로
+  #     채널이라 코어 다국어 검증 스코프 밖이고, 서버별 안내 키는 동적으로 조립되므로
   #     리터럴 게이트가 보지 못한다.
   - tests/Unit/Installer/InstallerLanguageParityTest.php
   #   · prune_preserves_public_storage_even_when_not_a_link — 링크 여부로 판정하던 시절

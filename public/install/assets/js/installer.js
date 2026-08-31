@@ -1449,6 +1449,8 @@
                     : `sudo chgrp -R ${webUser} ${mismatchPaths} && sudo chmod -R 775 ${mismatchPaths}`;
 
                 html += '<div class="permission-fix-guide">';
+                html += renderFtpPermissionGuide(data.directories && data.directories.ftp_guide_ownership);
+                html += openShellPermissionGuide();
                 html += `<p class="fix-guide-label">${lang('ownership_mismatch_option_group')}</p>`;
                 html += '<div class="code-box">';
                 html += `<pre class="fix-command">${escapeHtml(groupCommand)}</pre>`;
@@ -1471,6 +1473,7 @@
                     .replace(':owner', escapeHtml(owner))
                     .replace(':web_user', escapeHtml(webUser));
                 html += `<p class="fix-guide-hint" style="margin-top: 0.75rem;">${hintText}</p>`;
+                html += '</details>';
                 html += '</div>';
             }
 
@@ -1478,6 +1481,8 @@
             // 업계 표준(WordPress/Drupal/Joomla/Laravel)에 맞춰 chown 의존성 제거, 비트 강요 제거
             if (failedDirPaths.length > 0) {
                 html += '<div class="permission-fix-guide">';
+                html += renderFtpPermissionGuide(data.directories && data.directories.ftp_guide);
+                html += openShellPermissionGuide();
                 if (isWindows) {
                     const winDirPaths = failedDirPaths.map(p => p.replace(/\//g, '\\'));
                     const winDirCommands = winDirPaths.map(p => `icacls "${p}" /grant Everyone:(OI)(CI)F /T`);
@@ -1508,6 +1513,7 @@
                     html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
                     html += '</div>';
                 }
+                html += '</details>';
                 html += '</div>';
             }
 
@@ -1561,6 +1567,8 @@
                     return basePath ? p.replace(basePath, '.') : p;
                 });
                 html += '<div class="permission-fix-guide">';
+                html += renderFtpPermissionGuide(data.required_files && data.required_files.ftp_guide);
+                html += openShellPermissionGuide();
                 if (isWindows) {
                     const winFilePaths = notWritableFilePaths.map(p => p.replace(/\//g, '\\'));
                     const winFileCommands = winFilePaths.map(p => `icacls "${p}" /grant Everyone:F`);
@@ -1591,6 +1599,7 @@
                     html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
                     html += '</div>';
                 }
+                html += '</details>';
                 html += '</div>';
             }
 
@@ -1611,6 +1620,8 @@
                     : `sudo chgrp ${fileWebUser} ${mismatchFilePaths} && sudo chmod 664 ${mismatchFilePaths}`;
 
                 html += '<div class="permission-fix-guide">';
+                html += renderFtpPermissionGuide(data.required_files && data.required_files.ftp_guide_ownership);
+                html += openShellPermissionGuide();
                 html += `<p class="fix-guide-label">${lang('ownership_mismatch_option_group')}</p>`;
                 html += '<div class="code-box">';
                 html += `<pre class="fix-command">${escapeHtml(fileGroupCommand)}</pre>`;
@@ -1633,6 +1644,7 @@
                     .replace(':owner', escapeHtml(fileOwner))
                     .replace(':web_user', escapeHtml(fileWebUser));
                 html += `<p class="fix-guide-hint" style="margin-top: 0.75rem;">${fileHintText}</p>`;
+                html += '</details>';
                 html += '</div>';
             }
 
@@ -3331,6 +3343,47 @@
         });
 
         return card;
+    }
+
+    /**
+     * 권한 안내 무쉘 판본을 그린다 (W7).
+     *
+     * 이 화면을 보는 사람의 다수는 SSH 를 쓸 수 없다 — 그래서 FTP 조작 절차가 **기본 판본**
+     * 이고 기본 펼침이며, 명령어는 접힌 보조 판본이다. 절차 문구는 서버가 만든다(경로 목록·
+     * OS·소유 관계 판정을 두 벌로 갖지 않기 위해). 서버가 절차를 주지 않으면 아무것도 그리지
+     * 않는다 — 그 자리에 빈 아코디언이 남으면 운영자가 접힌 내용을 찾는다.
+     *
+     * @param {{steps: string[], note: string}|null|undefined} guide 서버가 만든 절차
+     * @returns {string} HTML 조각 (없으면 빈 문자열)
+     */
+    function renderFtpPermissionGuide(guide) {
+        if (!guide || !Array.isArray(guide.steps) || guide.steps.length === 0) {
+            return '';
+        }
+
+        let html = '<details class="permission-guide" open>';
+        html += `<summary class="permission-guide-summary">${lang('permission_guide_ftp_summary')}</summary>`;
+        html += '<ol class="permission-guide-steps">';
+        guide.steps.forEach(step => {
+            html += `<li>${escapeHtml(step)}</li>`;
+        });
+        html += '</ol>';
+        if (guide.note) {
+            html += `<p class="permission-guide-note">${escapeHtml(guide.note)}</p>`;
+        }
+        html += '</details>';
+
+        return html;
+    }
+
+    /**
+     * 쉘 명령 판본의 여는 태그 — FTP 판본과 달리 접어 둔다.
+     *
+     * @returns {string} HTML 조각
+     */
+    function openShellPermissionGuide() {
+        return '<details class="permission-guide">'
+            + `<summary class="permission-guide-summary">${lang('permission_guide_shell_summary')}</summary>`;
     }
 
     /**

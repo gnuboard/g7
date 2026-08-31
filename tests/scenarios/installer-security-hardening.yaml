@@ -108,6 +108,11 @@ test_files:
   - tests/Unit/Installer/ComposerPathValidationTest.php
   - tests/Unit/Installer/BinaryPathPolicyTest.php
   - tests/Unit/Installer/InstallerStep3BinaryPathStoreGuardTest.php
+  # develop 합류분 — `vector: handleStep3Post` × `.env` 라인 주입의 **저장 시점** 사전
+  # 거부. 직렬화기(serializeEnvValue)를 재는 형제와 달리 이쪽은 그 앞단이다. 마커의
+  # payload_class 값(env_line_injection)은 위 축의 newline_lf/newline_crlf 를 아우르는
+  # 이름으로, 축 값 목록과 1:1 이 아니다 — 이 매니페스트는 전개를 표식으로 면제한다.
+  - tests/Unit/Installer/InstallerStep3EnvValueGuardTest.php
 
 manual_verification:
   - description: "Critical-1 양방향 PoC — composer_binary 셸 페이로드"

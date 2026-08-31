@@ -6,6 +6,7 @@ use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\CleansTemporaryBasePath;
 
 /**
  * 설치 2단계(설치 환경 확인) 응답 인코딩 회귀 테스트.
@@ -26,6 +27,8 @@ use PHPUnit\Framework\TestCase;
 #[PreserveGlobalState(false)]
 class RequirementsResponseUtf8Test extends TestCase
 {
+    use CleansTemporaryBasePath;
+
     private static string $sharedBase = '';
 
     private static string $skipReason = '';

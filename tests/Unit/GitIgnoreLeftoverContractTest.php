@@ -7,12 +7,14 @@ use App\Services\StorageLeftoverPruneService;
 use PHPUnit\Framework\TestCase;
 
 /**
- * 인스톨러 쓰기 프로브와 상태 잠금 파일이 `.gitignore` 에 등재된다 (CLAUDE.md 「코드가 남기는 파일에는 정리 주체가 있다」).
+ * 인스톨러 쓰기 프로브와 상태 잠금 파일이 `.gitignore` 에 등재된다 (저장소 규약 「코드가 남기는 파일에는 정리 주체가 있다」).
  *
  * 모집단은 **이 테스트가 재는 것만**이다 — 쓰기 프로브(`.installer-write-probe-*`)가 남을 수
  * 있는 경로 전수(프루너의 프로브 루트 목록 + `storage/` 두 단계)와 상태 파일의 잠금 파일
- * (`installer-state.json.lock`, 15차 G3 W1-4). 「코드가 남기는 파일 전수」가 아니다 — 나머지
- * 잔여물(상태·런타임·파손 사본·프로브 sentinel 등)의 등재는 이 파일이 보지 않는다.
+ * (`installer-state.json.lock`, 15차 G3 W1-4), 코어 업데이트의 `deploy/**` 사이드카,
+ * 그리고 압축 풀기 부트스트랩(`g7-setup.php`)이 사이트 루트에 남기는 파일.
+ * 「코드가 남기는 파일 전수」가 아니다 — 나머지 잔여물(파손 사본·프로브 sentinel 등)의
+ * 등재는 이 파일이 보지 않는다.
  *
  * 쓰기 프로브는 인스톨러가 점검하는 11개 디렉토리 어디에나 남을 수 있는데 `storage/app`·
  * `bootstrap/cache` 두 곳만 각자의 무시 규칙 덕에 가려졌고 `storage/`·`modules/`·`plugins/`·
@@ -66,7 +68,70 @@ class GitIgnoreLeftoverContractTest extends TestCase
             $candidates[] = 'deploy/nginx/g7-layout2.conf'.$suffix;
         }
 
+        foreach ($this->bootstrapLeftovers() as $name) {
+            $candidates[] = $name;
+        }
+
         return $candidates;
+    }
+
+    /**
+     * 압축 풀기 부트스트랩이 사이트 루트에 남기는 파일 이름.
+     *
+     * 확인 번호 파일은 **해제를 여는 자격증명**이다. 해제가 끝나면 부트스트랩이 스스로
+     * 지우지만 중간에 그만두면 남고, 문서 루트를 프로젝트 루트로 두는 배치에서는 그 자리가
+     * 곧 저장소라 `git add -A` 한 번으로 자격증명이 이력에 들어간다.
+     *
+     * 모집단은 부트스트랩이 「자기가 관리하는 이름」으로 열거한 목록(`g7setup_is_self_managed()`)
+     * 에서 도출한다 — 손으로 적으면 이름이 하나 늘 때 같이 늘지 않는다. 그 파일은 압축이
+     * 풀리기 전에 도는 자기 완결 파일이라 require 할 수 없어 소스에서 읽는다.
+     *
+     * 배포되는 진입 파일 자신은 뺀다 — 그 파일은 무시되면 **안 되고**, 그 반대 방향은
+     * `ZipBootstrapContractTest::test_부트스트랩이_배포_대상에_포함된다` 가 잰다.
+     *
+     * @return list<string> 저장소 루트 기준 파일 이름
+     */
+    private function bootstrapLeftovers(): array
+    {
+        $path = dirname(__DIR__, 2).'/g7-setup.php';
+        $this->assertFileExists($path, '압축 풀기 부트스트랩이 저장소 루트에 없다');
+        $source = (string) file_get_contents($path);
+
+        $constants = [];
+        if (preg_match_all("/^const (G7_SETUP_[A-Z_]+) = '([^']*)';/m", $source, $m, PREG_SET_ORDER)) {
+            foreach ($m as $row) {
+                $constants[$row[1]] = $row[2];
+            }
+        }
+        $this->assertNotEmpty($constants, '부트스트랩 상수를 읽지 못했다 — 모집단이 비면 이 검사는 아무것도 재지 않는다');
+
+        $start = strpos($source, 'function g7setup_is_self_managed(');
+        $this->assertNotFalse($start, '자기 관리 파일 목록을 여는 함수가 없다 — 이름이 바뀌면 이 축이 조용히 빈다');
+        $open = strpos($source, '[', $start);
+        $close = strpos($source, '], true);', (int) $open);
+        $this->assertNotFalse($close, '자기 관리 파일 목록의 끝을 찾지 못했다');
+        $body = substr($source, (int) $open, (int) $close - (int) $open);
+
+        $selfName = $constants['G7_SETUP_SELF_NAME'] ?? '';
+        $this->assertNotSame('', $selfName, '진입 파일 이름 상수가 비었다');
+
+        $leftovers = [];
+        // 각 항목은 `G7_SETUP_X` 또는 `G7_SETUP_X.'접미사'` 형태다. `basename(__FILE__)` 처럼
+        // 상수가 아닌 항목은 진입 파일 자신을 가리키므로 여기서 잡히지 않아도 된다.
+        if (preg_match_all("/(G7_SETUP_[A-Z_]+)(?:\s*\.\s*'([^']*)')?/", $body, $m, PREG_SET_ORDER)) {
+            foreach ($m as $row) {
+                $value = $constants[$row[1]] ?? null;
+                if ($value === null || $value === $selfName) {
+                    continue;
+                }
+                $leftovers[] = $value.($row[2] ?? '');
+            }
+        }
+
+        $leftovers = array_values(array_unique($leftovers));
+        $this->assertNotEmpty($leftovers, '부트스트랩 잔여물 목록이 비었다 — 파서가 죽으면 이 축이 통째로 사라진다');
+
+        return $leftovers;
     }
 
     /**

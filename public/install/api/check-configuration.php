@@ -15,12 +15,30 @@ use App\Support\PrivilegedDatabaseAccounts;
  * - POST ?action=test-db      : 데이터베이스 연결 테스트
  */
 
+// 실행 모드 판정 헬퍼 — Step 3 의 실행 방식 선택란이 같은 판정을 본다 (D33).
+// 선언 전용 파일이라 출력 채널 가드보다 앞에 둘 수 있고, 아래 가드가 쓰는
+// installerHasFunction 을 여기서 정의한다 (21차 N4 의 순서 예외 2파일 중 하나).
+require_once __DIR__.'/../includes/execution-mode.php';
+
+// 오류 텍스트가 JSON 본문에 섞이지 않게 한다 (20차 #13 · 21차 N4) — **include 체인보다 앞**.
+// 이 파일의 detect-php 는 문서루트 밖 후보 경로를 stat 하므로 open_basedir 환경에서 warning
+// 발생이 정상 시나리오다 (#8) — 그 텍스트가 본문 앞에 붙으면 클라이언트의 response.json() 이
+// throw 해 PHP 자동 감지가 사유 없이 무동작이 된다.
+//
+// 라이브러리 모드(단위 테스트) 에서도 무는 자리다. utf8.php 는 선언 전용이 아니라
+// 최상위에서 app/Support 클래스를 조건부로 로드하므로, 그 include 를 가드 뒤로 넘기려면
+// 채널을 그보다 먼저 열어야 한다. 그 파일이 주는 installer_json_encode 는 라이브러리
+// 모드 소비자도 쓰므로 include 자체를 메인 블록 안으로 내릴 수는 없다.
+if (installerHasFunction('ini_set')) {
+    @ini_set('display_errors', '0');
+}
+error_reporting(E_ALL);
+
+// 프로세스 출력 UTF-8 정규화 + JSON 인코딩 — 응답 본문을 만드는 유일한 통로다.
+require_once __DIR__.'/../includes/utf8.php';
 // 실행 바이너리 경로 허용 형태 정책 — 인스톨러 API 와 설치 워커가 같은 규칙을 공유한다.
 // 한쪽만 고치면 다른 쪽이 우회로가 되므로 의존성 없는 공용 파일로 두고 양쪽에서 로드한다.
-require_once __DIR__.'/../includes/utf8.php';
 require_once __DIR__.'/../includes/binary-path-policy.php';
-// 실행 모드 판정 헬퍼 — Step 3 의 실행 방식 선택란이 같은 판정을 본다 (D33)
-require_once __DIR__.'/../includes/execution-mode.php';
 
 /**
  * 검증 API 클래스
@@ -531,8 +549,28 @@ class ValidationApi
      */
     private function checkDirectoryPermissions(): array
     {
+        // 안내를 내기 전에 PHP `chmod()` 로 직접 권한 부여를 시도한다 (B-8).
+        // 성공하면 아래 검사가 통과해 안내 자체가 나오지 않는다 — 쉘이 없는 계정에서는
+        // 이것이 유일한 자동 복구 수단이다. 실패는 무해하다(안내가 그대로 나온다).
+        installerRepairPermissions(array_keys(REQUIRED_DIRECTORIES));
+
         // 공통 함수 호출
         $check = checkDirectoryPermissions(REQUIRED_DIRECTORIES);
+
+        // W7 무쉘 판본 — 실패한 대상만 모아 FTP 조작 절차를 만든다. 소유권 불일치는 표준
+        // 값으로 쓰기가 생기지 않는 구성이므로 보조 값을 병기하는 별도 판본을 함께 낸다.
+        $failedRelative = [];
+        $ownershipRelative = [];
+        foreach ($check['results'] as $dir => $result) {
+            if ($result['passed']) {
+                continue;
+            }
+            if ($result['error_type'] === 'ownership_mismatch') {
+                $ownershipRelative[] = './'.$dir;
+            } elseif (in_array($result['error_type'], ['not_writable', 'not_readable', 'subdirectory_issues'], true)) {
+                $failedRelative[] = './'.$dir;
+            }
+        }
 
         // API 응답 형식에 맞게 변환
         $results = [];
@@ -562,6 +600,12 @@ class ValidationApi
             'web_server_group' => getWebServerGroup() ?? getWebServerUser() ?? 'www-data',
             'web_server_user' => getWebServerUser(),
             'all_passed' => $check['all_passed'],
+            'ftp_guide' => $failedRelative === []
+                ? null
+                : installerFtpPermissionGuide($failedRelative, true, isWindows()),
+            'ftp_guide_ownership' => $ownershipRelative === []
+                ? null
+                : installerFtpPermissionGuide($ownershipRelative, true, isWindows(), true),
             'message' => $check['all_passed']
                 ? lang('success_directories_writable')
                 : lang('error_directory_not_writable_detail'),
@@ -585,10 +629,15 @@ class ValidationApi
             '.env' => getEnvCopyCommand($basePath),
         ];
 
+        // 디렉토리와 같은 규율 — 안내를 내기 전에 직접 권한 부여를 시도한다 (B-8).
+        installerRepairPermissions(array_keys($filePaths), false);
+
         $webServerUser = getWebServerUser();
         $files = [];
         $allPassed = true;
         $hasNotWritable = false;
+        $notWritableRelative = [];
+        $ownershipRelative = [];
 
         foreach ($filePaths as $name => $fullPath) {
             $exists = file_exists($fullPath);
@@ -620,8 +669,10 @@ class ValidationApi
             } elseif (! $writable) {
                 if ($permsOctal >= 0644 && $webServerUser && $owner && $owner !== $webServerUser) {
                     $errorType = 'ownership_mismatch';
+                    $ownershipRelative[] = './'.$name;
                 } else {
                     $errorType = 'not_writable';
+                    $notWritableRelative[] = './'.$name;
                 }
                 $hasNotWritable = true;
             }
@@ -657,6 +708,12 @@ class ValidationApi
             'base_path_owner' => $basePathOwner,
             'base_path_owner_matches_web_user' => $basePathOwnerMatchesWebUser,
             'relative_base_path' => '.',
+            'ftp_guide' => $notWritableRelative === []
+                ? null
+                : installerFtpPermissionGuide($notWritableRelative, false, isWindows()),
+            'ftp_guide_ownership' => $ownershipRelative === []
+                ? null
+                : installerFtpPermissionGuide($ownershipRelative, false, isWindows(), true),
             'message' => $allPassed
                 ? lang('success_required_files')
                 : lang('error_required_files_missing'),
@@ -1652,16 +1709,6 @@ class ValidationApi
 $checkConfigurationLibraryMode = defined('CHECK_CONFIGURATION_LIBRARY') && constant('CHECK_CONFIGURATION_LIBRARY');
 
 if (! $checkConfigurationLibraryMode) {
-    // 오류 텍스트가 JSON 본문에 섞이지 않게 한다 (20차 #13 · 21차 N4) — **include 체인·가드보다
-    // 앞**. 이 파일의 detect-php 는 문서루트 밖 후보 경로를 stat 하므로 open_basedir 환경에서
-    // warning 발생이 정상 시나리오다 (#8) — 그 텍스트가 본문 앞에 붙으면 클라이언트의
-    // response.json() 이 throw 해 PHP 자동 감지가 사유 없이 무동작이 된다.
-    // installerHasFunction 은 파일 상단의 execution-mode.php require 가 이미 정의했다.
-    if (installerHasFunction('ini_set')) {
-        @ini_set('display_errors', '0');
-    }
-    error_reporting(E_ALL);
-
     // 필수 파일 로드 (config.php가 BASE_PATH를 정의함)
     require_once __DIR__.'/../includes/config.php';
     require_once __DIR__.'/../includes/session.php';

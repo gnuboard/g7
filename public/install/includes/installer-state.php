@@ -174,7 +174,17 @@ function installerPreserveCorruptState(string $content): void
 
     $backup = STATE_PATH.INSTALLER_STATE_CORRUPT_INFIX.date(INSTALLER_STATE_CORRUPT_STAMP_FORMAT).'.'.$digest;
 
-    // ìì ìí íì¼ì ë³´ì¡´ ì¬ë³¸ì´ë¤ â ìë¦¬ë©´ ì§ë¨ ê·¼ê±°ë¡ì¨ì ê°ì´ ìë¤.
+    // `installerWroteFully` 의 출처는 installer-runtime.php 다. 이 파일을 싣는 진입점 중
+    // 그것까지 싣는 것은 일부뿐이라(`index.php`·`save-extensions.php`·`session.php` 는 싣지
+    // 않는다), 로드 순서에 전이 의존하면 **파손 상태 파일을 만난 순간** fatal 이 된다 —
+    // 이 함수가 존재하는 이유가 바로 그 상황이라, 복구 안내를 띄워야 할 자리에서 화면이
+    // 통째로 백지가 된다. 형제 지점(`buildEnvContent` 의 `replaceEnvLine`)이 같은 이유로
+    // 같은 형태를 쓴다 (21차 6c). 내부 함수 가용성 판정이라 차단 함수 축의 대상이 아니다.
+    if (! function_exists('installerWroteFully')) {
+        require_once __DIR__.'/installer-runtime.php';
+    }
+
+    // 손상 상태 파일의 보존 사본이다 — 잘리면 진단 근거로써의 값이 없다.
     if (installerWroteFully(@file_put_contents($backup, $content), $content)) {
         if (installerHasFunction('chmod')) {
             @chmod($backup, 0600);

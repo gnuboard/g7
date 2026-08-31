@@ -865,7 +865,7 @@ class RootEntrypointContractTest extends TestCase
         // 그래서 패턴을 **바이트로 조립**한다. 조립한 값이 실제로 그 형태를 잡는지도
         //   ③ 그 뒤 판본은 개행 클래스로 `\R` 을 썼는데, `u` 수식자가 없으면 PCRE 는
         //      **바이트 모드**로 판정해 0x85(NEL)까지 개행으로 본다 — 이 저장소가 스스로
-        //      금지한 형태다(CLAUDE.md 「한글 텍스트를 정규식으로 자를 때」). 한글에서
+        //      금지한 형태다(저장소 규약 「한글 텍스트를 정규식으로 자를 때」). 한글에서
         //      실제 오탐이 되지는 않지만(0x85 는 연속 바이트라 `\` 뒤에 올 수 없다 — 실측),
         //      규약을 만든 자리가 그 규약을 어기고 있으면 규약이 죽는다. 실제 줄 종결자만
         //      보도록 명시 대안으로 적고, 그 성질까지 아래에서 잰다.
@@ -1368,8 +1368,16 @@ class RootEntrypointContractTest extends TestCase
 
         $rootFiles = collect((array) scandir(base_path()))
             ->filter(static fn (string $name) => $name !== '.' && $name !== '..' && is_file(base_path($name)))
-            // 진입점은 서빙돼야 한다 — 막으면 그 서버에서 사이트가 통째로 열리지 않는다.
-            ->reject(static fn (string $name) => $name === 'index.php')
+            // 최상위 `.php` 는 이 방어선의 대상이 **아니다** — 원리상 담을 수 없다.
+            //
+            // 이 방어선이 막는 것은 「PHP 로 실행되지 않아 원문이 그대로 나가는 것」이다
+            // (`artisan` 이 그 예다). `.php` 는 실행되므로 그 축에 해당하지 않고, 확장자
+            // 목록에 `php` 를 넣으면 **`index.php` 가 함께 막혀** 그 서버에서 사이트가
+            // 통째로 열리지 않는다. 종전에는 최상위 `.php` 가 `index.php` 하나뿐이라
+            // 그 이름만 예외로 두어도 성립했으나, 그것은 이름의 문제가 아니라 확장자의
+            // 문제였다. 대신 아래에서 「최상위 `.php` 는 자기 진입 가드를 갖는다」를
+            // 적극 조건으로 요구한다 — 예외를 넓히면서 의무를 없애지 않는다.
+            ->reject(static fn (string $name) => strtolower((string) pathinfo($name, PATHINFO_EXTENSION)) === 'php')
             // 이름이 점으로 시작하는 파일은 블록 밖 `RedirectMatch 403`(mod_alias) 이 이미 막는다.
             // 종전에는 `<FilesMatch "^\.">` + `Require` 였는데, `Require` 는 AuthConfig 등급을
             // 요구해 제한 AllowOverride 호스팅에서 전 요청 500 을 냈다(8차 라운드 실측).
@@ -1386,7 +1394,7 @@ class RootEntrypointContractTest extends TestCase
             ->map(static fn ($target) => trim((string) $target, '/'))
             ->reject(static fn (string $target) => $target === '' || str_contains($target, '/'))
             ->filter(static fn (string $target) => is_file(base_path($target)))
-            ->reject(static fn (string $target) => $target === 'index.php')
+            ->reject(static fn (string $target) => strtolower((string) pathinfo($target, PATHINFO_EXTENSION)) === 'php')
             ->reject(static fn (string $target) => str_starts_with($target, '.'))
             ->reject(static fn (string $target) => in_array($target, $releaseExcluded, true))
             ->unique()
@@ -1431,6 +1439,32 @@ class RootEntrypointContractTest extends TestCase
                 $name.' 가 mod_rewrite 부재 방어선에 걸리지 않는다 (확장자 `'.$ext.'`) — '
                 .'그 서버에서 원문이 그대로 서빙된다'
             );
+        }
+
+        // 최상위 `.php` 의 짝 의무 — 확장자 방어선이 담을 수 없는 만큼 자기 가드를 요구한다.
+        //
+        // `index.php` 는 위임만 하는 shim 이고 설치 게이트는 위임 대상(`public/index.php`)이
+        // 소유한다. 그 외의 최상위 `.php`(현재는 압축 풀기 부트스트랩)는 **설치가 끝난
+        // 사이트에서 스스로 닫혀야** 한다 — 그러지 않으면 운영 사이트에 인증 없는 표면이
+        // 남는다. 두 완료 신호를 모두 보는지까지 본다: 락 파일만 보면 `.env` 표식만 있는
+        // 사이트가, 표식만 보면 락 파일만 있는 사이트가 각각 열린다.
+        $rootPhpFiles = collect((array) scandir(base_path()))
+            ->filter(static fn (string $name) => $name !== '.' && $name !== '..' && is_file(base_path($name)))
+            ->filter(static fn (string $name) => strtolower((string) pathinfo($name, PATHINFO_EXTENSION)) === 'php')
+            ->reject(static fn (string $name) => $name === 'index.php')
+            ->values();
+
+        foreach ($rootPhpFiles as $name) {
+            $source = (string) file_get_contents(base_path($name));
+
+            foreach (['g7_installed', 'INSTALLER_COMPLETED'] as $signal) {
+                $this->assertStringContainsString(
+                    $signal,
+                    $source,
+                    $name.' 가 설치 완료 신호(`'.$signal.'`)를 보지 않는다 — '
+                    .'운영 사이트에 인증 없는 최상위 진입점이 남는다'
+                );
+            }
         }
     }
 

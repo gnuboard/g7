@@ -4,6 +4,8 @@ namespace Tests\Unit\Installer;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -23,6 +25,8 @@ use PHPUnit\Framework\TestCase;
  *
  * @effects step3_post_rejects_env_line_breaks_before_save
  */
+#[RunClassInSeparateProcess]
+#[PreserveGlobalState(false)]
 class InstallerStep3EnvValueGuardTest extends TestCase
 {
     public static function setUpBeforeClass(): void
@@ -37,6 +41,10 @@ class InstallerStep3EnvValueGuardTest extends TestCase
             define('SUPPORTED_LANGUAGES', ['ko' => '한국어', 'en' => 'English']);
         }
 
+        // 검증 상한 상수(MAX_APP_NAME_LENGTH 등)의 정의처. 종전에는 같은 프로세스의
+        // 다른 클래스가 이미 로드해 둔 것에 기대고 있어, 프로세스를 격리하면 상수가
+        // 없다 — 그 전이 의존이 바로 격리가 막는 형태다 (리베이스 4차).
+        require_once $projectRoot.'/public/install/includes/config.php';
         require_once $projectRoot.'/public/install/includes/functions.php';
         require_once $projectRoot.'/public/install/includes/binary-path-policy.php';
         require_once $projectRoot.'/public/install/includes/request-handler.php';

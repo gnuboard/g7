@@ -1851,6 +1851,146 @@ function getPermissionFixCommand(string $pathList, string $mode = 'ownership'): 
 }
 
 /**
+ * 쓰기 권한이 없는 대상에 PHP `chmod()` 로 직접 권한 부여를 시도합니다 (B-8).
+ *
+ * 안내를 내기 **전에** 한 번 시도한다 — 성공하면 안내 화면 자체가 필요 없다. 쉘도 SSH 도
+ * 없는 계정에서는 이것이 유일한 자동 복구 수단이다.
+ *
+ * 적용 범위를 좁게 잡는 이유 (§7 R41 — 무조건 적용은 운영자 의도를 덮어쓴다):
+ *  · **이미 쓸 수 있는 대상은 건드리지 않는다.** 통과한 경로의 비트를 바꾸면 운영자가
+ *    의도해서 조인 권한을 인스톨러가 되돌리는 것이 된다.
+ *  · **비트를 낮추지 않는다.** 현재 값에 필요한 비트를 더할 뿐이다 (0775 를 0755 로 깎지 않는다).
+ *  · 실패는 무해하다 — 안내가 그대로 나온다. 그래서 실패를 오류로 올리지 않는다.
+ *
+ * @param  array<int, string>  $paths  프로젝트 루트 기준 상대 경로 목록
+ * @param  bool  $isDirectory  디렉토리 대상인가 (파일이면 false)
+ * @return array<string, bool> 경로별 「이 호출로 쓰기 가능해졌는가」
+ */
+function installerRepairPermissions(array $paths, bool $isDirectory = true): array
+{
+    $repaired = [];
+
+    // `chmod` 는 하드닝 프로필이 막을 수 있다. 막히면 PHP 8 은 함수 테이블에서 지우므로
+    // 호출 자체가 치명 오류다 — `@` 는 가드가 아니다.
+    $canChmod = installerHasFunction('chmod');
+
+    foreach ($paths as $path) {
+        $full = BASE_PATH.'/'.ltrim($path, '/');
+        $repaired[$path] = false;
+
+        if (! file_exists($full)) {
+            continue;
+        }
+
+        // 이미 쓸 수 있으면 손대지 않는다.
+        $writable = $isDirectory ? installerDirectoryIsWritable($full) : is_writable($full);
+        if ($writable) {
+            continue;
+        }
+
+        if (! $canChmod) {
+            continue;
+        }
+
+        $current = @fileperms($full);
+        if ($current === false) {
+            continue;
+        }
+
+        $desired = ($current & 07777) | ($isDirectory ? REQUIRED_DIRECTORY_PERMISSIONS : 0644);
+        @chmod($full, $desired);
+        clearstatcache(true, $full);
+
+        $repaired[$path] = $isDirectory ? installerDirectoryIsWritable($full) : is_writable($full);
+    }
+
+    return $repaired;
+}
+
+/**
+ * 권한 값이 그 계정에 쓰기를 허용하는가 (Q7 판정 본체).
+ *
+ * 안내가 제시하는 숫자 값이 실제로 쓰기를 주는지는 **소유 관계**에 달려 있다. 이 판정을
+ * 함수로 두는 이유는 W7 의 보조 값(707)이 필요한 서버 구성이 실재하는지를 코드가
+ * 스스로 답하게 하기 위해서다 — 웹 서버가 파일 소유자와 다른 계정으로 돌고 공유 그룹도
+ * 없으면 0755 의 「others」 비트는 `r-x` 라 쓰기가 없다. 그 구성에서는 소유자만 쓸 수 있고,
+ * FTP 계정에는 소유자·그룹을 바꿀 수단이 없으므로 남는 선택지는 「others 에 쓰기」뿐이다.
+ *
+ * @param  int  $mode  퍼미션 비트 (예: 0755)
+ * @param  bool  $isOwner  판정 대상 계정이 소유자인가
+ * @param  bool  $isGroupMember  판정 대상 계정이 소유 그룹에 속하는가
+ * @return bool 쓰기가 허용되면 true
+ */
+function installerPermissionGrantsWrite(int $mode, bool $isOwner, bool $isGroupMember): bool
+{
+    if ($isOwner) {
+        return ($mode & 0200) !== 0;
+    }
+
+    if ($isGroupMember) {
+        return ($mode & 0020) !== 0;
+    }
+
+    return ($mode & 0002) !== 0;
+}
+
+/**
+ * 무쉘(FTP) 권한 안내 절차를 만듭니다 (W7).
+ *
+ * 이 화면을 보는 사람의 다수는 SSH 를 쓸 수 없다. 그래서 FTP 조작 절차가 **기본 판본**이고
+ * 명령어는 접힌 보조 판본이다. 소유자 변경 안내는 넣지 않는다 (보안 결정) — 퍼미션 값
+ * 안내로 한정한다.
+ *
+ * `$ownershipMismatch` 가 참이면 보조 값을 병기한다. 그 구성에서는 표준 값(755/644)이
+ * 소유자에게만 쓰기를 주므로 FTP 계정이 고를 수 있는 값이 하나 더 필요하다 (Q7).
+ *
+ * @param  array<int, string>  $paths  대상 경로 표시 문자열 목록 (사람이 읽는 경로)
+ * @param  bool  $isDirectory  디렉토리 대상인가
+ * @param  bool  $isWindows  Windows 환경인가
+ * @param  bool  $ownershipMismatch  소유자와 웹 서버 계정이 다른가
+ * @return array{steps: array<int, string>, note: string} 절차 목록과 보조 안내
+ */
+function installerFtpPermissionGuide(array $paths, bool $isDirectory, bool $isWindows, bool $ownershipMismatch = false): array
+{
+    $paths = array_values(array_filter(array_map('strval', $paths)));
+    $first = $paths[0] ?? ($isDirectory ? 'storage' : '.env');
+    $rest = array_slice($paths, 1);
+
+    $primary = $isDirectory ? REQUIRED_DIRECTORY_PERMISSIONS_DISPLAY : '644';
+    $fallback = $isDirectory ? '707' : '606';
+
+    $steps = [
+        lang('permission_guide_ftp_step_connect', ['path' => $first]),
+        lang('permission_guide_ftp_step_open'),
+    ];
+
+    if ($isWindows) {
+        $steps[] = lang('permission_guide_ftp_step_value_windows');
+    } else {
+        $steps[] = lang(
+            $isDirectory ? 'permission_guide_ftp_step_value_directory' : 'permission_guide_ftp_step_value_file',
+            ['value' => $primary]
+        );
+    }
+
+    if ($rest !== []) {
+        $steps[] = lang('permission_guide_ftp_step_repeat', ['paths' => implode(', ', $rest)]);
+    }
+
+    $steps[] = lang('permission_guide_ftp_step_recheck');
+
+    if ($isWindows) {
+        $note = lang('permission_guide_ftp_note_windows');
+    } elseif ($ownershipMismatch) {
+        $note = lang('permission_guide_ftp_fallback', ['value' => $fallback, 'primary' => $primary]);
+    } else {
+        $note = '';
+    }
+
+    return ['steps' => $steps, 'note' => $note];
+}
+
+/**
  * 권한 수정 명령어 판정 본체 — OS 를 **인자로** 받는다 (11차 #D16).
  *
  * `isWindows()` 를 함수 안에서 직접 부르면 그 프로세스의 OS 분기 하나만 평가된다 —

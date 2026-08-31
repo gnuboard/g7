@@ -2515,6 +2515,37 @@ hr {
   text-decoration: underline;
 }
 
+/* 권한 안내 무쉘 판본 (W7) — FTP 조작 절차와 쉘 명령을 두 벌로 낸다.
+   색은 선언하지 않는다: 이 블록은 언제나 경고·오류 카드 안에 놓이고, 그 카드의 문자색을
+   그대로 물려받아야 두 모드에서 대비가 카드와 함께 성립한다. */
+.permission-guide {
+  margin-top: var(--spacing-md);
+}
+
+.permission-guide-summary {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  padding: var(--spacing-xs) 0;
+}
+
+.permission-guide-steps {
+  margin: var(--spacing-sm) 0 0;
+  padding-left: var(--spacing-lg);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+}
+
+.permission-guide-steps li {
+  margin-bottom: var(--spacing-xs);
+}
+
+.permission-guide-note {
+  font-size: var(--font-size-xs);
+  margin-top: var(--spacing-sm);
+  margin-bottom: 0;
+}
+
 .fix-guide-hint {
   font-size: var(--font-size-xs);
   color: var(--fix-guide-hint-text);
