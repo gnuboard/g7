@@ -7,7 +7,7 @@
 | 템플릿 | 상태 | 문서 위치 |
 |---|---|---|
 | `sirsoft-admin_basic` | 이관 완료 | [templates/_bundled/sirsoft-admin_basic/docs/](../../../templates/_bundled/sirsoft-admin_basic/docs/README.md) |
-| `sirsoft-basic` | 이관 대기 (S3) | [components.md](sirsoft-basic/components.md) · [handlers.md](sirsoft-basic/handlers.md) · [layouts.md](sirsoft-basic/layouts.md) |
+| `sirsoft-basic` | 이관 완료 | [templates/_bundled/sirsoft-basic/docs/](../../../templates/_bundled/sirsoft-basic/docs/README.md) |
 
 이관 배경·문서 체계 전반은 [extension-documentation.md](../../extension/extension-documentation.md)
 를 참고하세요.

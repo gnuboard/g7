@@ -4,6 +4,12 @@ All notable changes to this plugin will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.0.2] - 2026-08-31
+
+### Added
+
+- 개발자와 AI 에이전트를 위한 문서를 추가했습니다. 확장 폴더의 `AGENTS.md`(설계 의도·확장점·수정 시 확인할 것)와 `README.md`(도입·운영 안내), `docs/`(상세 문서)로 구성됩니다.
+
 ## [1.0.1] - 2026-08-19
 
 ### Security

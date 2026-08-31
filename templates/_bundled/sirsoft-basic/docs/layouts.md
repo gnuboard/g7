@@ -1,11 +1,315 @@
-# sirsoft-basic 레이아웃
+# Basic — 레이아웃
+
+> 레이아웃 목록과 라우트 매핑 · 진입점: [AGENTS.md](../AGENTS.md)
+
+## 레이아웃 목록
+
+<!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
+레이아웃 166개 (루트: `layouts`).
+
+| 그룹 | 개수 |
+|---|---|
+| `(root)` | 2개 |
+| `auth` | 5개 |
+| `board` | 5개 |
+| `errors` | 6개 |
+| `mypage` | 11개 |
+| `page` | 1개 |
+| `partials` | 124개 |
+| `search` | 1개 |
+| `shop` | 9개 |
+| `users` | 2개 |
+
+| 레이아웃 | 그룹 | 종류 | extends |
+|---|---|---|---|
+| `_user_base` | `(root)` | partial | - |
+| `forgot_password` | `auth` | 화면 | `_user_base` |
+| `identity_challenge` | `auth` | 화면 | `_user_base` |
+| `login` | `auth` | 화면 | `_user_base` |
+| `register` | `auth` | 화면 | `_user_base` |
+| `reset_password` | `auth` | 화면 | `_user_base` |
+| `boards` | `board` | 화면 | `_user_base` |
+| `form` | `board` | 화면 | `_user_base` |
+| `index` | `board` | 화면 | `_user_base` |
+| `popular` | `board` | 화면 | `_user_base` |
+| `show` | `board` | 화면 | `_user_base` |
+| `401` | `errors` | 화면 | `_user_base` |
+| `403` | `errors` | 화면 | `_user_base` |
+| `404` | `errors` | 화면 | `_user_base` |
+| `500` | `errors` | 화면 | `_user_base` |
+| `503` | `errors` | 화면 | `_user_base` |
+| `maintenance` | `errors` | 화면 | `_user_base` |
+| `home` | `(root)` | 화면 | `_user_base` |
+| `addresses` | `mypage` | 화면 | `_user_base` |
+| `board` | `mypage` | 화면 | `_user_base` |
+| `change-password` | `mypage` | 화면 | `_user_base` |
+| `inquiries` | `mypage` | 화면 | `_user_base` |
+| `mileage` | `mypage` | 화면 | `_user_base` |
+| `notifications` | `mypage` | 화면 | `_user_base` |
+| `orders` | `mypage` | 화면 | `_user_base` |
+| `show` | `mypage` | 화면 | `_user_base` |
+| `profile-edit` | `mypage` | 화면 | `_user_base` |
+| `profile` | `mypage` | 화면 | `_user_base` |
+| `wishlist` | `mypage` | 화면 | `_user_base` |
+| `show` | `page` | 화면 | `_user_base` |
+| `_identity_challenge_modal` | `partials` | partial | - |
+| `_modal_notification_delete_all_confirm` | `partials` | partial | - |
+| `_login_form` | `partials` | partial | - |
+| `_modal_privacy` | `partials` | partial | - |
+| `_modal_terms` | `partials` | partial | - |
+| `_redirect_if_logged_in` | `partials` | partial | - |
+| `_register_form` | `partials` | partial | - |
+| `_board_card` | `partials` | partial | - |
+| `_parent_post` | `partials` | partial | - |
+| `_password_verify_modal` | `partials` | partial | - |
+| `_post_form` | `partials` | partial | - |
+| `_type_renderer` | `partials` | partial | - |
+| `_admin_links` | `partials` | partial | - |
+| `_empty_states` | `partials` | partial | - |
+| `_loading_error` | `partials` | partial | - |
+| `_type_renderer` | `partials` | partial | - |
+| `_write_button` | `partials` | partial | - |
+| `_popular_item` | `partials` | partial | - |
+| `_popular_list` | `partials` | partial | - |
+| `_comment_input` | `partials` | partial | - |
+| `_comment_item` | `partials` | partial | - |
+| `_comment_section` | `partials` | partial | - |
+| `_navigation` | `partials` | partial | - |
+| `_post_attachments` | `partials` | partial | - |
+| `_reply_section` | `partials` | partial | - |
+| `_type_renderer` | `partials` | partial | - |
+| `_modal_delete` | `partials` | partial | - |
+| `_modal_report` | `partials` | partial | - |
+| `_password_verify_modal` | `partials` | partial | - |
+| `form` | `partials` | 화면 | - |
+| `index` | `partials` | 화면 | - |
+| `show` | `partials` | 화면 | - |
+| `index` | `partials` | 화면 | - |
+| `index` | `partials` | 화면 | - |
+| `_currency_selector` | `partials` | partial | - |
+| `_board_summary` | `partials` | partial | - |
+| `_community_guide` | `partials` | partial | - |
+| `_popular_boards` | `partials` | partial | - |
+| `_recent_posts` | `partials` | partial | - |
+| `_shop_promo` | `partials` | partial | - |
+| `_stat_card_boards` | `partials` | partial | - |
+| `_stat_card_comments` | `partials` | partial | - |
+| `_stat_card_posts` | `partials` | partial | - |
+| `_stat_card_users` | `partials` | partial | - |
+| `_welcome_card` | `partials` | partial | - |
+| `_tab_navigation` | `partials` | partial | - |
+| `_list` | `partials` | partial | - |
+| `_modal_address` | `partials` | partial | - |
+| `_modal_confirm_delete` | `partials` | partial | - |
+| `_modal_confirm_overwrite` | `partials` | partial | - |
+| `_list` | `partials` | partial | - |
+| `_my_comments` | `partials` | partial | - |
+| `_my_posts` | `partials` | partial | - |
+| `_list` | `partials` | partial | - |
+| `_list` | `partials` | partial | - |
+| `_list` | `partials` | partial | - |
+| `_history` | `partials` | partial | - |
+| `_items` | `partials` | partial | - |
+| `_list` | `partials` | partial | - |
+| `_modal_cancel` | `partials` | partial | - |
+| `_modal_change_address` | `partials` | partial | - |
+| `_modal_confirm_purchase` | `partials` | partial | - |
+| `_modal_write_review` | `partials` | partial | - |
+| `_orderer` | `partials` | partial | - |
+| `_payment` | `partials` | partial | - |
+| `_shipping` | `partials` | partial | - |
+| `_status_header` | `partials` | partial | - |
+| `_edit` | `partials` | partial | - |
+| `_modal_withdraw` | `partials` | partial | - |
+| `_password_verify_section` | `partials` | partial | - |
+| `_view` | `partials` | partial | - |
+| `_list` | `partials` | partial | - |
+| `_search_filters` | `partials` | partial | - |
+| `_search_input` | `partials` | partial | - |
+| `_search_results` | `partials` | partial | - |
+| `_search_states` | `partials` | partial | - |
+| `_search_tabs` | `partials` | partial | - |
+| `_section` | `partials` | partial | - |
+| `_list` | `partials` | partial | - |
+| `_section` | `partials` | partial | - |
+| `_item_card` | `partials` | partial | - |
+| `_item_list` | `partials` | partial | - |
+| `_section` | `partials` | partial | - |
+| `_cart_item` | `partials` | partial | - |
+| `_cart_list` | `partials` | partial | - |
+| `_cart_summary` | `partials` | partial | - |
+| `_checkout_discount` | `partials` | partial | - |
+| `_checkout_items` | `partials` | partial | - |
+| `_checkout_mileage` | `partials` | partial | - |
+| `_checkout_orderer` | `partials` | partial | - |
+| `_checkout_payment` | `partials` | partial | - |
+| `_checkout_shipping` | `partials` | partial | - |
+| `_checkout_summary` | `partials` | partial | - |
+| `_modal_address_manage` | `partials` | partial | - |
+| `_modal_cart_delete_confirm` | `partials` | partial | - |
+| `_modal_cart_option_change` | `partials` | partial | - |
+| `_modal_cart_unavailable` | `partials` | partial | - |
+| `_modal_coupon_download` | `partials` | partial | - |
+| `_modal_exclusive_coupon_confirm` | `partials` | partial | - |
+| `_modal_temp_order_not_found` | `partials` | partial | - |
+| `_product_purchase_card` | `partials` | partial | - |
+| `_admin_edit_link` | `partials` | partial | - |
+| `_header` | `partials` | partial | - |
+| `_info_summary` | `partials` | partial | - |
+| `_modal_cart_added` | `partials` | partial | - |
+| `_modal_coupon_download_confirm` | `partials` | partial | - |
+| `_modal_inquiry_delete` | `partials` | partial | - |
+| `_modal_login_required` | `partials` | partial | - |
+| `_modal_qna_reply` | `partials` | partial | - |
+| `_modal_qna_write` | `partials` | partial | - |
+| `_modal_review_image` | `partials` | partial | - |
+| `_price_mobile` | `partials` | partial | - |
+| `_purchase_card` | `partials` | partial | - |
+| `_review_avatar` | `partials` | partial | - |
+| `_tab_detail` | `partials` | partial | - |
+| `_tab_qna` | `partials` | partial | - |
+| `_tab_reviews` | `partials` | partial | - |
+| `_category_breadcrumb` | `partials` | partial | - |
+| `_category_filter` | `partials` | partial | - |
+| `_new_products` | `partials` | partial | - |
+| `_popular_products` | `partials` | partial | - |
+| `_product_grid` | `partials` | partial | - |
+| `_recent_products` | `partials` | partial | - |
+| `_search_filter_bar` | `partials` | partial | - |
+| `index` | `search` | 화면 | `_user_base` |
+| `cart` | `shop` | 화면 | `_user_base` |
+| `category` | `shop` | 화면 | `_user_base` |
+| `checkout` | `shop` | 화면 | `_user_base` |
+| `guest_order_form` | `shop` | 화면 | `_user_base` |
+| `guest_order_show` | `shop` | 화면 | `_user_base` |
+| `index` | `shop` | 화면 | `_user_base` |
+| `order_complete` | `shop` | 화면 | `_user_base` |
+| `reorder` | `shop` | 화면 | `_user_base` |
+| `show` | `shop` | 화면 | `_user_base` |
+| `posts` | `users` | 화면 | `_user_base` |
+| `show` | `users` | 화면 | `_user_base` |
+<!-- @generated:layouts END -->
+
+<!-- @intent START -->
+166개 중 **124개가 partial** 입니다(화면 42). 이 비율이 이 템플릿의 구조를 그대로 보여줍니다 —
+화면 하나가 여러 조각으로 나뉘어 있고, 조각은 여러 화면이 공유합니다. 화면 하나를 고칠 때는
+그 화면 이름의 partials 디렉토리를 함께 열어야 전체가 보입니다.
+
+그룹은 방문자 여정과 1:1 입니다 — `auth`(로그인·가입·비밀번호·본인인증) · `board`(게시판) ·
+`shop`(상점) · `mypage`(마이페이지) · `page`(단일 문서) · `search` · `users` · `errors`.
+`(root)` 둘은 `_user_base`(모든 화면의 베이스)와 `home` 입니다.
+
+**모든 화면이 `_user_base` 를 상속합니다.** 헤더·푸터·모바일 네비·토스트·모달 호스트가 거기
+있으므로, `extends` 없이 독립 레이아웃을 새로 만들면 그 화면에서는 `toast` 나 `openModal` 이
+성공으로 기록되지만 **화면에는 아무것도 나타나지 않습니다**(호스트 컴포넌트가 마운트되지 않아서).
+새 화면은 특별한 이유가 없는 한 `_user_base` 를 상속합니다.
+
+`errors/` 6종(401·403·404·500·503·maintenance)은 코어가 오류 상황에서 직접 부릅니다. 401 은
+**로그인 리다이렉트를 여기서 구현하지 않습니다** — 코어 `TemplateApp.showRouteError` 가드가
+처리하므로, 이 레이아웃에서 다시 이동시키면 이중 리다이렉트가 됩니다.
+<!-- @intent END -->
+
+## 라우트 매핑
+
+<!-- @generated:layout-map START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
+| 경로 | 레이아웃 | 이름 |
+|---|---|---|
+| `/` | `home` | - |
+| `/login` | `auth/login` | - |
+| `/register` | `auth/register` | - |
+| `/forgot-password` | `auth/forgot_password` | - |
+| `/reset-password` | `auth/reset_password` | - |
+| `/identity/challenge` | `auth/identity_challenge` | - |
+| `/boards` | `board/boards` | - |
+| `/boards/popular` | `board/popular` | - |
+| `/board/:slug` | `board/index` | - |
+| `/board/:slug/write` | `board/form` | - |
+| `/board/:slug/:id` | `board/show` | - |
+| `/board/:slug/:id/edit` | `board/form` | - |
+| `/{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop')}}/products` | `shop/index` | - |
+| `/{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop')}}/category/:slug` | `shop/category` | - |
+| `/{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop')}}/products/:product_code` | `shop/show` | - |
+| `/{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop')}}/cart` | `shop/cart` | - |
+| `/{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop')}}/checkout` | `shop/checkout` | - |
+| `/{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop')}}/orders/:id/complete` | `shop/order_complete` | - |
+| `/{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop')}}/guest/orders` | `shop/guest_order_form` | - |
+| `/{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop')}}/guest/orders/:order_number` | `shop/guest_order_show` | - |
+| `/{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop')}}/reorder/:id` | `shop/reorder` | - |
+| `/mypage` | `-` | - |
+| `/mypage/profile` | `mypage/profile` | - |
+| `/mypage/profile/edit` | `mypage/profile-edit` | - |
+| `/mypage/change-password` | `mypage/change-password` | - |
+| `/mypage/orders` | `mypage/orders` | - |
+| `/mypage/orders/:order_number` | `mypage/orders/show` | - |
+| `/mypage/mileage` | `mypage/mileage` | - |
+| `/mypage/wishlist` | `mypage/wishlist` | - |
+| `/mypage/addresses` | `mypage/addresses` | - |
+| `/mypage/notifications` | `mypage/notifications` | - |
+| `/mypage/board` | `mypage/board` | - |
+| `/mypage/inquiries` | `mypage/inquiries` | - |
+| `/users/:userId` | `users/show` | - |
+| `/users/:userId/posts` | `users/posts` | - |
+| `/page/:slug` | `page/show` | - |
+| `/search` | `search/index` | - |
+| `/404` | `errors/404` | - |
+| `/403` | `errors/403` | - |
+| `/500` | `errors/500` | - |
+<!-- @generated:layout-map END -->
+
+<!-- @intent START -->
+상점 경로 9개만 **표현식**입니다. 운영자가 이커머스 환경설정에서 상점 경로(`route_path`,
+기본 `shop`)를 바꾸거나 아예 루트로 두면(`no_route`), 그 설정이 라우트 문자열에 그대로
+반영됩니다 — `routes.json` 이 정적 파일이 아니라 **표현식을 담을 수 있다**는 것이 이 템플릿의
+전제입니다.
+
+그래서 상점 라우트를 손볼 때는 세 경우를 함께 생각해야 합니다: 기본(`/shop/...`) · 운영자
+지정 경로(`/store/...`) · 루트 배치(`/products`). 문자열을 하드코딩하면 뒤의 둘이 조용히
+깨집니다.
+
+`/mypage` 자체는 레이아웃이 `-` 입니다 — 진입하면 하위 탭 중 하나로 넘기는 자리이며 자기
+화면을 갖지 않습니다.
+
+라우트를 바꾸면 `php artisan template:update sirsoft-basic --force` 로 반영합니다. 빌드는
+필요 없습니다.
+<!-- @intent END -->
+
+## 확장 오버라이드
+
+<!-- @generated:template-overrides START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
+| 대상 | 설명 |
+|---|---|
+| `extensions/sirsoft-daum_postcode/user-address-search.json` | 모듈/플러그인 확장 조각을 대체하는 오버라이드 |
+<!-- @generated:template-overrides END -->
+
+<!-- @intent START -->
+오버라이드는 **확장이 제공한 조각을 이 템플릿의 것으로 갈아 끼우는** 장치입니다. 지금은 하나
+있습니다 — `sirsoft-daum_postcode` 의 주소 검색 조각.
+
+플러그인이 제공하는 원본 조각은 이커머스 관리자 화면에 맞춰져 있어, 방문자 화면의 배송지 입력
+디자인과 어긋납니다. 조각을 고치는 대신 **템플릿이 자기 버전을 얹는** 것이 이 방향입니다 —
+플러그인을 업데이트해도 이 오버라이드는 남고, 다른 템플릿은 원본을 그대로 씁니다.
+
+그 대가로 **원본이 바뀌면 이 사본은 따라가지 않습니다.** 플러그인이 조각의 동작(핸들러 이름·
+필드 계약)을 바꾸면 오버라이드만 옛 계약을 붙들고 있게 되고, 증상은 "주소 검색 버튼이
+무반응" 으로만 나타납니다. 해당 플러그인을 업그레이드한 뒤에는 이 오버라이드를 함께 확인합니다.
+<!-- @intent END -->
+
+## 이관 원문 상세
+
+> 아래는 코어 `docs/frontend/templates/sirsoft-basic/layouts.md` 에 있던 원문을 이 문서로 옮긴 것입니다(#601). 이관 시점 그대로
+> 보존하되, **코드가 SSoT 인 값과 어긋나는 부분에는 정정 주석**을 달았습니다.
+
+### sirsoft-basic 레이아웃
 
 > **템플릿 식별자**: `sirsoft-basic` (type: user)
-> **관련 문서**: [컴포넌트](./components.md) | [핸들러](./handlers.md) | [레이아웃 JSON 스키마](../../layout-json.md)
+> **관련 문서**: [컴포넌트](components.md) | [핸들러](handlers.md) | [레이아웃 JSON 스키마](../../../../docs/frontend/layout-json.md)
+
+> **정정(#601)**: 아래 페이지 맵·개수는 이관 시점 값입니다. 실측 총계와 그룹별 분포는 위
+> 「레이아웃 목록」 블록이 SSoT 이며, 이관 이후 추가·삭제된 레이아웃이 있을 수 있습니다.
 
 ---
 
-## TL;DR (5초 요약)
+### TL;DR (5초 요약)
 
 ```text
 1. 베이스: _user_base.json (헤더 + 푸터 + 모바일 네비 + 콘텐츠 슬롯)
@@ -17,7 +321,7 @@
 
 ---
 
-## 목차
+### 목차
 
 1. [페이지 맵 (트리 구조)](#페이지-맵-트리-구조)
 2. [카테고리별 가이드](#카테고리별-가이드)
@@ -31,7 +335,7 @@
 
 ---
 
-## 페이지 맵 (트리 구조)
+### 페이지 맵 (트리 구조)
 
 ```text
 _user_base.json (베이스 레이아웃)
@@ -238,9 +542,9 @@ _user_base.json (베이스 레이아웃)
 
 ---
 
-## 카테고리별 가이드
+### 카테고리별 가이드
 
-### 인증 페이지 패턴
+#### 인증 페이지 패턴
 
 **대표**: `auth/login.json`, `auth/register.json`
 
@@ -270,7 +574,7 @@ slots.content:
 
 ---
 
-### 게시판 패턴
+#### 게시판 패턴
 
 **대표**: `board/index.json`, `board/show.json`, `board/form.json`
 
@@ -357,11 +661,11 @@ form.json:
 
 ---
 
-### 쇼핑몰 패턴
+#### 쇼핑몰 패턴
 
 **대표**: `shop/index.json`, `shop/show.json`, `shop/cart.json`, `shop/checkout.json`
 
-#### 상품 목록 (shop/index.json)
+##### 상품 목록 (shop/index.json)
 
 ```text
 extends: _user_base
@@ -378,7 +682,7 @@ slots.content:
       └── Pagination
 ```
 
-#### 상품 상세 (shop/show.json)
+##### 상품 상세 (shop/show.json)
 
 ```text
 extends: _user_base
@@ -409,7 +713,7 @@ slots.content:
 - `apiCall` — 장바구니 추가, 리뷰 작성, 위시리스트 토글
 - `saveToLocalStorage` — 최근 본 상품 저장
 
-#### 장바구니 (shop/cart.json)
+##### 장바구니 (shop/cart.json)
 
 ```text
 extends: _user_base
@@ -432,7 +736,7 @@ slots.content:
 - `state` 섹션으로 모달/선택 상태 관리
 - 장바구니 핸들러: `toggleCartItemSelection`, `selectAllCartItems`, `recalculateCart`
 
-#### 결제 (shop/checkout.json)
+##### 결제 (shop/checkout.json)
 
 ```text
 extends: _user_base
@@ -455,7 +759,7 @@ slots.content:
 
 ---
 
-### 마이페이지 패턴
+#### 마이페이지 패턴
 
 **대표**: `mypage/profile.json`, `mypage/orders.json`
 
@@ -496,7 +800,7 @@ slots.content:
 
 ---
 
-### 검색 패턴
+#### 검색 패턴
 
 **대표**: `search/index.json`
 
@@ -532,9 +836,9 @@ slots.content:
 
 ---
 
-### 기타 페이지 패턴
+#### 기타 페이지 패턴
 
-#### 사용자 프로필 (users/show.json, users/posts.json)
+##### 사용자 프로필 (users/show.json, users/posts.json)
 
 ```text
 extends: _user_base
@@ -545,7 +849,7 @@ slots.content:
       └── 게시글 목록 (users/posts.json)
 ```
 
-#### 정적 페이지 (page/show.json)
+##### 정적 페이지 (page/show.json)
 
 ```text
 extends: _user_base
@@ -555,7 +859,7 @@ slots.content:
       └── HtmlContent (본문 렌더링)
 ```
 
-#### 홈 (home.json)
+##### 홈 (home.json)
 
 ```text
 extends: _user_base
@@ -578,7 +882,7 @@ slots.content:
 
 ---
 
-### 에러 페이지 패턴
+#### 에러 페이지 패턴
 
 **대표**: `errors/404.json`
 
@@ -598,9 +902,9 @@ components:
 
 ---
 
-## 베이스 레이아웃 구조
+### 베이스 레이아웃 구조
 
-### _user_base.json
+#### _user_base.json
 
 모든 사용자 페이지의 공통 구조를 정의합니다.
 
@@ -638,10 +942,10 @@ _user_base.json
 
 ---
 
-## 관련 문서
+### 관련 문서
 
-- [sirsoft-basic 컴포넌트](./components.md)
-- [sirsoft-basic 핸들러](./handlers.md)
-- [sirsoft-admin_basic 레이아웃](../../../../templates/_bundled/sirsoft-admin_basic/docs/layouts.md)
-- [레이아웃 JSON 스키마](../../layout-json.md)
-- [레이아웃 상속](../../layout-json-inheritance.md)
+- [sirsoft-basic 컴포넌트](components.md)
+- [sirsoft-basic 핸들러](handlers.md)
+- [sirsoft-admin_basic 레이아웃](../../sirsoft-admin_basic/docs/layouts.md)
+- [레이아웃 JSON 스키마](../../../../docs/frontend/layout-json.md)
+- [레이아웃 상속](../../../../docs/frontend/layout-json-inheritance.md)

@@ -581,4 +581,4 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
 - [액션 핸들러 개요](../../../../docs/frontend/actions-handlers.md)
 - [sirsoft-admin_basic 컴포넌트](components.md)
 - [sirsoft-admin_basic 레이아웃](layouts.md)
-- [sirsoft-basic 핸들러](../../../../docs/frontend/templates/sirsoft-basic/handlers.md)
+- [sirsoft-basic 핸들러](../../sirsoft-basic/docs/handlers.md)

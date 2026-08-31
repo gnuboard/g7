@@ -23,7 +23,7 @@
 | `sirsoft-admin_basic` | 미선언 | 데스크톱 중심, Tailwind responsive 클래스는 동작 |
 | `sirsoft-basic` | `true` | MobileNav 포함, portable preset 지원 |
 
-> 상세 컴포넌트 목록: [sirsoft-admin_basic](../../templates/_bundled/sirsoft-admin_basic/docs/components.md), [sirsoft-basic](templates/sirsoft-basic/components.md)
+> 상세 컴포넌트 목록: [sirsoft-admin_basic](../../templates/_bundled/sirsoft-admin_basic/docs/components.md), [sirsoft-basic](../../templates/_bundled/sirsoft-basic/docs/components.md)
 
 ---
 

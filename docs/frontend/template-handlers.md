@@ -20,9 +20,6 @@
 ## 템플릿별 상세 문서
 
 <!-- AUTO-GENERATED-START: frontend-template-handlers -->
-| 템플릿 식별자 | 핸들러 문서 | TL;DR 핵심 |
-|--------------|-----------|----------|
-| `sirsoft-basic` | [handlers.md](templates/sirsoft-basic/handlers.md) | setTheme/initTheme: 다크/라이트 모드 전환 (admin과 동일 키 공유) |
 
 <!-- AUTO-GENERATED-END: frontend-template-handlers -->
 
@@ -58,4 +55,4 @@
 - [템플릿 개발 가이드](template-development.md)
 - [다크 모드 지원](dark-mode.md)
 - [sirsoft-admin_basic 컴포넌트](../../templates/_bundled/sirsoft-admin_basic/docs/components.md)
-- [sirsoft-basic 컴포넌트](templates/sirsoft-basic/components.md)
+- [sirsoft-basic 컴포넌트](../../templates/_bundled/sirsoft-basic/docs/components.md)

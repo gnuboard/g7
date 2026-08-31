@@ -174,7 +174,7 @@ global.window = {
 - docs/extension/template-basics.md
 - docs/extension/template-commands.md
 - templates/_bundled/sirsoft-admin_basic/docs/components.md
-- docs/frontend/templates/sirsoft-basic/components.md
+- templates/_bundled/sirsoft-basic/docs/components.md
 
 ## 테스트 실행
 \`\`\`powershell

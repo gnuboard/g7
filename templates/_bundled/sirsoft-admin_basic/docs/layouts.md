@@ -618,4 +618,4 @@ _admin_base.json
 - [sirsoft-admin_basic 핸들러](handlers.md)
 - [레이아웃 JSON 스키마](../../../../docs/frontend/layout-json.md)
 - [레이아웃 상속](../../../../docs/frontend/layout-json-inheritance.md)
-- [sirsoft-basic 레이아웃](../../../../docs/frontend/templates/sirsoft-basic/layouts.md)
+- [sirsoft-basic 레이아웃](../../sirsoft-basic/docs/layouts.md)

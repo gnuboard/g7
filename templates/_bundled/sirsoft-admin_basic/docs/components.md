@@ -581,7 +581,7 @@ interface SlotContainerProps {
 
 - [sirsoft-admin_basic 핸들러](handlers.md)
 - [sirsoft-admin_basic 레이아웃](layouts.md)
-- [sirsoft-basic 컴포넌트](../../../../docs/frontend/templates/sirsoft-basic/components.md)
+- [sirsoft-basic 컴포넌트](../../sirsoft-basic/docs/components.md)
 - [컴포넌트 개발 규칙](../../../../docs/frontend/components.md)
 - [컴포넌트 Props 레퍼런스](../../../../docs/frontend/component-props.md)
 - [컴포넌트 Props 레퍼런스 - Composite](../../../../docs/frontend/component-props-composite.md)

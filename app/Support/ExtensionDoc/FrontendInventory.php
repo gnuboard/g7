@@ -465,6 +465,15 @@ class FrontendInventory
             }
             if (preg_match('/^([A-Za-z_$][\w$]*)\s*[,:]/', $line, $km)) {
                 $keys[] = $km[1];
+
+                continue;
+            }
+            // 네임스페이스를 붙인 등록 키(`'vendor-ext.doThing': handler`)는 `.`·`-` 때문에
+            // 반드시 따옴표로 감싸인다. 식별자 키만 보면 그 항목이 통째로 빠지는데, 결과가
+            // "그만큼만 등록했다" 와 같은 모양이라 누락이 드러나지 않는다 (sirsoft-basic 이
+            // 32개 중 10개를 그렇게 잃고 있었다).
+            if (preg_match('/^["\']([^"\']+)["\']\s*:/', $line, $km)) {
+                $keys[] = $km[1];
             }
         }
 

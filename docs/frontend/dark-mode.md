@@ -25,7 +25,7 @@
 | `sirsoft-admin_basic` | 미선언 | ThemeToggle 존재, dark: variant 동작 |
 | `sirsoft-basic` | `true` | template.json에 선언, 완전 지원 |
 
-> 상세 컴포넌트 목록: [sirsoft-admin_basic](../../templates/_bundled/sirsoft-admin_basic/docs/components.md), [sirsoft-basic](templates/sirsoft-basic/components.md)
+> 상세 컴포넌트 목록: [sirsoft-admin_basic](../../templates/_bundled/sirsoft-admin_basic/docs/components.md), [sirsoft-basic](../../templates/_bundled/sirsoft-basic/docs/components.md)
 
 ---
 

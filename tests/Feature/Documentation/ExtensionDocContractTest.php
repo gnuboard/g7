@@ -36,17 +36,6 @@ class ExtensionDocContractTest extends TestCase
      * @var array<int, string>
      */
     private const DOC_BACKLOG = [
-        'module/gnuboard7-hello_module',
-        'module/sirsoft-ecommerce',
-        'module/sirsoft-page',
-        'plugin/gnuboard7-hello_plugin',
-        'plugin/sirsoft-ckeditor5',
-        'plugin/sirsoft-daum_postcode',
-        'plugin/sirsoft-marketing',
-        'plugin/sirsoft-message_bizppurio',
-        'template/gnuboard7-hello_admin_template',
-        'template/gnuboard7-hello_user_template',
-        'template/sirsoft-basic',
     ];
 
     /**
@@ -57,7 +46,7 @@ class ExtensionDocContractTest extends TestCase
      * 늘리려면 이 숫자를 올리는 **눈에 보이는 행위**를 거치게 합니다. 집필이 진행되면 이
      * 숫자도 함께 내려갑니다 (백로그는 줄어들기만 하므로 상한도 단조 감소한다).
      */
-    private const DOC_BACKLOG_CEILING = 11;
+    private const DOC_BACKLOG_CEILING = 0;
 
     /**
      * `_bundled` 스캔이 번들 확장 전수를 발견하는지 확인합니다.
@@ -958,6 +947,343 @@ class ExtensionDocContractTest extends TestCase
 
         $this->assertGreaterThan(0, $checkedTemplate, '템플릿을 하나도 검사하지 않았습니다.');
         $this->assertGreaterThan(0, $checkedControllers, '컨트롤러 디렉토리를 하나도 검사하지 않았습니다.');
+    }
+
+    /**
+     * 스케줄 주기가 계약 키(`schedule`)에서 읽히는지 단언합니다.
+     *
+     * `getSchedules()` 의 표준 계약 키는 `schedule` 이다 — `AbstractModule`/`AbstractPlugin`
+     * 의 주석과 `routes/console.php` 의 실제 소비부가 그 SSoT 다. 렌더러가 다른 키
+     * (`expression`/`cron`/`frequency`)만 보면 주기 열이 **모든 확장에서 영구히 `-`** 가
+     * 되는데, 그 모양은 "주기를 선언하지 않았다" 와 구분되지 않아 아무도 이상을 알아채지
+     * 못한다. 실제로 그 상태로 board·ecommerce 두 확장이 문서화되었다.
+     *
+     * 확장 문서를 대조하지 않고 합성 입력으로 판정하는 이유는, 스케줄을 선언한 확장이
+     * 저장소에서 사라지면 실측 대조가 **공허 통과**하기 때문이다.
+     */
+    public function test_schedule_period_reads_the_contract_key(): void
+    {
+        $ctx = [
+            'record' => ['type' => 'module', 'id' => 'vendor-ext'],
+            'surface' => [
+                'available' => true,
+                'values' => [
+                    'getSchedules' => [
+                        [
+                            'command' => 'vendor-ext:do-something',
+                            'schedule' => 'hourly',
+                            'description' => '계약 키만 선언한 스케줄',
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $block = (new ExtensionDocScaffolder)->renderBlock('schedules', $ctx);
+
+        $this->assertStringContainsString(
+            'hourly',
+            $block,
+            '계약 키 `schedule` 로 선언한 주기가 표에 실리지 않습니다 — 주기 열이 모든 확장에서 `-` 가 됩니다.',
+        );
+        $this->assertStringNotContainsString(
+            '| `-` |',
+            $block,
+            '주기를 선언한 스케줄이 미선언으로 렌더되었습니다.',
+        );
+    }
+
+    /**
+     * 네임스페이스를 붙인 핸들러 등록 키가 수집·렌더 양쪽에서 살아남는지 단언합니다.
+     *
+     * `'vendor-ext.doThing': handler` 처럼 네임스페이스를 붙인 키는 `.`·`-` 때문에 반드시
+     * 따옴표로 감싸인다. 수집기가 식별자 키만 보면 그 항목이 통째로 빠지는데, 결과가
+     * "그만큼만 등록했다" 와 같은 모양이라 누락이 드러나지 않는다 — 실제로 sirsoft-basic 이
+     * 32개 중 10개를 그렇게 잃고 있었다.
+     *
+     * 렌더 축도 함께 잠근다. 템플릿은 namespace 가 null 이지만 네임스페이스를 붙여 등록하는
+     * 핸들러를 함께 가질 수 있어, 그 경우 "네임스페이스 없음" 으로 적으면 사실과 반대가 된다.
+     */
+    public function test_namespaced_handler_keys_survive_collection_and_render(): void
+    {
+        $source = <<<'TS'
+        export const handlerMap = {
+            plainOne: plainOneHandler,
+            'vendor-ext.doThing': doThingHandler,
+            "vendor-ext.doOther": doOtherHandler,
+        };
+        TS;
+
+        $inventory = new FrontendInventory;
+        $method = (new \ReflectionClass(FrontendInventory::class))->getMethod('objectKeys');
+        $method->setAccessible(true);
+
+        /** @var array<int, string> $keys */
+        $keys = $method->invoke($inventory, $source, 'handlerMap');
+
+        $this->assertSame(
+            ['plainOne', 'vendor-ext.doThing', 'vendor-ext.doOther'],
+            $keys,
+            '따옴표로 감싼 네임스페이스 등록 키가 수집에서 빠졌습니다 — 누락이 "그만큼만 등록했다" 로 보입니다.',
+        );
+
+        $block = (new ExtensionDocScaffolder)->renderBlock('handlers', [
+            'record' => ['type' => 'template', 'id' => 'vendor-ext'],
+            'surface' => ['available' => true, 'values' => []],
+            'frontend' => [
+                'handlers' => [
+                    'namespace' => null,
+                    'names' => $keys,
+                    'source' => 'src/handlers/index.ts',
+                ],
+            ],
+        ]);
+
+        $this->assertStringContainsString(
+            '핸들러 3개',
+            $block,
+            '수집한 핸들러 수가 표에 그대로 실려야 합니다.',
+        );
+        $this->assertStringContainsString(
+            '`vendor-ext.doThing`',
+            $block,
+            '네임스페이스를 붙여 등록한 핸들러는 그 전체 이름이 호출 이름입니다.',
+        );
+        $this->assertStringContainsString(
+            '`plainOne` | (템플릿 전용',
+            $block,
+            '네임스페이스 없이 등록한 핸들러는 기존 표기를 유지해야 합니다.',
+        );
+    }
+
+    /**
+     * 확장 README 의 첫 화면이 이미지 배지가 아니라 H1 제목인지 단언합니다.
+     *
+     * PO 결정(2026-08-31): 확장 README 상단의 확장명은 shields.io 이미지 배지가 아니라 평범한
+     * H1 마크다운 제목이다. 확장은 20개가 병렬로 존재하는 대등한 구성요소이고, 각자가 코어와
+     * 같은 히어로 브랜딩을 받으면 "이 확장이 곧 독립 프로젝트" 라는 착시를 준다.
+     *
+     * 모집단은 손으로 적지 않고 `_bundled` 스캔에서 파생한다. 실제로 S2 가 이 축을
+     * `height="120"` 잔존 0 으로 닫았는데, S3 이 `height="60"` 으로 쓴 11개가 그 모집단 밖이라
+     * 게이트가 초록인 채 결정이 절반만 적용된 상태로 남았다. 판정은 높이가 아니라 **형태**
+     * (`style=for-the-badge` 이미지가 상단에 있는가)로 한다.
+     *
+     * `@generated:badges` 블록 안의 version/type/G7/license 배지는 대상이 아니다 — 그것은
+     * manifest 에서 오는 flat-square 정보 배지이고 계획서 §1.3 이 유지하기로 한 것이다.
+     */
+    public function test_extension_readme_leads_with_a_heading_not_a_hero_badge(): void
+    {
+        $records = (new ExtensionInventory)->collect('all');
+        $this->assertNotEmpty($records, '번들 확장을 하나도 발견하지 못했습니다.');
+
+        $checked = 0;
+        $heroes = [];
+        $missingHeading = [];
+
+        foreach ($records as $record) {
+            $readme = $record['path'].'/README.md';
+            if (! is_file($readme)) {
+                continue;
+            }
+
+            $checked++;
+            $body = (string) file_get_contents($readme);
+
+            // 자동 생성 배지 블록 앞부분(사람이 쓰는 히어로 영역)만 본다.
+            $head = $body;
+            $blockAt = strpos($body, '<!-- @generated:badges START');
+            if ($blockAt !== false) {
+                $head = substr($body, 0, $blockAt);
+            }
+
+            if (str_contains($head, 'style=for-the-badge')) {
+                $heroes[] = $record['type'].'/'.$record['id'];
+            }
+
+            $firstLine = '';
+            foreach (preg_split('/\r?\n/', $head) ?: [] as $line) {
+                if (trim($line) !== '') {
+                    $firstLine = trim($line);
+                    break;
+                }
+            }
+
+            if (! str_starts_with($firstLine, '# ')) {
+                $missingHeading[] = $record['type'].'/'.$record['id'].' — 첫 줄이 "'.$firstLine.'"';
+            }
+        }
+
+        $this->assertGreaterThan(
+            0,
+            $checked,
+            'README 를 가진 번들 확장이 하나도 없습니다 — 모집단이 비면 이 단언은 공허 통과합니다.',
+        );
+
+        $this->assertSame(
+            [],
+            $heroes,
+            "확장 README 상단에 히어로 이미지 배지가 남아 있습니다 (H1 제목으로 바꾸세요):\n".implode("\n", $heroes),
+        );
+
+        $this->assertSame(
+            [],
+            $missingHeading,
+            "확장 README 의 첫 줄이 H1 제목이 아닙니다:\n".implode("\n", $missingHeading),
+        );
+
+        // 이미 놓인 파일만 보면 **다음 확장**이 사각이다 — 골격 생성기가 히어로를 계속
+        // 찍어내면 21번째 확장은 태어나는 순간 이 단언에 걸리는 README 를 갖는다. 결정이
+        // 파일에만 적용되고 그 파일을 만드는 자리에는 적용되지 않은 상태가 남지 않도록
+        // 생성기 출력도 같은 판정을 통과시킨다.
+        $inventory = new ExtensionInventory;
+        $scaffolder = new ExtensionDocScaffolder;
+
+        foreach ($records as $record) {
+            $skeleton = $scaffolder->skeleton('README.md', $this->contextFor($record, $inventory));
+            $head = $skeleton;
+            $blockAt = strpos($skeleton, '<!-- @generated:badges START');
+            if ($blockAt !== false) {
+                $head = substr($skeleton, 0, $blockAt);
+            }
+
+            $this->assertStringNotContainsString(
+                'style=for-the-badge',
+                $head,
+                "README 골격 생성기가 히어로 배지를 찍어냅니다 ({$record['id']} 기준).",
+            );
+            $this->assertStringStartsWith(
+                '# ',
+                $skeleton,
+                "README 골격 생성기의 첫 줄이 H1 제목이 아닙니다 ({$record['id']} 기준).",
+            );
+        }
+    }
+
+    /**
+     * 확장 문서의 「활동 로그 훅」 표가 리스너의 실제 구독과 일치하는지 단언합니다.
+     *
+     * 이 목록은 코어 `docs/backend/activity-log-hooks.md` 에서 확장 소유로 옮겨온 것이고(#601),
+     * 옮겨올 당시 코어 문서가 이미 낡아 있었다. 리스너가 `before_*` 훅 구독을 걷어내고
+     * **Service 가 스냅샷을 `after_*` 인자로 넘기는** 구조로 바뀌었는데 표는 그대로였다 —
+     * 없는 구독 31행이 실려 있었고 실제 구독 13건이 빠져 있었으며, 소계·총계·메서드 이름까지
+     * 어긋나 있었다. 문서가 확장점의 SSoT 이므로 이 어긋남은 그 확장을 잡으려는 쪽이
+     * **잡히지 않는 훅을 구독**하게 만든다 (예외도 경고도 없이 리스너가 안 불릴 뿐이다).
+     *
+     * 모집단은 손으로 적지 않고 **코드**에서 파생한다 — `logActivity` 를 호출하면서 훅을
+     * 구독하는 리스너를 가진 확장 전부가 대상이다. 문서의 「활동 로그 훅」 절 존재 여부로
+     * 모집단을 정하면 그 절을 통째로 빠뜨린 확장이 검사에서 조용히 빠지는 순환이 된다
+     * (결제 3종이 실제로 그 사각에 있었다 — 리스너는 있는데 절이 없어 검사 밖이었다).
+     *
+     * 대상 판정을 파일명 관례(`*ActivityLog*`)가 아니라 실제 `logActivity` 호출로 하는 이유도
+     * 같다. 관례를 벗어난 이름도 잡히고, 설명 변수 해석기(`ActivityLogDescriptionResolver` —
+     * 기록하지 않고 해석만 한다)는 클래스명을 손으로 열거하지 않아도 빠진다.
+     */
+    public function test_activity_log_hook_tables_match_listener_subscriptions(): void
+    {
+        $records = (new ExtensionInventory)->collect('all');
+        $this->assertNotEmpty($records, '번들 확장을 하나도 발견하지 못했습니다.');
+
+        $checked = 0;
+        $problems = [];
+
+        foreach ($records as $record) {
+            // 모집단은 **코드**에서 파생한다. 「활동 로그 훅」 절을 가진 확장만 보면 절을
+            // 통째로 빠뜨린 확장이 검사에서 조용히 빠진다 — 검사 대상 문서의 존재 여부로
+            // 모집단을 정하는 순환이다(실제로 결제 3종이 그 사각에 있었다).
+            $listeners = glob($record['path'].'/src/Listeners/*.php') ?: [];
+            $subscriptions = [];
+
+            foreach ($listeners as $file) {
+                // 활동 로그를 **기록하는** 리스너만 대상이다. 파일명 관례(`*ActivityLog*`)가
+                // 아니라 실제 `logActivity` 호출로 가른다 — 관례를 벗어난 이름도 잡히고,
+                // 설명 해석기(기록하지 않고 해석만 한다)는 클래스명을 열거하지 않아도 빠진다.
+                if (! str_contains((string) file_get_contents($file), 'logActivity')) {
+                    continue;
+                }
+
+                $fqcn = $this->listenerFqcn($record, basename($file, '.php'));
+                if ($fqcn === null || ! method_exists($fqcn, 'getSubscribedHooks')) {
+                    continue;
+                }
+
+                foreach (array_keys($fqcn::getSubscribedHooks()) as $hook) {
+                    $subscriptions[] = $hook;
+                }
+            }
+
+            if ($subscriptions === []) {
+                continue;
+            }
+
+            $checked++;
+
+            $key = $record['type'].'/'.$record['id'];
+            $doc = $record['path'].'/docs/extension-points.md';
+            $body = is_file($doc) ? (string) file_get_contents($doc) : '';
+            $at = strpos($body, '## 활동 로그 훅');
+
+            if ($at === false) {
+                $problems[] = $key.' — 활동 로그를 기록하는 리스너가 있으나 docs/extension-points.md 에 「활동 로그 훅」 절이 없습니다 (구독 '.count($subscriptions).'건).';
+
+                continue;
+            }
+
+            // 절은 **다음 `## ` 헤딩에서 끊는다.** 파일 끝까지 열어 두면 뒤따르는 절
+            // (「훅 리스너」·「미들웨어」 등)의 표까지 삼켜 그 행이 전부 유령으로 보고된다.
+            $section = substr($body, $at);
+            $nextHeading = preg_match('/^## /m', substr($section, 3), $m, PREG_OFFSET_CAPTURE) === 1
+                ? 3 + $m[0][1]
+                : strlen($section);
+            $section = substr($section, 0, $nextHeading);
+
+            preg_match_all('/^\|\s*`([^`]+)`/m', $section, $matches);
+            $documented = $matches[1];
+
+            $phantom = array_values(array_unique(array_diff($documented, $subscriptions)));
+            $missing = array_values(array_unique(array_diff($subscriptions, $documented)));
+
+            foreach ($phantom as $hook) {
+                $problems[] = $key.' — 표에 있으나 구독하지 않습니다: '.$hook;
+            }
+            foreach ($missing as $hook) {
+                $problems[] = $key.' — 구독하지만 표에 없습니다: '.$hook;
+            }
+            if (count($documented) !== count($subscriptions)) {
+                $problems[] = $key.' — 표의 행 수('.count($documented).')와 구독 등록 수('.count($subscriptions).')가 다릅니다.';
+            }
+        }
+
+        $this->assertGreaterThan(
+            0,
+            $checked,
+            '활동 로그를 기록하는 리스너를 가진 확장이 하나도 없습니다 — 모집단이 비면 이 단언은 공허 통과합니다.',
+        );
+
+        $this->assertSame(
+            [],
+            $problems,
+            "활동 로그 훅 표가 리스너의 실제 구독과 어긋납니다:\n".implode("\n", $problems),
+        );
+    }
+
+    /**
+     * 확장 리스너 클래스의 FQCN 을 조립합니다.
+     *
+     * @param  array<string, mixed>  $record  확장 레코드
+     * @param  string  $class  리스너 클래스명
+     * @return string|null 존재하는 FQCN, 없으면 null
+     */
+    private function listenerFqcn(array $record, string $class): ?string
+    {
+        $root = $record['type'] === 'plugin' ? 'Plugins' : 'Modules';
+
+        [$vendor, $name] = array_pad(explode('-', (string) $record['id'], 2), 2, '');
+        $studly = static fn (string $v): string => str_replace(' ', '', ucwords(str_replace(['-', '_'], ' ', $v)));
+
+        $sep = chr(92);
+        $fqcn = $root.$sep.$studly($vendor).$sep.$studly($name).$sep.'Listeners'.$sep.$class;
+
+        return class_exists($fqcn) ? $fqcn : null;
     }
 
     /**

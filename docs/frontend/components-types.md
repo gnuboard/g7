@@ -453,4 +453,4 @@ export const Container: React.FC<ContainerProps> = ({ children }) => (
 - [컴포넌트 패턴](components-patterns.md)
 - [컴포넌트 고급 기능](components-advanced.md)
 - [sirsoft-admin_basic 컴포넌트](../../templates/_bundled/sirsoft-admin_basic/docs/components.md)
-- [sirsoft-basic 컴포넌트](templates/sirsoft-basic/components.md)
+- [sirsoft-basic 컴포넌트](../../templates/_bundled/sirsoft-basic/docs/components.md)

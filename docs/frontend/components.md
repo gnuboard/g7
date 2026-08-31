@@ -25,11 +25,6 @@
 | [components-advanced.md](components-advanced.md) | componentEvent, 아이콘, 체크리스트 | 이벤트 통신, 아이콘 규칙, 개발 체크리스트 |
 
 <!-- AUTO-GENERATED-START: frontend-template-reference -->
-### 템플릿별 레퍼런스
-
-| 템플릿 식별자 | 컴포넌트 | 핸들러 | 레이아웃 |
-|--------------|---------|--------|--------|
-| `sirsoft-basic` | [components.md](templates/sirsoft-basic/components.md) | [handlers.md](templates/sirsoft-basic/handlers.md) | [layouts.md](templates/sirsoft-basic/layouts.md) |
 
 <!-- AUTO-GENERATED-END: frontend-template-reference -->
 
@@ -156,6 +151,6 @@ import { Icon, IconName } from '../basic/Icon';
 - [레이아웃 JSON 스키마](./layout-json.md) - 컴포넌트를 레이아웃 JSON에서 사용하는 방법
 - [데이터 바인딩](./data-binding.md) - props에서 데이터 바인딩 사용법
 - [sirsoft-admin_basic 컴포넌트](../../templates/_bundled/sirsoft-admin_basic/docs/components.md) - Admin 컴포넌트 목록
-- [sirsoft-basic 컴포넌트](./templates/sirsoft-basic/components.md) - User 컴포넌트 목록 (58개)
+- [sirsoft-basic 컴포넌트](../../templates/_bundled/sirsoft-basic/docs/components.md) - User 컴포넌트 목록 (확장 소유)
 - [다크 모드](./dark-mode.md) - 컴포넌트 다크 모드 지원 가이드
 - [상태 관리](./state-management.md) - 전역/로컬 상태 관리 및 동기화 패턴

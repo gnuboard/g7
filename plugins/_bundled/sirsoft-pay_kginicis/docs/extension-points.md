@@ -56,6 +56,29 @@
 로그에 성공처럼 남을 수 있습니다.
 <!-- @intent END -->
 
+## 활동 로그 훅
+
+> 이 확장이 코어 활동 로그(`activity_logs`)에 기록을 남기기 위해 구독하는 훅 1개입니다.
+> 위 「구독 훅」 절이 이 확장의 구독 전량을 싣고, 이 절은 그중 **기록을 남기는 것**만 추립니다.
+> 코어 `docs/backend/activity-log-hooks.md` 에는 총계와 이 문서로의 링크만 남습니다(#601).
+
+> 새 항목을 추가하면 코어 `lang/{ko,en}/activity_log.php` 의 action 라벨과 description 본문,
+> 그리고 번들 일본어 팩까지 함께 정의해야 합니다 — **플러그인 lang 파일에 넣으면 action 라벨이
+> 해석되지 않습니다.** (description 본문은 이 확장의 `lang/{ko,en}/activity_log.php` 소유입니다.)
+
+### 결제 취소 훅 (CancelActivityLogListener)
+
+**파일**: `plugins/_bundled/sirsoft-pay_kginicis/src/Listeners/CancelActivityLogListener.php`
+**총 1훅**
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-ecommerce.payment.refund` | `logCancelConfirmed` | `payment.cancel` | `ResolvesActivityLogType` 로 해석 | Order |
+
+> 이 훅은 `filter` 이고 우선순위 **20** 입니다. 같은 훅을 구독하는 `PaymentRefundListener`(10)가
+> 먼저 실행돼 실제 취소가 성공한 뒤에야 기록이 남습니다 — 순서가 뒤바뀌면 실패한 취소도
+> 성공처럼 로그에 남습니다.
+
 ## 훅 리스너
 
 <!-- @generated:listeners START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->

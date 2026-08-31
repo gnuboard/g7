@@ -1369,7 +1369,10 @@ class ExtensionDocScaffolder
 
             $rows[] = [
                 $this->code((string) ($schedule['name'] ?? $schedule['command'] ?? $key)),
-                $this->code((string) ($schedule['expression'] ?? $schedule['cron'] ?? $schedule['frequency'] ?? '-')),
+                // 표준 계약 키는 `schedule` 이다 (AbstractModule/AbstractPlugin 의 getSchedules()
+                // 주석과 routes/console.php 소비부가 SSoT). 이 키를 빼면 주기 열이 모든 확장에서
+                // 영구히 '-' 가 되는데, "주기를 선언하지 않았다" 와 구분되지 않는다.
+                $this->code((string) ($schedule['schedule'] ?? $schedule['expression'] ?? $schedule['cron'] ?? $schedule['frequency'] ?? '-')),
                 (string) ($schedule['description'] ?? '-'),
             ];
         }
@@ -1894,9 +1897,17 @@ class ExtensionDocScaffolder
         $rows = [];
 
         foreach ($handlers['names'] as $name) {
+            // 등록 키가 이미 네임스페이스를 포함하면(따옴표 키) 그 값 자체가 호출 이름이다.
+            // 템플릿은 namespace 가 null 이지만 네임스페이스를 붙여 등록하는 핸들러를 함께
+            // 가질 수 있어, 그 경우 "네임스페이스 없음" 으로 적으면 사실과 반대가 된다.
+            $dot = strrpos($name, '.');
+            $qualified = $dot !== false
+                ? $name
+                : ($namespace !== null ? "{$namespace}.{$name}" : null);
+
             $rows[] = [
-                $this->code($name),
-                $namespace !== null ? $this->code("{$namespace}.{$name}") : '(템플릿 전용 — 네임스페이스 없음)',
+                $this->code($dot !== false ? substr($name, $dot + 1) : $name),
+                $qualified !== null ? $this->code($qualified) : '(템플릿 전용 — 네임스페이스 없음)',
             ];
         }
 
@@ -2234,20 +2245,15 @@ class ExtensionDocScaffolder
             $sections,
         );
 
+        // 확장명은 히어로 이미지가 아니라 평범한 H1 이다 (PO 결정 2026-08-31). 확장 20개는
+        // 대등하게 병렬로 존재하는 구성요소이고, 각자가 코어와 같은 히어로 브랜딩을 받으면
+        // "이 확장이 곧 독립 프로젝트" 라는 착시를 준다. `@generated:badges` 블록의
+        // flat-square 정보 배지는 manifest 에서 오는 것이라 그대로 둔다.
         $lines = [];
-        $lines[] = '<p align="center">';
-        $lines[] = sprintf(
-            '  <img src="https://img.shields.io/badge/%s-%s-000000?style=for-the-badge&labelColor=0066FF" height="60" alt="%s">',
-            rawurlencode(str_replace(['-', '_'], ['--', '__'], $name)),
-            rawurlencode(str_replace(['-', '_'], ['--', '__'], $record['id'])),
-            $this->escape($name),
-        );
-        $lines[] = '</p>';
+        $lines[] = '# '.$name;
         $lines[] = '';
-        $lines[] = '<p align="center">';
-        $lines[] = "  <strong>G7 {$label} · {$record['id']}</strong><br>";
-        $lines[] = '  '.$this->escape($description);
-        $lines[] = '</p>';
+        $lines[] = "**G7 {$label} · {$record['id']}**";
+        $lines[] = $this->escape($description);
         $lines[] = '';
         $lines[] = self::wrap('badges', $this->renderBlock('badges', $ctx));
         $lines[] = '';
