@@ -233,6 +233,12 @@ return [
     'static_cache_republished' => 'ホーム画面の静的ファイルを再作成しました。',
     'static_cache_republish_failed' => 'ホーム画面の静的ファイルを再作成できませんでした。サイトは正常に動作しています。',
 
+    'execution' => [
+        'fetch_success' => '実行方式の情報を取得しました。',
+        'fetch_failed' => '実行方式の情報の取得に失敗しました。',
+        'detect_success' => '実行環境を再検出しました。',
+        'detect_failed' => '実行環境の検出に失敗しました。',
+    ],
     'execution_mode' => [
         'auto' => '自動判断',
         'subprocess' => '常にCLIを使用',

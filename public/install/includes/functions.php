@@ -1796,6 +1796,29 @@ function generateEnvContent(): ?string
     $replacements['PHP_BINARY'] = escapeEnvValue($phpBinary);
     $replacements['COMPOSER_BINARY'] = escapeEnvValue($composerBinary);
 
+    // 큐 연결 — inprocess 설치는 `sync` 로 기록한다 (A-6 · D6).
+    //
+    // 기본 템플릿의 `database` 는 큐에 넣기만 하고 **소비 주체가 따로 있다**는 전제인데,
+    // CLI 를 쓸 수 없는 호스팅에서는 `queue:work` 워커를 띄울 수단이 없다. 그대로 두면
+    // 훅 리스너·알림이 잡 테이블에 쌓이기만 하고 아무도 꺼내지 않으며, 그 사실은 오류로
+    // 드러나지 않는다 — 알림이 그냥 오지 않을 뿐이다. `sync` 는 큐에 넣지 않고 요청 안에서
+    // 즉시 실행하므로 소비 주체가 필요 없다.
+    //
+    // subprocess 설치는 템플릿 기본값을 그대로 둔다 — 그 환경에는 워커를 띄울 수단이 있고,
+    // 여기서 값을 덮으면 운영자가 고르지 않은 정책 변경이 된다.
+    if (! function_exists('installerEffectiveExecutionMode')) {
+        require_once __DIR__.'/execution-mode.php';
+    }
+
+    // 판정은 설치 시작 시점에 한 번 내려 state 에 박아 둔 값(`execution_mode_resolved`)만
+    // 읽는다. 그 값이 없다고 여기서 **다시 감지하지 않는다** — 감지는 PHP 바이너리를 실제로
+    // 실행해 보는 동작이라, `.env` 본문을 만드는 함수가 프로세스를 띄우게 된다. 운영자가
+    // 넣은 경로가 그 호스팅에서 실행되지 않으면 마지막 단계에서 설치가 멎고, 그 사유는
+    // 「.env 를 쓰지 못했다」로만 보인다.
+    if (($state['execution_mode_resolved'] ?? null) === ExecutionEnvironment::MODE_INPROCESS) {
+        $replacements['QUEUE_CONNECTION'] = 'sync';
+    }
+
     foreach ($replacements as $key => $value) {
         $envContent = replaceEnvLine($envContent, $key, $value);
     }

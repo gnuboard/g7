@@ -124,6 +124,11 @@ class UpdateSettingRequest extends FormRequest
             $rules['value'][] = $enumerated;
         }
 
+        // 형태가 정해진 키(IP 목록 등)도 같은 이유로 두 경로가 같은 표를 쓴다.
+        foreach ($this->shapeRules() as $rule) {
+            $rules['value'][] = $rule;
+        }
+
         // 모듈/플러그인이 validation rules를 동적으로 추가할 수 있도록 훅 제공
         return HookManager::applyFilters('core.settings.update_validation_rules', $rules, $this);
     }
@@ -197,6 +202,22 @@ class UpdateSettingRequest extends FormRequest
         }
 
         return EnumeratedSettingValues::ruleFor($key);
+    }
+
+    /**
+     * 저장 대상 키의 전용 형태 규칙을 반환합니다.
+     *
+     * @return list<ValidationRule> 규칙 목록 (없으면 빈 배열)
+     */
+    private function shapeRules(): array
+    {
+        $key = $this->route('key');
+
+        if (! is_string($key) || $key === '') {
+            return [];
+        }
+
+        return SettingShapeRules::rulesFor($key);
     }
 
     /**

@@ -1658,6 +1658,7 @@
     "tokenValidation": "토큰 검증",
     "trustedProxy": "신뢰 프록시 진단",
     "user": "사용자",
-    "users": "사용자 목록"
+    "users": "사용자 목록",
+    "system_status": "실행 방식·예약 작업 상태"
   }
 }

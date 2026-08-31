@@ -831,6 +831,11 @@ return [
         ],
     ],
 
+    // IP 허용 목록 (웹 크론 호출 제한 — App\Rules\ValidIpAllowList)
+    'ip_allow_list' => [
+        'invalid' => '":value" 은(는) 올바른 IP 주소나 대역 표기가 아닙니다. 한 줄에 하나씩 또는 쉼표로 구분해 적어 주세요.',
+    ],
+
     // 설정값 검증 메시지
     'setting' => [
         'value' => [
@@ -1183,6 +1188,12 @@ return [
         'timezone' => '시간대',
         'language' => '언어',
         'default_language' => '기본 언어',
+        // 실행 방식·예약 작업 필드 (관리자 '시스템' 탭 — #609)
+        'system.execution_mode' => '실행 방식',
+        'system.cron_mode' => '예약 작업 실행 방식',
+        'system.cron_allowed_ips' => '예약 작업 허용 주소',
+        'system.cron_min_interval' => '예약 작업 최소 호출 간격',
+        'system.cron_visit_fallback' => '방문자 접속 시 예약 작업 실행',
         // 본인인증(IDV) 필드
         'identity_default_provider' => '기본 프로바이더',
         'identity_purpose_providers' => '목적별 프로바이더',

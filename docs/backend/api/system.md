@@ -150,6 +150,124 @@ _에러 응답이 정의되어 있지 않다. 이 라우트는 DB 에 접근하�
 이 프로브가 실패하고 대조군이 성공하면, 코드는 확장자 없는 URL 형태를 써야 한다. 서버측 URL 조립은 `App\Support\AssetUrl`, 프론트측은 `resources/js/core/support/assetUrl.ts` 가 같은 규칙을 공유하므로 한쪽만 바꾸면 그 자산만 404 가 된다. 라우트 등록은 단일 `Route::get()` 이 아니라 `Route::dualSuffix()` / `dualSuffixSegment()` / `dualAsset()` 로 확장자 형태와 확장자 없는 형태를 동시에 등록한다.
 
 
+### GET /api/system/cron/run
+<!-- @generated:start:api.public.system.cron.run -->
+- **라우트명**: `api.public.system.cron.run`
+- **컨트롤러**: `App\Http\Controllers\Api\Public\WebCronController@run`
+- **인증/권한**: 공개 (인증 불필요)
+
+**요청 파라미터**
+
+_요청 파라미터 없음._
+
+**요청 예시**
+
+```http
+GET /api/system/cron/run HTTP/1.1
+Host: api.example.com
+Accept: application/json
+```
+
+**응답 필드** (`data` 내부)
+
+> 문서 생성기는 호출 번호 없이 요청하므로 401 을 받는다. 아래 표는 `WebCronController::run()` 과 `ScheduleRunSummary::toArray()` 를 읽어 작성했다.
+
+| 이름 | 타입 | 예시값 | 설명 |
+| --- | --- | --- | --- |
+| ran | boolean | `true` | 이번 호출이 실제로 러너를 돌렸는지. 최소 간격 미도달이거나 실행 방식이 서버 크론 전용이면 `false` |
+| reason | string | `min_interval` | `ran=false` 일 때의 사유 — `min_interval` / `web_call_disabled` |
+| retry_after_seconds | integer | `240` | 최소 간격까지 남은 초 (`reason=min_interval` 일 때만) |
+| mode | string | `cron` | 저장된 예약 작업 실행 방식 (`reason=web_call_disabled` 일 때만) |
+| started_at | string | `2026-08-31T05:00:00+00:00` | 실행 시작 시각 (ISO 8601) |
+| finished_at | string | `2026-08-31T05:00:03+00:00` | 실행 종료 시각 (ISO 8601) |
+| duration_ms | integer | `3179` | 소요 시간(밀리초) |
+| due | integer | `3` | 소급 창 안에서 실행 대상으로 뽑힌 예약 수 |
+| executed | integer | `3` | 실제로 실행한 예약 수 |
+| failed | integer | `0` | 실패한 예약 수 (커맨드 되뽑기 실패 포함) |
+| skipped | integer | `0` | 건너뛴 예약 수 (조건 미충족·중복 실행 방지·다른 서버 담당) |
+| truncated | boolean | `false` | 실행 시간 상한에 걸려 남은 예약을 다음 호출로 넘겼는지 |
+| events | array | `[{"name":"sanctum:prune-expired","expression":"0 4 * * *","status":"executed"}]` | 예약별 결과 — `name`/`expression`/`status`(`executed`/`failed`/`skipped`)/`reason` |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "예약 작업 실행을 마쳤습니다.",
+    "data": {
+        "ran": true,
+        "started_at": "2026-08-31T05:00:00+00:00",
+        "finished_at": "2026-08-31T05:00:03+00:00",
+        "duration_ms": 3179,
+        "due": 2,
+        "executed": 2,
+        "failed": 0,
+        "skipped": 0,
+        "truncated": false,
+        "events": [
+            {
+                "name": "sanctum:prune-expired",
+                "expression": "0 4 * * *",
+                "status": "executed"
+            },
+            {
+                "name": "App\Jobs\GenerateSitemapJob",
+                "expression": "0 2 * * *",
+                "status": "executed"
+            }
+        ]
+    },
+    "error": null
+}
+```
+
+**에러 응답**
+
+| 상태 | 조건 | 메시지 키 |
+| --- | --- | --- |
+| 401 | 호출 번호가 없거나 저장된 번호와 다름 (번호 미발급 사이트 포함) | `schedule.cron.invalid_token` |
+| 403 | 허용 주소 목록이 설정되어 있고 호출자 IP 가 그 밖 | `schedule.cron.ip_not_allowed` |
+
+인증을 통과한 뒤에는 실행 건수·실패 건수와 무관하게 **200** 이다. 실행이 일어나지 않은 경우(`ran=false`)도 200 이며 사유는 `data.reason` 이 알린다.
+
+<!-- @generated:end -->
+
+**설명**
+
+서버에 예약 실행(크론)을 걸 수 없는 호스팅에서 예약 작업을 돌리는 진입점이다. 호스팅 제어판의 URL 호출형 예약 실행이나 외부 크론 서비스가 이 주소를 주기적으로 부른다. 실행 본체는 `g7:schedule-run` 커맨드와 **같은 러너**이며, 진입점만 둘이다.
+
+**인증** — 사이트마다 발급되는 호출 번호를 `?token=` 쿼리 또는 `X-G7-Cron-Token` 헤더로 싣는다. 헤더를 설정할 수 없는 외부 서비스가 많아 쿼리 방식도 유지하지만, 접근 로그에 쿼리스트링이 남는 환경에서는 헤더 쪽이 낫다. 번호는 상수 시간 비교로 대조하며 어떤 로그에도 남기지 않는다. 번호 조회·재발급은 `GET|POST /api/admin/settings/system/cron-token[/rotate]` 만 제공하고, 일반 설정 조회 응답에는 실리지 않는다.
+
+**응답 규약** — 인증을 통과하면 **실행 건수와 무관하게 언제나 200** 이다. 외부 크론 서비스는 비-200 을 장애로 보고 알림을 쏟는데, "지금은 돌 것이 없다" 는 장애가 아니기 때문이다. 인증 실패만 401(번호 불일치)·403(허용 IP 밖)이다.
+
+| `data` 필드 | 타입 | 설명 |
+| --- | --- | --- |
+| ran | boolean | 이번 호출이 실제로 러너를 돌렸는지. 최소 간격 미만 호출이거나 실행 방식이 "서버 크론만" 이면 `false` |
+| reason | string | `ran=false` 일 때의 사유 — `min_interval`(최소 간격 미도달) · `web_call_disabled`(주소 호출 미허용) |
+| retry_after_seconds | integer | 최소 간격까지 남은 초 (`reason=min_interval` 일 때만) |
+| due | integer | 소급 창 안에서 실행 대상으로 뽑힌 예약 수 |
+| executed | integer | 실제로 실행한 예약 수 |
+| failed | integer | 실패한 예약 수 (커맨드 되뽑기 실패 포함) |
+| skipped | integer | 건너뛴 예약 수 (조건 미충족·중복 실행 방지·다른 서버 담당) |
+| truncated | boolean | 실행 시간 상한에 걸려 남은 예약을 다음 호출로 넘겼는지 |
+| duration_ms | integer | 이번 호출의 소요 시간(밀리초) |
+| events | array | 예약별 결과 (`name`/`expression`/`status`/`reason`) |
+
+**호출 주기와 소급 실행** — 등록된 예약의 다수가 고정 시각(`dailyAt`)이라, 호출이 5~15분에 한 번인 환경에서는 그 분을 놓친다. 그래서 러너는 마지막 점검 시각 이후 시각이 지난 예약을 **소급 포함**해 실행한다. 소급 창 안에서 여러 번 due 였던 주기 예약도 1회만 실행하며, 창의 상한(`core.cron.catch_up_window_minutes`, 기본 하루)을 두어 장기 미호출 뒤 첫 호출이 폭주하지 않게 한다.
+
+최소 호출 간격(`system.cron_min_interval`)은 **호출 횟수 제한이지 실행 누락 사유가 아니다.** 간격 미만 호출을 건너뛰어도 점검 시각이 전진하지 않으므로, 다음 유효 호출의 소급 창이 그 사이 시각을 그대로 덮는다.
+
+**실행 시간 상한** — 한 번의 호출은 `core.cron.max_runtime_seconds`(기본 50초) 안에서만 예약을 처리하고, 남은 예약은 다음 호출로 넘긴다(`truncated=true`). 이때 점검 시각을 전진시키지 않으므로 잔여 예약이 창 밖으로 밀려나지 않는다.
+
+**중복 실행** — 서버 크론과 주소 호출이 함께 걸린 환경에서도 두 진입점이 프레임워크의 같은 mutex 를 공유하므로 같은 예약이 겹쳐 돌지 않는다.
+
+**실측 제외 사유** — 문서 생성기는 번호 없이 호출하므로 401 을 받는다. 위 응답 필드 표는 그래서 사람이 작성한 것이다.
+
+
 ### GET /api/system/public-storage
 <!-- @generated:start:api.public.system.public-storage.extensionless -->
 - **라우트명**: `api.public.system.public-storage.extensionless`

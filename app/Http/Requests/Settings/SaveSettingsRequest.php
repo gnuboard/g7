@@ -203,7 +203,7 @@ class SaveSettingsRequest extends FormRequest
 
         $rules = [
             // 탭 식별자
-            '_tab' => ['nullable', 'string', Rule::in(['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'notifications', 'identity'])],
+            '_tab' => ['nullable', 'string', Rule::in(['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'notifications', 'identity', 'system'])],
 
             // 각 탭의 컨테이너
             'general' => ['sometimes', 'array'],
@@ -215,6 +215,7 @@ class SaveSettingsRequest extends FormRequest
             'advanced' => ['sometimes', 'array'],
             'notifications' => ['sometimes', 'array'],
             'identity' => ['sometimes', 'array'],
+            'system' => ['sometimes', 'array'],
             'notifications.channels' => ['sometimes', 'array'],
             'notifications.channels.*.id' => ['required_with:notifications.channels', 'string', 'max:50'],
             'notifications.channels.*.is_active' => ['required_with:notifications.channels', 'boolean'],
@@ -235,9 +236,23 @@ class SaveSettingsRequest extends FormRequest
             // 허용값은 단건 저장(UpdateSettingRequest)과 같은 표(EnumeratedSettingValues)를 쓴다.
             'general.asset_url_mode' => ['nullable', 'string', EnumeratedSettingValues::ruleFor('general.asset_url_mode')],
 
-            // 실행 모드 — 웹 요청 안의 커맨드 실행 방식 (#609). 화면 노출은 P5 공정이 맡지만
-            // 카테고리가 카탈로그에 등재된 순간 저장 경로는 열리므로 허용값 게이트는 먼저 둔다.
+            // 실행 모드 — 웹 요청 안의 커맨드 실행 방식 (#609).
             'system.execution_mode' => ['nullable', 'string', EnumeratedSettingValues::ruleFor('system.execution_mode')],
+
+            // 예약 작업(웹 크론) — 허용값은 단건 저장과 같은 표를 쓴다.
+            // 호출 번호(토큰)는 여기에 없다 (D20) — 전용 API 로만 발급·조회한다.
+            'system.cron_mode' => ['nullable', 'string', EnumeratedSettingValues::ruleFor('system.cron_mode')],
+            'system.cron_allowed_ips' => array_merge(
+                ['nullable', 'string', 'max:1000'],
+                SettingShapeRules::rulesFor('system.cron_allowed_ips'),
+            ),
+            'system.cron_min_interval' => [
+                'nullable',
+                'integer',
+                'min:'.config('core.settings_limits.system_cron_min_interval_min', 0),
+                'max:'.config('core.settings_limits.system_cron_min_interval_max', 1440),
+            ],
+            'system.cron_visit_fallback' => ['nullable', 'boolean'],
             'general.site_logo' => ['nullable', 'array'],
             'general.site_logo.*' => ['integer', Rule::exists(Attachment::class, 'id')],
 

@@ -111,6 +111,33 @@
       }
     },
     {
+      "id": "system_status",
+      "label_key": "$t:editor.data_source.system_status",
+      "type": "api",
+      "endpoint": "/api/admin/settings/system/status",
+      "method": "GET",
+      "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'system'}}",
+      "auto_fetch": true,
+      "auth_required": true,
+      "fallback": {
+        "data": {
+          "execution": {
+            "effective_mode": "subprocess",
+            "configured_mode": "auto",
+            "detection": {
+              "blocked_functions": [],
+              "php_probe": {}
+            }
+          },
+          "cron": {
+            "mode": "auto",
+            "token_issued": false,
+            "last_run": null
+          }
+        }
+      }
+    },
+    {
       "id": "systemInfo",
       "label_key": "$t:editor.data_source.systemInfo",
       "type": "api",
@@ -546,6 +573,10 @@
                   "label": "$t:admin.settings.tabs.identity"
                 },
                 {
+                  "id": "system",
+                  "label": "$t:admin.settings.tabs.system"
+                },
+                {
                   "id": "info",
                   "label": "$t:admin.settings.tabs.info"
                 }
@@ -731,6 +762,9 @@
               },
               {
                 "partial": "partials/admin_settings/_tab_identity.json"
+              },
+              {
+                "partial": "partials/admin_settings/_tab_system.json"
               },
               {
                 "partial": "partials/admin_settings/_tab_info.json"
@@ -922,6 +956,9 @@
     },
     {
       "partial": "partials/admin_settings/_modal_static_cache_republish.json"
+    },
+    {
+      "partial": "partials/admin_settings/_modal_cron_token_rotate.json"
     },
     {
       "partial": "partials/admin_settings/_modal_notification_template_form.json"

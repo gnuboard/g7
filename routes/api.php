@@ -40,6 +40,7 @@ use App\Http\Controllers\Api\Admin\SeoCandidateController;
 // Identity Verification
 use App\Http\Controllers\Api\Admin\SeoOgPreviewController;
 use App\Http\Controllers\Api\Admin\SettingsController as AdminSettingsController;
+use App\Http\Controllers\Api\Admin\SystemExecutionController;
 use App\Http\Controllers\Api\Admin\TemplateController as AdminTemplateController;
 use App\Http\Controllers\Api\Admin\TemplateCustomTranslationController as AdminTemplateCustomTranslationController;
 // Public Controllers
@@ -59,6 +60,7 @@ use App\Http\Controllers\Api\Public\PublicProfileController;
 use App\Http\Controllers\Api\Public\PublicSearchController;
 use App\Http\Controllers\Api\Public\PublicStorageController;
 use App\Http\Controllers\Api\Public\PublicTemplateController;
+use App\Http\Controllers\Api\Public\WebCronController;
 use App\Http\Middleware\RefreshTokenExpiration;
 use App\Models\IdentityVerificationLog;
 use Illuminate\Http\Request;
@@ -198,6 +200,14 @@ Route::group([], function () {
     // 자산 라우트이므로 dualAsset 이중 등록 의무 (R33).
     Route::dualAsset('system/public-storage', [PublicStorageController::class, 'serve'])
         ->name('api.public.system.public-storage');
+
+    // 웹 크론 — 서버 크론을 걸 수 없는 호스팅의 예약 작업 진입점 (A-5).
+    // 호스팅 제어판의 URL 호출형 예약 실행이나 외부 크론 서비스가 이 주소를 부른다.
+    // 인증은 전용 호출 번호(상수 시간 비교) + 선택적 IP 제한이며, 통과하면 실행 건수와
+    // 무관하게 언제나 200 이다 — 외부 서비스는 비-200 을 장애로 보고 알림을 쏟는다.
+    // 주소가 정적 확장자로 끝나지 않으므로 이중 등록 헬퍼는 쓰지 않는다.
+    Route::get('system/cron/run', [WebCronController::class, 'run'])
+        ->name('api.public.system.cron.run');
 });
 
 // 브로드캐스팅 인증 (Sanctum 토큰 사용)
@@ -679,6 +689,17 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::post('test-driver', [AdminSettingsController::class, 'testDriverConnection'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.test-driver');
         Route::post('test-outbound-proxy', [AdminSettingsController::class, 'testOutboundProxy'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.test-outbound-proxy');
         Route::post('geoip/update', [AdminGeoIpController::class, 'update'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.geoip.update');
+        // 실행 방식·예약 작업 (W5) — `{key}` 와일드카드보다 **앞에** 둔다.
+        // 뒤에 두면 `system/status` 가 설정 키 `system` 의 조회로 잡힌다.
+        Route::prefix('system')->group(function () {
+            Route::get('status', [SystemExecutionController::class, 'show'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.system.status');
+            Route::post('detect', [SystemExecutionController::class, 'detect'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.system.detect');
+            // 호출 번호는 인증 없는 실행 자격증명이라 조회에도 update 권한을 요구한다 (D20).
+            Route::get('cron-token', [SystemExecutionController::class, 'cronToken'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.system.cron-token');
+            Route::post('cron-token/rotate', [SystemExecutionController::class, 'rotateCronToken'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.system.cron-token.rotate');
+            Route::post('cron/run', [SystemExecutionController::class, 'runSchedule'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.system.cron.run');
+        });
+
         Route::get('{key}', [AdminSettingsController::class, 'show'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.show');
         Route::put('{key}', [AdminSettingsController::class, 'update'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.update');
     });

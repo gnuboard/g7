@@ -1,0 +1,132 @@
+{
+  "meta": {
+    "editor_label": "$t:admin.modal_label.admin_settings.cron_token_rotate_modal",
+    "is_partial": true,
+    "description": "웹 크론 호출 번호 재발급 확인 모달 (W5)"
+  },
+  "id": "cron_token_rotate_modal",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:admin.settings.system.cron_token_rotate_title",
+    "size": "sm"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "py-2"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-gray-700 dark:text-gray-300"
+          },
+          "text": "$t:admin.settings.system.cron_token_rotate_confirm"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "mt-2 text-label-subtle"
+          },
+          "text": "$t:admin.settings.system.cron_token_rotate_warning"
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "modal-footer-buttons"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "btn btn-secondary"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "closeModal"
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:common.cancel"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "btn btn-danger"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "apiCall",
+              "auth_required": true,
+              "target": "/api/admin/settings/system/cron-token/rotate",
+              "params": {
+                "method": "POST"
+              },
+              "onSuccess": [
+                {
+                  "comment": "부모 화면의 주소칸을 갱신한다. 이 모달은 modals 섹션(포털) 소속이라 target:'local' 은 모달 자신의 _local 로 가고, 부모의 _local.cronUrl 은 그대로 남는다 — 그러면 재발급 뒤에도 무효가 된 옛 주소가 화면에 남아 운영자가 그것을 복사해 호스팅에 등록한다.",
+                  "handler": "setState",
+                  "params": {
+                    "target": "$parent._local",
+                    "cronUrl": "{{result.data.url}}"
+                  }
+                },
+                {
+                  "handler": "closeModal"
+                },
+                {
+                  "handler": "toast",
+                  "params": {
+                    "type": "success",
+                    "message": "$t:admin.settings.system.cron_token_rotated"
+                  }
+                },
+                {
+                  "handler": "refetchDataSource",
+                  "params": {
+                    "dataSourceId": "system_status"
+                  }
+                }
+              ],
+              "onError": [
+                {
+                  "handler": "toast",
+                  "params": {
+                    "type": "error",
+                    "message": "{{error.message ?? '$t:admin.settings.system.cron_token_rotate_failed'}}"
+                  }
+                }
+              ]
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:admin.settings.system.cron_token_rotate"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1153,6 +1153,55 @@ MD;
     }
 
     #[Test]
+    public function 응답_예시의_쿼리스트링_자격증명은_마스킹된다(): void
+    {
+        // 키 이름 대조만으로는 이 형태를 잡지 못한다 — 비밀이 값 **안**에 있고 그 값을
+        // 담은 키는 `url` 처럼 무해한 이름이다. 실제로 웹 크론 호출 주소가 그 형태라,
+        // 이 처리가 없으면 실측 응답의 살아 있는 호출 번호(인증 없이 예약 작업을 실행할
+        // 수 있는 자격증명)가 공개 문서에 그대로 실린다.
+        $scaffolder = new ApiDocScaffolder;
+
+        $secret = 'd6ba2b4f754b0a93f5d30b288f17cb4760980eb219fe09e6273cafb418cb655d';
+        $body = ['success' => true, 'data' => [
+            'url' => 'https://g7.example.com/api/system/cron/run?token='.$secret,
+            'header_name' => 'X-G7-Cron-Token',
+        ], 'message' => null, 'error' => null];
+
+        $block = $scaffolder->responseExampleBlock(null, [
+            'status' => 200,
+            'body' => $body,
+            'base_url' => 'https://g7.example.com',
+        ]);
+
+        $this->assertStringNotContainsString($secret, $block);
+        $this->assertStringContainsString('token={MASKED}', $block);
+        // 값 전체가 아니라 비밀 자리만 가린다 — 주소의 형태가 문서의 설명이다.
+        $this->assertStringContainsString('/api/system/cron/run?token=', $block);
+        // 비밀이 아닌 필드는 그대로 남는다.
+        $this->assertStringContainsString('X-G7-Cron-Token', $block);
+    }
+
+    #[Test]
+    public function 비밀이_아닌_쿼리_파라미터는_보존된다(): void
+    {
+        $scaffolder = new ApiDocScaffolder;
+
+        $body = ['success' => true, 'data' => [
+            'next_page_url' => 'https://g7.example.com/api/users?page=2&per_page=20',
+        ], 'message' => null, 'error' => null];
+
+        $block = $scaffolder->responseExampleBlock(null, [
+            'status' => 200,
+            'body' => $body,
+            'base_url' => 'https://g7.example.com',
+        ]);
+
+        $this->assertStringContainsString('page=2', $block);
+        $this->assertStringContainsString('per_page=20', $block);
+        $this->assertStringNotContainsString('{MASKED}', $block);
+    }
+
+    #[Test]
     public function 응답_예시_body의_절대_ur_l_호스트는_placeholder로_마스킹된다(): void
     {
         $scaffolder = new ApiDocScaffolder;
@@ -1252,6 +1301,52 @@ MD;
         $this->assertSame(
             substr_count($regen, '(사람 서술)'),
             substr_count($regen2, '(사람 서술)')
+        );
+    }
+
+    /**
+     * 머리말과 목차 표 사이의 사람 개요는 그 안에 인용 줄(`> …`)이 있어도 통째로 보존된다.
+     *
+     * 회귀 배경: 개요 추출이 head 전체에서 `>` 줄을 찾아 **마지막** 것 뒤만 개요로 삼았다.
+     * 그래서 개요 안에 인용 줄이 하나라도 있으면 그 위의 서술이 재생성 때마다 조용히
+     * 잘려 나갔다 — 코어 API 목차의 공통 규약(인증·로케일·페이지네이션)이 그렇게 사라졌고,
+     * 남은 문서는 문법상 멀쩡해 오류도 경고도 나지 않았다.
+     */
+    #[Test]
+    public function readme_개요_안의_인용줄이_그_위_서술을_잘라내지_않는다(): void
+    {
+        $scaffolder = new ApiDocScaffolder;
+
+        $entries = [['domain' => 'pages', 'file' => 'pages.md', 'count' => 5]];
+        $first = $scaffolder->readmeIndex('모듈 `sirsoft-page`', $entries);
+
+        // 머리말 인용 블록과 목차 생성 블록 사이에 사람 개요를 끼운다.
+        // 그 개요 **안**에 인용 줄이 다시 나온다 — 실제 코어 목차가 그 형태다.
+        $overview = '## 공통 규약
+
+첫 문단 (보존 대상).
+
+> 상세: [pagination.md](../pagination.md)
+
+마지막 문단.';
+        $marker = '<!-- @generated:start:api-readme-index -->';
+        $human = str_replace($marker, $overview.'
+
+'.$marker, $first);
+
+        $entriesUpdated = [['domain' => 'pages', 'file' => 'pages.md', 'count' => 6]];
+        $regen = $scaffolder->readmeIndex('모듈 `sirsoft-page`', $entriesUpdated, $human);
+
+        $this->assertStringContainsString('엔드포인트 수**: 6', $regen, '표는 갱신되어야 한다');
+        $this->assertStringContainsString('## 공통 규약', $regen, '인용 줄 위의 헤딩이 잘렸다');
+        $this->assertStringContainsString('첫 문단 (보존 대상).', $regen, '인용 줄 위의 서술이 잘렸다');
+        $this->assertStringContainsString('마지막 문단.', $regen);
+
+        // 재재생성해도 중복 없이 멱등이어야 한다.
+        $regen2 = $scaffolder->readmeIndex('모듈 `sirsoft-page`', $entriesUpdated, $regen);
+        $this->assertSame(
+            substr_count($regen, '첫 문단 (보존 대상).'),
+            substr_count($regen2, '첫 문단 (보존 대상).')
         );
     }
 
@@ -2141,6 +2236,71 @@ MD;
             '요구 권한(`core.widgets.manage`)이 없거나, 시스템 위젯을 삭제하려는 경우',
             $regenerated,
             '식별자만 갱신되고 사람이 보강한 조건은 그대로 남아야 한다'
+        );
+    }
+
+    /**
+     * 생성 블록 **안**(표 바로 아래)의 사람 서술도 재생성에서 살아남아야 한다.
+     *
+     * 회귀 배경: 보존 대상이 생성 블록 **뒤**의 `**설명**` 자리뿐이라, 표를 읽는 방법을
+     * 그 표 아래에 적어 둔 문단이 재생성 때마다 통째로 사라졌다 — 검색 API 문서의 정확도
+     * 설명 3문단이 그렇게 없어졌고, 남은 문서는 문법상 멀쩡해 아무 신호도 나지 않았다.
+     */
+    #[Test]
+    public function 생성블록_안_표_아래의_사람_서술이_재생성에서_보존된다(): void
+    {
+        $scaffolder = new ApiDocScaffolder;
+
+        $route = [
+            'method' => 'GET',
+            'uri' => '/api/search',
+            'name' => 'api.search',
+            'controller' => 'SearchController',
+            'controller_method' => 'index',
+            'permission' => null,
+            'middleware' => ['api'],
+            'path_params' => [],
+        ];
+        $request = ['request_class' => null, 'params' => [], 'hook_filters' => []];
+        $schema = [
+            'envelope' => ['data'],
+            'shape' => 'object',
+            'fields' => [['name' => 'total', 'type' => 'integer', 'sample' => '0', 'description' => '총 건수']],
+            'pagination' => false,
+        ];
+        $probe = ['status' => 200, 'skipped_reason' => null];
+        $header = "# 검색\n";
+        $keys = ['api.search'];
+
+        $section = $scaffolder->endpointSection($route, $request, $schema, $probe);
+        $doc = $scaffolder->mergeDocument(null, $header, [$section], $keys);
+
+        // 응답 필드 표 바로 아래(= 응답 예시 소제목 앞)에 사람이 문단을 끼운다.
+        $note = "카테고리 중 하나라도 상한에 걸리면 합계도 정확하지 않습니다.\n\n> 상세: [pagination.md](../pagination.md)";
+        $withProse = str_replace("\n**응답 예시**", "\n".$note."\n\n**응답 예시**", $doc);
+        $this->assertStringContainsString($note, $withProse, '사전 조건: 문단이 블록 안에 놓여야 한다');
+
+        $regenerated = $scaffolder->mergeDocument($withProse, $header, [$section], $keys);
+
+        $this->assertStringContainsString(
+            '카테고리 중 하나라도 상한에 걸리면 합계도 정확하지 않습니다.',
+            $regenerated,
+            '표 아래 사람 문단이 재생성에서 사라졌다'
+        );
+        $this->assertStringContainsString('> 상세: [pagination.md](../pagination.md)', $regenerated);
+        // 문단은 여전히 응답 필드 표와 응답 예시 사이에 있어야 한다.
+        $this->assertLessThan(
+            strpos($regenerated, '**응답 예시**'),
+            strpos($regenerated, '카테고리 중 하나라도'),
+            '문단이 원래 자리를 벗어났다'
+        );
+
+        // 재재생성해도 겹쳐 쌓이지 않는다.
+        $again = $scaffolder->mergeDocument($regenerated, $header, [$section], $keys);
+        $this->assertSame(
+            substr_count($regenerated, '카테고리 중 하나라도'),
+            substr_count($again, '카테고리 중 하나라도'),
+            '재생성마다 같은 문단이 겹쳐 쌓인다'
         );
     }
 }

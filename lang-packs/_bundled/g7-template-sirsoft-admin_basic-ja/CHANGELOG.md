@@ -17,7 +17,11 @@
 - 환경설정 > 일반의 「초기 화면 정적 파일」 카드 전체(제목·설명, 게시됨·미게시·비활성·개발 모드 상태 배지, 버전·파일 수·마지막 게시 시각·실행 계정·실패 사유 행, 「지금 다시 만들기」 버튼과 확인 모달)의 일본어 번역을 추가했습니다.
 - 레이아웃 편집기의 「초기 화면 정적 파일 상태」 데이터 항목 이름을 일본어로 추가했습니다.
 - 환경설정 > 정보 탭에서 메모리·디스크 사용량을 측정할 수 없을 때 표시되는 「측정 불가」 문구의 일본어 번역을 추가했습니다 (`settings.info.not_measurable`).
+- 환경설정 「시스템」 탭의 일본어 번역을 추가했습니다 (`settings.system.*` 46건) — 실행 방식 판정·재감지, 예약 작업 호출 주소·허용 주소·최소 간격·방문 트리거 폴백·마지막 실행 표시를 포함합니다.
+- 호출 번호 재발급 확인 모달의 일본어 번역을 추가했습니다 (`modal_label.admin_settings.cron_token_rotate_modal`).
+- 탭 이름과 복사 버튼, 실행 방식·예약 작업 상태 데이터소스 라벨의 일본어 번역을 추가했습니다 (`settings.tabs.system`, `common.copy`, `editor.data_source.system_status`).
 - 환경설정 > 일반 탭 사이트 URL 안내 문구의 일본어 번역을 추가했습니다 (`settings.general.site_url_help`).
+- 예약 작업 실행 이력 목록과 실행 기록 저장 실패 안내의 일본어 번역을 추가했습니다 (`settings.system.cron_history*`, `cron_state_persist_failed` 5건).
 
 ### Changed
 

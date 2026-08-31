@@ -217,7 +217,6 @@ HTTP/1.1 200
 | seo.bot_detection_enabled | body | boolean | 아니오 | — | 검색엔진 봇 감지 사용 여부 (봇 요청에 SEO 렌더링 적용) |
 | seo.bot_detection_library_enabled | body | boolean | 아니오 | — | 봇 감지 라이브러리 사용 여부 (User-Agent 목록 대신 라이브러리 판정) |
 | seo.og_default_site_name | body | string | 아니오 | max 200 | seo.og default site 이름 (식별자) |
-| seo.og_image_default | body | array | 아니오 | 항목: 존재하는 첨부 ID | 사이트 기본 공유 이미지(og:image) 첨부 ID 배열 — 화면별 og:image 가 없을 때 폴백으로 사용. 화면 제출 형태(첨부 객체 배열)도 수용하며 정수 ID 배열로 정규화된다 (7.0.9+) |
 | seo.og_image_default_width | body | integer | 아니오 | min 0, max 8000 | 기본 Open Graph 이미지 너비 (px) |
 | seo.og_image_default_height | body | integer | 아니오 | min 0, max 8000 | 기본 Open Graph 이미지 높이 (px) |
 | seo.twitter_default_card | body | string | 아니오 | — | 기본 트위터 카드 유형 (summary 등) |
@@ -1364,6 +1363,487 @@ HTTP/1.1 200
 판정식은 "HTTPS 인식 실패" 가 아니라 `forwarded_headers 가 비어 있지 않음 AND trusted_configured 가 거짓` 입니다. HTTP 전용 사이트가 프록시 뒤에 있는 구성에서는 혼합 콘텐츠 차단이 없어 화면이 정상으로 보이지만, 방문자 IP 기록·통보 IP 화이트리스트·로그인 시도 제한은 그대로 어긋나기 때문입니다.
 
 같은 판정을 관리자 대시보드 알림, 환경설정 > 고급 화면, 설치 마법사, `php artisan trusted-proxy:status` 가 공유합니다. 설정 방법과 도입 시 후속 조치는 [reverse-proxy.md](../reverse-proxy.md) 를 참고하세요.
+
+
+### POST /api/admin/settings/system/cron/run
+<!-- @generated:start:api.admin.settings.system.cron.run -->
+- **라우트명**: `api.admin.settings.system.cron.run`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\SystemExecutionController@runSchedule`
+- **인증/권한**: `auth:sanctum` + `permission:core.settings.update`
+
+**요청 파라미터**
+
+_요청 파라미터 없음._
+
+**요청 예시**
+
+```http
+POST /api/admin/settings/system/cron/run HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| started_at | string | `2026-08-31T05:01:13+00:00` | started 일시 |
+| finished_at | string | `2026-08-31T05:01:16+00:00` | finished 일시 |
+| duration_ms | integer | `3179` | 이번 호출의 소요 시간(밀리초) |
+| due | integer | `3` | 소급 창 안에서 실행 대상으로 뽑힌 예약 수 |
+| executed | integer | `3` | 실제로 실행한 예약 수 |
+| failed | integer | `0` | 실패한 예약 수 (커맨드 되뽑기 실패 포함) |
+| skipped | integer | `0` | 건너뛴 예약 수 (조건 미충족·중복 실행 방지·다른 서버 담당) |
+| truncated | boolean | `false` | 실행 시간 상한에 걸려 남은 예약을 다음 호출로 넘겼는지 여부 |
+| events | array | `[{"name":"start \/b cmd \/v:on \/c \"(\"C:\\laragon\\bin\…` | 이벤트 정의 목록 |
+
+**응답 예시**
+
+<!-- @probed -->
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "예약 작업 실행을 마쳤습니다.",
+    "data": {
+        "started_at": "2026-08-31T05:01:13+00:00",
+        "finished_at": "2026-08-31T05:01:16+00:00",
+        "duration_ms": 3179,
+        "due": 3,
+        "executed": 3,
+        "failed": 0,
+        "skipped": 0,
+        "truncated": false,
+        "events": [
+            {
+                "name": "start /b cmd /v:on /c \"(\"C:\\laragon\\bin\\php\\php-8.3.26-Win32-vs16-x64\\php.exe\" \"artisan\" dashboard:broadcast-resources & \"C:\\laragon\\bin\\php\\php-8.3.26-Win32-vs16-x64\\php.exe\" \"artisan\" schedule:finish \"framework\\schedule-2cc9df99ea408fb2532d26890a921a1250b61d8d\" ^!ERRORLEVEL^!) > \"NUL\" 2>&1\"",
+                "expression": "* * * * *",
+                "status": "executed"
+            },
+            {
+                "name": "\"C:\\laragon\\bin\\php\\php-8.3.26-Win32-vs16-x64\\php.exe\" \"artisan\" layout-previews:cleanup > \"NUL\" 2>&1",
+                "expression": "*/30 * * * *",
+                "status": "executed"
+            },
+            {
+                "name": "\"C:\\laragon\\bin\\php\\php-8.3.26-Win32-vs16-x64\\php.exe\" \"artisan\" identity:expire-challenges > \"NUL\" 2>&1",
+                "expression": "0 * * * *",
+                "status": "executed"
+            }
+        ]
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.settings.update`)이 없는 경우 |
+
+<!-- @generated:end -->
+
+**설명**
+
+관리자 화면의 [지금 실행] 이 부르는 경로다. 공개 웹 크론 주소와 **같은 러너**를 돌리되, 최소 호출 간격은 적용하지 않는다 — 그 제한은 외부의 과다 호출을 막기 위한 것이고, 이 경로는 권한을 확인한 운영자의 명시적 행동이기 때문이다.
+
+응답의 `data` 는 공개 웹 크론과 같은 실행 요약(`due`/`executed`/`failed`/`skipped`/`truncated`/`events`)이다. 필드 뜻은 `GET /api/system/cron/run` 항목을 참조한다.
+
+
+### POST /api/admin/settings/system/cron-token/rotate
+<!-- @generated:start:api.admin.settings.system.cron-token.rotate -->
+- **라우트명**: `api.admin.settings.system.cron-token.rotate`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\SystemExecutionController@rotateCronToken`
+- **인증/권한**: `auth:sanctum` + `permission:core.settings.update`
+
+**요청 파라미터**
+
+_요청 파라미터 없음._
+
+**요청 예시**
+
+```http
+POST /api/admin/settings/system/cron-token/rotate HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| url | string | `https://g7_3.dev/api/system/cron/run?…` | 호출 번호가 실린 절대 호출 주소 (하위 폴더 마운트 접두사·오리진 포함). 문서 예시의 번호는 마스킹된다 |
+| header_name | string | `X-G7-Cron-Token` | 번호를 헤더로 실을 때 쓰는 헤더 이름 |
+| issued_at | string | `2026-08-31T05:01:13+00:00` | issued 일시 |
+
+**응답 예시**
+
+<!-- @probed -->
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "호출 번호를 재발급했습니다. 기존 주소는 즉시 무효가 됩니다.",
+    "data": {
+        "url": "https://api.example.com/api/system/cron/run?token={MASKED}",
+        "header_name": "X-G7-Cron-Token",
+        "issued_at": "2026-08-31T05:01:13+00:00"
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.settings.update`)이 없는 경우 |
+
+<!-- @generated:end -->
+
+**설명**
+
+호출 번호를 새로 발급한다. **기존 주소는 즉시 무효**가 되므로, 호스팅 제어판이나 외부 예약 서비스에 등록해 둔 주소를 바꾸지 않으면 예약 작업이 그 시점부터 실행되지 않는다. 관리자 화면은 이 사실을 확인 모달로 먼저 알린다.
+
+접근 로그에 쿼리스트링이 남는 환경에서 주소가 유출됐다고 판단될 때 쓰는 경로다. 응답 형태는 조회와 같다.
+
+
+### GET /api/admin/settings/system/cron-token
+<!-- @generated:start:api.admin.settings.system.cron-token -->
+- **라우트명**: `api.admin.settings.system.cron-token`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\SystemExecutionController@cronToken`
+- **인증/권한**: `auth:sanctum` + `permission:core.settings.update`
+
+**요청 파라미터**
+
+_요청 파라미터 없음._
+
+**요청 예시**
+
+```http
+GET /api/admin/settings/system/cron-token HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| url | string | `https://g7_3.dev/api/system/cron/run?…` | 호출 번호가 실린 절대 호출 주소 (하위 폴더 마운트 접두사·오리진 포함). 문서 예시의 번호는 마스킹된다 |
+| header_name | string | `X-G7-Cron-Token` | 번호를 헤더로 실을 때 쓰는 헤더 이름 |
+| issued_at | string | `2026-08-31T05:00:28+00:00` | issued 일시 |
+
+**응답 예시**
+
+<!-- @probed -->
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "호출 주소를 조회했습니다.",
+    "data": {
+        "url": "https://api.example.com/api/system/cron/run?token={MASKED}",
+        "header_name": "X-G7-Cron-Token",
+        "issued_at": "2026-08-31T05:00:28+00:00"
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.settings.update`)이 없는 경우 |
+
+<!-- @generated:end -->
+
+**설명**
+
+웹 크론 호출 주소를 돌려주는 **전용** 경로다. 그 주소에는 인증 없이 예약 작업을 실행할 수 있는 호출 번호가 들어 있으므로, 일반 설정 조회(`GET /api/admin/settings`)·단건 조회(`GET /api/admin/settings/{key}`)·상태 조회(`GET .../system/status`) 어디에도 실리지 않는다. 이 경로가 유일한 통로다.
+
+**권한이 `core.settings.read` 가 아니라 `core.settings.update` 인 이유** — 이 값은 자격증명이다. 설정을 읽을 수만 있는 계정이 그것을 얻으면 등급 구분이 사라진다. 관리자 화면의 [보기]·[복사] 버튼도 같은 기준으로 수정 권한이 있을 때만 노출된다.
+
+번호가 아직 발급되지 않았으면 **이 호출 시점에 발급**한다. 운영자가 [보기] 를 눌렀다는 것은 그 주소를 쓰겠다는 뜻이고, 발급 버튼을 따로 두면 빈 값만 보이기 때문이다.
+
+| `data` 필드 | 타입 | 설명 |
+| --- | --- | --- |
+| url | string | 번호가 실린 절대 호출 주소. 하위 폴더 마운트의 접두사와 오리진이 붙어 있어 호스팅 제어판에 그대로 붙여넣을 수 있다 |
+| header_name | string | 번호를 헤더로 실을 때 쓰는 헤더 이름 (`X-G7-Cron-Token`) |
+| issued_at | string\|null | 번호 발급 시각 (ISO 8601) |
+
+응답 예시의 번호는 문서 생성 시 마스킹된다.
+
+
+### POST /api/admin/settings/system/detect
+<!-- @generated:start:api.admin.settings.system.detect -->
+- **라우트명**: `api.admin.settings.system.detect`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\SystemExecutionController@detect`
+- **인증/권한**: `auth:sanctum` + `permission:core.settings.read`
+
+**요청 파라미터**
+
+_요청 파라미터 없음._
+
+**요청 예시**
+
+```http
+POST /api/admin/settings/system/detect HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| detection | object | `{"mode":"subprocess","blocked_functions":[],"php_binary":…` | 환경 감지 결과 — `mode`/`blocked_functions`/`php_binary`/`php_probe`(사유는 `message_localized` 로 번역되어 온다) |
+| effective_mode | string | `subprocess` | 실제로 적용되는 실행 모드 (명시 설정 > 감지 순서로 해석한 결과) |
+| configured_mode | string | `auto` | 운영자가 저장한 실행 모드 설정값 (`auto` 면 미고정) |
+
+**응답 예시**
+
+<!-- @probed -->
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "실행 환경을 다시 감지했습니다.",
+    "data": {
+        "detection": {
+            "mode": "subprocess",
+            "blocked_functions": [],
+            "php_binary": "php",
+            "php_probe": {
+                "status": "valid",
+                "version": "8.3.26",
+                "sapi": "cli",
+                "message": "PHP 8.3.26 (최소 요구 버전 8.2.0 충족)",
+                "message_key": "php_probe_ok",
+                "message_params": {
+                    "version": "8.3.26",
+                    "min_version": "8.2.0"
+                },
+                "message_localized": "PHP 8.3.26 확인 (최소 요구 8.2.0)"
+            }
+        },
+        "effective_mode": "subprocess",
+        "configured_mode": "auto"
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.settings.read`)이 없는 경우 |
+
+<!-- @generated:end -->
+
+**설명**
+
+실행 환경을 그 자리에서 다시 판정한다. 호스팅이 `disable_functions` 나 PHP 실행 파일 배치를 바꾼 뒤 운영자가 저장된 판정을 갱신하는 수단이다.
+
+**저장된 설정을 덮지 않는다.** `system.execution_mode` 가 `auto` 가 아니면 그 고정값이 계속 우선하며, 이 호출은 **근거만** 갱신한다. 응답이 감지 결과와 유효 모드를 함께 실어 화면이 그 차이("자동 판정은 CLI 없음인데 운영자가 CLI 사용으로 고정해 두었다")를 보일 수 있게 한다.
+
+| `data` 필드 | 타입 | 설명 |
+| --- | --- | --- |
+| detection.mode | string | 환경 감지가 내린 모드 (`subprocess` / `inprocess`) |
+| detection.blocked_functions | array | 호스팅이 차단한 실행 함수 목록 (판정 근거) |
+| detection.php_binary | string | 판정에 쓴 PHP 실행 파일 경로 |
+| detection.php_probe | object | PHP 실행 파일 확인 결과 — `status`/`version`/`sapi`/`message_key`/`message_localized` |
+| effective_mode | string | 실제로 적용되는 모드 (명시 설정 > 감지 순서로 해석한 결과) |
+| configured_mode | string | 운영자가 저장한 설정값 (`auto` 면 미고정) |
+
+`php_probe.message_localized` 는 서버가 번역해 내려보내는 사유 문구다. 화면은 동적 번역 키에 치환값을 조합할 수단이 없어 그 자리가 비어 버리므로, 번역은 서버에서 끝난다.
+
+
+### GET /api/admin/settings/system/status
+<!-- @generated:start:api.admin.settings.system.status -->
+- **라우트명**: `api.admin.settings.system.status`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\SystemExecutionController@show`
+- **인증/권한**: `auth:sanctum` + `permission:core.settings.read`
+
+**요청 파라미터**
+
+_요청 파라미터 없음._
+
+**요청 예시**
+
+```http
+GET /api/admin/settings/system/status HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| execution | object | `{"effective_mode":"subprocess","configured_mode":"auto","…` | 실행 방식 상태 — `effective_mode`/`configured_mode`/`detection` |
+| cron | object | `{"mode":"auto","min_interval_minutes":5,"visit_fallback_e…` | 예약 작업 상태 — 실행 방식·최소 간격·방문 폴백·번호 발급 여부·마지막 실행 요약·미실행 경고 판정 |
+
+**응답 예시**
+
+<!-- @probed -->
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "실행 방식 정보를 조회했습니다.",
+    "data": {
+        "execution": {
+            "effective_mode": "subprocess",
+            "configured_mode": "auto",
+            "detection": {
+                "mode": "subprocess",
+                "blocked_functions": [],
+                "php_binary": "php",
+                "php_probe": {
+                    "status": "valid",
+                    "version": "8.3.26",
+                    "sapi": "cli",
+                    "message": "PHP 8.3.26 (최소 요구 버전 8.2.0 충족)",
+                    "message_key": "php_probe_ok",
+                    "message_params": {
+                        "version": "8.3.26",
+                        "min_version": "8.2.0"
+                    },
+                    "message_localized": "PHP 8.3.26 확인 (최소 요구 8.2.0)"
+                }
+            }
+        },
+        "cron": {
+            "mode": "auto",
+            "min_interval_minutes": 5,
+            "visit_fallback_enabled": false,
+            "token_issued": true,
+            "token_issued_at": "{MASKED}",
+            "last_run": {
+                "started_at": "2026-08-31T05:01:13+00:00",
+                "finished_at": "2026-08-31T05:01:16+00:00",
+                "duration_ms": 3179,
+                "due": 3,
+                "executed": 3,
+                "failed": 0,
+                "skipped": 0,
+                "truncated": false,
+                "events": [
+                    {
+                        "name": "start /b cmd /v:on /c \"(\"C:\\laragon\\bin\\php\\php-8.3.26-Win32-vs16-x64\\php.exe\" \"artisan\" dashboard:broadcast-resources & \"C:\\laragon\\bin\\php\\php-8.3.26-Win32-vs16-x64\\php.exe\" \"artisan\" schedule:finish \"framework\\schedule-2cc9df99ea408fb2532d26890a921a1250b61d8d\" ^!ERRORLEVEL^!) > \"NUL\" 2>&1\"",
+                        "expression": "* * * * *",
+                        "status": "executed"
+                    },
+                    {
+                        "name": "\"C:\\laragon\\bin\\php\\php-8.3.26-Win32-vs16-x64\\php.exe\" \"artisan\" layout-previews:cleanup > \"NUL\" 2>&1",
+                        "expression": "*/30 * * * *",
+                        "status": "executed"
+                    },
+                    {
+                        "name": "\"C:\\laragon\\bin\\php\\php-8.3.26-Win32-vs16-x64\\php.exe\" \"artisan\" identity:expire-challenges > \"NUL\" 2>&1",
+                        "expression": "0 * * * *",
+                        "status": "executed"
+                    }
+                ]
+            },
+            "last_executed_at": "2026-08-31T05:01:16+00:00",
+            "stale": false,
+            "stale_after_days": 2,
+            "recent_history": [
+                {
+                    "id": 42,
+                    "name": "sitemap:generate",
+                    "expression": "0 4 * * *",
+                    "status": "success",
+                    "trigger_type": "scheduled",
+                    "started_at": "2026-08-31T04:00:02+00:00",
+                    "duration": 3,
+                    "error_output": null
+                }
+            ],
+            "state_persist_failed": false
+        }
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.settings.read`)이 없는 경우 |
+
+<!-- @generated:end -->
+
+**설명**
+
+환경설정 「시스템」 탭이 화면을 그리는 데 쓰는 상태다. 실행 방식 카드(현재 모드·판정 근거)와 예약 작업 카드(실행 방식·최소 간격·마지막 실행)가 이 한 응답을 소비한다.
+
+**호출 번호는 싣지 않는다.** 발급되어 있는지(`cron.token_issued`)와 언제 발급됐는지만 알리고, 값 자체는 전용 경로로만 내려간다.
+
+| `data` 필드 | 타입 | 설명 |
+| --- | --- | --- |
+| execution.effective_mode | string | 실제로 적용되는 실행 모드 |
+| execution.configured_mode | string | 운영자가 저장한 설정값 (`auto` 면 미고정) |
+| execution.detection | object | 판정 근거 (`POST .../system/detect` 와 같은 형태) |
+| cron.mode | string | 예약 작업 실행 방식 (`auto`/`web`/`cron`/`both`) |
+| cron.min_interval_minutes | integer | 최소 호출 간격(분). 0 이면 제한 없음 |
+| cron.visit_fallback_enabled | boolean | 방문 트리거 폴백 사용 여부 |
+| cron.token_issued | boolean | 호출 번호 발급 여부 (**값은 싣지 않는다**) |
+| cron.token_issued_at | string\|null | 번호 발급 시각 |
+| cron.last_run | object\|null | 마지막 실행 요약 (`finished_at`/`duration_ms`/`due`/`executed`/`failed`/`skipped`/`truncated`) |
+| cron.last_executed_at | string\|null | 예약이 마지막으로 **실행된** 시각. 최소 간격에 걸려 되돌아간 호출은 여기에 실리지 않는다 |
+| cron.stale | boolean | 미실행 경고 발화 여부 (마지막 실행 이후 `stale_after_days` 경과) |
+| cron.stale_after_days | integer | 경고 발화 기준 일수 |
+| cron.recent_history | array | 코드로 등록된 예약의 최근 실행 이력 (시각 역순, 최대 20건). `last_run` 은 직전 1회만 담고 다음 호출에 덮이므로 지난 실행은 이 목록으로만 되짚을 수 있다 |
+| cron.recent_history[].name | string\|null | 예약 표시명 (실행 시점 스냅샷) |
+| cron.recent_history[].expression | string\|null | 실행 주기 (실행 시점 스냅샷) |
+| cron.recent_history[].status | string\|null | `success` / `failed` |
+| cron.recent_history[].trigger_type | string\|null | `scheduled`(주기 도래) / `manual`(화면의 [지금 실행]) |
+| cron.recent_history[].started_at | string\|null | 실행 시작 시각 (ISO 8601) |
+| cron.recent_history[].duration | integer\|null | 소요 시간(초) |
+| cron.recent_history[].error_output | string\|null | 실패 사유 (성공이면 null) |
+| cron.state_persist_failed | boolean | 실행 상태 파일 쓰기 실패 여부. `true` 면 점검 시각이 남지 않아 다음 호출의 소급 창이 상한까지 열리고 창 안의 예약이 매 호출 전부 다시 실행된다 |
 
 
 ### POST /api/admin/settings/test-driver

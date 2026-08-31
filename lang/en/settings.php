@@ -44,6 +44,14 @@ return [
     // System info related
     'seconds' => 's',
 
+    // Execution method / scheduled tasks screen (admin 'System' tab)
+    'execution' => [
+        'fetch_success' => 'Execution method information was retrieved.',
+        'fetch_failed' => 'Failed to retrieve execution method information.',
+        'detect_success' => 'The execution environment was detected again.',
+        'detect_failed' => 'Failed to detect the execution environment.',
+    ],
+
     // Execution mode (how commands run inside web requests)
     'execution_mode' => [
         'auto' => 'Detect automatically',

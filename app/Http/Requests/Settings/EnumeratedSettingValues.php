@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Settings;
 
 use App\Execution\ExecutionMode;
+use App\Scheduling\WebCronPolicy;
 use App\Support\AssetUrl;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\In;
@@ -34,6 +35,8 @@ final class EnumeratedSettingValues
             ],
             // 실행 모드 — 웹 요청 안의 커맨드 실행 방식 (#609)
             'system.execution_mode' => ExecutionMode::values(),
+            // 예약 작업 실행 방식 — 주소 호출 / 서버 크론 (#609)
+            'system.cron_mode' => WebCronPolicy::modes(),
         ];
     }
 

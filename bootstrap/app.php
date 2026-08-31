@@ -19,6 +19,7 @@ use App\Http\Middleware\OptionalSanctumMiddleware;
 use App\Http\Middleware\PermissionMiddleware;
 use App\Http\Middleware\RefreshTokenExpiration;
 use App\Http\Middleware\RoleMiddleware;
+use App\Http\Middleware\RunScheduleOnVisit;
 use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\SetTimezone;
 use App\Http\Middleware\StartApiSession;
@@ -116,6 +117,11 @@ $app = Application::configure(basePath: dirname(__DIR__))
 
         // Gzip 압축 미들웨어 (웹서버 설정 없이 애플리케이션 레벨에서 압축)
         $middleware->append(GzipEncodeResponse::class);
+
+        // 방문 트리거 예약 실행 폴백 (기본 꺼짐 — D5). 인증을 요구하지 않으므로 전역
+        // 등록이 가능하고, 실행은 응답을 보낸 뒤(terminate)에만 일어난다. 설정이 꺼져
+        // 있으면 판정 한 번으로 끝나는 no-op 이다.
+        $middleware->append(RunScheduleOnVisit::class);
 
         // 토큰 만료 시간 슬라이딩 갱신 미들웨어 (API 요청 시 토큰 만료 시간 자동 연장)
         $middleware->appendToGroup('api', [

@@ -26,6 +26,8 @@ import { toggleSidebarHandler, initSidebarHandler } from './sidebarHandler';
 import { downloadAttachmentHandler } from './downloadAttachment';
 // 자산 URL 방식 자동 감지 (이슈 #486) — 브라우저에서 프로브 쌍을 던져 재판정
 import { checkAssetUrlModeDriftHandler, detectAssetUrlModeHandler } from './detectAssetUrlModeHandler';
+// 클립보드 복사 — 값이 화면에 없어도 복사할 수 있어야 하는 자리(웹 크론 호출 주소)가 있다
+import { copyToClipboardHandler } from './copyToClipboardHandler';
 
 /**
  * 핸들러 맵
@@ -60,4 +62,6 @@ export const handlerMap = {
   initSidebar: initSidebarHandler,
   // 게시판 첨부 다운로드 (토큰 동반 → 활동이력 행위자 기록, #413 item 58b)
   downloadAttachment: downloadAttachmentHandler,
+  // 클립보드 복사 (가림 상태에서도 동작해야 하는 값 — 웹 크론 호출 주소)
+  copyToClipboard: copyToClipboardHandler,
 } as const;

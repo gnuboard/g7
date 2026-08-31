@@ -83,6 +83,10 @@ return [
         'advanced_pagination_result_cap_max' => 1000000,
         'advanced_pagination_max_page_min' => 0,
         'advanced_pagination_max_page_max' => 100000,
+
+        // 예약 작업 — 최소 호출 간격 (0 = 제한 없음, 상한 하루)
+        'system_cron_min_interval_min' => 0,
+        'system_cron_min_interval_max' => 1440,
     ],
 
     /*
@@ -118,6 +122,35 @@ return [
     */
     'static_cache' => [
         'enabled' => env('G7_STATIC_CACHE', true),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | 예약 작업 러너 (웹 크론)
+    |--------------------------------------------------------------------------
+    | 서버 크론을 걸 수 없는 호스팅에서 예약 작업을 주소 호출로 돌리는 러너의 경계값입니다.
+    | 운영자 화면에 노출되는 것은 최소 호출 간격 하나뿐이고, 아래 둘은 실행 환경의 성질에
+    | 가까워 설정 화면 대신 여기에 둡니다.
+    |
+    | - max_runtime_seconds:    한 번의 호출이 쓰는 실행 시간 상한. 남은 대상은 다음 호출로
+    |                           넘어갑니다 — 무CLI 환경의 요청 시간 상한에 걸려 응답이
+    |                           통째로 끊기는 것을 막습니다. PHP 의 max_execution_time 보다
+    |                           넉넉히 작아야 합니다.
+    | - catch_up_window_minutes: 소급 실행 판정의 상한 구간. 오래 호출되지 않은 사이트의 첫
+    |                           호출이 폭주하지 않도록 자릅니다. 하루로 두면 고정 시각
+    |                           (dailyAt) 작업이 각각 한 번씩만 밀려 실행됩니다.
+    | - min_interval_minutes:   최소 호출 간격의 기본값(운영자 미설정 시). 간격 미만 호출은
+    |                           실행 없이 정상 응답하며, 그 사이 시각은 다음 유효 호출의
+    |                           소급 창이 덮으므로 작업이 유실되지 않습니다.
+    | - stale_alert_days:       대시보드 "예약 작업 미실행" 경고의 발화 기준(일). 실행 모드와
+    |                           무관하게 전 환경에서 같은 기준으로 발화하고, 조치 안내 문구만
+    |                           모드에 따라 갈립니다.
+    */
+    'cron' => [
+        'max_runtime_seconds' => 50,
+        'catch_up_window_minutes' => 1440,
+        'min_interval_minutes' => 5,
+        'stale_alert_days' => 2,
     ],
 
     /*

@@ -161,6 +161,22 @@ class NotificationHookListener implements HookListenerInterface
                 continue;
             }
 
+            // 발송 건수 관측 (D6-a) — 큐 연결이 `sync` 인 사이트에서는 수신자마다의
+            // 발송이 **이 요청 안에서** 순차 실행된다. 실행 시간 상한에 걸리면 그 지점
+            // 이후 수신자는 누락되는데, 시작·완료 두 줄이 없으면 그 누락이 아무 흔적도
+            // 남기지 않는다. 시작 줄만 있고 완료 줄이 없는 조합이 곧 "중간에 끊겼다" 는
+            // 신호다. 정책은 바꾸지 않는다 — 관측만 확보한다.
+            $total = $notifiables->count();
+            $sent = 0;
+            $failed = 0;
+
+            Log::info('알림 발송 시작', [
+                'type' => $definition->type,
+                'channel' => $template->channel,
+                'recipients' => $total,
+                'queue_connection' => config('queue.default'),
+            ]);
+
             foreach ($notifiables as $notifiable) {
                 try {
                     $notifiableData = $data;
@@ -178,9 +194,12 @@ class NotificationHookListener implements HookListenerInterface
                     );
 
                     $notifiable->notify($notification);
+                    $sent++;
 
                     HookManager::doAction('core.notification.after_send', $notifiable, $definition, $data);
                 } catch (\Throwable $e) {
+                    $failed++;
+
                     Log::error('NotificationHookListener: 알림 발송 실패', [
                         'type' => $definition->type,
                         'channel' => $template->channel,
@@ -189,6 +208,14 @@ class NotificationHookListener implements HookListenerInterface
                     ]);
                 }
             }
+
+            Log::info('알림 발송 완료', [
+                'type' => $definition->type,
+                'channel' => $template->channel,
+                'recipients' => $total,
+                'sent' => $sent,
+                'failed' => $failed,
+            ]);
         }
     }
 }

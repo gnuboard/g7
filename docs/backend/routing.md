@@ -173,6 +173,12 @@ SPA catch-all(`routes/web.php` 의 admin·user 그룹)은 등록되지 않은 �
 두 형태는 모두 영구 유지한다 — 확장자 형태를 제거하면 URL 을 하드코딩한 서드파티 확장이 깨진다.
 엔드포인트별 변환 규칙 표와 프로브 판정 절차: [API 레퍼런스 진입점](./api/README.md) "자산 URL 이중 모드".
 
+**반대 방향의 의무도 있다** — 운영자가 외부 서비스에 붙여넣는 주소는 애초에 정적 확장자로 끝나지
+않게 만든다. 웹 크론 호출 주소(`GET /api/system/cron/run`)가 그 예다. 이런 주소에 `.json` 같은 접미사를
+붙이면 이중 등록으로 되살릴 수는 있지만, 운영자가 이미 등록해 둔 주소가 어느 형태였는지에 따라 사이트가
+달라진다 — 처음부터 확장자를 두지 않는 편이 낫다. 그 성질은 회귀 테스트가 라우트 URI 를 직접 재서 고정한다
+(`WebCronEndpointTest::test_cron_route_is_named_and_has_no_static_extension`).
+
 ### catch-all 은 예약 프리픽스를 전수 제외한다
 
 catch-all 은 그 뒤에 등록된 라우트를 **가린다**. Laravel 은 등록 순서대로 매칭하므로, 예약 프리픽스가

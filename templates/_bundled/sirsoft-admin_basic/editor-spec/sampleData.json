@@ -1,6 +1,59 @@
 {
   "comment": "admin 자체 + 코어 SSoT 도메인. locales/admin_menus/me/installed_modules/active_plugins/users 등. 실제 데이터소스 ID 는 착수 시점 admin 레이아웃 data_sources 로 재검증 — 본 블록은 코어 SSoT/공통 폴백.",
   "byDataSourceId": {
+    "system_status": {
+      "data": {
+        "execution": {
+          "effective_mode": "inprocess",
+          "configured_mode": "auto",
+          "detection": {
+            "blocked_functions": ["proc_open", "exec"],
+            "php_probe": {
+              "message_localized": "PHP 실행 파일을 찾지 못해 웹 안에서 직접 실행합니다."
+            }
+          }
+        },
+        "cron": {
+          "mode": "web",
+          "min_interval_minutes": 5,
+          "visit_fallback_enabled": true,
+          "token_issued": true,
+          "token_issued_at": "2026-08-30T09:12:00+09:00",
+          "last_run": {
+            "finished_at": "2026-09-01T04:00:07+09:00",
+            "duration_ms": 1840,
+            "executed": 6,
+            "failed": 0
+          },
+          "last_executed_at": "2026-09-01T04:00:07+09:00",
+          "stale": false,
+          "stale_after_days": 3,
+          "recent_history": [
+            {
+              "id": 3120,
+              "name": "seo:generate-sitemap",
+              "expression": "0 4 * * *",
+              "status": "success",
+              "trigger_type": "web_cron",
+              "started_at": "2026-09-01T04:00:05+09:00",
+              "duration": 1.84,
+              "error_output": null
+            },
+            {
+              "id": 3119,
+              "name": "queue:prune-batches",
+              "expression": "0 3 * * *",
+              "status": "success",
+              "trigger_type": "web_cron",
+              "started_at": "2026-08-31T03:00:02+09:00",
+              "duration": 0.42,
+              "error_output": null
+            }
+          ],
+          "state_persist_failed": false
+        }
+      }
+    },
     "trustedProxy": {
       "data": {
         "status": "warning",

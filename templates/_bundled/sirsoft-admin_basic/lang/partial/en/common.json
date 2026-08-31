@@ -81,5 +81,6 @@
   },
   "refresh": "Refresh",
   "activate": "Activate",
-  "skip": "Skip"
+  "skip": "Skip",
+  "copy": "Copy"
 }

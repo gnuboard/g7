@@ -830,6 +830,11 @@ return [
         ],
     ],
 
+    // IP allow list (web cron call restriction)
+    'ip_allow_list' => [
+        'invalid' => '":value" is not a valid IP address or range. List one per line, or separate them with commas.',
+    ],
+
     // Setting value validation messages
     'setting' => [
         'value' => [
@@ -1190,6 +1195,12 @@ return [
         'timezone' => 'timezone',
         'language' => 'language',
         'default_language' => 'default language',
+        // Execution method / scheduled task fields (admin 'System' tab)
+        'system.execution_mode' => 'Execution method',
+        'system.cron_mode' => 'Scheduled task execution method',
+        'system.cron_allowed_ips' => 'Scheduled task allowed addresses',
+        'system.cron_min_interval' => 'Scheduled task minimum interval',
+        'system.cron_visit_fallback' => 'Run scheduled tasks on visitor traffic',
         // Identity verification (IDV) fields
         'identity_default_provider' => 'default provider',
         'identity_purpose_providers' => 'purpose-to-provider mapping',

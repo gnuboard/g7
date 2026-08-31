@@ -44,6 +44,14 @@ return [
     // 시스템 정보 관련
     'seconds' => '초',
 
+    // 실행 방식·예약 작업 화면 (W5 — 관리자 '시스템' 탭)
+    'execution' => [
+        'fetch_success' => '실행 방식 정보를 조회했습니다.',
+        'fetch_failed' => '실행 방식 정보 조회에 실패했습니다.',
+        'detect_success' => '실행 환경을 다시 감지했습니다.',
+        'detect_failed' => '실행 환경 감지에 실패했습니다.',
+    ],
+
     // 실행 모드 (웹 요청 안의 커맨드 실행 방식)
     'execution_mode' => [
         'auto' => '자동으로 판단',

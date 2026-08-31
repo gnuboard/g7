@@ -225,7 +225,7 @@ CSS 가 아닌 자산은 바이트 그대로 서빙됩니다. 정적 게시본(`
 ## 코어 API 레퍼런스
 
 <!-- @generated:start:api-readme-index -->
-- **문서 수**: 36 · **엔드포인트 수**: 325
+- **문서 수**: 36 · **엔드포인트 수**: 336
 
 | 문서 | 도메인 | 엔드포인트 |
 | --- | --- | --- |
@@ -259,11 +259,11 @@ CSS 가 아닌 자산은 바이트 그대로 서빙됩니다. 정적 게시본(`
 | [roles.md](roles.md) | `roles` | 7 |
 | [schedules.md](schedules.md) | `schedules` | 12 |
 | [search.md](search.md) | `search` | 1 |
-| [seo.md](seo.md) | `seo` | 5 |
-| [settings.md](settings.md) | `settings` | 18 |
-| [system.md](system.md) | `system` | 2 |
-| [templates.md](templates.md) | `templates` | 57 |
-| [users.md](users.md) | `users` | 12 |
+| [seo.md](seo.md) | `seo` | 6 |
+| [settings.md](settings.md) | `settings` | 24 |
+| [system.md](system.md) | `system` | 5 |
+| [templates.md](templates.md) | `templates` | 70 |
+| [users.md](users.md) | `users` | 13 |
 | [verify-password.md](verify-password.md) | `verify-password` | 1 |
 
 <!-- @generated:end -->
@@ -273,7 +273,7 @@ CSS 가 아닌 자산은 바이트 그대로 서빙됩니다. 정적 게시본(`
 > 각 확장이 자신의 API 문서를 소유합니다. 아래 표는 자동 생성됩니다.
 
 <!-- @generated:start:api-readme-extensions -->
-- **확장 수**: 14 · **엔드포인트 수**: 428
+- **확장 수**: 14 · **엔드포인트 수**: 430
 
 | 확장 | 유형 | API 문서 목차 | 문서/엔드포인트 |
 | --- | --- | --- | --- |
@@ -290,6 +290,6 @@ CSS 가 아닌 자산은 바이트 그대로 서빙됩니다. 정적 게시본(`
 | `sirsoft-pay_nicepayments` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-pay_nicepayments/docs/api/README.md) | 0 / 0 |
 | `sirsoft-tosspayments` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-tosspayments/docs/api/README.md) | 2 / 4 |
 | `sirsoft-verification_kginicis` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-verification_kginicis/docs/api/README.md) | 2 / 3 |
-| `sirsoft-verification_nhnkcp` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-verification_nhnkcp/docs/api/README.md) | 1 / 1 |
+| `sirsoft-verification_nhnkcp` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-verification_nhnkcp/docs/api/README.md) | 2 / 3 |
 
 <!-- @generated:end -->

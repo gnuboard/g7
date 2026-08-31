@@ -174,7 +174,11 @@
             "max_attempts": 5
         },
         "system": {
-            "execution_mode": "auto"
+            "execution_mode": "auto",
+            "cron_mode": "auto",
+            "cron_allowed_ips": "",
+            "cron_min_interval": 5,
+            "cron_visit_fallback": false
         }
     },
     "frontend_schema": {
@@ -369,10 +373,14 @@
             }
         },
         "system": {
-            "expose": false,
-            "_comment": "실행 모드 (웹 요청 안의 커맨드 실행 방식) — CommandRunnerResolver 가 소비. W5 관리자 화면(예약 작업·실행 방식 탭)은 P5 공정에서 frontend 노출·저장 경로(merge_into/frontend_name)를 선언한다",
+            "expose": true,
+            "_comment": "실행 방식(웹 요청 안의 커맨드 실행) + 예약 작업(웹 크론) — 관리자 환경설정 '시스템' 탭(W5)이 소비한다. 호출 번호(토큰)는 이 카탈로그에 두지 않는다 (D20) — 인증 없는 실행 자격증명이라 설정 조회 응답에 실리면 '읽기만' 가능한 계정이 실행 권한을 얻는다. 보관은 WebCronTokenStore, 조회는 권한을 확인하는 전용 API 한 곳뿐이다",
             "fields": {
-                "execution_mode": { "type": "string", "sensitive": false }
+                "execution_mode": { "type": "string", "sensitive": false },
+                "cron_mode": { "type": "string", "sensitive": false },
+                "cron_allowed_ips": { "type": "string", "sensitive": false },
+                "cron_min_interval": { "type": "integer", "sensitive": false },
+                "cron_visit_fallback": { "type": "boolean", "sensitive": false }
             }
         }
     }

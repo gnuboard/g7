@@ -97,6 +97,20 @@ if ($result->exitCode !== 0) {
 
 판정이 환경 감지로 내려진 subprocess 면 `resolve()` 가 감지가 확인한 PHP 바이너리(자동 탐색 폴백이 찾은 경로 포함)를 `SubprocessCommandRunner` 생성자에 넘긴다 — PATH 의 `php` 는 실행 불가하고 비표준 경로에만 PHP 가 있는 호스팅에서 판정과 실행이 같은 바이너리를 본다. 명시·설정으로 고정된 subprocess 는 설정값 `process.php_binary` 를 그대로 쓴다.
 
+### 4.0 소비처 — 예약 작업 러너 (P5)
+
+예약 작업 러너(`App\Scheduling\ScheduleRunner`)는 이 계약의 소비처이면서 **모드 판정에 기대지 않는** 유일한 지점이다. 웹 크론의 존재 이유가 "CLI 스폰 불가" 이므로 그 경로는 언제나 in-process 여야 한다 — 해석기에 모드를 명시해 그 사실을 코드에 남긴다.
+
+```php
+$this->runners->resolve(ExecutionMode::Inprocess)->run($command, $parameters);
+```
+
+러너가 넘기는 파라미터는 shell 형태 스케줄 이벤트에서 되뽑은 것이다. 프레임워크는 `Schedule::command()` 를 `"{php} {artisan} 커맨드 --옵션=값"` 문자열로 조립해 두는데, 그 문자열을 스폰할 수 없는 환경에서는 접두사를 걷어 내고 커맨드명 + 파라미터로 되돌려야 한다 (`ArtisanCommandExtractor`). 되뽑기가 만드는 파라미터 표기는 위 §4 의 `Artisan::call()` 규약과 같으므로, 두 러너 어느 쪽에 넘겨도 같은 의미로 실행된다.
+
+되뽑기는 프레임워크 내부 표현에 의존하므로 **실패를 조용히 건너뛰지 않는다** — 건너뛰면 그 예약이 오류 없이 사라진다. 등록된 전 이벤트가 되뽑기에 성공하는지를 계약 테스트가 고정하고, Laravel 업그레이드로 표현이 바뀌면 그 테스트가 먼저 red 가 된다.
+
+예약 작업의 호출 규약·응답 형태·소급 실행은 [api/system.md](api/system.md) 의 `GET /api/system/cron/run` 항목이 소유한다.
+
 ### 4.1 인스톨러 (Laravel 부팅 전)
 
 인스톨러(`public/install/`)는 Laravel 오토로드 밖의 순수 PHP 라 코어 러너를 직접 쓰지 못한다. 대신 같은 두 전략을 한 파일에 둔 **인스톨러 러너** `public/install/includes/artisan-executor.php` 를 경유한다.
@@ -247,11 +261,19 @@ $process = proc_open($commandLine, $descriptors, $pipes, BASE_PATH, $env);
 
 | 키 | 기본값 | 허용값 | 비고 |
 |---|---|---|---|
-| `system.execution_mode` | `auto` | `auto` / `subprocess` / `inprocess` | `config/settings/defaults.json` `system` 카테고리. 프론트 노출(`expose`)은 관리자 화면 공정이 선언한다 |
+| `system.execution_mode` | `auto` | `auto` / `subprocess` / `inprocess` | `config/settings/defaults.json` `system` 카테고리. 관리자 「시스템」 탭(P5)이 노출·저장한다 |
+| `system.cron_mode` | `auto` | `auto` / `web` / `cron` / `both` | 예약 작업 실행 방식. `cron` 이면 주소 호출이 인증을 통과해도 실행하지 않는다 |
+| `system.cron_allowed_ips` | `''` | IP·CIDR 목록 (줄바꿈/쉼표) | 비우면 제한 없음. 형태 규칙은 `SettingShapeRules` 가 두 저장 경로에 공유한다 |
+| `system.cron_min_interval` | `5` | 0 ~ `core.settings_limits.system_cron_min_interval_max` | 분. 0 이면 제한 없음 |
+| `system.cron_visit_fallback` | `false` | boolean | 방문 트리거 폴백 (D5 — 기본 꺼짐) |
+
+**호출 번호(토큰)는 이 카탈로그에 없다.** 인증 없이 예약 작업을 실행할 수 있는 자격증명이라, 설정 조회 응답에 실리면 "읽기만" 가능한 계정이 실행 권한을 얻는다. 보관은 전용 파일(`App\Scheduling\WebCronTokenStore`), 노출은 권한을 확인하는 전용 API 한 곳뿐이다.
 
 허용값은 `App\Http\Requests\Settings\EnumeratedSettingValues` 한 곳에서 파생한다(`ExecutionMode::values()`). 설정 저장 경로는 둘이라 — 벌크 `POST /api/admin/settings` (`SaveSettingsRequest`) 와 단건 `PUT /api/admin/settings/{key}` (`UpdateSettingRequest`) — 한쪽에만 규칙을 두면 다른 쪽이 우회로가 되어 임의 문자열이 `system.json` 에 남는다. 런타임은 `fromStringOrAuto()` 가 `Auto` 로 폴백해 파손되지는 않지만, 저장 단계에서 막아 설정 파일에 뜻 모를 값이 기록되지 않게 한다. 같은 표에 `general.asset_url_mode` 도 올라 있다.
 
 허용값이 닫힌 설정 키를 새로 만들면 이 표에 추가한다 — 두 FormRequest 를 따로 고치지 않는다.
+
+허용값을 **열거할 수는 없지만 형태가 정해진** 키(IP 목록 등)는 형제 표 `App\Http\Requests\Settings\SettingShapeRules` 가 소유한다. 두 표 모두 벌크·단건 양쪽이 공유한다 — 단건 경로는 값의 타입·길이만 보므로, 그 경로에서 형태 규칙이 빠지면 검증이 통째로 사라지고 판정기가 조용히 매칭에 실패하는 값이 저장된다.
 
 ## 9. 측정 불가 계약 (시스템 리소스)
 
@@ -295,6 +317,10 @@ CPU·메모리·디스크 사용률을 OS 명령(`wmic`·PowerShell·`nproc`·`f
 | `tests/scenarios/no-cli-installer-stepwise.yaml` | 단계별 실행 시나리오 매니페스트 |
 | `tests/Unit/Http/Requests/Settings/EnumeratedSettingValuesTest.php` | 허용값 표 ↔ Enum/상수 ↔ 카탈로그 기본값 정합 |
 | `tests/Feature/Api/Admin/SettingsControllerTest.php` (`test_update_*_execution_mode`) | 단건 저장 경로의 허용값 게이트 |
+| `tests/Unit/Scheduling/ArtisanCommandExtractorTest.php` | shell 이벤트 되뽑기 — 옵션·플래그·배열 옵션·위치 인자·인용부호, 비-Artisan 이벤트는 예외로 드러남 |
+| `tests/Feature/Scheduling/ScheduleRunnerContractTest.php` | 등록된 전 이벤트 되뽑기 성공(실패 0) · 대상은 등록에서 도출(R17) · 식별 키 안정성·무충돌 |
+| `tests/Feature/Scheduling/ScheduleRunnerCatchUpTest.php` | 실행 창 소급(D17) · 중복 0 · 최소 간격 스킵 후 무유실 · 창 상한 · 조건부 등록(R16) · 상한 이월과 재개 |
+| `tests/Feature/Scheduling/ScheduleRunEntryPointParityTest.php` | 진입점 둘(웹·CLI)이 같은 본체·같은 기록을 쓴다 · CLI 종료 코드가 실패를 반영 |
 | `tests/scenarios/no-cli-execution-mode.yaml` | 시나리오 매니페스트 (`disable_functions` 는 INI 라 E2E 재현 불가 — 종단 검증은 전용 환경 실측) |
 
 ## 11. 관련 문서

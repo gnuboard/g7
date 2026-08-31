@@ -187,6 +187,18 @@ const ALERTS = [
   { type: 'warning', subtype: 'static_publish_write_failed', icon: 'exclamation-triangle', title: '게시 실패', message: 'm3' },
   // (4) 신규 warning — (3) 과 같은 경로
   { type: 'warning', subtype: 'trusted_proxy_missing', icon: 'exclamation-triangle', title: '신뢰 프록시 미설정', message: 'm4' },
+  // (5) 예약 미실행 (#609) — 이 알림은 종전에 화면이 **이름으로** 알아보게 되어 있었다.
+  //     그 열거를 심각도 판정이 대체했으므로, 이름이 목록에 없어도 amber 로 나와야 한다.
+  //     조치 링크(action_path)까지 실어 상단 승격이 그 링크를 빼앗지 않는지 함께 잰다.
+  {
+    type: 'warning',
+    subtype: 'schedule_not_running',
+    icon: 'clock',
+    title: '예약 미실행',
+    message: 'm5',
+    action_path: '/admin/settings?tab=system',
+    action_label: '설정으로 이동',
+  },
 ];
 
 /** 알림 목록만 채우고 나머지 데이터소스는 비워 렌더한다 */
@@ -234,12 +246,12 @@ describe('대시보드 알림 심각도별 배치와 색상', () => {
   it('경고 등급 알림은 subtype 과 무관하게 상단 배너에 amber + 테두리로 렌더된다', async () => {
     const testUtils = await renderAlerts(ALERTS);
 
-    // 경고 3건이 상단에 모두 쌓인다 — 하나가 다른 하나를 덮지 않는다
+    // 경고 4건이 상단에 모두 쌓인다 — 하나가 다른 하나를 덮지 않는다
     const banner = document.querySelector('#dashboard_alert_banners');
     expect(banner, '상단 배너 영역이 렌더되지 않았다').not.toBeNull();
-    expect(banner!.querySelectorAll('[id^="top_alert_item_"]').length).toBe(3);
+    expect(banner!.querySelectorAll('[id^="top_alert_item_"]').length).toBe(4);
 
-    for (const i of [0, 1, 2]) {
+    for (const i of [0, 1, 2, 3]) {
       const { row, icon } = readAlertClasses('top', i);
 
       expect(row, 'top_alert_item_' + i + ' 행 배경').toContain('bg-amber-50');
@@ -248,8 +260,8 @@ describe('대시보드 알림 심각도별 배치와 색상', () => {
       expect(icon, 'top_alert_icon_' + i + ' 아이콘 색').toContain('text-amber-600');
     }
 
-    // 제목 3건이 모두 살아 있다 (덮어쓰기 없음)
-    for (const title of ['비호환', '게시 실패', '신뢰 프록시 미설정']) {
+    // 제목 4건이 모두 살아 있다 (덮어쓰기 없음)
+    for (const title of ['비호환', '게시 실패', '신뢰 프록시 미설정', '예약 미실행']) {
       expect(screen.getByText(title), title + ' 이 사라졌다').toBeTruthy();
     }
 

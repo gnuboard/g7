@@ -1658,6 +1658,7 @@
     "tokenValidation": "Token Validation",
     "trustedProxy": "Trusted proxy diagnostic",
     "user": "User",
-    "users": "Users"
+    "users": "Users",
+    "system_status": "Execution method and scheduled task status"
   }
 }

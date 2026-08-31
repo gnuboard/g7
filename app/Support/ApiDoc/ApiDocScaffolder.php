@@ -53,6 +53,33 @@ class ApiDocScaffolder
     private const TOKEN_PLACEHOLDER = '{YOUR_TOKEN}';
 
     /**
+     * @var list<string> 비밀값으로 취급하는 이름 조각
+     *
+     * 두 곳이 이 표를 공유한다 — 응답 **키 이름** 대조와 문자열 값 안의 **쿼리
+     * 파라미터 이름** 대조. 표가 갈리면 한쪽 통로에만 새 비밀 이름이 등록되어,
+     * 다른 통로로 나가는 같은 값이 조용히 평문으로 남는다.
+     */
+    /**
+     * @var list<string> 생성 블록 안의 소제목 (사람 서술 보존의 구간 경계)
+     *
+     * endpointSection() 이 내보내는 순서와 같아야 한다 — 어긋나면 그 구간의 사람
+     * 서술이 보존 대상에서 빠진다.
+     */
+    private const SECTION_ANCHORS = [
+        '**요청 파라미터**',
+        '**요청 예시**',
+        '**응답 필드**',
+        '**응답 예시**',
+        '**에러 응답**',
+    ];
+
+    private const SENSITIVE_VALUE_KEYS = [
+        'token', 'access_token', 'refresh_token', 'plaintexttoken', 'plain_text_token',
+        'password', 'secret', 'api_key', 'apikey', 'private_key', 'client_secret',
+        'authorization', 'remember_token', 'app_key',
+    ];
+
+    /**
      * @var string 요청 예시의 공개 Host placeholder
      *
      * 실측 기준 URL(로컬 개발 호스트 등)을 공개 문서에 노출하지 않고 중립 placeholder 로 마스킹한다.
@@ -903,15 +930,18 @@ class ApiDocScaffolder
      */
     private function sanitizeSensitive(mixed $value): mixed
     {
+        // 키 이름이 아니라 **값 안**에 비밀이 든 경우 — 쿼리스트링에 자격증명을 싣는
+        // 주소가 그렇다(웹 크론 호출 주소의 `?token=…`). 키는 `url` 이라 아래 키 이름
+        // 대조를 통과해 버리므로, 문자열 값은 별도로 훑는다.
+        if (is_string($value)) {
+            return $this->maskSecretQueryParams($value);
+        }
+
         if (! is_array($value)) {
             return $value;
         }
 
-        $sensitiveKeys = [
-            'token', 'access_token', 'refresh_token', 'plaintexttoken', 'plain_text_token',
-            'password', 'secret', 'api_key', 'apikey', 'private_key', 'client_secret',
-            'authorization', 'remember_token', 'app_key',
-        ];
+        $sensitiveKeys = self::SENSITIVE_VALUE_KEYS;
 
         $result = [];
         foreach ($value as $k => $v) {
@@ -924,7 +954,9 @@ class ApiDocScaffolder
                 }
             }
 
-            if ($isSensitive && ! is_array($v) && $v !== null) {
+            // 참/거짓은 비밀을 담을 수 없다 — `token_issued` 처럼 '발급되어 있는가' 를
+            // 알리는 값까지 가리면 문서가 그 필드의 실제 형태를 잘못 말하게 된다.
+            if ($isSensitive && ! is_array($v) && ! is_bool($v) && $v !== null) {
                 // 타입 표기용 접미(_type/_expires 등)는 마스킹 대상이 아니므로 스칼라만 마스킹.
                 $result[$k] = ($keyLower === 'token_type') ? $v : '{MASKED}';
             } else {
@@ -933,6 +965,38 @@ class ApiDocScaffolder
         }
 
         return $result;
+    }
+
+    /**
+     * 문자열 값 안의 쿼리스트링 자격증명을 placeholder 로 마스킹합니다.
+     *
+     * 키 이름 대조만으로는 이 형태를 잡지 못한다 — 비밀이 값 **안**에 있고 그 값을 담은
+     * 키는 `url` 처럼 무해한 이름이기 때문이다. 실제로 웹 크론 호출 주소가 그 형태이며,
+     * 이 처리가 없으면 실측 응답의 살아 있는 호출 번호가 공개 문서에 그대로 실린다
+     * (그 번호는 인증 없이 예약 작업을 실행할 수 있는 자격증명이다).
+     *
+     * 값 전체를 지우지 않고 **비밀 자리만** 가린다 — 주소의 형태가 문서의 설명이다.
+     *
+     * @param  string  $value  응답 문자열 값
+     * @return string 비밀 쿼리 파라미터가 마스킹된 문자열
+     */
+    private function maskSecretQueryParams(string $value): string
+    {
+        if (! str_contains($value, '=')) {
+            return $value;
+        }
+
+        $names = implode('|', array_map(
+            static fn (string $key): string => preg_quote($key, '#'),
+            self::SENSITIVE_VALUE_KEYS,
+        ));
+
+        // `?token=…` · `&secret=…` 형태를 값의 끝(다음 구분자 직전)까지 가린다.
+        return (string) preg_replace(
+            '#(?<=[?&])('.$names.')=[^&\#\s"\']+#i',
+            '$1={MASKED}',
+            $value,
+        );
     }
 
     /**
@@ -1136,10 +1200,17 @@ class ApiDocScaffolder
             // 정확히 잘라낸 블록으로만 대조한다. extractGeneratedBlockBody 가 아니라
             // exactGeneratedBlock 을 쓰는 이유: 에러 표 추출(extractErrorTable)은 생성 블록
             // 종료 마커를 표의 끝 경계로 삼는데, 전자는 그 마커를 잘라내고 돌려준다.
-            $merged .= $this->applyPreservedErrorTable(
+            $withErrorTable = $this->applyPreservedErrorTable(
                 $withErrors,
                 $this->exactGeneratedBlock($existing, $key),
                 $section
+            );
+
+            // 소제목 사이에 사람이 끼워 넣은 서술은 마지막에 되돌린다 — 앞선 복원들이
+            // 표·예시를 다 세운 뒤라야 구간 경계가 최종 위치에 선다.
+            $merged .= $this->applyInterstitialProse(
+                $withErrorTable,
+                $this->extractInterstitialProse($this->extractGeneratedBlockBody($existing, $key) ?? $legacy)
             )."\n";
         }
 
@@ -1995,13 +2066,19 @@ class ApiDocScaffolder
 
         $head = substr($existing, 0, $startPos);
 
-        // 헤더 인용 블록(`> ...`) 의 마지막 줄 이후가 사람 개요다.
-        if (! preg_match_all('/(?:^|\n)>[^\n]*/', $head, $all, PREG_OFFSET_CAPTURE)) {
+        // 헤더 인용 블록은 **머리말 직후의 연속된 `>` 줄 한 덩어리**다. 그 덩어리가 끝나는
+        // 자리부터가 사람 개요이며, 개요 **안**에 인용 줄(`> 상세: …`)이 다시 나올 수 있다.
+        //
+        // 종전에는 head 전체에서 `>` 줄을 모두 찾아 **마지막** 것 뒤를 개요로 삼았다. 그러면
+        // 개요 안에 인용 줄이 하나라도 있는 순간 그 위의 서술이 통째로 잘려 나간다 — 재생성
+        // 때마다 조용히 사라지고, 남은 문서는 문법상 멀쩡해 오류도 경고도 나지 않는다(실측:
+        // 코어 API 목차의 공통 규약 — 인증·로케일·페이지네이션 104줄 — 이 이 경로로 소실됐다).
+        // 그래서 첫 인용 **덩어리**만 헤더로 보고, 그 뒤는 원문 그대로 보존한다.
+        if (! preg_match('/(?:^|\n)(?:>[^\n]*(?:\n|$))+/', $head, $m, PREG_OFFSET_CAPTURE)) {
             return null;
         }
 
-        $last = end($all[0]);
-        $overview = trim(substr($head, $last[1] + strlen($last[0])));
+        $overview = trim(substr($head, $m[0][1] + strlen($m[0][0])));
 
         return $overview === '' ? null : $overview;
     }
@@ -2150,6 +2227,171 @@ class ApiDocScaffolder
         $stub = '**설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->';
 
         return str_replace($stub, $preserved, $section);
+    }
+
+    /**
+     * 생성 블록 **안**의 소제목 사이에 사람이 끼워 넣은 서술을 소제목별로 걷어 옵니다.
+     *
+     * `extractHumanProse()` 가 보존하는 것은 생성 블록 **뒤**의 `**설명**` 자리뿐이다.
+     * 그런데 실제 문서에는 표 바로 아래(예: 응답 필드 표 뒤)에 그 표를 읽는 방법을 적은
+     * 문단이 놓여 있다 — 그 자리에 있어야 뜻이 통하기 때문이다. 그 서술은 재생성 때마다
+     * 통째로 사라졌고, 문서는 문법상 멀쩡해 오류도 경고도 나지 않았다(실측: 검색 API
+     * 문서의 정확도 설명 3문단).
+     *
+     * 판정은 보수적이다 — 소제목이 여는 구간에서 **기계가 만든 마지막 줄**(표 행 또는
+     * 코드펜스)보다 뒤에 오는 텍스트만 사람 서술로 본다. 기계 산출물이 아예 없는 구간은
+     * 건드리지 않는다: 그 경우 생성기가 다음 회차에 같은 문구를 다시 내므로, 걷어 두면
+     * 재생성마다 같은 문단이 겹쳐 쌓인다.
+     *
+     * @param  string|null  $oldBlock  기존 생성 블록 본문 (마커 제외)
+     * @return array<string, string> 소제목 → 그 구간 끝의 사람 서술
+     */
+    private function extractInterstitialProse(?string $oldBlock): array
+    {
+        if ($oldBlock === null) {
+            return [];
+        }
+
+        $prose = [];
+
+        foreach ($this->splitByAnchors($this->normalizeEol($oldBlock)) as $anchor => $chunk) {
+            $trailing = $this->trailingProseOf($chunk);
+
+            if ($trailing !== null) {
+                $prose[$anchor] = $trailing;
+            }
+        }
+
+        return $prose;
+    }
+
+    /**
+     * 걷어 온 구간별 사람 서술을 새 섹션의 같은 소제목 구간 끝에 되돌립니다.
+     *
+     * @param  string  $section  새로 생성된 섹션
+     * @param  array<string, string>  $prose  소제목 → 사람 서술
+     * @return string 서술이 복원된 섹션
+     */
+    private function applyInterstitialProse(string $section, array $prose): string
+    {
+        if ($prose === []) {
+            return $section;
+        }
+
+        $chunks = $this->splitByAnchors($this->normalizeEol($section));
+
+        if ($chunks === []) {
+            return $section;
+        }
+
+        $rebuilt = '';
+
+        foreach ($chunks as $anchor => $chunk) {
+            $text = rtrim($chunk, "\n");
+
+            // 이미 그 서술이 들어 있으면 다시 붙이지 않는다 (재생성 멱등).
+            if (isset($prose[$anchor]) && ! str_contains($text, $prose[$anchor])) {
+                $text .= "\n\n".$prose[$anchor];
+            }
+
+            $rebuilt .= $text."\n\n";
+        }
+
+        return rtrim($rebuilt, "\n")."\n";
+    }
+
+    /**
+     * 블록을 소제목 경계로 자릅니다 (소제목 앞 머리 부분은 빈 문자열 키).
+     *
+     * @param  string  $block  블록 본문
+     * @return array<string, string> 소제목(없으면 '') → 그 소제목이 여는 구간
+     */
+    private function splitByAnchors(string $block): array
+    {
+        $lines = explode("\n", $block);
+        $chunks = [];
+        $current = '';
+        $buffer = [];
+        $inFence = false;
+
+        foreach ($lines as $line) {
+            if (str_starts_with(ltrim($line), '```')) {
+                $inFence = ! $inFence;
+            }
+
+            $anchor = $inFence ? null : $this->anchorOf($line);
+
+            if ($anchor !== null) {
+                $chunks[$current] = implode("\n", $buffer);
+                $current = $anchor;
+                $buffer = [$line];
+
+                continue;
+            }
+
+            $buffer[] = $line;
+        }
+
+        $chunks[$current] = implode("\n", $buffer);
+
+        // 소제목이 하나도 없으면 자를 것이 없다 — 호출부가 원문을 그대로 쓰게 한다.
+        return count($chunks) > 1 ? $chunks : [];
+    }
+
+    /**
+     * 줄이 생성 블록의 소제목이면 그 식별자를 반환합니다.
+     *
+     * 소제목 뒤에 꼬리표가 붙는 경우가 있어(예: `**응답 필드** (\`data\` 내부)`) 접두만 본다.
+     *
+     * @param  string  $line  한 줄
+     * @return string|null 소제목 식별자 (아니면 null)
+     */
+    private function anchorOf(string $line): ?string
+    {
+        foreach (self::SECTION_ANCHORS as $anchor) {
+            if (str_starts_with($line, $anchor)) {
+                return $anchor;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 구간 끝에 붙은 사람 서술을 반환합니다 (기계 산출물 뒤의 텍스트).
+     *
+     * @param  string  $chunk  소제목이 여는 구간
+     * @return string|null 사람 서술 (없으면 null)
+     */
+    private function trailingProseOf(string $chunk): ?string
+    {
+        $lines = explode("\n", $chunk);
+        $lastMachine = null;
+        $inFence = false;
+
+        foreach ($lines as $i => $line) {
+            $trimmed = trim($line);
+
+            if (str_starts_with($trimmed, '```')) {
+                $inFence = ! $inFence;
+                $lastMachine = $i;
+
+                continue;
+            }
+
+            if ($inFence || str_starts_with($trimmed, '|')) {
+                $lastMachine = $i;
+            }
+        }
+
+        // 기계 산출물이 없는 구간은 판정하지 않는다 (위 주석의 겹침 방지).
+        if ($lastMachine === null) {
+            return null;
+        }
+
+        $tail = trim(implode("\n", array_slice($lines, $lastMachine + 1)));
+
+        return $tail === '' ? null : $tail;
     }
 
     /**

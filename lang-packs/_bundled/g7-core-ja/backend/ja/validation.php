@@ -754,6 +754,10 @@ return [
             'string' => 'パスは文字列である必要があります。',
         ],
     ],
+    'ip_allow_list' => [
+        'invalid' => '":value" は有効な IP アドレスまたは範囲の表記ではありません。1 行に 1 件ずつ、またはカンマで区切って入力してください。',
+    ],
+
     'setting' => [
         'value' => [
             'present' => 'リクエストに設定値(value)項目が含まれている必要があります。',
@@ -1042,6 +1046,11 @@ return [
         'definition_already_exists' => '同一の(provider、scope_type、scope_value)定義が既に存在します。',
     ],
     'attributes' => [
+        'system.execution_mode' => '実行方式',
+        'system.cron_mode' => 'スケジュール実行方式',
+        'system.cron_allowed_ips' => 'スケジュール許可アドレス',
+        'system.cron_min_interval' => 'スケジュール最小呼び出し間隔',
+        'system.cron_visit_fallback' => '訪問時のスケジュール実行',
         'layout' => 'レイアウト',
         'module' => 'モジュール',
         'token' => 'トークン',

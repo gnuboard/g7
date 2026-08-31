@@ -7,6 +7,7 @@ import { setDateRangeHandler } from './setDateRangeHandler';
 import { toggleSidebarHandler, initSidebarHandler } from './sidebarHandler';
 import { downloadAttachmentHandler } from './downloadAttachment';
 import { checkAssetUrlModeDriftHandler, detectAssetUrlModeHandler } from './detectAssetUrlModeHandler';
+import { copyToClipboardHandler } from './copyToClipboardHandler';
 /**
  * 핸들러 맵
  *
@@ -33,4 +34,5 @@ export declare const handlerMap: {
     readonly toggleSidebar: typeof toggleSidebarHandler;
     readonly initSidebar: typeof initSidebarHandler;
     readonly downloadAttachment: typeof downloadAttachmentHandler;
+    readonly copyToClipboard: typeof copyToClipboardHandler;
 };

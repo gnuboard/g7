@@ -1125,6 +1125,10 @@ if (isset($_GET['ajax_action'])) {
                                     <span>스케줄 이력 정리</span>
                                     <span class="text-[10px] opacity-60">(schedules:prune-history)</span>
                                 </button>
+                                <button onclick="runCommand('g7:schedule-run')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>밀린 예약 작업 실행</span>
+                                    <span class="text-[10px] opacity-60">(g7:schedule-run)</span>
+                                </button>
                                 <button onclick="runCommand('activity-log:prune')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>활동 로그 정리</span>
                                     <span class="text-[10px] opacity-60">(activity-log:prune)</span>
