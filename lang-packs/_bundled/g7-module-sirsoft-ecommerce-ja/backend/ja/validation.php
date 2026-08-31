@@ -221,6 +221,7 @@ return [
     'options_min' => 'オプションを1個以上追加してください。',
     'selling_price_lte_list' => '販売価格は定価より大きくすることはできません。',
     'option_selling_price_lte_list' => 'オプション販売価格は定価より大きくすることはできません。',
+    'claim_reason_code_format' => 'クレーム理由コードは英小文字で始まり、小文字・数字と単語間のアンダースコア（_）のみ使用できます（連続するアンダースコア・末尾のアンダースコアは不可）。すでに保存されているコードはそのままで構いません。',
     'product' => [
         'mileage_percent_max' => '定率のマイレージ付与率は100%を超えることはできません。',
         'selling_price_lte_list' => '販売価格は定価より高くすることはできません。',
@@ -764,9 +765,6 @@ return [
         'claim_requested_to' => [
             'date' => 'クレーム申請日の終了は正しい日付である必要があります。',
             'after_or_equal' => 'クレーム申請日の終了は開始日以降である必要があります。',
-        ],
-        'with_claim_summary' => [
-            'boolean' => 'クレーム要約の含否はtrueまたはfalseである必要があります。',
         ],
         'sort_by' => [
             'in' => '正しいソートフィールドを選択してください。',
@@ -1396,11 +1394,37 @@ return [
         'claim_reason_type' => 'クレーム区分',
         'claim_reason_code' => 'クレーム理由コード',
         'claim_reason_name' => 'クレーム理由名',
-        'claim_reason_fault_type' => '責任区分',
+        'claim_reason_fault_type' => '帰責区分',
         'claim_reason_is_user_selectable' => 'ユーザー選択可否',
         'claim_reason_is_active' => '使用可否',
         'claim_reason_sort_order' => '並び順',
         'claim_reason_search' => '検索語',
+        'claim.exchange_requestable_statuses' => '交換申請可能ステータス',
+        'claim.return_requestable_statuses' => '返品申請可能ステータス',
+        'claim.instant_cancel_statuses' => '即時キャンセル可能ステータス',
+        'claim.refund_request_statuses' => '返金申請可能ステータス',
+        'claim.allowed_charge_methods' => '許可請求方式',
+        'claim.charge_payment_methods' => '追加決済方法',
+        'claim.auto_approve_zero_charge' => '追加請求なし自動承認',
+        'claim.auto_approve_after_payment' => '追加決済完了後自動承認',
+        'claim.auto_approve_refund_request' => '返金申請自動承認',
+        'claim.max_images' => 'クレーム添付画像最大枚数',
+        'claim.image_max_size_kb' => 'クレーム添付画像最大容量(KB)',
+        'claim.request_period_days' => 'クレーム申請可能期間(日)',
+        'claim.complete_defaults.create_refund_request' => '完了処理デフォルト値 - 返金申請書受付',
+        'claim.complete_defaults.restore_stock' => '完了処理デフォルト値 - 在庫復元',
+        'claim.exchange_reasons' => '交換理由',
+        'claim.exchange_reasons.*.code' => '交換理由コード',
+        'claim.exchange_reasons.*.name' => '交換理由名',
+        'claim.exchange_reasons.*.fault_type' => '交換理由帰責区分',
+        'claim.return_reasons' => '返品理由',
+        'claim.return_reasons.*.code' => '返品理由コード',
+        'claim.return_reasons.*.name' => '返品理由名',
+        'claim.return_reasons.*.fault_type' => '返品理由帰責区分',
+        'claim.refund_reasons' => '返金理由',
+        'claim.refund_reasons.*.code' => '返金理由コード',
+        'claim.refund_reasons.*.name' => '返金理由名',
+        'claim.refund_reasons.*.fault_type' => '返金理由帰責区分',
     ],
     'custom' => [
         'basic_info' => [
@@ -1659,13 +1683,24 @@ return [
                 'max' => 'カートの保管期間は最大365日まで設定可能です。',
             ],
             'stock_restore_on_cancel' => [
-                'boolean' => 'キャンセル時の在庫復旧の可否は真偽値である必要があります。',
+                'boolean' => 'キャンセル時の在庫復元の可否は真偽値である必要があります。',
             ],
         ],
         'claim' => [
             'refund_reasons' => [
                 'duplicate_code' => '重複した返金理由コードがあります。',
                 'name_required' => '返金理由名は必須項目です。',
+                'code_swap' => '他の返金理由がまだ使用しているコードです。コードを入れ替えるには、先に一方を別のコードで保存してから変更してください。',
+            ],
+            'exchange_reasons' => [
+                'duplicate_code' => '重複した交換理由コードがあります。',
+                'name_required' => '交換理由名は必須項目です。',
+                'code_swap' => '他の交換理由がまだ使用しているコードです。コードを入れ替えるには、先に一方を別のコードで保存してから変更してください。',
+            ],
+            'return_reasons' => [
+                'duplicate_code' => '重複した返品理由コードがあります。',
+                'name_required' => '返品理由名は必須項目です。',
+                'code_swap' => '他の返品理由がまだ使用しているコードです。コードを入れ替えるには、先に一方を別のコードで保存してから変更してください。',
             ],
         ],
         'shipping' => [
@@ -1723,6 +1758,7 @@ return [
             ],
             'types' => [
                 'duplicate_code' => '重複した配送タイプのコードが存在します。',
+                'code_swap' => '他の配送タイプがまだ使用しているコードです。コードを入れ替えるには、先に一方を別のコードで保存してから変更してください。',
                 'name_required' => '配送タイプ名は必須項目です。',
                 'code' => [
                     'required_with' => '配送タイプコードは必須です。',
@@ -1744,6 +1780,7 @@ return [
             ],
             'carriers' => [
                 'duplicate_code' => '重複した配送業者のコードが存在します。',
+                'code_swap' => '他の配送業者がまだ使用しているコードです。コードを入れ替えるには、先に一方を別のコードで保存してから変更してください。',
                 'name_required' => '配送業者名は必須項目です。',
                 'code' => [
                     'required_with' => '配送業者コードは必須です。',

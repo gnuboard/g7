@@ -241,6 +241,10 @@
     "requested": "Cancel Requested",
     "completed": "Cancel Completed"
   },
+  "cancel_type": {
+    "full": "Full Cancel",
+    "partial": "Partial Cancel"
+  },
   "claim_reason_fault_type": {
     "customer": "Customer",
     "seller": "Seller",
@@ -250,5 +254,9 @@
     "pay_on_request": "Pay on Request",
     "pay_on_approval": "Pay after Approval",
     "deduct_from_refund": "Deduct from Refund"
+  },
+  "claim_shipping_fee_mode": {
+    "fixed": "Fixed Amount",
+    "original_policy": "Recalculate by Original Policy"
   }
 }

@@ -188,7 +188,7 @@ return [
         'JP' => '日本',
     ],
     'cancel_type' => [
-        'full' => '全額キャンセル',
+        'full' => '全体キャンセル',
         'partial' => '部分キャンセル',
     ],
     'cancel_status' => [
@@ -196,9 +196,9 @@ return [
         'completed' => 'キャンセル完了',
     ],
     'claim_reason_fault_type' => [
-        'customer' => '顧客過失',
-        'seller' => '販売者過失',
-        'carrier' => '配送業者過失',
+        'customer' => '顧客帰責',
+        'seller' => '販売者帰責',
+        'carrier' => '配送業者帰責',
     ],
     'claim_reason_type' => [
         'refund' => '返金·キャンセル',
@@ -308,7 +308,7 @@ return [
     ],
     'claim_shipping_fee_mode' => [
         'fixed' => '固定金額',
-        'original_policy' => '元配送ポリシー再計算',
+        'original_policy' => '元の配送ポリシー再計算',
     ],
     'exchange_status' => [
         'requested' => '交換申請',

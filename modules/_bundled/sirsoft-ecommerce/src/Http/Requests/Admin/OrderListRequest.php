@@ -32,26 +32,6 @@ class OrderListRequest extends FormRequest
     }
 
     /**
-     * 검증 전 입력 정규화
-     *
-     * 쿼리 파라미터 불리언은 문자열("true"/"false")로 도착한다 — `boolean` 규칙이
-     * "true" 를 거절하므로 해석 가능한 값만 정규화한다. 해석 불가한 값은 건드리지
-     * 않는다 (null 로 바꾸면 오타 파라미터가 "필터 없음" 으로 통과한다).
-     */
-    protected function prepareForValidation(): void
-    {
-        if (! $this->has('with_claim_summary')) {
-            return;
-        }
-
-        $normalized = filter_var($this->input('with_claim_summary'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
-
-        if ($normalized !== null) {
-            $this->merge(['with_claim_summary' => $normalized]);
-        }
-    }
-
-    /**
      * 유효성 검사 규칙
      *
      * @return array 주문 목록 조회 파라미터 검증 규칙
@@ -129,9 +109,6 @@ class OrderListRequest extends FormRequest
             'claim_fault_types.*' => ['string', Rule::in(ClaimReasonFaultTypeEnum::values())],
             'claim_requested_from' => ['nullable', 'date'],
             'claim_requested_to' => ['nullable', 'date', 'after_or_equal:claim_requested_from'],
-
-            // 클레임 컬럼 요약 (D22) — ColumnSelector 로 '클레임' 컬럼을 켠 경우에만 직렬화 (opt-in)
-            'with_claim_summary' => ['nullable', 'boolean'],
 
             // 회원 ID
             'user_id' => ['nullable', 'integer'],
@@ -227,7 +204,6 @@ class OrderListRequest extends FormRequest
             'claim_requested_from.date' => __('sirsoft-ecommerce::validation.orders.claim_requested_from.date'),
             'claim_requested_to.date' => __('sirsoft-ecommerce::validation.orders.claim_requested_to.date'),
             'claim_requested_to.after_or_equal' => __('sirsoft-ecommerce::validation.orders.claim_requested_to.after_or_equal'),
-            'with_claim_summary.boolean' => __('sirsoft-ecommerce::validation.orders.with_claim_summary.boolean'),
             // 회원 ID
             'user_id.integer' => __('sirsoft-ecommerce::validation.orders.user_id.integer'),
             // 주문자 UUID

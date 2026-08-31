@@ -98,6 +98,19 @@ interface OrderReturnRepositoryInterface
     public function countByReasonCode(string $reasonCode): int;
 
     /**
+     * 특정 배송사를 회수 택배사로 지정한 반품 신청 건수를 셉니다.
+     *
+     * 배송사를 삭제해도 되는지 판단할 때 사용합니다. 반품 신청서는 배송사를 `order_shippings`
+     * 가 아니라 자기 표의 `collection_carrier_id` 로 붙잡으므로, 일반 배송 건수만 세면
+     * **회수 전용으로만 쓰인 배송사가 "안 쓰임" 으로 판정된다.** 그 외래키는 `nullOnDelete`
+     * 라 그 상태로 삭제가 통과하면 접수된 신청서의 택배사가 오류도 로그도 없이 비워진다.
+     *
+     * @param  int  $carrierId  배송사 ID
+     * @return int 해당 배송사를 지정한 반품 신청 건수
+     */
+    public function countByCarrierId(int $carrierId): int;
+
+    /**
      * 회원의 신청서를 페이지네이션 조회합니다. (최신순)
      *
      * @param  int  $userId  회원 ID
@@ -130,7 +143,7 @@ interface OrderReturnRepositoryInterface
      * 승인 전 수정 화면의 미리보기에서 상태 가드가 자기 신청서의 코스 상태에 막히지 않도록
      * 쓴다 — 활성(비터미널) 상품 행이 박제한 `original_option_status` 를 돌려준다.
      *
-     * @param  int  $exchangeId  반품 신청서 ID
+     * @param  int  $returnId  반품 신청서 ID
      * @param  int  $orderOptionId  주문옵션 ID
      * @return string|null 원 상태 값 (이 신청서의 활성 상품 행이 없으면 null)
      */

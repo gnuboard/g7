@@ -3,12 +3,26 @@
 namespace Modules\Sirsoft\Ecommerce\Http\Requests\Admin;
 
 use App\Rules\LocaleRequiredTranslatable;
+use App\Rules\TranslatableField;
 use App\Services\DriverRegistryService;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Collection;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimChargeMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimReasonFaultTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimReasonTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingFeeTaxPolicy;
+use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
+use Modules\Sirsoft\Ecommerce\Models\ShippingCarrier;
+use Modules\Sirsoft\Ecommerce\Models\ShippingType;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimReasonRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingCarrierRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingTypeRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Rules\ClaimReasonCodeFormat;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
 use Modules\Sirsoft\Ecommerce\Support\MileageRounding;
@@ -66,7 +80,12 @@ class StoreEcommerceSettingsRequest extends FormRequest
      */
     private function numericCastTypeFor(mixed $fieldRules): ?string
     {
-        $list = is_array($fieldRules) ? $fieldRules : explode('|', (string) $fieldRules);
+        // `Rule::forEach()` 같은 규칙 객체는 문자열로 변환되지 않는다 — 숫자 캐스트 대상이 아니다.
+        if (! is_array($fieldRules) && ! is_string($fieldRules)) {
+            return null;
+        }
+
+        $list = is_array($fieldRules) ? $fieldRules : explode('|', $fieldRules);
 
         $castType = null;
         foreach ($list as $rule) {
@@ -291,16 +310,91 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'order_settings.confirmable_statuses' => ['nullable', 'array'],
             'order_settings.confirmable_statuses.*' => ['string', 'in:payment_complete,shipping_hold,preparing,shipping_ready,shipping,delivered'],
 
-            // claim 섹션 (refund_reasons는 DB 동기화 대상)
+            // claim 섹션 — 사유 카탈로그 3종(exchange/return/refund)은 DB 동기화 대상이고,
+            // 나머지 스칼라 축은 defaults.json(1.5.0)과 같은 형태로 JSON 에 저장된다.
+            // 어휘는 전부 Enum 단일 출처를 읽는다 — 리터럴을 늘어놓으면 Enum 이 늘 때
+            // 화면 옵션과 게이트가 갈려 그 값으로 저장한 설정이 422 로만 드러난다.
             'claim' => ['sometimes', 'array'],
-            'claim.refund_reasons' => ['nullable', 'array'],
-            'claim.refund_reasons.*.id' => ['nullable', 'integer'],
-            'claim.refund_reasons.*.code' => ['required_with:claim.refund_reasons', 'string', 'max:50', 'regex:/^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$/'],
-            'claim.refund_reasons.*.name' => ['required_with:claim.refund_reasons', 'array', new LocaleRequiredTranslatable(maxLength: 100)],
-            'claim.refund_reasons.*.fault_type' => ['required_with:claim.refund_reasons', 'string', 'in:customer,seller,carrier'],
-            'claim.refund_reasons.*.is_user_selectable' => ['nullable', 'boolean'],
-            'claim.refund_reasons.*.is_active' => ['nullable', 'boolean'],
-            'claim.refund_reasons.*.sort_order' => ['nullable', 'integer', 'min:0'],
+
+            // 신청 가능 상태 축 — 4축 모두 **주문옵션(상품) 상태**로 판정한다.
+            // (UserClaimService::claimableOptions() 와 ClaimQuantityGuard::statusValueForGate()
+            //  가 $option->option_status 를 이 목록과 대조한다. 주문 단위가 아니다 —
+            //  부분 배송·부분 취소로 옵션 상태가 섞인 주문에서 둘은 다른 답을 낸다.)
+            //
+            // 배열 6축도 `nullable` 이 아니라 `sometimes` 다 — 아래 정수 3축과 같은 이유다.
+            // null 은 규칙을 통과해 저장되고 array_merge(defaults, saved) 에서 기본값을 이겨,
+            // 소비처의 `(array) null = []` 가 그 기능을 통째로 닫는다(교환·반품·취소·환불
+            // 신청이 전건 거절되고 추가결제 수단이 하나도 없다). 화면은 배열만 보내므로
+            // API·업그레이드 경로로만 들어오는데, 무너지는 방향이 조용해서 드러나지 않는다.
+            // 빈 배열 `[]`("전부 내림")은 그대로 저장된다 — 그건 정당한 운영 의도다.
+            // Enum 전체가 아니라 축마다 화면이 실제로 제공하는 상태로 좁힌다 — 형제
+            // `order_settings.confirmable_statuses` 와 같은 방식이다. Enum 전체를 허용하면
+            // `instant_cancel_statuses:["cancelled","returned"]` 같은 조합이 200 으로 저장되고,
+            // `OrderRefundRequestService::branchForStatus()` 가 이 목록을 옵션 상태와 2차 축소
+            // 없이 직접 비교하므로 이미 종결된 옵션이 취소 분기로 들어간다.
+            'claim.exchange_requestable_statuses' => ['sometimes', 'array'],
+            'claim.exchange_requestable_statuses.*' => ['string', Rule::in(self::claimRequestableStatuses())],
+            'claim.return_requestable_statuses' => ['sometimes', 'array'],
+            'claim.return_requestable_statuses.*' => ['string', Rule::in(self::claimRequestableStatuses())],
+            'claim.instant_cancel_statuses' => ['sometimes', 'array'],
+            'claim.instant_cancel_statuses.*' => ['string', Rule::in(self::claimInstantCancelStatuses())],
+            'claim.refund_request_statuses' => ['sometimes', 'array'],
+            'claim.refund_request_statuses.*' => ['string', Rule::in(self::claimRefundRequestStatuses())],
+
+            // 청구 방식 / 추가결제 수단
+            'claim.allowed_charge_methods' => ['sometimes', 'array'],
+            'claim.allowed_charge_methods.*' => ['string', Rule::in(ClaimChargeMethodEnum::values())],
+            'claim.charge_payment_methods' => ['sometimes', 'array'],
+            // 확장 결제수단(간편결제)도 클레임 추가결제 수단으로 지정할 수 있어야 한다. 이 축의
+            // 화이트리스트 단일 출처는 `PaymentMethodResolver::allValidIds()`(builtin + 카탈로그)
+            // 이며 `CreateOrderRequest`·`OrderListRequest` 와 같은 파일의 order_settings 규칙이
+            // 이미 그것을 쓴다. builtin Enum 으로 좁히면 일반 주문에서는 1급인 수단이 이 설정에서만
+            // 거부되고, 저장값을 그대로 Rule::in 에 싣는 소비처(ValidatesClaimPaymentMethod)까지
+            // 함께 막혀 그 수단의 클레임 추가결제 경로가 통째로 닫힌다.
+            'claim.charge_payment_methods.*' => ['string', Rule::in(app(PaymentMethodResolver::class)->allValidIds())],
+
+            // 자동 승인.
+            // 불리언 3축도 `nullable` 이 아니라 `sometimes` 다 — 위 배열 6축·아래 정수 3축과 같은
+            // 이유다. null 은 규칙을 통과해 저장되고 array_merge(defaults, saved) 에서 기본값을
+            // 이긴다. 지금은 소비처가 `(bool) getSetting(..., false)` 로 방어하고 있어 증상이
+            // 없지만, 그건 **소비처 방어에 기댄 안전**이라 한 곳만 바뀌어도 조용히 무너진다.
+            'claim.auto_approve_zero_charge' => ['sometimes', 'boolean'],
+            'claim.auto_approve_after_payment' => ['sometimes', 'boolean'],
+            'claim.auto_approve_refund_request' => ['sometimes', 'boolean'],
+
+            // 첨부 이미지 / 신청 가능 기간.
+            // nullable 금지 — 형제 `order_settings.auto_cancel_days` 와 같은 이유다. null 은
+            // min: 을 우회해 저장되는데, getAllSettings() 의 array_merge(defaults, saved) 에서
+            // 저장된 null 이 기본값을 이겨 소비처가 (int) null = 0 을 본다. request_period_days 는
+            // `$days <= 0` 에서 조기 반환하므로 **신청 기간 제한이 통째로 꺼지고**,
+            // max_images·image_max_size_kb 는 max(1, 0) 으로 떨어져 첨부가 사실상 거부된다.
+            // 셋 다 오류·로그가 남지 않는다.
+            'claim.max_images' => ['sometimes', 'required', 'integer', 'min:'.config('sirsoft-ecommerce.limits.claim_max_images_min', 1), 'max:'.config('sirsoft-ecommerce.limits.claim_max_images_max', 20)],
+            'claim.image_max_size_kb' => ['sometimes', 'required', 'integer', 'min:'.config('sirsoft-ecommerce.limits.claim_image_max_size_kb_min', 128), 'max:'.config('sirsoft-ecommerce.limits.claim_image_max_size_kb_max', 20480)],
+            'claim.request_period_days' => ['sometimes', 'required', 'integer', 'min:'.config('sirsoft-ecommerce.limits.claim_request_period_days_min', 1), 'max:'.config('sirsoft-ecommerce.limits.claim_request_period_days_max', 365)],
+
+            // 완료 처리 기본값 (D26 — 모달 초기 선택값).
+            // 이 3축은 무너지는 **방향**까지 나쁘다. 소비처
+            // `AdminClaimService::completionDefaults()` 는 `$defaults[...] ?? true` 라 저장된 null 이
+            // `??` 를 발동시켜 **true** 가 된다 — 운영자가 꺼 둔 재고 복구·환불신청서 접수가
+            // 모달에 켜진 채 열리고 그대로 실행된다(그 메서드 주석이 경계하는 방향 그 자체다).
+            // 그래서 null 을 저장 자체에서 막는다.
+            // 하위 키는 `required_with` 로 묶는다. `sometimes` 만으로는 **키 부재**가 통과하는데,
+            // 카테고리 병합이 얕아(`array_merge`) 저장본에 맵이 있고 키만 없으면 defaults.json
+            // 으로 폴백하지 않고 소비처의 `?? true` 를 만난다 — null 을 막은 것과 같은 피해가
+            // 키를 빼는 것만으로 재현된다. 맵을 보내면 두 키를 모두 밝히도록 강제한다.
+            // `required_with` 는 상대 필드가 **비어 있으면**(빈 맵 `{}`) 발동하지 않고, 그 빈 맵은
+            // `validated()` 에서 부모 키째 탈락해 저장본에서 사라진다 — 얕은 병합이 defaults 를
+            // 되살려 소비처 `?? true` 를 만나는 같은 피해다. 그래서 맵 자체에 두 키를 요구한다.
+            'claim.complete_defaults' => ['sometimes', 'array', 'required_array_keys:create_refund_request,restore_stock'],
+            'claim.complete_defaults.create_refund_request' => ['required_with:claim.complete_defaults', 'boolean'],
+            'claim.complete_defaults.restore_stock' => ['required_with:claim.complete_defaults', 'boolean'],
+
+            // 사유 카탈로그 — 유형이 같은 스키마(D23)를 쓴다. 한 유형만 강도가 다르면
+            // 그 유형이 우회로가 되므로 규칙을 한 곳에서 파생한다. 유형 목록도 Enum 단일
+            // 출처다 — 손으로 나열하면 유형이 늘 때 규칙이 없는 유형이 생기고, validated()
+            // 가 그 섹션을 통째로 버려 응답은 200 인데 아무것도 저장되지 않는다.
+            ...$this->claimReasonRulesForAllTypes(),
 
             // review_settings 섹션
             'review_settings' => ['sometimes', 'array'],
@@ -352,21 +446,27 @@ class StoreEcommerceSettingsRequest extends FormRequest
 
             // shipping.carriers 섹션 (DB 동기화 대상)
             'shipping.carriers' => ['nullable', 'array'],
-            'shipping.carriers.*.id' => ['nullable', 'integer'],
-            'shipping.carriers.*.code' => ['required_with:shipping.carriers', 'string', 'max:50', 'regex:/^[a-z][a-z0-9]*(?:[-_][a-z0-9]+)*$/'],
-            'shipping.carriers.*.name' => ['required_with:shipping.carriers', 'array', new LocaleRequiredTranslatable(maxLength: 100)],
+            // `id` 는 "기존 행" 판정의 유일한 근거다(이름의 현재 로케일 필수 면제). 실재하지
+            // 않는 id 를 통과시키면 면제만 받고 sync 는 신규 create 로 흘러 이름 없는 행이 생긴다.
+            'shipping.carriers.*.id' => ['nullable', 'integer', Rule::exists(ShippingCarrier::class, 'id')],
+            // 형식 검사는 **신규 행**에만 건다. 이 탭은 저장할 때마다 카탈로그 전체를 되보내므로,
+            // 규칙이 좁혀지기 전에 만들어진 코드가 한 건이라도 있으면 운영자가 손대지 않은 그 행
+            // 때문에 탭 전체가 영구히 422 가 된다 — 같은 라운드가 클레임 사유 코드·이름과
+            // 배송사·배송유형 이름에 이미 적용한 판정을 코드 축에도 맞춘다.
+            'shipping.carriers.*.code' => Rule::forEach(fn ($value, string $attribute) => $this->catalogCodeRules($attribute, 'shipping.carriers')),
+            'shipping.carriers.*.name' => Rule::forEach(fn ($value, string $attribute) => $this->translatableNameRules($attribute, 'shipping.carriers')),
             'shipping.carriers.*.type' => ['required_with:shipping.carriers', 'string', 'in:domestic,international'],
             'shipping.carriers.*.tracking_url' => ['nullable', 'string', 'max:500'],
-            'shipping.carriers.*.is_active' => ['nullable', 'boolean'],
+            'shipping.carriers.*.is_active' => ['required_with:shipping.carriers', 'boolean'],
             'shipping.carriers.*.sort_order' => ['nullable', 'integer', 'min:0'],
 
             // shipping.types 섹션 (DB 동기화 대상)
             'shipping.types' => ['nullable', 'array'],
-            'shipping.types.*.id' => ['nullable', 'integer'],
-            'shipping.types.*.code' => ['required_with:shipping.types', 'string', 'max:50', 'regex:/^[a-z][a-z0-9]*(?:[-_][a-z0-9]+)*$/'],
-            'shipping.types.*.name' => ['required_with:shipping.types', 'array', new LocaleRequiredTranslatable(maxLength: 100)],
+            'shipping.types.*.id' => ['nullable', 'integer', Rule::exists(ShippingType::class, 'id')],
+            'shipping.types.*.code' => Rule::forEach(fn ($value, string $attribute) => $this->catalogCodeRules($attribute, 'shipping.types')),
+            'shipping.types.*.name' => Rule::forEach(fn ($value, string $attribute) => $this->translatableNameRules($attribute, 'shipping.types')),
             'shipping.types.*.category' => ['required_with:shipping.types', 'string', 'in:domestic,international,other'],
-            'shipping.types.*.is_active' => ['nullable', 'boolean'],
+            'shipping.types.*.is_active' => ['required_with:shipping.types', 'boolean'],
             'shipping.types.*.sort_order' => ['nullable', 'integer', 'min:0'],
         ];
     }
@@ -421,11 +521,16 @@ class StoreEcommerceSettingsRequest extends FormRequest
             $this->validateCountryNames($validator);
             $this->validateDefaultCountryExists($validator);
             $this->validateUniqueCarrierCodes($validator);
+            $this->validateCarrierCodeSwaps($validator);
             $this->validateCarrierNames($validator);
             $this->validateUniqueShippingTypeCodes($validator);
+            $this->validateShippingTypeCodeSwaps($validator);
             $this->validateShippingTypeNames($validator);
-            $this->validateUniqueRefundReasonCodes($validator);
-            $this->validateRefundReasonNames($validator);
+            foreach (ClaimReasonTypeEnum::cases() as $claimReasonType) {
+                $this->validateUniqueClaimReasonCodes($validator, $claimReasonType->value);
+                $this->validateClaimReasonCodeSwaps($validator, $claimReasonType->value);
+                $this->validateClaimReasonNames($validator, $claimReasonType->value);
+            }
             $this->validateMileageCurrencyRules($validator);
             $this->validateMileageEarnRate($validator);
         });
@@ -864,6 +969,74 @@ class StoreEcommerceSettingsRequest extends FormRequest
     }
 
     /**
+     * 다국어 이름 규칙 — 신규 행은 현재 로케일 필수, 기존 행(`id` 보유)은 길이·형식만.
+     *
+     * 카탈로그(배송사·배송유형·클레임 사유 3종)는 저장할 때마다 전체를 되보낸다. 다른 로케일에서
+     * 만들어 현재 로케일 이름이 빈 기존 행이 한 건이라도 있으면 손대지 않은 행이 섹션 전체를 막는다 —
+     * 기존 코드를 형식 검사에서 면제하는 `ClaimReasonCodeFormat` 과 같은 이유로 이름도 기존 행을 면제한다.
+     *
+     * @param  string  $attribute  현재 검증 중인 속성 경로 (`{section}.{index}.name`)
+     * @param  string  $section  카탈로그 섹션 경로 (`shipping.carriers` 등)
+     * @return array<int, mixed> 검증 규칙
+     */
+    protected function translatableNameRules(string $attribute, string $section): array
+    {
+        $idAttribute = preg_replace('/\.name$/', '.id', $attribute);
+        $isExistingRow = ! empty($this->input($idAttribute));
+
+        return $isExistingRow
+            ? ["required_with:{$section}", 'array', new TranslatableField(maxLength: 100)]
+            : ["required_with:{$section}", 'array', new LocaleRequiredTranslatable(maxLength: 100)];
+    }
+
+    /**
+     * 카탈로그 행이 기존 행(`id` 보유)인지 판정합니다 — after 훅의 현재 로케일 이름 검사 면제 기준.
+     *
+     * @param  array<string, mixed>  $row  카탈로그 행
+     * @return bool 기존 행이면 true
+     */
+    protected function isExistingCatalogRow(array $row): bool
+    {
+        return ! empty($row['id']);
+    }
+
+    /**
+     * 배송사·배송유형 코드의 규칙을 만듭니다 — 기존 행은 형식 검사를 면제합니다.
+     *
+     * 클레임 사유 코드가 `ClaimReasonCodeFormat` 의 면제 목록으로 하는 것과 같은 판정이다.
+     * 이 탭은 저장할 때마다 카탈로그 전체를 되보내므로, 형식 규칙이 좁혀진 뒤에는 이미
+     * 저장된 코드 한 건이 운영자가 손대지 않은 채로 탭 전체를 영구히 422 로 만든다.
+     * 기존 행(`id` 보유)이라도 **코드를 바꾸면** 그 값은 신규 취급이라 형식을 다시 받는다.
+     *
+     * @param  string  $attribute  검증 대상 속성 경로 (예: shipping.carriers.0.code)
+     * @param  string  $section  섹션 경로 (required_with 대상)
+     * @return array<int, mixed> 검증 규칙
+     */
+    protected function catalogCodeRules(string $attribute, string $section): array
+    {
+        $base = ["required_with:{$section}", 'string', 'max:50'];
+
+        $idAttribute = preg_replace('/\.code$/', '.id', $attribute);
+        $id = $this->input($idAttribute);
+
+        if (! empty($id)) {
+            // 저장소 인터페이스를 경유한다 — 요청 안에서 모델을 직접 조회하지 않는다
+            // (형제 `existingClaimReasonCodes()` 와 같은 규율).
+            $repository = $section === 'shipping.carriers'
+                ? app(ShippingCarrierRepositoryInterface::class)
+                : app(ShippingTypeRepositoryInterface::class);
+            $current = $repository->findById((int) $id)?->code;
+
+            // 손대지 않은 기존 코드만 면제한다 — 바꾼 값은 아래 형식 규칙을 받는다.
+            if ($current !== null && (string) $current === (string) $this->input($attribute)) {
+                return $base;
+            }
+        }
+
+        return [...$base, 'regex:/^[a-z][a-z0-9]*(?:[-_][a-z0-9]+)*$/'];
+    }
+
+    /**
      * 배송사 코드 중복 검증
      *
      * @param  Validator  $validator  Validator 인스턴스
@@ -915,6 +1088,10 @@ class StoreEcommerceSettingsRequest extends FormRequest
                     __('sirsoft-ecommerce::validation.custom.shipping.carriers.name_required')
                 );
 
+                continue;
+            }
+
+            if ($this->isExistingCatalogRow($carrier)) {
                 continue;
             }
 
@@ -984,6 +1161,10 @@ class StoreEcommerceSettingsRequest extends FormRequest
                 continue;
             }
 
+            if ($this->isExistingCatalogRow($type)) {
+                continue;
+            }
+
             $locale = app()->getLocale();
             $localeName = $name[$locale] ?? '';
             if (! is_string($localeName) || trim($localeName) === '') {
@@ -996,13 +1177,141 @@ class StoreEcommerceSettingsRequest extends FormRequest
     }
 
     /**
-     * 환불 사유 코드 중복 검증
+     * 교환·반품을 신청할 수 있는 주문 상태의 허용 어휘를 돌려줍니다.
+     *
+     * 설정 화면(`_claim_policy_section.json`)의 선택지와 같은 집합이다. 화면 옵션과 게이트가
+     * 갈리면 한쪽이 우회로가 되므로 `ClaimSettingsStatusVocabularyTest` 가 두 목록의
+     * 일치를 고정한다.
+     *
+     * @return array<int, string> 허용 상태 값 목록
+     */
+    public static function claimRequestableStatuses(): array
+    {
+        return [
+            OrderStatusEnum::PAYMENT_COMPLETE->value,
+            OrderStatusEnum::PREPARING->value,
+            OrderStatusEnum::SHIPPING_READY->value,
+            OrderStatusEnum::SHIPPING->value,
+            OrderStatusEnum::DELIVERED->value,
+            OrderStatusEnum::CONFIRMED->value,
+        ];
+    }
+
+    /**
+     * 환불신청서를 만들지 않고 즉시 취소되는 주문옵션 상태의 허용 어휘를 돌려줍니다.
+     *
+     * @return array<int, string> 허용 상태 값 목록
+     */
+    public static function claimInstantCancelStatuses(): array
+    {
+        return [
+            OrderStatusEnum::PAYMENT_COMPLETE->value,
+            OrderStatusEnum::SHIPPING_HOLD->value,
+            OrderStatusEnum::PREPARING->value,
+            OrderStatusEnum::SHIPPING_READY->value,
+        ];
+    }
+
+    /**
+     * 환불신청서로 접수되는 주문옵션 상태의 허용 어휘를 돌려줍니다.
+     *
+     * @return array<int, string> 허용 상태 값 목록
+     */
+    public static function claimRefundRequestStatuses(): array
+    {
+        return [
+            OrderStatusEnum::PAYMENT_COMPLETE->value,
+            OrderStatusEnum::SHIPPING_HOLD->value,
+            OrderStatusEnum::PREPARING->value,
+            OrderStatusEnum::SHIPPING_READY->value,
+            OrderStatusEnum::SHIPPING->value,
+        ];
+    }
+
+    /**
+     * 클레임 사유 카탈로그 전 유형의 검증 규칙을 만듭니다. (D23)
+     *
+     * 유형은 같은 스키마를 쓴다. 유형마다 규칙을 따로 적으면 한 유형만 강도가 낮아졌을 때
+     * 그 경로가 우회로가 되므로 한 곳에서 파생한다. 유형 목록은 ClaimReasonTypeEnum 이
+     * 단일 출처다 — 손으로 나열하면 유형이 늘 때 규칙 없는 유형이 생기고, validated() 가
+     * 그 섹션을 버려 응답 200·화면 "저장됨" 인데 아무것도 반영되지 않는다.
+     *
+     * @return array<string, array<int, mixed>> 검증 규칙
+     */
+    protected function claimReasonRulesForAllTypes(): array
+    {
+        $rules = [];
+
+        foreach (ClaimReasonTypeEnum::cases() as $type) {
+            $rules += $this->claimReasonRules($type->value);
+        }
+
+        return $rules;
+    }
+
+    /**
+     * 한 유형의 사유 카탈로그 검증 규칙을 만듭니다.
+     *
+     * @param  string  $type  사유 유형 (ClaimReasonTypeEnum 값)
+     * @return array<string, array<int, mixed>> 검증 규칙
+     */
+    protected function claimReasonRules(string $type): array
+    {
+        $key = "claim.{$type}_reasons";
+
+        return [
+            $key => ['nullable', 'array'],
+            // `id` 는 아래 이름 규칙의 "기존 행" 판정 근거이자 sync 의 update/create 분기 키다.
+            // 실재하지 않는 id(또는 다른 유형의 id)를 통과시키면 이름 면제만 받고 sync 는 else
+            // 분기(create)로 흘러 **현재 로케일 이름이 없는 사유가 새로 생긴다**. 유형 스코프까지
+            // 건다 — 교환 id 를 반품 페이로드에 실으면 그 역시 create 다.
+            "{$key}.*.id" => ['nullable', 'integer', Rule::exists(ClaimReason::class, 'id')->where('type', $type)],
+            // 형식은 ClaimReasonCodeFormat 단일 출처다 — 상세 REST 경로와 같은 규칙을 쓴다.
+            // 이 탭은 저장할 때마다 카탈로그 **전체**를 되보내므로, 이미 저장된 코드는 형식
+            // 검사를 면제한다. 면제가 없으면 규칙이 좁혀지기 전에 만들어진 코드 한 건 때문에
+            // 운영자가 손대지 않은 행이 탭 전체를 영구히 422 로 만든다.
+            "{$key}.*.code" => ["required_with:{$key}", 'string', 'max:50', new ClaimReasonCodeFormat($this->existingClaimReasonCodes($type))],
+            // 이름의 현재 로케일 필수는 **신규 행**에만 건다. 이 탭은 카탈로그 전체를 되보내므로,
+            // 다른 로케일에서 만든 기존 행(현재 로케일 이름이 빈 행)이 한 건이라도 있으면 운영자가
+            // 손대지 않은 그 행 때문에 탭 전체가 422 가 된다 — 코드 형식이 기존 코드를 면제하는
+            // 것과 같은 이유다. 기존 행은 길이·형식만 검사한다 (`id` 가 있으면 기존 행이다).
+            "{$key}.*.name" => Rule::forEach(fn ($value, string $attribute) => $this->translatableNameRules($attribute, $key)),
+            "{$key}.*.fault_type" => ["required_with:{$key}", 'string', Rule::in(ClaimReasonFaultTypeEnum::values())],
+            // `nullable` 이 아니라 `sometimes` 다. 소비처 `ClaimReasonService::syncReasons()` 가
+            // `?? true` 라 저장된 null 이 **true** 로 뒤집히고, 운영자가 내려 둔 사유가 저장
+            // 한 번에 구매자 선택지로 되살아난다 — 무너지는 방향이 "끈 것을 켜진 것으로" 라
+            // 형제 `claim.*` 불리언 3축과 같은 강도로 맞춘다(8차 N3 와 동일 판정).
+            // 키 부재까지 거절한다 (`required_with`). `sometimes` 는 null 만 막고, 키를 빼면 소비처의
+            // `?? true` 가 내려 둔 사유를 켜진 채 되살린다 — 같은 파일의 `complete_defaults` 와 같은 강도.
+            "{$key}.*.is_user_selectable" => ["required_with:{$key}", 'boolean'],
+            "{$key}.*.is_active" => ["required_with:{$key}", 'boolean'],
+            "{$key}.*.sort_order" => ['nullable', 'integer', 'min:0'],
+        ];
+    }
+
+    /**
+     * 해당 유형에 이미 저장된 사유 코드를 반환합니다. (형식 검사 면제 대상)
+     *
+     * 저장소 인터페이스를 경유한다 — 규칙 안에서 모델을 직접 조회하지 않는다.
+     *
+     * @param  string  $type  사유 유형 (ClaimReasonTypeEnum 값)
+     * @return array<int, string> 이미 저장된 코드
+     */
+    protected function existingClaimReasonCodes(string $type): array
+    {
+        return app(ClaimReasonRepositoryInterface::class)->getCodesByType($type);
+    }
+
+    /**
+     * 클레임 사유 코드 중복 검증 (교환/반품/환불 공통)
      *
      * @param  Validator  $validator  Validator 인스턴스
+     * @param  string  $type  사유 유형 (exchange|return|refund)
      */
-    protected function validateUniqueRefundReasonCodes(Validator $validator): void
+    protected function validateUniqueClaimReasonCodes(Validator $validator, string $type): void
     {
-        $reasons = $this->input('claim.refund_reasons', []);
+        $key = "claim.{$type}_reasons";
+        $reasons = $this->input($key, []);
 
         if (empty($reasons) || ! is_array($reasons)) {
             return;
@@ -1017,8 +1326,8 @@ class StoreEcommerceSettingsRequest extends FormRequest
             $code = strtolower(trim($reason['code']));
             if (in_array($code, $codes)) {
                 $validator->errors()->add(
-                    "claim.refund_reasons.{$index}.code",
-                    __('sirsoft-ecommerce::validation.custom.claim.refund_reasons.duplicate_code')
+                    "{$key}.{$index}.code",
+                    __("sirsoft-ecommerce::validation.custom.claim.{$type}_reasons.duplicate_code")
                 );
             }
             $codes[] = $code;
@@ -1026,13 +1335,143 @@ class StoreEcommerceSettingsRequest extends FormRequest
     }
 
     /**
-     * 환불 사유명 필수 검증 - 현재 로케일에 이름이 있어야 함
+     * 기존 행끼리 코드를 맞바꾸는 저장을 거절합니다 (교환/반품/환불 공통)
+     *
+     * 페이로드 안에서는 코드가 유일해도, 기존 행 A 가 **아직 다른 기존 행 B 가 쓰고 있는**
+     * 코드로 바뀌면 `syncReasons()` 가 행 단위로 update 하다 DB `unique(type, code)` 에서
+     * 죽는다. 그 시점엔 설정 파일(정책 13축)이 이미 기록된 뒤라 스칼라만 반영된 반쪽 상태가
+     * 남고, 예외도 `ClaimReasonException` 이 아니라 500 이다 — 쓰기 전 선행 판정
+     * (`assertSyncDeletable`)이 막으려던 바로 그 상태다. 그래서 파일 쓰기보다 앞선 이 자리에서
+     * 422 로 거절한다. 같은 저장에서 지워지는 행의 코드를 물려받는 것은 허용한다(삭제가 먼저다).
+     *
+     * @param  Validator  $validator  Validator 인스턴스
+     * @param  string  $type  사유 유형 (exchange|return|refund)
+     */
+    protected function validateClaimReasonCodeSwaps(Validator $validator, string $type): void
+    {
+        $key = "claim.{$type}_reasons";
+
+        $this->rejectCodeSwaps(
+            $validator,
+            $key,
+            $this->input($key, []),
+            fn (array $codes) => app(ClaimReasonRepositoryInterface::class)->findByCodes($type, $codes),
+            __("sirsoft-ecommerce::validation.custom.claim.{$type}_reasons.code_swap")
+        );
+    }
+
+    /**
+     * 기존 배송사끼리 코드를 맞바꾸는 저장을 거절합니다
+     *
+     * 클레임 사유와 같은 결함군이다 — `ecommerce_shipping_carriers.code` 도 UNIQUE 이고
+     * `syncCarriers()` 는 설정 파일 쓰기 **뒤** 행 단위로 update 한다. 클레임과 달리 기존 행의
+     * 코드 칸이 화면에서 자유 편집이라 API 가 아니라 설정 화면에서 그대로 재현된다.
      *
      * @param  Validator  $validator  Validator 인스턴스
      */
-    protected function validateRefundReasonNames(Validator $validator): void
+    protected function validateCarrierCodeSwaps(Validator $validator): void
     {
-        $reasons = $this->input('claim.refund_reasons', []);
+        $this->rejectCodeSwaps(
+            $validator,
+            'shipping.carriers',
+            $this->input('shipping.carriers', []),
+            fn (array $codes) => app(ShippingCarrierRepositoryInterface::class)->findByCodes($codes),
+            __('sirsoft-ecommerce::validation.custom.shipping.carriers.code_swap')
+        );
+    }
+
+    /**
+     * 기존 배송유형끼리 코드를 맞바꾸는 저장을 거절합니다
+     *
+     * 배송사·클레임 사유와 같은 결함군이다 — `ecommerce_shipping_types.code` 도 UNIQUE 이고
+     * `syncShippingTypes()` 는 설정 파일 쓰기 **뒤** 행 단위로 update 한다. 페이로드 안 유일성은
+     * 통과하는데 DB unique 에서 죽으므로, 그 시점엔 shipping 설정 파일이 이미 기록된 뒤라
+     * 스칼라만 반영된 반쪽 상태 + 500 이 남는다. 그래서 파일 쓰기보다 앞선 이 자리에서 422 로
+     * 거절한다. 같은 저장에서 지워지는 행의 코드를 물려받는 것은 허용한다(삭제가 먼저다).
+     *
+     * @param  Validator  $validator  Validator 인스턴스
+     */
+    protected function validateShippingTypeCodeSwaps(Validator $validator): void
+    {
+        $this->rejectCodeSwaps(
+            $validator,
+            'shipping.types',
+            $this->input('shipping.types', []),
+            fn (array $codes) => app(ShippingTypeRepositoryInterface::class)->findByCodes($codes),
+            __('sirsoft-ecommerce::validation.custom.shipping.types.code_swap')
+        );
+    }
+
+    /**
+     * 코드 맞바꾸기 판정 본체 (클레임 사유 3종·배송사 공용)
+     *
+     * 충돌 = 이 저장의 어떤 행(기존이든 신규든)이 쓰려는 코드를, **이 저장에 남는 다른 기존 행**이
+     * 아직 쥐고 있는 경우. 신규 행(`id` 없음)도 대상이다 — 신규 행이 "이 저장에서 코드가 바뀌는
+     * 기존 행" 의 현재 코드를 가져가면 `syncReasons()` 가 페이로드 순서대로 create 하다 같은
+     * unique 에서 죽는다. 같은 저장에서 지워지는 행의 코드를 물려받는 것은 허용한다(삭제가 먼저다).
+     *
+     * 대조는 양쪽 다 소문자로 한다 — 형식 규칙이 **이미 저장된 코드를 면제**하므로 DB 에는
+     * 대문자 코드가 남아 있을 수 있고, MySQL CI 콜레이션의 `whereIn` 은 그 행을 돌려주는데
+     * 엄격 비교는 놓친다(감지 실패 → unique 위반은 CI 로 터진다).
+     *
+     * @param  Validator  $validator  Validator 인스턴스
+     * @param  string  $key  섹션 키 (`claim.exchange_reasons` / `shipping.carriers`)
+     * @param  mixed  $rows  요청 행 배열
+     * @param  \Closure(array<int, string>): Collection  $findByCodes  코드 목록으로 현재 행을 찾는 조회
+     * @param  string  $message  거절 메시지 (번역 완료)
+     */
+    private function rejectCodeSwaps(Validator $validator, string $key, mixed $rows, \Closure $findByCodes, string $message): void
+    {
+        if (empty($rows) || ! is_array($rows)) {
+            return;
+        }
+
+        $incoming = [];
+        $presentIds = [];
+        foreach ($rows as $index => $row) {
+            if (! is_array($row) || ! isset($row['code'])) {
+                continue;
+            }
+
+            $id = ! empty($row['id']) ? (int) $row['id'] : null;
+            $incoming[] = ['index' => $index, 'id' => $id, 'code' => strtolower(trim((string) $row['code']))];
+            if ($id !== null) {
+                $presentIds[$id] = true;
+            }
+        }
+
+        if ($incoming === [] || $presentIds === []) {
+            return;
+        }
+
+        // 저장소 인터페이스를 경유한다 — 규칙 안에서 모델을 직접 조회하지 않는다.
+        $holders = [];
+        foreach ($findByCodes(array_column($incoming, 'code')) as $current) {
+            $holders[strtolower((string) $current->code)] = (int) $current->id;
+        }
+
+        foreach ($incoming as $row) {
+            $holderId = $holders[$row['code']] ?? null;
+
+            // 그 코드를 지금 쥔 행이 없거나, 자기 자신이거나, 이 저장에서 지워지는 행이면 충돌이 아니다.
+            if ($holderId === null || $holderId === $row['id'] || ! isset($presentIds[$holderId])) {
+                continue;
+            }
+
+            $validator->errors()->add("{$key}.{$row['index']}.code", $message);
+        }
+    }
+
+    /**
+     * 클레임 사유명 필수 검증 - 현재 로케일에 이름이 있어야 함 (교환/반품/환불 공통)
+     *
+     * @param  Validator  $validator  Validator 인스턴스
+     * @param  string  $type  사유 유형 (exchange|return|refund)
+     */
+    protected function validateClaimReasonNames(Validator $validator, string $type): void
+    {
+        $key = "claim.{$type}_reasons";
+        $reasons = $this->input($key, []);
 
         if (empty($reasons) || ! is_array($reasons)) {
             return;
@@ -1045,18 +1484,22 @@ class StoreEcommerceSettingsRequest extends FormRequest
 
             if (! is_array($name) || empty($name)) {
                 $validator->errors()->add(
-                    "claim.refund_reasons.{$index}.name",
-                    __('sirsoft-ecommerce::validation.custom.claim.refund_reasons.name_required')
+                    "{$key}.{$index}.name",
+                    __("sirsoft-ecommerce::validation.custom.claim.{$type}_reasons.name_required")
                 );
 
+                continue;
+            }
+
+            if ($this->isExistingCatalogRow($reason)) {
                 continue;
             }
 
             $localeName = $name[$locale] ?? '';
             if (! is_string($localeName) || trim($localeName) === '') {
                 $validator->errors()->add(
-                    "claim.refund_reasons.{$index}.name.{$locale}",
-                    __('sirsoft-ecommerce::validation.custom.claim.refund_reasons.name_required')
+                    "{$key}.{$index}.name.{$locale}",
+                    __("sirsoft-ecommerce::validation.custom.claim.{$type}_reasons.name_required")
                 );
             }
         }

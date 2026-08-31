@@ -124,10 +124,15 @@
                                 "handler": "sequence",
                                 "actions": [
                                   {
+                                    "comment": "해외배송을 끄면 배송가능국가 추가 폼과 [추가] 버튼이 함께 사라진다(둘 다 이 토글을 게이트로 갖는다). 그런데 그 폼을 연 채 껐다면 isAddingCountry 는 켜진 채 남고, 그것을 끄는 유일한 액션(폼 안의 [확정]/[취소])이 화면에서 사라진다 — 이후 페이지 [저장]의 인라인 폼 가드가 어느 탭에서도 저장을 영구히 막는다(새로고침 외 탈출구가 없고, 새로고침은 다른 탭 편집까지 버린다). 폼이 도달 불가가 되는 바로 이 지점에서 표시도 함께 내린다.",
                                     "handler": "setState",
                                     "params": {
                                       "target": "local",
-                                      "form.shipping.international_shipping_enabled": false
+                                      "form.shipping.international_shipping_enabled": false,
+                                      "isAddingCountry": false,
+                                      "newCountry": null,
+                                      "disableIntlWasAddingCountry": "{{_local.isAddingCountry === true}}",
+                                      "disableIntlCountryBuffer": "{{_local.newCountry}}"
                                     }
                                   },
                                   {
@@ -139,10 +144,13 @@
                             },
                             {
                               "then": {
+                                "comment": "위 분기와 같은 이유로 isAddingCountry 를 함께 내린다 — 해외배송을 끄면 배송가능국가 추가 폼이 도달 불가가 된다.",
                                 "handler": "setState",
                                 "params": {
                                   "target": "local",
                                   "form.shipping.international_shipping_enabled": false,
+                                  "isAddingCountry": false,
+                                  "newCountry": null,
                                   "hasChanges": true
                                 }
                               }

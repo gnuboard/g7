@@ -61,6 +61,12 @@ interface BuildOrderColumnsParams {
  *
  * 통화 설정에 따라 금액 컬럼을 동적으로 추가합니다.
  *
+ * 배선 현황: **현재 이 핸들러를 호출하는 레이아웃은 없다.** 주문 목록 DataGrid 는 컬럼을
+ * `_partial_order_datagrid.json` 에 직접 열거하며, 그 정의만이 셀 내용(`cellChildren`)을
+ * 갖는다. 형제 `loadVisibleColumnsHandler` 도 같은 상태이고, 배선된 것은
+ * `saveVisibleColumnsHandler` 하나다. 나중에 이 핸들러를 배선하려면 레이아웃 컬럼 정의의
+ * `cellChildren` 을 함께 가져오는 경로부터 만들어야 한다 — 아래 claim 컬럼 주석 참조.
+ *
  * @example
  * // init_actions에서 사용
  * {
@@ -93,6 +99,18 @@ export function buildOrderColumnsHandler(
         { field: 'payment_method', header: '$t:sirsoft-ecommerce.admin.order.column.payment_method', width: '100px', sortable: false, required: false },
         { field: 'delivery_method', header: '$t:sirsoft-ecommerce.admin.order.column.delivery_method', width: '100px', sortable: false, required: false },
         { field: 'country', header: '$t:sirsoft-ecommerce.admin.order.column.country', width: '80px', sortable: false, required: false },
+        // 형제 `loadVisibleColumnsHandler` 의 폴백은 device·claim 을 포함한 11키다. 여기만
+        // 10키로 남으면 두 핸들러를 함께 쓰는 화면에서 표시 목록이 정의 없는 field 를 가리키고,
+        // DataGrid 는 정의가 없는 컬럼을 그리지 않으므로 그 두 컬럼이 조용히 사라진다.
+        { field: 'device', header: '$t:sirsoft-ecommerce.admin.order.column.device', width: '80px', sortable: false, required: false },
+        // claim 컬럼에는 여기서 `cellChildren` 을 주지 않는다 — `ColumnDef` 는 field/header/
+        // width/sortable/required 만 갖는 타입이고, 이 핸들러는 그 다섯 축만 다룬다.
+        // 셀 내용(클레임 유형별 최신 상태 배지 + 2건 이상일 때 건수 병기)은 레이아웃
+        // `_partial_order_datagrid.json` 의 claim 컬럼 정의에만 있으며, 그것이 유일한 정본이다.
+        // 이 핸들러를 실제로 배선하게 되면(아래 "미배선" 주석 참조) 그 `cellChildren` 을
+        // 여기로 함께 옮기거나, 레이아웃 컬럼 정의와 병합하는 경로를 먼저 만들어야 한다.
+        // 그렇지 않으면 claim 컬럼이 헤더만 있고 전 행이 빈 셀이 된다.
+        { field: 'claim', header: '$t:sirsoft-ecommerce.admin.order.column.claim', width: '150px', sortable: false, required: false },
     ];
 
     // 통화별 금액 컬럼 추가 (기본 통화 제외)
@@ -584,6 +602,9 @@ export function saveVisibleColumnsHandler(
  *
  * LocalStorage에서 표시 컬럼 설정을 로드합니다.
  *
+ * 배선 현황: **현재 이 핸들러를 호출하는 레이아웃은 없다.** 주문 목록은 `loadFromLocalStorage`
+ * 로 같은 키를 직접 읽으므로, 아래 폴백 11키는 배선되는 날을 위한 예비다.
+ *
  * @param action 액션 객체 (params 포함)
  * @param _context 액션 컨텍스트
  * @returns 저장된 컬럼 목록 또는 기본값
@@ -593,16 +614,23 @@ export function loadVisibleColumnsHandler(
     _context: ActionContext
 ): string[] {
     const params = action.params || {};
+    // 주문 목록 DataGrid 의 실제 컬럼 field 와 같은 묶음이어야 한다. `order_date` 는 존재하지
+    // 않는 field 였고(실제 키는 `ordered_at`) `device`·`claim` 이 빠져 있었다 — 이 폴백을 쓰는
+    // 레이아웃이 생기는 순간 그 컬럼들이 조용히 사라진다(DataGrid 는 visibleColumns 에 없는
+    // 컬럼을 required 여부와 무관하게 걸러낸다). 레이아웃 3출처(state.visibleColumns /
+    // loadFromLocalStorage.defaultValue / ColumnSelector.defaultColumns)와 같은 11키로 맞춘다.
     const defaultColumns = params.defaultColumns || [
-        'order_date',
+        'ordered_at',
         'order_number',
-        'order_status',
-        'order_amount',
         'product',
+        'order_amount',
+        'order_status',
         'orderer',
         'payment_method',
         'delivery_method',
         'country',
+        'device',
+        'claim',
     ];
 
     try {

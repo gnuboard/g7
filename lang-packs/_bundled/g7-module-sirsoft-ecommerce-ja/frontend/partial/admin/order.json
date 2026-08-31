@@ -582,6 +582,20 @@
       "all": "すべて",
       "member": "会員",
       "guest": "非会員"
+    },
+    "claim": {
+      "block_title": "クレーム基準",
+      "block_hint": "この注文に受け付けられたクレームのタイプ·ステータスで注文を絞ります。タイプ別ステータスを指定しない場合、タイプに関わらず絞ります。ただし帰責を指定するとキャンセルは除外されます — キャンセルには帰責情報がありません。",
+      "presence": "クレーム",
+      "presence_none": "クレームなし",
+      "presence_any": "クレームあり",
+      "presence_active": "進行中のみ",
+      "exchange": "交換",
+      "return": "返品",
+      "refund": "返金",
+      "cancel": "キャンセル",
+      "fault": "帰責",
+      "requested_at": "クレーム申請日"
     }
   },
   "action": {
@@ -756,7 +770,8 @@
     "first_order": "初回購入",
     "action": "作業",
     "mileage_used_short": "マイレージ -{{amount}}",
-    "points_earned_short": "ポイント +{{amount}}"
+    "points_earned_short": "ポイント +{{amount}}",
+    "claim": "クレーム"
   },
   "device": {
     "mobile": "モバイル",

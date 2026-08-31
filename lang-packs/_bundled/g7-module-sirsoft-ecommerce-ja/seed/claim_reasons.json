@@ -19,5 +19,23 @@
   },
   "etc": {
     "name": "その他"
+  },
+  "size_mismatch": {
+    "name": "サイズが合わない"
+  },
+  "color_mismatch": {
+    "name": "色・デザインが気に入らない"
+  },
+  "wrong_option_selected": {
+    "name": "オプションの選択ミス"
+  },
+  "defective_product": {
+    "name": "商品の不良・破損"
+  },
+  "wrong_product_delivered": {
+    "name": "異なる商品が届いた"
+  },
+  "damaged_in_transit": {
+    "name": "配送中の破損"
   }
 }

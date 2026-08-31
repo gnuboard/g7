@@ -311,7 +311,7 @@ return [
     // 클레임 배송비 산정 모드 (ClaimShippingFeeModeEnum 값과 일치)
     'claim_shipping_fee_mode' => [
         'fixed' => '고정 금액',
-        'original_policy' => '원 배송정책 재계산',
+        'original_policy' => '원래 배송정책 재계산',
     ],
 
     // 교환상태 (ExchangeStatusEnum 값과 일치)

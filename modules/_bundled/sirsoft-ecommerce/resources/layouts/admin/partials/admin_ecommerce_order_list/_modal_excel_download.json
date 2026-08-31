@@ -35,7 +35,7 @@
                   "type": "basic",
                   "name": "Label",
                   "props": {
-                    "className": "flex items-start gap-3 p-3 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors {{_local.excelDownloadType === 'search' ? 'bg-primary-50 dark:bg-primary-900/20 ring-2 ring-primary-500' : ''}}"
+                    "className": "flex items-start gap-3 p-3 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors {{_global.excelDownloadContext?.type === 'search' ? 'bg-primary-50 dark:bg-primary-900/20 ring-2 ring-primary-500' : ''}}"
                   },
                   "children": [
                     {
@@ -45,7 +45,7 @@
                         "type": "radio",
                         "name": "excelDownloadType",
                         "value": "search",
-                        "checked": "{{_local.excelDownloadType === 'search'}}",
+                        "checked": "{{_global.excelDownloadContext?.type === 'search'}}",
                         "className": "radio mt-1"
                       },
                       "actions": [
@@ -53,8 +53,8 @@
                           "type": "change",
                           "handler": "setState",
                           "params": {
-                            "target": "_local",
-                            "excelDownloadType": "search"
+                            "target": "global",
+                            "excelDownloadContext.type": "search"
                           }
                         }
                       ]
@@ -80,7 +80,7 @@
                           "props": {
                             "className": "block text-tertiary mt-0.5"
                           },
-                          "text": "$t:sirsoft-ecommerce.admin.order.excel.option_search_desc:count={{orders?.data?.total ?? 0}}"
+                          "text": "$t:sirsoft-ecommerce.admin.order.excel.option_search_desc:count={{_global.excelDownloadContext?.total ?? 0}}"
                         }
                       ]
                     }
@@ -90,7 +90,7 @@
                   "type": "basic",
                   "name": "Label",
                   "props": {
-                    "className": "flex items-start gap-3 p-3 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors {{_local.excelDownloadType === 'selected' ? 'bg-primary-50 dark:bg-primary-900/20 ring-2 ring-primary-500' : ''}} {{_local.selectedItems.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}}"
+                    "className": "flex items-start gap-3 p-3 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors {{_global.excelDownloadContext?.type === 'selected' ? 'bg-primary-50 dark:bg-primary-900/20 ring-2 ring-primary-500' : ''}} {{(_global.excelDownloadContext?.selectedItems ?? []).length === 0 ? 'opacity-50 cursor-not-allowed' : ''}}"
                   },
                   "children": [
                     {
@@ -100,8 +100,8 @@
                         "type": "radio",
                         "name": "excelDownloadType",
                         "value": "selected",
-                        "checked": "{{_local.excelDownloadType === 'selected'}}",
-                        "disabled": "{{_local.selectedItems.length === 0}}",
+                        "checked": "{{_global.excelDownloadContext?.type === 'selected'}}",
+                        "disabled": "{{(_global.excelDownloadContext?.selectedItems ?? []).length === 0}}",
                         "className": "radio mt-1"
                       },
                       "actions": [
@@ -109,8 +109,8 @@
                           "type": "change",
                           "handler": "setState",
                           "params": {
-                            "target": "_local",
-                            "excelDownloadType": "selected"
+                            "target": "global",
+                            "excelDownloadContext.type": "selected"
                           }
                         }
                       ]
@@ -136,7 +136,7 @@
                           "props": {
                             "className": "block text-tertiary mt-0.5"
                           },
-                          "text": "$t:sirsoft-ecommerce.admin.order.excel.option_selected_desc:count={{_local.selectedItems.length}}"
+                          "text": "$t:sirsoft-ecommerce.admin.order.excel.option_selected_desc:count={{(_global.excelDownloadContext?.selectedItems ?? []).length}}"
                         }
                       ]
                     }
@@ -208,9 +208,9 @@
                   "params": {
                     "method": "POST",
                     "body": {
-                      "type": "{{_local.excelDownloadType}}",
-                      "order_ids": "{{_local.excelDownloadType === 'selected' ? _local.selectedItems : []}}",
-                      "filters": "{{_local.excelDownloadType === 'search' ? { search_field: _local.filter.searchField, search_keyword: _local.filter.searchKeyword, date_type: _local.filter.dateType, start_date: _local.filter.startDate, end_date: _local.filter.endDate, order_status: _local.filter.orderStatus, claim_refund_status: _local.filter.claimRefundStatus, claim_return_status: _local.filter.claimReturnStatus, claim_exchange_status: _local.filter.claimExchangeStatus, delivery_method: _local.filter.deliveryMethods, payment_method: _local.filter.paymentMethods, category_id: _local.filter.category4 || _local.filter.category3 || _local.filter.category2 || _local.filter.category1, min_price: _local.filter.minPrice, max_price: _local.filter.maxPrice, country: _local.filter.countries, device: _local.filter.devices } : {}}}"
+                      "type": "{{_global.excelDownloadContext?.type}}",
+                      "order_ids": "{{_global.excelDownloadContext?.type === 'selected' ? (_global.excelDownloadContext?.selectedItems ?? []) : []}}",
+                      "filters": "{{_global.excelDownloadContext?.type === 'search' ? { search_field: _global.excelDownloadContext?.filter?.searchField, search_keyword: _global.excelDownloadContext?.filter?.searchKeyword, date_type: _global.excelDownloadContext?.filter?.dateType, start_date: _global.excelDownloadContext?.filter?.startDate, end_date: _global.excelDownloadContext?.filter?.endDate, order_status: _global.excelDownloadContext?.filter?.orderStatus, claim_presence: _global.excelDownloadContext?.filter?.claimPresence, claim_exchange_statuses: _global.excelDownloadContext?.filter?.claimExchangeStatuses, claim_return_statuses: _global.excelDownloadContext?.filter?.claimReturnStatuses, claim_refund_statuses: _global.excelDownloadContext?.filter?.claimRefundStatuses, claim_cancel_types: _global.excelDownloadContext?.filter?.claimCancelTypes, claim_fault_types: _global.excelDownloadContext?.filter?.claimFaultTypes, claim_requested_from: _global.excelDownloadContext?.filter?.claimRequestedFrom, claim_requested_to: _global.excelDownloadContext?.filter?.claimRequestedTo, delivery_method: _global.excelDownloadContext?.filter?.deliveryMethods, payment_method: _global.excelDownloadContext?.filter?.paymentMethods, category_id: _global.excelDownloadContext?.filter?.category4 || _global.excelDownloadContext?.filter?.category3 || _global.excelDownloadContext?.filter?.category2 || _global.excelDownloadContext?.filter?.category1, min_price: _global.excelDownloadContext?.filter?.minPrice, max_price: _global.excelDownloadContext?.filter?.maxPrice, country: _global.excelDownloadContext?.filter?.countries, device: _global.excelDownloadContext?.filter?.devices } : {}}}"
                     },
                     "responseType": "blob"
                   },

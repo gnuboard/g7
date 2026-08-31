@@ -144,9 +144,12 @@ return [
     // 클레임 사유 관련
     'claim_reason_not_found' => '클레임 사유를 찾을 수 없습니다.',
     'claim_reason_in_use' => '이미 사용 중인 사유는 삭제할 수 없습니다. (사용 횟수: :count건)',
+    'claim_reason_code_locked_in_use' => '이미 사용 중인 사유의 코드는 변경할 수 없습니다. 접수된 신청서가 이 코드로 사유를 기억하고 있습니다. (사용 횟수: :count건)',
+    'claim_reason_type_locked_in_use' => '이미 사용 중인 사유의 유형은 변경할 수 없습니다. 접수된 신청서가 이 코드와 유형으로 사유를 기억하고 있습니다. (사용 횟수: :count건)',
 
     // 배송유형 관련
     'shipping_type_not_found' => '배송유형을 찾을 수 없습니다.',
+    'shipping_type_code_locked_in_use' => '이미 사용 중인 배송유형(:name)의 코드는 변경할 수 없습니다. 접수된 주문이 이 코드로 배송유형을 기억하고 있습니다. (사용 횟수: :count건)',
     'shipping_type_in_use' => '주문에서 사용 중인 배송유형(:name)은 삭제할 수 없습니다. (사용 횟수: :count건)',
 
     // 택배사 관련

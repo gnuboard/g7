@@ -241,6 +241,10 @@
     "requested": "취소신청",
     "completed": "취소완료"
   },
+  "cancel_type": {
+    "full": "전체취소",
+    "partial": "부분취소"
+  },
   "claim_reason_fault_type": {
     "customer": "고객 귀책",
     "seller": "판매자 귀책",
@@ -250,5 +254,9 @@
     "pay_on_request": "신청 시 결제",
     "pay_on_approval": "승인 후 결제",
     "deduct_from_refund": "환불액에서 차감"
+  },
+  "claim_shipping_fee_mode": {
+    "fixed": "고정 금액",
+    "original_policy": "원래 배송정책 재계산"
   }
 }

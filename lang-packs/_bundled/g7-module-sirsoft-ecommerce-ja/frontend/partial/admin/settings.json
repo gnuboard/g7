@@ -229,8 +229,8 @@
     "stock_management": {
       "title": "在庫管理",
       "description": "在庫関連のグローバルポリシーを設定します。",
-      "restore_on_cancel": "注文キャンセル時の在庫復旧",
-      "restore_on_cancel_description": "注文がキャンセルされると、差し引かれた在庫を自動的に復旧します。",
+      "restore_on_cancel": "注文キャンセル時の在庫復元",
+      "restore_on_cancel_description": "注文がキャンセルされると、差し引かれた在庫を自動的に復元します。",
       "restore_on_cancel_hint": "返品·交換処理時にも適用されます。"
     },
     "cash_receipt": {
@@ -260,7 +260,7 @@
       "columns": {
         "code": "コード",
         "name": "理由名",
-        "fault_type": "責任区分",
+        "fault_type": "帰責区分",
         "is_user_selectable": "顧客選択",
         "is_active": "有効",
         "actions": "管理"
@@ -269,13 +269,12 @@
         "code": "理由コード",
         "code_placeholder": "英小文字、アンダースコア（例：order_mistake）",
         "name": "理由名",
-        "name_ko_placeholder": "日本語",
-        "name_en_placeholder": "English",
-        "fault_type": "責任区分",
+        "name_ko_placeholder": "理由名",
+        "fault_type": "帰責区分",
         "fault_types": {
-          "customer": "顧客責任",
-          "seller": "販売者責任",
-          "carrier": "配送業者責任"
+          "customer": "顧客帰責",
+          "seller": "販売者帰責",
+          "carrier": "配送業者帰責"
         },
         "is_user_selectable": "顧客選択可能",
         "cancel": "キャンセル",
@@ -284,6 +283,137 @@
       "confirm_delete": "この返金理由を削除してよろしいですか？",
       "validation": {
         "code_required": "コードを入力してください",
+        "code_format": "コードは英小文字で始まり、英小文字・数字・単語間のアンダースコア(_)のみ使用できます — 連続アンダースコア(__)と末尾のアンダースコアは不可(例: size_mismatch)",
+        "code_length": "コードは50文字以内で入力してください",
+        "code_duplicate": "同じコードの理由がすでにあります — 別のコードを入力してください",
+        "name_required": "理由名を入力してください"
+      }
+    },
+    "policy": {
+      "days_unit": "日",
+      "images_unit": "枚",
+      "requestable": {
+        "title": "申請可能条件",
+        "description": "顧客が交換·返品·キャンセル·返金を申請できる商品ステータスと期間を設定します。",
+        "placeholder": "ステータスを選択してください",
+        "exchange_label": "交換申請可能ステータス",
+        "exchange_hint": "このステータスの商品のみ交換申請ボタンが表示され、申請が受け付けられます。",
+        "return_label": "返品申請可能ステータス",
+        "return_hint": "このステータスの商品のみ返品申請ボタンが表示され、申請が受け付けられます。",
+        "instant_cancel_label": "即時キャンセル可能ステータス",
+        "instant_cancel_hint": "このステータスの商品は返金申請書を作成せずにすぐにキャンセルされます。",
+        "refund_request_label": "返金申請可能ステータス",
+        "refund_request_hint": "このステータスの商品は返金申請書で受け付けられ、管理者承認後に返金されます。",
+        "request_period_days_label": "申請可能期間",
+        "request_period_days_hint": "配送完了（または購入確定）後、この期間を経過すると交換·返品を申請できません。"
+      },
+      "charge": {
+        "title": "追加決済",
+        "description": "交換往復配送料·オプション差額などのクレーム追加請求をどのような方式と手段で受け取るかを設定します。",
+        "methods_label": "許可請求方式",
+        "methods_placeholder": "請求方式を選択してください",
+        "methods_hint": "顧客が申請書で選択できる請求方式です。選択しない方式は申請画面に表示されません。",
+        "payment_methods_label": "追加決済方法",
+        "payment_methods_placeholder": "決済方法を選択してください",
+        "payment_methods_hint": "クレーム追加決済に使用できる決済方法です。ポイント決済は会員のみ使用できます。"
+      },
+      "auto_approve": {
+        "title": "自動承認",
+        "description": "管理者確認なしに申請を自動承認する条件を設定します。",
+        "zero_charge_label": "追加請求なし自動承認",
+        "zero_charge_hint": "追加請求額のない交換·返品申請を受け付け直後に承認します。",
+        "after_payment_label": "追加決済完了後自動承認",
+        "after_payment_hint": "顧客が追加決済を完了すると、自動的に承認ステータスに移行します。",
+        "refund_request_label": "返金申請自動承認",
+        "refund_request_hint": "受け付けられた返金申請書を自動的に承認ステータスに移行します。返金実行は別途です。"
+      },
+      "attachment": {
+        "title": "添付画像",
+        "description": "顧客が申請書にアップロードできる画像の枚数と容量を設定します。",
+        "max_images_label": "最大添付枚数",
+        "max_images_hint": "申請画面の案内文とサーバー拒否がこの値に従います。",
+        "image_max_size_kb_label": "画像最大容量",
+        "image_max_size_kb_hint": "1枚あたりの最大容量です。1MB = 1024KB。"
+      },
+      "complete_defaults": {
+        "title": "完了処理デフォルト値",
+        "description": "返品完了·交換完了へ移行する際に開く完了処理モーダルの初期選択値です。",
+        "notice": "ここで設定した値はモーダルの初期選択値に過ぎません。実際の在庫復元と返金申請書受付は、完了処理モーダルで個別に確定されます。",
+        "create_refund_request_label": "返金申請書受付",
+        "create_refund_request_hint": "モーダルの「今すぐ受付」をデフォルト選択にします。",
+        "restore_stock_label": "在庫復元",
+        "restore_stock_hint": "モーダルの個別在庫復元チェックをデフォルト選択にします。"
+      }
+    },
+    "exchange_reasons": {
+      "section_title": "交換理由管理",
+      "add_button": "理由追加",
+      "empty": "登録されている交換理由がありません。",
+      "columns": {
+        "code": "コード",
+        "name": "理由名",
+        "fault_type": "帰責区分",
+        "is_user_selectable": "顧客選択",
+        "is_active": "有効",
+        "actions": "管理"
+      },
+      "form": {
+        "code": "理由コード",
+        "code_placeholder": "英小文字、アンダースコア（例：order_mistake）",
+        "name": "理由名",
+        "name_ko_placeholder": "理由名",
+        "fault_type": "帰責区分",
+        "fault_types": {
+          "customer": "顧客帰責",
+          "seller": "販売者帰責",
+          "carrier": "配送業者帰責"
+        },
+        "is_user_selectable": "顧客選択可能",
+        "cancel": "キャンセル",
+        "save": "追加"
+      },
+      "confirm_delete": "この交換理由を削除してよろしいですか？",
+      "validation": {
+        "code_required": "コードを入力してください",
+        "code_format": "コードは英小文字で始まり、英小文字・数字・単語間のアンダースコア(_)のみ使用できます — 連続アンダースコア(__)と末尾のアンダースコアは不可(例: size_mismatch)",
+        "code_length": "コードは50文字以内で入力してください",
+        "code_duplicate": "同じコードの理由がすでにあります — 別のコードを入力してください",
+        "name_required": "理由名を入力してください"
+      }
+    },
+    "return_reasons": {
+      "section_title": "返品理由管理",
+      "add_button": "理由追加",
+      "empty": "登録されている返品理由がありません。",
+      "columns": {
+        "code": "コード",
+        "name": "理由名",
+        "fault_type": "帰責区分",
+        "is_user_selectable": "顧客選択",
+        "is_active": "有効",
+        "actions": "管理"
+      },
+      "form": {
+        "code": "理由コード",
+        "code_placeholder": "英小文字、アンダースコア（例：order_mistake）",
+        "name": "理由名",
+        "name_ko_placeholder": "理由名",
+        "fault_type": "帰責区分",
+        "fault_types": {
+          "customer": "顧客帰責",
+          "seller": "販売者帰責",
+          "carrier": "配送業者帰責"
+        },
+        "is_user_selectable": "顧客選択可能",
+        "cancel": "キャンセル",
+        "save": "追加"
+      },
+      "confirm_delete": "この返品理由を削除してよろしいですか？",
+      "validation": {
+        "code_required": "コードを入力してください",
+        "code_format": "コードは英小文字で始まり、英小文字・数字・単語間のアンダースコア(_)のみ使用できます — 連続アンダースコア(__)と末尾のアンダースコアは不可(例: size_mismatch)",
+        "code_length": "コードは50文字以内で入力してください",
+        "code_duplicate": "同じコードの理由がすでにあります — 別のコードを入力してください",
         "name_required": "理由名を入力してください"
       }
     }
@@ -329,8 +459,7 @@
         "code": "タイプコード",
         "code_placeholder": "英小文字、アンダースコア（例：express_delivery）",
         "name": "タイプ名",
-        "name_ko_placeholder": "日本語",
-        "name_en_placeholder": "English",
+        "name_ko_placeholder": "配送タイプ名",
         "category": "カテゴリー",
         "cancel": "キャンセル",
         "save": "追加"
@@ -355,7 +484,7 @@
         "name": "配送業者名",
         "type": "タイプ",
         "tracking_url": "追跡URL",
-        "is_active": "有効化",
+        "is_active": "有効",
         "actions": "管理"
       },
       "form": {
@@ -370,7 +499,7 @@
         "tracking_url_help": "{tracking_number}は送り状番号に置き換えられます。",
         "cancel": "キャンセル",
         "save": "保存",
-        "name_ko_placeholder": "日本語"
+        "name_ko_placeholder": "配送会社名"
       },
       "created": "配送業者が登録されました。",
       "updated": "配送業者が編集されました。",
@@ -554,5 +683,14 @@
     },
     "policy_form_editor_label": "本人認証ポリシーの追加/編集"
   },
-  "save_pending_currency": "追加中の通貨を先に確定（チェックボタン）するか、キャンセルしてから保存してください。"
+  "save_pending_currency": "追加中の通貨を先に確定（チェックボタン）するか、キャンセルしてから保存してください。",
+  "save_pending_form": "追加中の :forms フォームを先に追加ボタンで確定するか、キャンセルしてから保存してください。",
+  "save_pending_form_targets": {
+    "exchange_reason": "交換理由",
+    "return_reason": "返品理由",
+    "refund_reason": "返金理由",
+    "carrier": "配送業者",
+    "shipping_type": "配送タイプ",
+    "country": "配送可能国"
+  }
 }

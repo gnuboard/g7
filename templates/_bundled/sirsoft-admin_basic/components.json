@@ -1541,7 +1541,7 @@
           "status": {
             "type": "string",
             "required": true,
-            "description": "상태 타입 (success | warning | error | info | pending | default)"
+            "description": "상태 타입 (success | warning | error | danger | info | primary | secondary | dark | pending | default) — 유니언 밖의 값은 스타일 조회가 undefined 가 되어 배경·글자색이 통째로 사라진다. 도메인 Enum 의 variant() 가 내려보내는 값(danger·primary·secondary·dark 포함)을 전부 담고 있어야 한다."
           },
           "label": {
             "type": "string",
@@ -3078,7 +3078,7 @@
           "onColumnVisibilityChange": {
             "type": "function",
             "required": false,
-            "description": "컬럼 표시 변경 시 콜백 (visibleFields: string[]) => void"
+            "description": "컬럼 표시가 정해질 때 콜백 (visibleFields: string[], meta?: { source: 'user' | 'init' | 'dynamic' }) => void. 사람이 체크박스를 누른 순간(user)뿐 아니라 마운트 시 저장값·기본값으로 부모 상태를 맞출 때(init)와 동적 컬럼이 새로 생겨 자동 포함될 때(dynamic)도 발화한다 — 그 셋을 구분하지 못하면 복원을 사용자 조작으로 오해해, 주소를 다시 쓰는 소비처에서 화면에 들어올 때마다 주소가 바뀐다. 두 번째 인자는 가산이라 첫 인자만 읽는 기존 소비처는 영향받지 않는다. 같은 이름의 이벤트를 DataGrid 도 방출하는데 그쪽은 두 번째 인자를 싣지 않는다"
           },
           "triggerLabel": {
             "type": "string",
@@ -3386,6 +3386,61 @@
             "required": false,
             "default": "",
             "description": "추가 className"
+          },
+          "tagVariants": {
+            "type": "object",
+            "required": false,
+            "description": "태그 값별 색상 variant 맵핑 ({ [값]: 'blue' | 'green' | 'amber' | 'red' | 'purple' | 'gray' })"
+          },
+          "defaultVariant": {
+            "type": "string",
+            "required": false,
+            "default": "blue",
+            "description": "tagVariants 에 지정되지 않은 태그의 기본 색상 variant ('blue' | 'green' | 'amber' | 'red' | 'purple' | 'gray')"
+          },
+          "name": {
+            "type": "string",
+            "required": false,
+            "description": "폼 필드 이름 (지정 시 선택값을 hidden input 으로 함께 제출)"
+          },
+          "isMulti": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "다중 선택 여부 (false 면 하나만 선택되고 새 선택이 기존 값을 대체)"
+          },
+          "isClearable": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "선택 해제 가능 여부 (싱글 모드에서 유효)"
+          },
+          "isSearchable": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "검색 입력 사용 여부 (false 면 목록에서 고르기만 가능)"
+          },
+          "delimiters": {
+            "type": "array",
+            "required": false,
+            "description": "태그 구분자 배열 (creatable 모드에서 입력 시 자동 분리, 기본값: [\",\"])"
+          },
+          "splitOnPaste": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "붙여넣기한 문자열을 구분자로 자동 분리할지 여부"
+          },
+          "id": {
+            "type": "string",
+            "required": false,
+            "description": "컴포넌트 DOM ID (레이아웃 편집기 elemId 로도 사용)"
+          },
+          "editorAttrs": {
+            "type": "object",
+            "required": false,
+            "description": "레이아웃 편집기 주입 속성 (data-editor-* 등 — 편집 모드 선택용)"
           }
         }
       },

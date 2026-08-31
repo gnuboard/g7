@@ -33,6 +33,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderCancelOptionRepository
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderExchangeOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderExchangeRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundOptionRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderReturnOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderReturnRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingPolicyClaimAddressRepositoryInterface;
@@ -137,6 +138,56 @@ class ClaimRepositoriesTest extends ModuleTestCase
 
         $this->assertSame(2, $repo->countByReasonCode('size_mismatch'));
         $this->assertSame(0, $repo->countByReasonCode('never_used'));
+    }
+
+    /**
+     * 환불 계수기는 **환불 카탈로그에서 고른 사유**만 센다.
+     *
+     * `ecommerce_order_refunds.reason_code` 에는 네 출처가 쓴다. 그런데 반품 발·교환 발
+     * 환불행은 자기 신청서의 코드를 그대로 복사하므로 그 값의 출처는 **반품/교환 카탈로그**다.
+     * 코드 유일성이 `(type, code)` 쌍이라 같은 문자열이 유형 간 공존하고(기본 시드만 해도
+     * 환불∩반품 4종 `changed_mind`·`delayed_delivery`·`product_info_different`·`etc`),
+     * 스코프 없이 세면 **반품 한 건이 환불 카탈로그의 동명 사유를 잠근다** — 그 사유는 쓰인
+     * 적이 없는데 삭제도 코드 변경도 영구히 400 이 되고, 안내에 뜨는 "사용 횟수" 는 환불·취소
+     * 어디에서도 찾을 수 없는 수치다. `docs/api/claim-reasons.md` 가 "그 사유의 유형에 맞는
+     * 표 전수를 센다(환불 유형은 환불신청과 즉시취소 두 표를 합산)" 로 이미 이 계약을 적었고,
+     * 같은 저장소의 형제 메서드도 `DIRECT` 로 좁혀 센다.
+     *
+     * 되돌리면(스코프 제거) 아래 두 단언이 붉어진다.
+     */
+    public function test_refund_repository_counts_only_direct_refunds_by_reason_code(): void
+    {
+        $repo = app(OrderRefundRepositoryInterface::class);
+        $order = OrderFactory::new()->create();
+
+        $make = function (RefundSourceTypeEnum $source, string $code) use ($order) {
+            return OrderRefund::create([
+                'order_id' => $order->id,
+                'refund_source_type' => $source,
+                'refund_number' => 'RF-TEST-'.uniqid(),
+                'refund_status' => RefundStatusEnum::REQUESTED,
+                'refund_method' => RefundMethodEnum::PG,
+                'reason_code' => $code,
+                'refund_amount' => 0,
+                'refund_points_amount' => 0,
+                'refund_shipping_amount' => 0,
+            ]);
+        };
+
+        // 환불 카탈로그에서 고른 사유 — 이것만 세어야 한다.
+        $make(RefundSourceTypeEnum::DIRECT, 'etc');
+        $make(RefundSourceTypeEnum::DIRECT, 'etc');
+
+        // 반품·교환 카탈로그의 같은 코드가 복사돼 온 행 — 환불 사유의 사용량이 아니다.
+        $make(RefundSourceTypeEnum::RETURN, 'etc');
+        $make(RefundSourceTypeEnum::EXCHANGE, 'etc');
+
+        $this->assertSame(2, $repo->countByReasonCode('etc'));
+
+        // 반품 발 환불만 있는 코드는 환불 카탈로그에서 쓰인 적이 없다 — 잠기면 안 된다.
+        $make(RefundSourceTypeEnum::RETURN, 'changed_mind');
+
+        $this->assertSame(0, $repo->countByReasonCode('changed_mind'));
     }
 
     public function test_exchange_option_repository_bulk_status_update_scopes_to_exchange(): void

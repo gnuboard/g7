@@ -525,9 +525,13 @@ describe('D10 (defect #3) — 마이페이지 주소록 모달 국가 Select + �
  *
  * 두 가지 회귀를 동시에 차단한다.
  *
- * ① `_global.locale` 은 존재하지 않는 경로다. 엔진은 로케일을 최상위 `$locale` 로만 노출하므로
- *    (template-engine.ts::createGlobalVariables) 이를 인덱스로 쓰면 표현식이 항상 undefined 가 되어
- *    `?? name?.ko` 폴백으로 떨어진다 → 어떤 로케일에서도 한국어 국가명이 표시된다.
+ * ① 이 6개 면은 `_global.locale` 을 인덱스로 쓰지 않는다. 원래 근거는 "그 경로가 존재하지 않는다"
+ *    였으나 **더 이상 사실이 아니다** — S10 17차가 `initAdminLocale` 핸들러를 만들어 그 값을 채우기
+ *    시작했고, 18차가 그 체인을 읽는 관리자 레이아웃 5곳 전부에 주입을 배선했다
+ *    (`adminLocaleInjectionCoverage.test.ts` 가 그 불변식을 저장소 파생 모집단으로 지킨다).
+ *    그럼에도 이 6개 면에서 raw 인덱스를 금지하는 이유는 **다른 것**이다: 국가명은 저장본에 로케일
+ *    키가 없을 때 언어팩으로 보강돼야 하는데(아래 ②), raw 인덱스는 그 보강 경로를 건너뛰고
+ *    `?? name?.ko` 로 떨어진다. 즉 이 단언은 "경로 부재" 가 아니라 "$localized 경유 강제" 다.
  *
  * ② `$localized(value)` 를 fallbackKey 없이 호출하면, 저장본(settings/shipping.json)에 해당 로케일
  *    키가 없을 때 헬퍼가 ko 로 폴백한다. 기본 10개국은 언어팩이 라벨을 갖고 있으므로 fallbackKey
@@ -553,7 +557,7 @@ describe('#459 — 배송국가명 다국어 표시 ($localized + fallbackKey)',
   ];
 
   for (const [label, rel, base] of surfaces) {
-    it(`${label}: 존재하지 않는 경로 _global.locale 을 인덱스로 쓰지 않는다`, () => {
+    it(`${label}: 언어팩 보강을 건너뛰는 _global.locale raw 인덱스를 쓰지 않는다`, () => {
       const raw = serialize(rel, base);
       expect(raw).not.toMatch(/\[\s*_global\.locale\s*\]/);
     });

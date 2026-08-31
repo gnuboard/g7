@@ -9,6 +9,7 @@ use Illuminate\Http\Resources\MissingValue;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Concerns\LocalizesCountryName;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\SummarizesAdditionalOptions;
+use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\SummarizesClaims;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 
 /**
@@ -22,6 +23,7 @@ class UserOrderListResource extends BaseApiResource
     use HasMultiCurrencyPrices;
     use LocalizesCountryName;
     use SummarizesAdditionalOptions;
+    use SummarizesClaims;
 
     /**
      * 리소스를 배열로 변환
@@ -80,6 +82,11 @@ class UserOrderListResource extends BaseApiResource
             // 서버가 모두에게 전량을 안기는 쪽이 아니다.
             'items' => $this->resolveItems($orderCurrency),
             'item_count' => $this->resolveItemCount(),
+
+            // 클레임 요약 (D22) — 관리자 목록과 같은 형태다. 주문 목록 조회가 관계·집계를
+            // 항상 싣게 된 뒤로 이 값은 이미 손에 있었는데 직렬화만 하지 않아, 구매자는 자기
+            // 주문에 접수된 교환·반품·환불·취소가 어디까지 갔는지 목록에서 볼 수 없었다.
+            'claim_summary' => $this->resolveClaimSummary(),
 
             // 권한 메타
             'abilities' => [

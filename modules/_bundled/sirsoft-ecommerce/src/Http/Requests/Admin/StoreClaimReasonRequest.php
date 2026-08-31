@@ -8,6 +8,7 @@ use Illuminate\Validation\Rule;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimReasonFaultTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimReasonTypeEnum;
 use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
+use Modules\Sirsoft\Ecommerce\Rules\ClaimReasonCodeFormat;
 
 /**
  * 클레임 사유 생성 요청
@@ -37,7 +38,8 @@ class StoreClaimReasonRequest extends FormRequest
                 'required',
                 'string',
                 'max:50',
-                'regex:/^[a-z][a-z0-9_]*$/',
+                // 형식은 ClaimReasonCodeFormat 단일 출처. 신규 생성이라 면제 대상이 없다.
+                new ClaimReasonCodeFormat,
                 Rule::unique(ClaimReason::class, 'code')->where('type', $this->input('type', 'refund')),
             ],
             'name' => ['required', 'array', new LocaleRequiredTranslatable(maxLength: 100)],

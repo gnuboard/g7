@@ -133,8 +133,13 @@ interface OrderRefundRepositoryInterface
     /**
      * 사유 코드로 환불신청서 수를 셉니다.
      *
+     * **환불 카탈로그에서 고른 사유만** 센다 — 반품 발·교환 발 환불행의 `reason_code` 는
+     * 자기 신청서에서 복사돼 온 값이라 그 출처가 반품/교환 카탈로그이고, 코드 유일성이
+     * `(type, code)` 쌍이라 같은 문자열이 유형 간 공존한다. 사유 삭제·코드 변경 가드가
+     * 이 값을 쓰므로, 좁히지 않으면 반품 한 건이 환불 카탈로그의 동명 사유를 잠근다.
+     *
      * @param  string  $reasonCode  사유 코드
-     * @return int 신청서 수
+     * @return int 관리자 직접 환불(`direct`)로 접수된 신청서 수
      */
     public function countByReasonCode(string $reasonCode): int;
 }

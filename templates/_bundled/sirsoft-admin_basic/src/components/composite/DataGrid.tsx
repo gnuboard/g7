@@ -232,6 +232,14 @@ export interface DataGridProps {
   // 컬럼 표시/숨김 기능
   showColumnSelector?: boolean;
   visibleColumns?: string[];
+  /**
+   * 표시 컬럼이 바뀌었을 때 호출됩니다.
+   *
+   * 같은 이름의 이벤트를 ColumnSelector 도 방출하는데 그쪽은 두 번째 인자로 발화 출처
+   * (`{ source: 'user' | 'init' | 'dynamic' }`)를 함께 싣습니다. 여기서는 싣지 않으므로,
+   * ColumnSelector 용으로 쓴 `$args[1].source` 가드를 이 이벤트에 그대로 옮기면 항상
+   * undefined 가 되어 그 액션이 조용히 죽습니다.
+   */
   onColumnVisibilityChange?: (fields: string[]) => void;
 
   // 반응형 카드 뷰

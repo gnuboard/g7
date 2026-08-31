@@ -252,7 +252,13 @@ class OrderRefundRepository implements OrderRefundRepositoryInterface
      */
     public function countByReasonCode(string $reasonCode): int
     {
+        // 환불 카탈로그에서 고른 사유만 센다. 반품 발·교환 발 환불행은 자기 신청서의
+        // `reason_code` 를 그대로 복사하므로 그 값의 출처는 반품/교환 카탈로그이고,
+        // 코드 유일성이 `(type, code)` 쌍이라 같은 문자열이 유형 간 공존한다 — 스코프 없이
+        // 세면 반품 한 건이 환불 카탈로그의 동명 사유를 잠근다(쓰인 적 없는 사유가 삭제·코드
+        // 변경 영구 400). 취소 발은 이 컬럼을 채우지 않아 애초에 기여하지 않는다.
         return $this->model->newQuery()
+            ->where('refund_source_type', RefundSourceTypeEnum::DIRECT->value)
             ->where('reason_code', $reasonCode)
             ->count();
     }

@@ -2,7 +2,7 @@
   "id": "preset_section",
   "type": "basic",
   "name": "Div",
-  "comment": "P-001 ~ P-005, MB-012 ~ MB-014 프리셋 영역 (PC/모바일 동일 표시)",
+  "comment": "P-001 ~ P-005, MB-012 ~ MB-014 프리셋 영역 원안 — **어느 레이아웃도 이 partial 을 참조하지 않는다(미배선)**. 실제 프리셋 UI 는 `_partial_filter_section.json` 의 preset_row 가 담당한다. 이 파일은 `preset.conditions` 를 camelCase 그대로 URL 에 덤프하므로 배선하면 프리셋 적용이 무필터가 된다 — 처분은 S16 소유.",
   "props": {
     "className": "admin-card mb-4"
   },
@@ -29,7 +29,7 @@
               "name": "Icon",
               "props": {
                 "name": "settings",
-                "className": "w-4 h-4 icon-muted"
+                "className": "text-base icon-muted"
               }
             },
             {

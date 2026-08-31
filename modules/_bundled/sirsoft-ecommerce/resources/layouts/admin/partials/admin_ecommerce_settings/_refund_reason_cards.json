@@ -47,9 +47,19 @@
                       "type": "basic",
                       "name": "Div",
                       "props": {
-                        "className": "excel-card-title font-mono"
+                        "className": "{{_local.errors?.['claim.refund_reasons.' + reason._idx + '.code'] ? 'excel-card-title font-mono text-red-600 dark:text-red-400' : 'excel-card-title font-mono'}}"
                       },
                       "text": "{{reason.code}}"
+                    },
+                    {
+                      "comment": "PC 표와 같은 행 지목 통로 — 모바일에서만 코드 거절 사유가 사라지지 않게.",
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_local.errors?.['claim.refund_reasons.' + reason._idx + '.code']}}",
+                      "props": {
+                        "className": "form-error"
+                      },
+                      "text": "{{_local.errors?.['claim.refund_reasons.' + reason._idx + '.code']?.[0] ?? ''}}"
                     }
                   ]
                 }
@@ -122,6 +132,7 @@
                         "value": "{{reason.name ?? {}}}",
                         "layout": "compact",
                         "placeholder": "$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.name_ko_placeholder",
+                        "error": "{{_local.errors?.['claim.refund_reasons.' + reason._idx + '.name.' + (_global.locale ?? 'ko')]?.[0] ?? _local.errors?.['claim.refund_reasons.' + reason._idx + '.name']?.[0] ?? ''}}",
                         "disabled": "{{_computed.isReadOnly}}"
                       },
                       "actions": [
@@ -265,7 +276,7 @@
               "name": "Button",
               "props": {
                 "type": "button",
-                "className": "p-1.5 text-gray-400 hover:text-red-600 dark:text-red-400 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                "className": "p-1.5 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                 "title": "$t:common.delete",
                 "disabled": "{{_computed.isReadOnly}}"
               },

@@ -244,6 +244,7 @@ return [
     'options_min' => 'Please add at least one option.',
     'selling_price_lte_list' => 'Selling price cannot exceed list price.',
     'option_selling_price_lte_list' => 'Option selling price cannot exceed list price.',
+    'claim_reason_code_format' => 'The claim reason code must start with a lowercase letter and may contain lowercase letters, digits, and single underscores as word separators. Codes that are already saved may be left as they are.',
 
     // Product validation messages
     'product' => [
@@ -841,9 +842,6 @@ return [
             'date' => 'Claim requested end date must be a valid date.',
             'after_or_equal' => 'Claim requested end date must be on or after the start date.',
         ],
-        'with_claim_summary' => [
-            'boolean' => 'Claim summary flag must be true or false.',
-        ],
         // Sorting and pagination
         'sort_by' => [
             'in' => 'Please select a valid sort field.',
@@ -1413,6 +1411,34 @@ return [
         'review_settings.max_images' => 'Max review images',
         'review_settings.max_image_size_mb' => 'Max review image size (MB)',
 
+        // Claim settings
+        'claim.exchange_requestable_statuses' => 'Exchange requestable statuses',
+        'claim.return_requestable_statuses' => 'Return requestable statuses',
+        'claim.instant_cancel_statuses' => 'Instant cancel statuses',
+        'claim.refund_request_statuses' => 'Refund request statuses',
+        'claim.allowed_charge_methods' => 'Allowed charge methods',
+        'claim.charge_payment_methods' => 'Additional payment methods',
+        'claim.auto_approve_zero_charge' => 'Auto-approve zero charge',
+        'claim.auto_approve_after_payment' => 'Auto-approve after payment',
+        'claim.auto_approve_refund_request' => 'Auto-approve refund request',
+        'claim.max_images' => 'Claim attachment image limit',
+        'claim.image_max_size_kb' => 'Claim attachment image max size (KB)',
+        'claim.request_period_days' => 'Claim request period (days)',
+        'claim.complete_defaults.create_refund_request' => 'Completion default - create refund request',
+        'claim.complete_defaults.restore_stock' => 'Completion default - restore stock',
+        'claim.exchange_reasons' => 'Exchange reasons',
+        'claim.exchange_reasons.*.code' => 'Exchange reason code',
+        'claim.exchange_reasons.*.name' => 'Exchange reason name',
+        'claim.exchange_reasons.*.fault_type' => 'Exchange reason fault type',
+        'claim.return_reasons' => 'Return reasons',
+        'claim.return_reasons.*.code' => 'Return reason code',
+        'claim.return_reasons.*.name' => 'Return reason name',
+        'claim.return_reasons.*.fault_type' => 'Return reason fault type',
+        'claim.refund_reasons' => 'Refund reasons',
+        'claim.refund_reasons.*.code' => 'Refund reason code',
+        'claim.refund_reasons.*.name' => 'Refund reason name',
+        'claim.refund_reasons.*.fault_type' => 'Refund reason fault type',
+
         // Basic info
         'basic_info' => 'Basic Information',
         'basic_info.shop_name' => 'Shop Name',
@@ -1841,9 +1867,20 @@ return [
             ],
         ],
         'claim' => [
+            'exchange_reasons' => [
+                'duplicate_code' => 'Duplicate exchange reason code found.',
+                'name_required' => 'Exchange reason name is required.',
+                'code_swap' => 'Another exchange reason still uses this code. To swap codes, save one of them under a different code first.',
+            ],
+            'return_reasons' => [
+                'duplicate_code' => 'Duplicate return reason code found.',
+                'name_required' => 'Return reason name is required.',
+                'code_swap' => 'Another return reason still uses this code. To swap codes, save one of them under a different code first.',
+            ],
             'refund_reasons' => [
                 'duplicate_code' => 'Duplicate refund reason code found.',
                 'name_required' => 'Refund reason name is required.',
+                'code_swap' => 'Another refund reason still uses this code. To swap codes, save one of them under a different code first.',
             ],
         ],
         'shipping' => [
@@ -1901,6 +1938,7 @@ return [
             ],
             'types' => [
                 'duplicate_code' => 'Duplicate shipping type code found.',
+                'code_swap' => 'Another shipping type still uses this code. To swap codes, save one of them under a different code first.',
                 'name_required' => 'Shipping type name is required.',
                 'code' => [
                     'required_with' => 'Shipping type code is required.',
@@ -1922,6 +1960,7 @@ return [
             ],
             'carriers' => [
                 'duplicate_code' => 'Duplicate carrier code found.',
+                'code_swap' => 'Another carrier still uses this code. To swap codes, save one of them under a different code first.',
                 'name_required' => 'Carrier name is required.',
                 'code' => [
                     'required_with' => 'Carrier code is required.',

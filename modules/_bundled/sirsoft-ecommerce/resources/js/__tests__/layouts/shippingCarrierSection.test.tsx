@@ -161,21 +161,34 @@ describe('택배사 추가 버튼', () => {
         );
         expect(clickAction).toBeDefined();
         expect(clickAction.params?.isAddingCarrier).toBe(true);
-        expect(clickAction.params?.carrierForm).toBeDefined();
-        expect(clickAction.params?.carrierForm.code).toBe('');
-        expect(clickAction.params?.carrierForm.type).toBe('domestic');
-        expect(clickAction.params?.carrierForm.tracking_url).toBe('');
-        expect(clickAction.params?.carrierForm.is_active).toBe(true);
+
+        // 시드는 객체 리터럴이 아니라 **표현식**이다 — 이름 맵을 활성 언어팩에서 파생시켜야
+        // 하기 때문이다(아래 케이스). 나머지 축은 그 표현식 안에 그대로 담긴다.
+        const seed = String(clickAction.params?.carrierForm ?? '');
+
+        expect(seed).toContain("code: ''");
+        expect(seed).toContain("type: 'domestic'");
+        expect(seed).toContain("tracking_url: ''");
+        expect(seed).toContain('is_active: true');
     });
 
-    it('추가 버튼 클릭 시 carrierForm.name이 다국어 객체로 초기화된다', () => {
+    // 종전 계약은 `{ ko: '', en: '' }` 리터럴이었다. 그런데 [추가] 확정 게이트는 **현재 로케일**
+    // 의 이름을 요구하므로(10차 B1), ko/en 을 리터럴로 열거하면 그 밖의 로케일 운영자에게는
+    // 그 언어의 입력칸이 없고 — `MultilingualInput` 은 표시 로케일을 value 의 키에서 뽑고 언어
+    // 추가 버튼을 현재 로케일 필드에만 붙인다 — 언어 추가 버튼조차 나오지 않는다. 폼을 확정할
+    // 수 없는데 페이지 [저장]은 그 폼을 확정하라고 막는다. 프로덕션이 옳고 이 단언이 낡았다.
+    it('추가 버튼 클릭 시 carrierForm.name이 활성 언어팩 전체에서 파생된다', () => {
         const headerAddBtn = findAllByName(allNodes, 'Button').find(
             (b: any) => b.if?.includes('!_local.isAddingCarrier')
         );
         const clickAction = headerAddBtn?.actions?.find(
             (a: any) => a.type === 'click' && a.handler === 'setState'
         );
-        expect(clickAction.params?.carrierForm.name).toEqual({ ko: '', en: '' });
+        const seed = String(clickAction.params?.carrierForm ?? '');
+
+        expect(seed).toContain('$locales');
+        // 리터럴 열거로 되돌리면 붉어진다.
+        expect(seed).not.toContain("ko: ''");
     });
 
     it('추가 버튼 클릭 시 carrierFormErrors가 null로 초기화된다', () => {
@@ -348,7 +361,11 @@ describe('택배사 추가 폼', () => {
         const validCondition = action.conditions[0];
         expect(validCondition.if).toContain('carrierForm?.code');
         expect(validCondition.if).toContain('trim()');
-        expect(validCondition.if).toContain('carrierForm?.name?.ko');
+        // 이름 필수 판정은 **현재 로케일**이다 — `ko` 고정이 아니다. 사유 3종에 적용한 계약을
+        // 형제인 배송사에도 밀어 넣은 결과이며(S10), en/ja 로케일 운영자가 자기 언어 칸을 채우고도
+        // 폼 게이트에서 막히던 것을 없앤다. `ko` 로 되돌아가면 이 두 단언이 붉어진다.
+        expect(validCondition.if).toContain("carrierForm?.name?.[(_global.locale ?? 'ko')]");
+        expect(validCondition.if).not.toContain('carrierForm?.name?.ko');
         expect(validCondition.then.handler).toBe('setState');
         expect(validCondition.then.params?.['form.shipping.carriers']).toContain('...');
         expect(validCondition.then.params?.['form.shipping.carriers']).toContain('carrierForm');
@@ -375,7 +392,10 @@ describe('택배사 추가 폼', () => {
         expect(elseCondition.then.handler).toBe('setState');
         expect(elseCondition.then.params?.carrierFormErrors).toBeDefined();
         expect(elseCondition.then.params?.carrierFormErrors.code).toContain('carrierForm?.code');
-        expect(elseCondition.then.params?.carrierFormErrors.name_ko).toContain('carrierForm?.name?.ko');
+        expect(elseCondition.then.params?.carrierFormErrors.name_ko).toContain(
+            "carrierForm?.name?.[(_global.locale ?? 'ko')]"
+        );
+        expect(elseCondition.then.params?.carrierFormErrors.name_ko).not.toContain('carrierForm?.name?.ko');
     });
 });
 

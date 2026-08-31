@@ -149,6 +149,18 @@ class OrderExchangeRepository implements OrderExchangeRepositoryInterface
     /**
      * {@inheritDoc}
      */
+    public function countByCarrierId(int $carrierId): int
+    {
+        return $this->model->newQuery()
+            ->where(fn ($query) => $query
+                ->where('collection_carrier_id', $carrierId)
+                ->orWhere('redelivery_carrier_id', $carrierId))
+            ->count();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function paginateForUser(int $userId, array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
         $query = $this->model->newQuery()

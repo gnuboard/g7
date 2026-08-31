@@ -1,4 +1,4 @@
-feature: 사용 중인 배송유형·택배사 삭제의 예외 → 상태코드 매핑 (Settings In-Use Deletion Exception Status)
+feature: 배송유형·택배사 설정 저장의 거절 → 상태코드 매핑 (Settings Shipping Catalog Rejection Status)
 
 description: |
   관리자 배송설정 화면은 항목을 지우는 전용 엔드포인트를 갖지 않는다 — 저장 payload
@@ -6,10 +6,19 @@ description: |
   사용 중이면 서비스가 도메인 실패를 던지고, 컨트롤러가 그것을 광역 catch 로 받아
   500 "설정 저장 중 오류" 로 뭉개면 운영자는 **왜** 못 지우는지 알 수 없다.
 
-  핵심 설계:
-    - 사용 중 사유 → **400 + 사유 문구**(사용 중인 이름·건수). 일반 저장 실패 문구로
-      대체되지 않아야 하고, 삭제는 롤백되어야 한다.
-    - 그 외 예외 → 500, 응답 본문에 예외 원문(SQLSTATE 등) 미포함.
+  핵심 설계 — 거절의 종류마다 상태코드가 다르고, 그 구분 자체가 계약이다:
+    - **도메인 거절(400)** — 사용 중인 항목을 지우려 함. 사유 문구(이름·건수)가 담기고,
+      일반 저장 실패 문구로 대체되지 않으며, 삭제는 롤백된다.
+    - **입력 거절(422)** — 코드 맞바꾸기처럼 payload 자체가 성립하지 않음. FormRequest
+      단계에서 걸러지므로 서비스에 도달하지 않고, 필드 키에 오류가 붙는다.
+    - **인프라 실패(500)** — 그 외 예외. 응답 본문에 예외 원문(SQLSTATE 등) 미노출.
+    - **거절 없음(200)** — payload 자체는 성립해 저장이 통과하지만, 그 저장이 **담지 않은**
+      축을 지우지 않아야 하는 경로. 거절 세 종류와 상태코드도 단언 형태도 다르므로 따로 센다.
+
+  거절 세 종류 모두 **설정 파일이 기록되기 전에** 판정되어야 한다. 설정 저장은 JSON 파일
+  쓰기라 트랜잭션으로 되돌릴 수 없어, 뒤에서 거절되면 스칼라만 반영된 반쪽 상태가 남는다.
+  거절 없음(200) 축은 그 반대편이다 — 파일이 실제로 기록되므로, 기록되는 내용이 이번 저장이
+  담은 축만 바꾸고 나머지를 보존하는지가 계약이다.
 
   배송유형과 택배사는 사용량 집계 호출 지점이 각각 `countByShippingType`·`countByCarrierId`
   로 다르다. 한쪽만 단언하면 나머지 경로의 뭉개기가 그대로 남으므로 `resource` 를 축으로
@@ -20,7 +29,7 @@ description: |
 
 axes:
   resource: [shipping_type, shipping_carrier]
-  error_class: [domain, infrastructure]
+  error_class: [domain, validation, infrastructure, none]
 
 exclusions: []
 
@@ -28,9 +37,25 @@ effects:
   # 도메인 사유 — 사유가 담긴 400, 롤백
   - in_use_shipping_type_deletion_returns_400_with_reason
   - in_use_shipping_carrier_deletion_returns_400_with_reason
+  # 도메인 사유 — 사용 중 코드 변경도 삭제와 같은 강도로 400
+  - in_use_shipping_type_code_change_returns_400_with_reason
+  # 거절 없음(200) — 카탈로그만 담긴 저장이 담지 않은 스칼라 축을 지우지 않는다
+  - settings_shipping_section_with_only_catalogs_does_not_wipe_scalars
+  - settings_shipping_null_catalog_does_not_wipe_scalars
+  # 입력 거절(422) — 코드 맞바꾸기는 파일 쓰기 전 FormRequest 에서 걸린다
+  - settings_carrier_code_swap_is_rejected_before_the_write
+  - settings_shipping_type_code_swap_is_rejected_before_the_write
+  # 거절 없음(200) — 위 거절 가드들의 음성 대조군. 단언 형태가 달라 따로 센다
+  - settings_carrier_code_takeover_from_a_deleted_row_is_allowed
+  - settings_shipping_type_code_takeover_from_a_deleted_row_is_allowed
+  - unused_shipping_type_code_change_is_allowed
   # 인프라 예외 — 500 으로 구분, 원문 미노출
   - settings_save_infrastructure_exception_returns_500
   - settings_save_carrier_infrastructure_exception_returns_500
+  # 저장 훅 페이로드 — 실제로 동기화가 일어난 섹션을 보고한다(카탈로그만 담긴 저장 포함)
+  - settings_catalog_only_save_reports_its_section_to_the_save_hook
+  # 코드 형식 면제 — 손대지 않은 기존 값만 면제하고, 바꾼 값은 면제하지 않는다
+  - settings_carrier_code_format_exempts_untouched_existing_value
 
 scenarios:
   - id: in_use_deletion_tells_the_operator_why
@@ -39,14 +64,90 @@ scenarios:
       - in_use_shipping_type_deletion_returns_400_with_reason
       - in_use_shipping_carrier_deletion_returns_400_with_reason
 
+  - id: rejected_shipping_save_never_leaves_a_half_written_file
+    description: |
+      거절된 저장은 설정 파일을 건드리지 않는다 — 사용 중 항목 삭제(400)는 파일 쓰기 앞에서
+      판정되고 삭제는 롤백된다.
+    effects:
+      - in_use_shipping_type_deletion_returns_400_with_reason
+      - in_use_shipping_carrier_deletion_returns_400_with_reason
+
+  - id: a_passing_save_never_wipes_the_axes_it_did_not_carry
+    description: |
+      카탈로그(DB 단일 출처)만 담긴 배송 payload 는 200 으로 통과하되, 그 저장이 담지 않은
+      스칼라 전축(기본배송국가·무료배송기준·주소 API 등)을 지우지 않는다. 카탈로그가 빈
+      배열로 오는 경우와 `null` 로 오는 경우 둘 다이며, 두 형태는 컨트롤러에서 서로 다른
+      분기를 탄다 — 빈 배열만 덮으면 `null` 변종이 그대로 스칼라를 지운다.
+    effects:
+      - settings_shipping_section_with_only_catalogs_does_not_wipe_scalars
+      - settings_shipping_null_catalog_does_not_wipe_scalars
+
+  - id: in_use_code_changes_are_rejected_as_domain_errors
+    description: |
+      사용 중인 배송유형의 코드를 **바꾸는** 저장은 삭제와 같은 강도로 400(도메인 사유)으로
+      거절되고 반쪽 쓰기를 남기지 않는다. 주문 배송행은 배송유형을 코드 문자열로만 기억하므로
+      코드를 바꾸면 삭제와 똑같이 그 유형으로 접수된 전건이 카탈로그를 잃는다.
+
+      이 축은 맞바꾸기(422, 아래 시나리오)와 **다른 계약**이다 — 맞바꾸기는 payload 안 유일성
+      위반이라 FormRequest 가 파일 쓰기 전에 거르고, 이쪽은 DB 사용량을 봐야 아는 도메인 판정이다.
+      17차가 이 가드를 신설하면서 effect 를 따로 세우지 않고 422 그룹의 것을 재사용해, 축값
+      하나가 다시 400 과 422 두 계약을 뭉갰다(18차 정정). 미사용 개명(200)은 이 가드의 음성
+      대조군인데, 18차가 그것까지 같은 축·같은 effect 에 둔 탓에 이 effect 의 셀이 200 단언만으로도
+      채워졌다 — 400 가드가 회귀해도 초록이 유지되는 상태였다. 19차가 대조군을 아래
+      `negative_controls_pass_without_a_rejection` 로 옮겼다.
+    effects:
+      - in_use_shipping_type_code_change_returns_400_with_reason
+
+  - id: code_swaps_are_rejected_as_input_errors_before_the_write
+    description: |
+      기존 두 항목의 코드를 한 저장에서 맞바꾸는 payload 는 422 로 거절되고 설정 파일도
+      DB 도 변하지 않는다. 같은 저장에서 지워지는 항목의 코드를 물려받는 허용 경로(200)는
+      단언 형태가 달라 아래 `negative_controls_pass_without_a_rejection` 로 갈랐다.
+    effects:
+      - settings_carrier_code_swap_is_rejected_before_the_write
+      - settings_shipping_type_code_swap_is_rejected_before_the_write
+
+  - id: negative_controls_pass_without_a_rejection
+    description: |
+      거절 가드의 음성 대조군은 200 으로 통과한다 — ① 같은 저장에서 지워지는 항목의 코드를
+      물려받는 경우(삭제가 update 보다 먼저다), ② 쓰이지 않는 배송유형의 코드를 고치는 경우
+      (막는 것은 "쓰이는 중" 하나다).
+
+      거절 effect 를 이 대조군까지 마킹하면 그 effect 의 셀이 200 단언만으로 채워져,
+      400/422 가드가 회귀해도 커버리지가 초록으로 남는다 — 이 매니페스트가 13·14차에
+      정정한 것과 같은 형태다("축값 하나가 두 계약을 뭉개면 안 된다"). 19차가 대조군 전용
+      effect 를 세워 갈랐다.
+    effects:
+      - settings_carrier_code_takeover_from_a_deleted_row_is_allowed
+      - settings_shipping_type_code_takeover_from_a_deleted_row_is_allowed
+      - unused_shipping_type_code_change_is_allowed
+
   - id: settings_save_infrastructure_failure_is_not_disguised_as_input_error
     description: 사용량 집계 중 인프라 예외가 나면 두 자원 경로 모두 500 으로 구분되고 응답 본문에 예외 원문이 실리지 않는다
     effects:
       - settings_save_infrastructure_exception_returns_500
       - settings_save_carrier_infrastructure_exception_returns_500
 
+  - id: a_passing_save_reports_what_it_actually_synced
+    description: |
+      카탈로그만 담긴 저장의 훅 페이로드가 실제로 동기화가 일어난 섹션을 보고한다.
+      요청 본문의 키만 세면 DB 카탈로그를 갈아엎은 저장이 감사 로그에 "저장한 카테고리 없음"
+      으로 남는다 — 그 저장은 성공하므로 오류로도 드러나지 않는다.
+    effects:
+      - settings_catalog_only_save_reports_its_section_to_the_save_hook
+
+  - id: code_format_exemption_covers_only_the_value_the_operator_did_not_touch
+    description: |
+      규칙이 좁혀지기 전에 만들어진 코드가 있어도 손대지 않은 행이 저장을 막지 않는다.
+      다만 같은 행이라도 **바꾼 값**은 면제하지 않는다 — 면제가 우회로가 되면 느슨한 쪽으로
+      만든 코드 한 건이 카탈로그 전체를 되보내는 설정 탭을 영구 422 로 만든다.
+    effects:
+      - settings_carrier_code_format_exempts_untouched_existing_value
+
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/EcommerceSettingsInUseDeletionTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/EcommerceSettingsCarrierCodeSwapTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/EcommerceSettingsShippingTypeCodeSwapTest.php
 
 notes: |
   이 매니페스트는 5차 감사에서 신설됐다. 대상 테스트는 브랜치가 추가하면서 `@scenario`·
@@ -58,3 +159,25 @@ notes: |
   같은 라운드에 `resource=shipping_carrier, error_class=infrastructure` 칸의 테스트도
   함께 추가했다. 그 칸을 exclusion 으로 처리하지 않은 것은, 두 자원의 집계 호출 지점이
   실제로 다르기 때문이다. 여기서 제외 사유를 적었다면 그 사유가 곧 거짓이 된다.
+
+  13차가 두 가지를 정정했다. ① `error_class` 에 `validation` 을 세웠다 — 12차가 더한
+  코드 맞바꾸기 effect 는 422 인데 `domain`(400 + 삭제 롤백)으로 선언된 시나리오 안에
+  들어가 있었다. 커버리지 룰은 마킹의 존재만 보고 그 마킹이 단언하는 상태코드는 읽지
+  않으므로, 축값 하나가 400 과 422 두 계약을 뭉갠 채로 셀이 채워져 있었다 — 이 매니페스트가
+  존재하는 이유(상태코드 뭉개기 방지)가 축 안에서 재현된 셈이다. ② 배송유형 쪽 맞바꾸기
+  가드가 아예 없던 것을 신설하면서 그 effect 를 함께 등재했다.
+
+  14차가 같은 종류를 하나 더 정정했다. 13차가 더한
+  `settings_shipping_section_with_only_catalogs_does_not_wipe_scalars` 는 `assertOk()` 만 하는
+  **성공 경로**인데 `domain`(400 + 사유 문구 + 롤백) 축값에 남아 있었다 — 13차가 `validation`
+  을 빼내며 바로잡은 것과 같은 형태가 같은 라운드의 신규 effect 안에서 재현된 셈이다.
+  `error_class` 에 `none`(거절 없음, 200)을 세워 옮기고, 같은 칸에 `null` 카탈로그 변종을
+  더했다. `null` 은 규칙이 `nullable` 이라 실제로 도착하는 형태인데 컨트롤러가 `isset()` 으로
+  걸러 스칼라 전축을 지우고 있었다(14차 red 증명 2건).
+
+  19차가 같은 종류를 세 건 더 정정했다. 거절 가드의 **음성 대조군**(200 으로 통과하는 경로)
+  세 건이 거절 effect 를 그대로 마킹하고 있었다 — 코드 물려받기 2건(422 축), 미사용 개명
+  1건(400 축). 커버리지 룰은 마킹의 존재만 보므로 그 세 effect 의 셀은 `assertOk()` 만으로도
+  채워졌고, 400/422 가드가 회귀해도 초록이 유지되는 상태였다. 대조군 전용 effect 3종을 세워
+  `error_class=none` 으로 옮겼다. 거절 축의 effect 는 실제로 400/422 를 단언하는 케이스만
+  마킹한다.

@@ -38,6 +38,12 @@ interface CountrySetting {
     extra_fee_settings: Array<{ zipcode: string; fee: number; region?: string }> | null;
     extra_fee_multiply: boolean;
     is_active: boolean;
+    /** 클레임 배송비 산정 모드 (fixed 고정액 / original_policy 원 정책 재계산) */
+    claim_fee_mode: string;
+    /** 반품 클레임 배송비 고정액 — 편도 */
+    return_fixed_fee: number;
+    /** 교환 클레임 배송비 고정액 — 왕복 */
+    exchange_fixed_fee: number;
 }
 
 interface RangeTier {
@@ -160,6 +166,11 @@ const DEFAULT_COUNTRY_SETTING: Omit<CountrySetting, 'country_code'> = {
     extra_fee_settings: [],
     extra_fee_multiply: false,
     is_active: true,
+    // 클레임 배송비 축 — DB 컬럼 기본값과 같은 값을 명시로 싣는다. 비워 두면 본 폼 저장의
+    // 승계 판정이 "값 없음" 으로 읽어, 화면이 보여 준 기본값과 저장된 값이 갈린다.
+    claim_fee_mode: 'fixed',
+    return_fixed_fee: 0,
+    exchange_fixed_fee: 0,
 };
 
 // ===== 헬퍼 함수 =====

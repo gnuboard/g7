@@ -174,7 +174,8 @@
       "shipping_policies": "配送ポリシー一覧",
       "templates": "テンプレート一覧",
       "paymentSettings": "決済環境設定",
-      "orderClaims": "注文クレーム履歴"
+      "orderClaims": "注文クレーム履歴",
+      "claim_settings": "配送ポリシークレーム設定"
     },
     "action": {
       "request_pg_payment": {

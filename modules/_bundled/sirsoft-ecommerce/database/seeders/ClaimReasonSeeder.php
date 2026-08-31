@@ -7,6 +7,7 @@ use App\Contracts\Seeder\TranslatableSeederInterface;
 use App\Extension\Helpers\GenericEntitySyncHelper;
 use Illuminate\Database\Seeder;
 use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
+use Modules\Sirsoft\Ecommerce\Services\ClaimReasonService;
 
 /**
  * 클레임 사유 초기 데이터 시더.
@@ -296,14 +297,43 @@ class ClaimReasonSeeder extends Seeder implements TranslatableSeederInterface
             }
         }
 
+        // stale 정리는 **시드 정의에서 빠진 코드**를 걷어내는 장치다. 그런데 이 표는 S10 이후
+        // 운영자가 설정 화면에서 직접 사유를 추가·수정하는 표이기도 하다 — 운영자가 만든 사유는
+        // 정의상 이 목록에 없으므로, 보호 없이 돌리면 재설치 한 번이 **사용 중인 사유까지**
+        // 지운다. 지워지는 순간 접수된 신청서 전건이 사유 이름을 잃고 원시 코드로 노출된다 —
+        // S10 이 400 으로 막으려던 바로 그 상태다.
+        //
+        // 보존 범위는 **사용 중인 것**까지다. 설정 화면의 삭제 경로도 같은 판정으로 사용 중일
+        // 때만 400 으로 막고 미사용 사유는 지우게 하므로(`ClaimReasonService::deleteReason`),
+        // 여기서 미사용까지 보존하면 이 경로가 오히려 화면보다 강해져 같은 표에 **강도가 다른
+        // 두 삭제 경로**가 생긴다. 두 경로를 같은 강도로 맞추는 것이 이 보호의 목적이다.
+        //
+        // 판정은 그 서비스(단일 출처)에서 받고 삭제는 그대로 Helper 가 한다. 사용 중인 코드를
+        // 보존 목록에 더하는 형태라 Helper 시그니처를 바꾸지 않는다.
+        $service = app(ClaimReasonService::class);
         $totalDeleted = 0;
+        $preserved = 0;
+
         foreach ($definedByType as $type => $codes) {
+            $inUse = ClaimReason::where('type', $type)
+                ->whereNotIn('code', $codes)
+                ->get()
+                ->filter(fn (ClaimReason $reason) => $service->countUsage($reason) > 0)
+                ->pluck('code')
+                ->all();
+
+            $preserved += count($inUse);
+
             $totalDeleted += $helper->cleanupStale(
                 ClaimReason::class,
                 ['type' => $type],
                 'code',
-                $codes,
+                [...$codes, ...$inUse],
             );
+        }
+
+        if ($preserved > 0) {
+            $this->command->line("  - 사용 중이라 보존한 사유: {$preserved}건");
         }
 
         $total = ClaimReason::count();

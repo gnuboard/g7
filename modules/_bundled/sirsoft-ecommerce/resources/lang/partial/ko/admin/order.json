@@ -582,6 +582,20 @@
       "all": "전체",
       "member": "회원",
       "guest": "비회원"
+    },
+    "claim": {
+      "block_title": "클레임 기준",
+      "block_hint": "이 주문에 접수된 클레임의 유형·상태로 주문을 거릅니다. 유형별 상태를 지정하지 않으면 유형과 무관하게 거릅니다. 단 귀책을 지정하면 취소는 제외됩니다 — 취소에는 귀책 정보가 없습니다.",
+      "presence": "클레임",
+      "presence_none": "클레임 없음",
+      "presence_any": "클레임 있음",
+      "presence_active": "진행 중만",
+      "exchange": "교환",
+      "return": "반품",
+      "refund": "환불",
+      "cancel": "취소",
+      "fault": "귀책",
+      "requested_at": "클레임 신청일"
     }
   },
   "action": {
@@ -755,6 +769,7 @@
     "delivery_method": "배송방법",
     "country": "배송국가",
     "device": "구매환경",
+    "claim": "클레임",
     "first_order": "첫구매",
     "action": "작업"
   },

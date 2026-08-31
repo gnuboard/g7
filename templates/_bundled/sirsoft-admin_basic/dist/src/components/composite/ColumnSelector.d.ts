@@ -30,7 +30,23 @@ export interface ColumnSelectorProps {
     id?: string;
     columns: ColumnItem[];
     visibleColumns?: string[];
-    onColumnVisibilityChange?: (visibleFields: string[]) => void;
+    /**
+     * 표시 컬럼이 정해질 때 호출됩니다.
+     *
+     * 두 번째 인자 `meta.source` 가 **이 호출이 무엇 때문에 일어났는지**를 알려줍니다.
+     * 이 콜백은 사람이 체크박스를 누른 순간에만 오는 것이 아니라, 마운트 시 저장값·기본값으로
+     * 부모 상태를 맞출 때(`init`)와 동적 컬럼이 새로 생겨 자동 포함될 때(`dynamic`)도 옵니다.
+     * 그 셋을 구분하지 못하면 "복원"을 "사용자 조작"으로 오해해, 예컨대 주소를 다시 쓰는
+     * 소비처에서 화면에 들어올 때마다 주소가 바뀌는 문제가 생깁니다.
+     *
+     * 두 번째 인자는 **덧붙인 것**이라 기존 소비처(첫 인자만 읽는 곳)는 영향을 받지 않습니다.
+     *
+     * @param visibleFields 표시할 컬럼 field 목록
+     * @param meta 발화 출처 — `user`(사람이 토글) / `init`(마운트 동기화) / `dynamic`(동적 컬럼 자동 포함)
+     */
+    onColumnVisibilityChange?: (visibleFields: string[], meta?: {
+        source: 'user' | 'init' | 'dynamic';
+    }) => void;
     triggerLabel?: string;
     triggerIconName?: IconName;
     position?: 'left' | 'right';

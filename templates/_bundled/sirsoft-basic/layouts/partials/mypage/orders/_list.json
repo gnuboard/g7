@@ -699,6 +699,50 @@
                           "text": "$t:mypage.orders.partial_cancelled_badge"
                         },
                         {
+                          "comment": "클레임 배지 (D22) — 이 주문에 접수된 교환·반품·환불·취소의 유형별 최신 상태. 서버가 유형별 최신 1건만 요약해 내려주므로(claim_summary) 접수 건이 있는 유형만 그린다. status_label 이 유형 접두를 포함한다(예: '교환회수중').",
+                          "type": "basic",
+                          "name": "Div",
+                          "if": "{{(order.claim_summary ?? []).length > 0}}",
+                          "props": { "className": "flex flex-col items-end gap-1" },
+                          "children": [
+                            {
+                              "comment": "반복은 배지 자신에 건다 — 래퍼에 걸면 래퍼가 유형 수만큼 복제돼 배지 사이 gap 이 적용되지 않는다 (관리자 목록 `_partial_order_datagrid` 와 같은 형태).",
+                              "type": "basic",
+                              "name": "Span",
+                              "iteration": { "source": "{{order.claim_summary ?? []}}", "item_var": "claim" },
+                              "classMap": {
+                                "base": "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap",
+                                "key": "{{claim.status_variant}}",
+                                "variants": {
+                                  "success": "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+                                  "danger": "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+                                  "warning": "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
+                                  "info": "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+                                  "primary": "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400",
+                                  "secondary": "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
+                                  "dark": "bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200"
+                                },
+                                "default": "bg-gray-50 text-gray-600 dark:bg-gray-700 dark:text-gray-400"
+                              },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "text": "{{claim.status_label ?? claim.type_label ?? ''}}"
+                                },
+                                {
+                                  "comment": "같은 유형이 2건 이상이면 건수를 함께 보인다 — 배지는 최신 1건의 상태라 건수가 없으면 나머지가 없는 것처럼 읽힌다.",
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "if": "{{(claim.count ?? 0) > 1}}",
+                                  "props": { "className": "opacity-70" },
+                                  "text": "{{'(' + claim.count + ')'}}"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
                           "comment": "배송국가 칩 (D9 — 항상 표시, KR 포함)",
                           "type": "basic",
                           "name": "Span",

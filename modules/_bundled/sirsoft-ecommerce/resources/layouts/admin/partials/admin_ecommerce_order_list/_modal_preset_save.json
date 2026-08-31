@@ -98,9 +98,14 @@
                         "endDate": "{{_global.savingPresetConditions.endDate || ''}}",
                         "dateQuick": "{{_global.savingPresetConditions.dateQuick || ''}}",
                         "orderStatus": "{{_global.savingPresetConditions.orderStatus || []}}",
-                        "claimRefundStatus": "{{_global.savingPresetConditions.claimRefundStatus || []}}",
-                        "claimReturnStatus": "{{_global.savingPresetConditions.claimReturnStatus || []}}",
-                        "claimExchangeStatus": "{{_global.savingPresetConditions.claimExchangeStatus || []}}",
+                        "claimPresence": "{{_global.savingPresetConditions.claimPresence || ''}}",
+                        "claimExchangeStatuses": "{{_global.savingPresetConditions.claimExchangeStatuses || []}}",
+                        "claimReturnStatuses": "{{_global.savingPresetConditions.claimReturnStatuses || []}}",
+                        "claimRefundStatuses": "{{_global.savingPresetConditions.claimRefundStatuses || []}}",
+                        "claimCancelTypes": "{{_global.savingPresetConditions.claimCancelTypes || []}}",
+                        "claimFaultTypes": "{{_global.savingPresetConditions.claimFaultTypes || []}}",
+                        "claimRequestedFrom": "{{_global.savingPresetConditions.claimRequestedFrom || ''}}",
+                        "claimRequestedTo": "{{_global.savingPresetConditions.claimRequestedTo || ''}}",
                         "deliveryMethods": "{{_global.savingPresetConditions.deliveryMethods || []}}",
                         "paymentMethods": "{{_global.savingPresetConditions.paymentMethods || []}}",
                         "category1": "{{_global.savingPresetConditions.category1 || ''}}",
@@ -110,7 +115,12 @@
                         "minPrice": "{{_global.savingPresetConditions.minPrice || ''}}",
                         "maxPrice": "{{_global.savingPresetConditions.maxPrice || ''}}",
                         "countries": "{{_global.savingPresetConditions.countries || []}}",
-                        "devices": "{{_global.savingPresetConditions.devices || []}}"
+                        "devices": "{{_global.savingPresetConditions.devices || []}}",
+                        "shippingPolicy": "{{_global.savingPresetConditions.shippingPolicy || ''}}",
+                        "minShippingFee": "{{_global.savingPresetConditions.minShippingFee || ''}}",
+                        "maxShippingFee": "{{_global.savingPresetConditions.maxShippingFee || ''}}",
+                        "ordererUuid": "{{_global.savingPresetConditions.ordererUuid || ''}}",
+                        "memberType": "{{_global.savingPresetConditions.memberType || ''}}"
                       }
                     }
                   },

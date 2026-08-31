@@ -51,7 +51,7 @@ _단건 응답: `data` 객체의 필드._
 | inquiry | object | `{"board_slug":"inquiry"}` | 문의 연동 설정 (문의 게시판 slug) |
 | notifications | object | `{"channels":[{"id":"mail","is_active":true,"sort_order":1…` | 알림 채널 설정 (채널 ID·활성 여부·정렬 순서) |
 | mileage | object | `{"enabled":false,"default_earn_rate":1,"earn_trigger":"co…` | 마일리지 설정 (사용 여부·기본 적립률·적립 트리거·통화별 규칙·소멸/소멸 알림·실제 활성 알림 채널 포함) |
-| claim | object | `{"refund_reasons":[{"id":1,"type":"refund","code":"order_…` | 클레임 설정 (DB 관리 대상인 환불 사유 목록: 코드·다국어명·귀책 유형·노출/활성 여부) |
+| claim | object | `{"exchange_reasons":[…],"return_reasons":[…],"refund_reaso…` | 클레임 설정. **정책 스칼라**(신청 가능 상태 4축·신청 기간·허용 청구 방식/결제수단·자동 승인 3종·첨부 상한·완료 처리 기본값)와 **DB 관리 대상인 사유 카탈로그 3종**(`exchange_reasons`·`return_reasons`·`refund_reasons` — 각 항목은 코드·다국어명·귀책 유형·노출/활성 여부) |
 | available_pg_providers | array | `[{"id":"kginicis","name_key":"sirsoft-pay_kginicis::provi…` | 설치된 PG 플러그인이 훅으로 등록한 PG 제공자 목록 (id·name_key·지원 결제수단) |
 | available_cash_receipt_providers | array | `[]` | 설치된 플러그인이 훅으로 등록한 현금영수증 발급 제공자 목록 (id·name_key — 미등록 시 빈 배열이며 신청 폼이 노출되지 않음) |
 | available_public_asset_disks | array | `[{"id":"none","label":{"ko":"사용 안 함 (스트리밍)","en":"Disabl…` | 공개 자산 직접 URL 서빙 디스크 선택지 (코어 DriverRegistryService 카탈로그 — none/public/s3 + 플러그인 훅 등록분). 기본정보 탭의 공개 자산 디스크 Select 옵션 소스 |
@@ -276,6 +276,77 @@ HTTP/1.1 200
             ]
         },
         "claim": {
+            "exchange_requestable_statuses": [
+                "delivered",
+                "confirmed"
+            ],
+            "return_requestable_statuses": [
+                "delivered",
+                "confirmed"
+            ],
+            "instant_cancel_statuses": [
+                "payment_complete"
+            ],
+            "refund_request_statuses": [
+                "preparing",
+                "shipping_ready",
+                "shipping"
+            ],
+            "allowed_charge_methods": [
+                "pay_on_request",
+                "pay_on_approval",
+                "deduct_from_refund"
+            ],
+            "charge_payment_methods": [
+                "card",
+                "point"
+            ],
+            "auto_approve_zero_charge": false,
+            "auto_approve_after_payment": false,
+            "auto_approve_refund_request": false,
+            "max_images": 5,
+            "image_max_size_kb": 2048,
+            "request_period_days": 7,
+            "complete_defaults": {
+                "create_refund_request": true,
+                "restore_stock": true
+            },
+            "exchange_reasons": [
+                {
+                    "id": 11,
+                    "type": "exchange",
+                    "code": "size_mismatch",
+                    "name": {
+                        "ko": "사이즈가 맞지 않음",
+                        "en": "Size Does Not Fit"
+                    },
+                    "localized_name": "사이즈가 맞지 않음",
+                    "fault_type": "customer",
+                    "is_user_selectable": true,
+                    "is_active": true,
+                    "sort_order": 0
+                }
+            ,
+              "... (총 8건 중 1건 표시)"
+            ],
+            "return_reasons": [
+                {
+                    "id": 21,
+                    "type": "return",
+                    "code": "defective_product",
+                    "name": {
+                        "ko": "상품 불량/파손",
+                        "en": "Defective or Damaged Product"
+                    },
+                    "localized_name": "상품 불량/파손",
+                    "fault_type": "seller",
+                    "is_user_selectable": true,
+                    "is_active": true,
+                    "sort_order": 0
+                }
+            ,
+              "... (총 9건 중 1건 표시)"
+            ],
             "refund_reasons": [
                 {
                     "id": 1,
@@ -394,6 +465,16 @@ HTTP/1.1 200
         "available_pg_providers": [],
         "abilities": {
             "can_update": true
+        },
+        "_meta": {
+            "limits": {
+                "claim_max_images_min": 1,
+                "claim_max_images_max": 20,
+                "claim_image_max_size_kb_min": 128,
+                "claim_image_max_size_kb_max": 20480,
+                "claim_request_period_days_min": 1,
+                "claim_request_period_days_max": 365
+            }
         }
     }
 }
@@ -408,7 +489,9 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 관리자가 이커머스 모듈의 전체 환경설정을 카테고리별로 묶어 한 번에 조회합니다. `permission:sirsoft-ecommerce.settings.read` 권한이 필요하며, `EcommerceSettingsService::getAllSettings()`로 JSON 설정을 읽은 뒤 DB 관리 대상(배송사·배송유형·클레임 사유·마일리지 알림 채널)과 등록된 PG 목록을 병합해 반환합니다. `basic_info`·`shipping`·`order_settings`·`claim`·`mileage` 등 관리자 설정 화면 전 탭의 초기 데이터를 이 한 응답으로 채웁니다. 응답의 `abilities.can_update` 로 수정 권한 보유 여부도 함께 내려갑니다.
+> `_meta.limits` 는 모듈의 경계값 설정을 **통째로** 내려줍니다. 위 예시는 클레임 축 6키만 발췌한 것이고, 실제 응답에는 `auto_cancel_days_min`·`max_images_max`(리뷰 축) 등 다른 탭의 경계값도 함께 실립니다 — 항목이 늘어도 화면은 이 맵에서 자기가 쓸 키만 읽으면 됩니다.
+
+**설명** 관리자가 이커머스 모듈의 전체 환경설정을 카테고리별로 묶어 한 번에 조회합니다. `permission:sirsoft-ecommerce.settings.read` 권한이 필요하며, `EcommerceSettingsService::getAllSettings()`로 JSON 설정을 읽은 뒤 DB 관리 대상(배송사·배송유형·클레임 사유 카탈로그 3종·마일리지 알림 채널)과 등록된 PG 목록을 병합해 반환합니다. `basic_info`·`shipping`·`order_settings`·`claim`·`mileage` 등 관리자 설정 화면 전 탭의 초기 데이터를 이 한 응답으로 채웁니다. 응답의 `abilities.can_update` 로 수정 권한 보유 여부도 함께 내려갑니다.
 
 
 ### PUT /api/modules/sirsoft-ecommerce/admin/settings
@@ -476,15 +559,32 @@ HTTP/1.1 200
 | order_settings.cash_receipt_self_issue | body | boolean | 아니오 | — | 현금영수증 자진발급 사용 (구매자가 신청하지 않은 무통장 입금 건도 자동 발급) |
 | order_settings.shipping_fee_tax_policy | body | string | 아니오 | `proportional`, `taxable`, `follow_main_item` | 현금영수증의 배송비 과세 방식 (안분 / 전액 과세 / 주된 재화 기준) |
 | order_settings.payment_methods | body | array | 아니오 | — | 결제수단 목록. 항목별 `id`(필수)·`pg_provider`·`sort_order`(min 1)·`is_active`·`min_order_amount`(min 0)·`stock_deduction_timing`(`order_placed`\|`payment_complete`\|`none`)·`mileage_deduction_timing`(`order_placed`\|`payment_complete`). 최소 1개는 활성이어야 하며, PG 가 필요한 결제수단을 활성화하려면 PG사 지정 필수 |
-| order_settings.banks | body | array | 아니오 | — | 무통장입금용 은행 목록. 항목별 `code`(max 10, 필수)·`name`(다국어 배열, 현재 로케일 필수) |
+| order_settings.banks | body | array | 아니오 | — | 무통장입금용 은행 목록. 항목별 `code`(max 10, 필수)·`name`(다국어 배열 — 현재 로케일 이름 필수. 은행 행에는 `id` 가 없어 클레임 사유·배송사 같은 '기존 행 면제' 가 **없다**: 다른 로케일에서 만든 은행이 있으면 그 로케일 이름을 채워야 저장된다) |
 | order_settings.bank_accounts | body | array | 아니오 | — | 무통장 입금 계좌 목록. 항목별 `bank_code`·`account_number`·`account_holder`(모두 필수)·`is_active`·`is_default`. 계좌가 있으면 최소 1건은 사용+기본 상태여야 함 |
 | order_settings.auto_cancel_expired | body | boolean | 아니오 | — | 입금대기 상태 주문의 자동취소 사용 여부 |
 | order_settings.auto_cancel_days | body | integer | 아니오 | min 0, max 30 | 자동취소 기한(일). 주문일 포함 이 일수 경과 시 입금대기 주문을 자동 취소 |
 | order_settings.cart_expiry_days | body | integer | 아니오 | min 1, max 365 | 장바구니 보관기간(일). 경과 시 담긴 상품 자동 삭제 |
 | order_settings.stock_restore_on_cancel | body | boolean | 아니오 | — | 주문 취소 시 차감된 재고 자동 복구 여부 (반품/교환에도 적용) |
 | order_settings.confirmable_statuses | body | array | 아니오 | — | 사용자가 구매확정할 수 있는 주문 옵션 상태 목록 (`payment_complete`, `shipping_hold`, `preparing`, `shipping_ready`, `shipping`, `delivered` 중 선택) |
-| claim | body | array | 아니오 | — | 클레임 설정 섹션 (환불 사유 목록, DB 동기화 대상으로 분리 저장) |
-| claim.refund_reasons | body | array | 아니오 | — | 환불 사유 목록. 항목별 `id`·`code`(소문자·언더스코어, 필수)·`name`(다국어 배열, 현재 로케일 필수)·`fault_type`(`customer`\|`seller`\|`carrier`, 필수)·`is_user_selectable`·`is_active`·`sort_order`. 코드 중복 불가 |
+| claim | body | array | 아니오 | — | 클레임 설정 섹션 (정책 스칼라 + 사유 카탈로그 3종. 카탈로그는 DB 동기화 대상으로 분리 저장) |
+| claim.exchange_requestable_statuses | body | array | 아니오 | — | 교환을 신청할 수 있는 **주문옵션(상품) 상태** 목록. 허용 `payment_complete`·`preparing`·`shipping_ready`·`shipping`·`delivered`·`confirmed` (기본 `delivered`, `confirmed`). 키를 보내면 값이 있어야 한다(`null` 은 422) |
+| claim.return_requestable_statuses | body | array | 아니오 | — | 반품을 신청할 수 있는 **주문옵션(상품) 상태** 목록. 허용 `payment_complete`·`preparing`·`shipping_ready`·`shipping`·`delivered`·`confirmed` (기본 `delivered`, `confirmed`). 키를 보내면 값이 있어야 한다(`null` 은 422) |
+| claim.instant_cancel_statuses | body | array | 아니오 | — | 환불신청서를 만들지 않고 즉시 취소되는 **주문옵션(상품) 상태** 목록. 허용 `payment_complete`·`shipping_hold`·`preparing`·`shipping_ready` (기본 `payment_complete`). 키를 보내면 값이 있어야 한다(`null` 은 422) |
+| claim.refund_request_statuses | body | array | 아니오 | — | 환불신청서로 접수되는 **주문옵션(상품) 상태** 목록. 허용 `payment_complete`·`shipping_hold`·`preparing`·`shipping_ready`·`shipping` (기본 `preparing`, `shipping_ready`, `shipping`). 키를 보내면 값이 있어야 한다(`null` 은 422) |
+| claim.allowed_charge_methods | body | array | 아니오 | — | 고객이 신청서에서 고를 수 있는 청구 방식. 허용 `pay_on_request`·`pay_on_approval`·`deduct_from_refund`. 키를 보내면 값이 있어야 한다(`null` 은 422) |
+| claim.charge_payment_methods | body | array | 아니오 | — | 클레임 추가결제에 쓸 수 있는 결제수단 (기본 `card`, `point`). 허용값은 기본 결제수단 + 결제 플러그인이 등록한 확장 결제수단 ID — 일반 주문의 결제수단 목록과 같은 출처다. 키를 보내면 값이 있어야 한다(`null` 은 422) |
+| claim.auto_approve_zero_charge | body | boolean | 아니오 | — | 추가 청구액이 0원인 교환·반품 신청을 접수 즉시 승인할지 여부 |
+| claim.auto_approve_after_payment | body | boolean | 아니오 | — | 추가결제 완료 시 승인 전이를 자동 수행할지 여부 |
+| claim.auto_approve_refund_request | body | boolean | 아니오 | — | 접수된 환불신청서를 자동 승인할지 여부 (환불 실행은 별도) |
+| claim.max_images | body | integer | 아니오 | min 1, max 20 | 신청서 1건당 첨부 가능한 이미지 수 (1~20). 키를 보내면 값이 있어야 한다(`null` 은 422) |
+| claim.image_max_size_kb | body | integer | 아니오 | min 128, max 20480 | 첨부 이미지 1개의 최대 용량(KB, 128~20480). 키를 보내면 값이 있어야 한다(`null` 은 422) |
+| claim.request_period_days | body | integer | 아니오 | min 1, max 365 | 배송완료(또는 구매확정) 후 교환·반품을 신청할 수 있는 기간(일, 1~365). 키를 보내면 값이 있어야 한다(`null` 은 422) |
+| claim.complete_defaults | body | array | 아니오 | — | 완료 처리 모달의 초기 선택값 묶음 (실제 실행값은 모달에서 건별로 확정된다). **맵을 보내면 `create_refund_request`·`restore_stock` 두 키가 모두 있어야 한다** — 빈 맵 `{}` 과 부분 맵은 422 (키가 빠지면 저장본에서 사라져 모달이 '켜짐' 기본값으로 돌아간다) |
+| claim.complete_defaults.create_refund_request | body | boolean | 아니오 | — | 완료 처리 모달의 "환불신청서 지금 접수" 초기 선택값. `complete_defaults` 를 보내면 **필수**(`null` 도 422) |
+| claim.complete_defaults.restore_stock | body | boolean | 아니오 | — | 완료 처리 모달의 건별 재고 복구 체크 초기 선택값. `complete_defaults` 를 보내면 **필수**(`null` 도 422) |
+| claim.exchange_reasons | body | array | 아니오 | — | 교환 사유 목록. 항목별 `id`·`code`(소문자·언더스코어, 필수)·`name`(다국어 배열 — **신규 행**은 현재 로케일 필수, `id` 가 있는 기존 행은 길이·형식만 검사한다: 다른 로케일에서 만든 행 때문에 탭 전체가 막히지 않게 하기 위함)·`fault_type`(`customer`\|`seller`\|`carrier`, 필수)·`is_user_selectable`·`is_active`(행을 보내면 두 플래그 모두 **필수** — 키가 빠지면 422. 빠진 키가 `true` 로 채워져 내려 둔 사유가 되살아나는 것을 막는다)·`sort_order`. 코드 중복 불가. `code` 형식은 [claim-reasons.md](claim-reasons.md) 의 "코드 형식 규칙" 과 같고 이미 저장된 코드는 면제된다. DB 동기화 대상이라 JSON 설정에는 저장되지 않으며, 목록에서 빠진 사유는 삭제된다 — 그 유형에서 사용 중인 사유는 삭제도 `code` 변경도 400 으로 거절된다(사유명·귀책·노출 여부는 계속 수정 가능). `id` 는 **그 유형에 실재하는 행**이어야 한다(없는 id·다른 유형의 id 는 422 — 기존 행 면제의 유일한 근거이므로). 기존 행끼리 `code` 를 맞바꾸는 저장은 422 (`code_swap`) — 한쪽을 먼저 다른 코드로 저장한 뒤 바꾼다. 같은 저장에서 지워지는 행의 코드를 물려받는 것은 허용. |
+| claim.return_reasons | body | array | 아니오 | — | 반품 사유 목록. 항목별 `id`·`code`(소문자·언더스코어, 필수)·`name`(다국어 배열 — **신규 행**은 현재 로케일 필수, `id` 가 있는 기존 행은 길이·형식만 검사한다: 다른 로케일에서 만든 행 때문에 탭 전체가 막히지 않게 하기 위함)·`fault_type`(`customer`\|`seller`\|`carrier`, 필수)·`is_user_selectable`·`is_active`(행을 보내면 두 플래그 모두 **필수** — 키가 빠지면 422. 빠진 키가 `true` 로 채워져 내려 둔 사유가 되살아나는 것을 막는다)·`sort_order`. 코드 중복 불가. `code` 형식은 [claim-reasons.md](claim-reasons.md) 의 "코드 형식 규칙" 과 같고 이미 저장된 코드는 면제된다. DB 동기화 대상이라 JSON 설정에는 저장되지 않으며, 목록에서 빠진 사유는 삭제된다 — 그 유형에서 사용 중인 사유는 삭제도 `code` 변경도 400 으로 거절된다(사유명·귀책·노출 여부는 계속 수정 가능). `id` 는 **그 유형에 실재하는 행**이어야 한다(없는 id·다른 유형의 id 는 422 — 기존 행 면제의 유일한 근거이므로). 기존 행끼리 `code` 를 맞바꾸는 저장은 422 (`code_swap`) — 한쪽을 먼저 다른 코드로 저장한 뒤 바꾼다. 같은 저장에서 지워지는 행의 코드를 물려받는 것은 허용. |
+| claim.refund_reasons | body | array | 아니오 | — | 환불(취소) 사유 목록. 항목별 `id`·`code`(소문자·언더스코어, 필수)·`name`(다국어 배열 — **신규 행**은 현재 로케일 필수, `id` 가 있는 기존 행은 길이·형식만 검사한다: 다른 로케일에서 만든 행 때문에 탭 전체가 막히지 않게 하기 위함)·`fault_type`(`customer`\|`seller`\|`carrier`, 필수)·`is_user_selectable`·`is_active`(행을 보내면 두 플래그 모두 **필수** — 키가 빠지면 422. 빠진 키가 `true` 로 채워져 내려 둔 사유가 되살아나는 것을 막는다)·`sort_order`. 코드 중복 불가. `code` 형식은 [claim-reasons.md](claim-reasons.md) 의 "코드 형식 규칙" 과 같고 이미 저장된 코드는 면제된다. DB 동기화 대상이라 JSON 설정에는 저장되지 않으며, 목록에서 빠진 사유는 삭제된다 — 그 유형에서 사용 중인 사유는 삭제도 `code` 변경도 400 으로 거절된다(사유명·귀책·노출 여부는 계속 수정 가능). `id` 는 **그 유형에 실재하는 행**이어야 한다(없는 id·다른 유형의 id 는 422 — 기존 행 면제의 유일한 근거이므로). 기존 행끼리 `code` 를 맞바꾸는 저장은 422 (`code_swap`) — 한쪽을 먼저 다른 코드로 저장한 뒤 바꾼다. 같은 저장에서 지워지는 행의 코드를 물려받는 것은 허용. |
 | review_settings | body | array | 아니오 | — | 리뷰 정책 섹션 (작성 기한일·이미지 최대 개수·이미지 최대 용량 MB) |
 | review_settings.write_deadline_days | body | integer | 아니오 | min 1, max 365 | 구매 확정 후 리뷰를 작성할 수 있는 기간(일) |
 | review_settings.max_images | body | integer | 아니오 | min 0, max 20 | 리뷰 1건당 첨부 가능한 이미지 수 (0 = 이미지 첨부 불가) |
@@ -507,8 +607,8 @@ HTTP/1.1 200
 | shipping.free_shipping_enabled | body | boolean | 아니오 | — | 무료배송 기준금액 적용 여부 |
 | shipping.address_validation_enabled | body | boolean | 아니오 | — | 주소 검증(주소찾기 API) 사용 여부 |
 | shipping.address_api_provider | body | string | 아니오 | max 50 | 주소찾기 API 제공자 식별자 (기본값 `kakao`) |
-| shipping.carriers | body | array | 아니오 | — | 배송사 목록(DB 동기화 대상). 항목별 `id`·`code`(소문자/숫자/하이픈, 필수)·`name`(다국어 배열, 현재 로케일 필수)·`type`(`domestic`\|`international`, 필수)·`tracking_url`(`{tracking_number}` 치환)·`is_active`·`sort_order`. 코드 중복 불가 |
-| shipping.types | body | array | 아니오 | — | 배송유형 목록(DB 동기화 대상). 항목별 `id`·`code`(소문자/숫자/하이픈, 필수)·`name`(다국어 배열, 현재 로케일 필수)·`category`(`domestic`\|`international`\|`other`, 필수)·`is_active`·`sort_order`. 코드 중복 불가 |
+| shipping.carriers | body | array | 아니오 | — | 배송사 목록(DB 동기화 대상). 항목별 `id`·`code`(소문자/숫자/하이픈, 필수)·`name`(다국어 배열 — **신규 행**은 현재 로케일 필수, `id` 가 있는 기존 행은 길이·형식만 검사한다: 다른 로케일에서 만든 행 때문에 탭 전체가 막히지 않게 하기 위함)·`type`(`domestic`\|`international`, 필수)·`tracking_url`(`{tracking_number}` 치환)·`is_active`·`sort_order`. 코드 중복 불가. **기존 배송사끼리 코드를 맞바꾸는 저장은 422**(`shipping.carriers.N.code` — `code_swap`): 파일 쓰기 뒤 DB unique 에서 죽어 반쪽 상태가 남는 것을 막는다. 같은 저장에서 지워지는 배송사의 코드를 물려받는 것은 허용 |
+| shipping.types | body | array | 아니오 | — | 배송유형 목록(DB 동기화 대상). 항목별 `id`·`code`(소문자/숫자/하이픈, 필수)·`name`(다국어 배열 — **신규 행**은 현재 로케일 필수, `id` 가 있는 기존 행은 길이·형식만 검사한다: 다른 로케일에서 만든 행 때문에 탭 전체가 막히지 않게 하기 위함)·`category`(`domestic`\|`international`\|`other`, 필수)·`is_active`·`sort_order`. 코드 중복 불가. **기존 배송유형끼리 코드를 맞바꾸는 저장은 422**(`shipping.types.N.code` — `code_swap`): 파일 쓰기 뒤 DB unique 에서 죽어 반쪽 상태가 남는 것을 막는다. 같은 저장에서 지워지는 배송유형의 코드를 물려받는 것은 허용 |
 
 **요청 예시**
 
@@ -607,6 +707,48 @@ Content-Type: application/json
     "claim": [
         "예시값"
     ],
+    "claim.exchange_requestable_statuses": [
+        "delivered",
+        "confirmed"
+    ],
+    "claim.return_requestable_statuses": [
+        "delivered",
+        "confirmed"
+    ],
+    "claim.instant_cancel_statuses": [
+        "payment_complete"
+    ],
+    "claim.refund_request_statuses": [
+        "preparing",
+        "shipping_ready",
+        "shipping"
+    ],
+    "claim.allowed_charge_methods": [
+        "pay_on_request",
+        "pay_on_approval",
+        "deduct_from_refund"
+    ],
+    "claim.charge_payment_methods": [
+        "card",
+        "point"
+    ],
+    "claim.auto_approve_zero_charge": false,
+    "claim.auto_approve_after_payment": false,
+    "claim.auto_approve_refund_request": false,
+    "claim.max_images": 5,
+    "claim.image_max_size_kb": 2048,
+    "claim.request_period_days": 7,
+    "claim.complete_defaults": [
+        "예시값"
+    ],
+    "claim.complete_defaults.create_refund_request": true,
+    "claim.complete_defaults.restore_stock": true,
+    "claim.exchange_reasons": [
+        "예시값"
+    ],
+    "claim.return_reasons": [
+        "예시값"
+    ],
     "claim.refund_reasons": [
         "예시값"
     ],
@@ -666,7 +808,7 @@ _단건 응답: `data` 객체의 필드._
 | inquiry | object | `{"board_slug":"inquiry"}` | 문의 연동 설정 (문의 게시판 slug) |
 | notifications | object | `{"channels":[{"id":"mail","is_active":true,"sort_order":1…` | 알림 채널 설정 (채널 ID·활성 여부·정렬 순서) |
 | mileage | object | `{"enabled":false,"default_earn_rate":1,"earn_trigger":"co…` | 마일리지 설정 (사용 여부·기본 적립률·적립 트리거·통화별 규칙·소멸/소멸 알림·실제 활성 알림 채널 포함) |
-| claim | object | `{"refund_reasons":[{"id":1,"type":"refund","code":"order_…` | 클레임 설정 (DB 관리 대상인 환불 사유 목록: 코드·다국어명·귀책 유형·노출/활성 여부) |
+| claim | object | `{"exchange_reasons":[…],"return_reasons":[…],"refund_reaso…` | 클레임 설정. **정책 스칼라**(신청 가능 상태 4축·신청 기간·허용 청구 방식/결제수단·자동 승인 3종·첨부 상한·완료 처리 기본값)와 **DB 관리 대상인 사유 카탈로그 3종**(`exchange_reasons`·`return_reasons`·`refund_reasons` — 각 항목은 코드·다국어명·귀책 유형·노출/활성 여부) |
 | available_pg_providers | array | `[{"id":"kginicis","name_key":"sirsoft-pay_kginicis::provi…` | 설치된 PG 플러그인이 훅으로 등록한 PG 제공자 목록 (id·name_key·지원 결제수단) |
 | available_cash_receipt_providers | array | `[]` | 설치된 플러그인이 훅으로 등록한 현금영수증 발급 제공자 목록 (id·name_key — 미등록 시 빈 배열이며 신청 폼이 노출되지 않음) |
 | available_public_asset_disks | array | `[{"id":"none","label":{"ko":"사용 안 함 (스트리밍)","en":"Disabl…` | 공개 자산 직접 URL 서빙 디스크 선택지 (코어 DriverRegistryService 카탈로그 — none/public/s3 + 플러그인 훅 등록분). 기본정보 탭의 공개 자산 디스크 Select 옵션 소스 |
@@ -889,6 +1031,77 @@ HTTP/1.1 200
             ]
         },
         "claim": {
+            "exchange_requestable_statuses": [
+                "delivered",
+                "confirmed"
+            ],
+            "return_requestable_statuses": [
+                "delivered",
+                "confirmed"
+            ],
+            "instant_cancel_statuses": [
+                "payment_complete"
+            ],
+            "refund_request_statuses": [
+                "preparing",
+                "shipping_ready",
+                "shipping"
+            ],
+            "allowed_charge_methods": [
+                "pay_on_request",
+                "pay_on_approval",
+                "deduct_from_refund"
+            ],
+            "charge_payment_methods": [
+                "card",
+                "point"
+            ],
+            "auto_approve_zero_charge": false,
+            "auto_approve_after_payment": false,
+            "auto_approve_refund_request": false,
+            "max_images": 5,
+            "image_max_size_kb": 2048,
+            "request_period_days": 7,
+            "complete_defaults": {
+                "create_refund_request": true,
+                "restore_stock": true
+            },
+            "exchange_reasons": [
+                {
+                    "id": 11,
+                    "type": "exchange",
+                    "code": "size_mismatch",
+                    "name": {
+                        "ko": "사이즈가 맞지 않음",
+                        "en": "Size Does Not Fit"
+                    },
+                    "localized_name": "사이즈가 맞지 않음",
+                    "fault_type": "customer",
+                    "is_user_selectable": true,
+                    "is_active": true,
+                    "sort_order": 0
+                }
+            ,
+              "... (총 8건 중 1건 표시)"
+            ],
+            "return_reasons": [
+                {
+                    "id": 21,
+                    "type": "return",
+                    "code": "defective_product",
+                    "name": {
+                        "ko": "상품 불량/파손",
+                        "en": "Defective or Damaged Product"
+                    },
+                    "localized_name": "상품 불량/파손",
+                    "fault_type": "seller",
+                    "is_user_selectable": true,
+                    "is_active": true,
+                    "sort_order": 0
+                }
+            ,
+              "... (총 9건 중 1건 표시)"
+            ],
             "refund_reasons": [
                 {
                     "id": 1,
@@ -1013,7 +1226,6 @@ HTTP/1.1 200
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 400 | Bad Request | 설정 저장은 통과했으나 DB 동기화가 도메인 규칙에 걸린 경우 — 주문에서 사용 중인 배송유형·배송사를 payload 에서 빼 삭제하려 한 경우가 이에 해당하며, `message` 에 대상 이름과 사용 건수가 담긴다 |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.settings.update`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
@@ -1021,9 +1233,36 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**삭제 차단 사유의 구분** `shipping.types`·`shipping.carriers` 는 payload 에서 항목을 빼는 방식으로 삭제합니다. 그 항목이 주문에서 사용 중이면 삭제가 거부되는데, 이때는 **400** 과 함께 사유(대상 이름·사용 건수)가 `message` 로 전달됩니다. 저장 자체가 서버 결함으로 실패한 경우의 500(일반 저장 오류 문구)과 구분되므로, 운영자는 화면 문구만으로 "내가 고칠 수 있는 일인지"를 판별할 수 있습니다.
+**추가 에러 응답** (생성기가 관리하는 위 표 밖에 둔다 — 재생성 시 사라지지 않게)
 
-**설명** 관리자가 이커머스 환경설정을 저장합니다. `permission:sirsoft-ecommerce.settings.update` 권한이 필요하며, `_tab` 으로 저장할 카테고리를 지정하고 각 섹션(`basic_info`·`shipping`·`claim` 등)을 배열로 전달합니다. `EcommerceSettingsService::saveSettings()`가 JSON 설정을 저장하되, DB 관리 대상인 `shipping.carriers`·`shipping.types`·`claim.refund_reasons` 는 분리해 각 Service 의 sync 메서드로 동기화합니다. 저장 성공 시 `sirsoft-ecommerce.settings.after_save` 훅을 발화하고, 관리자 UI 상태 갱신을 위해 병합된 전체 설정을 다시 반환합니다.
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 400 | Bad Request | DB 동기화 대상이 도메인 규칙에 걸린 경우 — 주문에서 사용 중인 배송유형·배송사를 payload 에서 빼 삭제하려 한 경우, 사용 중인 **배송유형의 `code` 를 바꾸려** 한 경우, 또는 신청서에서 사용 중인 클레임 사유를 payload 에서 **빼 삭제**하거나 그 사유의 **`code` 를 바꾸려** 한 경우. `message` 에 대상 이름과 사용 건수가 담긴다. 세 카탈로그 모두 **설정 파일 쓰기 전에** 판정하므로, 이 400 을 받았을 때 같은 요청의 다른 설정도 저장되지 않았다 |
+
+**삭제 차단 사유의 구분** `shipping.types`·`shipping.carriers` 와 클레임 사유 카탈로그 3종(`claim.exchange_reasons`·`claim.return_reasons`·`claim.refund_reasons`)은 payload 에서 항목을 빼는 방식으로 삭제합니다. 그 항목이 사용 중이면 삭제가 거부되는데, 이때는 **400** 과 함께 사유(대상 이름·사용 건수)가 `message` 로 전달됩니다. 저장 자체가 서버 결함으로 실패한 경우의 500(일반 저장 오류 문구)과 구분되므로, 운영자는 화면 문구만으로 "내가 고칠 수 있는 일인지"를 판별할 수 있습니다.
+
+세 카탈로그(배송유형·배송사·클레임 사유) 모두 **설정 파일을 쓰기 전에** 판정합니다. 설정 저장은 JSON 파일 쓰기라 트랜잭션으로 되돌릴 수 없어, 뒤에서 거절되면 스칼라 설정만 반영된 반쪽 상태가 남기 때문입니다. 따라서 이 400 을 받았을 때 **같은 요청의 다른 설정도 저장되지 않았습니다**.
+
+**차단 사유는 삭제만이 아닙니다.** 같은 판정이 **사용 중인 사유의 `code` 변경**도 거절합니다 — 접수된 신청서는 사유를 `code` 문자열로만 기억하므로(`reason_id` 외래키가 없습니다) 오타 교정처럼 평범한 수정 한 번으로 그 사유로 접수된 전건이 사유 이름을 잃고 내부 코드가 화면에 드러납니다. 삭제를 막아 방지하려던 피해와 결과가 같아 같은 강도로 막습니다.
+
+같은 이유로 **사용 중인 `shipping.types` 항목의 `code` 변경**도 거절합니다. 주문 배송행은 배송유형을 `shipping_type` 코드 문자열로만 기억하므로, 코드를 바꾸면 기존 주문의 배송방법 표기가 비고 그 코드가 실린 목록 URL 이 422 가 되며, 새 코드 기준 사용 건수가 0 이 되어 삭제 차단마저 우회됩니다. 배송사(`shipping.carriers`)는 주문이 `id` 로 참조하므로 이 제약이 없습니다.
+
+조치는 어느 쪽이냐에 따라 다릅니다.
+
+- **삭제하려던 경우**: 그 사유를 payload 에 되돌려 두고 다시 저장합니다.
+- **`code` 를 바꾸려던 경우**: `code` 를 원래 값으로 되돌리고 나머지 필드만 저장합니다. **사유명·귀책 구분·노출/활성/정렬은 사용 중에도 계속 수정할 수 있습니다.** 코드 체계를 정말 바꿔야 한다면 새 코드로 사유를 추가하고 기존 사유를 비노출·비활성으로 내리십시오 — 기존 신청서의 라벨이 보존됩니다.
+
+사용 건수는 그 사유의 **유형에 맞는 표 전수**를 셉니다. 환불 유형은 환불신청(`order_refunds`)과 즉시취소(`order_cancels`) 두 표를 합산하므로, 즉시취소로만 쓰인 사유도 사용 중으로 판정됩니다.
+
+**설명** 관리자가 이커머스 환경설정을 저장합니다. `permission:sirsoft-ecommerce.settings.update` 권한이 필요하며, `_tab` 으로 저장할 카테고리를 지정하고 각 섹션(`basic_info`·`shipping`·`claim` 등)을 배열로 전달합니다. `EcommerceSettingsService::saveSettings()`가 JSON 설정을 저장하되, DB 관리 대상인 `shipping.carriers`·`shipping.types` 와 클레임 사유 카탈로그 3종(`claim.exchange_reasons`·`claim.return_reasons`·`claim.refund_reasons`)은 분리해 각 Service 의 sync 메서드로 동기화합니다. 사유 카탈로그의 삭제 가드는 그 사유의 **유형에 맞는 표 전수**를 세므로, 교환·반품에서 사용 중인 사유는 이 경로로도 지워지지 않습니다. 저장 성공 시 `sirsoft-ecommerce.settings.after_save` 훅을 발화하고, 관리자 UI 상태 갱신을 위해 병합된 전체 설정을 다시 반환합니다.
+
+**섹션은 통째로 교체됩니다 (부분 병합 아님)** 저장 범위를 정하는 것은 **payload 에 실린 섹션 키**입니다 — `_tab` 은 저장 대상을 고르지 않으며(검증된 카테고리 목록에서 제외되고 저장 단계에서도 `_` 로 시작하는 키는 건너뜁니다) 화면이 어느 탭에서 보냈는지를 기록하는 메타 값입니다. 그리고 보낸 섹션 안에서는 **보낸 키만 남습니다**. 저장은 카테고리 단위 JSON 파일 쓰기이며 기존 저장본과 키 단위로 병합하지 않으므로, 요청에서 빠진 키는 저장 파일에서 사라지고 조회 시 `defaults.json` 의 기본값으로 되돌아갑니다. 응답은 **200** 이고 오류도 경고도 없습니다.
+
+- 예: `{"_tab":"claim","claim":{"max_images":10}}` 로 저장하면 운영자가 앞서 지정한 `instant_cancel_statuses`·`allowed_charge_methods`·`auto_approve_*` 등 나머지 클레임 축이 모두 기본값으로 되돌아갑니다
+- `{"_tab":"claim","claim":{…},"shipping":{…}}` 처럼 두 섹션을 함께 보내면 **둘 다 저장됩니다**. `_tab` 이 `claim` 이라고 해서 shipping 이 무시되지 않으며, 그 shipping 섹션도 보낸 키만 남아 나머지는 기본값으로 되돌아갑니다
+- 따라서 클라이언트는 **그 섹션 전체를 다시 실어 보내야 합니다**. 관리자 화면은 조회 응답을 폼 상태로 들고 있다가 섹션 전체를 전송합니다
+- 파라미터 표의 `필수` 열이 "아니오" 인 것은 *그 섹션을 저장하지 않을 때 생략 가능* 하다는 뜻이지, 보낸 섹션 안에서 개별 키를 생략해도 보존된다는 뜻이 아닙니다
+- DB 관리 대상(`shipping.carriers`·`shipping.types` 와 클레임 사유 카탈로그 3종)은 이 규칙 밖입니다 — 키 자체를 보내지 않으면 동기화가 일어나지 않아 기존 목록이 유지됩니다. 다만 **빈 배열을 보내면 "전부 삭제" 요청**으로 해석되므로, 조회 응답에 그 키가 없다고 해서 `[]` 로 채워 보내면 안 됩니다
 
 **숫자 필드 정규화** 검증 규칙에 `integer` / `numeric` 이 선언된 모든 필드는 검증 직전에 숫자 타입으로 캐스트되어 저장됩니다(중첩 배열의 와일드카드 경로 포함 — 예: `mileage.currency_rules.*.use_unit`). HTML `number` 입력의 값은 문자열(`"5"`)로 전송되고 Laravel 의 `integer` 규칙은 숫자 문자열을 통과시키되 캐스트하지 않으므로, 정규화가 없으면 문자열이 그대로 설정 파일에 영속되어 이후 날짜/수치 연산에서 타입 오류를 유발합니다.
 

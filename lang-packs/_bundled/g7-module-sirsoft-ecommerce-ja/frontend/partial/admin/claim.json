@@ -62,7 +62,7 @@
     "reason": {
       "title": "申請理由",
       "reason_label": "理由",
-      "fault_type_label": "責任区分",
+      "fault_type_label": "帰責",
       "reject_reason_label": "却下理由",
       "no_detail": "詳細な理由は入力されていません。",
       "images_label": "添付画像"

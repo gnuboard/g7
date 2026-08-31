@@ -582,6 +582,20 @@
       "all": "All",
       "member": "Member",
       "guest": "Guest"
+    },
+    "claim": {
+      "block_title": "Claim criteria",
+      "block_hint": "Filters orders by the type and status of claims filed against them. If no per-type status is selected, orders are filtered regardless of claim type. Selecting a fault excludes cancellations, which carry no fault information.",
+      "presence": "Claim",
+      "presence_none": "No claim",
+      "presence_any": "Has claim",
+      "presence_active": "In progress only",
+      "exchange": "Exchange",
+      "return": "Return",
+      "refund": "Refund",
+      "cancel": "Cancel",
+      "fault": "Fault",
+      "requested_at": "Claim filed on"
     }
   },
   "action": {
@@ -755,6 +769,7 @@
     "delivery_method": "Delivery",
     "country": "Country",
     "device": "Device",
+    "claim": "Claim",
     "first_order": "First Order",
     "action": "Actions"
   },

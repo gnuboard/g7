@@ -1,13 +1,22 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "쇼핑몰 설정 클레임 탭 콘텐츠"
+    "description": "쇼핑몰 설정 클레임 탭 콘텐츠 (클레임 정책 + 교환/반품/환불 사유 카탈로그)"
   },
   "id": "tab_content_claim",
   "type": "basic",
   "name": "Div",
   "if": "{{(_global.activeEcommerceSettingsTab || query.tab || 'basic_info') === 'claim'}}",
   "children": [
+    {
+      "partial": "_claim_policy_section.json"
+    },
+    {
+      "partial": "_exchange_reason_section.json"
+    },
+    {
+      "partial": "_return_reason_section.json"
+    },
     {
       "partial": "_refund_reason_section.json"
     }

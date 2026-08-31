@@ -55,7 +55,6 @@
 | claim_fault_types | query | array | 아니오 | `customer`, `seller`, `carrier` | 귀책 필터 — 같은 클레임 행에 함께 적용. 취소 테이블에는 귀책 축이 없어 귀책 지정 시 취소 유형은 매칭에서 제외 |
 | claim_requested_from | query | date | 아니오 | — | 클레임 신청일 범위 시작 (해당 범위에 접수된 클레임이 있는 주문) |
 | claim_requested_to | query | date | 아니오 | after_or_equal:claim_requested_from | 클레임 신청일 범위 종료 |
-| with_claim_summary | query | boolean | 아니오 | — | 행별 `claim_summary`(유형별 최신 상태 배지) 포함 여부 — '클레임' 컬럼을 켠 화면만 요청 (미요청 시 직렬화 안 함) |
 | sort_by | query | string | 아니오 | `ordered_at`, `paid_at`, `total_amount`, `shipped_at` | 정렬 기준 필드명 (그 외 값은 422). `shipped_at` 은 배송 테이블 기준 — `desc` 는 주문별 **가장 늦은** 발송일, `asc` 는 **가장 이른** 발송일로 정렬하며 발송 이력이 없는 주문도 목록에 남는다 |
 | sort_order | query | string | 아니오 | `asc`, `desc` | 정렬 방향 (asc 오름차순 / desc 내림차순) |
 | per_page | query | integer | 아니오 | min 10, max 100 | 페이지당 항목 수 |
@@ -113,7 +112,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | address | object | `{"orderer_name":"연정훈","recipient_name":"소정훈","recipient_c…` | 배송지 요약 (주문자명·수령인명·배송국가 코드/현지화명) |
 | payment | object | `{"payment_method":"dbank","payment_method_label":"무통장입금"}` | 결제 요약 (결제수단 값·현지화 라벨) |
 | shipping | object | `{"shipping_type":null,"shipping_type_label":null,"shippin…` | 배송 요약 (배송유형·배송방법 라벨·택배사명·송장번호, 첫 번째 배송 기준) |
-| claim_summary | array | `[{"type":"return","type_label":"반품","count":2,"latest_cla…` | 유형별 최신 상태 배지 배열 (D22 — `with_claim_summary=1` 요청에만 직렬화). 항목: `{type, type_label, count, latest_claim_number, status, status_label, status_variant}` — 접수 건이 있는 유형만 실리고, 환불 축은 취소 발 신청서를 제외 |
+| claim_summary | array | `[{"type":"return","type_label":"반품","count":2,"latest_cla…` | 유형별 최신 상태 배지 배열 (D22). 항상 직렬화된다 — 접수 건이 있는 유형만 항목으로 실리므로 클레임이 없는 주문은 빈 배열이다. 항목: `{type, type_label, count, latest_claim_number, status, status_label, status_variant}` — 환불 축은 취소 발 신청서를 제외 |
 | is_owner | boolean | `false` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
 | abilities | object | `{"can_read":true,"can_update":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
@@ -186,6 +185,7 @@ HTTP/1.1 200
                     "carrier_name": null,
                     "tracking_number": null
                 },
+                "claim_summary": [],
                 "is_owner": false,
                 "abilities": {
                     "can_read": true,
@@ -249,6 +249,7 @@ HTTP/1.1 200
                     "carrier_name": null,
                     "tracking_number": null
                 },
+                "claim_summary": [],
                 "is_owner": false,
                 "abilities": {
                     "can_read": true,
@@ -1929,6 +1930,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | total_earned_points_amount_formatted | string | `¥300` | `total_earned_points_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | items | array | `[{"product_name":"USB 충전 케이블 #7","product_option_name":"2…` | 주문 품목 목록 (상품명·옵션명·썸네일·수량·단가/소계·추가옵션 요약) |
 | item_count | integer | `1` | item 개수 (집계) |
+| claim_summary | array | `[{"type":"exchange","type_label":"교환","count":1,"latest_c…` | 그 주문에 접수된 클레임의 유형별 최신 상태 배지 배열. 관리자 목록과 **같은 산출**(`SummarizesClaims`)이라 같은 주문이 두 화면에서 같은 상태로 보인다. 항상 직렬화되며 접수 건이 있는 유형만 항목으로 실리므로 클레임이 없는 주문은 빈 배열(`[]`)이다. 항목: `{type, type_label, count, latest_claim_number, status, status_label, status_variant}` |
 | abilities | object | `{"can_view":true,"can_cancel":false}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
 **응답 예시**
@@ -1949,7 +1951,7 @@ HTTP/1.1 200
                 "status": "preparing",
                 "status_label": "상품준비중",
                 "status_variant": "info",
-                "...": "(18개 키 생략, 총 23개)"
+                "...": "(19개 키 생략, 총 24개)"
             },
             {
                 "id": 1344,
@@ -1957,7 +1959,7 @@ HTTP/1.1 200
                 "status": "preparing",
                 "status_label": "상품준비중",
                 "status_variant": "info",
-                "...": "(18개 키 생략, 총 23개)"
+                "...": "(19개 키 생략, 총 24개)"
             },
             "... (총 25건 중 2건 표시)"
         ],

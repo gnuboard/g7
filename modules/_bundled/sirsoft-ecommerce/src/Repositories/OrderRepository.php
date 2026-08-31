@@ -230,197 +230,9 @@ class OrderRepository implements OrderRepositoryInterface
         // 권한 스코프 필터링
         PermissionHelper::applyPermissionScope($query, 'sirsoft-ecommerce.orders.read');
 
-        // 목록 기본 숨김 상태 제외 (PENDING_ORDER 등 임시 주문 상태 — OrderStatusEnum::listHiddenValues SSoT)
-        // order_status 필터가 명시적으로 지정된 경우에만 숨김 상태 표시 가능
-        if (empty($filters['order_status']) && empty($filters['include_pending_order'])) {
-            $query->whereNotIn('order_status', OrderStatusEnum::listHiddenValues());
-        }
-
-        // 회원 ID 필터 (유저 주문내역 조회용)
-        if (! empty($filters['user_id'])) {
-            $query->where('user_id', $filters['user_id']);
-        }
-
-        // 주문자 UUID 필터 (회원 검색 기반 주문자 필터)
-        if (! empty($filters['orderer_uuid'])) {
-            $ordererUser = User::where('uuid', $filters['orderer_uuid'])->first();
-            if ($ordererUser) {
-                $query->where('user_id', $ordererUser->id);
-            } else {
-                // UUID에 해당하는 회원이 없으면 결과 없음. 빈 whereIn 은 `0 = 1` 로 컴파일된다
-                $query->whereIn($query->getModel()->getKeyName(), []);
-            }
-        }
-
-        // 회원 구분 필터 (member: 회원 주문, guest: 비회원 주문)
-        if (! empty($filters['member_type'])) {
-            if ($filters['member_type'] === 'guest') {
-                $query->whereNull('user_id');
-            } elseif ($filters['member_type'] === 'member') {
-                $query->whereNotNull('user_id');
-            }
-        }
-
-        // 문자열 검색
-        if (! empty($filters['search_keyword'])) {
-            $keyword = $filters['search_keyword'];
-            $field = $filters['search_field'] ?? 'all';
-
-            $query->where(function ($q) use ($keyword, $field) {
-                if ($field === 'all' || $field === 'order_number') {
-                    $q->orWhere('order_number', 'like', "%{$keyword}%");
-                }
-                if ($field === 'all' || $field === 'orderer_name') {
-                    $q->orWhereHas('shippingAddress', function ($subQ) use ($keyword) {
-                        $subQ->where('orderer_name', 'like', "%{$keyword}%");
-                    });
-                }
-                if ($field === 'all' || $field === 'recipient_name') {
-                    $q->orWhereHas('shippingAddress', function ($subQ) use ($keyword) {
-                        $subQ->where('recipient_name', 'like', "%{$keyword}%");
-                    });
-                }
-                if ($field === 'all' || $field === 'orderer_phone') {
-                    $q->orWhereHas('shippingAddress', function ($subQ) use ($keyword) {
-                        $subQ->where('orderer_phone', 'like', "%{$keyword}%");
-                    });
-                }
-                if ($field === 'all' || $field === 'recipient_phone') {
-                    $q->orWhereHas('shippingAddress', function ($subQ) use ($keyword) {
-                        $subQ->where('recipient_phone', 'like', "%{$keyword}%");
-                    });
-                }
-                if ($field === 'all' || $field === 'product_name') {
-                    $q->orWhereHas('options', function ($subQ) use ($keyword) {
-                        $subQ->where('product_name', 'like', "%{$keyword}%");
-                    });
-                }
-                if ($field === 'all' || $field === 'sku') {
-                    $q->orWhereHas('options', function ($subQ) use ($keyword) {
-                        $subQ->where('sku', 'like', "%{$keyword}%");
-                    });
-                }
-            });
-        }
-
-        // 날짜 필터
-        if (! empty($filters['date_type']) && (! empty($filters['start_date']) || ! empty($filters['end_date']))) {
-            $dateField = $filters['date_type']; // ordered_at, paid_at, etc.
-
-            // whereDate 는 컬럼에 DATE() 를 씌워 인덱스를 무력화한다 — 같은 결과를 내는
-            // 범위 조건으로 준다 (종료일은 그날 끝까지 포함).
-            $this->applyDateRangeFilter(
-                $query,
-                $dateField,
-                $filters['start_date'] ?? null,
-                $filters['end_date'] ?? null
-            );
-        }
-
-        // 주문상태 필터 (다중 선택 가능)
-        if (! empty($filters['order_status'])) {
-            $statuses = is_array($filters['order_status'])
-                ? $filters['order_status']
-                : [$filters['order_status']];
-
-            // 합산 카운터 키(상품준비중 등)는 동일 상태 집합으로 확장해 카운터 수와 목록 수를 일치시킨다.
-            // 일반 상태 값은 그대로 유지된다 (OrderStatusEnum::statisticsFilterGroups SSoT).
-            $statuses = array_values(array_unique(array_merge(
-                ...array_map(
-                    fn ($s) => OrderStatusEnum::expandStatisticsFilter((string) $s),
-                    $statuses
-                )
-            )));
-
-            $query->whereIn('order_status', $statuses);
-        }
-
-        // 클레임 상태 필터 (환불/반품/교환)
-        if (! empty($filters['claim_refund_status'])) {
-            $this->applyClaimFilter($query, $filters['claim_refund_status'], 'refund');
-        }
-        if (! empty($filters['claim_return_status'])) {
-            $this->applyClaimFilter($query, $filters['claim_return_status'], 'return');
-        }
-        if (! empty($filters['claim_exchange_status'])) {
-            $this->applyClaimFilter($query, $filters['claim_exchange_status'], 'exchange');
-        }
-
-        // 클레임 기준 필터 (D22) — 클레임 신청서 테이블 기준 whereExists 서브쿼리.
-        // 위 레거시 필터(claim_*_status 단수형)는 옵션 상태 기반의 기존 계약이라 그대로 둔다.
-        $this->applyClaimCriteriaFilters($query, $filters);
-
-        // 결제수단 필터
-        if (! empty($filters['payment_method'])) {
-            $methods = is_array($filters['payment_method'])
-                ? $filters['payment_method']
-                : [$filters['payment_method']];
-            $query->whereHas('payment', function ($q) use ($methods) {
-                $q->whereIn('payment_method', $methods);
-            });
-        }
-
-        // 배송방법 필터
-        if (! empty($filters['shipping_type'])) {
-            $methods = is_array($filters['shipping_type'])
-                ? $filters['shipping_type']
-                : [$filters['shipping_type']];
-            $query->whereHas('shippings', function ($q) use ($methods) {
-                $q->whereIn('shipping_type', $methods);
-            });
-        }
-
-        // 카테고리 필터
-        if (! empty($filters['category_id'])) {
-            $categoryId = $filters['category_id'];
-            $query->whereHas('options.product.categories', function ($q) use ($categoryId) {
-                $q->where('ecommerce_product_categories.category_id', $categoryId);
-            });
-        }
-
-        // 금액 범위 필터
-        // 0 은 유효한 경계값이다(예: 결제금액 0원 주문만). empty() 로 거르면 0 이 "미입력"으로
-        // 취급돼 필터가 통째로 무시된다 — min_stock/max_stock 과 같은 판정식을 쓴다.
-        if (isset($filters['min_amount']) && $filters['min_amount'] !== '') {
-            $query->where('total_amount', '>=', (float) $filters['min_amount']);
-        }
-        if (isset($filters['max_amount']) && $filters['max_amount'] !== '') {
-            $query->where('total_amount', '<=', (float) $filters['max_amount']);
-        }
-
-        // 국가 필터
-        if (! empty($filters['country_codes'])) {
-            $countries = is_array($filters['country_codes'])
-                ? $filters['country_codes']
-                : [$filters['country_codes']];
-            $query->whereHas('shippingAddress', function ($q) use ($countries) {
-                $q->whereIn('recipient_country_code', $countries);
-            });
-        }
-
-        // 배송비 범위 필터
-        // 0 은 유효한 경계값이다(무료배송 주문만 보기). empty() 로 거르면 무시된다.
-        if (isset($filters['min_shipping_amount']) && $filters['min_shipping_amount'] !== '') {
-            $query->where('total_shipping_amount', '>=', (float) $filters['min_shipping_amount']);
-        }
-        if (isset($filters['max_shipping_amount']) && $filters['max_shipping_amount'] !== '') {
-            $query->where('total_shipping_amount', '<=', (float) $filters['max_shipping_amount']);
-        }
-
-        // 배송정책 필터 (OrderShipping 관계를 통해)
-        if (! empty($filters['shipping_policy_id'])) {
-            $query->whereHas('shippings', function ($q) use ($filters) {
-                $q->where('shipping_policy_id', $filters['shipping_policy_id']);
-            });
-        }
-
-        // 디바이스 필터
-        if (! empty($filters['order_device'])) {
-            $devices = is_array($filters['order_device'])
-                ? $filters['order_device']
-                : [$filters['order_device']];
-            $query->whereIn('order_device', $devices);
-        }
+        // 목록 필터는 단일 출처(applyListFilters)에서 적용한다 — 엑셀 내려받기
+        // (`getForExport`)가 같은 메서드를 부르므로, 축이 늘어도 두 경로가 함께 따라온다.
+        $this->applyListFilters($query, $filters);
 
         // 정렬 — 요청 값은 허용 목록으로만 해석한다.
         // 발송일(shipped_at)은 배송 테이블에 있어 상관 서브쿼리 정렬로 해석된다.
@@ -450,9 +262,15 @@ class OrderRepository implements OrderRepositoryInterface
                 // 목록은 대표 배송 1건의 표시 정보만 그린다. 택배사 이름까지 함께 로드해야
                 // Resource 가 행마다 carrier 를 다시 조회하지 않는다.
                 'firstShipping.carrier',
-                // 클레임 요약(D22)은 '클레임' 컬럼을 켠 요청만 싣는다 — 화면이 그리지 않는
-                // 하위 컬렉션을 목록에 무조건 실으면 안 된다 (공개 #76 규율).
-            ], ! empty($filters['with_claim_summary']) ? $this->claimSummaryRelations() : []),
+                // 클레임 요약(D22)은 목록이 항상 그리는 값이라 무조건 싣는다. 관계는 컬럼을
+                // 프루닝했고 건수는 DB 집계라, 실린 것은 행이 실제로 그리는 배지뿐이다
+                // (공개 #76 이 금지한 것은 "화면이 그리지 않는" 하위 컬렉션의 전량 직렬화다).
+                //
+                // 종전에는 `with_claim_summary` 요청에만 실었는데, 컬럼 표시(브라우저 기억)와
+                // 값 수신(주소)이 서로 다른 근거를 갖게 되어 어긋났다 — 컬럼을 한 번 켠
+                // 운영자의 다음 진입에서 컬럼은 보이는데 전 행이 "-" 가 됐다. 근거를 하나로
+                // 되돌려 그 어긋남 자체를 없앤다.
+            ], $this->claimSummaryRelations()),
             withCount: array_merge(
                 $withItems ? [] : [
                     // "외 N건" 표기용 전체 옵션 수.
@@ -464,7 +282,7 @@ class OrderRepository implements OrderRepositoryInterface
                         OrderStatusEnum::CANCELLED->value,
                     ),
                 ],
-                ! empty($filters['with_claim_summary']) ? $this->claimSummaryCounts() : [],
+                $this->claimSummaryCounts(),
             ),
             resultCap: PaginationLimits::resultCap('admin.orders'),
         );
@@ -721,8 +539,11 @@ class OrderRepository implements OrderRepositoryInterface
         if (! empty($ids)) {
             $query->whereIn('id', $ids);
         } else {
-            // 필터 적용 (getListWithFilters와 동일한 로직)
-            $this->applyFiltersToQuery($query, $filters);
+            // 필터 적용 — 목록 조회(`getListWithFilters`)와 **같은 메서드**를 부른다.
+            // 축을 여기에 복제하면 목록에만 필터가 늘어나는 순간 화면은 42건인데 내려받은
+            // 파일은 전건이 된다. 오류도 경고도 없이 **파일 내용만** 달라지므로 운영자가
+            // 알아챌 방법이 없다. 단일 출처를 부르면 축이 늘어도 이 경로가 함께 따라온다.
+            $this->applyListFilters($query, $filters);
         }
 
         // 정렬 (목록 조회와 동일한 허용 컬럼 화이트리스트)
@@ -803,8 +624,11 @@ class OrderRepository implements OrderRepositoryInterface
 
         if ($types === []) {
             // 귀책 필터 + 취소 유형만 지정된 조합 — 매칭 가능한 유형이 없다.
-            // 빈 whereIn 은 `0 = 1` 로 컴파일된다.
-            $query->whereIn($query->getModel()->getKeyName(), []);
+            // `none` 은 "그런 클레임이 없는 주문" 이라 전건이고(조건을 걸지 않는다), 나머지는 0건이다.
+            // 빈 whereIn 은 `0 = 1` 로 컴파일된다. (S6c 1차 이월 a — 이 분기가 presence 를 보지 않았다)
+            if ($presence !== 'none') {
+                $query->whereIn($query->getModel()->getKeyName(), []);
+            }
 
             return;
         }
@@ -926,22 +750,100 @@ class OrderRepository implements OrderRepositoryInterface
     }
 
     /**
-     * 필터 조건을 쿼리에 적용 (내부 헬퍼)
+     * 목록 필터를 쿼리에 적용합니다. (목록·엑셀 내려받기 공용 단일 출처)
      *
-     * @param  Builder  $query
+     * 목록 조회(`getListWithFilters`)와 엑셀 내려받기(`getForExport`)가 같은 메서드를 부른다.
+     * 축을 두 곳에 복제하면 한쪽에만 필터가 늘어나는 순간 화면은 42건인데 내려받은 파일은
+     * 전건이 되고, 오류도 경고도 없이 **파일 내용만** 달라져 운영자가 알아챌 방법이 없다.
+     *
+     * 권한 스코프는 여기에 두지 않는다 — 필터가 아니라 호출자(화면)의 열람 범위이므로
+     * 호출부가 각자 건다.
+     *
+     * @param  Builder  $query  주문 쿼리
+     * @param  array  $filters  요청 필터
+     * @return void 반환값 없음 (쿼리에 직접 조건을 건다)
      */
-    protected function applyFiltersToQuery($query, array $filters): void
+    protected function applyListFilters($query, array $filters): void
     {
-        // 목록 기본 숨김 상태 제외 (PENDING_ORDER 등 — OrderStatusEnum::listHiddenValues SSoT)
+        // 목록 기본 숨김 상태 제외 (PENDING_ORDER 등 임시 주문 상태 — OrderStatusEnum::listHiddenValues SSoT)
+        // order_status 필터가 명시적으로 지정된 경우에만 숨김 상태 표시 가능
         if (empty($filters['order_status']) && empty($filters['include_pending_order'])) {
             $query->whereNotIn('order_status', OrderStatusEnum::listHiddenValues());
         }
 
+        // 회원 ID 필터 (유저 주문내역 조회용)
+        if (! empty($filters['user_id'])) {
+            $query->where('user_id', $filters['user_id']);
+        }
+
+        // 주문자 UUID 필터 (회원 검색 기반 주문자 필터)
+        if (! empty($filters['orderer_uuid'])) {
+            $ordererUser = User::where('uuid', $filters['orderer_uuid'])->first();
+            if ($ordererUser) {
+                $query->where('user_id', $ordererUser->id);
+            } else {
+                // UUID에 해당하는 회원이 없으면 결과 없음. 빈 whereIn 은 `0 = 1` 로 컴파일된다
+                $query->whereIn($query->getModel()->getKeyName(), []);
+            }
+        }
+
+        // 회원 구분 필터 (member: 회원 주문, guest: 비회원 주문)
+        if (! empty($filters['member_type'])) {
+            if ($filters['member_type'] === 'guest') {
+                $query->whereNull('user_id');
+            } elseif ($filters['member_type'] === 'member') {
+                $query->whereNotNull('user_id');
+            }
+        }
+
+        // 문자열 검색
+        if (! empty($filters['search_keyword'])) {
+            $keyword = $filters['search_keyword'];
+            $field = $filters['search_field'] ?? 'all';
+
+            $query->where(function ($q) use ($keyword, $field) {
+                if ($field === 'all' || $field === 'order_number') {
+                    $q->orWhere('order_number', 'like', "%{$keyword}%");
+                }
+                if ($field === 'all' || $field === 'orderer_name') {
+                    $q->orWhereHas('shippingAddress', function ($subQ) use ($keyword) {
+                        $subQ->where('orderer_name', 'like', "%{$keyword}%");
+                    });
+                }
+                if ($field === 'all' || $field === 'recipient_name') {
+                    $q->orWhereHas('shippingAddress', function ($subQ) use ($keyword) {
+                        $subQ->where('recipient_name', 'like', "%{$keyword}%");
+                    });
+                }
+                if ($field === 'all' || $field === 'orderer_phone') {
+                    $q->orWhereHas('shippingAddress', function ($subQ) use ($keyword) {
+                        $subQ->where('orderer_phone', 'like', "%{$keyword}%");
+                    });
+                }
+                if ($field === 'all' || $field === 'recipient_phone') {
+                    $q->orWhereHas('shippingAddress', function ($subQ) use ($keyword) {
+                        $subQ->where('recipient_phone', 'like', "%{$keyword}%");
+                    });
+                }
+                if ($field === 'all' || $field === 'product_name') {
+                    $q->orWhereHas('options', function ($subQ) use ($keyword) {
+                        $subQ->where('product_name', 'like', "%{$keyword}%");
+                    });
+                }
+                if ($field === 'all' || $field === 'sku') {
+                    $q->orWhereHas('options', function ($subQ) use ($keyword) {
+                        $subQ->where('sku', 'like', "%{$keyword}%");
+                    });
+                }
+            });
+        }
+
         // 날짜 필터
         if (! empty($filters['date_type']) && (! empty($filters['start_date']) || ! empty($filters['end_date']))) {
-            $dateField = $filters['date_type'];
+            $dateField = $filters['date_type']; // ordered_at, paid_at, etc.
 
-            // whereDate 는 인덱스를 무력화한다 — 범위 조건으로 준다.
+            // whereDate 는 컬럼에 DATE() 를 씌워 인덱스를 무력화한다 — 같은 결과를 내는
+            // 범위 조건으로 준다 (종료일은 그날 끝까지 포함).
             $this->applyDateRangeFilter(
                 $query,
                 $dateField,
@@ -950,12 +852,114 @@ class OrderRepository implements OrderRepositoryInterface
             );
         }
 
-        // 주문상태 필터
+        // 주문상태 필터 (다중 선택 가능)
         if (! empty($filters['order_status'])) {
             $statuses = is_array($filters['order_status'])
                 ? $filters['order_status']
                 : [$filters['order_status']];
+
+            // 합산 카운터 키(상품준비중 등)는 동일 상태 집합으로 확장해 카운터 수와 목록 수를 일치시킨다.
+            // 일반 상태 값은 그대로 유지된다 (OrderStatusEnum::statisticsFilterGroups SSoT).
+            $statuses = array_values(array_unique(array_merge(
+                ...array_map(
+                    fn ($s) => OrderStatusEnum::expandStatisticsFilter((string) $s),
+                    $statuses
+                )
+            )));
+
             $query->whereIn('order_status', $statuses);
+        }
+
+        // 클레임 상태 필터 (환불/반품/교환) — 주문옵션 상태 기반의 단수 키.
+        // 현재 이 이름을 실어 보내는 경로는 없다: OrderListRequest 는 복수 키
+        // (claim_{exchange,return,refund}_statuses)만 검증 대상으로 선언하고, 관리자 화면의
+        // 필터·URL·프리셋·엑셀도 D22 에서 전부 복수 키로 이관됐다. 호출자가 생기기 전까지
+        // 도달하지 않는 분기이므로 "지원되는 계약" 으로 읽지 말 것 — 새 배선은 아래
+        // applyClaimCriteriaFilters(D22, 클레임 신청서 테이블 기준)를 쓴다.
+        if (! empty($filters['claim_refund_status'])) {
+            $this->applyClaimFilter($query, $filters['claim_refund_status'], 'refund');
+        }
+        if (! empty($filters['claim_return_status'])) {
+            $this->applyClaimFilter($query, $filters['claim_return_status'], 'return');
+        }
+        if (! empty($filters['claim_exchange_status'])) {
+            $this->applyClaimFilter($query, $filters['claim_exchange_status'], 'exchange');
+        }
+
+        // 클레임 기준 필터 (D22) — 클레임 신청서 테이블 기준 whereExists 서브쿼리.
+        // 화면·요청 검증이 쓰는 유일한 클레임 필터 경로다.
+        $this->applyClaimCriteriaFilters($query, $filters);
+
+        // 결제수단 필터
+        if (! empty($filters['payment_method'])) {
+            $methods = is_array($filters['payment_method'])
+                ? $filters['payment_method']
+                : [$filters['payment_method']];
+            $query->whereHas('payment', function ($q) use ($methods) {
+                $q->whereIn('payment_method', $methods);
+            });
+        }
+
+        // 배송방법 필터
+        if (! empty($filters['shipping_type'])) {
+            $methods = is_array($filters['shipping_type'])
+                ? $filters['shipping_type']
+                : [$filters['shipping_type']];
+            $query->whereHas('shippings', function ($q) use ($methods) {
+                $q->whereIn('shipping_type', $methods);
+            });
+        }
+
+        // 카테고리 필터
+        if (! empty($filters['category_id'])) {
+            $categoryId = $filters['category_id'];
+            $query->whereHas('options.product.categories', function ($q) use ($categoryId) {
+                $q->where('ecommerce_product_categories.category_id', $categoryId);
+            });
+        }
+
+        // 금액 범위 필터
+        // 0 은 유효한 경계값이다(예: 결제금액 0원 주문만). empty() 로 거르면 0 이 "미입력"으로
+        // 취급돼 필터가 통째로 무시된다 — min_stock/max_stock 과 같은 판정식을 쓴다.
+        if (isset($filters['min_amount']) && $filters['min_amount'] !== '') {
+            $query->where('total_amount', '>=', (float) $filters['min_amount']);
+        }
+        if (isset($filters['max_amount']) && $filters['max_amount'] !== '') {
+            $query->where('total_amount', '<=', (float) $filters['max_amount']);
+        }
+
+        // 국가 필터
+        if (! empty($filters['country_codes'])) {
+            $countries = is_array($filters['country_codes'])
+                ? $filters['country_codes']
+                : [$filters['country_codes']];
+            $query->whereHas('shippingAddress', function ($q) use ($countries) {
+                $q->whereIn('recipient_country_code', $countries);
+            });
+        }
+
+        // 배송비 범위 필터
+        // 0 은 유효한 경계값이다(무료배송 주문만 보기). empty() 로 거르면 무시된다.
+        if (isset($filters['min_shipping_amount']) && $filters['min_shipping_amount'] !== '') {
+            $query->where('total_shipping_amount', '>=', (float) $filters['min_shipping_amount']);
+        }
+        if (isset($filters['max_shipping_amount']) && $filters['max_shipping_amount'] !== '') {
+            $query->where('total_shipping_amount', '<=', (float) $filters['max_shipping_amount']);
+        }
+
+        // 배송정책 필터 (OrderShipping 관계를 통해)
+        if (! empty($filters['shipping_policy_id'])) {
+            $query->whereHas('shippings', function ($q) use ($filters) {
+                $q->where('shipping_policy_id', $filters['shipping_policy_id']);
+            });
+        }
+
+        // 디바이스 필터
+        if (! empty($filters['order_device'])) {
+            $devices = is_array($filters['order_device'])
+                ? $filters['order_device']
+                : [$filters['order_device']];
+            $query->whereIn('order_device', $devices);
         }
     }
 

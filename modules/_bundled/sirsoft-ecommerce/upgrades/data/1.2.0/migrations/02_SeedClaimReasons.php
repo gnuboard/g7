@@ -5,6 +5,7 @@ namespace App\Upgrades\Data\Ext\Modules\SirsoftEcommerce\V1_2_0\Migrations;
 use App\Extension\Upgrade\DataMigration;
 use App\Extension\UpgradeContext;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -70,11 +71,70 @@ class SeedClaimReasons implements DataMigration
             return;
         }
 
+        $translations = $this->loadLanguagePackTranslations($context);
+
         $created = 0;
-        $created += $this->seedType('exchange', self::EXCHANGE_REASONS, $context);
-        $created += $this->seedType('return', self::RETURN_REASONS, $context);
+        $created += $this->seedType('exchange', self::EXCHANGE_REASONS, $translations, $context);
+        $created += $this->seedType('return', self::RETURN_REASONS, $translations, $context);
 
         $context->logger->info('[ecommerce:1.2.0] 교환/반품 사유 시드 완료 — 신규 '.$created.'건');
+    }
+
+    /**
+     * 설치된 언어팩의 사유 시드 번역을 코드별로 모읍니다.
+     *
+     * 신규 설치는 `ClaimReasonSeeder` 가 `seed.*.translations` 필터로 언어팩 번역을 병합하지만,
+     * 업그레이드 경로는 이 데이터 마이그레이션이 직접 삽입하므로 그 병합을 타지 않는다 — 그대로 두면
+     * 업그레이드한 일본어 상점에서만 기본 사유 이름이 한국어로 남는다. V-1 규약(Illuminate 파사드만)
+     * 에 맞춰 활성 언어팩 디렉토리의 `seed/claim_reasons.json` 을 직접 읽는다.
+     *
+     * @param  UpgradeContext  $context  업그레이드 컨텍스트
+     * @return array<string, array<string, string>> code → [locale → 번역 이름]
+     */
+    private function loadLanguagePackTranslations(UpgradeContext $context): array
+    {
+        $root = base_path('lang-packs');
+        if (! File::isDirectory($root)) {
+            return [];
+        }
+
+        $translations = [];
+
+        foreach (File::directories($root) as $dir) {
+            $name = basename($dir);
+            if (str_starts_with($name, '_')) {
+                continue; // _bundled / _pending 은 활성 팩이 아니다
+            }
+
+            // 매니페스트 없는 디렉토리(설치 중단 잔여·백업 폴더)는 팩이 아니다 — `File::get` 은 부재 시
+            // 예외를 던지므로 먼저 확인한다. 안 그러면 폴더 하나가 이 시드 전체를 중단시킨다.
+            if (! File::exists($dir.'/language-pack.json')) {
+                continue;
+            }
+
+            $manifest = json_decode((string) File::get($dir.'/language-pack.json'), true);
+            if (! is_array($manifest)
+                || ($manifest['target_identifier'] ?? null) !== 'sirsoft-ecommerce'
+                || empty($manifest['locale'])
+                || ! File::exists($dir.'/seed/claim_reasons.json')) {
+                continue;
+            }
+
+            $seed = json_decode((string) File::get($dir.'/seed/claim_reasons.json'), true);
+            if (! is_array($seed)) {
+                continue;
+            }
+
+            foreach ($seed as $code => $entry) {
+                if (is_array($entry) && is_string($entry['name'] ?? null) && $entry['name'] !== '') {
+                    $translations[$code][$manifest['locale']] = $entry['name'];
+                }
+            }
+
+            $context->logger->info('[ecommerce:1.2.0] 언어팩 사유 번역 병합 — '.$name.' ('.$manifest['locale'].')');
+        }
+
+        return $translations;
     }
 
     /**
@@ -82,10 +142,11 @@ class SeedClaimReasons implements DataMigration
      *
      * @param  string  $type  사유 유형 (exchange, return)
      * @param  array<int, array{code: string, ko: string, en: string, fault_type: string}>  $reasons  사유 목록
+     * @param  array<string, array<string, string>>  $translations  언어팩 번역 (code → locale → 이름)
      * @param  UpgradeContext  $context  업그레이드 컨텍스트
      * @return int 신규 생성 건수
      */
-    private function seedType(string $type, array $reasons, UpgradeContext $context): int
+    private function seedType(string $type, array $reasons, array $translations, UpgradeContext $context): int
     {
         $now = now();
         $created = 0;
@@ -104,7 +165,7 @@ class SeedClaimReasons implements DataMigration
                 'type' => $type,
                 'code' => $reason['code'],
                 'name' => json_encode(
-                    ['ko' => $reason['ko'], 'en' => $reason['en']],
+                    ['ko' => $reason['ko'], 'en' => $reason['en']] + ($translations[$reason['code']] ?? []),
                     JSON_UNESCAPED_UNICODE
                 ),
                 'fault_type' => $reason['fault_type'],

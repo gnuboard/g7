@@ -44,21 +44,13 @@
               },
               "actions": [
                 {
+                  "comment": "신규 행의 name 은 활성 언어팩($locales) 전체에 대한 빈 문자열 맵으로 시드한다. [추가] 확정 게이트가 `name[현재 로케일]` 을 요구하므로, ko/en 을 리터럴로 열거하면 그 밖의 로케일 운영자는 그 언어의 입력칸도 언어 추가 버튼(MultilingualInput 은 activeLocales 를 value 의 키에서 뽑고 버튼을 현재 로케일 필드에만 붙인다)도 없어 폼을 영영 확정할 수 없다 — 그동안 페이지 [저장]은 그 폼을 확정하라고 막는다.",
                   "type": "click",
                   "handler": "setState",
                   "params": {
                     "target": "local",
                     "isAddingShippingType": true,
-                    "shippingTypeForm": {
-                      "code": "",
-                      "name": {
-                        "ko": "",
-                        "en": ""
-                      },
-                      "category": "domestic",
-                      "is_active": true,
-                      "sort_order": 0
-                    },
+                    "shippingTypeForm": "{{ { code: '', name: Object.fromEntries(($locales ?? []).map(l => [l, ''])), category: 'domestic', is_active: true, sort_order: 0 } }}",
                     "shippingTypeFormErrors": null
                   }
                 }
@@ -275,7 +267,7 @@
                   "handler": "conditions",
                   "conditions": [
                     {
-                      "if": "{{(_local.shippingTypeForm?.code ?? '').trim() && (_local.shippingTypeForm?.name?.ko ?? '').trim()}}",
+                      "if": "{{(_local.shippingTypeForm?.code ?? '').trim() && (_local.shippingTypeForm?.name?.[(_global.locale ?? 'ko')] ?? '').trim()}}",
                       "then": {
                         "handler": "setState",
                         "params": {
@@ -295,7 +287,7 @@
                           "target": "local",
                           "shippingTypeFormErrors": {
                             "code": "{{!(_local.shippingTypeForm?.code ?? '').trim() ? true : null}}",
-                            "name_ko": "{{!(_local.shippingTypeForm?.name?.ko ?? '').trim() ? true : null}}"
+                            "name_ko": "{{!(_local.shippingTypeForm?.name?.[(_global.locale ?? 'ko')] ?? '').trim() ? true : null}}"
                           }
                         }
                       }
@@ -499,7 +491,7 @@
                           "value": "{{$type.name ?? {}}}",
                           "layout": "compact",
                           "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.types.form.name_ko_placeholder",
-                          "error": "{{_local.errors?.['shipping.types.' + $type._idx + '.name.ko']?.[0] ?? _local.errors?.['shipping.types.' + $type._idx + '.name']?.[0] ?? ''}}",
+                          "error": "{{_local.errors?.['shipping.types.' + $type._idx + '.name.' + (_global.locale ?? 'ko')]?.[0] ?? _local.errors?.['shipping.types.' + $type._idx + '.name']?.[0] ?? ''}}",
                           "disabled": "{{_computed.isReadOnly}}"
                         },
                         "actions": [

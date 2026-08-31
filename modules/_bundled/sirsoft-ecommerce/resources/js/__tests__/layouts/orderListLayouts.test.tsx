@@ -281,6 +281,65 @@ describe('주문 목록 visibleColumns 검증', () => {
     it('visibleColumns에 no가 포함되지 않아야 함 (기본 숨김)', () => {
         expect(state.visibleColumns).not.toContain('no');
     });
+
+    /**
+     * 기본 컬럼 묶음의 출처가 셋이다 — 레이아웃 `state`, `loadFromLocalStorage` 의
+     * `defaultValue`, ColumnSelector 의 `defaultColumns`. 저장값이 없는 브라우저에서는
+     * loadFromLocalStorage 가 state 의 씨앗을 덮어쓰므로, 그 목록이 어긋나면 신규 운영자
+     * 화면에서만 컬럼이 빠진다(오류·로그 없음). DataGrid 는 `required` 를 보지 않고
+     * `visibleColumns.includes(col.field)` 로만 거르므로 필드명이 하나만 틀려도 그 컬럼이
+     * 사라진다 — 실제로 `order_date`(존재하지 않는 field, 실제 키는 `ordered_at`)가
+     * 들어 있어 주문일·디바이스 두 컬럼이 신규 운영자에게 보이지 않았다.
+     */
+    it('기본 컬럼 묶음 3출처(state / localStorage 기본값 / ColumnSelector)가 같아야 함', () => {
+        const restore = findNodes(orderList as any, (n: any) => n.handler === 'loadFromLocalStorage')
+            .concat(((orderList as any).init_actions ?? []).filter((a: any) => a.handler === 'loadFromLocalStorage'))
+            .find((a: any) => a.params?.stateKey === 'visibleColumns');
+        expect(restore).toBeDefined();
+
+        const selector = findNodes(filterSection, (n: any) => n.props?.defaultColumns !== undefined)[0];
+        expect(selector).toBeDefined();
+
+        expect([...restore.params.defaultValue].sort()).toEqual([...selector.props.defaultColumns].sort());
+        expect([...state.visibleColumns].sort()).toEqual([...selector.props.defaultColumns].sort());
+    });
+
+    it('기본 컬럼 묶음의 모든 키가 실제 DataGrid 컬럼 field 여야 함', () => {
+        const grid = findNodes(datagrid, (n: any) => n.name === 'DataGrid')[0];
+        const fields = (grid?.props?.columns ?? []).map((c: any) => c.field);
+        expect(fields.length).toBeGreaterThan(0);
+        for (const key of state.visibleColumns) {
+            expect(fields).toContain(key);
+        }
+    });
+
+    /**
+     * 계약 변경 (PO 확정, 6차 검증) — 종전 단언은 "클레임 컬럼은 기본 묶음 어디에도 없다
+     * (opt-in)" 였다. 그 opt-in 이 만든 것이 이번 라운드의 차단 결함이다: 컬럼 표시는
+     * 브라우저 저장값이, 값 수신은 주소(`with_claim_summary`)가 정해 서로 어긋났고,
+     * 컬럼을 한 번 켠 운영자의 다음 진입에서 컬럼은 보이는데 전 행이 "-" 가 됐다.
+     * 서버가 요약을 항상 싣도록 바꿔 근거를 하나로 되돌렸으므로, 클레임 컬럼은 이제
+     * 다른 10개와 같은 평범한 기본 컬럼이다.
+     */
+    it('클레임 컬럼은 기본 묶음 3출처에 모두 있어야 함', () => {
+        const restore = ((orderList as any).init_actions ?? [])
+            .find((a: any) => a.handler === 'loadFromLocalStorage' && a.params?.stateKey === 'visibleColumns');
+        const selector = findNodes(filterSection, (n: any) => n.props?.defaultColumns !== undefined)[0];
+
+        expect(state.visibleColumns).toContain('claim');
+        expect(restore.params.defaultValue).toContain('claim');
+        expect(selector.props.defaultColumns).toContain('claim');
+    });
+
+    /**
+     * 클레임 요약 요청을 주소로 나르던 축이 사라졌는지 고정한다. 남아 있으면 표시와
+     * 값 수신이 다시 두 근거를 갖게 되어 같은 결함이 되살아난다.
+     */
+    it('클레임 요약 opt-in 축(with_claim_summary)이 어디에도 남아 있지 않아야 함', () => {
+        const serialized = JSON.stringify([orderList, filterSection]);
+
+        expect(serialized.includes('"with_claim_summary"')).toBe(false);
+    });
 });
 
 // ========================================
@@ -334,30 +393,56 @@ describe('주문 목록 동적 필터 검증', () => {
 });
 
 // ========================================
-// 클레임 필터 제거 검증
+// 클레임 기준 필터 배선 검증 (D22)
 // ========================================
 
-describe('주문 목록 클레임 필터 제거 검증', () => {
-    it('필터 섹션에 claimStatus 관련 노드가 없어야 함', () => {
+/**
+ * 이 블록은 원래 "클레임 필터 제거 검증" 이었다.
+ *
+ * 2026-03 당시(#140) 클레임 기능 자체가 없어서 필터를 **임시로** 뺐고(그 지시 문언도
+ * "추후 재사용 가능하도록" 이었다) 그 사실을 테스트로 고정한 것이었다. 지금은 기능이
+ * 있고 서버(`OrderListRequest`)와 API 문서가 이미 클레임 필터 파라미터를 정본 계약으로
+ * 보유하므로, 부재를 단언하면 화면 테스트만 백엔드 계약과 반대 방향을 가리킨다.
+ *
+ * 축별 상세 계약(칩 어휘 == Enum 집합, 왕복 4지점, opt-in 요약)은
+ * `adminOrderListClaimFilter.test.ts` 가 담당한다. 여기서는 이 파일이 보던
+ * 세 지점(필터 섹션 / 데이터소스 params / state)에 배선이 **살아 있는지**만 지킨다.
+ */
+describe('주문 목록 클레임 기준 필터 배선 (D22)', () => {
+    it('필터 섹션에 클레임 노드가 있어야 함', () => {
         const claimNodes = findNodes(filterSection, (n: any) =>
             n.id?.includes('claim') || n.id?.includes('Claim')
         );
-        expect(claimNodes.length).toBe(0);
+        // 하한 0 은 노드가 하나만 남아도 통과한다. 이 블록의 실체는 칩 40개(유무 3 + 교환 14
+        // + 반품 11 + 환불 7 + 취소 2 + 귀책 3)와 신청일 2칸이므로, 그 규모가 무너지면
+        // 여기서 드러나야 한다 — 축별 어휘 대조는 adminOrderListClaimFilter.test.ts 소유다.
+        //
+        // 하한을 40 으로 두면 실측(47)과 7 만큼 벌어져 **칩 7개 또는 신청일 입력 2칸 전부가
+        // 사라져도 통과**한다. 실측값으로 고정한다 — 노드가 늘어 red 가 나면 그때 실측을 다시
+        // 세는 것이 맞다(무엇이 늘었는지 보게 된다).
+        expect(claimNodes.length).toBe(47);
+
+        // 필터 블록 컨테이너 자체도 살아 있어야 한다.
+        expect(claimNodes.some((n: any) => n.id === 'claim_filter_row')).toBe(true);
     });
 
-    it('data_sources params에 claim 관련 키가 없어야 함', () => {
+    it('data_sources params 에 클레임 축이 실려야 함', () => {
         const ordersDS = (orderList as any).data_sources.find((ds: any) => ds.id === 'orders');
         const claimKeys = Object.keys(ordersDS.params).filter((k: string) => k.includes('claim'));
-        expect(claimKeys.length).toBe(0);
+        expect(claimKeys).toContain('claim_presence');
+        // 요약 포함 여부는 더 이상 파라미터가 아니다 — 서버가 항상 싣는다.
+        expect(claimKeys).not.toContain('with_claim_summary');
     });
 
-    it('state에 claim 관련 필드가 없어야 함', () => {
+    it('state 에 클레임 필터 필드가 있어야 함', () => {
         const state = (orderList as any).state;
         const filterState = state.filter || {};
         const claimKeys = Object.keys(filterState).filter((k: string) =>
             k.toLowerCase().includes('claim')
         );
-        expect(claimKeys.length).toBe(0);
+        // 하한만 두면 8축 중 7축이 사라져도 통과한다 — 축별 상세는
+        // adminOrderListClaimFilter.test.ts 가 갖지만 여기서도 개수는 고정한다.
+        expect(claimKeys).toHaveLength(8);
     });
 });
 

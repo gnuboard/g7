@@ -144,9 +144,12 @@ return [
     // Claim Reason related
     'claim_reason_not_found' => 'Claim reason not found.',
     'claim_reason_in_use' => 'Cannot delete a reason that is already in use. (Used :count times)',
+    'claim_reason_code_locked_in_use' => 'Cannot change the code of a reason that is already in use. Submitted requests reference the reason by this code. (Used :count times)',
+    'claim_reason_type_locked_in_use' => 'Cannot change the type of a reason that is already in use. Submitted requests reference the reason by this code and type. (Used :count times)',
 
     // Shipping Type related
     'shipping_type_not_found' => 'Shipping type not found.',
+    'shipping_type_code_locked_in_use' => 'Cannot change the code of a shipping type (:name) that is already in use. Existing orders reference the shipping type by this code. (Used :count times)',
     'shipping_type_in_use' => 'Cannot delete shipping type (:name) in use by orders. (Used :count times)',
 
     // Shipping Carrier related

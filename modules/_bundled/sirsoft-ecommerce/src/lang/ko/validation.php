@@ -244,6 +244,7 @@ return [
     'options_min' => '옵션을 1개 이상 추가해주세요.',
     'selling_price_lte_list' => '판매가는 정가보다 클 수 없습니다.',
     'option_selling_price_lte_list' => '옵션 판매가는 정가보다 클 수 없습니다.',
+    'claim_reason_code_format' => '클레임 사유 코드는 영문 소문자로 시작하고, 소문자·숫자와 단어 사이의 언더스코어(_)만 사용할 수 있습니다(연속 언더스코어·끝 언더스코어 불가). 이미 저장된 코드는 그대로 두어도 됩니다.',
 
     // 상품 검증 메시지
     'product' => [
@@ -841,9 +842,6 @@ return [
             'date' => '클레임 신청일 종료는 올바른 날짜여야 합니다.',
             'after_or_equal' => '클레임 신청일 종료는 시작일 이후여야 합니다.',
         ],
-        'with_claim_summary' => [
-            'boolean' => '클레임 요약 포함 여부는 true 또는 false여야 합니다.',
-        ],
         // 정렬 및 페이지네이션
         'sort_by' => [
             'in' => '올바른 정렬 필드를 선택해주세요.',
@@ -1413,6 +1411,34 @@ return [
         'review_settings.max_images' => '리뷰 이미지 최대 개수',
         'review_settings.max_image_size_mb' => '리뷰 이미지 최대 용량(MB)',
 
+        // 클레임 설정
+        'claim.exchange_requestable_statuses' => '교환 신청 가능 상태',
+        'claim.return_requestable_statuses' => '반품 신청 가능 상태',
+        'claim.instant_cancel_statuses' => '즉시취소 가능 상태',
+        'claim.refund_request_statuses' => '환불신청 가능 상태',
+        'claim.allowed_charge_methods' => '허용 청구 방식',
+        'claim.charge_payment_methods' => '추가결제 수단',
+        'claim.auto_approve_zero_charge' => '추가 청구 없음 자동 승인',
+        'claim.auto_approve_after_payment' => '추가결제 완료 후 자동 승인',
+        'claim.auto_approve_refund_request' => '환불신청 자동 승인',
+        'claim.max_images' => '클레임 첨부 이미지 최대 개수',
+        'claim.image_max_size_kb' => '클레임 첨부 이미지 최대 용량(KB)',
+        'claim.request_period_days' => '클레임 신청 가능 기간(일)',
+        'claim.complete_defaults.create_refund_request' => '완료 처리 기본값 - 환불신청서 접수',
+        'claim.complete_defaults.restore_stock' => '완료 처리 기본값 - 재고 복구',
+        'claim.exchange_reasons' => '교환 사유',
+        'claim.exchange_reasons.*.code' => '교환 사유 코드',
+        'claim.exchange_reasons.*.name' => '교환 사유명',
+        'claim.exchange_reasons.*.fault_type' => '교환 사유 귀책 구분',
+        'claim.return_reasons' => '반품 사유',
+        'claim.return_reasons.*.code' => '반품 사유 코드',
+        'claim.return_reasons.*.name' => '반품 사유명',
+        'claim.return_reasons.*.fault_type' => '반품 사유 귀책 구분',
+        'claim.refund_reasons' => '환불 사유',
+        'claim.refund_reasons.*.code' => '환불 사유 코드',
+        'claim.refund_reasons.*.name' => '환불 사유명',
+        'claim.refund_reasons.*.fault_type' => '환불 사유 귀책 구분',
+
         // 기본 정보
         'basic_info' => '기본 정보',
         'basic_info.shop_name' => '쇼핑몰명',
@@ -1841,9 +1867,20 @@ return [
             ],
         ],
         'claim' => [
+            'exchange_reasons' => [
+                'duplicate_code' => '중복된 교환 사유 코드가 있습니다.',
+                'name_required' => '교환 사유명은 필수 항목입니다.',
+                'code_swap' => '다른 교환 사유가 아직 쓰고 있는 코드입니다. 코드를 서로 맞바꾸려면 한쪽을 먼저 다른 코드로 저장한 뒤 바꿔 주세요.',
+            ],
+            'return_reasons' => [
+                'duplicate_code' => '중복된 반품 사유 코드가 있습니다.',
+                'name_required' => '반품 사유명은 필수 항목입니다.',
+                'code_swap' => '다른 반품 사유가 아직 쓰고 있는 코드입니다. 코드를 서로 맞바꾸려면 한쪽을 먼저 다른 코드로 저장한 뒤 바꿔 주세요.',
+            ],
             'refund_reasons' => [
                 'duplicate_code' => '중복된 환불 사유 코드가 있습니다.',
                 'name_required' => '환불 사유명은 필수 항목입니다.',
+                'code_swap' => '다른 환불 사유가 아직 쓰고 있는 코드입니다. 코드를 서로 맞바꾸려면 한쪽을 먼저 다른 코드로 저장한 뒤 바꿔 주세요.',
             ],
         ],
         'shipping' => [
@@ -1901,6 +1938,7 @@ return [
             ],
             'types' => [
                 'duplicate_code' => '중복된 배송유형 코드가 있습니다.',
+                'code_swap' => '다른 배송유형이 아직 쓰고 있는 코드입니다. 코드를 서로 맞바꾸려면 한쪽을 먼저 다른 코드로 저장한 뒤 바꿔 주세요.',
                 'name_required' => '배송유형명은 필수 항목입니다.',
                 'code' => [
                     'required_with' => '배송유형 코드는 필수입니다.',
@@ -1922,6 +1960,7 @@ return [
             ],
             'carriers' => [
                 'duplicate_code' => '중복된 배송사 코드가 있습니다.',
+                'code_swap' => '다른 배송사가 아직 쓰고 있는 코드입니다. 코드를 서로 맞바꾸려면 한쪽을 먼저 다른 코드로 저장한 뒤 바꿔 주세요.',
                 'name_required' => '배송사명은 필수 항목입니다.',
                 'code' => [
                     'required_with' => '배송사 코드는 필수입니다.',

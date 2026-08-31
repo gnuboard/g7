@@ -9,8 +9,11 @@ use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderOptionFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderShippingFactory;
+use Modules\Sirsoft\Ecommerce\Enums\CancelStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\CancelTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
 use Modules\Sirsoft\Ecommerce\Models\OrderShipping;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
@@ -395,6 +398,58 @@ class OrderListDeferredJoinTest extends ModuleTestCase
     }
 
     /**
+     * 지연 조인 뒤에도 클레임 요약 관계가 살아 있다 (S10 13차).
+     *
+     * `PaginatesWithDeferredJoin` 은 inner 뿐 아니라 **outer 에서도** eager load 를 지운다 —
+     * 관계를 `relations:` 인자로 넘기지 않고 쿼리에 `with()` 만 해 두면 예외도 쿼리 오류도 없이
+     * 응답에서 필드만 사라진다. 그러면 화면의 클레임 컬럼은 전 행이 `-` 가 되는데, 형태가 같은
+     * 빈 배열이라 "미충족 조건부 필드" 검사(`{}` 만 본다)도 통과한다.
+     *
+     * 그래서 "클레임이 실재하는 주문"을 만들고 **값이 실려 오는지**를 본다. 클레임이 없는 주문의
+     * 빈 요약은 정상이므로, 빈 배열 금지가 아니라 채워짐을 단언해야 이 축이 고정된다.
+     *
+     * 14차 정정 — 종전 마킹은 `list_payload_has_no_empty_object_fields`(대표옵션 매니페스트 소유)
+     * 였는데 이 케이스는 빈 객체를 한 번도 보지 않는다. 형제 케이스가 그 effect 를 실제로
+     * 단언하고 있어 커버리지 룰은 침묵했다 — 이 케이스가 지키는 계약의 이름을 붙인다.
+     *
+     * @scenario claim_axis=type_status
+     *
+     * @effects order_list_claim_summary_survives_deferred_join
+     */
+    public function test_deferred_join_page_still_carries_the_claim_summary_relation(): void
+    {
+        $order = OrderFactory::new()->create();
+
+        OrderCancel::create([
+            'order_id' => $order->id,
+            'cancel_number' => 'S13CNL0001',
+            'cancel_status' => CancelStatusEnum::COMPLETED,
+            'cancel_type' => CancelTypeEnum::FULL,
+            'cancel_reason_type' => 'changed_mind',
+            'items_snapshot' => [],
+        ]);
+
+        $row = collect(
+            $this->actingAs($this->adminUser)
+                ->getJson('/api/modules/sirsoft-ecommerce/admin/orders')
+                ->assertOk()
+                ->json('data.data')
+        )->firstWhere('order_number', $order->order_number);
+
+        $this->assertNotNull($row, '방금 만든 주문이 목록에 없다');
+        $this->assertArrayHasKey('claim_summary', $row);
+
+        $cancel = collect($row['claim_summary'])->firstWhere('type', 'cancel');
+
+        $this->assertNotNull(
+            $cancel,
+            '클레임이 실재하는데 요약이 비었다 — 지연 조인이 outer 의 eager load 를 지웠을 때 나타나는 형태다'
+        );
+        $this->assertSame(1, $cancel['count']);
+        $this->assertSame('S13CNL0001', $cancel['latest_claim_number']);
+    }
+
+    /**
      * @effects list_payload_has_no_empty_object_fields
      */
     public function test_list_payload_has_no_unfulfilled_conditional_fields(): void
@@ -404,12 +459,18 @@ class OrderListDeferredJoinTest extends ModuleTestCase
         $response = $this->actingAs($this->adminUser)
             ->getJson('/api/modules/sirsoft-ecommerce/admin/orders');
 
-        foreach ($response->json('data.data') as $row) {
-            foreach ($row as $key => $value) {
+        // 연관배열로 디코드하면 JSON 의 `{}` 와 `[]` 가 둘 다 PHP `[]` 가 되어 구분되지 않는다.
+        // 잡으려는 것은 **미충족 조건부 필드가 남긴 `{}`** 뿐이고, 정상적으로 빈 배열인
+        // 필드(클레임이 없는 주문의 `claim_summary` 등)는 위반이 아니다. 객체로 디코드하면
+        // `{}` 만 stdClass 가 되므로 둘을 정확히 갈라 볼 수 있다.
+        $rows = json_decode($response->getContent(), false)->data->data;
+
+        foreach ($rows as $row) {
+            foreach (get_object_vars($row) as $key => $value) {
                 // 컬렉션이 toArray() 결과를 그대로 싣는 경로는 Laravel 의 MissingValue 제거를
                 // 거치지 않는다 — 미충족 필드가 `{}` 로 응답에 남는다
                 $this->assertFalse(
-                    is_array($value) && $value === [],
+                    $value instanceof \stdClass && get_object_vars($value) === [],
                     "미충족 조건부 필드가 빈 객체로 남았다: {$key}",
                 );
             }

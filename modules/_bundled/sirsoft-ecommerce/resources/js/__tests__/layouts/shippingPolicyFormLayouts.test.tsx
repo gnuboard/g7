@@ -222,19 +222,27 @@ describe('shippingPolicyFormLayouts', () => {
             expect(computed.defaultCurrencyLabel).toContain('language_currency?.default_currency');
         });
 
-        it('init_actions: 글로벌 상태 초기화 + 커스텀 핸들러 + 복사 모드 is_default 해제', () => {
-            expect(mainLayout.init_actions).toHaveLength(3);
+        it('init_actions: 로케일 주입 + 글로벌 상태 초기화 + 커스텀 핸들러 + 복사 모드 is_default 해제 + 신규 등록 회수지 허용', () => {
+            // 개수·인덱스로 고정하지 않는다 — 같은 파일의 partial 순서 검사(아래)가 이미 남긴
+            // 이유와 같다. 이 수는 계약이 아니라 당시 구조의 스냅샷이라, init_action 이 하나 늘 때마다
+            // 무관한 단언이 함께 깨진다(18차에 로케일 주입이 들어오며 실제로 그렇게 됐다).
+            // 계약은 "무엇이 있는가" 이고, 순서가 계약인 것은 로케일 주입 하나뿐이라
+            // 그 축은 전용 검사(adminLocaleInjectionCoverage)가 저장소 파생 모집단으로 본다.
+            const actions: any[] = mainLayout.init_actions;
+            const byHandler = (h: string) => actions.filter((a) => a.handler === h);
+
+            // 현재 로케일 주입 — 뒤에 두면 그보다 앞선 액션의 표현식이 빈 값을 읽는다.
+            expect(actions[0].handler).toBe('sirsoft-ecommerce.initAdminLocale');
 
             // 글로벌 상태 초기화 (템플릿 모달 로딩 플래그)
-            const globalInit = mainLayout.init_actions[0];
-            expect(globalInit.handler).toBe('setState');
-            expect(globalInit.params.target).toBe('global');
+            const globalInit = byHandler('setState').find((a) => a.params?.target === 'global');
+            expect(globalInit).toBeDefined();
             expect(globalInit.params.isTemplateSaving).toBe(false);
             expect(globalInit.params.isTemplateDeleting).toBe(false);
 
             // 커스텀 핸들러로 수정/등록/복사 모드 분기
-            const formInit = mainLayout.init_actions[1];
-            expect(formInit.handler).toBe('sirsoft-ecommerce.initShippingPolicyForm');
+            const [formInit] = byHandler('sirsoft-ecommerce.initShippingPolicyForm');
+            expect(formInit).toBeDefined();
             expect(formInit.params.isEdit).toBe('{{!!route.id}}');
             expect(formInit.params.isCopy).toBe('{{!!query?.copy_id && !route?.id}}');
             expect(formInit.params.policy).toBe('{{route.id ? policy?.data : copy_source?.data}}');
@@ -242,11 +250,33 @@ describe('shippingPolicyFormLayouts', () => {
             expect(formInit).not.toHaveProperty('if');
 
             // 복사 모드일 때 is_default=false 강제 해제
-            const copyDefaultReset = mainLayout.init_actions[2];
+            const copyDefaultReset = actions.find((a) => a.params?.['form.is_default'] === false);
+            expect(copyDefaultReset).toBeDefined();
             expect(copyDefaultReset.if).toBe('{{!!query?.copy_id && !route?.id}}');
             expect(copyDefaultReset.handler).toBe('setState');
             expect(copyDefaultReset.params.target).toBe('local');
-            expect(copyDefaultReset.params['form.is_default']).toBe(false);
+
+            // 신규 등록은 회수지 조회 데이터소스가 돌지 않으므로 저장 허용 플래그를 init 에서 세운다
+            // (액션 체인의 `if` 는 `route` 를 읽지 못한다 — S10 10차 실측)
+            const claimLoaded = actions.find((a) => a.params?.['claimAddresses._loaded'] === true);
+            expect(claimLoaded).toBeDefined();
+            expect(claimLoaded.if).toBe('{{!route.id}}');
+            expect(claimLoaded.handler).toBe('setState');
+            expect(claimLoaded.params.target).toBe('local');
+
+            // 개수 리터럴을 걷어내면서 **상한이 함께 사라졌다** — 그 뒤로는 무관한 init_action 이
+            // 몇 개 늘어도 이 검사가 초록이다. 형제 화면(`shippingPolicyListLayouts`)이 되살린 것과
+            // 같은 형태로 상한을 세운다: 개수가 아니라 **이 화면의 init_actions 에 설 수 있는
+            // 핸들러 집합**을 못박아, 예상 밖의 핸들러가 들어오면 그 이름과 함께 붉어지게 한다.
+            const ALLOWED_INIT_HANDLERS = [
+                'sirsoft-ecommerce.initAdminLocale',
+                'sirsoft-ecommerce.initShippingPolicyForm',
+                'setState',
+            ];
+            expect(
+                actions.map((a: any) => a?.handler).filter((h: string) => !ALLOWED_INIT_HANDLERS.includes(h)),
+                '예상 밖의 init_action 이 늘었다 — 의도한 것이면 허용 집합에 함께 적는다',
+            ).toEqual([]);
         });
 
         it('modals: extra_fee_template 모달 참조', () => {
@@ -257,26 +287,51 @@ describe('shippingPolicyFormLayouts', () => {
             expect(extraFeeModal.partial).toContain('_modal_extra_fee_template.json');
         });
 
-        it('5개 partial 참조 (basic_info + country_settings_wrapper[tabs, basic_fields, charge, extra_fee]) + footer_buttons (sticky 저장 영역)', () => {
+        it('partial 이 정해진 순서로 놓이고 footer_buttons 가 마지막이다', () => {
+            // 개수(toHaveLength)로 고정하지 않는다 — 이 수는 계약이 아니라 당시 구조의
+            // 스냅샷이라, partial 이 하나 늘 때마다 무관한 테스트가 깨져 왔다
+            // (3 → 2 → 3 → 4). 계약은 "무엇이 어떤 순서로 놓이는가" 이므로 상대 순서로 본다.
             const content = mainLayout.slots.content[0];
             const formSections = findById(content, 'form_sections');
             expect(formSections).toBeDefined();
-            // form_sections: basic_info + country_settings_wrapper + footer_buttons
-            expect(formSections.children).toHaveLength(3);
-            expect(formSections.children[0].partial).toContain('_partial_basic_info.json');
 
-            // country_settings_wrapper: 4개 partial (tabs, basic_fields, charge, extra_fee)
-            const wrapper = formSections.children[1];
-            expect(wrapper.id).toBe('country_settings_wrapper');
-            expect(wrapper.children).toHaveLength(4);
-            expect(wrapper.children[0].partial).toContain('_partial_country_tabs.json');
-            expect(wrapper.children[1].partial).toContain('_partial_country_basic_fields.json');
-            expect(wrapper.children[2].partial).toContain('_partial_charge_settings.json');
-            expect(wrapper.children[3].partial).toContain('_partial_extra_fee.json');
+            const order = (formSections.children as any[]).map(
+                (c: any) => c.partial ?? c.id
+            );
+            const at = (needle: string) => order.findIndex((v: string) => v.includes(needle));
 
-            // footer_buttons: sticky 하단 저장 영역
-            const footer = formSections.children[2];
-            expect(footer.id).toBe('footer_buttons');
+            // 기본정보 → 클레임 회수지 → 국가별 설정 → 저장 영역
+            expect(at('_partial_basic_info.json')).toBe(0);
+            expect(at('_partial_claim_addresses.json')).toBe(1);
+            expect(at('country_settings_wrapper')).toBeGreaterThan(at('_partial_claim_addresses.json'));
+            expect(at('footer_buttons')).toBe(order.length - 1);
+
+            // country_settings_wrapper 안쪽도 순서로 본다
+            const wrapper = (formSections.children as any[]).find(
+                (c: any) => c.id === 'country_settings_wrapper'
+            );
+            expect(wrapper).toBeDefined();
+
+            const inner = (wrapper.children as any[]).map((c: any) => c.partial ?? c.id);
+            const innerAt = (needle: string) => inner.findIndex((v: string) => v.includes(needle));
+
+            expect(innerAt('_partial_country_tabs.json')).toBe(0);
+            expect(innerAt('_partial_country_basic_fields.json')).toBe(1);
+            expect(innerAt('_partial_charge_settings.json')).toBeGreaterThan(
+                innerAt('_partial_country_basic_fields.json')
+            );
+            // 클레임 배송비는 청구 설정과 추가배송비 사이
+            expect(innerAt('_partial_claim_country_fee.json')).toBeGreaterThan(
+                innerAt('_partial_charge_settings.json')
+            );
+            expect(innerAt('_partial_extra_fee.json')).toBeGreaterThan(
+                innerAt('_partial_claim_country_fee.json')
+            );
+
+            // 상대 순서만 보면 같은 partial 이 두 번 실려 폼이 이중 렌더돼도 통과한다 —
+            // 개수를 계약으로 삼지 않는 대신 중복만 막는다.
+            expect(new Set(inner).size, `country_settings_wrapper 에 중복 partial 이 있다: ${inner.join(', ')}`).toBe(inner.length);
+            expect(new Set(order).size, `form_sections 에 중복 partial 이 있다: ${order.join(', ')}`).toBe(order.length);
         });
 
         it('form_sections에 dataKey + debounce 설정', () => {
@@ -1120,6 +1175,87 @@ describe('shippingPolicyFormLayouts', () => {
             expect(formKeys.some(k => k.includes('shipping_method'))).toBe(true);
             expect(formKeys.some(k => k.includes('currency_code'))).toBe(true);
             expect(formKeys.some(k => k.includes('country_tab_remove'))).toBe(true);
+        });
+    });
+
+    // ===== 등록/수정 안내 문구의 술어 (19차) =====
+
+    describe('저장 성공 토스트는 route.id 로만 등록/수정을 가른다', () => {
+        /**
+         * `savedPolicyId` 는 **요청 주소를 정하는 값**이다 — 신규 등록에서 정책 POST 는 성공했는데
+         * 뒤이은 회수지 PUT 이 거절되면 화면에 머무는데, `route.id` 는 여전히 비어 있어 다시 [저장]
+         * 을 누르면 같은 정책이 하나 더 생긴다. 그래서 첫 성공 시점에 그 id 를 붙잡는다.
+         *
+         * 그런데 그 값을 **"수정이었는가" 의 술어로 쓰면 안 된다.** `ActionDispatcher.handleSequence`
+         * 는 `__target:'local'` setState 의 결과를 `currentState` 에 병합해 같은 시퀀스의 뒤 액션
+         * 스냅샷에 싣는다. 그래서 `savedPolicyId` 를 채운 줄 다음부터는 신규 등록에서도 언제나
+         * truthy 이고, 토스트가 그것을 읽으면 새로 만든 정책에 "수정되었습니다" 가 나간다.
+         *
+         * 이 검사의 **모집단은 레이아웃에서 파생**한다 — 등록/수정 문구를 쓰는 토스트를 전부 찾아
+         * 각각의 술어를 본다. 성공 경로가 하나 더 생겨도(회수지 저장 유무로 이미 둘이다) 자동으로
+         * 검사 대상이 된다.
+         */
+
+        /** 등록/수정 문구를 쓰는 토스트 액션의 message 표현식을 레이아웃에서 전부 뽑는다 */
+        function saveToastMessages(): string[] {
+            const found: string[] = [];
+
+            const walk = (node: any): void => {
+                if (!node || typeof node !== 'object') return;
+
+                if (Array.isArray(node)) {
+                    node.forEach(walk);
+                    return;
+                }
+
+                const message = node?.handler === 'toast' ? node?.params?.message : undefined;
+
+                if (typeof message === 'string' && message.includes('shipping_policy.messages.created')) {
+                    found.push(message);
+                }
+
+                Object.values(node).forEach(walk);
+            };
+
+            walk(mainLayout);
+
+            return found;
+        }
+
+        it('모집단이 비어 있지 않다 (성공 토스트를 못 찾으면 아래 검사가 통째로 사문이 된다)', () => {
+            // 회수지를 저장하는 경로와 저장하지 않는 경로 둘 다 자기 토스트를 갖는다
+            expect(saveToastMessages().length).toBeGreaterThanOrEqual(2);
+        });
+
+        it('등록/수정 판정에 savedPolicyId 를 읽지 않는다', () => {
+            for (const message of saveToastMessages()) {
+                // 읽으면 신규 등록에서도 truthy 라 "수정되었습니다" 가 나간다
+                expect(message).not.toContain('savedPolicyId');
+            }
+        });
+
+        it('등록/수정 판정은 route.id 가 한다', () => {
+            for (const message of saveToastMessages()) {
+                expect(message).toContain('route.id ?');
+                expect(message).toContain('shipping_policy.messages.updated');
+            }
+        });
+
+        it('삼항의 방향이 뒤집혀 있지 않다 (route.id 가 있으면 "수정")', () => {
+            // 위 두 검사는 "`route.id ?` 를 쓴다" 와 "updated 문구를 쓴다" 만 본다 — 그래서
+            // `route.id ? …created : …updated` 로 **뒤집어도 셋 다 통과**한다. 그 상태의 증상은
+            // 19차가 고친 결함과 정확히 같다(새로 만든 정책에 "수정되었습니다"). 방향까지 고정한다.
+            for (const message of saveToastMessages()) {
+                const branches = /route\.id\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/.exec(message);
+
+                expect(branches, `삼항의 두 갈래를 읽지 못했다: ${message}`).not.toBeNull();
+                expect(branches![1], 'route.id 가 있는 갈래(수정)가 updated 를 가리켜야 한다').toContain(
+                    'shipping_policy.messages.updated',
+                );
+                expect(branches![2], 'route.id 가 없는 갈래(신규)가 created 를 가리켜야 한다').toContain(
+                    'shipping_policy.messages.created',
+                );
+            }
         });
     });
 });

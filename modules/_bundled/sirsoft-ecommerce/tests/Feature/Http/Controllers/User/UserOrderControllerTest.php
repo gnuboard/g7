@@ -11,6 +11,7 @@ use Modules\Sirsoft\Ecommerce\Enums\ProductDisplayStatus;
 use Modules\Sirsoft\Ecommerce\Enums\ProductSalesStatus;
 use Modules\Sirsoft\Ecommerce\Models\Cart;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Models\Product;
@@ -1282,5 +1283,94 @@ class UserOrderControllerTest extends ModuleTestCase
         $response->assertStatus(201);
         $this->assertDatabaseHas('ecommerce_carts', ['id' => $cart1->id, 'quantity' => 7]);
         $this->assertDatabaseMissing('ecommerce_carts', ['id' => $cart2->id]);
+    }
+
+    /**
+     * 마이페이지 주문내역이 그 주문에 접수된 클레임 요약을 함께 내려준다.
+     *
+     * 주문 목록 조회는 관리자·구매자가 같은 저장소 메서드를 쓴다. 그 메서드가 클레임 관계와
+     * 집계를 항상 싣게 된 뒤로 이 값은 이미 손에 있었는데 구매자 응답만 직렬화를 하지 않아,
+     * 불러온 것을 그대로 버리면서 구매자는 자기 주문의 교환·반품 진행 상태를 목록에서 볼 수
+     * 없었다. 오류도 로그도 남지 않는 형태였다.
+     *
+     * @scenario claim_presence=with_claim
+     *
+     * @effects mypage_order_list_serializes_claim_summary
+     */
+    public function test_마이페이지_주문내역이_클레임_요약을_내려준다(): void
+    {
+        $user = $this->createUser();
+        $this->actingAs($user);
+
+        $order = Order::factory()->create([
+            'user_id' => $user->id,
+            'order_status' => OrderStatusEnum::DELIVERED,
+        ]);
+
+        OrderExchange::factory()->create(['order_id' => $order->id]);
+
+        $response = $this->getJson('/api/modules/sirsoft-ecommerce/user/orders');
+
+        $response->assertOk();
+
+        $row = collect($response->json('data.data'))->firstWhere('id', $order->id);
+
+        $this->assertNotNull($row, '방금 만든 주문이 목록에 없다');
+        $this->assertArrayHasKey('claim_summary', $row, '구매자 응답에 클레임 요약이 없다');
+
+        $exchange = collect($row['claim_summary'])->firstWhere('type', 'exchange');
+
+        $this->assertNotNull($exchange, '접수된 교환이 요약에 실리지 않았다');
+        $this->assertSame(1, $exchange['count']);
+        $this->assertNotEmpty($exchange['status_label'], '배지에 그릴 상태 라벨이 비어 있다');
+        // 마이페이지 배지는 이 값으로 classMap 을 고른다 — 비면 7어휘가 전부 회색 하나가 된다.
+        // 관리자 쪽과 같은 트레이트가 만들지만, 한쪽만 단언하면 그 공유가 깨져도 드러나지 않는다.
+        $this->assertNotEmpty($exchange['status_variant'], '요약이 배지 variant 를 싣지 않았다 — 마이페이지 배지가 무색이 된다');
+        $this->assertNotEmpty($exchange['type_label'], '유형 라벨이 비어 있다 — 상태 라벨이 없을 때의 폴백 표기가 사라진다');
+    }
+
+    /**
+     * 클레임이 없는 주문은 빈 배열로 내려간다 (키 자체가 빠지지 않는다).
+     *
+     * 키가 없으면 화면이 "아직 안 왔다" 와 "없다" 를 구분하지 못해 `?? []` 분기가 번진다.
+     *
+     * @scenario claim_presence=without_claim
+     *
+     * @effects mypage_order_without_claim_serializes_empty_array
+     */
+    public function test_클레임이_없는_주문은_빈_배열을_내려준다(): void
+    {
+        $user = $this->createUser();
+        $this->actingAs($user);
+
+        $order = Order::factory()->create([
+            'user_id' => $user->id,
+            'order_status' => OrderStatusEnum::DELIVERED,
+        ]);
+
+        $response = $this->getJson('/api/modules/sirsoft-ecommerce/user/orders');
+
+        $row = collect($response->assertOk()->json('data.data'))->firstWhere('id', $order->id);
+
+        // 형제 케이스와 같은 강도로 먼저 확인한다 — 이 단언이 없으면 목록 조회가 깨졌을 때
+        // 원인이 "요약 직렬화" 가 아니라 "목록에 주문이 없다" 인데도 TypeError 로 죽어
+        // 리포트가 두 원인을 구분하지 못한다.
+        $this->assertNotNull($row, '방금 만든 주문이 목록에 없다');
+        $this->assertArrayHasKey('claim_summary', $row, '클레임이 없어도 요약 키는 있어야 한다');
+        $this->assertSame([], $row['claim_summary']);
+
+        // 위 단언만으로는 이 케이스의 이름(`..._serializes_empty_array`)이 약속한 것을 고정하지
+        // 못한다 — `$response->json()` 은 연관배열로 디코드하므로 JSON 의 `{}` 와 `[]` 가 둘 다
+        // PHP `[]` 가 되어 구분되지 않는다. 화면이 이 값을 `iteration` 으로 도는데 `{}` 가 오면
+        // 반복이 돌지 않고, 그 사실은 오류 없이 "배지가 안 보인다" 로만 나타난다.
+        // 형제 `OrderListDeferredJoinTest` 가 같은 함정을 객체 디코드로 가른다.
+        $decoded = json_decode($response->getContent(), false);
+        $rawRow = collect($decoded->data->data)->firstWhere('id', $order->id);
+
+        $this->assertNotNull($rawRow, '객체 디코드에서 주문을 찾지 못했다');
+        $this->assertIsArray(
+            $rawRow->claim_summary,
+            'claim_summary 가 빈 객체(`{}`)로 직렬화됐다 — 화면 반복이 돌지 않는다'
+        );
     }
 }

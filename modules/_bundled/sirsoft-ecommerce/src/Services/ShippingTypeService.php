@@ -165,6 +165,72 @@ class ShippingTypeService
     }
 
     /**
+     * 저장 payload 가 사용 중인 배송유형을 지우려 하는지 **쓰기 없이** 판정합니다
+     *
+     * 설정 저장은 JSON 파일 쓰기라 트랜잭션으로 되돌릴 수 없다. `syncShippingTypes()` 안의
+     * 가드는 파일이 이미 기록된 뒤에 돌아, 거절되면 배송 스칼라만 반영된 반쪽 상태가 남는다.
+     * 그래서 컨트롤러가 파일 쓰기 **앞에서** 이 선행 판정을 부른다
+     * (`ClaimReasonService::assertSyncDeletable()` 과 같은 형태).
+     *
+     * `syncShippingTypes()` 안의 가드는 그대로 둔다 — 이 서비스는 확장에 열려 있어 다른 호출
+     * 경로가 이 선행 판정을 건너뛸 수 있다.
+     *
+     * @param  array  $typesData  저장하려는 types 배열
+     * @return void 반환값 없음 (판정 결과는 예외로만 통지)
+     *
+     * @throws ShippingTypeOperationException 사용 중인 배송유형을 지우려 할 때
+     */
+    public function assertSyncDeletable(array $typesData): void
+    {
+        $existingIds = $this->repository->pluckIds();
+        $incomingIds = array_filter(array_column($typesData, 'id'));
+
+        foreach (array_diff($existingIds, $incomingIds) as $id) {
+            $type = $this->repository->findById((int) $id);
+
+            if (! $type) {
+                continue;
+            }
+
+            $usageCount = $this->orderShippingRepository->countByShippingType($type->code);
+
+            if ($usageCount > 0) {
+                throw new ShippingTypeOperationException('sirsoft-ecommerce::exceptions.shipping_type_in_use', [
+                    'name' => $type->getLocalizedName(),
+                    'count' => $usageCount,
+                ]);
+            }
+        }
+
+        // 코드 변경도 같은 강도로 막는다 — 사유 카탈로그(`ClaimReasonService::assertSyncDeletable`)와
+        // 같은 이유다. 주문 배송행은 배송유형을 `shipping_type` **코드 문자열**로만 기억하므로
+        // (FK 없음), 코드를 바꾸면 삭제와 똑같이 그 유형으로 접수된 전건이 카탈로그를 잃는다:
+        // 목록의 배송방법 라벨이 빈칸이 되고, 그 코드가 실린 북마크·프리셋 URL 은 목록 전체를
+        // 422 로 만들며, 새 코드 기준 사용량이 0 이라 **삭제 가드마저 통과**한다.
+        // 삭제만 막으면 평범한 오타 교정 한 번이 그 셋을 한꺼번에 낸다.
+        foreach ($typesData as $data) {
+            if (empty($data['id']) || ! in_array($data['id'], $existingIds)) {
+                continue;
+            }
+
+            $type = $this->repository->findById((int) $data['id']);
+
+            if (! $type || ! array_key_exists('code', $data) || $data['code'] === $type->code) {
+                continue;
+            }
+
+            $usageCount = $this->orderShippingRepository->countByShippingType($type->code);
+
+            if ($usageCount > 0) {
+                throw new ShippingTypeOperationException('sirsoft-ecommerce::exceptions.shipping_type_code_locked_in_use', [
+                    'name' => $type->getLocalizedName(),
+                    'count' => $usageCount,
+                ]);
+            }
+        }
+    }
+
+    /**
      * 배송유형 일괄 동기화 (설정 저장 시 사용)
      *
      * payload에 있는 types를 DB와 동기화합니다.
@@ -211,6 +277,22 @@ class ShippingTypeService
                 ];
 
                 if (! empty($data['id']) && in_array($data['id'], $existingIds)) {
+                    // 선행 판정(assertSyncDeletable)을 거치지 않는 호출 경로가 있을 수 있으므로
+                    // 여기서도 코드 변경을 막는다 — 삭제 가드와 같은 이유다
+                    // (`ClaimReasonService::syncReasons()` 와 같은 형태).
+                    $existing = $this->repository->findById((int) $data['id']);
+
+                    if ($existing && $existing->code !== $typeData['code']) {
+                        $usageCount = $this->orderShippingRepository->countByShippingType($existing->code);
+
+                        if ($usageCount > 0) {
+                            throw new ShippingTypeOperationException('sirsoft-ecommerce::exceptions.shipping_type_code_locked_in_use', [
+                                'name' => $existing->getLocalizedName(),
+                                'count' => $usageCount,
+                            ]);
+                        }
+                    }
+
                     $this->repository->update((int) $data['id'], $typeData);
                 } else {
                     $typeData['created_by'] = Auth::id();

@@ -20,6 +20,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
@@ -30,7 +31,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * - claim_presence 3종 (none / any / active)
  * - 유형별 상태(취소는 유형) 집합 필터 + 유형 간 OR
  * - 귀책·신청일 축 (취소는 귀책 축 없음 — 매칭 제외)
- * - claim_summary opt-in 직렬화 (미요청 시 키 부재, 취소 발 환불 제외, 유형별 최신 상태·건수)
+ * - claim_summary 항상 직렬화 (요청 파라미터와 무관 — 6차 PO 확정으로 opt-in 폐지. 취소 발 환불 제외, 유형별 최신 상태·건수)
  * - 어휘 밖 상태값 422
  */
 class OrderListClaimFilterTest extends ModuleTestCase
@@ -74,6 +75,15 @@ class OrderListClaimFilterTest extends ModuleTestCase
         return collect($response->json('data.data'))->pluck('order_number')->all();
     }
 
+    /**
+     * 총 건수 대조 — 한 주문에 매칭 클레임이 여럿이어도 원 행이 부풀지 않는다 (§8-1 T4).
+     *
+     * 이 effect 의 실질 단언은 여기뿐이다. E2E 는 클레임 표본이 0이면 아무것도 단언하지 못한다.
+     *
+     * @scenario claim_axis=type_status
+     *
+     * @effects order_list_claim_filter_total_is_not_inflated
+     */
     public function test_claim_filter_total_is_not_inflated_by_multiple_matching_claims(): void
     {
         $order = $this->makeOrder();
@@ -167,7 +177,8 @@ class OrderListClaimFilterTest extends ModuleTestCase
         // 전이 상태 어휘(requested 등)는 취소 축에서 422 — 어휘는 CancelTypeEnum 단일 출처
         $this->actingAs($this->admin)
             ->getJson($this->url('claim_cancel_types[]=requested'))
-            ->assertUnprocessable();
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('claim_cancel_types.0');
     }
 
     public function test_fault_and_requested_date_constrain_the_same_claim_row(): void
@@ -205,7 +216,7 @@ class OrderListClaimFilterTest extends ModuleTestCase
         $this->assertContains($sellerFault->order_number, $this->orderNumbers($range));
     }
 
-    public function test_claim_summary_is_serialized_only_when_requested(): void
+    public function test_claim_summary_is_serialized_without_any_opt_in_parameter(): void
     {
         $order = $this->makeOrder();
         $this->makeReturn($order, ReturnStatusEnum::REQUESTED);
@@ -232,13 +243,11 @@ class OrderListClaimFilterTest extends ModuleTestCase
             'refund_shipping_amount' => 0,
         ]);
 
-        // opt-in 없이 — 키 자체가 없다 (하위 컬렉션 무조건 직렬화 금지)
-        $withoutFlag = $this->actingAs($this->admin)->getJson($this->url())->assertOk();
-        $this->assertArrayNotHasKey('claim_summary', $withoutFlag->json('data.data.0'));
-
-        $withFlag = $this->actingAs($this->admin)
-            ->getJson($this->url('with_claim_summary=1'))
-            ->assertOk();
+        // 파라미터 없이도 항상 실린다. 종전에는 `with_claim_summary` 요청에만 싣는 opt-in
+        // 이었는데, 컬럼 표시(브라우저 저장값)와 값 수신(주소)이 서로 다른 근거를 갖게 되어
+        // 어긋났다 — 컬럼을 한 번 켠 운영자의 다음 진입에서 전 행이 "-" 가 됐다.
+        $withFlag = $this->actingAs($this->admin)->getJson($this->url())->assertOk();
+        $this->assertArrayHasKey('claim_summary', $withFlag->json('data.data.0'));
 
         $row = collect($withFlag->json('data.data'))->firstWhere('order_number', $order->order_number);
         $summary = collect($row['claim_summary'])->keyBy('type');
@@ -248,8 +257,21 @@ class OrderListClaimFilterTest extends ModuleTestCase
         $this->assertSame(ReturnStatusEnum::COLLECTING->value, $summary['return']['status']);
         $this->assertSame($latest->return_number, $summary['return']['latest_claim_number']);
 
+        // 배지 색을 정하는 값. 관리자 StatusBadge 와 마이페이지 classMap 이 **둘 다** 이 키
+        // 하나를 읽으므로, 트레이트에서 빠지거나 오타가 나면 7어휘가 전부 무색(회색 하나)이
+        // 되는데 어휘 대조 테스트는 Enum ↔ 사전 파일만 보아 초록으로 남는다. 페이로드에서
+        // 직접 단언한다 — 라벨도 같은 이유로 함께 본다.
+        $this->assertSame(
+            ReturnStatusEnum::COLLECTING->variant(),
+            $summary['return']['status_variant'],
+            '요약이 배지 variant 를 싣지 않았다 — 화면의 모든 상태 배지가 무색이 된다'
+        );
+        $this->assertSame(ReturnStatusEnum::COLLECTING->label(), $summary['return']['status_label']);
+        $this->assertNotEmpty($summary['return']['type_label'], '유형 라벨이 비어 있다 — 마이페이지 배지의 폴백 표기가 사라진다');
+
         // 취소 축은 실리고 환불 축은 취소 발 제외로 비어 있다
         $this->assertSame(1, $summary['cancel']['count']);
+        $this->assertNotNull($summary['cancel']['status_variant'], '취소 축만 variant 가 비었다');
         $this->assertArrayNotHasKey('refund', $summary->all());
     }
 
@@ -292,7 +314,7 @@ class OrderListClaimFilterTest extends ModuleTestCase
         ]);
 
         $response = $this->actingAs($this->admin)
-            ->getJson($this->url('with_claim_summary=1'))
+            ->getJson($this->url())
             ->assertOk();
 
         $row = collect($response->json('data.data'))->firstWhere('order_number', $order->order_number);
@@ -336,11 +358,13 @@ class OrderListClaimFilterTest extends ModuleTestCase
     {
         $this->actingAs($this->admin)
             ->getJson($this->url('claim_return_statuses[]=not_a_status'))
-            ->assertUnprocessable();
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('claim_return_statuses.0');
 
         $this->actingAs($this->admin)
             ->getJson($this->url('claim_presence=sometimes'))
-            ->assertUnprocessable();
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('claim_presence');
     }
 
     public function test_legacy_refunds_without_source_type_are_treated_as_direct(): void
@@ -375,7 +399,7 @@ class OrderListClaimFilterTest extends ModuleTestCase
 
         // ③ 요약 배지·건수에 실린다
         $summary = $this->actingAs($this->admin)
-            ->getJson($this->url('with_claim_summary=1'))
+            ->getJson($this->url())
             ->assertOk();
         $row = collect($summary->json('data.data'))->firstWhere('order_number', $legacy->order_number);
         $refund = collect($row['claim_summary'])->firstWhere('type', 'refund');
@@ -428,27 +452,33 @@ class OrderListClaimFilterTest extends ModuleTestCase
         $this->assertSame([$direct->order_number], $this->orderNumbers($response));
     }
 
-    public function test_with_claim_summary_accepts_string_booleans_and_rejects_unparsable_values(): void
+    /**
+     * 클레임 요약은 어떤 요청에도 실린다.
+     *
+     * 계약 변경 (PO 확정, 6차 검증) — 종전에는 `with_claim_summary` 파라미터가 이 축을
+     * 켰고, 그 파라미터의 문자열 불리언 정규화("true"/"false")와 해석 불가 값의 422 를
+     * 이 케이스가 고정했다. 표시와 값 수신이 근거를 달리해 어긋나는 결함의 원인이라
+     * 파라미터를 없앴다. 이제 확인할 것은 "요청이 무엇이든 실린다" 하나다.
+     */
+    public function test_claim_summary_is_served_regardless_of_query(): void
     {
         $order = $this->makeOrder();
         $this->makeReturn($order);
 
-        // 쿼리 파라미터는 문자열로 도착한다 — 화면이 "true"/"false" 를 보내는 형태를 받아야 한다.
-        $true = $this->actingAs($this->admin)
-            ->getJson($this->url('with_claim_summary=true'))
-            ->assertOk();
-        $this->assertArrayHasKey('claim_summary', $true->json('data.data.0'));
+        foreach (['', 'per_page=10', 'claim_presence=any'] as $query) {
+            $response = $this->actingAs($this->admin)->getJson($this->url($query))->assertOk();
 
-        $false = $this->actingAs($this->admin)
-            ->getJson($this->url('with_claim_summary=false'))
-            ->assertOk();
-        $this->assertArrayNotHasKey('claim_summary', $false->json('data.data.0'));
+            $this->assertArrayHasKey(
+                'claim_summary',
+                $response->json('data.data.0'),
+                "쿼리 [{$query}] 응답에 claim_summary 가 없습니다",
+            );
+        }
 
-        // 해석 불가한 값은 건드리지 않는다 — null 로 정규화하면 오타 파라미터가
-        // "필터 없음" 으로 조용히 통과한다.
+        // 사라진 파라미터는 미지정 키라 검증에서 조용히 무시된다 — 422 가 아니다.
         $this->actingAs($this->admin)
             ->getJson($this->url('with_claim_summary=maybe'))
-            ->assertStatus(422);
+            ->assertOk();
     }
 
     public function test_claim_requested_to_bounds_the_range(): void
@@ -490,5 +520,81 @@ class OrderListClaimFilterTest extends ModuleTestCase
 
         $this->assertSame([], $this->orderNumbers($response));
         $this->assertSame(0, $response->json('data.pagination.total'));
+    }
+
+    /**
+     * `claim_presence=none` + 귀책 + 취소 유형만 지정하면 매칭 가능한 유형이 없다 — "그런 클레임이
+     * 없는 주문" 은 전건이므로 결과가 비어서는 안 된다 (S6c 1차 이월 a — S10 소유).
+     */
+    public function test_presence_none_with_fault_and_cancel_only_returns_every_order(): void
+    {
+        $plain = $this->makeOrder();
+        $cancelled = $this->makeOrder();
+        OrderCancel::create([
+            'order_id' => $cancelled->id,
+            'cancel_number' => 'CL-TEST-'.uniqid(),
+            'cancel_type' => CancelTypeEnum::FULL,
+            'cancel_status' => CancelStatusEnum::COMPLETED,
+            'cancel_reason_type' => 'change_of_mind',
+            'items_snapshot' => [],
+        ]);
+
+        $res = $this->actingAs($this->admin)
+            ->getJson($this->url('claim_presence=none&claim_cancel_types[]=full&claim_fault_types[]=seller'))
+            ->assertOk();
+
+        $this->assertEqualsCanonicalizing(
+            [$plain->order_number, $cancelled->order_number],
+            $this->orderNumbers($res),
+        );
+
+        // 대조군: `any` 로는 같은 조합이 0건이다 — 두 응답이 서로의 여집합이어야 한다.
+        $any = $this->actingAs($this->admin)
+            ->getJson($this->url('claim_presence=any&claim_cancel_types[]=full&claim_fault_types[]=seller'))
+            ->assertOk();
+        $this->assertSame([], $this->orderNumbers($any));
+    }
+
+    /**
+     * 엑셀 내려받기가 화면과 같은 클레임 기준으로 걸러진다.
+     *
+     * 클레임 기준(D22)은 목록·내려받기 공용 필터 경로(`applyListFilters()`) 안에 있다 —
+     * 내려받기 쪽이 빠뜨리면 화면에는 1건인데 파일에는 전건이 담긴다. 실패도 경고도 없이
+     * **파일 내용만** 달라지므로, 운영자는 걸러진 결과를 받은 줄 알고 그대로 쓴다.
+     *
+     * @scenario claim_axis=type_status
+     *
+     * @effects order_list_claim_filter_narrows_result
+     */
+    public function test_export_applies_the_same_claim_criteria_as_the_list(): void
+    {
+        $matching = $this->makeOrder();
+        $this->makeReturn($matching);
+        $other = $this->makeOrder(); // 클레임 없는 주문 — 걸러져야 한다
+
+        $filters = ['claim_return_statuses' => ['requested']];
+
+        $exported = app(OrderRepositoryInterface::class)->getForExport($filters);
+
+        $this->assertSame(
+            [$matching->order_number],
+            $exported->pluck('order_number')->all(),
+            '내려받기가 클레임 기준을 무시했다 — 화면과 파일의 대상이 갈린다'
+        );
+
+        // 화면과 같은 술어를 쓰는지 함께 본다. 두 경로가 같은 답을 내야 계약이 성립한다.
+        $listed = $this->actingAs($this->admin)
+            ->getJson($this->url('claim_return_statuses[]=requested'))
+            ->assertOk();
+
+        $this->assertSame(
+            $this->orderNumbers($listed),
+            $exported->pluck('order_number')->all(),
+            '같은 필터인데 목록과 내려받기의 대상이 다르다'
+        );
+
+        // 명시 ID 내려받기(선택 행 저장)는 그 선택이 대상이다 — 클레임 기준을 덧씌우지 않는다.
+        $byIds = app(OrderRepositoryInterface::class)->getForExport($filters, [$other->id]);
+        $this->assertSame([$other->order_number], $byIds->pluck('order_number')->all());
     }
 }

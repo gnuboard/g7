@@ -174,6 +174,13 @@ class StoreEcommerceSettingsRequestNumericCastTest extends ModuleTestCase
 
         $numericFields = [];
         foreach ($rules as $field => $fieldRules) {
+            // `Rule::forEach()` 같은 규칙 객체는 문자열로 변환되지 않는다 — 요청의 파생 로직
+            // (`numericCastTypeFor`)과 같은 이유로 건너뛴다. 이 가드가 없으면 10차가 배송사·배송유형
+            // 이름 규칙을 forEach 로 바꾼 뒤 이 테스트가 red 였는데 어느 배치도 돌리지 않아 드러나지 않았다.
+            if (! is_array($fieldRules) && ! is_string($fieldRules)) {
+                continue;
+            }
+
             $list = is_array($fieldRules) ? $fieldRules : explode('|', (string) $fieldRules);
             foreach ($list as $rule) {
                 if (is_string($rule) && in_array($rule, ['integer', 'numeric'], true)) {

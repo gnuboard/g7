@@ -54,7 +54,15 @@
             "devices": [],
             "shippingPolicy": "",
             "minShippingFee": "",
-            "maxShippingFee": ""
+            "maxShippingFee": "",
+            "claimPresence": "",
+            "claimExchangeStatuses": [],
+            "claimReturnStatuses": [],
+            "claimRefundStatuses": [],
+            "claimCancelTypes": [],
+            "claimFaultTypes": [],
+            "claimRequestedFrom": "",
+            "claimRequestedTo": ""
         },
         "ordererSearchResults": [],
         "selectedItems": [],
@@ -82,13 +90,15 @@
             "payment_method",
             "delivery_method",
             "country",
-            "device"
+            "device",
+            "claim"
         ],
         "visibleFilters": [
             "searchField",
             "searchKeyword",
             "date",
-            "orderStatus"
+            "orderStatus",
+            "claim"
         ]
     },
     "transition_overlay": {
@@ -128,7 +138,15 @@
                 "min_shipping_amount": "{{query.min_shipping_amount}}",
                 "max_shipping_amount": "{{query.max_shipping_amount}}",
                 "orderer_uuid": "{{query.orderer_uuid}}",
-                "member_type": "{{query.member_type}}"
+                "member_type": "{{query.member_type}}",
+                "claim_presence": "{{query.claim_presence}}",
+                "claim_exchange_statuses": "{{query['claim_exchange_statuses[]']}}",
+                "claim_return_statuses": "{{query['claim_return_statuses[]']}}",
+                "claim_refund_statuses": "{{query['claim_refund_statuses[]']}}",
+                "claim_cancel_types": "{{query['claim_cancel_types[]']}}",
+                "claim_fault_types": "{{query['claim_fault_types[]']}}",
+                "claim_requested_from": "{{query.claim_requested_from}}",
+                "claim_requested_to": "{{query.claim_requested_to}}"
             },
             "errorHandling": {
                 "403": {
@@ -204,20 +222,27 @@
     ],
     "init_actions": [
         {
+            "comment": "레이아웃 표현식에는 현재 로케일을 알려 주는 변수가 없다 — `$locale` 은 편집 모드에서만 주입되고 `_global.locale` 은 코어가 쓰지 않아, 관례 체인 `$locale ?? _global.locale ?? 'ko'` 가 어떤 로케일에서도 마지막 항으로 굳는다. 이 화면의 필터 옵션 라벨 3지점(국가명·결제수단명·배송유형명)이 그 체인을 쓰므로, 주입이 없으면 en/ja 운영자에게 선택지가 한국어로 나온다. 설정 화면과 같은 이유·같은 순서로 다른 액션보다 먼저 주입한다.",
+            "handler": "sirsoft-ecommerce.initAdminLocale"
+        },
+        {
+            "comment": "저장값이 **없는** 브라우저의 초기 컬럼 묶음. ColumnSelector 의 defaultColumns(_partial_filter_section.json)와 state.visibleColumns 세 곳이 같은 값이어야 한다 — DataGrid 는 required 를 보지 않고 visibleColumns 에 있는 field 만 그리므로, 여기 목록이 컬럼 field 와 어긋나면 그 컬럼은 신규 운영자에게만 조용히 사라진다. claim 은 기본 표시 컬럼이다(PO 확정). 다만 표시 여부를 이 목록'만'이 정하는 것은 아니다 — ColumnSelector 는 브라우저 저장값(g7_columns_*)이 있으면 그것을 우선하고 신규 **정적** 컬럼을 자동으로 더하지 않는다(자동 포함은 dynamicColumns 전용). 그래서 컬럼 선택을 한 번이라도 만진 기존 운영자에게 claim 컬럼은 뜨지 않는다 — 기존 저장값을 건드리지 않는 것이 PO 확정(7차 Q1)이므로 마이그레이션을 두지 않는다. 그리고 DataGrid 의 컬럼 12개 중 no 는 이 4출처 어디에도 없어 렌더되지 않는다(HEAD 선재, S16 소유).",
             "handler": "loadFromLocalStorage",
             "params": {
                 "key": "g7_order_visible_columns",
                 "stateKey": "visibleColumns",
                 "defaultValue": [
-                    "order_date",
+                    "ordered_at",
                     "order_number",
-                    "order_status",
-                    "order_amount",
                     "product",
+                    "order_amount",
+                    "order_status",
                     "orderer",
                     "payment_method",
                     "delivery_method",
-                    "country"
+                    "country",
+                    "device",
+                    "claim"
                 ]
             }
         },
@@ -248,7 +273,15 @@
                         "maxShippingFee": "{{query.max_shipping_amount || ''}}",
                         "selectedPreset": "{{query.preset_id || ''}}",
                         "ordererUuid": "{{query.orderer_uuid || ''}}",
-                        "memberType": "{{query.member_type || ''}}"
+                        "memberType": "{{query.member_type || ''}}",
+                        "claimPresence": "{{query.claim_presence || ''}}",
+                        "claimExchangeStatuses": "{{query['claim_exchange_statuses[]'] || []}}",
+                        "claimReturnStatuses": "{{query['claim_return_statuses[]'] || []}}",
+                        "claimRefundStatuses": "{{query['claim_refund_statuses[]'] || []}}",
+                        "claimCancelTypes": "{{query['claim_cancel_types[]'] || []}}",
+                        "claimFaultTypes": "{{query['claim_fault_types[]'] || []}}",
+                        "claimRequestedFrom": "{{query.claim_requested_from || ''}}",
+                        "claimRequestedTo": "{{query.claim_requested_to || ''}}"
                     }
                 }
             }
@@ -282,7 +315,8 @@
                     "searchField",
                     "searchKeyword",
                     "date",
-                    "orderStatus"
+                    "orderStatus",
+                    "claim"
                 ]
             },
             "resultTo": {
@@ -320,7 +354,15 @@
                     "min_shipping_amount": "{{_local.filter.minShippingFee || null}}",
                     "max_shipping_amount": "{{_local.filter.maxShippingFee || null}}",
                     "orderer_uuid": "{{_local.filter.ordererUuid || null}}",
-                    "member_type": "{{_local.filter.memberType || null}}"
+                    "member_type": "{{_local.filter.memberType || null}}",
+                    "claim_presence": "{{_local.filter.claimPresence || null}}",
+                    "claim_exchange_statuses[]": "{{(_local.filter.claimExchangeStatuses || []).length > 0 ? _local.filter.claimExchangeStatuses : null}}",
+                    "claim_return_statuses[]": "{{(_local.filter.claimReturnStatuses || []).length > 0 ? _local.filter.claimReturnStatuses : null}}",
+                    "claim_refund_statuses[]": "{{(_local.filter.claimRefundStatuses || []).length > 0 ? _local.filter.claimRefundStatuses : null}}",
+                    "claim_cancel_types[]": "{{(_local.filter.claimCancelTypes || []).length > 0 ? _local.filter.claimCancelTypes : null}}",
+                    "claim_fault_types[]": "{{(_local.filter.claimFaultTypes || []).length > 0 ? _local.filter.claimFaultTypes : null}}",
+                    "claim_requested_from": "{{_local.filter.claimRequestedFrom || null}}",
+                    "claim_requested_to": "{{_local.filter.claimRequestedTo || null}}"
                 },
                 "transition_overlay_target": "order_datagrid__body"
             }
@@ -374,7 +416,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "arrow-left",
-                                                    "className": "w-5 h-5"
+                                                    "className": "text-xl"
                                                 }
                                             }
                                         ],
@@ -436,7 +478,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "refresh-cw",
-                                                    "className": "w-5 h-5"
+                                                    "className": "text-xl"
                                                 }
                                             }
                                         ],
@@ -488,7 +530,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "settings",
-                                            "className": "w-4 h-4"
+                                            "className": "text-base"
                                         }
                                     },
                                     {
@@ -523,7 +565,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "list",
-                                            "className": "w-4 h-4"
+                                            "className": "text-base"
                                         }
                                     },
                                     {

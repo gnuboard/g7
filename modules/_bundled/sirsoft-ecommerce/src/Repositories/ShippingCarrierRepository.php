@@ -101,6 +101,22 @@ class ShippingCarrierRepository implements ShippingCarrierRepositoryInterface
     /**
      * {@inheritDoc}
      */
+    public function findByCodes(array $codes): Collection
+    {
+        $codes = array_values(array_unique(array_filter(array_map('strval', $codes), fn (string $c) => $c !== '')));
+
+        if ($codes === []) {
+            return new Collection;
+        }
+
+        return $this->model->newQuery()
+            ->whereIn('code', $codes)
+            ->get(['id', 'code']);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function existsByCode(string $code, ?int $excludeId = null): bool
     {
         $query = $this->model->where('code', $code);
