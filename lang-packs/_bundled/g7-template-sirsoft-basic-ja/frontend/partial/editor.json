@@ -1103,7 +1103,8 @@
     "wishlist": "ウィッシュリスト",
     "mileage_balance": "マイレージ残高",
     "mileage_history": "マイレージ履歴",
-    "reviewSettings": "レビューポリシー設定"
+    "reviewSettings": "レビューポリシー設定",
+    "claimable": "クレーム申請可能商品"
   },
   "provider": {
     "naver": "Naver",

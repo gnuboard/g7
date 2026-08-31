@@ -46,10 +46,10 @@
               }
             },
             {
-              "comment": "전체 선택 체크박스 (취소 가능 시에만 표시)",
+              "comment": "전체 선택 체크박스 — 취소 가능하거나, 클레임(교환/반품/취소·환불)이 열린 상품이 있을 때 표시한다. claimable 데이터소스는 회원 주문상세 셸만 싣는다 — 비회원 셸에서는 undefined 라 종전과 같이 취소 가능 여부만 본다.",
               "type": "basic",
               "name": "Label",
-              "if": "{{order.data.abilities?.can_cancel === true}}",
+              "if": "{{order.data.abilities?.can_cancel === true || (claimable?.data?.options ?? []).some(o => (o.claimable_types ?? []).length > 0)}}",
               "props": { "className": "flex items-center gap-1.5 ml-2 cursor-pointer select-none" },
               "children": [
                 {
@@ -78,10 +78,10 @@
           ]
         },
         {
-          "comment": "우측: 주문 취소 버튼 (비활성화/활성화)",
+          "comment": "우측: 주문 취소 버튼 — 클레임 신청 버튼을 쓰는 셸(useClaimActions)에서는 감춘다. 취소는 [취소·환불 신청] 이 통합 입구로 받고(D2), 서버가 상품 상태로 즉시취소/환불신청을 분기한다. 표식이 없는 셸(비회원 주문상세)은 종전 취소 모달을 그대로 쓴다.",
           "type": "basic",
           "name": "Button",
-          "if": "{{order.data.abilities?.can_cancel === true}}",
+          "if": "{{order.data.abilities?.can_cancel === true && _local.useClaimActions !== true}}",
           "props": {
             "type": "button",
             "className": "flex items-center gap-1.5 px-3 py-1.5 bg-red-600 dark:bg-red-500 hover:bg-red-700 dark:hover:bg-red-600 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
@@ -135,10 +135,10 @@
               },
               "children": [
                 {
-                  "comment": "체크박스 (취소 가능 + 미취소 상태만)",
+                  "comment": "체크박스 — 취소 가능하거나 이 상품에 클레임이 열려 있을 때. 열린 유형이 없는 상품에 체크를 허용하면 신청 버튼이 활성화되지 않는 이유가 화면에 드러나지 않는다.",
                   "type": "basic",
                   "name": "Div",
-                  "if": "{{order.data.abilities?.can_cancel === true && item.option_status !== 'cancelled'}}",
+                  "if": "{{item.option_status !== 'cancelled' && (order.data.abilities?.can_cancel === true || (((claimable?.data?.options ?? []).find(o => o.option?.id === item.id)?.claimable_types) ?? []).length > 0)}}",
                   "props": { "className": "flex items-start pt-5 flex-shrink-0" },
                   "responsive": {
                     "portable": {

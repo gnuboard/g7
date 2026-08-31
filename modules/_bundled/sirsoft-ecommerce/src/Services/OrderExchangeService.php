@@ -163,7 +163,7 @@ class OrderExchangeService
      * @param  RefundPriorityEnum  $refundPriority  환불 우선순위
      * @param  array|null  $redeliveryAddress  재발송지 (D14) [{country_code?, zipcode?, ...}]
      * @param  int|null  $excludeExchangeId  수량 잠금 집계에서 뺄 교환 신청서 ID (수정 화면의 미리보기)
-     * @return array{shipping_fee: ClaimShippingFee, adjustment: AdjustmentResult, items: array, price_difference: float, additional_product_amount: float, refund_product_amount: float, total_charge_amount: float, fault_type: ClaimReasonFaultTypeEnum, charge_method: ClaimChargeMethodEnum|null, requires_payment: bool} 미리보기 결과
+     * @return array{shipping_fee: ClaimShippingFee, adjustment: AdjustmentResult, items: array, price_difference: float, additional_product_amount: float, refund_product_amount: float, total_charge_amount: float, mc_total_charge_amount: array|null, fault_type: ClaimReasonFaultTypeEnum, charge_method: ClaimChargeMethodEnum|null, requires_payment: bool} 미리보기 결과
      *
      * @throws OrderClaimException 사유 부재 / 대상 부재 / 신규 옵션 무효
      */
@@ -209,6 +209,10 @@ class OrderExchangeService
             'additional_product_amount' => $additional,
             'refund_product_amount' => $refund,
             'total_charge_amount' => $totalCharge,
+            // 접수 시 신청서에 박제되는 값(`mc_total_charge_amount`)과 같은 재료·같은 환율로 낸다.
+            // 미리보기에 이 값이 없으면 보조통화를 쓰는 구매자는 신청 화면에서 자기 통화의 청구액을
+            // 볼 수 없고, 결제 단계에 가서야 실제 금액을 알게 된다.
+            'mc_total_charge_amount' => $this->toMultiCurrency($totalCharge, $order->currency_snapshot ?? []),
             'fault_type' => $reason->fault_type,
             'charge_method' => $chargeMethod,
             'requires_payment' => $totalCharge > 0 && $chargeMethod?->requiresPayment() === true,

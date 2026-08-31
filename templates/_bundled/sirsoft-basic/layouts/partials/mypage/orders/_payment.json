@@ -497,6 +497,63 @@
           ]
         },
         {
+          "comment": "클레임(교환·반품) 추가결제 실수납 합계 (D20 · §2 해석 확정). 원 주문서 총 결제금액에 합산하지 않고 별도 표기하며, 합계 0원이면 행 자체를 렌더하지 않는다. 표기는 서버가 준 claim_additional_paid_total_formatted 를 그대로 쓴다 — 화면이 통화 기호를 붙이면 기본 통화가 다른 상점에서 단위만 틀린 금액이 나간다.",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{(order.data.claim_additional_paid_total ?? 0) > 0}}",
+          "props": { "className": "flex items-center justify-between" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-blue-600 dark:text-blue-400 font-medium" },
+              "text": "$t:mypage.order_detail.claim_additional_paid",
+              "responsive": {
+                "portable": {
+                  "props": { "className": "text-blue-600 dark:text-blue-400 font-medium text-sm" }
+                }
+              }
+            },
+            {
+              "comment": "기준통화 표기 + 보조통화 병기. 형제 금액 줄과 같은 규약이다 — 이 줄만 기준통화 단독이면 보조통화를 쓰는 구매자가 같은 카드 안에서 한 줄만 자기 통화로 읽지 못한다.",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "text-right" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-blue-600 dark:text-blue-400 font-medium" },
+                  "text": "+{{order.data.claim_additional_paid_total_formatted ?? ''}}",
+                  "responsive": {
+                    "portable": {
+                      "props": { "className": "text-blue-600 dark:text-blue-400 font-medium text-sm" }
+                    }
+                  }
+                },
+                {
+                  "comment": "보조 통화들",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex flex-wrap gap-x-2 justify-end mt-0.5" },
+                  "iteration": {
+                    "source": "{{Object.entries(order.data.mc_claim_additional_paid_total ?? {}).filter(([code]) => code !== (order.data.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
+                    "item_var": "claimPaidCurrency"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                      "text": "{{claimPaidCurrency[1]?.formatted ?? ''}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
           "comment": "구분선",
           "type": "basic",
           "name": "Div",

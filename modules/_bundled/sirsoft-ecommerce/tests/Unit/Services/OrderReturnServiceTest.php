@@ -1984,6 +1984,66 @@ class OrderReturnServiceTest extends ModuleTestCase
     }
 
     /**
+     * 미리보기도 보조통화 총액을 낸다 — 화면이 그 줄을 세우는 재료다 (§5-4).
+     *
+     * 반품의 청구는 회수 배송비 하나뿐이라 접수 시 박제되는 값과 같은 출처(`ClaimShippingFee::mcFee`)를
+     * 쓴다. 이 단언이 없으면 그 필드를 지워도 어떤 테스트도 red 가 되지 않고, 화면에서는 그 줄이
+     * 오류 없이 사라진다 (2026-08-31 3차 검증이 남긴 구멍).
+     */
+    public function test_preview_reports_multi_currency_charge_matching_the_request(): void
+    {
+        $policy = $this->createClaimShippingPolicy();
+        $order = $this->deliveredOrder(29000, 1, $policy);
+        $this->setReturnFixedFee($policy, 3000);
+
+        $order->forceFill(['currency_snapshot' => [
+            'base_currency' => 'KRW',
+            'order_currency' => 'KRW',
+            'exchange_rate' => 1.0,
+            'base_unit' => 1000,
+            'exchange_rates' => [
+                'KRW' => ['rate' => 1.0, 'rounding_unit' => '1', 'rounding_method' => 'floor', 'decimal_places' => 0, 'base_unit' => 1000],
+                'USD' => ['rate' => 0.75, 'rounding_unit' => '0.01', 'rounding_method' => 'round', 'decimal_places' => 2, 'base_unit' => 1000],
+            ],
+            'snapshot_at' => '2026-08-21T00:00:00+09:00',
+        ]])->save();
+
+        $order = $order->fresh(['options', 'shippings', 'payment']);
+        $payload = $this->payload($order, chargeMethod: ClaimChargeMethodEnum::PAY_ON_REQUEST);
+
+        $preview = $this->service->previewReturn(
+            $order,
+            $payload['items'],
+            'changed_mind',
+            ClaimChargeMethodEnum::PAY_ON_REQUEST
+        );
+        $return = $this->service->requestReturn($order, $payload);
+
+        $this->assertSame(3000, $preview['mc_total_charge_amount']['KRW']);
+        $this->assertSame(2.25, $preview['mc_total_charge_amount']['USD']);
+        // 예고와 기록이 같은 값이어야 한다 — 갈리면 화면이 예고한 금액과 청구가 어긋난다.
+        $this->assertSame($return->mc_total_charge_amount, $preview['mc_total_charge_amount']);
+    }
+
+    /** 통화 스냅샷이 없는 주문은 보조통화를 낼 근거가 없으므로 null 이다 (화면이 그 줄을 세우지 않는다). */
+    public function test_preview_reports_null_multi_currency_when_the_order_has_no_snapshot(): void
+    {
+        $policy = $this->createClaimShippingPolicy();
+        $this->setReturnFixedFee($policy, 3000);
+        $order = $this->deliveredOrder(29000, 1, $policy);
+        $order->forceFill(['currency_snapshot' => null])->save();
+        $payload = $this->payload($order);
+
+        $preview = $this->service->previewReturn(
+            $order->fresh(['options', 'shippings', 'payment']),
+            $payload['items'],
+            'changed_mind'
+        );
+
+        $this->assertNull($preview['mc_total_charge_amount']);
+    }
+
+    /**
      * 다통화 스냅샷이 없는 주문은 금액 수정 후에도 mc 컬럼이 비어 있다 (대조군).
      */
     public function test_update_amounts_leaves_multi_currency_empty_without_a_snapshot(): void

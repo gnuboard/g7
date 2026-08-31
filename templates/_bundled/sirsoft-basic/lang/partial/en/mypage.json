@@ -209,6 +209,7 @@
     "points_used": "Mileage Used",
     "deposit_used": "Deposit Used",
     "total_amount": "Total Amount",
+    "claim_additional_paid": "Claim additional payment",
     "points_earning": "Expected Mileage",
     "payment_method": "Payment Method",
     "shipping_status_title": "Shipping Status",

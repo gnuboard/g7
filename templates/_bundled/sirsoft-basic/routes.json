@@ -236,6 +236,15 @@
       }
     },
     {
+      "_comment": "클레임(교환/반품/취소·환불) 신청서 작성 — :type 은 exchange|return|refund 이며 그 밖의 값은 레이아웃 init_actions 가드가 404 로 세운다. 신청 내역 목록·상세·수정(edit) 라우트는 S13 이 추가한다.",
+      "path": "/mypage/orders/:order_number/claims/apply/:type",
+      "layout": "mypage/claims/apply",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:user.mypage.claim_apply_title"
+      }
+    },
+    {
       "path": "/mypage/mileage",
       "layout": "mypage/mileage",
       "auth_required": true,

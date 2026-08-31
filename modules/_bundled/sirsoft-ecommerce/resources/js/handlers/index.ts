@@ -237,6 +237,32 @@ import { changeShippingAddressHandler } from './userChangeShippingAddressHandler
 // 리뷰 작성 핸들러 (사용자)
 import { submitReviewHandler } from './userReviewHandlers';
 
+// 클레임 신청서 작성 핸들러 (회원/비회원 공용)
+import {
+    initClaimApplyHandler,
+    toggleClaimItemHandler,
+    toggleClaimSelectAllHandler,
+    updateClaimQuantityHandler,
+    setClaimReasonHandler,
+    setClaimChargeMethodHandler,
+    setClaimPaymentMethodHandler,
+    startClaimRedeliveryEditHandler,
+    applyClaimRedeliveryHandler,
+    resetClaimRedeliveryHandler,
+    openClaimChangeProductHandler,
+    setClaimChangeProductModeHandler,
+    applyClaimChangeProductHandler,
+    estimateClaimHandler,
+    submitClaimHandler,
+    clearClaimApplyTimers,
+} from './claimApplyHandlers';
+
+// 클레임 첨부 이미지 핸들러 (회원/비회원 공용)
+import {
+    setClaimImageFilesHandler,
+    removeClaimImageHandler,
+} from './claimImageHandlers';
+
 // 배송정책 폼 핸들러
 import {
     initShippingPolicyFormHandler,
@@ -500,6 +526,28 @@ export const handlerMap = {
 
     // ===== 리뷰 작성 (사용자) =====
     submitReview: submitReviewHandler,
+
+    // ===== 클레임 신청서 작성 (회원/비회원 공용) =====
+    initClaimApply: initClaimApplyHandler,
+    toggleClaimItem: toggleClaimItemHandler,
+    toggleClaimSelectAll: toggleClaimSelectAllHandler,
+    updateClaimQuantity: updateClaimQuantityHandler,
+    setClaimReason: setClaimReasonHandler,
+    setClaimChargeMethod: setClaimChargeMethodHandler,
+    setClaimPaymentMethod: setClaimPaymentMethodHandler,
+    startClaimRedeliveryEdit: startClaimRedeliveryEditHandler,
+    applyClaimRedelivery: applyClaimRedeliveryHandler,
+    resetClaimRedelivery: resetClaimRedeliveryHandler,
+    openClaimChangeProduct: openClaimChangeProductHandler,
+    setClaimChangeProductMode: setClaimChangeProductModeHandler,
+    applyClaimChangeProduct: applyClaimChangeProductHandler,
+    estimateClaim: estimateClaimHandler,
+    submitClaim: submitClaimHandler,
+    clearClaimApplyTimers: clearClaimApplyTimers,
+
+    // ===== 클레임 첨부 이미지 (회원/비회원 공용) =====
+    setClaimImageFiles: setClaimImageFilesHandler,
+    removeClaimImage: removeClaimImageHandler,
 
     // ===== URL 상태 복원 =====
     initCategoryFromUrl: initCategoryFromUrlHandler,

@@ -305,7 +305,8 @@
     "cancel_reason_title": "キャンセル理由",
     "cancel_reason": "理由",
     "cancel_reason_detail": "詳細な理由",
-    "charged_in_payment_currency": "決済通貨 {{currency}} {{amount}} 請求"
+    "charged_in_payment_currency": "決済通貨 {{currency}} {{amount}} 請求",
+    "claim_additional_paid": "クレーム追加決済"
   },
   "addresses": {
     "title": "配送先管理",

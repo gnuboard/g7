@@ -1,0 +1,284 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "클레임 신청서 작성 - 사유 선택 + 상세 사유 + 사진 첨부",
+    "editor_label": "$t:user.modal_label.mypage_claims.apply_reason"
+  },
+  "_comment": "사유 카탈로그는 유형별로 다른 목록이다(교환/반품/취소·환불 각각). 환불 사유를 교환 화면에 그리면 운영자가 교환용으로 만든 사유가 화면에 영영 나타나지 않는다. 라벨은 서버가 열람자 언어로 내려준 localized_name 을 그대로 쓴다 — name 은 다국어 맵이라 바인딩하면 객체가 그대로 찍힌다.",
+  "type": "basic",
+  "name": "Div",
+  "id": "claim_apply_reason",
+  "props": { "className": "bg-white dark:bg-gray-800 rounded-lg p-6" },
+  "responsive": {
+    "portable": {
+      "props": { "className": "bg-white dark:bg-gray-800 rounded-lg p-4" }
+    }
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex items-center gap-2 mb-4 pb-4 border-b border-gray-200 dark:border-gray-700" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "props": { "name": "comment-dots", "className": "text-base text-gray-700 dark:text-gray-300" }
+        },
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": { "className": "text-lg font-semibold text-gray-900 dark:text-white" },
+          "responsive": {
+            "portable": {
+              "props": { "className": "text-base font-semibold text-gray-900 dark:text-white" }
+            }
+          },
+          "text": "$t:claim.apply.reason_title"
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "space-y-4" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" },
+              "children": [
+                { "type": "basic", "name": "Span", "text": "$t:claim.apply.reason_label" },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-red-500 dark:text-red-400 ml-0.5" },
+                  "text": "*"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Select",
+              "props": {
+                "className": "{{_local.claimValidationErrors?.reason_code ? 'w-full px-3 py-2 text-sm border-2 border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white' : 'w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white'}}",
+                "value": "{{_local.claimReason ?? ''}}"
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "sirsoft-ecommerce.setClaimReason",
+                  "params": {
+                    "value": "{{$event.target.value}}",
+                    "claimApiBase": "{{_local.claimApiBase ?? ''}}",
+                    "isGuest": "{{_local.isGuest === true}}"
+                  }
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Option",
+                  "props": { "value": "" },
+                  "text": "$t:claim.apply.reason_placeholder"
+                },
+                {
+                  "comment": "사유 카탈로그는 진입 시 핸들러가 박아 둔 `_local.claimableSnapshot` 을 1순위로 읽고 데이터소스 store 는 폴백이다 — 핸들러(`claimableData`)와 같은 우선순위다. store 만 읽으면 `?order_id` 없이 들어온 진입(주소 직접 입력·북마크)에서 비어 있다: 그 경로는 첫 호출이 404 로 끝나고 체인이 다시 부르는데, 그 재조회 결과는 응답 컨텍스트로 핸들러에만 닿고 store 에는 나타나지 않는다. 상품 줄은 스냅샷에서 나와 그려지므로 화면은 정상으로 보이는데 사유만 비어, 사유가 필수인 신청서의 제출이 영영 막힌다(2026-08-31 3차 검증 실측).",
+                  "type": "basic",
+                  "name": "Option",
+                  "iteration": {
+                    "source": "{{((_local.claimableSnapshot ?? claimable?.data)?.reasons ?? {})[_local.claimType] ?? []}}",
+                    "item_var": "claimReason"
+                  },
+                  "props": { "value": "{{claimReason.code}}" },
+                  "text": "{{claimReason.localized_name}}"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{_local.claimValidationErrors?.reason_code}}",
+              "props": { "className": "text-xs text-red-500 dark:text-red-400 mt-1 block" },
+              "text": "{{Array.isArray(_local.claimValidationErrors?.reason_code) ? _local.claimValidationErrors.reason_code[0] : _local.claimValidationErrors?.reason_code}}"
+            },
+            {
+              "comment": "귀책 구분 — 회수·왕복 배송비의 부담 주체를 정하는 축이라, 사유를 고른 순간 무엇이 달라지는지 밝힌다. 라벨은 모듈 Enum 단일 출처를 쓴다.",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{!!_local.claimFaultType}}",
+              "props": { "className": "mt-2 flex items-center gap-1.5" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
+                  "text": "$t:claim.apply.fault_type_label"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-xs font-medium px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300" },
+                  "text": "{{_local.claimFaultType === 'customer' ? $t('sirsoft-ecommerce.enums.claim_reason_fault_type.customer') : (_local.claimFaultType === 'seller' ? $t('sirsoft-ecommerce.enums.claim_reason_fault_type.seller') : $t('sirsoft-ecommerce.enums.claim_reason_fault_type.carrier'))}}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" },
+              "text": "$t:claim.apply.reason_detail_label"
+            },
+            {
+              "type": "basic",
+              "name": "Textarea",
+              "props": {
+                "className": "w-full px-3 py-2 min-h-20 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
+                "placeholder": "$t:claim.apply.reason_detail_placeholder",
+                "maxLength": 1000,
+                "value": "{{_local.claimReasonDetail ?? ''}}"
+              },
+              "actions": [
+                {
+                  "type": "input",
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "claimReasonDetail": "{{$event.target.value}}",
+                    "claimValidationErrors": null,
+                    "claimSubmitError": null
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{_local.claimValidationErrors?.reason_detail}}",
+              "props": { "className": "text-xs text-red-500 dark:text-red-400 mt-1 block" },
+              "text": "{{Array.isArray(_local.claimValidationErrors?.reason_detail) ? _local.claimValidationErrors.reason_detail[0] : _local.claimValidationErrors?.reason_detail}}"
+            }
+          ]
+        },
+        {
+          "comment": "사진 첨부 — 장수·용량 상한은 운영자 설정(claim.max_images / claim.image_max_size_kb)이 정한다. 화면이 리터럴을 들고 있으면 운영자가 값을 바꿨을 때 안내와 실제 거절선이 갈린다.",
+          "type": "basic",
+          "name": "Div",
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" },
+              "text": "$t:claim.apply.images_title"
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mb-2" },
+              "text": "$t:claim.apply.images_hint|max={{(_local.claimableSnapshot ?? claimable?.data)?.settings?.max_images ?? 0}}|size={{(_local.claimableSnapshot ?? claimable?.data)?.settings?.image_max_size_kb ?? 0}}"
+            },
+            {
+              "type": "composite",
+              "name": "FileUploader",
+              "props": {
+                "autoUpload": false,
+                "accept": ".jpg,.jpeg,.png,.gif,.webp",
+                "maxFiles": "{{(_local.claimableSnapshot ?? claimable?.data)?.settings?.max_images ?? 5}}",
+                "maxSize": "{{Math.max(1, Math.ceil(((_local.claimableSnapshot ?? claimable?.data)?.settings?.image_max_size_kb ?? 5120) / 1024))}}"
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "sirsoft-ecommerce.setClaimImageFiles",
+                  "params": {
+                    "files": "{{$event.target.files ?? []}}"
+                  }
+                }
+              ]
+            },
+            {
+              "comment": "첨부 거절 사유 (§6-3 P13) — 서버는 `image_ids`·`image_ids.*` 로 쪼개 돌려주므로 핸들러가 접두사로 묶은 값을 읽는다. 요약 카드에만 남기면 구매자가 어느 칸을 고쳐야 하는지 알 수 없다.",
+              "type": "basic",
+              "name": "Span",
+              "if": "{{!!_local.claimFieldErrors?.images}}",
+              "props": { "className": "text-xs text-red-500 dark:text-red-400 mt-1 block" },
+              "text": "{{_local.claimFieldErrors?.images ?? ''}}"
+            },
+            {
+              "comment": "이미 올라간(귀속 대기) 첨부 — 제출이 실패한 뒤 재진입해도 남아 있으므로 여기서 지울 수 있어야 한다.",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{(_local.claimImages ?? []).length > 0}}",
+              "props": { "className": "mt-3 space-y-2" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "iteration": {
+                    "source": "{{_local.claimImages ?? []}}",
+                    "item_var": "claimImage"
+                  },
+                  "props": { "className": "flex items-center justify-between gap-3 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": { "className": "flex items-center gap-2 min-w-0" },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Img",
+                          "props": {
+                            "src": "{{claimImage.download_url ?? ''}}",
+                            "alt": "{{claimImage.original_name ?? ''}}",
+                            "className": "w-10 h-10 rounded object-cover bg-gray-100 dark:bg-gray-700"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": { "className": "text-sm text-gray-700 dark:text-gray-300 truncate" },
+                          "text": "{{claimImage.original_name ?? ''}}"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Button",
+                      "props": {
+                        "type": "button",
+                        "className": "flex-shrink-0 text-sm text-red-600 dark:text-red-400 hover:underline cursor-pointer"
+                      },
+                      "actions": [
+                        {
+                          "type": "click",
+                          "handler": "sirsoft-ecommerce.removeClaimImage",
+                          "params": {
+                            "imageId": "{{claimImage.id}}",
+                            "imageDeleteBase": "{{_local.imageDeleteBase ?? ''}}",
+                            "isGuest": "{{_local.isGuest === true}}"
+                          }
+                        }
+                      ],
+                      "text": "$t:claim.apply.image_remove"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

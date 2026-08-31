@@ -3,7 +3,10 @@
     "layout_name": "mypage/orders/show",
     "permissions": [],
     "extends": "_user_base",
+    "_comment_claim_actions": "클레임(교환/반품/취소·환불) 신청 진입을 이 화면이 소유한다. useClaimActions 는 공유 partial(_items.json)에 '이 셸은 클레임 신청 버튼을 쓴다' 를 알리는 표식이다 — 그 partial 은 비회원 주문상세와 공유하므로, 표식이 없는 셸(비회원)은 종전 [주문 취소] 버튼을 그대로 유지한다. 비회원 진입은 S14 가 같은 표식을 세워 전환한다.",
     "initLocal": {
+        "useClaimActions": true,
+        "claimOrderId": null,
         "isSubmittingAddress": false,
         "selectedItemIds": [],
         "selectAllItems": false,
@@ -33,7 +36,51 @@
             "method": "GET",
             "auto_fetch": true,
             "auth_required": true,
-            "loading_strategy": "progressive"
+            "loading_strategy": "progressive",
+            "_comment_refetch": "SPA 뒤로가기로 이 화면에 되돌아오면 캐시된 응답이 쓰여 onSuccess 가 발화하지 않는다 — 그러면 claimOrderId 를 세우고 claimable 을 부르는 체인이 통째로 건너뛰어져, 오류 없이 '신청할 수 있는 상품이 없습니다' 만 남는다(2026-08-31 실측). 클레임 가능 여부는 진입할 때마다 서버가 다시 판정해야 하는 값이기도 하다.",
+            "cache": false,
+            "refetchOnMount": true,
+            "initLocal": {
+                "claimOrderId": "data.id"
+            },
+            "onSuccess": [
+                {
+                    "comment": "클레임 가능 여부는 별도 엔드포인트가 판정한다(상품마다 어떤 유형이 열렸는지). 회원 클레임 API 는 주문 ID(정수)를 받는데 이 화면의 라우트는 주문번호를 쓰므로, 응답에서 받은 id 를 세운 뒤 claimable 을 부른다. 두 액션은 같은 sequence 안에 있어야 한다 — refetchDataSource 가 읽는 로컬 상태는 직전 setState 의 pending 값이다.",
+                    "handler": "sequence",
+                    "params": {
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "_local",
+                                    "claimOrderId": "{{response.data.data.id}}"
+                                }
+                            },
+                            {
+                                "handler": "refetchDataSource",
+                                "params": {
+                                    "dataSourceId": "claimable"
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "comment": "클레임 가능 상품·유형 — 버튼과 체크박스의 노출·활성 근거다. auto_fetch 를 끄고 order 응답이 도착한 뒤에만 부른다(주문 ID 가 필요하다).",
+            "id": "claimable",
+            "label_key": "$t:editor.data_source.claimable",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/user/orders/{{_local.claimOrderId}}/claimable-options",
+            "method": "GET",
+            "auto_fetch": false,
+            "auth_required": true,
+            "fallback": {
+                "data": {
+                    "options": []
+                }
+            }
         },
         {
             "id": "userAddresses",
@@ -174,6 +221,96 @@
                                     },
                                     {
                                         "partial": "partials/mypage/orders/_history.json"
+                                    },
+                                    {
+                                        "comment": "클레임 신청 버튼 3종 — 체크한 상품에 그 유형이 열려 있을 때만 활성이다. 열린 유형은 서버(claimable-options)가 상품마다 판정하므로 화면이 상태를 다시 해석하지 않는다. 열린 상품이 하나도 없으면 이 줄 자체가 나타나지 않는다.",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "if": "{{(claimable?.data?.options ?? []).some(o => (o.claimable_types ?? []).length > 0)}}",
+                                        "props": {
+                                            "className": "flex flex-row items-center justify-center gap-3 bg-white dark:bg-gray-800 rounded-lg p-4"
+                                        },
+                                        "responsive": {
+                                            "portable": {
+                                                "props": {
+                                                    "className": "flex flex-col gap-2 bg-white dark:bg-gray-800 rounded-lg p-4"
+                                                }
+                                            }
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "px-5 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
+                                                    "disabled": "{{(_local.selectedItemIds ?? []).length === 0 || !(_local.selectedItemIds ?? []).every(id => ((claimable?.data?.options ?? []).find(o => o.option?.id === id)?.claimable_types ?? []).includes('refund'))}}"
+                                                },
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/mypage/orders/{{route.order_number}}/claims/apply/refund",
+                                                            "mergeQuery": true,
+                                                            "query": {
+                                                                "options": "{{(_local.selectedItemIds ?? []).join(',')}}",
+                                                                "order_id": "{{order.data.id ?? ''}}"
+                                                            }
+                                                        }
+                                                    }
+                                                ],
+                                                "text": "$t:claim.apply.entry_refund"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "px-5 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
+                                                    "disabled": "{{(_local.selectedItemIds ?? []).length === 0 || !(_local.selectedItemIds ?? []).every(id => ((claimable?.data?.options ?? []).find(o => o.option?.id === id)?.claimable_types ?? []).includes('return'))}}"
+                                                },
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/mypage/orders/{{route.order_number}}/claims/apply/return",
+                                                            "mergeQuery": true,
+                                                            "query": {
+                                                                "options": "{{(_local.selectedItemIds ?? []).join(',')}}",
+                                                                "order_id": "{{order.data.id ?? ''}}"
+                                                            }
+                                                        }
+                                                    }
+                                                ],
+                                                "text": "$t:claim.apply.entry_return"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "px-5 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
+                                                    "disabled": "{{(_local.selectedItemIds ?? []).length === 0 || !(_local.selectedItemIds ?? []).every(id => ((claimable?.data?.options ?? []).find(o => o.option?.id === id)?.claimable_types ?? []).includes('exchange'))}}"
+                                                },
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/mypage/orders/{{route.order_number}}/claims/apply/exchange",
+                                                            "mergeQuery": true,
+                                                            "query": {
+                                                                "options": "{{(_local.selectedItemIds ?? []).join(',')}}",
+                                                                "order_id": "{{order.data.id ?? ''}}"
+                                                            }
+                                                        }
+                                                    }
+                                                ],
+                                                "text": "$t:claim.apply.entry_exchange"
+                                            }
+                                        ]
                                     },
                                     {
                                         "comment": "액션 버튼 영역",

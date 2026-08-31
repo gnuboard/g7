@@ -1,0 +1,518 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "클레임 신청서 작성 - 실시간 요약 + 청구 2축(D6) + 제출",
+    "editor_label": "$t:user.modal_label.mypage_claims.apply_summary"
+  },
+  "_comment": "금액은 전부 서버 미리보기(claims/preview)가 정한다 — 화면은 표시만 한다. 미리보기가 거절되면(422) 그 사유가 곧 신청이 거절될 사유이므로 금액을 지우고 제출을 잠근 뒤 이 자리에 그대로 보여 준다. 토스트로만 알리면 사라진 뒤에는 왜 제출이 막혔는지 화면에 남지 않는다.",
+  "_comment_charge_axes": "청구는 반드시 2축이다(D6). 한 축(라디오 1그룹)으로 접으면 '승인 후 결제 + 마일리지' 조합이 표현 불가해진다. 두 축 모두 운영자 허용 목록만 노출하고, '환불금에서 차감' 은 환불이 발생하는 신청에서만 활성이며 선택 시 축2 는 쓰이지 않으므로 비활성으로 표시한다. 취소·환불 유형은 회수 배송이 없어 청구가 발생하지 않으므로 두 축 모두 미노출이다.",
+  "type": "basic",
+  "name": "Div",
+  "id": "claim_apply_summary",
+  "props": { "className": "bg-white dark:bg-gray-800 rounded-lg p-6 space-y-4" },
+  "responsive": {
+    "portable": {
+      "props": { "className": "bg-white dark:bg-gray-800 rounded-lg p-4 space-y-3" }
+    }
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "H3",
+      "props": { "className": "text-lg font-semibold text-gray-900 dark:text-white pb-4 border-b border-gray-200 dark:border-gray-700" },
+      "responsive": {
+        "portable": {
+          "props": { "className": "text-base font-semibold text-gray-900 dark:text-white pb-3 border-b border-gray-200 dark:border-gray-700" }
+        }
+      },
+      "text": "$t:claim.apply.summary_title"
+    },
+    {
+      "comment": "계산 중",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_local.claimEstimateLoading === true}}",
+      "props": { "className": "py-6 text-center" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "props": { "name": "spinner", "className": "text-xl text-gray-400 dark:text-gray-500 animate-spin" }
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": { "className": "mt-2 text-sm text-gray-500 dark:text-gray-400" },
+          "text": "$t:claim.apply.estimate_loading"
+        }
+      ]
+    },
+    {
+      "comment": "미리보기 거절 안내 (P13) — 미리보기는 신청과 같은 자격 가드를 타므로 여기 나온 사유가 곧 신청 거절 사유다. 제출 버튼은 아래에서 함께 잠긴다.",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_local.claimEstimateLoading !== true && !!_local.claimEstimateError}}",
+      "props": { "className": "flex items-start gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "props": { "name": "circle-exclamation", "className": "text-base text-red-600 dark:text-red-400 flex-shrink-0" }
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "min-w-0" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "P",
+              "props": { "className": "text-sm text-red-700 dark:text-red-300" },
+              "text": "{{_local.claimEstimateError ?? ''}}"
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": { "className": "text-xs text-red-600 dark:text-red-400 mt-1" },
+              "text": "$t:claim.apply.blocked_hint"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "아직 계산할 수 없는 상태 — 상품과 사유가 모두 정해져야 서버가 금액을 낸다.",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_local.claimEstimateLoading !== true && !_local.claimEstimateError && !_local.claimEstimate}}",
+      "props": { "className": "py-6 text-center" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "P",
+          "props": { "className": "text-sm text-gray-400 dark:text-gray-500" },
+          "text": "$t:claim.apply.estimate_pending"
+        }
+      ]
+    },
+    {
+      "comment": "금액 요약 — 표기는 주문 시점 기준 통화로 고정한다.",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_local.claimEstimateLoading !== true && !!_local.claimEstimate}}",
+      "props": { "className": "space-y-2" },
+      "children": [
+        {
+          "comment": "배송비 — 교환은 왕복, 반품은 편도 회수비다.",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_local.claimType !== 'refund'}}",
+          "props": { "className": "flex items-center justify-between text-sm" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-gray-500 dark:text-gray-400" },
+              "text": "{{_local.claimType === 'exchange' ? $t('claim.apply.round_trip_shipping_fee') : $t('claim.apply.one_way_shipping_fee')}}"
+            },
+            {
+              "comment": "기준통화 표기 + 보조통화 병기 — 형제 금액 줄과 같은 규약이다(§5-4).",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "text-right" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-gray-900 dark:text-white" },
+                  "text": "{{_local.claimEstimateFormatted?.shipping_fee ?? ''}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex flex-wrap gap-x-2 justify-end mt-0.5" },
+                  "iteration": {
+                    "source": "{{_local.claimEstimateFormatted?.mc_shipping_fee ?? []}}",
+                    "item_var": "shippingFeeCurrency"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                      "text": "{{shippingFeeCurrency.formatted ?? ''}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "배송비 산출 근거 (§6-3) — 편도 단가 × 왕복 배수(교환 2 · 반품 1) + 도서산간. 서버가 배송정책 그룹마다 내려준 근거를 그대로 옮긴다. 근거가 없으면 구매자는 청구액이 어떻게 나왔는지 확인할 방법이 없고, 배송정책이 여러 개면 그룹마다 한 줄씩 나온다(그 줄 수가 곧 배송 건수다).",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_local.claimType !== 'refund' && (_local.claimEstimateFormatted?.shipping_groups ?? []).length > 0}}",
+          "props": { "className": "pl-3 space-y-0.5" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "iteration": {
+                "source": "{{_local.claimEstimateFormatted?.shipping_groups ?? []}}",
+                "item_var": "shippingGroup"
+              },
+              "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:claim.apply.shipping_fee_basis|unit={{shippingGroup.base_fee ?? ''}}|times={{shippingGroup.multiplier ?? 1}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{shippingGroup.has_extra_fee === true}}",
+                  "text": "$t:claim.apply.shipping_fee_extra_basis|extra={{shippingGroup.extra_fee ?? ''}}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_local.claimType === 'exchange' && (_local.claimEstimate?.price_difference ?? 0) !== 0}}",
+          "props": { "className": "flex items-center justify-between text-sm" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-gray-500 dark:text-gray-400" },
+              "text": "$t:claim.apply.option_price_difference"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "{{(_local.claimEstimate?.price_difference ?? 0) > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'}}" },
+              "text": "{{((_local.claimEstimate?.price_difference ?? 0) > 0 ? '+' : '-') + (_local.claimEstimateFormatted?.price_difference ?? '')}}"
+            }
+          ]
+        },
+        {
+          "comment": "옵션 차액의 상품별 분해 (§6-3) — 교환 대상은 상품마다 다르므로(D29) 합계만 보이면 어느 상품이 얼마를 보탰는지 알 수 없다. 상품 행에도 같은 값이 있지만, 여러 상품을 한꺼번에 신청하면 합계와 대조할 수 있는 자리는 요약뿐이다. 차액은 서버 미리보기가 상품마다 돌려준 값을 그 줄에 되붙인 것이라 합계와 출처가 같다.",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_local.claimType === 'exchange' && (_local.claimItems ?? []).filter(i => i.selected === true).length > 1}}",
+          "props": { "className": "pl-3 space-y-0.5" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "iteration": {
+                "source": "{{(_local.claimItems ?? []).filter(i => i.selected === true)}}",
+                "item_var": "summaryItem"
+              },
+              "props": { "className": "flex items-center justify-between text-xs" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-gray-500 dark:text-gray-400 truncate pr-2" },
+                  "text": "{{(summaryItem.product_name ?? '') + ' → ' + (summaryItem.exchange_mode === 'change' ? (summaryItem.new_option_label ?? '') : $t('claim.apply.exchange_same_option'))}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "{{(summaryItem.price_difference ?? 0) > 0 ? 'text-blue-600 dark:text-blue-400 flex-shrink-0' : ((summaryItem.price_difference ?? 0) < 0 ? 'text-red-600 dark:text-red-400 flex-shrink-0' : 'text-gray-400 dark:text-gray-500 flex-shrink-0')}}" },
+                  "text": "{{(summaryItem.price_difference ?? 0) === 0 ? $t('claim.apply.no_price_difference') : (((summaryItem.price_difference ?? 0) > 0 ? '+' : '-') + (summaryItem.price_difference_formatted ?? ''))}}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "환불 예정액 — 반품·취소·환불에서만 그린다. 교환의 adjustment 는 대상 상품을 일단 되돌린 뒤 새 옵션을 얹는 형태라 refund_total 이 0 이 아닌데(2026-08-31 실측: 차액 0원 교환에서 15,000원), 그 값은 구매자에게 돌려줄 돈이 아니다. 교환에서 돈이 오가는 축은 옵션 차액과 총 청구액 둘뿐이고 저가 교환의 환불은 차액이 음수로 나른다(§6-3).",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_local.claimType !== 'exchange' && (_local.claimEstimate?.adjustment?.refund_total ?? 0) > 0}}",
+          "props": { "className": "flex items-center justify-between text-sm" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-gray-500 dark:text-gray-400" },
+              "text": "$t:claim.apply.refund_expected"
+            },
+            {
+              "comment": "기준통화 표기 + 보조통화 병기 — 형제 금액 줄과 같은 규약이다(§5-4). 보조통화는 서버 정산이 낸 포맷 문자열을 그대로 쓴다.",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "text-right" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-red-600 dark:text-red-400 font-medium" },
+                  "text": "{{_local.claimEstimate?.adjustment?.refund_formatted?.base?.refund_total ?? _local.claimEstimateFormatted?.refund_total ?? ''}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex flex-wrap gap-x-2 justify-end mt-0.5" },
+                  "iteration": {
+                    "source": "{{_local.claimEstimateFormatted?.mc_refund_total ?? []}}",
+                    "item_var": "refundTotalCurrency"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                      "text": "{{refundTotalCurrency.formatted ?? ''}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "총 청구액 — 취소·환불은 회수 배송이 없어 청구가 발생하지 않으므로 그리지 않는다(§6-3). 형제 줄(청구 2축·환불 예정액)과 같은 유형 가드다 — 이 줄만 가드가 없으면 취소 신청서에 '총 청구액 0원' 이 선다.",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_local.claimType !== 'refund'}}",
+          "props": { "className": "flex items-center justify-between pt-3 mt-1 border-t border-gray-200 dark:border-gray-700" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-gray-900 dark:text-white font-medium" },
+              "text": "$t:claim.apply.total_charge"
+            },
+            {
+              "comment": "기준통화 표기 + 보조통화 병기(§6-3 · §5-4). 보조통화 값은 서버 미리보기가 주문 통화 스냅샷의 동결 환율로 낸 것을 핸들러가 그 통화로 포맷한 것이다 — 화면이 환산하면 예고와 청구의 근거가 갈린다. 미리보기 응답의 다통화 값은 `{통화코드: 숫자}` 라 주문 리소스의 `{amount, formatted}` 와 형태가 다르므로 `.formatted` 로 직접 읽지 않는다(2026-08-31 3차 검증 실측 — 그렇게 읽으면 오류 없이 빈 줄이 된다). 스냅샷이 없는 주문은 서버가 값을 주지 않으므로 이 줄이 나타나지 않는다.",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "text-right" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-lg font-bold text-gray-900 dark:text-white" },
+                  "text": "{{_local.claimEstimateFormatted?.total_charge_amount ?? ''}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex flex-wrap gap-x-2 justify-end mt-0.5" },
+                  "iteration": {
+                    "source": "{{_local.claimEstimateFormatted?.mc_total_charge_amount ?? []}}",
+                    "item_var": "totalChargeCurrency"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                      "text": "{{totalChargeCurrency.formatted ?? ''}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "축1 청구 방식 — 취소·환불은 회수 배송이 없어 청구가 발생하지 않으므로 미노출이다.",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_local.claimType !== 'refund' && ((_local.claimableSnapshot ?? claimable?.data)?.settings?.allowed_charge_methods ?? []).length > 0}}",
+      "props": { "className": "pt-3 border-t border-gray-200 dark:border-gray-700" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "P",
+          "props": { "className": "text-sm font-medium text-gray-900 dark:text-white mb-2" },
+          "text": "$t:claim.apply.charge_method_title"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "space-y-1" },
+          "iteration": {
+            "source": "{{(_local.claimableSnapshot ?? claimable?.data)?.settings?.allowed_charge_methods ?? []}}",
+            "item_var": "chargeMethod"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": { "className": "flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700" },
+              "children": [
+                {
+                  "comment": "'환불금에서 차감' 은 환불이 발생하는 신청(반품·저가 교환)에서만 고를 수 있다(§6-3). 교환의 환불 여부는 adjustment.refund_total 이 아니라 refund_product_amount(저가 교환의 차액 환불)로 판정한다 — 교환의 adjustment 는 대상 상품을 일단 되돌린 뒤 새 옵션을 얹는 형태라 차액 0원 교환에서도 refund_total 이 0 이 아니다(2026-08-31 실측). checked 는 사용자의 선택 상태에서 읽는다.",
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "radio",
+                    "name": "claimChargeMethod",
+                    "value": "{{chargeMethod}}",
+                    "checked": "{{_local.claimChargeMethod === chargeMethod}}",
+                    "disabled": "{{chargeMethod === 'deduct_from_refund' && (_local.claimType === 'exchange' ? (_local.claimEstimate?.refund_product_amount ?? 0) <= 0 : (_local.claimEstimate?.adjustment?.refund_total ?? 0) <= 0)}}",
+                    "className": "text-blue-600 disabled:opacity-50"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "sirsoft-ecommerce.setClaimChargeMethod",
+                      "params": {
+                        "value": "{{chargeMethod}}",
+                        "claimApiBase": "{{_local.claimApiBase ?? ''}}",
+                        "isGuest": "{{_local.isGuest === true}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-sm text-gray-700 dark:text-gray-300" },
+                  "text": "{{chargeMethod === 'pay_on_request' ? $t('sirsoft-ecommerce.enums.claim_charge_method.pay_on_request') : (chargeMethod === 'pay_on_approval' ? $t('sirsoft-ecommerce.enums.claim_charge_method.pay_on_approval') : $t('sirsoft-ecommerce.enums.claim_charge_method.deduct_from_refund'))}}"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "축1 거절 사유 (§6-3 P13) — 운영자가 허용 목록을 바꾼 뒤 제출하면 서버가 `charge_method` 를 거절한다. 그 사유를 요약 카드 맨 아래에만 남기면 어느 라디오가 막혔는지 알 수 없다.",
+      "type": "basic",
+      "name": "P",
+      "if": "{{!!_local.claimFieldErrors?.charge_method}}",
+      "props": { "className": "text-xs text-red-500 dark:text-red-400 mt-1" },
+      "text": "{{_local.claimFieldErrors?.charge_method ?? ''}}"
+    },
+    {
+      "comment": "축2 결제 수단 — '환불금에서 차감' 을 고르면 쓰이지 않으므로 비활성으로 표시한다.",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_local.claimType !== 'refund' && ((_local.claimableSnapshot ?? claimable?.data)?.settings?.charge_payment_methods ?? []).length > 0}}",
+      "props": { "className": "pt-3 border-t border-gray-200 dark:border-gray-700" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "P",
+          "props": { "className": "{{_local.claimChargeMethod === 'deduct_from_refund' ? 'text-sm font-medium text-gray-400 dark:text-gray-500 mb-2' : 'text-sm font-medium text-gray-900 dark:text-white mb-2'}}" },
+          "text": "$t:claim.apply.payment_method_title"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "space-y-1" },
+          "iteration": {
+            "source": "{{(_local.claimableSnapshot ?? claimable?.data)?.settings?.charge_payment_methods ?? []}}",
+            "item_var": "chargePaymentMethod"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": { "className": "flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "radio",
+                    "name": "claimPaymentMethod",
+                    "value": "{{chargePaymentMethod}}",
+                    "checked": "{{_local.claimPaymentMethod === chargePaymentMethod}}",
+                    "disabled": "{{_local.claimChargeMethod === 'deduct_from_refund'}}",
+                    "className": "text-blue-600 disabled:opacity-50"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "sirsoft-ecommerce.setClaimPaymentMethod",
+                      "params": {
+                        "value": "{{chargePaymentMethod}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "{{_local.claimChargeMethod === 'deduct_from_refund' ? 'text-sm text-gray-400 dark:text-gray-500' : 'text-sm text-gray-700 dark:text-gray-300'}}" },
+                  "text": "{{chargePaymentMethod === 'point' ? $t('claim.apply.payment_method_point') : $t('claim.apply.payment_method_card')}}"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "축2 거절 사유 (§6-3 P13) — `payment_method` 와 `refund_priority` 는 같은 칸이 정하는 값이라 한 자리에 남긴다.",
+      "type": "basic",
+      "name": "P",
+      "if": "{{!!_local.claimFieldErrors?.payment_method}}",
+      "props": { "className": "text-xs text-red-500 dark:text-red-400 mt-1" },
+      "text": "{{_local.claimFieldErrors?.payment_method ?? ''}}"
+    },
+    {
+      "comment": "제출 오류 (필드 오류가 아닌 사유) — 필드 오류는 각 섹션이 자기 자리에 표시한다.",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{!!_local.claimSubmitError}}",
+      "props": { "className": "p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "P",
+          "props": { "className": "text-sm text-red-700 dark:text-red-300" },
+          "text": "{{_local.claimSubmitError ?? ''}}"
+        }
+      ]
+    },
+    {
+      "comment": "제출 — 미리보기가 성공하지 않았으면(=신청 자격이 확인되지 않았으면) 누를 수 없다. 화면이 예고하는 금액과 실제 청구가 어긋난 채 제출되는 창을 없앤다.",
+      "type": "basic",
+      "name": "Button",
+      "props": {
+        "type": "button",
+        "className": "w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-bold hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+        "disabled": "{{(_local.claimItems ?? []).filter(i => i.selected).length === 0 || !_local.claimReason || _local.claimEstimateLoading === true || !!_local.claimEstimateError || !_local.claimEstimate || _local.isSubmittingClaim === true}}"
+      },
+      "actions": [
+        {
+          "type": "click",
+          "handler": "sirsoft-ecommerce.submitClaim",
+          "params": {
+            "claimApiBase": "{{_local.claimApiBase ?? ''}}",
+            "isGuest": "{{_local.isGuest === true}}",
+            "_comment_success_path": "접수 뒤 돌아갈 곳. 신청내역 목록(/mypage/claims)은 S13 이 만드는 라우트라 지금 보내면 접수는 성공했는데 404 가 열린다(2026-08-31 실측). 그때까지는 방금 신청한 주문상세로 돌아간다 — 그 화면이 신청 결과(상품 상태 전이)를 바로 보여 준다. S13 이 목록을 세우면 이 값을 목록으로 옮긴다.",
+            "successPath": "/mypage/orders/{{route.order_number}}"
+          }
+        }
+      ],
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "if": "{{_local.isSubmittingClaim === true}}",
+          "props": { "name": "spinner", "className": "text-sm animate-spin mr-1" }
+        },
+        {
+          "type": "basic",
+          "name": "Span",
+          "text": "{{_local.isSubmittingClaim === true ? $t('common.processing') : (_local.claimEstimate?.requires_payment === true ? (_local.claimEstimateFormatted?.total_charge_amount ?? '') + ' ' + $t('claim.apply.submit_with_payment') : $t('claim.apply.submit'))}}"
+        }
+      ]
+    }
+  ]
+}

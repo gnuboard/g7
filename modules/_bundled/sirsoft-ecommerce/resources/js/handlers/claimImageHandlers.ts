@@ -1,0 +1,303 @@
+/**
+ * 클레임 첨부 이미지 핸들러 (회원 · 비회원 공용)
+ *
+ * 신청서 작성 화면의 사진 첨부를 담당한다. 첨부는 신청서보다 먼저 만들어지므로
+ * **주문에 임시로 묶어(pending) 올려 두고**, 신청 시 `image_ids` 로 넘겨 신청서에 귀속시킨다
+ * (2단계 업로드 — `docs/api/orders.md` 의 `claims/images`).
+ *
+ * 업로드 시점은 **제출 직전**이다. 파일을 고를 때마다 올리면 FileUploader 가 change 마다
+ * 선택 전체를 다시 넘기므로 같은 파일이 거듭 올라가고, 그 중복이 운영자 설정 장수 상한을
+ * 소진해 정작 제출이 거절된다. 대신 이미 올라간 첨부(`_local.claimImages`)와 아직 올리지 않은
+ * 파일(`_local.claimImageFiles`)을 나눠 들고, 제출이 실패해도 올라간 것은 그대로 남겨
+ * 재시도가 다시 올리지 않게 한다.
+ *
+ * 상한(장수·용량)은 운영자 설정(`claim.max_images` / `claim.image_max_size_kb`)이 정한다.
+ * 화면이 리터럴을 들고 있으면 운영자가 값을 바꿨을 때 안내 문구와 실제 거절선이 갈리므로,
+ * 이 핸들러는 상한을 `claimable-options` 응답(`settings`)에서만 읽는다.
+ *
+ * 회원/비회원 분기는 셸이 준 `claimApiBase` / `imageDeleteBase` 로만 이뤄진다 — 핸들러가
+ * 로그인 여부를 스스로 판단하지 않는다(공유 partial 규율).
+ */
+
+import type { ActionContext } from '../types';
+
+const logger = ((window as any).G7Core?.createLogger?.('Ecom:ClaimImage')) ?? {
+    log: (...args: unknown[]) => console.log('[Ecom:ClaimImage]', ...args),
+    warn: (...args: unknown[]) => console.warn('[Ecom:ClaimImage]', ...args),
+    error: (...args: unknown[]) => console.error('[Ecom:ClaimImage]', ...args),
+};
+
+interface ActionWithParams<T = Record<string, any>> {
+    handler: string;
+    params?: T;
+    [key: string]: any;
+}
+
+/** 업로드된(귀속 대기) 첨부 — ClaimImageResource 형태 */
+export interface ClaimPendingImage {
+    id: number;
+    hash?: string;
+    original_name?: string;
+    size?: number;
+    download_url?: string;
+}
+
+/**
+ * 비회원 주문 토큰 헤더를 만듭니다. (셸이 비회원이라고 선언했을 때만)
+ *
+ * ApiClient(axios) 인터셉터는 globalHeaders 를 적용하지 않으므로 비회원 endpoint 호출 시
+ * 토큰 헤더를 명시적으로 첨부한다.
+ *
+ * @param isGuest 셸이 선언한 비회원 여부
+ * @returns axios config (회원이면 undefined)
+ */
+export function claimRequestConfig(isGuest: boolean): { headers: Record<string, string> } | undefined {
+    if (!isGuest) return undefined;
+
+    const token = (window as any).G7Core?.state?.get?.('_global')?.guestOrderToken;
+
+    return token ? { headers: { 'X-Guest-Order-Token': String(token) } } : undefined;
+}
+
+/**
+ * FileUploader 가 넘긴 항목에서 실제 파일 객체를 꺼냅니다.
+ *
+ * `_local` 상태를 거치면 File 의 prototype 이 소실될 수 있어 `instanceof File` 만으로는
+ * 유효한 파일이 조용히 버려진다 — 리뷰 작성 핸들러와 같은 방어를 쓴다.
+ *
+ * @param raw FileUploader 의 onChange 가 넘긴 배열
+ * @returns 업로드 가능한 파일 목록
+ */
+export function extractClaimFiles(raw: any[]): (File | Blob)[] {
+    return (raw ?? [])
+        .map((item: any) => {
+            if (item instanceof File) return item;
+            if (item?.file instanceof File) return item.file;
+            if (item?.file instanceof Blob) return item.file;
+            if (item?.file && typeof item.file.name === 'string' && item.file.size > 0) return item.file;
+            if (item instanceof Blob) return item;
+
+            return null;
+        })
+        .filter((f: any): f is File | Blob => f !== null);
+}
+
+/**
+ * 운영자 설정 상한으로 업로드 대기 파일을 거릅니다.
+ *
+ * @param files 업로드 후보
+ * @param alreadyUploaded 이미 올라간 첨부 수
+ * @param settings `claimable-options` 의 settings (max_images / image_max_size_kb)
+ * @returns 통과한 파일과 거절 사유
+ */
+export function filterClaimFilesByLimits(
+    files: (File | Blob)[],
+    alreadyUploaded: number,
+    settings: { max_images?: number; image_max_size_kb?: number }
+): { accepted: (File | Blob)[]; countExceeded: boolean; sizeExceeded: boolean } {
+    const maxImages = Number(settings?.max_images ?? 0);
+    const maxSizeKb = Number(settings?.image_max_size_kb ?? 0);
+
+    let accepted = files;
+    let countExceeded = false;
+    let sizeExceeded = false;
+
+    if (maxSizeKb > 0) {
+        const withinSize = accepted.filter((file) => file.size <= maxSizeKb * 1024);
+        sizeExceeded = withinSize.length !== accepted.length;
+        accepted = withinSize;
+    }
+
+    if (maxImages > 0 && alreadyUploaded + accepted.length > maxImages) {
+        accepted = accepted.slice(0, Math.max(0, maxImages - alreadyUploaded));
+        countExceeded = true;
+    }
+
+    return { accepted, countExceeded, sizeExceeded };
+}
+
+/**
+ * `claimable-options` 응답의 settings 를 읽습니다.
+ *
+ * 진입 시 작성 핸들러가 `_local.claimableSnapshot` 에 박아 둔 사본이 1순위다. 데이터소스
+ * store 는 화면에 따라 이 페이로드를 돌려주지 않는다 — 렌더 바인딩은 값을 그리는데 핸들러만
+ * null 을 보는 상태가 실재한다(2026-08-31 브라우저 실측). 그러면 상한이 0 으로 읽혀 장수·용량
+ * 가드가 통째로 사문화되고, 서버가 거절할 때까지 아무 안내도 나가지 않는다.
+ *
+ * @param G7Core G7Core 인스턴스
+ * @returns settings (없으면 빈 객체)
+ */
+function claimSettings(G7Core: any): { max_images?: number; image_max_size_kb?: number } {
+    const snapshot = G7Core.state?.getLocal?.()?.claimableSnapshot;
+
+    return snapshot?.settings ?? G7Core.dataSource?.get?.('claimable')?.data?.settings ?? {};
+}
+
+/**
+ * 대기 중인 파일을 순차 업로드하고 귀속 대기 첨부 목록을 갱신합니다.
+ *
+ * 신청 제출 직전에 `claimApplyHandlers` 가 호출한다. 실패한 파일은 토스트로 알리고
+ * 성공분만 `_local.claimImages` 에 누적한다 — 실패를 이유로 이미 올라간 첨부를 버리면
+ * 재시도에서 다시 올라가 장수 상한을 소진한다.
+ *
+ * @param G7Core G7Core 인스턴스
+ * @param options 업로드 옵션 (claimApiBase / isGuest)
+ * @returns 신청서에 귀속시킬 첨부 ID 목록
+ */
+export async function uploadPendingClaimFiles(
+    G7Core: any,
+    options: { claimApiBase: string; isGuest: boolean }
+): Promise<number[]> {
+    const local = G7Core.state.getLocal();
+    const already: ClaimPendingImage[] = local.claimImages ?? [];
+    const files = extractClaimFiles(local.claimImageFiles ?? []);
+
+    if (files.length === 0) {
+        return already.map((image) => Number(image.id)).filter((id) => id > 0);
+    }
+
+    const settings = claimSettings(G7Core);
+    const { accepted, countExceeded, sizeExceeded } = filterClaimFilesByLimits(files, already.length, settings);
+
+    if (sizeExceeded) {
+        G7Core.toast?.warning?.(
+            G7Core.t?.('claim.image.size_exceeded', { size: Number(settings.image_max_size_kb ?? 0) })
+            ?? '첨부 용량 상한을 초과한 파일은 제외했습니다.'
+        );
+    }
+
+    if (countExceeded) {
+        G7Core.toast?.warning?.(
+            G7Core.t?.('claim.image.limit_exceeded', { max: Number(settings.max_images ?? 0) })
+            ?? '첨부 장수 상한을 초과한 파일은 제외했습니다.'
+        );
+    }
+
+    const config = claimRequestConfig(options.isGuest);
+    const uploaded: ClaimPendingImage[] = [];
+
+    for (const file of accepted) {
+        const formData = new FormData();
+        formData.append('image', file);
+
+        try {
+            const response = await G7Core.api.post(
+                options.claimApiBase + '/claims/images',
+                formData,
+                {
+                    ...(config ?? {}),
+                    headers: { ...(config?.headers ?? {}), 'Content-Type': 'multipart/form-data' },
+                }
+            );
+
+            if (response?.success && response.data) {
+                uploaded.push(response.data as ClaimPendingImage);
+            }
+        } catch (error: any) {
+            logger.error('[uploadPendingClaimFiles] 실패:', error);
+            G7Core.toast?.error?.(
+                error?.response?.data?.message
+                ?? error?.data?.message
+                ?? G7Core.t?.('claim.image.upload_failed')
+                ?? '사진 업로드에 실패했습니다.'
+            );
+        }
+    }
+
+    // await 뒤의 로컬 상태는 다시 읽는다 — 업로드 도중 다른 편집이 있었으면 캡처본이 낡았다.
+    const latest = G7Core.state.getLocal();
+    const merged: ClaimPendingImage[] = [...(latest.claimImages ?? []), ...uploaded];
+
+    G7Core.state.setLocal({ claimImages: merged, claimImageFiles: [] });
+
+    return merged.map((image) => Number(image.id)).filter((id) => id > 0);
+}
+
+/**
+ * 첨부 선택 변경 핸들러 (FileUploader change)
+ *
+ * 파일은 아직 올리지 않고 대기열에만 담는다. 이미 올라간 첨부와 합쳐 상한을 넘으면
+ * 그 자리에서 안내한다 — 제출 시점에 처음 알리면 사용자가 무엇이 빠졌는지 알 수 없다.
+ *
+ * @example
+ * {
+ *   "handler": "sirsoft-ecommerce.setClaimImageFiles",
+ *   "params": { "files": "{{$event.target.files ?? []}}" }
+ * }
+ *
+ * @param action 액션 객체
+ * @param _context 액션 컨텍스트
+ */
+export function setClaimImageFilesHandler(
+    action: ActionWithParams<{ files?: any[] }>,
+    _context: ActionContext
+): void {
+    const G7Core = (window as any).G7Core;
+    if (!G7Core?.state) return;
+
+    const files = extractClaimFiles(action.params?.files ?? []);
+    const local = G7Core.state.getLocal();
+    const already: ClaimPendingImage[] = local.claimImages ?? [];
+    const settings = claimSettings(G7Core);
+    const { countExceeded, sizeExceeded } = filterClaimFilesByLimits(files, already.length, settings);
+
+    if (sizeExceeded) {
+        G7Core.toast?.warning?.(
+            G7Core.t?.('claim.image.size_exceeded', { size: Number(settings.image_max_size_kb ?? 0) })
+            ?? '첨부 용량 상한을 초과한 파일이 있습니다.'
+        );
+    }
+
+    if (countExceeded) {
+        G7Core.toast?.warning?.(
+            G7Core.t?.('claim.image.limit_exceeded', { max: Number(settings.max_images ?? 0) })
+            ?? '첨부 장수 상한을 초과했습니다.'
+        );
+    }
+
+    G7Core.state.setLocal({ claimImageFiles: action.params?.files ?? [] });
+}
+
+/**
+ * 귀속 대기 첨부 삭제 핸들러
+ *
+ * @example
+ * {
+ *   "handler": "sirsoft-ecommerce.removeClaimImage",
+ *   "params": { "imageId": 9, "imageDeleteBase": "/api/modules/sirsoft-ecommerce/user/claims/images", "isGuest": false }
+ * }
+ *
+ * @param action 액션 객체
+ * @param _context 액션 컨텍스트
+ */
+export async function removeClaimImageHandler(
+    action: ActionWithParams<{ imageId?: number; imageDeleteBase?: string; isGuest?: boolean }>,
+    _context: ActionContext
+): Promise<void> {
+    const G7Core = (window as any).G7Core;
+    if (!G7Core?.state) return;
+
+    const imageId = Number(action.params?.imageId ?? 0);
+    const imageDeleteBase = action.params?.imageDeleteBase ?? '';
+
+    if (!imageId || !imageDeleteBase) return;
+
+    try {
+        await G7Core.api.delete(imageDeleteBase + '/' + imageId, claimRequestConfig(action.params?.isGuest === true));
+    } catch (error: any) {
+        logger.error('[removeClaimImage] 실패:', error);
+        G7Core.toast?.error?.(
+            error?.response?.data?.message
+            ?? error?.data?.message
+            ?? G7Core.t?.('claim.image.remove_failed')
+            ?? '첨부 삭제에 실패했습니다.'
+        );
+
+        return;
+    }
+
+    const latest = G7Core.state.getLocal();
+    G7Core.state.setLocal({
+        claimImages: (latest.claimImages ?? []).filter((image: ClaimPendingImage) => Number(image.id) !== imageId),
+    });
+}

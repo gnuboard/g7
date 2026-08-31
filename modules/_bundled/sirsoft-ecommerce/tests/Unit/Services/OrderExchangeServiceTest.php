@@ -1260,6 +1260,56 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertTrue($preview['items'][0]['is_option_change']);
     }
 
+    /**
+     * 미리보기가 보조통화 청구액을 함께 낸다 — 접수 시 박제되는 값과 같아야 한다.
+     *
+     * 이 값이 없으면 보조통화를 쓰는 구매자는 신청 화면에서 자기 통화의 청구액을 볼 수 없고
+     * 결제 단계에 가서야 실제 금액을 알게 된다. 화면이 스스로 환산하는 것은 답이 아니다 —
+     * 예고와 청구의 근거가 갈린다.
+     */
+    public function test_preview_reports_multi_currency_charge_matching_the_request(): void
+    {
+        $policy = $this->createClaimShippingPolicy();
+        $order = $this->deliveredOrder(29000, 1, $policy);
+        $this->setExchangeFixedFee($policy, 6000);
+        $newOption = $this->siblingOption($order, 3000);
+
+        $order->forceFill(['currency_snapshot' => [
+            'base_currency' => 'KRW',
+            'order_currency' => 'KRW',
+            'exchange_rate' => 1.0,
+            'base_unit' => 1000,
+            'exchange_rates' => [
+                'KRW' => ['rate' => 1.0, 'rounding_unit' => '1', 'rounding_method' => 'floor', 'decimal_places' => 0, 'base_unit' => 1000],
+                'USD' => ['rate' => 0.75, 'rounding_unit' => '0.01', 'rounding_method' => 'round', 'decimal_places' => 2, 'base_unit' => 1000],
+            ],
+            'snapshot_at' => '2026-08-22T00:00:00+09:00',
+        ]])->save();
+
+        $order = $order->fresh(['options', 'shippings', 'payment', 'shippingAddress']);
+        $payload = $this->payload($order, chargeMethod: ClaimChargeMethodEnum::PAY_ON_REQUEST, newProductOptionId: $newOption->id);
+
+        $preview = $this->service->previewExchange($order, $payload['items'], 'size_mismatch', ClaimChargeMethodEnum::PAY_ON_REQUEST);
+        $exchange = $this->service->requestExchange($order, $payload);
+
+        $this->assertSame(9000, $preview['mc_total_charge_amount']['KRW']);
+        $this->assertSame(6.75, $preview['mc_total_charge_amount']['USD']);
+        // 예고와 기록이 같은 값이어야 한다.
+        $this->assertSame($exchange->mc_total_charge_amount, $preview['mc_total_charge_amount']);
+    }
+
+    /** 통화 스냅샷이 없는 주문은 보조통화를 낼 근거가 없으므로 null 이다 (화면이 그 줄을 세우지 않는다). */
+    public function test_preview_reports_null_multi_currency_when_the_order_has_no_snapshot(): void
+    {
+        $order = $this->deliveredOrder();
+        $order->forceFill(['currency_snapshot' => []])->save();
+        $payload = $this->payload($order);
+
+        $preview = $this->service->previewExchange($order->fresh(['options', 'shippings', 'payment', 'shippingAddress']), $payload['items'], 'size_mismatch');
+
+        $this->assertNull($preview['mc_total_charge_amount']);
+    }
+
     public function test_preview_does_not_write_any_record(): void
     {
         $order = $this->deliveredOrder();

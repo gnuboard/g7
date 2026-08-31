@@ -1,0 +1,355 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "클레임 신청서 작성 - 교환 재발송지 (D14)",
+    "editor_label": "$t:user.modal_label.mypage_claims.apply_redelivery"
+  },
+  "_comment": "교환 재발송지는 원 배송지가 기본값이고 [변경] 으로만 바뀐다. 우편번호·국가가 바뀌면 도서산간이 다시 판정되므로 적용 시 미리보기를 다시 부른다(D14). 국가는 바꿀 수 없다 — 교환은 해외배송을 지원하지 않아 서버가 원 배송지와 다른 국가를 422 로 거절한다.",
+  "type": "basic",
+  "name": "Div",
+  "id": "claim_apply_redelivery",
+  "if": "{{_local.claimType === 'exchange'}}",
+  "props": { "className": "bg-white dark:bg-gray-800 rounded-lg p-6" },
+  "responsive": {
+    "portable": {
+      "props": { "className": "bg-white dark:bg-gray-800 rounded-lg p-4" }
+    }
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex items-center justify-between mb-4 pb-4 border-b border-gray-200 dark:border-gray-700" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex items-center gap-2" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": { "name": "truck", "className": "text-base text-gray-700 dark:text-gray-300" }
+            },
+            {
+              "type": "basic",
+              "name": "H3",
+              "props": { "className": "text-lg font-semibold text-gray-900 dark:text-white" },
+              "responsive": {
+                "portable": {
+                  "props": { "className": "text-base font-semibold text-gray-900 dark:text-white" }
+                }
+              },
+              "text": "$t:claim.apply.redelivery_title"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "if": "{{_local.claimRedeliveryEditing !== true}}",
+          "props": {
+            "type": "button",
+            "className": "px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sirsoft-ecommerce.startClaimRedeliveryEdit"
+            }
+          ],
+          "text": "$t:claim.apply.redelivery_change"
+        }
+      ]
+    },
+    {
+      "comment": "표시 모드 — 편집 중이 아닐 때는 적용된 주소(변경 전이면 원 배송지)를 보여 준다.",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_local.claimRedeliveryEditing !== true}}",
+      "props": { "className": "space-y-1" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "P",
+          "props": { "className": "text-sm text-gray-900 dark:text-white" },
+          "text": "{{(_local.claimRedelivery?.recipient_name ?? order.data.shipping_address?.recipient_name ?? '') + ' / ' + (_local.claimRedelivery?.phone ?? order.data.shipping_address?.recipient_phone ?? '')}}"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
+          "text": "{{'(' + (_local.claimRedelivery?.zipcode ?? order.data.shipping_address?.zipcode ?? '') + ') ' + (_local.claimRedelivery?.address1 ?? order.data.shipping_address?.address ?? '') + ' ' + (_local.claimRedelivery?.address2 ?? order.data.shipping_address?.address_detail ?? '')}}"
+        },
+        {
+          "comment": "재발송지를 바꿔 도서산간이 다시 판정된 경우 — 배송비가 왜 달라졌는지 밝힌다(D14).",
+          "type": "basic",
+          "name": "P",
+          "if": "{{_local.claimEstimate?.shipping_fee?.redelivery_changed === true}}",
+          "props": { "className": "text-xs text-amber-600 dark:text-amber-400 mt-2" },
+          "text": "$t:claim.apply.redelivery_fee_recalculated"
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "if": "{{!!_local.claimRedelivery}}",
+          "props": {
+            "type": "button",
+            "className": "mt-2 text-sm text-gray-500 dark:text-gray-400 hover:underline cursor-pointer"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sirsoft-ecommerce.resetClaimRedelivery",
+              "params": {
+                "claimApiBase": "{{_local.claimApiBase ?? ''}}",
+                "isGuest": "{{_local.isGuest === true}}"
+              }
+            }
+          ],
+          "text": "$t:claim.apply.redelivery_reset"
+        }
+      ]
+    },
+    {
+      "comment": "편집 모드",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_local.claimRedeliveryEditing === true}}",
+      "props": { "className": "space-y-3" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "grid grid-cols-2 gap-3" },
+          "responsive": {
+            "portable": {
+              "props": { "className": "grid grid-cols-1 gap-3" }
+            }
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": { "className": "block text-xs text-gray-600 dark:text-gray-400 mb-1" },
+                  "text": "$t:claim.apply.recipient_name"
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "text",
+                    "maxLength": 50,
+                    "value": "{{_local.claimRedelivery?.recipient_name ?? ''}}",
+                    "className": "w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                  },
+                  "actions": [
+                    {
+                      "type": "input",
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "claimRedelivery.recipient_name": "{{$event.target.value}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": { "className": "block text-xs text-gray-600 dark:text-gray-400 mb-1" },
+                  "text": "$t:claim.apply.recipient_phone"
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "text",
+                    "maxLength": 20,
+                    "value": "{{_local.claimRedelivery?.phone ?? ''}}",
+                    "className": "w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                  },
+                  "actions": [
+                    {
+                      "type": "input",
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "claimRedelivery.phone": "{{$event.target.value}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": { "className": "block text-xs text-gray-600 dark:text-gray-400 mb-1" },
+              "text": "$t:claim.apply.zipcode"
+            },
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "text",
+                "maxLength": 20,
+                "value": "{{_local.claimRedelivery?.zipcode ?? ''}}",
+                "className": "w-40 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+              },
+              "actions": [
+                {
+                  "type": "input",
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "claimRedelivery.zipcode": "{{$event.target.value}}"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": { "className": "block text-xs text-gray-600 dark:text-gray-400 mb-1" },
+              "text": "$t:claim.apply.address1"
+            },
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "text",
+                "maxLength": 255,
+                "value": "{{_local.claimRedelivery?.address1 ?? ''}}",
+                "className": "w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+              },
+              "actions": [
+                {
+                  "type": "input",
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "claimRedelivery.address1": "{{$event.target.value}}"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": { "className": "block text-xs text-gray-600 dark:text-gray-400 mb-1" },
+              "text": "$t:claim.apply.address2"
+            },
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "text",
+                "maxLength": 255,
+                "value": "{{_local.claimRedelivery?.address2 ?? ''}}",
+                "className": "w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+              },
+              "actions": [
+                {
+                  "type": "input",
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "claimRedelivery.address2": "{{$event.target.value}}"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
+          "text": "$t:claim.apply.redelivery_country_locked|country={{order.data.shipping_address?.recipient_country_name ?? order.data.shipping_address?.recipient_country_code ?? ''}}"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex gap-2 pt-1" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "px-4 py-2 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors cursor-pointer"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sirsoft-ecommerce.applyClaimRedelivery",
+                  "params": {
+                    "claimApiBase": "{{_local.claimApiBase ?? ''}}",
+                    "isGuest": "{{_local.isGuest === true}}"
+                  }
+                }
+              ],
+              "text": "$t:claim.apply.redelivery_apply"
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sirsoft-ecommerce.resetClaimRedelivery",
+                  "params": {
+                    "claimApiBase": "{{_local.claimApiBase ?? ''}}",
+                    "isGuest": "{{_local.isGuest === true}}"
+                  }
+                }
+              ],
+              "text": "$t:claim.apply.redelivery_reset"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "재발송지 거절 사유 (§6-3 P13) — 서버는 `redelivery_address.*` 7키로 쪼개 돌려주므로 핸들러가 접두사로 묶은 값을 읽는다. 국가 불변 규칙(ExchangeRedeliveryCountryUnchanged)의 거절도 이 자리에 선다. 표시·편집 두 모드 밖에 두는 것은 편집을 닫은 뒤 제출해도 사유가 남아야 하기 때문이다.",
+      "type": "basic",
+      "name": "P",
+      "if": "{{!!_local.claimFieldErrors?.redelivery}}",
+      "props": { "className": "text-xs text-red-500 dark:text-red-400 mt-2" },
+      "text": "{{_local.claimFieldErrors?.redelivery ?? ''}}"
+    }
+  ]
+}

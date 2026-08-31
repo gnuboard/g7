@@ -1,0 +1,1283 @@
+/**
+ * 클레임(교환/반품/취소·환불) 신청서 작성 핸들러 (회원 · 비회원 공용)
+ *
+ * 작성 화면의 상태를 한 곳에서 다룬다 — 신청 상품 선택·수량, 교환 대상(상품 속성),
+ * 사유 선택, 재발송지, 청구 2축, 미리보기(서버 재계산), 제출·결제 진입.
+ *
+ * 금액은 전부 서버가 정한다(`claims/preview`). 화면은 표시만 하고, 이 핸들러도 금액을
+ * 스스로 계산하지 않는다 — 미리보기와 실행이 다른 식을 쓰면 예고한 금액과 청구된 금액이
+ * 조용히 갈라진다.
+ *
+ * 미리보기는 **낙관적 선택 ↔ 서버 재계산의 왕복**이다. 그래서 셋을 지킨다:
+ *  ① 요청마다 세대 번호를 붙여 **최신 요청의 응답만** 반영한다(성공·실패 양 경로).
+ *  ② 재계산이 실패하면 금액을 지우고 제출을 막는다 — 옛 요약을 남긴 채 새 선택으로
+ *     제출되면 화면이 예고한 금액과 실제 청구가 어긋난다.
+ *  ③ 체크·라디오의 표시값은 **사용자의 선택 상태**에서 읽는다. 서버가 정하는 것은 요약과
+ *     금액이지 체크 표시가 아니다.
+ *
+ * 회원/비회원 분기는 셸이 준 `claimApiBase` / `isGuest` 로만 이뤄진다 — 핸들러가 로그인
+ * 여부를 스스로 판단하지 않는다(공유 partial 규율).
+ */
+
+import type { ActionContext } from '../types';
+import { formatAmountInCurrency } from './calculateCurrencyPrices';
+import { claimRequestConfig, uploadPendingClaimFiles } from './claimImageHandlers';
+
+const logger = ((window as any).G7Core?.createLogger?.('Ecom:ClaimApply')) ?? {
+    log: (...args: unknown[]) => console.log('[Ecom:ClaimApply]', ...args),
+    warn: (...args: unknown[]) => console.warn('[Ecom:ClaimApply]', ...args),
+    error: (...args: unknown[]) => console.error('[Ecom:ClaimApply]', ...args),
+};
+
+interface ActionWithParams<T = Record<string, any>> {
+    handler: string;
+    params?: T;
+    [key: string]: any;
+}
+
+/** 신청서 작성 중인 상품 한 줄 */
+export interface ClaimApplyItem {
+    order_option_id: number;
+    product_id: number | null;
+    product_name: string;
+    product_option_name: string;
+    thumbnail_url: string;
+    unit_price: number;
+    unit_price_formatted: string;
+    available_quantity: number;
+    locked_quantity: number;
+    claimable_types: string[];
+    refund_branch: string | null;
+    selected: boolean;
+    quantity: number;
+    /** 교환 방식은 신청서 전체가 아니라 상품마다 정한다 (D29) */
+    exchange_mode: 'same' | 'change';
+    new_product_option_id: number | null;
+    new_option_label: string;
+    custom_options: Record<string, any> | null;
+    price_difference: number;
+    price_difference_formatted: string;
+    /** 단가의 보조통화 표기 (기준통화 제외) */
+    mc_unit_price: SecondaryCurrencyAmount[];
+    /** 제출 거절(422)이 이 줄을 지목한 사유 — 없으면 빈 문자열 */
+    validation_error: string;
+}
+
+/** 보조통화 한 줄 — 화면은 `formatted` 만 그린다 */
+export interface SecondaryCurrencyAmount {
+    code: string;
+    formatted: string;
+}
+
+/** 미리보기 debounce 타이머 */
+let claimEstimateDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** 미리보기 세대 번호 — 최신 요청의 응답만 반영한다 */
+let claimEstimateGeneration = 0;
+
+/**
+ * debounce 타이머와 세대 번호를 정리합니다.
+ *
+ * 화면을 떠날 때(lifecycle.onUnmount) 호출한다. 정리하지 않으면 떠난 화면의 응답이
+ * 다음 화면의 로컬 상태에 쓰인다.
+ */
+export function clearClaimApplyTimers(): void {
+    if (claimEstimateDebounceTimer) {
+        clearTimeout(claimEstimateDebounceTimer);
+        claimEstimateDebounceTimer = null;
+    }
+
+    claimEstimateGeneration += 1;
+}
+
+/**
+ * `claimable-options` 응답 페이로드를 읽습니다.
+ *
+ * 진입 시 `_local.claimableSnapshot` 에 박아 둔 사본이 1순위다. 데이터소스 store
+ * (`G7Core.dataSource.get`)는 화면에 따라 이 페이로드를 돌려주지 않는다 — 주문 데이터소스가
+ * `blocking` 인 작성 셸에서는 refetch 로 받은 값이 store 에 나타나지 않아, 렌더 바인딩
+ * (`claimable?.data?...`)은 값을 그리는데 핸들러만 null 을 본다(2026-08-31 브라우저 실측).
+ * 그 상태에서는 사유를 골라도 귀책이 비어 오류 없이 안내만 사라진다.
+ *
+ * @param G7Core G7Core 인스턴스
+ * @returns 페이로드 (없으면 null)
+ */
+function claimableData(G7Core: any): any {
+    const snapshot = G7Core.state?.getLocal?.()?.claimableSnapshot;
+
+    return snapshot ?? G7Core.dataSource?.get?.('claimable')?.data ?? null;
+}
+
+/**
+ * 주문 시점 기준 통화 코드를 읽습니다.
+ *
+ * 금액 표기는 거래 시점 통화로 고정한다 — 운영자가 이후 기본 통화를 바꿔도 이 신청서의
+ * 표기는 주문 통화를 따른다.
+ *
+ * @param G7Core G7Core 인스턴스
+ * @returns 통화 코드 (없으면 null → 설정 기본 통화)
+ */
+function orderCurrencyCode(G7Core: any): string | null {
+    return G7Core.dataSource?.get?.('order')?.data?.base_currency ?? null;
+}
+
+/**
+ * 오류를 구매자가 이 화면에서 고칠 수 있는 것과 그렇지 않은 것으로 가릅니다. (§6-3 P13)
+ *
+ * 4xx 는 상품·수량·사유처럼 구매자가 고쳐서 다시 시도할 수 있는 거절이므로 **화면에** 남긴다.
+ * 5xx 와 응답 자체가 오지 않은 실패(네트워크 끊김 — 상태코드가 없다)는 구매자가 고칠 것이
+ * 없고 화면에 남길 상태도 아니므로 **토스트로만** 알린다.
+ *
+ * 상태코드를 보지 않고 한쪽으로 몰면 서버 장애가 "상품·수량·사유를 다시 확인해 주세요" 로
+ * 안내되어, 구매자는 자기 신청서에서 잘못을 찾다가 못 찾고 몇 번을 고쳐도 계속 막힌다.
+ *
+ * @param error 잡은 오류
+ * @returns 구매자가 고칠 수 있는 거절이면 true
+ */
+export function isUserFixableClaimError(error: any): boolean {
+    const status = Number(error?.response?.status ?? error?.status ?? 0);
+
+    return status >= 400 && status < 500;
+}
+
+/**
+ * 신청서 작성 화면의 라우트 값(유형·미리 선택된 상품)을 주소에서 읽습니다.
+ *
+ * 이 핸들러는 `claimable` 데이터소스의 onSuccess 로 실행되는데, 그 실행 컨텍스트에는
+ * **`route`·`query` 가 없다** — 데이터소스 onSuccess 는 `{ response }` 만 넘긴다. 그래서
+ * 레이아웃이 `{{route.type}}` 을 param 으로 넘겨도 빈 값이 도착하고, 화면은 응답 200 에
+ * 오류 0 인 채로 빈 신청서가 된다. 주소는 그 시점에도 확정돼 있으므로 여기서 읽는다.
+ *
+ * 라우트 형태: `/mypage/orders/{orderNumber}/claims/apply/{type}?options=1,2`
+ * (비회원 셸도 `.../claims/apply/{type}` 로 끝나는 같은 형태다.)
+ *
+ * @returns 유형과 미리 선택된 주문 옵션 ID 문자열
+ */
+export function resolveClaimApplyRoute(): { claimType: string; preselected: string } {
+    if (typeof window === 'undefined' || !window.location) {
+        return { claimType: '', preselected: '' };
+    }
+
+    const segments = String(window.location.pathname || '').split('/').filter(Boolean);
+    const applyIndex = segments.lastIndexOf('apply');
+    const claimType = applyIndex >= 0 ? (segments[applyIndex + 1] ?? '') : '';
+
+    let preselected = '';
+    try {
+        preselected = new URLSearchParams(window.location.search || '').get('options') ?? '';
+    } catch {
+        preselected = '';
+    }
+
+    return { claimType, preselected };
+}
+
+/**
+ * 원 배송지를 재발송지 페이로드 형태로 옮깁니다. (D14)
+ *
+ * 주문 배송지 리소스(`OrderAddressResource`)와 재발송지 페이로드는 필드 이름이 다르다
+ * (`recipient_phone` ↔ `phone`, `address`/`address_detail` ↔ `address1`/`address2`).
+ * 이름이 어긋난 채 넘기면 서버는 빈 값으로 받아 원 배송지와 같은 주소로 재발송된다.
+ *
+ * @param G7Core G7Core 인스턴스
+ * @returns 재발송지 편집 버퍼 초기값
+ */
+export function orderShippingAddressAsRedelivery(G7Core: any): Record<string, string> {
+    const address = G7Core.dataSource?.get?.('order')?.data?.shipping_address ?? {};
+
+    return {
+        recipient_name: address.recipient_name ?? '',
+        phone: address.recipient_phone ?? '',
+        zipcode: address.zipcode ?? address.intl_postal_code ?? '',
+        address1: address.address ?? address.address_line_1 ?? '',
+        address2: address.address_detail ?? address.address_line_2 ?? '',
+        country_code: address.recipient_country_code ?? '',
+    };
+}
+
+/**
+ * 사유 카탈로그에서 귀책 구분을 찾습니다.
+ *
+ * @param G7Core G7Core 인스턴스
+ * @param claimType 클레임 유형
+ * @param reasonCode 사유 코드
+ * @returns 귀책 구분 (없으면 null)
+ */
+function resolveFaultType(G7Core: any, claimType: string, reasonCode: string): string | null {
+    const reasons = claimableData(G7Core)?.reasons?.[claimType] ?? [];
+    const matched = reasons.find((reason: any) => reason.code === reasonCode);
+
+    return matched?.fault_type ?? null;
+}
+
+/**
+ * 신청 대상(선택된 상품)만 서버 페이로드 형태로 만듭니다.
+ *
+ * @param items 작성 중인 상품 목록
+ * @returns 서버 items 페이로드
+ */
+export function buildClaimItemsPayload(items: ClaimApplyItem[]): Array<Record<string, any>> {
+    return (items ?? [])
+        .filter((item) => item.selected)
+        .map((item) => {
+            const payload: Record<string, any> = {
+                order_option_id: item.order_option_id,
+                quantity: item.quantity,
+            };
+
+            if (item.exchange_mode === 'change' && item.new_product_option_id) {
+                payload.new_product_option_id = item.new_product_option_id;
+            }
+
+            if (item.custom_options && Object.keys(item.custom_options).length > 0) {
+                payload.custom_options = item.custom_options;
+            }
+
+            return payload;
+        });
+}
+
+/**
+ * 미리보기 응답의 금액을 주문 통화 표기 문자열로 만듭니다.
+ *
+ * 미리보기 응답은 숫자만 준다(`*_formatted` 없음). 화면이 `금액.toLocaleString() + '원'`
+ * 으로 단위를 이어 붙이면 기본 통화가 원화가 아닌 상점에서 값은 맞고 단위만 틀린 금액이
+ * 나가므로, 설정의 기호·소수 자릿수를 따르는 공용 포맷터를 쓴다.
+ *
+ * `shipping_groups` 는 배송비 합계의 **산출 근거**다(§6-3). 서버가 배송정책 그룹마다
+ * `base_fee`(편도 단가) · `multiplier`(교환 2 · 반품 1) · `extra_fee`(도서산간)를 내려주므로
+ * 화면은 그 값을 옮기기만 한다 — 화면이 스스로 곱셈을 하면 합계(서버)와 근거(화면)의 출처가
+ * 갈려, 훅이 금액을 덮어쓴 상점에서 둘이 어긋나도 어느 쪽이 맞는지 알 수 없게 된다.
+ *
+ * `decomposable` 은 **`original_policy` 모드에서만** 참이다. `fixed` 는 운영자가 정책 화면에서
+ * 유형별 **총액**을 직접 선언한 값이라 서버도 배수를 곱하지 않으므로(D11), 그 값을 "편도 × N"
+ * 으로 적으면 선언액을 단가로 잘못 부르게 된다 — 교환인데 "× 1회" 로 보여 합계 라벨(왕복)과
+ * 어긋난다(2026-08-31 실측). 분해가 성립하지 않는 모드에서는 근거 줄을 세우지 않는다.
+ *
+ * @param estimate 미리보기 응답 payload
+ * @param currencyCode 주문 시점 기준 통화
+ * @returns 표기 문자열 맵 (`shipping_groups` 만 배열)
+ */
+/**
+ * 통화별 금액 맵을 화면이 그릴 수 있는 배열로 폅니다. (기준통화 제외)
+ *
+ * 이 모듈의 다통화 값은 **출처마다 형태가 다르다**:
+ *  - 미리보기(`mc_total_charge_amount` · `shipping_fee.mc_fee`) → `{통화코드: 숫자}`
+ *  - 주문 리소스(`mc_unit_price` 등 `formatStoredMultiCurrency` 산물) → `{통화코드: {amount, formatted}}`
+ *  - 정산 표기(`adjustment.refund_formatted.mc.*`) → `{통화코드: 포맷된 문자열}`
+ *
+ * 그래서 화면이 한 형태를 가정하고 `.formatted` 로 읽으면 다른 형태에서는 오류 없이
+ * **빈 문자열**이 되어 그 줄이 통째로 사라진다(2026-08-31 3차 `/validate-plan` 실측).
+ * 세 형태를 여기서 하나로 흡수하고, 화면은 `formatted` 만 읽는다.
+ *
+ * 미리보기는 `*_formatted` 를 주지 않으므로(판정③) 숫자는 그 통화로 여기서 포맷한다.
+ *
+ * @param amounts 통화코드 → 금액(숫자 · 포맷 문자열 · `{amount, formatted}` 중 하나)
+ * @param baseCurrency 기준통화 코드 (이 통화는 본문에 이미 표기되므로 제외)
+ * @returns 보조통화 표기 배열
+ */
+export function toSecondaryCurrencyList(
+    amounts: unknown,
+    baseCurrency: string | null
+): SecondaryCurrencyAmount[] {
+    if (!amounts || typeof amounts !== 'object' || Array.isArray(amounts)) {
+        return [];
+    }
+
+    return Object.entries(amounts as Record<string, any>)
+        .filter(([code]) => code !== baseCurrency)
+        .map(([code, value]) => {
+            if (typeof value === 'string') {
+                return { code, formatted: value };
+            }
+
+            if (value && typeof value === 'object' && typeof value.formatted === 'string') {
+                return { code, formatted: value.formatted };
+            }
+
+            return { code, formatted: formatAmountInCurrency(Number(value ?? 0), code) };
+        })
+        .filter((entry) => entry.formatted !== '');
+}
+
+/**
+ * 제출 거절(422)의 항목별 오류를 그 상품 줄에 붙입니다.
+ *
+ * 서버 키는 `items.{순번}.{필드}` 인데 그 순번은 **제출 페이로드의 순번**(선택된 행만
+ * 실린다)이라 화면의 행 번호와 다르다. 그 대응을 풀지 않으면 오류 본문이 어디에도
+ * 그려지지 않고 요약 카드에는 `message` 만 남는다(§6-3 P13 "필드 오류는 그 필드 옆에").
+ *
+ * @param items 현재 신청 상품 줄
+ * @param errors 서버가 준 필드 오류 맵 (없으면 전 줄의 오류를 지운다)
+ * @returns 오류가 반영된 상품 줄
+ */
+export function attachClaimItemErrors(
+    items: ClaimApplyItem[],
+    errors: Record<string, any> | null | undefined
+): ClaimApplyItem[] {
+    const payloadOrder = items.filter((item) => item.selected).map((item) => item.order_option_id);
+
+    return items.map((item) => {
+        const payloadIndex = payloadOrder.indexOf(item.order_option_id);
+        let message = '';
+
+        if (payloadIndex >= 0 && errors) {
+            const raw =
+                errors['items.' + payloadIndex + '.quantity']
+                ?? errors['items.' + payloadIndex + '.new_product_option_id']
+                ?? errors['items.' + payloadIndex + '.order_option_id'];
+
+            message = Array.isArray(raw) ? String(raw[0] ?? '') : String(raw ?? '');
+        }
+
+        return item.validation_error === message ? item : { ...item, validation_error: message };
+    });
+}
+
+/**
+ * 필드 오류를 화면의 표시 자리별로 묶습니다.
+ *
+ * 제출 거절(422)의 필드 오류는 그 필드 옆에 남긴다(§6-3 P13). 사유·상세사유는 자기 키를
+ * 그대로 읽고 상품 줄은 순번으로 매핑하지만, 첨부(`image_ids`·`image_ids.*`)와 재발송지
+ * (`redelivery_address.*` 7키)는 서버가 여러 키로 쪼개 돌려준다. 화면이 그 키를 하나씩
+ * 열거하면 서버가 키를 더하거나 이름을 바꿀 때 그 사유만 조용히 사라지고, 구매자에게는
+ * 요약 카드의 첫 줄만 남아 어느 칸이 막혔는지 알 수 없다. 접두사로 묶어 그 자리에 남긴다.
+ *
+ * @param errors 서버 422 의 `errors` 페이로드
+ * @return 표시 자리별 첫 사유 (없으면 빈 문자열)
+ */
+export function collectClaimFieldErrors(
+    errors: Record<string, any> | null | undefined
+): Record<string, string> {
+    const first = (prefixes: string[]): string => {
+        if (!errors) return '';
+
+        for (const key of Object.keys(errors)) {
+            if (!prefixes.some((prefix) => key === prefix || key.startsWith(prefix + '.'))) {
+                continue;
+            }
+
+            const raw = errors[key];
+            const message = Array.isArray(raw) ? String(raw[0] ?? '') : String(raw ?? '');
+
+            if (message) return message;
+        }
+
+        return '';
+    };
+
+    return {
+        charge_method: first(['charge_method']),
+        payment_method: first(['payment_method', 'refund_priority']),
+        images: first(['image_ids']),
+        redelivery: first(['redelivery_address']),
+    };
+}
+
+/**
+ * 필드 자리에 배치되지 않은 사유만 골라 냅니다.
+ *
+ * 요약 카드의 제출 오류 블록은 **필드에 매이지 않는 사유**만 맡는다(§6-3 P13). 서버가 주는
+ * 최상위 `message` 는 첫 오류 메시지라, 그것을 그대로 요약에 두면 이미 그 칸 옆에 선 사유가
+ * 화면에 두 번 나온다 — 2026-08-31 실측에서 청구 방식 거절이 축1 아래와 요약 카드에 나란히
+ * 떴다. 어느 쪽을 고쳐야 하는지 흐려지므로 배치된 사유는 요약에서 뺀다.
+ *
+ * 상품 줄은 순번 매핑에 성공한 키만 배치된 것으로 본다 — 매핑하지 않는 키(`custom_options`)는
+ * 어디에도 서지 않으므로 요약이 받아야 한다.
+ *
+ * @param errors 서버 422 의 `errors` 페이로드
+ * @param items 순번 매핑 대상 상품 줄 (제출 페이로드와 같은 순서)
+ * @return 배치되지 않은 첫 사유 (전부 배치됐으면 빈 문자열)
+ */
+export function unplacedClaimErrorMessage(
+    errors: Record<string, any> | null | undefined,
+    items: ClaimApplyItem[]
+): string {
+    if (!errors) return '';
+
+    const placedPrefixes = [
+        'reason_code',
+        'reason_detail',
+        'charge_method',
+        'payment_method',
+        'refund_priority',
+        'image_ids',
+        'redelivery_address',
+    ];
+    const mappedItemFields = ['quantity', 'new_product_option_id', 'order_option_id'];
+    const payloadLength = items.filter((item) => item.selected).length;
+
+    const isPlaced = (key: string): boolean => {
+        if (placedPrefixes.some((prefix) => key === prefix || key.startsWith(prefix + '.'))) {
+            return true;
+        }
+
+        const matched = key.match(/^items\.(\d+)\.(.+)$/);
+
+        return !!matched
+            && Number(matched[1]) < payloadLength
+            && mappedItemFields.includes(matched[2]);
+    };
+
+    for (const key of Object.keys(errors)) {
+        if (isPlaced(key)) continue;
+
+        const raw = errors[key];
+        const message = Array.isArray(raw) ? String(raw[0] ?? '') : String(raw ?? '');
+
+        if (message) return message;
+    }
+
+    return '';
+}
+
+export function formatClaimEstimate(estimate: any, currencyCode: string | null): Record<string, any> {
+    const fmt = (value: unknown): string => formatAmountInCurrency(Number(value ?? 0), currencyCode);
+
+    return {
+        shipping_fee: fmt(estimate?.shipping_fee?.fee),
+        shipping_extra_fee: fmt(estimate?.shipping_fee?.extra_fee),
+        shipping_groups: ((estimate?.shipping_fee?.groups ?? []) as any[])
+            .filter((group: any) => group?.mode === 'original_policy')
+            .map((group: any) => ({
+                base_fee: fmt(group?.base_fee),
+                multiplier: Number(group?.multiplier ?? 1),
+                extra_fee: fmt(group?.extra_fee),
+                has_extra_fee: Number(group?.extra_fee ?? 0) > 0,
+            })),
+        price_difference: fmt(Math.abs(Number(estimate?.price_difference ?? 0))),
+        additional_product_amount: fmt(estimate?.additional_product_amount),
+        refund_product_amount: fmt(estimate?.refund_product_amount),
+        total_charge_amount: fmt(estimate?.total_charge_amount),
+        refund_total: fmt(estimate?.adjustment?.refund_total),
+        // 보조통화 표기 — 세 줄 모두 서버가 재료를 준다(§5-4 "다통화는 전부 mc_* 규약").
+        // 환율은 서버가 주문 통화 스냅샷의 동결 환율로 낸 것을 그대로 쓴다 — 화면이 환산하면
+        // 예고와 청구의 근거가 갈린다.
+        mc_total_charge_amount: toSecondaryCurrencyList(estimate?.mc_total_charge_amount, currencyCode),
+        mc_shipping_fee: toSecondaryCurrencyList(estimate?.shipping_fee?.mc_fee, currencyCode),
+        mc_refund_total: toSecondaryCurrencyList(
+            estimate?.adjustment?.refund_formatted?.mc?.refund_total,
+            currencyCode
+        ),
+    };
+}
+
+/**
+ * 신청서 작성 화면 초기화 핸들러
+ *
+ * `claimable-options` 응답으로 상품 줄을 세우고, 주문상세에서 체크해 온 상품
+ * (`query.options`)을 미리 선택한다. 청구 2축의 기본값도 운영자 허용 목록의 첫 값으로
+ * 정한다 — 화면이 리터럴 기본값을 들고 있으면 운영자가 그 방식을 껐을 때 제출이 422 가 된다.
+ *
+ * 페이로드는 **응답 컨텍스트에서 직접 받는다**. 이 핸들러는 `claimable` 데이터소스의
+ * onSuccess 로 실행되는데, 그 시점의 `G7Core.dataSource.get('claimable')` 은 아직 비어 있다 —
+ * TemplateApp 의 상태 갱신이 refetch 해소 뒤에 일어나기 때문이다. 데이터소스에서 읽으면
+ * 응답은 200 인데 화면만 빈 신청서로 남고 오류는 어디에도 남지 않는다.
+ *
+ * @example
+ * {
+ *   "handler": "sirsoft-ecommerce.initClaimApply",
+ *   "params": {
+ *     "claimType": "exchange",
+ *     "preselected": "{{query.options ?? ''}}",
+ *     "claimable": "{{response.data.data}}"
+ *   }
+ * }
+ *
+ * @param action 액션 객체
+ * @param _context 액션 컨텍스트
+ */
+export function initClaimApplyHandler(
+    action: ActionWithParams<{ claimType?: string; preselected?: string; claimable?: any }>,
+    _context: ActionContext
+): void {
+    const G7Core = (window as any).G7Core;
+    if (!G7Core?.state) return;
+
+    const fromRoute = resolveClaimApplyRoute();
+    const claimType = String(action.params?.claimType || fromRoute.claimType || '');
+    const claimable = action.params?.claimable ?? claimableData(G7Core);
+
+    if (!claimType || !claimable) return;
+
+    const preselected = String(action.params?.preselected || fromRoute.preselected || '')
+        .split(',')
+        .map((value) => Number(value))
+        .filter((value) => value > 0);
+
+    const currency = orderCurrencyCode(G7Core);
+
+    const items: ClaimApplyItem[] = (claimable.options ?? [])
+        .filter((entry: any) => (entry.claimable_types ?? []).includes(claimType))
+        .map((entry: any) => {
+            const option = entry.option ?? {};
+            const available = Number(entry.available_quantity ?? 0);
+
+            return {
+                order_option_id: Number(option.id ?? 0),
+                product_id: option.product_id ?? null,
+                product_name: option.product_name ?? '',
+                product_option_name: option.product_option_name ?? '',
+                thumbnail_url: option.thumbnail_url ?? '',
+                unit_price: Number(option.unit_price ?? 0),
+                unit_price_formatted: option.unit_price_formatted ?? '',
+                available_quantity: available,
+                locked_quantity: Number(entry.locked_quantity ?? 0),
+                claimable_types: entry.claimable_types ?? [],
+                refund_branch: entry.refund_branch ?? null,
+                selected: preselected.includes(Number(option.id ?? 0)),
+                quantity: available > 0 ? Math.min(1, available) || available : 1,
+                exchange_mode: 'same',
+                new_product_option_id: null,
+                new_option_label: '',
+                custom_options: null,
+                price_difference: 0,
+                price_difference_formatted: formatAmountInCurrency(0, currency),
+                mc_unit_price: toSecondaryCurrencyList(option.mc_unit_price, currency),
+                validation_error: '',
+            } as ClaimApplyItem;
+        });
+
+    const settings = claimable.settings ?? {};
+    const allowedCharge: string[] = settings.allowed_charge_methods ?? [];
+    const allowedPayment: string[] = settings.charge_payment_methods ?? [];
+
+    G7Core.state.setLocal({
+        claimType,
+        claimableSnapshot: claimable,
+        claimItems: items,
+        claimSelectAll: items.length > 0 && items.every((item) => item.selected),
+        claimReason: '',
+        claimReasonDetail: '',
+        claimFaultType: null,
+        claimImages: claimable.pending_images ?? [],
+        claimImageFiles: [],
+        claimChargeMethod: allowedCharge[0] ?? '',
+        claimPaymentMethod: allowedPayment[0] ?? '',
+        claimRefundPriority: 'pg_first',
+        claimEstimate: null,
+        claimEstimateFormatted: null,
+        claimEstimateLoading: false,
+        claimEstimateError: null,
+        claimSubmitError: null,
+        claimValidationErrors: null,
+        claimFieldErrors: null,
+        isSubmittingClaim: false,
+        claimRedeliveryEditing: false,
+        claimRedelivery: null,
+        changeProductTarget: null,
+        changeProductMode: 'same',
+        changeProductProduct: null,
+        // 빈 객체가 아니라 null 로 지운다 — setLocal 은 깊은 병합이라 `{}` 는 무동작이고
+        // 앞 상품에서 고른 옵션이 그대로 남는다(2026-08-31 실측). 읽는 쪽은 전부 `?? {}` 다.
+        changeProductSelections: null,
+        changeProductMatched: null,
+        changeProductAdditionalSelections: null,
+        changeProductAdditionalTexts: null,
+    });
+}
+
+/**
+ * 신청 상품 선택 토글 핸들러
+ *
+ * @example
+ * { "handler": "sirsoft-ecommerce.toggleClaimItem", "params": { "index": 0, "claimApiBase": "..." } }
+ *
+ * @param action 액션 객체
+ * @param _context 액션 컨텍스트
+ */
+export function toggleClaimItemHandler(
+    action: ActionWithParams<{ index?: number; claimApiBase?: string; isGuest?: boolean }>,
+    _context: ActionContext
+): void {
+    const G7Core = (window as any).G7Core;
+    if (!G7Core?.state) return;
+
+    const index = Number(action.params?.index ?? -1);
+    if (index < 0) return;
+
+    const local = G7Core.state.getLocal();
+    const items: ClaimApplyItem[] = (local.claimItems ?? []).map((item: ClaimApplyItem, i: number) =>
+        i === index ? { ...item, selected: !item.selected } : item
+    );
+
+    G7Core.state.setLocal({
+        claimItems: items,
+        claimSelectAll: items.length > 0 && items.every((item) => item.selected),
+    });
+
+    scheduleClaimEstimate(G7Core, action.params ?? {});
+}
+
+/**
+ * 신청 상품 전체 선택 토글 핸들러
+ *
+ * @param action 액션 객체
+ * @param _context 액션 컨텍스트
+ */
+export function toggleClaimSelectAllHandler(
+    action: ActionWithParams<{ claimApiBase?: string; isGuest?: boolean }>,
+    _context: ActionContext
+): void {
+    const G7Core = (window as any).G7Core;
+    if (!G7Core?.state) return;
+
+    const local = G7Core.state.getLocal();
+    const next = !local.claimSelectAll;
+    const items: ClaimApplyItem[] = (local.claimItems ?? []).map((item: ClaimApplyItem) => ({
+        ...item,
+        selected: next,
+    }));
+
+    G7Core.state.setLocal({ claimItems: items, claimSelectAll: next });
+
+    scheduleClaimEstimate(G7Core, action.params ?? {});
+}
+
+/**
+ * 신청 수량 변경 핸들러
+ *
+ * 잔여 수량(`available_quantity`)을 상한으로 클램프한다 — 서버도 같은 상한으로 거절하지만,
+ * 입력 칸이 넘는 값을 그대로 보여 주면 요약이 그 수량으로 계산된 것처럼 읽힌다.
+ *
+ * @param action 액션 객체
+ * @param _context 액션 컨텍스트
+ */
+export function updateClaimQuantityHandler(
+    action: ActionWithParams<{ index?: number; value?: unknown; claimApiBase?: string; isGuest?: boolean }>,
+    _context: ActionContext
+): void {
+    const G7Core = (window as any).G7Core;
+    if (!G7Core?.state) return;
+
+    const index = Number(action.params?.index ?? -1);
+    if (index < 0) return;
+
+    const local = G7Core.state.getLocal();
+    const items: ClaimApplyItem[] = [...(local.claimItems ?? [])];
+    const target = items[index];
+
+    if (!target) return;
+
+    const max = Math.max(1, Number(target.available_quantity ?? 1));
+    const parsed = parseInt(String(action.params?.value ?? ''), 10);
+    const clamped = Math.max(1, Math.min(Number.isNaN(parsed) ? 1 : parsed, max));
+
+    items[index] = { ...target, quantity: clamped };
+
+    G7Core.state.setLocal({ claimItems: items });
+
+    scheduleClaimEstimate(G7Core, action.params ?? {});
+}
+
+/**
+ * 사유 선택 핸들러
+ *
+ * 사유가 귀책 구분을 정하고, 귀책이 회수·왕복 배송비의 부담 주체를 정한다 — 그래서 사유가
+ * 바뀌면 미리보기를 다시 부른다.
+ *
+ * @param action 액션 객체
+ * @param _context 액션 컨텍스트
+ */
+export function setClaimReasonHandler(
+    action: ActionWithParams<{ value?: string; claimApiBase?: string; isGuest?: boolean }>,
+    _context: ActionContext
+): void {
+    const G7Core = (window as any).G7Core;
+    if (!G7Core?.state) return;
+
+    const local = G7Core.state.getLocal();
+    const reasonCode = String(action.params?.value ?? '');
+
+    G7Core.state.setLocal({
+        claimReason: reasonCode,
+        claimFaultType: resolveFaultType(G7Core, String(local.claimType ?? ''), reasonCode),
+        claimValidationErrors: null,
+        claimFieldErrors: null,
+        claimSubmitError: null,
+    });
+
+    scheduleClaimEstimate(G7Core, action.params ?? {});
+}
+
+/**
+ * 청구 방식(축1) 선택 핸들러
+ *
+ * @param action 액션 객체
+ * @param _context 액션 컨텍스트
+ */
+export function setClaimChargeMethodHandler(
+    action: ActionWithParams<{ value?: string; claimApiBase?: string; isGuest?: boolean }>,
+    _context: ActionContext
+): void {
+    const G7Core = (window as any).G7Core;
+    if (!G7Core?.state) return;
+
+    G7Core.state.setLocal({ claimChargeMethod: String(action.params?.value ?? '') });
+
+    scheduleClaimEstimate(G7Core, action.params ?? {});
+}
+
+/**
+ * 결제 수단(축2) 선택 핸들러
+ *
+ * 결제 수단은 서버 재계산에 영향을 주지 않으므로 미리보기를 다시 부르지 않는다.
+ *
+ * @param action 액션 객체
+ * @param _context 액션 컨텍스트
+ */
+export function setClaimPaymentMethodHandler(
+    action: ActionWithParams<{ value?: string }>,
+    _context: ActionContext
+): void {
+    const G7Core = (window as any).G7Core;
+    if (!G7Core?.state) return;
+
+    G7Core.state.setLocal({ claimPaymentMethod: String(action.params?.value ?? '') });
+}
+
+/**
+ * 재발송지 편집 시작 핸들러 (D14)
+ *
+ * 원 배송지를 편집 버퍼의 초기값으로 복사한다.
+ *
+ * @param _action 액션 객체
+ * @param _context 액션 컨텍스트
+ */
+export function startClaimRedeliveryEditHandler(
+    _action: ActionWithParams,
+    _context: ActionContext
+): void {
+    const G7Core = (window as any).G7Core;
+    if (!G7Core?.state) return;
+
+    const local = G7Core.state.getLocal();
+
+    G7Core.state.setLocal({
+        claimRedeliveryEditing: true,
+        claimRedelivery: local.claimRedelivery ?? orderShippingAddressAsRedelivery(G7Core),
+    });
+}
+
+/**
+ * 재발송지 적용 핸들러 (D14)
+ *
+ * 우편번호·국가가 바뀌면 도서산간이 다시 판정되므로 미리보기를 다시 부른다.
+ *
+ * @param action 액션 객체
+ * @param _context 액션 컨텍스트
+ */
+export function applyClaimRedeliveryHandler(
+    action: ActionWithParams<{ claimApiBase?: string; isGuest?: boolean }>,
+    _context: ActionContext
+): void {
+    const G7Core = (window as any).G7Core;
+    if (!G7Core?.state) return;
+
+    G7Core.state.setLocal({ claimRedeliveryEditing: false });
+
+    scheduleClaimEstimate(G7Core, action.params ?? {});
+}
+
+/**
+ * 재발송지 되돌리기 핸들러 (원 배송지로 복귀)
+ *
+ * @param action 액션 객체
+ * @param _context 액션 컨텍스트
+ */
+export function resetClaimRedeliveryHandler(
+    action: ActionWithParams<{ claimApiBase?: string; isGuest?: boolean }>,
+    _context: ActionContext
+): void {
+    const G7Core = (window as any).G7Core;
+    if (!G7Core?.state) return;
+
+    G7Core.state.setLocal({ claimRedelivery: null, claimRedeliveryEditing: false });
+
+    scheduleClaimEstimate(G7Core, action.params ?? {});
+}
+
+/**
+ * 교환상품 변경 모달 열기 핸들러 (D29)
+ *
+ * 대상 상품의 index 를 받아 그 줄만 바꾼다. index 를 넘기지 않으면 항상 첫 상품이 바뀌고
+ * 오류 없이 조용히 잘못된 신청서가 저장된다.
+ *
+ * @param action 액션 객체
+ * @param _context 액션 컨텍스트
+ */
+export async function openClaimChangeProductHandler(
+    action: ActionWithParams<{ index?: number }>,
+    _context: ActionContext
+): Promise<void> {
+    const G7Core = (window as any).G7Core;
+    if (!G7Core?.state) return;
+
+    const index = Number(action.params?.index ?? -1);
+    if (index < 0) return;
+
+    const local = G7Core.state.getLocal();
+    const target: ClaimApplyItem | undefined = (local.claimItems ?? [])[index];
+
+    if (!target) return;
+
+    G7Core.state.setLocal({
+        changeProductTarget: { index, order_option_id: target.order_option_id, product_id: target.product_id },
+        changeProductMode: target.exchange_mode,
+        changeProductProduct: null,
+        // 빈 객체가 아니라 null 로 지운다 — setLocal 은 깊은 병합이라 `{}` 는 무동작이다.
+        // 그대로 두면 앞 행에서 고른 옵션이 이 행의 모달에 남아, 두 상품이 같은 옵션 값을
+        // 가질 때 구매자가 이 행에서 고르지 않은 값이 미리 선택된 채로 적용된다(2026-08-31 실측).
+        changeProductSelections: null,
+        changeProductMatched: null,
+        changeProductAdditionalSelections: null,
+        changeProductAdditionalTexts: null,
+        changeProductLoading: true,
+    });
+
+    G7Core.modal?.open?.('modal_claim_change_product');
+
+    try {
+        const response = await G7Core.api.get(
+            '/api/modules/sirsoft-ecommerce/products/' + String(target.product_id ?? '')
+        );
+
+        G7Core.state.setLocal({
+            changeProductProduct: response?.data ?? null,
+            changeProductLoading: false,
+        });
+    } catch (error: any) {
+        logger.error('[openClaimChangeProduct] 상품 조회 실패:', error);
+        G7Core.state.setLocal({ changeProductLoading: false });
+        G7Core.toast?.error?.(
+            error?.response?.data?.message
+            ?? G7Core.t?.('claim.change_product.load_failed')
+            ?? '교환 가능한 옵션을 불러오지 못했습니다.'
+        );
+    }
+}
+
+/**
+ * 교환 방식(동일상품/옵션변경) 선택 핸들러
+ *
+ * @param action 액션 객체
+ * @param _context 액션 컨텍스트
+ */
+export function setClaimChangeProductModeHandler(
+    action: ActionWithParams<{ mode?: string }>,
+    _context: ActionContext
+): void {
+    const G7Core = (window as any).G7Core;
+    if (!G7Core?.state) return;
+
+    G7Core.state.setLocal({ changeProductMode: action.params?.mode === 'change' ? 'change' : 'same' });
+}
+
+/**
+ * 교환상품 변경 적용 핸들러 (D29)
+ *
+ * 모달이 연 그 index 의 줄만 갱신한다.
+ *
+ * @param action 액션 객체
+ * @param _context 액션 컨텍스트
+ */
+export function applyClaimChangeProductHandler(
+    action: ActionWithParams<{ claimApiBase?: string; isGuest?: boolean }>,
+    _context: ActionContext
+): void {
+    const G7Core = (window as any).G7Core;
+    if (!G7Core?.state) return;
+
+    const local = G7Core.state.getLocal();
+    const target = local.changeProductTarget;
+
+    if (!target) return;
+
+    const index = Number(target.index ?? -1);
+    const items: ClaimApplyItem[] = [...(local.claimItems ?? [])];
+    const row = items[index];
+
+    if (!row) return;
+
+    const mode = local.changeProductMode === 'change' ? 'change' : 'same';
+    const matched = local.changeProductMatched ?? null;
+
+    if (mode === 'change' && !matched?.id) {
+        G7Core.toast?.warning?.(
+            G7Core.t?.('claim.change_product.select_option_required')
+            ?? '교환받을 옵션을 선택해 주세요.'
+        );
+
+        return;
+    }
+
+    const additionalSelections = local.changeProductAdditionalSelections ?? {};
+    const additionalTexts = local.changeProductAdditionalTexts ?? {};
+    const customOptions = Object.keys(additionalSelections).length > 0 || Object.keys(additionalTexts).length > 0
+        ? { selections: additionalSelections, custom_texts: additionalTexts }
+        : null;
+
+    items[index] = {
+        ...row,
+        exchange_mode: mode,
+        new_product_option_id: mode === 'change' ? Number(matched.id) : null,
+        new_option_label: mode === 'change'
+            ? (matched.option_name_localized ?? matched.option_name ?? '')
+            : '',
+        custom_options: customOptions,
+    };
+
+    G7Core.state.setLocal({ claimItems: items, changeProductTarget: null });
+    G7Core.modal?.close?.('modal_claim_change_product');
+
+    scheduleClaimEstimate(G7Core, action.params ?? {});
+}
+
+/**
+ * 미리보기를 debounce 로 예약합니다.
+ *
+ * 토글마다 요청을 쏘면 왕복이 겹쳐 옛 응답이 새 선택 위에 덮인다. 세대 번호로 최신 요청만
+ * 반영하되, 요청 수 자체도 debounce 로 줄인다.
+ *
+ * @param G7Core G7Core 인스턴스
+ * @param params 액션 파라미터 (claimApiBase / isGuest)
+ */
+function scheduleClaimEstimate(G7Core: any, params: { claimApiBase?: string; isGuest?: boolean }): void {
+    const claimApiBase = params.claimApiBase ?? '';
+
+    if (!claimApiBase) return;
+
+    // engine-v1.24.7: ActionDispatcher 의 try/finally 가 debounce 콜백 전에 __g7ActionContext 를
+    // 복원하므로, 콜백 실행 시점의 컨텍스트를 캡처해 두었다가 복원해야 setLocal 이 붙는다.
+    const savedActionContext = (window as any).__g7ActionContext;
+
+    if (claimEstimateDebounceTimer) {
+        clearTimeout(claimEstimateDebounceTimer);
+    }
+
+    claimEstimateDebounceTimer = setTimeout(() => {
+        const previousContext = (window as any).__g7ActionContext;
+        (window as any).__g7ActionContext = savedActionContext;
+
+        try {
+            void estimateClaimInternal(G7Core, claimApiBase, params.isGuest === true);
+        } finally {
+            (window as any).__g7ActionContext = previousContext;
+        }
+    }, 400);
+}
+
+/**
+ * 미리보기(서버 재계산) 실행
+ *
+ * 미리보기는 신청과 **같은 자격 가드**를 탄다 — 성공하면 신청 가능이라는 뜻이고, 422 면
+ * 그 사유가 곧 신청이 거절될 사유다. 그래서 실패는 토스트가 아니라 요약 자리의 안내로
+ * 남기고 제출 버튼을 잠근다.
+ *
+ * @param G7Core G7Core 인스턴스
+ * @param claimApiBase 주문 스코프 API 기준 경로
+ * @param isGuest 비회원 여부
+ */
+async function estimateClaimInternal(G7Core: any, claimApiBase: string, isGuest: boolean): Promise<void> {
+    const local = G7Core.state.getLocal();
+    const claimType = String(local.claimType ?? '');
+    const items = buildClaimItemsPayload(local.claimItems ?? []);
+
+    if (!claimType) return;
+
+    if (items.length === 0 || !local.claimReason) {
+        // 아직 계산할 수 없는 상태다 — 옛 금액을 남기면 지금 선택의 결과처럼 읽힌다.
+        claimEstimateGeneration += 1;
+        G7Core.state.setLocal({
+            claimEstimate: null,
+            claimEstimateFormatted: null,
+            claimEstimateLoading: false,
+            claimEstimateError: null,
+        });
+
+        return;
+    }
+
+    const generation = ++claimEstimateGeneration;
+
+    const body: Record<string, any> = {
+        type: claimType,
+        items,
+        reason_code: local.claimReason,
+        refund_priority: local.claimRefundPriority ?? 'pg_first',
+    };
+
+    if (local.claimChargeMethod) {
+        body.charge_method = local.claimChargeMethod;
+    }
+
+    if (local.claimRedelivery?.zipcode) {
+        body.redelivery_address = {
+            zipcode: local.claimRedelivery.zipcode,
+            country_code: local.claimRedelivery.country_code,
+        };
+    }
+
+    G7Core.state.setLocal({ claimEstimateLoading: true });
+
+    try {
+        const response = await G7Core.api.post(
+            claimApiBase + '/claims/preview',
+            body,
+            claimRequestConfig(isGuest)
+        );
+
+        if (generation !== claimEstimateGeneration) return;
+
+        const payload = response?.data ?? null;
+        const currency = orderCurrencyCode(G7Core);
+
+        // 상품별 차액은 서버 계산 결과를 그 줄에 되붙인다 — 화면이 스스로 곱셈을 하면
+        // 요약(서버)과 줄(화면)의 근거가 갈린다.
+        const latest = G7Core.state.getLocal();
+        const perItem: Record<number, number> = {};
+        for (const entry of payload?.items ?? []) {
+            perItem[Number(entry.order_option_id)] = Number(entry.price_difference ?? 0);
+        }
+
+        const nextItems = (latest.claimItems ?? []).map((item: ClaimApplyItem) => {
+            const difference = perItem[item.order_option_id];
+
+            return difference === undefined
+                ? item
+                : {
+                    ...item,
+                    price_difference: difference,
+                    price_difference_formatted: formatAmountInCurrency(Math.abs(difference), currency),
+                };
+        });
+
+        G7Core.state.setLocal({
+            claimItems: nextItems,
+            claimEstimate: payload,
+            claimEstimateFormatted: formatClaimEstimate(payload, currency),
+            claimEstimateLoading: false,
+            claimEstimateError: null,
+        });
+    } catch (error: any) {
+        if (generation !== claimEstimateGeneration) return;
+
+        logger.error('[estimateClaim] 실패:', error);
+
+        const message = error?.response?.data?.message
+            ?? error?.data?.message
+            ?? G7Core.t?.('claim.apply.estimate_failed')
+            ?? '예상 금액을 계산하지 못했습니다.';
+        const userFixable = isUserFixableClaimError(error);
+
+        G7Core.state.setLocal({
+            claimEstimate: null,
+            claimEstimateFormatted: null,
+            claimEstimateLoading: false,
+            // 4xx 만 화면에 남긴다 — 그 사유가 곧 신청이 거절될 사유다. 서버 장애·네트워크
+            // 실패는 화면에 남기지 않는다(§6-3 P13). 어느 쪽이든 금액은 지워지고 제출은
+            // `claimEstimate` 가 비어 있어 잠긴 채로 남는다.
+            claimEstimateError: userFixable ? message : null,
+        });
+
+        if (!userFixable) {
+            G7Core.toast?.error?.(message);
+        }
+    }
+}
+
+/**
+ * 미리보기 즉시 실행 핸들러 (진입 첫 조회 등)
+ *
+ * @param action 액션 객체
+ * @param _context 액션 컨텍스트
+ */
+export async function estimateClaimHandler(
+    action: ActionWithParams<{ claimApiBase?: string; isGuest?: boolean }>,
+    _context: ActionContext
+): Promise<void> {
+    const G7Core = (window as any).G7Core;
+    if (!G7Core?.state) return;
+
+    const claimApiBase = action.params?.claimApiBase ?? '';
+    if (!claimApiBase) return;
+
+    await estimateClaimInternal(G7Core, claimApiBase, action.params?.isGuest === true);
+}
+
+/**
+ * 유형별 신청 엔드포인트 접미사를 반환합니다.
+ *
+ * @param claimType 클레임 유형
+ * @returns 접미사 (알 수 없으면 null)
+ */
+export function claimStoreSuffix(claimType: string): string | null {
+    if (claimType === 'exchange') return '/exchanges';
+    if (claimType === 'return') return '/returns';
+    if (claimType === 'refund') return '/refund-requests';
+
+    return null;
+}
+
+/**
+ * 신청 제출 핸들러
+ *
+ * 첨부를 먼저 올려 `image_ids` 를 확보한 뒤 신청서를 접수하고, 결제가 필요하면 응답이
+ * 지목한 PG 결제 진입 핸들러를 그대로 dispatch 한다(provider-agnostic — 특정 PG 하드코딩 없음).
+ *
+ * @param action 액션 객체
+ * @param _context 액션 컨텍스트
+ */
+export async function submitClaimHandler(
+    action: ActionWithParams<{ claimApiBase?: string; isGuest?: boolean; successPath?: string }>,
+    _context: ActionContext
+): Promise<void> {
+    const G7Core = (window as any).G7Core;
+    if (!G7Core?.state) return;
+
+    const claimApiBase = action.params?.claimApiBase ?? '';
+    const isGuest = action.params?.isGuest === true;
+
+    if (!claimApiBase) return;
+
+    const local = G7Core.state.getLocal();
+    const claimType = String(local.claimType ?? '');
+    const suffix = claimStoreSuffix(claimType);
+    const items = buildClaimItemsPayload(local.claimItems ?? []);
+
+    if (!suffix) return;
+
+    if (items.length === 0) {
+        G7Core.toast?.warning?.(
+            G7Core.t?.('claim.apply.select_items_first') ?? '신청할 상품을 선택해 주세요.'
+        );
+
+        return;
+    }
+
+    if (!local.claimReason) {
+        G7Core.toast?.warning?.(
+            G7Core.t?.('claim.apply.reason_required') ?? '신청 사유를 선택해 주세요.'
+        );
+
+        return;
+    }
+
+    G7Core.state.setLocal({
+        isSubmittingClaim: true,
+        claimSubmitError: null,
+        claimValidationErrors: null,
+        claimFieldErrors: null,
+        // 지난 시도가 지목한 줄의 오류도 함께 지운다 — 남겨 두면 이미 고친 줄이 계속 붉게 남는다.
+        claimItems: attachClaimItemErrors(local.claimItems ?? [], null),
+    });
+
+    let imageIds: number[] = [];
+
+    try {
+        imageIds = await uploadPendingClaimFiles(G7Core, { claimApiBase, isGuest });
+    } catch (error: any) {
+        logger.error('[submitClaim] 첨부 업로드 실패:', error);
+    }
+
+    const body: Record<string, any> = {
+        items,
+        reason_code: local.claimReason,
+        refund_priority: local.claimRefundPriority ?? 'pg_first',
+    };
+
+    if (local.claimReasonDetail) {
+        body.reason_detail = local.claimReasonDetail;
+    }
+
+    if (imageIds.length > 0) {
+        body.image_ids = imageIds;
+    }
+
+    if (claimType !== 'refund') {
+        if (local.claimChargeMethod) {
+            body.charge_method = local.claimChargeMethod;
+        }
+
+        if (local.claimPaymentMethod) {
+            body.payment_method = local.claimPaymentMethod;
+        }
+    }
+
+    if (claimType === 'exchange' && local.claimRedelivery?.zipcode) {
+        body.redelivery_address = { ...local.claimRedelivery, changed_by_user: true };
+    }
+
+    try {
+        const response = await G7Core.api.post(
+            claimApiBase + suffix,
+            body,
+            claimRequestConfig(isGuest)
+        );
+
+        if (!response?.success) {
+            throw new Error(response?.message ?? 'Claim request failed');
+        }
+
+        G7Core.state.setLocal({ isSubmittingClaim: false, claimImageFiles: [], claimImages: [] });
+        G7Core.toast?.success?.(
+            response.message
+            ?? G7Core.t?.('claim.apply.submit_success')
+            ?? '신청이 접수되었습니다.'
+        );
+
+        const data = response.data ?? {};
+
+        if (data.requires_pg_payment && data.pg_payment_handler) {
+            await G7Core.dispatch?.({
+                handler: data.pg_payment_handler,
+                params: { pgPaymentData: data.pg_payment_data },
+            });
+
+            return;
+        }
+
+        if (action.params?.successPath) {
+            await G7Core.dispatch?.({
+                handler: 'navigate',
+                params: { path: action.params.successPath },
+            });
+        }
+    } catch (error: any) {
+        logger.error('[submitClaim] 실패:', error);
+
+        const errorData = error?.response?.data ?? error?.data;
+        const message = errorData?.message
+            ?? error?.message
+            ?? G7Core.t?.('claim.apply.submit_failed')
+            ?? '신청 접수에 실패했습니다.';
+        const userFixable = isUserFixableClaimError(error);
+
+        // 4xx 는 필드 오류를 그 필드 옆에, 필드에 매이지 않는 사유를 요약 카드에 남긴다 —
+        // 화면에 남는 안내를 토스트로 한 번 더 띄우면 같은 말이 두 곳에서 겹친다.
+        // 5xx·네트워크 실패는 화면에 남길 상태가 아니므로 토스트로만 알린다(§6-3 P13).
+        const validationErrors = userFixable ? (errorData?.errors ?? null) : null;
+        const currentItems = G7Core.state.getLocal()?.claimItems ?? [];
+        // 필드 자리에 배치되지 않은 사유만 요약 카드가 맡는다 — 배치된 사유까지 여기 두면
+        // 같은 말이 그 칸과 요약에 두 번 나온다(§6-3 P13). 오류 맵이 없는 4xx 는 message 를
+        // 그대로 남긴다: 그 사유는 어느 칸에도 매이지 않는다.
+        const summaryMessage = validationErrors
+            ? unplacedClaimErrorMessage(validationErrors, currentItems)
+            : message;
+
+        G7Core.state.setLocal({
+            isSubmittingClaim: false,
+            claimSubmitError: userFixable ? (summaryMessage || null) : null,
+            claimValidationErrors: validationErrors,
+            // 첨부·재발송지·청구 2축의 사유는 그 칸 아래에 남긴다 — 요약 카드의 message 한 줄만
+            // 남으면 구매자가 어느 칸을 고쳐야 하는지 알 수 없다(§6-3 P13).
+            claimFieldErrors: collectClaimFieldErrors(validationErrors),
+            // 항목별 오류는 그 상품 줄에 붙인다 — 요약 카드는 필드에 매이지 않는 사유만 맡는다.
+            claimItems: attachClaimItemErrors(currentItems, validationErrors),
+        });
+
+        if (!userFixable) {
+            G7Core.toast?.error?.(message);
+        }
+    }
+}

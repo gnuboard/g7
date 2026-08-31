@@ -66,7 +66,9 @@
     "addresses_title": "배송지 관리",
     "notifications_title": "알림",
     "board_title": "게시판 활동",
-    "inquiries_title": "상품 문의내역"
+    "inquiries_title": "상품 문의내역",
+    "claim_apply_title": "교환·반품·취소 신청",
+    "claim_apply_description": "주문 상품의 교환·반품·취소·환불을 신청합니다."
   },
   "identity": {
     "challenge": {
@@ -172,6 +174,13 @@
       "withdrawModal": "회원 탈퇴 확인"
     },
     "identity_challenge_modal": "본인인증",
-    "notification_delete_all_confirm_modal": "알림 전체 삭제 확인"
+    "notification_delete_all_confirm_modal": "알림 전체 삭제 확인",
+    "mypage_claims": {
+      "apply_items": "신청 상품",
+      "apply_redelivery": "재발송지",
+      "apply_reason": "신청 사유",
+      "apply_summary": "신청 요약",
+      "change_product_modal": "교환상품 변경"
+    }
   }
 }

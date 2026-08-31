@@ -126,7 +126,7 @@ class OrderReturnService
      * @param  ClaimChargeMethodEnum|null  $chargeMethod  청구 방식 (청구 0원이면 null)
      * @param  RefundPriorityEnum  $refundPriority  환불 우선순위
      * @param  int|null  $excludeReturnId  수량 잠금 집계에서 뺄 반품 신청서 ID (수정 화면의 미리보기)
-     * @return array{shipping_fee: ClaimShippingFee, adjustment: AdjustmentResult, fault_type: ClaimReasonFaultTypeEnum, charge_method: ClaimChargeMethodEnum|null, total_charge_amount: float, requires_payment: bool} 미리보기 결과
+     * @return array{shipping_fee: ClaimShippingFee, adjustment: AdjustmentResult, fault_type: ClaimReasonFaultTypeEnum, charge_method: ClaimChargeMethodEnum|null, total_charge_amount: float, mc_total_charge_amount: array|null, requires_payment: bool} 미리보기 결과
      *
      * @throws OrderClaimException 사유 부재 / 신청 자격 위반
      */
@@ -173,6 +173,9 @@ class OrderReturnService
             'fault_type' => $reason->fault_type,
             'charge_method' => $chargeMethod,
             'total_charge_amount' => (float) $shippingFee->fee,
+            // 접수 시 신청서에 박제되는 값(`mc_total_charge_amount`)과 같은 출처를 쓴다 — 반품의
+            // 청구액은 회수 배송비 그 자체이므로 배송비 산정이 이미 낸 다통화 값을 그대로 옮긴다.
+            'mc_total_charge_amount' => $shippingFee->mcFee ?: null,
             'requires_payment' => $shippingFee->fee > 0 && $chargeMethod?->requiresPayment() === true,
         ];
     }

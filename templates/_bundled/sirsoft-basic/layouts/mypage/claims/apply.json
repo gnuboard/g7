@@ -1,0 +1,296 @@
+{
+    "version": "1.0.0",
+    "layout_name": "mypage/claims/apply",
+    "permissions": [],
+    "extends": "_user_base",
+    "meta": {
+        "title": "$t:user.mypage.claim_apply_title",
+        "description": "$t:user.mypage.claim_apply_description"
+    },
+    "_comment": "클레임(교환/반품/취소·환불) 신청서 작성 셸. 유형은 라우트 파라미터(:type)로 들어오고 허용값 밖이면 404 로 세운다. 회원/비회원 분기는 이 셸이 흡수한다 — 공유 partial 은 _global.currentUser 를 참조하지 않고, 액션에 실린 claimApiBase / imageDeleteBase / isGuest 만 본다. 비회원 셸(shop/guest_claim_apply.json)은 같은 partial 을 재사용하며 이 세 값만 바꾼다.",
+    "_comment_order_id": "회원 클레임 API 는 주문 ID(정수)를 받는데(whereNumber('id')) 이 화면의 라우트는 주문번호를 쓴다. 그래서 order 데이터소스가 주문번호로 주문을 읽어 id 를 _local.claimOrderId 로 세운 뒤 claimable 을 refetch 한다. refetchDataSource 는 action.params 의 localStateOverride 를 읽지 않고 현재 로컬 상태를 병합하므로 setState 를 같은 sequence 앞에 두어야 한다.",
+    "_comment_shell_contract": "공유 partial 은 회원/비회원을 스스로 판단하지 않는다. 셸이 _local 에 세 값(claimApiBase / imageDeleteBase / isGuest)을 세우고 partial 은 그것만 읽는다. claimApiBase 는 주문 ID 가 필요하므로 order 데이터소스의 initLocal 이 소유한다 — 레이아웃 initLocal 에 같은 키를 두면 마운트 후 재적용에서 서로 덮어써 어느 쪽이 남는지가 순서에 좌우된다.",
+    "_comment_init_local": "이 화면의 상태는 initClaimApply 핸들러가 소유한다. 레이아웃 initLocal 에 같은 키를 두면 마운트 뒤 한 번 더 적용되면서 핸들러가 쓴 값을 초기값으로 되돌린다 — 첫 진입에서는 순서가 맞아 보이지만 SPA 뒤로가기로 되돌아오면 재적용이 뒤에 도착해, 응답 200 에 오류 0 인 채로 '신청할 수 있는 상품이 없습니다' 만 남는다(2026-08-31 실측). 그래서 여기에는 셸이 정하는 정적 계약 두 값만 둔다. 나머지 키는 표현식이 모두 fallback(?? [] / ?? '')을 갖는다.",
+    "initLocal": {
+        "isGuest": false,
+        "imageDeleteBase": "/api/modules/sirsoft-ecommerce/user/claims/images"
+    },
+    "data_sources": [
+        {
+            "id": "order",
+            "label_key": "$t:editor.data_source.order",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/user/orders/{{route.order_number}}",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "blocking",
+            "_comment_refetch": "SPA 뒤로가기로 이 화면에 되돌아오면 캐시된 응답이 쓰여 onSuccess 가 발화하지 않는다 — 그러면 claimOrderId 를 세우고 claimable 을 부르는 체인이 통째로 건너뛰어져, 오류 없이 '신청할 수 있는 상품이 없습니다' 만 남는다(2026-08-31 실측). 클레임 가능 여부는 진입할 때마다 서버가 다시 판정해야 하는 값이기도 하다.",
+            "cache": false,
+            "refetchOnMount": true,
+            "initLocal": {
+                "claimOrderId": "data.id",
+                "claimApiBase": "{{'/api/modules/sirsoft-ecommerce/user/orders/' + data.id}}"
+            },
+            "onSuccess": [
+                {
+                    "comment": "주문 ID 를 세운 뒤 claimable 을 부른다. 두 액션은 반드시 같은 sequence 안에 있어야 한다 — refetchDataSource 가 읽는 로컬 상태는 직전 setState 의 pending 값이다.",
+                    "handler": "sequence",
+                    "params": {
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "_local",
+                                    "claimOrderId": "{{response.data.data.id}}"
+                                }
+                            },
+                            {
+                                "handler": "refetchDataSource",
+                                "params": {
+                                    "dataSourceId": "claimable"
+                                }
+                            }
+                        ]
+                    }
+                }
+            ],
+            "errorHandling": {
+                "404": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            }
+        },
+        {
+            "_comment": "클레임 가능 상품·유형. 주문 ID 는 주문상세가 주소(?order_id)에 실어 보내므로 다른 데이터소스를 기다리지 않고 곧바로 부른다 — 체인(order 응답 → setState → refetch)에만 기대면 SPA 뒤로가기로 되돌아왔을 때 refetch 결과가 새로 마운트된 화면의 상태에 닿지 않아, 응답 200 · 오류 0 인 채로 빈 신청서만 남는다(2026-08-31 실측). 주소를 직접 입력해 들어와 order_id 가 없는 진입은 첫 호출이 404 로 끝나고(그 404 는 화면을 세우지 않는다) order 응답이 세운 _local.claimOrderId 로 체인이 다시 부른다.",
+            "id": "claimable",
+            "label_key": "$t:editor.data_source.claimable",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/user/orders/{{query.order_id ?? _local.claimOrderId ?? 0}}/claimable-options",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "cache": false,
+            "refetchOnMount": true,
+            "errorHandling": {
+                "404": {
+                    "comment": "order_id 없는 직접 진입의 첫 호출 — 체인이 곧 올바른 ID 로 다시 부른다. 화면을 세우지 않는다.",
+                    "handler": "suppress"
+                }
+            },
+            "onSuccess": [
+                {
+                    "comment": "응답으로 상품 줄·사유·청구 기본값을 세운다. 페이로드는 응답 컨텍스트에서 직접 넘긴다 — 자기 onSuccess 시점의 데이터소스 store 는 아직 비어 있어(TemplateApp 상태 갱신이 refetch 해소 뒤) 핸들러가 거기서 읽으면 응답은 200 인데 화면만 빈 신청서로 남는다. 유형(:type)과 미리 선택된 상품(?options)은 여기서 넘기지 않는다 — 데이터소스 onSuccess 의 실행 컨텍스트에는 route·query 가 없어 빈 값이 도착하고, 넘기는 형태만 남으면 살아 있는 배선처럼 보인다. 핸들러가 주소에서 직접 읽는다.",
+                    "handler": "sirsoft-ecommerce.initClaimApply",
+                    "params": {
+                        "claimable": "{{response.data.data}}"
+                    }
+                }
+            ]
+        }
+    ],
+    "init_actions": [
+        {
+            "comment": "라우트 유형 가드 — exchange/return/refund 외의 값으로 들어오면 화면을 세운다. 가드가 없으면 빈 신청서가 열리고 제출에서야 거절된다.",
+            "handler": "conditions",
+            "conditions": [
+                {
+                    "if": "{{!['exchange', 'return', 'refund'].includes(route.type ?? '')}}",
+                    "then": {
+                        "handler": "showErrorPage",
+                        "params": {
+                            "errorCode": 404,
+                            "target": "content"
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "min-h-screen bg-gray-50 dark:bg-gray-900"
+                },
+                "lifecycle": {
+                    "onUnmount": [
+                        {
+                            "comment": "떠난 화면의 미리보기 응답이 다음 화면의 로컬 상태에 쓰이지 않도록 debounce 타이머와 세대 번호를 정리한다.",
+                            "handler": "sirsoft-ecommerce.clearClaimApplyTimers"
+                        }
+                    ]
+                },
+                "children": [
+                    {
+                        "type": "layout",
+                        "name": "Container",
+                        "props": {
+                            "className": "py-8"
+                        },
+                        "responsive": {
+                            "portable": {
+                                "props": {
+                                    "className": "py-4"
+                                }
+                            }
+                        },
+                        "children": [
+                            {
+                                "comment": "뒤로가기 — 주문상세로 돌아간다. 같은 목록 클러스터 안의 이동이므로 목록 상태를 그대로 물려준다.",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-2 mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "type": "button",
+                                            "className": "flex items-center gap-1 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/mypage/orders/{{route.order_number}}",
+                                                    "mergeQuery": true,
+                                                    "query": {}
+                                                }
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "chevron-left",
+                                                    "className": "text-base"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-base font-medium"
+                                                },
+                                                "text": "$t:claim.apply.back"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "화면 제목 — 취소·환불은 서버가 판정한 분기(resolved_type)에 따라 라벨만 바뀐다. 사유 카드 구성과 수량 입력은 분기와 무관하게 같다.",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "mb-6"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H2",
+                                        "props": {
+                                            "className": "text-2xl font-bold text-gray-900 dark:text-white"
+                                        },
+                                        "responsive": {
+                                            "portable": {
+                                                "props": {
+                                                    "className": "text-xl font-bold text-gray-900 dark:text-white"
+                                                }
+                                            }
+                                        },
+                                        "text": "{{route.type === 'exchange' ? $t('claim.apply.title_exchange') : (route.type === 'return' ? $t('claim.apply.title_return') : ((_local.claimableSnapshot ?? claimable?.data)?.resolved_type === 'cancel' ? $t('claim.apply.title_cancel') : $t('claim.apply.title_refund')))}}"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                                        },
+                                        "text": "$t:claim.apply.order_number|number={{order.data.order_number ?? ''}}"
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "본문(2단) + 요약(sticky). 모바일은 1단으로 접고 요약은 아래로 내려간다.",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "grid grid-cols-3 gap-6 items-start"
+                                },
+                                "responsive": {
+                                    "portable": {
+                                        "props": {
+                                            "className": "flex flex-col gap-4"
+                                        }
+                                    }
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "col-span-2 space-y-4"
+                                        },
+                                        "responsive": {
+                                            "portable": {
+                                                "props": {
+                                                    "className": "space-y-3"
+                                                }
+                                            }
+                                        },
+                                        "children": [
+                                            {
+                                                "partial": "partials/mypage/claims/_apply_items.json"
+                                            },
+                                            {
+                                                "partial": "partials/mypage/claims/_apply_redelivery.json"
+                                            },
+                                            {
+                                                "partial": "partials/mypage/claims/_apply_reason.json"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "col-span-1 sticky top-24"
+                                        },
+                                        "responsive": {
+                                            "portable": {
+                                                "props": {
+                                                    "className": "w-full"
+                                                }
+                                            }
+                                        },
+                                        "children": [
+                                            {
+                                                "partial": "partials/mypage/claims/_apply_summary.json"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        {
+            "partial": "partials/mypage/claims/_modal_change_product.json"
+        }
+    ]
+}

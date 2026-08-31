@@ -3448,6 +3448,7 @@ _교환 (`type=exchange`)_
 | additional_product_amount | number | `0` | 추가로 받을 상품 금액 |
 | refund_product_amount | number | `0` | 돌려줄 상품 금액 |
 | total_charge_amount | number | `6000` | 총 청구액 (배송비 + 추가 상품 금액) |
+| mc_total_charge_amount | object\|null | `{"KRW":9000,"USD":6.75}` | 총 청구액의 통화별 환산 (주문 통화 스냅샷의 동결 환율. 스냅샷이 없으면 `null`) |
 | fault_type | string | `customer` | 사유의 귀책 구분 |
 | charge_method | string\|null | `pay_on_request` | 적용된 청구 방식 |
 | requires_payment | boolean | `true` | 신청 시 추가결제가 필요한지 (청구액 > 0 이고 결제형 청구 방식) |
@@ -3461,6 +3462,7 @@ _반품 (`type=return`)_
 | fault_type | string | `customer` | 귀책 구분 |
 | charge_method | string\|null | `pay_on_request` | 적용된 청구 방식 |
 | total_charge_amount | number | `3000` | 총 청구액 (반품 배송비) |
+| mc_total_charge_amount | object\|null | `{"KRW":3000,"USD":2.25}` | 총 청구액의 통화별 환산 (배송비 산정이 낸 값. 스냅샷이 없으면 `null`) |
 | requires_payment | boolean | `true` | 신청 시 추가결제가 필요한지 |
 
 _취소·환불 (`type=refund`)_
@@ -3483,6 +3485,7 @@ _취소·환불 (`type=refund`)_
         "fault_type": "customer",
         "charge_method": "pay_on_request",
         "total_charge_amount": 3000,
+        "mc_total_charge_amount": { "KRW": 3000, "USD": 2.25 },
         "requires_payment": true
     }
 }

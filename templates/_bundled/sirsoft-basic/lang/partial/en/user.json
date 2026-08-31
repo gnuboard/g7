@@ -66,7 +66,9 @@
     "addresses_title": "Address Management",
     "notifications_title": "Notifications",
     "board_title": "Board Activity",
-    "inquiries_title": "Product Inquiries"
+    "inquiries_title": "Product Inquiries",
+    "claim_apply_title": "Exchange / Return / Cancel",
+    "claim_apply_description": "Request an exchange, return, cancellation or refund for your order."
   },
   "identity": {
     "challenge": {
@@ -172,6 +174,13 @@
       "withdrawModal": "Withdraw Membership"
     },
     "identity_challenge_modal": "Identity Verification",
-    "notification_delete_all_confirm_modal": "Delete All Notifications"
+    "notification_delete_all_confirm_modal": "Delete All Notifications",
+    "mypage_claims": {
+      "apply_items": "Claim items",
+      "apply_redelivery": "Redelivery address",
+      "apply_reason": "Claim reason",
+      "apply_summary": "Claim summary",
+      "change_product_modal": "Change exchange option"
+    }
   }
 }
