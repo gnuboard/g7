@@ -8,7 +8,7 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Auth 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(raw HTTP) + 실측 응답 필드 표 + 응답 예시(envelope)
 3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
@@ -61,6 +61,7 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 
 <!-- @generated:end -->
+
 
 **설명**
 
@@ -157,6 +158,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 현재 관리자 토큰을 새 Sanctum 토큰으로 교체한다. `AuthService::refreshToken()` 이 기존 토큰을 폐기하고 새 토큰을 발급하며, `data` 에는 새 `token` 과 `user`(UserResource) 가 담긴다. 만료 임박 토큰을 재발급하는 용도로, 세션 만료로 재인증이 필요한 경우(토큰 무효)에는 `401 auth.unauthenticated` 를 반환한다.
@@ -201,7 +204,7 @@ _단건 응답: `data` 객체의 필드._
 | status_label | string | `활성` | 상태의 사람이 읽는 라벨 (상태 Enum label() 산물) |
 | status_variant | string | `success` | 상태 표시 색상/스타일 변형 키 (상태 Enum variant() 산물 — UI 배지용) |
 | is_admin | boolean | `true` | 관리자 역할 보유 여부 (User::isAdmin() — 역할 관계 기반 파생) |
-| homepage | null | `null` | 홈페이지 URL |
+| homepage | string | `https://example.com` | 홈페이지 URL |
 | mobile | null | `null` | 휴대폰 번호 |
 | phone | null | `null` | 전화번호 |
 | zipcode | null | `null` | 우편번호 |
@@ -247,6 +250,8 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 
@@ -342,6 +347,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 관리자 로그인. `email`/`password` 검증 후 `AuthService::login()` 이 인증하고, 인증 사용자가 `isAdmin()` 이 아니면 `403 auth.admin_required` 로 거부한다. 성공 시 `data.token`(Sanctum Bearer) 과 `data.user`(UserResource) 를 반환한다. 계정 잠금 시 `AccountLockedException`, 자격 불일치 시 `422` 검증 오류를 반환한다. 이후 모든 관리자 API 호출은 이 토큰을 `Authorization: Bearer` 헤더로 실어야 한다.
@@ -401,6 +408,8 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우, 또는 등록되지 않은 이메일인 경우 (`auth.password_reset_failed` — `error.errors.email` 에 `auth.email_not_registered` 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 
@@ -490,6 +499,8 @@ HTTP/1.1 200
 | 423 | Locked | 로그인 실패 누적으로 계정이 잠긴 경우 (`auth.account_locked` — `error.locked_until`, `error.retry_after_seconds` 포함) |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 
@@ -594,6 +605,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 비밀번호 단계가 돌려준 challenge 를 확인해 로그인을 완료한다. 로그인과 동일한 요청 제한(`throttle:auth-login`)이 걸려 코드 대입 시도도 함께 억제된다.
@@ -648,6 +661,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
 **설명**
 
 현재 사용자 토큰을 폐기해 로그아웃한다(`message: auth.logout_success`). 현재 요청에 사용된 토큰만 폐기하며, 모든 기기에서 로그아웃하려면 `/api/user/auth/logout-all-devices` 를 사용한다.
@@ -669,7 +683,7 @@ HTTP/1.1 200
 | password | body | string | 예 | — | 비밀번호 |
 | mobile | body | string | 아니오 | max 20 | 휴대폰번호 (선택) |
 | phone | body | string | 아니오 | max 20 | 전화번호 (선택) |
-| language | body | string | 아니오 | `ko`, `en` | 언어 코드 |
+| language | body | string | 아니오 | `ko`, `en`, `ja` | 언어 코드 |
 | agree_terms | body | string | 아니오 | — | 이용약관 동의 (코어 필수 동의 — accepted 규칙, 미동의 시 가입 거부) |
 | agree_privacy | body | string | 아니오 | — | 개인정보 처리방침 동의 (코어 필수 동의 — accepted 규칙, 미동의 시 가입 거부) |
 | agree_email_subscription | body | boolean | 아니오 | — | 광고성 이메일 수신 동의 (marketing 플러그인 주입, 선택 항목) |
@@ -763,6 +777,8 @@ HTTP/1.1 201
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 회원가입(공개). 성공 시 `201 auth.register_success` 와 `data.token`/`data.user` 를 반환해 가입 직후 로그인 상태로 이어진다. `agree_*` 동의 파라미터(약관/개인정보/이메일수신/마케팅/제3자제공/정보공개)는 가입 시점의 동의 이력으로 기록된다 — 그중 `agree_email_subscription`/`agree_marketing_consent`/`agree_third_party_consent`/`agree_info_disclosure` 및 `preferred_currency`/`preferred_shipping_country` 는 marketing·ecommerce 확장이 훅(`core.auth.register_validation_rules`)으로 주입하는 파라미터로, 해당 확장 비활성 시 무시된다. 검증 실패 시 `422 auth.register_failed`.
@@ -825,6 +841,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 비밀번호 재설정을 실제 반영한다(공개). 재설정 메일의 `token` 과 `email`, 새 `password` 를 받아 비밀번호를 갱신하고 `message: auth.password_reset_success`. 토큰 만료/불일치 등 검증 실패 시 `422 auth.password_reset_failed`. 반영 전 토큰 유효성만 먼저 확인하려면 `/api/auth/validate-reset-token` 을 사용한다.
@@ -867,7 +885,7 @@ _단건 응답: `data` 객체의 필드._
 | status_label | string | `활성` | 상태의 사람이 읽는 라벨 (상태 Enum label() 산물) |
 | status_variant | string | `success` | 상태 표시 색상/스타일 변형 키 (상태 Enum variant() 산물 — UI 배지용) |
 | is_admin | boolean | `true` | 관리자 역할 보유 여부 (User::isAdmin() — 역할 관계 기반 파생) |
-| homepage | null | `null` | 홈페이지 URL |
+| homepage | string | `https://example.com` | 홈페이지 URL |
 | mobile | null | `null` | 휴대폰 번호 |
 | phone | null | `null` | 전화번호 |
 | zipcode | null | `null` | 우편번호 |
@@ -953,6 +971,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 프론트(사용자) 레이아웃 전역 부트스트랩 엔드포인트. `_user_base.json` 의 `current_user` data_source 가 모든 페이지 진입 시 호출한다. 관리자 `user` 와 달리 응답을 `UserResource::toAuthArray()` 로 만들어 `core.user.filter_resource_data` 필터를 적용하므로, marketing 플러그인·ecommerce 모듈이 훅으로 병합한 필드(`notify_*`, `marketing_consent*`, `channels`, `ecommerce_*` 등)가 함께 내려온다. 이 필드들은 확장 소유이므로 상세 설명은 각 확장 문서를 따른다. 로그인 시 이 응답이 계정 영속 통화를 덮어쓰는 계약(D-LOGIN-CUR)의 출처다.
@@ -1021,6 +1041,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 비밀번호 재설정 토큰의 유효성만 사전 확인한다(공개, 비밀번호 미변경). 재설정 화면(`admin_reset_password.json`/`auth/reset_password.json`) 진입 시 토큰/이메일이 유효한지 먼저 검사해, 만료·위조 링크면 즉시 오류 화면을 보이고 유효하면 새 비밀번호 입력 폼을 노출하는 용도다. 실제 반영은 `/api/auth/reset-password` 가 담당한다.
@@ -1072,6 +1094,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
 **설명**
 
 `/user` prefix 그룹의 사용자 로그아웃. 공용 경로 `/api/auth/logout` 과 동일하게 현재 토큰을 폐기하되, `permission:core.auth.logout` 권한 게이트를 추가로 통과해야 한다. 세션 시작(`start.api.session`)이 걸린 공용 경로와 달리 권한 기반 접근 제어가 필요한 흐름에서 사용한다.
@@ -1122,6 +1145,7 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`core.auth.logout`)이 없는 경우 |
 
 <!-- @generated:end -->
+
 
 **설명**
 
@@ -1200,6 +1224,8 @@ HTTP/1.1 200
 | 423 | Locked | 계정이 잠긴 경우. 응답 형태는 로그인 엔드포인트의 423 과 동일하다 (`auth.account_locked` / `auth.account_locked_permanently` — `errors.locked_until`, `errors.retry_after_seconds`, `errors.permanent`). 잠긴 계정은 기존 세션으로도 토큰을 연장할 수 없으며, 차단 시 기존 토큰도 폐기되지 않는다 |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 
@@ -1300,6 +1326,8 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`core.auth.user`)이 없는 경우 |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 

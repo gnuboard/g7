@@ -8,7 +8,7 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Notification Templates 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(raw HTTP) + 실측 응답 필드 표 + 응답 예시(envelope)
 3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
@@ -84,6 +84,8 @@ _단건 응답: `data` 객체의 필드._
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 저장 전 알림 템플릿의 렌더링 결과를 미리 확인합니다. `definition_id` 와 다국어 `subject`/`body`, 선택적 `locale` 을 받아 샘플 변수로 치환된 제목·본문을 반환합니다. 인증(`auth:sanctum`)과 `core.settings.read` 권한이 필요하며, 실제 발송이나 저장은 일어나지 않습니다. 템플릿 편집 화면에서 변수 치환 결과를 실시간으로 확인할 때 사용합니다.
 
@@ -206,6 +208,8 @@ _단건 응답: `data` 객체의 필드 (`NotificationTemplateResource`)._
 
 <!-- @generated:end -->
 
+
+
 **설명** 단일 채널 알림 템플릿의 다국어 제목(`subject`)·본문(`body`)과 클릭 URL, 수신자(`recipients`), 활성 상태를 수정합니다. 인증(`auth:sanctum`)과 `core.settings.update` 권한이 필요합니다. `template` 경로 파라미터로 대상을 지정하며, 확장이 `core.notification_template.update_validation_rules` 훅으로 추가 파라미터를 검증에 넣을 수 있습니다. 관리자가 특정 채널의 알림 문구를 편집해 저장할 때 사용합니다.
 
 
@@ -268,27 +272,25 @@ HTTP/1.1 200
         "definition_id": 1,
         "channel": "mail",
         "subject": {
-            "ko": "[{board_name}] 게시글에 새 댓글이 등록되었습니다",
-            "en": "[{board_name}] New comment on your post"
+            "ko": "[{app_name}] 회원가입을 환영합니다",
+            "en": "[{app_name}] Welcome to Our Service"
         },
         "body": {
-            "ko": "<h1>{name}님, 안녕하세요.</h1><p><strong>{board_name}</strong> 게시판의 게시글에 <strong>{comment_author}</strong>님이 댓글을 남겼습니다.</p><blockquote style=\"border-left: 3px solid #cbd5e0; padding-left: 12px; color: #718096;\">{comment_content}</blockquote><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{post_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">게시글 보기</a></td></tr></table><p>감사합니다,<br><a href=\"{site_url}\">{app_name}</a></p>",
-            "en": "<h1>Hello, {name}.</h1><p><strong>{comment_author}</strong> commented on your post in <strong>{board_name}</strong>.</p><blockquote style=\"border-left: 3px solid #cbd5e0; padding-left: 12px; color: #718096;\">{comment_content}</blockquote><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{post_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">View Post</a></td></tr></table><p>Thank you,<br><a href=\"{site_url}\">{app_name}</a></p>"
+            "ko": "<h1>{name}님, 환영합니다!</h1><p>{app_name}에 가입해 주셔서 감사합니다.</p><p>이제 모든 서비스를 이용하실 수 있습니다. 아래 버튼을 클릭하여 로그인해 주세요.</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{action_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">로그인하기</a></td></tr></table><p>감사합니다,<br><a href=\"{site_url}\">{app_name}</a></p>",
+            "en": "<h1>Welcome, {name}!</h1><p>Thank you for joining {app_name}.</p><p>You now have access to all our services. Click the button below to log in.</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{action_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">Log In</a></td></tr></table><p>Thank you,<br><a href=\"{site_url}\">{app_name}</a></p>"
         },
         "click_url": null,
         "recipients": [
             {
-                "type": "related_user",
-                "relation": "post_author",
-                "exclude_trigger_user": true
+                "type": "trigger_user"
             }
         ],
         "is_active": true,
         "is_default": true,
         "user_overrides": null,
         "updated_by": null,
-        "created_at": "2026-07-30 18:45:11",
-        "updated_at": "2026-07-30 18:45:11",
+        "created_at": "2026-07-28 09:33:18",
+        "updated_at": "2026-08-31 17:44:30",
         "abilities": {
             "can_update": true,
             "can_delete": true
@@ -307,6 +309,8 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 단일 채널 템플릿을 소속 정의의 기본값 데이터로 복원합니다. 인증(`auth:sanctum`)과 `core.settings.update` 권한이 필요합니다. 소속 정의가 없으면 404, 해당 채널의 기본 데이터가 없으면 404 를 반환합니다. 편집한 문구를 버리고 기본값 하나만 되돌릴 때 사용하며, 정의 전체를 복원하는 정의 reset 과 달리 대상 템플릿에만 적용됩니다.
 
@@ -409,6 +413,8 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 단일 채널 알림 템플릿의 활성 상태(`is_active`)를 현재 값의 반대로 토글합니다. 인증(`auth:sanctum`)과 `core.settings.update` 권한이 필요합니다. 비활성 템플릿은 해당 채널로의 발송이 중단되므로, 정의는 유지한 채 특정 채널만 켜거나 끌 때 사용합니다.
 

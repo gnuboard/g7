@@ -8,7 +8,7 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Schedules 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(raw HTTP) + 실측 응답 필드 표 + 응답 예시(envelope)
 3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
@@ -154,6 +154,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 예약 작업(스케줄) 목록을 페이지네이션과 함께 조회하며, 응답에는 상태별 통계도 포함됩니다. `core.schedules.read` 권한이 필요합니다. `type`/`frequency`/`status`/`last_result`/`extension_type` 등으로 필터링하고 `sort_by`/`sort_order` 로 정렬할 수 있습니다. 관리자 스케줄 관리 화면의 목록·필터·요약 카드 표시에 사용합니다.
 
 
@@ -291,6 +293,8 @@ HTTP/1.1 201
 
 <!-- @generated:end -->
 
+
+
 **설명** 새 예약 작업을 생성합니다. `core.schedules.create` 권한이 필요합니다. `type`(artisan/shell/url), `command`, `expression`, `frequency` 를 지정하며 생성자(creator)는 현재 사용자로 자동 기록됩니다. 검증 실패 시 422로 응답하고, 성공 시 201과 생성된 스케줄 리소스를 반환합니다. 관리자 스케줄 등록 폼에 사용합니다.
 
 
@@ -350,6 +354,8 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 전달된 `ids` 배열의 스케줄을 일괄 삭제합니다. `core.schedules.delete` 권한이 필요합니다. 삭제 처리 결과 요약을 반환하며, 검증 실패 시 422로 응답합니다. 목록에서 여러 스케줄을 선택해 한 번에 제거하는 동작에 사용합니다.
 
@@ -420,6 +426,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 전달된 `ids` 배열의 스케줄 활성 상태(`is_active`)를 일괄 변경합니다. `core.schedules.update` 권한이 필요합니다. 처리 결과 요약을 반환하며, 검증 실패 시 422로 응답합니다. 목록에서 여러 스케줄을 선택해 한 번에 활성화/비활성화하는 동작에 사용합니다.
 
 
@@ -472,6 +480,7 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
 
 **설명** 특정 실행 이력 레코드를 삭제합니다. `core.schedules.delete` 권한이 필요합니다. 대상 이력이 없으면 404로 응답합니다. 스케줄 상세의 실행 이력 목록에서 개별 이력을 제거할 때 사용합니다.
 
@@ -541,6 +550,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 스케줄 전체의 집계 통계를 조회합니다. `core.schedules.read` 권한이 필요합니다. 전체/활성/비활성 수와 마지막 실행 결과별(성공/실패/실행중/미실행) 건수를 반환합니다. 관리자 스케줄 대시보드의 요약 카드 표시에 사용합니다.
 
 
@@ -593,6 +604,7 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
 
 **설명** 단일 스케줄을 삭제합니다. `core.schedules.delete` 권한이 필요합니다. 경로의 `schedule` 은 라우트 모델 바인딩으로 해석되어 존재하지 않으면 404가 됩니다. 관리자 스케줄 관리 화면의 개별 삭제 동작에 사용합니다.
 
@@ -706,6 +718,8 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 단일 스케줄의 상세 정보를 조회하며 생성자(creator) 정보를 함께 로드합니다. `core.schedules.read` 권한이 필요합니다. 경로의 `schedule` 은 라우트 모델 바인딩으로 해석되어 없으면 404가 됩니다. 관리자 스케줄 상세/수정 화면의 초기 데이터 로딩에 사용합니다.
 
@@ -848,6 +862,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 기존 스케줄 정보를 수정합니다. `core.schedules.update` 권한이 필요합니다. store 와 동일한 필드(`type`/`command`/`expression`/`frequency` 등)를 받으며 검증 실패 시 422로 응답합니다. 경로의 `schedule` 은 라우트 모델 바인딩으로 해석되며, 수정된 스케줄 리소스를 반환합니다. 관리자 스케줄 수정 폼에 사용합니다.
 
 
@@ -951,6 +967,8 @@ HTTP/1.1 201
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 기존 스케줄을 복제해 새 스케줄을 만듭니다. `core.schedules.create` 권한이 필요합니다. 원본을 바탕으로 새 레코드를 생성하며, 성공 시 201과 복제된 스케줄 리소스를 반환합니다. 유사한 설정의 스케줄을 빠르게 추가하는 "복제" 동작에 사용합니다.
 
@@ -1062,6 +1080,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 특정 스케줄의 실행 이력을 페이지네이션으로 조회합니다. `core.schedules.read` 권한이 필요합니다. `status`(success/failed/running), `trigger_type`(scheduled/manual), 기간(`started_from`/`started_to`)으로 필터링하고 `sort_by`/`sort_order` 로 정렬할 수 있습니다. 스케줄 상세의 실행 이력 탭 표시에 사용합니다.
 
 
@@ -1152,6 +1172,8 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 스케줄을 예약 시각과 무관하게 즉시 실행합니다. `core.schedules.run` 권한이 필요합니다. 실제 명령이 수행되고 실행 이력 레코드가 생성되며, 그 이력(trigger_type=manual)을 반환합니다. 관리자가 대상 작업을 수동으로 즉시 돌려 결과를 확인하는 "지금 실행" 동작에 사용합니다.
 

@@ -8,7 +8,7 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Core Update 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(raw HTTP) + 실측 응답 필드 표 + 응답 예시(envelope)
 3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
@@ -71,6 +71,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 코어의 버전별 변경사항(CHANGELOG)을 구조화된 배열로 조회합니다. `source`(active/bundled/github)로 어느 위치의 CHANGELOG를 읽을지, `from_version`/`to_version`으로 조회 범위를 지정합니다. `core.settings.read` 권한이 필요하며, 업데이트 안내 화면에서 새 버전에 무엇이 바뀌는지 보여줄 때 사용합니다. 확장은 `core.extension.changelog_validation_rules` 훅으로 파라미터를 확장할 수 있습니다.
 
 
@@ -130,6 +132,8 @@ _단건 응답: `data` 객체의 필드._
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명** GitHub 릴리스를 기준으로 코어 업데이트 가능 여부를 확인합니다. 현재 버전과 최신 버전을 비교한 결과를 반환하며, 조회에 실패하면 실패 사유·현재 버전·github_url과 함께 422를 반환합니다. `core.settings.update` 권한이 필요하고, 관리자가 업데이트 확인 버튼을 눌러 새 버전 유무를 점검하는 시나리오에 사용합니다.
 

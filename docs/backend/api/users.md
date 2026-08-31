@@ -8,7 +8,7 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Users 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(raw HTTP) + 실측 응답 필드 표 + 응답 예시(envelope)
 3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
@@ -202,6 +202,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 관리자 사용자 관리 화면(`admin_user_list.json`)의 목록을 제공합니다. `filters` 로 이름/이메일 다중 검색(operator: like, eq, starts_with, ends_with), `date_filter`(all/week/month/custom)와 `start_date`/`end_date` 로 가입 기간 필터, `sort_by`/`sort_order` 로 정렬한다. 응답은 `data.data[]`(항목별 순번 `number` + 요약 필드)와 `data.pagination`(페이지 정보)에 더해 `data.statistics`(통계)와 `data.abilities`(컬렉션 레벨 권한)를 함께 반환한다. 기본값은 `per_page=15`, `page=1`, `sort_by=created_at`, `sort_order=desc`, `date_filter=all` 이다.
@@ -221,7 +223,7 @@ HTTP/1.1 200
 | nickname | body | string | 아니오 | max 50 | 닉네임 |
 | email | body | email | 예 | max 255 | 이메일 주소 |
 | password | body | string | 예 | — | 비밀번호 |
-| language | body | string | 아니오 | `ko`, `en` | 언어 코드 |
+| language | body | string | 아니오 | `ko`, `en`, `ja` | 언어 코드 |
 | country | body | string | 아니오 | — | 국가 코드 (ISO 3166-1 alpha-2) |
 | timezone | body | string | 아니오 | — | 타임존 식별자 |
 | status | body | string | 아니오 | `active`, `inactive`, `blocked`, `withdrawn` | 계정 상태 (미지정 시 active) |
@@ -384,6 +386,8 @@ HTTP/1.1 201
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 관리자가 새 사용자를 생성합니다. `name`, `email`, `password`(8자 이상, `password_confirmation` 확인 필수), 그리고 역할이 필수이다 — 역할은 `roles`(객체 배열 `[{id}]`) 또는 `role_ids`(id 배열) 중 하나로 지정하며 둘 다 보내면 `role_ids` 가 우선한다. `language`(미지정 시 `ko`), `status`(미지정 시 `active`), 연락처/주소/자기소개 등은 선택 항목이다. 성공 시 201 과 함께 생성된 사용자를 `UserResource` 형태로 반환한다. `notify_*`/`marketing_consent`/`third_party_consent`/`info_disclosure`/`email_subscription` 파라미터는 확장(sirsoft-marketing)이 검증 규칙을 주입한 필드로, 상세는 해당 확장 문서를 참조한다.
@@ -462,6 +466,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 여러 사용자의 계정 상태를 한 번에 변경합니다. `ids` 는 대상 사용자 UUID 배열이며, `status` 는 `active`/`inactive`/`blocked`/`withdrawn`/`pending_verification`(UserStatus Enum 값) 중 하나이다. `ExcludeCurrentUser` 규칙으로 요청자 본인은 대상에서 제외된다. 목록 화면의 다중 선택 후 일괄 상태 변경에 사용한다.
@@ -538,6 +544,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 이메일 주소의 사용 가능 여부(중복 아님)를 확인합니다. `email` 은 필수, `exclude_user_id`(UUID)를 주면 해당 사용자를 중복 검사에서 제외한다 — 사용자 수정 화면에서 자기 자신의 이메일을 유지할 때 사용한다. 응답 `data.available` 이 true 면 사용 가능, false 면 이미 사용 중이다. 사용자 생성/수정 폼의 이메일 실시간 중복 확인에 쓰인다.
@@ -553,7 +561,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| language | body | string | 예 | `ko`, `en` | 언어 코드 |
+| language | body | string | 예 | `ko`, `en`, `ja` | 언어 코드 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.user.update_language_validation_rules`).
 
@@ -589,7 +597,7 @@ _단건 응답: `data` 객체의 필드._
 | status_label | string | `활성` | 상태의 사람이 읽는 라벨 (상태 Enum label() 산물) |
 | status_variant | string | `success` | 상태 표시 색상/스타일 변형 키 (상태 Enum variant() 산물 — UI 배지용) |
 | is_admin | boolean | `true` | 관리자 역할 보유 여부 (User::isAdmin() — 역할 관계 기반 파생) |
-| homepage | null | `null` | 홈페이지 URL |
+| homepage | string | `https://example.com` | 홈페이지 URL |
 | mobile | null | `null` | 휴대폰 번호 |
 | phone | null | `null` | 전화번호 |
 | zipcode | null | `null` | 우편번호 |
@@ -662,6 +670,8 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 
@@ -784,6 +794,7 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
 
 **설명**
 
@@ -909,6 +920,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 사용자를 검색해 `UserResource` 컬렉션으로 반환합니다. `uuid` 를 주면 해당 UUID 의 단일 사용자(존재 시 1건, 없으면 빈 배열)를, 없으면 `keyword` 로 이름·닉네임·이메일을 부분 일치 검색한다(`keyword` 와 `uuid` 중 하나는 필수). 알림 템플릿 수신자 지정이나 활동 로그 필터의 사용자 선택 UI 에서 사용한다.
@@ -979,6 +992,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 관리자 대시보드의 사용자 통계 위젯이 소비하는 집계 API. 캐시 없이 실시간 집계.
 
 
@@ -1036,6 +1051,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 지정한 사용자(경로 파라미터는 UUID 로 바인딩)를 삭제합니다. 슈퍼관리자 계정은 삭제할 수 없으며 시도 시 422(`exceptions.cannot_delete_super_admin`)를 반환한다. 그 외 삭제 실패 시에는 실패 상세 사유가 담긴 422 를, 나머지 오류는 500 을 반환한다. 삭제는 Service 계층에서 관련 데이터 정리와 훅을 거쳐 처리된다.
@@ -1082,7 +1099,7 @@ _단건 응답: `data` 객체의 필드._
 | status_label | string | `활성` | 상태의 사람이 읽는 라벨 (상태 Enum label() 산물) |
 | status_variant | string | `success` | 상태 표시 색상/스타일 변형 키 (상태 Enum variant() 산물 — UI 배지용) |
 | is_admin | boolean | `true` | 관리자 역할 보유 여부 (User::isAdmin() — 역할 관계 기반 파생) |
-| homepage | null | `null` | 홈페이지 URL |
+| homepage | string | `https://example.com` | 홈페이지 URL |
 | mobile | null | `null` | 휴대폰 번호 |
 | phone | null | `null` | 전화번호 |
 | zipcode | null | `null` | 우편번호 |
@@ -1271,6 +1288,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 특정 사용자의 상세 정보를 조회합니다(경로 파라미터는 UUID 로 바인딩). `withAdminInfo()` 를 통해 기본 필드에 더해 관리자 전용 필드(admin_memo, ip_address, withdrawn_at, blocked_at)와 관계형 데이터(modules, plugins, menus, roles, permissions, consents 및 개수 필드)를 함께 반환한다. `core.user.filter_resource_data` 필터로 확장이 자신의 필드(sirsoft-marketing 의 알림/동의 설정, sirsoft-ecommerce 의 마일리지/선호 통화·배송국 등)를 병합한다. 관리자 사용자 상세/수정 화면(`admin_user_detail.json`/`admin_user_form.json`)이 소비한다.
@@ -1291,7 +1310,7 @@ HTTP/1.1 200
 | nickname | body | string | 아니오 | max 50 | 닉네임 |
 | email | body | email | 예 | max 255 | 이메일 주소 |
 | password | body | string | 아니오 | — | 비밀번호 |
-| language | body | string | 아니오 | `ko`, `en` | 언어 코드 |
+| language | body | string | 아니오 | `ko`, `en`, `ja` | 언어 코드 |
 | country | body | string | 아니오 | — | 국가 코드 (ISO 3166-1 alpha-2) |
 | timezone | body | string | 아니오 | — | 타임존 식별자 |
 | status | body | string | 아니오 | `active`, `inactive`, `blocked`, `withdrawn` | 계정 상태 (미지정 시 active) |
@@ -1455,6 +1474,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 기존 사용자 정보를 수정합니다(경로 파라미터는 UUID 로 바인딩). `name`, `email` 은 필수이며 `email` 은 해당 사용자를 제외한 고유성 검사를 거친다. `password` 는 선택이며 값을 주면 8자 이상·`password_confirmation` 확인을 요구한다(미전송 시 기존 비밀번호 유지). 역할은 `roles` 또는 `role_ids` 중 하나로 지정하고 둘 다 오면 `role_ids` 가 우선한다. 성공 시 갱신된 사용자를 `UserResource` 로 반환한다. `notify_*`/`marketing_consent`/`third_party_consent`/`info_disclosure`/`email_subscription` 파라미터는 확장(sirsoft-marketing)이 검증 규칙을 주입한 필드로, 상세는 해당 확장 문서를 참조한다.
@@ -1475,7 +1496,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-POST /api/admin/users/a26219fc-94a0-4f63-9404-04c2a6ac99e4/unlock HTTP/1.1
+POST /api/admin/users/{user}/unlock HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -1499,7 +1520,7 @@ _단건 응답: `data` 객체의 필드._
 | status_label | string | `활성` | 상태의 사람이 읽는 라벨 (상태 Enum label() 산물) |
 | status_variant | string | `success` | 상태 표시 색상/스타일 변형 키 (상태 Enum variant() 산물 — UI 배지용) |
 | is_admin | boolean | `true` | 관리자 역할 보유 여부 (User::isAdmin() — 역할 관계 기반 파생) |
-| homepage | null | `null` | 홈페이지 URL |
+| homepage | string | `https://example.com` | 홈페이지 URL |
 | mobile | null | `null` | 휴대폰 번호 |
 | phone | null | `null` | 전화번호 |
 | zipcode | null | `null` | 우편번호 |
@@ -1572,6 +1593,8 @@ HTTP/1.1 200
 | 404 | Not Found | 해당 UUID 의 사용자가 없는 경우 |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 
@@ -1651,6 +1674,8 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 

@@ -8,7 +8,7 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Templates 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(raw HTTP) + 실측 응답 필드 표 + 응답 예시(envelope)
 3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
@@ -203,6 +203,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 설치/미설치 템플릿을 모두 포함해 목록을 조회합니다(TemplateService::getPaginatedTemplates). `search`(이름·식별자·설명·벤더 OR 검색), `filters`(AND 조건), `status`, `type`, `include_hidden` 필터와 페이지네이션을 지원하며, 응답에는 현재 사용자의 install/activate/uninstall 수행 가능 여부(`abilities`)가 함께 담깁니다. `core.templates.read` 권한이 필요합니다.
 
 
@@ -300,6 +302,8 @@ _단건 응답: `data` 객체의 필드._
 
 <!-- @generated:end -->
 
+
+
 **설명** 설치된 템플릿을 활성화합니다. 필요한 의존 모듈/플러그인이 충족되지 않으면 409(warning)로 누락 목록을 반환하며, `force=true`로 강제 활성화할 수 있습니다. 활성화 성공 시 재활성화로 되살아나는 번들 언어팩 목록(`pending_language_packs`)을 함께 반환합니다. `core.templates.activate` 권한이 필요합니다.
 
 
@@ -365,6 +369,8 @@ _단건 응답: `data` 객체의 필드._
 | 500 | Server Error | 업데이트 확인 처리 실패 (GitHub API 호출 실패 등) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 설치된 모든 템플릿의 배포 최신 버전을 조회해 업데이트 가능 여부를 확인합니다(TemplateService::checkForUpdates). 별도 요청 파라미터는 없으며, 목록 화면의 업데이트 배지 갱신에 사용됩니다. `core.templates.install` 권한이 필요합니다.
 
@@ -475,6 +481,8 @@ _단건 응답: `data` 객체의 필드 (TemplateResource)._
 | 500 | Server Error | 비활성화 처리 실패 (템플릿 미존재 등) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 활성 상태의 템플릿을 비활성화합니다(TemplateService::deactivateTemplate). `core.templates.activate` 권한이 필요합니다.
 
@@ -596,6 +604,8 @@ _단건 응답: `data` 객체의 필드 (TemplateResource + cascade 결과)._
 
 <!-- @generated:end -->
 
+
+
 **설명** `_bundled`/`_pending` 대기소의 템플릿을 활성 디렉토리로 설치합니다. 요청 시 함께 선택한 의존 확장을 먼저 설치(cascade 1단계)하고, 실패 시 중단합니다. 설치 성공 후 동반 번들 언어팩을 best-effort로 설치하며 실패 목록을 `language_pack_failures`로 반환합니다(cascade 2단계). `core.templates.install` 권한이 필요합니다.
 
 
@@ -709,6 +719,8 @@ _단건 응답: `data` 객체의 필드 (TemplateResource — 목록 응답 항�
 
 <!-- @generated:end -->
 
+
+
 **설명** 업로드된 ZIP 파일에서 템플릿을 설치합니다(TemplateService::installFromZipFile). 최대 50MB(51200KB)까지 허용합니다. `core.templates.install` 권한이 필요합니다.
 
 
@@ -819,6 +831,8 @@ _단건 응답: `data` 객체의 필드 (TemplateResource — 목록 응답 항�
 
 <!-- @generated:end -->
 
+
+
 **설명** 지정한 GitHub 저장소 URL에서 템플릿을 내려받아 설치합니다(TemplateService::installFromGithub). `core.templates.install` 권한이 필요합니다.
 
 
@@ -868,6 +882,7 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (`data`: `null`, �
 | 500 | Server Error | 첨부 파일 삭제 실패 (스토리지/DB 삭제 실패 — `첨부 파일 삭제에 실패했습니다.`) |
 
 <!-- @generated:end -->
+
 
 **설명** 레이아웃 편집 중 업로드된 첨부(배경 이미지 등)를 삭제합니다. 스토리지의 실제 파일과 DB 행을 함께 삭제합니다(TemplateLayoutAttachmentService::delete). `core.templates.layouts.edit` 권한이 필요합니다.
 
@@ -948,6 +963,8 @@ _단건 응답: `data` 객체의 필드._
 | 422 | Unprocessable Entity | 파일 검증 위반 또는 ZIP 열기 실패 (`manifest 미리보기에 실패했습니다.` + `errors.error`) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 업로드된 ZIP을 실제 설치하지 않고 manifest와 검증 결과만 추출해 반환합니다(TemplateService::previewManifest). 설치 전 확인 다이얼로그에서 사용합니다. `core.templates.install` 권한이 필요합니다.
 
@@ -1059,6 +1076,8 @@ _단건 응답: `data` 객체의 필드 (TemplateResource — 갱신 후 템플�
 
 <!-- @generated:end -->
 
+
+
 **설명** 템플릿의 레이아웃을 파일에서 다시 읽어 DB에 갱신합니다(TemplateService::refreshTemplateLayouts). 파일로 직접 수정한 레이아웃을 반영할 때 사용합니다. `core.templates.activate` 권한이 필요합니다.
 
 
@@ -1125,6 +1144,8 @@ Authorization: Bearer {YOUR_TOKEN}
 
 <!-- @generated:end -->
 
+
+
 **설명** 활성 디렉토리의 템플릿을 제거합니다(`_bundled` 원본은 보존). `delete_data=true`인 경우 관련 데이터까지 함께 삭제합니다(TemplateService::uninstallTemplate). `core.templates.uninstall` 권한이 필요합니다.
 
 
@@ -1146,7 +1167,7 @@ Authorization: Bearer {YOUR_TOKEN}
 **요청 예시**
 
 ```http
-GET /api/admin/templates/sirsoft-admin_basic/changelog?source=active&from_version=%EC%98%88%EC%8B%9C%EA%B0%92&to_version=%EC%98%88%EC%8B%9C%EA%B0%92 HTTP/1.1
+GET /api/admin/templates/{identifier}/changelog?source=active&from_version=%EC%98%88%EC%8B%9C%EA%B0%92&to_version=%EC%98%88%EC%8B%9C%EA%B0%92 HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -1266,6 +1287,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 특정 템플릿의 변경 내역(CHANGELOG)을 조회합니다. `source`(active/bundled/github)로 출처를, `from_version`/`to_version`으로 버전 범위를 지정할 수 있습니다(TemplateService::getTemplateChangelog). `core.templates.read` 권한이 필요합니다.
 
 
@@ -1284,7 +1307,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-GET /api/admin/templates/sirsoft-admin_basic/editor-assets HTTP/1.1
+GET /api/admin/templates/{identifier}/editor-assets HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -1339,6 +1362,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 레이아웃 편집기 부팅용 자산 매니페스트(컴포넌트 IIFE JS / CSS URL)를 반환합니다. 비활성 템플릿도 편집할 수 있도록 활성 디렉토리 → `_bundled` 폴백으로 빌드 산출물을 탐색하며, 빌드가 없으면 빈 목록으로 폴백합니다. `core.templates.layouts.edit` 권한이 필요합니다.
 
 
@@ -1357,7 +1382,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-GET /api/admin/templates/sirsoft-admin_basic/editor/broadcast-catalog HTTP/1.1
+GET /api/admin/templates/{identifier}/editor/broadcast-catalog HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -1414,6 +1439,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
 
 
@@ -1432,7 +1459,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-GET /api/admin/templates/sirsoft-admin_basic/editor/broadcast-catalog.json HTTP/1.1
+GET /api/admin/templates/{identifier}/editor/broadcast-catalog.json HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -1442,7 +1469,9 @@ Authorization: Bearer {YOUR_TOKEN}
 
 _`data` 객체의 필드 (`BroadcastCatalogService::collect` + 요청 식별자)._
 
-| 필드 | 타입 | 예시값 | 용도/설명 |
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | identifier | string | `sirsoft-admin_basic` | 요청한 템플릿 식별자 (요청값 반향) |
 | channels | array | `[{"name":"core.notifications","source":{"kind":"core"}}]` | 구독 가능한 브로드캐스트 채널 목록. `source.kind` 는 `core`/`module`/`plugin` 이며 확장 채널에는 `source.identifier` 가 붙는다 (활성 확장만 수집) |
@@ -1480,6 +1509,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 데이터소스 websocket 후보용으로 등록된 브로드캐스트 채널/이벤트 카탈로그를 반환합니다(BroadcastCatalogService::collect). 편집기 전용 가드 하에서만 노출되며(admin 전역 broadcast 회피), `identifier`는 라우트 일관성용이고 카탈로그는 설치본 전역 기준입니다. `core.templates.layouts.edit` 권한이 필요합니다.
 
 
@@ -1498,7 +1529,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-GET /api/admin/templates/sirsoft-admin_basic/editor/component-styles HTTP/1.1
+GET /api/admin/templates/{identifier}/editor/component-styles HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -1528,6 +1559,7 @@ Content-Type: text/css; charset=UTF-8
 
 <!-- @generated:end -->
 
+
 **설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
 
 
@@ -1546,7 +1578,7 @@ Content-Type: text/css; charset=UTF-8
 **요청 예시**
 
 ```http
-GET /api/admin/templates/sirsoft-admin_basic/editor/component-styles.css HTTP/1.1
+GET /api/admin/templates/{identifier}/editor/component-styles.css HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -1584,6 +1616,8 @@ Content-Type: text/css; charset=UTF-8
 
 <!-- @generated:end -->
 
+
+
 **설명** 레이아웃 편집기 프리뷰 전용 CSS를 서빙합니다. 편집기 진입 시에만 components.css의 다크 조상 셀렉터를 프리뷰 마커로 치환하고(editor-spec `darkMode.previewIsolation` 규칙), 필요 시 `@layer` 래퍼를 평탄화해 라이트/다크 프리뷰를 격리합니다. 변환 결과는 캐시 버전+파일 mtime 키로 캐시하며, CSS 부재 시 빈 응답으로 폴백합니다. `core.templates.layouts.edit` 권한이 필요합니다.
 
 URI 가 `editor/components.css` 가 아니라 `editor/component-styles.css` 인 이유는 [자산 URL 이중 모드](README.md#자산-url-이중-모드) 때문입니다. 확장자를 뗀 형태(`editor/components`)가 `editor/components.json` 의 확장자 없는 형태와 충돌하므로 CSS 쪽 URI 를 분리했습니다. 확장자 없는 형태는 `editor/component-styles` 입니다.
@@ -1604,7 +1638,7 @@ URI 가 `editor/components.css` 가 아니라 `editor/component-styles.css` 인 
 **요청 예시**
 
 ```http
-GET /api/admin/templates/sirsoft-admin_basic/editor/components HTTP/1.1
+GET /api/admin/templates/{identifier}/editor/components HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -1650,6 +1684,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
 
 
@@ -1668,7 +1704,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-GET /api/admin/templates/sirsoft-admin_basic/editor/components.json HTTP/1.1
+GET /api/admin/templates/{identifier}/editor/components.json HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -1678,8 +1714,14 @@ Authorization: Bearer {YOUR_TOKEN}
 
 _`data` 는 템플릿의 `components.json` 내용을 그대로 담은 **컴포넌트 맵**이다 (고정 필드 집합이 아니라 컴포넌트명 → 정의 매핑)._
 
-| 필드 | 타입 | 예시값 | 용도/설명 |
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
+| $schema | string | `https://json-schema.org/draft/2020-12…` | JSON 스키마 선언 URL (편집기/검증 도구용) |
+| templateId | string | `sirsoft-admin_basic` | 대상 템플릿의 식별자 |
+| version | string | `1.0.0` | 템플릿 버전 (예: 1.0.0) |
+| components | object | `{"basic":[{"name":"Button","type":"basic","description":"…` | 컴포넌트 트리 (레이아웃이 렌더할 컴포넌트 정의) |
 | (컴포넌트명) | object | `{"type":"basic","tag":"div"}` | 컴포넌트 정의. 키는 레이아웃 JSON 의 `name` 과 일치한다 |
 
 > 활성/`_bundled` 어디에도 `components.json` 이 없으면 `404`(`templates.layout_not_found`)다.
@@ -1711,6 +1753,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 편집기용 components.json(컴포넌트 정의)을 서빙합니다. 비활성 템플릿도 편집 가능하도록 활성 디렉토리 → `_bundled` 폴백으로 파일을 읽어 반환합니다. `core.templates.layouts.edit` 권한이 필요합니다.
 
 
@@ -1729,7 +1773,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-GET /api/admin/templates/sirsoft-admin_basic/editor/editor-spec HTTP/1.1
+GET /api/admin/templates/{identifier}/editor/editor-spec HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -1778,6 +1822,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
 
 
@@ -1796,7 +1842,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-GET /api/admin/templates/sirsoft-admin_basic/editor/editor-spec.json HTTP/1.1
+GET /api/admin/templates/{identifier}/editor/editor-spec.json HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -1806,10 +1852,12 @@ Authorization: Bearer {YOUR_TOKEN}
 
 _`data` 객체의 필드 (`EditorSpecAssembler::assemble`)._
 
-| 필드 | 타입 | 예시값 | 용도/설명 |
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | identifier | string | `sirsoft-admin_basic` | 요청한 템플릿 식별자 (요청값 반향) |
-| spec | object \| null | `{"palette":[…],"styleControls":{…}}` | 합본된 편집기 스펙. 분할 매니페스트(`editor-spec/` + `$include`)는 **활성 디렉토리 기준**으로 합쳐지며(`_bundled` 폴백 없음), 미분할 원본 파일은 그대로 반환된다. 스펙이 없으면 `null` (404 아님) |
+| spec | object | `{"$schema":"https:\/\/json-schema.org\/draft\/2020-12\/sc…` | 합본된 편집기 스펙. 분할 매니페스트(`editor-spec/` + `$include`)는 **활성 디렉토리 기준**으로 합쳐지며(`_bundled` 폴백 없음), 미분할 원본 파일은 그대로 반환된다. 스펙이 없으면 `null` (404 아님) |
 
 **응답 예시**
 
@@ -1841,6 +1889,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 편집기 스펙(editor-spec.json)을 서빙합니다. 분할 스펙은 manifest + `$include` 블록을 합본한 단일 spec으로 반환하며(활성 디렉토리 기준), sampleData/sampleGlobal/states 등 전 블록이 포함됩니다. 파일 미존재 시 `spec=null`로 폴백합니다. `core.templates.layouts.edit` 권한이 필요합니다.
 
 
@@ -1860,7 +1910,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-GET /api/admin/templates/sirsoft-admin_basic/editor/lang/{locale} HTTP/1.1
+GET /api/admin/templates/{identifier}/editor/lang/{locale} HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -93648,6 +93698,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
 
 
@@ -93667,7 +93719,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-GET /api/admin/templates/sirsoft-admin_basic/editor/lang/{locale}.json HTTP/1.1
+GET /api/admin/templates/{identifier}/editor/lang/{locale}.json HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -93707,6 +93759,8 @@ _단건 응답: `data` 는 템플릿 `lang/{locale}.json` 의 내용을 그대�
 
 <!-- @generated:end -->
 
+
+
 **설명** 편집기용 다국어 데이터(lang/{locale}.json)를 서빙합니다. 활성 상태 검증 없이 활성 디렉토리 → `_bundled` 폴백으로 읽으며, 파일 부재 시 빈 객체로 폴백합니다. `core.templates.layouts.edit` 권한이 필요합니다.
 
 
@@ -93725,7 +93779,7 @@ _단건 응답: `data` 는 템플릿 `lang/{locale}.json` 의 내용을 그대�
 **요청 예시**
 
 ```http
-GET /api/admin/templates/sirsoft-admin_basic/editor/permission-candidates HTTP/1.1
+GET /api/admin/templates/{identifier}/editor/permission-candidates HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -93789,6 +93843,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
 
 
@@ -93807,7 +93863,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-GET /api/admin/templates/sirsoft-admin_basic/editor/permission-candidates.json HTTP/1.1
+GET /api/admin/templates/{identifier}/editor/permission-candidates.json HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -93817,7 +93873,9 @@ Authorization: Bearer {YOUR_TOKEN}
 
 _`data` 객체의 필드._
 
-| 필드 | 타입 | 예시값 | 용도/설명 |
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | identifier | string | `sirsoft-admin_basic` | 요청한 템플릿 식별자 (요청값 반향) |
 | permissions | array | `[{"identifier":"core.users.read","name":"사용자 조회"}]` | 레이아웃 조건식에 쓸 수 있는 권한 후보 목록 (현재 로케일로 해석된 표시명 포함) |
@@ -93852,6 +93910,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 레이아웃 편집기의 표시 권한 지정용으로 코어+활성 확장의 전체 권한을 `{key, name}` 목록으로 반환합니다(PermissionService::getPermissionCandidates). 편집기 진입 가드 하에서만 노출되어, 권한 카탈로그가 모든 admin 페이지에 상시 노출되던 방식보다 범위가 편집기로 한정됩니다. `core.templates.layouts.edit` 권한이 필요합니다.
 
 
@@ -93870,7 +93930,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-GET /api/admin/templates/sirsoft-admin_basic/editor/routes HTTP/1.1
+GET /api/admin/templates/{identifier}/editor/routes HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -93886,7 +93946,7 @@ _단건 응답: `data` 객체의 필드._
 | routes | array | `[{"path":"*\/admin","redirect":"\/admin\/dashboard","auth…` | 라우트 정의 목록 |
 | base_layouts | array | `[{"layout_name":"_admin_base","label":null}]` | 상속 가능한 베이스 레이아웃 목록 |
 | modals | array | `[{"modal_id":"identity-challenge-modal","host_layout":"_a…` | 모달 컴포넌트 정의 배열 |
-| layout_versions | array | `[]` | 레이아웃 버전 이력 목록 |
+| layout_versions | object | `{"admin_dashboard":6}` | 레이아웃 버전 이력 목록 |
 
 **응답 예시**
 
@@ -94012,6 +94072,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
 
 
@@ -94030,7 +94092,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-GET /api/admin/templates/sirsoft-admin_basic/editor/routes.json HTTP/1.1
+GET /api/admin/templates/{identifier}/editor/routes.json HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -94040,10 +94102,15 @@ Authorization: Bearer {YOUR_TOKEN}
 
 _`data` 는 템플릿 `routes.json` 에 모듈·플러그인 라우트를 병합하고 각 라우트에 출처를 태깅한 결과다._
 
-| 필드 | 타입 | 예시값 | 용도/설명 |
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | version | string | `1.0.0` | routes.json 스키마 버전 |
 | routes | array | `[{"path":"/","layout":"home","source":{"kind":"template","identifier":"sirsoft-basic"}}]` | 라우트 목록. **`source` 태깅이 필수**다 — 편집기 라우트 트리가 `source.kind` 로 그룹핑하므로 태깅이 없으면 클라이언트가 라우트 트리 렌더에서 실패한다 |
+| base_layouts | array | `[{"layout_name":"_admin_base","label":null}]` | 상속 가능한 베이스 레이아웃 목록 |
+| modals | array | `[{"modal_id":"identity-challenge-modal","host_layout":"_a…` | 모달 컴포넌트 정의 배열 |
+| layout_versions | object | `{"admin_dashboard":6}` | 레이아웃 버전 이력 목록 |
 
 > 공개 라우트 엔드포인트와 달리 **비활성 템플릿도 조회 가능**하고 `_bundled` 폴백이 적용된다 (편집 대상이 활성일 필요가 없다).
 
@@ -94082,6 +94149,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 편집기 라우트 트리용 routes.json을 서빙합니다. 각 라우트에 `source`(kind/identifier) 태깅과 모듈/플러그인 라우트 병합을 적용해(TemplateService::getEditorRoutesDataWithModules) 클라이언트가 출처별로 그룹핑할 수 있게 하며, 활성/비활성 무관 + `_bundled` 폴백으로 동작합니다. `core.templates.layouts.edit` 권한이 필요합니다.
 
 
@@ -94109,7 +94178,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-POST /api/admin/templates/sirsoft-admin_basic/editor/seo-bot-preview HTTP/1.1
+POST /api/admin/templates/{identifier}/editor/seo-bot-preview HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -94167,6 +94236,8 @@ _단건 응답: `data` 객체의 필드._
 
 <!-- @generated:end -->
 
+
+
 **설명** 편집기 [검색엔진] 탭의 봇 HTML 실시간 미리보기를 반환합니다. dirty 레이아웃 + 편집기 샘플 데이터로 운영과 동일한 렌더 경로를 거쳐(SEO 캐시 우회) 완성 HTML을 만들며, `meta.seo.enabled=false`이거나 미렌더 시 `enabled=false`로 미노출을 안내합니다. `core.templates.layouts.edit` 권한이 필요합니다.
 
 
@@ -94181,7 +94252,7 @@ _단건 응답: `data` 객체의 필드._
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | identifier | path | string | 예 | — | 대상 리소스의 식별자 |
-| extensions | query | string | 아니오 | JSON 배열 문자열 | 후보를 수집할 확장 선언. `[{"type":"module","id":"sirsoft-board"}]` 형태의 JSON 문자열이며, `type`·`id` 가 모두 문자열인 항목만 채택된다(그 외는 조용히 무시). 편집 중인 레이아웃이 아직 활성화하지 않은 확장의 후보까지 보려 할 때 쓴다 |
+| extensions | query | string | 아니오 | — | 후보를 수집할 확장 선언. `[{"type":"module","id":"sirsoft-board"}]` 형태의 JSON 문자열이며, `type`·`id` 가 모두 문자열인 항목만 채택된다(그 외는 조용히 무시). 편집 중인 레이아웃이 아직 활성화하지 않은 확장의 후보까지 보려 할 때 쓴다 |
 | page_type | query | string | 아니오 | — | 치환 변수(`vars`) 후보를 좁힐 페이지 유형. 빈 문자열은 미지정과 같게 처리된다 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.seo_candidate.index_validation_rules`).
@@ -94189,7 +94260,7 @@ _단건 응답: `data` 객체의 필드._
 **요청 예시**
 
 ```http
-GET /api/admin/templates/sirsoft-admin_basic/editor/seo-candidates?extensions=%EC%98%88%EC%8B%9C%EA%B0%92&page_type=%EC%98%88%EC%8B%9C%EA%B0%92 HTTP/1.1
+GET /api/admin/templates/{identifier}/editor/seo-candidates?extensions=%EC%98%88%EC%8B%9C%EA%B0%92&page_type=%EC%98%88%EC%8B%9C%EA%B0%92 HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -94408,10 +94479,12 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
 
@@ -94435,7 +94508,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-GET /api/admin/templates/sirsoft-admin_basic/editor/seo-candidates.json?extensions=%EC%98%88%EC%8B%9C%EA%B0%92&page_type=%EC%98%88%EC%8B%9C%EA%B0%92 HTTP/1.1
+GET /api/admin/templates/{identifier}/editor/seo-candidates.json?extensions=%EC%98%88%EC%8B%9C%EA%B0%92&page_type=%EC%98%88%EC%8B%9C%EA%B0%92 HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -94445,7 +94518,9 @@ Authorization: Bearer {YOUR_TOKEN}
 
 _`data` 객체의 필드 (`SeoCandidateService::collect` + 요청 식별자)._
 
-| 필드 | 타입 | 예시값 | 용도/설명 |
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | identifier | string | `sirsoft-admin_basic` | 요청한 템플릿 식별자 (요청값 반향) |
 | page_types | array | `[{"id":"board_list","label":"게시판 목록"}]` | 선택 가능한 페이지 유형 후보 (활성 확장 + 요청이 선언한 확장 기준) |
@@ -94484,6 +94559,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 편집기 [검색엔진] 탭의 SEO 후보(page_type/toggle_setting/유효 vars)를 한 번에 공급합니다(SeoCandidateService::collect). `extensions`(JSON `[{type,id}]`)와 `page_type` query로 편집 중 레이아웃 문맥을 전달하며, 후보 미존재 시 빈 목록 → 자유 텍스트 폴백입니다. `core.templates.layouts.edit` 권한이 필요합니다.
 
 
@@ -94508,7 +94585,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-POST /api/admin/templates/sirsoft-admin_basic/editor/seo-og-preview HTTP/1.1
+POST /api/admin/templates/{identifier}/editor/seo-og-preview HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -94627,6 +94704,8 @@ _단건 응답: `data` 객체의 필드._
 
 <!-- @generated:end -->
 
+
+
 **설명** 편집기 [검색엔진] 탭의 OG/Twitter/구조화 데이터 미리보기를 반환합니다. dirty `meta.seo` + 샘플로 og/twitter cascade를 실제 계산하고 필터 전/후 diff로 각 키의 출처·잠김을 산출합니다(SeoOgPreviewService::preview). `core.templates.layouts.edit` 권한이 필요합니다.
 
 
@@ -94648,7 +94727,7 @@ _단건 응답: `data` 객체의 필드._
 **요청 예시**
 
 ```http
-GET /api/admin/templates/sirsoft-admin_basic/layout-attachments?layout_name=%EC%98%88%EC%8B%9C%20%EC%9D%B4%EB%A6%84 HTTP/1.1
+GET /api/admin/templates/{identifier}/layout-attachments?layout_name=%EC%98%88%EC%8B%9C%20%EC%9D%B4%EB%A6%84 HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -94697,6 +94776,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 해당 템플릿의 레이아웃 첨부(배경 이미지 등) 목록을 조회합니다(ImagePickerControl의 이미지 재선택용). `layout_name` query로 특정 레이아웃의 첨부만 필터할 수 있습니다(TemplateLayoutAttachmentService::list). `core.templates.layouts.edit` 권한이 필요합니다.
 
 
@@ -94719,7 +94800,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-POST /api/admin/templates/sirsoft-admin_basic/layout-attachments HTTP/1.1
+POST /api/admin/templates/{identifier}/layout-attachments HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -94779,6 +94860,8 @@ _단건 응답: `data` 객체의 필드._
 
 <!-- @generated:end -->
 
+
+
 **설명** 레이아웃 편집 중 첨부 파일을 업로드합니다. 스토리지 저장 후 DB 행을 생성하고 접근 URL을 반환합니다(TemplateLayoutAttachmentService::upload). 최대 10MB(10240KB)까지 허용합니다. `core.templates.layouts.edit` 권한이 필요합니다.
 
 
@@ -94797,7 +94880,7 @@ _단건 응답: `data` 객체의 필드._
 **요청 예시**
 
 ```http
-GET /api/admin/templates/sirsoft-admin_basic/license HTTP/1.1
+GET /api/admin/templates/{identifier}/license HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -94839,6 +94922,8 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 템플릿의 라이선스 파일(LICENSE) 내용을 반환합니다(LicenseService::getExtensionLicense). 식별자는 소문자/숫자/`_`/`-` 형식만 허용하며, 파일이 없으면 404를 반환합니다. `core.templates.read` 권한이 필요합니다.
 
@@ -94961,6 +95046,8 @@ _단건 응답: `data` 객체의 필드 (TemplateResource::toDetailArray + `lang
 
 <!-- @generated:end -->
 
+
+
 **설명** 특정 템플릿의 상세 정보를 조회합니다(TemplateService::getTemplateInfo). 목록보다 상세한 필드(toDetailArray)와 함께 지원 언어팩 정보를 주입해 반환하며, 템플릿이 없으면 404를 반환합니다. `core.templates.read` 권한이 필요합니다.
 
 
@@ -95032,6 +95119,8 @@ _단건 응답: `data` 객체의 필드._
 
 <!-- @generated:end -->
 
+
+
 **설명** 업데이트 전 사용자가 수정한 레이아웃이 있는지 확인합니다(TemplateService::checkModifiedLayouts). 업데이트 시 레이아웃 전략(overwrite/keep) 선택의 참고 자료로 사용합니다. `core.templates.read` 권한이 필요합니다.
 
 
@@ -95090,6 +95179,8 @@ _단건 응답: `data` 객체의 필드._
 | 500 | Server Error | 삭제 트랜잭션 실패 |
 
 <!-- @generated:end -->
+
+
 
 **설명** 관리 모달의 '선택 삭제'/'미사용 전체 삭제'로 커스텀 다국어 키를 일괄 삭제합니다. 요청 `ids` 중 해당 템플릿 소속 키만 추려 삭제해(교차 템플릿 삭제 차단) 삭제 건수를 반환합니다. `core.templates.layouts.edit` 권한이 필요합니다.
 
@@ -95170,6 +95261,8 @@ _목록 응답: `data` 는 커스텀 다국어 키 배열입니다 (페이지네
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 레이아웃 편집기의 인라인 편집/번역 탭에서 사용하는 커스텀 다국어 키 목록을 조회합니다. `layout_name`으로 특정 레이아웃을, `status`(active/orphaned)로 사용 여부를 필터할 수 있습니다(TemplateCustomTranslationService::getList). `core.templates.layouts.edit` 권한이 필요합니다.
 
@@ -95257,6 +95350,8 @@ _단건 응답: `data` 객체의 필드 (생성된 커스텀 다국어 키, HTTP
 
 <!-- @generated:end -->
 
+
+
 **설명** 인라인 편집 확정 시 커스텀 다국어 키를 생성합니다. `layout_name`/`locale`/`value`를 받아 트랜잭션으로 키를 만들고 생성자를 기록합니다(TemplateCustomTranslationService::createKey). `core.templates.layouts.edit` 권한이 필요합니다.
 
 
@@ -95276,7 +95371,7 @@ _단건 응답: `data` 객체의 필드 (생성된 커스텀 다국어 키, HTTP
 **요청 예시**
 
 ```http
-DELETE /api/admin/templates/{templateName}/custom-translations/1 HTTP/1.1
+DELETE /api/admin/templates/{templateName}/custom-translations/{id} HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -95308,6 +95403,7 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (`data`: `null`, �
 
 <!-- @generated:end -->
 
+
 **설명** 커스텀 다국어 키 1건을 삭제합니다. 대상 키가 경로의 템플릿 소속인지 교차검증한 뒤 삭제합니다(TemplateCustomTranslationService::deleteKey). `core.templates.layouts.edit` 권한이 필요합니다.
 
 
@@ -95331,7 +95427,7 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (`data`: `null`, �
 **요청 예시**
 
 ```http
-PUT /api/admin/templates/{templateName}/custom-translations/1 HTTP/1.1
+PUT /api/admin/templates/{templateName}/custom-translations/{id} HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -95396,6 +95492,8 @@ _단건 응답: `data` 객체의 필드 (수정된 커스텀 다국어 키)._
 | 500 | Server Error | 수정 트랜잭션 실패 |
 
 <!-- @generated:end -->
+
+
 
 **설명** 번역 탭의 일괄 편집으로 커스텀 다국어 키의 로케일별 값을 수정합니다. `expected_lock_version` 기반 낙관적 잠금을 적용해 동시 수정 충돌 시 409(current/your version)를 반환합니다(TemplateCustomTranslationService::updateValues). `core.templates.layouts.edit` 권한이 필요합니다.
 
@@ -95502,6 +95600,8 @@ _단건 응답: `data` 객체의 필드._
 | 500 | Server Error | 대상 템플릿을 찾을 수 없거나 프리뷰 구성 실패 |
 
 <!-- @generated:end -->
+
+
 
 **설명** 템플릿 설치 cascade 프리뷰를 반환합니다. 의존 확장 목록과 동반 가능한 번들 언어팩을 미리 계산해(ExtensionInstallPreviewBuilder::build) 설치 확인 화면에서 사용합니다. `core.templates.install` 권한이 필요합니다.
 
@@ -95615,6 +95715,8 @@ _목록 응답: `data` 는 출처(모듈/플러그인)별 그룹 배열입니다
 
 <!-- @generated:end -->
 
+
+
 **설명** 특정 템플릿에 모듈/플러그인이 주입한 레이아웃 확장 목록을 출처별로 그룹핑해 조회합니다. 각 확장에는 호스트 레이아웃 목록(`host_layouts`)이 부착되어, 캔버스 로드 없이 화면별 연결 확장을 정적 구성할 수 있습니다(LayoutExtensionService::getExtensionsByTemplateId). 응답에는 라우트 트리가 실제로 그리는 필드만 담기고 **확장 레이아웃 본문(`content`)은 제외됩니다** — 목록은 페이지네이션 없이 전 확장을 반환하므로 본문을 함께 실으면 전 행의 JSON 전문이 전송됩니다. 본문은 단건 조회(`GET /api/admin/templates/{template}/layout-extensions/{extension}`)가 공급합니다. `core.templates.read` 권한이 필요합니다.
 
 
@@ -95714,6 +95816,8 @@ _단건 응답: `data` 객체의 필드 (LayoutExtensionResource + `host_layouts
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 특정 레이아웃 확장 1건의 상세를 조회합니다. 확장이 경로의 템플릿 소속인지 교차검증하며, 편집 모드 캔버스가 호스트 병합 렌더에 쓰는 호스트 레이아웃 후보(`host_layouts`)를 함께 반환합니다. `core.templates.read` 권한이 필요합니다.
 
@@ -95835,6 +95939,8 @@ _단건 응답: `data` 객체의 필드 (수정된 LayoutExtensionResource)._
 
 <!-- @generated:end -->
 
+
+
 **설명** 레이아웃 확장의 content를 수정합니다. `expected_lock_version` 기반 낙관적 잠금으로 동시 수정 시 409를 반환하며, `content`는 최상위 키(extension_point/components 등) 누락을 막기 위해 검증된 하위 규칙이 아닌 원본 배열을 그대로 저장합니다. `priority`도 함께 갱신할 수 있습니다. `core.templates.layouts.edit` 권한이 필요합니다.
 
 
@@ -95907,6 +96013,8 @@ _단건 응답: `data` 객체의 필드._
 | 500 | Server Error | 미리보기 생성 실패 |
 
 <!-- @generated:end -->
+
+
 
 **설명** 편집 중인 레이아웃 확장 content를 임시 저장하고 대표 레이아웃에 적용한 미리보기 URL/토큰을 반환합니다. overlay 타입은 target_name이, extension_point 타입은 `preview_layout` 파라미터가 대표 레이아웃이 되며, 미지정 시 422를 반환합니다(LayoutPreviewService::createExtensionPreview). `core.templates.read` 권한이 필요합니다.
 
@@ -95990,6 +96098,8 @@ _목록 응답: `data` 는 버전 이력 배열입니다 (페이지네이션 없
 
 <!-- @generated:end -->
 
+
+
 **설명** 레이아웃 확장의 버전 이력을 최신순으로 조회합니다(LayoutExtensionService::getExtensionVersions). 한 번에 돌려주는 개수는 `limit` 으로 정하며 기본 100건, 최대 500건입니다 — 전체를 무제한으로 돌려주지 않습니다. 상한을 넘는 과거 버전은 단건 조회로 접근합니다. `core.templates.read` 권한이 필요합니다. 응답에는 목록 표시용 필드만 담기고 본문(`content`)은 제외됩니다.
 
 
@@ -96066,6 +96176,8 @@ _단건 응답: `data` 객체의 필드 (복원 결과로 새로 기록된 버�
 
 <!-- @generated:end -->
 
+
+
 **설명** 레이아웃 확장을 지정한 버전으로 복원합니다. 복원은 새 버전으로 기록되며 복원 후 새 버전 정보를 반환합니다(LayoutExtensionService::restoreExtensionVersion). `core.templates.layouts.edit` 권한이 필요합니다.
 
 
@@ -96141,6 +96253,8 @@ _단건 응답: `data` 객체의 필드 (LayoutExtensionVersionResource)._
 
 <!-- @generated:end -->
 
+
+
 **설명** 레이아웃 확장의 특정 버전 content를 조회합니다(버전 비교/diff용, LayoutExtensionService::getExtensionVersion). `core.templates.read` 권한이 필요합니다.
 
 
@@ -96165,7 +96279,7 @@ Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
 ```
 
-**응답 필드** (`data` 내부, 배열의 각 항목)
+**응답 필드** (`data` 내부)
 
 | 필드 | 타입 | 설명 |
 | --- | --- | --- |
@@ -96230,6 +96344,8 @@ Authorization: Bearer {YOUR_TOKEN}
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 특정 템플릿의 모든 레이아웃 목록을 조회합니다. 각 레이아웃에 이름 → 라우트 path 매핑을 부착해, 코드 편집기가 파일 선택 시 `?route=` URL 동기화나 위지윅에서 넘어온 라우트로 파일을 복원할 수 있게 합니다(LayoutService::getLayoutListByTemplateId). 응답에는 파일트리가 실제로 그리는 필드(이름·설명·라우트 path·크기·수정일시·업데이트 여부)만 담기고, **레이아웃 본문(`content`)과 파싱된 블록(`components`·`data_sources`·`metadata`)은 제외됩니다** — 목록은 페이지네이션 없이 템플릿의 전 레이아웃을 반환하므로 본문을 함께 실으면 편집기 진입만으로 모든 레이아웃 JSON 전문이 전송됩니다. 설명·크기는 조회 계층이 본문에서 파생값만 뽑아 넘기며 본문 자체는 응답에 남지 않습니다. 본문은 단건 조회(`GET /api/admin/templates/{template}/layouts/{layout}`)가 공급합니다. `core.templates.read` 권한이 필요합니다.
 
@@ -96322,6 +96438,8 @@ _단건 응답: `data` 객체의 필드 (LayoutResource)._
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 특정 레이아웃 1건의 상세(content 포함)를 조회합니다(LayoutService::getLayoutByName). 레이아웃이 없으면 404를 반환합니다. `core.templates.read` 권한이 필요합니다.
 
@@ -96609,6 +96727,8 @@ _단건 응답: `data` 객체의 필드 (수정된 LayoutResource)._
 
 <!-- @generated:end -->
 
+
+
 **설명** 레이아웃 content를 수정합니다. `expected_lock_version` 기반 낙관적 잠금을 적용해 동시 수정 충돌 시 409(current/your version)를 반환합니다(LayoutService::updateLayout). `core.templates.layouts.edit` 권한이 필요합니다.
 
 
@@ -96677,6 +96797,8 @@ _단건 응답: `data` 객체의 필드._
 | 500 | Server Error | 미리보기 생성 실패 |
 
 <!-- @generated:end -->
+
+
 
 **설명** 편집 중인 레이아웃 content를 임시 저장하고 미리보기 URL/토큰을 반환합니다(LayoutPreviewService::createPreview). 토큰은 만료 시각을 함께 반환합니다. `core.templates.read` 권한이 필요합니다.
 
@@ -96763,6 +96885,8 @@ _목록 응답: `data` 는 버전 이력 배열입니다 (페이지네이션 없
 
 <!-- @generated:end -->
 
+
+
 **설명** 레이아웃의 버전 이력을 최신순으로 조회합니다(LayoutService::getLayoutVersions). 한 번에 돌려주는 개수는 `limit` 으로 정하며 기본 100건, 최대 500건입니다 — 전체를 무제한으로 돌려주지 않습니다. 상한을 넘는 과거 버전은 단건 조회(`GET .../versions/{version}`)로 접근합니다. `core.templates.read` 권한이 필요합니다. 응답에는 목록 표시용 필드만 담기고 본문(`components` 등)은 제외됩니다.
 
 
@@ -96844,6 +96968,8 @@ _단건 응답: `data` 객체의 필드 (복원 결과로 새로 기록된 버�
 | 500 | Server Error | 복원 트랜잭션 실패 |
 
 <!-- @generated:end -->
+
+
 
 **설명** 레이아웃을 지정한 버전으로 복원합니다. 복원 결과는 새 버전으로 기록되어 반환됩니다(LayoutService::restoreVersion). `core.templates.layouts.edit` 권한이 필요합니다.
 
@@ -96932,6 +97058,8 @@ _단건 응답: `data` 객체의 필드 (LayoutVersionResource + `full_content` 
 
 <!-- @generated:end -->
 
+
+
 **설명** 레이아웃의 특정 버전 content를 조회합니다. 버전 비교 diff용으로 slots/extends 등을 포함한 content 원본 전체를 노출합니다(LayoutService::getLayoutVersion). `core.templates.read` 권한이 필요합니다.
 
 
@@ -96994,6 +97122,8 @@ _단건 응답: `data` 객체의 필드._
 | 500 | Server Error | 삭제 정보 조회 실패 |
 
 <!-- @generated:end -->
+
+
 
 **설명** 템플릿 제거 시 함께 삭제될 데이터 정보를 조회합니다(TemplateService::getTemplateUninstallInfo). 제거 확인 다이얼로그에서 사용하며, 템플릿이 없으면 404를 반환합니다. `core.templates.uninstall` 권한이 필요합니다.
 
@@ -97111,6 +97241,8 @@ _업데이트할 내용이 없거나 템플릿 정보를 다시 읽지 못한 �
 
 <!-- @generated:end -->
 
+
+
 **설명** 설치된 템플릿을 최신 버전으로 업데이트합니다. `layout_strategy`(overwrite: 레이아웃 전면 교체 / keep: 사용자 수정 레이아웃 유지)로 레이아웃 처리 방식을 결정하며, `force`로 강제 진행할 수 있습니다(TemplateService::performVersionUpdate). `core.templates.install` 권한이 필요합니다. `keep` 을 지정하면 사용자가 수정한 레이아웃(원본 해시와 현재 내용이 다른 레이아웃)은 갱신 대상에서 제외되어 현재 내용이 그대로 유지되고, 나머지 레이아웃만 파일 기준으로 갱신됩니다. 성공 응답 메시지에는 대상 식별자와 적용된 버전이 채워집니다.
 
 
@@ -97130,7 +97262,7 @@ _업데이트할 내용이 없거나 템플릿 정보를 다시 읽지 못한 �
 **요청 예시**
 
 ```http
-GET /api/templates/assets/sirsoft-admin_basic?identifier=example-key&path=%EC%98%88%EC%8B%9C%EA%B0%92 HTTP/1.1
+GET /api/templates/assets/{identifier}?path=%EC%98%88%EC%8B%9C%EA%B0%92 HTTP/1.1
 Host: api.example.com
 Accept: application/json
 ```
@@ -97160,10 +97292,12 @@ Content-Type: text/javascript
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
 
@@ -97184,7 +97318,7 @@ Content-Type: text/javascript
 **요청 예시**
 
 ```http
-GET /api/templates/assets/sirsoft-admin_basic/{path}?identifier=example-key HTTP/1.1
+GET /api/templates/assets/{identifier}/{path} HTTP/1.1
 Host: api.example.com
 Accept: application/json
 ```
@@ -97215,6 +97349,7 @@ ETag: "9f2c1a4e8b7d3c5f"
 
 <!-- @generated:end -->
 
+
 **설명** 템플릿의 정적 자산 파일(JS/CSS/이미지 등)을 서빙하는 공개 엔드포인트입니다. FormRequest에서 경로 보안 검증을 마친 뒤 파일을 조회하며(TemplateService::getAssetFilePath), ETag 및 장기 캐싱 헤더와 함께 반환합니다. 허용되지 않은 파일 유형은 403, 파일 부재 시 404입니다. 인증이 필요 없습니다.
 
 
@@ -97233,7 +97368,7 @@ ETag: "9f2c1a4e8b7d3c5f"
 **요청 예시**
 
 ```http
-GET /api/templates/sirsoft-admin_basic/components HTTP/1.1
+GET /api/templates/{identifier}/components HTTP/1.1
 Host: api.example.com
 Accept: application/json
 ```
@@ -97291,7 +97426,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-GET /api/templates/sirsoft-admin_basic/components.json HTTP/1.1
+GET /api/templates/{identifier}/components.json HTTP/1.1
 Host: api.example.com
 Accept: application/json
 ```
@@ -97359,7 +97494,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-GET /api/templates/sirsoft-admin_basic/config HTTP/1.1
+GET /api/templates/{identifier}/config HTTP/1.1
 Host: api.example.com
 Accept: application/json
 ```
@@ -97559,6 +97694,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
 
 
@@ -97577,7 +97714,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-GET /api/templates/sirsoft-admin_basic/config.json HTTP/1.1
+GET /api/templates/{identifier}/config.json HTTP/1.1
 Host: api.example.com
 Accept: application/json
 ```
@@ -97586,11 +97723,30 @@ Accept: application/json
 
 _`data` 는 템플릿의 `template.json` 매니페스트 내용이다 (고정 필드 집합이 아니라 매니페스트 그대로)._
 
-| 필드 | 타입 | 예시값 | 용도/설명 |
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | identifier | string | `sirsoft-basic` | 템플릿 식별자 |
+| vendor | string | `sirsoft` | 벤더/개발자명 (예: sirsoft) |
+| name | object | `{"ko":"Admin Basic","en":"Admin Basic"}` | 대상의 이름/명칭 (다국어 필드는 로케일별 값 객체) |
 | version | string | `1.1.1` | 템플릿 버전 |
+| license | string | `MIT` | 라이선스 식별자 (manifest license) |
+| description | object | `{"ko":"그누보드7 기본 관리자 템플릿","en":"Gnuboard7 default admin te…` | 설명 (다국어 필드는 로케일별 값 객체) |
 | type | string | `user` | 템플릿 유형 (`admin`/`user`) |
+| locales | array | `["ko","en"]` | 활성 로케일 코드 배열 |
+| author | object | `{"name":"sirsoft","email":"contact@sirsoft.com","url":"ht…` | 작성자 사용자 객체 (uuid/name — author 관계 파생) |
+| release_date | string | `2026-05-15` | 배포일 |
+| g7_version | string | `>=7.0.7` | 요구하는 코어 최소 버전 (manifest requires.g7_version) |
+| dependencies | object | `{"modules":[],"plugins":[]}` | 의존하는 확장 맵 (manifest 파생 — {modules, plugins}) |
+| assets | object | `{"css":["assets\/css\/main.css","assets\/css\/ui-system.c…` | 프론트엔드 에셋 매니페스트 (manifest 파생 — js/css 진입점·로딩 전략) |
+| components | object | `{"basic":["a","button","checkbox","div","form","h1","h2",…` | 컴포넌트 트리 (레이아웃이 렌더할 컴포넌트 정의) |
+| preview | object | `{"thumbnail":"preview\/thumbnail.png","screenshots":["pre…` | 미리보기 정보 객체 |
+| error_config | object | `{"layouts":{"401":"errors\/401","403":"errors\/403","404"…` | 에러 표시 설정 객체 |
+| github_url | string | `https://github.com/gnuboard/g7-templa…` | GitHub 저장소 URL (manifest 파생) |
+| github_changelog_url | string | `https://github.com/gnuboard/g7-templa…` | GitHub 변경 이력(CHANGELOG) URL (manifest 파생) |
+| externals | array | `[{"id":"fontawesome","type":"style","url":"https:\/\/cdnj…` | 외부 의존 라이브러리 목록 (번들에서 제외되고 전역에서 해석) |
+| cache_version | integer | `1788165896` | 에셋 캐시 무효화 버전 (번들 URL 파일명에 포함) |
 | (그 외 매니페스트 키) | mixed | — | `template.json` 이 선언한 나머지 키가 그대로 실린다 |
 
 > **활성 템플릿만** 조회된다 — 비활성이거나 매니페스트가 없으면 `404`. 응답은 1시간 캐시된다.
@@ -97625,6 +97781,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 활성 템플릿의 설정 파일(template.json, error_config 등 메타데이터)을 서빙하는 공개 엔드포인트입니다. 응답에 확장 캐시 버전(`cache_version`)을 포함해 프론트엔드가 후속 API 호출에 사용하게 하며, 비활성/미존재 템플릿은 404입니다. 1시간 캐시됩니다. 서버 캐시는 템플릿 라이프사이클(`template:update` / `template:cache-clear` / 비활성화 / 삭제) 시점에 즉시 무효화되어 최신 매니페스트가 반영됩니다. 인증이 필요 없습니다.
 
 
@@ -97643,7 +97801,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-GET /api/templates/sirsoft-admin_basic/editor-spec HTTP/1.1
+GET /api/templates/{identifier}/editor-spec HTTP/1.1
 Host: api.example.com
 Accept: application/json
 ```
@@ -97689,6 +97847,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 템플릿의 편집기 스펙(editor-spec.json)을 서빙하는 공개 엔드포인트입니다. 분할 스펙은 manifest + `$include` 블록을 합본한 단일 spec으로(활성 디렉토리 기준) 반환하며, 파일 미존재 시 `spec=null`로 폴백합니다. 인증이 필요 없습니다.
 
 
@@ -97708,7 +97868,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-GET /api/templates/sirsoft-admin_basic/lang/{locale} HTTP/1.1
+GET /api/templates/{identifier}/lang/{locale} HTTP/1.1
 Host: api.example.com
 Accept: application/json
 ```
@@ -189514,7 +189674,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-GET /api/templates/sirsoft-admin_basic/lang/{locale}.json HTTP/1.1
+GET /api/templates/{identifier}/lang/{locale}.json HTTP/1.1
 Host: api.example.com
 Accept: application/json
 ```
@@ -189569,7 +189729,7 @@ _이 엔드포인트는 `success`/`message`/`data` 봉투를 사용하지 않습
 **요청 예시**
 
 ```http
-GET /api/templates/sirsoft-admin_basic/layout-attachments/{attachment}/file HTTP/1.1
+GET /api/templates/{identifier}/layout-attachments/{attachment}/file HTTP/1.1
 Host: api.example.com
 Accept: application/json
 ```
@@ -189597,6 +189757,7 @@ ETag: "9f2c1a4e8b7d3c5f"
 
 <!-- @generated:end -->
 
+
 **설명** 레이아웃 첨부 이미지 파일을 서빙하는 공개 엔드포인트입니다. 발행된 배경 이미지가 일반 방문자에게도 로드되어야 하므로 인증 없이 노출하며, 비공개 attachments 디스크의 파일을 캐싱 헤더와 함께 인라인 스트림합니다. 첨부가 경로의 템플릿 소속이 아니거나 파일이 없으면 404입니다. 인증이 필요 없습니다.
 
 
@@ -189615,7 +189776,7 @@ ETag: "9f2c1a4e8b7d3c5f"
 **요청 예시**
 
 ```http
-GET /api/templates/sirsoft-admin_basic/routes HTTP/1.1
+GET /api/templates/{identifier}/routes HTTP/1.1
 Host: api.example.com
 Accept: application/json
 ```
@@ -189734,7 +189895,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-GET /api/templates/sirsoft-admin_basic/routes.json HTTP/1.1
+GET /api/templates/{identifier}/routes.json HTTP/1.1
 Host: api.example.com
 Accept: application/json
 ```
@@ -189743,7 +189904,9 @@ Accept: application/json
 
 _`data` 는 템플릿 `routes.json` 에 활성 모듈·플러그인 라우트를 병합한 결과다._
 
-| 필드 | 타입 | 예시값 | 용도/설명 |
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | version | string | `1.0.0` | routes.json 스키마 버전 |
 | routes | array | `[{"path":"/","layout":"home","source":{"kind":"template","identifier":"sirsoft-basic"}}]` | 라우트 목록 (각 항목에 출처 `source` 태깅) |

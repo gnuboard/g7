@@ -8,7 +8,7 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 System 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(raw HTTP) + 실측 응답 필드 표 + 응답 예시(envelope)
 3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
@@ -65,6 +65,8 @@ window.__g7AssetProbe = 'G7_ASSET_PROBE_OK';
 _에러 응답이 정의되어 있지 않다. 이 라우트는 DB 에 접근하지 않으므로 설치 전에도 응답하며, 도달하기만 하면 항상 `200` 이다. 도달하지 못해 `404`/`5xx` 가 관측되면 그것은 에러가 아니라 **판정 입력**이다 (아래 설명 참조)._
 
 <!-- @generated:end -->
+
+
 
 **설명**
 
@@ -143,6 +145,8 @@ _에러 응답이 정의되어 있지 않다. 이 라우트는 DB 에 접근하�
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 자산 URL 모드 감지의 **표적** 엔드포인트다. 확장자(`.js`)로 끝나므로 서버의 정적 최적화 블록이 가로채는지 여부가 그대로 드러난다. 판정표와 주의사항은 대조군 `GET /api/system/asset-probe` 항목을 참조한다.
@@ -158,12 +162,16 @@ _에러 응답이 정의되어 있지 않다. 이 라우트는 DB 에 접근하�
 
 **요청 파라미터**
 
-_요청 파라미터 없음._
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| token | query | string | 아니오 | — | 인증/검증 토큰 |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.web_cron.run_validation_rules`).
 
 **요청 예시**
 
 ```http
-GET /api/system/cron/run HTTP/1.1
+GET /api/system/cron/run?token=%7BYOUR_TOKEN%7D HTTP/1.1
 Host: api.example.com
 Accept: application/json
 ```
@@ -227,14 +235,17 @@ HTTP/1.1 200
 
 **에러 응답**
 
-| 상태 | 조건 | 메시지 키 |
+| 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | 호출 번호가 없거나 저장된 번호와 다름 (번호 미발급 사이트 포함) | `schedule.cron.invalid_token` |
 | 403 | 허용 주소 목록이 설정되어 있고 호출자 IP 가 그 밖 | `schedule.cron.ip_not_allowed` |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+
+<!-- @generated:end -->
 
 인증을 통과한 뒤에는 실행 건수·실패 건수와 무관하게 **200** 이다. 실행이 일어나지 않은 경우(`ran=false`)도 200 이며 사유는 `data.reason` 이 알린다.
 
-<!-- @generated:end -->
+
 
 **설명**
 
@@ -276,19 +287,21 @@ HTTP/1.1 200
 
 **요청 파라미터**
 
-| 이름 | 위치 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- | --- |
-| `file` | 쿼리 | string | ✅ | `storage/app/public` 기준 상대 파일 경로 (예: `images/a.png`). 확장자 형태의 `{path}` 세그먼트와 **같은 값**이며, 어느 형태로 오든 컨트롤러는 `path` 하나만 본다 |
-| `v` | 쿼리 | string | — | 캐시 무효화 버전 (선택) |
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| path | query | string | 예 | — | 컨트롤러가 읽는 내부 파라미터명. 이 형태에서는 `file` 로 전달한다 |
+| file | query | string | 예 | — | `storage/app/public` 기준 상대 파일 경로 (예: `images/a.png`). 확장자 형태의 `{path}` 세그먼트와 **같은 값**이며, 어느 형태로 오든 컨트롤러는 `path` 하나만 본다 |
+| v | query | string | 아니오 | — | 캐시 무효화 버전 (선택) |
 
 **요청 예시**
 
 ```http
 GET /api/system/public-storage?file=images%2Fa.png HTTP/1.1
 Host: api.example.com
+Accept: application/json
 ```
 
-**응답 필드**
+**응답 필드** (`data` 내부)
 
 확장자 형태(`GET /api/system/public-storage/{path}`)와 **같은 컨트롤러 메서드**이므로 응답이 동일하다 — JSON 봉투를 쓰지 않고 파일 자체를 스트리밍(BinaryFileResponse)으로 반환하며, `Content-Type` / `Cache-Control` / `ETag` / `Last-Modified` / `Content-Encoding` / `Vary` 는 그 항목의 표를 그대로 따른다. 이 형태에만 설명이 필요한 헤더는 하나다.
 
@@ -321,6 +334,8 @@ Accept-Ranges: bytes
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 확장자로 끝나는 동적 응답을 서버의 정적 최적화 블록이 가로채는 환경에서 쓰는, **같은 파일의 두 번째 주소**다. 정규식 location 은 쿼리스트링을 제외한 경로에만 매칭되므로 파일 경로를 `?file=` 쿼리로 옮기면 그 블록에 걸리지 않는다. 어느 형태를 쓸지는 서버 설정(`general.asset_url_mode`)이 정하며, 판정은 프로브 쌍(`GET /api/system/asset-probe.js` / `GET /api/system/asset-probe`)이 한다.
@@ -338,17 +353,18 @@ Accept-Ranges: bytes
 
 **요청 파라미터**
 
-| 이름 | 위치 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- | --- |
-| `path` | 경로 세그먼트 | string | ✅ | `storage/app/public` 기준 상대 파일 경로 (예: `images/a.png`) |
-| `file` | 쿼리 | string | ✅(확장자 없는 형태) | 확장자 없는 형태에서 `path` 대신 파일 경로를 담는다 |
-| `v` | 쿼리 | string | — | 캐시 무효화 버전 (선택) |
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| path | path | string | 예 | — | `storage/app/public` 기준 상대 파일 경로 (예: `images/a.png`) |
+| file | query | string | 아니오 | — | 확장자 없는 형태에서 `path` 대신 파일 경로를 담는다 |
+| v | query | string | 아니오 | — | 캐시 무효화 버전 (선택) |
 
 **요청 예시**
 
 ```http
 GET /api/system/public-storage/images/a.png HTTP/1.1
 Host: api.example.com
+Accept: application/json
 ```
 
 확장자 없는 형태 (정적 최적화 블록이 확장자 붙은 동적 응답을 가로채는 서버):
@@ -358,7 +374,7 @@ GET /api/system/public-storage?file=images%2Fa.png HTTP/1.1
 Host: api.example.com
 ```
 
-**응답 필드**
+**응답 필드** (`data` 내부)
 
 이 엔드포인트는 JSON 봉투를 쓰지 않는다 — 파일 자체를 스트리밍(BinaryFileResponse)으로 반환한다.
 
@@ -409,6 +425,8 @@ Last-Modified: Mon, 25 Aug 2026 04:12:33 GMT
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 `storage/app/public` 을 읽기 전용으로 서빙하는 **공개 스토리지 대체 통로**다. 표준 환경에서 public 디스크 파일은 `public/storage` 심볼릭 링크를 통해 정적 URL(`/storage/...`)로 서빙되지만, 링크를 만들 수 없는 호스팅(공유 호스팅의 `symlink` 차단·권한 부재)에서는 그 URL 이 전부 404 가 된다. 이 라우트가 그 환경의 서빙을 담당한다.
@@ -420,4 +438,5 @@ Last-Modified: Mon, 25 Aug 2026 04:12:33 GMT
 - **정적 서빙(`/storage/...`)과 다른 축이다.** 정적 경로에서 점 파일이 막히는지는 서버 설정이 정한다 — 배포 레이아웃 ②(문서 루트 = 프로젝트 루트)의 루트 `.htaccess` 는 점으로 시작하는 경로를 `403` 으로 막지만(`.well-known/` 제외), 그 규칙이 걸리지 않는 배치에서는 웹서버가 그대로 서빙할 수 있다. 이 라우트는 그 방어선에 기대지 않고 스스로 같은 규칙을 갖는다.
 - 확장자로 끝나는 와일드카드 자산 라우트이므로 위 이중 모드 규약(`?file=` 형태)이 동일하게 적용된다.
 - **링크 가용 판정의 기준이 되는 `public_path()` 는 진입 파일이 넘긴다.** public 디렉토리를 앱 루트 밖에 두는 문서 루트 분리 배치에서는 운영자의 진입 파일이 `G7_PUBLIC_PATH` 를 정의하고, 부팅 지점이 그 값으로 `public_path()` 를 고정한다. 진입 파일이 없는 문맥(콘솔 `artisan`·테스트)도 같은 값을 봐야 하므로 **같은 이름의 서버·셸 환경변수**로도 전달된다 — 우선순위는 `G7_PUBLIC_PATH` 상수 → `$_SERVER['G7_PUBLIC_PATH']`(웹서버가 넘긴 값: Apache `SetEnv`·nginx `fastcgi_param`) → `getenv('G7_PUBLIC_PATH')`(셸·크론)이며, 셋 다 없으면 아무것도 걸지 않는다. `.env` 는 이 판정 시점에 아직 로드되지 않으므로 그 파일로는 전달할 수 없다. 통로가 하나라도 빠지면 웹은 운영자의 public 디렉토리를, 콘솔은 앱 루트의 `public/` 을 보게 되어 `storage:link` 복구처럼 두 문맥이 함께 쓰는 코드가 서로 다른 트리를 대상으로 돈다(오류 없이 링크만 엉뚱한 곳에 생긴다). 배포본의 어떤 파일도 이 상수를 정의하지 않는다 — 그 배치는 운영자가 자기 진입 파일을 두는 형태다.
+
 

@@ -65,6 +65,12 @@ class ApiDocScaffolder
      * endpointSection() 이 내보내는 순서와 같아야 한다 — 어긋나면 그 구간의 사람
      * 서술이 보존 대상에서 빠진다.
      */
+    /** @var string 머리말의 TL;DR 헤딩 (사람 절의 앞뒤 위치 판정 기준) */
+    private const TLDR_HEADING = '## TL;DR (5초 요약)';
+
+    /** @var string 소제목 앞쪽 서술의 보관 키 접두 (뒤쪽 서술과 구분) */
+    private const LEAD_PREFIX = 'lead:';
+
     private const SECTION_ANCHORS = [
         '**요청 파라미터**',
         '**요청 예시**',
@@ -1171,7 +1177,9 @@ class ApiDocScaffolder
         // 파싱 전에 줄 끝을 LF 로 정규화한다 (문서는 .gitattributes 가 eol=lf 로 저장한다).
         $existing = $this->normalizeEol($existing);
 
-        $merged = $header."\n";
+        // 머리말은 고정 서식이라 통째로 갈아 끼운다 — 그 앞자리에 놓인 사람 절은
+        // 되돌린다 (엔드포인트 하나에 속하지 않는 문서 전체 서술의 자리다).
+        $merged = $this->preserveHeadProse($header, $existing)."\n";
 
         foreach ($sections as $i => $section) {
             $key = $sectionKeys[$i];
@@ -1185,6 +1193,12 @@ class ApiDocScaffolder
             // 순서 주의: 표 자체를 되살린 뒤에 셀 설명을 맞춘다.
             $withFields = $this->restoreEmptyProbeTable($withProse, $existing, $key, $legacy);
             $withTables = $this->restoreTableDescriptions($withFields, $existing, $key, $legacy);
+            // 이번 실측에 나타나지 않은 기존 행을 되살린다 — 조건부 필드가 표본 하나로
+            // 사라지는 것을 막는다 (에러 표가 이미 같은 방침이다).
+            $withTables = $this->restoreMissingTableRows(
+                $withTables,
+                $this->extractGeneratedBlockBody($existing, $key) ?? $legacy
+            );
             // 실측 불가 마커 자리·응답 예시를 사람이 채운 경우 되살린다
             // (@probed 출처 마커 부재 = 사람 작성분, 위치 기반이므로 블록 본문으로만 대조).
             $withBodies = $this->applyPreservedResponseBodies(
@@ -1254,7 +1268,12 @@ class ApiDocScaffolder
             return $section;
         }
 
-        $lines = explode("\n", $section);
+        // 생성 블록 **안**에서만 대조한다 — 그 뒤 사람 서술 영역에도 같은 행 이름을 쓰는
+        // 표가 놓일 수 있고(응답 필드를 다시 정리한 표), 경계를 넘으면 사람이 쓴 설명이
+        // 생성 표의 설명으로 덮인다. 실측: 웹 크론 문서의 `duration_ms`·`events` 설명.
+        [$body, $tail] = $this->splitAtBlockEnd($section);
+
+        $lines = explode("\n", $body);
         foreach ($lines as $index => $line) {
             $parsed = $this->parseTableRow($line);
             if ($parsed === null) {
@@ -1304,7 +1323,7 @@ class ApiDocScaffolder
             }
         }
 
-        return implode("\n", $lines);
+        return implode("\n", $lines).$tail;
     }
 
     /**
@@ -2230,6 +2249,244 @@ class ApiDocScaffolder
     }
 
     /**
+     * 문서 머리 영역에 사람이 쓴 `##` 섹션을 새 머리말에 되돌립니다.
+     *
+     * 머리말은 고정 서식이라 재생성이 그것으로 통째로 갈아 끼운다. 그런데 첫 엔드포인트
+     * 앞자리에는 그 문서 전체에 걸리는 사람 서술이 놓이곤 한다(설정 문서의 「목록 한계값」
+     * 절처럼 — 엔드포인트 하나에 속하지 않아 그 자리 말고는 둘 곳이 없다). 그대로 두면
+     * 재생성 한 번에 사라졌고, 문서는 문법상 멀쩡해 아무 신호도 나지 않았다.
+     *
+     * 원래 자리를 지킨다 — TL;DR 앞에 있던 절은 앞에, 뒤에 있던 절은 뒤에 둔다.
+     *
+     * @param  string  $header  새로 만든 머리말
+     * @param  string|null  $existing  기존 문서 전문
+     * @return string 사람 절이 되살아난 머리말
+     */
+    private function preserveHeadProse(string $header, ?string $existing): string
+    {
+        if ($existing === null) {
+            return $header;
+        }
+
+        $head = $this->headRegion($this->normalizeEol($existing));
+
+        if ($head === '') {
+            return $header;
+        }
+
+        $tldrPos = strpos($head, self::TLDR_HEADING);
+        $before = [];
+        $after = [];
+
+        foreach ($this->topLevelSections($head) as $offset => $sectionText) {
+            if (str_starts_with($sectionText, self::TLDR_HEADING)) {
+                continue;
+            }
+
+            // 이미 머리말이 담고 있으면(재재생성) 다시 넣지 않는다.
+            if (str_contains($header, rtrim($sectionText))) {
+                continue;
+            }
+
+            if ($tldrPos !== false && $offset < $tldrPos) {
+                $before[] = rtrim($sectionText);
+            } else {
+                $after[] = rtrim($sectionText);
+            }
+        }
+
+        if ($before === [] && $after === []) {
+            return $header;
+        }
+
+        if ($before !== []) {
+            $insertAt = strpos($header, self::TLDR_HEADING);
+            $prefix = implode("\n\n", $before)."\n\n";
+            $header = $insertAt === false
+                ? $header.$prefix
+                : substr($header, 0, $insertAt).$prefix.substr($header, $insertAt);
+        }
+
+        if ($after !== []) {
+            $header = rtrim($header, "\n")."\n\n".implode("\n\n", $after)."\n\n";
+        }
+
+        return $header;
+    }
+
+    /**
+     * 첫 엔드포인트 헤딩(`### `) 앞까지의 머리 영역을 잘라냅니다.
+     *
+     * @param  string  $document  문서 전문
+     * @return string 머리 영역 (없으면 빈 문자열)
+     */
+    private function headRegion(string $document): string
+    {
+        $lines = explode("\n", $document);
+        $fence = false;
+
+        foreach ($lines as $i => $line) {
+            if (str_starts_with(ltrim($line), '```')) {
+                $fence = ! $fence;
+
+                continue;
+            }
+
+            if (! $fence && str_starts_with($line, '### ')) {
+                return implode("\n", array_slice($lines, 0, $i));
+            }
+        }
+
+        return $document;
+    }
+
+    /**
+     * 머리 영역의 `## ` 절을 오프셋과 함께 돌려줍니다.
+     *
+     * @param  string  $head  머리 영역
+     * @return array<int, string> 시작 오프셋 → 절 원문
+     */
+    private function topLevelSections(string $head): array
+    {
+        $lines = explode("\n", $head);
+        $fence = false;
+        $starts = [];
+
+        foreach ($lines as $i => $line) {
+            if (str_starts_with(ltrim($line), '```')) {
+                $fence = ! $fence;
+
+                continue;
+            }
+
+            if (! $fence && str_starts_with($line, '## ')) {
+                $starts[] = $i;
+            }
+        }
+
+        $sections = [];
+
+        foreach ($starts as $n => $start) {
+            $end = $starts[$n + 1] ?? count($lines);
+            $text = trim(implode("\n", array_slice($lines, $start, $end - $start)));
+
+            if ($text === '') {
+                continue;
+            }
+
+            $offset = strlen(implode("\n", array_slice($lines, 0, $start)));
+            $sections[$offset] = $text;
+        }
+
+        return $sections;
+    }
+
+    /**
+     * 이번 실측에 나타나지 않은 기존 표 행을 되살립니다.
+     *
+     * 응답 필드 표는 **이번 호출이 관측한 것**으로 다시 조립된다. 그래서 조건부로만 실리는
+     * 필드(특정 상태에서만 채워지는 항목, 확장이 주입하는 항목)는 그 조건이 성립하지 않은
+     * 호출 한 번으로 표에서 사라진다 — 스펙이 바뀌어서가 아니라 이번 표본에 없었을 뿐인데,
+     * 문서에서는 「그런 필드가 없다」로 읽힌다. 실제로 검색 문서의 정확도·커서 필드 10행이
+     * 그렇게 없어졌다.
+     *
+     * 에러 표에 이미 같은 방침이 있다(기존에만 있는 행은 되살린다). 같은 이유로 파라미터·
+     * 응답 필드 표에도 적용한다. 스펙에서 정말 빠진 필드는 사람이 그 행을 지우면 되고,
+     * 그 편집은 눈에 보인다 — 반대 방향(조용한 소실)은 보이지 않는다.
+     *
+     * 표는 소제목 구간별로 짝지어 대조한다. 구간을 무시하고 행 이름만 보면 요청 파라미터
+     * 표의 행이 응답 필드 표로 옮겨 붙는다.
+     *
+     * @param  string  $section  새로 생성된 섹션
+     * @param  string|null  $oldBlock  기존 생성 블록 본문
+     * @return string 누락 행이 되살아난 섹션
+     */
+    private function restoreMissingTableRows(string $section, ?string $oldBlock): string
+    {
+        if ($oldBlock === null) {
+            return $section;
+        }
+
+        [$body, $tail] = $this->splitAtBlockEnd($this->normalizeEol($section));
+
+        $oldChunks = $this->splitByAnchors($this->normalizeEol($oldBlock));
+        $newChunks = $this->splitByAnchors($body);
+
+        if ($oldChunks === [] || $newChunks === []) {
+            return $section;
+        }
+
+        $rebuilt = '';
+
+        foreach ($newChunks as $anchor => $chunk) {
+            if (isset($oldChunks[$anchor])) {
+                $chunk = $this->mergeMissingRows($chunk, $oldChunks[$anchor]);
+            }
+
+            $rebuilt .= rtrim($chunk, "\n")."\n\n";
+        }
+
+        return rtrim($rebuilt, "\n")."\n".$tail;
+    }
+
+    /**
+     * 한 구간의 표에 기존 전용 행을 덧붙입니다.
+     *
+     * @param  string  $chunk  새 구간
+     * @param  string  $oldChunk  기존 구간
+     * @return string 병합된 구간
+     */
+    private function mergeMissingRows(string $chunk, string $oldChunk): string
+    {
+        $lines = explode("\n", $chunk);
+        $tableEnd = null;
+        $present = [];
+        $columns = null;
+
+        foreach ($lines as $i => $line) {
+            $parsed = $this->parseTableRow($line);
+
+            if ($parsed === null) {
+                continue;
+            }
+
+            $present[$parsed['key']] = true;
+            $columns ??= count($parsed['cols']);
+            $tableEnd = $i;
+        }
+
+        // 새 구간에 표가 없으면 되살릴 자리가 없다 — 표 자체의 복원은 형제 메서드가 맡는다.
+        if ($tableEnd === null) {
+            return $chunk;
+        }
+
+        $missing = [];
+
+        foreach (explode("\n", $oldChunk) as $line) {
+            $parsed = $this->parseTableRow($line);
+
+            if ($parsed === null || isset($present[$parsed['key']])) {
+                continue;
+            }
+
+            // 열 수가 다른 행은 다른 표의 것이다 — 끼워 넣으면 표가 깨진다.
+            if ($columns !== null && count($parsed['cols']) !== $columns) {
+                continue;
+            }
+
+            $missing[] = rtrim($line);
+        }
+
+        if ($missing === []) {
+            return $chunk;
+        }
+
+        array_splice($lines, $tableEnd + 1, 0, $missing);
+
+        return implode("\n", $lines);
+    }
+
+    /**
      * 생성 블록 **안**의 소제목 사이에 사람이 끼워 넣은 서술을 소제목별로 걷어 옵니다.
      *
      * `extractHumanProse()` 가 보존하는 것은 생성 블록 **뒤**의 `**설명**` 자리뿐이다.
@@ -2260,6 +2517,12 @@ class ApiDocScaffolder
             if ($trailing !== null) {
                 $prose[$anchor] = $trailing;
             }
+
+            $leading = $this->leadingProseOf($chunk);
+
+            if ($leading !== null) {
+                $prose[self::LEAD_PREFIX.$anchor] = $leading;
+            }
         }
 
         return $prose;
@@ -2278,7 +2541,9 @@ class ApiDocScaffolder
             return $section;
         }
 
-        $chunks = $this->splitByAnchors($this->normalizeEol($section));
+        [$body, $tail] = $this->splitAtBlockEnd($this->normalizeEol($section));
+
+        $chunks = $this->splitByAnchors($body);
 
         if ($chunks === []) {
             return $section;
@@ -2290,6 +2555,14 @@ class ApiDocScaffolder
             $text = rtrim($chunk, "\n");
 
             // 이미 그 서술이 들어 있으면 다시 붙이지 않는다 (재생성 멱등).
+            $lead = $prose[self::LEAD_PREFIX.$anchor] ?? null;
+
+            if ($lead !== null && ! str_contains($text, $lead)) {
+                $lines = explode("\n", $text);
+                array_splice($lines, 1, 0, ['', $lead]);
+                $text = implode("\n", $lines);
+            }
+
             if (isset($prose[$anchor]) && ! str_contains($text, $prose[$anchor])) {
                 $text .= "\n\n".$prose[$anchor];
             }
@@ -2297,7 +2570,31 @@ class ApiDocScaffolder
             $rebuilt .= $text."\n\n";
         }
 
-        return rtrim($rebuilt, "\n")."\n";
+        return rtrim($rebuilt, "\n")."\n".$tail;
+    }
+
+    /**
+     * 섹션을 생성 블록 본문과 그 뒤(사람 서술 영역)로 가릅니다.
+     *
+     * 소제목 기준 구간 나누기는 **생성 블록 안**에서만 뜻이 있다. 마지막 소제목이 여는
+     * 구간을 블록 끝에서 자르지 않으면 그 뒤의 사람 서술까지 같은 구간으로 묶여, 거기
+     * 놓인 표에 블록 안의 행이 끼어든다(실측: 에러 표의 상태코드 행이 사람이 쓴 응답
+     * 필드 표 아래에 붙었다).
+     *
+     * @param  string  $section  섹션 원문
+     * @return array{0: string, 1: string} [블록 본문(종료 마커 포함), 그 뒤 원문]
+     */
+    private function splitAtBlockEnd(string $section): array
+    {
+        $pos = strpos($section, self::GEN_END);
+
+        if ($pos === false) {
+            return [$section, ''];
+        }
+
+        $cut = $pos + strlen(self::GEN_END);
+
+        return [substr($section, 0, $cut), substr($section, $cut)];
     }
 
     /**
@@ -2355,6 +2652,43 @@ class ApiDocScaffolder
         }
 
         return null;
+    }
+
+    /**
+     * 구간의 소제목과 기계 산출물 **사이**에 놓인 사람 서술을 반환합니다.
+     *
+     * 표를 읽는 방법은 표 아래에 적기도 하고 위에 적기도 한다(대시보드 문서의 「이 목록은
+     * 필터 훅의 결과다」 같은 안내). 뒤쪽만 보존하면 앞에 적힌 안내가 재생성마다 사라진다.
+     *
+     * @param  string  $chunk  소제목이 여는 구간
+     * @return string|null 사람 서술 (없으면 null)
+     */
+    private function leadingProseOf(string $chunk): ?string
+    {
+        $lines = explode("\n", $chunk);
+        $firstMachine = null;
+
+        foreach ($lines as $i => $line) {
+            if ($i === 0) {
+                continue; // 소제목 줄
+            }
+
+            $trimmed = trim($line);
+
+            if (str_starts_with($trimmed, '```') || str_starts_with($trimmed, '|')) {
+                $firstMachine = $i;
+                break;
+            }
+        }
+
+        // 기계 산출물이 없는 구간은 판정하지 않는다 (뒤쪽 보존과 같은 이유).
+        if ($firstMachine === null) {
+            return null;
+        }
+
+        $lead = trim(implode("\n", array_slice($lines, 1, $firstMachine - 1)));
+
+        return $lead === '' ? null : $lead;
     }
 
     /**
