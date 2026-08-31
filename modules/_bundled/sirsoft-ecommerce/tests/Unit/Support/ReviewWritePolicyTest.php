@@ -11,13 +11,13 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 같은 규칙이 서비스(저장 가능 여부)와 리소스(화면 표시)에 각각 구현돼 있어
  * 조회 방식과 기본값 출처가 서로 달랐다. 특히 서비스 쪽 config 폴백은 모듈 config
  * 네임스페이스를 잘못 참조해(`ecommerce.*`) 항상 null 로 해석되고 있었다.
- *
- * @effects review_deadline_uses_single_policy_source
  */
 class ReviewWritePolicyTest extends ModuleTestCase
 {
     /**
      * 모듈 config 네임스페이스가 실제로 해석된다. (기존 폴백은 null 이었다)
+     *
+     * @effects review_deadline_uses_single_policy_source
      */
     public function test_module_config_namespace_resolves(): void
     {
@@ -27,6 +27,8 @@ class ReviewWritePolicyTest extends ModuleTestCase
 
     /**
      * 설정 미지정 시 config 기본값을 사용한다.
+     *
+     * @effects review_deadline_uses_single_policy_source
      */
     public function test_deadline_days_falls_back_to_module_config(): void
     {

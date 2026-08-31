@@ -8,6 +8,7 @@ require_once __DIR__.'/../../ModuleTestCase.php';
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
+use Illuminate\Testing\TestResponse;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 
 /**
@@ -20,7 +21,6 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * 폼 진입 단계에서는 부모글 정보가 그대로 응답되는 결함이 있었습니다.
  *
  * @scenario viewer=regular
- * @effects form_meta_blocks_blinded_parent_and_hides_original, form_data_blocks_blinded_parent_and_hides_original, form_meta_blocks_deleted_parent_and_hides_original, form_data_blocks_deleted_parent_and_hides_original, form_meta_allows_published_parent
  */
 class ReplyFormParentBlockTest extends BoardTestCase
 {
@@ -78,6 +78,9 @@ class ReplyFormParentBlockTest extends BoardTestCase
     // 블라인드 부모글
     // ==========================================
 
+    /**
+     * @effects form_meta_blocks_blinded_parent_and_hides_original
+     */
     public function test_form_meta_blocks_blinded_parent_and_hides_original(): void
     {
         $parentId = $this->createTestPost([
@@ -95,6 +98,9 @@ class ReplyFormParentBlockTest extends BoardTestCase
         $this->assertStringNotContainsString('블라인드 부모 본문 SECRET', $this->decodedContent($response));
     }
 
+    /**
+     * @effects form_data_blocks_blinded_parent_and_hides_original
+     */
     public function test_form_data_blocks_blinded_parent_and_hides_original(): void
     {
         $parentId = $this->createTestPost([
@@ -116,6 +122,9 @@ class ReplyFormParentBlockTest extends BoardTestCase
     // 삭제된 부모글
     // ==========================================
 
+    /**
+     * @effects form_meta_blocks_deleted_parent_and_hides_original
+     */
     public function test_form_meta_blocks_deleted_parent_and_hides_original(): void
     {
         $parentId = $this->createTestPost([
@@ -133,6 +142,9 @@ class ReplyFormParentBlockTest extends BoardTestCase
         $this->assertStringNotContainsString('삭제 부모 본문 SECRET', $this->decodedContent($response));
     }
 
+    /**
+     * @effects form_data_blocks_deleted_parent_and_hides_original
+     */
     public function test_form_data_blocks_deleted_parent_and_hides_original(): void
     {
         $parentId = $this->createTestPost([
@@ -154,6 +166,9 @@ class ReplyFormParentBlockTest extends BoardTestCase
     // 정상 부모글 (회귀 방지 — 차단되면 안 됨)
     // ==========================================
 
+    /**
+     * @effects form_meta_allows_published_parent
+     */
     public function test_form_meta_allows_published_parent(): void
     {
         $parentId = $this->createTestPost([
@@ -175,7 +190,7 @@ class ReplyFormParentBlockTest extends BoardTestCase
      * Laravel JSON 응답은 한글을 \uXXXX로 직렬화하므로, 원문 노출 여부 검증 시
      * 디코딩 후 비교해야 합니다.
      *
-     * @param  \Illuminate\Testing\TestResponse  $response  테스트 응답
+     * @param  TestResponse  $response  테스트 응답
      * @return string 디코딩된 본문 문자열
      */
     private function decodedContent($response): string

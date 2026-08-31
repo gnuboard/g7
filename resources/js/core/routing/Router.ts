@@ -1,6 +1,6 @@
 import { AuthManager } from '../auth/AuthManager';
 import { createLogger } from '../utils/Logger';
-import { suffixed } from '../support/assetUrl';
+import { stripBasePrefix, suffixed, withBasePrefix } from '../support/assetUrl';
 
 const logger = createLogger('Router');
 
@@ -272,7 +272,10 @@ export class Router {
    * 현재 URL 경로를 처리하여 매칭되는 라우트를 찾고 이벤트를 발생시킵니다.
    */
   async navigateToCurrentPath(): Promise<void> {
-    const pathname = window.location.pathname;
+    // 브라우저가 알려 주는 주소에서 사이트 마운트 접두사를 벗긴다. 라우트 패턴은
+    // 언제나 접두사 없이 등록되므로, 하위 폴더 배치(`/g7/board/free`)에서 벗기지
+    // 않으면 어떤 패턴에도 맞지 않아 전 화면이 「없는 페이지」가 된다 (12차 G3).
+    const pathname = stripBasePrefix(window.location.pathname);
     const search = window.location.search;
     const matchResult = this.match(pathname);
 
@@ -305,6 +308,7 @@ export class Router {
       if (!isAuthenticated) {
         const loginUrl = authManager.getLoginRedirectUrl(authType, pathname + search);
         logger.log(`Not authenticated, redirecting to: ${loginUrl}`);
+        // base-path:allow getLoginRedirectUrl() 가 접두사를 붙인 값이다.
         window.location.href = loginUrl;
         return;
       }
@@ -372,8 +376,10 @@ export class Router {
     this.pendingNavigation = null;
 
     try {
-      // URL 변경 (브라우저 히스토리에 추가)
-      window.history.pushState({}, '', path);
+      // URL 변경 (브라우저 히스토리에 추가). 히스토리에 실리는 값은 **브라우저가
+      // 보는 주소**이므로 접두사를 붙인다 — 붙이지 않으면 하위 폴더 배치에서 주소창이
+      // 사이트 밖을 가리키게 되고, 그 상태로 새로고침하면 설치 밖으로 나간다.
+      window.history.pushState({}, '', withBasePrefix(path));
 
       // 라우트 매칭 및 렌더링 (완료까지 대기)
       await this.navigateToCurrentPath();

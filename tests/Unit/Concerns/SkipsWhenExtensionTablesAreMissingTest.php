@@ -16,8 +16,6 @@ use Tests\Concerns\SkipsWhenExtensionTablesAreMissing;
  * `skip 0` 수치가 계속 근거다.
  *
  * 커버 축: env_parse plain·quoted·value_with_equals·comment·inline_comment·quoted_hash·blank·no_separator
- *
- * @effects skip_guard_parses_env_without_ini_semantics, skip_guard_required_tables_are_fixed
  */
 class SkipsWhenExtensionTablesAreMissingTest extends TestCase
 {
@@ -51,6 +49,9 @@ class SkipsWhenExtensionTablesAreMissingTest extends TestCase
         };
     }
 
+    /**
+     * @effects skip_guard_parses_env_without_ini_semantics
+     */
     public function test_parses_plain_and_quoted_values(): void
     {
         $config = $this->subject()->parse([
@@ -81,6 +82,8 @@ class SkipsWhenExtensionTablesAreMissingTest extends TestCase
      *
      * `parse_ini_file` 을 쓰지 않는 이유가 이것이다 — 괄호가 든 값 하나에 전체 파싱이
      * 실패하면 판정 불가로 떨어져 가드가 조용히 통과하고, 그 다음이 부팅 실패다.
+     *
+     * @effects skip_guard_parses_env_without_ini_semantics
      */
     public function test_survives_values_that_would_break_ini_parsing(): void
     {
@@ -141,6 +144,8 @@ class SkipsWhenExtensionTablesAreMissingTest extends TestCase
      *
      * 이 목록이 비면 가드가 **한 번도 건너뛰지 않게** 되어(fail-open) 리허설 직후의
      * 부팅 실패가 다시 진짜 회귀처럼 보인다. 늘어나면 반대로 과잉 건너뜀이 된다.
+     *
+     * @effects skip_guard_required_tables_are_fixed
      */
     public function test_required_extension_tables_are_fixed(): void
     {

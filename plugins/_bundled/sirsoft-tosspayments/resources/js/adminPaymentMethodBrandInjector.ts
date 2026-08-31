@@ -1,3 +1,4 @@
+import { routePath } from './apiUrl';
 /**
  * 관리자 주문설정 결제수단 목록의 브랜드 마크 주입.
  *
@@ -75,7 +76,7 @@ function windowRecord(): Record<string, unknown> {
 }
 
 function isOrderSettingsPage(): boolean {
-    if (!ADMIN_SETTINGS_RE.test(window.location.pathname)) return false;
+    if (!ADMIN_SETTINGS_RE.test(routePath(window.location.pathname))) return false;
 
     const tab = new URLSearchParams(window.location.search).get('tab');
     return tab === null || tab === '' || tab === 'order_settings';

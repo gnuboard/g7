@@ -19,8 +19,6 @@ use Tests\TestCase;
  * 대시보드 API 엔드포인트를 테스트합니다.
  *
  * 커버 축: shell_exec_guard_surface dashboard_cpu·dashboard_memory / measurement_result measured·not_measurable
- *
- * @effects resources_probe_failure_returns_null_percentage_not_zero
  */
 class DashboardControllerTest extends TestCase
 {
@@ -284,6 +282,8 @@ class DashboardControllerTest extends TestCase
      *
      * getSystemResources 전체를 mock 하지 않고 내부 probe(getCpuUsage)만 throw 시켜
      * safeProbe 격리가 실제로 동작하는지 검증한다.
+     *
+     * @effects resources_probe_failure_returns_null_percentage_not_zero
      */
     public function test_resources_returns_200_when_probe_fails(): void
     {

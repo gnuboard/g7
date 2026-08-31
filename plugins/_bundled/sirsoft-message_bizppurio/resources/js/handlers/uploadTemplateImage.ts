@@ -22,6 +22,7 @@
  * }
  */
 
+import { apiUrl } from '../apiUrl';
 import type { ActionContext, ActionWithParams } from '../types';
 
 const logger = ((window as any).G7Core?.createLogger?.('MessageBizppurio:UploadImage')) ?? {
@@ -30,7 +31,14 @@ const logger = ((window as any).G7Core?.createLogger?.('MessageBizppurio:UploadI
     error: (...args: unknown[]) => console.error('[MessageBizppurio:UploadImage]', ...args),
 };
 
-const UPLOAD_URL = '/api/plugins/sirsoft-message_bizppurio/admin/templates/image';
+/**
+ * 이미지 업로드 프록시의 루트 상대 경로.
+ *
+ * 접두사는 여기서 붙이지 않는다 — 모듈 로드 시점에는 코어(`G7Core.url`)도
+ * `G7Config.basePath` 도 아직 없을 수 있어 그때의 값이 박제된다. 실제 호출 직전에
+ * `apiUrl()` 로 붙인다.
+ */
+const UPLOAD_PATH = '/api/plugins/sirsoft-message_bizppurio/admin/templates/image';
 
 /** 서버 사유가 없을 때 쓰는 최후 폴백 문구의 다국어 키 */
 const FAILURE_KEY = 'sirsoft-message_bizppurio.template.form.image_upload_failed';
@@ -194,7 +202,7 @@ export async function uploadTemplateImageHandler(
         const form = new FormData();
         form.append('image', file, file.name);
 
-        const res = await fetch(UPLOAD_URL, {
+        const res = await fetch(apiUrl(UPLOAD_PATH), {
             method: 'POST',
             headers: {
                 Accept: 'application/json',

@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\VerificationKginicis\Http\Controllers;
 
 use App\Http\Controllers\Api\Base\PublicBaseController;
+use App\Support\AssetUrl;
 use Illuminate\Http\RedirectResponse;
 use Plugins\Sirsoft\VerificationKginicis\Http\Requests\InicisCallbackRequest;
 use Plugins\Sirsoft\VerificationKginicis\Services\InicisCallbackResolver;
@@ -48,7 +49,7 @@ class InicisCallbackController extends PublicBaseController
             ],
         );
 
-        $bridgeUrl = url('/plugins/sirsoft-verification_kginicis/plugin/inicis/popup-bridge')
+        $bridgeUrl = AssetUrl::siteAbsolute('/plugins/sirsoft-verification_kginicis/plugin/inicis/popup-bridge')
             .'?'.http_build_query($outcome->toBridgeQuery());
 
         return redirect()->away($bridgeUrl);

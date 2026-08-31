@@ -7,6 +7,7 @@ use App\Extension\HookManager;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Mockery;
 use Mockery\MockInterface;
@@ -413,6 +414,13 @@ class CategoryImageServiceTest extends ModuleTestCase
 
     /**
      * download 메서드가 StorageInterface.response()를 사용하여 StreamedResponse를 반환하는지 테스트
+     *
+     * 헤더 계약은 11차 G3 라운드 B11-12 로 **강화**되었고, 14차에 그 계약의 소유자가 바뀌었다 —
+     * `Cache-Control`·`ETag`·`Expires`·304 판정은 코어 단일 지점(`streamedFileResponse()`)이
+     * 만들고 서비스는 스트림 + 검증자 메타(`getFileInfo()`)만 돌려준다. 서비스가 그 헤더를
+     * 스토리지에 넘기면 코어 지점이 덮어쓰거나 갈린 사본이 되므로, 여기서는 **넘기지 않는
+     * 것**을 단언한다. HTTP 계약(검증자·304·환경별 정책)은 `CategoryImageServiceRowDiskTest`
+     * 가 실제 라우트로 잰다.
      */
     #[Test]
     public function test_download_returns_streamed_response(): void
@@ -423,12 +431,16 @@ class CategoryImageServiceTest extends ModuleTestCase
             'path' => 'category/2024/01/19/image.jpg',
             'original_filename' => 'photo.jpg',
             'mime_type' => 'image/jpeg',
+            'file_size' => 1234,
         ]);
         $image->id = 1;
+        // 검증자 소스가 되는 행 메타 — 미저장 모델은 updated_at 이 null 이라
+        // Last-Modified 축을 재지 못한다.
+        $image->updated_at = Carbon::parse('2026-08-01 09:30:00');
 
         $this->repository
             ->shouldReceive('findByHash')
-            ->once()
+            ->twice()
             ->with($hash)
             ->andReturn($image);
 
@@ -436,13 +448,18 @@ class CategoryImageServiceTest extends ModuleTestCase
             echo 'image-data';
         });
 
+        $capturedHeaders = null;
+
         $this->storage
             ->shouldReceive('response')
-            ->once()
-            ->with('images', 'category/2024/01/19/image.jpg', 'photo.jpg', [
-                'Content-Type' => 'image/jpeg',
-                'Cache-Control' => 'public, max-age=31536000',
-            ])
+            ->twice()
+            ->withArgs(function ($category, $path, $filename, $headers) use (&$capturedHeaders) {
+                $capturedHeaders = $headers;
+
+                return $category === 'images'
+                    && $path === 'category/2024/01/19/image.jpg'
+                    && $filename === 'photo.jpg';
+            })
             ->andReturn($mockResponse);
 
         // Act
@@ -450,6 +467,31 @@ class CategoryImageServiceTest extends ModuleTestCase
 
         // Assert
         $this->assertInstanceOf(StreamedResponse::class, $result);
+
+        $this->assertSame('image/jpeg', $capturedHeaders['Content-Type']);
+
+        $this->assertSame(
+            gmdate('D, d M Y H:i:s', $image->updated_at->getTimestamp()).' GMT',
+            $capturedHeaders['Last-Modified'] ?? null,
+            'Last-Modified 는 행 메타(updated_at)에서 결정적으로 만들어져야 한다',
+        );
+
+        // 캐시 정책·ETag 는 코어 지점의 몫이다 — 서비스가 넘기면 사본이 된다.
+        $this->assertArrayNotHasKey('Cache-Control', $capturedHeaders, '캐시 정책은 코어 streamedFileResponse() 가 환경에 따라 정한다');
+        $this->assertArrayNotHasKey('ETag', $capturedHeaders, 'ETag 는 코어 지점이 etag_source 로 만든다');
+
+        // 서빙 정보는 코어 형제(`AttachmentService::getFileInfo()`)와 같은 형태다.
+        $info = $this->service->getFileInfo($hash);
+
+        $this->assertSame($mockResponse, $info['response']);
+        $this->assertSame(
+            // 미저장 모델은 `disk` 가 null 이라 첫 세그먼트가 빈 문자열이다.
+            '|category/2024/01/19/image.jpg|'.$image->updated_at->getTimestamp().'|1234',
+            $info['etag_source'],
+        );
+        $this->assertSame($image->updated_at->getTimestamp(), $info['last_modified']);
+        $this->assertSame('image/jpeg', $info['mime_type']);
+        $this->assertSame(CategoryImageService::IMAGE_CACHE_MAX_AGE, $info['max_age']);
     }
 
     /**

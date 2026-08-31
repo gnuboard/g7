@@ -6,6 +6,7 @@ namespace Plugins\Sirsoft\PayKginicis\Controllers;
 
 use App\Extension\HookManager;
 use App\Services\PluginSettingsService;
+use App\Support\AssetUrl;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -720,8 +721,8 @@ class PaymentCallbackController
      *
      * PG가 브라우저 POST 로 콜백을 보내는 동안 Apache 가 ProxyPreserveHost Off 등
      * 으로 Host 헤더를 localhost 로 바꿔서 PHP 에 전달하는 경우, Laravel 의
-     * redirect('/path') 가 http://localhost/path 를 생성해버린다. config('app.url')
-     * (.env 의 APP_URL)을 명시적 base 로 사용하여 도메인을 보존한다.
+     * redirect('/path') 가 http://localhost/path 를 생성해버린다. AssetUrl::siteAbsolute()
+     * 로 설정 오리진(APP_URL)을 붙여 도메인을 보존하고, 마운트 접두사도 멱등으로 채운다.
      */
     private function absolutize(string $url): string
     {
@@ -729,10 +730,9 @@ class PaymentCallbackController
             return $url;
         }
 
-        $base = rtrim((string) config('app.url'), '/');
         $path = $url === '' ? '/' : ($url[0] === '/' ? $url : '/'.$url);
 
-        return $base.$path;
+        return AssetUrl::siteAbsolute($path);
     }
 
     /**

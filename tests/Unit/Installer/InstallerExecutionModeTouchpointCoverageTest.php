@@ -24,8 +24,6 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  *    고를 수 없는 선택지를 고른 것으로 보인다.
  *
  * 커버 축: mode_touchpoint vendor_mode_read·execution_mode_read
- *
- * @effects installer_every_vendor_mode_read_is_coerced_by_execution_mode, installer_every_execution_mode_read_is_normalized
  */
 class InstallerExecutionModeTouchpointCoverageTest extends TestCase
 {
@@ -99,6 +97,8 @@ class InstallerExecutionModeTouchpointCoverageTest extends TestCase
 
     /**
      * R9/R10/A-4 — vendor_mode 를 읽는 모든 지점이 실행 모드 보정을 거친다.
+     *
+     * @effects installer_every_vendor_mode_read_is_coerced_by_execution_mode
      */
     public function test_every_vendor_mode_read_goes_through_execution_mode_coercion(): void
     {
@@ -116,6 +116,8 @@ class InstallerExecutionModeTouchpointCoverageTest extends TestCase
 
     /**
      * 실행 모드 선택값을 읽는 모든 지점이 정규화/해석 헬퍼를 거친다.
+     *
+     * @effects installer_every_execution_mode_read_is_normalized
      */
     public function test_every_execution_mode_read_goes_through_normalizer_or_resolver(): void
     {

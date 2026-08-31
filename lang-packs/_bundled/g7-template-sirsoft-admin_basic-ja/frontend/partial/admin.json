@@ -1331,6 +1331,7 @@
       "site_info_desc": "基本的なサイト情報を設定します。",
       "site_name": "サイト名",
       "site_url": "サイト URL",
+      "site_url_help": "このアドレスは通知・パスワード再設定メールのリンクと決済の復帰先アドレスの基準になります。プロキシやサブフォルダ配置の場合は実際のアクセスアドレスと一致させてください。",
       "site_description": "サイト説明",
       "site_description_placeholder": "サイトに関する簡単な説明を入力してください。",
       "admin_email": "管理者メール",

@@ -15,9 +15,11 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  * 대조는 예외 없이 **주석을 지운 뒤** 한다 — 원문에는 주석 처리된 배선도 글자로 남으므로
  * 원문 대조는 「배선이 살아 있다」를 증명하지 못한다.
  *
- * 커버 축: gate origin_check·post_complete_guard·worker_state_gate·function_availability·bundle_usability·probe_rate_limit·https_ssoT·state_file_presence / entry install_process·install_worker·state_management·save_extensions·finalize_env·check_configuration·session·config·request_handler
+ * 손 목록은 파일이 늘어도 스스로 자라지 않는다. 그래서 목록마다 **역방향 도출**을 둔다 —
+ * 「그 판정을 실제로 부르는 파일」과 「POST 를 받는 파일」을 소스에서 뽑아, 목록이 그것을
+ * 전부 덮는지 본다. 모집단은 `api/` 한 겹이 아니라 `public/install/**` 전수다 (14차 C11-9·C11-10).
  *
- * @effects installer_state_changing_endpoints_check_request_origin, installer_post_complete_endpoints_are_closed, installer_blocked_function_call_sites_are_guarded, installer_display_errors_is_disabled_before_state_read
+ * 커버 축: gate origin_check·post_complete_guard·worker_state_gate·function_availability·bundle_usability·probe_rate_limit·https_ssoT·state_file_presence / entry install_process·install_worker·state_management·save_extensions·finalize_env·check_configuration·session·config·request_handler·index
  */
 class InstallerEntryGateWiringTest extends TestCase
 {
@@ -47,6 +49,8 @@ class InstallerEntryGateWiringTest extends TestCase
      * 인스톨러의 csrf_token 검증은 정의만 있고 호출부가 저장소 전체에 0건이었다 — 그런데
      * 세션 쿠키 SameSite 완화의 근거로는 그 검증이 인용돼 있었다. 한 엔드포인트만 빠져도
      * 그 지점이 우회로가 되므로 목록으로 고정한다.
+     *
+     * @effects installer_state_changing_endpoints_check_request_origin
      */
     public function test_state_changing_endpoints_check_request_origin(): void
     {
@@ -56,6 +60,9 @@ class InstallerEntryGateWiringTest extends TestCase
             'api/save-extensions.php' => '설치할 확장 목록을 다른 사이트가 바꿀 수 있다',
             'api/finalize-env.php' => '완료 표식 기록·runtime.php 삭제를 다른 사이트가 부를 수 있다',
             'api/install-worker.php' => '크로스오리진 이미지 태그 하나가 실제 설치를 시작한다',
+            // 역방향 도출이 드러낸 자리 — 이 파일은 손 목록이 만들어진 뒤에 같은 가드를
+            // 부르게 됐고, 그동안 그 호출을 재는 검사가 0건이었다 (10차 G3 라운드 C10-9).
+            'api/run-task.php' => '단계별 실행(요청 1 = 태스크 1)을 다른 사이트가 부를 수 있다',
         ];
 
         foreach ($endpoints as $relative => $why) {
@@ -65,6 +72,138 @@ class InstallerEntryGateWiringTest extends TestCase
                 $relative.' 이 출처 확인을 부르지 않는다 — '.$why
             );
         }
+
+        // 목록의 **반대 방향**도 잰다.
+        //
+        // 위 다섯은 손으로 적혀 있었고, 그 사이 `api/run-task.php` 가 같은 가드를
+        // 부르게 됐는데 목록에 들어오지 않았다 — 그래서 그 파일의 출처 확인은
+        // **어느 검사도 보지 않는 상태**였다(그 줄을 지워도 전부 초록). 손 목록은
+        // 파일이 늘어도 스스로 자라지 않는다 (10차 G3 라운드 C10-9).
+        //
+        // 그래서 「그 가드를 실제로 부르는 엔드포인트」를 소스에서 도출해, 목록이
+        // 그것을 전부 덮는지 본다. 새 파일이 그 가드를 부르면 여기서 멈춘다.
+        //
+        // 모집단은 `api/` 한 겹이 아니라 **인스톨러 전수**다. 종전에는 `glob('api/*.php')`
+        // 로 고정돼 있어, 그 밖의 POST 진입점은 구조적으로 보이지 않았다 — `index.php` 의
+        // POST 처리(`includes/request-handler.php` 위임)가 정확히 그 자리다 (14차 C11-9).
+        // 모집단을 넓히면 **판정을 선언하는 파일**(`includes/execution-mode.php`)도 그 글자를
+        // 갖는다. 선언은 호출이 아니므로 토큰 판정으로 가른다.
+        $callers = [];
+
+        foreach ($this->installerPhpFiles() as $relative => $source) {
+            if ($this->directFunctionCalls($source, ['installerCrossOriginRejection']) !== []) {
+                $callers[] = $relative;
+            }
+        }
+
+        sort($callers);
+
+        $this->assertNotSame([], $callers, '출처 확인을 부르는 엔드포인트가 하나도 없다 — 이 검사가 아무것도 재지 않는다');
+
+        foreach ($callers as $relative) {
+            $this->assertArrayHasKey(
+                $relative,
+                $endpoints,
+                $relative.' 이 출처 확인을 부르는데 이 목록에 없다 — 그 호출을 지워도 아무 검사도 red 가 되지 않는다. '
+                .'목록에 사유와 함께 등재할 것'
+            );
+        }
+
+        // **가드가 없는 POST 진입점의 원장.**
+        //
+        // 위 대조는 「가드를 부르는 파일」만 본다 — 부르지 **않는** POST 진입점은 어느
+        // 방향에서도 보이지 않는다. 그래서 POST 를 받는 파일을 소스에서 도출하고, 그것이
+        // 가드 목록이나 이 원장 중 한쪽에 반드시 있게 한다. 원장 항목은 「빠뜨린 것」이
+        // 아니라 **사유와 함께 남긴 사실**이며, 다음 회차가 그 사유를 다시 읽는다.
+        //
+        // 제품 결정(14차 (4)): `index.php`·`request-handler.php` 에 가드를 **추가하지 않는다**
+        // (동작 불변). 검사 범위만 넓히고 사실을 원장에 남긴다.
+        $ledger = [
+            'index.php' => '설치 첫 화면과 각 단계의 폼 제출이 같은 진입점을 쓴다 — 여기에 출처 확인을 '
+                .'걸면 프록시·리버스프록시 뒤에서 첫 화면 자체가 막힐 수 있어, 이 저장소가 잴 수 없는 '
+                .'환경에서 설치가 통째로 불가능해진다. 오늘 악용이 성립하지 않는 근거는 세션 쿠키의 '
+                .'`SameSite=Lax` 다 — 교차 사이트 POST 에는 쿠키가 실리지 않아 그 요청은 설치 세션을 '
+                .'얻지 못한다. 가드 추가 여부는 G8 브라우저 실측이 소유한다',
+            'includes/request-handler.php' => 'index.php 의 POST 를 받아 처리하는 본체다 — 위와 같은 사유이며, '
+                .'그 진입점에 걸지 않기로 한 판단이 여기까지 이어진다. 이 파일만 따로 가드를 걸면 '
+                .'같은 요청이 두 층에서 다르게 판정된다',
+            'api/check-configuration.php' => 'POST action 셋(`test-db`·`test-php-binary`·`test-composer`·'
+                .'`detect-execution-mode`)은 **상태를 바꾸지 않는 probe** 다. 남용 축은 출처가 아니라 '
+                .'호출 횟수이고 `installerProbeRateLimitExceeded()` 가 그 축을 소유한다',
+        ];
+
+        $postEntries = [];
+
+        foreach ($this->installerPhpFiles() as $relative => $source) {
+            $handlesPost = (str_contains($source, 'REQUEST_METHOD') && str_contains($source, "'POST'"))
+                || str_contains($source, '$_POST');
+
+            if ($handlesPost) {
+                $postEntries[] = $relative;
+            }
+        }
+
+        sort($postEntries);
+
+        $this->assertNotSame([], $postEntries, 'POST 를 받는 인스톨러 파일을 하나도 찾지 못했다 — 이 대조가 아무것도 재지 않는다');
+
+        foreach ($postEntries as $relative) {
+            $this->assertTrue(
+                isset($endpoints[$relative]) || isset($ledger[$relative]),
+                $relative.' 이 POST 를 받는데 출처 확인도, 그것을 두지 않은 사유도 없다 — '
+                .'둘 중 하나를 반드시 남긴다. 사유 없이 비어 있으면 다음 회차가 「검토했는데 '
+                .'불필요하다」와 「보지 못했다」를 구분할 수 없다'
+            );
+        }
+
+        // 원장에 **죽은 항목**을 남기지 않는다 — 그 파일이 더는 POST 를 받지 않거나 가드를
+        // 갖게 되면 사유가 사실과 어긋난다. 그때 red 가 되어 원장을 정리하게 한다.
+        foreach ($ledger as $relative => $why) {
+            $this->assertContains(
+                $relative,
+                $postEntries,
+                $relative.' 이 원장에 있는데 POST 진입점이 아니다 — 사유가 사실과 어긋났다: '.$why
+            );
+
+            $this->assertArrayNotHasKey(
+                $relative,
+                $endpoints,
+                $relative.' 이 출처 확인을 갖게 됐다 — 원장에서 빼고 가드 목록으로 옮긴다'
+            );
+        }
+    }
+
+    /**
+     * 인스톨러 PHP 파일 전수 (상대 경로 => 주석 제거 소스).
+     *
+     * 모집단을 손으로 적거나 한 겹(`api/*.php`)으로 고정하면 그 밖에 생긴 진입점이
+     * 구조적으로 사각이 된다.
+     *
+     * @return array<string, string> public/install 기준 상대 경로 => 주석 제거 소스
+     */
+    private function installerPhpFiles(): array
+    {
+        $root = $this->installRoot();
+        $files = [];
+
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS),
+        );
+
+        foreach ($iterator as $file) {
+            if (! $file->isFile() || $file->getExtension() !== 'php') {
+                continue;
+            }
+
+            $relative = strtr(substr($file->getPathname(), strlen($root) + 1), [DIRECTORY_SEPARATOR => '/']);
+            $files[$relative] = $this->stripComments((string) file_get_contents($file->getPathname()));
+        }
+
+        ksort($files);
+
+        $this->assertNotSame([], $files, '인스톨러 PHP 파일을 하나도 찾지 못했다 — 도출이 비었다');
+
+        return $files;
     }
 
     /**
@@ -72,6 +211,8 @@ class InstallerEntryGateWiringTest extends TestCase
      *
      * `.env` 쓰기가 실패하면 종전 가드는 계속 통과시켰다 — DB·관리자 계정이 완비된 운영
      * 사이트에서 재시작·중단·초기화가 영구히 열린 채 남는다.
+     *
+     * @effects installer_post_complete_endpoints_are_closed
      */
     public function test_post_complete_guard_is_wired_to_destructive_entries(): void
     {
@@ -126,6 +267,8 @@ class InstallerEntryGateWiringTest extends TestCase
      * 12차 #A6 은 이 파일을 「이미 try 진입 전에 끈다」고 기록했으나 실물은 그렇지 않았다 —
      * 상태 읽기·번역 로드를 켜진 채로 돌고 헤더 송출 뒤에야 껐다. 그 구간의 warning 한 줄이면
      * `text/event-stream` 헤더가 서지 못해 EventSource 는 사유 대신 "연결 실패" 만 본다.
+     *
+     * @effects installer_display_errors_is_disabled_before_state_read
      */
     public function test_display_errors_is_disabled_before_the_state_file_is_read(): void
     {
@@ -145,6 +288,8 @@ class InstallerEntryGateWiringTest extends TestCase
 
     /**
      * 호스팅이 흔히 막는 함수의 호출 지점에 가드가 있는가 (13차 환경#1).
+     *
+     * @effects installer_blocked_function_call_sites_are_guarded
      */
     public function test_blocked_function_call_sites_are_guarded(): void
     {
@@ -156,7 +301,8 @@ class InstallerEntryGateWiringTest extends TestCase
             'disk_free_space 가드가 없으면 그 호스팅에서 요구사항 목록이 통째로 뜨지 않는다'
         );
 
-        $session = $this->source('includes/session.php');
+        // 배선 단언은 문자열 채널까지 벗긴 소스로 잰다 (G3 회차 15).
+        $session = $this->sourceWithoutCommentsAndStrings($this->installRoot().'/includes/session.php');
 
         $this->assertStringContainsString('installerIniSet(', $session, 'ini_set 무가드 호출은 첫 화면을 백지로 만든다');
         $this->assertStringNotContainsString(
@@ -168,12 +314,14 @@ class InstallerEntryGateWiringTest extends TestCase
         // 진입점은 호출 **리터럴**을 그대로 둔다 — 그 줄을 문자로 고정하는 소스 게이트가 이미
         // 있어서 래퍼로 감싸면 그 게이트가 배선을 못 본다. 대신 같은 파일에 가용성 판정이
         // 있어야 한다 (`@` 는 undefined function Error 를 막지 못하므로 가드가 아니다).
-        foreach ([
+        $entryPoints = [
             'api/install-worker.php' => ['ini_set', 'set_time_limit', 'ignore_user_abort'],
             'api/sse-probe.php' => ['ini_set', 'set_time_limit', 'ignore_user_abort'],
             'api/install-process.php' => ['ini_set', 'set_time_limit', 'ignore_user_abort'],
             'api/state-management.php' => ['ini_set'],
-        ] as $relative => $functions) {
+        ];
+
+        foreach ($entryPoints as $relative => $functions) {
             $src = $this->source($relative);
 
             foreach ($functions as $function) {
@@ -183,6 +331,47 @@ class InstallerEntryGateWiringTest extends TestCase
                     $relative.' 이 '.$function.' 을(를) 가용성 판정 없이 부른다 — 그 호스팅에서 이 엔드포인트가 치명 종료한다'
                 );
             }
+        }
+
+        // **역방향 도출.**
+        //
+        // 위 목록은 손으로 적혀 있다. 그 사이 같은 함수를 부르게 된 파일은 목록에 스스로
+        // 들어오지 않는다 — 형제 축(출처 확인)이 정확히 그 형태로 한 파일을 놓쳤고, 이
+        // 목록에는 그 방향이 아예 없었다 (14차 C11-10).
+        //
+        // 그래서 그 함수들을 **실제로 부르는** 파일을 소스에서 도출하고, 그 파일이 같은
+        // 파일 안에 가용성 판정을 갖는지 본다. 손 목록은 「리터럴 호출을 유지하기로 한
+        // 진입점」이라는 의도를 남기는 자리로만 남고, 강제는 도출이 한다.
+        $blocked = ['ini_set', 'set_time_limit', 'ignore_user_abort'];
+        $derived = 0;
+
+        foreach ($this->installerPhpFiles() as $relative => $source) {
+            foreach ($this->directFunctionCalls($source, $blocked) as $function) {
+                $this->assertStringContainsString(
+                    "installerHasFunction('".$function."')",
+                    $source,
+                    $relative.' 이 '.$function.' 을(를) 가용성 판정 없이 부른다 — 그 호스팅에서 이 파일이 '
+                    .'치명 종료한다. `@` 는 가드가 아니다 (PHP 8 은 차단 함수를 함수 테이블에서 제거한다)'
+                );
+
+                $derived++;
+            }
+        }
+
+        $this->assertGreaterThanOrEqual(
+            array_sum(array_map('count', $entryPoints)),
+            $derived,
+            '도출한 호출 지점이 손 목록보다 적다 — 도출식이 그 표기를 모르거나 모집단이 줄었다'
+        );
+
+        // 손 목록이 **사문화되지 않았는가** — 그 파일이 더는 그 함수를 부르지 않으면
+        // 「리터럴 호출을 유지한다」는 의도가 사실과 어긋난다.
+        foreach ($entryPoints as $relative => $functions) {
+            $this->assertSame(
+                $functions,
+                $this->directFunctionCalls($this->source($relative), $blocked),
+                $relative.' 의 손 목록이 실제 호출과 어긋난다 — 목록을 실물에 맞춘다'
+            );
         }
     }
 
@@ -221,6 +410,31 @@ class InstallerEntryGateWiringTest extends TestCase
                 $relative.' 에 파일 존재만 보는 사본이 남아 있다 — '.$why
             );
         }
+
+        // **역방향 도출** — 이 판정을 부르는 파일이 손 목록에 전부 있는가.
+        //
+        // 손 목록은 파일이 늘어도 스스로 자라지 않는다. 새 소비처가 생기면 그 파일의
+        // 사본 금지(`file_exists`) 축이 통째로 사각이 된다 (14차 C11-10).
+        $derived = [];
+
+        foreach ($this->installerPhpFiles() as $relative => $source) {
+            if (str_contains($source, 'installerVendorBundleUsable(')) {
+                $derived[] = $relative;
+            }
+        }
+
+        sort($derived);
+
+        $this->assertNotSame([], $derived, '번들 가용성 판정을 부르는 파일이 하나도 없다 — 이 대조가 아무것도 재지 않는다');
+
+        foreach ($derived as $relative) {
+            $this->assertArrayHasKey(
+                $relative,
+                $consumers,
+                $relative.' 이 번들 가용성 판정을 부르는데 이 목록에 없다 — 그 파일의 사본 금지 축이 '
+                .'측정되지 않는다. 목록에 사유와 함께 등재할 것'
+            );
+        }
     }
 
     /**
@@ -230,7 +444,11 @@ class InstallerEntryGateWiringTest extends TestCase
     {
         $src = $this->source('api/check-configuration.php');
 
-        $this->assertStringContainsString('installerProbeRateLimitExceeded(', $src, '무인증 probe 에 상한이 없다');
+        $this->assertStringContainsString(
+            'installerProbeRateLimitExceeded(',
+            $this->sourceWithoutCommentsAndStrings($this->installRoot().'/api/check-configuration.php'),
+            '무인증 probe 에 상한이 없다'
+        );
 
         // 연결 실패 응답에서 드라이버 원문을 걷었는가 (보안#6). 판정 범위는 PDO 예외 분기로
         // 좁힌다 — 형제 분기(`catch (Exception)`)가 돌려주는 것은 이 파일이 스스로 던진

@@ -258,7 +258,7 @@ test.describe('체크아웃 현금영수증 신청 폼 (무통장 슬롯 주입)
   // A3 — 저장값은 남아 있는데 그 프로바이더를 제공하는 확장이 없으면 미설정과 동일하게 다뤄야 한다.
   // 공개 응답이 raw 값을 그대로 내보내면 신청 폼이 계속 렌더되고, 신청하면 구독자 없는 훅을
   // 호출해 발급 실패로만 조용히 기록된다.
-  // @scenario cash-receipt-ui-and-refund-bank provider_state=dead
+  // @scenario provider_state=dead
   // @effects dead_cash_receipt_provider_normalized_in_public, checkout_slot_hidden_when_provider_unset
   test('공개 결제설정의 현금영수증 프로바이더는 등록된 확장이 있을 때만 실린다', async ({ page }) => {
     const settings = await page.evaluate(async () => {

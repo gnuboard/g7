@@ -1,3 +1,5 @@
+# audit:allow test-scenario-coverage reason: issue:#609 develop 이 소유한 축(custom_ext_type · outcome)의 @scenario 마킹이 이 매니페스트 선언과 어긋난다 — 축을 선언하면 교차곱 8케이스가 미커버가 되고, 그 케이스를 재는 테스트 작성은 그 축을 소유한 작업의 몫이라 리베이스 범위 밖이다(PO 결정). 표식을 걷는 것이 그 작업의 완료 조건이다.
+
 feature: 사용자 추가 에셋 (확장 custom/ 디렉토리)
 
 description: |
@@ -25,6 +27,9 @@ axes:
   # 변경 감지 범위 축 (#651 F7) — 감지 서명이 게시 집합(custom/** 재귀)과 같은 열거자를 쓰는지.
   # 종전 서명은 최상위 css/js 의 mtime 만 봐서 하위 디렉토리 글꼴·이미지 교체가 영영 미게시였다.
   custom_change_detection: [top_level_asset, nested_static_file, no_change]
+  # 마킹은 있는데 선언이 없던 축 (값은 실제 마킹에서 도출) — 머리말 표식이 교차곱 유예를 소유한다.
+  custom_ext_type: [template]                      # 자산을 선언한 확장의 종류
+  outcome: [failed]                                # 로더가 자산을 못 받았을 때의 결과
 
 exclusions:
   - { custom_source: none, custom_asset: css, reason: "출처가 없으면 자산 종류 축이 성립하지 않는다" }
@@ -85,6 +90,9 @@ test_files:
   - tests/Feature/Extension/VendoredAssetServingTest.php
   - tests/Feature/Extension/BundledExtensionNoExternalAssetTest.php
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-uninstall-preserved-backups.test.tsx
+  # 이 파일이 custom_source·custom_asset 축을 마킹한다 — 선언한 매니페스트가
+  # 그 파일을 참조하지 않으면 축 대조가 성립하지 않는다 (선언 = 마킹).
+  - tests/Feature/Module/ModuleAssetServingTest.php
 
 sub_flows:
   - id: custom_manage_surface

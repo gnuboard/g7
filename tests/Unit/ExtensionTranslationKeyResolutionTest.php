@@ -16,9 +16,7 @@ use Tests\TestCase;
  * **코어 lang 그룹일 때만** 해석된다. 호출 지점을 손으로 열거하면 새 확장·새 호출이 같은
  * 함정을 다시 밟으므로, 저장소를 훑어 모든 호출을 검사한다.
  *
- * @scenario case=extension_translation_key_resolution
- *
- * @effects extension_non_namespaced_key_resolves_to_core_group
+ * @scenario extension_translation_key_resolution
  */
 class ExtensionTranslationKeyResolutionTest extends TestCase
 {
@@ -133,7 +131,11 @@ class ExtensionTranslationKeyResolutionTest extends TestCase
     {
         $found = [];
 
-        foreach (preg_split('/\R/', $contents) as $index => $line) {
+        // `\R` 은 UTF-8 모드가 아니면 **바이트 0x85**(NEL)도 개행으로 본다. 한국어 문구의
+        // 흔한 글자가 그 바이트로 끝나(`종` = EC A2 85) 한 줄이 글자 중간에서 쪼개지면,
+        // 그 자리를 지나는 키 호출이 두 조각으로 갈려 아래 패턴에 잡히지 않고 줄 번호도
+        // 밀린다 — 누락을 찾는 검사가 조용히 통과한다. 실제 줄 종결자만 본다.
+        foreach (preg_split('~\r\n|\r|\n~', $contents) as $index => $line) {
             if (! preg_match_all(self::KEY_PATTERN, $line, $matches, PREG_SET_ORDER)) {
                 continue;
             }

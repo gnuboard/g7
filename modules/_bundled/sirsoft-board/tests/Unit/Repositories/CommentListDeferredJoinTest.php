@@ -18,9 +18,7 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * 하나라도 inner/outer 한쪽에만 적용되면 화면에서는 "이미 지운 글의 댓글이 보인다" 또는
  * "마지막 페이지가 비어 있다" 로만 드러난다. 그 성질들을 고정한다.
  *
- * @scenario case=user_comment_list_deferred_join
- *
- * @effects soft_deleted_excluded, page_boundary_stable, cached_total_skips_count
+ * @scenario user_comment_list_deferred_join
  */
 class CommentListDeferredJoinTest extends BoardTestCase
 {
@@ -72,6 +70,9 @@ class CommentListDeferredJoinTest extends BoardTestCase
         return $this->createTestComment($postId, array_merge(['user_id' => $this->userId], $attributes));
     }
 
+    /**
+     * @effects soft_deleted_excluded
+     */
     public function test_soft_deleted_comments_are_excluded(): void
     {
         $postId = $this->createTestPost();
@@ -86,6 +87,9 @@ class CommentListDeferredJoinTest extends BoardTestCase
         $this->assertSame(1, $result->total());
     }
 
+    /**
+     * @effects soft_deleted_excluded
+     */
     public function test_comments_of_soft_deleted_posts_are_excluded(): void
     {
         $livePostId = $this->createTestPost(['title' => '살아있는 글']);
@@ -112,6 +116,9 @@ class CommentListDeferredJoinTest extends BoardTestCase
         $this->assertSame(['내 댓글'], collect($result->items())->pluck('content')->all());
     }
 
+    /**
+     * @effects page_boundary_stable
+     */
     public function test_pages_do_not_overlap_and_last_page_is_reported(): void
     {
         $postId = $this->createTestPost();
@@ -158,6 +165,9 @@ class CommentListDeferredJoinTest extends BoardTestCase
         $this->assertCount(2, $result->items());
     }
 
+    /**
+     * @effects cached_total_skips_count
+     */
     public function test_cached_total_skips_the_count_query(): void
     {
         $postId = $this->createTestPost();

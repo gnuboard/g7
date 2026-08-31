@@ -15,6 +15,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Modules\Sirsoft\Page\Providers\PageServiceProvider;
+use Tests\Concerns\RebuildsRouteNameLookups;
 use Tests\TestCase;
 
 /**
@@ -26,6 +27,7 @@ use Tests\TestCase;
 abstract class ModuleTestCase extends TestCase
 {
     use DatabaseTransactions;
+    use RebuildsRouteNameLookups;
 
     /**
      * 마이그레이션 완료 플래그 (프로세스당 한 번만 실행)
@@ -299,6 +301,9 @@ abstract class ModuleTestCase extends TestCase
                 ->middleware('api')
                 ->group($apiRoutesFile);
         }
+
+        // 라우트 캐시가 있는 머신에서 fluent `->name()` 등록분의 이름 조회를 살린다 (공유 trait).
+        $this->rebuildRouteNameLookups();
     }
 
     /**

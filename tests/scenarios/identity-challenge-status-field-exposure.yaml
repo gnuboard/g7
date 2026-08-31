@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: 본 매니페스트는 challenge 상태 조회 응답의 노출 필드 SSoT. 회귀 가드는 test_files 의 Feature 테스트가 cover.
+# audit:allow test-scenario-coverage reason: issue:#609 본 매니페스트는 challenge 상태 조회 응답의 노출 필드 SSoT. 회귀 가드는 test_files 의 Feature 테스트가 cover.
 # e2e:allow 챌린지 진행 화면(auth/identity_challenge)의 프론트 변경은 서버가 더는 주지 않는 attempts 필드 참조를 제거한 것뿐이며, 남은 시도 횟수 UI 는 URL query fallback 과 verify 실패 시 로컬 증가로 동일하게 동작한다. 실질 회귀 대상(응답에서 attempts 제거)은 IdentityChallengeShowTest 가 검증하므로 브라우저 E2E 는 불요.
 
 feature: 본인인증 challenge 상태 조회 — 노출 필드 제한 (민감 필드 비노출)

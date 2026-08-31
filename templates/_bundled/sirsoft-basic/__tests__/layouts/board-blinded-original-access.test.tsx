@@ -1,3 +1,6 @@
+// @scenario board-blinded-original-access
+// (매니페스트 소속 표기 — 회차 16 W6: 선언된 파일은 마킹을 최소 1개 가진다)
+
 /**
  * @file board-blinded-original-access.test.tsx
  * @description 블라인드 게시글/댓글 '원글 보기' 게이트 회귀 (이슈 #413-34)

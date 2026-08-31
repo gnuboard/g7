@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Providers\BoardServiceProvider;
+use Tests\Concerns\RebuildsRouteNameLookups;
 use Tests\TestCase;
 
 /**
@@ -32,6 +33,7 @@ use Tests\TestCase;
 abstract class ModuleTestCase extends TestCase
 {
     use DatabaseTransactions;
+    use RebuildsRouteNameLookups;
 
     /**
      * 모듈 루트 경로를 반환합니다.
@@ -284,6 +286,10 @@ abstract class ModuleTestCase extends TestCase
                 ->middleware('api')
                 ->group($apiRoutesFile);
         }
+
+        // 라우트 캐시가 있는 머신에서 fluent `->name()` 등록분의 이름 조회를 살린다 (공유 trait).
+        // 없으면 `route()`/`temporarySignedRoute()` 를 쓰는 테스트가 그 머신에서만 실패한다.
+        $this->rebuildRouteNameLookups();
     }
 
     /**

@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: |
+# audit:allow test-scenario-coverage reason: issue:#609 |
 #   cross product 자동 전개는 audit 실행 환경의 fallback YAML 파서가 nested axes 를 읽지 못해
 #   검출되지 않는다(다른 시나리오와 동일 한계). 축 조합은 PHPUnit Feature 테스트
 #   (CoreScheduleRegistrationTest · DataRetentionCommandsTest)와 모듈 커맨드 테스트가
@@ -27,6 +27,9 @@ description: |
     - 관리자 등록 예약: 다음 실행 시각 계산도 같은 기준.
 
 axes:
+  # G3 회차 16 W6 — 종전 마킹이 쓰던 이름을 선언으로 올린다 (선언 = 마킹). 값은 실제 마킹에서 도출.
+  vector: [browser_log_write]
+  actor_permission: [debug_gate_enabled]
   target:
     - sanctum_tokens
     - password_reset_tokens
@@ -53,6 +56,7 @@ axes:
     - core_backups
     - legacy_browser_log
   leftover_mode: [real_delete, dry_run]
+  root_entry_link: [plain, symlinked]                               # 루트 진입 파일이 링크인가 — 링크면 생산자가 임시 파일을 링크 **대상** 디렉토리에 만들므로 정리자의 모집단도 그 자리를 봐야 한다 (G3 회차 16 W2 C-5)
   leftover_guard: [aged_out, fresh_kept, latest_backup_kept, normal_pending_untouched, idempotent_second_run]
 
 exclusions:

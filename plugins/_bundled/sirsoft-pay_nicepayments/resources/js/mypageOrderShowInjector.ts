@@ -1,5 +1,5 @@
 import { buildOrderRequestHeaders } from './guestOrderToken';
-
+import { apiUrl, routePath } from './apiUrl';
 const PLUGIN_ID = 'sirsoft-pay_nicepayments';
 const FLAG = '__nicepayOrderShowInjectorInstalled';
 const ROW_ID = 'nicepay-mp-receipt-row';
@@ -51,7 +51,7 @@ async function fetchReceiptInfo(orderNumber: string): Promise<ReceiptInfo | null
     const headers = buildOrderRequestHeaders();
     if (!headers) return null;
     try {
-        const res = await fetch(`/api/plugins/${PLUGIN_ID}/user/orders/${orderNumber}/receipt`, {
+        const res = await fetch(apiUrl(`/api/plugins/${PLUGIN_ID}/user/orders/${orderNumber}/receipt`), {
             headers,
             credentials: 'same-origin',
         });
@@ -127,6 +127,7 @@ function buildReceiptRow(orderNumber: string): HTMLElement {
         btn.textContent = '영수증 조회';
         const url = data?.receipt_url ?? null;
         if (url) {
+            // base-path:allow PG 가 내려준 영수증 절대 URL 이다.
             window.open(url, 'nicepay_receipt', 'width=800,height=600,scrollbars=yes,resizable=yes');
         }
     });
@@ -251,7 +252,7 @@ function startPolling(orderNumber: string): void {
 }
 
 function onRouteChange(): void {
-    const match = location.pathname.match(ORDER_SHOW_RE);
+    const match = routePath(location.pathname).match(ORDER_SHOW_RE);
     // 회원 그룹(match[1]) 또는 비회원 그룹(match[2]) 중 한쪽이 채워진다.
     const segment = match?.[1] ?? match?.[2];
     if (segment) startPolling(segment);

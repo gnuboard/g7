@@ -3,6 +3,7 @@
 namespace Tests\Unit\Installer;
 
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
  * 인스톨러 API 진입점의 오류 출력 채널 가드 (20차 #8·#9·#13)
@@ -21,11 +22,11 @@ use PHPUnit\Framework\TestCase;
  * 그 stat 은 warning 을 내므로(반환은 false — 판정은 그대로 옳다) 진단 억제가 필요하다.
  * `file_exists`/`is_dir` 는 차단 함수 축(hosting-blocked-function)이 아니라 **경고 채널**
  * 축이다 — `@` 가 정당한 도구인 지점이다 (PHP 8 에서도 이 함수들은 제거되지 않는다).
- *
- * @effects installer_api_error_output_never_corrupts_response_body
  */
 class InstallerJsonEndpointErrorChannelTest extends TestCase
 {
+    use ScansPhpSourceFunctions;
+
     private function apiDir(): string
     {
         return dirname(__DIR__, 3).'/public/install/api';
@@ -33,15 +34,13 @@ class InstallerJsonEndpointErrorChannelTest extends TestCase
 
     /**
      * 주석을 걷어낸 소스 — 주석 처리된 배선이 「살아 있는 배선」으로 오인되면 게이트가
-     * 주석 한 줄로 꺼진다 (19차 #4 가 실측한 위장 형태). 블록 주석 전체와 줄 시작 `//` 만
-     * 걷는다 — 코드 뒤 꼬리 주석까지 지우면 문자열 안 `//`(URL)가 오절단된다.
+     * 주석 한 줄로 꺼진다 (19차 #4 가 실측한 위장 형태). 토크나이저가 지우므로 코드 뒤
+     * 꼬리 주석도 걷히고 문자열 안 `//`(URL)는 보존된다 — 종전의 정규식(줄 시작 `//` 만)은
+     * 꼬리 주석 속 배선을 남겼다.
      */
     private function strippedSource(string $file): string
     {
-        $source = (string) file_get_contents($this->apiDir().'/'.$file);
-        $source = (string) preg_replace('#/\*.*?\*/#s', '', $source);
-
-        return (string) preg_replace('#^\s*//.*$#m', '', $source);
+        return $this->sourceWithoutComments($this->apiDir().'/'.$file);
     }
 
     /**
@@ -70,7 +69,7 @@ class InstallerJsonEndpointErrorChannelTest extends TestCase
                 continue;
             }
 
-            $source = (string) file_get_contents($this->apiDir().'/'.$entry);
+            $source = $this->sourceWithoutComments($this->apiDir().'/'.$entry);
 
             // 응답 방출 지점이 없는 파일은 라이브러리다. 문자열 리터럴 안의 "echo ..." 오탐을
             // 피하려고 행 시작 컨텍스트가 아닌 호출 형태(`header(` / `echo json_encode`)로 본다.
@@ -96,7 +95,63 @@ class InstallerJsonEndpointErrorChannelTest extends TestCase
     }
 
     /**
+     * `apache_setenv` 의 두 번째 인자는 문자열이어야 한다 (G3 P0 실측 회귀).
+     *
+     * PHP 8 의 mod_php 에서 `apache_setenv('no-gzip', 1)` 은 TypeError 이고 `@` 는 Error 를
+     * 삼키지 않는다 — `function_exists` 가드는 통과하는데(함수는 존재한다) 호출이 치명
+     * 종료한다. 이 형태는 **mod_php 실환경에서만** 드러난다: CLI·PHPUnit 에는 apache_setenv
+     * 자체가 없어 가드가 호출을 건너뛰므로 어떤 단위 게이트도 울리지 않았고, G3 의 P0
+     * 리허설에서 finalize-env 가 500 으로 죽으며 실측됐다 (`.env` 머지 통째 소실).
+     * 모집단은 installer 트리 전체 — 운영자 안내 문구(lang)의 예시 코드도 같은 계약이다.
+     */
+    public function test_apache_setenv_second_argument_is_always_a_string(): void
+    {
+        $offenders = [];
+        $root = dirname(__DIR__, 3).'/public/install';
+        $pattern = '/apache_setenv\(\s*\\\\?[\'"][^\'"]+\\\\?[\'"]\s*,\s*(?!\s*\\\\?[\'"])/';
+
+        // 판정식 자기검증 — 이 검사가 재는 것은 「위반이 없다」이므로, 판정식이 깨지면
+        // 그 사실이 초록과 구분되지 않는다. 양성·음성 대조를 먼저 세운다
+        // (7차 G3 라운드 E12).
+        $this->assertSame(1, preg_match($pattern, "apache_setenv('no-gzip', 1);"));
+        $this->assertSame(1, preg_match($pattern, 'apache_setenv(\'no-gzip\', $flag);'));
+        $this->assertSame(0, preg_match($pattern, "apache_setenv('no-gzip', '1');"));
+
+        $scanned = 0;
+        $matchedTargets = 0;
+
+        $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS));
+        foreach ($iterator as $item) {
+            /** @var \SplFileInfo $item */
+            if (! $item->isFile() || ! in_array($item->getExtension(), ['php', 'js'], true)) {
+                continue;
+            }
+
+            $scanned++;
+            $source = $this->sourceWithoutComments($item->getPathname());
+            if (str_contains($source, 'apache_setenv')) {
+                $matchedTargets++;
+            }
+
+            // 문자열이 아닌 두 번째 인자(따옴표로 시작하지 않는 리터럴/변수) 검출.
+            // lang 사전의 이스케이프 예시(\'no-gzip\')까지 같은 패턴으로 걸린다.
+            if (preg_match($pattern, $source)) {
+                $offenders[] = substr($item->getPathname(), strlen($root) + 1);
+            }
+        }
+
+        $this->assertSame([], $offenders, "apache_setenv 두 번째 인자가 문자열이 아닌 파일 (mod_php PHP 8 에서 TypeError → 500):\n".implode("\n", $offenders));
+
+        // 모집단 하한 — `$root` 나 확장자 필터가 어긋나 스캔이 0건이 되면 위 비교는
+        // 공허하다. 형제 도출(`endpointFiles()`)은 이미 하한을 갖는데 이 축만 없었다.
+        $this->assertGreaterThan(30, $scanned, '모집단 도출 실패 — installer 트리를 훑지 못했다');
+        $this->assertGreaterThan(0, $matchedTargets, '`apache_setenv` 를 담은 파일이 하나도 없다 — 이 계약의 대상이 사라졌다면 검사도 함께 옮겨야 한다');
+    }
+
+    /**
      * #13: 모든 API 진입점이 display_errors 를 가드된 형태로 끄고 error_reporting 을 유지한다.
+     *
+     * @effects installer_api_error_output_never_corrupts_response_body
      */
     public function test_every_api_endpoint_disables_display_errors_with_guard(): void
     {
@@ -128,6 +183,8 @@ class InstallerJsonEndpointErrorChannelTest extends TestCase
      *
      * 선행 로드가 허용되는 것은 실행 모드 헬퍼 파일 하나뿐이다 — 최상위 실행문이 없고
      * 프로젝트 루트를 자체 역산하며, 가드 함수 `installerHasFunction` 의 출처다.
+     *
+     * @effects installer_api_error_output_never_corrupts_response_body
      */
     public function test_error_channel_guard_precedes_include_chain(): void
     {
@@ -176,9 +233,7 @@ class InstallerJsonEndpointErrorChannelTest extends TestCase
         $offenders = [];
 
         foreach (['execution-mode.php', 'binary-path-policy.php'] as $file) {
-            $source = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/includes/'.$file);
-            $source = (string) preg_replace('#/\*.*?\*/#s', '', $source);
-            $source = (string) preg_replace('#^\s*//.*$#m', '', $source);
+            $source = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/includes/'.$file);
 
             foreach (explode("\n", $source) as $lineNo => $line) {
                 // 들여쓰기된 줄은 블록 내부다 — 최상위 실행문만 본다.
@@ -200,7 +255,7 @@ class InstallerJsonEndpointErrorChannelTest extends TestCase
      */
     public function test_detect_php_candidate_stat_suppresses_diagnostics(): void
     {
-        $source = (string) file_get_contents($this->apiDir().'/check-configuration.php');
+        $source = $this->strippedSource('check-configuration.php');
 
         $this->assertMatchesRegularExpression(
             '/if \(! @file_exists\(\$path\)\)/',
@@ -214,7 +269,7 @@ class InstallerJsonEndpointErrorChannelTest extends TestCase
      */
     public function test_pending_path_probe_stat_suppresses_diagnostics(): void
     {
-        $source = (string) file_get_contents($this->apiDir().'/check-configuration.php');
+        $source = $this->strippedSource('check-configuration.php');
 
         $this->assertStringContainsString('! @is_dir($resolved)', $source, 'is_dir 진단 억제 부재 (#9)');
         $this->assertStringContainsString('@is_writable($resolved)', $source, 'is_writable 진단 억제 부재 (#9)');

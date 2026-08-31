@@ -16,8 +16,6 @@ use Tests\TestCase;
  * 브라우저에서 죽어 안내조차 뜨지 않는다.
  *
  * @scenario entrypoint=user, failure_mode=parse_error
- *
- * @effects bootstrap_partial_emits_reason_branch, incompatible_strings_defined_per_locale
  */
 class BootstrapFallbackDiagnosisTest extends TestCase
 {
@@ -37,6 +35,9 @@ class BootstrapFallbackDiagnosisTest extends TestCase
         ])->render();
     }
 
+    /**
+     * @effects bootstrap_partial_emits_reason_branch
+     */
     public function test_두_진입점_모두_사유별_분기를_렌더한다(): void
     {
         foreach (['user', 'admin'] as $templateType) {
@@ -161,6 +162,9 @@ class BootstrapFallbackDiagnosisTest extends TestCase
         $this->assertStringContainsString('syntaxError', $html);
     }
 
+    /**
+     * @effects incompatible_strings_defined_per_locale
+     */
     public function test_비호환_안내_문구가_지원_로케일마다_정의된다(): void
     {
         $original = app()->getLocale();
@@ -192,6 +196,9 @@ class BootstrapFallbackDiagnosisTest extends TestCase
         }
     }
 
+    /**
+     * @effects incompatible_strings_defined_per_locale
+     */
     public function test_번들_일본어_언어팩에도_비호환_문구가_있다(): void
     {
         $path = base_path('lang-packs/_bundled/g7-core-ja/backend/ja/errors.php');

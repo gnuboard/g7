@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Listeners;
 
 use App\Models\User;
+use App\Support\AssetUrl;
 use Illuminate\Support\Facades\Config;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
 use Modules\Sirsoft\Ecommerce\Listeners\EcommerceNotificationDataListener;
@@ -420,5 +421,29 @@ class EcommerceNotificationDataListenerTest extends ModuleTestCase
         // 화면 라벨만 "결제 완료" 의미로
         $this->assertEquals('결제 완료', $confirmed['name']['ko']);
         $this->assertEquals('Payment Completed', $confirmed['name']['en']);
+    }
+
+    /**
+     * 주문 링크는 요청이 아니라 **설정된 사이트 주소**를 따르고 후행 슬래시를 이어 붙이지 않는다.
+     *
+     * `config('app.url').'/mypage/…'` 는 후행 슬래시를 그대로 실어 `https://host/g7//mypage/…` 를
+     * 만든다 — 메일 안의 링크가 조용히 깨진다 (16차 G3 라운드 B-4).
+     *
+     * @scenario base_path=subpath, navigation_direction=navigation
+     *
+     * @effects notification_links_are_built_by_the_site_absolute_helper
+     */
+    public function test_order_url_follows_the_configured_site_url_without_double_slash(): void
+    {
+        Config::set('app.url', 'https://example.com/g7/');
+        $order = $this->makeMemberOrder('홍길동', 'ORD-SUBPATH-1');
+
+        try {
+            $result = $this->listener->extractData($this->emptyDefault(), 'order_confirmed', [$order]);
+        } finally {
+            AssetUrl::forceBasePrefix(null);
+        }
+
+        $this->assertSame('https://example.com/g7/mypage/orders/ORD-SUBPATH-1', $result['data']['order_url']);
     }
 }

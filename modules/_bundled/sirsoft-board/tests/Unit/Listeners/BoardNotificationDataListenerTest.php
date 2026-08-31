@@ -2,11 +2,14 @@
 
 namespace Modules\Sirsoft\Board\Tests\Unit\Listeners;
 
+use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Models\Role;
 use App\Models\User;
+use App\Support\AssetUrl;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Mockery;
+use Mockery\MockInterface;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Enums\TriggerType;
 use Modules\Sirsoft\Board\Listeners\BoardNotificationDataListener;
@@ -15,7 +18,6 @@ use Modules\Sirsoft\Board\Models\Comment;
 use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Models\Report;
 use Modules\Sirsoft\Board\Models\UserNotificationSetting;
-use App\Contracts\Repositories\RoleRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
@@ -41,7 +43,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
 
     private RoleRepositoryInterface $roleRepository;
 
-    /** @var \Mockery\MockInterface&UserNotificationSettingService */
+    /** @var MockInterface&UserNotificationSettingService */
     private $userNotificationSettingService;
 
     /**
@@ -83,7 +85,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
      * 구독할 훅 목록이 올바르게 정의되어 있는지 확인합니다.
      */
     #[Test]
-    public function test_getSubscribedHooks_올바른_훅_구독(): void
+    public function test_get_subscribed_hooks_올바른_훅_구독(): void
     {
         $hooks = BoardNotificationDataListener::getSubscribedHooks();
 
@@ -97,7 +99,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
      * 지원하지 않는 타입은 기본값을 반환합니다.
      */
     #[Test]
-    public function test_extractData_미지원_타입_기본값_반환(): void
+    public function test_extract_data_미지원_타입_기본값_반환(): void
     {
         $default = ['notifiable' => null, 'notifiables' => null, 'data' => ['test' => true], 'context' => []];
 
@@ -163,7 +165,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
      * 게시판 알림 설정이 꺼져있으면 빈 결과를 반환합니다.
      */
     #[Test]
-    public function test_new_comment_알림OFF_빈결과(): void
+    public function test_new_comment_알림_of_f_빈결과(): void
     {
         $comment = $this->createMockComment(['parent_id' => null, 'user_id' => 20]);
 
@@ -210,7 +212,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
      * 사용자 개인 알림 설정에서 댓글 알림이 꺼져있으면 빈 결과를 반환합니다.
      */
     #[Test]
-    public function test_new_comment_사용자설정OFF_빈결과(): void
+    public function test_new_comment_사용자설정_of_f_빈결과(): void
     {
         $postAuthor = $this->createMockUser(10, '게시글작성자');
         $commentAuthor = $this->createMockUser(20, '댓글작성자');
@@ -296,7 +298,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
      * 사용자 개인 알림 설정에서 대댓글 알림이 꺼져있으면 빈 결과를 반환합니다.
      */
     #[Test]
-    public function test_reply_comment_사용자설정OFF_빈결과(): void
+    public function test_reply_comment_사용자설정_of_f_빈결과(): void
     {
         $parentAuthor = $this->createMockUser(10, '부모댓글작성자');
         $replyAuthor = $this->createMockUser(20, '대댓글작성자');
@@ -375,7 +377,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
      * 사용자 개인 알림 설정에서 답변글 알림이 꺼져있으면 빈 결과를 반환합니다.
      */
     #[Test]
-    public function test_post_reply_사용자설정OFF_빈결과(): void
+    public function test_post_reply_사용자설정_of_f_빈결과(): void
     {
         $originalAuthor = $this->createMockUser(10, '원글작성자');
         $replyAuthor = $this->createMockUser(20, '답변작성자');
@@ -544,7 +546,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
      * 회귀: 기존엔 게이트가 없어 OFF여도 발송 데이터가 생성됨.
      */
     #[Test]
-    public function test_post_action_게시글작성자_알림OFF_빈결과(): void
+    public function test_post_action_게시글작성자_알림_of_f_빈결과(): void
     {
         $admin = $this->createMockUser(1, '관리자');
         $postAuthor = $this->createMockUser(10, '게시글작성자');
@@ -571,7 +573,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
      * 댓글 작성자가 notify_post_complete를 끄면 post_action에서 빈 결과를 반환합니다 (#413 10-2).
      */
     #[Test]
-    public function test_post_action_댓글작성자_알림OFF_빈결과(): void
+    public function test_post_action_댓글작성자_알림_of_f_빈결과(): void
     {
         $admin = $this->createMockUser(1, '관리자');
         $commentAuthor = $this->createMockUser(10, '댓글작성자');
@@ -803,7 +805,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
      * notify_author_on_report_action이 꺼져있으면 빈 결과를 반환합니다.
      */
     #[Test]
-    public function test_report_action_설정OFF_빈결과(): void
+    public function test_report_action_설정_of_f_빈결과(): void
     {
         Config::set('g7_settings.modules.sirsoft-board.report_policy', [
             'notify_author_on_report_action' => false,
@@ -856,7 +858,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
      * notify_admin_on_post가 꺼져있으면 빈 결과를 반환합니다.
      */
     #[Test]
-    public function test_new_post_admin_알림OFF_빈결과(): void
+    public function test_new_post_admin_알림_of_f_빈결과(): void
     {
         $post = $this->createMockPost(100, '새 게시글', 10, null, null);
         $board = $this->createMockBoard('test-board', true, false); // notify_admin_on_post = false
@@ -938,7 +940,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
      * notify_admin_on_report가 꺼져있으면 빈 결과를 반환합니다.
      */
     #[Test]
-    public function test_report_received_admin_설정OFF_빈결과(): void
+    public function test_report_received_admin_설정_of_f_빈결과(): void
     {
         Config::set('g7_settings.modules.sirsoft-board.report_policy', [
             'notify_admin_on_report' => false,
@@ -956,7 +958,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
     /**
      * 빈 결과 구조를 검증합니다.
      *
-     * @param array $result 검증 대상
+     * @param  array  $result  검증 대상
      * @return void
      */
     private function assertEmptyResult(array $result): void
@@ -972,8 +974,8 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
     /**
      * Mock User 객체를 생성합니다.
      *
-     * @param int $id 사용자 ID
-     * @param string $name 사용자 이름
+     * @param  int  $id  사용자 ID
+     * @param  string  $name  사용자 이름
      * @return User
      */
     private function createMockUser(int $id, string $name): User
@@ -988,9 +990,9 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
     /**
      * Mock Board 객체를 생성합니다.
      *
-     * @param string $slug 게시판 슬러그
-     * @param bool $notifyAuthor 작성자 알림 여부
-     * @param bool $notifyAdminOnPost 관리자 알림 여부
+     * @param  string  $slug  게시판 슬러그
+     * @param  bool  $notifyAuthor  작성자 알림 여부
+     * @param  bool  $notifyAdminOnPost  관리자 알림 여부
      * @return Board
      */
     private function createMockBoard(string $slug, bool $notifyAuthor, bool $notifyAdminOnPost = false): Board
@@ -1008,11 +1010,11 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
     /**
      * Mock Post 객체를 생성합니다.
      *
-     * @param int $id 게시글 ID
-     * @param string $title 게시글 제목
-     * @param int|null $userId 작성자 ID
-     * @param User|null $user 작성자 User 객체
-     * @param int|null $parentId 부모 게시글 ID
+     * @param  int  $id  게시글 ID
+     * @param  string  $title  게시글 제목
+     * @param  int|null  $userId  작성자 ID
+     * @param  User|null  $user  작성자 User 객체
+     * @param  int|null  $parentId  부모 게시글 ID
      * @return Post
      */
     private function createMockPost(int $id, string $title, ?int $userId, ?User $user = null, ?int $parentId = null): Post
@@ -1032,7 +1034,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
     /**
      * Mock Comment 객체를 생성합니다.
      *
-     * @param array $attributes 댓글 속성
+     * @param  array  $attributes  댓글 속성
      * @return Comment
      */
     private function createMockComment(array $attributes): Comment
@@ -1043,5 +1045,31 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
         }
 
         return $comment;
+    }
+
+    /**
+     * 게시글 링크는 요청이 아니라 **설정된 사이트 주소**를 따르고 후행 슬래시를 이어 붙이지 않는다.
+     *
+     * `config('app.url').'/board/…'` 는 후행 슬래시를 그대로 실어 `https://host/g7//board/…` 를
+     * 만든다 — 메일 안의 링크가 조용히 깨진다 (16차 G3 라운드 B-4).
+     *
+     * @scenario base_path=subpath, navigation_direction=navigation
+     *
+     * @effects notification_links_are_built_by_the_site_absolute_helper
+     */
+    public function test_post_url_follows_the_configured_site_url_without_double_slash(): void
+    {
+        Config::set('app.url', 'https://example.com/g7/');
+        $board = new Board(['slug' => 'free']);
+        $post = new Post;
+        $post->id = 5;
+
+        try {
+            $url = (new \ReflectionMethod($this->listener, 'buildPostUrl'))->invoke($this->listener, $board, $post);
+        } finally {
+            AssetUrl::forceBasePrefix(null);
+        }
+
+        $this->assertSame('https://example.com/g7/board/free/5', $url);
     }
 }

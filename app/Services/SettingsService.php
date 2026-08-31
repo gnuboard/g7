@@ -1318,6 +1318,7 @@ class SettingsService
     {
         return [
             // php_uname / ini_get 은 disable_functions 로 차단될 수 있어 개별 격리한다.
+            // audit:allow hosting-blocked-function-requires-guard safeSystemProbe 가 Throwable 을 잡아 「확인 불가」로 접는다 — 룰은 try/catch 를 보지 못한다
             'os_info' => $this->safeSystemProbe('os_info', fn () => php_uname('s').' '.php_uname('r'), __('common.unknown')),
             'web_server' => $_SERVER['SERVER_SOFTWARE'] ?? __('common.unknown'),
             'php_version' => PHP_VERSION,
@@ -1467,9 +1468,29 @@ class SettingsService
             $newKey = 'base64:'.base64_encode(random_bytes(32));
 
             $envPath = base_path('.env');
-            $envContent = file_get_contents($envPath);
+            $envContent = @file_get_contents($envPath);
+
+            if ($envContent === false) {
+                return ['success' => false, 'error' => __('settings.app_key_env_write_failed')];
+            }
+
             $envContent = preg_replace('/^APP_KEY=.*/m', 'APP_KEY='.$newKey, $envContent);
-            file_put_contents($envPath, $envContent);
+
+            // PCRE 실패(백트랙 한계 등)는 `null` 이다 — 그것을 쓰면 `.env` 가 빈 파일이 된다.
+            if ($envContent === null) {
+                return ['success' => false, 'error' => __('settings.app_key_env_write_failed')];
+            }
+
+            // 부분 쓰기는 `false` 가 아니라 **쓴 바이트 수**다(디스크 full·quota). 반환값을
+            // 버리면 잘린 `.env` 가 「재생성 완료」로 보고되고, 그 파일에는 APP_KEY 도
+            // DB 자격증명도 온전히 남아 있지 않아 사이트가 다음 부팅에서 뜨지 않는다.
+            // 되돌릴 사본도 없다(제자리 쓰기). 형제 축(인스톨러 `installerWroteFully()` ·
+            // `AbstractRootMarkerFileUpdater` · `CoreUpdateService`)이 같은 규율을 쓴다.
+            $written = @file_put_contents($envPath, $envContent, LOCK_EX);
+
+            if ($written === false || $written !== strlen($envContent)) {
+                return ['success' => false, 'error' => __('settings.app_key_env_write_failed')];
+            }
 
             // .env 변경 반영 + config 캐시 재생성 (clear 만 하면 캐시 비활성 상태로 잔존).
             ConfigCacheHelper::rebuild();
@@ -1593,6 +1614,8 @@ class SettingsService
 
         // open_basedir 제한 환경에서 disk_*_space 가 warning → ErrorException 이 되지 않도록
         // @ 억제 + numeric 체크 (공개#40, getMemoryUsage 폴백 패턴 재사용).
+        // `disable_functions` 축은 호출부의 `safeSystemProbe` 가 `\Throwable` 로 접는다
+        // (PHP 8 의 차단 함수 호출은 `Error`). audit 이관 원장의 「조치 불필요」 판정과 같다.
         $totalRaw = @disk_total_space($path);
         $freeRaw = @disk_free_space($path);
         $total = is_numeric($totalRaw) ? (int) $totalRaw : 0;

@@ -55,9 +55,9 @@
                             {
                                 "id": "create_button",
                                 "type": "basic",
-                                "name": "Button",
+                                "name": "A",
                                 "props": {
-                                    "className": "px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors shadow-lg shadow-purple-200 dark:shadow-purple-900/50",
+                                    "className": "inline-block px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors shadow-lg shadow-purple-200 dark:shadow-purple-900/50",
                                     "href": "/admin/sirsoft-sample/items/create"
                                 },
                                 "text": "$t:sirsoft-sample.admin.index.create_button"

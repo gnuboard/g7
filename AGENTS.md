@@ -172,7 +172,7 @@
 | `sirsoft-pay_nicepayments` | 플러그인 | [docs/api/](plugins/_bundled/sirsoft-pay_nicepayments/docs/api/README.md) | 0 / 0 |
 | `sirsoft-tosspayments` | 플러그인 | [docs/api/](plugins/_bundled/sirsoft-tosspayments/docs/api/README.md) | 2 / 4 |
 | `sirsoft-verification_kginicis` | 플러그인 | [docs/api/](plugins/_bundled/sirsoft-verification_kginicis/docs/api/README.md) | 2 / 3 |
-| `sirsoft-verification_nhnkcp` | 플러그인 | [docs/api/](plugins/_bundled/sirsoft-verification_nhnkcp/docs/api/README.md) | 1 / 1 |
+| `sirsoft-verification_nhnkcp` | 플러그인 | [docs/api/](plugins/_bundled/sirsoft-verification_nhnkcp/docs/api/README.md) | 2 / 3 |
 
 
 ### 확장 개발자 문서 (20개 확장, 자동 스캔)
@@ -361,13 +361,135 @@ pending 은 저장소 B 의 base 가 된다 — `setLocal` 이 `currentSnapshot 
 
 | 금지 | 올바른 사용 |
 |------|------------|
-| `Route::get('{id}/routes.json', ...)` (`.js`/`.css`/`.json`/`.map` 단일 등록) | `Route::dualSuffix('{id}/routes', 'json', ...)` — 확장자 형태 + 확장자 없는 형태 동시 등록 |
+| `Route::get('{id}/routes.json', ...)` (`.js`/`.mjs`/`.css`/`.json`/`.map`/`.xml` 단일 등록) | `Route::dualSuffix('{id}/routes', 'json', ...)` — 확장자 형태 + 확장자 없는 형태 동시 등록 |
 | `Route::get('bundle.js', ...)` (접미사가 종류를 구분해 제거 불가) | `Route::dualSuffixSegment('bundle', 'js', ...)` (`bundle.js` + `bundle/js`) |
 | `Route::get('assets/{id}/{path}', ...)` (와일드카드 자산) | `Route::dualAsset('assets/{id}', ...)` (`.../{path}` + `?file=` 쿼리) |
 | 서버에서 `'/api/templates/assets/'.$id.'/'.$path` 문자열 조립 | `App\Support\AssetUrl::templateAsset($id, $path)` |
 | 프론트에서 `` `/api/templates/${id}/routes.json` `` 템플릿 리터럴 조립 | `resources/js/core/support/assetUrl.ts` 의 `suffixed()` / `templateAsset()` 등 |
 
 정규식 location 은 프리픽스 location 보다 먼저 매칭되므로, 정적 최적화 블록(`location ~* \.(js|css|json)$`)이 있는 서버에서는 확장자 붙은 동적 응답이 `try_files ... /index.php` 폴백 기회 없이 404 가 된다. 서버측 `AssetUrl` 과 프론트측 `assetUrl.ts` 는 동일 규칙을 공유하므로 한쪽만 바꾸면 그 자산만 404 가 된다. 상세: [routing.md](docs/backend/routing.md) "정적 확장자로 끝나는 동적 엔드포인트", [api/README.md](docs/backend/api/README.md) "자산 URL 이중 모드".
+
+### 브라우저가 만드는 주소 — 하위 폴더 마운트
+
+사이트는 문서 루트가 아니라 하위 폴더에 설치될 수 있다(`https://host/g7/`). 서버가 렌더한 주소는 `AssetUrl::basePrefix()` 로 접두사를 갖는데 **브라우저 안에서 만드는 주소**는 루트 상대다 — 같은 화면에서 두 규칙이 공존하면 요청·이동이 사이트 밖으로 나가고, 증상은 오류가 아니라 **버튼이 조용히 무반응**인 것이다(문서 루트에 다른 사이트가 있으면 그쪽 응답을 받는다).
+
+| ❌ 금지 | ✅ 올바른 사용 |
+|--------|---------------|
+| 코어 JS 에서 `fetch('/api/…')` · 변수로 조립한 뒤 `fetch(url)` | `withBasePrefix()` 또는 `assetUrl.ts` 생성기(`suffixed`·`templateAsset`·`extensionBundle` 등) |
+| 확장 JS 에서 `fetch('/api/…')` | 확장별 `apiUrl()` (코어 `G7Core.url.api` 위임 + 같은 SSoT 폴백) — 확장 번들은 별도 IIFE 라 `import` 가 불가능하다 |
+| 브라우저가 그대로 여는 주소를 루트 상대로 (`location.href` 대입 · `location.assign/replace` · `window.open` · 외부 인증기관에 넘기는 복귀 주소) | 코어는 `withBasePrefix()`, 확장은 `sitePath()` — 라우터를 거치지 않으므로 접두사를 붙일 주체가 호출부밖에 없다 |
+| 브라우저 주소(`location.pathname`)를 라우트 패턴과 **그대로** 대조 | 코어는 `stripBasePrefix()`, 확장은 `routePath()` 로 접두사를 **벗긴 뒤** 대조 — 라우트는 언제나 접두사 없이 등록되므로, 벗기지 않으면 하위 폴더 사이트에서 그 대조가 언제나 불일치라 전 주소가 「없는 페이지」가 되고 그 기능이 조용히 사라진다 |
+| `history.pushState`/`replaceState` 의 **세 번째 인자**를 루트 상대로 | 그 값도 브라우저가 보는 주소다 — 코어는 `withBasePrefix()`, 확장은 `sitePath()`. 붙이지 않으면 주소창이 사이트 밖 경로로 바뀌고, 그 뒤의 새로고침·뒤로가기가 사이트를 벗어난다 |
+| 화면 링크를 날 `<a href="/…">` 로 직접 작성 | 템플릿 `A` 컴포넌트를 쓴다 — 그 컴포넌트가 `sitePath()` 로 접두사를 붙인다. 붙이는 자리를 한 곳으로 모아야 새로 추가되는 링크가 다시 사각이 되지 않는다 |
+| 확장 헬퍼 사본(`apiUrl.ts`)을 확장마다 다르게 유지 | 바이트 동일한 사본 — 갈리면 그 확장만 다른 규칙을 따르고, 다른 확장이 정상인 만큼 원인이 더 숨는다 |
+| 크롤러·메일이 받는 **절대** 자산 주소를 `url()` 이나 `str_starts_with('http') ? : AssetUrl::absolute()` 로 조립 | `AssetUrl::siteAbsolute()` — 접두사 멱등 보정 후 오리진을 붙이는 단일 지점. `url()` 은 이미 접두사를 품은 값에 접두사를 **한 번 더** 실어 404 를 만들고, 순진한 3항식은 프로토콜 상대(`//host/x`)·상대 경로(`img.png`)·`data:` 를 오리진에 그대로 이어 붙인다. 붙일 대상이 사이트 경로뿐이면 `AssetUrl::sitePath()` |
+| 메일·알림·비밀번호 재설정 링크 · 결제/본인인증 복귀·통보 주소 · 사이트맵 색인·증분 색인 · 봇 데이터소스 호출 같은 **서버가 만드는 절대 주소**를 `config('app.url').'/…'` 나 `url('/…')` 로 조립 | `AssetUrl::siteAbsolute('/…')` — `url()` 은 요청의 호스트·접두사를 실어 앞단 프록시 배치에서 사이트 밖을 가리키고 접두사를 품은 값에 접두사를 한 번 더 싣는다. `config('app.url').'/…'` 는 `APP_URL` 의 후행 슬래시를 그대로 실어 `https://host/g7//login` 을 만든다. 둘 다 오류 없이 깨진 링크로만 드러나고, 요청이 없는 문맥(큐·콘솔)에서는 재현조차 되지 않는다. `general.site_url` 은 저장 시 후행 슬래시를 걷어낸다 |
+
+봇이 받는 **절대** 주소는 축이 하나 더 있다 — 오리진을 붙이는 자리에서 「이미 절대인가」를 호출부가 직접 판정하면, `http` 로 시작하는 한 형태만 알고 나머지가 전부 샌다. 그 판정은 `AssetUrl::siteAbsolute()` 한 곳이 소유하며 정적 검사가 코어와 번들 확장 전체를 본다. `AssetUrl::absolute()` **단독** 호출은 대상이 아니다 — 「오리진만 붙인다」는 계약에 의존하는 형제 소비처가 있다.
+
+붙이는 쪽(요청·이동)과 벗기는 쪽(라우트 대조)은 **다른 방향**이다. 한쪽만 재는 회귀 테스트는 다른 쪽이 통째로 빠져도 초록이므로 양방향을 함께 잰다. 판정할 수 없는 형태(변수·표현식)는 그 줄 바로 위에 `// base-path:allow <사유>` 로 의도를 남긴다 — 외부 시스템(PG 등)이 내려준 절대 주소가 그 자리다.
+
+> 상세: [g7core-api.md "주소 조립 (G7Core.url)"](docs/frontend/g7core-api.md)
+> 자동 차단: `assetUrl.test.ts` 의 소스 계약 검사 — 모집단은 코어 + **번들 확장 전체**이고(모집단이 비면 초록이므로 모집단 자체도 잰다), 사본 동일성도 같은 파일이 잰다. 벗기는 쪽은 정적 검사가 확장 전수를 따로 본다 — 붙이는 쪽과 다른 방향이라 한 축만으로는 다른 쪽이 통째로 빠져도 초록이다
+
+### 파일 서빙 응답 계약 — 링크 유무로 위험이 갈리지 않는다
+
+`public/storage` 심볼릭 링크를 만들 수 없는 호스팅에서는 public 디스크 파일이 정적 경로(`/storage/…`) 대신 읽기 전용 서빙 라우트로 나간다. 그 통로는 **정적 서빙과 동등**해야 한다 — 어느 한쪽에만 있는 성질이 생기면 같은 사이트가 링크 유무에 따라 다르게 동작하고, 그 차이는 오류가 아니라 조용한 동작 차이로만 나타난다.
+
+| ❌ 금지 | ✅ 올바른 사용 |
+|--------|---------------|
+| 버전(`?v=`) 없는 URL 의 응답에 `Cache-Control: immutable` | 기본값이 요청의 `?v=` 유무에서 **파생**된다(`fileResponse(..., immutable: null)`) — 버전 없는 URL 은 자동으로 `must-revalidate` 다. 명시 인자는 그 파생을 덮을 때만 쓴다(공개 스토리지는 `false` 고정). 같은 URL 의 내용이 교체되는 자산에 `immutable` 을 붙이면 교체한 파일이 만료 전까지 옛것으로 남는다. 첨부는 대상이 아니다 — URL 에 내용 해시가 들어가 내용이 바뀌면 주소도 바뀐다 |
+| 확장자를 모르는 파일의 MIME 을 **내용 스니핑**으로 결정 | 확장자 표에 없으면 `application/octet-stream` 고정 — 스니핑은 HTML 형태 업로드물을 `text/html` 로 승격시켜 브라우저가 실행한다(정적 서빙은 미지 유형을 내려받기로 준다) |
+| public 디스크 URL 을 `Storage::disk('public')->url()` 로 직접 조립 | `ResolvesPublicUrl` 경유 — 링크 가용 판정(`StorageLinkHelper::publicStorageLinkUsable()`)이 SSoT 이고, 화면은 서버가 준 URL 을 그대로 쓴다 |
+| 링크 존재를 `is_link()` 로만 판정 | `StorageLinkHelper::isLinkOrJunction()` — Windows junction 은 `is_link()`·`is_dir()` 이 모두 false 라 그대로 통과하며, 그러면 같은 계약이 OS 에 따라 성립·불성립으로 갈린다 |
+| 응답 본문을 바꾸면서 `ETag` 를 그대로 승계 | 표현이 다르면 다른 ETag (RFC 9110 §8.8.1) — gzip 본문은 `-gzip` 접미사를 붙이고, 재검증 비교는 그 접미사를 벗겨 판정한다 |
+| `Vary: Accept-Encoding` 을 **압축한 응답에만** 부착 | 압축 대상 유형이면 압축 여부와 무관하게 부착 — 유무가 갈리면 공유 캐시가 잘못된 표현을 재사용한다 |
+| HEAD·부분 응답(206)을 압축 경로에 태움 | 둘 다 제외 — `BinaryFileResponse` 를 일반 응답으로 치환하면 HEAD 에 본문이 실리고, 206 은 `Content-Range` 와 본문이 어긋난다 |
+| 자산 서빙 경로를 요청 클래스마다 따로 흡수·검증 | `ResolvesDualModeFilePath` (입력 흡수) + `ValidatesExtensionAssetPath` (판정) 를 네 통로가 공유 — 사본이 갈리면 같은 파일이 통로마다 다른 판정을 받고, 실제로 한쪽에만 들어간 보강이 나머지에서 누락됐다 |
+| 확장 자산 경로에 점(`.`)으로 시작하는 세그먼트를 허용 | 거부 — 서버 3종 설정의 숨김 파일 차단은 **URL 경로**에만 걸리는데 확장자 없는 모드는 그 경로를 `?file=` 로 옮겨 그 방어선을 지나간다. 공개 스토리지는 그 거부를 **404** 로 낸다(정적 서빙과 같은 코드) |
+| 확장 자산 서빙 서비스가 요청 규칙만 믿고 경로를 그대로 열기 | `SecuresExtensionAssetPath` 로 2차 봉쇄(정제 + realpath 재확인) — 규칙 한 줄이 무력해지면 남는 방어선이 없다 |
+| 확장 자산 서빙 **서비스** 중 일부만 확장자 화이트리스트 2차 확인 보유 | 세 서비스(module·plugin·template)가 같은 강도 — 한쪽만 있으면 컨트롤러의 `file_type_not_allowed` 403 분기가 나머지에서 **도달 불가**가 되고, 운영 소스맵 차단 같은 보강이 그 통로에서만 사문화된다. 「요청 규칙이 이미 막으니 무해하다」는 방어가 아니다 — 서비스는 확장에 열려 있다 |
+| 확장 자산 MIME 표를 통로마다 사본으로 유지 | 공유 SSoT 경유 — 사본이 갈리면 같은 파일이 통로마다 다른 `Content-Type` 으로 나가고, `local` 소스맵 완화가 일부 통로에서만 성립한다 |
+| `?file=` 값 인코더가 서버(`rawurlencode`)와 프론트(`encodeURIComponent`)로 갈림 | 양쪽이 같은 RFC 3986 규칙 — `!` `'` `(` `)` `*` 의 처리가 달라 같은 자산의 URL 문자열이 둘로 갈리면 HTTP 캐시 키가 분할된다(오류는 나지 않는다) |
+| 노출 점검 sentinel 을 확장자 있는 이름·고정 권한으로 생성 | 확장자 없는 이름 + **같은 디렉토리 대조 파일과 같은 권한 등급** — 0600 으로 고정하면 정상 서버에서도 storage 계열이 상시 「측정 불가」가 되어 자동 차단이 모든 배치에서 운영자 확인으로 강등된다 |
+
+**`api/*` 의 검증 실패는 `Accept` 헤더와 무관하게 언제나 JSON 422 다.** 프레임워크 기본값은 「JSON 을 기대하지 않는 요청이면 302 + 이전 주소로 되돌리기」인데, 자산 요청은 `Accept: image/*` 로 오므로 그 기본값이 그대로 걸린다 — 그러면 잘못된 경로 하나로 **무인증 오픈 리다이렉트**가 성립하고(되돌릴 주소는 `Referer` 다), 같은 파일을 내주는 정적 서빙(404)과 응답 형태도 갈린다. 새 API 경로는 이 계약을 전제로 쓴다.
+
+| ❌ 금지 | ✅ 올바른 사용 |
+|--------|---------------|
+| `api/*` 응답 형태를 `expectsJson()` 으로 분기 | 전 경로 JSON 고정 — 분기는 `bootstrap/app.php` 의 렌더러 한 곳이 소유한다 |
+| 코어 업데이트가 루트 보호 파일 갱신 결과(`RootHtaccessUpdater::apply()`)를 버림 | `isFailure()` → `failureMessage()`, 실패가 아니어도 `noticeMessage()` — 「마커가 없어 갱신하지 않았다」는 **보호 규칙이 미적용으로 남았다**는 뜻이라 조용히 넘기면 안 된다 |
+| 롤백 경로만 경고 통로에서 빠뜨림 | 업데이트·롤백 **양쪽**이 같은 통로로 출력 — 한쪽만 배선하면 그 경로의 사실이 로그 파일에만 남는다 |
+| `deploy/**` 서버 설정 조각을 디렉토리 통째 복사로 갱신 | `CoreUpdateService::applyDeployFragments()` — 조각 머리말이 운영자에게 직접 수정을 지시하므로, 수정본은 보존하고 새 판본을 `<이름>.dist` 로 옆에 두고 경고한다. 판정 근거는 백업이 아니라 **코어가 마지막으로 제시한 판본의 해시 원장**(`storage/app/core-update/deploy-fragments.json`)이다 — 백업은 현재 디스크의 사본이라 「운영자가 고쳤는가」를 말해 주지 못한다. **보존한 조각도 원장에 새 판본의 해시를 기록한다** — 기록하지 않으면 운영자가 `.dist` 를 합친 뒤에도 매 업데이트마다 「판정 불가 → `.dist`」 가 반복된다. 원장이 없는 설치본은 `seedDeployFragmentLedger()`(인스톨러·업그레이드 스텝)가 사이드카 없는 조각의 디스크 해시로 씨앗한다. 옛 `.dist` 가 새 판본과 다르면 덮어쓰지 않고 `.dist.new` 로 둔다(합치던 중간 작업 보호). 원장 쓰기 실패는 통보 통로에 싣는다. 롤백은 `.dist`·`.dist.new` 와 원장을 함께 걷는다 |
+| 루트 `web.config` 를 「코어 소유, 통째 교체」로 갱신 | 루트 `.htaccess` 와 **같은 마커 블록 규칙** — `BEGIN G7`/`END G7` 을 담은 XML 주석 줄이 경계이고 블록(`system.webServer` 전체)만 교체한다. 판정 로직은 `AbstractRootMarkerFileUpdater` 하나가 소유하고 자식은 마커·문구 키만 정한다(사본 금지). 어느 루트 파일이 갱신기를 지나는지는 리터럴이 아니라 `CoreBackupHelper::ROOT_MARKER_FILE_UPDATERS` 에서 도출하며, 정상 targets 분기와 자동 발견 폴백 분기 **둘 다** 그 표를 본다 |
+| 정적 서빙에 `X-Content-Type-Options: nosniff` 부재 | 네 서버 설정 전부에 둔다 — `public/.htaccess`(`Header always set`, `mod_headers` 가드 · FileInfo 등급)·`web.config`(`customHeaders`)·nginx(`add_header … always`)·Caddy(`header`). 앱의 파일 응답 헬퍼가 같은 헤더를 붙이므로, 정적 서빙에 없으면 `public/storage` 링크 유무에 따라 업로드된 SVG·HTML 의 실행 여부가 갈린다. nginx 의 `add_header` 는 상속되지 않고 **대체**되므로 서버 수준 헤더는 조각 안에 함께 적는다 |
+| 루트 `.htaccess` 갱신의 임시 파일을 **링크가 놓인** 디렉토리에 생성 | 링크 **대상**의 디렉토리(`resolveWriteTarget()`) — 대상이 다른 파일시스템이면 `rename()` 이 EXDEV 로 실패해 보호 규칙이 구판으로 고착되고, 안내는 권한만 가리킨다 |
+| `applyUpdate()`/`restoreFromBackup()` 반환값을 버리고 `getLastRootFileWarnings()` 게터에만 의존 | 반환값의 `root_file_warnings` 가 계약이다 — 게터는 콘솔 커맨드의 편의이고, 커맨드가 아닌 소비처(웹 워커)는 반환값으로만 그 사실을 받는다 |
+
+`ETag` 는 큰따옴표로 감싼다(RFC 9110 §8.8.3). 따옴표 없는 값은 유효한 entity-tag 가 아니라 중간 프록시·CDN 이 버리거나 다시 쓸 수 있고, 정적 서빙은 언제나 따옴표를 붙인다. `Last-Modified` 를 내보내면 `If-Modified-Since` 도 함께 처리한다 — 내보내기만 하고 무시하면 ETag 를 쓰지 않는 프록시가 매번 전문을 받아 간다.
+
+**재검증 비교는 한 지점이 소유한다.** 압축본은 표현이 다르므로 ETag 에 `-gzip` 접미사가 붙는데, 비교하는 쪽이 그 접미사(그리고 다중값·`W/` 약한 검증자)를 흡수하지 않으면 브라우저가 돌려보낸 값이 **영원히 불일치**해 그 URL 의 304 가 통째로 사라진다. 오류도 경고도 없이 매 재검증이 전문 200 이 되는 형태라, 회귀 테스트는 반드시 `Accept-Encoding: gzip` 을 실은 **2왕복**이어야 한다 — 그 헤더가 없으면 압축이 일어나지 않아 접미사도 붙지 않고, 엄격 비교로도 통과한다.
+
+**304 는 200 이 실었을 헤더를 함께 싣는다** — `Cache-Control`·`Expires`·`Vary`(RFC 9110 §15.4.5). `Vary` 가 빠지면 공유 캐시가 어떤 축으로 갈린 표현인지 모른 채 항목을 갱신한다. 다만 200 이 싣지 않는 축을 304 에만 붙이지 않는다(반대 방향 비대칭).
+
+| ❌ 금지 | ✅ 올바른 사용 |
+|--------|---------------|
+| `If-None-Match` 를 `===` 로 직접 비교 | 비교 헬퍼 단일 지점 경유 — 접미사·다중값·`W/` 를 그 한 곳이 흡수한다 |
+| 무인증·무상한 파일 서빙 경로를 압축 미들웨어에 태움 | 압축은 웹서버·CDN 의 몫 — 그 경로는 압축에서 명시적으로 제외한다(압축 경로는 파일을 통째로 메모리에 읽어 동시 요청 수만큼 증폭된다). 판정 근거는 **크기의 유계성**이다: 상한(`MAX_FILE_COMPRESS_SIZE`) 안에서 크기가 유계인 배포 자산(코어·확장 번들·템플릿 자산)은 압축 대상이고, **사용자가 올린 파일**처럼 크기·건수가 유계가 아닌 통로만 제외한다. 형제 공개 자산 라우트가 제외 선언을 갖지 않는 것은 누락이 아니라 이 판정의 결과다 |
+| 스트림 서빙 헬퍼에만 `immutable` 인자를 두지 않음 | 형제 헬퍼와 같은 인자 — 없으면 그 경로의 소비처는 위 `immutable` 규정을 지킬 수단이 없다 |
+| 압축본이 `Accept-Ranges: bytes` 를 승계 | 압축하면 그 헤더를 **제거**한다 — 그 오프셋은 identity 표현의 것인데 같은 URL 에 `Range` 가 오면 206 이 압축에서 제외돼 identity 로 나가므로, 압축본 길이로 범위를 계산한 재개 다운로드가 다른 표현을 이어붙인다. 정적 서빙은 압축 시 이 헤더를 지운다 |
+| 304 가 identity ETag 를 싣는데 같은 요청의 200 은 `-gzip` 을 싣기 | 304 는 **클라이언트가 보유한 표현**의 검증자를 그대로 돌려준다 — 접미사는 본문 있는 응답에만 붙어 304 는 압축 경로를 지나지 않는다. 어긋나면 공유 캐시가 gzip 본문을 identity 검증자로 갱신해, 200 에서 표현을 갈라 놓은 이유가 그 자리에서 사라진다 |
+| 무확장자 자산 URL 모드의 응답이 **파일 이름**을 선언하지 않음 | 파일 응답 헬퍼 단일 지점이 `Content-Disposition: inline; filename=…` 을 붙인다 — 그 모드에서는 URL 마지막 세그먼트가 확장 식별자라, 선언이 없으면 같은 파일이 URL 모드에 따라 다른 이름으로 저장되고 정적 서빙과도 갈린다. 호출부로 내리면 통로마다 갈린다 |
+| 공개 디스크 URL 전환을 링크 판정만으로 결정 | 운영자가 그 디스크 URL 을 다른 위치로 지정했으면 그 설정이 우선 — 링크 부재를 이유로 로컬 라우트로 끌어오면 그 사이트의 공개 자산이 통째로 어긋난다 |
+| 파일 서빙 응답에 `X-Content-Type-Options: nosniff` 부재 | 헬퍼 단일 지점(`fileResponse()`·`streamedFileResponse()`)이 200·304 모두에 붙인다 — 업로드된 SVG·HTML 이 앱 오리진에서 실행되는 축이다. 정적 서빙 설정은 그 헤더를 붙이므로 이 통로만 빠지면 링크 유무로 위험이 갈린다. 호출부로 내리면 열 통로 중 하나가 반드시 빠진다 |
+| 컨트롤러가 스토리지 스트림·`response()->file()` 을 **그대로** 돌려줌 | 파일 응답을 돌려주는 컨트롤러 메서드는 전부 헬퍼 두 지점 중 하나를 지난다 — 응답 계약(nosniff·ETag·304·압축 제외 선언)은 그 지점에만 있고, 지나지 않는 통로는 오류 없이 헤더만 빠진다 |
+| 스트림 헬퍼에 사용자 업로드물을 넘기면서 `immutable`·`mimeType`·`skipCompression` 을 생략 | 셋 다 명시 — 생략은 오류가 아니다: `immutable` 은 요청자가 붙인 `?v=` 로 파생돼 업로드물이 1년 불변이 되고, `mimeType` 은 어댑터 추정(사본)에 기대며, 압축 제외는 응답 클래스를 보고 건너뛰는 우연이 된다 |
+| 빈 문자열 MIME 을 「모름」과 다르게 취급 (`??=` 로 `null` 만 폴백) · 어느 쪽도 비면 예외 | `''`·공백도 응답 헤더로 폴백하고, **어느 쪽도 비면 `application/octet-stream`**(정적 서빙의 미지 유형 규약 — 알 수 없으면 내려받기, 스니핑 금지). 예외로 던지면 행 `mime_type` 이 빈 첨부(데이터 상태)가 무인증 표면의 500 이 된다 |
+| 서비스가 돌려준 서빙 메타(`response`·`etag_source`·`mime_type`·`last_modified`)의 키 검증을 컨트롤러마다 `array_key_exists` 사본으로 | `streamedFileResponseFromMeta()` 단일 지점(`FileServingMeta` 값 객체) — 사본은 두 곳에만 있었고 나머지 아홉 통로는 무가드라 서비스가 키를 빠뜨리면 500 또는 조용한 축 소실이었다. 컨트롤러별 `servedWithCacheContract()` 사본도 두지 않는다 |
+| 실재하지만 읽을 수 없는 파일을 파일 응답에 그대로 넘김 | 정적 서빙과 같은 **403** — 넘기면 `File must be readable` 예외로 무인증 표면이 500 + 스택 로그다. 판정은 서비스(`isReadable()`)가 소유해 `chmod` 로 재현할 수 없는 환경에서도 잠근다 |
+| `Accept-Encoding` 을 `str_contains('gzip')` 으로 판정 | RFC 9110 §12.5.3 가중치 — `gzip;q=0` 은 명시 거부라 압축하지 않고, `*` 는 gzip 이 따로 거부되지 않은 한 압축한다 |
+
+**HEAD 는 압축하지 않는다** — 그 응답에는 본문이 없어야 하는데 압축 경로가 파일 응답을 일반 응답으로 치환하면서 본문을 싣기 때문이다. 그 결과 같은 URL 에 대해 HEAD 와 GET 이 서로 다른 표현을 광고한다(GET 은 `Content-Encoding: gzip` + 접미사 ETag, HEAD 는 둘 다 없음). 본문 없는 응답에서 그 차이는 무해하지만, HEAD 로 크기·검증자를 미리 재는 클라이언트는 GET 이 돌려줄 값과 다른 것을 본다는 사실을 전제해야 한다.
+
+
+배포 레이아웃 ②(문서 루트 = 프로젝트 루트)의 루트 `.htaccess` 에서 `mod_rewrite` 부재 시 방어선이 막는 디렉토리·파일 목록은 **그 목록이 완전한지를 사람의 기억에 맡기지 않는다** — 기대값을 배포 대상(`update.targets`)과 실제 최상위 디렉토리·파일에서 도출해 계약 검사가 대조한다. 목록 자체는 `.htaccess` 에 그대로 적혀 있고(Apache 가 그 파일만 읽는다), 최상위 항목이 하나 늘면 그 검사가 red 가 돼 사람이 옮긴다. 손으로만 유지하던 시절에는 그 강제가 없어 두 차례 연속으로 불완전했다.
+
+**배포 레이아웃 ②의 `.htaccess` 는 `Options`·`Require` 를 쓰지 않는다.** 두 지시어는 각각 `Options`·`AuthConfig` 등급의 `AllowOverride` 를 요구하는데, 저가형 공유 호스팅에서 흔한 `AllowOverride FileInfo Limit Indexes` 조합에는 그 등급이 없어 Apache 가 「not allowed here」로 **그 디렉토리 하위 전 요청을 500** 으로 만든다(실측). 모든 요청이 `public/` 으로 위임되는 배치에서 그 500 은 곧 사이트 전체 장애이고, 인스톨러조차 뜨지 않아 원인을 알려 줄 화면이 없다. `<IfModule>` 은 그 가드가 되지 않는다 — 모듈 **유무**만 보고 권한 등급은 보지 못하므로 감싼 채로도 500 이 난다(실측). 같은 보호를 등급이 낮은 수단으로 낸다: 경로 판정은 `RedirectMatch`(FileInfo), 접근 거부는 `Order`/`Deny`(Limit), 디렉토리 목록 차단은 `IndexIgnore`(Indexes).
+
+| ❌ 금지 | ✅ 올바른 사용 |
+|--------|---------------|
+| 배포되는 `.htaccess` 에 `Options`(`-Indexes`·`-MultiViews` 포함)·`Require` | `IndexIgnore`·`RedirectMatch`·`Order`/`Deny` — 제한 `AllowOverride` 에서도 평가되는 등급으로 같은 보호를 낸다 |
+| `<IfModule>` 로 감싸 등급 문제를 피했다고 간주 | 모듈 유무와 권한 등급은 다른 축 — 감싸도 500 은 그대로다 |
+| 정본 주소·트레일링 슬래시 정규화를 **부모** 디렉토리 `.htaccess` 에 둠 | 규칙은 **평가되는 파일**이 소유한다 — mod_rewrite 의 디렉토리별 설정은 상속되지 않아, 자식이 `RewriteEngine On` 을 선언하면 그 요청에 대해 부모 규칙집이 통째로 대체된다(루트에 적은 `^public/…` 는 평가될 기회가 없고, 실측에서 `/public/favicon.ico` 가 301 이 아니라 200 으로 나갔다) |
+| 정규화 규칙이 **위임된 내부 리다이렉트**까지 대상으로 삼음 | 브라우저가 직접 친 요청만 대상으로 한다(`REDIRECT_STATUS` 가 비어 있는 요청) — 위임된 요청까지 잡으면 위임 자체가 되던져져 무한 301 이 된다 |
+| 정규화 응답에 `/public` 접두를 실어 돌려보냄 | 접두 없는 정본 주소로 돌려보낸다 — 실어 보내면 서버가 스스로 제2 주소 체계를 공표하고, 실존 최상위 디렉토리에서는 무한 301 이 된다 |
+| 마운트 위치를 **파일시스템·문서 루트 조회**로 판정 (`%{DOCUMENT_ROOT}…/public/index.php -f`) | mod_rewrite 가 per-directory 규칙에 넘기는 **매치 문자열**로 판정한다 (`RewriteRule !^public/`) — 그 값은 URL 에서 이 디렉토리에 해당하는 앞부분이 이미 벗겨진 나머지라, 레이아웃 ②·하위 폴더·별칭에서는 `public/` 이 남지 않고 표준 배치에서는 남는다. `DOCUMENT_ROOT` 는 **웹서버의 `DocumentRoot` 지시어**이지 사이트가 놓인 위치가 아니어서, 운영자가 문서 루트 밖을 `Alias` 로 여는 배치에서는 조회가 빗나가 규칙이 통째로 꺼진다(실측: 별칭 대상이 문서 루트와 같으면 우연히 성립하고, 밖이면 `/g7out/public/…` 가 200) |
+| 정본 주소 301(**직접 요청**)의 목적지를 `%{THE_REQUEST}`(요청 라인 원문)에서 만듦 | 서버가 **디코딩한 `%{REQUEST_URI}`** 에서 만든다 — 이 규칙은 직접 요청 전용(`REDIRECT_STATUS` 가 비어 있음)이라 위임으로 값이 다시 쓰이기 전이고, 그 시점의 `REQUEST_URI` 는 마운트 접두사를 그대로 갖는다. 원문에서 만들면 아래 행의 접두사 오인이 성립한다 |
+| 슬래시 보정(**위임된 요청**)의 목적지를 `%{REQUEST_URI}` 에서 **재조립** | `%{THE_REQUEST}` 에서 만든다 — 별칭(`Alias`) 마운트 중 **별칭 대상이 그 vhost 의 `DocumentRoot` 와 같은 디렉토리**인 배치는 **위임된** 요청의 `REQUEST_URI` 가 접두사를 잃은 `/public/…` 라 재조립 `%1` 이 비어 결과가 **사이트 밖 주소**가 된다(7마운트 × 3형태 실측 — 별칭 3축 중 그 1축만 잃고, 대상이 문서 루트 **밖**이면 실린다. 「별칭이면 항상 잃는다」가 아니다). 판별자는 「별칭이냐」가 아니라 아래 `SCRIPT_NAME` 행과 **같다**. 접두사 소실은 위임된 요청에만 해당하므로 위 행에는 걸리지 않는다 |
+| `NE` 를 붙일지를 규칙마다 감으로 정함 | **목적지를 어느 값에서 만들었는가**가 정한다 — `%{THE_REQUEST}`(인코딩된 원문)는 `NE` 필수(없으면 `%20` 이 `%2520` 으로 나간다), `%{REQUEST_URI}`(디코딩된 값)는 `NE` 금지(붙이면 반대로 인코딩이 모자라 공백·한글 주소가 깨진다). 한 방향만 재는 검사는 반대쪽 실수를 통과시킨다 |
+| 사이트 위치를 **경로 세그먼트 이름**(`/public/`)으로 판정하면서 그 이름이 마운트 접두사에도 있을 수 있음을 무시 | 접두사에 같은 이름이 들어갈 수 있다(`Alias /my/public/site`) — 인코딩된 요청 원문에서 그 이름을 찾으면 **접두사 자신의 세그먼트**만 남아 그 자리를 사이트의 공개 폴더로 오인하고, 잘라 낸 결과가 **사이트 밖 주소로 301** 이 된다(실측: `/my/public/site/%70ublic/favicon.ico` → `Location: …/my/site/%70ublic/…`). 디코딩된 값은 두 세그먼트를 모두 보여 주고, 자를 자리는 **정규식 탐욕성이 아니라 per-directory 매치 문자열**(`$1`)에 묶어 고정한다 — 탐욕성으로 고르면 라우트 자신의 `public` 세그먼트가 목적지에서 삭제되고(실측 `/public/board/public/1` → `/board/1`), 레이아웃 게이트가 첫 세그먼트만 보므로 **표준 배치**(문서 루트 = `public/`)에서도 `public` 이 뒤에 든 주소가 깎인다(`/storage/public/img.png` → `/storage/img.png`) — 그 배치는 이 규칙이 관여하지 **말아야** 한다 |
+| 위임 규칙이 **사이트 안 경로**(`E=G7_ROUTE:$1`)를 진입 스크립트에 넘기지 않음 | 넘긴다 — 별칭(`Alias`) 마운트 중 **별칭 대상이 그 vhost 의 `DocumentRoot` 와 같은 디렉토리**인 배치는 `SCRIPT_NAME` 이 `/public/index.php` 로 접두사를 잃는다(실측 — 대상이 문서 루트 **밖**이면 실린다. 「별칭이면 항상 없다」가 아니다). 그 배치에서 이 값이 없으면 진입 스크립트가 접두사를 복원할 근거를 잃고 미설치 안내가 사이트 밖으로 보낸다. 브라우저 주소만으로는 어디까지가 마운트인지 구분할 수 없으므로 **추정으로 메우지 않는다** |
+| 공개 스토리지 서빙 루트로 `filesystems.disks.public.root` 값을 그대로 신뢰 | **로컬 드라이버 + 절대 경로**일 때만 신뢰하고, 아니면 `storage/app/public` 으로 폴백하며 그 사실을 경고로 남긴다 — 비로컬 디스크의 root 는 원격 버킷 접두사라 로컬 경로로 쓰면 서빙이 통째로 어긋난다 |
+| 링크 가용 판정을 링크의 **존재**로만 결정 | 링크가 **설정된 루트**를 가리키는지까지 본다 — 운영자가 루트를 옮긴 사이트에서 옛 위치를 가리키는 살아 있는 링크는 가용으로 읽혀 URL 이 `/storage/…` 로 나가는데 그 트리는 비어 있어 공개 자산이 전부 조용히 404 가 된다(오류도 로그도 없다) |
+
+> 상세: [api/system.md](docs/backend/api/system.md) · [storage-driver.md](docs/extension/storage-driver.md)
+> 응답 헤더 계약은 정적 검사로 판정할 수 없어 계약 테스트가 소유한다 — 이 절의 각 항목에는 대응 계약 테스트가 있다
+
+### 코드가 남기는 파일에는 정리 주체가 있다
+
+설치·업데이트·백업 경로는 파일을 남긴다. 그중 **비밀을 담은 것**(DB 자격증명·`APP_KEY`)과 **사용자 파일의 사본**은 누적이 저장 공간 문제가 아니라 **노출** 문제다. 남기는 코드를 쓸 때 걷는 주체를 함께 쓰지 않으면 그 파일은 영구히 쌓이고, 오류도 경고도 남지 않는다.
+
+| ❌ 금지 | ✅ 올바른 사용 |
+|--------|---------------|
+| 파일을 남기면서 걷는 주체를 두지 않음 | 생산자 곁의 스윕(진행 중 요청 보호용 나이 하한) **또는** `StorageLeftoverPruneService` 의 대상군. 둘 다 없으면 그 파일은 영구 잔존한다 |
+| 임시 이름의 **생성 규칙**을 생산자와 정리자가 각각 리터럴로 가짐 | 규칙을 상수가 소유하고 양쪽이 그것을 본다 — 갈리면 정리자의 모집단이 조용히 빈다 |
+| 생산자와 정리자의 **후보 디렉토리 목록**이 다름 | 같아야 한다. 한쪽만 아는 디렉토리의 잔여물은 다른 쪽 모집단 밖이다 |
+| `@filemtime()` 실패를 「아주 오래됨」으로 읽어 **삭제** | 조회 실패는 **보존** — `(int) false === 0` 이라 `time() - 0` 이 언제나 하한을 넘어 나이 게이트가 통째로 무력해지고, 진행 중인 다른 요청의 파일을 지운다(fail-open) |
+| 남기는 파일을 `.gitignore` 에 등재하지 않음 | 등재한다 — `git add -A` 한 번으로 자격증명·사용자 업로드가 저장소에 들어간다 |
+| 백업 정렬의 마지막 결정자가 **동률을 허용** | 전순서를 만든다. `Ymd_His` 스탬프도 `filemtime()` 도 **초 해상도**라 같은 초의 둘은 양쪽 다 같아진다 — 그때 비교자가 0 을 돌리면 「최신 1개 보존」이 열거 순서에 좌우된다 |
+| 새 정리 대상군을 서비스에만 추가 | 운영자 화면의 라벨 표에도 추가 — 라벨에 없는 대상군은 합계에서도 목록에서도 빠진다 |
+
+> 생산자 상수 대조 · 라벨 대칭 · 최신 1개 보존 · 열거 순서 독립성은 정적 검사로 판정할 수 없어 계약 테스트가 소유한다
 
 ### 라우트 캐시 안전성
 
@@ -405,12 +527,12 @@ catch-all shadow 는 보호처럼 보인다는 점이 위험하다. 가려진 �
 |------|------------|
 | 웹 도달 코드(컨트롤러·서비스·인스톨러·예약 작업)에서 `proc_open`/`exec` 로 `php artisan …` 을 직접 스폰 | `App\Execution\CommandRunner` 경유 — `CommandRunnerResolver::resolve()->run($command, $params)` (모드 결정: 명시 인자 > `system.execution_mode` > `ExecutionEnvironment::detect()`). **인스톨러는 Laravel 부팅 전이라 이 클래스를 부를 수 없다** — `installerRunArtisan($command, $parameters)` 단일 지점을 쓴다 ([execution-mode.md](docs/backend/execution-mode.md) §4.1) |
 | `function_exists('proc_open')` 등으로 실행 함수 가용성을 직접 판정 | `ExecutionEnvironment::hasFunction()` — `function_exists` + `disable_functions` 를 함께 본다 (인스톨러도 같은 클래스를 `require_once` 로 공유) |
-| 호스팅이 차단할 수 있는 함수(`exec`·`proc_open`·`putenv`·`disk_free_space`·`opcache_*` 등)를 가드 없이 **호출** | 호출 전에 `ExecutionEnvironment::hasFunction()` 으로 판정하고 대체 경로를 둔다. `@` 는 가드가 아니다 — PHP 8 은 차단 함수를 함수 테이블에서 제거하므로 그 호출은 `Error`(치명)이고 `@` 는 진단 억제일 뿐이다. 가드가 진입점에 있는 형태는 정상이며 그 자리에 면제 표식을 남긴다 |
+| 호스팅이 차단할 수 있는 함수(`exec`·`proc_open`·`putenv`·`disk_free_space`·`opcache_*`·`ini_get`·`ini_set`·`error_log` 등)를 가드 없이 **호출** | 호출 전에 `ExecutionEnvironment::hasFunction()` 으로 판정하고 대체 경로를 둔다. `@` 는 가드가 아니다 — PHP 8 은 차단 함수를 함수 테이블에서 제거하므로 그 호출은 `Error`(치명)이고 `@` 는 진단 억제일 뿐이다. 가드가 진입점에 있는 형태는 정상이며 그 자리에 면제 표식을 남긴다. 인스톨러 코드(`public/install/**`)에서는 `chmod`·`glob`·`uniqid` 도 같은 가드 대상이다 — 그 범위는 응답 봉투가 서기 **전** 에 불리는 자리라, 막히면 오류 화면조차 서지 못하고 첫 화면이 백지가 된다 |
 | 확장 vendor 를 `_pending` 소스에서만 `VendorResolver` 로 구성 | 설치·업데이트 **양쪽**이 resolver 를 경유한다. `_bundled` 소스 설치(웹 인스톨러의 정상 경로)와 `--force` 재설치가 빠지면 `--vendor-mode=bundled` 가 무시되고 raw composer 만 남아, composer 를 실행할 수 없는 호스팅에서 vendor 가 빈 확장이 「설치 완료」로 남는다(DB 에는 `bundled` 로 기록되고 이후 업데이트만 그 모드를 상속한다) |
 | `php artisan schema:dump` 산출물(`database/schema/*.sql`) 커밋 | 마이그레이션만 커밋 — `migrate` 가 덤프를 발견하면 `mysql` 바이너리를 스폰한다 |
 | 허용값이 닫힌 설정 키(`system.execution_mode`·`general.asset_url_mode`)의 허용값 규칙을 한쪽 FormRequest 에만 부착 | `EnumeratedSettingValues` 표 하나를 벌크(`SaveSettingsRequest`)·단건(`UpdateSettingRequest`) 양쪽이 공유 — 한쪽만 검사하면 다른 쪽이 우회로가 되어 임의 문자열이 설정 파일에 남는다 |
 
-불확실할 때의 기본값은 subprocess 다(기본값 불변) — inprocess 는 스폰 불가가 확인된 환경에서만 고른다. 정적 검사가 직접 스폰과 `schema:dump` 산출물을 차단한다. 아직 러너로 옮기지 못한 기존 스폰 지점은 `// audit:allow web-artisan-spawn-requires-runner <사유>` 표식을 남기며, 표식이 곧 이관 대상 목록이다. 정적 검사는 `function_exists` 직접 판정도 차단하며, 아직 옮기지 못한 지점은 `// audit:allow execution-function-availability-via-ssot <사유>` 표식을 남긴다. 정적 검사는 **무가드 호출** 축도 함께 본다 — 실행 함수 가용성 판정과는 다른 축이며, `artisan` 이 아닌 것을 무가드로 스폰하는 곳(`exec('which unzip')` 등)이 그 자리다. 대상에는 런타임 ini 접근(`ini_get`·`ini_set`)과 진단 채널(`error_log`)도 들어간다 — 셋 다 응답 봉투가 서기 전에 불려서, 막히면 첫 화면이 백지가 된다. 짝이 있는 함수는 함께 본다(`ini_set` 만 다루고 `ini_get` 을 빼면 그 자리가 사각이다). 아직 가드를 두지 못한 지점은 `// audit:allow hosting-blocked-function-requires-guard <사유>` 표식을 남긴다. 허용값 표 공유는 코드 리뷰에서 확인한다. 확장 vendor 의 설치·업데이트 대칭은 테스트가 소스 계약으로 고정한다. 상세: [execution-mode.md](docs/backend/execution-mode.md) · [vendor-bundle.md](docs/extension/vendor-bundle.md).
+불확실할 때의 기본값은 subprocess 다(기본값 불변) — inprocess 는 스폰 불가가 확인된 환경에서만 고른다. 정적 검사가 직접 스폰과 `schema:dump` 산출물을 차단한다. 아직 러너로 옮기지 못한 기존 스폰 지점은 `// audit:allow web-artisan-spawn-requires-runner <사유>` 표식을 남기며, 표식이 곧 이관 대상 목록이다. 정적 검사는 `function_exists` 직접 판정도 차단하며, 아직 옮기지 못한 지점은 `// audit:allow execution-function-availability-via-ssot <사유>` 표식을 남긴다. 정적 검사는 **무가드 호출** 축도 함께 본다 — 실행 함수 가용성 판정과는 다른 축이며, `artisan` 이 아닌 것을 무가드로 스폰하는 곳(`exec('which unzip')` 등)이 그 자리다. 대상에는 런타임 ini 접근(`ini_get`·`ini_set`)과 진단 채널(`error_log`)도 들어간다 — 셋 다 응답 봉투가 서기 전에 불려서, 막히면 첫 화면이 백지가 된다. 특히 `ini_get` 은 가드 판정의 단일 출처 자신(`ExecutionEnvironment::hasFunction()` 이 `disable_functions` 목록을 읽는 자리)에서 무가드로 불리고 있었다 — 그 한 줄이 죽으면 「가드가 있으니 안전하다」고 선언한 지점이 전부 동시에 무너진다. 짝이 있는 함수는 함께 본다(`ini_set` 만 다루고 `ini_get` 을 빼면 그 자리가 사각이다). 아직 가드를 두지 못한 지점은 `// audit:allow hosting-blocked-function-requires-guard <사유>` 표식을 남긴다. 허용값 표 공유는 코드 리뷰에서 확인한다. 확장 vendor 의 설치·업데이트 대칭은 테스트가 소스 계약으로 고정한다. 상세: [execution-mode.md](docs/backend/execution-mode.md) · [vendor-bundle.md](docs/extension/vendor-bundle.md).
 
 ### 목록 컨텍스트 왕복 (list context round-trip)
 
@@ -1053,6 +1175,7 @@ Added/Changed/Fixed 내 항목이 10개를 초과하면 `####` 서브 헤딩으�
 ```text
 기능 구현 = 테스트 코드 작성 필수
 신규 기능 / 도메인 표면 변경 = 시나리오 매니페스트(tests/scenarios/<feature>.yaml) 작성 의무 — 입력 axis cross product + 후속 효과 체인 전수 커버
+시나리오 마킹은 메서드 단위 — 클래스/파일 docblock 전용 @effects 금지, 매니페스트가 선언하지 않은 axis 이름 마킹 금지(선언 = 마킹). 미작성 효과는 pending_effects 원장에 보존하되 「바뀌지 않았다·이미 있다·범위 밖이다」 같은 회고 문장은 효과가 아니므로 notes 로 옮긴다. 테스트가 @effects 로 재는 효과는 어느 매니페스트의 effects/pending_effects 에 선언돼야 한다(선언 없는 이름은 정적 검사가 차단, 원장은 줄이는 방향으로만). 면제 표식 사유에는 issue:#N 필수 (정적 검사가 차단 — 상세: docs/testing-guide.md)
 테스트 통과 = 작업 완료 (작성만으로 불충분!)
 기존 테스트 있음 → 변경사항 반영하여 수정 후 실행
 기능 구현 시 관련된 모든 계층(백엔드+프론트엔드+레이아웃 렌더링) 테스트 필수
@@ -1349,6 +1472,32 @@ BaseApiController (최상위)
 Laravel 기본 메서드 주석은 영어 유지 (up(), down() 등)
 ```
 
+### 한글 텍스트를 정규식으로 자를 때
+
+PCRE 의 `\R` · `\v` · `\h` 는 **UTF-8 모드(`u` 수식자)가 아니면 바이트 단위로** 판정한다. 그래서 `\R` 은 CR·LF·CRLF 뿐 아니라 **0x85**(NEL)도 개행으로 본다. 3바이트 한글 중 마지막 바이트가 0x85 인 글자가 흔해(`종` = EC A2 85), 그 글자가 든 줄은 **글자 한가운데서 쪼개진다** — `preg_split('/\R/', "가\n종류\n나")` 는 3개가 아니라 **4개**를 돌려주고 앞 조각 끝에 깨진 2바이트가 남는다(실측).
+
+예외도 경고도 나지 않는다. 운영자 입력을 줄 단위로 저장하는 자리에서는 깨진 항목이 그대로 저장되고, 소스를 줄로 갈라 주석을 걸러 내는 검사에서는 주석 뒷조각이 표식을 잃어 「주석은 보지 않는다」는 전제가 무너진다.
+
+| ❌ 금지 | ✅ 올바른 사용 |
+|--------|---------------|
+| `preg_split('/\R/', $텍스트)` — 실제 줄 종결자만 볼 의도인데 `u` 수식자가 없음 | `preg_split('~\r\n|\r|\n~', $텍스트)` — 유니코드 개행까지 의도한 자리라면 `u` 수식자를 붙인다 |
+| `\v` · `\h` 를 `u` 없이 공백 판정에 사용 | 같은 판단 — 셋 다 바이트 모드에서 비-ASCII 바이트를 삼킨다 |
+
+정적 검사가 이 패턴을 차단한다. 의도적으로 필요한 자리는 `// audit:allow preg-newline-escape-byte-unsafe <사유>` 로 밝힌다.
+
+### 소스에 원시 제어문자를 두지 않는다
+
+같은 바이트 축의 함정이 한 겹 더 있다 — 이스케이프가 한 겹 풀려 **원시 제어문자**가 소스에 박히는 것이다. 문법은 그대로 유효하고 테스트도 린트도 통과하므로 **아무것도 울리지 않는다.** 그런데 도구 쪽에서 성질이 바뀐다: 원시 NUL(`0x00`)이 들어간 파일은 `grep`·`ripgrep` 이 **내용을 통째로 건너뛰고**(`Binary file … matches` 한 줄만 낸다) git 도 diff 를 `-	-` 로 가린다 — 그 파일이 이후 **모든 조사에서 조용히 사라진다**(실측: `grep -I` 가 0건으로 센다).
+
+더 나쁜 것은 **의미가 조용히 달라지는** 경우다. PCRE 의 `\b`(단어 경계)가 `0x08`(백스페이스)로 풀리면 `(?![^\n]*\bbrowse\b)` 가 리터럴 백스페이스를 요구하게 되어 그 부정 선읽기는 **영원히 성립할 수 없다** — 가드가 통째로 무력화되는데 테스트는 계속 통과한다(실측).
+
+| ❌ 금지 | ✅ 올바른 사용 |
+|--------|---------------|
+| 소스에 원시 제어문자(`0x00`–`0x08` · `0x0B` · `0x0C` · `0x0E`–`0x1F` · `0x7F` · 홀로 있는 CR) | 이스케이프 표기(`'\x00'` · `'\x01'` · `chr(8)`) — 런타임 값은 완전히 같고 소스만 읽을 수 있게 된다 |
+| JSON 문자열의 **산문 자리**에 `\u000b` 같은 제어문자 이스케이프 | 설명 대상이 PCRE 이스케이프면 JSON 소스에 `\\v` 로 적는다(파싱되면 `\v`) — `\u000b` 는 파싱되면 **진짜 VT** 가 되어 같은 사고가 인코딩 뒤에 숨는다 |
+
+정적 검사가 이 패턴을 차단한다. 의도적으로 필요한 자리는 `// audit:allow raw-control-byte-in-source <사유>` 로 밝힌다.
+
 ---
 
 ## 코드 품질
@@ -1585,6 +1734,13 @@ php artisan migrate:rollback
 | `app/Seo/**` | [seo-system.md](docs/backend/seo-system.md) |
 | `app/Benchmark/**`, `config/benchmark.php` | [benchmark.md](docs/backend/benchmark.md) |
 | `app/Execution/**`, `app/Support/ExecutionEnvironment.php`, `app/Http/Requests/Settings/EnumeratedSettingValues.php` | [execution-mode.md](docs/backend/execution-mode.md) |
+| 루트 `index.php` · 루트 `.htaccess` · `web.config` | [INSTALL.md](INSTALL.md) "방법 6: 문서 루트 고정 · 심볼릭 링크 불가 호스팅" + 본 문서 "파일 서빙 응답 계약" — 배포 레이아웃 ②의 `.htaccess` 는 `Options`·`Require` 를 쓰지 않는다(제한 `AllowOverride` 에서 그 디렉토리 하위 전 요청이 500). 정규화 규칙은 **평가되는 파일**이 소유하고, 마운트 위치는 리터럴이 아니라 접두사 변수로 판정한다 |
+| `deploy/**` (nginx · Caddy 설정 조각) | [INSTALL.md](INSTALL.md) "방법 6" — 루트 `.htaccess` 와 **같은 것을 막는** 조각이다. 한쪽만 고치면 서버에 따라 보호 강도가 갈리므로 각 조각 머리말의 대응표를 함께 갱신하고, 실측하지 않은 서버는 그 사실을 INSTALL.md 와 조각 머리말 **양쪽**에 고지한다 |
+| `app/Extension/Helpers/{AbstractRootMarkerFileUpdater,RootHtaccessUpdater,RootWebConfigUpdater}.php` | [core-update-system.md](docs/backend/core-update-system.md) "Step 7: 파일 적용" — `apply()` 는 `bool` 이 아니라 `RESULT_*` 를 돌려준다. 업데이트·롤백 **양쪽**이 `isFailure()`/`failureMessage()`/`noticeMessage()` 를 소비해야 한다. 이 파일들은 `app/Extension/Helpers/**` 아래이므로 코어 공개 확장 표면 변경 시 버전 동기화 의무도 함께 판정한다 |
+| `app/Services/PublicStorageService.php` | [api/system.md](docs/backend/api/system.md) `GET /api/system/public-storage`, [storage-driver.md](docs/extension/storage-driver.md) — 서빙 루트는 `filesystems.disks.public.root` 를 **조건부로** 신뢰하고(로컬 드라이버 + 절대 경로), 링크 가용 판정은 링크의 **대상**까지 본다 |
+| `app/Support/AssetUrl.php` | [routing.md](docs/backend/routing.md) "정적 확장자로 끝나는 동적 엔드포인트", [api/README.md](docs/backend/api/README.md) "자산 URL 이중 모드" — 프론트측 `resources/js/core/support/assetUrl.ts` 와 같은 규칙을 공유하므로 한쪽만 바꾸면 그 자산만 404 가 된다 |
+| `resources/js/core/support/assetUrl.ts` | [g7core-api.md](docs/frontend/g7core-api.md) "주소 조립 (G7Core.url)" — 붙이는 쪽(`withBasePrefix`)과 벗기는 쪽(`stripBasePrefix`)은 다른 방향이다. 한쪽만 재는 회귀 테스트는 다른 쪽이 통째로 빠져도 통과한다 |
+| `(modules\|plugins)/_bundled/*/resources/js/apiUrl.ts`, `templates/_bundled/*/src/support/apiUrl.ts` | [g7core-api.md](docs/frontend/g7core-api.md) "주소 조립 (G7Core.url)" — 번들 확장 전체가 **바이트 동일한 사본**으로 갖는다(`apiUrl` / `sitePath` / `routePath`). 한 곳을 고치면 전부 같이 고친다 |
 | `public/install/**` | [execution-mode.md](docs/backend/execution-mode.md) §4.1 (인스톨러는 Artisan 을 `installerRunArtisan()` 단일 지점으로만 실행 — 직접 스폰 금지) |
 
 ---

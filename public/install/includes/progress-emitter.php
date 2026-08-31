@@ -8,7 +8,12 @@
  * - NullEmitter: addLog만 수행 (폴링 모드, state.json 기반 조회)
  */
 if (! defined('BASE_PATH')) {
-    define('BASE_PATH', realpath(dirname(__DIR__, 3)) ?: dirname(__DIR__, 3));
+    // `realpath` 도 호스팅이 막을 수 있는 함수다 — 이 파일을 단독 로드하는 경로에서는 이 줄이
+    // 첫 코드라, 막힌 환경에서 무가드로 부르면 어떤 봉투도 서기 전에 치명 종료한다.
+    // 형태는 `config.php` 의 폴백과 같다(사본이 갈리면 진입점에 따라 백지가 갈린다 — 15차 G3 W1-10).
+    define('BASE_PATH', function_exists('realpath')
+        ? (realpath(dirname(__DIR__, 3)) ?: dirname(__DIR__, 3))
+        : dirname(__DIR__, 3));
 }
 
 interface ProgressEmitter

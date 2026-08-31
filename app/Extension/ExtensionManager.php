@@ -23,6 +23,17 @@ use Symfony\Component\Process\Process;
  */
 class ExtensionManager
 {
+    /**
+     * Windows 에서 시스템 TEMP 를 쓸 수 없을 때 composer 에 넘기는 임시 디렉토리
+     * (`storage/` 기준 상대 경로).
+     *
+     * 이 디렉토리는 composer 가 채우고 아무도 비우지 않는다 — 정리 커맨드의 형제 대상군
+     * (`storage/app/temp`)과 경로가 달라 그 스캔의 모집단 밖이었다. 회수는
+     * `StorageLeftoverPruneService` 의 `storage_temp` 대상군이 맡고, 두 곳이 같은 값을
+     * 보도록 여기를 SSoT 로 둔다 (11차 G3 라운드 E11-9).
+     */
+    public const COMPOSER_FALLBACK_TEMP_DIR = 'temp';
+
     protected string $modulesPath;
 
     protected string $pluginsPath;
@@ -772,6 +783,126 @@ PHP;
     }
 
     /**
+     * 디렉토리 안의 파일을 이름 순으로 나열합니다 (`glob` 비사용).
+     *
+     * `glob` 은 일부 하드닝 프로필의 `disable_functions` 목록에 들어간다. 막힌 호스팅에서
+     * PHP 8 은 그 함수를 함수 테이블에서 제거하므로 호출이 `Error`(치명)가 되고, `@` 도
+     * `?:` 도 그것을 잡지 못한다 — 확장 업그레이드 스텝 발견·레이아웃 확장 로딩이 그
+     * 자리에서 죽는다. 이 안이 대상으로 삼는 제약 호스팅이 정확히 그 조합이라 그 경로들은
+     * `scandir` 로 나열한다. (`glob` 이 **항상** 막힌다는 뜻은 아니다 — 전역 가드 대상이
+     * 아니라는 정적 검사 쪽 판정은 그대로이고, 여기서는 그 판정과 무관하게 값싼 회피를
+     * 택했을 뿐이다.)
+     *
+     * 나열 규칙을 한 곳에 두는 이유: 종전에는 같은 루프가 네 벌이었고 그중 하나만
+     * `scandir` 로 옮겨져 있었다 — 옮긴 쪽이 읽히기 **전에** 옮기지 않은 쪽이 죽으므로
+     * 그 회피는 도달조차 하지 못했다 (11차 G3 라운드).
+     *
+     * `.` 로 시작하는 항목은 배제한다. `glob('*.php')` 가 걸러 주던 에디터 잔해·AppleDouble
+     * (`._Foo.php`)이 `require_once` 대상이 되면 정렬상 가장 먼저 로드된다.
+     *
+     * @param  string  $directory  나열할 디렉토리 절대 경로
+     * @param  string  $suffix  파일명 끝 (예: `.php`, `.json`)
+     * @param  string  $prefix  파일명 시작 (빈 문자열이면 조건 없음)
+     * @return array<int, string> 이름 오름차순 절대 경로 목록
+     */
+    public static function listDirectoryFiles(string $directory, string $suffix, string $prefix = ''): array
+    {
+        if (! is_dir($directory)) {
+            return [];
+        }
+
+        // `scandir` 은 하드닝 프로필의 표준 차단 목록에 있고, PHP 8 은 차단 함수를 함수
+        // 테이블에서 지우므로 그 호출은 `Error`(치명)다. 이 두 나열기는 **웹 요청 안에서**
+        // 도는 소비처(잔여물 정리 예약 작업 6대상군 · 확장 스캔)가 부르는 공용 지점이라,
+        // 여기가 무가드면 그 소비처들이 자기 가드를 갖춰도 이 자리에서 함께 죽는다 —
+        // 실제로 프루너는 자기 안을 전부 대칭으로 갖춰 놓고 이 전이 지점을 타고 있었다
+        // (23차 G3 라운드 D23-6). 나열할 수 없으면 「없음」이 아니라 **빈 목록**이며,
+        // 그 판정은 형제 가드(`StorageLeftoverPruneService`)와 같은 방향이다.
+        if (! ExecutionEnvironment::hasFunction('scandir')) {
+            return [];
+        }
+
+        $files = [];
+
+        foreach (scandir($directory) ?: [] as $entry) {
+            if (str_starts_with($entry, '.')) {
+                continue;
+            }
+
+            if ($prefix !== '' && ! str_starts_with($entry, $prefix)) {
+                continue;
+            }
+
+            if (! str_ends_with($entry, $suffix)) {
+                continue;
+            }
+
+            $candidate = $directory.DIRECTORY_SEPARATOR.$entry;
+
+            if (is_file($candidate)) {
+                $files[] = $candidate;
+            }
+        }
+
+        sort($files);
+
+        return $files;
+    }
+
+    /**
+     * 디렉토리 하위의 **디렉토리** 이름을 오름차순으로 나열합니다.
+     *
+     * 형제 `listDirectoryFiles()` 의 디렉토리 판본이다 — `glob('*', GLOB_ONLYDIR)` 를
+     * 쓰던 자리를 같은 이유로 대체한다. 나열 수단을 한 곳에 두면, 그 회피가 필요한
+     * 호스팅에서 「옮긴 지점보다 **먼저** 실행되는 옮기지 않은 지점」이 생기지 않는다.
+     *
+     * `.` 로 시작하는 항목은 배제한다(`.` `..` 및 에디터·VCS 잔해).
+     *
+     * @param  string  $directory  나열할 디렉토리 절대 경로
+     * @param  string  $prefix  디렉토리명 시작 (빈 문자열이면 조건 없음)
+     * @return array<int, string> 이름 오름차순 절대 경로 목록
+     */
+    public static function listDirectories(string $directory, string $prefix = ''): array
+    {
+        if (! is_dir($directory)) {
+            return [];
+        }
+
+        // `scandir` 은 하드닝 프로필의 표준 차단 목록에 있고, PHP 8 은 차단 함수를 함수
+        // 테이블에서 지우므로 그 호출은 `Error`(치명)다. 이 두 나열기는 **웹 요청 안에서**
+        // 도는 소비처(잔여물 정리 예약 작업 6대상군 · 확장 스캔)가 부르는 공용 지점이라,
+        // 여기가 무가드면 그 소비처들이 자기 가드를 갖춰도 이 자리에서 함께 죽는다 —
+        // 실제로 프루너는 자기 안을 전부 대칭으로 갖춰 놓고 이 전이 지점을 타고 있었다
+        // (23차 G3 라운드 D23-6). 나열할 수 없으면 「없음」이 아니라 **빈 목록**이며,
+        // 그 판정은 형제 가드(`StorageLeftoverPruneService`)와 같은 방향이다.
+        if (! ExecutionEnvironment::hasFunction('scandir')) {
+            return [];
+        }
+
+        $directories = [];
+
+        foreach (scandir($directory) ?: [] as $entry) {
+            if (str_starts_with($entry, '.')) {
+                continue;
+            }
+
+            if ($prefix !== '' && ! str_starts_with($entry, $prefix)) {
+                continue;
+            }
+
+            $candidate = $directory.DIRECTORY_SEPARATOR.$entry;
+
+            if (is_dir($candidate)) {
+                $directories[] = $candidate;
+            }
+        }
+
+        sort($directories);
+
+        return $directories;
+    }
+
+    /**
      * 디렉토리명(vendor-name)을 네임스페이스(Vendor\Name)로 변환합니다.
      *
      * 하이픈('-')은 네임스페이스 구분자('\')로, 언더스코어('_')는 PascalCase 단어 경계로 처리됩니다.
@@ -1189,7 +1320,7 @@ PHP;
         // Windows: TEMP 디렉토리가 없거나 쓰기 불가능하면 storage/temp 사용
         if (PHP_OS_FAMILY === 'Windows') {
             if (! isset($env['TEMP']) || ! is_dir($env['TEMP']) || ! is_writable($env['TEMP'])) {
-                $tempDir = storage_path('temp');
+                $tempDir = storage_path(self::COMPOSER_FALLBACK_TEMP_DIR);
                 if (! is_dir($tempDir)) {
                     @mkdir($tempDir, 0755, true);
                 }

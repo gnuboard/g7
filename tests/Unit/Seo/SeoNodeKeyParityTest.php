@@ -116,6 +116,17 @@ class SeoNodeKeyParityTest extends TestCase
                 if (! in_array($key, $known, true) && ! $this->isCommentKey($key)) {
                     $unknown[$key][] = str_replace(base_path().DIRECTORY_SEPARATOR, '', $file);
                 }
+
+                // `_comment` 로 시작하는 키는 전부 저자 주석이다. 레이아웃 저자는 한 노드에
+                // 여러 주석을 달려고 `_comment_id`·`_comment_why` 처럼 접미사를 붙이는데,
+                // 정확 일치로만 판정하면 그때마다 이 목록을 손대야 하고 그 사이에는 **무관한
+                // 실패가 상주**한다(실측: `_comment_id` 가 그 상태로 남아 있었다). 주석은
+                // 정의상 봇 화면 콘텐츠에 영향을 주지 않으므로 계열로 흡수한다.
+                if (str_starts_with($key, '_comment')) {
+                    continue;
+                }
+
+                $unknown[$key][] = str_replace(base_path().DIRECTORY_SEPARATOR, '', $file);
             }
         }
 
@@ -218,21 +229,76 @@ class SeoNodeKeyParityTest extends TestCase
     }
 
     /**
+     * 봇 렌더링 대상이 되는 레이아웃/확장 자산 뿌리를 **저장소에서 도출**합니다.
+     *
+     * 종전에는 다섯 경로를 손으로 적었다(사용자 템플릿 하나 + 플러그인 셋). 그 목록은 확장이
+     * 늘어도 함께 늘지 않아, 새 번들 확장의 자산은 이 패리티 검사 밖에 남았다 — 실측 17 뿌리 중
+     * 5 만 보고 있었다 (15차 G3 라운드 F-49). `scandir` 로 도출한다 (`glob` 은 형제 룰이 이 트리에서
+     * 차단 가능 함수로 다루는 이름이다).
+     *
+     * 관리자 템플릿(`template.json` 의 `type: admin`)과 `admin/` 레이아웃은 인증이 필요해 봇이
+     * 접근할 수 없으므로 제외합니다. 모듈·플러그인의 `resources/layouts` 는 어느 템플릿에 등록되는지
+     * 폴더(`admin/`·`user/`)가 정하므로 뿌리로 넣고 경로 필터가 `admin/` 을 뺀다.
+     *
+     * @return array<int, string> 뿌리 절대 경로 목록 (정렬)
+     */
+    private function botFacingAssetRoots(): array
+    {
+        $roots = [];
+
+        $listDirs = static function (string $dir): array {
+            if (! is_dir($dir)) {
+                return [];
+            }
+            $entries = array_filter(scandir($dir) ?: [], static fn (string $e): bool => $e !== '.' && $e !== '..' && is_dir($dir.'/'.$e));
+            sort($entries);
+
+            return array_values($entries);
+        };
+
+        foreach (['modules', 'plugins'] as $kind) {
+            $container = base_path($kind.'/_bundled');
+            foreach ($listDirs($container) as $id) {
+                foreach (['layouts', 'extensions'] as $leaf) {
+                    $candidate = $container.'/'.$id.'/resources/'.$leaf;
+                    if (is_dir($candidate)) {
+                        $roots[] = $candidate;
+                    }
+                }
+            }
+        }
+
+        $templates = base_path('templates/_bundled');
+        foreach ($listDirs($templates) as $id) {
+            $manifest = $templates.'/'.$id.'/template.json';
+            $meta = is_file($manifest) ? json_decode((string) file_get_contents($manifest), true) : null;
+            if (is_array($meta) && ($meta['type'] ?? null) === 'admin') {
+                continue;
+            }
+            foreach (['layouts', 'extensions'] as $leaf) {
+                $candidate = $templates.'/'.$id.'/'.$leaf;
+                if (is_dir($candidate)) {
+                    $roots[] = $candidate;
+                }
+            }
+        }
+
+        sort($roots);
+
+        return $roots;
+    }
+
+    /**
      * 봇 렌더링 대상이 되는 레이아웃/확장 자산 파일 목록을 반환합니다.
      *
-     * 관리자 템플릿과 admin 레이아웃은 인증이 필요해 봇이 접근할 수 없으므로 제외합니다.
+     * 모집단이 비면 이 검사는 아무것도 재지 않는다 — 그 상태를 통과로 두지 않는다.
      *
      * @return array<int, string> 파일 절대 경로 목록
      */
     private function botFacingLayoutFiles(): array
     {
-        $roots = [
-            base_path('templates/_bundled/sirsoft-basic/layouts'),
-            base_path('templates/_bundled/sirsoft-basic/extensions'),
-            base_path('plugins/_bundled/sirsoft-ckeditor5/resources/extensions'),
-            base_path('plugins/_bundled/sirsoft-daum_postcode/resources/extensions'),
-            base_path('plugins/_bundled/sirsoft-gdpr/resources/extensions'),
-        ];
+        $roots = $this->botFacingAssetRoots();
+        $this->assertGreaterThanOrEqual(10, count($roots), '봇 대상 자산 뿌리 도출이 실물과 어긋났다 — 모집단이 비면 패리티 검사가 무의미하다');
 
         $files = [];
         foreach ($roots as $root) {
@@ -248,6 +314,14 @@ class SeoNodeKeyParityTest extends TestCase
 
                 $path = $entry->getPathname();
                 if (str_contains(str_replace('\\', '/', $path), '/admin/')) {
+                    continue;
+                }
+
+                // 확장 자산이 **관리자 레이아웃**을 겨냥하면(`target_layout: admin_*` · `_admin_base`)
+                // 그 화면도 인증 뒤라 봇 대상이 아니다 — 뿌리를 도출로 넓히며 들어온 축 (F-49).
+                $document = json_decode((string) file_get_contents($path), true);
+                $target = is_array($document) ? ($document['target_layout'] ?? null) : null;
+                if (is_string($target) && preg_match('/^_?admin(?:_|\/|$)/', $target) === 1) {
                     continue;
                 }
 

@@ -15,7 +15,8 @@ use PHPUnit\Framework\Attributes\Test;
  * 로드된 images 첫 건의 URL 을 방출해 카테고리 og:image 의 생산자가 되는 계약을
  * 고정한다 (재쿼리 금지 — 로드된 관계에서만 선택).
  *
- * @effects category_detail_emits_thumbnail_url
+ * 효과 마킹은 그 효과를 **재는 메서드**의 docblock 에 둔다 (아래 두 테스트) — 클래스에만
+ * 달면 어느 테스트가 그것을 재는지 가리키지 못한다.
  */
 class PublicCategoryThumbnailTest extends ModuleTestCase
 {

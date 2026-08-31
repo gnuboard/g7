@@ -6,6 +6,7 @@ use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 use Tests\Concerns\CleansTemporaryBasePath;
+use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
  * 메모리 예산 축 회귀 가드 (20차 #1·#2·#3)
@@ -30,6 +31,7 @@ use Tests\Concerns\CleansTemporaryBasePath;
 class InstallerMemoryBudgetTest extends TestCase
 {
     use CleansTemporaryBasePath;
+    use ScansPhpSourceFunctions;
 
     private string $projectRoot = '';
 
@@ -56,8 +58,8 @@ class InstallerMemoryBudgetTest extends TestCase
      */
     public function test_memory_declarations_agree_across_screen_and_both_strategies(): void
     {
-        $api = (string) file_get_contents($this->projectRoot.'/public/install/api/check-configuration.php');
-        $executor = (string) file_get_contents($this->projectRoot.'/public/install/includes/artisan-executor.php');
+        $api = $this->sourceWithoutComments($this->projectRoot.'/public/install/api/check-configuration.php');
+        $executor = $this->sourceWithoutComments($this->projectRoot.'/public/install/includes/artisan-executor.php');
 
         $this->assertSame(1, preg_match('/\$recommendedMemoryMb = (\d+);/', $api, $screen), 'Step 2 권장치 선언을 찾지 못함');
         $this->assertSame(1, preg_match('/-d\W+memory_limit=(\d+)M/', $executor, $subprocess), 'subprocess -d 선언을 찾지 못함');
@@ -72,7 +74,7 @@ class InstallerMemoryBudgetTest extends TestCase
      */
     public function test_inprocess_memory_raise_shortfall_is_recorded(): void
     {
-        $executor = (string) file_get_contents($this->projectRoot.'/public/install/includes/artisan-executor.php');
+        $executor = $this->sourceWithoutComments($this->projectRoot.'/public/install/includes/artisan-executor.php');
 
         $this->assertStringContainsString(
             'log_memory_limit_raise_shortfall',
@@ -80,7 +82,7 @@ class InstallerMemoryBudgetTest extends TestCase
             '상향 미달의 진행 기록 배선 부재 (#1) — installerIniSet 은 void 라 실패가 어디에도 남지 않는다'
         );
         // 다국어 등재 (별개 채널 — ko/en 대칭은 InstallerLanguageParityTest 소유)
-        $ko = (string) file_get_contents($this->projectRoot.'/public/install/lang/ko.php');
+        $ko = $this->sourceWithoutComments($this->projectRoot.'/public/install/lang/ko.php');
         $this->assertStringContainsString('log_memory_limit_raise_shortfall', $ko);
     }
 
@@ -101,13 +103,10 @@ class InstallerMemoryBudgetTest extends TestCase
      */
     public function test_log_offset_slices_before_materialization(): void
     {
-        $source = (string) file_get_contents($this->projectRoot.'/public/install/includes/installer-state.php');
+        $source = $this->sourceWithoutComments($this->projectRoot.'/public/install/includes/installer-state.php');
+        $body = $this->functionBody($source, 'getInstallationLogs');
 
-        $start = strpos($source, 'function getInstallationLogs(');
-        $this->assertNotFalse($start);
-        $body = substr($source, $start, strpos($source, "\nfunction ", $start + 1) !== false
-            ? strpos($source, "\nfunction ", $start + 1) - $start
-            : 4000);
+        $this->assertNotSame('', $body, 'getInstallationLogs() 를 찾지 못했다');
 
         $slicePos = strpos($body, 'array_slice');
         $mapPos = strpos($body, 'preg_match');

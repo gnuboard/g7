@@ -20,11 +20,7 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * 이미 고정하고 있고, FULLTEXT 매칭 건수는 InnoDB 전문검색 캐시 상태에 좌우되어
  * 이 계층에서 단언할 대상이 아니다.
  *
- * @scenario case=search_cursor_pagination
- *
- * @effects search_latest_sort_uses_cursor,
- *          search_relevance_sort_stays_on_offset,
- *          search_cursor_payload_keeps_offset_key_set
+ * @scenario search_cursor_pagination
  */
 class SearchCursorPaginationTest extends BoardTestCase
 {

@@ -194,6 +194,8 @@ function findFormFields(node: any): string[] {
 // =============================================
 // 1. 메인 레이아웃 (admin_board_settings.json)
 // =============================================
+// @scenario layout-semantic-asset-mapping-408
+// (#408 시맨틱 자산 매핑 매니페스트 3종의 대상 레이아웃 렌더링 테스트 — 자산 치환의 구조 회귀를 잰다)
 describe('admin_board_settings.json - 메인 레이아웃', () => {
     it('레이아웃 메타데이터가 올바르다', () => {
         expect(mainLayout.version).toBe('1.0.0');
@@ -1717,6 +1719,8 @@ describe('기본 설정 탭 (general) - 날짜 표시 방식', () => {
 // =============================================
 // N. SEO 탭 (_tab_seo.json)
 // =============================================
+// @scenario layout-semantic-asset-mapping-408-seo-tab
+// @effects board_seo_tab_meta_settings_header_uses_section_header_asset, board_seo_tab_replaces_card_accordion_with_admin_card_for_three_page_types, board_seo_tab_form_field_names_preserve_seo_meta_boards_board_post_title_description
 describe('_tab_seo.json - SEO 설정 탭', () => {
     it('Partial 메타데이터가 올바르다', () => {
         expect(tabSeo.meta.is_partial).toBe(true);

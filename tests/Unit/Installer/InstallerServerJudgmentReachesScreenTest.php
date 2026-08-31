@@ -24,8 +24,6 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  * 것만으로 조용히 사각이 된다.
  *
  * 커버 축: judgment env_writable·finalize_accepted / consumed yes·no
- *
- * @effects installer_precheck_reads_env_writable, installer_finalize_checks_acceptance
  */
 class InstallerServerJudgmentReachesScreenTest extends TestCase
 {
@@ -33,13 +31,13 @@ class InstallerServerJudgmentReachesScreenTest extends TestCase
 
     private function clientSource(): string
     {
-        return $this->stripJsComments(
-            (string) file_get_contents(dirname(__DIR__, 3).'/public/install/assets/js/installer.js')
-        );
+        return $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/assets/js/installer.js');
     }
 
     /**
      * S-2 — 사전 점검이 서버의 쓰기 권한 판정을 읽는다.
+     *
+     * @effects installer_precheck_reads_env_writable
      */
     public function test_pre_install_check_consumes_env_writable(): void
     {
@@ -85,6 +83,8 @@ class InstallerServerJudgmentReachesScreenTest extends TestCase
 
     /**
      * S-3 — 마무리 요청의 수락 여부를 본다.
+     *
+     * @effects installer_finalize_checks_acceptance
      */
     public function test_finalize_checks_acceptance(): void
     {
@@ -125,7 +125,7 @@ class InstallerServerJudgmentReachesScreenTest extends TestCase
      */
     public function test_extension_scan_failure_reasons_reach_the_screen(): void
     {
-        $server = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/api/scan-extensions.php');
+        $server = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/api/scan-extensions.php');
 
         $keys = [];
         if (preg_match_all("/'message_key'\s*=>\s*'([a-z0-9_]+)'/", $server, $m)) {
@@ -138,7 +138,7 @@ class InstallerServerJudgmentReachesScreenTest extends TestCase
             '서버가 사유를 다국어 키로 싣지 않으면 화면은 상태 코드만 그릴 수 있다',
         );
 
-        $labels = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/views/4-extension-selection.php');
+        $labels = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/views/4-extension-selection.php');
         foreach (['ko', 'en'] as $locale) {
             $messages = require dirname(__DIR__, 3).'/public/install/lang/'.$locale.'.php';
 
@@ -177,7 +177,7 @@ class InstallerServerJudgmentReachesScreenTest extends TestCase
             'public/install/api/check-configuration.php',
             'public/install/views/3-configuration.php',
         ] as $relative) {
-            $source = (string) file_get_contents(dirname(__DIR__, 3).'/'.$relative);
+            $source = $this->sourceWithoutComments(dirname(__DIR__, 3).'/'.$relative);
 
             $this->assertStringContainsString(
                 'installerExecutionModeRejection(',

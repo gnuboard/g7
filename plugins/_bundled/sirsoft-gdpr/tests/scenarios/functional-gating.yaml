@@ -1,4 +1,7 @@
-# audit:allow test-scenario-coverage reason: Phase 2 단순화 후 functional 게이팅은 4영역(클라이언트 storage / 클라이언트 cookie / 서버 미들웨어 / cleanup) × 3축(consent / user_initiated / cookie_state) cross product 로 축소됨. registered 축 제거로 cross product 가 작아져 등록된 PHPUnit 16 + Vitest 36 = 52 케이스로 모든 axes 의 핵심 조합과 후속 효과 체인을 커버.
+# audit:allow test-scenario-coverage reason: issue:#609 Phase 2 단순화 후 functional 게이팅은 4영역(클라이언트 storage / 클라이언트 cookie / 서버 미들웨어 / cleanup) × 3축(consent / user_initiated / cookie_state) cross product 로 축소됨. registered 축 제거로 cross product 가 작아져 등록된 PHPUnit 16 + Vitest 36 = 52 케이스로 모든 axes 의 핵심 조합과 후속 효과 체인을 커버.
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 15차 F-21 에서 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
+# 원장(9차 G3 라운드 C-4): 이 매니페스트는 :cross-product 로 좁히면 effects 40건이 미검증으로 드러난다.
+#   그 짝 맞추기는 이 공정(GDPR 플러그인)의 몫이며, 좁히는 시점에 함께 처리한다.
 
 feature: GDPR functional 카테고리 1st-party 게이팅 (Phase 2 단순화)
 

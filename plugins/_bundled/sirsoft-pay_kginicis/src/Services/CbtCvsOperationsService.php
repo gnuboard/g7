@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayKginicis\Services;
 
+use App\Support\AssetUrl;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -318,7 +319,7 @@ class CbtCvsOperationsService
             'last_notify_result' => (string) ($meta['cvs_last_notify_result'] ?? ''),
             'last_notify_reason' => (string) ($meta['cvs_last_notify_reason'] ?? ''),
             'notify_history' => array_slice($this->normalizeHistory($meta['cvs_notify_history'] ?? []), 0, 10),
-            'notify_url' => url('/plugins/sirsoft-pay_kginicis/payment/cbt/cvs-notify'),
+            'notify_url' => AssetUrl::siteAbsolute('/plugins/sirsoft-pay_kginicis/payment/cbt/cvs-notify'),
             'can_simulate_notify' => $isCbtCvs && $isWaitingDeposit && (bool) ($meta['is_test_mode'] ?? false),
             'can_mark_expired' => $isCbtCvs && $isWaitingDeposit && $isExpiredByTime,
             'last_recheck_at' => (string) ($meta['cvs_last_recheck_at'] ?? ''),

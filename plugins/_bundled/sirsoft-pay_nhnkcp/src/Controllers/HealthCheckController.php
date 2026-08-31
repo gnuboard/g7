@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayNhnkcp\Controllers;
 
+use App\Support\ExecutionEnvironment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Http;
 
@@ -33,7 +34,7 @@ class HealthCheckController
 
     public function __construct()
     {
-        $this->binDir = dirname(__DIR__, 2) . '/bin';
+        $this->binDir = dirname(__DIR__, 2).'/bin';
     }
 
     /**
@@ -72,7 +73,7 @@ class HealthCheckController
     /**
      * 현재 PHP 런타임의 OS/아키텍처에 맞는 CLI 바이너리 정보 반환
      *
-     * @return array{0: string, 1: string, 2: bool}  [filename, arch label, requireExec]
+     * @return array{0: string, 1: string, 2: bool} [filename, arch label, requireExec]
      */
     private function resolveCliForCurrentOs(): array
     {
@@ -107,7 +108,7 @@ class HealthCheckController
         $execOk = ! $this->isErroneous($byId['exec_function'] ?? null);
 
         // 현재 OS 의 CLI 바이너리 ID 동적 계산 (checkCliBinary 와 동일 규칙)
-        $cliId = 'cli_' . preg_replace('/[^a-z0-9_]/i', '_', strtolower(pathinfo($cliFilename, PATHINFO_FILENAME)));
+        $cliId = 'cli_'.preg_replace('/[^a-z0-9_]/i', '_', strtolower(pathinfo($cliFilename, PATHINFO_FILENAME)));
         $cliOk = ! $this->isErroneous($byId[$cliId] ?? null);
 
         $pubKeyOk = ! $this->isErroneous($byId['pub_key'] ?? null);
@@ -214,7 +215,9 @@ class HealthCheckController
             (string) ($_SERVER['SERVER_ADDR'] ?? ''),
             (string) request()->server('LOCAL_ADDR', ''),
             (string) ($_SERVER['LOCAL_ADDR'] ?? ''),
-            gethostbyname((string) gethostname()),
+            // 호스팅이 gethostname 을 차단하면 후보 하나가 비는 것뿐이다 — 앞의 서버 변수 후보들이
+            // 이미 같은 값을 내고, 판정은 normalizeIp 가 빈 값을 걸러 낸다.
+            ExecutionEnvironment::hasFunction('gethostname') ? gethostbyname((string) gethostname()) : '',
         ];
 
         foreach ($candidates as $candidate) {
@@ -242,8 +245,8 @@ class HealthCheckController
      */
     private function checkExecFunction(): array
     {
-        $disabled = array_map('trim', explode(',', (string) ini_get('disable_functions')));
-        $isDisabled = in_array('exec', $disabled, true) || ! function_exists('exec');
+        // 가용성 판정은 코어 SSoT 가 소유한다 — function_exists 와 disable_functions 를 함께 본다.
+        $isDisabled = ! ExecutionEnvironment::hasFunction('exec');
 
         if ($isDisabled) {
             return [
@@ -295,8 +298,8 @@ class HealthCheckController
      */
     private function checkCliBinary(string $filename, string $arch, bool $requireExec = true): array
     {
-        $path = $this->binDir . '/' . $filename;
-        $id = 'cli_' . preg_replace('/[^a-z0-9_]/i', '_', strtolower(pathinfo($filename, PATHINFO_FILENAME)));
+        $path = $this->binDir.'/'.$filename;
+        $id = 'cli_'.preg_replace('/[^a-z0-9_]/i', '_', strtolower(pathinfo($filename, PATHINFO_FILENAME)));
         $label = "CLI 바이너리 ({$arch}) — {$filename}";
 
         if (! file_exists($path)) {
@@ -326,7 +329,7 @@ class HealthCheckController
                 'category' => 'pc',
                 'label' => $label,
                 'status' => self::STATUS_OK,
-                'detail' => '실행 권한 OK (' . substr(sprintf('%o', fileperms($path)), -4) . ')',
+                'detail' => '실행 권한 OK ('.substr(sprintf('%o', fileperms($path)), -4).')',
             ];
         }
 
@@ -359,7 +362,7 @@ class HealthCheckController
      */
     private function checkPubKey(): array
     {
-        $path = $this->binDir . '/pub.key';
+        $path = $this->binDir.'/pub.key';
 
         if (! file_exists($path)) {
             return [
@@ -403,9 +406,9 @@ class HealthCheckController
             'status' => self::STATUS_ERROR,
             'detail' => '모바일 결제 (SmartPhone Pay) 가 동작하지 않습니다.',
             'remediation' => "PHP SOAP 확장을 설치하고 PHP-FPM 을 재시작하세요:\n"
-                . "Ubuntu/Debian: sudo apt install php8.x-soap && sudo systemctl restart php8.x-fpm\n"
-                . "RHEL/CentOS:   sudo yum install php-soap && sudo systemctl restart php-fpm\n"
-                . "확인: php -m | grep soap",
+                ."Ubuntu/Debian: sudo apt install php8.x-soap && sudo systemctl restart php8.x-fpm\n"
+                ."RHEL/CentOS:   sudo yum install php-soap && sudo systemctl restart php-fpm\n"
+                .'확인: php -m | grep soap',
         ];
     }
 
@@ -417,7 +420,7 @@ class HealthCheckController
         $wsdlFiles = ['KCPPaymentService.wsdl', 'real_KCPPaymentService.wsdl'];
         $missing = [];
         foreach ($wsdlFiles as $f) {
-            if (! file_exists($this->binDir . '/' . $f)) {
+            if (! file_exists($this->binDir.'/'.$f)) {
                 $missing[] = $f;
             }
         }
@@ -428,7 +431,7 @@ class HealthCheckController
                 'category' => 'mobile',
                 'label' => 'WSDL 파일',
                 'status' => self::STATUS_ERROR,
-                'detail' => '누락: ' . implode(', ', $missing),
+                'detail' => '누락: '.implode(', ', $missing),
                 'remediation' => 'KCP 에서 제공받은 WSDL 파일을 bin/ 에 복사하세요. (테스트/라이브 별로 두 개)',
             ];
         }

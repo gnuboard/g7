@@ -20,8 +20,6 @@ use Tests\TestCase;
  * 실제 `php artisan` 을 스폰하므로 부수효과 있는 커맨드는 여기서 돌리지 않는다.
  *
  * 커버 축: php_binary_source detected_autodetect·configured / runner_strategy subprocess·inprocess
- *
- * @effects subprocess_runner_uses_injected_php_binary, format_parameters_matches_artisan_call_convention, inprocess_runner_executes_safe_command, both_runners_agree_on_safe_command_exit_status, both_runners_agree_on_unknown_command_failure
  */
 class CommandRunnerEquivalenceTest extends TestCase
 {
@@ -39,6 +37,8 @@ class CommandRunnerEquivalenceTest extends TestCase
 
     /**
      * 파라미터 표기 → CLI 인자 변환 계약 (Artisan::call 규약과 동일 의미).
+     *
+     * @effects format_parameters_matches_artisan_call_convention
      */
     public function test_format_parameters_matches_artisan_call_convention(): void
     {
@@ -57,6 +57,8 @@ class CommandRunnerEquivalenceTest extends TestCase
 
     /**
      * in-process 러너: 안전한 커맨드(list)가 성공하고 출력이 채워진다.
+     *
+     * @effects inprocess_runner_executes_safe_command
      */
     public function test_inprocess_runner_executes_safe_command(): void
     {
@@ -73,6 +75,8 @@ class CommandRunnerEquivalenceTest extends TestCase
      *
      * disable_functions 프로필(P0)에서는 서브프로세스 자체가 성립하지 않으므로
      * 그 환경에서는 측정 대상이 아니다 (무CLI 축 종단 검증은 브라우저 실측 — §8).
+     *
+     * @effects both_runners_agree_on_safe_command_exit_status
      */
     public function test_both_runners_agree_on_safe_command_exit_status(): void
     {
@@ -184,6 +188,8 @@ class CommandRunnerEquivalenceTest extends TestCase
      *
      * 현재 프로세스의 PHP_BINARY 를 명시 주입해 같은 커맨드가 성공하면, 경로 주입이
      * 설정값을 우회해 스폰까지 도달했다는 뜻이다.
+     *
+     * @effects subprocess_runner_uses_injected_php_binary
      */
     public function test_subprocess_runner_uses_injected_php_binary(): void
     {
@@ -213,6 +219,8 @@ class CommandRunnerEquivalenceTest extends TestCase
     /**
      * 등가 계약 — 존재하지 않는 커맨드는 두 러너 모두 비-0 으로 끝난다.
      * (실패를 성공으로 뭉개는 러너가 없어야 한다)
+     *
+     * @effects both_runners_agree_on_unknown_command_failure
      */
     public function test_both_runners_agree_on_unknown_command_failure(): void
     {

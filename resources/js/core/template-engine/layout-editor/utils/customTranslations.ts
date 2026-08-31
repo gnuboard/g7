@@ -19,6 +19,7 @@
  */
 
 import { buildAuthHeaders } from './authToken';
+import { withBasePrefix } from '../../../support/assetUrl';
 
 /** 커스텀 다국어 키 1건 — 백엔드 TemplateCustomTranslationResource 필드 */
 export interface CustomTranslation {
@@ -63,7 +64,7 @@ export async function listCustomTranslations(
     `/api/admin/templates/${encodeId(templateIdentifier)}/custom-translations` +
     (qs ? `?${qs}` : '');
   try {
-    const res = await fetch(url, {
+    const res = await fetch(withBasePrefix(url), {
       method: 'GET',
       headers: buildAuthHeaders(),
       credentials: 'same-origin',
@@ -96,7 +97,7 @@ export async function updateCustomTranslation(
 ): Promise<CustomTranslationResult<CustomTranslation>> {
   const url = `/api/admin/templates/${encodeId(templateIdentifier)}/custom-translations/${id}`;
   try {
-    const res = await fetch(url, {
+    const res = await fetch(withBasePrefix(url), {
       method: 'PUT',
       headers: buildAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ values, expected_lock_version: expectedLockVersion }),
@@ -125,7 +126,7 @@ export async function deleteCustomTranslation(
 ): Promise<CustomTranslationResult<true>> {
   const url = `/api/admin/templates/${encodeId(templateIdentifier)}/custom-translations/${id}`;
   try {
-    const res = await fetch(url, {
+    const res = await fetch(withBasePrefix(url), {
       method: 'DELETE',
       headers: buildAuthHeaders(),
       credentials: 'same-origin',
@@ -153,7 +154,7 @@ export async function bulkDeleteCustomTranslations(
 ): Promise<CustomTranslationResult<{ deleted: number }>> {
   const url = `/api/admin/templates/${encodeId(templateIdentifier)}/custom-translations`;
   try {
-    const res = await fetch(url, {
+    const res = await fetch(withBasePrefix(url), {
       method: 'DELETE',
       headers: buildAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ ids }),

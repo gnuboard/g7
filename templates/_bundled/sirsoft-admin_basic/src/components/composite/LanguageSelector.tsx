@@ -1,3 +1,4 @@
+import { apiUrl } from '../../support/apiUrl';
 import React, { useState, useRef, useEffect } from 'react';
 import { Div } from '../basic/Div';
 import { Button } from '../basic/Button';
@@ -154,7 +155,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
 
       // API 호출로 DB에 저장 (실패해도 UI는 변경)
       try {
-        const response = await fetch(apiEndpoint, {
+        const response = await fetch(apiUrl(apiEndpoint), {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',

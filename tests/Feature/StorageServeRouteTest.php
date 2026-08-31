@@ -29,8 +29,11 @@ class StorageServeRouteTest extends TestCase
             ->values()
             ->all();
 
+        // 프레임워크 자동 라우트 이름은 `storage.{disk}` **접두**다. 포함 검사로 두면 G7 자신의
+        // 공개 스토리지 서빙 라우트(`api.public.system.public-storage.extensionless`)까지 걸린다 —
+        // 그 라우트는 읽기 전용 대체 통로이지 이 검사가 막는 자동 PUT 입구가 아니다.
         foreach ($names as $name) {
-            $this->assertStringNotContainsString(
+            $this->assertStringStartsNotWith(
                 'storage.',
                 (string) $name,
                 "serve 자동 라우트가 여전히 등록됨: {$name}"
@@ -66,11 +69,36 @@ class StorageServeRouteTest extends TestCase
      */
     public function test_storage_serve_route_names_absent(): void
     {
-        foreach (['storage.local', 'storage.modules', 'storage.plugins'] as $name) {
+        foreach (['storage.local', 'storage.modules', 'storage.plugins', 'storage.public'] as $name) {
             $this->assertNull(
                 Route::getRoutes()->getByName($name),
                 "serve 라우트 {$name} 이 여전히 등록됨"
             );
         }
+    }
+
+    /**
+     * 로컬 디스크 전부가 `serve => false` 를 **명시**한다 (15차 G3 라운드).
+     *
+     * `public` 디스크만 선언이 없었다. 프레임워크 기본값이 오늘은 미서빙이라 무증상이지만,
+     * 형제 여섯 디스크와 달리 이 디스크만 기본값에 기대면 프레임워크가 기본값을 바꾸는 순간
+     * 인증 없는 `PUT /storage/{path}` 입구가 이 디스크에서만 열린다 — 공개#52 가 닫은 바로
+     * 그 입구다. 선언은 디스크 정의에서 도출하므로 디스크가 늘면 이 검사가 함께 넓어진다.
+     */
+    public function test_every_local_disk_declares_serve_false_explicitly(): void
+    {
+        $undeclared = [];
+
+        foreach ((array) config('filesystems.disks') as $name => $disk) {
+            if (($disk['driver'] ?? null) !== 'local') {
+                continue;
+            }
+
+            if (! array_key_exists('serve', $disk) || $disk['serve'] !== false) {
+                $undeclared[] = $name;
+            }
+        }
+
+        $this->assertSame([], $undeclared, '로컬 디스크가 serve => false 를 명시하지 않는다: '.implode(', ', $undeclared));
     }
 }

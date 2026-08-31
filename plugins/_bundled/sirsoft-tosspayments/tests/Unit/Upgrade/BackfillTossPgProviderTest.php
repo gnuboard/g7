@@ -19,8 +19,6 @@ use Plugins\Sirsoft\Tosspayments\Tests\PluginTestCase;
  *
  * @scenario method_kind=extension, capability_declared=declared, capability=pg_locked
  *
- * @effects upgrade_step_backfills_settings_file, saved_null_pg_provider_self_healed
- *
  * @group payment
  * @group upgrade
  */
@@ -56,6 +54,9 @@ class BackfillTossPgProviderTest extends PluginTestCase
         parent::tearDown();
     }
 
+    /**
+     * @effects upgrade_step_backfills_settings_file, saved_null_pg_provider_self_healed
+     */
     public function test_backfills_pg_declaration_for_toss_methods(): void
     {
         // 결함 시절의 저장 상태 재현: pg_provider=null, 능력 키 부재

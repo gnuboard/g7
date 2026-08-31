@@ -58,7 +58,7 @@ if (installerHasFunction('ini_set')) {
     @ini_set('zlib.output_compression', false);
 }
 if (function_exists('apache_setenv')) {
-    @apache_setenv('no-gzip', 1);
+    @apache_setenv('no-gzip', '1');
 }
 // 진행 보장 포함 (17차 #B7). 이 파일은 의도적으로 최소 include 체인이라
 // functions.php 의 공용 헬퍼를 쓰지 않고 같은 규칙을 인라인한다 — 닫히지 않는

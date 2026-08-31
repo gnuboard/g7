@@ -48,23 +48,27 @@ if (! function_exists('e')) {
     }
 }
 
-/**
- * JavaScript 이스케이프 함수
- *
- * JavaScript 컨텍스트에서 안전하게 사용할 수 있도록 값을 이스케이프합니다.
- */
-function js_escape(mixed $value): string
-{
-    $json = installer_json_encode(
-        $value,
-        JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE
-    );
+if (! function_exists('js_escape')) {
+    /**
+     * JavaScript 이스케이프 함수
+     *
+     * JavaScript 컨텍스트에서 안전하게 사용할 수 있도록 값을 이스케이프합니다.
+     */
+    function js_escape(mixed $value): string
+    {
+        // 인코딩은 installer_json_encode 가 소유한다 — 인스톨러의 유일한 json_encode 자리이고,
+        // invalid UTF-8 이 섞였을 때 빈 본문(HTTP 200)이 나가는 것을 막는다 (#62).
+        $json = installer_json_encode(
+            $value,
+            JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE
+        );
 
-    if ($json === '') {
-        return '""';
+        if ($json === '') {
+            return '""';
+        }
+
+        return $json;
     }
-
-    return $json;
 }
 
 /**
@@ -124,7 +128,7 @@ function getDatabaseConnection(array $config, bool $isReadDb = false): PDO
  * 데이터베이스 권한 검증
  *
  * `indeterminate=true` 는 「부족」이 아니라 「확인 불가」다 — 게이트는 경고만 하고 진행을
- * 허용한다(PO 결정 §16.26.4 #2). 그때 missing 은 항상 빈 배열이다.
+ * 허용한다(제품 결정 §16.26.4 #2). 그때 missing 은 항상 빈 배열이다.
  *
  * @param  PDO  $pdo  PDO 연결 객체
  * @param  string  $database  데이터베이스명
@@ -179,7 +183,7 @@ function checkDatabasePrivileges(PDO $pdo, string $database, bool $isReadDb = fa
 
         $missingPrivileges = array_values(array_diff($requiredPrivileges, $foundPrivileges));
 
-        // 「부족」과 「확인 불가」의 구분 (PO 결정 §16.26.4 #2 — 확인 불가는 경고 후 진행 허용).
+        // 「부족」과 「확인 불가」의 구분 (제품 결정 §16.26.4 #2 — 확인 불가는 경고 후 진행 허용).
         // 전개하지 못한 롤이나 해석하지 못한 행이 **하나라도** 남아 있으면 판정을 단정하지
         // 않는다 — missing 이 비어 있어도 그 행이 REVOKE 변형(권한을 빼는 문장)일 수 있다
         // (21차 N2 파생 — 종전에는 missing 이 비면 unparseable 을 무시해, 해석 못 한 회수가
@@ -921,10 +925,12 @@ function showAlertAndRedirect(string $title, string $message, string $redirectUr
         $translations = loadTranslations(getCurrentLanguage());
     }
 
+    // `$lang`·`$title` 은 HTML 속성·텍스트 자리라 htmlspecialchars 다. 그러나 `$message`·
+    // `$redirectUrl` 은 인라인 `<script>` 의 **JS 문자열 문맥**에 실린다 — htmlspecialchars 는
+    // `</script>`·역슬래시·개행을 이스케이프하지 않아 스크립트 탈출 통로가 된다. index.php:232
+    // 규약과 같이 `installerJsString`(JSON_HEX_*)으로 인코딩한다 (17차 A-6).
     $lang = htmlspecialchars(getCurrentLanguage());
     $title = htmlspecialchars($title);
-    $message = htmlspecialchars($message, ENT_QUOTES);
-    $redirectUrl = htmlspecialchars($redirectUrl);
 
     echo '<!DOCTYPE html>';
     echo '<html lang="'.$lang.'">';
@@ -935,8 +941,8 @@ function showAlertAndRedirect(string $title, string $message, string $redirectUr
     echo '</head>';
     echo '<body>';
     echo '<script>';
-    echo 'alert("'.$message.'");';
-    echo 'window.location.href = "'.$redirectUrl.'";';
+    echo 'alert('.installerJsString($message).');';
+    echo 'window.location.href = '.installerJsString($redirectUrl).';';
     echo '</script>';
     echo '</body>';
     echo '</html>';
@@ -966,7 +972,7 @@ function showStepFileNotFoundError(int $currentStep): void
     echo '</h1>';
     echo '<p class="installer-description">'.lang('error_step_file_not_found').'</p>';
     echo '<div class="btn-group">';
-    echo '<a href="'.INSTALLER_BASE_URL.'/" class="btn btn-secondary">← '.lang('previous').'</a>';
+    echo '<a href="'.e(INSTALLER_BASE_URL).'/" class="btn btn-secondary">← '.lang('previous').'</a>';
     echo '</div>';
     echo '</div>';
 }
@@ -1302,6 +1308,42 @@ function getChownTarget(): string
     return $user.':'.$group;
 }
 
+if (! function_exists('installerWriteProbeBudgetExhausted')) {
+    /**
+     * 쓰기 실측 프로브의 요청당 총량 상한 (D5).
+     *
+     * 이 판정은 디렉토리마다 파일을 만들었다 지우므로 비용이 하위 디렉토리 수에 비례한다.
+     * 최상위 대상은 12개 안팎으로 고정이지만 재귀 하위는 그렇지 않다 — 운영 중 불어나는
+     * 트리(`storage/`)를 훑으면 요구사항 화면 한 번이 파일시스템 왕복 수천 번이 된다.
+     * 형제 축(노출 점검)은 이미 상한을 갖는다.
+     *
+     * @return bool 상한에 닿았으면 true (호출부는 그 자리에서 판정을 멈춘다)
+     */
+    function installerWriteProbeBudgetExhausted(): bool
+    {
+        return installerCountWriteProbe(false) >= INSTALLER_WRITE_PROBE_BUDGET;
+    }
+}
+
+if (! function_exists('installerCountWriteProbe')) {
+    /**
+     * 이번 요청에서 수행한 쓰기 실측 프로브 수를 세고 돌려줍니다.
+     *
+     * @param  bool  $increment  true 면 1 증가시킨 뒤 돌려준다
+     * @return int 현재까지의 프로브 수
+     */
+    function installerCountWriteProbe(bool $increment = true): int
+    {
+        static $count = 0;
+
+        if ($increment) {
+            $count++;
+        }
+
+        return $count;
+    }
+}
+
 if (! function_exists('installerDirectoryIsWritable')) {
     /**
      * 디렉토리에 **실제로** 쓸 수 있는지 확인합니다.
@@ -1324,7 +1366,12 @@ if (! function_exists('installerDirectoryIsWritable')) {
             return false;
         }
 
-        $probe = rtrim($path, '/\\').DIRECTORY_SEPARATOR.'.installer-write-probe-'.uniqid('', true);
+        installerCountWriteProbe();
+
+        // 고유 이름은 차단 가능한 `uniqid()` 가 아니라 원시 함수 폴백을 갖춘 SSoT 로 만든다 —
+        // 이 함수는 요구사항 화면의 디렉토리 권한 점검 경로라, 여기서 죽으면 첫 화면이 백지다.
+        // 접두사는 정리 주체 둘(노출 점검 스윕 · 코어 프루너)이 같은 상수로 본다 (13차 G3 W1-6).
+        $probe = rtrim($path, '/\\').DIRECTORY_SEPARATOR.INSTALLER_WRITE_PROBE_PREFIX.installerUniqueSuffix(INSTALLER_TMP_SUFFIX_BYTES);
 
         $handle = @fopen($probe, 'wb');
         if ($handle === false) {
@@ -1480,10 +1527,9 @@ function checkSubdirectoriesRecursive(string $path, int $maxDepth = 1, int $curr
     // 함수를 함수 테이블에서 **제거**하므로 호출은 `Error` 이고, `@` 는 진단 억제일 뿐이다.
     // 가드가 없으면 요구사항 화면이 통째로 뜨지 않는다 (13차 환경#1 과 같은 유형).
     //
-    // 여기서 `ExecutionEnvironment` 대신 `function_exists` 를 쓰는 이유: 이 파일은 인스톨러
-    // 최하위 유틸이라 `execution-mode.php` 를 끌어오면 순환 의존이 된다. PHP 8 에서는
-    // 차단 함수가 테이블에서 사라지므로 이 판정만으로도 결과가 같다.
-    if (! function_exists('scandir')) {
+    // 판정은 인스톨러 SSoT(`installerHasFunction`)를 경유한다 — 종전 주석의 「순환 의존」
+    // 근거는 사실이 아니다(같은 파일이 SSoT 를 네 곳에서 직접 부른다). 7차 G3 라운드 D-14.
+    if (! installerHasFunction('scandir')) {
         return $failedPaths;
     }
 
@@ -1513,6 +1559,16 @@ function checkSubdirectoriesRecursive(string $path, int $maxDepth = 1, int $curr
         // 절대 경로를 상대 경로로 변환
         $relativePath = str_replace(BASE_PATH.'/', '', $itemPath);
         $relativePath = str_replace('\\', '/', $relativePath);
+
+        // 실측 프로브 총량 상한. 이 판정은 디렉토리마다 파일을 **만들었다 지우므로**,
+        // 하위 디렉토리 수에 비례해 파일시스템 왕복이 늘어난다 — 형제 축(노출 점검)은
+        // 상한을 갖는데 이 축만 없었고, `storage/` 처럼 운영 중 하위가 불어나는 트리를
+        // 훑으면 요구사항 화면이 그만큼 느려진다. 상한에 닿으면 판정을 **멈추고**
+        // 그때까지의 결과를 돌려준다 — 「권한 없음」을 지어내지 않는 방향이다
+        // (22차 G3 라운드 D5).
+        if (installerWriteProbeBudgetExhausted()) {
+            return $failedPaths;
+        }
 
         // 쓰기 권한 체크 — 상위 디렉토리와 같은 기준(실제 쓰기 probe)을 쓴다.
         // 한쪽만 stat 판정이면 상위는 걸러내는 것을 하위가 통과시켜 결과가 어긋난다.
@@ -1904,7 +1960,7 @@ function checkExistingTables(PDO $pdo, string $database, string $tablePrefix = '
         'other_tables_count' => max(0, count($tables) - count($g7TablesFound)),
         'all_tables' => $tables,
         // 동의 화면이 그리는 삭제 대상은 **삭제 계산과 동일 산출**이어야 한다 (21차 #21-2 ①,
-        // PO 결정 §16.27.1 #2) — 다른 목록을 보여주면 동의가 거짓이 된다.
+        // 제품 결정 §16.27.1 #2) — 다른 목록을 보여주면 동의가 거짓이 된다.
         'drop_targets' => filterTablesByPrefix($tables, $tablePrefix),
         // 접두 매칭은 더 긴 접두사 이웃(g7_ ⊂ g7_shop_)을 함께 문다 — 그 이웃이 G7 설치로
         // 감지되면 화면이 별도 경고를 띄운다 (21차 #21-2 ②).
@@ -2040,20 +2096,112 @@ if (! function_exists('installerErrorLog')) {
      * `session.php` 세션 부팅의 최상위 코드). 무가드로 부르면 그 최후 수단이 첫 요청에서
      * 화면을 백지로 만든다.
      *
-     * 여기서 `ExecutionEnvironment` 대신 `function_exists` 를 쓰는 이유는 같은 파일의
-     * `checkDirectoryPermissions` 와 동일하다 — 이 파일은 인스톨러 최하위 유틸이고
-     * `execution-mode.php` 를 끌어오면 순환 의존이 된다. PHP 8 에서는 차단 함수가 테이블에서
-     * 사라지므로 이 판정만으로 결과가 같다.
+     * 판정은 인스톨러 SSoT(`installerHasFunction`)를 경유한다. 종전 주석은 「이 파일은
+     * 최하위 유틸이라 `execution-mode.php` 를 끌어오면 순환 의존」이라고 적었는데 **사실이
+     * 아니다** — 이 파일은 최상단에서 `App\Support\ExecutionEnvironment` 를 `use` 하고
+     * 네 곳에서 직접 부르며, 모든 진입점이 `execution-mode.php` 를 이 파일보다 **먼저**
+     * 읽는다. 그 SSoT 자신이 로드 실패를 `function_exists` 폴백으로 흡수하므로 「끌어오면
+     * 위험하다」는 전제도 성립하지 않는다 (7차 G3 라운드 D-14).
      *
      * @param  string  $message  기록할 메시지
      */
     function installerErrorLog(string $message): void
     {
-        // audit:allow execution-function-availability-via-ssot 최하위 유틸 — SSoT 로드는 순환 의존
-        if (! function_exists('error_log')) {
+        if (! installerHasFunction('error_log')) {
             return;
         }
 
         error_log($message);
+    }
+}
+
+if (! defined('INSTALLER_TMP_INFIX')) {
+    /**
+     * 원자 교체 임시 파일 이름의 **중간 조각**(`<대상>.tmp.<hex>`).
+     *
+     * 접미사 패턴(`INSTALLER_TMP_SUFFIX_PATTERN`)만 SSoT 로 잠그고 이 조각은 상태 파일·
+     * 런타임 파일·코어 프루너(`RootHtaccessUpdater::TEMP_INFIX`) 세 곳 리터럴이었다 —
+     * 한쪽이 갈리면 그 스윕의 모집단이 조용히 0 이 된다 (14차 G3 W2-4). 인스톨러 두 곳은
+     * 이 상수를 가리키고, 코어 상수와의 일치는 `StorageLeftoverPruneServiceTest` 가 잠근다.
+     */
+    define('INSTALLER_TMP_INFIX', '.tmp.');
+}
+
+if (! defined('INSTALLER_TMP_SUFFIX_BYTES')) {
+    /**
+     * 원자 교체 임시 파일 이름(`<대상>.tmp.<hex>`)에 쓰는 `installerUniqueSuffix()` 바이트 수.
+     *
+     * 이름을 **만드는 쪽**(상태 파일 · 런타임 파일)과 **지우는 쪽**(각 스윕 · 코어 프루너)이
+     * 같은 값을 봐야 한다. 종전에는 파일마다 판정 패턴을 리터럴로 들고 있었고, 런타임 쪽이
+     * `{8}` 로 갈려 생성 이름(16진 16자)이 영원히 매치되지 않았다 — 스윕 모집단이 0 인 채
+     * 오류도 경고도 없었다 (13차 G3 W1-1). 그래서 생성 규칙 곁에 한 번만 적는다.
+     */
+    define('INSTALLER_TMP_SUFFIX_BYTES', 8);
+}
+
+if (! defined('INSTALLER_TMP_SUFFIX_PATTERN')) {
+    /**
+     * 위 바이트 수로 만든 접미사의 **판정 패턴** — 16진 `INSTALLER_TMP_SUFFIX_BYTES × 2` 자 이상.
+     *
+     * 하한인 이유: CSPRNG 가 없는 환경의 폴백은 뒤에 `dechex(microtime)` 을 더 붙여 더 길다.
+     * 코어 쪽 형제(`RootHtaccessUpdater::TEMP_SUFFIX_PATTERN`)와 같은 값이며 그 일치는
+     * `StorageLeftoverPruneServiceTest` 가 잠근다.
+     */
+    define('INSTALLER_TMP_SUFFIX_PATTERN', '/^[0-9a-f]{16,}$/');
+}
+
+if (! defined('INSTALLER_WRITE_PROBE_BUDGET')) {
+    /**
+     * 한 요청에서 수행할 쓰기 실측 프로브의 **총량 상한** (D5 · 22차 G3 라운드).
+     *
+     * 최상위 대상은 12개 안팎으로 고정이지만 재귀 하위(`checkSubdirectoriesRecursive`)는
+     * 운영 중 불어난다. 프로브 하나가 파일 생성 + 쓰기 + 삭제이므로 그 비용이 요구사항
+     * 화면의 응답 시간에 그대로 실린다. 값은 최상위 12 + 하위 여유를 담되, 사람이 기다릴
+     * 수 있는 범위로 잡는다 — 상한에 닿으면 판정을 멈추고 그때까지의 결과만 돌려준다
+     * (「권한 없음」을 지어내지 않는 방향).
+     */
+    define('INSTALLER_WRITE_PROBE_BUDGET', 200);
+}
+
+if (! defined('INSTALLER_WRITE_PROBE_PREFIX')) {
+    /**
+     * 쓰기 가능 실측 프로브(`installerDirectoryIsWritable`)의 파일 이름 접두사.
+     *
+     * 만든 직후 지우지만 fopen 과 unlink 사이에서 프로세스가 죽으면 남는다 — 정리 스윕
+     * (`exposure-check.php`)과 코어 프루너(`StorageLeftoverPruneService`)가 이 값을 본다 (13차 G3 W1-6).
+     */
+    define('INSTALLER_WRITE_PROBE_PREFIX', '.installer-write-probe-');
+}
+
+if (! function_exists('installerUniqueSuffix')) {
+    /**
+     * 임시 파일 이름을 가르는 고유 접미사를 만든다 — **차단 가능한 함수에 기대지 않고**.
+     *
+     * `random_bytes()` 는 CSPRNG 를 얻지 못하면 던진다. 종전에는 그 `catch` 안에서
+     * `uniqid()` 로 폴백했는데, 그 형태에는 잡을 수 없는 실패가 하나 남아 있었다 —
+     * `uniqid` 자체가 막힌 환경에서는 **catch 블록 안에서 다시 `Error`** 가 나고,
+     * 그것을 받을 곳이 없어 그대로 치명이 된다. 폴백은 잡히는 자리에 있어야 의미가 있다.
+     *
+     * 그래서 폴백은 하드닝 프로필의 차단 목록에 오르지 않는 원시 함수만 쓴다. 이 값은
+     * 비밀이 아니라 **같은 디렉토리 안에서 겹치지 않기만 하면 되는 이름**이므로 암호학적
+     * 강도가 필요 없다 (비밀 자체는 언제나 `random_bytes` 경로에서만 만든다).
+     *
+     * @param  int  $bytes  난수 바이트 수 (최소 4)
+     * @return string 16진 문자열 접미사
+     */
+    function installerUniqueSuffix(int $bytes = 8): string
+    {
+        $bytes = max(4, $bytes);
+
+        try {
+            return bin2hex(random_bytes($bytes));
+        } catch (Throwable) {
+            $seed = '';
+            for ($i = 0; $i < $bytes; $i++) {
+                $seed .= chr(mt_rand(0, 255));
+            }
+
+            return bin2hex($seed).dechex((int) (microtime(true) * 1000));
+        }
     }
 }

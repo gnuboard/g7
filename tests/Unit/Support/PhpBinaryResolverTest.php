@@ -14,8 +14,6 @@ use Tests\TestCase;
  * 직접 주입해 고정한다.
  *
  * 커버 축: php_binary_probe valid·invalid_with_autodetect·invalid_no_autodetect·uncertain
- *
- * @effects validate_rejects_empty_or_nonexistent_binary_path, validate_reports_sapi_for_configured_binary, auto_detect_orders_cli_binaries_first
  */
 class PhpBinaryResolverTest extends TestCase
 {
@@ -71,6 +69,8 @@ class PhpBinaryResolverTest extends TestCase
 
     /**
      * validate()는 빈 경로에 대해 invalid를 반환한다.
+     *
+     * @effects validate_rejects_empty_or_nonexistent_binary_path
      */
     public function test_validate_returns_invalid_for_empty_path(): void
     {
@@ -120,6 +120,8 @@ class PhpBinaryResolverTest extends TestCase
 
     /**
      * validate()는 존재하지 않는 파일 경로에 대해 invalid를 반환한다.
+     *
+     * @effects validate_rejects_empty_or_nonexistent_binary_path
      */
     public function test_validate_returns_invalid_for_nonexistent_path(): void
     {
@@ -215,6 +217,8 @@ class PhpBinaryResolverTest extends TestCase
      *
      * FPM/CGI 바이너리도 --version 은 정상 종료하며 같은 형태로 버전을 찍으므로,
      * 괄호 안 SAPI 이름이 CLI 여부를 가리는 유일한 단서다.
+     *
+     * @effects validate_reports_sapi_for_configured_binary
      */
     public function test_validate_reports_sapi(): void
     {
@@ -230,6 +234,8 @@ class PhpBinaryResolverTest extends TestCase
      * 첫 후보인 PHP_BINARY 는 웹 서버가 실행 중인 바이너리라 FPM/CGI 인 경우가 흔하다.
      * 그 바이너리는 --version 검증을 통과하면서도 artisan 스크립트를 인자로 받지 못해,
      * 그대로 실행 바이너리로 승격되면 판정(subprocess 가능)과 실행(전 태스크 실패)이 어긋난다.
+     *
+     * @effects auto_detect_orders_cli_binaries_first
      */
     public function test_auto_detect_orders_cli_binaries_first(): void
     {

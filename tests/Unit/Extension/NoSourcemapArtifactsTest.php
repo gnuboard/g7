@@ -193,7 +193,9 @@ class NoSourcemapArtifactsTest extends TestCase
         $process = new Process(array_merge(['git'], $args), base_path());
         $process->run();
 
-        $lines = preg_split('/\R/', trim($process->getOutput())) ?: [];
+        // `\R` 은 UTF-8 모드가 아니면 바이트 0x85 도 개행으로 본다 — 비-ASCII 경로가
+        // 목록에 들어오면 한 경로가 두 줄로 갈려 어느 쪽도 실재하지 않는 이름이 된다.
+        $lines = preg_split('~\r\n|\r|\n~', trim($process->getOutput())) ?: [];
 
         return array_values(array_filter($lines, fn (string $line): bool => $line !== ''));
     }

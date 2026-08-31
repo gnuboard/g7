@@ -26,8 +26,6 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  * 매니페스트에 한해** 같은 검사를 여기서 돌린다 — 면제는 원래 의도한 축(조합)에만 남는다.
  *
  * 커버 축: manifest installer_stepwise·execution_mode / direction declared_file_has_marker·marker_is_declared·declared_effect_is_marked·axis_matches_source
- *
- * @effects no_cli_manifest_files_all_carry_markers, no_cli_manifest_effects_are_bidirectional, no_cli_manifest_axes_match_their_source_of_truth
  */
 class InstallerScenarioMarkerCoverageTest extends TestCase
 {
@@ -80,6 +78,7 @@ class InstallerScenarioMarkerCoverageTest extends TestCase
      */
     private function declaredTestFiles(string $manifest): array
     {
+        // meta:allow raw-source-read 생산 소스가 아니라 시나리오 매니페스트 YAML 이다
         $lines = file(self::root().'/'.$manifest, FILE_IGNORE_NEW_LINES) ?: [];
         $files = [];
         $inBlock = false;
@@ -112,6 +111,7 @@ class InstallerScenarioMarkerCoverageTest extends TestCase
      */
     private function declaredEffects(string $manifest): array
     {
+        // meta:allow raw-source-read 생산 소스가 아니라 시나리오 매니페스트 YAML 이다
         $lines = file(self::root().'/'.$manifest, FILE_IGNORE_NEW_LINES) ?: [];
         $effects = [];
         $inBlock = false;
@@ -144,6 +144,7 @@ class InstallerScenarioMarkerCoverageTest extends TestCase
      */
     private function markedEffects(string $relative): array
     {
+        // meta:allow raw-source-read — 시나리오 표식(scenario·effects 태그)은 독블록 안에 있어 원문이 필요하다
         $source = (string) file_get_contents(self::root().'/'.$relative);
         preg_match_all('/@effects\s+(.+)$/m', $source, $matches);
 
@@ -190,6 +191,8 @@ class InstallerScenarioMarkerCoverageTest extends TestCase
      *
      * 매니페스트가 「이 파일도 이 기능을 검증한다」고 선언해 두었는데 마킹이 없으면, 그 파일이
      * 무엇을 떠받치는지 알 수 없고 지워도 아무 게이트가 울지 않는다.
+     *
+     * @effects no_cli_manifest_files_all_carry_markers
      */
     public function test_every_declared_file_carries_a_marker(): void
     {
@@ -201,6 +204,7 @@ class InstallerScenarioMarkerCoverageTest extends TestCase
                 if (! is_file($path)) {
                     continue; // 파일 부재는 매니페스트 검증기 소관
                 }
+                // meta:allow raw-source-read — 시나리오 표식(scenario·effects 태그)은 독블록 안에 있어 원문이 필요하다
                 $source = (string) file_get_contents($path);
                 if (! preg_match('/@(scenario|effects)\b/', $source)) {
                     $unmarked[] = $manifest.' → '.$relative;
@@ -221,6 +225,8 @@ class InstallerScenarioMarkerCoverageTest extends TestCase
      * 삼으면, 그 `test_files` 에 실린 공정 밖 파일(대시보드 테스트 2건)이 자기 공정의 효과를
      * 하나만 더해도 이 게이트가 red 가 된다 — 이 게이트가 소유하지도 않은 파일의 변경에
      * 결합되는 상태다.
+     *
+     * @effects no_cli_manifest_effects_are_bidirectional
      */
     public function test_markers_reference_declared_effects(): void
     {
@@ -254,6 +260,8 @@ class InstallerScenarioMarkerCoverageTest extends TestCase
      * 남은 방향(선언 효과 → 마커)은 룰 면제 안에 있어 검사되지 않았고, 두 매니페스트의
      * `effects:` 에 아무 이름이나 한 줄 더해도 초록이었다 — 「이 축은 덮여 있다」는 선언이
      * 사실 확인 없이 통과하는 상태다. 지금은 미마킹 0 이지만 그것을 지키는 것이 없었다.
+     *
+     * @effects no_cli_manifest_effects_are_bidirectional
      */
     public function test_every_declared_effect_is_marked_somewhere(): void
     {
@@ -294,6 +302,7 @@ class InstallerScenarioMarkerCoverageTest extends TestCase
      */
     private function declaredAxes(string $manifest): array
     {
+        // meta:allow raw-source-read 생산 소스가 아니라 시나리오 매니페스트 YAML 이다
         $lines = file(self::root().'/'.$manifest, FILE_IGNORE_NEW_LINES) ?: [];
         $axes = [];
         $inBlock = false;
@@ -333,8 +342,8 @@ class InstallerScenarioMarkerCoverageTest extends TestCase
      */
     private function taskIdsFromSource(): array
     {
-        $source = (string) file_get_contents(self::root().'/public/install/includes/task-runner.php');
-        $body = $this->functionBody($this->stripComments($source), 'buildInstallationTaskList');
+        $source = $this->sourceWithoutComments(self::root().'/public/install/includes/task-runner.php');
+        $body = $this->functionBody($source, 'buildInstallationTaskList');
 
         $this->assertNotSame('', $body, 'buildInstallationTaskList() 을 찾지 못했다 — SSoT 이름이 바뀌었다');
 
@@ -381,6 +390,7 @@ class InstallerScenarioMarkerCoverageTest extends TestCase
         // 저장소 **전 매니페스트**가 선언한 파일의 합집합이 기준이다.
         $declared = [];
         foreach (glob($root.'/tests/scenarios/*.yaml') ?: [] as $manifest) {
+            // meta:allow raw-source-read — 매니페스트 YAML 원문
             $body = (string) file_get_contents($manifest);
             if (preg_match_all('#tests/Unit/Installer/([A-Za-z0-9_]+\.php)#', $body, $m)) {
                 foreach ($m[1] as $name) {
@@ -391,6 +401,7 @@ class InstallerScenarioMarkerCoverageTest extends TestCase
 
         $orphans = [];
         foreach ($files as $path) {
+            // meta:allow raw-source-read — 시나리오 표식(scenario·effects 태그)은 독블록 안에 있어 원문이 필요하다
             $source = (string) file_get_contents($path);
             if (! preg_match('/@(scenario|effects)\b/', $source)) {
                 continue; // 마커가 없는 파일은 이 방향의 대상이 아니다
@@ -412,6 +423,9 @@ class InstallerScenarioMarkerCoverageTest extends TestCase
         );
     }
 
+    /**
+     * @effects no_cli_manifest_axes_match_their_source_of_truth
+     */
     public function test_task_axis_covers_every_live_task(): void
     {
         $axes = $this->declaredAxes('tests/scenarios/no-cli-installer-stepwise.yaml');
@@ -448,6 +462,8 @@ class InstallerScenarioMarkerCoverageTest extends TestCase
      *
      * 축에 열거형 밖의 값이 들어가면 그 조합은 실제로 만들어질 수 없고, 열거형에 값이 하나
      * 늘어도 축은 조용히 그대로다 — 어느 쪽도 오류가 되지 않는다.
+     *
+     * @effects no_cli_manifest_axes_match_their_source_of_truth
      */
     public function test_execution_mode_axes_come_from_the_core_enum(): void
     {
@@ -483,15 +499,15 @@ class InstallerScenarioMarkerCoverageTest extends TestCase
 
     /**
      * 진행 모드 축의 어휘가 인스톨러 소스와 일치한다 (12차 M-1).
+     *
+     * @effects no_cli_manifest_axes_match_their_source_of_truth
      */
     public function test_installation_mode_axis_matches_the_installer_vocabulary(): void
     {
         $axes = $this->declaredAxes('tests/scenarios/no-cli-installer-stepwise.yaml');
         $this->assertArrayHasKey('installation_mode', $axes);
 
-        $source = $this->stripComments(
-            (string) file_get_contents(self::root().'/public/install/includes/execution-mode.php')
-        );
+        $source = $this->sourceWithoutComments(self::root().'/public/install/includes/execution-mode.php');
 
         $this->assertSame(
             1,

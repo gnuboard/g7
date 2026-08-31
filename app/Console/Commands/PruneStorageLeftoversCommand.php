@@ -36,9 +36,20 @@ class PruneStorageLeftoversCommand extends Command
     private const GROUP_LABELS = [
         'staging' => '업데이트 스테이징 잔존',
         'temp' => '코어 임시 산출물',
+        'storage_temp' => 'composer 폴백 임시 디렉토리',
+        'core_pending' => '번들 업데이트 매니페스트 잔존',
+        'core_update_preserved' => '코어 업데이트 교체 전 사본',
+        'core_update_reports' => '코어 업데이트 리포트 로그',
+        'public_storage_broken' => '손상된 공개 스토리지 링크 백업',
+        'public_storage_broken_docroot' => '손상된 공개 스토리지 링크 백업 (문서 루트 안)',
+        'installer_probes' => '인스톨러 점검·설치 잔여물',
+        'installer_state_corrupt' => '인스톨러 파손 상태 사본',
         'vendor_bundle_staging' => 'vendor 번들 스테이징',
         'extension_backups' => '확장 백업',
         'core_backups' => '코어 백업',
+        'root_entry_temp' => '루트 진입·보호 파일 임시 산출물',
+        'stale_swap_files' => '확장 동기화 잠금 잔해',
+        'env_backups' => 'finalize 가 남긴 .env 보존 사본',
         'legacy_browser_log' => '레거시 브라우저 로그',
     ];
 

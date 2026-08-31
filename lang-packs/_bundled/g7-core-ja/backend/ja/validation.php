@@ -671,6 +671,7 @@ return [
         'null_byte_detected' => 'NULL バイト攻撃が検出されました。',
         'outside_base_directory' => '基本ディレクトリ外のパスは許可されていません。',
         'file_type_not_allowed' => '許可されていないファイルタイプです。拡張子: :extension (許可: :allowed)',
+        'hidden_segment_not_allowed' => 'ドット(.)で始まるファイル·ディレクトリは提供していません。',
     ],
     'extension_identifier' => [
         'max' => '拡張識別子は最大255文字まで入力できます。',
@@ -688,6 +689,7 @@ return [
         'absolute_path_not_allowed' => '絶対パスは許可されません。',
         'null_byte_detected' => 'NULL バイトが検出されました。',
         'outside_base_directory' => '基準ディレクトリ外へのアクセスは許可されません。',
+        'hidden_segment_not_allowed' => 'ドット(.)で始まるファイル·ディレクトリは提供していません。',
     ],
     'plugin_path' => [
         'file_type_not_allowed' => '許可されていないファイルタイプです。拡張子: :extension（許可: :allowed）',
@@ -696,6 +698,7 @@ return [
         'absolute_path_not_allowed' => '絶対パスは許可されません。',
         'null_byte_detected' => 'NULL バイトが検出されました。',
         'outside_base_directory' => '基準ディレクトリ外へのアクセスは許可されません。',
+        'hidden_segment_not_allowed' => 'ドット(.)で始まるファイル·ディレクトリは提供していません。',
     ],
     'auth' => [
         'two_factor' => [
@@ -898,8 +901,6 @@ return [
         'debug_mode_boolean' => 'デバッグモードはtrueまたはfalse値である必要があります。',
         'sql_query_log_required' => 'SQLクエリログ設定を選択してください。',
         'sql_query_log_boolean' => 'SQLクエリログはtrueまたはfalse値である必要があります。',
-
-        // アウトバウンド HTTP プロキシ
         'outbound_proxy_required' => 'アウトバウンドプロキシアドレスを入力してください。',
         'outbound_proxy_string' => 'アウトバウンドプロキシアドレスは文字列である必要があります。',
         'outbound_proxy_max' => 'アウトバウンドプロキシアドレスは:max文字を超えることはできません。',

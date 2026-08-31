@@ -3,6 +3,7 @@
 namespace Tests\Unit\Installer;
 
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
  * 인스톨러 테스트의 프로세스 격리 전수 검사.
@@ -21,11 +22,11 @@ use PHPUnit\Framework\TestCase;
  * 클래스도 모집단이다.
  *
  * 커버 축: isolation_declaration class_isolated·method_isolated·missing / base_path_definition defines·does_not_define / temp_base_cleanup shared_trait·own_teardown·missing
- *
- * @effects installer_test_defining_base_path_declares_process_isolation, installer_test_creating_temp_base_path_cleans_it_up
  */
 class InstallerTestIsolationCoverageTest extends TestCase
 {
+    use ScansPhpSourceFunctions;
+
     /** 클래스 단위 / 메서드 단위 격리 — 둘 다 프로세스 경계를 만들어 상수 충돌을 없앤다 */
     private const ISOLATION_ATTRIBUTES = [
         'RunClassInSeparateProcess',
@@ -64,18 +65,42 @@ class InstallerTestIsolationCoverageTest extends TestCase
             }
 
             $relative = str_replace(DIRECTORY_SEPARATOR, '/', substr($file->getPathname(), strlen($root) + 1));
-            $sources[$relative] = (string) file_get_contents($file->getPathname());
+            // 읽기와 주석 제거를 공용 진입점에 묶는다 (G3 회차 14 W4-8) — 아래 직접 정의자 판정은
+            // 주석을 지운 소스를 요구하고, 전이 판정(`loadsFile()`)은 토큰이라 주석에 무관하다.
+            $sources[$relative] = $this->sourceWithoutComments($file->getPathname());
         }
 
-        // ① 직접 정의자 — 따옴표 종류와 `define (` 공백을 모두 받는다.
+        // ① 직접 정의자 — 따옴표 종류와 `define (` 공백을 모두 받는다. 주석을 지운 뒤 본다 —
+        //    주석 처리된 `define('BASE_PATH'` 도 원문에는 글자로 남는다.
         $definers = [];
         foreach ($sources as $relative => $source) {
-            if (preg_match('/\bdefine\s*\(\s*([\x27"])BASE_PATH\1/', $source) === 1) {
+            if (preg_match('/\bdefine\s*\(\s*([\x27"])BASE_PATH\1/', $this->stripComments($source)) === 1) {
                 $definers[$relative] = true;
             }
         }
 
         // ② 전이 — 정의자를 require 하는 파일도 정의자다. 고정점까지 접는다.
+        //
+        //    판정은 `loadsFile()` 의 토큰 경로다 (G3 회차 13 W5-5). 종전에는 원문 정규식
+        //    `(?:require|include)(?:_once)?[^;]*<basename>` 이었다 — 주석 속 경로가 매치되고,
+        //    `include` 가 **`includes/`** 의 앞 일곱 글자에 매치되며, `config.php` 가
+        //    `some-config.php` 에 매치됐다. 같은 파일 안에서 테스트 쪽(`definesBasePath`)만
+        //    토큰이고 이 축은 원문이라 한 판정이 두 규칙을 갖고 있었다.
+        //
+        //    판정 불가(`null` — 파일명이 변수인 require)는 **정의자로 친다**. 무엇을 로드하는지
+        //    모르는 파일을 「로드하지 않는다」로 접으면 그 파일을 require 하는 테스트가
+        //    상수를 실 저장소 루트로 박고도 이 게이트를 통과한다(fail-closed 를 택한다).
+        //
+        //    needle 은 **디렉토리를 포함한 상대 경로**로 넘긴다 (G3 회차 14 W4-7). 종전에는
+        //    `basename($definer)` 였는데, 파일명뿐인 needle 로는 `loadsFile()` 이 동적
+        //    require 의 디렉토리 리터럴(`__DIR__."/../lang/{$lang}.php"`)을 배제 근거로 쓸
+        //    수 없다 — 같은 라운드가 그 자리의 `false` 접힘(fail-open)을 `null` 로 고치자
+        //    `functions.php`·`validation.php`(번역 파일만 동적 require)가 `api/save-extensions.php`
+        //    의 전이 정의자로 실측됐고, 그것을 require 하는 테스트 셋에 거짓 격리 의무가
+        //    생겼다. 이 소비처는 정의자의 디렉토리를 **알고 있으므로** 버리지 않는다 — 같은
+        //    디렉토리 형제 형태(`__DIR__.'/config.php'`)는 `loadsFile()` 이 그대로 받는다.
+        //    루트의 `index.php` 는 상대 경로에 디렉토리가 없으므로 `./` 를 붙여 「트리 루트
+        //    기준」임을 선언한다(그 트레이트 독블록).
         do {
             $grew = false;
             foreach ($sources as $relative => $source) {
@@ -83,9 +108,7 @@ class InstallerTestIsolationCoverageTest extends TestCase
                     continue;
                 }
                 foreach (array_keys($definers) as $definer) {
-                    $needle = preg_quote(basename($definer), '/');
-                    if (preg_match('/(?:require|include)(?:_once)?[^;
-]*'.$needle.'/', $source) === 1) {
+                    if ($this->loadsFile($source, './'.$definer) !== false) {
                         $definers[$relative] = true;
                         $grew = true;
                         break;
@@ -103,21 +126,31 @@ class InstallerTestIsolationCoverageTest extends TestCase
     }
 
     /**
-     * 이 소스가 (직접이든 전이든) BASE_PATH 를 정의하는가.
+     * 이 테스트 소스가 `BASE_PATH` 를 (직접이든 전이든) 정의하는가.
      *
-     * 따옴표 종류와 `define (` 공백을 모두 받는다 — 한 표기만 보면 다른 표기로 쓴 클래스가
-     * 격리 없이 게이트를 통과해, 6차 라운드가 닫은 사각이 그대로 다시 열린다.
+     * 직접 정의는 주석을 지운 소스에서 본다. 전이 정의는 **로드**만 해당한다 — 경로를
+     * 문자열로 언급만 하는 소스 대조 테스트(그 파일을 읽어 검사할 뿐 실행하지 않는다)까지
+     * 잡으면 오탐이 된다. 판정은 트레이트의 `loadsFile()` 이 토큰으로 한다 (그 독블록에
+     * 두 오탐 형태를 적어 두었다).
+     *
+     * `loadsFile()` 의 판정 불가(`null`)는 **정의자로 친다** — 파일명이 변수인 require 가
+     * 정의자의 디렉토리를 가리키면 그 파일을 로드할 수 있고, 로드하면 상수가 박힌다.
+     * 「모른다」를 「하지 않는다」로 접으면 6차가 닫은 조용한 skip 이 그 자리에서 다시 열린다.
+     *
+     * @param  string  $src  테스트 소스
+     * @return bool 정의하면(또는 정의할 수 있으면) true
      */
     private function definesBasePath(string $src): bool
     {
-        if (preg_match('/\bdefine\s*\(\s*([\'"])BASE_PATH\1/', $src) === 1) {
+        if (preg_match('/\bdefine\s*\(\s*([\'"])BASE_PATH\1/', $this->stripComments($src)) === 1) {
             return true;
         }
 
         foreach ($this->transitiveDefiners() as $include) {
-            // **로드**만 전이 정의다 — 경로를 문자열로 언급만 하는 소스 대조 테스트
-            // (그 파일을 읽어 검사할 뿐 실행하지 않는다)까지 잡으면 오탐이 된다.
-            if (preg_match('/(?:require|include)(?:_once)?[^;\n]*'.preg_quote($include, '/').'/', $src) === 1) {
+            // 정의자 목록은 인스톨러 트리 루트 기준이다 — `./` 로 그 사실을 선언한다(위 전이 판정과
+            // 같은 이유. 없으면 `require $path`(`…/lang/'.$code.'.php`) 같은 번역 파일 로드가 루트
+            // 정의자 `index.php` 에 대해 판정 불가로 떨어져 그 테스트에 거짓 격리 의무가 생긴다).
+            if ($this->loadsFile($src, './'.$include) !== false) {
                 return true;
             }
         }
@@ -158,7 +191,9 @@ class InstallerTestIsolationCoverageTest extends TestCase
                 continue;
             }
 
-            $source = (string) file_get_contents($file->getPathname());
+            // 모집단 조건도 주석을 지운 소스로 본다 — 독블록에서만 인스톨러 경로를 언급하는 테스트는
+            // 인스톨러 include 를 로드하지 않는다 (G3 회차 14 W4-8).
+            $source = $this->sourceWithoutComments($file->getPathname());
             if (! str_contains($source, 'public/install/')) {
                 continue;   // 인스톨러 include 를 건드리지 않는 테스트는 이 게이트의 대상이 아니다
             }
@@ -176,13 +211,16 @@ class InstallerTestIsolationCoverageTest extends TestCase
         $this->assertGreaterThanOrEqual(20, count($this->scannedFiles()), '인스톨러 테스트 모집단이 비면 이 게이트는 무의미하다');
     }
 
+    /**
+     * @effects installer_test_defining_base_path_declares_process_isolation
+     */
     public function test_every_class_defining_base_path_declares_process_isolation(): void
     {
         $offenders = [];
         $definers = 0;
 
         foreach ($this->scannedFiles() as $path) {
-            $src = (string) file_get_contents($path);
+            $src = $this->sourceWithoutComments($path);
 
             if (! $this->definesBasePath($src)) {
                 continue;
@@ -222,7 +260,7 @@ class InstallerTestIsolationCoverageTest extends TestCase
         $isolatedCount = 0;
 
         foreach ($this->scannedFiles() as $path) {
-            $src = (string) file_get_contents($path);
+            $src = $this->sourceWithoutComments($path);
 
             if (! $this->declaresIsolation($src)) {
                 continue;
@@ -250,6 +288,8 @@ class InstallerTestIsolationCoverageTest extends TestCase
      * 돌 때마다 개발자 임시 디렉토리에 트리가 쌓인다 — 실측 시점에 42개 중 정리 절차를 가진
      * 클래스는 14개뿐이었다. 정리는 공용 트레이트(`CleansTemporaryBasePath`)나 클래스 자신의
      * `tearDownAfterClass()` 둘 중 하나로 선언한다.
+     *
+     * @effects installer_test_creating_temp_base_path_cleans_it_up
      */
     public function test_every_class_creating_a_temp_base_path_cleans_it_up(): void
     {
@@ -257,7 +297,7 @@ class InstallerTestIsolationCoverageTest extends TestCase
         $creators = 0;
 
         foreach ($this->scannedFiles() as $path) {
-            $src = (string) file_get_contents($path);
+            $src = $this->sourceWithoutComments($path);
 
             if (! $this->createsTemporaryBasePath($src)) {
                 continue;
@@ -366,6 +406,19 @@ class Foo {}
         $this->assertTrue($this->definesBasePath($transitive), '전이 정의(로드)도 상수를 박는다');
         $this->assertFalse($this->definesBasePath($mentionOnly), '경로를 문자열로 언급만 하는 소스 대조 테스트는 대상이 아니다');
         $this->assertFalse($this->definesBasePath($neither));
+
+        // G3 회차 13 W5-4·5 — 토큰 경로의 다섯 형태.
+        $commentedDefine = "<?php\n// define('BASE_PATH', '/tmp/x');\n";
+        $commentedRequire = "<?php\nrequire __DIR__.'/other.php'; // public/install/includes/installer-state.php\n";
+        $dynamicRequire = "<?php\nforeach (\$files as \$file) {\n    require \$root.'/public/install/api/'.\$file;\n}\n";
+        $langRequire = "<?php\n\$root = dirname(__DIR__, 3).'/public/install/lang';\n\$t = require \$root.'/'.\$locale.'.php';\n";
+        $siblingName = "<?php\nrequire_once __DIR__.'/public/install/includes/some-installer-state.php';\n";
+
+        $this->assertFalse($this->definesBasePath($commentedDefine), '주석 처리된 define 은 상수를 박지 않는다');
+        $this->assertFalse($this->definesBasePath($commentedRequire), '주석 속 경로는 로드가 아니다');
+        $this->assertTrue($this->definesBasePath($dynamicRequire), '파일명이 변수인 require 가 정의자의 디렉토리를 가리키면 보수적으로 정의자다 (fail-closed)');
+        $this->assertFalse($this->definesBasePath($langRequire), '변수를 풀면 lang/ 임이 드러난다 — 판정 불가로 남기면 거짓 red 다');
+        $this->assertFalse($this->definesBasePath($siblingName), '파일명 대조는 세그먼트 경계다');
 
         $isolatedClass = '<?php
 #[RunClassInSeparateProcess]

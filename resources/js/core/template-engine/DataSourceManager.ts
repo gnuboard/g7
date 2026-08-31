@@ -25,6 +25,7 @@ import { createLogger } from '../utils/Logger';
 import { webSocketManager } from '../websocket/WebSocketManager';
 import type { G7DevToolsInterface } from './G7CoreGlobals';
 import type { GlobalHeaderRule } from './LayoutLoader';
+import { withBasePrefix } from '../support/assetUrl';
 
 const logger = createLogger('DataSourceManager');
 
@@ -1778,7 +1779,9 @@ export class DataSourceManager {
           }
         }
 
-        const response = await fetch(url, {
+        // 인증 분기는 `apiClient`(=`withBasePrefix('/api')`)를 타는데 이 분기만 raw fetch
+        // 였다 — 같은 데이터소스가 로그인 여부에 따라 다른 호스트를 쳤다 (11차 G3 라운드).
+        const response = await fetch(withBasePrefix(url), {
           method,
           headers: requestHeaders,
           body: fetchBody,

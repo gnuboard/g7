@@ -6,6 +6,7 @@ use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 use Tests\Concerns\CleansTemporaryBasePath;
+use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
  * 21차 동시성·이중 파서 축 회귀 가드 (#21-1 · #21-4 · #21-8 · #21-9)
@@ -33,6 +34,7 @@ use Tests\Concerns\CleansTemporaryBasePath;
 class InstallerRetryLifecycleTest extends TestCase
 {
     use CleansTemporaryBasePath;
+    use ScansPhpSourceFunctions;
 
     protected function setUp(): void
     {
@@ -70,7 +72,7 @@ class InstallerRetryLifecycleTest extends TestCase
      */
     public function test_step3_save_routes_through_status_patch(): void
     {
-        $source = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/includes/request-handler.php');
+        $source = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/includes/request-handler.php');
 
         $this->assertStringContainsString('installerConfigSaveStatusPatch(', $source, 'Step 3 저장이 상태 보존 판정을 경유하지 않는다 (#21-9)');
         $this->assertStringNotContainsString("'installation_status' => 'ready',", $source, "무조건 'ready' 덮어쓰기가 남아 있다 (#21-9)");
@@ -101,7 +103,7 @@ class InstallerRetryLifecycleTest extends TestCase
      */
     public function test_install_start_routes_through_retry_judgment(): void
     {
-        $source = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/api/install-process.php');
+        $source = $this->sourceWithoutCommentsAndStrings(dirname(__DIR__, 3).'/public/install/api/install-process.php');
 
         $this->assertStringContainsString('installerIsRetryRun(', $source, '시작 엔드포인트가 재시도 판정 SSoT 를 경유하지 않는다 (#21-9)');
     }
@@ -127,7 +129,7 @@ class InstallerRetryLifecycleTest extends TestCase
      */
     public function test_save_extensions_routes_through_selection_gate(): void
     {
-        $source = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/api/save-extensions.php');
+        $source = $this->sourceWithoutCommentsAndStrings(dirname(__DIR__, 3).'/public/install/api/save-extensions.php');
 
         $this->assertStringContainsString('installerExtensionSelectionRejection(', $source, 'save-extensions 가 상태 게이트를 경유하지 않는다 (#21-8)');
     }
@@ -187,7 +189,7 @@ class InstallerRetryLifecycleTest extends TestCase
      */
     public function test_guard_shares_parse_failure_fallback(): void
     {
-        $guard = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/api/_guard.php');
+        $guard = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/api/_guard.php');
 
         $this->assertSame(
             2,
@@ -203,7 +205,7 @@ class InstallerRetryLifecycleTest extends TestCase
      */
     public function test_step3_save_runs_under_state_lock(): void
     {
-        $source = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/includes/request-handler.php');
+        $source = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/includes/request-handler.php');
 
         $this->assertStringContainsString('installerWithStateLock(', $source, 'Step 3 저장이 상태 잠금을 경유하지 않는다 (22차 N-2)');
     }
@@ -214,7 +216,7 @@ class InstallerRetryLifecycleTest extends TestCase
      */
     public function test_step3_pending_path_validation_matches_check_button(): void
     {
-        $source = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/includes/request-handler.php');
+        $source = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/includes/request-handler.php');
 
         $this->assertStringContainsString('\.\.([', $source, '상위 경로 세그먼트(..) 거부 정규식이 없다 (#21-4)');
         $this->assertStringContainsString('"\0"', $source, 'NUL 거부가 없다 (#21-4)');

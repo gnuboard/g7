@@ -1,3 +1,4 @@
+import { withBasePrefix } from '../../../support/assetUrl';
 /**
  * AccessErrorPanel.tsx — 레이아웃 로드 실패 안내 패널
  *
@@ -107,10 +108,12 @@ function AccessRedirectGate({ error }: { error: EditorAccessError }): null {
     if (typeof window === 'undefined') return;
 
     const auth = AuthManager.getInstance();
+    // base-path:allow 복귀 주소 — 접두사를 품은 원본을 쓴다
     const returnUrl = `${window.location.pathname}${window.location.search}`;
     const redirectUrl = auth.getLoginRedirectUrl('admin', returnUrl, 'session_expired');
     // 짧은 지연 — 사용자가 "로그인 페이지로 이동 중" 안내를 볼 수 있게 한다.
     const timer = window.setTimeout(() => {
+      // base-path:allow redirectUrl 은 getLoginRedirectUrl() 이 접두사를 붙인 값이다.
       window.location.href = redirectUrl;
     }, 600);
     return () => window.clearTimeout(timer);
@@ -126,7 +129,8 @@ export function AccessErrorPanel({ error }: AccessErrorPanelProps): React.ReactE
 
   const handleGoHome = (): void => {
     if (typeof window !== 'undefined') {
-      window.location.href = '/admin';
+      // 리터럴 루트 상대는 하위 폴더 배치에서 사이트 밖을 가리킨다 (12차 G3).
+      window.location.href = withBasePrefix('/admin');
     }
   };
 
@@ -139,7 +143,9 @@ export function AccessErrorPanel({ error }: AccessErrorPanelProps): React.ReactE
   const handleSignIn = (): void => {
     if (typeof window === 'undefined') return;
     const auth = AuthManager.getInstance();
+    // base-path:allow 복귀 주소 — 접두사를 품은 원본을 쓴다
     const returnUrl = `${window.location.pathname}${window.location.search}`;
+    // base-path:allow getLoginRedirectUrl() 자신이 접두사를 붙여 돌려준다.
     window.location.href = auth.getLoginRedirectUrl('admin', returnUrl);
   };
 

@@ -1,4 +1,10 @@
-# audit:allow test-scenario-coverage reason: 14축 full cross product 691만 조합 — 전개 상한 초과.
+# audit:allow test-scenario-coverage reason: issue:#609 14축 full cross product 691만 조합 — 전개 상한 초과.
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 15차 F-21 에서 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
+# 원장(9차 G3 라운드 C-4): 이 매니페스트는 :cross-product 로 좁히면 effects 47건이 미검증으로 드러난다.
+#   그 짝 맞추기는 이 공정(이커머스 현금영수증·환불계좌)의 몫이며, 좁히는 시점에 함께 처리한다.
+#   ※ 최초 측정은 「미검증 0건」이었는데 그것은 사실이 아니었다 — 조합 수 216,000 이 상한을 넘어
+#     룰이 effects 대조 **전에** 조기 반환하고 있었다. 같은 라운드가 그 순서를 고쳐(상한은 실제로
+#     전개하는 경로에만 건다) 이 수치가 드러났다. 상한을 이유로 좁히지 못하는 상태는 해소됐다.
 #   test_files 실재 검사는 이 면제와 무관하게 항상 수행된다(끄려면 `:test-files` 접미사).
 #   실제 커버는 아래 effects 69건과 test_files 12개가 담당한다. S2 가 이월한 E2E axis 를 본 매니페스트에서 채운다.
 feature: 현금영수증 신청/발급 UI · 환불계좌 수집
@@ -39,6 +45,8 @@ axis_notes:
     ready·waiting_deposit 양쪽에 true). 입금 대기 상태를 판정하는 모든 표면은 두 값을 함께 매칭해야 한다.
 
 axes:
+  # G3 회차 16 W6 — 종전 마킹이 쓰던 이름을 선언으로 올린다 (선언 = 마킹). 값은 실제 마킹에서 도출.
+  change_mode: [manual]
   surface:                    # 사람이 조작하는 표면
     - checkout                # W-1 체크아웃 신청 폼 (모듈 주입)
     - mypage_order            # W-2 유저 주문상세 카드 (모듈 주입)

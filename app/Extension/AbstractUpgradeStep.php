@@ -57,8 +57,13 @@ abstract class AbstractUpgradeStep implements UpgradeStepInterface
             return [];
         }
 
-        $files = glob($dir.'/*.php') ?: [];
-        sort($files);
+        // `glob` 은 하드닝 프로필의 표준 차단 대상이다. 막힌 호스팅에서 PHP 8 은 그 함수를
+        // 함수 테이블에서 제거하므로 이 호출은 `Error`(치명)이고, **업그레이드 스텝 전체가
+        // 그 자리에서 죽는다** — 이 안이 대상으로 삼은 제약 호스팅에서 정리가 한 번도
+        // 실행되지 않는다는 뜻이다. 로더가 사각이면 개별 마이그레이션이 `scandir` 로
+        // 회피한 것도 무의미하므로(`01_MovePublicStorage…` 가 정확히 그 근거를 적고 있다)
+        // 같은 규율로 정렬한다.
+        $files = ExtensionManager::listDirectoryFiles($dir, '.php');
 
         $migrations = [];
         $namespace = DataSnapshot::versionedNamespace($context, $dir).'\\Migrations';

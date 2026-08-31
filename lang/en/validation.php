@@ -1,5 +1,7 @@
 <?php
 
+// changelog:allow 숨김 파일 서빙 거부 문구 — 무CLI·고정 문서루트 축(#609)의 신규 키. 공개 CHANGELOG 는 기능 완성 릴리즈 섹션에 일괄 기재
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -733,6 +735,7 @@ return [
         'absolute_path_not_allowed' => 'Absolute paths are not allowed.',
         'null_byte_detected' => 'NULL byte attack detected.',
         'outside_base_directory' => 'Paths outside the base directory are not allowed.',
+        'hidden_segment_not_allowed' => 'Files and directories whose names begin with a dot are not served.',
         'file_type_not_allowed' => 'File type not allowed. Extension: :extension (Allowed: :allowed)',
     ],
 
@@ -755,6 +758,7 @@ return [
         'absolute_path_not_allowed' => 'Absolute paths are not allowed.',
         'null_byte_detected' => 'NULL byte detected.',
         'outside_base_directory' => 'Access outside the base directory is not allowed.',
+        'hidden_segment_not_allowed' => 'Files and directories whose names begin with a dot are not served.',
     ],
 
     // Plugin path validation messages
@@ -765,6 +769,7 @@ return [
         'absolute_path_not_allowed' => 'Absolute paths are not allowed.',
         'null_byte_detected' => 'NULL byte detected.',
         'outside_base_directory' => 'Access outside the base directory is not allowed.',
+        'hidden_segment_not_allowed' => 'Files and directories whose names begin with a dot are not served.',
     ],
 
     // Auth validation messages

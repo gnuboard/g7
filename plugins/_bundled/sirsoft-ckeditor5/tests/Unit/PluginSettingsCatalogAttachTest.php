@@ -15,11 +15,12 @@ use Plugins\Sirsoft\Ckeditor5\Tests\PluginTestCase;
  * available_public_asset_disks 카탈로그가 서버 부착되는지 검증합니다. 화면이 코어
  * 설정 API(core.settings.read)를 교차 조회하면 화면 권한(core.plugins.read)과
  * 표면이 갈려 커스텀 역할에서 카탈로그만 조용히 비므로, 단일 표면 계약을 고정합니다.
- *
- * @effects settings_catalog_includes_plugin_registered_disks
  */
 class PluginSettingsCatalogAttachTest extends PluginTestCase
 {
+    /**
+     * @effects settings_catalog_includes_plugin_registered_disks
+     */
     #[Test]
     public function settings_response_attaches_public_asset_catalog(): void
     {

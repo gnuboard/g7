@@ -19,8 +19,6 @@ use Plugins\Sirsoft\Ckeditor5\Tests\PluginTestCase;
  *
  * 스키마 타입만으로는 검증할 수 없다 — 선택지가 코어 3종 + 플러그인 훅 등록
  * 디스크라 런타임에만 확정되기 때문이다.
- *
- * @effects invalid_disk_rejected_with_422
  */
 class PluginSettingsPublicAssetDiskValidationTest extends PluginTestCase
 {
@@ -63,6 +61,9 @@ class PluginSettingsPublicAssetDiskValidationTest extends PluginTestCase
         $this->assertSame('', $request->validated()['public_asset_disk'] ?? '');
     }
 
+    /**
+     * @effects invalid_disk_rejected_with_422
+     */
     #[Test]
     public function unknown_disk_is_rejected(): void
     {

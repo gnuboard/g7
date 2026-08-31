@@ -20,11 +20,7 @@ use Tests\Concerns\CountsQueries;
  * 특정 시점의 쿼리 수를 숫자로 박아 두면 관계 하나만 추가해도 깨져 유지되지 않는다.
  * 대신 **행 수를 늘려도 쿼리 수가 늘지 않는다** 를 단언한다 — 그것이 N+1 의 정의다.
  *
- * @scenario case=list_query_count
- *
- * @effects shop_home_popular_query_count_stable,
- *          shop_home_new_query_count_stable,
- *          shop_home_recent_query_count_stable
+ * @scenario list_query_count
  */
 class ShopHomeQueryCountRegressionTest extends ModuleTestCase
 {

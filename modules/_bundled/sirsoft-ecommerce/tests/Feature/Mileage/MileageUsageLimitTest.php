@@ -28,10 +28,6 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 2) 주문 확정 (OrderProcessingService) — 임시주문 생성 이후의 설정 변경·조작 차단
  *
  * @scenario actor=member, change_mode=api
- *
- * @effects mileage_usage_limit_enforced_on_temp_order,
- *   mileage_usage_limit_enforced_on_order_create,
- *   mileage_preview_not_blocked_by_limit
  */
 class MileageUsageLimitTest extends ModuleTestCase
 {
@@ -188,6 +184,8 @@ class MileageUsageLimitTest extends ModuleTestCase
      * 정률 상한(max_use_percent)을 초과하는 사용 요청은 422 로 차단됩니다.
      *
      * 수정 전: 잔액만 확인해 201 로 통과 → 결제금액 전액을 마일리지로 충당 가능.
+     *
+     * @effects mileage_usage_limit_enforced_on_temp_order
      */
     public function test_use_points_exceeding_max_use_percent_returns_422(): void
     {
@@ -230,6 +228,8 @@ class MileageUsageLimitTest extends ModuleTestCase
 
     /**
      * 정액 상한(max_use_value)을 초과하는 사용 요청은 422 로 차단됩니다.
+     *
+     * @effects mileage_usage_limit_enforced_on_temp_order
      */
     public function test_use_points_exceeding_max_use_value_returns_422(): void
     {
@@ -249,6 +249,8 @@ class MileageUsageLimitTest extends ModuleTestCase
 
     /**
      * 사용 단위(use_unit)에 맞지 않는 사용 요청은 422 로 차단됩니다.
+     *
+     * @effects mileage_usage_limit_enforced_on_temp_order
      */
     public function test_use_points_violating_use_unit_returns_422(): void
     {
@@ -268,6 +270,8 @@ class MileageUsageLimitTest extends ModuleTestCase
 
     /**
      * 최소 사용액(min_use_amount) 미만 사용 요청은 422 로 차단됩니다.
+     *
+     * @effects mileage_usage_limit_enforced_on_temp_order
      */
     public function test_use_points_below_min_use_amount_returns_422(): void
     {
@@ -287,6 +291,8 @@ class MileageUsageLimitTest extends ModuleTestCase
 
     /**
      * 임시주문 수정(PUT) 경로에서도 동일하게 차단됩니다.
+     *
+     * @effects mileage_usage_limit_enforced_on_temp_order
      */
     public function test_use_points_exceeding_limit_on_update_returns_422(): void
     {
@@ -317,6 +323,8 @@ class MileageUsageLimitTest extends ModuleTestCase
      * 임시주문 생성 후 한도 설정이 강화되면 주문 확정 시점에 차단됩니다.
      *
      * 임시주문 단계 검증만 두면 "먼저 담아둔 임시주문"으로 정책을 우회할 수 있습니다.
+     *
+     * @effects mileage_usage_limit_enforced_on_order_create
      */
     public function test_order_create_blocked_when_limit_tightened_after_temp_order(): void
     {
@@ -401,6 +409,8 @@ class MileageUsageLimitTest extends ModuleTestCase
      * 한도를 초과하게 된 임시주문이 있어도 체크아웃 조회는 200 을 유지합니다.
      *
      * 조회 경로에서 던지면 설정 변경 직후 사용자의 주문서 화면이 통째로 붕괴합니다.
+     *
+     * @effects mileage_preview_not_blocked_by_limit
      */
     public function test_checkout_preview_still_returns_200_when_limit_tightened(): void
     {

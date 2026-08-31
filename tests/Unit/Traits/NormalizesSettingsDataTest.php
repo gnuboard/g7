@@ -29,8 +29,6 @@ class NormalizesSettingsDataDummy
  * 숫자 설정이 문자열로 영속되어도(HTML number 입력 → Laravel integer 규칙은
  * 숫자 문자열을 통과시키되 캐스트하지 않음) 조회 시 defaults 스키마의 스칼라 타입으로
  * 정규화되는지 검증한다. 정규화가 없으면 Carbon 등 strict 타입 경계에서 TypeError 가 난다.
- *
- * @effects settings_read_returns_schema_scalar_type
  */
 class NormalizesSettingsDataTest extends TestCase
 {
@@ -46,6 +44,9 @@ class NormalizesSettingsDataTest extends TestCase
     // 스칼라 숫자 정규화 (int)
     // ──────────────────────────────────────────────
 
+    /**
+     * @effects settings_read_returns_schema_scalar_type
+     */
     public function test_numeric_string_is_cast_to_int_when_default_is_int(): void
     {
         $result = $this->dummy->normalizeCategory(
@@ -66,6 +67,9 @@ class NormalizesSettingsDataTest extends TestCase
         $this->assertSame(7, $result['auto_cancel_days']);
     }
 
+    /**
+     * @effects settings_read_returns_schema_scalar_type
+     */
     public function test_nested_category_settings_are_normalized(): void
     {
         $result = $this->dummy->normalize(

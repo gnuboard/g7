@@ -16,11 +16,6 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 이 테스트가 그 회귀를 고정한다.
  *
  * @scenario actor=admin, change_mode=manual
- *
- * @effects settings_cash_receipt_provider_persisted,
- *   settings_shipping_fee_tax_policy_persisted,
- *   settings_cash_receipt_self_issue_persisted,
- *   settings_invalid_shipping_fee_tax_policy_rejected_422
  */
 class EcommerceSettingsCashReceiptTest extends ModuleTestCase
 {
@@ -47,6 +42,9 @@ class EcommerceSettingsCashReceiptTest extends ModuleTestCase
         return $settings;
     }
 
+    /**
+     * @effects settings_cash_receipt_provider_persisted
+     */
     public function test_현금영수증_프로바이더가_저장된다(): void
     {
         // 저장값 해석은 레지스트리 대조를 거치므로 제공 확장을 함께 등록한다 (A3)
@@ -61,6 +59,9 @@ class EcommerceSettingsCashReceiptTest extends ModuleTestCase
         $this->assertSame('tosspayments', $this->settings()->getCashReceiptProvider());
     }
 
+    /**
+     * @effects settings_cash_receipt_provider_persisted
+     */
     public function test_프로바이더를_빈_문자열로_저장하면_미사용이_된다(): void
     {
         $this->actingAs($this->adminUser)->putJson($this->apiBase, [
@@ -72,6 +73,9 @@ class EcommerceSettingsCashReceiptTest extends ModuleTestCase
         $this->assertNull($this->settings()->getCashReceiptProvider());
     }
 
+    /**
+     * @effects settings_shipping_fee_tax_policy_persisted
+     */
     public function test_배송비_과세_정책이_저장된다(): void
     {
         $this->actingAs($this->adminUser)->putJson($this->apiBase, [
@@ -85,6 +89,9 @@ class EcommerceSettingsCashReceiptTest extends ModuleTestCase
         );
     }
 
+    /**
+     * @effects settings_shipping_fee_tax_policy_persisted
+     */
     public function test_배송비_과세_정책_3종이_모두_저장된다(): void
     {
         foreach (ShippingFeeTaxPolicy::cases() as $policy) {
@@ -97,6 +104,9 @@ class EcommerceSettingsCashReceiptTest extends ModuleTestCase
         }
     }
 
+    /**
+     * @effects settings_invalid_shipping_fee_tax_policy_rejected_422
+     */
     public function test_알_수_없는_배송비_과세_정책은_거부된다(): void
     {
         $this->actingAs($this->adminUser)->putJson($this->apiBase, [
@@ -106,6 +116,9 @@ class EcommerceSettingsCashReceiptTest extends ModuleTestCase
             ->assertJsonValidationErrors(['order_settings.shipping_fee_tax_policy']);
     }
 
+    /**
+     * @effects settings_cash_receipt_self_issue_persisted
+     */
     public function test_자진발급_토글이_저장된다(): void
     {
         $this->actingAs($this->adminUser)->putJson($this->apiBase, [

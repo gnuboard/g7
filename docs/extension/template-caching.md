@@ -249,8 +249,11 @@ async loadLayout(layoutName: string): Promise<LayoutConfig> {
 }
 
 // TranslationEngine.ts
+import { withBasePrefix } from './support/assetUrl';
+
 async loadTranslations(identifier: string, locale: string): Promise<void> {
-    let url = `/api/template/${identifier}/language/${locale}`;
+    // 브라우저 안에서 만드는 주소는 반드시 마운트 접두사를 거친다 (아래 주의 참조).
+    let url = withBasePrefix(`/api/template/${identifier}/language/${locale}`);
     const params: string[] = [];
 
     if (this.cacheVersion > 0) {
@@ -268,9 +271,11 @@ async loadTranslations(identifier: string, locale: string): Promise<void> {
 
 ```typescript
 // TemplateApp.ts
+import { withBasePrefix } from './support/assetUrl';
+
 async init(): Promise<void> {
     // 서버에서 캐시 버전 조회
-    const response = await fetch('/api/extension/cache-version');
+    const response = await fetch(withBasePrefix('/api/extension/cache-version'));
     const { version } = await response.json();
 
     // 각 엔진에 버전 설정
@@ -278,6 +283,26 @@ async init(): Promise<void> {
     this.translationEngine.setCacheVersion(version);
 }
 ```
+
+#### 주소는 루트 상대로 두지 않는다
+
+사이트는 문서 루트가 아니라 하위 폴더에 설치될 수 있다(`https://host/g7/`). 서버가 렌더한 주소에는
+마운트 접두사가 이미 붙어 있지만 **브라우저 안에서 만드는 주소**는 루트 상대(`/api/…`)라 접두사가 없다.
+`fetch('/api/…')` 를 그대로 쓰면 그 요청이 사이트 밖으로 나가고, 증상은 오류가 아니라
+**버튼이 조용히 무반응**인 것이다(문서 루트에 다른 사이트가 있으면 그쪽 응답을 받는다).
+
+- **코어 코드**는 `withBasePrefix()` 를 쓴다 (`resources/js/core/support/assetUrl.ts`).
+- **확장 코드**는 확장별 `apiUrl()` 헬퍼를 쓴다 — 확장 번들은 코어와 별도 IIFE 라 `import` 가 불가능하므로,
+  코어 `G7Core.url.api` 에 위임하고 같은 SSoT(`G7Config.basePath`)를 읽는 폴백을 가진 사본을 각 확장이 갖는다.
+- 변수로 조립한 뒤 `fetch(url)` 하는 형태도 같은 대상이다 — 조립하는 자리에서 접두사를 붙인다.
+
+| 헬퍼 | 부르는 자리 |
+|------|-------------|
+| `apiUrl(path)` | 서버를 부르는 주소 (`fetch` 등) |
+| `sitePath(path)` | 브라우저가 그대로 여는 주소 (`location.href` 대입 · `window.open` · `history.pushState` 의 세 번째 인자) |
+| `routePath(path)` | 받아 온 주소를 라우트와 대조할 때 — 접두사를 **벗긴다** |
+
+> 상세: [G7Core 전역 API 레퍼런스 "주소 조립 (G7Core.url)"](../frontend/g7core-api.md)
 
 ### 캐시 버전 API 엔드포인트
 

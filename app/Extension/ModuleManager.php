@@ -1212,8 +1212,8 @@ class ModuleManager implements ModuleManagerInterface
 
                     if (isset($builtPaths['js']) || isset($builtPaths['css'])) {
                         $assets = [
-                            'js' => isset($builtPaths['js']) ? AssetUrl::moduleAsset($identifier, $builtPaths['js']) : null,
-                            'css' => isset($builtPaths['css']) ? AssetUrl::moduleAsset($identifier, $builtPaths['css']) : null,
+                            'js' => isset($builtPaths['js']) ? AssetUrl::moduleAsset($identifier, $builtPaths['js'], $module->getVersion()) : null,
+                            'css' => isset($builtPaths['css']) ? AssetUrl::moduleAsset($identifier, $builtPaths['css'], $module->getVersion()) : null,
                             'priority' => $loadingConfig['priority'] ?? 100,
                         ];
                     }
@@ -1302,8 +1302,8 @@ class ModuleManager implements ModuleManagerInterface
 
                     if (isset($builtPaths['js']) || isset($builtPaths['css'])) {
                         $assets = [
-                            'js' => isset($builtPaths['js']) ? AssetUrl::moduleAsset($identifier, $builtPaths['js']) : null,
-                            'css' => isset($builtPaths['css']) ? AssetUrl::moduleAsset($identifier, $builtPaths['css']) : null,
+                            'js' => isset($builtPaths['js']) ? AssetUrl::moduleAsset($identifier, $builtPaths['js'], $module->getVersion()) : null,
+                            'css' => isset($builtPaths['css']) ? AssetUrl::moduleAsset($identifier, $builtPaths['css'], $module->getVersion()) : null,
                             'priority' => $loadingConfig['priority'] ?? 100,
                         ];
                     }
@@ -1450,8 +1450,8 @@ class ModuleManager implements ModuleManagerInterface
 
             if (isset($builtPaths['js']) || isset($builtPaths['css'])) {
                 $assets = [
-                    'js' => isset($builtPaths['js']) ? AssetUrl::moduleAsset($identifier, $builtPaths['js']) : null,
-                    'css' => isset($builtPaths['css']) ? AssetUrl::moduleAsset($identifier, $builtPaths['css']) : null,
+                    'js' => isset($builtPaths['js']) ? AssetUrl::moduleAsset($identifier, $builtPaths['js'], $module->getVersion()) : null,
+                    'css' => isset($builtPaths['css']) ? AssetUrl::moduleAsset($identifier, $builtPaths['css'], $module->getVersion()) : null,
                     'priority' => $loadingConfig['priority'] ?? 100,
                 ];
             }
@@ -1785,7 +1785,7 @@ class ModuleManager implements ModuleManagerInterface
 
         foreach ($migrationPaths as $migrationPath) {
             // 디렉토리 내 마이그레이션 파일 목록 (역순으로 정렬 - 최신 것부터 롤백)
-            $migrationFiles = glob($migrationPath.'/*.php');
+            $migrationFiles = ExtensionManager::listDirectoryFiles($migrationPath, '.php');
 
             if (empty($migrationFiles)) {
                 Log::info('롤백할 마이그레이션 파일이 없습니다.', [
@@ -2918,7 +2918,7 @@ class ModuleManager implements ModuleManagerInterface
         $namespace = $this->convertDirectoryToNamespace($moduleDirName);
 
         // 시더 파일들을 찾아서 실행
-        $seederFiles = File::glob($seederPath.'/*Seeder.php');
+        $seederFiles = ExtensionManager::listDirectoryFiles($seederPath, 'Seeder.php');
 
         foreach ($seederFiles as $seederFile) {
             $fileName = basename($seederFile, '.php');

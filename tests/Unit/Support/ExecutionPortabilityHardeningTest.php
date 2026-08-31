@@ -15,8 +15,6 @@ use ReflectionMethod;
  * 패널 경로 부재·`open_basedir`·`disable_functions`·블로킹 read 는 로컬에서 늘 통과한다.
  * 그래서 판정을 **주입 가능한 자리**로 끌어내거나(disable_functions 목록·private 메서드),
  * 별도 프로세스를 실제로 띄워서 그 환경을 만들어 확인한다.
- *
- * @effects core_execution_layer_survives_restricted_hosting
  */
 class ExecutionPortabilityHardeningTest extends TestCase
 {
@@ -78,6 +76,8 @@ class ExecutionPortabilityHardeningTest extends TestCase
      * exec 은 성공하는 경로". PATH 로 해석되는 bare 이름이 그 성질을 그대로 만족한다
      * (`file_exists('php.exe')` 는 CWD 기준이라 false, exec 은 PATH 에서 찾아 성공).
      * stat 조기 실패가 남아 있으면 이 단언이 red 가 된다.
+     *
+     * @effects core_execution_layer_survives_restricted_hosting
      */
     public function test_validate_does_not_reject_path_that_stat_cannot_see(): void
     {
@@ -225,6 +225,8 @@ class ExecutionPortabilityHardeningTest extends TestCase
      * `disable_functions` 는 런타임에 바꿀 수 없으므로 그 환경을 **실제로 띄워서** 확인한다.
      * PHP 8 은 차단 함수를 함수 테이블에서 제거하므로 무가드 호출은 `Error` 로 죽는다 —
      * `@` 로는 막히지 않는다(진단 억제일 뿐).
+     *
+     * @effects core_execution_layer_survives_restricted_hosting
      */
     public function test_inherited_environment_survives_disabled_getenv(): void
     {
@@ -265,6 +267,8 @@ class ExecutionPortabilityHardeningTest extends TestCase
      * Unix 에서 `max_execution_time` 은 시스템 콜 대기를 세지 않으므로, 블로킹 read 루프는
      * PHP 실행 제한으로도 끝나지 않는다. 그 사이 워커 lock 은 heartbeat 없이 stale 로 넘어가
      * 다른 요청이 같은 작업을 겹쳐 실행한다.
+     *
+     * @effects core_execution_layer_survives_restricted_hosting
      */
     public function test_output_read_gives_up_on_a_silent_child(): void
     {

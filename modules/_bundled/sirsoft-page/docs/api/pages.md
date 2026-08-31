@@ -1211,9 +1211,26 @@ _이 엔드포인트는 JSON 봉투를 반환하지 않습니다. 성공 시 이
 ```http
 HTTP/1.1 200
 Content-Type: image/jpeg
-Content-Disposition: inline
+Content-Disposition: inline; filename="photo.jpg"
+Cache-Control: public, max-age=31536000, must-revalidate
+ETag: "9f2c1d5a0b7e4c3f8a6d2e1b9c0f7a5d"
+Last-Modified: Tue, 14 Nov 2023 22:13:20 GMT
+Expires: Wed, 13 Nov 2024 22:13:20 GMT
 
 (이미지 바이너리 스트림)
+```
+
+조건부 요청 (HTTP 304) — `If-None-Match` 가 현재 ETag 와 일치하거나, `If-None-Match` 없이 `If-Modified-Since` 가 수정 시각 이후이면 본문 없이 응답합니다. 304 는 200 이 실었을 `ETag`·`Last-Modified`·`Cache-Control`·`Expires` 를 그대로 싣습니다:
+
+```http
+GET /api/modules/sirsoft-page/pages/attachment/{hash}/preview HTTP/1.1
+If-None-Match: "9f2c1d5a0b7e4c3f8a6d2e1b9c0f7a5d"
+
+HTTP/1.1 304 Not Modified
+ETag: "9f2c1d5a0b7e4c3f8a6d2e1b9c0f7a5d"
+Last-Modified: Tue, 14 Nov 2023 22:13:20 GMT
+Cache-Control: public, max-age=31536000, must-revalidate
+Expires: Wed, 13 Nov 2024 22:13:20 GMT
 ```
 
 실패 시(첨부 미존재 · 이미지가 아닌 첨부 · 스토리지에 파일 없음):
@@ -1237,6 +1254,8 @@ Content-Disposition: inline
 **설명** 이미지 첨부 썸네일을 인라인으로 미리봅니다(해시 기반, 12자). `download` 와 동일한 발행상태 게이트를 적용합니다 — 발행된 페이지의 썸네일은 누구나, 미발행 페이지의 썸네일은 `sirsoft-page.pages.read` 권한 관리자만 미리볼 수 있습니다. 무인가 사용자에게는 미발행 썸네일이 차단됩니다.
 
 브라우저 `<img src>` 는 Authorization 헤더를 실을 수 없으므로, 미발행 페이지의 관리자 응답(관리자 상세·미발행 미리보기)에는 `expires`·`signature` 쿼리가 붙은 **한시 서명 URL** 이 `preview_url` 로 직렬화되며, 이 엔드포인트는 유효한 서명을 권한과 동등한 자격으로 허용합니다. 서명이 변조·만료된 요청은 404 로 차단됩니다. 발행 페이지의 `preview_url` 은 종전과 동일한 무서명 공개 경로입니다. 이미지 스트리밍 응답이므로 실측 대상이 아닙니다.
+
+**조건부 요청**: 응답은 행 메타(디스크·경로·수정 시각·크기) 기반 `ETag` 와 `Last-Modified` 를 싣고, 되돌아온 `If-None-Match`(우선) / `If-Modified-Since` 를 판정해 변경이 없으면 본문 없는 304 로 응답합니다. 판정은 코어 파일 서빙 헬퍼(`streamedFileResponse()`)가 하므로 다중값·`W/` 약한 검증자·압축 표현의 `-gzip` 접미사가 모두 인정되며, 304 에도 200 과 같은 캐시 헤더가 실립니다. 주소에 자산 버전(`?v=`)이 없으므로 `immutable` 은 붙지 않고(비운영 환경은 `no-cache`), 같은 주소의 이미지가 교체되면 재검증으로 도달합니다. 파일 이름 선언(`Content-Disposition`)은 스토리지 계층이 원본 파일명으로 만듭니다.
 
 
 ### GET /api/modules/sirsoft-page/pages/{slug}

@@ -10,6 +10,8 @@
  * 같은 탭에서 외부 도메인을 다녀와도 유지된다.
  */
 
+import { routePath, sitePath } from './apiUrl';
+
 const PLUGIN_IDENTIFIER = 'sirsoft-tosspayments';
 
 const STORAGE_KEY = 'g7:sirsoft-tosspayments:pendingClose';
@@ -124,7 +126,7 @@ async function postCloseReport(
         return;
     }
 
-    await fetch(CLOSE_REPORT_PATH, {
+    await fetch(sitePath(CLOSE_REPORT_PATH), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify(payload),
@@ -161,7 +163,7 @@ export async function reportPaymentFailureOnReturn(): Promise<void> {
     }
 
     // 결제 완료 화면으로 돌아왔으면 보고 대상이 아니다.
-    if (/\/(complete|success)(\/|$|\?)/.test(window.location.pathname)) {
+    if (/\/(complete|success)(\/|$|\?)/.test(routePath(window.location.pathname))) {
         forgetPendingClose();
 
         return;

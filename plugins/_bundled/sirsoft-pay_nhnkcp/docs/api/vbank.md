@@ -31,6 +31,24 @@
 
 상세: [docs/backend/middleware.md "확장 미들웨어 선언 (self-gate)"](../../../../../docs/backend/middleware.md).
 
+### 운영자에게 표시되는 통보 URL
+
+관리자 설정 화면은 `GET /api/plugins/sirsoft-pay_nhnkcp/admin/vbank-notify-url`(라우트명 `api.plugins.sirsoft-pay_nhnkcp.vbank.notify.url`, `auth:sanctum` + `admin`)로 위 두 경로의 **전체 주소**를 받아 표시한다. 운영자는 그 값을 NHN KCP 상점관리자에 등록한다.
+
+응답 예:
+
+```json
+{
+  "success": true,
+  "data": {
+    "url": "https://example.com/plugins/sirsoft-pay_nhnkcp/payment/vbank-notify",
+    "escrow_common_notify_url": "https://example.com/plugins/sirsoft-pay_nhnkcp/payment/escrow-common-notify"
+  }
+}
+```
+
+주소는 **사이트 설정의 기준 주소**에서 만들어진다 — 이 요청이 어떤 호스트로 들어왔는지는 보지 않는다. 앞단에 프록시·로드밸런서를 두었거나 사이트가 하위 폴더(`https://example.com/shop/`)에 설치된 배치에서도 결제대행사가 실제로 접속할 수 있는 하나의 주소가 나오도록 하기 위함이다. 표시된 주소가 바깥에서 닿지 않는다면 먼저 **환경설정의 사이트 주소**가 실제 서비스 주소와 같은지 확인한다.
+
 ---
 
 ## 모바일 가상계좌 세션 확인값

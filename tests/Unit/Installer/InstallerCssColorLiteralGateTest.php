@@ -17,8 +17,6 @@ use PHPUnit\Framework\TestCase;
  * - **토큰 선언 라인**(`--x: #hex`) — 리터럴이 있어야 하는 유일한 자리. 라인 단위로 걷어낸다.
  * - **흑백 알파 오버레이**(`rgba(0,0,0,α)`/`rgba(255,255,255,α)`) — 그림자·그라디언트의
  *   알파 채널은 토큰이 원리상 담지 못한다 (12차 #B33 이 주석으로 명문화한 축).
- *
- * @effects installer_css_colors_come_from_tokens_only
  */
 class InstallerCssColorLiteralGateTest extends TestCase
 {
@@ -83,6 +81,8 @@ class InstallerCssColorLiteralGateTest extends TestCase
 
     /**
      * 실 스타일시트: 허용 자리 밖 색 리터럴 0.
+     *
+     * @effects installer_css_colors_come_from_tokens_only
      */
     public function test_stylesheet_has_no_color_literals_outside_token_declarations(): void
     {

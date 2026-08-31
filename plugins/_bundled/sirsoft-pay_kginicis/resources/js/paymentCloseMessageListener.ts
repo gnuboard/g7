@@ -1,3 +1,4 @@
+import { apiUrl, routePath } from './apiUrl';
 import {
     clearMobilePaymentReturnPending,
     hasMobilePaymentReturnPending,
@@ -44,7 +45,7 @@ function isPaymentCloseMessage(data: unknown): data is PaymentCloseMessage {
 }
 
 function isCheckoutPage(): boolean {
-    return /\/shop\/checkout\/?$/.test(window.location.pathname);
+    return /\/shop\/checkout\/?$/.test(routePath(window.location.pathname));
 }
 
 function windowRecord(): Record<string, unknown> {
@@ -61,16 +62,23 @@ function getActiveStandardPaymentCloseContext(): StandardPaymentCloseReportConte
 }
 
 function resolveApiUrl(url: string): string {
-    if (/^https?:\/\//i.test(url) || url.startsWith('/api/')) {
+    // 절대 URL 은 그대로. 나머지는 `/api/…` 로 정규화한 뒤 **사이트 마운트 접두사**를
+    // 붙인다 — 붙이지 않으면 하위 폴더 배치에서 결제 종료 보고가 사이트 밖으로 나가고,
+    // 실패해도 화면에 아무 흔적이 남지 않는다 (12차 G3 라운드).
+    if (/^https?:\/\//i.test(url)) {
         return url;
     }
 
+    if (url.startsWith('/api/')) {
+        return apiUrl(url);
+    }
+
     if (url.startsWith('/plugins/')) {
-        return `/api${url}`;
+        return apiUrl(`/api${url}`);
     }
 
     if (url.startsWith('plugins/')) {
-        return `/api/${url}`;
+        return apiUrl(`/api/${url}`);
     }
 
     return url;
@@ -179,7 +187,7 @@ export async function reportStandardPaymentFailureOnReturn(): Promise<void> {
     }
 
     // 결제 완료 화면으로 돌아왔으면 보고 대상이 아니다 — 성공 확정은 서버가 이미 했다.
-    if (/\/(complete|success)(\/|$|\?)/.test(window.location.pathname)) {
+    if (/\/(complete|success)(\/|$|\?)/.test(routePath(window.location.pathname))) {
         clearStandardPaymentCloseReportContext();
 
         return;
@@ -233,6 +241,7 @@ export async function reportStandardPaymentWindowClosed(
         if (typeof apiClient?.post === 'function') {
             await apiClient.post(context.closeReportUrl, payload);
         } else {
+            // base-path:allow resolveApiUrl() 이 정규화 끝에서 apiUrl() 을 거친다
             await fetch(resolveApiUrl(context.closeReportUrl), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

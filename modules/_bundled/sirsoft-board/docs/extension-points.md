@@ -10,13 +10,13 @@
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
 | `core.module_settings.after_save` | action | — | `src/Http/Controllers/Admin/BoardSettingsController.php:123` |
-| `sirsoft-board.attachment.after_delete` | action | — | `src/Services/AttachmentService.php:463` |
-| `sirsoft-board.attachment.after_download` | action | — | `src/Services/AttachmentService.php:776` |
-| `sirsoft-board.attachment.after_link` | action | — | `src/Services/AttachmentService.php:217` 외 1곳 |
-| `sirsoft-board.attachment.after_reorder` | action | — | `src/Services/AttachmentService.php:631` |
-| `sirsoft-board.attachment.after_upload` | action | — | `src/Services/AttachmentService.php:192` |
-| `sirsoft-board.attachment.before_delete` | action | — | `src/Services/AttachmentService.php:442` |
-| `sirsoft-board.attachment.before_reorder` | action | — | `src/Services/AttachmentService.php:626` |
+| `sirsoft-board.attachment.after_delete` | action | — | `src/Services/AttachmentService.php:491` |
+| `sirsoft-board.attachment.after_download` | action | — | `src/Services/AttachmentService.php:829` |
+| `sirsoft-board.attachment.after_link` | action | — | `src/Services/AttachmentService.php:226` 외 1곳 |
+| `sirsoft-board.attachment.after_reorder` | action | — | `src/Services/AttachmentService.php:659` |
+| `sirsoft-board.attachment.after_upload` | action | — | `src/Services/AttachmentService.php:201` |
+| `sirsoft-board.attachment.before_delete` | action | — | `src/Services/AttachmentService.php:470` |
+| `sirsoft-board.attachment.before_reorder` | action | — | `src/Services/AttachmentService.php:654` |
 | `sirsoft-board.attachment.before_upload` | action | — | `src/Services/AttachmentService.php:117` |
 | `sirsoft-board.attachment.filter_upload_file` | filter | — | `src/Services/AttachmentService.php:120` |
 | `sirsoft-board.attachment.reorder_validation_rules` | filter | — | `src/Http/Requests/ReorderAttachmentsRequest.php:35` |

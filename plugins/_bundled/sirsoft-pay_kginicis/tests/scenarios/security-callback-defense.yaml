@@ -1,4 +1,7 @@
-# audit:allow test-scenario-coverage reason: Phase 2 SSoT — 본 매니페스트는 KG 이니시스 콜백 보안 매트릭스의 명세 문서. 단위 테스트(ValidatesTimestampFreshnessTest 13건) 가 freshness 핵심 경로를 커버하며, replay/net-cancel 의 cross product 전체 자동 검증은 Phase 3 (침투 PoC) 에서 처리.
+# audit:allow test-scenario-coverage reason: issue:#609 Phase 2 SSoT — 본 매니페스트는 KG 이니시스 콜백 보안 매트릭스의 명세 문서. 단위 테스트(ValidatesTimestampFreshnessTest 13건) 가 freshness 핵심 경로를 커버하며, replay/net-cancel 의 cross product 전체 자동 검증은 Phase 3 (침투 PoC) 에서 처리.
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 15차 F-21 에서 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
+# 원장(9차 G3 라운드 C-4): 이 매니페스트는 :cross-product 로 좁히면 effects 23건이 미검증으로 드러난다.
+#   그 짝 맞추기는 이 공정(결제 플러그인(KG이니시스))의 몫이며, 좁히는 시점에 함께 처리한다.
 
 feature: 콜백 보안 방어 (replay attack / signature timestamp freshness / post-approve net cancel / 비인증 브라우저 콜백의 주문 변조)
 

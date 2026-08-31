@@ -29,6 +29,10 @@ class SitemapWriterTest extends TestCase
     {
         parent::setUp();
 
+        // 색인 <loc> 의 오리진은 설정(app.url)이 우선이다 (AssetUrl::siteAbsolute()). 개발 사이트의
+        // app.url 이 흘러들면 url() 기대값(요청 호스트 http://localhost)과 갈리므로 고정한다.
+        Config::set('app.url', 'http://localhost');
+
         Config::set('app.locale', 'ko');
         Config::set('app.supported_locales', ['ko']);
 

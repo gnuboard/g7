@@ -26,6 +26,11 @@ require_once __DIR__.'/../includes/functions.php';
 require_once __DIR__.'/_guard.php';
 installer_guard_or_410();
 
+// 다국어 로드 — 형제 6곳과 같은 규칙이다. 이 파일만 싣지 않아 아래 405 문구가
+// 하드코딩 영문으로 나갔다(한국어 운영자에게 이 엔드포인트만 영문). (12차 G3 라운드 E-3)
+$currentLang = getCurrentLanguage();
+$translations = loadTranslations($currentLang);
+
 // JSON 응답 헤더.
 // `no-store` 는 형제 GET 엔드포인트(check-configuration · scan-extensions)와 같은 규칙이다 —
 // 운영자가 권한을 고치고 재검사했을 때 프록시·뒤로가기가 옛 「실패」를 재생하면 안 된다.
@@ -37,7 +42,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     http_response_code(405);
     echo installer_json_encode([
         'success' => false,
-        'message' => 'Only GET requests are allowed.',
+        'message' => lang('error_get_method_required'),
+        'message_key' => 'error_get_method_required',
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -46,8 +52,12 @@ $envPath = BASE_PATH.'/.env';
 
 // 소유자 === 웹 서버 사용자 여부 판별 (chgrp/sudo 생략 기준)
 $webUser = getWebServerUser();
-$baseOwner = function_exists('posix_getpwuid') && function_exists('posix_getuid')
-    ? (posix_getpwuid(fileowner(BASE_PATH))['name'] ?? null)
+// 가드는 **실제로 부르는 함수**를 본다. 종전에는 `posix_getuid` 를 함께 요구했는데 그
+// 함수는 이 줄에서 한 번도 불리지 않고, 정작 인자를 만드는 `fileowner` 는 판정 대상이
+// 아니었다 — 형제 판정(`check-configuration.php`)은 `posix_getpwuid` 만 보고 있어 같은
+// 판정의 두 사본이 이미 갈려 있었다 (7차 G3 라운드 D-7).
+$baseOwner = installerHasFunction('posix_getpwuid') && function_exists('fileowner')
+    ? (posix_getpwuid((int) fileowner(BASE_PATH))['name'] ?? null)
     : null;
 $ownerIsWebUser = $webUser && $baseOwner && $webUser === $baseOwner;
 

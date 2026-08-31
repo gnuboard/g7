@@ -25,8 +25,6 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  * 진행 기록으로 새어 나온다(서버가 안 붙임). 그래서 두 소스를 대조한다.
  *
  * 커버 축: channel progress_log·command_detail / emitter stream·batch / side server·client
- *
- * @effects installer_command_output_prefix_is_shared_by_server_and_client, installer_command_output_never_enters_the_progress_log, installer_command_output_has_a_collapsible_home
  */
 class InstallerCommandOutputChannelTest extends TestCase
 {
@@ -45,7 +43,7 @@ class InstallerCommandOutputChannelTest extends TestCase
      */
     private function serverPrefix(): string
     {
-        $config = (string) file_get_contents($this->installRoot().'/includes/config.php');
+        $config = $this->sourceWithoutComments($this->installRoot().'/includes/config.php');
 
         $this->assertMatchesRegularExpression(
             "/define\('INSTALLER_COMMAND_OUTPUT_PREFIX',\s*'([^']+)'\)/",
@@ -60,15 +58,15 @@ class InstallerCommandOutputChannelTest extends TestCase
 
     /**
      * 서버와 화면이 같은 리터럴을 쓴다.
+     *
+     * @effects installer_command_output_prefix_is_shared_by_server_and_client
      */
     public function test_prefix_literal_is_shared_by_server_and_client(): void
     {
         $prefix = $this->serverPrefix();
         $this->assertNotSame('', $prefix);
 
-        $js = $this->stripJsComments(
-            (string) file_get_contents($this->installRoot().'/assets/js/installer.js')
-        );
+        $js = $this->sourceWithoutComments($this->installRoot().'/assets/js/installer.js');
 
         $this->assertMatchesRegularExpression(
             "/const\s+COMMAND_OUTPUT_PREFIX\s*=\s*'".preg_quote($prefix, '/')."'/",
@@ -83,12 +81,12 @@ class InstallerCommandOutputChannelTest extends TestCase
      *
      * 표식이 붙는 자리가 갈리면 한 진행 모드에서만 원문이 새어 나간다 — 폴링은 배치
      * 기록(addLogBatch), SSE·단계별 실행은 스트림 emit 을 쓰기 때문이다.
+     *
+     * @effects installer_command_output_never_enters_the_progress_log
      */
     public function test_every_command_output_emitter_goes_through_the_marked_channel(): void
     {
-        $runner = $this->stripComments(
-            (string) file_get_contents($this->installRoot().'/includes/task-runner.php')
-        );
+        $runner = $this->sourceWithoutComments($this->installRoot().'/includes/task-runner.php');
 
         // 원문을 그대로 log 이벤트로 흘리는 형태가 남아 있으면 안 된다.
         $this->assertDoesNotMatchRegularExpression(
@@ -116,12 +114,12 @@ class InstallerCommandOutputChannelTest extends TestCase
      * 화면에 그 원문이 갈 자리가 실제로 있다 — 접기 영역과 분류 배선.
      *
      * 표식만 붙이고 화면이 분류하지 않으면 표식 문자열째로 진행 기록에 찍힌다.
+     *
+     * @effects installer_command_output_has_a_collapsible_home
      */
     public function test_client_routes_marked_lines_into_the_collapsible_detail(): void
     {
-        $js = $this->stripJsComments(
-            (string) file_get_contents($this->installRoot().'/assets/js/installer.js')
-        );
+        $js = $this->sourceWithoutComments($this->installRoot().'/assets/js/installer.js');
         // 19차 G#4 — 뷰도 주석을 지운 뒤 대조한다.
         //
         // 같은 메서드의 `$js` 는 `stripJsComments()` 를 지나는데 뷰만 원문이었다. 그래서
@@ -129,9 +127,12 @@ class InstallerCommandOutputChannelTest extends TestCase
         // 남고, 분류된 커맨드 원문은 갈 자리가 없어 조용히 사라진다 — docblock 이 예고한
         // 「예외도 오류도 남지 않는다」가 그대로 성립한다. 10차 #G4 가 세우고 §16.14.6 이
         // 재확인한 「문자로 대조하는 게이트는 주석을 지운다」 규약의 유일한 미적용 지점이었다.
-        $view = $this->stripComments(
-            (string) file_get_contents($this->installRoot().'/views/5-installation.php')
-        );
+        //
+        // G3 회차 14 W4-8 — 뷰는 **두 언어**다. `stripComments()` 는 PHP 주석만 지우므로
+        // `<script>` 안의 JS 주석(`// appendCommandOutput(`)이 남아 같은 사각이 반쪽 열려
+        // 있었다. 공용 진입점(`sourceWithoutComments()`)이 PHP 주석을 지운 뒤 script 구간을
+        // JS 규칙으로 한 번 더 지운다.
+        $view = $this->sourceWithoutComments($this->installRoot().'/views/5-installation.php');
 
         // 실행 중 경로와 새로고침 복원 경로 **양쪽**이 분류한다 — 한쪽만 하면
         // 「돌 때는 안 보이는데 새로고침하면 보이는」 줄이 생긴다.

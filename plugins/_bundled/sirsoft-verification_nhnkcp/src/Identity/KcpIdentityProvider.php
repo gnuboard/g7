@@ -9,6 +9,7 @@ use App\Extension\IdentityVerification\DTO\VerificationChallenge;
 use App\Extension\IdentityVerification\DTO\VerificationResult;
 use App\Models\IdentityVerificationLog;
 use App\Models\User;
+use App\Support\AssetUrl;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
@@ -805,7 +806,7 @@ class KcpIdentityProvider implements IdentityVerificationInterface
      */
     protected function callbackUrl(): string
     {
-        return url('/plugins/sirsoft-verification_nhnkcp/plugin/nhnkcp/callback');
+        return AssetUrl::siteAbsolute('/plugins/sirsoft-verification_nhnkcp/plugin/nhnkcp/callback');
     }
 
     /**

@@ -25,7 +25,6 @@ use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
  *
  * @scenario scope=localStorage, notation=exact, locked=operator_item, settings_state=empty, request=key_absent
  *
- * @effects upgrade_seeds_allowlist_when_key_absent, upgrade_preserves_operator_edited_allowlist, upgrade_is_idempotent, upgrade_skips_when_settings_file_missing, upgrade_skips_when_settings_json_malformed, upgrade_does_not_seed_locked_items, allowlist_default_seeded_from_shipped_catalog
  */
 class SeedNecessaryStorageAllowlistTest extends PluginTestCase
 {
@@ -68,6 +67,9 @@ class SeedNecessaryStorageAllowlistTest extends PluginTestCase
         parent::tearDown();
     }
 
+    /**
+     * @effects upgrade_seeds_allowlist_when_key_absent, allowlist_default_seeded_from_shipped_catalog
+     */
     public function test_seeds_allowlist_when_key_is_absent(): void
     {
         $this->writeSettings(['banner_enabled' => true]);
@@ -88,6 +90,9 @@ class SeedNecessaryStorageAllowlistTest extends PluginTestCase
         $this->assertTrue($settings['banner_enabled']);
     }
 
+    /**
+     * @effects upgrade_preserves_operator_edited_allowlist
+     */
     public function test_preserves_operator_edited_allowlist(): void
     {
         $edited = [
@@ -102,6 +107,9 @@ class SeedNecessaryStorageAllowlistTest extends PluginTestCase
         $this->assertSame($edited, $this->readSettings()['necessary_storage_allowlist']);
     }
 
+    /**
+     * @effects upgrade_is_idempotent
+     */
     public function test_is_idempotent_on_repeated_runs(): void
     {
         $this->writeSettings(['banner_enabled' => true]);
@@ -115,6 +123,9 @@ class SeedNecessaryStorageAllowlistTest extends PluginTestCase
         $this->assertSame($first, $second);
     }
 
+    /**
+     * @effects upgrade_skips_when_settings_file_missing
+     */
     public function test_skips_when_settings_file_missing(): void
     {
         $this->assertFalse(File::exists($this->path));
@@ -124,6 +135,9 @@ class SeedNecessaryStorageAllowlistTest extends PluginTestCase
         $this->assertFalse(File::exists($this->path), '파일이 없으면 새로 만들지 않는다');
     }
 
+    /**
+     * @effects upgrade_skips_when_settings_json_malformed
+     */
     public function test_skips_when_settings_json_is_malformed(): void
     {
         File::ensureDirectoryExists(dirname($this->path));
@@ -134,6 +148,9 @@ class SeedNecessaryStorageAllowlistTest extends PluginTestCase
         $this->assertSame('{ not json', File::get($this->path), '깨진 파일을 덮어쓰지 않는다');
     }
 
+    /**
+     * @effects upgrade_does_not_seed_locked_items
+     */
     public function test_does_not_seed_locked_items(): void
     {
         $this->writeSettings([]);

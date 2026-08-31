@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Plugins\Sirsoft\PayKginicis\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
+use App\Support\AssetUrl;
 use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
 
 class RegisterPgProviderListener implements HookListenerInterface
@@ -150,7 +151,7 @@ class RegisterPgProviderListener implements HookListenerInterface
                     'installMonth' => [3, 5, 6, 10, 12],
                 ],
                 'cvs' => [
-                    'notiUrl' => url('/plugins/sirsoft-pay_kginicis/payment/cbt/cvs-notify'),
+                    'notiUrl' => AssetUrl::siteAbsolute('/plugins/sirsoft-pay_kginicis/payment/cbt/cvs-notify'),
                     'contactInfo' => $this->setting($settings, 'japan_merchant_name_short', 'サンプル'),
                     'contactTelNum' => $this->setting($settings, 'japan_contact_phone', '0120-123-456'),
                     'contactHours' => $this->setting($settings, 'japan_contact_opening_hours', '10:00-18:00'),

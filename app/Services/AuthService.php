@@ -13,6 +13,7 @@ use App\Enums\UserStatus;
 use App\Exceptions\Auth\AccountLockedException;
 use App\Extension\HookManager;
 use App\Models\User;
+use App\Support\AssetUrl;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -543,7 +544,8 @@ class AuthService
         $resetPath = $redirectPrefix
             ? '/'.$redirectPrefix.'/reset-password'
             : '/reset-password';
-        $resetUrl = config('app.url').$resetPath.'?'.http_build_query([
+        // 오리진·접두사는 설정된 사이트 주소를 따르고 후행 슬래시를 이어 붙이지 않는다 (16차 G3 라운드 B-4).
+        $resetUrl = AssetUrl::siteAbsolute($resetPath).'?'.http_build_query([
             'token' => $token,
             'email' => $user->email,
         ]);

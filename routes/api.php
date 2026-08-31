@@ -57,6 +57,7 @@ use App\Http\Controllers\Api\Public\PublicModuleController;
 use App\Http\Controllers\Api\Public\PublicPluginController;
 use App\Http\Controllers\Api\Public\PublicProfileController;
 use App\Http\Controllers\Api\Public\PublicSearchController;
+use App\Http\Controllers\Api\Public\PublicStorageController;
 use App\Http\Controllers\Api\Public\PublicTemplateController;
 use App\Http\Middleware\RefreshTokenExpiration;
 use App\Models\IdentityVerificationLog;
@@ -190,6 +191,13 @@ Route::group([], function () {
     // DB 미접근·무인증·no-store. 상세: App\Http\Controllers\Api\Public\AssetProbeController
     Route::dualSuffix('system/asset-probe', 'js', [AssetProbeController::class, 'probe'])
         ->name('api.public.system.asset-probe');
+
+    // 공개 스토리지(storage/app/public) 읽기 전용 서빙 (B-3) — public/storage 심볼릭
+    // 링크를 만들 수 없는 호스팅의 대체 통로. 링크가 있으면 URL 생성기가 정적 경로
+    // (/storage/...)를, 없으면 이 라우트를 자동 선택한다. 확장자로 끝나는 와일드카드
+    // 자산 라우트이므로 dualAsset 이중 등록 의무 (R33).
+    Route::dualAsset('system/public-storage', [PublicStorageController::class, 'serve'])
+        ->name('api.public.system.public-storage');
 });
 
 // 브로드캐스팅 인증 (Sanctum 토큰 사용)

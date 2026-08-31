@@ -112,11 +112,78 @@ function handleStep1Post(string $currentLang, ?string &$error = null): void
 }
 
 /**
- * Step 2 POST 처리 (요구사항 검증)
+ * 웹 노출 점검 판정값을 로그에 실을 표시 문구로 바꿉니다.
+ *
+ * 값을 보내는 쪽은 무인증 화면이므로 **닫힌 집합**으로만 받는다 — 임의 문자열을 그대로
+ * 로그에 실으면 그 줄이 공격자의 받아쓰기가 된다. 집합 밖(부재 포함)은 「보고되지 않음」
+ * 으로 접는다: 그 사실 자체가 화면 배선이 끊겼다는 신호이므로 없애지 않고 남긴다.
+ *
+ * @param  mixed  $verdict  화면이 보낸 판정값
+ * @return string 로그에 실을 번역 문구
  */
-function handleStep2Post(): void
+function installerWebExposureVerdictLabel($verdict): string
+{
+    return match (installerNormalizeWebExposureVerdict($verdict)) {
+        'safe' => lang('web_exposure_safe'),
+        'exposed' => lang('web_exposure_exposed'),
+        'unknown' => lang('web_exposure_unknown'),
+        'confirmed' => lang('web_exposure_verdict_confirmed'),
+        'pending' => lang('web_exposure_verdict_pending'),
+        default => lang('web_exposure_verdict_unreported'),
+    };
+}
+
+/**
+ * 웹 노출 점검 판정값을 닫힌 집합으로 정규화합니다 — 로그 문구와 서버측 게이트가 같은 값을 본다.
+ *
+ * 화면(`installer.js`)이 보내는 값은 `safe`·`exposed`·`unknown`·`confirmed` 와 숨은 필드의
+ * 초기값 `pending`(프로브가 끝나기 전에 제출된 경우) 다섯이다. 그 밖(부재·비문자열·대소문자
+ * 변형 포함)은 `unreported` 로 접는다 — 게이트는 `exposed` 만 막으므로 이 접힘이 차단을
+ * 넓히지는 않는다. `pending` 을 집합에 두는 이유는 로그다: 접으면 「보고되지 않음」(배선 파손
+ * 신호)과 「판정 전 제출」이 같은 줄이 된다 (16차 G3 D-6).
+ *
+ * @param  mixed  $verdict  화면이 보낸 판정값
+ * @return string `safe`|`exposed`|`unknown`|`confirmed`|`pending`|`unreported`
+ */
+function installerNormalizeWebExposureVerdict($verdict): string
+{
+    return match (is_string($verdict) ? $verdict : '') {
+        'safe', 'exposed', 'unknown', 'confirmed', 'pending' => $verdict,
+        default => 'unreported',
+    };
+}
+
+/**
+ * Step 2 POST 처리 (요구사항 검증)
+ *
+ * @param  string|null  &$error  에러 메시지 (참조) — 노출됨 판정이면 여기 실리고 단계는 넘어가지 않는다
+ */
+function handleStep2Post(?string &$error = null): void
 {
     if (isset($_POST['proceed'])) {
+        $verdict = installerNormalizeWebExposureVerdict($_POST['web_exposure_verdict'] ?? null);
+
+        // 노출 점검(B-4)의 판정은 브라우저가 내리고 [다음 단계] 버튼도 화면이 잠근다(4차 제품
+        // 결정 — 차단은 화면이 한다). 서버는 그 값을 닫힌 집합으로 정규화하고 **자기 신고
+        // `exposed` 만** 막는다 (14차 G3 W2-3) — 실효 범위는 「노출됨으로 판정된 화면에서
+        // 버튼 비활성을 풀고 눌러도 넘어가지 않는다」까지다. 게이트의 목적은 경고 무시 방지이지
+        // 공격자 차단이 아니므로, 값 위조(`safe` 로 바꿔 전송)와 API 직접 호출은 설계상 열려
+        // 있다. `unknown`(판정 불능)과 `confirmed`(운영자 직접 확인, D21)는 종전대로 통과한다
+        // — 자동 판정이 불가능한 배치를 서버가 막을 근거는 없다.
+        if ($verdict === 'exposed') {
+            addLog(lang('log_web_exposure_blocked'));
+            $error = lang('error_web_exposure_blocked');
+
+            return;
+        }
+
+        // 그 결과는 단계를 넘어가는 순간 사라졌다 — 「보호 확인됨으로 통과했는지 / 판정
+        // 불능에서 운영자가 직접 확인하고 넘어갔는지」를 되짚을 근거가 어디에도 없었다
+        // (잔여물 정리 실패조차 설치 로그에 남는데 정작 판정은 남지 않았다). 통과 시점에 한 줄 남긴다.
+        addLog(lang('log_web_exposure_verdict', [
+            'verdict' => installerWebExposureVerdictLabel($verdict),
+        ]));
+
         updateStepStatus(2, 3);
         redirectToStep(3);
     }
@@ -416,7 +483,7 @@ function handlePostRequest(int $currentStep, string $currentLang, array &$formDa
     match ($currentStep) {
         0 => handleStep0Post(),
         1 => handleStep1Post($currentLang, $error),
-        2 => handleStep2Post(),
+        2 => handleStep2Post($error),
         3 => handleStep3Post($currentLang, $formData, $errors),
         default => null
     };

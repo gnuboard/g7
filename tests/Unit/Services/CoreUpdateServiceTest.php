@@ -2,11 +2,15 @@
 
 namespace Tests\Unit\Services;
 
+use App\Extension\Helpers\BackupDirectoryName;
 use App\Extension\Helpers\CoreBackupHelper;
 use App\Extension\Helpers\FilePermissionHelper;
+use App\Extension\Helpers\RootWebConfigUpdater;
 use App\Services\CoreUpdateService;
+use App\Services\StorageLeftoverPruneService;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 /**
@@ -144,6 +148,321 @@ class CoreUpdateServiceTest extends TestCase
 
         $this->assertFalse($result['update_available']);
         $this->assertTrue($result['check_failed']);
+    }
+
+    /**
+     * 릴리스 응답에 `tag_name` 이 없을 때의 안내에 **치환 자리가 남지 않는다.**
+     *
+     * `no_releases_found` 는 `(HTTP :status — :message)` 를 싣는 키다. 파라미터 없이
+     * 부르면 번역기가 자리표시자를 그대로 둔 문장을 돌려주므로, 운영자 화면에 `:status`·
+     * `:message` 가 노출된다. 이 경로는 GitHub 이 200 을 주면서 페이로드가 비어 있을 때만
+     * 도는 실패 분기라 정상 흐름 테스트로는 드러나지 않는다.
+     *
+     * @scenario release_payload=missing_tag_name, api_message=absent
+     *
+     * @effects version_check_failure_message_has_no_unfilled_placeholder
+     */
+    public function test_missing_tag_name_error_has_no_unfilled_placeholder(): void
+    {
+        Http::fake([
+            'api.github.com/*' => Http::response([], 200),
+        ]);
+
+        $service = new class extends CoreUpdateService
+        {
+            /**
+             * 보호 메서드를 테스트에서 직접 호출하기 위한 노출 지점.
+             *
+             * @param  string  $githubUrl  저장소 URL
+             * @return array{version: ?string, error: ?string} 조회 결과
+             */
+            public function exposeFetch(string $githubUrl): array
+            {
+                return $this->fetchLatestVersionFromGithub($githubUrl);
+            }
+        };
+
+        $result = $service->exposeFetch('https://github.com/test-owner/test-repo');
+
+        $this->assertNull($result['version']);
+        $this->assertIsString($result['error']);
+        $this->assertStringNotContainsString(
+            ':status',
+            $result['error'],
+            '치환 자리가 그대로 남았다 — 운영자 화면에 `:status` 가 노출된다'
+        );
+        $this->assertStringNotContainsString(
+            ':message',
+            $result['error'],
+            '치환 자리가 그대로 남았다 — 운영자 화면에 `:message` 가 노출된다'
+        );
+    }
+
+    /**
+     * 사유가 **비어 있는** 응답에서도 화면 문구에 빈 괄호가 남지 않는다 — 형제 분기 전수.
+     *
+     * `(HTTP :status — :message)` 서식을 쓰는 키는 다섯이다. 종전에는 그중 하나만
+     * 폴백을 갖고 나머지 넷은 GitHub 이 준 `message` 를 **그대로** 넘겼다 — 비-JSON
+     * 본문이나 `message` 없는 응답에서는 그 값이 빈 문자열이라 운영자 화면에
+     * `(HTTP 401 — )` 가 뜬다. 치환 자리가 남는 것과 증상만 다를 뿐 같은 결함이다.
+     *
+     * 상태코드별로 다른 분기를 타므로 **분기마다** 잰다 — 한 코드만 재면 나머지가
+     * 그대로 빠져도 초록이고, 실제로 그 상태였다.
+     *
+     * @scenario api_message=absent, http_status=401|403|404|500
+     *
+     * @effects version_check_failure_message_has_no_unfilled_placeholder
+     */
+    public function test_empty_api_message_does_not_leave_a_blank_reason(): void
+    {
+        $service = new class extends CoreUpdateService
+        {
+            /**
+             * 보호 메서드를 테스트에서 직접 호출하기 위한 노출 지점.
+             *
+             * @param  string  $githubUrl  저장소 URL
+             * @return array{version: ?string, error: ?string} 조회 결과
+             */
+            public function exposeFetch(string $githubUrl): array
+            {
+                return $this->fetchLatestVersionFromGithub($githubUrl);
+            }
+        };
+
+        // 401·403 은 토큰이 있을 때만 `github_token_invalid` 분기를 탄다(없으면 안내가 다르다).
+        config()->set('core_update.github_token', 'dummy-token');
+
+        foreach ([401, 403, 404, 500] as $status) {
+            // 본문에 `message` 가 없다 — 실제 GitHub 이 비-JSON 오류 본문을 줄 때의 형태다.
+            Http::fake([
+                'api.github.com/*' => Http::response([], $status),
+            ]);
+
+            $result = $service->exposeFetch('https://github.com/test-owner/test-repo');
+
+            $this->assertIsString($result['error'], "HTTP {$status} 에서 사유 문자열이 만들어지지 않았다");
+
+            $this->assertDoesNotMatchRegularExpression(
+                '/—\s*\)/u',
+                $result['error'],
+                "HTTP {$status} 의 안내에 빈 사유가 남았다 — 운영자 화면에 `(HTTP {$status} — )` 가 뜬다"
+            );
+        }
+    }
+
+    /**
+     * 교체 직전 사본의 **부분 쓰기**는 「남겼다」로 보고되지 않는다.
+     *
+     * `file_put_contents` 는 디스크가 차면 `false` 가 아니라 쓴 바이트 수를 돌려준다.
+     * `=== false` 만 보면 잘린 사본이 성공으로 통과해 「여기 사본이 있습니다」라는 안내가
+     * 나가는데, 그 사본으로는 되찾을 수 없다 — 이 자리는 업데이트 성공 시 코어 백업이
+     * 즉시 삭제된 뒤 남는 **유일한 복구 수단**이다. 형제 두 지점은 이미 길이를 대조한다.
+     *
+     * 잘린 사본을 남겨 두는 것도 안 된다 — 잔존물 정리기가 그것을 백업으로 보고
+     * 「최신 1개」 자리를 차지하게 해, 되돌릴 수 없는 파일이 되돌릴 수단 자리를 막는다.
+     *
+     * @scenario write_outcome=partial, write_outcome=complete, recovery_slot=occupied, recovery_slot=free
+     *
+     * @effects replaced_root_index_copy_reports_only_a_complete_write
+     */
+    public function test_partial_write_of_the_preserved_root_index_is_reported_as_not_preserved(): void
+    {
+        $work = sys_get_temp_dir().DIRECTORY_SEPARATOR.'g7-preserve-partial-'.bin2hex(random_bytes(4));
+        $storage = $work.DIRECTORY_SEPARATOR.'storage';
+        File::ensureDirectoryExists($storage);
+        $this->tempDirs[] = $work;
+
+        $originalStoragePath = app()->storagePath();
+        app()->useStoragePath($storage);
+
+        $service = new class extends CoreUpdateService
+        {
+            /**
+             * 보호 메서드를 테스트에서 직접 호출하기 위한 노출 지점.
+             *
+             * @param  string  $contents  교체 직전 파일 내용
+             * @return string|null 사본 경로 (남기지 못했으면 null)
+             */
+            public function exposePreserve(string $contents): ?string
+            {
+                return $this->preserveReplacedRootIndex($contents);
+            }
+        };
+
+        $contents = str_repeat('A', 512);
+        $copyRoot = $storage.DIRECTORY_SEPARATOR.'app'.DIRECTORY_SEPARATOR.'core-update';
+
+        try {
+            // 디스크가 찬 상황 — 쓰기는 성공을 반환하지만 일부만 기록된다.
+            File::partialMock()
+                ->shouldReceive('put')
+                ->once()
+                ->andReturn(3);
+
+            $this->assertNull(
+                $service->exposePreserve($contents),
+                '잘린 사본을 「남겼다」로 보고하면 운영자가 복구 가능하다고 믿는다'
+            );
+
+            $this->assertSame(
+                [],
+                is_dir($copyRoot) ? array_values(array_diff((array) scandir($copyRoot), ['.', '..'])) : [],
+                '잘린 사본이 남았다 — 잔존물 정리기가 그것을 「최신 1개」로 보존해 진짜 복구 수단 자리를 막는다'
+            );
+        } finally {
+            app()->useStoragePath($originalStoragePath);
+        }
+    }
+
+    /**
+     * 대조군 — 온전히 쓰인 사본은 경로를 돌려준다.
+     *
+     * 이 대조군이 없으면 「무엇을 넣어도 null 을 돌려주는」 구현으로도 위 테스트가 초록이
+     * 되고, 복구 수단이 통째로 사라지는 기능 축소를 아무도 잡지 못한다.
+     *
+     * @scenario write_outcome=complete
+     *
+     * @effects replaced_root_index_copy_reports_only_a_complete_write
+     */
+    public function test_complete_write_of_the_preserved_root_index_returns_the_copy_path(): void
+    {
+        $work = sys_get_temp_dir().DIRECTORY_SEPARATOR.'g7-preserve-full-'.bin2hex(random_bytes(4));
+        $storage = $work.DIRECTORY_SEPARATOR.'storage';
+        File::ensureDirectoryExists($storage);
+        $this->tempDirs[] = $work;
+
+        $originalStoragePath = app()->storagePath();
+        app()->useStoragePath($storage);
+
+        $service = new class extends CoreUpdateService
+        {
+            /**
+             * 보호 메서드를 테스트에서 직접 호출하기 위한 노출 지점.
+             *
+             * @param  string  $contents  교체 직전 파일 내용
+             * @return string|null 사본 경로 (남기지 못했으면 null)
+             */
+            public function exposePreserve(string $contents): ?string
+            {
+                return $this->preserveReplacedRootIndex($contents);
+            }
+        };
+
+        try {
+            $contents = "<?php\n// 운영자 랜딩\n";
+            $copy = $service->exposePreserve($contents);
+
+            $this->assertIsString($copy, '온전히 쓴 사본을 「남기지 못했다」로 보고하면 복구 안내가 사라진다');
+            $this->assertFileExists($copy);
+            $this->assertSame($contents, (string) file_get_contents($copy));
+        } finally {
+            app()->useStoragePath($originalStoragePath);
+        }
+    }
+
+    /**
+     * 루트 진입 파일 복사가 **조용히 실패**하면 운영자에게 도달한다.
+     *
+     * `FilePermissionHelper::copyFile()` 은 `void` 이고 그 안의 `File::copy()` 가 돌려주는
+     * `false` 를 삼킨다. 그래서 루트 파일만 웹 프로세스가 덮어쓸 수 없는 배치(FTP 로 푼
+     * 사이트 — 이 안이 대상으로 삼은 바로 그 호스팅)에서는 예외 없이 돌아오고 **구버전
+     * 파일이 그대로 남는다.** 종전 판정은 대상 파일이 **없을 때만** 통보했는데, 이 경우는
+     * `is_file()` 이 참이라 통보가 통째로 빠졌다 — 크기를 재고도 그 결과를 버린 셈이라
+     * 길이 대조를 지워도 관측 동작이 같았다.
+     *
+     * @scenario copy_outcome=silently_failed, copy_outcome=succeeded, destination=stale_file
+     *
+     * @effects root_file_copy_that_did_not_land_is_reported_not_claimed_as_updated
+     */
+    public function test_silently_failed_root_file_copy_is_reported(): void
+    {
+        $work = sys_get_temp_dir().DIRECTORY_SEPARATOR.'g7-rootcopy-fail-'.bin2hex(random_bytes(4));
+        File::ensureDirectoryExists($work);
+        $this->tempDirs[] = $work;
+
+        $source = $work.DIRECTORY_SEPARATOR.'source-index.php';
+        $destination = $work.DIRECTORY_SEPARATOR.'index.php';
+        file_put_contents($source, str_repeat('N', 256));
+        file_put_contents($destination, 'OLD');
+
+        $service = $this->makeRootCopyService();
+
+        // 덮어쓰지 못하는 배치 — 예외는 없고 반환값만 false 다(호출부가 그 값을 버린다).
+        File::partialMock()
+            ->shouldReceive('copy')
+            ->once()
+            ->andReturn(false);
+
+        $service->exposeCopyRootFile('index.php', $source, $destination);
+
+        $warnings = $service->getLastRootFileWarnings();
+
+        $this->assertNotEmpty(
+            $warnings,
+            '복사가 도달하지 않았는데 통보가 없다 — 콘솔에는 「코어 파일 적용 완료」만 뜨고 루트 진입 파일은 구버전으로 남는다'
+        );
+        $this->assertStringContainsString(
+            $destination,
+            implode("\n", $warnings),
+            '통보가 대상 경로를 싣지 않으면 운영자는 무엇을 확인해야 할지 알 수 없다'
+        );
+        $this->assertSame('OLD', (string) file_get_contents($destination), '이 케이스의 전제(구버전 잔존)가 성립하지 않았다');
+    }
+
+    /**
+     * 대조군 — 온전히 도달한 복사에는 통보가 붙지 않는다.
+     *
+     * 이 대조군이 없으면 「언제나 경고하는」 구현으로도 위 검사가 초록이 되고, 정상
+     * 업데이트마다 거짓 경보가 뜨는 회귀를 아무도 잡지 못한다.
+     *
+     * @scenario copy_outcome=succeeded
+     *
+     * @effects root_file_copy_that_did_not_land_is_reported_not_claimed_as_updated
+     */
+    public function test_successful_root_file_copy_records_no_warning(): void
+    {
+        $work = sys_get_temp_dir().DIRECTORY_SEPARATOR.'g7-rootcopy-ok-'.bin2hex(random_bytes(4));
+        File::ensureDirectoryExists($work);
+        $this->tempDirs[] = $work;
+
+        $source = $work.DIRECTORY_SEPARATOR.'source-index.php';
+        $destination = $work.DIRECTORY_SEPARATOR.'index.php';
+        file_put_contents($source, str_repeat('N', 256));
+        file_put_contents($destination, 'OLD');
+
+        $service = $this->makeRootCopyService();
+
+        $service->exposeCopyRootFile('index.php', $source, $destination);
+
+        $this->assertSame(
+            [],
+            $service->getLastRootFileWarnings(),
+            '정상 복사에 경보가 붙으면 매 업데이트마다 거짓 경보가 뜬다'
+        );
+        $this->assertSame(str_repeat('N', 256), (string) file_get_contents($destination));
+    }
+
+    /**
+     * 보호 메서드 `copyRootFileOrWarn()` 을 테스트에서 부르기 위한 노출 지점.
+     *
+     * @return CoreUpdateService 노출 메서드를 가진 서비스
+     */
+    private function makeRootCopyService(): CoreUpdateService
+    {
+        return new class extends CoreUpdateService
+        {
+            /**
+             * 보호 메서드를 테스트에서 직접 호출하기 위한 노출 지점.
+             *
+             * @param  string  $target  정규화된 대상 이름
+             * @param  string  $source  소스 파일
+             * @param  string  $destination  대상 파일
+             */
+            public function exposeCopyRootFile(string $target, string $source, string $destination): void
+            {
+                $this->copyRootFileOrWarn($target, $source, $destination);
+            }
+        };
     }
 
     // ========================================================================
@@ -596,7 +915,9 @@ MD;
 
         // core_ 접두사 + 타임스탬프 형식인지 확인
         $dirName = basename($pendingPath);
-        $this->assertMatchesRegularExpression('/^core_\d{8}_\d{6}$/', $dirName);
+        // 초 단위 타임스탬프 뒤에 난수 접미사가 붙는다 — 같은 초에 시작한 두 실행이
+        // 같은 디렉토리를 받으면 한쪽이 내려받는 중인 페이로드에 다른 쪽이 겹쳐 쓴다.
+        $this->assertMatchesRegularExpression('/^core_\d{8}_\d{6}_[0-9a-f]{8}$/', $dirName);
     }
 
     /**
@@ -1422,12 +1743,773 @@ MD;
         }
     }
 
+    // ========================================================================
+    // applyUpdate() — deploy/ 서버 설정 조각의 운영자 수정본 보존 (G3 회차 15 W2-1)
+    // ========================================================================
+
+    /**
+     * 운영자가 고친 `deploy/**` 조각은 덮어쓰지 않고 새 판본을 `.dist` 로 옆에 둔다.
+     *
+     * 조각 머리말은 운영자에게 그 파일을 **직접 고치라**고 지시한다(`fastcgi_pass`·하위 폴더
+     * 접두사). 그런데 `deploy` 대상은 디렉토리 통째 복사로 갱신되어 그 수정이 다음 코어
+     * 업데이트에서 조용히 사라졌다 — nginx 는 그 파일을 `include` 로 제자리에서 읽으므로
+     * 사이트의 PHP 소켓 설정이 릴리즈 기본값으로 되돌아간다. 코어가 마지막으로 쓴 내용의
+     * 기록이 없으면(이 기능 이전에 설치된 사이트) 새 판본과 다른 것을 모두 수정본으로 본다 —
+     * 잃는 쪽보다 한 번 더 확인시키는 쪽이 낫다.
+     *
+     * @scenario deploy_fragment_state=operator_modified
+     *
+     * @effects operator_modified_deploy_fragment_is_kept_and_new_version_lands_beside_it
+     */
+    public function test_operator_modified_deploy_fragment_is_preserved_with_dist_sidecar_and_warning(): void
+    {
+        [$source, $fakeBase, $restore] = $this->prepareApplyUpdateEnv(['deploy']);
+        // 원장은 `storage_path()` 아래에 쓰인다 — 격리하지 않으면 실 저장소의 원장이 이 테스트의
+        // 픽스처 해시로 덮인다 (형제 `test_unmodified_deploy_fragment_…` 와 같은 격리) (G3 회차 16 W2 A11).
+        $originalStoragePath = app()->storagePath();
+        app()->useStoragePath($fakeBase.DIRECTORY_SEPARATOR.'storage');
+
+        try {
+            $srcFragment = $source.DIRECTORY_SEPARATOR.'deploy'.DIRECTORY_SEPARATOR.'nginx'.DIRECTORY_SEPARATOR.'g7-layout2.conf';
+            $destFragment = $fakeBase.DIRECTORY_SEPARATOR.'deploy'.DIRECTORY_SEPARATOR.'nginx'.DIRECTORY_SEPARATOR.'g7-layout2.conf';
+            File::ensureDirectoryExists(dirname($srcFragment));
+            File::ensureDirectoryExists(dirname($destFragment));
+            File::put($srcFragment, "# release v2\nfastcgi_pass unix:/run/php/php8.2-fpm.sock;\n");
+            File::put($destFragment, "# release v1\nfastcgi_pass unix:/run/php/php8.3-fpm.sock; # operator\n");
+
+            $result = $this->service->applyUpdate($source, null, prune: true, applyList: null);
+
+            $this->assertStringContainsString(
+                '# operator',
+                File::get($destFragment),
+                '운영자 수정본이 덮여 사라졌다 — nginx 가 include 로 읽는 소켓 설정이 릴리즈 기본값으로 되돌아간다'
+            );
+            $this->assertFileExists($destFragment.'.dist', '새 판본이 옆에 놓이지 않으면 운영자는 무엇을 합칠지 알 수 없다');
+            $this->assertSame(
+                "# release v2\nfastcgi_pass unix:/run/php/php8.2-fpm.sock;\n",
+                File::get($destFragment.'.dist')
+            );
+
+            $warnings = $this->service->getLastRootFileWarnings();
+            $this->assertNotEmpty($warnings, '보존 사실이 통보 통로에 실리지 않으면 운영자는 새 판본이 있는지 알 수 없다');
+            $this->assertStringContainsString($destFragment.'.dist', implode("\n", $warnings));
+            $this->assertSame($warnings, $result['root_file_warnings'], '반환값에도 같은 경고가 실려야 커맨드가 아닌 소비처도 받는다');
+        } finally {
+            app()->useStoragePath($originalStoragePath);
+            $restore();
+        }
+    }
+
+    /**
+     * 코어가 마지막으로 쓴 그대로인 조각은 정상 갱신되고, 남아 있던 `.dist` 는 걷힌다.
+     *
+     * 이 대조군이 없으면 「언제나 보존하는」 구현으로도 위 검사가 초록이 되고, 수정하지
+     * 않은 사이트의 조각이 영원히 구판본에 머문다(보호 규칙이 갱신되지 않는다).
+     *
+     * @scenario deploy_fragment_state=unmodified
+     *
+     * @effects unmodified_deploy_fragment_is_updated_and_stale_dist_removed
+     */
+    public function test_unmodified_deploy_fragment_is_updated_and_stale_dist_is_removed(): void
+    {
+        [$source, $fakeBase, $restore] = $this->prepareApplyUpdateEnv(['deploy']);
+        $originalStoragePath = app()->storagePath();
+        $storage = $fakeBase.DIRECTORY_SEPARATOR.'storage';
+        File::ensureDirectoryExists($storage.DIRECTORY_SEPARATOR.'app');
+        app()->useStoragePath($storage);
+
+        try {
+            $relative = 'nginx/g7-layout2.conf';
+            $srcFragment = $source.DIRECTORY_SEPARATOR.'deploy'.DIRECTORY_SEPARATOR.'nginx'.DIRECTORY_SEPARATOR.'g7-layout2.conf';
+            $destFragment = $fakeBase.DIRECTORY_SEPARATOR.'deploy'.DIRECTORY_SEPARATOR.'nginx'.DIRECTORY_SEPARATOR.'g7-layout2.conf';
+            File::ensureDirectoryExists(dirname($srcFragment));
+            File::ensureDirectoryExists(dirname($destFragment));
+
+            // 1차 업데이트 — 대상 부재 → 신규 복사 + 코어가 쓴 내용의 해시가 원장에 남는다.
+            File::put($srcFragment, "# release v1\n");
+            $this->service->applyUpdate($source, null, prune: true, applyList: null);
+            $this->assertSame("# release v1\n", File::get($destFragment));
+            $this->assertSame([], $this->service->getLastRootFileWarnings(), '신규 복사는 통보 대상이 아니다');
+
+            $ledger = $storage.DIRECTORY_SEPARATOR.'app'.DIRECTORY_SEPARATOR.'core-update'.DIRECTORY_SEPARATOR.CoreUpdateService::DEPLOY_FRAGMENT_LEDGER;
+            $this->assertFileExists($ledger, '코어가 쓴 내용의 기록이 없으면 다음 업데이트가 수정본과 원본을 가릴 수 없다');
+            $this->assertSame(hash('sha256', "# release v1\n"), json_decode((string) File::get($ledger), true)[$relative] ?? null);
+
+            // 앞선 실행이 남긴 `.dist` 가 있다고 치자 — 운영자가 합친 뒤 지우지 않은 잔존물.
+            File::put($destFragment.'.dist', "# stale sidecar\n");
+
+            // 2차 업데이트 — 디스크가 코어가 쓴 그대로이므로 정상 갱신 + 잔존 `.dist` 제거.
+            File::put($srcFragment, "# release v2\n");
+            $this->service->applyUpdate($source, null, prune: true, applyList: null);
+
+            $this->assertSame("# release v2\n", File::get($destFragment), '수정하지 않은 조각은 새 판본으로 갱신되어야 한다');
+            $this->assertFileDoesNotExist($destFragment.'.dist', '갱신된 뒤에도 옛 .dist 가 남으면 운영자가 그것을 새 판본으로 오인한다');
+            $this->assertSame([], $this->service->getLastRootFileWarnings(), '정상 갱신마다 경고가 뜨면 진짜 경고가 묻힌다');
+
+            // 3차 — 운영자가 그 사이 고쳤다. 원장의 해시와 다르므로 보존된다.
+            File::put($destFragment, "# release v2\n# operator\n");
+            File::put($srcFragment, "# release v3\n");
+            $this->service->applyUpdate($source, null, prune: true, applyList: null);
+
+            $this->assertSame("# release v2\n# operator\n", File::get($destFragment));
+            $this->assertSame("# release v3\n", File::get($destFragment.'.dist'));
+            $this->assertNotEmpty($this->service->getLastRootFileWarnings());
+        } finally {
+            app()->useStoragePath($originalStoragePath);
+            $restore();
+        }
+    }
+
+    /**
+     * 되돌리기는 `.dist` 도 걷는다 — 백업에는 없는 파일이라 복원만으로는 남는다.
+     *
+     * 반환값에도 경고가 실린다(형제 `applyUpdate` 와 같은 계약) — 무CLI 웹 워커처럼
+     * 커맨드가 아닌 소비처가 `getLastRootFileWarnings()` 를 모르면 통보가 통째로 사라진다.
+     *
+     * @scenario rollback_leftover=deploy_dist_sidecar
+     *
+     * @effects rollback_removes_deploy_dist_sidecars_and_returns_warnings
+     */
+    public function test_restore_from_backup_removes_deploy_dist_sidecars_and_returns_warnings(): void
+    {
+        $sandbox = storage_path('test_rollback_dist_'.uniqid());
+        $backup = storage_path('test_rollback_dist_backup_'.uniqid());
+        $this->tempDirs[] = $sandbox;
+        $this->tempDirs[] = $backup;
+        File::ensureDirectoryExists($sandbox.DIRECTORY_SEPARATOR.'deploy'.DIRECTORY_SEPARATOR.'nginx');
+        File::ensureDirectoryExists($backup);
+
+        $dist = $sandbox.DIRECTORY_SEPARATOR.'deploy'.DIRECTORY_SEPARATOR.'nginx'.DIRECTORY_SEPARATOR.'g7-layout2.conf.dist';
+        File::put($sandbox.DIRECTORY_SEPARATOR.'deploy'.DIRECTORY_SEPARATOR.'nginx'.DIRECTORY_SEPARATOR.'g7-layout2.conf', "# operator\n");
+        File::put($dist, "# new\n");
+
+        // 되돌리기는 `.dist.new`(A5 — 옛 `.dist` 와 충돌한 새 판본)도 함께 걷는다.
+        $distNew = $dist.'.new';
+        File::put($distNew, "# newer\n");
+
+        $originalBasePath = base_path();
+        $originalLangPath = app()->langPath();
+        // 원장 삭제는 `storage_path()` 를 본다 — 격리하지 않으면 실 저장소의 원장이 지워진다 (G3 회차 16 W2 A11).
+        $originalStoragePath = app()->storagePath();
+        app()->setBasePath($sandbox);
+        app()->useLangPath($originalLangPath);
+        app()->useStoragePath($sandbox.DIRECTORY_SEPARATOR.'storage');
+        config([
+            'app.update.targets' => [],
+            'app.update.backup_only' => [],
+            'app.update.excludes' => [],
+        ]);
+
+        try {
+            $result = $this->service->restoreFromBackup($backup);
+
+            $this->assertFileDoesNotExist($dist, '되돌린 뒤 .dist 가 남으면 되돌린 판본 옆에 미래 판본이 놓인다');
+            $this->assertFileDoesNotExist($distNew, '되돌린 뒤 .dist.new 가 남으면 되돌린 판본 옆에 미래 판본이 놓인다');
+            $this->assertSame([], $result['failed_targets']);
+            $this->assertSame($this->service->getLastRootFileWarnings(), $result['root_file_warnings']);
+        } finally {
+            app()->setBasePath($originalBasePath);
+            app()->useStoragePath($originalStoragePath);
+        }
+    }
+
+    /**
+     * 판정할 수 없어 보존한 조각도 **원장에 새 판본의 해시를 기록**한다 (G3 회차 16 W2 A2/C-2).
+     *
+     * 종전에는 「원장 부재 → 보존 + `.dist`」 분기가 원장을 씨앗하지 않았다. 그러면 운영자가 안내대로
+     * `.dist` 를 합쳐 파일이 새 판본과 바이트 동일해져도, 다음 업데이트는 원장이 여전히 없어 다시
+     * 「판정 불가 → 보존 + `.dist`」 로 떨어진다 — 매 업데이트마다 같은 안내가 반복되고 그 조각은
+     * **영원히** 자동 갱신되지 않는다. 오류도 없고 안내는 사실처럼 읽힌다.
+     *
+     * 원장은 「코어가 마지막으로 **제시한** 판본」을 기록한다: 합치면 디스크 == 원장 → 정상 갱신으로
+     * 탈출, 합치지 않으면 디스크 ≠ 원장 → 보존 유지(올바른 동작).
+     *
+     * @scenario deploy_fragment_state=operator_modified, deploy_fragment_ledger=absent, deploy_fragment_merge=merged
+     *
+     * @effects merged_deploy_fragment_escapes_preservation_on_the_next_update
+     */
+    public function test_merged_dist_escapes_preservation_on_the_next_update_even_without_a_prior_ledger(): void
+    {
+        [$source, $fakeBase, $restore] = $this->prepareApplyUpdateEnv(['deploy']);
+        $originalStoragePath = app()->storagePath();
+        $storage = $fakeBase.DIRECTORY_SEPARATOR.'storage';
+        app()->useStoragePath($storage);
+
+        try {
+            $relative = 'nginx/g7-layout2.conf';
+            $srcFragment = $source.DIRECTORY_SEPARATOR.'deploy'.DIRECTORY_SEPARATOR.'nginx'.DIRECTORY_SEPARATOR.'g7-layout2.conf';
+            $destFragment = $fakeBase.DIRECTORY_SEPARATOR.'deploy'.DIRECTORY_SEPARATOR.'nginx'.DIRECTORY_SEPARATOR.'g7-layout2.conf';
+            File::ensureDirectoryExists(dirname($srcFragment));
+            File::ensureDirectoryExists(dirname($destFragment));
+            $ledger = $storage.DIRECTORY_SEPARATOR.'app'.DIRECTORY_SEPARATOR.'core-update'.DIRECTORY_SEPARATOR.CoreUpdateService::DEPLOY_FRAGMENT_LEDGER;
+
+            // 원장 없이 시작 — 이 기능 이전 설치본. 디스크에는 구판이 있다.
+            File::put($destFragment, "# release v1\n");
+            File::put($srcFragment, "# release v2\n");
+            $this->service->applyUpdate($source, null, prune: true, applyList: null);
+
+            $this->assertSame("# release v1\n", File::get($destFragment), '판정 불가면 보존한다');
+            $this->assertSame("# release v2\n", File::get($destFragment.'.dist'));
+            $this->assertFileExists($ledger, '판정 불가 분기가 원장을 씨앗하지 않으면 합친 뒤에도 영구히 보존 분기다');
+            $this->assertSame(
+                hash('sha256', "# release v2\n"),
+                json_decode((string) File::get($ledger), true)[$relative] ?? null,
+                '원장에는 코어가 제시한 새 판본의 해시가 실려야 합친 파일이 다음에 「코어가 쓴 그대로」로 읽힌다'
+            );
+
+            // 운영자가 안내대로 합쳤다 — `.dist` 를 그대로 채택하고 지웠다.
+            File::put($destFragment, "# release v2\n");
+            File::delete($destFragment.'.dist');
+
+            // 다음 업데이트 — 정상 갱신으로 탈출해야 한다.
+            File::put($srcFragment, "# release v3\n");
+            $this->service->applyUpdate($source, null, prune: true, applyList: null);
+
+            $this->assertSame("# release v3\n", File::get($destFragment), '합친 조각이 다시 「판정 불가」로 떨어졌다 — 안내가 매 업데이트마다 반복된다');
+            $this->assertFileDoesNotExist($destFragment.'.dist');
+            $this->assertSame([], $this->service->getLastRootFileWarnings());
+        } finally {
+            app()->useStoragePath($originalStoragePath);
+            $restore();
+        }
+    }
+
+    /**
+     * 합치지 않은 조각은 계속 보존되고, 옛 `.dist` 와 다른 새 판본은 `.dist.new` 로 옆에 둔다 (A5).
+     *
+     * `.dist` 를 덮어쓰면 운영자가 그 파일에 합치던 중간 작업이 사라진다. 그렇다고 새 판본을 버리면
+     * 운영자는 최신 보호 규칙을 손에 넣지 못한다 — 둘 다 남기고 사실을 통보한다.
+     *
+     * @scenario deploy_fragment_state=operator_modified, deploy_fragment_ledger=absent, deploy_fragment_merge=unmerged
+     *
+     * @effects unmerged_deploy_fragment_stays_preserved_and_conflicting_dist_is_not_overwritten
+     */
+    public function test_unmerged_fragment_stays_preserved_and_a_conflicting_dist_is_kept_beside_a_dist_new(): void
+    {
+        [$source, $fakeBase, $restore] = $this->prepareApplyUpdateEnv(['deploy']);
+        $originalStoragePath = app()->storagePath();
+        app()->useStoragePath($fakeBase.DIRECTORY_SEPARATOR.'storage');
+
+        try {
+            $srcFragment = $source.DIRECTORY_SEPARATOR.'deploy'.DIRECTORY_SEPARATOR.'nginx'.DIRECTORY_SEPARATOR.'g7-layout2.conf';
+            $destFragment = $fakeBase.DIRECTORY_SEPARATOR.'deploy'.DIRECTORY_SEPARATOR.'nginx'.DIRECTORY_SEPARATOR.'g7-layout2.conf';
+            File::ensureDirectoryExists(dirname($srcFragment));
+            File::ensureDirectoryExists(dirname($destFragment));
+
+            File::put($destFragment, "# release v1 # operator\n");
+            File::put($srcFragment, "# release v2\n");
+            $this->service->applyUpdate($source, null, prune: true, applyList: null);
+            $this->assertSame("# release v2\n", File::get($destFragment.'.dist'));
+
+            // 합치지 않은 채 다음 업데이트.
+            File::put($srcFragment, "# release v3\n");
+            $this->service->applyUpdate($source, null, prune: true, applyList: null);
+
+            $this->assertSame("# release v1 # operator\n", File::get($destFragment), '합치지 않은 조각은 계속 보존되어야 한다');
+            $this->assertSame("# release v2\n", File::get($destFragment.'.dist'), '운영자가 합치던 .dist 를 덮어썼다');
+            $this->assertSame("# release v3\n", File::get($destFragment.'.dist.new'), '새 판본이 .dist.new 로 옆에 놓이지 않았다');
+
+            $warnings = implode("\n", $this->service->getLastRootFileWarnings());
+            $this->assertStringContainsString($destFragment.'.dist.new', $warnings, '충돌 사실이 통보 통로에 실리지 않았다');
+            $this->assertStringNotContainsString('settings.core_update.', $warnings, '문구가 번역되지 않은 키로 나갔다');
+
+            // 같은 상태로 한 번 더 — `.dist.new` 는 코어가 만든 파일이라 자유롭게 갱신한다.
+            File::put($srcFragment, "# release v4\n");
+            $this->service->applyUpdate($source, null, prune: true, applyList: null);
+            $this->assertSame("# release v4\n", File::get($destFragment.'.dist.new'));
+            $this->assertSame("# release v2\n", File::get($destFragment.'.dist'));
+        } finally {
+            app()->useStoragePath($originalStoragePath);
+            $restore();
+        }
+    }
+
+    /**
+     * 원장 쓰기 실패는 **통보 통로**와 업그레이드 로그 채널에 실린다 (A4).
+     *
+     * 원장은 다음 업데이트의 판정 근거다 — 쓰지 못했는데 조용히 넘기면 그 사이트는 다음 업데이트에서
+     * 전 조각이 「판정 불가」로 떨어지고, 운영자는 이유를 알 수 없다.
+     *
+     * @scenario deploy_fragment_state=unmodified, deploy_fragment_ledger=unwritable
+     *
+     * @effects deploy_fragment_ledger_write_failure_reaches_the_operator
+     */
+    public function test_deploy_fragment_ledger_write_failure_is_reported_not_swallowed(): void
+    {
+        [$source, $fakeBase, $restore] = $this->prepareApplyUpdateEnv(['deploy']);
+        $originalStoragePath = app()->storagePath();
+        $storage = $fakeBase.DIRECTORY_SEPARATOR.'storage';
+        app()->useStoragePath($storage);
+
+        try {
+            $srcFragment = $source.DIRECTORY_SEPARATOR.'deploy'.DIRECTORY_SEPARATOR.'nginx'.DIRECTORY_SEPARATOR.'g7-layout2.conf';
+            File::ensureDirectoryExists(dirname($srcFragment));
+            File::put($srcFragment, "# release v1\n");
+
+            // 원장 자리에 **디렉토리**를 둔다 — 파일 쓰기가 반드시 실패하는 형태다.
+            $ledger = $storage.DIRECTORY_SEPARATOR.'app'.DIRECTORY_SEPARATOR.'core-update'.DIRECTORY_SEPARATOR.CoreUpdateService::DEPLOY_FRAGMENT_LEDGER;
+            File::ensureDirectoryExists($ledger);
+
+            $result = $this->service->applyUpdate($source, null, prune: true, applyList: null);
+
+            $warnings = implode("\n", $result['root_file_warnings']);
+            $this->assertStringContainsString($ledger, $warnings, '원장 쓰기 실패가 통보 통로에 실리지 않았다');
+            $this->assertStringNotContainsString('settings.core_update.', $warnings, '문구가 번역되지 않은 키로 나갔다');
+        } finally {
+            app()->useStoragePath($originalStoragePath);
+            $restore();
+        }
+    }
+
+    /**
+     * `seedDeployFragmentLedger()` 는 현재 디스크의 해시로 원장을 만들고, 사이드카가 있는 조각은 건너뛴다 (A2 ②).
+     *
+     * 인스톨러(설치 완료 시점)와 업그레이드 스텝이 부르는 진입점이다. `.dist`/`.dist.new` 가 옆에 있는
+     * 조각은 디스크가 릴리즈 판본이 아니라는 뜻이므로 씨앗하지 않는다 — 씨앗하면 운영자 수정본이
+     * 「코어가 쓴 그대로」로 읽혀 다음 업데이트가 그것을 덮어쓴다. 원장이 이미 있으면 손대지 않는다.
+     *
+     * @scenario deploy_fragment_ledger=absent, deploy_fragment_state=unmodified
+     *
+     * @effects deploy_fragment_ledger_can_be_seeded_from_disk_without_touching_preserved_fragments
+     */
+    public function test_seed_deploy_fragment_ledger_hashes_the_disk_and_skips_fragments_with_sidecars(): void
+    {
+        $sandbox = storage_path('test_seed_ledger_'.uniqid());
+        $this->tempDirs[] = $sandbox;
+        File::ensureDirectoryExists($sandbox.DIRECTORY_SEPARATOR.'deploy'.DIRECTORY_SEPARATOR.'nginx');
+        File::ensureDirectoryExists($sandbox.DIRECTORY_SEPARATOR.'deploy'.DIRECTORY_SEPARATOR.'caddy');
+        File::put($sandbox.DIRECTORY_SEPARATOR.'deploy'.DIRECTORY_SEPARATOR.'nginx'.DIRECTORY_SEPARATOR.'g7-layout2.conf', "# nginx\n");
+        File::put($sandbox.DIRECTORY_SEPARATOR.'deploy'.DIRECTORY_SEPARATOR.'caddy'.DIRECTORY_SEPARATOR.'g7-layout2.caddyfile', "# caddy operator\n");
+        File::put($sandbox.DIRECTORY_SEPARATOR.'deploy'.DIRECTORY_SEPARATOR.'caddy'.DIRECTORY_SEPARATOR.'g7-layout2.caddyfile.dist', "# caddy release\n");
+
+        $originalStoragePath = app()->storagePath();
+        $storage = $sandbox.DIRECTORY_SEPARATOR.'storage';
+        app()->useStoragePath($storage);
+
+        try {
+            $seeded = $this->service->seedDeployFragmentLedger($sandbox);
+
+            $ledger = $storage.DIRECTORY_SEPARATOR.'app'.DIRECTORY_SEPARATOR.'core-update'.DIRECTORY_SEPARATOR.CoreUpdateService::DEPLOY_FRAGMENT_LEDGER;
+            $this->assertFileExists($ledger);
+            $decoded = json_decode((string) File::get($ledger), true);
+            $this->assertSame(['nginx/g7-layout2.conf'], $seeded);
+            $this->assertSame(hash('sha256', "# nginx\n"), $decoded['nginx/g7-layout2.conf'] ?? null);
+            $this->assertArrayNotHasKey('caddy/g7-layout2.caddyfile', $decoded, '사이드카가 있는 조각을 씨앗하면 운영자 수정본이 다음 업데이트에서 덮인다');
+            $this->assertArrayNotHasKey('caddy/g7-layout2.caddyfile.dist', $decoded, '사이드카 자신은 조각이 아니다');
+
+            // 원장이 이미 있으면 손대지 않는다.
+            File::put($sandbox.DIRECTORY_SEPARATOR.'deploy'.DIRECTORY_SEPARATOR.'nginx'.DIRECTORY_SEPARATOR.'g7-layout2.conf', "# nginx changed\n");
+            $this->assertSame([], $this->service->seedDeployFragmentLedger($sandbox));
+            $this->assertSame(hash('sha256', "# nginx\n"), json_decode((string) File::get($ledger), true)['nginx/g7-layout2.conf']);
+        } finally {
+            app()->useStoragePath($originalStoragePath);
+        }
+    }
+
+    /**
+     * 루트 `web.config` 는 정상 targets 분기에서 **마커 블록 갱신기**를 지난다 (C-1).
+     *
+     * 소스 계약(`RootEntrypointContractTest`)이 배선을 잠그고, 이 검사는 실제 결과를 잰다 — 블록 밖
+     * 운영자 요소가 남고 블록 안이 새 판본으로 바뀐다.
+     *
+     * @scenario server_kind=iis_webconfig, htaccess_operator_state=modified_outside_block, update_targets_state=current
+     *
+     * @effects root_marker_files_are_updated_by_the_block_updater_in_both_apply_branches
+     */
+    public function test_apply_update_preserves_operator_elements_outside_the_web_config_block(): void
+    {
+        [$source, $fakeBase, $restore] = $this->prepareApplyUpdateEnv(['web.config']);
+
+        try {
+            $begin = RootWebConfigUpdater::BEGIN_MARKER;
+            $end = RootWebConfigUpdater::END_MARKER;
+            $release = "<?xml version=\"1.0\"?>\n<configuration>\n{$begin}\n  <system.webServer><!-- v2 --></system.webServer>\n{$end}\n</configuration>\n";
+            $installed = "<?xml version=\"1.0\"?>\n<configuration>\n{$begin}\n  <system.webServer><!-- v1 --></system.webServer>\n{$end}\n  <system.web><customErrors mode=\"Off\" /></system.web>\n</configuration>\n";
+            File::put($source.DIRECTORY_SEPARATOR.'web.config', $release);
+            File::put($fakeBase.DIRECTORY_SEPARATOR.'web.config', $installed);
+
+            $result = $this->service->applyUpdate($source, null, prune: true, applyList: null);
+
+            $written = File::get($fakeBase.DIRECTORY_SEPARATOR.'web.config');
+            $this->assertStringContainsString('<!-- v2 -->', $written, '블록 안이 새 판본으로 바뀌지 않았다');
+            $this->assertStringContainsString('<customErrors mode="Off" />', $written, '블록 밖 운영자 요소가 사라졌다 — web.config 가 통째 교체됐다');
+            $this->assertSame([], $result['root_file_warnings']);
+        } finally {
+            $restore();
+        }
+    }
+
+    /**
+     * 자동 발견 폴백 분기(구버전 targets)에서도 `web.config` 는 갱신기를 지난다 (C-1).
+     *
+     * @scenario server_kind=iis_webconfig, htaccess_operator_state=modified_outside_block, update_targets_state=stale_without_root_files
+     *
+     * @effects root_marker_files_are_updated_by_the_block_updater_in_both_apply_branches
+     */
+    public function test_auto_discovery_fallback_preserves_operator_elements_outside_the_web_config_block(): void
+    {
+        [$source, $fakeBase, $restore] = $this->prepareApplyUpdateEnv([]);
+
+        try {
+            $begin = RootWebConfigUpdater::BEGIN_MARKER;
+            $end = RootWebConfigUpdater::END_MARKER;
+            File::put($source.DIRECTORY_SEPARATOR.'web.config', "<configuration>\n{$begin}\n<a>v2</a>\n{$end}\n</configuration>\n");
+            File::put($fakeBase.DIRECTORY_SEPARATOR.'web.config', "<configuration>\n{$begin}\n<a>v1</a>\n{$end}\n<operator />\n</configuration>\n");
+
+            $this->service->applyUpdate($source, null, prune: false, applyList: null);
+
+            $written = File::get($fakeBase.DIRECTORY_SEPARATOR.'web.config');
+            $this->assertStringContainsString('<a>v2</a>', $written);
+            $this->assertStringContainsString('<operator />', $written, '자동 발견 폴백이 web.config 를 통째 복사했다');
+        } finally {
+            $restore();
+        }
+    }
+
+    /**
+     * 콘솔 커맨드는 `applyUpdate()`·`restoreFromBackup()` **반환값**의 경고를 출력한다 (C-6).
+     *
+     * 게터(`getLastRootFileWarnings()`)는 커맨드의 편의이고 반환값이 계약이다 — 커맨드마저 게터만
+     * 쓰면 반환값 축은 소비처가 0 이라 조용히 죽는다(무CLI 웹 워커가 그것을 처음 쓰는 순간 드러난다).
+     *
+     * @scenario process_shape=standalone, warning_channel=console
+     *
+     * @effects rollback_removes_deploy_dist_sidecars_and_returns_warnings
+     */
+    public function test_update_command_consumes_the_return_values_for_root_file_warnings(): void
+    {
+        $source = (string) file_get_contents(base_path('app/Console/Commands/Core/CoreUpdateCommand.php'));
+
+        $this->assertMatchesRegularExpression(
+            '/\$restoreResult\s*=\s*\$service->restoreFromBackup\(/',
+            $source,
+            '롤백 호출부가 restoreFromBackup() 의 반환값을 버린다 — 반환값 계약의 소비처가 0 이 된다'
+        );
+        $this->assertStringContainsString(
+            "\$restoreResult['root_file_warnings']",
+            $source,
+            '롤백 호출부가 반환값의 root_file_warnings 를 출력에 쓰지 않는다'
+        );
+        $this->assertMatchesRegularExpression(
+            '/\$applyResult\s*=\s*\$service->applyUpdate\(/',
+            $source,
+            '적용 호출부가 applyUpdate() 의 반환값을 버린다'
+        );
+        $this->assertStringContainsString(
+            "\$applyResult['root_file_warnings']",
+            $source,
+            '적용 호출부가 반환값의 root_file_warnings 를 출력에 쓰지 않는다'
+        );
+    }
+
+    /**
+     * 교체 직전 루트 진입 파일 사본의 디렉토리 이름은 백업 이름 SSoT 가 만든다 (G3 회차 15 W2-5).
+     *
+     * 생산자가 `date()` 를 직접 부르면 정리자의 판정 정규식과 갈릴 수 있고, 그 상태는
+     * 오류가 아니라 **정리 대상에서 조용히 빠지는 것**으로만 나타난다 — 코어 백업이 실제로
+     * 그랬다(`BackupDirectoryName` 독블록). 이름은 SSoT 가 만들고, 정리자의 패턴이 그 이름을
+     * 받아들이는지를 여기서 함께 잰다.
+     */
+    public function test_preserved_root_index_directory_name_comes_from_the_backup_name_ssot(): void
+    {
+        $work = sys_get_temp_dir().DIRECTORY_SEPARATOR.'g7-preserve-stamp-'.bin2hex(random_bytes(4));
+        $storage = $work.DIRECTORY_SEPARATOR.'storage';
+        File::ensureDirectoryExists($storage);
+        $this->tempDirs[] = $work;
+
+        $originalStoragePath = app()->storagePath();
+        app()->useStoragePath($storage);
+
+        $service = new class extends CoreUpdateService
+        {
+            public function exposePreserve(string $contents): ?string
+            {
+                return $this->preserveReplacedRootIndex($contents);
+            }
+        };
+
+        try {
+            $path = $service->exposePreserve('<?php // landing');
+            $this->assertNotNull($path);
+
+            $directory = basename(dirname($path));
+            $this->assertMatchesRegularExpression(
+                BackupDirectoryName::pattern(''),
+                $directory,
+                '사본 디렉토리 이름이 백업 이름 SSoT 형태가 아니다'
+            );
+            $this->assertMatchesRegularExpression(
+                '/_[0-9a-f]{8}$/',
+                $directory,
+                '같은 초 충돌 접미사가 없다 — 이름을 SSoT(`stamp()`)가 아니라 `date()` 로 만들고 있다'
+            );
+
+            $pruner = new \ReflectionClassConstant(StorageLeftoverPruneService::class, 'CORE_UPDATE_PRESERVED_NAME_PATTERN');
+            $this->assertSame(
+                1,
+                preg_match((string) $pruner->getValue(), $directory),
+                '정리자의 이름 패턴이 생산자가 만든 이름을 받아들이지 않는다 — 이 사본은 영구 잔존한다'
+            );
+        } finally {
+            app()->useStoragePath($originalStoragePath);
+        }
+    }
+
     /**
      * applyUpdate 환경(격리 base_path + config targets)을 준비합니다.
      *
      * @param  array<int, string>  $targets  config('app.update.targets') 로 설정할 값
      * @return array{0:string, 1:string, 2:\Closure} [source 경로, fakeBase 경로, 복원 클로저]
      */
+    // ========================================================================
+    // applyUpdate() — 루트 진입·보호 파일 갱신 실패의 도달 (3차 G3 라운드 H4)
+    // ========================================================================
+
+    /**
+     * 루트 `.htaccess` 를 쓰지 못하면 그 사실이 **호출부까지 올라온다**.
+     *
+     * 2차 라운드가 갱신기에 실패 판정을 넣었지만 두 호출부가 모두 반환값을 버렸고, 게다가
+     * 「블록이 같아 쓸 필요가 없었다」와 「쓰기가 실패했다」가 같은 `false` 여서 소비하려
+     * 해도 실패를 가려낼 수 없었다. 콘솔에는 「코어 파일 적용 완료」만 뜨고 보호 규칙은
+     * 구버전으로 남는다 — 다른 코어 파일은 전부 신 버전인 채로.
+     *
+     * @effects root_htaccess_write_failure_is_reported_not_claimed_as_updated
+     */
+    public function test_root_htaccess_write_failure_surfaces_to_the_caller(): void
+    {
+        [$source, $fakeBase, $restore] = $this->prepareApplyUpdateEnv(['.htaccess']);
+
+        try {
+            $block = "# BEGIN G7\nRewriteRule ^ public/$1 [L] # %s\n# END G7\n";
+            File::put($source.DIRECTORY_SEPARATOR.'.htaccess', sprintf($block, 'new'));
+
+            $dest = $fakeBase.DIRECTORY_SEPARATOR.'.htaccess';
+            File::put($dest, sprintf($block, 'old')."# operator rule\n");
+
+            chmod($dest, 0444);
+            if (@file_put_contents($dest, 'probe') !== false) {
+                chmod($dest, 0644);
+                $this->markTestSkipped('읽기 전용 파일에 쓰기가 성공하는 환경 — 실패 경로를 재현할 수 없다');
+            }
+
+            try {
+                $this->service->applyUpdate($source, null, prune: false, applyList: null);
+
+                $warnings = $this->service->getLastRootFileWarnings();
+                $this->assertNotEmpty(
+                    $warnings,
+                    '실패가 호출부에 도달하지 않으면 운영자는 「완료」만 보고 구버전 보호 규칙을 그대로 쓴다'
+                );
+                $this->assertStringContainsString('.htaccess', implode("\n", $warnings));
+
+                $this->assertStringContainsString(
+                    '# old',
+                    (string) File::get($dest),
+                    '실패했으면 내용도 그대로여야 한다'
+                );
+            } finally {
+                chmod($dest, 0644);
+            }
+        } finally {
+            $restore();
+        }
+    }
+
+    /**
+     * 갱신에 성공하면 경고가 남지 않는다 — 정상 경로에 거짓 경고를 내지 않는다.
+     *
+     * 「변경 없음」·「운영자가 블록을 지웠다」도 실패가 아니다. 이 대조군이 없으면 위 테스트는
+     * 「항상 경고를 쌓는」 구현으로도 초록이 된다.
+     *
+     * @effects root_htaccess_write_failure_is_reported_not_claimed_as_updated
+     */
+    public function test_successful_root_htaccess_update_records_no_warning(): void
+    {
+        [$source, $fakeBase, $restore] = $this->prepareApplyUpdateEnv(['.htaccess']);
+
+        try {
+            $block = "# BEGIN G7\nRewriteRule ^ public/$1 [L] # %s\n# END G7\n";
+            File::put($source.DIRECTORY_SEPARATOR.'.htaccess', sprintf($block, 'new'));
+
+            $dest = $fakeBase.DIRECTORY_SEPARATOR.'.htaccess';
+            File::put($dest, sprintf($block, 'old')."# operator rule\n");
+
+            $this->service->applyUpdate($source, null, prune: false, applyList: null);
+
+            $this->assertSame([], $this->service->getLastRootFileWarnings());
+            $written = (string) File::get($dest);
+            $this->assertStringContainsString('# new', $written);
+            $this->assertStringContainsString('# operator rule', $written, '블록 밖 운영자 규칙은 보존된다');
+        } finally {
+            $restore();
+        }
+    }
+
+    /**
+     * 콘솔이 그 경고를 실제로 **출력하는 배선**을 갖는다.
+     *
+     * 서비스가 경고를 쌓아도 아무도 읽지 않으면 종전과 같다. 배선은 형제 축
+     * (`surfacePermissionWarnings`)과 같은 형태이며, 그 자리가 지워지면 이 단언이 red 다.
+     */
+    public function test_update_command_surfaces_root_file_warnings(): void
+    {
+        $command = (string) File::get(base_path('app/Console/Commands/Core/CoreUpdateCommand.php'));
+
+        $this->assertStringContainsString(
+            'surfaceRootFileWarnings(',
+            $command,
+            '경고를 쌓아도 출력하는 자리가 없으면 운영자에게 도달하지 않는다'
+        );
+        $this->assertStringContainsString(
+            'getLastRootFileWarnings()',
+            $command,
+            '출력 함수가 서비스의 경고를 실제로 읽어야 한다'
+        );
+    }
+
+    /**
+     * 롤백 뒤 루트 보호 파일 소실도 **콘솔에 도달**해야 합니다 (5차 G3).
+     *
+     * 종전에는 `Log::warning` 한 줄이 전부였다 — 업데이트 경로에는 콘솔 배선이 있는데
+     * 롤백 경로에만 없었다(형제 불균형). 그 결과 「백업에서 복원되었습니다」만 보고 창을
+     * 닫은 운영자는, 문서 루트가 프로젝트 루트인 사이트가 그 순간부터 무방비라는 사실을
+     * 로그 파일을 열어야만 알 수 있었다.
+     *
+     * 판정 자체도 manifest 가 있을 때만 돌던 것을 떼어냈다 — manifest 가 없어 prune 을
+     * 건너뛴 경우에도 파일이 없을 수 있다.
+     *
+     * 대상은 루트 진입·보호 파일 **3종 전부**다 (14차 G3 라운드). 종전에는 `index.php` 와
+     * `.htaccess` 둘만 봤는데, IIS 로 압축을 푼 사이트에서 실제로 보호를 수행하는 것은
+     * `web.config` 이고 그 배치에서 `.htaccess` 는 아무 의미가 없다. 즉 그 서버에서는
+     * 유일한 보호 수단이 사라져도 경고가 발화하지 않았고, 증상은 「경고가 없다」뿐이라
+     * 운영자가 알아챌 방법이 없었다.
+     */
+    public function test_rollback_reports_missing_root_protection_files(): void
+    {
+        $sandbox = storage_path('test_rootprot_'.uniqid());
+        $this->tempDirs[] = $sandbox;
+        File::ensureDirectoryExists($sandbox);
+
+        // 목록은 SSoT 를 그대로 쓴다 — 여기 다시 적으면 4번째 파일이 늘 때 이 축이
+        // 조용히 그 파일을 재지 않게 된다(지금 고치는 결함이 정확히 그 형태였다).
+        $this->assertContains(
+            'web.config',
+            CoreBackupHelper::ROOT_PROTECTION_FILES,
+            'IIS 배치의 유일한 보호 파일이 판정 대상에 없다'
+        );
+
+        $this->assertSame(
+            CoreBackupHelper::ROOT_PROTECTION_FILES,
+            CoreBackupHelper::missingRootProtectionFiles($sandbox),
+            '세 파일이 없으면 그대로 보고되어야 한다'
+        );
+
+        File::put($sandbox.'/index.php', '<?php');
+        $this->assertSame(
+            ['.htaccess', 'web.config'],
+            CoreBackupHelper::missingRootProtectionFiles($sandbox),
+            '있는 것은 빼고 없는 것만 보고한다'
+        );
+
+        // Apache 축만 복구된 상태 — IIS 축은 여전히 무방비다. 형제 파일 하나가 있다고
+        // 침묵하면 그 배치에서 노출이 보고되지 않는다.
+        File::put($sandbox.'/.htaccess', '# BEGIN G7');
+        $this->assertSame(
+            ['web.config'],
+            CoreBackupHelper::missingRootProtectionFiles($sandbox),
+            '`.htaccess` 가 복구돼도 IIS 배치는 여전히 무방비다 — 그 사실이 보고되어야 한다'
+        );
+
+        File::put($sandbox.'/web.config', '<?xml version="1.0"?>');
+        $this->assertSame(
+            [],
+            CoreBackupHelper::missingRootProtectionFiles($sandbox),
+            '셋 다 있으면 알릴 것이 없다'
+        );
+
+        $command = (string) File::get(base_path('app/Console/Commands/Core/CoreUpdateCommand.php'));
+        $rollbackBlock = (string) strstr($command, '$service->restoreFromBackup(');
+        $this->assertNotSame('', $rollbackBlock, '롤백 호출부를 찾지 못했다');
+        // 롤백 경로는 반환값(`root_file_warnings`)을 같은 출력 통로(`surfaceWarnings`)에 넘긴다 —
+        // 게터 경유(`surfaceRootFileWarnings`)는 예외 경로 전용이다 (G3 회차 16 W2 C-6).
+        $this->assertStringContainsString(
+            "surfaceWarnings(\$restoreResult['root_file_warnings']",
+            substr($rollbackBlock, 0, 2000),
+            '롤백 경로도 업데이트 경로와 같은 통로로 경고를 출력해야 한다'
+        );
+    }
+
+    /**
+     * 롤백이 문서 루트 **안**에 되살린 공개 파일 사본도 콘솔에 도달해야 합니다 (8차 G3).
+     *
+     * 백업은 업데이트 이전 스냅샷이라 그 시점의 `public/storage.broken.*`(공개 업로드 전량
+     * 사본)을 그대로 되돌려 놓는다. 7.1.0 스텝이 이미 문서 루트 밖으로 옮긴 뒤라면 같은
+     * 파일이 두 벌이 되고 그중 하나는 웹에서 열린다.
+     *
+     * 형제 축(루트 진입·보호 파일 소실)은 판정을 값으로 돌려주는 `missingRootProtectionFiles()`
+     * 를 거쳐 콘솔 통로(`lastRootFileWarnings`)에 실리는데, 이 축만 `Log::warning` 한 줄로
+     * 끝나 있었다 — §16.36.5 의 「로그 전용 → 콘솔 통로」가 한쪽에만 적용된 상태. 롤백한
+     * 운영자는 「백업에서 복원되었습니다」만 보고, 공개 업로드 사본이 웹에서 열린다는 사실을
+     * 로그 파일을 열어야만 알 수 있었다.
+     *
+     * 콘솔 출력 배선 자체(`surfaceRootFileWarnings()` 가 롤백 catch 에 있음)는 바로 위
+     * 형제 테스트가 이미 잠근다 — 여기서는 그 통로에 **실린다**는 것을 잰다.
+     */
+    public function test_rollback_reports_public_file_copies_restored_inside_the_document_root(): void
+    {
+        $sandbox = storage_path('test_docroot_residue_'.uniqid());
+        $this->tempDirs[] = $sandbox;
+        File::ensureDirectoryExists($sandbox.DIRECTORY_SEPARATOR.'public');
+
+        $this->assertSame(
+            [],
+            CoreBackupHelper::restoredDocrootResidue($sandbox),
+            '되살아난 사본이 없으면 알릴 것이 없다 — 정상 롤백마다 경보가 뜨면 진짜 경고가 묻힌다'
+        );
+
+        $residueDir = $sandbox.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'storage.broken.20260101_000000';
+        File::ensureDirectoryExists($residueDir);
+        File::put($residueDir.DIRECTORY_SEPARATOR.'avatar.png', 'binary');
+
+        $this->assertSame(
+            [$residueDir],
+            CoreBackupHelper::restoredDocrootResidue($sandbox),
+            '되살아난 사본은 판정이 값으로 돌려줘야 호출부가 콘솔에 실을 수 있다 (형제 규약)'
+        );
+
+        $backup = storage_path('test_docroot_residue_backup_'.uniqid());
+        $this->tempDirs[] = $backup;
+        File::ensureDirectoryExists($backup);
+
+        $originalBasePath = base_path();
+        $originalLangPath = app()->langPath();
+        app()->setBasePath($sandbox);
+        // `setBasePath()` 는 언어 경로도 함께 옮긴다 — 격리 트리에는 `lang/` 이 없어
+        // 그대로 두면 이 경로의 모든 `__()` 가 **키 문자열 그대로** 돌아온다. 그 상태는
+        // 프로덕션에 없다(요청 중 base path 를 옮기지 않는다). 실제 문구가 운영자에게
+        // 도달하는지를 재는 것이 이 테스트의 목적이므로 언어 경로는 원래 자리로 고정한다.
+        app()->useLangPath($originalLangPath);
+        config([
+            'app.update.targets' => [],
+            'app.update.backup_only' => [],
+            'app.update.excludes' => [],
+        ]);
+
+        try {
+            $this->service->restoreFromBackup($backup);
+
+            $warnings = $this->service->getLastRootFileWarnings();
+            $this->assertNotEmpty($warnings, '롤백 결과가 콘솔 통로에 하나도 실리지 않았다');
+            $this->assertStringContainsString(
+                $residueDir,
+                implode("\n", $warnings),
+                '되살아난 공개 파일 사본의 경로가 통보에 실리지 않으면 운영자는 노출을 알 수 없다'
+            );
+        } finally {
+            app()->setBasePath($originalBasePath);
+        }
+    }
+
     private function prepareApplyUpdateEnv(array $targets): array
     {
         $source = storage_path('test_apply3_src_'.uniqid());
@@ -1438,7 +2520,16 @@ MD;
         File::ensureDirectoryExists($fakeBase);
 
         $originalBasePath = base_path();
+        $originalLangPath = app()->langPath();
         app()->setBasePath($fakeBase);
+
+        // 기준 경로를 격리 트리로 옮기면 **언어 경로도 함께 옮겨져** 이 흐름의 모든
+        // `__()` 가 번역문 대신 키 문자열로 떨어진다. 그러면 「운영자에게 실제로 도달하는
+        // 문구인가」를 재는 단언이 조용히 무의미해진다(키에는 파일명이 들어 있지 않다).
+        // 언어 경로만 원래 자리로 고정한다 — 프로덕션에는 없는 상태이므로 테스트 쪽 조치다.
+        app()->useLangPath($originalLangPath);
+        app()->forgetInstance('translator');
+        app()->forgetInstance('translation.loader');
 
         config([
             'app.update.targets' => $targets,
@@ -1446,8 +2537,11 @@ MD;
             'app.update.protected_paths' => ['.env', 'storage', 'vendor', 'node_modules', '.git'],
         ]);
 
-        $restore = function () use ($originalBasePath): void {
+        $restore = function () use ($originalBasePath, $originalLangPath): void {
             app()->setBasePath($originalBasePath);
+            app()->useLangPath($originalLangPath);
+            app()->forgetInstance('translator');
+            app()->forgetInstance('translation.loader');
         };
 
         return [$source, $fakeBase, $restore];
@@ -1463,6 +2557,8 @@ MD;
      *
      * 회귀 시나리오: beta.3 → beta.4 업그레이드에서 beta.3 의 targets 에 `lang-packs/_bundled`
      * 가 없어 신버전 zip 의 lang-packs 가 활성 디렉토리로 복사되지 않은 결함.
+     *
+     * @effects root_entry_files_reach_installs_running_older_targets
      */
     public function test_apply_update_auto_discovers_new_top_level_directories(): void
     {
@@ -1518,6 +2614,64 @@ MD;
 
             // PROTECTED 보호: storage/.env 는 자동 발견 폴백이 절대 덮지 않음
             $this->assertSame('KEEP_ME', File::get($fakeBase.DIRECTORY_SEPARATOR.'storage'.DIRECTORY_SEPARATOR.'app'.DIRECTORY_SEPARATOR.'runtime.txt'));
+            $this->assertSame('APP_VERSION=local', File::get($fakeBase.DIRECTORY_SEPARATOR.'.env'));
+        } finally {
+            app()->setBasePath($originalBasePath);
+        }
+    }
+
+    /**
+     * 자동 발견 폴백은 **점으로 시작하는 최상위 파일**도 본다 (D25 — 루트 `.htaccess`).
+     *
+     * 이 폴백은 구버전 `targets` 로 도는 첫 업데이트에서 신규 최상위 항목이 도달하는
+     * 유일한 통로다. 열거가 숨김 파일을 건너뛰면 루트 `index.php` 는 전달되고 루트
+     * `.htaccess` 만 빠져 — 보호 규칙 없는 진입점이 남는 최악의 조합이 된다. 그리고
+     * 그 상태는 예외도 로그도 남기지 않는다(폴백은 「없는 항목」과 「안 보이는 항목」을
+     * 구분하지 못한다).
+     *
+     * protected_paths 존중은 같은 열거를 타므로 여기서 함께 잠근다 — 숨김 파일이 보이기
+     * 시작하면 `.env` 도 후보에 들어오기 때문이다.
+     *
+     * @effects root_entry_files_reach_installs_running_older_targets
+     */
+    public function test_apply_update_auto_discovers_hidden_top_level_files(): void
+    {
+        $sourcePath = storage_path('test_apply_hidden_src_'.uniqid());
+        $this->tempDirs[] = $sourcePath;
+        File::ensureDirectoryExists($sourcePath);
+
+        File::put($sourcePath.DIRECTORY_SEPARATOR.'.htaccess', "# BEGIN G7\n# new release block\n# END G7\n");
+        File::put($sourcePath.DIRECTORY_SEPARATOR.'index.php', "<?php require __DIR__.'/public/index.php';\n");
+        File::put($sourcePath.DIRECTORY_SEPARATOR.'.env', 'APP_VERSION=hijacked');
+
+        $fakeBase = storage_path('test_apply_hidden_base_'.uniqid());
+        $this->tempDirs[] = $fakeBase;
+        File::ensureDirectoryExists($fakeBase);
+        File::put($fakeBase.DIRECTORY_SEPARATOR.'.env', 'APP_VERSION=local');
+
+        $originalBasePath = base_path();
+        app()->setBasePath($fakeBase);
+
+        try {
+            // 구버전 targets 시뮬레이션 — 루트 진입 파일 2종이 아직 목록에 없다.
+            config([
+                'app.update.targets' => [],
+                'app.update.excludes' => [],
+                'app.update.protected_paths' => ['.env', 'storage', 'vendor', 'node_modules', '.git'],
+            ]);
+
+            $this->service->applyUpdate($sourcePath);
+
+            $this->assertFileExists(
+                $fakeBase.DIRECTORY_SEPARATOR.'index.php',
+                '루트 shim 이 자동 발견 폴백으로 전달되어야 한다 (D25)'
+            );
+            $this->assertFileExists(
+                $fakeBase.DIRECTORY_SEPARATOR.'.htaccess',
+                '루트 .htaccess 가 자동 발견 폴백으로 전달되어야 한다 — 숨김 파일을 건너뛰면 보호 규칙 없는 진입점만 남는다 (D25)'
+            );
+
+            // 숨김 파일이 열거에 들어와도 protected_paths 는 그대로 지켜져야 한다.
             $this->assertSame('APP_VERSION=local', File::get($fakeBase.DIRECTORY_SEPARATOR.'.env'));
         } finally {
             app()->setBasePath($originalBasePath);
@@ -1868,5 +3022,45 @@ MD;
         } finally {
             app()->setBasePath($originalBasePath);
         }
+    }
+
+    /**
+     * 실행 잠금은 **실제로 얻은 쪽만** 푼다 (재진입 소유권).
+     *
+     * 재진입을 무조건 `true` 로 흡수하고 해제를 무조건 수행하면, **안쪽 호출의
+     * `finally` 가 바깥 보유자의 잠금을 푼다.** 그 형태가 실재한다 — 웹 오케스트레이터가
+     * 잠금을 잡은 뒤 같은 프로세스에서 `Artisan::call('core:update')` 를 부르면 커맨드가
+     * 끝나며 잠금이 풀리고, 이후 백업 삭제·롤백 구간이 무잠금으로 돌아 잠금이 지키려던
+     * 것(겹친 실행이 서로의 백업을 파괴)이 그대로 재현된다.
+     *
+     * @scenario update_concurrency=reentrant
+     *
+     * @effects run_lock_release_requires_ownership
+     */
+    public function test_run_lock_release_is_owned_by_the_acquirer(): void
+    {
+        $this->assertTrue($this->service->acquireRunLock(), '첫 획득은 성공해야 한다');
+        $this->assertSame(1, CoreUpdateService::runLockDepth());
+
+        // 안쪽(재진입) 획득 — 같은 프로세스라 통과하지만 깊이가 는다.
+        $this->assertTrue($this->service->acquireRunLock());
+        $this->assertSame(2, CoreUpdateService::runLockDepth());
+
+        // 안쪽 해제는 바깥 보유를 풀지 않는다.
+        $this->service->releaseRunLock();
+        $this->assertSame(
+            1,
+            CoreUpdateService::runLockDepth(),
+            '안쪽 해제가 바깥 잠금을 풀면 이후 구간이 무잠금으로 돈다'
+        );
+
+        // 바깥 해제로 완전히 풀린다.
+        $this->service->releaseRunLock();
+        $this->assertSame(0, CoreUpdateService::runLockDepth());
+
+        // 완전히 푼 뒤에는 다시 얻을 수 있다.
+        $this->assertTrue($this->service->acquireRunLock());
+        $this->assertSame(1, CoreUpdateService::runLockDepth());
+        $this->service->releaseRunLock();
     }
 }

@@ -3,6 +3,7 @@
 namespace Tests\Unit\Installer;
 
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
  * 22차 스윕 회귀 가드 — 「한 사실, 두 판정기」와 「참→거짓 전이를 소비자가 놓침」 축
@@ -26,24 +27,29 @@ use PHPUnit\Framework\TestCase;
  * - **#22-9**: 합성 키(taskId:target) 분해가 JS 안에서 두 규칙(첫 콜론 vs 전체 split)이었다.
  * - **N-5**: 디스크 여유 경고 문구가 카드 값 슬롯 계약(짧은 라벨)을 깼다.
  * - **N-6·N-8**: 롤 토큰 꼬리 무제한 · 전개 출력의 미전개 롤 무신호.
- *
- * @effects installer_state_transitions_are_consistently_judged
  */
 class InstallerStateTransitionConsistencyTest extends TestCase
 {
-    private static function src(string $relative): string
+    use ScansPhpSourceFunctions;
+
+    /**
+     * 주석을 지운 소스 — 이 클래스의 모든 소스 계약은 이 지점을 지난다.
+     */
+    private function src(string $relative): string
     {
-        return (string) file_get_contents(dirname(__DIR__, 3).'/'.$relative);
+        return $this->sourceWithoutComments(dirname(__DIR__, 3).'/'.$relative);
     }
 
     /**
      * #22-1: 세 지점이 같은 술어(존재 + 쓰기 가능)를 쓴다.
+     *
+     * @effects installer_state_transitions_are_consistently_judged
      */
     public function test_env_readiness_judged_identically_at_all_three_gates(): void
     {
-        $js = self::src('public/install/assets/js/installer.js');
-        $server = self::src('public/install/api/install-process.php');
-        $ko = self::src('public/install/lang/ko.php');
+        $js = $this->src('public/install/assets/js/installer.js');
+        $server = $this->src('public/install/api/install-process.php');
+        $ko = $this->src('public/install/lang/ko.php');
 
         // 사전 점검(거부형 `=== false`)과 재검사(허용형 `!== false`) 모두 env_writable 을
         // 소비해야 한다 — 재검사가 존재만 보면 그 버튼이 게이트의 우회로다.
@@ -60,10 +66,12 @@ class InstallerStateTransitionConsistencyTest extends TestCase
 
     /**
      * #22-3: 재개 어휘가 [초기화]의 실제 기록값을 포함한다.
+     *
+     * @effects installer_state_transitions_are_consistently_judged
      */
     public function test_resume_vocabulary_includes_reset_status(): void
     {
-        $index = self::src('public/install/index.php');
+        $index = $this->src('public/install/index.php');
 
         $this->assertStringContainsString("'not_started'", $index, '[초기화] 후 세션이 끊기면 저장된 진행(step_status)이 있는데 환영 화면부터 다시 걷는다 (#22-3)');
     }
@@ -73,7 +81,7 @@ class InstallerStateTransitionConsistencyTest extends TestCase
      */
     public function test_completed_display_reverts_removed_markers(): void
     {
-        $js = self::src('public/install/assets/js/installer.js');
+        $js = $this->src('public/install/assets/js/installer.js');
 
         $start = strpos($js, 'function displayCompletedTasks(');
         $this->assertNotFalse($start);
@@ -88,7 +96,7 @@ class InstallerStateTransitionConsistencyTest extends TestCase
      */
     public function test_env_php_binary_record_shares_shape_gate(): void
     {
-        $functions = self::src('public/install/includes/functions.php');
+        $functions = $this->src('public/install/includes/functions.php');
 
         $this->assertStringContainsString('installer_binary_path_shape_ok(', $functions, '.env 기록이 실행(getPhpBinary)과 다른 판정으로 원문을 박는다 (#22-5) — 설치는 A 로 끝나고 설치본은 B 를 쓰라고 기록된다');
     }
@@ -98,7 +106,8 @@ class InstallerStateTransitionConsistencyTest extends TestCase
      */
     public function test_language_change_reports_state_save_failure(): void
     {
-        $functions = self::src('public/install/includes/functions.php');
+        // 배선 단언은 문자열 채널까지 벗긴 소스로 잰다 (G3 회차 15).
+        $functions = $this->sourceWithoutCommentsAndStrings(dirname(__DIR__, 3).'/public/install/includes/functions.php');
 
         $start = strpos($functions, 'function handleLanguageChange(');
         $this->assertNotFalse($start);
@@ -112,7 +121,7 @@ class InstallerStateTransitionConsistencyTest extends TestCase
      */
     public function test_sse_mode_gates_share_response_envelope(): void
     {
-        $worker = self::src('public/install/api/install-worker.php');
+        $worker = $this->src('public/install/api/install-worker.php');
 
         $rejectPos = strpos($worker, 'installerSseWorkerRejected(');
         $this->assertNotFalse($rejectPos);
@@ -126,7 +135,7 @@ class InstallerStateTransitionConsistencyTest extends TestCase
      */
     public function test_composite_key_split_is_single_ruled(): void
     {
-        $js = self::src('public/install/assets/js/installer.js');
+        $js = $this->src('public/install/assets/js/installer.js');
 
         $this->assertGreaterThanOrEqual(3, substr_count($js, 'splitCompositeTaskKey('), '합성 키 분해 규칙이 지점마다 다르다 (#22-9)');
         $this->assertStringNotContainsString(".split(':')", $js, "전체 split(':') 은 콜론이 둘 이상인 키에서 target 을 자른다 (#22-9)");
@@ -137,8 +146,8 @@ class InstallerStateTransitionConsistencyTest extends TestCase
      */
     public function test_disk_headroom_warning_leaves_value_slot(): void
     {
-        $api = self::src('public/install/api/check-configuration.php');
-        $js = self::src('public/install/assets/js/installer.js');
+        $api = $this->src('public/install/api/check-configuration.php');
+        $js = $this->src('public/install/assets/js/installer.js');
 
         $this->assertStringContainsString("'headroom_message'", $api, '경고 문구가 message 에 합성되면 카드 값 슬롯(짧은 라벨 계약)에 문단이 들어간다 (N-5)');
         $this->assertStringContainsString('disk.headroom_message', $js);
@@ -158,7 +167,7 @@ class InstallerStateTransitionConsistencyTest extends TestCase
      */
     public function test_role_expansion_edges_are_bounded(): void
     {
-        $functions = self::src('public/install/includes/functions.php');
+        $functions = $this->src('public/install/includes/functions.php');
 
         $this->assertStringNotContainsString('(?:@\S+)?', $functions, '롤 토큰 꼬리가 무제한이면 SQL 보간의 신뢰 경계가 서버 출력 하나로 얇아진다 (N-6)');
         $this->assertStringContainsString("expanded['roles']", $functions, '전개 출력의 새 롤 부여가 무신호로 사라지면 권한 부족을 조용히 놓친다 (N-8) — 확인 불가는 확인 불가로 표시한다');
@@ -169,7 +178,7 @@ class InstallerStateTransitionConsistencyTest extends TestCase
      */
     public function test_mark_task_completed_has_sibling_defenses(): void
     {
-        $state = self::src('public/install/includes/installer-state.php');
+        $state = $this->src('public/install/includes/installer-state.php');
 
         $start = strpos($state, 'function markTaskCompleted(');
         $this->assertNotFalse($start);

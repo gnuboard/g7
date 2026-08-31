@@ -6,6 +6,7 @@ use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use PHPUnit\Framework\TestCase;
 use Tests\Concerns\CleansTemporaryBasePath;
+use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
  * 파일시스템이 협조하지 않을 때의 삭제·복원 계약 (19차 F2·F3·F5).
@@ -30,6 +31,7 @@ use Tests\Concerns\CleansTemporaryBasePath;
 class InstallerFilesystemFailureTest extends TestCase
 {
     use CleansTemporaryBasePath;
+    use ScansPhpSourceFunctions;
 
     private static string $base = '';
 
@@ -158,28 +160,12 @@ class InstallerFilesystemFailureTest extends TestCase
         ];
 
         foreach ($targets as $relative => $function) {
-            $source = (string) file_get_contents(dirname(__DIR__, 3).'/'.$relative);
+            // 주석을 지운 소스에서 트레이트가 본문을 도출한다 — 손으로 센 중괄호는 문자열
+            // 안의 중괄호에서 어긋나고, 원문 대조는 주석 처리된 가드를 통과시킨다.
+            $source = $this->sourceWithoutComments(dirname(__DIR__, 3).'/'.$relative);
+            $body = $this->functionBody($source, $function);
 
-            $start = strpos($source, 'function '.$function.'(');
-            $this->assertNotFalse($start, $function.'() 를 찾지 못했다');
-
-            $open = strpos($source, '{', $start);
-            $depth = 0;
-            $end = $open;
-            for ($i = $open, $len = strlen($source); $i < $len; $i++) {
-                if ($source[$i] === '{') {
-                    $depth++;
-                }
-                if ($source[$i] === '}') {
-                    $depth--;
-                    if ($depth === 0) {
-                        $end = $i;
-
-                        break;
-                    }
-                }
-            }
-            $body = substr($source, $open, $end - $open + 1);
+            $this->assertNotSame('', $body, $function.'() 를 찾지 못했다');
 
             $this->assertMatchesRegularExpression(
                 '/===\s*false/',

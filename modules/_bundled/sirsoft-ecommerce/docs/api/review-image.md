@@ -46,7 +46,7 @@ _이 엔드포인트는 JSON 봉투(`data`)를 반환하지 않습니다. 성공
 | 헤더 | 값 | 용도/설명 |
 | --- | --- | --- |
 | Content-Type | `image/jpeg` | 업로드 시 저장된 이미지의 MIME 타입 (`product_review_images.mime_type`) |
-| Cache-Control | `public, max-age=31536000` | 공개 이미지 장기 캐싱 (1년) |
+| Cache-Control | `public, max-age=31536000, must-revalidate` (프로덕션) / `no-cache` (그 외) | 코어 파일 서빙 단일 지점이 환경에 따라 정하는 캐싱 정책 — `ETag`·`Last-Modified`·`Expires` 동반, 조건부 요청은 304 |
 | Content-Disposition | `attachment; filename="review.jpg"` | 업로드 시의 원본 파일명 (`original_filename`) |
 
 **응답 예시**
@@ -54,7 +54,10 @@ _이 엔드포인트는 JSON 봉투(`data`)를 반환하지 않습니다. 성공
 ```http
 HTTP/1.1 200 OK
 Content-Type: image/jpeg
-Cache-Control: public, max-age=31536000
+Cache-Control: public, max-age=31536000, must-revalidate
+ETag: "9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d"
+Last-Modified: Wed, 15 Jul 2026 00:00:00 GMT
+Expires: Thu, 15 Jul 2027 00:00:00 GMT
 Content-Disposition: attachment; filename="review.jpg"
 
 <이미지 바이너리 스트림>
@@ -83,4 +86,4 @@ Content-Disposition: attachment; filename="review.jpg"
 
 브라우저 `<img src>` 는 Authorization 헤더를 실을 수 없으므로, 숨김 리뷰의 이미지를 싣는 관리자 응답(리뷰 목록·상세)의 `download_url` 에는 `expires`·`signature` 쿼리가 붙은 **한시 서명 URL** 이 직렬화되며, 이 엔드포인트는 유효한 서명을 상태 게이트와 동등한 자격으로 허용합니다. 서명이 변조·만료된 요청은 종전과 동일하게 404 로 차단됩니다. 노출(VISIBLE) 리뷰의 `download_url` 은 무서명 공개 URL(직접 URL/CDN 또는 이 API 경로)을 유지합니다.
 
-
+**캐시 계약(14차 정리)** 응답은 코어 파일 서빙 단일 지점과 같은 규칙을 따릅니다 — 검증자 `ETag`(행 메타 `disk|path|updated_at|file_size` 의 MD5, 따옴표 포함)·`Last-Modified`(행의 `updated_at`)를 싣고, 요청의 `If-None-Match`(`-gzip` 접미사·다중값·`W/` 흡수) 또는 `If-Modified-Since` 가 일치하면 본문 없는 `304 Not Modified` 를 200 과 같은 `Cache-Control`·`Expires` 와 함께 돌려줍니다. `Cache-Control` 은 프로덕션에서 `public, max-age=31536000, must-revalidate`(자산 버전 `?v=` 가 없는 URL 이라 `immutable` 은 붙지 않음), 그 외 환경에서는 `no-cache` 입니다. 사용자 업로드물이라 응답 압축 대상에서 제외됩니다.

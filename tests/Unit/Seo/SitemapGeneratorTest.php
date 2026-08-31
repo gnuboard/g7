@@ -8,6 +8,8 @@ use App\Seo\SitemapGenerator;
 use App\Seo\SitemapWriter;
 use App\Seo\TemplateRouteResolver;
 use App\Services\TemplateService;
+use App\Support\AssetUrl;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 use Mockery;
@@ -47,6 +49,11 @@ class SitemapGeneratorTest extends TestCase
         // storage/app/settings/seo.json 으로 적재되며 settings 디스크 fake 의 영향을 받지 않는다.
         // 실행 머신의 영속 설정에 다국어 hreflang 검증 결과가 좌우되지 않도록 명시 고정한다.
         Config::set('g7_settings.core.seo.sitemap_hreflang_enabled', true);
+
+        // `loc` 의 오리진은 설정(`app.url`)이 우선이다 (`AssetUrl::siteAbsolute()`). 개발 사이트의
+        // `app.url` 이 그대로 흘러들면 `url()` 기대값(요청 호스트 http://localhost)과 갈리므로
+        // 둘이 같은 값을 내는 상태로 고정한다. 갈리는 경우는 아래 전용 테스트가 명시적으로 만든다.
+        Config::set('app.url', 'http://localhost');
 
         $this->routeResolver = Mockery::mock(TemplateRouteResolver::class);
         $this->templateService = Mockery::mock(TemplateService::class);
@@ -774,13 +781,62 @@ class SitemapGeneratorTest extends TestCase
             }
 
             $urls[] = [
-                'loc' => url($routePath),
+                'loc' => AssetUrl::siteAbsolute($routePath), // 생산 코드(collectStaticRoutes)와 같은 단일 지점
                 'changefreq' => 'weekly',
                 'priority' => 0.5,
             ];
         }
 
         return $urls;
+    }
+
+    /**
+     * 사이트맵 `loc` 의 오리진은 **설정(`app.url`)이 우선**이다 — 정적 라우트와 기여자 URL 양쪽.
+     *
+     * 종전 `url()` 은 요청의 호스트를 실었다. 사이트맵은 콘솔(`seo:generate-sitemap`)이 만들면
+     * 요청이 없어 `app.url` 을, 웹 요청이 만들면 그 요청의 호스트를 실어 **같은 사이트의
+     * 사이트맵이 생성 경로에 따라 다른 오리진**을 가졌다. 페이지의 정본 주소(canonical)와
+     * 같은 단일 지점(`AssetUrl::siteAbsolute()`)으로 통일한다 (15차 G3 라운드 W4-1).
+     */
+    public function test_loc_는_요청_호스트가_아니라_설정_오리진을_싣는다(): void
+    {
+        config(['app.url' => 'https://example.com/g7']);
+        AssetUrl::forceBasePrefix('/g7');
+        app()->instance('request', Request::create('http://other/sitemap.xml'));
+
+        $this->templateService->shouldReceive('getRoutesDataWithModules')
+            ->with('sirsoft-user_basic')
+            ->andReturn([
+                'success' => true,
+                'data' => [
+                    'routes' => [
+                        ['path' => '/about', 'auth_required' => false, 'guest_only' => false],
+                        // 이미 접두사를 가진 값은 두 번 실리지 않는다.
+                        ['path' => '/g7/contact', 'auth_required' => false, 'guest_only' => false],
+                    ],
+                ],
+            ]);
+
+        $contributor = Mockery::mock(SitemapContributorInterface::class);
+        $contributor->shouldReceive('getIdentifier')->andReturn('ecommerce');
+        $contributor->shouldReceive('getUrls')->andReturn([
+            ['url' => '/products/shoes'],
+        ]);
+        Log::shouldReceive('warning')->zeroOrMoreTimes();
+
+        try {
+            $static = $this->invokeCollectStaticRoutes(['identifier' => 'sirsoft-user_basic']);
+
+            $this->generator->registerContributor($contributor);
+            $xml = $this->generator->generate();
+        } finally {
+            AssetUrl::forceBasePrefix(null);
+        }
+
+        $this->assertSame('https://example.com/g7/about', $static[0]['loc'], '정적 라우트 loc 이 요청 호스트를 실었다');
+        $this->assertSame('https://example.com/g7/contact', $static[1]['loc'], '접두사가 두 번 실렸다');
+        $this->assertStringContainsString('<loc>https://example.com/g7/products/shoes</loc>', $xml, '기여자 loc 이 요청 호스트를 실었다');
+        $this->assertStringNotContainsString('http://other', $xml);
     }
 }
 

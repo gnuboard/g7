@@ -92,6 +92,11 @@ return [
     ],
 
     // SEO / Sitemap 관련 예외
+    // 파일 서빙 헬퍼 — 호출부 계약 위반 (개발자 대상)
+    'file_serving' => [
+        'meta_key_missing' => '파일 서빙 메타에 필수 키가 없습니다: :key',
+    ],
+
     'seo' => [
         'sitemap_write_failed' => 'Sitemap 파일 기록에 실패했습니다: :path',
         'sitemap_gzip_failed' => 'Sitemap 자식 파일 압축에 실패했습니다: :file',

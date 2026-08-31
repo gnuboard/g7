@@ -1,7 +1,7 @@
 /**
  * Smoke: 비회원 주문 조회 폼 진입 검증 (Issue #55 단계 5 그룹 C+D)
  *
- * @scenario guest-order: actor=guest, entry_point=login_screen_lookup_link
+ * @scenario actor=guest, entry_point=login_screen_lookup_link
  * @effects guest_order_form_accepts_order_number_phone_password_three_fields
  *
  * 검증 범위:
@@ -50,7 +50,7 @@ test('@smoke 비회원 조회 폼은 인증 없이 접근 가능해야 한다 (a
 });
 
 /**
- * @scenario guest-order: actor=guest, token_state=missing
+ * @scenario actor=guest, token_state=missing
  * @effects order_complete_401_404_clears_token_and_shows_lookup_link
  * @effects order_complete_blur_until_orderData_loaded_prevents_flash
  *
@@ -84,7 +84,7 @@ test('@smoke 비로그인 + 토큰 부재 상태로 주문 완료 화면 진입 
 });
 
 /**
- * @scenario guest-order: actor=guest, token_state=valid_in_session_storage, entry_point=guest_order_form
+ * @scenario actor=guest, token_state=valid_in_session_storage, entry_point=guest_order_form
  * @effects guest_order_form_clears_session_token_on_entry_for_standard_form_visibility
  *
  * /shop/guest/orders 진입 시 sessionStorage 의 유효 토큰을 init_actions(clearGuestTokenOnEntry)
@@ -120,7 +120,7 @@ test('@smoke 유효 sessionStorage 토큰 보유 시 /guest/orders 진입은 토
 });
 
 /**
- * @scenario guest-order: actor=guest, token_state=expired_in_session_storage, entry_point=guest_order_form
+ * @scenario actor=guest, token_state=expired_in_session_storage, entry_point=guest_order_form
  * @effects expired_session_token_is_cleared_and_form_renders
  *
  * 만료된 sessionStorage 토큰을 보유한 사용자가 /guest/orders 에 진입하면
@@ -151,7 +151,7 @@ test('@smoke 만료된 sessionStorage 토큰 보유 시 /guest/orders 진입은 
 });
 
 /**
- * @scenario guest-order: actor=guest, entry_point=header_lookup_link
+ * @scenario actor=guest, entry_point=header_lookup_link
  * @effects header_and_mobile_nav_order_lookup_routes_via_login_redirect_param
  *
  * 비로그인 상태로 헤더 '주문조회' 메뉴 클릭 시 /login?redirect=/mypage/orders 로 진입해

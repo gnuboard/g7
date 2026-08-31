@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import { sitePath } from '../apiUrl';
 import {
     PaymentCloseReportContext,
     preparePaymentRetry,
@@ -346,7 +347,7 @@ export async function requestPaymentHandler(action: any, _context?: any): Promis
             buyer_phone: pgPaymentData.customer_phone ?? '',
             payment_method: paymentMethod,
         };
-        const callbackUrl = window.location.origin + config.callback_urls.callback;
+        const callbackUrl = window.location.origin + sitePath(config.callback_urls.callback);
 
         await preparePaymentRetry(closeReportContext);
 

@@ -1,4 +1,7 @@
-# audit:allow test-scenario-coverage reason: 이슈 #481(공개 #79) 사이트맵 생성 확장성 SSoT. 6축 cross product(216 조합)는 docblock 전수 @scenario 매핑이 비현실적이라 면제하고, 회귀 가드는 test_files(백엔드 PHPUnit + 레이아웃 Vitest + Playwright E2E)로 커버한다. 대용량 축(scale)은 scenario-scale-axis-required / job-generator-needs-scale-test 룰이 별도 강제(면제 대상 아님) — scale.cases[].assert 는 @scale 마킹으로 전수 커버.
+# audit:allow test-scenario-coverage reason: issue:#609 이슈 #481(공개 #79) 사이트맵 생성 확장성 SSoT. 6축 cross product(216 조합)는 docblock 전수 @scenario 매핑이 비현실적이라 면제하고, 회귀 가드는 test_files(백엔드 PHPUnit + 레이아웃 Vitest + Playwright E2E)로 커버한다. 대용량 축(scale)은 scenario-scale-axis-required / job-generator-needs-scale-test 룰이 별도 강제(면제 대상 아님) — scale.cases[].assert 는 @scale 마킹으로 전수 커버.
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 15차 F-21 에서 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
+# 원장(9차 G3 라운드 C-4): 이 매니페스트는 :cross-product 로 좁히면 effects 18건이 미검증으로 드러난다.
+#   그 짝 맞추기는 이 공정(SEO)의 몫이며, 좁히는 시점에 함께 처리한다.
 
 feature: sitemap_generation
 
@@ -16,6 +19,10 @@ description: |
     - 대용량 경로는 유계 메모리 + 분할 정확성 + 방송 스로틀을 scale 축으로 회귀 가드.
 
 axes:
+  # G3 회차 16 W6 — 종전 마킹이 쓰던 이름을 선언으로 올린다 (선언 = 마킹). 값은 실제 마킹에서 도출.
+  tab: [seo, advanced]
+  permitted: [yes]
+  transition_overlay: [wait_for]
   multilingual: [off, on]
   split_threshold: [under, over]
   serve_mode: [fresh, stale, absent]

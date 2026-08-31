@@ -6,6 +6,7 @@ namespace Plugins\Sirsoft\PayKginicis\Controllers;
 
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
+use App\Support\AssetUrl;
 use App\Support\OutboundProxy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
@@ -205,8 +206,8 @@ class AdminCbtConnectivityCheckController extends AdminBaseController
 
     private function buildCallbackDiagnostics(): array
     {
-        $appUrl = rtrim((string) config('app.url'), '/');
-        $callbackUrl = url('/plugins/sirsoft-pay_kginicis/payment/cbt/callback');
+        $appUrl = AssetUrl::siteRoot();
+        $callbackUrl = AssetUrl::siteAbsolute('/plugins/sirsoft-pay_kginicis/payment/cbt/callback');
         $appHost = parse_url($appUrl, PHP_URL_HOST);
         $callbackHost = parse_url($callbackUrl, PHP_URL_HOST);
 

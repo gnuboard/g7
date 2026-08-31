@@ -186,8 +186,12 @@ class SettingsServiceProvider extends ServiceProvider
             Config::set('app.name', $this->localizeSettingValue($generalSettings['site_name']));
         }
 
-        if (! empty($generalSettings['site_url'])) {
-            Config::set('app.url', $generalSettings['site_url']);
+        if (! empty($generalSettings['site_url']) && is_string($generalSettings['site_url'])) {
+            // 후행 슬래시·앞뒤 공백은 여기서 걷어낸다 — 관리자 저장 경로(SaveSettingsRequest)는
+            // 이미 정규화하지만 인스톨러는 그 경로를 우회해 원값을 저장한다(task-runner). 저장된
+            // 값이 모두 이 한 지점을 지나 app.url 이 되므로, 정규화를 여기 두면 저장 경로와
+            // 무관하게 app.url 이 후행 슬래시 없는 형태로 고정된다 (17차 G3 라운드 B-8).
+            Config::set('app.url', rtrim(trim($generalSettings['site_url']), '/'));
         }
 
         if (! empty($generalSettings['timezone'])) {

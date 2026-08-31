@@ -16,6 +16,14 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class ImageServeService
 {
     /**
+     * 본문 이미지 서빙의 캐시 유지 시간 (초) — 1년.
+     *
+     * 이 URL 에는 자산 버전(`?v=`)이 없어 `immutable` 은 붙이지 않는다 — 같은 주소의
+     * 내용이 교체될 수 있는 자산이라, 붙이면 교체한 파일이 만료 전까지 옛것으로 남는다.
+     */
+    public const CACHE_MAX_AGE = 31536000;
+
+    /**
      * @param  ImageUploadRepositoryInterface  $repository  이미지 업로드 리포지토리
      * @param  StorageInterface  $storage  플러그인 스토리지 드라이버
      */
@@ -33,6 +41,32 @@ class ImageServeService
     public function findByHash(string $hash): ?Ckeditor5ImageUpload
     {
         return $this->repository->findByHash($hash);
+    }
+
+    /**
+     * 조건부 요청 판정에 쓰는 검증자 소스를 행 메타에서 만듭니다.
+     *
+     * 파일 stat 이 아니라 **행 메타**(disk·path·updated_at·size)로 만든다 — 원격 디스크
+     * (S3 등)에서도 결정적이고, 코어 형제(`BaseApiController::streamedFileResponse()`)가
+     * 쓰는 소스 구성과 같다. 컨트롤러가 이 값을 그 헬퍼에 넘겨 `If-None-Match` /
+     * `If-Modified-Since` 를 판정한다.
+     *
+     * @param  Ckeditor5ImageUpload  $image  이미지 업로드 행
+     * @return array{etag_source: string, last_modified: int|null} ETag 소스와 수정 시각(Unix time)
+     */
+    public function cacheValidators(Ckeditor5ImageUpload $image): array
+    {
+        $lastModifiedAt = $image->updated_at?->getTimestamp();
+
+        return [
+            'etag_source' => implode('|', [
+                (string) $image->storage_disk,
+                (string) $image->file_path,
+                (string) $lastModifiedAt,
+                (string) $image->file_size,
+            ]),
+            'last_modified' => $lastModifiedAt,
+        ];
     }
 
     /**
@@ -62,14 +96,36 @@ class ImageServeService
 
         $storage = $useRowDisk ? $this->storage->withDisk($rowDisk) : $this->storage;
 
+        // 검증자(ETag · Last-Modified)를 함께 싣는다. 종전에는 `max-age=31536000` 만 있고
+        // 검증자가 하나도 없었다 — 이 URL 에는 `?v=` 가 없으므로 **재검증 자체가 불가능**해
+        // 운영자가 본문 이미지를 갈아 끼워도 방문자는 최대 1년간 옛것을 보고, 만료 뒤에는
+        // 내용이 같아도 매 요청이 전문 200 이 된다(304 로 끝날 왕복이 하나도 없다).
+        // 형제(ecommerce `ServesImageWithRowValidators`)는 같은 계열에서 `must-revalidate`
+        // 까지 갖추고 있었다 — 한쪽만 갖추면 그것은 규율이 아니라 그 확장의 패치다.
+        // ETag 는 큰따옴표로 감싼다 (RFC 9110 §8.8.3).
+        // (12차 G3 라운드 D1)
+        //
+        // 검증자의 **소스**는 `cacheValidators()` 한 곳이 만든다 — 조건부 요청 판정은
+        // 컨트롤러가 코어 단일 지점(`streamedFileResponse()`)에 맡기는데, 그 지점이 같은
+        // 소스로 ETag 를 다시 만들므로 여기서 실은 값과 어긋나면 안 된다 (13차 G3 라운드).
+        $validators = $this->cacheValidators($image);
+        $lastModifiedAt = $validators['last_modified'];
+
+        $headers = [
+            'Content-Type' => $image->mime_type,
+            'Cache-Control' => 'public, max-age='.self::CACHE_MAX_AGE.', must-revalidate',
+            'ETag' => '"'.md5($validators['etag_source']).'"',
+        ];
+
+        if ($lastModifiedAt !== null) {
+            $headers['Last-Modified'] = gmdate('D, d M Y H:i:s', $lastModifiedAt).' GMT';
+        }
+
         $response = $storage->response(
             $category,
             $relativePath,
             $image->original_name,
-            [
-                'Content-Type' => $image->mime_type,
-                'Cache-Control' => 'public, max-age=31536000',
-            ]
+            $headers
         );
 
         if (! $response) {

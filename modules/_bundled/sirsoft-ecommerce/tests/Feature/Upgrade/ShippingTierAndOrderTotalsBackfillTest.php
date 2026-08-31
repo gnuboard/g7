@@ -21,8 +21,6 @@ use Modules\Sirsoft\Ecommerce\Upgrades\Upgrade_1_1_1;
  * 값을 다시 움직이면 운영자가 보정한 값이 조용히 덮어써집니다.
  *
  * @scenario charge_policy=range_weight, boundary=at_max, unit_source=g
- *
- * @effects continuous_tier_min_normalized, order_totals_backfilled, upgrade_is_idempotent
  */
 class ShippingTierAndOrderTotalsBackfillTest extends ModuleTestCase
 {
@@ -76,6 +74,9 @@ class ShippingTierAndOrderTotalsBackfillTest extends ModuleTestCase
         return json_decode((string) $row->ranges, true)['tiers'] ?? [];
     }
 
+    /**
+     * @effects continuous_tier_min_normalized
+     */
     public function test_it_normalizes_continuous_tier_min_to_previous_max(): void
     {
         // 구 규칙(max + 1)으로 저장된 무게 구간
@@ -113,6 +114,9 @@ class ShippingTierAndOrderTotalsBackfillTest extends ModuleTestCase
         $this->assertEquals(6, $tiers[1]['min']);
     }
 
+    /**
+     * @effects continuous_tier_min_normalized
+     */
     public function test_it_normalizes_first_quantity_tier_min_to_zero(): void
     {
         // 샘플 데이터는 "1~5개 / 6개~" 로 저장돼 있다. 시작값이 읽기전용이 된 이상
@@ -132,6 +136,9 @@ class ShippingTierAndOrderTotalsBackfillTest extends ModuleTestCase
         $this->assertEquals(3000, $tiers[0]['fee']);
     }
 
+    /**
+     * @effects order_totals_backfilled
+     */
     public function test_it_backfills_order_totals_from_option_subtotals(): void
     {
         $order = OrderFactory::new()->create();
@@ -176,6 +183,9 @@ class ShippingTierAndOrderTotalsBackfillTest extends ModuleTestCase
         $this->assertEquals(888.0, (float) $row->total_volume);
     }
 
+    /**
+     * @effects upgrade_is_idempotent
+     */
     public function test_it_is_idempotent(): void
     {
         $settingId = $this->makeCountrySetting(ChargePolicyEnum::RANGE_VOLUME, [

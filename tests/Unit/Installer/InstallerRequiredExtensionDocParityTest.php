@@ -3,6 +3,7 @@
 namespace Tests\Unit\Installer;
 
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
  * 인스톨러가 자동 검사하는 필수 PHP 확장 ↔ 공개 문서(`docs/requirements.md` §1.4·§9) 대조 (17차).
@@ -20,11 +21,11 @@ use PHPUnit\Framework\TestCase;
  * `BASE_PATH` 가 실 저장소 루트로 박혀 격리 속성이 필요해지기 때문이다 (§16.13.7 규약).
  *
  * 커버 축: extension_list source·doc / doc_section inline·summary
- *
- * @effects required_extension_list_matches_public_doc, required_extension_count_matches_public_doc
  */
 class InstallerRequiredExtensionDocParityTest extends TestCase
 {
+    use ScansPhpSourceFunctions;
+
     private function repoRoot(): string
     {
         return dirname(__DIR__, 3);
@@ -37,7 +38,7 @@ class InstallerRequiredExtensionDocParityTest extends TestCase
      */
     private function sourceExtensions(): array
     {
-        $source = (string) file_get_contents($this->repoRoot().'/public/install/includes/config.php');
+        $source = $this->sourceWithoutComments($this->repoRoot().'/public/install/includes/config.php');
 
         $this->assertSame(
             1,
@@ -45,9 +46,8 @@ class InstallerRequiredExtensionDocParityTest extends TestCase
             'REQUIRED_EXTENSIONS 선언을 찾지 못했다 — 선언 형태가 바뀌면 이 검사가 사문이 된다',
         );
 
-        // 주석 줄을 걷어내고 따옴표 안의 이름만 취한다.
-        $body = preg_replace('!//[^\n]*!', '', (string) $m[1]);
-        preg_match_all("/'([a-z0-9_]+)'/i", (string) $body, $names);
+        // 주석은 읽을 때 이미 걷었다 — 따옴표 안의 이름만 취한다.
+        preg_match_all("/'([a-z0-9_]+)'/i", (string) $m[1], $names);
 
         return $names[1];
     }
@@ -72,6 +72,9 @@ class InstallerRequiredExtensionDocParityTest extends TestCase
         return ['count' => (int) $m[1], 'names' => $names[1]];
     }
 
+    /**
+     * @effects required_extension_list_matches_public_doc
+     */
     public function test_required_extension_list_matches_public_doc(): void
     {
         $source = $this->sourceExtensions();
@@ -85,6 +88,9 @@ class InstallerRequiredExtensionDocParityTest extends TestCase
         );
     }
 
+    /**
+     * @effects required_extension_count_matches_public_doc
+     */
     public function test_required_extension_count_matches_public_doc(): void
     {
         $source = $this->sourceExtensions();

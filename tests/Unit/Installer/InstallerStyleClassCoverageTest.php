@@ -3,6 +3,7 @@
 namespace Tests\Unit\Installer;
 
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
  * 인스톨러 화면이 쓰는 CSS 클래스가 실제로 선언돼 있는지 검사한다.
@@ -20,15 +21,15 @@ use PHPUnit\Framework\TestCase;
  *
  * 전부 텍스트는 정상 표시되므로 스크린샷을 사람이 봐도 지나간다. 그래서 정적 검사가 필요하다.
  *
- * 검사 범위는 인스톨러로 한정한다 (PO 결정 2026-08-23) — 저장소 전체 룰은 기존 화면의
+ * 검사 범위는 인스톨러로 한정한다 (제품 결정 2026-08-23) — 저장소 전체 룰은 기존 화면의
  * 미해결 위반을 대량으로 끌어와 작업 범위가 예측 불가하게 커진다.
  *
  * 커버 축: style_class_declared declared·undeclared·external·allowlisted
- *
- * @effects installer_markup_classes_have_style_rules
  */
 class InstallerStyleClassCoverageTest extends TestCase
 {
+    use ScansPhpSourceFunctions;
+
     /**
      * 규칙이 없어도 되는 클래스와 그 근거.
      *
@@ -94,7 +95,11 @@ class InstallerStyleClassCoverageTest extends TestCase
     }
 
     /**
-     * 인스톨러 스타일시트 전수를 이어붙인 소스.
+     * 인스톨러 스타일시트 전수를 이어붙인 소스 — 주석은 지운 채 (G3 회차 14 W4-8).
+     *
+     * 읽기와 주석 제거를 공용 진입점(`sourceWithoutComments()`, CSS 는 블록 주석만)에 묶는다.
+     * 종전에는 원문을 이어붙이고 소비처마다 정규식으로 다시 지웠다 — 한 소비처가 그것을
+     * 잊으면 주석 속 선택자가 「선언」으로 계상되어 규칙을 지우고 이름만 남겨도 초록이다.
      *
      * @return string CSS 소스
      */
@@ -103,7 +108,7 @@ class InstallerStyleClassCoverageTest extends TestCase
         $files = $this->scanFiles($this->installDir().'/assets/css', ['css']);
         $this->assertNotEmpty($files, '인스톨러 스타일시트를 하나도 찾지 못했다 — 스캔이 죽었다');
 
-        return implode("\n", array_map(static fn (string $f): string => (string) file_get_contents($f), $files));
+        return implode("\n", array_map(fn (string $f): string => $this->sourceWithoutComments($f), $files));
     }
 
     /**
@@ -162,6 +167,11 @@ class InstallerStyleClassCoverageTest extends TestCase
      *  - `403-forbidden.php` — 자체 `<style>` 을 가진 독립 페이지다
      *  - Font Awesome (`fa`/`fas`/`far`/`fab`/`fa-*`) — 외부 스타일시트 소유
      *  - `-` 로 끝나는 토큰 — `'alert alert-' + kind` 같은 문자열 조립의 앞조각
+     *  - **주석 속** 클래스 — 소스는 주석을 지운 뒤 읽는다(`sourceWithoutComments()`, G3 회차 14
+     *    W4-8). 주석에 적힌 `class="…"` 는 화면에 붙지 않는데 모집단에 들면 그 이름에 CSS 선언
+     *    의무가 생겨(거짓 red) 다음 사람이 죽은 클래스에 규칙을 만들거나 면제 목록을 늘린다.
+     *    반대 방향은 없다 — 주석으로 감싼 마크업이 모집단에서 빠지는 것은 실제로 붙지 않는
+     *    클래스가 빠지는 것이라 옳다.
      *
      * @return array<string, array<int, string>>
      */
@@ -189,7 +199,7 @@ class InstallerStyleClassCoverageTest extends TestCase
                 continue;   // 언어 파일은 문구의 정의이고 마크업이 아니다
             }
 
-            $source = (string) file_get_contents($file);
+            $source = $this->sourceWithoutComments($file);
 
             foreach ($this->classesInSource($source) as $token) {
                 $used[$token][] = basename($file);
@@ -360,7 +370,7 @@ class InstallerStyleClassCoverageTest extends TestCase
                 $derived['.'.$member] = true;
             }
         }
-        $js = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/assets/js/installer.js');
+        $js = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/assets/js/installer.js');
         preg_match_all("/className:\s*'(task-[a-z-]+)'/", $js, $taskStates);
         foreach ($taskStates[1] as $member) {
             $derived['.'.$member] = true;
@@ -415,6 +425,9 @@ class InstallerStyleClassCoverageTest extends TestCase
         $this->assertGreaterThanOrEqual(250, count($this->declaredClasses()), 'CSS 선언 집합이 비면 이 검사가 무의미하다');
     }
 
+    /**
+     * @effects installer_markup_classes_have_style_rules
+     */
     public function test_every_markup_class_has_a_style_rule_or_a_stated_reason(): void
     {
         $declared = $this->declaredClasses();

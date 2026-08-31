@@ -2,6 +2,7 @@
 
 namespace App\Extension\Traits;
 
+use App\Extension\ExtensionManager;
 use Illuminate\Support\Facades\File;
 
 /**
@@ -115,7 +116,7 @@ trait ValidatesTranslationPath
         $localeDirectories = File::directories($path);
 
         foreach ($localeDirectories as $localeDir) {
-            $phpFiles = File::glob($localeDir.'/*.php');
+            $phpFiles = ExtensionManager::listDirectoryFiles($localeDir, '.php');
             if (! empty($phpFiles)) {
                 return true;
             }

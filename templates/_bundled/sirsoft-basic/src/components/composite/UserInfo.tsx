@@ -39,6 +39,7 @@
  * // author.name이 "홍길동"이어도 "관리자"가 표시됨
  */
 
+import { sitePath } from '../../support/apiUrl';
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Div } from '../basic/Div';
@@ -343,7 +344,7 @@ export const UserInfo: React.FC<UserInfoProps> = ({
       if (g7Core?.navigate) {
         g7Core.navigate(path);
       } else {
-        window.location.href = path;
+        window.location.href = sitePath(path);
       }
     }
   }, [actualUserId]);

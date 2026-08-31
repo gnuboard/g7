@@ -76,6 +76,38 @@ if (! function_exists('installer_is_completed')) {
     }
 }
 
+if (! function_exists('installer_guard_completed_message')) {
+    /**
+     * 완료 가드가 운영자에게 보낼 문구를 돌려준다.
+     *
+     * 사실 관계 (13차 G3 W1-12): API 진입점 12곳 전부가 이 가드를 `$translations` 를 싣기
+     * **전에** 부른다. 그래서 이 함수가 실제로 돌려주는 값은 언제나 **영문 폴백**이고, 아래
+     * 번역 분기는 현재 어느 진입점에서도 도달하지 않는다. 화면이 그 사유를 운영자 언어로
+     * 보여 주는 통로는 문구가 아니라 응답의 `message_key`(`installer_disabled_completed`)다 —
+     * `installer.js` 가 그 키를 `INSTALLER_LANG` 으로 번역해 그린다. 이 폴백 문구가 그대로
+     * 보이는 경우는 브라우저 주소창으로 API 를 **직접 연** 때뿐이다.
+     *
+     * 번역 분기를 남겨 두는 이유는 판정 술어의 역사다. 종전 술어 `function_exists('lang')` 은
+     * 언제나 참이라(진입점이 `functions.php` 를 가드보다 먼저 싣는다) `lang()` 이 미설정
+     * `$translations` 앞에서 **원시 키**를 돌려줬다 — 폴백을 둔 목적이 뒤집혔다. 그래서
+     * 판정 대상을 「번역이 실렸는가」로 바꿨다(12차 G3 E-1). 번역이 실린 뒤에 부르는 진입점이
+     * 생기면 그때 이 분기가 산다 — 그 전까지는 「번역이 실렸으면 번역문」이 아니라
+     * 「지금은 영문 폴백뿐」이 이 함수의 실제 계약이다.
+     *
+     * @return string 영문 폴백 (번역이 실린 뒤 불리는 경로가 생기면 그때는 번역문)
+     */
+    function installer_guard_completed_message(): string
+    {
+        global $translations;
+
+        if (function_exists('lang') && isset($translations) && is_array($translations) && $translations !== []) {
+            return lang('installer_disabled_completed');
+        }
+
+        return 'Installer is disabled because installation has been completed.';
+    }
+}
+
 if (! function_exists('installer_guard_or_410')) {
     function installer_guard_or_410(): void
     {
@@ -92,11 +124,8 @@ if (! function_exists('installer_guard_or_410')) {
 
         echo json_encode([
             'success' => false,
-            // 운영자 화면에 도달할 수 있는 문구다 — 번역이 로드돼 있으면 번역문을 쓴다
-            // (진입점에 따라 이 가드가 lang() 보다 먼저 돌 수 있어 폴백을 둔다).
-            'message' => function_exists('lang')
-                ? lang('installer_disabled_completed')
-                : 'Installer is disabled because installation has been completed.',
+            // 운영자 화면에 도달할 수 있는 문구다 — 판정은 단일 지점이 소유한다.
+            'message' => installer_guard_completed_message(),
             'message_key' => 'installer_disabled_completed',
         ], JSON_UNESCAPED_UNICODE);
 
@@ -227,9 +256,7 @@ if (! function_exists('installer_guard_post_complete_or_410')) {
 
         echo json_encode([
             'success' => false,
-            'message' => function_exists('lang')
-                ? lang('installer_disabled_completed')
-                : 'Installer is disabled because installation has been completed.',
+            'message' => installer_guard_completed_message(),
             'message_key' => 'installer_disabled_completed',
         ], JSON_UNESCAPED_UNICODE);
 
@@ -274,9 +301,7 @@ if (! function_exists('installer_guard_finalize_or_410')) {
 
         echo json_encode([
             'success' => false,
-            'message' => function_exists('lang')
-                ? lang('installer_disabled_completed')
-                : 'Installer is disabled because installation has been completed.',
+            'message' => installer_guard_completed_message(),
             'message_key' => 'installer_disabled_completed',
         ], JSON_UNESCAPED_UNICODE);
 

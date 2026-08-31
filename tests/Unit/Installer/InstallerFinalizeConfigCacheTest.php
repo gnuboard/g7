@@ -7,7 +7,7 @@ use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use PHPUnit\Framework\TestCase;
 
 /**
- * 설치 마무리가 설정 캐시를 무효화하는지 실측한다 (PO 결정 13차 D7/E2).
+ * 설치 마무리가 설정 캐시를 무효화하는지 실측한다 (제품 결정 13차 D7/E2).
  *
  * 마지막 태스크 `config_cache` 는 `.env` 머지 **이전**에 돈다. 그 시점의 config 는
  * `InstallerRuntimeServiceProvider` 가 `storage/installer/runtime.php` 에서 주입한 값이고,
@@ -19,7 +19,7 @@ use PHPUnit\Framework\TestCase;
  * 결과는 오류도 경고도 없이 「설치는 성공했는데 확장 API 가 전부 404 이고 비밀번호가
  * 캐시 파일에 남아 있는」 상태다.
  *
- * PO 결정은 「굽지 않는다」가 아니라 「끝날 때 지운다」다 — 태스크 목록은 그대로 두고
+ * 제품 결정은 「굽지 않는다」가 아니라 「끝날 때 지운다」다 — 태스크 목록은 그대로 두고
  * finalize 가 마지막에 그 파일을 지운다. 그리고 그 삭제는 **설치를 중단시키지 않는다**.
  *
  * 함수 단위로는 확인되지 않는 계약이다 — 삭제가 `.env` 쓰기 **뒤**에 있어야 하고(앞에 두면
@@ -179,10 +179,22 @@ class InstallerFinalizeConfigCacheTest extends TestCase
             'runtime.php 정리가 설정 캐시 삭제 실패에 막혔다 — 삭제 실패는 설치를 중단시키지 않는다',
         );
 
+        // 기대 문구는 **번역된 본문**이다. 종전 기대값(`bootstrap/cache/config.php 삭제
+        // FAILED`)은 이 기록이 다국어 키로 옮겨지기 전의 것이라 어느 쪽으로도 맞지 않았고,
+        // 그 stale 한 기대가 「이 파일만 번역을 싣지 않는다」는 실제 결함을 가리고 있었다.
+        // 원시 키가 나가면 이 단언이 red 다 (13차 G3 라운드).
+        $log = $this->installationLog();
+
         $this->assertStringContainsString(
-            'bootstrap/cache/config.php 삭제 FAILED',
-            $this->installationLog(),
+            '설정 캐시 삭제 실패',
+            $log,
             '삭제 실패가 진행 기록에 남지 않았다 — 운영자가 수동 정리 대상을 알 방법이 사라진다',
+        );
+
+        $this->assertStringNotContainsString(
+            'log_finalize_env_',
+            $log,
+            '진행 기록이 원시 다국어 키로 나갔다 — 형제 엔드포인트처럼 번역을 실어야 한다',
         );
     }
 

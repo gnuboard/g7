@@ -679,6 +679,9 @@ class BoardSettingsControllerTest extends ModuleTestCase
      * - 3번 게시판은 미적용
      * - 컬럼 업데이트(혼합 경로)도 원복
      */
+    /**
+     * @effects permission_failure_rolls_back_all_boards, permission_failure_response_has_rolled_back_and_board_name
+     */
     public function test_bulk_apply_rolls_back_all_when_permission_fails_midway(): void
     {
         $boards = [];
@@ -731,6 +734,9 @@ class BoardSettingsControllerTest extends ModuleTestCase
      * 컬럼 업데이트(bulkUpdate)는 단일 쿼리라 특정 게시판을 짚을 수 없음:
      * - 응답은 HTTP 200 + data.rolled_back=true + board=null
      * - 권한도 미적용(원복)
+     */
+    /**
+     * @effects column_failure_rolls_back_all_changes, column_failure_response_has_rolled_back_and_null_board
      */
     public function test_bulk_apply_rolls_back_with_generic_when_column_update_fails(): void
     {

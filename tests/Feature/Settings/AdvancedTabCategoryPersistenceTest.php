@@ -20,10 +20,7 @@ use Tests\TestCase;
  * 분류 대상은 손으로 열거하지 않고 스키마(`frontend_schema.*.merge_into === 'advanced'`)
  * 에서 도출합니다. 새 카테고리가 고급 탭에 합류해도 이 테스트가 자동으로 그것을 셉니다.
  *
- * @scenario case=advanced_tab_category_persistence
- *
- * @effects pagination_limits_persist_from_admin_settings
- * @effects advanced_tab_persists_every_merged_category
+ * @scenario advanced_tab_category_persistence
  */
 class AdvancedTabCategoryPersistenceTest extends TestCase
 {

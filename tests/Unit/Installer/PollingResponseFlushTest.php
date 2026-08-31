@@ -24,7 +24,7 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  *   @ini_set('output_buffering', 'off')
  *   @ini_set('zlib.output_compression', false)
  *
- *   @apache_setenv('no-gzip', 1)
+ *   @apache_setenv('no-gzip', '1')
  *   while (ob_get_level() > 0) ob_end_clean();
  *
  * 본 테스트는 install-process.php 의 폴링 분기에 동일한 출력 처리 비활성화가 echo
@@ -79,10 +79,15 @@ class PollingResponseFlushTest extends TestCase
     {
         $pollingBranch = $this->extractPollingBranch();
 
+        // 두 번째 인자는 **문자열**이어야 한다. PHP 8 의 mod_php 에서 `apache_setenv('no-gzip', 1)`
+        // 은 TypeError 이고 `@` 는 Error 를 억제하지 못해 응답이 통째로 500 이 된다 (G3 P0 실측).
+        // 형제 게이트 InstallerJsonEndpointErrorChannelTest 가 인스톨러 트리 전수에 문자열 인자를
+        // 강제하므로, 이 자리가 int 형태를 요구하면 두 게이트가 서로를 빨갛게 만든다 — 여기서
+        // 보는 것은 「분기 안에 있는가 · echo 보다 앞인가」뿐이고 인자 형태는 그 게이트가 소유한다.
         $this->assertMatchesRegularExpression(
-            '/apache_setenv\(\s*[\'"]no-gzip[\'"]\s*,\s*1\s*\)/i',
+            '/apache_setenv\(\s*[\'"]no-gzip[\'"]\s*,\s*[\'"]1[\'"]\s*\)/i',
             $pollingBranch,
-            '폴링 분기는 echo 이전에 apache_setenv(no-gzip, 1) 를 호출해야 한다 — '
+            '폴링 분기는 echo 이전에 apache_setenv(no-gzip, \'1\') 를 호출해야 한다 — '
             .'Apache mod_deflate 가 응답을 압축하면 Content-Length 가 무력화됨.'
         );
     }
@@ -179,7 +184,7 @@ class PollingResponseFlushTest extends TestCase
         $this->assertLessThan(
             $echoPos,
             $noGzipPos,
-            'apache_setenv(no-gzip, 1) 는 echo 이전에 실행되어야 한다.'
+            'apache_setenv(no-gzip) 는 echo 이전에 실행되어야 한다.'
         );
     }
 

@@ -28,6 +28,7 @@ use Modules\Sirsoft\Ecommerce\Module;
 use Modules\Sirsoft\Ecommerce\Providers\EcommerceServiceProvider;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Support\CurrencySettingsCache;
+use Tests\Concerns\RebuildsRouteNameLookups;
 use Tests\TestCase;
 
 /**
@@ -41,6 +42,7 @@ use Tests\TestCase;
  */
 abstract class ModuleTestCase extends TestCase
 {
+    use RebuildsRouteNameLookups;
     use RefreshDatabase;
 
     /**
@@ -417,6 +419,9 @@ abstract class ModuleTestCase extends TestCase
                 ->middleware('api')
                 ->group($apiRoutesFile);
         }
+
+        // 라우트 캐시가 있는 머신에서 fluent `->name()` 등록분의 이름 조회를 살린다 (공유 trait).
+        $this->rebuildRouteNameLookups();
     }
 
     /**

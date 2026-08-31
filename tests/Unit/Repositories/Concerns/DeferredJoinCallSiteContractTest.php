@@ -25,9 +25,7 @@ use PHPUnit\Framework\TestCase;
  * 쿼리 오류도 내지 않고 **응답에서 관계 필드만 사라진다**. HTTP 테스트가 그 필드를 단언하지
  * 않으면 전부 초록으로 통과한다(실제로 스케줄 실행 이력의 `triggered_by` 가 이렇게 유실됐다).
  *
- * @scenario case=deferred_join_call_site_contract
- *
- * @effects call_sites_declare_columns, call_sites_declare_sort, call_sites_pass_relations_as_argument
+ * @scenario deferred_join_call_site_contract
  */
 class DeferredJoinCallSiteContractTest extends TestCase
 {
@@ -182,6 +180,9 @@ class DeferredJoinCallSiteContractTest extends TestCase
         return '';
     }
 
+    /**
+     * @effects call_sites_pass_relations_as_argument
+     */
     #[DataProvider('callSiteWithMethodBodyProvider')]
     public function test_call_site_passes_relations_as_argument(string $file, int $line, string $args, string $body): void
     {
@@ -201,6 +202,9 @@ class DeferredJoinCallSiteContractTest extends TestCase
         );
     }
 
+    /**
+     * @effects call_sites_declare_columns
+     */
     #[DataProvider('callSiteProvider')]
     public function test_call_site_declares_columns(string $file, int $line, string $args): void
     {
@@ -217,6 +221,9 @@ class DeferredJoinCallSiteContractTest extends TestCase
         );
     }
 
+    /**
+     * @effects call_sites_declare_sort
+     */
     #[DataProvider('callSiteProvider')]
     public function test_call_site_declares_sort_spec(string $file, int $line, string $args): void
     {

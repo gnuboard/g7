@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\AssetUrl;
 use Illuminate\Support\Facades\Route;
 use Plugins\Sirsoft\PayKginicis\Controllers\AdminCbtConnectivityCheckController;
 use Plugins\Sirsoft\PayKginicis\Controllers\AdminCbtCvsOperationsController;
@@ -59,8 +60,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
         return response()->json([
             'success' => true,
             'data' => [
-                'url' => url('/plugins/sirsoft-pay_kginicis/payment/vbank-notify'),
-                'mobile_url' => url('/plugins/sirsoft-pay_kginicis/payment/mobile/vbank-notify'),
+                'url' => AssetUrl::siteAbsolute('/plugins/sirsoft-pay_kginicis/payment/vbank-notify'),
+                'mobile_url' => AssetUrl::siteAbsolute('/plugins/sirsoft-pay_kginicis/payment/mobile/vbank-notify'),
             ],
         ]);
     })->middleware('permission:admin,sirsoft-ecommerce.settings.read')

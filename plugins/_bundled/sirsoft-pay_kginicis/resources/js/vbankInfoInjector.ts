@@ -1,3 +1,4 @@
+import { routePath } from './apiUrl';
 import { fetchKginicisReceiptInfo, KginicisReceiptInfo } from './receiptPopup';
 
 const PLUGIN_ID = 'sirsoft-pay_kginicis';
@@ -261,14 +262,14 @@ function startMypagePolling(orderNumber: string): void {
 }
 
 function onRouteChange(): void {
-    const oc = location.pathname.match(ORDER_COMPLETE_RE);
+    const oc = routePath(location.pathname).match(ORDER_COMPLETE_RE);
     if (oc) {
         // 주문완료 페이지: ISO 날짜 텍스트 포맷
         setTimeout(fixOrderCompleteDates, 500);
         return;
     }
 
-    const mp = location.pathname.match(ORDER_SHOW_RE);
+    const mp = routePath(location.pathname).match(ORDER_SHOW_RE);
     if (mp) {
         startMypagePolling(mp[1]);
     }

@@ -61,7 +61,7 @@ class ModuleServiceProvider extends ServiceProvider
             }
 
             // Providers 디렉토리 내 모든 PHP 파일 스캔
-            $providerFiles = File::glob($providersPath.'/*.php');
+            $providerFiles = ExtensionManager::listDirectoryFiles($providersPath, '.php');
 
             foreach ($providerFiles as $providerFile) {
                 $providerClass = $this->resolveProviderClass($moduleName, $providerFile);

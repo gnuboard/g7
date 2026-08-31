@@ -45,18 +45,20 @@ _이 엔드포인트는 JSON 봉투(`data`)를 반환하지 않습니다. 성공
 | --- | --- | --- |
 | Content-Type | `image/png` 등 | 첨부파일의 MIME 타입 (`attachments.mime_type`) |
 | Content-Disposition | `attachment; filename="원본파일명.pdf"` | 이미지가 아닌 파일에만 부여 — 원본 파일명으로 다운로드 |
-| Cache-Control | `public, max-age=86400, immutable` (프로덕션) / `no-cache` (그 외) | 이미지 응답의 캐싱 정책. max-age 는 환경설정 `cache.layout_ttl` (기본 86400초) |
-| Expires | `Wed, 15 Jul 2026 00:00:00 GMT` | 이미지 응답의 만료 시각 (현재 시각 + max-age) |
-| ETag | `9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d` | 이미지 응답의 검증자 (파일 수정시각 + 크기의 MD5). 요청의 `If-None-Match` 와 일치하면 `304 Not Modified` |
+| Cache-Control | `public, max-age=86400, must-revalidate` (프로덕션) / `no-cache` (그 외) | 캐싱 정책 — 이미지·비이미지 공통. max-age 는 환경설정 `cache.layout_ttl` (기본 86400초). 이 URL 에는 자산 버전(`?v=`)이 없어 `immutable` 은 붙지 않는다 |
+| Expires | `Wed, 15 Jul 2026 00:00:00 GMT` | 만료 시각 (현재 시각 + max-age) — 이미지·비이미지 공통 |
+| ETag | `"9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d"` | 검증자 (행 메타 `disk|path|updated_at|size` 의 MD5, 따옴표 포함) — 이미지·비이미지 공통. 요청의 `If-None-Match` 와 일치하면 `304 Not Modified`(`-gzip` 접미사·다중값·`W/` 흡수) |
+| Last-Modified | `Wed, 15 Jul 2026 00:00:00 GMT` | 행의 `updated_at` — 요청의 `If-Modified-Since` 가 그 이후면 `304 Not Modified` (`If-None-Match` 가 있으면 그것이 우선) |
 
 **응답 예시**
 
 ```http
 HTTP/1.1 200 OK
 Content-Type: image/png
-Cache-Control: public, max-age=86400, immutable
+Cache-Control: public, max-age=86400, must-revalidate
 Expires: Wed, 15 Jul 2026 00:00:00 GMT
-ETag: 9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d
+ETag: "9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d"
+Last-Modified: Wed, 15 Jul 2026 00:00:00 GMT
 
 <파일 바이너리>
 ```
@@ -67,6 +69,10 @@ ETag: 9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d
 HTTP/1.1 200 OK
 Content-Type: application/pdf
 Content-Disposition: attachment; filename="manual.pdf"
+Cache-Control: public, max-age=86400, must-revalidate
+Expires: Wed, 15 Jul 2026 00:00:00 GMT
+ETag: "1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f"
+Last-Modified: Wed, 15 Jul 2026 00:00:00 GMT
 
 <파일 바이너리>
 ```
@@ -75,12 +81,12 @@ Content-Disposition: attachment; filename="manual.pdf"
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 304 | Not Modified | 이미지 응답에서 요청 `If-None-Match` 헤더가 현재 ETag 와 일치하는 경우 (본문 없음) |
+| 304 | Not Modified | 요청 `If-None-Match` 가 현재 ETag 와 일치하거나, 그 헤더 없이 `If-Modified-Since` 가 `Last-Modified` 이후인 경우 — 이미지·비이미지 공통 (본문 없음, 200 과 같은 `Cache-Control`·`Expires`·`Last-Modified` 동반) |
 | 403 | Forbidden | 첨부파일 접근 권한 없음 (`core.attachment.download` 훅 권한 미충족) 또는 스토리지에 실제 파일이 없는 경우 — `{"success": false, "message": "이 첨부파일에 대한 접근 권한이 없습니다."}` |
 | 404 | Not Found | 해당 해시의 첨부파일이 존재하지 않는 경우 — `{"success": false, "message": "첨부파일을 찾을 수 없습니다."}` |
 
 <!-- @generated:end -->
 
-**설명** 해시(12자)로 식별되는 첨부파일을 다운로드합니다. 이미지 파일은 캐싱 헤더와 함께 인라인으로 표시하고 그 외 파일은 다운로드 방식으로 제공합니다. 인증이 필요 없는 공개 라우트이지만 접근 권한은 AttachmentService가 로그인/비로그인 사용자 모두를 대상으로 하이브리드 방식으로 검사하며, 파일이 없으면 404, 권한이 없으면 403을 반환합니다. 게시글 첨부·상품 이미지 등 공개 리소스를 URL로 직접 내려받는 시나리오에 사용합니다.
+**설명** 해시(12자)로 식별되는 첨부파일을 다운로드합니다. 이미지 파일은 인라인으로 표시하고 그 외 파일은 다운로드 방식(`Content-Disposition: attachment`)으로 제공하며, **두 경우 모두 같은 캐시 계약**(검증자 `ETag`·`Last-Modified`, 조건부 요청 → 304, 200 과 같은 캐시 헤더 동반)을 갖습니다. 사용자 업로드물이라 응답 압축 대상에서 제외됩니다. 인증이 필요 없는 공개 라우트이지만 접근 권한은 AttachmentService가 로그인/비로그인 사용자 모두를 대상으로 하이브리드 방식으로 검사하며, 파일이 없으면 404, 권한이 없으면 403을 반환합니다. 게시글 첨부·상품 이미지 등 공개 리소스를 URL로 직접 내려받는 시나리오에 사용합니다.
 
 

@@ -21,15 +21,6 @@ use PHPUnit\Framework\Attributes\Test;
  * 목록 제목·블라인드 안내·사유 문구는 그대로 노출(투명성) — 차단 대상은 원문뿐.
  *
  * @scenario board-blinded-original-access
- *
- * @effects published_content_visible_to_all,
- *          blinded_content_null_for_guest,
- *          blinded_content_null_for_other_member,
- *          blinded_content_visible_to_author,
- *          blinded_content_visible_to_manager,
- *          blinded_guest_authored_content_null_for_guest,
- *          blinded_post_preview_empty_in_list,
- *          blinded_comment_content_matrix
  */
 class PostBlindedAccessControlTest extends BoardTestCase
 {
@@ -325,7 +316,7 @@ class PostBlindedAccessControlTest extends BoardTestCase
     /**
      * 블라인드 댓글 원문은 비로그인에게 차단되고, 작성자/관리자에게 노출된다.
      *
-     * @scenario viewer=guest viewer=other_member viewer=author viewer=manager
+     * @scenario viewer=guest, viewer=other_member, viewer=author, viewer=manager
      *
      * @effects blinded_comment_content_matrix
      */

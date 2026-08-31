@@ -15,10 +15,7 @@ use Modules\Sirsoft\Page\Tests\ModuleTestCase;
  *
  * 응답은 200 이고 형태도 정상이라 기능 테스트로는 드러나지 않는다.
  *
- * @scenario case=search_cursor_page_propagation
- *
- * @effects search_deep_page_link_keeps_offset,
- *          search_first_page_starts_cursor
+ * @scenario search_cursor_page_propagation
  */
 class PageSearchCursorDeepLinkTest extends ModuleTestCase
 {

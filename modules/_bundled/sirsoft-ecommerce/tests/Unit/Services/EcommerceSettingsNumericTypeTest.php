@@ -12,8 +12,6 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 관리자 화면이 HTML number 입력의 문자열 값을 저장하더라도, 조회 시에는
  * defaults.json 스키마의 스칼라 타입(int/float)으로 정규화되어야 한다.
  * 정규화가 없으면 Carbon 등 strict 타입 경계에서 TypeError 가 발생한다.
- *
- * @effects settings_read_returns_schema_scalar_type
  */
 class EcommerceSettingsNumericTypeTest extends ModuleTestCase
 {
@@ -43,6 +41,9 @@ class EcommerceSettingsNumericTypeTest extends ModuleTestCase
         parent::tearDown();
     }
 
+    /**
+     * @effects settings_read_returns_schema_scalar_type
+     */
     public function test_auto_cancel_days_saved_as_string_is_read_back_as_int(): void
     {
         $this->service->saveSettings(['order_settings' => ['auto_cancel_days' => '5']]);
@@ -50,6 +51,9 @@ class EcommerceSettingsNumericTypeTest extends ModuleTestCase
         $this->assertSame(5, $this->service->getSetting('order_settings.auto_cancel_days'));
     }
 
+    /**
+     * @effects settings_read_returns_schema_scalar_type
+     */
     public function test_cart_expiry_days_saved_as_string_is_read_back_as_int(): void
     {
         $this->service->saveSettings(['order_settings' => ['cart_expiry_days' => '15']]);

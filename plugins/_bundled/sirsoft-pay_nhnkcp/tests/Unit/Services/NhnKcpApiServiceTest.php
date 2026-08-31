@@ -225,6 +225,9 @@ class NhnKcpApiServiceTest extends PluginTestCase
         $service->getTransaction('TNO_ERR', 'ORD-ERR');
     }
 
+    /**
+     * @effects net_cancel_sends_pg_cancel_api_call, net_cancel_passes_approved_tno, net_cancel_full_omits_amount_fields
+     */
     public function test_cancel_payment_calls_cli_with_full_cancel_params(): void
     {
         $stub = $this->makeServiceWithStubbedCli(

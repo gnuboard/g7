@@ -11,7 +11,7 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  * 세 결함 모두 **텍스트는 정상 표시되므로** 스크린샷을 사람이 봐도 지나간다:
  *
  *  - #B30 펼친 아코디언에 높이 상한이 있으면 넘친 단계가 스크롤바도 없이 사라진다
- *         (13차 PO 결정 — 그 잘림을 막으면서 접기 전환도 유지한다: `max-height: none` 은
+ *         (13차 제품 결정 — 그 잘림을 막으면서 접기 전환도 유지한다: `max-height: none` 은
  *          `0` 과 보간되지 않아 애니메이션을 함께 없앴다. 그리드 행 크기 `1fr ↔ 0fr` 로 바꾼다)
  *  - #B31 같은 선택자를 미디어 쿼리 **뒤**에서 다시 선언하면 그 보정이 한 번도 적용되지 않는다
  *         (미디어 쿼리는 명시도를 올리지 않는다 — 같은 명시도면 뒤가 이긴다)
@@ -20,8 +20,6 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  *
  * 커버 축: cascade_conflict media_then_top·none / overflow_cap capped·uncapped / dim_channel exempt·text /
  *          collapse_transition interpolable·non_interpolable / collapse_child single·missing
- *
- * @effects installer_expanded_accordion_has_no_height_cap, installer_media_query_corrections_are_not_overridden, installer_opacity_is_limited_to_documented_cases, installer_accordion_collapse_uses_interpolable_transition, installer_accordion_collapse_child_wrapper_exists
  */
 class InstallerCssCascadeContractTest extends TestCase
 {
@@ -161,6 +159,9 @@ class InstallerCssCascadeContractTest extends TestCase
         return $rules;
     }
 
+    /**
+     * @effects installer_expanded_accordion_has_no_height_cap
+     */
     public function test_펼친_작업_그룹에_높이_상한이_없다(): void
     {
         foreach ($this->rules as $rule) {
@@ -199,7 +200,7 @@ class InstallerCssCascadeContractTest extends TestCase
     }
 
     /**
-     * 접기 애니메이션은 보간 가능한 속성으로 구현되어야 한다 (PO 결정 13차 — B30 복구).
+     * 접기 애니메이션은 보간 가능한 속성으로 구현되어야 한다 (제품 결정 13차 — B30 복구).
      *
      * 12차가 잘림(#B30)을 `max-height: none` 으로 막으면서 접기 전환이 함께 사라졌다 —
      * `none` 은 `0` 과 보간되지 않아 패딩 전환만 남는다. 잘림 금지와 전환 유지는 함께
@@ -207,6 +208,8 @@ class InstallerCssCascadeContractTest extends TestCase
      *
      * 이 방식은 **단일 자식**을 요구한다 — 자식이 여럿이면 두 번째 행부터 `auto` 라
      * 접히지 않는다. 그래서 클리핑을 맡는 자식 규칙까지 함께 고정한다.
+     *
+     * @effects installer_accordion_collapse_uses_interpolable_transition
      */
     public function test_접힘_전환은_보간되는_속성으로_구현된다(): void
     {
@@ -251,6 +254,8 @@ class InstallerCssCascadeContractTest extends TestCase
      *
      * CSS 만 고치면 그 규칙은 아무 요소에도 붙지 않는다 — 접힘이 조용히 동작하지 않는데
      * 스타일시트만 보면 정상으로 읽힌다.
+     *
+     * @effects installer_accordion_collapse_child_wrapper_exists
      */
     public function test_접힘_전환이_요구하는_단일_자식이_마크업에_있다(): void
     {
@@ -264,6 +269,9 @@ class InstallerCssCascadeContractTest extends TestCase
         );
     }
 
+    /**
+     * @effects installer_media_query_corrections_are_not_overridden
+     */
     public function test_미디어_쿼리_보정을_뒤의_중복_선언이_덮지_않는다(): void
     {
         $conflicts = [];
@@ -297,6 +305,9 @@ class InstallerCssCascadeContractTest extends TestCase
         );
     }
 
+    /**
+     * @effects installer_opacity_is_limited_to_documented_cases
+     */
     public function test_불투명도_감소는_문서화된_지점에만_있다(): void
     {
         $offenders = [];

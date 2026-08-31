@@ -1,3 +1,4 @@
+import { apiUrl, routePath } from './apiUrl';
 const PLUGIN_ID = 'sirsoft-pay_kginicis';
 const FLAG = '__sirsoftKginicisCheckoutJpyPaymentMethodRestrictorInstalled';
 const CHECKOUT_RE = /^\/shop\/checkout\/?$/;
@@ -178,11 +179,11 @@ export function resolveCheckoutCurrency(): string | null {
 }
 
 function shouldUseJpyRestriction(): boolean {
-    return CHECKOUT_RE.test(window.location.pathname) && resolveCheckoutCurrency() === 'JPY';
+    return CHECKOUT_RE.test(routePath(window.location.pathname)) && resolveCheckoutCurrency() === 'JPY';
 }
 
 function shouldHideJapanMethods(): boolean {
-    if (!CHECKOUT_RE.test(window.location.pathname)) return false;
+    if (!CHECKOUT_RE.test(routePath(window.location.pathname))) return false;
     const currency = resolveCheckoutCurrency();
     return currency !== null && currency !== 'JPY';
 }
@@ -192,7 +193,12 @@ async function fetchRestrictEnabled(fetchImpl: typeof fetch): Promise<boolean> {
 
     cachedRestrictEnabled = (async () => {
         try {
-            const response = await fetchImpl(CLIENT_CONFIG_PATH, {
+            // 서버 호출은 마운트 접두사를 거친다. 종전에는 루트 상대 리터럴이라
+            // 하위 폴더 배치에서 문서 루트로 나갔고, 실패는 아래 `catch` 가
+            // `false` 로 삼켜 **JPY 주문의 결제수단 제한이 통째로 적용되지 않았다**
+            // — 차단해야 할 결제수단이 체크아웃에 그대로 남고 오류도 로그도 없다.
+            // (형제 상수 둘은 `path.endsWith()` 대조용이라 접두사와 무관하다.)
+            const response = await fetchImpl(apiUrl(CLIENT_CONFIG_PATH), {
                 headers: { Accept: 'application/json' },
             });
             if (!response.ok) return false;
@@ -358,7 +364,7 @@ function patchRenderedPaymentButtons(): boolean {
 }
 
 async function startDomPatchLoop(fetchImpl: typeof fetch): Promise<void> {
-    if (!CHECKOUT_RE.test(window.location.pathname)) return;
+    if (!CHECKOUT_RE.test(routePath(window.location.pathname))) return;
     const isJpy = shouldUseJpyRestriction();
     const isHideJapan = shouldHideJapanMethods();
     if (!isJpy && !isHideJapan) return;
@@ -416,6 +422,8 @@ export function installCheckoutJpyPaymentMethodRestrictor(): void {
         const method = extractMethod(input, init);
         const path = pathnameOf(url);
 
+        // 이 래퍼는 주소를 조립하지 않는다 — 접두사는 그 값을 만든 쪽이 이미 붙였다.
+        // base-path:allow 전역 fetch 를 감싼 통과 경로이고 `input` 은 호출자가 만든 값이다
         const response = await originalFetch(input, init);
 
         if (method === 'GET' && path.endsWith(CHECKOUT_PATH)) {

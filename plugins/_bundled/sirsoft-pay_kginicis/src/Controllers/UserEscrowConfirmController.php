@@ -7,6 +7,7 @@ namespace Plugins\Sirsoft\PayKginicis\Controllers;
 // audit:allow api-doc-coverage 요청 파라미터·응답 구조 무변경 — 테이블명 리터럴을 모델 파생으로 정리한 내부 리팩토링 (#571)
 
 use App\Http\Controllers\Controller;
+use App\Support\AssetUrl;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -142,8 +143,8 @@ class UserEscrowConfirmController extends Controller
         $mKey = $this->apiService->getEscrowConfirmMKey();
         $timestamp = (string) round(microtime(true) * 1000);
         $jsUrl = $isTest ? self::PC_JS_URL_TEST : self::PC_JS_URL_LIVE;
-        $returnUrl = url('/plugins/sirsoft-pay_kginicis/payment/escrow-confirm/pc/return');
-        $closeUrl = url('/plugins/sirsoft-pay_kginicis/payment/escrow-confirm/close');
+        $returnUrl = AssetUrl::siteAbsolute('/plugins/sirsoft-pay_kginicis/payment/escrow-confirm/pc/return');
+        $closeUrl = AssetUrl::siteAbsolute('/plugins/sirsoft-pay_kginicis/payment/escrow-confirm/close');
 
         $html = <<<HTML
         <!DOCTYPE html>
@@ -183,7 +184,7 @@ class UserEscrowConfirmController extends Controller
     private function mobileConfirmPage(string $tid): Response
     {
         $mid = $this->apiService->getMid();
-        $nextUrl = url('/plugins/sirsoft-pay_kginicis/payment/escrow-confirm/mobile/return');
+        $nextUrl = AssetUrl::siteAbsolute('/plugins/sirsoft-pay_kginicis/payment/escrow-confirm/mobile/return');
         $payUrl = self::MOBILE_PAY_URL;
 
         $html = <<<HTML
@@ -219,6 +220,10 @@ class UserEscrowConfirmController extends Controller
 
     private function htmlResponse(string $html): Response
     {
+        // file-serving:allow 파일이 아니라 이 자리에서 만든 구매결정 결과 문서를 돌려준다 — 서빙 계약
+        // (nosniff·ETag·304·압축 제외) 의 대상이 아니다. 표식이 없으면 소스 계약 검사가 이
+        // 메서드를 파일 서빙으로 읽는다. 형제 인증 브리지 둘과 같은 처분이며, 이 4개는
+        // `src/Controllers` 를 써서 계약 모집단 자체에 없었다 (23차 G3 라운드 B23-6).
         return response($html, 200, ['Content-Type' => 'text/html; charset=UTF-8']);
     }
 

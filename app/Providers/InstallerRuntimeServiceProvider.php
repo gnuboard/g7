@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Support\ExecutionEnvironment;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 
 /**
@@ -142,7 +144,15 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
         // bootstrap/app.php 의 Env::disablePutenv() 로 인해 getenv 가 빈 값일 수 있으므로,
         // getenv / $_ENV / $_SERVER 셋 중 어느 하나라도 정합 (root 아님 + 빈 값 아님) 이면
         // 정상 환경으로 판정하여 보정 skip. 셋 다 stale (root 또는 빈) 일 때만 진입.
-        $envUsername = (string) getenv('DB_WRITE_USERNAME');
+        // `getenv`/`putenv` 는 하드닝 프로필의 표준 차단 대상이고, PHP 8 은 차단 함수를
+        // 함수 테이블에서 **지운다** — 그 호출은 `Error`(치명)다. 이 프로바이더는
+        // `runtime.php` 가 있는 동안 **모든 웹 요청의 register() 단계**에서 도는데,
+        // 그 시점은 Laravel 이 응답 봉투를 세우기 전이라 치명이 곧 **사이트 전면 백지**다.
+        // 형제(`public/install/includes/artisan-executor.php`)는 같은 두 함수에 이미
+        // 가드를 갖고 있었다 — 같은 판정의 두 사본이 갈려 있던 것이다. (12차 G3 E-13)
+        $envUsername = ExecutionEnvironment::hasFunction('getenv')
+            ? (string) getenv('DB_WRITE_USERNAME')
+            : '';
         $envUsernameSE = (string) ($_ENV['DB_WRITE_USERNAME'] ?? '');
         $serverUsernameSE = (string) ($_SERVER['DB_WRITE_USERNAME'] ?? '');
         foreach ([$envUsername, $envUsernameSE, $serverUsernameSE] as $candidate) {
@@ -158,12 +168,18 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
             'DB_PREFIX', 'APP_KEY',
         ];
 
+        $putenvAvailable = ExecutionEnvironment::hasFunction('putenv');
+
         foreach ($refreshableKeys as $key) {
             if (! array_key_exists($key, $parsed)) {
                 continue;
             }
             $value = $this->unwrapEnvValue((string) $parsed[$key]);
-            putenv($key.'='.$value);
+            // `putenv` 가 막힌 환경에서도 `$_ENV`/`$_SERVER` 갱신은 그대로 수행한다 —
+            // `Env` 리포지토리가 그 둘도 읽으므로 보정 효과가 통째로 사라지지는 않는다.
+            if ($putenvAvailable) {
+                putenv($key.'='.$value);
+            }
             $_ENV[$key] = $value;
             $_SERVER[$key] = $value;
         }
@@ -221,7 +237,7 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
         // 새 Config 로 재인스턴스화되도록 강제. config.write.username 이 stale root 로
         // 남아 있던 회귀의 부속 원인 차단 (DB Manager 의 connection 캐시).
         try {
-            \Illuminate\Support\Facades\DB::purge('mysql');
+            DB::purge('mysql');
         } catch (\Throwable $e) {
             // non-fatal — Config 만 갱신된 상태로도 다음 connection 시 정합 값 사용
         }

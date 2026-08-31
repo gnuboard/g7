@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Board;
 use App\Extension\AbstractModule;
 use App\Models\Role;
 use App\Seo\Concerns\LocalizesSeoValues;
+use App\Support\AssetUrl;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Schema;
 use Modules\Sirsoft\Board\Database\Seeders\BoardTypeSeeder;
@@ -536,12 +537,26 @@ class Module extends AbstractModule
                 $extra[] = ['property' => 'article:section', 'content' => $boardName];
             }
 
-            // PostResource toArray() 의 'thumbnail' 키 사용 (PostResource.php:183).
-            // 상대 경로(/api/...) 는 url() 로 절대 URL 변환 — Facebook/Threads/Slack 모두 절대 URL 필수.
+            // PostResource toArray() 의 'thumbnail' 키 사용 (PostResource.php:203).
+            // 상대 경로는 절대 URL 로 변환한다 — Facebook/Threads/Slack 모두 절대 URL 필수.
+            //
+            // 변환은 `url()` 이 아니라 `AssetUrl::absolute()` 다. 이 값의 생산자
+            // (`Attachment::previewUrlForSlug()`)가 `AssetUrl::basePrefix()` 를 거치므로
+            // 값은 **이미 마운트 접두사를 품은** 사이트 절대 경로(`/g7/api/…`)인데,
+            // `url()` 은 요청 루트(접두사 포함)를 앞에 다시 붙여 `https://host/g7/g7/api/…`
+            // 가 된다. 크롤러만 받는 값이라 화면에는 아무 표시가 없고 미리보기 이미지만
+            // 404 다. 접두사를 멱등으로 보정한 뒤 오리진만 붙이는
+            // `AssetUrl::siteAbsolute()` 가 그 SSoT 이며, 그 독블록이 이 실패를 이름으로
+            // 적고 있다.
+            //
+            // 종전에는 이 자리에 `str_starts_with('http') ? … : AssetUrl::absolute()` 라는
+            // 순진한 형태가 있었다. 그 형태는 세 입력을 조용히 망가뜨린다 —
+            // 프로토콜 상대(`//cdn/…` → `https://host//cdn/…`) · 상대 경로
+            // (`img.png` → `https://hostimg.png`) · `data:` URI. 그리고 접두사를 채우는
+            // 주체가 없어 리터럴 사이트 경로(`/images/logo.png`)는 하위 폴더 배치에서
+            // 접두사를 잃었다 (16차 G3 라운드 A-4).
             $thumbnailRaw = (string) (data_get($post, 'thumbnail') ?? '');
-            $image = $thumbnailRaw !== ''
-                ? (str_starts_with($thumbnailRaw, 'http') ? $thumbnailRaw : url($thumbnailRaw))
-                : '';
+            $image = AssetUrl::siteAbsolute($thumbnailRaw);
 
             return array_filter([
                 'type' => 'article',
@@ -591,10 +606,12 @@ class Module extends AbstractModule
             $schema['description'] = mb_substr(strip_tags($description), 0, 200);
         }
 
-        // 썸네일 URL — thumbnail 키 우선 + 절대 URL 변환
+        // 썸네일 URL — thumbnail 키 우선 + 절대 URL 변환.
+        // 형제(`seoOgDefaults`)와 **같은 변환기**를 쓴다. 두 곳이 갈리면 같은 값이 og 와
+        // schema 에서 다른 주소로 나가고, 그중 한쪽만 404 가 된다.
         $thumbnailRaw = (string) (data_get($post, 'thumbnail') ?? '');
         if ($thumbnailRaw !== '') {
-            $schema['image'] = str_starts_with($thumbnailRaw, 'http') ? $thumbnailRaw : url($thumbnailRaw);
+            $schema['image'] = AssetUrl::siteAbsolute($thumbnailRaw);
         }
 
         $publishedAt = (string) ($post['created_at'] ?? '');

@@ -4,6 +4,7 @@ namespace App\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
 use App\Models\User;
+use App\Support\AssetUrl;
 
 /**
  * 코어 알림 데이터 필터 리스너
@@ -34,7 +35,7 @@ class CoreNotificationDataListener implements HookListenerInterface
     /**
      * 훅 이벤트를 처리합니다.
      *
-     * @param mixed ...$args 훅에서 전달된 인수들
+     * @param  mixed  ...$args  훅에서 전달된 인수들
      * @return void
      */
     public function handle(...$args): void {}
@@ -42,9 +43,9 @@ class CoreNotificationDataListener implements HookListenerInterface
     /**
      * 알림 유형에 따라 데이터와 컨텍스트를 추출합니다.
      *
-     * @param array $default 기본 extract_data 구조
-     * @param string $type 알림 정의 유형
-     * @param array $args 훅에서 전달된 원본 인수
+     * @param  array  $default  기본 extract_data 구조
+     * @param  string  $type  알림 정의 유형
+     * @param  array  $args  훅에서 전달된 원본 인수
      * @return array{notifiable: null, notifiables: null, data: array, context: array}
      */
     public function extractData(array $default, string $type, array $args): array
@@ -60,7 +61,7 @@ class CoreNotificationDataListener implements HookListenerInterface
     /**
      * 회원가입 환영 알림 데이터를 추출합니다.
      *
-     * @param array $args 훅 인수 [$user, $extra]
+     * @param  array  $args  훅 인수 [$user, $extra]
      * @return array
      */
     private function extractWelcome(array $args): array
@@ -70,16 +71,14 @@ class CoreNotificationDataListener implements HookListenerInterface
             return $this->emptyResult();
         }
 
-        $baseUrl = config('app.url');
-
         return [
             'notifiable' => null,
             'notifiables' => null,
             'data' => [
                 'name' => $user->name ?? '',
                 'app_name' => config('app.name'),
-                'action_url' => "{$baseUrl}/login",
-                'site_url' => $baseUrl,
+                'action_url' => AssetUrl::siteAbsolute('/login'),
+                'site_url' => AssetUrl::siteRoot(),
             ],
             'context' => [
                 'trigger_user_id' => $user->id,
@@ -91,7 +90,7 @@ class CoreNotificationDataListener implements HookListenerInterface
     /**
      * 비밀번호 재설정 요청 알림 데이터를 추출합니다.
      *
-     * @param array $args 훅 인수 [$user, $extra]
+     * @param  array  $args  훅 인수 [$user, $extra]
      * @return array
      */
     private function extractResetPassword(array $args): array
@@ -102,7 +101,6 @@ class CoreNotificationDataListener implements HookListenerInterface
         }
 
         $extra = $args[1] ?? [];
-        $baseUrl = config('app.url');
 
         return [
             'notifiable' => null,
@@ -110,9 +108,9 @@ class CoreNotificationDataListener implements HookListenerInterface
             'data' => [
                 'name' => $user->name ?? '',
                 'app_name' => config('app.name'),
-                'action_url' => $extra['reset_url'] ?? "{$baseUrl}/reset-password",
+                'action_url' => $extra['reset_url'] ?? AssetUrl::siteAbsolute('/reset-password'),
                 'expire_minutes' => (string) config('auth.passwords.users.expire', 60),
-                'site_url' => $baseUrl,
+                'site_url' => AssetUrl::siteRoot(),
             ],
             'context' => [
                 'trigger_user_id' => $user->id,
@@ -124,7 +122,7 @@ class CoreNotificationDataListener implements HookListenerInterface
     /**
      * 비밀번호 변경 완료 알림 데이터를 추출합니다.
      *
-     * @param array $args 훅 인수 [$user]
+     * @param  array  $args  훅 인수 [$user]
      * @return array
      */
     private function extractPasswordChanged(array $args): array
@@ -134,16 +132,14 @@ class CoreNotificationDataListener implements HookListenerInterface
             return $this->emptyResult();
         }
 
-        $baseUrl = config('app.url');
-
         return [
             'notifiable' => null,
             'notifiables' => null,
             'data' => [
                 'name' => $user->name ?? '',
                 'app_name' => config('app.name'),
-                'action_url' => "{$baseUrl}/login",
-                'site_url' => $baseUrl,
+                'action_url' => AssetUrl::siteAbsolute('/login'),
+                'site_url' => AssetUrl::siteRoot(),
             ],
             'context' => [
                 'trigger_user_id' => $user->id,

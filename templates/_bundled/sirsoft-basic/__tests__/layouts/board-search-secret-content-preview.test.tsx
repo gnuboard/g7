@@ -1,3 +1,6 @@
+// @scenario board-search-secret-content-preview
+// (매니페스트 소속 표기 — 회차 16 W6: 선언된 파일은 마킹을 최소 1개 가진다)
+
 /**
  * @file board-search-secret-content-preview.test.tsx
  * @description 게시판 목록/검색 미리보기 비밀글·블라인드 차단 게이트 회귀 (이슈 #413-37)

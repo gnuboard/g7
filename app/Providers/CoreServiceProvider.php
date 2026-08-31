@@ -559,7 +559,7 @@ class CoreServiceProvider extends ServiceProvider
                     'required' => $requiredVersion,
                 ];
 
-                Log::warning(__('extensions.warnings.auto_deactivated'), [
+                Log::warning(__('extensions.warnings.auto_deactivated', ['type' => $type, 'identifier' => $identifier]), [
                     'type' => $type,
                     'identifier' => $identifier,
                     'required_version' => $requiredVersion,
@@ -705,7 +705,7 @@ class CoreServiceProvider extends ServiceProvider
                     'required' => $requiredVersion,
                 ];
 
-                Log::warning(__('extensions.warnings.auto_deactivated'), [
+                Log::warning(__('extensions.warnings.auto_deactivated', ['type' => 'templates', 'identifier' => $identifier]), [
                     'type' => 'templates',
                     'identifier' => $identifier,
                     'required_version' => $requiredVersion,

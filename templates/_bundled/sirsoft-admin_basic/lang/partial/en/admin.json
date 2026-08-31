@@ -1327,6 +1327,7 @@
       "site_info_desc": "Configure basic site information.",
       "site_name": "Site Name",
       "site_url": "Site URL",
+      "site_url_help": "This address is the basis for notification and password-reset email links and payment return URLs. On a proxy or subfolder deployment it must match the actual site address.",
       "site_description": "Site Description",
       "site_description_placeholder": "Enter a brief description of your site.",
       "admin_email": "Admin Email",

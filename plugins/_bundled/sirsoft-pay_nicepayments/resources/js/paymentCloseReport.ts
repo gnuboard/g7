@@ -1,3 +1,4 @@
+import { apiUrl } from './apiUrl';
 export interface PaymentCloseReportContext {
     closeReportUrl?: string;
     oid: string;
@@ -8,16 +9,23 @@ export interface PaymentCloseReportContext {
 }
 
 function resolveApiUrl(url: string): string {
-    if (/^https?:\/\//i.test(url) || url.startsWith('/api/')) {
+    // 절대 URL 은 그대로. 나머지는 `/api/…` 로 정규화한 뒤 **사이트 마운트 접두사**를
+    // 붙인다 — 붙이지 않으면 하위 폴더 배치에서 결제 종료 보고가 사이트 밖으로 나가고,
+    // 실패해도 화면에 아무 흔적이 남지 않는다 (12차 G3 라운드).
+    if (/^https?:\/\//i.test(url)) {
         return url;
     }
 
+    if (url.startsWith('/api/')) {
+        return apiUrl(url);
+    }
+
     if (url.startsWith('/plugins/')) {
-        return `/api${url}`;
+        return apiUrl(`/api${url}`);
     }
 
     if (url.startsWith('plugins/')) {
-        return `/api/${url}`;
+        return apiUrl(`/api/${url}`);
     }
 
     return url;
@@ -51,6 +59,7 @@ export async function reportPaymentWindowClosed(
             return;
         }
 
+        // base-path:allow resolveApiUrl() 이 정규화 끝에서 apiUrl() 을 거친다
         await fetch(resolveApiUrl(context.closeReportUrl), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

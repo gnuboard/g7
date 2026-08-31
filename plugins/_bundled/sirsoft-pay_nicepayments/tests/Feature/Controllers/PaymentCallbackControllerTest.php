@@ -748,6 +748,11 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $this->assertStringContainsString('error=order_not_found', $response->headers->get('Location'));
     }
 
+    /**
+     * @scenario context=authorize_card, threat=post_approve_failure, callback_state=domain_fails
+     *
+     * @effects post_approve_failure_triggers_send_net_cancel, net_cancel_sends_pg_cancel_api_call
+     */
     public function test_auth_callback_redirects_to_fail_and_sends_net_cancel_on_authorize_failure(): void
     {
         $order = $this->createTestOrder(50000);

@@ -11,9 +11,11 @@ class KcpReceiptPopup {
     constructor(params: { url?: string; cash_url?: string }) {
         const features = 'width=800,height=600,scrollbars=yes,resizable=yes,toolbar=no,menubar=no';
         if (params.url) {
+            // base-path:allow PG 가 내려준 영수증 절대 URL 이다.
             window.open(params.url, 'kcp_receipt', features);
         }
         if (params.cash_url) {
+            // base-path:allow PG 가 내려준 현금영수증 절대 URL 이다.
             window.open(params.cash_url, 'kcp_cash_receipt', features);
         }
     }

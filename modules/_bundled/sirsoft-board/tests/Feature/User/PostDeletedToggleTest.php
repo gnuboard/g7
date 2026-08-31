@@ -8,7 +8,6 @@ require_once __DIR__.'/../../ModuleTestCase.php';
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
-use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 
 /**
@@ -18,7 +17,6 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * 삭제된 게시글/댓글이 목록에 노출되는지 검증합니다.
  *
  * @scenario viewer=manager
- * @effects manager_sees_deleted_post_original_title_and_content, manager_sees_deleted_comment_original_content
  */
 class PostDeletedToggleTest extends BoardTestCase
 {
@@ -255,6 +253,8 @@ class PostDeletedToggleTest extends BoardTestCase
 
     /**
      * manager 권한자는 삭제된 게시글 상세에서 제목/본문 원본을 본다.
+     *
+     * @effects manager_sees_deleted_post_original_title_and_content
      */
     public function test_manager_sees_deleted_post_original_title_and_content(): void
     {
@@ -275,6 +275,8 @@ class PostDeletedToggleTest extends BoardTestCase
 
     /**
      * manager 권한자는 삭제된 댓글의 원본 본문을 본다.
+     *
+     * @effects manager_sees_deleted_comment_original_content
      */
     public function test_manager_sees_deleted_comment_original_content(): void
     {

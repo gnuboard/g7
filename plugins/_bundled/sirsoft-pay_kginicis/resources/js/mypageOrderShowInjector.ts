@@ -1,4 +1,5 @@
 // e2e:allow PG 영수증 DOM 주입 — 외부 PG(이니시스) 결제 데이터 의존으로 브라우저 E2E 재현 불가, Vitest 회귀(__tests__/mypageOrderShowInjector.test.ts)로 검증
+import { routePath } from './apiUrl';
 import {
     canOpenKginicisReceipt,
     fetchKginicisReceiptInfo,
@@ -197,7 +198,7 @@ function startPolling(routeSegment: string, isGuestRoute: boolean): void {
 }
 
 function onRouteChange(): void {
-    const match = location.pathname.match(ORDER_SHOW_RE);
+    const match = routePath(location.pathname).match(ORDER_SHOW_RE);
     if (match) {
         // 회원 그룹(match[1] = 주문 ID) 또는 비회원 그룹(match[2] = 주문번호) 중 한 쪽이 채워진다.
         const memberSegment = match[1];
@@ -246,7 +247,7 @@ export function installMypageOrderShowInjector(): void {
 
     const observeTarget = document.getElementById('app') ?? document.body;
     const observer = new MutationObserver(() => {
-        if (ORDER_SHOW_RE.test(location.pathname)) schedule(250);
+        if (ORDER_SHOW_RE.test(routePath(location.pathname))) schedule(250);
     });
     observer.observe(observeTarget, { childList: true, subtree: true });
 }

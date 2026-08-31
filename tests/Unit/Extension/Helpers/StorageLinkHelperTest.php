@@ -31,6 +31,12 @@ class StorageLinkHelperTest extends TestCase
         $this->fakeBase = storage_path('app/testing/storage_link_helper_'.uniqid('', true));
         File::ensureDirectoryExists($this->fakeBase);
         app()->setBasePath($this->fakeBase);
+
+        // 공개 디스크 루트도 함께 옮긴다. 이 값은 **복구기와 판정기가 공유하는 출처**이고
+        // (`PublicStorageService::rootPath()`), 기저 경로만 바꾸면 둘이 서로 다른 트리를
+        // 보게 되어 픽스처가 재려는 상황 자체가 성립하지 않는다 — 종전에는 복구기만
+        // `storage_path()` 리터럴을 써서 그 불일치가 가려져 있었다 (22차 G3 라운드 D4).
+        config(['filesystems.disks.public.root' => $this->fakeBase.'/storage/app/public']);
     }
 
     protected function tearDown(): void
@@ -274,14 +280,34 @@ class StorageLinkHelperTest extends TestCase
             '재생성된 링크는 storage/app/public 을 가리켜야 한다 (source 마커 접근 가능)',
         );
 
-        // .broken 백업 존재 + dereferenced 콘텐츠 보존
-        $backups = array_values(array_filter(
+        // 백업 존재 + dereferenced 콘텐츠 보존.
+        //
+        // 백업 위치는 **문서 루트 밖**(`storage/app/public-storage-broken-*`)이다. 종전에는
+        // `public/storage.broken.*` 였는데, 그 사본이 제2 URL 로 무기한 서빙되어 운영자가 지운
+        // 공개 파일이 계속 열렸다(정리 주체도 없다).
+        //
+        // 구현에는 볼륨이 달라 이동이 불가능한 환경을 위한 폴백(종전 위치)이 있지만, **이
+        // 테스트 환경은 같은 볼륨**이라 그 분기에 들어가지 않는다 — 아래 단언이 그것을
+        // 못박는다(`$insideDocroot` 는 비어 있어야 한다). 두 후보를 모두 훑는 것은 실패했을
+        // 때 어느 쪽에 남았는지 메시지로 드러내기 위해서이지, 폴백을 허용하기 위해서가 아니다.
+        $outsideDocroot = array_values(array_filter(
+            scandir($this->fakeBase.'/storage/app'),
+            fn ($e) => str_starts_with($e, 'public-storage-broken-'),
+        ));
+        $insideDocroot = array_values(array_filter(
             scandir($this->fakeBase.'/public'),
             fn ($e) => str_starts_with($e, 'storage.broken.'),
         ));
-        $this->assertCount(1, $backups, '.broken 백업 1개 존재');
-        $this->assertFileExists($this->fakeBase.'/public/'.$backups[0].'/uploaded.txt');
-        $this->assertSame('dereferenced content', File::get($this->fakeBase.'/public/'.$backups[0].'/uploaded.txt'));
+
+        $this->assertCount(1, array_merge($outsideDocroot, $insideDocroot), '백업 1개 존재');
+
+        $backupPath = $outsideDocroot !== []
+            ? $this->fakeBase.'/storage/app/'.$outsideDocroot[0]
+            : $this->fakeBase.'/public/'.$insideDocroot[0];
+
+        $this->assertSame([], $insideDocroot, '같은 볼륨이면 문서 루트 밖으로 옮겨져야 한다');
+        $this->assertFileExists($backupPath.'/uploaded.txt');
+        $this->assertSame('dereferenced content', File::get($backupPath.'/uploaded.txt'));
     }
 
     /**
@@ -312,5 +338,127 @@ class StorageLinkHelperTest extends TestCase
         ));
         $this->assertEmpty($backups, '이미 정상 junction 은 rename 백업 없이 보존되어야 한다');
         $this->assertFileExists($this->fakeBase.'/public/storage/uploaded.txt');
+    }
+
+    /**
+     * 운영자가 공개 디스크 루트를 **옮긴** 사이트에서, 복구기가 그 루트를 가리키는 링크를
+     * 만드는지 잰다.
+     *
+     * 22차가 복구기의 리터럴(`storage_path('app/public')`)을 판정기와 같은 출처로 바꿨다고
+     * 기록했지만, 픽스처가 공개 루트를 `storage/app/public` 과 **같은 값**으로 두어
+     * 「옮긴」 상황을 한 번도 만들지 않았다 — 리터럴로 되돌려도 전 케이스가 초록이었다.
+     * 그 축을 여기서 연다 (23차 G3 라운드 D23-1).
+     */
+    #[Test]
+    public function 공개_루트를_옮긴_사이트에서_설정된_루트를_가리키는_링크를_만듭니다(): void
+    {
+        $movedRoot = $this->fakeBase.'/custom-public-root';
+        config(['filesystems.disks.public.root' => $movedRoot]);
+
+        File::ensureDirectoryExists($this->fakeBase.'/public');
+        File::ensureDirectoryExists($movedRoot);
+        File::put($movedRoot.'/uploaded.txt', 'user upload');
+
+        // 종전 리터럴이 가리키던 자리. 여기에도 트리를 두어, 복구기가 **어느 쪽을 골랐는지**가
+        // 결과로 드러나게 한다 — 없으면 `is_dir()` 가드에 걸려 그냥 skip 이라 축이 죽는다.
+        File::ensureDirectoryExists($this->fakeBase.'/storage/app/public');
+        File::put($this->fakeBase.'/storage/app/public/stale.txt', 'old location');
+
+        StorageLinkHelper::ensurePublicStorageLink();
+
+        if (! StorageLinkHelper::isLinkOrJunction($this->fakeBase.'/public/storage')) {
+            $this->markTestSkipped('이 환경에서 symlink·junction 둘 다 생성 실패');
+        }
+
+        $this->assertFileExists(
+            $this->fakeBase.'/public/storage/uploaded.txt',
+            '복구기가 **설정된** 공개 스토리지 루트를 가리켜야 한다',
+        );
+        $this->assertFileDoesNotExist(
+            $this->fakeBase.'/public/storage/stale.txt',
+            '복구기가 옛 리터럴 위치를 가리키면 그 사이트의 공개 자산이 전부 404 가 된다',
+        );
+    }
+
+    /**
+     * **이미** 옛 위치를 가리키는 살아 있는 링크를 복구기가 고치는지 잰다.
+     *
+     * 22차는 그 상태를 「생산」하지 않게만 고쳤다. 멱등 게이트가 `is_link()` 하나였으므로
+     * 이미 그 상태인 사이트는 복구기가 그대로 지나쳤고 — 링크는 살아 있으니 true 다 —
+     * 판정기는 같은 상태를 대상 불일치로 「불가」로 읽었다. 생산은 막혔는데 잔존은 영구였다
+     * (23차 G3 라운드 D23-2).
+     */
+    #[Test]
+    public function 옛_위치를_가리키는_살아있는_링크를_설정된_루트로_재연결합니다(): void
+    {
+        $movedRoot = $this->fakeBase.'/custom-public-root';
+        $staleRoot = $this->fakeBase.'/storage/app/public';
+
+        File::ensureDirectoryExists($this->fakeBase.'/public');
+        File::ensureDirectoryExists($movedRoot);
+        File::ensureDirectoryExists($staleRoot);
+        File::put($movedRoot.'/uploaded.txt', 'user upload');
+        File::put($staleRoot.'/stale.txt', 'old location');
+
+        // 먼저 옛 위치를 가리키는 **정상** 링크를 만든다 (설정은 아직 옛 위치).
+        StorageLinkHelper::ensurePublicStorageLink();
+
+        if (! StorageLinkHelper::isLinkOrJunction($this->fakeBase.'/public/storage')) {
+            $this->markTestSkipped('이 환경에서 symlink·junction 둘 다 생성 실패');
+        }
+
+        $this->assertFileExists($this->fakeBase.'/public/storage/stale.txt', '전제: 옛 위치를 가리키는 링크가 서 있다');
+
+        // 운영자가 공개 루트를 옮겼다.
+        config(['filesystems.disks.public.root' => $movedRoot]);
+        StorageLinkHelper::resetPublicStorageLinkMemo();
+
+        $this->assertFalse(
+            StorageLinkHelper::isUsableStorageLink($this->fakeBase.'/public/storage', $movedRoot),
+            '전제: 판정기는 이 상태를 「불가」로 읽는다',
+        );
+
+        StorageLinkHelper::ensurePublicStorageLink();
+
+        $this->assertFileExists(
+            $this->fakeBase.'/public/storage/uploaded.txt',
+            '복구기가 옛 위치를 가리키는 링크를 설정된 루트로 재연결해야 한다',
+        );
+        $this->assertFileDoesNotExist($this->fakeBase.'/public/storage/stale.txt');
+
+        // 링크만 걷어냈으므로 옛 트리 자체는 그대로 남아 있어야 한다 (데이터 무손실).
+        $this->assertFileExists($staleRoot.'/stale.txt', '링크 재연결이 옛 트리를 지워서는 안 된다');
+
+        // 링크를 걷는 것은 백업 대상이 아니다 — 일반 디렉토리 손상과 성질이 다르다.
+        $backups = array_values(array_filter(
+            scandir($this->fakeBase.'/public'),
+            fn ($e) => str_starts_with($e, 'storage.broken.'),
+        ));
+        $this->assertEmpty($backups, '링크 재연결은 rename 백업을 만들지 않는다');
+    }
+
+    /**
+     * 끊어진(dangling) 링크도 복구 대상이다 — `is_link()` 는 대상을 보지 않는다.
+     */
+    #[Test]
+    public function 끊어진_링크를_재연결합니다(): void
+    {
+        File::ensureDirectoryExists($this->fakeBase.'/public');
+        File::ensureDirectoryExists($this->fakeBase.'/storage/app/public');
+        File::put($this->fakeBase.'/storage/app/public/uploaded.txt', 'user upload');
+
+        $gone = $this->fakeBase.'/vanished-root';
+        File::ensureDirectoryExists($gone);
+        if (! @symlink($gone, $this->fakeBase.'/public/storage')) {
+            $this->markTestSkipped('이 환경에서 symlink 생성 불가');
+        }
+        File::deleteDirectory($gone);
+
+        StorageLinkHelper::ensurePublicStorageLink();
+
+        $this->assertFileExists(
+            $this->fakeBase.'/public/storage/uploaded.txt',
+            '끊어진 링크는 no-op 대상이 아니다 — 그대로 두면 공개 자산이 전부 404 다',
+        );
     }
 }

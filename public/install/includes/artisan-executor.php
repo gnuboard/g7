@@ -275,7 +275,7 @@ if (! function_exists('installerRunArtisanSubprocess')) {
         // 들어오므로(run-task.php), 선언만 600 으로 올리면 비정상 종료 시 이미 죽은 요청의
         // 점유가 최대 10분 남아 다음 요청이 그동안 busy 를 받는다. in-process 부팅과 같은
         // 순서로 수명을 먼저 올린 뒤 그 값을 lock 에 알린다.
-        // 선언값은 요청값이 아니라 **실제로 적용된 값**이다 (PO 결정 13차 환경#9) —
+        // 선언값은 요청값이 아니라 **실제로 적용된 값**이다 (제품 결정 13차 환경#9) —
         // `set_time_limit` 이 막혔거나 호스팅이 상한을 잠근 환경에서 600 을 선언하면
         // 30초에 죽은 워커의 예산이 10분 남아 다음 요청이 그동안 거짓 busy 를 받는다.
         $timeBudget = installerSetTimeLimit(INSTALLER_SUBPROCESS_TIME_LIMIT);
@@ -388,7 +388,7 @@ if (! function_exists('installerBootLaravelForInProcess')) {
         // heartbeat 를 갱신할 수 없으므로, 알리지 않으면 아직 살아 있는 이 요청을 다른
         // 요청이 stale 로 보고 탈취해 같은 태스크를 겹쳐 돌린다.
         //
-        // 선언값은 요청값이 아니라 **실제로 적용된 값**이다 (PO 결정 13차 환경#9) — 요청값을
+        // 선언값은 요청값이 아니라 **실제로 적용된 값**이다 (제품 결정 13차 환경#9) — 요청값을
         // 그대로 선언하면 그 시간을 얻지 못한 환경에서 죽은 워커의 예산이 그만큼 남는다.
         $workerId = function_exists('installerCurrentWorkerId') ? installerCurrentWorkerId() : null;
         if ($workerId !== null && function_exists('extendWorkerStaleWindow')) {

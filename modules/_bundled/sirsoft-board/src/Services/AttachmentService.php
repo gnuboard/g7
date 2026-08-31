@@ -134,6 +134,15 @@ class AttachmentService
         // 임시 파일을 제자리에서 줄이므로 아래의 저장·크기 계산이 모두 축소본을 본다.
         app(ImageResizer::class)->resizeInPlace($file->getRealPath(), $file->getMimeType());
 
+        // 축소는 **제자리 덮어쓰기**라 그 경로의 stat 이 이미 캐시돼 있을 수 있다.
+        //
+        // 아래에서 읽는 `getSize()` 는 PHP 의 공유 stat 캐시를 그대로 쓰는데, 그 값이
+        // 축소 전 크기면 행의 `size` 가 실제 저장 바이트보다 커진다. 그 값은 서빙에서
+        // `Content-Length` 로 **선언**되므로(8차 B-6) 어긋나는 순간 응답이 잘린다.
+        // 종전에는 정합이 「캐시가 아직 안 찼다」는 호출 순서의 우연에 걸려 있었다
+        // (10차 G3 라운드 B10-6).
+        clearstatcache(true, $file->getRealPath());
+
         // 스토리지에 파일 저장 (category: 'attachments')
         $this->storage->put('attachments', $path, file_get_contents($file->getRealPath()));
 
@@ -256,12 +265,31 @@ class AttachmentService
             // 최종 경로 생성 (기존 경로 규칙 유지)
             $newPath = "{$slug}/".date('Y/m/d')."/{$attachment->stored_filename}";
 
-            // 파일 물리적 이동 (StorageInterface: get + put + delete)
-            $content = $this->storage->get('attachments', $attachment->path);
-            if ($content) {
-                $this->storage->put('attachments', $newPath, $content);
-                $this->storage->delete('attachments', $attachment->path);
+            // 파일 물리적 이동 (StorageInterface: get + put + delete) — 디스크는 **행이 정한다.**
+            //
+            // 읽기 실패를 조용히 지나가지 않는다. 종전에는 `if ($content)` 라 ①읽기 실패
+            // (`get()` 은 미존재 시 null)와 ②0 바이트 파일이 모두 falsy 로 접혀 이동을
+            // 건너뛰면서 **DB `path` 는 아래에서 갱신**됐다 — 행은 최종 경로를 가리키는데
+            // 파일은 임시 경로에 남거나 아예 없어, 첨부가 오류도 로그도 없이 영구 유실된다.
+            // 디스크를 옮긴 사이트에서는 그 읽기가 **항상** 실패하므로 그 창의 모든 신규
+            // 글 첨부가 전멸한다 (11차 G3 라운드 B11-9).
+            $storage = $this->storageForRow($attachment->disk);
+            $content = $storage->get('attachments', $attachment->path);
+
+            if ($content === null) {
+                Log::error('게시판 임시 첨부 파일을 읽지 못해 연결을 건너뜁니다 — 행을 그대로 둡니다', [
+                    'board_slug' => $slug,
+                    'attachment_id' => $attachment->id,
+                    'disk' => $attachment->disk,
+                    'path' => $attachment->path,
+                    'post_id' => $postId,
+                ]);
+
+                continue;
             }
+
+            $storage->put('attachments', $newPath, $content);
+            $storage->delete('attachments', $attachment->path);
 
             // DB 업데이트: board_id 이동, post_id 설정, temp_key 제거, path 변경
             // 임시 첨부파일(board_id=0)을 직접 업데이트 (repository->update()는 board_id=$board->id로 조회하므로 사용 불가)
@@ -740,7 +768,11 @@ class AttachmentService
     }
 
     /**
-     * 첨부파일 다운로드 응답 생성
+     * 첨부파일 다운로드 응답 생성 (하위호환 표면)
+     *
+     * 캐시 계약(검증자·304)은 이 스트림에 실리지 않는다 — `getDownloadInfo()` 가 돌려주는
+     * 메타를 컨트롤러가 코어 단일 지점(`streamedFileResponse()`)에 넘겨 입힌다. 이 메서드는
+     * 그 정보의 `response` 만 돌려준다.
      *
      * @param  string  $slug  게시판 식별자
      * @param  int  $id  첨부파일 ID
@@ -748,6 +780,27 @@ class AttachmentService
      * @return StreamedResponse|null 파일 스트림 또는 없을 경우 null
      */
     public function download(string $slug, int $id, string $context = 'admin'): ?StreamedResponse
+    {
+        return $this->getDownloadInfo($slug, $id, $context)['response'] ?? null;
+    }
+
+    /**
+     * 다운로드(첨부 방식) 서빙 정보 조회 (스트림 + 검증자 메타)
+     *
+     * 미리보기 통로(`getFileInfo()`)와 **같은 서빙 메타**(ETag 소스·수정 시각)를 돌려준다.
+     * 종전에는 다운로드가 `download()` 하나로 끝나 검증자가 하나도 없었다 — 같은 첨부가
+     * 미리보기로는 304 로 재검증되고 내려받기로는 매번 전문을 받아 갔다. 오류도 로그도
+     * 없이 대역폭으로만 나타나고, 정적 서빙(링크가 되는 서버)은 두 통로를 가리지 않는다
+     * (14차 G3 라운드). 권한·상태 게이트·훅 순서는 종전 `download()` 와 같다.
+     *
+     * @param  string  $slug  게시판 식별자
+     * @param  int  $id  첨부파일 ID
+     * @param  string  $context  권한 컨텍스트 (admin | user)
+     * @return array{response: StreamedResponse, mime_type: string, filename: string, etag_source: string, last_modified: int|null}|null 서빙 정보 또는 null
+     *
+     * @throws AccessDeniedHttpException 스코프 밖 첨부이거나 삭제글·비밀글 게이트에 막힌 경우
+     */
+    public function getDownloadInfo(string $slug, int $id, string $context = 'admin'): ?array
     {
         $attachment = $this->repository->findById($slug, $id);
 
@@ -775,22 +828,73 @@ class AttachmentService
         // $context('user'|'admin')는 로그 부가정보용 (log_type 은 요청 경로로 자동 결정).
         HookManager::doAction('sirsoft-board.attachment.after_download', $attachment, $context);
 
-        // RFC 5987에 따라 UTF-8 파일명 인코딩
-        $encodedFilename = rawurlencode($attachment->original_filename);
-
-        return $this->storage->response(
+        // `Content-Disposition` 을 직접 만들지 않는다.
+        //
+        // Flysystem 어댑터는 그 헤더가 이미 있으면 자기 `makeDisposition()` 을 통째로
+        // 건너뛴다. 그래서 원문 파일명이 그대로 헤더에 실렸고, 이름에 따옴표가 들어간
+        // 업로드(`getClientOriginalName()` 은 basename 만 하고 따옴표를 지우지 않는다)는
+        // 헤더 구조를 깨뜨렸다. 형제 `preview()` 는 8차에 스토리지 단일 지점으로
+        // 위임됐는데 이 메서드만 남아 있었다 — 코어 형제도 헤더를 넘기지 않고
+        // `download()` 를 쓴다 (10차 G3 라운드 B10-2).
+        //
+        // 디스크도 행이 정한다(B10-3).
+        $response = $this->storageForRow($attachment->disk)->download(
             'attachments',
             $attachment->path,
             $attachment->original_filename,
-            [
-                'Content-Type' => $attachment->mime_type,
-                'Content-Disposition' => "attachment; filename=\"{$attachment->original_filename}\"; filename*=UTF-8''{$encodedFilename}",
-            ]
+            ['Content-Type' => $attachment->mime_type]
         );
+
+        if (! $response) {
+            return null;
+        }
+
+        return [
+            'response' => $response,
+            'mime_type' => (string) $attachment->mime_type,
+            'filename' => (string) $attachment->original_filename,
+            ...$this->validatorMeta($attachment),
+        ];
+    }
+
+    /**
+     * 행 메타에서 서빙 검증자를 만듭니다 — 미리보기·다운로드 두 통로가 **같은 값**을 쓴다.
+     *
+     * ETag 는 파일 stat 이 아니라 행 메타에서 만든다 — 원격 디스크에서도 결정적이다.
+     * 코어 형제(`App\Services\AttachmentService`)와 **같은 직렬화**(정수 타임스탬프)를 쓴다.
+     * 종전에는 `(string) $attachment->updated_at`(Carbon 의 `__toString`,
+     * `2026-08-28 12:54:00`)이라 같은 값이 두 통로에서 다른 문자열이 됐다. 무해하지만
+     * 「코어 형제와 같은 형태다」가 사실이 아니었고, 형제 대조를 그 문장에 기대는 다음
+     * 회차가 오판한다 (10차 G3 라운드 E-08). 배포 시 게시판 첨부 ETag 가 1회 무효화된다
+     * (내용은 그대로, 검증자만 바뀐다).
+     *
+     * @param  Attachment  $attachment  첨부 행
+     * @return array{etag_source: string, last_modified: int|null}
+     */
+    private function validatorMeta(Attachment $attachment): array
+    {
+        return [
+            'etag_source' => implode('|', [
+                (string) $attachment->disk,
+                (string) $attachment->path,
+                (string) $attachment->updated_at?->getTimestamp(),
+                (string) $attachment->size,
+            ]),
+            // 조건부 요청의 `Last-Modified`/`If-Modified-Since` 축 — ETag 를 쓰지 않고
+            // 시각으로만 재검증하는 프록시는 이 값이 없으면 매번 전문을 받아 간다.
+            // ETag 소스와 같은 행 메타라 파일 stat 없이 결정적이다.
+            'last_modified' => $attachment->updated_at?->getTimestamp(),
+        ];
     }
 
     /**
      * 첨부파일 URL 조회
+     *
+     * 디스크는 **행이 정한다.** 같은 클래스의 서빙 4지점과 정리 2지점은 이미
+     * `storageForRow()` 를 지나는데 이 메서드만 카테고리 기본 디스크로 갔다 — 디스크를
+     * 옮긴 사이트에서 이 값만 다른 디스크의 주소를 가리키고, 그 URL 은 404 가 되거나
+     * (더 나쁘게는) 옛 디스크에 남은 다른 파일을 가리킨다. 오류도 로그도 남지 않는다
+     * (11차 G3 라운드 B11-8).
      *
      * @param  string  $slug  게시판 식별자
      * @param  int  $id  첨부파일 ID
@@ -804,14 +908,23 @@ class AttachmentService
             return null;
         }
 
-        return $this->storage->url('attachments', $attachment->path);
+        return $this->storageForRow($attachment->disk)->url('attachments', $attachment->path);
     }
 
     /**
-     * 이미지 미리보기 (권한 체크 없이)
+     * 이미지 미리보기 스트림 (기능 레벨 권한 없이, 콘텐츠 상태 게이트는 적용)
      *
-     * 이미지 파일을 권한 체크 없이 스트리밍합니다.
-     * 비회원도 이미지를 볼 수 있습니다.
+     * 이미지 파일을 기능 레벨 권한 검사 없이 스트리밍합니다(비회원 썸네일 허용).
+     * 삭제글·비밀글 게이트는 `getFileInfo()` 안에서 그대로 적용됩니다.
+     *
+     * 서빙은 `getFileInfo()` + `streamFile()` 단일 지점에 위임합니다 — 종전에는 이
+     * 메서드만 존재 검사 없이 자체 응답을 만들고 원문 헤더 `Content-Disposition: inline`
+     * 으로 스토리지의 파일 이름 선언을 덮어, 같은 파일이 통로에 따라 다른 이름·다른
+     * 강도로 나갔습니다. 현재 호출부는 컨트롤러가 두 메서드를 직접 부르므로 없지만,
+     * 서비스는 확장에 열려 있어 "지금 호출부가 없다" 는 방어가 아닙니다.
+     *
+     * 캐싱 헤더(ETag/Cache-Control/조건부 응답)는 형제 `streamFile()` 과 마찬가지로
+     * 컨트롤러(`streamedFileResponse()`)가 입힙니다 — 서비스는 스트림까지만 만듭니다.
      *
      * @param  string  $slug  게시판 식별자
      * @param  int  $id  첨부파일 ID
@@ -821,30 +934,19 @@ class AttachmentService
     {
         $attachment = $this->repository->findById($slug, $id);
 
-        if (! $attachment) {
-            return null;
-        }
-
         // 이미지가 아닌 경우
-        if (! $attachment->is_image) {
+        if (! $attachment || ! $attachment->is_image) {
             return null;
         }
 
-        // 삭제된 게시글의 첨부파일은 관리 권한자만 접근
-        $this->assertDeletedPostAttachmentAccess($slug, $attachment);
+        // 콘텐츠 상태 게이트 + 존재 검사 + 서빙 메타는 getFileInfo() 가 소유한다
+        $fileInfo = $this->getFileInfo($slug, $id);
 
-        // 비밀글 첨부파일은 열람 권한자만 접근
-        $this->assertSecretPostAttachmentAccess($slug, $attachment);
+        if (! $fileInfo) {
+            return null;
+        }
 
-        return $this->storage->response(
-            'attachments',
-            $attachment->path,
-            $attachment->original_filename,
-            [
-                'Content-Type' => $attachment->mime_type,
-                'Content-Disposition' => 'inline',
-            ]
-        );
+        return $this->streamFile($fileInfo);
     }
 
     /**
@@ -861,7 +963,7 @@ class AttachmentService
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  첨부파일 ID
      * @param  bool  $signatureVerified  한시 서명 검증 통과 여부
-     * @return array{path: string, mime_type: string, filename: string}|null 파일 정보 또는 null
+     * @return array{path: string, disk: string|null, mime_type: string, filename: string, etag_source: string, last_modified: int|null, size: int}|null 파일 정보 또는 null
      */
     public function getFileInfo(string $slug, int $id, bool $signatureVerified = false): ?array
     {
@@ -879,25 +981,77 @@ class AttachmentService
             $this->assertSecretPostAttachmentAccess($slug, $attachment);
         }
 
-        // 파일 존재 확인
-        if (! $this->storage->exists('attachments', $attachment->path)) {
+        // 파일 존재 확인 — **행의 disk** 를 따른다.
+        //
+        // 같은 클래스의 삭제·정리 경로는 이미 `storageForRow()` 를 쓰고 코어 형제도
+        // `withDisk($attachment->disk)` 를 쓰는데, 서빙 경로만 카테고리 기본 디스크로
+        // 갔다. 그러면서 바로 아래 `etag_source` 는 `disk` 를 **싣는다** — 검증자는
+        // 디스크가 표현을 가른다고 선언하고 서빙은 그것을 부정하는 자기모순이었다.
+        // 증상은 404 + 로그 한 줄이라, 디스크를 옮긴 사이트에서 썸네일이 조용히
+        // 전멸한다 (10차 G3 라운드 B10-3).
+        $storage = $this->storageForRow($attachment->disk);
+
+        if (! $storage->exists('attachments', $attachment->path)) {
             Log::error('게시판 첨부파일 스토리지에 없음', [
                 'board_slug' => $slug,
                 'attachment_id' => $attachment->id,
+                'disk' => $attachment->disk,
                 'path' => $attachment->path,
             ]);
 
             return null;
         }
 
-        // 전체 파일 경로 생성
-        $basePath = $this->storage->getBasePath('attachments');
-        $fullPath = $basePath.DIRECTORY_SEPARATOR.$attachment->path;
-
+        // 로컬 절대 경로를 조립하지 않는다. 코어 형제(`BaseApiController::fileResponse`)는
+        // `filemtime`/`filesize` 전제라 원격 디스크(S3 등) 행에서 그대로 죽고, 이 통로는
+        // 그 실패를 404 로 접어 **게시판 썸네일이 오류 없이 전부 사라진다**. 코어는 같은
+        // 사유로 이미 스트림 서빙(`StorageInterface::response()` + `streamedFileResponse()`)
+        // 으로 옮겼는데 이 모듈만 남아 있었다 (8차 G3 라운드 C-2).
+        //
+        // `path` 는 **디스크 상대 경로**다(종전에는 절대 경로였다). 서빙은 컨트롤러가
+        // 스토리지에 위임하므로 이 자리에서 경로를 조립할 이유가 없다.
         return [
-            'path' => $fullPath,
+            'path' => $attachment->path,
+            // 서빙도 이 값을 따라야 한다 — `streamFile()` 은 행을 보지 못하므로
+            // 디스크를 여기서 실어 보낸다.
+            'disk' => $attachment->disk,
             'mime_type' => $attachment->mime_type,
             'filename' => $attachment->original_filename,
+            // 검증자(ETag 소스·수정 시각)는 다운로드 통로와 같은 자리가 만든다.
+            ...$this->validatorMeta($attachment),
+            // Content-Length 선지정용 — 넘기지 않으면 어댑터가 size() 로 원격 메타를
+            // 한 번 더 조회한다. 업로드 시점의 저장 바이트 수가 그대로 기록된 값이다.
+            'size' => (int) $attachment->size,
         ];
+    }
+
+    /**
+     * 첨부 스트림 응답을 만듭니다 (원격·로컬 디스크 공통).
+     *
+     * Content-Type 과 Content-Length 를 행 메타로 선지정한다 — 넘기지 않으면
+     * Flysystem 어댑터가 mimeType()/size() 로 원격 메타를 한 번 더 조회한다.
+     * 크기는 업로드 시점의 저장 바이트 수(축소·이동 후에도 내용 보존)라 실제 전송량과 같다.
+     * 코어 형제(`App\Services\AttachmentService::getFileInfo()`)와 같은 형태다.
+     *
+     * 디스크도 행이 정한다 — `getFileInfo()` 가 실어 보낸 `disk` 를 따른다. 이 값이
+     * 없으면(구 호출부) 카테고리 기본 디스크로 내려간다.
+     *
+     * @param  array{path: string, mime_type: string, filename: string, size?: int, disk?: string|null}  $fileInfo
+     * @return StreamedResponse|null
+     */
+    public function streamFile(array $fileInfo): ?StreamedResponse
+    {
+        $headers = ['Content-Type' => $fileInfo['mime_type']];
+
+        if (isset($fileInfo['size'])) {
+            $headers['Content-Length'] = (string) $fileInfo['size'];
+        }
+
+        return $this->storageForRow($fileInfo['disk'] ?? null)->response(
+            'attachments',
+            $fileInfo['path'],
+            $fileInfo['filename'],
+            $headers
+        );
     }
 }

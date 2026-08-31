@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: disable_functions 는 INI 값이라 PHPUnit/Playwright 런타임에서 재현 불가 (계획서 §8 자동화 한계). 판정·해석 분기는 콜백 주입 단위 테스트(test_files)가 커버하고, 무CLI 프로필의 종단(E2E) 검증은 P0 격리 환경의 브라우저 실측(§9 S2·S6)이 담당한다 — 그 실측 결과는 G8 보고서에 기록된다.
+# audit:allow test-scenario-coverage reason: issue:#609 disable_functions 는 INI 값이라 PHPUnit/Playwright 런타임에서 재현 불가 (계획서 §8 자동화 한계). 판정·해석 분기는 콜백 주입 단위 테스트(test_files)가 커버하고, 무CLI 프로필의 종단(E2E) 검증은 P0 격리 환경의 브라우저 실측(§9 S2·S6)이 담당한다 — 그 실측 결과는 G8 보고서에 기록된다.
 
 feature: 공통 실행 모드 (무CLI 환경 지원 축 A 의 뼈대 — P1/G1)
 

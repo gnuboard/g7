@@ -1,4 +1,7 @@
-# audit:allow test-scenario-coverage reason: 이슈 #492(공개 #74) 깊은 OFFSET 목록 페이지네이션 SSoT. axes cross product(수백 조합 × 26개 호출처)는 docblock 전수 @scenario 매핑이 비현실적이라 면제하고, 회귀 가드는 test_files(트레이트 단위 + 호출 계약 전수 스캔 + 도메인별 저장소 회귀 + Playwright E2E)로 커버한다. 대용량 축(scale)은 scenario-scale-axis-required 룰이 별도 강제(면제 대상 아님) — scale.assert 는 @scale 마킹으로 전수 커버.
+# audit:allow test-scenario-coverage reason: issue:#609 이슈 #492(공개 #74) 깊은 OFFSET 목록 페이지네이션 SSoT. axes cross product(수백 조합 × 26개 호출처)는 docblock 전수 @scenario 매핑이 비현실적이라 면제하고, 회귀 가드는 test_files(트레이트 단위 + 호출 계약 전수 스캔 + 도메인별 저장소 회귀 + Playwright E2E)로 커버한다. 대용량 축(scale)은 scenario-scale-axis-required 룰이 별도 강제(면제 대상 아님) — scale.assert 는 @scale 마킹으로 전수 커버.
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 15차 F-21 에서 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
+# 원장(9차 G3 라운드 C-4): 이 매니페스트는 :cross-product 로 좁히면 effects 21건이 미검증으로 드러난다.
+#   그 짝 맞추기는 이 공정(페이지네이션)의 몫이며, 좁히는 시점에 함께 처리한다.
 
 feature: deep_offset_pagination
 

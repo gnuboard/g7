@@ -1,4 +1,7 @@
-# audit:allow test-scenario-coverage reason: axes cross product 의 핵심 회귀 가드는 test_files 의 단위(recipeEngine.scope/styleScope/flexModel/StyleScopeTabs/property-controls/s7-property-controls)·렌더(DynamicRenderer.responsive)·Feature(LayoutControllerEditorSaveTest) 가 cover. E2E axis 는 property-editor-scope.spec.ts 의 // @scenario/@effects docblock 으로 매핑.
+# audit:allow test-scenario-coverage reason: issue:#609 axes cross product 의 핵심 회귀 가드는 test_files 의 단위(recipeEngine.scope/styleScope/flexModel/StyleScopeTabs/property-controls/s7-property-controls)·렌더(DynamicRenderer.responsive)·Feature(LayoutControllerEditorSaveTest) 가 cover. E2E axis 는 property-editor-scope.spec.ts 의 // @scenario/@effects docblock 으로 매핑.
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 15차 F-21 에서 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
+# 원장(9차 G3 라운드 C-4): 이 매니페스트는 :cross-product 로 좁히면 effects 22건이 미검증으로 드러난다.
+#   그 짝 맞추기는 이 공정(레이아웃 편집기)의 몫이며, 좁히는 시점에 함께 처리한다.
 
 feature: 레이아웃 편집기 스타일 탭 — 색 모드(라이트/다크) × 디바이스별 스타일 편집
 

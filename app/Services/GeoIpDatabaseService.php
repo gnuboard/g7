@@ -3,8 +3,10 @@
 namespace App\Services;
 
 use App\Contracts\Repositories\ConfigRepositoryInterface;
+use App\Extension\ExtensionManager;
 use App\Extension\HookManager;
 use App\Support\ConfigCacheHelper;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -26,9 +28,9 @@ class GeoIpDatabaseService
      *
      * @param  bool  $force  파일이 이미 존재해도 재다운로드
      * @return array{success: bool, status: string, message?: string, data?: array<string, mixed>}
-     *         status: 'updated' | 'skipped' | 'missing_license_key' | 'download_failed' |
-     *                 'unauthorized' | 'extract_failed' | 'file_not_found' | 'replace_failed' |
-     *                 'connection_failed' | 'empty_response'
+     *                                                                                             status: 'updated' | 'skipped' | 'missing_license_key' | 'download_failed' |
+     *                                                                                             'unauthorized' | 'extract_failed' | 'file_not_found' | 'replace_failed' |
+     *                                                                                             'connection_failed' | 'empty_response'
      */
     public function updateDatabase(bool $force = false): array
     {
@@ -284,7 +286,7 @@ class GeoIpDatabaseService
                 ->retry($retryAttempts, $retryDelayMs, null, false)
                 ->sink($archivePath)
                 ->get($url);
-        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+        } catch (ConnectionException $e) {
             return [
                 'success' => false,
                 'status' => 'connection_failed',
@@ -353,10 +355,18 @@ class GeoIpDatabaseService
      */
     private function findMmdbFile(string $extractPath, string $editionId): ?string
     {
-        $pattern = $extractPath.DIRECTORY_SEPARATOR.$editionId.'_*'.DIRECTORY_SEPARATOR.$editionId.'.mmdb';
-        $found = glob($pattern);
+        // 나열은 단일 지점을 쓴다 — GeoIP DB 갱신은 예약 작업이고, 무CLI 환경에서 그
+        // 스케줄은 **웹 요청 안에서** 실행되므로 `glob` 이 막힌 호스팅에서는 이 자리가
+        // 치명 오류가 된다 (12차 G3 라운드).
+        foreach (ExtensionManager::listDirectories($extractPath, $editionId.'_') as $versionDir) {
+            $candidate = $versionDir.DIRECTORY_SEPARATOR.$editionId.'.mmdb';
 
-        return ! empty($found) ? $found[0] : null;
+            if (is_file($candidate)) {
+                return $candidate;
+            }
+        }
+
+        return null;
     }
 
     /**

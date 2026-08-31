@@ -476,8 +476,8 @@ class SeoRenderer implements SeoRendererInterface
         // 미리보기는 null → config('app.locale') 폴백).
         $defaultLocale = $defaultLocale ?? config('app.locale');
         $canonicalUrl = $locale === $defaultLocale
-            ? url($url)
-            : url($url).'?locale='.$locale;
+            ? AssetUrl::siteAbsolute($url)
+            : AssetUrl::siteAbsolute($url).'?locale='.$locale;
         $ogUrl = '<meta property="og:url" content="'.e($canonicalUrl).'">'."\n";
 
         // hreflang 태그 생성 (다국어 SEO)
@@ -824,7 +824,7 @@ class SeoRenderer implements SeoRendererInterface
             return '';
         }
 
-        $baseUrl = url($url);
+        $baseUrl = AssetUrl::siteAbsolute($url);
         $tags = '';
 
         foreach ($supportedLocales as $loc) {
@@ -865,7 +865,9 @@ class SeoRenderer implements SeoRendererInterface
         // string 을 추출한다 (공개#49 — OG 경로와 동일 처리. JSON-LD WebSite.name·모듈 title 의
         // {{_global.site_name}}/{site_name} 치환이 array 로 깨지던 비일관성 해소).
         $global['site_name'] = $this->resolveLocalizedValue(g7_core_settings('general.site_name', ''));
-        $global['site_url'] = g7_core_settings('general.site_url', url('/'));
+        // 폴백은 요청 호스트(`url('/')`)가 아니라 설정된 사이트 주소다 — 같은 화면의
+        // canonical·og:url 과 오리진이 갈리지 않게 한다 (16차 G3 라운드 B-6).
+        $global['site_url'] = g7_core_settings('general.site_url', AssetUrl::siteRoot());
 
         // modules: 모듈별 설정 (config에서 로드)
         $global['modules'] = config('g7_settings.modules', []);

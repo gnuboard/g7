@@ -1,3 +1,4 @@
+import { apiUrl, sitePath } from '../../support/apiUrl';
 import React, { useState, useRef, useEffect } from 'react';
 import { Div } from '../basic/Div';
 import { Button } from '../basic/Button';
@@ -158,7 +159,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
       const bearerToken = getBearerToken();
 
       // API 호출
-      const response = await fetch(logoutEndpoint, {
+      const response = await fetch(apiUrl(logoutEndpoint), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -173,18 +174,18 @@ export const UserProfile: React.FC<UserProfileProps> = ({
         // 로그아웃 성공 - 로컬 스토리지에서 토큰 제거
         localStorage.removeItem('auth_token');
         // 로그인 페이지로 리다이렉션
-        window.location.href = redirectPath;
+        window.location.href = sitePath(redirectPath);
       } else {
         logger.error('로그아웃 실패:', response.statusText);
         // 실패해도 토큰 제거 및 로그인 페이지로 이동 (토큰 만료 등의 경우)
         localStorage.removeItem('auth_token');
-        window.location.href = redirectPath;
+        window.location.href = sitePath(redirectPath);
       }
     } catch (error) {
       logger.error('로그아웃 오류:', error);
       // 에러 발생 시에도 토큰 제거 및 로그인 페이지로 이동
       localStorage.removeItem('auth_token');
-      window.location.href = redirectPath;
+      window.location.href = sitePath(redirectPath);
     } finally {
       setIsLoggingOut(false);
     }

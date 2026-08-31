@@ -1,3 +1,4 @@
+import { apiUrl, sitePath } from '../apiUrl';
 /**
  * 주문 관리 관련 핸들러
  *
@@ -409,7 +410,7 @@ export function handleOrderRowActionHandler(
 
         case 'print':
             // 새 창에서 배송장 출력
-            window.open(`/admin/ecommerce/orders/${row.order_number}/shipping-label`, '_blank');
+            window.open(sitePath(`/admin/ecommerce/orders/${row.order_number}/shipping-label`), '_blank');
             break;
 
         default:
@@ -591,7 +592,7 @@ export async function downloadOrderExcelHandler(
 
     // Blob 다운로드 처리
     const token = G7Core?.auth?.getToken();
-    const response = await fetch(endpoint, {
+    const response = await fetch(apiUrl(endpoint), {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

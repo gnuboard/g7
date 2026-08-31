@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: axes cross product(extension_type×group×timing×target_kind×extension_status×route_match = 256)는 조합 열거로, 실질 회귀 가드는 effects 가 담당한다. effects 는 test_files 의 메서드 docblock @effects 로 전수 매핑되어 개별 검증된다. target_kind 8종 매칭식·group 펼침·timing 분리·활성 필터·라우트명 vs URI 매칭은 registry 단위 테스트가 값별로 직접 관측하고, 게이트 실행/무명 라우트/실요청 파싱은 gate 테스트가 커버한다. 조합 개별 docblock 마킹은 effects 매핑과 중복이므로 생략.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#609 axes cross product(extension_type×group×timing×target_kind×extension_status×route_match = 256)는 조합 열거로, 실질 회귀 가드는 effects 가 담당한다. effects 는 test_files 의 메서드 docblock @effects 로 전수 매핑되어 개별 검증된다. target_kind 8종 매칭식·group 펼침·timing 분리·활성 필터·라우트명 vs URI 매칭은 registry 단위 테스트가 값별로 직접 관측하고, 게이트 실행/무명 라우트/실요청 파싱은 gate 테스트가 커버한다. 조합 개별 docblock 마킹은 effects 매핑과 중복이므로 생략.
 
 feature: 확장 선언 미들웨어 self-gate (getMiddleware + ExtensionMiddlewareGate)
 

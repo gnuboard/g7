@@ -1,5 +1,5 @@
 import { buildOrderRequestHeaders } from './guestOrderToken';
-
+import { apiUrl, routePath } from './apiUrl';
 const PLUGIN_ID = 'sirsoft-pay_nicepayments';
 const FLAG = '__nicepayOcReceiptInjectorInstalled';
 const BTN_ID = 'nicepay-oc-receipt-btn';
@@ -25,7 +25,7 @@ async function fetchPayment(orderNumber: string): Promise<Payment | null> {
     if (!headers) return null;
 
     try {
-        const res = await fetch(`/api/modules/sirsoft-ecommerce/user/orders/${orderNumber}`, {
+        const res = await fetch(apiUrl(`/api/modules/sirsoft-ecommerce/user/orders/${orderNumber}`), {
             headers,
             credentials: 'same-origin',
         });
@@ -42,7 +42,7 @@ async function fetchReceiptInfo(orderNumber: string): Promise<ReceiptInfo | null
     if (!headers) return null;
 
     try {
-        const res = await fetch(`/api/plugins/${PLUGIN_ID}/user/orders/${orderNumber}/receipt`, {
+        const res = await fetch(apiUrl(`/api/plugins/${PLUGIN_ID}/user/orders/${orderNumber}/receipt`), {
             headers,
             credentials: 'same-origin',
         });
@@ -111,6 +111,7 @@ async function injectOnOrderComplete(orderNumber: string): Promise<void> {
         receiptBtn.textContent = '영수증 조회';
         const url = data?.receipt_url ?? null;
         if (url) {
+            // base-path:allow PG 가 내려준 영수증 절대 URL 이다.
             window.open(url, 'nicepay_receipt', 'width=800,height=600,scrollbars=yes,resizable=yes');
         }
     });
@@ -122,7 +123,7 @@ async function injectOnOrderComplete(orderNumber: string): Promise<void> {
 }
 
 function tryInject(): void {
-    const match = location.pathname.match(ORDER_COMPLETE_RE);
+    const match = routePath(location.pathname).match(ORDER_COMPLETE_RE);
     if (match) {
         void injectOnOrderComplete(match[1]);
     }

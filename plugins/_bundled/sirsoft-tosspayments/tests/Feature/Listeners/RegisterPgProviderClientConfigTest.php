@@ -10,8 +10,6 @@ use Plugins\Sirsoft\Tosspayments\Tests\PluginTestCase;
  * RegisterPgProviderListener::getClientConfig 확장 테스트.
  *
  * order_sheet_mode / enabled_methods / vbank / use_escrow 프론트 노출을 검증한다.
- *
- * @effects enabled_methods_exposed_with_core_mapping
  */
 class RegisterPgProviderClientConfigTest extends PluginTestCase
 {
@@ -48,6 +46,9 @@ class RegisterPgProviderClientConfigTest extends PluginTestCase
         $this->assertSame([], $config['enabled_methods']);
     }
 
+    /**
+     * @effects enabled_methods_exposed_with_core_mapping
+     */
     public function test_order_sheet_on_returns_enabled_methods_with_mapping(): void
     {
         $this->mockSettings([

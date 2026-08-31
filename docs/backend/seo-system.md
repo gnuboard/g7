@@ -461,7 +461,7 @@ $meta['og'] = HookManager::applyFilters('core.seo.filter_og_data', $meta['og'], 
 |----|-----|-----|
 | `type` | string | og:type (product/article/website 등) |
 | `title` / `description` | string | 텍스트 |
-| `image` | string (절대 URL) | og:image |
+| `image` | string (절대 URL) | og:image — 조립은 `AssetUrl::siteAbsolute()` (아래 참조) |
 | `image_secure_url` | string | og:image:secure_url (HTTPS) |
 | `image_width` / `image_height` | int\|null | 픽셀 크기 |
 | `image_type` | string | image/jpeg 등 MIME |
@@ -480,6 +480,32 @@ $meta['og'] = HookManager::applyFilters('core.seo.filter_og_data', $meta['og'], 
 | `extra` | array<{name,content}> | 자유 twitter:* |
 
 **`$structured_data`**: Schema.org JSON-LD 배열 (`@type` 필수). 청취자가 자유롭게 키 추가/수정 가능. SeoRenderer 가 `@context: https://schema.org` 자동 prepend.
+
+### 절대 주소는 `AssetUrl::siteAbsolute()` 가 만든다
+
+봇은 페이지 주소를 모른 채 색인하므로 `og:image` · `twitter:image` · `schema.image` · 봇 화면의 `src`/`href` 는 **오리진까지 붙은 절대 주소**여야 한다. 그 조립에는 함정이 둘 있고, 방향이 서로 반대라 한쪽만 막으면 다른 쪽이 남는다.
+
+| ❌ 금지 | 무슨 일이 벌어지나 |
+|--------|------------------|
+| `url($path)` | 그 값의 생산자(`Attachment::previewUrlForSlug()` 등)가 **이미 마운트 접두사를 실었다** — `url()` 이 한 번 더 실어 `/g7/g7/…` 로 404 |
+| `str_starts_with($v, 'http') ? $v : AssetUrl::absolute($v)` | 프로토콜 상대(`//cdn.x/y.png`)·상대 경로(`img.png`)·`data:` 를 오리진에 그대로 이어 붙인다. 루트 상대(`/images/logo.png`)에는 반대로 **접두사를 채우지 않는다** |
+
+`AssetUrl::siteAbsolute()` 가 그 단일 지점이다 — 접두사를 **멱등**으로 보정한 뒤 오리진을 붙이고, 이미 절대이거나 스킴을 가진 값(`//`·`data:`·`mailto:`·`#`·`?`·상대 경로)은 **원본 그대로** 돌려준다. 오리진 없이 사이트 경로만 필요하면 `AssetUrl::sitePath()`.
+
+**정본 주소(canonical · `og:url` · `hreflang` · 사이트맵 `<loc>`)도 같은 단일 지점이다 — 오리진의 출처는 설정(`APP_URL`)이 우선이고 요청은 폴백이다.** 종전에는 이 넷만 `url()` 로 만들어 **요청의 호스트**를 실었다. 같은 페이지의 `og:image` 는 설정 오리진을 싣고 정본 주소는 요청 호스트를 실으면, TLS 를 앞단에서 끝내는 프록시(요청은 `http` 로 도착)나 내부 호스트명으로 도착하는 크롤러 요청에서 **한 페이지 안의 두 절대 주소가 서로 다른 오리진**을 가리키고, 사이트맵은 콘솔(`seo:generate-sitemap`, 요청 없음 → `APP_URL`)이 만들었는지 웹 요청이 만들었는지에 따라 오리진이 달라진다. 크롤러는 그것을 오류 없이 다른 사이트로 색인한다. `SeoRenderer`(canonical·og:url·hreflang)와 `SitemapGenerator`(정적 라우트·기여자 `url` → `loc`) 전부가 `AssetUrl::siteAbsolute()` 를 경유하며, 입력은 접두사 없는 요청 경로(`$request->getPathInfo()`)라 접두사는 한 번만 실린다. 기여자가 `loc` 을 직접 만들 때도 `url()` 이 아니라 이 헬퍼를 쓴다 (아래 유즈케이스). `APP_URL` 이 오리진을 담고 있지 않으면 종전대로 요청에서 취한다.
+
+같은 단일 지점을 지나는 서버측 절대 주소가 넷 더 있다 — 어느 하나라도 `url()` 이면 그 주소만 요청 호스트를 싣고, 접두사를 이미 품은 값에는 접두사가 한 번 더 실린다.
+
+| 지점 | 주소 | 어긋나면 |
+|------|------|---------|
+| `SitemapFileStore::childUrl()` | 사이트맵 **색인**의 자식 `<loc>` | 부모(색인)와 자식(항목)의 오리진이 한 사이트맵 안에서 갈린다 — 콘솔 생성이면 `http://localhost` |
+| `SitemapIndexer` → `SitemapGenerator::entryLoc()` | 증분 색인(리스너 경유)의 `url` → `loc` | 같은 리소스의 `<loc>` 이 전체 재생성과 증분에서 다르다. 규칙은 `entryLoc()` 하나가 소유한다 |
+| `DataSourceResolver` | 봇 렌더가 부르는 내부 API 주소 | `/g7/api/…` 를 품은 데이터소스가 `/g7/g7/api/…` 가 되어 봇 화면에서만 데이터가 빈다(fallback 이 오류를 흡수한다) |
+| `SeoRenderer` `_global.site_url` 폴백 | `general.site_url` 이 빈 사이트의 JSON-LD `WebSite.url` 등 | 같은 화면의 canonical 은 설정 오리진, `site_url` 은 요청 호스트 |
+
+알림·메일·비밀번호 재설정 링크와 결제·본인인증의 복귀·통보 주소도 같다 — `config('app.url').'/path'` 는 `APP_URL` 의 후행 슬래시를 그대로 실어 `https://host/g7//login` 을 만들고, `url()` 은 요청 호스트를 싣는다. 저장 쪽에서는 `general.site_url` 이 후행 슬래시 없이 저장된다(요청 정규화).
+
+정적 검사는 봇 렌더러의 속성 조립 루프를 **도출**해 그 루프가 `src`/`href` 를 이 헬퍼로 처리하는지 판정한다 — 「`'src'` 리터럴이 있는 줄」을 모집단으로 삼으면 그 이름을 적지 않는 방출 지점이 구조적으로 보이지 않아, 실제로 네 번째 지점이 그렇게 누락된 적이 있다.
 
 **유즈케이스**:
 
@@ -603,7 +629,7 @@ class EcommerceSitemapContributor extends AbstractSitemapContributor
     public function getUrlsLazy(): iterable
     {
         foreach ($this->products->streamVisibleForSitemap() as $p) {
-            yield ['loc' => url("/shop/{$p->id}"), 'lastmod' => $p->updated_at?->toW3cString(),
+            yield ['loc' => AssetUrl::siteAbsolute("/shop/{$p->id}"), 'lastmod' => $p->updated_at?->toW3cString(),
                    'resource_type' => 'product', 'resource_id' => (string) $p->id];
         }
     }

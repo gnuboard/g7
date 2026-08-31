@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: 시각 회귀 없는 자산 정의 튜닝 + 호출처 토큰 전수 정리. .alert-{info,warning,danger,success,error} 패밀리의 padding/gap/text 톤을 자산에 흡수 + 외부 mt-* 책임 호출처로 위임 + 39개 JSON 호출처에서 redundant 토큰 일괄 제거. 데이터/액션/i18n 키 모두 동일.
+# audit:allow test-scenario-coverage reason: issue:#609 시각 회귀 없는 자산 정의 튜닝 + 호출처 토큰 전수 정리. .alert-{info,warning,danger,success,error} 패밀리의 padding/gap/text 톤을 자산에 흡수 + 외부 mt-* 책임 호출처로 위임 + 39개 JSON 호출처에서 redundant 토큰 일괄 제거. 데이터/액션/i18n 키 모두 동일.
 
 feature: 어드민·사용자 안내 박스 .alert-* 자산 시맨틱 완성 + 호출처 전수 redundant 토큰 제거 (#408 보강)
 
@@ -77,7 +77,8 @@ effects:
   - test_admin_basic_drivers_seo_partial_renders_correctly_with_cleaned_call_sites
   - admin_basic_main_css_documents_external_margin_responsibility_in_asset_comment
 
-test_files: []
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/Alert.test.tsx
 
 validation:
   audit_rule: frontend-change-requires-e2e

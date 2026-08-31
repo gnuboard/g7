@@ -208,7 +208,7 @@ class PluginController extends AdminBaseController
             // Service에서 이미 번역된 메시지를 errors에 포함하므로
             // 첫 번째 에러를 top-level message로 직접 사용 (이중 래핑 방지)
             $firstError = collect($e->errors())->flatten()->first()
-                ?? __('plugins.install_failed');
+                ?? __('plugins.install_failed', ['error' => __('plugins.errors.unknown_error')]);
 
             return $this->validationError($e->errors(), $firstError);
         } catch (\Exception $e) {

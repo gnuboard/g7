@@ -1,3 +1,4 @@
+import { apiUrl } from './apiUrl';
 /**
  * GDPR 레이아웃 확장 부트스트랩
  *
@@ -77,7 +78,7 @@ async function getJson<T>(path: string): Promise<T | null> {
 
     // Fallback: G7Core 미로드 (부트 초기) — fetch 직접 사용
     try {
-        const response = await fetch('/api' + path, {
+        const response = await fetch(apiUrl('/api' + path), {
             method: 'GET',
             headers: { Accept: 'application/json' },
             credentials: 'same-origin',

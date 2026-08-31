@@ -1,3 +1,4 @@
+import { sitePath, routePath } from '../../support/apiUrl';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Div } from '../basic/Div';
 import { Img } from '../basic/Img';
@@ -86,7 +87,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
 }) => {
   const [expandedItems, setExpandedItems] = useState<Set<string | number>>(new Set());
   const [locale, setLocale] = useState<string>(currentLocaleProp || G7Core()?.locale?.current?.() || 'ko');
-  const [currentPath, setCurrentPath] = useState<string>(window.location.pathname);
+  const [currentPath, setCurrentPath] = useState<string>(routePath(window.location.pathname));
 
   // 메뉴 트리에서 모든 URL 수집 (가장 구체적인 매칭 판별용)
   const allMenuUrls = useMemo(() => {
@@ -124,7 +125,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       setLocale(newLocale);
 
       // 현재 경로 업데이트
-      const newPath = state?._global?.currentPath || window.location.pathname;
+      const newPath = state?._global?.currentPath || routePath(window.location.pathname);
       setCurrentPath(newPath);
     });
 
@@ -134,7 +135,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   // 브라우저 뒤로가기/앞으로가기 감지
   useEffect(() => {
     const handlePopState = () => {
-      setCurrentPath(window.location.pathname);
+      setCurrentPath(routePath(window.location.pathname));
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -277,7 +278,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       });
     } else {
       // fallback: 전체 페이지 리로드
-      window.location.href = url;
+      window.location.href = sitePath(url);
     }
   };
 

@@ -4,6 +4,7 @@ namespace Tests\Unit\Seo;
 
 use App\Seo\ComponentHtmlMapper;
 use App\Seo\ExpressionEvaluator;
+use App\Support\AssetUrl;
 use Tests\TestCase;
 
 class ComponentHtmlMapperTest extends TestCase
@@ -274,6 +275,440 @@ class ComponentHtmlMapperTest extends TestCase
     /**
      * A + href + children을 올바르게 렌더링합니다.
      */
+    /**
+     * 봇 화면의 사이트 내부 링크도 마운트 접두사를 거친다.
+     *
+     * 화면(React)은 접두사를 붙이는 자리를 템플릿 `A` 컴포넌트 한 곳으로 모았는데,
+     * 봇 경로는 `component_map` 이 `A` 를 `{"tag":"a"}` 로 치환하므로 그 자리를
+     * 거치지 않는다. 접두사가 빠지면 하위 폴더 배치에서 **검색 색인이 사이트 밖
+     * 주소로 쌓이고**, 오류가 나지 않아 아무도 모른다 (15차 G3 라운드).
+     */
+    public function test_internal_href_carries_the_mount_prefix_for_bots(): void
+    {
+        AssetUrl::forceBasePrefix('/g7');
+
+        try {
+            $html = $this->render([
+                ['name' => 'A', 'props' => ['href' => '/page/about', 'text' => '소개']],
+            ]);
+
+            $this->assertStringContainsString('<a href="/g7/page/about"', $html);
+        } finally {
+            AssetUrl::forceBasePrefix(null);
+        }
+    }
+
+    /**
+     * 사이트 경로가 아닌 목적지는 손대지 않는다 — 과잉 전환 대조.
+     */
+    public function test_external_and_relative_href_are_untouched_for_bots(): void
+    {
+        AssetUrl::forceBasePrefix('/g7');
+
+        try {
+            $html = $this->render([
+                ['name' => 'A', 'props' => ['href' => 'https://example.com/x', 'text' => 'a']],
+                ['name' => 'A', 'props' => ['href' => '//cdn.example.com/y', 'text' => 'b']],
+                ['name' => 'A', 'props' => ['href' => '#section', 'text' => 'c']],
+                // 이미 접두사를 가진 값 — 멱등이어야 이중 접두가 생기지 않는다.
+                ['name' => 'A', 'props' => ['href' => '/g7/page/faq', 'text' => 'd']],
+            ]);
+
+            $this->assertStringContainsString('href="https://example.com/x"', $html);
+            $this->assertStringContainsString('href="//cdn.example.com/y"', $html);
+            $this->assertStringContainsString('href="#section"', $html);
+            $this->assertStringContainsString('href="/g7/page/faq"', $html);
+            $this->assertStringNotContainsString('/g7/g7/', $html);
+            $this->assertStringNotContainsString('/g7//cdn', $html);
+        } finally {
+            AssetUrl::forceBasePrefix(null);
+        }
+    }
+
+    /**
+     * 루트 설치에서는 종전과 동일하다 — 회귀 대조.
+     */
+    public function test_root_install_href_is_unchanged_for_bots(): void
+    {
+        AssetUrl::forceBasePrefix('');
+
+        try {
+            $html = $this->render([
+                ['name' => 'A', 'props' => ['href' => '/page/about', 'text' => '소개']],
+            ]);
+
+            $this->assertStringContainsString('<a href="/page/about"', $html);
+        } finally {
+            AssetUrl::forceBasePrefix(null);
+        }
+    }
+
+    /**
+     * `href` 를 내보내는 **모든 지점**이 접두사 헬퍼를 거친다 (소스 계약).
+     *
+     * 동작 테스트는 자기가 세운 렌더 경로만 잰다 — 그래서 형제 지점 다섯을 배선하고도
+     * 여섯 번째(`renderFieldWithAttrs` — `seo-config.json` 이 자기 소유로 선언한 헤더·푸터
+     * 앵커를 그린다)가 남아, 같은 봇 응답 안에 `/g7/page/about` 와 `/page/about` 이
+     * **동시에** 나갔다. 단위 테스트는 초록이었고 P0 하위 폴더 실측이 잡았다.
+     *
+     * 그래서 「그 파일에서 `href` 속성을 조립하는 자리가 전부 헬퍼를 거치는가」를
+     * 소스로 잠근다 — 새 방출 지점이 생기면 이 검사가 즉시 요구한다 (15차 G3 라운드).
+     */
+    public function test_every_href_emission_point_goes_through_the_prefix_helper(): void
+    {
+        $source = (string) file_get_contents(base_path('app/Seo/ComponentHtmlMapper.php'));
+
+        // 주석을 걷어낸다 — 위 설명이 그 이름을 언급하므로 자기충족을 피한다.
+        $code = (string) preg_replace(['#/\*.*?\*/#s', '#//[^\n]*#'], '', $source);
+
+        // `href` 속성값을 만드는 자리: `'href'` 문자열 비교 또는 `href="` 리터럴 조립.
+        $emissionLines = [];
+        foreach (preg_split('~\r\n|\r|\n~', $code) ?: [] as $n => $line) {
+            if (preg_match('/href\s*=\s*"|[\'"]href[\'"]/', $line) === 1) {
+                $emissionLines[$n + 1] = trim($line);
+            }
+        }
+
+        $this->assertNotEmpty($emissionLines, 'href 방출 지점을 하나도 찾지 못했다 — 이 검사가 아무것도 재지 않는다');
+
+        // 판정 범위는 **감싸는 메서드 전체**다.
+        //
+        // ±N 줄 창으로는 부족하다 — 값을 메서드 앞에서 한 번 감싸 두고 아래에서 여러 번
+        // 쓰는 형태(`$escapedHref` 를 네 분기가 공유한다)가 정상인데, 좁은 창은 그것을
+        // 전부 위반으로 본다. 반대로 파일 전체를 보면 어디든 한 번만 나오면 통과해
+        // 아무것도 재지 못한다. 메서드가 그 중간이다.
+        $lines = preg_split('~\r\n|\r|\n~', $code) ?: [];
+        $unwired = [];
+
+        foreach ($emissionLines as $lineNo => $text) {
+            // 허용 목록 선언(`allowed_attrs` 등)은 값을 만들지 않는다.
+            if (str_contains($text, "'class', 'id', 'href'")) {
+                continue;
+            }
+
+            if (! str_contains($this->enclosingMethodBody($lines, $lineNo), 'siteHref(')) {
+                $unwired[] = $lineNo.': '.substr($text, 0, 90);
+            }
+        }
+
+        $this->assertSame(
+            [],
+            $unwired,
+            '접두사 헬퍼를 거치지 않는 href 방출 지점이 있다 — 하위 폴더 배치에서 그 링크만 사이트 밖으로 나간다'
+        );
+    }
+
+    /**
+     * 봇 화면의 `src` 는 접두사를 **한 번만** 실은 절대 URL 이 된다.
+     *
+     * 이 자리에 오는 값의 생산자(`ProductImage::apiDownloadUrl()` 등)가 이미
+     * `AssetUrl::basePrefix()` 를 붙여 주는데 종전 코드는 그 위에 `url()` 을 태웠다 —
+     * `url()` 은 오리진과 접두사를 함께 붙이므로 `https://host/g7/g7/api/…` 가 나갔고
+     * 그 주소는 404 다. 오류가 아니라 **봇 화면에서 이미지가 안 나오는 것**이 유일한
+     * 증상이라, 같은 함수의 `href` 를 세 줄 아래에서 고치고도 남아 있었다
+     * (10차 G3 라운드 X-1).
+     *
+     * 반대 방향도 함께 잰다 — 레이아웃이 리터럴로 적은 사이트 경로에는 접두사를
+     * 붙일 주체가 이 자리밖에 없다.
+     */
+    public function test_internal_src_is_absolute_and_carries_the_mount_prefix_once(): void
+    {
+        AssetUrl::forceBasePrefix('/g7');
+
+        try {
+            $html = $this->render(
+                [['name' => 'ProductImageViewer', 'props' => ['images' => '{{images}}']]],
+                [
+                    'images' => [
+                        // 생산자가 이미 접두사를 실은 값 (`ProductImage::apiDownloadUrl()` 형태)
+                        ['src' => '/g7/api/modules/sirsoft-ecommerce/product-image/abc'],
+                        // 레이아웃 리터럴 — 접두사를 붙일 주체가 여기밖에 없다
+                        ['src' => '/images/logo.png'],
+                        // 사이트 경로가 아닌 값은 손대지 않는다
+                        ['src' => 'https://cdn.example.com/x.png'],
+                        ['src' => '//cdn.example.com/y.png'],
+                    ],
+                ],
+            );
+
+            $this->assertStringNotContainsString('/g7/g7/', $html, '접두사가 두 번 실렸다 — 그 주소는 404 다');
+            $this->assertStringContainsString('/g7/api/modules/sirsoft-ecommerce/product-image/abc"', $html);
+            $this->assertStringContainsString('/g7/images/logo.png"', $html);
+            $this->assertStringContainsString('src="https://cdn.example.com/x.png"', $html);
+            $this->assertStringContainsString('src="//cdn.example.com/y.png"', $html);
+            $this->assertStringNotContainsString('/g7//cdn', $html);
+
+            // 사이트 경로였던 둘은 절대 URL 이어야 한다 (봇은 페이지 주소를 모른 채 색인한다).
+            preg_match_all('/src="([^"]+)"/', $html, $m);
+            foreach ($m[1] as $src) {
+                if (str_contains($src, 'cdn.example.com')) {
+                    continue;
+                }
+                $this->assertStringStartsWith('http', $src, "봇 화면의 자산 주소가 절대 URL 이 아니다: {$src}");
+            }
+        } finally {
+            AssetUrl::forceBasePrefix(null);
+        }
+    }
+
+    /**
+     * 루트 설치에서는 접두사가 붙지 않는다 — 과잉 전환 대조.
+     */
+    public function test_root_install_src_gains_origin_but_no_prefix(): void
+    {
+        AssetUrl::forceBasePrefix('');
+
+        try {
+            $html = $this->render(
+                [['name' => 'ProductImageViewer', 'props' => ['images' => '{{images}}']]],
+                ['images' => [['src' => '/images/logo.png']]],
+            );
+
+            $this->assertMatchesRegularExpression('~src="https?://[^/"]+/images/logo\.png"~', $html);
+        } finally {
+            AssetUrl::forceBasePrefix(null);
+        }
+    }
+
+    /**
+     * `src` 를 내보내는 **모든 지점**이 자산 헬퍼를 거친다 (소스 계약).
+     *
+     * 형제 축(`href`)이 정확히 이 형태의 검사를 갖고 있었고, 그 덕에 여섯 번째 방출
+     * 지점이 드러났다. `src` 축에는 그 검사가 없어서 세 지점 중 둘만 변환하고 하나는
+     * **아무 변환도 하지 않는** 상태가 유지되고 있었다 (10차 G3 라운드).
+     */
+    public function test_every_src_emission_point_goes_through_the_asset_helper(): void
+    {
+        $source = (string) file_get_contents(base_path('app/Seo/ComponentHtmlMapper.php'));
+
+        // 주석을 걷어낸다 — 위 설명이 그 이름을 언급하므로 자기충족을 피한다.
+        $code = (string) preg_replace(['#/\*.*?\*/#s', '#//[^\n]*#'], '', $source);
+
+        $lines = preg_split('~\r\n|\r|\n~', $code) ?: [];
+        $emissionLines = [];
+        foreach ($lines as $n => $line) {
+            if (preg_match('/[\'"]src[\'"]/', $line) === 1) {
+                $emissionLines[$n + 1] = trim($line);
+            }
+        }
+
+        $this->assertNotEmpty($emissionLines, 'src 방출 지점을 하나도 찾지 못했다 — 이 검사가 아무것도 재지 않는다');
+
+        $unwired = [];
+
+        foreach ($emissionLines as $lineNo => $text) {
+            // 허용 목록 선언은 값을 만들지 않는다.
+            if (str_contains($text, "'class', 'id', 'href'")) {
+                continue;
+            }
+
+            if (! str_contains($this->enclosingMethodBody($lines, $lineNo), 'siteAssetUrl(')) {
+                $unwired[] = $lineNo.': '.substr($text, 0, 90);
+            }
+        }
+
+        $this->assertSame(
+            [],
+            $unwired,
+            '자산 헬퍼를 거치지 않는 src 방출 지점이 있다 — 그 이미지만 봇 화면에서 사라지거나 사이트 밖을 가리킨다'
+        );
+    }
+
+    /**
+     * 지정한 줄을 감싸는 메서드의 본문을 돌려줍니다 (소스 계약 검사 공용).
+     *
+     * 판정 범위는 **감싸는 메서드 전체**다. ±N 줄 창으로는 부족하다 — 값을 메서드
+     * 앞에서 한 번 감싸 두고 아래에서 여러 번 쓰는 형태(`$escapedHref` 를 네 분기가
+     * 공유한다)가 정상인데, 좁은 창은 그것을 전부 위반으로 본다. 반대로 파일 전체를
+     * 보면 어디든 한 번만 나오면 통과해 아무것도 재지 못한다. 메서드가 그 중간이다.
+     *
+     * 이 도출을 세 검사가 공유한다 — 종전에는 같은 스캐너가 두 벌의 사본이었고,
+     * 한쪽만 고쳐지면 두 축의 판정 범위가 조용히 갈린다 (16차 G3 라운드 A-3).
+     *
+     * @param  array  $lines  주석을 걷어낸 소스의 줄 배열 (0-based)
+     * @param  int  $lineNo  대상 줄 번호 (1-based)
+     * @return string 감싸는 메서드의 본문
+     */
+    private function enclosingMethodBody(array $lines, int $lineNo): string
+    {
+        $declaration = '/^\s*(?:private|protected|public)\s+function\s/';
+
+        $start = 0;
+        for ($i = $lineNo - 1; $i >= 0; $i--) {
+            if (preg_match($declaration, $lines[$i] ?? '') === 1) {
+                $start = $i;
+                break;
+            }
+        }
+
+        $end = count($lines);
+        for ($i = $lineNo; $i < count($lines); $i++) {
+            if (preg_match($declaration, $lines[$i] ?? '') === 1) {
+                $end = $i;
+                break;
+            }
+        }
+
+        return implode("\n", array_slice($lines, $start, max(1, $end - $start)));
+    }
+
+    /**
+     * 속성 문자열을 조립하는 **루프 전수**가 `href` 와 `src` 를 헬퍼로 처리한다 (소스 계약).
+     *
+     * 형제 두 검사(`…every_href_emission_point…` · `…every_src_emission_point…`)는
+     * 모집단을 「그 이름의 리터럴이 있는 줄」에서 도출한다. 그 모집단은 **자기충족**이다
+     * — 배선되지 않은 지점에는 애초에 그 리터럴이 없으므로, 이미 배선된 지점들만
+     * 스스로를 확인하고 배선되지 않은 지점은 **구조적으로 보이지 않는다**.
+     *
+     * 실제로 `buildAttributes()` 가 그 사각에 있었다. 그 메서드는 `src` 리터럴이 없어
+     * src 축 검사의 모집단 밖이었고, `src` 는 허용 속성이며 `component_map` 에 `Img` 가
+     * 있어 레이아웃 JSON 의 모든 `Img` 가 그 자리를 지난다 — 즉 봇 화면의 그 이미지는
+     * **아무 변환도 없이** 나갔다. 반대 방향으로 `buildIterateItemAttributes()` 는
+     * `href` 가 빠져 있었다 (16차 G3 라운드 A-1·A-2·A-3).
+     *
+     * 그래서 모집단을 이름이 아니라 **구조**에서 도출한다: 속성 이름을 변수로 받아
+     * `이름="값"` 을 이어 붙이는 루프. 그 형태의 루프는 어떤 속성이든 실어 낼 수 있으므로
+     * 두 헬퍼를 **둘 다** 거쳐야 한다.
+     */
+    public function test_every_attribute_building_loop_routes_both_href_and_src(): void
+    {
+        $source = (string) file_get_contents(base_path('app/Seo/ComponentHtmlMapper.php'));
+
+        // 주석을 걷어낸다 — 위 설명이 그 이름을 언급하므로 자기충족을 피한다.
+        $code = (string) preg_replace(['#/\*.*?\*/#s', '#//[^\n]*#'], '', $source);
+
+        $lines = preg_split('~\r\n|\r|\n~', $code) ?: [];
+
+        // 모집단: `$attrs .= " {$이름}=\"…"` 형태 — 속성 **이름이 변수**이고 값을 싣는 줄.
+        // 값 없는 boolean 속성(`$attrs .= " {$htmlAttr}"`)은 주소를 만들지 않으므로 제외한다.
+        $loopLines = [];
+        foreach ($lines as $n => $line) {
+            if (preg_match('/\$attr\w*\s*\.=/', $line) !== 1) {
+                continue;
+            }
+            if (preg_match('/\{\$\w+\}=/', $line) !== 1) {
+                continue;
+            }
+            $loopLines[$n + 1] = trim($line);
+        }
+
+        // 공허성 대조 — 도출 정규식이 무력해지면 이 검사가 조용히 초록이 된다.
+        // 현재 실물은 넷(`buildIterateItemAttributes` · `renderFieldIterate` ·
+        // `renderFieldWithAttrs` · `buildAttributes`)이다. 줄어들면 사람이 확인한다.
+        $this->assertGreaterThanOrEqual(
+            4,
+            count($loopLines),
+            '속성 조립 루프를 4개 미만으로 찾았다 — 도출이 무력해졌거나 구조가 바뀌었다'
+        );
+
+        $unwired = [];
+
+        foreach ($loopLines as $lineNo => $text) {
+            $body = $this->enclosingMethodBody($lines, $lineNo);
+
+            $missing = [];
+            if (! str_contains($body, 'siteHref(')) {
+                $missing[] = 'siteHref';
+            }
+            if (! str_contains($body, 'siteAssetUrl(')) {
+                $missing[] = 'siteAssetUrl';
+            }
+
+            if ($missing !== []) {
+                $unwired[] = $lineNo.': '.implode('+', $missing).' 누락 — '.substr($text, 0, 70);
+            }
+        }
+
+        $this->assertSame(
+            [],
+            $unwired,
+            '속성 조립 루프가 href/src 중 한쪽만 배선했다 — 그 축의 주소만 하위 폴더 배치에서 사이트 밖을 가리킨다'
+        );
+    }
+
+    /**
+     * `Img` props 의 `src` 가 봇 화면에서 접두사를 실은 절대 URL 이 된다 (동작 회귀).
+     *
+     * 이 경로(`buildAttributes`)는 레이아웃 JSON 이 선언한 `Img` 를 그린다 —
+     * `component_map` 에 `Img` 가 있고 `src` 가 허용 속성이므로 가장 흔한 통로인데,
+     * 형제 셋만 자산 헬퍼를 거치고 이 지점은 **아무 변환도 없었다** (16차 G3 라운드 A-1).
+     */
+    public function test_component_props_src_carries_the_mount_prefix_and_origin(): void
+    {
+        AssetUrl::forceBasePrefix('/g7');
+
+        try {
+            $html = $this->render([
+                ['name' => 'Img', 'props' => ['src' => '/images/logo.png', 'alt' => '로고']],
+            ]);
+
+            $this->assertMatchesRegularExpression(
+                '~src="https?://[^/"]+/g7/images/logo\.png"~',
+                $html,
+                'Img props 의 src 가 접두사·오리진 없이 나갔다'
+            );
+            $this->assertStringNotContainsString('/g7/g7/', $html, '접두사가 두 번 실렸다');
+        } finally {
+            AssetUrl::forceBasePrefix(null);
+        }
+    }
+
+    /**
+     * iterate 모드 `item_attrs` 의 `href` 가 봇 화면에서 접두사를 얻는다 (동작 회귀).
+     *
+     * 이 지점(`buildIterateItemAttributes`)은 `src` 만 배선돼 있었다 — A-1 의 반대 방향
+     * 비대칭이며, `item_attrs` 는 속성 이름을 자유롭게 선언하므로 링크가 온다
+     * (16차 G3 라운드 A-2).
+     */
+    public function test_iterate_item_attrs_href_carries_the_mount_prefix(): void
+    {
+        AssetUrl::forceBasePrefix('/g7');
+
+        try {
+            // 기본 맵에 **덧붙인다** — 통째로 갈아치우면 다른 축의 전제가 사라진다.
+            $this->mapper->setComponentMap(array_merge($this->getDefaultComponentMap(), [
+                'LinkList' => ['tag' => 'ul', 'render' => 'iterate_links', 'props_source' => 'items'],
+            ]));
+            $this->mapper->setRenderModes(array_merge($this->getDefaultRenderModes(), [
+                'iterate_links' => [
+                    'type' => 'iterate',
+                    'source' => '$props_source',
+                    'item_tag' => 'a',
+                    'item_attrs' => ['href' => '{url}'],
+                ],
+            ]));
+
+            $html = $this->render(
+                [['name' => 'LinkList', 'props' => ['items' => '{{links}}']]],
+                ['links' => [['url' => '/board/notice']]],
+            );
+
+            $this->assertStringContainsString('href="/g7/board/notice"', $html);
+            $this->assertStringNotContainsString('href="/board/notice"', $html);
+        } finally {
+            AssetUrl::forceBasePrefix(null);
+        }
+    }
+
+    /**
+     * 자산 헬퍼가 `url()` 로 되돌아가지 않는다 (소스 계약).
+     *
+     * 이 결함은 「접두사가 두 번 실린다」이므로 값 단언만으로는 재발을 못 막는다 —
+     * `config('app.url')` 에 접두사가 없는 개발 환경에서는 `url()` 도 같은 값을 내기
+     * 때문이다. 그래서 **그 헬퍼를 쓰지 않는다**는 것을 소스로 잠근다.
+     */
+    public function test_bot_html_never_builds_asset_urls_with_the_url_helper(): void
+    {
+        $source = (string) file_get_contents(base_path('app/Seo/ComponentHtmlMapper.php'));
+        $code = (string) preg_replace(['#/\*.*?\*/#s', '#//[^\n]*#'], '', $source);
+
+        $this->assertSame(
+            0,
+            preg_match_all('/(?<![\w>$])url\s*\(/', $code),
+            'ComponentHtmlMapper 가 `url()` 을 쓴다 — 그 헬퍼는 오리진과 마운트 접두사를 함께 붙이므로 접두사를 이미 실은 값에서 이중 접두가 된다'
+        );
+    }
+
     public function test_a_with_href_and_children(): void
     {
         $components = [
@@ -2363,10 +2798,29 @@ class ComponentHtmlMapperTest extends TestCase
         $this->assertStringNotContainsString('/https://cdn.test/', $html);
 
         // 대조군 — 상대 경로는 여전히 절대화된다 (가드의 양방향 동작 고정)
+        //
+        // 기대값을 `url()` 로 적지 않는다. 그 헬퍼는 **요청이 실어 온 호스트**를 오리진으로
+        // 쓰는데, 봇에게 나가는 자산 주소는 요청 호스트가 아니라 사이트가 선언한 오리진
+        // (`config('app.url')`)이어야 한다 — 대체 호스트명으로 들어온 봇이 그 호스트의
+        // 주소를 색인해 가면 안 되기 때문이다. 그래서 절대화 주체가
+        // `AssetUrl::absolute()` 로 바뀌었다 (10차 G3 라운드 X-1).
+        //
+        // 기대값은 두 헬퍼 어느 쪽에도 기대지 않고 **성질**로 적는다 — 그래야 절대화
+        // 주체가 또 바뀌어도 이 단언이 자기충족으로 통과하지 않는다.
         $context['product']['thumbnail_url'] = '/storage/products/rel.jpg';
         $relativeHtml = $this->render($components, $context);
 
-        $this->assertStringContainsString('src="'.url('/storage/products/rel.jpg').'"', $relativeHtml);
+        $this->assertSame(
+            1,
+            preg_match('/src="(https?:\/\/[^"]+)"/', $relativeHtml, $m),
+            '상대 경로 썸네일이 절대 URL 로 바뀌지 않았다',
+        );
+        $this->assertStringEndsWith('/storage/products/rel.jpg', $m[1]);
+        $this->assertStringContainsString(
+            (string) parse_url((string) config('app.url'), PHP_URL_HOST),
+            $m[1],
+            '봇 자산 주소의 오리진이 사이트가 선언한 오리진이 아니다',
+        );
     }
 
     /**

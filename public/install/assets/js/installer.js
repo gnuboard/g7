@@ -200,6 +200,695 @@
     // Step 2: 요구사항 검증
     // =========================================================================
 
+    /* region:web-exposure — Step 2 게이트·웹 노출 판정 (vitest 가 이 구간을 그대로 평가한다) */
+
+    /**
+     * Step 2 [다음 단계] 게이트 상태 (D3 · D21).
+     *
+     * 서버 집계(all_required_passed)와 브라우저 웹 노출 판정을 함께 본다 — 노출 점검은
+     * 판정 주체가 브라우저라 서버 집계에 없다. 상태 값:
+     *   'pending'   프로브 진행 중 (fail-closed — 다음 비활성)
+     *   'safe'      전 대상 보호 확인
+     *   'exposed'   노출 확정 (설치 차단 — D3)
+     *   'unknown'   판정 불능 (운영자 수동 확인 대기 — D21)
+     *   'confirmed' 판정 불능 상태에서 운영자가 '확인했음' 체크 (진행 허용 — D21)
+     */
+    let step2ServerAllPassed = false;
+    // 기본값은 **판정 불능**이다. 「안전」으로 두면 게이트 갱신 순서가 한 번만 바뀌어도
+    // 아무 판정 없이 열린다 — 이 축의 기본값은 언제나 fail-closed 쪽이어야 한다.
+    let step2ExposureState = 'unknown';
+
+    /**
+     * 게이트 상태 두 축을 함께 갱신한다 (쓰기 단일 지점).
+     *
+     * @param {boolean} serverAllPassed 서버 all_required_passed
+     * @param {string} exposureState 노출 판정 상태
+     */
+    function setStep2GateState(serverAllPassed, exposureState) {
+        step2ServerAllPassed = !!serverAllPassed;
+        step2ExposureState = exposureState;
+    }
+
+    /**
+     * 노출 판정 축만 갱신한다 (프로브 완료·'확인했음' 체크 경로).
+     *
+     * @param {string} exposureState 노출 판정 상태
+     */
+    function setStep2ExposureState(exposureState) {
+        step2ExposureState = exposureState;
+    }
+
+    /**
+     * Step 2 의 [다음 단계]/[다시 검사] 버튼 상태를 게이트 상태로부터 갱신한다.
+     *
+     * §12 W1: 비활성은 속성과 시각 표현을 함께 준다 (버튼은 언제나 자리에 있고 상태만 바뀐다).
+     */
+    function updateStep2Gate() {
+        const nextBtn = document.getElementById('next-btn');
+        const recheckBtn = document.getElementById('recheck-btn');
+        if (!nextBtn) return;
+
+        const exposureOk = step2ExposureState === 'safe' || step2ExposureState === 'confirmed';
+        const pass = step2ServerAllPassed && exposureOk;
+
+        nextBtn.classList.remove('hidden');
+        nextBtn.disabled = !pass;
+        nextBtn.setAttribute('aria-disabled', pass ? 'false' : 'true');
+
+        if (recheckBtn) {
+            recheckBtn.classList.toggle('hidden', pass);
+        }
+    }
+
+    /**
+     * 프로젝트 루트의 웹 경로를 파생한다 (B-4 프로브 기준점).
+     *
+     * 노출 프로브 대상(`/.env.example` 등)은 **프로젝트 루트** 기준이다 — 앱 루트(public)
+     * 기준이 아니다. 문서루트=프로젝트 루트 배치에서 인스톨러는 `/public/install` 로
+     * 서빙되므로, 앱 루트(`/public`)에 대고 프로브하면 정작 노출된 프로젝트 루트(`/`)를
+     * 지나쳐 노출을 영원히 놓친다 (D3 의 판정 대상이 바로 그 배치다).
+     *
+     * 파생: INSTALLER_BASE_URL 에서 `/install` 을 벗기고, 남은 꼬리가 `/public` 이면
+     * 그것도 벗긴다 — `/install` → `` (표준 배치: 프로젝트 루트는 웹 밖, 프로브는 안전으로
+     * 수렴) / `/public/install` → `` / `/g7/public/install` → `/g7`.
+     *
+     * @returns {string} origin 포함 프로젝트 루트 URL (후행 슬래시 없음)
+     */
+    function getProjectRootUrl() {
+        return getProjectRootCandidates()[0];
+    }
+    /* 프로덕션 소비처는 `resolveProjectRoot` 하나다. 이 함수는 그 기준점을 이름으로 설명하고
+       vitest 가 파생 규칙(꼬리 벗기기)을 직접 재는 진입점이다. */
+
+    /**
+     * 프로젝트 루트 URL **후보**를 우선순위 순으로 열거한다. **고르지는 않는다.**
+     *
+     * 꼬리 판정은 대소문자를 구분하지 않는다 — 대소문자 무시 파일시스템(Windows·IIS·macOS)
+     * 에서 운영자가 `/Install/` 로 접속하면 기준 URL 이 그 표기 그대로 들어오는데, 구분해서
+     * 벗기면 프로젝트 루트가 `/Public/Install` 로 잡혀 전 대상이 404 → 「보호 확인됨」 으로
+     * 조용히 수렴한다 (installerDeriveBaseUrl 과 같은 규약).
+     *
+     * `/public` 꼬리를 벗기는 것은 **추측이다.** 인스톨러가 위임을 거쳐 `<루트>/install/` 로
+     * 열렸는지, 실제 위치 `<루트>/public/install/` 로 열렸는지 URL 만으로는 구분되지 않고,
+     * 프로젝트 디렉토리 이름이 실제로 `public` 인 배치에서는 한 칸 위를 가리키게 된다.
+     *
+     * 한때 이 추측을 **양성 대조로 골라** 실측으로 바꾸려 했으나, 그러면 대조가 게이트가
+     * 아니라 후보 탐색기가 되어 「대조 실패 → 판정 불능」에 도달할 입력이 사라진다
+     * (`resolveProjectRoot` 주석 참조). 그래서 지금은 **언제나 첫 후보만** 쓰고, 두 번째
+     * 후보는 그 추측이 있었다는 사실을 남기는 열거 항목이다 — 소비처는 없다. 골라 쓰는
+     * 형태로 되돌리지 말 것.
+     *
+     * @returns {string[]} origin 포함 후보 URL 목록 (후행 슬래시 없음, 중복 제거)
+     */
+    function getProjectRootCandidates() {
+        const base = (window.INSTALLER_BASE_URL || '').replace(/\/install\/?$/i, '');
+        const stripped = base.replace(/\/public$/i, '');
+        const origin = window.location.origin;
+
+        return stripped === base
+            ? [`${origin}${base}`]
+            : [`${origin}${stripped}`, `${origin}${base}`];
+    }
+
+    /**
+     * 프로젝트 루트를 정하고, 그 루트에서 양성 대조를 잰다.
+     *
+     * **후보를 바꾸지 않는다.** 한때 이 함수는 「대조가 열리는 후보를 찾을 때까지 후보를
+     * 갈아치우는」 형태였는데, 그러면 대조가 게이트가 아니라 **후보 탐색기**가 된다 —
+     * `judgeExposureResults` 의 `controls.some(!reachable)` 분기에 도달할 수 있는 입력이
+     * 사라져, 위임(mod_rewrite)이 죽은 레이아웃 ② 가 두 번째 후보에서 통과해 「보호
+     * 확인됨」으로 수렴하고 설치가 완주했다. 그 사이트는 첫 화면 말고는 전 라우트가 404 다.
+     *
+     * 「프로젝트 디렉토리 이름이 실제로 `public`」과 「위임 사망」은 화면에서 관측이 완전히
+     * 동일하다. 구분할 수 없으므로 구분을 시도하지 않고 **둘 다** 판정 불능(D21 운영자 확인
+     * 경로)으로 보낸다 — 전자는 막히는 것이 아니라 한 단계를 더 밟는다. 노출 확정은 언제나
+     * 이 대조보다 우선한다(D3 불변).
+     *
+     * 대조가 없으면(서버가 대조 대상을 만들지 못한 배치) 첫 후보를 그대로 쓴다 — 고를
+     * 근거가 없을 때 후보를 바꾸는 것은 또 다른 추측이다.
+     *
+     * @param {Array<{path: string, marker: string, label: string}>} controls 대조 대상
+     * @returns {Promise<{root: string, controlResults: Array}>}
+     */
+    async function resolveProjectRoot(controls) {
+        const root = getProjectRootCandidates()[0];
+
+        if (!controls.length) {
+            return { root, controlResults: [] };
+        }
+
+        const controlResults = await Promise.all(
+            controls.map((c) => probeExposureControl(root, c))
+        );
+
+        return { root, controlResults };
+    }
+
+    /**
+     * 서버 요구사항 응답으로부터 노출 게이트의 **초기** 상태를 정한다 (B-4 · D3).
+     *
+     * 서버가 `web_exposure` 항목을 내려주지 않으면 「안전」이 아니라 **판정 불능**이다 —
+     * 인스톨러 화면과 서버는 언제나 같은 릴리즈라 이 부재는 하위호환 상황이 아니라 배선
+     * 파손이고, 안전으로 접으면 서버 항목 한 줄이 사라지는 것만으로 B-4 게이트가 통째로
+     * 열린다(그 변이를 어떤 테스트도 잡지 못하던 상태였다). 판정 불능은 D21 경로로 보내
+     * 운영자 직접 확인을 요구한다.
+     *
+     * @param {{targets?: Array}|undefined} exposure 서버 응답의 web_exposure 항목
+     * @returns {string} 'pending'(프로브 대기) | 'unknown'(판정 불능 — D21)
+     */
+    function initialExposureState(exposure) {
+        return exposure && Array.isArray(exposure.targets) ? 'pending' : 'unknown';
+    }
+
+    /**
+     * 링크 생성 불가 안내를 띄워야 하는지 판정한다 (B-4 symlink 실측의 소비 지점).
+     *
+     * 서버가 `symlink()` 를 실제로 시도해 판정한 값을 화면이 쓰지 않으면 그 실측은 없는
+     * 것과 같다. 불가(false)일 때만 알린다 — 가능(true)은 기본 동작이고, 판정 불능(null)은
+     * 알릴 내용이 없다. 설치를 막는 항목은 아니다(대체 서빙 경로가 자동 선택된다).
+     *
+     * @param {{symlink_supported?: boolean|null}|undefined} exposure 서버 응답의 web_exposure 항목
+     * @returns {boolean} 안내가 필요하면 true
+     */
+    function storageLinkNoticeNeeded(exposure) {
+        return !!exposure && exposure.symlink_supported === false;
+    }
+
+    /**
+     * 프로브 결과 집합에서 노출 상태를 판정한다 (B-4).
+     *
+     * 하나라도 노출이면 'exposed' (D3 — 차단이 우선), 노출은 없지만 판정 실패가 있거나
+     * 판정 근거 자체가 없으면 'unknown' (D21), 전 대상 판정 성공 + 노출 0 이면 'safe'.
+     *
+     * `unmeasuredCount` 는 서버가 **준비에 실패해 대상조차 만들지 못한** 계열의 수다.
+     * 그 계열은 프로브 결과에 나타나지 않으므로 결과 배열만 보면 「전 대상 판정 성공」
+     * 으로 읽힌다 — 루트가 쓰기 불가한 호스팅에서 storage 계열이 목록에서 빠지고 남은
+     * 두 계열이 403 이면 화면이 초록 「보호 확인됨」이 되던 자리다. 재지 못한 축이
+     * 하나라도 있으면 안전이라고 말할 수 없다.
+     *
+     * @param {Array<{exposed: boolean, judged: boolean}>} results 프로브 결과
+     * @param {number} [unmeasuredCount] 서버가 준비하지 못해 재지 못한 계열 수
+     * @returns {string} 'exposed' | 'unknown' | 'safe'
+     */
+    /**
+     * 이 서버에서 보호 설정이 **어디에 사는지** 알려 주는 블록을 만듭니다.
+     *
+     * 종전 안내는 「루트 .htaccess 가 동작하는지 확인하라」 한 갈래뿐이었다. 그런데 그 파일을
+     * 읽는 서버는 Apache·LiteSpeed 뿐이고, IIS 는 동봉된 `web.config` 를, nginx·Caddy 는
+     * **어떤 동봉 파일도 읽지 않는다** — 그 서버의 운영자는 존재하지 않는 조치를 찾게 된다.
+     * 그래서 서버가 밝힌 종류에 맞는 파일·경로를 지목한다.
+     *
+     * 서버 종류는 안내 분기에만 쓴다. 노출 판정 자체는 언제나 실제 응답이 정하므로,
+     * 조각을 적용했다는 **주장만으로는 통과하지 못한다** — [다시 검증]이 다시 잰다.
+     *
+     * @param {object} item 서버가 내려준 web_exposure 항목
+     * @returns {string} 안내 HTML (판정 불가하면 범용 안내)
+     */
+    function renderServerProtectionGuide(item) {
+        const kinds = ['apache', 'litespeed', 'iis', 'nginx'];
+        const kind = kinds.includes(item && item.server_kind) ? item.server_kind : 'other';
+
+        return `
+            <div class="fix-guide-label">${escapeHtml(lang('web_exposure_server_guide_label'))}</div>
+            <p class="fix-guide-hint">${escapeHtml(lang('web_exposure_server_guide_' + kind))}</p>`;
+    }
+
+    function judgeExposureResults(results, unmeasuredCount, controlResults, absentSignature) {
+        // 노출 확정이 언제나 우선한다 — 기준 주소가 틀렸든 위임이 죽었든, `.env` 가 원문
+        // 그대로 200 이면 그것은 노출이다 (D3).
+        if (results.some((r) => r.exposed)) {
+            return 'exposed';
+        }
+
+        // 양성 대조: **열려야 하는** 주소가 열리지 않으면 이번 측정의 기준틀을 신뢰할 수 없다.
+        // 403/404 를 보호로 읽는 판정은 「막혔다」와 「그 주소에 아무것도 없다」를 구분하지
+        // 못하므로, 위임이 죽은 서버(mod_rewrite 부재)와 기준 주소를 잘못 잡은 배치가 전부
+        // 초록으로 수렴한다. 그 둘을 여기서 함께 잡는다.
+        const controls = Array.isArray(controlResults) ? controlResults : [];
+        if (controls.some((c) => !c.reachable)) {
+            return 'unknown';
+        }
+
+        // 음성 대조로 판정을 되살린다.
+        //
+        // 403/404 가 아니어도, **파일이 없는 주소와 똑같은 응답**을 받았다면 그 대상 역시
+        // 파일이 서빙되지 않은 것이다. 이 승격이 없으면 레이아웃 ②의 정상 배치가 상시
+        // 판정 불능이 되어 D3 자동 차단이 모든 배치에서 D21 로 강등된다 (14차 G3 라운드).
+        //
+        // 안전 조건은 위에서 이미 섰다 — 노출 확정이 우선하고(마커 일치), 양성 대조가
+        // 실패하면 여기 도달하지 못한다. 그래서 전 주소에 200 로그인 화면을 내리는 인증
+        // 가로채기 배치는 이 승격을 타지 못한다(그 배치에서는 인스톨러 자산도 가로채여
+        // 양성 대조가 먼저 깨진다).
+        const judged = results.map((r) => {
+            if (r.judged) {
+                return true;
+            }
+            if (!absentSignature || typeof r.status !== 'number' || r.length === null) {
+                return false;
+            }
+
+            // **빈 본문은 승격 근거가 되지 못한다.**
+            //
+            // 형태 대조는 「이 서버가 파일 없는 주소에 주는 응답과 같은가」를 묻는다. 그런데
+            // 길이 0 은 어느 서버에서나 나올 수 있는 값이라 그 물음의 답이 되지 못한다 —
+            // 실제로 `/vendor/autoload.php` 는 서빙이 아니라 **PHP 로 실행되면** 200 + 빈
+            // 본문이 되고(마커는 본문에 나타나지 않는다), 그러면 「프로젝트 루트에서 PHP 가
+            // 실행된다」는 상태가 「보호 확인됨」으로 읽힌다. 판정 불능으로 남기는 편이 옳다
+            // (15차 G3 라운드).
+            if (absentSignature.length === 0 || r.length === 0) {
+                return false;
+            }
+
+            return r.status === absentSignature.status && r.length === absentSignature.length;
+        });
+
+        if (results.length === 0 || judged.some((ok) => !ok)) {
+            return 'unknown';
+        }
+        // 인자를 빠뜨린 호출부가 조용히 'safe' 로 떨어지지 않도록 기본값을 0 으로 둔다.
+        if ((unmeasuredCount || 0) > 0) {
+            return 'unknown';
+        }
+
+        return 'safe';
+    }
+
+    /**
+     * 음성 대조 1건을 던진다 — 이 주소에는 **파일이 없다**.
+     *
+     * 레이아웃 ②는 루트 `.htaccess` 가 모든 주소를 앱으로 위임하므로, 파일이 서빙되지
+     * 않는 주소도 200 앱 화면으로 돌아온다(P0 실측: `/vendor/autoload.php`·`/storage/...`).
+     * 403/404 만 보호로 읽으면 그 정상 배치가 상시 판정 불능이 되어 D3 자동 차단이 모든
+     * 배치에서 D21 로 강등된다. 그래서 「이 서버가 파일 없는 주소에 무엇을 돌려주는가」를
+     * 함께 재고, 그 형태와 같은 응답을 받은 대상은 파일이 서빙되지 않은 것으로 읽는다.
+     *
+     * 형태는 `status` + 본문 길이로 잰다. 본문이 매 요청 달라지는 부분(CSRF 토큰)이 있어
+     * 문자열 동일성으로는 잴 수 없지만 길이는 안정적이다(실측: 12,557 바이트 고정).
+     *
+     * @param {string} root 프로젝트 루트 URL (origin 포함)
+     * @param {{path: string, label: string}} control 음성 대조 대상
+     * @returns {Promise<{status: number, length: number}|null>} 잴 수 없으면 null
+     */
+    async function probeAbsentControl(root, control) {
+        if (!control || !control.path) {
+            return null;
+        }
+
+        try {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 10000);
+            const res = await fetch(`${root}${control.path}?g7ep=${Date.now()}`, {
+                cache: 'no-store',
+                credentials: 'omit',
+                redirect: 'manual',
+                signal: controller.signal,
+            });
+            clearTimeout(timer);
+
+            if (res.type === 'opaqueredirect') {
+                return null;
+            }
+
+            // 403/404 는 이미 대상 판정이 보호로 읽는 응답이다. 그 형태를 음성 대조로
+            // 쓰면 판정이 중복될 뿐이므로 형태 대조는 200 계열에서만 의미가 있다 — 그 밖의
+            // 상태(5xx 등)는 서버 상태지 「파일 없는 주소의 형태」가 아니다. 종전 코드는 이
+            // 주석과 달리 전 status 를 서명으로 받았다 (15차 G3 W1-7).
+            if (!res.ok) {
+                return null;
+            }
+
+            const body = await res.text();
+
+            return { status: res.status, length: body.length };
+        } catch (e) {
+            return null;
+        }
+    }
+
+    /**
+     * 양성 대조 1건을 던진다 — 이 주소는 **200 + 마커** 여야 한다.
+     *
+     * @param {string} root 프로젝트 루트 URL (origin 포함)
+     * @param {{path: string, marker: string, label: string}} control 대조 대상
+     * @returns {Promise<{path: string, label: string, reachable: boolean}>}
+     */
+    async function probeExposureControl(root, control) {
+        try {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 10000);
+            const res = await fetch(`${root}${control.path}?g7ec=${Date.now()}`, {
+                cache: 'no-store',
+                credentials: 'omit',
+                redirect: 'manual',
+                signal: controller.signal,
+            });
+            clearTimeout(timer);
+
+            if (res.type === 'opaqueredirect' || !res.ok) {
+                return { path: control.path, label: control.label, reachable: false };
+            }
+
+            const body = await res.text();
+
+            return {
+                path: control.path,
+                label: control.label,
+                reachable: !!(control.marker && body.includes(control.marker)),
+            };
+        } catch (e) {
+            return { path: control.path, label: control.label, reachable: false };
+        }
+    }
+
+    /**
+     * 웹 노출 점검 프로브 1건을 던진다 (B-4).
+     *
+     * 판정은 상태코드가 아니라 **본문의 마커**다 — 서버가 내려준 마커(비밀 아님)가 본문에
+     * 있으면 그 파일이 원문 그대로 서빙된 것(노출)이다. 200 + 에러 HTML / catch-all 페이지는
+     * 마커가 없어 노출로 오판하지 않는다 (asset-probe 와 같은 규약).
+     *
+     * @param {string} root 앱 루트 URL (origin 포함)
+     * @param {{path: string, marker: string}} target 프로브 대상
+     * @returns {Promise<{path: string, exposed: boolean, judged: boolean}>}
+     */
+    async function probeExposureTarget(root, target) {
+        try {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 10000);
+            const res = await fetch(`${root}${target.path}?g7ep=${Date.now()}`, {
+                cache: 'no-store',
+                credentials: 'omit',
+                // 리다이렉트를 따라가지 않는다. 따라가면 `.env` 요청이 로그인 페이지 200 으로
+                // 끝나 마커 불일치 → 「보호 확인됨」이 된다 — 3xx 는 파일이 열리는지 재지 못한
+                // 것이지 보호를 증명한 것이 아니다. manual 이면 `type === 'opaqueredirect'`
+                // (status 0)로 도착하므로 아래 !res.ok 분기가 판정 불능으로 보낸다.
+                redirect: 'manual',
+                signal: controller.signal,
+            });
+            clearTimeout(timer);
+
+            if (res.type === 'opaqueredirect') {
+                return { path: target.path, exposed: false, judged: false };
+            }
+
+            if (!res.ok) {
+                // 보호를 증명하는 것은 **접근 거부(403)와 부재(404)** 뿐이다. 그 밖의 비-200 은
+                // 「파일이 열리는지 재지 못했다」이지 「보호되어 있다」가 아니다 — 사이트 전체
+                // Basic 인증(401)이나 쿼리스트링을 막는 WAF(400 등)에서 전 대상을 차단 확인으로
+                // 접으면, 노출된 배치에 초록 「보호 확인됨」이 뜨고 운영자가 안전하다고 믿는다.
+                // 판정 불능은 D21 경로(운영자 직접 확인)로 보낸다.
+                const denied = res.status === 403 || res.status === 404;
+
+                return {
+                    path: target.path,
+                    exposed: false,
+                    judged: denied,
+                    status: res.status,
+                    length: null,
+                };
+            }
+
+            const body = await res.text();
+            const matched = !!(target.marker && body.includes(target.marker));
+
+            // 200 + 마커 일치 → 원문이 그대로 서빙됐다(노출). 200 + 마커 **부재**는 보호의
+            // 증명이 아니다 — 인증 프록시(oauth2-proxy·Azure AD App Proxy)·캡티브 포털·CDN
+            // 챌린지는 로그인 화면을 200 으로 렌더한다. 3xx 는 `redirect: 'manual'` 로 막았는데
+            // **200 인터스티셜**은 그 규칙을 그대로 우회해 「보호 확인됨」이 됐다.
+            // 보호를 증명하는 것은 접근 거부(403)와 부재(404)뿐이라는 규칙을 여기에도 적용한다.
+            return {
+                path: target.path,
+                exposed: matched,
+                judged: matched,
+                status: res.status,
+                length: body.length,
+            };
+        } catch (e) {
+            // 네트워크 예외 — 판정 불능 (D21 경로)
+            return { path: target.path, exposed: false, judged: false };
+        }
+    }
+
+    /**
+     * Step 2 웹 노출 점검 카드를 프로브 결과로 갱신하고 게이트를 재계산한다 (B-4 · D3 · D21).
+     *
+     * - 노출 확정: 카드 빨강 + 노출된 실제 주소 목록 + 조치 안내, [다음 단계] 비활성 (D3)
+     * - 판정 불능: 카드 노랑 + 수동 확인 절차(직접 열어볼 주소 목록) + '확인했음' 체크 후 진행 (D21)
+     * - 안전: 카드 초록
+     *
+     * 카드 본문은 **한 번에 조립해 한 번만 대입한다.** 대입 뒤에 `innerHTML +=` 로 무언가를
+     * 덧붙이면 그 시점에 subtree 가 통째로 다시 파싱되어, 먼저 붙여 둔 확인 체크박스의
+     * 이벤트 리스너가 사라진다 — 링크 생성 불가(안내가 붙는 조건)와 판정 불능이 겹치는
+     * 환경은 이 안이 대상으로 하는 바로 그 호스팅이고, 거기서 [다음 단계] 를 여는 유일한
+     * 조작이 무반응이 된다(오류도 로그도 남지 않는다).
+     *
+     * @param {object|null} exposure 서버 응답의 web_exposure 항목 (targets 배열 포함)
+     */
+    async function refreshWebExposureCard(exposure) {
+        const slot = document.getElementById('web-exposure-card');
+        if (!slot) return;
+
+        // 프로브 기준점은 앱 루트(public)가 아니라 **프로젝트 루트**다 — getProjectRootUrl 주석 참조.
+        // 서버 항목이 없으면 대상 0 → judgeExposureResults 가 'unknown' 으로 수렴한다
+        // (「대상 0 을 안전으로 읽지 않는다」는 기존 계약과 같은 경로다).
+        const targets = exposure && Array.isArray(exposure.targets) ? exposure.targets : [];
+        // 서버가 준비하지 못해 **대상조차 만들지 못한** 계열. 프로브 결과에 나타나지 않으므로
+        // 판정에 따로 실어야 한다 — 안 그러면 재지 않은 축이 「전 대상 판정 성공」에 묻힌다.
+        const unmeasured = exposure && Array.isArray(exposure.unmeasured) ? exposure.unmeasured : [];
+
+        // 양성 대조 — 서버가 「반드시 열려야 하는 주소」로 지목한 것들. 기준 URL 후보를
+        // 고르는 데 먼저 쓰고(추측 → 실측), 그 다음 판정 근거로도 쓴다.
+        const controls = exposure && Array.isArray(exposure.controls) ? exposure.controls : [];
+        const { root, controlResults } = await resolveProjectRoot(controls);
+
+        // 음성 대조 — 서버가 지목한 「파일이 없는 주소」. 기준 URL 이 확정된 뒤에 잰다.
+        const absentControl = exposure && exposure.absent_control ? exposure.absent_control : null;
+
+        const [results, absentSignature] = await Promise.all([
+            Promise.all(targets.map((t) => probeExposureTarget(root, t))),
+            probeAbsentControl(root, absentControl),
+        ]);
+        const unreachableControls = controlResults.filter((c) => !c.reachable);
+        const judgement = judgeExposureResults(
+            results,
+            unmeasured.length,
+            controlResults,
+            absentSignature
+        );
+        const exposedPaths = results.filter((r) => r.exposed).map((r) => r.path);
+        setStep2ExposureState(judgement);
+        recordExposureVerdict(judgement);
+
+        // 링크 생성 가능 여부 실측 결과(B-4)를 운영자에게 알린다. 불가한 환경에서는 공개
+        // 파일이 정적 경로 대신 앱 서빙 경로로 나가므로 그 사실이 화면에 드러나야 한다 —
+        // 값을 응답에만 싣고 아무 데도 쓰지 않으면 그 실측은 없는 것과 같다. 설치를 막는
+        // 항목이 아니므로(대체 경로가 자동 선택된다) 정보 문구로만 덧붙인다.
+        const linkNotice = storageLinkNoticeNeeded(exposure)
+            ? `
+                <div class="alert alert-info" role="note">
+                    <div>${escapeHtml(lang('storage_link_unavailable_detail'))}</div>
+                </div>`
+            : '';
+
+        if (judgement === 'exposed') {
+            // W1 확정: 노출이 확인된 실제 주소를 표시한다 — 이미 외부에서 열리는 상태라
+            // 조치 가능성이 노출 위험보다 크다.
+            const listItems = exposedPaths
+                .map((p) => `<li><code>${escapeHtml(root + p)}</code></li>`)
+                .join('');
+            slot.innerHTML = renderSingleItemCard(
+                lang('web_exposure'),
+                'status-fail',
+                lang('web_exposure_exposed'),
+                '',
+                true
+            ) + `
+                <div class="alert alert-error">
+                    <div>${escapeHtml(lang('web_exposure_exposed_detail'))}</div>
+                    <div class="fix-guide-label">${escapeHtml(lang('web_exposure_exposed_list_label'))}</div>
+                    <ul class="alert-list exposure-address-list">${listItems}</ul>
+                    <p class="fix-guide-hint">${escapeHtml(lang('web_exposure_exposed_remedy'))}</p>
+                    ${renderServerProtectionGuide(exposure)}
+                </div>` + linkNotice;
+        } else if (judgement === 'unknown') {
+            // D21: 판정 불능은 노출 확정과 다른 상태다 — 불능 사유 + 직접 열어 확인할 주소
+            // 목록을 펼치고, '모두 접근 불가임을 확인했음' 체크 전까지 [다음 단계] 비활성.
+            // 대상이 하나도 없으면(서버 항목 부재 등) 목록 블록은 접는다 — 빈 목록을 라벨과
+            // 함께 내보내면 확인할 것이 있는 것처럼 읽힌다. 확인 경로 자체는 그대로 연다.
+            //
+            // 그때 체크박스 문구를 고르는 기준은 **주소 목록의 유무 하나**다(`manualItems`).
+            // 재지 못한 계열 목록(`unmeasuredItems`)까지 조건에 넣으면, 대상 0 + unmeasured 만
+            // 있는 상태에서 「위 주소를 모두 확인했고…」가 뜬다 — 화면에 주소가 한 줄도 없는데
+            // 그것을 다 확인했다고 서명시키는 꼴이고, 정확히 그 경우를 위해 만든
+            // `web_exposure_manual_confirm_no_list`(무엇을 열어 봐야 하는지 문구가 직접 말한다)
+            // 에는 영영 도달하지 않는다.
+            const manualItems = targets
+                .map((t) => `<li><a href="${escapeAttribute(root + t.path)}" target="_blank" rel="noopener noreferrer">${escapeHtml(root + t.path)}</a></li>`)
+                .join('');
+            const manualList = manualItems
+                ? `
+                    <div class="fix-guide-label">${escapeHtml(lang('web_exposure_manual_list_label'))}</div>
+                    <ul class="alert-list exposure-address-list">${manualItems}</ul>`
+                : '';
+            // 재지 못한 계열은 「확인할 주소」 목록에 실을 수 없다(주소가 만들어지지 않았다).
+            // 그 사실을 이름과 함께 따로 알린다 — 무엇을 재지 못했는지 모르면 운영자가
+            // '모두 접근 불가임을 확인했음' 에 근거 없이 체크하게 된다.
+            // 사유까지 싣는다. 이름만 주면 「못 쟀다」와 「원래 없다」가 구분되지 않는데,
+            // 둘은 운영자가 할 일이 다르다 — 예컨대 `.env.example` 의 `missing` 은 파일이
+            // 없다는 뜻이 아니라 **그 파일을 `.env` 로 이름을 바꿨다**는 뜻이라(흔한 절차)
+            // 그 계열이 실제로 열려 있을 수 있다. 사유 키가 사전에 없으면 이름만 보인다.
+            const unmeasuredItems = unmeasured
+                .map((u) => {
+                    // 사유 문구는 **계열마다 할 일이 다르다.** 종전에는 `missing` 하나가
+                    // 전 계열에 공용이라, 인스톨러 자신의 자산이 없어 양성 대조를 만들지
+                    // 못한 경우에도 「`.env.example` 을 `.env` 로 바꿨다면」이라는 엉뚱한
+                    // 조치를 안내했다 — 운영자가 있지도 않은 파일을 찾게 된다.
+                    // 계열 전용 키를 먼저 찾고, 없으면 공용 문구로 떨어진다 (14차 G3 라운드).
+                    const slug = String(u.label || '')
+                        .replace(/[^a-z0-9]+/gi, '_')
+                        .replace(/^_+|_+$/g, '')
+                        .toLowerCase();
+                    const resolve = (key) => {
+                        const text = lang(key);
+
+                        return text && text !== key ? text : '';
+                    };
+                    const reason = u.reason
+                        ? resolve('web_exposure_unmeasured_reason_' + u.reason + '_' + slug) ||
+                          resolve('web_exposure_unmeasured_reason_' + u.reason)
+                        : '';
+
+                    return `<li>${escapeHtml(u.label)}${reason ? ' — ' + escapeHtml(reason) : ''}</li>`;
+                })
+                .join('');
+            const unmeasuredList = unmeasuredItems
+                ? `
+                    <div class="fix-guide-label">${escapeHtml(lang('web_exposure_unmeasured_label'))}</div>
+                    <ul class="alert-list">${unmeasuredItems}</ul>`
+                : '';
+            // 양성 대조가 열리지 않았다면 그것이 판정 불능의 **원인**이다. 그 사실을 먼저
+            // 알리지 않으면 운영자는 「직접 열어 보니 다 안 열린다」를 근거로 확인 체크를
+            // 누르는데, 실제로는 보호가 아니라 **위임이 죽어서** 아무것도 안 열리는 것이다
+            // (그 상태로 설치를 마치면 사이트는 `/` 밖 전 라우트가 404 다).
+            const controlItems = unreachableControls
+                .map((c) => `<li><code>${escapeHtml(root + c.path)}</code></li>`)
+                .join('');
+            const controlBlock = controlItems
+                ? `
+                    <div class="fix-guide-label">${escapeHtml(lang('web_exposure_control_failed_label'))}</div>
+                    <ul class="alert-list exposure-address-list">${controlItems}</ul>
+                    <p class="fix-guide-hint">${escapeHtml(lang('web_exposure_control_failed_hint'))}</p>`
+                : '';
+            slot.innerHTML = renderSingleItemCard(
+                lang('web_exposure'),
+                'status-warning',
+                lang('web_exposure_unknown'),
+                '',
+                true
+            ) + `
+                <div class="alert alert-warning">
+                    <div>${escapeHtml(lang('web_exposure_unknown_detail'))}</div>${controlBlock}${unmeasuredList}${manualList}
+                    <p class="fix-guide-hint">${escapeHtml(lang('web_exposure_manual_hint'))}</p>
+                    <label class="form-checkbox">
+                        <input type="checkbox" id="web-exposure-confirm" class="checkbox-input">
+                        <span>${escapeHtml(lang(manualItems
+                            ? 'web_exposure_manual_confirm'
+                            : 'web_exposure_manual_confirm_no_list'))}</span>
+                    </label>
+                </div>` + linkNotice;
+
+            // 리스너는 **최종 대입 이후에** 붙인다 (위 주석 참조).
+            const confirmBox = slot.querySelector('#web-exposure-confirm');
+            if (confirmBox) {
+                confirmBox.addEventListener('change', function () {
+                    setStep2ExposureState(this.checked ? 'confirmed' : 'unknown');
+                    recordExposureVerdict(this.checked ? 'confirmed' : 'unknown');
+                    updateStep2Gate();
+                });
+            }
+        } else {
+            slot.innerHTML = renderSingleItemCard(
+                lang('web_exposure'),
+                'status-pass',
+                lang('web_exposure_safe'),
+                '',
+                true
+            ) + linkNotice;
+        }
+
+        // 판정이 끝난 지금에야 busy 를 푼다 — 이 카드는 자기 리전을 선언하지 않고
+        // 바깥 영역(`#requirements-result`)의 리전에 얹힌다(중첩 금지 · 아래 참조).
+        //
+        // 바깥 영역의 busy 해제는 요구사항 목록을 그린 직후에
+        // 일어나는데, 이 카드는 그 시점에 아직 「확인 중…」이고 판정은 비동기로 뒤에 온다.
+        // 그 하나만으로 [다음 단계] 가 잠겨 있으므로(필수 게이트), 화면 판독기 사용자는
+        // 「확인 중…」을 최종 상태로 듣고 버튼이 왜 비활성인지 알 방법이 없었다. 바깥 영역의
+        // 해제를 미루면 요구사항 결과 자체의 안내가 프로브(최대 10초)만큼 늦어지므로,
+        // 지연 없이 두 상태를 각각 알리도록 이 자리에 별도 busy 를 둔다.
+        slot.setAttribute('aria-busy', 'false');
+
+        updateStep2Gate();
+    }
+
+    /**
+     * 노출 점검 판정을 Step 2 폼의 숨은 필드에 적어 둔다 (D3 · D21 감사 흔적).
+     *
+     * 판정 주체가 브라우저이고 게이트도 화면이 잠그므로, 그 결과는 화면을 떠나는 순간
+     * 사라진다 — 「보호 확인됨으로 통과했는지 / 판정 불능에서 운영자가 직접 확인하고
+     * 넘어갔는지」를 나중에 되짚을 근거가 어디에도 없었다(잔여물 정리 실패조차 설치 로그에
+     * 남는데 정작 판정은 남지 않았다). 이 값은 [다음 단계] POST 에 실려 서버가
+     * `storage/logs/installation.log` 에 한 줄로 남긴다.
+     *
+     * 클라이언트 로그 패널(`#install-log`)은 Step 5 에만 있어 이 화면에서 `addLogMessage()`
+     * 는 아무 데도 쓰지 않는다 — 그래서 기록 통로를 서버 로그로 잡았다.
+     *
+     * @param {string} verdict 판정값 ('safe'|'unknown'|'exposed'|'confirmed')
+     * @returns {void}
+     */
+    function recordExposureVerdict(verdict) {
+        const field = document.getElementById('web-exposure-verdict');
+        if (field) {
+            field.value = verdict;
+        }
+    }
+
+    /* endregion:web-exposure */
+
+    /* region:requirements-failure — 이 구간은 회귀 테스트가 소스에서 잘라 **실제로 실행**한다
+       (사본 금지). 서버가 갈라 보낸 실패 사유를 화면까지 나르는 유일한 지점이다. */
+
+    /**
+     * 요구사항 검사 실패 응답을 화면이 쓰는 두 조각(제목 · 진단 상세)으로 나눈다.
+     *
+     * 서버는 사유를 `message_key`(번역 키) · `message`(서버 로케일 문구) · `details`
+     * (예외 원문) 셋으로 갈라 보낸다. 종전에는 `response.ok` 판정이 본문 읽기보다 앞에
+     * 있어 그 셋이 통째로 버려지고 화면에는 「요구사항 검증 실패」와 `HTTP 500: ` 만
+     * 남았다 — 운영자는 레이트리밋인지 예외인지 알 수 없었다. 형제 지점
+     * (`scan-extensions` 소비부)은 정확히 이 사유로 「본문을 **먼저** 읽는다」로 고쳐져
+     * 있었고, 이 지점만 남아 있었다 (7차 G3 라운드 D-1).
+     *
+     * `statusText` 는 쓰지 않는다 — HTTP/2 응답에서 브라우저가 언제나 빈 문자열을 주므로
+     * 진단 상세가 `HTTP 500: ` 로 끝난다. 형제(`installation-monitor.js`)도 상태 코드만
+     * 싣는다 (7차 G3 라운드 D-2).
+     *
+     * @param {number} status - HTTP 상태 코드
+     * @param {object|null} payload - 파싱된 응답 본문 (파싱 실패 시 null)
+     * @returns {{heading: string, detail: string}} 제목과 진단 상세
+     */
+    function describeRequirementsFailure(status, payload) {
+        const body = payload && typeof payload === 'object' ? payload : null;
+        const heading = translateWithKey(body && body.message_key, '')
+            || (body && typeof body.message === 'string' ? body.message : '')
+            || lang('requirements_check_failed');
+
+        const details = body && body.details ? String(body.details) : '';
+        const detail = details ? `HTTP ${status} — ${details}` : `HTTP ${status}`;
+
+        return { heading, detail };
+    }
+
+    /* endregion:requirements-failure */
+
     /**
      * 서버 요구사항 검증 실행
      */
@@ -209,26 +898,39 @@
             const apiUrl = `${window.location.origin}${window.INSTALLER_BASE_URL}/api/check-configuration.php?action=requirements`;
             const response = await fetch(apiUrl);
 
-            // HTTP 응답 상태 확인
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-
-            // 빈 본문(HTTP 200 + Content-Length 0)을 response.json() 에 넘기면
-            // "Unexpected end of JSON input" 이라는, 원인도 조치도 알 수 없는 문구가 화면에 뜬다.
-            // (gnuboard/g7#62 — 한글 계정명 환경에서 실제로 발생했다)
-            // 사람이 읽고 조치할 수 있는 안내로 바꾼다.
-            const text = await response.text();
-
-            if (text.trim() === '') {
-                throw new Error(lang('error_empty_server_response'));
-            }
-
-            let data;
+            // 본문을 **먼저** 읽는다 — 사유는 본문에만 있다 (위 describeRequirementsFailure).
+            //
+            // 빈 본문(HTTP 200 + Content-Length 0)과 파싱 실패는 **구분한다**. 그대로
+            // `response.json()` 에 넘기면 "Unexpected end of JSON input" 이라는, 원인도
+            // 조치도 알 수 없는 문구가 화면에 뜬다 (gnuboard/g7#62 — 한글 계정명 환경에서
+            // 실제로 발생했다). 두 경우의 조치가 다르므로 안내도 갈라 준다.
+            let data = null;
+            let bodyFailureKey = null;
             try {
-                data = JSON.parse(text);
-            } catch (parseError) {
-                throw new Error(lang('error_invalid_server_response'));
+                const text = await response.text();
+
+                if (text.trim() === '') {
+                    bodyFailureKey = 'error_empty_server_response';
+                } else {
+                    data = JSON.parse(text);
+                }
+            } catch (_) {
+                bodyFailureKey = 'error_invalid_server_response';
+                data = null;
+            }
+
+            // 상태 코드가 사유를 담고 있으면 그쪽이 우선이다 — 본문이 비어도
+            // describeRequirementsFailure 가 상태만으로 안내를 만든다.
+            if (!response.ok) {
+                const failure = describeRequirementsFailure(response.status, data);
+                const error = new Error(failure.detail);
+                error.installerHeading = failure.heading;
+                throw error;
+            }
+
+            // 200 인데 본문을 읽지 못한 경우 — 서버 설정·계정명·경로 문자가 원인이다.
+            if (bodyFailureKey !== null || !data) {
+                throw new Error(lang(bodyFailureKey ?? 'error_invalid_server_response'));
             }
 
             const resultHtml = renderRequirements(data);
@@ -243,32 +945,27 @@
             // await 하지 않는다 — 프로브가 늦거나 실패해도 요구사항 화면을 막지 않는다.
             refreshAssetUrlModeCard();
 
-            // 버튼 표시 제어
-            const recheckBtn = document.getElementById('recheck-btn');
-            const nextBtn = document.getElementById('next-btn');
+            // 버튼 표시 제어 (§12 W1 규약은 updateStep2Gate 가 소유한다).
+            // 웹 노출 점검(B-4)은 필수 게이트이므로 판정이 끝날 때까지 fail-closed 로
+            // 잠근다 — 프로브는 same-origin fetch 라 곧바로 끝난다. 서버 항목 부재는
+            // 「안전」이 아니라 판정 불능이다 (initialExposureState 주석).
+            setStep2GateState(!! data.all_required_passed, initialExposureState(data.web_exposure));
+            updateStep2Gate();
 
-            // §12 W1: 「…[다음 단계] 가 **비활성**된다. 비활성은 속성과 시각 표현을 함께 준다」.
-            // 종전에는 미통과 시 버튼을 `hidden` 으로 없앴다 — 그러면 무엇이 막혔는지가 아니라
-            // 버튼이 사라진 것으로 읽히고, 마크업이 갖고 있는 `disabled` 상태는 화면에 한 번도
-            // 렌더되지 않았다 (10차). 버튼은 언제나 자리에 있고 상태만 바뀐다.
-            nextBtn.classList.remove('hidden');
-            nextBtn.disabled = ! data.all_required_passed;
-            nextBtn.setAttribute('aria-disabled', data.all_required_passed ? 'false' : 'true');
-
-            if (data.all_required_passed) {
-                recheckBtn.classList.add('hidden');
-            } else {
-                recheckBtn.classList.remove('hidden');
-            }
+            // 웹 노출 점검도 브라우저 판정이다 (D3 · D21) — 완료 시 게이트를 다시 계산한다.
+            refreshWebExposureCard(data.web_exposure);
         } catch (error) {
             // 브라우저 원문(`Failed to fetch` 등)은 안내 문구가 아니다 — 문구는 번역 키로 두고
             // 원문은 접힌 진단 상세에만 싣는다 (§12.0 W3, 실패 화면과 같은 규약).
             const rawDetail = error && error.message ? String(error.message) : '';
+            // 서버가 사유를 갈라 보낸 경우에는 그 제목을 쓴다 — 일반 문구로 덮으면
+            // 레이트리밋과 예외가 화면에서 구분되지 않는다.
+            const heading = (error && error.installerHeading) || lang('requirements_check_failed');
             const failedRegion = document.getElementById('requirements-result');
             failedRegion.setAttribute('aria-busy', 'false');
             failedRegion.innerHTML = `
                 <div class="alert alert-error">
-                    ${escapeHtml(lang('requirements_check_failed'))}
+                    ${escapeHtml(heading)}
                     ${rawDetail ? `<div class="failure-error-detail"><strong>${escapeHtml(lang('view_error_details'))}</strong><pre class="error-stack">${escapeHtml(rawDetail)}</pre></div>` : ''}
                 </div>
             `;
@@ -343,7 +1040,7 @@
         );
         if (disk.headroom_message) {
             html += `
-                    <div class="alert alert-warning" role="alert">
+                    <div class="alert alert-warning">
                         <span>${escapeHtml(disk.headroom_message)}</span>
                     </div>`;
         }
@@ -657,6 +1354,34 @@
                 false
             )}</div>`;
         }
+
+        // 12. 웹 노출 점검 카드 (필수 게이트 — B-4 · D3 · D21)
+        // 판정 주체가 브라우저이므로 "확인 중" 으로 먼저 그리고 refreshWebExposureCard() 가
+        // 프로브 결과로 갱신한다. failedRequirements.push() 를 하지 않는다 — 이 시점에는
+        // 판정값이 없고, 노출/판정 불능의 안내·게이팅은 카드 갱신부가 담당한다.
+        //
+        // 카드 자리는 **서버 응답과 무관하게** 그린다. 항목이 없는 것은 배선 파손이라
+        // 판정 불능(D21)인데, 그때 자리까지 없으면 사유도 운영자 확인 경로도 없이
+        // [다음 단계] 만 비활성이 되어 [다시 검증] 을 영원히 누르게 된다.
+        //
+        // 이 자리는 **자기 라이브 리전을 선언하지 않는다.** 이 조각이 들어가는 바깥 영역
+        // (`#requirements-result`)이 이미 `role="status" aria-live="polite"` 이고, 그 영역의
+        // `aria-busy` 는 요구사항 목록을 그린 직후 **false** 로 풀린다 — 즉 그 뒤에 오는 이
+        // 카드의 비동기 갱신도 **그 바깥 영역이** 낭독한다(변경 subtree 만 — `aria-atomic`
+        // 기본값이 false 다). 안쪽에 리전을 한 번 더 선언하면 polite 안의 polite 가 되어
+        // 화면 판독기 구현에 따라 중복 낭독 또는 안쪽 무시로 갈린다.
+        //
+        // `aria-busy` 는 남긴다 — 리전 선언이 아니라 **노출 지연 표시**다. 라이브 리전 안의
+        // 요소가 busy 이면 그 안의 변경은 busy 가 풀릴 때까지 노출되지 않으므로, 판정 전의
+        // 「확인 중…」이 최종 상태로 읽히는 것을 그대로 막는다. busy 해제는
+        // refreshWebExposureCard 가 판정을 그린 뒤에 한다.
+        html += `<div id="web-exposure-card" aria-busy="true">${renderSingleItemCard(
+            lang('web_exposure'),
+            'status-warning',
+            lang('web_exposure_checking'),
+            '',
+            true
+        )}</div>`;
 
         html += '</div>';
 
@@ -1036,6 +1761,11 @@
      * 설치는 진행된다. 그 문장은 서버가 `message` 로 주고, 판정 근거는 정보 카드와 같은
      * 목록으로 이어 붙인다.
      *
+     * 카드는 **라이브 리전을 선언하지 않는다.** 이 조각은 요구사항 목록과 함께 한 번에
+     * `#requirements-result`(화면이 소유한 `role="status" aria-live="polite"`) 안으로
+     * 들어가고 그 뒤로 갱신되지 않는다 — 안쪽에 리전을 또 두면 중첩이라 화면 판독기
+     * 구현에 따라 중복 낭독 또는 안쪽 무시로 갈린다. 시각적 강조는 카드 클래스가 맡는다.
+     *
      * @param {object} df disabled_functions 판정 응답 (status/reasons/message 포함)
      */
     function renderExecutionModeFailCard(df) {
@@ -1052,7 +1782,7 @@
         `;
 
         return `
-            <div class="requirement-card requirement-card--fail" role="status" aria-live="polite">
+            <div class="requirement-card requirement-card--fail">
                 <div class="requirement-card-header">
                     <div class="header-left">
                         ${getStatusIcon('status-fail')}
@@ -1079,6 +1809,8 @@
      * 실패가 아니라 "CLI 없이 설치한다" 는 정보 항목이다. 판정 근거와
      * 설치 후 달라지는 것 3가지를 카드 본문에 함께 표시한다.
      *
+     * 라이브 리전을 선언하지 않는 이유는 형제 카드(renderExecutionModeFailCard)와 같다.
+     *
      * @param {object} df disabled_functions 판정 응답 (status/reasons/message 포함)
      */
     function renderExecutionModeInfoCard(df) {
@@ -1101,7 +1833,7 @@
         // 「필수」 배지를 달면 PHP 버전·필수 확장과 같은 게이트로 읽혀, 시안이 없애려던
         // "설치가 막힌 건가?" 라는 오해를 그대로 만든다.
         return `
-            <div class="requirement-card requirement-card--info" role="status" aria-live="polite">
+            <div class="requirement-card requirement-card--info">
                 <div class="requirement-card-header">
                     <div class="header-left">
                         ${statusIcon}
@@ -1359,14 +2091,14 @@
 
                     const tablesList = (info.all_tables || []).slice(0, 20).join(', ');
                     // 삭제 대상은 서버가 삭제 계산과 **동일 산출**(filterTablesByPrefix)로 내려준
-                    // 목록을 그대로 그린다 (21차 #21-2 ①, PO 결정) — 잘라내지 않는다: 동의의
+                    // 목록을 그대로 그린다 (21차 #21-2 ①, 제품 결정) — 잘라내지 않는다: 동의의
                     // 대상이 화면에 전부 보여야 동의가 참이 된다.
                     const dropTargets = info.drop_targets || [];
                     // 더 긴 접두사의 다른 G7 설치(g7_ 입력 시 g7_shop_)가 삭제 범위에 물리면
                     // 별도 경고 — 접두 매칭은 그 사이트를 통째로 지운다 (21차 #21-2 ②).
                     const nestedPrefixes = info.nested_g7_prefixes || [];
                     const nestedWarningHtml = nestedPrefixes.length > 0 ? `
-                            <div class="alert alert-error" role="alert">
+                            <div class="alert alert-error">
                                 <strong>${escapeHtml(lang('db_nested_g7_warning', { prefixes: nestedPrefixes.join(', ') }))}</strong>
                             </div>` : '';
                     const dropTargetsHtml = dropTargets.length > 0 ? `
@@ -1425,15 +2157,15 @@
                         <span>${escapeHtml(result.message)}</span>
                     </div>
                     ${result.privilege_warning ? `
-                    <div class="alert alert-warning" role="alert">
+                    <div class="alert alert-warning">
                         <span>${escapeHtml(result.privilege_warning)}</span>
                     </div>` : ''}
                     ${result.db_server_notice ? `
-                    <div class="alert alert-warning" role="alert">
+                    <div class="alert alert-warning">
                         <span>${escapeHtml(result.db_server_notice)}</span>
                     </div>` : ''}
                     ${(result.existing_tables && result.existing_tables.check_failed) ? `
-                    <div class="alert alert-warning" role="alert">
+                    <div class="alert alert-warning">
                         <span>${escapeHtml(lang('db_existing_check_failed'))}</span>
                     </div>` : ''}
                     ${existingCardHtml}
@@ -1970,7 +2702,8 @@
      * Step 2 에는 `app_url` 입력이 아직 없으므로 현재 origin 기준으로 조립한다.
      */
     function getAppRootUrl() {
-        const base = (window.INSTALLER_BASE_URL || '').replace(/\/install$/, '');
+        // 표기를 가리지 않는다 — 형제 `getProjectRootCandidates` 와 같은 규칙(16차 G3 A12).
+        const base = (window.INSTALLER_BASE_URL || '').replace(/\/install$/i, '');
 
         return `${window.location.origin}${base}`;
     }
@@ -2409,9 +3142,11 @@
             if (!response.ok || !result || !result.success) {
                 const key = result && result.message_key;
                 const labels = window.EXTENSION_LABELS || {};
+                // 최후 폴백도 다국어 표를 거친다 — `EXTENSION_LABELS` 가 실리기 전의 실패에서
+                // 영문 리터럴이 한국어 화면에 그대로 나갔다 (13차 G3 W1-13).
                 const message = (key && labels[key])
                     || labels.extension_load_failed
-                    || 'Failed to load extensions';
+                    || lang('extension_load_failed');
 
                 throw new Error(message);
             }
@@ -2605,6 +3340,23 @@
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    /**
+     * **속성 자리**에 값을 넣을 때 쓴다.
+     *
+     * `escapeHtml()` 은 `textContent → innerHTML` 이라 `& < >` 만 바꾸고 따옴표는 통과시킨다.
+     * 텍스트 노드에서는 그것으로 충분하지만 `href="..."` 안에서는 값이 따옴표를 닫고 나올
+     * 수 있다. 이 자리의 값(`installerDeriveBaseUrl()` 산출물)은 `REQUEST_URI` 에서 파생되어
+     * 요청자 영향권에 있다.
+     *
+     * @param {string} value 속성 값
+     * @returns {string} 따옴표까지 이스케이프된 값
+     */
+    function escapeAttribute(value) {
+        return escapeHtml(value)
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
     }
 
     /**
@@ -3476,7 +4228,7 @@
                 })
             });
             const result = await response.json();
-            if (!result.success) throw new Error(result.error_message || result.error || window.EXTENSION_LABELS?.save_failed || 'Save failed');
+            if (!result.success) throw new Error(result.error_message || result.error || window.EXTENSION_LABELS?.save_failed || lang('save_failed'));
             window.location.href = INSTALLER_BASE_URL + '?step=5';
         } catch (error) {
             alert(error.message);
@@ -4872,6 +5624,13 @@
      *
      * 완료 화면을 걷어내지는 않는다 — 설치 자체는 끝났고, 남은 것은 마무리 한 단계다.
      * 그러나 그 사실을 숨기면 운영자는 인스톨러가 왜 계속 열려 있는지 알 수 없다.
+     *
+     * 이 조각은 **자기 라이브 리전을 선언하지 않는다.** 붙는 자리인 `#completion-section`
+     * 이 이미 `role="status" aria-live="polite"` 이고(이 시점에는 `hidden` 이 풀려 화면에
+     * 있다), 그 안에 노드를 덧붙이는 것 자체가 그 리전의 낭독 대상이다. 여기에 다시
+     * `role="alert"`(암묵 assertive)를 얹으면 assertive-in-polite 중첩이라 화면 판독기
+     * 구현에 따라 중복 낭독 또는 안쪽 무시로 갈린다 — 어느 쪽이든 의도한 안내가 아니다.
+     * 시각적 강조는 `alert alert-error` 클래스가 그대로 담당한다.
      */
     function showFinalizeRejectedNotice() {
         const section = document.getElementById('completion-section');
@@ -4880,7 +5639,6 @@
         const notice = document.createElement('div');
         notice.id = 'finalize-rejected-notice';
         notice.className = 'alert alert-error';
-        notice.setAttribute('role', 'alert');
         notice.textContent = lang('finalize_rejected_notice');
         section.appendChild(notice);
     }
@@ -6416,7 +7174,14 @@
             // 아니라 끝난 뒤 finalize 에서 한 번 일어나고 실패해도 조용히 return 하므로,
             // 14단계가 전부 초록으로 끝나고 「설치 완료」가 뜨는데 `.env` 는 설치 전 그대로다.
             // `_guard.php` 는 `.env` 의 `INSTALLER_COMPLETED` 로만 판정하므로 인스톨러가
-            // **영구히 열린 채** 남는다 — 실패도 경고도 없다. 여기서 막는 것이 유일한 지점이다.
+            // **영구히 열린 채** 남는다 — 실패도 경고도 없다.
+            //
+            // 다만 여기가 **유일한** 지점은 아니다(종전 문언 정정, 8차 G3 라운드): 같은 술어의
+            // 서버 사본이 `api/install-process.php` 에 있다. 아래 `catch` 가 통과로 떨어지는 것은
+            // 그 사본이 받아 주기 때문이고, 그 사본의 독블록이 「화면만이 유일한 지점이면
+            // fetch 예외가 곧 우회로가 된다」로 그 관계를 적고 있다. 이 문단을 「유일」로 두면
+            // 다음 사람이 fail-open 을 결함으로 읽고 화면 쪽만 fail-closed 로 바꾼다 —
+            // 그러면 점검 API 가 잠깐 실패한 정상 환경의 설치가 막힌다.
             if (check.env_writable === false) {
                 renderEnvNotWritableSetup(basePath, isWin, relativePath);
 
@@ -6425,7 +7190,8 @@
 
             return true;
         } catch (error) {
-            // 체크 API 실패 시 설치 진행 허용 (install-process.php에서 재검증)
+            // 체크 API 실패 시 설치 진행 허용 — 서버 사본(`api/install-process.php` 의
+            // `.env` 쓰기 가능 재검사)이 같은 술어로 다시 막는다.
             return true;
         }
     }

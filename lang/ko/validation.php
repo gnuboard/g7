@@ -1,5 +1,7 @@
 <?php
 
+// changelog:allow 숨김 파일 서빙 거부 문구 — 무CLI·고정 문서루트 축(#609)의 신규 키. 공개 CHANGELOG 는 기능 완성 릴리즈 섹션에 일괄 기재
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -734,6 +736,7 @@ return [
         'absolute_path_not_allowed' => '절대 경로는 허용되지 않습니다.',
         'null_byte_detected' => 'NULL 바이트 공격이 감지되었습니다.',
         'outside_base_directory' => '기준 디렉토리 외부 경로는 허용되지 않습니다.',
+        'hidden_segment_not_allowed' => '점(.)으로 시작하는 파일·디렉토리는 제공하지 않습니다.',
         'file_type_not_allowed' => '허용되지 않은 파일 타입입니다. 확장자: :extension (허용: :allowed)',
     ],
 
@@ -756,6 +759,7 @@ return [
         'absolute_path_not_allowed' => '절대 경로는 허용되지 않습니다.',
         'null_byte_detected' => 'NULL 바이트가 감지되었습니다.',
         'outside_base_directory' => '기준 디렉토리 외부 접근은 허용되지 않습니다.',
+        'hidden_segment_not_allowed' => '점(.)으로 시작하는 파일·디렉토리는 제공하지 않습니다.',
     ],
 
     // 플러그인 경로 검증 메시지
@@ -766,6 +770,7 @@ return [
         'absolute_path_not_allowed' => '절대 경로는 허용되지 않습니다.',
         'null_byte_detected' => 'NULL 바이트가 감지되었습니다.',
         'outside_base_directory' => '기준 디렉토리 외부 접근은 허용되지 않습니다.',
+        'hidden_segment_not_allowed' => '점(.)으로 시작하는 파일·디렉토리는 제공하지 않습니다.',
     ],
 
     // 인증 관련 검증 메시지

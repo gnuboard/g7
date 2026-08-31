@@ -28,11 +28,6 @@ use PHPUnit\Framework\Attributes\DataProvider;
  *  - 환불계좌 부분 입력 거부 (required_with 상당)
  *
  * @scenario actor=guest, change_mode=manual
- *
- * @effects checkout_cash_receipt_request_persisted, checkout_refund_bank_persisted,
- *   checkout_cash_receipt_identifier_masked_and_encrypted,
- *   checkout_refund_bank_partial_input_rejected_422,
- *   cash_receipt_request_not_persisted_for_non_dbank
  */
 class CheckoutCashReceiptAndRefundBankTest extends ModuleTestCase
 {
@@ -172,6 +167,9 @@ class CheckoutCashReceiptAndRefundBankTest extends ModuleTestCase
         $this->assertNull($payment->getRawOriginal('cash_receipt_identifier_encrypted'));
     }
 
+    /**
+     * @effects checkout_cash_receipt_request_persisted
+     */
     public function test_현금영수증_신청이_결제행에_저장된다(): void
     {
         $this->postOrder([
@@ -188,6 +186,9 @@ class CheckoutCashReceiptAndRefundBankTest extends ModuleTestCase
         $this->assertSame(CashReceiptIdentifierType::PHONE, $payment->cash_receipt_identifier_type);
     }
 
+    /**
+     * @effects checkout_cash_receipt_identifier_masked_and_encrypted
+     */
     public function test_식별번호는_평문_컬럼에_마스킹본_암호화_컬럼에_원본이_저장된다(): void
     {
         $this->postOrder([
@@ -266,6 +267,8 @@ class CheckoutCashReceiptAndRefundBankTest extends ModuleTestCase
      * getDbankInfo() 와 동일하게 getCashReceiptInfo() 도 결제수단으로 게이팅한다.
      *
      * @param  string  $paymentMethod  무통장이 아닌 결제수단
+     *
+     * @effects cash_receipt_request_not_persisted_for_non_dbank
      */
     #[DataProvider('nonDbankPaymentMethodProvider')]
     public function test_무통장이_아니면_현금영수증_신청정보를_저장하지_않는다(string $paymentMethod): void
@@ -329,6 +332,9 @@ class CheckoutCashReceiptAndRefundBankTest extends ModuleTestCase
         $this->assertNull($payment->refund_bank_holder);
     }
 
+    /**
+     * @effects checkout_refund_bank_persisted
+     */
     public function test_환불계좌_전체_입력이_결제행에_저장된다(): void
     {
         $this->postOrder([
@@ -428,6 +434,8 @@ class CheckoutCashReceiptAndRefundBankTest extends ModuleTestCase
     /**
      * @param  array<string, mixed>  $refundBank
      * @param  array<int, string>  $expectedErrors
+     *
+     * @effects checkout_refund_bank_partial_input_rejected_422
      */
     #[DataProvider('partialRefundBankProvider')]
     public function test_환불계좌_부분_입력은_거부된다(array $refundBank, array $expectedErrors): void
@@ -441,6 +449,9 @@ class CheckoutCashReceiptAndRefundBankTest extends ModuleTestCase
 
     // ---------------------------------------------------------------- 사슬 무결성
 
+    /**
+     * @effects checkout_cash_receipt_request_persisted
+     */
     public function test_현금영수증과_환불계좌를_함께_보내면_둘_다_저장된다(): void
     {
         $this->postOrder([

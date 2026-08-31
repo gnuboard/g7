@@ -8,12 +8,13 @@ use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 use Tests\Concerns\CleansTemporaryBasePath;
+use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
- * 테이블 삭제 범위의 공개·기록 회귀 가드 (21차 #21-2, PO 결정 §16.27.1 #2 「목록 표시+기록」)
+ * 테이블 삭제 범위의 공개·기록 회귀 가드 (21차 #21-2, 제품 결정 §16.27.1 #2 「목록 표시+기록」)
  *
  * 삭제 대상 선정은 무경계 접두 매칭이다 — 같은 DB 에 더 긴 접두사 사이트(`g7_` 입력 시
- * `g7_shop_*`)가 있으면 [테이블 삭제] 동의가 이웃 사이트를 통째로 DROP 한다. PO 결정은
+ * `g7_shop_*`)가 있으면 [테이블 삭제] 동의가 이웃 사이트를 통째로 DROP 한다. 제품 결정은
  * 매칭 규칙 변경이 아니라 **투명성**이다:
  * ① 동의 화면이 실제 삭제 대상 목록(삭제 계산과 동일 산출 — `filterTablesByPrefix`)을 보여준다
  * ② 더 긴 접두사의 다른 G7 설치가 감지되면 별도 경고를 띄운다
@@ -26,6 +27,7 @@ use Tests\Concerns\CleansTemporaryBasePath;
 class InstallerDropTargetDisclosureTest extends TestCase
 {
     use CleansTemporaryBasePath;
+    use ScansPhpSourceFunctions;
 
     protected function setUp(): void
     {
@@ -102,7 +104,7 @@ class InstallerDropTargetDisclosureTest extends TestCase
      */
     public function test_consent_card_renders_disclosure(): void
     {
-        $js = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/assets/js/installer.js');
+        $js = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/assets/js/installer.js');
 
         $this->assertStringContainsString('drop_targets', $js, '동의 카드가 삭제 대상 목록을 그리지 않는다 (#21-2 ①)');
         $this->assertStringContainsString('nested_g7_prefixes', $js, '동의 카드가 이웃 G7 설치 경고를 그리지 않는다 (#21-2 ②)');
@@ -114,9 +116,9 @@ class InstallerDropTargetDisclosureTest extends TestCase
     public function test_drop_and_truncate_record_table_names(): void
     {
         $projectRoot = dirname(__DIR__, 3);
-        $taskRunner = (string) file_get_contents($projectRoot.'/public/install/includes/task-runner.php');
-        $rollback = (string) file_get_contents($projectRoot.'/public/install/api/rollback-functions.php');
-        $ko = (string) file_get_contents($projectRoot.'/public/install/lang/ko.php');
+        $taskRunner = $this->sourceWithoutComments($projectRoot.'/public/install/includes/task-runner.php');
+        $rollback = $this->sourceWithoutComments($projectRoot.'/public/install/api/rollback-functions.php');
+        $ko = $this->sourceWithoutComments($projectRoot.'/public/install/lang/ko.php');
 
         $this->assertStringContainsString('log_db_cleanup_dropped_tables', $taskRunner, '드롭한 테이블명이 기록되지 않는다 (#21-2 ③)');
         // TRUNCATE 경로는 기왕부터 테이블별 기록(rollback_table_truncated)을 갖는다 — 그 계약의 잔존만 잠근다.

@@ -9,13 +9,13 @@ use PHPUnit\Framework\TestCase;
  * 실행 모드 열거형 단위 테스트.
  *
  * 커버 축: execution_mode_choice auto·subprocess·inprocess·invalid
- *
- * @effects execution_mode_enum_has_exactly_three_cases, execution_mode_unknown_value_falls_back_to_auto
  */
 class ExecutionModeTest extends TestCase
 {
     /**
      * 열거 값은 auto/subprocess/inprocess 셋뿐이다.
+     *
+     * @effects execution_mode_enum_has_exactly_three_cases
      */
     public function test_enum_cases(): void
     {
@@ -27,6 +27,8 @@ class ExecutionModeTest extends TestCase
 
     /**
      * fromStringOrAuto: null/빈 문자열/미지원 값은 전부 Auto 폴백.
+     *
+     * @effects execution_mode_unknown_value_falls_back_to_auto
      */
     public function test_from_string_or_auto_falls_back_to_auto(): void
     {

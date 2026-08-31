@@ -14,10 +14,6 @@ use Modules\Sirsoft\Page\Tests\ModuleTestCase;
  * 컬럼 순서가 어긋나 옵티마이저가 무시하는 색인을 정상으로 판정한다.
  *
  * @scenario page-published-sort-index
- *
- * @effects published_sort_index_exists,
- *          published_sort_index_column_order,
- *          page_list_query_uses_published_sort_index
  */
 class PublishedSortIndexCoverageTest extends ModuleTestCase
 {

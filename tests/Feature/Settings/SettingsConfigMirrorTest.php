@@ -28,8 +28,6 @@ use Tests\TestCase;
  * 재부팅으로는 결함이 드러나지 않기 때문이다.
  *
  * @scenario scope=core, scope=plugin, trigger=save, trigger=boot, field_sensitivity=sensitive
- *
- * @effects core_mirror_refreshed_after_save, core_mirror_refreshed_after_set_setting, plugin_mirror_refreshed_after_save, plugin_mirror_merges_defaults, sensitive_fields_absent_from_mirror_on_boot, sensitive_fields_absent_from_mirror_on_refresh, sensitive_fields_still_readable_via_dedicated_getter, page_module_mirror_exists
  */
 class SettingsConfigMirrorTest extends TestCase
 {
@@ -37,6 +35,8 @@ class SettingsConfigMirrorTest extends TestCase
 
     /**
      * A1: 코어 설정 저장 후 같은 프로세스의 미러가 신값을 읽는다.
+     *
+     * @effects core_mirror_refreshed_after_save
      */
     public function test_core_settings_mirror_is_refreshed_after_save(): void
     {
@@ -51,6 +51,8 @@ class SettingsConfigMirrorTest extends TestCase
 
     /**
      * A1: setSetting() 경로도 같은 무효화 처리를 받는다.
+     *
+     * @effects core_mirror_refreshed_after_set_setting
      */
     public function test_set_setting_also_refreshes_core_mirror(): void
     {
@@ -99,7 +101,7 @@ class SettingsConfigMirrorTest extends TestCase
     /**
      * A2/A4: 플러그인 미러는 defaults 병합·복호화를 마친 값(전용 게터와 같은 형태)을 담는다.
      *
-     * @effects plugin_mirror_matches_dedicated_getter_shape
+     * @effects plugin_mirror_matches_dedicated_getter_shape, plugin_mirror_merges_defaults
      */
     public function test_plugin_settings_mirror_uses_the_service_value_not_raw_file(): void
     {
@@ -137,6 +139,8 @@ class SettingsConfigMirrorTest extends TestCase
      *
      * 미러는 봇 전용 화면 생성기가 키 제한 없이 조회하는 경로이므로, 민감값이 실리면
      * 레이아웃이 그 키를 참조하는 순간 평문이 봇 HTML 로 나간다.
+     *
+     * @effects sensitive_fields_absent_from_mirror_on_boot, sensitive_fields_absent_from_mirror_on_refresh, sensitive_fields_still_readable_via_dedicated_getter
      */
     public function test_sensitive_plugin_fields_never_reach_the_mirror(): void
     {
@@ -168,7 +172,7 @@ class SettingsConfigMirrorTest extends TestCase
     /**
      * A2/A7: 플러그인 저장 경로가 미러 재채움을 호출하고, 그 결과에 민감값이 없다.
      *
-     * @effects sensitive_fields_absent_from_mirror_after_save
+     * @effects sensitive_fields_absent_from_mirror_after_save, plugin_mirror_refreshed_after_save
      */
     public function test_plugin_save_triggers_mirror_refresh(): void
     {
@@ -280,6 +284,8 @@ class SettingsConfigMirrorTest extends TestCase
 
     /**
      * A5: sirsoft-page 미러가 존재하고 defaults.json 값을 담는다.
+     *
+     * @effects page_module_mirror_exists
      */
     public function test_page_module_mirror_exists(): void
     {

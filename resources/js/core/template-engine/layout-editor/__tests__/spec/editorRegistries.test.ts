@@ -1,3 +1,6 @@
+// @scenario layout-editor-array-editor, layout-editor-children-list, layout-editor-data-builtins, layout-editor-table-editor, layout-editor-table-inplace
+// (매니페스트 소속 표기 — 회차 16 W6: 선언된 파일은 마킹을 최소 1개 가진다)
+
 /**
  * editorRegistries.test.ts — 노드 에디터/캔버스 오버레이 레지스트리 + 코어 에디터 등록
  *

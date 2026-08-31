@@ -123,8 +123,10 @@ class ModuleAssetServingTest extends TestCase
         $response = $this->get('/api/modules/assets/inactive-module/dist/js/module.iife.js');
 
         // Assert
-        // 검증 실패로 인한 리다이렉트 또는 404 허용
-        $this->assertContains($response->status(), [302, 404]);
+        // 검증 실패는 `api/*` 전 경로에서 JSON 422 다 — 302 를 허용하면 그 목적지가
+        // `Referer` 인 무인증 오픈 리다이렉트를 통과시키게 되고, 404 와 함께 열거하면
+        // 「어느 쪽이 계약인가」가 흐려진다. 실제 응답 하나로 고정한다.
+        $this->assertContains($response->status(), [404, 422]);
     }
 
     /**
@@ -136,8 +138,10 @@ class ModuleAssetServingTest extends TestCase
         $response = $this->get('/api/modules/assets/test-module/dist/js/nonexistent.js');
 
         // Assert
-        // 검증 실패로 인한 리다이렉트 또는 404 허용
-        $this->assertContains($response->status(), [302, 404]);
+        // 검증 실패는 `api/*` 전 경로에서 JSON 422 다 — 302 를 허용하면 그 목적지가
+        // `Referer` 인 무인증 오픈 리다이렉트를 통과시키게 되고, 404 와 함께 열거하면
+        // 「어느 쪽이 계약인가」가 흐려진다. 실제 응답 하나로 고정한다.
+        $this->assertContains($response->status(), [404, 422]);
     }
 
     /**
@@ -149,7 +153,7 @@ class ModuleAssetServingTest extends TestCase
         $response = $this->get('/api/modules/assets/test-module/../../.env');
 
         // Assert
-        $this->assertContains($response->status(), [302, 422]);
+        $this->assertSame(422, $response->status(), 'api/* 검증 실패는 Accept 헤더와 무관하게 JSON 422 다 — 302 는 Referer 로 되돌리는 무인증 오픈 리다이렉트다');
     }
 
     /**
@@ -161,7 +165,7 @@ class ModuleAssetServingTest extends TestCase
         $response = $this->get('/api/modules/assets/test-module/..%5c..%5cconfig.php');
 
         // Assert
-        $this->assertContains($response->status(), [302, 422]);
+        $this->assertSame(422, $response->status(), 'api/* 검증 실패는 Accept 헤더와 무관하게 JSON 422 다 — 302 는 Referer 로 되돌리는 무인증 오픈 리다이렉트다');
     }
 
     /**
@@ -180,7 +184,7 @@ class ModuleAssetServingTest extends TestCase
 
         foreach ($patterns as $pattern) {
             $response = $this->get("/api/modules/assets/test-module/{$pattern}secret.txt");
-            $this->assertContains($response->status(), [302, 422], "Pattern {$pattern} should be blocked");
+            $this->assertSame(422, $response->status(), "Pattern {$pattern} should be blocked — api/* 검증 실패는 Accept 헤더와 무관하게 JSON 422 다 (302 는 Referer 로 되돌리는 무인증 오픈 리다이렉트)");
         }
     }
 
@@ -193,7 +197,7 @@ class ModuleAssetServingTest extends TestCase
         $response = $this->get('/api/modules/assets/test-module/C:%5cWindows%5cSystem32%5cconfig.ini');
 
         // Assert
-        $this->assertContains($response->status(), [302, 422]);
+        $this->assertSame(422, $response->status(), 'api/* 검증 실패는 Accept 헤더와 무관하게 JSON 422 다 — 302 는 Referer 로 되돌리는 무인증 오픈 리다이렉트다');
     }
 
     /**
@@ -205,7 +209,7 @@ class ModuleAssetServingTest extends TestCase
         $response = $this->get('/api/modules/assets/test-module//etc/passwd');
 
         // Assert
-        $this->assertContains($response->status(), [302, 422]);
+        $this->assertSame(422, $response->status(), 'api/* 검증 실패는 Accept 헤더와 무관하게 JSON 422 다 — 302 는 Referer 로 되돌리는 무인증 오픈 리다이렉트다');
     }
 
     /**
@@ -217,7 +221,7 @@ class ModuleAssetServingTest extends TestCase
         $response = $this->get('/api/modules/assets/test-module/malicious.php%00.js');
 
         // Assert
-        $this->assertContains($response->status(), [302, 422]);
+        $this->assertSame(422, $response->status(), 'api/* 검증 실패는 Accept 헤더와 무관하게 JSON 422 다 — 302 는 Referer 로 되돌리는 무인증 오픈 리다이렉트다');
     }
 
     /**
@@ -233,7 +237,7 @@ class ModuleAssetServingTest extends TestCase
         $response = $this->get('/api/modules/assets/test-module/malicious.php');
 
         // Assert
-        $this->assertContains($response->status(), [302, 422]);
+        $this->assertSame(422, $response->status(), 'api/* 검증 실패는 Accept 헤더와 무관하게 JSON 422 다 — 302 는 Referer 로 되돌리는 무인증 오픈 리다이렉트다');
     }
 
     /**
@@ -245,7 +249,7 @@ class ModuleAssetServingTest extends TestCase
 
         foreach ($disallowedExtensions as $ext) {
             $response = $this->get("/api/modules/assets/test-module/malicious.{$ext}");
-            $this->assertContains($response->status(), [302, 422], "Extension .{$ext} should be blocked");
+            $this->assertSame(422, $response->status(), "Extension .{$ext} should be blocked — api/* 검증 실패는 Accept 헤더와 무관하게 JSON 422 다 (302 는 Referer 로 되돌리는 무인증 오픈 리다이렉트)");
         }
     }
 
@@ -322,7 +326,10 @@ class ModuleAssetServingTest extends TestCase
         $response->assertStatus(200);
         $etag = $response->headers->get('ETag');
         $this->assertNotNull($etag, 'ETag header should be present');
-        $this->assertMatchesRegularExpression('/^[a-f0-9]{32}$/', $etag, 'ETag should be a 32-character MD5 hash');
+        // RFC 9110 §8.8.3 의 entity-tag 는 큰따옴표로 감싼 형태다 — 정적 서빙(Apache·nginx)도
+        // 항상 따옴표를 붙이고, 따옴표 없는 값은 중간 프록시·CDN 이 버리거나 다시 쓸 수 있다.
+        // 값 자체는 종전대로 파일에서 파생된 MD5 다 (3차 G3 라운드 L2).
+        $this->assertMatchesRegularExpression('/^"[a-f0-9]{32}"$/', $etag, 'ETag should be a quoted 32-character MD5 hash');
     }
 
     /**
@@ -348,7 +355,15 @@ class ModuleAssetServingTest extends TestCase
     }
 
     /**
-     * 프로덕션 환경에서 immutable 캐싱 정책 적용
+     * 프로덕션 캐싱 정책은 **URL 이 버전을 싣는지**로 갈린다.
+     *
+     * `immutable` 은 「만료 전까지 서버에 다시 묻지 말라」는 지시다. 버전 없는 주소에
+     * 붙이면 그 확장을 업데이트해도 방문자 브라우저가 만료(1년)까지 옛 파일을 쓴다 —
+     * 오류도 경고도 없이 「업데이트했는데 화면이 그대로」로만 나타난다.
+     *
+     * 종전 이 테스트는 **버전 없는 주소**를 요청하고 `immutable` 이 있어야 통과라고
+     * 단언했다. 즉 규정 위반 상태가 곧 green 이었고, 그 계약이 서 있는 한 결함을 고치면
+     * 테스트가 red 가 되는 구조였다. 계약을 판정 기준 자체로 교체한다 (11차 G3 라운드).
      */
     public function test_applies_immutable_caching_in_production(): void
     {
@@ -362,9 +377,36 @@ class ModuleAssetServingTest extends TestCase
 
         // Assert
         $response->assertStatus(200);
-        $cacheControl = $response->headers->get('Cache-Control');
-        $this->assertStringContainsString('immutable', $cacheControl, 'Production should use immutable caching');
+        $cacheControl = (string) $response->headers->get('Cache-Control');
         $this->assertStringContainsString('public', $cacheControl);
+        $this->assertStringContainsString('max-age=31536000', $cacheControl);
+
+        // 버전이 없는 주소 — 재확인을 요구해야 한다.
+        $this->assertStringNotContainsString(
+            'immutable',
+            $cacheControl,
+            '버전 없는 주소에 immutable 이 붙었다 — 확장을 업데이트해도 방문자에게 도달하지 않는다'
+        );
+        $this->assertStringContainsString('must-revalidate', $cacheControl);
+    }
+
+    /**
+     * 같은 파일이라도 **버전이 실린 주소**는 immutable 이다.
+     *
+     * 위 형제와 짝이다 — 한쪽만 두면 「immutable 을 통째로 없앴다」와 「기준에 따라 갈린다」를
+     * 구분할 수 없고, 캐싱 이점을 잃은 것도 green 으로 보인다.
+     */
+    public function test_applies_immutable_caching_when_the_url_carries_a_version(): void
+    {
+        app()['env'] = 'production';
+        $jsPath = $this->testModulePath.'/dist/js/module.iife.js';
+        file_put_contents($jsPath, 'console.log("test");');
+
+        $response = $this->get('/api/modules/assets/test-module/dist/js/module.iife.js?v=1.2.3');
+
+        $response->assertStatus(200);
+        $cacheControl = (string) $response->headers->get('Cache-Control');
+        $this->assertStringContainsString('immutable', $cacheControl, '버전이 실린 주소는 재확인이 필요 없다');
         $this->assertStringContainsString('max-age=31536000', $cacheControl);
     }
 
@@ -430,8 +472,121 @@ class ModuleAssetServingTest extends TestCase
         // Act: 브라우저 요청 (Accept 헤더 없음) — 서빙되지 않음을 확인
         $browser = $this->get('/api/modules/assets/test-module/dist/js/module.iife.js.map');
 
-        // Assert: 200 서빙이 아니어야 한다 (검증 실패 → 리다이렉트)
-        $this->assertNotSame(200, $browser->getStatusCode());
+        // Assert: 검증 실패는 Accept 헤더와 무관하게 JSON 422 다. `assertNotSame(200, ...)` 은
+        // 302 를 통과시키는데, 그 302 의 목적지는 `Referer` 라 무인증 오픈 리다이렉트가 된다.
+        $browser->assertStatus(422);
+    }
+
+    /**
+     * 확장자 없는 모드(`?file=`)가 경로 모드와 **같은 판정**을 받는다.
+     *
+     * `ResolvesDualModeFilePath` 는 네 통로가 공유하는데, 쿼리 모드를 실제로 재는 통로는
+     * 공개 스토리지 하나뿐이었다 — 세 요청 클래스의 `dualModeFilePath()` 를
+     * `query('file')` 로 되돌려도 전 스위트가 초록이다.
+     *
+     * @scenario url_mode=path
+     *
+     * @effects dual_mode_query_form_matches_path_form
+     */
+    public function test_dual_mode_query_form_matches_the_path_form(): void
+    {
+        $viaPath = $this->get('/api/modules/assets/test-module/dist/js/nonexistent.js');
+        $viaQuery = $this->get('/api/modules/assets/test-module?file=dist/js/nonexistent.js');
+
+        $this->assertSame(
+            $viaPath->status(),
+            $viaQuery->status(),
+            '같은 파일이 주소 형태에 따라 다르게 판정되면 이중 모드가 검사 강도를 가르는 장치가 된다'
+        );
+    }
+
+    /**
+     * 점(`.`)으로 시작하는 이름은 두 모드 모두에서 거부된다.
+     *
+     * 서버 3종 설정의 숨김 파일 차단은 **URL 경로**에만 걸린다. 확장자 없는 모드는 그
+     * 경로를 쿼리로 옮기므로 그 방어선을 통째로 지나간다 — 애플리케이션 계층이 같은
+     * 규칙을 갖지 않으면 같은 파일이 주소 형태에 따라 403·200 으로 갈린다.
+     *
+     * @scenario url_mode=path
+     *
+     * @effects hidden_segments_rejected_in_both_url_modes
+     */
+    public function test_hidden_segments_are_rejected_in_both_url_modes(): void
+    {
+        // 파일이 **실재해야** 이 축이 측정된다 — 없으면 규칙과 무관하게 404 라
+        // 규칙을 통째로 지워도 초록이 된다.
+        $dotFile = $this->hiddenFixtureRoot().DIRECTORY_SEPARATOR.'.eslintrc.json';
+        file_put_contents($dotFile, '{"root":true}');
+
+        try {
+            foreach (['/api/modules/assets/test-module/.eslintrc.json', '/api/modules/assets/test-module?file=.eslintrc.json'] as $url) {
+                $response = $this->get($url);
+
+                $this->assertNotSame(
+                    200,
+                    $response->baseResponse->getStatusCode(),
+                    $url.' 가 점으로 시작하는 이름을 내준다 — 서버 설정의 숨김 파일 차단은 경로 모드에만 걸린다'
+                );
+            }
+            // 구분자 축 — 백슬래시도 세그먼트 구분자다. 이 케이스가 없으면 분할이
+            // `/` 만 보는 상태를 게이트가 통과시킨다(9차가 정확히 그 상태였다):
+            // 봉쇄 판정은 `\` 를 구분자로 취급하므로 숨김 세그먼트만 못 보고 넘어간다.
+            //
+            // 파일이 **실재해야** 이 축이 측정된다 — 없으면 규칙과 무관하게 404 라
+            // 규칙을 되돌려도 초록이 된다.
+            $hiddenDir = $this->hiddenFixtureRoot().DIRECTORY_SEPARATOR.'sub'.DIRECTORY_SEPARATOR.'.hidden';
+            @mkdir($hiddenDir, 0755, true);
+            $nested = $hiddenDir.DIRECTORY_SEPARATOR.'app.js';
+            file_put_contents($nested, 'console.log(1);');
+
+            try {
+                $viaBackslash = $this->get('/api/modules/assets/test-module?file=sub%5C.hidden/app.js');
+
+                $this->assertNotSame(
+                    200,
+                    $viaBackslash->baseResponse->getStatusCode(),
+                    '백슬래시 구분자로 숨김 세그먼트 차단이 우회된다'
+                );
+            } finally {
+                @unlink($nested);
+                @rmdir($hiddenDir);
+                @rmdir(dirname($hiddenDir));
+            }
+        } finally {
+            @unlink($dotFile);
+        }
+    }
+
+    /**
+     * 숨김 파일 픽스처를 놓을 디렉토리 (자산 루트).
+     *
+     * @return string 절대 경로
+     */
+    private function hiddenFixtureRoot(): string
+    {
+        return $this->testModulePath;
+    }
+
+    /**
+     * 식별자가 봉쇄 기준선을 고를 수 없다.
+     *
+     * 라우트에 형태 제약이 없고 Laravel 은 매칭·바인딩을 디코딩된 경로로 하므로
+     * `%2e%2e` 가 `..` 로 들어온다. 그 값을 그대로 보간하면 기준 디렉토리가 프로젝트
+     * 루트가 되어, 순회 없이도 루트의 임의 파일이 검증을 통과한다.
+     *
+     * @scenario identifier_shape=valid
+     *
+     * @effects asset_identifier_cannot_pick_the_containment_base
+     */
+    public function test_identifier_cannot_select_the_containment_base(): void
+    {
+        $response = $this->get('/api/modules/assets/%2e%2e?file=composer.json');
+
+        $this->assertNotSame(
+            200,
+            $response->baseResponse->getStatusCode(),
+            '식별자가 기준선을 고르면 봉쇄가 요청이 지정한 디렉토리 기준이 된다'
+        );
     }
 
     /**

@@ -7,6 +7,8 @@
  * 여기서는 브라우저 없이 검증 가능한 불변식(L1·L5·L7)과, blade 인라인 복구기와
  * TS 빌더의 **규칙 드리프트**를 다룬다. 요청 횟수·리로드·폴백 UI(L2·L3·L4·L8)는
  * 브라우저 계층이므로 Playwright spec 이 담당한다.
+ *
+ * @effects public_storage_asset_url_conversion_matches_the_route_form
  */
 
 // e2e:allow 불변식의 순수 로직 단위. 브라우저 계층(L2·L3·L4·L8)은 asset-url-mode.spec.ts 가 커버한다.
@@ -31,34 +33,53 @@ import {
  * 클라이언트가 만든 URL 이 어긋나 그 자산만 404 가 되므로, 실제 blade 소스에서
  * 함수를 뽑아 TS 구현과 대조한다.
  */
-function loadInlineConverter(): (url: string) => string | null {
+function loadInlineConverter(basePath = ''): (url: string) => string | null {
     const bladePath = resolve(__dirname, '../../../../views/partials/asset-url-recovery.blade.php');
     const source = readFileSync(bladePath, 'utf-8');
 
-    const start = source.indexOf('function toExtensionless(url) {');
-    expect(start, 'blade 파샬에서 toExtensionless 를 찾지 못했다').toBeGreaterThan(-1);
+    /**
+     * blade 파샬에서 함수 하나를 균형 중괄호로 잘라낸다.
+     *
+     * 변환기가 파샬 안의 다른 함수를 부르면 그것도 함께 주입해야 blade 스코프가 재현된다.
+     * 이름을 열거하는 대신 이 헬퍼로 뽑아 이어 붙인다 — 하나만 잘라 오면 그 호출이
+     * `is not defined` 로 죽고, 그것은 「blade 구현이 틀렸다」와 구분되지 않는다.
+     *
+     * @param signature 함수 시그니처 시작 문자열
+     * @returns 함수 소스
+     */
+    function sliceFunction(signature: string): string {
+        const start = source.indexOf(signature);
+        expect(start, `blade 파샬에서 ${signature} 를 찾지 못했다`).toBeGreaterThan(-1);
 
-    // 균형 중괄호로 함수 본문 끝을 찾는다
-    let depth = 0;
-    let end = start;
-    for (let i = source.indexOf('{', start); i < source.length; i += 1) {
-        if (source[i] === '{') depth += 1;
-        else if (source[i] === '}') {
-            depth -= 1;
-            if (depth === 0) {
-                end = i + 1;
-                break;
+        let depth = 0;
+        let end = start;
+        for (let i = source.indexOf('{', start); i < source.length; i += 1) {
+            if (source[i] === '{') depth += 1;
+            else if (source[i] === '}') {
+                depth -= 1;
+                if (depth === 0) {
+                    end = i + 1;
+                    break;
+                }
             }
         }
+
+        return source.slice(start, end);
     }
 
-    const fnSource = source.slice(start, end);
+    const fnSource = [
+        sliceFunction('function encodeFileQueryValue(filePath) {'),
+        sliceFunction('function normalizeBasePath(value) {'),
+        sliceFunction('function toExtensionless(url) {'),
+    ].join('\n');
 
     // 함수가 참조하는 파샬 상단 상수를 함께 주입한다 (blade 스코프 재현)
     // eslint-disable-next-line no-new-func
     return new Function(
-        `var FILE_QUERY_PARAM = 'file';\n${fnSource}\nreturn toExtensionless;`,
-    )() as (url: string) => string | null;
+        'basePath',
+        `var FILE_QUERY_PARAM = 'file';
+var BASE_PATH = basePath;\n${fnSource}\nreturn toExtensionless;`,
+    )(basePath) as (url: string) => string | null;
 }
 
 describe('자산 URL 자가 복구 불변식 (§12)', () => {
@@ -128,6 +149,12 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
             '/api/plugins/bundle.css',
             '/api/templates/sirsoft-basic/routes.json?v=7',
             '/api/layouts/sirsoft-basic/home.json?with_source_meta=1&v=7',
+            // 공개 스토리지 대체 서빙(B-3) — 링크가 없는 서버에서 `/storage/...` 를 대신한다.
+            // 두 구현 모두 이 규칙이 **없었고**, 대조 목록에도 없어서 「양쪽이 같이 틀린」
+            // 상태가 초록으로 통과했다. `.css` 형태는 특히 위험했다 — 접미사 제거 규칙에
+            // 먼저 걸려 `.../theme` 으로 오변환됐다(그 라우트의 무확장자 형태는 `?file=` 이다).
+            '/api/system/public-storage/uploads/logo.png',
+            '/api/system/public-storage/theme/custom.css?v=7',
         ];
 
         it('모든 대표 URL 에서 두 구현의 결과가 동일하다', () => {
@@ -138,6 +165,116 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
                 expect(inline(url), `blade 인라인 변환기가 ${url} 을 변환하지 못했다`).not.toBeNull();
                 expect(inline(url), `변환 규칙 드리프트: ${url}`).toBe(convertToCurrentMode(url));
             }
+        });
+
+        it('공개 스토리지는 접미사 제거가 아니라 ?file= 로 변환된다 (규칙 순서)', () => {
+            // 두 구현이 **같이** 틀리면 위의 드리프트 대조는 초록이다. 그래서 결과값 자체를
+            // 잠근다 — 접미사 제거 규칙이 먼저 걸리면 `.../custom.css` 가 `.../custom` 이 되고,
+            // 그 주소에는 파일이 없어 404 가 된다(그 라우트의 무확장자 형태는 `?file=` 이다).
+            const inline = loadInlineConverter();
+            (globalThis as any).__g7AssetUrlMode = MODE_EXTENSIONLESS;
+
+            const cssUrl = '/api/system/public-storage/theme/custom.css?v=7';
+            const expected = '/api/system/public-storage?file=theme%2Fcustom.css&v=7';
+
+            expect(convertToCurrentMode(cssUrl)).toBe(expected);
+            expect(inline(cssUrl)).toBe(expected);
+        });
+
+        it('경로에 리터럴 %가 있어도 던지지 않는다 (5차 G3 · H6)', () => {
+            // 서버의 확장자 모드는 경로를 **인코딩하지 않는다**(형제 `AssetUrl::asset()` 과
+            // 동형이고 정적 `/storage/…` 도 그렇다). 그래서 `50%off.png` 같은 파일명이 그대로
+            // 실려 오는데, `decodeURIComponent('50%off.png')` 는 `URIError` 를 던진다.
+            //
+            // 두 구현이 **똑같이** 던지므로 위의 드리프트 대조는 초록이다 — 4차가 기록한
+            // 「양쪽이 같이 틀려서 초록」이 다른 입력에서 그대로 재현된 자리다. 던지는 지점은
+            // 모듈 자산 로딩 전체(ModuleAssetLoader)와 CSS 자가 복구 핸들러라, 그 페이지의
+            // 확장 자산이 통째로 멈추거나 스타일이 조용히 사라진다.
+            const inline = loadInlineConverter();
+            (globalThis as any).__g7AssetUrlMode = MODE_EXTENSIONLESS;
+
+            const raw = [
+                '/api/system/public-storage/uploads/50%off.png',
+                '/api/templates/assets/sirsoft-basic/css/100%wide.css',
+            ];
+
+            for (const url of raw) {
+                expect(() => convertToCurrentMode(url), `TS 구현이 ${url} 에서 던진다`).not.toThrow();
+                expect(() => inline(url), `blade 구현이 ${url} 에서 던진다`).not.toThrow();
+                expect(inline(url), `변환 규칙 드리프트: ${url}`).toBe(convertToCurrentMode(url));
+            }
+
+            // 던지지 않는 것으로 끝내지 않는다 — 서버가 그 파일에 붙이는 이름과 같아야 한다.
+            // `rawurlencode('uploads/50%off.png')` = `uploads%2F50%25off.png`.
+            expect(convertToCurrentMode('/api/system/public-storage/uploads/50%off.png'))
+                .toBe('/api/system/public-storage?file=uploads%2F50%25off.png');
+
+            // 이미 인코딩된 경로는 이중 인코딩하지 않는다 (기존 동작 보존).
+            expect(convertToCurrentMode('/api/system/public-storage/uploads/%EC%82%AC%EC%A7%84.png'))
+                .toBe('/api/system/public-storage?file=uploads%2F%EC%82%AC%EC%A7%84.png');
+        });
+
+        /**
+         * 사이트가 하위 폴더에 마운트된 배치(`https://host/g7/`)에서도 두 구현이 같은 규칙을 쓴다.
+         *
+         * 서버는 그 배치에서 `/g7/api/…` 를 만든다. 변환기가 접두사를 벗기지 않으면 어느
+         * 규칙에도 매치되지 않아 **자가 복구가 통째로 무력**해지고, 붙여 주지 않으면 변환
+         * 결과가 사이트 밖(`/api/…`)을 가리킨다. 값의 출처는 서버 하나다.
+         *
+         * @effects asset_url_recovery_follows_the_site_base_path_in_both_implementations
+         */
+        it('하위 폴더 마운트에서 두 구현이 접두사를 벗기고 다시 붙인다', () => {
+            const basePath = '/g7';
+            const inline = loadInlineConverter(basePath);
+            (globalThis as any).__g7AssetUrlMode = MODE_EXTENSIONLESS;
+            (globalThis as any).G7Config = { cache_version: 7, basePath };
+
+            const pairs: Array<[string, string]> = [
+                ['/g7/api/system/public-storage/uploads/logo.png', '/g7/api/system/public-storage?file=uploads%2Flogo.png'],
+                ['/g7/api/templates/assets/sirsoft-basic/dist/js/a.js', '/g7/api/templates/assets/sirsoft-basic?file=dist%2Fjs%2Fa.js'],
+                ['/g7/api/modules/bundle.js', '/g7/api/modules/bundle/js'],
+            ];
+
+            for (const [input, expected] of pairs) {
+                expect(convertToCurrentMode(input), `TS: ${input}`).toBe(expected);
+                expect(inline(input), `blade 드리프트: ${input}`).toBe(expected);
+            }
+
+            // 접두사 밖 주소는 대상이 아니다 — 다른 사이트를 가리키는 URL 을 건드리지 않는다.
+            expect(convertToCurrentMode('/other/api/modules/bundle.js')).toBe('/other/api/modules/bundle.js');
+            expect(inline('/other/api/modules/bundle.js')).toBeNull();
+        });
+
+        /**
+         * 접두사 값이 **정규형이 아닐 때**도 두 구현이 같은 규칙을 쓴다.
+         *
+         * 종전 대조는 양쪽에 이미 정규화된 같은 값(`'/g7'`)을 주입해서 이 축을 원리상 볼
+         * 수 없었다 — TS 판본만 `normalizeBasePath` 를 거치고 blade 판본은 주입값을 그대로
+         * 이어 붙이는 비대칭이 그대로 남아 있었다. 루트 설치의 `'/'` 가 특히 나쁘다:
+         * 정규화 없이 이어 붙이면 `//api/…` 가 되어 **프로토콜 상대 URL**(다른 호스트)이 된다.
+         *
+         * @effects asset_url_recovery_follows_the_site_base_path_in_both_implementations
+         */
+        it('정규화되지 않은 접두사 값에도 두 구현이 같은 결과를 낸다', () => {
+            (globalThis as any).__g7AssetUrlMode = MODE_EXTENSIONLESS;
+
+            for (const raw of ['/g7', '/g7/', 'g7']) {
+                const inline = loadInlineConverter(raw);
+                (globalThis as any).G7Config = { cache_version: 7, basePath: raw };
+
+                expect(convertToCurrentMode('/g7/api/modules/bundle.js'), `TS: ${raw}`)
+                    .toBe('/g7/api/modules/bundle/js');
+                expect(inline('/g7/api/modules/bundle.js'), `blade 드리프트: ${raw}`)
+                    .toBe('/g7/api/modules/bundle/js');
+            }
+
+            // 루트 설치를 `'/'` 로 표현한 값은 「접두사 없음」과 같아야 한다.
+            const rootInline = loadInlineConverter('/');
+            (globalThis as any).G7Config = { cache_version: 7, basePath: '/' };
+
+            expect(convertToCurrentMode('/api/modules/bundle.js')).toBe('/api/modules/bundle/js');
+            expect(rootInline('/api/modules/bundle.js'), '`//api/…` 는 다른 호스트를 가리킨다')
+                .toBe('/api/modules/bundle/js');
         });
 
         it('코어 엔진 번들은 두 구현 모두 변환하지 않는다', () => {
@@ -251,8 +388,15 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
             expect(open, 'blade 파샬에서 스크립트 태그를 찾지 못했다').toBeGreaterThan(-1);
             expect(close, 'blade 파샬에서 스크립트 종료 태그를 찾지 못했다').toBeGreaterThan(open);
 
-            // blade echo(`{{ ... }}`)는 JS 가 아니므로 리터럴로 치환한다
-            const js = source.slice(open + '<script>'.length, close).replace(/{{[^}]*}}/g, '1234');
+            // blade 문법은 JS 가 아니므로 리터럴로 치환한다. 두 형태를 모두 다뤄야 한다 —
+            // echo(`{{ ... }}`)와 지시자(`@json(...)`). 앞의 것만 치환하면 파샬에 `@json`
+            // 이 들어온 순간 `new Function` 이 SyntaxError 로 죽고, 그것은 「복구기 구현이
+            // 틀렸다」와 구분되지 않는다. 마운트 접두사는 빈 문자열(루트 배치)로 둔다 —
+            // 아래 케이스들의 URL 이 모두 접두사 없는 형태라 그 전제와 맞춰야 한다.
+            const js = source
+                .slice(open + '<script>'.length, close)
+                .replace(/=\s*@json\([\s\S]*?\);/g, "= '';")
+                .replace(/{{[^}]*}}/g, '1234');
 
             // eslint-disable-next-line no-new-func
             new Function(js)();
@@ -361,7 +505,33 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
          */
         it('엔진 소스에 프로브 엔드포인트 호출이 없다', () => {
             const engineRoot = resolve(__dirname, '../../');
+            const repoRoot = resolve(__dirname, '../../../../../');
+
+            // 프로브 경로는 **서버 라우트가 SSoT** 다. 종전에는 이 파일에 `'asset-probe'`
+            // 리터럴을 적어 두었는데, 그러면 엔드포인트 이름이 바뀌는 순간 이 게이트가
+            // 영구히 0건이 되고 아무도 알 수 없다 — 그 이름은 이 저장소의 프론트 소스
+            // 어디에도 없어 대조할 상대가 없다. 라우트에서 도출해, 못 찾으면 그 자체가
+            // red 가 되게 한다 (7차 G3 라운드 E13).
+            const routes = readFileSync(join(repoRoot, 'routes/api.php'), 'utf-8');
+            const declared = /dualSuffix\(\s*'([^']*asset-probe[^']*)'/.exec(routes);
+
+            expect(
+                declared,
+                'routes/api.php 에서 프로브 라우트를 찾지 못했다 — 이름이 바뀌었다면 이 게이트가 재는 대상도 함께 옮겨야 한다',
+            ).not.toBeNull();
+
+            const token = (declared as RegExpExecArray)[1].split('/').pop() as string;
+
+            /** 엔진 소스 한 벌이 프로브를 직접 호출하는지 판정한다. */
+            const callsProbe = (src: string): boolean => src.includes(token);
+
+            // 양성 대조 — 판정식이 실제 위반 문자열을 잡는지 확인한다. 이것이 없으면
+            // 판정이 사문이 되어도(빈 토큰 등) 그대로 초록이다.
+            expect(callsProbe(`fetch(suffixed('/api/system/${token}', 'js'));`)).toBe(true);
+            expect(callsProbe('fetch(withBasePrefix("/api/me"));')).toBe(false);
+
             const offenders: string[] = [];
+            let scanned = 0;
 
             const walk = (dir: string): void => {
                 for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -376,8 +546,9 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
 
                     if (!/\.(ts|tsx)$/.test(entry.name)) continue;
 
+                    scanned += 1;
                     const src = readFileSync(full, 'utf-8');
-                    if (src.includes('asset-probe')) {
+                    if (callsProbe(src)) {
                         offenders.push(full.replace(engineRoot, ''));
                     }
                 }
@@ -389,6 +560,8 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
                 offenders,
                 `엔진 레이어가 프로브를 직접 호출한다 (L9 위반 — 감지는 부트스트랩 단독):\n${offenders.join('\n')}`,
             ).toEqual([]);
+            // 모집단 대조 — 한 파일도 훑지 못하면 위 비교는 공허하다.
+            expect(scanned).toBeGreaterThan(50);
         });
     });
 

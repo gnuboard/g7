@@ -94,21 +94,15 @@ class SitemapIndexer
     /**
      * 항목의 절대 URL(loc)을 해석합니다.
      *
-     * 'loc'(절대 URL)이 있으면 그대로, 없으면 'url'(상대 경로)을 url() 로 절대화합니다.
+     * 규칙은 전체 재생성과 같은 단일 지점(`SitemapGenerator::entryLoc()`)이 소유한다 — 여기만
+     * `url()` 사본이면 요청 호스트를 싣고 접두사를 한 번 더 실어, 같은 리소스의 `<loc>` 이
+     * 생성 경로에 따라 갈린다 (16차 G3 라운드 B-3).
      *
      * @param  array<string, mixed>  $entry  URL 항목
      * @return string|null 절대 URL (해석 불가 시 null)
      */
     private function resolveLoc(array $entry): ?string
     {
-        if (isset($entry['loc']) && is_string($entry['loc']) && $entry['loc'] !== '') {
-            return $entry['loc'];
-        }
-
-        if (isset($entry['url']) && is_string($entry['url']) && $entry['url'] !== '') {
-            return url($entry['url']);
-        }
-
-        return null;
+        return SitemapGenerator::entryLoc($entry);
     }
 }

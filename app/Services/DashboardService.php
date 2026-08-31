@@ -466,6 +466,10 @@ class DashboardService
 
         // open_basedir 로 '/' 가 제한된 환경에서 disk_*_space 가 warning → ErrorException 이
         // 되지 않도록 @ 억제 + numeric 체크 (공개#40). ?: 0 폴백은 예외 승격 후엔 무력하므로 @ 필수.
+        // `@` 는 `disable_functions` 축의 가드가 아니지만, 이 두 지점은 호출부가
+        // `safeProbe`/`safeSystemProbe` 로 `\Throwable` 을 잡아 「측정 불가」 폴백으로 접는다 —
+        // PHP 8 에서 차단 함수 호출은 `Error`(= Throwable)이므로 그 catch 가 실제로 잡는다.
+        // audit 이관 원장이 이 자리를 「조치 불필요」로 판정한 근거가 그것이다.
         $totalRaw = @disk_total_space($path);
         $freeRaw = @disk_free_space($path);
         $total = is_numeric($totalRaw) ? (float) $totalRaw : 0;

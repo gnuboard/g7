@@ -14,7 +14,6 @@ use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
  *
  * @scenario scope=localStorage, notation=exact, locked=operator_item, settings_state=populated, request=invalid_format
  *
- * @effects update_persists_allowlist_per_scope, update_normalizes_textarea_string_to_array, update_without_key_leaves_existing_value_untouched, update_rejects_invalid_item_format_with_scope_indexed_error_key, update_rejects_unknown_scope, update_ignores_locked_list_from_request, show_includes_default_catalog_previews
  */
 class GdprAdminSettingsControllerTest extends PluginTestCase
 {
@@ -541,6 +540,7 @@ class GdprAdminSettingsControllerTest extends PluginTestCase
      * 남지 않아 증상만으로는 알 수 없다.
      *
      * @return void
+     * @effects show_includes_default_catalog_previews
      */
     public function test_show_includes_default_catalog_previews(): void
     {
@@ -603,6 +603,7 @@ class GdprAdminSettingsControllerTest extends PluginTestCase
      * 필수 저장 항목 허용목록이 스코프별로 저장된다.
      *
      * @return void
+     * @effects update_persists_allowlist_per_scope
      */
     public function test_update_persists_necessary_storage_allowlist(): void
     {
@@ -629,6 +630,7 @@ class GdprAdminSettingsControllerTest extends PluginTestCase
      * 줄바꿈 문자열로 들어와도 배열로 정규화된다 (blocked_domains 와 동일 규약).
      *
      * @return void
+     * @effects update_normalizes_textarea_string_to_array
      */
     public function test_update_normalizes_necessary_storage_allowlist_textarea_string(): void
     {
@@ -656,6 +658,7 @@ class GdprAdminSettingsControllerTest extends PluginTestCase
      * 비우고, 그 사이트는 다음 방문부터 로그인 외 모든 설정을 잃는다.
      *
      * @return void
+     * @effects update_without_key_leaves_existing_value_untouched
      */
     public function test_update_without_allowlist_key_leaves_it_untouched(): void
     {
@@ -677,6 +680,7 @@ class GdprAdminSettingsControllerTest extends PluginTestCase
      * 메시지를 붙일 수 있다.
      *
      * @return void
+     * @effects update_rejects_invalid_item_format_with_scope_indexed_error_key
      */
     public function test_update_rejects_invalid_allowlist_item_format(): void
     {
@@ -734,6 +738,7 @@ class GdprAdminSettingsControllerTest extends PluginTestCase
      * "등록했는데 안 되는" 상태로만 보인다.
      *
      * @return void
+     * @effects update_rejects_unknown_scope
      */
     public function test_update_rejects_unknown_allowlist_scope(): void
     {
@@ -755,6 +760,7 @@ class GdprAdminSettingsControllerTest extends PluginTestCase
      * 저장 가능하면 API 한 번으로 잠금을 무력화할 수 있다.
      *
      * @return void
+     * @effects update_ignores_locked_list_from_request
      */
     public function test_update_ignores_locked_list_from_request(): void
     {

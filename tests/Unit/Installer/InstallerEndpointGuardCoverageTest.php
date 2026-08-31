@@ -16,8 +16,6 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  * 흐름에만 허용된다 — 허용 목록 밖의 파일이 그 가드를 쓰면 차단 강도가 조용히 약해진 것이다.
  *
  * 커버 축: endpoint_guard general·finalize_allowed·finalize_unexpected·missing
- *
- * @effects installer_every_api_endpoint_passes_completion_guard, stepwise_endpoint_wraps_uncaught_errors_in_a_json_envelope
  */
 class InstallerEndpointGuardCoverageTest extends TestCase
 {
@@ -70,12 +68,87 @@ class InstallerEndpointGuardCoverageTest extends TestCase
         return array_values(array_filter($files, fn (string $f) => ! in_array($f, self::LIBRARIES, true)));
     }
 
+    /**
+     * 인스톨러의 `includes/` PHP 파일 전수 (결정 헬퍼 도출 모집단).
+     *
+     * 한 파일 고정으로 두면 형제 파일에 새 결정 헬퍼가 생겨도 도출이 그것을 모른다 —
+     * 그러면 그 헬퍼를 부르는 엔드포인트가 배선 대조에서 통째로 빠진다
+     * (10차 G3 라운드 C10-10).
+     *
+     * @return array<int, string> 절대 경로 목록
+     */
+    private function installerIncludeFiles(): array
+    {
+        // 재귀 스캔 — `endpoints()` 와 동형 (G3 회차 13 M-4 ②). 한 겹 `glob('*.php')` 은
+        // `includes/` 아래에 디렉토리가 하나 생기는 순간 그 안의 결정 헬퍼를 통째로 놓친다.
+        $dir = dirname(__DIR__, 3).'/public/install/includes';
+
+        $files = [];
+        $it = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS));
+        foreach ($it as $file) {
+            if ($file->isFile() && $file->getExtension() === 'php') {
+                $files[] = $file->getPathname();
+            }
+        }
+
+        sort($files);
+
+        return $files;
+    }
+
+    /**
+     * 판정 SSoT(`includes/execution-mode.php`)가 소유한 **결정** 헬퍼 이름 — 도출한다.
+     *
+     * 이름이 결정을 담는 것만 고른다: 거부(`*Rejection`/`*Rejected`)·수용(`*Accepted`)·
+     * 차단(`*BlockedBy*`)·확정(`installerResolve*`)·요구(`installerRequires*`).
+     * 그 밖(`installerHasFunction`·`installerSetTimeLimit` 같은 유틸)은 어느 엔드포인트든
+     * 부르므로 배선 축이 아니다 — 넣으면 모든 파일이 걸려 표가 소음으로 부푼다.
+     *
+     * @return array<int, string>
+     */
+    private function decisionHelpers(): array
+    {
+        // 모집단은 **인스톨러 전수**다.
+        //
+        // 종전에는 `includes/execution-mode.php` 한 파일만 읽었다. 그런데 같은 이름
+        // 규칙에 걸리는 결정 헬퍼가 형제 파일에도 있다(`installerRecordBusyRejection`
+        // — `includes/installer-state.php`). 그러면 그 헬퍼를 부르는 엔드포인트는
+        // 배선 표 대조에서 통째로 빠지고, 새 파일이 생겨도 아무것도 울지 않는다
+        // (10차 G3 라운드 C10-10).
+        $names = [];
+
+        foreach ($this->installerIncludeFiles() as $file) {
+            preg_match_all(
+                '/^\s*function\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(/m',
+                $this->sourceWithoutComments($file),
+                $matches
+            );
+
+            foreach ($matches[1] as $name) {
+                $names[] = $name;
+            }
+        }
+
+        $decision = array_values(array_filter(
+            array_unique($names),
+            static fn (string $fn): bool => preg_match('/(Rejection|Rejected|Accepted|BlockedBy)/', $fn) === 1
+                || preg_match('/^installer(Resolve|Requires)/', $fn) === 1,
+        ));
+
+        sort($decision);
+
+        return $decision;
+    }
+
     public function test_population_is_not_empty(): void
     {
         $this->assertGreaterThanOrEqual(10, count($this->endpoints()));
         $this->assertContains('run-task.php', $this->endpoints(), '단계별 실행 엔드포인트가 모집단에 있어야 한다');
     }
 
+    /**
+     * @effects installer_every_api_endpoint_passes_completion_guard
+     */
     public function test_every_endpoint_loads_guard_and_calls_it(): void
     {
         foreach ($this->endpoints() as $file) {
@@ -173,7 +246,12 @@ class InstallerEndpointGuardCoverageTest extends TestCase
         // 11차 #A10 이 「보관본 없음」과 「값 불일치」를 나누면서 호출부가 부르는 이름이
         // installerStepwiseTokenRejection() 으로 바뀌었다 — 그 함수가 내부에서
         // installerStepwiseTokenAccepted() 를 부른다. 축(「판정을 실제로 부른다」)은 그대로다.
-        $this->assertStringContainsString('installerStepwiseTokenRejection(', $src, '토큰 판정을 거치지 않고 진행하면 안 된다');
+        // 배선 축은 문자열 채널까지 벗긴 소스로 잰다 (G3 회차 15) — 위의 문자열 리터럴 단언은 $src 그대로.
+        $this->assertStringContainsString(
+            'installerStepwiseTokenRejection(',
+            $this->sourceWithoutCommentsAndStrings($this->apiDir().'/run-task.php'),
+            '토큰 판정을 거치지 않고 진행하면 안 된다'
+        );
         $this->assertStringContainsString("['installer']['stepwise_token']", $src, '토큰은 runtime.php 의 installer 섹션에서 읽는다 (R3)');
     }
 
@@ -194,7 +272,11 @@ class InstallerEndpointGuardCoverageTest extends TestCase
             $src,
             'skip_task 가 토큰 판정을 부르려면 그 판정을 소유한 파일을 require 해야 한다'
         );
-        $this->assertStringContainsString('installerStepwiseTokenRejection(', $src, '토큰 판정은 한 지점이 소유한다');
+        $this->assertStringContainsString(
+            'installerStepwiseTokenRejection(',
+            $this->sourceWithoutCommentsAndStrings($this->apiDir().'/state-management.php'),
+            '토큰 판정은 한 지점이 소유한다'
+        );
         $this->assertStringNotContainsString(
             'hash_equals(',
             $src,
@@ -266,14 +348,118 @@ class InstallerEndpointGuardCoverageTest extends TestCase
             // 지우면 단계별 + composer 조합이 서버에서 다시 통과한다.
             ['includes/execution-mode.php', 'installerCoerceInstallationModeForVendor(', '진행 방식 확정이 Vendor 조합 보정을 건너뛰어 stepwise + composer 가 서버에서 통과한다', 'installerResolveInstallationMode'],
             ['includes/execution-mode.php', 'installerStepwiseBlockedByVendorMode(', '조합 보정이 차단 판정을 부르지 않아 보정이 무조건 통과가 된다', 'installerCoerceInstallationModeForVendor'],
+            // 아래 두 줄은 하한을 도출로 바꾸면서 드러난 실제 사각이다 — 확장 선택 저장은
+            // 상태를 바꾸는 엔드포인트인데 그 두 게이트의 **호출**을 아무도 보지 않았다.
+            // 지우면 진행 이력이 있는 설치의 선택 교체와 교차 출처 요청이 다시 통과한다.
+            ['api/save-extensions.php', 'installerExtensionSelectionRejection(', '진행 이력이 있는 설치의 확장 선택 교체가 다시 통과해 의존성 검증 없는 편입·진행률 되감김이 생긴다', null],
+            ['api/save-extensions.php', 'installerCrossOriginRejection(', '상태를 바꾸는 저장 엔드포인트의 출처 확인이 사라진다', null],
+            // 아래는 대조 단위를 (파일, 헬퍼) 쌍으로 내리면서 드러났다. 이 호출은 형제
+            // 검사(`InstallerServerJudgmentReachesScreenTest`)가 **손 목록**으로 덮고
+            // 있었지만, 도출은 그 사실을 알 수 없다 — 표에 없으면 「배선 표가 이 쌍을
+            // 모른다」가 사실이고, 손 목록이 줄어드는 날 그 사각이 조용히 열린다
+            // (10차 G3 라운드 C10-9).
+            ['api/check-configuration.php', 'installerExecutionModeRejection(', '화면의 「고를 수 있는가」가 서버 저장 게이트와 다른 규칙을 쓰게 되어, 서버가 받아들이는 선택을 화면이 잠근다', null],
+            // 아래 아홉은 같은 전환이 드러낸 나머지다. 여섯은 형제 검사
+            // (`InstallerEntryGateWiringTest`)의 **손 목록**이 덮고 있었고, 셋은
+            // **어느 검사도 보지 않았다** — 그중 `run-task.php` 의 출처 확인은 단계별
+            // 실행 엔드포인트라, 지우면 그 통로가 교차 출처로 열린다 (10차 G3 라운드 C10-9).
+            ['api/finalize-env.php', 'installerCrossOriginRejection(', '완료 표식 기록·runtime.php 삭제를 다른 사이트가 부를 수 있다', null],
+            ['api/install-process.php', 'installerCrossOriginRejection(', '설치 시작 + 단계별 토큰 발급을 다른 사이트가 부를 수 있다', null],
+            ['api/install-process.php', 'installerRecordBusyRejection(', '진행 중 판정의 기록이 사라져 동시 시작이 조용히 통과한다 (형제 검사에도 없던 자리)', null],
+            ['api/install-worker.php', 'installerCrossOriginRejection(', '크로스오리진 이미지 태그 하나가 실제 설치를 시작한다', null],
+            ['api/install-worker.php', 'installerSseWorkerStateRejection(', 'SSE 워커가 상태 게이트 없이 재진입해 같은 태스크가 두 번 돈다', null],
+            ['api/run-task.php', 'installerCrossOriginRejection(', '단계별 실행 엔드포인트의 출처 확인이 사라진다 — 형제 검사의 손 목록에 이 파일이 없어 어느 검사도 보지 않았다', null],
+            ['api/run-task.php', 'installerStepwiseTokenRejection(', '단계별 실행 토큰 게이트가 사라져 요청 하나로 임의 태스크를 돌릴 수 있다', null],
+            ['api/state-management.php', 'installerCrossOriginRejection(', '중단·초기화를 다른 사이트가 부를 수 있다', null],
+            ['api/state-management.php', 'installerStepwiseTokenRejection(', '중단·초기화의 토큰 게이트가 사라진다 (형제 검사에도 없던 자리)', null],
         ];
 
         // 배선 표는 api/·includes/ 뿐 아니라 **views/** 도 모집단으로 삼는다 — 판정이 화면에서
         // 소비되는 절반은 종전에 통째로 사각이었다 (12차 GI-6).
-        $this->assertGreaterThanOrEqual(26, count($expectations), '배선 목록이 줄면 그만큼 사각이 늘어난다');
         $this->assertNotEmpty(
             array_filter($expectations, static fn (array $row): bool => str_starts_with($row[0], 'views/')),
             '화면에서 소비되는 판정도 배선이다 — views/ 가 모집단에서 빠지면 그 절반이 사각이 된다'
+        );
+
+        // 하한을 리터럴(`>= 26`)로 적으면 그 수가 **자기 자신과 비교된다** — 표에 없는
+        // 엔드포인트가 새로 생겨도 숫자가 움직이지 않아 늘어난 사각이 게이트에 보이지 않는다.
+        // 실측: 판정 헬퍼를 부르는 엔드포인트를 하나 새로 넣어도 이 클래스 12검사가 전부
+        // 초록이었다. 하한과 커버리지를 **실제 파일 집합에서 도출**하고 양방향으로 잰다.
+        $wiredFiles = array_values(array_unique(array_column($expectations, 0)));
+        $wiredEndpoints = array_values(array_unique(array_map(
+            static fn (string $path): string => basename($path),
+            array_filter($wiredFiles, static fn (string $path): bool => str_starts_with($path, 'api/')),
+        )));
+
+        // (파일, 헬퍼) 쌍 — 대조 단위를 파일에서 쌍으로 내린다 (10차 G3 라운드 C10-9).
+        $wiredPairs = [];
+
+        foreach ($expectations as [$relative, $call]) {
+            if (! str_starts_with($relative, 'api/')) {
+                continue;
+            }
+
+            $wiredPairs[] = basename($relative).'::'.rtrim($call, '(');
+        }
+
+        $wiredPairs = array_values(array_unique($wiredPairs));
+
+        $endpoints = $this->endpoints();
+        $decisionHelpers = $this->decisionHelpers();
+
+        // 모집단 자체를 잰다 — 어느 한쪽이 비면 아래 두 대조가 조용히 통과한다.
+        $this->assertNotEmpty($endpoints, '엔드포인트 도출이 비었다 — 아래 대조가 무의미해진다');
+        $this->assertNotEmpty($decisionHelpers, '결정 헬퍼 도출이 비었다 — 아래 대조가 무의미해진다');
+
+        // (1) 실제 ⊇ 표 — 표의 api/ 행은 실존하는 (라이브러리가 아닌) 엔드포인트를 가리킨다.
+        foreach ($wiredEndpoints as $file) {
+            $this->assertContains(
+                $file,
+                $endpoints,
+                "배선 표의 {$file} 이 실제 엔드포인트 모집단에 없다 — 이름이 바뀌었거나 사라진 행이다"
+            );
+        }
+
+        // (2) 표 ⊇ 실제 — 판정 SSoT 의 **결정** 헬퍼를 부르는 엔드포인트는 전부 표에 있어야
+        //     한다. 「이 엔드포인트에는 배선이 없다」를 손으로 선언하지 않고 소스에서 잰다 —
+        //     손 선언은 파일이 새로 생겨도 그대로 남아 그 사각을 덮어 준다.
+        $mustBeWired = [];
+
+        foreach ($endpoints as $file) {
+            $source = $this->stripComments((string) file_get_contents($this->apiDir().'/'.$file));
+
+            $called = array_values(array_filter(
+                $decisionHelpers,
+                static fn (string $fn): bool => preg_match('/(?<![A-Za-z0-9_$])'.preg_quote($fn, '/').'\s*\(/', $source) === 1,
+            ));
+
+            if ($called === []) {
+                continue;
+            }
+
+            $mustBeWired[] = $file;
+
+            // 대조 단위는 **(파일, 헬퍼) 쌍**이다.
+            //
+            // 종전에는 「이 **파일**이 표에 있는가」만 물었다. 그래서 한 파일이 결정
+            // 헬퍼를 셋 부르는데 표에 한 행만 있어도 통과했고, 나머지 둘은 지워도
+            // 아무 검사도 red 가 되지 않았다 — 실물이 그 상태였다
+            // (`api/run-task.php` 의 교차 출처 가드) (10차 G3 라운드 C10-9).
+            foreach ($called as $helper) {
+                $this->assertContains(
+                    $file.'::'.$helper,
+                    $wiredPairs,
+                    "{$file} 이 결정 헬퍼 `{$helper}` 를 부르는데 배선 표에 그 쌍이 없다 "
+                    .'— 그 호출을 지워도 아무 검사도 red 가 되지 않는다'
+                );
+            }
+        }
+
+        // (3) 하한도 도출한다 — 배선이 필요한 엔드포인트 수만큼은 표가 덮어야 한다.
+        $this->assertGreaterThanOrEqual(
+            count($mustBeWired),
+            count($wiredEndpoints),
+            '배선 표가 덮는 엔드포인트가 배선이 필요한 엔드포인트보다 적다 — 그 차이가 곧 사각이다'
         );
 
         foreach ($expectations as [$relative, $call, $why, $enclosing]) {
@@ -317,6 +503,8 @@ class InstallerEndpointGuardCoverageTest extends TestCase
      * 비-JSON 본문이 나가 프론트의 res.json() 이 깨지고, 운영자에게는 실제 실패 사유 대신
      * 일반 통신 오류만 보인다. 일회성 probe(check-env·session-probe)와 SSE 주 응답
      * (install-worker)은 이 모집단이 아니다 — 반복 파싱 루프에 실리지 않는다.
+     *
+     * @effects stepwise_endpoint_wraps_uncaught_errors_in_a_json_envelope
      */
     public function test_browser_polled_json_endpoints_have_a_top_level_throwable_envelope(): void
     {

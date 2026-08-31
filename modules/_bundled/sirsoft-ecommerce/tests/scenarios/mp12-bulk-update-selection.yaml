@@ -1,4 +1,5 @@
-# audit:allow test-scenario-coverage reason: |
+# audit:allow test-scenario-coverage reason: issue:#609 |
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 15차 F-21 에서 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
 #   selection × target × source 18 케이스는 docblock 마킹으로 열거되어 있지 않다 (MP12/A27 소유,
 #   이 매니페스트 작성 시점부터의 미결 상태). #518 은 이 매트릭스를 넓히지 않았고, 이번에 추가한
 #   effects 3종(aggregate_entry_for_unloaded_options /

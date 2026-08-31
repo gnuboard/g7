@@ -3,6 +3,7 @@
 namespace Tests\Unit\Extension\Helpers;
 
 use App\Extension\Helpers\FilePermissionHelper;
+use App\Extension\Helpers\StorageLinkHelper;
 use Illuminate\Support\Facades\File;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -151,6 +152,46 @@ class FilePermissionHelperSymlinkTest extends TestCase
     }
 
     /**
+     * 보호 경로가 **일반 디렉토리**여도 보존한다 — 링크 여부에 묶이지 않는다.
+     *
+     * 종전 판정은 `in_array(...) && (is_link || isReparsePoint)` 였다. 그래서 심볼릭
+     * 링크를 만들 수 없어 `public/storage` 를 **복사 디렉토리로 운영**하는 사이트
+     * (이 안이 대상으로 삼은 바로 그 호스팅)와 7.1.0 정리 대상 상태에서는 보호가 통째로
+     * 빠져 `deleteDirectory()` 로 **공개 업로드 전량이 영구 삭제**됐다. 그 경로는 릴리즈
+     * 소스에 없는 것이 정상이라 orphan 판정은 언제나 참이다.
+     *
+     * @scenario storage_link=plain_directory, update_mode=prune
+     *
+     * @effects prune_preserves_public_storage_even_when_not_a_link
+     */
+    #[Test]
+    public function remove_orphan_items_는_보호_경로가_일반_디렉토리여도_보존합니다(): void
+    {
+        $source = $this->tempRoot.'/src2';
+        $dest = $this->tempRoot.'/dst2';
+
+        File::ensureDirectoryExists($source);
+        File::ensureDirectoryExists($dest.'/storage');
+        File::put($dest.'/storage/uploaded.txt', '업로드 파일');
+
+        // 손상 백업도 같은 이유로 보존 대상이다 — 7.1.0 스텝이 문서 루트 밖으로 옮길
+        // 때까지 운영자에게 남은 유일한 사본일 수 있는데, 그 스텝은 이 정리보다 뒤에 돈다.
+        File::ensureDirectoryExists($dest.'/storage.broken.20260101010101');
+        File::put($dest.'/storage.broken.20260101010101/old.txt', '이전 사본');
+
+        FilePermissionHelper::copyDirectory($source, $dest, null, [], '', true, false, null, ['storage']);
+
+        $this->assertFileExists(
+            $dest.'/storage/uploaded.txt',
+            '보호 경로가 링크가 아니라는 이유로 공개 업로드가 삭제되면 안 된다'
+        );
+        $this->assertFileExists(
+            $dest.'/storage.broken.20260101010101/old.txt',
+            '손상 백업은 7.1.0 스텝이 옮길 대상이다 — 그 전에 지우면 옮길 것이 없다'
+        );
+    }
+
+    /**
      * 화이트리스트 밖 orphan symlink 는 `preserveLinkPaths=['storage']` 여도 여전히 삭제.
      *
      * 정밀 보호(무조건 보존 아님)임을 보장 — `public/storage` 만 좁게 보존한다는 설계 확정.
@@ -265,6 +306,55 @@ class FilePermissionHelperSymlinkTest extends TestCase
         // junction 은 dest 에도 junction 으로 보존되어 target 내용에 접근 가능해야 한다
         $this->assertTrue(is_dir($dest.'/storage'), 'dest 의 storage 는 디렉토리(junction)로 접근 가능해야 한다');
         $this->assertFileExists($dest.'/storage/inside.txt', 'junction 통과 시 target 파일 접근 가능');
+
+        // 위 두 단언은 **보존과 역참조 심층복사를 구분하지 못한다** — 내용을 통째로 베껴도
+        // 둘 다 통과한다. 복사 뒤에 target 에 새 파일을 넣어 dest 에서 보이는지로 가른다.
+        File::put($linkTarget.'/after_copy.txt', '복사 후 target 에 생긴 파일');
+        $this->assertFileExists(
+            $dest.'/storage/after_copy.txt',
+            'junction 이 보존되지 않고 내용이 복사됐다 — target 변경이 dest 에 비치지 않는다'
+        );
+    }
+
+    /**
+     * junction 판정이 저장소의 실측 사실과 어긋나면 안 됩니다.
+     *
+     * `StorageLinkHelper` 가 PHP 8.3/Windows 실측으로 확정한 사실은 「정상 junction 은
+     * `is_dir`·`file_exists` 둘 다 true」다. 그런데 `FilePermissionHelper` 의 판정은 한때
+     * 그 반대(`is_dir` 이면 junction 아님)를 전제로 조기 반환해, **모든 정상 junction 을
+     * 일반 디렉토리로 오판**했다. 그러면 `removeOrphanItems` 가 링크만 지우는 분기를 놓치고
+     * `File::deleteDirectory` 로 내려가 **target 안의 파일을 전부 지운다**(#43 이 막으려던 사고).
+     */
+    #[Test]
+    public function junction_은_링크_판정_ssot_와_같은_결과여야_합니다(): void
+    {
+        if (PHP_OS_FAMILY !== 'Windows') {
+            $this->markTestSkipped('junction 은 Windows 전용 (mklink /J)');
+        }
+
+        $linkTarget = $this->tempRoot.'/ssot_target';
+        $junctionPath = $this->tempRoot.'/ssot_junction';
+
+        File::ensureDirectoryExists($linkTarget);
+        exec('cmd /c mklink /J '.escapeshellarg($junctionPath).' '.escapeshellarg($linkTarget).' 2>&1', $out, $code);
+        if ($code !== 0) {
+            $this->markTestSkipped('junction 생성 실패: '.implode("\n", $out));
+        }
+
+        $reflection = new \ReflectionMethod(FilePermissionHelper::class, 'isReparsePoint');
+
+        $this->assertTrue(
+            $reflection->invoke(null, $junctionPath),
+            'FilePermissionHelper 가 정상 junction 을 인식하지 못한다 — 링크 보존·링크만 제거 분기가 전부 무력화된다'
+        );
+        $this->assertTrue(
+            StorageLinkHelper::isLinkOrJunction($junctionPath),
+            '링크 판정 SSoT 도 같은 결과여야 한다'
+        );
+        $this->assertFalse(
+            $reflection->invoke(null, $linkTarget),
+            '일반 디렉토리를 junction 으로 오판하면 안 된다'
+        );
     }
 
     /**

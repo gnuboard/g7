@@ -30,8 +30,6 @@ use Tests\TestCase;
  *
  * 정적 룰 쪽 사각도 함께 닫았지만(모집단에 `database/**` 추가), 그 룰은 「무가드 호출」만
  * 본다. 「$_ENV 를 먼저 보는가」는 행위라서 이 검사가 소유한다.
- *
- * @effects installer_admin_seeder_reads_env_without_putenv
  */
 class AdminSeederEnvChannelTest extends TestCase
 {
@@ -75,6 +73,9 @@ class AdminSeederEnvChannelTest extends TestCase
         parent::tearDown();
     }
 
+    /**
+     * @effects installer_admin_seeder_reads_env_without_putenv
+     */
     public function test_seeder_reads_admin_credentials_from_env_superglobal(): void
     {
         // `installerPutEnv()` 가 putenv 없이 남기는 상태 그대로
@@ -97,6 +98,9 @@ class AdminSeederEnvChannelTest extends TestCase
         $this->assertSame('en', $resolved['language'], '관리자 언어가 조용히 기본값으로 떨어졌다 (§7 R2)');
     }
 
+    /**
+     * @effects installer_admin_seeder_reads_env_without_putenv
+     */
     public function test_seeder_reads_admin_credentials_from_server_superglobal(): void
     {
         // `installerPutEnv()` 는 두 슈퍼전역을 함께 채운다. 호스팅의 `variables_order` 설정에

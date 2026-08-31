@@ -46,7 +46,10 @@ _이 엔드포인트는 JSON `data` 를 반환하지 않습니다. 성공 시 `R
 | 헤더 | 타입 | 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | Content-Type | string | `image/jpeg` | 업로드 레코드의 `mime_type` 값. 허용 MIME: `image/jpeg`, `image/png`, `image/gif`, `image/webp` |
-| Cache-Control | string | `public, max-age=31536000` | 공개 콘텐츠 이미지의 장기 캐싱 (1년) |
+| Cache-Control | string | `public, max-age=31536000, must-revalidate` | 공개 콘텐츠 이미지의 장기 캐싱 (1년). 주소에 자산 버전(`?v=`)이 없어 `immutable` 은 붙지 않는다. 비운영 환경에서는 `no-cache` |
+| ETag | string | `"9f2c…"` | 행 메타(디스크·경로·수정 시각·크기) 기반 검증자 — 따옴표를 포함한 entity-tag |
+| Last-Modified | string | `Tue, 14 Nov 2023 22:13:20 GMT` | 업로드 레코드의 수정 시각 |
+| Expires | string | `Wed, 13 Nov 2024 22:13:20 GMT` | 캐시 만료 시각 (`max-age` 와 같은 근거) |
 | Content-Disposition | string | `inline; filename="photo.jpg"` | 업로드 시 원본 파일명(`original_name`)을 파일명으로 사용 |
 
 **응답 예시**
@@ -56,10 +59,26 @@ _이 엔드포인트는 JSON `data` 를 반환하지 않습니다. 성공 시 `R
 ```http
 HTTP/1.1 200 OK
 Content-Type: image/jpeg
-Cache-Control: public, max-age=31536000
+Cache-Control: public, max-age=31536000, must-revalidate
+ETag: "9f2c1d5a0b7e4c3f8a6d2e1b9c0f7a5d"
+Last-Modified: Tue, 14 Nov 2023 22:13:20 GMT
+Expires: Wed, 13 Nov 2024 22:13:20 GMT
 Content-Disposition: inline; filename="photo.jpg"
 
 <binary image data>
+```
+
+조건부 요청 (HTTP 304) — `If-None-Match` 가 현재 ETag 와 일치하거나, `If-None-Match` 없이 `If-Modified-Since` 가 수정 시각 이후이면 본문 없이 응답합니다. 304 는 200 이 실었을 `ETag`·`Last-Modified`·`Cache-Control`·`Expires` 를 그대로 싣습니다:
+
+```http
+GET /api/plugins/sirsoft-ckeditor5/images/{hash} HTTP/1.1
+If-None-Match: "9f2c1d5a0b7e4c3f8a6d2e1b9c0f7a5d"
+
+HTTP/1.1 304 Not Modified
+ETag: "9f2c1d5a0b7e4c3f8a6d2e1b9c0f7a5d"
+Last-Modified: Tue, 14 Nov 2023 22:13:20 GMT
+Cache-Control: public, max-age=31536000, must-revalidate
+Expires: Wed, 13 Nov 2024 22:13:20 GMT
 ```
 
 실패 시 (HTTP 404) — 표준 JSON envelope:
@@ -87,6 +106,7 @@ CKEditor5 본문에 삽입된 이미지를 실제로 내려주는 공개 서빙 
 - `{hash}` 는 라우트 제약 `where('hash', '[a-f0-9]{12}')` 로 12자리 소문자 16진수만 매칭된다. 형식이 어긋나면 라우트 자체가 매칭되지 않아 404 가 된다. 이 값은 이미지 업로드 시 발급된 `download_url` 의 마지막 경로 세그먼트다.
 - 성공 응답은 JSON 이 아니라 **이미지 바이너리 스트림**(`StreamedResponse`, `Content-Type` 은 이미지 MIME)이다. `ResponseHelper` envelope 로 감싸지 않는다.
 - `ImageServeService::findByHash()` 가 레코드를 찾지 못하거나 스토리지에 실제 파일이 없어 `serve()` 가 null 을 반환하면 `messages.image.not_found`(404) 표준 JSON 을 반환한다.
+- **조건부 요청**: 응답은 `ETag`(행 메타 기반)·`Last-Modified` 를 싣고, 되돌아온 `If-None-Match`(우선) / `If-Modified-Since` 를 판정해 변경이 없으면 본문 없는 304 로 응답한다. 판정은 코어 파일 서빙 헬퍼(`streamedFileResponse()`)가 하므로 다중값·`W/` 약한 검증자·압축 표현의 `-gzip` 접미사가 모두 인정되며, 304 에도 200 과 같은 캐시 헤더가 실린다. 주소에 자산 버전이 없으므로 `immutable` 은 붙지 않는다 — 같은 주소의 이미지가 교체되면 재검증으로 도달한다.
 
 **응답 예시** (실패 시에만 JSON — 성공 시에는 이미지 바이너리)
 

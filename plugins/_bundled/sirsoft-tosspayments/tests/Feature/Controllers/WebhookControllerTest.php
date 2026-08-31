@@ -18,9 +18,6 @@ use Plugins\Sirsoft\Tosspayments\Tests\PluginTestCase;
  * 가상계좌 입금통보(deposit) — secret 대조 / 리플레이 멱등 / status 분기 / 상태 가드.
  *
  * @scenario webhook_status=done, webhook_secret=match, replay=first
- *
- * @effects deposit_done_completes_payment, deposit_canceled_fails_payment,
- *          webhook_secret_verified, webhook_replay_idempotent, non_waiting_deposit_is_noop
  */
 class WebhookControllerTest extends PluginTestCase
 {
@@ -89,6 +86,9 @@ class WebhookControllerTest extends PluginTestCase
         $this->app->instance(PluginSettingsService::class, $mock);
     }
 
+    /**
+     * @effects deposit_done_completes_payment
+     */
     public function test_deposit_done_completes_payment(): void
     {
         $this->mockPluginSettings();
@@ -107,6 +107,9 @@ class WebhookControllerTest extends PluginTestCase
         $this->assertSame(PaymentStatusEnum::PAID->value, $order->payment->payment_status->value);
     }
 
+    /**
+     * @effects deposit_canceled_fails_payment
+     */
     public function test_deposit_canceled_fails_payment(): void
     {
         $this->mockPluginSettings();
@@ -124,6 +127,9 @@ class WebhookControllerTest extends PluginTestCase
         $this->assertSame(OrderStatusEnum::CANCELLED, $order->order_status);
     }
 
+    /**
+     * @effects webhook_secret_verified
+     */
     public function test_secret_mismatch_returns_401(): void
     {
         $this->mockPluginSettings();
@@ -141,6 +147,9 @@ class WebhookControllerTest extends PluginTestCase
         $this->assertNotSame(OrderStatusEnum::PAYMENT_COMPLETE, $order->order_status);
     }
 
+    /**
+     * @effects webhook_secret_verified
+     */
     public function test_secret_verification_can_be_disabled(): void
     {
         $this->mockPluginSettings(['webhook_secret_verify' => false]);
@@ -157,6 +166,9 @@ class WebhookControllerTest extends PluginTestCase
         $this->assertSame(OrderStatusEnum::PAYMENT_COMPLETE, $order->order_status);
     }
 
+    /**
+     * @effects webhook_replay_idempotent
+     */
     public function test_replay_after_paid_is_idempotent(): void
     {
         $this->mockPluginSettings();
@@ -214,6 +226,9 @@ class WebhookControllerTest extends PluginTestCase
         $response->assertStatus(422);
     }
 
+    /**
+     * @effects non_waiting_deposit_is_noop
+     */
     public function test_deposit_on_non_waiting_order_is_noop_200(): void
     {
         $this->mockPluginSettings();

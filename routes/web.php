@@ -3,9 +3,13 @@
 use App\Http\Controllers\Api\Public\SitemapController;
 use App\Seo\TemplateRouteResolver;
 use App\Support\StaticExtensionPattern;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Http\Request;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 // 개발용 라우트 - 디버그 모드 + 관리자 인증 필수
 Route::get('/dev', function () {
@@ -42,9 +46,30 @@ Route::prefix('admin')
 // Sitemap XML 라우트
 // 자식 경로는 SitemapFileStore::childUrl() 이 sitemapindex 의 <loc> 에 기록하는 값과 일치해야 한다.
 // gzip 여부는 manifest 가 결정하므로 .xml / .xml.gz 를 같은 액션에서 처리한다.
-Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('web.sitemap');
-Route::get('/sitemap-{n}.xml', [SitemapController::class, 'child'])->whereNumber('n')->name('web.sitemap.child');
-Route::get('/sitemap-{n}.xml.gz', [SitemapController::class, 'child'])->whereNumber('n')->name('web.sitemap.child.gz');
+//
+// `dualSuffix` 가 아니라 `dualSuffixSegment` 를 쓴다 — 접미사를 떼면 `/sitemap` 이라는
+// **맨 이름**을 이 라우트가 선점해 그 주소를 쓰던 사용자 페이지가 도달 불가가 되고,
+// `.xml` 과 `.xml.gz` 의 확장자 없는 형태가 서로 충돌한다. 세그먼트로 내리면 둘 다
+// 생기지 않는다 (7차 G3 라운드 B-6).
+//
+// 세션·쿠키 미들웨어를 뺀다 — 이 파일은 `web` 그룹이라 `StartSession` 이 매 응답에 세션
+// 쿠키를 싣는데, 사이트맵 응답은 `public, max-age` 다. `Set-Cookie` 가 실린 `public` 응답은
+// 공유 캐시가 저장하지 않거나(RFC 9111 §3.5 — 캐시마다 다르다) 세션 쿠키를 다른 방문자에게
+// 재사용한다. 봇이 받는 응답이라 세션이 있을 이유도 없다. `ShareErrorsFromSession` 은 세션
+// 없이는 예외를 던지므로 함께 뺀다 (16차 G3 라운드 E-5).
+$sitemapWithoutSession = [
+    StartSession::class,
+    ShareErrorsFromSession::class,
+    AddQueuedCookiesToResponse::class,
+    ValidateCsrfToken::class,
+];
+Route::dualSuffixSegment('/sitemap', 'xml', [SitemapController::class, 'index'])->withoutMiddleware($sitemapWithoutSession)->name('web.sitemap');
+Route::dualSuffixSegment('/sitemap-{n}', 'xml', [SitemapController::class, 'child'])->withoutMiddleware($sitemapWithoutSession)->whereNumber('n')->name('web.sitemap.child');
+// gzip 형태는 확장자 없는 짝을 따로 만들지 않는다 — `child()` 는 URL 의 접미사를 보지 않고
+// manifest 로 gzip 여부를 정하므로, 바로 위 줄이 등록한 `/sitemap-{n}/xml` 이 gzip 세트에도
+// 그대로 도달한다. 짝을 하나 더 만들면 같은 응답을 내는 제3의 주소만 늘어난다.
+// audit:allow dynamic-route-static-extension 확장자 없는 짝은 위 줄의 `/sitemap-{n}/xml` 이 소유한다
+Route::get('/sitemap-{n}.xml.gz', [SitemapController::class, 'child'])->withoutMiddleware($sitemapWithoutSession)->whereNumber('n')->name('web.sitemap.child.gz');
 
 // User 라우트 - user 템플릿 의존성 검증 + SEO 봇 감지
 Route::middleware(['template.dependencies:user', 'seo'])

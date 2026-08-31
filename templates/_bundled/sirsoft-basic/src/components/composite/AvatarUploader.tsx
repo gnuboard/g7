@@ -13,6 +13,8 @@
 
 import { useRef, useState, useCallback, useEffect } from 'react';
 
+import { apiUrl } from '../../support/apiUrl';
+
 import { Div } from '../basic/Div';
 import { Span } from '../basic/Span';
 import { Button } from '../basic/Button';
@@ -178,7 +180,7 @@ export function AvatarUploader({
       // API 호출
       const csrfToken = getCsrfToken();
       const authToken = getAuthToken();
-      const response = await fetch(uploadEndpoint, {
+      const response = await fetch(apiUrl(uploadEndpoint), {
         method: 'POST',
         headers: {
           Accept: 'application/json',
@@ -277,7 +279,7 @@ export function AvatarUploader({
     try {
       const csrfToken = getCsrfToken();
       const authToken = getAuthToken();
-      const response = await fetch(deleteEndpoint, {
+      const response = await fetch(apiUrl(deleteEndpoint), {
         method: 'DELETE',
         headers: {
           Accept: 'application/json',

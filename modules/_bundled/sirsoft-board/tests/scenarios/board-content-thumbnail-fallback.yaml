@@ -1,3 +1,5 @@
+# audit:allow test-scenario-coverage reason: issue:#609 develop 이 소유한 축(backfill)의 @scenario 마킹이 이 매니페스트 선언과 어긋난다 — 축을 선언하면 교차곱 12케이스가 미커버가 되고, 그 케이스를 재는 테스트 작성은 그 축을 소유한 작업의 몫이라 리베이스 범위 밖이다(PO 결정). 표식을 걷는 것이 그 작업의 완료 조건이다.
+
 feature: 본문 첫 이미지 목록 썸네일 폴백
 
 description: |
@@ -9,6 +11,8 @@ description: |
 axes:
   image_source: [attachment_only, content_internal_only, both, content_external_only, none]
   secrecy: [normal, secret_unauthorized]
+  # 마킹은 있는데 선언이 없던 축 (값은 실제 마킹에서 도출) — 머리말 표식이 교차곱 유예를 소유한다.
+  backfill: [idempotent, legacy_row, text_mode]    # 업그레이드 백필의 입력 상태
 
 exclusions:
   - { image_source: attachment_only, secrecy: secret_unauthorized, reason: "비밀글 게이트는 image_source 와 무관하게 최상단에서 null — 대표 1조합(content_internal_only)으로 게이트를 검증하고 첨부 축은 기존 PostResourceThumbnailUrlTest 비밀글 케이스가 커버" }
@@ -38,6 +42,12 @@ effects:
   - external_only_content_yields_null
   - secret_post_thumbnail_stays_null
   - detail_and_og_share_same_fallback
+  # 테스트 docblock 에는 있었으나 어느 매니페스트에도 없던 축 — 선언 = 마킹.
+  - backfill_fills_legacy_rows
+  - backfill_keeps_external_only_null
+  - text_mode_content_never_caches
+  - backfill_idempotent_second_run
+  - recompute_on_content_change
 
 test_files:
   - tests/Unit/Support/HtmlImageExtractorTest.php

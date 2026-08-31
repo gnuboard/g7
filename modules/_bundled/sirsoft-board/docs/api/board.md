@@ -23,6 +23,11 @@
 - **댓글 목록**(`GET .../posts/{postId}/comments`): 부모 게시글이 비밀글이고 열람 권한이 없으면 빈 목록(`200`)을 반환합니다.
 - **첨부 서빙**(`GET .../attachment/{hash}`, `.../attachment/{hash}/preview`): 부모 게시글이 비밀글이고 열람 권한이 없으면 `403`. 첨부 요청은 상세와 분리된 요청이라 비밀번호 검증(`password_verified`)은 적용되지 않으며 작성자/관리 권한만 인정합니다.
 - **상세/목록 응답**: 비열람자에게 `content`·`title`·`reply`·`attachments`가 마스킹됩니다.
+- **첨부 서빙 응답 헤더**: 두 통로 모두 행 메타에서 만든 `ETag`·`Last-Modified`·`Content-Length` 를
+  싣고 `If-None-Match`·`If-Modified-Since` 에 `304` 로 답합니다. `304` 는 `200` 이 실었을
+  캐시 헤더를 함께 싣고, 클라이언트가 보유한 표현의 검증자를 그대로 돌려줍니다. 파일 이름
+  선언(`Content-Disposition`)은 스토리지 계층이 만들며, 서빙 디스크는 각 첨부 행의 `disk` 를
+  따릅니다.
 
 ---
 

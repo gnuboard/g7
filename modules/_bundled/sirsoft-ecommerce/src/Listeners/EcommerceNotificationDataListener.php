@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Listeners;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Extension\ModuleManager;
 use App\Models\User;
+use App\Support\AssetUrl;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\ProductInquiry;
@@ -320,8 +321,6 @@ class EcommerceNotificationDataListener implements HookListenerInterface
             return $this->emptyResult();
         }
 
-        $baseUrl = config('app.url');
-
         return [
             'notifiable' => null,
             'notifiables' => null,
@@ -336,8 +335,8 @@ class EcommerceNotificationDataListener implements HookListenerInterface
                     $order,
                     (float) $order->total_paid_amount > 0 ? (float) $order->total_paid_amount : (float) $order->total_amount
                 ),
-                'order_url' => "{$baseUrl}/admin/ecommerce/orders/{$order->order_number}",
-                'site_url' => $baseUrl,
+                'order_url' => AssetUrl::siteAbsolute("/admin/ecommerce/orders/{$order->order_number}"),
+                'site_url' => AssetUrl::siteRoot(),
             ],
             'context' => [
                 'trigger_user_id' => $order->user_id,
@@ -358,7 +357,6 @@ class EcommerceNotificationDataListener implements HookListenerInterface
             return $this->emptyResult();
         }
 
-        $baseUrl = config('app.url');
         $product = $inquiry->product;
 
         return [
@@ -370,8 +368,8 @@ class EcommerceNotificationDataListener implements HookListenerInterface
                 'product_name' => $product?->getLocalizedName() ?? ($inquiry->product_name_snapshot[app()->getLocale()] ?? ''),
                 'customer_name' => $inquiry->user?->name ?? '',
                 'inquiry_content' => mb_substr($inquiry->inquirable?->content ?? '', 0, 200),
-                'inquiry_url' => "{$baseUrl}/admin/ecommerce/product-inquiries",
-                'site_url' => $baseUrl,
+                'inquiry_url' => AssetUrl::siteAbsolute('/admin/ecommerce/product-inquiries'),
+                'site_url' => AssetUrl::siteRoot(),
             ],
             'context' => [
                 'trigger_user_id' => $inquiry->user_id,
@@ -396,8 +394,6 @@ class EcommerceNotificationDataListener implements HookListenerInterface
             return $this->emptyResult();
         }
 
-        $baseUrl = config('app.url');
-
         return [
             'notifiable' => null,
             'notifiables' => null,
@@ -406,8 +402,8 @@ class EcommerceNotificationDataListener implements HookListenerInterface
                 'app_name' => config('app.name'),
                 'product_name' => $inquiry->product?->getLocalizedName() ?? ($inquiry->product_name_snapshot[app()->getLocale()] ?? ''),
                 'inquiry_content' => mb_substr($inquiry->inquirable?->content ?? '', 0, 200),
-                'inquiry_url' => "{$baseUrl}/mypage/inquiries",
-                'site_url' => $baseUrl,
+                'inquiry_url' => AssetUrl::siteAbsolute('/mypage/inquiries'),
+                'site_url' => AssetUrl::siteRoot(),
             ],
             'context' => [
                 'trigger_user_id' => $inquiry->user_id,
@@ -449,14 +445,12 @@ class EcommerceNotificationDataListener implements HookListenerInterface
      */
     private function buildOrderData(Order $order, array $extra = []): array
     {
-        $baseUrl = config('app.url');
-
         if ($order->isGuestOrder()) {
             $name = $order->getOrdererName() ?? '';
-            $orderUrl = "{$baseUrl}".ShopPathResolver::path(self::GUEST_ORDER_LOOKUP_SUFFIX);
+            $orderUrl = AssetUrl::siteAbsolute(ShopPathResolver::path(self::GUEST_ORDER_LOOKUP_SUFFIX));
         } else {
             $name = $order->user?->name ?? '';
-            $orderUrl = "{$baseUrl}/mypage/orders/{$order->order_number}";
+            $orderUrl = AssetUrl::siteAbsolute("/mypage/orders/{$order->order_number}");
         }
 
         // 표시 금액 = 결제완료액(있으면) 또는 주문 총액(base 통화)을 결제 통화로 환산한 포맷.
@@ -476,7 +470,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
             'order_number' => $order->order_number,
             'total_amount' => $this->formatOrderChargeAmount($order, $baseAmount),
             'order_url' => $orderUrl,
-            'site_url' => $baseUrl,
+            'site_url' => AssetUrl::siteRoot(),
             // 배송지 변수 (B6)
             'shipping_recipient_name' => $shipping?->recipient_name ?? '',
             'shipping_recipient_phone' => $shipping?->recipient_phone ?? '',
@@ -559,7 +553,6 @@ class EcommerceNotificationDataListener implements HookListenerInterface
         $currency = (string) ($args[2] ?? 'KRW');
         $expiresDate = (string) ($args[3] ?? '');
         $balance = (float) ($args[4] ?? 0);
-        $baseUrl = config('app.url');
 
         return [
             'notifiable' => null,
@@ -571,8 +564,8 @@ class EcommerceNotificationDataListener implements HookListenerInterface
                 'currency' => $currency,
                 'expires_date' => $expiresDate,
                 'balance' => number_format($balance),
-                'mileage_url' => "{$baseUrl}/mypage/mileage",
-                'site_url' => $baseUrl,
+                'mileage_url' => AssetUrl::siteAbsolute('/mypage/mileage'),
+                'site_url' => AssetUrl::siteRoot(),
             ],
             'context' => [
                 'trigger_user_id' => $user->id,

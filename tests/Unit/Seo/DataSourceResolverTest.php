@@ -3,7 +3,9 @@
 namespace Tests\Unit\Seo;
 
 use App\Seo\DataSourceResolver;
+use App\Support\AssetUrl;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -46,6 +48,38 @@ class DataSourceResolverTest extends TestCase
 
         $this->assertArrayHasKey('product', $result);
         $this->assertSame($responseData, $result['product']);
+    }
+
+    /**
+     * 내부 API 호출 주소는 요청이 아니라 **설정된 사이트 주소**(`app.url`)를 따르고, 접두사는 한 번만 실린다.
+     *
+     * 봇 렌더가 `url($endpoint)` 로 조립하면 요청 호스트를 부르고, 레이아웃 데이터소스가 접두사를
+     * 이미 품은 값(`/g7/api/…`)에는 접두사가 **한 번 더** 실려 `/g7/g7/api/…` 이 된다 — 봇 화면에서만
+     * 데이터가 조용히 비고, 오류는 fallback 으로 흡수된다 (16차 G3 라운드 B-7).
+     *
+     * @scenario base_path=subpath, navigation_direction=request
+     *
+     * @effects seo_data_source_calls_follow_the_configured_site_url
+     */
+    public function test_api_call_targets_the_configured_site_url_idempotently(): void
+    {
+        config(['app.url' => 'https://example.com/g7']);
+        app()->instance('request', Request::create('http://localhost/products/1'));
+
+        Http::fake(['*' => Http::response(['data' => ['ok' => true]], 200)]);
+
+        try {
+            $this->resolver->resolve([
+                ['id' => 'a', 'endpoint' => '/api/products/1', 'method' => 'GET'],
+                ['id' => 'b', 'endpoint' => '/g7/api/products/2', 'method' => 'GET'],
+            ], ['a', 'b'], [], 'ko');
+        } finally {
+            AssetUrl::forceBasePrefix(null);
+        }
+
+        Http::assertSent(fn ($request) => $request->url() === 'https://example.com/g7/api/products/1');
+        Http::assertSent(fn ($request) => $request->url() === 'https://example.com/g7/api/products/2');
+        Http::assertNotSent(fn ($request) => str_contains($request->url(), '/g7/g7/') || str_starts_with($request->url(), 'http://localhost'));
     }
 
     /**

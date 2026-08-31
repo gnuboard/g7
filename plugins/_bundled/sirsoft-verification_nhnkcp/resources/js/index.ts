@@ -1,3 +1,4 @@
+import { apiUrl } from './apiUrl';
 /**
  * NHN KCP 휴대폰 본인확인 plugin — 코어 IDV 모달 슬롯 기반 통합.
  *
@@ -450,7 +451,7 @@ async function reportAbandonedChallenge(challengeId?: string): Promise<void> {
     const token = getG7Core()?.api?.getToken?.() ?? null;
 
     try {
-        await fetch(`/api/identity/challenges/${encodeURIComponent(challengeId)}/cancel`, {
+        await fetch(apiUrl(`/api/identity/challenges/${encodeURIComponent(challengeId)}/cancel`), {
             method: 'POST',
             credentials: 'include',
             headers: {
@@ -488,7 +489,7 @@ async function reissueChallenge(current: Record<string, any>): Promise<Record<st
             }
         })();
 
-        const res = await fetch('/api/identity/challenges', {
+        const res = await fetch(apiUrl('/api/identity/challenges'), {
             method: 'POST',
             credentials: 'include',
             headers: {
@@ -706,8 +707,11 @@ function handleMobileReturn(): void {
     params.delete('identity_error');
     params.delete('identity_error_message');
     const query = params.toString();
+    // base-path:allow 지금 열려 있는 주소를 그대로 되쓴다 — `location.pathname` 은 이미 마운트 접두사를 포함한다
     const nextUrl = window.location.pathname + (query ? `?${query}` : '') + window.location.hash;
     try {
+        // 바꾸는 것은 쿼리스트링뿐이므로 접두사를 다시 붙이면 이중이 된다.
+        // base-path:allow 바로 위에서 조립한 값이다
         window.history.replaceState(null, '', nextUrl);
     } catch { /* noop */ }
 }

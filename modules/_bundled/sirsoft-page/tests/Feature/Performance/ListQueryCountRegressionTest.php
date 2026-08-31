@@ -12,10 +12,7 @@ use Tests\Concerns\CountsQueries;
  *
  * 행 수를 늘려도 쿼리 수가 늘지 않는지 단언한다 — 그것이 N+1 의 정의다.
  *
- * @scenario case=list_query_count
- *
- * @effects page_list_query_count_stable,
- *          page_search_query_count_stable
+ * @scenario list_query_count
  */
 class ListQueryCountRegressionTest extends ModuleTestCase
 {

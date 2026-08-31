@@ -34,6 +34,7 @@ import type { GlobalHeaderRule } from './LayoutLoader';
 import { IdentityGuardInterceptor } from '../identity/IdentityGuardInterceptor';
 import { isAbortError, isNetworkFailure, loadScriptWithRetry, loadStylesheetWithRetry } from './networkResilience';
 import { isAllowedScriptSrc, getTrustedScriptHosts } from '../support/scriptSrcPolicy';
+import { isSameOriginSitePath, withBasePrefix } from '../support/assetUrl';
 
 const logger = createLogger('ActionDispatcher');
 
@@ -2417,6 +2418,18 @@ export class ActionDispatcher {
         }
 
         case 'replaceUrl': {
+          // 이 표식이 덮는 것은 **벗기는 쪽** 축이다(`location.pathname` 을 읽으면
+          // `stripBasePrefix()` 를 거치라는 계약). 붙이는 쪽 수집기 여섯은 이 줄을
+          // 보지 않으므로 그쪽만 보면 「아무것도 덮지 않는 선무장 면제」로 읽히는데,
+          // 실제로 지우면 벗기는 쪽 게이트가 red 가 된다(10차 실측 — 그 판단으로
+          // 한 번 지웠다가 되돌렸다).
+          //
+          // 면제가 정당한 이유: 이 값은 라우트 대조에 쓰이지 않고 그대로
+          // `handleReplaceUrl` 로 넘어가며, 그 안쪽의
+          // `history.replaceState(…, withBasePrefix(finalPath))` 가 멱등이라
+          // 접두사를 품은 현재 주소를 되써도 이중 접두가 생기지 않는다.
+          //
+          // base-path:allow 현재 주소를 그대로 되쓰는 폴백이라 접두사를 벗기지 않는다
           const replaceUrlPath = resolvedParams.path || resolvedTarget || window.location.pathname;
           result = await this.handleReplaceUrl(replaceUrlPath, resolvedParams);
           break;
@@ -3311,10 +3324,40 @@ export class ActionDispatcher {
     const windowTarget = params.target === '_self' ? '_self' : '_blank';
     logger.log('handleOpenWindow:', { target, params, finalPath, windowTarget });
 
+    // 브라우저가 그대로 여는 주소이므로 **넘기기 전에** same-origin 인지 판정한다.
+    //
+    // 이 자리가 미등록 라우트 fallback 의 종착지다(`resolveNavigateFallback`). 그런데
+    // 라우트 패턴은 전부 `^/…$` 앵커라 외부 URL 은 **구조적으로** 매치될 수 없고, 그래서
+    // 「매치 실패 → 바깥으로 내보낸다」는 폴백 규칙은 외부 주소를 **반드시** 통과시킨다 —
+    // 매치 실패가 방어가 아니라 방아쇠다. 번들 템플릿 3곳이 로그인 복귀 주소
+    // (`{{query.redirect}}`)를 검증 없이 `navigate` 로 넘기므로, 게이트가 없으면
+    // 무인증 오픈 리다이렉트가 된다(공격자 링크 → 클릭 1회 → 외부 사이트).
+    //
+    // 판정은 `withBasePrefix()` **앞**에 둔다 — 그 함수는 `/` 로 시작하지 않는 값을
+    // 접두사 없이 원본 그대로 돌려주므로(설계상 정당), 뒤에 두면 이미 늦다.
+    // 레이아웃 23곳의 `openWindow` 는 전부 사이트 내부 경로라 과차단이 없다. 외부
+    // 링크는 템플릿 `A` 컴포넌트가 소유한다.
+    if (!isSameOriginSitePath(finalPath)) {
+      logger.warn(
+        'handleOpenWindow: 사이트 밖 주소는 열지 않는다 (same-origin 아님) —',
+        finalPath
+      );
+
+      return;
+    }
+
+    // 브라우저가 그대로 여는 주소다 — 레이아웃 JSON 의 `target`(`/board/free` 등)은
+    // 접두사가 없는 라우트 기준 경로이므로 여기서 붙인다. 붙이지 않으면 하위 폴더
+    // 배치에서 사이트 밖으로 나가고, 그쪽에 다른 사이트가 있으면 그 응답을 연다
+    // (12차 G3). `withBasePrefix()` 는 멱등이라 이미 접두사가 실린 값도 안전하다.
+    const navigablePath = withBasePrefix(finalPath);
+
     if (windowTarget === '_self') {
-      window.location.assign(finalPath);
+      // base-path:allow navigablePath 는 바로 위에서 withBasePrefix() 를 거친 값이다.
+      window.location.assign(navigablePath);
     } else {
-      window.open(finalPath, '_blank');
+      // base-path:allow navigablePath 는 같은 분기 앞에서 withBasePrefix() 를 거친 값이다.
+      window.open(navigablePath, '_blank');
     }
   }
 
@@ -3382,8 +3425,10 @@ export class ActionDispatcher {
 
     logger.log('handleReplaceUrl:', { target, params, finalPath });
 
-    // URL만 변경 (데이터소스 refetch 없음, 컴포넌트 리마운트 없음)
-    window.history.replaceState(null, '', finalPath);
+    // URL만 변경 (데이터소스 refetch 없음, 컴포넌트 리마운트 없음).
+    // 히스토리에 싣는 값은 브라우저가 보는 주소이므로 접두사를 붙인다 — 형제
+    // `Router.executeNavigation` 과 같은 규칙이다 (12차 G3).
+    window.history.replaceState(null, '', withBasePrefix(finalPath));
 
     // 이동 후 스크롤 위치 적용 (기본: preserve — URL만 교체하는 용도이므로 유지)
     this.applyScrollOption(params.scroll, params.scrollBehavior, 'preserve');
@@ -3437,7 +3482,7 @@ export class ActionDispatcher {
    */
   private async ensureCsrfToken(): Promise<void> {
     try {
-      await fetch('/sanctum/csrf-cookie', {
+      await fetch(withBasePrefix('/sanctum/csrf-cookie'), {
         credentials: 'include',
       });
     } catch (error) {
@@ -3671,6 +3716,15 @@ export class ActionDispatcher {
       }
     }
 
+    // 하위 폴더 배치(`https://host/g7/`)에서 사이트 밖으로 나가지 않도록 접두사를 거친다.
+    //
+    // 여기가 **런타임 주경로**다 — 레이아웃 JSON 의 `"target": "/api/…"` 가 그대로 실려
+    // 오고, 번들 레이아웃에만 387건이 있다. 생성기(`assetUrl.ts`)에만 규칙을 붙였을 때
+    // 이 경로는 사각으로 남아 있었고, 증상은 오류가 아니라 **버튼이 아무 반응도 하지
+    // 않는 것**이었다 (11차 G3 라운드). 헬퍼는 멱등이고 절대 URL·프로토콜 상대 URL·
+    // 상대 경로는 그대로 돌려주므로, 외부 주소를 target 으로 쓰는 흐름도 영향이 없다.
+    finalTarget = withBasePrefix(finalTarget);
+
     // 전역 헤더 추출 (패턴 매칭)
     // Stale Closure 방지: G7Core.state.getGlobal/getLocal()로 최신 상태 조회
     // (cartKey 재발급 등 중간에 상태가 변경된 경우에도 최신 값 사용)
@@ -3738,7 +3792,7 @@ export class ActionDispatcher {
     }
 
     try {
-      let response = await fetch(finalTarget, options);
+      let response = await fetch(withBasePrefix(finalTarget), options);
 
       // 응답 본문 파싱 (성공/실패 모두)
       let responseData: any;

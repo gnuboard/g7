@@ -79,6 +79,9 @@ class TemplateLayoutAttachmentServingTest extends TestCase
             echo 'bytes';
         }, 200, ['Content-Type' => 'image/png']);
 
+        // 행 disk 해석은 주입 disk 와의 비교부터 한다 (`ResolvesRowStorage`).
+        $this->storage->shouldReceive('getDisk')->andReturn('public');
+        config(['filesystems.disks.s3' => ['driver' => 's3']]);
         $this->storage->shouldReceive('withDisk')->with('s3')->andReturnSelf();
         $this->storage->shouldReceive('response')->andReturn($stream);
 
@@ -105,6 +108,40 @@ class TemplateLayoutAttachmentServingTest extends TestCase
     }
 
     /**
+     * 행 disk 가 **더 이상 등록돼 있지 않으면** 주입 스토리지로 폴백한다.
+     *
+     * 고아 disk 는 운영자가 만들지 않아도 생긴다 — 그 디스크를 제공하던 플러그인을
+     * 비활성화하거나 `FILESYSTEM_DISK` 를 바꾸면 config 에서 사라지고 행은 남는다.
+     * 종전에는 그 값을 존재 검증 없이 `withDisk()` 에 넘겼는데, `withDisk()` 는 clone
+     * 후 대입만 할 뿐 검증하지 않으므로 예외는 그 뒤 `response()` 가 디스크를 해석하는
+     * 순간 터진다. 이 서비스가 소비하는 라우트는 **무인증 공개 서빙**이라 고아 disk 행
+     * 하나로 500 + 스택 로그가 났다. 같은 판정을 번들 확장 넷은 이미 갖고 있었고
+     * 코어 둘만 없었다 (12차 G3 라운드 B12-1).
+     *
+     * 폴백 결과는 그 디스크에 파일이 없으므로 404 다 — 그것이 「저장 위치를 잃은
+     * 첨부」의 정상 degradation 이고, 500 은 아니다.
+     */
+    public function test_orphan_row_disk_falls_back_instead_of_throwing(): void
+    {
+        $template = new Template;
+        $template->id = 7;
+        $this->templateRepository->shouldReceive('findByIdentifier')
+            ->with('sirsoft-basic')->andReturn($template);
+
+        // 행은 s3 를 가리키는데 그 disk 가 config 에서 사라진 상태.
+        config(['filesystems.disks.s3' => null]);
+
+        $this->storage->shouldReceive('getDisk')->andReturn('public');
+        // 고아 disk 로는 withDisk 를 만들지 않아야 한다 — 만들면 아래 response 해석에서 터진다.
+        $this->storage->shouldNotReceive('withDisk');
+        $this->storage->shouldReceive('response')->andReturnNull();
+
+        $result = $this->service->getServableResponse('sirsoft-basic', $this->makeAttachment(7));
+
+        $this->assertNull($result, '고아 disk 는 404 로 떨어져야 한다 (500 아님)');
+    }
+
+    /**
      * 스토리지에 파일이 없으면(response null) null 이어야 합니다.
      */
     public function test_missing_file_returns_null(): void
@@ -114,6 +151,9 @@ class TemplateLayoutAttachmentServingTest extends TestCase
         $this->templateRepository->shouldReceive('findByIdentifier')
             ->with('sirsoft-basic')->andReturn($template);
 
+        // 행 disk 해석은 주입 disk 와의 비교부터 한다 (`ResolvesRowStorage`).
+        $this->storage->shouldReceive('getDisk')->andReturn('public');
+        config(['filesystems.disks.s3' => ['driver' => 's3']]);
         $this->storage->shouldReceive('withDisk')->with('s3')->andReturnSelf();
         $this->storage->shouldReceive('response')->andReturnNull();
 

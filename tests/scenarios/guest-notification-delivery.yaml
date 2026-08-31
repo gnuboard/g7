@@ -1,4 +1,5 @@
-# audit:allow test-scenario-coverage reason: |
+# audit:allow test-scenario-coverage reason: issue:#609 |
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 15차 F-21 에서 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
 #   cross product 자동 전개는 audit 실행 환경에 js-yaml 이 없어 fallback YAML 파서가
 #   nested axes 를 null 로 읽어 expandCases 가 throw 한다(동일 한계로 다른 시나리오도
 #   audit:allow 처리됨). 본 기능은 코어 Unit(GuestNotifiable/Resolver/채널게이트) +
@@ -22,6 +23,11 @@ description: |
     - 이커머스: 비회원 주문 6종 알림이 buildOrderContext 단일 지점에서 guest_recipient 제공
 
 axes:
+  # G3 회차 16 W6 — 종전 마킹이 쓰던 이름을 선언으로 올린다 (선언 = 마킹). 값은 실제 마킹에서 도출.
+  transition_path: [update, complete_payment]
+  target_status: [delivered, payment_complete]
+  previous_status: [different]
+  order_count: [single]
   recipient_type:
     - member        # 회원 (User)
     - guest         # 비회원 (GuestNotifiable)

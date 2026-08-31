@@ -16,6 +16,7 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { withBasePrefix } from '../../../../support/assetUrl';
 import { buildAuthHeaders } from '../../utils/authToken';
 
 /** 봇 미리보기 응답(서버 data) */
@@ -91,13 +92,26 @@ export function SeoBotPreviewPanel({
     setLoading(true);
     setError(null);
     try {
-      const endpoint = `/api/admin/templates/${encodeURIComponent(id)}/editor/seo-bot-preview`;
-      const res = await f(endpoint, {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: buildAuthHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify({ layout: lo, url: u, locale: lc, seed_context: sc ?? {}, route_params: rp ?? {} }),
-      });
+      // 하위 폴더 마운트에서도 사이트 안으로 가야 한다 — 형제(`SeoForm`)와 같은 규칙이고
+      // 접두사 부착은 **호출 자리에서** 한다. 중간 변수에 담으면 소스 계약 검사가 그 값이
+      // 접두사를 거쳤는지 볼 수 없다. 거치지 않으면 이 POST 가 사이트 밖
+      // (`https://host/api/…`)으로 나가고, 실패는 아래 `catch` 가 삼켜 봇 미리보기 패널만
+      // 조용히 비어 있게 된다.
+      const res = await f(
+        withBasePrefix(`/api/admin/templates/${encodeURIComponent(id)}/editor/seo-bot-preview`),
+        {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: buildAuthHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({
+            layout: lo,
+            url: u,
+            locale: lc,
+            seed_context: sc ?? {},
+            route_params: rp ?? {},
+          }),
+        }
+      );
       const body = await res.json().catch(() => null);
       if (!res.ok) {
         setError((body as { message?: string })?.message ?? `HTTP ${res.status}`);

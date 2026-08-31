@@ -7,6 +7,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { G7DevToolsCore } from '../../G7DevToolsCore';
+import { withBasePrefix } from '../../../support/assetUrl';
 
 export interface LayoutTabProps {
     devTools: G7DevToolsCore;
@@ -33,7 +34,7 @@ export const LayoutTab: React.FC<LayoutTabProps> = ({ devTools }) => {
     useEffect(() => {
         const fetchPermissions = async () => {
             try {
-                const response = await fetch('/api/admin/permissions', {
+                const response = await fetch(withBasePrefix('/api/admin/permissions'), {
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
                         'Accept': 'application/json',

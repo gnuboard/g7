@@ -1,16 +1,4 @@
 /**
- * 로컬 스토리지 관련 핸들러
- *
- * 비로그인 사용자의 장바구니 키 등 클라이언트 스토리지 관리를 처리합니다.
- *
- * 핸들러 시그니처: ActionDispatcher의 ActionHandler 형식을 따름
- * (action: ActionDefinition, context: ActionContext) => void | Promise<void>
- *
- * G7Core API 사용:
- * - G7Core.state.set() - 전역 상태 설정
- * - G7Core.state.get()._global?.currentUser - 현재 사용자 확인
- */
-/**
  * 장바구니 키 초기화
  *
  * 비로그인 사용자의 장바구니를 식별하기 위한 키를 생성/로드합니다.

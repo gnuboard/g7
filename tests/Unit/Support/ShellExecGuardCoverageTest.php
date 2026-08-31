@@ -18,8 +18,6 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  * 채널로도 도달하지 않았다 — 그 두 지점이 여기 모집단이다.
  *
  * 커버 축: shell_exec_guard_surface settings_memory·settings_cpu_info
- *
- * @effects settings_system_info_shell_calls_are_guarded
  */
 class ShellExecGuardCoverageTest extends TestCase
 {
@@ -114,6 +112,9 @@ class ShellExecGuardCoverageTest extends TestCase
         return $this->stripComments((string) file_get_contents($path));
     }
 
+    /**
+     * @effects settings_system_info_shell_calls_are_guarded
+     */
     public function test_every_shell_call_sits_behind_an_availability_guard(): void
     {
         $unguarded = [];
@@ -139,7 +140,7 @@ class ShellExecGuardCoverageTest extends TestCase
                     // 환경에서 **오히려** 셸을 부른다) 가드를 통째로 밖으로 내보내도 초록이었다
                     // (12차 GI-5). 형제 커버리지 테스트 4종은 전부 부정 픽스처를 갖는데
                     // 이 파일만 없어 세 경우(정상·반전·가드 밖)가 구분되지 않았다.
-                    if (! $this->guardCoversOffset($body, $bodyAt)) {
+                    if (! $this->guardCoversOffset($body, $bodyAt, $this->sourceIsPhp($source))) {
                         $unguarded[] = $relative.'::'.$enclosing.' ('.$primitive.')';
                     }
                 }
@@ -178,9 +179,12 @@ class ShellExecGuardCoverageTest extends TestCase
      *
      * @param  string  $body  함수 본문 (또는 파일 전체)
      * @param  int  $offset  본문 기준 호출 위치
+     * @param  bool  $isPhp  이 본문이 PHP 인가 — **호출부가 알려 준다**. 본문에는
+     *                       `<?php` 가 없어 추론에 맡기면 PHP 가 JS 스캐너로 흘러
+     *                       heredoc·`#` 주석의 중괄호를 코드로 세게 된다 (12차 G3 B-1).
      * @return bool 보호 범위 안이면 true
      */
-    private function guardCoversOffset(string $body, int $offset): bool
+    private function guardCoversOffset(string $body, int $offset, bool $isPhp): bool
     {
         // ① 조기 반환 가드
         if (preg_match_all('/\bif\s*\(\s*!\s*[A-Za-z_\\\\:]*hasFunction\s*\(/', $body, $m, PREG_OFFSET_CAPTURE) > 0) {
@@ -189,10 +193,7 @@ class ShellExecGuardCoverageTest extends TestCase
                 if ($open === false) {
                     continue;
                 }
-                $close = $this->matchingBrace($body, $open);
-                if ($close === null) {
-                    continue;
-                }
+                $close = $this->matchingBrace($body, $open, $isPhp);
                 $block = substr($body, $open, $close - $open + 1);
                 if (preg_match('/\b(?:return|throw|exit)\b/', $block) !== 1) {
                     continue;   // 빠져나가지 않는 블록은 가드가 아니다
@@ -222,8 +223,8 @@ class ShellExecGuardCoverageTest extends TestCase
                 if ($open === false) {
                     continue;
                 }
-                $close = $this->matchingBrace($body, $open);
-                if ($close !== null && $offset > $open && $offset < $close) {
+                $close = $this->matchingBrace($body, $open, $isPhp);
+                if ($offset > $open && $offset < $close) {
                     return true;
                 }
             }
@@ -326,7 +327,7 @@ class ShellExecGuardCoverageTest extends TestCase
             $body = $this->functionBody($src, 'f');
             $at = strpos($body, 'shell_exec(\'');
             $this->assertNotFalse($at, $label.' 픽스처에서 셸 호출을 찾지 못했다');
-            $this->assertTrue($this->guardCoversOffset($body, (int) $at), $label.' 은 가드 안의 호출이다');
+            $this->assertTrue($this->guardCoversOffset($body, (int) $at, true), $label.' 은 가드 안의 호출이다');
         }
 
         // (a) 조건 반전 — 차단 환경에서 **오히려** 셸을 부른다
@@ -346,7 +347,7 @@ class ShellExecGuardCoverageTest extends TestCase
                 $label.' 은 본문에 이름을 들고 있다 — 그래서 종전 판정이 통과시켰다'
             );
             $this->assertFalse(
-                $this->guardCoversOffset($body, (int) $at),
+                $this->guardCoversOffset($body, (int) $at, true),
                 $label.' 은 가드 밖의 호출이다 — 차단 환경에서 fatal Error 가 된다'
             );
         }
@@ -354,6 +355,8 @@ class ShellExecGuardCoverageTest extends TestCase
 
     /**
      * 설정 화면의 두 지점이 모집단에서 빠지지 않는다 — 매니페스트 축이 그 둘을 요구한다.
+     *
+     * @effects settings_system_info_shell_calls_are_guarded
      */
     public function test_settings_surfaces_are_in_the_population(): void
     {

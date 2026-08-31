@@ -1,3 +1,4 @@
+import { apiUrl, routePath } from './apiUrl';
 import {
     canOpenKginicisReceipt,
     fetchKginicisReceiptInfo,
@@ -51,7 +52,7 @@ async function fetchPayment(orderNumber: string): Promise<Payment | null> {
     }
 
     try {
-        const res = await fetch(`/api/modules/sirsoft-ecommerce/user/orders/${orderNumber}`, { headers });
+        const res = await fetch(apiUrl(`/api/modules/sirsoft-ecommerce/user/orders/${orderNumber}`), { headers });
         if (!res.ok) return null;
         const data = (await res.json()) as { data?: { payment?: Payment } };
         return data?.data?.payment ?? null;
@@ -146,7 +147,7 @@ async function injectOnOrderComplete(orderNumber: string): Promise<void> {
 }
 
 function tryInject(): void {
-    const match = location.pathname.match(ORDER_COMPLETE_RE);
+    const match = routePath(location.pathname).match(ORDER_COMPLETE_RE);
     if (match) {
         void injectOnOrderComplete(match[1]);
     }

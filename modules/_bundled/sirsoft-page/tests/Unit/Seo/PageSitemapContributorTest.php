@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Config;
 use Modules\Sirsoft\Page\Models\Page;
 use Modules\Sirsoft\Page\Seo\PageSitemapContributor;
 use Modules\Sirsoft\Page\Tests\ModuleTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * PageSitemapContributor 단위 테스트
@@ -20,11 +21,10 @@ use Modules\Sirsoft\Page\Tests\ModuleTestCase;
  * - getUrls: 미발행 페이지 URL 미포함
  * - getUrls: URL 항목 구조 (url/lastmod/changefreq/priority)
  * - getUrls: 기여자당 URL 안전 상한 초과 시 절단
- *
- * @group page
- * @group unit
- * @group seo
  */
+#[Group('page')]
+#[Group('unit')]
+#[Group('seo')]
 class PageSitemapContributorTest extends ModuleTestCase
 {
     private PageSitemapContributor $contributor;

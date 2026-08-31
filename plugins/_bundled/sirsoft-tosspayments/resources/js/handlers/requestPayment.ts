@@ -16,6 +16,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { rememberPendingClose } from '../paymentCloseReport';
+import { sitePath } from '../apiUrl';
 
 interface EscrowProduct {
     id: string;
@@ -346,8 +347,8 @@ export async function requestPaymentHandler(action: any, _context?: any): Promis
             },
             orderId: pgPaymentData.order_number,
             orderName: pgPaymentData.order_name,
-            successUrl: origin + config.callback_urls.success,
-            failUrl: origin + config.callback_urls.fail,
+            successUrl: origin + sitePath(config.callback_urls.success),
+            failUrl: origin + sitePath(config.callback_urls.fail),
             customerEmail: pgPaymentData.customer_email ?? undefined,
             customerName: pgPaymentData.customer_name ?? undefined,
             customerMobilePhone: pgPaymentData.customer_phone ?? undefined,

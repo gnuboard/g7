@@ -16,14 +16,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 그 과정에서 SET 절에 값이 실리는 경로가 깨지면 조용히 엉뚱한 값이 기록된다.
  * "몇 행이 영향받았는가" 만 보면 통과하므로, **결과값 자체**를 단언한다.
  *
- * @scenario case=product_bulk_adjustment
- *
- * @effects bulk_price_increase_applies_exact_amount,
- *          bulk_price_percent_applies_exact_ratio,
- *          bulk_price_floors_at_zero,
- *          bulk_stock_increase_applies_exact_amount,
- *          bulk_stock_floors_at_zero,
- *          bulk_adjustment_touches_only_selected_rows
+ * @scenario product_bulk_adjustment
  */
 class ProductBulkAdjustmentTest extends ModuleTestCase
 {

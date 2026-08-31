@@ -19,8 +19,6 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  * 오지 않는 드리프트. 목록 방식 자체가 재발원이므로 두 파일을 직접 대조한다.
  *
  * 커버 축: event_direction server_emits·client_listens / event_kind progress·terminal
- *
- * @effects installer_liveness_event_list_covers_every_server_event
  */
 class InstallerSseEventConsumerParityTest extends TestCase
 {
@@ -93,6 +91,9 @@ class InstallerSseEventConsumerParityTest extends TestCase
         return $names[1];
     }
 
+    /**
+     * @effects installer_liveness_event_list_covers_every_server_event
+     */
     public function test_침묵_감시_목록이_서버가_보내는_이벤트_전수를_덮는다(): void
     {
         $server = $this->serverEventNames();
@@ -112,6 +113,9 @@ class InstallerSseEventConsumerParityTest extends TestCase
         );
     }
 
+    /**
+     * @effects installer_liveness_event_list_covers_every_server_event
+     */
     public function test_감시_목록에_서버가_보내지_않는_이름이_없다(): void
     {
         $unknown = array_values(array_diff($this->livenessEventNames(), $this->serverEventNames()));

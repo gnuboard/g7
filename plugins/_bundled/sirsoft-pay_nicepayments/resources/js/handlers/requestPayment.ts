@@ -1,3 +1,4 @@
+import { apiUrl, sitePath } from '../apiUrl';
 import { reportPaymentWindowClosed } from '../paymentCloseReport';
 
 interface G7ApiResponse {
@@ -298,7 +299,7 @@ export async function requestPaymentHandler(action: PaymentAction, _context?: un
 
         // 3. 서버에서 EdiDate + SignData 생성
         //    공개 엔드포인트지만 서버에서 주문번호, 결제 전 상태, 금액, 구매자 컨텍스트를 검증한다.
-        const signDataUrl = window.location.origin + config.sign_data_url;
+        const signDataUrl = window.location.origin + apiUrl(config.sign_data_url);
         const authToken = (typeof localStorage !== 'undefined') ? localStorage.getItem('auth_token') : null;
         const signDataHeaders: Record<string, string> = {
             'Content-Type': 'application/json',
@@ -308,6 +309,7 @@ export async function requestPaymentHandler(action: PaymentAction, _context?: un
         if (authToken) {
             signDataHeaders['Authorization'] = `Bearer ${authToken}`;
         }
+        // base-path:allow signDataUrl 은 바로 위에서 origin + apiUrl() 로 조립된다
         const signDataRes = await fetch(signDataUrl, {
             method: 'POST',
             credentials: 'include',
@@ -325,7 +327,7 @@ export async function requestPaymentHandler(action: PaymentAction, _context?: un
         }
 
         const signData: SignDataResponse = await signDataRes.json();
-        const callbackUrl = window.location.origin + CALLBACK_PATH;
+        const callbackUrl = window.location.origin + sitePath(CALLBACK_PATH);
 
         // 4. 결제 폼 생성
         // 간편결제는 PayMethod='CARD' + DirectShowOpt='CARD' + 방식별 directive 필드 조합.

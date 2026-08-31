@@ -634,16 +634,19 @@ class AttachmentServiceTest extends ModuleTestCase
 
         $expectedResponse = new StreamedResponse;
 
-        $this->storage->shouldReceive('response')
+        // 파일 이름 선언은 **스토리지 단일 지점**이 만든다 — 원문을 헤더로 넘기면
+        // 어댑터가 자기 `makeDisposition()` 을 통째로 건너뛴다(따옴표가 든 이름에서
+        // 헤더 구조가 깨진다). 형제 `preview()` 는 8차에 위임됐고 코어 형제도 헤더를
+        // 넘기지 않는다 (10차 G3 라운드 B10-2).
+        $this->storage->shouldReceive('getDisk')->andReturn('local');
+        $this->storage->shouldReceive('download')
             ->once()
             ->withArgs(function ($category, $path, $filename, $headers) {
                 return $category === 'attachments'
                     && $path === 'notice/2025/01/21/test.pdf'
                     && $filename === 'document.pdf'
                     && $headers['Content-Type'] === 'application/pdf'
-                    && str_contains($headers['Content-Disposition'], 'attachment')
-                    && str_contains($headers['Content-Disposition'], 'filename="document.pdf"')
-                    && str_contains($headers['Content-Disposition'], "filename*=UTF-8''document.pdf");
+                    && ! array_key_exists('Content-Disposition', $headers);
             })
             ->andReturn($expectedResponse);
 
@@ -688,18 +691,17 @@ class AttachmentServiceTest extends ModuleTestCase
 
         $expectedResponse = new StreamedResponse;
 
-        $this->storage->shouldReceive('response')
+        // RFC 5987 인코딩도 어댑터가 만든다 — 호출부가 손으로 만들면 그 정제 지점을
+        // 건너뛴다 (10차 G3 라운드 B10-2).
+        $this->storage->shouldReceive('getDisk')->andReturn('local');
+        $this->storage->shouldReceive('download')
             ->once()
             ->withArgs(function ($category, $path, $filename, $headers) {
-                $expectedEncoded = rawurlencode('문서파일.pdf');
-
                 return $category === 'attachments'
                     && $path === 'notice/2025/01/21/test.pdf'
                     && $filename === '문서파일.pdf'
                     && $headers['Content-Type'] === 'application/pdf'
-                    && str_contains($headers['Content-Disposition'], 'attachment')
-                    && str_contains($headers['Content-Disposition'], 'filename="문서파일.pdf"')
-                    && str_contains($headers['Content-Disposition'], "filename*=UTF-8''{$expectedEncoded}");
+                    && ! array_key_exists('Content-Disposition', $headers);
             })
             ->andReturn($expectedResponse);
 
@@ -739,7 +741,8 @@ class AttachmentServiceTest extends ModuleTestCase
             ->with('notice', 1)
             ->andReturn($attachment);
 
-        $this->storage->shouldReceive('response')
+        $this->storage->shouldReceive('getDisk')->andReturn('local');
+        $this->storage->shouldReceive('download')
             ->once()
             ->andReturn(new StreamedResponse);
 
@@ -780,7 +783,8 @@ class AttachmentServiceTest extends ModuleTestCase
             ->with('notice', 1)
             ->andReturn($attachment);
 
-        $this->storage->shouldReceive('response')
+        $this->storage->shouldReceive('getDisk')->andReturn('local');
+        $this->storage->shouldReceive('download')
             ->once()
             ->andReturn(new StreamedResponse);
 
@@ -847,5 +851,171 @@ class AttachmentServiceTest extends ModuleTestCase
 
         // Assert
         $this->assertEquals('https://example.com/storage/modules/sirsoft-board/attachments/notice/2025/01/21/test.jpg', $result);
+    }
+
+    /**
+     * URL 조립도 **행에 기록된 disk** 를 따른다.
+     *
+     * 같은 클래스의 서빙 4지점·정리 2지점은 이미 `storageForRow()` 를 지나는데 이
+     * 메서드만 카테고리 기본 디스크로 갔다 — 디스크를 옮긴 사이트에서 이 값만 다른
+     * 디스크의 주소를 가리키고, 오류도 로그도 남지 않는다 (11차 G3 라운드 B11-8).
+     */
+    #[Test]
+    public function test_get_url_uses_the_disk_recorded_on_the_row(): void
+    {
+        $this->registerRowDisk();
+
+        $attachment = new Attachment([
+            'id' => 1,
+            'disk' => self::ROW_DISK,
+            'path' => 'notice/2025/01/21/test.jpg',
+        ]);
+
+        $this->repository->shouldReceive('findById')
+            ->once()
+            ->with('notice', 1)
+            ->andReturn($attachment);
+
+        $this->storage->shouldReceive('getDisk')->andReturn('modules');
+
+        $rowStorage = Mockery::mock(StorageInterface::class);
+        $rowStorage->shouldReceive('url')
+            ->once()
+            ->with('attachments', 'notice/2025/01/21/test.jpg')
+            ->andReturn('https://cdn.test/assets/notice/2025/01/21/test.jpg');
+
+        $this->storage->shouldReceive('withDisk')
+            ->once()
+            ->with(self::ROW_DISK)
+            ->andReturn($rowStorage);
+
+        // 주입 스토리지로 새면 그 mock 의 `url` 이 「예상치 못한 호출」로 실패한다.
+        $this->assertSame(
+            'https://cdn.test/assets/notice/2025/01/21/test.jpg',
+            $this->service->getUrl('notice', 1)
+        );
+    }
+
+    /**
+     * 임시 첨부 연결의 파일 이동도 **행에 기록된 disk** 를 따른다.
+     *
+     * 디스크를 옮긴 사이트에서는 주입 디스크에 그 파일이 없으므로 읽기가 항상 실패한다
+     * (11차 G3 라운드 B11-9).
+     */
+    #[Test]
+    public function test_link_temp_attachments_moves_files_on_the_row_disk(): void
+    {
+        $this->registerRowDisk();
+
+        $slug = 'notice';
+        $tempKey = 'temp-row-disk';
+
+        $attachment = Mockery::mock(Attachment::class)->makePartial();
+        $attachment->id = 1;
+        $attachment->disk = self::ROW_DISK;
+        $attachment->path = "{$slug}/temp/{$tempKey}/uuid1.jpg";
+        $attachment->stored_filename = 'uuid1.jpg';
+        $attachment->shouldReceive('update')->once()->andReturn(true);
+
+        $this->repository->shouldReceive('getByTempKey')
+            ->once()
+            ->with($slug, $tempKey)
+            ->andReturn(new EloquentCollection([$attachment]));
+
+        $this->storage->shouldReceive('getDisk')->andReturn('modules');
+
+        $rowStorage = Mockery::mock(StorageInterface::class);
+        $rowStorage->shouldReceive('get')->once()->andReturn('file-content');
+        $rowStorage->shouldReceive('put')->once()->andReturn(true);
+        $rowStorage->shouldReceive('delete')->once()->andReturn(true);
+
+        $this->storage->shouldReceive('withDisk')
+            ->with(self::ROW_DISK)
+            ->andReturn($rowStorage);
+
+        // 임시 디렉토리 정리는 종전 그대로 주입 스토리지가 수행한다 (동작 불변).
+        $this->storage->shouldReceive('deleteDirectory')->once()->andReturn(true);
+
+        $this->assertSame(1, $this->service->linkTempAttachmentsWithMove($slug, $tempKey, 5));
+    }
+
+    /**
+     * 파일을 읽지 못하면 연결을 **건너뛰고** DB `path` 를 갱신하지 않는다.
+     *
+     * 종전에는 `if ($content)` 라 읽기 실패(null)와 0 바이트 파일이 모두 falsy 로 접혀
+     * 이동을 건너뛰면서 DB `path` 는 갱신됐다 — 행은 최종 경로를 가리키는데 파일은
+     * 임시 경로에 남거나 아예 없어 첨부가 오류도 로그도 없이 영구 유실된다.
+     * 여기서는 `update` 가 **불리지 않는 것**이 판정이다 (11차 G3 라운드 B11-9).
+     */
+    #[Test]
+    public function test_link_temp_attachments_skips_the_row_when_the_file_is_unreadable(): void
+    {
+        $slug = 'notice';
+        $tempKey = 'temp-unreadable';
+
+        $attachment = Mockery::mock(Attachment::class)->makePartial();
+        $attachment->id = 1;
+        $attachment->path = "{$slug}/temp/{$tempKey}/gone.jpg";
+        $attachment->stored_filename = 'gone.jpg';
+        $attachment->shouldReceive('update')->never();
+
+        $this->repository->shouldReceive('getByTempKey')
+            ->once()
+            ->with($slug, $tempKey)
+            ->andReturn(new EloquentCollection([$attachment]));
+
+        // 읽기 실패 — 이동은 일어나지 않아야 한다.
+        $this->storage->shouldReceive('get')->once()->andReturn(null);
+        $this->storage->shouldReceive('put')->never();
+        $this->storage->shouldReceive('delete')->never();
+        $this->storage->shouldReceive('deleteDirectory')->once()->andReturn(true);
+
+        $this->assertSame(0, $this->service->linkTempAttachmentsWithMove($slug, $tempKey, 5));
+    }
+
+    /**
+     * 0 바이트 파일은 정상 이동한다 (반대 방향 — 회귀 0 확인).
+     *
+     * 종전 `if ($content)` 는 빈 문자열도 falsy 로 접어 정상 업로드물을 조용히 버렸다.
+     */
+    #[Test]
+    public function test_link_temp_attachments_moves_zero_byte_files(): void
+    {
+        $slug = 'notice';
+        $tempKey = 'temp-zero-byte';
+
+        $attachment = Mockery::mock(Attachment::class)->makePartial();
+        $attachment->id = 1;
+        $attachment->path = "{$slug}/temp/{$tempKey}/empty.txt";
+        $attachment->stored_filename = 'empty.txt';
+        $attachment->shouldReceive('update')->once()->andReturn(true);
+
+        $this->repository->shouldReceive('getByTempKey')
+            ->once()
+            ->with($slug, $tempKey)
+            ->andReturn(new EloquentCollection([$attachment]));
+
+        $this->storage->shouldReceive('get')->once()->andReturn('');
+        $this->storage->shouldReceive('put')->once()->andReturn(true);
+        $this->storage->shouldReceive('delete')->once()->andReturn(true);
+        $this->storage->shouldReceive('deleteDirectory')->once()->andReturn(true);
+
+        $this->assertSame(1, $this->service->linkTempAttachmentsWithMove($slug, $tempKey, 5));
+    }
+
+    /** 행에만 기록된, 주입 스토리지와 다른 디스크. */
+    private const ROW_DISK = 'fake_cdn';
+
+    /**
+     * 행 disk 를 config 에 등록합니다 (미등록이면 고아 disk 폴백에 걸린다).
+     */
+    private function registerRowDisk(): void
+    {
+        config([
+            'filesystems.disks.'.self::ROW_DISK => [
+                'driver' => 'local',
+                'root' => storage_path('framework/testing/disks/fake_cdn'),
+            ],
+        ]);
     }
 }

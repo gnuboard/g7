@@ -145,6 +145,11 @@ final class ExecutionEnvironment
         // `message` 는 하위호환(로그·개발 편의)으로 남기고, 화면에 노출되는 사유는
         // `message_key` 로 넘긴다 — 소비처가 자기 로케일로 번역한다. 키가 없는 주입 스텁도
         // 계약을 유지하도록 빈 문자열로 채운다.
+        //
+        // 사전은 `lang/{ko,en}/settings.php` 의 `php_probe_*` 다. 이 키들은 한동안 **어떤
+        // 언어팩에도 없었고** 번역하는 소비처도 없어, 계약이 선언만 남고 사문이었다 —
+        // 화면이 붙는 순간 원시 키가 그대로 노출됐을 것이다. 소비처는 자기 네임스페이스를
+        // 붙여 쓴다: `__('settings.'.$key, $params)` (7차 G3 라운드 D-5).
         return [
             'status' => ($result['valid'] ?? false) ? 'valid' : 'invalid',
             'version' => $result['version'] ?? null,

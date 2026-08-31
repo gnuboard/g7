@@ -45,7 +45,7 @@ _이 엔드포인트는 JSON 봉투(`data`)를 반환하지 않습니다. 성공
 | --- | --- | --- |
 | Content-Type | `image/jpeg` (레코드의 `mime_type` 값 그대로 — `image/png` \| `image/webp` \| `image/gif` 등) | 저장된 이미지의 MIME 타입 |
 | Content-Disposition | `attachment; filename="product-main.jpg"` (레코드의 `original_filename`) | 업로드 당시의 원본 파일명 |
-| Cache-Control | `public, max-age=31536000` | 브라우저/CDN 1년 캐싱 (해시 기반 URL이므로 내용 변경 시 URL 자체가 바뀜) |
+| Cache-Control | `public, max-age=31536000, must-revalidate` (프로덕션) / `no-cache` (그 외) | 코어 파일 서빙 단일 지점이 환경에 따라 정하는 캐싱 정책 — `ETag`·`Last-Modified`·`Expires` 동반, 조건부 요청은 304 |
 
 **응답 예시**
 
@@ -55,7 +55,10 @@ _이 엔드포인트는 JSON 봉투(`data`)를 반환하지 않습니다. 성공
 HTTP/1.1 200 OK
 Content-Type: image/jpeg
 Content-Disposition: attachment; filename="product-main.jpg"
-Cache-Control: public, max-age=31536000
+Cache-Control: public, max-age=31536000, must-revalidate
+ETag: "9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d"
+Last-Modified: Wed, 15 Jul 2026 00:00:00 GMT
+Expires: Thu, 15 Jul 2027 00:00:00 GMT
 
 <binary image data>
 ```
@@ -79,4 +82,4 @@ Cache-Control: public, max-age=31536000
 
 **설명** 공개 API로, 해시(`hash`, 12자)로 식별되는 상품 이미지 원본 파일을 스트리밍 서빙합니다. 인증이 필요 없으며(`PublicBaseController`), `ProductImageController@download`가 먼저 `ProductImageService::findByHash()`로 이미지 레코드 존재를 확인한 뒤 `ProductImageService::download()`로 `StorageInterface::response()` 기반 `StreamedResponse`를 반환합니다. 응답에는 저장된 `mime_type`과 `Cache-Control: public, max-age=31536000`(1년) 헤더가 부여되어 브라우저/CDN 캐싱에 최적화됩니다. 해시에 해당하는 레코드가 없거나 스토리지에 실제 파일이 없으면 404 에러 응답을 반환합니다.
 
-
+**캐시 계약(14차 정리)** 응답은 코어 파일 서빙 단일 지점과 같은 규칙을 따릅니다 — 검증자 `ETag`(행 메타 `disk|path|updated_at|file_size` 의 MD5, 따옴표 포함)·`Last-Modified`(행의 `updated_at`)를 싣고, 요청의 `If-None-Match`(`-gzip` 접미사·다중값·`W/` 흡수) 또는 `If-Modified-Since` 가 일치하면 본문 없는 `304 Not Modified` 를 200 과 같은 `Cache-Control`·`Expires` 와 함께 돌려줍니다. `Cache-Control` 은 프로덕션에서 `public, max-age=31536000, must-revalidate`(자산 버전 `?v=` 가 없는 URL 이라 `immutable` 은 붙지 않음), 그 외 환경에서는 `no-cache` 입니다. 사용자 업로드물이라 응답 압축 대상에서 제외됩니다.

@@ -21,6 +21,8 @@ use Tests\TestCase;
  *
  * 성능 회귀 방지 목적: 설치 완료 상태에서 매 요청 `information_schema.tables`
  * 쿼리가 실행되지 않아야 합니다.
+ *
+ * @scenario hook-cache
  */
 class InstallerCompletedGuardTest extends TestCase
 {

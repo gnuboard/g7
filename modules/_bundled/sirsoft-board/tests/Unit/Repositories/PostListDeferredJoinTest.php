@@ -20,9 +20,7 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * 읽는" 2단계 조회다. 이 화면은 공지 병합·답글 트리·다음 페이지 판정이 얽혀 있어, 조회 방식
  * 변경이 조용히 깨지면 화면에서 빈 값이나 누락으로만 드러난다. 그 성질들을 고정한다.
  *
- * @scenario case=post_list_deferred_join
- *
- * @effects self_scoped_list_returns_only_own_rows, soft_deleted_rows_stay_excluded, with_trashed_scope_is_preserved
+ * @scenario post_list_deferred_join
  */
 class PostListDeferredJoinTest extends BoardTestCase
 {
@@ -159,6 +157,9 @@ class PostListDeferredJoinTest extends BoardTestCase
         $this->assertFalse($page2->hasMorePages(), '마지막 페이지에서 다음 버튼이 남으면 안 된다');
     }
 
+    /**
+     * @effects soft_deleted_rows_stay_excluded
+     */
     public function test_soft_deleted_posts_are_excluded_by_default(): void
     {
         $this->createTestPost(['title' => '살아있는 글']);
@@ -171,6 +172,9 @@ class PostListDeferredJoinTest extends BoardTestCase
         $this->assertNotContains('삭제된 글', $titles);
     }
 
+    /**
+     * @effects with_trashed_scope_is_preserved
+     */
     public function test_with_trashed_includes_deleted_posts(): void
     {
         $this->createTestPost(['title' => '살아있는 글']);
@@ -209,6 +213,8 @@ class PostListDeferredJoinTest extends BoardTestCase
      * 지연 조인은 이 쿼리를 clone 해 inner/outer 두 번 실행하므로, 스코프가 한쪽에만
      * 걸리면 목록에 타인 글이 노출되거나(권한 누출) 페이지가 비게 된다. 이 실패는
      * 예외 없이 조용히 일어나므로 결과 집합으로 직접 단언한다.
+     *
+     * @effects self_scoped_list_returns_only_own_rows
      */
     public function test_self_scoped_list_returns_only_own_rows(): void
     {

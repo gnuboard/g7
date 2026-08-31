@@ -19,9 +19,6 @@ use Plugins\Sirsoft\Tosspayments\Tests\PluginTestCase;
  * 토스페이먼츠 결제 콜백 컨트롤러 기능 테스트
  *
  * @scenario payment_method=toss_virtual_account, use_escrow=on
- *
- * @effects vbank_account_stored_without_completing, vbank_secret_stored_for_webhook,
- *          is_escrow_snapshot_persisted
  */
 class PaymentCallbackControllerTest extends PluginTestCase
 {
@@ -178,7 +175,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
      * 기본값이 `/shop/...` 리터럴이던 시절에는 주소를 바꾼 상점의 구매자가 결제를 마치고
      * 존재하지 않는 페이지로 떨어졌다. 리다이렉트라 예외도 404 로그도 남지 않는다.
      *
-     * @scenario case=payment_redirect_follows_shop_route_path
+     * @scenario payment_redirect_follows_shop_route_path
      *
      * @effects payment_redirect_follows_route_path
      */
@@ -594,6 +591,8 @@ class PaymentCallbackControllerTest extends PluginTestCase
 
     /**
      * confirm 응답이 WAITING_FOR_DEPOSIT 이면 completePayment 하지 않고 계좌 정보만 저장한다.
+     *
+     * @effects vbank_account_stored_without_completing, vbank_secret_stored_for_webhook
      */
     public function test_success_virtual_account_stores_vbank_without_completing(): void
     {
@@ -643,6 +642,8 @@ class PaymentCallbackControllerTest extends PluginTestCase
 
     /**
      * 가상계좌 응답의 useEscrow 가 is_escrow 스냅샷으로 저장된다.
+     *
+     * @effects is_escrow_snapshot_persisted
      */
     public function test_success_virtual_account_persists_escrow_flag(): void
     {

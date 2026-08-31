@@ -20,8 +20,6 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  * 여러 가지(조건문·대입·부정)라 그것들을 열거하면 곧 사각이 생긴다.
  *
  * 커버 축: write_target settings_dir·settings_file·installed_flag / result_used checked·discarded
- *
- * @effects installer_durable_writes_never_discard_their_result
  */
 class InstallerDurableWriteCheckTest extends TestCase
 {
@@ -66,6 +64,9 @@ class InstallerDurableWriteCheckTest extends TestCase
         ];
     }
 
+    /**
+     * @effects installer_durable_writes_never_discard_their_result
+     */
     #[DataProvider('durableWriteProvider')]
     public function test_durable_write_results_are_not_discarded(string $function, string $callee): void
     {

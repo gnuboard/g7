@@ -642,7 +642,9 @@
                 switch (status) {
                     case 'completed':
                         this.stop();
-                        this._invoke('onComplete', { message: state.error_detail || null, redirect: '/install/' });
+                        // 고정 `/install/` 금지 (G3 입력 ②) — 서브경로 배치에서 완료 리다이렉트가
+                        // 존재하지 않는 경로로 떨어진다. 페이지가 심은 INSTALLER_BASE_URL 을 쓴다.
+                        this._invoke('onComplete', { message: state.error_detail || null, redirect: (window.INSTALLER_BASE_URL || '/install') + '/' });
                         break;
                     case 'failed':
                         this.stop();
@@ -888,7 +890,8 @@
                     case 'completed':
                         this.stop();
                         if (!this.terminalEventSeen) {
-                            this._invoke('onComplete', { message: null, redirect: '/install/' });
+                            // 고정 `/install/` 금지 (G3 입력 ②) — Polling 완료 폴백도 동일 규칙.
+                            this._invoke('onComplete', { message: null, redirect: (window.INSTALLER_BASE_URL || '/install') + '/' });
                         }
                         return;
 

@@ -236,6 +236,49 @@ v접두사 자동 감지 (resolveGithubArchiveUrl):
 >   - **소유권 상속**: `symlink()` 은 소유권 인자가 없어 sudo 실행 시 링크가 root:root 로 생성된다. 재생성 직후 부모 `public/` 의 owner/group 을 기준으로 `lchown`/`lchgrp`(링크 자체 대상 — `chown` 은 target 을 따라감) 보정해 원래 앱 실행 유저 소유를 유지한다. 이 프로젝트의 "신규 항목은 부모 소유권 상속"(`FilePermissionHelper`) 컨벤션과 일치. 비-POSIX/함수 부재/권한 부족 시 무해하게 skip.
 > - 이 복구 로직은 beta.5 DataMigration `RecoverPublicStorageSymlink` 와 `StorageLinkHelper` 로 일원화되어 있다(부재→재생성 케이스까지 상위호환).
 
+> **루트 보호 파일(`/index.php`·`/.htaccess`)의 갱신 결과는 반드시 소비한다.** 루트 `.htaccess` 만은 통째 복사가 아니라 코어 관리 블록(`# BEGIN G7` ~ `# END G7`)만 교체한다 — 블록 밖의 운영자 규칙을 보존하기 위해서다. 그 갱신기(`RootHtaccessUpdater::apply()`)는 `bool` 이 아니라 `RESULT_*` 문자열을 돌려주며, 호출부는 아래 갈래를 **모두** 처리해야 한다.
+>
+> | 결과 | 뜻 | 호출부가 할 일 |
+> |---|---|---|
+> | `updated` · `unchanged` | 정상 | 없음 |
+> | `preserved` | 대상에 코어 관리 블록이 없어 **손대지 않았다** | `noticeMessage()` 를 운영자에게 노출. 운영자가 일부러 지웠을 수도 있지만, 예전 사이트의 `.htaccess` 가 그대로 있거나 전송 중단으로 빈 파일이 된 경우도 같은 결과다 — 후자는 **보호 규칙이 미적용으로 남았다**는 뜻이고, 문서 루트가 프로젝트 루트인 배치에서 그것은 설정 파일 노출이다 |
+> | `created` | 대상이 없어 **새로 만들었다** | `noticeMessage()` 를 운영자에게 노출. 프로젝트 루트가 웹에 열려 있던 배치라면 이제 보호되지만, 그 사이트가 `/public/…` 주소를 써 왔다면 **그 주소가 정본 주소로 301 이동한다** — 주소 체계가 바뀐다는 뜻이라 운영자가 알아야 한다 |
+> | `duplicate_block` · `broken_block` · `source_invalid` · `destination_invalid` · `read_failed` | 실패 | `isFailure()` 로 판정하고 `failureMessage()` 를 노출. 업데이트 자체는 계속한다. `read_failed` 는 소스·대상을 **읽지 못한** 경우다 — 그것을 `preserved` 로 접으면 「운영자가 지웠다」로 오인된다. `broken_block` 은 마커가 **하나만** 있거나(BEGIN 만 · END 만) 역순인 경우다 — 지운 것이 아니라 **잘린** 것이라(전송 중단·부분 쓰기·손편집) 그 파일은 지금 보호 규칙이 온전하지 않으며, 이것도 `preserved` 로 접으면 안내가 원인을 가린다. 마커가 하나도 없는 파일만 `preserved` 다 |
+> | `write_failed` | 쓰지 못했다 — 보호 규칙이 구버전으로 남았다 | 위 행과 같다 |
+>
+>
+> **보호 대상은 루트 `.htaccess` 하나다.** `public/.htaccess` 는 마커 블록 방식이 아니라
+> `public` 디렉토리 복사로 갱신되며, 운영자 수정본은 증분 판정에서 `changed` 로 분류되어
+> 코어 판본으로 덮인다(백업에는 원본이 남는다). 레이아웃 ②에서는 요청이 두 파일을 차례로
+> 지나가는데 그중 하나만 보존되는 구조이므로, 서버 규칙을 덧붙일 때는 **루트 `.htaccess` 의
+> 블록 밖**에 적는다.
+>
+> 결과를 버리면 그 사이트는 「적용 완료」만 보고 무방비로 남는다. 콘솔 커맨드는 `CoreUpdateService::getLastRootFileWarnings()` 로 모아 한 번에 출력하며, **롤백 경로도 같은 통로를 쓴다** — 되돌리기가 그 두 파일을 지웠을 때 그 사실이 로그 파일에만 남으면 운영자는 알 수 없다. 웹 오케스트레이터를 만들 때도 같은 갈래를 같은 통로로 처리한다 — 통보 대상은 `preserved` 와 `created` **둘**이다.
+
+> **루트 `web.config` 는 `.htaccess` 와 같은 마커 블록 규칙을 따른다.** `BEGIN G7` / `END G7` 을 담은 XML 주석 한 줄씩이 경계이고(`<configuration>` 바로 안쪽, 줄 시작), 코어는 그 블록(`system.webServer` 요소 전체)만 교체한다 — 운영자가 블록 밖에 둔 `<configuration>` 의 다른 자식 요소(`<system.web>`·`<location>`)는 보존되고 결과는 유효한 XML 로 남는다. 종전에는 이 파일이 「코어 소유, 통째 교체」였다 — 같은 사이트에서 두 파일이 정반대로 동작했다. 판정 로직(마커 없음·두 벌·손상·CRLF·읽기/쓰기 실패·링크 대상·부분 쓰기)은 `AbstractRootMarkerFileUpdater` 하나가 소유하고, `RootHtaccessUpdater`·`RootWebConfigUpdater` 는 마커 문자열·로그 태그·문구 키 접두만 정한다. 어느 루트 파일이 갱신기를 지나는지는 `CoreBackupHelper::ROOT_MARKER_FILE_UPDATERS`(보호 파일 SSoT 에서 도출)가 정하며, 정상 targets 분기와 자동 발견 폴백 분기 둘 다 그 표를 본다. `web.config` 의 통보 문구는 `settings.core_update.root_web_config_*` 다.
+>
+> **형제 파일 루트 `index.php` 도 같은 통로를 쓴다.** 그 파일은 마커 블록이 없어 통째로 교체되는데, 교체 대상이 코어 shim 이 아니면(레이아웃 ③ 사이트가 두던 자체 랜딩·리다이렉트) 그 내용은 백업에만 남는다. `CoreUpdateService::recordRootIndexReplacement()` 가 그 사실을 같은 경고 버퍼에 싣는다. 교체 직전 사본의 디렉토리 이름은 `BackupDirectoryName::stamp()` 가 만든다 — 잔존물 정리기의 판정 정규식이 같은 곳을 보므로 한쪽만 바뀌는 일이 없다.
+
+> **`deploy/**` 서버 설정 조각은 운영자 수정본을 보존한다.** 조각 머리말이 운영자에게 그 파일을 직접 고치라고 지시하고(`fastcgi_pass`·하위 폴더 접두사), nginx 는 그 파일을 `include` 로 제자리에서 읽는다. 그래서 `deploy` 대상은 디렉토리 통째 복사가 아니라 `CoreUpdateService::applyDeployFragments()` 가 파일마다 판정한다 — 근거는 **코어가 마지막으로 쓴 내용의 해시 원장**(`storage/app/core-update/deploy-fragments.json`)이다. 백업 스냅샷은 근거가 못 된다(현재 디스크의 사본이라 언제나 현재 디스크와 같다).
+>
+> | 디스크 상태 | 동작 | 통보 |
+> |---|---|---|
+> | 새 판본과 같다 | 원장만 갱신, 잔존 `.dist` 제거 | 없음 |
+> | 없다 | 신규 복사 | 없음 |
+> | 원장의 해시와 같다(코어가 쓴 그대로) | 정상 갱신 + 잔존 `.dist` 제거 | 없음 |
+> | 그 외 — 운영자 수정본, 또는 원장이 없어 판정 불가(이 기능 이전 설치본의 첫 업데이트) | 덮어쓰지 않고 새 판본을 `<이름>.dist` 로 옆에 둔다. **원장에는 새 판본의 해시를 기록한다** | `deploy_fragment_preserved` 를 같은 경고 버퍼에 싣는다 |
+> | 위와 같은데 옛 `.dist` 가 이미 있고 그 내용이 새 판본과 다르다 | `.dist` 는 덮어쓰지 않고(운영자가 합치던 중간 작업일 수 있다) 새 판본을 `<이름>.dist.new` 로 둔다. `.dist.new` 는 코어가 만든 파일이라 다음 업데이트가 자유롭게 갱신한다 | `deploy_fragment_dist_conflict` |
+>
+> **원장의 의미는 「코어가 마지막으로 제시한 판본」이다** — 「코어가 쓴 것」이 아니다. 보존한 조각도 새 판본의 해시를 기록하기 때문에, 운영자가 안내대로 `.dist` 를 합쳐 파일이 새 판본과 같아지면 다음 업데이트에서 디스크 == 원장이라 정상 갱신으로 탈출한다. 합치지 않으면 디스크 ≠ 원장이라 보존이 유지된다. 기록하지 않으면 원장이 없던 사이트는 합친 뒤에도 **매 업데이트마다** 「판정 불가 → `.dist`」 가 반복된다(오류 없음).
+>
+> **원장이 없는 설치본은 씨앗한다.** 설치 완료 시점(인스톨러)과 7.1.0 업그레이드 스텝(`upgrades/data/7.1.0/migrations/02_SeedDeployFragmentLedger.php`)이 `CoreUpdateService::seedDeployFragmentLedger($projectRoot)` 와 같은 로직으로 현재 디스크의 해시를 원장에 쓴다 — 그 시점의 디스크는 **사이드카(`.dist`·`.dist.new`)가 없는 조각에 한해** 릴리즈 판본과 같다. 사이드카가 있는 조각은 씨앗하지 않는다(씨앗하면 운영자 수정본이 「코어가 쓴 그대로」로 읽혀 다음 업데이트가 덮어쓴다). 원장이 이미 있으면 손대지 않는다. 스텝은 업그레이드 경로 규율(기존 클래스의 신규 메서드 호출 금지)로 로컬 로직을 갖고, 서비스 씨앗기와의 결과 일치는 `tests/Unit/Upgrades/SeedDeployFragmentLedgerTest` 가 대조한다.
+>
+> **원장 쓰기 실패는 통보 통로에 실린다** (`deploy_fragment_ledger_write_failed`) — 원장은 다음 업데이트의 판정 근거라, 쓰지 못한 채 넘기면 그 사이트는 다음 업데이트에서 전 조각이 「판정 불가」로 떨어지고 운영자는 이유를 알 수 없다. 보존·충돌·쓰기 실패는 전부 업그레이드 로그 채널(`upgrade`)에도 함께 남는다.
+>
+> `.dist`·`.dist.new` 는 웹에서 열리지 않는다 — `deploy/` 디렉토리와 `dist` 확장자가 네 서버 조각의 차단 목록에 모두 있다(`ServerConfigParityTest`). 이 경로는 orphan 을 지우지 않는다(`--prune` 이어도) — 운영자가 둔 파일이 사라지는 것이 곧 이 규칙이 막는 결함이다. 롤백(`restoreFromBackup()`)은 `.dist`·`.dist.new` 와 원장을 함께 걷는다: 복원된 내용이 코어가 쓴 것인지 운영자 수정본인지 그 자리에서는 알 수 없으므로 다음 업데이트가 「판정 불가 → 보존 + 안내」 쪽으로 떨어지게 둔다 — 그리고 그 보존이 원장을 다시 씨앗하므로 한 번뿐이다.
+
+> **경고는 반환값에도 실린다.** `applyUpdate()` 는 `['root_file_warnings' => list<string>]` 을, `restoreFromBackup()` 은 `['failed_targets' => list<string>, 'root_file_warnings' => list<string>]` 을 돌려준다 — `getLastRootFileWarnings()` 와 같은 값이다. 콘솔 커맨드도 정상 경로·롤백 경로에서는 **반환값**을 출력 통로에 넘기고, 게터는 적용이 예외로 끊겨 반환값이 없는 경로에서만 쓴다 — 커맨드마저 게터만 쓰면 반환값 축은 소비처가 0 이라 조용히 죽는다. 무CLI 웹 워커처럼 커맨드가 아닌 소비처에게는 반환값이 곧 계약이다.
+
 > **자동 발견 폴백의 배경 (engine-v / beta.4 이후)**: Step 7 은 부모 프로세스의 `config('app.update.targets')` 를 사용한다. 부모는 업그레이드 *직전* 의 코드/메모리 상태이므로 신버전이 도입한 신규 최상위 디렉토리(예: beta.4 의 `lang-packs/`) 가 부모의 stale targets 에서 누락된다. 폴백은 이 결함을 안전망으로 차단하며, `config/app.php` 의 `update.protected_paths` 가 런타임 데이터(`storage`)·로컬 환경(`.env*`)·별도 파이프라인 산출물(`vendor`)·개발 메타(`.git`/`.claude`/`.serena` 등) 의 의도치 않은 덮어쓰기를 방지한다.
 
 ### Step 9: 마이그레이션 + 동기화

@@ -43,7 +43,9 @@ class PublicModuleController extends PublicBaseController
     {
         $this->logApiUsage('modules.bundle', ['kind' => 'js']);
 
-        return $this->bundleResponse($this->bundleService, 'module', 'js', 'text/javascript');
+        // MIME 은 번들 서비스가 SSoT 다 — 통로마다 리터럴을 두면 같은 파일이
+        // 통로에 따라 다른 Content-Type 으로 나간다.
+        return $this->bundleResponse($this->bundleService, 'module', 'js', $this->bundleService->bundleMimeType('js'));
     }
 
     /**
@@ -55,7 +57,9 @@ class PublicModuleController extends PublicBaseController
     {
         $this->logApiUsage('modules.bundle', ['kind' => 'css']);
 
-        return $this->bundleResponse($this->bundleService, 'module', 'css', 'text/css');
+        // MIME 은 번들 서비스가 SSoT 다 — 통로마다 리터럴을 두면 같은 파일이
+        // 통로에 따라 다른 Content-Type 으로 나간다.
+        return $this->bundleResponse($this->bundleService, 'module', 'css', $this->bundleService->bundleMimeType('css'));
     }
 
     /**

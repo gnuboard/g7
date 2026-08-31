@@ -9,6 +9,7 @@ use App\Extension\IdentityVerification\DTO\VerificationChallenge;
 use App\Extension\IdentityVerification\DTO\VerificationResult;
 use App\Models\User;
 use App\Services\IdentityMessageDispatcher;
+use App\Support\AssetUrl;
 use Carbon\CarbonInterval;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
@@ -436,7 +437,7 @@ class MailIdentityProvider implements IdentityVerificationInterface
                     'expire_minutes' => $ttlMinutes,
                     'purpose_label' => $this->resolvePurposeLabel($purpose),
                     'app_name' => (string) config('app.name'),
-                    'site_url' => (string) config('app.url'),
+                    'site_url' => AssetUrl::siteRoot(),
                     'recipient_email' => $email,
                 ],
                 context: [
@@ -468,8 +469,10 @@ class MailIdentityProvider implements IdentityVerificationInterface
                 ['challenge_id' => $challengeId, 'token' => $linkToken],
             );
         } catch (\Throwable) {
-            // 라우트 미존재 환경(테스트 등)에서는 경로 + query 로 fallback
-            return rtrim((string) config('app.url'), '/').'/identity/verify?challenge='.$challengeId.'&token='.$linkToken;
+            // 라우트 미존재 환경(테스트 등)에서는 경로 + query 로 fallback.
+            // 오리진·마운트 접두사는 AssetUrl 이 SSoT — config('app.url') 직접 결합은
+            // 하위 폴더 배치에서 사이트 밖을 가리키고, 큐·콘솔 문맥에서 접두사를 잃는다.
+            return AssetUrl::siteAbsolute('/identity/verify?challenge='.$challengeId.'&token='.$linkToken);
         }
     }
 

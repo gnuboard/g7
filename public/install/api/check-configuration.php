@@ -121,6 +121,7 @@ class ValidationApi
             'opcache' => $this->checkOpcache(),
             'php_limits' => $this->checkPhpLimits(),
             'asset_url_mode' => $this->checkAssetUrlMode(),
+            'web_exposure' => $this->checkWebExposure(),
         ];
 
         // 모든 필수 요구사항 통과 여부
@@ -221,7 +222,7 @@ class ValidationApi
             $dbTypeLabel = $isReadDb ? 'Read' : 'Write';
             $privilegeWarning = null;
 
-            // 「확인 불가」는 차단하지 않는다 (PO 결정 §16.26.4 #2) — SHOW GRANTS 거부·롤 전개
+            // 「확인 불가」는 차단하지 않는다 (제품 결정 §16.26.4 #2) — SHOW GRANTS 거부·롤 전개
             // 실패 환경에서 권한이 실재해도 설치가 원리상 불가능해지던 거짓 차단(20차 #6)의 수정.
             // 실제 부족은 설치 중 해당 단계가 사유와 함께 잡는다 (실패 화면 기정비).
             if (! empty($privileges['indeterminate'])) {
@@ -498,7 +499,7 @@ class ValidationApi
         $passed = $freeSpaceMb >= $minSpaceMb;
 
         // 차단 기준(500MB)과 실사용(약 700MB — docs/requirements.md §9)의 간극 안내
-        // (21차 #21-7, PO 결정 §16.27.1 #3 — 차단 기준은 유지하고 경고만 덧붙인다).
+        // (21차 #21-7, 제품 결정 §16.27.1 #3 — 차단 기준은 유지하고 경고만 덧붙인다).
         // 종전에는 여유 600MB 서버가 초록으로 통과하고 설치 중반에 디스크가 차서
         // 엉뚱한 오류(composer 쓰기 실패·PDO 예외)로 죽었다.
         $recommendedMb = RECOMMENDED_DISK_SPACE_MB;
@@ -775,7 +776,7 @@ class ValidationApi
      */
     private function checkPhpLimits(): array
     {
-        // 실행 경로의 실제 요구와 같은 값이어야 한다 (20차 #1, PO 결정 §16.26.4 #3) —
+        // 실행 경로의 실제 요구와 같은 값이어야 한다 (20차 #1, 제품 결정 §16.26.4 #3) —
         // subprocess 는 `-d memory_limit=512M`, in-process 는 512M 상향을 시도한다.
         // 종전 256M 은 그보다 낮아, 256~512M 호스트가 화면을 초록으로 지나고 설치 중반
         // OOM 을 만났다. 세 선언의 등치는 InstallerMemoryBudgetTest 가 잠근다.
@@ -834,6 +835,53 @@ class ValidationApi
             'detected' => null,  // 브라우저 프로브가 채운다 (서버 판정 불가)
             'probe_extension' => '/api/system/asset-probe.js',
             'probe_extensionless' => '/api/system/asset-probe',
+        ];
+    }
+
+    /**
+     * 웹 노출 점검 항목 정의 (필수 게이트 — 판정은 브라우저가 한다. D3·D21)
+     *
+     * `checkAssetUrlMode` 와 같은 구조다: 서버 loopback 프로브는 vhost·SSL·프록시 체인을
+     * 우회해 실제 방문자가 겪는 것과 다른 답을 내므로, 서버는 프로브 **대상 목록**만
+     * 내려주고 실제 HTTP 판정은 브라우저가 수행한다 (`installer.js::refreshWebExposureCard`).
+     *
+     * - 노출 확정 → 그 항목만 빨강 + [다음 단계] 비활성 (설치 차단 — D3)
+     * - 판정 불능(프로브 예외) → 노랑 경고 + 수동 확인 절차(주소 목록) + '확인했음'
+     *   체크 후에만 진행 (D21)
+     *
+     * `detected` 가 null 인 것은 미구현이 아니라 위 이유에 따른 설계다. 서버 집계
+     * (`isAllRequiredPassed`)에 이 항목이 없는 것도 같은 이유 — 게이트는 브라우저
+     * 판정 이후 화면이 잡는다 (Step 2 전환은 원래 클라이언트 게이트다).
+     */
+    private function checkWebExposure(): array
+    {
+        $plan = installerExposureProbePlan();
+
+        return [
+            'required' => true, // 노출 확정 시 설치 차단 게이트 (D3)
+            'detected' => null, // 브라우저 프로브가 채운다 (서버 loopback 판정 금지)
+            'targets' => $plan['targets'],
+            // 준비에 실패해 **한 번도 재지 못한** 계열 (fail-open 차단). 종전에는 이런 계열이
+            // 목록에서 조용히 빠져, 남은 두 계열이 403 이면 화면이 「보호 확인됨」으로 초록이
+            // 됐다 — 재지 않은 축까지 안전으로 읽힌 것이다. 하나라도 있으면 판정 불능(D21).
+            'unmeasured' => $plan['unmeasured'],
+            // 양성 대조 — **열려야 하는** 주소다. 403/404 를 보호로 읽는 판정에서 「막혔다」와
+            // 「그 주소에 아무것도 없다」를 가려내지 못하면, 위임이 죽은 서버(mod_rewrite 부재)와
+            // 기준 주소를 잘못 잡은 배치가 전부 「보호 확인됨」으로 수렴한다.
+            'controls' => $plan['controls'],
+            // 음성 대조 — **파일이 없는** 주소다. 레이아웃 ②는 모든 주소를 앱으로 위임하므로
+            // 서빙되지 않는 파일도 200 앱 화면으로 돌아온다(실측: `/vendor/autoload.php`·
+            // `/storage/...`). 403/404 만 보호로 읽으면 그 정상 배치가 상시 「판정 불능」이 되어
+            // D3 자동 차단이 모든 배치에서 D21 로 강등된다. 이 대조와 **같은 형태**로 돌아온
+            // 대상은 파일이 서빙되지 않은 것이므로 보호로 읽는다 (양성 대조가 통과한 경우에만).
+            'absent_control' => $plan['absent_control'],
+            // 링크 가용 실측 (B-4) — 정보 제공용. 링크 불가 시 대체 서빙(B-3)은 런타임이
+            // 링크 부재를 감지해 자동 선택하므로 이 값이 설치를 막지 않는다.
+            'symlink_supported' => installerProbeSymlinkSupport(),
+            // 보호 설정이 사는 곳은 서버마다 다르다 — 동봉 파일이 스스로 적용되는 서버
+            // (Apache·LiteSpeed·IIS)와 운영자가 서버 설정에 직접 넣어야 하는 서버
+            // (nginx·Caddy)의 조치가 갈린다. 안내 분기에만 쓰고 게이트로 쓰지 않는다.
+            'server_kind' => installerDetectServerKind(),
         ];
     }
 
@@ -1543,6 +1591,10 @@ class ValidationApi
 
         // HTTPS / OPcache 는 선택 사항이므로 검증하지 않음 (경고만 표시하고 설치는 진행)
 
+        // 웹 노출 점검(web_exposure)은 required 지만 이 집계에 넣지 않는다 — 판정 주체가
+        // 브라우저(서버 loopback 프로브는 오판)라 서버는 판정값을 모른다. 노출/판정 불능의
+        // [다음 단계] 게이팅은 화면이 프로브 결과로 잡는다 (checkWebExposure 주석 · D3 · D21).
+
         return true;
     }
 
@@ -1614,6 +1666,9 @@ if (! $checkConfigurationLibraryMode) {
     require_once __DIR__.'/../includes/config.php';
     require_once __DIR__.'/../includes/session.php';
     require_once __DIR__.'/../includes/functions.php';
+    // 웹 노출 자가 진단 (B-4) — 프로브 대상 산출 + symlink 실측. 선언 전용 파일이지만
+    // 출력 채널 가드(위)보다 뒤에 배선한다 (21차 N4 규약 — 예외 목록을 늘리지 않는다).
+    require_once __DIR__.'/../includes/exposure-check.php';
 
     // 설치 완료 시 인스톨러 비즈니스 로직 진입 차단
     require_once __DIR__.'/_guard.php';

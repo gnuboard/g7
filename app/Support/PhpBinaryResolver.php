@@ -218,10 +218,12 @@ class PhpBinaryResolver
         $output = [];
         $returnCode = -1;
 
-        // audit:allow hosting-blocked-function-requires-guard 가드는 호출 진입점 두 곳이 갖는다 —
-        // ExecutionEnvironment::probePhpBinary() 와 인스톨러 validatePhpPath() 가 각각
-        // hasFunction('exec') 으로 먼저 판정하고 「판정 불확실」을 돌려준다. 이 함수는 그 뒤에만
-        // 도달하며, 파일 단위로 보는 룰에는 그 가드가 보이지 않는다.
+        // 가드는 호출 진입점 두 곳이 갖는다 — ExecutionEnvironment::probePhpBinary() 와 인스톨러
+        // validatePhpPath() 가 각각 함수 가용성을 먼저 판정하고 「판정 불확실」을 돌려준다. 이 함수는
+        // 그 뒤에만 도달하며, 파일 단위로 보는 룰에는 그 가드가 보이지 않는다. (면제 표식은 호출
+        // 직전 줄에 둔다 — 룰의 탐색 창은 3줄이고, 종전에는 이 주석의 가드 함수 이름 자체가 가드로
+        // 오인돼 위반이 가려져 있었다 — G3 회차 15.)
+        // audit:allow hosting-blocked-function-requires-guard 진입점 2곳의 hasFunction 판정 뒤에만 도달
         exec($command, $output, $returnCode);
 
         if ($returnCode !== 0) {
@@ -267,7 +269,8 @@ class PhpBinaryResolver
      * `message_key` 로 실어 보낸다 — 코어가 한국어 문장을 확정해 API 응답에 실으면
      * 같은 응답의 다른 사유들이 번역되는 것과 달리 그 항목만 번역되지 않은 채 나간다.
      *
-     * @param  string  $key  다국어 키 (접두사 없음 — 소비처가 자기 네임스페이스를 붙인다)
+     * @param  string  $key  다국어 키 (접두사 없음 — 소비처가 자기 네임스페이스를 붙인다.
+     *                       사전은 `lang/{ko,en}/settings.php` 의 `php_probe_*`)
      * @param  array<string, string>  $params  치환 파라미터
      * @param  string  $fallback  하위호환 메시지
      * @return array{valid: bool, version: null, sapi: null, message: string, message_key: string, message_params: array<string, string>}

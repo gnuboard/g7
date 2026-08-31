@@ -249,9 +249,11 @@ export class TranslationEngine {
         ? extStaticUrl(`templates/${templateId}/lang/${locale}.json`, this.cacheVersion)
         : null;
 
+      // 면제 표식은 **그 줄 자신**에 둔다 — 판정 창이 「그 줄 + 바로 윗줄」이라
+      // 삼항의 첫 줄 위에 한 번만 적으면 두 분기 어느 쪽도 덮이지 않는다.
       const response = staticUrl !== null
-        ? await fetchStaticFirst(staticUrl, url, { label: `lang/${locale}.json` })
-        : await fetch(url);
+        ? await fetchStaticFirst(staticUrl, url, { label: `lang/${locale}.json` }) // base-path:allow `staticUrl` 은 extStaticUrl(), `url` 은 suffixed() 산출물이라 접두사가 이미 붙어 있다.
+        : await fetch(url); // base-path:allow `url` 은 suffixed() 산출물이라 접두사가 이미 붙어 있다.
 
       if (!response.ok) {
         throw new TranslationError(

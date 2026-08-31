@@ -167,6 +167,191 @@ class InstallerStateIntegrityTest extends TestCase
     }
 
     /**
+     * 파손 사본 상한(5)에 닿으면 **가장 오래된 것을 내보내고 새 것을 남긴다** — 그리고 그 사실을
+     * 로그에 남긴다 (14차 G3 W2-2·W2-8).
+     *
+     * 종전에는 상한에서 조용히 `return` 했다. 사본 다섯이 차면 그 뒤 최대 30일(프루너의
+     * 백업 등급)동안 **새 파손의 근거가 0** 이고, 그 침묵은 로그에도 없었다. 상한의 목적은
+     * 디렉토리 잠식 방지이지 최신 근거 폐기가 아니므로, 상한 유지 + 최신 보존이 맞다.
+     */
+    public function test_corrupt_copy_cap_evicts_the_oldest_and_logs(): void
+    {
+        $prefix = STATE_PATH.INSTALLER_STATE_CORRUPT_INFIX;
+        $stamps = ['20260101000000', '20260102000000', '20260103000000', '20260104000000', '20260105000000'];
+
+        foreach ($stamps as $i => $stamp) {
+            file_put_contents($prefix.$stamp.'.'.str_repeat((string) $i, 8), '{"old": '.$i);
+        }
+        $this->assertCount(5, installerListCorruptStateCopies(), '픽스처가 상한에 닿지 않았다');
+
+        $errorLog = self::$base.'/storage/logs/php-error.log';
+        $previous = ini_set('error_log', $errorLog);
+
+        try {
+            installerPreserveCorruptState('{"completed_tasks": ["db_migrate"], "brand_new": true');
+        } finally {
+            if ($previous !== false) {
+                ini_set('error_log', $previous);
+            }
+        }
+
+        $copies = installerListCorruptStateCopies();
+        $this->assertCount(5, $copies, '상한이 유지되지 않는다 — 디렉토리 잠식 방지가 사라졌다');
+
+        $names = array_map('basename', $copies);
+        $this->assertNotContains(
+            basename($prefix.'20260101000000.00000000'),
+            $names,
+            '가장 오래된 사본이 남아 있다 — 새 파손의 근거를 위해 그것이 나가야 한다'
+        );
+
+        // meta:allow raw-source-read 생산 소스가 아니라 보존된 상태 파일 사본이다 — 주석 채널과 무관하다.
+        $newest = array_filter($copies, static fn (string $path): bool => str_contains((string) file_get_contents($path), 'brand_new'));
+        $this->assertCount(1, $newest, '상한에 닿았을 때 새 파손의 근거가 보존되지 않는다');
+
+        // meta:allow raw-source-read 생산 소스가 아니라 이 테스트가 리다이렉트한 PHP error_log 파일이다.
+        $logged = is_file($errorLog) ? (string) file_get_contents($errorLog) : '';
+        $this->assertStringContainsString(
+            '[installer-state]',
+            $logged,
+            '상한 소진(내보내기)이 로그에 남지 않는다 — 형제(보존 성공)는 남기는데 이 분기만 조용하다'
+        );
+        $this->assertMatchesRegularExpression('/evict|oldest|cap/i', $logged, '로그가 내보내기 사실을 말하지 않는다');
+    }
+
+    /**
+     * 사본 나열은 **정렬된** 목록이다 — 내보낼 「가장 오래된 것」은 열거 순서가 아니라 이름
+     * (타임스탬프)로 정한다. `scandir`·`glob` 모두 순서를 보장하지 않는다.
+     */
+    public function test_corrupt_copy_listing_is_sorted_by_stamp(): void
+    {
+        $prefix = STATE_PATH.INSTALLER_STATE_CORRUPT_INFIX;
+        foreach (['20260105000000', '20260101000000', '20260103000000'] as $stamp) {
+            file_put_contents($prefix.$stamp.'.abcdef01', '{');
+        }
+
+        $names = array_map('basename', installerListCorruptStateCopies());
+        $sorted = $names;
+        sort($sorted, SORT_STRING);
+
+        $this->assertSame($sorted, $names, '사본 목록이 정렬돼 있지 않다 — 내보낼 대상이 열거 순서에 좌우된다');
+    }
+
+    /**
+     * 같은 초 안의 사본 다섯은 **결정적으로** 정렬되고, 상한 소진 시 새 사본이 보존된다 (15차 G3 W1-8).
+     *
+     * 정렬 키는 파일명(`<YmdHis>.<sha8>`)이라 같은 초 안에서는 sha8 사전순이다 — 생성 순서와
+     * 무관하지만 열거 순서에는 좌우되지 않는다. 종전 주석은 이 구간을 「가장 오래된 것」으로
+     * 불렀는데, 그 구간에서 실제로 성립하는 약속은 「언제나 같은 하나가 나간다 + 새 사본은
+     * 남는다」뿐이다. 정렬 방식은 바꾸지 않는다 — 계약을 사실대로 잠근다.
+     */
+    public function test_same_second_corrupt_copies_sort_deterministically_and_keep_the_new_copy(): void
+    {
+        $prefix = STATE_PATH.INSTALLER_STATE_CORRUPT_INFIX;
+        $stamp = '20260101000000';
+        $digests = ['cafebabe', '01234567', 'deadbeef', '89abcdef', '0badf00d'];
+
+        // 열거 순서와 무관함을 재기 위해 사전순이 아닌 순서로 만든다.
+        foreach ($digests as $i => $digest) {
+            file_put_contents($prefix.$stamp.'.'.$digest, '{"old": '.$i);
+        }
+
+        $first = array_map('basename', installerListCorruptStateCopies());
+        $second = array_map('basename', installerListCorruptStateCopies());
+        $sorted = $first;
+        sort($sorted, SORT_STRING);
+
+        $this->assertCount(5, $first);
+        $this->assertSame($sorted, $first, '같은 초 안의 목록이 이름 사전순이 아니다');
+        $this->assertSame($first, $second, '같은 입력에서 목록이 달라진다 — 내보낼 대상이 실행마다 바뀐다');
+
+        $previous = ini_set('error_log', self::$base.'/storage/logs/php-error.log');
+
+        try {
+            installerPreserveCorruptState('{"brand_new": true');
+        } finally {
+            if ($previous !== false) {
+                ini_set('error_log', $previous);
+            }
+        }
+
+        $after = array_map('basename', installerListCorruptStateCopies());
+        $this->assertCount(5, $after, '상한이 유지되지 않는다');
+        $this->assertNotContains(
+            basename($prefix.$stamp.'.01234567'),
+            $after,
+            '같은 초 안에서는 이름 사전순 첫 항목(sha8 최소)이 나간다 — 그 규칙이 바뀌었다면 주석과 이 계약을 함께 고친다'
+        );
+
+        // meta:allow raw-source-read 생산 소스가 아니라 보존된 상태 파일 사본이다 — 주석 채널과 무관하다.
+        $newest = array_filter(installerListCorruptStateCopies(), static fn (string $path): bool => str_contains((string) file_get_contents($path), 'brand_new'));
+        $this->assertCount(1, $newest, '상한에 닿았을 때 새 파손의 근거가 보존되지 않는다');
+    }
+
+    /**
+     * 파손 원문은 로그에 싣지 않는다 — 길이·digest 만 (15차 G3 W1-9).
+     *
+     * 비밀은 상태 파일에 없어야 하지만(이슈 #465) 레거시 상태 파일이 남아 있을 수 있다. 종전에는
+     * 파싱 실패 메시지가 원문 200 바이트를 무마스킹으로 진행 기록과 PHP 오류 로그에 실었다.
+     */
+    public function test_corrupt_state_preview_is_not_logged_verbatim(): void
+    {
+        $secret = 'SECRET-TOKEN-a1b2c3d4';
+        $content = '{"config": {"db_write_password": "'.$secret.'"}, "broken": ';
+        file_put_contents(STATE_PATH, $content);
+
+        $errorLog = self::$base.'/storage/logs/php-error.log';
+        $previous = ini_set('error_log', $errorLog);
+
+        try {
+            getInstallationState();
+        } finally {
+            if ($previous !== false) {
+                ini_set('error_log', $previous);
+            }
+        }
+
+        $logs = '';
+        foreach (glob(self::$base.'/storage/logs/*') ?: [] as $file) {
+            // meta:allow raw-source-read 생산 소스가 아니라 이 테스트가 만든 로그 파일이다.
+            $logs .= (string) file_get_contents($file);
+        }
+
+        $this->assertStringContainsString('Failed to parse state file JSON', $logs, '파손 사실 자체는 로그에 남아야 한다');
+        $this->assertStringNotContainsString($secret, $logs, '파손 원문이 로그에 그대로 실린다 — 레거시 상태 파일의 비밀이 로그로 옮겨 간다');
+        $this->assertStringContainsString('length='.strlen($content), $logs, '길이가 기록되지 않는다');
+        $this->assertStringContainsString('sha1='.substr(sha1($content), 0, 8), $logs, 'digest 가 기록되지 않는다 — 보존 사본(같은 digest)과 대조할 근거가 없다');
+    }
+
+    /**
+     * `BASE_PATH` 폴백의 `realpath` 가드가 세 파일에서 같은 형태다 (15차 G3 W1-10).
+     *
+     * `realpath` 는 하드닝 프로필이 막을 수 있고, 이 줄은 단독 로드 경로에서 그 파일이 실행하는
+     * 첫 코드다. `config.php` 만 가드를 갖고 형제 둘(`installer-state.php` · `progress-emitter.php`)
+     * 은 무가드 사본이었다 — 사본이 갈리면 같은 호스팅에서 진입점에 따라 백지가 갈린다.
+     */
+    public function test_base_path_fallback_guards_realpath_in_every_copy(): void
+    {
+        $root = dirname(__DIR__, 3).'/public/install/includes/';
+
+        foreach (['config.php', 'installer-state.php', 'progress-emitter.php'] as $file) {
+            // meta:allow raw-source-read 소스 계약 — define 블록의 형태를 대조한다.
+            $source = (string) file_get_contents($root.$file);
+
+            $this->assertSame(
+                1,
+                preg_match('/if \(! defined\(\'BASE_PATH\'\)\) \{(.*?)\n\}/s', $source, $m),
+                $file.' 에서 BASE_PATH 폴백 블록을 찾지 못했다'
+            );
+            $this->assertStringContainsString(
+                "function_exists('realpath')",
+                $m[1],
+                $file.' 의 BASE_PATH 폴백이 realpath 를 무가드로 부른다 — 막힌 호스팅에서 그 진입점만 백지가 된다'
+            );
+        }
+    }
+
+    /**
      * #D13 — 상태 파일이 사라지면(초기화) 다시 정상 경로로 돌아온다.
      */
     public function test_removing_the_corrupt_file_restores_writes(): void

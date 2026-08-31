@@ -13,10 +13,7 @@ use Plugins\Sirsoft\PayNhnkcp\Tests\PluginTestCase;
  * 결제를 마친 구매자가 존재하지 않는 페이지로 떨어지는데, 리다이렉트라 예외도 로그도
  * 남지 않아 증상이 드러나지 않는다.
  *
- * @scenario case=payment_redirect_follows_shop_route_path
- *
- * @effects payment_redirect_follows_route_path, payment_redirect_drops_segment_when_no_route,
- *          operator_supplied_redirect_url_is_preserved
+ * @scenario payment_redirect_follows_shop_route_path
  *
  * @group payment
  */
@@ -43,6 +40,9 @@ class ShopRedirectUrlTest extends PluginTestCase
         $this->assertSame('/shop/checkout', ShopRedirectUrl::resolve(ShopRedirectUrl::DEFAULT_FAIL_URL));
     }
 
+    /**
+     * @effects payment_redirect_follows_route_path
+     */
     public function test_운영자가_바꾼_상점_주소를_따른다(): void
     {
         $this->setShopSettings(['route_path' => 'store']);
@@ -54,6 +54,9 @@ class ShopRedirectUrlTest extends PluginTestCase
         $this->assertSame('/store/checkout', ShopRedirectUrl::resolve(ShopRedirectUrl::DEFAULT_FAIL_URL));
     }
 
+    /**
+     * @effects payment_redirect_drops_segment_when_no_route
+     */
     public function test_주소_없이_운영하면_루트에_붙는다(): void
     {
         $this->setShopSettings(['no_route' => true]);
@@ -65,6 +68,9 @@ class ShopRedirectUrlTest extends PluginTestCase
         $this->assertSame('/checkout', ShopRedirectUrl::resolve(ShopRedirectUrl::DEFAULT_FAIL_URL));
     }
 
+    /**
+     * @effects operator_supplied_redirect_url_is_preserved
+     */
     public function test_운영자가_직접_넣은_주소는_그대로_쓴다(): void
     {
         $this->setShopSettings(['route_path' => 'store']);

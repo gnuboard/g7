@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Models;
 
 use App\Models\User;
+use App\Support\AssetUrl;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -116,6 +117,6 @@ class CategoryImage extends Model
      */
     protected function apiDownloadUrl(): string
     {
-        return '/api/modules/sirsoft-ecommerce/category-image/'.$this->hash;
+        return AssetUrl::basePrefix().'/api/modules/sirsoft-ecommerce/category-image/'.$this->hash;
     }
 }

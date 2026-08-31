@@ -235,6 +235,9 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     #[Test]
+    /**
+     * @effects aborted_activity_log_recorded
+     */
     public function handle_settings_after_bulk_apply_aborted는_권한_실패_시_게시판명을_담아_기록한다(): void
     {
         $fields = ['manager', 'per_page'];
@@ -264,6 +267,9 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     #[Test]
+    /**
+     * @effects aborted_activity_log_recorded
+     */
     public function handle_settings_after_bulk_apply_aborted는_컬럼_실패_시_게시판명없이_기록한다(): void
     {
         // 컬럼 일괄 업데이트 실패는 특정 게시판을 짚을 수 없어 failed_board=null

@@ -386,6 +386,65 @@ class ProductImageServiceTest extends ModuleTestCase
         $this->assertEquals(1, $result);
     }
 
+    /**
+     * 임시 이미지를 **읽지 못하면** 행을 그대로 두고 건너뛴다.
+     *
+     * 종전에는 falsy 를 조용히 접고도 `path` 를 최종 경로로 갱신했다 — 행은 옮겨진 자리를
+     * 가리키는데 파일은 임시 경로에 남고, 이 메서드 끝의 임시 디렉토리 정리가 그 임시본을
+     * 지운다. 결과는 **상품 이미지의 영구 유실**이고 오류도 로그도 남지 않는다.
+     * 형제 둘(게시판·페이지)은 11차에 같은 자리를 고쳤다 (12차 G3 라운드 D4).
+     */
+    #[Test]
+    public function test_link_temp_images_skips_the_row_when_the_file_cannot_be_read(): void
+    {
+        $tempKey = 'temp-uuid-unreadable';
+        $productId = 7;
+        $productCode = 'PROD-007';
+
+        $tempImage = new ProductImage([
+            'product_id' => null,
+            'temp_key' => $tempKey,
+            'stored_filename' => 'ghost.jpg',
+            'path' => "products/temp/{$tempKey}/ghost.jpg",
+        ]);
+        $tempImage->id = 42;
+
+        $this->repository
+            ->shouldReceive('getByTempKey')
+            ->once()
+            ->with($tempKey)
+            ->andReturn(new EloquentCollection([$tempImage]));
+
+        $this->repository
+            ->shouldReceive('getMaxSortOrder')
+            ->once()
+            ->with($productId, 'main')
+            ->andReturn(0);
+
+        // 읽기 실패.
+        $this->storage
+            ->shouldReceive('get')
+            ->once()
+            ->with('images', "products/temp/{$tempKey}/ghost.jpg")
+            ->andReturn(null);
+
+        // 옮기지 않았으므로 원본을 지워서는 안 된다.
+        $this->storage->shouldNotReceive('put');
+        $this->storage->shouldNotReceive('delete');
+
+        // 그리고 행의 경로를 갱신해서도 안 된다 — 갱신하면 파일과 행이 어긋난 채 고착된다.
+        $this->repository->shouldNotReceive('update');
+
+        $this->storage
+            ->shouldReceive('deleteDirectory')
+            ->once()
+            ->with('images', "products/temp/{$tempKey}");
+
+        $result = $this->service->linkTempImages($tempKey, $productId, $productCode);
+
+        $this->assertSame(0, $result, '읽지 못한 이미지는 연결 건수에 세지 않는다');
+    }
+
     #[Test]
     public function test_reorder_updates_image_order(): void
     {

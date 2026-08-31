@@ -3,6 +3,7 @@
 namespace Tests\Unit\Installer;
 
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
  * 「이미 설치/활성화」 판정의 오탐 회귀 가드 (21차 #21-3)
@@ -16,11 +17,11 @@ use PHPUnit\Framework\TestCase;
  *
  * 실제 코어 커맨드의 문구(lang/{ko,en}/modules·plugins·templates.php)는 전부 **문장 끝**에
  * 그 구가 온다 — 판정을 줄 끝 앵커로 좁히면 실 메시지는 그대로 잡고 중간 삽입 오탐은 떨어진다.
- *
- * @effects installer_already_applied_judgment_rejects_mid_sentence_matches
  */
 class InstallerAlreadyAppliedJudgmentTest extends TestCase
 {
+    use ScansPhpSourceFunctions;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -28,6 +29,9 @@ class InstallerAlreadyAppliedJudgmentTest extends TestCase
         require_once dirname(__DIR__, 3).'/public/install/includes/execution-mode.php';
     }
 
+    /**
+     * @effects installer_already_applied_judgment_rejects_mid_sentence_matches
+     */
     public function test_real_command_messages_are_recognized(): void
     {
         $this->assertTrue(installerOutputConfirmsAlreadyApplied('⚠️  모듈 "sirsoft-board"이(가) 이미 설치되어 있습니다.'));
@@ -37,6 +41,9 @@ class InstallerAlreadyAppliedJudgmentTest extends TestCase
         $this->assertTrue(installerOutputConfirmsAlreadyApplied("some noise\nTemplate is already installed.\n"));
     }
 
+    /**
+     * @effects installer_already_applied_judgment_rejects_mid_sentence_matches
+     */
     public function test_mid_sentence_occurrence_is_not_success(): void
     {
         $this->assertFalse(
@@ -118,7 +125,8 @@ class InstallerAlreadyAppliedJudgmentTest extends TestCase
      */
     public function test_task_runner_routes_through_judgment(): void
     {
-        $source = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/includes/task-runner.php');
+        // 배선 단언은 문자열 채널까지 벗긴 소스로 잰다 — nowdoc·문자열 안의 같은 글자로 초록이 되지 않게 (G3 회차 15).
+        $source = $this->sourceWithoutCommentsAndStrings(dirname(__DIR__, 3).'/public/install/includes/task-runner.php');
 
         $this->assertStringContainsString('installerOutputConfirmsAlreadyApplied(', $source, '태스크 러너가 판정 SSoT 를 경유하지 않는다 (#21-3)');
         $this->assertStringNotContainsString('stripos($outputText, $pattern)', $source, '무경계 부분문자열 판정이 남아 있다 (#21-3)');

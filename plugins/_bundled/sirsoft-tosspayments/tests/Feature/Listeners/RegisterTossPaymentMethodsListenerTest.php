@@ -13,8 +13,6 @@ use Plugins\Sirsoft\Tosspayments\Tests\PluginTestCase;
  * order_sheet_mode / 결제수단 토글 / 삽입 위치 / core_payment_method 선언을 검증한다.
  *
  * @scenario order_sheet_mode=true, payment_method=toss_card
- *
- * @effects enabled_methods_exposed_with_core_mapping
  */
 class RegisterTossPaymentMethodsListenerTest extends PluginTestCase
 {
@@ -72,6 +70,9 @@ class RegisterTossPaymentMethodsListenerTest extends PluginTestCase
         $this->assertSame(['card', 'phone', 'point'], array_column($result, 'id'));
     }
 
+    /**
+     * @effects enabled_methods_exposed_with_core_mapping
+     */
     public function test_injects_only_enabled_methods(): void
     {
         $this->mockSettings([
@@ -115,6 +116,9 @@ class RegisterTossPaymentMethodsListenerTest extends PluginTestCase
         $this->assertSame('toss_card', end($ids));
     }
 
+    /**
+     * @effects enabled_methods_exposed_with_core_mapping
+     */
     public function test_entry_declares_core_payment_method(): void
     {
         $this->mockSettings([

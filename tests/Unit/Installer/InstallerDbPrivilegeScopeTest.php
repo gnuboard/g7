@@ -9,9 +9,10 @@ use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 use Tests\Concerns\CleansTemporaryBasePath;
+use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
- * DB 권한 사전 검사의 스코프·토큰·롤 판정 회귀 가드 (20차 #4·#5·#6, PO 결정 §16.26.4 #2)
+ * DB 권한 사전 검사의 스코프·토큰·롤 판정 회귀 가드 (20차 #4·#5·#6, 제품 결정 §16.26.4 #2)
  *
  * 세 결함을 잠근다:
  *
@@ -23,14 +24,14 @@ use Tests\Concerns\CleansTemporaryBasePath;
  *   `ALTER ROUTINE` 이 `ALTER` 로 집계되어 `missing` 안내가 틀렸다.
  * - **#6 롤 미전개 → 거짓 차단**: `SHOW GRANTS FOR CURRENT_USER()` 는 MySQL 8 롤을
  *   전개하지 않는다. 롤로만 권한을 받은 계정은 전부 `missing` 으로 떨어져 설치가
- *   시작조차 되지 않았다. PO 결정(§16.26.4 #2): 롤 전개를 시도하고, **끝내 확인 불가면
+ *   시작조차 되지 않았다. 제품 결정(§16.26.4 #2): 롤 전개를 시도하고, **끝내 확인 불가면
  *   `indeterminate` 로 강등해 게이트는 경고만 하고 진행을 허용**한다. 실제 부족은 설치 중
  *   해당 단계가 사유와 함께 잡는다.
  *
  * 판정 계약: `missing` 이 비지 않은 채 반환되는 것은 **해석이 확정된 부족**뿐이다.
  * 확인 불가(SHOW GRANTS 실패 · 롤 전개 실패 · 해석 불가 부여 잔존)는 `indeterminate=true`
  * + `missing=[]` 로 돌려, 게이트 구조가 어긋나도 차단으로 새지 않게 한다(fail-open 은
- * PO 가 명시 결정한 방향이다 — 임의 완화가 아니다).
+ * 제품에서 명시적으로 결정한 방향이다 — 임의 완화가 아니다).
  *
  * @effects installer_db_privilege_check_scopes_to_target_database
  */
@@ -39,6 +40,7 @@ use Tests\Concerns\CleansTemporaryBasePath;
 class InstallerDbPrivilegeScopeTest extends TestCase
 {
     use CleansTemporaryBasePath;
+    use ScansPhpSourceFunctions;
 
     protected function setUp(): void
     {
@@ -181,7 +183,7 @@ class InstallerDbPrivilegeScopeTest extends TestCase
     }
 
     /**
-     * #6/PO 결정: 롤 전개가 실패하면 차단이 아니라 「확인 불가」로 강등한다.
+     * #6/제품 결정: 롤 전개가 실패하면 차단이 아니라 「확인 불가」로 강등한다.
      */
     public function test_unexpandable_roles_degrade_to_indeterminate(): void
     {
@@ -198,12 +200,12 @@ class InstallerDbPrivilegeScopeTest extends TestCase
         $result = checkDatabasePrivileges($pdo, 'target_db');
 
         $this->assertFalse($result['has_all']);
-        $this->assertTrue((bool) ($result['indeterminate'] ?? false), '전개 불가는 indeterminate 다 (PO 결정 — 경고 후 진행)');
+        $this->assertTrue((bool) ($result['indeterminate'] ?? false), '전개 불가는 indeterminate 다 (제품 결정 — 경고 후 진행)');
         $this->assertSame([], $result['missing'], '확인 불가 상태에서 missing 을 채우면 게이트가 차단해 버린다');
     }
 
     /**
-     * #6/PO 결정: SHOW GRANTS 자체가 거부되는 환경도 차단이 아니라 「확인 불가」다.
+     * #6/제품 결정: SHOW GRANTS 자체가 거부되는 환경도 차단이 아니라 「확인 불가」다.
      */
     public function test_show_grants_failure_is_indeterminate_not_blocking(): void
     {
@@ -256,7 +258,7 @@ class InstallerDbPrivilegeScopeTest extends TestCase
 
     /**
      * 21차 N2 파생: 해석하지 못한 행이 남으면 missing 이 비어도 「확인」을 단정하지 않는다 —
-     * 그 행이 REVOKE 변형일 수 있다. 확인 불가는 경고 후 진행(PO 결정)이므로 안전 방향이다.
+     * 그 행이 REVOKE 변형일 수 있다. 확인 불가는 경고 후 진행(제품 결정)이므로 안전 방향이다.
      */
     public function test_unparseable_line_degrades_even_when_nothing_missing(): void
     {
@@ -354,12 +356,12 @@ class InstallerDbPrivilegeScopeTest extends TestCase
     public function test_privilege_and_version_warnings_reach_screen(): void
     {
         $projectRoot = dirname(__DIR__, 3);
-        $api = (string) file_get_contents($projectRoot.'/public/install/api/check-configuration.php');
-        $js = (string) file_get_contents($projectRoot.'/public/install/assets/js/installer.js');
+        $api = $this->sourceWithoutComments($projectRoot.'/public/install/api/check-configuration.php');
+        $js = $this->sourceWithoutComments($projectRoot.'/public/install/assets/js/installer.js');
 
         $this->assertStringContainsString("'privilege_warning'", $api, '게이트가 권한 경고를 응답에 실어야 한다');
         $this->assertStringContainsString("'db_server_notice'", $api, '게이트가 서버 버전 안내를 응답에 실어야 한다');
-        $this->assertStringContainsString('indeterminate', $api, '게이트가 확인 불가를 차단과 구분해야 한다 (PO 결정)');
+        $this->assertStringContainsString('indeterminate', $api, '게이트가 확인 불가를 차단과 구분해야 한다 (제품 결정)');
         $this->assertStringContainsString('result.privilege_warning', $js, '화면이 권한 경고를 그려야 한다');
         $this->assertStringContainsString('result.db_server_notice', $js, '화면이 서버 버전 안내를 그려야 한다');
     }

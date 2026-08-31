@@ -16,6 +16,8 @@
  * @since 1.0.0-beta.1
  */
 
+import { sitePath } from './apiUrl';
+
 const PLUGIN_IDENTIFIER = 'sirsoft-verification_kginicis';
 const PROVIDER_ID = 'inicis';
 const POPUP_FEATURES = 'width=400,height=640,scrollbars=yes,resizable=yes';
@@ -50,7 +52,10 @@ function getG7Core(): Record<string, any> | null {
 }
 
 function buildSuccessUrl(): string {
-    return `${window.location.origin}/plugins/${PLUGIN_IDENTIFIER}/plugin/inicis/callback`;
+    // 마운트 접두사를 붙인다 — 이 값은 **외부 인증기관에 넘기는 복귀 주소**라
+    // 브라우저가 그대로 연다. 하위 폴더 배치(`https://host/g7/`)에서 접두사가 없으면
+    // 인증은 성공했는데 복귀가 사이트 밖으로 나가고, 오류도 로그도 남지 않는다.
+    return `${window.location.origin}${sitePath(`/plugins/${PLUGIN_IDENTIFIER}/plugin/inicis/callback`)}`;
 }
 
 /**

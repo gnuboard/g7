@@ -163,6 +163,14 @@
                         "className": "form-error"
                       },
                       "text": "{{_local.errors?.['general.site_url']?.[0] ?? ''}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "form-help text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:admin.settings.general.site_url_help"
                     }
                   ]
                 }

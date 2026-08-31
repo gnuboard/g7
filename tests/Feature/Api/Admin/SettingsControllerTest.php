@@ -785,6 +785,87 @@ class SettingsControllerTest extends TestCase
             ->assertJsonValidationErrors(['value']);
     }
 
+    /**
+     * 벌크 저장 경로도 같은 허용값 표를 탄다.
+     *
+     * 규정은 「허용값이 닫힌 설정 키의 규칙을 벌크·단건 **양쪽**이 공유한다」인데,
+     * 측정은 단건 쪽에만 있었다 — `SaveSettingsRequest` 의 두 줄을 지워도 전 테스트가
+     * 초록이라, 한쪽이 우회로가 되는 상태를 아무것도 잡지 못했다 (7차 G3 라운드 D-4).
+     *
+     * @scenario save_path=bulk,setting_key=general.asset_url_mode,value_kind=undeclared
+     *
+     * @effects bulk_save_rejects_undeclared_enumerated_value
+     */
+    public function test_store_rejects_undeclared_asset_url_mode(): void
+    {
+        $response = $this->authRequest()->postJson('/api/admin/settings', [
+            '_tab' => 'general',
+            'general' => [
+                'site_name' => 'Test Site',
+                'site_url' => 'https://test.example.com',
+                'admin_email' => 'admin@example.com',
+                'timezone' => 'Asia/Seoul',
+                'language' => 'ko',
+                'asset_url_mode' => 'garbage',
+            ],
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['general.asset_url_mode']);
+    }
+
+    /**
+     * 형제 키(실행 모드)도 벌크 경로에서 같은 게이트를 탄다.
+     *
+     * @scenario save_path=bulk,setting_key=system.execution_mode,value_kind=undeclared
+     *
+     * @effects bulk_save_rejects_undeclared_enumerated_value
+     */
+    public function test_store_rejects_undeclared_execution_mode(): void
+    {
+        $response = $this->authRequest()->postJson('/api/admin/settings', [
+            '_tab' => 'general',
+            'general' => [
+                'site_name' => 'Test Site',
+                'site_url' => 'https://test.example.com',
+                'admin_email' => 'admin@example.com',
+                'timezone' => 'Asia/Seoul',
+                'language' => 'ko',
+            ],
+            'system' => [
+                'execution_mode' => 'garbage',
+            ],
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['system.execution_mode']);
+    }
+
+    /**
+     * 선언된 값은 벌크 경로로 저장된다 — 게이트가 정상 입력까지 막지 않는다.
+     *
+     * @scenario save_path=bulk,setting_key=general.asset_url_mode,value_kind=declared
+     *
+     * @effects bulk_save_accepts_declared_enumerated_value
+     */
+    public function test_store_accepts_declared_asset_url_mode(): void
+    {
+        $response = $this->authRequest()->postJson('/api/admin/settings', [
+            '_tab' => 'general',
+            'general' => [
+                'site_name' => 'Test Site',
+                'site_url' => 'https://test.example.com',
+                'admin_email' => 'admin@example.com',
+                'timezone' => 'Asia/Seoul',
+                'language' => 'ko',
+                'asset_url_mode' => 'extensionless',
+            ],
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson(['success' => true]);
+    }
+
     // ========================================================================
     // 시스템 정보 테스트 (systemInfo)
     // ========================================================================

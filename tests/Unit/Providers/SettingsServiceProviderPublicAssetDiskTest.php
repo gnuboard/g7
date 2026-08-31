@@ -18,8 +18,6 @@ use Tests\TestCase;
  * (injectPublicAssetDiskConfig)는 테스트 격리 가드와 분리되어 있어 직접 단언이
  * 가능하며, 가드(applyPublicAssetDiskConfig)가 testing 환경에서 주입을 실제로
  * 차단하는지도 함께 고정합니다.
- *
- * @effects global_setting_injects_core_config_with_none_normalized
  */
 class SettingsServiceProviderPublicAssetDiskTest extends TestCase
 {
@@ -43,6 +41,8 @@ class SettingsServiceProviderPublicAssetDiskTest extends TestCase
 
     /**
      * 저장값이 core.storage.public_asset_disk 로 주입되는지 테스트합니다.
+     *
+     * @effects global_setting_injects_core_config_with_none_normalized
      */
     public function test_stored_disk_injected_into_core_config(): void
     {
@@ -57,6 +57,8 @@ class SettingsServiceProviderPublicAssetDiskTest extends TestCase
 
     /**
      * 'none'(스트리밍 유지 선택)이 미설정('')으로 정규화되는지 테스트합니다.
+     *
+     * @effects global_setting_injects_core_config_with_none_normalized
      */
     public function test_none_sentinel_normalized_to_empty(): void
     {

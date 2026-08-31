@@ -3,6 +3,7 @@
 namespace App\Console\Commands\Core\Concerns;
 
 use App\Console\Commands\Core\ExecuteBundledUpdatesCommand;
+use App\Execution\SubprocessCommandRunner;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\TemplateManager;
@@ -12,6 +13,7 @@ use App\Services\CoreUpdateService;
 use App\Services\LanguagePackService;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 /**
  * 코어 업데이트 완료 후 _bundled 번들에 신버전이 포함된
@@ -32,6 +34,19 @@ use Illuminate\Support\Facades\Log;
  */
 trait BundledExtensionUpdatePrompt
 {
+    /**
+     * 자식 프로세스에 넘길 번들 업데이트 매니페스트의 위치 (`storage/` 기준 상대 경로).
+     *
+     * 정리 주체는 아래 `spawnBundledUpdates()` 의 `finally` 하나뿐이었다 — FPM 타임아웃 ·
+     * OOM-kill 로 그 코드가 돌지 않으면 파일이 영구히 남는다. 회수는
+     * `StorageLeftoverPruneService` 의 `core_pending` 대상군이 맡고, 이름 규약의 일치는
+     * 계약 테스트가 이 상수를 소스에서 읽어 잠근다 (11차 G3 라운드 E11-9).
+     */
+    private const BUNDLED_MANIFEST_DIR = 'app/core_pending';
+
+    /** 번들 업데이트 매니페스트 파일 이름 접두사. */
+    private const BUNDLED_MANIFEST_PREFIX = 'bundled-updates-manifest_';
+
     /**
      * 번들 업데이트 목록 수집.
      *
@@ -306,7 +321,9 @@ trait BundledExtensionUpdatePrompt
             return null;
         }
 
-        $manifestPath = storage_path('app/core_pending'.DIRECTORY_SEPARATOR.'bundled-updates-manifest_'.uniqid().'.json');
+        // 고유 이름은 차단 가능한 `uniqid()` 가 아니라 `Str::random()` 으로 만든다 —
+        // 이 경로는 무CLI 환경에서 웹 요청 안(in-process)으로도 도달한다.
+        $manifestPath = storage_path(self::BUNDLED_MANIFEST_DIR.DIRECTORY_SEPARATOR.self::BUNDLED_MANIFEST_PREFIX.Str::random(16).'.json');
         File::ensureDirectoryExists(dirname($manifestPath));
         File::put($manifestPath, json_encode($manifest, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
 
@@ -328,8 +345,11 @@ trait BundledExtensionUpdatePrompt
                 2 => ['pipe', 'w'],
             ];
 
-            // ENV 합집합 (G7_UPDATE_IN_PROGRESS 등 핵심 플래그 자식에 전달)
-            $env = array_merge(getenv(), $_ENV);
+            // ENV 합집합 (G7_UPDATE_IN_PROGRESS 등 핵심 플래그 자식에 전달).
+            // `getenv` 판정과 `$_SERVER` 폴백은 형제 러너가 SSoT 로 갖는다 — 이 자리는
+            // `proc_open` 가드 안쪽이라 「proc_open 은 되는데 getenv 만 막힌」 조합에서
+            // 무가드 호출이 치명 종료한다 (7차 G3 라운드 D-8).
+            $env = SubprocessCommandRunner::inheritedEnvironment();
 
             $process = proc_open($commandLine, $descriptors, $pipes, base_path(), $env);
             if (! is_resource($process)) {

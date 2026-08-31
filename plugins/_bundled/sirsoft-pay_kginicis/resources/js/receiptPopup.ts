@@ -1,3 +1,4 @@
+import { apiUrl } from './apiUrl';
 // e2e:allow PG 영수증 조회/팝업 — 외부 PG(이니시스) 결제 데이터 의존으로 브라우저 E2E 재현 불가, Vitest 회귀(__tests__/receiptPopup.test.ts)로 검증
 const PLUGIN_ID = 'sirsoft-pay_kginicis';
 
@@ -39,7 +40,7 @@ async function requestKginicisReceiptInfo(
     headers: Record<string, string>,
 ): Promise<{ status: number; data: KginicisReceiptInfo | null }> {
     try {
-        const res = await fetch(`/api/plugins/${PLUGIN_ID}/user/orders/${orderNumber}/receipt`, {
+        const res = await fetch(apiUrl(`/api/plugins/${PLUGIN_ID}/user/orders/${orderNumber}/receipt`), {
             headers,
             credentials: 'same-origin',
         });
@@ -111,6 +112,7 @@ export function receiptRowLabel(info: KginicisReceiptInfo | null | undefined): s
 
 export function openKginicisReceipt(info: KginicisReceiptInfo): void {
     if (info.receipt_url) {
+        // base-path:allow PG 가 내려준 영수증 절대 URL 이다 — 사이트 경로가 아니다.
         window.open(info.receipt_url, 'kginicis_receipt', 'width=800,height=600,scrollbars=yes,resizable=yes');
         return;
     }

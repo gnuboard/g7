@@ -138,7 +138,7 @@ API 와 동기화하는 역할만 합니다. 등록은 훅 기반입니다
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 23개 | `plugins/_bundled/sirsoft-pay_nicepayments/tests` |
+| PHPUnit | 24개 | `plugins/_bundled/sirsoft-pay_nicepayments/tests` |
 | Vitest | 8개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
 | 시나리오 매니페스트 | 1개 | `tests/scenarios` |

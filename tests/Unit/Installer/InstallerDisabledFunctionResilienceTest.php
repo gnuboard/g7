@@ -3,6 +3,7 @@
 namespace Tests\Unit\Installer;
 
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
  * `disable_functions` 환경에서 인스톨러 화면이 서는지 실측한다 (13차 환경#1·환경#18).
@@ -33,12 +34,12 @@ use PHPUnit\Framework\TestCase;
  * 한 개도 돌지 않는 상태(`installerSetTimeLimit` 의 무가드 `ini_get`)는 어떤 검사에도 걸리지
  * 않았다 — 그래서 stepwise 런타임 하네스를 함께 둔다.
  *
- * 커버 축: blocked_function disk_free_space·ini_set·ini_get·error_log·realpath·set_time_limit·ignore_user_abort·glob·php_uname·sys_get_temp_dir·putenv·opcache_get_status·scandir / entry requirements_screen·session_boot·stepwise_runtime / outcome renders·fatal
- *
- * @effects installer_requirements_screen_survives_blocked_functions, installer_session_boot_survives_blocked_ini_set, installer_disk_space_check_reports_unknown_instead_of_blocking, installer_stepwise_runtime_survives_blocked_functions
+ * 커버 축: blocked_function disk_free_space·ini_set·ini_get·error_log·realpath·set_time_limit·ignore_user_abort·glob·php_uname·sys_get_temp_dir·putenv·opcache_get_status·scandir / entry requirements_screen·session_boot·stepwise_runtime·corrupt_state_copies / outcome renders·fatal
  */
 class InstallerDisabledFunctionResilienceTest extends TestCase
 {
+    use ScansPhpSourceFunctions;
+
     /**
      * 요구사항 화면이 막혀도 서야 하는 함수들.
      *
@@ -69,6 +70,40 @@ class InstallerDisabledFunctionResilienceTest extends TestCase
         // 3인자 형태가 임의 파일 쓰기라 하드닝 프로필의 표준 차단 대상인데, 무가드 호출이
         // 28곳이었다 — 막히면 첫 요청이 백지가 되고, 그 사유를 남길 채널이 바로 그것이다.
         'error_log',
+        // 3차 G3 라운드. 노출 점검(exposure-check.php)이 링크 실측 임시 파일명을 가르는 데
+        // 이 함수를 무가드로 썼다 — 막힌 호스팅에서 요구사항 화면이 통째로 뜨지 않았다.
+        // 호출 자체를 난수원으로 통일해 없앴고, 되살아나면 이 전수 검사가 잡는다.
+        'getmypid',
+        // 4차 G3 라운드. 3차가 정적 룰에는 등재했는데 **이 전수 검사에는 넣지 않아**, 계획서
+        // 문언(「룰과 전수 검사에 등재」)이 절반만 사실이었다. 두 게이트의 목록이 어긋나면
+        // 어느 쪽을 봐도 「검사했다」와 「보지 않았다」가 구분되지 않는다.
+        'posix_getpid',
+        // 4차 G3 라운드. 둘 다 하드닝 프로필이 막을 수 있는데 인스톨러가 **비밀 채널
+        // (runtime.php 0600)·설치 상태 저장·vendor 설치·완료 플래그**에서 무가드로 불렀다.
+        // 막히면 PHP 8 은 함수 테이블에서 지우므로 Error(치명)이고, 그 지점들은 전부 설치가
+        // 한 걸음도 나아가지 못하는 자리다. 형제 지점(exposure-check.php)은 이미 가드가
+        // 있었으므로 규약이 파일마다 갈려 있던 상태였다.
+        'chmod',
+        // 5차 G3 라운드. 4차가 「catch 안의 uniqid 폴백」을 교체했다고 기록했으나 잔존 2곳이
+        // 남아 있었고, 정적 룰·이 목록·대기 목록 **셋 다 이 이름을 몰라** 아무도 잡지
+        // 못했다. 남은 자리 하나는 요구사항 화면의 디렉토리 권한 점검이라 첫 화면이 백지다.
+        'uniqid',
+        // 7차 G3 라운드. 인스톨러는 이미 `installerHasFunction('symlink')` 로 이 이름을
+        // 차단 가능으로 다뤘는데, **이 목록과 정적 룰 둘 다 그 이름을 몰랐다** — 그래서
+        // 코어 형제 두 지점(`StorageLinkHelper::createLink` · `FilePermissionHelper`)의
+        // `@symlink(...)` 무가드가 세 게이트 전부를 통과했고, 그 상태로 아래 대기 목록은
+        // 「알려진 무가드 지점 없음」을 선언하고 있었다.
+        'symlink',
+        // 7차 G3 라운드 D-13. 대기 목록이 「비어 있다」를 **도출로** 바꾸자마자 이 여섯이
+        // 드러났다 — 정적 룰이 가드를 요구하고 부팅 경로가 실제로 부르는데 이 전수 검사의
+        // 모집단에는 없었다. 전부 가드는 갖고 있었으므로 결함이 아니라 **측정 공백**이며,
+        // 손으로 비운 선언이 그만큼 사실이 아니었다는 실례다.
+        'exec',
+        'proc_open',
+        'getenv',
+        'posix_geteuid',
+        'posix_getpwuid',
+        'posix_getgrgid',
     ];
 
     /**
@@ -119,6 +154,79 @@ class InstallerDisabledFunctionResilienceTest extends TestCase
         return ['code' => $code, 'output' => implode("\n", $output)];
     }
 
+    /**
+     * 파손 상태 사본 나열은 `glob` 이 막혀도 **목록을 낸다** (14차 G3 W2-2).
+     *
+     * 종전에는 `glob` 차단 시 빈 목록이었다 — 그러면 「같은 내용 1회」와 「상한 5」 두
+     * 가드가 동시에 증발해 폴링마다 마스킹 전 상태 사본이 무제한 증식한다. 형제
+     * (`installerListExposureProbeFiles`)와 같은 `scandir` 폴백을 요구한다.
+     */
+    public function test_corrupt_state_copies_are_listed_when_glob_is_blocked(): void
+    {
+        putenv('G7_PROBE_SUFFIX=globonly-'.bin2hex(random_bytes(3)));
+        $result = $this->runProbe('corrupt_state_copies_probe.php', 'glob');
+        $this->assertSame(0, $result['code'], '차단 환경에서도 하네스는 정상 종료해야 한다: '.$result['output']);
+
+        $decoded = json_decode(trim($result['output']), true);
+        $this->assertIsArray($decoded, '하네스 출력이 JSON 이 아니다: '.$result['output']);
+        $this->assertFalse($decoded['glob_available'], '하네스가 glob 을 실제로 막지 못했다 — 이 검사는 아무것도 재지 않는다');
+        $this->assertSame(2, $decoded['count'], 'glob 이 막히면 사본 목록이 비어 두 가드가 함께 증발한다: '.$result['output']);
+        $this->assertNotContains('installer-state.json.corrupt.notes', $decoded['names'], '형식이 다른 이물이 목록에 끼면 상한이 조기 소진된다');
+    }
+
+    /**
+     * 정리 스윕의 **차단 분기**가 「쓸지 못했다」로 보고하는가 — 그리고 `glob` 하나로는
+     * 더 이상 멈추지 않는가 (15차 G3 라운드에 계약을 **강화**했다).
+     *
+     * 종전에는 `glob` 이 막히면 정리가 통째로 무동작이었다. 그런데 **sentinel 생성은 그
+     * 조건과 무관하게 계속되므로** 무인증 요청 반복이 `storage/installer` 에 상한 없이
+     * 쌓였고, 총량 방어를 맡긴다고 적어 둔 진입 스윕이 바로 그 환경에서 사문이었다.
+     * 나열을 `scandir` 폴백으로 넓혀, 「쓸지 못했다」는 **두 함수가 모두 막힌** 경우로
+     * 좁혔다.
+     *
+     * `installerCleanupExposureProbe()` 는 「지울 것이 없었다(removed:0)」와 「쓸지 못했다」를
+     * 나눠 보고한다 — 뭉뚱그리면 정리가 통째로 무동작인 호스팅에서도 「정리 완료 (0개)」가
+     * 남아 운영자가 잔여물이 없다고 읽는다. 그런데 그 두 갈래 중 **차단 쪽을 재는 검사가
+     * 없었다**: `glob` 은 `disable_functions` 로만 막히고, 그 설정은 돌고 있는 프로세스
+     * 안에서 만들 수 없다. 그래서 형제 하네스와 같은 방식으로 별도 프로세스에서 잰다.
+     */
+    public function test_cleanup_reports_it_could_not_sweep_when_glob_is_blocked(): void
+    {
+        // `glob` 만 막힌 환경은 이제 **정상적으로 쓴다** — 나열이 `scandir` 로 넘어간다.
+        putenv('G7_PROBE_SUFFIX=globonly');
+        $globOnly = $this->runProbe('exposure_cleanup_probe.php', 'glob');
+        $this->assertSame(0, $globOnly['code'], '차단 환경에서도 하네스는 정상 종료해야 한다: '.$globOnly['output']);
+
+        $decodedGlobOnly = json_decode(trim($globOnly['output']), true);
+        $this->assertIsArray($decodedGlobOnly, '하네스 출력이 JSON 이 아니다: '.$globOnly['output']);
+        $this->assertTrue(
+            $decodedGlobOnly['swept'],
+            'glob 만 막힌 환경은 scandir 로 쓸 수 있어야 한다 — 못 쓸면 잔여물이 무한히 쌓인다'
+        );
+
+        // 나열 수단이 **둘 다** 막혔을 때만 「쓸지 못했다」다.
+        putenv('G7_PROBE_SUFFIX=blocked');
+        $blocked = $this->runProbe('exposure_cleanup_probe.php', 'glob,scandir');
+        $this->assertSame(0, $blocked['code'], '차단 환경에서도 하네스는 정상 종료해야 한다: '.$blocked['output']);
+
+        $decoded = json_decode(trim($blocked['output']), true);
+        $this->assertIsArray($decoded, '하네스 출력이 JSON 이 아니다: '.$blocked['output']);
+        $this->assertFalse($decoded['swept'], '나열 수단이 전부 막힌 환경은 「쓸지 못했다」로 보고해야 한다');
+        $this->assertSame('listing_unavailable', $decoded['reason']);
+
+        // 대조군 — 같은 하네스가 차단 없이 돌면 「쓸었다」다. 이 대조가 없으면 하네스가
+        // 늘 false 를 내도 위 단언만으로는 드러나지 않는다.
+        putenv('G7_PROBE_SUFFIX=allowed');
+        $allowed = $this->runProbe('exposure_cleanup_probe.php', '');
+        $decodedAllowed = json_decode(trim($allowed['output']), true);
+        $this->assertIsArray($decodedAllowed, '대조군 출력이 JSON 이 아니다: '.$allowed['output']);
+        $this->assertTrue($decodedAllowed['swept'], '차단이 없으면 쓸었다고 보고해야 한다');
+        $this->assertNull($decodedAllowed['reason']);
+    }
+
+    /**
+     * @effects installer_requirements_screen_survives_blocked_functions
+     */
     public function test_requirements_screen_renders_when_common_functions_are_blocked(): void
     {
         foreach (self::BLOCKED_FUNCTIONS as $function) {
@@ -154,6 +262,8 @@ class InstallerDisabledFunctionResilienceTest extends TestCase
      * 실측 사례: `installerSetTimeLimit()` 이 바로 위 `set_time_limit` 은 가드하면서
      * 다음 줄의 `ini_get('max_execution_time')` 은 무가드였다. `run-task.php` 가 lock 을
      * 잡기 전에 부르는 자리라, 막힌 호스팅에서는 JSON 봉투도 서지 못한 500 이 된다.
+     *
+     * @effects installer_stepwise_runtime_survives_blocked_functions
      */
     public function test_stepwise_runtime_judgment_survives_blocked_functions(): void
     {
@@ -182,6 +292,9 @@ class InstallerDisabledFunctionResilienceTest extends TestCase
         }
     }
 
+    /**
+     * @effects installer_disk_space_check_reports_unknown_instead_of_blocking
+     */
     public function test_disk_space_check_reports_unknown_instead_of_blocking(): void
     {
         $result = $this->runProbe('requirements_probe.php', 'disk_free_space');
@@ -209,7 +322,7 @@ class InstallerDisabledFunctionResilienceTest extends TestCase
      */
     public function test_disk_probe_failure_branch_matches_blocked_branch(): void
     {
-        $source = (string) file_get_contents(
+        $source = $this->sourceWithoutComments(
             dirname(__DIR__, 3).'/public/install/api/check-configuration.php'
         );
 
@@ -223,6 +336,9 @@ class InstallerDisabledFunctionResilienceTest extends TestCase
         $this->assertStringContainsString("'current_mb' => null", $branch, '측정하지 못한 값은 0 이 아니라 null 이다 (차단 갈래와 동일 계약)');
     }
 
+    /**
+     * @effects installer_session_boot_survives_blocked_ini_set
+     */
     public function test_session_boot_survives_blocked_ini_set(): void
     {
         $result = $this->runProbe('session_boot_probe.php', 'ini_set');
@@ -242,9 +358,15 @@ class InstallerDisabledFunctionResilienceTest extends TestCase
     public function test_pending_unguarded_call_sites_still_fatal_and_stay_on_the_ledger(): void
     {
         if (self::PENDING_UNGUARDED === []) {
-            // 목록이 비면 검사할 대상도 없다 — 그 사실 자체를 단언해 둔다. 새 무가드 지점이
-            // 목록에 오르면 아래 전수 검사가 그대로 되살아난다.
-            $this->assertSame([], self::PENDING_UNGUARDED, '대기 목록이 비어 있다 (알려진 무가드 지점 없음)');
+            // 목록이 비면 검사할 대상이 없다. 종전에는 그 사실을 `assertSame([], PENDING_UNGUARDED)`
+            // 로 「단언」했는데 상수를 자기 자신과 비교하는 것이라 **언제나 참**이었다 — 즉
+            // 「알려진 무가드 지점 없음」의 근거가 그 목록을 손으로 비운 것 자체였고, 실제로
+            // 7차 G3 라운드에서 `symlink` 두 지점이 그 선언 밖에 있었다 (D-13·D-3).
+            //
+            // 대신 **도출**을 단언한다: 이 파일의 전수 검사 목록(BLOCKED_FUNCTIONS)이 정적 룰이
+            // 가드를 요구하는 이름 전부를 담고 있는가. 룰에 이름이 하나 늘면 이 검사가 red 가
+            // 되어 사람이 옮긴다 — 손으로 비운 목록에는 없던 강제다.
+            $this->assertPendingLedgerIsDerivedNotHandEmptied();
 
             return;
         }
@@ -258,6 +380,98 @@ class InstallerDisabledFunctionResilienceTest extends TestCase
                 $function.' 은(는) 이제 가드된 것으로 보인다 — PENDING_UNGUARDED 목록에서 지우고 위 전수 검사로 옮길 것 ('.$owner.')'
             );
         }
+    }
+
+    /**
+     * 대기 목록이 **비어 있다는 사실**이 도출된 것인지 확인합니다.
+     *
+     * 「알려진 무가드 지점 없음」은 손으로 비울 수 있는 선언이라, 그 자체로는 근거가 되지
+     * 않는다. 정적 룰(`hosting-blocked-function-requires-guard`)이 가드를 요구하는 이름 중
+     * **부팅 경로가 실제로 부르는 것**을 도출해, 이 파일의 전수 검사 목록이 그것을 전부
+     * 담고 있는지 본다. 룰에 이름이 늘거나 부팅 경로에 새 호출이 생기면 red 가 된다
+     * (7차 G3 라운드 D-13).
+     */
+    private function assertPendingLedgerIsDerivedNotHandEmptied(): void
+    {
+        $required = $this->guardedFunctionNamesFromRule();
+
+        $this->assertGreaterThan(
+            20,
+            count($required),
+            '정적 룰에서 가드 대상 함수명을 도출하지 못했다 — 도출이 비면 아래 비교가 공허하다'
+        );
+
+        $bootSource = '';
+        $root = dirname(__DIR__, 3);
+        foreach (self::BOOT_PATH_FILES as $relative) {
+            $bootSource .= $this->sourceWithoutComments($root.'/'.$relative);
+        }
+
+        $missing = [];
+        foreach ($required as $function) {
+            // 부팅 경로가 실제로 부르는 이름만 본다 — 룰 전체를 요구하면 인스톨러가 쓰지도
+            // 않는 함수의 프로브를 강요하게 되어 검사가 목적을 잃는다.
+            if (preg_match('/(?<![\w$>])'.preg_quote($function, '/').'\s*\(/', $bootSource) !== 1) {
+                continue;
+            }
+            if (in_array($function, self::BLOCKED_FUNCTIONS, true)) {
+                continue;
+            }
+
+            $missing[] = $function;
+        }
+
+        $this->assertSame(
+            [],
+            $missing,
+            '정적 룰이 가드를 요구하고 부팅 경로가 실제로 부르는데 이 전수 검사 목록에 없는 함수: '
+            .implode(', ', $missing).' — 「알려진 무가드 지점 없음」 선언이 그만큼 사실이 아니다'
+        );
+    }
+
+    /**
+     * 정적 룰 파일에서 가드 대상 함수명을 도출합니다.
+     *
+     * 룰은 JS 라 PHP 에서 실행할 수 없다. 배열 리터럴의 따옴표 문자열을 뽑는다 — 이름이
+     * 늘면 그대로 따라오고, 룰 파일이 사라지면 도출이 비어 위 하한 단언이 red 가 된다.
+     *
+     * @return array<int, string> 함수명 목록
+     */
+    private function guardedFunctionNamesFromRule(): array
+    {
+        $path = dirname(__DIR__, 3).'/.claude/scripts/audit/rules/hosting-blocked-function-requires-guard.cjs';
+
+        if (! is_file($path)) {
+            return [];
+        }
+
+        // 룰은 JS 다 — 주석 속 `'name'` 이 목록에 섞이지 않도록 JS 규칙으로 주석을 지운다.
+        $source = $this->sourceWithoutComments($path, false);
+        $names = [];
+
+        foreach (['GUARDED_FUNCTIONS', 'INSTALLER_SCOPED_FUNCTIONS'] as $constant) {
+            $start = strpos($source, 'const '.$constant.' = [');
+            if ($start === false) {
+                continue;
+            }
+
+            $end = strpos($source, '];', $start);
+            if ($end === false) {
+                continue;
+            }
+
+            $body = substr($source, $start, $end - $start);
+            if (preg_match_all("/'([a-z0-9_]+)'/i", $body, $m)) {
+                foreach ($m[1] as $name) {
+                    $names[strtolower($name)] = true;
+                }
+            }
+        }
+
+        $names = array_keys($names);
+        sort($names);
+
+        return $names;
     }
 
     /**
@@ -296,7 +510,7 @@ class InstallerDisabledFunctionResilienceTest extends TestCase
 
         foreach (self::BOOT_PATH_FILES as $relative) {
             $path = $root.'/'.$relative;
-            $source = is_file($path) ? (string) file_get_contents($path) : '';
+            $source = is_file($path) ? $this->sourceWithoutComments($path) : '';
 
             if ($source === '') {
                 $this->fail('부팅 경로 파일을 읽지 못했다: '.$relative);

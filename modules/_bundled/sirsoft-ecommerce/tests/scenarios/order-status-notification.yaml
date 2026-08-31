@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: |
+# audit:allow test-scenario-coverage reason: issue:#609 |
 #   cross product 자동 전개는 audit 실행 환경에 js-yaml 이 없어 fallback YAML 파서가
 #   nested axes 를 null 로 읽어 expandCases 가 throw 한다(동일 한계로 다른 번들 시나리오도
 #   audit:allow 처리됨). 본 기능은 백엔드 Unit(리스너/서비스) + Feature(알림 적재) +
@@ -24,6 +24,17 @@ description: |
     - D8: order_confirmed 라벨 "주문 확인"→"결제 완료" 의미로 명확화 (type/hook/recipients 불변)
 
 axes:
+  # G3 회차 16 W6 — 종전 마킹이 쓰던 이름을 선언으로 올린다 (선언 = 마킹). 값은 실제 마킹에서 도출.
+  policy: [approve, confirm_deposit]
+  enabled: [on]
+  actor: [admin]
+  verified_state: [unverified]
+  model_reloaded_status: [confirmed]
+  model_status: [delivered]
+  has_shipping_row: [true]
+  metadata: [carrier_and_tracking]
+  payment_method: [dbank, card]
+  current_status: [payment_complete]
   transition_path:
     - update                       # 관리자 단건 수정 (C0)
     - bulk_update                  # 관리자 목록 일괄 (C1)

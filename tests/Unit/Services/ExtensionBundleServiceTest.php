@@ -510,6 +510,46 @@ class ExtensionBundleServiceTest extends TestCase
     }
 
     /**
+     * 원자 게시 임시 파일(`{type}.{version}.{kind}.tmp.<hex>`)이 나이 하한을 지나면 걷힌다.
+     *
+     * `writeAtomically` 는 rename 실패 시에만 tmp 를 지운다 — put 과 rename 사이에서 프로세스가
+     * 죽으면 남는데, 정리기는 번들 이름 패턴만 봐서 tmp 를 영원히 거르지 않았다 (13차 G3 W1-5).
+     * 진행 중인 게시를 지우지 않도록 나이 하한을 두고, 생성 규칙과 다른 이름은 건드리지 않는다.
+     */
+    public function test_cleanup_removes_aged_atomic_write_tmp_files_only(): void
+    {
+        $bundleDir = storage_path('app/ext-bundles');
+        File::ensureDirectoryExists($bundleDir);
+
+        $stale = $bundleDir.'/module.200.js.tmp.0123456789abcdef';
+        $fresh = $bundleDir.'/plugin.200.css.tmp.fedcba9876543210';
+        $foreign = $bundleDir.'/module.200.js.tmp.backup';
+
+        File::put($stale, 'stale');
+        touch($stale, time() - 3600);
+        File::put($fresh, 'fresh');
+        File::put($foreign, 'operator');
+        touch($foreign, time() - 3600);
+        File::put($bundleDir.'/module.200.js', 'current');
+
+        try {
+            $this->moduleManager->shouldReceive('getActiveModules')->andReturn([]);
+
+            $deleted = $this->service()->cleanupStaleBundles(200);
+
+            $this->assertSame(1, $deleted);
+            $this->assertFileDoesNotExist($stale, '오래된 게시 tmp 를 걷는 주체가 없다 — 게시마다 하나씩 영구 누적된다');
+            $this->assertFileExists($fresh, '진행 중일 수 있는 신선한 tmp 를 지웠다');
+            $this->assertFileExists($foreign, '생성 규칙과 다른 이름을 지웠다');
+            $this->assertFileExists($bundleDir.'/module.200.js');
+        } finally {
+            @unlink($stale);
+            @unlink($fresh);
+            @unlink($foreign);
+        }
+    }
+
+    /**
      * @effects clear_bundles_by_type_scopes_to_prefix
      */
     public function test_clear_bundles_by_type(): void

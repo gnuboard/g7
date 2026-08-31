@@ -32,7 +32,11 @@ class ExtensionBackupHelper
             );
         }
 
-        $timestamp = date('Ymd_His');
+        // 형제 축(`CoreBackupHelper`)과 같은 규약을 쓴다 — 같은 초에 시작한 두 실행이
+        // 같은 디렉토리를 백업 대상으로 잡으면 뒤 실행이 앞 실행의 신 버전 디스크를
+        // 「업데이트 이전 스냅샷」 자리에 덮어쓴다. 확장 업데이트에는 코어와 달리
+        // 실행 잠금이 없어 그 충돌이 오히려 더 쉽다.
+        $timestamp = BackupDirectoryName::stamp();
         $backupRoot = storage_path('app/extension_backups');
         $backupTypeDir = storage_path("app/extension_backups/{$type}");
         $backupPath = storage_path("app/extension_backups/{$type}/{$identifier}_{$timestamp}");

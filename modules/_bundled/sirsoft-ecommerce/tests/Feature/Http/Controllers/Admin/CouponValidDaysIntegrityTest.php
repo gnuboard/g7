@@ -25,8 +25,6 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  *
  * 그래서 ① 수정 요청에서 확정될 조합을 검증해 저장을 막고, ② 이미 저장된 데이터는
  * 발급 관문(assertIssuable)에서 명시적으로 차단합니다.
- *
- * @effects coupon_update_rejects_days_from_issue_without_valid_days, coupon_issue_blocked_when_validity_not_configured
  */
 class CouponValidDaysIntegrityTest extends ModuleTestCase
 {

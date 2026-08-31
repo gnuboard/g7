@@ -13,6 +13,14 @@
  *  1. 저장값과 실제 환경이 일치하면 안내가 뜨지 않는다 (상시 경고는 소음이 된다)
  *  2. 확장자 형태만 가로채이면 안내가 뜨고, 버튼이 환경설정 일반 탭으로 보낸다
  *  3. 프로브가 양쪽 다 실패하면(PHP/네트워크 장애) 안내가 뜨지 않는다
+ *
+ * ## 시나리오 매니페스트 귀속 (14차 G3 검증 라운드)
+ *
+ * `tests/scenarios/docroot-single-folder.yaml` 의 `e2e_asset_url_recovery=admin_drift_notice`
+ * 를 소유한다. 13차까지 이 spec 은 어느 매니페스트에도 등록돼 있지 않았다.
+ *
+ * @scenario asset_url_mode=extension, e2e_asset_url_recovery=admin_drift_notice
+ * @effects admin_dashboard_reports_asset_url_mode_drift
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 
@@ -64,6 +72,8 @@ test.describe('관리자 대시보드 — 자산 URL 방식 드리프트 안내'
     await authenticatePage(page, token);
   });
 
+  // @scenario asset_url_mode=extension, e2e_asset_url_recovery=admin_drift_notice
+  // @effects admin_dashboard_reports_asset_url_mode_drift
   test('저장값과 실제 환경이 일치하면 안내가 뜨지 않는다', async ({ page }) => {
     await stubProbes(page, true, true);
     await gotoDashboard(page);
@@ -74,6 +84,8 @@ test.describe('관리자 대시보드 — 자산 URL 방식 드리프트 안내'
     ).toHaveCount(0);
   });
 
+  // @scenario asset_url_mode=extension, e2e_asset_url_recovery=admin_drift_notice
+  // @effects admin_dashboard_reports_asset_url_mode_drift
   test('확장자 형태가 가로채이면 안내가 뜨고 환경설정으로 이동시킨다', async ({ page }) => {
     await stubProbes(page, false, true);
     await gotoDashboard(page);
@@ -89,6 +101,8 @@ test.describe('관리자 대시보드 — 자산 URL 방식 드리프트 안내'
     await expect(page).toHaveURL(/\/admin\/settings\?.*tab=general/, { timeout: 20_000 });
   });
 
+  // @scenario asset_url_mode=extension, e2e_asset_url_recovery=admin_drift_notice
+  // @effects admin_dashboard_reports_asset_url_mode_drift
   test('프로브가 양쪽 다 실패하면 안내가 뜨지 않는다 (모드 문제가 아님)', async ({ page }) => {
     await stubProbes(page, false, false);
     await gotoDashboard(page);

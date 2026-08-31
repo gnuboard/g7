@@ -873,6 +873,48 @@ public function url(string $category, string $path): ?string
 문자열로 설정된 디스크(S3+CDN 등)면 직접 URL 을 생성합니다. url 설정이 없거나
 빈 문자열/공백이면 null 입니다 (AWS_URL 미설정 방어).
 
+**`public` 디스크의 링크 불가 환경**: `public` 디스크의 정적 URL(`{APP_URL}/storage/...`)은
+`public/storage` 심볼릭 링크가 있어야만 동작합니다. 링크를 만들 수 없는 호스팅에서는 URL 이
+자동으로 읽기 전용 서빙 라우트(`/api/system/public-storage/...`) 형태로 전환됩니다 — 판정과
+형태는 서버가 정하므로(SSoT) 소비측은 반환된 URL 을 그대로 쓰면 되고, 어느 형태인지 가정하는
+코드를 두지 않아야 합니다.
+
+이 전환은 **그 디스크 URL 이 표준 `/storage` 경로를 가리킬 때에 한합니다.** 운영자가
+`filesystems.disks.public.url` 을 다른 위치(CDN·별도 경로)로 지정한 배치는 로컬
+`public/storage` 링크가 애초에 필요 없고 파일도 그쪽이 내주므로, 링크 부재를 이유로 로컬
+라우트로 끌어오지 않고 설정값을 그대로 씁니다. 다른 디스크에 대해 `filesystems.disks.{disk}.url`
+을 권위로 삼는 것과 같은 규칙입니다.
+
+「표준 `/storage` 를 가리키는가」는 **사이트가 마운트된 경로 접두사를 벗기고** 판정합니다.
+하위 폴더 배치(`https://host/g7/`)에서 기본식은 `/g7/storage` 가 되는데, 접두사를 벗기지
+않으면 그 배치가 언제나 「운영자가 다른 위치로 지정했다」로 오분류되어 **대체 서빙이 절대
+켜지지 않습니다** — 링크를 만들 수 없는 그 사이트의 공개 이미지가 전부 404 가 됩니다.
+접두사의 출처는 서버가 자산 URL 을 만들 때 쓰는 값과 같고, 요청이 없는 문맥(큐·콘솔)에서는
+`app.url` 의 경로 부분을 씁니다.
+
+**링크 가용 판정은 링크의 대상까지 봅니다.** `public/storage` 가 링크(symlink 또는 Windows
+junction)로 존재하고 도달 가능한 것만으로는 부족하며, 그 링크가 **설정된 공개 스토리지
+루트**를 가리키는지까지 확인합니다. 파일을 쓰는 쪽과 서빙하는 쪽은 이미
+`filesystems.disks.public.root` 를 따르므로, 운영자가 그 루트를 옮긴 사이트에서는 옛 위치를
+가리키는 살아 있는 링크가 남습니다 — 존재만 보면 그 링크가 가용으로 읽혀 URL 이
+`/storage/...` 로 나가는데 그 트리는 비어 있어 공개 자산이 전부 404 가 되고, 오류도 로그도
+남지 않습니다. 링크는 있지만 대상이 없는 「반쪽」 상태도 같은 이유로 **불가**로 판정합니다.
+
+**서빙 루트는 `filesystems.disks.public.root` 를 따르되 조건부로 신뢰합니다.** 그 값이
+① 공개 디스크의 드라이버가 `local` 이고 ② 절대 경로일 때만 서빙 루트로 쓰고, 둘 중 하나라도
+아니면 `storage/app/public` 으로 폴백하면서 그 사실을 경고로 남깁니다. 비로컬 디스크의
+`root` 는 원격 버킷 안의 접두사라 로컬 경로로 쓰면 서빙이 통째로 어긋나고, 상대 경로는
+해석 기준(작업 디렉토리)이 실행 문맥마다 달라 같은 사이트가 요청 경로에 따라 다른 트리를
+내주기 때문입니다. 조용히 폴백하면 그 사이트의 공개 자산이 왜 404 인지 알 통로가 없으므로
+경고가 유일한 단서입니다.
+
+이 URL 은 **서버 설정**(`general.asset_url_mode`)이 정하는 형태로 내려옵니다. 브라우저가
+런타임에 확장자 없는 형태로 전환하는 자가 복구 장치가 따로 있지만, 그것이 덮는 범위는
+부팅에 필요한 자산(코어 번들·CSS 링크·확장 병합 번들)뿐입니다 — API 응답으로 실려 와
+`<img src>` 로 바로 들어가는 공개 스토리지 URL 은 그 변환기를 거치지 않습니다. 정적 확장자를
+가로채는 서버에서는 **서버 설정을 확장자 없는 모드로 바꾸는 것이 유일한 항구적 해법**이며,
+런타임 전환은 그때까지 화면이 뜨게 하는 응급 장치입니다.
+
 **필터 훅**: 생성 결과는 디스크 종류와 무관하게 `core.storage.filter_url` 필터 훅을
 **항상** 통과합니다 (null 도 발화 대상). 확장은 URL 을 공급(서명 URL 등)/수정(도메인
 교체)/차단(빈 문자열 반환 → 호출측 스트리밍 폴백)할 수 있습니다. 컨텍스트 6키:
@@ -1123,6 +1165,32 @@ return $response ?? ResponseHelper::notFound(...);
 ```
 
 `StorageInterface::get()` 은 소형 메타 파일(manifest.json 등)의 전체 읽기 전용이며, 서빙 본문에는 사용하지 않는다.
+
+### 파일 서빙 응답은 코어 헬퍼를 지난다
+
+`response()` / `download()` 가 만든 스트림을 컨트롤러가 **그대로** 돌려주지 않는다. 응답 계약 — ETag·304 재검증·`Cache-Control`·`X-Content-Type-Options: nosniff`·압축 제외 선언 — 은 코어 헬퍼(`BaseApiController::streamedFileResponse()`, 로컬 파일은 `fileResponse()`) 한 자리에 있고, 그 자리를 지나지 않는 통로는 오류 없이 헤더만 빠진다. 사용자가 올린 파일을 내주는 통로는 `immutable: false`·`mimeType: <행 mime_type>`·`skipCompression: true` 세 인자를 명시한다.
+
+```php
+// ❌ 금지 — 스토리지 스트림을 그대로 반환 (검증자·nosniff·압축 제외 선언 전부 없음)
+return $this->storage->download('attachments', $row->path, $row->original_filename, [
+    'Content-Type' => $row->mime_type,
+]);
+
+// ✅ 올바름 — 서비스는 스트림 + 행 메타(검증자 소스)까지, 계약은 코어 헬퍼가 입힌다
+$info = $this->attachmentService->getDownloadInfo($row);
+
+return $this->streamedFileResponse(
+    $info['response'],
+    $info['etag_source'],
+    (int) g7_core_settings('cache.layout_ttl', 86400),
+    immutable: false,
+    lastModifiedAt: $info['last_modified'],
+    mimeType: $info['mime_type'],
+    skipCompression: true
+);
+```
+
+`Content-Disposition` 은 헬퍼가 건드리지 않으므로 `download()` 의 `attachment` 선언은 그대로 승계된다 — 인라인·다운로드 두 통로가 같은 헬퍼를 지난다.
 
 ---
 

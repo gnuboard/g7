@@ -18,6 +18,7 @@
  * @since engine-v1.44.0
  */
 
+import { withBasePrefix } from '../support/assetUrl';
 import { createLogger } from '../utils/Logger';
 import {
   IDENTITY_REDIRECT_STASH_KEY,
@@ -212,6 +213,7 @@ export class IdentityGuardInterceptor {
     }
 
     const replayUrl = appendVerificationToken(returnReq.url, result.token);
+    // base-path:allow 원 요청(`returnReq.url`)의 재생 — 그 주소는 만들 때 접두사를 거쳤다.
     return fetch(replayUrl, {
       method: returnReq.method,
       headers: originalRequest?.headers ?? {
@@ -257,6 +259,7 @@ export class IdentityGuardInterceptor {
       } catch (e) {
         logger.warn('sessionStorage 접근 실패 — stash 없이 redirect 합니다.', e);
       }
+      // base-path:allow 서버·외부 인증기관이 준 verification.redirect_url 이다 — 사이트 경로가 아닐 수 있어 호출부가 손대지 않는다. 사이트 경로를 넘기는 템플릿 launcher 가 sitePath() 로 붙여 보낸다.
       window.location.href = redirectUrl;
     }
 
@@ -363,7 +366,11 @@ export const defaultLauncher: ModalLauncher = async (payload) => {
     /* ignore */
   }
 
-  const challengePath = `/identity/challenge?return=${encodeURIComponent(returnUrl)}`;
+  // 마운트 접두사를 붙인다 — `navigate` 는 라우터가 붙여 주지만 아래 폴백은 브라우저가
+  // 그대로 여는 주소라, 하위 폴더 배치에서 접두사가 없으면 사이트 밖으로 나간다.
+  const challengePath = withBasePrefix(
+    `/identity/challenge?return=${encodeURIComponent(returnUrl)}`
+  );
   try {
     await G7Core.dispatch({
       handler: 'navigate',
@@ -371,6 +378,7 @@ export const defaultLauncher: ModalLauncher = async (payload) => {
     });
   } catch (e) {
     logger.warn('navigate 실패 — window.location 으로 폴백', e);
+    // base-path:allow challengePath 는 바로 위에서 withBasePrefix() 로 조립된 값이다.
     window.location.href = challengePath;
   }
 

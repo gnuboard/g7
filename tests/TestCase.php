@@ -4,6 +4,7 @@ namespace Tests;
 
 use App\Contracts\Notifications\ChannelReadinessCheckerInterface;
 use App\Contracts\Repositories\ConfigRepositoryInterface;
+use App\Extension\Helpers\StorageLinkHelper;
 use App\Extension\Testing\ExtensionTestAllowlist;
 use App\Helpers\PermissionHelper;
 use App\Listeners\Identity\EnforceIdentityPolicyListener;
@@ -105,10 +106,22 @@ abstract class TestCase extends BaseTestCase
      * 실제로 이 환경에서 8건이 그렇게 실패했다.
      *
      * 다른 모드를 검증해야 하는 테스트는 `AssetUrl::forceMode()` 로 자기 전제를 명시한다.
+     *
+     * `public/storage` 링크 가용 판정도 같은 계열이다. `StorageLinkHelper` 는 그 값을
+     * **프로세스 수명 static memo** 로 들고 있고 첫 호출에서 개발자 체크아웃의 실제
+     * `public/storage` 를 실측한다 — 링크가 있는 머신과 없는 머신에서 공개 디스크 URL 이
+     * `/storage/…` 와 `/api/system/public-storage/…` 로 갈린다. 즉 같은 코드가 머신에 따라
+     * 다른 결과를 낸다. 기본 전제는 「링크 있음」(표준 배치)으로 고정하고, 링크 부재 배치를
+     * 검증하는 테스트는 `StorageLinkHelper::forcePublicStorageLinkUsable(false)` 로 자기
+     * 전제를 명시한다.
      */
     private function pinEnvironmentDependentSettings(): void
     {
         config(['g7_settings.core.general.asset_url_mode' => AssetUrl::MODE_EXTENSION]);
+        StorageLinkHelper::forcePublicStorageLinkUsable(true);
+        // 마운트 접두사 강제값도 프로세스 수명 static 이다 — 앞 케이스가 `forceBasePrefix('/g7')`
+        // 를 남기면 뒤 케이스의 모든 주소가 `/g7/…` 로 나가 개별 통과 / 스위트 실패가 된다.
+        AssetUrl::forceBasePrefix(null);
     }
 
     /**

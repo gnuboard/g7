@@ -10,6 +10,7 @@ import {
 import {
     markStandardPaymentCloseReportContext,
 } from '../paymentCloseMessageListener';
+import { sitePath } from '../apiUrl';
 
 interface PgPaymentData {
     order_number: string;
@@ -377,7 +378,7 @@ async function requestMobileKoreanPayment(
     // 메뉴얼(STEP 2) 표준 응답에는 P_OID 가 없음 — 주문번호를 쿼리스트링으로 echo 받아 회수.
     const nextUrl = appendSelectedPaymentMethod(
         window.location.origin +
-            config.callback_urls.mobile_callback +
+            sitePath(config.callback_urls.mobile_callback) +
             '?orderId=' + encodeURIComponent(pgPaymentData.order_number),
         paymentMethod,
     );
@@ -441,7 +442,7 @@ async function requestMobileKoreanPayment(
     // 요청에 P_NOTI_URL 을 명시해야 입금통보를 받을 수 있다.
     if (iniPayment === 'VBANK' && ! isEasyPay) {
         fields.P_NOTI_URL =
-            window.location.origin + config.callback_urls.mobile_vbank_notify;
+            window.location.origin + sitePath(config.callback_urls.mobile_vbank_notify);
     }
 
     markMobilePaymentReturnPending();
@@ -494,11 +495,11 @@ async function requestKoreanPayment(
     }
 
     const callbackUrl = appendSelectedPaymentMethod(
-        window.location.origin + config.callback_urls.callback,
+        window.location.origin + sitePath(config.callback_urls.callback),
         paymentMethod,
     );
     // KG 이니시스 공식 closeUrl 페이지에서 결제창만 닫게 하여 체크아웃 SPA를 유지한다.
-    const orderCloseUrl = window.location.origin + config.callback_urls.close;
+    const orderCloseUrl = window.location.origin + sitePath(config.callback_urls.close);
     removeKoreanPaymentForms();
 
     const formId = KOREAN_PAYMENT_FORM_ID_PREFIX + Date.now();
@@ -607,7 +608,7 @@ function buildCbtExtraData(config: ClientConfig, paymentMethod?: string): CbtExt
         ? CBT_PAYMETHODS_BY_PAYMENT_METHOD[paymentMethod]
         : undefined;
     const paymethod = selectedPaymethods ?? base.payment?.paymethod ?? DEFAULT_CBT_PAYMETHODS;
-    const cvsNotifyUrl = window.location.origin + config.callback_urls.cbt_cvs_notify;
+    const cvsNotifyUrl = window.location.origin + sitePath(config.callback_urls.cbt_cvs_notify);
 
     return {
         ...base,
@@ -666,7 +667,7 @@ async function requestCbtPayment(
 
     const returnUrl =
         window.location.origin +
-        config.callback_urls.cbt_callback +
+        sitePath(config.callback_urls.cbt_callback) +
         `?oid=${encodeURIComponent(pgPaymentData.order_number)}` +
         `&selectedPaymentMethod=${encodeURIComponent(paymentMethod ?? 'card')}`;
 

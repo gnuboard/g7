@@ -175,6 +175,9 @@ class NicePaymentsApiServiceTest extends PluginTestCase
         $service->cancelPayment('TID_ORIG', 'ORD-001', 50000, '고객 요청', 0);
     }
 
+    /**
+     * @effects net_cancel_sends_pg_cancel_api_call
+     */
     public function test_send_net_cancel_posts_to_net_cancel_url(): void
     {
         $service = $this->makeService();

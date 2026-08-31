@@ -1,4 +1,5 @@
-# audit:allow test-scenario-coverage reason: |
+# audit:allow test-scenario-coverage reason: issue:#609 |
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 15차 F-21 에서 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
 #   cross product 자동 전개는 audit 실행 환경의 fallback YAML 파서가 nested axes 를 읽지 못해
 #   검출되지 않는다(다른 번들 시나리오와 동일 한계). 본 변경은 백엔드 전용(검증 규칙 계층)
 #   이며 PHPUnit Feature 테스트가 화면·필드·경계 조합을 커버하고 green 이다.
@@ -28,6 +29,10 @@ description: |
       (상품 본가는 `min:0.01`, 옵션은 0 허용이 기존 계약)
 
 axes:
+  # G3 회차 16 W6 — 종전 마킹이 쓰던 이름을 선언으로 올린다 (선언 = 마킹). 값은 실제 마킹에서 도출.
+  entity: [ec_product]
+  payload: [selling_only, list_only]
+  relation: [exceeds_stored_list, below_stored_selling, within_stored_list]
   surface: [single_product, bulk_products, bulk_options, product_options]
   field: [price, price_relation, mileage_value]
   mileage_type: [percent, fixed, none]

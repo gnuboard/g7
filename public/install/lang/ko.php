@@ -417,6 +417,24 @@ return [
     'log_worker_lock_lost_retreat' => '다른 요청이 설치 진행을 이어받아 이 요청은 물러납니다.',
     'log_worker_disconnected_abort' => '브라우저 연결이 끊어져 이 요청을 종료합니다.',
     'log_worker_started' => '설치 작업을 시작합니다.',
+    'log_finalize_env_generate_failed' => '[finalize-env] .env 기본 내용을 만들지 못했습니다 (.env.example 없음)',
+    'log_finalize_env_backup_kept' => '[finalize-env] 기존 .env 를 보존했습니다: :path',
+    'log_finalize_env_write_failed' => '[finalize-env] .env 쓰기 실패: path=:path, last_error=:error',
+    'log_finalize_env_merged' => '[finalize-env] .env 머지 완료 (권한 변경 없음, 기존 권한 보존): path=:path, perms=:perms, owner_uid=:owner, group_gid=:group, process_euser=:euser',
+    'log_finalize_env_runtime_delete_failed' => '[finalize-env] runtime.php 삭제 실패: path=:path, last_error=:error. 파일이 남아 있어 임시 자격증명이 평문으로 보존됩니다 — 직접 지워 주세요.',
+    'log_finalize_env_runtime_removed' => '[finalize-env] runtime.php 삭제 완료',
+    'log_finalize_env_config_cache_delete_failed' => '[finalize-env] 설정 캐시 삭제 실패: path=:path, last_error=:error. 설치 이전 값이 남아 있으므로 이 파일을 직접 지우거나 `php artisan config:clear` 를 실행해 주세요.',
+    'log_finalize_env_config_cache_removed' => '[finalize-env] 설정 캐시 삭제 완료 (다음 요청이 .env 로 재생성)',
+    'log_finalize_env_state_delete_failed' => '[finalize-env] 설치 상태 파일 삭제 실패: path=:path, last_error=:error',
+    'log_finalize_env_state_removed' => '[finalize-env] 설치 상태 파일 삭제 완료',
+    'log_finalize_env_state_redacted' => '[finalize-env] 설치 상태 파일 잔존 — 비밀 필드 제거 완료',
+    'log_finalize_env_state_redact_failed' => '[finalize-env] 설치 상태 파일의 비밀 필드 제거에 실패했습니다 — 직접 삭제해 주세요: :path',
+    'log_finalize_env_unexpected_exception' => '[finalize-env] 예기치 못한 오류: :message @ :file::line',
+    'log_finalize_env_probe_sweep_unwritable' => '[finalize-env] 노출 점검 잔여 파일을 지우지 못했습니다 (사유: :reason) — storage/installer 를 직접 정리해 주세요.',
+    'log_finalize_env_probe_sweep_partial' => '[finalize-env] 노출 점검 잔여 파일 :failed개를 지우지 못했습니다 (지움 :removed개) — storage/installer 를 직접 정리해 주세요.',
+    'log_finalize_env_probe_sweep_done' => '[finalize-env] 노출 점검 잔여 파일 정리 완료 (:removed개)',
+    'log_reset_probe_sweep_unwritable' => '[reset] 노출 점검 잔여 파일을 지우지 못했습니다 (사유: :reason) — storage/installer 를 직접 정리해 주세요.',
+    'log_reset_probe_sweep_partial' => '[reset] 노출 점검 잔여 파일 :failed개를 지우지 못했습니다 (지움 :removed개) — storage/installer 를 직접 정리해 주세요.',
     'log_worker_client_ip' => '요청 IP: :ip',
     'log_worker_rejected_busy' => '다른 요청이 이미 설치를 진행하고 있어 이 요청은 시작하지 않습니다.',
     'log_worker_lock_acquired' => '설치 진행 권한을 확보했습니다.',
@@ -461,6 +479,10 @@ return [
     'log_error_occurred' => '❌ 오류 발생: :error',
     'log_env_file_created' => '.env 파일 생성 완료',
     'log_env_flag_added' => '.env 파일에 설치 완료 플래그 추가',
+    'log_storage_link_created' => '공개 파일 링크(public/storage)를 만들었습니다.',
+    'log_storage_link_skipped' => '공개 파일 링크(public/storage)를 만들지 못했습니다 — 공개 파일은 애플리케이션 경로로 서빙됩니다(설치에는 영향 없음).',
+    'log_deploy_ledger_seeded' => '서버 설정 조각(deploy/)의 갱신 기준선을 기록했습니다.',
+    'log_deploy_ledger_seed_skipped' => '서버 설정 조각(deploy/)의 갱신 기준선을 기록하지 못했습니다 — 다음 코어 업데이트가 그 조각을 보존 쪽으로 다룹니다(설치에는 영향 없음).',
     'log_installed_flag_created' => 'g7_installed 플래그 파일 생성',
     'log_state_updated' => '설치 상태 업데이트 완료',
     'log_all_tasks_completed' => '🎉 모든 설치 작업이 완료되었습니다!',
@@ -635,7 +657,7 @@ location /install/api/ {
 // install-worker.php 최상단에 추가
 ini_set(\'output_buffering\', \'off\');
 ini_set(\'zlib.output_compression\', \'off\');
-@apache_setenv(\'no-gzip\', 1);
+@apache_setenv(\'no-gzip\', \'1\');
 
 [공유 호스팅]
 호스팅 제공업체에 SSE(Server-Sent Events) 지원 여부를 문의해주세요.
@@ -923,6 +945,59 @@ ini_set(\'zlib.output_compression\', \'off\');
     'asset_url_mode_detected_unavailable' => '확장자 있는 주소와 없는 주소 모두 응답하지 않아 서빙 방식을 감지하지 못했습니다. 에셋 방식 자체의 문제라기보다, 앱이 아직 이 주소에서 정상 응답하지 않거나(PHP·라우팅 설정) 프록시·보안 규칙(CSP 등)이 프로브 요청을 막고 있을 가능성이 큽니다. 이 항목은 설치를 막지 않으니 계속 진행할 수 있으며, 설치 후 화면이 비어 보이면 관리자 > 환경설정 > 일반에서 확장자 미사용으로 바꿔 보세요.',
     'asset_url_mode_checking' => '확인 중…',
     'asset_url_mode_unknown' => '확인 불가',
+
+    // 웹 노출 점검 (B-4 · D3 · D21)
+    'web_exposure' => '웹 노출 점검',
+    'web_exposure_checking' => '확인 중…',
+    'web_exposure_safe' => '보호 확인됨',
+    'web_exposure_exposed' => '노출됨',
+    'web_exposure_exposed_detail' => '설정 파일과 내부 디렉토리가 웹에서 그대로 열립니다. 이 상태로 설치하면 데이터베이스 비밀번호 등 민감 정보가 외부에 노출되므로 설치를 진행할 수 없습니다.',
+    'web_exposure_exposed_list_label' => '외부에서 열람이 확인된 주소',
+    'web_exposure_exposed_remedy' => '문서 루트를 public/ 디렉토리로 지정하거나, 릴리즈에 동봉된 루트 .htaccess 가 동작하는지(Apache AllowOverride) 확인한 뒤 [다시 검증]을 눌러 주세요.',
+    'web_exposure_server_guide_label' => '이 서버에서 보호 설정이 있는 곳',
+    'web_exposure_server_guide_apache' => '릴리즈에 동봉된 최상위 .htaccess 가 이 일을 합니다. 서버에서 .htaccess 사용이 꺼져 있거나(AllowOverride) 그 파일이 올라가지 않았을 수 있습니다. 확인한 뒤 [다시 검증]을 눌러 주세요.',
+    'web_exposure_server_guide_litespeed' => '릴리즈에 동봉된 최상위 .htaccess 가 이 일을 합니다. LiteSpeed 의 .htaccess 사용 설정이 켜져 있는지 확인한 뒤 [다시 검증]을 눌러 주세요.',
+    'web_exposure_server_guide_iis' => '릴리즈에 동봉된 최상위 web.config 가 이 일을 합니다. URL Rewrite 모듈이 설치되어 있는지 확인한 뒤 [다시 검증]을 눌러 주세요. 모듈이 없으면 사이트가 500 오류로 열리지 않습니다.',
+    'web_exposure_server_guide_nginx' => 'nginx 는 폴더마다 놓인 설정 파일을 읽지 않으므로 서버 설정에 직접 넣어야 합니다. 배포본의 deploy/nginx/g7-layout2.conf 를 서버 블록에 include 하고 설정을 다시 읽은(reload) 뒤 [다시 검증]을 눌러 주세요.',
+    'web_exposure_server_guide_other' => '이 서버는 폴더마다 놓인 설정 파일을 읽지 않을 수 있습니다. 배포본의 deploy/ 디렉토리에 있는 설정 조각을 서버 설정에 적용하고 다시 읽은 뒤 [다시 검증]을 눌러 주세요. 조각이 없는 서버라면 문서 루트를 public/ 으로 바꾸는 방법이 가장 확실합니다.',
+    'web_exposure_unknown' => '판정 불능',
+    'web_exposure_unknown_detail' => '노출 여부를 자동으로 판정하지 못했습니다(점검 요청이 차단되었거나 응답이 없습니다). 아래 주소를 브라우저 새 탭에서 직접 열어, 파일 내용이 보이지 않는지(오류 화면·404·403 이면 정상) 확인해 주세요.',
+    'web_exposure_manual_list_label' => '직접 열어 확인할 주소',
+    'web_exposure_control_failed_label' => '열려야 하는데 열리지 않은 주소',
+    'web_exposure_control_failed_hint' => '이 주소는 정상 배치라면 반드시 열립니다. 열리지 않는다는 것은 보호가 잘 되어 있다는 뜻이 아닙니다. 원인은 셋 중 하나입니다. ① 웹 서버가 요청을 애플리케이션으로 넘기지 못하고 있습니다(Apache 의 mod_rewrite 가 없거나 .htaccess 가 무시되는 서버) — 이 상태로 설치를 마치면 첫 화면 외의 거의 모든 주소가 열리지 않습니다. 서버 관리자에게 문의하거나, 문서 루트를 public 폴더로 지정하는 방식으로 설치하세요. ② 설치 프로그램이 잡은 점검 기준 주소가 실제 프로젝트 주소와 다릅니다(프로젝트 폴더 이름이 public 인 경우 등) — 이 경우 사이트 자체는 정상이므로, 아래 주소 목록을 브라우저에서 직접 열어 접근이 막히는지 확인한 뒤 진행하세요. ③ 리버스 프록시가 주소 앞부분(접두사)을 벗겨서 넘기고 있습니다(예: 프록시는 /g7/install 을 받고 서버는 /install 을 봄) — 프록시가 X-Forwarded-Prefix 헤더로 그 접두사를 알려 주도록 설정하면 점검 기준 주소가 바로잡힙니다.',
+    'web_exposure_unmeasured_label' => '점검하지 못한 항목 (준비 실패 — 직접 확인 필요)',
+    'web_exposure_unmeasured_reason_not_writable' => 'storage 폴더에 쓸 수 없어 점검용 파일을 만들지 못했습니다',
+    'web_exposure_unmeasured_reason_rate_limited' => '짧은 시간에 너무 여러 번 점검해 이번에는 건너뛰었습니다 (잠시 후 다시 검증)',
+    'web_exposure_unmeasured_reason_no_random' => '이 서버에서 난수를 만들 수 없어 점검용 파일을 만들지 못했습니다',
+    'web_exposure_unmeasured_reason_no_marker' => '점검 기준으로 쓸 표식을 그 파일에서 찾지 못해 이 계열을 재지 못했습니다 — 아래 주소를 직접 열어 확인하세요',
+    'web_exposure_unmeasured_reason_missing' => '점검 대상 파일이 없어 이 계열을 재지 못했습니다 — 아래 주소를 직접 열어 확인하세요',
+    'web_exposure_unmeasured_reason_missing_env' => '점검 대상 파일이 없습니다 — .env.example 을 .env 로 이름을 바꿨다면 그 계열이 실제로 열려 있을 수 있으니 직접 확인하세요',
+    'web_exposure_unmeasured_reason_missing_install_assets' => '인스톨러 자산 파일이 없어 기준 대조를 만들지 못했습니다 — 배포본이 온전히 업로드되었는지(public/install/assets 폴더) 확인해 주세요',
+    // vendor 계열 전용 사유. 「없다」가 아니라 「아직 풀리지 않았다」이며, 설치가 끝나면
+    // 그 경로에 파일이 생기므로 그때 직접 확인해야 한다.
+    'web_exposure_unmeasured_reason_not_deployed' => '이 계열의 파일이 아직 배포되지 않아(의존성 압축 파일을 나중에 푸는 설치 방식) 이번에는 재지 못했습니다 — 설치를 마친 뒤 해당 경로를 브라우저에서 직접 열어 내용이 보이지 않는지 확인하세요',
+    // 점검 자신의 뒷정리를 하지 못한 경우. 판정에는 영향이 없지만(총량은 창당 상한이 묶는다)
+    // 잔여 파일이 쌓인다는 사실은 운영자에게 도달해야 한다.
+    'web_exposure_unmeasured_reason_not_listable' => '이 서버에서는 폴더 목록을 읽을 수 없어 점검용 임시 파일을 자동으로 정리하지 못합니다 — 설치를 마친 뒤 storage 폴더의 점검용 파일이 남아 있으면 직접 지워 주세요',
+    // 프록시가 보낸 접두사 헤더를 안전하지 않은 형태라 버린 경우. 기준 주소가 실제 마운트
+    // 밖일 수 있으므로 판정을 신뢰할 수 없다 — 값 자체는 화면에도 로그에도 싣지 않는다.
+    'web_exposure_unmeasured_reason_forwarded_prefix_rejected' => '리버스 프록시가 보낸 주소 접두사(X-Forwarded-Prefix) 값이 허용되지 않는 형태라 무시했습니다 — 점검 기준 주소가 실제 주소와 다를 수 있으니 프록시 설정에서 그 헤더 값을 경로(/접두사) 형태로만 보내도록 바로잡거나, 아래 주소를 직접 열어 확인하세요',
+    'web_exposure_manual_hint' => '어느 주소에서든 파일 내용이 그대로 보이면 설치를 중단하고 문서 루트 설정 또는 보호 설정(.htaccess)을 먼저 바로잡아야 합니다.',
+    'web_exposure_manual_confirm' => '위 주소를 모두 확인했고, 파일 내용이 보이는 주소가 없음을 확인했습니다.',
+    // 목록이 비는 경우가 있다 — 서버가 대상을 하나도 만들지 못했거나 배선이 끊긴 상태다.
+    // 그때 「위 주소를 모두 확인했다」를 그대로 쓰면 아무것도 나열되지 않은 화면에서
+    // 근거 없이 체크하게 되므로, 운영자가 무엇을 확인해야 하는지 문구가 직접 말한다.
+    'web_exposure_manual_confirm_no_list' => '점검할 주소를 만들지 못했습니다. `.env`·`storage/`·`vendor/` 를 브라우저에서 직접 열어 보고, 파일 내용이 보이는 주소가 없음을 확인했습니다.',
+    // 노출 판정은 브라우저가 내리고 게이트도 화면이 잠근다. 그 판정이 어디에도 남지 않으면
+    // 「보호 확인됨으로 통과했는지 / 판정 불능에서 운영자가 직접 확인하고 넘어갔는지」를
+    // 나중에 되짚을 근거가 없다 — 단계를 넘어갈 때 설치 로그에 한 줄 남긴다.
+    'log_web_exposure_verdict' => '[web-exposure] 웹 노출 점검 판정: :verdict',
+    'log_web_exposure_blocked' => '[web-exposure] 노출됨 판정 상태에서 다음 단계 요청이 들어와 서버가 진행을 거부했습니다',
+    'error_web_exposure_blocked' => '웹 노출 점검에서 「노출됨」으로 판정된 상태에서는 설치를 진행할 수 없습니다. 문서 루트 또는 보호 설정을 바로잡은 뒤 [다시 검증]을 눌러 주세요.',
+    'web_exposure_verdict_confirmed' => '판정 불능 — 운영자가 직접 확인함',
+    'web_exposure_verdict_unreported' => '보고되지 않음',
+    'web_exposure_verdict_pending' => '판정 전 (점검이 끝나기 전에 제출됨)',
+    'storage_link_unavailable_detail' => '이 서버에서는 심볼릭 링크를 만들 수 없어, 공개 파일(첨부 이미지 등)을 정적 경로 대신 앱의 읽기 전용 서빙 주소로 내보냅니다. 설치는 그대로 진행되며 별도 조치는 필요 없습니다.',
     'core_update_github_url' => 'GitHub 저장소 URL',
     'core_update_github_url_help' => '코어 업데이트를 확인할 GitHub 저장소 URL입니다.',
     'core_update_github_token' => 'GitHub 액세스 토큰',

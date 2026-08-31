@@ -28,11 +28,6 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 부분 입력(3필드 중 일부)은 결제수단과 무관하게 거부한다 — 그 상태로는 환불이 불가능하다.
  *
  * @scenario actor=admin, change_mode=manual
- *
- * @effects cancel_refund_bank_required_for_paid_vbank_422,
- *   cancel_refund_bank_optional_before_deposit,
- *   cancel_refund_bank_partial_input_rejected_422,
- *   cancel_refund_bank_persisted_to_payment_row
  */
 class CancelOrderRefundBankTest extends ModuleTestCase
 {
@@ -173,6 +168,9 @@ class CancelOrderRefundBankTest extends ModuleTestCase
 
     // ------------------------------------------------- vbank 입금완료 = 필수
 
+    /**
+     * @effects cancel_refund_bank_required_for_paid_vbank_422
+     */
     public function test_가상계좌_입금완료_취소는_환불계좌가_없으면_거부된다(): void
     {
         ['order' => $order] = $this->createPaidOrder();
@@ -201,6 +199,9 @@ class CancelOrderRefundBankTest extends ModuleTestCase
         $this->cancel($order)->assertOk();
     }
 
+    /**
+     * @effects cancel_refund_bank_persisted_to_payment_row
+     */
     public function test_가상계좌_입금완료_취소에_환불계좌를_주면_통과하고_결제행에_저장된다(): void
     {
         ['order' => $order, 'payment' => $payment] = $this->createPaidOrder();
@@ -222,6 +223,9 @@ class CancelOrderRefundBankTest extends ModuleTestCase
 
     // ------------------------------------------------- vbank 입금전 / dbank = 선택
 
+    /**
+     * @effects cancel_refund_bank_optional_before_deposit
+     */
     public function test_가상계좌_입금전_취소는_환불계좌가_없어도_된다(): void
     {
         ['order' => $order] = $this->createPaidOrder([
@@ -231,6 +235,9 @@ class CancelOrderRefundBankTest extends ModuleTestCase
         $this->cancel($order)->assertOk();
     }
 
+    /**
+     * @effects cancel_refund_bank_optional_before_deposit
+     */
     public function test_무통장_취소는_환불계좌가_없어도_된다(): void
     {
         ['order' => $order] = $this->createPaidOrder([
@@ -240,6 +247,9 @@ class CancelOrderRefundBankTest extends ModuleTestCase
         $this->cancel($order)->assertOk();
     }
 
+    /**
+     * @effects cancel_refund_bank_optional_before_deposit
+     */
     public function test_카드_취소는_환불계좌가_없어도_된다(): void
     {
         ['order' => $order] = $this->createPaidOrder([
@@ -251,6 +261,9 @@ class CancelOrderRefundBankTest extends ModuleTestCase
 
     // ------------------------------------------------- 부분 입력 거부 (결제수단 무관)
 
+    /**
+     * @effects cancel_refund_bank_partial_input_rejected_422
+     */
     public function test_무통장이라도_환불계좌_부분_입력은_거부된다(): void
     {
         ['order' => $order] = $this->createPaidOrder([
@@ -262,6 +275,9 @@ class CancelOrderRefundBankTest extends ModuleTestCase
             ->assertJsonValidationErrors(['refund_bank.bank_code', 'refund_bank.holder']);
     }
 
+    /**
+     * @effects cancel_refund_bank_partial_input_rejected_422
+     */
     public function test_가상계좌_환불계좌_부분_입력은_거부된다(): void
     {
         ['order' => $order] = $this->createPaidOrder();

@@ -1,3 +1,4 @@
+import { apiUrl } from '../../support/apiUrl';
 /**
  * PostReactions 컴포넌트
  *
@@ -135,7 +136,7 @@ const PostReactions: React.FC<PostReactionsProps> = ({
 
     // 기본 API 호출
     try {
-      const response = await fetch(`/api/posts/${postId}/reactions`, {
+      const response = await fetch(apiUrl(`/api/posts/${postId}/reactions`), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

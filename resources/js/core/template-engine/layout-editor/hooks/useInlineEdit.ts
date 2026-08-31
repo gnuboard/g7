@@ -36,6 +36,7 @@ import {
 import { setPendingValue, setPendingValues } from './pendingCustomTranslations';
 import { TranslationEngine } from '../../TranslationEngine';
 import { suffixed } from '../../../support/assetUrl';
+import { withBasePrefix } from '../../../support/assetUrl';
 import {
   stripBindingTokens,
   buildParamizedKeyText,
@@ -571,7 +572,7 @@ export async function createCustomKey(
 ): Promise<{ kind: 'ok' | 'error'; resource?: CreatedKeyResource; message?: string }> {
   const url = `/api/admin/templates/${encodeURIComponent(templateIdentifier)}/custom-translations`;
   try {
-    const response = await fetch(url, {
+    const response = await fetch(withBasePrefix(url), {
       method: 'POST',
       credentials: 'same-origin',
       headers: buildAuthHeaders({ 'Content-Type': 'application/json' }),
@@ -620,7 +621,7 @@ export async function updateCustomKeyValue(
   // 다른 로케일 값 보존 — 기존 values 위에 현재 로케일만 덮어쓴다.
   const nextValues = { ...(row.values ?? {}), [locale]: value };
   try {
-    const response = await fetch(url, {
+    const response = await fetch(withBasePrefix(url), {
       method: 'PUT',
       credentials: 'same-origin',
       headers: buildAuthHeaders({ 'Content-Type': 'application/json' }),
@@ -652,7 +653,7 @@ export async function findCustomKeyRow(
 ): Promise<CreatedKeyResource | null> {
   const url = `/api/admin/templates/${encodeURIComponent(templateIdentifier)}/custom-translations`;
   try {
-    const response = await fetch(url, {
+    const response = await fetch(withBasePrefix(url), {
       method: 'GET',
       credentials: 'same-origin',
       headers: buildAuthHeaders(),

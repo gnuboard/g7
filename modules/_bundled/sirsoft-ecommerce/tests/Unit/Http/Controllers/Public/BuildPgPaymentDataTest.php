@@ -17,8 +17,6 @@ use ReflectionMethod;
  * - 배송지 주소 기반 고객 정보
  * - 결제 금액/통화
  * - 에스크로 상품 상세(escrow_products)
- *
- * @effects escrow_products_localized_unit_price_per_item
  */
 class BuildPgPaymentDataTest extends ModuleTestCase
 {
@@ -315,6 +313,8 @@ class BuildPgPaymentDataTest extends ModuleTestCase
 
     /**
      * escrow_products 가 주문 옵션 수만큼, 개당가·수량·로컬라이즈 상품명으로 구성되는지 확인.
+     *
+     * @effects escrow_products_localized_unit_price_per_item
      */
     public function test_escrow_products_옵션별_개당가_수량_상품명(): void
     {
@@ -355,6 +355,8 @@ class BuildPgPaymentDataTest extends ModuleTestCase
 
     /**
      * escrow_products 상품명이 영어 로케일에서 로컬라이즈되는지 확인.
+     *
+     * @effects escrow_products_localized_unit_price_per_item
      */
     public function test_escrow_products_상품명_영어_로컬라이즈(): void
     {

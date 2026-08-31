@@ -29,10 +29,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  *   2. 집계를 붙이지 않은 경로에서는 0 을 지어내지 않고 **필드를 생략**한다.
  *      (집계를 붙였는데 리뷰가 0건이면 별칭은 존재하고 값만 null 이므로 종전대로 0 으로 표기)
  *
- * @scenario case=product_list_review_aggregate
- *
- * @effects recently_viewed_products_carry_real_review_stats
- * @effects list_resource_omits_review_stats_when_not_aggregated
+ * @scenario product_list_review_aggregate
  */
 class ProductListReviewAggregateTest extends ModuleTestCase
 {

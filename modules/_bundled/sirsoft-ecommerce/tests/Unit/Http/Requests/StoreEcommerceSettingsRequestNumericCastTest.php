@@ -15,8 +15,6 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  *
  * 캐스트 대상은 rules() 에서 파생한다 — 필드를 손으로 열거하면 규칙이 추가될 때
  * 누락(드리프트)이 생기므로, integer/numeric 규칙을 가진 모든 필드가 자동 포함되어야 한다.
- *
- * @effects request_numeric_fields_cast_before_validation, request_validation_not_loosened
  */
 class StoreEcommerceSettingsRequestNumericCastTest extends ModuleTestCase
 {
@@ -32,6 +30,9 @@ class StoreEcommerceSettingsRequestNumericCastTest extends ModuleTestCase
         return $request;
     }
 
+    /**
+     * @effects request_numeric_fields_cast_before_validation
+     */
     public function test_auto_cancel_days_string_is_cast_to_int(): void
     {
         $request = $this->resolve([
@@ -52,6 +53,9 @@ class StoreEcommerceSettingsRequestNumericCastTest extends ModuleTestCase
         $this->assertSame(5, $request->validated()['order_settings']['auto_cancel_days']);
     }
 
+    /**
+     * @effects request_numeric_fields_cast_before_validation
+     */
     public function test_wildcard_nested_numeric_fields_are_cast(): void
     {
         $request = $this->resolve([
@@ -72,6 +76,9 @@ class StoreEcommerceSettingsRequestNumericCastTest extends ModuleTestCase
         $this->assertSame(1000, $rule['min_use_amount']);
     }
 
+    /**
+     * @effects request_validation_not_loosened
+     */
     public function test_non_numeric_string_is_not_cast_and_still_fails_validation(): void
     {
         $this->expectException(ValidationException::class);
@@ -82,6 +89,9 @@ class StoreEcommerceSettingsRequestNumericCastTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * @effects request_validation_not_loosened
+     */
     public function test_decimal_string_on_integer_field_still_fails_validation(): void
     {
         // 소수 문자열을 intval 로 통과시키면 검증이 느슨해진다 — 캐스트 대상에서 제외되어야 한다.

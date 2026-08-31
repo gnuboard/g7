@@ -37,6 +37,7 @@ import type {
   LoadingComponentSpec,
 } from './specTypes';
 import { createLogger } from '../../../utils/Logger';
+import { withBasePrefix } from '../../../support/assetUrl';
 
 const logger = createLogger('EditorSpecLoader');
 
@@ -176,6 +177,7 @@ async function fetchOneSpec(
     kind === 'template' ? 'templates' : kind === 'module' ? 'modules' : 'plugins';
   const url = `${apiBaseUrl}/${prefix}/${encodeURIComponent(identifier)}/editor-spec`;
   try {
+    // base-path:allow `url` 은 `apiBaseUrl` 로 조립되고, 그 기본값이 `withBasePrefix('/api')` 다.
     const response = await fetcher(url);
     if (!response.ok) {
       // 404 등은 정상 케이스(스펙 미작성 확장) — warn 없이 null
@@ -346,7 +348,11 @@ function mergeInto(dst: EditorSpec, src: EditorSpec, source?: RecipeSource): voi
 export async function loadEditorSpecBundle(
   options: EditorSpecLoadOptions,
 ): Promise<LoadedEditorSpec> {
-  const apiBaseUrl = options.apiBaseUrl ?? '/api';
+  // 기본값은 **접두사를 거친** `/api` 다. 종전 리터럴은 하위 폴더 배치
+  // (`https://host/g7/`)에서 문서 루트로 나가 편집기 스펙이 전부 404 였는데,
+  // 이 로더는 404 를 「스펙 미작성 확장」으로 보고 `null` 을 돌려주므로(아래
+  // `fetchOneSpec`) 오류도 경고도 없이 **팔레트·스타일 컨트롤이 조용히 비어** 있었다.
+  const apiBaseUrl = options.apiBaseUrl ?? withBasePrefix('/api');
   const fetcher = options.fetcher ?? (typeof fetch !== 'undefined' ? fetch : undefined);
   if (!fetcher) {
     logger.warn('loadEditorSpecBundle: fetch unavailable, returning null spec');

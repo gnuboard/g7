@@ -39,8 +39,6 @@ use Tests\TestCase;
  * 선행 단계가 원상 복구되는지 단언합니다.
  *
  * @scenario failure_injection=last_write_fails
- *
- * @effects withdraw_is_atomic_all_or_nothing, avatar_file_removed_only_after_commit
  */
 class MultiStepWriteAtomicityTest extends TestCase
 {
@@ -48,6 +46,8 @@ class MultiStepWriteAtomicityTest extends TestCase
 
     /**
      * deleteUser: 마지막 delete 실패 시 역할·동의·토큰·아바타 파일이 원상 복구된다.
+     *
+     * @effects withdraw_is_atomic_all_or_nothing, avatar_file_removed_only_after_commit
      */
     public function test_delete_user_rolls_back_roles_and_tokens(): void
     {
@@ -219,6 +219,8 @@ class MultiStepWriteAtomicityTest extends TestCase
 
     /**
      * updateUser — 역할 동기화 실패 시 프로필 갱신·토큰 정리가 원상 복구된다.
+     *
+     * @effects withdraw_is_atomic_all_or_nothing
      */
     public function test_update_user_rolls_back_profile_and_tokens(): void
     {

@@ -67,6 +67,11 @@ class DirectoryPermissionScanDepthTest extends TestCase
         }
 
         require_once $projectRoot.'/public/install/includes/config.php';
+        // `functions.php` 의 권한 스캔은 막힌 함수 판정을 인스톨러 SSoT
+        // (`installerHasFunction`)로 한다. 그 정의는 `execution-mode.php` 에 있으므로
+        // 먼저 싣지 않으면 스캔이 `Call to undefined function` 으로 죽는다 — 프로덕션은
+        // 진입점이 두 파일을 함께 싣지만 이 테스트는 `functions.php` 만 싣고 있었다.
+        require_once $projectRoot.'/public/install/includes/execution-mode.php';
         require_once $projectRoot.'/public/install/includes/functions.php';
     }
 

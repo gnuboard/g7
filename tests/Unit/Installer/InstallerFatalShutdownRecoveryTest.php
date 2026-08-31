@@ -20,7 +20,7 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  *   **건너뛰기가 원리상 불가능**해진다 — 화면은 영원히 진행 중으로 보이고 탈출구는
  *   완료 마커를 전부 버리는 초기화뿐이다.
  *
- * 고정하는 계약 (PO 결정 — 실패로 승격해 건너뛰기를 허용한다):
+ * 고정하는 계약 (제품 결정 — 실패로 승격해 건너뛰기를 허용한다):
  *  - 치명 오류로 끝난 요청은 `current_task` 를 `failed_task` 로 승격하고
  *    `installation_status='failed'` · `failed_task_target` · `failed_task_skippable` 을
  *    정상 실패 경로와 같은 필드 집합으로 기록한다.

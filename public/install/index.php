@@ -80,7 +80,38 @@ $error = null;
 // Step 3 기본값 설정
 if ($currentStep === 3) {
     $defaults = DEFAULT_INSTALL_CONFIG;
-    $defaults['app_url'] = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'];
+    // `APP_URL` 에는 **마운트 접두사까지** 담는다.
+    //
+    // 종전에는 scheme + host 만 조립해, 하위 폴더 설치(`https://host/g7/`)에서 그 값이
+    // `https://host` 가 됐다. 그 값은 요청이 없는 문맥의 주소 SSoT 다 —
+    // `AssetUrl::configuredBasePath()` 가 `app.url` 의 경로를 접두사 폴백으로 읽고,
+    // 큐·콘솔·예약 작업·**메일 본문**이 그 폴백을 탄다. 즉 접두사를 빠뜨리면 그 문맥의
+    // 주소가 전부 사이트 밖을 가리키는데, 화면(요청 기반)은 정상이라 드러나지 않는다.
+    // 그 폴백이 막으려고 만들어진 실패를 인스톨러가 심는 형태였다 (15차 G3 라운드).
+    //
+    // 접두사는 인스톨러 자신의 기준 주소 SSoT 에서 얻는다(`/…/install` → `/…`) — 그
+    // 함수가 이미 Alias·하위 디렉토리·API 컨텍스트를 전부 흡수한다. 인자는 기준 URL
+    // 파생(`config.php`)과 **같은 집합**이다 — 프록시가 벗긴 접두사(`X-Forwarded-Prefix`)를
+    // 여기만 빠뜨리면 그 배치에서 접두사 없는 `APP_URL` 이 `.env` 에 영구 저장된다 (15차 G3 W1-3).
+    $installerBase = installerDeriveBaseUrl(
+        (string) ($_SERVER['SCRIPT_NAME'] ?? ''),
+        isset($_SERVER['REQUEST_URI']) ? (string) $_SERVER['REQUEST_URI'] : null,
+        isset($_SERVER['HTTP_X_FORWARDED_PREFIX']) ? (string) $_SERVER['HTTP_X_FORWARDED_PREFIX'] : null,
+    );
+    $mountPrefix = rtrim((string) preg_replace('#/install$#i', '', $installerBase), '/');
+
+    // 스킴도 같은 저장소의 공용 판정을 쓴다. 종전에는 `HTTPS` 서버 변수 하나만 보는
+    // 단독 판정이었는데, TLS 를 앞단에서 끝내는 프록시 뒤에서는 그 값이 비어 있고
+    // `HTTP_X_FORWARDED_PROTO: https` 만 온다 — 그러면 `.env` 에 `APP_URL=http://…` 가
+    // **영구 저장**되고, 오리진 축은 설정이 요청보다 권위이므로(`AssetUrl::absolute()`)
+    // https 페이지에 `http://` 이미지가 실려 브라우저가 혼합 콘텐츠로 조용히 차단한다.
+    // 그 실패는 그 독블록이 이름을 붙여 막으려던 바로 그것이다. 형제 둘(`session.php`
+    // ·`api/check-configuration.php`)이 이미 이 판정을 쓴다 — 값을 영구화하는 여기만
+    // 안 쓰고 있었다 (12차 G3 라운드 A12-3).
+    // 호스트는 `Host` 헤더가 없으면(HTTP/1.0 클라이언트·일부 프록시) `SERVER_NAME` 으로 떨어진다
+    // — 가드 없이 읽으면 경고와 함께 빈 호스트가 `APP_URL=http://` 로 `.env` 에 영구 저장된다 (16차 G3 D-8).
+    $defaults['app_url'] = (installerRequestIsHttps($_SERVER) ? 'https' : 'http')
+        .'://'.((string) ($_SERVER['HTTP_HOST'] ?? '') ?: (string) ($_SERVER['SERVER_NAME'] ?? '')).$mountPrefix;
     $defaults['admin_language'] = getCurrentLanguage();
     // state.json에서 비밀번호 제외된 config 복원 (폼에 비밀번호를 사전 입력하지 않음).
     // state 에는 이미 비밀이 기록되지 않지만(이슈 #465), 레거시 state.json 이 남아 있는
@@ -146,14 +177,15 @@ if (! headers_sent()) {
     <title><?= lang('welcome_title') ?> - <?= lang('brand_name') ?></title>
 
     <!-- CSS -->
-    <!-- 아이콘: 설치 마법사는 SPA 부팅 전이라 자산 URL 헬퍼를 쓸 수 없으므로 상대 경로로 자체 제공한다 -->
-    <link rel="stylesheet" href="<?= INSTALLER_BASE_URL ?>/assets/vendor/font-awesome/6.5.1/css/all.inlined.css">
-    <link rel="stylesheet" href="<?= INSTALLER_BASE_URL ?>/assets/css/installer.css?v=<?= time() ?>">
+    <!-- 아이콘: 설치 마법사는 SPA 부팅 전이라 자산 URL 헬퍼를 쓸 수 없으므로 상대 경로로 자체 제공한다.
+         기준 주소는 `dirname($_SERVER['SCRIPT_NAME'])` 에서 오는 요청 유래 값이라 그대로 두지 않고 이스케이프한다. -->
+    <link rel="stylesheet" href="<?= e(INSTALLER_BASE_URL) ?>/assets/vendor/font-awesome/6.5.1/css/all.inlined.css">
+    <link rel="stylesheet" href="<?= e(INSTALLER_BASE_URL) ?>/assets/css/installer.css?v=<?= time() ?>">
 </head>
 <body>
     <?php /* 헤더 바는 첫 화면(환영)에도 나온다 — 테마 토글이 그 안에 있어, 종전처럼 1단계부터
              띄우면 시스템과 반대로 보고 싶은 사용자는 다음 단계로 넘어가야만 전환 수단을 만난다
-             (10차, PO 결정). 단계 표시만 첫 화면에서 생략한다 — 아직 시작하지 않았기 때문이다. */ ?>
+             (10차, 제품 결정). 단계 표시만 첫 화면에서 생략한다 — 아직 시작하지 않았기 때문이다. */ ?>
     <!-- Installer Header Bar -->
     <div class="installer-header-bar">
         <div class="installer-header-content">
@@ -213,7 +245,7 @@ if (! headers_sent()) {
         // 클라이언트 검증은 즉시 피드백용이며, 실제 차단은 서버 3개 경로가 담당한다.
         window.INSTALLER_BLOCKED_DB_ACCOUNTS = <?= installer_json_encode(PrivilegedDatabaseAccounts::BLOCKED, $jsonInlineFlags) ?>;
     </script>
-    <script src="<?= INSTALLER_BASE_URL ?>/assets/js/installation-monitor.js?v=<?= time() ?>"></script>
-    <script src="<?= INSTALLER_BASE_URL ?>/assets/js/installer.js?v=<?= time() ?>"></script>
+    <script src="<?= e(INSTALLER_BASE_URL) ?>/assets/js/installation-monitor.js?v=<?= time() ?>"></script>
+    <script src="<?= e(INSTALLER_BASE_URL) ?>/assets/js/installer.js?v=<?= time() ?>"></script>
 </body>
 </html>

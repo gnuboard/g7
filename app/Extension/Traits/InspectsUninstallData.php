@@ -2,6 +2,7 @@
 
 namespace App\Extension\Traits;
 
+use App\Extension\ExtensionManager;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
@@ -28,7 +29,7 @@ trait InspectsUninstallData
         $tables = [];
 
         foreach ($migrationPaths as $migrationPath) {
-            $migrationFiles = glob($migrationPath.'/*.php');
+            $migrationFiles = ExtensionManager::listDirectoryFiles($migrationPath, '.php');
             if (empty($migrationFiles)) {
                 continue;
             }

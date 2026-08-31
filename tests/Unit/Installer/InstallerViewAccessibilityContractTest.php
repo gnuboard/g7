@@ -18,29 +18,10 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  *  - #B28 진행 중 눌리지 않는 트리거가 Tab 순서에 남으면 「죽은 버튼」이 된다
  *
  * 커버 축: markup_channel svg·inline_style·live_region·attribute_escape·inert_trigger
- *
- * @effects installer_decorative_svgs_are_hidden_from_assistive_tech, installer_views_do_not_dim_text_with_inline_opacity, installer_replaced_regions_declare_live_semantics, installer_translated_attribute_values_are_escaped, installer_running_card_header_is_inert
  */
 class InstallerViewAccessibilityContractTest extends TestCase
 {
     use ScansPhpSourceFunctions;
-
-    /**
-     * 확장자에 맞는 주석 제거 — 대조 전에 예외 없이 지난다.
-     *
-     * 원문에는 주석 처리된 마크업도 글자로 남아, 「그 화면 요소가 살아 있다」를 증명하지
-     * 못한다. 두 스트리퍼 모두 줄 수를 보존하므로 `파일:줄번호` 보고는 그대로 성립한다.
-     *
-     * @param  string  $path  파일 경로 (확장자로 스트리퍼를 고른다)
-     * @param  string  $source  원본
-     * @return string 주석이 제거된 소스
-     */
-    private function withoutComments(string $path, string $source): string
-    {
-        return str_ends_with($path, '.js')
-            ? $this->stripJsComments($source)
-            : $this->stripComments($source);
-    }
 
     private function installRoot(): string
     {
@@ -90,12 +71,15 @@ class InstallerViewAccessibilityContractTest extends TestCase
         return $files;
     }
 
+    /**
+     * @effects installer_decorative_svgs_are_hidden_from_assistive_tech
+     */
     public function test_모든_장식_sv_g_가_보조기술에서_감춰진다(): void
     {
         $offenders = [];
 
         foreach ($this->markupFiles() as $file) {
-            $lines = explode("\n", $this->withoutComments($file, (string) file_get_contents($file)));
+            $lines = explode("\n", $this->sourceWithoutComments($file));
             foreach ($lines as $index => $line) {
                 if (! preg_match('/<svg\b/', $line)) {
                     continue;
@@ -124,12 +108,15 @@ class InstallerViewAccessibilityContractTest extends TestCase
         );
     }
 
+    /**
+     * @effects installer_views_do_not_dim_text_with_inline_opacity
+     */
     public function test_화면_파일이_인라인_style_로_글자를_흐리게_하지_않는다(): void
     {
         $offenders = [];
 
         foreach ($this->scanFiles($this->installRoot().'/views', ['php']) as $file) {
-            $lines = explode("\n", $this->withoutComments($file, (string) file_get_contents($file)));
+            $lines = explode("\n", $this->sourceWithoutComments($file));
             foreach ($lines as $index => $line) {
                 if (preg_match('/style\s*=\s*"[^"]*opacity\s*:/i', $line)) {
                     $offenders[] = basename($file).':'.($index + 1);
@@ -146,6 +133,9 @@ class InstallerViewAccessibilityContractTest extends TestCase
         );
     }
 
+    /**
+     * @effects installer_replaced_regions_declare_live_semantics
+     */
     public function test_통째로_갈아_끼워지는_결과_영역이_라이브_리전을_선언한다(): void
     {
         // 스피너/빈 상태 → 결과로 **통째로** 교체되는 컨테이너. 교체 자체는 조용하므로
@@ -160,7 +150,7 @@ class InstallerViewAccessibilityContractTest extends TestCase
         $expected = [];
         foreach ($this->scanFiles($this->installRoot().'/views', ['php']) as $file) {
             $relative = 'views/'.basename($file);
-            $source = $this->withoutComments($file, (string) file_get_contents($file));
+            $source = $this->sourceWithoutComments($file);
 
             if (preg_match_all('/<div[^>]*\sid="([a-z0-9-]+-result)"/i', $source, $m)) {
                 $expected[$relative] = array_values(array_unique($m[1]));
@@ -170,7 +160,7 @@ class InstallerViewAccessibilityContractTest extends TestCase
         $this->assertNotSame([], $expected, '결과 영역을 하나도 찾지 못했다 — 이름 규약이 바뀌었으면 도출 규칙도 함께 옮긴다');
 
         foreach ($expected as $relative => $ids) {
-            $source = $this->withoutComments($relative, (string) file_get_contents($this->installRoot().'/'.$relative));
+            $source = $this->sourceWithoutComments($this->installRoot().'/'.$relative);
 
             foreach ($ids as $id) {
                 $matched = preg_match('/<div[^>]*id="'.preg_quote($id, '/').'"[^>]*>/', $source, $m);
@@ -186,12 +176,15 @@ class InstallerViewAccessibilityContractTest extends TestCase
         }
     }
 
+    /**
+     * @effects installer_translated_attribute_values_are_escaped
+     */
     public function test_번역문을_속성값에_넣을_때_이스케이프한다(): void
     {
         $offenders = [];
 
         foreach (array_merge($this->scanFiles($this->installRoot().'/views', ['php']), [$this->installRoot().'/index.php']) as $file) {
-            $lines = explode("\n", $this->withoutComments($file, (string) file_get_contents($file)));
+            $lines = explode("\n", $this->sourceWithoutComments($file));
             foreach ($lines as $index => $line) {
                 // 짧은 echo 태그로 속성값을 채우면서 이스케이프 헬퍼를 거치지 않은 것
                 // 한 태그 안만 본다 — 닫는 태그를 넘겨 읽으면 같은 줄의 다음 태그까지 한 덩어리가 된다
@@ -201,7 +194,7 @@ class InstallerViewAccessibilityContractTest extends TestCase
                 foreach ($m[1] as $expression) {
                     $expression = trim($expression);
 
-                    if (preg_match('/htmlspecialchars|json_encode|urlencode|rawurlencode|installerJsString/', $expression)) {
+                    if (preg_match('/htmlspecialchars|json_encode|\be\(|urlencode|rawurlencode|installerJsString/', $expression)) {
                         continue;
                     }
                     // 코드 안의 상수는 사용자 입력·번역문이 아니다 (INSTALLER_BASE_URL 등)
@@ -226,9 +219,12 @@ class InstallerViewAccessibilityContractTest extends TestCase
         );
     }
 
+    /**
+     * @effects installer_running_card_header_is_inert
+     */
     public function test_설치_중_진행_카드_헤더가_tab_순서에_남지_않는다(): void
     {
-        $source = $this->stripComments((string) file_get_contents($this->installRoot().'/views/5-installation.php'));
+        $source = $this->sourceWithoutComments($this->installRoot().'/views/5-installation.php');
 
         $matched = preg_match('/<div[^>]*id="installation-card-header"[^>]*>/s', $source, $m);
         $this->assertSame(1, $matched, '진행 카드 헤더를 찾지 못했다');
@@ -247,11 +243,168 @@ class InstallerViewAccessibilityContractTest extends TestCase
         );
 
         // 완료·실패·중단에서 해제하는 지점이 실제로 있어야 한다 — 없으면 영영 못 누른다.
-        $installer = $this->stripJsComments((string) file_get_contents($this->installRoot().'/assets/js/installer.js'));
+        $installer = $this->sourceWithoutComments($this->installRoot().'/assets/js/installer.js');
         $this->assertStringContainsString(
             'setInstallationCardInteractive(true)',
             $installer,
             '설치가 끝난 뒤 헤더를 다시 활성화하는 지점이 없다 — 접기/펼치기가 영영 막힌다',
+        );
+    }
+
+    /**
+     * 라이브 리전 역할을 갖는 `role` 값 (암묵 `aria-live` 를 동반한다).
+     *
+     * `role="status"`·`role="log"`·`role="marquee"` 는 암묵 polite, `role="alert"` 는 암묵
+     * assertive, `role="timer"` 는 암묵 off 다. 즉 `aria-live` 를 적지 않아도 리전이 선다 —
+     * 리터럴 `aria-live` 하나만 세는 검사는 이 축을 통째로 놓친다.
+     *
+     * @return string 정규식 대안 목록 (`alert|status|…`)
+     */
+    private function liveRegionRoleAlternation(): string
+    {
+        return 'alert|status|log|marquee|timer';
+    }
+
+    /**
+     * installer.js 안의 라이브 리전 **선언 전수**를 도출한다.
+     *
+     * 두 표기 모두 본다 — 템플릿 문자열의 리터럴 속성(`role="status"` · `aria-live="polite"`)과
+     * DOM API 호출(`setAttribute('role', 'alert')` · `setAttribute('aria-live', …)`). 한 표기만
+     * 세면 다른 표기로 쓰인 선언이 영원히 사각이다(종전 검사가 정확히 그랬다).
+     *
+     * 각 선언에는 **그것을 그리는 함수**를 함께 붙인다 — 중첩 여부는 「그 조각이 어디에
+     * 붙는가」로 갈리고, 그 판별자가 함수 단위이기 때문이다.
+     *
+     * @return array<string, array{line: int, function: string, snippet: string, appendsToBody: bool}>
+     *                                                                                                 키는 `줄번호:함수명` (한 줄이 두 패턴에 걸려도 한 건으로 접는다)
+     */
+    private function jsLiveRegionDeclarations(): array
+    {
+        $source = $this->sourceWithoutComments($this->installRoot().'/assets/js/installer.js');
+        $live = $this->liveRegionRoleAlternation();
+
+        // 함수 경계 도출 — 이름을 손으로 적지 않는다. 각 함수는 다음 함수 선언 직전까지다.
+        $functions = [];
+        if (preg_match_all('/^[ \t]*(?:async[ \t]+)?function[ \t]+(\w+)[ \t]*\(/m', $source, $fm, PREG_OFFSET_CAPTURE)) {
+            foreach ($fm[1] as $index => $capture) {
+                $functions[] = ['name' => $capture[0], 'start' => $fm[0][$index][1]];
+            }
+        }
+        $functions[] = ['name' => '<eof>', 'start' => strlen($source)];
+
+        $patterns = [
+            '/\brole\s*=\s*"(?:'.$live.')"/',
+            '/\baria-live\s*=\s*"/',
+            '/\.setAttribute\(\s*([\'"])role\1\s*,\s*([\'"])(?:'.$live.')\2/',
+            '/\.setAttribute\(\s*([\'"])aria-live\1/',
+        ];
+
+        $found = [];
+        foreach ($patterns as $pattern) {
+            if (! preg_match_all($pattern, $source, $m, PREG_OFFSET_CAPTURE)) {
+                continue;
+            }
+
+            foreach ($m[0] as $hit) {
+                [$snippet, $offset] = $hit;
+                $line = substr_count(substr($source, 0, $offset), "\n") + 1;
+
+                $name = '<top-level>';
+                $start = 0;
+                $end = $functions[0]['start'];
+                for ($i = 0; $i < count($functions) - 1; $i++) {
+                    if ($offset >= $functions[$i]['start'] && $offset < $functions[$i + 1]['start']) {
+                        $name = $functions[$i]['name'];
+                        $start = $functions[$i]['start'];
+                        $end = $functions[$i + 1]['start'];
+                        break;
+                    }
+                }
+
+                $body = substr($source, $start, $end - $start);
+
+                $found[$line.':'.$name] = [
+                    'line' => $line,
+                    'function' => $name,
+                    'snippet' => trim($snippet),
+                    // 최상위 리전인가 — `document.body` 에 직접 붙는 조각만 자기 리전을 갖는다.
+                    'appendsToBody' => str_contains($body, 'document.body.appendChild'),
+                ];
+            }
+        }
+
+        ksort($found);
+
+        return $found;
+    }
+
+    /**
+     * 라이브 리전은 **한 층만** 둔다.
+     *
+     * 화면(`views/*.php` · `includes/functions.php`)이 결과 영역을 `role="status"
+     * aria-live="polite"` 로 선언하고, JS 가 그 안을 갈아 끼운다. 그 안쪽 조각이 다시
+     * 리전을 선언하면 중첩이고, 화면 판독기 구현에 따라 **중복 낭독** 또는 **안쪽 역할
+     * 무시**로 갈린다 — 어느 쪽이든 의도한 안내가 아니다.
+     *
+     * 안쪽 리전이 없어도 갱신은 낭독된다. 바깥 리전의 `aria-busy` 는 결과를 그린 직후
+     * false 로 풀리므로, 그 뒤에 오는 비동기 갱신도 바깥 리전이 알린다(`aria-atomic`
+     * 기본값이 false 라 **바뀐 subtree 만** 읽는다). 안쪽에 남기는 것은 `aria-busy`
+     * 뿐이며 — 그것은 리전 선언이 아니라 노출 지연 표시다.
+     *
+     * 판정은 **도출한다.** 종전에는 리터럴 `role="alert"` 한 형태만 셌는데, `role="status"`
+     * 는 암묵 polite 라 polite-in-polite 3곳과 `setAttribute` 형태의 alert-in-polite 1곳이
+     * 그 계수 밖에 있었다 (11차 G3 라운드 F-1 · 10차 F10-13 의 미완).
+     *
+     * @scenario a11y_axis=live_region, nesting=none
+     *
+     * @effects installer_live_regions_are_not_nested
+     */
+    public function test_라이브_리전이_중첩되지_않는다(): void
+    {
+        $declarations = $this->jsLiveRegionDeclarations();
+
+        $offenders = [];
+        $topLevel = [];
+        foreach ($declarations as $key => $declaration) {
+            if ($declaration['appendsToBody']) {
+                $topLevel[$key] = $declaration;
+
+                continue;
+            }
+            $offenders[] = 'installer.js:'.$declaration['line']
+                .' ('.$declaration['function'].') → '.$declaration['snippet'];
+        }
+
+        $this->assertSame(
+            [],
+            $offenders,
+            "JS 가 그리는 조각이 스스로 라이브 리전을 선언한다:\n  ".implode("\n  ", $offenders)
+            ."\n그 조각은 화면이 소유한 `aria-live` 영역 **안**으로 들어가므로 리전이 중첩된다."
+            ."\n바깥 리전이 이미 그 갱신을 낭독한다 — 안쪽에 남길 것은 `aria-busy` 뿐이고,"
+            ."\n시각적 강조는 카드/`alert alert-error` 클래스가 담당한다."
+            ."\n자기 리전이 필요한 조각은 `document.body` 에 직접 붙는 것(토스트)뿐이다.",
+        );
+
+        // 반대 방향 ① — 최상위(body 직결) 리전까지 지우면 그 안내가 통째로 사라진다.
+        $this->assertNotSame(
+            [],
+            $topLevel,
+            'document.body 에 직접 붙는 조각의 라이브 리전이 하나도 없다 — 안쪽 중첩을 '
+            .'정리하면서 최상위 리전까지 지웠다(의존성 잠금 토스트가 화면 밖에서 침묵한다)',
+        );
+
+        // 반대 방향 ② — 조각이 얹히는 **바깥** 리전. 이것이 사라지면 안쪽을 비워 둔 조각의
+        // 갱신을 알릴 주체가 아무도 없다. `views/*.php` 의 `-result` 영역은 형제 검사가
+        // 이미 잠그므로, 여기서는 `functions.php` 가 만드는 결과 섹션을 본다
+        // (완료·실패·중단 — 마무리 거부 안내가 덧붙는 자리다).
+        $functions = $this->sourceWithoutComments($this->installRoot().'/includes/functions.php');
+        $matched = preg_match('/<div[^>]*class="result-section[^"]*"[^>]*>/', $functions, $m);
+        $this->assertSame(1, $matched, 'functions.php 에서 결과 섹션 컨테이너를 찾지 못했다 — 도출 규칙이 뒤처졌다');
+        $this->assertMatchesRegularExpression(
+            '/\brole="(?:'.$this->liveRegionRoleAlternation().')"|\baria-live=/',
+            $m[0],
+            '완료/실패/중단 결과 섹션에 라이브 리전 선언이 없다 — 이 섹션은 JS 가 덧붙이는 '
+            .'안내(마무리 거부 등)의 유일한 낭독 주체다',
         );
     }
 }

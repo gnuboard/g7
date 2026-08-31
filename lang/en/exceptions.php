@@ -92,6 +92,11 @@ return [
     ],
 
     // SEO / Sitemap 관련 예외
+    // 파일 서빙 헬퍼 — 호출부 계약 위반 (개발자 대상)
+    'file_serving' => [
+        'meta_key_missing' => 'The file serving meta is missing a required key: :key',
+    ],
+
     'seo' => [
         'sitemap_write_failed' => 'Failed to write sitemap file: :path',
         'sitemap_gzip_failed' => 'Failed to compress sitemap child file: :file',

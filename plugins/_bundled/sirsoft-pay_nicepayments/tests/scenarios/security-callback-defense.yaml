@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: Phase 2 SSoT — 본 매니페스트는 나이스페이먼츠 콜백 보안 매트릭스의 명세 문서. AuthToken Cache 기반 dedupe 와 replay/net-cancel 의 cross product 전체 자동 검증은 Phase 3 (침투 PoC) 에서 처리.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#609 Phase 2 SSoT — 본 매니페스트는 나이스페이먼츠 콜백 보안 매트릭스의 명세 문서. AuthToken Cache 기반 dedupe 와 replay/net-cancel 의 cross product 전체 자동 검증은 Phase 3 (침투 PoC) 에서 처리.
 
 feature: 콜백 보안 방어 (replay attack / authToken dedupe / post-approve net cancel / 승인 URL 호스트 정규화)
 
@@ -44,19 +44,13 @@ exclusions:
 effects:
   # DB 영구 replay defense — PreventsReplayCallback trait
   - replay_detected_on_second_arrival_db
-  - replay_response_is_idempotent_ok
-  - replay_no_double_completion
-  - replay_logged_with_context
   - replay_first_arrival_proceeds_normally
-  - replay_db_unique_blocks_concurrent_insert
 
   # 단기 AuthToken dedupe — CacheInterface 60s TTL
   - auth_token_first_arrival_writes_cache
   - auth_token_within_60s_blocked
   - auth_token_outside_60s_proceeds
   - auth_token_cache_key_uses_sha256_of_mid_token_txtid
-  - auth_token_blocked_returns_4xx_or_idempotent
-  - auth_token_logged_when_dedupe_hit
 
   # 승인 URL 호스트 정규화 (KVE-2026-2010 형제 — 검증기 미경유 독립 경로)
   - approval_url_host_check_reuses_core_normalize_host_not_a_copy
@@ -69,11 +63,24 @@ effects:
   # Post-approve net cancel
   - post_approve_failure_triggers_send_net_cancel
   - net_cancel_sends_pg_cancel_api_call
+
+# 미작성 — 회차 16 W6 (G3): 어느 테스트도 아직 재지 않는 효과의 원장.
+# 재는 테스트가 생기면 effects 로 승격한다 (지우지 않는다 — 검사 도구가 개수를 노출한다).
+pending_effects:
+  - replay_response_is_idempotent_ok
+  - replay_no_double_completion
+  - replay_logged_with_context
+  - replay_db_unique_blocks_concurrent_insert
+  - auth_token_blocked_returns_4xx_or_idempotent
+  - auth_token_logged_when_dedupe_hit
   - net_cancel_uses_browser_fetch_to_bypass_interceptor
   - net_cancel_passes_approved_tid
   - net_cancel_passes_full_amount
 
 test_files:
+  - plugins/_bundled/sirsoft-pay_nicepayments/tests/Feature/Concerns/PreventsReplayCallbackTest.php
+  - plugins/_bundled/sirsoft-pay_nicepayments/tests/Unit/Controllers/AuthTokenDedupeKeyTest.php
+  - plugins/_bundled/sirsoft-pay_nicepayments/tests/Feature/Controllers/PaymentCallbackControllerTest.php
   - plugins/_bundled/sirsoft-pay_nicepayments/tests/Unit/Services/NicePaymentsApiServiceTest.php
 
 manual_verification:

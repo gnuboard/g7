@@ -16,8 +16,6 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 왕복(read → edit → save)에서 값이 살아남는지가 이 필드의 계약이다.
  *
  * @scenario charge_policy=range_weight, unit_source=g
- *
- * @effects product_option_dimensions_round_trip
  */
 class ProductOptionResourceDimensionsTest extends ModuleTestCase
 {
@@ -37,6 +35,9 @@ class ProductOptionResourceDimensionsTest extends ModuleTestCase
         return (new ProductOptionResource($option))->toArray(Request::create('/'));
     }
 
+    /**
+     * @effects product_option_dimensions_round_trip
+     */
     public function test_it_serializes_weight_and_volume_in_storage_units(): void
     {
         // 상품 옵션의 저장 단위는 g / cm³ (배송정책의 kg/L 환산은 배송비 계산 시점에만)
@@ -57,6 +58,9 @@ class ProductOptionResourceDimensionsTest extends ModuleTestCase
         $this->assertNull($data['volume']);
     }
 
+    /**
+     * @effects product_option_dimensions_round_trip
+     */
     public function test_it_preserves_decimal_precision(): void
     {
         $data = $this->toResourceArray(['weight' => 12.5, 'volume' => 0.75]);

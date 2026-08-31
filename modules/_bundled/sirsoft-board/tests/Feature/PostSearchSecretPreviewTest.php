@@ -22,15 +22,6 @@ use PHPUnit\Framework\Attributes\Test;
  * 상세 본문(content) 권한자 노출은 기존 정책(PostBlindedAccessControlTest)이 보장 — 본 테스트 범위 밖.
  *
  * @scenario board-search-secret-content-preview
- *
- * @effects published_preview_visible_in_list,
- *          secret_preview_empty_for_guest,
- *          secret_preview_empty_for_other_member,
- *          secret_preview_empty_for_author,
- *          secret_preview_empty_for_manager,
- *          secret_preview_empty_via_search_filter,
- *          blinded_preview_empty_in_list,
- *          secret_title_visible_in_list
  */
 class PostSearchSecretPreviewTest extends BoardTestCase
 {

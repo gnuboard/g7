@@ -12,7 +12,12 @@
 use App\Support\ExecutionEnvironment;
 
 if (! defined('BASE_PATH')) {
-    define('BASE_PATH', realpath(dirname(__DIR__, 3)) ?: dirname(__DIR__, 3)); // public/install/includes에서 프로젝트 루트로
+    // `realpath` 도 호스팅이 막을 수 있는 함수다 — 이 파일을 단독 로드하는 경로에서는 이 줄이
+    // 첫 코드라, 막힌 환경에서 무가드로 부르면 어떤 봉투도 서기 전에 치명 종료한다.
+    // 형태는 `config.php` 의 폴백과 같다(사본이 갈리면 진입점에 따라 백지가 갈린다 — 15차 G3 W1-10).
+    define('BASE_PATH', function_exists('realpath')
+        ? (realpath(dirname(__DIR__, 3)) ?: dirname(__DIR__, 3))
+        : dirname(__DIR__, 3)); // public/install/includes에서 프로젝트 루트로
 }
 
 // UTF-8 정규화 헬퍼 — scan-extensions 경로에서는 config.php 보다 먼저 로드된다.
@@ -21,14 +26,84 @@ require_once __DIR__.'/utf8.php';
 if (! defined('STATE_PATH')) {
     define('STATE_PATH', BASE_PATH.'/storage/installer-state.json');
 }
+
+if (! defined('INSTALLER_STATE_LOCK_SUFFIX')) {
+    /**
+     * 상태 파일 배타 구간의 잠금 파일 접미사 (`installer-state.json.lock`).
+     *
+     * 생산자(`installerWithStateLock`)·finalize 정리·정리 주체(`StorageLeftoverPruneService`)가
+     * 같은 이름을 봐야 한다. 종전에는 세 곳이 각자 `'.lock'` 리터럴이었고 프루너는 이 파일을
+     * 몰라, 설치를 포기한 사이트에 영구 잔존했다 (15차 G3 W1-4). 인스톨러는 Laravel 부팅 전
+     * 코드라 값이 두 곳에 있고 그 일치는 `StorageLeftoverPruneServiceTest` 가 잠근다.
+     */
+    define('INSTALLER_STATE_LOCK_SUFFIX', '.lock');
+}
 if (! defined('INSTALLER_DIR')) {
     define('INSTALLER_DIR', BASE_PATH.'/storage/installer');
 }
 
 // 로그 정규화가 `isWindows()` 를 쓴다 (13차 환경#16 — 판정 사본 제거). 이 파일만 단독으로
 // 로드하는 경로(단위 테스트·일부 API)가 있으므로 의존을 명시한다. functions.php 는 최상위
-// 부수효과 없이 함수만 선언하므로 순서 의존이 생기지 않는다.
+// 부수효과 없이 함수·상수만 선언하므로 순서 의존이 생기지 않는다. 임시 파일 이름의 중간
+// 조각·바이트 수·판정 패턴(`INSTALLER_TMP_*`)도 그 파일 소유라 아래 정의보다 먼저 싣는다.
 require_once __DIR__.'/functions.php';
+
+if (! defined('INSTALLER_STATE_TMP_INFIX')) {
+    /**
+     * 상태 파일 원자 교체 임시 이름의 중간 조각 (`installer-state.json.tmp.<hex>`).
+     *
+     * 값은 이름 생성 SSoT(`functions.php` 의 `INSTALLER_TMP_INFIX`)를 그대로 가리킨다 —
+     * 리터럴 사본은 갈려도 아무것도 울리지 않는다 (14차 G3 W2-4).
+     */
+    define('INSTALLER_STATE_TMP_INFIX', INSTALLER_TMP_INFIX);
+}
+
+if (! defined('INSTALLER_STATE_TMP_SUFFIX_PATTERN')) {
+    /**
+     * 임시 파일 접미사의 **생성 규칙**(16진) — 만드는 쪽과 지우는 쪽이 같은 값을 본다.
+     *
+     * 값은 이름 생성 SSoT(`functions.php` 의 `INSTALLER_TMP_SUFFIX_PATTERN`)를 그대로
+     * 가리킨다. 파일마다 리터럴을 두면 한쪽만 갈린다 — 실제로 형제(`installer-runtime.php`)가
+     * `{8}` 로 갈려 그쪽 스윕 모집단이 0 이었다 (13차 G3 W1-1).
+     *
+     * 형식을 보지 않으면 `<대상>.tmp.*` 에 걸린 것을 무조건 지운다 — 운영자가 같은 이름
+     * 공간에 둔 파일(`installer-state.json.tmp.backup` 등)이 300초 뒤 조용히 사라진다.
+     * 형제 두 지점(`RootHtaccessUpdater::TEMP_SUFFIX_PATTERN` ·
+     * `StorageLeftoverPruneService::pruneRootEntryTemp`)이 같은 규칙을 쓰는데, 이 파일은
+     * 그 둘에게 **선례로 인용까지 되면서** 자기만 게이트가 없었다 (11차 G3 라운드 E11-2).
+     */
+    define('INSTALLER_STATE_TMP_SUFFIX_PATTERN', INSTALLER_TMP_SUFFIX_PATTERN);
+}
+
+if (! defined('INSTALLER_STATE_CORRUPT_INFIX')) {
+    /**
+     * 파손 상태 사본 이름의 중간 조각 (`installer-state.json.corrupt.<YmdHis>.<sha8>`).
+     *
+     * 생산자(`installerPreserveCorruptState`)는 상한 5 로 만들기만 하고 지우는 지점이 없었다 —
+     * 마스킹 전 비밀을 담을 수 있는 파일이 영구 잔존한다. 정리 주체(`StorageLeftoverPruneService`)
+     * 가 같은 이름 규칙을 봐야 하며, 인스톨러는 Laravel 부팅 전 코드라 값이 두 곳에 있고
+     * 그 일치는 `StorageLeftoverPruneServiceTest` 가 잠근다 (13차 G3 W1-2).
+     */
+    define('INSTALLER_STATE_CORRUPT_INFIX', '.corrupt.');
+}
+
+if (! defined('INSTALLER_STATE_CORRUPT_STAMP_FORMAT')) {
+    /** 파손 사본의 시각 조각 형식 (`date()` 형식 문자열, 14자리). */
+    define('INSTALLER_STATE_CORRUPT_STAMP_FORMAT', 'YmdHis');
+}
+
+if (! defined('INSTALLER_STATE_CORRUPT_SUFFIX_PATTERN')) {
+    /** 파손 사본 접미사(`<YmdHis>.<sha1 앞 8자>`)의 판정 패턴 — 첫 그룹이 시각 조각이다. */
+    define('INSTALLER_STATE_CORRUPT_SUFFIX_PATTERN', '/^(\d{14})\.[0-9a-f]{8}$/');
+}
+
+// 이 파일은 `glob`·`chmod` 를 쓴다 — 둘 다 하드닝 프로필이 막을 수 있고, 막히면 PHP 8 은
+// 함수 테이블에서 지우므로 그 호출은 `Error`(치명)다. 하필 **설치 진행 상태를 저장하는
+// 경로**라 한 줄이 죽으면 설치가 한 걸음도 나아가지 못한다. 가드 판정은 저장소 단일
+// SSoT(`installerHasFunction` → `ExecutionEnvironment::hasFunction`)를 그대로 쓴다 —
+// 여기서 `function_exists` 로 사본을 만들면 판정 지점이 둘로 갈린다. execution-mode.php 는
+// 최상위 부수효과 없이 함수만 선언하므로 functions.php 와 같은 이유로 순서 의존이 없다.
+require_once __DIR__.'/execution-mode.php';
 
 /**
  * 상태 파일 파손 여부를 기억한다 (13차 #D13).
@@ -67,7 +142,7 @@ function installerPreserveCorruptState(string $content): void
     // 남긴다 (17차 #C6) — 종전처럼 「사본이 하나라도 있으면 중단」하면 두 번째 이후의 **다른**
     // 파손은 근거가 남지 않아, 「과거 어느 시점에 한 번 깨졌다」밖에 알 수 없었다.
     $digest = substr(sha1($content), 0, 8);
-    $existing = glob(STATE_PATH.'.corrupt.*') ?: [];
+    $existing = installerListCorruptStateCopies();
 
     foreach ($existing as $candidate) {
         if (str_ends_with((string) $candidate, '.'.$digest)) {
@@ -76,16 +151,88 @@ function installerPreserveCorruptState(string $content): void
     }
 
     // 서로 다른 파손이 계속 나는 병리적 환경에서 디렉토리가 잠식되지 않도록 상한을 둔다.
+    //
+    // 상한에 닿으면 **가장 오래된 사본을 내보내고 새 것을 남긴다** (14차 G3 W2-8). 종전처럼
+    // 조용히 `return` 하면 다섯이 찬 뒤로는 새 파손의 근거가 0 이고, 프루너가 백업 등급
+    // (30일 + 최신 1개)으로 걷을 때까지 그 침묵이 이어진다 — 상한의 목적은 잠식 방지이지
+    // 최신 근거의 폐기가 아니다. 목록은 이름순(= 타임스탬프순)이라 첫 항목이 가장 오래된
+    // 것이다 — 다만 **같은 초 안에서는 sha8 사전순**이라 생성 순서와 무관하고, 그 구간에서
+    // 성립하는 약속은 「열거 순서와 무관하게 언제나 같은 하나가 나간다 + 새 사본은 남는다」
+    // 뿐이다 (15차 G3 W1-8). 내보내지 못하면(삭제 불가) 잠식을 막기 위해 종전대로 남기지
+    // 않되, 그 사실은 로그에 남긴다 — 어느 쪽이든 조용하지 않다.
     if (count($existing) >= 5) {
-        return;
+        $oldest = (string) $existing[0];
+
+        if (! @unlink($oldest)) {
+            installerErrorLog('[installer-state] Corrupt state copy cap (5) reached and the oldest copy could not be evicted; new copy not preserved: '.$oldest);
+
+            return;
+        }
+
+        installerErrorLog('[installer-state] Corrupt state copy cap (5) reached; evicted oldest copy: '.$oldest);
     }
 
-    $backup = STATE_PATH.'.corrupt.'.date('YmdHis').'.'.$digest;
+    $backup = STATE_PATH.INSTALLER_STATE_CORRUPT_INFIX.date(INSTALLER_STATE_CORRUPT_STAMP_FORMAT).'.'.$digest;
 
-    if (@file_put_contents($backup, $content) !== false) {
-        @chmod($backup, 0600);
+    // ìì ìí íì¼ì ë³´ì¡´ ì¬ë³¸ì´ë¤ â ìë¦¬ë©´ ì§ë¨ ê·¼ê±°ë¡ì¨ì ê°ì´ ìë¤.
+    if (installerWroteFully(@file_put_contents($backup, $content), $content)) {
+        if (installerHasFunction('chmod')) {
+            @chmod($backup, 0600);
+        }
         installerErrorLog('[installer-state] Corrupt state preserved at: '.$backup);
     }
+}
+
+/**
+ * 파손 상태 사본을 나열한다 — **생성 규칙과 같은 형태만**.
+ *
+ * 상한(5) 판정과 「같은 내용 1회」 판정이 이 목록을 근거로 하므로, 형식이 다른 파일
+ * (운영자가 같은 이름 공간에 둔 메모 등)이 끼면 상한이 조기 소진돼 새 파손의 근거가
+ * 남지 않는다.
+ *
+ * `glob` 이 막힌 호스팅에서는 `scandir` 로 나열한다 — 형제 `installerListExposureProbeFiles()`
+ * 와 같은 폴백이다. 종전에는 그 환경에서 빈 목록이었고, 그러면 두 가드가 **동시에 증발**해
+ * 폴링(2초)마다 마스킹 전 상태 파일 사본이 무제한 증식했다 (14차 G3 W2-2). 둘 다 막히면
+ * 나열 수단이 없으므로 빈 목록이다(사본은 여전히 남긴다).
+ *
+ * 목록은 이름순(= 타임스탬프순)으로 정렬돼 있다 — 상한에서 내보낼 「가장 오래된 것」이
+ * 열거 순서에 좌우되지 않도록. `glob` 도 `scandir` 도 순서를 계약하지 않는다. 같은 초 안의
+ * 사본은 이름의 나머지(sha8) 사전순이다 — 결정적이지만 생성 순서와는 무관하다(초 해상도로는
+ * 어느 쪽이 나중인지 알 수 없다).
+ *
+ * @return array<int, string> 사본 절대 경로 목록 (정렬됨)
+ */
+function installerListCorruptStateCopies(): array
+{
+    $prefix = STATE_PATH.INSTALLER_STATE_CORRUPT_INFIX;
+    $candidates = [];
+
+    if (installerHasFunction('glob')) {
+        $candidates = glob($prefix.'*') ?: [];
+    } elseif (installerHasFunction('scandir')) {
+        $dir = dirname(STATE_PATH);
+        $name = basename($prefix);
+
+        foreach (@scandir($dir) ?: [] as $entry) {
+            if ($entry !== '.' && $entry !== '..' && str_starts_with($entry, $name)) {
+                $candidates[] = $dir.'/'.$entry;
+            }
+        }
+    }
+
+    $copies = [];
+
+    foreach ($candidates as $candidate) {
+        $candidate = (string) $candidate;
+
+        if (preg_match(INSTALLER_STATE_CORRUPT_SUFFIX_PATTERN, substr($candidate, strlen($prefix))) === 1) {
+            $copies[] = $candidate;
+        }
+    }
+
+    sort($copies, SORT_STRING);
+
+    return $copies;
 }
 
 /**
@@ -144,9 +291,13 @@ function getInstallationState(): array
     // 원본을 덮어써 완료 마커·설정·진행 모드가 통째로 사라진다. 사본을 남기고 판정을 세워
     // 저장을 막는다 — 진행이 멈추는 대신 데이터가 남는다.
     if (json_last_error() !== JSON_ERROR_NONE || ! is_array($state)) {
+        // 원문은 싣지 않는다 — 길이와 digest 만 (15차 G3 W1-9). 비밀은 상태 파일에 없어야 하지만
+        // (이슈 #465) 레거시 상태 파일이 남아 있을 수 있고, 종전에는 앞 200 바이트가 무마스킹으로
+        // 진행 기록과 PHP 오류 로그에 실렸다. digest 는 보존 사본 이름의 접미사와 같은 값이라
+        // 로그와 사본을 대조할 수 있다.
         $contentLen = strlen($content);
-        $preview = substr($content, 0, 200);
-        $msg = "[installer-state] Failed to parse state file JSON (length={$contentLen}): ".json_last_error_msg().' / preview: '.$preview;
+        $digest = substr(sha1($content), 0, 8);
+        $msg = "[installer-state] Failed to parse state file JSON (length={$contentLen} sha1={$digest}): ".json_last_error_msg();
         installerErrorLog($msg);
         addLog($msg);
 
@@ -234,15 +385,33 @@ function saveInstallationState(array $state): bool
     static $tmpSwept = false;
     if (! $tmpSwept) {
         $tmpSwept = true;
-        foreach (glob(STATE_PATH.'.tmp.*') ?: [] as $stale) {
+        $tmpPrefix = STATE_PATH.INSTALLER_STATE_TMP_INFIX;
+
+        foreach (installerHasFunction('glob') ? (glob($tmpPrefix.'*') ?: []) : [] as $stale) {
+            $stale = (string) $stale;
+
+            // **생성 규칙과 같은 형태만** 지운다 — 형제 두 지점과 같은 규율.
+            if (preg_match(INSTALLER_STATE_TMP_SUFFIX_PATTERN, substr($stale, strlen($tmpPrefix))) !== 1) {
+                continue;
+            }
+
+            $mtime = @filemtime($stale);
+
+            // mtime 을 읽지 못하면 **보존**한다. `false < (time() - 300)` 은 PHP 8 에서
+            // true 라, 종전 조건은 조회 실패를 「아주 오래됨」으로 읽어 지웠다(fail-open).
+            // 형제 둘은 정반대다 — 한쪽은 `$mtime !== false &&`, 한쪽은 조회 실패 시 보존.
             // 진행 중인 다른 요청의 tmp 를 지우지 않도록 충분히 오래된 것만.
-            if (@filemtime((string) $stale) < time() - 300) {
-                @unlink((string) $stale);
+            if ($mtime !== false && $mtime < time() - 300) {
+                @unlink($stale);
             }
         }
     }
 
-    $tmpPath = STATE_PATH.'.tmp.'.getmypid().'.'.uniqid();
+    // 임시 이름은 고유하기만 하면 된다. 종전에는 `getmypid()` 로 갈랐는데 그 함수는 하드닝
+    // 프로필의 차단 대상이라 막힌 호스팅에서 PHP 8 은 함수 테이블에서 지운다 — 즉 Error(치명)
+    // 이고, 하필 **상태 저장 경로**라 그 한 줄로 설치가 한 걸음도 나아가지 못한다. 형제
+    // 선례(`reserveCommandOutputFile`)와 같은 난수원으로 얻는다 (3차 G3 라운드).
+    $tmpPath = STATE_PATH.INSTALLER_STATE_TMP_INFIX.installerUniqueSuffix(INSTALLER_TMP_SUFFIX_BYTES);
 
     $result = @file_put_contents($tmpPath, $content, LOCK_EX);
     if ($result === false || $result !== strlen($content)) {
@@ -256,7 +425,9 @@ function saveInstallationState(array $state): bool
 
     // 최종 파일 권한은 종전대로 0664 다. tmp 단계에서 넓히지 않는 이유는 rename 전에
     // 프로세스가 죽으면 그 권한 그대로 남기 때문이다 (17차 #C7).
-    @chmod($tmpPath, 0664);
+    if (installerHasFunction('chmod')) {
+        @chmod($tmpPath, 0664);
+    }
 
     if (! @rename($tmpPath, STATE_PATH)) {
         $msg = '[installer-state] Failed to rename state tmp file: '.$tmpPath.' → '.STATE_PATH;
@@ -291,7 +462,7 @@ if (! function_exists('installerDiscardCorruptState')) {
 
         // 사본은 통상 getInstallationState() 가 이미 남겼다. 없으면 여기서 남긴다 —
         // 원인 분석 근거를 지우면서 복구하는 것이 되어선 안 된다.
-        if ((glob(STATE_PATH.'.corrupt.*') ?: []) === [] && is_file(STATE_PATH)) {
+        if (installerListCorruptStateCopies() === [] && is_file(STATE_PATH)) {
             installerPreserveCorruptState((string) @file_get_contents(STATE_PATH));
         }
 
@@ -561,7 +732,7 @@ if (! function_exists('installerWithStateLock')) {
             return $mutator();
         }
 
-        $guard = @fopen(STATE_PATH.'.lock', 'c');
+        $guard = @fopen(STATE_PATH.INSTALLER_STATE_LOCK_SUFFIX, 'c');
         $locked = $guard !== false && @flock($guard, LOCK_EX);
 
         // 잠금을 못 얻으면 보호 없이 진행한다(위 docblock) — 그러나 **그 사실은 남긴다** (17차 #C9).
@@ -571,7 +742,7 @@ if (! function_exists('installerWithStateLock')) {
             static $lockWarned = false;
             if (! $lockWarned) {
                 $lockWarned = true;
-                installerErrorLog('[installer-state] flock unavailable — state writes proceed without the exclusive section: '.STATE_PATH.'.lock');
+                installerErrorLog('[installer-state] flock unavailable — state writes proceed without the exclusive section: '.STATE_PATH.INSTALLER_STATE_LOCK_SUFFIX);
             }
         }
 
@@ -776,7 +947,10 @@ function acquireWorkerLock(int $staleSeconds = 15): array
         }
 
         $reason = $activeId !== null ? 'takeover_stale' : 'available';
-        $newWorkerId = bin2hex(random_bytes(8));
+        // 이 값은 비밀이 아니라 **겹치지 않으면 되는 이름**이다 — `installerUniqueSuffix()`
+        // 가 그 구분을 명문화한 단일 지점이고, CSPRNG 를 얻지 못하는 호스팅에서
+        // `random_bytes()` 는 던진다. 무가드로 두면 그 한 줄로 단계별 설치가 500 이 된다.
+        $newWorkerId = installerUniqueSuffix(8);
 
         $state['active_worker_id'] = $newWorkerId;
         $state['last_heartbeat'] = $now;
@@ -1270,7 +1444,7 @@ function extendWorkerStaleWindow(string $workerId, int $seconds): bool
 
 if (! defined('INSTALLER_ABORT_WAIT_MAX_SECONDS')) {
     /**
-     * 중단이 「작업이 물러날 때까지」 기다리는 상한(초) — PO 결정(13차).
+     * 중단이 「작업이 물러날 때까지」 기다리는 상한(초) — 제품 결정(13차).
      *
      * P0 실측 최장 태스크는 vendor 추출 ≈10~15s, module_install ≈10s 다. 그보다 오래
      * 기다릴 이유가 없고, 무한 대기는 금지다 — 중단은 어떤 경우에도 완료되어야 한다.
@@ -1295,7 +1469,7 @@ if (! defined('INSTALLER_ABORT_REQUEST_TIME_LIMIT')) {
 
 if (! function_exists('installerMarkAbortRequested')) {
     /**
-     * 중단 표식만 먼저 기록한다 — 워커가 다음 태스크 경계에서 물러나게 하는 신호 (PO 결정 13차).
+     * 중단 표식만 먼저 기록한다 — 워커가 다음 태스크 경계에서 물러나게 하는 신호 (제품 결정 13차).
      *
      * `installerApplyAbortedState()` 와 다른 점이 둘 있고, 둘 다 의도한 것이다:
      *
@@ -1330,7 +1504,7 @@ if (! function_exists('installerMarkAbortRequested')) {
 
 if (! function_exists('installerAbortWaitCapSeconds')) {
     /**
-     * 이 요청의 시간 예산 안에서 안전하게 기다릴 수 있는 상한(초)을 정한다 (PO 결정 13차).
+     * 이 요청의 시간 예산 안에서 안전하게 기다릴 수 있는 상한(초)을 정한다 (제품 결정 13차).
      *
      * 대기 중에도 응답은 살아 있어야 한다 — 요청 수명을 대기가 다 써 버리면 되돌리기가
      * 시작되기도 전에 요청이 끊긴다. 그래서 예산의 1/3 만 대기에 쓰고 나머지는 되돌리기에
@@ -1351,7 +1525,7 @@ if (! function_exists('installerAbortWaitCapSeconds')) {
 
 if (! function_exists('installerWaitForWorkerToRetreat')) {
     /**
-     * 진행 중인 작업이 물러날 때까지 기다린다 (PO 결정 13차 — 11차 이월분).
+     * 진행 중인 작업이 물러날 때까지 기다린다 (제품 결정 13차 — 11차 이월분).
      *
      * 「물러났다」의 판정은 **워커 lock 이 해제되었거나 그 시간 예산이 지났는가** 다
      * (`installerActiveWorkerIsAlive`). 워커는 태스크 경계에서만 중단 표식을 확인하므로,

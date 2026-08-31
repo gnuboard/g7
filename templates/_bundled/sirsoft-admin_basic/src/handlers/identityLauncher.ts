@@ -1,3 +1,4 @@
+import { apiUrl, sitePath } from '../support/apiUrl';
 /**
  * IDV Modal Launcher (sirsoft-admin_basic)
  *
@@ -83,7 +84,7 @@ async function startChallenge(payload: VerificationPayload, target: IdentityVeri
   if (target) body.target = target;
 
   const url = payload.challenge_start_url || '/api/identity/challenges';
-  const res = await fetch(url, {
+  const res = await fetch(apiUrl(url), {
     method: 'POST',
     credentials: 'include',
     headers: {
@@ -238,7 +239,11 @@ export async function sirsoftAdminBasicIdentityLauncher(
     return identity.redirectExternally({
       ...payload,
       render_hint: 'external_redirect',
-      redirect_url: `/admin/identity/challenge?challenge_id=${encodeURIComponent(challenge.id)}&return=${encodeURIComponent(window.location.href)}`,
+      // 외부 인증기관이 그대로 여는 복귀 주소다 — 접두사가 없으면 하위 폴더
+      // 사이트에서 인증을 마친 사용자가 사이트 밖으로 돌아온다.
+      redirect_url: sitePath(
+        `/admin/identity/challenge?challenge_id=${encodeURIComponent(challenge.id)}&return=${encodeURIComponent(window.location.href)}`
+      ),
     });
   }
 

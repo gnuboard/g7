@@ -41,6 +41,7 @@ export interface MonacoJSONSchema {
  */
 export const defaultJSONSchemas: MonacoJSONSchema[] = [
   {
+    // base-path:allow Monaco 스키마 `uri` 는 요청되지 않는 식별자다 — 마운트 접두사와 무관
     uri: `${window.location.origin}/schemas/layout.json`,
     fileMatch: ['*layout*.json'],
     schema: {

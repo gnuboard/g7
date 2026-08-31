@@ -70,6 +70,143 @@ class EcommerceModuleSeoTest extends ModuleTestCase
     }
 
     /**
+     * 회귀: 하위 폴더 마운트에서 og:image · schema.image 에 접두사가 두 번 붙지 않는다.
+     *
+     * `ProductImage::download_url` 이 `AssetUrl::basePrefix()` 를 거치도록 바뀌면서
+     * 그 값은 이미 마운트 접두사를 품는다(`/g7/api/…`). 그 값에 `url()` 을 쓰면 요청
+     * 루트(접두사 포함)가 앞에 다시 붙어 `https://host/g7/g7/api/…` 가 된다 —
+     * 크롤러만 받는 값이라 화면에는 아무 표시가 없고, 미리보기 이미지만 404 다.
+     * 오리진만 붙이는 `AssetUrl::absolute()` 가 그 SSoT 이고, 그 독블록이 바로 이
+     * 실패를 이름으로 적고 있다.
+     */
+    public function test_seo_image_does_not_double_apply_the_mount_prefix(): void
+    {
+        // 마운트를 **실제로** 재현한다. `AssetUrl::forceBasePrefix()` 만으로는 부족하다 —
+        // 이중 부착을 만드는 것은 `url()` 이고 그 헬퍼는 요청 루트를 보기 때문에,
+        // 루트를 함께 옮기지 않으면 이 결함은 재현되지 않고 검사는 조용히 초록이 된다.
+        AssetUrl::forceBasePrefix('/g7');
+        URL::forceRootUrl('http://localhost/g7');
+
+        try {
+            $context = [
+                'product' => [
+                    'data' => [
+                        'name' => '가죽 크로스백',
+                        'thumbnail_url' => '/g7/api/modules/sirsoft-ecommerce/product-image/abc123',
+                    ],
+                ],
+                'category' => [
+                    'data' => [
+                        'name' => '가방',
+                        'thumbnail_url' => '/g7/api/modules/sirsoft-ecommerce/category-image/cat1',
+                    ],
+                ],
+            ];
+
+            $og = $this->module->seoOgDefaults('product', $context);
+            $this->assertStringNotContainsString('/g7/g7/', $og['image'], 'og:image 에 마운트 접두사가 두 번 붙었다');
+            $this->assertStringEndsWith('/g7/api/modules/sirsoft-ecommerce/product-image/abc123', $og['image']);
+
+            $catOg = $this->module->seoOgDefaults('category', $context);
+            $this->assertStringNotContainsString('/g7/g7/', $catOg['image'], '카테고리 og:image 에 접두사가 두 번 붙었다');
+            $this->assertStringStartsWith('http', $catOg['image'], '카테고리 og:image 는 절대 URL 이어야 크롤러가 인식한다');
+            $this->assertStringEndsWith(
+                '/g7/api/modules/sirsoft-ecommerce/category-image/cat1',
+                $catOg['image']
+            );
+
+            // `schema.image` 축은 og 축과 **같은 강도**로 잰다.
+            //
+            // 종전에는 이 자리에 이중접두 단언 하나뿐이었고, 파일 전체에서 `$schema['image']`
+            // 를 재는 단언이 그것 하나였다. 그런데 이 결함의 반대편 실패(절대화 자체를
+            // 지움)는 `/g7/g7/` 를 만들지 않으므로 그 상태에서도 초록이다 — 형제 모듈
+            // (`BoardModuleSeoTest`)은 이미 세 축으로 잠갔는데 이쪽만 남아 있었다
+            // (16차 G3 라운드 A-5).
+            $schema = $this->module->seoStructuredData('product', $context);
+            $this->assertStringNotContainsString('/g7/g7/', $schema['image'], 'schema.image 에 접두사가 두 번 붙었다');
+            $this->assertStringStartsWith('http', $schema['image'], 'schema.image 는 절대 URL 이어야 크롤러가 인식한다');
+            $this->assertStringEndsWith(
+                '/g7/api/modules/sirsoft-ecommerce/product-image/abc123',
+                $schema['image']
+            );
+        } finally {
+            AssetUrl::forceBasePrefix(null);
+            URL::forceRootUrl(null);
+        }
+    }
+
+    /**
+     * 접두사가 없는 표준 배치에서는 종전과 동일하다 — 과잉 전환 대조.
+     *
+     * 형제 모듈(`BoardModuleSeoTest`)이 이미 갖고 있던 축인데 이쪽에는 없었다.
+     * 그래서 `schema.image` 의 표준 배치 동작은 어느 검사에도 걸리지 않았다
+     * (16차 G3 라운드 A-5).
+     */
+    public function test_seo_image_is_unchanged_without_a_mount_prefix(): void
+    {
+        $context = [
+            'product' => [
+                'data' => [
+                    'name' => '표준 배치 상품',
+                    'thumbnail_url' => '/api/modules/sirsoft-ecommerce/product-image/abc123',
+                ],
+            ],
+        ];
+
+        $og = $this->module->seoOgDefaults('product', $context);
+        $this->assertStringStartsWith('http', $og['image'], 'og:image 는 절대 URL 이어야 크롤러가 인식한다');
+        $this->assertStringEndsWith('/api/modules/sirsoft-ecommerce/product-image/abc123', $og['image']);
+
+        // 무접두사 배치에서도 두 축을 나란히 잰다.
+        $schema = $this->module->seoStructuredData('product', $context);
+        $this->assertStringStartsWith('http', $schema['image'], 'schema.image 는 절대 URL 이어야 크롤러가 인식한다');
+        $this->assertStringEndsWith('/api/modules/sirsoft-ecommerce/product-image/abc123', $schema['image']);
+    }
+
+    /**
+     * 사이트 경로가 아닌 자산 값은 손대지 않고, 리터럴 사이트 경로에는 접두사를 채운다.
+     *
+     * 종전 형태(`str_starts_with('http') ? … : AssetUrl::absolute()`)는 세 입력을
+     * 조용히 망가뜨렸다 — 프로토콜 상대(`//cdn/…` → `https://host//cdn/…`) · 상대 경로
+     * (`img.png` → `https://hostimg.png`) · `data:` URI(`https://hostdata:image/…`).
+     * 그리고 접두사를 채우는 주체가 없어 리터럴 사이트 경로는 하위 폴더 배치에서
+     * 접두사를 잃었다. 넷 다 오류가 나지 않고 그 이미지만 안 나온다
+     * (16차 G3 라운드 A-4).
+     */
+    public function test_seo_image_leaves_non_site_paths_alone_and_fills_the_prefix(): void
+    {
+        AssetUrl::forceBasePrefix('/g7');
+        URL::forceRootUrl('http://localhost/g7');
+
+        try {
+            $imageFor = function (string $thumbnail): string {
+                return $this->module->seoOgDefaults('product', [
+                    'product' => ['data' => ['name' => '상품', 'thumbnail_url' => $thumbnail]],
+                ])['image'] ?? '';
+            };
+
+            // 프로토콜 상대 — 오리진을 앞에 붙이면 `https://host//cdn/…` 가 된다.
+            $this->assertSame('//cdn.example.com/y.png', $imageFor('//cdn.example.com/y.png'));
+
+            // 상대 경로 — 오리진을 붙이면 구분자 없이 이어 붙는다.
+            $this->assertSame('img.png', $imageFor('img.png'));
+
+            // `data:` URI — 사이트 경로가 아니다.
+            $this->assertSame('data:image/png;base64,AAA', $imageFor('data:image/png;base64,AAA'));
+
+            // 절대 URL 은 종전과 같이 그대로.
+            $this->assertSame('https://cdn.example.com/x.png', $imageFor('https://cdn.example.com/x.png'));
+
+            // 리터럴 사이트 경로에는 접두사를 채울 주체가 여기밖에 없다.
+            $this->assertStringEndsWith('/g7/images/logo.png', $imageFor('/images/logo.png'));
+            $this->assertStringNotContainsString('/g7/g7/', $imageFor('/images/logo.png'));
+        } finally {
+            AssetUrl::forceBasePrefix(null);
+            URL::forceRootUrl(null);
+        }
+    }
+
+    /**
      * 카테고리 og:image 출력 레벨 — thumbnail_url 이 있으면 image 가 절대 URL 로 방출된다.
      *
      * @scenario product-content-thumbnail-fallback

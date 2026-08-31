@@ -20,8 +20,6 @@ use Tests\TestCase;
  * before/after_withdraw 훅을 통째로 건너뛰었다. 본인 탈퇴와 결과가 같아야 한다.
  *
  * @scenario entry_point=admin_update_status, entry_point=admin_bulk_status, target_account=admin
- *
- * @effects admin_status_change_runs_full_withdrawal, admin_status_change_fires_withdraw_hooks, bulk_status_withdraw_delegates_per_user, bulk_status_reports_failed_count, admin_account_withdraw_blocked_consistently
  */
 class AdminWithdrawPathUnificationTest extends TestCase
 {
@@ -29,6 +27,8 @@ class AdminWithdrawPathUnificationTest extends TestCase
 
     /**
      * W8: 단건 상태 변경으로 탈퇴시켜도 익명화와 훅이 동일하게 수행된다.
+     *
+     * @effects admin_status_change_runs_full_withdrawal, admin_status_change_fires_withdraw_hooks
      */
     public function test_update_user_with_withdrawn_status_runs_full_withdrawal(): void
     {
@@ -113,6 +113,8 @@ class AdminWithdrawPathUnificationTest extends TestCase
 
     /**
      * W9: 일괄 상태 변경도 건별 정식 탈퇴로 처리되고, 차단 대상은 실패 건수로 보고된다.
+     *
+     * @effects bulk_status_withdraw_delegates_per_user, bulk_status_reports_failed_count
      */
     public function test_bulk_status_withdrawn_delegates_per_user_and_reports_failures(): void
     {
@@ -147,6 +149,8 @@ class AdminWithdrawPathUnificationTest extends TestCase
      * W9-b: 전건이 차단되어도 200 으로 나가므로, 응답만으로 "아무 일도 없었음" 이 구분되어야 한다.
      *
      * 이 구분이 없으면 화면은 성공 안내를 띄우고 운영자는 처리된 줄 안다 (실제 제보 경로).
+     *
+     * @effects bulk_status_reports_failed_count
      */
     public function test_bulk_status_withdrawn_reports_zero_updated_when_every_target_is_blocked(): void
     {
@@ -234,6 +238,8 @@ class AdminWithdrawPathUnificationTest extends TestCase
 
     /**
      * W10: 관리자를 상태 변경으로 탈퇴시키려는 시도는 일관되게 차단된다.
+     *
+     * @effects admin_account_withdraw_blocked_consistently
      */
     public function test_update_user_cannot_withdraw_admin_via_status(): void
     {

@@ -6,6 +6,7 @@ use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 use Tests\Concerns\CleansTemporaryBasePath;
+use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
  * `.env` 생성의 템플릿 드리프트 내성 + NUL 제거 회귀 가드 (20차 #11·#12)
@@ -27,6 +28,7 @@ use Tests\Concerns\CleansTemporaryBasePath;
 class InstallerEnvTemplateDriftTest extends TestCase
 {
     use CleansTemporaryBasePath;
+    use ScansPhpSourceFunctions;
 
     protected function setUp(): void
     {

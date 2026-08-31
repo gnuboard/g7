@@ -21,8 +21,6 @@ use Tests\TestCase;
  * 각 커맨드가 보존 기간을 넘긴 행만 지우고 기간 이내 행은 보존하는지 고정합니다.
  *
  * @scenario row_age=within_retention, row_age=beyond_retention
- *
- * @effects rows_beyond_retention_are_deleted, rows_within_retention_are_kept, identity_challenges_transition_without_deletion, automated_prune_emits_its_own_hooks
  */
 class DataRetentionCommandsTest extends TestCase
 {
@@ -30,6 +28,8 @@ class DataRetentionCommandsTest extends TestCase
 
     /**
      * B2: seo:prune-stats — 보존 기간 초과 통계만 삭제.
+     *
+     * @effects rows_beyond_retention_are_deleted, rows_within_retention_are_kept
      */
     public function test_seo_prune_stats_removes_only_expired_rows(): void
     {
@@ -47,6 +47,8 @@ class DataRetentionCommandsTest extends TestCase
 
     /**
      * B3: schedules:prune-history — 보존 기간 초과 이력만 삭제.
+     *
+     * @effects rows_beyond_retention_are_deleted
      */
     public function test_schedule_history_prune_removes_only_expired_rows(): void
     {
@@ -78,6 +80,8 @@ class DataRetentionCommandsTest extends TestCase
 
     /**
      * B4: identity:expire-challenges — 만료 challenge 만 상태 전환(비파괴).
+     *
+     * @effects identity_challenges_transition_without_deletion
      */
     public function test_identity_expire_challenges_transitions_only_past_due(): void
     {
@@ -101,6 +105,8 @@ class DataRetentionCommandsTest extends TestCase
 
     /**
      * B6: identity:prune-logs — 보관 기간 초과 이력만 파기.
+     *
+     * @effects rows_beyond_retention_are_deleted
      */
     public function test_identity_prune_logs_removes_only_expired_rows(): void
     {
@@ -118,6 +124,8 @@ class DataRetentionCommandsTest extends TestCase
 
     /**
      * B7: activity-log:prune — 보존 기간 초과 로그만 삭제.
+     *
+     * @effects rows_beyond_retention_are_deleted
      */
     public function test_activity_log_prune_removes_only_expired_rows(): void
     {
@@ -140,6 +148,8 @@ class DataRetentionCommandsTest extends TestCase
 
     /**
      * B8: notification-log:prune — 보존 기간 초과 발송 이력만 삭제.
+     *
+     * @effects rows_beyond_retention_are_deleted
      */
     public function test_notification_log_prune_removes_only_expired_rows(): void
     {
@@ -210,7 +220,7 @@ class DataRetentionCommandsTest extends TestCase
      *
      * 커맨드가 클램프를 들고 있으면 다른 호출자가 생길 때 그 보호가 따라오지 않는다.
      *
-     * @effects retention_floor_is_owned_by_the_domain_layer
+     * @effects retention_floor_is_owned_by_the_domain_layer, rows_within_retention_are_kept
      */
     public function test_retention_floor_is_enforced_below_the_command(): void
     {

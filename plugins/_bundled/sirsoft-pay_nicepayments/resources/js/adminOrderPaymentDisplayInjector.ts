@@ -1,3 +1,4 @@
+import { apiUrl, routePath } from './apiUrl';
 const PLUGIN_ID = 'sirsoft-pay_nicepayments';
 const FLAG = '__nicepayAdminPaymentDisplayInjectorInstalled';
 
@@ -18,7 +19,7 @@ async function fetchAdminTransactionStatus(orderNumber: string): Promise<AdminTr
     if (!token) return null;
 
     try {
-        const res = await fetch(`/api/plugins/${PLUGIN_ID}/admin/orders/${orderNumber}/transaction-status`, {
+        const res = await fetch(apiUrl(`/api/plugins/${PLUGIN_ID}/admin/orders/${orderNumber}/transaction-status`), {
             headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
         });
         if (!res.ok) return null;
@@ -134,7 +135,7 @@ function startPolling(orderNumber: string): void {
 }
 
 function onRouteChange(): void {
-    const match = location.pathname.match(ADMIN_ORDER_SHOW_RE);
+    const match = routePath(location.pathname).match(ADMIN_ORDER_SHOW_RE);
     if (match) startPolling(match[1]);
 }
 

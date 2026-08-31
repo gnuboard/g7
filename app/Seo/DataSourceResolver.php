@@ -2,6 +2,7 @@
 
 namespace App\Seo;
 
+use App\Support\AssetUrl;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -134,7 +135,9 @@ class DataSourceResolver
         $timeout = 5;
 
         try {
-            $fullUrl = url($endpoint);
+            // 설정된 사이트 주소(`app.url`)의 오리진 + 멱등 접두사 — `url()` 은 요청 호스트를
+            // 싣고 접두사를 품은 endpoint(`/g7/api/…`)에 접두사를 한 번 더 싣는다 (16차 G3 라운드 B-7).
+            $fullUrl = AssetUrl::siteAbsolute(str_starts_with($endpoint, '/') ? $endpoint : '/'.$endpoint);
 
             $request = Http::timeout($timeout)
                 ->withoutVerifying()

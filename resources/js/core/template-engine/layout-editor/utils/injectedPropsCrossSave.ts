@@ -15,6 +15,7 @@
  */
 
 import { buildAuthHeaders } from './authToken';
+import { withBasePrefix } from '../../../support/assetUrl';
 
 /** 교차 저장 결과 */
 export type InjectedPropsSaveResult =
@@ -41,13 +42,17 @@ export async function saveInjectedPropsToExtension(
   nextProps: Record<string, unknown>,
   fetchImpl: typeof fetch = fetch,
 ): Promise<InjectedPropsSaveResult> {
-  const baseUrl = `/api/admin/templates/${encodeURIComponent(
+  // 브라우저가 그대로 치는 주소라 접두사를 붙일 주체가 여기밖에 없다. 종전에는
+  // 루트 상대라 하위 폴더 배치에서 GET 이 404 였고, 그 분기는 `{ kind: 'not_found' }`
+  // 로 조용히 끝나 **편집한 주입 속성이 저장되지 않았다** — 오류도 토스트도 없다.
+  const baseUrl = withBasePrefix(`/api/admin/templates/${encodeURIComponent(
     templateIdentifier,
-  )}/layout-extensions/${extensionId}`;
+  )}/layout-extensions/${extensionId}`);
 
   // 1. 현재 확장 content 로드.
   let showRes: Response;
   try {
+    // base-path:allow `baseUrl` 은 바로 위에서 `withBasePrefix()` 를 거친 값이다.
     showRes = await fetchImpl(baseUrl, {
       headers: buildAuthHeaders(),
       credentials: 'same-origin',
@@ -88,6 +93,7 @@ export async function saveInjectedPropsToExtension(
   // 3. PUT 저장.
   let putRes: Response;
   try {
+    // base-path:allow `baseUrl` 은 위에서 `withBasePrefix()` 를 거친 같은 값이다.
     putRes = await fetchImpl(baseUrl, {
       method: 'PUT',
       headers: buildAuthHeaders({ 'Content-Type': 'application/json' }),

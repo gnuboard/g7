@@ -3939,4 +3939,73 @@ class SeoRendererTest extends TestCase
         // resetAll() 대신 이 테스트가 등록한 필터만 해제 (위 og_data 테스트와 동일 사유)
         HookManager::clearFilter('core.seo.filter_structured_data');
     }
+
+    /**
+     * 정본 주소(canonical · og:url · hreflang)의 오리진은 **설정(`app.url`)이 우선**이다.
+     *
+     * 종전에는 `url()` 로 만들어 **요청의 호스트**가 실렸다 — 같은 자산의 `og:image` 는
+     * `AssetUrl::siteAbsolute()` 로 설정 오리진을 실으므로, TLS 를 앞단에서 끝내는
+     * 프록시나 내부 호스트명으로 도착하는 크롤러 요청에서 한 페이지 안의 정본 주소와
+     * 이미지 주소가 **서로 다른 오리진**을 가리켰다. 크롤러는 그것을 오류 없이 다른
+     * 사이트로 색인한다 (15차 G3 라운드 W4-1).
+     *
+     * 접두사는 한 번만 실린다 — `url()` 은 요청 루트(오리진 + 마운트 접두사)를 붙이는데
+     * `siteAbsolute()` 는 접두사를 멱등으로 채운 뒤 오리진만 붙인다.
+     */
+    public function test_canonical_og_url_hreflang_은_요청_호스트가_아니라_설정_오리진을_싣는다(): void
+    {
+        config(['app.locale' => 'ko', 'app.supported_locales' => ['ko', 'en'], 'app.url' => 'https://example.com/g7']);
+        app()->setLocale('ko');
+        AssetUrl::forceBasePrefix('/g7');
+
+        // 요청은 다른 호스트로 도착한다 — `url()` 은 이 값을 실었다.
+        $request = Request::create('http://other/products/123');
+        app()->instance('request', $request);
+
+        $this->setupRouteResolver('/products/123', [
+            'templateIdentifier' => 'sirsoft-user_basic',
+            'layoutName' => 'shop/show',
+            'routeParams' => ['id' => '123'],
+            'moduleIdentifier' => null,
+            'routeMeta' => [],
+        ]);
+
+        $mergedLayout = $this->buildMergedLayout(seoEnabled: true, components: []);
+        $this->layoutService->shouldReceive('getLayout')->once()->andReturn($mergedLayout);
+        $this->metaResolver->shouldReceive('resolve')->once()->andReturn($this->buildMetaResult(title: '상품'));
+        $this->htmlMapper->shouldReceive('render')->andReturn('');
+
+        $viewMock = Mockery::mock(\Illuminate\View\View::class);
+        $viewMock->shouldReceive('render')->once()->andReturn('<html>상품</html>');
+
+        $captured = null;
+        View::shouldReceive('make')
+            ->with('seo', Mockery::on(function ($data) use (&$captured) {
+                $captured = $data;
+
+                return true;
+            }))
+            ->once()
+            ->andReturn($viewMock);
+
+        try {
+            $this->assertNotNull($this->renderer->render($request));
+        } finally {
+            AssetUrl::forceBasePrefix(null);
+        }
+
+        $this->assertSame('https://example.com/g7/products/123', $captured['canonicalUrl'], 'canonical 이 요청 호스트를 실었다');
+        $this->assertStringContainsString(
+            '<meta property="og:url" content="https://example.com/g7/products/123">',
+            $captured['ogTags'],
+            'og:url 이 요청 호스트를 실었다',
+        );
+
+        $tags = $captured['hreflangTags'];
+        $this->assertStringContainsString('hreflang="ko" href="https://example.com/g7/products/123"', $tags);
+        $this->assertStringContainsString('hreflang="en" href="https://example.com/g7/products/123?locale=en"', $tags);
+        $this->assertStringContainsString('hreflang="x-default" href="https://example.com/g7/products/123"', $tags);
+        $this->assertStringNotContainsString('http://other', $tags.$captured['canonicalUrl'].$captured['ogTags'], '요청 호스트가 정본 주소에 남았다');
+        $this->assertStringNotContainsString('/g7/g7/', $tags.$captured['canonicalUrl'].$captured['ogTags'], '접두사가 두 번 실렸다');
+    }
 }

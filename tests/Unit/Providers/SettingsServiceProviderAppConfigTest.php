@@ -77,6 +77,25 @@ class SettingsServiceProviderAppConfigTest extends TestCase
     }
 
     /**
+     * 저장된 site_url 의 후행 슬래시·공백은 app.url 로 주입되기 전에 걷어낸다 (17차 G3 라운드 B-8).
+     *
+     * 관리자 저장 경로(SaveSettingsRequest)는 이미 정규화하지만 인스톨러는 그 경로를 우회해
+     * 원값을 저장한다. 저장된 값이 모두 이 지점을 지나 app.url 이 되므로, 여기서 정규화하면
+     * 저장 경로와 무관하게 app.url 이 후행 슬래시 없는 형태로 고정된다.
+     */
+    public function test_site_url_trailing_slash_and_whitespace_are_stripped(): void
+    {
+        $this->callApplyAppConfig(['site_url' => 'https://example.com/g7/']);
+        $this->assertSame('https://example.com/g7', config('app.url'), '후행 슬래시가 남았다 — 인스톨러가 저장한 값이 정규화되지 않는다');
+
+        $this->callApplyAppConfig(['site_url' => '  https://example.com/  ']);
+        $this->assertSame('https://example.com', config('app.url'), '앞뒤 공백·후행 슬래시가 남았다');
+
+        $this->callApplyAppConfig(['site_url' => 'https://example.com']);
+        $this->assertSame('https://example.com', config('app.url'), '이미 정규화된 값은 그대로 둔다');
+    }
+
+    /**
      * 정규화 결과가 Blade e() (htmlspecialchars)에서 TypeError 없이 string 으로 렌더됩니다.
      */
     public function test_normalized_site_name_renders_without_type_error(): void

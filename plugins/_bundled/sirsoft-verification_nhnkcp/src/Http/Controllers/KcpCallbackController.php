@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\VerificationNhnkcp\Http\Controllers;
 
 use App\Http\Controllers\Api\Base\PublicBaseController;
+use App\Support\AssetUrl;
 use Illuminate\Http\RedirectResponse;
 use Plugins\Sirsoft\VerificationNhnkcp\Http\Requests\KcpCallbackRequest;
 use Plugins\Sirsoft\VerificationNhnkcp\Services\KcpCallbackResolver;
@@ -47,7 +48,7 @@ class KcpCallbackController extends PublicBaseController
             ],
         );
 
-        $bridgeUrl = url('/plugins/sirsoft-verification_nhnkcp/plugin/nhnkcp/bridge')
+        $bridgeUrl = AssetUrl::siteAbsolute('/plugins/sirsoft-verification_nhnkcp/plugin/nhnkcp/bridge')
             .'?'.http_build_query($outcome->toBridgeQuery());
 
         return redirect()->away($bridgeUrl);

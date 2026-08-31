@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Models;
 
 use App\Models\User;
+use App\Support\AssetUrl;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -112,7 +113,7 @@ class ProductReviewImage extends Model
      */
     protected function apiDownloadUrl(): string
     {
-        return '/api/modules/sirsoft-ecommerce/review-image/'.$this->hash;
+        return AssetUrl::basePrefix().'/api/modules/sirsoft-ecommerce/review-image/'.$this->hash;
     }
 
     /**

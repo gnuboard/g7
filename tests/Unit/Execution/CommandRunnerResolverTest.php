@@ -18,8 +18,6 @@ use Tests\TestCase;
  * 그리고 기본값 불변(설정 없는 기존 환경 = subprocess)을 고정한다.
  *
  * 커버 축: php_binary_source detected_autodetect·configured / requested_mode none·auto·subprocess·inprocess / saved_setting absent·auto·subprocess·inprocess·invalid
- *
- * @effects detected_php_binary_reaches_subprocess_runner, explicit_subprocess_uses_configured_binary, default_resolves_to_subprocess_without_any_setting, auto_follows_detection_to_inprocess, explicit_request_overrides_everything, saved_setting_overrides_detection, saved_auto_setting_still_detects, invalid_saved_setting_falls_back_to_detection, requested_auto_is_not_explicit, detection_report_exposes_basis
  */
 class CommandRunnerResolverTest extends TestCase
 {
@@ -57,6 +55,8 @@ class CommandRunnerResolverTest extends TestCase
     /**
      * 기본값 불변 단언 — 설정이 없는 환경(= 기존 전 사이트)에서 감지가 subprocess 면
      * 판정도 subprocess 다. 이 테스트가 red 면 기존 사이트의 동작이 바뀐 것이다.
+     *
+     * @effects default_resolves_to_subprocess_without_any_setting
      */
     public function test_default_resolves_to_subprocess_without_any_setting(): void
     {
@@ -68,6 +68,8 @@ class CommandRunnerResolverTest extends TestCase
 
     /**
      * 환경 감지가 inprocess 로 확정되면 (설정 없음 + auto) inprocess 러너.
+     *
+     * @effects auto_follows_detection_to_inprocess
      */
     public function test_auto_follows_detection_to_inprocess(): void
     {
@@ -79,6 +81,8 @@ class CommandRunnerResolverTest extends TestCase
 
     /**
      * 호출부 명시 모드가 최우선이다 (감지·설정 무시).
+     *
+     * @effects explicit_request_overrides_everything
      */
     public function test_explicit_request_overrides_everything(): void
     {
@@ -93,6 +97,8 @@ class CommandRunnerResolverTest extends TestCase
 
     /**
      * 운영자 저장 설정(auto 아님)이 환경 감지보다 우선한다.
+     *
+     * @effects saved_setting_overrides_detection
      */
     public function test_saved_setting_overrides_detection(): void
     {
@@ -104,6 +110,8 @@ class CommandRunnerResolverTest extends TestCase
 
     /**
      * 저장 설정이 auto 면 고정이 아니다 — 감지 결과를 따른다 (매 판정마다 감지).
+     *
+     * @effects saved_auto_setting_still_detects
      */
     public function test_saved_auto_setting_still_detects(): void
     {
@@ -115,6 +123,8 @@ class CommandRunnerResolverTest extends TestCase
 
     /**
      * 저장 설정이 알 수 없는 값이면 auto 로 안전 변환되어 감지를 따른다.
+     *
+     * @effects invalid_saved_setting_falls_back_to_detection
      */
     public function test_invalid_saved_setting_falls_back_to_detection(): void
     {
@@ -126,6 +136,8 @@ class CommandRunnerResolverTest extends TestCase
 
     /**
      * requested = Auto 는 "명시" 가 아니다 — 설정 → 감지 순서로 진행한다.
+     *
+     * @effects requested_auto_is_not_explicit
      */
     public function test_requested_auto_is_not_explicit(): void
     {
@@ -139,6 +151,8 @@ class CommandRunnerResolverTest extends TestCase
      *
      * "PATH 의 php 는 실행 불가, 비표준 경로에만 있음" 환경에서 판정(subprocess)과
      * 실행(설정값 php)이 어긋나지 않아야 한다.
+     *
+     * @effects detected_php_binary_reaches_subprocess_runner
      */
     public function test_detected_php_binary_reaches_subprocess_runner(): void
     {
@@ -182,6 +196,8 @@ class CommandRunnerResolverTest extends TestCase
 
     /**
      * 명시·설정 고정 subprocess 는 감지를 거치지 않으므로 설정값 바이너리를 쓴다 (기본값 불변).
+     *
+     * @effects explicit_subprocess_uses_configured_binary
      */
     public function test_explicit_subprocess_uses_configured_binary(): void
     {
@@ -196,6 +212,8 @@ class CommandRunnerResolverTest extends TestCase
 
     /**
      * detectionReport 는 판정 근거(차단 함수·probe)를 그대로 노출한다 (W5 표시용).
+     *
+     * @effects detection_report_exposes_basis
      */
     public function test_detection_report_exposes_basis(): void
     {

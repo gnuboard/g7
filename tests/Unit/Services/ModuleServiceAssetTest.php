@@ -162,13 +162,24 @@ class ModuleServiceAssetTest extends TestCase
     }
 
     /**
-     * 소스맵(.map)은 JSON 으로 타입 지정하지 않는다.
+     * 소스맵(.map)은 로컬 환경 밖에서 **서빙되지 않는다**.
      *
-     * 소스맵에는 원본 코드 전문(sourcesContent)이 담겨 있어, 서빙 허용 자체를 로컬 환경으로
-     * 한정하고 MIME 표에서도 제외했다(#471 / 공개 #72). 표에 되돌아오면 그 조치가 조용히
-     * 풀린 것이므로 명시적으로 고정한다.
+     * 소스맵에는 원본 코드 전문(sourcesContent)이 담겨 있어 서빙 허용 자체를 로컬 환경으로
+     * 한정했다(#471 / 공개 #72). 그 한정을 소유하는 것은 확장자 화이트리스트
+     * (`AllowedModuleFileType::getAllowedExtensions()`)이고, 서비스가 그 목록을 2차로
+     * 확인한다.
+     *
+     * 종전에는 「MIME 표에 `map` 이 없다」로 이 조치를 고정했는데, 그 형태에는 사각이 있었다 —
+     * 모듈 통로에는 확장자 2차 확인이 아예 없어 소스맵이 화이트리스트를 우회한 호출부에서
+     * `application/octet-stream` 으로 **그대로 나갔고**, 단언은 「JSON 이 아니다」라 초록이었다.
+     * 그래서 약한 축(MIME 표기)이 아니라 강한 축(서빙 거부)을 잰다. 되돌리면
+     * (서비스에서 화이트리스트 2차 확인을 빼면) 이 단언이 red 다.
+     *
+     * 로컬 환경에서 표가 `application/json` 을 돌려주는 것은 의도다 — 그래야 devtools 가
+     * 소스맵을 읽어 그 완화가 목적을 달성한다. 그 축은 세 통로 공유 trait 이 소유하고
+     * `ExtensionAssetServiceContainmentParityTest` 가 고정한다.
      */
-    public function test_source_map_is_not_typed_as_json(): void
+    public function test_source_map_is_not_served_outside_local(): void
     {
         // Arrange
         Module::factory()->create([
@@ -179,11 +190,16 @@ class ModuleServiceAssetTest extends TestCase
         $filePath = $this->testModulePath.'/dist/js/module.iife.js.map';
         file_put_contents($filePath, '{"version":3,"sources":[]}');
 
+        // 테스트 환경은 `local` 이 아니다 — 그 전제가 깨지면 이 단언의 의미가 바뀐다.
+        $this->assertFalse($this->app->environment('local'), '테스트 환경이 local 이면 이 축은 반대 계약을 잰다');
+
         // Act
         $result = $this->moduleService->getAssetFilePath('test-module', 'dist/js/module.iife.js.map');
 
         // Assert
-        $this->assertNotEquals('application/json', $result['mimeType']);
+        $this->assertFalse($result['success']);
+        $this->assertEquals('file_type_not_allowed', $result['error']);
+        $this->assertNull($result['mimeType']);
     }
 
     /**

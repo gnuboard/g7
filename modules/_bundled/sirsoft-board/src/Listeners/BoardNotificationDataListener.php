@@ -4,15 +4,18 @@ namespace Modules\Sirsoft\Board\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
 use App\Contracts\Repositories\RoleRepositoryInterface;
+use App\Extension\ModuleManager;
 use App\Models\User;
-use Illuminate\Support\Facades\Auth;
+use App\Support\AssetUrl;
 use BackedEnum;
+use Illuminate\Support\Facades\Auth;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Enums\TriggerType;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\Comment;
 use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Models\Report;
+use Modules\Sirsoft\Board\Module;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
@@ -59,7 +62,7 @@ class BoardNotificationDataListener implements HookListenerInterface
     /**
      * 훅 이벤트를 처리합니다.
      *
-     * @param mixed ...$args 훅에서 전달된 인수들
+     * @param  mixed  ...$args  훅에서 전달된 인수들
      * @return void
      */
     public function handle(...$args): void {}
@@ -67,15 +70,15 @@ class BoardNotificationDataListener implements HookListenerInterface
     /**
      * 게시판 모듈의 기본 알림 정의를 코어 리셋 로직에 제공합니다.
      *
-     * @param array $definitions 현재까지 수집된 기본 정의 목록
-     * @param array $context type/channel 필터 컨텍스트
+     * @param  array  $definitions  현재까지 수집된 기본 정의 목록
+     * @param  array  $context  type/channel 필터 컨텍스트
      * @return array 게시판 시더 정의를 병합한 목록
      */
     public function contributeDefaultDefinitions(array $definitions, array $context = []): array
     {
         // module.php 의 getNotificationDefinitions() 가 SSoT — declarative getter 패턴
-        /** @var \Modules\Sirsoft\Board\Module $module */
-        $module = app(\App\Extension\ModuleManager::class)->getModule('sirsoft-board');
+        /** @var Module $module */
+        $module = app(ModuleManager::class)->getModule('sirsoft-board');
         if (! $module) {
             return $definitions;
         }
@@ -94,9 +97,9 @@ class BoardNotificationDataListener implements HookListenerInterface
     /**
      * 알림 유형에 따라 데이터와 컨텍스트를 추출합니다.
      *
-     * @param array $default 기본 extract_data 구조
-     * @param string $type 알림 정의 유형
-     * @param array $args 훅에서 전달된 원본 인수
+     * @param  array  $default  기본 extract_data 구조
+     * @param  string  $type  알림 정의 유형
+     * @param  array  $args  훅에서 전달된 원본 인수
      * @return array{notifiable: null, notifiables: null, data: array, context: array}
      */
     public function extractData(array $default, string $type, array $args): array
@@ -120,7 +123,7 @@ class BoardNotificationDataListener implements HookListenerInterface
     /**
      * 새 댓글 알림 데이터를 추출합니다.
      *
-     * @param array $args 훅 인수 [$comment, $slug]
+     * @param  array  $args  훅 인수 [$comment, $slug]
      * @return array
      */
     private function extractNewComment(array $args): array
@@ -160,7 +163,7 @@ class BoardNotificationDataListener implements HookListenerInterface
                 'comment_author' => $comment->user?->name ?? $comment->author_name ?? '',
                 'comment_content' => $commentContent,
                 'post_url' => $this->buildPostUrl($board, $post),
-                'site_url' => config('app.url'),
+                'site_url' => AssetUrl::siteRoot(),
             ],
             'context' => [
                 'trigger_user_id' => $comment->user_id,
@@ -175,7 +178,7 @@ class BoardNotificationDataListener implements HookListenerInterface
     /**
      * 대댓글 알림 데이터를 추출합니다.
      *
-     * @param array $args 훅 인수 [$comment, $slug]
+     * @param  array  $args  훅 인수 [$comment, $slug]
      * @return array
      */
     private function extractReplyComment(array $args): array
@@ -220,7 +223,7 @@ class BoardNotificationDataListener implements HookListenerInterface
                 'comment_author' => $comment->user?->name ?? $comment->author_name ?? '',
                 'comment_content' => $commentContent,
                 'post_url' => $this->buildPostUrl($board, $post),
-                'site_url' => config('app.url'),
+                'site_url' => AssetUrl::siteRoot(),
             ],
             'context' => [
                 'trigger_user_id' => $comment->user_id,
@@ -239,7 +242,7 @@ class BoardNotificationDataListener implements HookListenerInterface
     /**
      * 답변글 알림 데이터를 추출합니다.
      *
-     * @param array $args 훅 인수 [$post, $slug, $options?]
+     * @param  array  $args  훅 인수 [$post, $slug, $options?]
      * @return array
      */
     private function extractPostReply(array $args): array
@@ -275,7 +278,7 @@ class BoardNotificationDataListener implements HookListenerInterface
                 'board_name' => $board->localizedName ?? $board->name,
                 'post_title' => $parentPost->title ?? '',
                 'post_url' => $this->buildPostUrl($board, $parentPost),
-                'site_url' => config('app.url'),
+                'site_url' => AssetUrl::siteRoot(),
             ],
             'context' => [
                 'trigger_user_id' => $post->user_id,
@@ -290,7 +293,7 @@ class BoardNotificationDataListener implements HookListenerInterface
     /**
      * 관리자 처리(직권) 알림 데이터를 추출합니다.
      *
-     * @param array $args 훅 인수 [$post, $slug] 또는 [$comment, $slug]
+     * @param  array  $args  훅 인수 [$post, $slug] 또는 [$comment, $slug]
      * @return array
      */
     private function extractPostAction(array $args): array
@@ -332,7 +335,7 @@ class BoardNotificationDataListener implements HookListenerInterface
                     'action_type' => $actionType,
                     'target_type' => $targetTypeLabel,
                     'post_url' => $this->buildPostUrl($board, $target),
-                    'site_url' => config('app.url'),
+                    'site_url' => AssetUrl::siteRoot(),
                 ],
                 'context' => [
                     'trigger_user_id' => Auth::id(),
@@ -373,8 +376,8 @@ class BoardNotificationDataListener implements HookListenerInterface
                     'post_title' => $post?->title ?? '',
                     'action_type' => $actionType,
                     'target_type' => $targetTypeLabel,
-                    'post_url' => $post ? $this->buildPostUrl($board, $post) : config('app.url'),
-                    'site_url' => config('app.url'),
+                    'post_url' => $post ? $this->buildPostUrl($board, $post) : AssetUrl::siteRoot(),
+                    'site_url' => AssetUrl::siteRoot(),
                 ],
                 'context' => [
                     'trigger_user_id' => Auth::id(),
@@ -392,7 +395,7 @@ class BoardNotificationDataListener implements HookListenerInterface
     /**
      * 신고 처리 결과 알림 데이터를 추출합니다.
      *
-     * @param array $args 훅 인수 [$post, $slug] 또는 [$comment, $slug]
+     * @param  array  $args  훅 인수 [$post, $slug] 또는 [$comment, $slug]
      * @return array
      */
     private function extractReportAction(array $args): array
@@ -430,7 +433,7 @@ class BoardNotificationDataListener implements HookListenerInterface
                     'action_type' => $actionType,
                     'target_type' => $targetTypeLabel,
                     'post_url' => $this->buildPostUrl($board, $target),
-                    'site_url' => config('app.url'),
+                    'site_url' => AssetUrl::siteRoot(),
                 ],
                 'context' => [
                     'trigger_user_id' => Auth::id(),
@@ -462,8 +465,8 @@ class BoardNotificationDataListener implements HookListenerInterface
                     'post_title' => $post?->title ?? '',
                     'action_type' => $actionType,
                     'target_type' => $targetTypeLabel,
-                    'post_url' => $post ? $this->buildPostUrl($board, $post) : config('app.url'),
-                    'site_url' => config('app.url'),
+                    'post_url' => $post ? $this->buildPostUrl($board, $post) : AssetUrl::siteRoot(),
+                    'site_url' => AssetUrl::siteRoot(),
                 ],
                 'context' => [
                     'trigger_user_id' => Auth::id(),
@@ -485,7 +488,7 @@ class BoardNotificationDataListener implements HookListenerInterface
     /**
      * 신규 게시글 관리자 알림 데이터를 추출합니다.
      *
-     * @param array $args 훅 인수 [$post, $slug, $options?]
+     * @param  array  $args  훅 인수 [$post, $slug, $options?]
      * @return array
      */
     private function extractNewPostAdmin(array $args): array
@@ -536,7 +539,7 @@ class BoardNotificationDataListener implements HookListenerInterface
                 'post_title' => $post->title ?? '',
                 'post_author' => $post->author_name ?? $post->user?->name ?? '',
                 'post_url' => $this->buildPostUrl($board, $post),
-                'site_url' => config('app.url'),
+                'site_url' => AssetUrl::siteRoot(),
             ],
             'context' => [
                 'trigger_user_id' => $post->user_id,
@@ -551,7 +554,7 @@ class BoardNotificationDataListener implements HookListenerInterface
     /**
      * 신고 접수 관리자 알림 데이터를 추출합니다.
      *
-     * @param array $args 훅 인수 [$report]
+     * @param  array  $args  훅 인수 [$report]
      * @return array
      */
     private function extractReportReceivedAdmin(array $args): array
@@ -604,10 +607,10 @@ class BoardNotificationDataListener implements HookListenerInterface
                 'app_name' => config('app.name'),
                 'board_name' => $boardName,
                 'post_title' => $postTitle,
-                'target_type' => __('sirsoft-board::notification.report_action.target_types.' . $targetType),
-                'reason_type' => __('sirsoft-board::notification.report_received_admin.reason_types.' . $reasonType),
-                'report_url' => config('app.url') . '/admin/boards/reports',
-                'site_url' => config('app.url'),
+                'target_type' => __('sirsoft-board::notification.report_action.target_types.'.$targetType),
+                'reason_type' => __('sirsoft-board::notification.report_received_admin.reason_types.'.$reasonType),
+                'report_url' => AssetUrl::siteAbsolute('/admin/boards/reports'),
+                'site_url' => AssetUrl::siteRoot(),
             ],
             'context' => [
                 'trigger_user_id' => $report->reporter_id ?? null,
@@ -623,26 +626,27 @@ class BoardNotificationDataListener implements HookListenerInterface
     /**
      * 게시글 URL을 생성합니다.
      *
-     * @param Board $board 게시판
-     * @param Post $post 게시글
+     * @param  Board  $board  게시판
+     * @param  Post  $post  게시글
      * @return string
      */
     private function buildPostUrl(Board $board, Post $post): string
     {
-        return config('app.url') . "/board/{$board->slug}/{$post->id}";
+        // 오리진·접두사는 설정된 사이트 주소를 따르고 후행 슬래시를 이어 붙이지 않는다 (16차 G3 라운드 B-4).
+        return AssetUrl::siteAbsolute("/board/{$board->slug}/{$post->id}");
     }
 
     /**
      * 컨텐츠를 200자로 자릅니다.
      *
-     * @param string|null $content 원본 컨텐츠
+     * @param  string|null  $content  원본 컨텐츠
      * @return string
      */
     private function truncateContent(?string $content): string
     {
         $text = strip_tags($content ?? '');
 
-        return mb_strlen($text) > 200 ? mb_substr($text, 0, 200) . '...' : $text;
+        return mb_strlen($text) > 200 ? mb_substr($text, 0, 200).'...' : $text;
     }
 
     /**
@@ -651,7 +655,7 @@ class BoardNotificationDataListener implements HookListenerInterface
      * after_blind/after_delete/after_restore 훅에서 호출되므로
      * 모델의 현재 상태로 어떤 처리가 수행되었는지 판단합니다.
      *
-     * @param array $args 훅 인수 [$target, $slug, ...]
+     * @param  array  $args  훅 인수 [$target, $slug, ...]
      * @return string 처리 유형 (번역된 라벨)
      */
     private function resolveActionType(array $args): string
@@ -688,8 +692,8 @@ class BoardNotificationDataListener implements HookListenerInterface
      *
      * 설정 레코드가 없으면 기본적으로 알림을 받지 않는 것으로 간주합니다.
      *
-     * @param int $userId 사용자 ID
-     * @param string $field 알림 설정 필드명 (notify_comment, notify_reply_comment, notify_post_reply, notify_post_complete)
+     * @param  int  $userId  사용자 ID
+     * @param  string  $field  알림 설정 필드명 (notify_comment, notify_reply_comment, notify_post_reply, notify_post_complete)
      * @return bool 알림 활성화 여부
      */
     private function isUserNotificationEnabled(int $userId, string $field): bool

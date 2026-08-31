@@ -1,5 +1,5 @@
 import { buildOrderRequestHeaders } from './guestOrderToken';
-
+import { apiUrl, routePath } from './apiUrl';
 const PLUGIN_ID = 'sirsoft-pay_nhnkcp';
 const FLAG = '__kcpMpShowInjectorInstalled';
 const VBANK_ID = 'kcp-mp-vbank-row';
@@ -53,7 +53,7 @@ async function fetchReceiptUrls(orderNumber: string): Promise<ReceiptInfo | null
     const headers = buildOrderRequestHeaders();
     if (!headers) return null;
     try {
-        const res = await fetch(`/api/plugins/${PLUGIN_ID}/user/orders/${orderNumber}/receipt`, {
+        const res = await fetch(apiUrl(`/api/plugins/${PLUGIN_ID}/user/orders/${orderNumber}/receipt`), {
             headers,
             credentials: 'same-origin',
         });
@@ -77,7 +77,7 @@ async function fetchMockDepositInfo(orderNumber: string): Promise<MockDepositInf
     const headers = buildOrderRequestHeaders();
     if (!headers) return null;
     try {
-        const res = await fetch(`/api/plugins/${PLUGIN_ID}/user/orders/${orderNumber}/vbank-mock-deposit-info`, {
+        const res = await fetch(apiUrl(`/api/plugins/${PLUGIN_ID}/user/orders/${orderNumber}/vbank-mock-deposit-info`), {
             headers,
             credentials: 'same-origin',
         });
@@ -383,7 +383,7 @@ function startPolling(orderNumber: string): void {
 }
 
 function onRouteChange(): void {
-    const match = location.pathname.match(ORDER_SHOW_RE);
+    const match = routePath(location.pathname).match(ORDER_SHOW_RE);
     // 회원 그룹(match[1]) 또는 비회원 그룹(match[2]) 중 한쪽이 채워진다.
     const segment = match?.[1] ?? match?.[2];
     if (segment) startPolling(segment);

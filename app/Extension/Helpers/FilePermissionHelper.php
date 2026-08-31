@@ -2,6 +2,7 @@
 
 namespace App\Extension\Helpers;
 
+use App\Support\ExecutionEnvironment;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 
@@ -37,7 +38,8 @@ class FilePermissionHelper
      *                                               전체 파일 복사(기존 동작). 지정 시 이 맵에 없는 파일은 복사를 스킵한다 — 코어
      *                                               업데이트 증분 모드에서 "코어가 변경하지 않은 파일"을 건드리지 않기 위함. symlink
      *                                               는 이 필터의 영향을 받지 않고 항상 재생성된다(링크는 목록 산출 대상이 아님).
-     * @param  array<int, string>  $preserveLinkPaths  orphan 정리 시 삭제하지 않고 보존할
+     * @param  array<int, string>  $preserveLinkPaths  orphan 정리 시 삭제하지 않고 보존할 경로
+     *                                                 (링크 여부와 무관 — 그 경로가 일반 디렉토리여도 보존)
      *                                                 symlink/junction 의 상대경로 화이트리스트(이 디렉토리 루트 기준, 예 `['storage']`).
      *                                                 `removeOrphans=true` 라도 이 목록에 매칭되는 orphan 링크는 삭제하지 않는다 — 코어
      *                                                 업데이트 prune 모드에서 `public/storage` symlink 가 orphan 으로 판정되어 삭제되던
@@ -175,12 +177,17 @@ class FilePermissionHelper
             File::deleteDirectory($destination);
         }
 
-        if (@symlink($target, $destination)) {
+        // `symlink` 가드 사유는 형제(`StorageLinkHelper::createLink`)와 같다 — `@` 는
+        // 진단 억제일 뿐이고 차단 환경에서는 이 호출이 `Error`(치명)다. 불가하면 아래
+        // junction 폴백을 거쳐 호출자의 일반 복사 폴백으로 넘어간다.
+        if (ExecutionEnvironment::hasFunction('symlink') && @symlink($target, $destination)) {
             return true;
         }
 
         // symlink 실패 + target 이 디렉토리 → Windows junction 으로 폴백 재생성.
-        if (PHP_OS_FAMILY === 'Windows' && is_dir($target)) {
+        // `exec` 차단 호스팅에서는 무가드 호출이 PHP 8 Error(치명)가 되므로 SSoT 판정을
+        // 거치고, 불가하면 일반 복사 폴백(호출자)으로 넘긴다 (G3 이관 — hosting-blocked-function 가드).
+        if (PHP_OS_FAMILY === 'Windows' && is_dir($target) && ExecutionEnvironment::hasFunction('exec')) {
             exec(
                 'cmd /c mklink /J '.escapeshellarg($destination).' '.escapeshellarg($target).' 2>&1',
                 $out,
@@ -210,7 +217,7 @@ class FilePermissionHelper
      * @param  array  $excludes  제외할 이름 또는 경로 목록
      * @param  string  $relativePath  현재 상대 경로
      * @param  bool  $preserveTopLevelOrphans  최상위 한 레벨의 orphan 보존 여부
-     * @param  array<int, string>  $preserveLinkPaths  삭제하지 않고 보존할 symlink/junction
+     * @param  array<int, string>  $preserveLinkPaths  삭제하지 않고 보존할 경로 (링크 여부 무관)
      *                                                 상대경로 화이트리스트(루트 기준). orphan 이 링크이면서 이 목록에 매칭되면 삭제하지
      *                                                 않고 보존한다 — `public/storage` symlink 보호(#43). 화이트리스트 밖 orphan 링크는 삭제.
      */
@@ -241,11 +248,22 @@ class FilePermissionHelper
                 // 보호 화이트리스트 매칭 링크/junction 은 orphan 이어도 보존 — 코어 업데이트
                 // prune 모드에서 `public/storage` symlink 가 릴리즈 소스에 없다는 이유로 삭제되어
                 // 업로드 파일이 404 되던 결함(#43) 차단. 화이트리스트 밖 orphan 링크는 아래에서 삭제.
+                // 보호는 **경로 기준**이다 — 링크일 때만 걸면 그 경로가 링크가 **아닌**
+                // 형태로 존재하는 사이트에서 보호가 통째로 빠진다. `public/storage` 가
+                // 일반 디렉토리인 상태(심볼릭 링크를 만들 수 없어 복사로 운영하거나,
+                // 7.1.0 정리 대상인 바로 그 상태)에서 종전 판정은 아래 `deleteDirectory()`
+                // 로 떨어져 **공개 업로드 전량이 영구 삭제**됐다. 그 경로는 릴리즈 소스에
+                // 없는 것이 정상이므로 orphan 판정은 언제나 참이다.
+                //
+                // `storage.broken.*` 도 같은 이유로 보존한다 — 7.1.0 마이그레이션이
+                // 「옮기기만 하고 지우지 않는다, 그 사본이 운영자에게 유일하게 남은
+                // 파일일 수 있다」를 불변식으로 선언했는데, 그 스텝은 이 정리보다
+                // **뒤에** 돌아 아무것도 보지 못한다.
                 if (
                     in_array($itemRelativePath, $preserveLinkPaths, true)
-                    && (is_link($destItem->getPathname()) || static::isReparsePoint($destItem->getPathname()))
+                    || static::isPreservedRuntimeResidue($itemRelativePath, $preserveLinkPaths)
                 ) {
-                    Log::info('removeOrphanItems: 보호 대상 orphan 링크 보존', [
+                    Log::info('removeOrphanItems: 보호 대상 orphan 보존', [
                         'path' => $destItem->getPathname(),
                         'relative' => $itemRelativePath,
                     ]);
@@ -349,6 +367,30 @@ class FilePermissionHelper
             // 신규 파일: 부모 디렉토리의 소유자/그룹 상속
             static::inheritOwnershipFromParent($destination);
         }
+    }
+
+    /**
+     * 보호 경로가 남긴 **런타임 잔해**인지 판정합니다.
+     *
+     * `public/storage` 를 보호 목록에 넣은 배치에서는 그 경로의 손상 백업
+     * (`storage.broken.<타임스탬프>`)도 함께 보호해야 한다. 그 사본은 코어가 만든
+     * 것이고, 7.1.0 업그레이드 스텝이 문서 루트 밖으로 옮길 때까지 **운영자에게 남은
+     * 유일한 파일일 수 있다.** 그 스텝은 이 정리보다 뒤에 돌므로 여기서 지우면
+     * 스텝이 옮길 대상 자체가 사라진다.
+     *
+     * @param  string  $itemRelativePath  대상의 상대 경로
+     * @param  array<int, string>  $preservePaths  보호 경로 목록
+     * @return bool 보호 대상이면 true
+     */
+    protected static function isPreservedRuntimeResidue(string $itemRelativePath, array $preservePaths): bool
+    {
+        foreach ($preservePaths as $preserved) {
+            if (str_starts_with($itemRelativePath, $preserved.'.broken.')) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

@@ -5,7 +5,6 @@ namespace Modules\Sirsoft\Board\Tests\Feature\User;
 // ModuleTestCase 수동 로드 (autoload 전에 로드 필요)
 require_once __DIR__.'/../../ModuleTestCase.php';
 
-use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 
 /**
@@ -92,6 +91,9 @@ class PostNavigationApiTest extends BoardTestCase
     /**
      * 목록의 첫 번째 글(가장 최신 = id가 가장 큰)은 prev가 null인지 검증
      */
+    /**
+     * @effects navigation_boundary_null
+     */
     public function test_first_post_has_null_prev(): void
     {
         // Given
@@ -111,6 +113,9 @@ class PostNavigationApiTest extends BoardTestCase
 
     /**
      * 목록의 마지막 글(가장 오래된 = id가 가장 작은)은 next가 null인지 검증
+     */
+    /**
+     * @effects navigation_boundary_null
      */
     public function test_last_post_has_null_next(): void
     {
@@ -150,6 +155,11 @@ class PostNavigationApiTest extends BoardTestCase
 
     /**
      * 공지글은 navigation 미제공 — prev/next 모두 null 반환
+     */
+    /**
+     * @scenario post_kind=notice
+     *
+     * @effects navigation_null_for_notice
      */
     public function test_notice_post_returns_null_navigation(): void
     {

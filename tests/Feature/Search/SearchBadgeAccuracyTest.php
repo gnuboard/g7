@@ -15,10 +15,7 @@ use Tests\TestCase;
  * 모듈이 각자 자기 정확도 키를 내보내던 시절에는 어떤 배지는 받고 어떤 배지는 못 받았다.
  * 코어가 일괄로 붙인다는 성질을 여기서 잠근다.
  *
- * @scenario case=search_badge_accuracy
- *
- * @effects badge_accuracy_is_emitted_per_category,
- *          badge_accuracy_defaults_to_exact
+ * @scenario search_badge_accuracy
  */
 class SearchBadgeAccuracyTest extends TestCase
 {

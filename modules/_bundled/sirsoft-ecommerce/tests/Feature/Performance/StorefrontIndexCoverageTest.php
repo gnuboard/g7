@@ -21,10 +21,6 @@ use PHPUnit\Framework\Attributes\Test;
  * MySQL 계열이 아니면 EXPLAIN 출력 형식이 달라 판정할 수 없으므로 건너뛴다.
  *
  * @scenario storefront-index-coverage
- *
- * @effects display_sort_index_exists,
- *          sales_aggregate_index_exists,
- *          product_list_uses_display_sort_index
  */
 class StorefrontIndexCoverageTest extends ModuleTestCase
 {

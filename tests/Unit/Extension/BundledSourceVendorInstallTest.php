@@ -37,12 +37,6 @@ use Tests\TestCase;
  * `ShellExecGuardCoverageTest` 와 같은 규율이다.
  *
  * 커버 축: extension_vendor_source pending_staging·bundled_source·force_reinstall
- *
- * @effects composer_binary_lookup_does_not_leak_exception_when_spawn_blocked
- * @effects spawn_availability_is_judged_through_execution_environment_ssot
- * @effects bundled_source_install_routes_vendor_through_resolver
- * @effects raw_composer_fallback_is_gated_by_vendor_resolution_flag
- * @effects module_and_plugin_managers_have_symmetric_vendor_paths
  */
 class BundledSourceVendorInstallTest extends TestCase
 {
@@ -65,6 +59,9 @@ class BundledSourceVendorInstallTest extends TestCase
         parent::tearDown();
     }
 
+    /**
+     * @effects composer_binary_lookup_does_not_leak_exception_when_spawn_blocked
+     */
     #[Test]
     public function 스폰_불가_환경에서_composer_바이너리_탐색이_예외를_흘리지_않는다(): void
     {
@@ -84,6 +81,11 @@ class BundledSourceVendorInstallTest extends TestCase
         );
     }
 
+    /**
+     * @scenario function_availability=all_blocked
+     *
+     * @effects spawn_availability_is_judged_through_execution_environment_ssot
+     */
     #[Test]
     public function 스폰_가용성_판정은_실행환경_ssot_를_경유한다(): void
     {
@@ -110,6 +112,11 @@ class BundledSourceVendorInstallTest extends TestCase
         );
     }
 
+    /**
+     * @scenario extension_vendor_source=bundled_source
+     *
+     * @effects bundled_source_install_routes_vendor_through_resolver
+     */
     #[Test]
     public function 설치_경로는_pending_가드_밖에서도_resolver_를_경유한다(): void
     {
@@ -154,9 +161,29 @@ class BundledSourceVendorInstallTest extends TestCase
                 "{$class}::{$method} — 복사 후 resolver 통로가 vendor 해결 플래그로 열리지 않는다 "
                 .'(조건이 상수로 바뀌어 통로가 죽어 있을 수 있다)'
             );
+
+            // 그 분기는 `! app()->environment('testing')` 로 막혀 있어 **어떤 테스트도
+            // 실행할 수 없다.** 즉 이 파일의 판정은 전부 소스 문자열 대조이고, 행위
+            // 측정은 존재하지 않는다 — 그 한계를 여기 명시해 다음 라운드가 「행위까지
+            // 잠겨 있다」로 오독하지 않게 한다 (7차 G3 라운드 D-12).
+            //
+            // 대신 그 환경 가드 자신을 잰다. 가드가 사라지면 확장 설치 테스트가 실제로
+            // composer 를 돌려 스위트가 네트워크에 묶이고, 그 사실은 이 파일이 아니면
+            // 아무 데서도 드러나지 않는다.
+            $this->assertStringContainsString(
+                "! app()->environment('testing')",
+                $afterCopy,
+                "{$class}::{$method} — 복사 후 resolver 통로에 테스트 환경 가드가 없다. "
+                .'그러면 확장 설치 테스트가 실제로 composer 를 실행한다'
+            );
         }
     }
 
+    /**
+     * @scenario extension_vendor_source=force_reinstall
+     *
+     * @effects raw_composer_fallback_is_gated_by_vendor_resolution_flag
+     */
     #[Test]
     public function raw_composer_폴백은_vendor_해결_플래그_뒤에_있다(): void
     {
@@ -179,6 +206,11 @@ class BundledSourceVendorInstallTest extends TestCase
         }
     }
 
+    /**
+     * @scenario extension_vendor_source=pending_staging
+     *
+     * @effects module_and_plugin_managers_have_symmetric_vendor_paths
+     */
     #[Test]
     public function 두_매니저의_vendor_통로_개수가_대칭이다(): void
     {

@@ -245,11 +245,13 @@ function cleanupStaleVendorBundleBackups(string $vendorDir, string $targetDir): 
 {
     $removed = 0;
 
-    $candidates = array_merge(
+    // `glob` 이 막힌 호스팅에서는 정리를 건너뛴다 — 무가드 호출은 PHP 8 에서 Error(치명)라
+    // 그 자체로 vendor 설치를 세운다. 잔여 백업은 남아도 설치를 막지 않는다.
+    $candidates = installerHasFunction('glob') ? array_merge(
         glob($vendorDir.DIRECTORY_SEPARATOR.'.bundle_backup_*', GLOB_ONLYDIR) ?: [],
         glob($targetDir.DIRECTORY_SEPARATOR.'storage'.DIRECTORY_SEPARATOR.'installer'
             .DIRECTORY_SEPARATOR.'vendor-backup-*', GLOB_ONLYDIR) ?: [],
-    );
+    ) : [];
 
     foreach ($candidates as $stale) {
         if (is_link($stale)) {

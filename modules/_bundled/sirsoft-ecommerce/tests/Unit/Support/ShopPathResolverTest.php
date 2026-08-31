@@ -21,10 +21,7 @@ use PHPUnit\Framework\Attributes\Test;
  * 결제 플러그인 4종의 리다이렉트 주소도 이 해석기를 SSoT 로 삼는다
  * (plugins/_bundled/sirsoft-tosspayments/tests/scenarios/payment-redirect-shop-route-path.yaml).
  *
- * @scenario case=payment_redirect_follows_shop_route_path
- *
- * @effects payment_redirect_follows_route_path, payment_redirect_drops_segment_when_no_route,
- *          default_shop_redirect_unchanged
+ * @scenario payment_redirect_follows_shop_route_path
  */
 class ShopPathResolverTest extends ModuleTestCase
 {
@@ -41,6 +38,9 @@ class ShopPathResolverTest extends ModuleTestCase
         Config::set('g7_settings.modules.sirsoft-ecommerce.basic_info', $basicInfo);
     }
 
+    /**
+     * @effects default_shop_redirect_unchanged
+     */
     #[Test]
     public function 설정이_없으면_기본_상점_주소로_폴백한다(): void
     {
@@ -50,6 +50,9 @@ class ShopPathResolverTest extends ModuleTestCase
         $this->assertSame('/shop/products/A1', ShopPathResolver::path('products/A1'));
     }
 
+    /**
+     * @effects payment_redirect_follows_route_path
+     */
     #[Test]
     public function 운영자가_바꾼_주소를_반영한다(): void
     {
@@ -59,6 +62,9 @@ class ShopPathResolverTest extends ModuleTestCase
         $this->assertSame('/store/orders/20260806-0001/complete', ShopPathResolver::path('orders/20260806-0001/complete'));
     }
 
+    /**
+     * @effects payment_redirect_drops_segment_when_no_route
+     */
     #[Test]
     public function 주소_없이_운영하면_루트에_붙는다(): void
     {

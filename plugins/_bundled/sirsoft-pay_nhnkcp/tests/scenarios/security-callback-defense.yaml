@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: Phase 2 SSoT — 본 매니페스트는 NHN KCP 콜백 보안 매트릭스의 명세 문서. CLI sanitization 단위 테스트가 핵심 경로를 커버하며, replay/net-cancel 의 cross product 전체 자동 검증은 Phase 3 (침투 PoC) 에서 처리.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#609 Phase 2 SSoT — 본 매니페스트는 NHN KCP 콜백 보안 매트릭스의 명세 문서. CLI sanitization 단위 테스트가 핵심 경로를 커버하며, replay/net-cancel 의 cross product 전체 자동 검증은 Phase 3 (침투 PoC) 에서 처리.
 
 feature: 콜백 보안 방어 (replay attack / CLI command injection / post-approve net cancel / 비인증 브라우저 콜백의 주문 변조)
 
@@ -63,17 +63,11 @@ effects:
   - replay_detected_on_second_arrival
   - replay_response_is_idempotent_ok
   - replay_no_double_completion
-  - replay_logged_with_context
   - replay_first_arrival_proceeds_normally
-  - replay_db_unique_blocks_concurrent_insert
 
   # CLI sanitization — assertSafeCliValue + escapeshellarg
   - cli_arg_rejects_double_quote
   - cli_arg_rejects_backtick
-  - cli_arg_rejects_dollar_paren
-  - cli_arg_rejects_pipe
-  - cli_arg_rejects_redirect
-  - cli_arg_rejects_semicolon
   - cli_arg_rejects_null_byte
   - cli_arg_rejects_control_char_low
   - cli_arg_rejects_control_char_high
@@ -102,13 +96,27 @@ effects:
   - normal_approval_still_completes_the_order
 
   # Post-approve net cancel
-  - post_approve_failure_triggers_auto_cancel
   - net_cancel_sends_pg_cancel_api_call
   - net_cancel_passes_approved_tno
-  - net_cancel_passes_full_amount
+  - net_cancel_full_omits_amount_fields
+
+# 미작성 — 회차 16 W6 (G3): 어느 테스트도 아직 재지 않는 효과의 원장.
+# 재는 테스트가 생기면 effects 로 승격한다 (지우지 않는다 — 검사 도구가 개수를 노출한다).
+pending_effects:
+  - replay_logged_with_context
+  - replay_db_unique_blocks_concurrent_insert
+  - cli_arg_rejects_dollar_paren
+  - cli_arg_rejects_pipe
+  - cli_arg_rejects_redirect
+  - cli_arg_rejects_semicolon
+  - post_approve_failure_triggers_auto_cancel
 
 test_files:
   - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Feature/Controllers/PaymentCallbackControllerTest.php
+  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Feature/Concerns/PreventsReplayCallbackTest.php
+  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Unit/Services/CliInjectionDefenseTest.php
+  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Feature/Controllers/EscrowCommonNotifyControllerTest.php
+  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Unit/Services/NhnKcpApiServiceTest.php
 
 manual_verification:
   - description: "위조 콜백 PoC — 남의 주문번호로 결제 실패 유도"

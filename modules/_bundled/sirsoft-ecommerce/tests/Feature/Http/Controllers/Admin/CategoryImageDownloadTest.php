@@ -16,8 +16,9 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  * 관리자 카테고리 이미지 다운로드 서빙 회귀 테스트
  *
  * 배경: downloadImage() 가 과거 response()->streamDownload(fn => echo Storage::get())
- * 로 파일 전체를 메모리에 적재하는 안티패턴이었다. 서빙은 CategoryImageService::download()
- * (StorageInterface::response() 기반 스트리밍)로 위임해야 한다.
+ * 로 파일 전체를 메모리에 적재하는 안티패턴이었다. 서빙은 CategoryImageService::getFileInfo()
+ * (StorageInterface::response() 기반 스트리밍 + 검증자 메타)로 위임하고, 캐시 계약은 코어
+ * 단일 지점(`streamedFileResponse()`)이 입힌다 (14차 G3 라운드).
  *
  * 이 테스트는 컨트롤러가 서비스의 스트리밍 경로로 위임하는지를 단언한다 —
  * 전체 적재 경로(getByHash 조회 후 직접 Storage 접근)로 회귀하면 실패한다.
@@ -62,12 +63,19 @@ class CategoryImageDownloadTest extends ModuleTestCase
             'Content-Type' => 'image/jpeg',
         ]);
 
-        // 서비스의 스트리밍 다운로드가 호출되어야 한다.
+        // 서비스의 스트리밍 서빙 정보가 호출되어야 한다.
         $this->categoryImageService
-            ->shouldReceive('download')
+            ->shouldReceive('getFileInfo')
             ->once()
             ->with($hash)
-            ->andReturn($streamed);
+            ->andReturn([
+                'response' => $streamed,
+                'etag_source' => 'modules|category/x.jpg|1700000000|11',
+                'mime_type' => 'image/jpeg',
+                'filename' => 'x.jpg',
+                'last_modified' => 1700000000,
+                'max_age' => CategoryImageService::IMAGE_CACHE_MAX_AGE,
+            ]);
 
         // 전체 적재 경로(getByHash 후 직접 Storage 접근)는 사용하면 안 된다.
         $this->categoryImageService
@@ -82,6 +90,12 @@ class CategoryImageDownloadTest extends ModuleTestCase
             '관리자 다운로드는 스트리밍 응답을 반환해야 한다 (전체 메모리 적재 금지)'
         );
         $this->assertSame($streamed, $result, '서비스가 생성한 스트리밍 응답을 그대로 반환해야 한다');
+
+        // 캐시 계약은 코어 지점이 입힌다 — 검증자가 없으면 회차 13 이전 상태(재검증 불가)다.
+        $this->assertMatchesRegularExpression('/^"[0-9a-f]{32}"$/', (string) $result->headers->get('ETag'));
+        $this->assertNotNull($result->headers->get('Cache-Control'));
+        $this->assertNotNull($result->headers->get('Expires'));
+        $this->assertNotNull($result->headers->get('Last-Modified'));
     }
 
     /**
@@ -93,7 +107,7 @@ class CategoryImageDownloadTest extends ModuleTestCase
         $hash = 'missinghash0';
 
         $this->categoryImageService
-            ->shouldReceive('download')
+            ->shouldReceive('getFileInfo')
             ->once()
             ->with($hash)
             ->andReturn(null);

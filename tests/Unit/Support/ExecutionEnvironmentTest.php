@@ -13,13 +13,13 @@ use PHPUnit\Framework\TestCase;
  * 브라우저 실측이 담당한다.
  *
  * 커버 축: function_availability all_available·one_blocked·all_blocked / requested_mode none·auto·subprocess·inprocess
- *
- * @effects detect_returns_subprocess_when_functions_available_and_probe_valid, detect_returns_inprocess_when_functions_blocked, detect_returns_inprocess_when_single_function_blocked, detect_returns_inprocess_when_probe_invalid_and_no_autodetect, detect_falls_back_to_autodetected_binary, detect_fail_safe_to_subprocess_when_probe_uncertain, probe_returns_unavailable_when_exec_blocked, subprocess_function_set_is_stable
  */
 class ExecutionEnvironmentTest extends TestCase
 {
     /**
      * 함수 전부 가용 + probe 통과 → subprocess (현행 경로 유지).
+     *
+     * @effects detect_returns_subprocess_when_functions_available_and_probe_valid
      */
     public function test_detect_returns_subprocess_when_functions_available_and_probe_valid(): void
     {
@@ -36,6 +36,8 @@ class ExecutionEnvironmentTest extends TestCase
 
     /**
      * 필수 함수 차단 → 서브프로세스가 명확히 불가 → inprocess.
+     *
+     * @effects detect_returns_inprocess_when_functions_blocked
      */
     public function test_detect_returns_inprocess_when_functions_blocked(): void
     {
@@ -50,6 +52,8 @@ class ExecutionEnvironmentTest extends TestCase
 
     /**
      * 일부 함수만 차단되어도 서브프로세스 요건 미충족 → inprocess.
+     *
+     * @effects detect_returns_inprocess_when_single_function_blocked
      */
     public function test_detect_returns_inprocess_when_single_function_blocked(): void
     {
@@ -64,6 +68,8 @@ class ExecutionEnvironmentTest extends TestCase
 
     /**
      * 함수 가용 + probe 명확 실패 + 자동 탐색도 실패 → inprocess.
+     *
+     * @effects detect_returns_inprocess_when_probe_invalid_and_no_autodetect
      */
     public function test_detect_returns_inprocess_when_probe_invalid_and_no_autodetect(): void
     {
@@ -81,6 +87,8 @@ class ExecutionEnvironmentTest extends TestCase
     /**
      * 지정 바이너리 probe 실패 + 공통 경로 자동 탐색 성공 → subprocess.
      * (PATH 에 php 가 없고 비표준 경로에만 있는 호스팅을 오판하지 않는다)
+     *
+     * @effects detect_falls_back_to_autodetected_binary
      */
     public function test_detect_falls_back_to_autodetected_binary(): void
     {
@@ -98,6 +106,8 @@ class ExecutionEnvironmentTest extends TestCase
 
     /**
      * probe 판정 불확실(unavailable) → fail-safe 는 subprocess (기존 환경 보호).
+     *
+     * @effects detect_fail_safe_to_subprocess_when_probe_uncertain
      */
     public function test_detect_fail_safe_to_subprocess_when_probe_uncertain(): void
     {
@@ -113,6 +123,8 @@ class ExecutionEnvironmentTest extends TestCase
 
     /**
      * probe: exec 차단 환경에서는 실행 없이 unavailable(불확실) 을 돌려준다.
+     *
+     * @effects probe_returns_unavailable_when_exec_blocked
      */
     public function test_probe_returns_unavailable_when_exec_blocked(): void
     {
@@ -128,6 +140,8 @@ class ExecutionEnvironmentTest extends TestCase
     /**
      * 서브프로세스 필수 함수 집합은 인스톨러 게이트의 현행 집합과 동일해야 한다.
      * (집합 변경 = 설치 게이트 판정 변경 — 의도 없는 변경을 차단)
+     *
+     * @effects subprocess_function_set_is_stable
      */
     public function test_subprocess_function_set_is_stable(): void
     {

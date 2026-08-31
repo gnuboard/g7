@@ -3,7 +3,9 @@
 namespace Tests\Feature\Seo;
 
 use App\Seo\Contracts\SitemapContributorInterface;
+use App\Seo\SeoCacheManager;
 use App\Seo\SitemapGenerator;
+use App\Support\AssetUrl;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
@@ -67,7 +69,8 @@ class JaLocaleSeoIntegrationTest extends TestCase
         $generator->registerContributor($contributor);
         $xml = $generator->generate();
 
-        $base = url('/about');
+        // 정본 주소는 설정 우선 단일 지점(AssetUrl::siteAbsolute)이 만든다 — G3 회차 15, 제품 결정.
+        $base = AssetUrl::siteAbsolute('/about');
 
         // 다국어 모드 → xhtml 네임스페이스 활성화
         $this->assertStringContainsString(
@@ -114,7 +117,7 @@ class JaLocaleSeoIntegrationTest extends TestCase
 
         // 기본 ko 로케일은 ?locale=ko 가 아니라 clean URL
         $this->assertStringContainsString(
-            '<loc>'.url('/contact').'</loc>',
+            '<loc>'.AssetUrl::siteAbsolute('/contact').'</loc>',
             $xml,
             '기본 로케일(ko) URL 은 ?locale 파라미터 없이 clean URL 이어야 함'
         );
@@ -163,7 +166,7 @@ class JaLocaleSeoIntegrationTest extends TestCase
         Cache::flush();
 
         // ja 로케일과 ko 로케일이 같은 URL 에서 별도 캐시 키를 사용하는지 검증
-        $cacheManager = app(\App\Seo\SeoCacheManager::class);
+        $cacheManager = app(SeoCacheManager::class);
 
         $reflection = new \ReflectionClass($cacheManager);
         if (! $reflection->hasMethod('buildKey')) {

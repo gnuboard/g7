@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\AssetUrl;
 use Illuminate\Support\Facades\Route;
 use Plugins\Sirsoft\PayNhnkcp\Controllers\AdminEscrowDeliveryController;
 use Plugins\Sirsoft\PayNhnkcp\Controllers\AdminOrderListController;
@@ -49,8 +50,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
     Route::get('/vbank-notify-url', fn () => response()->json([
         'success' => true,
         'data' => [
-            'url' => url('/plugins/sirsoft-pay_nhnkcp/payment/vbank-notify'),
-            'escrow_common_notify_url' => url('/plugins/sirsoft-pay_nhnkcp/payment/escrow-common-notify'),
+            'url' => AssetUrl::siteAbsolute('/plugins/sirsoft-pay_nhnkcp/payment/vbank-notify'),
+            'escrow_common_notify_url' => AssetUrl::siteAbsolute('/plugins/sirsoft-pay_nhnkcp/payment/escrow-common-notify'),
         ],
     ]))->middleware('permission:admin,sirsoft-ecommerce.settings.read')
         ->name('vbank.notify.url');

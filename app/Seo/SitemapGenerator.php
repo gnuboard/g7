@@ -6,6 +6,7 @@ use App\Enums\SitemapChangeFreq;
 use App\Extension\TemplateManager;
 use App\Seo\Contracts\SitemapContributorInterface;
 use App\Services\TemplateService;
+use App\Support\AssetUrl;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -150,11 +151,36 @@ class SitemapGenerator
     private function normalizeEntry(array $entry): array
     {
         if (isset($entry['url']) && ! isset($entry['loc'])) {
-            $entry['loc'] = url($entry['url']);
+            $entry['loc'] = self::entryLoc($entry);
             unset($entry['url']);
         }
 
         return $entry;
+    }
+
+    /**
+     * URL 항목의 절대 주소(`loc`)를 해석합니다 — 전체 재생성과 증분 색인이 공유하는 단일 지점.
+     *
+     * `loc`(절대 URL)이 있으면 그대로, 없으면 `url`(사이트 경로)을 `AssetUrl::siteAbsolute()` 로
+     * 절대화한다 — 설정(`app.url`)의 오리진이 우선이고 접두사는 **멱등**으로 실린다. 종전에는
+     * 증분 색인(`SitemapIndexer`)이 같은 규칙을 `url()` 사본으로 갖고 있어, 같은 리소스의
+     * `<loc>` 이 생성 경로(전체 재생성 vs 리스너 경유 증분)에 따라 오리진·접두사가 갈렸다
+     * (16차 G3 라운드 B-3).
+     *
+     * @param  array<string, mixed>  $entry  URL 항목
+     * @return string|null 절대 URL (해석 불가 시 null)
+     */
+    public static function entryLoc(array $entry): ?string
+    {
+        if (isset($entry['loc']) && is_string($entry['loc']) && $entry['loc'] !== '') {
+            return $entry['loc'];
+        }
+
+        if (isset($entry['url']) && is_string($entry['url']) && $entry['url'] !== '') {
+            return AssetUrl::siteAbsolute($entry['url']);
+        }
+
+        return null;
     }
 
     /**
@@ -290,7 +316,7 @@ class SitemapGenerator
                 }
 
                 $urls[] = [
-                    'loc' => url($routePath),
+                    'loc' => AssetUrl::siteAbsolute($routePath),
                     'changefreq' => SitemapChangeFreq::Weekly->value,
                     'priority' => 0.5,
                 ];

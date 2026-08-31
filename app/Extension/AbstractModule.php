@@ -246,9 +246,11 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
         }
 
         $steps = [];
-        $files = glob($upgradesPath.'/Upgrade_*.php');
 
-        if (! $files) {
+        // 나열은 `glob` 을 쓰지 않는다 — 근거는 `ExtensionManager::listDirectoryFiles()`.
+        $files = ExtensionManager::listDirectoryFiles($upgradesPath, '.php', 'Upgrade_');
+
+        if ($files === []) {
             return [];
         }
 
@@ -978,7 +980,7 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
             return [];
         }
 
-        return glob($path.'/*.json') ?: [];
+        return ExtensionManager::listDirectoryFiles($path, '.json');
     }
 
     /**

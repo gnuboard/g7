@@ -30,7 +30,8 @@ const FREE_MIDDLE_POST_ID = 49;
 const REPLY_POST_ID = 66;
 
 test.describe.skip('게시글 네비게이션 + 목록 복귀 — 사용자 페이지 (#413)', () => {
-  // @scenario post_kind=original, position=middle
+  // (position=middle — 미선언 축은 평문으로)
+// @scenario post_kind=original
   // @effects list_return_preserves_query
   test('목록(카테고리+페이지) → 상세 → 목록 복귀 시 URL query 가 보존된다', async ({ page }) => {
     const listUrl = `/board/${BOARD_SLUG}?category=자유&page=2`;
@@ -55,7 +56,8 @@ test.describe.skip('게시글 네비게이션 + 목록 복귀 — 사용자 페�
     expect(page.url()).toContain('page=2');
   });
 
-  // @scenario post_kind=original, category=same, position=middle
+  // (category=same, position=middle — 미선언 축은 평문으로)
+// @scenario post_kind=original
   // @effects navigation_limited_to_same_category
   test('카테고리 글 상세의 이전/다음 이동은 동일 카테고리 글로만 이동한다', async ({ page }) => {
     await page.goto(`/board/${BOARD_SLUG}/${FREE_MIDDLE_POST_ID}?category=자유`);

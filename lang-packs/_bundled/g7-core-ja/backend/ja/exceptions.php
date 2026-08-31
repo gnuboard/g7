@@ -66,6 +66,11 @@ return [
         'vendor_dir_not_found' => 'vendor/ディレクトリが存在しません。最初にcomposer installを実行してください: :path',
         'composer_binary_not_found' => 'Composerバイナリが見つかりません。COMPOSER_BINARY環境変数を設定するか、composerをPATHに追加してください。',
     ],
+    // 파일 서빙 헬퍼 — 호출부 계약 위반 (개발자 대상)
+    'file_serving' => [
+        'meta_key_missing' => 'ファイル配信メタに必須キーがありません: :key',
+    ],
+
     'seo' => [
         'sitemap_write_failed' => 'Sitemapファイルの記録に失敗しました: :path',
         'sitemap_gzip_failed' => 'Sitemap子ファイルの圧縮に失敗しました: :file',

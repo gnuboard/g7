@@ -1331,6 +1331,7 @@
       "site_info_desc": "기본 사이트 정보를 설정합니다.",
       "site_name": "사이트 이름",
       "site_url": "사이트 URL",
+      "site_url_help": "이 주소는 알림·비밀번호 재설정 메일 링크와 결제 복귀 주소의 기준이 됩니다. 프록시·하위 폴더 배치라면 실제 접속 주소와 일치해야 합니다.",
       "site_description": "사이트 설명",
       "site_description_placeholder": "사이트에 대한 간단한 설명을 입력하세요.",
       "admin_email": "관리자 이메일",

@@ -33,10 +33,6 @@ use PHPUnit\Framework\Attributes\DataProvider;
  * 비회원 토큰 후속 액션(verify, cancel, 배송지 변경 등) 의 회원 주문 보호/경계를 검증한다.
  *
  * @scenario actor=guest, change_mode=manual, e2e_browser=chromium
- *
- * @effects guest_update_shipping_address_succeeds_with_valid_token,
- *   guest_update_shipping_address_blocked_404_without_or_invalid_token,
- *   guest_update_shipping_address_validation_422_when_recipient_fields_missing
  */
 class OrderControllerTest extends ModuleTestCase
 {
@@ -1334,6 +1330,8 @@ class OrderControllerTest extends ModuleTestCase
      *
      * VerifyGuestOrderToken 은 토큰 부재/만료/위조를 모두 동일한 404(order_not_found)로 처리해
      * 주문 존재 여부를 노출하지 않는다 (조회/취소 등 다른 비회원 액션과 일관).
+     *
+     * @effects guest_update_shipping_address_blocked_404_without_or_invalid_token
      */
     public function test_비회원_배송지_변경_토큰_없으면_차단(): void
     {
@@ -1354,6 +1352,8 @@ class OrderControllerTest extends ModuleTestCase
 
     /**
      * 24. 잘못된(위조) 토큰으로 배송지 변경 시 차단 (404)
+     *
+     * @effects guest_update_shipping_address_blocked_404_without_or_invalid_token
      */
     public function test_비회원_배송지_변경_잘못된_토큰_차단(): void
     {
@@ -1375,6 +1375,8 @@ class OrderControllerTest extends ModuleTestCase
 
     /**
      * 25. 토큰은 유효하나 받는분/연락처 누락 시 검증 실패 (422)
+     *
+     * @effects guest_update_shipping_address_validation_422_when_recipient_fields_missing
      */
     public function test_비회원_배송지_변경_필수필드_누락_검증실패(): void
     {

@@ -16,9 +16,7 @@ use Tests\TestCase;
  * 호출 지점을 손으로 열거하면 검색에 새로 합류하는 도메인이 같은 함정을 다시 밟는다.
  * 여기서는 저장소를 훑어 **모든 호출 지점**이 페이지 번호를 넘기는지 확인한다.
  *
- * @scenario case=search_cursor_page_propagation
- *
- * @effects every_uses_cursor_call_forwards_page
+ * @scenario search_cursor_page_propagation
  */
 class SearchCursorPagePropagationParityTest extends TestCase
 {

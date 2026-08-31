@@ -33,7 +33,7 @@ class InstallerClientContractDriftTest extends TestCase
 
     private function installerJs(): string
     {
-        return $this->stripJsComments((string) file_get_contents($this->installRoot().'/assets/js/installer.js'));
+        return $this->sourceWithoutComments($this->installRoot().'/assets/js/installer.js');
     }
 
     /**
@@ -108,7 +108,7 @@ class InstallerClientContractDriftTest extends TestCase
 
     public function test_정지_감지_창의_근거가_서버_상수에서_온다(): void
     {
-        $view = $this->stripComments((string) file_get_contents($this->installRoot().'/views/5-installation.php'));
+        $view = $this->sourceWithoutComments($this->installRoot().'/views/5-installation.php');
 
         $this->assertMatchesRegularExpression(
             '/window\.INSTALLER_SERVER_BLOCKING_WINDOW_MS\s*=.*INSTALLER_SUBPROCESS_TIME_LIMIT/s',
@@ -150,7 +150,7 @@ class InstallerClientContractDriftTest extends TestCase
 
     public function test_인라인_j_s_로_나가는_값이_전부_이스케이프를_지난다(): void
     {
-        $index = $this->stripComments((string) file_get_contents($this->installRoot().'/index.php'));
+        $index = $this->sourceWithoutComments($this->installRoot().'/index.php');
 
         // 짧은 echo 태그로 인라인 JS 문자열 리터럴 안에 직접 박히는 값을 찾는다.
         preg_match_all('/window\.[A-Z_]+\s*=\s*[\'"]<\?=\s*([^?]+?)\s*\?>/', $index, $raw);
@@ -200,9 +200,7 @@ class InstallerClientContractDriftTest extends TestCase
      */
     public function test_서버가_확인_불가로_표시하는_항목은_화면도_그_갈래를_읽는다(): void
     {
-        $server = $this->stripComments(
-            (string) file_get_contents($this->installRoot().'/api/check-configuration.php')
-        );
+        $server = $this->sourceWithoutComments($this->installRoot().'/api/check-configuration.php');
 
         $start = strpos($server, '$requirements = [');
         $this->assertNotFalse($start, '요구사항 목록 정의를 찾지 못했다 — 이 검사의 기준점이 사라졌다');
@@ -312,9 +310,7 @@ class InstallerClientContractDriftTest extends TestCase
      */
     public function test_요구사항_응답의_모든_항목이_화면에_그려진다(): void
     {
-        $server = $this->stripComments(
-            (string) file_get_contents($this->installRoot().'/api/check-configuration.php')
-        );
+        $server = $this->sourceWithoutComments($this->installRoot().'/api/check-configuration.php');
 
         $start = strpos($server, '$requirements = [');
         $this->assertNotFalse($start, '요구사항 목록 정의를 찾지 못했다 — 이 검사의 기준점이 사라졌다');

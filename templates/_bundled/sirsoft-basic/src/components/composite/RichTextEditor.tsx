@@ -1,3 +1,4 @@
+import { apiUrl } from '../../support/apiUrl';
 /**
  * RichTextEditor 컴포넌트
  *
@@ -141,7 +142,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     formData.append('file', file);
 
     try {
-      const response = await fetch(imageUploadUrl, {
+      const response = await fetch(apiUrl(imageUploadUrl), {
         method: 'POST',
         body: formData,
         credentials: 'include',
@@ -290,7 +291,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           onChange={(e) => setContent(e.target.value)}
           placeholder={placeholder}
           disabled={disabled}
-          className="w-full p-4 bg-gray-900 text-gray-100 font-mono text-sm focus:outline-none resize-none"
+          className="w-full p-4 bg-gray-900 dark:bg-gray-950 text-gray-100 dark:text-gray-200 font-mono text-sm focus:outline-none resize-none"
           style={{ minHeight }}
         />
       ) : (
@@ -335,7 +336,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
               <Button
                 type="button"
                 onClick={insertLink}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white dark:text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600"
               >
                 {t('editor.link_modal.insert')}
               </Button>

@@ -112,7 +112,9 @@ class EcommerceSettingsSeoCacheInvalidationTest extends ModuleTestCase
     /**
      * 저장 실패(검증 탈락) 시에는 훅이 발화되지 않는다.
      *
-     * @scenario actor=admin, save_path=bulk, outcome=validation_failed
+     * (outcome=validation_failed — 미선언 축은 평문으로)
+     *
+     * @scenario actor=admin, save_path=bulk
      *
      * @effects module_settings_after_save_hook_not_fired_on_failure
      */
@@ -129,7 +131,9 @@ class EcommerceSettingsSeoCacheInvalidationTest extends ModuleTestCase
     /**
      * 이커머스 SEO 캐시 리스너가 이 훅으로 실제 무효화를 수행한다.
      *
-     * @scenario actor=admin, save_path=bulk, listener=seo_cache
+     * (listener=seo_cache — 미선언 축은 평문으로)
+     *
+     * @scenario actor=admin, save_path=bulk
      *
      * @effects seo_cache_invalidated_on_module_settings_save
      */
@@ -158,7 +162,9 @@ class EcommerceSettingsSeoCacheInvalidationTest extends ModuleTestCase
      * 훅 발화만 고정하면 리스너가 조용히 아무것도 하지 않게 되어도 green 이다.
      * 캐시 매니저를 mock 해 호출 자체를 단언한다.
      *
-     * @scenario actor=admin, save_path=bulk, listener=seo_cache
+     * (listener=seo_cache — 미선언 축은 평문으로)
+     *
+     * @scenario actor=admin, save_path=bulk
      *
      * @effects seo_cache_invalidated_on_module_settings_save
      */
@@ -180,7 +186,9 @@ class EcommerceSettingsSeoCacheInvalidationTest extends ModuleTestCase
     /**
      * SEO 와 무관한 탭 저장은 SEO 캐시를 건드리지 않는다.
      *
-     * @scenario actor=admin, save_path=bulk, listener=seo_cache, tab=non_seo
+     * (listener=seo_cache, tab=non_seo — 미선언 축은 평문으로)
+     *
+     * @scenario actor=admin, save_path=bulk
      *
      * @effects seo_cache_untouched_for_non_seo_tab
      */
@@ -292,7 +300,9 @@ class EcommerceSettingsSeoCacheInvalidationTest extends ModuleTestCase
      * 코어 활동로그 리스너가 같은 훅을 구독하므로, 훅이 죽으면 SEO 캐시와 함께
      * 설정 변경 감사 기록도 조용히 사라진다.
      *
-     * @scenario actor=admin, save_path=bulk, listener=activity_log
+     * (listener=activity_log — 미선언 축은 평문으로)
+     *
+     * @scenario actor=admin, save_path=bulk
      *
      * @effects module_settings_save_recorded_in_activity_log
      */

@@ -121,6 +121,125 @@ class ErrorMessageParamSubstitutionTest extends TestCase
     }
 
     /**
+     * 치환 자리를 가진 키를 **번역기로 직접** 부르는 자리도 파라미터와 함께 부른다.
+     *
+     * 위 두 축(`->error()` · 예외 생성자)은 응답 헬퍼를 거치는 경로만 본다. 그런데 같은
+     * 결함은 그 밖에서도 난다 — `__('키')` 를 그대로 부르고 그 결과를 예외 메시지·로그
+     * 메시지·검증 실패 문구로 쓰는 자리다. 실제로 그 사각에 17건이 있었고, 그중에는
+     * 「형제 호출부는 채우는데 이 한 자리만 빠진」 형태(`ValidOutboundProxyUrl` 의 두
+     * `$fail()`)도 있었다. 두 축이 초록인 채로 그 자리들은 계속 자리표시자를 노출했다.
+     *
+     * 판정은 **키를 실제로 해석해서** 한다(lang 파일 직접 파싱은 중첩 키 경로를 잃는다).
+     * 자리표시자로 인정하는 것은 문장 시작·공백·따옴표·괄호 뒤에 오는 `:이름` 뿐이다 —
+     * 그 조건이 없으면 `php artisan core:update` · `HH:mm` · `socks5h://…:1080` 같은
+     * 본문 텍스트가 전부 오탐이 된다.
+     *
+     * @param  string  $source  대상 소스
+     */
+    #[Test]
+    public function 치환_자리를_가진_키는_번역기_직접_호출에서도_파라미터와_함께_불린다(): void
+    {
+        $missing = [];
+        $checked = 0;
+
+        foreach ($this->phpFilesIn(app_path()) as $file) {
+            $source = File::get($file);
+
+            foreach ($this->translatorCallsIn($source) as [$offset, $call]) {
+                $args = $this->topLevelArguments($call);
+
+                // 파라미터를 넘기는 호출은 이 축의 대상이 아니다 (그 내용의 정합은
+                // 형제 두 축과 코드 리뷰가 본다).
+                if (count($args) !== 1) {
+                    continue;
+                }
+
+                if (! preg_match("/^\s*'([^']+)'\s*$/", $args[0], $m)) {
+                    continue;
+                }
+
+                $key = $m[1];
+                $text = trans($key, [], 'ko');
+
+                // 그룹 전체를 가리키는 키는 배열을 돌려준다 — 문장이 아니므로 대상 밖이다.
+                // 해석되지 않는 키(번역기가 키 자체를 돌려준 것)도 lang 파일에 없는
+                // 것이므로 이 축의 판정 대상이 아니다.
+                if (! is_string($text) || $text === $key) {
+                    continue;
+                }
+
+                $checked++;
+
+                if (! preg_match('/(?:^|[\s"\'(\[])(:([a-zA-Z_][a-zA-Z0-9_]*))/', $text, $pm)) {
+                    continue;
+                }
+
+                // Validator 가 채우는 자리는 호출부의 책임이 아니다 — `messages()` 가
+                // 돌려준 문구의 `:attribute`·`:max` 등은 규칙 평가 시점에 치환된다.
+                if (in_array($pm[2], self::VALIDATOR_FILLED_PLACEHOLDERS, true)) {
+                    continue;
+                }
+
+                $line = substr_count(substr($source, 0, $offset), "\n") + 1;
+                $missing[] = str_replace(base_path().DIRECTORY_SEPARATOR, '', $file).':'.$line
+                    .'  '.$key.' → '.$pm[1];
+            }
+        }
+
+        $this->assertGreaterThan(
+            100,
+            $checked,
+            '검사한 번역기 호출이 너무 적다 — 탐지가 모집단을 잃었다'
+        );
+
+        $this->assertSame(
+            [],
+            $missing,
+            '다음 호출부가 치환 파라미터 없이 문구를 만든다 — 그 자리표시자가 운영자 화면·'
+            ."로그에 그대로 노출된다:\n  ".implode("\n  ", $missing)
+        );
+    }
+
+    /**
+     * Validator 가 스스로 채우는 치환 자리 이름.
+     *
+     * 이 이름들은 `messages()` 가 돌려준 문구 안에서 규칙 평가 시점에 치환되므로,
+     * 호출부가 파라미터로 넘기지 않는 것이 정상이다.
+     *
+     * @var list<string>
+     */
+    private const VALIDATOR_FILLED_PLACEHOLDERS = [
+        'attribute', 'max', 'min', 'size', 'values', 'value', 'other', 'date', 'format', 'input',
+    ];
+
+    /**
+     * 소스에서 `__(...)` / `trans(...)` 호출 전체를 괄호 균형으로 잘라 반환합니다.
+     *
+     * @param  string  $source  대상 소스
+     * @return array<int, array{0: int, 1: string}> [호출 시작 오프셋, 호출 전체 문자열]
+     */
+    private function translatorCallsIn(string $source): array
+    {
+        $calls = [];
+
+        foreach (['__(', 'trans('] as $token) {
+            foreach ($this->callsIn($source, $token) as [$at, $call]) {
+                // `$this->__(` · `Str::trans(` 처럼 다른 심볼의 꼬리가 우연히 맞는
+                // 경우를 배제한다 — 토큰 바로 앞이 식별자 문자면 다른 이름이다.
+                $before = $at > 0 ? $source[$at - 1] : ' ';
+
+                if (preg_match('/[A-Za-z0-9_>:$\\\\]/', $before) === 1) {
+                    continue;
+                }
+
+                $calls[] = [$at, $call];
+            }
+        }
+
+        return $calls;
+    }
+
+    /**
      * 소스에서 `new *OperationException(...)` 생성자 호출 전체를 잘라 반환합니다.
      *
      * `->error()` 스캐너는 첫 인자가 문자열 리터럴이 아니면 건너뛰므로, 키를 들고 다니는

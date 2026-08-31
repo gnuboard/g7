@@ -23,7 +23,6 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  *   범위: 삭제글만. 블라인드글 첨부는 본 항목 범위 외(별도 추적).
  *
  * @scenario viewer=regular
- * @effects manager_sees_deleted_post_attachments_in_detail, normal_post_attachments_still_visible, regular_user_cannot_download_deleted_post_attachment, regular_user_can_download_normal_post_attachment_passes_gate, regular_user_cannot_preview_deleted_post_attachment
  */
 class DeletedPostAttachmentAccessTest extends BoardTestCase
 {
@@ -130,6 +129,9 @@ class DeletedPostAttachmentAccessTest extends BoardTestCase
     // 상세 응답 첨부 목록
     // ==========================================
 
+    /**
+     * @effects manager_sees_deleted_post_attachments_in_detail
+     */
     public function test_manager_sees_deleted_post_attachments_in_detail(): void
     {
         $postId = $this->createTestPost([
@@ -147,6 +149,9 @@ class DeletedPostAttachmentAccessTest extends BoardTestCase
         $this->assertNotEmpty($response->json('data.attachments'), 'manager 에게는 삭제글 첨부 목록이 노출되어야 합니다');
     }
 
+    /**
+     * @effects normal_post_attachments_still_visible
+     */
     public function test_normal_post_attachments_still_visible(): void
     {
         // 회귀 방지: 정상글 첨부는 일반 사용자에게도 그대로 노출
@@ -168,6 +173,9 @@ class DeletedPostAttachmentAccessTest extends BoardTestCase
     // 다운로드 (해시 직접 접근)
     // ==========================================
 
+    /**
+     * @effects regular_user_cannot_download_deleted_post_attachment
+     */
     public function test_regular_user_cannot_download_deleted_post_attachment(): void
     {
         $postId = $this->createTestPost([
@@ -185,6 +193,9 @@ class DeletedPostAttachmentAccessTest extends BoardTestCase
         $response->assertStatus(403);
     }
 
+    /**
+     * @effects regular_user_can_download_normal_post_attachment_passes_gate
+     */
     public function test_regular_user_can_download_normal_post_attachment_passes_gate(): void
     {
         // 회귀 방지: 정상글 첨부는 권한 게이트를 통과해야 한다.
@@ -206,6 +217,9 @@ class DeletedPostAttachmentAccessTest extends BoardTestCase
     // 미리보기 (이미지 직접 접근)
     // ==========================================
 
+    /**
+     * @effects regular_user_cannot_preview_deleted_post_attachment
+     */
     public function test_regular_user_cannot_preview_deleted_post_attachment(): void
     {
         // 삭제글 이미지 첨부 미리보기는 비권한자에게 403 으로 차단되어야 한다.

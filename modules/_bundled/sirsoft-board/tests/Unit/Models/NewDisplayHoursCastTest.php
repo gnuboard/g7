@@ -19,11 +19,12 @@ use PHPUnit\Framework\Attributes\Test;
  * 요청 입력으로 모델에 대입된 직후(재조회 전)에는 문자열이 그대로 남아 API 응답/비교 연산의
  * 타입이 조회 시점에 따라 달라진다. 형제 숫자 컬럼(max_reply_depth/posts_count 등)과
  * 동일하게 integer 캐스트로 통일한다.
- *
- * @effects board_new_display_hours_is_integer
  */
 class NewDisplayHoursCastTest extends BoardTestCase
 {
+    /**
+     * @effects board_new_display_hours_is_integer
+     */
     #[Test]
     public function new_display_hours_is_integer_right_after_mass_assignment(): void
     {
@@ -46,6 +47,9 @@ class NewDisplayHoursCastTest extends BoardTestCase
         $this->assertSame(48, $board->new_display_hours);
     }
 
+    /**
+     * @effects board_new_display_hours_is_integer
+     */
     #[Test]
     public function new_display_hours_is_cast_to_integer_when_loaded_from_db(): void
     {

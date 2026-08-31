@@ -532,7 +532,7 @@ function rollbackDbSeed(array $state): array
  *
  * 현재 호출처 0. 종전 주석은 "reset-state.php 에서 사용" 이라고 적었으나 그 파일은 존재하지
  * 않고, `state-management.php?action=reset` 은 롤백을 수행하지 않는다(안내만 남긴다). 제거는
- * 동작 변경이라 별개 결정이므로 표기만 사실에 맞춘다 (10차, PO 결정 「기록만」).
+ * 동작 변경이라 별개 결정이므로 표기만 사실에 맞춘다 (10차, 제품 결정 「기록만」).
  *
  * @return array ['success' => bool, 'message' => string, 'output' => array]
  */
@@ -604,7 +604,10 @@ function rollbackCompleteFlag(): array
                     addLog(lang('rollback_env_flag_read_failed'));
                     // 형제 지점(finalize)과 같은 잠금을 쓴다 (19차 F11) — 되돌리기와 마무리가
                     // 겹치는 창은 좁지만, 같은 파일을 쓰는 두 지점에 다른 규칙을 두지 않는다.
-                } elseif (file_put_contents($envPath, $stripped, LOCK_EX) !== false) {
+                    // 부분 쓰기도 실패로 읽는다 — 형제(finalize)가 같은 축을 막으므로
+                    // 여기만 통과시키면 「같은 파일을 쓰는 두 지점에 다른 규칙」이 된다.
+                    // 되돌리기가 `.env` 를 잘라 놓고 성공으로 보고하면 복구가 더 어려워진다.
+                } elseif (installerWroteFully(@file_put_contents($envPath, $stripped, LOCK_EX), $stripped)) {
                     addLog(lang('rollback_env_flag_removed'));
                     $results[] = lang('rollback_env_flag_removed');
                 } else {
@@ -778,7 +781,7 @@ function rollbackCurrentTask(array $state): array
 /**
  * 완료된 작업들을 역순으로 롤백합니다.
  *
- * 현재 호출처 0 — 종전 주석의 `reset-state.php` 는 존재하지 않는 파일이다 (10차, PO 결정 「기록만」).
+ * 현재 호출처 0 — 종전 주석의 `reset-state.php` 는 존재하지 않는 파일이다 (10차, 제품 결정 「기록만」).
  *
  * @param  array  $completedTasks  완료된 작업 목록
  * @param  array  $rollbackableTasks  롤백 가능한 작업 목록
@@ -797,7 +800,7 @@ function rollbackCurrentTask(array $state): array
 // 다시 세워야 한다.
 //
 // 제거는 동작 변경이라 별개 결정이므로 표기만 사실에 맞춘다 (형제 `forceRollbackDbMigrate`
-// 와 같은 처분 — 10차 PO 결정 「기록만」).
+// 와 같은 처분 — 10차 제품 결정 「기록만」).
 function rollbackCompletedTasks(array $completedTasks, array $rollbackableTasks, array $state): array
 {
     $results = [];

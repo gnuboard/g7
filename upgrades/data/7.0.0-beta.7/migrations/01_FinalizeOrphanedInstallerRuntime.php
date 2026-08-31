@@ -119,7 +119,11 @@ final class FinalizeOrphanedInstallerRuntime implements DataMigration
 
         $merged = $this->mergeRuntimeIntoEnv($envBase, $runtime);
 
-        if (@file_put_contents($envPath, $merged, LOCK_EX) === false) {
+        // ë¶ë¶ ì°ê¸°ë `false` ê° ìëë¼ ì´ ë°ì´í¸ ìë¤ â ê·¸ê²ì ì±ê³µì¼ë¡ ì½ì¼ë©´ ìë¦° `.env` ë¥¼
+        // ë¨ê¸°ê³  ë°ë¡ ìëìì ì ì¼í ë³µêµ¬ ê·¼ê±°ì¸ `runtime.php` ë¥¼ ì§ì´ë¤.
+        $written = @file_put_contents($envPath, $merged, LOCK_EX);
+
+        if ($written === false || $written !== strlen($merged)) {
             $context->logger->error('[7.0.0-beta.7] .env 쓰기 실패 — runtime.php 보존');
 
             return;
@@ -501,7 +505,7 @@ final class FinalizeOrphanedInstallerRuntime implements DataMigration
      * 모든 chown/chgrp/chmod 호출은 실패해도 진행 (운영자가 수동 보정 가능하도록 로그 안내).
      *
      * @param  array{mode:int|null, uid:int|null, gid:int|null}|null  $preservedStat
-     *         머지 직전 .env 가 존재했다면 그 stat. 부재였으면 null.
+     *                                                                                머지 직전 .env 가 존재했다면 그 stat. 부재였으면 null.
      */
     private function applyEnvPermissions(
         string $envPath,
@@ -624,7 +628,7 @@ final class FinalizeOrphanedInstallerRuntime implements DataMigration
         $euid = posix_geteuid();
         $name = function_exists('posix_getpwuid') ? (posix_getpwuid($euid)['name'] ?? null) : null;
 
-        return ($name ?? 'uid') . '(' . $euid . ')';
+        return ($name ?? 'uid').'('.$euid.')';
     }
 
     /**

@@ -1,5 +1,5 @@
 import { buildOrderRequestHeaders } from './guestOrderToken';
-
+import { apiUrl, routePath } from './apiUrl';
 const PLUGIN_ID = 'sirsoft-pay_nhnkcp';
 const FLAG = '__kcpOcReceiptInjectorInstalled';
 const BTN_ID = 'kcp-oc-receipt-btn';
@@ -20,7 +20,7 @@ async function fetchPayment(orderNumber: string): Promise<Payment | null> {
     if (!headers) return null;
 
     try {
-        const res = await fetch(`/api/modules/sirsoft-ecommerce/user/orders/${orderNumber}`, {
+        const res = await fetch(apiUrl(`/api/modules/sirsoft-ecommerce/user/orders/${orderNumber}`), {
             headers,
             credentials: 'same-origin',
         });
@@ -43,7 +43,7 @@ async function fetchReceiptUrl(orderNumber: string): Promise<ReceiptInfo | null>
     if (!headers) return null;
 
     try {
-        const res = await fetch(`/api/plugins/${PLUGIN_ID}/user/orders/${orderNumber}/receipt`, {
+        const res = await fetch(apiUrl(`/api/plugins/${PLUGIN_ID}/user/orders/${orderNumber}/receipt`), {
             headers,
             credentials: 'same-origin',
         });
@@ -152,7 +152,7 @@ async function injectOnOrderComplete(orderNumber: string): Promise<void> {
 }
 
 function tryInject(): void {
-    const path = location.pathname;
+    const path = routePath(location.pathname);
     const ocMatch = path.match(ORDER_COMPLETE_RE);
     if (ocMatch) {
         void injectOnOrderComplete(ocMatch[1]);

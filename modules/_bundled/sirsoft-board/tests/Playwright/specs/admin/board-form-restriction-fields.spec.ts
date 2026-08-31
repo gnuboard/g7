@@ -82,7 +82,8 @@ test.describe.skip('게시판 폼 — 제한 키워드/허용 확장자 TagInput
     await expect(page.locator('[name="blocked_keywords"]')).toHaveCount(0, { timeout: 10_000 });
   });
 
-  // @scenario field=blocked_keywords, mode=update
+  // (mode=update — 수정 폼 재진입. mode 는 매니페스트 미선언 축이라 평문으로 남긴다)
+// @scenario field=blocked_keywords, tab=post
   // @effects taginput_values_persist_as_array_chips_on_reentry
   test('저장한 제한 키워드가 수정 폼 재진입 시 칩으로 복원된다', async ({
     page,

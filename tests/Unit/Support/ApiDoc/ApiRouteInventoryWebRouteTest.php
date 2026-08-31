@@ -98,7 +98,14 @@ class ApiRouteInventoryWebRouteTest extends TestCase
         $this->assertNotContains('web.modules.gnuboard7-hello_module.admin.memos.index', $names);
         $this->assertNotContains('web.modules.gnuboard7-hello_module.admin.memos.store', $names);
 
+        // 배제 대상은 **web** 관리자 화면뿐이다 — `api/modules/{id}/admin/...` 는 machine-facing
+        // API 라우트라 정상 수집 대상이다(hello_module 이 그 형태를 갖는다). URI 만 보면 둘이
+        // 구분되지 않으므로 이름의 `web.` 접두로 모집단을 좁힌다.
         foreach ($routes as $route) {
+            if (! str_starts_with((string) ($route['name'] ?? ''), 'web.')) {
+                continue;
+            }
+
             $this->assertStringNotContainsString(
                 '/admin/',
                 $route['uri'],

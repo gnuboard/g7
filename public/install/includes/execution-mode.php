@@ -920,18 +920,154 @@ if (! function_exists('installerProbeRateLimitExceeded')) {
      * @param  string  $bucket  상한을 따로 세는 이름
      * @param  int  $limit  창 안에서 허용할 호출 수
      * @param  int  $windowSeconds  창 길이(초)
+     * @param  bool  $clientScopeOnly  true 면 **전역** 창을 보지 않는다 — 무인증 원격자가
+     *                                 공유 창을 소진해 운영자의 판정을 강등시키는 것을
+     *                                 막아야 하는 버킷에 쓴다. 클라이언트별 창과 원격
+     *                                 주소 창은 이때도 함께 본다 (총량 방어)
      * @return bool 상한을 넘었으면 true
      */
-    function installerProbeRateLimitExceeded(string $bucket, int $limit = 60, int $windowSeconds = 300): bool
+    function installerProbeRateLimitExceeded(string $bucket, int $limit = 60, int $windowSeconds = 300, bool $clientScopeOnly = false): bool
     {
-        $path = BASE_PATH.'/storage/installer-probe-rate.json';
+        // 상한은 **클라이언트별**로 센다. 카운터 하나를 전 클라이언트가 공유하면 그 상한
+        // 자체가 공격 수단이 된다 — 무인증 원격자가 `probe_exposure_sentinel` 창을 소진하면
+        // 운영자의 storage 계열이 상시 `rate_limited` 로 떨어지고, 그러면 노출 자동 차단(D3)이
+        // 운영자 수동 확인(D21)으로 **강등**된다. 화면상 이상이 없어 알아챌 방법도 없다.
+        //
+        // 클라이언트 식별은 세션 > 원격 주소 순이다. 신원을 갈아 끼우면 이 카운터는 새
+        // 창을 얻으므로, 총량은 아래 전역 상한(넉넉한 배수)이 따로 막는다. 두 축이 각각
+        // 「남의 창을 못 뺏는다」와 「전체가 무제한이 되지 않는다」를 맡는다.
+        $clientKey = installerProbeRateLimitClientKey();
+
+        if ($clientKey !== '') {
+            $clientExceeded = installerProbeRateLimitCount($bucket.'|'.$clientKey, $limit, $windowSeconds);
+
+            // ── 두 통을 함께 본다 (12차 G3 라운드) ────────────────────────────────
+            //
+            // 11차는 클라이언트 식별을 세션 기반으로 바꾸고 이 분기에서 전역 창을
+            // 뺐다. 앞의 절반은 옳다 — 전역 창은 **남이 채울 수 있고**, 채워지면
+            // 운영자의 storage 계열이 상시 `rate_limited` 로 떨어져 노출 자동
+            // 차단(D3)이 수동 확인(D21)으로 강등된다.
+            //
+            // 그러나 뒤의 절반이 새 구멍을 냈다. `session_id()` 는 **요청하는 쪽이
+            // 정하는 값**이다(쿠키를 안 보내면 매 요청이 새 세션, 아무 값이나 보내도
+            // 그 값). 그래서 이 버킷들은 쿠키를 갈아 끼우는 것만으로 상한이 통째로
+            // 사라졌다 — 11차 이전의 IP 키는 적어도 그 우회를 허용하지 않았으므로,
+            // **외부 공격에 대해서는 오히려 약해진 상태**였다. 종전 주석이 적은
+            // 「그 창은 브라우저 하나 단위로 성립한다」는 성립하지 않는다.
+            //
+            // 그래서 총량 방어를 **전역이 아니라 원격 주소로** 되돌린다. 세 성질이
+            // 동시에 선다:
+            //   · 운영자는 자기 세션 창(`$limit`)을 쓴다 — 남이 뺏지 못한다.
+            //   · 쿠키를 갈아 끼우는 쪽은 같은 주소의 창(`$limit * 10`)에 걸린다.
+            //   · 그 주소 창을 채워 남을 강등시키려면 **그 사람과 같은 egress IP**
+            //     여야 한다. 전역 창처럼 지구 반대편에서 채울 수 없다.
+            $addressKey = installerProbeRateLimitAddressKey();
+
+            $addressExceeded = $addressKey !== ''
+                && $addressKey !== $clientKey
+                && installerProbeRateLimitCount($bucket.'|addr|'.$addressKey, $limit * 10, $windowSeconds);
+
+            if ($clientScopeOnly) {
+                return $clientExceeded || $addressExceeded;
+            }
+
+            $globalExceeded = installerProbeRateLimitCount($bucket, $limit * 10, $windowSeconds);
+
+            return $globalExceeded || $clientExceeded || $addressExceeded;
+        }
+
+        return installerProbeRateLimitCount($bucket, $limit, $windowSeconds);
+    }
+}
+
+if (! function_exists('installerProbeRateLimitClientKey')) {
+    /**
+     * 상한을 나눌 클라이언트 식별자를 돌려줍니다.
+     *
+     * 식별에 실패하면 빈 문자열 — 그때는 전역 카운터 하나로 되돌아간다(종전 동작).
+     *
+     * @return string 식별자 해시 (없으면 빈 문자열)
+     */
+    function installerProbeRateLimitClientKey(): string
+    {
+        // `session_status()` 로 가드하지 않는다. 이 함수를 실제로 부르는 액션
+        // (`?action=requirements`)은 그 전에 `session_write_close()` 를 하므로 상태가
+        // `PHP_SESSION_NONE` 이고, 종전 가드는 **언제나 거짓**이었다 — 즉 세션 축이 죽어
+        // 클라이언트 식별이 사실상 `REMOTE_ADDR` 단독이었다. 앞단 프록시·CDN·LB 뒤
+        // (이 점검이 대상으로 삼는 호스팅 계층)에서는 전 방문자가 프록시 IP 하나를
+        // 공유하므로, 무인증 원격자가 창 안에서 상한만큼 호출하면 **운영자의 계열이
+        // 상한 초과로 빠져** 노출 자동 차단이 수동 확인으로 강등된다.
+        //
+        // `session_id()` 는 write-close 뒤에도 같은 값을 돌려준다(실측). 그러므로 상태가
+        // 아니라 **식별자 자체**를 본다 (11차 G3 라운드).
+        $raw = (string) session_id();
+
+        if ($raw === '') {
+            $raw = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
+        }
+
+        return $raw === '' ? '' : substr(hash('sha256', $raw), 0, 16);
+    }
+}
+
+if (! function_exists('installerProbeRateLimitAddressKey')) {
+    /**
+     * 총량 방어를 나눌 **원격 주소** 식별자를 돌려줍니다.
+     *
+     * 형제 `installerProbeRateLimitClientKey()` 는 세션을 먼저 보는데, 그 값은 요청하는
+     * 쪽이 고르는 값이라 신원을 갈아 끼우면 새 창을 얻는다. 이 함수는 그 축을 막으려고
+     * **갈아 끼울 수 없는 것**만 본다.
+     *
+     * 프록시 헤더(`X-Forwarded-For` 등)는 보지 않는다 — 그것도 요청자가 정하는 값이라
+     * 여기서 읽으면 이 함수의 존재 이유가 사라진다. 앞단 프록시 뒤에서 이 값이 모든
+     * 방문자에게 같아지는 것은 **의도한 동작**이다: 그 배수 창(`$limit * 10`)은 같은
+     * egress 를 쓰는 사람들끼리만 공유되고, 개별 운영자는 자기 세션 창을 따로 갖는다.
+     *
+     * @return string 식별자 해시 (없으면 빈 문자열)
+     */
+    function installerProbeRateLimitAddressKey(): string
+    {
+        $raw = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
+
+        return $raw === '' ? '' : substr(hash('sha256', $raw), 0, 16);
+    }
+}
+
+if (! function_exists('installerProbeRateLimitCount')) {
+    /**
+     * 버킷 하나의 호출 수를 세고 상한 초과 여부를 판정합니다.
+     *
+     * @param  string  $bucket  상한을 따로 세는 이름
+     * @param  int  $limit  창 안에서 허용할 호출 수
+     * @param  int  $windowSeconds  창 길이(초)
+     * @return bool 상한을 넘었으면 true
+     */
+    function installerProbeRateLimitCount(string $bucket, int $limit, int $windowSeconds): bool
+    {
+        $path = installerProbeRateLimitStatePath();
         $now = time();
 
+        // 읽기도 잠금을 잡는다. `file_put_contents` 는 `LOCK_EX` 를 얻기 **전에** 파일을
+        // 자르므로, 무잠금 리더가 그 창에 들어오면 빈 내용을 읽고 카운터를 통째로 초기화한다
+        // (상한이 조용히 사라진다). 형제 상태 파일들이 tmp+rename 을 쓰는 것과 같은 이유다.
+        // 읽기와 쓰기는 **하나의 임계 구역**이어야 한다. 종전에는 공유 잠금으로 읽고
+        // 잠금을 놓은 뒤 별도의 `LOCK_EX` 로 썼다 — 그 사이에 다른 프로세스가 끼어들면
+        // 같은 값을 읽은 N 개 요청이 각자 `k+1` 을 써서 증가분이 유실된다. 그러면 상한이
+        // **병렬화만으로 우회**되고, 상한이 지키려던 것은 무인증 파일 생성이므로 결과는
+        // `storage/installer` 에 sentinel 이 무제한으로 쌓이는 것이다.
         $buckets = [];
-        if (is_file($path) && is_readable($path)) {
-            $decoded = json_decode((string) @file_get_contents($path), true);
-            if (is_array($decoded)) {
-                $buckets = $decoded;
+        $handle = @fopen($path, 'c+b');
+        $locked = false;
+
+        if ($handle !== false) {
+            $locked = (bool) @flock($handle, LOCK_EX);
+
+            if ($locked) {
+                $raw = (string) stream_get_contents($handle);
+                $decoded = json_decode($raw, true);
+                if (is_array($decoded)) {
+                    $buckets = $decoded;
+                }
             }
         }
 
@@ -956,11 +1092,118 @@ if (! function_exists('installerProbeRateLimitExceeded')) {
 
         // json-encode:allow — HTTP 응답이 아니라 내부 상한 카운터 파일이다(값은 정수뿐).
         // 이 파일은 config 보다 먼저 로드될 수 있어야 하므로 인스톨러 헬퍼에 의존하지 않는다.
-        @file_put_contents($path, json_encode($buckets), LOCK_EX);
+        $encoded = (string) json_encode($buckets);
+        $written = false;
+
+        if ($handle !== false && $locked) {
+            if (@rewind($handle) && @ftruncate($handle, 0)) {
+                $written = @fwrite($handle, $encoded);
+                @fflush($handle);
+            }
+        }
+
+        if ($handle !== false) {
+            if ($locked) {
+                @flock($handle, LOCK_UN);
+            }
+            @fclose($handle);
+        }
+
+        if ($written === false || $written !== strlen($encoded)) {
+            // 기록하지 못했다. 이 자리를 통과시키면 상한이 **가장 필요한 환경에서만** 사라진다
+            // — `storage/` 권한을 아직 주지 않은 창(= 요구사항 화면이 빨간 그 상태)에서
+            // 무인증 `test-db`(임의 host:port 접속)·`test-php-binary`(임의 절대경로 실행)가
+            // 무제한이 된다. 그렇다고 막으면 정상 설치가 상한 때문에 멈춘다.
+            //
+            // 그래서 세션으로 내려간다. 세션은 쿠키를 버리면 초기화되므로 완전한 상한은 되지
+            // 못하지만, 쿠키를 유지한 채 도는 단순 반복은 여기서 끊긴다 — 아무 상한도 없는
+            // 것과는 다르다. 세션조차 없으면 그때는 통과시킨다(설치를 막지 않는다).
+            return installerProbeRateLimitExceededInSession($bucket, $limit, $windowSeconds);
+        }
 
         return $count > $limit;
     }
 }
+if (! function_exists('installerProbeRateLimitExceededInSession')) {
+    /**
+     * 파일에 기록하지 못했을 때의 상한 폴백 — 세션 카운터.
+     *
+     * 완전한 상한은 아니다(쿠키를 버리면 초기화된다). 그러나 파일 기록이 막힌 환경에서
+     * 아무 상한도 두지 않으면 무인증 probe 엔드포인트가 그 창 동안 무제한이 되므로,
+     * 「끊기지 않는 반복」만이라도 여기서 끊는다. 세션 자체가 없으면 통과시킨다 — 상한
+     * 때문에 정상 설치가 막히는 쪽이 더 나쁘다는 판단은 그대로다.
+     *
+     * @param  string  $bucket  상한을 따로 세는 이름
+     * @param  int  $limit  창 안에서 허용할 호출 수
+     * @param  int  $windowSeconds  창 길이(초)
+     * @return bool 상한을 넘었으면 true
+     */
+    function installerProbeRateLimitExceededInSession(string $bucket, int $limit, int $windowSeconds): bool
+    {
+        // 세션이 **닫혀 있으면 잠깐 다시 연다.**
+        //
+        // 종전에는 닫혀 있으면 곧장 통과시켰는데, 이 폴백을 가장 필요로 하는 경로가 바로
+        // 세션을 닫고 들어온다 — 노출 점검(`?action=requirements`)은 느린 프로브 동안
+        // 세션 잠금을 쥐지 않으려고 `session_write_close()` 를 먼저 부른다. 그래서 이
+        // 폴백은 그 경로에서 **한 번도 세어 본 적이 없었고**, 「끊기지 않는 반복만이라도
+        // 끊는다」는 선언이 사실이 아니었다 (15차 G3 라운드).
+        //
+        // 다시 여는 비용(짧은 잠금)은 이 폴백이 도는 조건 자체가 예외적(storage 쓰기 불가)
+        // 이라 감수한다. 응답이 이미 나가기 시작했으면 열 수 없으므로 그때는 종전대로
+        // 통과시킨다 — 상한 때문에 정상 설치가 막히는 쪽이 더 나쁘다는 판단은 그대로다.
+        $reopened = false;
+
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            if (headers_sent() || session_status() === PHP_SESSION_DISABLED) {
+                return false;
+            }
+
+            if (@session_start() !== true) {
+                return false;
+            }
+
+            $reopened = true;
+        }
+
+        $now = time();
+        $key = 'installer_probe_rate';
+        $buckets = is_array($_SESSION[$key] ?? null) ? $_SESSION[$key] : [];
+
+        $entry = is_array($buckets[$bucket] ?? null) ? $buckets[$bucket] : [];
+        $startedAt = (int) ($entry['started_at'] ?? 0);
+        $count = (int) ($entry['count'] ?? 0);
+
+        if ($startedAt <= 0 || ($now - $startedAt) >= $windowSeconds) {
+            $startedAt = $now;
+            $count = 0;
+        }
+
+        $count++;
+        $buckets[$bucket] = ['started_at' => $startedAt, 'count' => $count];
+        $_SESSION[$key] = $buckets;
+
+        // 우리가 연 것이면 곧바로 되돌린다 — 호출부가 잠금을 쥐지 않으려고 닫아 둔
+        // 상태였으므로, 세느라 연 잠금을 그대로 두면 그 회피가 무효가 된다.
+        if ($reopened) {
+            @session_write_close();
+        }
+
+        return $count > $limit;
+    }
+}
+
+if (! function_exists('installerProbeRateLimitStatePath')) {
+    /**
+     * 레이트리밋 상태 파일 경로 (정리 주체가 이 경로를 공유한다).
+     *
+     * @return string 절대 경로
+     */
+    function installerProbeRateLimitStatePath(): string
+    {
+        return BASE_PATH.'/storage/installer-probe-rate.json';
+    }
+}
+
 if (! function_exists('installerIniSet')) {
     /**
      * `ini_set()` 을 가용할 때만 호출한다 (13차 환경#1·환경#18).
@@ -988,7 +1231,7 @@ if (! function_exists('installerIniSet')) {
 
 if (! function_exists('installerEffectiveTimeLimit')) {
     /**
-     * 요청한 실행 시간과 **실제로 적용된 값** 중 작은 쪽을 돌려준다 (PO 결정 13차 환경#9).
+     * 요청한 실행 시간과 **실제로 적용된 값** 중 작은 쪽을 돌려준다 (제품 결정 13차 환경#9).
      *
      * `set_time_limit()` 은 요청한 값을 항상 얻어내지 못한다 — `disable_functions` 로 막혀
      * 있거나, `Suhosin` 계열이 상한을 고정하거나, 호스팅이 ini 를 잠근 경우 호출은 조용히
@@ -1035,7 +1278,7 @@ if (! function_exists('installerSetTimeLimit')) {
      * 막힌 환경에서도 설치는 진행되어야 한다 (13차 환경#1) — 시간 상한을 못 늘리는 것과
      * 그 자리에서 치명 종료하는 것은 전혀 다른 결과다.
      *
-     * 반환값은 워커 lock 에 선언할 시간 예산이다 (PO 결정 13차 환경#9). 호출부는 요청값이
+     * 반환값은 워커 lock 에 선언할 시간 예산이다 (제품 결정 13차 환경#9). 호출부는 요청값이
      * 아니라 **이 반환값**을 선언해야 한다 — 근거는 `installerEffectiveTimeLimit()` 이 소유한다.
      *
      * @param  int  $seconds  허용을 요청할 실행 시간(초)

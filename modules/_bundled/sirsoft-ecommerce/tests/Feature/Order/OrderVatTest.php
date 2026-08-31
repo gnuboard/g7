@@ -24,8 +24,6 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 표기가 달랐습니다.
  *
  * @scenario actor=member, change_mode=api
- *
- * @effects order_vat_calculated_at_creation, mixed_tax_rate_summed_per_option
  */
 class OrderVatTest extends ModuleTestCase
 {
@@ -78,6 +76,8 @@ class OrderVatTest extends ModuleTestCase
 
     /**
      * 과세 상품의 부가세가 계산 단계에서 산출되는지 테스트합니다.
+     *
+     * @effects order_vat_calculated_at_creation
      */
     public function test_vat_is_calculated_for_taxable_items(): void
     {
@@ -114,6 +114,8 @@ class OrderVatTest extends ModuleTestCase
      * 세율이 섞인 주문에서 옵션별로 합산되는지 테스트합니다.
      *
      * 전체 과세표준에 단일 세율을 적용하면 값이 어긋난다.
+     *
+     * @effects mixed_tax_rate_summed_per_option
      */
     public function test_mixed_tax_rates_are_summed_per_option(): void
     {
@@ -162,6 +164,8 @@ class OrderVatTest extends ModuleTestCase
      * 주문 생성 시점에 total_vat_amount 가 기록되는지 테스트합니다.
      *
      * 수정 전: 쓰기 지점이 부분취소 재계산뿐이라 신규 주문은 영구 0.
+     *
+     * @effects order_vat_calculated_at_creation
      */
     public function test_order_row_records_vat_at_creation(): void
     {

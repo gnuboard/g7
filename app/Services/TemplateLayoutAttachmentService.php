@@ -7,6 +7,7 @@ use App\Contracts\Repositories\TemplateLayoutAttachmentRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Extension\HookManager;
 use App\Models\TemplateLayoutAttachment;
+use App\Services\Concerns\ResolvesRowStorage;
 use App\Support\ImageResizer;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
@@ -25,6 +26,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class TemplateLayoutAttachmentService
 {
+    use ResolvesRowStorage;
+
     /** 스토리지 카테고리 — {category}/{path} 경로 패턴의 prefix */
     private const STORAGE_CATEGORY = 'template-layout-attachments';
 
@@ -69,6 +72,15 @@ class TemplateLayoutAttachmentService
         // 환경설정 > 업로드의 최대 가로/세로·품질 적용 (코어 설정이 모든 업로드 경로에 동일 적용).
         // 임시 파일을 제자리에서 줄이므로 아래의 저장·크기 기록이 모두 축소본을 본다.
         app(ImageResizer::class)->resizeInPlace($file->getRealPath(), $file->getMimeType());
+
+        // 위 한 줄의 약속("모두 축소본을 본다")을 실제로 성립시킨다.
+        //
+        // 축소는 **제자리 덮어쓰기**이고, `ImageResizer::resizeInPlace()` 는 쓰기 **전에**
+        // `is_file()` 로 그 경로를 stat 하므로 PHP 공유 stat 캐시가 반드시 채워진다. 그 뒤의
+        // `getSize()` 는 그 캐시를 그대로 읽어 **축소 전 크기**를 돌려주고, 그 값이 행의
+        // `size` 로 기록돼 실제 저장 바이트와 어긋난다. 형제 `sirsoft-board` 는 같은 사유로
+        // 이미 이 처리를 갖는다 (11차 G3 라운드 B11-4).
+        clearstatcache(true, $file->getRealPath());
 
         $stored = $this->storage
             ->withDisk($disk)
@@ -138,8 +150,7 @@ class TemplateLayoutAttachmentService
     public function delete(TemplateLayoutAttachment $attachment): bool
     {
         // 1. 스토리지 파일 실삭제 (명시적 — CASCADE 미의존)
-        $this->storage
-            ->withDisk($attachment->disk)
+        $this->storageForRow($attachment->disk)
             ->delete(self::STORAGE_CATEGORY, $attachment->path);
 
         // 2. DB 행 삭제
@@ -190,7 +201,7 @@ class TemplateLayoutAttachmentService
 
         // 행 disk 기준 인라인 스트림 (존재 검사는 response() 내부에서 수행).
         // 로컬 절대 경로 조립(getBasePath)은 S3 등 원격 디스크 행에서 성립하지 않는다 (#99).
-        $response = $this->storage->withDisk($attachment->disk)->response(
+        $response = $this->storageForRow($attachment->disk)->response(
             self::STORAGE_CATEGORY,
             $attachment->path,
             $attachment->original_name ?? basename($attachment->path),

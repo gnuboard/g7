@@ -1,5 +1,6 @@
 import { getApiClient } from '../api/ApiClient';
 import { createLogger } from '../utils/Logger';
+import { withBasePrefix } from '../support/assetUrl';
 
 const logger = createLogger('AuthManager');
 
@@ -369,7 +370,9 @@ export class AuthManager {
 
       // 로그인 페이지로 리다이렉트 (queryString 포함)
       if (config && previousState.type) {
+        // base-path:allow 복귀 주소는 브라우저가 그대로 열 값이라 접두사를 품은 원본을 쓴다
         const returnUrl = window.location.pathname + window.location.search;
+        // base-path:allow getLoginRedirectUrl() 자신이 withBasePrefix() 로 접두사를 붙여 돌려준다.
         window.location.href = this.getLoginRedirectUrl(previousState.type, returnUrl);
       }
     }
@@ -452,13 +455,19 @@ export class AuthManager {
    * @returns 로그인 페이지 URL (redirect 파라미터 포함)
    */
   getLoginRedirectUrl(type: AuthType, returnUrl: string, reason?: string): string {
+    // 이 값의 소비처는 전부 `window.location.href` — 즉 **브라우저가 그대로 여는
+    // 주소**다. 접두사를 붙이지 않으면 하위 폴더 배치에서 로그인 페이지가 사이트
+    // 밖(`https://host/login`)을 가리켜 세션 만료가 곧 이탈이 된다 (12차 G3).
+    //
+    // `returnUrl` 은 호출부가 `location.pathname` 에서 만들어 이미 접두사를 갖고 있고,
+    // `withBasePrefix()` 는 멱등이라 어느 형태로 들어와도 이중 접두가 되지 않는다.
     const config = this.config.get(type);
     if (!config) {
-      return '/login';
+      return withBasePrefix('/login');
     }
 
     const encodedReturnUrl = encodeURIComponent(returnUrl);
-    let url = `${config.loginPath}?redirect=${encodedReturnUrl}`;
+    let url = `${withBasePrefix(config.loginPath)}?redirect=${encodedReturnUrl}`;
     if (reason) {
       url += `&reason=${encodeURIComponent(reason)}`;
     }

@@ -1,3 +1,4 @@
+import { routePath } from './apiUrl';
 const PLUGIN_ID = 'sirsoft-pay_nicepayments';
 const FLAG = '__nicepayAdminPaymentMethodBrandInjectorInstalled';
 const LISTENER_FLAG = '__nicepayAdminPaymentMethodBrandSyncListenerAttached';
@@ -82,7 +83,7 @@ function windowRecord(): Record<string, unknown> {
 }
 
 function isOrderSettingsPage(): boolean {
-    if (!ADMIN_SETTINGS_RE.test(window.location.pathname)) return false;
+    if (!ADMIN_SETTINGS_RE.test(routePath(window.location.pathname))) return false;
 
     const tab = new URLSearchParams(window.location.search).get('tab');
     return tab === null || tab === '' || tab === 'order_settings';

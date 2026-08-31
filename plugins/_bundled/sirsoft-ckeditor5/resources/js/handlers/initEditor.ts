@@ -20,6 +20,8 @@ import {
     removeTextareaFallback,
     renderTextareaFallback,
 } from './textareaFallback';
+import { apiUrl } from '../apiUrl';
+import { editorInstances, isSyncSuppressed } from './editorInstances';
 
 /** CKEditor5 다크 모드 CSS 엘리먼트 ID */
 const CKEDITOR5_DARK_CSS_ID = 'ckeditor5-dark-override';
@@ -858,7 +860,10 @@ function getPlugins(CKEDITOR: CKEditorGlobal, toolbarType: string, withImageUplo
  * 인가는 서버 라우트 게이트(auth:sanctum + admin)가 전담하므로 쿼리 파라미터는 붙이지 않습니다.
  */
 function buildUploadUrl(): string {
-    return '/api/plugins/sirsoft-ckeditor5/upload';
+    // CKEditor 의 `simpleUpload` 는 이 주소로 **자기가 직접** 요청을 보낸다 — `fetch(` 를
+    // 거치지 않으므로 주소 게이트의 수집기에 잡히지 않았고, 하위 폴더 배치에서 에디터
+    // 이미지 업로드만 사이트 밖으로 나갔다 (14차 G3 라운드).
+    return apiUrl('/api/plugins/sirsoft-ckeditor5/upload');
 }
 
 /**

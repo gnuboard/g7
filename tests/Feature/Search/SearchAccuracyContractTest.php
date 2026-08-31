@@ -16,13 +16,6 @@ use Tests\TestCase;
  * 응답에 실어 보내야 한다. 세지 않은 값을 정확한 것처럼 말하지 않는다.
  *
  * @scenario pagination-accuracy-contract
- *
- * @effects exact_total_reports_exact,
- *          bounded_total_reports_at_least,
- *          bounded_total_hides_last_page,
- *          bounded_total_keeps_next,
- *          page_limit_rejects_abusive_page,
- *          search_message_switches_on_accuracy
  */
 class SearchAccuracyContractTest extends TestCase
 {

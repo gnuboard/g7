@@ -1149,7 +1149,7 @@ if (! function_exists('cleanupExistingTablesSSE')) {
                 $pdo->exec('SET FOREIGN_KEY_CHECKS = 1');
 
                 sendSSEEvent('log', ['message' => lang('log_db_cleanup_done', ['count' => count($tables)])]);
-                // 지운 테이블명을 기록에 남긴다 (21차 #21-2 ③, PO 결정) — 접두 매칭 삭제는
+                // 지운 테이블명을 기록에 남긴다 (21차 #21-2 ③, 제품 결정) — 접두 매칭 삭제는
                 // 더 긴 접두사 이웃까지 물 수 있는데, 종전에는 count 만 남아 무엇이 지워졌는지
                 // 사후에도 알 수 없었다. 사람 문장 + 이름 나열이므로 §12.0 W3(원시 SQL 금지)와
                 // 충돌하지 않는다.
@@ -1401,11 +1401,10 @@ if (! function_exists('reserveCommandOutputFile')) {
                 //
                 // `random_bytes` 는 CSPRNG 다. 막힌 환경(`disable_functions`)에서는 종전
                 // 방식으로 떨어진다 — 이름이 약해질 뿐 기능은 유지된다.
-                try {
-                    $suffix = bin2hex(random_bytes(16));
-                } catch (Throwable $e) {
-                    $suffix = uniqid('', true);
-                }
+                // `random_bytes` 실패 폴백을 `catch` 안에서 `uniqid()` 로 두면, `uniqid` 까지
+                // 막힌 환경에서 **catch 블록 안에서 다시 `Error`** 가 나고 받을 곳이 없다.
+                // 폴백은 잡히는 자리에 있어야 한다 — 그 자리가 installerUniqueSuffix() 다.
+                $suffix = installerUniqueSuffix(16);
 
                 return $dir.DIRECTORY_SEPARATOR.'installer-cmd-output-'.$suffix.'.log';
             }
@@ -1434,6 +1433,10 @@ if (! function_exists('installerCleanupCommandOutputFiles')) {
 
         foreach ([BASE_PATH.'/storage/logs', BASE_PATH.'/storage/installer', installerTempDir()] as $dir) {
             if ($dir === null || ! is_dir($dir)) {
+                continue;
+            }
+
+            if (! installerHasFunction('glob')) {
                 continue;
             }
 
@@ -2086,7 +2089,9 @@ if (! function_exists('createSettingsJsonSSE')) {
 
                 // 쓰기 결과를 확인한다 (19차 F1) — 버리면 한 카테고리도 저장되지 않은 채
                 // 「생성 완료」가 보고되고, 그 사실은 어디에도 남지 않는다.
-                if (@file_put_contents($filePath, $json, LOCK_EX) === false) {
+                // 부분 쓰기는 `false` 가 아니라 쓴 바이트 수다 — 잘린 설정 JSON 이
+                // 「생성 완료」로 보고되면 그 카테고리의 설정이 통째로 깨진 채 설치가 끝난다.
+                if (! installerWroteFully(@file_put_contents($filePath, $json, LOCK_EX), $json)) {
                     logInstallationError(lang('error_settings_json_write_failed', ['path' => $filePath]));
 
                     return [
@@ -2101,7 +2106,8 @@ if (! function_exists('createSettingsJsonSSE')) {
                 // `core_update.json` 에는 프라이빗 저장소 GitHub PAT 가 들어간다. R3 이
                 // `runtime.php` 로 세운 규칙(「비밀은 0600 채널에만」)이 이 사본에는 적용되지
                 // 않아, 기본 umask 로 0644 가 되고 되돌리기도 그 파일을 대상으로 보지 않는다.
-                if ($category === 'core_update' && isset($data['github_token']) && $data['github_token'] !== '') {
+                if ($category === 'core_update' && isset($data['github_token']) && $data['github_token'] !== ''
+                    && installerHasFunction('chmod')) {
                     @chmod($filePath, 0600);
                 }
 
@@ -2162,7 +2168,12 @@ if (! function_exists('setInstallationCompleteSSE')) {
             // 쓰기 결과를 확인한다 (13차 #D12). 반환값을 버리면 storage/app 이 쓰기 불가일 때도
             // 「설치 완료」가 보고되고, 그 뒤 부팅은 g7_installed 부재를 보고 다시 인스톨러로 간다
             // — 운영자에게는 완료 화면을 본 직후 설치가 처음부터 다시 뜨는 것으로만 보인다.
-            if (@file_put_contents($installedFlagPath, date('Y-m-d H:i:s')) === false) {
+            // 부분 쓰기도 실패로 읽는다 — 이 파일의 **존재**가 설치 완료 판정 근거이므로,
+            // 잘린 채 남으면 위 주석이 막으려던 상태(완료 화면 직후 인스톨러 재진입)가
+            // 그대로 성립한다. 짧은 문자열이라 확률은 낮지만 규율을 지점마다 갈라 두지 않는다.
+            $installedFlagBody = date('Y-m-d H:i:s');
+
+            if (! installerWroteFully(@file_put_contents($installedFlagPath, $installedFlagBody), $installedFlagBody)) {
                 logInstallationError(lang('error_installed_flag_write_failed', ['path' => $installedFlagPath]));
 
                 return [
@@ -2172,8 +2183,47 @@ if (! function_exists('setInstallationCompleteSSE')) {
                     'message_params' => ['path' => $installedFlagPath],
                 ];
             }
-            @chmod($installedFlagPath, 0644);
+            if (installerHasFunction('chmod')) {
+                @chmod($installedFlagPath, 0644);
+            }
             sendSSEEvent('log', ['message' => lang('log_installed_flag_created')]);
+
+            // `public/storage` 링크를 만들 수 있으면 만든다 (B-3 · B-4).
+            //
+            // 링크가 있으면 공개 파일이 웹서버의 정적 서빙으로 나가고, 없으면 앱 서빙 경로가
+            // 대신한다 — 둘 다 성립하지만 **전자가 기본 경로**다. 종전에는 인스톨러가
+            // `symlink()` 가용 여부를 **재기만 하고 만들지는 않아**, 링크가 가능한 호스팅에
+            // 새로 설치해도 언제나 대체 경로를 탔다(링크 생성은 코어 업데이트에만 있었다).
+            //
+            // 실패해도 설치를 막지 않는다 — 그것이 대체 경로의 존재 이유다. 대상은
+            // `config('filesystems.links')` 가 정하므로(`public/storage` → `storage/app/public`)
+            // 여기서 경로나 가용성 판정을 복제하지 않는다. Artisan 실행은 인스톨러의 단일
+            // 지점(`installerRunArtisan`)을 그대로 쓴다 — 직접 스폰 금지 규율과 같다.
+            $linkResult = installerRunArtisan('storage:link');
+
+            // 종료 코드 0 이 곧 「만들었다」가 아니다 — Laravel 의 `storage:link` 는 링크가
+            // **이미 있으면** 알림만 내고 0 으로 끝난다. 그 경우까지 「만들었습니다」로 적으면
+            // 설치 로그가 사실과 달라진다. 결과 파일을 직접 확인해 문구를 가른다.
+            $linkExists = file_exists(BASE_PATH.'/public/storage');
+            sendSSEEvent('log', [
+                'message' => $linkResult['exit_code'] === 0 && $linkExists
+                    ? lang('log_storage_link_created')
+                    : lang('log_storage_link_skipped'),
+            ]);
+
+            // `deploy/**` 서버 설정 조각의 해시 원장을 설치 시점 디스크로 씨앗한다 (D25 · 회차 16).
+            //
+            // 코어 업데이트는 그 원장을 근거로 「운영자가 고친 조각인가」를 가른다. 원장이 없으면
+            // 판정 자체가 불가능해 첫 업데이트에서 전량이 보존(`.dist` + 경고)으로 떨어진다 —
+            // 갓 설치한 사이트가 새 보호 규칙을 못 받는 형태다. 설치 직후 디스크는 곧 릴리즈
+            // 판본이라 이 시점이 유일하게 확실한 기준선이다. 실패해도 설치를 막지 않는다 —
+            // 원장이 없으면 다음 업데이트가 보존 쪽(잃지 않는 쪽)으로 떨어질 뿐이다.
+            $ledgerResult = installerRunArtisan('core:deploy-ledger-seed');
+            sendSSEEvent('log', [
+                'message' => $ledgerResult['exit_code'] === 0
+                    ? lang('log_deploy_ledger_seeded')
+                    : lang('log_deploy_ledger_seed_skipped'),
+            ]);
 
             // 인스톨러 작업 중 composer install 등이 storage/temp 에 남긴 Symfony Process
             // sf_proc_*.{out,err,lock} 잔여 파일 정리. 디렉토리 자체는 보존 (다음 사용 대비).
@@ -2325,7 +2375,7 @@ if (! function_exists('buildInstallationTaskList')) {
         // 그래서 여기서 구운 `bootstrap/cache/config.php` 에는 `app.installer_completed=false`
         // 가 박히고 runtime.php 의 평문 DB 비밀번호가 캐시로 복제된다.
         //
-        // PO 결정(13차): 굽는 것 자체는 그대로 두고, **finalize 가 마지막에 그 캐시 파일을
+        // 제품 결정(13차): 굽는 것 자체는 그대로 두고, **finalize 가 마지막에 그 캐시 파일을
         // 지운다** (`finalize-env.php` 의 runtime.php 정리 구간). 목록에서 빼는 것은 계약
         // 변경(매니페스트 `task` 축·뷰 파리티)이라 선택하지 않았다. 그러므로 여기서 구운
         // 캐시는 설치가 끝나는 시점에 사라지고, 다음 요청이 머지된 `.env` 로 재생성한다.
@@ -2645,7 +2695,10 @@ if (! function_exists('finalizeInstallationRun')) {
 
         sendSSEEvent('completed', [
             'message' => lang('log_installation_completed'),
-            'redirect' => '/install/',
+            // 고정 `/install/` 금지 — 서브경로 배치(문서루트=프로젝트 루트의 `/public/install` 등)에서
+            // 완료 리다이렉트가 존재하지 않는 경로로 떨어진다 (G3 입력 ②). config.php 가 API
+            // 컨텍스트에서도 옳은 값을 만들도록 보정되어 있다.
+            'redirect' => INSTALLER_BASE_URL.'/',
         ]);
 
         addLog(lang('log_all_tasks_completed'));

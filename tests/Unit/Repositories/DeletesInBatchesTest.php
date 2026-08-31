@@ -16,8 +16,6 @@ use Tests\TestCase;
  * 끊어 지우면서도 대상이 남김없이 사라지는지를 고정한다.
  *
  * @scenario row_age=beyond_retention
- *
- * @effects large_purge_is_split_into_batches
  */
 class DeletesInBatchesTest extends TestCase
 {
@@ -27,6 +25,8 @@ class DeletesInBatchesTest extends TestCase
      * 배치 크기를 넘는 대상도 남김없이 삭제된다.
      *
      * 단일 배치만 처리하고 끝내는 구현이면 나머지가 남아 red 가 된다.
+     *
+     * @effects large_purge_is_split_into_batches
      */
     public function test_deletes_every_matching_row_across_multiple_batches(): void
     {

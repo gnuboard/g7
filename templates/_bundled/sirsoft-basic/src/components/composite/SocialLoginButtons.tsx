@@ -5,6 +5,7 @@
  * Google, Naver, Kakao 등의 소셜 로그인을 지원합니다.
  */
 
+import { sitePath } from '../../support/apiUrl';
 import React from 'react';
 import { Div } from '../basic/Div';
 import { Button } from '../basic/Button';
@@ -157,7 +158,9 @@ const SocialLoginButtons: React.FC<SocialLoginButtonsProps> = ({
   const handleSocialLogin = (provider: SocialProvider) => {
     // OAuth 인증 URL로 리다이렉트
     const callbackUrl = encodeURIComponent(window.location.href);
-    window.location.href = `/api/auth/${provider}?redirect=${callbackUrl}`;
+    // 브라우저가 그대로 여는 주소라 접두사를 붙일 주체가 여기밖에 없다 —
+    // 하위 폴더 배치에서 접두사가 없으면 소셜 로그인이 사이트 밖으로 나간다.
+    window.location.href = sitePath(`/api/auth/${provider}?redirect=${callbackUrl}`);
   };
 
   const getButtonText = (providerName: string): string => {

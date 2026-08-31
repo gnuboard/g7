@@ -5,6 +5,7 @@ namespace Tests\Unit\Seo;
 use App\Seo\ExpressionEvaluator;
 use App\Seo\SeoMetaResolver;
 use App\Services\SettingsService;
+use App\Support\AssetUrl;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
@@ -1295,6 +1296,125 @@ class SeoMetaResolverTest extends TestCase
         $this->assertSame('product', $result['og']['type']);
         $this->assertSame('에어맥스', $result['og']['title']);
         $this->assertSame('https://example.com/p.jpg', $result['og']['image']);
+    }
+
+    /**
+     * 선언 경로의 `og:image` 가 마운트 접두사를 **한 번만** 싣는다.
+     *
+     * 이 자리에 오는 값은 레이아웃이 선언한 표현식의 평가 결과이고, 그 표현식을
+     * **모듈이 편집기 칩으로 광고한다** — `sirsoft-board` 는 `{{post.data.thumbnail}}`,
+     * `sirsoft-ecommerce` 는 `{{product.data.thumbnail_url}}` 를 칩으로 제시한다.
+     * 두 값의 생산자는 `AssetUrl::basePrefix()` 를 이미 실어 주므로, 종전의 `url()`
+     * (오리진 + 접두사)로는 `https://host/g7/g7/api/…` 가 나가고 그 주소는 404 다.
+     *
+     * 9차가 게시판 모듈의 **기본값** 경로에서 고친 것과 같은 실패가 한 계층 위
+     * (코어 해석기)에 남아 있었다 — 운영자가 편집기에서 칩을 고르는 순간 재현된다
+     * (10차 G3 라운드 X-2).
+     */
+    public function test_declared_og_image_carries_the_mount_prefix_once(): void
+    {
+        // 마운트를 **실제로** 재현한다. `forceBasePrefix` 만 걸면 `url()` 은 그 값을
+        // 보지 않아 되돌림 변이가 동작 축에서 조용히 통과한다 — `url()` 의 오리진은
+        // config 가 아니라 **요청 root** 이므로 `URL::forceRootUrl()` 까지 걸어야
+        // 그 헬퍼가 진짜로 이중 접두를 만든다 (10차 실측 · 9차 A-2 와 같은 방식).
+        Config::set('app.url', 'https://example.test/g7');
+        URL::forceRootUrl('https://example.test/g7');
+        AssetUrl::forceBasePrefix('/g7');
+
+        try {
+            $seoConfig = [
+                'og' => [
+                    'image' => '{{product.data.thumbnail_url}}',
+                    'image_secure_url' => '{{product.data.thumbnail_url}}',
+                ],
+                'twitter' => ['image' => '{{product.data.thumbnail_url}}'],
+            ];
+            // 생산자(`ProductImage::apiDownloadUrl()`)가 접두사를 실은 값
+            $context = ['product' => ['data' => [
+                'thumbnail_url' => '/g7/api/modules/sirsoft-ecommerce/product-image/abc',
+            ]]];
+
+            $result = $this->resolver->resolve($seoConfig, $context, 'sirsoft-ecommerce', null, []);
+
+            foreach ([$result['og']['image'], $result['og']['image_secure_url'], $result['twitter']['image']] as $url) {
+                $this->assertStringNotContainsString('/g7/g7/', $url, '접두사가 두 번 실렸다 — 그 주소는 404 다');
+                $this->assertStringStartsWith('http', $url);
+                $this->assertStringEndsWith('/g7/api/modules/sirsoft-ecommerce/product-image/abc', $url);
+            }
+        } finally {
+            AssetUrl::forceBasePrefix(null);
+            URL::forceRootUrl(null);
+        }
+    }
+
+    /**
+     * 접두사가 없는 사이트 경로에는 접두사를 **채운다** — 반대 방향 대조.
+     *
+     * 레이아웃이 리터럴로 적은 경로(`/img/og.png`)에 접두사를 붙일 주체는 이 자리뿐이다.
+     * 오리진만 붙이는 것으로 고치면 이쪽이 조용히 깨진다.
+     */
+    public function test_declared_og_image_gains_the_prefix_when_it_has_none(): void
+    {
+        Config::set('app.url', 'https://example.test/g7');
+        URL::forceRootUrl('https://example.test/g7');
+        AssetUrl::forceBasePrefix('/g7');
+
+        try {
+            $result = $this->resolver->resolve(
+                ['og' => ['image' => '/img/og.png']],
+                [],
+                'sirsoft-ecommerce',
+                null,
+                [],
+            );
+
+            $this->assertStringEndsWith('/g7/img/og.png', $result['og']['image']);
+            $this->assertStringStartsWith('http', $result['og']['image']);
+            $this->assertStringNotContainsString('/g7/g7/', $result['og']['image']);
+        } finally {
+            AssetUrl::forceBasePrefix(null);
+            URL::forceRootUrl(null);
+        }
+    }
+
+    /**
+     * 사이트 경로가 아닌 값은 손대지 않는다 — 과잉 전환 대조.
+     */
+    public function test_declared_og_image_leaves_non_site_paths_untouched(): void
+    {
+        AssetUrl::forceBasePrefix('/g7');
+
+        try {
+            $result = $this->resolver->resolve(
+                ['og' => ['image' => '//cdn.example.com/y.png']],
+                [],
+                'sirsoft-ecommerce',
+                null,
+                [],
+            );
+
+            $this->assertSame('//cdn.example.com/y.png', $result['og']['image']);
+        } finally {
+            AssetUrl::forceBasePrefix(null);
+        }
+    }
+
+    /**
+     * 봇 메타의 자산 주소를 `url()` 로 만들지 않는다 (소스 계약).
+     *
+     * 값 단언만으로는 재발을 못 막는다 — `config('app.url')` 에 접두사가 없는 개발
+     * 환경에서는 `url()` 도 같은 값을 내기 때문이다.
+     */
+    public function test_meta_resolver_never_builds_asset_urls_with_the_url_helper(): void
+    {
+        $source = (string) file_get_contents(base_path('app/Seo/SeoMetaResolver.php'));
+        $code = (string) preg_replace(['#/\*.*?\*/#s', '#//[^\n]*#'], '', $source);
+
+        $this->assertSame(
+            0,
+            preg_match_all('/(?<![\w>$])url\s*\(/', $code),
+            'SeoMetaResolver 가 `url()` 을 쓴다 — 그 헬퍼는 오리진과 마운트 접두사를 함께 붙이므로 접두사를 이미 실은 값에서 이중 접두가 된다',
+        );
     }
 
     /**

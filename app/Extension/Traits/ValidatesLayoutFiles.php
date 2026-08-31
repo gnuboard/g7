@@ -3,6 +3,7 @@
 namespace App\Extension\Traits;
 
 use App\Exceptions\LayoutIncludeException;
+use App\Extension\ExtensionManager;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 
@@ -44,12 +45,12 @@ trait ValidatesLayoutFiles
             $layoutFiles = $this->scanLayoutFilesRecursively($layoutsPath);
         } else {
             // 루트 디렉토리의 JSON 파일만 스캔
-            $layoutFiles = File::glob("{$layoutsPath}/*.json");
+            $layoutFiles = ExtensionManager::listDirectoryFiles($layoutsPath, '.json');
 
             // errors/ 디렉토리만 추가 스캔 (에러 페이지 레이아웃용)
             $errorsPath = "{$layoutsPath}/errors";
             if (File::exists($errorsPath)) {
-                $errorLayoutFiles = File::glob("{$errorsPath}/*.json");
+                $errorLayoutFiles = ExtensionManager::listDirectoryFiles($errorsPath, '.json');
                 $layoutFiles = array_merge($layoutFiles, $errorLayoutFiles);
             }
         }

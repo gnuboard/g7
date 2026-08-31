@@ -159,7 +159,7 @@ class InstallerTaskListViewParityTest extends TestCase
         $this->assertFileExists($viewPath);
 
         // 주석을 지운 뒤 대조한다 — 주석 처리된 소속표도 원문에는 글자로 남는다.
-        $viewSource = $this->stripComments((string) file_get_contents($viewPath));
+        $viewSource = $this->sourceWithoutComments($viewPath);
 
         $mapMatched = preg_match('/\$taskGroupByTaskId\s*=\s*\[(.*?)\n\];/s', $viewSource, $m);
         $this->assertSame(1, $mapMatched, '화면에 태스크 ID → 그룹 소속표가 없다 — 목록을 다시 손으로 적었다는 뜻이다');
@@ -170,7 +170,7 @@ class InstallerTaskListViewParityTest extends TestCase
         $runnerPath = dirname(__DIR__, 3).'/public/install/includes/task-runner.php';
         $this->assertFileExists($runnerPath);
 
-        $runnerSource = $this->stripComments((string) file_get_contents($runnerPath));
+        $runnerSource = $this->sourceWithoutComments($runnerPath);
 
         $listMatched = preg_match(
             "/function buildInstallationTaskList\(\): array\s*\{(.*?)\n    \}/s",
@@ -199,7 +199,7 @@ class InstallerTaskListViewParityTest extends TestCase
         // 콘솔에도 아무것도 남지 않아 무엇이 잘못됐는지 알 방법이 없었다 (12차 #B24).
         // 목록 자체는 위 검사가 지키고, 여기서는 그 방어가 뚫렸을 때의 흔적을 지킨다.
         // JS 도 같은 규칙이다 — 주석 처리된 console.warn 은 흔적을 남기지 않는다.
-        $installer = $this->stripJsComments((string) file_get_contents(dirname(__DIR__, 3).'/public/install/assets/js/installer.js'));
+        $installer = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/assets/js/installer.js');
 
         $matched = preg_match(
             '/function setTaskStatus\(.*?\n    \}/s',
@@ -219,7 +219,7 @@ class InstallerTaskListViewParityTest extends TestCase
     {
         $installRoot = dirname(__DIR__, 3).'/public/install';
 
-        $viewSource = $this->stripComments((string) file_get_contents($installRoot.'/views/5-installation.php'));
+        $viewSource = $this->sourceWithoutComments($installRoot.'/views/5-installation.php');
         preg_match('/\$taskGroupByTaskId\s*=\s*\[(.*?)\n\];/s', (string) $viewSource, $m);
         preg_match_all("/'([a-z0-9_]+)'\s*=>/", $m[1] ?? '', $mapKeys);
 

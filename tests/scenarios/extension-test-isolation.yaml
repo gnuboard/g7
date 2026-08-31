@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: axes cross product 는 환경×allowlist상태×확장유형×등록표면×테스트종류의 조합 열거로, 실질 회귀 가드는 effects 18건이 담당한다. effects 는 test_files 의 메서드 docblock @effects 로 전수 매핑되어 개별 검증된다. cross product 개별 케이스의 docblock 마킹은 effects 매핑과 중복이므로 생략.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#609 axes cross product 는 환경×allowlist상태×확장유형×등록표면×테스트종류의 조합 열거로, 실질 회귀 가드는 effects 18건이 담당한다. effects 는 test_files 의 메서드 docblock @effects 로 전수 매핑되어 개별 검증된다. cross product 개별 케이스의 docblock 마킹은 effects 매핑과 중복이므로 생략.
 
 feature: 테스트 환경 확장 격리 (requiredExtensions allowlist)
 

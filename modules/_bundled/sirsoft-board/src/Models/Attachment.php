@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Board\Models;
 
 use App\Models\User;
+use App\Support\AssetUrl;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -169,7 +170,12 @@ class Attachment extends Model
 
         // route() 생성은 빈 슬러그(미해석 board)에서 예외가 되므로 문자열 조립을 유지한다
         // — 빈 슬러그 허용은 AttachmentPreviewUrlTest 가 고정한 기존 계약이다.
-        return '/api/modules/sirsoft-board/boards/'.$boardSlug.'/attachment/'.$this->hash;
+        //
+        // 마운트 접두사는 손조립이 놓치는 축이다. 코어 형제(`App\Models\Attachment`)가
+        // 같은 사유로 이미 `AssetUrl::basePrefix()` 를 붙였는데 이 확장만 빠져 있었다 —
+        // 소비 지점이 `Img.src` 라 라우터를 거치지 않아 접두사를 붙일 주체가 여기밖에
+        // 없고, 하위 폴더 배치에서는 오류 없이 첨부가 전부 깨진다.
+        return AssetUrl::basePrefix().'/api/modules/sirsoft-board/boards/'.$boardSlug.'/attachment/'.$this->hash;
     }
 
     /**
@@ -218,7 +224,11 @@ class Attachment extends Model
 
         // route() 생성은 빈 슬러그(미해석 board)에서 예외가 되므로 문자열 조립을 유지한다
         // — 빈 슬러그 허용은 AttachmentPreviewUrlTest 가 고정한 기존 계약이다.
-        return '/api/modules/sirsoft-board/boards/'.$slug.'/attachment/'.$this->hash.'/preview';
+        //
+        // 접두사 사유는 위 `getDownloadUrlAttribute` 와 같다. 서명 분기(위)는 여기서
+        // 건드리지 않는다 — 그 값은 Laravel 이 서명한 경로이고 검증 쪽이 같은 값을
+        // 재조립하므로, 접두사를 이 자리에서 덧붙이면 서명이 어긋난다.
+        return AssetUrl::basePrefix().'/api/modules/sirsoft-board/boards/'.$slug.'/attachment/'.$this->hash.'/preview';
     }
 
     /**

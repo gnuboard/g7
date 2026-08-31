@@ -6,6 +6,7 @@ use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use PHPUnit\Framework\TestCase;
 use Tests\Concerns\CleansTemporaryBasePath;
+use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
  * 인스톨러 런타임 헬퍼 단위 테스트
@@ -26,6 +27,7 @@ use Tests\Concerns\CleansTemporaryBasePath;
 class InstallerRuntimeHelperTest extends TestCase
 {
     use CleansTemporaryBasePath;
+    use ScansPhpSourceFunctions;
 
     private string $tempBase = '';
 
@@ -109,6 +111,24 @@ class InstallerRuntimeHelperTest extends TestCase
 
         // 멱등성 — 부재 상태에서 재호출 OK
         $this->assertTrue(deleteInstallerRuntime());
+    }
+
+    /**
+     * 삭제 경로도 쓰기 경로와 같은 OPcache 규약을 따른다 (15차 G3 W1-11).
+     *
+     * `runtime.php` 는 PHP 파일이라 OPcache 가 캐시한다. 쓰기(`writeInstallerRuntime`)와 읽기는
+     * 갱신 직후 항목을 버리는데 삭제만 빠져 있었다 — 지운 뒤 `revalidate_freq` 창 안의 다음
+     * 요청이 stale 항목을 include 해 이미 삭제된 비밀을 읽는다.
+     */
+    public function test_delete_invalidates_the_runtime_opcache_entry_like_the_write_path(): void
+    {
+        $source = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/includes/installer-runtime.php');
+
+        $this->assertStringContainsString(
+            'installerInvalidateRuntimeOpcache();',
+            $this->functionBody($source, 'deleteInstallerRuntime'),
+            '삭제 경로가 OPcache 항목을 버리지 않는다 — 쓰기 경로와 비대칭이다'
+        );
     }
 
     public function test_read_returns_null_for_corrupted_file(): void
@@ -504,5 +524,67 @@ ENV;
 
         // escapeEnvValue 가 큰따옴표/백슬래시 escape + 큰따옴표 wrapping
         $this->assertStringContainsString('DB_WRITE_PASSWORD="p@ss\\"with$pecial"', $merged);
+    }
+
+    /**
+     * 생성 규칙(`installerUniqueSuffix(INSTALLER_TMP_SUFFIX_BYTES)`)으로 만든 tmp 가 스윕에 걷힌다.
+     *
+     * 종전 판정 패턴은 `{8}` 이었는데 생성 이름은 16진 **16자**라 영원히 매치되지 않았다 —
+     * 스윕 모집단이 0 인 채 형제(`installer-state.php`)만 `{16,}` 이었다 (13차 G3 W1-1).
+     * 생성 규칙과 판정 패턴이 같은 SSoT(`functions.php`)를 보는지를 실제 이름으로 잰다.
+     *
+     * @effects installer_runtime_helpers_behave_as_contracted
+     */
+    public function test_stale_runtime_tmp_files_named_by_the_real_suffix_rule_are_swept(): void
+    {
+        $prefix = INSTALLER_RUNTIME_PATH.INSTALLER_RUNTIME_TMP_INFIX;
+
+        $stale = $prefix.installerUniqueSuffix(INSTALLER_TMP_SUFFIX_BYTES);
+        file_put_contents($stale, 'stale');
+        touch($stale, time() - 3600);
+
+        $fresh = $prefix.installerUniqueSuffix(INSTALLER_TMP_SUFFIX_BYTES);
+        file_put_contents($fresh, 'fresh');
+
+        // 생성 규칙과 다른 이름 — 운영자가 같은 이름 공간에 둔 파일이다.
+        $operator = $prefix.'backup';
+        file_put_contents($operator, 'operator');
+        touch($operator, time() - 3600);
+
+        try {
+            $this->assertTrue(writeInstallerRuntime(['app' => ['key' => 'base64:'.base64_encode(random_bytes(32))]]));
+
+            $this->assertFileDoesNotExist($stale, '생성 규칙으로 만든 오래된 tmp 가 걷히지 않는다 — 판정 패턴이 생성 규칙과 갈렸다');
+            $this->assertFileExists($fresh, '300초 미만의 tmp 를 지웠다 — 진행 중인 다른 요청의 파일이다');
+            $this->assertFileExists($operator, '생성 규칙과 다른 이름을 지웠다');
+        } finally {
+            @unlink($fresh);
+            @unlink($operator);
+            @unlink($stale);
+        }
+    }
+
+    /**
+     * 생성 규칙과 판정 패턴이 **같은 SSoT** 를 본다.
+     *
+     * 실제 생성 이름(CSPRNG 경로)이 패턴에 매치되고, 두 스윕(런타임 · 상태)의 패턴이 모두
+     * `functions.php` 의 한 상수다. mtime 조회 실패 보존은 실 파일로 재현할 수 없어(정상
+     * 파일시스템에서 `filemtime` 은 실패하지 않는다) 소스 계약으로 잠근다.
+     *
+     * @effects installer_runtime_helpers_behave_as_contracted
+     */
+    public function test_tmp_suffix_rule_and_sweep_pattern_share_one_source(): void
+    {
+        $this->assertSame(1, preg_match(INSTALLER_RUNTIME_TMP_SUFFIX_PATTERN, installerUniqueSuffix(INSTALLER_TMP_SUFFIX_BYTES)), '생성된 접미사가 판정 패턴에 매치되지 않는다');
+        $this->assertSame(INSTALLER_TMP_SUFFIX_PATTERN, INSTALLER_RUNTIME_TMP_SUFFIX_PATTERN, '런타임 스윕 패턴이 SSoT 와 다르다');
+
+        // 폴백 경로(CSPRNG 부재)는 더 긴 이름을 만든다 — 하한 패턴이므로 그것도 통과한다.
+        $seed = str_repeat('ab', INSTALLER_TMP_SUFFIX_BYTES).dechex((int) (microtime(true) * 1000));
+        $this->assertSame(1, preg_match(INSTALLER_TMP_SUFFIX_PATTERN, $seed));
+
+        // 주석 속 문장이 대조를 통과시키지 않도록 주석을 걷어낸 소스로 대조한다.
+        $source = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/includes/installer-runtime.php');
+        $this->assertStringContainsString('INSTALLER_RUNTIME_TMP_INFIX.installerUniqueSuffix(INSTALLER_TMP_SUFFIX_BYTES)', $source, '생산자가 판정과 다른 바이트 수로 이름을 만든다');
+        $this->assertStringContainsString('$mtime !== false && $mtime < time() - 300', $source, 'mtime 조회 실패를 「아주 오래됨」으로 읽어 지운다 (fail-open)');
     }
 }

@@ -236,7 +236,7 @@ _단건 응답: `data` 객체의 필드 (만료 처리 후 갱신된 CBT 편의�
 | last_notify_result | string | `` | 마지막 통보 처리 결과 (`confirmed`/`ignored`/`failed`) |
 | last_notify_reason | string | `` | 마지막 통보 처리 사유 |
 | notify_history | array | `[]` | 최근 입금 통보 이력(최대 10건) |
-| notify_url | string | `https://api.example.com/plugins/sirsoft-pay_kginicis/payment/cbt/cvs-notify` | 입금 통보(NOTI) 수신 URL |
+| notify_url | string | `https://api.example.com/plugins/sirsoft-pay_kginicis/payment/cbt/cvs-notify` | 입금 통보(NOTI) 수신 URL — 오리진·하위 폴더 접두사는 요청 주소가 아니라 상점 주소 설정(사이트 URL)을 따른다 |
 | can_simulate_notify | boolean | `false` | 통보 시뮬레이션 가능 여부 (테스트 모드 + 입금대기). 만료 후에는 `false`. |
 | can_mark_expired | boolean | `false` | 만료 처리 가능 여부. 이미 만료됐으므로 `false`. |
 | last_recheck_at | string | `` | 마지막 로컬 상태 재확인 일시 |
@@ -463,7 +463,7 @@ _단건 응답: `data` 객체의 필드 (시뮬레이션 통보 처리 후 갱�
 | last_notify_result | string | `confirmed` | 마지막 통보 처리 결과 (`confirmed`/`ignored`/`failed`) |
 | last_notify_reason | string | `deposit_confirmed` | 마지막 통보 처리 사유. 입금 확정은 `deposit_confirmed`. |
 | notify_history | array | `[{"received_at":"2026-07-08T06:35:02+00:00","source":"admin_simulation","remote_ip":"127.0.0.1","result":"confirmed","reason":"deposit_confirmed","tid":"INIJPGCARDapidocsmpl0000000001","order_id":"APIDOC-KGINICIS-000001","mid":"apidocmid1","status":"00","amount":5000,"currency":"JPY","sid":"apidocsid1"}]` | 최근 입금 통보 이력(최대 10건). 관리자 시뮬레이션은 `source=admin_simulation` 으로 기록된다. |
-| notify_url | string | `https://api.example.com/plugins/sirsoft-pay_kginicis/payment/cbt/cvs-notify` | 입금 통보(NOTI) 수신 URL |
+| notify_url | string | `https://api.example.com/plugins/sirsoft-pay_kginicis/payment/cbt/cvs-notify` | 입금 통보(NOTI) 수신 URL — 오리진·하위 폴더 접두사는 요청 주소가 아니라 상점 주소 설정(사이트 URL)을 따른다 |
 | can_simulate_notify | boolean | `false` | 통보 시뮬레이션 가능 여부(테스트 모드 + 입금대기). 입금완료 후에는 `false`. |
 | can_mark_expired | boolean | `false` | 만료 처리 가능 여부. 입금완료 후에는 `false`. |
 | last_recheck_at | string | `` | 마지막 로컬 상태 재확인 일시 |

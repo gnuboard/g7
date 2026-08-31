@@ -82,12 +82,19 @@ if (! $sessionProbeLibraryMode) {
     require_once __DIR__.'/_guard.php';
     installer_guard_or_410();
 
+    // 다국어 로드 — 형제 6곳과 같은 규칙이다 (12차 G3 라운드 E-3).
+    $currentLang = getCurrentLanguage();
+    $translations = loadTranslations($currentLang);
+
     header('Content-Type: application/json; charset=utf-8');
     header('Cache-Control: no-store, no-cache, must-revalidate');
 
     if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
         http_response_code(405);
-        echo installer_json_encode(['error' => 'GET method required'], JSON_UNESCAPED_UNICODE);
+        echo installer_json_encode([
+            'error' => lang('error_get_method_required'),
+            'message_key' => 'error_get_method_required',
+        ], JSON_UNESCAPED_UNICODE);
         exit;
     }
 

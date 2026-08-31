@@ -5,7 +5,9 @@
  * 쿼리로 레이아웃을 식별한다. 본 spec 은 템플릿 소유 레이아웃의 동작을 검증한다
  * (위지윅 chrome 측 동작은 코어 chrome-controls.spec.ts 가 커버).
  *
- * @scenario code_editor_entry=direct_route_query
+ * 진입 축(마커 아님 — 평문): code_editor_entry=direct_route_query.
+ *
+ * @scenario layout-editor-chrome-controls
  * @effects code_editor_restores_layout_from_route_query
  */
 import { test, expect, authenticatePage } from '../../fixtures/admin-template-auth';

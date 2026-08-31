@@ -43,6 +43,10 @@ class PublicPageControllerTest extends FeatureTestCase
         $storageMock->shouldReceive('response')->andReturnUsing(
             fn () => new StreamedResponse(fn () => print ('file content'), 200)
         );
+        // 다운로드 통로는 `download()` 프리미티브(첨부 disposition)를 쓴다 — 코어 첨부 통로와 같은 형태 (G3 회차 15)
+        $storageMock->shouldReceive('download')->andReturnUsing(
+            fn () => new StreamedResponse(fn () => print ('file content'), 200, ['Content-Type' => 'application/pdf'])
+        );
         $this->app->instance(StorageInterface::class, $storageMock);
 
         // PageAttachmentService 는 contextual binding 으로 모듈 도메인 Storage 를 받으므로

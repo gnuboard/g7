@@ -21,11 +21,21 @@
 - 초기 화면 파일 생성 실패 알림의 [다시 만들기] 버튼 라벨과 복구 완료 안내의 일본어 번역을 추가했습니다.
 - 운영자 추가 파일을 둘 폴더를 만들지 못했을 때 표시되는 실패 사유(같은 이름의 파일이 있음·상위 폴더에 쓸 수 없음 등)와 조치 안내의 일본어 번역을 추가했습니다.
 - 실행 모드(자동 판단·항상 CLI 사용·항상 CLI 없이) 라벨과 외부 프로세스 실행 불가 안내의 일본어 번역을 추가했습니다 (`settings.execution_mode.*`, `exceptions.execution.*`).
+- 코어 업데이트가 문서 루트의 진입·보호 파일을 교체하거나 갱신하지 못했을 때 안내하는 문구의 일본어 번역을 추가했습니다 (`settings.core_update.root_*`, `settings.core_update.rollback_*`).
+- 자산 경로에 점(.)으로 시작하는 파일·디렉토리가 포함됐을 때의 거부 안내 문구 일본어 번역을 추가했습니다 (템플릿·모듈·플러그인 경로 3종).
+- PHP 실행 파일 확인 결과 안내 문구의 일본어 번역을 추가했습니다 (`settings.php_probe_*` 10건). 외부 명령 실행이 막힌 호스팅에서 확인을 건너뛴 사유도 함께 안내합니다.
+- 손상된 공개 스토리지 백업이 쌓였을 때의 안내 문구 일본어 번역을 추가했습니다 (`settings.core_update.storage_link_backup_accumulated`).
+- 코어 업데이트가 운영자가 수정한 서버 설정 조각(`deploy/`)을 보존하고 새 판본을 `.dist` 로 옆에 두었을 때의 안내 문구 일본어 번역을 추가했습니다 (`settings.core_update.deploy_fragment_preserved`, `deploy_fragment_dist_write_failed`).
+- `g7:asset-url-mode` 조회가 큐·콘솔이 쓰는 마운트 접두사와 `APP_URL` 의 경로를 나란히 보여 주고 불일치를 경고하는 문구의 일본어 번역을 추가했습니다 (`asset_url_mode.base_path.*`).
+- 코어 업데이트가 IIS 루트 보호 파일(`web.config`)을 마커 블록 단위로 갱신할 때의 안내 문구와, 서버 설정 조각의 `.dist.new` 충돌·갱신 기록 쓰기 실패 안내 문구의 일본어 번역을 추가했습니다 (`settings.core_update.root_web_config_*`, `deploy_fragment_dist_conflict`, `deploy_fragment_ledger_write_failed`).
+- 관리 블록을 교체한 결과가 온전하지 않아(`web.config` 는 적형 XML 이 아니어서) 갱신을 건너뛰었을 때의 안내 문구 일본어 번역을 추가했습니다 (`settings.core_update.root_htaccess_splice_invalid`, `root_web_config_splice_invalid`).
 
 ### Changed
 
+- 아웃바운드 프록시 항목의 주석 구분을 정리했습니다(문구 변경 없음).
+- 루트 보호 규칙 파일 쓰기 실패 안내를 「임시 파일은 대상 파일의 디렉토리에 만들며, 심볼릭 링크면 링크 대상의 권한」으로 원인 범위를 넓힌 코어 문구에 맞춰 일본어 번역을 갱신했습니다 (`settings.core_update.root_htaccess_write_failed`).
+- 코어 업데이트가 루트 보호 파일의 관리 블록 마커를 찾지 못했을 때의 안내를 「마커를 찾지 못했다(지워졌거나 형태가 바뀌었다)」로 정정한 코어 문구에 맞춰 일본어 번역을 갱신했습니다 (`settings.core_update.root_htaccess_preserved`).
 - 코어 업데이트 완료 안내문(`settings.core_update.apply_mode_incremental_prune_hint`)의 일본어 번역을 코어 문구 변경에 맞춰 갱신했습니다 — 성공한 업데이트 뒤에는 동작하지 않는 정리 명령 안내를 걷어내고 `--prune` 재실행 안내만 남깁니다.
-
 ## [1.0.8] - 2026-08-24
 
 ### Added

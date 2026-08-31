@@ -15,10 +15,7 @@ use Plugins\Sirsoft\Tosspayments\Tests\PluginTestCase;
  * 판단 규칙만 순수 함수로 검증한다 — 실제 설정 파일(storage/app/plugins/...)은 개발
  * 환경의 실데이터이므로 테스트가 건드리지 않는다.
  *
- * @scenario case=payment_redirect_follows_shop_route_path
- *
- * @effects legacy_default_redirect_is_backfilled, operator_custom_redirect_survives_backfill,
- *          redirect_backfill_is_idempotent
+ * @scenario payment_redirect_follows_shop_route_path
  *
  * @group payment
  * @group upgrade
@@ -33,6 +30,9 @@ class BackfillShopBaseRedirectUrlsTest extends PluginTestCase
         require_once base_path('plugins/_bundled/sirsoft-tosspayments/upgrades/data/1.0.0/migrations/BackfillShopBaseRedirectUrls.php');
     }
 
+    /**
+     * @effects legacy_default_redirect_is_backfilled
+     */
     public function test_예전_기본값이_저장돼_있으면_자리표시자로_바꾼다(): void
     {
         [$settings, $updated] = BackfillShopBaseRedirectUrls::apply([
@@ -45,6 +45,9 @@ class BackfillShopBaseRedirectUrlsTest extends PluginTestCase
         $this->assertSame(['redirect_success_url', 'redirect_fail_url'], $updated);
     }
 
+    /**
+     * @effects operator_custom_redirect_survives_backfill
+     */
     public function test_운영자가_직접_넣은_주소는_건드리지_않는다(): void
     {
         $custom = [
@@ -70,6 +73,9 @@ class BackfillShopBaseRedirectUrlsTest extends PluginTestCase
         $this->assertSame(['redirect_success_url'], $updated);
     }
 
+    /**
+     * @effects redirect_backfill_is_idempotent
+     */
     public function test_재실행해도_변화가_없다(): void
     {
         [$once] = BackfillShopBaseRedirectUrls::apply([

@@ -1,3 +1,6 @@
+// @scenario deleted-post-detail-visibility
+// (매니페스트 소속 표기 — 회차 16 W6: 선언된 파일은 마킹을 최소 1개 가진다)
+
 /**
  * 관리자 게시글 상세 - cascade 댓글 노출 분기 회귀 테스트 (#413-69-②)
  *

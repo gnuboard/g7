@@ -109,6 +109,8 @@ export function installOrderResponseInterceptor(): void {
         const method = extractMethod(input, init);
 
         if (!isTargetEndpoint(url, method)) {
+            // 이 래퍼는 주소를 조립하지 않는다 — 접두사는 그 값을 만든 쪽이 이미 붙였다.
+            // base-path:allow 전역 fetch 를 감싼 통과 경로이고 `input` 은 호출자가 만든 값이다
             return originalFetch(input, init);
         }
 
@@ -127,6 +129,7 @@ export function installOrderResponseInterceptor(): void {
 
         // 그 외에는 요청/응답을 일절 변조하지 않는다 — 코어가 확장 결제수단을
         // 1급 시민으로 처리하고, 결제창 진입은 응답의 pg_payment_handler 로 dispatch 된다.
+        // base-path:allow 위 통과 경로와 같다 — `input` 은 호출자가 만든 값이다
         return originalFetch(input, init);
     };
 

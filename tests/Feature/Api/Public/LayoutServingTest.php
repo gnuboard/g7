@@ -656,6 +656,85 @@ class LayoutServingTest extends TestCase
     }
 
     /**
+     * gzip 클라이언트의 재검증이 304 로 끝나야 합니다.
+     *
+     * 압축 미들웨어는 압축본의 ETag 에 `-gzip` 접미사를 붙인다 — content-coding 이 다르면
+     * 다른 표현이므로 옳다(RFC 9110 §8.8.1). 브라우저는 그 값을 그대로 `If-None-Match` 로
+     * 되돌려 보내므로, 재검증 쪽이 접미사를 벗겨 비교하지 않으면 **영원히 불일치**해 304 가
+     * 성립하지 않는다. 그러면 레이아웃 JSON 이 매 재검증마다 전문 200 으로 다시 나가는데,
+     * 오류도 경고도 없이 대역폭·응답시간만 늘어나는 형태라 드러나지 않는다.
+     *
+     * 이 왕복은 반드시 `Accept-Encoding: gzip` 을 실어야 한다 — 그 헤더가 없으면 압축이
+     * 일어나지 않아 접미사도 붙지 않고, 엄격 비교로도 통과해 변이가 살아남는다.
+     */
+    public function test_gzip_client_revalidation_returns_304(): void
+    {
+        $template = Template::create([
+            'identifier' => 'sirsoft-admin_basic',
+            'vendor' => 'sirsoft',
+            'name' => ['ko' => '기본 관리자 템플릿', 'en' => 'Basic Admin Template'],
+            'version' => '1.0.0',
+            'type' => 'admin',
+            'status' => ExtensionStatus::Active->value,
+            'description' => ['ko' => '기본 관리자 템플릿', 'en' => 'Basic Admin Template'],
+        ]);
+
+        $components = [];
+        for ($i = 0; $i < 50; $i++) {
+            $components[] = [
+                'type' => 'div',
+                'props' => ['class' => "component-{$i}"],
+                'children' => [['type' => 'span', 'props' => [], 'children' => ["Content for component {$i} with padding text"]]],
+            ];
+        }
+
+        $layout = TemplateLayout::create([
+            'template_id' => $template->id,
+            'name' => 'revalidated-dashboard',
+            'content' => ['meta' => ['title' => 'Revalidated'], 'data_sources' => [], 'components' => $components],
+        ]);
+
+        $url = "/api/layouts/{$template->identifier}/{$layout->name}.json";
+
+        $first = $this->withHeaders(['Accept-Encoding' => 'gzip, deflate'])->get($url);
+        $first->assertStatus(200);
+        $this->assertSame('gzip', $first->headers->get('Content-Encoding'), '전제: 이 응답은 압축되어야 이 테스트가 의미를 갖는다');
+
+        $etag = $first->headers->get('ETag');
+        $this->assertNotNull($etag);
+        $this->assertStringContainsString('-gzip', $etag, '전제: 압축본의 ETag 에는 표현 접미사가 붙는다');
+
+        // 브라우저가 하는 그대로 — 받은 값을 손대지 않고 되돌려 보낸다.
+        $second = $this->withHeaders(['Accept-Encoding' => 'gzip, deflate', 'If-None-Match' => $etag])->get($url);
+
+        $second->assertStatus(304);
+
+        // `Vary` 는 200 과 **같은 값**이어야 한다. 종전에는 존재만 단언했는데, 그 값은
+        // 조건부가 아니라 고정 문자열이라 구현이 무엇을 하든 성립했다 — 즉 이 줄은
+        // 게이트가 아니라 형태 기록이었다. 200 과 대조하면 실제로 잠긴다.
+        $this->assertSame(
+            $first->headers->get('Vary'),
+            $second->headers->get('Vary'),
+            '304 가 200 과 다른 Vary 축을 실으면 공유 캐시가 잘못된 표현을 재사용한다'
+        );
+        $this->assertSame(
+            $first->headers->get('Cache-Control'),
+            $second->headers->get('Cache-Control'),
+            '304 는 200 이 실었을 캐시 정책을 그대로 싣는다 (RFC 9110 §15.4.5)'
+        );
+
+        // `ETag` 도 같은 축이다. 접미사는 본문이 있는 응답에만 붙으므로(304 는 압축
+        // 미들웨어가 건너뛴다) 종전에는 같은 요청이 200 에서 `"…-gzip"`, 304 에서 `"…"`
+        // 를 내보냈다 — 공유 캐시가 gzip 본문을 identity 검증자로 갱신하게 되어, 200 에서
+        // 표현을 갈라 놓은 이유가 그 자리에서 사라진다 (7차 G3 라운드 C5).
+        $this->assertSame(
+            $first->headers->get('ETag'),
+            $second->headers->get('ETag'),
+            '304 의 ETag 가 같은 요청의 200 과 다르다 — 공유 캐시가 두 표현을 뒤섞는다'
+        );
+    }
+
+    /**
      * Accept-Encoding 헤더가 없으면 압축하지 않아야 합니다.
      */
     public function test_does_not_compress_layout_when_client_does_not_accept_gzip(): void

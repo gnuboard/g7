@@ -6,7 +6,11 @@ use App\Contracts\Extension\HookListenerInterface;
 use App\Extension\HookListenerRegistrar;
 use App\Extension\HookManager;
 use App\Jobs\DispatchHookListenerJob;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
@@ -36,6 +40,9 @@ class HookListenerRegistrarTest extends TestCase
     /**
      * 기본 Action 리스너가 큐 Job으로 디스패치되는지 검증합니다.
      */
+    /**
+     * @effects cache_registered_action_dispatches_queue_job
+     */
     public function test_action_listener_dispatches_job_by_default(): void
     {
         Queue::fake();
@@ -59,11 +66,11 @@ class HookListenerRegistrarTest extends TestCase
     {
         Queue::fake();
 
-        $user = \App\Models\User::factory()->create();
-        \Illuminate\Support\Facades\Auth::login($user);
-        \Illuminate\Support\Facades\App::setLocale('ko');
+        $user = User::factory()->create();
+        Auth::login($user);
+        App::setLocale('ko');
 
-        $request = \Illuminate\Http\Request::create('/api/admin/users', 'GET', [], [], [], [
+        $request = Request::create('/api/admin/users', 'GET', [], [], [], [
             'REMOTE_ADDR' => '203.0.113.10',
             'HTTP_USER_AGENT' => 'TestAgent/1.0',
         ]);
@@ -84,6 +91,9 @@ class HookListenerRegistrarTest extends TestCase
     /**
      * sync: true 리스너가 동기로 실행되는지 검증합니다.
      */
+    /**
+     * @effects cache_registered_sync_action_executes_immediately
+     */
     public function test_sync_listener_executes_immediately(): void
     {
         Queue::fake();
@@ -99,6 +109,9 @@ class HookListenerRegistrarTest extends TestCase
 
     /**
      * Filter 리스너가 동기로 실행되고 반환값이 정상 전달되는지 검증합니다.
+     */
+    /**
+     * @effects cache_registered_filter_executes_synchronously_and_returns_value
      */
     public function test_filter_listener_executes_synchronously(): void
     {

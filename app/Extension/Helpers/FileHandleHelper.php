@@ -25,6 +25,14 @@ class FileHandleHelper
      */
     private static function currentPid(): int
     {
+        // 여기서는 PID **자체가 의미**를 갖는다(자기 프로세스를 종료 대상에서 뺀다) — 난수로
+        // 대체할 수 없다. `getmypid` 는 하드닝 프로필의 차단 대상이라 무가드로 부르면 PHP 8
+        // 에서 Error(치명)다. 막힌 환경에서는 0 을 돌려 「자기 PID 를 모른다」를 표현하고,
+        // 그 경우 어떤 프로세스도 제외 대상으로 걸러지지 않는다 (3차 G3 라운드).
+        if (! ExecutionEnvironment::hasFunction('getmypid')) {
+            return 0;
+        }
+
         return getmypid() ?: 0;
     }
 
@@ -102,8 +110,29 @@ class FileHandleHelper
         // (handle.exe 는 Sysinternals 외부 도구이고, Windows Store App Execution Alias 와
         //  충돌하는 경우 무한 대기하므로 명시적으로 사용 가능한 경우에만 호출.)
 
-        // 현재 PHP 프로세스 제외
+        // 현재 PHP 프로세스 제외.
+        //
+        // 자기 PID 를 모르면(`getmypid` 차단) 제외가 성립하지 않는다 — `unset($all[0])` 는
+        // 아무것도 지우지 않으므로 **자기 자신이 종료 후보로 남는다.** 「모른다」의 안전한
+        // 표현은 「자기를 죽일 수도 있는 목록」이 아니라 「목록 없음」이다. 잠금 프로세스를
+        // 못 찾은 것과 같이 다룬다.
+        //
+        // 그 결과 유일한 소비자(`releaseLocks()`)는 「해제할 잠금 없음」으로 읽어 **진행
+        // 가능(true)** 을 돌려준다 — 즉 이 폴백은 fail-closed 가 아니라 fail-open 이다.
+        // 그것이 여기서 옳은 이유는 이 함수가 하는 일이 **종료 후보 목록 만들기**뿐이고,
+        // 자기 PID 를 모르는 채 만든 목록은 자기 자신을 죽일 수 있기 때문이다. 「잘못된
+        // 목록」보다 「목록 없음」이 안전하고, 잠금이 실제로 있다면 그 뒤의 파일 조작이
+        // 자기 오류로 실패해 드러난다.
+        //
+        // (`getmypid` 이 막히는 환경은 리눅스 하드닝 프로필인데, 이 함수는 그 앞에서
+        //  비-Windows 조기 반환을 하므로 실제로는 도달하지 않는다. 방어로만 둔다.)
         $currentPid = self::currentPid();
+        if ($currentPid === 0) {
+            $output('[lock-detect] 자기 프로세스를 식별할 수 없어 잠금 프로세스 목록을 만들지 않습니다.');
+
+            return [];
+        }
+
         unset($allProcesses[$currentPid]);
 
         $filtered = array_values($allProcesses);
@@ -311,7 +340,26 @@ class FileHandleHelper
             return [];
         }
 
+        // `tempnam`·`sys_get_temp_dir` 도 하드닝 프로필의 차단 대상이다 — 형제 지점
+        // (인스톨러의 명령 출력 파일 예약)은 이미 같은 이름을 그렇게 다룬다. 무가드로
+        // 부르면 PHP 8 에서 `Error`(치명)이고, 설령 호출이 되더라도 `tempnam` 이 false 를
+        // 돌리면 `false.'.ps1'` 이 `'.ps1'` 이 되어 **현재 작업 디렉토리에 파일을 만든다**.
+        // 그 경우 강제 종료 시 아래 `finally` 가 돌지 않아 잔존물이 남고, 그것을 걷는
+        // 주체는 어디에도 없다 (11차 G3 라운드 E11-12).
+        if (! ExecutionEnvironment::hasFunction('sys_get_temp_dir') || ! ExecutionEnvironment::hasFunction('tempnam')) {
+            $output('[RestartManager] tempnam()/sys_get_temp_dir() 함수 사용 불가');
+
+            return [];
+        }
+
         $tempScript = tempnam(sys_get_temp_dir(), 'g7lock_');
+
+        if ($tempScript === false) {
+            $output('[RestartManager] 임시 스크립트 파일 생성 실패 — 시스템 temp 디렉토리 쓰기 불가');
+
+            return [];
+        }
+
         $scriptPath = $tempScript.'.ps1';
         rename($tempScript, $scriptPath);
 
@@ -688,6 +736,7 @@ PSFOOTER;
         ];
 
         $pipes = [];
+
         $process = @proc_open($command, $descriptors, $pipes, null, null, [
             'bypass_shell' => false,
             'create_new_console' => false,

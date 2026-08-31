@@ -58,6 +58,14 @@ class ImageUploadService
         // 환경설정 > 업로드의 최대 가로/세로·품질 적용 (코어 설정이 모든 업로드 경로에 동일 적용)
         app(ImageResizer::class)->resizeInPlace($file->getRealPath(), $file->getMimeType());
 
+        // 축소는 **같은 경로를 제자리에서 갈아 끼운다.** 그 과정이 `is_file()` 로 그 경로를
+        // stat 하므로 PHP 공유 stat 캐시가 채워지고, 뒤따르는 `getSize()` 는 그 캐시를 그대로
+        // 읽어 **축소 전 크기**를 돌려준다. `getimagesize()` 는 파일을 직접 읽으므로
+        // width/height 만 축소본을 가리키고 크기만 어긋난다 — 한 행의 두 값이 서로 다른
+        // 파일을 가리키는 상태다. 형제 넷(코어 2 · 게시판 · 페이지)은 같은 사유로 이미 이
+        // 처리를 갖는다 (12차 G3 라운드 D3 — 11차가 형제 절반에만 적용했다).
+        clearstatcache(true, $file->getRealPath());
+
         $this->storage->put('images', $path, file_get_contents($file->getRealPath()));
 
         $record = $this->repository->create([

@@ -230,6 +230,254 @@ class InstallerEnvironmentJudgmentTest extends TestCase
         $this->assertFalse(installerProbeRateLimitExceeded($bucket.'_other', 3, 300));
     }
 
+    /**
+     * 클라이언트 식별이 **세션**을 실제로 쓴다 (프록시 뒤 공유 IP 방어).
+     *
+     * `installerProbeRateLimitClientKey()` 는 종전에 `session_status() === PHP_SESSION_ACTIVE`
+     * 로 가드했다. 그런데 이 함수를 부르는 유일한 액션(`?action=requirements`)은 그 전에
+     * `session_write_close()` 를 하므로 상태가 `PHP_SESSION_NONE` 이고, 그 가드는 **언제나
+     * 거짓**이었다 — 세션 축이 죽어 식별이 사실상 `REMOTE_ADDR` 단독이었다.
+     *
+     * 앞단 프록시·CDN·LB 뒤에서는 전 방문자가 같은 IP 로 도착한다(이 점검이 대상으로 삼는
+     * 호스팅 계층이 바로 그 구성이다). 그 상태에서는 무인증 원격자가 창 안에서 상한만큼
+     * 호출하는 것만으로 **운영자의 storage 계열이 상한 초과로 대상에서 빠져** 노출 자동
+     * 차단(D3)이 수동 확인(D21)으로 강등된다 — 화면에는 아무 이상이 없다.
+     *
+     * 종전 테스트는 `REMOTE_ADDR` 만 심어 「IP = 클라이언트」를 전제로 쟀으므로 이 축을
+     * 볼 수 없었다 (11차 G3 라운드).
+     *
+     * @scenario rate_limit=client_identity, deployment=reverse_proxy_shared_ip
+     *
+     * @effects probe_rate_limit_is_scoped_per_browser_behind_a_proxy
+     */
+    public function test_client_key_uses_the_session_even_after_write_close(): void
+    {
+        $previousAddr = $_SERVER['REMOTE_ADDR'] ?? null;
+
+        try {
+            // 프록시 뒤 — 두 방문자가 같은 IP 로 도착한다.
+            $_SERVER['REMOTE_ADDR'] = '203.0.113.7';
+
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_write_close();
+            }
+
+            @session_id('g7-round11-session-a');
+            @session_start();
+            session_write_close();
+
+            $this->assertSame(
+                PHP_SESSION_NONE,
+                session_status(),
+                'write-close 뒤 상태가 ACTIVE 면 이 회귀 축 자체가 성립하지 않는다'
+            );
+
+            $first = installerProbeRateLimitClientKey();
+
+            @session_id('g7-round11-session-b');
+            @session_start();
+            session_write_close();
+
+            $second = installerProbeRateLimitClientKey();
+
+            $this->assertNotSame(
+                '',
+                $first,
+                'write-close 뒤 세션 식별자를 읽지 못한다 — 상한이 IP 단독으로 떨어진다'
+            );
+            $this->assertNotSame(
+                $first,
+                $second,
+                '같은 IP 의 서로 다른 브라우저가 같은 상한 버킷을 쓴다 — 프록시 뒤에서 '
+                .'원격자가 운영자의 노출 점검을 강등시킬 수 있다'
+            );
+        } finally {
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_write_close();
+            }
+
+            if ($previousAddr === null) {
+                unset($_SERVER['REMOTE_ADDR']);
+            } else {
+                $_SERVER['REMOTE_ADDR'] = $previousAddr;
+            }
+        }
+    }
+
+    /**
+     * 상한을 **클라이언트별로 나누는** 축이 실제로 동작한다.
+     *
+     * 이 축이 필요한 이유: 카운터 하나를 전 클라이언트가 공유하면 그 상한 자체가 공격
+     * 수단이 된다 — 무인증 원격자가 창을 소진하면 운영자의 storage 계열이 상시
+     * `rate_limited` 로 떨어지고, 그러면 노출 **자동 차단(D3)** 이 운영자 **수동 확인(D21)**
+     * 으로 강등된다. 화면상 이상이 없어 알아챌 방법도 없다.
+     *
+     * 종전에는 이 분기에 **들어가는 테스트가 하나도 없었다** — 식별자는 세션 또는
+     * `REMOTE_ADDR` 에서 오는데 PHPUnit CLI 에는 둘 다 없어 언제나 빈 문자열이었고,
+     * 그래서 분기 전체를 지워도 초록이었다. 여기서 `REMOTE_ADDR` 을 심어 그 경로를 연다.
+     */
+    public function test_probe_rate_limit_is_counted_per_client(): void
+    {
+        if (! is_dir(BASE_PATH.'/storage')) {
+            mkdir(BASE_PATH.'/storage', 0777, true);
+        }
+        @unlink(BASE_PATH.'/storage/installer-probe-rate.json');
+
+        $bucket = 'test_'.bin2hex(random_bytes(4));
+        $previous = $_SERVER['REMOTE_ADDR'] ?? null;
+
+        try {
+            $_SERVER['REMOTE_ADDR'] = '203.0.113.10';
+            $first = installerProbeRateLimitClientKey();
+            $this->assertNotSame('', $first, '원격 주소가 있으면 클라이언트 식별자가 나와야 한다');
+
+            for ($i = 0; $i < 3; $i++) {
+                $this->assertFalse(installerProbeRateLimitExceeded($bucket, 3, 300));
+            }
+            $this->assertTrue(
+                installerProbeRateLimitExceeded($bucket, 3, 300),
+                '자기 창을 다 쓴 클라이언트는 거부되어야 한다'
+            );
+
+            // 다른 클라이언트는 **자기 창**을 갖는다 — 이것이 D3→D21 강등을 막는 성질이다.
+            $_SERVER['REMOTE_ADDR'] = '203.0.113.99';
+            $this->assertNotSame($first, installerProbeRateLimitClientKey(), '클라이언트가 다르면 식별자도 달라야 한다');
+            $this->assertFalse(
+                installerProbeRateLimitExceeded($bucket, 3, 300),
+                '남이 소진한 창이 내 판정을 막으면 노출 자동 차단이 수동 확인으로 강등된다'
+            );
+
+            // 식별에 실패하면 종전(전역 카운터 하나)으로 되돌아간다.
+            unset($_SERVER['REMOTE_ADDR']);
+            $this->assertSame('', installerProbeRateLimitClientKey(), '식별 불가는 빈 문자열이어야 한다');
+        } finally {
+            if ($previous === null) {
+                unset($_SERVER['REMOTE_ADDR']);
+            } else {
+                $_SERVER['REMOTE_ADDR'] = $previous;
+            }
+        }
+    }
+
+    /**
+     * 판정 집합을 깎는 자리는 **전역 창을 보지 않는다** (`clientScopeOnly`).
+     *
+     * 전역 창은 신원을 갈아 끼우는 총량을 막는 장치인데, 그 창이 차면 운영자의 storage
+     * 계열이 프로브 대상에서 빠진다. 대상 집합이 줄면 판정은 `exposed` → `unknown` 방향으로만
+     * 움직이므로 노출 자동 차단(D3)이 수동 확인(D21)으로 **강등**된다 — 무인증 원격자가
+     * 그 강등을 일으킬 수 있었다.
+     *
+     * @effects exposure_probe_rate_limit_cannot_downgrade_the_blocking_verdict
+     */
+    public function test_client_scoped_limit_ignores_the_global_window(): void
+    {
+        if (! is_dir(BASE_PATH.'/storage')) {
+            mkdir(BASE_PATH.'/storage', 0777, true);
+        }
+        @unlink(BASE_PATH.'/storage/installer-probe-rate.json');
+
+        $bucket = 'test_'.bin2hex(random_bytes(4));
+        $previous = $_SERVER['REMOTE_ADDR'] ?? null;
+
+        try {
+            // 남들이 전역 창(limit×10)을 채운다.
+            for ($i = 0; $i < 20; $i++) {
+                $_SERVER['REMOTE_ADDR'] = '198.51.100.'.$i;
+                installerProbeRateLimitExceeded($bucket, 2, 300);
+                installerProbeRateLimitExceeded($bucket, 2, 300);
+            }
+
+            $_SERVER['REMOTE_ADDR'] = '203.0.113.7';
+
+            $this->assertFalse(
+                installerProbeRateLimitExceeded($bucket, 2, 300, clientScopeOnly: true),
+                '남이 채운 전역 창이 내 판정을 깎으면 노출 자동 차단이 수동 확인으로 강등된다'
+            );
+
+            // 전역 축을 보는 호출은 여전히 총량을 막는다 (그 역할은 유지된다).
+            $this->assertTrue(
+                installerProbeRateLimitExceeded($bucket, 2, 300),
+                '총량 방어까지 사라지면 신원 교체로 무제한 생성이 열린다'
+            );
+        } finally {
+            if ($previous === null) {
+                unset($_SERVER['REMOTE_ADDR']);
+            } else {
+                $_SERVER['REMOTE_ADDR'] = $previous;
+            }
+        }
+    }
+
+    /**
+     * 신원(세션)을 갈아 끼워도 **원격 주소 창**이 총량을 막는다.
+     *
+     * 11차는 클라이언트 식별을 `REMOTE_ADDR` 에서 `session_id()` 로 옮기면서 이 분기의
+     * 총량 방어(전역 창)를 함께 뺐다. 그런데 `session_id()` 는 **요청하는 쪽이 정하는
+     * 값**이다 — 쿠키를 보내지 않으면 매 요청이 새 세션이고, 아무 값이나 보내면 그
+     * 값이 된다. 그래서 그 두 버킷(`probe_exposure_sentinel`·`probe_symlink`)은 쿠키를
+     * 갈아 끼우는 것만으로 상한이 통째로 사라진 상태였다. 그 상한이 지키던 것은
+     * **무인증 파일 생성**이므로, 결과는 `storage/installer` 에 sentinel 이 무제한으로
+     * 쌓이는 것이다.
+     *
+     * 이 테스트가 없으면 그 구멍은 드러나지 않는다 — PHPUnit CLI 에는 세션이 없어
+     * 식별자가 `REMOTE_ADDR` 로 폴백하고, 그러면 신원 교체 자체가 재현되지 않는다.
+     * 여기서는 주소를 고정한 채 **세션만** 갈아 끼워 그 축을 정확히 연다.
+     *
+     * @scenario probe_identity=stable
+     *
+     * @effects probe_rate_limit_survives_identity_rotation
+     */
+    public function test_client_scoped_limit_still_bounds_identity_rotation(): void
+    {
+        if (! is_dir(BASE_PATH.'/storage')) {
+            mkdir(BASE_PATH.'/storage', 0777, true);
+        }
+        @unlink(BASE_PATH.'/storage/installer-probe-rate.json');
+
+        $bucket = 'test_'.bin2hex(random_bytes(4));
+        $previousAddr = $_SERVER['REMOTE_ADDR'] ?? null;
+        $previousSession = session_id();
+
+        try {
+            $_SERVER['REMOTE_ADDR'] = '203.0.113.42';
+
+            // 세션을 매번 갈아 끼우며 부른다 — 클라이언트 창(2)은 매번 새것이라
+            // 종전에는 **영원히** 통과했다.
+            $rejected = false;
+            for ($i = 0; $i < 40; $i++) {
+                session_id('rotating-'.$i.'-'.bin2hex(random_bytes(4)));
+
+                if (installerProbeRateLimitExceeded($bucket, 2, 300, clientScopeOnly: true)) {
+                    $rejected = true;
+                    break;
+                }
+            }
+
+            $this->assertTrue(
+                $rejected,
+                '신원을 갈아 끼우는 것만으로 상한이 사라지면 무인증 원격자가 파일을 무제한 생성한다'
+            );
+
+            // 그런데 **다른 주소**의 운영자는 여전히 자기 창을 쓴다 — 이 성질이
+            // 깨지면 원격자가 남을 강등시킬 수 있고, 그것이 11차가 전역 창을 뺀 이유다.
+            $_SERVER['REMOTE_ADDR'] = '198.51.100.5';
+            session_id('operator-'.bin2hex(random_bytes(4)));
+
+            $this->assertFalse(
+                installerProbeRateLimitExceeded($bucket, 2, 300, clientScopeOnly: true),
+                '남이 소진한 창이 내 판정을 막으면 노출 자동 차단이 수동 확인으로 강등된다'
+            );
+        } finally {
+            session_id($previousSession === '' ? '' : $previousSession);
+
+            if ($previousAddr === null) {
+                unset($_SERVER['REMOTE_ADDR']);
+            } else {
+                $_SERVER['REMOTE_ADDR'] = $previousAddr;
+            }
+        }
+    }
+
     public function test_byte_size_parsing_keeps_unlimited_distinct_from_unknown(): void
     {
         $this->assertSame(256 * 1024 * 1024, installerParseByteSize('256M'));

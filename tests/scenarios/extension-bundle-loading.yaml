@@ -1,4 +1,7 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 입력 axis 의 완전 cross-product(11축)는 조합 폭발이라 대표 조합만 마킹한다. effects 축은 면제하지 않는다 — 모든 effect 가 테스트 마킹으로 도달해야 한다.
+# audit:allow test-scenario-coverage[cross_product] reason: 입력 axis 의 완전 cross-product(11축)는 조합 폭발이라 대표 조합만 마킹한다. effects 축은 면제하지 않는다 — 모든 effect 가 테스트 마킹으로 도달해야 한다. 조합은 test_files 의 Unit/Feature 가 대표 조합으로 덮고, effects 는 병합 계약(순서·구분자·소스맵·캐시·폴백)과 브라우저 실측으로 전수 마킹한다. (issue:#609 합류분 병합)
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 15차 F-21 에서 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
+# 원장(9차 G3 라운드 C-4 → 해소): 축 한정 면제로 이미 좁혔다. effects 는 면제 대상이 아니므로
+#   선언한 effects 전부가 테스트 마킹으로 도달해야 한다.
 
 feature: 확장(모듈/플러그인) 프론트엔드 IIFE/CSS 서버측 번들 병합
 
@@ -65,6 +68,13 @@ effects:
   - empty_result_with_missing_declared_artifact_returns_503
   - missing_artifact_paths_are_logged
   - bundle_css_failure_banner_uses_user_vocabulary
+  # 테스트 docblock 에는 있었으나 어느 매니페스트에도 없던 축 — 선언 = 마킹.
+  - bundle_disk_write_failure_falls_back_to_memory
+  - bundle_empty_with_declared_assets_returns_503
+  - bundle_decision_is_shared_across_extension_types
+  - asset_declaration_count_reads_manifest_not_built_files
+  - clear_bundles_preserves_current_version
+  - cleanup_removes_stale_atomic_write_temp_files
 
 test_files:
   - tests/Unit/Services/ExtensionBundleServiceTest.php

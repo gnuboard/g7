@@ -27,7 +27,6 @@ use Symfony\Component\HttpFoundation\Cookie;
  *
  * @scenario scope=cookie, notation=wildcard, locked=locked_item, settings_state=empty, request=valid_item
  *
- * @effects middleware_passes_cookie_listed_in_operator_settings, middleware_removes_cookie_absent_from_settings, middleware_supports_wildcard_in_cookie_allowlist, middleware_locked_cookies_survive_empty_settings, middleware_locked_cookies_cannot_be_removed_via_settings, middleware_session_cookie_name_resolved_at_runtime
  */
 class CookieConsentMiddlewareTest extends PluginTestCase
 {
@@ -169,6 +168,7 @@ class CookieConsentMiddlewareTest extends PluginTestCase
      * 운영자가 설정에 등재한 cookie 는 미동의여도 통과한다.
      *
      * 판정 목록이 설정에서 온다는 증거 — 하드코딩 배열이면 이 이름은 통과할 수 없다.
+     * @effects middleware_passes_cookie_listed_in_operator_settings
      */
     public function test_passes_cookie_listed_in_operator_settings(): void
     {
@@ -187,6 +187,7 @@ class CookieConsentMiddlewareTest extends PluginTestCase
      * 설정에서 뺀 cookie 는 제거된다 (위 테스트의 대조군).
      *
      * 이 축이 없으면 "목록이 통째로 열려 있어도" 위 테스트는 통과한다.
+     * @effects middleware_removes_cookie_absent_from_settings
      */
     public function test_removes_cookie_absent_from_operator_settings(): void
     {
@@ -206,6 +207,7 @@ class CookieConsentMiddlewareTest extends PluginTestCase
      *
      * 저장소 목록만 접두사 매칭을 지원하던 시절, 운영자가 쿠키 카드에 적은 `myplugin_*` 은
      * 아무 효과가 없었고 그 사실이 화면에 드러나지 않았다.
+     * @effects middleware_supports_wildcard_in_cookie_allowlist
      */
     public function test_supports_wildcard_in_cookie_allowlist(): void
     {
@@ -227,6 +229,7 @@ class CookieConsentMiddlewareTest extends PluginTestCase
      *
      * 잠금 항목은 설정이 아니라 코드가 정한다 — 설정 조회가 실패하거나 운영자가 목록을
      * 통째로 비워도 사이트가 서야 한다.
+     * @effects middleware_locked_cookies_survive_empty_settings
      */
     public function test_locked_cookies_survive_empty_settings(): void
     {
@@ -251,6 +254,7 @@ class CookieConsentMiddlewareTest extends PluginTestCase
      * 운영자가 잠금 항목을 목록에서 지워도 판정에서는 사라지지 않는다.
      *
      * 잠금은 '설정 밖 합집합' 이므로 저장 요청으로 무력화할 수 없어야 한다.
+     * @effects middleware_locked_cookies_cannot_be_removed_via_settings
      */
     public function test_locked_cookies_cannot_be_removed_via_settings(): void
     {
@@ -274,6 +278,7 @@ class CookieConsentMiddlewareTest extends PluginTestCase
      * 서버는 `config('session.cookie')` 를 읽는데 클라이언트는 'laravel_session' 을
      * 하드코딩하고 있었다 — `SESSION_COOKIE` 를 지정한 사이트에서는 클라이언트 목록의 그
      * 항목이 죽어 있었고, 두 목록을 대조하는 테스트가 없었다 (발견 ①).
+     * @effects middleware_session_cookie_name_resolved_at_runtime
      */
     public function test_session_cookie_name_is_resolved_at_runtime(): void
     {

@@ -21,7 +21,7 @@ class AllowedTemplateFileType implements ValidationRule
         'json',
 
         // Images
-        'png', 'jpg', 'jpeg', 'svg', 'webp', 'gif',
+        'png', 'jpg', 'jpeg', 'svg', 'webp', 'gif', 'ico',
 
         // Fonts
         'woff', 'woff2', 'ttf', 'otf', 'eot',

@@ -1504,7 +1504,7 @@ class TemplateManager implements TemplateManagerInterface
         try {
             $validatedLayouts = $this->validateLayoutFiles($layoutsPath, $templateName, 'template', true);
         } catch (\Exception $e) {
-            Log::error(__('templates.errors.layout_registration_failed'), [
+            Log::error(__('templates.errors.layout_registration_failed', ['error' => $e->getMessage()]), [
                 'template' => $templateName,
                 'error' => $e->getMessage(),
             ]);
@@ -1544,7 +1544,7 @@ class TemplateManager implements TemplateManagerInterface
                 ]);
 
             } catch (\Exception $e) {
-                Log::error(__('templates.errors.layout_registration_failed'), [
+                Log::error(__('templates.errors.layout_registration_failed', ['error' => $e->getMessage()]), [
                     'file' => $validatedLayout['file'],
                     'error' => $e->getMessage(),
                 ]);
@@ -1615,7 +1615,7 @@ class TemplateManager implements TemplateManagerInterface
             try {
                 $validatedLayouts = $this->validateLayoutFiles($moduleDirectory, $moduleIdentifier, 'template', true);
             } catch (\Exception $e) {
-                Log::error(__('templates.errors.override_layout_registration_failed'), [
+                Log::error(__('templates.errors.override_layout_registration_failed', ['error' => $e->getMessage()]), [
                     'template' => $templateName,
                     'module' => $moduleIdentifier,
                     'error' => $e->getMessage(),
@@ -1669,7 +1669,7 @@ class TemplateManager implements TemplateManagerInterface
                     ]);
 
                 } catch (\Exception $e) {
-                    Log::error(__('templates.errors.override_layout_registration_failed'), [
+                    Log::error(__('templates.errors.override_layout_registration_failed', ['error' => $e->getMessage()]), [
                         'file' => $validatedLayout['file'],
                         'template' => $templateName,
                         'module' => $moduleIdentifier,
@@ -2091,7 +2091,7 @@ class TemplateManager implements TemplateManagerInterface
         try {
             $validatedLayouts = $this->validateLayoutFiles($layoutsPath, $identifier, 'template', true);
         } catch (\Exception $e) {
-            Log::error(__('templates.errors.layout_registration_failed'), [
+            Log::error(__('templates.errors.layout_registration_failed', ['error' => $e->getMessage()]), [
                 'template' => $identifier,
                 'error' => $e->getMessage(),
             ]);
@@ -2169,7 +2169,7 @@ class TemplateManager implements TemplateManagerInterface
                     Log::info("템플릿 레이아웃 생성: {$layoutName}", ['template' => $identifier]);
                 }
             } catch (\Exception $e) {
-                Log::error(__('templates.errors.layout_registration_failed'), [
+                Log::error(__('templates.errors.layout_registration_failed', ['error' => $e->getMessage()]), [
                     'file' => $validatedLayout['file'],
                     'error' => $e->getMessage(),
                 ]);
@@ -2261,7 +2261,7 @@ class TemplateManager implements TemplateManagerInterface
         }
 
         // extensions/{module-identifier}/ 폴더 순회
-        $moduleDirectories = glob($extensionsPath.'/*', GLOB_ONLYDIR);
+        $moduleDirectories = ExtensionManager::listDirectories($extensionsPath);
 
         if (empty($moduleDirectories)) {
             Log::debug('Extension 오버라이드 모듈 폴더 없음', ['template' => $templateIdentifier]);
@@ -2271,7 +2271,7 @@ class TemplateManager implements TemplateManagerInterface
 
         foreach ($moduleDirectories as $moduleDir) {
             $moduleIdentifier = basename($moduleDir);
-            $overrideFiles = glob($moduleDir.'/*.json');
+            $overrideFiles = ExtensionManager::listDirectoryFiles($moduleDir, '.json');
 
             foreach ($overrideFiles as $file) {
                 try {

@@ -21,9 +21,76 @@ if (! defined('BASE_PATH')) {
 
 // .env 값 직렬화 정책 (개행 주입 차단) — functions.php 와 같은 관문을 공유한다.
 require_once __DIR__.'/env-value.php';
+// 이 파일은 비밀(DB 자격증명·APP_KEY)을 0600 채널에 쓴다. 그 쓰기가 쓰는 두 헬퍼의
+// 출처를 명시한다 — 이 파일만 단독으로 로드하는 경로(단위 테스트·일부 API)가 있고,
+// 의존을 적지 않으면 그 경로에서 `Call to undefined function` 으로 죽는다.
+//   · `installerUniqueSuffix()` (functions.php) — 임시 파일 이름. 차단 가능한 함수에
+//     기대지 않는 난수원이다. 그 이름의 **바이트 수와 판정 패턴**(`INSTALLER_TMP_SUFFIX_*`)
+//     도 같은 파일이 소유하므로 아래 상수 정의보다 먼저 싣는다.
+//   · `installerHasFunction()` (execution-mode.php) — `chmod` 가용 판정 SSoT.
+// 둘 다 최상위 부수효과 없이 함수·상수만 선언하므로 순서 의존이 생기지 않는다
+// (installer-state.php 가 같은 이유로 같은 두 파일을 require 한다).
+require_once __DIR__.'/functions.php';
+require_once __DIR__.'/execution-mode.php';
+
+if (! defined('INSTALLER_RUNTIME_TMP_INFIX')) {
+    // tmp 이름의 **생성 규칙**을 상수가 소유한다 — 스윕이 같은 규칙으로만 지우도록
+    // 형제(`installer-state.php` 의 `INSTALLER_STATE_TMP_INFIX`)와 같은 규율을 쓴다.
+    // 값은 이름 생성 SSoT(`functions.php` 의 `INSTALLER_TMP_INFIX`)를 그대로 가리킨다 (14차 G3 W2-4).
+    define('INSTALLER_RUNTIME_TMP_INFIX', INSTALLER_TMP_INFIX);
+}
+
+if (! defined('INSTALLER_RUNTIME_TMP_SUFFIX_PATTERN')) {
+    // 판정 패턴은 이름 생성 SSoT 곁의 상수를 **그대로** 가리킨다. 종전에는 여기 리터럴
+    // `{8}` 이 있었는데 생성 이름은 16진 16자라 영원히 매치되지 않았다 — 스윕이 돌아도
+    // 모집단이 0 이었고 오류도 경고도 없었다 (13차 G3 W1-1).
+    define('INSTALLER_RUNTIME_TMP_SUFFIX_PATTERN', INSTALLER_TMP_SUFFIX_PATTERN);
+}
 
 if (! defined('INSTALLER_RUNTIME_PATH')) {
     define('INSTALLER_RUNTIME_PATH', BASE_PATH.'/storage/installer/runtime.php');
+}
+
+if (! defined('INSTALLER_ENV_BACKUP_INFIX')) {
+    /**
+     * finalize 가 남기는 `.env` 원본 보존 사본 이름의 중간 조각 (`.env.bak.<Ymd_His>[_N]`).
+     *
+     * 정리 주체(`StorageLeftoverPruneService::ENV_BACKUP_PREFIX`)가 같은 이름을 봐야 한다 —
+     * 종전에는 양쪽 다 리터럴이라 어느 쪽이 바뀌어도 아무것도 red 가 되지 않았다 (13차 G3 W1-7).
+     * 인스톨러는 Laravel 부팅 전 코드라 코어 상수를 참조할 수 없어 값이 두 곳에 있고,
+     * 그 일치는 `StorageLeftoverPruneServiceTest` 가 잠근다.
+     */
+    define('INSTALLER_ENV_BACKUP_INFIX', '.bak.');
+}
+
+if (! defined('INSTALLER_ENV_BACKUP_STAMP_FORMAT')) {
+    /** `.env` 보존 사본의 시각 조각 형식 (`date()` 형식 문자열). */
+    define('INSTALLER_ENV_BACKUP_STAMP_FORMAT', 'Ymd_His');
+}
+
+if (! function_exists('installerWroteFully')) {
+    /**
+     * `file_put_contents()` 가 내용을 **끝까지** 썼는지 판정한다.
+     *
+     * 그 함수는 실패했을 때만 `false` 를 돌려주는 것이 아니다 — 디스크가 가득 찼거나
+     * quota 를 넘으면 **쓴 바이트 수**를 돌려주고, 그 값은 truthy 다. 그래서 `=== false`
+     * 만 보는 호출부는 **잘린 파일을 성공으로 통과시킨다.** 설치·되돌리기가 다루는 파일은
+     * `.env`(APP_KEY·DB 자격증명) · `runtime.php`(비밀 채널) · 설정 JSON 처럼 잘리면
+     * 되돌릴 수 없는 것들이라, 그 통과가 곧 복구 불가 상태다.
+     *
+     * 판정을 이 한 곳이 소유한다 — 지점마다 사본을 두면 나중에 추가되는 쓰기 지점이
+     * 다시 사각이 된다. 형제 축(`exposure-check.php` sentinel · `installer-state.php`
+     * 상태 파일 · 코어 `AbstractRootMarkerFileUpdater` · `CoreUpdateService`)이 같은
+     * 규율을 쓴다.
+     *
+     * @param  int|false  $written  `file_put_contents()` 반환값
+     * @param  string  $content  쓰려던 내용
+     * @return bool 끝까지 썼으면 true
+     */
+    function installerWroteFully($written, string $content): bool
+    {
+        return $written !== false && $written === strlen($content);
+    }
 }
 
 if (! function_exists('readInstallerRuntime')) {
@@ -46,6 +113,47 @@ if (! function_exists('readInstallerRuntime')) {
         $data = @include INSTALLER_RUNTIME_PATH;
 
         return is_array($data) ? $data : null;
+    }
+}
+
+if (! function_exists('installerSweepStaleRuntimeTmpFiles')) {
+    /**
+     * `runtime.php.tmp.<hex>` 잔여물을 걷는다.
+     *
+     * 생성 규칙과 **같은 형태만** 지운다 — 형제 두 지점과 같은 규율이다. 그리고 mtime 을
+     * 읽지 못하면 **보존한다**: `(int) @filemtime()` 은 실패 시 `0` 이라 `time() - 0` 이
+     * 언제나 하한을 넘어 「아주 오래됨」으로 읽히고, 그러면 **진행 중인 다른 요청의 tmp 를
+     * 지운다**(fail-open). 형제 `installer-state.php` 가 11차에 같은 자리를 고쳤다.
+     *
+     * 요청당 한 번만 훑는다.
+     *
+     * @return void
+     */
+    function installerSweepStaleRuntimeTmpFiles(): void
+    {
+        static $swept = false;
+        if ($swept) {
+            return;
+        }
+        $swept = true;
+
+        $prefix = INSTALLER_RUNTIME_PATH.INSTALLER_RUNTIME_TMP_INFIX;
+
+        // `glob` 은 하드닝 프로필의 차단 대상이다 — 막히면 정리를 건너뛴다(잔여물이 남는
+        // 것보다 치명이 더 나쁘다).
+        foreach (installerHasFunction('glob') ? (glob($prefix.'*') ?: []) : [] as $stale) {
+            $stale = (string) $stale;
+
+            if (preg_match(INSTALLER_RUNTIME_TMP_SUFFIX_PATTERN, substr($stale, strlen($prefix))) !== 1) {
+                continue;
+            }
+
+            $mtime = @filemtime($stale);
+
+            if ($mtime !== false && $mtime < time() - 300) {
+                @unlink($stale);
+            }
+        }
     }
 }
 
@@ -75,12 +183,38 @@ if (! function_exists('writeInstallerRuntime')) {
         // 존재해 같은 호스트의 다른 계정이 폴링해 읽을 수 있고, 동시 두 요청이 같은 tmp 를
         // 쓰면 한쪽의 rename 이 다른 쪽 내용을 확정해 클라이언트가 받은 토큰과 파일 속
         // 토큰이 어긋난다. 상태 파일 쓰기(installer-state.php)가 이미 같은 규칙을 쓴다.
-        $tmp = INSTALLER_RUNTIME_PATH.'.tmp.'.getmypid().'.'.uniqid('', true);
-        if (@file_put_contents($tmp, $php, LOCK_EX) === false) {
+        //
+        // `getmypid()` 는 쓰지 않는다 — 하드닝 프로필의 차단 대상이라 막힌 호스팅에서
+        // PHP 8 은 함수 테이블에서 지우고, 그 호출은 Error(치명)가 되어 이 비밀 채널
+        // 자체가 무너진다. 고유성만 필요한 자리다 (3차 G3 라운드).
+        // 남겨진 tmp 를 치운다. 쓰기 성공과 rename 사이에서 프로세스가 죽으면(FPM 타임아웃
+        // · OOM-kill · 재시작) tmp 가 남는데 **정리 주체가 없었다** — 형제 둘
+        // (`installer-state.php` · `RootHtaccessUpdater`)은 스윕을 갖는데 이것만 빠져 있었다.
+        // 이 파일은 DB 자격증명 + APP_KEY + 토큰을 담으므로 형제(상태 파일)보다 등급이
+        // 높고, 확장자가 `.php` 가 아니라 배포 레이아웃 ②에서 웹서버가 평문으로 내보낼 수
+        // 있다. 요청당 한 번만 훑는다. (12차 G3 C-4)
+        installerSweepStaleRuntimeTmpFiles();
+
+        $tmp = INSTALLER_RUNTIME_PATH.INSTALLER_RUNTIME_TMP_INFIX.installerUniqueSuffix(INSTALLER_TMP_SUFFIX_BYTES);
+
+        // 부분 쓰기는 `false` 가 아니라 쓴 바이트 수다. 이 파일은 `@include` 로 읽는 PHP
+        // 소스라 잘리면 `return array(` 가 닫히지 않아 그 요청이 파스 오류로 죽는다 —
+        // 게다가 DB 자격증명 + APP_KEY 를 담은 **비밀 채널**이라 잘린 채 rename 으로
+        // 확정되면 설치를 진행할 수도 되돌릴 수도 없다. 형제(`installer-state.php`)와
+        // 같은 규율로 대조하고, 실패한 tmp 는 남기지 않는다.
+        if (! installerWroteFully(@file_put_contents($tmp, $php, LOCK_EX), $php)) {
+            @unlink($tmp);
+
             return false;
         }
 
-        @chmod($tmp, 0600);
+        // `chmod` 도 하드닝 프로필이 막을 수 있고, 막히면 PHP 8 은 함수 테이블에서 지우므로
+        // 이 호출이 `Error`(치명)가 되어 **비밀 채널 쓰기 자체가 무너진다** — 설치가 한 걸음도
+        // 나아가지 못한다. 형제 지점(exposure-check.php 의 sentinel 0600)은 이미 가드가 있었다.
+        // 권한을 못 거는 것은 감수한다(비밀 파일은 어차피 곧 지워지고, 대안이 없다).
+        if (installerHasFunction('chmod')) {
+            @chmod($tmp, 0600);
+        }
 
         // atomic rename
         if (! @rename($tmp, INSTALLER_RUNTIME_PATH)) {
@@ -89,7 +223,9 @@ if (! function_exists('writeInstallerRuntime')) {
             return false;
         }
 
-        @chmod(INSTALLER_RUNTIME_PATH, 0600);
+        if (installerHasFunction('chmod')) {
+            @chmod(INSTALLER_RUNTIME_PATH, 0600);
+        }
         installerInvalidateRuntimeOpcache();
 
         return true;
@@ -123,7 +259,13 @@ if (! function_exists('deleteInstallerRuntime')) {
             return true;
         }
 
-        return @unlink(INSTALLER_RUNTIME_PATH);
+        $deleted = @unlink(INSTALLER_RUNTIME_PATH);
+
+        // 쓰기 경로와 같은 규약 — 지운 뒤 revalidate 창 안의 다음 요청이 stale 항목을 include 해
+        // 이미 삭제된 비밀을 읽지 않도록 (15차 G3 W1-11).
+        installerInvalidateRuntimeOpcache();
+
+        return $deleted;
     }
 }
 
@@ -172,7 +314,7 @@ if (! function_exists('backupExistingEnvFile')) {
         }
 
         // 같은 초에 두 번 호출돼도 서로 덮어쓰지 않도록 접미사를 붙여 빈 이름을 찾는다.
-        $base = $envPath.'.bak.'.date('Ymd_His');
+        $base = $envPath.INSTALLER_ENV_BACKUP_INFIX.date(INSTALLER_ENV_BACKUP_STAMP_FORMAT);
         $candidate = $base;
         for ($i = 1; $i <= 50 && file_exists($candidate); $i++) {
             $candidate = $base.'_'.$i;
@@ -182,12 +324,19 @@ if (! function_exists('backupExistingEnvFile')) {
             return null;
         }
 
-        if (@file_put_contents($candidate, $content, LOCK_EX) === false) {
+        // 부분 쓰기를 성공으로 읽으면 **잘린 백업**이 유일한 회수 경로로 남는다 —
+        // 이 사본의 존재 이유(원본 `.env` 를 제자리 쓰기로 덮기 전 보존)가 그 자리에서
+        // 사라진다. 잘린 사본은 지우고 「백업 없음」으로 보고하는 편이 정직하다.
+        if (! installerWroteFully(@file_put_contents($candidate, $content, LOCK_EX), $content)) {
+            @unlink($candidate);
+
             return null;
         }
 
-        // 원본과 같은 비밀을 담으므로 소유자만 읽도록 조인다.
-        @chmod($candidate, 0600);
+        // 원본과 같은 비밀을 담으므로 소유자만 읽도록 조인다 (chmod 차단 환경은 가드로 통과).
+        if (installerHasFunction('chmod')) {
+            @chmod($candidate, 0600);
+        }
 
         return $candidate;
     }

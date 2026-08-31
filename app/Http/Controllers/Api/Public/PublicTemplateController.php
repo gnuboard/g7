@@ -381,10 +381,32 @@ class PublicTemplateController extends PublicBaseController
         // 이미지/일반 파일 모두 캐싱 헤더와 함께 인라인 응답 (레이아웃 캐시 TTL, 기본 24시간).
         // PublicAttachmentController 의 이미지 서빙과 동일한 streamedFileResponse(ETag/Cache-Control) 사용
         // — 행 disk 를 따르는 스토리지 스트림이라 S3 등 원격 디스크 행에서도 성립한다 (#99).
-        return $this->streamedFileResponse(
-            $serveInfo['response'],
-            $serveInfo['etag_source'],
-            (int) g7_core_settings('cache.layout_ttl', 86400)
+        //
+        // 수정 시각을 함께 넘긴다 — ETag 를 쓰지 않고 `If-Modified-Since` 로만 재검증하는
+        // 프록시는 `Last-Modified` 가 없으면 매 요청 전문을 받아 간다. 값은 ETag 소스와
+        // 같은 행 메타(`updated_at`)라 파일 stat 없이 결정적이다.
+        //
+        // 세 인자를 **명시**한다 — 형제 아홉 통로는 전부 넘기는데 이 통로만 생략하고 있었다
+        // (15차 G3 라운드). 셋 다 없어도 동작하는 축이라 오류로 드러나지 않는다:
+        //  - `immutable: false` — 이 주소는 행 id 라 서버가 버전을 발급하지 않는다. 생략하면
+        //    요청자가 붙인 `?v=1` 로 사용자 업로드물이 1년 immutable 로 나간다.
+        //  - `mimeType` — 근거는 행 메타(`mime_type`)다. 스토리지 어댑터의 추정은 사본이다.
+        //  - `skipCompression: true` — 사용자 업로드물이라 크기·건수가 유계가 아니다.
+        //
+        // 키 검증은 코어 헬퍼(`streamedFileResponseFromMeta()`)가 한다 — 서비스는 확장에 열려
+        // 있어 「지금 구현이 채운다」는 방어가 아니다 (16차 G3 라운드 E-6). `last_modified`·
+        // `mime_type` 은 서비스 메타가 아니라 **행 메타**에서 직접 채운다 — ETag 소스와 같은
+        // 행(`updated_at`)이라 파일 stat 없이 결정적이고, 스토리지 어댑터의 MIME 추정은 사본이다.
+        return $this->streamedFileResponseFromMeta(
+            [
+                ...$serveInfo,
+                'last_modified' => $attachment->updated_at?->getTimestamp(),
+                'mime_type' => (string) $attachment->mime_type,
+            ],
+            (int) g7_core_settings('cache.layout_ttl', 86400),
+            immutable: false,
+            skipCompression: true,
+            logContext: ['template' => $identifier, 'attachment_id' => $attachment->id]
         );
     }
 }

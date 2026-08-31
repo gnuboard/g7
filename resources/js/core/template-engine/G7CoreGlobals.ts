@@ -31,6 +31,7 @@ import { useResponsive, ResponsiveProvider, ResponsiveContext } from './Responsi
 import { responsiveManager, BREAKPOINT_PRESETS } from './ResponsiveManager';
 import { AuthManager } from '../auth/AuthManager';
 import { getApiClient } from '../api/ApiClient';
+import { basePrefix, stripBasePrefix, withBasePrefix } from '../support/assetUrl';
 import { createLogger, flushEarlyLogs } from '../utils/Logger';
 import { WebSocketManager } from '../websocket/WebSocketManager';
 import { G7DevToolsCore } from '../devtools/G7DevToolsCore';
@@ -2672,6 +2673,53 @@ function initDataSourceAPI(G7Core: any): void {
 }
 
 /**
+ * 주소 조립 API 초기화 — 확장(모듈·플러그인·템플릿)이 쓰는 **공식 수단**.
+ *
+ * 확장 프론트엔드는 코어와 **별도 IIFE 번들**이라 `import { withBasePrefix }` 를 할 수
+ * 없다. 그래서 종전에는 접두사를 붙일 방법 자체가 없었고, 번들 확장 15곳이 전부
+ * `fetch('/api/…')` 형태로 남아 하위 폴더 마운트(`https://host/g7/`)에서 사이트 밖을
+ * 불렀다 — 증상은 오류가 아니라 **버튼이 조용히 무반응**인 것이다(결제·본인인증·반응).
+ *
+ * 코어 게이트가 「접두사 헬퍼를 거쳤는가」로 판정하므로, 확장이 그 판정을 통과할 수 있는
+ * 이름을 여기서 준다. 값은 서버가 `G7Config.basePath` 로 내려준 것과 같은 SSoT 다.
+ *
+ * ```ts
+ * const res = await fetch(window.G7Core.url.api('/api/plugins/x/y'));
+ * ```
+ *
+ * @param G7Core - window.G7Core 전역 객체
+ * @since 12차 G3 검증 라운드
+ */
+function initUrlAPI(G7Core: any): void {
+  G7Core.url = {
+    /**
+     * 루트 상대 경로에 사이트 마운트 접두사를 붙입니다 (멱등).
+     *
+     * @param path `/` 로 시작하는 경로
+     * @returns 접두사가 붙은 경로
+     */
+    api: (path: string): string => withBasePrefix(path),
+
+    /**
+     * 사이트 마운트 접두사를 벗겨 라우트 기준 경로로 되돌립니다.
+     *
+     * @param path `/` 로 시작하는 경로
+     * @returns 접두사를 벗긴 경로
+     */
+    route: (path: string): string => stripBasePrefix(path),
+
+    /**
+     * 현재 사이트 마운트 접두사를 반환합니다 (루트 설치면 빈 문자열).
+     *
+     * @returns 접두사
+     */
+    base: (): string => basePrefix(),
+  };
+
+  logger.log('전역 객체 window.G7Core.url에 노출됨');
+}
+
+/**
  * 로케일 관리 API 초기화
  */
 function initLocaleAPI(G7Core: any, deps: G7CoreDependencies): void {
@@ -3268,6 +3316,7 @@ export function initializeG7CoreGlobals(deps: G7CoreDependencies): void {
   initDispatchAPI(G7Core);
   initStateAPI(G7Core);
   initDataSourceAPI(G7Core);
+  initUrlAPI(G7Core);
   initLocaleAPI(G7Core, deps);
   initToastAPI(G7Core);
   initModalAPI(G7Core);

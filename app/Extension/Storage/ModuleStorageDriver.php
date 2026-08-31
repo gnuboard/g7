@@ -48,7 +48,12 @@ class ModuleStorageDriver implements StorageInterface
      */
     private function resolvePath(string $category, string $path): string
     {
-        $basePath = "{$this->identifier}/{$category}";
+        // 빈 카테고리를 흡수한다 — 형제 `CoreStorageDriver` 와 같은 규칙이다. 흡수하지
+        // 않으면 `url('', 'logo.png')` 이 `{id}//logo.png` 를 만들고, 그 이중 슬래시는
+        // 링크가 **없는** 배치에서만 경로 규칙에 걸려 422 가 된다(정적 서빙은 200).
+        $basePath = $category === ''
+            ? $this->identifier
+            : "{$this->identifier}/{$category}";
 
         if (empty($path)) {
             return $basePath;

@@ -2,6 +2,15 @@
 .DS_Store
 .env
 .env.backup
+# finalize 가 남기는 원본 보존 사본 — `.env` 전문(DB 자격증명·APP_KEY)을 담는다.
+# `.env`/`.env.backup` 패턴은 이 이름을 덮지 못한다. (12차 G3 C-7)
+.env.bak.*
+# 루트 진입·보호 파일의 원자 교체 임시 파일 (`AbstractRootMarkerFileUpdater`) — 교체 중 강제 종료 시 남는다. (13차 G3 W1-3)
+# 루트 앵커를 두지 않는다 — 루트 파일이 심볼릭 링크면 임시 파일은 링크 **대상**의 디렉토리에 생기고,
+# 그 대상이 저장소 안의 다른 위치일 수 있다. (G3 회차 16 W2 G-6)
+.htaccess.tmp.*
+index.php.tmp.*
+web.config.tmp.*
 .phpactor.json
 .phpunit.result.cache
 /.fleet
@@ -11,11 +20,19 @@
 /.vscode
 /.zed
 /auth.json
-/node_modules/public/hot
+/node_modules
+/public/hot
 /public/storage
+# 손상된 공개 스토리지 링크의 백업 — 공개 파일 **전량 사본**이다.
+# 형제(`storage/app/public-storage-broken-*`)는 `storage/app/.gitignore` 의 `*` 로
+# 덮이는데 이쪽만 빠져 있었다. 미등재면 `git add -A` 한 번으로 사용자 업로드가
+# 통째로 저장소에 들어간다. (12차 G3 C-8)
+/public/storage.broken.*
 /storage/*.key
 /storage/pail
 /storage/composer
+# composer 폴백 임시 디렉토리 (12차 G3 C-9)
+/storage/temp
 /vendor/*
 !/vendor/.gitkeep
 /.composer
@@ -98,7 +115,20 @@ storage/app/geoip/
 
 # 인스톨러 런타임 산출물 — 각 환경에서 자동 생성/소비
 storage/installer-state.json
+# 상태 파일의 원자 교체 임시 파일과 파손 사본 — 마스킹 전 비밀을 담을 수 있다. (13차 G3 W1-3)
+storage/installer-state.json.tmp.*
+storage/installer-state.json.corrupt.*
+# 상태 파일 배타 구간의 잠금 파일 (installerWithStateLock). (15차 G3 W1-4)
+storage/installer-state.json.lock
+storage/installer-probe-rate.json
 storage/installer/
+# 코어 업데이트가 운영자 수정본 옆에 두는 서버 설정 조각의 새 판본 (applyDeployFragments). (15차 G3 W2-1)
+# `.dist` 와 그 충돌 변형 `.dist.new` 둘 다 — 한쪽만 막으면 `git add -A` 로 다른 쪽이 샌다 (18차 C-a). (`.dist.new` 는 `.dist` 로 끝나지 않아 위 패턴에 안 걸린다)
+deploy/**/*.dist
+deploy/**/*.dist.new
+# 쓰기 가능 실측 프로브 — 인스톨러가 점검하는 디렉토리(storage 두 단계 · modules · plugins ·
+# templates · lang-packs · bootstrap/cache · vendor) 어디에나 남을 수 있어 경로 없이 이름으로 막는다. (14차 G3 W2-7)
+.installer-write-probe-*
 
 # 개발 전용 파일
 .api-test/

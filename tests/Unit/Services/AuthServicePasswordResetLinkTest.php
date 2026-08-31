@@ -1,0 +1,84 @@
+<?php
+
+namespace Tests\Unit\Services;
+
+use App\Contracts\Repositories\PasswordResetTokenRepositoryInterface;
+use App\Contracts\Repositories\RoleRepositoryInterface;
+use App\Contracts\Repositories\UserConsentRepositoryInterface;
+use App\Contracts\Repositories\UserRepositoryInterface;
+use App\Extension\HookManager;
+use App\Models\User;
+use App\Services\AuthService;
+use App\Services\IdentityPolicyService;
+use App\Support\AssetUrl;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Config;
+use Mockery;
+use Tests\TestCase;
+
+/**
+ * 비밀번호 재설정 링크는 `AssetUrl::siteAbsolute()` 가 만든다.
+ *
+ * `config('app.url').$path` 는 `APP_URL` 의 후행 슬래시를 그대로 실어 `…/g7//reset-password` 를
+ * 만든다 — 메일의 링크가 조용히 깨지고, 사용자는 재설정을 마칠 수 없다 (16차 G3 라운드 B-4).
+ */
+class AuthServicePasswordResetLinkTest extends TestCase
+{
+    private const HOOK = 'core.auth.after_reset_password_request';
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        HookManager::clearAction(self::HOOK);
+        Config::set('app.url', 'https://example.com/g7/');
+        app()->instance('request', Request::create('http://localhost/api/x'));
+    }
+
+    protected function tearDown(): void
+    {
+        HookManager::clearAction(self::HOOK);
+        AssetUrl::forceBasePrefix(null);
+
+        parent::tearDown();
+    }
+
+    /**
+     * @scenario base_path=subpath, navigation_direction=navigation
+     *
+     * @effects notification_links_are_built_by_the_site_absolute_helper
+     */
+    public function test_reset_url_follows_the_configured_site_url_without_double_slash(): void
+    {
+        $user = new User(['name' => '홍길동', 'email' => 'hong@example.com']);
+
+        $users = Mockery::mock(UserRepositoryInterface::class);
+        $users->shouldReceive('findByEmail')->with('hong@example.com')->andReturn($user);
+
+        $tokens = Mockery::mock(PasswordResetTokenRepositoryInterface::class);
+        $tokens->shouldReceive('updateOrCreateByEmail')->twice();
+
+        $service = new AuthService(
+            $users,
+            Mockery::mock(RoleRepositoryInterface::class),
+            Mockery::mock(UserConsentRepositoryInterface::class),
+            $tokens,
+            Mockery::mock(IdentityPolicyService::class),
+        );
+
+        $captured = [];
+        HookManager::addAction(self::HOOK, function ($u, array $extra) use (&$captured): void {
+            $captured[] = $extra['reset_url'] ?? null;
+        });
+
+        $service->forgotPassword('hong@example.com');
+        $service->forgotPassword('hong@example.com', 'admin');
+
+        $this->assertCount(2, $captured);
+        $this->assertStringStartsWith('https://example.com/g7/reset-password?token=', $captured[0]);
+        $this->assertStringStartsWith('https://example.com/g7/admin/reset-password?token=', $captured[1]);
+        foreach ($captured as $url) {
+            $this->assertStringNotContainsString('g7//', $url);
+        }
+    }
+}

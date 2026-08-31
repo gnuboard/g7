@@ -119,6 +119,27 @@ class SaveSettingsRequest extends FormRequest
         ]);
 
         $this->normalizeAllowedExtensions();
+        $this->normalizeSiteUrl();
+    }
+
+    /**
+     * 사이트 주소(`general.site_url`)의 후행 슬래시를 저장 전에 걷어냅니다.
+     *
+     * 운영자가 `https://example.com/g7/` 로 적으면 그 값에 `/path` 를 잇는 소비처마다 `//` 가
+     * 생긴다. 소비처에서 걷어내면 한 곳이 빠지고, 저장 경로 진입 전 한 곳에서 걷어내면 그 형태가
+     * 설정 파일에 남지 않는다 (16차 G3 라운드 B-4). 문자열이 아닌 값은 검증 규칙이 판정한다.
+     */
+    private function normalizeSiteUrl(): void
+    {
+        $general = $this->input('general');
+
+        if (! is_array($general) || ! is_string($general['site_url'] ?? null)) {
+            return;
+        }
+
+        $general['site_url'] = rtrim(trim($general['site_url']), '/');
+
+        $this->merge(['general' => $general]);
     }
 
     /**

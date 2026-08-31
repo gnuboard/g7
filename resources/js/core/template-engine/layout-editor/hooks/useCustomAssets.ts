@@ -22,6 +22,7 @@
  */
 
 import { useCallback, useState } from 'react';
+import { withBasePrefix } from '../../../support/assetUrl';
 import { buildAuthHeaders } from '../utils/authToken';
 
 /** 목록 항목 1건 */
@@ -74,11 +75,18 @@ export interface CustomAssetTarget {
 /**
  * 관리 API base URL 을 만듭니다.
  *
+ * 사이트 마운트 접두사를 **여기서** 붙인다 — 이 hook 의 다섯 호출이 전부 이 한 곳을
+ * 거치므로, 호출부마다 붙이면 한 곳만 빠져도 그 조작만 조용히 죽는다. 하위 폴더
+ * 배치(`https://host/g7/`)에서 접두사가 없으면 요청이 사이트 밖으로 나가고, 운영자
+ * 화면에는 오류 없이 「목록이 비어 있고 저장이 되지 않는」 상태만 남는다.
+ *
  * @param target 관리 대상 확장
- * @returns base URL
+ * @returns 마운트 접두사가 붙은 base URL
  */
 function baseUrl(target: CustomAssetTarget): string {
-  return `/api/admin/extensions/${encodeURIComponent(target.type)}/${encodeURIComponent(target.identifier)}/custom-assets`;
+  return withBasePrefix(
+    `/api/admin/extensions/${encodeURIComponent(target.type)}/${encodeURIComponent(target.identifier)}/custom-assets`,
+  );
 }
 
 /**
@@ -115,6 +123,7 @@ export function useCustomAssets(target: CustomAssetTarget): UseCustomAssetsResul
     setError(null);
 
     try {
+      // base-path:allow 주소는 `baseUrl()` 산출물이라 접두사가 이미 붙어 있다 (그 한 곳이 이 hook 의 단일 지점).
       const response = await fetch(baseUrl(target), {
         credentials: 'same-origin',
         headers: buildAuthHeaders(),
@@ -161,6 +170,7 @@ export function useCustomAssets(target: CustomAssetTarget): UseCustomAssetsResul
 
       try {
         const url = `${baseUrl(target)}/content?path=${encodeURIComponent(path)}`;
+        // base-path:allow 주소는 `baseUrl()` 산출물이라 접두사가 이미 붙어 있다 (그 한 곳이 이 hook 의 단일 지점).
         const response = await fetch(url, {
           credentials: 'same-origin',
           headers: buildAuthHeaders(),
@@ -261,6 +271,7 @@ export function useCustomAssets(target: CustomAssetTarget): UseCustomAssetsResul
 
       try {
         const url = `${baseUrl(target)}?path=${encodeURIComponent(path)}`;
+        // base-path:allow 주소는 `baseUrl()` 산출물이라 접두사가 이미 붙어 있다 (그 한 곳이 이 hook 의 단일 지점).
         const response = await fetch(url, {
           method: 'DELETE',
           credentials: 'same-origin',

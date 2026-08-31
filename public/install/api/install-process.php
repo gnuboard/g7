@@ -493,7 +493,7 @@ try {
             @ini_set('zlib.output_compression', false);
         }
         if (function_exists('apache_setenv')) {
-            @apache_setenv('no-gzip', 1);
+            @apache_setenv('no-gzip', '1');
         }
 
         // 기존 출력 버퍼 전부 비우기 (헤더 설정 전)

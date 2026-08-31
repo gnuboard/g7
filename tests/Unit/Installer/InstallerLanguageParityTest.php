@@ -4,6 +4,7 @@ namespace Tests\Unit\Installer;
 
 use App\Execution\ExecutionMode;
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
  * 인스톨러 다국어 정합 회귀 테스트 (10차 #G7).
@@ -31,11 +32,24 @@ use PHPUnit\Framework\TestCase;
  *  8. 자리표시자 치환은 `lang(key, replace)` 한 지점을 지난다 (12차 #C8, 잔존분은 상한 고정).
  *
  * 커버 축: locale ko·en / key_shape flat·nested / placeholder_style colon·brace·escape / reference_channel php·js
- *
- * @effects installer_lang_locales_have_identical_keys, installer_lang_placeholders_match_across_locales, installer_lang_rejects_brace_placeholders, installer_lang_literal_references_are_defined, installer_lang_rejects_literal_escape_sequences, installer_inline_script_strings_use_shared_escaping
  */
 class InstallerLanguageParityTest extends TestCase
 {
+    use ScansPhpSourceFunctions;
+
+    /*
+     * 인스톨러에는 문구 채널이 **둘** 있고 규칙이 다르다 — 이 테스트가 보는 것은 앞의 하나다.
+     *
+     *  - **진행 로그**(`lang()` 경유, SSE·폴링으로 화면에 뜬다): 운영자가 읽는 문구이므로
+     *    번역 대상이고, 아래 검사들이 키 정의·자리표시자·양방향 parity 를 잠근다.
+     *  - **진단 로그**(`addLog()` 로 상태 파일에 쌓이는 기록): 사후 분석용이라 원문 한국어
+     *    리터럴을 그대로 쓴다. 이 채널을 번역 대상으로 끌어오면 키가 폭증하는 데 비해
+     *    읽는 사람은 개발자뿐이다.
+     *
+     * 새 문구를 넣을 때 어느 채널인지 먼저 정한다 — 한 공정 안에서 두 규칙이 섞이면
+     * 나중에 어느 쪽이 의도였는지 알 수 없게 된다.
+     */
+
     /** 코드가 부르지만 값이 동적으로 조립되는 접두사 — 리터럴 대조 대상에서 제외한다. */
     private const DYNAMIC_PREFIXES = [
         'task_',
@@ -126,6 +140,9 @@ class InstallerLanguageParityTest extends TestCase
         return $found;
     }
 
+    /**
+     * @effects installer_lang_locales_have_identical_keys
+     */
     public function test_locales_define_the_same_keys(): void
     {
         $ko = $this->locale('ko');
@@ -143,6 +160,9 @@ class InstallerLanguageParityTest extends TestCase
         );
     }
 
+    /**
+     * @effects installer_lang_placeholders_match_across_locales
+     */
     public function test_placeholders_match_across_locales(): void
     {
         $ko = $this->locale('ko');
@@ -167,6 +187,9 @@ class InstallerLanguageParityTest extends TestCase
         );
     }
 
+    /**
+     * @effects installer_lang_rejects_brace_placeholders
+     */
     public function test_brace_placeholders_are_not_used(): void
     {
         $offenders = [];
@@ -186,6 +209,76 @@ class InstallerLanguageParityTest extends TestCase
     }
 
     /**
+     * 안내가 부르는 버튼 이름이 화면에 **실재하는 라벨**과 같다 (8차 P4-3).
+     *
+     * ko 의 노출 조치 안내는 「[다시 검사]를 눌러 주세요」였는데 실제 버튼은 `recheck`
+     * (`[다시 검증]`)다 — 운영자는 화면에 없는 버튼을 찾는다. 오탈자가 아니라 **다른 이름**
+     * 이라 키 정합·자리표시자·parity 어느 검사에도 걸리지 않았고(문구 자체는 정상 번역이다),
+     * en 은 처음부터 `Recheck` 로 일치해 두 로케일을 나란히 보지 않으면 드러나지 않았다.
+     *
+     * 대괄호는 이 사전에서 로그 접두(`[롤백]`)·구획 제목으로도 쓰이므로 전수 규칙으로
+     * 넓히지 않는다 — **버튼을 지목하는 안내**만 그 버튼의 라벨과 대조한다.
+     *
+     * @effects installer_lang_guidance_names_existing_buttons
+     */
+    public function test_guidance_names_the_button_that_exists(): void
+    {
+        /** @var array<string, string> 안내 키 => 그 안내가 지목하는 버튼 라벨 키 */
+        $guidance = [
+            'web_exposure_exposed_remedy' => 'recheck',
+            // 16차 G3 D-4 — 서버측 차단 문구의 en 이 `[Re-verify]` 를 불렀다(실재 라벨은 `Recheck`).
+            'error_web_exposure_blocked' => 'recheck',
+        ];
+
+        $offenders = [];
+        foreach ($this->localeCodes() as $code) {
+            $table = $this->locale($code);
+            foreach ($guidance as $messageKey => $labelKey) {
+                if (! isset($table[$messageKey], $table[$labelKey])) {
+                    $offenders[] = $code.':'.$messageKey.' (키 부재)';
+
+                    continue;
+                }
+                if (! str_contains($table[$messageKey], '['.$table[$labelKey].']')) {
+                    $offenders[] = $code.':'.$messageKey.' → ['.$table[$labelKey].']';
+                }
+            }
+        }
+
+        $this->assertSame(
+            [],
+            $offenders,
+            '안내가 실재하지 않는 버튼 이름을 부른다 — 운영자는 화면에 없는 버튼을 찾게 된다'
+        );
+    }
+
+    /**
+     * 원인을 열거하는 안내는 자기가 **몇 개를 열거하는지** 바르게 말한다 (16차 G3 D-5).
+     *
+     * 양성 대조 실패 안내는 ③(리버스 프록시)을 덧붙이면서 머리말 「원인은 둘 중 하나」를 그대로
+     * 두었다 — 운영자는 두 개만 읽고 세 번째를 지나친다. 열거 표식 수와 머리말의 수를 대조한다.
+     *
+     * @scenario exposure_control=unreachable
+     *
+     * @effects installer_control_failed_hint_counts_its_causes
+     */
+    public function test_control_failed_hint_states_the_number_of_causes_it_lists(): void
+    {
+        $expectedCount = [
+            'ko' => ['/[①②③④⑤]/u', '셋 중 하나'],
+            'en' => ['/\(\d\)/', 'three possible causes'],
+        ];
+
+        foreach ($expectedCount as $code => [$markerPattern, $heading]) {
+            $message = $this->locale($code)['web_exposure_control_failed_hint'] ?? '';
+            $listed = preg_match_all($markerPattern, $message);
+
+            $this->assertSame(3, $listed, $code.' 안내가 열거하는 원인 수가 바뀌었다 — 머리말도 함께 고쳐야 한다');
+            $this->assertStringContainsString($heading, $message, $code.' 안내의 머리말이 열거한 원인 수와 다르다');
+        }
+    }
+
+    /**
      * 이스케이프 시퀀스가 값에 문자 그대로 남아 있지 않은가 (11차 #B18).
      *
      * PHP 홑따옴표 문자열은 `
@@ -193,6 +286,8 @@ class InstallerLanguageParityTest extends TestCase
      * 줄바꿈 대신 역슬래시와 n 이 화면에 뜬다. 같은 파일 안에서 형제 키는 쌍따옴표라
      * 정상이었고, 표기가 갈렸다는 사실을 어떤 게이트도 보지 않았다. 중괄호 금지 축과
      * 같은 종류의 결함이라 같은 자리에서 잠근다.
+     *
+     * @effects installer_lang_rejects_literal_escape_sequences
      */
     public function test_escape_sequences_are_not_literal(): void
     {
@@ -224,6 +319,58 @@ class InstallerLanguageParityTest extends TestCase
      * (`lang('task_'.$id)`) 은 리터럴이 아니므로 정규식이 애초에 잡지 않고, 접두사만 남는
      * 형태는 DYNAMIC_PREFIXES 로 걸러 오탐을 막는다.
      */
+    /**
+     * 동적으로 조립되는 서버별 안내 키가 **전부 정의돼 있다**.
+     *
+     * `installer.js` 는 `lang('web_exposure_server_guide_' + kind)` 로 키를 만든다.
+     * 리터럴이 아니므로 형제 게이트(`test_literal_key_references_are_defined`)가 보지
+     * 못하고, vitest 쪽은 `lang` 을 스텁으로 주입하므로 실제 키 존재를 재지 않는다 —
+     * 두 검사 사이의 틈이다. 분기 목록을 **소스에서 도출해** 그 틈을 닫는다.
+     *
+     * @scenario server_kind=apache
+     *
+     * @effects server_guide_keys_exist_for_every_branch
+     */
+    public function test_dynamic_server_guide_keys_are_defined_for_every_branch(): void
+    {
+        $source = $this->sourceWithoutComments(
+            dirname(__DIR__, 3).'/public/install/assets/js/installer.js'
+        );
+
+        $this->assertSame(
+            1,
+            preg_match("/const kinds = \[([^\]]*)\];/", $source, $m),
+            '서버 종류 분기 목록을 소스에서 도출하지 못했다 — 이 게이트가 통째로 무력해진다'
+        );
+
+        preg_match_all("/'([a-z]+)'/", $m[1], $found);
+        $kinds = $found[1];
+        $kinds[] = 'other'; // 목록에 없는 값의 폴백 — 소스가 그렇게 접는다
+
+        $this->assertGreaterThanOrEqual(5, count($kinds), '분기 도출이 비었다');
+
+        foreach (['ko', 'en'] as $locale) {
+            $defined = $this->locale($locale);
+
+            $this->assertArrayHasKey(
+                'web_exposure_server_guide_label',
+                $defined,
+                $locale.': 서버별 안내 제목 키가 없다'
+            );
+
+            foreach ($kinds as $kind) {
+                $this->assertArrayHasKey(
+                    'web_exposure_server_guide_'.$kind,
+                    $defined,
+                    $locale.': 서버 종류 `'.$kind.'` 의 안내 키가 없다 — 그 서버 운영자에게 키 문자열이 그대로 나간다'
+                );
+            }
+        }
+    }
+
+    /**
+     * @effects installer_lang_literal_references_are_defined
+     */
     public function test_literal_key_references_are_defined(): void
     {
         $defined = $this->locale('ko');
@@ -232,7 +379,7 @@ class InstallerLanguageParityTest extends TestCase
         foreach ($this->sourceFiles() as $file) {
             // 주석을 지운 뒤에 찾는다 — 규정·예시 주석 안의 `lang('key')` 는 호출이 아니다.
             // 남겨 두면 문서에 적힌 예시가 「정의되지 않은 키」로 잡혀 이 게이트가 오탐으로 죽는다.
-            $source = $this->stripComments((string) file_get_contents($file));
+            $source = $this->sourceWithoutComments($file);
             preg_match_all('/(?:lang|getLangMessage)\(\s*\'([a-z0-9_.]+)\'\s*[,)]/i', $source, $matches);
 
             foreach (array_unique($matches[1]) as $key) {
@@ -268,7 +415,7 @@ class InstallerLanguageParityTest extends TestCase
         $surplus = [];
 
         foreach ($this->sourceFiles() as $file) {
-            $source = $this->stripComments((string) file_get_contents($file));
+            $source = $this->sourceWithoutComments($file);
 
             // `lang('key', ['a' => …, 'b' => …])` 의 키와 인자 이름만 뽑는다. 중첩 배열·함수
             // 호출이 값 자리에 오면 첫 `]` 에서 잘릴 수 있으므로 **이름 추출에만** 쓴다.
@@ -340,7 +487,7 @@ class InstallerLanguageParityTest extends TestCase
     public function test_supported_languages_constant_matches_shipped_lang_files(): void
     {
         // 주석을 지운 뒤 대조한다 — 주석 처리된 상수 선언도 원문에는 글자로 남는다.
-        $source = $this->stripComments((string) file_get_contents(self::installRoot().'/includes/config.php'));
+        $source = $this->sourceWithoutComments(self::installRoot().'/includes/config.php');
 
         $this->assertSame(
             1,
@@ -381,7 +528,7 @@ class InstallerLanguageParityTest extends TestCase
                 continue;
             }
 
-            $source = $this->stripComments((string) file_get_contents($file));
+            $source = $this->sourceWithoutComments($file);
             preg_match_all('/\blang\(\s*\'([a-z0-9_]+(?:\.[a-z0-9_]+)+)\'/i', $source, $matches);
 
             foreach (array_unique($matches[1]) as $key) {
@@ -416,7 +563,7 @@ class InstallerLanguageParityTest extends TestCase
             static fn (string $p): string => preg_quote($p, '/'),
             array_merge(self::DYNAMIC_PREFIXES, ['step_'])
         ));
-        $tables = $this->stripComments((string) file_get_contents(self::installRoot().'/includes/functions.php'));
+        $tables = $this->sourceWithoutComments(self::installRoot().'/includes/functions.php');
         preg_match_all('/=>\s*\'(('.$prefixes.')[a-z0-9_]+)\'/', $tables, $matches);
         $tableKeys = array_values(array_unique($matches[1]));
 
@@ -444,7 +591,7 @@ class InstallerLanguageParityTest extends TestCase
         }
 
         // (3) 판정 근거 — `execution-mode.php` 가 실제로 내보내는 source 어휘.
-        $resolver = $this->stripComments((string) file_get_contents(self::installRoot().'/includes/execution-mode.php'));
+        $resolver = $this->sourceWithoutComments(self::installRoot().'/includes/execution-mode.php');
         preg_match_all('/\'source\'\s*=>\s*\'([a-z_]+)\'/', $resolver, $sourceMatches);
         $sources = array_values(array_unique($sourceMatches[1]));
 
@@ -453,6 +600,57 @@ class InstallerLanguageParityTest extends TestCase
             $key = 'execution_mode_source_'.$source;
             if (! isset($defined[$key])) {
                 $missing[] = 'execution-mode.php → '.$key;
+            }
+        }
+
+        // (4) 「재지 못한 사유」 어휘 — `exposure-check.php` 가 실제로 내보내는 reason 값.
+        //     화면(`installer.js`)이 `'web_exposure_unmeasured_reason_' + u.reason` 으로
+        //     조립하므로 (1)~(3) 과 같은 계열이다. 이 축이 없던 동안 `no_marker` 하나가
+        //     정의 없이 남아, 그 계열은 「점검하지 못한 항목」에 **사유 없이 라벨만** 떴다 —
+        //     D21 이 요구한 「무엇을 왜 재지 못했는지」의 절반이 빠진 상태였다.
+        $exposure = $this->sourceWithoutComments(self::installRoot().'/includes/exposure-check.php');
+        // `unmeasured[]` 에 실리는 사유만 본다. 같은 파일의 정리 스윕도 `reason` 키를 쓰지만
+        // 그쪽은 진단 로그 채널이라 이 키 계열이 아니다 — 모집단을 넓히면 거짓 빨강이 된다.
+        preg_match_all(
+            // `$unmeasured[] = [...]` 뿐 아니라 **반환문 안에 인라인으로 실린** 형태도 본다
+            // (7차: 대조 계열의 준비 실패가 그 형태다). 접두를 선택적으로 두지 않으면 그
+            // 어휘가 모집단 밖에 남아 문구 없이 라벨만 뜨는 상태가 다시 생긴다.
+            '/(?:\$unmeasured\[\]\s*=\s*)?\[\s*\'label\'\s*=>\s*\'[^\']*\'\s*,\s*\'reason\'\s*=>\s*\'([a-z_]+)\'/',
+            $exposure,
+            $reasonMatches
+        );
+        $reasons = array_values(array_unique($reasonMatches[1]));
+
+        $this->assertNotEmpty($reasons, 'exposure-check.php 에서 사유 어휘를 읽지 못했다 — 표기가 바뀌었다');
+
+        // 반대 방향도 잠근다. 이 축은 「서버가 어휘를 늘렸는데 문구가 없다」만 보고 있었다 —
+        // 화면이 조립하는 **접두사 리터럴**이 바뀌면 사유가 조용히 사라지는데(`hasReason`
+        // 판정이 그것을 삼켜 라벨만 뜬다) 그 회귀는 어느 게이트에도 걸리지 않았다.
+        //
+        // 접두사는 화면에서 두 번 쓰인다 — 키를 **조립**할 때와, 번역이 없어 키가 그대로
+        // 돌아왔는지 **판정**할 때. 개수를 박아 두면 정당한 구조 변경에서 거짓 빨강이 되므로
+        // 존재와 어휘 일관성을 잰다.
+        $installerJs = $this->sourceWithoutComments(self::installRoot().'/assets/js/installer.js');
+
+        $this->assertGreaterThan(
+            0,
+            substr_count($installerJs, "'web_exposure_unmeasured_reason_'"),
+            '화면의 사유 키 접두사가 사라지면 「무엇을 왜 재지 못했는지」가 조용히 빠진다 (라벨만 뜬다)'
+        );
+
+        $definedWithPrefix = array_filter(
+            array_keys($defined),
+            static fn (string $key): bool => str_starts_with($key, 'web_exposure_unmeasured_reason_')
+        );
+
+        $this->assertNotEmpty(
+            $definedWithPrefix,
+            '화면이 조립하는 접두사로 시작하는 문구가 하나도 없다 — 두 쪽의 어휘가 갈렸다'
+        );
+        foreach ($reasons as $reason) {
+            $key = 'web_exposure_unmeasured_reason_'.$reason;
+            if (! isset($defined[$key])) {
+                $missing[] = 'exposure-check.php → '.$key;
             }
         }
 
@@ -485,7 +683,7 @@ class InstallerLanguageParityTest extends TestCase
         $counts = [];
 
         foreach ($this->sourceFiles() as $file) {
-            $source = $this->stripComments((string) file_get_contents($file));
+            $source = $this->sourceWithoutComments($file);
             $found = preg_match_all(
                 '/\b(?:lang|getLangMessage)\(\s*\'[a-z0-9_.]+\'\s*\)\s*\.replace\(/i',
                 $source
@@ -510,87 +708,6 @@ class InstallerLanguageParityTest extends TestCase
             $exceeded,
             '자리표시자 치환은 lang(key, replace) 한 지점을 지난다 — .replace(문자열, …) 은 첫 occurrence 만 바꾼다'
         );
-    }
-
-    /**
-     * PHP·JS 주석을 지운다.
-     *
-     * PHP 는 토크나이저로 정확히 지우고, JS 는 토크나이저가 없으므로 줄 주석·블록 주석을
-     * 보수적으로 지운다(문자열 안의 `//` 를 지우지 않도록 따옴표 상태를 따라간다).
-     *
-     * @param  string  $source  원본
-     * @return string 주석이 지워진 소스
-     */
-    private function stripComments(string $source): string
-    {
-        if (str_starts_with(ltrim($source), '<?php')) {
-            $out = '';
-            foreach (token_get_all($source) as $token) {
-                if (is_array($token)) {
-                    $out .= in_array($token[0], [T_COMMENT, T_DOC_COMMENT], true)
-                        ? str_repeat("\n", substr_count($token[1], "\n"))
-                        : $token[1];
-
-                    continue;
-                }
-                $out .= $token;
-            }
-
-            return $out;
-        }
-
-        $out = '';
-        $length = strlen($source);
-        $quote = null;
-
-        for ($i = 0; $i < $length; $i++) {
-            $char = $source[$i];
-            $next = $i + 1 < $length ? $source[$i + 1] : '';
-
-            if ($quote !== null) {
-                $out .= $char;
-                if ($char === '\\') {
-                    $out .= $next;
-                    $i++;
-
-                    continue;
-                }
-                if ($char === $quote) {
-                    $quote = null;
-                }
-
-                continue;
-            }
-
-            if ($char === '"' || $char === "'" || $char === '`') {
-                $quote = $char;
-                $out .= $char;
-
-                continue;
-            }
-
-            if ($char === '/' && $next === '/') {
-                while ($i < $length && $source[$i] !== "\n") {
-                    $i++;
-                }
-                $out .= "\n";
-
-                continue;
-            }
-
-            if ($char === '/' && $next === '*') {
-                $end = strpos($source, '*/', $i + 2);
-                $segment = $end === false ? substr($source, $i) : substr($source, $i, $end - $i + 2);
-                $out .= str_repeat("\n", substr_count($segment, "\n"));
-                $i = $end === false ? $length : $end + 1;
-
-                continue;
-            }
-
-            $out .= $char;
-        }
-
-        return $out;
     }
 
     /**
@@ -656,6 +773,8 @@ class InstallerLanguageParityTest extends TestCase
      * (`views/3-configuration.php`)이고, 그 함수에 테스트 참조가 **0** 이었다 — 본문을
      * `return "'".$value."'";` 로 바꿔도 전 스위트가 초록이다. 나머지 인라인 스크립트 두
      * 곳은 서로 다른 규칙(지역 상수·맨 json_encode)을 쓰고 있었고 그 사실도 무검사였다.
+     *
+     * @effects installer_inline_script_strings_use_shared_escaping
      */
     public function test_inline_script_string_helper_escapes_dangerous_characters(): void
     {
@@ -686,13 +805,15 @@ line2',
      * 인라인 스크립트가 문구를 심는 채널이 갈라지지 않았는가 (11차 #D4).
      *
      * 규칙이 파일마다 다르면 한 파일만 규칙에서 뒤처져도 아무도 모른다.
+     *
+     * @effects installer_inline_script_strings_use_shared_escaping
      */
     public function test_inline_scripts_use_the_shared_escaping_helper(): void
     {
         $offenders = [];
 
         foreach ($this->scanFiles(self::installRoot().'/views', ['php']) as $path) {
-            $source = $this->stripComments((string) file_get_contents((string) $path));
+            $source = $this->sourceWithoutComments((string) $path);
 
             // `<script>` 구간만 본다 — HTML 본문의 lang() 은 htmlspecialchars 담당이다.
             if (preg_match_all('#<script\b[^>]*>(.*?)</script>#s', $source, $blocks) !== 1 && ! isset($blocks[1])) {

@@ -198,4 +198,88 @@ describe('ActionDispatcher - handleNavigate fallback (engine-v1.40.0)', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/shop/orders/123', { replace: false });
     expect(mockWindowOpen).not.toHaveBeenCalled();
   });
+
+  // ── 미등록 라우트 fallback 의 same-origin 게이트 ─────────────────────────────
+  //
+  // 폴백은 「매치 실패 = 이 템플릿이 모르는 주소 = 바깥으로 내보낸다」로 동작한다.
+  // 그런데 라우트 패턴은 전부 `^/…$` 앵커라 **외부 URL 은 구조적으로 매치될 수 없다** —
+  // 즉 매치 실패가 방어가 아니라 방아쇠다. 로그인 복귀 주소(`?redirect=`)는 검증 없이
+  // 이 자리에 도착하므로(번들 템플릿 3곳), 게이트가 없으면 무인증 오픈 리다이렉트다.
+  //
+  // 판정은 브라우저 URL 파서와 같은 정규화를 거친다 — 문자열 접두 검사만으로는
+  // 백슬래시·탭·개행 우회를 막지 못한다. 과차단도 재는 이유는 경로 중간의 연속
+  // 슬래시·백슬래시가 authority 를 만들지 않기 때문이다.
+  describe('same-origin 게이트 — 외부 오리진은 fallback 으로 내보내지 않는다', () => {
+    const external: ReadonlyArray<readonly [string, string]> = [
+      ['scheme 절대 URL', 'https://evil.com/checkout'],
+      ['protocol-relative', '//evil.com/checkout'],
+      ['백슬래시 authority', '/\\evil.com/checkout'],
+      ['백슬래시 2개 authority', '\\\\evil.com/checkout'],
+      ['탭 삽입', '/\t/evil.com/checkout'],
+      ['개행 삽입', '/\n/evil.com/checkout'],
+      ['CR 삽입', '/\r/evil.com/checkout'],
+      ['슬래시 3개', '///evil.com/checkout'],
+      ['scheme + 슬래시 3개', 'https:///evil.com/checkout'],
+      ['앞뒤 공백을 두른 절대 URL', '  https://evil.com/x  '],
+    ];
+
+    it.each(external)('%s 은 바깥으로 나가지 않는다', async (_label, path) => {
+      mockMatch.mockReturnValue(null);
+
+      await dispatcher.dispatchAction({
+        type: 'click',
+        handler: 'navigate',
+        params: { path },
+      });
+
+      expect(mockLocationAssign).not.toHaveBeenCalled();
+      expect(mockWindowOpen).not.toHaveBeenCalled();
+    });
+
+    it('미등록이지만 사이트 안인 경로는 종전대로 fallback 이 동작한다 (과차단 없음)', async () => {
+      mockMatch.mockReturnValue(null);
+
+      await dispatcher.dispatchAction({
+        type: 'click',
+        handler: 'navigate',
+        params: { path: '/admin/users' },
+      });
+
+      expect(mockLocationAssign).toHaveBeenCalledWith('/admin/users');
+    });
+
+    it('경로 중간의 연속 슬래시는 authority 가 아니므로 통과한다 (과차단 없음)', async () => {
+      mockMatch.mockReturnValue(null);
+
+      await dispatcher.dispatchAction({
+        type: 'click',
+        handler: 'navigate',
+        params: { path: '/files/a//b.png' },
+      });
+
+      expect(mockLocationAssign).toHaveBeenCalledWith('/files/a//b.png');
+    });
+
+    it('openWindow 를 직접 부르는 경로도 같은 게이트를 지난다', async () => {
+      await dispatcher.dispatchAction({
+        type: 'click',
+        handler: 'openWindow',
+        params: { path: 'https://evil.com/x', target: '_self' },
+      });
+
+      expect(mockLocationAssign).not.toHaveBeenCalled();
+      expect(mockWindowOpen).not.toHaveBeenCalled();
+    });
+
+    it('openWindow 의 새 탭 경로도 같은 게이트를 지난다', async () => {
+      await dispatcher.dispatchAction({
+        type: 'click',
+        handler: 'openWindow',
+        params: { path: '//evil.com/x', target: '_blank' },
+      });
+
+      expect(mockWindowOpen).not.toHaveBeenCalled();
+      expect(mockLocationAssign).not.toHaveBeenCalled();
+    });
+  });
 });

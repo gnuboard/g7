@@ -319,6 +319,23 @@ class StateManagementApi
             throw new Exception(lang('state_save_failed'));
         }
 
+        // 노출 점검 잔여물 정리 (B-4) — 초기화도 sentinel 을 남기는 경로다. 다음 점검은
+        // 새 이름의 대상을 만들므로 옛 파일은 그대로 두면 계속 쌓이기만 한다.
+        // `finalizing: false` — 이 둘은 요구사항 화면이 열려 있는 동안에도 부를 수 있는
+        // 무인증 경로다. 진행 중인 점검의 sentinel 을 지우면 그 화면이 404 를 「보호됨」
+        // 으로 확정하고, 상한 상태를 지우면 무인증 요청 하나로 상한이 초기화된다.
+        $probeCleanup = installerCleanupExposureProbe(null, finalizing: false);
+        if (! $probeCleanup['swept']) {
+            addLog(lang('log_reset_probe_sweep_unwritable', [
+                'reason' => (string) ($probeCleanup['reason'] ?? 'unknown'),
+            ]));
+        } elseif ($probeCleanup['failed'] > 0) {
+            addLog(lang('log_reset_probe_sweep_partial', [
+                'failed' => (string) $probeCleanup['failed'],
+                'removed' => (string) $probeCleanup['removed'],
+            ]));
+        }
+
         addLog(lang('state_reset_completed', ['step' => $targetStep]));
 
         // 성공 응답
@@ -413,7 +430,7 @@ class StateManagementApi
             session_write_close();
         }
 
-        // ── 되돌리기 전에 「작업이 물러날 때까지」 기다린다 (PO 결정 13차 — 11차 이월분) ──
+        // ── 되돌리기 전에 「작업이 물러날 때까지」 기다린다 (제품 결정 13차 — 11차 이월분) ──
         //
         // 워커는 태스크 **경계에서만** 중단을 확인한다. 그래서 종전처럼 되돌리기를 즉시
         // 부르면, 아직 실행 중인 바로 그 태스크와 되돌리기가 겹칠 수 있었다.
@@ -462,6 +479,25 @@ class StateManagementApi
             ]
             : null;
         // 세션도 Step 5를 유지 (중단 화면 표시)
+
+        // 노출 점검 잔여물 정리 (B-4) — 중단은 sentinel 을 남기는 경로 중 하나였다. 정리
+        // 주체가 finalize 성공 경로뿐이라, 중단·방치로 끝난 설치는 난수 파일을 계속 남겼다.
+        // `finalizing: false` — 이 둘은 요구사항 화면이 열려 있는 동안에도 부를 수 있는
+        // 무인증 경로다. 진행 중인 점검의 sentinel 을 지우면 그 화면이 404 를 「보호됨」
+        // 으로 확정하고, 상한 상태를 지우면 무인증 요청 하나로 상한이 초기화된다.
+        $probeCleanup = installerCleanupExposureProbe(null, finalizing: false);
+        if (! $probeCleanup['swept']) {
+            addLog(sprintf(
+                '[abort] 노출 점검 잔여 파일을 쓸지 못했습니다 (사유: %s) — storage/installer 를 직접 정리해 주세요.',
+                (string) ($probeCleanup['reason'] ?? 'unknown'),
+            ));
+        } elseif ($probeCleanup['failed'] > 0) {
+            addLog(sprintf(
+                '[abort] 노출 점검 잔여 파일 %d개를 지우지 못했습니다 (지움 %d개) — storage/installer 를 직접 정리해 주세요.',
+                $probeCleanup['failed'],
+                $probeCleanup['removed'],
+            ));
+        }
 
         $saveResult = installerFinalizeAbortedState(
             installerApplyAbortedState(getInstallationState()),
@@ -580,6 +616,8 @@ require_once __DIR__.'/../includes/session.php';
 require_once __DIR__.'/../includes/functions.php';
 require_once __DIR__.'/../includes/installer-state.php';
 require_once __DIR__.'/../includes/installer-runtime.php';
+// 노출 점검 sentinel 정리 헬퍼 (B-4) — abort/reset 정리 구간에서 호출
+require_once __DIR__.'/../includes/exposure-check.php';
 
 // 롤백 함수 로드 (reset, abort 액션에서 필요)
 require_once __DIR__.'/rollback-functions.php';

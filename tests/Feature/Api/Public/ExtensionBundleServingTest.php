@@ -66,6 +66,8 @@ class ExtensionBundleServingTest extends TestCase
         $mock->shouldReceive('buildBundleContent')->andReturn($memoryContent);
         $mock->shouldReceive('countAssetDeclaringExtensions')->andReturn($declaredCount);
         $mock->shouldReceive('findMissingDeclaredAssets')->andReturn($missing);
+        $mock->shouldReceive('bundleMimeType')
+            ->andReturnUsing(static fn (string $kind): string => $kind === 'css' ? 'text/css' : 'text/javascript');
         $this->app->instance(ExtensionBundleService::class, $mock);
     }
 
@@ -263,6 +265,32 @@ class ExtensionBundleServingTest extends TestCase
 
         $response->assertOk();
         $this->assertStringStartsWith('text/css', $response->headers->get('Content-Type'));
+    }
+
+    /**
+     * 빈 번들 응답도 **응답 계약 헬퍼**를 지나 `nosniff` 를 싣는다.
+     *
+     * 파일이 있는 응답은 `fileResponse()` 가 그 헤더를 붙이는데, 빈 응답만 손으로
+     * 조립하면 같은 주소가 활성 확장 유무에 따라 다른 헤더를 공표한다. 종전에는 그
+     * 전환(회차 20)을 재는 테스트가 없어, 되돌려도 전 스위트가 초록이었다
+     * (22차 G3 라운드 B6).
+     *
+     * @effects extension_bundle_empty_response_declares_nosniff
+     */
+    public function test_empty_bundle_response_declares_nosniff_like_its_file_sibling(): void
+    {
+        $this->bindBundleService('');
+
+        foreach (['/api/modules/bundle.js', '/api/plugins/bundle.js', '/api/modules/bundle.css', '/api/plugins/bundle.css'] as $url) {
+            $response = $this->get($url.'?v=777');
+
+            $response->assertOk();
+            $response->assertHeader(
+                'X-Content-Type-Options',
+                'nosniff'
+            );
+            $this->assertSame('', $response->getContent(), $url.' 의 빈 번들 응답에 본문이 실렸다');
+        }
     }
 
     public function test_bundle_routes_do_not_collide_with_asset_route(): void

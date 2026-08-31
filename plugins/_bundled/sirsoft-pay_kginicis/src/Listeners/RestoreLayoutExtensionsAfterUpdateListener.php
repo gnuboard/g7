@@ -9,6 +9,7 @@ use App\Contracts\Repositories\LayoutRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Enums\LayoutExtensionType;
 use App\Enums\LayoutSourceType;
+use App\Extension\ExtensionManager;
 use App\Services\LayoutExtensionService;
 use Illuminate\Support\Facades\Log;
 
@@ -34,12 +35,12 @@ class RestoreLayoutExtensionsAfterUpdateListener implements HookListenerInterfac
     /**
      * 기본 핸들러 (미사용).
      *
-     * @param mixed ...$args
+     * @param  mixed  ...$args
      */
     public function handle(...$args): void {}
 
     /**
-     * @param string $identifier
+     * @param  string  $identifier
      */
     public function restoreCurrentExtensionsAfterUpdate(string $identifier): void
     {
@@ -76,7 +77,12 @@ class RestoreLayoutExtensionsAfterUpdateListener implements HookListenerInterfac
      */
     private function currentOverlayExtensions(): array
     {
-        $paths = glob($this->extensionsDirectory().'/*.json') ?: [];
+        // `glob` 은 하드닝 프로필의 `disable_functions` 목록에 들어간다 — 막힌 호스팅에서
+        // PHP 8 은 그 함수를 함수 테이블에서 제거하므로 이 호출은 `Error`(치명)가 되고
+        // `?:` 는 그것을 잡지 못한다. 이 리스너는 플러그인 업데이트 트랜잭션 안에서
+        // 동기 실행되므로(`sync => true`) 그 자리에서 업데이트가 통째로 죽는다.
+        // 코어가 같은 이유로 쓰는 나열 수단을 그대로 공유한다 (13차 G3 라운드).
+        $paths = ExtensionManager::listDirectoryFiles($this->extensionsDirectory(), '.json');
         $extensions = [];
 
         foreach ($paths as $path) {

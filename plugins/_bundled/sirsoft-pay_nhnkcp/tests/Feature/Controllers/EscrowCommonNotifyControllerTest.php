@@ -6,6 +6,7 @@ namespace Plugins\Sirsoft\PayNhnkcp\Tests\Feature\Controllers;
 
 use App\Extension\HookManager;
 use App\Models\User;
+use Illuminate\Testing\TestResponse;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderPaymentFactory;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
@@ -54,20 +55,20 @@ class EscrowCommonNotifyControllerTest extends PluginTestCase
         return $order;
     }
 
-    private function postEscrowNotify(array $payload): \Illuminate\Testing\TestResponse
+    private function postEscrowNotify(array $payload): TestResponse
     {
         return $this->withServerVariables(['REMOTE_ADDR' => '203.238.36.58'])
             ->post('/plugins/sirsoft-pay_nhnkcp/payment/escrow-common-notify', $payload);
     }
 
-    private function assertKcpNotifyRetry(\Illuminate\Testing\TestResponse $response): void
+    private function assertKcpNotifyRetry(TestResponse $response): void
     {
         $response->assertOk();
         $this->assertStringContainsString('name="result"', $response->getContent());
         $this->assertStringNotContainsString('value="0000"', $response->getContent());
     }
 
-    private function assertKcpNotifyOk(\Illuminate\Testing\TestResponse $response): void
+    private function assertKcpNotifyOk(TestResponse $response): void
     {
         $response->assertOk();
         $this->assertStringContainsString('name="result"', $response->getContent());
@@ -122,6 +123,11 @@ class EscrowCommonNotifyControllerTest extends PluginTestCase
         $this->assertTrue($hookCalled);
     }
 
+    /**
+     * @scenario threat=replay, callback_state=second_arrival_same_tno
+     *
+     * @effects replay_no_double_completion, replay_response_is_idempotent_ok
+     */
     public function test_escrow_common_notify_does_not_dispatch_duplicate_payload_twice(): void
     {
         $order = $this->createEscrowOrder('KCP_ESCROW_TNO_REAL');

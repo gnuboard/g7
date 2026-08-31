@@ -32,12 +32,19 @@ import { webSocketManager } from './websocket/WebSocketManager';
 import { getModuleAssetLoader, parseModuleAssetsFromConfig, parsePluginAssetsFromConfig, parseBundleUrlsFromConfig } from './modules';
 import { SystemBannerManager } from './template-engine/SystemBannerManager';
 import {
+    fetchWithRetry,
     installUnloadGuard,
     isDocumentUnloading,
     loadScriptWithRetry,
 } from './template-engine/networkResilience';
 import { notifyAssetFailure, clearAssetFailure } from './assets/AssetFailureNotice';
-import { suffixed, extStaticUrl, convertToCurrentMode } from './support/assetUrl';
+import {
+    convertToCurrentMode,
+    extStaticUrl,
+    stripBasePrefix,
+    suffixed,
+    withBasePrefix,
+} from './support/assetUrl';
 import { fetchStaticFirst } from './support/fetchStaticFirst';
 import {
     normalizeScriptSrcForOriginCheck as normalizeScriptSrcForOriginCheckImpl,
@@ -502,6 +509,7 @@ export class TemplateApp {
                 // routes.json 로딩 (저장된 캐시 버전 사용)
                 // 정적 게시본(bake) 우선 — miss 면 즉시 종전 API 로 폴백 (#122).
                 // legacy 측은 네트워크 일시 실패(응답 없음)에만 재시도. HTTP 에러는 아래 체인이 종전대로 throw.
+                // base-path:allow 첫 인자는 `extStaticUrl()` 산출물 아니면 null 이다 — 삼항이라 게이트가 형태를 읽지 못한다.
                 fetchStaticFirst(
                     storedCacheVersion > 0
                         ? extStaticUrl(`templates/${this.config.templateId}/routes.json`, storedCacheVersion)
@@ -649,12 +657,14 @@ export class TemplateApp {
                 // (apiClient 는 토큰 미보유 시 요청을 skip 하므로 콜백도 발동 안 함).
                 // 즉 사용자는 로그인된 상태였다가 세션이 만료된 케이스이므로
                 // reason='session_expired' 를 부여해 로그인 페이지에서 안내 토스트가 노출되도록 한다.
+                // base-path:allow 복귀 주소는 브라우저가 그대로 열 값이라 접두사를 품은 원본을 쓴다
                 const returnUrl = window.location.pathname + window.location.search;
                 const loginUrl = authManager.getLoginRedirectUrl(
                     authType as AuthType,
                     returnUrl,
                     'session_expired'
                 );
+                // base-path:allow getLoginRedirectUrl() 가 접두사를 붙인 값이다.
                 window.location.href = loginUrl;
             });
 
@@ -2797,10 +2807,15 @@ export class TemplateApp {
         // details.hadToken=true 로 마킹하는 정보를 함께 사용해야 한다.
         if (error instanceof LayoutLoaderError && error.details?.status === 401) {
             const templateId = this.config.templateId || '';
-            const pathname = window.location.pathname;
+            // 인증 타입 판정은 **라우트 기준 경로**로 한다 — 하위 폴더 배치에서
+            // `location.pathname` 은 `/g7/admin/…` 이라 `/admin` 접두 검사가 거짓이
+            // 되고, 관리자 화면의 세션 만료가 사용자 로그인으로 흘러간다 (12차 G3).
+            // 복귀 주소는 브라우저가 그대로 열 값이므로 벗기지 않은 원본을 쓴다.
+            const pathname = stripBasePrefix(window.location.pathname);
             const authType: AuthType =
                 templateId.includes('admin') || pathname.startsWith('/admin') ? 'admin' : 'user';
-            const returnUrl = pathname + window.location.search;
+            // base-path:allow 복귀 주소는 브라우저가 그대로 열 값이라 접두사를 품은 원본을 쓴다
+            const returnUrl = window.location.pathname + window.location.search;
             const hadToken =
                 !!getApiClient().getToken() || error.details?.hadToken === true;
             const loginUrl = AuthManager.getInstance().getLoginRedirectUrl(
@@ -2808,6 +2823,7 @@ export class TemplateApp {
                 returnUrl,
                 hadToken ? 'session_expired' : undefined
             );
+            // base-path:allow getLoginRedirectUrl() 가 접두사를 붙인 값이다.
             window.location.href = loginUrl;
             return;
         }
@@ -3036,7 +3052,7 @@ export class TemplateApp {
         //    이 값은 template-engine.ts:createGlobalVariables() 의 `$locales` 의 SSoT 로,
         //    UserProfile 등 언어 셀렉터 컴포넌트가 새로고침 없이 재렌더링한다.
         try {
-            const localesResponse = await fetch(`/api/locales/active?_=${Date.now()}`);
+            const localesResponse = await fetch(withBasePrefix(`/api/locales/active?_=${Date.now()}`));
             if (localesResponse.ok) {
                 const localesResult = await localesResponse.json();
                 const locales = localesResult?.data?.locales;
@@ -3220,7 +3236,9 @@ export class TemplateApp {
             // XSRF 토큰 가져오기
             const xsrfToken = this.getXsrfToken();
 
-            const response = await fetch(endpoint, {
+            // 하위 폴더 배치에서 사이트 밖으로 나가지 않도록 접두사를 거친다.
+            // (헬퍼는 멱등이라 이미 접두사가 붙은 값도 안전하다.)
+            const response = await fetch(withBasePrefix(endpoint), {
                 method,
                 headers: {
                     'Content-Type': 'application/json',
@@ -3959,7 +3977,15 @@ export class TemplateApp {
         const newQueryParams = new URLSearchParams(url.search);
 
         // 1. URL 업데이트 (히스토리 교체, 리로드 없음)
-        window.history.replaceState(null, '', newPath);
+        //
+        // 히스토리에 싣는 값은 브라우저가 보는 주소이므로 접두사를 붙인다 — 형제
+        // `ActionDispatcher.handleReplaceUrl`(withBasePrefix) · `Router.executeNavigation`
+        // 과 같은 규칙이다. 12차가 그 둘을 고칠 때 이 한 곳이 빠져 있었고, 목록 화면의
+        // 검색·정렬·페이지 이동(`navigate` + `replace: true`)이 전부 이 경로라 하위 폴더
+        // 배치에서 주소창만 마운트 밖으로 교체됐다(새로고침·북마크 시 다른 사이트가
+        // 열린다). `withBasePrefix` 는 멱등이라 이미 붙은 값이 와도 안전하다
+        // (14차 G3 라운드).
+        window.history.replaceState(null, '', withBasePrefix(newPath));
         logger.log('URL updated via replaceState');
 
         // 2. 내부 쿼리 컨텍스트 업데이트

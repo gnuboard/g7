@@ -23,12 +23,6 @@ use Tests\TestCase;
  * API 에도 실패가 드러나지 않습니다.
  *
  * 축 조합은 각 테스트 메서드의 @scenario 주석이 담당한다.
- *
- * @effects proxy_setting_persists_to_debug_category
- * @effects proxy_setting_rejects_invalid_url
- * @effects proxy_applied_to_global_http_options
- * @effects proxy_absent_leaves_global_http_options_untouched
- * @effects proxy_connection_test_reports_egress_ip
  */
 class OutboundProxySettingTest extends TestCase
 {

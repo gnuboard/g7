@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\VerificationKginicis\Http\Controllers;
 
 use App\Http\Controllers\Api\Base\PublicBaseController;
+use App\Support\AssetUrl;
 use Illuminate\Http\Response;
 use Plugins\Sirsoft\VerificationKginicis\Http\Requests\InicisPopupBridgeRequest;
 
@@ -51,6 +52,9 @@ class InicisPopupBridgeController extends PublicBaseController
      */
     protected function htmlResponse(string $html): Response
     {
+        // file-serving:allow 파일이 아니라 이 자리에서 만든 중계 문서를 돌려준다 — 서빙 계약
+        // (nosniff·ETag·304) 의 대상이 아니다. 표식이 없으면 소스 계약 검사가 이 메서드를
+        // 파일 서빙으로 읽는다 (22차 G3 라운드 B2).
         return response($html, 200, ['Content-Type' => 'text/html; charset=UTF-8']);
     }
 
@@ -69,6 +73,13 @@ class InicisPopupBridgeController extends PublicBaseController
         // 문서 언어와 제목을 현재 로케일에 맞춘다.
         $locale = e(app()->getLocale());
         $title = e(__('sirsoft-verification_kginicis::messages.bridge_page_title'));
+
+        // 복귀 정보가 없을 때의 기본 목적지는 **이 사이트의 루트**다.
+        // 리터럴 '/' 는 하위 폴더 배치(https://host/g7/)에서 문서 루트를 가리켜
+        // 사이트 밖(다른 사이트 또는 404)으로 나간다 — 본인인증을 마친 사용자가
+        // 엉뚱한 곳에 떨어지고, 오류는 남지 않는다 (14차 G3 라운드).
+        $prefix = AssetUrl::basePrefix();
+        $siteRoot = $prefix === '' ? '/' : $prefix.'/';
 
         return <<<HTML
 <!DOCTYPE html>
@@ -107,7 +118,7 @@ class InicisPopupBridgeController extends PublicBaseController
     }
     try { window.sessionStorage.removeItem(REDIRECT_STASH_KEY); } catch (e) {}
 
-    var dest = (stash && stash.return_url) ? stash.return_url : '/';
+    var dest = (stash && stash.return_url) ? stash.return_url : '{$siteRoot}';
     var sep = dest.indexOf('?') >= 0 ? '&' : '?';
     if (payload.verification_token) {
         dest += sep + 'verification_token=' + encodeURIComponent(payload.verification_token);

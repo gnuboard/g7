@@ -7,8 +7,6 @@ use Plugins\Sirsoft\Tosspayments\Tests\PluginTestCase;
 
 /**
  * RegisterPgProviderListener 단위 테스트
- *
- * @effects toss_provider_registered_with_payment_handler
  */
 class RegisterPgProviderListenerTest extends PluginTestCase
 {
@@ -41,6 +39,8 @@ class RegisterPgProviderListenerTest extends PluginTestCase
 
     /**
      * registerProvider가 토스페이먼츠를 제공자 목록에 추가하는지 확인
+     *
+     * @effects toss_provider_registered_with_payment_handler
      */
     public function test_register_provider_adds_tosspayments(): void
     {

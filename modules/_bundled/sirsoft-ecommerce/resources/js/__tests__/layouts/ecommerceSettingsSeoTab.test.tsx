@@ -144,6 +144,8 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
   // ==============================
   // 3. 메타 설정 섹션 헤더 + 페이지별 admin-card 구조
   // ==============================
+  // @scenario layout-semantic-asset-mapping-408-seo-tab
+  // @effects ecommerce_seo_tab_meta_settings_header_uses_section_header_asset, ecommerce_seo_tab_replaces_card_accordion_with_admin_card_for_four_page_types, ecommerce_seo_tab_form_field_names_preserve_seo_meta_category_search_product_shop_index
   describe('메타 설정 섹션 (section-header + admin-card × 4)', () => {
     it('meta_settings_header가 section-header 자산을 사용한다', () => {
       const header = findById(tabSeo, 'meta_settings_header');
