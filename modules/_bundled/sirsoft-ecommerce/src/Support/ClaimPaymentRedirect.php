@@ -16,8 +16,10 @@ use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
  * (회원 마이페이지 / 비회원 상점 경로)은 이 모듈이 소유한다. 플러그인 4종이 각자 주소를
  * 조립하면 화면 경로가 바뀔 때 네 곳이 함께 낡으므로 여기가 단일 출처다.
  *
- * 반환 주소의 쿼리 계약: 성공 `?claim_payment=success`, 실패 `?claim_payment=failed&error={code}`.
- * 신청서 상세 화면(유저 템플릿)이 이 파라미터로 결과 안내를 표시한다.
+ * 반환 주소의 쿼리 계약: 성공 `?claim_payment=success`, 실패 `?claim_payment=failed&error={code}`,
+ * 사용자 중단 `?claim_payment=cancelled`. 세 경우 모두 `claim_number` 를 함께 싣는다.
+ * 돌아갈 화면(유저 템플릿)이 이 파라미터로 결과 안내를 표시한다 — 안내가 없으면 구매자는
+ * 결제창에서 돌아온 뒤 돈이 나갔는지 알 수 없다.
  */
 final class ClaimPaymentRedirect
 {
@@ -102,12 +104,32 @@ final class ClaimPaymentRedirect
         $order = $payment->order;
         $isGuest = $order !== null && $order->user_id === null;
 
-        if ($claimNumber === null || $claimNumber === '') {
-            $path = $isGuest ? (ShopPathResolver::base() ?: '/') : ClaimUrl::MEMBER_LIST;
+        // 신청서 상세 화면은 아직 서지 않았다(회원 S13 / 비회원 S14). 그 주소로 보내면 프론트
+        // 라우터가 받아 줄 라우트가 없어 404 가 열리고, 결제를 마치고 돌아온 구매자는 돈이
+        // 나갔는지조차 확인하지 못한다 — 실패·취소도 사유 없이 같은 404 다(2026-08-31 실측).
+        // 그래서 결과를 보여 줄 수 있는 화면으로 돌아간다: 회원은 주문 상세(클레임 추가결제
+        // 합계 행이 이미 그려진다), 비회원은 주문 조회 화면(상세는 조회 토큰을 전제하는데
+        // 결제창에서 돌아온 브라우저에 그 토큰이 있다고 보장할 수 없다 — 알림 링크가 같은
+        // 이유로 이미 조회 화면을 가리킨다).
+        //
+        // 신청서 상세가 서면 이 세 줄만 `ClaimUrl::{member,guest}Detail($claimNumber)` 로
+        // 되돌린다 — 주소 규칙은 `ClaimUrl` 에 그대로 남아 있다.
+        $orderNumber = (string) ($order?->order_number ?? '');
+
+        if ($isGuest) {
+            $path = ClaimUrl::guestLookup();
+        } elseif ($orderNumber !== '') {
+            $path = ClaimUrl::memberOrderDetail($orderNumber);
         } else {
-            $path = $isGuest
-                ? ClaimUrl::guestDetail($claimNumber)
-                : ClaimUrl::memberDetail($claimNumber);
+            // 주문을 읽지 못하면 목록으로 — 이 경로는 결제 건이 가리키는 주문이 사라진 때뿐이다.
+            $path = ClaimUrl::MEMBER_LIST;
+        }
+
+        // 어느 신청서의 결제였는지 화면이 알아야 결과 안내에 그 번호를 실을 수 있다. 신청서
+        // 상세로 돌아가던 때에는 주소가 그 번호를 품고 있었으나, 주문 상세로 돌아가면 주소에
+        // 남지 않는다 — 쿼리로 옮긴다.
+        if ($claimNumber !== null && $claimNumber !== '') {
+            $query['claim_number'] = $claimNumber;
         }
 
         $queryString = http_build_query($query);

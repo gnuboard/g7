@@ -23,7 +23,11 @@
  *   claim_apply_shipping_fee_basis_hidden_for_fixed_mode,
  *   claim_apply_change_product_modal_clears_previous_row_selection,
  *   claim_apply_secondary_currency_absorbs_all_server_shapes,
- *   claim_apply_item_validation_error_maps_to_its_row
+ *   claim_apply_item_validation_error_maps_to_its_row,
+ *   claim_apply_refund_branch_cannot_be_mixed,
+ *   claim_apply_refund_branch_follows_selection,
+ *   claim_apply_return_summary_uses_server_gross_refund,
+ *   claim_apply_refund_bank_sent_only_when_filled
  *
  * @vitest-environment jsdom
  */
@@ -33,6 +37,7 @@ import {
     applyClaimChangeProductHandler,
     attachClaimItemErrors,
     collectClaimFieldErrors,
+    normalizeRefundAccountPrefill,
     unplacedClaimErrorMessage,
     buildClaimItemsPayload,
     claimStoreSuffix,
@@ -49,6 +54,10 @@ import {
     setClaimReasonHandler,
     submitClaimHandler,
     toSecondaryCurrencyList,
+    toggleClaimItemHandler,
+    toggleClaimSelectAllHandler,
+    canSelectClaimItem,
+    resolveSelectedRefundBranch,
     updateClaimQuantityHandler,
 } from '../../handlers/claimApplyHandlers';
 
@@ -541,6 +550,7 @@ describe('claimApplyHandlers', () => {
             payment_method: '',
             images: '',
             redelivery: '',
+            refund_bank: '',
         });
         // 화면에 남는 안내를 토스트로 한 번 더 띄우지 않는다 (§6-3 P13).
         expect(mockG7Core.toast.error).not.toHaveBeenCalled();
@@ -892,6 +902,7 @@ describe('claimApplyHandlers', () => {
             payment_method: '',
             images: '',
             redelivery: '',
+            refund_bank: '',
         });
     });
 
@@ -983,5 +994,332 @@ describe('claimApplyHandlers', () => {
 
         expect(mockG7Core.api.post).not.toHaveBeenCalled();
         vi.useRealTimers();
+    });
+
+    // ================================================================
+    // S12 — 취소·환불 분기 / 반품 요약 3줄 / 환불계좌
+    // ================================================================
+
+    /**
+     * 취소·환불의 분기 축 — 두 분기가 섞인 주문에서 화면이 무엇을 막고 무엇을 고르는가.
+     *
+     * `mixed` 는 "그 조합으로 신청하면 무엇이 되는가" 가 아니라 **그 조합을 만들 수 없는가**를
+     * 잰다. 서버가 신청 전체를 거절하므로 화면이 만들 수 있게 두면 구매자는 사유까지 다 채운
+     * 뒤에야 막힌다.
+     *
+     * @scenario claim_type=refund, charge_method=none, refund_branch=mixed
+     * @effects claim_apply_refund_branch_cannot_be_mixed,
+     *   claim_apply_refund_branch_follows_selection,
+     *   claim_apply_refund_branch_select_all_picks_one_branch,
+     *   claim_apply_refund_bank_sent_only_when_filled,
+     *   claim_apply_refund_account_never_prefills_masked_values
+     */
+
+    /**
+     * 취소·환불이 열린 주문 — 결제완료 상품(즉시취소)과 배송준비 상품(환불신청)이 섞여 있다.
+     *
+     * 서버는 이 조합을 한 신청서로 받지 않는다(`claim_refund_branch_mixed`). 화면이 그 조합을
+     * 만들 수 있게 두면 구매자는 사유까지 다 채운 뒤에야 거절받는다 — 미리보기도 같은 이유로
+     * 실패하므로 금액조차 볼 수 없다.
+     */
+    function seedMixedRefundState(): void {
+        mockDataSources = {
+            claimable: {
+                data: {
+                    order_id: 120,
+                    order_number: '20260823-0012',
+                    resolved_type: 'mixed',
+                    options: [
+                        {
+                            option: { id: 410, product_name: '즉시취소 상품', unit_price: 10000, unit_price_formatted: '10,000원' },
+                            available_quantity: 1,
+                            locked_quantity: 0,
+                            claimable_types: ['refund'],
+                            refund_branch: 'cancel',
+                        },
+                        {
+                            option: { id: 411, product_name: '환불신청 상품', unit_price: 20000, unit_price_formatted: '20,000원' },
+                            available_quantity: 1,
+                            locked_quantity: 0,
+                            claimable_types: ['refund'],
+                            refund_branch: 'refund',
+                        },
+                    ],
+                    reasons: { refund: [{ code: 'changed_mind', localized_name: '단순 변심', fault_type: 'customer' }] },
+                    settings: { allowed_charge_methods: [], charge_payment_methods: [], max_images: 5, image_max_size_kb: 5120 },
+                    refund_account: { required: false, banks: [] },
+                    pending_images: [],
+                },
+            },
+            order: { data: { id: 120, order_number: '20260823-0012', base_currency: 'KRW' } },
+        };
+
+        initClaimApplyHandler(
+            { handler: 'initClaimApply', params: { claimType: 'refund', preselected: '' } },
+            {} as any
+        );
+
+        mockLocalState.claimReason = 'changed_mind';
+    }
+
+    it('취소·환불 — 분기가 다른 상품은 함께 고를 수 없다 (서버가 신청 전체를 거절하는 조합)', () => {
+        seedMixedRefundState();
+
+        toggleClaimItemHandler(
+            { handler: 'toggleClaimItem', params: { index: 0, claimApiBase: API_BASE } },
+            {} as any
+        );
+
+        expect(mockLocalState.claimItems[0].selected).toBe(true);
+        expect(mockLocalState.claimResolvedBranch).toBe('cancel');
+
+        // 다른 분기의 상품 — 잠겨 있어야 한다.
+        expect(canSelectClaimItem(mockLocalState.claimItems, 1, 'refund')).toBe(false);
+
+        toggleClaimItemHandler(
+            { handler: 'toggleClaimItem', params: { index: 1, claimApiBase: API_BASE } },
+            {} as any
+        );
+
+        expect(mockLocalState.claimItems[1].selected).toBe(false);
+        expect(mockG7Core.toast.warning).toHaveBeenCalled();
+        // 분기 판정도 그대로다 — 거절된 선택이 라벨을 흔들면 안 된다.
+        expect(mockLocalState.claimResolvedBranch).toBe('cancel');
+    });
+
+    it('취소·환불 — 이미 고른 상품은 언제나 해제할 수 있다 (잘못 고른 조합에서 빠져나올 길)', () => {
+        seedMixedRefundState();
+
+        toggleClaimItemHandler({ handler: 'toggleClaimItem', params: { index: 0, claimApiBase: API_BASE } }, {} as any);
+        expect(canSelectClaimItem(mockLocalState.claimItems, 0, 'refund')).toBe(true);
+
+        toggleClaimItemHandler({ handler: 'toggleClaimItem', params: { index: 0, claimApiBase: API_BASE } }, {} as any);
+
+        expect(mockLocalState.claimItems[0].selected).toBe(false);
+        // 선택이 비면 분기는 다시 정해지지 않은 상태다 — 그래야 다른 분기를 고를 수 있다.
+        expect(mockLocalState.claimResolvedBranch).toBeNull();
+        expect(canSelectClaimItem(mockLocalState.claimItems, 1, 'refund')).toBe(true);
+    });
+
+    it('취소·환불 — 전체 선택은 먼저 만나는 분기만 고른다 (전건을 고른 척한 뒤 제출에서 거절하지 않는다)', () => {
+        seedMixedRefundState();
+
+        toggleClaimSelectAllHandler(
+            { handler: 'toggleClaimSelectAll', params: { claimApiBase: API_BASE } },
+            {} as any
+        );
+
+        expect(mockLocalState.claimItems[0].selected).toBe(true);
+        expect(mockLocalState.claimItems[1].selected).toBe(false);
+        expect(resolveSelectedRefundBranch(mockLocalState.claimItems)).toBe('cancel');
+        // 전건이 선택되지 않았으므로 '전체 선택' 체크도 켜지지 않는다 — 켜면 화면이 거짓말을 한다.
+        expect(mockLocalState.claimSelectAll).toBe(false);
+    });
+
+    it('교환·반품은 분기가 없는 유형이라 언제나 고를 수 있다 (대조군)', () => {
+        seedApplyState();
+
+        expect(canSelectClaimItem(mockLocalState.claimItems, 0, 'exchange')).toBe(true);
+        expect(canSelectClaimItem(mockLocalState.claimItems, 1, 'exchange')).toBe(true);
+        expect(mockLocalState.claimResolvedBranch).toBeNull();
+    });
+
+    /**
+     * 반품 요약의 재료 — 서버가 낸 값을 옮기기만 한다.
+     *
+     * @scenario claim_type=return, charge_method=deduct_from_refund, refund_branch=none
+     * @effects claim_apply_return_summary_uses_server_gross_refund
+     */
+    it('반품 요약 — 차감 전 금액·차감액은 서버가 낸 값을 그대로 옮긴다 (화면이 되더하지 않는다)', () => {
+        const formatted = formatClaimEstimate(
+            {
+                type: 'return',
+                shipping_fee: { fee: 3000, mc_fee: { KRW: 3000, USD: 2.25 } },
+                adjustment: { refund_total: 26000 },
+                deducted_shipping_fee: 3000,
+                refund_before_deduction: 29000,
+                mc_refund_before_deduction: { KRW: 29000, USD: 21.75 },
+                total_charge_amount: 3000,
+            },
+            'KRW'
+        );
+
+        expect(formatted.refund_before_deduction).toBe('29,000원');
+        expect(formatted.deducted_shipping_fee).toBe('3,000원');
+        expect(formatted.refund_total).toBe('26,000원');
+        // 보조통화도 서버 재료를 쓴다 — 기준통화는 병기 목록에서 빠진다.
+        expect(formatted.mc_refund_before_deduction).toEqual([{ code: 'USD', formatted: '$21.75' }]);
+    });
+
+    /**
+     * @scenario claim_type=return, charge_method=pay_on_request, refund_branch=none
+     * @effects claim_apply_return_summary_uses_server_gross_refund
+     */
+    it('반품 요약 — 별도 결제 방식은 차감액이 0 이라 세 줄이 서지 않는다 (대조군)', () => {
+        const formatted = formatClaimEstimate(
+            {
+                type: 'return',
+                shipping_fee: { fee: 3000 },
+                adjustment: { refund_total: 29000 },
+                deducted_shipping_fee: 0,
+                refund_before_deduction: 29000,
+                total_charge_amount: 3000,
+            },
+            'KRW'
+        );
+
+        expect(formatted.deducted_shipping_fee).toBe('0원');
+        expect(formatted.refund_before_deduction).toBe(formatted.refund_total);
+    });
+
+    it('환불계좌 — 세 필드가 채워졌을 때만 페이로드에 싣는다', async () => {
+        seedMixedRefundState();
+        toggleClaimItemHandler({ handler: 'toggleClaimItem', params: { index: 0, claimApiBase: API_BASE } }, {} as any);
+
+        mockLocalState.claimRefundBankCode = '004';
+        mockLocalState.claimRefundBankAccount = '1234567890';
+        mockLocalState.claimRefundBankHolder = '홍길동';
+
+        mockG7Core.api.post.mockResolvedValue({ success: true, data: {} });
+
+        await submitClaimHandler(
+            { handler: 'submitClaim', params: { claimApiBase: API_BASE } },
+            {} as any
+        );
+
+        const body = mockG7Core.api.post.mock.calls.at(-1)![1];
+        expect(mockG7Core.api.post.mock.calls.at(-1)![0]).toBe(API_BASE + '/refund-requests');
+        expect(body.refund_bank).toEqual({ bank_code: '004', account_number: '1234567890', holder: '홍길동' });
+    });
+
+    it('환불계좌 — 아무것도 입력하지 않으면 키 자체를 보내지 않는다 (미입력과 일부 입력이 구분된다)', async () => {
+        seedMixedRefundState();
+        toggleClaimItemHandler({ handler: 'toggleClaimItem', params: { index: 0, claimApiBase: API_BASE } }, {} as any);
+
+        mockG7Core.api.post.mockResolvedValue({ success: true, data: {} });
+
+        await submitClaimHandler(
+            { handler: 'submitClaim', params: { claimApiBase: API_BASE } },
+            {} as any
+        );
+
+        const body = mockG7Core.api.post.mock.calls.at(-1)![1];
+        expect(body).not.toHaveProperty('refund_bank');
+        // 취소·환불은 청구가 발생하지 않으므로 청구 2축도 싣지 않는다.
+        expect(body).not.toHaveProperty('charge_method');
+        expect(body).not.toHaveProperty('payment_method');
+    });
+
+    it('환불계좌 — 일부만 입력해도 그대로 보내 서버가 거절하게 한다 (화면이 조용히 지우지 않는다)', async () => {
+        seedMixedRefundState();
+        toggleClaimItemHandler({ handler: 'toggleClaimItem', params: { index: 0, claimApiBase: API_BASE } }, {} as any);
+
+        mockLocalState.claimRefundBankCode = '004';
+        mockG7Core.api.post.mockResolvedValue({ success: true, data: {} });
+
+        await submitClaimHandler({ handler: 'submitClaim', params: { claimApiBase: API_BASE } }, {} as any);
+
+        const body = mockG7Core.api.post.mock.calls.at(-1)![1];
+        expect(body.refund_bank).toEqual({ bank_code: '004', account_number: '', holder: '' });
+    });
+
+    it('환불계좌 — 반품도 세 필드를 싣는다 (계좌 환불은 반품에서도 일어난다)', async () => {
+        mockDataSources = {
+            claimable: claimableResponse,
+            order: { data: { id: 120, order_number: '20260823-0012', base_currency: 'KRW' } },
+        };
+
+        initClaimApplyHandler(
+            { handler: 'initClaimApply', params: { claimType: 'return', preselected: '310' } },
+            {} as any
+        );
+
+        mockLocalState.claimReason = 'size_mismatch';
+        mockLocalState.claimRefundBankCode = '004';
+        mockLocalState.claimRefundBankAccount = '1234567890';
+        mockLocalState.claimRefundBankHolder = '홍길동';
+
+        mockG7Core.api.post.mockResolvedValue({ success: true, data: {} });
+
+        await submitClaimHandler({ handler: 'submitClaim', params: { claimApiBase: API_BASE } }, {} as any);
+
+        const body = mockG7Core.api.post.mock.calls.at(-1)![1];
+        expect(mockG7Core.api.post.mock.calls.at(-1)![0]).toBe(API_BASE + '/returns');
+        expect(body.refund_bank).toEqual({ bank_code: '004', account_number: '1234567890', holder: '홍길동' });
+    });
+
+    it('환불계좌 — 차액이 돌아오지 않는 교환에는 싣지 않는다 (대조군)', async () => {
+        seedApplyState();
+
+        mockLocalState.claimEstimate = { refund_product_amount: 0 };
+        mockLocalState.claimRefundBankCode = '004';
+        mockLocalState.claimRefundBankAccount = '1234567890';
+        mockLocalState.claimRefundBankHolder = '홍길동';
+
+        mockG7Core.api.post.mockResolvedValue({ success: true, data: {} });
+
+        await submitClaimHandler({ handler: 'submitClaim', params: { claimApiBase: API_BASE } }, {} as any);
+
+        expect(mockG7Core.api.post.mock.calls.at(-1)![1]).not.toHaveProperty('refund_bank');
+    });
+
+    it('환불계좌 — 저가 옵션 교환으로 차액이 돌아오면 싣는다', async () => {
+        seedApplyState();
+
+        // 카드 노출 조건과 같은 값을 본다 — 다른 값을 쓰면 칸은 보이는데 전송되지 않거나 그 반대가 된다.
+        mockLocalState.claimEstimate = { refund_product_amount: 1000 };
+        mockLocalState.claimRefundBankCode = '004';
+        mockLocalState.claimRefundBankAccount = '1234567890';
+        mockLocalState.claimRefundBankHolder = '홍길동';
+
+        mockG7Core.api.post.mockResolvedValue({ success: true, data: {} });
+
+        await submitClaimHandler({ handler: 'submitClaim', params: { claimApiBase: API_BASE } }, {} as any);
+
+        const body = mockG7Core.api.post.mock.calls.at(-1)![1];
+        expect(mockG7Core.api.post.mock.calls.at(-1)![0]).toBe(API_BASE + '/exchanges');
+        expect(body.refund_bank).toEqual({ bank_code: '004', account_number: '1234567890', holder: '홍길동' });
+    });
+
+    it('환불계좌 — 주문 시 등록해 둔 계좌가 있으면 채워서 연다 (서버가 실어 준 원문)', () => {
+        mockDataSources = {
+            claimable: {
+                data: {
+                    ...claimableResponse.data,
+                    refund_account: {
+                        required: true,
+                        banks: [{ code: '004', name: { ko: '국민은행' } }],
+                        prefill: { bank_code: '004', account_number: '110234567890', holder: '홍길동' },
+                    },
+                },
+            },
+            order: { data: { id: 120, base_currency: 'KRW' } },
+        };
+
+        initClaimApplyHandler(
+            { handler: 'initClaimApply', params: { claimType: 'return', preselected: '310' } },
+            {} as any
+        );
+
+        expect(mockLocalState.claimRefundBankCode).toBe('004');
+        expect(mockLocalState.claimRefundBankAccount).toBe('110234567890');
+        expect(mockLocalState.claimRefundBankHolder).toBe('홍길동');
+    });
+
+    it('환불계좌 — 프리필이 반쯤 오면 채우지 않는다 (서버는 셋 다 오거나 하나도 안 오거나만 받는다)', () => {
+        expect(normalizeRefundAccountPrefill({ bank_code: '004' }))
+            .toEqual({ bank_code: '', account_number: '', holder: '' });
+        expect(normalizeRefundAccountPrefill(null))
+            .toEqual({ bank_code: '', account_number: '', holder: '' });
+        expect(normalizeRefundAccountPrefill({ bank_code: '004', account_number: '110234567890', holder: '홍길동' }))
+            .toEqual({ bank_code: '004', account_number: '110234567890', holder: '홍길동' });
+    });
+
+    it('제출 거절 — 환불계좌 사유는 그 카드 아래 자리로 간다 (요약 카드에 겹치지 않는다)', () => {
+        const errors = { refund_bank: ['은행·계좌번호·예금주를 모두 입력해 주세요.'] };
+
+        expect(collectClaimFieldErrors(errors).refund_bank).toBe('은행·계좌번호·예금주를 모두 입력해 주세요.');
+        // 그 자리에 섰으므로 요약 카드는 같은 말을 다시 하지 않는다.
+        expect(unplacedClaimErrorMessage(errors, [])).toBe('');
     });
 });

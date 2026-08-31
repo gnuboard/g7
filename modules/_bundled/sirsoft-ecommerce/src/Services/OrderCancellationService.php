@@ -31,6 +31,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderPaymentRepositoryInter
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderShippingRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Services\Concerns\AppliesRefundBankAccount;
 use Modules\Sirsoft\Ecommerce\Support\ShippingPolicySnapshot;
 
 /**
@@ -41,6 +42,8 @@ use Modules\Sirsoft\Ecommerce\Support\ShippingPolicySnapshot;
  */
 class OrderCancellationService
 {
+    use AppliesRefundBankAccount;
+
     /**
      * @param  OrderAdjustmentService  $adjustmentService  환불금액 계산 서비스
      * @param  OrderOptionService  $orderOptionService  주문 옵션 서비스
@@ -71,36 +74,6 @@ class OrderCancellationService
         protected RefundExecutionService $refundExecutionService,
         protected ClaimQuantityGuard $claimQuantityGuard,
     ) {}
-
-    /**
-     * 관리자가 취소 모달에서 입력한 환불 계좌를 결제행에 반영합니다.
-     *
-     * 미입력이면 기존 값(주문 시 입력분)을 그대로 둔다 — 취소 요청이 계좌를 지우지 않는다.
-     * 가상계좌 입금완료 건의 미입력은 CancelOrderRequest 가 이미 422 로 막는다.
-     *
-     * @param  Order  $order  대상 주문
-     * @param  array|null  $refundBankInfo  환불 계좌 (bank_code/account_number/holder)
-     */
-    protected function applyRefundBank(Order $order, ?array $refundBankInfo): void
-    {
-        if ($refundBankInfo === null) {
-            return;
-        }
-
-        $order->loadMissing('payment');
-
-        if (! $order->payment) {
-            return;
-        }
-
-        $this->orderPaymentRepository->updateRefundBank(
-            $order->payment,
-            $refundBankInfo['bank_code'],
-            $this->settingsService->resolveBankName($refundBankInfo['bank_code']),
-            $refundBankInfo['account_number'],
-            $refundBankInfo['holder'],
-        );
-    }
 
     /**
      * 취소 확정 후 현금영수증을 현재 금액에 맞춰 동기화합니다.

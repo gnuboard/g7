@@ -14,6 +14,8 @@ use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderPaymentRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Services\Concerns\AppliesRefundBankAccount;
 
 /**
  * 환불 실행 서비스
@@ -27,15 +29,19 @@ use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
  */
 class RefundExecutionService
 {
+    use AppliesRefundBankAccount;
+
     /**
      * @param  StockService  $stockService  재고 서비스
      * @param  EcommerceSettingsService  $settingsService  이커머스 설정 서비스
      * @param  CashReceiptService  $cashReceiptService  현금영수증 발급/취소 서비스
+     * @param  OrderPaymentRepositoryInterface  $orderPaymentRepository  주문 결제 저장소 (송금 대상 계좌 갱신)
      */
     public function __construct(
         protected StockService $stockService,
         protected EcommerceSettingsService $settingsService,
         protected CashReceiptService $cashReceiptService,
+        protected OrderPaymentRepositoryInterface $orderPaymentRepository,
     ) {}
 
     /**
@@ -70,6 +76,12 @@ class RefundExecutionService
         bool $executePg = true,
     ): void {
         $order->loadMissing('payment');
+
+        // 송금 대상 계좌를 이 환불의 계좌로 맞춘다 — PG 환불 API 의 refundReceiveAccount 와
+        // 무통장 수동 이체가 읽는 자리는 결제행 하나뿐이라, 구매자가 신청서에서 고친 계좌는
+        // 실행 직전 여기에 반영되어야 실제 송금에 닿는다. 신청 접수만으로 덮어쓰지 않는 이유는
+        // AppliesRefundBankAccount 독블록에 있다.
+        $this->applyRefundBank($order, $this->refundBankInfoOf($refund));
 
         // PG사 선택이 필요한 결제수단(카드/가상계좌/계좌이체/휴대폰)만 PG 환불 훅에 진입한다.
         // 무통장입금(dbank)·포인트·예치금·무료는 PG 리스너가 인식하지 못해 success=false → 예외.
@@ -120,6 +132,31 @@ class RefundExecutionService
         }
 
         $payment->update($this->buildCancelledAmountUpdates($payment, $result));
+    }
+
+    /**
+     * 환불 레코드가 든 환불 계좌를 돌려줍니다. (세 값이 모두 있을 때만)
+     *
+     * 일부만 채워 반영하면 은행만 바뀌고 계좌번호는 옛 값으로 남은 조합이 송금 대상이 된다.
+     *
+     * @param  OrderRefund  $refund  환불 레코드
+     * @return array{bank_code: string, account_number: string, holder: string}|null 환불 계좌
+     */
+    protected function refundBankInfoOf(OrderRefund $refund): ?array
+    {
+        $bankCode = (string) ($refund->refund_bank_code ?? '');
+        $account = (string) ($refund->refund_bank_account ?? '');
+        $holder = (string) ($refund->refund_bank_holder ?? '');
+
+        if ($bankCode === '' || $account === '' || $holder === '') {
+            return null;
+        }
+
+        return [
+            'bank_code' => $bankCode,
+            'account_number' => $account,
+            'holder' => $holder,
+        ];
     }
 
     /**

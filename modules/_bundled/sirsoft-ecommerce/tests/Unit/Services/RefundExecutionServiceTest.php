@@ -387,6 +387,88 @@ class RefundExecutionServiceTest extends ModuleTestCase
     // A. 추출 등가성 — PG 환불
     // ================================================================
 
+    // ================================================================
+    // A-0. 송금 대상 계좌 — 실행 시점 반영 (2026-08-31 PO 확정)
+    // ================================================================
+
+    /**
+     * 환불을 실행하면 그 환불이 든 계좌가 송금 대상(주문 결제행)에 반영된다.
+     *
+     * PG 환불 API 의 `refundReceiveAccount` 와 무통장 수동 이체가 읽는 자리는 결제행 하나뿐이다.
+     * 구매자가 신청서에서 고친 계좌는 실행 직전 여기에 닿아야 실제 송금에 반영된다 — 닿지 않으면
+     * 오류 없이 옛 계좌로 돈이 나간다.
+     *
+     * @scenario claim_type=return, charge_method=deduct_from_refund, refund_branch=none
+     *
+     * @effects claim_refund_account_reaches_the_payout_target_at_execution
+     */
+    public function test_execute_applies_the_refunds_own_bank_account_to_the_payment(): void
+    {
+        $this->stubPgRefundSuccess();
+        $order = $this->createPaidOrder();
+        $refund = $this->createRefund($order, [
+            'refund_bank_code' => '004',
+            'refund_bank_account' => '110234567890',
+            'refund_bank_holder' => '홍길동',
+        ]);
+
+        $this->service->execute($order, $refund, new AdjustmentResult(refundAmount: 5000));
+
+        $payment = $order->fresh('payment')->payment;
+
+        $this->assertSame('004', $payment->refund_bank_code);
+        $this->assertSame('110234567890', $payment->refund_bank_account);
+        $this->assertSame('홍길동', $payment->refund_bank_holder);
+    }
+
+    /**
+     * 계좌를 들지 않은 환불은 송금 대상을 지우지 않는다.
+     *
+     * 카드 취소처럼 계좌가 필요 없는 환불이 결제행을 비우면, 뒤이어 계좌로 나가야 하는 환불에서
+     * 운영자가 이체할 근거가 사라진다.
+     */
+    public function test_execute_keeps_the_existing_account_when_the_refund_carries_none(): void
+    {
+        $this->stubPgRefundSuccess();
+        $order = $this->createPaidOrder();
+        $order->payment->update([
+            'refund_bank_code' => '088',
+            'refund_bank_account' => '9999999999',
+            'refund_bank_holder' => '김주문',
+        ]);
+
+        $this->service->execute($order, $this->createRefund($order), new AdjustmentResult(refundAmount: 5000));
+
+        $payment = $order->fresh('payment')->payment;
+
+        $this->assertSame('088', $payment->refund_bank_code);
+        $this->assertSame('9999999999', $payment->refund_bank_account);
+        $this->assertSame('김주문', $payment->refund_bank_holder);
+    }
+
+    /**
+     * 세 값 중 하나라도 비면 반영하지 않는다.
+     *
+     * 은행만 바뀌고 계좌번호는 옛 값으로 남은 조합이 송금 대상이 되면, 어느 계좌로도 가지 않거나
+     * 남의 계좌로 간다.
+     */
+    public function test_execute_ignores_a_partially_filled_account_on_the_refund(): void
+    {
+        $this->stubPgRefundSuccess();
+        $order = $this->createPaidOrder();
+        $order->payment->update([
+            'refund_bank_code' => '088',
+            'refund_bank_account' => '9999999999',
+            'refund_bank_holder' => '김주문',
+        ]);
+
+        $refund = $this->createRefund($order, ['refund_bank_code' => '004']);
+
+        $this->service->execute($order, $refund, new AdjustmentResult(refundAmount: 5000));
+
+        $this->assertSame('088', $order->fresh('payment')->payment->refund_bank_code);
+    }
+
     public function test_execute_pg_refund_marks_refund_completed_on_success(): void
     {
         $this->stubPgRefundSuccess('TXN-1234');

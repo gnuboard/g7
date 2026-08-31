@@ -180,7 +180,9 @@
       "apply_redelivery": "재발송지",
       "apply_reason": "신청 사유",
       "apply_summary": "신청 요약",
-      "change_product_modal": "교환상품 변경"
+      "apply_refund_account": "환불 계좌",
+      "change_product_modal": "교환상품 변경",
+      "withdraw_modal": "신청 철회 확인"
     }
   }
 }

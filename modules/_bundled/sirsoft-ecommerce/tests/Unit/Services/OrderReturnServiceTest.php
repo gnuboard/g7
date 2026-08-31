@@ -2025,6 +2025,173 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertSame($return->mc_total_charge_amount, $preview['mc_total_charge_amount']);
     }
 
+    /**
+     * 환불금 차감 방식의 미리보기는 차감 전 금액과 차감액을 함께 낸다. (§6-3 반품 요약 3줄)
+     *
+     * `adjustment.refund_total` 은 회수비를 이미 뺀 뒤의 금액이라, 화면이 그것만 받으면 §6-3 이
+     * 요구하는 첫 줄(환불 예정액)을 세울 근거가 없다. 화면이 되더하면 예고와 청구의 근거가 갈린다.
+     *
+     * @scenario claim_type=return, charge_method=deduct_from_refund, refund_branch=none
+     *
+     * @effects claim_return_preview_reports_refund_before_deduction
+     */
+    public function test_preview_reports_the_refund_before_the_collection_fee_is_deducted(): void
+    {
+        $policy = $this->createClaimShippingPolicy();
+        $order = $this->deliveredOrder(29000, 1, $policy);
+        $this->setReturnFixedFee($policy, 3000);
+        $order = $order->fresh(['options', 'shippings', 'payment']);
+        $payload = $this->payload($order);
+
+        $preview = $this->service->previewReturn(
+            $order,
+            $payload['items'],
+            'changed_mind',
+            ClaimChargeMethodEnum::DEDUCT_FROM_REFUND
+        );
+
+        $this->assertSame(3000.0, $preview['deducted_shipping_fee']);
+        $this->assertSame(
+            $preview['refund_before_deduction'] - 3000.0,
+            $preview['adjustment']->getTotalRefundAmount(),
+            '차감 전 금액 − 차감액 = 최종 환불액 이어야 세 줄이 서로를 설명한다',
+        );
+    }
+
+    /**
+     * 회수비가 환불 대상 금액 전부를 먹어도 차감 전 금액은 **실제 환불 가능액**이다.
+     *
+     * 확정 환불액에 회수비를 되더하는 방식은 이 조합에서 실제보다 큰 금액을 내놓는다 —
+     * 환불액이 0 으로 바닥쳐 있어 `0 + 회수비` 가 되기 때문이다. 세 줄의 뺄셈은 그래도
+     * 맞아떨어지므로 화면만 보고는 첫 줄이 부풀었다는 것을 알 수 없다.
+     *
+     * @scenario claim_type=return, charge_method=deduct_from_refund, refund_branch=none
+     *
+     * @effects claim_return_preview_reports_refund_before_deduction
+     */
+    public function test_preview_reports_the_real_gross_refund_when_the_fee_exceeds_it(): void
+    {
+        $policy = $this->createClaimShippingPolicy();
+        $order = $this->deliveredOrder(2000, 1, $policy);
+        $this->setReturnFixedFee($policy, 5000);
+        $order = $order->fresh(['options', 'shippings', 'payment']);
+        $payload = $this->payload($order);
+
+        $preview = $this->service->previewReturn(
+            $order,
+            $payload['items'],
+            'changed_mind',
+            ClaimChargeMethodEnum::DEDUCT_FROM_REFUND
+        );
+
+        $this->assertSame(5000.0, $preview['deducted_shipping_fee']);
+        $this->assertSame(0.0, (float) $preview['adjustment']->getTotalRefundAmount());
+        // 되더하는 방식이면 5,000 이 된다 — 이 주문에서 돌려받을 수 있는 돈은 2,000 뿐이다.
+        $this->assertSame(
+            2000.0,
+            $preview['refund_before_deduction'],
+            '차감 전 금액은 회수비를 되더한 값이 아니라 회수비 없이 계산한 실제 환불 가능액이다',
+        );
+    }
+
+    /**
+     * 별도 결제 방식은 회수비를 환불금에서 빼지 않으므로 차감액이 0 이고 두 금액이 같다. (대조군)
+     *
+     * 이 방식에서 차감액이 0 이 아니면 화면이 "환불 예정액"과 "최종"을 다르게 그려, 실제로는
+     * 전액 환불되는데 구매자는 배송비만큼 덜 받는 것으로 읽는다.
+     *
+     * @scenario claim_type=return, charge_method=pay_on_request, refund_branch=none
+     *
+     * @effects claim_return_preview_reports_no_deduction_when_charged_separately
+     */
+    public function test_preview_reports_no_deduction_when_the_fee_is_charged_separately(): void
+    {
+        $policy = $this->createClaimShippingPolicy();
+        $order = $this->deliveredOrder(29000, 1, $policy);
+        $this->setReturnFixedFee($policy, 3000);
+        $order = $order->fresh(['options', 'shippings', 'payment']);
+        $payload = $this->payload($order);
+
+        $preview = $this->service->previewReturn(
+            $order,
+            $payload['items'],
+            'changed_mind',
+            ClaimChargeMethodEnum::PAY_ON_REQUEST
+        );
+
+        $this->assertSame(0.0, $preview['deducted_shipping_fee']);
+        $this->assertSame($preview['adjustment']->getTotalRefundAmount(), $preview['refund_before_deduction']);
+    }
+
+    /**
+     * 차감 전 금액의 보조통화도 주문 스냅샷의 동결 환율로 낸다. (§5-4)
+     *
+     * 화면이 스스로 환산하면 예고와 청구의 근거가 갈린다.
+     *
+     * @scenario claim_type=return, charge_method=deduct_from_refund, refund_branch=none
+     *
+     * @effects claim_return_preview_multi_currency_for_refund_before_deduction
+     */
+    public function test_preview_reports_multi_currency_for_the_refund_before_deduction(): void
+    {
+        $policy = $this->createClaimShippingPolicy();
+        $order = $this->deliveredOrder(29000, 1, $policy);
+        $this->setReturnFixedFee($policy, 3000);
+
+        $order->forceFill(['currency_snapshot' => [
+            'base_currency' => 'KRW',
+            'order_currency' => 'KRW',
+            'exchange_rate' => 1.0,
+            'base_unit' => 1000,
+            'exchange_rates' => [
+                'KRW' => ['rate' => 1.0, 'rounding_unit' => '1', 'rounding_method' => 'floor', 'decimal_places' => 0, 'base_unit' => 1000],
+                'USD' => ['rate' => 0.75, 'rounding_unit' => '0.01', 'rounding_method' => 'round', 'decimal_places' => 2, 'base_unit' => 1000],
+            ],
+            'snapshot_at' => '2026-08-21T00:00:00+09:00',
+        ]])->save();
+
+        $order = $order->fresh(['options', 'shippings', 'payment']);
+        $payload = $this->payload($order);
+
+        $preview = $this->service->previewReturn(
+            $order,
+            $payload['items'],
+            'changed_mind',
+            ClaimChargeMethodEnum::DEDUCT_FROM_REFUND
+        );
+
+        $this->assertNotNull($preview['mc_refund_before_deduction']);
+        $this->assertSame(
+            $preview['refund_before_deduction'],
+            (float) $preview['mc_refund_before_deduction']['KRW'],
+        );
+        // 환산은 스냅샷의 base_unit(1000) 을 분모로 쓴다 — 형제 줄(`mc_total_charge_amount`)과 같은 변환기다.
+        $this->assertEqualsWithDelta(
+            $preview['refund_before_deduction'] / 1000 * 0.75,
+            (float) $preview['mc_refund_before_deduction']['USD'],
+            0.01,
+        );
+    }
+
+    /** 스냅샷이 없으면 차감 전 금액의 보조통화도 null 이다 (형제 줄과 같은 규약). */
+    public function test_preview_reports_null_multi_currency_for_refund_before_deduction_without_a_snapshot(): void
+    {
+        $policy = $this->createClaimShippingPolicy();
+        $this->setReturnFixedFee($policy, 3000);
+        $order = $this->deliveredOrder(29000, 1, $policy);
+        $order->forceFill(['currency_snapshot' => null])->save();
+        $payload = $this->payload($order);
+
+        $preview = $this->service->previewReturn(
+            $order->fresh(['options', 'shippings', 'payment']),
+            $payload['items'],
+            'changed_mind',
+            ClaimChargeMethodEnum::DEDUCT_FROM_REFUND
+        );
+
+        $this->assertNull($preview['mc_refund_before_deduction']);
+    }
+
     /** 통화 스냅샷이 없는 주문은 보조통화를 낼 근거가 없으므로 null 이다 (화면이 그 줄을 세우지 않는다). */
     public function test_preview_reports_null_multi_currency_when_the_order_has_no_snapshot(): void
     {

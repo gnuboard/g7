@@ -11,6 +11,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
+use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 
 /**
  * 클레임 신청서 리소스 (교환·반품·환불·취소 공용 — 유저 목록·상세·비회원 공용)
@@ -199,6 +200,12 @@ class ClaimResource extends BaseApiResource
                     ? $this->collectionCarrier?->buildTrackingUrl((string) $claim->collection_tracking_number)
                     : null, null),
                 'collection_completed_at_formatted' => $this->formatDateTimeStringForUser($claim->collection_completed_at),
+                // 구매자가 이 신청서에 적어 낸 환불 계좌 — 환불신청서(아래 OrderRefund 블록)와 같은
+                // 키·같은 마스킹 게이트를 쓴다. 유형마다 이름이 다르면 운영자 화면이 유형별로 갈린다.
+                'refund_bank_code' => $claim->refund_bank_code,
+                'refund_bank_name' => $this->resolveRefundBankName($claim->refund_bank_code),
+                'refund_bank_account' => $this->refundBankAccountForViewer($claim->refund_bank_account),
+                'refund_bank_holder' => $this->refundBankHolderForViewer($claim->refund_bank_holder),
             ];
         }
 
@@ -234,6 +241,7 @@ class ClaimResource extends BaseApiResource
                 'refund_total_formatted' => $this->formatOrderCurrency((float) $claim->refund_amount + (float) $claim->refund_points_amount, $currency),
                 'mc_refund_amount' => $this->formatStoredMultiCurrency($claim->mc_refund_amount),
                 'refund_bank_code' => $claim->refund_bank_code,
+                'refund_bank_name' => $this->resolveRefundBankName($claim->refund_bank_code),
                 'refund_bank_account' => $this->refundBankAccountForViewer($claim->refund_bank_account),
                 'refund_bank_holder' => $this->refundBankHolderForViewer($claim->refund_bank_holder),
                 'refunded_at_formatted' => $this->formatDateTimeStringForUser($claim->refunded_at),
@@ -296,5 +304,25 @@ class ClaimResource extends BaseApiResource
         };
 
         return $claim->relationLoaded($relation) ? $claim->{$relation} : [];
+    }
+
+    /**
+     * 환불 은행 코드를 운영자 설정의 은행명으로 해석합니다.
+     *
+     * 은행 코드표는 운영자가 주문설정에서 관리한다. 화면이 그 표를 읽으려면 설정 데이터소스가
+     * 필요한데 그 게이트는 클레임 화면의 라우트 권한보다 좁아, 클레임만 볼 수 있는 운영자에게는
+     * 그 데이터소스만 403 이 되어 은행명이 조용히 빈다. 그래서 서버가 해석해 실어 준다 —
+     * 해석 규칙은 계좌를 결제행에 반영할 때(`AppliesRefundBankAccount`)와 같은 자리를 쓴다.
+     *
+     * @param  string|null  $bankCode  은행 코드
+     * @return string|null 은행명 (코드가 없으면 null, 목록에 없으면 코드 그대로)
+     */
+    protected function resolveRefundBankName(?string $bankCode): ?string
+    {
+        if ($bankCode === null || $bankCode === '') {
+            return null;
+        }
+
+        return app(EcommerceSettingsService::class)->resolveBankName($bankCode);
     }
 }

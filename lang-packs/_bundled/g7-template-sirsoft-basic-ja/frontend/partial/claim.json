@@ -60,7 +60,24 @@
     "select_items_first": "申請する商品を選択してください。",
     "reason_required": "申請理由を選択してください。",
     "submit_success": "申請が受け付けられました。",
-    "submit_failed": "申請受け付けに失敗しました。"
+    "submit_failed": "申請受け付けに失敗しました。",
+    "refund_branch_cancel_badge": "即座にキャンセル",
+    "refund_branch_refund_badge": "返金申請",
+    "refund_branch_mixed_notice": "この注文には即座にキャンセルされる商品と返金申請が必要な商品が含まれています。2つは一度に申請できないため、先に選んだ方のみが選択されます。",
+    "refund_branch_mixed_blocked": "即座にキャンセルされる商品と返金申請が必要な商品は分けて申請してください。",
+    "notice_cancel": "お支払いになった方法で即座に返金されます。販売者の承認をお待ちになる必要はありません。",
+    "notice_refund": "申請後、販売者の確認を経て返金されます。",
+    "refund_expected_before_deduction": "返金予定額",
+    "collection_fee_deducted": "回収配送費控除",
+    "refund_final": "最終返金額",
+    "refund_account_title": "返金口座",
+    "refund_account_hint": "口座で返金される注文です。返金を受け取られる口座をご入力ください。",
+    "refund_account_bank_select": "銀行をお選びください",
+    "refund_account_number_placeholder": "口座番号（ハイフンなし、数字のみ）",
+    "refund_account_holder_placeholder": "口座名義人",
+    "refund_account_all_required": "銀行·口座番号·口座名義人をすべてご入力ください。",
+    "submit_cancel": "注文キャンセルする",
+    "submit_refund": "返金申請する"
   },
   "change_product": {
     "title": "交換商品変更",
@@ -80,5 +97,23 @@
     "limit_exceeded": "写真は最大 {{max}}枚まで添付できます。",
     "size_exceeded": "写真1枚は {{size}}KB を超えることはできません。",
     "remove_failed": "添付削除に失敗しました。"
+  },
+  "withdraw": {
+    "title": "申請取り下げ",
+    "confirm_message": "{{number}}の申請を取り下げされますか?",
+    "irreversible_notice": "取り下げた申請は取り戻せません。必要であれば再度申請してください。",
+    "payment_refund_notice": "既にお支払いになった追加金額があれば、一緒に返金されます。",
+    "cancel": "閉じる",
+    "confirm": "取り下げる",
+    "success": "申請が取り下げられました。",
+    "failed": "申請取り下げに失敗しました。"
+  },
+  "payment_result": {
+    "success": "追加決済が完了しました。",
+    "failed": "追加決済が完了しませんでした。",
+    "cancelled": "決済をキャンセルされました。申請はそのままです。",
+    "claim_number": "申請番号 {{number}}",
+    "error_code": "失敗コード {{code}}",
+    "retry_hint": "申請内容から再度決済することができます。引き続き失敗する場合は、別の決済方法をご利用ください。"
   }
 }

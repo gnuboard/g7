@@ -42,6 +42,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderShippingRepositoryInte
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingPolicyClaimAddressRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Rules\ExchangeRedeliveryCountryUnchanged;
+use Modules\Sirsoft\Ecommerce\Services\Concerns\AppliesRefundBankAccount;
 
 /**
  * 교환 클레임 서비스
@@ -98,6 +99,8 @@ use Modules\Sirsoft\Ecommerce\Rules\ExchangeRedeliveryCountryUnchanged;
  */
 class OrderExchangeService
 {
+    use AppliesRefundBankAccount;
+
     /**
      * @param  OrderAdjustmentService  $adjustmentService  금액 재계산 서비스 (미리보기·청구 방식 검증)
      * @param  ClaimShippingFeeService  $claimShippingFeeService  클레임 배송비 산정 서비스
@@ -313,7 +316,7 @@ class OrderExchangeService
                 'return_address_snapshot' => $this->resolveReturnAddressSnapshot($lockedOrder, $resolved),
                 'redelivery_address_snapshot' => $redelivery,
                 'requested_by' => $requestedBy,
-            ]);
+            ] + $this->refundBankColumns($payload['refund_bank'] ?? null));
 
             foreach ($plans as $plan) {
                 $this->createExchangeOption($created, $lockedOrder, $plan, $currencySnapshot);
@@ -2482,6 +2485,11 @@ class OrderExchangeService
             'order_id' => $order->id,
             'refund_source_type' => RefundSourceTypeEnum::EXCHANGE,
             'refund_source_id' => $exchange->id,
+            // 구매자가 교환 신청서에 적어 낸 계좌를 환불 레코드가 이어받는다 - 저가 교환의 차액
+            // 환불이 실제로 나갈 때 이 값으로 결제행을 갱신한다.
+            'refund_bank_code' => $exchange->refund_bank_code,
+            'refund_bank_account' => $exchange->refund_bank_account,
+            'refund_bank_holder' => $exchange->refund_bank_holder,
             'refund_number' => $this->sequenceService->generateCode(SequenceType::REFUND),
             'refund_status' => RefundStatusEnum::REQUESTED,
             'refund_method' => $this->refundExecutionService->determineRefundMethod($order),

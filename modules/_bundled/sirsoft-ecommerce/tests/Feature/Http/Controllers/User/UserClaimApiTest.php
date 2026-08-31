@@ -13,6 +13,7 @@ use Mockery;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimPaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderClaimException;
 use Modules\Sirsoft\Ecommerce\Models\ClaimImage;
@@ -20,6 +21,7 @@ use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
 use Modules\Sirsoft\Ecommerce\Models\MileageTransaction;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
 use Modules\Sirsoft\Ecommerce\Services\ClaimAttachmentService;
@@ -120,6 +122,52 @@ class UserClaimApiTest extends ModuleTestCase
             ->assertJsonStructure(['data' => ['reasons' => ['exchange', 'return', 'refund'], 'settings' => ['allowed_charge_methods', 'charge_payment_methods'], 'pending_images']]);
     }
 
+    /**
+     * PG 결제 주문은 환불계좌를 요구하지 않는다. (§6-3 — 무통장 원결제면 환불계좌 입력)
+     *
+     * 어느 결제수단이 계좌 환불인지는 서버가 정한다. 화면이 결제수단 코드로 재현하면 확장
+     * 결제수단이 자기 카탈로그에 선언한 환불 수단과 갈리고, 어긋난 쪽은 오류 없이 계좌
+     * 입력칸이 없는 계좌 환불이 되거나 쓸모없는 계좌를 요구한다.
+     *
+     * @scenario claim_type=refund, charge_method=none, refund_branch=refund
+     *
+     * @effects claim_refund_account_requirement_declared_by_server
+     */
+    public function test_claimable_options_does_not_require_a_refund_account_for_pg_payments(): void
+    {
+        $order = $this->myDeliveredOrder();
+
+        $this->actingAs($this->user)->getJson($this->base()."/orders/{$order->id}/claimable-options")
+            ->assertOk()
+            ->assertJsonPath('data.refund_account.required', false)
+            // 필요하지 않은 주문에는 은행 목록을 싣지 않는다 — 목록 자체가 입력칸의 근거다.
+            ->assertJsonPath('data.refund_account.banks', []);
+    }
+
+    /**
+     * 무통장 결제 주문은 환불계좌를 요구하고, 운영자가 등록한 은행 목록을 함께 낸다.
+     *
+     * @scenario claim_type=refund, charge_method=none, refund_branch=cancel
+     *
+     * @effects claim_refund_account_requirement_declared_by_server,
+     *   claim_refund_account_banks_come_from_operator_settings
+     */
+    public function test_claimable_options_requires_a_refund_account_for_bank_transfer_payments(): void
+    {
+        $order = $this->deliveredClaimOrder(paymentOverrides: ['payment_method' => PaymentMethodEnum::DBANK->value]);
+        $order->forceFill(['user_id' => $this->user->id])->save();
+
+        $response = $this->actingAs($this->user)->getJson($this->base()."/orders/{$order->id}/claimable-options")
+            ->assertOk()
+            ->assertJsonPath('data.refund_account.required', true);
+
+        $banks = $response->json('data.refund_account.banks');
+
+        $this->assertNotEmpty($banks, '운영자 주문설정의 은행 목록이 화면에 도달해야 계좌 선택칸이 선다');
+        $this->assertArrayHasKey('code', $banks[0]);
+        $this->assertArrayHasKey('name', $banks[0]);
+    }
+
     public function test_claimable_options_is_404_for_someone_elses_order(): void
     {
         $order = $this->deliveredClaimOrder();
@@ -194,6 +242,172 @@ class UserClaimApiTest extends ModuleTestCase
 
         $this->assertSame(1, OrderReturn::count());
         $this->assertSame(0, ClaimPayment::count());
+    }
+
+    /**
+     * 반품도 환불계좌를 받고, 그 값은 **그 신청서 행**에 적힌다. (§6-3 · 2026-08-31 PO 확정)
+     *
+     * 신청서마다 자기 계좌를 든다 — 주문할 때 남긴 계좌를 채워서 열되 그 자리에서 고칠 수 있으므로,
+     * 신청서가 자기 값을 들지 않으면 어느 계좌로 신청했는지가 남지 않는다.
+     *
+     * 주문 결제행은 **실제 송금 대상**이라 신청 접수만으로는 바뀌지 않는다. 접수 때 덮어쓰면 아직
+     * 나가지도 않은 신청이 주문 전체의 송금 대상을 바꾼다 — 그 갱신은 환불을 실행하는 시점의 일이다.
+     *
+     * @scenario claim_type=return, charge_method=deduct_from_refund, refund_branch=none
+     *
+     * @effects claim_refund_account_recorded_on_the_claim_itself
+     */
+    public function test_return_request_records_the_refund_account_on_the_return_itself(): void
+    {
+        $order = $this->myDeliveredOrder();
+
+        $this->actingAs($this->user)->postJson($this->base()."/orders/{$order->id}/returns", [
+            'items' => $this->items($order),
+            'reason_code' => 'changed_mind',
+            'charge_method' => 'deduct_from_refund',
+            'refund_bank' => ['bank_code' => '004', 'account_number' => '110234567890', 'holder' => '홍길동'],
+        ])->assertCreated();
+
+        $return = OrderReturn::firstOrFail();
+
+        $this->assertSame('004', $return->refund_bank_code);
+        $this->assertSame('110234567890', $return->refund_bank_account);
+        $this->assertSame('홍길동', $return->refund_bank_holder);
+
+        // 송금 대상은 아직 그대로다 — 접수는 실행이 아니다.
+        $payment = $order->fresh('payment')->payment;
+
+        $this->assertNull($payment->refund_bank_code);
+        $this->assertNull($payment->refund_bank_account);
+        $this->assertNull($payment->refund_bank_holder);
+    }
+
+    /**
+     * 교환도 환불계좌를 받고, 그 값은 교환 신청서 행에 적힌다.
+     *
+     * 저가 옵션으로 바꾸면 차액이 구매자에게 돌아간다 — 그 돈이 계좌로 나가는 주문이면 반품·취소·
+     * 환불과 같은 자리·같은 강도로 받아야 한다. 교환만 받지 않으면 그 차액을 어느 계좌로 보낼지가
+     * 주문 당시 값뿐이라, 구매자가 계좌를 바꾼 경우 운영자가 따로 물어야 한다.
+     *
+     * @scenario claim_type=exchange, charge_method=pay_on_request, refund_branch=none
+     *
+     * @effects claim_refund_account_recorded_on_the_claim_itself
+     */
+    public function test_exchange_request_records_the_refund_account_on_the_exchange_itself(): void
+    {
+        $this->registerTestPgProvider();
+        $order = $this->myDeliveredOrder();
+
+        $this->actingAs($this->user)->postJson($this->base()."/orders/{$order->id}/exchanges", [
+            'items' => $this->items($order),
+            'reason_code' => 'size_mismatch',
+            'charge_method' => 'pay_on_request',
+            'payment_method' => 'card',
+            'refund_bank' => ['bank_code' => '004', 'account_number' => '110234567890', 'holder' => '홍길동'],
+        ])->assertCreated();
+
+        $exchange = OrderExchange::firstOrFail();
+
+        $this->assertSame('004', $exchange->refund_bank_code);
+        $this->assertSame('110234567890', $exchange->refund_bank_account);
+        $this->assertSame('홍길동', $exchange->refund_bank_holder);
+
+        $this->assertNull($order->fresh('payment')->payment->refund_bank_code);
+    }
+
+    /**
+     * 교환의 환불계좌도 세 필드가 함께 와야 한다.
+     *
+     * 형제 경로(취소·환불·반품)가 이미 같은 규칙을 갖는다 — 한 유형만 약하면 그 유형이 우회로가 된다.
+     *
+     * @scenario claim_type=exchange, charge_method=pay_on_request, refund_branch=none
+     *
+     * @effects claim_refund_account_requires_all_three_fields
+     */
+    public function test_exchange_request_rejects_a_partially_filled_refund_account(): void
+    {
+        $order = $this->myDeliveredOrder();
+
+        $this->actingAs($this->user)->postJson($this->base()."/orders/{$order->id}/exchanges", [
+            'items' => $this->items($order),
+            'reason_code' => 'size_mismatch',
+            'charge_method' => 'pay_on_request',
+            'payment_method' => 'card',
+            'refund_bank' => ['bank_code' => '004'],
+        ])->assertStatus(422)->assertJsonValidationErrors(['refund_bank']);
+
+        $this->assertSame(0, OrderExchange::count());
+    }
+
+    /**
+     * 반품의 환불계좌도 세 필드가 함께 와야 한다. (하나만 오면 계좌 없는 무통장 환불이 승인된다)
+     *
+     * 취소·환불이 이미 같은 규칙을 갖는다 — 형제 경로의 강도가 다르면 약한 쪽이 우회로가 된다.
+     *
+     * @scenario claim_type=return, charge_method=deduct_from_refund, refund_branch=none
+     *
+     * @effects claim_refund_account_requires_all_three_fields
+     */
+    public function test_return_request_rejects_a_partially_filled_refund_account(): void
+    {
+        $order = $this->myDeliveredOrder();
+
+        $this->actingAs($this->user)->postJson($this->base()."/orders/{$order->id}/returns", [
+            'items' => $this->items($order),
+            'reason_code' => 'changed_mind',
+            'charge_method' => 'deduct_from_refund',
+            'refund_bank' => ['bank_code' => '004'],
+        ])->assertStatus(422)->assertJsonValidationErrors(['refund_bank']);
+
+        $this->assertSame(0, OrderReturn::count());
+    }
+
+    /**
+     * 주문 시 등록해 둔 계좌가 있으면 신청 화면이 채울 수 있게 원문을 함께 낸다. (2026-08-31 PO 확정)
+     *
+     * 표시용 응답은 계좌번호·예금주를 마스킹하므로(`MasksRefundBankAccount`), 화면이 그 값을
+     * 입력칸에 채우면 구매자가 손대지 않고 제출했을 때 별표가 섞인 계좌번호가 저장된다 —
+     * 검증은 통과하고 환불 실행 때가 되어서야 드러난다. 프리필은 이 통로만 쓴다.
+     *
+     * @scenario claim_type=refund, charge_method=none, refund_branch=cancel
+     *
+     * @effects claim_refund_account_prefills_the_registered_account
+     */
+    public function test_claimable_options_prefills_the_registered_refund_account(): void
+    {
+        $order = $this->deliveredClaimOrder(paymentOverrides: [
+            'payment_method' => PaymentMethodEnum::DBANK->value,
+            'refund_bank_code' => '004',
+            'refund_bank_account' => '110234567890',
+            'refund_bank_holder' => '홍길동',
+        ]);
+        $order->forceFill(['user_id' => $this->user->id])->save();
+
+        $this->actingAs($this->user)->getJson($this->base()."/orders/{$order->id}/claimable-options")
+            ->assertOk()
+            ->assertJsonPath('data.refund_account.required', true)
+            ->assertJsonPath('data.refund_account.prefill.bank_code', '004')
+            // 마스킹된 값이 아니라 원문이어야 손대지 않은 제출이 그대로 저장돼도 맞는 계좌가 된다.
+            ->assertJsonPath('data.refund_account.prefill.account_number', '110234567890')
+            ->assertJsonPath('data.refund_account.prefill.holder', '홍길동');
+    }
+
+    /**
+     * 등록된 계좌가 없으면 프리필은 비어 있다. (대조군 — 화면은 빈 칸을 연다)
+     *
+     * @scenario claim_type=refund, charge_method=none, refund_branch=cancel
+     *
+     * @effects claim_refund_account_prefills_the_registered_account
+     */
+    public function test_claimable_options_has_no_prefill_without_a_registered_account(): void
+    {
+        $order = $this->deliveredClaimOrder(paymentOverrides: ['payment_method' => PaymentMethodEnum::DBANK->value]);
+        $order->forceFill(['user_id' => $this->user->id])->save();
+
+        $this->actingAs($this->user)->getJson($this->base()."/orders/{$order->id}/claimable-options")
+            ->assertOk()
+            ->assertJsonPath('data.refund_account.required', true)
+            ->assertJsonPath('data.refund_account.prefill', null);
     }
 
     public function test_return_request_of_a_foreign_item_is_422_and_someone_elses_order_is_404(): void

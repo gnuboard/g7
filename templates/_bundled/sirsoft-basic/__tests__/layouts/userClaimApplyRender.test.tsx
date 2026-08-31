@@ -17,6 +17,7 @@
  *  ③ 취소·환불 유형에서는 총 청구액 줄 자체가 서지 않는다
  *  ④ 제출 거절(422)의 사유가 그 칸 옆에 나온다 — 상품 줄 / 첨부 / 재발송지 / 청구 2축
  *  ⑤ 미리보기 거절(P13)은 화면에 남고 금액은 지워진다
+ *  ⑥ (S12) 반품 요약 3줄 · 취소·환불 분기 라벨 · 환불계좌 · 분기 혼재 잠금 · 철회 모달
  *
  * @scenario exchange_mode=change, preview_result=ok
  * @effects claim_apply_total_charge_shows_secondary_currency,
@@ -24,7 +25,12 @@
  *   claim_apply_total_charge_row_hidden_for_refund,
  *   claim_apply_item_validation_error_maps_to_its_row,
  *   claim_apply_field_errors_render_beside_their_input,
- *   claim_apply_preview_rejection_stays_on_screen
+ *   claim_apply_preview_rejection_stays_on_screen,
+ *   claim_apply_return_summary_shows_gross_deduction_and_final,
+ *   claim_apply_refund_branch_drives_notice_and_submit_label,
+ *   claim_apply_refund_account_shown_only_for_bank_refunds,
+ *   claim_apply_refund_branch_locks_cross_branch_items,
+ *   claim_withdraw_modal_states_consequences
  *
  * @vitest-environment jsdom
  */
@@ -50,6 +56,10 @@ function setupRegistry() {
   );
   registry.register('composite', 'FileUploader', () =>
     React.createElement('div', { 'data-testid': 'file-uploader' })
+  );
+  // 철회 모달은 composite Modal 이다 — 껍데기만 있으면 되고, 잴 것은 그 안의 글자다.
+  registry.register('composite', 'Modal', ({ children, title }: any) =>
+    React.createElement('div', { 'data-testid': 'modal' }, title, children)
   );
 
   return registry;
@@ -133,11 +143,15 @@ function itemState(overrides: Record<string, any> = {}): Record<string, any> {
   };
 }
 
-async function renderPartial(file: string, local: Record<string, any>) {
+async function renderPartial(
+  file: string,
+  local: Record<string, any>,
+  translations: Record<string, any> = {}
+) {
   const utils = createLayoutTest(asLayout(file), {
     initialState: { _local: local },
     locale: 'ko',
-    translations: {},
+    translations,
     componentRegistry: setupRegistry(),
   });
 
@@ -287,5 +301,381 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
     active = utils;
 
     expect(container.textContent ?? '').toContain('교환 재발송지의 국가는 변경할 수 없습니다.');
+  });
+
+  // ================================================================
+  // S12 — 반품 요약 3줄 / 취소·환불 분기 / 환불계좌
+  // ================================================================
+
+  /**
+   * 반품 요약 — 회수비를 환불금에서 차감하는 방식(§6-3).
+   *
+   * `adjustment.refund_total` 은 **이미 차감된 뒤**의 금액이라, 그 값만으로는 세 줄을 세울 수
+   * 없다. 차감 전 금액과 차감액을 서버가 따로 낸다.
+   */
+  function returnDeductedState(): Record<string, any> {
+    return estimateState({
+      claimType: 'return',
+      claimEstimate: {
+        adjustment: { refund_total: 26000 },
+        deducted_shipping_fee: 3000,
+        refund_before_deduction: 29000,
+      },
+      claimEstimateFormatted: {
+        shipping_fee: '3,000원',
+        shipping_extra_fee: '0원',
+        shipping_groups: [],
+        price_difference: '0원',
+        total_charge_amount: '3,000원',
+        refund_total: '26,000원',
+        refund_before_deduction: '29,000원',
+        deducted_shipping_fee: '3,000원',
+        mc_total_charge_amount: [{ code: 'USD', formatted: '$2.25' }],
+        mc_shipping_fee: [{ code: 'USD', formatted: '$2.25' }],
+        mc_refund_total: [{ code: 'USD', formatted: '$19.50' }],
+        mc_refund_before_deduction: [{ code: 'USD', formatted: '$21.75' }],
+      },
+      claimableSnapshot: {
+        settings: {
+          allowed_charge_methods: ['deduct_from_refund'],
+          charge_payment_methods: ['card'],
+          max_images: 5,
+          image_max_size_kb: 2048,
+        },
+      },
+      claimChargeMethod: 'deduct_from_refund',
+    });
+  }
+
+  /**
+   * @scenario claim_type=return, charge_method=deduct_from_refund, refund_branch=none
+   * @effects claim_apply_return_summary_shows_gross_deduction_and_final
+   */
+  it('반품 요약 — 환불예정(차감 전) · 회수비 차감 · 최종 세 줄이 글자로 나온다 (§6-3)', async () => {
+    const { utils, container } = await renderPartial('_apply_summary.json', returnDeductedState());
+    active = utils;
+
+    const text = container.textContent ?? '';
+
+    // 첫 줄은 차감 **전** 금액이다 — refund_total(26,000) 을 여기 그리면 구매자는 회수비가
+    // 두 번 빠진 것으로 읽는다.
+    expect(text).toContain('29,000원');
+    expect(text).toContain('-3,000원');
+    expect(text).toContain('26,000원');
+    // 세 줄 모두 보조통화를 병기한다(§5-4).
+    expect(text).toContain('$21.75');
+    expect(text).toContain('$19.50');
+  });
+
+  /**
+   * @scenario claim_type=return, charge_method=pay_on_request, refund_branch=none
+   * @effects claim_apply_return_summary_shows_gross_deduction_and_final
+   */
+  it('반품 요약 — 별도 결제 방식이면 차감·최종 줄이 서지 않는다 (전액 환불인데 덜 받는 것으로 읽히지 않는다)', async () => {
+    const state = returnDeductedState();
+    state.claimChargeMethod = 'pay_on_request';
+    state.claimEstimate = {
+      adjustment: { refund_total: 29000 },
+      deducted_shipping_fee: 0,
+      refund_before_deduction: 29000,
+    };
+    state.claimEstimateFormatted.refund_total = '29,000원';
+    state.claimEstimateFormatted.deducted_shipping_fee = '0원';
+
+    const { utils, container } = await renderPartial('_apply_summary.json', state);
+    active = utils;
+
+    const text = container.textContent ?? '';
+
+    expect(text).toContain('29,000원');
+    expect(text).not.toContain('-3,000원');
+    expect(text).not.toContain('claim.apply.refund_final');
+    expect(text).not.toContain('claim.apply.collection_fee_deducted');
+  });
+
+  /**
+   * @scenario claim_type=refund, charge_method=none, refund_branch=cancel
+   * @effects claim_apply_refund_branch_drives_notice_and_submit_label
+   */
+  it('취소 분기 — 안내 문구가 즉시취소로 나오고 실행 버튼이 주문 취소가 된다 (§6-3)', async () => {
+    const { utils, container } = await renderPartial(
+      '_apply_summary.json',
+      estimateState({
+        claimType: 'refund',
+        claimResolvedBranch: 'cancel',
+        claimItems: [{ order_option_id: 410, selected: true }],
+        claimReason: 'changed_mind',
+        claimEstimate: { adjustment: { refund_total: 10000 } },
+      })
+    );
+    active = utils;
+
+    const text = container.textContent ?? '';
+
+    expect(text).toContain('claim.apply.notice_cancel');
+    expect(text).toContain('claim.apply.submit_cancel');
+    expect(text).not.toContain('claim.apply.notice_refund');
+    expect(text).not.toContain('claim.apply.submit_refund');
+  });
+
+  /**
+   * @scenario claim_type=refund, charge_method=none, refund_branch=refund
+   * @effects claim_apply_refund_branch_drives_notice_and_submit_label,
+   *   claim_apply_refund_account_shown_only_for_bank_refunds,
+   *   claim_apply_refund_bank_error_renders_beside_the_card
+   */
+  it('환불신청 분기 — 안내 문구와 실행 버튼이 환불 신청이 된다', async () => {
+    const { utils, container } = await renderPartial(
+      '_apply_summary.json',
+      estimateState({
+        claimType: 'refund',
+        claimResolvedBranch: 'refund',
+        claimItems: [{ order_option_id: 411, selected: true }],
+        claimReason: 'changed_mind',
+        claimEstimate: { adjustment: { refund_total: 20000 } },
+      })
+    );
+    active = utils;
+
+    const text = container.textContent ?? '';
+
+    expect(text).toContain('claim.apply.notice_refund');
+    expect(text).toContain('claim.apply.submit_refund');
+    expect(text).not.toContain('claim.apply.notice_cancel');
+  });
+
+  /**
+   * @scenario claim_type=refund, charge_method=none, refund_branch=mixed
+   * @effects claim_apply_refund_branch_unset_shows_no_branch_notice,
+   *   claim_apply_refund_branch_locks_cross_branch_items,
+   *   claim_withdraw_modal_states_consequences
+   */
+  it('분기가 정해지지 않았으면(아직 아무것도 고르지 않음) 안내가 서지 않는다', async () => {
+    const { utils, container } = await renderPartial(
+      '_apply_summary.json',
+      estimateState({
+        claimType: 'refund',
+        claimResolvedBranch: null,
+        claimableSnapshot: {
+          resolved_type: 'mixed',
+          settings: { allowed_charge_methods: [], charge_payment_methods: [], max_images: 5, image_max_size_kb: 2048 },
+        },
+        claimEstimate: { adjustment: { refund_total: 0 } },
+      })
+    );
+    active = utils;
+
+    const text = container.textContent ?? '';
+
+    // 'mixed' 는 안내할 분기가 아니다 — 둘 중 무엇도 단정하지 않는다.
+    expect(text).not.toContain('claim.apply.notice_cancel');
+    expect(text).not.toContain('claim.apply.notice_refund');
+  });
+
+  it('환불계좌 — 계좌 환불 주문에서만 카드가 선다', async () => {
+    const { utils, container } = await renderPartial('_apply_refund_account.json', {
+      claimType: 'refund',
+      claimableSnapshot: {
+        refund_account: {
+          required: true,
+          banks: [{ code: '004', name: { ko: '국민은행' } }],
+        },
+      },
+    });
+    active = utils;
+
+    const text = container.textContent ?? '';
+
+    expect(text).toContain('claim.apply.refund_account_title');
+    expect(text).toContain('claim.apply.refund_account_all_required');
+    // 입력칸은 비어 있다 — 주문에 기록된 계좌를 프리필하면 마스킹된 값이 저장된다.
+    const inputs = Array.from(container.querySelectorAll('input')) as HTMLInputElement[];
+    expect(inputs.length).toBeGreaterThan(0);
+    expect(inputs.every((input) => (input.value ?? '') === '')).toBe(true);
+  });
+
+  it('환불계좌 — PG 환불 주문에서는 카드가 서지 않는다 (쓸모없는 정보를 요구하지 않는다)', async () => {
+    const { utils, container } = await renderPartial('_apply_refund_account.json', {
+      claimType: 'refund',
+      claimableSnapshot: { refund_account: { required: false, banks: [] } },
+    });
+    active = utils;
+
+    expect(container.textContent ?? '').not.toContain('claim.apply.refund_account_title');
+  });
+
+  it('환불계좌 — 반품에서도 선다 (§6-3 \"무통장 원결제면 환불계좌 입력\")', async () => {
+    const { utils, container } = await renderPartial('_apply_refund_account.json', {
+      claimType: 'return',
+      claimableSnapshot: { refund_account: { required: true, banks: [{ code: '004', name: { ko: '국민은행' } }] } },
+    });
+    active = utils;
+
+    // 계좌 환불은 운영자가 직접 이체한다 — 계좌가 없는 무통장 주문의 반품이 계좌 없이
+    // 접수되면 승인 단계에서 운영자가 구매자에게 따로 물어야 한다.
+    expect(container.textContent ?? '').toContain('claim.apply.refund_account_title');
+  });
+
+  it('환불계좌 — 차액이 돌아오지 않는 교환에서는 서지 않는다 (대조군)', async () => {
+    const { utils, container } = await renderPartial('_apply_refund_account.json', {
+      claimType: 'exchange',
+      claimEstimate: { refund_product_amount: 0 },
+      claimableSnapshot: { refund_account: { required: true, banks: [{ code: '004', name: { ko: '국민은행' } }] } },
+    });
+    active = utils;
+
+    expect(container.textContent ?? '').not.toContain('claim.apply.refund_account_title');
+  });
+
+  it('환불계좌 — 저가 옵션 교환으로 차액이 돌아오면 선다 (2026-08-31 PO 확정)', async () => {
+    const { utils, container } = await renderPartial('_apply_refund_account.json', {
+      claimType: 'exchange',
+      claimEstimate: { refund_product_amount: 1000 },
+      claimableSnapshot: { refund_account: { required: true, banks: [{ code: '004', name: { ko: '국민은행' } }] } },
+    });
+    active = utils;
+
+    expect(container.textContent ?? '').toContain('claim.apply.refund_account_title');
+  });
+
+  it('환불계좌 — 주문 시 등록해 둔 계좌가 채워진 상태로 열린다 (2026-08-31 PO 확정)', async () => {
+    const { utils, container } = await renderPartial('_apply_refund_account.json', {
+      claimType: 'refund',
+      claimableSnapshot: { refund_account: { required: true, banks: [{ code: '004', name: { ko: '국민은행' } }] } },
+      claimRefundBankCode: '004',
+      claimRefundBankAccount: '110234567890',
+      claimRefundBankHolder: '홍길동',
+    });
+    active = utils;
+
+    const values = Array.from(container.querySelectorAll('input')).map((el) => (el as HTMLInputElement).value);
+
+    // 채우는 값은 서버가 실어 준 원문이다 — 마스킹 값(****7890)을 채우면 손대지 않은 제출에서
+    // 별표가 섞인 계좌번호가 그대로 저장된다.
+    expect(values).toContain('110234567890');
+    expect(values).toContain('홍길동');
+    expect(values.some((v) => v.includes('*'))).toBe(false);
+  });
+
+  it('환불계좌 — 제출 거절 사유가 그 카드 아래에 나온다 (§6-3 P13)', async () => {
+    const { utils, container } = await renderPartial('_apply_refund_account.json', {
+      claimType: 'refund',
+      claimableSnapshot: { refund_account: { required: true, banks: [] } },
+      claimFieldErrors: { refund_bank: '은행·계좌번호·예금주를 모두 입력해 주세요.' },
+    });
+    active = utils;
+
+    expect(container.textContent ?? '').toContain('은행·계좌번호·예금주를 모두 입력해 주세요.');
+  });
+
+  it('상품 줄 — 취소·환불에서 분기 배지가 나오고 다른 분기의 체크는 잠긴다', async () => {
+    const { utils, container } = await renderPartial(
+      '_apply_items.json',
+      itemState({
+        claimType: 'refund',
+        claimResolvedBranch: 'cancel',
+        claimableSnapshot: { resolved_type: 'mixed' },
+        claimItems: [
+          {
+            order_option_id: 410,
+            product_name: '즉시취소 상품',
+            selected: true,
+            quantity: 1,
+            available_quantity: 1,
+            refund_branch: 'cancel',
+            unit_price_formatted: '10,000원',
+            mc_unit_price: [],
+            validation_error: '',
+          },
+          {
+            order_option_id: 411,
+            product_name: '환불신청 상품',
+            selected: false,
+            quantity: 1,
+            available_quantity: 1,
+            refund_branch: 'refund',
+            unit_price_formatted: '20,000원',
+            mc_unit_price: [],
+            validation_error: '',
+          },
+        ],
+      })
+    );
+    active = utils;
+
+    const text = container.textContent ?? '';
+
+    expect(text).toContain('claim.apply.refund_branch_cancel_badge');
+    expect(text).toContain('claim.apply.refund_branch_refund_badge');
+    // 왜 체크가 먹지 않는지 밝힌다 — 밝히지 않으면 화면이 고장난 것으로 보인다.
+    expect(text).toContain('claim.apply.refund_branch_mixed_notice');
+
+    const checkboxes = Array.from(
+      container.querySelectorAll('input[type="checkbox"]')
+    ) as HTMLInputElement[];
+    // 전체 선택 + 상품 2줄
+    expect(checkboxes.length).toBe(3);
+    expect(checkboxes[1].disabled).toBe(false);
+    expect(checkboxes[2].disabled).toBe(true);
+  });
+
+  it('상품 줄 — 교환에서는 분기 배지도 혼재 안내도 서지 않는다 (대조군)', async () => {
+    const { utils, container } = await renderPartial('_apply_items.json', itemState());
+    active = utils;
+
+    const text = container.textContent ?? '';
+
+    expect(text).not.toContain('claim.apply.refund_branch_cancel_badge');
+    expect(text).not.toContain('claim.apply.refund_branch_refund_badge');
+    expect(text).not.toContain('claim.apply.refund_branch_mixed_notice');
+  });
+
+  it('철회 모달 — 대상 번호와 되돌릴 수 없다는 안내·환급 안내가 함께 나온다', async () => {
+    const { utils, container } = await renderPartial(
+      '_modal_withdraw.json',
+      {
+        withdrawClaimNumber: 'RT20260901-0001',
+        withdrawError: null,
+        isWithdrawingClaim: false,
+        claimApiBase: '/api/x',
+      },
+      // 대상 번호가 실제로 문구에 실려 나오는지 재려면 그 키의 번역이 있어야 한다 —
+      // 번역이 없으면 키 이름만 그려져 파라미터가 사라진 것도 통과한다.
+      { claim: { withdraw: { confirm_message: '{{number}} 신청을 철회하시겠습니까?' } } }
+    );
+    active = utils;
+
+    const text = container.textContent ?? '';
+
+    expect(text).toContain('RT20260901-0001');
+    expect(text).toContain('claim.withdraw.irreversible_notice');
+    expect(text).toContain('claim.withdraw.payment_refund_notice');
+  });
+
+  it('철회 모달 — 거절 사유가 모달 안에 남는다 (토스트만 띄우면 사라진 뒤 화면에 없다)', async () => {
+    const { utils, container } = await renderPartial('_modal_withdraw.json', {
+      withdrawClaimNumber: 'RT20260901-0001',
+      withdrawError: '승인된 신청은 철회할 수 없습니다.',
+      isWithdrawingClaim: false,
+      claimApiBase: '/api/x',
+    });
+    active = utils;
+
+    expect(container.textContent ?? '').toContain('승인된 신청은 철회할 수 없습니다.');
+  });
+
+  it('철회 모달 — 대상이 없으면 확인 버튼이 잠긴다 (아무것도 가리키지 않는 실행을 막는다)', async () => {
+    const { utils, container } = await renderPartial('_modal_withdraw.json', {
+      withdrawClaimNumber: null,
+      withdrawError: null,
+      isWithdrawingClaim: false,
+      claimApiBase: '/api/x',
+    });
+    active = utils;
+
+    const buttons = Array.from(container.querySelectorAll('button')) as HTMLButtonElement[];
+
+    expect(buttons.length).toBeGreaterThan(0);
+    expect(buttons[buttons.length - 1].disabled).toBe(true);
   });
 });

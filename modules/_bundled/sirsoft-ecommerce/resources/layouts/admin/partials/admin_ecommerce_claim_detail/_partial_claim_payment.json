@@ -2011,7 +2011,10 @@
                                 "refundAmount": "{{_local.refundAmount ?? ''}}",
                                 "refundPointsAmount": "{{_local.refundPointsAmount ?? ''}}",
                                 "refundMethod": "{{_local.refundMethod ?? ''}}",
-                                "refundMethods": "{{claim?.data?.refund_methods ?? []}}"
+                                "refundMethods": "{{claim?.data?.refund_methods ?? []}}",
+                                "refundBankName": "{{claim?.data?.claim?.refund_bank_name ?? ''}}",
+                                "refundBankAccount": "{{claim?.data?.claim?.refund_bank_account ?? ''}}",
+                                "refundBankHolder": "{{claim?.data?.claim?.refund_bank_holder ?? ''}}"
                               }
                             }
                           ]

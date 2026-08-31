@@ -1154,6 +1154,12 @@ interface ClaimRefundExecuteContext {
     refundMethod: string;
     /** 환불 수단 라벨 (서버가 준 선택지에서 해석) */
     refundMethodLabel: string;
+    /** 환불 계좌 은행명 (계좌 이체 환불일 때만) */
+    refundBankName: string;
+    /** 환불 계좌번호 (열람 권한이 없으면 마스킹된 값) */
+    refundBankAccount: string;
+    /** 환불 계좌 예금주 (열람 권한이 없으면 마스킹된 값) */
+    refundBankHolder: string;
 }
 
 /**
@@ -1287,6 +1293,9 @@ export async function openClaimRefundExecuteHandler(
         refundPointsAmount?: string | number | null;
         refundMethod?: string | null;
         refundMethods?: Array<{ value?: string; label?: string }>;
+        refundBankName?: string | null;
+        refundBankAccount?: string | null;
+        refundBankHolder?: string | null;
     }>,
     _context?: ActionContext,
 ): Promise<void> {
@@ -1306,6 +1315,11 @@ export async function openClaimRefundExecuteHandler(
     const methodLabel = (params.refundMethods ?? [])
         .find((option) => option?.value === method)?.label ?? method;
 
+    // 계좌 이체 환불은 운영자가 손으로 보낸다 — 어느 계좌인지 이 창에 없으면 다른 화면을
+    // 뒤져야 하고, 못 찾으면 구매자에게 다시 묻게 된다. 은행명은 서버가 해석해 실어 준다:
+    // 화면이 은행 코드표를 읽으려면 설정 데이터소스가 필요한데 그 게이트가 이 화면의 라우트
+    // 권한보다 좁아, 클레임만 볼 수 있는 운영자에게는 그 데이터소스만 403 이 되어 은행명이
+    // 조용히 빈다.
     const context: ClaimRefundExecuteContext = {
         claimId,
         claimNumber: params.claimNumber ?? '',
@@ -1314,6 +1328,9 @@ export async function openClaimRefundExecuteHandler(
         refundPointsAmount: amountOrNull(params.refundPointsAmount) ?? 0,
         refundMethod: method,
         refundMethodLabel: methodLabel,
+        refundBankName: (params.refundBankName ?? '').trim(),
+        refundBankAccount: (params.refundBankAccount ?? '').trim(),
+        refundBankHolder: (params.refundBankHolder ?? '').trim(),
     };
 
     G7Core.state.set({ claimRefundExecuteContext: context, isProcessing: false });

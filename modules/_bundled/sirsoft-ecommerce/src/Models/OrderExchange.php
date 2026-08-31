@@ -75,6 +75,9 @@ class OrderExchange extends Model
         'completed_at',
         'reject_reason',
         'admin_memo',
+        'refund_bank_code',
+        'refund_bank_account',
+        'refund_bank_holder',
     ];
 
     /**

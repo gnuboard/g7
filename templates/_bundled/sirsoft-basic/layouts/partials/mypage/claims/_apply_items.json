@@ -81,6 +81,26 @@
       ]
     },
     {
+      "comment": "취소·환불 분기 혼재 안내 — 결제완료 상품은 즉시 취소되고 배송준비 이후 상품은 환불 신청으로 심사를 받는다. 두 분기를 한 신청서에 섞으면 서버가 신청 전체를 거절하므로(claim_refund_branch_mixed) 화면이 그 조합을 만들 수 없게 잠근다. 잠근 이유를 밝히지 않으면 구매자는 체크가 왜 먹지 않는지 알 수 없다.",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_local.claimType === 'refund' && ((_local.claimableSnapshot ?? claimable?.data)?.resolved_type === 'mixed')}}",
+      "props": { "className": "flex items-start gap-2 mb-4 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "props": { "name": "triangle-exclamation", "className": "text-base text-amber-600 dark:text-amber-400 flex-shrink-0" }
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": { "className": "text-xs text-amber-700 dark:text-amber-300 min-w-0" },
+          "text": "$t:claim.apply.refund_branch_mixed_notice"
+        }
+      ]
+    },
+    {
       "comment": "신청 가능한 상품이 없을 때 — 유형별로 열린 상품이 하나도 없으면 버튼을 눌러 들어와도 빈 화면이 되므로 사유를 밝힌다.",
       "type": "basic",
       "name": "Div",
@@ -134,10 +154,12 @@
                     {
                       "type": "basic",
                       "name": "Input",
+                      "comment": "다른 분기의 상품은 지금 고를 수 없다 — 고르면 서버가 신청 전체를 거절하므로, 사유까지 다 채운 뒤 거절받지 않게 여기서 잠근다. 이미 고른 상품은 언제나 해제할 수 있어야 하므로(잠그면 잘못 고른 조합에서 빠져나올 수 없다) 선택 상태는 잠금 판정에서 제외한다. 핸들러도 같은 규칙을 갖는다 — 잠금은 표시이고 판정은 핸들러가 한다.",
                       "props": {
                         "type": "checkbox",
                         "checked": "{{claimItem.selected === true}}",
-                        "className": "w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 cursor-pointer"
+                        "disabled": "{{_local.claimType === 'refund' && claimItem.selected !== true && !!_local.claimResolvedBranch && _local.claimResolvedBranch !== claimItem.refund_branch}}",
+                        "className": "w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                       },
                       "actions": [
                         {
@@ -191,6 +213,14 @@
                       "if": "{{(claimItem.product_option_name ?? '') !== ''}}",
                       "props": { "className": "text-sm text-gray-500 dark:text-gray-400 mt-0.5 truncate" },
                       "text": "{{claimItem.product_option_name ?? ''}}"
+                    },
+                    {
+                      "comment": "이 상품이 어느 분기인지 — 배송 전이면 즉시 취소, 배송준비 이후면 환불 신청이다. 두 분기가 섞인 주문에서 무엇을 나눠 신청해야 하는지 이 배지가 알려 준다. 분기는 서버가 상품 상태로 판정해 내려준 값(refund_branch)이며 화면이 상태 코드로 재현하지 않는다 — 운영자가 신청 가능 상태 설정을 바꾸면 판정이 갈린다.",
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_local.claimType === 'refund' && !!claimItem.refund_branch}}",
+                      "props": { "className": "{{claimItem.refund_branch === 'cancel' ? 'inline-block mt-1 px-2 py-0.5 rounded text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'inline-block mt-1 px-2 py-0.5 rounded text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'}}" },
+                      "text": "{{claimItem.refund_branch === 'cancel' ? $t('claim.apply.refund_branch_cancel_badge') : $t('claim.apply.refund_branch_refund_badge')}}"
                     },
                     {
                       "comment": "단가 표기는 서버가 준 문자열을 그대로 쓴다 — 화면이 통화 기호를 붙이면 기본 통화가 다른 상점에서 단위만 틀린 금액이 나간다. 보조통화는 형제 금액 줄과 같은 규약으로 병기한다(§5-4).",

@@ -78,7 +78,7 @@ class UserClaimService
      * 주문의 클레임 가능 상품과 유형·사유·설정을 돌려줍니다. (신청 화면의 `claimable` 컨텍스트)
      *
      * @param  Order  $order  주문
-     * @return array 신청 가능 옵션 + 유형별 사유 + 설정 + 미귀속 첨부
+     * @return array 신청 가능 옵션 + 유형별 사유 + 설정 + 환불계좌 요건 + 미귀속 첨부
      */
     public function claimableOptions(Order $order): array
     {
@@ -134,7 +134,85 @@ class UserClaimService
                 ClaimTypeEnum::REFUND->value => $this->claimReasonRepository->getUserSelectableReasons(ClaimTypeEnum::REFUND->value),
             ],
             'settings' => $this->publicSettings(),
+            'refund_account' => $this->refundAccountRequirement($order),
             'pending_images' => $this->attachmentService->listPendingFor($order),
+        ];
+    }
+
+    /**
+     * 환불계좌 입력 요건을 돌려줍니다. (§6-3 — 무통장 원결제면 환불계좌 입력)
+     *
+     * 판정은 환불 도메인 서비스가 소유한다(`refundsToBankAccount`) — 화면이 결제수단 코드로
+     * 재현하면 확장 결제수단이 자기 카탈로그에 선언한 환불 수단과 갈린다.
+     *
+     * 주문 시 등록해 둔 계좌가 있으면 그 **원문**을 `prefill` 로 실어 화면이 입력칸을 채운다
+     * (2026-08-31 PO 확정 — 우려 제기 후 재확인). 표시용 리소스(`MasksRefundBankAccount`)의
+     * 마스킹 값을 채우면 구매자가 손대지 않고 제출했을 때 별표가 섞인 계좌번호가 저장되므로,
+     * 프리필은 반드시 이 원문 통로를 쓰고 마스킹 값을 재사용하지 않는다.
+     *
+     * 이 통로는 자기 주문을 여는 경로(회원 본인 / 비회원 조회 토큰)에서만 열린다 —
+     * `claimable-options` 자체가 그 자격을 이미 통과한 뒤다. 비회원 조회 토큰을 얻은 사람에게
+     * 계좌 원문이 노출되는 것은 그 결정이 감수한 대가이며, 계좌가 필요 없는 주문
+     * (`required=false`)에는 싣지 않는다.
+     *
+     * @param  Order  $order  주문
+     * @return array{required: bool, banks: array<int, array{code: string, name: mixed}>, prefill: array{bank_code: string, account_number: string, holder: string}|null} 환불계좌 요건
+     */
+    protected function refundAccountRequirement(Order $order): array
+    {
+        $required = $this->refundRequestService->refundsToBankAccount($order);
+
+        return [
+            'required' => $required,
+            'prefill' => $required ? $this->registeredRefundAccount($order) : null,
+            // 은행 목록은 운영자가 주문설정에서 관리하는 값이다 — 화면에 코드표를 두면 운영자가
+            // 취급 은행을 바꿔도 신청서만 옛 목록으로 남는다. 필요하지 않은 주문에는 싣지 않는다.
+            'banks' => $required
+                ? array_values(array_map(
+                    fn (array $bank) => ['code' => (string) ($bank['code'] ?? ''), 'name' => $bank['name'] ?? ($bank['code'] ?? '')],
+                    array_filter(
+                        (array) $this->settingsService->getSetting('order_settings.banks', []),
+                        fn ($bank) => is_array($bank) && filled($bank['code'] ?? null),
+                    ),
+                ))
+                : [],
+        ];
+    }
+
+    /**
+     * 주문에 등록된 환불 계좌 원문을 돌려줍니다. (신청서 입력칸 프리필)
+     *
+     * 세 값이 모두 있을 때만 돌려준다 — 일부만 채워 보내면 화면이 반쯤 채워진 폼을 그리고,
+     * 서버는 "셋 다 오거나 하나도 오지 않거나" 만 허용하므로 구매자가 나머지를 채우기 전까지
+     * 제출이 거절된다. 아무것도 없으면 `null` 이고 화면은 빈 칸을 연다.
+     *
+     * 마스킹 리소스를 거치지 않는다 — 마스킹 값을 채우면 손대지 않은 제출에서 별표가 섞인
+     * 계좌번호가 저장된다.
+     *
+     * @param  Order  $order  주문
+     * @return array{bank_code: string, account_number: string, holder: string}|null 등록된 환불 계좌
+     */
+    protected function registeredRefundAccount(Order $order): ?array
+    {
+        $order->loadMissing('payment');
+        $payment = $order->payment;
+
+        if ($payment === null) {
+            return null;
+        }
+
+        $bankCode = (string) ($payment->refund_bank_code ?? '');
+        $account = (string) ($payment->refund_bank_account ?? '');
+        $holder = (string) ($payment->refund_bank_holder ?? '');
+
+        if ($bankCode === '' || $account === '' || $holder === '') {
+            return null;
+        }
+
+        return [
+            'bank_code' => $bankCode,
+            'account_number' => $account,
+            'holder' => $holder,
         ];
     }
 

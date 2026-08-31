@@ -263,6 +263,13 @@ import {
     removeClaimImageHandler,
 } from './claimImageHandlers';
 
+// 클레임 신청내역 핸들러 (회원/비회원 공용) — 철회
+import {
+    openClaimWithdrawHandler,
+    closeClaimWithdrawHandler,
+    withdrawClaimHandler,
+} from './claimListHandlers';
+
 // 배송정책 폼 핸들러
 import {
     initShippingPolicyFormHandler,
@@ -548,6 +555,11 @@ export const handlerMap = {
     // ===== 클레임 첨부 이미지 (회원/비회원 공용) =====
     setClaimImageFiles: setClaimImageFilesHandler,
     removeClaimImage: removeClaimImageHandler,
+
+    // ===== 클레임 신청내역 (회원/비회원 공용) =====
+    openClaimWithdraw: openClaimWithdrawHandler,
+    closeClaimWithdraw: closeClaimWithdrawHandler,
+    withdrawClaim: withdrawClaimHandler,
 
     // ===== URL 상태 복원 =====
     initCategoryFromUrl: initCategoryFromUrlHandler,

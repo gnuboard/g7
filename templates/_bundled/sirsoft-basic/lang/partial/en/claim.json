@@ -60,7 +60,24 @@
     "select_items_first": "Select the items to request.",
     "reason_required": "Select a reason for the request.",
     "submit_success": "Your request has been received.",
-    "submit_failed": "The request could not be submitted."
+    "submit_failed": "The request could not be submitted.",
+    "refund_branch_cancel_badge": "Instant cancellation",
+    "refund_branch_refund_badge": "Refund request",
+    "refund_branch_mixed_notice": "This order contains both items that can be cancelled right away and items that need a refund request. They cannot be submitted together, so only the group you pick first stays selected.",
+    "refund_branch_mixed_blocked": "Items that are cancelled right away and items that need a refund request must be submitted separately.",
+    "notice_cancel": "You will be refunded to your original payment method right away, with no seller approval needed.",
+    "notice_refund": "You will be refunded after the seller reviews your request.",
+    "refund_expected_before_deduction": "Expected refund",
+    "collection_fee_deducted": "Return shipping deducted",
+    "refund_final": "Final refund",
+    "refund_account_title": "Refund account",
+    "refund_account_hint": "This order is refunded by bank transfer. Please enter the account to receive the refund.",
+    "refund_account_bank_select": "Select a bank",
+    "refund_account_number_placeholder": "Account number (digits only)",
+    "refund_account_holder_placeholder": "Account holder",
+    "refund_account_all_required": "Please enter the bank, account number and account holder.",
+    "submit_cancel": "Cancel order",
+    "submit_refund": "Request refund"
   },
   "change_product": {
     "title": "Change exchange option",
@@ -80,5 +97,23 @@
     "limit_exceeded": "You can attach up to {{max}} photos.",
     "size_exceeded": "Each photo must be {{size}}KB or smaller.",
     "remove_failed": "The attachment could not be removed."
+  },
+  "withdraw": {
+    "title": "Withdraw request",
+    "confirm_message": "Withdraw request {{number}}?",
+    "irreversible_notice": "A withdrawn request cannot be restored. You can submit a new one if you need to.",
+    "payment_refund_notice": "Any extra amount you have already paid will be refunded together.",
+    "cancel": "Close",
+    "confirm": "Withdraw",
+    "success": "Your request has been withdrawn.",
+    "failed": "Could not withdraw the request."
+  },
+  "payment_result": {
+    "success": "The additional payment is complete.",
+    "failed": "The additional payment did not go through.",
+    "cancelled": "You cancelled the payment. Your request is still saved.",
+    "claim_number": "Request no. {{number}}",
+    "error_code": "Failure code {{code}}",
+    "retry_hint": "You can pay again from your request. If it keeps failing, please try another payment method."
   }
 }

@@ -117,6 +117,23 @@ class OrderRefundRequestService
     }
 
     /**
+     * 이 주문의 환불이 계좌 이체로 나가는지 판정합니다. (신청 화면의 환불계좌 입력 노출 근거)
+     *
+     * 어느 결제수단이 계좌 환불인지는 `PaymentMethodResolver::refundMethod()` 가 정한다 — 확장
+     * 결제수단은 자기 카탈로그에 `refund_method` 를 선언하고, 미선언 수단은 PG 필요 여부로 갈린다.
+     * 화면이 결제수단 코드를 보고 그 규칙을 재현하면 확장이 수단을 더할 때마다 판정이 갈리고,
+     * 어긋난 쪽은 오류 없이 "계좌 입력칸이 없는 계좌 환불"(승인 후 관리자가 다시 받아야 한다)
+     * 또는 "PG 환불인데 계좌를 요구"(구매자가 쓸모없는 정보를 넣는다)가 된다.
+     *
+     * @param  Order  $order  주문
+     * @return bool 계좌 이체 환불이면 true
+     */
+    public function refundsToBankAccount(Order $order): bool
+    {
+        return $this->refundExecutionService->determineRefundMethod($order) === RefundMethodEnum::BANK;
+    }
+
+    /**
      * 주문옵션 상태 하나의 분기를 돌려줍니다. (신청 대상이 아니면 null)
      *
      * 두 설정 목록에 같은 상태가 들어 있으면 즉시취소가 이긴다 — 취소 가능 상태는 환불 심사를 거칠

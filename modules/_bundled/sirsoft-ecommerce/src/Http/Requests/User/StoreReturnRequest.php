@@ -59,6 +59,12 @@ class StoreReturnRequest extends FormRequest
             'charge_method' => ['nullable', 'string', Rule::in(ClaimChargeMethodEnum::values())],
             'payment_method' => $this->paymentMethodRules(),
             'refund_priority' => ['nullable', 'string', Rule::in(RefundPriorityEnum::values())],
+            // 계좌 환불 주문의 환불 계좌 — 취소·환불(`StoreRefundRequestRequest`)과 같은 형태다.
+            // 반품도 계좌로 환불될 수 있으므로(§6-3 "무통장 원결제면 환불계좌 입력") 같은 강도로 받는다.
+            'refund_bank' => ['nullable', 'array'],
+            'refund_bank.bank_code' => ['nullable', 'string', 'max:10'],
+            'refund_bank.account_number' => ['nullable', 'string', 'max:50'],
+            'refund_bank.holder' => ['nullable', 'string', 'max:50'],
             'image_ids' => ['nullable', 'array', 'max:'.$this->maxImages()],
             'image_ids.*' => ['integer'],
         ];
@@ -81,6 +87,7 @@ class StoreReturnRequest extends FormRequest
             'reason_code.required' => __('sirsoft-ecommerce::validation.claims.reason_code.required'),
             'reason_code.exists' => __('sirsoft-ecommerce::validation.claims.reason_code.exists'),
             'reason_detail.max' => __('sirsoft-ecommerce::validation.claims.reason_detail.max'),
+            'refund_bank.array' => __('sirsoft-ecommerce::validation.claims.refund_bank.array'),
             'charge_method.in' => __('sirsoft-ecommerce::validation.claims.charge_method.in'),
             'payment_method.in' => __('sirsoft-ecommerce::validation.claims.payment_method.in'),
             'image_ids.array' => __('sirsoft-ecommerce::validation.claims.image_ids.array'),
@@ -110,6 +117,14 @@ class StoreReturnRequest extends FormRequest
                     );
                 }
             }
+
+            // 환불 계좌는 세 필드가 함께 와야 한다 — 하나만 오면 계좌 없는 무통장 환불이 승인된다.
+            $bank = (array) $this->input('refund_bank', []);
+            $filled = array_filter(['bank_code', 'account_number', 'holder'], fn (string $f) => filled($bank[$f] ?? null));
+
+            if ($filled !== [] && count($filled) !== 3) {
+                $validator->errors()->add('refund_bank', __('sirsoft-ecommerce::validation.claims.refund_bank.incomplete'));
+            }
         });
     }
 
@@ -137,12 +152,19 @@ class StoreReturnRequest extends FormRequest
     public function toServicePayload(): array
     {
         $validated = $this->validated();
+        $bank = $validated['refund_bank'] ?? null;
+        $hasBank = is_array($bank) && filled($bank['bank_code'] ?? null) && filled($bank['account_number'] ?? null) && filled($bank['holder'] ?? null);
 
         return [
             'items' => $validated['items'],
             'reason_code' => $validated['reason_code'],
             'reason_detail' => $validated['reason_detail'] ?? null,
             'charge_method' => $validated['charge_method'] ?? null,
+            'refund_bank' => $hasBank ? [
+                'bank_code' => (string) $bank['bank_code'],
+                'account_number' => (string) $bank['account_number'],
+                'holder' => (string) $bank['holder'],
+            ] : null,
             'refund_priority' => isset($validated['refund_priority'])
                 ? RefundPriorityEnum::from($validated['refund_priority'])
                 : RefundPriorityEnum::PG_FIRST,

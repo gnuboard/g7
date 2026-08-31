@@ -817,8 +817,42 @@ describe('환불 실행 (D18·D19)', () => {
             refundPointsAmount: 1000,
             refundMethod: 'pg',
             refundMethodLabel: 'PG사 환불',
+            refundBankName: '',
+            refundBankAccount: '',
+            refundBankHolder: '',
         });
         expect(mockG7Core.modal.open).toHaveBeenCalledWith('modal_claim_refund_execute');
+    });
+
+    /**
+     * 계좌 이체 환불은 운영자가 손으로 보낸다 — 어느 계좌로 보낼지 이 창에 없으면 다른 화면을
+     * 뒤져야 하고, 못 찾으면 구매자에게 다시 묻게 된다. 은행명은 서버가 해석해 실어 준 값을
+     * 그대로 쓴다(화면이 은행 코드표를 읽으면 그 설정 데이터소스만 403 이 되는 운영자가 생긴다).
+     *
+     * @scenario claim_type=refund, cancellable=present
+     * @effects claim_refund_execute_seeds_modal_context
+     */
+    it('계좌 이체 환불이면 보낼 계좌를 모달 문맥에 함께 넘긴다', async () => {
+        await openClaimRefundExecuteHandler(
+            {
+                handler: 'sirsoft-ecommerce.openClaimRefundExecute',
+                params: {
+                    ...REFUND_TARGET,
+                    refundMethod: 'bank',
+                    refundBankName: '국민은행',
+                    refundBankAccount: '110234567890',
+                    refundBankHolder: '홍길동',
+                },
+            },
+            mockContext,
+        );
+
+        expect(mockGlobalState.claimRefundExecuteContext).toMatchObject({
+            refundMethodLabel: '무통장 환불',
+            refundBankName: '국민은행',
+            refundBankAccount: '110234567890',
+            refundBankHolder: '홍길동',
+        });
     });
 
     /**

@@ -85,6 +85,7 @@ trait HandlesClaimActions
                     $payload['reasons'],
                 ),
                 'settings' => $payload['settings'],
+                'refund_account' => $payload['refund_account'],
                 'pending_images' => ClaimImageResource::collection($payload['pending_images'])->toArray(request()),
             ]);
         } catch (Exception $e) {

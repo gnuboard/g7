@@ -32,6 +32,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderReturnOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderReturnRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingPolicyClaimAddressRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Services\Concerns\AppliesRefundBankAccount;
 
 /**
  * 반품 클레임 서비스
@@ -69,6 +70,8 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingPolicyClaimAddressR
  */
 class OrderReturnService
 {
+    use AppliesRefundBankAccount;
+
     /**
      * @param  OrderAdjustmentService  $adjustmentService  환불금액 재계산 서비스
      * @param  ClaimShippingFeeService  $claimShippingFeeService  클레임 배송비 산정 서비스
@@ -126,7 +129,7 @@ class OrderReturnService
      * @param  ClaimChargeMethodEnum|null  $chargeMethod  청구 방식 (청구 0원이면 null)
      * @param  RefundPriorityEnum  $refundPriority  환불 우선순위
      * @param  int|null  $excludeReturnId  수량 잠금 집계에서 뺄 반품 신청서 ID (수정 화면의 미리보기)
-     * @return array{shipping_fee: ClaimShippingFee, adjustment: AdjustmentResult, fault_type: ClaimReasonFaultTypeEnum, charge_method: ClaimChargeMethodEnum|null, total_charge_amount: float, mc_total_charge_amount: array|null, requires_payment: bool} 미리보기 결과
+     * @return array{shipping_fee: ClaimShippingFee, adjustment: AdjustmentResult, fault_type: ClaimReasonFaultTypeEnum, charge_method: ClaimChargeMethodEnum|null, total_charge_amount: float, mc_total_charge_amount: array|null, deducted_shipping_fee: float, refund_before_deduction: float, mc_refund_before_deduction: array|null, requires_payment: bool} 미리보기 결과
      *
      * @throws OrderClaimException 사유 부재 / 신청 자격 위반
      */
@@ -167,6 +170,8 @@ class OrderReturnService
 
         $result = $this->adjustmentService->preview($order, $adjustment, $refundPriority);
 
+        $refundBeforeDeduction = $this->refundBeforeDeduction($order, $claimItems, $adjustment, $result, $refundPriority);
+
         return [
             'shipping_fee' => $shippingFee,
             'adjustment' => $result,
@@ -176,8 +181,86 @@ class OrderReturnService
             // 접수 시 신청서에 박제되는 값(`mc_total_charge_amount`)과 같은 출처를 쓴다 — 반품의
             // 청구액은 회수 배송비 그 자체이므로 배송비 산정이 이미 낸 다통화 값을 그대로 옮긴다.
             'mc_total_charge_amount' => $shippingFee->mcFee ?: null,
+            // 환불금 차감 방식은 `adjustment.refund_total` 이 **이미 회수비를 뺀 뒤**의 금액이다
+            // (`ReturnAdjustment::getAdditionalCharges()`). 그래서 화면이 그 값만 받으면 §6-3 이
+            // 반품 요약에 요구하는 세 줄(환불예정 / 회수비 / 최종) 가운데 첫 줄을 세울 수 없고,
+            // 화면이 스스로 되더하면 예고와 청구의 근거가 갈린다. 차감액과 차감 전 금액을 서버가
+            // 함께 낸다 — 차감하지 않는 방식에서는 차감액이 0 이고 두 값이 같아진다.
+            'deducted_shipping_fee' => (float) $adjustment->getAdditionalCharges(),
+            'refund_before_deduction' => $refundBeforeDeduction,
+            // 다통화 표기도 형제 줄과 같은 규약이다(§5-4). 환율은 현재 설정이 아니라 주문
+            // currency_snapshot 의 동결 환율을 쓴다 — 화면이 환산하면 예고와 청구의 근거가 갈린다.
+            'mc_refund_before_deduction' => $this->toMultiCurrencyOrNull(
+                $refundBeforeDeduction,
+                $order->currency_snapshot ?? [],
+            ),
             'requires_payment' => $shippingFee->fee > 0 && $chargeMethod?->requiresPayment() === true,
         ];
+    }
+
+    /**
+     * 회수 배송비를 빼기 전의 환불 예정액을 돌려줍니다. (§6-3 반품 요약 첫 줄)
+     *
+     * 차감하지 않는 방식에서는 차감이 없으므로 확정된 환불액이 곧 차감 전 금액이다.
+     *
+     * 차감 방식에서는 **회수비를 0 으로 둔 같은 산식**을 한 번 더 돌려 얻는다. 확정 환불액에
+     * 회수비를 되더하는 방법은 두 경우에 실제보다 큰 금액을 내놓는다 — ① 결제 여력
+     * (`total_paid_amount - total_refunded_amount`)이 상한이 되어 환불액이 이미 잘린 주문
+     * (앞선 클레임이 일부를 환불한 경우) ② 회수비가 환불 대상 금액 전부를 먹어 환불액이
+     * 0 으로 바닥친 경우. 두 경우 모두 세 줄의 뺄셈은 맞아떨어지므로 화면만 보고는 첫 줄이
+     * 부풀었다는 것을 알 수 없다.
+     *
+     * 재계산을 한 번 더 하는 비용은 차감 방식에서만 든다.
+     *
+     * @param  Order  $order  주문
+     * @param  array  $claimItems  신청 상품 [{order_option_id, quantity}]
+     * @param  ReturnAdjustment  $adjustment  차감 방식이 반영된 조정 DTO
+     * @param  AdjustmentResult  $result  그 조정의 계산 결과
+     * @param  RefundPriorityEnum  $refundPriority  환불 우선순위
+     * @return float 차감 전 환불 예정액
+     */
+    protected function refundBeforeDeduction(
+        Order $order,
+        array $claimItems,
+        ReturnAdjustment $adjustment,
+        AdjustmentResult $result,
+        RefundPriorityEnum $refundPriority,
+    ): float {
+        if ($adjustment->getAdditionalCharges() <= 0) {
+            return (float) $result->getTotalRefundAmount();
+        }
+
+        $withoutDeduction = $this->adjustmentService->preview(
+            $order,
+            new ReturnAdjustment(returnItems: $claimItems, collectionFee: 0, chargeMethod: null),
+            $refundPriority,
+        );
+
+        return (float) $withoutDeduction->getTotalRefundAmount();
+    }
+
+    /**
+     * 금액을 주문 통화 스냅샷의 동결 환율로 다통화 표기로 변환합니다.
+     *
+     * 스냅샷이 없는 주문은 `null` 을 돌려준다 — 그 줄은 화면에 서지 않는다. 현재 상점 설정의
+     * 환율로 대신 환산하면 거래 시점 통화로 동결한다는 규약이 깨진다.
+     *
+     * @param  float  $amount  기준 통화 금액
+     * @param  array  $currencySnapshot  주문 통화 스냅샷
+     * @return array|null 다통화 표기 (스냅샷 부재 시 null)
+     */
+    protected function toMultiCurrencyOrNull(float $amount, array $currencySnapshot): ?array
+    {
+        if (empty($currencySnapshot)) {
+            return null;
+        }
+
+        $converted = $this->currencyService->convertToMultiCurrencyWithSnapshot(
+            $amount == (int) $amount ? (int) $amount : $amount,
+            $currencySnapshot,
+        );
+
+        return $converted ?: null;
     }
 
     /**
@@ -249,7 +332,7 @@ class OrderReturnService
                 'items_snapshot' => $this->buildItemsSnapshot($resolved),
                 'return_address_snapshot' => $this->resolveReturnAddressSnapshot($lockedOrder, $resolved),
                 'requested_by' => $requestedBy,
-            ]);
+            ] + $this->refundBankColumns($payload['refund_bank'] ?? null));
 
             foreach ($resolved as $entry) {
                 $this->createReturnOption($return, $lockedOrder, $entry['option'], $entry['quantity']);
@@ -1729,6 +1812,12 @@ class OrderReturnService
             'original_calculation_snapshot' => $result->originalSnapshot,
             'recalculated_snapshot' => $result->recalculatedSnapshot,
             'processed_by' => $processedBy,
+            // 구매자가 반품 신청서에 적어 낸 계좌를 환불 레코드가 이어받는다 — 실제 송금은 환불을
+            // 실행하는 시점에 이 값으로 결제행을 갱신한 뒤 나간다. 이어받지 않으면 신청서에만
+            // 남고 송금은 주문 당시 계좌로 간다.
+            'refund_bank_code' => $return->refund_bank_code,
+            'refund_bank_account' => $return->refund_bank_account,
+            'refund_bank_holder' => $return->refund_bank_holder,
         ]);
 
         foreach ($this->refundExecutionService->buildRefundOptionRows($order, $claimItems, $result) as $row) {

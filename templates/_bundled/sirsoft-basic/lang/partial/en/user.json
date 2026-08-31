@@ -180,7 +180,9 @@
       "apply_redelivery": "Redelivery address",
       "apply_reason": "Claim reason",
       "apply_summary": "Claim summary",
-      "change_product_modal": "Change exchange option"
+      "apply_refund_account": "Refund account",
+      "change_product_modal": "Change exchange option",
+      "withdraw_modal": "Withdraw request confirmation"
     }
   }
 }

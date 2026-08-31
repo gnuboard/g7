@@ -189,7 +189,7 @@
                                 ]
                             },
                             {
-                                "comment": "화면 제목 — 취소·환불은 서버가 판정한 분기(resolved_type)에 따라 라벨만 바뀐다. 사유 카드 구성과 수량 입력은 분기와 무관하게 같다.",
+                                "comment": "화면 제목 — 취소·환불은 분기에 따라 라벨만 바뀐다(§6-3). 사유 카드 구성과 수량 입력은 분기와 무관하게 같다. 분기는 **지금 고른 상품**을 1순위로 읽는다 — 서버의 resolved_type 은 주문 전체의 판정이라 두 분기가 섞인 주문에서 mixed 이고, 그 값으로 제목을 정하면 결제완료 상품만 골라 즉시 취소되는데도 화면은 \"환불 신청\" 이라고 부른다. 아직 아무것도 고르지 않았으면 서버 판정으로 떨어진다.",
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
@@ -209,7 +209,7 @@
                                                 }
                                             }
                                         },
-                                        "text": "{{route.type === 'exchange' ? $t('claim.apply.title_exchange') : (route.type === 'return' ? $t('claim.apply.title_return') : ((_local.claimableSnapshot ?? claimable?.data)?.resolved_type === 'cancel' ? $t('claim.apply.title_cancel') : $t('claim.apply.title_refund')))}}"
+                                        "text": "{{route.type === 'exchange' ? $t('claim.apply.title_exchange') : (route.type === 'return' ? $t('claim.apply.title_return') : ((_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) === 'cancel' ? $t('claim.apply.title_cancel') : $t('claim.apply.title_refund')))}}"
                                     },
                                     {
                                         "type": "basic",
@@ -258,6 +258,10 @@
                                             },
                                             {
                                                 "partial": "partials/mypage/claims/_apply_reason.json"
+                                            },
+                                            {
+                                                "comment": "환불 계좌 — 계좌로 환불되는 주문(무통장 등)에서만 선다. 노출 판정은 서버가 내려준 refund_account.required 가 하고, partial 이 스스로 가름한다.",
+                                                "partial": "partials/mypage/claims/_apply_refund_account.json"
                                             }
                                         ]
                                     },

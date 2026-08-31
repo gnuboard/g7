@@ -102,6 +102,10 @@
 | collection_tracking_number | string\|null | `null` | 회수 송장번호 |
 | collection_tracking_url | string\|null | `null` | 회수 배송 추적 URL (택배사 템플릿으로 서버가 조립. 택배사·송장번호 중 하나라도 없거나 택배사에 추적 주소가 등록돼 있지 않으면 `null`) |
 | collection_completed_at_formatted | string\|null | `null` | 회수 완료 일시 |
+| refund_bank_code | string\|null | `004` | 구매자가 이 신청서에 적어 낸 환불 계좌 은행 코드. 계좌 이체로 환불되는 주문에서만 실린다 (교환은 저가 옵션 교환으로 차액이 돌아올 때) |
+| refund_bank_name | string\|null | `국민은행` | 그 은행 코드의 이름. 운영자가 주문설정에 등록한 목록에서 서버가 해석한다 — 화면이 그 코드표를 읽으려면 설정 데이터소스가 필요한데 그 게이트는 클레임 화면의 라우트 권한보다 좁다 |
+| refund_bank_account | string\|null | `*******7890` | 환불 계좌번호. `sirsoft-ecommerce.orders.read` 권한이 없는 열람자에게는 뒤 4자리만 남는다 |
+| refund_bank_holder | string\|null | `홍*` | 환불 계좌 예금주. 같은 게이트로 마스킹된다 |
 
 **교환 전용 블록** (`claim_type` = `exchange`)
 
@@ -134,7 +138,8 @@
 | refund_total | number | `29000` | PG + 마일리지 환불 합계 |
 | refund_total_formatted | string | `29,000원` | 환불 합계 표기 |
 | mc_refund_amount | object | — | PG 환불 다중 통화 스냅샷 |
-| refund_bank_code | string\|null | `null` | 환불 계좌 은행 코드 (무통장 주문) |
+| refund_bank_code | string\|null | `004` | 이 환불이 나갈 계좌의 은행 코드. 직접 환불신청은 구매자 입력분이고, 교환·반품에서 넘어온 환불은 그 신청서의 값을 이어받는다 |
+| refund_bank_name | string\|null | `국민은행` | 그 은행 코드의 이름 (서버 해석) |
 | refund_bank_account | string\|null | `*********3456` | 환불 계좌번호 (마스킹) |
 | refund_bank_holder | string\|null | `null` | 환불 계좌 예금주 |
 | refunded_at_formatted | string\|null | `null` | 환불 완료 일시 |

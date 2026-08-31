@@ -173,6 +173,85 @@ export function resolveClaimApplyRoute(): { claimType: string; preselected: stri
 }
 
 /**
+ * 취소·환불 신청서에서 지금 선택된 상품이 속한 분기를 돌려줍니다. (`cancel` | `refund` | null)
+ *
+ * 취소·환불은 한 화면이지만 서버는 **두 파이프라인**으로 갈린다 — 결제완료 상품은 즉시취소로
+ * 바로 환불되고, 배송준비 이후 상품은 환불신청서로 심사를 받는다. 두 분기의 상품을 한 신청서에
+ * 섞으면 서버가 422(`claim_refund_branch_mixed`)로 거절한다.
+ *
+ * 분기는 **선택된 상품**으로 정해진다. 선택이 없으면 아직 정해지지 않은 것이므로 null 이다.
+ *
+ * @param items 신청 상품 줄
+ * @returns 분기 (선택 없음 → null, 두 분기가 섞임 → 'mixed')
+ */
+export function resolveSelectedRefundBranch(items: ClaimApplyItem[]): string | null {
+    const branches = Array.from(
+        new Set(
+            items
+                .filter((item) => item.selected && !!item.refund_branch)
+                .map((item) => String(item.refund_branch))
+        )
+    );
+
+    if (branches.length === 0) return null;
+
+    return branches.length === 1 ? branches[0] : 'mixed';
+}
+
+/**
+ * 이 상품을 지금 고를 수 있는지 판정합니다. (취소·환불의 분기 혼재 차단)
+ *
+ * 이미 고른 상품과 분기가 다르면 서버가 신청 전체를 거절한다. 화면이 그 조합을 만들 수 있게
+ * 두면 구매자는 사유까지 다 채운 뒤에야 "나누어 신청해 주세요" 를 받는다 — 미리보기도 같은
+ * 이유로 실패하므로 금액조차 볼 수 없다. 고를 수 없는 상품은 애초에 잠근다.
+ *
+ * 교환·반품은 분기가 없는 유형이라 언제나 고를 수 있다.
+ *
+ * @param items 신청 상품 줄
+ * @param index 판정 대상 줄 번호
+ * @param claimType 클레임 유형
+ * @returns 지금 고를 수 있으면 true
+ */
+export function canSelectClaimItem(items: ClaimApplyItem[], index: number, claimType: string): boolean {
+    const target = items[index];
+
+    if (!target) return false;
+    // 이미 고른 상품은 언제나 해제할 수 있다 — 잠그면 잘못 고른 조합에서 빠져나올 수 없다.
+    if (target.selected) return true;
+    if (claimType !== 'refund') return true;
+
+    const current = resolveSelectedRefundBranch(items);
+
+    return current === null || current === target.refund_branch;
+}
+
+/**
+ * 서버가 실어 준 등록 환불계좌를 입력칸 초기값 형태로 정규화합니다.
+ *
+ * 세 값이 모두 있을 때만 채운다 — 서버는 "셋 다 오거나 하나도 오지 않거나" 만 허용하므로,
+ * 반쯤 채운 폼을 열면 구매자가 나머지를 채우기 전까지 제출이 거절된다. 서버는 이미 그 조건으로
+ * 걸러 내지만, 화면도 같은 규칙을 갖는다 — 한쪽만 지키면 응답 형태가 바뀔 때 조용히 갈린다.
+ *
+ * @param prefill 서버 응답의 `refund_account.prefill`
+ * @returns 입력칸 초기값 세 개 (없으면 빈 문자열)
+ */
+export function normalizeRefundAccountPrefill(
+    prefill: any
+): { bank_code: string; account_number: string; holder: string } {
+    const empty = { bank_code: '', account_number: '', holder: '' };
+
+    if (!prefill || typeof prefill !== 'object') return empty;
+
+    const bankCode = String(prefill.bank_code ?? '').trim();
+    const accountNumber = String(prefill.account_number ?? '').trim();
+    const holder = String(prefill.holder ?? '').trim();
+
+    if (!bankCode || !accountNumber || !holder) return empty;
+
+    return { bank_code: bankCode, account_number: accountNumber, holder };
+}
+
+/**
  * 원 배송지를 재발송지 페이로드 형태로 옮깁니다. (D14)
  *
  * 주문 배송지 리소스(`OrderAddressResource`)와 재발송지 페이로드는 필드 이름이 다르다
@@ -371,6 +450,9 @@ export function collectClaimFieldErrors(
         payment_method: first(['payment_method', 'refund_priority']),
         images: first(['image_ids']),
         redelivery: first(['redelivery_address']),
+        // 환불계좌는 세 필드가 함께 와야 하므로(`StoreRefundRequestRequest::withValidator`) 서버가
+        // 묶음 키(`refund_bank`)와 개별 키를 모두 돌려줄 수 있다. 접두사로 묶어 그 카드 아래 남긴다.
+        refund_bank: first(['refund_bank']),
     };
 }
 
@@ -403,6 +485,7 @@ export function unplacedClaimErrorMessage(
         'refund_priority',
         'image_ids',
         'redelivery_address',
+        'refund_bank',
     ];
     const mappedItemFields = ['quantity', 'new_product_option_id', 'order_option_id'];
     const payloadLength = items.filter((item) => item.selected).length;
@@ -450,6 +533,11 @@ export function formatClaimEstimate(estimate: any, currencyCode: string | null):
         refund_product_amount: fmt(estimate?.refund_product_amount),
         total_charge_amount: fmt(estimate?.total_charge_amount),
         refund_total: fmt(estimate?.adjustment?.refund_total),
+        // 반품 요약 3줄(§6-3) — 회수비를 환불금에서 차감하는 방식은 `adjustment.refund_total` 이
+        // 이미 차감된 뒤의 금액이라, 차감 전 금액과 차감액을 서버가 따로 낸다. 화면이 되더하면
+        // 예고와 청구의 근거가 갈린다.
+        refund_before_deduction: fmt(estimate?.refund_before_deduction),
+        deducted_shipping_fee: fmt(estimate?.deducted_shipping_fee),
         // 보조통화 표기 — 세 줄 모두 서버가 재료를 준다(§5-4 "다통화는 전부 mc_* 규약").
         // 환율은 서버가 주문 통화 스냅샷의 동결 환율로 낸 것을 그대로 쓴다 — 화면이 환산하면
         // 예고와 청구의 근거가 갈린다.
@@ -459,6 +547,7 @@ export function formatClaimEstimate(estimate: any, currencyCode: string | null):
             estimate?.adjustment?.refund_formatted?.mc?.refund_total,
             currencyCode
         ),
+        mc_refund_before_deduction: toSecondaryCurrencyList(estimate?.mc_refund_before_deduction, currencyCode),
     };
 }
 
@@ -541,12 +630,17 @@ export function initClaimApplyHandler(
     const settings = claimable.settings ?? {};
     const allowedCharge: string[] = settings.allowed_charge_methods ?? [];
     const allowedPayment: string[] = settings.charge_payment_methods ?? [];
+    const refundPrefill = normalizeRefundAccountPrefill(claimable.refund_account?.prefill);
 
     G7Core.state.setLocal({
         claimType,
         claimableSnapshot: claimable,
         claimItems: items,
         claimSelectAll: items.length > 0 && items.every((item) => item.selected),
+        // 취소·환불의 화면 라벨은 **지금 고른 상품**의 분기를 따른다. 서버의 `resolved_type` 은
+        // 주문 전체의 판정이라 두 분기가 섞인 주문에서는 'mixed' 이고, 그 값으로 라벨을 정하면
+        // 구매자가 결제완료 상품만 골라 즉시 취소되는데도 화면은 "환불 신청" 이라고 부른다.
+        claimResolvedBranch: resolveSelectedRefundBranch(items),
         claimReason: '',
         claimReasonDetail: '',
         claimFaultType: null,
@@ -555,6 +649,14 @@ export function initClaimApplyHandler(
         claimChargeMethod: allowedCharge[0] ?? '',
         claimPaymentMethod: allowedPayment[0] ?? '',
         claimRefundPriority: 'pg_first',
+        // 환불계좌는 주문 시 등록해 둔 계좌가 있으면 채워서 연다(2026-08-31 PO 확정).
+        // 채우는 값은 서버가 `refund_account.prefill` 로 실어 준 **원문**이며, 표시용 응답의
+        // 마스킹 값(계좌 뒤 4자리·예금주 첫 글자)을 재사용하지 않는다 — 마스킹 값을 채우면
+        // 구매자가 손대지 않고 제출했을 때 별표가 섞인 계좌번호가 저장되고, 검증은 통과해
+        // 환불 실행 때가 되어서야 드러난다. 등록분이 없으면 세 칸 모두 빈 상태다.
+        claimRefundBankCode: refundPrefill.bank_code,
+        claimRefundBankAccount: refundPrefill.account_number,
+        claimRefundBankHolder: refundPrefill.holder,
         claimEstimate: null,
         claimEstimateFormatted: null,
         claimEstimateLoading: false,
@@ -597,13 +699,27 @@ export function toggleClaimItemHandler(
     if (index < 0) return;
 
     const local = G7Core.state.getLocal();
-    const items: ClaimApplyItem[] = (local.claimItems ?? []).map((item: ClaimApplyItem, i: number) =>
+    const current: ClaimApplyItem[] = local.claimItems ?? [];
+
+    // 취소·환불은 즉시취소와 환불신청서가 한 화면에서 갈린다 — 두 분기를 섞으면 서버가 신청
+    // 전체를 거절하므로(`claim_refund_branch_mixed`) 그 조합을 만들 수 있게 두지 않는다.
+    if (!canSelectClaimItem(current, index, String(local.claimType ?? ''))) {
+        G7Core.toast?.warning?.(
+            G7Core.t?.('claim.apply.refund_branch_mixed_blocked')
+            ?? '즉시 취소되는 상품과 환불 신청이 필요한 상품은 나누어 신청해 주세요.'
+        );
+
+        return;
+    }
+
+    const items: ClaimApplyItem[] = current.map((item: ClaimApplyItem, i: number) =>
         i === index ? { ...item, selected: !item.selected } : item
     );
 
     G7Core.state.setLocal({
         claimItems: items,
         claimSelectAll: items.length > 0 && items.every((item) => item.selected),
+        claimResolvedBranch: resolveSelectedRefundBranch(items),
     });
 
     scheduleClaimEstimate(G7Core, action.params ?? {});
@@ -623,13 +739,27 @@ export function toggleClaimSelectAllHandler(
     if (!G7Core?.state) return;
 
     const local = G7Core.state.getLocal();
+    const claimType = String(local.claimType ?? '');
+    const current: ClaimApplyItem[] = local.claimItems ?? [];
     const next = !local.claimSelectAll;
-    const items: ClaimApplyItem[] = (local.claimItems ?? []).map((item: ClaimApplyItem) => ({
+
+    // 전체 선택도 같은 규칙을 탄다. 취소·환불에서 두 분기가 섞여 있으면 "전체" 는 서버가
+    // 거절하는 조합이므로, 먼저 만나는 분기만 고른다 — 화면이 전건을 고른 것처럼 보이게 한 뒤
+    // 제출에서야 거절하면 구매자는 무엇을 나눠야 하는지 알 수 없다.
+    const targetBranch = next && claimType === 'refund'
+        ? (current.find((item: ClaimApplyItem) => !!item.refund_branch)?.refund_branch ?? null)
+        : null;
+
+    const items: ClaimApplyItem[] = current.map((item: ClaimApplyItem) => ({
         ...item,
-        selected: next,
+        selected: next && (targetBranch === null || item.refund_branch === targetBranch),
     }));
 
-    G7Core.state.setLocal({ claimItems: items, claimSelectAll: next });
+    G7Core.state.setLocal({
+        claimItems: items,
+        claimSelectAll: items.length > 0 && items.every((item) => item.selected),
+        claimResolvedBranch: resolveSelectedRefundBranch(items),
+    });
 
     scheduleClaimEstimate(G7Core, action.params ?? {});
 }
@@ -1206,6 +1336,30 @@ export async function submitClaimHandler(
 
     if (claimType === 'exchange' && local.claimRedelivery?.zipcode) {
         body.redelivery_address = { ...local.claimRedelivery, changed_by_user: true };
+    }
+
+    // 환불계좌는 구매자에게 돈이 돌아가는 신청에서, 그리고 세 필드가 다 채워졌을 때만 싣는다 —
+    // 서버는 셋 중 하나만 와도 거절한다(계좌 없이 승인되는 무통장 환불을 막는 규칙이다).
+    // 아무것도 채우지 않았으면 키 자체를 보내지 않아 "입력하지 않음" 과 "일부만 입력" 이
+    // 구분되고, 서버는 신청서에 계좌를 적지 않는다.
+    // 교환은 저가 옵션으로 바꿔 차액이 돌아올 때만 대상이다 — 그 판정은 카드 노출 조건과 같은
+    // 값(refund_product_amount)을 쓴다. 다른 값을 쓰면 칸은 보이는데 전송되지 않거나 그 반대가
+    // 되고, 둘 다 오류를 남기지 않는다.
+    const refundsToBuyer =
+        claimType !== 'exchange' || Number(local.claimEstimate?.refund_product_amount ?? 0) > 0;
+
+    if (refundsToBuyer) {
+        const bankCode = String(local.claimRefundBankCode ?? '').trim();
+        const bankAccount = String(local.claimRefundBankAccount ?? '').trim();
+        const bankHolder = String(local.claimRefundBankHolder ?? '').trim();
+
+        if (bankCode || bankAccount || bankHolder) {
+            body.refund_bank = {
+                bank_code: bankCode,
+                account_number: bankAccount,
+                holder: bankHolder,
+            };
+        }
     }
 
     try {

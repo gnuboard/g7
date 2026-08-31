@@ -442,16 +442,31 @@ describe('_apply_summary.json — 요약 + 청구 2축 (D6·P13)', () => {
     // 있어 오류 없이 **빈 줄**이 렌더됐고, 바인딩 문자열의 존재만 보던 이 테스트가 그것을
     // 통과시켰다. 이제 세 줄 모두 핸들러가 편 배열(`claimEstimateFormatted.mc_*`)을 읽고
     // item_var 의 `formatted` 필드를 그린다 — 핸들러 출력과 맞물리는 경로만 통과한다.
-    const cases: Array<[string, string]> = [
-      ['totalChargeCurrency', 'mc_total_charge_amount'],
-      ['shippingFeeCurrency', 'mc_shipping_fee'],
-      ['refundTotalCurrency', 'mc_refund_total'],
+    // S12: 환불 예정액 줄은 청구 방식에 따라 **차감 전/후** 두 배열 중 하나를 읽는다(§6-3 반품
+    // 요약 3줄). 그래서 이 축의 단언은 정확한 문자열이 아니라 규약을 잰다 — ⓐ 핸들러가 편
+    // 배열(`claimEstimateFormatted.mc_*`)만 읽고 ⓑ 서버 원형(`{통화코드: 숫자}`)을 직접 읽지
+    // 않으며 ⓒ item_var 의 `formatted` 를 그린다. 문자열 고정으로 되돌리면 줄이 늘 때마다
+    // 이 테스트가 규약이 아니라 형태를 막게 된다.
+    const cases: Array<[string, string[]]> = [
+      ['totalChargeCurrency', ['mc_total_charge_amount']],
+      ['shippingFeeCurrency', ['mc_shipping_fee']],
+      ['refundTotalCurrency', ['mc_refund_total', 'mc_refund_before_deduction']],
+      ['refundFinalCurrency', ['mc_refund_total']],
     ];
 
-    for (const [itemVar, key] of cases) {
+    for (const [itemVar, keys] of cases) {
       const loop = flatten(summary).find((n) => n.iteration?.item_var === itemVar);
       expect(loop, `${itemVar} 반복이 없다`).toBeDefined();
-      expect(loop?.iteration?.source).toBe(`{{_local.claimEstimateFormatted?.${key} ?? []}}`);
+
+      const source = String(loop?.iteration?.source ?? '');
+
+      for (const key of keys) {
+        expect(source, `${itemVar} 가 ${key} 를 읽지 않는다`).toContain(`_local.claimEstimateFormatted?.${key}`);
+      }
+
+      // 서버 원형을 직접 읽으면 오류 없이 빈 줄이 된다 (3차 C1 의 형태).
+      expect(source).not.toContain('refund_formatted?.mc');
+      expect(source).not.toContain('claimEstimate?.mc_');
 
       const texts = flattenChildren(loop).map((n) => n.text).filter((t): t is string => typeof t === 'string');
       expect(texts).toContain(`{{${itemVar}.formatted ?? ''}}`);

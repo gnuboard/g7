@@ -3340,6 +3340,9 @@ Authorization: Bearer {YOUR_TOKEN}
 | settings.return_requestable_statuses | string[] | `["delivered","confirmed"]` | 반품 신청이 열리는 주문 옵션 상태 |
 | settings.instant_cancel_statuses | string[] | `["pending_payment","payment_complete"]` | 취소·환불 신청이 즉시취소로 처리되는 상태 (`claim.instant_cancel_statuses`) |
 | settings.refund_request_statuses | string[] | `["preparing","shipping_ready"]` | 취소·환불 신청이 환불신청서(운영자 승인)로 접수되는 상태 (`claim.refund_request_statuses`) |
+| refund_account.required | boolean | `false` | 이 주문의 환불이 **계좌 이체**로 나가는지 (`PaymentMethodResolver::refundMethod()` 판정 = `bank`). 참이면 취소·환불 신청서가 환불 계좌 입력칸을 세운다. 어느 결제수단이 계좌 환불인지는 확장 결제수단이 자기 카탈로그에 선언하므로 화면이 결제수단 코드로 재현하지 않는다 |
+| refund_account.banks | array | `[{"code":"004","name":{"ko":"국민은행"}}]` | 운영자가 주문설정에 등록한 은행 목록 (`order_settings.banks`). `required` 가 거짓이면 빈 배열이다. `name` 은 다국어 맵이라 라벨은 `$localized(name)` 로 푼다 |
+| refund_account.prefill | object\|null | `{"bank_code":"004","account_number":"110234567890","holder":"홍길동"}` | 주문 시 등록해 둔 환불 계좌의 **원문**. 신청서가 입력칸을 채우는 데 쓴다. 세 값이 모두 있을 때만 실리고 그 밖에는 `null` 이다. 표시용 응답(`ClaimResource`·`OrderPaymentResource`)은 계좌번호 뒤 4자리·예금주 첫 글자만 내보내므로, 그 마스킹 값을 입력칸에 채우면 손대지 않은 제출에서 별표가 섞인 계좌가 저장된다 — 프리필은 이 필드만 쓴다. `required` 가 거짓이면 실리지 않는다 |
 | pending_images | array | — | 이 주문에 올려 둔 임시 첨부 ([ClaimImageResource](claims.md#claim-image-resource), `claimable_type=pending`) |
 
 **응답 예시**
@@ -3377,6 +3380,7 @@ Authorization: Bearer {YOUR_TOKEN}
             "instant_cancel_statuses": ["pending_payment", "payment_complete"],
             "refund_request_statuses": ["preparing", "shipping_ready"]
         },
+        "refund_account": { "required": false, "banks": [], "prefill": null },
         "pending_images": []
     }
 }
@@ -3393,7 +3397,7 @@ Authorization: Bearer {YOUR_TOKEN}
 
 <!-- @generated:end -->
 
-**설명** 클레임 신청 화면을 여는 첫 호출입니다. 주문의 각 상품에 어떤 클레임이 열려 있는지(`claimable_types`), 잔여 수량, 취소·환불 신청 시 즉시취소/환불신청 분기, 사유 카탈로그, 화면이 따라야 할 설정값, 작성 중 올려 둔 임시 첨부를 한 번에 돌려줍니다. 교환·반품이 진행 중인 상품은 옵션 상태가 코스 상태(`exchange_in_progress`/`return_in_progress`)라 `claimable_types` 가 비고, 직접 환불신청이 진행 중인 상품은 상태가 그대로라도 `locked_quantity` 만큼 잔여가 줄어듭니다. `resolved_type` 이 `mixed` 면 즉시취소 상품과 환불신청 상품을 한 신청에 섞을 수 없으므로 화면이 상품 선택을 분기별로 나눠야 합니다.
+**설명** 클레임 신청 화면을 여는 첫 호출입니다. 주문의 각 상품에 어떤 클레임이 열려 있는지(`claimable_types`), 잔여 수량, 취소·환불 신청 시 즉시취소/환불신청 분기, 사유 카탈로그, 화면이 따라야 할 설정값, 작성 중 올려 둔 임시 첨부를 한 번에 돌려줍니다. 교환·반품이 진행 중인 상품은 옵션 상태가 코스 상태(`exchange_in_progress`/`return_in_progress`)라 `claimable_types` 가 비고, 직접 환불신청이 진행 중인 상품은 상태가 그대로라도 `locked_quantity` 만큼 잔여가 줄어듭니다. `resolved_type` 이 `mixed` 면 즉시취소 상품과 환불신청 상품을 한 신청에 섞을 수 없으므로 화면이 상품 선택을 분기별로 나눠야 합니다. `refund_account` 는 그 주문의 환불이 계좌 이체로 나가는지, 그때 고를 은행 목록, 그리고 주문 시 등록해 둔 계좌(`prefill`)입니다 — 화면은 이 값으로만 계좌 입력칸을 세우고 채웁니다. 프리필은 반드시 `prefill` 을 쓰고 표시용 응답의 마스킹된 계좌를 되쓰지 않습니다(마스킹 값을 되보내면 별표가 섞인 계좌가 저장됩니다). 계좌 입력칸은 반품·취소·환불 세 유형에 서고, 교환은 저가 옵션으로 바꿔 **차액이 구매자에게 돌아갈 때만** 섭니다.
 
 ---
 
@@ -3463,6 +3467,9 @@ _반품 (`type=return`)_
 | charge_method | string\|null | `pay_on_request` | 적용된 청구 방식 |
 | total_charge_amount | number | `3000` | 총 청구액 (반품 배송비) |
 | mc_total_charge_amount | object\|null | `{"KRW":3000,"USD":2.25}` | 총 청구액의 통화별 환산 (배송비 산정이 낸 값. 스냅샷이 없으면 `null`) |
+| deducted_shipping_fee | number | `3000` | 환불금에서 실제로 차감한 회수 배송비. 청구 방식이 `deduct_from_refund` 일 때만 0 이 아니다 — 별도 결제 방식(`pay_on_request`/`pay_on_approval`)은 배송비를 클레임 결제 건으로 따로 받으므로 0 이다 |
+| refund_before_deduction | number | `29000` | 회수 배송비를 빼기 **전**의 환불 예정액. `adjustment.refund_total` 은 이미 차감된 뒤의 금액이라, 화면이 "환불예정 / 회수비 / 최종" 세 줄을 세우려면 이 값이 필요하다. 차감하지 않는 방식에서는 `adjustment.refund_total` 과 같다 |
+| mc_refund_before_deduction | object\|null | `{"KRW":29000,"USD":21.75}` | 차감 전 환불 예정액의 통화별 환산 (주문 통화 스냅샷의 동결 환율. 스냅샷이 없으면 `null`) |
 | requires_payment | boolean | `true` | 신청 시 추가결제가 필요한지 |
 
 _취소·환불 (`type=refund`)_
@@ -3486,6 +3493,9 @@ _취소·환불 (`type=refund`)_
         "charge_method": "pay_on_request",
         "total_charge_amount": 3000,
         "mc_total_charge_amount": { "KRW": 3000, "USD": 2.25 },
+        "deducted_shipping_fee": 3000,
+        "refund_before_deduction": 29000,
+        "mc_refund_before_deduction": { "KRW": 29000, "USD": 21.75 },
         "requires_payment": true
     }
 }
@@ -3525,6 +3535,7 @@ _취소·환불 (`type=refund`)_
 | charge_method | body | string | 아니오 | 환경설정 `claim.allowed_charge_methods` | 배송비·차액 청구 방식. 청구액이 0 이면 무시 |
 | payment_method | body | string | 아니오 | 환경설정 `claim.charge_payment_methods` | `pay_on_request` 일 때 결제 수단 (`point` 는 회원만) |
 | refund_priority | body | string | 아니오 | `pg_first`, `points_first` | 옵션 차액이 음수일 때 환불 배분 우선순위 |
+| refund_bank | body | object | 아니오 | `bank_code`(max 10) · `account_number`(max 50) · `holder`(max 50) | 환불 계좌. 저가 옵션으로 바꿔 **차액이 구매자에게 돌아가는** 교환에서, 그 환불이 계좌 이체로 나가는 주문(`claimable-options` 의 `refund_account.required=true`)일 때 화면이 싣는다. **세 값이 함께 오거나 하나도 오지 않아야 한다** — 일부만 오면 422 다. 값이 오면 교환 신청서 행에 저장되고, 완료 시 만들어지는 환불 레코드가 그 값을 이어받는다 |
 | image_ids | body | integer[] | 아니오 | max = 환경설정 `claim.max_images`(기본 5) | 귀속시킬 임시 첨부 ID (이 주문에 올린 `pending` 첨부만). 상한은 운영자 설정을 그대로 따른다 |
 | redelivery_address | body | object | 아니오 | — | 재발송지 — `recipient_name`, `phone`, `zipcode`, `address1`, `address2`, `country_code`(원 배송지와 같은 국가만), `changed_by_user` |
 
@@ -3618,6 +3629,7 @@ Content-Type: application/json
 | charge_method | body | string | 아니오 | 환경설정 `claim.allowed_charge_methods` | 반품 배송비 청구 방식. 청구액이 0 이면 무시 |
 | payment_method | body | string | 아니오 | 환경설정 `claim.charge_payment_methods` | `pay_on_request` 일 때 결제 수단 |
 | refund_priority | body | string | 아니오 | `pg_first`, `points_first` | 환불 배분 우선순위 |
+| refund_bank | body | object | 아니오 | `bank_code`(max 10) · `account_number`(max 50) · `holder`(max 50) | 환불 계좌. 계좌 이체로 환불되는 주문(`claimable-options` 의 `refund_account.required=true`)에서 화면이 싣는다. **세 값이 함께 오거나 하나도 오지 않아야 한다** — 일부만 오면 422 다. 값이 오면 **그 신청서 행**(`refund_bank_*`)에 저장된다. 주문 결제행은 신청 접수만으로는 바뀌지 않는다 — 실제 송금이 읽는 자리라, 그 환불을 **실행하는 시점**에 실행 대상 환불의 계좌로 갱신된다(즉시취소는 접수가 곧 실행이라 그 자리에서 반영된다) |
 | image_ids | body | integer[] | 아니오 | max = 환경설정 `claim.max_images`(기본 5) | 귀속시킬 임시 첨부 ID |
 
 **요청 예시**

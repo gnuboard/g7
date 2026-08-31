@@ -162,7 +162,10 @@
         "description": "{{number}} 신청서의 환불을 실행합니다.",
         "warning": "환불은 되돌릴 수 없습니다. 금액과 환불 수단을 확인해주세요.",
         "confirm": "환불하기"
-      }
+      },
+      "refund_bank_name": "환불 은행",
+      "refund_bank_account": "환불 계좌번호",
+      "refund_bank_holder": "예금주"
     }
   },
   "subtab": {

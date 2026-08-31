@@ -60,7 +60,24 @@
     "select_items_first": "신청할 상품을 선택해 주세요.",
     "reason_required": "신청 사유를 선택해 주세요.",
     "submit_success": "신청이 접수되었습니다.",
-    "submit_failed": "신청 접수에 실패했습니다."
+    "submit_failed": "신청 접수에 실패했습니다.",
+    "refund_branch_cancel_badge": "즉시 취소",
+    "refund_branch_refund_badge": "환불 신청",
+    "refund_branch_mixed_notice": "이 주문에는 바로 취소되는 상품과 환불 신청이 필요한 상품이 함께 있습니다. 두 가지는 한 번에 신청할 수 없어 먼저 고른 쪽만 선택됩니다.",
+    "refund_branch_mixed_blocked": "바로 취소되는 상품과 환불 신청이 필요한 상품은 나누어 신청해 주세요.",
+    "notice_cancel": "결제하신 수단으로 바로 환불됩니다. 판매자 승인을 기다리지 않아도 됩니다.",
+    "notice_refund": "신청 후 판매자 확인을 거쳐 환불됩니다.",
+    "refund_expected_before_deduction": "환불 예정액",
+    "collection_fee_deducted": "회수 배송비 차감",
+    "refund_final": "최종 환불액",
+    "refund_account_title": "환불 계좌",
+    "refund_account_hint": "계좌로 환불되는 주문입니다. 환불 받으실 계좌를 입력해 주세요.",
+    "refund_account_bank_select": "은행을 선택해 주세요",
+    "refund_account_number_placeholder": "계좌번호 (- 없이 숫자만)",
+    "refund_account_holder_placeholder": "예금주",
+    "refund_account_all_required": "은행·계좌번호·예금주를 모두 입력해 주세요.",
+    "submit_cancel": "주문 취소하기",
+    "submit_refund": "환불 신청하기"
   },
   "change_product": {
     "title": "교환상품 변경",
@@ -80,5 +97,23 @@
     "limit_exceeded": "사진은 최대 {{max}}장까지 첨부할 수 있습니다.",
     "size_exceeded": "사진 1장은 {{size}}KB 를 넘을 수 없습니다.",
     "remove_failed": "첨부 삭제에 실패했습니다."
+  },
+  "withdraw": {
+    "title": "신청 철회",
+    "confirm_message": "{{number}} 신청을 철회하시겠습니까?",
+    "irreversible_notice": "철회한 신청은 되돌릴 수 없습니다. 필요하면 다시 신청해 주세요.",
+    "payment_refund_notice": "이미 결제하신 추가 금액이 있으면 함께 환급됩니다.",
+    "cancel": "닫기",
+    "confirm": "철회하기",
+    "success": "신청이 철회되었습니다.",
+    "failed": "신청 철회에 실패했습니다."
+  },
+  "payment_result": {
+    "success": "추가 결제가 완료되었습니다.",
+    "failed": "추가 결제가 완료되지 않았습니다.",
+    "cancelled": "결제를 취소하셨습니다. 신청은 그대로 남아 있습니다.",
+    "claim_number": "신청번호 {{number}}",
+    "error_code": "실패 코드 {{code}}",
+    "retry_hint": "신청 내역에서 다시 결제하실 수 있습니다. 계속 실패하면 다른 결제 수단을 이용해 주세요."
   }
 }

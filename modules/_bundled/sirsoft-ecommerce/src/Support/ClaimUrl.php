@@ -17,6 +17,13 @@ use Modules\Sirsoft\Ecommerce\Listeners\EcommerceNotificationDataListener;
  *  - 관리자 주문상세 클레임 내역 (`OrderClaimHistoryResource`) — 관리자 상세
  *  - 알림 메일·사이트내 알림 (`ClaimNotificationDataListener`) — 회원 상세 / 비회원 조회 진입
  *
+ * **아직 서지 않은 화면이 있다.** 신청서 상세(회원 `MEMBER_DETAIL` / 비회원 `GUEST_DETAIL`)는
+ * 뒤 세션이 만든다. 그 사이 이 주소로 사용자를 보내면 프론트 라우터가 받아 줄 라우트가 없어
+ * **404 가 열린다** — 결제를 마치고 돌아온 구매자에게는 돈이 나갔는지조차 알리지 못하는 화면이다
+ * (2026-08-31 브라우저 실측: 성공·실패·취소 전부 404). 그래서 PG 콜백은 화면이 설 때까지
+ * 주문 상세로 돌아간다(`memberOrderDetail`). 신청서 상세가 서면 `ClaimPaymentRedirect` 의
+ * 목적지만 이 상수로 되돌리면 된다 — 주소 규칙 자체는 여기 그대로 있다.
+ *
  * 비회원에게 보내는 **알림 링크**만 상세가 아니라 비회원 주문 조회 화면을 가리킨다.
  * 비회원 상세는 조회 토큰을 전제하는데 메일에서 바로 눌러 들어온 브라우저에는 그
  * 토큰이 없어, 상세 주소를 그대로 실으면 열리지 않는 화면으로 보내게 된다. 주문 알림이
@@ -29,6 +36,9 @@ final class ClaimUrl
 
     /** 회원 신청서 목록 경로 (번호 해석 불가 시 폴백) */
     public const MEMBER_LIST = '/mypage/claims';
+
+    /** 회원 주문 상세 경로 템플릿 (신청서 화면이 아직 없을 때 결제 결과를 보여 줄 자리) */
+    public const MEMBER_ORDER_DETAIL = '/mypage/orders/{orderNumber}';
 
     /** 비회원 신청서 상세 경로 템플릿 (`{shopBase}` 는 상점 기준 경로로 치환) */
     public const GUEST_DETAIL = '{shopBase}/guest/claims/{claimNumber}';
@@ -45,6 +55,21 @@ final class ClaimUrl
     public static function memberDetail(string $claimNumber): string
     {
         return strtr(self::MEMBER_DETAIL, ['{claimNumber}' => $claimNumber]);
+    }
+
+    /**
+     * 회원 주문 상세 경로를 반환합니다.
+     *
+     * 클레임 추가결제의 PG 콜백이 돌아갈 자리다. 신청서 상세 화면(`MEMBER_DETAIL`)이 서면
+     * 그리로 옮기지만, 그 전까지 결제 결과는 이 화면이 받는다 — 주문 상세는 클레임 추가결제
+     * 합계 행을 이미 그리므로 결제된 사실이 그 자리에서 확인된다.
+     *
+     * @param  string  $orderNumber  주문번호
+     * @return string 앱 내 경로
+     */
+    public static function memberOrderDetail(string $orderNumber): string
+    {
+        return strtr(self::MEMBER_ORDER_DETAIL, ['{orderNumber}' => $orderNumber]);
     }
 
     /**

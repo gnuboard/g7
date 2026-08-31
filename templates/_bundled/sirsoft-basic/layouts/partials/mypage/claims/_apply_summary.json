@@ -232,10 +232,10 @@
           ]
         },
         {
-          "comment": "환불 예정액 — 반품·취소·환불에서만 그린다. 교환의 adjustment 는 대상 상품을 일단 되돌린 뒤 새 옵션을 얹는 형태라 refund_total 이 0 이 아닌데(2026-08-31 실측: 차액 0원 교환에서 15,000원), 그 값은 구매자에게 돌려줄 돈이 아니다. 교환에서 돈이 오가는 축은 옵션 차액과 총 청구액 둘뿐이고 저가 교환의 환불은 차액이 음수로 나른다(§6-3).",
+          "comment": "환불 예정액 — 반품·취소·환불에서만 그린다. 회수비를 환불금에서 차감하는 방식이면 이 줄은 **차감 전** 금액이고 아래 두 줄(차감·최종)이 이어진다(§6-3). 그 금액은 서버가 따로 낸다(`refund_before_deduction`) — `adjustment.refund_total` 은 이미 차감된 뒤의 값이라 화면이 되더하면 예고와 청구의 근거가 갈린다. 교환의 adjustment 는 대상 상품을 일단 되돌린 뒤 새 옵션을 얹는 형태라 refund_total 이 0 이 아닌데(2026-08-31 실측: 차액 0원 교환에서 15,000원), 그 값은 구매자에게 돌려줄 돈이 아니다. 교환에서 돈이 오가는 축은 옵션 차액과 총 청구액 둘뿐이고 저가 교환의 환불은 차액이 음수로 나른다(§6-3).",
           "type": "basic",
           "name": "Div",
-          "if": "{{_local.claimType !== 'exchange' && (_local.claimEstimate?.adjustment?.refund_total ?? 0) > 0}}",
+          "if": "{{_local.claimType !== 'exchange' && ((_local.claimEstimate?.adjustment?.refund_total ?? 0) > 0 || (_local.claimEstimate?.deducted_shipping_fee ?? 0) > 0)}}",
           "props": { "className": "flex items-center justify-between text-sm" },
           "children": [
             {
@@ -254,14 +254,14 @@
                   "type": "basic",
                   "name": "Span",
                   "props": { "className": "text-red-600 dark:text-red-400 font-medium" },
-                  "text": "{{_local.claimEstimate?.adjustment?.refund_formatted?.base?.refund_total ?? _local.claimEstimateFormatted?.refund_total ?? ''}}"
+                  "text": "{{(_local.claimEstimate?.deducted_shipping_fee ?? 0) > 0 ? (_local.claimEstimateFormatted?.refund_before_deduction ?? '') : (_local.claimEstimate?.adjustment?.refund_formatted?.base?.refund_total ?? _local.claimEstimateFormatted?.refund_total ?? '')}}"
                 },
                 {
                   "type": "basic",
                   "name": "Div",
                   "props": { "className": "flex flex-wrap gap-x-2 justify-end mt-0.5" },
                   "iteration": {
-                    "source": "{{_local.claimEstimateFormatted?.mc_refund_total ?? []}}",
+                    "source": "{{((_local.claimEstimate?.deducted_shipping_fee ?? 0) > 0 ? _local.claimEstimateFormatted?.mc_refund_before_deduction : _local.claimEstimateFormatted?.mc_refund_total) ?? []}}",
                     "item_var": "refundTotalCurrency"
                   },
                   "children": [
@@ -270,6 +270,72 @@
                       "name": "Span",
                       "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
                       "text": "{{refundTotalCurrency.formatted ?? ''}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "회수 배송비 차감 (§6-3 반품 요약 3줄) — 청구 방식이 '환불금에서 차감' 일 때만 선다. 별도 결제 방식은 회수비를 환불금에서 빼지 않으므로 서버가 차감액 0 을 낸다 — 그때 이 줄을 그리면 전액 환불되는데도 배송비만큼 덜 받는 것으로 읽힌다.",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{(_local.claimEstimate?.deducted_shipping_fee ?? 0) > 0}}",
+          "props": { "className": "flex items-center justify-between text-sm" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-gray-500 dark:text-gray-400" },
+              "text": "$t:claim.apply.collection_fee_deducted"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-gray-900 dark:text-white" },
+              "text": "{{'-' + (_local.claimEstimateFormatted?.deducted_shipping_fee ?? '')}}"
+            }
+          ]
+        },
+        {
+          "comment": "최종 환불액 (§6-3 — 환불예정 − 회수비). 서버가 정한 `adjustment.refund_total` 을 그대로 그린다 — 화면이 빼면 예고와 실제 환불액의 근거가 갈린다.",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{(_local.claimEstimate?.deducted_shipping_fee ?? 0) > 0}}",
+          "props": { "className": "flex items-center justify-between pt-3 mt-1 border-t border-gray-200 dark:border-gray-700" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-gray-900 dark:text-white font-medium" },
+              "text": "$t:claim.apply.refund_final"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "text-right" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-lg font-bold text-red-600 dark:text-red-400" },
+                  "text": "{{_local.claimEstimate?.adjustment?.refund_formatted?.base?.refund_total ?? _local.claimEstimateFormatted?.refund_total ?? ''}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex flex-wrap gap-x-2 justify-end mt-0.5" },
+                  "iteration": {
+                    "source": "{{_local.claimEstimateFormatted?.mc_refund_total ?? []}}",
+                    "item_var": "refundFinalCurrency"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                      "text": "{{refundFinalCurrency.formatted ?? ''}}"
                     }
                   ]
                 }
@@ -326,6 +392,26 @@
       ]
     },
     {
+      "comment": "취소·환불 분기 안내 (§6-3) — 같은 작성 셸이지만 서버는 두 파이프라인으로 갈린다. 즉시취소는 승인 없이 바로 환불되고 환불신청서는 판매자 확인을 거친다 — 금액은 같아도 언제 돈이 돌아오는지가 다르므로 신청 전에 밝힌다. 분기는 서버 판정(resolved_type)이 아니라 **지금 고른 상품**을 따른다 — 두 분기가 섞인 주문에서 서버 판정은 'mixed' 라, 그 값으로 안내하면 결제완료 상품만 골라 즉시 취소되는데도 판매자 확인을 거친다고 말하게 된다.",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_local.claimType === 'refund' && !!(_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) && (_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) !== 'mixed'}}",
+      "props": { "className": "flex items-start gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "props": { "name": "circle-info", "className": "text-base text-blue-600 dark:text-blue-400 flex-shrink-0" }
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": { "className": "text-xs text-blue-700 dark:text-blue-300 min-w-0" },
+          "text": "{{(_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) === 'cancel' ? $t('claim.apply.notice_cancel') : $t('claim.apply.notice_refund')}}"
+        }
+      ]
+    },
+    {
       "comment": "축1 청구 방식 — 취소·환불은 회수 배송이 없어 청구가 발생하지 않으므로 미노출이다.",
       "type": "basic",
       "name": "Div",
@@ -353,7 +439,7 @@
               "props": { "className": "flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700" },
               "children": [
                 {
-                  "comment": "'환불금에서 차감' 은 환불이 발생하는 신청(반품·저가 교환)에서만 고를 수 있다(§6-3). 교환의 환불 여부는 adjustment.refund_total 이 아니라 refund_product_amount(저가 교환의 차액 환불)로 판정한다 — 교환의 adjustment 는 대상 상품을 일단 되돌린 뒤 새 옵션을 얹는 형태라 차액 0원 교환에서도 refund_total 이 0 이 아니다(2026-08-31 실측). checked 는 사용자의 선택 상태에서 읽는다.",
+                  "comment": "'환불금에서 차감' 은 환불이 발생하는 신청(반품·저가 교환)에서만 고를 수 있다(§6-3). 교환의 환불 여부는 adjustment.refund_total 이 아니라 refund_product_amount(저가 교환의 차액 환불)로 판정한다 — 교환의 adjustment 는 대상 상품을 일단 되돌린 뒤 새 옵션을 얹는 형태라 차액 0원 교환에서도 refund_total 이 0 이 아니다(2026-08-31 실측). 반품은 **차감 전** 금액(refund_before_deduction)으로 판정한다 — adjustment.refund_total 은 이 방식을 고른 뒤에는 차감된 뒤의 값이라, 회수비가 환불액을 다 먹는 반품에서 고르는 순간 자기 자신이 비활성으로 바뀐다. checked 는 사용자의 선택 상태에서 읽는다.",
                   "type": "basic",
                   "name": "Input",
                   "props": {
@@ -361,7 +447,7 @@
                     "name": "claimChargeMethod",
                     "value": "{{chargeMethod}}",
                     "checked": "{{_local.claimChargeMethod === chargeMethod}}",
-                    "disabled": "{{chargeMethod === 'deduct_from_refund' && (_local.claimType === 'exchange' ? (_local.claimEstimate?.refund_product_amount ?? 0) <= 0 : (_local.claimEstimate?.adjustment?.refund_total ?? 0) <= 0)}}",
+                    "disabled": "{{chargeMethod === 'deduct_from_refund' && (_local.claimType === 'exchange' ? (_local.claimEstimate?.refund_product_amount ?? 0) <= 0 : (_local.claimEstimate?.refund_before_deduction ?? _local.claimEstimate?.adjustment?.refund_total ?? 0) <= 0)}}",
                     "className": "text-blue-600 disabled:opacity-50"
                   },
                   "actions": [
@@ -510,7 +596,7 @@
         {
           "type": "basic",
           "name": "Span",
-          "text": "{{_local.isSubmittingClaim === true ? $t('common.processing') : (_local.claimEstimate?.requires_payment === true ? (_local.claimEstimateFormatted?.total_charge_amount ?? '') + ' ' + $t('claim.apply.submit_with_payment') : $t('claim.apply.submit'))}}"
+          "text": "{{_local.isSubmittingClaim === true ? $t('common.processing') : (_local.claimType === 'refund' ? ((_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) === 'cancel' ? $t('claim.apply.submit_cancel') : $t('claim.apply.submit_refund')) : (_local.claimEstimate?.requires_payment === true ? (_local.claimEstimateFormatted?.total_charge_amount ?? '') + ' ' + $t('claim.apply.submit_with_payment') : $t('claim.apply.submit')))}}"
         }
       ]
     }

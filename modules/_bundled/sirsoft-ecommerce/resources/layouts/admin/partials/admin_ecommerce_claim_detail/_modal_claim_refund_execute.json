@@ -114,6 +114,90 @@
               ]
             },
             {
+              "comment": "계좌 이체 환불은 운영자가 손으로 보낸다 — 어느 계좌로 보낼지 이 창에 없으면 다른 화면을 뒤져야 하고, 못 찾으면 구매자에게 다시 묻게 된다. 계좌가 실리지 않은 환불(카드 취소 등)에서는 줄이 서지 않는다.",
+              "if": "{{!!_global.claimRefundExecuteContext?.refundBankName}}",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex justify-between text-sm"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-secondary"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.refund_bank_name"
+                },
+                {
+                  "id": "crm_005_bank_name",
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-gray-900 dark:text-gray-100"
+                  },
+                  "text": "{{_global.claimRefundExecuteContext?.refundBankName}}"
+                }
+              ]
+            },
+            {
+              "comment": "계좌 이체 환불은 운영자가 손으로 보낸다 — 어느 계좌로 보낼지 이 창에 없으면 다른 화면을 뒤져야 하고, 못 찾으면 구매자에게 다시 묻게 된다. 계좌가 실리지 않은 환불(카드 취소 등)에서는 줄이 서지 않는다.",
+              "if": "{{!!_global.claimRefundExecuteContext?.refundBankAccount}}",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex justify-between text-sm"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-secondary"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.refund_bank_account"
+                },
+                {
+                  "id": "crm_006_bank_account",
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-gray-900 dark:text-gray-100"
+                  },
+                  "text": "{{_global.claimRefundExecuteContext?.refundBankAccount}}"
+                }
+              ]
+            },
+            {
+              "comment": "계좌 이체 환불은 운영자가 손으로 보낸다 — 어느 계좌로 보낼지 이 창에 없으면 다른 화면을 뒤져야 하고, 못 찾으면 구매자에게 다시 묻게 된다. 계좌가 실리지 않은 환불(카드 취소 등)에서는 줄이 서지 않는다.",
+              "if": "{{!!_global.claimRefundExecuteContext?.refundBankHolder}}",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex justify-between text-sm"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-secondary"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.refund_bank_holder"
+                },
+                {
+                  "id": "crm_007_bank_holder",
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-gray-900 dark:text-gray-100"
+                  },
+                  "text": "{{_global.claimRefundExecuteContext?.refundBankHolder}}"
+                }
+              ]
+            },
+            {
               "type": "basic",
               "name": "Div",
               "props": {

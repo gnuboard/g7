@@ -162,7 +162,10 @@
         "description": "The refund for claim {{number}} will be executed.",
         "warning": "A refund cannot be undone. Please check the amounts and the refund method.",
         "confirm": "Refund"
-      }
+      },
+      "refund_bank_name": "Refund bank",
+      "refund_bank_account": "Refund account",
+      "refund_bank_holder": "Account holder"
     }
   },
   "subtab": {

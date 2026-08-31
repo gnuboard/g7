@@ -162,7 +162,10 @@
         "warning": "返金は取り消すことができません。金額と返金方法をご確認ください。",
         "confirm": "返金する"
       },
-      "method_limit_hint": "{{method}} 残高 {{amount}}"
+      "method_limit_hint": "{{method}} 残高 {{amount}}",
+      "refund_bank_name": "返金銀行",
+      "refund_bank_account": "返金口座番号",
+      "refund_bank_holder": "口座名義人"
     }
   },
   "subtab": {
