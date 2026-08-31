@@ -51,8 +51,15 @@ enum ConsentSource: string
     /**
      * 사용자 요청으로 직접 지정할 수 있는 출처 값 목록.
      *
-     * `register` / `mypage_renew_all` 은 서버가 스스로 기록하는 경로이므로
-     * 공개 요청 본문에서 지정할 수 없습니다.
+     * `register`(회원가입 시 동의) · `mypage_renew_all`(정책 개정 후 일괄 재동의) ·
+     * `withdraw`(회원탈퇴 시 일괄 철회) 는 서버가 스스로 기록하는 경로이므로 공개 요청
+     * 본문에서 지정할 수 없습니다. 이 엔드포인트는 비인증 방문자도 도달하므로, 지정을
+     * 허용하면 가입·재동의·탈퇴를 하지 않은 사람의 이력이 그렇게 기록됩니다 — 동의 이력은
+     * 출처가 존재 이유이고, 그렇게 기록되어도 오류도 로그도 남지 않습니다.
+     *
+     * 새 case 를 추가할 때는 그것이 공개 요청으로 지정 가능한지 판단해 이 목록에 넣거나
+     * 빼고, 뺐다면 `ConsentSourceVocabularyParityTest` 에 제외 단언을 함께 추가합니다 —
+     * 목록에서 빠뜨려도 검증이 없으면 아무 테스트도 red 가 되지 않습니다.
      *
      * @return array<int, string>
      */
@@ -61,7 +68,6 @@ enum ConsentSource: string
         return [
             self::Banner->value,
             self::PreferenceCenter->value,
-            self::Register->value,
             self::Mypage->value,
         ];
     }

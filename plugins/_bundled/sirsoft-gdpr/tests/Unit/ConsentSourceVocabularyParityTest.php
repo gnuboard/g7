@@ -183,6 +183,13 @@ class ConsentSourceVocabularyParityTest extends TestCase
         $selectable = ConsentSource::requestSelectableValues();
 
         $this->assertNotContains(ConsentSource::MypageRenewAll->value, $selectable);
+        // 회원탈퇴 철회는 `GdprConsentService::revokeAllOnWithdraw()` 만 기록하는 경로다.
+        // 공개 요청이 이 값을 실을 수 있으면 탈퇴하지 않은 사용자의 이력이 탈퇴로 기록된다.
+        $this->assertNotContains(ConsentSource::Withdraw->value, $selectable);
+        // 가입 동의는 `GdprAuthConsentListener::recordRegisterConsents()` 만 기록하는
+        // 경로다. 이 엔드포인트는 비인증 방문자도 도달하므로, 지정을 허용하면 가입하지
+        // 않은 방문자의 이력이 가입 동의로 기록된다.
+        $this->assertNotContains(ConsentSource::Register->value, $selectable);
         $this->assertContains(ConsentSource::Banner->value, $selectable);
     }
 }

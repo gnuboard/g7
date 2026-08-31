@@ -83,6 +83,18 @@ case입니다 — 두 지점 모두 enum이 아닌 `'withdraw'` 리터럴을 직
 추가로 정정했습니다. 새 기록 지점을 추가할 때 위치 인자로 리터럴을 넘기면 이 가드가 여전히
 못 볼 수 있다는 점을 유의하세요 — 가능하면 `'source' =>`/`'last_source' =>` 형태(배열 키)를
 쓰거나 이 테스트의 정규식을 함께 넓힙니다.
+
+전체 어휘(`ConsentSource::allValues()`)와 **공개 요청이 지정할 수 있는 부분집합**
+(`ConsentSource::requestSelectableValues()`)은 다릅니다. `register`(회원가입 시 동의) ·
+`mypage_renew_all`(정책 개정 후 일괄 재동의) · `withdraw`(회원탈퇴 시 일괄 철회)는 서버가
+스스로 기록하는 경로이므로 `StoreCookieConsentRequest` 의 `Rule::in` 에서 제외됩니다 —
+이 엔드포인트는 `optional.sanctum` 이라 비인증 방문자도 도달하므로, 공개 요청이 이 값을
+실을 수 있으면 가입하지도 탈퇴하지도 재동의하지도 않은 사람의 이력이 그렇게 기록됩니다.
+동의 이력은 출처가 존재 이유이고, 그렇게 기록되어도 오류도 로그도 남지 않습니다. 반대로 관리자
+동의 이력 화면의 출처 필터(`IndexConsentLogRequest`)는 `allValues()` 를 씁니다: 기록된
+어휘 전부가 필터로 도달 가능해야 하기 때문입니다. 새 case 를 추가할 때 어느 쪽에 속하는지
+판단하고, 제외한다면 `ConsentSourceVocabularyParityTest` 에 제외 단언을 함께 남기세요 —
+목록에서 빠뜨려도 단언이 없으면 아무 테스트도 red 가 되지 않습니다.
 <!-- @intent END -->
 
 ## Repository
