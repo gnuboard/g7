@@ -84,6 +84,10 @@ class UserClaimService
     {
         $order->loadMissing('options');
 
+        // 비회원 주문은 소유 회원이 없다 — 그 주문의 신청자는 조회 토큰을 쥔 비회원이며,
+        // 마일리지 결제가 열리지 않는 쪽이다(회원 경로는 본인 주문만 연다).
+        $isGuest = $order->user_id === null;
+
         $exchangeStatuses = $this->statusValues('claim.exchange_requestable_statuses', [OrderStatusEnum::DELIVERED->value, OrderStatusEnum::CONFIRMED->value]);
         $returnStatuses = $this->statusValues('claim.return_requestable_statuses', [OrderStatusEnum::DELIVERED->value, OrderStatusEnum::CONFIRMED->value]);
 
@@ -133,7 +137,7 @@ class UserClaimService
                 ClaimTypeEnum::RETURN->value => $this->claimReasonRepository->getUserSelectableReasons(ClaimTypeEnum::RETURN->value),
                 ClaimTypeEnum::REFUND->value => $this->claimReasonRepository->getUserSelectableReasons(ClaimTypeEnum::REFUND->value),
             ],
-            'settings' => $this->publicSettings(),
+            'settings' => $this->publicSettings($isGuest),
             'refund_account' => $this->refundAccountRequirement($order),
             'pending_images' => $this->attachmentService->listPendingFor($order),
         ];
@@ -219,13 +223,29 @@ class UserClaimService
     /**
      * 신청 화면이 읽는 공개 설정을 돌려줍니다. (`claim_settings` 컨텍스트)
      *
+     * 결제 수단 목록은 **그 신청자가 실제로 쓸 수 있는 것**만 싣는다. 마일리지는 회원 원장에서
+     * 차감하므로 비회원에게 열리지 않는데(`ClaimPaymentService::assertPaymentMethodAvailableToRequester`),
+     * 화면이 운영자 허용 목록을 그대로 그리면 비회원에게 고를 수 없는 수단이 보인다 — 고르고
+     * 제출해야 422 로 거절되고, 그 전까지는 화면 어디에도 그 사실이 나타나지 않는다
+     * (2026-09-01 브라우저 실측). 거절하는 지점과 보여 주는 목록이 같은 판정을 써야 한다.
+     *
+     * @param  bool  $isGuest  비회원 신청자 여부
      * @return array 공개 설정
      */
-    public function publicSettings(): array
+    public function publicSettings(bool $isGuest = false): array
     {
+        $chargePaymentMethods = $this->statusValues('claim.charge_payment_methods', [PaymentMethodEnum::CARD->value, PaymentMethodEnum::POINT->value]);
+
+        if ($isGuest) {
+            $chargePaymentMethods = array_values(array_filter(
+                $chargePaymentMethods,
+                fn (string $method): bool => $method !== PaymentMethodEnum::POINT->value,
+            ));
+        }
+
         return [
             'allowed_charge_methods' => $this->statusValues('claim.allowed_charge_methods', ClaimChargeMethodEnum::values()),
-            'charge_payment_methods' => $this->statusValues('claim.charge_payment_methods', [PaymentMethodEnum::CARD->value, PaymentMethodEnum::POINT->value]),
+            'charge_payment_methods' => $chargePaymentMethods,
             'max_images' => $this->attachmentService->maxImages(),
             'image_max_size_kb' => $this->attachmentService->maxSizeKb(),
             'request_period_days' => (int) $this->settingsService->getSetting('claim.request_period_days', 7),
@@ -508,7 +528,35 @@ class UserClaimService
     }
 
     /**
-     * 주문의 클레임 목록을 유형별로 돌려줍니다. (비회원 주문상세 "이 주문의 클레임" 섹션)
+     * 한 주문의 신청 내역을 유형별로 페이지네이션 조회합니다. (비회원 주문상세 "이 주문의 클레임" 섹션)
+     *
+     * 비회원에게는 주문을 가로지르는 신청내역 목록이 없다 — 조회 토큰이 주문 하나에 묶이기
+     * 때문이다. 그래서 이 조회가 비회원의 목록이고, 회원 목록(`listForUser`)과 같은 서브탭
+     * 계약(유형 하나 · 최신순 · 페이지)을 쓴다. 한 주문의 건수가 그 주문의 상품 수에 묶인다는
+     * 전제는 성립하지 않는다 — 철회는 행을 남기므로 신청↔철회를 반복하면 계속 쌓인다.
+     *
+     * @param  Order  $order  주문
+     * @param  ClaimTypeEnum  $type  유형
+     * @param  array  $filters  필터 (status / from / to)
+     * @param  int  $perPage  페이지당 건수
+     * @return LengthAwarePaginator 페이지네이션 결과
+     */
+    public function listForOrderPaginated(Order $order, ClaimTypeEnum $type, array $filters = [], int $perPage = 20): LengthAwarePaginator
+    {
+        return match ($type) {
+            ClaimTypeEnum::EXCHANGE => $this->exchangeRepository->paginateForOrder($order->id, $filters, $perPage),
+            ClaimTypeEnum::RETURN => $this->returnRepository->paginateForOrder($order->id, $filters, $perPage),
+            ClaimTypeEnum::REFUND => $this->refundRepository->paginateForOrder($order->id, $filters, $perPage),
+            ClaimTypeEnum::CANCEL => $this->cancelRepository->paginateForOrder($order->id, $filters, $perPage),
+        };
+    }
+
+    /**
+     * 주문의 클레임 목록을 유형별로 전량 돌려줍니다. (관리자 주문상세 '클레임 내역' 섹션 — D20)
+     *
+     * 구매자 화면(비회원 주문상세 섹션)은 이 메서드를 쓰지 않는다 — 유형 하나를 페이지 단위로
+     * 읽는 `listForOrderPaginated()` 가 그 자리다. 관리자 섹션은 유형 서브탭에 건수 뱃지를
+     * 달아 네 유형을 한 응답으로 받으므로 이 형태가 남는다(상한은 저장소 `listByOrderId`).
      *
      * @param  Order  $order  주문
      * @return array<string, Collection> 유형 값 => 신청서 목록

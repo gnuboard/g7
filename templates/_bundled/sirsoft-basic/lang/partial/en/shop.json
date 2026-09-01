@@ -616,5 +616,14 @@
   "guest_order_show": {
     "page_title": "Guest Order Detail",
     "back_to_lookup": "Back to Order Lookup"
+  },
+  "guest_claim_show": {
+    "page_title": "Guest Claim Detail",
+    "page_description": "Review the exchange, return, or cancellation/refund request filed for a guest order."
+  },
+  "guest_claim_apply": {
+    "page_title": "File a Guest Claim",
+    "page_description": "File an exchange, return, or cancellation/refund request for a guest order.",
+    "edit_page_title": "Edit Guest Claim"
   }
 }

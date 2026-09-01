@@ -3,14 +3,15 @@
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
 use App\Support\Query\PaginationLimits;
-use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefundOption;
 use Modules\Sirsoft\Ecommerce\Repositories\Concerns\FiltersAdminClaimList;
+use Modules\Sirsoft\Ecommerce\Repositories\Concerns\PaginatesBuyerClaimList;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundRepositoryInterface;
 
 /**
@@ -19,6 +20,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundRepositoryInterf
 class OrderRefundRepository implements OrderRefundRepositoryInterface
 {
     use FiltersAdminClaimList;
+    use PaginatesBuyerClaimList;
 
     /**
      * @param  OrderRefund  $model  주문 환불 모델
@@ -138,31 +140,53 @@ class OrderRefundRepository implements OrderRefundRepositoryInterface
      */
     public function paginateForUser(int $userId, array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
-        $query = $this->model->newQuery()
-            // 목록이 직렬화하는 것만 싣는다 (형제 저장소와 같은 근거).
-            ->with(['refundOptions.orderOption', 'order'])
+        $query = $this->buyerClaimListQuery()
             ->whereHas('order', fn ($q) => $q->where('user_id', $userId));
 
-        // 취소 발 제외 — 출처 미상(NULL) 행은 직접 환불로 본다 (판정 단일 출처)
+        return $this->paginateBuyerClaimList($query, $filters, $perPage);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function paginateForOrder(int $orderId, array $filters = [], int $perPage = 20): LengthAwarePaginator
+    {
+        $query = $this->buyerClaimListQuery()->where('order_id', $orderId);
+
+        return $this->paginateBuyerClaimList($query, $filters, $perPage);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    protected function buyerClaimListQuery(): Builder
+    {
+        $query = $this->model->newQuery()
+            // 목록이 직렬화하는 것만 싣는다 (형제 저장소와 같은 근거).
+            ->with(['refundOptions.orderOption', 'order']);
+
+        // 취소 발 제외 — 출처 미상(NULL) 행은 직접 환불로 본다 (판정 단일 출처).
+        // 열람자와 무관한 이 유형 고유의 스코프이므로 기준 쿼리가 소유한다 —
+        // 회원 목록에만 걸면 비회원 섹션에서 취소 서브탭과 이중 노출된다.
         OrderRefund::applyNonCancelOrigin($query);
 
-        if (! empty($filters['status'])) {
-            $query->where('refund_status', $filters['status']);
-        }
+        return $query;
+    }
 
-        // 기간 필터 — whereDate 는 컬럼에 DATE() 를 씌워 인덱스를 못 쓰게 만든다.
-        // 같은 결과를 내는 범위 조건으로 바꿔 created_at 인덱스를 살린다
-        // (종료일은 그날 23:59:59.999999 까지 포함해야 whereDate 와 동일한 경계를 갖는다).
-        // 경계 해석은 저장소가 맡는다 — 요청이 문자열을 이어 붙이면 시각이 섞인 입력에서 규격 밖 값이 된다.
-        if (! empty($filters['from'])) {
-            $query->where('created_at', '>=', Carbon::parse($filters['from'])->startOfDay());
-        }
+    /**
+     * {@inheritDoc}
+     */
+    protected function buyerClaimStatusColumn(): string
+    {
+        return 'refund_status';
+    }
 
-        if (! empty($filters['to'])) {
-            $query->where('created_at', '<=', Carbon::parse($filters['to'])->endOfDay());
-        }
-
-        return $query->orderByDesc('id')->paginate($perPage, [(new OrderRefund)->getTable().'.*']);
+    /**
+     * {@inheritDoc}
+     */
+    protected function buyerClaimListColumns(): array
+    {
+        return [(new OrderRefund)->getTable().'.*'];
     }
 
     /**

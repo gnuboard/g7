@@ -616,5 +616,14 @@
   "guest_order_show": {
     "page_title": "비회원 주문 상세",
     "back_to_lookup": "주문 조회로 돌아가기"
+  },
+  "guest_claim_show": {
+    "page_title": "비회원 신청 내역 상세",
+    "page_description": "비회원 주문의 교환·반품·취소/환불 신청 내용을 확인합니다."
+  },
+  "guest_claim_apply": {
+    "page_title": "비회원 클레임 신청",
+    "page_description": "비회원 주문의 교환·반품·취소/환불을 신청합니다.",
+    "edit_page_title": "비회원 신청 내용 수정"
   }
 }

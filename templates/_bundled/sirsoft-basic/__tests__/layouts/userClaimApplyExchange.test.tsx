@@ -186,13 +186,20 @@ describe('apply.json — 작성 셸', () => {
     // 정하고 그 뒤로 바뀌지 않는 값**뿐이다. S13 이 더한 `claimEditApiBase`(수정 PATCH 주소의
     // 앞부분)도 그 성질이며, 회원과 비회원의 라우트 모양이 달라 핸들러가 조립할 수 없다.
     expect(Object.keys(apply.initLocal).sort()).toEqual([
+      'claimDetailPathBase',
       'claimEditApiBase',
+      'claimListPath',
       'imageDeleteBase',
       'isGuest',
     ]);
     expect(apply.initLocal.isGuest).toBe(false);
     expect(apply.initLocal.imageDeleteBase).toContain('/user/claims/images');
     expect(apply.initLocal.claimEditApiBase).toContain('/user/claims');
+    // 접수·저장 뒤에 갈 곳도 같은 성질이다 — 회원/비회원에 따라 셸이 정하고 그 뒤로 바뀌지
+    // 않는다. 공유 partial(_apply_summary.json)이 주소를 리터럴로 들면 비회원이 회원 전용
+    // 주소로 보내진다(S14).
+    expect(apply.initLocal.claimListPath).toBe('/mypage/claims');
+    expect(apply.initLocal.claimDetailPathBase).toBe('/mypage/claims');
 
     // claimApiBase 는 주문 ID 가 필요하므로 order 데이터소스의 initLocal 이 소유한다.
     const order = apply.data_sources.find((s: any) => s.id === 'order');
@@ -363,7 +370,11 @@ describe('_apply_summary.json — 요약 + 청구 2축 (D6·P13)', () => {
     // 원래 목적지로 되돌렸다. 유형 서브탭을 함께 실어야 방금 낸 신청서가 보인다(유형마다
     // 서버가 다른 테이블을 읽는다).
     const successPath = String(submit.actions[0].params.successPath);
-    expect(successPath).toContain('/mypage/claims?type=');
+    // 목적지의 앞부분은 셸이 준다(S14) — partial 이 회원 주소를 리터럴로 들면 비회원이
+    // 회원 전용 주소로 보내진다. 유형 서브탭은 여전히 이 자리에서 붙인다.
+    expect(successPath).toContain('_local.claimListPath');
+    expect(successPath).toContain("'?type='");
+    expect(successPath).not.toContain('/mypage/');
     expect(successPath).not.toContain('/mypage/orders/');
     // 취소·환불은 두 분기가 같은 탭에 서지 않는다 — 즉시취소로 갈린 건은 cancel 탭이다.
     expect(successPath).toContain("'cancel'");

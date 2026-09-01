@@ -270,9 +270,19 @@ class ClaimResource extends BaseApiResource
                 'refund_points_amount_formatted' => $this->formatOrderCurrency((float) $claim->refund_points_amount, $currency),
                 'refund_shipping_amount' => $this->roundToOrderCurrency((float) $claim->refund_shipping_amount, $currency),
                 'refund_shipping_amount_formatted' => $this->formatOrderCurrency((float) $claim->refund_shipping_amount, $currency),
+                // 상세의 배송비 대비 행은 교환·반품에서 `mc_claim_shipping_fee` 를 병기한다. 환불 분기가
+                // 이 키를 내보내지 않으면 같은 자리에서 환불 신청서만 외화가 사라진다 — 컬럼은 이미 있고
+                // 노출만 없었다.
+                'mc_refund_shipping_amount' => $this->formatStoredMultiCurrency($claim->mc_refund_shipping_amount),
                 'refund_total' => $this->roundToOrderCurrency((float) $claim->refund_amount + (float) $claim->refund_points_amount, $currency),
                 'refund_total_formatted' => $this->formatOrderCurrency((float) $claim->refund_amount + (float) $claim->refund_points_amount, $currency),
                 'mc_refund_amount' => $this->formatStoredMultiCurrency($claim->mc_refund_amount),
+                // 화면의 보조 통화 줄은 바로 위 기준 통화 줄(`refund_total_formatted` = 현금 + 마일리지)과
+                // 같은 값의 다른 표기여야 한다. `mc_refund_amount` 는 **현금분만**이라 마일리지가 섞인
+                // 환불에서 두 줄이 서로 다른 금액이 되는데, 둘 다 정상 서식이라 흔적이 남지 않는다.
+                'mc_refund_total' => $this->formatStoredMultiCurrency(
+                    $this->sumMultiCurrency($claim->mc_refund_amount, $claim->mc_refund_points_amount)
+                ),
                 'refund_bank_code' => $this->forList ? null : $claim->refund_bank_code,
                 'refund_bank_name' => $this->forList ? null : $this->resolveRefundBankName($claim->refund_bank_code),
                 'refund_bank_account' => $this->forList ? null : $this->refundBankAccountForViewer($claim->refund_bank_account),
@@ -290,6 +300,10 @@ class ClaimResource extends BaseApiResource
                 'refund_amount' => $refund ? $this->roundToOrderCurrency((float) $refund->refund_amount, $currency) : null,
                 'refund_amount_formatted' => $refund ? $this->formatOrderCurrency((float) $refund->refund_amount, $currency) : null,
                 'refund_points_amount' => $refund ? $this->roundToOrderCurrency((float) $refund->refund_points_amount, $currency) : null,
+                // 취소도 형제 유형과 같이 보조 통화를 병기한다 — 이 키가 없으면 다통화 상점에서
+                // 취소 유형 상세만 외화 줄이 통째로 사라진다. 기준 줄이 현금분(`refund_amount_formatted`)
+                // 이므로 여기도 현금분이다(합계를 실으면 위아래 두 줄이 다른 금액이 된다).
+                'mc_refund_amount' => $refund ? $this->formatStoredMultiCurrency($refund->mc_refund_amount) : [],
                 'refund_status' => $refund?->refund_status?->value,
                 'refund_status_label' => $refund?->refund_status?->label(),
                 'cancelled_at_formatted' => $this->formatDateTimeStringForUser($claim->cancelled_at),

@@ -103,6 +103,24 @@
       ]
     },
     {
+      "comment": "보조 통화 — 바로 위 배송비 대비 행과 같은 값의 다른 표기다. 읽는 필드는 그 줄의 분기와 **같아야 한다**: 교환·반품은 `mc_claim_shipping_fee`, 환불은 `mc_refund_shipping_amount`. 취소는 그 자리가 '—' 라 짝이 없고 체인이 비어 줄도 서지 않는다.",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex flex-wrap gap-x-2 justify-end" },
+      "iteration": {
+        "source": "{{Object.entries(((claim.data?.claim?.claim_type === 'exchange' || claim.data?.claim?.claim_type === 'return') ? claim.data?.claim?.mc_claim_shipping_fee : claim.data?.claim?.mc_refund_shipping_amount) ?? {}).filter(([code]) => code !== (claim.data?.claim?.currency_code ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
+        "item_var": "currency"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Span",
+          "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
+          "text": "{{currency[1]?.formatted ?? ''}}"
+        }
+      ]
+    },
+    {
       "comment": "대비 행 2 — 결제/환불. 왼쪽은 원 주문의 최종 결제금액, 오른쪽은 이 클레임으로 더 내거나 돌려받는 금액이다.",
       "type": "basic",
       "name": "Div",
@@ -139,12 +157,12 @@
       ]
     },
     {
-      "comment": "보조 통화 — 주문 도메인 mc_* 규약. 기본 통화와 같은 코드는 빼고 나열한다.",
+      "comment": "보조 통화 — 바로 위 기준 통화 줄과 **같은 값의 다른 표기**다. 환불은 기준 줄이 현금+마일리지 합(`refund_total_formatted`)이므로 합계 필드(`mc_refund_total`)를 읽는다 — 현금분만인 `mc_refund_amount` 를 읽으면 마일리지가 섞인 환불에서 두 줄이 다른 금액이 되는데 둘 다 정상 서식이라 흔적이 남지 않는다(2026-09-01 3차 검증). 취소는 기준 줄이 현금분이라 `mc_refund_amount` 로 떨어진다. 기본 통화와 같은 코드는 빼고 나열한다.",
       "type": "basic",
       "name": "Div",
       "props": { "className": "flex flex-wrap gap-x-2 justify-end" },
       "iteration": {
-        "source": "{{Object.entries(claim.data?.claim?.mc_total_charge_amount ?? claim.data?.claim?.mc_refund_amount ?? {}).filter(([code]) => code !== (claim.data?.claim?.currency_code ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
+        "source": "{{Object.entries(claim.data?.claim?.mc_total_charge_amount ?? claim.data?.claim?.mc_refund_total ?? claim.data?.claim?.mc_refund_amount ?? {}).filter(([code]) => code !== (claim.data?.claim?.currency_code ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
         "item_var": "currency"
       },
       "children": [
@@ -230,6 +248,24 @@
                       "name": "Span",
                       "props": { "className": "text-sm font-medium text-gray-900 dark:text-white" },
                       "text": "{{payment.total_amount_formatted ?? ''}}"
+                    },
+                    {
+                      "comment": "보조 통화 — 바로 위 결제 금액과 같은 값의 다른 표기다. `mc_amount` 는 결제 수단(카드·마일리지)과 무관하게 **청구액 전체**로 만들어지므로(카드분·마일리지분은 배타적이다) 합계인 `total_amount_formatted` 와 같은 값이다.",
+                      "type": "basic",
+                      "name": "Div",
+                      "props": { "className": "flex flex-wrap gap-x-2 justify-end" },
+                      "iteration": {
+                        "source": "{{Object.entries(payment.mc_amount ?? {}).filter(([code]) => code !== (claim.data?.claim?.currency_code ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
+                        "item_var": "currency"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
+                          "text": "{{currency[1]?.formatted ?? ''}}"
+                        }
+                      ]
                     },
                     {
                       "type": "basic",

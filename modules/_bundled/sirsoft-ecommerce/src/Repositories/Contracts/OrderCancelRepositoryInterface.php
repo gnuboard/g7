@@ -68,6 +68,23 @@ interface OrderCancelRepositoryInterface
     public function paginateForUser(int $userId, array $filters = [], int $perPage = 20): LengthAwarePaginator;
 
     /**
+     * 한 주문의 신청서를 페이지네이션 조회합니다. (최신순 — 비회원 주문상세 '이 주문의 클레임' 섹션)
+     *
+     * 비회원에게는 주문을 가로지르는 신청내역 목록이 없다(토큰이 주문 하나에 묶인다). 그래서 이
+     * 조회가 비회원의 목록이며, 회원 목록(`paginateForUser`)과 같은 관계·컬럼·정렬을 쓴다 —
+     * 한쪽만 다르면 같은 카드가 회원/비회원에서 다른 필드를 그린다.
+     *
+     * 상한 없는 조회(`listByOrderId`)를 목록에 쓰지 않는 이유는 건수가 주문의 상품 수에 묶이지
+     * 않기 때문이다 — 철회는 행을 남기므로 같은 주문에서 신청↔철회를 반복하면 계속 쌓인다.
+     *
+     * @param  int  $orderId  주문 ID
+     * @param  array  $filters  필터 (status / from / to)
+     * @param  int  $perPage  페이지당 건수
+     * @return LengthAwarePaginator 페이지네이션 결과
+     */
+    public function paginateForOrder(int $orderId, array $filters = [], int $perPage = 20): LengthAwarePaginator;
+
+    /**
      * 관리자 목록을 페이지네이션 조회합니다. (최신순, 전 회원·비회원 대상)
      *
      * @param  array  $filters  필터 (statuses / from / to / reason_code / requester_type / search_field / search_keyword)

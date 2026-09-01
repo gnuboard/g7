@@ -616,5 +616,14 @@
     "shippable_to": "{country} 配送可能",
     "shipping_fee_summary": "{country} 配送料：{fee}"
   },
-  "admin_edit": "管理者で編集"
+  "admin_edit": "管理者で編集",
+  "guest_claim_show": {
+    "page_title": "非会員申請内容詳細",
+    "page_description": "非会員注文の交換·返品·キャンセル·返金申請内容を確認します。"
+  },
+  "guest_claim_apply": {
+    "page_title": "非会員クレーム申請",
+    "page_description": "非会員注文の交換·返品·キャンセル·返金を申請します。",
+    "edit_page_title": "非会員申請内容編集"
+  }
 }

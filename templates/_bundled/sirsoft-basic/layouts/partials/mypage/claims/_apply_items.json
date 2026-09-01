@@ -346,6 +346,14 @@
                           "text": "{{claimItem.exchange_mode === 'change' ? (claimItem.new_option_label ?? '') : $t('claim.apply.exchange_same_option')}}"
                         },
                         {
+                          "comment": "이 교환에 얹은 추가옵션 — 고른 직후 여기 서지 않으면 구매자는 자기가 무엇을 골랐는지 확인할 수 없다. 추가금은 요약의 옵션 차액에 이미 합산돼 있으므로 여기서는 이름만 나열한다(두 자리에 같은 금액을 두면 합계로 오독된다).",
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{(claimItem.new_additional_labels ?? []).length > 0}}",
+                          "props": { "className": "block text-xs mt-0.5 text-gray-500 dark:text-gray-400 truncate" },
+                          "text": "+ {{(claimItem.new_additional_labels ?? []).join(', ')}}"
+                        },
+                        {
                           "comment": "옵션 차액은 서버 미리보기가 준 값을 그 줄에 되붙인 것이다 — 화면이 스스로 곱셈하면 요약과 근거가 갈린다.",
                           "type": "basic",
                           "name": "Span",

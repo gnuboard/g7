@@ -2047,6 +2047,18 @@ return [
             'required' => 'Please specify the claim type.',
             'in' => 'Unsupported claim type.',
         ],
+        // The rule owns the limit — the wording carries no number.
+        // Borrowing the order-list wording announced a different cap (100) than the rule enforces (50).
+        'per_page' => [
+            'integer' => 'Items per page must be an integer.',
+            'min' => 'Items per page must be at least :min.',
+            'max' => 'Items per page cannot exceed :max.',
+        ],
+        'page' => [
+            'integer' => 'Page number must be an integer.',
+            'min' => 'Page number must be at least :min.',
+            'max' => 'Page number cannot exceed :max.',
+        ],
         'status' => [
             'in' => 'That status does not exist for the selected claim type.',
         ],

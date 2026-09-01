@@ -105,7 +105,7 @@ describe('목록 컨텍스트 왕복 — 같은 목록 안의 이동만 상태�
     expect(pager).toBeTruthy();
     expect(pager.params.mergeQuery).toBe(true);
 
-    const detail = navigates.find((a) => String(a.params?.path ?? '').includes('{{claim.claim_number}}')
+    const detail = navigates.find((a) => String(a.params?.path ?? '').includes('claim.claim_number')
       && !String(a.params?.path ?? '').includes('/edit'));
     expect(detail).toBeTruthy();
     expect(detail.params.mergeQuery).toBe(true);
@@ -340,11 +340,15 @@ describe('상세 셸 — 원 주문을 신청서 뒤에 읽는다', () => {
 
     expect(save).toHaveLength(1);
     expect(save[0].params.claimEditApiBase).toBe("{{_local.claimEditApiBase ?? ''}}");
-    expect(String(save[0].params.successPath)).toContain('/mypage/claims/');
+    // 돌아갈 곳의 앞부분도 셸이 준다 — partial 이 회원 주소를 리터럴로 들면 비회원이 회원
+    // 전용 주소로 보내져 로그인 화면이 열린다(오류도 토스트도 남지 않는다, S14).
+    expect(String(save[0].params.successPath)).toContain('_local.claimDetailPathBase');
+    expect(String(save[0].params.successPath)).not.toContain('/mypage/');
 
     expect(applyShell.initLocal.claimEditApiBase).toBe(
       '/api/modules/sirsoft-ecommerce/user/claims'
     );
+    expect(applyShell.initLocal.claimDetailPathBase).toBe('/mypage/claims');
   });
 
   // @scenario claim_type=cancel, screen=list, entry=none
@@ -517,7 +521,9 @@ describe('상세 셸 — 원 주문을 신청서 뒤에 읽는다', () => {
       String(a.params?.path ?? '').includes('/edit')
     );
 
-    expect(String(fromList.params.path)).toMatch(/^\/mypage\/claims\/.+\/edit$/);
+    // 목록은 여러 셸이 공유하므로 앞부분을 셸에서 받는다(S14). 상세 셸은 자기 화면이라 리터럴이다.
+    expect(String(fromList.params.path)).toContain('_local.claimDetailPathBase');
+    expect(String(fromList.params.path)).toContain("'/edit'");
     expect(String(fromDetail.params.path)).toMatch(/^\/mypage\/claims\/.+\/edit$/);
     // 두 진입 모두 목록 상태를 물려준다 — 수정을 마치면 보던 목록으로 돌아간다.
     expect(fromList.params.mergeQuery).toBe(true);

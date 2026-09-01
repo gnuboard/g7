@@ -114,7 +114,8 @@
     "cancelled": "決済をキャンセルされました。申請はそのままです。",
     "claim_number": "申請番号 {{number}}",
     "error_code": "失敗コード {{code}}",
-    "retry_hint": "申請内容から再度決済することができます。引き続き失敗する場合は、別の決済方法をご利用ください。"
+    "retry_hint": "申請内容から再度決済することができます。引き続き失敗する場合は、別の決済方法をご利用ください。",
+    "guest_lookup_hint": "下記で注文を照会すると、申請内容と決済ステータスを確認できます。"
   },
   "list": {
     "tab_exchange": "交換",
@@ -139,7 +140,8 @@
     "refund_amount": "返金額",
     "total_charge": "合計請求額",
     "empty": "申請内容がありません。",
-    "go_orders": "注文内容を表示"
+    "go_orders": "注文内容を表示",
+    "order_section_title": "この注文のキャンセル·返品·交換"
   },
   "detail": {
     "back": "申請内容",
@@ -186,7 +188,8 @@
     "reject_reason": "却下理由",
     "images": "添付写真",
     "image_viewer_title": "添付写真",
-    "image_viewer_close": "閉じる"
+    "image_viewer_close": "閉じる",
+    "back_to_order": "注文詳細に戻る"
   },
   "edit": {
     "title": "申請内容編集",

@@ -114,7 +114,8 @@
     "cancelled": "You cancelled the payment. Your request is still saved.",
     "claim_number": "Request no. {{number}}",
     "error_code": "Failure code {{code}}",
-    "retry_hint": "You can pay again from your request. If it keeps failing, please try another payment method."
+    "retry_hint": "You can pay again from your request. If it keeps failing, please try another payment method.",
+    "guest_lookup_hint": "Look up your order below to see the request and its payment status."
   },
   "list": {
     "tab_exchange": "Exchange",
@@ -139,7 +140,8 @@
     "refund_amount": "Refund",
     "total_charge": "Total charge",
     "empty": "No requests yet.",
-    "go_orders": "View orders"
+    "go_orders": "View orders",
+    "order_section_title": "This Order's Cancellations, Returns and Exchanges"
   },
   "detail": {
     "back": "Requests",
@@ -186,7 +188,8 @@
     "reject_reason": "Rejection reason",
     "images": "Attached photos",
     "image_viewer_title": "Attached photo",
-    "image_viewer_close": "Close"
+    "image_viewer_close": "Close",
+    "back_to_order": "Back to Order Detail"
   },
   "edit": {
     "title": "Edit request",

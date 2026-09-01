@@ -137,7 +137,9 @@
 | refund_shipping_amount_formatted | string | `0원` | 환불 배송비 표기 |
 | refund_total | number | `29000` | PG + 마일리지 환불 합계 |
 | refund_total_formatted | string | `29,000원` | 환불 합계 표기 |
-| mc_refund_amount | object | — | PG 환불 다중 통화 스냅샷 |
+| mc_refund_amount | object | `{"USD":{"amount":22.5,"formatted":"$22.50"}}` | **PG 환불분만**의 다중 통화 스냅샷 (마일리지 제외) |
+| mc_refund_total | object | `{"USD":{"amount":26.25,"formatted":"$26.25"}}` | **PG + 마일리지 합계**의 다중 통화 표기. `refund_total_formatted` 와 같은 금액의 다른 표기다 — 화면이 두 값을 같은 자리에 나란히 그리므로 보조 통화 줄은 이 필드를 읽는다(`mc_refund_amount` 를 읽으면 마일리지가 섞인 환불에서 위아래 두 줄이 다른 금액이 되는데 둘 다 정상 서식이라 흔적이 남지 않는다). 저장된 두 스냅샷을 통화별로 더한 값이며 환율을 다시 보지 않는다. 통화 스냅샷이 없는 주문은 빈 객체 |
+| mc_refund_shipping_amount | object | `{"USD":{"amount":2.55,"formatted":"$2.55"}}` | 환불 배송비(`refund_shipping_amount_formatted`)의 다중 통화 표기. 상세의 배송비 대비 행은 교환·반품에서 `mc_claim_shipping_fee` 를 병기하므로, 환불 분기도 같은 자리에서 이 필드를 읽는다. 통화 스냅샷이 없는 주문은 빈 객체 |
 | refund_bank_code | string\|null | `004` | 이 환불이 나갈 계좌의 은행 코드. 직접 환불신청은 구매자 입력분이고, 교환·반품에서 넘어온 환불은 그 신청서의 값을 이어받는다 |
 | refund_bank_name | string\|null | `국민은행` | 그 은행 코드의 이름 (서버 해석) |
 | refund_bank_account | string\|null | `*********3456` | 환불 계좌번호 (마스킹) |
@@ -153,6 +155,7 @@
 | refund_amount | number\|null | `29000` | 연결 환불 건의 PG 환불 금액 (`refund` 관계 로드 시) |
 | refund_amount_formatted | string\|null | `29,000원` | PG 환불 금액 표기 |
 | refund_points_amount | number\|null | `0` | 연결 환불 건의 마일리지 환불 금액 |
+| mc_refund_amount | object | `{"USD":{"amount":13.5,"formatted":"$13.50"}}` | 연결 환불 건의 PG 환불분 다중 통화 표기. 취소의 기준 통화 줄이 `refund_amount_formatted`(현금분)이므로 여기도 현금분이다 — 합계를 실으면 화면의 위아래 두 줄이 다른 금액이 된다. 연결 환불이 없으면 빈 객체 |
 | refund_status | string\|null | `completed` | 연결 환불 건의 상태 |
 | refund_status_label | string\|null | `환불완료` | 환불 상태 라벨 |
 | cancelled_at_formatted | string\|null | `2026-08-23 13:41` | 취소 일시 |
@@ -184,6 +187,7 @@
 | unit_price_formatted | string | `29,000원` | 단가 표기 |
 | subtotal_amount | number | `29000` | 단가 × 수량 |
 | subtotal_amount_formatted | string | `29,000원` | 소계 표기 |
+| mc_subtotal_amount | object | `{"USD":{"amount":21.75,"formatted":"$21.75"}}` | 소계의 통화별 표기. **거래 시점에 동결된 통화별 단가 × 클레임 수량**이며 환율을 다시 보지 않는다. 화면은 `subtotal_amount_formatted` 와 이 값을 같은 자리에 나란히 그리므로 둘은 같은 금액의 다른 표기여야 한다 — 차액(`mc_price_difference`)은 교환 행에만 있는 별개 축이다. 주문 옵션이 함께 로드되지 않은 응답에서는 빈 객체 |
 | product_name | string\|null | `반팔 티셔츠` | 상품명 (현재 로케일) |
 | product_option_name | string\|null | `화이트 / M` | 상품 옵션명 |
 | option_name | string\|null | `화이트 / M` | 옵션 표시명 |
@@ -195,11 +199,14 @@
 | refund_amount_formatted | string | `29,000원` | 행 환불 금액 표기 |
 | is_option_change | boolean | `true` | (교환 행) 다른 옵션으로의 교환인지 |
 | new_product_option_id | integer\|null | `56` | (교환 행) 교환 대상 상품 옵션 ID (동일 옵션 교환이면 `null`) |
-| new_option_snapshot | object\|null | — | (교환 행) 교환 대상 옵션 스냅샷 |
-| new_option_label | string\|null | `화이트 / L` | (교환 행) 교환 대상 옵션 표시명 |
+| new_option_snapshot | object\|null | — | (교환 행) 교환 대상 옵션 스냅샷. 옵션 자체(`option_name` · `option_value`)와 함께, 이 교환에 얹은 추가옵션이 신청 시점 이름·추가금으로 동결된다(`additional_options_snapshot` · `additional_options_total`) |
+| new_option_label | string\|null | `색상: 화이트, 사이즈: XL` | (교환 행) 교환 대상 옵션 표시명. 스냅샷의 `option_value`(항목명까지)를 우선 읽고, 그 키가 없는 구형 스냅샷은 짧은 `option_name`(`화이트/XL`)으로 떨어진다 |
+| new_additional_options | array | `[{"name":"프리미엄 포장","price_adjustment":5000,"price_adjustment_formatted":"5,000원","custom_text":""}]` | (교환 행) 이 교환에 얹은 추가옵션. 신청 시점 동결값이라 운영자가 나중에 선택지를 고치거나 지워도 바뀌지 않는다. 고르지 않았으면 빈 배열 |
+| new_additional_options_total | number | `5000` | (교환 행) 추가옵션 **단위당** 합계. 이 값은 `price_difference` 에 이미 반영되어 있다 |
+| new_additional_options_total_formatted | string | `5,000원` | 추가옵션 합계 표기 |
 | new_unit_price | number | `31000` | (교환 행) 교환 대상 단가 |
 | new_unit_price_formatted | string | `31,000원` | 교환 대상 단가 표기 |
-| price_difference | number | `2000` | (교환 행) 단위 차액 (양수면 추가 결제, 음수면 환불) |
+| price_difference | number | `2000` | (교환 행) 차액 (양수면 추가 결제, 음수면 환불). `((신규 옵션가 + 새로 고른 추가옵션 단위합계) − (원 옵션가 + 원 주문의 추가옵션 단위합계)) × 신청 수량` — 추가옵션을 빼고 교환하면 그만큼이 음수로 돌아온다 |
 | price_difference_formatted | string | `2,000원` | 차액 표기 |
 | mc_price_difference | object | — | 차액 다중 통화 스냅샷 |
 | new_order_option_id | integer\|null | `null` | (교환 행) 교환 완료 후 생성된 새 주문 옵션 ID |

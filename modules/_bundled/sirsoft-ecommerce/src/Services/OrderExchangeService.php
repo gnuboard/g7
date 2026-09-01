@@ -39,10 +39,12 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundOptionRepository
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderShippingRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductAdditionalOptionValueRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingPolicyClaimAddressRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Rules\ExchangeRedeliveryCountryUnchanged;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\AppliesRefundBankAccount;
+use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesAdditionalOptions;
 
 /**
  * 교환 클레임 서비스
@@ -100,6 +102,7 @@ use Modules\Sirsoft\Ecommerce\Services\Concerns\AppliesRefundBankAccount;
 class OrderExchangeService
 {
     use AppliesRefundBankAccount;
+    use ResolvesAdditionalOptions;
 
     /**
      * @param  OrderAdjustmentService  $adjustmentService  금액 재계산 서비스 (미리보기·청구 방식 검증)
@@ -122,6 +125,7 @@ class OrderExchangeService
      * @param  ShippingPolicyClaimAddressRepositoryInterface  $claimAddressRepository  배송정책 회수지 Repository
      * @param  ProductOptionRepositoryInterface  $productOptionRepository  상품 옵션 Repository
      * @param  OrderShippingRepositoryInterface  $orderShippingRepository  주문 배송 Repository (후속 옵션 배송 행 복제)
+     * @param  ProductAdditionalOptionValueRepositoryInterface  $additionalOptionValueRepository  추가옵션 선택지 Repository (교환 추가옵션 재조회·동결)
      */
     public function __construct(
         protected OrderAdjustmentService $adjustmentService,
@@ -144,6 +148,7 @@ class OrderExchangeService
         protected ShippingPolicyClaimAddressRepositoryInterface $claimAddressRepository,
         protected ProductOptionRepositoryInterface $productOptionRepository,
         protected OrderShippingRepositoryInterface $orderShippingRepository,
+        protected ProductAdditionalOptionValueRepositoryInterface $additionalOptionValueRepository,
     ) {}
 
     // ───────────────────────────────────────────────
@@ -1125,15 +1130,31 @@ class OrderExchangeService
                 ? $input['custom_options']
                 : null;
 
+            // 추가옵션은 클라이언트가 보낸 ID 만 신뢰하고 값·가격은 서버에서 다시 읽는다
+            // (주문 체크아웃과 같은 규칙 — `ResolvesAdditionalOptions`). 그 상품 소속이 아닌
+            // 선택지는 제외되므로 금액에도 표기에도 실리지 않는다.
+            [$newAdditionalTotal, $newAdditionalSnapshot] = $this->resolveAdditionalOptions(
+                (int) $target->product_id,
+                $this->normalizeClaimCustomOptions($customOptions)
+            );
+
+            // 주문의 소계 규칙(D6)은 `(옵션가 + 추가옵션 단위합계) × 수량` 이다. 교환 차액도 같은
+            // 식이어야 한다 — 추가옵션 항을 양쪽에서 빼면 유료 추가옵션을 골라도 청구가 0 이 되고,
+            // 원 주문의 추가옵션을 빼고 교환해도 그만큼이 돌아오지 않는다.
+            $originalAdditionalTotal = (int) ($option->additional_options_total ?? 0);
+
             $plans[$optionId] = [
                 'option' => $option,
                 'quantity' => (int) $entry['quantity'],
                 'target' => $target,
                 'is_option_change' => $isOptionChange,
                 'custom_options' => $customOptions,
+                'new_additional_options_total' => $newAdditionalTotal,
+                'new_additional_options_snapshot' => $newAdditionalSnapshot,
                 'unit_price' => $unitPrice,
                 'new_unit_price' => $newUnitPrice,
-                'price_difference' => ($newUnitPrice - $unitPrice) * (int) $entry['quantity'],
+                'price_difference' => (($newUnitPrice + $newAdditionalTotal) - ($unitPrice + $originalAdditionalTotal))
+                    * (int) $entry['quantity'],
             ];
         }
 
@@ -1507,10 +1528,57 @@ class OrderExchangeService
         }
 
         if ($plan['custom_options'] !== null) {
+            // 보낸 원문(그룹ID→값ID)도 남긴다 — 수정 화면이 선택 상태를 되살릴 때 읽는다.
             $snapshot['custom_options'] = $plan['custom_options'];
         }
 
+        // 화면이 그릴 재료는 **이름과 추가금이 동결된 스냅샷**이다. 예전에는 ID 만 남아
+        // 이름을 복원할 방법이 없었고(운영자가 선택지를 고치거나 지우면 더더욱), 그래서
+        // 신청 후 화면에 추가옵션이 아예 나오지 않았다. 주문의 `additional_options_snapshot`
+        // 과 같은 형태·같은 해석기를 쓴다.
+        if (($plan['new_additional_options_snapshot'] ?? []) !== []) {
+            $snapshot['additional_options_snapshot'] = $plan['new_additional_options_snapshot'];
+            $snapshot['additional_options_total'] = (int) ($plan['new_additional_options_total'] ?? 0);
+        }
+
         return $snapshot === [] ? null : $snapshot;
+    }
+
+    /**
+     * 클레임 화면이 보내는 추가옵션 선택을 주문 해석기의 입력 형태로 바꿉니다.
+     *
+     * 화면은 그룹 단위로 `{selections: {그룹ID: 값ID}, custom_texts: {그룹ID: 텍스트}}` 를 보내고,
+     * 해석기는 `[{value_id, custom_text}]` 를 받는다. 두 형태를 잇는 곳이 여기 하나여야
+     * 주문과 교환이 같은 규칙 위에 선다.
+     *
+     * @param  array|null  $customOptions  화면이 보낸 원문
+     * @return array<int, array{value_id: int, custom_text: string}> 해석기 입력
+     */
+    protected function normalizeClaimCustomOptions(?array $customOptions): array
+    {
+        if ($customOptions === null) {
+            return [];
+        }
+
+        $selections = is_array($customOptions['selections'] ?? null) ? $customOptions['selections'] : [];
+        $customTexts = is_array($customOptions['custom_texts'] ?? null) ? $customOptions['custom_texts'] : [];
+
+        $normalized = [];
+
+        foreach ($selections as $groupId => $valueId) {
+            $valueId = (int) $valueId;
+
+            if ($valueId <= 0) {
+                continue;
+            }
+
+            $normalized[] = [
+                'value_id' => $valueId,
+                'custom_text' => (string) ($customTexts[$groupId] ?? ''),
+            ];
+        }
+
+        return $normalized;
     }
 
     /**

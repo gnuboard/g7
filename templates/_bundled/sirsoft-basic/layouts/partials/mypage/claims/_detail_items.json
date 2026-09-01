@@ -135,6 +135,24 @@
                       "text": "{{item.subtotal_amount_formatted ?? ''}}"
                     },
                     {
+                      "comment": "보조 통화 — 바로 위 소계와 같은 값의 다른 표기다. 목록 카드의 같은 상품 행(`_list.json`)은 이 병기를 하고 있어, 여기만 없으면 같은 상품의 소계가 목록에는 외화가 뜨고 상세에는 안 뜬다.",
+                      "type": "basic",
+                      "name": "Div",
+                      "props": { "className": "flex flex-wrap gap-x-2 mt-0.5" },
+                      "iteration": {
+                        "source": "{{Object.entries(item.mc_subtotal_amount ?? {}).filter(([code]) => code !== (claim.data?.claim?.currency_code ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
+                        "item_var": "currency"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
+                          "text": "{{currency[1]?.formatted ?? ''}}"
+                        }
+                      ]
+                    },
+                    {
                       "comment": "이 상품에서 돌려받는 금액 — 반품·환불·취소의 상품 행이 든다.",
                       "type": "basic",
                       "name": "P",
@@ -172,6 +190,14 @@
                   "text": "{{item.new_option_label ?? ''}}"
                 },
                 {
+                  "comment": "이 교환에 얹은 추가옵션 — 신청 시점 동결값이다(운영자가 나중에 선택지를 고쳐도 이 표기는 바뀌지 않는다). 추가금은 아래 옵션 차액에 이미 합산돼 있어 이름만 나열한다.",
+                  "type": "basic",
+                  "name": "P",
+                  "if": "{{(item.new_additional_options ?? []).length > 0}}",
+                  "props": { "className": "text-xs text-gray-600 dark:text-gray-400 mt-0.5" },
+                  "text": "+ {{(item.new_additional_options ?? []).map(o => o.custom_text ? (o.name + ' (' + o.custom_text + ')') : o.name).join(', ')}}"
+                },
+                {
                   "type": "basic",
                   "name": "P",
                   "if": "{{item.is_option_change !== true}}",
@@ -186,9 +212,10 @@
                   "text": "$t:claim.detail.price_difference|amount={{item.price_difference_formatted ?? ''}}"
                 },
                 {
-                  "comment": "보조 통화 — 주문 도메인 mc_* 규약.",
+                  "comment": "보조 통화 — 바로 위 차액 줄과 **같은 게이트**여야 한다. 차액이 0 인 신청(동일상품 교환·동가 옵션변경)에서 그 줄은 서지 않는데 이 iteration 만 돌면 라벨 없는 `$0.00 ¥0 元0.00 €0.00` 만 남는다(2026-09-01 3차 검증). 서버는 교환 행이면 차액이 0 이어도 통화별 항목을 싣는다 — 게이트는 화면이 건다. 주문 도메인 mc_* 규약.",
                   "type": "basic",
                   "name": "Div",
+                  "if": "{{item.is_option_change === true && (item.price_difference ?? 0) !== 0}}",
                   "props": { "className": "flex flex-wrap gap-x-2 mt-0.5" },
                   "iteration": {
                     "source": "{{Object.entries(item.mc_price_difference ?? {}).filter(([code]) => code !== (claim.data?.claim?.currency_code ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",

@@ -38,6 +38,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponIssueRepositoryInterf
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductAdditionalOptionValueRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingPolicyRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesAdditionalOptions;
 use Modules\Sirsoft\Ecommerce\Support\MileageRounding;
 use Modules\Sirsoft\Ecommerce\Support\VatCalculator;
 
@@ -77,6 +78,8 @@ use Modules\Sirsoft\Ecommerce\Support\VatCalculator;
  */
 class OrderCalculationService
 {
+    use ResolvesAdditionalOptions;
+
     /**
      * @param  CurrencyConversionService  $currencyService  통화 변환 서비스
      * @param  ProductOptionRepositoryInterface  $productOptionRepository  상품 옵션 Repository
@@ -452,83 +455,6 @@ class OrderCalculationService
         }
 
         return $preparedItems;
-    }
-
-    /**
-     * 추가옵션 선택을 서버에서 재조회하여 단위 합계와 스냅샷을 산출합니다.
-     *
-     * value_id 기준으로 활성·해당 상품 소속인 선택지만 인정하며, 가격은 항상
-     * 서버 DB 값(KRW)을 사용합니다. 잘못된/비활성/타상품 value_id 는 무시됩니다.
-     * 필수 그룹 미선택 등 차단 검증은 담기/주문 검증 계층(서버 SSoT)이 담당합니다.
-     *
-     * 직접입력 텍스트(custom_text)는 가격에 무관하며, 선택의 value_id 기준으로
-     * 해당 선택지 스냅샷에 동결 병합됩니다(E3).
-     *
-     * @param  int  $productId  상품 ID
-     * @param  array  $selections  추가옵션 선택 [{additional_option_id, value_id, custom_text?}]
-     * @return array{0: int, 1: array} [단위당 추가옵션 합계, 추가옵션 스냅샷]
-     */
-    protected function resolveAdditionalOptions(int $productId, array $selections): array
-    {
-        if (empty($selections)) {
-            return [0, []];
-        }
-
-        // value_id => custom_text 매핑 (직접입력 텍스트 동결용)
-        $valueIds = [];
-        $customTextByValueId = [];
-        foreach ($selections as $selection) {
-            $valueId = (int) ($selection['value_id'] ?? 0);
-            if ($valueId > 0) {
-                $valueIds[] = $valueId;
-                $customText = trim((string) ($selection['custom_text'] ?? ''));
-                if ($customText !== '') {
-                    $customTextByValueId[$valueId] = $customText;
-                }
-            }
-        }
-
-        if (empty($valueIds)) {
-            return [0, []];
-        }
-
-        $values = $this->additionalOptionValueRepository->findActiveByIds($valueIds);
-
-        $total = 0;
-        $snapshot = [];
-        foreach ($values as $value) {
-            // 소속 검증: 선택지의 그룹이 이 상품에 속해야 함 (D12)
-            if ($value->additionalOption?->product_id !== $productId) {
-                continue;
-            }
-
-            $total += $value->getPriceAdjustment();
-
-            $entry = $value->toSnapshotArray();
-            // 직접입력 텍스트 동결: allow_custom_text 선택지에 한해 주입 (E3)
-            if ($value->allow_custom_text && isset($customTextByValueId[$value->id])) {
-                $entry['custom_text'] = $customTextByValueId[$value->id];
-            }
-            $snapshot[] = $entry;
-        }
-
-        return [$total, $snapshot];
-    }
-
-    /**
-     * 추가옵션 스냅샷에서 단위당 합계(KRW)를 산출합니다.
-     *
-     * @param  array  $snapshot  추가옵션 스냅샷 [{price_adjustment, ...}]
-     * @return int 단위당 추가옵션 합계
-     */
-    protected function sumAdditionalOptionsSnapshot(array $snapshot): int
-    {
-        $total = 0;
-        foreach ($snapshot as $entry) {
-            $total += (int) ($entry['price_adjustment'] ?? 0);
-        }
-
-        return $total;
     }
 
     /**

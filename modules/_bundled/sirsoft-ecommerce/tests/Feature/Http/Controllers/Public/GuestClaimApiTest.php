@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Mockery;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimPaymentStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\ClaimImage;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
@@ -100,6 +101,11 @@ class GuestClaimApiTest extends ModuleTestCase
         return [['order_option_id' => $order->options->first()->id, 'quantity' => $quantity]];
     }
 
+    /**
+     * @scenario claim_type=exchange, entry=without_token, screen=order_section
+     *
+     * @effects guest_claim_routes_are_token_protected
+     */
     public function test_every_claim_route_is_token_protected(): void
     {
         [$order] = $this->guestOrderWithToken();
@@ -146,10 +152,11 @@ class GuestClaimApiTest extends ModuleTestCase
         $number = $response->json('data.claim.claim_number');
 
         // 이 주문의 클레임 목록 / 상세 / 수정 / 철회
-        $this->getJson($this->base($order).'/claims', ['X-Guest-Order-Token' => $token])
+        // 목록은 회원 신청내역과 같은 계약이다 — 유형 서브탭 하나(`?type=`)를 페이지 단위로 읽는다.
+        $this->getJson($this->base($order).'/claims?type=return', ['X-Guest-Order-Token' => $token])
             ->assertOk()
-            ->assertJsonPath('data.counts.return', 1)
-            ->assertJsonPath('data.claims.return.0.claim_number', $number);
+            ->assertJsonPath('data.pagination.total', 1)
+            ->assertJsonPath('data.data.0.claim_number', $number);
 
         $this->getJson($this->base($order)."/claims/{$number}", ['X-Guest-Order-Token' => $token])
             ->assertOk()->assertJsonPath('data.claim.claim_number', $number);
@@ -228,6 +235,51 @@ class GuestClaimApiTest extends ModuleTestCase
         $this->assertSame(OrderStatusEnum::CANCELLED, $order->fresh()->order_status);
     }
 
+    public function test_claim_item_rows_carry_the_subtotals_own_multi_currency(): void
+    {
+        // 화면은 상품 행에 소계(`subtotal_amount_formatted`)와 그 보조 통화를 나란히 그린다.
+        // 소계의 보조 통화가 응답에 없으면 그 줄이 다른 필드로 흘러가는데, 두 값 모두 정상
+        // 서식이라 어긋난 흔적이 남지 않는다 — 2026-09-01 실측에서 동일상품 교환이 화면에
+        // `28,000원 / $0.00`(교환 차액) 으로 나갔고, 차액 필드가 없는 반품은 그 줄이 통째로 비었다.
+        // 유형마다 저장 컬럼이 다르므로 네 유형 전부가 이 키를 실어야 같은 카드가 같은 것을 그린다.
+        // 수량 3 중 2 만 신청한다 — 소계를 주문 수량으로 만들면 이 조합에서만 어긋나므로,
+        // 수량 1 픽스처로는 그 축이 죽은 채 초록이 된다(이 테스트를 세울 때 실제로 그랬다).
+        [$order, $token] = $this->guestOrderWithToken(quantity: 3);
+
+        $this->postJson($this->base($order).'/returns', [
+            'items' => $this->items($order, 2), 'reason_code' => 'changed_mind', 'charge_method' => 'deduct_from_refund',
+        ], ['X-Guest-Order-Token' => $token])->assertCreated();
+
+        $items = $this->getJson($this->base($order).'/claims?type=return', ['X-Guest-Order-Token' => $token])
+            ->assertOk()
+            ->json('data.data.0.items');
+
+        $this->assertNotEmpty($items, '반품 신청서의 상품 행이 비어 있으면 이 축을 잴 수 없다.');
+
+        foreach ($items as $item) {
+            $this->assertArrayHasKey('mc_subtotal_amount', $item);
+            $this->assertNotSame([], $item['mc_subtotal_amount'], '소계의 보조 통화가 비면 화면의 그 줄이 통째로 사라진다.');
+
+            $this->assertSame(2, $item['quantity'], '신청 수량이 주문 수량과 같으면 수량 축이 죽는다.');
+
+            $orderOption = $order->options()->findOrFail($item['order_option_id']);
+            $unitPrices = $orderOption->mc_unit_price ?? [];
+            $this->assertNotEmpty($unitPrices, '주문옵션에 통화별 단가가 없으면 이 축의 기대값을 세울 수 없다.');
+
+            foreach ($unitPrices as $code => $unitPrice) {
+                $this->assertArrayHasKey($code, $item['mc_subtotal_amount'], "통화 {$code} 의 소계가 빠졌다.");
+                $this->assertArrayHasKey('formatted', $item['mc_subtotal_amount'][$code]);
+                // 소계는 단가 × **클레임 수량**이다 — 주문 수량으로 만들면 부분 반품에서 어긋난다.
+                $this->assertEqualsWithDelta(
+                    $unitPrice * $item['quantity'],
+                    $item['mc_subtotal_amount'][$code]['amount'],
+                    0.01,
+                    "통화 {$code} 의 소계가 단가×수량과 다르다.",
+                );
+            }
+        }
+    }
+
     public function test_another_orders_token_cannot_reach_this_orders_claim(): void
     {
         [$order, $token] = $this->guestOrderWithToken();
@@ -300,9 +352,9 @@ class GuestClaimApiTest extends ModuleTestCase
             }
         });
 
-        $rows = $this->getJson($this->base($order).'/claims', ['X-Guest-Order-Token' => $token])
+        $rows = $this->getJson($this->base($order).'/claims?type=return', ['X-Guest-Order-Token' => $token])
             ->assertOk()
-            ->json('data.claims.return');
+            ->json('data.data');
 
         $this->assertCount(2, $rows);
 
@@ -388,9 +440,9 @@ class GuestClaimApiTest extends ModuleTestCase
             'collection_tracking_number' => '651234567890',
         ])->save();
 
-        $response = $this->getJson($this->base($order).'/claims', ['X-Guest-Order-Token' => $token])->assertOk();
+        $response = $this->getJson($this->base($order).'/claims?type=return', ['X-Guest-Order-Token' => $token])->assertOk();
 
-        $row = $response->json('data.claims.return.0');
+        $row = $response->json('data.data.0');
         $this->assertSame($order->order_number, $row['order_number']);
         $this->assertNotNull($row['collection_carrier_name'], '배송사 관계가 없으면 이름이 무음 null 이 됩니다.');
         $this->assertSame('https://track.example.test/651234567890', $row['collection_tracking_url']);
@@ -418,6 +470,149 @@ class GuestClaimApiTest extends ModuleTestCase
         $this->assertStringNotContainsString('110123456789', json_encode($payment, JSON_UNESCAPED_UNICODE));
     }
 
+    /**
+     * @scenario claim_type=return, entry=with_token, screen=order_section
+     *
+     * @effects guest_order_claim_list_is_paginated_by_type
+     */
+    public function test_the_order_claim_list_is_paginated_and_scoped_to_one_type(): void
+    {
+        // 한 주문의 신청 건수가 그 주문의 상품 수에 묶인다는 전제는 성립하지 않는다 — 철회는
+        // 행을 남기므로(수량 잠금만 풀린다) 신청↔철회를 반복하면 계속 쌓인다. 페이지네이션이
+        // 없으면 그 전량이 한 응답에 실리고, 응답은 정상 200 이라 부풀었다는 사실이 드러나지 않는다.
+        [$order, $token] = $this->guestOrderWithToken();
+        $option = $order->options->first();
+
+        for ($i = 0; $i < 3; $i++) {
+            $result = app(UserClaimService::class)->requestReturn($order, [
+                'items' => [['order_option_id' => $option->id, 'quantity' => 1]],
+                'reason_code' => 'changed_mind',
+                'charge_method' => 'deduct_from_refund',
+                'requested_by' => null,
+            ]);
+
+            // 철회해도 행은 남는다 — 다음 신청이 같은 수량을 다시 잠글 수 있게 풀어 준다.
+            app(UserClaimService::class)->withdraw(ClaimTypeEnum::RETURN, $result['claim']);
+        }
+
+        $first = $this->getJson($this->base($order).'/claims?type=return&per_page=2', ['X-Guest-Order-Token' => $token])
+            ->assertOk()
+            ->assertJsonPath('data.pagination.total', 3)
+            ->assertJsonPath('data.pagination.per_page', 2)
+            ->assertJsonPath('data.pagination.current_page', 1)
+            ->assertJsonPath('data.pagination.last_page', 2)
+            ->assertJsonPath('data.pagination.has_more_pages', true);
+
+        $this->assertCount(2, $first->json('data.data'));
+
+        $second = $this->getJson($this->base($order).'/claims?type=return&per_page=2&page=2', ['X-Guest-Order-Token' => $token])
+            ->assertOk()
+            ->assertJsonPath('data.pagination.current_page', 2)
+            ->assertJsonPath('data.pagination.has_more_pages', false);
+
+        $this->assertCount(1, $second->json('data.data'));
+
+        // 두 페이지가 서로 다른 행을 싣는다 — 정렬이 전순서가 아니면 겹치거나 샌다.
+        $this->assertEmpty(array_intersect(
+            collect($first->json('data.data'))->pluck('claim_number')->all(),
+            collect($second->json('data.data'))->pluck('claim_number')->all(),
+        ));
+
+        // 유형 서브탭이 곧 목록 정체성이다 — 다른 유형 탭에는 이 행들이 서지 않는다.
+        $this->getJson($this->base($order).'/claims?type=exchange', ['X-Guest-Order-Token' => $token])
+            ->assertOk()
+            ->assertJsonPath('data.pagination.total', 0);
+    }
+
+    /**
+     * @scenario claim_type=cancel, entry=with_token, screen=order_section
+     *
+     * @effects guest_order_claim_list_rejects_a_type_outside_the_vocabulary
+     */
+    public function test_the_order_claim_list_rejects_a_type_outside_the_vocabulary(): void
+    {
+        // 게이트가 없으면 오타·구버전 유형이 422 없이 빈 목록으로 응답되어, 사용자에게는
+        // "해당 신청 없음" 과 구분되지 않는다 (회원 목록과 같은 계약 — 요청도 같은 한 벌이다).
+        [$order, $token] = $this->guestOrderWithToken();
+
+        $this->getJson($this->base($order).'/claims?type=nonexistent', ['X-Guest-Order-Token' => $token])
+            ->assertStatus(422);
+
+        // 유형을 생략하면 서브탭 기본값(교환)이다 — 회원 목록과 같은 기본값이어야 두 화면의
+        // 첫 진입이 같은 탭을 연다.
+        $this->getJson($this->base($order).'/claims', ['X-Guest-Order-Token' => $token])
+            ->assertOk()
+            ->assertJsonPath('data.pagination.total', 0);
+
+        // 페이지 상한 거절의 **안내 문구가 실제 상한과 같아야 한다**. 주문 목록의 문구를 빌려
+        // 쓰던 시절에는 이 목록의 상한이 50 인데 "최대 100" 이라고 안내했다 — 사용자는 그 수를
+        // 믿고 다시 보내다 같은 거절을 받는다(2026-09-01 브라우저 실측).
+        $message = $this->getJson($this->base($order).'/claims?type=return&per_page=51', ['X-Guest-Order-Token' => $token])
+            ->assertStatus(422)
+            ->json('message');
+
+        $this->assertStringContainsString('50', (string) $message);
+        $this->assertStringNotContainsString('100', (string) $message);
+    }
+
+    /**
+     * @scenario claim_type=return, entry=with_token, screen=apply
+     *
+     * @effects guest_claim_options_hide_the_payment_method_the_server_refuses
+     */
+    public function test_the_claimable_options_hide_mileage_from_a_guest(): void
+    {
+        // 마일리지는 회원 원장에서 차감하므로 비회원에게 열리지 않는다 — 그런데 화면은 이
+        // 응답의 허용 목록을 그대로 라디오로 그린다. 목록에 남겨 두면 비회원에게 고를 수 없는
+        // 수단이 보이고, 고르고 제출해야 422 로 거절된다(2026-09-01 브라우저 실측 — 신청서
+        // 작성 화면에 '마일리지' 선택지가 서 있었다). 거절하는 지점과 보여 주는 목록은 같은
+        // 판정을 써야 한다.
+        [$order, $token] = $this->guestOrderWithToken();
+
+        $methods = $this->getJson($this->base($order).'/claimable-options', ['X-Guest-Order-Token' => $token])
+            ->assertOk()
+            ->json('data.settings.charge_payment_methods');
+
+        $this->assertIsArray($methods);
+        $this->assertNotContains('point', $methods, '비회원에게 마일리지 결제 수단이 노출됩니다.');
+        // 모집단이 비면 red — 목록을 통째로 비워도 통과하는 상태를 막는다.
+        $this->assertNotEmpty($methods);
+    }
+
+    /**
+     * @scenario claim_type=exchange, entry=without_token, screen=detail
+     *
+     * @effects guest_claim_screens_clear_the_token_and_return_to_lookup
+     */
+    public function test_the_token_404_carries_the_lookup_screen_address(): void
+    {
+        // 이 404 를 받는 화면은 남은 토큰을 비우고 조회 폼으로 안내해야 하는데, 그 주소는
+        // 상점 주소 설정(route_path/no_route)에 따라 달라져 화면이 스스로 조립할 수 없다.
+        // 화면이 `_global.shopBase` 로 조립하는 폴백에 기대면 그 값이 서기 전에 해소되는
+        // 응답(blocking 데이터소스)에서 `undefined/guest/orders` 라는 상대 경로가 만들어져
+        // 없는 화면이 열린다(2026-09-01 브라우저 실측 — 신청서 상세에 토큰 없이 진입한 경로).
+        [$order] = $this->guestOrderWithToken();
+
+        foreach ([
+            $this->base($order).'/claims',
+            $this->base($order).'/claims/RT00000000-0001',
+            $this->base($order).'/claimable-options',
+        ] as $uri) {
+            $response = $this->getJson($uri)->assertNotFound();
+
+            $redirect = $response->json('errors.redirect_to');
+
+            $this->assertIsString($redirect, "{$uri} 의 404 에 돌아갈 주소가 없습니다.");
+            $this->assertStringStartsWith('/', $redirect, '상대 경로면 화면이 현재 주소 뒤에 이어 붙여 없는 화면으로 간다.');
+            $this->assertStringEndsWith('/guest/orders', $redirect);
+        }
+    }
+
+    /**
+     * @scenario claim_type=exchange, entry=expired_token, screen=order_section
+     *
+     * @effects guest_claim_routes_are_token_protected
+     */
     public function test_an_expired_token_no_longer_reaches_the_claim_routes(): void
     {
         // 토큰은 HMAC 안에 만료시각을 담고 있어 서버 상태 없이 만료된다. TTL 이 지난 뒤에도

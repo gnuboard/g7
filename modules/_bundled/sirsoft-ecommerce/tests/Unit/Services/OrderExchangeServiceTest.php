@@ -30,6 +30,8 @@ use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefundOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderShipping;
+use Modules\Sirsoft\Ecommerce\Models\ProductAdditionalOption;
+use Modules\Sirsoft\Ecommerce\Models\ProductAdditionalOptionValue;
 use Modules\Sirsoft\Ecommerce\Models\ProductOption;
 use Modules\Sirsoft\Ecommerce\Models\ShippingCarrier;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
@@ -2554,5 +2556,129 @@ class OrderExchangeServiceTest extends ModuleTestCase
 
         $this->assertSame($exchange->id, $same->id);
         $this->assertSame($exchange->updated_at->toIso8601String(), $same->updated_at->toIso8601String());
+    }
+
+    // ================================================================
+    // 신청 — 추가옵션 (이름 동결 · 청구 반영)
+    // ================================================================
+
+    /**
+     * 그 상품에 딸린 추가옵션 그룹과 선택지 하나를 만듭니다.
+     *
+     * @param  Order  $order  주문
+     * @param  int  $priceAdjustment  추가금
+     * @param  string  $groupName  그룹 이름
+     * @param  string  $valueName  선택지 이름
+     * @return ProductAdditionalOptionValue 선택지
+     */
+    protected function additionalOptionValue(
+        Order $order,
+        int $priceAdjustment,
+        string $groupName = '포장 방식',
+        string $valueName = '선물 포장',
+    ): ProductAdditionalOptionValue {
+        $group = ProductAdditionalOption::create([
+            'product_id' => $order->options->first()->product_id,
+            'name' => ['ko' => $groupName, 'en' => $groupName],
+            'is_required' => false,
+            'sort_order' => 0,
+        ]);
+
+        return ProductAdditionalOptionValue::create([
+            'additional_option_id' => $group->id,
+            'name' => ['ko' => $valueName, 'en' => $valueName],
+            'price_adjustment' => $priceAdjustment,
+            'is_default' => false,
+            'is_active' => true,
+            'allow_custom_text' => false,
+            'sort_order' => 0,
+        ]);
+    }
+
+    public function test_request_charges_the_additional_options_the_buyer_picked(): void
+    {
+        // 주문의 소계 규칙(D6)은 `(옵션가 + 추가옵션 단위합계) × 수량` 이다. 교환 차액이 추가옵션
+        // 항을 빼면 구매자가 3,000원짜리 포장을 골라도 상점은 0원을 청구한다(2026-09-01 실측).
+        $order = $this->deliveredOrder();
+        $value = $this->additionalOptionValue($order, 3000);
+
+        $payload = $this->payload($order, chargeMethod: ClaimChargeMethodEnum::PAY_ON_REQUEST);
+        $payload['items'][0]['custom_options'] = ['selections' => [(string) $value->additional_option_id => $value->id]];
+
+        $exchange = $this->service->requestExchange($order, $payload);
+        $item = $exchange->exchangeOptions->first();
+
+        $this->assertSame(3000.0, (float) $item->price_difference, '동일상품 교환이라도 새로 고른 추가옵션은 청구된다.');
+    }
+
+    public function test_request_returns_the_original_additional_options_when_the_exchange_drops_them(): void
+    {
+        // 원 주문에 유료 추가옵션이 있었는데 교환에서 고르지 않으면 그 상품은 그 추가옵션 없이
+        // 재발송된다 — 같은 식(D6)이라면 그만큼이 구매자에게 돌아와야 한다.
+        $order = $this->deliveredOrder();
+        $order->options->first()->update(['additional_options_total' => 3000]);
+        $order->load('options');
+
+        $exchange = $this->service->requestExchange($order, $this->payload($order));
+
+        $this->assertSame(-3000.0, (float) $exchange->exchangeOptions->first()->price_difference);
+    }
+
+    public function test_request_freezes_additional_option_names_and_prices_in_the_snapshot(): void
+    {
+        // 예전에는 선택 ID 만 남아 이름을 복원할 방법이 없었고, 그래서 신청 후 화면에 추가옵션이
+        // 아예 나오지 않았다. 주문과 같은 형태로 동결한다.
+        $order = $this->deliveredOrder();
+        $value = $this->additionalOptionValue($order, 3000);
+
+        $payload = $this->payload($order, chargeMethod: ClaimChargeMethodEnum::PAY_ON_REQUEST);
+        $payload['items'][0]['custom_options'] = ['selections' => [(string) $value->additional_option_id => $value->id]];
+
+        $exchange = $this->service->requestExchange($order, $payload);
+        $snapshot = $exchange->exchangeOptions->first()->new_option_snapshot;
+
+        $this->assertSame(3000, $snapshot['additional_options_total']);
+        $this->assertCount(1, $snapshot['additional_options_snapshot']);
+        $this->assertSame($value->id, $snapshot['additional_options_snapshot'][0]['value_id']);
+        $this->assertSame('선물 포장', $snapshot['additional_options_snapshot'][0]['name']['ko']);
+        $this->assertSame(3000, $snapshot['additional_options_snapshot'][0]['price_adjustment']);
+    }
+
+    public function test_request_ignores_additional_options_that_belong_to_another_product(): void
+    {
+        // 다른 상품의 선택지 ID 로 금액이나 표기를 만들 수 없어야 한다(D12).
+        $order = $this->deliveredOrder();
+        $otherOrder = $this->deliveredOrder();
+        $foreign = $this->additionalOptionValue($otherOrder, 9000);
+
+        $payload = $this->payload($order);
+        $payload['items'][0]['custom_options'] = ['selections' => [(string) $foreign->additional_option_id => $foreign->id]];
+
+        $exchange = $this->service->requestExchange($order, $payload);
+        $item = $exchange->exchangeOptions->first();
+
+        $this->assertSame(0.0, (float) $item->price_difference, '남의 상품 선택지는 청구에 실리지 않는다.');
+        $this->assertArrayNotHasKey('additional_options_snapshot', $item->new_option_snapshot ?? []);
+    }
+
+    public function test_preview_and_request_charge_the_same_additional_options(): void
+    {
+        // 화면이 예고하는 것과 실행하는 것이 같아야 한다 — 미리보기와 접수가 같은 경로를 탄다.
+        $order = $this->deliveredOrder();
+        $value = $this->additionalOptionValue($order, 3000);
+
+        $payload = $this->payload($order, chargeMethod: ClaimChargeMethodEnum::PAY_ON_REQUEST);
+        $payload['items'][0]['custom_options'] = ['selections' => [(string) $value->additional_option_id => $value->id]];
+
+        $preview = $this->service->previewExchange(
+            $order,
+            $payload['items'],
+            'size_mismatch',
+            ClaimChargeMethodEnum::PAY_ON_REQUEST
+        );
+        $exchange = $this->service->requestExchange($order, $payload);
+
+        $this->assertSame(3000.0, (float) $preview['items'][0]['price_difference']);
+        $this->assertSame(3000.0, (float) $exchange->exchangeOptions->first()->price_difference);
     }
 }

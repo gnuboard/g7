@@ -3,14 +3,15 @@
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
 use App\Support\Query\PaginationLimits;
-use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturnOption;
 use Modules\Sirsoft\Ecommerce\Repositories\Concerns\FiltersAdminClaimList;
+use Modules\Sirsoft\Ecommerce\Repositories\Concerns\PaginatesBuyerClaimList;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderReturnRepositoryInterface;
 
 /**
@@ -19,6 +20,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderReturnRepositoryInterf
 class OrderReturnRepository implements OrderReturnRepositoryInterface
 {
     use FiltersAdminClaimList;
+    use PaginatesBuyerClaimList;
 
     /**
      * @param  OrderReturn  $model  반품 신청서 모델
@@ -166,29 +168,47 @@ class OrderReturnRepository implements OrderReturnRepositoryInterface
      */
     public function paginateForUser(int $userId, array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
-        $query = $this->model->newQuery()
-            // 목록이 직렬화하는 것만 싣는다 (형제 저장소와 같은 근거 — 첨부는 상세 소관,
-            // 주문 배송지는 이 목록의 어느 칸도 읽지 않는다).
-            ->with(['returnOptions.orderOption', 'order', 'collectionCarrier'])
+        $query = $this->buyerClaimListQuery()
             ->whereHas('order', fn ($q) => $q->where('user_id', $userId));
 
-        if (! empty($filters['status'])) {
-            $query->where('return_status', $filters['status']);
-        }
+        return $this->paginateBuyerClaimList($query, $filters, $perPage);
+    }
 
-        // 기간 필터 — whereDate 는 컬럼에 DATE() 를 씌워 인덱스를 못 쓰게 만든다.
-        // 같은 결과를 내는 범위 조건으로 바꿔 created_at 인덱스를 살린다
-        // (종료일은 그날 23:59:59.999999 까지 포함해야 whereDate 와 동일한 경계를 갖는다).
-        // 경계 해석은 저장소가 맡는다 — 요청이 문자열을 이어 붙이면 시각이 섞인 입력에서 규격 밖 값이 된다.
-        if (! empty($filters['from'])) {
-            $query->where('created_at', '>=', Carbon::parse($filters['from'])->startOfDay());
-        }
+    /**
+     * {@inheritDoc}
+     */
+    public function paginateForOrder(int $orderId, array $filters = [], int $perPage = 20): LengthAwarePaginator
+    {
+        $query = $this->buyerClaimListQuery()->where('order_id', $orderId);
 
-        if (! empty($filters['to'])) {
-            $query->where('created_at', '<=', Carbon::parse($filters['to'])->endOfDay());
-        }
+        return $this->paginateBuyerClaimList($query, $filters, $perPage);
+    }
 
-        return $query->orderByDesc('id')->paginate($perPage, [(new OrderReturn)->getTable().'.*']);
+    /**
+     * {@inheritDoc}
+     */
+    protected function buyerClaimListQuery(): Builder
+    {
+        return $this->model->newQuery()
+            // 목록이 직렬화하는 것만 싣는다 (형제 저장소와 같은 근거 — 첨부는 상세 소관,
+            // 주문 배송지는 이 목록의 어느 칸도 읽지 않는다).
+            ->with(['returnOptions.orderOption', 'order', 'collectionCarrier']);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    protected function buyerClaimStatusColumn(): string
+    {
+        return 'return_status';
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    protected function buyerClaimListColumns(): array
+    {
+        return [(new OrderReturn)->getTable().'.*'];
     }
 
     /**

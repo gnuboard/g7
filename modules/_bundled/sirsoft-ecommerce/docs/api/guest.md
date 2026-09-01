@@ -136,6 +136,7 @@ _단건 응답: `data` 객체의 필드 (`GuestOrderResource` — 취소 후 갱
 | is_partially_cancelled | boolean | `false` | 일부 옵션만 취소된 주문인지 여부 (별도 상태가 아닌 파생 플래그, 보조 뱃지용) |
 | subtotal_amount | number | `12000` | 상품 합계 금액 (주문 시점 통화 기준) |
 | subtotal_amount_formatted | string | `12,000원` | 상품 합계 금액 표기 문자열 |
+| mc_subtotal_amount | object | `{"USD":{"amount":10.2,"formatted":"$10.20"}}` | 주문 상품 합계(`subtotal_amount`)의 통화별 표기 — 주문 시점에 동결된 스냅샷이다. 클레임 상품 행의 같은 이름 필드는 **다른 값**(동결 단가 × 클레임 수량)이며 [claims.md](claims.md#claim-item-resource) 가 정의한다 |
 | total_discount_amount | number | `0` | 총 할인 금액 |
 | total_discount_amount_formatted | string | `0원` | 총 할인 금액 표기 문자열 |
 | total_shipping_amount | number | `3000` | 총 배송비 |
@@ -504,6 +505,7 @@ _단건 응답: `data` 객체의 필드 (`AdjustmentResult::toPreviewArray()` �
 | restored_coupons | array | — | 취소로 복원되는 쿠폰 정보 (`coupon_name`, `discount_amount`) |
 | shipping_details | array | — | 배송비 정책별 상세 (`policy_name`, `base_difference`, `extra_difference`, `total_difference`) |
 | mc_refund_amount | object\|null | — | PG 환불 금액의 다중 통화 표기 (통화코드 → 금액) |
+| mc_refund_total | object | — | PG + 마일리지 **합계**의 다중 통화 표기. 신청내역 상세의 보조 통화 줄이 읽는 값이며 `refund_total` 과 같은 금액의 다른 표기다. 상세는 [claims.md](claims.md) |
 | mc_refund_points_amount | object\|null | — | 마일리지 환불 금액의 다중 통화 표기 |
 | mc_refund_shipping_amount | object\|null | — | 배송비 환불 금액의 다중 통화 표기 |
 | original_snapshot | object | — | 재계산 전 주문 금액 스냅샷 |
@@ -777,9 +779,10 @@ _단건 응답: `data` 객체의 필드 (`GuestOrderResource` — 배송지 수�
 비회원 공통 차이:
 
 - 신청자(`requested_by`)는 항상 `null`, `is_guest_request=true`.
-- 마일리지 결제(`payment_method=point`)는 열리지 않는다 — 422 `claim_point_payment_requires_member`. 신청 시점 결제에서 이 수단을 지정하면 **신청서를 만들기 전에** 거절되므로 거절된 요청은 신청서도 결제 건도 남기지 않는다. 수단을 생략하면 허용 목록에서 비회원이 쓸 수 있는 첫 수단으로 확정된다.
+- 마일리지 결제(`payment_method=point`)는 열리지 않는다 — 422 `claim_point_payment_requires_member`. 같은 판정을 `claimable-options` 응답도 따른다: `settings.charge_payment_methods` 에서 `point` 가 빠져 나가므로 화면이 고를 수 없는 수단을 그리지 않는다. 신청 시점 결제에서 이 수단을 지정하면 **신청서를 만들기 전에** 거절되므로 거절된 요청은 신청서도 결제 건도 남기지 않는다. 수단을 생략하면 허용 목록에서 비회원이 쓸 수 있는 첫 수단으로 확정된다.
 - 첨부 업로드·귀속·삭제는 토큰 주문에 묶인 첨부만 가능하다. 다른 주문의 첨부 ID 는 `claim_image_not_found`.
 - 인증 오류는 401/403 이 아니라 전부 404 다.
+- 요청 빈도 제한이 걸려 있다 — 이 블록 전체가 IP 기준 분당 **120회**, 첨부 업로드(`claim-images.store`)만 분당 **20회**다. 초과하면 **429**. 정상 사용은 이 상한 훨씬 아래이며, 신청서 한 장을 쓰는 동안 입력마다 나가는 미리보기(`claims/preview`)가 가장 잦은 호출이다.
 
 | 메서드 | URI | 라우트명 | 회원 대응 |
 | --- | --- | --- | --- |
@@ -788,7 +791,7 @@ _단건 응답: `data` 객체의 필드 (`GuestOrderResource` — 배송지 수�
 | POST | /api/modules/sirsoft-ecommerce/guest/orders/{orderNumber}/exchanges | `api.modules.sirsoft-ecommerce.guest.orders.exchanges.store` | `user.orders.exchanges.store` |
 | POST | /api/modules/sirsoft-ecommerce/guest/orders/{orderNumber}/returns | `api.modules.sirsoft-ecommerce.guest.orders.returns.store` | `user.orders.returns.store` |
 | POST | /api/modules/sirsoft-ecommerce/guest/orders/{orderNumber}/refund-requests | `api.modules.sirsoft-ecommerce.guest.orders.refund-requests.store` | `user.orders.refund-requests.store` |
-| GET | /api/modules/sirsoft-ecommerce/guest/orders/{orderNumber}/claims | `api.modules.sirsoft-ecommerce.guest.orders.claims.index` | (비회원 전용 형태) |
+| GET | /api/modules/sirsoft-ecommerce/guest/orders/{orderNumber}/claims | `api.modules.sirsoft-ecommerce.guest.orders.claims.index` | `user.claims.index` (주문 스코프) |
 | GET | /api/modules/sirsoft-ecommerce/guest/orders/{orderNumber}/claims/{claimNumber} | `api.modules.sirsoft-ecommerce.guest.orders.claims.show` | `user.claims.show` |
 | PATCH | /api/modules/sirsoft-ecommerce/guest/orders/{orderNumber}/claims/{claimNumber} | `api.modules.sirsoft-ecommerce.guest.orders.claims.update` | `user.claims.update` |
 | POST | /api/modules/sirsoft-ecommerce/guest/orders/{orderNumber}/claims/{claimNumber}/withdraw | `api.modules.sirsoft-ecommerce.guest.orders.claims.withdraw` | `user.claims.withdraw` |
@@ -1007,11 +1010,17 @@ Content-Type: application/json
 | --- | --- | --- | --- | --- | --- |
 | orderNumber | path | string | 예 | — | 주문번호 |
 | X-Guest-Order-Token | header | string | 예 | — | 비회원 주문 조회 토큰 |
+| type | query | string | 아니오 | `exchange` \| `return` \| `refund` \| `cancel` | 유형 서브탭 (기본 `exchange`) |
+| status | query | string | 아니오 | 유형별 상태 Enum | 상태 필터 |
+| from | query | date | 아니오 | — | 신청일 시작 (그날 00:00:00 부터) |
+| to | query | date | 아니오 | — | 신청일 종료 (그날 23:59:59 까지) |
+| page | query | integer | 아니오 | 1 이상 | 페이지 번호 |
+| per_page | query | integer | 아니오 | 1~50 | 페이지당 건수 (기본 20) |
 
 **요청 예시**
 
 ```http
-GET /api/modules/sirsoft-ecommerce/guest/orders/20260823-0012/claims HTTP/1.1
+GET /api/modules/sirsoft-ecommerce/guest/orders/20260823-0012/claims?type=return&page=1&per_page=20 HTTP/1.1
 Host: api.example.com
 Accept: application/json
 X-Guest-Order-Token: {GUEST_ORDER_TOKEN}
@@ -1021,15 +1030,8 @@ X-Guest-Order-Token: {GUEST_ORDER_TOKEN}
 
 | 필드 | 타입 | 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| order_number | string | `20260823-0012` | 주문번호 |
-| claims.exchange | array | — | 이 주문의 교환 신청서 ([ClaimResource](claims.md#claim-resource), 결제 블록 없음, 최신순) |
-| claims.return | array | — | 반품 신청서 |
-| claims.refund | array | — | 직접 환불신청서 |
-| claims.cancel | array | — | 취소 이력 |
-| counts.exchange | integer | `1` | 교환 건수 |
-| counts.return | integer | `0` | 반품 건수 |
-| counts.refund | integer | `0` | 환불신청 건수 |
-| counts.cancel | integer | `0` | 취소 건수 |
+| data | array | — | 이 유형의 신청서 목록 ([ClaimResource](claims.md#claim-resource) 목록 표현, 최신순) |
+| pagination | object | — | 페이지 정보 (`current_page` / `per_page` / `from` / `to` / `has_more_pages` / `last_page` / `total`) |
 
 **응답 예시**
 
@@ -1038,25 +1040,29 @@ X-Guest-Order-Token: {GUEST_ORDER_TOKEN}
     "success": true,
     "message": "신청 내역을 조회했습니다.",
     "data": {
-        "order_number": "20260823-0012",
-        "claims": {
-            "exchange": [ { "claim_number": "EX20260823000003", "claim_type": "exchange", "status": "requested" } ],
-            "return": [],
-            "refund": [],
-            "cancel": []
-        },
-        "counts": { "exchange": 1, "return": 0, "refund": 0, "cancel": 0 }
+        "data": [
+            { "claim_number": "RT20260823000003", "claim_type": "return", "status": "requested" }
+        ],
+        "pagination": {
+            "current_page": 1,
+            "per_page": 20,
+            "from": 1,
+            "to": 1,
+            "has_more_pages": false,
+            "last_page": 1,
+            "total": 1
+        }
     }
 }
 ```
 
 **오류 응답**
 
-404 (토큰·주문번호 불일치) / 500.
+404 (토큰·주문번호 불일치) / 422 (유형·상태 어휘 밖, 페이지 범위 밖) / 500.
 
 <!-- @generated:end -->
 
-**설명** 비회원에게는 주문을 가로지르는 신청내역 목록이 없으므로(토큰이 주문 하나에 묶인다) 이 주문의 신청서를 유형별로 전부 돌려줍니다. 페이지네이션이 없는 이유는 한 주문의 신청 건수가 그 주문의 상품 수에 묶이기 때문입니다.
+**설명** 비회원에게는 주문을 가로지르는 신청내역 화면이 없으므로(조회 토큰이 주문 하나에 묶인다) 이 응답이 비회원의 목록입니다. 그래서 회원 신청내역([claims.md](claims.md))과 같은 계약을 씁니다 — 유형 서브탭 하나를 최신순 페이지로 읽습니다. 종전에는 네 유형을 한 응답에 전량 실었는데, 그 형태는 한 주문의 신청 건수가 그 주문의 상품 수에 묶인다는 전제에 기댔습니다. 철회는 행을 남기므로(수량 잠금만 풀립니다) 같은 주문에서 신청↔철회를 반복하면 계속 쌓여 그 전제가 성립하지 않습니다.
 
 ---
 

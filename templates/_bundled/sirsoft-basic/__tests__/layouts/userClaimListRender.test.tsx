@@ -361,6 +361,125 @@ describe('클레임 신청내역 목록 — 렌더', () => {
     expect(text).not.toContain('환불액');
   });
 
+  // @scenario claim_type=return, entry=with_token, screen=order_section
+  // @effects claim_list_amount_column_branches_by_type
+  it('청구가 0원인 반품은 금액 열에 보조 통화만 남기지 않는다', async () => {
+    // 2026-09-01 비회원 실측: 차감 방식(회수 배송비 0원) 반품에서 금액 열이
+    // `$0.00 ¥0 元0.00 €0.00` 만 남았다. 회수 배송비 줄과 총 청구액 줄은 0원이라 서지 않는데
+    // 보조 통화 iteration 만 게이트 없이 돌았기 때문이다 — 구매자는 그 0 이 무엇의 0 인지 알 수
+    // 없고, 응답은 200 이라 어긋난 흔적이 어디에도 남지 않는다.
+    const { utils, container } = await renderList(
+      [
+        returnClaim({
+          claim_shipping_fee: 0,
+          claim_shipping_fee_formatted: '0원',
+          total_charge_amount: 0,
+          total_charge_amount_formatted: '0원',
+          mc_total_charge_amount: {
+            USD: { formatted: '$0.00' },
+            JPY: { formatted: '¥0' },
+          },
+        }),
+      ],
+      { type: 'return' }
+    );
+    active = utils;
+
+    const text = container.textContent ?? '';
+
+    // 근거가 되는 줄이 서지 않으므로 그 값의 보조 통화도 서지 않는다.
+    expect(text).not.toContain('$0.00');
+    expect(text).not.toContain('¥0');
+    expect(text).not.toContain('claim.list.total_charge');
+    expect(text).not.toContain('claim.list.collection_shipping_fee');
+    // 금액 열 자체(제목)는 남는다 — 열을 통째로 지우면 표가 어긋난다.
+    expect(text).toContain('금액');
+  });
+
+  // @scenario claim_type=exchange, entry=with_token, screen=list
+  // @effects claim_list_item_secondary_currency_matches_subtotal
+  it('상품 행의 보조 통화는 그 위 소계와 같은 값이다 (차액이 아니다)', async () => {
+    // 2026-09-01 비회원 실측: 소계 줄은 `subtotal_amount_formatted`(28,000원)를 그리는데
+    // 바로 아래 보조 통화 줄이 `mc_price_difference`(교환 차액)를 그렸다. 동일상품 교환은
+    // 차액이 0 이라 `28,000원` 밑에 `$0.00` 이 붙었고, 다통화 사용자는 상품 금액을 0 으로 읽는다.
+    // 두 줄은 같은 값의 다른 표기여야 한다.
+    const { utils, container } = await renderList(
+      [
+        exchangeClaim({
+          items: [
+            {
+              product_name: '티셔츠',
+              product_option_name: '차콜/M',
+              quantity: 1,
+              subtotal_amount_formatted: '29,000원',
+              mc_subtotal_amount: { USD: { formatted: '$21.75' }, JPY: { formatted: '¥2,940' } },
+              thumbnail_url: '',
+              is_option_change: true,
+              new_option_label: '블랙/L',
+              price_difference: 3000,
+              price_difference_formatted: '3,000원',
+              mc_price_difference: { USD: { formatted: '$2.25' } },
+              status_label: '교환회수중',
+              status_variant: 'info',
+            },
+          ],
+        }),
+      ],
+      { type: 'exchange' }
+    );
+    active = utils;
+
+    const text = container.textContent ?? '';
+
+    // 소계의 보조 통화가 그려진다.
+    expect(text).toContain('$21.75');
+    expect(text).toContain('¥2,940');
+
+    // 차액의 보조 통화를 **소계 자리에** 그리지 않는다. 예전에는 `not.toContain('$2.25')` 로 이
+    // 계약을 대신 표현했는데, 그것은 차액의 보조 통화가 카드 어디에도 없던 시절에만 성립하는
+    // 대역이었다(2026-09-01 4차 `/validate-plan` 에서 교환 대상 줄에도 병기가 붙었다). 계약은
+    // 그대로이므로 자리를 직접 지목하도록 조인다 — 소계 바로 다음 형제가 소계의 보조 통화 줄이다.
+    const subtotal = Array.from(container.querySelectorAll('p')).find(
+      (el) => el.textContent?.trim() === '29,000원'
+    );
+    expect(subtotal).toBeTruthy();
+    const subtotalSecondary = subtotal?.nextElementSibling?.textContent ?? '';
+    expect(subtotalSecondary).toContain('$21.75');
+    expect(subtotalSecondary).not.toContain('$2.25');
+  });
+
+  // @scenario claim_type=return, entry=with_token, screen=list
+  // @effects claim_list_item_secondary_currency_matches_subtotal
+  it('교환이 아닌 유형의 상품 행에도 보조 통화가 선다', async () => {
+    // `mc_price_difference` 는 교환 유형에만 실리는 필드라, 반품·취소·환불 행은 보조 통화 줄이
+    // 통째로 비어 있었다. 같은 카드가 유형에 따라 다른 정보를 그리면 안 된다.
+    const { utils, container } = await renderList(
+      [
+        returnClaim({
+          items: [
+            {
+              product_name: 'USB 케이블',
+              product_option_name: '1m/화이트',
+              quantity: 1,
+              subtotal_amount_formatted: '7,000원',
+              mc_subtotal_amount: { USD: { formatted: '$5.95' }, JPY: { formatted: '¥805' } },
+              thumbnail_url: '',
+              status_label: '반품신청',
+              status_variant: 'secondary',
+            },
+          ],
+        }),
+      ],
+      { type: 'return' }
+    );
+    active = utils;
+
+    const text = container.textContent ?? '';
+
+    expect(text).toContain('$5.95');
+    expect(text).toContain('¥805');
+  });
+
   it('환불 금액 열 — 환불액이 음수 부호와 함께 선다', async () => {
     const { utils, container } = await renderList([refundClaim()], { type: 'refund' });
     active = utils;
@@ -371,6 +490,152 @@ describe('클레임 신청내역 목록 — 렌더', () => {
     expect(text).toContain('−39,000원');
     expect(text).not.toContain('총 청구액');
     expect(text).not.toContain('claim.list.collection_shipping_fee');
+  });
+
+  it('환불 금액 열 — 환불액에도 보조 통화가 병기된다 (합계 필드를 읽는다)', async () => {
+    // 서버는 목록 응답에도 `mc_refund_total`(현금+마일리지)·`mc_refund_amount`(현금분)를 싣는데
+    // 화면이 쓰지 않아, 다통화 상점에서 환불·취소 카드만 외화가 통째로 빠져 있었다. 총 청구액 줄은
+    // 바로 아래에서 병기하므로 같은 카드가 유형에 따라 다른 정보를 그렸다(2026-09-01 4차).
+    // 기준 줄이 합계(`refund_total_formatted`)이므로 현금분을 읽으면 두 줄이 다른 금액이 된다.
+    const { utils, container } = await renderList(
+      [
+        refundClaim({
+          mc_refund_amount: { USD: { formatted: '$28.50' } },
+          mc_refund_total: { USD: { formatted: '$29.25' }, JPY: { formatted: '¥3,955' } },
+        }),
+      ],
+      { type: 'refund' }
+    );
+    active = utils;
+
+    const text = container.textContent ?? '';
+
+    expect(text).toContain('−39,000원');
+    expect(text).toContain('$29.25');
+    expect(text).toContain('¥3,955');
+    expect(text).not.toContain('$28.50');
+  });
+
+  it('취소 금액 열 — 보조 통화는 현금분(mc_refund_amount)으로 떨어진다', async () => {
+    // 취소는 기준 줄이 연결 환불의 현금분(`refund_amount_formatted`)이라 합계 키가 없다.
+    const { utils, container } = await renderList(
+      [
+        refundClaim({
+          claim_number: 'CN20260901-0004',
+          claim_type: 'cancel',
+          claim_type_label: '취소',
+          refund_total_formatted: undefined,
+          refund_amount_formatted: '32,000원',
+          mc_refund_amount: { USD: { formatted: '$27.20' } },
+        }),
+      ],
+      { type: 'cancel' }
+    );
+    active = utils;
+
+    const text = container.textContent ?? '';
+
+    expect(text).toContain('−32,000원');
+    expect(text).toContain('$27.20');
+  });
+
+  it('금액 열 — 클레임 배송비에도 보조 통화가 병기된다', async () => {
+    // 같은 금액 열의 형제 줄(총 청구액)은 병기하는데 배송비 줄만 기준 통화로 남아 있었다.
+    const { utils, container } = await renderList(
+      [exchangeClaim({ mc_claim_shipping_fee: { USD: { formatted: '$4.50' } } })],
+      { type: 'exchange' }
+    );
+    active = utils;
+
+    const text = container.textContent ?? '';
+
+    expect(text).toContain('+6,000원');
+    expect(text).toContain('$4.50');
+  });
+
+  it('상품 행 — 옵션 차액에도 보조 통화가 병기된다 (차액이 0 이면 서지 않는다)', async () => {
+    // 게이트는 차액이 실제로 그려지는 조건과 같아야 한다 — 동일상품 교환에서 이 줄만 돌면
+    // 근거 없는 0 이 남는다(상세의 같은 자리에서 3차가 겪은 형태다).
+    const { utils, container } = await renderList([exchangeClaim()], { type: 'exchange' });
+    active = utils;
+
+    expect(container.textContent ?? '').toContain('$2.25');
+
+    const { utils: same, container: sameOption } = await renderList(
+      [
+        exchangeClaim({
+          items: [
+            {
+              product_name: '니트',
+              product_option_name: '아이보리/L',
+              quantity: 1,
+              subtotal_amount_formatted: '52,000원',
+              is_option_change: false,
+              new_option_label: '',
+              price_difference: 0,
+              mc_price_difference: { USD: { formatted: '$0.00' } },
+            },
+          ],
+        }),
+      ],
+      { type: 'exchange' }
+    );
+
+    // 단언이 cleanup **앞**에 와야 한다 — 언마운트된 컨테이너는 비어 있어 어떤 `not.toContain`
+    // 이든 통과한다(2026-09-01 4차: 이 순서 때문에 게이트 되돌림이 red 가 되지 않았다).
+    expect(sameOption.textContent ?? '').toContain('52,000원');
+    expect(sameOption.textContent ?? '').not.toContain('$0.00');
+
+    same.cleanup();
+  });
+
+  it('상품 행 — 이 교환에 얹은 추가옵션이 이름으로 나온다', async () => {
+    // 신청 시점 동결값이다. 예전에는 선택 ID 만 남아 이 자리에 그릴 재료가 없었다.
+    const { utils, container } = await renderList(
+      [
+        exchangeClaim({
+          items: [
+            {
+              product_name: '티셔츠',
+              product_option_name: '차콜/M',
+              quantity: 1,
+              subtotal_amount_formatted: '29,000원',
+              thumbnail_url: '',
+              is_option_change: true,
+              new_option_label: '블랙/L',
+              price_difference: 3000,
+              price_difference_formatted: '3,000원',
+              new_additional_options: [
+                { name: '선물 포장', price_adjustment: 3000, price_adjustment_formatted: '3,000원', custom_text: '' },
+                { name: '각인', price_adjustment: 0, price_adjustment_formatted: '0원', custom_text: 'G7' },
+              ],
+              status_label: '교환회수중',
+              status_variant: 'info',
+            },
+          ],
+        }),
+      ],
+      { type: 'exchange' }
+    );
+    active = utils;
+
+    const text = container.textContent ?? '';
+
+    expect(text).toContain('선물 포장');
+    expect(text).toContain('각인 (G7)');
+  });
+
+  it('상품 행 — 추가옵션이 없으면 그 줄이 서지 않는다', async () => {
+    const { utils, container } = await renderList([exchangeClaim()], { type: 'exchange' });
+    active = utils;
+
+    expect(container.textContent ?? '').not.toContain('선물 포장');
+
+    // 게이트가 없으면 목록이 비어도 접두사 `+` 만 남은 줄이 선다.
+    const strays = Array.from(container.querySelectorAll('p')).filter(
+      (el) => (el.textContent ?? '').trim() === '+'
+    );
+    expect(strays).toHaveLength(0);
   });
 
   it('배송조회 — 교환은 회수·재발송 두 항목, 환불은 대시', async () => {

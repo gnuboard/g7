@@ -639,7 +639,7 @@
             "claimApiBase": "{{_local.claimApiBase ?? ''}}",
             "isGuest": "{{_local.isGuest === true}}",
             "_comment_success_path": "접수 뒤 돌아갈 곳 — 신청내역 목록. 방금 접수한 신청서가 그 목록에 서고, 거기서 상세·수정·철회로 이어진다. 유형 서브탭을 함께 실어 방금 낸 유형의 탭이 열리게 한다(유형마다 서버가 다른 테이블을 읽으므로 탭이 어긋나면 방금 낸 신청서가 보이지 않는다). 취소·환불은 두 분기가 같은 refund 탭에 서지 않는다 — 즉시취소로 갈린 건은 cancel 탭이므로 지금 고른 상품이 정한 분기를 따른다.",
-            "successPath": "/mypage/claims?type={{_local.claimType === 'refund' ? ((_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) === 'cancel' ? 'cancel' : 'refund') : (_local.claimType ?? 'exchange')}}"
+            "successPath": "{{(_local.claimListPath ?? '') + '?type=' + (_local.claimType === 'refund' ? ((_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) === 'cancel' ? 'cancel' : 'refund') : (_local.claimType ?? 'exchange'))}}"
           }
         }
       ],
@@ -676,7 +676,7 @@
             "claimApiBase": "{{_local.claimApiBase ?? ''}}",
             "isGuest": "{{_local.isGuest === true}}",
             "_comment_success_path": "저장 뒤 돌아갈 곳은 그 신청서의 상세다 — 방금 고친 내용이 그 화면에 그대로 서므로 저장됐다는 사실이 값으로 확인된다.",
-            "successPath": "/mypage/claims/{{route.claim_number ?? ''}}"
+            "successPath": "{{(_local.claimDetailPathBase ?? '') + '/' + (route.claim_number ?? '')}}"
           }
         }
       ],

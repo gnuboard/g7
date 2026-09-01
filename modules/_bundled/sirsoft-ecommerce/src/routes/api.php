@@ -310,50 +310,62 @@ Route::prefix('guest/orders/{orderNumber}')
 
         // ── 비회원 클레임(교환/반품/취소·환불) ─────────────────────────────
         // 회원 경로와 같은 FormRequest·액션 본문을 쓴다(HandlesClaimActions). 주문은 토큰이 검증한 guest_order 만.
-        // GET /guest/orders/{orderNumber}/claimable-options - 클레임 가능 상품·유형·사유·설정
-        Route::get('/claimable-options', [GuestClaimController::class, 'claimableOptions'])
-            ->name('guest.orders.claimable-options');
+        //
+        // 요청 빈도 제한 — 이 블록에는 전역 API 리미터가 없고 형제 라우트(`guest/orders/verify`)만
+        // `throttle:20,1` 을 갖는다. 조회 토큰을 손에 넣은 쪽이 신청·미리보기·첨부 업로드를 무제한으로
+        // 반복할 수 있으면 파일 쓰기(`claim-images.store`)가 디스크를 채우고, 철회가 행을 남기는 신청↔철회
+        // 반복은 그 주문의 목록을 계속 부풀린다. 정상 사용은 이 상한 훨씬 아래다 — 신청서 한 장을 쓰는
+        // 동안 미리보기가 입력마다(debounce) 나가는 것이 가장 잦은 호출이다.
+        Route::middleware('throttle:120,1')->group(function () {
+            // GET /guest/orders/{orderNumber}/claimable-options - 클레임 가능 상품·유형·사유·설정
+            Route::get('/claimable-options', [GuestClaimController::class, 'claimableOptions'])
+                ->name('guest.orders.claimable-options');
 
-        // POST /guest/orders/{orderNumber}/claims/preview - 신청 미리보기 (배송비·차액·환불 예정액)
-        Route::post('/claims/preview', [GuestClaimController::class, 'preview'])
-            ->name('guest.orders.claims.preview');
+            // POST /guest/orders/{orderNumber}/claims/preview - 신청 미리보기 (배송비·차액·환불 예정액)
+            Route::post('/claims/preview', [GuestClaimController::class, 'preview'])
+                ->name('guest.orders.claims.preview');
 
-        // POST /guest/orders/{orderNumber}/exchanges - 교환 신청
-        Route::post('/exchanges', [GuestClaimController::class, 'storeExchange'])
-            ->name('guest.orders.exchanges.store');
+            // POST /guest/orders/{orderNumber}/exchanges - 교환 신청
+            Route::post('/exchanges', [GuestClaimController::class, 'storeExchange'])
+                ->name('guest.orders.exchanges.store');
 
-        // POST /guest/orders/{orderNumber}/returns - 반품 신청
-        Route::post('/returns', [GuestClaimController::class, 'storeReturn'])
-            ->name('guest.orders.returns.store');
+            // POST /guest/orders/{orderNumber}/returns - 반품 신청
+            Route::post('/returns', [GuestClaimController::class, 'storeReturn'])
+                ->name('guest.orders.returns.store');
 
-        // POST /guest/orders/{orderNumber}/refund-requests - 취소·환불 신청 (상태 자동 분기)
-        Route::post('/refund-requests', [GuestClaimController::class, 'storeRefund'])
-            ->name('guest.orders.refund-requests.store');
+            // POST /guest/orders/{orderNumber}/refund-requests - 취소·환불 신청 (상태 자동 분기)
+            Route::post('/refund-requests', [GuestClaimController::class, 'storeRefund'])
+                ->name('guest.orders.refund-requests.store');
 
-        // GET /guest/orders/{orderNumber}/claims - 이 주문의 클레임 목록 (비회원 주문상세 섹션)
-        Route::get('/claims', [GuestClaimController::class, 'index'])
-            ->name('guest.orders.claims.index');
+            // GET /guest/orders/{orderNumber}/claims - 이 주문의 클레임 목록 (비회원 주문상세 섹션)
+            Route::get('/claims', [GuestClaimController::class, 'index'])
+                ->name('guest.orders.claims.index');
 
-        // 클레임 번호 단위 — GET 상세 / PATCH 수정(승인 전) / POST 철회
-        Route::get('/claims/{claimNumber}', [GuestClaimController::class, 'show'])
-            ->name('guest.orders.claims.show');
-        Route::patch('/claims/{claimNumber}', [GuestClaimController::class, 'update'])
-            ->name('guest.orders.claims.update');
-        Route::post('/claims/{claimNumber}/withdraw', [GuestClaimController::class, 'withdraw'])
-            ->name('guest.orders.claims.withdraw');
+            // 클레임 번호 단위 — GET 상세 / PATCH 수정(승인 전) / POST 철회
+            Route::get('/claims/{claimNumber}', [GuestClaimController::class, 'show'])
+                ->name('guest.orders.claims.show');
+            Route::patch('/claims/{claimNumber}', [GuestClaimController::class, 'update'])
+                ->name('guest.orders.claims.update');
+            Route::post('/claims/{claimNumber}/withdraw', [GuestClaimController::class, 'withdraw'])
+                ->name('guest.orders.claims.withdraw');
 
-        // 첨부 이미지 — POST 업로드(신청서 작성 중, 주문 스코프 · 신청서 미귀속) / DELETE 삭제
-        Route::post('/claims/images', [GuestClaimController::class, 'storeImage'])
-            ->name('guest.orders.claim-images.store');
-        Route::delete('/claims/images/{image}', [GuestClaimController::class, 'destroyImage'])
-            ->whereNumber('image')
-            ->name('guest.orders.claim-images.destroy');
+            // 첨부 이미지 — POST 업로드(신청서 작성 중, 주문 스코프 · 신청서 미귀속) / DELETE 삭제
+            // 업로드는 이 블록에서 유일한 파일 쓰기이므로 블록 상한 위에 좁은 상한을 겹친다 —
+            // 한 신청서의 첨부 장수 상한(설정)은 신청서 단위이지 시간 단위가 아니라, 신청서를
+            // 만들지 않고 업로드만 반복하는 경로를 막지 못한다.
+            Route::post('/claims/images', [GuestClaimController::class, 'storeImage'])
+                ->middleware('throttle:20,1')
+                ->name('guest.orders.claim-images.store');
+            Route::delete('/claims/images/{image}', [GuestClaimController::class, 'destroyImage'])
+                ->whereNumber('image')
+                ->name('guest.orders.claim-images.destroy');
 
-        // 추가결제 — POST 결제 시작 / POST PG 승인 콜백
-        Route::post('/claim-payments/{paymentNumber}/pay', [GuestClaimController::class, 'pay'])
-            ->name('guest.orders.claim-payments.pay');
-        Route::post('/claim-payments/{paymentNumber}/approve', [GuestClaimController::class, 'approve'])
-            ->name('guest.orders.claim-payments.approve');
+            // 추가결제 — POST 결제 시작 / POST PG 승인 콜백
+            Route::post('/claim-payments/{paymentNumber}/pay', [GuestClaimController::class, 'pay'])
+                ->name('guest.orders.claim-payments.pay');
+            Route::post('/claim-payments/{paymentNumber}/approve', [GuestClaimController::class, 'approve'])
+                ->name('guest.orders.claim-payments.approve');
+        });
     });
 
 // 회원/비회원 공유 주문 상세 조회 (optional.sanctum)

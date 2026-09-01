@@ -7,6 +7,7 @@
   "_comment": "§6-1 — 서브탭 4종(교환/반품/환불/취소) × 신청서 단위 카드. 카드 본문은 PC 4열(신청상품·사유·배송조회·금액), 모바일은 1단 스택이다. 유형마다 4열째의 구성이 다르므로 유형 분기는 그 열 안에서만 한다 — 카드 골격을 유형별로 복제하면 헤더·액션 규칙을 네 곳에서 고쳐야 한다.",
   "_comment_type_tabs": "서브탭은 라우트가 아니라 ?type= 으로 왕복한다. 유형마다 서버가 **다른 테이블**을 읽으므로(교환/반품/환불/취소) 앞 유형의 페이지 번호를 물려받으면 빈 화면이 열린다 — 그래서 탭 전환만은 목록 상태를 승계하지 않고 page 를 함께 초기화한다.",
   "_comment_shell_contract": "셸이 _local.claimWithdrawApiBase / isGuest / withdrawRefreshDataSourceId 를 세운다. 철회 확인 모달(_modal_withdraw.json)은 그 값만 읽으므로 이 파일은 [철회] 버튼과 대상 번호만 넘긴다.",
+  "_comment_shell_paths": "화면 주소도 셸이 준다 — 이 목록은 회원 신청내역(/mypage/claims)과 비회원 주문상세의 '이 주문의 클레임' 섹션이 같이 쓰는데, 두 화면의 주소 모양이 다르다. 셋을 셸이 세운다: claimListPath(이 목록을 소유한 화면 — 서브탭·페이지 왕복의 목적지) / claimDetailPathBase(상세·수정 주소의 앞부분) / claimEmptyCtaPath(빈 목록에서 나갈 곳). partial 이 주소를 리터럴로 들면 비회원이 회원 전용 주소로 보내져 로그인 화면이 열린다 — 오류도 토스트도 남지 않는다.",
   "type": "basic",
   "name": "Div",
   "children": [
@@ -42,7 +43,7 @@
                 {
                   "comment": "audit:allow layout-list-context-navigate-merge-query 유형 서브탭 전환 — 유형마다 서버가 다른 테이블을 읽으므로 앞 유형의 페이지 번호를 물려받으면 빈 화면이 열린다. 목록 정체성이 바뀌는 이동이라 승계하지 않는다.",
                   "handler": "navigate",
-                  "params": { "path": "/mypage/claims", "query": { "type": "{{tab.id}}", "page": "1" }, "replace": true }
+                  "params": { "path": "{{_local.claimListPath ?? ''}}", "query": { "type": "{{tab.id}}", "page": "1" }, "replace": true }
                 }
               ]
             }
@@ -150,7 +151,7 @@
                               "type": "click",
                               "handler": "navigate",
                               "params": {
-                                "path": "/mypage/claims/{{claim.claim_number}}/edit",
+                                "path": "{{(_local.claimDetailPathBase ?? '') + '/' + claim.claim_number + '/edit'}}",
                                 "mergeQuery": true,
                                 "query": {}
                               }
@@ -269,12 +270,12 @@
                               "text": "{{item.subtotal_amount_formatted ?? ''}}"
                             },
                             {
-                              "comment": "보조 통화 — 주문 도메인 mc_* 규약. 선택 통화와 같은 코드는 빼고 나열한다.",
+                              "comment": "보조 통화 — 바로 위 소계(subtotal_amount_formatted)와 같은 값의 다른 표기다. 읽는 필드가 어긋나면 두 줄이 서로 다른 금액이 되는데 둘 다 정상 서식이라 어긋난 흔적이 남지 않는다(2026-09-01 실측: 소계 자리에 교환 차액이 그려져 동일상품 교환이 `28,000원 / $0.00` 이 됐고, 차액 필드가 없는 반품·취소·환불은 이 줄이 통째로 비었다). 선택 통화와 같은 코드는 빼고 나열한다.",
                               "type": "basic",
                               "name": "Div",
                               "props": { "className": "flex flex-wrap gap-x-2" },
                               "iteration": {
-                                "source": "{{Object.entries(item.mc_price_difference ?? {}).filter(([code]) => code !== (claim.currency_code ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
+                                "source": "{{Object.entries(item.mc_subtotal_amount ?? {}).filter(([code]) => code !== (claim.currency_code ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
                                 "item_var": "currency"
                               },
                               "children": [
@@ -293,6 +294,33 @@
                               "if": "{{item.is_option_change === true}}",
                               "props": { "className": "text-xs text-indigo-600 dark:text-indigo-400 mt-1 truncate" },
                               "text": "⇄ {{item.new_option_label ?? ''}} {{(item.price_difference ?? 0) !== 0 ? item.price_difference_formatted : ''}}"
+                            },
+                            {
+                              "comment": "이 교환에 얹은 추가옵션 — 신청 시점에 이름과 추가금이 동결된 값이다. 추가금은 위 차액에 이미 합산돼 있으므로 이름만 나열한다.",
+                              "type": "basic",
+                              "name": "P",
+                              "if": "{{(item.new_additional_options ?? []).length > 0}}",
+                              "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate" },
+                              "text": "+ {{(item.new_additional_options ?? []).map(o => o.custom_text ? (o.name + ' (' + o.custom_text + ')') : o.name).join(', ')}}"
+                            },
+                            {
+                              "comment": "보조 통화 — 바로 위 줄이 끝에 붙인 옵션 차액과 같은 값의 다른 표기다. 게이트는 그 차액이 실제로 그려지는 조건(`is_option_change && 차액 ≠ 0`)과 **같아야 한다** — 동일상품 교환·동가 옵션변경은 차액이 안 그려지는데 이 줄만 돌면 근거 없는 0 만 남는다.",
+                              "type": "basic",
+                              "name": "Div",
+                              "if": "{{item.is_option_change === true && (item.price_difference ?? 0) !== 0}}",
+                              "props": { "className": "flex flex-wrap gap-x-2" },
+                              "iteration": {
+                                "source": "{{Object.entries(item.mc_price_difference ?? {}).filter(([code]) => code !== (claim.currency_code ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
+                                "item_var": "currency"
+                              },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
+                                  "text": "{{currency[1]?.formatted ?? ''}}"
+                                }
+                              ]
                             },
                             {
                               "comment": "상품 단위 상태 — 헤더 상태와 다를 수 있다(운영자가 상품 단위로 전이할 수 있다, D25). 다를 때만 그린다.",
@@ -487,6 +515,25 @@
                       ]
                     },
                     {
+                      "comment": "보조 통화 — 바로 위 클레임 배송비와 같은 값의 다른 표기다. 게이트는 그 줄과 **같아야 한다**(0원이면 배송비 줄이 서지 않는다).",
+                      "type": "basic",
+                      "name": "Div",
+                      "if": "{{(claim.claim_type === 'exchange' || claim.claim_type === 'return') && (claim.claim_shipping_fee ?? 0) > 0}}",
+                      "props": { "className": "flex flex-wrap gap-x-2 justify-end" },
+                      "iteration": {
+                        "source": "{{Object.entries(claim.mc_claim_shipping_fee ?? {}).filter(([code]) => code !== (claim.currency_code ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
+                        "item_var": "currency"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
+                          "text": "{{currency[1]?.formatted ?? ''}}"
+                        }
+                      ]
+                    },
+                    {
                       "comment": "교환의 추가 상품금액 — 고가 옵션으로 바꾼 차액.",
                       "type": "basic",
                       "name": "Div",
@@ -550,6 +597,25 @@
                       ]
                     },
                     {
+                      "comment": "보조 통화 — 바로 위 환불액과 같은 값의 다른 표기다. 읽는 필드는 그 줄의 분기와 **같아야 한다**: 환불은 기준 줄이 현금+마일리지 합(`refund_total_formatted`)이므로 합계 필드를, 취소는 현금분(`refund_amount_formatted`)이므로 현금 필드를 읽는다. 어긋나면 두 줄이 서로 다른 금액이 되는데 둘 다 정상 서식이라 흔적이 남지 않는다.",
+                      "type": "basic",
+                      "name": "Div",
+                      "if": "{{(claim.claim_type === 'refund' || claim.claim_type === 'cancel') && (claim.refund_amount ?? 0) >= 0}}",
+                      "props": { "className": "flex flex-wrap gap-x-2 justify-end" },
+                      "iteration": {
+                        "source": "{{Object.entries((claim.claim_type === 'refund' ? claim.mc_refund_total : claim.mc_refund_amount) ?? {}).filter(([code]) => code !== (claim.currency_code ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
+                        "item_var": "currency"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
+                          "text": "{{currency[1]?.formatted ?? ''}}"
+                        }
+                      ]
+                    },
+                    {
                       "comment": "소계 — 교환·반품의 총 청구액. 청구가 없는 신청(0원 자동 승인 등)에는 줄을 세우지 않는다.",
                       "type": "basic",
                       "name": "Div",
@@ -571,9 +637,10 @@
                       ]
                     },
                     {
-                      "comment": "보조 통화 — 총 청구액의 다통화 표기(주문 도메인 mc_* 규약).",
+                      "comment": "보조 통화 — 총 청구액의 다통화 표기(주문 도메인 mc_* 규약). 게이트는 총 청구액 줄과 **같아야 한다** — 청구가 0원인 신청(차감 방식 반품·0원 자동 승인)에서 그 줄은 서지 않는데 이 iteration 만 돌면 금액 열에 근거 없는 `$0.00 ¥0 元0.00 €0.00` 만 남는다(2026-09-01 비회원 실측). 구매자는 그 0 이 무엇의 0 인지 알 수 없다.",
                       "type": "basic",
                       "name": "Div",
+                      "if": "{{(claim.claim_type === 'exchange' || claim.claim_type === 'return') && (claim.total_charge_amount ?? 0) > 0}}",
                       "props": { "className": "flex flex-wrap gap-x-2 justify-end" },
                       "iteration": {
                         "source": "{{Object.entries(claim.mc_total_charge_amount ?? {}).filter(([code]) => code !== (claim.currency_code ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
@@ -618,7 +685,7 @@
                       "type": "click",
                       "handler": "navigate",
                       "params": {
-                        "path": "/mypage/claims/{{claim.claim_number}}",
+                        "path": "{{(_local.claimDetailPathBase ?? '') + '/' + claim.claim_number}}",
                         "mergeQuery": true,
                         "query": {}
                       }
@@ -670,10 +737,10 @@
           },
           "actions": [
             {
-              "comment": "audit:allow layout-list-context-navigate-merge-query 다른 목록(주문내역)으로 나가는 이동 — 클레임 목록의 서브탭·페이지를 물려주면 주문 목록이 알지 못하는 파라미터가 실린다.",
+              "comment": "audit:allow layout-list-context-navigate-merge-query 이 목록 밖으로 나가는 이동 — 클레임 목록의 서브탭·페이지를 물려주면 목적지가 알지 못하는 파라미터가 실린다. 목적지는 셸이 정한다(회원=주문 내역, 비회원=상품 목록 — 비회원에게는 주문 내역 화면이 없다).",
               "type": "click",
               "handler": "navigate",
-              "params": { "path": "/mypage/orders" }
+              "params": { "path": "{{_local.claimEmptyCtaPath ?? ''}}" }
             }
           ],
           "text": "$t:claim.list.go_orders"
@@ -707,7 +774,7 @@
           "handler": "sequence",
           "actions": [
             { "handler": "setState", "params": { "target": "local", "claimsPage": "{{$args[0]}}" } },
-            { "handler": "navigate", "params": { "path": "/mypage/claims", "mergeQuery": true, "query": { "page": "{{$args[0]}}" }, "replace": true } }
+            { "handler": "navigate", "params": { "path": "{{_local.claimListPath ?? ''}}", "mergeQuery": true, "query": { "page": "{{$args[0]}}" }, "replace": true } }
           ]
         }
       ]

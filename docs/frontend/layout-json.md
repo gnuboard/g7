@@ -38,8 +38,9 @@
 2. [필수 필드](#필수-필드)
 3. [레이아웃 권한 (permissions)](#레이아웃-권한-permissions)
 4. [컴포넌트 정의](#컴포넌트-정의)
-5. [격리된 상태 (isolatedState)](#격리된-상태-isolatedstate)
-6. [텍스트 렌더링](#텍스트-렌더링)
+5. [레이아웃 최상위 initLocal](#레이아웃-최상위-initlocal)
+6. [격리된 상태 (isolatedState)](#격리된-상태-isolatedstate)
+7. [텍스트 렌더링](#텍스트-렌더링)
 
 ---
 
@@ -581,6 +582,55 @@ Laravel의 `FormRequest::validated()` 메서드는 `rules()`에 정의된 필드
 
 - 편집 모드 서빙(`?with_source_meta=1`, 편집 권한 필요)에서는 편집기가 `comment` 를 편집 가능한 속성으로 노출하므로 **보존**된다. 공개/편집 응답은 별도 캐시 키로 분리되어 있어 조건부 제거가 안전하다.
 - 따라서 `comment` 는 편집기·저장본에서는 유지되고, 일반 사용자에게 서빙되는 응답에서만 사라진다. 레이아웃 로직이 `comment` 값에 의존해서는 안 된다.
+
+---
+
+## 레이아웃 최상위 initLocal
+
+레이아웃 최상위 `initLocal`(구 `state`, engine-v1.11.0+ 별칭)은 `_local` 의 **정적 초기값**을 세운다.
+데이터 소스의 `initLocal`(응답을 `_local` 로 옮기는 옵션)과는 다른 것이다.
+
+```json
+{
+  "layout_name": "shop/guest_claim_show",
+  "initLocal": {
+    "isGuest": true,
+    "withdrawRefreshDataSourceId": "claim"
+  }
+}
+```
+
+### 값은 그대로 복사된다 — 표현식은 해석되지 않는다
+
+엔진은 값을 JSON 깊은 복사로 옮긴다. 그래서 `{{...}}` 를 쓰면 **그 문자열 자체**가 `_local` 에 들어간다.
+
+| ❌ 금지 | ✅ 올바른 사용 |
+| --- | --- |
+| `"initLocal": { "apiBase": "/api/orders/{{_global.orderNumber}}/claims" }` | 표현식이 필요한 값은 `init_actions` 의 `setState` 로 세운다 |
+
+어긋나도 예외가 나지 않는다 — 주소에 `{{_global.orderNumber}}` 가 그대로 실려 요청이 404 가 되거나,
+화면이 그 문자열을 그대로 출력한다. 정적 리터럴(불리언·숫자·고정 문자열·고정 배열)만 여기 둔다.
+
+### 이미 값이 있는 키는 덮지 않는다
+
+`_local[key]` 가 `undefined` 일 때만 채운다. 앞 화면이 같은 키를 남겨 두었다면 그 값이 유지되므로,
+화면마다 초기값이 달라야 하는 키는 `init_actions` 에서 명시적으로 세운다.
+
+### 실행 순서
+
+```text
+blocking 데이터 소스 조회
+  → 레이아웃 initLocal/initGlobal/initIsolated
+    → 데이터 소스의 initLocal/initGlobal/initIsolated
+      → init_actions (부모 → 자식 순)
+```
+
+`blocking` 데이터 소스는 이 사슬의 **맨 앞**에서 조회된다. 그래서 `init_actions` 나 `initLocal` 이
+세우는 값을 blocking 데이터 소스의 주소·헤더에서 읽을 수 없다 — 그 자리에는 아직 아무것도 없다.
+그 값이 필요한 데이터 소스는 `progressive` 로 두고 `blur_until_loaded` 로 로딩 중을 가린다.
+
+`extends` 로 상속하면 부모의 `init_actions` 가 자식보다 먼저 실행되므로, 부모가 세운 `_global` 값은
+자식의 `init_actions` 에서 읽을 수 있다.
 
 ---
 

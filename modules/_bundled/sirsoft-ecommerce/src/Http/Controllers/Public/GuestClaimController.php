@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderClaimException;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Traits\HandlesClaimActions;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Public\GuestOrderTokenRequest;
+use Modules\Sirsoft\Ecommerce\Http\Requests\User\ClaimListRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\User\ClaimPaymentApproveRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\User\ClaimPaymentPayRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\User\ClaimPreviewRequest;
@@ -18,8 +19,8 @@ use Modules\Sirsoft\Ecommerce\Http\Requests\User\StoreRefundRequestRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\User\StoreReturnRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\User\UpdateClaimRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\User\UploadClaimImageRequest;
+use Modules\Sirsoft\Ecommerce\Http\Resources\ClaimCollection;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ClaimImageResource;
-use Modules\Sirsoft\Ecommerce\Http\Resources\ClaimResource;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Services\ClaimAttachmentService;
 use Modules\Sirsoft\Ecommerce\Services\UserClaimService;
@@ -100,39 +101,28 @@ class GuestClaimController extends PublicBaseController
     }
 
     /**
-     * 이 주문의 클레임 목록 (비회원 주문상세 섹션 — 횡단 목록 없음, §5-1-3)
+     * 이 주문의 신청 내역 (비회원 주문상세 섹션 — 횡단 목록 없음, §5-1-3)
      *
-     * @param  GuestOrderTokenRequest  $request  토큰 검증 주문
+     * 비회원에게는 주문을 가로지르는 신청내역 화면이 없다(조회 토큰이 주문 하나에 묶인다).
+     * 그래서 이 응답이 비회원의 목록이며 회원 목록(`user.claims.index`)과 같은 계약을 쓴다 —
+     * 유형 서브탭 하나 · 최신순 · 페이지. 네 유형을 한 응답에 전량 싣던 종전 형태는 한 주문의
+     * 건수가 그 주문의 상품 수에 묶인다는 전제에 기댔는데, 철회가 행을 남기므로(수량 잠금만
+     * 풀린다) 신청↔철회를 반복하면 계속 쌓여 그 전제가 성립하지 않는다.
+     *
+     * @param  ClaimListRequest  $request  검증된 목록 요청 (토큰 검증 주문 포함)
      * @return JsonResponse 응답
      */
-    public function index(GuestOrderTokenRequest $request): JsonResponse
+    public function index(ClaimListRequest $request): JsonResponse
     {
         try {
-            $order = $request->getOrder();
-            $currency = $order->currency_snapshot['base_currency'] ?? $order->currency ?? null;
-            $snapshot = $order->currency_snapshot;
-            $groups = [];
+            $claims = $this->claimService->listForOrderPaginated(
+                $request->getOrder(),
+                $request->claimType(),
+                $request->filters(),
+                $request->perPage(),
+            );
 
-            $byType = $this->claimService->listForOrder($order);
-            // 사유 라벨은 행마다 `ClaimReason` 을 되읽는다 — 4유형 전 건을 한 번에 실으므로
-            // 주입 없이는 그 건수만큼 쿼리가 는다 (`ClaimCollection` 과 같은 처방).
-            $reasonLabels = $this->claimService->reasonLabelsFor($byType);
-
-            foreach ($byType as $type => $claims) {
-                $groups[$type] = $claims->map(
-                    fn ($claim) => (new ClaimResource($claim))
-                        ->withOrderCurrency($currency)
-                        ->withCurrencySnapshot($snapshot)
-                        ->withReasonLabels($reasonLabels)
-                        ->toArray(request())
-                )->values()->all();
-            }
-
-            return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.claims.list_retrieved', [
-                'order_number' => $order->order_number,
-                'claims' => $groups,
-                'counts' => array_map('count', $groups),
-            ]);
+            return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.claims.list_retrieved', new ClaimCollection($claims));
         } catch (Exception $e) {
             return $this->claimServerError('guest-index', $e);
         }

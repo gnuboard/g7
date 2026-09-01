@@ -164,7 +164,7 @@ class OrderClaimHistoryTest extends ModuleTestCase
             'order_id' => $order->id,
             'order_option_id' => $option->id,
             'unit_price' => 29000,
-            'new_option_snapshot' => ['option_label' => '블랙/L'],
+            'new_option_snapshot' => ['option_name' => ['ko' => '블랙/L'], 'option_value' => ['ko' => '색상: 블랙, 사이즈: L']],
             'new_unit_price' => 32000,
             'price_difference' => 3000,
         ]);
@@ -275,7 +275,7 @@ class OrderClaimHistoryTest extends ModuleTestCase
             'order_id' => $order->id,
             'order_option_id' => $option->id,
             'unit_price' => 29000,
-            'new_option_snapshot' => ['option_label' => '화이트/S'],
+            'new_option_snapshot' => ['option_name' => ['ko' => '화이트/S'], 'option_value' => ['ko' => '색상: 화이트, 사이즈: S']],
             'new_unit_price' => 27000,
             'price_difference' => -2000,
         ]);
@@ -306,7 +306,7 @@ class OrderClaimHistoryTest extends ModuleTestCase
             'order_id' => $order->id,
             'order_option_id' => $option->id,
             'unit_price' => 29000,
-            'new_option_snapshot' => ['option_label' => '블랙/L'],
+            'new_option_snapshot' => ['option_name' => ['ko' => '블랙/L'], 'option_value' => ['ko' => '색상: 블랙, 사이즈: L']],
             'new_unit_price' => 32000,
             'price_difference' => 3000,
         ]);
@@ -318,7 +318,10 @@ class OrderClaimHistoryTest extends ModuleTestCase
             $this->assertArrayHasKey($field, $row, $field.' 어휘가 사라졌습니다');
         }
 
-        $this->assertSame('블랙/L', $row['new_option_label']);
+        // 픽스처는 서비스가 실제로 쓰는 스냅샷 형태여야 한다 — 예전 픽스처는 어느 쓰기 경로도
+        // 만든 적 없는 `option_label` 키를 담아, 같은 키를 읽던 리소스의 결함을 가려 주고 있었다
+        // (실데이터에서는 이 값이 항상 null 이었다 — 2026-09-01 4차 `/validate-plan` 브라우저 실측).
+        $this->assertSame('색상: 블랙, 사이즈: L', $row['new_option_label']);
         $this->assertSame(32000, $row['new_unit_price']);
     }
 

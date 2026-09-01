@@ -354,6 +354,80 @@ trait HasMultiCurrencyPrices
     }
 
     /**
+     * 저장된 다중 통화 금액들을 통화별로 더합니다.
+     *
+     * 화면의 보조 통화 줄은 바로 위 기준 통화 줄과 **같은 값의 다른 표기**여야 한다. 기준 줄이
+     * 두 금액의 합(예: 환불 총액 = 현금 + 마일리지)인데 보조 통화가 한쪽만 읽으면 두 줄이 서로
+     * 다른 금액이 되는데, 둘 다 정상 서식이라 어긋난 흔적이 응답에도 화면에도 남지 않는다.
+     * 그래서 합계는 화면이 아니라 여기서 만든다 — 화면이 두 맵을 더하면 그 규칙이 화면마다 갈린다.
+     *
+     * 환율을 다시 보지 않는다. 통화별로 더한 뒤 그 통화의 자릿수로 반올림한다.
+     *
+     * @param  array|null  ...$multiCurrencyAmounts  통화별 금액 맵들 (예: {'KRW': 10000, 'USD': 7.5})
+     * @return array<string, float|int>|null 통화별 합계 (모두 비면 null)
+     */
+    protected function sumMultiCurrency(?array ...$multiCurrencyAmounts): ?array
+    {
+        $sums = [];
+
+        foreach ($multiCurrencyAmounts as $map) {
+            if (empty($map)) {
+                continue;
+            }
+
+            foreach ($map as $code => $amount) {
+                if (! is_numeric($amount)) {
+                    continue;
+                }
+
+                $sums[$code] = ($sums[$code] ?? 0) + $amount;
+            }
+        }
+
+        if ($sums === []) {
+            return null;
+        }
+
+        $result = [];
+
+        foreach ($sums as $code => $amount) {
+            $result[$code] = $this->roundToCurrency($amount, (string) $code);
+        }
+
+        return $result;
+    }
+
+    /**
+     * 저장된 다중 통화 단가에 수량을 곱해 소계 배열을 만듭니다.
+     *
+     * 환율을 다시 보지 않는다 — 거래 시점에 동결된 통화별 단가를 그대로 곱하므로 기준 통화
+     * 소계와 같은 근거 위에 선다. 통화별로 따로 곱한 뒤 그 통화의 자릿수로 반올림하는 것은
+     * 기준 통화 소계를 환산하는 방식과 다르다: 후자는 환산 오차가 수량만큼 증폭된다.
+     *
+     * @param  array|null  $multiCurrencyUnitPrices  통화별 단가 (예: {'KRW': 28000, 'USD': 23.8})
+     * @param  int  $quantity  수량
+     * @return array<string, float|int>|null 통화별 소계 (입력이 비면 null)
+     */
+    protected function multiplyMultiCurrency(?array $multiCurrencyUnitPrices, int $quantity): ?array
+    {
+        if (empty($multiCurrencyUnitPrices)) {
+            return null;
+        }
+
+        $result = [];
+
+        foreach ($multiCurrencyUnitPrices as $code => $amount) {
+            if (! is_numeric($amount)) {
+                continue;
+            }
+
+            $result[$code] = $this->roundToCurrency($amount * $quantity, (string) $code);
+        }
+
+        return $result === [] ? null : $result;
+    }
+
+    /**
      * 저장된 다중 통화 금액을 포맷팅합니다.
      *
      * 주문 시점에 저장된 mc_* 필드를 프론트엔드에서 사용할 수 있는 형태로 변환합니다.

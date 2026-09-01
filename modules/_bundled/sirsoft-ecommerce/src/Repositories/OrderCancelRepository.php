@@ -3,11 +3,12 @@
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
 use App\Support\Query\PaginationLimits;
-use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
 use Modules\Sirsoft\Ecommerce\Repositories\Concerns\FiltersAdminClaimList;
+use Modules\Sirsoft\Ecommerce\Repositories\Concerns\PaginatesBuyerClaimList;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderCancelRepositoryInterface;
 
 /**
@@ -16,6 +17,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderCancelRepositoryInterf
 class OrderCancelRepository implements OrderCancelRepositoryInterface
 {
     use FiltersAdminClaimList;
+    use PaginatesBuyerClaimList;
 
     /**
      * @param  OrderCancel  $model  주문 취소 모델
@@ -87,29 +89,47 @@ class OrderCancelRepository implements OrderCancelRepositoryInterface
      */
     public function paginateForUser(int $userId, array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
-        $query = $this->model->newQuery()
-            // 목록이 직렬화하는 것만 싣는다. 취소 이력의 환불액은 연결된 환불신청서가 들고
-            // 있고 목록이 그 값을 그리므로 `refund` 는 남긴다 — 주문 배송지는 읽지 않는다.
-            ->with(['cancelOptions.orderOption', 'refund', 'order'])
+        $query = $this->buyerClaimListQuery()
             ->whereHas('order', fn ($q) => $q->where('user_id', $userId));
 
-        if (! empty($filters['status'])) {
-            $query->where('cancel_status', $filters['status']);
-        }
+        return $this->paginateBuyerClaimList($query, $filters, $perPage);
+    }
 
-        // 기간 필터 — whereDate 는 컬럼에 DATE() 를 씌워 인덱스를 못 쓰게 만든다.
-        // 같은 결과를 내는 범위 조건으로 바꿔 created_at 인덱스를 살린다
-        // (종료일은 그날 23:59:59.999999 까지 포함해야 whereDate 와 동일한 경계를 갖는다).
-        // 경계 해석은 저장소가 맡는다 — 요청이 문자열을 이어 붙이면 시각이 섞인 입력에서 규격 밖 값이 된다.
-        if (! empty($filters['from'])) {
-            $query->where('created_at', '>=', Carbon::parse($filters['from'])->startOfDay());
-        }
+    /**
+     * {@inheritDoc}
+     */
+    public function paginateForOrder(int $orderId, array $filters = [], int $perPage = 20): LengthAwarePaginator
+    {
+        $query = $this->buyerClaimListQuery()->where('order_id', $orderId);
 
-        if (! empty($filters['to'])) {
-            $query->where('created_at', '<=', Carbon::parse($filters['to'])->endOfDay());
-        }
+        return $this->paginateBuyerClaimList($query, $filters, $perPage);
+    }
 
-        return $query->orderByDesc('id')->paginate($perPage, [(new OrderCancel)->getTable().'.*']);
+    /**
+     * {@inheritDoc}
+     */
+    protected function buyerClaimListQuery(): Builder
+    {
+        return $this->model->newQuery()
+            // 목록이 직렬화하는 것만 싣는다. 취소 이력의 환불액은 연결된 환불신청서가 들고
+            // 있고 목록이 그 값을 그리므로 `refund` 는 남긴다 — 주문 배송지는 읽지 않는다.
+            ->with(['cancelOptions.orderOption', 'refund', 'order']);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    protected function buyerClaimStatusColumn(): string
+    {
+        return 'cancel_status';
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    protected function buyerClaimListColumns(): array
+    {
+        return [(new OrderCancel)->getTable().'.*'];
     }
 
     /**

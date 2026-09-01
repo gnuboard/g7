@@ -54,6 +54,8 @@ export interface ClaimApplyItem {
     exchange_mode: 'same' | 'change';
     new_product_option_id: number | null;
     new_option_label: string;
+    /** 이 교환에 얹은 추가옵션의 표시 이름 (작성 화면 전용 — 접수 후에는 서버 동결 스냅샷을 읽는다) */
+    new_additional_labels: string[];
     custom_options: Record<string, any> | null;
     price_difference: number;
     price_difference_formatted: string;
@@ -348,6 +350,13 @@ export function buildClaimEditItems(claim: any, currency: string | null): ClaimA
             exchange_mode: item.is_option_change === true ? 'change' : 'same',
             new_product_option_id: item.new_product_option_id ?? null,
             new_option_label: item.new_option_label ?? '',
+            // 수정 화면은 접수 때 동결된 이름을 그대로 되살린다 — 다시 해석하면 그 사이 운영자가
+            // 선택지를 고쳤을 때 신청서에 남은 표기와 화면이 갈린다.
+            new_additional_labels: (item.new_additional_options ?? []).map((entry: any) => {
+                const text = String(entry?.custom_text ?? '').trim();
+
+                return text !== '' ? `${entry?.name ?? ''} (${text})` : String(entry?.name ?? '');
+            }).filter((label: string) => label !== ''),
             custom_options: item.new_option_snapshot?.custom_options ?? null,
             price_difference: Number(item.price_difference ?? 0),
             price_difference_formatted: item.price_difference_formatted
@@ -905,6 +914,7 @@ export function initClaimApplyHandler(
                 exchange_mode: 'same',
                 new_product_option_id: null,
                 new_option_label: '',
+                new_additional_labels: [],
                 custom_options: null,
                 price_difference: 0,
                 price_difference_formatted: formatAmountInCurrency(0, currency),
@@ -1333,6 +1343,23 @@ export function applyClaimChangeProductHandler(
         ? { selections: additionalSelections, custom_texts: additionalTexts }
         : null;
 
+    // 고른 추가옵션의 **이름**은 이 모달이 이미 쥐고 있다(그룹 목록을 그리고 있으므로).
+    // 접수 후 화면은 서버가 동결한 스냅샷을 읽지만, 작성 화면은 아직 서버에 보내기 전이라
+    // 여기서 만들어 두지 않으면 고른 직후의 요약 줄에 아무것도 나오지 않는다.
+    const additionalGroups: any[] = local.changeProductProduct?.additional_options ?? [];
+    const additionalLabels: string[] = Object.entries(additionalSelections)
+        .map(([groupId, valueId]) => {
+            const group = additionalGroups.find((g) => Number(g?.id) === Number(groupId));
+            const value = (group?.values ?? []).find((v: any) => Number(v?.id) === Number(valueId));
+
+            if (!value?.name) return '';
+
+            const text = String(additionalTexts[groupId as any] ?? '').trim();
+
+            return text !== '' ? `${value.name} (${text})` : String(value.name);
+        })
+        .filter((label) => label !== '');
+
     items[index] = {
         ...row,
         exchange_mode: mode,
@@ -1340,6 +1367,7 @@ export function applyClaimChangeProductHandler(
         new_option_label: mode === 'change'
             ? (matched.option_name_localized ?? matched.option_name ?? '')
             : '',
+        new_additional_labels: additionalLabels,
         custom_options: customOptions,
     };
 

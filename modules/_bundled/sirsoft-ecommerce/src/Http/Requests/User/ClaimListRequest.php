@@ -13,6 +13,7 @@ use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ResolvesClaimOrder;
 
 /**
  * 회원 클레임 신청 내역 목록 요청 (유형 서브탭 단위)
@@ -20,9 +21,16 @@ use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
  * 상태 어휘는 유형마다 다르므로(교환 14 / 반품 11 / 환불 7 / 취소 2) 각 유형의 Enum 을 단일 출처로 삼아
  * `status` 를 게이트한다. 게이트 없이 저장소 `where(status = 값)` 에 흘려보내면 오타·구버전 상태값이
  * 422 없이 **빈 목록**으로 응답되어, 사용자에게는 "해당 신청 없음" 과 구분되지 않는다.
+ *
+ * 비회원 주문상세의 '이 주문의 클레임' 섹션도 같은 요청을 쓴다 — 유형·상태·기간·페이지 계약이
+ * 같은데 요청을 두 벌로 두면 한쪽만 고쳤을 때 두 화면의 게이트가 갈린다. 열람 범위만 다르고
+ * (회원 = 본인 주문 전체 / 비회원 = 토큰이 검증한 주문 하나) 그 차이는 `ResolvesClaimOrder` 가
+ * 흡수한다. 회원 경로에는 주문이 없으므로 `getOrder()` 를 부르지 않는다.
  */
 class ClaimListRequest extends FormRequest
 {
+    use ResolvesClaimOrder;
+
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
      *
@@ -72,11 +80,15 @@ class ClaimListRequest extends FormRequest
         return [
             'type.in' => __('sirsoft-ecommerce::validation.claims.type.in'),
             'status.in' => __('sirsoft-ecommerce::validation.claims.status.in'),
-            'page.integer' => __('sirsoft-ecommerce::validation.orders.page.integer'),
-            'page.min' => __('sirsoft-ecommerce::validation.orders.page.min'),
-            'per_page.integer' => __('sirsoft-ecommerce::validation.orders.per_page.integer'),
-            'per_page.min' => __('sirsoft-ecommerce::validation.orders.per_page.min'),
-            'per_page.max' => __('sirsoft-ecommerce::validation.orders.per_page.max'),
+            // 문구는 클레임 목록 자신의 것을 쓴다 — 주문 목록의 것은 그 화면의 상한(10~100)을
+            // 숫자로 박고 있어, 이 목록의 실제 상한(1~50)과 다른 수를 사용자에게 안내한다.
+            // 여기 문구는 `:min`/`:max` 치환이라 규칙을 고쳐도 안내가 어긋나지 않는다.
+            'page.integer' => __('sirsoft-ecommerce::validation.claims.page.integer'),
+            'page.min' => __('sirsoft-ecommerce::validation.claims.page.min'),
+            'page.max' => __('sirsoft-ecommerce::validation.claims.page.max'),
+            'per_page.integer' => __('sirsoft-ecommerce::validation.claims.per_page.integer'),
+            'per_page.min' => __('sirsoft-ecommerce::validation.claims.per_page.min'),
+            'per_page.max' => __('sirsoft-ecommerce::validation.claims.per_page.max'),
         ];
     }
 

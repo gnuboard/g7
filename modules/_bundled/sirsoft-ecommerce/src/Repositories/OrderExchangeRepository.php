@@ -3,14 +3,15 @@
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
 use App\Support\Query\PaginationLimits;
-use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchangeOption;
 use Modules\Sirsoft\Ecommerce\Repositories\Concerns\FiltersAdminClaimList;
+use Modules\Sirsoft\Ecommerce\Repositories\Concerns\PaginatesBuyerClaimList;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderExchangeRepositoryInterface;
 
 /**
@@ -19,6 +20,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderExchangeRepositoryInte
 class OrderExchangeRepository implements OrderExchangeRepositoryInterface
 {
     use FiltersAdminClaimList;
+    use PaginatesBuyerClaimList;
 
     /**
      * @param  OrderExchange  $model  교환 신청서 모델
@@ -163,31 +165,49 @@ class OrderExchangeRepository implements OrderExchangeRepositoryInterface
      */
     public function paginateForUser(int $userId, array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
-        $query = $this->model->newQuery()
+        $query = $this->buyerClaimListQuery()
+            ->whereHas('order', fn ($q) => $q->where('user_id', $userId));
+
+        return $this->paginateBuyerClaimList($query, $filters, $perPage);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function paginateForOrder(int $orderId, array $filters = [], int $perPage = 20): LengthAwarePaginator
+    {
+        $query = $this->buyerClaimListQuery()->where('order_id', $orderId);
+
+        return $this->paginateBuyerClaimList($query, $filters, $perPage);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    protected function buyerClaimListQuery(): Builder
+    {
+        return $this->model->newQuery()
             // 목록이 직렬화하는 것만 싣는다 (목록 응답의 하위 컬렉션 규율). 첨부(`images`)는
             // 신청내역 목록이 그리지 않는다 — 사진은 상세의 사유 카드에서만 보이므로 행마다
             // 전량 직렬화하면 한 페이지가 신청서 수 × 첨부 수만큼 부풀기만 한다.
             // 주문 배송지(`order.shippingAddress`)도 이 목록의 어느 칸도 읽지 않는다.
-            ->with(['exchangeOptions.orderOption', 'order', 'collectionCarrier', 'redeliveryCarrier'])
-            ->whereHas('order', fn ($q) => $q->where('user_id', $userId));
+            ->with(['exchangeOptions.orderOption', 'order', 'collectionCarrier', 'redeliveryCarrier']);
+    }
 
-        if (! empty($filters['status'])) {
-            $query->where('exchange_status', $filters['status']);
-        }
+    /**
+     * {@inheritDoc}
+     */
+    protected function buyerClaimStatusColumn(): string
+    {
+        return 'exchange_status';
+    }
 
-        // 기간 필터 — whereDate 는 컬럼에 DATE() 를 씌워 인덱스를 못 쓰게 만든다.
-        // 같은 결과를 내는 범위 조건으로 바꿔 created_at 인덱스를 살린다
-        // (종료일은 그날 23:59:59.999999 까지 포함해야 whereDate 와 동일한 경계를 갖는다).
-        // 경계 해석은 저장소가 맡는다 — 요청이 문자열을 이어 붙이면 시각이 섞인 입력에서 규격 밖 값이 된다.
-        if (! empty($filters['from'])) {
-            $query->where('created_at', '>=', Carbon::parse($filters['from'])->startOfDay());
-        }
-
-        if (! empty($filters['to'])) {
-            $query->where('created_at', '<=', Carbon::parse($filters['to'])->endOfDay());
-        }
-
-        return $query->orderByDesc('id')->paginate($perPage, [(new OrderExchange)->getTable().'.*']);
+    /**
+     * {@inheritDoc}
+     */
+    protected function buyerClaimListColumns(): array
+    {
+        return [(new OrderExchange)->getTable().'.*'];
     }
 
     /**
