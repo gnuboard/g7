@@ -247,6 +247,95 @@ return [
         'rollback_root_protection_missing' => 'After the rollback the root entry and protection files are missing (:paths). This is normal if the document root is public/ or the restored version never had them. If the document root is the project root, configuration files are now exposed on the web - restore those files or point the document root at public/ immediately.',
         'rollback_docroot_residue' => 'The rollback restored public file copies inside the document root (:paths) — those copies are served over the web as-is. Review them, then move them outside the document root or delete them.',
 
+        // -- Web stepwise execution (W6 - #609 G6) ---------------------
+        //
+        // The `log_*` lines are what the operator opens with [View log]. They record
+        // **how far the run got**, not merely what it did.
+        'unzip_command_unavailable' => 'The unzip command cannot be executed on this server (process execution functions are disabled). If the PHP zip extension (ZipArchive) is available, extraction falls back to it automatically.',
+        'composer_unavailable' => 'Composer cannot be executed on this server (process execution functions are disabled). Use the bundled vendor mode, or run the update from an environment with SSH access.',
+        'web' => [
+            // Step names (progress list)
+            'steps' => [
+                'preflight' => 'Preflight checks',
+                'maintenance' => 'Maintenance mode',
+                'download' => 'Download',
+                'backup' => 'Backup',
+                'vendor' => 'Prepare dependencies',
+                'plan' => 'Compute changes',
+                'apply' => 'Apply files',
+                'vendor_copy' => 'Install dependencies',
+                'migrate' => 'Database sync',
+                'upgrade_steps' => 'Upgrade steps',
+                'bundled' => 'Bundled extensions & language packs',
+                'finalize' => 'Finalize',
+            ],
+
+            // Response messages
+            'status_success' => 'Update status retrieved.',
+            'status_failed' => 'Failed to retrieve the update status.',
+            'started' => 'The update has been started.',
+            'start_failed' => 'Failed to start the update.',
+            'advanced' => 'The step has been performed.',
+            'advance_failed' => 'Failed to perform the step.',
+            'dismissed' => 'The update record has been cleared.',
+            'dismiss_failed' => 'Failed to clear the update record.',
+
+            // Run control
+            'no_active_run' => 'There is no update in progress.',
+            'step_in_progress' => 'Another request is performing the same step. Please try again in a moment.',
+            'still_running' => 'The update is still in progress. You can clear the record once it finishes.',
+            'missing_pending_path' => 'The downloaded update files could not be located. Please start over.',
+
+            // Preflight (D26)
+            'preflight_failed' => 'Preflight checks found problems, so the update was not started: :reasons',
+            'preflight_not_writable' => 'The following paths are not writable: :paths - a web update requires the web server account to be able to write to them. If you cannot change the permissions, run `php artisan core:update` over SSH instead.',
+            'preflight_low_disk' => 'Not enough free disk space (:free free, roughly :required required). The backup and the new version coexist for part of the run, so several times the current size is needed.',
+
+            // Manual ZIP source (D18)
+            'version_from_zip' => '(determined after extraction)',
+            'zip_file_invalid' => 'Only a ZIP file name may be given (no path, ending in `.zip`).',
+            'zip_not_newer' => 'The version in the selected ZIP (:to) is not newer than the current version (:from). Web updates do not support forced re-application.',
+
+            // Failure and rollback (D10)
+            'upgrade_steps_failed' => 'Upgrade steps failed: :output',
+            'handoff_exhausted' => 'The upgrade steps repeatedly requested a fresh process, so the run was stopped (last completed point :after / reason :reason).',
+            'bundled_partial_failure' => ':failed bundled extensions or language packs were not updated. The core itself was applied successfully; you can retry the failed ones individually from the extension management screens.',
+            'permission_warning' => 'Ownership/permission restore could not normalise :failed entries under :target - uploads or cache writes may fail, so please check them.',
+            'maintenance_off_failed' => 'Maintenance mode could not be disabled (:error) - the site is still showing the maintenance page. Run `php artisan up` over SSH.',
+            'ownership_restore_failed' => 'File ownership and permissions could not be restored after the rollback (:error) - the site may be unable to write files, so please check the permissions.',
+
+            // Progress log
+            'log_started' => 'Update started (:from -> :to)',
+            'log_preflight_ok' => 'Preflight checks passed (:checked paths inspected)',
+            'log_preflight_failed' => 'Preflight checks failed - the update was not started',
+            'log_maintenance_on' => 'Maintenance mode enabled',
+            'log_maintenance_off' => 'Maintenance mode disabled',
+            'log_downloaded' => 'Downloaded :version',
+            'log_zip_extracted' => 'Manual ZIP extracted (:file -> :version)',
+            'log_backup' => 'Backup created (:path)',
+            'log_vendor_skipped' => 'Dependencies unchanged - preparation skipped',
+            'log_vendor' => 'Dependencies prepared (strategy :strategy, :packages packages)',
+            'log_manifest' => 'New-file manifest written (:files files, :dirs directories)',
+            'log_manifest_failed' => 'New-file manifest could not be written - rollback will overlay only (:error)',
+            'log_apply_list' => 'Change set computed (:added added, :changed changed)',
+            'log_apply_list_failed' => 'Change set could not be computed - falling back to a full overwrite (:error)',
+            'log_applied' => 'Core files applied',
+            'log_vendor_copy_skipped' => 'Dependencies unchanged - install skipped',
+            'log_vendor_copied' => 'Dependencies installed',
+            'log_migrated' => 'Migrations and role/menu resync completed',
+            'log_upgrade_steps' => ':count upgrade steps executed',
+            'log_handoff' => 'The upgrade steps requested a fresh process (completed through :after, target :to) - the next step request continues from there. Reason: :reason',
+            'log_bundled_skipped' => 'Bundled extensions and language packs were not selected',
+            'log_bundled_none' => 'No bundled extension or language pack has a newer version',
+            'log_bundled' => 'Bundled extensions and language packs updated (:success succeeded, :failed failed)',
+            'log_spawn_fallback' => 'A separate process could not be started - running inside this request instead (:reason)',
+            'log_finalized' => 'Finalized - current version :version',
+            'log_step_failed' => 'Failed during :step: :error',
+            'log_restored' => 'Restored from the backup',
+            'log_restored_partial' => 'Only partially restored (failed targets: :targets)',
+            'log_restore_failed' => 'Restore failed: :error',
+        ],
+
         // GitHub API error messages
         'github_url_not_configured' => 'GitHub repository URL is not configured.',
         'github_api_failed' => 'Unable to connect to GitHub API.',

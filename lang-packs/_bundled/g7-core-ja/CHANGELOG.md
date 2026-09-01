@@ -34,6 +34,9 @@
 - `g7:asset-url-mode` 조회가 큐·콘솔이 쓰는 마운트 접두사와 `APP_URL` 의 경로를 나란히 보여 주고 불일치를 경고하는 문구의 일본어 번역을 추가했습니다 (`asset_url_mode.base_path.*`).
 - 코어 업데이트가 IIS 루트 보호 파일(`web.config`)을 마커 블록 단위로 갱신할 때의 안내 문구와, 서버 설정 조각의 `.dist.new` 충돌·갱신 기록 쓰기 실패 안내 문구의 일본어 번역을 추가했습니다 (`settings.core_update.root_web_config_*`, `deploy_fragment_dist_conflict`, `deploy_fragment_ledger_write_failed`).
 - 관리 블록을 교체한 결과가 온전하지 않아(`web.config` 는 적형 XML 이 아니어서) 갱신을 건너뛰었을 때의 안내 문구 일본어 번역을 추가했습니다 (`settings.core_update.root_htaccess_splice_invalid`, `root_web_config_splice_invalid`).
+- 관리자 화면에서 코어를 업데이트하는 웹 동선의 일본어 번역을 추가했습니다 (`settings.core_update.web.*` 65건) — 단계 이름 12개, 진행 기록, 사전 점검 실패 사유, 되돌리기 결과(소유권 복원 실패 안내 포함), 수동 ZIP 안내를 포함합니다.
+- 서버 명령이 차단된 환경에서 압축 해제·Composer 실행이 불가능함을 알리는 문구의 일본어 번역을 추가했습니다 (`settings.core_update.unzip_command_unavailable`·`composer_unavailable`, `vendor.composer_unavailable`).
+- 코어 업데이트 실행·성공·실패 활동 기록 문구의 일본어 번역을 추가했습니다 (`activity_log.description.core_update_*` 3건과 동작 라벨 3건).
 
 ### Changed
 

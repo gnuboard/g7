@@ -101,6 +101,9 @@ class StorageLeftoverPruneService
         'plugins/_pending',
         'templates',
         'templates/_pending',
+        // 초기 화면 정적 파일 게시 루트(`public/build/ext`)의 상위 — 인스톨러가 권한을 점검하는
+        // 대상이라 그 자리에도 쓰기 프로브가 남는다 (#651 이 인스톨러 목록에 들인 뒤 합류).
+        'public/build',
         'lang-packs',
         'lang-packs/_pending',
         'storage/app/core_pending',
@@ -250,6 +253,7 @@ class StorageLeftoverPruneService
             'temp' => $this->pruneCoreTemp($cutoff, $dryRun),
             'storage_temp' => $this->pruneComposerTemp($cutoff, $dryRun),
             'core_pending' => $this->pruneCorePendingManifests($cutoff, $dryRun),
+            'core_pending_staging' => $this->pruneCorePendingStaging($cutoff, $dryRun),
             'core_update_preserved' => $this->pruneCoreUpdatePreserved($backupCutoff, $dryRun),
             'core_update_reports' => $this->pruneCoreUpdateReports($backupCutoff, $dryRun),
             'public_storage_broken' => $this->prunePublicStorageBroken($backupCutoff, $dryRun),
@@ -385,6 +389,87 @@ class StorageLeftoverPruneService
             $cutoff,
             $dryRun
         );
+    }
+
+    /**
+     * 코어 업데이트가 전개한 `_pending` 디렉토리를 정리합니다.
+     *
+     * `{pending_path}/core_{Ymd_His}/` — 릴리즈 한 벌을 통째로 푼 자리다. 정리 주체는
+     * `CoreUpdateService::cleanupPending()` 하나였고 그것은 커맨드의 정상 경로와 **처리된**
+     * 실패 경로에서만 불린다. 치명 오류·요청 시간 초과·OOM-kill 이면 그 코드가 돌지 않아
+     * 수백 MB 가 영구히 남는데, 이 서비스의 어느 대상군도 그 자리를 보지 않았다
+     * (`core_pending` 은 같은 디렉토리의 **매니페스트 파일**만 접두사로 좁혀 본다).
+     * 무CLI 웹 워커는 요청 시간 상한 안에서 도므로 그 실패 모드가 특히 흔하다
+     * (#609 G6 — G3 회차 6 이관).
+     *
+     * 나이 하한이 진행 중인 실행을 보호한다 — 기본 보존일(3일) 안의 디렉토리는 건드리지
+     * 않으므로, 지금 내려받는 중인 페이로드가 지워질 수 없다.
+     *
+     * 위치는 리터럴이 아니라 **설정**(`app.update.pending_path`)에서 읽는다. 운영자가 그
+     * 값을 옮긴 사이트에서 기본 경로만 훑으면 이 대상군의 모집단이 조용히 빈다.
+     *
+     * @param  int  $cutoff  이 시각(Unix time) 이전 mtime 만 삭제
+     * @param  bool  $dryRun  삭제 없이 목록만
+     * @return list<string> 삭제(예정) 경로 목록
+     */
+    private function pruneCorePendingStaging(int $cutoff, bool $dryRun): array
+    {
+        $pruned = [];
+
+        foreach ($this->corePendingDirectories() as $directory) {
+            // 이름 판정은 **생산자 상수**에서 도출한다 — 사본으로 적으면 한쪽이 모양을 바꿔도
+            // 다른 쪽은 따라가지 못하고, 그 상태가 오류가 아니라 모집단 공백으로만 나타난다.
+            foreach (ExtensionManager::listDirectories($directory, CoreUpdateService::PENDING_DIR_PREFIX) as $entry) {
+                if ($this->isFresh($entry, $cutoff)) {
+                    continue;
+                }
+
+                $pruned[] = $entry;
+
+                if (! $dryRun) {
+                    File::deleteDirectory($entry);
+                }
+            }
+        }
+
+        return $pruned;
+    }
+
+    /**
+     * 코어 `_pending` 이 놓일 수 있는 디렉토리 목록.
+     *
+     * 기본 위치(형제 대상군과 같은 `storage/app/core_pending`)와 **운영자가 옮긴 위치**
+     * (`app.update.pending_path`)를 둘 다 본다. 설정만 보면 이 서비스가 주입받은 storage
+     * 루트를 벗어나고, 기본값만 보면 옮긴 사이트의 잔여물이 모집단에서 빠진다 —
+     * 생산자와 정리자의 후보가 갈리는 것이 정확히 그 공백을 만든다.
+     *
+     * @return list<string> 절대 경로 (중복 제거)
+     */
+    private function corePendingDirectories(): array
+    {
+        $directories = [$this->storagePath('app'.DIRECTORY_SEPARATOR.'core_pending')];
+
+        $configured = (string) config('app.update.pending_path');
+
+        if ($configured !== '') {
+            $directories[] = $configured;
+        }
+
+        $seen = [];
+        $unique = [];
+
+        foreach ($directories as $directory) {
+            $key = realpath($directory) ?: $directory;
+
+            if (isset($seen[$key])) {
+                continue;
+            }
+
+            $seen[$key] = true;
+            $unique[] = $directory;
+        }
+
+        return $unique;
     }
 
     /**

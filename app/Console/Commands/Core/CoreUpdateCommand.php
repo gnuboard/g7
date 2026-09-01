@@ -92,7 +92,13 @@ class CoreUpdateCommand extends Command
         // 정리 로직 불필요.
         $_ENV['G7_UPDATE_IN_PROGRESS'] = '1';
         $_SERVER['G7_UPDATE_IN_PROGRESS'] = '1';
-        putenv('G7_UPDATE_IN_PROGRESS=1');
+
+        // `putenv` 는 하드닝 프로필의 표준 차단 대상이다. 막힌 환경에서 무가드로 부르면
+        // 업데이트가 시작하자마자 `Error` 로 죽는다 — 위 두 줄이 이미 같은 사실을 심었고
+        // 소비처(`CoreServiceProvider::isCoreUpdateInProgress`)도 그 둘을 먼저 본다 (#609 D34).
+        if (ExecutionEnvironment::hasFunction('putenv')) {
+            putenv('G7_UPDATE_IN_PROGRESS=1');
+        }
 
         $backupPath = null;
         $maintenanceEnabled = false;
@@ -891,8 +897,9 @@ class CoreUpdateCommand extends Command
      */
     private function spawnUpgradeStepsProcess(string $fromVersion, string $toVersion, bool $force, \Closure $log): bool
     {
-        // audit:allow execution-function-availability-via-ssot 현행 직접 판정 — G6(코어 업데이트 CLI)에서 ExecutionEnvironment::hasFunction 으로 이관 (#609 D34)
-        if (! function_exists('proc_open')) {
+        // 가용성 판정은 SSoT 한 곳이 소유한다 — `function_exists` 만으로는 `disable_functions`
+        // 로 이름만 남겨 둔 호스팅을 구분하지 못한다 (#609 D34 이관 완료).
+        if (! ExecutionEnvironment::hasFunction('proc_open')) {
             return $this->failSpawnWithMode(
                 'proc_open 비활성',
                 $log,

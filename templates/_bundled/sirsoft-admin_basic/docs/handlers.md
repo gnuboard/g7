@@ -5,12 +5,17 @@
 ## 템플릿 전용 핸들러
 
 <!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-핸들러 18개 (정의: `src/handlers/index.ts`).
+핸들러 23개 (정의: `src/handlers/index.ts`).
 
 | 핸들러 | 레이아웃에서 부르는 이름 |
 |---|---|
 | `detectAssetUrlMode` | (템플릿 전용 — 네임스페이스 없음) |
 | `checkAssetUrlModeDrift` | (템플릿 전용 — 네임스페이스 없음) |
+| `startCoreUpdate` | (템플릿 전용 — 네임스페이스 없음) |
+| `resumeCoreUpdate` | (템플릿 전용 — 네임스페이스 없음) |
+| `autoResumeCoreUpdate` | (템플릿 전용 — 네임스페이스 없음) |
+| `dismissCoreUpdate` | (템플릿 전용 — 네임스페이스 없음) |
+| `refreshCoreUpdateStatus` | (템플릿 전용 — 네임스페이스 없음) |
 | `setTheme` | (템플릿 전용 — 네임스페이스 없음) |
 | `initTheme` | (템플릿 전용 — 네임스페이스 없음) |
 | `scrollToSection` | (템플릿 전용 — 네임스페이스 없음) |
@@ -152,6 +157,72 @@ ApiClient 경유로 토큰을 자동 첨부해야 다운로드 행위가 관리�
 남으면 SEO 렌더링은 계속 깨집니다 — `checkAssetUrlModeDrift` 가 그 간극을 관리자에게 드러내는
 유일한 지점입니다. 판정 불가(`unavailable`)일 때는 아무 것도 표시하지 않습니다 — 일시적
 네트워크 장애를 결함 신호로 오인시키지 않기 위함입니다.
+### 코어 업데이트 핸들러 (W6)
+
+코어 업데이트 서버는 **한 요청에 한 단계**만 수행한다. 그 경계가 편의가 아니라 안전
+요건인 이유는, 파일을 교체한 프로세스가 사라진 클래스를 참조하면 치명 오류가 나기
+때문이다. 그래서 **진행을 이어 가는 주체가 화면**이고, 이 핸들러들이 그 반복 호출을 맡는다.
+
+레이아웃 액션 체인으로 같은 일을 하려면 자기 자신을 참조하는 재귀 `actionRef` 가
+필요한데, 반복 횟수가 데이터에 따라 달라진다(업그레이드 스텝이 같은 단계를 여러 번
+요구할 수 있다). 형제 사례(`detectAssetUrlMode`)와 같은 판단으로 핸들러에 둔다.
+
+| 핸들러 | params | 설명 |
+|--------|--------|------|
+| `startCoreUpdate` | `{ update_bundled_extensions, rebuild_search_index, layout_strategy, zip_file }` | 착수 후 끝까지 반복 호출 |
+| `resumeCoreUpdate` | 없음 | 중단된 진행을 **운영자 조작으로** 이어받음 ([이어서 진행] 버튼) |
+| `autoResumeCoreUpdate` | 없음 | 진행·되돌리기 중인 실행을 **조작 없이** 이어받음 (진행 블록 `lifecycle.onMount`) |
+| `dismissCoreUpdate` | 없음 | 끝난 실행의 기록 정리 |
+| `refreshCoreUpdateStatus` | 없음 | 상태만 다시 읽음 |
+
+**여기 없는 것이 규정이다** — `force`·`prune`·`no_backup`·`no_maintenance` 는 웹 동선에
+입력 표면 자체가 없다. 화면이 그 키를 실어도 서버가 받지 않지만, 그 전에 **화면이 만들지
+않는 것**이 계약이다.
+
+상태는 `_global.coreUpdateStatus` 하나에 싣는다 — 화면이 그 한 값만 보고 네 상태(최신 ·
+새 버전 있음 · 진행 중 · 실패)를 고르므로, 진행 중 다른 곳에서 부분 갱신이 끼어들 여지가
+없다. 진행 중 여부는 `_global.coreUpdateBusy` 로 알린다.
+
+```json
+{
+  "type": "click",
+  "handler": "startCoreUpdate",
+  "params": {
+    "update_bundled_extensions": "{{_local.coreUpdateBundled !== false}}",
+    "rebuild_search_index": "{{_local.coreUpdateRebuildIndex === true}}",
+    "layout_strategy": "{{_local.coreUpdateLayoutStrategy ?? 'overwrite'}}",
+    "zip_file": "{{_local.coreUpdateZipFile ?? ''}}"
+  }
+}
+```
+
+`zip_file` 이 빈 문자열이면 **싣지 않는다** — 빈 값을 보내면 서버가 그것을 수동 소스 지정
+으로 읽어 자동 내려받기 경로가 사라진다.
+
+### 자동 이어받기
+
+`autoResumeCoreUpdate` 는 진행 상태를 그리는 지점의 `lifecycle.onMount` 에 배선한다. 이
+배선이 없으면 브라우저를 닫았다 들어온 운영자에게는 진행률만 복원되고 아무도 다음 단계를
+부르지 않아 **사이트가 점검 모드에 멈춘 채** 남는다. 실패 시의 자동 되돌리기도 다음 호출이
+복원을 수행하는 구조라 같은 배선에 기댄다.
+
+자동 경로는 **페이지 수명당 상한**을 갖는다(`MAX_AUTO_RESUMES`). 반복 호출 상한으로 멈춘
+진행이 곧바로 자동 재개되면 같은 왕복이 무한히 돌기 때문이며, 그 뒤로는 [이어서 진행] 이
+유일한 진행 수단이 된다(`resumeCoreUpdate` 는 이 상한을 쓰지 않는다). 이미 다른 호출이
+몰고 있으면(`_global.coreUpdateBusy`) 겹쳐 부르지 않는다 — 서버 점유 409 만 발생한다.
+
+```json
+{
+  "id": "core_update_auto_resume",
+  "if": "{{(_computed.coreUpdateRun?.status === 'running' || _computed.coreUpdateRun?.status === 'rolling_back') && _global.coreUpdateBusy !== true}}",
+  "lifecycle": { "onMount": [{ "handler": "autoResumeCoreUpdate" }] }
+}
+```
+
+---
+
+| `startCoreUpdate`, `resumeCoreUpdate`, `autoResumeCoreUpdate`, `dismissCoreUpdate`, `refreshCoreUpdateStatus` | `src/handlers/coreUpdateHandler.ts` | `startCoreUpdateHandler` |
+
 <!-- @intent END -->
 
 ## 부트스트랩

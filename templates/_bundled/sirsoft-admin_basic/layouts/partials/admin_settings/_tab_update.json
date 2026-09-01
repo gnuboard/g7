@@ -1,0 +1,1091 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "환경설정 업데이트 탭 콘텐츠 (코어 업데이트 웹 동선 — W6 4상태)"
+  },
+  "id": "tab_content_update",
+  "type": "basic",
+  "name": "Div",
+  "if": "{{(_global.activeSettingsTab || query.tab || 'general') === 'update' && (_global.settingsAbilities?.can_core_update ?? false)}}",
+  "children": [
+    {
+      "id": "card_core_update",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "admin-card"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "card-title"
+          },
+          "text": "$t:admin.settings.core_update.title"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "card-description"
+          },
+          "text": "$t:admin.settings.core_update.desc"
+        },
+
+        {
+          "id": "core_update_version_row",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-4 mb-4 flex flex-wrap items-center gap-x-6 gap-y-2"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-label-subtle"
+                  },
+                  "text": "$t:admin.settings.core_update.current_version"
+                },
+                {
+                  "id": "core_update_current_version",
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-heading"
+                  },
+                  "text": "{{systemInfo?.data?.g7_version ?? '-'}}"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_local.coreUpdateInfo?.update_available}}",
+              "props": {
+                "className": "flex items-center gap-2"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-label-subtle"
+                  },
+                  "text": "$t:admin.settings.core_update.latest_version"
+                },
+                {
+                  "type": "composite",
+                  "name": "StatusBadge",
+                  "props": {
+                    "status": "success",
+                    "label": "{{_local.coreUpdateInfo?.latest_version ?? ''}}"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "core_update_up_to_date",
+              "type": "basic",
+              "name": "Span",
+              "if": "{{!!_local.coreUpdateInfo && !_local.coreUpdateInfo?.update_available}}",
+              "props": {
+                "className": "text-secondary text-sm"
+              },
+              "text": "$t:admin.settings.core_update.up_to_date"
+            }
+          ]
+        },
+
+        {
+          "id": "core_update_check_error",
+          "type": "composite",
+          "name": "Alert",
+          "if": "{{!_computed.coreUpdateRun && !!_local.coreUpdateCheckError}}",
+          "props": {
+            "type": "error",
+            "message": "{{$t('admin.settings.core_update.check_failed_hint') + ' ' + (_local.coreUpdateCheckError ?? '')}}",
+            "className": "mb-4"
+          }
+        },
+
+        {
+          "id": "core_update_preflight_blocked",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{!_computed.coreUpdateRun && _computed.coreUpdatePreflight?.ok === false}}",
+          "props": {
+            "className": "rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-3 space-y-2 mb-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-heading text-sm"
+              },
+              "text": "$t:admin.settings.core_update.preflight_blocked_title"
+            },
+            {
+              "type": "basic",
+              "name": "Ul",
+              "props": {
+                "className": "list-disc list-inside space-y-1"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Li",
+                  "iteration": {
+                    "source": "_computed.coreUpdatePreflight?.errors ?? []",
+                    "item_var": "preflightError",
+                    "index_var": "preflightErrorIndex"
+                  },
+                  "props": {
+                    "className": "text-secondary text-xs"
+                  },
+                  "text": "{{preflightError}}"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-secondary text-xs"
+              },
+              "text": "$t:admin.settings.core_update.preflight_blocked_hint"
+            }
+          ]
+        },
+
+        {
+          "id": "core_update_idle_actions",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{!_computed.coreUpdateRun}}",
+          "props": {
+            "className": "flex flex-wrap gap-2 mb-4"
+          },
+          "children": [
+            {
+              "id": "core_update_check_button",
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "btn-secondary",
+                "disabled": "{{_local.checkingCoreUpdate === true}}"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sequence",
+                  "params": {
+                    "actions": [
+                      {
+                        "handler": "setState",
+                        "params": {
+                          "target": "local",
+                          "checkingCoreUpdate": true
+                        }
+                      },
+                      {
+                        "handler": "apiCall",
+                        "auth_required": true,
+                        "target": "/api/admin/core-update/check",
+                        "params": {
+                          "method": "POST"
+                        },
+                        "onSuccess": [
+                          {
+                            "handler": "setState",
+                            "params": {
+                              "target": "local",
+                              "checkingCoreUpdate": false,
+                              "coreUpdateCheckError": null,
+                              "coreUpdateInfo": "{{result.data}}"
+                            }
+                          }
+                        ],
+                        "onError": [
+                          {
+                            "handler": "setState",
+                            "params": {
+                              "target": "local",
+                              "checkingCoreUpdate": false,
+                              "coreUpdateCheckError": "{{error.errors?.reason ?? error.message}}"
+                            }
+                          },
+                          {
+                            "handler": "toast",
+                            "params": {
+                              "type": "error",
+                              "message": "{{error.errors?.reason ?? error.message}}"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "if": "{{_local.checkingCoreUpdate === true}}",
+                  "props": {
+                    "name": "spinner",
+                    "className": "text-sm animate-spin"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_local.checkingCoreUpdate !== true}}",
+                  "text": "$t:admin.settings.core_update.check_update"
+                }
+              ]
+            },
+            {
+              "id": "core_update_changelog_button",
+              "type": "basic",
+              "name": "Button",
+              "if": "{{_local.coreUpdateInfo?.update_available}}",
+              "props": {
+                "type": "button",
+                "className": "btn-secondary"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "apiCall",
+                  "auth_required": true,
+                  "target": "/api/admin/core-update/changelog",
+                  "params": {
+                    "method": "GET"
+                  },
+                  "onSuccess": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "coreChangelog": "{{result.data.changelog ?? []}}"
+                      }
+                    },
+                    {
+                      "handler": "openModal",
+                      "target": "core_changelog_modal"
+                    }
+                  ],
+                  "onError": [
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "error",
+                        "message": "{{error.message ?? '$t:admin.settings.info.changelog_load_failed'}}"
+                      }
+                    }
+                  ]
+                }
+              ],
+              "text": "$t:admin.settings.core_update.view_changelog"
+            }
+          ]
+        },
+
+        {
+          "id": "core_update_options",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{!_computed.coreUpdateRun && (_local.coreUpdateInfo?.update_available === true || (_local.coreUpdateZipFile ?? '') !== '')}}",
+          "props": {
+            "className": "space-y-3 mb-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "H4",
+              "props": {
+                "className": "text-label"
+              },
+              "text": "$t:admin.settings.core_update.together_title"
+            },
+            {
+              "id": "core_update_bundled_row",
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "className": "flex items-start gap-2 cursor-pointer"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Checkbox",
+                  "props": {
+                    "autoBinding": false,
+                    "checked": "{{_local.coreUpdateBundled !== false}}",
+                    "className": "mt-0.5"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "coreUpdateBundled": "{{$event.target.checked}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-heading"
+                      },
+                      "text": "$t:admin.settings.core_update.together_bundled"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "text-secondary text-xs"
+                      },
+                      "text": "$t:admin.settings.core_update.together_bundled_hint"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "core_update_rebuild_index_row",
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "className": "flex items-start gap-2 cursor-pointer"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Checkbox",
+                  "props": {
+                    "autoBinding": false,
+                    "checked": "{{_local.coreUpdateRebuildIndex === true}}",
+                    "className": "mt-0.5"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "coreUpdateRebuildIndex": "{{$event.target.checked}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-heading"
+                      },
+                      "text": "$t:admin.settings.core_update.together_rebuild_index"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "text-secondary text-xs"
+                      },
+                      "text": "$t:admin.settings.core_update.together_rebuild_index_hint"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "core_update_layout_strategy",
+              "type": "composite",
+              "name": "RadioGroup",
+              "props": {
+                "name": "core_update_layout_strategy",
+                "label": "$t:admin.settings.core_update.layout_strategy",
+                "inline": true,
+                "value": "{{_local.coreUpdateLayoutStrategy ?? 'overwrite'}}",
+                "options": [
+                  {
+                    "value": "overwrite",
+                    "label": "$t:admin.settings.core_update.layout_overwrite"
+                  },
+                  {
+                    "value": "keep",
+                    "label": "$t:admin.settings.core_update.layout_keep"
+                  }
+                ]
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "coreUpdateLayoutStrategy": "{{$event.target.value}}"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "core_update_modified_layouts_hint",
+              "type": "basic",
+              "name": "P",
+              "if": "{{_computed.coreUpdateModified?.has_modified === true}}",
+              "props": {
+                "className": "text-warning-soft text-xs"
+              },
+              "text": "$t:admin.settings.core_update.modified_layouts_hint|count={{_computed.coreUpdateModified?.count ?? 0}}"
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-secondary text-xs"
+              },
+              "text": "$t:admin.settings.core_update.layout_per_extension_hint"
+            }
+          ]
+        },
+
+        {
+          "id": "core_update_maintenance_warning",
+          "type": "composite",
+          "name": "Alert",
+          "if": "{{!_computed.coreUpdateRun && (_local.coreUpdateInfo?.update_available === true || (_local.coreUpdateZipFile ?? '') !== '')}}",
+          "props": {
+            "type": "warning",
+            "message": "$t:admin.settings.core_update.maintenance_warning",
+            "className": "mb-4"
+          }
+        },
+
+        {
+          "id": "core_update_start_row",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{!_computed.coreUpdateRun && (_local.coreUpdateInfo?.update_available === true || (_local.coreUpdateZipFile ?? '') !== '')}}",
+          "props": {
+            "className": "flex justify-end"
+          },
+          "children": [
+            {
+              "id": "core_update_start_button",
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "btn-primary",
+                "disabled": "{{_global.coreUpdateBusy === true}}"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "startCoreUpdate",
+                  "params": {
+                    "update_bundled_extensions": "{{_local.coreUpdateBundled !== false}}",
+                    "rebuild_search_index": "{{_local.coreUpdateRebuildIndex === true}}",
+                    "layout_strategy": "{{_local.coreUpdateLayoutStrategy ?? 'overwrite'}}",
+                    "zip_file": "{{_local.coreUpdateZipFile ?? ''}}"
+                  }
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "if": "{{_global.coreUpdateBusy === true}}",
+                  "props": {
+                    "name": "spinner",
+                    "className": "text-sm animate-spin"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "{{_global.coreUpdateBusy === true ? $t('admin.settings.core_update.starting') : $t('admin.settings.core_update.start')}}"
+                }
+              ]
+            }
+          ]
+        },
+
+        {
+          "id": "core_update_auto_resume",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{(_computed.coreUpdateRun?.status === 'running' || _computed.coreUpdateRun?.status === 'rolling_back') && _global.coreUpdateBusy !== true}}",
+          "lifecycle": {
+            "onMount": [
+              {
+                "handler": "autoResumeCoreUpdate"
+              }
+            ]
+          },
+          "props": {
+            "className": "hidden"
+          }
+        },
+
+        {
+          "id": "core_update_progress",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{!!_computed.coreUpdateRun}}",
+          "props": {
+            "className": "space-y-4"
+          },
+          "children": [
+            {
+              "id": "core_update_progress_header",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_computed.coreUpdateRun?.status === 'running'}}",
+              "props": {
+                "className": "flex items-center justify-between"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-heading"
+                  },
+                  "text": "$t:admin.settings.core_update.progress_title"
+                },
+                {
+                  "id": "core_update_progress_count",
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-secondary text-sm"
+                  },
+                  "text": "$t:admin.settings.core_update.progress_count|done={{_computed.coreUpdateRun?.completed_count ?? 0}}|total={{_computed.coreUpdateTotalSteps ?? 0}}"
+                }
+              ]
+            },
+            {
+              "id": "core_update_progress_track",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_computed.coreUpdateRun?.status === 'running'}}",
+              "props": {
+                "className": "h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden"
+              },
+              "children": [
+                {
+                  "id": "core_update_progress_fill",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "h-2 rounded-full bg-blue-600 dark:bg-blue-500 transition-all",
+                    "style": {
+                      "width": "{{Math.round(((_computed.coreUpdateRun?.completed_count ?? 0) / Math.max(_computed.coreUpdateTotalSteps ?? 1, 1)) * 100) + '%'}}"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "id": "core_update_step_list",
+              "type": "basic",
+              "name": "Ul",
+              "if": "{{_computed.coreUpdateRun?.status === 'running'}}",
+              "props": {
+                "className": "space-y-1"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Li",
+                  "iteration": {
+                    "source": "_computed.coreUpdateSteps ?? []",
+                    "item_var": "step",
+                    "index_var": "stepIndex"
+                  },
+                  "props": {
+                    "className": "flex items-center gap-2 text-sm"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "{{(_computed.coreUpdateRun?.completed_steps ?? []).includes(step.key) ? 'circle-check' : (_computed.coreUpdateRun?.current_step === step.key ? 'spinner' : 'circle')}}",
+                        "className": "{{(_computed.coreUpdateRun?.completed_steps ?? []).includes(step.key) ? 'text-sm text-green-600 dark:text-green-400' : (_computed.coreUpdateRun?.current_step === step.key ? 'text-sm text-blue-600 dark:text-blue-400 animate-spin' : 'text-sm text-gray-300 dark:text-gray-600')}}"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "{{(_computed.coreUpdateRun?.completed_steps ?? []).includes(step.key) || _computed.coreUpdateRun?.current_step === step.key ? 'text-heading' : 'text-secondary'}}"
+                      },
+                      "text": "{{step.label}}"
+                    }
+                  ]
+                }
+              ]
+            },
+
+            {
+              "id": "core_update_completed",
+              "type": "composite",
+              "name": "Alert",
+              "if": "{{_computed.coreUpdateRun?.status === 'completed'}}",
+              "props": {
+                "type": "success",
+                "message": "$t:admin.settings.core_update.completed_desc|version={{_computed.coreUpdateRun?.to_version ?? ''}}"
+              }
+            },
+
+            {
+              "id": "core_update_failed",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_computed.coreUpdateRun?.status === 'rolled_back' || _computed.coreUpdateRun?.status === 'rollback_failed' || _computed.coreUpdateRun?.status === 'rolling_back'}}",
+              "props": {
+                "className": "space-y-3"
+              },
+              "children": [
+                {
+                  "id": "core_update_failed_alert",
+                  "type": "composite",
+                  "name": "Alert",
+                  "props": {
+                    "type": "error",
+                    "message": "$t:admin.settings.core_update.failed_title|step={{_computed.coreUpdateRun?.error?.step_label ?? ''}}|detail={{_computed.coreUpdateRun?.error?.message ?? ''}}"
+                  }
+                },
+                {
+                  "id": "core_update_rolled_back_alert",
+                  "type": "composite",
+                  "name": "Alert",
+                  "if": "{{_computed.coreUpdateRun?.rollback?.restored === true}}",
+                  "props": {
+                    "type": "success",
+                    "message": "{{_computed.coreUpdateRun?.rollback?.files_were_applied ? $t('admin.settings.core_update.rolled_back') : $t('admin.settings.core_update.rolled_back_not_applied')}}"
+                  }
+                },
+                {
+                  "id": "core_update_rollback_failed_alert",
+                  "type": "composite",
+                  "name": "Alert",
+                  "if": "{{_computed.coreUpdateRun?.status === 'rollback_failed'}}",
+                  "props": {
+                    "type": "error",
+                    "message": "{{$t('admin.settings.core_update.rollback_failed') + ' ' + $t('admin.settings.core_update.rollback_manual')}}"
+                  }
+                },
+                {
+                  "id": "core_update_rollback_failed_targets",
+                  "type": "basic",
+                  "name": "P",
+                  "if": "{{(_computed.coreUpdateRun?.rollback?.failed_targets ?? []).length > 0}}",
+                  "props": {
+                    "className": "text-error-soft text-xs"
+                  },
+                  "text": "$t:admin.settings.core_update.rollback_failed_targets|targets={{(_computed.coreUpdateRun?.rollback?.failed_targets ?? []).join(', ')}}"
+                },
+                {
+                  "id": "core_update_report_path",
+                  "type": "basic",
+                  "name": "P",
+                  "if": "{{_computed.coreUpdateRun?.error?.report_path}}",
+                  "props": {
+                    "className": "text-secondary text-xs break-all"
+                  },
+                  "text": "{{$t('admin.settings.core_update.report_path') + ': ' + (_computed.coreUpdateRun?.error?.report_path ?? '')}}"
+                },
+                {
+                  "id": "core_update_backup_path",
+                  "type": "basic",
+                  "name": "P",
+                  "if": "{{_computed.coreUpdateRun?.status === 'rollback_failed' && _computed.coreUpdateRun?.rollback?.backup_path}}",
+                  "props": {
+                    "className": "text-secondary text-xs break-all"
+                  },
+                  "text": "{{$t('admin.settings.core_update.backup_path') + ': ' + (_computed.coreUpdateRun?.rollback?.backup_path ?? '')}}"
+                }
+              ]
+            },
+
+            {
+              "id": "core_update_notices",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{(_computed.coreUpdateRun?.notices ?? []).length > 0}}",
+              "props": {
+                "className": "rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 p-3 space-y-1"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-heading text-sm"
+                  },
+                  "text": "$t:admin.settings.core_update.notices_title"
+                },
+                {
+                  "type": "basic",
+                  "name": "Ul",
+                  "props": {
+                    "className": "list-disc list-inside space-y-1"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Li",
+                      "iteration": {
+                        "source": "_computed.coreUpdateRun?.notices ?? []",
+                        "item_var": "notice",
+                        "index_var": "noticeIndex"
+                      },
+                      "props": {
+                        "className": "text-secondary text-xs"
+                      },
+                      "text": "{{notice}}"
+                    }
+                  ]
+                }
+              ]
+            },
+
+            {
+              "id": "core_update_warnings",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{(_computed.coreUpdateRun?.warnings ?? []).length > 0}}",
+              "props": {
+                "className": "rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-3 space-y-1"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-heading text-sm"
+                  },
+                  "text": "$t:admin.settings.core_update.warnings_title"
+                },
+                {
+                  "type": "basic",
+                  "name": "Ul",
+                  "props": {
+                    "className": "list-disc list-inside space-y-1"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Li",
+                      "iteration": {
+                        "source": "_computed.coreUpdateRun?.warnings ?? []",
+                        "item_var": "warning",
+                        "index_var": "warningIndex"
+                      },
+                      "props": {
+                        "className": "text-secondary text-xs"
+                      },
+                      "text": "{{warning}}"
+                    }
+                  ]
+                }
+              ]
+            },
+
+            {
+              "id": "core_update_run_actions",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex flex-wrap gap-2"
+              },
+              "children": [
+                {
+                  "id": "core_update_log_toggle",
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "type": "button",
+                    "className": "btn-secondary"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "coreUpdateLogOpen": "{{!(_local.coreUpdateLogOpen ?? false)}}"
+                      }
+                    }
+                  ],
+                  "text": "{{(_local.coreUpdateLogOpen ?? false) ? $t('admin.settings.core_update.hide_log') : $t('admin.settings.core_update.view_log')}}"
+                },
+                {
+                  "id": "core_update_resume_button",
+                  "type": "basic",
+                  "name": "Button",
+                  "if": "{{(_computed.coreUpdateRun?.status === 'running' || _computed.coreUpdateRun?.status === 'rolling_back') && _global.coreUpdateBusy !== true}}",
+                  "props": {
+                    "type": "button",
+                    "className": "btn-primary"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "resumeCoreUpdate"
+                    }
+                  ],
+                  "text": "$t:admin.settings.core_update.resume"
+                },
+                {
+                  "id": "core_update_guide_button",
+                  "type": "basic",
+                  "name": "Button",
+                  "if": "{{_computed.coreUpdateRun?.status === 'rolled_back' || _computed.coreUpdateRun?.status === 'rollback_failed'}}",
+                  "props": {
+                    "type": "button",
+                    "className": "btn-secondary"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "openModal",
+                      "target": "core_update_guide_modal"
+                    }
+                  ],
+                  "text": "$t:admin.settings.core_update.view_guide"
+                },
+                {
+                  "id": "core_update_dismiss_button",
+                  "type": "basic",
+                  "name": "Button",
+                  "if": "{{_computed.coreUpdateRun?.status === 'completed' || _computed.coreUpdateRun?.status === 'rolled_back' || _computed.coreUpdateRun?.status === 'rollback_failed'}}",
+                  "props": {
+                    "type": "button",
+                    "className": "btn-secondary"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "dismissCoreUpdate"
+                    }
+                  ],
+                  "text": "$t:admin.settings.core_update.dismiss"
+                }
+              ]
+            },
+
+            {
+              "id": "core_update_log",
+              "type": "basic",
+              "name": "Pre",
+              "if": "{{(_local.coreUpdateLogOpen ?? false)}}",
+              "props": {
+                "className": "max-h-72 overflow-auto rounded-lg bg-gray-900 dark:bg-gray-950 text-gray-100 dark:text-gray-200 text-xs p-3 whitespace-pre-wrap"
+              },
+              "text": "{{(_computed.coreUpdateRun?.logs ?? []).join('\n')}}"
+            }
+          ]
+        }
+      ]
+    },
+
+    {
+      "id": "card_core_update_advanced",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{!_computed.coreUpdateRun}}",
+      "props": {
+        "className": "admin-card"
+      },
+      "children": [
+        {
+          "type": "composite",
+          "name": "Accordion",
+          "props": {
+            "defaultOpen": false
+          },
+          "children": [
+            {
+              "id": "core_update_advanced_trigger",
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-heading"
+              },
+              "text": "$t:admin.settings.core_update.advanced_title"
+            },
+            {
+              "id": "core_update_advanced_content",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "pt-3"
+              },
+              "children": [
+              {
+                "id": "core_update_manual_zip",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                  "className": "space-y-2 mb-4"
+                },
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                      "className": "text-label"
+                    },
+                    "text": "$t:admin.settings.core_update.manual_zip_label"
+                  },
+                  {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                      "className": "text-secondary text-xs"
+                    },
+                    "text": "$t:admin.settings.core_update.manual_zip_hint"
+                  },
+                  {
+                    "id": "core_update_manual_zip_empty",
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{(_computed.coreUpdateManualSources ?? []).length === 0}}",
+                    "props": {
+                      "className": "text-secondary text-xs"
+                    },
+                    "text": "$t:admin.settings.core_update.manual_zip_none"
+                  },
+                  {
+                    "id": "core_update_manual_zip_select",
+                    "type": "basic",
+                    "name": "Select",
+                    "if": "{{(_computed.coreUpdateManualSources ?? []).length > 0}}",
+                    "props": {
+                      "className": "input-field",
+                      "value": "{{_local.coreUpdateZipFile ?? ''}}"
+                    },
+                    "actions": [
+                      {
+                        "type": "change",
+                        "handler": "setState",
+                        "params": {
+                          "target": "local",
+                          "coreUpdateZipFile": "{{$event.target.value}}"
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "type": "basic",
+                        "name": "Option",
+                        "props": {
+                          "value": ""
+                        },
+                        "text": "$t:admin.settings.core_update.manual_zip_auto"
+                      },
+                      {
+                        "type": "basic",
+                        "name": "Option",
+                        "iteration": {
+                          "source": "_computed.coreUpdateManualSources ?? []",
+                          "item_var": "source"
+                        },
+                        "props": {
+                          "value": "{{source.name}}"
+                        },
+                        "text": "{{source.name}}"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "core_update_cli_guide",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                  "className": "space-y-2"
+                },
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                      "className": "text-label"
+                    },
+                    "text": "$t:admin.settings.core_update.cli_guide_title"
+                  },
+                  {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                      "className": "text-secondary text-xs"
+                    },
+                    "text": "$t:admin.settings.info.update_guide_desc"
+                  },
+                  {
+                    "type": "basic",
+                    "name": "Pre",
+                    "props": {
+                      "className": "rounded-lg bg-gray-900 dark:bg-gray-950 text-gray-100 dark:text-gray-200 text-xs p-3 whitespace-pre-wrap"
+                    },
+                    "text": "$t:admin.settings.info.update_guide_cmd"
+                  },
+                  {
+                    "id": "core_update_cli_guide_button",
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                      "type": "button",
+                      "className": "btn-secondary"
+                    },
+                    "actions": [
+                      {
+                        "type": "click",
+                        "handler": "openModal",
+                        "target": "core_update_guide_modal"
+                      }
+                    ],
+                    "text": "$t:admin.settings.core_update.view_guide"
+                  }
+                ]
+              }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

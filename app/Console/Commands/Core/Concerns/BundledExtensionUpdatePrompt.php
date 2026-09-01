@@ -11,6 +11,7 @@ use App\Extension\Vendor\VendorMode;
 use App\Search\SearchIndexMaintenanceManager;
 use App\Services\CoreUpdateService;
 use App\Services\LanguagePackService;
+use App\Support\ExecutionEnvironment;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -316,8 +317,9 @@ trait BundledExtensionUpdatePrompt
      */
     private function spawnBundledUpdates(array $manifest): ?array
     {
-        // audit:allow execution-function-availability-via-ssot 현행 직접 판정 — G6(코어 업데이트 CLI)에서 ExecutionEnvironment::hasFunction 으로 이관 (#609 D34)
-        if (! function_exists('proc_open')) {
+        // 가용성 판정은 SSoT 한 곳이 소유한다 (#609 D34 이관 완료) — 판정이 틀리면
+        // in-process 폴백으로 넘어가지 못하고 그 자리에서 `Error` 로 죽는다.
+        if (! ExecutionEnvironment::hasFunction('proc_open')) {
             return null;
         }
 

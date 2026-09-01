@@ -17,8 +17,11 @@
 ## 실행 환경 전제 (CRITICAL)
 
 ```text
-⚠️ core:update 는 SSH/CLI 환경에서 코어 파일 소유자(보통 FTP/SSH 사용자)가
+⚠️ core:update **커맨드** 는 SSH/CLI 환경에서 코어 파일 소유자(보통 FTP/SSH 사용자)가
    직접 실행한다고 가정합니다.
+
+   SSH 가 없는 호스팅을 위한 웹 단계 실행은 §15 가 다룹니다 — 같은 서비스를 같은 순서로
+   부르되, 오케스트레이션만 다릅니다(한 요청 = 한 단계).
 ```
 
 ### 권한 모델
@@ -26,7 +29,8 @@
 | 실행 환경 | 권한 가정 | 권장 사용 |
 |----------|----------|----------|
 | **SSH/CLI 직접 실행** | 사용자 = 파일 소유자 → 모든 코어 파일 쓰기 가능 | ✅ 정상 사용 (권장) |
-| **웹 인스톨러 (`public/install/`)** | PHP-FPM 사용자 (www-data 등) — 권한 제한적 | ⚠️ vendor 번들 모드로만 신규 설치 가능. 코어 업데이트는 미지원 |
+| **웹 인스톨러 (`public/install/`)** | PHP-FPM 사용자 (www-data 등) — 권한 제한적 | ⚠️ vendor 번들 모드로만 신규 설치 가능 |
+| **관리자 화면의 웹 단계 실행** (§15) | PHP-FPM 사용자 | ✅ 서버 명령을 쓸 수 없는 호스팅용. 착수 전 쓰기 가능성을 진단해 불가하면 시작하지 않는다 |
 | **www-data 로 CLI 실행** | 코어 파일 소유자와 다를 수 있음 | ⚠️ 비권장 — 권한 거부 가능 |
 
 ### 권한 거부 발생 시 대처
@@ -61,6 +65,7 @@
 12. [에러 처리 및 로깅](#12-에러-처리-및-로깅)
 13. [유지보수 모드](#13-유지보수-모드)
 14. [코어 vs 확장 업데이트 비교](#14-코어-vs-확장-업데이트-비교)
+15. [웹 단계 실행 (관리자 화면)](#15-웹-단계-실행-관리자-화면)
 
 ---
 
@@ -806,12 +811,22 @@ php artisan core:check-updates
 
 > 파일: `app/Http/Controllers/Api/Admin/CoreUpdateController.php`
 
-| 메서드 | 경로 | 설명 |
-|--------|------|------|
-| GET | `/api/admin/core-update/check-updates` | 코어 업데이트 확인 (422 시 check_failed) |
-| POST | `/api/admin/core-update/changelog` | 코어 변경 로그 조회 (from_version, to_version) |
+| 메서드 | 경로 | 권한 | 설명 |
+|--------|------|------|------|
+| POST | `/api/admin/core-update/check` | `core.settings.update` | 코어 업데이트 확인 (422 시 check_failed) |
+| GET | `/api/admin/core-update/changelog` | `core.settings.read` | 코어 변경 로그 조회 (from_version, to_version) |
+| GET | `/api/admin/core-update/status` | `core.system.update` | 웹 실행 상태 (W6 4상태의 근거) |
+| POST | `/api/admin/core-update/start` | `core.system.update` | 실행 등록 (단계는 수행하지 않음) |
+| POST | `/api/admin/core-update/advance` | `core.system.update` | 다음 단계 **하나**를 수행 |
+| POST | `/api/admin/core-update/dismiss` | `core.system.update` | 끝난 실행의 기록 정리 |
 
-> ActivityLog: `checkForUpdates` 호출 시 `core_update.check` 액티비티 기록
+적용 경로 셋은 설정 수정과 **다른 권한**을 요구합니다 — 설정을 고치는 것과 코어를 갈아
+끼우는 것은 실패 시 되돌리는 비용이 다릅니다.
+
+파라미터·응답 필드·예시는 [api/core-update.md](api/core-update.md) 가 소유합니다.
+
+> ActivityLog: 확인은 `core_update.check`, 웹 실행은 `core_update.started` ·
+> `core_update.completed` · `core_update.failed` 를 기록합니다.
 
 ---
 
@@ -937,6 +952,164 @@ URL: https://example.com/{secret}
 | **로깅** | 타임스탬프 성공/실패 로그 + 실패 보고서 | laravel.log | laravel.log |
 
 ---
+
+## 15. 웹 단계 실행 (관리자 화면)
+
+> 파일: `app/CoreUpdate/{CoreUpdateOrchestrator,CoreUpdateRunState,CoreUpdatePreflight,CoreUpdateStep,CoreUpdateOptions}.php`
+
+SSH 를 쓸 수 없는 호스팅을 위해 관리자 화면(환경설정 > 업데이트)에서 같은 업데이트를
+수행합니다. **일은 신설하지 않습니다** — `CoreUpdateService` 와 기존 콘솔 커맨드
+(`core:execute-upgrade-steps` · `core:execute-bundled-updates`)를 그대로 부르고,
+오케스트레이터는 **순서·재개·되돌리기**만 맡습니다.
+
+### 왜 한 요청에 한 단계인가
+
+파일을 교체한 프로세스가 사라진 클래스를 참조하면 치명 오류가 납니다(실사례:
+2026-04-17). 그래서 단계마다 요청을 끊고, 그 다음 요청은 **신버전 코드로 새로 부팅된
+프로세스**가 처리합니다.
+
+**순서 불변식**: 업그레이드 스텝(`upgrade_steps`)은 파일 적용(`apply`)과 **반드시 다른
+요청**에서 실행합니다. CLI 는 그 격리를 `proc_open` 스폰으로 얻지만 스폰이 막힌 호스팅에는
+그 수단이 없고, 요청 경계가 그것을 대신합니다. 계약 테스트
+(`tests/Unit/CoreUpdate/CoreUpdateStepContractTest.php` ·
+`CoreUpdatePipelineParityTest.php`)가 이 불변식을 고정합니다.
+
+`apply` 단계는 마지막에 컴파일 캐시 파일(`config`·`routes`·`services`·`packages`·`events`)을
+**삭제만** 합니다. 그 자리에서 `clearAllCaches()` 를 부르면 `package:discover` 등이 방금
+교체된 파일을 구버전 프로세스에서 로드하게 되므로, 남은 정리는 다음 요청과 마무리 단계가
+맡습니다.
+
+### 단계
+
+| 순서 | 키 | 내용 |
+| --- | --- | --- |
+| 1 | `preflight` | 시스템 요구사항 · `_pending` 경로 · **적용 대상 전 경로의 쓰기 가능성** · 여유 공간 |
+| 2 | `maintenance` | 유지보수 모드 활성화 |
+| 3 | `download` | 내려받기 또는 운영자 ZIP 추출 |
+| 4 | `backup` | 백업 + 소유권 스냅샷(전체 · 항목별) |
+| 5 | `vendor` | `_pending` vendor 구성 (변경 없으면 스킵) |
+| 6 | `plan` | 신규 파일 manifest + 3-way 증분 적용 목록 |
+| 7 | `apply` | 코어 파일 적용 (증분 고정) |
+| 8 | `vendor_copy` | vendor 디렉토리 복사 |
+| 9 | `migrate` | `runMigrations()` + `reloadCoreConfigAndResync()` |
+| 10 | `upgrade_steps` | 러너 경유 `core:execute-upgrade-steps --steps-only` |
+| 11 | `bundled` | 러너 경유 `core:execute-bundled-updates --manifest=…` (선택) |
+| 12 | `finalize` | 버전 기록 · 캐시 · 소유권 복원 · 링크 복구 · 정리 · 유지보수 해제 |
+
+### 안전 기본값 (웹 전용 고정)
+
+`--force` · `--prune` · `--no-backup` · `--no-maintenance` · `--vendor-mode` · `--source` ·
+`--local` 은 **웹 동선에 입력 표면 자체가 없습니다.** 검증에서 거르는 형태를 택하지 않은
+이유는 규칙 한 줄만 풀면 켜지는 값이 남기 때문입니다 — `CoreUpdateOptions` 에는 그 필드가
+없고, `StartCoreUpdateRequest` 에도 그 키가 없습니다. CLI 는 그 선택들을 그대로 유지합니다.
+
+받는 선택은 넷뿐입니다: 번들 확장·언어팩 동시 업데이트(기본 켬) · 검색 인덱스 재생성
+(기본 끔) · 전역 레이아웃 전략(기본 `overwrite`) · 수동 ZIP 파일명.
+
+### 진행 상태와 재개
+
+`storage/app/core-update/web-run.json` 이 요청 경계를 넘는 유일한 기억입니다. 증분 적용
+목록은 커질 수 있어 사이드카 파일(`web-run-apply-list.json`)로 분리합니다.
+
+`CoreUpdateService` 의 실행 잠금(`flock`)은 프로세스 수명에 묶여 요청 사이를 잇지
+못하므로, 요청 경계를 넘는 직렬화는 상태 파일의 **점유(토큰 + 심박)** 가 맡습니다. 심박을
+읽을 수 없으면 **보유 중으로 봅니다**(fail-closed) — 판정 불능을 「오래됨」으로 접으면
+진행 중인 다른 요청의 점유를 빼앗기 때문입니다. `flock` 은 같은 요청 구간에서 **동시에
+도는 CLI 실행**을 막는 데 계속 쓰입니다.
+
+### 사전 조건은 누르기 전에 보인다
+
+착수 화면(`GET /api/admin/core-update/status`)은 응답의 `preflight` 로 쓰기 권한·여유 공간
+판정을 함께 받습니다. 실행 1단계에서만 재면 쓰기 권한이 없는 호스팅의 운영자는 **사이트를
+점검 모드로 보낸 뒤에야** 그 사실을 알게 됩니다.
+
+화면용 요약은 **얕게** 잽니다 — 각 대상 경로의 쓰기 비트와 여유 공간까지입니다. 하위 전수
+순회와 트리 크기 추정은 저장소 규모에 따라 십수 초가 걸려(실측) 화면을 여는 요청에 실을 수
+없습니다. 전수 판정은 착수 1단계가 소유하며 **차단의 권위도 그쪽에 있습니다.**
+
+진단 대상은 `update.targets` 만이 아니라 **웹 흐름이 실제로 쓰는 경로 전부**입니다 —
+`backup_only`(vendor)는 targets 에 없지만 `vendor_copy` 단계가 덮어쓰고 되돌리기도 그리로
+복원합니다. 빠뜨리면 「진단은 통과했는데 적용에서 실패」가 재현되고, 그때는 이미 파일 적용이
+끝난 뒤라 되돌리기까지 부분 실패합니다.
+
+### 진행은 화면이 스스로 이어간다
+
+한 요청이 한 단계만 수행하므로 **반복 호출의 주체는 화면**입니다. 진행·되돌리기 상태를
+그리는 지점이 마운트될 때 자동으로 다음 단계를 부르며, 그래서 브라우저를 닫았다 다시
+들어와도 진행이 이어집니다. 이 배선이 없으면 진행률만 복원되고 아무도 `advance` 를 부르지
+않아 **사이트가 점검 모드에 멈춘 채** 남습니다 — 실패 시의 「조작 없이 되돌린다」도 다음
+호출이 복원을 수행하는 구조라 같은 배선에 기댑니다.
+
+자동 경로에는 페이지 수명당 상한이 있습니다. 반복 호출 상한으로 멈춘 진행이 곧바로 자동
+재개되면 같은 왕복이 무한히 돌기 때문이며, 그 뒤로는 [이어서 진행] 이 유일한 진행 수단이
+됩니다(그 버튼은 이 상한을 쓰지 않습니다).
+
+### 실패와 되돌리기
+
+단계가 실패하면 상태가 `rolling_back` 으로 전이하고, 이어지는 `advance` 호출이 백업 복원을
+수행합니다 — 운영자 조작이 필요 없습니다. 화면에서 가장 중요한 정보는 「실패했다」가 아니라
+**「지금 사이트는 멀쩡하다」**이므로, 되돌리기 결과를 실패 사유와 분리해 표시합니다.
+복원까지 실패한 경우(`rollback_failed`)에만 수동 복구 절차·백업 위치·실패 리포트 경로를
+엽니다.
+
+업그레이드 스텝이 새 프로세스를 요구하면(`UpgradeHandoffException`) CLI 는 재실행 명령을
+안내하고 끝내지만, 웹에서는 **다음 요청이 곧 새 프로세스**이므로 같은 단계를 이어서
+수행합니다(상한 `MAX_HANDOFF_CONTINUATIONS`).
+
+**업그레이드 스텝 단계는 스폰 실패 모드를 `fallback` 으로 강제합니다.**
+`CoreUpdateService::runUpgradeSteps()` 의 stale 메모리 가드는 `config('app.version')` 이
+목표 버전보다 낮으면 「부모가 구버전 코드를 들고 있다」로 판정하고, 배포 기본값(`abort`)
+에서는 그 자리에서 핸드오프를 던집니다. CLI 는 자식 프로세스 env 에 `APP_VERSION=toVersion`
+을 실어 그 판정을 피합니다.
+
+웹에서는 그 판정의 **전제 자체가 성립하지 않습니다** — 이 단계는 파일 적용과 다른 요청이라
+이미 신버전 코드로 부팅된 프로세스이고, `.env` 의 `APP_VERSION` 은 마무리 단계까지 옛 값으로
+남습니다. 강제하지 않으면 매 요청이 같은 판정을 반복해 핸드오프가 상한까지 소진되고,
+**정상 적용된 코어가 되돌려집니다.** 강제 채널은 `config()`(in-process 러너)와
+`$_ENV`/`$_SERVER`(서브프로세스 자식)이며, `putenv` 는 쓰지 않습니다 — 그 값은 프로세스
+수명에 남아 같은 워커의 다음 요청까지 모드를 바꿉니다.
+
+**되돌리기는 성공 경로와 같은 강도로 마무리합니다.** 파일을 제자리에 놓는 것으로 끝나지
+않습니다 — 시작 전 스냅샷으로 소유권·퍼미션을 복원하고(복원 실패는 경고로 노출), 컴파일
+캐시는 **파일만** 지우며(`clearAllCaches()` 를 부르면 되돌린 디스크를 신버전 클래스를 든
+프로세스가 재발견합니다), 파일을 쓰는 구간이므로 단계 수행과 **같은 잠금** 안에서 돕니다.
+
+### 유지보수 모드에 갇히지 않는다
+
+업데이트는 스스로 유지보수 모드를 켭니다. 진행·되돌리기 경로가 그 안에 갇히면 사이트를
+세워 놓고 이어 갈 수단이 사라지므로 두 겹으로 엽니다:
+
+1. `MaintenanceModePage::MAINTENANCE_EXEMPT_URIS` — `status`·`advance`·`dismiss` 세 경로.
+   실제 라우트 URI 와의 일치는 계약 테스트가 고정합니다(어긋나면 진행이 503 으로 멈춥니다).
+2. `advance` 응답이 싣는 유지보수 우회 쿠키 — 관리자 화면(SPA 셸·다른 조회 API)까지 엽니다.
+
+쿠키만으로는 부족합니다(만료·다른 기기·쿠키 차단). 목록만으로도 부족합니다(관리자 화면
+자체가 열리지 않습니다).
+
+### 권한과 활동 로그
+
+`core.system.update` 는 설정 수정과 분리된 권한이며 최고관리자 역할에만 기본
+부여됩니다. 이 권한이 없는 관리자에게 화면은 업데이트 영역을 **비활성이 아니라
+미표시**로 다룹니다.
+
+실행·성공·실패는 훅(`core.core_update.started` · `.completed` · `.failed`)으로 발행되고
+`CoreActivityLogListener` 가 활동 로그에 남깁니다. 실패 로그에는 되돌리기 결과가 함께
+실립니다 — 「실패했다」와 「사이트가 지금 어떤 상태인가」는 다른 사실입니다.
+
+### 수동 ZIP 소스
+
+외부 접속이 막힌 서버는 릴리스 ZIP 을 `storage/app/core_pending` 에 올려 두고 이름으로
+지정합니다. 디렉토리는 서버가 정하고 **이름만** 받으며, 해석 결과가 그 디렉토리 밖을
+가리키면 거부합니다. 이후는 자동 내려받기와 같은 파이프라인이며, 버전 비교도 동일하게
+적용됩니다(웹에는 `--force` 가 없습니다).
+
+### 정리 주체
+
+전개 디렉토리(`storage/app/core_pending/core_*`)는 `cleanupPending()` 이 정상·처리된 실패
+경로에서만 지웁니다. 치명 오류·요청 시간 초과·강제 종료에서는 그 코드가 돌지 않으므로,
+`StorageLeftoverPruneService` 의 `core_pending_staging` 대상군이 보존일이 지난 것을
+회수합니다. 이름 규약은 `CoreUpdateService::PENDING_DIR_PREFIX` 가 소유하고 정리 쪽이 그
+상수를 읽습니다.
 
 ## 참고 파일 위치
 

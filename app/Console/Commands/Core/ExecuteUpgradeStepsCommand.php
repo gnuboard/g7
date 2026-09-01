@@ -155,7 +155,11 @@ class ExecuteUpgradeStepsCommand extends Command
         // `Aborted.` exit=1 회귀 발생 (882deb9b0 사각지대). env 시그널이 옵션 부재를 보완.
         //
         // 단독 호출 (운영자 수동) 시엔 env 미설정 → 모든 단계 정상 진행.
-        $isSpawnChild = getenv('G7_UPDATE_IN_PROGRESS') === '1';
+        // `getenv` 가 막힌 호스팅에서도 판정은 성립해야 한다 — 부모는 `$_ENV`/`$_SERVER`
+        // 에도 같은 값을 심고, 서브프로세스 러너는 그 둘을 합쳐 자식에게 물려준다 (#609 D34).
+        $isSpawnChild = ($_ENV['G7_UPDATE_IN_PROGRESS']
+            ?? $_SERVER['G7_UPDATE_IN_PROGRESS']
+            ?? (ExecutionEnvironment::hasFunction('getenv') ? getenv('G7_UPDATE_IN_PROGRESS') : false)) === '1';
 
         // 사전 단계 (단독 실행 안전성 보장).
         //

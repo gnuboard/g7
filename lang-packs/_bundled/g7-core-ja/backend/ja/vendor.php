@@ -13,6 +13,8 @@ return [
         'mode_label' => 'Vendor インストール方式',
         'mode_hint' => 'Composer が使用できない環境ではバンドルモードを選択してください。',
     ],
+    'composer_unavailable' => 'このサーバーでは Composer を実行できません（プロセス実行関数が無効化されています）。拡張が提供する vendor バンドルを使用するか、SSH が利用できる環境で実行してください。',
+
     'build' => [
         'start' => '{target} ビルド中...',
         'success' => '{target} ビルド完了 ({size}, {packages} packages)',

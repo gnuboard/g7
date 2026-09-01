@@ -712,6 +712,26 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::get('changelog', [AdminCoreUpdateController::class, 'changelog'])
             ->middleware('permission:admin,core.settings.read')
             ->name('api.admin.core-update.changelog');
+
+        // 웹 단계 실행 (W6) — 적용 경로는 **별도 권한**을 요구한다 (D4). 설정을 고칠 수
+        // 있다는 것과 코어를 갈아 끼울 수 있다는 것은 다른 등급이고, 이 권한이 없는
+        // 관리자에게는 화면에서 영역 자체가 보이지 않는다.
+        //
+        // 이 세 경로의 URI 는 `MaintenanceModePage::MAINTENANCE_EXEMPT_URIS` 와 짝이다 —
+        // 업데이트가 스스로 켠 점검 모드에 진행·되돌리기가 갇히면 안 되기 때문이다.
+        // 한쪽만 바꾸면 진행이 503 으로 멈추므로 계약 테스트가 둘을 대조한다.
+        Route::get('status', [AdminCoreUpdateController::class, 'status'])
+            ->middleware('permission:admin,core.system.update')
+            ->name('api.admin.core-update.status');
+        Route::post('start', [AdminCoreUpdateController::class, 'start'])
+            ->middleware('permission:admin,core.system.update')
+            ->name('api.admin.core-update.start');
+        Route::post('advance', [AdminCoreUpdateController::class, 'advance'])
+            ->middleware('permission:admin,core.system.update')
+            ->name('api.admin.core-update.advance');
+        Route::post('dismiss', [AdminCoreUpdateController::class, 'dismiss'])
+            ->middleware('permission:admin,core.system.update')
+            ->name('api.admin.core-update.dismiss');
     });
 
     // 메뉴 관리

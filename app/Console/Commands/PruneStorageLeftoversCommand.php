@@ -38,6 +38,7 @@ class PruneStorageLeftoversCommand extends Command
         'temp' => '코어 임시 산출물',
         'storage_temp' => 'composer 폴백 임시 디렉토리',
         'core_pending' => '번들 업데이트 매니페스트 잔존',
+        'core_pending_staging' => '코어 업데이트 전개 디렉토리 잔존',
         'core_update_preserved' => '코어 업데이트 교체 전 사본',
         'core_update_reports' => '코어 업데이트 리포트 로그',
         'public_storage_broken' => '손상된 공개 스토리지 링크 백업',

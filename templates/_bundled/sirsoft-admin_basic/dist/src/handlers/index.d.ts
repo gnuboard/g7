@@ -8,6 +8,7 @@ import { toggleSidebarHandler, initSidebarHandler } from './sidebarHandler';
 import { downloadAttachmentHandler } from './downloadAttachment';
 import { checkAssetUrlModeDriftHandler, detectAssetUrlModeHandler } from './detectAssetUrlModeHandler';
 import { copyToClipboardHandler } from './copyToClipboardHandler';
+import { startCoreUpdateHandler, resumeCoreUpdateHandler, autoResumeCoreUpdateHandler, dismissCoreUpdateHandler, refreshCoreUpdateStatusHandler } from './coreUpdateHandler';
 /**
  * 핸들러 맵
  *
@@ -19,6 +20,11 @@ import { copyToClipboardHandler } from './copyToClipboardHandler';
 export declare const handlerMap: {
     readonly detectAssetUrlMode: typeof detectAssetUrlModeHandler;
     readonly checkAssetUrlModeDrift: typeof checkAssetUrlModeDriftHandler;
+    readonly startCoreUpdate: typeof startCoreUpdateHandler;
+    readonly resumeCoreUpdate: typeof resumeCoreUpdateHandler;
+    readonly autoResumeCoreUpdate: typeof autoResumeCoreUpdateHandler;
+    readonly dismissCoreUpdate: typeof dismissCoreUpdateHandler;
+    readonly refreshCoreUpdateStatus: typeof refreshCoreUpdateStatusHandler;
     readonly setTheme: typeof setThemeHandler;
     readonly initTheme: typeof initThemeHandler;
     readonly scrollToSection: typeof scrollToSectionHandler;

@@ -11,6 +11,10 @@
 - 게시판 환경설정 > 일괄 적용 확인 창의 「금지어」 항목 이름 일본어 번역을 추가했습니다 (`admin/settings.bulk_apply.field_labels.blocked_keywords`).
 - 열람 권한이 없는 비밀글에 댓글·답글을 작성하려 할 때 표시되는 안내 문구의 일본어 번역을 추가했습니다 (`messages.comment.post_secret`, `validation.comment.post_id.secret`, `validation.post.parent_id.secret`).
 
+### Fixed
+
+- 안내 문구의 값 표시 형식을 원본(한국어) 문구와 맞췄습니다. 건수와 글자 수 제한이 일본어 화면에서 표시되지 않을 수 있던 문제가 해소됩니다.
+
 ## [1.0.3] - 2026-08-19
 
 ### Added

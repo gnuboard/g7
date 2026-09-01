@@ -481,6 +481,22 @@ return [
                     ['identifier' => 'core.language_packs.update', 'type' => 'admin', 'name' => ['ko' => '언어팩 업데이트', 'en' => 'Update Language Packs'], 'description' => ['ko' => '설치된 언어팩의 업데이트를 확인하고 실행할 수 있습니다.', 'en' => 'Can check and apply updates for installed language packs.'], 'order' => 4],
                 ],
             ],
+            [
+                // 코어 자신을 갈아 끼우는 권한은 **환경설정 묶음에 두지 않는다** (#609 D4).
+                // 설정을 고치는 것과 코어를 교체하는 것은 실패 시 되돌리는 비용이 다르고,
+                // 같은 묶음에 두면 권한 화면에서 둘이 뭉뚱그려져 별도 권한을 만든 취지를
+                // 잃는다. 이 권한이 없는 관리자에게는 환경설정의 업데이트 영역이
+                // 비활성이 아니라 **보이지 않는다**.
+                'identifier' => 'core.system',
+                'name' => ['ko' => '시스템 관리', 'en' => 'System Management'],
+                'description' => ['ko' => '코어 자체의 유지보수 권한', 'en' => 'Core maintenance permissions'],
+                'category' => 'system',
+                'order' => 14,
+                'type' => 'admin',
+                'permissions' => [
+                    ['identifier' => 'core.system.update', 'type' => 'admin', 'name' => ['ko' => '코어 업데이트', 'en' => 'Core Update'], 'description' => ['ko' => '그누보드7 코어를 새 버전으로 업데이트할 수 있습니다.', 'en' => 'Can update the Gnuboard7 core to a new version.'], 'order' => 1],
+                ],
+            ],
         ],
     ],
 

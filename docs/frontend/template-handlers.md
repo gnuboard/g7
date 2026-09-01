@@ -11,7 +11,7 @@
 1. setLocale: 앱 언어 변경 — 엔진 빌트인 (ActionDispatcher)
 2. setTheme/initTheme: 다크/라이트 모드 — 양쪽 템플릿 공통
 3. 각 템플릿별 전용 핸들러 → 아래 링크 참조
-4. sirsoft-admin_basic: scrollToSection, initMenuFromUrl, filterVisibility 4종, multilingualTag 3종
+4. sirsoft-admin_basic: scrollToSection, initMenuFromUrl, filterVisibility 4종, multilingualTag 3종, coreUpdate 5종
 5. sirsoft-basic: 장바구니 6종, 상품 옵션 2종, 다중 통화 5종, 스토리지 6종
 ```
 

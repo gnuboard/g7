@@ -122,9 +122,23 @@ class CoreActivityLogListenerTest extends TestCase
     {
         $hooks = CoreActivityLogListener::getSubscribedHooks();
 
-        // 65개 로깅(after_*) 훅 (mail_template 2개 제거됨, IDV/auth 후속 추가 분 포함,
-        // develop 머지 후 +2, 관리자 계정 잠금 해제(core.auth.account_unlocked) +1)
-        $this->assertCount(65, $hooks);
+        // 로깅(after_*) 훅 (mail_template 2개 제거됨, IDV/auth 후속 추가 분 포함,
+        // develop 머지 후 +2, 관리자 계정 잠금 해제(core.auth.account_unlocked) +1,
+        // 코어 업데이트 웹 단계 실행 3개(started·completed·failed — #609 G6) +3,
+        // 운영자 추가 에셋 변경(core.custom_assets.after_change — develop) +1)
+        $this->assertCount(69, $hooks);
+
+        // 숫자만 세면 「구독은 했는데 핸들러가 없다」가 통과한다 — 등록된 훅 전부가
+        // 실제 메서드를 가리키는지 함께 본다.
+        foreach ($hooks as $hook => $handler) {
+            $method = is_array($handler) ? ($handler['method'] ?? null) : $handler;
+
+            $this->assertIsString($method, "훅 {$hook} 의 핸들러 이름을 읽지 못했다.");
+            $this->assertTrue(
+                method_exists(CoreActivityLogListener::class, $method),
+                "훅 {$hook} 가 존재하지 않는 메서드 {$method} 를 가리킨다.",
+            );
+        }
     }
 
     public function test_handle_does_nothing(): void

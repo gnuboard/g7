@@ -10,11 +10,11 @@
     "update_failed": "Failed to update product.",
     "deleted": "Product deleted successfully.",
     "delete_failed": "Failed to delete product.",
-    "bulk_updated": ":count products updated successfully.",
+    "bulk_updated": "{{count}} products updated successfully.",
     "bulk_update_failed": "Failed to bulk update products.",
-    "bulk_price_updated": "Price updated for :count products.",
+    "bulk_price_updated": "Price updated for {{count}} products.",
     "bulk_price_update_failed": "Failed to bulk update product prices.",
-    "bulk_stock_updated": "Stock updated for :count products.",
+    "bulk_stock_updated": "Stock updated for {{count}} products.",
     "bulk_stock_update_failed": "Failed to bulk update product stock.",
     "bulk": {
       "no_selection": "No items selected.",
@@ -26,9 +26,9 @@
     }
   },
   "options": {
-    "bulk_price_updated": "Price updated for :count options.",
+    "bulk_price_updated": "Price updated for {{count}} options.",
     "bulk_price_update_failed": "Failed to bulk update option prices.",
-    "bulk_stock_updated": "Stock updated for :count options.",
+    "bulk_stock_updated": "Stock updated for {{count}} options.",
     "bulk_stock_update_failed": "Failed to bulk update option stock.",
     "bulk_update_success": "{count} options have been updated.",
     "bulk_update_error": "Option bulk update failed.",

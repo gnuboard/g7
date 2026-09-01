@@ -9,9 +9,72 @@
     "title": "$t:admin.settings.page_title",
     "description": "$t:admin.settings.page_description"
   },
+  "defines": {
+    "settingsTabs": [
+      {
+        "id": "general",
+        "label": "$t:admin.settings.tabs.general"
+      },
+      {
+        "id": "mail",
+        "label": "$t:admin.settings.tabs.mail"
+      },
+      {
+        "id": "upload",
+        "label": "$t:admin.settings.tabs.upload"
+      },
+      {
+        "id": "seo",
+        "label": "$t:admin.settings.tabs.seo"
+      },
+      {
+        "id": "security",
+        "label": "$t:admin.settings.tabs.security"
+      },
+      {
+        "id": "drivers",
+        "label": "$t:admin.settings.tabs.drivers"
+      },
+      {
+        "id": "advanced",
+        "label": "$t:admin.settings.tabs.advanced"
+      },
+      {
+        "id": "notification_definitions",
+        "label": "$t:admin.settings.tabs.notification_definitions"
+      },
+      {
+        "id": "language_packs",
+        "label": "$t:admin.settings.tabs.language_packs"
+      },
+      {
+        "id": "identity",
+        "label": "$t:admin.settings.tabs.identity"
+      },
+      {
+        "id": "system",
+        "label": "$t:admin.settings.tabs.system"
+      },
+      {
+        "id": "update",
+        "label": "$t:admin.settings.tabs.update"
+      },
+      {
+        "id": "info",
+        "label": "$t:admin.settings.tabs.info"
+      }
+    ]
+  },
   "computed": {
     "isReadOnly": "{{!!_global.settingsAbilities && !(_global.settingsAbilities?.can_update ?? false)}}",
-    "envLocked": "{{_local.form?._meta?.env_locked ?? null}}"
+    "envLocked": "{{_local.form?._meta?.env_locked ?? null}}",
+    "coreUpdateStatus": "{{_global.coreUpdateStatus ?? core_update_status?.data ?? null}}",
+    "coreUpdateRun": "{{(_global.coreUpdateStatus ?? core_update_status?.data)?.run ?? null}}",
+    "coreUpdateSteps": "{{(_global.coreUpdateStatus ?? core_update_status?.data)?.steps ?? []}}",
+    "coreUpdateTotalSteps": "{{(_global.coreUpdateStatus ?? core_update_status?.data)?.total_steps ?? 0}}",
+    "coreUpdateManualSources": "{{(_global.coreUpdateStatus ?? core_update_status?.data)?.manual_sources ?? []}}",
+    "coreUpdateModified": "{{(_global.coreUpdateStatus ?? core_update_status?.data)?.modified_layouts ?? null}}",
+    "coreUpdatePreflight": "{{(_global.coreUpdateStatus ?? core_update_status?.data)?.preflight ?? null}}"
   },
   "transition_overlay": {
     "target": "settings_tab_content",
@@ -111,6 +174,31 @@
       }
     },
     {
+      "id": "core_update_status",
+      "label_key": "$t:editor.data_source.core_update_status",
+      "type": "api",
+      "endpoint": "/api/admin/core-update/status",
+      "method": "GET",
+      "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'update' && (_global.settingsAbilities?.can_core_update !== false)}}",
+      "auto_fetch": true,
+      "auth_required": true,
+      "refetchOnMount": true,
+      "fallback": {
+        "data": {
+          "run": null,
+          "steps": [],
+          "total_steps": 0,
+          "manual_sources": [],
+          "modified_layouts": {
+            "has_modified": false,
+            "count": 0,
+            "extensions": []
+          },
+          "preflight": null
+        }
+      }
+    },
+    {
       "id": "system_status",
       "label_key": "$t:editor.data_source.system_status",
       "type": "api",
@@ -143,7 +231,7 @@
       "type": "api",
       "endpoint": "/api/admin/settings/system-info",
       "method": "GET",
-      "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'info'}}",
+      "if": "{{['info', 'update'].includes(query.tab || _global.activeSettingsTab || 'general')}}",
       "auto_fetch": true,
       "auth_required": true,
       "fallback": {
@@ -531,56 +619,7 @@
             "name": "TabNavigation",
             "props": {
               "className": "sticky-tab-nav-responsive",
-              "tabs": [
-                {
-                  "id": "general",
-                  "label": "$t:admin.settings.tabs.general"
-                },
-                {
-                  "id": "mail",
-                  "label": "$t:admin.settings.tabs.mail"
-                },
-                {
-                  "id": "upload",
-                  "label": "$t:admin.settings.tabs.upload"
-                },
-                {
-                  "id": "seo",
-                  "label": "$t:admin.settings.tabs.seo"
-                },
-                {
-                  "id": "security",
-                  "label": "$t:admin.settings.tabs.security"
-                },
-                {
-                  "id": "drivers",
-                  "label": "$t:admin.settings.tabs.drivers"
-                },
-                {
-                  "id": "advanced",
-                  "label": "$t:admin.settings.tabs.advanced"
-                },
-                {
-                  "id": "notification_definitions",
-                  "label": "$t:admin.settings.tabs.notification_definitions"
-                },
-                {
-                  "id": "language_packs",
-                  "label": "$t:admin.settings.tabs.language_packs"
-                },
-                {
-                  "id": "identity",
-                  "label": "$t:admin.settings.tabs.identity"
-                },
-                {
-                  "id": "system",
-                  "label": "$t:admin.settings.tabs.system"
-                },
-                {
-                  "id": "info",
-                  "label": "$t:admin.settings.tabs.info"
-                }
-              ],
+              "tabs": "{{(_defines?.settingsTabs ?? []).filter(t => t.id !== 'update' || (_global.settingsAbilities?.can_core_update ?? false))}}",
               "activeTabId": "{{_global.activeSettingsTab || query.tab || 'general'}}",
               "variant": "default"
             },
@@ -767,6 +806,9 @@
                 "partial": "partials/admin_settings/_tab_system.json"
               },
               {
+                "partial": "partials/admin_settings/_tab_update.json"
+              },
+              {
                 "partial": "partials/admin_settings/_tab_info.json"
               }
             ],
@@ -778,7 +820,7 @@
             "id": "footer_buttons",
             "type": "basic",
             "name": "Div",
-            "if": "{{!_computed.isReadOnly && (_global.activeSettingsTab || query.tab || 'general') !== 'info' && (_global.activeSettingsTab || query.tab || 'general') !== 'language_packs'}}",
+            "if": "{{!_computed.isReadOnly && (_global.activeSettingsTab || query.tab || 'general') !== 'info' && (_global.activeSettingsTab || query.tab || 'general') !== 'update' && (_global.activeSettingsTab || query.tab || 'general') !== 'language_packs'}}",
             "props": {
               "className": "sticky-footer-buttons"
             },

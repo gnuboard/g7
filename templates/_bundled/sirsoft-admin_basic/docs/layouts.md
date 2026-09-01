@@ -5,7 +5,7 @@
 ## 레이아웃 목록
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 148개 (루트: `layouts`).
+레이아웃 149개 (루트: `layouts`).
 
 | 그룹 | 개수 |
 |---|---|
@@ -13,7 +13,7 @@
 | `auth` | 1개 |
 | `errors` | 6개 |
 | `overrides` | 1개 |
-| `partials` | 113개 |
+| `partials` | 114개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -143,6 +143,7 @@
 | `_tab_security` | `partials` | partial | - |
 | `_tab_seo` | `partials` | partial | - |
 | `_tab_system` | `partials` | partial | - |
+| `_tab_update` | `partials` | partial | - |
 | `_tab_upload` | `partials` | partial | - |
 | `_modal_extension_preview_layout` | `partials` | partial | - |
 | `_modal_extension_version_history` | `partials` | partial | - |

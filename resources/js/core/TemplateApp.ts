@@ -357,6 +357,34 @@ export class TemplateApp {
         if (!savedLocale && config.locale) {
             this.saveLocaleToStorage(config.locale);
         }
+
+        this.applyDocumentLanguage(finalLocale);
+    }
+
+    /**
+     * 문서의 언어 표시(`<html lang>`)를 실제 렌더 로케일에 맞춥니다.
+     *
+     * blade 는 **서버가 아는 로케일**로 이 속성을 찍는데, 사용자가 화면에서 고른 언어는
+     * `g7_locale` 에만 있어 서버가 모를 수 있다. 그러면 일본어로 그려진 화면이
+     * `lang="en"` 을 달고 나간다 — 화면 읽기 프로그램은 일본어를 영어로 읽으려 하고,
+     * 브라우저의 번역 제안·하이픈 처리도 잘못된 언어를 기준으로 동작한다.
+     *
+     * 초기 확정과 언어 전환 **양쪽**이 이 지점을 지난다 — 한쪽만 두면 전환한 뒤에만,
+     * 또는 첫 진입에만 맞는 상태가 된다.
+     *
+     * @param locale 적용할 로케일 (예: `ja`, `ko`)
+     */
+    private applyDocumentLanguage(locale: string): void {
+        if (typeof document === 'undefined' || !locale) {
+            return;
+        }
+
+        try {
+            // BCP 47 은 하이픈을 쓴다 (`ko_KR` → `ko-KR`).
+            document.documentElement.lang = locale.replace(/_/g, '-');
+        } catch (error) {
+            logger.warn('Failed to apply document language:', error);
+        }
     }
 
     /**
@@ -3099,6 +3127,7 @@ export class TemplateApp {
 
             // 로케일 업데이트
             this.config.locale = locale;
+            this.applyDocumentLanguage(locale);
 
             // localStorage에 저장
             this.saveLocaleToStorage(locale);

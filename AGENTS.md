@@ -150,7 +150,7 @@
 
 | 대상 | 진입점 | 문서/엔드포인트 |
 |------|--------|----------------|
-| 코어 | [docs/backend/api/README.md](docs/backend/api/README.md) | 36 / 336 |
+| 코어 | [docs/backend/api/README.md](docs/backend/api/README.md) | 36 / 340 |
 
 
 ### 확장 API 레퍼런스 (14개 확장, 자동 스캔)
@@ -199,7 +199,7 @@
 | `sirsoft-verification_nhnkcp` | 플러그인 | [AGENTS.md](plugins/_bundled/sirsoft-verification_nhnkcp/AGENTS.md) | [docs/](plugins/_bundled/sirsoft-verification_nhnkcp/docs/README.md) | 훅 0 · 라우트 2 · 모델 2 · 레이아웃 1 |
 | `gnuboard7-hello_admin_template` | 템플릿 | [AGENTS.md](templates/_bundled/gnuboard7-hello_admin_template/AGENTS.md) | [docs/](templates/_bundled/gnuboard7-hello_admin_template/docs/README.md) | 훅 0 · 라우트 1 · 모델 0 · 레이아웃 8 |
 | `gnuboard7-hello_user_template` | 템플릿 | [AGENTS.md](templates/_bundled/gnuboard7-hello_user_template/AGENTS.md) | [docs/](templates/_bundled/gnuboard7-hello_user_template/docs/README.md) | 훅 0 · 라우트 1 · 모델 0 · 레이아웃 8 |
-| `sirsoft-admin_basic` | 템플릿 | [AGENTS.md](templates/_bundled/sirsoft-admin_basic/AGENTS.md) | [docs/](templates/_bundled/sirsoft-admin_basic/docs/README.md) | 훅 0 · 라우트 29 · 모델 0 · 레이아웃 148 |
+| `sirsoft-admin_basic` | 템플릿 | [AGENTS.md](templates/_bundled/sirsoft-admin_basic/AGENTS.md) | [docs/](templates/_bundled/sirsoft-admin_basic/docs/README.md) | 훅 0 · 라우트 29 · 모델 0 · 레이아웃 149 |
 | `sirsoft-basic` | 템플릿 | [AGENTS.md](templates/_bundled/sirsoft-basic/AGENTS.md) | [docs/](templates/_bundled/sirsoft-basic/docs/README.md) | 훅 0 · 라우트 40 · 모델 0 · 레이아웃 166 |
 
 
@@ -271,6 +271,25 @@
 | `$value` (이벤트 값) | `$event.target.value` |
 | `{{props.xxx}}` (Partial) | data_sources ID 직접 참조 |
 | `{{$response.xxx}}` (onSuccess) | `{{response.xxx}}` ($ 접두사 없음) |
+
+### 프론트 다국어 문구의 치환 자리
+
+값을 끼워 넣는 문구의 자리표시자는 **`{{name}}`**(또는 `{name}`)로 적는다. 백엔드(Laravel)의
+`:name` 은 프론트 엔진이 치환하지 않는다 — 번역기가 읽는 형태가 그 둘뿐이다. `:name` 을 쓰면
+값이 정상 전달돼도 **자리표시자가 문장 그대로 화면에 나가고**, 오류도 경고도 콘솔 로그도
+남지 않는다. 레이아웃 JSON 구조를 보는 검사는 전부 초록이라 그 화면을 실제로 그려 보기
+전에는 드러나지 않는다.
+
+| ❌ 금지 | ✅ 올바른 사용 |
+|--------|---------------|
+| 프론트 lang 에 `"현재 버전은 :version 입니다."` | `"현재 버전은 {{version}} 입니다."` |
+| 문장 조립을 레이아웃이 `$t('키').replace(':step', …)` 로 수행 | 조각을 전부 파라미터로 넘기고 **문장 조립은 언어 파일이 소유**한다(`$t:키\|step={{…}}\|detail={{…}}`) — 로케일마다 어순·구두점이 다르다 |
+| `$t:키\|param={{…}}` 뒤에 다른 바인딩을 이어 붙이기 | 그 바인딩이 파라미터를 삼켜 값이 사라진다 — 이어 붙일 것도 파라미터로 넘긴다 |
+
+백엔드 lang(`lang/**/*.php`)은 대상이 아니다 — 그쪽은 `:name` 이 정상이다.
+
+> 상세: [data-binding-i18n.md](docs/frontend/data-binding-i18n.md) "다국어 처리 기본"
+> 정적 검사가 프론트 lang 전수를 대조한다.
 
 ### iteration/반복 렌더링
 
@@ -474,6 +493,40 @@ pending 은 저장소 B 의 base 가 된다 — `setLocal` 이 `currentSnapshot 
 
 > 상세: [api/system.md](docs/backend/api/system.md) · [storage-driver.md](docs/extension/storage-driver.md)
 > 응답 헤더 계약은 정적 검사로 판정할 수 없어 계약 테스트가 소유한다 — 이 절의 각 항목에는 대응 계약 테스트가 있다
+
+### 웹에서 도는 코어 업데이트 — 요청 경계가 곧 격리다
+
+SSH 를 쓸 수 없는 호스팅의 코어 업데이트는 **한 요청이 한 단계**만 수행한다. 파일을 교체한
+프로세스가 사라진 클래스를 참조하면 치명 오류가 나는데, 명령행은 그 격리를 `proc_open`
+스폰으로 얻고 스폰이 막힌 호스팅에는 그 수단이 없다 — 요청 경계가 그것을 대신한다. 그래서
+단계 분리는 편의가 아니라 **안전 요건**이고, 한 단계 안에서 둘을 이어 하면 목록은 그대로인
+채 경계만 사라진다.
+
+| ❌ 금지 | ✅ 올바른 사용 |
+|--------|---------------|
+| 한 단계 구현이 파일 적용과 업그레이드 스텝을 이어 수행 | 두 단계는 **다른 요청** — `CoreUpdateStep` 순서와 `stepApply`/`stepUpgradeSteps` 분리가 그 경계다 |
+| 파일 적용 직후 같은 요청에서 `clearAllCaches()`·`package:discover` 호출 | 컴파일 캐시 **파일만 삭제** — 커맨드를 부르면 방금 교체된 파일을 구버전 프로세스가 로드한다 |
+| 웹 착수 요청에 `force`·`prune`·`no_backup`·`no_maintenance` 입력을 두고 검증으로 거르기 | **입력 표면 자체를 두지 않는다** — 규칙 한 줄만 풀면 켜지는 값이 남으면 그 선언은 유지되지 않는다. 명령행의 그 옵션들은 그대로 유지한다(웹 미노출이지 기능 제거가 아니다) |
+| 요청 경계를 넘는 직렬화를 `flock`(`acquireRunLock`)에 의존 | 잠금은 프로세스 수명에 묶여 요청 사이를 잇지 못한다 — 상태 파일의 **점유(토큰 + 심박)** 가 그 축이고, `flock` 은 동시에 도는 명령행 실행을 막는 데 쓴다 |
+| 점유 심박을 읽지 못한 것을 「오래됨」으로 접어 회수 | 판정 불능은 **보유 중**(fail-closed) — 접으면 진행 중인 다른 요청의 점유를 빼앗아, 그 점유가 막으려던 상태가 그대로 재현된다 |
+| 진행·되돌리기 엔드포인트를 유지보수 모드 면제 목록에서 누락 | 업데이트가 **스스로 켠** 점검 모드에 진행이 갇힌다 — 목록(`MaintenanceModePage::MAINTENANCE_EXEMPT_URIS`)과 실제 라우트 URI 가 어긋나면 진행이 오류 없이 503 으로 멈춘다 |
+| 우회 쿠키만으로 관리자 화면 접근을 보장 | 쿠키는 만료·다른 기기·차단으로 없을 수 있다 — 면제 목록과 **둘 다** 둔다(한쪽은 복구 경로, 한쪽은 화면) |
+| 실패를 화면에 「실패했다」로만 표시 | 운영자가 먼저 알아야 하는 것은 **「지금 사이트는 멀쩡한가」** — 되돌리기 결과를 실패 사유와 **분리된 영역**에 둔다 |
+| 진행 중에 사람이 멈추는 버튼 제공 | 파일 교체 중 중단은 반쪽 상태를 남긴다 — 실패 판정과 되돌리기는 시스템이 한다 |
+| 업그레이드 스텝 단계를 배포 기본값(`spawn_failure_mode=abort`)으로 그냥 돌리기 | 그 단계에서 **`fallback` 을 강제**한다 — 웹은 `.env` 의 `APP_VERSION` 이 마무리 단계까지 옛 값이라 stale 메모리 가드가 **항상** 참이 되고, 매 요청이 같은 핸드오프를 던져 상한까지 반복한 뒤 **정상 적용된 코어가 되돌려진다**. 그 가드의 전제(부모가 구버전 코드를 들고 있다)는 웹에서 성립하지 않는다 — 이 단계는 파일 적용 다음 요청이다. 강제 채널은 `config()`(in-process)와 `$_ENV`/`$_SERVER`(자식 프로세스)이며 `putenv` 는 쓰지 않는다(프로세스 수명에 남아 같은 워커의 다음 요청까지 모드를 바꾼다) |
+| 되돌리기 경로를 성공 경로보다 약하게 마무리 | 되돌리기도 **파일을 쓰는 구간**이다 — 소유권·퍼미션 복원·컴파일 캐시 파일 삭제(커맨드 호출 금지)·단계 수행과 같은 잠금, 셋 다 성공 경로와 같은 강도로 적용한다. 파일만 제자리에 놓고 끝내면 되돌린 사이트가 쓰기 권한을 잃은 채 500 으로 뜬다 |
+| 사전 진단을 실행 1단계에서만 수행 | 착수 화면이 **누르기 전에** 그 판정을 받는다 — 쓰기 권한이 없는 호스팅의 운영자가 사이트를 점검 모드로 보낸 뒤에야 알게 되면 안 된다. 화면용 요약은 **얕게**(하위 전수 순회·트리 크기 추정 없이) 재고, 전수 판정은 1단계가 소유한다 |
+| 진단 대상을 배포 대상 목록으로만 잡기 | 웹 흐름이 **실제로 쓰는 경로 전부** — 의존성 디렉토리는 배포 대상 목록에 없지만 적용 단계가 덮어쓰고 되돌리기도 그리로 복원한다. 빠뜨리면 「진단은 통과했는데 적용에서 실패」가 그대로 재현되고, 그때는 되돌리기까지 부분 실패한다 |
+| 중단된 진행을 운영자가 손으로 이어 가게 두기 | 화면이 **스스로 이어간다** — 진행·되돌리기 상태를 그리는 지점이 마운트될 때 자동으로 다음 단계를 부른다. 없으면 창을 닫은 운영자의 사이트가 점검 모드에 멈춘 채 남고, 실패 시 「조작 없이 되돌린다」도 그 호출에 기대므로 함께 무너진다. 자동 경로에는 페이지 수명당 상한을 두어 상한으로 멈춘 진행이 무한 재개되지 않게 한다 |
+
+명령행과 웹은 **같은 서비스를 같은 순서로** 부른다. 순서를 아는 지식이 두 곳에 있으므로,
+한쪽에 단계가 늘어도 다른 쪽은 따라가지 못한다 — 그 상태는 오류가 아니라 「어느 한쪽에서만
+나는 결함」으로만 드러난다. `CoreUpdatePipelineParityTest` 가 명령행의 서비스 호출 집합을
+소스에서 도출해 웹이 그 전부를 덮는지 보고, 웹이 일부러 부르지 않는 것은 **사유와 함께**
+선언하게 한다 (그 선언이 낡으면 그것도 red 다).
+
+> 상세: [core-update-system.md §15](docs/backend/core-update-system.md) · [api/core-update.md](docs/backend/api/core-update.md)
+> 계약 테스트: `CoreUpdateStepContractTest`(순서 불변식 · 단계 이름 · 면제 목록 대칭) · `CoreUpdatePipelineParityTest`(명령행↔웹 호출 집합) · `CoreUpdateSafeDefaultsTest`(입력 표면 부재 · 명령행 옵션 존치) · `CoreUpdateRunStateTest`(재개 · 점유)
 
 ### 코드가 남기는 파일에는 정리 주체가 있다
 
@@ -1610,6 +1663,9 @@ php artisan plugin:build sirsoft-payment --active       # 활성 디렉토리에
 
 > **빌드 원칙**: 기본값은 `_bundled` 디렉토리. 빌드 결과물은 빌드 경로 내에만 남음.
 
+`_bundled` 의 `dist/`(코어는 `public/build/core/`)는 Git 추적되는 배포 산출물이다 (`*.map` 만 ignore). src 변경 시 커밋 dist 를 `--production` 으로 동반 재빌드한다 — 신규 소스 리터럴이 dist 에 없으면 stale 빌드이며, 정적 검사가 이를 검출한다. 커밋 dist 에 `//# sourceMappingURL=` 참조를 남기지 않는다 — `.map` 은 배포본에 존재하지 않아 브라우저 개발자 도구에서 404 를 유발한다. 코어 3번들 재빌드는 `core:build --production` (`--full` 은 앱 번들 전용 — `public/build` 를 비워 코어 3번들을 지운다).
+
+코어(`resources/js/core/**` → `public/build/core/*.js`)도 같은 의무를 진다. 소스만 고치고 번들을 다시 굽지 않으면 브라우저는 그 변경을 받지 못하고, 오류도 경고도 나지 않으며 변경 이력에는 「고쳤다」고 적힌 채 릴리즈된다. 코어는 리터럴이 아니라 **클래스 멤버 이름**으로 대조한다 — 최소화는 지역 이름만 줄이고 속성 키는 그대로 남으므로, 리터럴을 하나도 새로 만들지 않는 변경도 검출된다. 세 번들의 합집합과 대조하며, 그 파일의 이름 과반이 번들에 있을 때만 판정한다(번들에 실리지 않은 파일을 흔한 이름 하나로 오판하지 않기 위해서다).
 `_bundled` 의 `dist/`(코어는 `public/build/core/`)는 Git 추적되는 배포 산출물이다 (`*.map` 만 ignore). src 변경 시 커밋 dist 를 `--production` 으로 동반 재빌드한다 — 신규 소스 리터럴이 dist 에 없으면 stale 빌드이며, 정적 검사가 이를 검출한다. 커밋 dist 에 `//# sourceMappingURL=` 참조를 남기지 않는다 — `.map` 은 배포본에 존재하지 않아 브라우저 개발자 도구에서 404 를 유발한다. 코어 3번들 재빌드는 `core:build --production`.
 
 ### 빌드는 자기 산출물만 교체한다 (`emptyOutDir`)

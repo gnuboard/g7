@@ -28,6 +28,15 @@ import { downloadAttachmentHandler } from './downloadAttachment';
 import { checkAssetUrlModeDriftHandler, detectAssetUrlModeHandler } from './detectAssetUrlModeHandler';
 // 클립보드 복사 — 값이 화면에 없어도 복사할 수 있어야 하는 자리(웹 크론 호출 주소)가 있다
 import { copyToClipboardHandler } from './copyToClipboardHandler';
+// 코어 업데이트 웹 단계 실행 (#609 G6) — 서버가 한 요청에 한 단계만 수행하므로
+// 반복 호출의 주체가 화면이다 (요청 경계가 곧 R25 방어선).
+import {
+  startCoreUpdateHandler,
+  resumeCoreUpdateHandler,
+  autoResumeCoreUpdateHandler,
+  dismissCoreUpdateHandler,
+  refreshCoreUpdateStatusHandler,
+} from './coreUpdateHandler';
 
 /**
  * 핸들러 맵
@@ -42,6 +51,13 @@ export const handlerMap = {
   detectAssetUrlMode: detectAssetUrlModeHandler,
   // 대시보드 진단 — 저장된 방식과 실제 환경을 대조해 불일치만 알린다 (저장하지 않음)
   checkAssetUrlModeDrift: checkAssetUrlModeDriftHandler,
+  // 코어 업데이트 (W6) — 착수·이어받기·기록 정리·상태 갱신
+  startCoreUpdate: startCoreUpdateHandler,
+  resumeCoreUpdate: resumeCoreUpdateHandler,
+  // 진행 블록이 마운트될 때 스스로 이어간다 — 창을 닫은 뒤에도 점검 모드에 멈추지 않게
+  autoResumeCoreUpdate: autoResumeCoreUpdateHandler,
+  dismissCoreUpdate: dismissCoreUpdateHandler,
+  refreshCoreUpdateStatus: refreshCoreUpdateStatusHandler,
   setTheme: setThemeHandler,
   initTheme: initThemeHandler,
   scrollToSection: scrollToSectionHandler,

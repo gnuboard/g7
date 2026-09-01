@@ -10,11 +10,11 @@
     "update_failed": "상품 수정에 실패했습니다.",
     "deleted": "상품이 삭제되었습니다.",
     "delete_failed": "상품 삭제에 실패했습니다.",
-    "bulk_updated": ":count개 상품이 일괄 수정되었습니다.",
+    "bulk_updated": "{{count}}개 상품이 일괄 수정되었습니다.",
     "bulk_update_failed": "상품 일괄 수정에 실패했습니다.",
-    "bulk_price_updated": ":count개 상품의 가격이 일괄 변경되었습니다.",
+    "bulk_price_updated": "{{count}}개 상품의 가격이 일괄 변경되었습니다.",
     "bulk_price_update_failed": "상품 가격 일괄 변경에 실패했습니다.",
-    "bulk_stock_updated": ":count개 상품의 재고가 일괄 변경되었습니다.",
+    "bulk_stock_updated": "{{count}}개 상품의 재고가 일괄 변경되었습니다.",
     "bulk_stock_update_failed": "상품 재고 일괄 변경에 실패했습니다.",
     "bulk": {
       "no_selection": "선택된 항목이 없습니다.",
@@ -26,9 +26,9 @@
     }
   },
   "options": {
-    "bulk_price_updated": ":count개 옵션의 판매가가 일괄 변경되었습니다.",
+    "bulk_price_updated": "{{count}}개 옵션의 판매가가 일괄 변경되었습니다.",
     "bulk_price_update_failed": "옵션 판매가 일괄 변경에 실패했습니다.",
-    "bulk_stock_updated": ":count개 옵션의 재고가 일괄 변경되었습니다.",
+    "bulk_stock_updated": "{{count}}개 옵션의 재고가 일괄 변경되었습니다.",
     "bulk_stock_update_failed": "옵션 재고 일괄 변경에 실패했습니다.",
     "bulk_update_success": "옵션 {count}개가 수정되었습니다.",
     "bulk_update_error": "옵션 일괄 업데이트에 실패했습니다.",

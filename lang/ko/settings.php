@@ -247,6 +247,95 @@ return [
         'rollback_root_protection_missing' => '되돌린 뒤 루트 진입·보호 파일이 없습니다 (:paths) — 문서 루트가 public/ 인 표준 배치이거나 되돌린 판본에 원래 없던 파일이라면 정상입니다. 문서 루트를 프로젝트 루트로 쓰고 있다면 설정 파일이 웹에 노출된 상태이므로 즉시 그 파일을 복구하거나 문서 루트를 public/ 으로 바꾸세요.',
         'rollback_docroot_residue' => '되돌리기가 문서 루트 안의 공개 파일 사본을 되살렸습니다 (:paths) — 그 사본은 웹에서 그대로 열립니다. 내용을 확인한 뒤 문서 루트 밖으로 옮기거나 삭제하세요.',
 
+        // ── 웹 단계 실행 (W6 · #609 G6) ────────────────────────────────
+        //
+        // 진행 기록(`log_*`)은 운영자가 [기록 보기] 로 여는 줄이다. 무엇을 했는지가
+        // 아니라 **어디까지 갔는지**를 알 수 있어야 하므로 단계마다 한 줄을 남긴다.
+        'unzip_command_unavailable' => '이 서버에서는 unzip 명령을 실행할 수 없습니다 (프로세스 실행 함수가 차단되어 있습니다). PHP zip 확장(ZipArchive)이 있으면 그 방식으로 자동 전환됩니다.',
+        'composer_unavailable' => '이 서버에서는 Composer 를 실행할 수 없습니다 (프로세스 실행 함수가 차단되어 있습니다). 번들 vendor 방식으로 진행하거나 SSH 가 가능한 환경에서 실행하세요.',
+        'web' => [
+            // 단계 이름 (화면의 진행 목록)
+            'steps' => [
+                'preflight' => '사전 점검',
+                'maintenance' => '점검 모드 전환',
+                'download' => '내려받기',
+                'backup' => '백업',
+                'vendor' => '의존성 준비',
+                'plan' => '적용 대상 산출',
+                'apply' => '파일 적용',
+                'vendor_copy' => '의존성 반영',
+                'migrate' => '데이터베이스 반영',
+                'upgrade_steps' => '업그레이드 스텝',
+                'bundled' => '번들 확장·언어팩',
+                'finalize' => '마무리',
+            ],
+
+            // 응답 메시지
+            'status_success' => '업데이트 상태를 가져왔습니다.',
+            'status_failed' => '업데이트 상태를 가져오지 못했습니다.',
+            'started' => '업데이트를 시작했습니다.',
+            'start_failed' => '업데이트를 시작하지 못했습니다.',
+            'advanced' => '단계를 수행했습니다.',
+            'advance_failed' => '단계를 수행하지 못했습니다.',
+            'dismissed' => '업데이트 기록을 지웠습니다.',
+            'dismiss_failed' => '업데이트 기록을 지우지 못했습니다.',
+
+            // 진행 제어
+            'no_active_run' => '진행 중인 업데이트가 없습니다.',
+            'step_in_progress' => '다른 요청이 같은 단계를 수행하고 있습니다 — 잠시 후 다시 시도하세요.',
+            'still_running' => '업데이트가 아직 진행 중입니다. 끝난 뒤에 기록을 지울 수 있습니다.',
+            'missing_pending_path' => '내려받은 업데이트 파일의 위치를 찾지 못했습니다 — 처음부터 다시 시작하세요.',
+
+            // 사전 진단 (D26)
+            'preflight_failed' => '사전 점검에서 문제가 발견되어 업데이트를 시작하지 않았습니다: :reasons',
+            'preflight_not_writable' => '다음 경로에 쓰기 권한이 없습니다: :paths — 웹에서 업데이트하려면 이 경로들을 웹 서버 계정이 쓸 수 있어야 합니다. 권한을 바꿀 수 없다면 SSH 에서 `php artisan core:update` 를 실행하세요.',
+            'preflight_low_disk' => '여유 공간이 부족합니다 (남은 공간 :free, 필요 추정 :required). 백업과 새 버전이 동시에 놓이는 구간이 있어 현재 크기의 몇 배가 필요합니다.',
+
+            // 수동 ZIP (㉯ — D18)
+            'version_from_zip' => '(ZIP 추출 후 판별)',
+            'zip_file_invalid' => 'ZIP 파일 이름만 지정할 수 있습니다 (경로 없이 `.zip` 으로 끝나는 이름).',
+            'zip_not_newer' => '지정한 ZIP 의 버전(:to)이 현재 버전(:from)보다 새롭지 않습니다. 웹 업데이트는 강제 재적용을 지원하지 않습니다.',
+
+            // 실패·되돌리기 (D10)
+            'upgrade_steps_failed' => '업그레이드 스텝 실행에 실패했습니다: :output',
+            'handoff_exhausted' => '업그레이드 스텝이 새 프로세스 재진입을 반복 요청해 중단했습니다 (마지막 완료 지점 :after / 사유 :reason).',
+            'bundled_partial_failure' => '번들 확장·언어팩 중 :failed개가 업데이트되지 않았습니다. 코어는 정상 반영되었으며, 실패한 확장은 확장 관리 화면에서 개별로 다시 시도할 수 있습니다.',
+            'permission_warning' => '소유권·권한 복원에서 :target 의 :failed개 항목을 정상화하지 못했습니다 — 업로드 파일이나 캐시 쓰기에 문제가 생길 수 있으니 확인하세요.',
+            'maintenance_off_failed' => '점검 모드를 해제하지 못했습니다 (:error) — 사이트가 점검 화면에 머물러 있습니다. SSH 에서 `php artisan up` 을 실행하세요.',
+            'ownership_restore_failed' => '되돌린 뒤 파일 소유권·권한을 원래대로 되돌리지 못했습니다 (:error) — 사이트가 파일을 쓰지 못할 수 있으니 권한을 확인하세요.',
+
+            // 진행 기록
+            'log_started' => '업데이트 시작 (:from → :to)',
+            'log_preflight_ok' => '사전 점검 통과 (검사 경로 :checked개)',
+            'log_preflight_failed' => '사전 점검 실패 — 적용을 시작하지 않았습니다',
+            'log_maintenance_on' => '점검 모드 켜짐',
+            'log_maintenance_off' => '점검 모드 해제',
+            'log_downloaded' => ':version 내려받기 완료',
+            'log_zip_extracted' => '수동 ZIP 추출 완료 (:file → :version)',
+            'log_backup' => '백업 생성 완료 (:path)',
+            'log_vendor_skipped' => '의존성 변경 없음 — 준비 단계 건너뜀',
+            'log_vendor' => '의존성 준비 완료 (방식 :strategy, 패키지 :packages개)',
+            'log_manifest' => '신규 파일 목록 작성 (파일 :files개, 폴더 :dirs개)',
+            'log_manifest_failed' => '신규 파일 목록 작성 실패 — 되돌리기는 덮어쓰기만 수행합니다 (:error)',
+            'log_apply_list' => '적용 대상 산출 완료 (신규 :added개, 변경 :changed개)',
+            'log_apply_list_failed' => '적용 대상 산출 실패 — 전체 덮어쓰기로 진행합니다 (:error)',
+            'log_applied' => '코어 파일 적용 완료',
+            'log_vendor_copy_skipped' => '의존성 변경 없음 — 반영 단계 건너뜀',
+            'log_vendor_copied' => '의존성 반영 완료',
+            'log_migrated' => '마이그레이션 · 권한/메뉴 재동기 완료',
+            'log_upgrade_steps' => '업그레이드 스텝 :count개 실행 완료',
+            'log_handoff' => '업그레이드 스텝이 새 프로세스를 요청 (:after 까지 완료, 대상 :to) — 다음 단계 요청에서 이어서 실행합니다. 사유: :reason',
+            'log_bundled_skipped' => '번들 확장·언어팩 함께 업데이트를 선택하지 않았습니다',
+            'log_bundled_none' => '번들에 새 버전이 있는 확장·언어팩이 없습니다',
+            'log_bundled' => '번들 확장·언어팩 업데이트 완료 (성공 :success, 실패 :failed)',
+            'log_spawn_fallback' => '별도 프로세스 실행 불가 — 같은 요청 안에서 실행합니다 (:reason)',
+            'log_finalized' => '마무리 완료 — 현재 버전 :version',
+            'log_step_failed' => ':step 단계에서 실패: :error',
+            'log_restored' => '백업본으로 되돌렸습니다',
+            'log_restored_partial' => '일부만 되돌렸습니다 (실패 항목: :targets)',
+            'log_restore_failed' => '되돌리기 실패: :error',
+        ],
+
         // GitHub API 에러 메시지
         'github_url_not_configured' => 'GitHub 저장소 URL이 설정되지 않았습니다.',
         'github_api_failed' => 'GitHub API에 연결할 수 없습니다.',

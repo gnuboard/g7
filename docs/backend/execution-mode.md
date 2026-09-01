@@ -188,7 +188,7 @@ best-effort 태스크(번들 언어팩 설치·`config:cache`)의 실패는 `sta
 
 직접 스폰·`schema:dump` 산출물·`function_exists` 직접 판정은 정적 검사가 차단한다. 허용값 표 공유는 의미 판정이라 코드 리뷰에서 확인한다.
 
-아직 SSoT 로 옮기지 못한 `function_exists` 직접 판정(코어 업데이트 CLI 2곳)은 `// audit:allow execution-function-availability-via-ssot <사유>` 표식을 남긴다 — 표식이 곧 이관 목록이다(§6 과 같은 규약). 인스톨러 쪽 3곳은 이관이 끝나 표식이 없다.
+아직 SSoT 로 옮기지 못한 `function_exists` 직접 판정은 `// audit:allow execution-function-availability-via-ssot <사유>` 표식을 남긴다 — 표식이 곧 이관 목록이다(§6 과 같은 규약). 코어 업데이트 CLI·인스톨러의 이관은 끝났고, 남은 표식 둘은 **원리상 이관할 수 없는 자리**다: 판정 SSoT 를 `require` 하지 않는 인스톨러 파일과, 그 SSoT 로드 자체가 실패했을 때의 최후 폴백이다. 그 두 줄을 지우면 SSoT 가 없는 환경에서 인스톨러가 첫 화면부터 뜨지 않는다.
 
 ### 5.1 차단 함수는 호출부마다 가드가 필요하다
 

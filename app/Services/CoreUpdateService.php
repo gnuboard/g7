@@ -26,6 +26,7 @@ use App\Extension\Vendor\VendorInstallContext;
 use App\Extension\Vendor\VendorInstallResult;
 use App\Extension\Vendor\VendorMode;
 use App\Extension\Vendor\VendorResolver;
+use App\Support\ExecutionEnvironment;
 use Database\Seeders\IdentityMessageDefinitionSeeder;
 use Database\Seeders\IdentityPolicySeeder;
 use Database\Seeders\NotificationDefinitionSeeder;
@@ -60,6 +61,17 @@ class CoreUpdateService
      * 실패 리포트(`failure`, 이 서비스).
      */
     public const UPDATE_REPORT_NAME_PATTERN = '/^'.self::UPDATE_REPORT_PREFIX.'(?:success|failed|failure)_(\d{8}_\d{6})\.log$/';
+
+    /**
+     * `_pending` 전개 디렉토리의 이름 접두사 (`{pending_path}/core_{Ymd_His}/`).
+     *
+     * 정리 주체는 `cleanupPending()` 하나였고 그것은 정상 경로와 **처리된** 실패 경로에서만
+     * 불린다 — 치명 오류·타임아웃·kill(무CLI 웹 워커에서 특히 흔하다)이면 그 코드가 돌지
+     * 않아 릴리즈 한 벌 크기의 디렉토리가 영구히 남는다. 회수는 `StorageLeftoverPruneService`
+     * 의 `core_pending_staging` 대상군이 맡고, 이름 규약의 일치는 계약 테스트가 이 상수를
+     * 읽어 잠근다 (#609 G6 — 회차 6 이관).
+     */
+    public const PENDING_DIR_PREFIX = 'core_';
 
     /**
      * 코어 업데이트 리포트 로그의 절대 경로를 만듭니다 (생산자 단일 지점).
@@ -1176,6 +1188,14 @@ class CoreUpdateService
      */
     protected function extractWithUnzip(string $zipPath, string $extractDir): void
     {
+        // `exec` 가 막힌 호스팅에서는 이 전략 자체가 성립하지 않는다. 무가드로 부르면
+        // PHP 8 이 함수 테이블에서 지운 이름이라 `Error` 로 요청이 죽고, 위쪽의 추출
+        // 폴백 체인이 다음 전략으로 넘어갈 기회를 잃는다 — 웹 업데이트에서는 그것이
+        // 곧 「사유 없는 500」이다 (#609 D34 이관).
+        if (! ExecutionEnvironment::hasFunction('exec')) {
+            throw new CoreUpdateOperationException('settings.core_update.unzip_command_unavailable');
+        }
+
         $escapedZip = escapeshellarg($zipPath);
         $escapedDir = escapeshellarg($extractDir);
 
@@ -1194,6 +1214,12 @@ class CoreUpdateService
      */
     protected function isUnzipAvailable(): bool
     {
+        // 판정 자체가 `exec` 를 쓴다 — 그 함수가 막혀 있으면 「없다」가 정답이고, 무가드로
+        // 부르면 가용성을 묻는 자리에서 요청이 죽는다 (#609 D34 이관).
+        if (! ExecutionEnvironment::hasFunction('exec')) {
+            return false;
+        }
+
         exec('which unzip 2>/dev/null', $output, $exitCode);
 
         return $exitCode === 0;
@@ -2173,6 +2199,14 @@ class CoreUpdateService
             2 => ['pipe', 'w'],
         ];
 
+        // composer 실행은 `proc_open` 없이는 성립하지 않는다. 무가드로 부르면 그 함수가
+        // 막힌 호스팅에서 `Error` 로 요청이 죽어, 호출자(`VendorResolver`)가 번들 모드로
+        // 폴백할 기회를 잃는다 — 무CLI 환경에서 vendor 가 빈 채 진행되는 것보다 나쁜
+        // 상태다(사유가 남지 않는다). 여기서는 도메인 예외로 바꿔 폴백에 태운다 (#609 D34).
+        if (! ExecutionEnvironment::hasFunction('proc_open')) {
+            throw new CoreUpdateOperationException('settings.core_update.composer_unavailable');
+        }
+
         $process = proc_open($command, $descriptors, $pipes, $workingDir, EnvironmentDetector::buildComposerEnv());
 
         if (! is_resource($process)) {
@@ -2805,7 +2839,7 @@ class CoreUpdateService
         // 같은 문자열을 두 곳에 적게 되고, 그 상태가 곧 이 규약이 폐기하려던 것이다:
         // 한쪽이 모양을 바꿔도 다른 쪽은 따라가지 못하고 그 사실이 오류로 나타나지 않는다.
         $timestamp = BackupDirectoryName::stamp();
-        $pendingPath = $basePath.DIRECTORY_SEPARATOR.'core_'.$timestamp;
+        $pendingPath = $basePath.DIRECTORY_SEPARATOR.self::PENDING_DIR_PREFIX.$timestamp;
 
         File::ensureDirectoryExists($pendingPath, 0770, true);
 

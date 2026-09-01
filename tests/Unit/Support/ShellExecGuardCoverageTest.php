@@ -45,16 +45,18 @@ class ShellExecGuardCoverageTest extends TestCase
     /**
      * 다른 공정이 소유한 무가드 지점 — **알고 있고, 아직 이관하지 않았다** (11차 #D9).
      *
-     * 어휘를 스폰 계열 전수로 넓히자 A-8 면 밖의 실제 무가드 3곳이 드러났다. 코어 업데이트
-     * 경로는 D34 가 G6 에 배정한 이관 대상이고, 여기서 함께 고치면 이 검사가 A-8 게이트가
-     * 아니라 저장소 전체 감사기가 된다. 목록으로 고정해 **새로 생기는 것**은 red 가 되게 한다 —
-     * 조용히 스캔 밖으로 빼면 그 사실 자체가 사라진다.
+     * 어휘를 스폰 계열 전수로 넓히자 A-8 면 밖의 실제 무가드 3곳이 드러났고, 그 셋(코어
+     * 업데이트 경로)은 **G6 에서 이관을 마쳤다** — `extractWithUnzip`·`isUnzipAvailable` 은
+     * `exec`, `executeComposerInstall` 은 `proc_open` 가용성을 SSoT 로 먼저 묻고 도메인
+     * 예외로 폴백한다 (#609 D34).
+     *
+     * 목록을 지우지 않고 **비운 채로 남긴다** — 이 상수가 사라지면 「이관 대상이 있었다」는
+     * 사실과 「지금은 없다」는 판정이 함께 사라지고, 새 지점이 생겼을 때 다시 목록을 만드는
+     * 사람이 그 규율을 처음부터 발명해야 한다.
+     *
+     * @var list<string>
      */
-    private const DEFERRED_TO_OTHER_TRACKS = [
-        'app/Services/CoreUpdateService.php::extractWithUnzip (exec)',
-        'app/Services/CoreUpdateService.php::isUnzipAvailable (exec)',
-        'app/Services/CoreUpdateService.php::executeComposerInstall (proc_open)',
-    ];
+    private const DEFERRED_TO_OTHER_TRACKS = [];
 
     /**
      * `app/**` 에서 스폰 프리미티브를 부르는 파일을 스캔한다 (11차 #D9).

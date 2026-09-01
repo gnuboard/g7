@@ -159,6 +159,92 @@ return [
         'apply_mode_incremental_prune_hint' => '新バージョンで削除されたファイルをあわせてクリーンアップするには、同じアップデートを `--prune` オプションで再実行してください。',
         'apply_mode_prune' => 'ファイル適用: 全体上書き + 削除ファイルのクリーンアップを実行しました (--prune)。',
         'apply_mode_fallback' => 'ファイル適用: バックアップがないため、増分適用をスキップして全体上書きを実行しました。ユーザーのカスタムファイル保持をご希望の場合は、次回以降はバックアップを保持したままアップデートしてください。',
+        // -- Web ステップ実行 (W6) --------------------------------------
+        'unzip_command_unavailable' => 'このサーバーでは unzip コマンドを実行できません（プロセス実行関数が無効化されています）。PHP の zip 拡張（ZipArchive）が利用できる場合は、その方式に自動的に切り替わります。',
+        'composer_unavailable' => 'このサーバーでは Composer を実行できません（プロセス実行関数が無効化されています）。バンドル vendor 方式で進めるか、SSH が利用できる環境で実行してください。',
+        'web' => [
+            // ステップ名（進行リスト）
+            'steps' => [
+                'preflight' => '事前チェック',
+                'maintenance' => 'メンテナンスモード切替',
+                'download' => 'ダウンロード',
+                'backup' => 'バックアップ',
+                'vendor' => '依存関係の準備',
+                'plan' => '適用対象の算出',
+                'apply' => 'ファイル適用',
+                'vendor_copy' => '依存関係の反映',
+                'migrate' => 'データベース反映',
+                'upgrade_steps' => 'アップグレードステップ',
+                'bundled' => 'バンドル拡張・言語パック',
+                'finalize' => '仕上げ',
+            ],
+
+            // レスポンスメッセージ
+            'status_success' => 'アップデート状態を取得しました。',
+            'status_failed' => 'アップデート状態を取得できませんでした。',
+            'started' => 'アップデートを開始しました。',
+            'start_failed' => 'アップデートを開始できませんでした。',
+            'advanced' => 'ステップを実行しました。',
+            'advance_failed' => 'ステップを実行できませんでした。',
+            'dismissed' => 'アップデート記録を削除しました。',
+            'dismiss_failed' => 'アップデート記録を削除できませんでした。',
+
+            // 進行制御
+            'no_active_run' => '進行中のアップデートはありません。',
+            'step_in_progress' => '別のリクエストが同じステップを実行しています。しばらくしてからもう一度お試しください。',
+            'still_running' => 'アップデートはまだ進行中です。完了後に記録を削除できます。',
+            'missing_pending_path' => 'ダウンロードしたアップデートファイルの場所が見つかりません。最初からやり直してください。',
+
+            // 事前診断
+            'preflight_failed' => '事前チェックで問題が見つかったため、アップデートを開始しませんでした: :reasons',
+            'preflight_not_writable' => '次のパスに書き込み権限がありません: :paths — Web からアップデートするには、これらのパスに Web サーバーアカウントが書き込める必要があります。権限を変更できない場合は、SSH で `php artisan core:update` を実行してください。',
+            'preflight_low_disk' => '空き容量が不足しています（空き :free / 必要見込み :required）。バックアップと新バージョンが同時に置かれる区間があるため、現在のサイズの数倍が必要です。',
+
+            // 手動 ZIP
+            'version_from_zip' => '（ZIP 展開後に判定）',
+            'zip_file_invalid' => 'ZIP ファイル名のみ指定できます（パスなし、`.zip` で終わる名前）。',
+            'zip_not_newer' => '指定した ZIP のバージョン（:to）が現在のバージョン（:from）より新しくありません。Web アップデートは強制的な再適用に対応していません。',
+
+            // 失敗・巻き戻し
+            'upgrade_steps_failed' => 'アップグレードステップの実行に失敗しました: :output',
+            'handoff_exhausted' => 'アップグレードステップが新しいプロセスでの再実行を繰り返し要求したため中断しました（最後の完了地点 :after / 理由 :reason）。',
+            'bundled_partial_failure' => 'バンドル拡張・言語パックのうち :failed 件が更新されませんでした。コア本体は正常に反映されています。失敗した拡張は拡張管理画面から個別に再試行できます。',
+            'permission_warning' => '所有権・権限の復元で :target の :failed 件を正常化できませんでした — アップロードファイルやキャッシュの書き込みに問題が生じる可能性があるため確認してください。',
+            'maintenance_off_failed' => 'メンテナンスモードを解除できませんでした（:error）— サイトはメンテナンス画面のままです。SSH で `php artisan up` を実行してください。',
+            'ownership_restore_failed' => '巻き戻し後にファイルの所有権・権限を元に戻せませんでした（:error）— サイトがファイルを書き込めない可能性があるため権限を確認してください。',
+
+            // 進行記録
+            'log_started' => 'アップデート開始（:from → :to）',
+            'log_preflight_ok' => '事前チェック通過（検査パス :checked 件）',
+            'log_preflight_failed' => '事前チェック失敗 — 適用を開始しませんでした',
+            'log_maintenance_on' => 'メンテナンスモード有効',
+            'log_maintenance_off' => 'メンテナンスモード解除',
+            'log_downloaded' => ':version のダウンロード完了',
+            'log_zip_extracted' => '手動 ZIP の展開完了（:file → :version）',
+            'log_backup' => 'バックアップ作成完了（:path）',
+            'log_vendor_skipped' => '依存関係に変更なし — 準備をスキップ',
+            'log_vendor' => '依存関係の準備完了（方式 :strategy、パッケージ :packages 件）',
+            'log_manifest' => '新規ファイル一覧を作成（ファイル :files 件、フォルダ :dirs 件）',
+            'log_manifest_failed' => '新規ファイル一覧の作成に失敗 — 巻き戻しは上書きのみ行います（:error）',
+            'log_apply_list' => '適用対象の算出完了（新規 :added 件、変更 :changed 件）',
+            'log_apply_list_failed' => '適用対象の算出に失敗 — 全体上書きで進めます（:error）',
+            'log_applied' => 'コアファイルの適用完了',
+            'log_vendor_copy_skipped' => '依存関係に変更なし — 反映をスキップ',
+            'log_vendor_copied' => '依存関係の反映完了',
+            'log_migrated' => 'マイグレーション・権限/メニュー再同期の完了',
+            'log_upgrade_steps' => 'アップグレードステップ :count 件を実行完了',
+            'log_handoff' => 'アップグレードステップが新しいプロセスを要求（:after まで完了、対象 :to）— 次のステップ要求で続行します。理由: :reason',
+            'log_bundled_skipped' => 'バンドル拡張・言語パックの同時更新は選択されていません',
+            'log_bundled_none' => 'バンドルに新しいバージョンがある拡張・言語パックはありません',
+            'log_bundled' => 'バンドル拡張・言語パックの更新完了（成功 :success、失敗 :failed）',
+            'log_spawn_fallback' => '別プロセスを起動できません — 同じリクエスト内で実行します（:reason）',
+            'log_finalized' => '仕上げ完了 — 現在のバージョン :version',
+            'log_step_failed' => ':step ステップで失敗: :error',
+            'log_restored' => 'バックアップから巻き戻しました',
+            'log_restored_partial' => '一部のみ巻き戻しました（失敗項目: :targets）',
+            'log_restore_failed' => '巻き戻しに失敗: :error',
+        ],
+
         'github_url_not_configured' => 'GitHub リポジトリ URL が設定されていません。',
         'github_api_failed' => 'GitHub API に接続できません。',
         'github_token_required' => 'プライベートリポジトリです。GitHub アクセストークンを設定してください。',

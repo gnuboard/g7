@@ -55,6 +55,13 @@ class StorageLeftoverPruneServiceTest extends TestCase
         File::ensureDirectoryExists($this->storageRoot);
         File::ensureDirectoryExists($this->publicRoot);
 
+        // `app.update.pending_path` 는 주입 루트 밖의 **절대 경로**라, 그대로 두면 이 단위
+        // 테스트가 개발 머신의 실제 코어 업데이트 전개본(`storage/app/core_pending`)을 훑고
+        // `dryRun: false` 경로에서 지운다 — 픽스처가 만든 것이 아닌 것을 지우는 셈이다.
+        // 픽스처 안의 다른 자리로 옮겨, 「운영자가 옮긴 위치도 본다」는 축은 그대로 재면서
+        // 바깥을 건드리지 않게 한다.
+        config(['app.update.pending_path' => $this->fixtureRoot.DIRECTORY_SEPARATOR.'moved_core_pending']);
+
         $this->service = new StorageLeftoverPruneService($this->baseRoot, $this->storageRoot, $this->publicRoot);
     }
 
@@ -1016,6 +1023,37 @@ class StorageLeftoverPruneServiceTest extends TestCase
 
         $this->assertContains($composerTemp, $result['storage_temp']);
         $this->assertDirectoryDoesNotExist($composerTemp);
+    }
+
+    /**
+     * 코어 업데이트가 전개한 `_pending` 디렉토리에 정리 주체가 있다.
+     *
+     * `cleanupPending()` 은 커맨드의 정상 경로와 **처리된** 실패 경로에서만 불린다.
+     * 치명 오류·요청 시간 초과·kill(무CLI 웹 워커에서 특히 흔하다)이면 그 코드가 돌지
+     * 않아 릴리즈 한 벌 크기의 디렉토리가 영구히 남는데, 형제 대상군(`core_pending`)은
+     * 같은 디렉토리의 **매니페스트 파일**만 접두사로 좁혀 본다 (#609 G6 — 회차 6 이관).
+     *
+     * @scenario leftover_target=core_pending_staging, leftover_mode=real_delete, leftover_guard=aged_out
+     *
+     * @effects core_pending_staging_has_a_pruner
+     */
+    public function test_core_pending_staging_directories_are_pruned(): void
+    {
+        $aged = $this->makeDir('storage/app/core_pending/'.CoreUpdateService::PENDING_DIR_PREFIX.'20260701_010101', 5);
+        $fresh = $this->makeDir('storage/app/core_pending/'.CoreUpdateService::PENDING_DIR_PREFIX.'20260830_235959', 0);
+        $manifest = $this->makeFile('storage/app/core_pending/bundled-updates-manifest_abcdefghijklmnop.json', 5);
+        $unrelated = $this->makeDir('storage/app/core_pending/vendor-cache', 5);
+
+        $result = $this->service->prune(days: 3, backupDays: 30, dryRun: false);
+
+        $this->assertSame([$aged], $result['core_pending_staging']);
+        $this->assertDirectoryDoesNotExist($aged);
+        $this->assertDirectoryExists($fresh, '진행 중일 수 있는 최근 전개본은 남긴다 — 나이 하한이 그 보호다');
+        $this->assertDirectoryExists($unrelated, '생산자 접두사가 아닌 디렉토리는 이 대상군의 소관이 아니다');
+
+        // 형제 대상군(매니페스트)과 겹치지 않는다 — 두 대상군이 같은 항목을 세면 합계가 틀어진다.
+        $this->assertSame([$manifest], $result['core_pending']);
+        $this->assertNotContains($manifest, $result['core_pending_staging']);
     }
 
     /**
