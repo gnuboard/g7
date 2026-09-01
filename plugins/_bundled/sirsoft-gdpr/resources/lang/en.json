@@ -238,7 +238,8 @@
                 "preference_center": "Preferences",
                 "mypage": "MyPage",
                 "register": "Sign-up",
-                "mypage_renew_all": "MyPage bulk re-consent"
+                "mypage_renew_all": "MyPage bulk re-consent",
+                "withdraw": "Account withdrawal"
             },
             "col": {
                 "created_at": "Time",

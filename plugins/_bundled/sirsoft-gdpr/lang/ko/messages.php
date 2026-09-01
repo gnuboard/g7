@@ -201,6 +201,7 @@ return [
                 'register' => '회원가입',
                 'mypage' => '마이페이지',
                 'mypage_renew_all' => '마이페이지 일괄 재동의',
+                'withdraw' => '회원탈퇴',
             ],
             'col' => [
                 'created_at' => '시점',

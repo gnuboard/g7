@@ -1052,6 +1052,28 @@ if (isset($_GET['ajax_action'])) {
                             </div>
                         </div>
 
+                        <!-- 확장 개발자 문서 -->
+                        <div class="bg-slate-900/40 rounded-xl p-4 border border-slate-700/30">
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="text-lg">📗</span>
+                                <span class="text-xs font-medium text-slate-200">확장 개발자 문서</span>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                <button onclick="runCommand('ext:docgen --dry-run')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-600 hover:bg-slate-700 text-white text-xs font-medium rounded transition-colors" title="번들 확장별 훅·모델·마이그레이션·레이아웃 실측 집계와 문서 대상을 출력합니다. 파일을 만들거나 고치지 않습니다.">
+                                    <span>확장 문서 대상·집계 확인</span>
+                                    <span class="text-[10px] opacity-60">(ext:docgen --dry-run)</span>
+                                </button>
+                                <button onclick="runCommand('ext:docgen --check')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors" title="문서 누락·필수 섹션 누락·자동 생성 블록이 코드 실측과 어긋나는지 검사합니다. 파일을 고치지 않습니다.">
+                                    <span>확장 문서 drift 검사</span>
+                                    <span class="text-[10px] opacity-60">(ext:docgen --check)</span>
+                                </button>
+                                <button onclick="runCommand('ext:docgen')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded transition-colors" title="자동 생성 블록 안쪽만 코드 실측으로 갱신합니다. 블록 밖 사람이 쓴 서술은 건드리지 않습니다.">
+                                    <span>확장 문서 갱신</span>
+                                    <span class="text-[10px] opacity-60">(ext:docgen)</span>
+                                </button>
+                            </div>
+                        </div>
+
                         <!-- 유지보수 -->
                         <div class="bg-slate-900/40 rounded-xl p-4 border border-slate-700/30">
                             <div class="flex items-center gap-2 mb-3">
@@ -1582,6 +1604,10 @@ if (isset($_GET['ajax_action'])) {
          */
         const COMMAND_TIMEOUTS = {
             'security:audit-dependencies': 300000,
+            // 확장 20개의 진입 클래스를 실제로 부팅해 선언형 getter 40종을 호출한다.
+            // 기본 60초를 넘기면 화면은 타임아웃을 띄우는데 서버는 계속 문서를 쓰므로,
+            // "실패했다" 와 "성공했는데 화면이 포기했다" 가 구분되지 않는다.
+            'ext:docgen': 300000,
         };
 
         /**

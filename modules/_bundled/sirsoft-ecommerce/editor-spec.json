@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "moduleId": "sirsoft-ecommerce",
   "version": "1.0.0",
-  "description": "레이아웃 편집기 스펙 — 이커머스 모듈 도메인 sampleData/sampleGlobal/states. admin 레이아웃 data_source ID 전수 스캔 기반 도메인 ID 28종(상품·주문·브랜드·쿠폰·배송정책·정산·설정 등) byDataSourceId + 사용자 페이지(템플릿 렌더) byEndpointPattern. 공용 인프라(roles/availableChannels/identityProviders/ecommerceIdentity*/ecommerceNotificationDefinitions)는 admin 템플릿 스펙·코어 프리셋 폴백이 커버.",
+  "description": "이커머스 모듈 레이아웃 편집기 스펙 — 관리자·사용자 상점 화면의 프리뷰 샘플과 페이지 상태. 공용 인프라(roles·availableChannels·identityProviders 등)는 관리자 템플릿 스펙과 코어 기본값이 커버한다.",
   "actionRecipes": {
     "comment": "이커머스 모듈 소유 친화 액션 레시피. 코어 시드 위에 module 단계로 병합(__source:{kind:module,id:sirsoft-ecommerce}, 편집기 〔이커머스〕 배지). 라벨은 모듈 격리 네임스페이스($t:sirsoft-ecommerce.editor.action.*) — 편집기 t()가 모듈 lang 통짜 ko.json/en.json 의 editor.action 을 sirsoft-ecommerce.editor.action 으로 해석한다(코어/템플릿 editor 와 격리). 결제(PG) 진입은 커머스 도메인이라 코어가 아닌 모듈이 소유한다(provider-agnostic — 핸들러명을 백엔드 응답값으로 받음).",
     "requestPgPayment": {

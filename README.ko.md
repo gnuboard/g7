@@ -1,13 +1,9 @@
 <p align="center"><a href="README.md">English</a> | 한국어</p>
 
-<p align="center">
-  <img src="https://img.shields.io/badge/그누보드7-Gnuboard7-000000?style=for-the-badge&labelColor=0066FF&logoColor=white" height="200" alt="그누보드7 (Gnuboard7)">
-</p>
+# 그누보드7
 
-<p align="center">
-  <strong>모던 아키텍처로 다시 태어난 대한민국 대표 오픈소스 CMS</strong><br>
-  A modern, extensible CMS platform built with Laravel + React
-</p>
+**모던 아키텍처로 다시 태어난 대한민국 대표 오픈소스 CMS**
+A modern, extensible CMS platform built with Laravel + React
 
 <p align="center">
   <a href="#"><img src="https://img.shields.io/badge/version-7.0.10-blue" alt="Version"></a>

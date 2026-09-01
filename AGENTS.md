@@ -10,7 +10,7 @@
 
 | 문서 | 설명 | TL;DR 핵심 |
 |------|------|-----------|
-| [activity-log-hooks.md](docs/backend/activity-log-hooks.md) | 활동 로그 훅 레퍼런스 (Activity Log Hooks Reference) | 코어 66훅 + 이커머스 92훅 + 게시판 32훅 + 페이지 8훅 = 총 198훅 |
+| [activity-log-hooks.md](docs/backend/activity-log-hooks.md) | 활동 로그 훅 레퍼런스 (Activity Log Hooks Reference) | 코어 66훅 + 확장 132훅 = 총 198훅 (확장별 목록은 그 확장이 소유) |
 | [activity-log.md](docs/backend/activity-log.md) | 활동 로그 시스템 (Activity Log System) | Monolog 기반: Service 훅 → Listener → Log::channel('activity... |
 | [admin-settings-access.md](docs/backend/admin-settings-access.md) | Admin 환경설정 값 접근 (`g7_core_settings` vs `config()`) | 동기화 SSoT: storage/app/settings/*.json → SettingsServicePr... |
 | [api-documentation.md](docs/backend/api-documentation.md) | API 레퍼런스 문서 규정 (API Documentation) | 모든 API 엔드포인트는 레퍼런스 문서 필수 — 메서드/URI/파라미터/응답 필드 + 요청·응답 예시 ... |
@@ -47,7 +47,7 @@
 | [user-overrides.md](docs/backend/user-overrides.md) | 사용자 수정 보존 (HasUserOverrides Trait) | 모델에 `use HasUserOverrides;` + `protected array $trackable... |
 | [validation.md](docs/backend/validation.md) | 검증 (Validation) | 필수: FormRequest에서 검증 (Service에 검증 로직 배치 금지) |
 
-### 프론트엔드 [frontend/](docs/frontend/) (50개)
+### 프론트엔드 [frontend/](docs/frontend/) (44개)
 
 | 문서 | 설명 | TL;DR 핵심 |
 |------|------|-----------|
@@ -95,20 +95,15 @@
 | [tailwind-safelist.md](docs/frontend/tailwind-safelist.md) | Tailwind Safelist 가이드 | Tailwind는 빌드 시 사용된 클래스만 CSS에 포함 |
 | [template-development.md](docs/frontend/template-development.md) | 템플릿 개발 가이드라인 | 디렉토리: templates/[vendor-template]/ (예: sirsoft-admin_basic) |
 | [template-handlers.md](docs/frontend/template-handlers.md) | 템플릿 전용 핸들러 | setLocale: 앱 언어 변경 — 엔진 빌트인 (ActionDispatcher) |
-| [components.md](docs/frontend/templates/sirsoft-admin_basic/components.md) | sirsoft-admin_basic 컴포넌트 | Basic 37개: HTML 래핑 (Div, Button, Input, Select, Form, A, ... |
-| [handlers.md](docs/frontend/templates/sirsoft-admin_basic/handlers.md) | sirsoft-admin_basic 핸들러 | setLocale: 앱 언어 변경 (locale 파라미터) |
-| [layouts.md](docs/frontend/templates/sirsoft-admin_basic/layouts.md) | sirsoft-admin_basic 레이아웃 | 베이스: _admin_base.json (사이드바 + 헤더 + 콘텐츠 슬롯) |
-| [components.md](docs/frontend/templates/sirsoft-basic/components.md) | sirsoft-basic 컴포넌트 | Basic 26개: HTML 래핑 (Div, Button, Input, Select, Form, A, ... |
-| [handlers.md](docs/frontend/templates/sirsoft-basic/handlers.md) | sirsoft-basic 핸들러 | setTheme/initTheme: 다크/라이트 모드 전환 (admin과 동일 키 공유) |
-| [layouts.md](docs/frontend/templates/sirsoft-basic/layouts.md) | sirsoft-basic 레이아웃 | 베이스: _user_base.json (헤더 + 푸터 + 모바일 네비 + 콘텐츠 슬롯) |
 
-### 확장 시스템 [extension/](docs/extension/) (30개)
+### 확장 시스템 [extension/](docs/extension/) (31개)
 
 | 문서 | 설명 | TL;DR 핵심 |
 |------|------|-----------|
 | [cache-driver.md](docs/extension/cache-driver.md) | 캐시 드라이버 시스템 (CacheInterface) | 모든 캐시 저장은 CacheInterface 사용 (Cache:: 직접 호출 금지) |
 | [changelog-rules.md](docs/extension/changelog-rules.md) | Changelog 규칙 (Changelog Rules) | 확장/코어 버전 업 시 CHANGELOG.md에 변경사항 기록 필수 (미기록 시 버전 업 불가) |
 | [editor-spec.md](docs/extension/editor-spec.md) | 편집기 스펙 (editor-spec.json) | editor-spec.json = 편집기 팔레트/스타일 컨트롤/중첩 규칙/샘플 데이터/레시피의 선언 (... |
+| [extension-documentation.md](docs/extension/extension-documentation.md) | 확장 개발자 문서 (Extension Documentation) | 확장마다 AGENTS.md(개발자·에이전트용) + README.md(사람용) + docs/(상세) 를 갖는다 |
 | [extension-manager.md](docs/extension/extension-manager.md) | ExtensionManager (확장 관리자) | composer.json 수정 없음 - 런타임 오토로드 방식 사용 |
 | [extension-update-system.md](docs/extension/extension-update-system.md) | 확장 업데이트 시스템 (Extension Update System) | 업데이트 감지 우선순위: GitHub > _bundled (2단계, _pending 미참여) |
 | [hooks.md](docs/extension/hooks.md) | 훅 시스템 (Hook System) | Action 훅: doAction() - 부가 작업 (로그, 알림, 캐시) |
@@ -177,6 +172,34 @@
 | `sirsoft-tosspayments` | 플러그인 | [docs/api/](plugins/_bundled/sirsoft-tosspayments/docs/api/README.md) | 2 / 4 |
 | `sirsoft-verification_kginicis` | 플러그인 | [docs/api/](plugins/_bundled/sirsoft-verification_kginicis/docs/api/README.md) | 2 / 3 |
 | `sirsoft-verification_nhnkcp` | 플러그인 | [docs/api/](plugins/_bundled/sirsoft-verification_nhnkcp/docs/api/README.md) | 1 / 1 |
+
+
+### 확장 개발자 문서 (20개 확장, 자동 스캔)
+
+> 확장을 수정하기 전에 읽는 문서. 설계 의도 · 디렉토리 지도 · 확장점(발행/구독 훅) · 수정 시 동반 의무 · 금지 패턴을 담는다. `php artisan ext:docgen` 이 실측 부분을 유지하며, 이 표는 `{modules,plugins,templates}/_bundled/*/docs/README.md` 를 패턴 스캔해 자동 편입된다(확장명 하드코딩 없음).
+
+| 확장 | 유형 | 에이전트 가이드 | 문서 목차 | 실측 집계 |
+|------|------|----------------|----------|----------|
+| `gnuboard7-hello_module` | 모듈 | [AGENTS.md](modules/_bundled/gnuboard7-hello_module/AGENTS.md) | [docs/](modules/_bundled/gnuboard7-hello_module/docs/README.md) | 훅 1 · 라우트 7 · 모델 1 · 레이아웃 3 |
+| `sirsoft-board` | 모듈 | [AGENTS.md](modules/_bundled/sirsoft-board/AGENTS.md) | [docs/](modules/_bundled/sirsoft-board/docs/README.md) | 훅 90 · 라우트 80 · 모델 9 · 레이아웃 46 |
+| `sirsoft-ecommerce` | 모듈 | [AGENTS.md](modules/_bundled/sirsoft-ecommerce/AGENTS.md) | [docs/](modules/_bundled/sirsoft-ecommerce/docs/README.md) | 훅 508 · 라우트 239 · 모델 47 · 레이아웃 206 |
+| `sirsoft-page` | 모듈 | [AGENTS.md](modules/_bundled/sirsoft-page/AGENTS.md) | [docs/](modules/_bundled/sirsoft-page/docs/README.md) | 훅 21 · 라우트 17 · 모델 3 · 레이아웃 3 |
+| `gnuboard7-hello_plugin` | 플러그인 | [AGENTS.md](plugins/_bundled/gnuboard7-hello_plugin/AGENTS.md) | [docs/](plugins/_bundled/gnuboard7-hello_plugin/docs/README.md) | 훅 1 · 라우트 0 · 모델 0 · 레이아웃 1 |
+| `sirsoft-ckeditor5` | 플러그인 | [AGENTS.md](plugins/_bundled/sirsoft-ckeditor5/AGENTS.md) | [docs/](plugins/_bundled/sirsoft-ckeditor5/docs/README.md) | 훅 4 · 라우트 5 · 모델 1 · 레이아웃 2 |
+| `sirsoft-daum_postcode` | 플러그인 | [AGENTS.md](plugins/_bundled/sirsoft-daum_postcode/AGENTS.md) | [docs/](plugins/_bundled/sirsoft-daum_postcode/docs/README.md) | 훅 2 · 라우트 0 · 모델 0 · 레이아웃 1 |
+| `sirsoft-gdpr` | 플러그인 | [AGENTS.md](plugins/_bundled/sirsoft-gdpr/AGENTS.md) | [docs/](plugins/_bundled/sirsoft-gdpr/docs/README.md) | 훅 2 · 라우트 15 · 모델 3 · 레이아웃 4 |
+| `sirsoft-marketing` | 플러그인 | [AGENTS.md](plugins/_bundled/sirsoft-marketing/AGENTS.md) | [docs/](plugins/_bundled/sirsoft-marketing/docs/README.md) | 훅 4 · 라우트 2 · 모델 2 · 레이아웃 1 |
+| `sirsoft-message_bizppurio` | 플러그인 | [AGENTS.md](plugins/_bundled/sirsoft-message_bizppurio/AGENTS.md) | [docs/](plugins/_bundled/sirsoft-message_bizppurio/docs/README.md) | 훅 1 · 라우트 21 · 모델 2 · 레이아웃 1 |
+| `sirsoft-pay_kginicis` | 플러그인 | [AGENTS.md](plugins/_bundled/sirsoft-pay_kginicis/AGENTS.md) | [docs/](plugins/_bundled/sirsoft-pay_kginicis/docs/README.md) | 훅 6 · 라우트 35 · 모델 0 · 레이아웃 1 |
+| `sirsoft-pay_nhnkcp` | 플러그인 | [AGENTS.md](plugins/_bundled/sirsoft-pay_nhnkcp/AGENTS.md) | [docs/](plugins/_bundled/sirsoft-pay_nhnkcp/docs/README.md) | 훅 8 · 라우트 16 · 모델 0 · 레이아웃 1 |
+| `sirsoft-pay_nicepayments` | 플러그인 | [AGENTS.md](plugins/_bundled/sirsoft-pay_nicepayments/AGENTS.md) | [docs/](plugins/_bundled/sirsoft-pay_nicepayments/docs/README.md) | 훅 5 · 라우트 15 · 모델 0 · 레이아웃 1 |
+| `sirsoft-tosspayments` | 플러그인 | [AGENTS.md](plugins/_bundled/sirsoft-tosspayments/AGENTS.md) | [docs/](plugins/_bundled/sirsoft-tosspayments/docs/README.md) | 훅 4 · 라우트 4 · 모델 0 · 레이아웃 1 |
+| `sirsoft-verification_kginicis` | 플러그인 | [AGENTS.md](plugins/_bundled/sirsoft-verification_kginicis/AGENTS.md) | [docs/](plugins/_bundled/sirsoft-verification_kginicis/docs/README.md) | 훅 3 · 라우트 2 · 모델 2 · 레이아웃 1 |
+| `sirsoft-verification_nhnkcp` | 플러그인 | [AGENTS.md](plugins/_bundled/sirsoft-verification_nhnkcp/AGENTS.md) | [docs/](plugins/_bundled/sirsoft-verification_nhnkcp/docs/README.md) | 훅 0 · 라우트 2 · 모델 2 · 레이아웃 1 |
+| `gnuboard7-hello_admin_template` | 템플릿 | [AGENTS.md](templates/_bundled/gnuboard7-hello_admin_template/AGENTS.md) | [docs/](templates/_bundled/gnuboard7-hello_admin_template/docs/README.md) | 훅 0 · 라우트 1 · 모델 0 · 레이아웃 8 |
+| `gnuboard7-hello_user_template` | 템플릿 | [AGENTS.md](templates/_bundled/gnuboard7-hello_user_template/AGENTS.md) | [docs/](templates/_bundled/gnuboard7-hello_user_template/docs/README.md) | 훅 0 · 라우트 1 · 모델 0 · 레이아웃 8 |
+| `sirsoft-admin_basic` | 템플릿 | [AGENTS.md](templates/_bundled/sirsoft-admin_basic/AGENTS.md) | [docs/](templates/_bundled/sirsoft-admin_basic/docs/README.md) | 훅 0 · 라우트 29 · 모델 0 · 레이아웃 145 |
+| `sirsoft-basic` | 템플릿 | [AGENTS.md](templates/_bundled/sirsoft-basic/AGENTS.md) | [docs/](templates/_bundled/sirsoft-basic/docs/README.md) | 훅 0 · 라우트 40 · 모델 0 · 레이아웃 166 |
 
 
 <!-- AUTO-GENERATED-END: docs-quick-reference -->
@@ -460,6 +483,40 @@ Icon 은 `<i>` 글리프라 박스 크기가 곧 `font-size` 다. `w-N h-N` 은 
 
 > 상세: [module-assets.md](docs/extension/module-assets.md) "사용자 추가 에셋", [static-asset-publishing.md](docs/backend/static-asset-publishing.md)
 > 정적 검사가 외부 자산 URL 과 번들 확장의 `custom/` 배포를 차단한다. 서술자 형태와 교체 2경로 보존은 테스트가 잠근다.
+
+### 확장은 자기 개발자 문서를 소유한다
+
+`docs/api/**` 는 "엔드포인트가 무엇을 받고 무엇을 돌려주는가" 만 답한다. 확장을 고치려는 쪽이 실제로 묻는 것은 그 앞이다 — **왜 이렇게 설계됐는가 / 어디를 확장해야 하는가 / 무엇을 건드리면 안 되는가.** 그 답이 코드 안에만 있으면 매번 `src/` 전체를 훑어 구조를 재발견하게 되고, 확장이 발행하는 훅은 확장점인데도 사실상 비공개가 된다.
+
+확장마다 `AGENTS.md`(고치는 쪽) · `README.md`(도입·운영 쪽) · `docs/**`(상세)를 두고, 코드에서 실측되는 표는 `php artisan ext:docgen` 이 유지한다.
+
+| ❌ 금지 | ✅ 올바른 사용 |
+|--------|---------------|
+| 확장 표면(훅·라우트·권한·모델·레이아웃·핸들러)을 바꾸고 그 확장 문서를 그대로 둠 | 같은 작업 단위에 `ext:docgen --scope={type}:{id}` 재실행 + 낡은 서술 정정 |
+| 자동 생성 블록(`@generated:*`) 안쪽을 손으로 고침 | 생성기가 교체하는 자리다 — 코드를 고치거나 블록 **밖**에 서술한다 |
+| 생성기에 파괴적 재생성 플래그(`--force`)를 추가 | 기본 동작이 "블록 안쪽 교체" 다. 사람 서술이 소실될 경로를 만들지 않는다 |
+| 문서에 없는 블록 키를 생성기가 임의 위치에 주입 | 누락으로 보고하고 사람이 마커 자리를 정한다 (문서 구조는 사람 소유) |
+| 필수 문서·섹션·블록 목록을 검사 스크립트에 복제 | `ExtensionDocScaffolder::DOCUMENTS` 단일 SSoT — 스크립트는 `ext:docgen --check --json` 을 소비한다 |
+| `TODO:` 마커를 추측으로 채움 | 코드 근거를 읽어 서술한다 — 다섯 자리(의도·흐름·금지패턴·사용방법·트러블슈팅)는 생성기가 채울 수 없는 **왜** 다 |
+| `5. 수정 시 동반 의무` 에 코어 횡단 규정을 전부 나열 | 그 확장에 **실제로 걸리는 것만** 추린다 — 전부 적으면 정작 걸리는 항목이 묻힌다 |
+| 신규 확장을 문서 없이 스캐폴딩 | `php artisan ext:docgen --scope={type}:{id} --init` 으로 골격을 함께 만든다 — 없으면 21번째 확장부터 다시 문서 없이 태어난다 |
+| 확장 문서를 활성 디렉토리에서 작성 | `_bundled` 에서만 작성하고 update 커맨드로 반영 (문서만이면 빌드 불필요) |
+| 확장이 훅을 추가할 때 코어 문서를 고침 | 훅 집계는 그 확장의 `docs/extension-points.md` 소유 — 코어에는 총계와 링크만 |
+| 레이아웃에 `data_source` 를 추가하고 `editor-spec.json` 의 `sampleData` 를 그대로 둠 | 같은 ID 로 프리뷰 샘플 추가 — 없으면 **편집기 캔버스에서만** 그 영역이 빈 화면이 되고 실제 화면은 정상이라 오류도 경고도 남지 않는다 |
+| 컴포넌트를 추가하고 팔레트에만 등록 | 템플릿 스펙은 `componentPalette.entries` · `componentPalette.groups` · `nesting` · `componentCapabilities` **넷 다** — 하나만 빠지면 편집기에서 절반만 동작하고, 어느 단계가 빠졌는지는 증상으로만 구분된다 |
+| 모듈·플러그인 스펙에 `componentPalette` 선언 | 컴포넌트는 템플릿 소유 — 모듈·플러그인 스펙은 도메인 데이터(`sampleData`·`states`)만 담는다. 같은 자리를 두고 다투면 어느 쪽이 이기는지가 병합 순서에 좌우된다 |
+| 공용 ID(`settings`·`roles`·`me`)를 확장마다 각자 선언 | 템플릿 스펙 한 곳 — 사본이 갈라져도 오류가 나지 않는다 |
+| 편집기 스펙 `description` 에 작업 단계·심사 판정·작업 방법을 적음 (`Phase 4/5 에서 추가`·`— 정당`·`전수 스캔 기반`) | **무엇을 담았는가**만 적는다 — 확장만 내려받은 제3자에게 내부 맥락은 해석 불가이고, "다음에 추가" 는 그 항목이 실제로 들어온 뒤에도 남아 **거짓이 된다**. 문서의 한 줄 요약은 이 필드를 옮기지 않고 실측에서 생성한다 |
+| 편집기 스펙을 고치고 update 커맨드 생략 | 서빙은 **활성 디렉토리만** 읽는다(`_bundled` 폴백 없음) — 파일은 고쳤는데 편집기에 직전 내용이 그대로 보인다 |
+
+이 결함군은 오류를 남기지 않는다. 문서가 코드와 어긋난 채로 계속 읽히는 것이 유일한 증상이며, 훅 이름이 어긋나면 그 확장을 잡으려던 쪽이 **잡히지 않는 훅을 구독**하게 된다(예외도 경고도 없이 리스너가 호출되지 않을 뿐이다).
+
+mermaid 문법 오류는 GitHub 렌더 시점에만 드러난다. 구조 검사가 잡을 수 있는 것은 선언된 다이어그램 종류·빈 본문·괄호 균형까지이므로, 새 형식은 실제 렌더를 눈으로 확인한다.
+
+`docs/editor-spec.md` 는 세 유형 공통이다 — 편집기 스펙을 두지 않는 확장에도 문서를 둔다. 미보유가 정상일 수 있고("이 확장은 공용 ID 만 쓴다") 그 정상 여부를 적을 자리가 없으면 다음 사람이 부재를 누락으로 오해하거나 필요한 시점을 놓친다. 그 문서의 "샘플 데이터와 페이지 상태" 절은 그 확장 레이아웃의 `data_source` 중 프리뷰 샘플이 붙지 않는 것을 실측해 나열한다 — 이 결함은 편집기 캔버스에서만 빈 화면으로 나타나므로 그 목록이 유일한 통로다.
+
+> 상세: [extension-documentation.md](docs/extension/extension-documentation.md)
+> 정적 검사가 확장 표면 변경 시 문서 미동반과 미채움 마커 잔존을 검출한다. 생성기의 비파괴 계약(블록 밖 손실 0 · 재실행 멱등 · 미존재 키 미주입)과 필수 문서·섹션·블록 목록은 테스트가 잠근다.
 
 ### 의존성 감사 신호는 거짓일 수 있다
 
@@ -1388,6 +1445,7 @@ php artisan migrate:rollback
 
 | 수정 대상 파일 패턴 | 작업 전 필수 참조 |
 | ------------------- | ------------------ |
+| `(modules\|plugins\|templates)/_bundled/{id}/**` (그 확장의 소스 전반) | 그 확장의 `AGENTS.md` · `docs/README.md` — 설계 의도·디렉토리 지도·확장점·**수정 시 동반 의무**·금지 패턴. 수정 후 표면이 바뀌었으면 `php artisan ext:docgen --scope={type}:{id}` ([extension-documentation.md](docs/extension/extension-documentation.md)) |
 | `app/Http/Controllers/**` | [controllers.md](docs/backend/controllers.md), [api-documentation.md](docs/backend/api-documentation.md) |
 | `app/Services/**` | [service-repository.md](docs/backend/service-repository.md) |
 | `app/Http/Requests/**` | [validation.md](docs/backend/validation.md) |

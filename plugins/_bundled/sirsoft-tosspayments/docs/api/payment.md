@@ -86,7 +86,7 @@ Location: /shop/checkout?error=PAY_PROCESS_CANCELED&orderId=20260711-000001
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | paymentKey | query | string | 예 | — | 토스가 발급한 결제 키. Confirm API 호출에 사용한다. |
-| orderId | query | string | 예 | — | 주문번호 (G7 `orders.order_number`). SDK 호출 시 넘긴 값이 그대로 돌아온다. |
+| orderId | query | string | 예 | — | 주문번호 (그누보드7 `orders.order_number`). SDK 호출 시 넘긴 값이 그대로 돌아온다. |
 | amount | query | integer | 예 | min 1 | 결제 금액. 주문의 결제요청 금액과 대조하며, 불일치 시 결제를 승인하지 않는다. |
 
 **요청 예시**
