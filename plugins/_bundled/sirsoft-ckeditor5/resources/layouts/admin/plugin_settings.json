@@ -779,11 +779,12 @@
                                             },
                                             {
                                                 "handler": "apiCall",
+                                                "comment": "미리보기 편집기(preview_editor)는 props.name 이 preview_content 라 폼 자동바인딩으로 _local.form 에 쌓인다. 저장 대상이 아니므로 body 에서 제외한다 — 그대로 두면 운영자가 미리보기에 입력한 내용이 플러그인 설정으로 저장된다. 표현식 평가기는 구조분해 rest(const { a, ...rest } = obj)와 콜백 안의 멤버 대입(out[k] = v)을 지원하지 않는다 — 쓰면 식이 평가되지 않고 원문 문자열이 그대로 body 로 전송된다(오류 없이 200 이 떨어져 드러나지 않는다). Object.entries/filter/fromEntries 조합만 사용할 것(브라우저 실측으로 확인).",
                                                 "auth_required": true,
                                                 "target": "/api/admin/plugins/{{route.identifier}}/settings",
                                                 "params": {
                                                     "method": "PUT",
-                                                    "body": "{{_local.form}}"
+                                                    "body": "{{(function() { const form = _local.form || {}; return Object.fromEntries(Object.entries(form).filter(entry => entry[0] !== 'preview_content' && entry[0] !== 'preview_content_mode')); })()}}"
                                                 },
                                                 "onSuccess": [
                                                     {

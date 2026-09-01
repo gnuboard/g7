@@ -1,0 +1,74 @@
+feature: 폭 변경 후 저장 시 편집기 본문 보존 (공개 이슈 #130 / engine-v1.63.3)
+
+description: |
+  엔진은 폼 상태를 React localDynamicState(저장소 A)와 globalState._local(저장소 B)에 이중
+  저장한다. setGlobalState 는 _local 을 얕게 병합하므로 `{ _local: X }` 는 B 를 통째 교체한다.
+
+  CKEditor 는 setLocal({ render:false, selfManaged:true }) 로 B 에만 본문을 쓴다 — 그 호출은
+  React 렌더를 한 번도 일으키지 않아 extendedDataContext useMemo 가 재계산되지 않고
+  context.state 가 입력 이전 스냅샷에 머문다. 여기에 브레이크포인트를 넘지 않는 폭 변경(19px)
+  이 겹치면 의존성 배열 없는 useLayoutEffect 가 __g7PendingLocalState 를 null 로 지우고,
+  저장 시 setState 의 base 가 stale A 로 떨어져 B 와 sequence 반환값이 함께 오염된다.
+
+  수정은 두 지점을 함께 고친다:
+    - B 동기화 base 를 live B(getGlobalState()._local) + 변경 키로
+    - 같은 분기의 반환값도 같은 canonical 결과로 (요청 body 는 B 가 아니라 이 반환값에서 온다)
+  두 경로 모두 addMissingLeafKeys 로 저장소 A 전용 키(loadingActions 등)를 보충한다.
+
+  증상이 조용하다는 점이 이 기능의 핵심이다 — 작성은 422, 수정은 성공 토스트와 함께 편집분
+  소실이며 콘솔 에러는 0건이다. 그래서 "저장됐다" 가 아니라 요청 body 의 content 를 본다.
+
+test_files:
+  - resources/js/core/template-engine/__tests__/troubleshooting-state-setstate.test.ts
+  - resources/js/core/template-engine/__tests__/DynamicRenderer.resizePendingClear.test.tsx
+  - resources/js/core/__tests__/G7CoreGlobals.selfManagedPromotion.test.ts
+  - plugins/_bundled/sirsoft-ckeditor5/tests/Playwright/specs/admin/editor-resize-save-body-integrity.spec.ts
+
+axes:
+  save_flow: [create, edit]
+  resize_kind: [same_breakpoint, crossed_breakpoint, none]
+
+effects:
+  - request_body_content_matches_editor_getdata
+  - create_save_returns_2xx_not_422
+  - edit_save_persists_typed_addition
+  - canonical_local_keeps_editor_content_after_resize
+  - setstate_local_preserves_canonical_keys_when_pending_is_null
+  - save_without_resize_unaffected
+  - resize_save_emits_no_console_errors
+  - success_toast_only_when_content_actually_saved
+  - resize_clears_pending_local_state
+  - selfmanaged_setlocal_writes_canonical_without_render
+
+sub_flows:
+  - id: control_no_resize
+    description: |
+      리사이즈 없이 저장하면 수정 전에도 정상이다 — 재현 조건이 폭 변경임을 고정한다.
+      이 축이 수정 전에 실패하면 결함 모델이 틀린 것이므로, 자동바인딩 → pending → setLocal
+      두 번째 소실 경로(사례 40 "인접 벡터")를 먼저 조사해야 한다.
+    effects: [save_without_resize_unaffected]
+
+  - id: silent_failure_surface
+    description: |
+      콘솔에도 토스트에도 드러나지 않던 결함이라 조용함 자체를 증거로 고정한다.
+      수정 화면은 성공 토스트가 뜨므로 화면 피드백으로는 판정할 수 없다 — DB 재조회로 본다.
+    effects: [resize_save_emits_no_console_errors, success_toast_only_when_content_actually_saved]
+
+  - id: canonical_store_integrity
+    description: |
+      pending 이 null 인 상태에서 setState(local) 을 태워도 저장소 B 의 본문이 남는지를
+      직접 본다. 요청 body 축과 별개로 B 쓰기 축을 독립 고정한다.
+    effects:
+      - canonical_local_keeps_editor_content_after_resize
+      - setstate_local_preserves_canonical_keys_when_pending_is_null
+
+  - id: trigger_halves
+    description: |
+      결함은 두 조각이 겹쳐야 성립한다. 각 조각을 단위 계층에서 따로 잠근다 —
+      ① 폭 변경 리렌더가 __g7PendingLocalState 를 비운다(실물 렌더)
+      ② selfManaged setLocal 이 렌더 없이 저장소 B 에만 쓴다(엔진 실물)
+      단위 계층에서는 소실 자체를 재현할 수 없으므로(TemplateApp 재구현 필요) 조각만 고정하고,
+      합류 지점은 사례 40 회귀 테스트와 E2E 가 담당한다.
+    effects:
+      - resize_clears_pending_local_state
+      - selfmanaged_setlocal_writes_canonical_without_render

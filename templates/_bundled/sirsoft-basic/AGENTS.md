@@ -166,8 +166,8 @@ API 까지만 소유하고, 그 API 를 소비해 실제로 그리는 것은 이
 # Vitest (확장 디렉토리에서) (PowerShell)
 cd templates/_bundled/sirsoft-basic && powershell -Command "npm run test:run -- <대상>"
 
-# Playwright E2E (Bash)
-npx playwright test templates/_bundled/sirsoft-basic/tests/Playwright/specs/<대상>.spec.ts
+# Playwright E2E (확장 디렉토리에서) (Bash)
+cd templates/_bundled/sirsoft-basic && npm run test:e2e -- specs/<대상>.spec.ts
 
 ```
 

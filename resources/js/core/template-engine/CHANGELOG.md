@@ -5,6 +5,28 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.63.3] - 2026-09-01
+
+### Fixed
+
+#### 리사이즈 후 저장 시 편집기 본문이 저장소 B 와 sequence 반환값에서 함께 사라지던 문제 (#130)
+
+- `handleSetState` 의 COMPONENT 분기가 `_global._local`(저장소 B)을 동기화할 때, base 를 저장소 A 계열 전체 스냅샷 대신 **live B + 변경 키**로 삼는다. `setGlobalState` 는 `_local` 을 얕게 병합하므로 이 동기화는 patch 가 아니라 **통째 교체**였고, A 가 아직 받지 못한 값이 조용히 사라졌다. 정답 선례는 같은 파일의 dot-notation 경로(engine-v1.58.2)이며 그 주석이 이 경로를 위험으로 지목하고 있었다.
+- **같은 분기의 반환값도 live B 기반으로 신선화한다.** 요청 body 는 저장소 B 를 읽지 않는다 — sequence 의 `currentState`(= 이 반환값)에서 온다. B 쓰기만 고치면 B 는 지켜지지만 저장은 여전히 422 가 났다.
+- A 가 값을 못 받는 대표 경로는 `setLocal({ render:false, selfManaged:true })`(CKEditor5 등 자체 DOM 관리 플러그인)다. 이 호출은 React 렌더를 한 번도 일으키지 않아, `extendedDataContext` useMemo 가 재계산되지 않고 `context.state` 가 입력 이전 스냅샷으로 고정된다. 여기에 **브레이크포인트를 넘지 않는 폭 변경**(19px 로 재현)이 겹쳐 `__g7PendingLocalState` 가 null 이 되면 base 가 stale A 로 떨어졌다.
+- 예외도 콘솔 에러도 남지 않는 결함이었다 — 작성 화면은 422, **수정 화면은 성공 토스트와 함께 직전 본문이 저장되어 편집분이 사라졌다.**
+- 제외 조건은 종전 동작을 유지한다: `merge:"replace"`(의도적 리셋 · 사례 17), 모달 컨텍스트 스택이 있는 경우(사례 29), `__templateApp` 부재(v1.50.4 호환 폴백). `merge:"shallow"` 는 제외하지 않는다 — 현행 shallow 는 리프 컴포넌트의 부분 상태를 base 로 써서 오히려 이 결함에 더 노출돼 있었다.
+- 두 쓰기 경로(B 쓰기 · 반환값)가 같은 규칙으로 저장소 A 전용 키(`loadingActions` 등)를 보충한다. 규칙이 갈리면 나중에 소비자가 생길 때 어느 경로를 탔느냐로 결과가 달라진다.
+
+#### `setParentLocal` 이 모달에서 부모로 값을 올릴 때 저장소 B 를 통째 교체하던 문제
+
+- `setParentLocal` 은 부모 컨텍스트의 **저장소 A**(`parentEntry.state._local`)를 base 로 만든 값을 그대로 `setGlobalState({ _local: ... })` 에 넘겼다. 위와 같은 얕은 병합 특성 때문에 이 쓰기도 patch 가 아니라 통째 교체였고, 부모가 페이지 루트일 때 그 A 스냅샷은 B 보다 뒤처져 있을 수 있다(사례 21). 이제 B 에는 live B + 변경 키만 얹고 A 전용 키는 보충한다.
+- 저장소 A 경로(`parentEntry.setState`)와 `__g7PendingLocalState` 는 종전 그대로다 — 그쪽 base 까지 B 기반으로 바꾸면 React 전용 배열이 B 초기값으로 덮이는 사례 22 위험이 생긴다. `merge:"replace"` 는 여기서도 제외한다(사례 17).
+
+### Changed
+
+- `addMissingLeafKeys` 를 `helpers/StateMerge.ts` 로 옮겨 `G7CoreGlobals` 와 `ActionDispatcher` 가 공유한다. `G7CoreGlobals` 가 이미 `ActionDispatcher` 를 import 하고 있어 역방향 값 import 가 런타임 순환이 되기 때문이며, 동작은 원문 그대로다.
+
 ## [engine-v1.63.2] - 2026-08-27
 
 ### Fixed

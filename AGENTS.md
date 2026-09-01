@@ -313,6 +313,21 @@ Icon 은 `<i>` 글리프라 박스 크기가 곧 `font-size` 다. `w-N h-N` 은 
 | await 후 캡처된 상태 사용 | await 후 `G7Core.state.getLocal()` 재조회 |
 | setState params 키에 `{{}}` 사용 | 키는 정적 경로만, 배열 조작은 `.map()`/`.filter()` |
 
+### 저장소 B 통째 교체 금지
+
+엔진은 폼 상태를 React `localDynamicState`(저장소 A)와 `globalState._local`(저장소 B)에 이중 저장한다. `TemplateApp.setGlobalState` 는 최상위 키를 **얕게** 병합하므로 `setGlobalState({ _local: X })` 는 B 를 patch 가 아니라 **통째 교체**한다. X 가 A 계열 스냅샷이면, A 가 아직 받지 못한 값이 조용히 사라진다.
+
+| 금지 | 올바른 사용 |
+|------|------------|
+| `globalStateUpdater({ _local: <A 계열 스냅샷> })` (저장소 B 통째 교체) | live B(`getGlobalState()._local`)를 base 로 변경 키만 얹기 |
+| sequence 반환값을 stale base 로 구성 | 반환값도 live B 기반 + `addMissingLeafKeys` 로 A 전용 키 보충 |
+| 두 쓰기 경로(B 쓰기 / 반환값)에 서로 다른 병합 규칙 | 같은 규칙 — 갈라지면 나중에 소비자가 생길 때 어느 경로를 탔느냐로 결과가 달라진다 |
+| `__g7ForcedLocalFields` 오버레이가 있으니 `context.state` 도 최신이라고 가정 | 그 오버레이는 `extendedDataContext` **useMemo 안에서 읽는 window 전역**이라 deps 가 아니다 — memo 가 재계산되지 않으면 실리지 않는다 |
+
+A 가 값을 못 받는 대표 경로는 `setLocal({ render: false, selfManaged: true })`(CKEditor 등 자체 DOM 관리 플러그인)다. `render:false` 는 `updateTemplateData` 앞에서 조기 return 하고 액션 밖이라 `__g7ActionContext` 도 없으므로 **React 렌더가 0회** — memo 가 재계산되지 않아 `context.state` 가 입력 이전 스냅샷으로 고정된다. 여기에 폭 변경 리렌더가 `__g7PendingLocalState` 를 null 로 지우면(의존성 배열 없는 `useLayoutEffect`) base 가 stale A 로 떨어진다.
+
+이 결함군은 예외도 콘솔 에러도 남기지 않는다 — 화면에는 본문이 그대로 보이는데 요청 body 만 비어 나가고(작성 화면 422), 수정 화면에서는 성공 토스트와 함께 **직전 본문이 저장되어 편집분이 사라진다**. 정적 검사가 `_local` 동기화 호출의 base 를 검사한다.
+
 ### 핸들러 정의
 
 | 금지 | 올바른 사용 |

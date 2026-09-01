@@ -2,14 +2,10 @@
 
 namespace Tests\Feature\Documentation;
 
-use App\Support\ExtensionDoc\DataModelCollector;
-use App\Support\ExtensionDoc\DeclarativeSurfaceCollector;
-use App\Support\ExtensionDoc\DependencyGraphCollector;
 use App\Support\ExtensionDoc\ExtensionDocContext;
 use App\Support\ExtensionDoc\ExtensionDocScaffolder;
 use App\Support\ExtensionDoc\ExtensionInventory;
 use App\Support\ExtensionDoc\FrontendInventory;
-use App\Support\ExtensionDoc\HookInventory;
 use App\Support\ExtensionDoc\TestPathCollector;
 use Tests\TestCase;
 
@@ -436,19 +432,19 @@ class ExtensionDocContractTest extends TestCase
      */
     public function test_empty_intent_axis_agrees_across_tooling(): void
     {
-        $filled = "<!-- @intent START -->
+        $filled = '<!-- @intent START -->
 서술이 있다.
-<!-- @intent END -->";
-        $empty = "<!-- @intent START -->
+<!-- @intent END -->';
+        $empty = '<!-- @intent START -->
 
-<!-- @intent END -->";
+<!-- @intent END -->';
 
         $this->assertSame(0, ExtensionDocScaffolder::emptyIntentBlocks($filled));
         $this->assertSame(1, ExtensionDocScaffolder::emptyIntentBlocks($empty));
-        $this->assertSame(2, ExtensionDocScaffolder::emptyIntentBlocks($empty."
-".$empty));
-        $this->assertSame(1, ExtensionDocScaffolder::emptyIntentBlocks($filled."
-".$empty));
+        $this->assertSame(2, ExtensionDocScaffolder::emptyIntentBlocks($empty.'
+'.$empty));
+        $this->assertSame(1, ExtensionDocScaffolder::emptyIntentBlocks($filled.'
+'.$empty));
 
         $script = (string) file_get_contents(base_path('.claude/scripts/check-extension-docs.cjs'));
 
@@ -1340,5 +1336,81 @@ class ExtensionDocContractTest extends TestCase
         // 늘 때 한쪽만 갱신되어, 테스트가 만든 블록에 그 축이 빠진 채 파일과 달라진다 —
         // 결과는 "생성기를 다시 돌려라" 인데 아무리 돌려도 사라지지 않는 드리프트다.
         return app(ExtensionDocContext::class)->build($record);
+    }
+
+    /**
+     * 문서가 싣는 Playwright 명령이 그 확장의 config 를 잡는지 단언합니다.
+     *
+     * 확장은 자기 config 를 `tests/Playwright/playwright.config.ts` 에 두므로, 저장소
+     * 루트에서 spec 경로만 넘기면 코어 config(`testDir: tests/Playwright/specs`)가 잡혀
+     * 그 spec 이 모집단 밖이 됩니다. 결과는 실패가 아니라 **"No tests found"** 입니다 —
+     * 문서대로 따른 사람은 테스트를 돌렸다고 믿는데 0건이 지나가고, 코어 globalSetup 이
+     * 개발 사이트에 시드 화면을 설치·제거하는 부작용만 남습니다.
+     *
+     * 모집단은 열거하지 않고 실측에서 파생합니다 — Playwright 테스트를 새로 갖추는 확장이
+     * 생기면 자동으로 편입됩니다.
+     */
+    public function test_playwright_command_resolves_the_extension_config(): void
+    {
+        $collector = new TestPathCollector;
+        $checked = [];
+
+        foreach ((new ExtensionInventory)->collect('all') as $record) {
+            $collected = $collector->collect($record);
+
+            // 명령 문자열이 아니라 **라벨**로 고른다 — 명령은 `npm run test:e2e` 처럼
+            // 도구 이름을 담지 않을 수 있고, 그러면 이 검사가 대상을 못 찾은 채 통과한다.
+            $command = null;
+            foreach ($collected['commands'] as $entry) {
+                if (str_contains($entry['label'], 'Playwright')) {
+                    $command = $entry['command'];
+                    break;
+                }
+            }
+
+            if ($command === null) {
+                $this->assertSame(
+                    0,
+                    $collected['playwright']['count'],
+                    "{$record['type']}:{$record['id']} — Playwright 테스트가 있는데 실행 명령이 없습니다.",
+                );
+
+                continue;
+            }
+
+            $rel = $record['relPath'];
+            $config = $record['path'].DIRECTORY_SEPARATOR.'tests'.DIRECTORY_SEPARATOR
+                .'Playwright'.DIRECTORY_SEPARATOR.'playwright.config.ts';
+
+            $this->assertFileExists(
+                $config,
+                "{$rel} — Playwright 명령을 싣는 확장은 자기 config 를 가져야 합니다.",
+            );
+
+            // 확장 디렉토리로 이동하거나(그 자리의 npm 스크립트가 --config 를 품는다),
+            // 명령이 직접 --config 를 지목하거나. 둘 중 하나여야 코어 config 를 피한다.
+            $entersExtensionDir = str_contains($command, "cd {$rel} &&");
+            $namesConfig = str_contains($command, '--config=');
+
+            $this->assertTrue(
+                $entersExtensionDir || $namesConfig,
+                "{$rel} — 명령이 코어 config 를 잡습니다(실행 결과가 \"No tests found\"). "
+                ."확장 디렉토리로 이동하거나 --config 를 지목해야 합니다: {$command}",
+            );
+
+            $this->assertStringNotContainsString(
+                "npx playwright test {$rel}/tests/Playwright/specs/",
+                $command,
+                "{$rel} — 루트 기준 spec 경로 형태는 코어 config 로 해석됩니다.",
+            );
+
+            $checked[] = $rel;
+        }
+
+        // 하한 — 모집단이 비면 위 루프가 통째로 돌지 않고도 통과한다.
+        $this->assertNotEmpty(
+            $checked,
+            'Playwright 명령을 싣는 확장을 하나도 찾지 못했습니다 — 모집단 파생이 죽었습니다.',
+        );
     }
 }

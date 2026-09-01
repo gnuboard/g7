@@ -209,8 +209,8 @@ php vendor/bin/phpunit modules/_bundled/sirsoft-ecommerce/tests --filter='<대�
 # Vitest (확장 디렉토리에서) (PowerShell)
 cd modules/_bundled/sirsoft-ecommerce && powershell -Command "npm run test:run -- <대상>"
 
-# Playwright E2E (Bash)
-npx playwright test modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/<대상>.spec.ts
+# Playwright E2E (확장 디렉토리에서) (Bash)
+cd modules/_bundled/sirsoft-ecommerce && npm run test:e2e -- specs/<대상>.spec.ts
 
 ```
 

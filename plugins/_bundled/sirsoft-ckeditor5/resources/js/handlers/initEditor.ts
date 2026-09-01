@@ -1096,8 +1096,12 @@ function createMultilingualTabs(
 
 /**
  * 폼 데이터 업데이트를 위해 G7Core setState를 호출합니다.
+ *
+ * 테스트를 위해 export 한다 — `hasChanges` 를 본문과 분리해 보내는 계약은 화면에서
+ * "저장 버튼이 계속 비활성" 으로만 드러나므로 단위 테스트로 잠근다
+ * (`resolveSingleContent` 와 같은 선례).
  */
-function syncToForm(
+export function syncToForm(
     name: string,
     locale: string,
     value: string,
@@ -1111,9 +1115,24 @@ function syncToForm(
         return;
     }
 
+    // `hasChanges` 는 아래 본문 배치와 함께 보내면 안 된다.
+    //
+    // 그 배치는 `render: false` + `selfManaged: true` 라 React 렌더를 일으키지 않는다(성능 —
+    // 37,000+ 바인딩 재평가 회피). 그런데 저장 버튼의 활성 조건이 `{{!_local.hasChanges || ...}}`
+    // 처럼 이 플래그를 읽는 화면에서는, 플래그가 저장소 B 에만 들어가고 React 가 다시 그리지
+    // 않아 **버튼이 계속 비활성으로 남는다** — 본문만 고친 운영자는 저장 자체를 할 수 없다.
+    // (관리자 게시글 수정 화면에서 실측 재현. 제목 등 다른 입력을 함께 건드리면 그 입력의
+    //  자동바인딩이 렌더를 일으켜 가려지므로, 화면·보드에 따라 드러나기도 하고 아니기도 한다.)
+    //
+    // 이 플래그는 스칼라 한 개라 본문과 달리 성능 사유가 없다. 그래서 렌더를 일으키는 일반
+    // setLocal 로 분리하되, **false → true 로 처음 넘어갈 때만** 보낸다. 이미 true 면 건너뛰므로
+    // 편집 세션당 추가 렌더는 최대 1회다.
+    if (G7Core.state.getLocal?.()?.hasChanges !== true) {
+        G7Core.state.setLocal({ hasChanges: true });
+    }
+
     const updates: Record<string, any> = {
         [`form.${name}_mode`]: 'html',
-        hasChanges: true,
     };
 
     if (isMultilingual) {
