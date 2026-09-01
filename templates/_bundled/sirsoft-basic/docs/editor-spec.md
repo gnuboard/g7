@@ -13,7 +13,7 @@
 | 스타일 시스템 | `tailwind` |
 | 다크 모드 전략 | `ancestor-class` |
 
-> 레이아웃 편집기 스펙 — Phase 3 (nesting + componentPalette 블록).  controls/componentCapabilities/actionRecipes 등은 Phase 4/5 에서 추가.
+> 분할 13블록 · 팔레트 45 · 스타일 컨트롤 173 · 편집 역량 51 · 중첩 컨테이너 14 · 프리뷰 샘플 59 · 엔드포인트 샘플 1 · 페이지 상태 17 · 액션 레시피 20
 <!-- @generated:editor-spec-summary END -->
 
 <!-- @intent START -->

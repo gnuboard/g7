@@ -2559,13 +2559,64 @@ class ExtensionDocScaffolder
 
         $table = $this->table(['항목', '값'], $rows);
 
-        $description = $spec['description'] ?? null;
+        // 한 줄 요약은 스펙 파일의 `description` 을 옮기지 않고 **실측에서 만든다.**
+        //
+        // 그 필드는 코드가 아니라 사람이 쓴 메모라 실측과 대조되지 않는다. 옮겨 싣던 동안
+        // 12건 중 5건이 낡았고, 그중 둘은 바로 아래 표와 정반대를 말했다("controls 는
+        // 나중에 추가" — 이미 303개가 있는데). 오류도 경고도 나지 않는다: 문서가 자기
+        // 자신을 반박한 채로 읽힐 뿐이다.
+        //
+        // 수치에서 파생하면 그 어긋남이 생길 자리가 없어진다. 도메인 의미("무엇을 위한
+        // 샘플인가")는 이 블록 바로 아래 사람 서술 칸이 담당하므로 잃는 것도 없다.
+        $summary = $this->editorSpecHeadline($spec);
 
-        if (is_string($description) && $description !== '') {
-            return $table."\n\n> ".$this->escape($description);
+        return $summary === null ? $table : $table."\n\n> ".$summary;
+    }
+
+    /**
+     * 실측값으로 편집기 스펙 한 줄 요약을 만듭니다.
+     *
+     * 두 표(선언 요약·선언 블록)에 흩어진 값을 한 줄로 압축해, 문서를 연 사람이 첫 줄만
+     * 읽고도 이 스펙의 규모와 성격을 알 수 있게 합니다. 값이 없는 축은 넣지 않습니다 —
+     * `0` 을 나열하면 요약이 길어지기만 하고 읽히지 않습니다.
+     *
+     * @param  array<string, mixed>  $spec  편집기 스펙 인벤토리
+     * @return string|null 요약 문장 (실을 값이 없으면 null)
+     */
+    private function editorSpecHeadline(array $spec): ?string
+    {
+        $counts = [];
+
+        foreach ($spec['blocks'] as $block) {
+            $counts[$block['key']] = $block['count'];
         }
 
-        return $table;
+        $parts = [];
+
+        $parts[] = $spec['split'] === true
+            ? '분할 '.count($spec['includes']).'블록'
+            : '단일 파일';
+
+        // 표시 순서는 편집기에서 마주치는 순서다 — 무엇을 놓을 수 있고(팔레트), 어떻게
+        // 꾸미고(컨트롤·역량), 어디에 담고(중첩), 무엇으로 그려 보는가(샘플·상태).
+        foreach ([
+            ['componentPalette.entries', '팔레트'],
+            ['controls', '스타일 컨트롤'],
+            ['componentCapabilities', '편집 역량'],
+            ['nesting.containers', '중첩 컨테이너'],
+            ['sampleData.byDataSourceId', '프리뷰 샘플'],
+            ['sampleData.byEndpointPattern', '엔드포인트 샘플'],
+            ['states.groups', '페이지 상태'],
+            ['actionRecipes', '액션 레시피'],
+        ] as [$key, $label]) {
+            $n = $counts[$key] ?? null;
+
+            if (is_int($n) && $n > 0) {
+                $parts[] = $label.' '.$n;
+            }
+        }
+
+        return $parts === [] ? null : implode(' · ', $parts);
     }
 
     /**

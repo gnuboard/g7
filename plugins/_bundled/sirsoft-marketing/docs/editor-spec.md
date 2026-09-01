@@ -13,7 +13,7 @@
 | 스타일 시스템 | - |
 | 다크 모드 전략 | - |
 
-> 마케팅 동의 플러그인 레이아웃 편집기 샘플 데이터.
+> 단일 파일 · 프리뷰 샘플 1
 <!-- @generated:editor-spec-summary END -->
 
 <!-- @intent START -->

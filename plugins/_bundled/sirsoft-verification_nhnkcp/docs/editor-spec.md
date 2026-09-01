@@ -13,7 +13,7 @@
 | 스타일 시스템 | - |
 | 다크 모드 전략 | - |
 
-> NHN KCP 휴대폰 본인확인 플러그인 레이아웃 편집기 샘플 데이터.
+> 단일 파일 · 프리뷰 샘플 1 · 페이지 상태 3
 <!-- @generated:editor-spec-summary END -->
 
 <!-- @intent START -->

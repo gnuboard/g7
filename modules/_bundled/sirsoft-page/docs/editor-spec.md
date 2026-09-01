@@ -13,7 +13,7 @@
 | 스타일 시스템 | - |
 | 다크 모드 전략 | - |
 
-> 레이아웃 편집기 스펙 — 페이지 모듈 도메인 sampleData/states. 실제 admin 레이아웃 data_source ID 4종 전수(pages/page/pageData/versions) + 사용자 페이지(/p/:slug, 약관/개인정보) byEndpointPattern. sampleGlobal 은 페이지 도메인이 _global keyspace 를 두지 않아 미작성(&#039;필요 시&#039; 조건부 — 정당).
+> 단일 파일 · 프리뷰 샘플 6 · 엔드포인트 샘플 3 · 페이지 상태 3
 <!-- @generated:editor-spec-summary END -->
 
 <!-- @intent START -->

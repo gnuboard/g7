@@ -13,7 +13,7 @@
 | 스타일 시스템 | - |
 | 다크 모드 전략 | - |
 
-> 레이아웃 편집기 스펙 — 게시판 모듈 도메인 sampleData/sampleGlobal/states. 실제 admin 레이아웃 data_source ID 전수 스캔 기반 도메인 ID(posts/post/reports/report_detail/reporters_list/boards/boards_list/board_types/form_data/form_meta/settings) + 사용자 게시판 페이지 byEndpointPattern. 공용 인프라(roles/availableChannels/identityProviders/boardIdentity*/boardNotificationDefinitions)는 admin 템플릿 스펙(roles/availableChannels/identityProviders)·코어 프리셋 폴백이 커버.
+> 단일 파일 · 프리뷰 샘플 23 · 엔드포인트 샘플 4 · 페이지 상태 8
 <!-- @generated:editor-spec-summary END -->
 
 <!-- @intent START -->
