@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.4] - 2026-09-01
+
+### Added
+
+- 게시판 환경설정 > 일괄 적용 확인 창의 「금지어」 항목 이름 일본어 번역을 추가했습니다 (`admin/settings.bulk_apply.field_labels.blocked_keywords`).
+
 ## [1.0.3] - 2026-08-19
 
 ### Added

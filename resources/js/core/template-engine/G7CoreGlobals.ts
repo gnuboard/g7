@@ -22,6 +22,7 @@ import { DataBindingEngine, dataBindingEngine } from './DataBindingEngine';
 import { hasPipes } from './PipeRegistry';
 import { extractSingleBinding } from './BindingShape';
 import { evaluateStringCondition } from './helpers/ConditionEvaluator';
+import { addMissingLeafKeys } from './helpers/StateMerge';
 import { DataSourceManager, dataSourceManager } from './DataSourceManager';
 import DynamicRenderer from './DynamicRenderer';
 import { useTransitionState } from './TransitionContext';
@@ -1627,48 +1628,10 @@ function hasOnlyNumericKeys(obj: Record<string, any>): boolean {
  * @param source 병합할 소스 객체
  * @returns 병합된 결과 객체
  */
-/**
- * base 객체에 없는 leaf 키만 extra에서 추가합니다.
- *
- * deepMerge와 달리 base에 이미 존재하는 값(배열 포함)은 절대 덮어쓰지 않습니다.
- * extra에만 존재하는 키는 재귀적으로 추가됩니다.
- *
- * 용도: setLocal에서 dynamicLocal(actionContext.state)의 setState 전용 키를 globalLocal에
- * 안전하게 추가할 때 사용. dynamicLocal의 stale 배열(init_actions 기본값)이 globalLocal의
- * 정상 API 데이터를 덮어쓰는 것을 방지합니다.
- *
- * @since engine-v1.41.0
- *
- * @example
- * ```ts
- * const base = { form: { category_ids: [381, 384], name: 'A' } };
- * const extra = { form: { category_ids: [], options: [] }, selectedProducts: [1] };
- * addMissingLeafKeys(base, extra);
- * // → { form: { category_ids: [381, 384], name: 'A', options: [] }, selectedProducts: [1] }
- * // base의 category_ids는 보존, extra의 selectedProducts와 options는 추가
- * ```
- */
-function addMissingLeafKeys(base: Record<string, any>, extra: Record<string, any>): Record<string, any> {
-  const result = { ...base };
-  for (const key of Object.keys(extra)) {
-    if (!(key in result)) {
-      // base에 없는 키: extra 값 그대로 추가
-      result[key] = extra[key];
-    } else if (
-      result[key] !== null &&
-      typeof result[key] === 'object' &&
-      !Array.isArray(result[key]) &&
-      extra[key] !== null &&
-      typeof extra[key] === 'object' &&
-      !Array.isArray(extra[key])
-    ) {
-      // 양쪽 모두 plain object: 재귀적으로 처리
-      result[key] = addMissingLeafKeys(result[key], extra[key]);
-    }
-    // base에 이미 존재하는 leaf 값(배열, 문자열, 숫자 등): 건너뜀 (base 값 보존)
-  }
-  return result;
-}
+// addMissingLeafKeys 는 engine-v1.63.3 에서 helpers/StateMerge 로 이동했다.
+// ActionDispatcher 의 handleSetState COMPONENT path 가 같은 보충 규칙을 써야 하는데
+// G7CoreGlobals → ActionDispatcher import 가 이미 있어 역방향 값 import 가 순환이 되기 때문이다.
+// 동작은 원문 그대로다 (사례 13 회귀 테스트가 잠금 역할).
 
 function deepMerge(target: Record<string, any>, source: Record<string, any>): Record<string, any> {
   // 특수 케이스: target이 배열이고 source가 숫자 키만 가진 객체인 경우
@@ -2363,7 +2326,31 @@ function initStateAPI(G7Core: any): void {
       // globalState._local도 함께 업데이트해야 후속 getLocal() 호출이 최신 값을 반환함.
       const templateApp = (window as any).__templateApp;
       if (templateApp?.setGlobalState) {
-        templateApp.setGlobalState({ _local: merged });
+        // 저장소 B 쓰기의 base 는 live B 다 (engine-v1.63.3 / 공개 이슈 #130 과 같은 정책).
+        //
+        // `merged` 는 부모 컨텍스트의 **저장소 A**(`parentEntry.state._local`)를 base 로 만든 값이다.
+        // `setGlobalState` 는 `_local` 을 얕게 병합하므로 그것을 그대로 쓰면 B 가 통째 교체되고,
+        // A 가 아직 받지 못한 값(예: selfManaged 플러그인이 B 에만 쓴 편집기 본문)이 사라진다.
+        // 부모 컨텍스트가 페이지 루트일 때 그 A 스냅샷은 B 보다 뒤처져 있을 수 있다(사례 21).
+        //
+        // 그래서 B 에는 live B + 변경 키만 얹고, A 전용 키는 `addMissingLeafKeys` 로 보충한다.
+        // 저장소 A 경로(`parentEntry.setState`)와 pending 은 종전 그대로 둔다 — 그쪽 base 를
+        // 바꾸면 React 전용 배열이 B 초기값으로 덮이는 사례 22 위험이 생긴다.
+        //
+        // `merge: 'replace'` 는 의도적 리셋이므로 제외한다(사례 17).
+        const canonicalLocal = templateApp.getGlobalState?.()?._local;
+        const canUseCanonical = mergeMode !== 'replace'
+          && !!canonicalLocal && typeof canonicalLocal === 'object' && !Array.isArray(canonicalLocal);
+
+        const canonicalMerged = canUseCanonical
+          ? (mergeMode === 'shallow'
+            ? { ...(canonicalLocal as Record<string, any>), ...converted }
+            : deepMerge(canonicalLocal as Record<string, any>, converted))
+          : undefined;
+
+        templateApp.setGlobalState({
+          _local: canonicalMerged ? addMissingLeafKeys(canonicalMerged, merged) : merged,
+        });
       }
 
       parentEntry.setState(merged);

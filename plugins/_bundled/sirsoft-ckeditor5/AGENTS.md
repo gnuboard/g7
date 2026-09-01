@@ -171,8 +171,8 @@
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 15개 | `plugins/_bundled/sirsoft-ckeditor5/tests` |
-| Vitest | 9개 | `vitest.config.ts` |
-| Playwright | 3개 | `tests/Playwright` |
+| Vitest | 11개 | `vitest.config.ts` |
+| Playwright | 4개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 1개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
@@ -184,8 +184,8 @@ php vendor/bin/phpunit plugins/_bundled/sirsoft-ckeditor5/tests --filter='<대�
 # Vitest (확장 디렉토리에서) (PowerShell)
 cd plugins/_bundled/sirsoft-ckeditor5 && powershell -Command "npm run test:run -- <대상>"
 
-# Playwright E2E (Bash)
-npx playwright test plugins/_bundled/sirsoft-ckeditor5/tests/Playwright/specs/<대상>.spec.ts
+# Playwright E2E (확장 디렉토리에서) (Bash)
+cd plugins/_bundled/sirsoft-ckeditor5 && npm run test:e2e -- specs/<대상>.spec.ts
 
 ```
 

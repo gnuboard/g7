@@ -162,4 +162,81 @@ test.describe('편집기 자산 실패 폴백', () => {
         await expect(page.locator('[data-ckeditor5-fallback]')).toHaveCount(0, { timeout: 20_000 });
         await expect(page.locator('#g7-asset-failure-notice')).toHaveCount(0, { timeout: 20_000 });
     });
+
+    test('폭을 바꾼 뒤 저장해도 폴백 입력창의 본문이 그대로 전송된다', async ({ page, editorToken }) => {
+        // @scenario asset_class=vendored, outcome=failed
+        // @effects failed_asset_falls_back_to_plain_input, fallback_body_survives_resize_on_save
+        //
+        // 이 케이스는 두 매니페스트에 걸친다 — 폴백이 서는 것 자체는
+        // `self-hosted-runtime-assets.yaml`, 폭 변경 후 본문이 살아남는 것은
+        // `editor-resize-save-body-integrity.yaml` 이 소유한다.
+        //
+        // 공개 #130(engine-v1.63.3) 인접 축. 평문 폴백도 본문을 `setLocal({ render:false,
+        // selfManaged:true })` 로 저장소 B 에만 쓰므로, 편집기 경로와 **같은 조건**이 성립한다.
+        // 다만 폴백은 디바운스를 쓰지 않아 입력 즉시 B 에 실린다 — 그래서 편집기 spec 의
+        // 결정화 4단계 중 ①(디바운스 발화 대기)이 필요 없고, ②폭 변경 → ③pending 클리어
+        // 확정 → ④저장만 밟는다.
+        //
+        // 판정은 화면이 아니라 **요청 body** 로 한다. 이 결함은 작성 화면에서 422 로,
+        // 수정 화면에서는 성공 토스트와 함께 조용한 손실로 나타나므로 화면 피드백은 근거가
+        // 되지 못한다.
+        await page.route(EDITOR_BUNDLE, (route) => route.abort());
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await authenticatePage(page, editorToken);
+
+        await page.goto('/admin/board/notice/create');
+        await page.waitForLoadState('networkidle');
+
+        const textarea = page.locator('[data-ckeditor5-fallback]');
+        await expect(textarea).toBeVisible({ timeout: 20_000 });
+
+        const stamp = Date.now();
+        const marker = `FALLBACK-RESIZE-${stamp}`;
+        await page.locator('input[name="title"]').fill(`E2E 폴백 폭변경 ${stamp}`);
+        await textarea.fill(marker);
+
+        // 본문이 저장소 B 에 실렸는지 먼저 확정한다 (폴백은 디바운스가 없어 즉시 실린다)
+        await expect
+            .poll(
+                async () =>
+                    await page.evaluate(
+                        () => (window as any).G7Core?.state?.getLocal?.()?.form?.content ?? ''
+                    ),
+                { timeout: 20_000 }
+            )
+            .toContain(marker);
+
+        // 브레이크포인트를 넘지 않는 19px 변경 — 이것만으로 pending 이 비워진다
+        await page.setViewportSize({ width: 1421, height: 900 });
+        await expect
+            .poll(async () => await page.evaluate(() => (window as any).__g7PendingLocalState === null), {
+                timeout: 20_000,
+            })
+            .toBe(true);
+
+        let postId: number | null = null;
+        try {
+            const [request, response] = await Promise.all([
+                page.waitForRequest((r) => r.url().includes('/posts') && r.method() === 'POST'),
+                page.waitForResponse((r) => r.url().includes('/posts') && r.request().method() === 'POST'),
+                page.locator('#footer_save_button').click(),
+            ]);
+
+            const body = request.postDataJSON();
+            expect(String(body.content ?? ''), '폭 변경 뒤에도 폴백 본문이 전송돼야 한다').toContain(marker);
+            expect(body.content_mode, '폴백의 평문 계약은 폭 변경과 무관하게 유지돼야 한다').toBe('text');
+            expect(response.status(), '저장이 422 가 아니어야 한다').toBeLessThan(400);
+
+            const json = await response.json();
+            postId = json?.data?.id ?? null;
+        } finally {
+            if (postId !== null) {
+                const del = await page.request.delete(
+                    `/api/modules/sirsoft-board/admin/board/notice/posts/${postId}`,
+                    { headers: { Authorization: `Bearer ${editorToken}`, Accept: 'application/json' } },
+                );
+                expect(del.ok(), `정리 삭제가 성공해야 한다 (status ${del.status()})`).toBeTruthy();
+            }
+        }
+    });
 });

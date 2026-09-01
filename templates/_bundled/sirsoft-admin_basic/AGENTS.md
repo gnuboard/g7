@@ -129,8 +129,8 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 # Vitest (확장 디렉토리에서) (PowerShell)
 cd templates/_bundled/sirsoft-admin_basic && powershell -Command "npm run test:run -- <대상>"
 
-# Playwright E2E (Bash)
-npx playwright test templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/<대상>.spec.ts
+# Playwright E2E (확장 디렉토리에서) (Bash)
+cd templates/_bundled/sirsoft-admin_basic && npm run test:e2e -- specs/<대상>.spec.ts
 
 ```
 

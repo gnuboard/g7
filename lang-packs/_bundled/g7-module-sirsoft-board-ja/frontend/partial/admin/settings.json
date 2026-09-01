@@ -310,6 +310,7 @@
       "notify_admin_on_post": "管理者通知",
       "notify_author": "投稿者通知",
       "new_display_hours": "新着表示時間",
+      "blocked_keywords": "禁止ワード",
       "default_board_permissions": "デフォルト権限",
       "manager": "掲示板管理"
     },

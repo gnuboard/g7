@@ -160,9 +160,13 @@ class TestPathCollector
         }
 
         if ($playwright['count'] > 0) {
+            // 확장은 자기 config 를 `tests/Playwright/` 아래 두므로 저장소 루트에서 부르면
+            // 코어 config(testDir: tests/Playwright/specs)가 잡혀 그 spec 이 모집단 밖이 된다.
+            // 결과는 실패가 아니라 "No tests found" — 돌렸다고 착각한 채 0건이 지나가고,
+            // 코어 globalSetup 이 개발 사이트에 시드 화면을 설치·제거하는 부작용만 남는다.
             $commands[] = [
-                'label' => 'Playwright E2E',
-                'command' => "npx playwright test {$rel}/tests/Playwright/specs/<대상>.spec.ts",
+                'label' => 'Playwright E2E (확장 디렉토리에서)',
+                'command' => "cd {$rel} && npm run test:e2e -- specs/<대상>.spec.ts",
                 'shell' => 'Bash',
             ];
         }

@@ -161,8 +161,8 @@ php vendor/bin/phpunit plugins/_bundled/sirsoft-gdpr/tests --filter='<대상클�
 # Vitest (확장 디렉토리에서) (PowerShell)
 cd plugins/_bundled/sirsoft-gdpr && powershell -Command "npm run test:run -- <대상>"
 
-# Playwright E2E (Bash)
-npx playwright test plugins/_bundled/sirsoft-gdpr/tests/Playwright/specs/<대상>.spec.ts
+# Playwright E2E (확장 디렉토리에서) (Bash)
+cd plugins/_bundled/sirsoft-gdpr && npm run test:e2e -- specs/<대상>.spec.ts
 
 ```
 

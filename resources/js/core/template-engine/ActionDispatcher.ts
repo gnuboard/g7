@@ -28,6 +28,7 @@ import type { ErrorHandlerConfig, ErrorContext } from '../types/ErrorHandling';
 import { createLogger } from '../utils/Logger';
 import type { G7DevToolsInterface } from './G7CoreGlobals';
 import { evaluateConditionBranches } from './helpers/ConditionEvaluator';
+import { addMissingLeafKeys } from './helpers/StateMerge';
 import { triggerModalParentUpdate } from './ParentContextProvider';
 import type { GlobalHeaderRule } from './LayoutLoader';
 import { IdentityGuardInterceptor } from '../identity/IdentityGuardInterceptor';
@@ -4141,9 +4142,69 @@ export class ActionDispatcher {
         // (_localInit 미반영 시점)에 __g7PendingLocalState 를 fresh B baseline 으로 미리 채워두므로,
         // currentState 가 pending(정상)을 우선 사용하여 stale context.state 를 건너뛴다.
         // 그 사전설정 경로를 변경/제거하면 사례 13/22(stale 배열의 globalLocal 통째 교체 오염) 재발 가능성을 함께 점검해야 한다.
+        // engine-v1.63.3 (공개 이슈 #130): B 동기화의 base 를 A 계열 전체 스냅샷에서
+        // live B(_global._local) + 변경 키로 바꾼다.
+        //
+        // 위 [안전성 의존 관계] 주석이 전제한 "currentState 가 정합한 _local 전체" 는 성립하지
+        // 않는 구간이 있다. CKEditor 등 selfManaged 플러그인이 setLocal({render:false}) 로
+        // B 에만 본문을 쓰면 React 렌더가 일어나지 않아 extendedDataContext useMemo 가
+        // 재계산되지 않고(deps 에 __g7ForcedLocalFields 가 없다 — window 전역이라 deps 가 될 수 없다),
+        // context.state 는 본문 타이핑 이전 스냅샷으로 고정된다. 그 상태에서 폭 변경 리렌더가
+        // __g7PendingLocalState 를 null 로 지우면(DynamicRenderer.tsx:1110) currentState 가
+        // stale A 로 떨어지고, 그것을 B 에 통째로 덮어써 본문이 사라진다.
+        //
+        // 정답 선례는 같은 파일의 dot-notation path(engine-v1.58.2, :4235~)다. 그것이 이미
+        // "live B base + 변경 키" 로 같은 문제를 풀었고 주석에서 이 COMPONENT path 를 위험으로
+        // 지목했다. 이번 수정은 그 정책을 이 경로에 맞춘다.
+        //
+        // 제외 조건:
+        // - merge:"replace" — 의도적 리셋이므로 live B 를 base 로 삼지 않는다 (사례 17)
+        // - 모달 컨텍스트 스택이 있음 — 모달의 setState 가 페이지 _local 을 흡수하는 것을 막는다
+        //   (사례 29, setLocal v1.24.7 가드와 동형)
+        //   한계: 스택은 openModal/closeModal 핸들러에서만 push/pop 되므로(:4836·:4911)
+        //   setState 플래그로 여는 모달과 G7Core.modal.open() 은 depth 0 으로 보인다. 이는
+        //   v1.24.7 가드가 이미 가진 사각과 동일하며, 그 경우에도 새 동작은 "B 통째 교체" 가
+        //   아니라 "B 에 병합" 이라 사례 29 대비 악화되지 않는다.
+        // - __templateApp 부재 — 종전 전체 스냅샷 폴백 (v1.50.4 호환)
+        //
+        // merge:"shallow" 는 제외하지 않는다. 현행 shallow 는 pending 을 무시하고 context.state
+        // 만 base 로 쓰므로(:4110) 리프 컴포넌트의 부분 상태가 base 가 되어 오히려 이 결함에
+        // 더 노출돼 있다.
+        const modalDepth = ((window as any).__g7LayoutContextStack || []).length;
+        let canonicalMerged: Record<string, any> | undefined;
+
         if (this.globalStateUpdater) {
-          this.globalStateUpdater({ _local: pendingExpected }, { render: false });
-          logger.log('[handleSetState] _global._local synced (render:false):', pendingExpected);
+          const canonicalLocal = modalDepth === 0
+            ? (window as any).__templateApp?.getGlobalState?.()?._local
+            : undefined;
+          const canUseCanonical = mergeMode !== 'replace'
+            && !!canonicalLocal && typeof canonicalLocal === 'object' && !Array.isArray(canonicalLocal);
+
+          if (canUseCanonical) {
+            // convertedPayload 를 쓰면 안 된다 — 그것은 빈 base 위의 변환이라
+            // {"form.title":"X"} → {form:{title:"X"}} 가 되고, 얕게 얹으면 B.form 이 통째
+            // 교체되어 고치려던 결함을 재생산한다. deepMergeWithState 는 createNestedUpdate 로
+            // 형제 키를 유지한 채 leaf 만 바꾼다. result={...currentState}(:4521) 로 시작하고
+            // deepMergeInto 가 참조 동일성 가드(:4608)로 매 레벨 방어 복사하므로 live B 를
+            // 변이하지 않는다.
+            const merged = mergeMode === 'deep'
+              ? this.deepMergeWithState(resolvedPayload, canonicalLocal as Record<string, any>)
+              : { ...(canonicalLocal as Record<string, any>), ...resolvedPayload };
+            const { __mergeMode: _cmm, __setStateId: _cssid, ...rest } = merged as any;
+            canonicalMerged = rest;
+          } else if (mergeMode !== 'replace') {
+            logger.log('[handleSetState] canonical _local 미사용 → 전체 스냅샷 폴백',
+              { modalDepth, hasTemplateApp: !!(window as any).__templateApp });
+          }
+
+          // B 쓰기에도 A 전용 키를 보충한다 — setLocal 선례(G7CoreGlobals 의
+          // addMissingLeafKeys(globalLocal, dynamicLocal))와 대칭.
+          // addMissingLeafKeys 는 base 에 이미 있는 값을 절대 덮지 않으므로 사례 13/22 위험이 없다.
+          const syncedLocal = canonicalMerged
+            ? addMissingLeafKeys(canonicalMerged, pendingExpected)
+            : pendingExpected;
+          this.globalStateUpdater({ _local: syncedLocal }, { render: false });
+          logger.log('[handleSetState] _global._local synced (render:false):', syncedLocal);
         }
 
         // engine-v1.17.5: dataKey 자동 바인딩이 있는 컴포넌트에서 setState 핸들러 호출 시
@@ -4170,7 +4231,24 @@ export class ActionDispatcher {
         // DevTools: 렌더링 완료 후 상태 변경 완료 (DynamicRenderer에서 처리되지만 fallback으로 setTimeout 사용)
         if (setStateId && devTools) setTimeout(() => devTools.completeStateChange(setStateId), 0);
         // sequence에서 _local 동기화에 사용하기 위해 __target 마커 추가
-        return { __target: 'local', ...fullMergedState };
+        //
+        // engine-v1.63.3 (공개 이슈 #130): 반환값도 live B 기반으로 신선화한다.
+        // 요청 body 는 저장소 B 를 읽지 않는다 — handleApiCall 의 getLocal() 은
+        // getMatchingGlobalHeaders 전용이고, body 는 sequence 의 currentState(= 이 반환값)에서
+        // 온다(handleSequence:5342·5379·5428, 트러블슈팅 사례 15 계약). 따라서 B 쓰기만 고치면
+        // B 는 지켜지지만 422 는 그대로 난다.
+        //
+        // base 는 live B(충돌 leaf 는 B 승), extra 는 A 기반 스냅샷에서 B 에 없는 키만 보충
+        // — 사례 13(engine-v1.41.0) 정책 재사용. React 전용 키(loadingActions, DataGrid 선택 등)를
+        // 잃지 않는다. __mergeMode 재부착은 handleSequence:5431~5438 계약 보존용.
+        const returnedState = canonicalMerged
+          ? addMissingLeafKeys(canonicalMerged, pendingExpected)
+          : fullMergedState;
+        return {
+          __target: 'local',
+          ...returnedState,
+          ...(mergeMode !== 'deep' ? { __mergeMode: mergeMode } : {}),
+        };
       } else if (this.globalStateUpdater) {
         // init_actions 등에서 componentContext가 없는 경우 globalStateUpdater를 통해 _local 업데이트
         logger.log('[handleSetState] Using GLOBAL STATE UPDATER path for _local');
