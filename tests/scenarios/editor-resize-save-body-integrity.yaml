@@ -22,6 +22,7 @@ test_files:
   - resources/js/core/template-engine/__tests__/troubleshooting-state-setstate.test.ts
   - resources/js/core/template-engine/__tests__/DynamicRenderer.resizePendingClear.test.tsx
   - resources/js/core/__tests__/G7CoreGlobals.selfManagedPromotion.test.ts
+  - resources/js/core/template-engine/__tests__/DynamicRenderer.autoBindingPendingBase.test.tsx
   - plugins/_bundled/sirsoft-ckeditor5/tests/Playwright/specs/admin/editor-resize-save-body-integrity.spec.ts
 
 axes:
@@ -39,6 +40,9 @@ effects:
   - success_toast_only_when_content_actually_saved
   - resize_clears_pending_local_state
   - selfmanaged_setlocal_writes_canonical_without_render
+  - autobinding_keystroke_preserves_editor_content
+  - pending_snapshot_carries_forced_overlay
+  - typed_path_wins_over_forced_previous_value
 
 sub_flows:
   - id: control_no_resize
@@ -72,3 +76,19 @@ sub_flows:
     effects:
       - resize_clears_pending_local_state
       - selfmanaged_setlocal_writes_canonical_without_render
+
+  - id: autobinding_after_resize
+    description: |
+      engine-v1.63.4 (사례 41) — 같은 뿌리의 **다른 방아쇠**. 폭 변경으로 pending 이 비워진 뒤
+      제목 등 자동바인딩 입력에 키를 치면, performStateUpdate 가 stale 한 저장소 A 스냅샷을
+      pending 에 싣고 이어지는 setLocal 이 그것을 base 로 채택해 저장소 B 를 통째 교체한다.
+      **저장 클릭 전에** 이미 편집분이 사라지므로 engine-v1.63.3 의 수정은 이 경로를 지나가지 않는다.
+
+      pending 은 getLocal() 이 읽는 "화면과 같은 전체 스냅샷" 이어야 하므로, 렌더러가
+      extendedDataContext._local 을 만드는 순서(dataContext._local → dynamicState →
+      __g7ForcedLocalFields)를 그대로 따르게 합성한다. 방금 입력한 경로는 마지막에 다시 얹어
+      오버레이의 직전 값이 입력을 되돌리지 못하게 한다(사례 11 계열 역방향 결함 방지).
+    effects:
+      - autobinding_keystroke_preserves_editor_content
+      - pending_snapshot_carries_forced_overlay
+      - typed_path_wins_over_forced_previous_value

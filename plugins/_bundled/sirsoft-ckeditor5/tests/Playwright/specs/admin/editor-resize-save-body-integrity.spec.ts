@@ -348,4 +348,90 @@ test.describe('폭 변경 후 저장 — 편집기 본문 보존', () => {
         });
         expect(canonical, 'setState 가 저장소 B 의 본문을 지우지 않아야 한다').toContain(marker);
     });
+
+    test('폭 변경 뒤 자동바인딩 입력이 편집분을 되돌리지 않는다 (사례 41)', async ({ page, editorToken }) => {
+        // @scenario save_flow=edit, resize_kind=same_breakpoint
+        // @effects autobinding_keystroke_preserves_editor_content, pending_snapshot_carries_forced_overlay
+        //
+        // engine-v1.63.4. 같은 뿌리(저장소 B 통째 교체)의 **다른 방아쇠**다 — 손실이 저장 클릭이
+        // 아니라 그 앞의 키입력에서 일어나므로 engine-v1.63.3 의 수정은 이 경로를 지나가지 않는다.
+        //
+        // 순서가 중요하다: 본문 편집 → 폭 변경 → **제목 입력** → 저장.
+        // 폭 변경으로 pending 이 비워진 뒤의 자동바인딩 키입력이 stale 한 저장소 A 스냅샷을
+        // pending 에 실으면, 이어지는 setLocal 이 그것을 base 로 채택해 B 를 통째 교체한다.
+        //
+        // 판정은 화면이 아니라 요청 body 로 한다 — 수정 화면은 성공 토스트가 뜨고 서버 원본이
+        // 저장되므로 화면 피드백이 근거가 되지 못한다.
+        const stamp = Date.now();
+        const original = `AUTOBIND-ORIG-${stamp}`;
+        const added = `AUTOBIND-EDIT-${stamp}`;
+
+        await page.setViewportSize(SAME_BREAKPOINT.from);
+        await authenticatePage(page, editorToken);
+
+        // 원본 글을 만든다 (리사이즈 없이 — 대조군과 같은 경로)
+        await page.goto(`/admin/board/${BOARD}/create`);
+        const createEditor = page.locator('.ck-editor__editable').first();
+        await expect(createEditor).toBeVisible({ timeout: 30_000 });
+        await page.locator('input[name="title"]').pressSequentially(`제목 ${stamp}`);
+        await createEditor.click();
+        await createEditor.pressSequentially(original);
+        await waitForDebounceFlush(page, original);
+
+        const [createRequest, createResponse] = await Promise.all([
+            page.waitForRequest((r) => r.url().includes('/posts') && r.method() === 'POST'),
+            page.waitForResponse((r) => r.url().includes('/posts') && r.request().method() === 'POST'),
+            page.locator('#footer_save_button').click(),
+        ]);
+        expect(String(createRequest.postDataJSON().content ?? '')).toContain(original);
+        const postId = (await createResponse.json())?.data?.id ?? null;
+        expect(postId, '원본 글 id 를 받아야 한다').not.toBeNull();
+
+        try {
+            // 수정 화면 — 본문을 고치고, 폭을 바꾸고, 그 뒤에 제목을 건드린다
+            await page.goto(`/admin/board/${BOARD}/${postId}/edit`);
+            const editor = page.locator('.ck-editor__editable').first();
+            await expect(editor).toBeVisible({ timeout: 30_000 });
+            await expect(editor).toContainText(original, { timeout: 30_000 });
+
+            await editor.click();
+            await editor.pressSequentially(added);
+            await waitForDebounceFlush(page, added);          // ① 디바운스 발화 확정
+
+            await page.setViewportSize(SAME_BREAKPOINT.to);   // ② 폭 변경
+            await waitForPendingCleared(page);                // ③ pending 클리어 확정
+
+            // ④ 자동바인딩 키입력 — 여기서 편집분이 사라졌다
+            await page.locator('input[name="title"]').pressSequentially('!');
+
+            await expect
+                .poll(
+                    async () =>
+                        await page.evaluate(() => {
+                            const c = (window as any).__templateApp?.getGlobalState?.()?._local?.form?.content;
+                            return typeof c === 'string' ? c : JSON.stringify(c ?? '');
+                        }),
+                    { timeout: 20_000 },
+                )
+                .toContain(added);
+
+            const [request] = await Promise.all([
+                page.waitForRequest((r) => r.url().includes('/posts') && r.method() === 'PUT'),
+                page.locator('#footer_save_button').click(),
+            ]);
+
+            const sent = String(request.postDataJSON().content ?? '');
+            expect(sent, '자동바인딩 키입력 뒤에도 편집분이 전송돼야 한다').toContain(added);
+            expect(sent, '원본도 함께 남아야 한다').toContain(original);
+        } finally {
+            if (postId !== null) {
+                const del = await page.request.delete(
+                    `/api/modules/sirsoft-board/admin/board/${BOARD}/posts/${postId}`,
+                    { headers: { Authorization: `Bearer ${editorToken}`, Accept: 'application/json' } },
+                );
+                expect(del.ok(), `정리 삭제가 성공해야 한다 (status ${del.status()})`).toBeTruthy();
+            }
+        }
+    });
+
 });

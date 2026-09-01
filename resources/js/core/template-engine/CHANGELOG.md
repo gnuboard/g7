@@ -5,6 +5,18 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.63.4] - 2026-09-01
+
+### Fixed
+
+#### 자동바인딩 키입력이 편집기 본문을 서버 원본으로 되돌리던 문제
+
+- 자동바인딩(`performStateUpdate`)이 `__g7PendingLocalState` 에 **저장소 A 기반 전체 스냅샷**을 그대로 대입했다. 그 base(`parentFormContext.state`)는 `extendedDataContext` useMemo 의 결과라, `setLocal({ render:false, selfManaged:true })`(CKEditor5 등)이 저장소 B 에만 쓴 뒤 memo 가 재계산되지 않은 구간에서는 **편집 이전 스냅샷으로 고정**된다. 이어지는 `setLocal` 이 `currentSnapshot = pendingState || baseLocal` 로 그것을 채택해 저장소 B 를 통째 교체하면서 편집분이 사라졌다.
+- 이제 pending 은 렌더러가 화면을 만드는 순서(`dataContext._local → dynamicState → __g7ForcedLocalFields`)와 같게 합성한다(`composeAutoBindingPendingSnapshot`). pending 은 `getLocal()` 이 읽는 "화면과 같은 전체 스냅샷" 이므로 이 정합이 맞다. 방금 입력한 경로는 마지막에 다시 얹어, 오버레이의 직전 값이 입력을 되돌리지 못하게 한다.
+- 성립 조건에는 **memo deps 와 무관한 리렌더**가 선행해야 한다(브라우저 실측: 폭 변경). 그것이 없으면 손실이 없다 — 리사이즈 없는 대조군은 정상이다. engine-v1.63.3(#130)이 저장 클릭 경로를 고쳤다면 이번 수정은 **그 앞의 키입력 경로**를 고친다.
+- 작성 화면은 `내용은 필수입니다` 422 로, **수정 화면은 성공 토스트와 함께 서버 원본이 저장되어** 편집분이 조용히 사라졌다. 화면의 편집기에는 고친 내용이 그대로 보이고 콘솔 에러도 없었다.
+- 저장소 A 경로(`parentFormContext.setState`)와 `setLocal` 의 base 우선순위는 **건드리지 않는다**. 전자는 2026-04-22 에 로그인 폼 email 손실로 철회된 수정의 자리이고, 후자는 `_localInit`(engine-v1.49.2)이 초기 데이터를 pending 에만 실어 두는 구간을 깨뜨린다.
+
 ## [engine-v1.63.3] - 2026-09-01
 
 ### Fixed
