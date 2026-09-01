@@ -18,6 +18,7 @@
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { syncToForm } from '../../handlers/initEditor';
+import { renderTextareaFallback } from '../../handlers/textareaFallback';
 
 type Call = { updates: Record<string, any>; options?: Record<string, any> };
 
@@ -117,5 +118,203 @@ describe('편집기 본문 동기화 — hasChanges 렌더 분리 (저장 버튼
         const body = contentCalls();
         expect(body[0].updates['form.content.ja']).toBe('<p>本文</p>');
         expect(hasChangesCalls()).toHaveLength(1);
+    });
+});
+
+/**
+ * 저장 대상이 아닌 편집기는 폼을 "변경됨" 으로 만들지 않는다.
+ *
+ * 위 수정이 `hasChanges` 를 **렌더를 일으키는** setLocal 로 승격시키면서, 설정 화면의
+ * 미리보기 편집기처럼 저장 대상이 아닌 편집기의 입력까지 [저장] 버튼을 즉시 켜게 됐다.
+ * 미리보기 내용은 저장 액션의 body 에서 제외되므로 잘못 저장될 위험은 없지만, 운영자에게는
+ * "바뀐 것이 없는데 바뀐 것처럼" 보인다.
+ *
+ * 어느 편집기가 저장 대상인지는 **레이아웃이 안다**. 그래서 핸들러가 필드명(`preview_content`)
+ * 을 알아보는 대신 `trackChanges` 선언으로 받는다 — 필드명 하드코딩은 다른 확장이 같은
+ * 미리보기 패턴을 쓸 때 그대로 재발한다.
+ */
+describe('편집기 본문 동기화 — 저장 대상이 아닌 편집기 (trackChanges:false)', () => {
+    beforeEach(() => {
+        stubG7Core();
+        vi.restoreAllMocks();
+    });
+
+    afterEach(() => {
+        delete (window as any).G7Core;
+    });
+
+    it('trackChanges:false 면 hasChanges 를 아예 보내지 않는다', () => {
+        syncToForm('preview_content', 'ko', '<p>시험 입력</p>', true, false);
+
+        expect(
+            hasChangesCalls(),
+            '미리보기 입력이 [저장] 버튼을 켜면 안 된다',
+        ).toHaveLength(0);
+    });
+
+    it('trackChanges:false 여도 본문 동기화는 그대로 한다 (미리보기 렌더가 이 값을 읽는다)', () => {
+        syncToForm('preview_content', 'ko', '<p>시험 입력</p>', true, false);
+
+        const body = contentCalls();
+        expect(body, '본문은 종전대로 보낸다').toHaveLength(1);
+        expect(body[0].updates['form.preview_content.ko']).toBe('<p>시험 입력</p>');
+        expect(body[0].updates['form.preview_content_mode']).toBe('html');
+        expect(body[0].options?.render).toBe(false);
+        expect(body[0].options?.selfManaged).toBe(true);
+    });
+
+    it('생략하면 종전대로 hasChanges 를 보낸다 (기본값 true — 게시글 편집기 보호)', () => {
+        syncToForm('content', 'ko', '<p>본문</p>', false);
+
+        expect(hasChangesCalls(), '기본값이 false 로 뒤집히면 저장 버튼 회귀가 되돌아온다').toHaveLength(1);
+    });
+
+    it('trackChanges:false 인 편집기는 이미 켜진 hasChanges 를 끄지도 않는다', () => {
+        // 다른 입력이 이미 폼을 변경 상태로 만든 뒤 미리보기를 건드리는 순서
+        stubG7Core({ hasChanges: true });
+
+        syncToForm('preview_content', 'ko', '<p>시험</p>', true, false);
+
+        expect(hasChangesCalls(), '건드리지 않는다 — 끄면 진짜 변경이 묻힌다').toHaveLength(0);
+        expect(localState.hasChanges, '기존 변경 상태는 유지돼야 한다').toBe(true);
+    });
+});
+
+/**
+ * 회귀: 평문 폴백에서도 본문만 고치면 저장 버튼이 활성화된다 (형제 경로 패리티)
+ *
+ * `syncToForm` 의 결함을 고치면서 **형제 경로인 `syncFallbackToForm` 은 그대로 남았다.**
+ * 그쪽도 `hasChanges: true` 를 `render:false + selfManaged:true` 배치에 넣으므로,
+ * 편집기 자산을 못 불러와 평문 입력창으로 내려간 상태에서 본문만 고치면
+ * `admin_board_post_form.json` 의 저장 버튼
+ * (`disabled: "{{... || (!!route?.id && !_local.hasChanges)}}"`)이 계속 비활성이다 —
+ * **글 수정 자체가 불가능하다.** 폐쇄망·방화벽·광고차단기 환경에서는 그 폴백이 정상 경로다.
+ *
+ * 폴백에는 편집기에 없는 결이 하나 더 있다: `syncFallbackToForm` 은 사용자 입력뿐 아니라
+ * **렌더 시점에도** 불린다(`_mode='text'` 를 미리 심어 두려고). 그 자리까지 플래그를 켜면
+ * 사용자가 아무것도 입력하지 않았는데 화면을 여는 것만으로 "변경됨" 이 된다. 그래서
+ * 사용자 입력에서 온 호출만 플래그를 올린다.
+ */
+describe('평문 폴백 본문 동기화 — hasChanges 렌더 분리 (형제 경로)', () => {
+    let container: HTMLElement;
+
+    /**
+     * 폴백을 세울 컨테이너를 만듭니다.
+     *
+     * @return 문서에 붙은 빈 컨테이너
+     */
+    function mountContainer(): HTMLElement {
+        const el = document.createElement('div');
+        document.body.appendChild(el);
+        return el;
+    }
+
+    beforeEach(() => {
+        stubG7Core();
+        container = mountContainer();
+    });
+
+    afterEach(() => {
+        container.remove();
+        delete (window as any).G7Core;
+    });
+
+    it('폴백이 서는 것만으로는 폼이 변경됨이 되지 않는다', () => {
+        renderTextareaFallback({
+            container,
+            name: 'content',
+            height: 400,
+            readOnly: false,
+            multilingual: false,
+            initialContent: '<p>서버 원본</p>',
+        });
+
+        expect(
+            hasChangesCalls(),
+            '입력이 없는데 [저장] 이 켜지면 운영자가 바뀐 줄 알고 누른다',
+        ).toHaveLength(0);
+        // 평문 계약은 그대로 심어야 한다 (서버가 HTML 로 신뢰하면 안 된다)
+        expect(contentCalls().at(-1)?.updates['form.content_mode']).toBe('text');
+    });
+
+    it('폴백 입력창에 글자를 치면 hasChanges 가 렌더를 일으키며 올라간다', () => {
+        renderTextareaFallback({
+            container,
+            name: 'content',
+            height: 400,
+            readOnly: false,
+            multilingual: false,
+            initialContent: '',
+        });
+
+        const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
+        textarea.value = '폴백으로 쓴 본문';
+        textarea.dispatchEvent(new Event('input', { bubbles: true }));
+
+        const flag = hasChangesCalls();
+        expect(flag, '입력했는데 플래그가 안 오르면 저장 버튼이 비활성으로 남는다').toHaveLength(1);
+        expect(flag[0].updates.hasChanges).toBe(true);
+        expect(flag[0].options?.render, 'render:false 면 React 가 버튼을 다시 그리지 않는다').not.toBe(false);
+        expect(flag[0].options?.selfManaged, 'selfManaged 면 안 된다').not.toBe(true);
+    });
+
+    it('본문 배치에는 hasChanges 가 섞이지 않는다', () => {
+        renderTextareaFallback({
+            container,
+            name: 'content',
+            height: 400,
+            readOnly: false,
+            multilingual: false,
+            initialContent: '',
+        });
+
+        const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
+        textarea.value = 'x';
+        textarea.dispatchEvent(new Event('input', { bubbles: true }));
+
+        for (const c of contentCalls()) {
+            expect('hasChanges' in c.updates, 'render:false 배치에 섞이면 저장소 A 가 못 받는다').toBe(false);
+        }
+    });
+
+    it('연속 입력에서도 hasChanges 렌더는 첫 1회뿐이다', () => {
+        renderTextareaFallback({
+            container,
+            name: 'content',
+            height: 400,
+            readOnly: false,
+            multilingual: false,
+            initialContent: '',
+        });
+
+        const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
+        for (const v of ['a', 'ab', 'abc']) {
+            textarea.value = v;
+            textarea.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+
+        expect(hasChangesCalls(), '편집 세션당 추가 렌더는 최대 1회').toHaveLength(1);
+    });
+
+    it('저장 대상이 아닌 편집기의 폴백은 폼을 변경됨으로 만들지 않는다', () => {
+        renderTextareaFallback({
+            container,
+            name: 'preview_content',
+            height: 400,
+            readOnly: false,
+            multilingual: false,
+            initialContent: '',
+            trackChanges: false,
+        });
+
+        const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
+        textarea.value = '미리보기 시험';
+        textarea.dispatchEvent(new Event('input', { bubbles: true }));
+
+        expect(
+            hasChangesCalls(),
+            '미리보기가 폴백으로 내려앉아도 저장 대상이 아닌 것은 그대로다',
+        ).toHaveLength(0);
+        expect(contentCalls().at(-1)?.updates['form.preview_content'], '본문 동기화는 유지').toBe('미리보기 시험');
     });
 });

@@ -74,6 +74,15 @@ interface InitEditorParams {
     imageUpload?: boolean | string;
     height?: number | string;
     toolbar?: string;
+    /**
+     * 이 편집기의 입력을 "폼이 변경됨"(`_local.hasChanges`)으로 칠지 여부. 기본 `true`.
+     *
+     * 저장 대상이 아닌 편집기(설정 화면의 미리보기 등)는 `false` 로 선언한다. 그러지 않으면
+     * 운영자가 시험 삼아 미리보기에만 글자를 쳐도 [저장] 버튼이 켜져, 바뀐 것이 없는데
+     * 바뀐 것처럼 보인다. 어느 편집기가 저장 대상인지는 **레이아웃이 안다** — 그래서
+     * 핸들러가 필드명을 알아보는 대신 선언으로 받는다.
+     */
+    trackChanges?: boolean | string;
 }
 
 /** 툴바 프리셋 */
@@ -1100,12 +1109,20 @@ function createMultilingualTabs(
  * 테스트를 위해 export 한다 — `hasChanges` 를 본문과 분리해 보내는 계약은 화면에서
  * "저장 버튼이 계속 비활성" 으로만 드러나므로 단위 테스트로 잠근다
  * (`resolveSingleContent` 와 같은 선례).
+ *
+ * @param name 폼 필드명
+ * @param locale 이 값이 속한 로케일 (다국어 모드에서만 경로에 반영)
+ * @param value 편집기가 내놓은 HTML
+ * @param isMultilingual 다국어 편집기 여부 (`form.{name}.{locale}` vs `form.{name}`)
+ * @param tracksChanges 이 입력을 폼 변경(`_local.hasChanges`)으로 칠지 여부. 기본 `true`
+ * @return void
  */
 export function syncToForm(
     name: string,
     locale: string,
     value: string,
-    isMultilingual: boolean
+    isMultilingual: boolean,
+    tracksChanges: boolean = true
 ): void {
     // setData() 호출 중 change:data 재진입 방지
     if (isSyncSuppressed()) return;
@@ -1127,7 +1144,11 @@ export function syncToForm(
     // 이 플래그는 스칼라 한 개라 본문과 달리 성능 사유가 없다. 그래서 렌더를 일으키는 일반
     // setLocal 로 분리하되, **false → true 로 처음 넘어갈 때만** 보낸다. 이미 true 면 건너뛰므로
     // 편집 세션당 추가 렌더는 최대 1회다.
-    if (G7Core.state.getLocal?.()?.hasChanges !== true) {
+    //
+    // 저장 대상이 아닌 편집기(설정 화면의 미리보기 등)는 `tracksChanges:false` 로 이 축에서
+    // 빠진다 — 그러지 않으면 시험 입력만으로 [저장] 이 켜져 바뀐 것이 없는데 바뀐 것처럼 보인다.
+    // 본문 동기화는 그런 편집기도 그대로 수행한다(미리보기 렌더가 그 값을 읽는다).
+    if (tracksChanges && G7Core.state.getLocal?.()?.hasChanges !== true) {
         G7Core.state.setLocal({ hasChanges: true });
     }
 
@@ -1307,6 +1328,9 @@ export async function initEditorHandler(
     const placeholder = params.placeholder ?? '';
     const height = params.height !== undefined ? (Number(params.height) || 400) : (Number(pluginSettings.editorHeight) || 400);
     const toolbarType = (params.toolbar !== undefined ? (params.toolbar as string) : (pluginSettings.toolbar as string)) ?? 'standard';
+    // 기본은 true — 저장 대상이 아닌 편집기만 레이아웃이 명시적으로 끈다.
+    // 미평가 표현식(`{{...}}`)이 그대로 들어와도 truthy 문자열이라 기본값 쪽으로 떨어진다.
+    const tracksChanges = !(params.trackChanges === false || params.trackChanges === 'false');
 
     // content 파싱: 다국어 시 객체, 단일 시 문자열
     // extensionPointProps를 통해 전달되는 경우 표현식이 평가되지 않고 raw 문자열로 전달될 수 있음
@@ -1326,6 +1350,7 @@ export async function initEditorHandler(
             height,
             readOnly: isReadOnly,
             placeholder,
+            trackChanges: tracksChanges,
             multilingual: isMultilingual,
             locales: isMultilingual ? getSupportedLocales() : undefined,
             activeLocale: getCurrentLocale(),
@@ -1397,7 +1422,7 @@ export async function initEditorHandler(
                     if (!externalSync.shouldEmit()) return;
                     const html = (editor as any).getData();
                     externalSync.noteEmitted(html);
-                    syncToForm(name, locale, html, true);
+                    syncToForm(name, locale, html, true, tracksChanges);
                     updateCheckIconsRef.current();
                 });
 
@@ -1447,6 +1472,7 @@ export async function initEditorHandler(
                 locales,
                 activeLocale,
                 contentMap,
+                trackChanges: tracksChanges,
             });
             notifyEditorAssetFailure(
                 `ckeditor5-editor:${containerId}`,
@@ -1503,7 +1529,7 @@ export async function initEditorHandler(
                 if (!externalSync.shouldEmit()) return;
                 const html = (editor as any).getData();
                 externalSync.noteEmitted(html);
-                syncToForm(name, singleLocale, html, false);
+                syncToForm(name, singleLocale, html, false, tracksChanges);
             });
 
             isInitializing = false;
@@ -1542,6 +1568,7 @@ export async function initEditorHandler(
                 multilingual: false,
                 activeLocale: getCurrentLocale(),
                 initialContent,
+                trackChanges: tracksChanges,
             });
             notifyEditorAssetFailure(
                 `ckeditor5-editor:${containerId}`,

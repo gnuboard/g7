@@ -165,7 +165,11 @@ test.describe('편집기 자산 실패 폴백', () => {
 
     test('폭을 바꾼 뒤 저장해도 폴백 입력창의 본문이 그대로 전송된다', async ({ page, editorToken }) => {
         // @scenario asset_class=vendored, outcome=failed
-        // @effects failed_asset_falls_back_to_plain_input
+        // @effects failed_asset_falls_back_to_plain_input, fallback_body_survives_resize_on_save
+        //
+        // 이 케이스는 두 매니페스트에 걸친다 — 폴백이 서는 것 자체는
+        // `self-hosted-runtime-assets.yaml`, 폭 변경 후 본문이 살아남는 것은
+        // `editor-resize-save-body-integrity.yaml` 이 소유한다.
         //
         // 공개 #130(engine-v1.63.3) 인접 축. 평문 폴백도 본문을 `setLocal({ render:false,
         // selfManaged:true })` 로 저장소 B 에만 쓰므로, 편집기 경로와 **같은 조건**이 성립한다.

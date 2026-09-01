@@ -39,6 +39,13 @@ export interface TextareaFallbackOptions {
     contentMap?: Record<string, string>;
     /** 단일 모드 초기값 */
     initialContent?: string;
+    /**
+     * 이 입력을 "폼이 변경됨"(`_local.hasChanges`)으로 칠지 여부. 기본 `true`.
+     *
+     * 편집기 쪽 `trackChanges` 와 같은 축이다 — 저장 대상이 아닌 편집기가 폴백으로
+     * 내려앉아도 저장 대상이 아닌 것은 그대로여야 한다.
+     */
+    trackChanges?: boolean;
 }
 
 /** 컨테이너별 폴백 상태 (재시도 시 값 승계에 쓴다) */
@@ -54,20 +61,42 @@ const fallbackState = new WeakMap<HTMLElement, {
  * `_mode` 를 `'text'` 로 둔다 — 편집기가 없으므로 입력된 것은 HTML 이 아니다.
  * 이 값을 그대로 `'html'` 로 두면 서버가 평문을 HTML 로 신뢰하게 된다.
  *
+ * `hasChanges` 는 본문 배치에 섞지 않는다 — `syncToForm` 과 같은 이유다. 그 배치는
+ * `render:false + selfManaged:true` 라 React 렌더를 일으키지 않으므로, 플래그가 저장소 B 에만
+ * 들어가고 저장 버튼의 활성 조건이 재평가되지 않는다. `admin_board_post_form.json` 은
+ * 수정 화면에서 `(!!route?.id && !_local.hasChanges)` 로 저장을 잠그므로, 폴백에서 본문만
+ * 고친 운영자는 **저장 자체를 할 수 없다.** 폐쇄망·방화벽 환경에서는 이 폴백이 정상 경로다.
+ *
+ * 이 함수는 사용자 입력뿐 아니라 **폴백을 세우는 시점에도** 불린다(`_mode='text'` 를 미리
+ * 심어 두려고). 그 자리까지 플래그를 켜면 아무것도 입력하지 않았는데 화면을 여는 것만으로
+ * "변경됨" 이 되므로, 실제 입력에서 온 호출만 올린다.
+ *
  * @param name 폼 필드명
  * @param value 반영할 값 (다국어면 로케일 맵)
+ * @param userInitiated 사용자 입력에서 온 호출인지 (렌더 시점 시드는 `false`)
+ * @param tracksChanges 이 입력을 폼 변경으로 칠지 여부 (저장 대상이 아닌 편집기는 `false`)
  * @return void
  */
-function syncFallbackToForm(name: string, value: string | Record<string, string>): void {
+function syncFallbackToForm(
+    name: string,
+    value: string | Record<string, string>,
+    userInitiated: boolean,
+    tracksChanges: boolean
+): void {
     const G7Core = (window as any).G7Core;
 
     if (!G7Core?.state?.setLocal || !name) {
         return;
     }
 
+    // 렌더를 일으키는 별도 setLocal. false → true 로 처음 넘어갈 때만 보내므로
+    // 편집 세션당 추가 렌더는 최대 1회다 (`syncToForm` 과 같은 규칙).
+    if (userInitiated && tracksChanges && G7Core.state.getLocal?.()?.hasChanges !== true) {
+        G7Core.state.setLocal({ hasChanges: true });
+    }
+
     const updates: Record<string, any> = {
         [`form.${name}_mode`]: 'text',
-        hasChanges: true,
     };
 
     if (typeof value === 'string') {
@@ -98,6 +127,9 @@ export function renderTextareaFallback(options: TextareaFallbackOptions): void {
     }
 
     container.innerHTML = '';
+
+    // 기본은 true — 저장 대상이 아닌 편집기(설정 화면 미리보기 등)만 명시적으로 끈다.
+    const tracksChanges = options.trackChanges !== false;
 
     const locales = multilingual ? (options.locales ?? []) : [];
     const activeLocale = options.activeLocale ?? locales[0] ?? '';
@@ -169,7 +201,7 @@ export function renderTextareaFallback(options: TextareaFallbackOptions): void {
                 currentLocale = locale;
                 textarea.value = values[locale] ?? '';
                 textarea.dataset.locale = locale;
-                syncFallbackToForm(name, values);
+                syncFallbackToForm(name, values, false, tracksChanges);
                 refreshTabs();
             });
 
@@ -183,7 +215,7 @@ export function renderTextareaFallback(options: TextareaFallbackOptions): void {
 
         textarea.addEventListener('input', () => {
             values[currentLocale] = textarea.value;
-            syncFallbackToForm(name, values);
+            syncFallbackToForm(name, values, true, tracksChanges);
             refreshTabs();
         });
     } else {
@@ -191,7 +223,7 @@ export function renderTextareaFallback(options: TextareaFallbackOptions): void {
 
         textarea.addEventListener('input', () => {
             values[''] = textarea.value;
-            syncFallbackToForm(name, textarea.value);
+            syncFallbackToForm(name, textarea.value, true, tracksChanges);
         });
     }
 
@@ -201,7 +233,7 @@ export function renderTextareaFallback(options: TextareaFallbackOptions): void {
 
     // 폴백으로 내려앉았다는 사실 자체를 폼 상태에 반영한다 — 사용자가 아무것도 입력하지
     // 않고 저장해도 서버가 평문으로 처리하도록.
-    syncFallbackToForm(name, multilingual ? values : (values[''] ?? ''));
+    syncFallbackToForm(name, multilingual ? values : (values[''] ?? ''), false, tracksChanges);
 }
 
 /**

@@ -700,11 +700,13 @@
                                         "id": "preview_editor",
                                         "type": "extension_point",
                                         "name": "html_editor",
+                                        "comment": "trackChanges:false — 미리보기는 설정을 시험해 보는 자리라 저장 대상이 아니다(위 저장 액션의 body 에서도 제외된다). 이것을 빼면 미리보기에 글자만 쳐도 _local.hasChanges 가 켜져 [저장] 버튼이 활성화되고, 운영자는 바뀐 것이 없는데 바뀐 줄 알고 누르게 된다. 어느 편집기가 저장 대상인지는 레이아웃만 알므로 핸들러가 필드명으로 알아보게 하지 않고 여기서 선언한다.",
                                         "props": {
                                             "name": "preview_content",
                                             "content": "",
                                             "placeholder": "$t:sirsoft-ckeditor5.settings.preview_placeholder",
-                                            "multilingual": true
+                                            "multilingual": true,
+                                            "trackChanges": false
                                         },
                                         "default": [
                                             {

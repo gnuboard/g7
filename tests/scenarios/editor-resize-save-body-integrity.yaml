@@ -24,6 +24,10 @@ test_files:
   - resources/js/core/__tests__/G7CoreGlobals.selfManagedPromotion.test.ts
   - resources/js/core/template-engine/__tests__/DynamicRenderer.autoBindingPendingBase.test.tsx
   - plugins/_bundled/sirsoft-ckeditor5/tests/Playwright/specs/admin/editor-resize-save-body-integrity.spec.ts
+  # 편집기 확보 실패 시의 평문 폴백도 같은 조건(저장소 B 전용 쓰기)을 만든다 — 그 축을
+  # 잠그는 케이스가 이 spec 안에 있으므로 여기에 함께 건다. 자산 폴백 자체의 계약은
+  # self-hosted-runtime-assets.yaml 이 소유한다.
+  - plugins/_bundled/sirsoft-ckeditor5/tests/Playwright/specs/editor-fallback.spec.ts
 
 axes:
   save_flow: [create, edit]
@@ -43,6 +47,7 @@ effects:
   - autobinding_keystroke_preserves_editor_content
   - pending_snapshot_carries_forced_overlay
   - typed_path_wins_over_forced_previous_value
+  - fallback_body_survives_resize_on_save
 
 sub_flows:
   - id: control_no_resize
@@ -92,3 +97,14 @@ sub_flows:
       - autobinding_keystroke_preserves_editor_content
       - pending_snapshot_carries_forced_overlay
       - typed_path_wins_over_forced_previous_value
+
+  - id: plain_fallback_after_resize
+    description: |
+      편집기 확보에 실패해 평문 입력창으로 내려간 경우도 본문을 `setLocal({ render:false,
+      selfManaged:true })` 로 저장소 B 에만 쓴다 — 이 결함의 성립 조건이 그대로 성립한다.
+      폴백은 디바운스를 쓰지 않아 입력 즉시 B 에 실리므로, 편집기 축의 결정화 4단계 중
+      ①(디바운스 발화 대기)만 빠지고 ②폭 변경 → ③pending 클리어 확정 → ④저장은 동일하다.
+
+      이 축이 별도로 필요한 이유: 폐쇄망·차단 환경에서는 폴백이 **정상 경로**다. 편집기 축만
+      잠그면 그 환경의 운영자에게는 결함이 남은 채로 남는다.
+    effects: [fallback_body_survives_resize_on_save]

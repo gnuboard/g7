@@ -163,7 +163,6 @@ G7이 자동으로 주입하는 `_global` 속성입니다. 레이아웃에서 �
 - **예외**: `selfManaged: true` 명시한 호출은 자동 승격 제외 (CKEditor5 등 자체 DOM 관리 플러그인 전용)
 - **pending 스냅샷**: 자동바인딩은 `__g7PendingLocalState` 에 "지금 화면과 같은 전체 스냅샷" 을 싣는다. 이 값이 뒤이은 `setLocal` 의 base 가 되므로, 저장소 A 스냅샷을 그대로 실으면 B 에만 있던 값(selfManaged 플러그인이 쓴 편집기 본문 등)이 사라진다. 그래서 렌더러가 화면을 만드는 순서(`dataContext._local → dynamicState → __g7ForcedLocalFields`)를 그대로 따라 합성한다 (engine-v1.63.4)
 
-
 ### 엔진 수정 시 금지 사항 (CRITICAL)
 
 ```text

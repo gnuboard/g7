@@ -88,7 +88,15 @@ describe('CKEditor5 textarea 폴백', () => {
 
             expect(updates['form.content']).toBe('사용자가 쓴 글');
             expect(updates['form.content_mode']).toBe('text');
-            expect(updates.hasChanges).toBe(true);
+
+            // `hasChanges` 는 이 배치에 없다 — 배치가 `render:false + selfManaged:true` 라
+            // React 렌더를 일으키지 않아, 여기에 실으면 저장 버튼의 활성 조건이 재평가되지
+            // 않는다(수정 화면에서 저장 자체가 불가능해진다). 별도 setLocal 로 나간다.
+            expect(updates.hasChanges, '본문 배치에 섞으면 저장 버튼이 안 켜진다').toBeUndefined();
+            expect(
+                setLocal.mock.calls.some(([u]: [Record<string, any>]) => u.hasChanges === true),
+                '플래그 자체는 올라가야 한다',
+            ).toBe(true);
         });
 
         /**
