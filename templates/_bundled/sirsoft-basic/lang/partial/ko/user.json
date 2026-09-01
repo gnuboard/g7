@@ -68,7 +68,12 @@
     "board_title": "게시판 활동",
     "inquiries_title": "상품 문의내역",
     "claim_apply_title": "교환·반품·취소 신청",
-    "claim_apply_description": "주문 상품의 교환·반품·취소·환불을 신청합니다."
+    "claim_apply_description": "주문 상품의 교환·반품·취소·환불을 신청합니다.",
+    "claims_title": "취소·반품·교환 신청내역",
+    "claims_description": "교환·반품·환불·취소 신청 내역을 확인하고 수정하거나 철회합니다.",
+    "claim_detail_title": "신청 상세",
+    "claim_detail_description": "신청서의 상품·배송·금액·사유를 확인합니다.",
+    "claim_edit_title": "신청 내용 수정"
   },
   "identity": {
     "challenge": {
@@ -182,7 +187,13 @@
       "apply_summary": "신청 요약",
       "apply_refund_account": "환불 계좌",
       "change_product_modal": "교환상품 변경",
-      "withdraw_modal": "신청 철회 확인"
+      "withdraw_modal": "신청 철회 확인",
+      "list": "신청내역 목록",
+      "detail_items": "신청 상품",
+      "detail_shipping": "배송",
+      "detail_claim_info": "클레임 정보",
+      "detail_reason": "신청 사유",
+      "image_viewer_modal": "첨부 사진 보기"
     }
   }
 }

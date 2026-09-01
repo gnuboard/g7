@@ -52,7 +52,37 @@ class UpdateClaimRequest extends FormRequest
             'redelivery_address.address2' => ['nullable', 'string', 'max:255'],
             'redelivery_address.country_code' => ['nullable', 'string', 'size:2'],
             'redelivery_address.changed_by_user' => ['nullable', 'boolean'],
+            // 환불 계좌 — 접수(Store*Request)와 같은 키·같은 상한을 쓴다. 형태가 갈리면
+            // 같은 값이 접수에서는 통과하고 수정에서만 거절되어, 구매자는 무엇이 잘못됐는지
+            // 알 수 없다.
+            'refund_bank' => ['nullable', 'array'],
+            'refund_bank.bank_code' => ['nullable', 'string', 'max:10'],
+            'refund_bank.account_number' => ['nullable', 'string', 'max:50'],
+            'refund_bank.holder' => ['nullable', 'string', 'max:50'],
         ];
+    }
+
+    /**
+     * 추가 검증 규칙을 적용합니다.
+     *
+     * @param  Validator  $validator  검증기
+     */
+    protected function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator) {
+            // 환불 계좌는 세 필드가 함께 와야 한다 — 하나만 오면 은행만 바뀌고 계좌번호는
+            // 옛 값으로 남아, 운영자가 존재하지 않는 계좌로 이체를 시도한다. 접수 경로
+            // (Store*Request::withValidator)와 같은 등식이다.
+            $bank = (array) $this->input('refund_bank', []);
+            $filled = array_values(array_filter(
+                ['bank_code', 'account_number', 'holder'],
+                fn (string $field) => filled($bank[$field] ?? null)
+            ));
+
+            if ($filled !== [] && count($filled) !== 3) {
+                $validator->errors()->add('refund_bank', __('sirsoft-ecommerce::validation.claims.refund_bank.incomplete'));
+            }
+        });
     }
 
     /**
@@ -104,6 +134,23 @@ class UpdateClaimRequest extends FormRequest
             if (array_key_exists($key, $validated)) {
                 $payload[$key] = $validated[$key];
             }
+        }
+
+        // 환불 계좌는 세 값이 다 찬 경우에만 싣는다. 빈 채로 실으면 구매자가 손대지 않은
+        // 화면에서 저장했을 때 이미 기록된 계좌가 지워진다 — 표시 응답은 마스킹된 값이라
+        // 화면이 원문을 되돌려 보낼 수 없고, 지워진 사실은 환불 실행 때가 되어서야 드러난다.
+        $bank = $validated['refund_bank'] ?? null;
+
+        if (is_array($bank)
+            && filled($bank['bank_code'] ?? null)
+            && filled($bank['account_number'] ?? null)
+            && filled($bank['holder'] ?? null)
+        ) {
+            $payload['refund_bank'] = [
+                'bank_code' => (string) $bank['bank_code'],
+                'account_number' => (string) $bank['account_number'],
+                'holder' => (string) $bank['holder'],
+            ];
         }
 
         return $payload;

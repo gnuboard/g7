@@ -353,6 +353,20 @@ class OrderRefundRequestService
             $updates['reason_detail'] = $payload['reason_detail'];
         }
 
+        // 환불 계좌 — D13 이 여는 축이다(2026-09-01 PO 확정: 수정 화면에서 편집 가능, 단
+        // 수정이 허용되는 신청 단계에서만 — 이 메서드는 그 단계에서만 진입한다). 값이 세 개
+        // 다 찬 경우에만 페이로드에 실리므로(UpdateClaimRequest), 손대지 않은 저장이 기록된
+        // 계좌를 지우지 않는다. 실제 송금 대상(주문 결제행)은 여기서 바꾸지 않는다 — 그
+        // 갱신은 환불을 실행하는 시점의 책임이다(AppliesRefundBankAccount). 접수 경로
+        // (`create()`)와 같은 컬럼·같은 키를 쓴다.
+        $bank = $payload['refund_bank'] ?? null;
+
+        if (is_array($bank)) {
+            $updates['refund_bank_code'] = $bank['bank_code'];
+            $updates['refund_bank_account'] = $bank['account_number'];
+            $updates['refund_bank_holder'] = $bank['holder'];
+        }
+
         if ($updates === []) {
             return $refund;
         }

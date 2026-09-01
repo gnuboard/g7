@@ -175,7 +175,7 @@
                     {
                       "type": "basic",
                       "name": "Span",
-                      "text": "{{$get(channel.label_i18n, _global.locale, channel.label)}}"
+                      "text": "{{$localized(channel.label_i18n) || channel.label}}"
                     }
                   ]
                 },

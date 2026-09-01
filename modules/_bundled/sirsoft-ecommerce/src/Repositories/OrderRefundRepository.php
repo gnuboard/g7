@@ -139,7 +139,8 @@ class OrderRefundRepository implements OrderRefundRepositoryInterface
     public function paginateForUser(int $userId, array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
         $query = $this->model->newQuery()
-            ->with(['refundOptions.orderOption', 'images', 'order.shippingAddress'])
+            // 목록이 직렬화하는 것만 싣는다 (형제 저장소와 같은 근거).
+            ->with(['refundOptions.orderOption', 'order'])
             ->whereHas('order', fn ($q) => $q->where('user_id', $userId));
 
         // 취소 발 제외 — 출처 미상(NULL) 행은 직접 환불로 본다 (판정 단일 출처)

@@ -46,6 +46,11 @@ class ClaimResource extends BaseApiResource
     protected bool $withAdminFields = false;
 
     /**
+     * 목록 표현 여부 (화면이 목록 행에서 그리지 않는 것을 뺀다)
+     */
+    protected bool $forList = false;
+
+    /**
      * 관리자 확장 필드(관리자 메모·처리자·신청자명)를 응답에 덧붙입니다.
      *
      * 유저 응답의 기존 키는 바꾸지 않고 **추가만** 한다 — 같은 리소스를 유저·관리자 화면이
@@ -56,6 +61,27 @@ class ClaimResource extends BaseApiResource
     public function withAdminFields(): static
     {
         $this->withAdminFields = true;
+
+        return $this;
+    }
+
+    /**
+     * 목록 표현으로 좁힙니다. (신청내역 목록 — 유형 서브탭 단위 페이지네이션)
+     *
+     * 목록은 화면이 그 행에서 **실제로 그리는 것**만 싣는다. 이 리소스는 목록과 상세가
+     * 겸용이라 상세에 필요한 것(첨부 전량·주소/배송비 스냅샷 JSON·상세 사유·반려 사유·
+     * 환불 계좌)까지 행마다 실리는데, 신청내역 목록의 어느 칸도 그것을 읽지 않는다.
+     * `per_page` 상한이 50 이고 신청서 하나가 상품 200줄까지 가질 수 있어, 그대로 두면
+     * 한 페이지를 여는 것만으로 수천 줄이 응답에 실린다.
+     *
+     * 상품 행(`items`)은 남긴다 — 목록 카드가 상품마다 썸네일·옵션·수량·금액과 (교환이면)
+     * 교환 대상을 그리므로 그것은 낭비가 아니라 화면이 요구하는 값이다.
+     *
+     * @return static 자기 자신
+     */
+    public function forList(): static
+    {
+        $this->forList = true;
 
         return $this;
     }
@@ -158,17 +184,22 @@ class ClaimResource extends BaseApiResource
             'is_editable' => $type !== ClaimTypeEnum::CANCEL && method_exists($claim, 'isWithdrawable') && $claim->isWithdrawable(),
             'reason_code' => $claim->reason_code ?? $claim->cancel_reason_type ?? null,
             'reason_label' => $this->resolveReasonLabel($claim, $type),
-            'reason_detail' => $claim->reason_detail ?? $claim->cancel_reason ?? null,
+            'reason_detail' => $this->forList ? null : ($claim->reason_detail ?? $claim->cancel_reason ?? null),
             'fault_type' => $claim->fault_type?->value ?? null,
             'fault_type_label' => $claim->fault_type?->label() ?? null,
-            'reject_reason' => $claim->reject_reason ?? null,
+            'reject_reason' => $this->forList ? null : ($claim->reject_reason ?? null),
             'requested_by' => $claim->requested_by ?? $claim->cancelled_by ?? null,
             'is_guest_request' => method_exists($claim, 'isGuestRequest') ? $claim->isGuestRequest() : ($claim->cancelled_by === null),
             'currency_code' => $currency,
             'items' => ClaimItemResource::collection($items)->each(
                 fn ($r) => $r->withOrderCurrency($currency)->withCurrencySnapshot($snapshot)
             ),
-            'images' => $claim instanceof OrderCancel ? [] : ClaimImageResource::collection($this->whenLoaded('images', fn () => $this->images, [])),
+            // 목록은 첨부를 그리지 않는다 — 사진은 상세의 사유 카드에서만 보인다. 저장소도
+            // 목록에서 이 관계를 싣지 않으므로 값은 어차피 빈 배열이지만, 표현 쪽에서도
+            // 의도를 남긴다(관계를 다시 싣는 변경이 조용히 목록을 부풀리지 않게).
+            'images' => ($this->forList || $claim instanceof OrderCancel)
+                ? []
+                : ClaimImageResource::collection($this->whenLoaded('images', fn () => $this->images, [])),
             'requested_at' => $claim->created_at?->toIso8601String(), // audit:allow datetime-display-user-timezone reason: paired with *_formatted user-tz field
             'requested_at_formatted' => $this->formatDateTimeStringForUser($claim->created_at),
             'approved_at_formatted' => $this->formatDateTimeStringForUser($claim->approved_at ?? null),
@@ -185,12 +216,12 @@ class ClaimResource extends BaseApiResource
                 'claim_shipping_fee' => $this->roundToOrderCurrency((float) $claim->claim_shipping_fee, $currency),
                 'claim_shipping_fee_formatted' => $this->formatOrderCurrency((float) $claim->claim_shipping_fee, $currency),
                 'mc_claim_shipping_fee' => $this->formatStoredMultiCurrency($claim->mc_claim_shipping_fee),
-                'shipping_fee_snapshot' => $claim->shipping_fee_snapshot,
+                'shipping_fee_snapshot' => $this->forList ? null : $claim->shipping_fee_snapshot,
                 'total_charge_amount' => $this->roundToOrderCurrency((float) $claim->total_charge_amount, $currency),
                 'total_charge_amount_formatted' => $this->formatOrderCurrency((float) $claim->total_charge_amount, $currency),
                 'mc_total_charge_amount' => $this->formatStoredMultiCurrency($claim->mc_total_charge_amount),
                 'requires_additional_payment' => $claim->requiresAdditionalPayment(),
-                'return_address_snapshot' => $claim->return_address_snapshot,
+                'return_address_snapshot' => $this->forList ? null : $claim->return_address_snapshot,
                 'collection_carrier_id' => $claim->collection_carrier_id,
                 'collection_carrier_name' => $this->whenLoaded('collectionCarrier', fn () => $this->collectionCarrier?->getLocalizedName(), null),
                 'collection_tracking_number' => $claim->collection_tracking_number,
@@ -202,10 +233,12 @@ class ClaimResource extends BaseApiResource
                 'collection_completed_at_formatted' => $this->formatDateTimeStringForUser($claim->collection_completed_at),
                 // 구매자가 이 신청서에 적어 낸 환불 계좌 — 환불신청서(아래 OrderRefund 블록)와 같은
                 // 키·같은 마스킹 게이트를 쓴다. 유형마다 이름이 다르면 운영자 화면이 유형별로 갈린다.
-                'refund_bank_code' => $claim->refund_bank_code,
-                'refund_bank_name' => $this->resolveRefundBankName($claim->refund_bank_code),
-                'refund_bank_account' => $this->refundBankAccountForViewer($claim->refund_bank_account),
-                'refund_bank_holder' => $this->refundBankHolderForViewer($claim->refund_bank_holder),
+                // 환불 계좌는 목록의 어느 칸도 읽지 않는다. 은행명 해석은 행마다 설정을
+                // 읽는 호출이기도 하다.
+                'refund_bank_code' => $this->forList ? null : $claim->refund_bank_code,
+                'refund_bank_name' => $this->forList ? null : $this->resolveRefundBankName($claim->refund_bank_code),
+                'refund_bank_account' => $this->forList ? null : $this->refundBankAccountForViewer($claim->refund_bank_account),
+                'refund_bank_holder' => $this->forList ? null : $this->refundBankHolderForViewer($claim->refund_bank_holder),
             ];
         }
 
@@ -215,7 +248,7 @@ class ClaimResource extends BaseApiResource
                 'additional_product_amount_formatted' => $this->formatOrderCurrency((float) $claim->additional_product_amount, $currency),
                 'refund_product_amount' => $this->roundToOrderCurrency((float) $claim->refund_product_amount, $currency),
                 'refund_product_amount_formatted' => $this->formatOrderCurrency((float) $claim->refund_product_amount, $currency),
-                'redelivery_address_snapshot' => $claim->redelivery_address_snapshot,
+                'redelivery_address_snapshot' => $this->forList ? null : $claim->redelivery_address_snapshot,
                 'redelivery_carrier_id' => $claim->redelivery_carrier_id,
                 'redelivery_carrier_name' => $this->whenLoaded('redeliveryCarrier', fn () => $this->redeliveryCarrier?->getLocalizedName(), null),
                 'redelivery_tracking_number' => $claim->redelivery_tracking_number,
@@ -240,10 +273,10 @@ class ClaimResource extends BaseApiResource
                 'refund_total' => $this->roundToOrderCurrency((float) $claim->refund_amount + (float) $claim->refund_points_amount, $currency),
                 'refund_total_formatted' => $this->formatOrderCurrency((float) $claim->refund_amount + (float) $claim->refund_points_amount, $currency),
                 'mc_refund_amount' => $this->formatStoredMultiCurrency($claim->mc_refund_amount),
-                'refund_bank_code' => $claim->refund_bank_code,
-                'refund_bank_name' => $this->resolveRefundBankName($claim->refund_bank_code),
-                'refund_bank_account' => $this->refundBankAccountForViewer($claim->refund_bank_account),
-                'refund_bank_holder' => $this->refundBankHolderForViewer($claim->refund_bank_holder),
+                'refund_bank_code' => $this->forList ? null : $claim->refund_bank_code,
+                'refund_bank_name' => $this->forList ? null : $this->resolveRefundBankName($claim->refund_bank_code),
+                'refund_bank_account' => $this->forList ? null : $this->refundBankAccountForViewer($claim->refund_bank_account),
+                'refund_bank_holder' => $this->forList ? null : $this->refundBankHolderForViewer($claim->refund_bank_holder),
                 'refunded_at_formatted' => $this->formatDateTimeStringForUser($claim->refunded_at),
             ];
         }

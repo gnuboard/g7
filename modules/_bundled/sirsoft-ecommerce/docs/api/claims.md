@@ -10,7 +10,7 @@
 1. 클레임 4종(교환 exchange / 반품 return / 환불신청 refund / 취소 cancel)은 한 응답 형태(ClaimResource)로 통일되고 claim_type 으로 구분한다
 2. 신청내역 목록은 유형 서브탭 단위 페이지네이션 — type 파라미터 하나로 한 유형만 받는다 (기본 exchange)
 3. 상세·수정·철회는 claim_number 로 찾고, 남의 신청서는 존재 여부를 드러내지 않고 404
-4. 수정(PATCH)은 승인 전(is_editable)에만 — 사유·상세·청구 방식·첨부·재발송지. 배송비가 바뀌면 차액 결제 건을 새로 만들거나 초과분을 환급한다
+4. 수정(PATCH)은 승인 전(is_editable)에만 — 사유·상세·청구 방식·첨부·재발송지·환불 계좌. 배송비가 바뀌면 차액 결제 건을 새로 만들거나 초과분을 환급한다
 5. 철회는 대기 중인 결제 건을 닫고 이미 낸 추가결제를 환급한다
 ```
 
@@ -293,13 +293,27 @@ Authorization: Bearer {YOUR_TOKEN}
 
 _목록 응답: `data` 배열의 각 항목은 [ClaimResource](#claim-resource)(결제 블록 없음), `pagination` 은 페이지 정보._
 
+**목록은 화면이 그 행에서 그리는 것만 싣습니다.** 아래 필드는 목록 표현에서 언제나 `null`(첨부는 빈 배열)로 내려갑니다 — 값 자체는 상세(`GET user/claims/{claimNumber}`)에서 읽습니다. `per_page` 상한이 50 이고 신청서 하나가 상품 200줄까지 가질 수 있어, 그대로 실으면 한 페이지를 여는 것만으로 수천 줄이 응답에 실립니다.
+
+| 목록에서 빠지는 필드 | 대신 읽는 곳 |
+| --- | --- |
+| `images` (빈 배열) | 상세 |
+| `reason_detail` · `reject_reason` | 상세 |
+| `shipping_fee_snapshot` · `return_address_snapshot` · `redelivery_address_snapshot` | 상세 |
+| `refund_bank_code` · `refund_bank_name` · `refund_bank_account` · `refund_bank_holder` | 상세 |
+
+상품 행(`items`)은 목록에도 실립니다 — 신청내역 화면이 상품마다 썸네일·옵션·수량·금액을 그리기 때문입니다.
+
 | 필드 | 타입 | 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | data | array | — | 신청서 목록 (최신순) |
 | pagination.current_page | integer | `1` | 현재 페이지 |
-| pagination.last_page | integer | `1` | 마지막 페이지 |
+| pagination.last_page | integer\|null | `1` | 마지막 페이지. **총 건수가 상한에 잘리면 `null`** 입니다 — 그때는 마지막 페이지로 바로 뛸 수 없고 `has_more_pages` 로 다음 장 유무만 판단합니다 |
 | pagination.per_page | integer | `20` | 페이지당 건수 |
-| pagination.total | integer | `2` | 총 건수 |
+| pagination.total | integer | `2` | 총 건수. `total_relation` 이 함께 오면 그 값이 정확한 수인지 "이상" 인지를 알려 줍니다 |
+| pagination.has_more_pages | boolean | `false` | 다음 페이지 존재 여부. `last_page` 가 `null` 일 때 페이지 이동의 유일한 근거입니다 |
+| pagination.from | integer\|null | `1` | 이 페이지 첫 항목의 전체 순번 (빈 페이지면 `null`) |
+| pagination.to | integer\|null | `2` | 이 페이지 마지막 항목의 전체 순번 (빈 페이지면 `null`) |
 
 **응답 예시**
 
@@ -324,6 +338,11 @@ _목록 응답: `data` 배열의 각 항목은 [ClaimResource](#claim-resource)(
                     { "order_option_id": 310, "quantity": 1, "product_name": "반팔 티셔츠", "option_name": "화이트 / M" }
                 ],
                 "images": [],
+                "reason_detail": null,
+                "reject_reason": null,
+                "shipping_fee_snapshot": null,
+                "return_address_snapshot": null,
+                "refund_bank_code": null,
                 "requested_at_formatted": "2026-08-23 13:40"
             }
         ],
@@ -422,6 +441,8 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **설명** 클레임 번호 하나로 4종 어느 신청서든 조회합니다. 교환·반품 상세에는 결제 블록이 붙어 결제 대기 건이 있으면 `payment_entry` 로 바로 결제창을 열 수 있습니다(주문 결제와 같은 4키 계약). 다른 회원의 신청서는 404 이며 존재 여부를 드러내지 않습니다.
 
+상세 응답은 상품 행의 **원 주문옵션**(`product_name`·`product_option_name`·`thumbnail_url`)과 **회수·재발송 배송사**(`collection_carrier_name`·`collection_tracking_url`·`redelivery_carrier_name`·`redelivery_tracking_url`)를 함께 싣습니다. 목록과 달리 첨부(`images`)와 사유 상세·반려 사유·주소/배송비 스냅샷·환불 계좌도 모두 실립니다 — 신청서 상세 화면이 그리는 값들입니다.
+
 ---
 
 ### PATCH /api/modules/sirsoft-ecommerce/user/claims/{claimNumber}
@@ -441,6 +462,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | add_image_ids | body | integer[] | 아니오 | max = 환경설정 `claim.max_images`(기본 5) | 귀속시킬 임시 업로드(`pending`) 첨부 ID 목록 |
 | remove_image_ids | body | integer[] | 아니오 | max = 환경설정 `claim.max_images`(기본 5) | 떼어낼 첨부 ID 목록 (이 신청서 소속만). 이 신청서 소속이 아닌 ID 는 조용히 무시된다 |
 | redelivery_address | body | object | 아니오 | — | (교환) 재발송지 — `recipient_name`(max 50), `phone`(max 20), `zipcode`(max 20), `address1`/`address2`(max 255), `country_code`(2자, 원 배송지와 같은 국가만), `changed_by_user`(boolean) |
+| refund_bank | body | object | 아니오 | 세 값이 **함께** 와야 한다 | 환불 계좌 — `bank_code`(max 10), `account_number`(max 50), `holder`(max 50) — 접수(POST)와 같은 키·같은 상한이다. 셋 중 일부만 채워 보내면 `validation.claims.refund_bank.incomplete` 로 거절된다 (은행만 바뀌고 계좌번호가 옛 값으로 남으면 운영자가 없는 계좌로 이체한다). 셋이 다 빈 채로 보내면 **기록된 계좌를 지우지 않고 그대로 둔다** — 표시 응답은 마스킹된 값이라 화면이 원문을 되돌려 보낼 수 없기 때문이다. 실제 송금 대상(주문 결제행)은 여기서 바뀌지 않는다 |
 
 **요청 예시**
 

@@ -177,13 +177,22 @@ describe('apply.json — 작성 셸', () => {
     expect(init.params.preselected).toBeUndefined();
   });
 
-  it('레이아웃 initLocal 은 셸 계약 두 값만 갖는다 (핸들러가 쓰는 키를 두면 재적용이 되돌린다)', () => {
+  it('레이아웃 initLocal 은 셸이 정하는 정적 계약값만 갖는다 (핸들러가 쓰는 키를 두면 재적용이 되돌린다)', () => {
     // 회귀(2026-08-31 브라우저 실측): initLocal 은 마운트 뒤 한 번 더 적용되며 핸들러가 쓴 값을
     // 초기값으로 되돌린다. 첫 진입에서는 순서가 맞아 보이지만 SPA 뒤로가기로 되돌아오면 재적용이
     // 뒤에 도착해, 응답 200 · 오류 0 인 채로 빈 신청서만 남는다.
-    expect(Object.keys(apply.initLocal).sort()).toEqual(['imageDeleteBase', 'isGuest']);
+    //
+    // 지키는 것은 개수가 아니라 성질이다 — 여기 있어도 되는 것은 **회원/비회원에 따라 셸이
+    // 정하고 그 뒤로 바뀌지 않는 값**뿐이다. S13 이 더한 `claimEditApiBase`(수정 PATCH 주소의
+    // 앞부분)도 그 성질이며, 회원과 비회원의 라우트 모양이 달라 핸들러가 조립할 수 없다.
+    expect(Object.keys(apply.initLocal).sort()).toEqual([
+      'claimEditApiBase',
+      'imageDeleteBase',
+      'isGuest',
+    ]);
     expect(apply.initLocal.isGuest).toBe(false);
     expect(apply.initLocal.imageDeleteBase).toContain('/user/claims/images');
+    expect(apply.initLocal.claimEditApiBase).toContain('/user/claims');
 
     // claimApiBase 는 주문 ID 가 필요하므로 order 데이터소스의 initLocal 이 소유한다.
     const order = apply.data_sources.find((s: any) => s.id === 'order');
@@ -349,9 +358,15 @@ describe('_apply_summary.json — 요약 + 청구 2축 (D6·P13)', () => {
     expect(disabled).toContain('!_local.claimReason');
     expect(submit.actions[0].handler).toBe('sirsoft-ecommerce.submitClaim');
 
-    // 회귀(2026-08-31 브라우저 실측): 접수 뒤 /mypage/claims 로 보내면 그 라우트는 S13 이
-    // 만들기 전이라 접수는 성공했는데 404 가 열린다. 지금은 방금 신청한 주문상세로 돌아간다.
-    expect(submit.actions[0].params.successPath).toBe('/mypage/orders/{{route.order_number}}');
+    // 접수 뒤 돌아갈 곳은 신청내역 목록이다. S12 시점에는 그 라우트가 없어(뒤 세션 소유)
+    // 접수는 성공했는데 404 가 열렸고, 그동안은 주문상세로 돌아갔다 — S13 이 목록을 세우며
+    // 원래 목적지로 되돌렸다. 유형 서브탭을 함께 실어야 방금 낸 신청서가 보인다(유형마다
+    // 서버가 다른 테이블을 읽는다).
+    const successPath = String(submit.actions[0].params.successPath);
+    expect(successPath).toContain('/mypage/claims?type=');
+    expect(successPath).not.toContain('/mypage/orders/');
+    // 취소·환불은 두 분기가 같은 탭에 서지 않는다 — 즉시취소로 갈린 건은 cancel 탭이다.
+    expect(successPath).toContain("'cancel'");
   });
 
   it('청구는 2축이고 두 축 모두 운영자 허용 목록에서 나온다', () => {
@@ -647,12 +662,30 @@ describe('_payment.json — 클레임 추가결제 합계 행 (D20)', () => {
     expect(texts).toContain("{{claimPaidCurrency[1]?.formatted ?? ''}}");
   });
 
-  it('현금영수증 확장 슬롯은 여전히 결제 정보 목록의 마지막 자식이다', () => {
+  it('확장 슬롯은 여전히 결제 정보 목록의 말단에 있다 (금액 줄이 슬롯 뒤로 밀리지 않는다)', () => {
+    // 이 축이 재는 것은 "새로 더한 금액 줄이 확장 슬롯 뒤로 가지 않았는가" 다 — 뒤로 가면
+    // 확장이 주입한 카드와 금액 줄의 순서가 뒤집혀 결제 정보가 두 덩이로 갈라진다.
+    // 2026-09-01 슬롯이 하나 늘었다(mypage_order_payment_provider_slot — PG 제공 블록이
+    // 레이아웃 이름이 아니라 이 카드를 따라가게 하려고 신설). 그래서 "마지막 하나" 가 아니라
+    // "말단 연속 구간" 을 잰다.
     const infoList = (orderPayment.children as any[]).find((c) =>
       (c.props?.className ?? '').includes('space-y-3')
     );
-    const last = infoList.children[infoList.children.length - 1];
-    expect(last.type).toBe('extension_point');
-    expect(last.name).toBe('mypage_order_cash_receipt_slot');
+    const children = infoList.children as any[];
+
+    const trailingSlots: string[] = [];
+    for (let i = children.length - 1; i >= 0; i--) {
+      if (children[i].type !== 'extension_point') break;
+      trailingSlots.unshift(children[i].name);
+    }
+
+    expect(trailingSlots).toEqual([
+      'mypage_order_cash_receipt_slot',
+      'mypage_order_payment_provider_slot',
+    ]);
+
+    // 확장 슬롯은 말단에만 있다 — 중간에 끼면 금액 줄 사이가 갈라진다.
+    const slotCount = children.filter((c: any) => c.type === 'extension_point').length;
+    expect(slotCount).toBe(trailingSlots.length);
   });
 });

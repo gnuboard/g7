@@ -173,6 +173,212 @@ export function resolveClaimApplyRoute(): { claimType: string; preselected: stri
 }
 
 /**
+ * 지금 열려 있는 화면이 **수정(edit)** 인지 판정합니다.
+ *
+ * 수정 라우트는 유형(`:type`)이 없고 클레임 번호만 받는다 — 유형은 서버가 번호로 해석한다
+ * (`/mypage/claims/{번호}/edit`, 비회원 `{shopBase}/guest/claims/{번호}/edit`). 그래서 작성
+ * 화면의 유형 가드를 그대로 적용하면 수정 진입이 통째로 404 가 된다.
+ *
+ * @returns 수정 화면이면 true
+ */
+export function isClaimEditRoute(): boolean {
+    return resolveClaimEditNumber() !== '';
+}
+
+/**
+ * 수정 대상 클레임 번호를 주소에서 읽습니다.
+ *
+ * 유형별 접두사(EX/RT/RF/CN)로 판정하지 않는다 — 운영자가 채번 설정에서 접두사를 바꿀 수
+ * 있어, 접두사로 가르면 그 설정을 바꾼 상점에서만 조용히 어긋난다. 위치(`.../{번호}/edit`)로
+ * 읽고 유형 해석은 서버에 맡긴다.
+ *
+ * @returns 클레임 번호 (수정 화면이 아니면 빈 문자열)
+ */
+export function resolveClaimEditNumber(): string {
+    if (typeof window === 'undefined' || !window.location) return '';
+
+    const segments = String(window.location.pathname || '').split('/').filter(Boolean);
+    const editIndex = segments.lastIndexOf('edit');
+
+    if (editIndex < 1) return '';
+    if (segments[editIndex - 2] !== 'claims') return '';
+
+    return decodeURIComponent(segments[editIndex - 1] ?? '');
+}
+
+/**
+ * 작성 셸의 주문 데이터소스가 404 로 끝났을 때의 처분을 정합니다.
+ *
+ * 작성 진입은 주소가 주문번호를 품으므로 404 는 곧 "열 수 없는 주문" 이고 오류 화면을
+ * 세워야 한다. 수정 진입은 주소에 주문번호가 없어 **첫 호출이 반드시 404** 다 — 주문번호는
+ * 신청서 응답이 알려 주고 그 뒤 체인이 올바른 번호로 다시 부른다. 그 정상 경로에서 오류
+ * 화면을 세우면 수정 화면이 열리지 않는다.
+ *
+ * 두 경우를 데이터소스의 `errorHandling` 만으로는 가를 수 없다 — 그 자리는 조건 분기를
+ * 받지 않는다(핸들러의 `conditions` 배열이 전달되지 않는다). 그래서 판정을 여기서 한다.
+ *
+ * @example
+ * { "handler": "sirsoft-ecommerce.claimApplyOrderMissing" }
+ *
+ * @param _action 액션 객체
+ * @param _context 액션 컨텍스트
+ */
+export async function claimApplyOrderMissingHandler(
+    _action: ActionWithParams,
+    _context: ActionContext
+): Promise<void> {
+    const G7Core = (window as any).G7Core;
+    if (!G7Core?.dispatch) return;
+
+    if (isClaimEditRoute()) return;
+
+    await G7Core.dispatch({
+        handler: 'showErrorPage',
+        params: { errorCode: 404, target: 'content' },
+    });
+}
+
+/**
+ * 수정 화면의 신청서를 읽어 셸 계약값을 세우고 주문 조회를 잇습니다.
+ *
+ * 데이터소스가 아니라 핸들러가 부른다 — 데이터소스는 조건부 auto_fetch 를 받지 않아,
+ * 작성 진입에서도 신청서 조회가 한 번 나가게 된다(주소에 클레임 번호가 없어 반드시 실패하는
+ * 요청이다). 진입 유형이 정해진 값을 화면이 아는 상황이라 그 요청을 내지 않는 것이 맞다.
+ *
+ * 신청서에서 주문번호를 얻은 뒤 `order` 를 다시 부르면 그 뒤는 작성 화면과 같은 체인이다
+ * (order → claimOrderId → claimable → initClaimApply). `initClaimApply` 가 여기서 세운
+ * `claimEditSnapshot` 을 보고 작성 대신 수정 상태를 만든다.
+ *
+ * @example
+ * {
+ *   "handler": "sirsoft-ecommerce.initClaimEdit",
+ *   "params": { "claimApiBase": "/api/modules/sirsoft-ecommerce/user/claims", "isGuest": false }
+ * }
+ *
+ * @param action 액션 객체
+ * @param _context 액션 컨텍스트
+ */
+export async function initClaimEditHandler(
+    action: ActionWithParams<{ claimApiBase?: string; isGuest?: boolean }>,
+    _context: ActionContext
+): Promise<void> {
+    const G7Core = (window as any).G7Core;
+    if (!G7Core?.state) return;
+
+    const base = String(action.params?.claimApiBase ?? '').replace(/\/+$/, '');
+    const claimNumber = resolveClaimEditNumber();
+    const isGuest = action.params?.isGuest === true;
+
+    // 셸이 주소 앞부분을 주지 않았으면 보내지 않는다 — 회원과 비회원의 라우트 모양이 달라
+    // 핸들러가 조립하면 한쪽이 404 가 된다(공유 partial 규율과 같은 근거).
+    if (!base || !claimNumber) return;
+
+    G7Core.state.setLocal({ claimEditMode: true, claimEditNumber: claimNumber, claimEditLoading: true });
+
+    try {
+        const response = await G7Core.api.get(
+            base + '/' + encodeURIComponent(claimNumber),
+            claimRequestConfig(isGuest)
+        );
+
+        const claim = response?.data?.claim ?? null;
+
+        if (!claim) {
+            throw new Error(response?.message ?? 'Claim not found');
+        }
+
+        G7Core.state.setLocal({
+            claimEditSnapshot: claim,
+            claimEditLoading: false,
+            // 주문번호는 order 데이터소스의 주소 재료다. 이 값이 서기 전의 첫 호출은
+            // 404 로 끝나고(claimApplyOrderMissing 이 그 404 를 정상 경로로 판정한다),
+            // 여기서 값을 세운 뒤의 refetch 가 실제 주문을 읽는다.
+            claimEditOrderNumber: claim.order_number ?? null,
+        });
+
+        await G7Core.dispatch?.({
+            handler: 'refetchDataSource',
+            params: { dataSourceId: 'order' },
+        });
+    } catch (error: any) {
+        logger.error('[initClaimEdit] 실패:', error);
+
+        G7Core.state.setLocal({ claimEditLoading: false });
+
+        // 열 수 없는 신청서(없음·남의 것·토큰 만료)는 오류 화면으로 끝낸다 — 빈 수정
+        // 폼을 세우면 구매자가 채워 넣은 뒤 저장에서야 거절된다.
+        await G7Core.dispatch?.({
+            handler: 'showErrorPage',
+            params: { errorCode: Number(error?.response?.status ?? error?.status ?? 404), target: 'content' },
+        });
+    }
+}
+
+/**
+ * 접수된 신청서의 상품 행을 수정 화면의 상품 줄로 옮깁니다.
+ *
+ * 수정 화면의 품목·수량·교환 대상은 읽기 전용이다(D13) — 그래도 같은 형태로 만들어 두는
+ * 것은 미리보기 재호출(재발송지 변경, D14)이 작성과 같은 페이로드를 쓰기 때문이다. 형태가
+ * 갈리면 수정 화면에서만 미리보기 본문이 달라져 금액이 다르게 나온다.
+ *
+ * @param claim 신청서 응답
+ * @param currency 주문 시점 기준 통화
+ * @returns 상품 줄
+ */
+export function buildClaimEditItems(claim: any, currency: string | null): ClaimApplyItem[] {
+    return (claim?.items ?? []).map((item: any) => {
+        const quantity = Number(item.quantity ?? 0);
+
+        return {
+            order_option_id: Number(item.order_option_id ?? 0),
+            product_id: item.product_id ?? null,
+            product_name: item.product_name ?? '',
+            product_option_name: item.product_option_name ?? '',
+            thumbnail_url: item.thumbnail_url ?? '',
+            unit_price: Number(item.unit_price ?? 0),
+            unit_price_formatted: item.unit_price_formatted ?? '',
+            // 이미 이 신청서가 잡아 둔 수량이다 — 남은 신청 가능 수량이 아니라 신청한 수량을
+            // 상한으로 둔다(수정 화면에서 수량은 바꿀 수 없다).
+            available_quantity: quantity,
+            locked_quantity: 0,
+            claimable_types: [String(claim?.claim_type ?? '')],
+            refund_branch: null,
+            selected: true,
+            quantity,
+            exchange_mode: item.is_option_change === true ? 'change' : 'same',
+            new_product_option_id: item.new_product_option_id ?? null,
+            new_option_label: item.new_option_label ?? '',
+            custom_options: item.new_option_snapshot?.custom_options ?? null,
+            price_difference: Number(item.price_difference ?? 0),
+            price_difference_formatted: item.price_difference_formatted
+                ?? formatAmountInCurrency(Math.abs(Number(item.price_difference ?? 0)), currency),
+            mc_unit_price: toSecondaryCurrencyList(item.mc_price_difference, currency),
+            validation_error: '',
+        } as ClaimApplyItem;
+    });
+}
+
+/**
+ * 접수된 신청서의 첨부를 수정 화면의 첨부 줄로 옮깁니다.
+ *
+ * `attached: true` 를 달아 둔다 — 이미 신청서에 귀속된 첨부는 그 자리에서 지우지 않고
+ * 저장할 때 `remove_image_ids` 로 넘긴다. 바로 지우면 저장을 취소하고 나가도 첨부만
+ * 영구히 사라지고, 서버의 장수 상한 판정(삭제 후 남을 장수)도 화면과 갈린다.
+ *
+ * @param claim 신청서 응답
+ * @returns 첨부 줄
+ */
+export function buildClaimEditImages(claim: any): Array<Record<string, any>> {
+    return (claim?.images ?? []).map((image: any) => ({
+        id: Number(image.id ?? 0),
+        hash: image.hash ?? '',
+        original_name: image.original_name ?? '',
+        download_url: image.download_url ?? '',
+        attached: true,
+    }));
+}
+
+/**
  * 취소·환불 신청서에서 지금 선택된 상품이 속한 분기를 돌려줍니다. (`cancel` | `refund` | null)
  *
  * 취소·환불은 한 화면이지만 서버는 **두 파이프라인**으로 갈린다 — 결제완료 상품은 즉시취소로
@@ -576,6 +782,72 @@ export function formatClaimEstimate(estimate: any, currencyCode: string | null):
  * @param action 액션 객체
  * @param _context 액션 컨텍스트
  */
+/**
+ * 수정 화면의 로컬 상태를 신청서에서 만듭니다.
+ *
+ * 작성 초기화(`initClaimApplyHandler`)와 **키 집합이 같아야 한다** — 공유 partial 이 그 키를
+ * 읽으므로, 한쪽에만 있는 키가 생기면 그 화면에서만 조용히 빈 칸이 된다.
+ *
+ * @param G7Core G7Core 인스턴스
+ * @param claim 신청서 응답
+ * @param claimable `claimable-options` 응답 (사유 카탈로그·설정)
+ * @param claimType 클레임 유형
+ */
+function seedClaimEditState(G7Core: any, claim: any, claimable: any, claimType: string): void {
+    const currency = orderCurrencyCode(G7Core);
+    const items = buildClaimEditItems(claim, currency);
+
+    G7Core.state.setLocal({
+        claimType,
+        claimableSnapshot: claimable,
+        claimItems: items,
+        claimSelectAll: false,
+        claimResolvedBranch: null,
+        claimReason: claim.reason_code ?? '',
+        claimReasonDetail: claim.reason_detail ?? '',
+        claimFaultType: claim.fault_type ?? null,
+        claimImages: buildClaimEditImages(claim),
+        claimImageFiles: [],
+        // 이미 귀속된 첨부의 삭제는 저장할 때 한꺼번에 넘긴다 — 그 자리에서 지우면 저장을
+        // 취소하고 나가도 첨부만 사라진다.
+        claimRemoveImageIds: [],
+        claimChargeMethod: claim.charge_method ?? '',
+        claimPaymentMethod: '',
+        claimRefundPriority: 'pg_first',
+        // 환불계좌는 이 신청서 행의 값이며 서버가 마스킹해 내려준다 — 수정 대상이 아니다
+        // (D13 이 여는 것은 사유·상세 사유·첨부와 재발송지뿐이다).
+        claimRefundBankCode: '',
+        claimRefundBankAccount: '',
+        claimRefundBankHolder: '',
+        // 재발송지는 신청서에 동결된 값에서 출발한다 — 원 배송지로 되돌리면 구매자가 이미
+        // 바꿔 둔 주소가 화면에서만 사라지고, 저장하면 그 주소로 되돌아간다.
+        claimRedelivery: claim.redelivery_address_snapshot ?? null,
+        claimRedeliveryEditing: false,
+        // 접수 시점의 청구액 — 재발송지를 바꿔 배송비가 다시 계산되면 이 값과의 차액이
+        // 추가 청구되거나 환불된다(D14). 그 차액을 화면이 드러내려면 기준값이 필요하다.
+        claimEditOriginalCharge: Number(claim.total_charge_amount ?? 0),
+        claimEditChargeDelta: 0,
+        claimEditChargeDeltaFormatted: '',
+        claimEditSaving: false,
+        claimEditError: null,
+        claimEstimate: null,
+        claimEstimateFormatted: null,
+        claimEstimateLoading: false,
+        claimEstimateError: null,
+        claimSubmitError: null,
+        claimValidationErrors: null,
+        claimFieldErrors: null,
+        isSubmittingClaim: false,
+        changeProductTarget: null,
+        changeProductMode: 'same',
+        changeProductProduct: null,
+        changeProductSelections: null,
+        changeProductMatched: null,
+        changeProductAdditionalSelections: null,
+        changeProductAdditionalTexts: null,
+    });
+}
+
 export function initClaimApplyHandler(
     action: ActionWithParams<{ claimType?: string; preselected?: string; claimable?: any }>,
     _context: ActionContext
@@ -584,10 +856,24 @@ export function initClaimApplyHandler(
     if (!G7Core?.state) return;
 
     const fromRoute = resolveClaimApplyRoute();
-    const claimType = String(action.params?.claimType || fromRoute.claimType || '');
+    const editSnapshot = G7Core.state.getLocal?.()?.claimEditSnapshot ?? null;
+    // 수정 진입은 주소에 유형이 없다 — 유형은 신청서가 알려 준다(서버가 번호로 해석한 값).
+    const claimType = String(
+        action.params?.claimType || fromRoute.claimType || (editSnapshot?.claim_type ?? '')
+    );
     const claimable = action.params?.claimable ?? claimableData(G7Core);
 
     if (!claimType || !claimable) return;
+
+    // 수정 화면 — 상품·수량·교환 대상은 신청서가 정하고(읽기 전용) 사유·상세 사유·첨부와
+    // 교환 재발송지만 바꾼다(D13/D14). 작성 화면의 상품 목록(claimable.options)은 이 신청서가
+    // 이미 잡아 둔 수량을 신청 가능분에서 빼고 내려주므로, 그것으로 줄을 만들면 수정 화면에
+    // 정작 신청한 상품이 하나도 서지 않는다.
+    if (editSnapshot) {
+        seedClaimEditState(G7Core, editSnapshot, claimable, claimType);
+
+        return;
+    }
 
     const preselected = String(action.params?.preselected || fromRoute.preselected || '')
         .split(',')
@@ -1141,6 +1427,13 @@ async function estimateClaimInternal(G7Core: any, claimApiBase: string, isGuest:
         body.charge_method = local.claimChargeMethod;
     }
 
+    // 수정 화면의 미리보기 — 자기 신청서가 잡아 둔 수량을 잠금 집계에서 뺀다. 이 값을 빼면
+    // 자기 자신에게 막혀 "신청할 수 있는 수량을 넘었습니다" 로 거절되고, 재발송지를 바꿔도
+    // 배송비가 다시 계산되지 않는다(D14). 서버는 소유자 확인 뒤에만 제외한다.
+    if (local.claimEditNumber) {
+        body.claim_number = local.claimEditNumber;
+    }
+
     if (local.claimRedelivery?.zipcode) {
         body.redelivery_address = {
             zipcode: local.claimRedelivery.zipcode,
@@ -1182,12 +1475,23 @@ async function estimateClaimInternal(G7Core: any, claimApiBase: string, isGuest:
                 };
         });
 
+        // 수정 화면의 차액(D14) — 다시 계산된 청구액과 접수 시점 청구액의 차이다. 이 줄이
+        // 없으면 구매자는 재발송지를 바꾼 뒤 얼마가 더 청구되는지(또는 돌아오는지) 모른 채
+        // 저장하게 되고, 그 차액은 저장 뒤에야 결제·환급으로 드러난다.
+        const editDelta = latest.claimEditMode === true
+            ? Number(payload?.total_charge_amount ?? 0) - Number(latest.claimEditOriginalCharge ?? 0)
+            : 0;
+
         G7Core.state.setLocal({
             claimItems: nextItems,
             claimEstimate: payload,
             claimEstimateFormatted: formatClaimEstimate(payload, currency),
             claimEstimateLoading: false,
             claimEstimateError: null,
+            claimEditChargeDelta: editDelta,
+            claimEditChargeDeltaFormatted: editDelta === 0
+                ? ''
+                : formatAmountInCurrency(Math.abs(editDelta), currency),
         });
     } catch (error: any) {
         if (generation !== claimEstimateGeneration) return;
@@ -1428,6 +1732,191 @@ export async function submitClaimHandler(
             claimFieldErrors: collectClaimFieldErrors(validationErrors),
             // 항목별 오류는 그 상품 줄에 붙인다 — 요약 카드는 필드에 매이지 않는 사유만 맡는다.
             claimItems: attachClaimItemErrors(currentItems, validationErrors),
+        });
+
+        if (!userFixable) {
+            G7Core.toast?.error?.(message);
+        }
+    }
+}
+
+/**
+ * 수정 화면의 저장 핸들러 (PATCH — 승인 전 사유·상세 사유·첨부·교환 재발송지, D13/D14)
+ *
+ * 바꿀 수 있는 것만 보낸다. 품목·수량·교환 대상·청구 방식은 접수된 값이 그대로 남으므로
+ * 페이로드에 싣지 않는다 — 같은 값을 다시 보내면 서버가 그 축을 "바뀐 것" 으로 처리해
+ * 배송비 재산정·차액 정산이 불필요하게 도는 경로가 생긴다.
+ *
+ * 첨부는 두 갈래다: 아직 올리지 않은 파일은 먼저 업로드해 `add_image_ids` 로, 이미 귀속된
+ * 첨부의 삭제는 `remove_image_ids` 로 넘긴다. 서버가 한 흐름에서 처리해야 장수 상한 판정이
+ * 화면과 갈리지 않는다(삭제 후 남을 장수를 함께 본다).
+ *
+ * @example
+ * {
+ *   "handler": "sirsoft-ecommerce.saveClaimEdit",
+ *   "params": {
+ *     "claimEditApiBase": "{{_local.claimWithdrawApiBase ?? ''}}",
+ *     "claimApiBase": "{{_local.claimApiBase ?? ''}}",
+ *     "isGuest": false,
+ *     "successPath": "/mypage/claims/{{route.claim_number}}"
+ *   }
+ * }
+ *
+ * @param action 액션 객체
+ * @param _context 액션 컨텍스트
+ */
+export async function saveClaimEditHandler(
+    action: ActionWithParams<{
+        claimEditApiBase?: string;
+        claimApiBase?: string;
+        isGuest?: boolean;
+        successPath?: string;
+    }>,
+    _context: ActionContext
+): Promise<void> {
+    const G7Core = (window as any).G7Core;
+    if (!G7Core?.state) return;
+
+    // 수정 주소의 앞부분은 셸이 통째로 준다 — 회원(/user/claims)과 비회원
+    // (/guest/orders/{주문번호}/claims)의 라우트 모양이 달라 핸들러가 조립하면 한쪽이 404 다.
+    const editBase = String(action.params?.claimEditApiBase ?? '').replace(/\/+$/, '');
+    // 첨부 업로드는 주문 스코프 주소를 쓴다(신청서 미귀속 첨부를 올리는 자리라 작성과 같다).
+    const claimApiBase = String(action.params?.claimApiBase ?? '');
+    const isGuest = action.params?.isGuest === true;
+    const local = G7Core.state.getLocal();
+    const claimNumber = String(local.claimEditNumber ?? '').trim();
+
+    if (!editBase || !claimNumber) return;
+    // 더블클릭으로 두 번 나가면 두 번째는 첫 저장이 만든 상태를 다시 고치려다 거절된다 —
+    // 성공한 저장 뒤에 실패 안내가 뜬다.
+    if (local.claimEditSaving === true) return;
+
+    if (!local.claimReason) {
+        G7Core.toast?.warning?.(
+            G7Core.t?.('claim.apply.reason_required') ?? '신청 사유를 선택해 주세요.'
+        );
+
+        return;
+    }
+
+    G7Core.state.setLocal({
+        claimEditSaving: true,
+        claimEditError: null,
+        claimValidationErrors: null,
+        claimFieldErrors: null,
+    });
+
+    let addImageIds: number[] = [];
+
+    if (claimApiBase) {
+        try {
+            addImageIds = await uploadPendingClaimFiles(G7Core, { claimApiBase, isGuest });
+        } catch (error: any) {
+            logger.error('[saveClaimEdit] 첨부 업로드 실패:', error);
+        }
+    }
+
+    const latest = G7Core.state.getLocal();
+    const body: Record<string, any> = {
+        reason_code: latest.claimReason,
+        reason_detail: latest.claimReasonDetail ?? '',
+    };
+
+    if (addImageIds.length > 0) {
+        body.add_image_ids = addImageIds;
+    }
+
+    const removeIds = (latest.claimRemoveImageIds ?? []).map((value: unknown) => Number(value)).filter((value: number) => value > 0);
+
+    if (removeIds.length > 0) {
+        body.remove_image_ids = removeIds;
+    }
+
+    // 재발송지는 교환에서만, 그리고 구매자가 실제로 연 경우에만 싣는다. 값이 같아도
+    // `changed_by_user` 는 true 다 — 바꾼 사실 자체가 운영자에게 남아야 할 기록이다(D14).
+    if (latest.claimType === 'exchange' && latest.claimRedelivery?.zipcode) {
+        body.redelivery_address = { ...latest.claimRedelivery, changed_by_user: true };
+    }
+
+    // 환불 계좌는 접수와 같은 규칙으로 싣는다(2026-09-01 PO 확정 — 수정 화면에서 편집 가능).
+    // 표시 응답의 계좌는 마스킹된 값이라 화면이 되돌려 보낼 수 없으므로 칸은 빈 채로 열리고,
+    // 구매자가 실제로 채운 경우에만 전송한다 — 손대지 않은 저장이 기록된 계좌를 지우지
+    // 않게 하는 것이 이 조건의 목적이다. 셋 중 일부만 채우면 그대로 보내 서버가 거절한다
+    // (조용히 버리면 구매자는 바뀐 줄 안다).
+    const editBankCode = String(latest.claimRefundBankCode ?? '').trim();
+    const editBankAccount = String(latest.claimRefundBankAccount ?? '').trim();
+    const editBankHolder = String(latest.claimRefundBankHolder ?? '').trim();
+
+    if (editBankCode || editBankAccount || editBankHolder) {
+        body.refund_bank = {
+            bank_code: editBankCode,
+            account_number: editBankAccount,
+            holder: editBankHolder,
+        };
+    }
+
+    try {
+        const response = await G7Core.api.patch(
+            editBase + '/' + encodeURIComponent(claimNumber),
+            body,
+            claimRequestConfig(isGuest)
+        );
+
+        if (!response?.success) {
+            throw new Error(response?.message ?? 'Claim update failed');
+        }
+
+        G7Core.state.setLocal({
+            claimEditSaving: false,
+            claimEditError: null,
+            claimImageFiles: [],
+            claimRemoveImageIds: [],
+        });
+
+        G7Core.toast?.success?.(
+            response.message
+            ?? G7Core.t?.('claim.edit.save_success')
+            ?? '신청 내용이 수정되었습니다.'
+        );
+
+        // 재발송지 변경으로 배송비가 다시 계산되면 차액이 추가 청구될 수 있다. 그 경우
+        // 서버가 결제 진입을 지목하므로 작성과 같은 방식으로 그대로 dispatch 한다
+        // (특정 PG 하드코딩 없음). 차액이 환불이거나 0 이면 결제 진입이 없다.
+        const data = response.data ?? {};
+
+        if (data.requires_pg_payment && data.pg_payment_handler) {
+            await G7Core.dispatch?.({
+                handler: data.pg_payment_handler,
+                params: { pgPaymentData: data.pg_payment_data },
+            });
+
+            return;
+        }
+
+        if (action.params?.successPath) {
+            await G7Core.dispatch?.({
+                handler: 'navigate',
+                params: { path: action.params.successPath },
+            });
+        }
+    } catch (error: any) {
+        logger.error('[saveClaimEdit] 실패:', error);
+
+        const errorData = error?.response?.data ?? error?.data;
+        const message = errorData?.message
+            ?? error?.message
+            ?? G7Core.t?.('claim.edit.save_failed')
+            ?? '신청 내용 수정에 실패했습니다.';
+        const userFixable = isUserFixableClaimError(error);
+        const validationErrors = userFixable ? (errorData?.errors ?? null) : null;
+
+        G7Core.state.setLocal({
+            claimEditSaving: false,
+            // 4xx 는 화면에 남긴다 — 승인 뒤에는 수정할 수 없어 서버가 거절하는데,
+            // 토스트로만 알리면 사라진 뒤 왜 막혔는지 화면에 남지 않는다(§6-3 P13).
+            claimEditError: userFixable ? message : null,
+            claimValidationErrors: validationErrors,
+            claimFieldErrors: collectClaimFieldErrors(validationErrors),
         });
 
         if (!userFixable) {

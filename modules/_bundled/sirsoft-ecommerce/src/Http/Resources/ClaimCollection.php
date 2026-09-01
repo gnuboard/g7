@@ -28,8 +28,11 @@ class ClaimCollection extends BaseApiCollection
         return array_merge([
             // $this->collection 원소는 이미 ClaimResource 로 래핑되어 있다 ($collects 자동 추론) — 다시 감싸면
             // resource 가 ClaimResource 자신이 되어 toArray 의 모델 타입 판정이 TypeError 로 죽는다.
+            // 목록 표현을 **명시 호출**한다 — 리소스가 목록·상세 겸용이라, 컬렉션이 그냥
+            // `toArray()` 를 부르면 상세용 필드(첨부 전량·주소/배송비 스냅샷·상세 사유·
+            // 환불 계좌)까지 행마다 실린다. 그 필드를 그리는 칸은 목록에 없다.
             'data' => $this->collection
-                ->map(fn (ClaimResource $claim) => $claim->withReasonLabels($reasonLabels)->toArray($request))
+                ->map(fn (ClaimResource $claim) => $claim->forList()->withReasonLabels($reasonLabels)->toArray($request))
                 ->toArray(),
         ], $this->paginationMeta());
     }

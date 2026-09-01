@@ -1,13 +1,15 @@
 /**
  * @file claimPaymentResultBanner.test.tsx
- * @description 클레임 추가결제 PG 콜백 결과 안내 — 주문 상세 배너 (#599 S12)
+ * @description 클레임 추가결제 PG 콜백 결과 안내 — 신청서 상세 배너 (#599 S12 → S13 이관)
  *
  * PG 결제창에서 돌아온 구매자에게 결과를 알리는 자리다. 이 자리가 없으면 결제가 성공했는지
  * 실패했는지 화면에 남지 않는다 — 처리는 서버에서 정상 완료되므로 어긋난 사실이 어디에도
  * 드러나지 않고, 구매자만 돈이 나갔는지 모른 채 남는다.
  *
  * 2026-08-31 브라우저 실측이 찾은 결함의 회귀 가드다. 원래는 돌아갈 화면 자체가 없어
- * (신청서 상세는 뒤 세션 소유) 성공·실패·취소 전부 404 가 열렸다.
+ * (신청서 상세는 뒤 세션 소유) 성공·실패·취소 전부 404 가 열렸다. S12 는 그 사이 주문
+ * 상세를 임시 목적지로 삼았고, S13 이 신청서 상세를 세우면서 배너와 복귀 주소를 **함께**
+ * 원래 자리로 옮겼다 — 한쪽만 옮기면 안내가 사라지거나 두 곳에 뜬다.
  *
  * 세 결과를 **구분해서** 그리는지 잰다 — 하나로 뭉뚱그리면 실패가 성공처럼 읽힌다.
  *
@@ -27,11 +29,11 @@ import {
   createMockComponentRegistryWithBasics,
 } from '@core/template-engine/__tests__/utils/layoutTestUtils';
 
-/** 주문 상세 셸에서 결과 배너 노드만 떼어 낸다 — 셸 전체는 이 파일의 관심사가 아니다. */
+/** 신청서 상세 셸에서 결과 배너 노드만 떼어 낸다 — 셸 전체는 이 파일의 관심사가 아니다. */
 function bannerNode(): any {
   const shell = JSON.parse(
     fs.readFileSync(
-      path.resolve(__dirname, '../../layouts/mypage/orders/show.json'),
+      path.resolve(__dirname, '../../layouts/mypage/claims/show.json'),
       'utf-8'
     )
   );
@@ -53,7 +55,7 @@ function bannerNode(): any {
   };
   walk(shell);
 
-  expect(found, '결과 배너 노드가 주문 상세에 없다').toHaveLength(1);
+  expect(found, '결과 배너 노드가 신청서 상세에 없다').toHaveLength(1);
 
   return found[0];
 }
@@ -96,6 +98,15 @@ async function renderWith(query: Record<string, string>) {
 }
 
 describe('클레임 추가결제 결과 배너', () => {
+  it('주문 상세에는 남아 있지 않다 — 이관은 옮기는 것이지 복제가 아니다', () => {
+    const orderShell = fs.readFileSync(
+      path.resolve(__dirname, '../../layouts/mypage/orders/show.json'),
+      'utf-8'
+    );
+
+    expect(orderShell).not.toContain('claim_payment');
+  });
+
   let active: { cleanup: () => void } | null = null;
 
   afterEach(() => {

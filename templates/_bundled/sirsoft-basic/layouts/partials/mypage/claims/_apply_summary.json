@@ -412,10 +412,10 @@
       ]
     },
     {
-      "comment": "축1 청구 방식 — 취소·환불은 회수 배송이 없어 청구가 발생하지 않으므로 미노출이다.",
+      "comment": "축1 청구 방식 — 취소·환불은 회수 배송이 없어 청구가 발생하지 않으므로 미노출이다. 수정 화면도 미노출이다(§6-3 — 승인 전에 바꿀 수 있는 것은 사유·상세 사유·첨부와 재발송지뿐이다). 대신 접수 때 고른 방식을 아래 읽기 전용 줄이 보여 준다.",
       "type": "basic",
       "name": "Div",
-      "if": "{{_local.claimType !== 'refund' && ((_local.claimableSnapshot ?? claimable?.data)?.settings?.allowed_charge_methods ?? []).length > 0}}",
+      "if": "{{_local.claimEditMode !== true && _local.claimType !== 'refund' && ((_local.claimableSnapshot ?? claimable?.data)?.settings?.allowed_charge_methods ?? []).length > 0}}",
       "props": { "className": "pt-3 border-t border-gray-200 dark:border-gray-700" },
       "children": [
         {
@@ -486,7 +486,7 @@
       "comment": "축2 결제 수단 — '환불금에서 차감' 을 고르면 쓰이지 않으므로 비활성으로 표시한다.",
       "type": "basic",
       "name": "Div",
-      "if": "{{_local.claimType !== 'refund' && ((_local.claimableSnapshot ?? claimable?.data)?.settings?.charge_payment_methods ?? []).length > 0}}",
+      "if": "{{_local.claimEditMode !== true && _local.claimType !== 'refund' && ((_local.claimableSnapshot ?? claimable?.data)?.settings?.charge_payment_methods ?? []).length > 0}}",
       "props": { "className": "pt-3 border-t border-gray-200 dark:border-gray-700" },
       "children": [
         {
@@ -551,6 +551,62 @@
       "text": "{{_local.claimFieldErrors?.payment_method ?? ''}}"
     },
     {
+      "comment": "수정 화면의 청구 방식 — 읽기 전용이다. 접수 때 고른 방식이 그대로 남으므로 값은 보이되 바꿀 수는 없다(§6-3).",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_local.claimEditMode === true && _local.claimType !== 'refund' && !!_local.claimEditSnapshot?.charge_method_label}}",
+      "props": { "className": "flex items-center justify-between text-sm pt-3 border-t border-gray-200 dark:border-gray-700" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Span",
+          "props": { "className": "text-gray-500 dark:text-gray-400" },
+          "text": "$t:claim.apply.charge_method_title"
+        },
+        {
+          "type": "basic",
+          "name": "Span",
+          "props": { "className": "text-gray-900 dark:text-white" },
+          "text": "{{_local.claimEditSnapshot?.charge_method_label ?? ''}}"
+        }
+      ]
+    },
+    {
+      "comment": "재발송지를 바꿔 배송비가 다시 계산된 결과의 차액 (D14). 접수 시점 청구액과의 차이이며, 더 내야 하면 저장 뒤 결제창이 열리고 돌려받을 금액이면 이미 받은 추가결제에서 환급된다. 이 줄이 없으면 구매자는 얼마가 달라지는지 모른 채 저장하게 되고, 그 사실은 저장 뒤에야 드러난다.",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_local.claimEditMode === true && (_local.claimEditChargeDelta ?? 0) !== 0}}",
+      "props": { "className": "flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-yellow-900/20 border border-amber-200 dark:border-yellow-800" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "props": { "name": "circle-info", "className": "text-base text-amber-600 dark:text-amber-400 flex-shrink-0" }
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": { "className": "text-xs text-amber-800 dark:text-yellow-200 min-w-0" },
+          "text": "{{(_local.claimEditChargeDelta ?? 0) > 0 ? $t('claim.edit.charge_delta_more') : $t('claim.edit.charge_delta_less')}} {{_local.claimEditChargeDeltaFormatted ?? ''}}"
+        }
+      ]
+    },
+    {
+      "comment": "수정 거절 사유 (§6-3 P13) — 승인 뒤에는 수정할 수 없어 서버가 거절한다. 토스트로만 알리면 사라진 뒤 왜 막혔는지 화면에 남지 않는다.",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{!!_local.claimEditError}}",
+      "props": { "className": "p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "P",
+          "props": { "className": "text-sm text-red-700 dark:text-red-300" },
+          "text": "{{_local.claimEditError ?? ''}}"
+        }
+      ]
+    },
+    {
       "comment": "제출 오류 (필드 오류가 아닌 사유) — 필드 오류는 각 섹션이 자기 자리에 표시한다.",
       "type": "basic",
       "name": "Div",
@@ -566,9 +622,10 @@
       ]
     },
     {
-      "comment": "제출 — 미리보기가 성공하지 않았으면(=신청 자격이 확인되지 않았으면) 누를 수 없다. 화면이 예고하는 금액과 실제 청구가 어긋난 채 제출되는 창을 없앤다.",
+      "comment": "제출 — 미리보기가 성공하지 않았으면(=신청 자격이 확인되지 않았으면) 누를 수 없다. 화면이 예고하는 금액과 실제 청구가 어긋난 채 제출되는 창을 없앤다. 수정 화면에는 서지 않는다(그 자리는 아래 [저장]이다).",
       "type": "basic",
       "name": "Button",
+      "if": "{{_local.claimEditMode !== true}}",
       "props": {
         "type": "button",
         "className": "w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-bold hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
@@ -581,8 +638,8 @@
           "params": {
             "claimApiBase": "{{_local.claimApiBase ?? ''}}",
             "isGuest": "{{_local.isGuest === true}}",
-            "_comment_success_path": "접수 뒤 돌아갈 곳. 신청내역 목록(/mypage/claims)은 S13 이 만드는 라우트라 지금 보내면 접수는 성공했는데 404 가 열린다(2026-08-31 실측). 그때까지는 방금 신청한 주문상세로 돌아간다 — 그 화면이 신청 결과(상품 상태 전이)를 바로 보여 준다. S13 이 목록을 세우면 이 값을 목록으로 옮긴다.",
-            "successPath": "/mypage/orders/{{route.order_number}}"
+            "_comment_success_path": "접수 뒤 돌아갈 곳 — 신청내역 목록. 방금 접수한 신청서가 그 목록에 서고, 거기서 상세·수정·철회로 이어진다. 유형 서브탭을 함께 실어 방금 낸 유형의 탭이 열리게 한다(유형마다 서버가 다른 테이블을 읽으므로 탭이 어긋나면 방금 낸 신청서가 보이지 않는다). 취소·환불은 두 분기가 같은 refund 탭에 서지 않는다 — 즉시취소로 갈린 건은 cancel 탭이므로 지금 고른 상품이 정한 분기를 따른다.",
+            "successPath": "/mypage/claims?type={{_local.claimType === 'refund' ? ((_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) === 'cancel' ? 'cancel' : 'refund') : (_local.claimType ?? 'exchange')}}"
           }
         }
       ],
@@ -597,6 +654,43 @@
           "type": "basic",
           "name": "Span",
           "text": "{{_local.isSubmittingClaim === true ? $t('common.processing') : (_local.claimType === 'refund' ? ((_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) === 'cancel' ? $t('claim.apply.submit_cancel') : $t('claim.apply.submit_refund')) : (_local.claimEstimate?.requires_payment === true ? (_local.claimEstimateFormatted?.total_charge_amount ?? '') + ' ' + $t('claim.apply.submit_with_payment') : $t('claim.apply.submit')))}}"
+        }
+      ]
+    },
+    {
+      "comment": "저장 (수정 화면) — 사유가 없으면 누를 수 없다. 작성과 달리 미리보기 성공을 요구하지 않는다: 수정 화면의 미리보기는 재발송지를 바꿨을 때 차액을 보여 주기 위한 것이고, 사유·상세 사유·첨부만 고치는 저장은 금액을 건드리지 않는다. 미리보기 성공을 요구하면 그 경우까지 저장이 잠긴다.",
+      "type": "basic",
+      "name": "Button",
+      "if": "{{_local.claimEditMode === true}}",
+      "props": {
+        "type": "button",
+        "className": "w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-bold hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+        "disabled": "{{!_local.claimReason || _local.claimEditSaving === true || _local.claimEstimateLoading === true}}"
+      },
+      "actions": [
+        {
+          "type": "click",
+          "handler": "sirsoft-ecommerce.saveClaimEdit",
+          "params": {
+            "claimEditApiBase": "{{_local.claimEditApiBase ?? ''}}",
+            "claimApiBase": "{{_local.claimApiBase ?? ''}}",
+            "isGuest": "{{_local.isGuest === true}}",
+            "_comment_success_path": "저장 뒤 돌아갈 곳은 그 신청서의 상세다 — 방금 고친 내용이 그 화면에 그대로 서므로 저장됐다는 사실이 값으로 확인된다.",
+            "successPath": "/mypage/claims/{{route.claim_number ?? ''}}"
+          }
+        }
+      ],
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "if": "{{_local.claimEditSaving === true}}",
+          "props": { "name": "spinner", "className": "text-sm animate-spin mr-1" }
+        },
+        {
+          "type": "basic",
+          "name": "Span",
+          "text": "{{_local.claimEditSaving === true ? $t('common.processing') : $t('claim.edit.save')}}"
         }
       ]
     }

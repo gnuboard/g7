@@ -11,6 +11,7 @@
   "tabs": {
     "profile": "Profile",
     "orders": "Orders",
+    "claims": "Claims",
     "board": "Board Activity",
     "wishlist": "Wishlist",
     "addresses": "Addresses",

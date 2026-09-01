@@ -5,6 +5,11 @@ const ROW_ID = 'kcp-mp-receipt-row';
 const MOCK_DEPOSIT_ID = 'kcp-mp-mock-deposit';
 
 const ORDER_SHOW_RE = /^\/mypage\/orders\/([^/]+)$/;
+// 클레임 신청서 상세도 같은 결제 정보 카드를 재사용한다(§6-2). 그 주소에 실린 것은
+// 클레임 번호라 주문번호를 뽑을 수 없으므로, 이 경로에서는 화면이 이미 읽어 둔 주문을
+// 그대로 쓴다(주문번호 대조 생략). 이 갈래가 없으면 카드는 뜨는데 이 블록만 빠진 채
+// 열리고, 오류도 경고도 남지 않는다.
+const CLAIM_SHOW_RE = /^\/mypage\/claims\/([^/]+)$/;
 
 interface Payment {
     pg_provider?: string;
@@ -24,14 +29,16 @@ interface OrderData {
     payment?: Payment;
 }
 
-function getOrderFromState(orderNumber: string): OrderData | null {
+function getOrderFromState(orderNumber: string | null): OrderData | null {
     try {
         const g7 = (window as unknown as Record<string, unknown>).G7Core as Record<string, unknown> | undefined;
         const getState = g7?.getState as (() => Record<string, unknown>) | undefined;
         const ctx = getState?.()?.currentDataContext as Record<string, unknown> | undefined;
         const order = ctx?.order as { data?: OrderData } | undefined;
         const data = order?.data;
-        if (!data || data.order_number !== orderNumber) return null;
+        if (!data) return null;
+        if (orderNumber !== null && data.order_number !== orderNumber) return null;
+        if (orderNumber === null && !data.order_number) return null;
         return data;
     } catch {
         return null;
@@ -283,7 +290,7 @@ function buildReceiptRow(orderNumber: string): HTMLElement {
         btn.textContent = '영수증 조회';
         if (data) {
             const KcpPopup = (window as unknown as Record<string, unknown>).KcpReceiptPopup as
-                (new (p: { url?: string; cash_url?: string }) => unknown) | undefined;
+                (new (p: { url?: string; cash_url?: string | null }) => unknown) | undefined;
             if (KcpPopup) {
                 new KcpPopup({ url: data.receipt_url, cash_url: data.cash_receipt_url });
             }
@@ -296,12 +303,16 @@ function buildReceiptRow(orderNumber: string): HTMLElement {
     return row;
 }
 
-async function tryInject(orderNumber: string): Promise<boolean> {
+async function tryInject(orderNumber: string | null): Promise<boolean> {
     const orderData = getOrderFromState(orderNumber);
 
     if (!orderData) {
         // ctx.order가 null — 관리자가 타인 주문 열람 시 mypage API 404로 상태 없음.
         // 컨테이너가 렌더링됐으면 모의입금 API만 직접 시도 후 종료.
+        // 주소가 주문을 가리키지 않는 화면(클레임 신청서 상세)에서는 부를 주문번호가 없다 —
+        // 주문이 아직 안 실렸다는 뜻이므로 재시도한다.
+        if (orderNumber === null) return false;
+
         if (!document.getElementById(MOCK_DEPOSIT_ID)) {
             const container = findPaymentRowsContainer();
             if (!container) return false; // 컨테이너 미렌더링 → 재시도
@@ -316,6 +327,10 @@ async function tryInject(orderNumber: string): Promise<boolean> {
 
     const { payment } = orderData;
     if (!payment || payment.pg_provider !== 'nhnkcp') return true; // nhnkcp 아님
+
+    // 영수증·모의입금 API 는 주문번호 기반이다. 클레임 신청서 상세는 주소가 클레임 번호라
+    // 주문번호를 상태에서 가져온다 — 주소 세그먼트를 그대로 쓰면 404 가 된다.
+    const resolvedOrderNumber = orderData.order_number as string;
 
     const needsVbank = payment.payment_method === 'vbank' && !!payment.vbank_name;
     // 영수증 버튼은 결제완료(paid_at 채워짐) 시점에만 표시 — 가상계좌 입금대기 상태 차단
@@ -333,7 +348,7 @@ async function tryInject(orderNumber: string): Promise<boolean> {
     const container = findPaymentRowsContainer();
     if (!container) return false; // DOM 미렌더링 → 재시도
 
-    const receiptInfo = needsReceipt ? await fetchReceiptUrls(orderNumber) : null;
+    const receiptInfo = needsReceipt ? await fetchReceiptUrls(resolvedOrderNumber) : null;
     const displayPatched = patchMypagePaymentMethodDisplay(
         container,
         receiptInfo?.payment_method_display_label,
@@ -346,7 +361,7 @@ async function tryInject(orderNumber: string): Promise<boolean> {
     }
 
     if (!document.getElementById(ROW_ID) && needsReceipt) {
-        container.appendChild(buildReceiptRow(orderNumber));
+        container.appendChild(buildReceiptRow(resolvedOrderNumber));
         console.info(`[${PLUGIN_ID}] receipt button injected on mypage order show`);
         return false;
     }
@@ -356,7 +371,7 @@ async function tryInject(orderNumber: string): Promise<boolean> {
     }
 
     if (!document.getElementById(MOCK_DEPOSIT_ID) && mightNeedMock) {
-        const info = await fetchMockDepositInfo(orderNumber);
+        const info = await fetchMockDepositInfo(resolvedOrderNumber);
         if (info?.available) {
             container.appendChild(buildMockDepositBlock(info));
             console.info(`[${PLUGIN_ID}] mock deposit form injected on mypage order show`);
@@ -369,7 +384,7 @@ async function tryInject(orderNumber: string): Promise<boolean> {
     return true;
 }
 
-function startPolling(orderNumber: string): void {
+function startPolling(orderNumber: string | null): void {
     let attempts = 0;
     const id = setInterval(() => {
         attempts++;
@@ -381,7 +396,14 @@ function startPolling(orderNumber: string): void {
 
 function onRouteChange(): void {
     const match = location.pathname.match(ORDER_SHOW_RE);
-    if (match) startPolling(match[1]);
+    if (match) {
+        startPolling(match[1]);
+
+        return;
+    }
+
+    // 클레임 신청서 상세 — 주소가 클레임 번호라 화면이 읽어 둔 주문을 그대로 쓴다.
+    if (CLAIM_SHOW_RE.test(location.pathname)) startPolling(null);
 }
 
 export function installMypageOrderShowInjector(): void {

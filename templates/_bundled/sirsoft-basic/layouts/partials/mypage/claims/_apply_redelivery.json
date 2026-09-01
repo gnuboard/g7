@@ -294,7 +294,7 @@
           "type": "basic",
           "name": "P",
           "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
-          "text": "$t:claim.apply.redelivery_country_locked|country={{order.data.shipping_address?.recipient_country_name ?? order.data.shipping_address?.recipient_country_code ?? ''}}"
+          "text": "$t:claim.apply.redelivery_country_locked|country={{$localized(order.data.shipping_address?.recipient_country_name) || order.data.shipping_address?.recipient_country_code || ''}}"
         },
         {
           "type": "basic",

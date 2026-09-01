@@ -47,7 +47,8 @@
         {
           "type": "basic",
           "name": "Label",
-          "if": "{{(_local.claimItems ?? []).length > 0}}",
+          "comment": "전체선택은 수정 화면에 세우지 않는다 — 품목·수량은 승인 전에도 바꿀 수 없고(D13), 켜지는 컨트롤을 남기면 눌러도 아무 일이 없는 자리가 된다.",
+          "if": "{{(_local.claimItems ?? []).length > 0 && _local.claimEditMode !== true}}",
           "props": { "className": "flex items-center gap-1.5 cursor-pointer select-none" },
           "children": [
             {
@@ -85,7 +86,7 @@
       "type": "basic",
       "name": "Div",
       "if": "{{_local.claimType === 'refund' && ((_local.claimableSnapshot ?? claimable?.data)?.resolved_type === 'mixed')}}",
-      "props": { "className": "flex items-start gap-2 mb-4 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800" },
+      "props": { "className": "flex items-start gap-2 mb-4 p-3 rounded-lg bg-amber-50 dark:bg-yellow-900/20 border border-amber-200 dark:border-yellow-800" },
       "children": [
         {
           "type": "basic",
@@ -95,7 +96,7 @@
         {
           "type": "basic",
           "name": "P",
-          "props": { "className": "text-xs text-amber-700 dark:text-amber-300 min-w-0" },
+          "props": { "className": "text-xs text-amber-700 dark:text-yellow-300 min-w-0" },
           "text": "$t:claim.apply.refund_branch_mixed_notice"
         }
       ]
@@ -158,7 +159,7 @@
                       "props": {
                         "type": "checkbox",
                         "checked": "{{claimItem.selected === true}}",
-                        "disabled": "{{_local.claimType === 'refund' && claimItem.selected !== true && !!_local.claimResolvedBranch && _local.claimResolvedBranch !== claimItem.refund_branch}}",
+                        "disabled": "{{_local.claimEditMode === true || (_local.claimType === 'refund' && claimItem.selected !== true && !!_local.claimResolvedBranch && _local.claimResolvedBranch !== claimItem.refund_branch)}}",
                         "className": "w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                       },
                       "actions": [
@@ -276,7 +277,7 @@
                         "min": 1,
                         "max": "{{claimItem.available_quantity ?? 1}}",
                         "value": "{{claimItem.quantity ?? 1}}",
-                        "disabled": "{{claimItem.selected !== true}}",
+                        "disabled": "{{_local.claimEditMode === true || claimItem.selected !== true}}",
                         "className": "w-20 px-2 py-1 text-sm text-right border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50"
                       },
                       "actions": [
@@ -362,8 +363,10 @@
                       ]
                     },
                     {
+                      "comment": "교환상품 변경은 수정 화면에 세우지 않는다 — 승인 전에 바꿀 수 있는 것은 사유·상세 사유·첨부와 재발송지뿐이고(D13), 교환 대상을 바꾸는 것은 신청서를 다시 내는 일이다.",
                       "type": "basic",
                       "name": "Button",
+                      "if": "{{_local.claimEditMode !== true}}",
                       "props": {
                         "type": "button",
                         "className": "flex-shrink-0 px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-white dark:hover:bg-gray-800 transition-colors cursor-pointer"

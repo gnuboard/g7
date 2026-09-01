@@ -68,7 +68,12 @@
     "board_title": "Board Activity",
     "inquiries_title": "Product Inquiries",
     "claim_apply_title": "Exchange / Return / Cancel",
-    "claim_apply_description": "Request an exchange, return, cancellation or refund for your order."
+    "claim_apply_description": "Request an exchange, return, cancellation or refund for your order.",
+    "claims_title": "Exchange, return and cancellation requests",
+    "claims_description": "Review, edit or withdraw your exchange, return, refund and cancellation requests.",
+    "claim_detail_title": "Request details",
+    "claim_detail_description": "Review the items, shipping, amounts and reason of the request.",
+    "claim_edit_title": "Edit request"
   },
   "identity": {
     "challenge": {
@@ -182,7 +187,13 @@
       "apply_summary": "Claim summary",
       "apply_refund_account": "Refund account",
       "change_product_modal": "Change exchange option",
-      "withdraw_modal": "Withdraw request confirmation"
+      "withdraw_modal": "Withdraw request confirmation",
+      "list": "Request list",
+      "detail_items": "Requested items",
+      "detail_shipping": "Shipping",
+      "detail_claim_info": "Request details",
+      "detail_reason": "Reason",
+      "image_viewer_modal": "Photo viewer"
     }
   }
 }

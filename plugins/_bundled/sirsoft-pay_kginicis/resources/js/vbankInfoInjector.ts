@@ -6,6 +6,11 @@ const MP_SECTION_ID = 'kginicis-mp-vbank-info';
 
 const ORDER_COMPLETE_RE = /^\/shop\/orders\/([^/]+)\/complete$/;
 const ORDER_SHOW_RE = /^\/mypage\/orders\/([^/]+)$/;
+// 클레임 신청서 상세도 같은 결제 정보 카드(partials/mypage/orders/_payment.json)를 재사용한다.
+// 그 주소에 실린 것은 클레임 번호라 주문번호를 뽑을 수 없으므로, 이 경로에서는 화면이 이미
+// 읽어 둔 주문을 그대로 쓴다(주문번호 대조 생략). 이 갈래가 없으면 결제 정보 카드는 뜨는데
+// 입금 안내만 빠진 채 열리고, 오류도 경고도 남지 않는다.
+const CLAIM_SHOW_RE = /^\/mypage\/claims\/([^/]+)$/;
 
 // ISO 8601 날짜 패턴 (2026-06-11T23:59:59+00:00 등)
 const ISO_DATE_RE = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+\-]\d{2}:\d{2}/;
@@ -110,7 +115,13 @@ function fixOrderCompleteDates(): void {
 // ──────────────────────────────────────────────
 // 마이페이지: G7Core 상태에서 vbank 정보 주입
 // ──────────────────────────────────────────────
-function getOrderFromState(orderNumber: string): OrderData | null {
+/**
+ * 화면이 읽어 둔 주문을 돌려줍니다.
+ *
+ * @param orderNumber 주소에서 뽑은 주문번호. 주소가 주문번호를 싣지 않는 화면(클레임 신청서
+ *                    상세)에서는 null 이며, 그때는 대조 없이 로드된 주문을 그대로 쓴다.
+ */
+function getOrderFromState(orderNumber: string | null): OrderData | null {
     try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const g7 = (window as any).G7Core as Record<string, unknown> | undefined;
@@ -118,7 +129,9 @@ function getOrderFromState(orderNumber: string): OrderData | null {
         const ctx = getState?.()?.currentDataContext as Record<string, unknown> | undefined;
         const order = ctx?.order as { data?: OrderData } | undefined;
         const data = order?.data;
-        if (!data || data.order_number !== orderNumber) return null;
+        if (!data) return null;
+        if (orderNumber !== null && data.order_number !== orderNumber) return null;
+        if (orderNumber === null && !data.order_number) return null;
         return data;
     } catch {
         return null;
@@ -223,9 +236,12 @@ function buildCbtCvsSection(payment: Payment, receiptInfo: KginicisReceiptInfo |
     return section;
 }
 
-async function tryInjectMypage(orderNumber: string): Promise<boolean> {
+async function tryInjectMypage(orderNumber: string | null): Promise<boolean> {
     const orderData = getOrderFromState(orderNumber);
     if (!orderData) return false;
+
+    // 영수증 조회는 언제나 실제 주문번호로 한다 — 클레임 상세는 주소에 클레임 번호를 싣는다.
+    const resolvedOrderNumber = orderData.order_number as string;
 
     const { payment } = orderData;
     if (!payment) return true;
@@ -238,7 +254,7 @@ async function tryInjectMypage(orderNumber: string): Promise<boolean> {
     const container = findPaymentContainer();
     if (!container) return false;
 
-    const receiptInfo = await fetchKginicisReceiptInfo(orderNumber);
+    const receiptInfo = await fetchKginicisReceiptInfo(resolvedOrderNumber);
     const dueDateStr = payment.vbank_due_at ? formatKoreanDate(payment.vbank_due_at as string) : '';
     container.appendChild(
         isCbtCvsPayment(payment, receiptInfo)
@@ -250,7 +266,7 @@ async function tryInjectMypage(orderNumber: string): Promise<boolean> {
     return true;
 }
 
-function startMypagePolling(orderNumber: string): void {
+function startMypagePolling(orderNumber: string | null): void {
     let attempts = 0;
     const id = setInterval(() => {
         attempts++;
@@ -271,6 +287,14 @@ function onRouteChange(): void {
     const mp = location.pathname.match(ORDER_SHOW_RE);
     if (mp) {
         startMypagePolling(mp[1]);
+
+        return;
+    }
+
+    // 클레임 신청서 상세 — 주소가 클레임 번호라 주문번호를 뽑을 수 없다. 화면이 읽어 둔
+    // 주문을 그대로 쓴다.
+    if (CLAIM_SHOW_RE.test(location.pathname)) {
+        startMypagePolling(null);
     }
 }
 

@@ -210,8 +210,13 @@ trait HandlesClaimActions
         try {
             $resolved = $this->claims()->findOwned($claimNumber, $this->viewer()['user_id'], $this->viewer()['guest_order']);
 
+            // 번호 해석이 싣는 관계는 소유권 판정에 필요한 최소한이다(상품 행·첨부·주문).
+            // 상세 화면은 그 위에 상품의 원 주문옵션(상품명·옵션명·썸네일)과 회수·재발송
+            // 배송사(배송사명·추적 URL)를 그린다 — 다시 싣지 않으면 그 칸들이 오류 없이
+            // 전부 비고, 응답은 200 이라 어디에도 어긋난 흔적이 남지 않는다. 수정 응답이
+            // 이미 같은 이유로 `reloaded()` 를 거친다.
             return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.claims.retrieved', [
-                'claim' => $this->detailResource($resolved['claim'])->toArray(request()),
+                'claim' => $this->detailResource($this->reloaded($resolved['claim']))->toArray(request()),
             ]);
         } catch (OrderClaimException $e) {
             return $this->claimNotFound();

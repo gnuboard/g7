@@ -282,6 +282,30 @@ export async function removeClaimImageHandler(
 
     if (!imageId || !imageDeleteBase) return;
 
+    // 이미 신청서에 귀속된 첨부(수정 화면의 기존 사진)는 그 자리에서 지우지 않는다. 삭제
+    // 엔드포인트는 소유만 확인하고 바로 파일까지 지우므로, 저장을 취소하고 나가도 첨부만
+    // 영구히 사라진다. 대신 삭제 목록에 담아 두었다가 저장할 때 `remove_image_ids` 로
+    // 넘긴다 — 서버가 같은 흐름에서 처리해야 장수 상한 판정(삭제 후 남을 장수)이 화면과
+    // 갈리지 않는다.
+    const current = G7Core.state.getLocal();
+    const target = (current.claimImages ?? []).find(
+        (image: ClaimPendingImage & { attached?: boolean }) => Number(image.id) === imageId
+    );
+
+    if (target?.attached === true) {
+        G7Core.state.setLocal({
+            claimImages: (current.claimImages ?? []).filter(
+                (image: ClaimPendingImage) => Number(image.id) !== imageId
+            ),
+            claimRemoveImageIds: [
+                ...(current.claimRemoveImageIds ?? []).filter((value: unknown) => Number(value) !== imageId),
+                imageId,
+            ],
+        });
+
+        return;
+    }
+
     try {
         await G7Core.api.delete(imageDeleteBase + '/' + imageId, claimRequestConfig(action.params?.isGuest === true));
     } catch (error: any) {

@@ -49,9 +49,10 @@
         },
         {
           "comment": "배송지 수정 버튼 - 배송 전 상태 (회원/비회원 공통). 공유 partial 이라 비회원 상세(guest_order_show)에서도 재사용되며, 비회원은 모달에서 탭 없이 직접입력 폼만 노출된다.",
+          "_comment_readonly": "조회 전용으로 이 카드를 마운트하는 화면(클레임 신청서 상세)은 셸이 _local.orderShippingReadonly 를 세운다. 그 화면에는 changeAddressModal 이 없어 버튼을 그대로 두면 눌리지 않는 버튼이 생기고, 클릭은 오류도 토스트도 남기지 않는다. 값을 세우지 않는 화면(주문 상세·비회원 주문 상세)에서는 undefined 라 지금까지와 같다.",
           "type": "basic",
           "name": "Button",
-          "if": "{{order.data.order_status === 'pending_payment' || order.data.order_status === 'payment_complete'}}",
+          "if": "{{_local.orderShippingReadonly !== true && (order.data.order_status === 'pending_payment' || order.data.order_status === 'payment_complete')}}",
           "props": { "type": "button", "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" },
           "children": [
             { "type": "basic", "name": "Icon", "size": "sm", "props": { "name": "pen-to-square" } },
@@ -144,7 +145,7 @@
               "type": "basic",
               "name": "Span",
               "props": { "className": "text-gray-900 dark:text-white" },
-              "text": "{{order.data.shipping_address?.recipient_country_name?.[_global.locale] ?? order.data.shipping_address?.recipient_country_name?.ko ?? order.data.shipping_address?.recipient_country_code ?? 'KR'}}",
+              "text": "{{$localized(order.data.shipping_address?.recipient_country_name) || order.data.shipping_address?.recipient_country_code || 'KR'}}",
               "responsive": {
                 "portable": {
                   "props": { "className": "text-gray-900 dark:text-white text-sm" }

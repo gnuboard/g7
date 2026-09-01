@@ -58,12 +58,13 @@
               ],
               "actions": [
                 {
+                  "comment": "새 주소 폼을 null 로 열면 기본 배송지 체크박스가 자동바인딩할 boolean 이 없어, 손대지 않은 제출이 빈 문자열을 보낸다. 형제 화면(mypage/addresses/_list.json)이 같은 위젯을 이미 boolean 으로 시드한다.",
                   "type": "click",
                   "handler": "setState",
                   "params": {
                     "target": "local",
                     "addressModalMode": "form",
-                    "editingAddress": null,
+                    "editingAddress": { "is_default": false },
                     "addressErrors": null
                   }
                 }
@@ -558,7 +559,7 @@
                   "props": {
                     "name": "country_code",
                     "value": "{{_local.editingAddress?.country_code ?? _global.preferredShippingCountry ?? 'KR'}}",
-                    "options": "{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: (c.name?.[_global.locale] ?? c.name?.ko ?? c.code) }))}}",
+                    "options": "{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: ($localized(c.name) || c.code) }))}}",
                     "className": "w-full"
                   }
                 }

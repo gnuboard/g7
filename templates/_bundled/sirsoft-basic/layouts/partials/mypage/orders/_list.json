@@ -752,7 +752,7 @@
                           },
                           "children": [
                             { "type": "basic", "name": "Span", "props": { "className": "{{'fi fi-' + (order.recipient_country_code ?? 'kr').toLowerCase()}}" } },
-                            { "type": "basic", "name": "Span", "text": "{{order.recipient_country_name?.[_global.locale] ?? order.recipient_country_name?.ko ?? order.recipient_country_code}}" }
+                            { "type": "basic", "name": "Span", "text": "{{$localized(order.recipient_country_name) || order.recipient_country_code}}" }
                           ]
                         }
                       ]

@@ -514,6 +514,95 @@ class UserClaimApiTest extends ModuleTestCase
         $this->actingAs($this->user)->getJson($this->base().'/claims/NOPE-0000')->assertNotFound();
     }
 
+    /**
+     * 목록은 화면이 그 행에서 실제로 그리는 것만 싣는다. (S13 — P3)
+     *
+     * 이 리소스는 목록·상세 겸용이라 상세용 필드(첨부 전량·주소/배송비 스냅샷 JSON·상세 사유·
+     * 반려 사유·환불 계좌)까지 행마다 실렸다. `per_page` 상한이 50 이고 신청서 하나가 상품
+     * 200줄까지 가질 수 있어, 그대로 두면 한 페이지를 여는 것만으로 수천 줄이 응답에 실린다.
+     *
+     * 상품 행(`items`)은 남는다 — 목록 카드가 상품마다 썸네일·옵션·수량·금액을 그리므로
+     * 그것은 낭비가 아니라 화면이 요구하는 값이다. 그 구분이 이 테스트의 요지다.
+     *
+     * @scenario claim_type=return, charge_method=pay_on_request, refund_branch=none
+     *
+     * @effects claim_list_response_drops_what_the_list_does_not_draw
+     */
+    public function test_index_omits_what_the_list_does_not_draw(): void
+    {
+        $order = $this->myDeliveredOrder();
+        $claims = app(UserClaimService::class);
+        $return = $claims->requestReturn($order, [
+            'items' => $this->items($order),
+            'reason_code' => 'changed_mind',
+            'reason_detail' => '상세 사유가 여기에 있다',
+            'charge_method' => 'deduct_from_refund',
+            'requested_by' => $this->user->id,
+            'refund_bank' => ['bank_code' => '004', 'account_number' => '110234567890', 'holder' => '홍길동'],
+        ])['claim'];
+
+        // 상세는 그 값을 전부 싣는다 — 목록만 좁힌다는 것이 이 테스트의 대조군이다.
+        $this->actingAs($this->user)->getJson($this->base()."/claims/{$return->return_number}")
+            ->assertOk()
+            ->assertJsonPath('data.claim.reason_detail', '상세 사유가 여기에 있다')
+            ->assertJsonPath('data.claim.refund_bank_code', '004');
+
+        $response = $this->actingAs($this->user)->getJson($this->base().'/claims?type=return')
+            ->assertOk()
+            ->assertJsonCount(1, 'data.data');
+
+        $row = $response->json('data.data.0');
+
+        // 화면이 그리는 것 — 남는다.
+        $this->assertSame($return->return_number, $row['claim_number']);
+        $this->assertNotEmpty($row['items']);
+        $this->assertArrayHasKey('product_name', $row['items'][0]);
+        $this->assertNotNull($row['reason_label']);
+        $this->assertNotNull($row['status_label']);
+
+        // 목록의 어느 칸도 읽지 않는 것 — 빠진다.
+        $this->assertSame([], $row['images']);
+        $this->assertNull($row['reason_detail']);
+        $this->assertNull($row['reject_reason']);
+        $this->assertNull($row['shipping_fee_snapshot']);
+        $this->assertNull($row['return_address_snapshot']);
+        $this->assertNull($row['refund_bank_code']);
+        $this->assertNull($row['refund_bank_account']);
+        $this->assertNull($row['refund_bank_holder']);
+    }
+
+    /**
+     * 상세는 상품의 원 주문옵션과 배송사를 함께 싣는다.
+     *
+     * 번호 해석이 싣는 관계는 소유권 판정에 필요한 최소한이라(상품 행·첨부·주문) 그대로
+     * 내보내면 상품명·옵션명·썸네일과 배송사명·추적 URL 이 **오류 없이 전부 null** 이 된다.
+     * 응답은 200 이고 키도 그대로 있어 어긋난 흔적이 어디에도 남지 않는다 — S13 이 상세
+     * 화면을 만들며 찾은 결함의 회귀 가드다.
+     *
+     * @scenario claim_type=return, charge_method=deduct_from_refund, refund_branch=none
+     *
+     * @effects claim_detail_loads_the_relations_the_screen_draws
+     */
+    public function test_show_loads_the_relations_the_detail_screen_draws(): void
+    {
+        $order = $this->myDeliveredOrder();
+        $claims = app(UserClaimService::class);
+        $return = $claims->requestReturn($order, [
+            'items' => $this->items($order),
+            'reason_code' => 'changed_mind',
+            'charge_method' => 'deduct_from_refund',
+            'requested_by' => $this->user->id,
+        ])['claim'];
+
+        $row = $this->actingAs($this->user)->getJson($this->base()."/claims/{$return->return_number}")
+            ->assertOk()
+            ->json('data.claim.items.0');
+
+        // 상품명이 비면 상세 화면의 상품 카드가 통째로 빈 줄이 된다.
+        $this->assertNotNull($row['product_name']);
+        $this->assertNotSame('', $row['product_name']);
+    }
+
     public function test_update_changes_the_reason_before_approval_and_is_422_after(): void
     {
         $order = $this->myDeliveredOrder();
@@ -532,6 +621,81 @@ class UserClaimApiTest extends ModuleTestCase
         $this->actingAs($this->user)->patchJson($this->base()."/claims/{$return->return_number}", ['reason_detail' => 'x'])
             ->assertStatus(422)
             ->assertJsonPath('message', __('sirsoft-ecommerce::exceptions.claim_not_editable'));
+    }
+
+    public function test_update_saves_the_refund_account_the_buyer_typed(): void
+    {
+        // 2026-09-01 PO 확정 — 환불 계좌는 수정 화면에서 고칠 수 있다(신청 단계에서만).
+        // 화면이 칸을 열어 두는데 저장 경로가 그 값을 받지 않으면, 구매자는 채워 넣고 저장
+        // 성공을 본 뒤에도 옛 계좌로 돈을 받는다. 응답은 200 이라 어긋난 흔적이 남지 않는다.
+        $order = $this->myDeliveredOrder();
+        $claims = app(UserClaimService::class);
+        $return = $claims->requestReturn($order, [
+            'items' => $this->items($order),
+            'reason_code' => 'changed_mind',
+            'charge_method' => 'deduct_from_refund',
+            'requested_by' => $this->user->id,
+            'refund_bank' => ['bank_code' => '004', 'account_number' => '11100022233', 'holder' => '홍길동'],
+        ])['claim'];
+
+        $this->actingAs($this->user)->patchJson($this->base()."/claims/{$return->return_number}", [
+            'reason_detail' => '계좌를 바꿉니다',
+            'refund_bank' => ['bank_code' => '088', 'account_number' => '99988877766', 'holder' => '김철수'],
+        ])->assertOk();
+
+        $fresh = $return->fresh();
+
+        $this->assertSame('088', $fresh->refund_bank_code);
+        $this->assertSame('99988877766', $fresh->refund_bank_account);
+        $this->assertSame('김철수', $fresh->refund_bank_holder);
+    }
+
+    public function test_update_without_a_refund_account_keeps_the_recorded_one(): void
+    {
+        // 표시 응답의 계좌는 마스킹된 값이라 화면이 되돌려 보낼 수 없다 — 그래서 수정 화면은
+        // 칸을 빈 채로 연다. 그 빈 값을 저장이 반영하면, 사유만 고친 저장 한 번이 계좌를
+        // 지운다.
+        $order = $this->myDeliveredOrder();
+        $claims = app(UserClaimService::class);
+        $return = $claims->requestReturn($order, [
+            'items' => $this->items($order),
+            'reason_code' => 'changed_mind',
+            'charge_method' => 'deduct_from_refund',
+            'requested_by' => $this->user->id,
+            'refund_bank' => ['bank_code' => '004', 'account_number' => '11100022233', 'holder' => '홍길동'],
+        ])['claim'];
+
+        $this->actingAs($this->user)->patchJson($this->base()."/claims/{$return->return_number}", [
+            'reason_detail' => '사유만 고칩니다',
+        ])->assertOk();
+
+        $fresh = $return->fresh();
+
+        $this->assertSame('004', $fresh->refund_bank_code);
+        $this->assertSame('11100022233', $fresh->refund_bank_account);
+        $this->assertSame('홍길동', $fresh->refund_bank_holder);
+    }
+
+    public function test_update_rejects_a_partly_filled_refund_account(): void
+    {
+        // 셋 중 하나만 오면 은행만 바뀌고 계좌번호는 옛 값으로 남아, 운영자가 존재하지 않는
+        // 계좌로 이체를 시도한다. 접수 경로와 같은 등식이어야 한다.
+        $order = $this->myDeliveredOrder();
+        $claims = app(UserClaimService::class);
+        $return = $claims->requestReturn($order, [
+            'items' => $this->items($order),
+            'reason_code' => 'changed_mind',
+            'charge_method' => 'deduct_from_refund',
+            'requested_by' => $this->user->id,
+            'refund_bank' => ['bank_code' => '004', 'account_number' => '11100022233', 'holder' => '홍길동'],
+        ])['claim'];
+
+        $this->actingAs($this->user)->patchJson($this->base()."/claims/{$return->return_number}", [
+            'refund_bank' => ['account_number' => '99988877766'],
+        ])->assertStatus(422);
+
+        // 거절된 요청이 상태를 남기면 안 된다.
+        $this->assertSame('11100022233', $return->fresh()->refund_bank_account);
     }
 
     public function test_update_cannot_pick_a_reason_that_is_hidden_from_users(): void

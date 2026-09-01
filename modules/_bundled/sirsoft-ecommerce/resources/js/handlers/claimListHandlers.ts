@@ -1,9 +1,15 @@
 /**
  * 클레임 신청내역 핸들러 (회원 · 비회원 공용)
  *
- * 신청서를 접수한 뒤의 조작 — 지금은 **철회**다. 철회는 신청서를 되돌리는 것이므로 확인
- * 모달을 거치고, 확인 뒤에는 서버가 상태 전이와 후속 처리(수량 잠금 해제, 이미 받은 추가결제의
- * 환급)를 한 흐름으로 수행한다. 화면은 결과만 반영한다.
+ * 신청서를 접수한 뒤의 조작 — **철회**와 **미수납 추가결제**다. 철회는 신청서를 되돌리는
+ * 것이므로 확인 모달을 거치고, 확인 뒤에는 서버가 상태 전이와 후속 처리(수량 잠금 해제,
+ * 이미 받은 추가결제의 환급)를 한 흐름으로 수행한다. 화면은 결과만 반영한다.
+ *
+ * 추가결제는 청구 방식이 `pay_on_approval`(승인 시점 결제)일 때 생긴다 — 운영자가 승인하면
+ * 서버가 결제 대기 건(CP)을 만들고 신청서를 결제대기로 옮기는데, 그 뒤 **구매자가 낼 자리**가
+ * 이 화면이다. 진입점이 없으면 상세는 미수납 금액만 보여 주고 낼 방법은 어디에도 없다
+ * (2026-09-01 `/validate-plan` 2차 PO 확정 — 그 전까지 `POST claim-payments/{번호}/pay` 의
+ * 프로덕션 소비처가 0건이었다).
  *
  * 철회 대상은 **클레임 번호**로 지목한다 — 유형별 접두사(EX/RT/RF/CN)는 운영자가 채번 설정에서
  * 바꿀 수 있으므로 화면이 접두사로 유형을 판정하지 않는다. 서버가 번호로 유형을 해석한다
@@ -201,6 +207,132 @@ export async function withdrawClaimHandler(
             isWithdrawingClaim: false,
             // 4xx 는 모달 안에 남긴다 — 토스트는 사라진 뒤 왜 철회가 막혔는지 화면에 남지 않는다.
             withdrawError: userFixable ? message : null,
+        });
+
+        if (!userFixable) {
+            G7Core.toast?.error?.(message);
+        }
+    }
+}
+
+/**
+ * 신청서의 미수납 추가결제를 시작합니다. (결제 대기 건 → PG 결제창 또는 마일리지 즉시 결제)
+ *
+ * 청구 방식이 `pay_on_approval` 이면 운영자 승인 시점에 서버가 결제 대기 건(CP)을 만들고
+ * 신청서를 결제대기로 옮긴다. 그 뒤 낼 사람은 구매자인데, 그 자리가 없으면 상세는 미수납
+ * 금액만 보여 주고 결제는 영원히 완결되지 않는다 — 운영자가 그 청구 방식을 허용해도 그렇다.
+ *
+ * 결제 수단은 **보내지 않는다**. 서버가 결제 대기 건을 만들 때 이미 상점의 허용 수단으로
+ * 확정해 두었고(`resolveDefaultPaymentMethodFor` — 신청 시점 결제·차액 정산과 같은 게이트),
+ * 화면은 그 수단을 표시만 한다. 여기서 수단을 다시 고르게 하면 신청서 작성 화면이 쓰는
+ * 카탈로그(`claimable-options`)를 이 화면도 읽어야 하는데, 그 응답은 주문 스코프라 상세가
+ * 데이터소스를 하나 더 들어야 한다. 수단 변경은 별개 결정으로 남긴다.
+ *
+ * 결제 주소의 앞부분(`payApiBase`)은 철회와 같은 이유로 **셸이 통째로 준다**:
+ *
+ *   회원    POST /user/claim-payments/{paymentNumber}/pay                        (주문 스코프 **없음**)
+ *   비회원  POST /guest/orders/{orderNumber}/claim-payments/{paymentNumber}/pay  (주문 스코프 있음)
+ *
+ * @example
+ * {
+ *   "handler": "sirsoft-ecommerce.payClaimOutstanding",
+ *   "params": {
+ *     "payApiBase": "{{_local.claimPayApiBase}}",
+ *     "paymentNumber": "{{claim.data?.claim?.pending_payment?.payment_number}}",
+ *     "isGuest": false,
+ *     "refreshDataSourceId": "claim"
+ *   }
+ * }
+ *
+ * @param action 액션 객체
+ * @param _context 액션 컨텍스트
+ */
+export async function payClaimOutstandingHandler(
+    action: ActionWithParams<{
+        payApiBase?: string;
+        paymentNumber?: string;
+        isGuest?: boolean;
+        refreshDataSourceId?: string;
+    }>,
+    _context: ActionContext
+): Promise<void> {
+    const G7Core = (window as any).G7Core;
+    if (!G7Core?.state) return;
+
+    // 신청서 작성용 주문 스코프 주소로 대신 조립하지 않는다 — 회원 결제 라우트는 주문 스코프가
+    // 아니라서 그렇게 만든 주소는 404 다(철회와 같은 결). 셸이 값을 주지 않았으면 보내지 않는다.
+    const payApiBase = String(action.params?.payApiBase ?? '').replace(/\/+$/, '');
+    const paymentNumber = String(action.params?.paymentNumber ?? '').trim();
+    const isGuest = action.params?.isGuest === true;
+
+    if (!payApiBase || !paymentNumber) {
+        logger.warn('[payClaimOutstanding] 결제 주소 또는 결제번호가 없어 보내지 않는다');
+
+        return;
+    }
+
+    const local = G7Core.state.getLocal();
+
+    // 더블클릭으로 두 번 나가면 두 번째는 이미 결제 진입한 건을 다시 열려다 거절된다 —
+    // 결제창이 뜬 뒤에 실패 안내가 겹친다.
+    if (local.isPayingClaim === true) return;
+
+    G7Core.state.setLocal({ isPayingClaim: true, claimPayError: null });
+
+    try {
+        const response = await G7Core.api.post(
+            payApiBase + '/' + encodeURIComponent(paymentNumber) + '/pay',
+            {},
+            claimRequestConfig(isGuest)
+        );
+
+        if (!response?.success) {
+            throw new Error(response?.message ?? 'Claim payment failed');
+        }
+
+        const data = response.data ?? {};
+
+        // PG 결제창으로 넘어가는 경우에는 진행 표시를 내리지 않는다 — 결제창이 뜨는 동안
+        // 버튼이 다시 살아나면 같은 결제 건으로 두 번 진입할 수 있다. 돌아온 화면은
+        // 상세를 다시 읽으므로(진입 시 refetch) 그때 상태가 서버 값으로 맞춰진다.
+        if (data.requires_pg_payment && data.pg_payment_handler) {
+            await G7Core.dispatch?.({
+                handler: data.pg_payment_handler,
+                params: { pgPaymentData: data.pg_payment_data },
+            });
+
+            return;
+        }
+
+        // 마일리지 즉시 결제 — 결제창 없이 그 자리에서 끝난다.
+        G7Core.state.setLocal({ isPayingClaim: false, claimPayError: null });
+        G7Core.toast?.success?.(
+            response.message
+            ?? G7Core.t?.('claim.detail.pay_success')
+            ?? '결제가 완료되었습니다.'
+        );
+
+        if (action.params?.refreshDataSourceId) {
+            await G7Core.dispatch?.({
+                handler: 'refetchDataSource',
+                params: { dataSourceId: action.params.refreshDataSourceId },
+            });
+        }
+    } catch (error: any) {
+        logger.error('[payClaimOutstanding] 실패:', error);
+
+        const message = error?.response?.data?.message
+            ?? error?.data?.message
+            ?? error?.message
+            ?? G7Core.t?.('claim.detail.pay_failed')
+            ?? '결제를 시작하지 못했습니다.';
+        const userFixable = isUserFixableClaimError(error);
+
+        G7Core.state.setLocal({
+            isPayingClaim: false,
+            // 4xx 는 화면에 남긴다 — 토스트는 사라진 뒤 왜 결제가 막혔는지 근거가 남지 않는다
+            // (철회와 같은 채널 규약 §6-3 P13).
+            claimPayError: userFixable ? message : null,
         });
 
         if (!userFixable) {

@@ -88,7 +88,9 @@ class OrderCancelRepository implements OrderCancelRepositoryInterface
     public function paginateForUser(int $userId, array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
         $query = $this->model->newQuery()
-            ->with(['cancelOptions.orderOption', 'refund', 'order.shippingAddress'])
+            // 목록이 직렬화하는 것만 싣는다. 취소 이력의 환불액은 연결된 환불신청서가 들고
+            // 있고 목록이 그 값을 그리므로 `refund` 는 남긴다 — 주문 배송지는 읽지 않는다.
+            ->with(['cancelOptions.orderOption', 'refund', 'order'])
             ->whereHas('order', fn ($q) => $q->where('user_id', $userId));
 
         if (! empty($filters['status'])) {

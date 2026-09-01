@@ -167,7 +167,9 @@ class OrderReturnRepository implements OrderReturnRepositoryInterface
     public function paginateForUser(int $userId, array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
         $query = $this->model->newQuery()
-            ->with(['returnOptions.orderOption', 'images', 'order.shippingAddress', 'collectionCarrier'])
+            // 목록이 직렬화하는 것만 싣는다 (형제 저장소와 같은 근거 — 첨부는 상세 소관,
+            // 주문 배송지는 이 목록의 어느 칸도 읽지 않는다).
+            ->with(['returnOptions.orderOption', 'order', 'collectionCarrier'])
             ->whereHas('order', fn ($q) => $q->where('user_id', $userId));
 
         if (! empty($filters['status'])) {

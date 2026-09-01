@@ -1,0 +1,250 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "클레임 상세 - 배송 (회수 · 재발송 송장/추적 + 주소)",
+    "editor_label": "$t:user.modal_label.mypage_claims.detail_shipping"
+  },
+  "_comment": "§6-2 — 회수(교환·반품)와 재발송(교환)을 한 카드 안 두 항목으로 둔다. 관리자 상세(D17-②)와 같은 형태다 — 두 배송을 별도 카드로 나누면 같은 신청서의 오고 가는 흐름이 끊겨 보인다. 환불·취소는 회수 배송이 없어 이 카드가 통째로 서지 않는다.",
+  "_comment_readonly": "조회 전용이다. 송장 입력·상태 변경은 운영자 화면 소관이며, 여기에 입력 요소를 두면 구매자가 고칠 수 없는 값을 고칠 수 있는 것처럼 보인다.",
+  "_comment_tracking_url": "추적 URL 은 서버가 배송사 템플릿으로 만든다(`collection_tracking_url` / `redelivery_tracking_url`). 화면이 규칙을 재조립하면 주문 배송 조회와 두 벌이 되어 배송사 URL 이 바뀔 때 한쪽만 낡는다.",
+  "type": "basic",
+  "name": "Div",
+  "if": "{{claim.data?.claim?.claim_type === 'exchange' || claim.data?.claim?.claim_type === 'return'}}",
+  "props": { "className": "bg-white dark:bg-gray-800 rounded-lg p-6" },
+  "responsive": {
+    "portable": {
+      "props": { "className": "bg-white dark:bg-gray-800 rounded-lg p-4" }
+    }
+  },
+  "children": [
+    {
+      "comment": "섹션 제목",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex items-center gap-2 mb-4 pb-4 border-b border-gray-200 dark:border-gray-700" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "props": { "name": "truck", "className": "text-base text-gray-900 dark:text-white" }
+        },
+        {
+          "type": "basic",
+          "name": "H2",
+          "props": { "className": "text-base font-bold text-gray-900 dark:text-white" },
+          "text": "$t:claim.detail.shipping_title"
+        }
+      ]
+    },
+    {
+      "comment": "회수 — 교환·반품 공통. 회수지는 운영자가 배송정책에 등록한 주소를 신청 시점에 동결한 것이다(return_address_snapshot).",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "space-y-2" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "P",
+          "props": { "className": "text-sm font-semibold text-gray-900 dark:text-white" },
+          "text": "$t:claim.detail.collection_title"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex items-baseline justify-between gap-3" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-sm text-gray-500 dark:text-gray-400 flex-shrink-0" },
+              "text": "$t:claim.detail.tracking"
+            },
+            {
+              "type": "basic",
+              "name": "A",
+              "if": "{{!!claim.data?.claim?.collection_tracking_url}}",
+              "props": {
+                "href": "{{claim.data?.claim?.collection_tracking_url}}",
+                "target": "_blank",
+                "rel": "noopener noreferrer",
+                "className": "inline-flex items-center gap-1 text-sm text-indigo-600 dark:text-indigo-400 hover:underline break-all text-right"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "{{claim.data?.claim?.collection_carrier_name ?? ''}} {{claim.data?.claim?.collection_tracking_number ?? ''}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": { "name": "arrow-up-right-from-square", "className": "text-xs" }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{!claim.data?.claim?.collection_tracking_url}}",
+              "props": { "className": "text-sm text-gray-900 dark:text-white text-right break-all" },
+              "text": "{{claim.data?.claim?.collection_tracking_number ?? $t('claim.detail.tracking_pending')}}"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "if": "{{!!claim.data?.claim?.collection_completed_at_formatted}}",
+          "props": { "className": "flex items-baseline justify-between gap-3" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
+              "text": "$t:claim.detail.collection_completed_at"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-sm text-gray-900 dark:text-white" },
+              "text": "{{claim.data?.claim?.collection_completed_at_formatted}}"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "if": "{{!!claim.data?.claim?.return_address_snapshot}}",
+          "props": { "className": "flex items-start justify-between gap-3" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-sm text-gray-500 dark:text-gray-400 flex-shrink-0" },
+              "text": "$t:claim.detail.collection_address"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-sm text-gray-900 dark:text-white text-right" },
+              "text": "({{claim.data?.claim?.return_address_snapshot?.zipcode ?? ''}}) {{claim.data?.claim?.return_address_snapshot?.address1 ?? ''}} {{claim.data?.claim?.return_address_snapshot?.address2 ?? ''}}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "재발송 — 교환만. 재발송지는 구매자가 신청·수정에서 바꿀 수 있으므로(D14) 고친 사실을 뱃지로 남긴다.",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{claim.data?.claim?.claim_type === 'exchange'}}",
+      "props": { "className": "space-y-2 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex items-center gap-2" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "P",
+              "props": { "className": "text-sm font-semibold text-gray-900 dark:text-white" },
+              "text": "$t:claim.detail.redelivery_title"
+            },
+            {
+              "comment": "구매자가 재발송지를 바꾼 신청서 — 값이 원 배송지와 같아도 바꾼 사실 자체를 남긴다(changed_by_user).",
+              "type": "basic",
+              "name": "Span",
+              "if": "{{claim.data?.claim?.redelivery_address_snapshot?.changed_by_user === true}}",
+              "props": { "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400" },
+              "text": "$t:claim.detail.redelivery_changed_badge"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "if": "{{!!claim.data?.claim?.redelivery_address_snapshot}}",
+          "props": { "className": "space-y-0.5" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "P",
+              "props": { "className": "text-sm text-gray-900 dark:text-white" },
+              "text": "{{claim.data?.claim?.redelivery_address_snapshot?.recipient_name ?? ''}} / {{claim.data?.claim?.redelivery_address_snapshot?.phone ?? ''}}"
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": { "className": "text-sm text-gray-600 dark:text-gray-400" },
+              "text": "({{claim.data?.claim?.redelivery_address_snapshot?.zipcode ?? ''}}) {{claim.data?.claim?.redelivery_address_snapshot?.address1 ?? ''}} {{claim.data?.claim?.redelivery_address_snapshot?.address2 ?? ''}}"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex items-baseline justify-between gap-3" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-sm text-gray-500 dark:text-gray-400 flex-shrink-0" },
+              "text": "$t:claim.detail.tracking"
+            },
+            {
+              "type": "basic",
+              "name": "A",
+              "if": "{{!!claim.data?.claim?.redelivery_tracking_url}}",
+              "props": {
+                "href": "{{claim.data?.claim?.redelivery_tracking_url}}",
+                "target": "_blank",
+                "rel": "noopener noreferrer",
+                "className": "inline-flex items-center gap-1 text-sm text-indigo-600 dark:text-indigo-400 hover:underline break-all text-right"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "{{claim.data?.claim?.redelivery_carrier_name ?? ''}} {{claim.data?.claim?.redelivery_tracking_number ?? ''}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": { "name": "arrow-up-right-from-square", "className": "text-xs" }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{!claim.data?.claim?.redelivery_tracking_url}}",
+              "props": { "className": "text-sm text-gray-900 dark:text-white text-right break-all" },
+              "text": "{{claim.data?.claim?.redelivery_tracking_number ?? $t('claim.detail.tracking_pending')}}"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "if": "{{!!claim.data?.claim?.redelivered_at_formatted}}",
+          "props": { "className": "flex items-baseline justify-between gap-3" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
+              "text": "$t:claim.detail.redelivered_at"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-sm text-gray-900 dark:text-white" },
+              "text": "{{claim.data?.claim?.redelivered_at_formatted}}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

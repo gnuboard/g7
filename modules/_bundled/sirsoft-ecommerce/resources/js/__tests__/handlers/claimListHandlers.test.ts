@@ -27,6 +27,7 @@ import {
     openClaimWithdrawHandler,
     closeClaimWithdrawHandler,
     withdrawClaimHandler,
+    payClaimOutstandingHandler,
 } from '../../handlers/claimListHandlers';
 
 let mockLocalState: Record<string, any> = {};
@@ -52,6 +53,10 @@ const mockG7Core = {
 // 번호만 잇는다" 이다 — 핸들러가 스스로 주소를 조립하면 한쪽이 404 가 된다(2026-08-31 실측).
 const MEMBER_WITHDRAW_BASE = '/api/modules/sirsoft-ecommerce/user/claims';
 const GUEST_WITHDRAW_BASE = '/api/modules/sirsoft-ecommerce/guest/orders/20260823-0012/claims';
+
+// 추가결제 라우트도 회원/비회원의 모양이 다르다 (`php artisan route:list --path=claim-payments`).
+const MEMBER_PAY_BASE = '/api/modules/sirsoft-ecommerce/user/claim-payments';
+const GUEST_PAY_BASE = '/api/modules/sirsoft-ecommerce/guest/orders/20260823-0012/claim-payments';
 
 describe('claimListHandlers', () => {
     beforeEach(() => {
@@ -215,5 +220,135 @@ describe('claimListHandlers', () => {
         expect(mockG7Core.api.post.mock.calls[0][2]).toEqual({
             headers: { 'X-Guest-Order-Token': 'guest-token-1' },
         });
+    });
+
+    // ───────────────────────────────────────────────
+    // 미수납 추가결제 (승인 시점 결제)
+    // ───────────────────────────────────────────────
+
+    it('결제 — 셸이 준 앞부분에 결제번호만 잇는다 (핸들러가 주소를 조립하지 않는다)', async () => {
+        mockG7Core.api.post.mockResolvedValue({ success: true, data: { requires_pg_payment: false } });
+
+        await payClaimOutstandingHandler(
+            { handler: 'payClaimOutstanding', params: { payApiBase: MEMBER_PAY_BASE, paymentNumber: 'CP20260901-0001' } },
+            {} as any
+        );
+
+        expect(mockG7Core.api.post.mock.calls[0][0]).toBe(MEMBER_PAY_BASE + '/CP20260901-0001/pay');
+    });
+
+    it('결제 — 비회원 앞부분도 그대로 쓴다 (주문 스코프가 붙은 모양)', async () => {
+        mockG7Core.api.post.mockResolvedValue({ success: true, data: { requires_pg_payment: false } });
+
+        await payClaimOutstandingHandler(
+            { handler: 'payClaimOutstanding', params: { payApiBase: GUEST_PAY_BASE, paymentNumber: 'CP20260901-0001', isGuest: true } },
+            {} as any
+        );
+
+        expect(mockG7Core.api.post.mock.calls[0][0]).toBe(GUEST_PAY_BASE + '/CP20260901-0001/pay');
+    });
+
+    it('결제 — 결제 수단을 실어 보내지 않는다 (서버가 결제 대기 건에 확정해 둔 값을 쓴다)', async () => {
+        mockG7Core.api.post.mockResolvedValue({ success: true, data: { requires_pg_payment: false } });
+
+        await payClaimOutstandingHandler(
+            { handler: 'payClaimOutstanding', params: { payApiBase: MEMBER_PAY_BASE, paymentNumber: 'CP20260901-0001' } },
+            {} as any
+        );
+
+        expect(mockG7Core.api.post.mock.calls[0][1]).toEqual({});
+    });
+
+    it('결제 — 주소나 결제번호가 없으면 보내지 않는다', async () => {
+        await payClaimOutstandingHandler(
+            { handler: 'payClaimOutstanding', params: { payApiBase: '', paymentNumber: 'CP20260901-0001' } },
+            {} as any
+        );
+        await payClaimOutstandingHandler(
+            { handler: 'payClaimOutstanding', params: { payApiBase: MEMBER_PAY_BASE, paymentNumber: '' } },
+            {} as any
+        );
+
+        expect(mockG7Core.api.post).not.toHaveBeenCalled();
+    });
+
+    it('결제 — PG 가 필요하면 그 플러그인 핸들러로 파라미터를 넘긴다', async () => {
+        mockG7Core.api.post.mockResolvedValue({
+            success: true,
+            data: {
+                requires_pg_payment: true,
+                pg_payment_handler: 'sirsoft-tosspayments.requestPayment',
+                pg_payment_data: { order_number: 'CP20260901-0001', amount: 6000 },
+            },
+        });
+
+        await payClaimOutstandingHandler(
+            { handler: 'payClaimOutstanding', params: { payApiBase: MEMBER_PAY_BASE, paymentNumber: 'CP20260901-0001', refreshDataSourceId: 'claim' } },
+            {} as any
+        );
+
+        expect(mockG7Core.dispatch).toHaveBeenCalledWith({
+            handler: 'sirsoft-tosspayments.requestPayment',
+            params: { pgPaymentData: { order_number: 'CP20260901-0001', amount: 6000 } },
+        });
+        // 결제창이 뜨는 동안 버튼이 다시 살아나면 같은 건으로 두 번 진입할 수 있다.
+        expect(mockLocalState.isPayingClaim).toBe(true);
+        // 결제창으로 넘어갔으므로 상세를 다시 읽지 않는다 — 지금 읽으면 결제 전 값으로 덮인다.
+        expect(mockG7Core.dispatch).toHaveBeenCalledTimes(1);
+    });
+
+    it('결제 — 마일리지 즉시 결제는 그 자리에서 끝나고 상세를 다시 읽는다', async () => {
+        mockG7Core.api.post.mockResolvedValue({
+            success: true,
+            message: '결제가 완료되었습니다.',
+            data: { requires_pg_payment: false, pg_payment_handler: null },
+        });
+
+        await payClaimOutstandingHandler(
+            { handler: 'payClaimOutstanding', params: { payApiBase: MEMBER_PAY_BASE, paymentNumber: 'CP20260901-0001', refreshDataSourceId: 'claim' } },
+            {} as any
+        );
+
+        expect(mockLocalState.isPayingClaim).toBe(false);
+        expect(mockG7Core.toast.success).toHaveBeenCalledWith('결제가 완료되었습니다.');
+        expect(mockG7Core.dispatch).toHaveBeenCalledWith({
+            handler: 'refetchDataSource',
+            params: { dataSourceId: 'claim' },
+        });
+    });
+
+    it('결제 — 더블클릭으로 두 번 나가지 않는다', async () => {
+        mockLocalState = { isPayingClaim: true };
+
+        await payClaimOutstandingHandler(
+            { handler: 'payClaimOutstanding', params: { payApiBase: MEMBER_PAY_BASE, paymentNumber: 'CP20260901-0001' } },
+            {} as any
+        );
+
+        expect(mockG7Core.api.post).not.toHaveBeenCalled();
+    });
+
+    it('결제 — 4xx 는 화면에 남기고 5xx 는 토스트로 알린다 (철회와 같은 채널 규약)', async () => {
+        mockG7Core.api.post.mockRejectedValue({ response: { status: 422, data: { message: '결제할 수 있는 상태가 아닙니다.' } } });
+
+        await payClaimOutstandingHandler(
+            { handler: 'payClaimOutstanding', params: { payApiBase: MEMBER_PAY_BASE, paymentNumber: 'CP20260901-0001' } },
+            {} as any
+        );
+
+        expect(mockLocalState.claimPayError).toBe('결제할 수 있는 상태가 아닙니다.');
+        expect(mockG7Core.toast.error).not.toHaveBeenCalled();
+
+        vi.clearAllMocks();
+        mockLocalState = {};
+        mockG7Core.api.post.mockRejectedValue({ response: { status: 500, data: { message: 'Server Error' } } });
+
+        await payClaimOutstandingHandler(
+            { handler: 'payClaimOutstanding', params: { payApiBase: MEMBER_PAY_BASE, paymentNumber: 'CP20260901-0001' } },
+            {} as any
+        );
+
+        expect(mockLocalState.claimPayError).toBeNull();
+        expect(mockG7Core.toast.error).toHaveBeenCalledWith('Server Error');
     });
 });

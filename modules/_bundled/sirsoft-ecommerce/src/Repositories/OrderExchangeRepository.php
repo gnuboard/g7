@@ -164,7 +164,11 @@ class OrderExchangeRepository implements OrderExchangeRepositoryInterface
     public function paginateForUser(int $userId, array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
         $query = $this->model->newQuery()
-            ->with(['exchangeOptions.orderOption', 'images', 'order.shippingAddress', 'collectionCarrier', 'redeliveryCarrier'])
+            // 목록이 직렬화하는 것만 싣는다 (목록 응답의 하위 컬렉션 규율). 첨부(`images`)는
+            // 신청내역 목록이 그리지 않는다 — 사진은 상세의 사유 카드에서만 보이므로 행마다
+            // 전량 직렬화하면 한 페이지가 신청서 수 × 첨부 수만큼 부풀기만 한다.
+            // 주문 배송지(`order.shippingAddress`)도 이 목록의 어느 칸도 읽지 않는다.
+            ->with(['exchangeOptions.orderOption', 'order', 'collectionCarrier', 'redeliveryCarrier'])
             ->whereHas('order', fn ($q) => $q->where('user_id', $userId));
 
         if (! empty($filters['status'])) {

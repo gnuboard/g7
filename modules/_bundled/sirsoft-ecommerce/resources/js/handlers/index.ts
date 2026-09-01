@@ -255,6 +255,9 @@ import {
     estimateClaimHandler,
     submitClaimHandler,
     clearClaimApplyTimers,
+    claimApplyOrderMissingHandler,
+    initClaimEditHandler,
+    saveClaimEditHandler,
 } from './claimApplyHandlers';
 
 // 클레임 첨부 이미지 핸들러 (회원/비회원 공용)
@@ -263,11 +266,12 @@ import {
     removeClaimImageHandler,
 } from './claimImageHandlers';
 
-// 클레임 신청내역 핸들러 (회원/비회원 공용) — 철회
+// 클레임 신청내역 핸들러 (회원/비회원 공용) — 철회 · 미수납 추가결제
 import {
     openClaimWithdrawHandler,
     closeClaimWithdrawHandler,
     withdrawClaimHandler,
+    payClaimOutstandingHandler,
 } from './claimListHandlers';
 
 // 배송정책 폼 핸들러
@@ -552,6 +556,11 @@ export const handlerMap = {
     submitClaim: submitClaimHandler,
     clearClaimApplyTimers: clearClaimApplyTimers,
 
+    // ===== 클레임 신청서 수정 (회원/비회원 공용 — 작성 셸의 edit 모드) =====
+    claimApplyOrderMissing: claimApplyOrderMissingHandler,
+    initClaimEdit: initClaimEditHandler,
+    saveClaimEdit: saveClaimEditHandler,
+
     // ===== 클레임 첨부 이미지 (회원/비회원 공용) =====
     setClaimImageFiles: setClaimImageFilesHandler,
     removeClaimImage: removeClaimImageHandler,
@@ -560,6 +569,7 @@ export const handlerMap = {
     openClaimWithdraw: openClaimWithdrawHandler,
     closeClaimWithdraw: closeClaimWithdrawHandler,
     withdrawClaim: withdrawClaimHandler,
+    payClaimOutstanding: payClaimOutstandingHandler,
 
     // ===== URL 상태 복원 =====
     initCategoryFromUrl: initCategoryFromUrlHandler,

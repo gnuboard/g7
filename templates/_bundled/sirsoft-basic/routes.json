@@ -236,12 +236,39 @@
       }
     },
     {
-      "_comment": "클레임(교환/반품/취소·환불) 신청서 작성 — :type 은 exchange|return|refund 이며 그 밖의 값은 레이아웃 init_actions 가드가 404 로 세운다. 신청 내역 목록·상세·수정(edit) 라우트는 S13 이 추가한다.",
+      "_comment": "클레임(교환/반품/취소·환불) 신청서 작성 — :type 은 exchange|return|refund 이며 그 밖의 값은 레이아웃 init_actions 가드가 404 로 세운다.",
       "path": "/mypage/orders/:order_number/claims/apply/:type",
       "layout": "mypage/claims/apply",
       "auth_required": true,
       "meta": {
         "title": "$t:user.mypage.claim_apply_title"
+      }
+    },
+    {
+      "_comment": "신청 내역 목록 — 유형 서브탭은 ?type=exchange|return|refund|cancel 로 왕복한다(라우트 파라미터가 아니다). 마이페이지 탭 '취소·반품·교환' 의 목적지.",
+      "path": "/mypage/claims",
+      "layout": "mypage/claims",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:user.mypage.claims_title"
+      }
+    },
+    {
+      "_comment": "신청 내역 수정 — 작성 셸(mypage/claims/apply)을 edit 모드로 재사용한다(§5-1-6). 상세(:claim_number)보다 먼저 선언해 세그먼트 수가 같은 경로가 서로를 가리지 않게 한다. 유형은 라우트가 아니라 신청서 응답이 알려 주므로 :type 파라미터가 없다.",
+      "path": "/mypage/claims/:claim_number/edit",
+      "layout": "mypage/claims/apply",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:user.mypage.claim_edit_title"
+      }
+    },
+    {
+      "_comment": "신청 내역 상세 — 클레임 번호로 서버가 유형을 해석한다(ClaimNumberResolver). 유형별 접두사(EX/RT/RF/CN)는 운영자가 채번 설정에서 바꿀 수 있으므로 화면이 접두사로 유형을 판정하지 않는다.",
+      "path": "/mypage/claims/:claim_number",
+      "layout": "mypage/claims/show",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:user.mypage.claim_detail_title"
       }
     },
     {

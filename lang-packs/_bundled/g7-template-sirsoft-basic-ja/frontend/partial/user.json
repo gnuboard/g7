@@ -68,7 +68,12 @@
     "inquiries_title": "商品問い合わせ履歴",
     "mileage_title": "マイレージ",
     "claim_apply_title": "交換·返品·キャンセル申請",
-    "claim_apply_description": "注文商品の交換·返品·キャンセル·返金を申請します。"
+    "claim_apply_description": "注文商品の交換·返品·キャンセル·返金を申請します。",
+    "claims_title": "キャンセル·返品·交換申請履歴",
+    "claims_description": "交換·返品·返金·キャンセル申請履歴を確認し、編集または取り消します。",
+    "claim_detail_title": "申請詳細",
+    "claim_detail_description": "申請書の商品·配送·金額·理由を確認します。",
+    "claim_edit_title": "申請内容編集"
   },
   "identity": {
     "challenge": {
@@ -182,7 +187,13 @@
       "apply_summary": "申請概要",
       "change_product_modal": "交換商品変更",
       "apply_refund_account": "返金口座",
-      "withdraw_modal": "申請取消確認"
+      "withdraw_modal": "申請取消確認",
+      "list": "申請履歴一覧",
+      "detail_items": "申請商品",
+      "detail_shipping": "配送",
+      "detail_claim_info": "クレーム情報",
+      "detail_reason": "申請理由",
+      "image_viewer_modal": "添付写真を表示"
     }
   }
 }

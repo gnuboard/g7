@@ -4,6 +4,11 @@ const ROW_ID = 'nicepay-mp-receipt-row';
 const VBANK_BLOCK_ID = 'nicepay-mp-vbank-info';
 
 const ORDER_SHOW_RE = /^\/mypage\/orders\/([^/]+)$/;
+// 클레임 신청서 상세도 같은 결제 정보 카드를 재사용한다(§6-2). 그 주소에 실린 것은
+// 클레임 번호라 주문번호를 뽑을 수 없으므로, 이 경로에서는 화면이 이미 읽어 둔 주문을
+// 그대로 쓴다(주문번호 대조 생략). 이 갈래가 없으면 카드는 뜨는데 이 블록만 빠진 채
+// 열리고, 오류도 경고도 남지 않는다.
+const CLAIM_SHOW_RE = /^\/mypage\/claims\/([^/]+)$/;
 
 interface Payment {
     pg_provider?: string;
@@ -28,14 +33,16 @@ interface ReceiptInfo {
     payment_method_display_label?: string | null;
 }
 
-function getOrderFromState(orderNumber: string): OrderData | null {
+function getOrderFromState(orderNumber: string | null): OrderData | null {
     try {
         const g7 = (window as Record<string, unknown>).G7Core as Record<string, unknown> | undefined;
         const getState = g7?.getState as (() => Record<string, unknown>) | undefined;
         const ctx = getState?.()?.currentDataContext as Record<string, unknown> | undefined;
         const order = ctx?.order as { data?: OrderData } | undefined;
         const data = order?.data;
-        if (!data || data.order_number !== orderNumber) return null;
+        if (!data) return null;
+        if (orderNumber !== null && data.order_number !== orderNumber) return null;
+        if (orderNumber === null && !data.order_number) return null;
         return data;
     } catch {
         return null;
@@ -209,16 +216,20 @@ function buildVbankBlock(orderData: OrderData): HTMLElement {
     return wrap;
 }
 
-async function tryInject(orderNumber: string): Promise<boolean> {
+async function tryInject(orderNumber: string | null): Promise<boolean> {
     const orderData = getOrderFromState(orderNumber);
     if (!orderData) return false;
+
+    // 영수증 API 는 주문번호 기반이다. 클레임 신청서 상세는 주소가 클레임 번호라 주문번호를
+    // 상태에서 가져온다 — 주소 세그먼트를 그대로 쓰면 404 가 된다.
+    const resolvedOrderNumber = orderData.order_number as string;
 
     const { payment } = orderData;
     if (!payment || payment.pg_provider !== 'nicepayments') return true;
 
     const container = findPaymentContainer();
     if (!container) return false;
-    const receiptInfo = await fetchReceiptInfo(orderNumber);
+    const receiptInfo = await fetchReceiptInfo(resolvedOrderNumber);
     patchPaymentMethodDisplay(container, receiptInfo?.payment_method_display_label);
 
     // 가상계좌 입금 안내 — 결제수단이 vbank 이고 가상계좌 번호 발급된 경우 표시 (paid_at 무관: 입금 전후 모두 표시).
@@ -233,12 +244,12 @@ async function tryInject(orderNumber: string): Promise<boolean> {
 
     if (document.getElementById(ROW_ID)) return true;
 
-    container.appendChild(buildReceiptRow(orderNumber));
+    container.appendChild(buildReceiptRow(resolvedOrderNumber));
     console.info(`[${PLUGIN_ID}] receipt button injected on mypage order show`);
     return true;
 }
 
-function startPolling(orderNumber: string): void {
+function startPolling(orderNumber: string | null): void {
     let attempts = 0;
     const id = setInterval(() => {
         attempts++;
@@ -250,7 +261,14 @@ function startPolling(orderNumber: string): void {
 
 function onRouteChange(): void {
     const match = location.pathname.match(ORDER_SHOW_RE);
-    if (match) startPolling(match[1]);
+    if (match) {
+        startPolling(match[1]);
+
+        return;
+    }
+
+    // 클레임 신청서 상세 — 주소가 클레임 번호라 화면이 읽어 둔 주문을 그대로 쓴다.
+    if (CLAIM_SHOW_RE.test(location.pathname)) startPolling(null);
 }
 
 export function installMypageOrderShowInjector(): void {
