@@ -160,6 +160,7 @@ HookManager::addAction(
 - [ ] 레이아웃 조각 7개는 대상 화면(알림 설정·알림 템플릿 편집·발송 이력)의 자리가 사라지면 오류 없이 빠진다 — 코어·게시판·이커머스 업그레이드 후 노출 확인
 - [ ] 크리덴셜 설정을 추가한다면 `frontend_schema` 에 `expose: false` + `sensitive: true` 를 함께 선언
 - [ ] `dist/` 는 커밋되는 배포 산출물 — TS 를 고쳤으면 `--production` 재빌드 후 커밋 (`sourceMappingURL` 잔존 금지)
+- [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 를 확인 — 이 확장은 편집기 스펙이 없어 `bizppurioCategories` · `bizppurioProfiles` · `bizppurio_templates_list` · `report_url` · `templates_readiness` 가 편집기 캔버스에서 빈 화면으로 보인다. `data_source` 를 더 늘리면 그 자리도 같은 상태가 된다
 
 ## 6. 금지 패턴
 
@@ -216,6 +217,7 @@ npx playwright test plugins/_bundled/sirsoft-message_bizppurio/tests/Playwright/
 | [docs/data-model.md](docs/data-model.md) | 모델·소유 테이블·마이그레이션·Enum | ✅ |
 | [docs/settings.md](docs/settings.md) | 설정 스키마·권한·메뉴·라우트·의존 관계 | ✅ |
 | [docs/frontend.md](docs/frontend.md) | 레이아웃·액션 핸들러·전역 진입점·에셋 | ✅ |
+| [docs/editor-spec.md](docs/editor-spec.md) | 레이아웃 편집기에 선언한 팔레트·컨트롤·샘플 데이터 | ✅ |
 | [docs/api/](docs/api/README.md) | API 레퍼런스 (엔드포인트별 파라미터·응답 필드) | ✅ |
 | [CHANGELOG.md](CHANGELOG.md) | 변경 이력 | ✅ |
 <!-- @generated:docs-index END -->

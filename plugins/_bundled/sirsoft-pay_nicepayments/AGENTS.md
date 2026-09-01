@@ -117,6 +117,7 @@ API 와 동기화하는 역할만 합니다. 등록은 훅 기반입니다
 - [ ] 인증 실패(1단계)와 승인 실패(2단계)의 사용자 안내 방식(silent redirect vs `?error=`)을 구분 유지 — §1 "의도적으로 하지 않는 것" 참고
 - [ ] IP 화이트리스트(`VbankNotifyIpWhitelist`) 대상 라우트를 추가/변경하면 미들웨어 부착 대상(targets)도 함께 갱신
 - [ ] 새 간편결제 수단을 추가하면 그 결제수단의 계약 상태를 관리자 안내에도 반영
+- [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 의 동반 의무 표를 따라 `editor-spec.json` 을 함께 갱신 — 샘플이 없는 `data_source` 는 편집기 캔버스에서만 빈 화면이 되고 실제 화면은 정상이라 오류도 경고도 남지 않는다. 반영은 `php artisan plugin:update sirsoft-pay_nicepayments --force`
 
 ## 6. 금지 패턴
 
@@ -164,6 +165,7 @@ cd plugins/_bundled/sirsoft-pay_nicepayments && powershell -Command "npm run tes
 | [docs/data-model.md](docs/data-model.md) | 모델·소유 테이블·마이그레이션·Enum | ✅ |
 | [docs/settings.md](docs/settings.md) | 설정 스키마·권한·메뉴·라우트·의존 관계 | ✅ |
 | [docs/frontend.md](docs/frontend.md) | 레이아웃·액션 핸들러·전역 진입점·에셋 | ✅ |
+| [docs/editor-spec.md](docs/editor-spec.md) | 레이아웃 편집기에 선언한 팔레트·컨트롤·샘플 데이터 | ✅ |
 | [docs/api/](docs/api/README.md) | API 레퍼런스 (엔드포인트별 파라미터·응답 필드) | ✅ |
 | [CHANGELOG.md](CHANGELOG.md) | 변경 이력 | ✅ |
 <!-- @generated:docs-index END -->

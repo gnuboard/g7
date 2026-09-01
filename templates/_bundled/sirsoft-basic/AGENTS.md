@@ -134,6 +134,7 @@ API 까지만 소유하고, 그 API 를 소비해 실제로 그리는 것은 이
 - [ ] `extensions/sirsoft-daum_postcode/` 오버라이드는 원본이 바뀌어도 따라가지 않는다 — 그 플러그인 업그레이드 후 확인
 - [ ] TSX/TS 를 고쳤다면 `template:build --production` 후 `dist/` 동반 커밋 (`sourceMappingURL` 잔존 금지)
 - [ ] 프론트엔드 변경은 Playwright spec 동반 — 단위 테스트만으로는 화면 회귀가 드러나지 않는다
+- [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 의 동반 의무 표를 따라 `editor-spec/` 블록을 함께 갱신 — 컴포넌트는 팔레트·역량·중첩 **넷 다** 손대야 편집기에서 온전히 동작하고, 하나만 빠지면 절반만 동작한다. 반영은 `php artisan template:update sirsoft-basic --force` (편집기는 활성 디렉토리만 읽는다)
 
 ## 6. 금지 패턴
 
@@ -183,5 +184,6 @@ npx playwright test templates/_bundled/sirsoft-basic/tests/Playwright/specs/<대
 | [docs/components.md](docs/components.md) | 템플릿이 제공하는 컴포넌트 | ✅ |
 | [docs/layouts.md](docs/layouts.md) | 레이아웃 목록과 라우트 매핑 | ✅ |
 | [docs/handlers.md](docs/handlers.md) | 템플릿 전용 핸들러와 부트스트랩 | ✅ |
+| [docs/editor-spec.md](docs/editor-spec.md) | 레이아웃 편집기에 선언한 팔레트·컨트롤·샘플 데이터 | ✅ |
 | [CHANGELOG.md](CHANGELOG.md) | 변경 이력 | ✅ |
 <!-- @generated:docs-index END -->

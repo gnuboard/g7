@@ -172,6 +172,7 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 - [ ] 목록 응답에 하위 컬렉션(옵션·이미지)을 실을 때 화면이 실제로 그리는 것만 — Repository 의 `relations:` 와 Resource 의 `whenLoaded` 를 함께 본다
 - [ ] 결제수단·PG 관련 선언을 바꾸면 기설치본 `order_settings.json` 을 정정하는 업그레이드 스텝 동반 (자기 접두사만, 멱등)
 - [ ] 새 관리자 화면을 추가하면 그 화면의 권한(`getPermissions()`)·메뉴(`getAdminMenus()`)·라우트 이름이 서로 가리키는 대상이 일치하는지 확인
+- [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 의 동반 의무 표를 따라 `editor-spec.json` 을 함께 갱신 — 샘플이 없는 `data_source` 는 편집기 캔버스에서만 빈 화면이 되고 실제 화면은 정상이라 오류도 경고도 남지 않는다. 반영은 `php artisan module:update sirsoft-ecommerce --force`
 
 ## 6. 금지 패턴
 
@@ -227,6 +228,7 @@ npx playwright test modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/<�
 | [docs/data-model.md](docs/data-model.md) | 모델·소유 테이블·마이그레이션·Enum | ✅ |
 | [docs/settings.md](docs/settings.md) | 설정 스키마·권한·메뉴·라우트·의존 관계 | ✅ |
 | [docs/frontend.md](docs/frontend.md) | 레이아웃·액션 핸들러·전역 진입점·에셋 | ✅ |
+| [docs/editor-spec.md](docs/editor-spec.md) | 레이아웃 편집기에 선언한 팔레트·컨트롤·샘플 데이터 | ✅ |
 | [docs/api/](docs/api/README.md) | API 레퍼런스 (엔드포인트별 파라미터·응답 필드) | ✅ |
 | [CHANGELOG.md](CHANGELOG.md) | 변경 이력 | ✅ |
 <!-- @generated:docs-index END -->

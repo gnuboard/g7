@@ -125,6 +125,7 @@ Filter 구독에는 `'type' => 'filter'` 선언이 반드시 필요합니다. �
 - [ ] 구독 대상 모듈의 훅 이름이 바뀌면 이 플러그인이 조용히 아무 일도 하지 않게 된다
 - [ ] `docs/extension/sample-extensions.md` 의 계층 표와 어긋나지 않는지 확인 (파일을 추가·삭제했다면 그 표도 갱신)
 - [ ] 플러그인은 완전한 페이지 레이아웃을 등록할 수 없다 — 설정 화면과 `layout_extensions` 만
+- [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 를 확인 — 이 확장은 편집기 스펙이 없어도 되는 상태(공용 ID 만 사용)다. 이 확장만 쓰는 `data_source` 를 새로 붙이는 순간 `editor-spec.json` 신설이 필요해진다
 
 ## 6. 금지 패턴
 
@@ -173,5 +174,6 @@ php vendor/bin/phpunit plugins/_bundled/gnuboard7-hello_plugin/tests --filter='<
 | [docs/data-model.md](docs/data-model.md) | 모델·소유 테이블·마이그레이션·Enum | ✅ |
 | [docs/settings.md](docs/settings.md) | 설정 스키마·권한·메뉴·라우트·의존 관계 | ✅ |
 | [docs/frontend.md](docs/frontend.md) | 레이아웃·액션 핸들러·전역 진입점·에셋 | ✅ |
+| [docs/editor-spec.md](docs/editor-spec.md) | 레이아웃 편집기에 선언한 팔레트·컨트롤·샘플 데이터 | ✅ |
 | [CHANGELOG.md](CHANGELOG.md) | 변경 이력 | ✅ |
 <!-- @generated:docs-index END -->

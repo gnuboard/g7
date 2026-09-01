@@ -149,6 +149,7 @@
 - [ ] 코어 검색·SEO·ckeditor5 의 훅 이름이 바뀌면 이 모듈의 구독 5종이 조용히 끊기므로 함께 확인
 - [ ] 첨부 제한(`attachment.*`)은 `config/settings/defaults.json` 이 SSoT — 서비스에서 리터럴로 재클램프하지 않는다
 - [ ] 활동 로그 항목을 추가하면 코어 `lang/{ko,en}/activity_log.php` 의 action 라벨·description 과 번들 ja 팩까지 동반
+- [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 의 동반 의무 표를 따라 `editor-spec.json` 을 함께 갱신 — 샘플이 없는 `data_source` 는 편집기 캔버스에서만 빈 화면이 되고 실제 화면은 정상이라 오류도 경고도 남지 않는다. 반영은 `php artisan module:update sirsoft-page --force`
 
 ## 6. 금지 패턴
 
@@ -202,6 +203,7 @@ npx playwright test modules/_bundled/sirsoft-page/tests/Playwright/specs/<대상
 | [docs/data-model.md](docs/data-model.md) | 모델·소유 테이블·마이그레이션·Enum | ✅ |
 | [docs/settings.md](docs/settings.md) | 설정 스키마·권한·메뉴·라우트·의존 관계 | ✅ |
 | [docs/frontend.md](docs/frontend.md) | 레이아웃·액션 핸들러·전역 진입점·에셋 | ✅ |
+| [docs/editor-spec.md](docs/editor-spec.md) | 레이아웃 편집기에 선언한 팔레트·컨트롤·샘플 데이터 | ✅ |
 | [docs/api/](docs/api/README.md) | API 레퍼런스 (엔드포인트별 파라미터·응답 필드) | ✅ |
 | [CHANGELOG.md](CHANGELOG.md) | 변경 이력 | ✅ |
 <!-- @generated:docs-index END -->

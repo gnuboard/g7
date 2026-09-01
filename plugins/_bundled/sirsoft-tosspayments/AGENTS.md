@@ -126,6 +126,7 @@
 - [ ] 가상계좌 웹훅의 secret 대조(`webhook_secret_verify`)를 기본값 `true` 이외로 바꾸지 않는다 — 끄면 토스 노티 위조를 막을 수단이 사라진다
 - [ ] `order_sheet_mode` 관련 로직을 고칠 때 `RegisterPgProviderListener`(enabled_methods)와 `RegisterTossPaymentMethodsListener`(builtin 결제수단 주입) 양쪽을 함께 갱신 — 한쪽만 고치면 설정과 노출 목록이 어긋난다
 - [ ] `ValidateTossSettingsListener`에 새 범위 검증을 추가하면 `core.plugin_settings.before_save` 의 `sync: true`를 유지
+- [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 를 확인 — 이 확장은 편집기 스펙이 없어도 되는 상태(공용 ID 만 사용)다. 이 확장만 쓰는 `data_source` 를 새로 붙이는 순간 `editor-spec.json` 신설이 필요해진다
 
 ## 6. 금지 패턴
 
@@ -173,6 +174,7 @@ cd plugins/_bundled/sirsoft-tosspayments && powershell -Command "npm run test:ru
 | [docs/data-model.md](docs/data-model.md) | 모델·소유 테이블·마이그레이션·Enum | ✅ |
 | [docs/settings.md](docs/settings.md) | 설정 스키마·권한·메뉴·라우트·의존 관계 | ✅ |
 | [docs/frontend.md](docs/frontend.md) | 레이아웃·액션 핸들러·전역 진입점·에셋 | ✅ |
+| [docs/editor-spec.md](docs/editor-spec.md) | 레이아웃 편집기에 선언한 팔레트·컨트롤·샘플 데이터 | ✅ |
 | [docs/api/](docs/api/README.md) | API 레퍼런스 (엔드포인트별 파라미터·응답 필드) | ✅ |
 | [CHANGELOG.md](CHANGELOG.md) | 변경 이력 | ✅ |
 <!-- @generated:docs-index END -->

@@ -22,6 +22,11 @@ class ExtensionDocScaffolder
     public const GEN_PREFIX = '<!-- @generated:';
 
     /**
+     * @var string 미채움 축 라벨 — 마커를 지우고 서술을 쓰지 않은 빈 `@intent` 블록
+     */
+    public const EMPTY_INTENT_LABEL = '(빈 서술)';
+
+    /**
      * @var string 미채움 마커 — 설계 의도 / 소개 서술
      */
     public const TODO_INTENT = 'TODO: 의도';
@@ -164,6 +169,24 @@ class ExtensionDocScaffolder
             'blocks' => [
                 '템플릿 전용 핸들러' => 'handlers',
                 '부트스트랩' => 'frontend-entry',
+            ],
+        ],
+        // 편집기 스펙은 **세 유형 모두** 가진다. 스펙을 두지 않은 확장에도 문서를 두는 것은
+        // 미보유가 곧 정상일 수 있기 때문이다 — "이 확장은 왜 편집기 스펙이 없어도 되는가 /
+        // 언제 필요해지는가" 를 적을 자리가 없으면, 다음 사람이 그 부재를 누락으로 오해하거나
+        // 반대로 필요한 시점을 놓친다. 미보유 확장의 블록은 그 사실을 명시하고 사람 서술로
+        // 이어진다.
+        'docs/editor-spec.md' => [
+            'types' => ['module', 'plugin', 'template'],
+            // 절 ↔ 블록은 **키로** 묶는다. 순번 결합은 절을 하나 끼우는 순간 그 뒤 블록이
+            // 전부 엉뚱한 헤딩 밑으로 들어가는데, 헤딩 존재·블록 존재를 각각만 보는 게이트는
+            // 그 어긋남을 잡지 못한다. 필수 절 목록은 이 배열의 키에서 파생한다(중복 정의 없음).
+            'blocks' => [
+                '선언 요약' => 'editor-spec-summary',
+                '선언 블록' => 'editor-spec-blocks',
+                '컴포넌트 팔레트' => 'editor-spec-palette',
+                '샘플 데이터와 페이지 상태' => 'editor-spec-samples',
+                '수정 시 동반 의무' => 'editor-spec-obligations',
             ],
         ],
     ];
@@ -345,6 +368,35 @@ class ExtensionDocScaffolder
             self::TODO_USAGE,
             self::TODO_TROUBLESHOOTING,
         ];
+    }
+
+    /**
+     * 본문이 빈 사람 영역(`@intent`) 블록 수를 셉니다.
+     *
+     * 미채움은 `TODO:` 마커로만 드러나지 않습니다. 스캐폴딩 직후 마커를 **지우기만 하고**
+     * 서술을 쓰지 않으면 마커 검사는 0 을 돌려주고 골격·블록 검사도 전부 통과합니다 —
+     * 결과가 "다 채웠다" 와 구분되지 않아, 비어 있는 문서가 완비로 집계됩니다.
+     *
+     * 그래서 마커 잔량과 빈 본문을 **같은 축**(미채움)으로 함께 봅니다.
+     *
+     * @param  string  $content  문서 전문
+     * @return int 빈 `@intent` 블록 수
+     */
+    public static function emptyIntentBlocks(string $content): int
+    {
+        if (preg_match_all('/<!-- @intent START -->(.*?)<!-- @intent END -->/s', $content, $m) === false) {
+            return 0;
+        }
+
+        $empty = 0;
+
+        foreach ($m[1] as $body) {
+            if (trim($body) === '') {
+                $empty++;
+            }
+        }
+
+        return $empty;
     }
 
     /**
@@ -565,6 +617,11 @@ class ExtensionDocScaffolder
             'assets' => $this->renderAssets($ctx),
             'components' => $this->renderComponents($ctx),
             'layout-map' => $this->renderLayoutMap($ctx),
+            'editor-spec-summary' => $this->renderEditorSpecSummary($ctx),
+            'editor-spec-blocks' => $this->renderEditorSpecBlocks($ctx),
+            'editor-spec-palette' => $this->renderEditorSpecPalette($ctx),
+            'editor-spec-samples' => $this->renderEditorSpecSamples($ctx),
+            'editor-spec-obligations' => $this->renderEditorSpecObligations($ctx),
             default => $this->none('알 수 없는 블록 키: '.$key),
         };
     }
@@ -593,7 +650,7 @@ class ExtensionDocScaffolder
 
         $core = $ctx['deps']['coreVersion'] ?? null;
         if ($core !== null) {
-            $badges[] = $this->badge('G7', $core, '1F883D');
+            $badges[] = $this->badge('그누보드7', $core, '1F883D');
         }
 
         $license = $manifest['license'] ?? null;
@@ -639,7 +696,7 @@ class ExtensionDocScaffolder
     private function renderRequirements(array $ctx): string
     {
         $rows = [];
-        $rows[] = ['G7 코어', $this->code($ctx['deps']['coreVersion'] ?? '(제약 없음)')];
+        $rows[] = ['그누보드7 코어', $this->code($ctx['deps']['coreVersion'] ?? '(제약 없음)')];
         $rows[] = ['PHP', $this->code($this->composerPhp($ctx) ?? '^8.2')];
 
         foreach ($ctx['deps']['requires'] as $dep) {
@@ -826,6 +883,7 @@ class ExtensionDocScaffolder
             'docs/components.md' => '템플릿이 제공하는 컴포넌트',
             'docs/layouts.md' => '레이아웃 목록과 라우트 매핑',
             'docs/handlers.md' => '템플릿 전용 핸들러와 부트스트랩',
+            'docs/editor-spec.md' => '레이아웃 편집기에 선언한 팔레트·컨트롤·샘플 데이터',
             default => '-',
         };
     }
@@ -2252,7 +2310,7 @@ class ExtensionDocScaffolder
         $lines = [];
         $lines[] = '# '.$name;
         $lines[] = '';
-        $lines[] = "**G7 {$label} · {$record['id']}**";
+        $lines[] = "**그누보드7 {$label} · {$record['id']}**";
         $lines[] = $this->escape($description);
         $lines[] = '';
         $lines[] = self::wrap('badges', $this->renderBlock('badges', $ctx));
@@ -2455,8 +2513,282 @@ class ExtensionDocScaffolder
             'docs/components.md' => '컴포넌트',
             'docs/layouts.md' => '레이아웃',
             'docs/handlers.md' => '핸들러',
+            'docs/editor-spec.md' => '레이아웃 편집기 스펙',
             default => basename($doc, '.md'),
         };
+    }
+
+    // -----------------------------------------------------------------------
+    // 편집기 스펙 블록 렌더러
+    // -----------------------------------------------------------------------
+
+    /**
+     * 편집기 스펙 보유 여부와 형태를 렌더합니다.
+     *
+     * 미보유는 결함이 아니라 정상일 수 있으므로 "없음" 을 사실로 적고 사람 서술에 넘깁니다.
+     * 다만 manifest 가 있는데 읽지 못한 경우(malformed)는 구분해 적습니다 — 뭉뚱그리면
+     * 깨진 JSON 이 "이 확장은 편집기 스펙을 두지 않는다" 로 굳습니다.
+     *
+     * @param  array<string, mixed>  $ctx  수집 컨텍스트
+     * @return string 마크다운
+     */
+    private function renderEditorSpecSummary(array $ctx): string
+    {
+        $spec = $ctx['editorSpec'] ?? null;
+
+        if (! is_array($spec)) {
+            return $this->none('편집기 스펙을 수집하지 못했습니다.');
+        }
+
+        if (($spec['malformed'] ?? false) === true) {
+            return $this->none('`editor-spec.json` 이 존재하지만 JSON 으로 읽지 못했습니다 — 편집기가 이 확장의 선언을 무시하고 있습니다.');
+        }
+
+        if (($spec['present'] ?? false) !== true) {
+            return $this->none('이 확장은 편집기 스펙(`editor-spec.json`)을 두지 않습니다. 편집기는 코어 기본 팔레트와 활성 템플릿의 스펙만으로 이 확장의 화면을 다룹니다.');
+        }
+
+        $rows = [];
+        $rows[] = ['manifest', $this->code((string) $spec['manifest'])];
+        $rows[] = ['형태', $spec['split'] === true
+            ? '분할 — manifest + `editor-spec/*.json` '.count($spec['includes']).'개 블록'
+            : '단일 파일 (인라인)'];
+        $rows[] = ['스펙 버전', $this->code((string) ($spec['version'] ?? ''))];
+        $rows[] = ['스타일 시스템', $this->code((string) ($spec['styleSystem'] ?? ''))];
+        $rows[] = ['다크 모드 전략', $this->code((string) ($spec['darkMode'] ?? ''))];
+
+        $table = $this->table(['항목', '값'], $rows);
+
+        $description = $spec['description'] ?? null;
+
+        if (is_string($description) && $description !== '') {
+            return $table."\n\n> ".$this->escape($description);
+        }
+
+        return $table;
+    }
+
+    /**
+     * 스펙이 선언한 블록별 항목 수를 렌더합니다.
+     *
+     * @param  array<string, mixed>  $ctx  수집 컨텍스트
+     * @return string 마크다운
+     */
+    private function renderEditorSpecBlocks(array $ctx): string
+    {
+        $spec = $ctx['editorSpec'] ?? null;
+
+        if (! is_array($spec) || ($spec['present'] ?? false) !== true) {
+            return $this->none('선언된 편집기 스펙 블록이 없습니다.');
+        }
+
+        $rows = [];
+
+        foreach ($spec['blocks'] as $block) {
+            $rows[] = [
+                $this->code($block['key']),
+                $this->editorSpecBlockRole($block['key']),
+                $block['count'] === null ? '-' : (string) $block['count'],
+                $this->code($block['source']),
+            ];
+        }
+
+        return $this->table(['블록', '역할', '항목 수', '출처'], $rows);
+    }
+
+    /**
+     * 편집기 스펙 블록의 역할을 한 줄로 설명합니다.
+     *
+     * 블록 키는 코어가 정한 어휘이므로 확장마다 다시 설명할 필요가 없고, 반대로 설명이
+     * 없으면 확장 문서만 읽는 쪽이 키 이름만으로 의미를 추측하게 됩니다.
+     *
+     * @param  string  $key  블록 키
+     * @return string 역할 설명
+     */
+    private function editorSpecBlockRole(string $key): string
+    {
+        return match ($key) {
+            'componentPalette', 'componentPalette.entries' => '편집기 "요소 추가" 팔레트에 나타나는 항목',
+            'componentPalette.groups' => '팔레트 좌측 목록의 묶음',
+            'nesting.draggable' => '캔버스에서 끌어 옮길 수 있는 컴포넌트',
+            'nesting.containers' => '자식을 담을 수 있는 컴포넌트와 그 허용 규칙',
+            'sampleData.byDataSourceId' => '레이아웃 `data_sources` ID 로 붙는 프리뷰 응답',
+            'sampleData.byEndpointPattern' => '엔드포인트 패턴으로 붙는 프리뷰 응답',
+            'states.groups' => '상태 변종을 적용할 범위(라우트·베이스 레이아웃)',
+            'conditionRecipes.operators' => '조건 표현식에 쓸 수 있는 연산자',
+            'controls' => '재사용 스타일 컨트롤 정의',
+            'componentCapabilities' => '컴포넌트별 편집 역량(어떤 속성을 편집기가 다루는가)',
+            'nesting' => '어떤 컴포넌트 안에 무엇을 넣을 수 있는가',
+            'sampleData' => '캔버스 프리뷰용 샘플 응답',
+            'sampleGlobal' => '`_global.*` 프리뷰 baseline 시드',
+            'states' => '페이지 상태 변종(빈 목록·오류 등)',
+            'stateLabels' => '상태값 친화 명칭 카탈로그',
+            'actionRecipes' => '친화 명칭 → 액션 JSON 레시피',
+            'conditionRecipes' => '친화 조건 → `if` 표현식 레시피',
+            'computedRecipes' => '계산값 레시피',
+            'errorRecipes' => '오류 처리 레시피',
+            'loadingComponents' => '로딩 표시 컴포넌트 후보',
+            'actionChipCandidates' => '동작 데이터 칩 컨텍스트 후보',
+            default => '-',
+        };
+    }
+
+    /**
+     * ID 목록을 표 한 칸에 담을 수 있게 줄입니다.
+     *
+     * 70개를 한 줄로 늘어놓으면 표가 읽히지 않고, 그렇다고 개수만 남기면 어떤 ID 인지
+     * 확인할 길이 사라집니다. 앞쪽을 보이고 나머지는 수로 줄입니다.
+     *
+     * @param  array<int, string>  $ids  ID 목록
+     * @param  int  $limit  나열할 최대 개수
+     * @return string 마크다운 셀 내용
+     */
+    private function idListCell(array $ids, int $limit = 12): string
+    {
+        if ($ids === []) {
+            return '-';
+        }
+
+        $shown = array_slice($ids, 0, $limit);
+        $cell = implode(' · ', array_map(fn (string $id): string => $this->code($id), $shown));
+
+        $rest = count($ids) - count($shown);
+
+        return $rest > 0 ? $cell." … 외 {$rest}개" : $cell;
+    }
+
+    /**
+     * 팔레트 그룹별 항목 수를 렌더합니다.
+     *
+     * @param  array<string, mixed>  $ctx  수집 컨텍스트
+     * @return string 마크다운
+     */
+    private function renderEditorSpecPalette(array $ctx): string
+    {
+        $spec = $ctx['editorSpec'] ?? null;
+
+        if (! is_array($spec) || ($spec['present'] ?? false) !== true) {
+            return $this->none('이 확장은 편집기 팔레트에 항목을 추가하지 않습니다.');
+        }
+
+        $rows = [];
+
+        foreach ($spec['paletteGroups'] as $group) {
+            $rows[] = [
+                $this->escape($group['group']),
+                $this->code($group['kind']),
+                (string) $group['count'],
+            ];
+        }
+
+        if ($rows === []) {
+            return $this->none('이 확장은 `componentPalette` 를 선언하지 않습니다 — 편집기 팔레트에 추가되는 항목이 없습니다.');
+        }
+
+        return $this->table(['그룹', '종류', '컴포넌트 수'], $rows);
+    }
+
+    /**
+     * 샘플 데이터 ID 와 페이지 상태 변종을 렌더합니다.
+     *
+     * 이 두 축은 편집기 캔버스가 실제 API 없이 화면을 그릴 때 쓰는 값입니다. 레이아웃의
+     * `data_sources` ID 와 어긋나면 편집기 프리뷰만 빈 화면이 되는데, 실제 화면은 정상이라
+     * 어긋남이 드러나지 않습니다.
+     *
+     * @param  array<string, mixed>  $ctx  수집 컨텍스트
+     * @return string 마크다운
+     */
+    private function renderEditorSpecSamples(array $ctx): string
+    {
+        $spec = $ctx['editorSpec'] ?? null;
+
+        if (! is_array($spec)) {
+            return $this->none('편집기 스펙을 수집하지 못했습니다.');
+        }
+
+        // 스펙이 없어도 **미커버 목록은 낸다.** 스펙이 없는 확장이야말로 프리뷰가 비는
+        // 자리를 가질 가능성이 크고, 여기서 조기 반환하면 정작 필요한 확장에서 그 목록이
+        // 통째로 사라진다 — 그런데 결과는 "빈 자리가 없다" 와 구분되지 않는다.
+        $sections = [];
+
+        if (($spec['present'] ?? false) === true) {
+            // 세 자리를 한 행으로 합치지 않는다 — `data_sources` ID 로 붙는 샘플과 엔드포인트
+            // 패턴으로 붙는 샘플은 어긋났을 때 고칠 자리가 다르고, 페이지 상태는 ID 가 아니라
+            // 적용 범위(라우트/베이스 레이아웃)로 식별된다.
+            $rows = [];
+
+            foreach ([
+                ['sampleData.byDataSourceId', $spec['sampleDataIds']],
+                ['sampleData.byEndpointPattern', $spec['sampleEndpointPatterns']],
+                ['states.groups', $spec['stateScopes']],
+            ] as [$label, $ids]) {
+                $declared = ($spec['declaredPaths'][$label] ?? false) === true;
+
+                $rows[] = [
+                    $this->code($label),
+                    $this->editorSpecBlockRole($label),
+                    $declared ? (string) count($ids) : '미선언',
+                    $declared ? $this->idListCell($ids) : '-',
+                ];
+            }
+
+            $sections[] = $this->table(['자리', '역할', '개수', 'ID'], $rows);
+        } else {
+            $sections[] = $this->none('이 확장은 편집기 스펙을 두지 않아 선언된 샘플 데이터·페이지 상태가 없습니다.');
+        }
+
+        $uncovered = $spec['uncovered'] ?? [];
+
+        if ($uncovered === []) {
+            $sections[] = $this->none('이 확장 레이아웃의 `data_source` 는 전부 프리뷰 샘플이 붙습니다 (이 확장 또는 번들 템플릿 스펙이 커버).');
+        } else {
+            $sections[] = '**프리뷰 샘플이 없는 `data_source` '.count($uncovered).'개** — 편집기 캔버스에서 이 자리만 빈 화면이 됩니다. 실제 화면은 정상이라 오류도 경고도 남지 않습니다.'
+                ."\n\n".$this->idListCell($uncovered, 20);
+        }
+
+        return implode("\n\n", $sections);
+    }
+
+    /**
+     * 편집기 스펙을 함께 고쳐야 하는 변경과 그 절차를 렌더합니다.
+     *
+     * 이 표가 없으면 확장에 화면 요소를 추가해도 편집기 팔레트에 나타나지 않는 상태가
+     * 오류도 경고도 없이 남습니다 — 편집기는 선언되지 않은 컴포넌트를 "없는 것" 으로
+     * 다룰 뿐 실패를 보고하지 않습니다.
+     *
+     * @param  array<string, mixed>  $ctx  수집 컨텍스트
+     * @return string 마크다운
+     */
+    private function renderEditorSpecObligations(array $ctx): string
+    {
+        $record = $ctx['record'];
+        $spec = $ctx['editorSpec'] ?? null;
+        $hasSpec = is_array($spec) && ($spec['present'] ?? false) === true;
+
+        $update = "php artisan {$record['type']}:update {$record['id']} --force";
+
+        $rows = [
+            ['컴포넌트를 새로 만들었다', '`componentPalette` 에 항목 추가 · `componentCapabilities` 에 편집 역량 선언 · `nesting` 에 담길 자리 규정'],
+            ['레이아웃에 `data_sources` 를 추가했다', '`sampleData` 에 같은 ID 로 프리뷰 응답 추가 (없으면 편집기 캔버스만 빈 화면)'],
+            ['`_global.*` 을 새로 읽는다', '`sampleGlobal` 에 baseline 값 추가'],
+            ['빈 목록·오류 같은 화면 변종을 추가했다', '`states` 에 변종 추가 · `stateLabels` 에 친화 명칭'],
+            ['새 액션·조건 패턴을 도입했다', '`actionRecipes` / `conditionRecipes` 에 친화 명칭 등록'],
+        ];
+
+        $table = $this->table(['이런 변경을 했다면', '편집기 스펙에서 함께 할 일'], $rows);
+
+        if (! $hasSpec) {
+            // 스펙이 없는 확장에도 이 표를 남긴다. 지금은 해당 없음이지만, 위 사건 중 하나가
+            // 일어나는 순간 스펙을 **신설**해야 한다는 것이 이 문서가 전할 내용이다.
+            return $this->none('이 확장은 아직 편집기 스펙을 두지 않습니다. 아래 변경이 생기면 `editor-spec.json` 을 신설합니다.')
+                ."\n\n".$table;
+        }
+
+        // `_bundled` 편집분은 update 커맨드로 활성 디렉토리에 반영된 뒤에만 편집기에 보인다
+        // (`EditorSpecAssembler` 는 활성 디렉토리만 합본한다 — `_bundled` 폴백이 없다).
+        return $table."\n\n"
+            .'편집기 스펙은 JSON 이므로 빌드가 필요 없습니다. 다만 편집기 서빙은 **활성 디렉토리만** 읽으므로(`_bundled` 폴백 없음) 편집 후 반드시 반영합니다:'
+            ."\n\n```bash\n".$update."\n```";
     }
 
     // -----------------------------------------------------------------------

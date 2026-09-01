@@ -2,14 +2,9 @@
 
 namespace App\Console\Commands\Extension;
 
-use App\Support\ExtensionDoc\DataModelCollector;
-use App\Support\ExtensionDoc\DeclarativeSurfaceCollector;
-use App\Support\ExtensionDoc\DependencyGraphCollector;
+use App\Support\ExtensionDoc\ExtensionDocContext;
 use App\Support\ExtensionDoc\ExtensionDocScaffolder;
 use App\Support\ExtensionDoc\ExtensionInventory;
-use App\Support\ExtensionDoc\FrontendInventory;
-use App\Support\ExtensionDoc\HookInventory;
-use App\Support\ExtensionDoc\TestPathCollector;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use InvalidArgumentException;
@@ -49,23 +44,13 @@ class ExtDocgenCommand extends Command
      * 커맨드를 실행합니다.
      *
      * @param  ExtensionInventory  $inventory  번들 확장 인벤토리
-     * @param  DeclarativeSurfaceCollector  $surface  선언형 표면 수집기
-     * @param  HookInventory  $hooks  훅 인벤토리
-     * @param  DataModelCollector  $data  데이터 모델 수집기
-     * @param  FrontendInventory  $frontend  프론트 인벤토리
-     * @param  TestPathCollector  $tests  테스트 경로 수집기
-     * @param  DependencyGraphCollector  $deps  의존 관계 수집기
+     * @param  ExtensionDocContext  $context  수집 컨텍스트 조립기
      * @param  ExtensionDocScaffolder  $scaffolder  문서 스캐폴더
      * @return int 종료 코드
      */
     public function handle(
         ExtensionInventory $inventory,
-        DeclarativeSurfaceCollector $surface,
-        HookInventory $hooks,
-        DataModelCollector $data,
-        FrontendInventory $frontend,
-        TestPathCollector $tests,
-        DependencyGraphCollector $deps,
+        ExtensionDocContext $context,
         ExtensionDocScaffolder $scaffolder
     ): int {
         $scope = (string) $this->option('scope');
@@ -134,19 +119,7 @@ class ExtDocgenCommand extends Command
         $results = [];
 
         foreach ($records as $record) {
-            // 선언형 표면을 먼저 모은다 — 발행 훅의 1차 출처가 그 안의 `getHooks()` 선언이다.
-            $collectedSurface = $surface->collect($record);
-            $declaredHooks = $collectedSurface['values']['getHooks'] ?? [];
-
-            $ctx = [
-                'record' => $record,
-                'surface' => $collectedSurface,
-                'hooks' => $hooks->collect($record, is_array($declaredHooks) ? $declaredHooks : []),
-                'data' => $data->collect($record),
-                'frontend' => $frontend->collect($record),
-                'tests' => $tests->collect($record),
-                'deps' => $deps->collect($record),
-            ];
+            $ctx = $context->build($record);
 
             $results[] = $this->processExtension($ctx, $scaffolder);
         }
@@ -227,6 +200,18 @@ class ExtDocgenCommand extends Command
                 if ($count > 0) {
                     $result['unfilled'][] = ['doc' => $doc, 'marker' => $marker, 'count' => $count];
                 }
+            }
+
+            // 마커를 지우기만 하고 서술을 안 쓴 자리도 미채움이다. 이 축이 없으면
+            // "TODO 를 삭제한 문서" 가 "채운 문서" 와 같은 모양으로 통과한다.
+            $emptyIntents = ExtensionDocScaffolder::emptyIntentBlocks($content);
+
+            if ($emptyIntents > 0) {
+                $result['unfilled'][] = [
+                    'doc' => $doc,
+                    'marker' => ExtensionDocScaffolder::EMPTY_INTENT_LABEL,
+                    'count' => $emptyIntents,
+                ];
             }
 
             $docBodies = [];

@@ -1,13 +1,13 @@
 # NicePayments
 
-**G7 플러그인 · sirsoft-pay_nicepayments**
+**그누보드7 플러그인 · sirsoft-pay_nicepayments**
 나이스페이먼츠 결제를 sirsoft-ecommerce 에 연결하는 결제 플러그인
 
 <!-- @generated:badges START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 <p align="center">
   <img src="https://img.shields.io/badge/version-1.0.3-0066FF?style=flat-square" alt="version 1.0.3">
   <img src="https://img.shields.io/badge/type-%ED%94%8C%EB%9F%AC%EA%B7%B8%EC%9D%B8-555555?style=flat-square" alt="type 플러그인">
-  <img src="https://img.shields.io/badge/G7-%3E%3D7.0.10-1F883D?style=flat-square" alt="G7 &gt;=7.0.10">
+  <img src="https://img.shields.io/badge/%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7-%3E%3D7.0.10-1F883D?style=flat-square" alt="그누보드7 &gt;=7.0.10">
   <img src="https://img.shields.io/badge/license-MIT-8250DF?style=flat-square" alt="license MIT">
   <img src="https://img.shields.io/badge/requires-sirsoft--ecommerce-BF8700?style=flat-square" alt="requires sirsoft-ecommerce">
 </p>
@@ -22,7 +22,7 @@
 ## 소개
 
 <!-- @intent START -->
-나이스페이먼츠(NicePayments) 표준결제를 G7 `sirsoft-ecommerce` 모듈에 연결하는 결제
+나이스페이먼츠(NicePayments) 표준결제를 그누보드7 `sirsoft-ecommerce` 모듈에 연결하는 결제
 플러그인입니다. 결제 승인은 **인증→승인 2단계**로 나뉩니다 — 결제창(`goPay` iframe
 팝업/모바일 폼)이 먼저 인증 결과를 서버로 보내고, 서버가 그 결과를 받아 별도 승인 API를
 호출해야 최종 완료됩니다.
@@ -76,7 +76,7 @@ URL로 결과를 POST 하면 결제 완료 처리됩니다.
 <!-- @generated:requirements START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 항목 | 값 |
 |---|---|
-| G7 코어 | `>=7.0.10` |
+| 그누보드7 코어 | `>=7.0.10` |
 | PHP | `^8.2` |
 | 의존 모듈 | `sirsoft-ecommerce` `>=1.1.0` |
 <!-- @generated:requirements END -->
@@ -212,6 +212,7 @@ https://your-domain.com/plugins/sirsoft-pay_nicepayments/payment/vbank-notify
 | [docs/data-model.md](docs/data-model.md) | 모델·소유 테이블·마이그레이션·Enum | ✅ |
 | [docs/settings.md](docs/settings.md) | 설정 스키마·권한·메뉴·라우트·의존 관계 | ✅ |
 | [docs/frontend.md](docs/frontend.md) | 레이아웃·액션 핸들러·전역 진입점·에셋 | ✅ |
+| [docs/editor-spec.md](docs/editor-spec.md) | 레이아웃 편집기에 선언한 팔레트·컨트롤·샘플 데이터 | ✅ |
 | [docs/api/](docs/api/README.md) | API 레퍼런스 (엔드포인트별 파라미터·응답 필드) | ✅ |
 | [CHANGELOG.md](CHANGELOG.md) | 변경 이력 | ✅ |
 <!-- @generated:docs-index END -->

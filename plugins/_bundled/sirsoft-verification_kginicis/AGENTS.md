@@ -134,6 +134,7 @@ Cache 에 stash(`inicis:pending_record:{key}`) → 회원가입 완료 → `core
 - [ ] PII 컬럼(이름·생년월일·성별·CI/DI 등)을 다루는 코드 변경 시 GDPR 삭제/탈퇴 정리 리스너(`CleanInicisRecordOnUserDelete`/`CleanInicisRecordOnUserWithdraw`)가 여전히 그 컬럼을 정리하는지 확인
 - [ ] 팝업 기반 인증 흐름(`startAuth`)을 고칠 때 `window.open`을 사용자 클릭 컨텍스트 밖으로 옮기지 않는다 — Chrome popup blocker 회피가 깨진다
 - [ ] `duplicate_field`/`duplicate_block_enabled` 로직을 고치면 `InicisDuplicateField` Enum 과 `AssertNoDuplicateInicisIdentity`를 함께 갱신
+- [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 의 동반 의무 표를 따라 `editor-spec.json` 을 함께 갱신 — 샘플이 없는 `data_source` 는 편집기 캔버스에서만 빈 화면이 되고 실제 화면은 정상이라 오류도 경고도 남지 않는다. 반영은 `php artisan plugin:update sirsoft-verification_kginicis --force`
 
 ## 6. 금지 패턴
 
@@ -182,6 +183,7 @@ cd plugins/_bundled/sirsoft-verification_kginicis && powershell -Command "npm ru
 | [docs/data-model.md](docs/data-model.md) | 모델·소유 테이블·마이그레이션·Enum | ✅ |
 | [docs/settings.md](docs/settings.md) | 설정 스키마·권한·메뉴·라우트·의존 관계 | ✅ |
 | [docs/frontend.md](docs/frontend.md) | 레이아웃·액션 핸들러·전역 진입점·에셋 | ✅ |
+| [docs/editor-spec.md](docs/editor-spec.md) | 레이아웃 편집기에 선언한 팔레트·컨트롤·샘플 데이터 | ✅ |
 | [docs/api/](docs/api/README.md) | API 레퍼런스 (엔드포인트별 파라미터·응답 필드) | ✅ |
 | [CHANGELOG.md](CHANGELOG.md) | 변경 이력 | ✅ |
 <!-- @generated:docs-index END -->

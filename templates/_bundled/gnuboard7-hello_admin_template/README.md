@@ -1,13 +1,13 @@
 # Hello Admin Template
 
-**G7 템플릿 · gnuboard7-hello_admin_template**
+**그누보드7 템플릿 · gnuboard7-hello_admin_template**
 그누보드7 학습용 최소 Admin 템플릿 스켈레톤
 
 <!-- @generated:badges START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 <p align="center">
   <img src="https://img.shields.io/badge/version-0.1.1-0066FF?style=flat-square" alt="version 0.1.1">
   <img src="https://img.shields.io/badge/type-%ED%85%9C%ED%94%8C%EB%A6%BF-555555?style=flat-square" alt="type 템플릿">
-  <img src="https://img.shields.io/badge/G7-%3E%3D7.0.10-1F883D?style=flat-square" alt="G7 &gt;=7.0.10">
+  <img src="https://img.shields.io/badge/%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7-%3E%3D7.0.10-1F883D?style=flat-square" alt="그누보드7 &gt;=7.0.10">
   <img src="https://img.shields.io/badge/license-MIT-8250DF?style=flat-square" alt="license MIT">
 </p>
 <!-- @generated:badges END -->
@@ -72,7 +72,7 @@ flowchart TD
 <!-- @generated:requirements START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 항목 | 값 |
 |---|---|
-| G7 코어 | `>=7.0.10` |
+| 그누보드7 코어 | `>=7.0.10` |
 | PHP | `^8.2` |
 <!-- @generated:requirements END -->
 
@@ -156,6 +156,7 @@ php artisan template:activate gnuboard7-hello_admin_template
 | [docs/components.md](docs/components.md) | 템플릿이 제공하는 컴포넌트 | ✅ |
 | [docs/layouts.md](docs/layouts.md) | 레이아웃 목록과 라우트 매핑 | ✅ |
 | [docs/handlers.md](docs/handlers.md) | 템플릿 전용 핸들러와 부트스트랩 | ✅ |
+| [docs/editor-spec.md](docs/editor-spec.md) | 레이아웃 편집기에 선언한 팔레트·컨트롤·샘플 데이터 | ✅ |
 | [CHANGELOG.md](CHANGELOG.md) | 변경 이력 | ✅ |
 <!-- @generated:docs-index END -->
 

@@ -15,6 +15,7 @@
 | [components.md](components.md) | 템플릿이 제공하는 컴포넌트 |
 | [layouts.md](layouts.md) | 레이아웃 목록과 라우트 매핑 |
 | [handlers.md](handlers.md) | 템플릿 전용 핸들러와 부트스트랩 |
+| [editor-spec.md](editor-spec.md) | 레이아웃 편집기에 선언한 팔레트·컨트롤·샘플 데이터 |
 | [../AGENTS.md](../AGENTS.md) | 에이전트·확장개발자 진입점 |
 | [../README.md](../README.md) | 사람(도입검토자·운영자) 진입점 |
 <!-- @generated:doc-toc END -->

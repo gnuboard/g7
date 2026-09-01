@@ -116,6 +116,7 @@ SSoT 는 코어 `config/template.php` 의 `required_admin_components` 입니다.
 - [ ] TSX 를 고쳤다면 `template:build --production` 후 `dist/` 동반 커밋 (`sourceMappingURL` 잔존 금지)
 - [ ] `docs/extension/sample-extensions.md` 의 계층 표와 어긋나지 않는지 확인
 - [ ] 레이아웃 렌더링 테스트(`__tests__/layouts/*.test.tsx`)는 이 템플릿 디렉토리에 둔다 — 코어 디렉토리에 두지 않는다
+- [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 를 확인 — 이 확장은 편집기 스펙이 없어도 되는 상태(공용 ID 만 사용)다. 이 확장만 쓰는 `data_source` 를 새로 붙이는 순간 `editor-spec.json` 신설이 필요해진다
 
 ## 6. 금지 패턴
 
@@ -161,5 +162,6 @@ cd templates/_bundled/gnuboard7-hello_admin_template && powershell -Command "npm
 | [docs/components.md](docs/components.md) | 템플릿이 제공하는 컴포넌트 | ✅ |
 | [docs/layouts.md](docs/layouts.md) | 레이아웃 목록과 라우트 매핑 | ✅ |
 | [docs/handlers.md](docs/handlers.md) | 템플릿 전용 핸들러와 부트스트랩 | ✅ |
+| [docs/editor-spec.md](docs/editor-spec.md) | 레이아웃 편집기에 선언한 팔레트·컨트롤·샘플 데이터 | ✅ |
 | [CHANGELOG.md](CHANGELOG.md) | 변경 이력 | ✅ |
 <!-- @generated:docs-index END -->

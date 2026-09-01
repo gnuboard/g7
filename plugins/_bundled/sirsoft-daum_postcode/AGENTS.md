@@ -126,6 +126,7 @@ Daum SDK 를 로드 → 컨테이너 `onMount` 에서 `sirsoft-daum_postcode.set
 - [ ] `dist/` 는 커밋되는 배포 산출물 — TS 를 고쳤으면 `--production` 재빌드 후 커밋 (`sourceMappingURL` 잔존 금지)
 - [ ] 조각이 붙는 확장점(`address_search_slot`)을 여는 화면이 그 자리를 없애면 오류 없이 사라진다 — 대상 확장 업그레이드 후 노출 확인
 - [ ] 프론트엔드를 고쳤다면 Playwright spec 을 함께 갱신·실행한다 (단위 테스트만으로는 장착 회귀가 드러나지 않는다)
+- [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 를 확인 — 이 확장은 편집기 스펙이 없어도 되는 상태(공용 ID 만 사용)다. 이 확장만 쓰는 `data_source` 를 새로 붙이는 순간 `editor-spec.json` 신설이 필요해진다
 
 ## 6. 금지 패턴
 
@@ -171,5 +172,6 @@ cd plugins/_bundled/sirsoft-daum_postcode && powershell -Command "npm run test:r
 | [docs/data-model.md](docs/data-model.md) | 모델·소유 테이블·마이그레이션·Enum | ✅ |
 | [docs/settings.md](docs/settings.md) | 설정 스키마·권한·메뉴·라우트·의존 관계 | ✅ |
 | [docs/frontend.md](docs/frontend.md) | 레이아웃·액션 핸들러·전역 진입점·에셋 | ✅ |
+| [docs/editor-spec.md](docs/editor-spec.md) | 레이아웃 편집기에 선언한 팔레트·컨트롤·샘플 데이터 | ✅ |
 | [CHANGELOG.md](CHANGELOG.md) | 변경 이력 | ✅ |
 <!-- @generated:docs-index END -->

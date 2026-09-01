@@ -148,6 +148,7 @@
 - [ ] 정리 커맨드의 판정 로직을 고쳤다면 fail-open 가드(`hasPotentiallyMissingSources()`)가 여전히 앞에 있는지 확인 — 이 가드가 빠지면 이미지가 조용히 지워진다
 - [ ] 편집기 폴백 경로를 고쳤다면 저장 계약(`{name}_mode`)과 재시도 시 내용 승계가 유지되는지 확인
 - [ ] 프론트엔드를 고쳤다면 Playwright 위지윅 spec 을 함께 갱신·실행한다 (단위 테스트만으로는 편집기 장착 회귀가 드러나지 않는다)
+- [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 를 확인 — 이 확장은 편집기 스펙이 없어 `ckeditor5Uploads` 가 편집기 캔버스에서 빈 화면으로 보인다. `data_source` 를 더 늘리면 그 자리도 같은 상태가 된다
 
 ## 6. 금지 패턴
 
@@ -202,6 +203,7 @@ npx playwright test plugins/_bundled/sirsoft-ckeditor5/tests/Playwright/specs/<�
 | [docs/data-model.md](docs/data-model.md) | 모델·소유 테이블·마이그레이션·Enum | ✅ |
 | [docs/settings.md](docs/settings.md) | 설정 스키마·권한·메뉴·라우트·의존 관계 | ✅ |
 | [docs/frontend.md](docs/frontend.md) | 레이아웃·액션 핸들러·전역 진입점·에셋 | ✅ |
+| [docs/editor-spec.md](docs/editor-spec.md) | 레이아웃 편집기에 선언한 팔레트·컨트롤·샘플 데이터 | ✅ |
 | [docs/api/](docs/api/README.md) | API 레퍼런스 (엔드포인트별 파라미터·응답 필드) | ✅ |
 | [CHANGELOG.md](CHANGELOG.md) | 변경 이력 | ✅ |
 <!-- @generated:docs-index END -->

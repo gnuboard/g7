@@ -5,6 +5,7 @@ namespace Tests\Feature\Documentation;
 use App\Support\ExtensionDoc\DataModelCollector;
 use App\Support\ExtensionDoc\DeclarativeSurfaceCollector;
 use App\Support\ExtensionDoc\DependencyGraphCollector;
+use App\Support\ExtensionDoc\ExtensionDocContext;
 use App\Support\ExtensionDoc\ExtensionDocScaffolder;
 use App\Support\ExtensionDoc\ExtensionInventory;
 use App\Support\ExtensionDoc\FrontendInventory;
@@ -427,6 +428,43 @@ class ExtensionDocContractTest extends TestCase
     }
 
     /**
+     * 빈 서술 축이 PHP 와 검사 스크립트 양쪽에 존재하고 같은 판정을 내려야 합니다.
+     *
+     * 미채움은 두 축입니다 — `TODO:` 마커 잔량과, 마커를 지우고 서술을 쓰지 않은 빈
+     * `@intent` 블록. 후자가 한쪽에만 있으면 그 도구만 통과시키는데, 결과가 "다 채웠다"
+     * 와 구분되지 않아 비어 있는 문서가 완비로 집계됩니다.
+     */
+    public function test_empty_intent_axis_agrees_across_tooling(): void
+    {
+        $filled = "<!-- @intent START -->
+서술이 있다.
+<!-- @intent END -->";
+        $empty = "<!-- @intent START -->
+
+<!-- @intent END -->";
+
+        $this->assertSame(0, ExtensionDocScaffolder::emptyIntentBlocks($filled));
+        $this->assertSame(1, ExtensionDocScaffolder::emptyIntentBlocks($empty));
+        $this->assertSame(2, ExtensionDocScaffolder::emptyIntentBlocks($empty."
+".$empty));
+        $this->assertSame(1, ExtensionDocScaffolder::emptyIntentBlocks($filled."
+".$empty));
+
+        $script = (string) file_get_contents(base_path('.claude/scripts/check-extension-docs.cjs'));
+
+        $this->assertStringContainsString(
+            'countEmptyIntentBlocks',
+            $script,
+            'check-extension-docs.cjs 에 빈 서술 축이 없습니다 — PHP 만 세면 하네스가 통과시킵니다.',
+        );
+        $this->assertStringContainsString(
+            "id: 'emptyIntent'",
+            $script,
+            'check-extension-docs.cjs 의 빈 서술 축 식별자가 없습니다.',
+        );
+    }
+
+    /**
      * 모든 번들 확장에서 수집기와 렌더러가 예외 없이 동작해야 합니다.
      *
      * 확장 하나의 특이 구조(다국어 배열 라벨 등)가 생성 전체를 중단시키는 것을 막습니다.
@@ -760,7 +798,10 @@ class ExtensionDocContractTest extends TestCase
         $module = ExtensionDocScaffolder::documentsForType(ExtensionInventory::TYPE_MODULE);
         $template = ExtensionDocScaffolder::documentsForType(ExtensionInventory::TYPE_TEMPLATE);
 
-        foreach (['AGENTS.md', 'README.md', 'docs/README.md', 'docs/architecture.md'] as $shared) {
+        // `docs/editor-spec.md` 는 세 유형 공통이다. 편집기 스펙을 두지 않는 확장에도 문서를
+        // 두는 것은 "왜 없어도 되는가 / 언제 필요해지는가" 를 적을 자리가 필요하기 때문이며,
+        // 그 자리가 사라지면 미보유가 누락으로 오해되거나 필요한 시점을 놓친다.
+        foreach (['AGENTS.md', 'README.md', 'docs/README.md', 'docs/architecture.md', 'docs/editor-spec.md'] as $shared) {
             $this->assertContains($shared, $module);
             $this->assertContains($shared, $template);
         }
@@ -1295,20 +1336,9 @@ class ExtensionDocContractTest extends TestCase
      */
     private function contextFor(array $record, ExtensionInventory $inventory): array
     {
-        // 커맨드와 **같은 방식**으로 조립해야 한다. 발행 훅의 1차 출처가 선언형 표면의
-        // `getHooks()` 이므로, 그것을 넘기지 않으면 여기서 만든 블록이 커맨드가 쓰는 블록과
-        // 달라진다 — 문서가 생기는 순간 드리프트 검사가 없는 드리프트를 보고하게 된다.
-        $surface = (new DeclarativeSurfaceCollector)->collect($record);
-        $declaredHooks = $surface['values']['getHooks'] ?? [];
-
-        return [
-            'record' => $record,
-            'surface' => $surface,
-            'hooks' => (new HookInventory)->collect($record, is_array($declaredHooks) ? $declaredHooks : []),
-            'data' => (new DataModelCollector)->collect($record),
-            'frontend' => (new FrontendInventory)->collect($record),
-            'tests' => (new TestPathCollector)->collect($record),
-            'deps' => (new DependencyGraphCollector($inventory))->collect($record),
-        ];
+        // 커맨드와 **같은 조립기**를 쓴다. 여기서 배열을 손으로 다시 엮으면 수집 축이 하나
+        // 늘 때 한쪽만 갱신되어, 테스트가 만든 블록에 그 축이 빠진 채 파일과 달라진다 —
+        // 결과는 "생성기를 다시 돌려라" 인데 아무리 돌려도 사라지지 않는 드리프트다.
+        return app(ExtensionDocContext::class)->build($record);
     }
 }

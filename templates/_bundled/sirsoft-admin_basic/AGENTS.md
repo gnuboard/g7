@@ -15,7 +15,7 @@
 ## 1. 이 확장은 무엇인가
 
 <!-- @intent START -->
-G7 이 기본 제공하는 유일한 admin 타입 템플릿입니다 — 코어 관리자 화면(대시보드·사용자·역할·
+그누보드7 이 기본 제공하는 유일한 admin 타입 템플릿입니다 — 코어 관리자 화면(대시보드·사용자·역할·
 설정·확장 관리 등)뿐 아니라 **모든 번들 모듈/플러그인의 관리자 레이아웃**(`resources/layouts/
 admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템플릿의 컴포넌트로 그려집니다.
 그래서 이 템플릿의 공개 계약(필수 컴포넌트 35개, `_admin_base` 슬롯 구조)을 깨면 코어가
@@ -102,6 +102,7 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 - [ ] 필수 컴포넌트(35개) 의 Props 시그니처를 깨는 변경은 전체 번들 확장 관리자 화면에 영향 — 변경 전 `src/components/{basic,composite}/` 의 실사용처를 넓게 확인
 - [ ] `_admin_base.json` 슬롯 구조(`content` 슬롯 등) 변경 시 그 슬롯에 의존하는 모든 화면(145개 레이아웃 대다수) 영향 검토
 - [ ] AdminSidebar 의 `MenuItem`/`AdminSidebarProps` 인터페이스 확장 시 이 문서의 §docs/components.md "AdminSidebar 상세" 동기화
+- [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 의 동반 의무 표를 따라 `editor-spec/` 블록을 함께 갱신 — 컴포넌트는 팔레트·역량·중첩 **넷 다** 손대야 편집기에서 온전히 동작하고, 하나만 빠지면 절반만 동작한다. 반영은 `php artisan template:update sirsoft-admin_basic --force` (편집기는 활성 디렉토리만 읽는다)
 
 ## 6. 금지 패턴
 
@@ -146,5 +147,6 @@ npx playwright test templates/_bundled/sirsoft-admin_basic/tests/Playwright/spec
 | [docs/components.md](docs/components.md) | 템플릿이 제공하는 컴포넌트 | ✅ |
 | [docs/layouts.md](docs/layouts.md) | 레이아웃 목록과 라우트 매핑 | ✅ |
 | [docs/handlers.md](docs/handlers.md) | 템플릿 전용 핸들러와 부트스트랩 | ✅ |
+| [docs/editor-spec.md](docs/editor-spec.md) | 레이아웃 편집기에 선언한 팔레트·컨트롤·샘플 데이터 | ✅ |
 | [CHANGELOG.md](CHANGELOG.md) | 변경 이력 | ✅ |
 <!-- @generated:docs-index END -->

@@ -1,13 +1,13 @@
 # 비즈뿌리오 메시지 발송
 
-**G7 플러그인 · sirsoft-message_bizppurio**
+**그누보드7 플러그인 · sirsoft-message_bizppurio**
 비즈뿌리오 연동 SMS/LMS·카카오 알림톡 발송 플러그인입니다. 코어 알림 시스템 채널로 문자·알림톡을 발송하고 발송 결과를 webhook 으로 수신합니다.
 
 <!-- @generated:badges START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 <p align="center">
   <img src="https://img.shields.io/badge/version-1.0.1-0066FF?style=flat-square" alt="version 1.0.1">
   <img src="https://img.shields.io/badge/type-%ED%94%8C%EB%9F%AC%EA%B7%B8%EC%9D%B8-555555?style=flat-square" alt="type 플러그인">
-  <img src="https://img.shields.io/badge/G7-%3E%3D7.0.6-1F883D?style=flat-square" alt="G7 &gt;=7.0.6">
+  <img src="https://img.shields.io/badge/%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7-%3E%3D7.0.6-1F883D?style=flat-square" alt="그누보드7 &gt;=7.0.6">
   <img src="https://img.shields.io/badge/license-MIT-8250DF?style=flat-square" alt="license MIT">
 </p>
 <!-- @generated:badges END -->
@@ -23,7 +23,7 @@
 <!-- @intent START -->
 비즈뿌리오(Bizppurio)를 연동해 **문자(SMS/LMS)와 카카오 알림톡**을 발송하는 플러그인입니다.
 
-G7 코어 알림 시스템에 문자·알림톡 채널을 추가하므로, 회원가입·주문 완료처럼 코어와 모듈이
+그누보드7 코어 알림 시스템에 문자·알림톡 채널을 추가하므로, 회원가입·주문 완료처럼 코어와 모듈이
 이미 발화하는 알림을 문자와 알림톡으로도 자동 발송할 수 있습니다. 알림을 새로 만들 필요 없이
 **기존 알림의 채널만 켜면** 됩니다.
 
@@ -98,7 +98,7 @@ flowchart LR
 <!-- @generated:requirements START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 항목 | 값 |
 |---|---|
-| G7 코어 | `>=7.0.6` |
+| 그누보드7 코어 | `>=7.0.6` |
 | PHP | `^8.2` |
 <!-- @generated:requirements END -->
 
@@ -259,6 +259,7 @@ https://your-domain.com/api/plugins/sirsoft-message_bizppurio/webhook
 | [docs/data-model.md](docs/data-model.md) | 모델·소유 테이블·마이그레이션·Enum | ✅ |
 | [docs/settings.md](docs/settings.md) | 설정 스키마·권한·메뉴·라우트·의존 관계 | ✅ |
 | [docs/frontend.md](docs/frontend.md) | 레이아웃·액션 핸들러·전역 진입점·에셋 | ✅ |
+| [docs/editor-spec.md](docs/editor-spec.md) | 레이아웃 편집기에 선언한 팔레트·컨트롤·샘플 데이터 | ✅ |
 | [docs/api/](docs/api/README.md) | API 레퍼런스 (엔드포인트별 파라미터·응답 필드) | ✅ |
 | [CHANGELOG.md](CHANGELOG.md) | 변경 이력 | ✅ |
 <!-- @generated:docs-index END -->

@@ -43,7 +43,7 @@ Listeners/LogMemoCreatedListener        memo.created 구독 — 부가 작업은
 resources/layouts/                      admin 2 + user 1
 ```
 
-이 지도가 곧 **G7 모듈의 규약**입니다 — 검증은 FormRequest, 데이터 접근은 Repository
+이 지도가 곧 **그누보드7 모듈의 규약**입니다 — 검증은 FormRequest, 데이터 접근은 Repository
 인터페이스, 부가 작업은 훅 리스너, 응답 형태는 Resource. 샘플이 잘못된 본을 보이면 그것을 따라
 한 모듈이 전부 같은 형태가 되므로, 이 네 경계는 편의를 위해서도 흐트러뜨리지 않습니다.
 

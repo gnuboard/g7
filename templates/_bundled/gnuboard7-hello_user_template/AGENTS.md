@@ -23,7 +23,7 @@
 
 **홈 화면이 이 샘플의 핵심**입니다. `data_sources` 로 학습용 모듈의 메모 API
 (`/api/modules/gnuboard7-hello_module/memos`)를 호출해 목록을 그립니다 — 모듈이 데이터를,
-템플릿이 화면을 담당하는 G7 의 기본 경계를 가장 짧게 보여주는 예시입니다. 실제 게시판·이커머스
+템플릿이 화면을 담당하는 그누보드7 의 기본 경계를 가장 짧게 보여주는 예시입니다. 실제 게시판·이커머스
 모듈도 방문자 화면을 갖지 않고 같은 방식으로 템플릿에 맡깁니다.
 
 `manifest.hidden = true` 라 관리자 UI 의 템플릿 목록에 나타나지 않습니다. artisan CLI 로는
@@ -117,6 +117,7 @@ User 템플릿은 자기가 그리고 싶은 화면에 필요한 API 를 `data_s
 - [ ] `manifest.hidden = true` 를 유지 (복제본에서만 제거)
 - [ ] TSX 를 고쳤다면 `template:build --production` 후 `dist/` 동반 커밋 (`sourceMappingURL` 잔존 금지)
 - [ ] 레이아웃 렌더링 테스트(`__tests__/layouts/*.test.tsx`)는 이 템플릿 디렉토리에 둔다
+- [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 를 확인 — 이 확장은 편집기 스펙이 없어 `memos` 가 편집기 캔버스에서 빈 화면으로 보인다. `data_source` 를 더 늘리면 그 자리도 같은 상태가 된다
 
 ## 6. 금지 패턴
 
@@ -163,5 +164,6 @@ cd templates/_bundled/gnuboard7-hello_user_template && powershell -Command "npm 
 | [docs/components.md](docs/components.md) | 템플릿이 제공하는 컴포넌트 | ✅ |
 | [docs/layouts.md](docs/layouts.md) | 레이아웃 목록과 라우트 매핑 | ✅ |
 | [docs/handlers.md](docs/handlers.md) | 템플릿 전용 핸들러와 부트스트랩 | ✅ |
+| [docs/editor-spec.md](docs/editor-spec.md) | 레이아웃 편집기에 선언한 팔레트·컨트롤·샘플 데이터 | ✅ |
 | [CHANGELOG.md](CHANGELOG.md) | 변경 이력 | ✅ |
 <!-- @generated:docs-index END -->
