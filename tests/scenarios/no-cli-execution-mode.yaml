@@ -90,6 +90,12 @@ effects:
   - bundled_source_install_routes_vendor_through_resolver
   - raw_composer_fallback_is_gated_by_vendor_resolution_flag
   - module_and_plugin_managers_have_symmetric_vendor_paths
+  # W1 정보 카드의 [자세히 보기] — 링크가 사라지는 축과 목적지(INSTALL.md 방법 5 제목)가
+  # 사라지는 축이 다르다. 뒤쪽은 404 가 아니라 문서 맨 위가 열려 오류로 드러나지 않는다 (D32)
+  - installer_execution_mode_card_links_to_install_guide
+  # 같은 계약의 모집단은 그 화면 하나가 아니다 — 관리자 코어 업데이트 안내 모달에도 같은
+  # 형태의 링크가 있고, 추적 파일 전수에서 도출해 함께 잰다 (P7 검증 라운드 1 결정)
+  - install_guide_link_targets_exist_repo_wide
 
 test_files:
   - tests/Unit/Support/ExecutionEnvironmentTest.php
@@ -107,6 +113,8 @@ test_files:
   - tests/Unit/Extension/BundledSourceVendorInstallTest.php
   # 제한 호스팅 내성 회귀 가드 (19차 파생 산출물 — 20차 역방향 대조가 등재)
   - tests/Unit/Support/ExecutionPortabilityHardeningTest.php
+  # W1 [자세히 보기] 링크와 그 목적지의 실재 (D32 · P7)
+  - tests/Unit/Installer/InstallerExecutionModeGuideLinkTest.php
 
 # 번들 존재 축(vendor_bundle_presence)도 같은 이유로 단위 커버리지 밖이다 — 그 축이 갈리는
 # 지점은 인스톨러 게이트 카드(A-1)이고, `vendor-bundle.zip` 유무는 파일 배치의 문제라

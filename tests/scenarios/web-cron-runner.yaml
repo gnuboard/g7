@@ -161,7 +161,7 @@ effects:
   - schedule_state_persist_success_leaves_no_failure_flag
   - schedule_state_persist_failure_is_reported
   - schedule_state_persist_flag_clears_after_recovery
-  # 큐 연결 기록 (A-6 · 검증 R2 축 28 — 프로젝트 결정으로 이 매니페스트가 소유)
+  # 큐 연결 기록 (A-6 · 검증 R2 축 28 — 이 매니페스트가 소유한다)
   - inprocess_install_records_sync_queue_connection
   - subprocess_install_leaves_queue_connection_untouched
   - queue_connection_differs_between_execution_modes
@@ -192,7 +192,7 @@ pending_effects:
       승계 조건(R22 컨텍스트 복원 · R23 전용 큐)은 A-6 문서가 소유한다.
 
 notes:
-  - 인스톨러의 QUEUE_CONNECTION=sync 기록(A-6)은 이 매니페스트가 소유한다 (프로젝트 결정 2026-08-31). 종전 서술은 no-cli-installer-stepwise.yaml 로 넘긴다고 적었으나 그 매니페스트에 해당 축도 effect 도 없어 아무 데도 없는 상태였고, 18줄을 통째로 지워도 red 가 하나도 나지 않았다. G5 가 만든 코드이므로 G5 가 지킨다 — 이미 완료 선언된 G2 공정을 다시 열지 않는다.
+  - 인스톨러의 QUEUE_CONNECTION=sync 기록(A-6)은 이 매니페스트가 소유한다. 종전 서술은 no-cli-installer-stepwise.yaml 로 넘긴다고 적었으나 그 매니페스트에 해당 축도 effect 도 없어 아무 데도 없는 상태였고, 18줄을 통째로 지워도 red 가 하나도 나지 않았다. 그 값을 쓰는 코드와 같은 자리에서 지킨다.
   - 알림 발송 건수 로그(D6-a)는 정책 변경이 아니라 관측 확보다. 그 관측이 코드에 남아 있는지는 이 매니페스트가 재고(notification_send_* 3종), 발송 경로 자체의 계약은 guest-notification-delivery.yaml 이 소유한다.
 
 test_files:

@@ -1100,6 +1100,7 @@ ini_set(\'zlib.output_compression\', \'off\');
     'execution_mode_change_vendor' => '의존성은 동봉된 묶음으로 설치합니다',
     'execution_mode_change_cron' => '예약 작업은 주소 호출 방식으로 설정해야 합니다',
     'execution_mode_change_update' => '코어 업데이트는 관리자 화면 버튼으로 합니다',
+    'execution_mode_learn_more' => '자세히 보기',
     'error_no_cli_and_no_bundle' => '이 서버는 외부 명령 실행이 제한되어 있고, 동봉된 의존성 묶음(vendor-bundle.zip)도 찾을 수 없어 설치를 진행할 수 없습니다. 전체 배포판 압축을 그대로 업로드했는지 확인하세요.',
     'php_cli_version' => 'PHP CLI 버전',
     'php_cli_version_check_skipped' => 'exec 함수가 비활성화되어 CLI 버전 확인을 건너뛰었습니다.',

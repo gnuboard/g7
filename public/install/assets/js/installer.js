@@ -1816,6 +1816,15 @@
     }
 
     /**
+     * 실행 방식 안내 문서 주소 (D32)
+     *
+     * 설치본에는 `INSTALL.md` 가 함께 놓이지만 그 파일은 웹에서 열리지 않는다 —
+     * 표준 배치에서는 문서 루트 밖이고, 문서 루트 고정 배치에서는 보호 규칙이 막는다.
+     * 그래서 링크 대상은 공개 저장소의 같은 절이다.
+     */
+    const EXECUTION_MODE_GUIDE_URL = 'https://github.com/gnuboard/g7/blob/main/INSTALL.md#%EB%B0%A9%EB%B2%95-5-cli-%EC%97%86%EB%8A%94-%ED%98%B8%EC%8A%A4%ED%8C%85';
+
+    /**
      * 실행 방식 정보(파랑) 카드 렌더링 (A-1 · W1)
      *
      * 실패가 아니라 "CLI 없이 설치한다" 는 정보 항목이다. 판정 근거와
@@ -1836,6 +1845,9 @@
                     <li>${lang('execution_mode_change_cron')}</li>
                     <li>${lang('execution_mode_change_update')}</li>
                 </ul>
+                <p class="execution-mode-more">
+                    <a href="${escapeAttribute(EXECUTION_MODE_GUIDE_URL)}" target="_blank" rel="noopener noreferrer">${lang('execution_mode_learn_more')}</a>
+                </p>
             </div>
         `;
 

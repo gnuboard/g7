@@ -176,6 +176,30 @@ best-effort 태스크(번들 언어팩 설치·`config:cache`)의 실패는 `sta
 
 실행 모드가 관여하는 지점(`vendor_mode`·`execution_mode` 를 읽는 파일)은 손으로 열거하지 않고 `InstallerExecutionModeTouchpointCoverageTest` 가 소스 스캔으로 도출한다 — 새 지점이 보정 함수(`installerCoerceVendorModeForExecution`·`vendorModeFromState`·`installerNormalizeExecutionMode` 계열)를 거치지 않으면 red 가 된다. Step 3 의 "bundled 를 골랐는데 Step 5 가 composer 를 검사해 설치가 멈춘" 과거 사고가 그 형태였다.
 
+### 4.2 소비처 — 코어 업데이트 웹 오케스트레이터 (P6)
+
+관리자 화면의 코어 업데이트(`App\CoreUpdate\CoreUpdateOrchestrator`)는 해석기를 주입받아
+업그레이드 스텝·번들 확장 단계를 러너로 돌린다. 모드 자체는 해석기의 판정을 그대로 따르지만,
+**스폰 실패 모드만은 그 단계에 한해 `fallback` 으로 강제한다**(`SPAWN_FAILURE_MODE`).
+
+이유는 판정의 전제가 웹에서 성립하지 않기 때문이다. `CoreUpdateService::runUpgradeSteps()` 의
+stale 메모리 가드는 `config('app.version')` 이 목표 버전보다 낮으면 「부모가 구버전 코드를 들고
+있다」로 보고 배포 기본값(`abort`)에서 핸드오프를 던진다. CLI 는 자식 프로세스 env 에
+`APP_VERSION` 을 실어 그 판정을 피한다. 그런데 웹에서는 이 단계가 **파일 적용과 다른 요청**이라
+이미 신버전 코드로 부팅된 프로세스이고, `.env` 의 `APP_VERSION` 은 마무리 단계까지 옛 값으로
+남는다 — 강제하지 않으면 매 요청이 같은 판정을 반복해 핸드오프가 상한까지 소진되고
+**정상 적용된 코어가 되돌려진다.**
+
+강제 채널은 둘이다.
+
+| 채널 | 대상 |
+|---|---|
+| `config(['app.update.spawn_failure_mode' => …])` | in-process 러너 (같은 프로세스가 그 설정을 읽는다) |
+| `$_ENV` · `$_SERVER` | 서브프로세스 러너가 띄우는 자식 |
+
+`putenv` 는 쓰지 않는다 — 그 값은 프로세스 수명에 남아 같은 워커의 **다음 요청**까지 모드를
+바꾼다.
+
 ## 5. 규칙
 
 | 금지 | 올바른 사용 |
@@ -321,6 +345,10 @@ CPU·메모리·디스크 사용률을 OS 명령(`wmic`·PowerShell·`nproc`·`f
 | `tests/Feature/Scheduling/ScheduleRunnerContractTest.php` | 등록된 전 이벤트 되뽑기 성공(실패 0) · 대상은 등록에서 도출(R17) · 식별 키 안정성·무충돌 |
 | `tests/Feature/Scheduling/ScheduleRunnerCatchUpTest.php` | 실행 창 소급(D17) · 중복 0 · 최소 간격 스킵 후 무유실 · 창 상한 · 조건부 등록(R16) · 상한 이월과 재개 |
 | `tests/Feature/Scheduling/ScheduleRunEntryPointParityTest.php` | 진입점 둘(웹·CLI)이 같은 본체·같은 기록을 쓴다 · CLI 종료 코드가 실패를 반영 |
+| `tests/Unit/CoreUpdate/CoreUpdateStepContractTest.php` | 웹 단계 순서 불변식 — 파일 적용과 업그레이드 스텝이 **다른 요청**이라는 격리(스폰이 막힌 호스팅에서 요청 경계가 `proc_open` 스폰을 대신한다) |
+| `tests/Unit/CoreUpdate/CoreUpdatePipelineParityTest.php` | CLI 와 웹이 같은 서비스를 같은 순서로 부른다 — 한쪽에만 단계가 늘어난 상태를 차단 |
+| `tests/Unit/CoreUpdate/CoreUpdateSafeDefaultsTest.php` | 웹 착수의 입력 표면 부재(`force`·`prune`·`no-backup`…)와 CLI 옵션 존치 |
+| `tests/Feature/Api/Admin/CoreUpdateWebFlowTest.php` | 웹 단계 실행의 종단 — 착수·진행·재개·되돌리기 |
 | `tests/scenarios/no-cli-execution-mode.yaml` | 시나리오 매니페스트 (`disable_functions` 는 INI 라 E2E 재현 불가 — 종단 검증은 전용 환경 실측) |
 
 ## 11. 관련 문서

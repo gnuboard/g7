@@ -306,17 +306,16 @@ return [
         //   `G7_UPDATE_PROTECTED_PATHS` 를 덮어쓰는 경우는 코드로 막지 않는다(그 설정의
         //   존재 이유가 운영자 판단이므로). 롤백 prune 이 세 파일을 지우는 것은 의도된
         //   동작이다 — 업데이트 이전 상태로 되돌리는 것이 목적이다.
-        // `g7-setup.php` — FTP 전용 호스팅의 압축 풀기 부트스트랩(설치 전에만 쓰이고,
-        //   해제가 끝나면 스스로 지운다). 배포 ZIP 에는 실리지만 코어 업데이트는 손대지
-        //   않는다: 업데이트가 도는 시점의 사이트는 이미 설치를 마친 상태라 배포할 이유가
-        //   없고, targets 에 두면 운영자가 지운 파일이 업데이트마다 되살아난다(자기 진입
-        //   가드가 있어 동작은 하지 않지만 파일이 다시 생기는 것 자체가 뜻밖의 일이다).
-        //   보호 목록에 두면 남아 있는 사이트는 그대로, 지워진 사이트는 지워진 채로 둔다.
+        // 압축 풀기 부트스트랩(`g7-setup.php`)은 **설치 시점 파일**이라 업데이트가 관리하지
+        // 않는다 (P7 · G4 산출물). 정상 설치는 그 파일이 스스로를 지우며 끝나고, 남아 있는
+        // 사본은 완료 표식 둘을 보고 410 을 내는 무해한 상태다. `targets` 에 넣으면 운영자가
+        // 지운 진입 파일이 업데이트마다 루트에 되살아나므로 여기에 둔다 — 만들지도 지우지도
+        // 않는다는 선언이다. (2026-09-01 결정. 미등재 상태는 정적 검사가 error 로 잡는다)
         // modules,plugins,templates,lang-packs 부모 디렉토리도 보호 대상에 포함.
         // targets 에 `{modules,plugins,templates,lang-packs}/_bundled` 가 명시되어 정상 흐름에서는
         // 처리되므로 영향 없음. 자동 발견 폴백이 부모 디렉토리 단위로 base 를 통째로 복사해
         // 활성 서브디렉토리(예: templates/sirsoft-basic) 를 잘못 삭제하는 회귀(#347) 차단용 방어 깊이.
-        'protected_paths' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_PROTECTED_PATHS', '.env,.env.local,.env.production,.env.testing,.env.testing.example,storage,vendor,node_modules,.git,.github,.idea,.vscode,.serena,.claude,.codex,.agents,CLAUDE.md,AGENTS.override.md,.mcp.json,.phpunit.result.cache,core_pending,modules,plugins,templates,lang-packs,g7-setup.php')))),
+        'protected_paths' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_PROTECTED_PATHS', '.env,.env.local,.env.production,.env.testing,.env.testing.example,g7-setup.php,storage,vendor,node_modules,.git,.github,.idea,.vscode,.serena,.claude,.codex,.agents,CLAUDE.md,AGENTS.override.md,.mcp.json,.phpunit.result.cache,core_pending,modules,plugins,templates,lang-packs')))),
         'backup_only' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_BACKUP_ONLY', 'vendor')))),
         'backup_extra' => ['storage/app/settings'],
         // 업데이트 종료 시 base_path() 소유자/그룹 기준으로 소유권을 재귀 복원할 경로 목록.
