@@ -32,7 +32,8 @@ import { addMissingLeafKeys } from './helpers/StateMerge';
 import { triggerModalParentUpdate } from './ParentContextProvider';
 import type { GlobalHeaderRule } from './LayoutLoader';
 import { IdentityGuardInterceptor } from '../identity/IdentityGuardInterceptor';
-import { isAbortError, isNetworkFailure } from './networkResilience';
+import { isAbortError, isNetworkFailure, loadScriptWithRetry, loadStylesheetWithRetry } from './networkResilience';
+import { isAllowedScriptSrc, getTrustedScriptHosts } from '../support/scriptSrcPolicy';
 
 const logger = createLogger('ActionDispatcher');
 
@@ -1410,43 +1411,36 @@ export class ActionDispatcher {
               const scriptUrl = moduleData.assets.js;
               const scriptId = `module-${identifier}`;
 
-              // 이미 로드된 스크립트인지 확인
+              // 출처 게이트 — 정상 확장 자산 URL 은 전부 `/api/...` same-origin 이다.
+              this.assertAllowedExtensionAssetUrl(scriptUrl, `module script (${identifier})`, action);
+
+              // 이미 로드된 스크립트면 JS 만 건너뛴다 (CSS 는 아래 형제 블록이 계속 처리).
               if (document.getElementById(scriptId)) {
                 logger.warn(`reloadModuleHandlers: Script ${scriptId} already loaded`);
-                return;
+              } else {
+                await loadScriptWithRetry(
+                  scriptUrl,
+                  { id: scriptId },
+                  { label: `module-script:${identifier}` }
+                );
+                logger.log(`reloadModuleHandlers: Script loaded successfully for ${identifier}`);
               }
+            }
 
-              // <script> 태그 동적 생성
-              const script = document.createElement('script');
-              script.id = scriptId;
-              script.src = scriptUrl;
-              script.async = true;
+            // CSS 파일이 있으면 동적 로드 (JS 유무·기존재와 무관한 형제 작업)
+            if (moduleData.assets.css) {
+              const cssUrl = moduleData.assets.css;
+              const linkId = `module-css-${identifier}`;
 
-              await new Promise<void>((resolve, reject) => {
-                script.onload = () => {
-                  logger.log(`reloadModuleHandlers: Script loaded successfully for ${identifier}`);
-                  resolve();
-                };
-                script.onerror = () => {
-                  logger.error(`reloadModuleHandlers: Failed to load script for ${identifier}`);
-                  reject(new Error(`Failed to load module script: ${scriptUrl}`));
-                };
-                document.head.appendChild(script);
-              });
+              this.assertAllowedExtensionAssetUrl(cssUrl, `module stylesheet (${identifier})`, action);
 
-              // CSS 파일이 있으면 동적 로드
-              if (moduleData.assets.css) {
-                const cssUrl = moduleData.assets.css;
-                const linkId = `module-css-${identifier}`;
-
-                if (!document.getElementById(linkId)) {
-                  const link = document.createElement('link');
-                  link.id = linkId;
-                  link.rel = 'stylesheet';
-                  link.href = cssUrl;
-                  document.head.appendChild(link);
-                  logger.log(`reloadModuleHandlers: CSS loaded for ${identifier}`);
-                }
+              if (!document.getElementById(linkId)) {
+                await loadStylesheetWithRetry(
+                  cssUrl,
+                  { id: linkId },
+                  { label: `module-css:${identifier}` }
+                );
+                logger.log(`reloadModuleHandlers: CSS loaded for ${identifier}`);
               }
             }
           }
@@ -1530,43 +1524,36 @@ export class ActionDispatcher {
               const scriptUrl = pluginData.assets.js;
               const scriptId = `plugin-${identifier}`;
 
-              // 이미 로드된 스크립트인지 확인
+              // 출처 게이트 — 정상 확장 자산 URL 은 전부 `/api/...` same-origin 이다.
+              this.assertAllowedExtensionAssetUrl(scriptUrl, `plugin script (${identifier})`, action);
+
+              // 이미 로드된 스크립트면 JS 만 건너뛴다 (CSS 는 아래 형제 블록이 계속 처리).
               if (document.getElementById(scriptId)) {
                 logger.warn(`reloadPluginHandlers: Script ${scriptId} already loaded`);
-                return;
+              } else {
+                await loadScriptWithRetry(
+                  scriptUrl,
+                  { id: scriptId },
+                  { label: `plugin-script:${identifier}` }
+                );
+                logger.log(`reloadPluginHandlers: Script loaded successfully for ${identifier}`);
               }
+            }
 
-              // <script> 태그 동적 생성
-              const script = document.createElement('script');
-              script.id = scriptId;
-              script.src = scriptUrl;
-              script.async = true;
+            // CSS 파일이 있으면 동적 로드 (JS 유무·기존재와 무관한 형제 작업)
+            if (pluginData.assets.css) {
+              const cssUrl = pluginData.assets.css;
+              const linkId = `plugin-css-${identifier}`;
 
-              await new Promise<void>((resolve, reject) => {
-                script.onload = () => {
-                  logger.log(`reloadPluginHandlers: Script loaded successfully for ${identifier}`);
-                  resolve();
-                };
-                script.onerror = () => {
-                  logger.error(`reloadPluginHandlers: Failed to load script for ${identifier}`);
-                  reject(new Error(`Failed to load plugin script: ${scriptUrl}`));
-                };
-                document.head.appendChild(script);
-              });
+              this.assertAllowedExtensionAssetUrl(cssUrl, `plugin stylesheet (${identifier})`, action);
 
-              // CSS 파일이 있으면 동적 로드
-              if (pluginData.assets.css) {
-                const cssUrl = pluginData.assets.css;
-                const linkId = `plugin-css-${identifier}`;
-
-                if (!document.getElementById(linkId)) {
-                  const link = document.createElement('link');
-                  link.id = linkId;
-                  link.rel = 'stylesheet';
-                  link.href = cssUrl;
-                  document.head.appendChild(link);
-                  logger.log(`reloadPluginHandlers: CSS loaded for ${identifier}`);
-                }
+              if (!document.getElementById(linkId)) {
+                await loadStylesheetWithRetry(
+                  cssUrl,
+                  { id: linkId },
+                  { label: `plugin-css:${identifier}` }
+                );
+                logger.log(`reloadPluginHandlers: CSS loaded for ${identifier}`);
               }
             }
           }
@@ -5791,15 +5778,61 @@ export class ActionDispatcher {
   }
 
   /**
+   * 확장 자산 URL(js/css)이 주입 허용 대상인지 검사하고, 아니면 차단합니다.
+   *
+   * 확장 활성화 응답이 지시하는 URL 을 그대로 `<script>`/`<link>` 로 붙이는 경로는
+   * 레이아웃 `scripts[]` 와 같은 출처 정책을 받아야 한다. 정상 확장 자산 URL 은 전부
+   * `/api/...` same-origin 이므로 과차단은 발생하지 않는다.
+   *
+   * @param url 자산 URL
+   * @param what 오류 메시지에 실을 대상 설명
+   * @param action 액션 정의 (ActionError 컨텍스트)
+   * @throws ActionError 미신뢰 출처인 경우
+   * @since engine-v1.64.0
+   */
+  private assertAllowedExtensionAssetUrl(url: string, what: string, action: ActionDefinition): void {
+    if (isAllowedScriptSrc(url, getTrustedScriptHosts())) {
+      return;
+    }
+
+    logger.error(`Blocked untrusted ${what} asset url: ${url}`);
+    throw new ActionError(
+      `Blocked untrusted ${what} url (same-origin path or declared trusted host required): ${url}`,
+      action
+    );
+  }
+
+  /**
    * 로드된 외부 스크립트 ID를 추적하기 위한 Set
    */
   private static loadedScripts: Set<string> = new Set();
+
+  /**
+   * 로드 진행 중인 스크립트의 공유 Promise (키 = scriptId).
+   *
+   * 같은 스크립트를 동시에 요청한 호출자들이 하나의 `<script>` 태그를 공유하고,
+   * **1회차 onload 이후에** 함께 완료되도록 한다. 종전에는 in-flight 를 추적하지 않아
+   * 2번째 호출이 "DOM 에 태그가 있다" 는 이유로 로드 완료 전에 즉시 resolve 했고,
+   * 그 호출자의 onLoad 는 SDK 전역이 아직 없는 시점에 실행됐다 (예외 없이 무반응).
+   *
+   * 공유 Promise 는 "로드 완료" 만 담는다 — onLoad 는 호출자별로 await 후 각자 실행한다.
+   *
+   * @since engine-v1.64.0
+   */
+  private static loadingScripts: Map<string, Promise<void>> = new Map();
 
   /**
    * 외부 스크립트를 동적으로 로드합니다.
    *
    * 이미 로드된 스크립트는 재로드하지 않고 캐시된 상태를 사용합니다.
    * 스크립트 로드 완료 시 onLoad 액션을 실행합니다.
+   *
+   * `src` 는 레이아웃 `scripts[]` 와 **같은 출처 정책**을 받는다 — same-origin 절대 경로이거나
+   * 확장이 manifest 로 선언한 신뢰 호스트여야 하며, 그 밖의 원격 URL 은 로드 전에 차단된다
+   * (`support/scriptSrcPolicy`). 이 경로만 게이트가 없으면 저장측 검증을 우회한 임의 원격
+   * 코드가 그대로 실행된다.
+   *
+   * 같은 스크립트를 동시에 요청하면 하나의 태그를 공유하고 모두 1회차 로드 완료 후 resolve 한다.
    *
    * @param params 스크립트 로드 파라미터
    *   - src: 스크립트 URL (필수)
@@ -5832,6 +5865,18 @@ export class ActionDispatcher {
       throw new ActionError('loadScript handler requires "src" parameter', action);
     }
 
+    // 출처 게이트 — 캐시 검사보다 앞이다. 뒤에 두면 이미 로드된 미신뢰 스크립트가
+    // 캐시 히트로 통과한다.
+    if (!isAllowedScriptSrc(src, getTrustedScriptHosts())) {
+      logger.warn(
+        `loadScript: blocked untrusted script src (same-origin path or declared trusted host required): ${src}`
+      );
+      throw new ActionError(
+        `Blocked untrusted script src (same-origin path or declared trusted host required): ${src}`,
+        action
+      );
+    }
+
     const scriptId = id || `script_${src.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
     // 이미 로드된 스크립트인지 확인
@@ -5846,7 +5891,22 @@ export class ActionDispatcher {
       return true;
     }
 
+    // 같은 스크립트가 로드 중이면 그 Promise 를 공유한다 (태그 1개, 완료는 함께).
+    const inFlight = ActionDispatcher.loadingScripts.get(scriptId);
+    if (inFlight) {
+      logger.log(`loadScript: joining in-flight load: ${scriptId}`);
+      await inFlight;
+
+      if (action.onLoad) {
+        await this.executeAction(action.onLoad, context);
+      }
+
+      return true;
+    }
+
     // DOM에 이미 스크립트가 존재하는지 확인
+    // (dispatcher 가 만들지 않은 외래 태그 — 로드 상태를 식별할 수 없으므로 완료로 간주한다.
+    //  dispatcher 자신의 경합은 위 in-flight Map 이 이미 제거했다.)
     const existingScript = document.getElementById(scriptId);
     if (existingScript) {
       logger.log(`loadScript: script element already exists: ${scriptId}`);
@@ -5862,36 +5922,56 @@ export class ActionDispatcher {
 
     logger.log(`loadScript: loading script: ${src}`);
 
-    return new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.id = scriptId;
-      script.src = src;
-      script.async = async;
-      script.defer = defer;
+    const script = document.createElement('script');
+    script.id = scriptId;
+    script.src = src;
+    script.async = async;
+    script.defer = defer;
 
-      script.onload = async () => {
+    // 동의 관리(gdpr) preblocker 가 src setter 에서 동기적으로 차단을 기록한다.
+    // 차단된 스크립트는 append 해도 영영 로드되지 않으므로, 태그를 붙이지 않고
+    // 미완료 상태(resolve(false))로 돌려준다 — 오류가 아니라 "동의 전" 이라는 상태다.
+    // 캐시·in-flight 에 기록하지 않으므로 동의 후 재디스패치하면 정상 로드된다.
+    if (script.hasAttribute('data-gdpr-blocked-src')) {
+      logger.warn(`loadScript: script blocked by consent manager (not loaded): ${src}`);
+      return false;
+    }
+
+    const loadPromise = new Promise<void>((resolve, reject) => {
+      script.onload = () => {
         logger.log(`loadScript: script loaded successfully: ${scriptId}`);
         ActionDispatcher.loadedScripts.add(scriptId);
-
-        // onLoad 액션 실행
-        if (action.onLoad) {
-          try {
-            await this.executeAction(action.onLoad, context);
-          } catch (error) {
-            logger.error('loadScript: onLoad action failed:', error);
-          }
-        }
-
-        resolve(true);
+        ActionDispatcher.loadingScripts.delete(scriptId);
+        resolve();
       };
 
       script.onerror = (error) => {
         logger.error(`loadScript: failed to load script: ${src}`, error);
+        ActionDispatcher.loadingScripts.delete(scriptId);
         reject(new ActionError(`Failed to load script: ${src}`, action));
       };
 
       document.head.appendChild(script);
     });
+
+    // 공유 Promise 의 rejection 이 구독자 없는 시점에 unhandled 로 새지 않게 한다
+    // (아래 await 와 join 경로가 각자 처리한다).
+    loadPromise.catch(() => {});
+
+    ActionDispatcher.loadingScripts.set(scriptId, loadPromise);
+
+    await loadPromise;
+
+    // onLoad 액션 실행
+    if (action.onLoad) {
+      try {
+        await this.executeAction(action.onLoad, context);
+      } catch (error) {
+        logger.error('loadScript: onLoad action failed:', error);
+      }
+    }
+
+    return true;
   }
 
   /**
@@ -5974,6 +6054,10 @@ export class ActionDispatcher {
       );
     }
 
+    // 심층 방어: 스크립트 로드 게이트를 통과한 전역만 호출된다는 전제 위에서,
+    // 임의 코드 실행으로 직결되는 생성자는 참조 동일성으로 거부한다.
+    this.assertCallableExternalConstructor(Constructor, constructorPath, action);
+
     logger.log(`callExternal: calling constructor ${constructorPath}`);
 
     // 콜백 함수 생성 (callbackEvent가 지정된 경우)
@@ -5999,8 +6083,15 @@ export class ActionDispatcher {
             const processMapping = (mapping: Record<string, any>): Record<string, any> => {
               const result: Record<string, any> = {};
               for (const [fieldName, dataPath] of Object.entries(mapping)) {
+                // 프로토타입 오염 차단: 이 결과는 deepMergeWithState → setState 로 흘러가므로
+                // 매핑 키 하나가 앱 전역의 모든 객체를 오염시킬 수 있다.
+                if (ActionDispatcher.isPrototypePathSegment(fieldName)) {
+                  logger.warn(`callExternal: skipped prototype-polluting mapping key: ${fieldName}`);
+                  continue;
+                }
+
                 if (typeof dataPath === 'string') {
-                  // 리프 노드: 실제 데이터 매핑
+                  // 리프 노드: 실제 데이터 매핑 (경로 세그먼트도 같은 판정을 받는다)
                   result[fieldName] = this.getNestedProperty(data, dataPath);
                 } else if (typeof dataPath === 'object' && dataPath !== null) {
                   // 중첩 객체: 재귀 처리
@@ -6125,6 +6216,10 @@ export class ActionDispatcher {
       );
     }
 
+    // 심층 방어: 스크립트 로드 게이트를 통과한 전역만 호출된다는 전제 위에서,
+    // 임의 코드 실행으로 직결되는 생성자는 참조 동일성으로 거부한다.
+    this.assertCallableExternalConstructor(Constructor, constructorPath, action);
+
     logger.log(`callExternalEmbed: creating layer for ${constructorPath}`);
 
     // 레이어 요소들 생성
@@ -6152,8 +6247,15 @@ export class ActionDispatcher {
             const processMapping = (mapping: Record<string, any>): Record<string, any> => {
               const result: Record<string, any> = {};
               for (const [fieldName, dataPath] of Object.entries(mapping)) {
+                // 프로토타입 오염 차단: 이 결과는 deepMergeWithState → setState 로 흘러가므로
+                // 매핑 키 하나가 앱 전역의 모든 객체를 오염시킬 수 있다.
+                if (ActionDispatcher.isPrototypePathSegment(fieldName)) {
+                  logger.warn(`callExternal: skipped prototype-polluting mapping key: ${fieldName}`);
+                  continue;
+                }
+
                 if (typeof dataPath === 'string') {
-                  // 리프 노드: 실제 데이터 매핑
+                  // 리프 노드: 실제 데이터 매핑 (경로 세그먼트도 같은 판정을 받는다)
                   result[fieldName] = this.getNestedProperty(data, dataPath);
                 } else if (typeof dataPath === 'object' && dataPath !== null) {
                   // 중첩 객체: 재귀 처리
@@ -6327,7 +6429,38 @@ export class ActionDispatcher {
   }
 
   /**
+   * 프로토타입 체인에 도달하는 경로 세그먼트 (읽기·쓰기 양쪽에서 거부한다).
+   *
+   * 이 세그먼트를 타면 객체의 데이터가 아니라 **모든 객체가 공유하는 프로토타입**에
+   * 닿는다. 읽기 쪽에서는 `Object.constructor` 같은 경로가 임의 함수 생성자로 이어지고,
+   * 쓰기 쪽에서는 `__proto__` 매핑 한 줄이 앱 전역의 객체를 오염시킨다.
+   *
+   * @since engine-v1.64.0
+   */
+  private static readonly PROTOTYPE_PATH_SEGMENTS: readonly string[] = [
+    '__proto__',
+    'prototype',
+    'constructor',
+  ];
+
+  /**
+   * 경로 세그먼트가 프로토타입 체인에 닿는지 판정합니다.
+   *
+   * @param segment 경로 세그먼트
+   * @returns 프로토타입 체인 세그먼트면 true
+   * @since engine-v1.64.0
+   */
+  private static isPrototypePathSegment(segment: string): boolean {
+    return ActionDispatcher.PROTOTYPE_PATH_SEGMENTS.includes(segment);
+  }
+
+  /**
    * 중첩된 객체 속성을 경로로 접근합니다.
+   *
+   * 프로토타입 체인 세그먼트(`__proto__`/`prototype`/`constructor`)가 포함된 경로는
+   * `undefined` 를 돌려준다 — 던지지 않는 이유는 이 함수가 상태 경로 해석에도 쓰이는
+   * 공용 함수이기 때문이다. callExternal 에서는 이 undefined 가 기존의
+   * "Constructor not found" ActionError 로 수렴한다.
    *
    * @param obj 대상 객체 (예: window)
    * @param path 점으로 구분된 경로 (예: "daum.Postcode")
@@ -6335,8 +6468,49 @@ export class ActionDispatcher {
    */
   private getNestedProperty(obj: Record<string, any>, path: string): any {
     return path.split('.').reduce((current: any, key: string) => {
+      if (ActionDispatcher.isPrototypePathSegment(key)) {
+        return undefined;
+      }
       return current && current[key] !== undefined ? current[key] : undefined;
     }, obj);
+  }
+
+  /**
+   * callExternal 이 해석한 생성자가 임의 코드 실행 seam 인지 검사합니다.
+   *
+   * 이름이 아니라 **참조 동일성**으로 판정한다 — `window.myAlias = Function` 처럼 별칭을
+   * 만들어 두면 이름 비교는 그대로 통과하기 때문이다. 스크립트 로드 게이트를 통과한
+   * 전역만 호출된다는 전제 위의 심층 방어다.
+   *
+   * @param Constructor 해석된 생성자
+   * @param constructorPath 오류 메시지에 실을 경로
+   * @param action 액션 정의 (ActionError 컨텍스트)
+   * @throws ActionError 임의 코드 실행 seam 인 경우
+   * @since engine-v1.64.0
+   */
+  private assertCallableExternalConstructor(
+    Constructor: unknown,
+    constructorPath: string,
+    action: ActionDefinition
+  ): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const denied: unknown[] = [
+      (window as any).Function,
+      (window as any).eval,
+      (window as any).setTimeout,
+      (window as any).setInterval,
+    ];
+
+    if (denied.some(fn => fn !== undefined && fn === Constructor)) {
+      logger.error(`callExternal: blocked arbitrary code execution seam: ${constructorPath}`);
+      throw new ActionError(
+        `Blocked constructor (arbitrary code execution): ${constructorPath}`,
+        action
+      );
+    }
   }
 
   /**

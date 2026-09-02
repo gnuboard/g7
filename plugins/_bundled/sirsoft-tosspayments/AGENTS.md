@@ -127,6 +127,7 @@
 - [ ] `order_sheet_mode` 관련 로직을 고칠 때 `RegisterPgProviderListener`(enabled_methods)와 `RegisterTossPaymentMethodsListener`(builtin 결제수단 주입) 양쪽을 함께 갱신 — 한쪽만 고치면 설정과 노출 목록이 어긋난다
 - [ ] `ValidateTossSettingsListener`에 새 범위 검증을 추가하면 `core.plugin_settings.before_save` 의 `sync: true`를 유지
 - [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 를 확인 — 이 확장은 편집기 스펙이 없어도 되는 상태(공용 ID 만 사용)다. 이 확장만 쓰는 `data_source` 를 새로 붙이는 순간 `editor-spec.json` 신설이 필요해진다
+- [ ] 토스페이먼츠가 SDK 호스트를 바꾸면 `plugin.json` 의 `trusted_script_hosts`(+`trusted_script_hosts_reason`)와 `resources/js/handlers/requestPayment.ts` 의 `KNOWN_SDK_HOSTS` 를 **함께** 갱신 — 두 목록이 어긋나면 테스트가 실패하며, 코드 상수에 없는 호스트는 주입 직전 확인에서 거부되어 결제가 진행되지 않는다(fail-closed). 변경 후 `php artisan ext:docgen --scope=plugin:sirsoft-tosspayments` 재실행
 
 ## 6. 금지 패턴
 
@@ -151,7 +152,7 @@
 | PHPUnit | 13개 | `plugins/_bundled/sirsoft-tosspayments/tests` |
 | Vitest | 6개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 3개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 4개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

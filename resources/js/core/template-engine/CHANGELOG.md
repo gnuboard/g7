@@ -5,6 +5,38 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.64.0] - 2026-09-02
+
+### Security
+
+#### 동적 스크립트 주입 경로 전부에 출처 게이트 적용 (KVE-2026-1915 B-2 후속)
+
+- 레이아웃 `scripts[]` 에만 있던 원격 스크립트 차단 게이트를 **브라우저에 새 `<script>` 를 붙이는 모든 경로**로 넓혔다. 종전에는 `loadScript` 액션 · `reloadModuleHandlers`/`reloadPluginHandlers` 의 확장 자산 · 편집기 프리뷰 캔버스 · `G7Core.asset.loadScript` 가 게이트 밖이라, 저장측(SafeLayoutExpressions·NoExternalUrls)이 외부 URL 저장을 422 로 막아도 런타임 디스패치 한 번으로 임의 원격 코드가 로드됐다(실브라우저 실측: 미신뢰 CDN 스크립트 로드 성공, 전역 생성 확인).
+- 판정식을 `resources/js/core/support/scriptSrcPolicy.ts` 로 분리해 런타임 SSoT 를 하나로 두었다. `TemplateApp` 의 private 4개(`isAllowedScriptSrc` · `normalizeScriptSrcForOriginCheck` · `extractScriptHost` · `getTrustedScriptHosts`)는 그 모듈로 위임하는 thin delegate 로 남긴다(테스트 seam 보존). `ActionDispatcher → TemplateApp` import 는 순환의존이라 불가능하므로 공유 모듈이 유일한 해법이다.
+- 게이트 실패 시 동작은 경로 성격에 맞춘다: 액션(`loadScript` · 확장 자산 재로드)은 `ActionError` 로 실패해 `onError`/`errorHandling` 오류 채널로 전달되고, 레이아웃 `scripts[]` 와 편집기 프리뷰는 종전대로 skip + 경고다.
+- `G7Core.asset.isAllowedScriptSrc(url)` 를 공개 seam 으로 노출한다. 코어 로더를 쓸 수 없는 주입(iframe `document.write` 등)이 같은 판정을 재사용하는 통로다. `G7Core.asset.loadScript` 는 미신뢰 URL 을 reject 한다 — 공개 API 계약 변경이다.
+- `callExternal`/`callExternalEmbed` 에 심층 방어를 더했다. 해석된 생성자가 `Function`·`eval`·`setTimeout`·`setInterval` 이면 **참조 동일성**으로 거부하고(별칭 전역도 차단), 경로 세그먼트가 `__proto__`/`prototype`/`constructor` 면 `getNestedProperty` 가 `undefined` 를 돌려준다. `callbackSetState` 매핑 키도 같은 판정을 받아, 매핑 한 줄이 `deepMergeWithState` → `setState` 를 타고 앱 전역 객체를 오염시키던 쓰기 경로를 닫았다.
+
+### Fixed
+
+#### 같은 스크립트를 동시에 요청하면 로드 전에 완료 처리되던 문제
+
+- `loadScript` 액션이 in-flight 를 추적하지 않아, 2번째 호출이 "DOM 에 태그가 있다" 는 이유로 **1번째 로드가 끝나기 전에** 즉시 완료됐다(실측 0ms resolve). 그 호출자의 `onLoad` 는 SDK 전역이 아직 없는 시점에 실행되어 아무 일도 일어나지 않았고, 예외도 콘솔 에러도 남지 않았다.
+- 이제 `scriptId` 별 공유 Promise 를 두어 태그는 하나만 만들고, 동시 호출자 모두 그 태그의 `onload` 이후에 완료된다. 공유 Promise 는 "로드 완료" 만 담고 `onLoad` 는 호출자별로 각자 실행한다. dispatcher 가 만들지 않은 외래 태그는 로드 상태를 식별할 수 없으므로 종전대로 완료로 간주한다.
+
+#### 확장 핸들러 재로드에서 script 가 이미 있으면 CSS 까지 건너뛰던 문제
+
+- `reloadModuleHandlers`/`reloadPluginHandlers` 의 `assets.js` 기존재 early `return` 이 뒤따르는 CSS 로드까지 통째로 건너뛰었다. CSS 블록이 `if (assets.js)` 안에 중첩돼 있어 **CSS 만 있는 확장**은 아예 스타일이 붙지 않았다. 이제 JS 만 건너뛰고 CSS 는 형제 블록에서 독립적으로 처리한다.
+- 두 핸들러의 원시 `<script>`/`<link>` 생성을 `loadScriptWithRetry`/`loadStylesheetWithRetry` 로 교체했다. 실패한 element 를 남기지 않으므로 잔존 태그가 다음 시도를 조기 완료시키지 않는다.
+
+#### 확장 CSS 를 동시에 요청하면 `<link>` 가 중복 생성되던 문제
+
+- `ModuleAssetLoader.loadCSS` 만 in-flight Promise 공유(`loadingPromises`)가 없어 같은 확장의 CSS 동시 요청이 `<link>` 를 중복 생성했고, 재시도 로더가 기존 element 를 제거하면서 서로의 시도를 지웠다. 키는 `module-css-{id}` 로 둬 `loadJS` 의 raw identifier 키공간과 겹치지 않게 한다. 실패 시 throw 하지 않는 기존 계약은 유지한다.
+
+### Changed
+
+- 동의 관리(gdpr) preblocker 가 차단한 스크립트는 `loadScript` 액션에서 **오류가 아니라 미완료 상태**로 끝난다(`false` 반환). 태그를 붙이지 않고 캐시·in-flight 에도 기록하지 않으므로, 동의 후 다시 디스패치하면 정상 로드된다. `onLoad` 는 실행되지 않는다.
+
 ## [engine-v1.63.5] - 2026-09-02
 
 ### Fixed

@@ -479,4 +479,63 @@ describe('ModuleAssetLoader', () => {
             ).resolves.toBeUndefined();
         });
     });
+
+    describe('loadCSS in-flight Promise 공유', () => {
+        /**
+         * appendChild 를 가로채 생성된 element 를 모으고 즉시 load 를 발화시킨다.
+         *
+         * @return 생성된 element 목록
+         */
+        function stubStylesheetLoading(): HTMLElement[] {
+            const created: HTMLElement[] = [];
+
+            vi.spyOn(document.head, 'appendChild').mockImplementation(((node: any) => {
+                if (node.tagName === 'LINK' || node.tagName === 'SCRIPT') {
+                    created.push(node);
+                    document.body.appendChild(node);
+                    queueMicrotask(() => node.onload?.(new Event('load')));
+                }
+                return node;
+            }) as any);
+
+            return created;
+        }
+
+        it('같은 확장 CSS 동시 2회 → link 1개만 생성된다', async () => {
+            const created = stubStylesheetLoading();
+
+            await Promise.all([
+                (loader as any).loadCSS('vendor-ext', '/api/modules/x.css'),
+                (loader as any).loadCSS('vendor-ext', '/api/modules/x.css'),
+            ]);
+
+            expect(created.filter(el => el.tagName === 'LINK')).toHaveLength(1);
+            expect(document.getElementById('module-css-vendor-ext')).not.toBeNull();
+        });
+
+        it('CSS 로드 실패는 여전히 throw 하지 않는다 (no-throw 계약 유지)', async () => {
+            vi.spyOn(document.head, 'appendChild').mockImplementation(((node: any) => {
+                if (node.tagName === 'LINK') {
+                    document.body.appendChild(node);
+                    queueMicrotask(() => node.onerror?.(new Event('error')));
+                }
+                return node;
+            }) as any);
+
+            await expect(
+                (loader as any).loadCSS('vendor-fail', '/api/modules/x.css')
+            ).resolves.toBeUndefined();
+        });
+
+        it('CSS in-flight 키는 JS 키공간과 겹치지 않는다', async () => {
+            stubStylesheetLoading();
+
+            const pending = (loader as any).loadCSS('vendor-ext', '/api/modules/x.css');
+
+            expect((loader as any).loadingPromises.has('module-css-vendor-ext')).toBe(true);
+            expect((loader as any).loadingPromises.has('vendor-ext')).toBe(false);
+
+            await pending;
+        });
+    });
 });

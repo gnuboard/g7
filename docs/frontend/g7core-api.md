@@ -814,8 +814,15 @@ const PriceDisplay: React.FC<{ price: number }> = ({ price }) => {
 | `module` | `(identifier, path, version?) => string` | 모듈 자산 URL |
 | `plugin` | `(identifier, path, version?) => string` | 플러그인 자산 URL |
 | `convertToCurrentMode` | `(url) => string` | 서버가 확장자 형태로 굳혀 내려준 URL 을 현재 모드로 보정 |
-| `loadScript` | `(url, attrs?, options?) => Promise<void>` | 재시도 계층을 갖춘 스크립트 로더 |
+| `loadScript` | `(url, attrs?, options?) => Promise<void>` | 재시도 계층을 갖춘 스크립트 로더 (출처 게이트 적용) |
 | `loadStylesheet` | `(url, attrs?, options?) => Promise<void>` | 재시도 계층을 갖춘 스타일시트 로더 |
+| `isAllowedScriptSrc` | `(url) => boolean` | 스크립트 URL 이 주입 허용 대상인지 판정 |
+
+`loadScript` 의 `url` 은 레이아웃 `scripts[]` 와 **같은 출처 정책**을 받습니다 — same-origin
+절대 경로이거나 확장이 manifest(`trusted_script_hosts`)로 선언한 신뢰 호스트여야 하며, 그 밖의
+원격 URL 은 reject 됩니다. 로더를 쓸 수 없는 주입(iframe `document.write` 등)은
+`isAllowedScriptSrc` 로 같은 판정을 재사용하세요.
+상세: [security.md](security.md#외부-스크립트-신뢰-출처-허용목록)
 
 `path` 기준이 확장 타입마다 다릅니다. **템플릿은 서버가 `dist/` 를 자동으로 붙이므로 `path` 에
 `dist/` 를 포함하지 않고**, 모듈·플러그인은 확장 루트 기준이라 `dist/` 를 직접 포함합니다.

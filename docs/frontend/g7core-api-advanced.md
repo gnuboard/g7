@@ -923,8 +923,11 @@ declare global {
         module: (identifier: string, path: string, version?: number | string | null) => string;
         plugin: (identifier: string, path: string, version?: number | string | null) => string;
         convertToCurrentMode: (url: string) => string;
+        // 출처 게이트 적용 (engine-v1.64.0+) — 미신뢰 URL 은 reject
         loadScript: (url: string, attrs?: Record<string, string>, options?: Record<string, unknown>) => Promise<void>;
         loadStylesheet: (url: string, attrs?: Record<string, string>, options?: Record<string, unknown>) => Promise<void>;
+        // 같은 판정을 직접 물어보는 seam (engine-v1.64.0+)
+        isAllowedScriptSrc: (url: string) => boolean;
       };
 
       // 자산 실패 안내 (engine-v1.62.0+)

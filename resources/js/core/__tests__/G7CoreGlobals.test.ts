@@ -1653,6 +1653,46 @@ describe('G7CoreGlobals - 자산 API', () => {
     expect(typeof G7Core.asset.loadStylesheet).toBe('function');
   });
 
+  describe('loadScript 출처 게이트', () => {
+    /**
+     * @effects untrusted_external_script_blocked
+     */
+    it('미신뢰 외부 URL 은 reject 된다', async () => {
+      await expect(G7Core.asset.loadScript('https://cdn.evil.com/x.js')).rejects.toThrow(
+        /Blocked untrusted script src/
+      );
+    });
+
+    it('authority 우회 형태도 reject 된다', async () => {
+      await expect(G7Core.asset.loadScript('/\\/evil.com/x.js')).rejects.toThrow(
+        /Blocked untrusted script src/
+      );
+    });
+
+    /**
+     * @effects trusted_script_host_allowlist_wired
+     */
+    it('same-origin 경로와 선언된 신뢰 호스트는 게이트를 통과한다', () => {
+      (window as any).G7Config.trustedScriptHosts = ['t1.daumcdn.net'];
+
+      // 실제 네트워크를 타지 않도록 로드는 즉시 실패시키고, 게이트 통과 여부만 본다
+      vi.spyOn(document.head, 'appendChild').mockImplementation(((node: any) => {
+        queueMicrotask(() => node.onerror?.(new Event('error')));
+        return node;
+      }) as any);
+
+      expect(G7Core.asset.isAllowedScriptSrc('/api/plugins/assets/x/dist/a.js')).toBe(true);
+      expect(G7Core.asset.isAllowedScriptSrc('//t1.daumcdn.net/postcode.v2.js')).toBe(true);
+      expect(G7Core.asset.isAllowedScriptSrc('https://cdn.evil.com/x.js')).toBe(false);
+
+      vi.restoreAllMocks();
+    });
+
+    it('판정 함수를 공개 seam 으로 노출한다 (로더를 못 쓰는 주입용)', () => {
+      expect(typeof G7Core.asset.isAllowedScriptSrc).toBe('function');
+    });
+  });
+
   /**
    * @scenario asset_class=vendored, outcome=failed
    * @effects failed_asset_shows_retry_notice

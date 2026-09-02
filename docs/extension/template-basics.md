@@ -295,6 +295,8 @@ public function restoreVersion(int $layoutId, int $version): TemplateLayout
 
 `externals`는 페이지 최초 진입에 항상 필요한 리소스만 선언합니다. 라우트별 조건부 스크립트나 액션 실행 중 동적 로딩은 layout `scripts`와 `loadScript` 책임입니다.
 
+세 경로 모두 **같은 출처 정책**을 받습니다 — same-origin 경로이거나 확장이 manifest(`trusted_script_hosts`)로 선언한 신뢰 호스트여야 합니다. 상세: [module-assets.md](module-assets.md#trusted_script_hosts--외부-스크립트-신뢰-호스트) · [frontend/security.md](../frontend/security.md#외부-스크립트-신뢰-출처-허용목록)
+
 ---
 
 ## 에러 페이지 설정 (error_config)

@@ -150,5 +150,10 @@
             "amount_mismatch": "Payment amount does not match.",
             "authorize_failed": "Payment authorization failed."
         }
+    },
+    "payment": {
+        "error": {
+            "sdk_url_untrusted": "The payment module address is not valid, so the payment cannot proceed. Please contact the administrator."
+        }
     }
 }

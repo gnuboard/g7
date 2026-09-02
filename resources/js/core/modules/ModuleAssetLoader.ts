@@ -397,6 +397,15 @@ export class ModuleAssetLoader {
     /**
      * CSS 파일을 동적으로 로드합니다.
      *
+     * `loadJS`·`loadBundleJs` 와 같이 in-flight Promise 를 공유한다 — CSS 경로만 이
+     * 계층이 없어서, 같은 확장의 CSS 를 동시에 요청하면 `<link>` 가 중복 생성되고
+     * 재시도 로더가 기존 element 를 제거하면서 서로의 시도를 지웠다.
+     *
+     * 키는 `module-css-{id}` 로 둔다 — `loadJS` 가 raw identifier 를 키로 쓰므로,
+     * 같은 키공간을 쓰면 JS 로드가 CSS 로드로 오인되어 조용히 건너뛰어진다.
+     *
+     * 실패해도 throw 하지 않는 기존 계약을 유지한다(`surfaceCssFailure`).
+     *
      * @param identifier 모듈 식별자
      * @param url CSS 파일 URL
      */
@@ -409,18 +418,31 @@ export class ModuleAssetLoader {
             return;
         }
 
-        try {
-            await loadStylesheetWithRetry(url, { id: elementId }, { label: `CSS: ${identifier}` });
-
-            logger.log(`CSS loaded: ${identifier}`);
-
-            const link = document.getElementById(elementId);
-            if (link) {
-                this.registerLoadedAsset(identifier, { type: 'css', element: link });
-            }
-        } catch (error) {
-            this.surfaceCssFailure(identifier, identifier, url, error);
+        // 이미 로딩 중인 경우 대기 (JS 키공간과 겹치지 않는 elementId 를 키로 쓴다)
+        const existingPromise = this.loadingPromises.get(elementId);
+        if (existingPromise) {
+            logger.log(`CSS already loading: ${identifier}`);
+            return existingPromise;
         }
+
+        const loadPromise = loadStylesheetWithRetry(url, { id: elementId }, { label: `CSS: ${identifier}` })
+            .then(() => {
+                logger.log(`CSS loaded: ${identifier}`);
+
+                const link = document.getElementById(elementId);
+                if (link) {
+                    this.registerLoadedAsset(identifier, { type: 'css', element: link });
+                }
+                this.loadingPromises.delete(elementId);
+            })
+            .catch((error) => {
+                this.loadingPromises.delete(elementId);
+                this.surfaceCssFailure(identifier, identifier, url, error);
+            });
+
+        this.loadingPromises.set(elementId, loadPromise);
+
+        return loadPromise;
     }
 
     /**

@@ -90,5 +90,10 @@
     "vbank_due_label": "入金期限",
     "receipt_label": "領収書",
     "receipt_view": "領収書を表示"
+  },
+  "payment": {
+    "error": {
+      "sdk_url_untrusted": "決済モジュールのアドレスが正しくないため、決済を進めることができません。管理者にお問い合わせください。"
+    }
   }
 }
