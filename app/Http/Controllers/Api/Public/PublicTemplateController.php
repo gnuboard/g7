@@ -7,6 +7,7 @@ use App\Enums\ExtensionStatus;
 use App\Extension\Helpers\EditorSpecAssembler;
 use App\Extension\Traits\ClearsTemplateCaches;
 use App\Http\Controllers\Api\Base\PublicBaseController;
+use App\Http\Controllers\Concerns\ServesRewritableCssAssets;
 use App\Http\Requests\Public\Template\ServeTemplateAssetRequest;
 use App\Models\TemplateLayoutAttachment;
 use App\Services\TemplateLayoutAttachmentService;
@@ -23,6 +24,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class PublicTemplateController extends PublicBaseController
 {
     use ClearsTemplateCaches;
+    use ServesRewritableCssAssets;
 
     public function __construct(
         private TemplateService $templateService,
@@ -146,8 +148,17 @@ class PublicTemplateController extends PublicBaseController
             };
         }
 
-        // 파일 반환 (ETag 및 환경별 캐싱 헤더 포함)
-        return $this->fileResponse($result['filePath'], $result['mimeType'], 31536000);
+        // 파일 반환 (ETag 및 환경별 캐싱 헤더 포함).
+        // CSS 는 안의 상대 참조를 절대 자산 URL 로 치환해 내보낸다 — 확장자 없는 모드에서
+        // 상대 해석이 어긋나 글꼴·아이콘이 404 가 되기 때문이다.
+        return $this->rewritableAssetResponse(
+            $result['filePath'],
+            $result['mimeType'],
+            'templates',
+            $identifier,
+            $path,
+            31536000
+        );
     }
 
     /**

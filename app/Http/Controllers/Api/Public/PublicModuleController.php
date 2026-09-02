@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Public;
 
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use App\Http\Controllers\Concerns\ServesExtensionBundles;
+use App\Http\Controllers\Concerns\ServesRewritableCssAssets;
 use App\Http\Requests\Public\Module\ServeModuleAssetRequest;
 use App\Services\ExtensionBundleService;
 use App\Services\ModuleService;
@@ -19,6 +20,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 class PublicModuleController extends PublicBaseController
 {
     use ServesExtensionBundles;
+    use ServesRewritableCssAssets;
 
     public function __construct(
         private readonly ModuleService $moduleService,
@@ -89,7 +91,14 @@ class PublicModuleController extends PublicBaseController
         }
 
         // 파일 반환 (ETag 및 환경별 캐싱 헤더 포함, 1년 캐시)
-        return $this->fileResponse($result['filePath'], $result['mimeType'], 31536000);
+        return $this->rewritableAssetResponse(
+            $result['filePath'],
+            $result['mimeType'],
+            'modules',
+            $identifier,
+            $path,
+            31536000
+        );
     }
 
     /**

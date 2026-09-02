@@ -380,6 +380,22 @@ pending 은 저장소 B 의 base 가 된다 — `setLocal` 이 `currentSnapshot 
 
 전역 함수 위반은 `Call to undefined function` 500 인데 예외의 `file` 이 `laravel-serializable-closure://` 라 원인 파일이 스택에 드러나지 않는다. 프로바이더 등록분이 사라지는 이유는 별개다 — `Router::setCompiledRoutes()` 가 `booted` 콜백에서 라우트 컬렉션을 통째로 교체하므로 그보다 앞선 등록은 조건 충족 여부와 무관하게 폐기된다(프레임워크 자신의 `BroadcastManager::routes()` 는 `routesAreCached()` 가드를 갖지만 모든 패키지가 그렇지는 않다). 정적 검사가 라우트 파일의 전역 함수 선언을 차단한다. 상세: [routing.md](docs/backend/routing.md) "캐시 안전한 라우트 작성".
 
+### 조건부로만 열리는 라우트군의 게이트 (디버그·개발 라우트)
+
+특정 조건에서만 열려야 하는 라우트군은 판정을 핸들러 안이 아니라 그룹 미들웨어에 둔다. 게이트가 핸들러마다 흩어져 있으면 라우트를 추가할 때 함께 적는 것을 잊게 되고, 빠뜨려도 예외도 로그도 남지 않는다 — 그 엔드포인트가 정상 응답하는 것이 유일한 증상이다.
+
+| 금지 | 올바른 사용 |
+|------|------------|
+| 디버그 라우트 핸들러 안에서 `DebugGate::isEnabled()` 로 개별 판정 | `bootstrap/app.php` 의 그룹 래퍼(`Route::middleware(['api', 'debug.gate'])`)가 단일 부착 |
+| catch-all 제외 패턴에 예약 프리픽스 누락 (`_boost`·`modules`) | `(?!admin)(?!api)(?!plugins)(?!_boost)(?!modules)` 전수 제외 — shadow 를 보호로 삼지 않는다 |
+| 게이트 부착을 행위 테스트(403 이 나오는지)로만 확인 | 라우트군 전체의 `gatherMiddleware()` 에 게이트 별칭이 있는지 단언하는 등록 계약 테스트 + 모집단 가드 |
+| 그룹 게이트가 라우트 캐시에도 구워질 것이라 가정 | 캐시 상태에서의 차단도 검증 — 라우트 캐시는 확장 수명주기 지점에서 자동 생성되어 오히려 흔한 상태다 |
+| `withRouting(channels: ...)` 로 채널 정의를 로드 | 프로바이더에서 `require routes/channels.php` — `channels:` 인자는 `Broadcast::routes()`(게이트 없는 `/broadcasting/auth`)까지 자동 등록해 킬스위치 우회로를 만든다 |
+
+catch-all shadow 는 보호처럼 보인다는 점이 위험하다. 가려진 라우트는 도달 불가라 게이트가 없어도 증상이 없고, 제외 패턴이 한 줄 바뀌는 순간 무방비로 노출된다 — 실제로 `_boost` GET 4종이 그 상태였고, 같은 그룹의 `DELETE clear` 는 shadow 밖이라 운영 환경·`APP_DEBUG=false` 에서 미인증 200 으로 `storage/debug-dump` 전체를 지웠다(공개#128). 등록 계약 축을 행위 테스트로 대체할 수 없는 이유도 같다: 가려진 라우트는 행위상 "막힌 것" 과 구분되지 않는다.
+
+정적 검사가 디버그 라우트 파일의 개별 게이트를 차단하며, 부착·행위·캐시 축과 방송 인증 라우트 단일성은 테스트가 잠근다. 상세: [routing.md](docs/backend/routing.md) "디버그·개발 라우트는 그룹 단위로 게이트한다".
+
 ### 목록 컨텍스트 왕복 (list context round-trip)
 
 페이지네이션 목록 화면과 그에 딸린 상세·형제 상세·작성/수정 폼·확인 모달은 하나의 목록 클러스터다. 이 클러스터 안에서의 이동은 URL 목록 상태(`page`/`search`/`category`/`filters[*]`/정렬/`per_page`)를 손실 없이 보존해야 한다.
@@ -497,7 +513,7 @@ pending 은 저장소 B 의 base 가 된다 — `setLocal` 이 `currentSnapshot 
 | 사용자 추가 에셋 URL 을 `ext.cache_version` 으로 무효화 | 파일 서명(수정 시각) — 확장 캐시 버전은 운영자가 파일을 고쳤다고 오르지 않는다 |
 | `custom/` 보존을 rename 경로에만 적용 | 교체 **두 경로 모두**(rename · 제자리 동기화 폴백) — 한쪽만 고치면 Windows 잠금 상황에서만 조용히 사라진다 |
 
-동봉 자산은 배포 산출물이므로 `sourceMappingURL` 참조를 남기지 않는다(`.map` 은 gitignore 대상이라 404 가 된다). 인라인 여부는 "없으면 조작 불능인가" 로 가른다 — 아이콘 폰트는 인라인, 글꼴·장식 아이콘은 파일 분리(자산 URL 이 쿼리 형태가 되는 서버에서 CSS 내부 상대 `url()` 이 해석되지 않는 조합이 남는다).
+동봉 자산은 배포 산출물이므로 `sourceMappingURL` 참조를 남기지 않는다(`.map` 은 gitignore 대상이라 404 가 된다). 인라인 여부는 "없으면 조작 불능인가" 로 가른다 — 아이콘 폰트는 인라인, 글꼴·장식 아이콘은 파일 분리. 분리한 자산을 CSS 가 상대 경로로 가리켜도 된다: 확장 자산 CSS 는 서빙 시점에 내부 상대 참조가 절대 자산 URL 로 치환된다(`ServesRewritableCssAssets`). 치환이 없으면 쿼리 형태(`?file=`) 서버에서 그 참조가 조용히 404 가 된다.
 
 사용자 추가 에셋(`custom/`)은 **출처에 의존하지 않는 서술자**로 해석하고 `core.assets.custom_assets` 필터 훅을 해석기 끝에 둔다. 소비자(뷰 컴포저·프론트 로더·서빙)가 출처를 보면, 나중에 다른 출처(템플릿 환경설정의 화면 입력 등)가 붙을 때 평행 경로가 생기고 "운영자 CSS 가 어디서 오는가" 의 SSoT 가 둘로 갈린다.
 
