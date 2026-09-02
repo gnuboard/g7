@@ -398,6 +398,25 @@ class AssetUrl
     }
 
     /**
+     * 확장 자산의 **API 서빙 URL** 을 생성합니다 (정적 게시본 분기 없음).
+     *
+     * 정적 게시본을 건너뛰는 이유: 이 메서드의 호출자는 CSS 서빙 컨트롤러다. 게시본이
+     * 활성이면 그 CSS 자체가 웹서버에서 경로 형태로 나가 컨트롤러에 도달하지 않으므로,
+     * 여기 도달했다는 것은 이 요청에 게시본이 적용되지 않았다는 뜻이다. 한 스타일시트
+     * 안에서 서빙 경로가 갈리지 않도록 API 형태로 통일한다.
+     *
+     * @param  string  $type  `templates` / `modules` / `plugins`
+     * @param  string  $identifier  확장 식별자
+     * @param  string  $path  확장 기준 파일 경로
+     * @param  int|string|null  $version  캐시 무효화 버전
+     * @return string 생성된 URL (현재 모드 반영)
+     */
+    public static function extensionApiAsset(string $type, string $identifier, string $path, int|string|null $version = null): string
+    {
+        return self::asset($type, $identifier, $path, $version);
+    }
+
+    /**
      * 확장 자산 URL 을 생성하는 공통 구현.
      *
      * 확장자 없는 모드에서는 파일 경로를 `?file=` 쿼리로 옮긴다. 경로가 곧 파일명이라

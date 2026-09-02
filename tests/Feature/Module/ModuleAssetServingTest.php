@@ -461,12 +461,12 @@ class ModuleAssetServingTest extends TestCase
             'Content-Type should start with text/css'
         );
 
-        // BinaryFileResponse 는 스트리밍이라 본문이 버퍼에 없다 — 어떤 파일을 서빙했는지로
-        // 확인한다. dist/ 의 동명 파일이 아니라 custom/ 의 파일이어야 한다.
-        $served = $response->baseResponse->getFile()->getRealPath();
-        $this->assertSame(
-            realpath($this->testModulePath.'/custom/custom.css'),
-            $served,
+        // dist/ 의 동명 파일이 아니라 custom/ 의 파일이어야 한다 — 내용으로 확인한다.
+        // CSS 응답은 상대 참조 치환을 거치므로 본문이 버퍼에 실린다(BinaryFileResponse 아님).
+        // 파일 경로 대신 내용을 보는 편이 "무엇이 나갔는가" 를 직접 재는 것이기도 하다.
+        $this->assertStringContainsString(
+            '.operator { color: red; }',
+            $response->getContent(),
             'custom/ 의 파일이 서빙되어야 한다'
         );
     }

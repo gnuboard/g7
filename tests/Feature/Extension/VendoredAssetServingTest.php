@@ -258,7 +258,10 @@ class VendoredAssetServingTest extends TestCase
     #[Test]
     public function 빌드_산출물_정리가_동봉_자산을_보존한다(): void
     {
-        $workspace = storage_path('framework/testing/prune-'.uniqid());
+        // `_bundled` 아래에 둔다 — 정리는 소스 디렉토리에서만 수행된다(#619). 활성 경로에서는
+        // 경고만 남기고 아무것도 지우지 않으므로, 그 경로에 두면 이 테스트가 재려는 것 자체가
+        // 실행되지 않는다.
+        $workspace = storage_path('framework/testing/_bundled/prune-'.uniqid());
         File::ensureDirectoryExists($workspace.'/dist/js');
         File::ensureDirectoryExists($workspace.'/dist/vendor/lib/1.0.0');
         File::put($workspace.'/dist/js/old.js', '// old');
@@ -268,6 +271,17 @@ class VendoredAssetServingTest extends TestCase
         $command = new class
         {
             use PrunesBuildOutput;
+
+            /**
+             * Artisan 커맨드의 출력 메서드 대역.
+             *
+             * 트레이트가 활성 경로에서 경고를 내보내므로 대역에도 있어야 한다 — 없으면
+             * 그 분기에 닿는 순간 치명적 오류가 나서 무엇이 어긋났는지 드러나지 않는다.
+             *
+             * @param  string  $string  메시지
+             * @param  int|string|null  $verbosity  출력 수준
+             */
+            public function warn($string, $verbosity = null): void {}
 
             /**
              * 정리를 실행합니다.

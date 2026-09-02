@@ -77,7 +77,7 @@ class ExtensionBundleServiceTest extends TestCase
      * hasAssets/getAssetLoadingConfig/getBuiltAssetAbsolutePaths/getIdentifier 를
      * 노출하는 가짜 확장 인스턴스를 만든다.
      */
-    private function fakeExtension(string $identifier, int $priority, ?string $jsPath, ?string $cssPath, string $strategy = 'global'): object
+    private function fakeExtension(string $identifier, int $priority, ?string $jsPath, ?string $cssPath, string $strategy = 'global', ?string $cssRelPath = null): object
     {
         $ext = Mockery::mock();
         $ext->shouldReceive('hasAssets')->andReturn(true);
@@ -96,6 +96,13 @@ class ExtensionBundleServiceTest extends TestCase
             $paths['css'] = $cssPath;
         }
         $ext->shouldReceive('getBuiltAssetAbsolutePaths')->andReturn($paths);
+
+        // 확장 루트 기준 상대 경로 — CSS 상대 참조 해석의 기준점
+        $relative = [];
+        if ($cssRelPath !== null) {
+            $relative['css'] = $cssRelPath;
+        }
+        $ext->shouldReceive('getBuiltAssetPaths')->andReturn($relative);
 
         return $ext;
     }
@@ -124,6 +131,9 @@ class ExtensionBundleServiceTest extends TestCase
         $ext->shouldReceive('getAssets')->andReturn($assets);
         $ext->shouldReceive('getBuiltAssetAbsolutePaths')->andReturn(
             array_map(fn () => $this->fixtureDir.'/missing-'.$identifier.'.out', $assets)
+        );
+        $ext->shouldReceive('getBuiltAssetPaths')->andReturn(
+            array_map(fn () => 'dist/css/module.css', $assets)
         );
 
         return $ext;
@@ -306,20 +316,58 @@ class ExtensionBundleServiceTest extends TestCase
         $this->assertStringContainsString('window.GOOD=1', $js);
     }
 
-    public function test_css_with_relative_url_is_excluded(): void
+    /**
+     * 상대 참조를 가진 CSS 는 **제외되지 않고 치환되어** 병합된다.
+     *
+     * 종전 계약은 그 확장을 번들에서 통째로 제외하는 것이었고 주석은 "개별 폴백 유지" 라고
+     * 적었지만, 번들 URL 이 내려오면 프론트는 개별 로딩을 아예 타지 않는다
+     * (TemplateApp.loadExtensionAssets). 즉 제외 = 그 확장 스타일이 하나도 적용되지 않음
+     * 이었고, 오류도 로그 흔적도 화면 경고도 남지 않았다.
+     */
+    public function test_css_with_relative_url_is_rewritten_not_excluded(): void
     {
         $safe = $this->writeFixture('safe.css', '.a{color:red}');
         $relative = $this->writeFixture('rel.css', '.b{background:url(./img/x.png)}');
 
         $this->moduleManager->shouldReceive('getActiveModules')->andReturn([
-            'ext-safe' => $this->fakeExtension('ext-safe', 10, null, $safe),
-            'ext-rel' => $this->fakeExtension('ext-rel', 20, null, $relative),
+            'ext-safe' => $this->fakeExtension('ext-safe', 10, null, $safe, cssRelPath: 'dist/css/module.css'),
+            'ext-rel' => $this->fakeExtension('ext-rel', 20, null, $relative, cssRelPath: 'dist/css/module.css'),
         ]);
 
         $css = $this->service()->buildCssBundle('module');
 
+        // 두 확장 모두 병합에 남는다 — 제외가 사라졌다는 것이 이 축의 핵심이다.
         $this->assertStringContainsString('.a{color:red}', $css);
+        $this->assertStringContainsString('.b{background:', $css);
+
+        // 상대 참조는 그대로 나가지 않는다 (그 주소는 병합본 기준으로 풀려 404 가 된다).
         $this->assertStringNotContainsString('url(./img/x.png)', $css);
+
+        // 치환 결과는 그 확장의 절대 자산 URL 이며, CSS 가 놓인 디렉토리 기준으로 풀린다.
+        $this->assertStringContainsString('/api/modules/assets/ext-rel', $css);
+        $this->assertStringContainsString('dist/css/img/x.png', rawurldecode($css));
+    }
+
+    /**
+     * 절대·루트상대·data URI 참조는 병합에서도 손대지 않는다.
+     */
+    public function test_css_bundle_leaves_absolute_references_untouched(): void
+    {
+        $path = $this->writeFixture('abs.css',
+            '.a{background:url(https://cdn.example.com/x.png)}'
+            .'.b{background:url(/build/ext/1/y.png)}'
+            .'.c{background:url(data:image/gif;base64,AA==)}'
+        );
+
+        $this->moduleManager->shouldReceive('getActiveModules')->andReturn([
+            'ext-abs' => $this->fakeExtension('ext-abs', 10, null, $path, cssRelPath: 'dist/css/module.css'),
+        ]);
+
+        $css = $this->service()->buildCssBundle('module');
+
+        $this->assertStringContainsString('url(https://cdn.example.com/x.png)', $css);
+        $this->assertStringContainsString('url(/build/ext/1/y.png)', $css);
+        $this->assertStringContainsString('url(data:image/gif;base64,AA==)', $css);
     }
 
     public function test_empty_bundle_returns_empty_path(): void

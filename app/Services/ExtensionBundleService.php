@@ -7,6 +7,7 @@ use App\Extension\PluginManager;
 use App\Extension\Storage\CoreStorageDriver;
 use App\Extension\Traits\ClearsTemplateCaches;
 use App\Http\View\Composers\TemplateComposer;
+use App\Support\AssetCssUrlRewriter;
 use App\Support\AssetUrl;
 use Illuminate\Support\Facades\Log;
 
@@ -64,9 +65,12 @@ class ExtensionBundleService
      * 필터/정렬을 쓰도록 하는 SSoT. 순서 제어는 오직 manifest
      * `loading.priority` 숫자 오름차순뿐이며 특정 확장 이름 하드코딩은 없다(제약 1).
      *
+     * `cssRelPath` 는 확장 루트 기준 상대 경로다 — 병합 시 CSS 안의 상대 참조를 그 CSS 가
+     * 놓인 위치 기준으로 풀어야 하는데, 절대 경로만으로는 확장 루트를 되짚을 수 없다.
+     *
      * @param  string  $type  'module' | 'plugin'
-     * @return array<string, array{jsAbsPath: ?string, cssAbsPath: ?string, priority: int}>
-     *                                                                                      identifier => 절대경로/우선순위 (priority 오름차순 정렬)
+     * @return array<string, array{jsAbsPath: ?string, cssAbsPath: ?string, cssRelPath: ?string, priority: int}>
+     *                                                                                                           identifier => 절대경로/상대경로/우선순위 (priority 오름차순 정렬)
      */
     public function getOrderedGlobalAssetPaths(string $type): array
     {
@@ -98,9 +102,14 @@ class ExtensionBundleService
                 continue;
             }
 
+            // CSS 안의 상대 참조를 풀려면 그 CSS 가 확장 안에서 **어디에 놓였는지**가 필요하다.
+            // 절대 경로만으로는 확장 루트를 되짚을 수 없으므로 선언된 상대 경로를 함께 싣는다.
+            $cssRelPath = $extension->getBuiltAssetPaths()['css'] ?? null;
+
             $ordered[$extension->getIdentifier()] = [
                 'jsAbsPath' => $jsAbsPath,
                 'cssAbsPath' => $cssAbsPath,
+                'cssRelPath' => $cssRelPath,
                 'priority' => (int) ($loadingConfig['priority'] ?? 100),
             ];
         }
@@ -164,9 +173,12 @@ class ExtensionBundleService
     /**
      * 확장 타입의 CSS 번들 문자열을 생성합니다.
      *
-     * priority 순으로 각 CSS 파일을 읽어 `\n` 구분자로 이어붙인다. 상대경로
-     * `url(...)` 참조가 있는 CSS 는 병합 시 경로가 깨지므로 번들에서 제외하고
-     * 경고 로그를 남긴다(안전장치 — 현재 번들 CSS 는 url() 0건).
+     * priority 순으로 각 CSS 파일을 읽어 `\n` 구분자로 이어붙인다. CSS 안의 상대
+     * `url(...)`·`@import` 참조는 그 확장의 절대 자산 URL 로 치환한다 — 병합본의 주소는
+     * 어느 확장의 dist 디렉토리도 아니라 상대 해석이 반드시 어긋나기 때문이다.
+     *
+     * 치환은 개별 자산 서빙(ServesRewritableCssAssets)과 같은 규칙(AssetCssUrlRewriter)을
+     * 쓴다. 두 경로가 서로 다른 코드로 갈라지면 한쪽만 고쳐진 채 남는다.
      *
      * @param  string  $type  'module' | 'plugin'
      * @return string 병합된 CSS (활성 global 에셋이 없으면 빈 문자열)
@@ -175,6 +187,8 @@ class ExtensionBundleService
     {
         $ordered = $this->getOrderedGlobalAssetPaths($type);
         $isProduction = app()->environment('production');
+        $typeSegment = $type === 'plugin' ? 'plugins' : 'modules';
+        $version = $this->getCurrentVersion();
         $segments = [];
 
         foreach ($ordered as $identifier => $paths) {
@@ -195,16 +209,24 @@ class ExtensionBundleService
                     continue;
                 }
 
-                // 상대경로 url() 참조가 있으면 병합 시 폰트/이미지 경로가 깨진다.
-                // 절대/data URI 는 안전하므로 상대경로만 검출해 해당 CSS 제외.
-                if ($this->hasRelativeUrl($content)) {
-                    Log::warning('확장 CSS 에 상대경로 url() 존재 — 번들에서 제외(개별 폴백 유지)', [
-                        'type' => $type,
-                        'identifier' => $identifier,
-                    ]);
-
-                    continue;
-                }
+                // 상대 참조는 **치환**한다. 병합본의 주소(`/api/{type}/bundle.css` 또는 정적
+                // 게시본)는 어느 확장의 dist 디렉토리도 아니므로 상대 해석이 반드시 어긋나는데,
+                // 그 실패는 404 하나로만 나타나 서버 로그에 흔적이 없다.
+                //
+                // 종전에는 그런 CSS 를 가진 확장을 번들에서 통째로 제외했다. 그러나 번들 URL 이
+                // 내려오면 프론트는 개별 로딩을 아예 타지 않으므로(TemplateApp.loadExtensionAssets)
+                // 제외 = 그 확장의 스타일이 **하나도 적용되지 않음** 이었다. 주석이 말하던
+                // "개별 폴백" 은 bundleUrls 부재(구버전 blade) 경로에만 있다.
+                $content = AssetCssUrlRewriter::rewrite(
+                    $content,
+                    (string) ($paths['cssRelPath'] ?? ''),
+                    fn (string $path): string => AssetUrl::extensionApiAsset(
+                        $typeSegment,
+                        $identifier,
+                        $path,
+                        $version
+                    )
+                );
 
                 $segments[] = $this->processCssSourceMap($content, $isProduction);
             } catch (\Throwable $e) {
@@ -579,42 +601,6 @@ class ExtensionBundleService
 
         // 구분자로 `~` 사용 — 패턴에 `/`, `#` 가 포함됨
         return preg_replace('~/\*#\s*sourceMappingURL=\S+?\s*\*/~', '', $content) ?? $content;
-    }
-
-    /**
-     * CSS 내용에 상대경로 url() 참조가 있는지 확인합니다.
-     *
-     * 절대 URL(http/https), 루트 절대경로(/), data URI 는 병합에 안전하므로
-     * 그 외의 url() 참조만 상대경로로 간주한다.
-     *
-     * @param  string  $css  CSS 내용
-     * @return bool 상대경로 url() 이 하나라도 있으면 true
-     */
-    private function hasRelativeUrl(string $css): bool
-    {
-        if (! preg_match_all('/url\(\s*[\'"]?([^\'")]+)[\'"]?\s*\)/i', $css, $matches)) {
-            return false;
-        }
-
-        foreach ($matches[1] as $url) {
-            $url = trim($url);
-
-            if ($url === '') {
-                continue;
-            }
-
-            $isAbsolute = str_starts_with($url, 'http://')
-                || str_starts_with($url, 'https://')
-                || str_starts_with($url, '//')
-                || str_starts_with($url, '/')
-                || str_starts_with($url, 'data:');
-
-            if (! $isAbsolute) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**
