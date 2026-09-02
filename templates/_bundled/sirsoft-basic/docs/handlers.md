@@ -64,6 +64,25 @@
 
 `setLocale` 은 이 템플릿의 핸들러가 아닙니다 — 엔진(`ActionDispatcher`) 빌트인이라 등록이
 필요 없습니다.
+
+### 핸들러 시그니처는 `(action, context)` 입니다
+
+엔진은 등록된 핸들러를 `handler(action, context)` 로 부르고, 레이아웃이 선언한 값은
+`action.params` 에 해석되어 들어옵니다. 첫 인자를 params 로 받는 형태로 작성하면 레이아웃이
+넘긴 값이 전부 `undefined` 가 되는데, 오류가 나지 않아 드러나지 않습니다. 타입 정의는
+`src/types/index.ts` 의 `HandlerFunction` · `TemplateActionDefinition` 이 정본입니다.
+
+상태 조회·설정 API 는 컨텍스트가 아니라 전역 `G7Core` 가 제공합니다:
+
+| 하는 일 | 쓰는 것 |
+|---|---|
+| 전역 상태 읽기/쓰기 | `G7Core.state.get()` / `G7Core.state.set()` |
+| 로컬(`_local`) 상태 읽기/쓰기 | `G7Core.state.getLocal()` / `G7Core.state.setLocal()` |
+| 현재 사용자 | `AuthManager.getInstance().getUser()` |
+
+`context.setState(updates)` 는 **객체 하나**를 받습니다. 스코프 인자를 앞에 두는
+`setState('global', {...})` 형태로 부르면 문자열 `'global'` 이 로컬 상태에 전개되어,
+오류 없이 상태만 오염됩니다.
 <!-- @intent END -->
 
 ## 부트스트랩
@@ -389,10 +408,11 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 | 필드 | 타입 | 필수 | 설명 |
 |------|------|------|------|
 | `value` | number | ✅ | 포맷팅할 숫자 값 |
-| `currencyCode` | string | ❌ | 통화 코드 (KRW, USD, JPY, CNY, EUR) |
-| `locale` | string | ❌ | 로케일 (미지정 시 통화 기본 로케일 사용) |
+| `currencyCode` | string | ❌ | 통화 코드 (미지정 시 표시 통화 → 기본 통화 순) |
+| `locale` | string | ❌ | 로케일 (미지정 시 브라우저 로케일) |
 
-지원 통화: KRW (₩), USD ($), JPY (¥), CNY (¥), EUR (€)
+통화 표기는 **쇼핑몰 설정**(`language_currency.currencies`)의 기호와 소수 자릿수를 따릅니다.
+고정 통화표를 두지 않으므로 운영자가 추가한 통화도 그대로 표기됩니다.
 
 #### getCurrencySymbol (sirsoft-basic.getCurrencySymbol)
 

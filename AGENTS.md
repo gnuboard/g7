@@ -193,7 +193,7 @@
 | `sirsoft-pay_kginicis` | 플러그인 | [AGENTS.md](plugins/_bundled/sirsoft-pay_kginicis/AGENTS.md) | [docs/](plugins/_bundled/sirsoft-pay_kginicis/docs/README.md) | 훅 6 · 라우트 35 · 모델 0 · 레이아웃 1 |
 | `sirsoft-pay_nhnkcp` | 플러그인 | [AGENTS.md](plugins/_bundled/sirsoft-pay_nhnkcp/AGENTS.md) | [docs/](plugins/_bundled/sirsoft-pay_nhnkcp/docs/README.md) | 훅 8 · 라우트 16 · 모델 0 · 레이아웃 1 |
 | `sirsoft-pay_nicepayments` | 플러그인 | [AGENTS.md](plugins/_bundled/sirsoft-pay_nicepayments/AGENTS.md) | [docs/](plugins/_bundled/sirsoft-pay_nicepayments/docs/README.md) | 훅 5 · 라우트 15 · 모델 0 · 레이아웃 1 |
-| `sirsoft-tosspayments` | 플러그인 | [AGENTS.md](plugins/_bundled/sirsoft-tosspayments/AGENTS.md) | [docs/](plugins/_bundled/sirsoft-tosspayments/docs/README.md) | 훅 4 · 라우트 4 · 모델 0 · 레이아웃 1 |
+| `sirsoft-tosspayments` | 플러그인 | [AGENTS.md](plugins/_bundled/sirsoft-tosspayments/AGENTS.md) | [docs/](plugins/_bundled/sirsoft-tosspayments/docs/README.md) | 훅 4 · 라우트 5 · 모델 0 · 레이아웃 1 |
 | `sirsoft-verification_kginicis` | 플러그인 | [AGENTS.md](plugins/_bundled/sirsoft-verification_kginicis/AGENTS.md) | [docs/](plugins/_bundled/sirsoft-verification_kginicis/docs/README.md) | 훅 3 · 라우트 2 · 모델 2 · 레이아웃 1 |
 | `sirsoft-verification_nhnkcp` | 플러그인 | [AGENTS.md](plugins/_bundled/sirsoft-verification_nhnkcp/AGENTS.md) | [docs/](plugins/_bundled/sirsoft-verification_nhnkcp/docs/README.md) | 훅 0 · 라우트 2 · 모델 2 · 레이아웃 1 |
 | `gnuboard7-hello_admin_template` | 템플릿 | [AGENTS.md](templates/_bundled/gnuboard7-hello_admin_template/AGENTS.md) | [docs/](templates/_bundled/gnuboard7-hello_admin_template/docs/README.md) | 훅 0 · 라우트 1 · 모델 0 · 레이아웃 8 |
@@ -324,6 +324,8 @@ Icon 은 `<i>` 글리프라 박스 크기가 곧 `font-size` 다. `w-N h-N` 은 
 | 두 쓰기 경로(B 쓰기 / 반환값)에 서로 다른 병합 규칙 | 같은 규칙 — 갈라지면 나중에 소비자가 생길 때 어느 경로를 탔느냐로 결과가 달라진다 |
 | `__g7ForcedLocalFields` 오버레이가 있으니 `context.state` 도 최신이라고 가정 | 그 오버레이는 `extendedDataContext` **useMemo 안에서 읽는 window 전역**이라 deps 가 아니다 — memo 가 재계산되지 않으면 실리지 않는다 |
 | 자동바인딩이 `__g7PendingLocalState` 에 저장소 A 스냅샷을 그대로 대입 | 렌더러와 같은 순서로 `__g7ForcedLocalFields` 를 얹고 방금 입력한 경로를 다시 적용 — pending 은 `getLocal()` 이 읽는 "화면과 같은 전체 스냅샷" 이다 |
+| 저장소 A 에만 쓰는 `_local` 경로 (`context.setState(payload)` 단독) | 같은 지배 분기 안에서 B 도 갱신 — `G7Core.state.setLocal(payload, { render: false })`. B 에 이미 키가 있으면 보충 대상에서 빠져 A 의 값이 조용히 유실된다 |
+| 미러를 **형제 분기**에 두고 이 분기도 지켜진다고 간주 | 미러는 그 쓰기를 **지배하는 분기 안**에 둔다 — 긴 함수를 통째로 보면 한 분기의 미러가 다른 분기를 면죄한다 |
 
 A 가 값을 못 받는 대표 경로는 `setLocal({ render: false, selfManaged: true })`(CKEditor 등 자체 DOM 관리 플러그인)다. `render:false` 는 `updateTemplateData` 앞에서 조기 return 하고 액션 밖이라 `__g7ActionContext` 도 없으므로 **React 렌더가 0회** — memo 가 재계산되지 않아 `context.state` 가 입력 이전 스냅샷으로 고정된다. 여기에 폭 변경 리렌더가 `__g7PendingLocalState` 를 null 로 지우면(의존성 배열 없는 `useLayoutEffect`) base 가 stale A 로 떨어진다.
 

@@ -1,0 +1,100 @@
+# audit:allow test-scenario-coverage reason: 형제 결제 플러그인(nhnkcp·kginicis·nicepayments)의 security-callback-defense 와 같은 형태의 명세 SSoT. 조합 커버는 test_files 의 통과 테스트가 담당하고, 본 매니페스트는 "무엇을 반드시 담아야 하는가" 를 고정한다.
+
+feature: 콜백 보안 방어 (비인증 브라우저 콜백의 주문 변조 / 소유권 검증 실패 기록)
+
+description: |
+  토스페이먼츠 결제 콜백 처리 경로의 주문 상태 전이 계약.
+
+  근본 결함: 실패 리다이렉트(`fail`)는 로그인도 서명 확인도 거치지 않는 GET 이면서
+  주소에 담겨 온 `orderId` 로 주문을 찾아 결제 실패 처리했다. 주문번호만 아는 제3자가
+  그 주소를 열기만 해도 남의 결제대기 주문이 취소됐다 — 보고된 NHN KCP 건보다 조건이
+  가볍다(위조 암호문조차 필요 없다).
+
+  불변조건: **비인증 브라우저-리턴 콜백은 주문/결제 상태를 전이하지 않는다.**
+  상태 전이가 허용되는 경로는 셋뿐이다 —
+    (a) 서버 승인(`confirmPayment`)이 성립한 이후,
+    (b) 소유권을 검증한 close-report,
+    (c) 서명이 검증된 웹훅.
+
+  형제 대비: kcp·kginicis·nicepay 는 close-report 를 이미 갖고 있었으나 토스에는 없어,
+  `fail` 에서 mutation 을 떼면 정당한 결제 실패가 어디에도 기록되지 않는 공백이 생겼다.
+  그래서 형제와 동형인 소유권 검증 close-report 를 함께 신설했다(구매자 연락처 + 금액 대조).
+
+  축 설계: 판정에 실제로 영향을 주는 것은 "누가 불렀는가"와 "서버 승인이 성립했는가"다.
+  리다이렉트 주소 커스터마이즈·쿼리 병합은 표시 계층이므로 축이 아니다.
+
+axes:
+  endpoint: [success_redirect, fail_redirect, close_report, webhook]
+  caller: [pg_server_confirmed, unauthenticated_browser, ownership_verified_buyer, signed_webhook]
+  order_owner: [self, another_user]
+  order_state: [payable_pending, already_paid, no_longer_payable, not_found]
+
+exclusions:
+  - { endpoint: success_redirect, caller: unauthenticated_browser, reason: "성공 경로는 서버 confirmPayment 결과로만 완료되므로 호출자 축이 판정에 관여하지 않는다" }
+  - { endpoint: success_redirect, caller: ownership_verified_buyer, reason: "동일 — 성공 확정은 소유권이 아니라 서버 승인이 정한다" }
+  - { endpoint: success_redirect, caller: signed_webhook, reason: "성공 리다이렉트와 웹훅은 별개 엔드포인트" }
+  - { endpoint: fail_redirect, caller: pg_server_confirmed, reason: "실패 리다이렉트는 서버 승인을 거치지 않는다 — 그것이 이 결함의 전제다" }
+  - { endpoint: fail_redirect, caller: ownership_verified_buyer, reason: "실패 리다이렉트에는 구매자 확인 수단이 없다 — 확인은 close-report 가 한다" }
+  - { endpoint: fail_redirect, caller: signed_webhook, reason: "브라우저 리턴 경로에는 서명이 없다" }
+  - { endpoint: close_report, caller: pg_server_confirmed, reason: "close-report 는 결제창을 닫은 구매자가 부르는 경로" }
+  - { endpoint: close_report, caller: signed_webhook, reason: "동일" }
+  - { endpoint: webhook, caller: unauthenticated_browser, reason: "서명 없는 요청은 웹훅으로 수용되지 않는다" }
+  - { endpoint: webhook, caller: ownership_verified_buyer, reason: "웹훅은 PG 서버가 부른다" }
+  - { endpoint: webhook, caller: pg_server_confirmed, reason: "웹훅의 신뢰 근거는 승인 결과가 아니라 서명이다" }
+  - { endpoint: close_report, order_owner: another_user, order_state: not_found, reason: "주문이 없으면 소유권 판정 이전에 404 로 끝난다" }
+  - { endpoint: fail_redirect, order_state: not_found, order_owner: another_user, reason: "동일 — 주문이 없으면 소유권 축이 성립하지 않는다" }
+  - { endpoint: success_redirect, order_owner: another_user, reason: "성공 경로의 주문은 서버 승인 응답이 지목한다 — 주소로 고를 수 없다" }
+
+effects:
+  # 비인증 브라우저 콜백의 주문 변조 차단
+  - fail_redirect_does_not_mutate_the_order
+  - unauthenticated_fail_link_cannot_cancel_another_users_order
+  - fail_redirect_still_carries_error_params_to_the_checkout_screen
+  - fail_redirect_handles_missing_order_id_without_error
+  - fail_redirect_honors_custom_fail_url_and_existing_query_params
+
+  # 성공 경로 회귀 방지 (서버 승인만이 완료를 만든다)
+  - success_completes_the_order_only_after_server_confirm
+  - success_redirects_to_checkout_on_confirm_api_failure
+  - success_redirects_to_checkout_on_amount_mismatch
+  - success_redirects_to_checkout_on_order_not_found
+  - success_redirect_follows_shop_route_path_setting
+
+  # 소유권 검증 실패 기록 (형제 플러그인과 동형으로 신설)
+  - close_report_marks_pending_order_cancelled
+  - close_report_records_declined_payment_with_its_code
+  - close_report_rejects_buyer_mismatch
+  - close_report_rejects_missing_buyer_information
+  - close_report_rejects_amount_mismatch
+  - close_report_returns_not_found_for_unknown_order
+  - close_report_ignores_order_whose_payment_already_paid
+  - close_report_ignores_order_that_is_no_longer_payable
+  - close_report_restores_mileage_and_option_state_through_fail_payment
+
+test_files:
+  - plugins/_bundled/sirsoft-tosspayments/tests/Feature/Controllers/PaymentCallbackControllerTest.php
+  - plugins/_bundled/sirsoft-tosspayments/tests/Feature/Controllers/PaymentCloseReportControllerTest.php
+
+manual_verification:
+  - description: "위조 실패 링크 PoC — 주소 하나로 남의 주문 취소"
+    steps:
+      - "피해자 계정으로 결제대기 주문 1건 생성 (pending_order / ready)"
+      - "로그아웃 상태에서 `/api/plugins/sirsoft-tosspayments/payment/fail?orderId={피해주문번호}&code=...` GET"
+      - "302 리다이렉트만 발생하고 주문 상태·결제 상태가 불변인지 재조회로 확인"
+      - "피해자 재로그인 후 주문 상세에서 여전히 결제대기인지 확인"
+  - description: "정상 실패 기록 — 소유권 검증 close-report"
+    steps:
+      - "구매자 본인 정보(주문 연락처)와 금액을 담아 close-report 호출 → 주문 취소 기록"
+      - "같은 요청에서 연락처만 다른 사람 것으로 바꿔 호출 → 거부되고 주문 불변"
+      - "취소 기록 시 선차감 마일리지 복원·옵션 취소 동기가 함께 일어나는지 확인"
+
+notes: |
+  `fail` 은 사용자에게 보여 줄 화면을 정하는 표시 경로다. 상태 기록은 close-report 가 맡는다.
+  둘을 한 엔드포인트에 겹치면, 화면을 여는 행위가 곧 상태 변경이 되어 인증 없는 주소가
+  그대로 조작 통로가 된다.
+
+  관련 코드:
+   - src/Controllers/PaymentCallbackController.php (success / fail)
+   - src/Controllers/PaymentCloseReportController.php (소유권 검증 실패 기록)
+   - src/Controllers/WebhookController.php (서명 검증 웹훅)
+   - 형제 참조: plugins/_bundled/sirsoft-pay_nhnkcp · sirsoft-pay_kginicis 의 close-report

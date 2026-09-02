@@ -5,6 +5,28 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.63.5] - 2026-09-02
+
+### Fixed
+
+#### 커스텀 핸들러가 기록한 값이 요청 body 에 실리지 않던 문제
+
+- 커스텀 핸들러가 받는 `context.setState` 는 **저장소 A**(React `localDynamicState`)만 갱신했다. engine-v1.63.3 이 sequence 후속 액션의 `_local` 을 live B 기준으로 바꾼 뒤로, 저장소 B 에 이미 그 키가 있으면 `addMissingLeafKeys` 보충 대상에서 빠져 **A 의 값이 조용히 유실**된다. 상품상세에서 옵션을 고르면 화면에는 담긴 항목이 그대로 보이는데 `POST …/checkout` body 가 `{"direct_items":[]}` 로 나가 422 가 났고, 「장바구니 담기」는 클라 가드에 걸려 요청조차 나가지 않았다. 예외도 콘솔 에러도 없었다.
+- 엔진이 스스로 선언한 이중 저장소 불변조건(`performStateUpdate` 상단 주석)은 "B 가 정본, A 는 쓰는 시점에 강제로 일치시키는 미러" 다. engine-v1.63.3 의 중재 규칙은 그 선언과 일치하므로 **그대로 두고**, 그 규칙을 어기던 쓰기 경로를 규칙에 맞췄다.
+- 커스텀 핸들러에게 넘기는 `setState` 를 A/B 양쪽에 쓰는 writer 로 승격한다. 래퍼는 `handleCustomAction` **한 곳**에만 싣는다 — 컨텍스트 생성 지점에서 감싸면 그 컨텍스트가 `handleOpenModal` 을 통해 `__g7LayoutContextStack` 으로 새고, 그 스택을 읽는 부모 스코프 경로 4곳이 오염된다.
+- 미러는 `G7Core.state.setLocal({ render:false })` 로 수행해 `__g7PendingLocalState` · `__g7ForcedLocalFields` · `__g7SetLocalOverrideKeys` · **`__g7SequenceLocalSync`** 를 함께 갱신한다. 마지막 것이 핵심이다 — `handleSequence` 는 커스텀 핸들러 뒤에 오직 그 변수로만 `currentState` 를 갱신하는데, `context.setState` 경로는 그 변수를 전혀 건드리지 않아 엔진이 마련한 전파 장치가 사문화돼 있었다.
+- 종전 동작을 유지하는 제외 조건: 함수형 업데이터, `scope: 'parent' | 'root'`, 모달 컨텍스트 스택이 있는 경우(사례 29), `merge: 'replace'`(사례 17), payload 에 `errors` 키 또는 `File`·`Blob`·`Date` 같은 non-plain 객체, `__templateApp`/`setLocal` 부재(테스트·프리뷰 폴백).
+- `__mergeMode` 를 명시한 호출은 `__g7ForcedLocalFields` 를 **얕은 스프레드**로 재보정한다. `setLocal` 은 깊게 병합하는데 저장소 A 경로는 얕은 스프레드여서, 사례 19 의 2차 수정(`currentSelection: {}` 리셋)이 깊은 병합에서는 무효화된다.
+
+#### 저장소 A 에만 쓰던 나머지 경로 정리
+
+- `resultTo: { target: '_local' }` · isolated 폴백 · `setState` 기본 분기 · `handleSetError` · `callExternal`/`callExternalEmbed` 콜백 · `loadFromLocalStorage` · `FormContext.updateByScope` 가 저장소 B 도 함께 갱신한다.
+- `loadingActions`(apiCall 로딩 플래그)와 `$parent`/`$root` 스코프 쓰기는 대상에서 제외한다. 전자는 apiCall 을 발화한 컴포넌트 자신의 일시적 표시 플래그라 페이지 단위 슬롯에 실으면 다른 컴포넌트로 새고 해제가 되지 않으며, 후자는 `_local` 정본이 아닌 다른 슬롯을 노린다.
+
+### Changed
+
+- 이중 저장소 계약을 경로별 **양방향 쌍**(`[이중저장소 A→B]` / `[이중저장소 B→A]`)으로 고정하는 테스트를 추가했다. 한 방향만 시험하면 반대 방향 회귀가 초록으로 통과한다 — 사례 41 은 B→A 축, 사례 42 는 A→B 축으로 각각 그렇게 새어 나갔다.
+
 ## [engine-v1.63.4] - 2026-09-01
 
 ### Fixed

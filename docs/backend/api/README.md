@@ -248,7 +248,7 @@ location ~* \.(js|css|json)$ { expires max; access_log off; }
 > 각 확장이 자신의 API 문서를 소유합니다. 아래 표는 자동 생성됩니다.
 
 <!-- @generated:start:api-readme-extensions -->
-- **확장 수**: 14 · **엔드포인트 수**: 416
+- **확장 수**: 14 · **엔드포인트 수**: 428
 
 | 확장 | 유형 | API 문서 목차 | 문서/엔드포인트 |
 | --- | --- | --- | --- |
@@ -256,10 +256,10 @@ location ~* \.(js|css|json)$ { expires max; access_log off; }
 | `sirsoft-board` | 모듈 | [docs/api/](../../../modules/_bundled/sirsoft-board/docs/api/README.md) | 10 / 80 |
 | `sirsoft-ecommerce` | 모듈 | [docs/api/](../../../modules/_bundled/sirsoft-ecommerce/docs/api/README.md) | 33 / 239 |
 | `sirsoft-page` | 모듈 | [docs/api/](../../../modules/_bundled/sirsoft-page/docs/api/README.md) | 2 / 17 |
-| `sirsoft-ckeditor5` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-ckeditor5/docs/api/README.md) | 2 / 2 |
+| `sirsoft-ckeditor5` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-ckeditor5/docs/api/README.md) | 3 / 5 |
 | `sirsoft-gdpr` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-gdpr/docs/api/README.md) | 4 / 15 |
 | `sirsoft-marketing` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-marketing/docs/api/README.md) | 2 / 2 |
-| `sirsoft-message_bizppurio` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-message_bizppurio/docs/api/README.md) | 6 / 12 |
+| `sirsoft-message_bizppurio` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-message_bizppurio/docs/api/README.md) | 6 / 21 |
 | `sirsoft-pay_kginicis` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-pay_kginicis/docs/api/README.md) | 5 / 34 |
 | `sirsoft-pay_nhnkcp` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-pay_nhnkcp/docs/api/README.md) | 0 / 0 |
 | `sirsoft-pay_nicepayments` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-pay_nicepayments/docs/api/README.md) | 0 / 0 |

@@ -10,9 +10,9 @@
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
 | `sirsoft-pay_nicepayments.payment.after_authorize` | action | 나이스페이먼츠 서버 승인 완료 후 | `src/Controllers/PaymentCallbackController.php:257` |
-| `sirsoft-pay_nicepayments.payment.after_cancel` | action | 나이스페이먼츠 결제 취소 완료 후 | `src/Services/NicePaymentsApiService.php:308` |
+| `sirsoft-pay_nicepayments.payment.after_cancel` | action | 나이스페이먼츠 결제 취소 완료 후 | `src/Services/NicePaymentsApiService.php:312` |
 | `sirsoft-pay_nicepayments.payment.before_authorize` | action | 나이스페이먼츠 서버 승인 API 호출 전 | `src/Controllers/PaymentCallbackController.php:252` |
-| `sirsoft-pay_nicepayments.payment.before_cancel` | action | 나이스페이먼츠 결제 취소 API 호출 전 (본인인증 등 확장 지점) | `src/Services/NicePaymentsApiService.php:285` |
+| `sirsoft-pay_nicepayments.payment.before_cancel` | action | 나이스페이먼츠 결제 취소 API 호출 전 (본인인증 등 확장 지점) | `src/Services/NicePaymentsApiService.php:289` |
 | `sirsoft-pay_nicepayments.payment.refund_failed` | action | — | `src/Listeners/PaymentRefundListener.php:131` |
 <!-- @generated:hooks-published END -->
 

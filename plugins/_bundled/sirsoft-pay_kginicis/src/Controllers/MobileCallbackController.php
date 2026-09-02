@@ -203,8 +203,10 @@ class MobileCallbackController
                     'P_RMESG1' => $result['P_RMESG1'] ?? '',
                 ]);
 
-                $this->orderService->failPayment($order, $resultStatus, $result['P_RMESG1'] ?? '');
-
+                // 승인이 성립하지 않았다 — 실제로 결제된 것이 없으므로 주문 상태를 바꾸지 않는다.
+                // 비인증 브라우저 콜백이라 주문번호(P_OID)와 P_TID 는 요청자가 고른 값이고,
+                // 그 조합으로 만든 "승인 실패" 로 타인의 결제대기 주문을 취소시킬 수 있다.
+                // 정당한 결제창 닫힘은 소유권을 검증하는 close-report 가 기록한다.
                 return redirect($this->resolveFailUrl([
                     'error' => $resultStatus,
                     'message' => $result['P_RMESG1'] ?? '',

@@ -200,18 +200,18 @@ class PaymentCallbackController
             $callbackLock = $this->acquireOrderCallbackLock('authCallback', $ordrIdxx);
             $order = $order->fresh('payment') ?? $order;
 
-            if ($order->order_status === OrderStatusEnum::CANCELLED) {
-                $restored = $this->restoreRetryableKcpOrder($order, $goodMny > 0 ? $goodMny : null);
-                if (! $restored) {
-                    Log::warning('KCP: cancelled order is not retryable', ['ordr_idxx' => $ordrIdxx]);
+            // 취소 주문 재결제 — 여기서는 되살리지 않고 "되살릴 수 있는가" 만 읽는다.
+            // 되살리기는 상태 변경이고 이 시점의 입력은 전부 비인증 브라우저 값이라,
+            // 여기서 수행하면 주문번호만 아는 제3자가 남의 취소 주문을 결제대기로
+            // 되돌릴 수 있다. 실제 되살리기는 승인·발급이 확정된 뒤에 수행한다.
+            if ($order->order_status === OrderStatusEnum::CANCELLED
+                && ! $this->isRetryableKcpFailure($order, $order->payment)) {
+                Log::warning('KCP: cancelled order is not retryable', ['ordr_idxx' => $ordrIdxx]);
 
-                    return redirect($this->resolveFailUrl([
-                        'error' => 'order_not_retryable',
-                        'orderId' => $ordrIdxx,
-                    ]));
-                }
-
-                $order = $order->fresh('payment') ?? $order;
+                return redirect($this->resolveFailUrl([
+                    'error' => 'order_not_retryable',
+                    'orderId' => $ordrIdxx,
+                ]));
             }
 
             if (($order->payment?->isPaid() ?? false) || $order->order_status === OrderStatusEnum::PAYMENT_COMPLETE) {
@@ -252,21 +252,20 @@ class PaymentCallbackController
                     'actual' => $goodMny,
                 ]);
 
-                $failedOrder = $this->orderService->failPayment($order, 'AMOUNT_MISMATCH', 'KCP callback amount mismatch');
-                $this->markKcpPaymentFailureRecord(
-                    $failedOrder,
-                    'AMOUNT_MISMATCH',
-                    'KCP callback amount mismatch',
-                    'amount_mismatch',
-                );
-
+                // 승인 전이다 — 이 시점의 입력은 전부 브라우저가 보낸 값이고 이 엔드포인트는
+                // PG 서명도 IP 증명도 없다. 주문번호도 요청자가 고른 값이므로, 금액 불일치를
+                // 근거로 주문을 실패 처리하면 남의 주문번호와 임의 금액만으로 그 주문을
+                // 취소시킬 수 있다. 상태는 바꾸지 않고 결제창으로 되돌린다.
+                // 정당한 결제창 닫힘은 소유권을 검증하는 close-report 가 기록한다.
                 return redirect($this->resolveFailUrl(['error' => 'amount_mismatch', 'orderId' => $ordrIdxx]));
             }
 
             // 가상계좌: 계좌 발급 완료 처리 (실제 입금은 vbankNotify에서 처리)
-            // KCP 콜백의 use_pay_method=VCNT 또는 주문의 payment_method=vbank 로 감지
-            $isVbank = ($validated['use_pay_method'] ?? '') === 'VCNT'
-                || (bool) $order->payment?->isVirtualAccount();
+            // 분기 판정은 주문에 저장된 결제수단만 본다 — 요청의 use_pay_method 를 함께 보면
+            // 비인증 브라우저가 use_pay_method=VCNT 한 줄로 카드 주문을 가상계좌 분기로 몰아
+            // 승인 검증이 없는 경로를 고를 수 있다 (KVE-2026-2018 동일 계열).
+            // 결제창은 결제수단을 확정한 뒤 열리므로 정상 흐름은 주문 값만으로 판정된다.
+            $isVbank = (bool) $order->payment?->isVirtualAccount();
             if ($isVbank) {
                 return $this->handleVbankIssued($validated, $order, $encData, $encInfo, $ordrIdxx, $custIp, $request);
             }
@@ -287,14 +286,11 @@ class PaymentCallbackController
                     'res_msg' => $pgResponse['res_msg'] ?? '',
                 ]);
 
-                $failedOrder = $this->orderService->failPayment($order, $pgResCd, $pgResponse['res_msg'] ?? '');
-                $this->markKcpPaymentFailureRecord(
-                    $failedOrder,
-                    $pgResCd,
-                    $pgResponse['res_msg'] ?? '',
-                    'approval_failed',
-                );
-
+                // 승인이 성립하지 않았다 — 실제로 결제된 것이 없으므로 주문 상태를 바꾸지 않는다.
+                // 이 엔드포인트는 비인증 브라우저 POST 라 "승인 실패" 는 공격자가 남의 주문번호와
+                // 위조 암호문을 보내기만 해도 만들어낼 수 있는 상태다. 그것을 근거로 실패 처리하면
+                // 타인의 결제대기 주문을 임의로 취소시킬 수 있다 (KVE-2026-2018).
+                // 실제 승인이 일어난 뒤의 실패만 아래 catch 블록에서 주문에 반영한다.
                 return redirect($this->resolveFailUrl([
                     'error' => $pgResCd,
                     'message' => $pgResponse['res_msg'] ?? '',
@@ -323,6 +319,16 @@ class PaymentCallbackController
             // PG 측 승인이 확정된 시점 — 후속 처리 실패 시 cancel 필요. catch 에서 참조.
             $approvedTno = $tno;
             $approvedAmtForCancel = $approvedAmt;
+
+            // 승인이 확정된 뒤에만 취소 주문을 되살린다. 실패하면 예외로 아래 catch 에 넘겨
+            // PG 잔존 승인을 자동 취소한다(사용자 환불 보장).
+            if ($order->order_status === OrderStatusEnum::CANCELLED) {
+                if (! $this->restoreRetryableKcpOrder($order, $approvedAmt)) {
+                    throw new \RuntimeException('cancelled order is not retryable after approval');
+                }
+
+                $order = $order->fresh('payment') ?? $order;
+            }
 
             $isEscrow = ($pgResponse['escw_yn'] ?? '') === 'Y';
             $easyPayMeta = $this->resolveEasyPayMeta($validated);
@@ -397,7 +403,10 @@ class PaymentCallbackController
             // Approve 가 이미 KCP 측에서 발생했으면 자동 취소로 PG 잔존 승인 해제
             $this->autoCancelIfApproved($approvedTno, $ordrIdxx, $approvedAmtForCancel, 'amount_mismatch');
 
-            if ($order instanceof Order) {
+            // 주문 상태를 바꾸는 것은 KCP 승인이 실제로 일어난 뒤의 실패뿐이다. tno 가 비어 있으면
+            // 승인 전에 터진 예외이고, 그 시점의 입력은 전부 비인증 브라우저가 보낸 값이라
+            // 남의 주문을 취소시키는 통로가 된다.
+            if ($order instanceof Order && $this->hasApproval($approvedTno)) {
                 $failedOrder = $this->orderService->failPayment($order, 'AMOUNT_MISMATCH', $e->getMessage());
                 $this->markKcpPaymentFailureRecord(
                     $failedOrder,
@@ -417,7 +426,8 @@ class PaymentCallbackController
 
             $this->autoCancelIfApproved($approvedTno, $ordrIdxx, $approvedAmtForCancel, 'confirm_failed');
 
-            if ($order instanceof Order) {
+            // 승인 이후의 후속 처리 실패만 주문에 반영한다 (위 amount_mismatch catch 와 동일 기준).
+            if ($order instanceof Order && $this->hasApproval($approvedTno)) {
                 $failedOrder = $this->orderService->failPayment($order, 'CONFIRM_FAILED', $e->getMessage());
                 $this->markKcpPaymentFailureRecord(
                     $failedOrder,
@@ -577,8 +587,11 @@ class PaymentCallbackController
      * Mobile SmartPhone Pay: enc_data 없이 평문 필드(bankname/account/depositor/va_date)가
      *   콜백 POST 에 직접 포함되므로 CLI 호출을 건너뛰고 요청에서 직접 읽음.
      *
-     * 발급 성공 = res_cd == 0000 AND bankname/account 가 모두 채워진 경우만.
-     * 그 외 (CLI 9502 / 예외 / 평문 필드 결락) 는 발급 실패로 판정해 failPayment + fail URL.
+     * 발급 성공 = bankname/account 가 모두 채워진 경우만 (정상 res_cd 는 결제수단별로 다르다).
+     * 그 외 (CLI 9502 / 예외 / 평문 필드 결락) 는 발급 실패로 판정하되 **주문 상태는 바꾸지
+     * 않고** fail URL 로 되돌려 보낸다 — 이 엔드포인트는 비인증 브라우저 POST 라, 발급 미완을
+     * 근거로 실패 처리하면 주문번호만 아는 제3자가 남의 주문을 취소시킬 수 있다
+     * (KVE-2026-2018 과 동일 기준). 정당한 실패는 소유권을 검증하는 close-report 가 기록한다.
      */
     private function handleVbankIssued(
         array $validated,
@@ -615,14 +628,10 @@ class PaymentCallbackController
                     'error' => $e->getMessage(),
                 ]);
 
-                $failedOrder = $this->orderService->failPayment($order, 'cli_exception', $e->getMessage());
-                $this->markKcpPaymentFailureRecord(
-                    $failedOrder,
-                    'cli_exception',
-                    $e->getMessage(),
-                    'vbank_cli_exception',
-                );
-
+                // 승인이 성립하지 않았다 — 주문 상태를 바꾸지 않는다. 이 엔드포인트는 비인증
+                // 브라우저 POST 라, CLI 실패를 근거로 실패 처리하면 남의 주문번호와 위조 입력만으로
+                // 그 주문을 취소시킬 수 있다 (카드 경로와 동일 기준 · KVE-2026-2018).
+                // 정당한 결제 실패는 소유권을 검증하는 close-report 가 기록한다.
                 return redirect($this->resolveFailUrl([
                     'error' => 'cli_exception',
                     'message' => __('sirsoft-pay_nhnkcp::messages.errors.payment_failed'),
@@ -660,14 +669,12 @@ class PaymentCallbackController
                 'is_mobile' => $isMobile,
             ]);
 
-            $failedOrder = $this->orderService->failPayment($order, $effectiveCode, $effectiveMsg);
-            $this->markKcpPaymentFailureRecord(
-                $failedOrder,
-                $effectiveCode,
-                $effectiveMsg,
-                'vbank_issuance_failed',
-            );
-
+            // 발급이 성립하지 않았다 — 주문 상태를 바꾸지 않는다.
+            // 모바일 분기의 $pgResponse 는 콜백 POST 평문을 그대로 옮긴 값이라 PG 서버 호출이
+            // 아예 없고, PC 분기의 CLI 실패도 위조 암호문으로 유도할 수 있다. 어느 쪽이든
+            // 비인증 브라우저 입력이므로 이를 근거로 실패 처리하면 주문번호만 아는 제3자가
+            // 남의 결제대기 주문을 취소시킬 수 있다 (카드 경로와 동일 기준 · KVE-2026-2018).
+            // 정당한 발급 실패는 소유권을 검증하는 close-report 가 기록한다.
             return redirect($this->resolveFailUrl([
                 'error' => $effectiveCode,
                 'message' => $effectiveMsg,
@@ -693,8 +700,28 @@ class PaymentCallbackController
             ]);
         }
 
+        // 취소 주문 재결제 — 되살리기는 상태 변경이므로 PG 서버가 발급을 확인해 준 PC 분기에서만
+        // 수행한다. 모바일 분기는 서버 호출이 없어 발급 증거가 콜백 평문뿐이라, 되살리면
+        // 주문번호만 아는 제3자가 남의 취소 주문을 되돌릴 수 있다.
+        if ($order->order_status === OrderStatusEnum::CANCELLED) {
+            if ($isMobile || ! $this->restoreRetryableKcpOrder($order, null)) {
+                Log::warning('KCP: cancelled vbank order not restored (no server-side issuance proof)', [
+                    'ordr_idxx' => $ordrIdxx,
+                    'is_mobile' => $isMobile,
+                ]);
+
+                return redirect($this->resolveFailUrl([
+                    'error' => 'order_not_retryable',
+                    'orderId' => $ordrIdxx,
+                ]));
+            }
+
+            $order = $order->fresh('payment') ?? $order;
+        }
+
         // 가상계좌 발급 정보를 OrderPayment vbank 전용 컬럼에 저장 (PENDING_PAYMENT 상태 유지).
-        // 저장 실패 시도 부분 저장으로 사용자에게 잘못된 정보가 노출되지 않도록 failPayment 처리.
+        // 저장이 실패하면 부분 저장으로 잘못된 계좌가 노출되지 않도록 실패로 되돌린다. 단
+        // failPayment 는 PG 서버가 발급을 확인해 준 PC 분기에서만 부른다 (아래 catch 참조).
         try {
             $expireRaw = $pgResponse['va_date'] ?? null;
             $vbankDueAt = null;
@@ -735,13 +762,17 @@ class PaymentCallbackController
                 'error' => $e->getMessage(),
             ]);
 
-            $failedOrder = $this->orderService->failPayment($order, 'vbank_save_failed', $e->getMessage());
-            $this->markKcpPaymentFailureRecord(
-                $failedOrder,
-                'vbank_save_failed',
-                $e->getMessage(),
-                'vbank_save_failed',
-            );
+            // PG 서버가 발급을 확인해 준 PC 분기에서만 주문에 반영한다. 모바일 분기의 발급 데이터는
+            // 콜백 평문이라 위조할 수 있어, 저장 실패를 근거로 주문을 취소시키는 통로가 된다.
+            if (! $isMobile) {
+                $failedOrder = $this->orderService->failPayment($order, 'vbank_save_failed', $e->getMessage());
+                $this->markKcpPaymentFailureRecord(
+                    $failedOrder,
+                    'vbank_save_failed',
+                    $e->getMessage(),
+                    'vbank_save_failed',
+                );
+            }
 
             return redirect($this->resolveFailUrl([
                 'error' => 'vbank_save_failed',
@@ -850,6 +881,20 @@ class PaymentCallbackController
      * cancel 자체가 실패해도 사용자 응답 흐름은 막지 않음 — 로깅만 수행하고
      * 운영자가 KCP 가맹점 관리자에서 수동 처리하도록 신호.
      */
+    /**
+     * KCP 승인이 실제로 발생했는지 판정합니다.
+     *
+     * tno 는 승인 응답이 성공한 뒤에만 채워진다. 비어 있으면 승인 전에 흐름이 끊긴 것이고,
+     * 그 시점까지의 입력은 전부 비인증 브라우저가 보낸 값이라 주문 상태 변경의 근거가 될 수 없다.
+     *
+     * @param  string|null  $approvedTno  승인 확정 시 기록되는 거래번호
+     * @return bool 승인이 발생했으면 true
+     */
+    private function hasApproval(?string $approvedTno): bool
+    {
+        return $approvedTno !== null && $approvedTno !== '';
+    }
+
     private function autoCancelIfApproved(
         ?string $tno,
         string $ordrIdxx,

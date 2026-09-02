@@ -136,6 +136,11 @@ OS 판별 후 `executeCliWindows()`/`executeCliLinux()` 로 분기 → CLI 인�
 | 동일 `transaction_id` 콜백을 매번 재처리 | `PreventsReplayCallback::wasAlreadyPaid()` 로 이미 `paid` 상태면 멱등 응답 | KCP 서버의 재전송·사용자의 새로고침으로 같은 콜백이 두 번 오면 결제완료 알림·마일리지가 중복 적립될 수 있다 |
 | 에스크로 공통통보의 `tx_cd`/`cl_status` 매핑을 컨트롤러 밖(리스너 등)에서 다시 판정 | `EscrowCommonNotifyController` 의 매핑표(§핵심 흐름)를 SSoT 로 유지 | 판정 로직이 두 곳에 있으면 KCP 가 새 `cl_status` 값을 보낼 때 한쪽만 갱신되어 조용히 어긋난다 |
 | 라이브 사이트 키(`live_site_key`)를 로그·에러 메시지에 노출 | 운영 키는 항상 마스킹하거나 로그 대상에서 제외 | 노출되면 제3자가 결제창 요청을 위조할 수 있다 |
+| 승인 성립 전 실패 분기(브라우저 결과코드·금액 불일치·CLI 승인 거절)에서 `failPayment()` 호출 | 로그 + `resolveFailUrl()` 만. 주문 상태는 건드리지 않는다 | `authCallback` 은 PG 서명도 IP 증명도 없는 비인증 브라우저 POST 이고 `ordr_idxx` 도 요청자가 고른 값이다. 승인 실패는 남의 주문번호와 위조 암호문만으로 만들어낼 수 있으므로, 그것을 근거로 실패 처리하면 타인의 결제대기 주문이 취소된다 |
+| catch 블록에서 `$approvedTno` 확인 없이 주문을 실패 처리 | `hasApproval($approvedTno)` 가 참일 때만 — tno 는 승인 성공 후에만 채워진다 | 승인 전에 터진 예외까지 반영하면 위 금지 패턴과 같은 통로가 catch 경로로 다시 열린다 |
+| 정당한 결제 실패 기록을 콜백에서 처리 | 소유권을 검증하는 `close-report`(`requestMatchesOrderBuyer`) 경유 | 구매자 이메일·전화 대조를 통과한 요청만 주문 상태를 바꿔야 한다 |
+| 결제창 컨텍스트(구매자 정보)를 메모리에만 보관 | `rememberPendingClose()` 로 sessionStorage 에 남기고, 부팅 시 `reportPaymentFailureOnReturn()` 으로 보고 | 결제창은 전체 페이지 이동으로 열리고 돌아와 JS 컨텍스트가 소실된다. 승인 거절은 fail URL 리다이렉트로 끝나므로, 남겨 둔 정보가 없으면 정당한 결제 실패가 어디에도 기록되지 않는다 |
+| 실패 화면에서 보고가 닿지 못한 주문을 방치 | 이커머스 모듈의 만료 주문 자동 정리가 최종 안전망 | 브라우저를 바로 닫으면 보고가 나가지 않는다. 두 경로가 함께 있어야 선차감 마일리지가 무기한 묶이지 않는다 |
 <!-- @intent END -->
 
 ## 7. 테스트 실행

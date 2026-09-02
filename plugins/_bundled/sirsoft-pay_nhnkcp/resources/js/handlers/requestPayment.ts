@@ -3,6 +3,7 @@
 import {
     PaymentCloseReportContext,
     preparePaymentRetry,
+    rememberPendingClose,
     reportPaymentWindowClosed,
 } from '../paymentCloseReport';
 import {
@@ -290,6 +291,11 @@ export async function requestPaymentHandler(action: any, _context?: any): Promis
         const callbackUrl = window.location.origin + config.callback_urls.callback;
 
         await preparePaymentRetry(closeReportContext);
+
+        // 결제창은 전체 페이지 이동으로 열리고 돌아오므로, 실패 화면에서 서버에 보고할 때 쓸
+        // 구매자 정보를 미리 남겨 둔다. 브라우저 리턴 콜백은 인증이 없어 주문 상태를 바꾸지 않고,
+        // 소유권을 대조하는 close-report 만이 정당한 결제 실패를 기록할 수 있다.
+        rememberPendingClose(closeReportContext);
 
         if (isMobileDevice()) {
             await handleMobilePayment(G7Core, pgPaymentData, paymentMethod, isEasyPay, callbackUrl);

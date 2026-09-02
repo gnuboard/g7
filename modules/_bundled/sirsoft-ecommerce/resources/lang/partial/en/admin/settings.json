@@ -213,7 +213,10 @@
       "toggle_description": "Automatically cancel pending payment orders after the specified period.",
       "toggle_hint": "When disabled, pending payment orders will not be auto-cancelled.",
       "days_prefix": "Pending payment orders will be auto-cancelled",
-      "days_suffix": "days after the order date."
+      "days_suffix": "days after the order date.",
+      "pending_minutes_prefix": "Orders that reached the payment window but did not complete are cancelled after",
+      "pending_minutes_suffix": "minutes.",
+      "pending_minutes_hint": "Set 0 to leave this group alone. Maximum 20160 minutes (14 days)."
     },
     "cart_expiry": {
       "title": "Cart Expiry",

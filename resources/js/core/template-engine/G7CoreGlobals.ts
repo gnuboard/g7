@@ -1847,6 +1847,11 @@ function initStateAPI(G7Core: any): void {
           if (targetContext?.setState) {
             // 함수형 업데이트를 사용하여 항상 최신 상태와 병합
             // React setState는 비동기이므로 스냅샷 대신 함수형 업데이트 필수
+            //
+            // scope:'parent'|'root' 은 `_local` 정본이 아니라 레이아웃 컨텍스트 스택의
+            // 부모/루트 슬롯을 대상으로 한다. 여기서 저장소 B 를 함께 쓰면 모달의 쓰기가
+            // 페이지 _local 을 오염시킨다(사례 29).
+            // audit:allow local-store-write-must-mirror 부모/루트 슬롯 전용 (위 사유)
             targetContext.setState((currentLocal: Record<string, any>) => {
               if (mergeMode === 'replace') return converted;
               if (mergeMode === 'shallow') return { ...(currentLocal || {}), ...converted };

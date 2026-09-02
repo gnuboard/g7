@@ -71,8 +71,90 @@ Location: /shop/checkout?error=PAY_PROCESS_CANCELED&orderId=20260711-000001
 
 주의사항:
 
-- 이 엔드포인트는 **주문 상태를 변경하지 않는다**. 결제 취소 이력 기록은 프론트엔드가 별도 API(`/modules/sirsoft-ecommerce/orders/{orderNumber}/cancel-payment`)로 수행한다.
+- 이 엔드포인트는 **주문 상태를 변경하지 않는다**. 인증도 서명도 없는 GET 이고 `orderId`·`code` 가 전부 쿼리스트링에서 오므로, 실패 처리를 수행하면 링크 하나로 남의 결제대기 주문을 취소시킬 수 있다. 결제 실패 기록은 구매자 정보를 대조하는 `POST /api/plugins/sirsoft-tosspayments/payment/close-report` 가 담당하며, 실패 화면에 도착한 프론트엔드가 그 경로로 보고한다.
 - 결제창을 띄우기 전 단계에서 사용자가 취소한 경우(SDK `USER_CANCEL`)는 이 콜백을 타지 않고 프론트엔드에서 직접 처리된다.
+
+
+### POST /api/plugins/sirsoft-tosspayments/payment/close-report
+<!-- @generated:start:api.plugins.sirsoft-tosspayments.payment.close-report -->
+- **라우트명**: `api.plugins.sirsoft-tosspayments.payment.close-report`
+- **컨트롤러**: `Plugins\Sirsoft\Tosspayments\Controllers\PaymentCloseReportController@store`
+- **인증/권한**: 공개 (인증 불필요)
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| orderId | body | string | 예 | max 40 | 결제창을 닫거나 결제가 거절된 대상 주문의 주문번호. 서버가 이 값으로 주문을 조회해 결제 실패/취소 이력을 기록한다. |
+| amount | body | integer | 예 | min 1 | 결제 금액. 저장된 주문 청구액과 일치하는지 검증한다. |
+| buyer_email | body | string | 아니오 | max 255 | 구매자 이메일. 주문의 구매자 정보와 대조해 본인 요청인지 확인한다. |
+| buyer_phone | body | string | 아니오 | max 30 | 구매자 전화번호. 주문의 구매자 정보와 대조해 본인 요청인지 확인한다. |
+| code | body | string | 아니오 | max 60 | 토스 실패 코드. 값이 있으면 결제 거절로, 없으면 결제창 닫힘으로 기록한다. |
+| reason | body | string | 아니오 | max 160 | 사람이 읽을 실패 사유. 취소 이력에 남는다. |
+
+**요청 예시**
+
+```http
+POST /api/plugins/sirsoft-tosspayments/payment/close-report HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Content-Type: application/json
+
+{
+    "orderId": "20260711-000001",
+    "amount": 10000,
+    "buyer_email": "buyer@example.com",
+    "buyer_phone": "01012345678",
+    "code": "REJECT_CARD_COMPANY",
+    "reason": "카드사에서 승인을 거절했습니다."
+}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| status | string | `recorded` | 처리 결과. 기록했으면 `recorded`, 대상이 아니어서 넘어갔으면 `ignored`. |
+| reason | string | `order_not_payable` | `status` 가 `ignored` 일 때만 포함. 무시 사유(`order_not_payable` / `payment_already_paid`). |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "성공적으로 처리되었습니다.",
+    "data": {
+        "status": "recorded"
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 403 | Forbidden | 요청의 구매자 정보(`buyer_email` / `buyer_phone`)가 주문의 구매자와 일치하지 않는 경우 |
+| 404 | Not Found | `orderId` 에 해당하는 주문이 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지), 주문 통화가 청구 불가, 금액이 주문 청구액과 불일치 |
+| 429 | Too Many Requests | 동일 IP·`orderId` 조합에서 분당 20회를 초과해 요청한 경우 |
+
+<!-- @generated:end -->
+
+**설명**
+
+**주문을 실패로 전이시키는 유일한 결제창 경로**입니다. 브라우저 리턴 콜백(`/payment/fail`)은 인증도 서명도 없고 주문번호가 쿼리스트링으로 오므로 주문 상태를 바꾸지 않습니다. 정당한 결제 실패는 구매자 이메일·전화 대조를 통과한 이 요청으로만 기록되며, 이는 다른 결제사 플러그인(KCP·KG이니시스·나이스페이)의 close-report 와 같은 계약입니다.
+
+프론트엔드는 결제창을 열기 직전에 구매자 정보를 브라우저 세션에 남겨 두었다가, 결제가 거절되어 실패 화면으로 돌아왔을 때 그 정보로 이 엔드포인트를 호출합니다. 결제창은 전체 페이지 이동으로 열리고 돌아오므로 화면의 컨텍스트는 그 사이 소실되기 때문입니다.
+
+`code` 유무로 기록이 갈립니다 — 값이 있으면 결제 거절(`failure_stage=payment_failed`), 없으면 결제창 닫힘(`failure_stage=window_closed`)으로 남아 운영자가 원인을 구분할 수 있습니다.
+
+이미 결제가 성립한 주문(`payment_status=paid`)과 결제 가능 상태가 아닌 주문은 성공 응답에 `status: ignored` 로 무시합니다 — 결제 성공 콜백(`success` → `confirmPayment`)과 경쟁할 때 주문/옵션 상태가 어긋나는 것을 차단합니다.
+
+보고가 끝내 도달하지 못한 주문(브라우저를 바로 닫는 등)은 이커머스 모듈의 만료 주문 자동 정리가 최종 안전망으로 처리합니다.
 
 
 ### GET /plugins/sirsoft-tosspayments/payment/success
