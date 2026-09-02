@@ -662,6 +662,64 @@
                   "text": "{{_local.errors?.['order_settings.auto_cancel_days']?.[0] ?? ''}}"
                 }
               ]
+            },
+            {
+              "comment": "결제 미완료 주문 만료 기준(분) — 결제창까지 갔으나 결제가 성립하지 않은 주문을 정리하는 스케줄러가 읽는다. 자동취소 토글과 독립이므로 토글 하위에 두지 않는다.",
+              "id": "pending_order_expire_minutes_row",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex-center gap-2 flex-wrap"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-body"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.pending_minutes_prefix"
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "number",
+                    "name": "order_settings.pending_order_expire_minutes",
+                    "value": "{{_local.form?.order_settings?.pending_order_expire_minutes ?? 1440}}",
+                    "min": "{{_local?.form?._meta?.limits?.pending_order_expire_minutes_min ?? 0}}",
+                    "max": "{{_local?.form?._meta?.limits?.pending_order_expire_minutes_max ?? 20160}}",
+                    "step": "1",
+                    "className": "{{_local.errors?.['order_settings.pending_order_expire_minutes'] ? 'input input-error w-24' : 'input w-24'}}",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-body"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.pending_minutes_suffix"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "form-hint w-full"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.pending_minutes_hint"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_local.errors?.['order_settings.pending_order_expire_minutes']}}",
+                  "props": {
+                    "className": "form-error-xs w-full mt-1"
+                  },
+                  "text": "{{_local.errors?.['order_settings.pending_order_expire_minutes']?.[0] ?? ''}}"
+                }
+              ]
             }
           ],
           "props": {

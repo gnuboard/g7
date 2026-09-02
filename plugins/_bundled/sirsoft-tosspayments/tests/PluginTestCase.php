@@ -240,6 +240,16 @@ abstract class PluginTestCase extends TestCase
                 ->middleware('web')
                 ->group($webRoutesFile);
         }
+
+        $apiRoutesFile = dirname(__DIR__).'/src/routes/api.php';
+
+        if (file_exists($apiRoutesFile)) {
+            // 프로덕션 PluginRouteServiceProvider 와 동일한 프리픽스·이름 규약을 따른다.
+            Route::prefix('api/plugins/sirsoft-tosspayments')
+                ->name('api.plugins.sirsoft-tosspayments.')
+                ->middleware('api')
+                ->group($apiRoutesFile);
+        }
     }
 
     /**

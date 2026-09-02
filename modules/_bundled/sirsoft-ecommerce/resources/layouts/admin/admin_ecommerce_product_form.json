@@ -976,7 +976,8 @@
                                         "props": {
                                             "type": "button",
                                             "disabled": "{{_local.isSaving || (route.itemCode && product?.data?.abilities?.can_update !== true)}}",
-                                            "className": "flex-center btn btn-primary gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            "className": "flex-center btn btn-primary gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed",
+                                            "data-testid": "product-save"
                                         },
                                         "children": [
                                             {

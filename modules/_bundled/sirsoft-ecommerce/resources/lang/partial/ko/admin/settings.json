@@ -213,7 +213,10 @@
       "toggle_description": "입금대기 상태의 주문을 지정 기간 후 자동으로 취소합니다.",
       "toggle_hint": "비활성화하면 입금대기 주문이 자동 취소되지 않습니다.",
       "days_prefix": "입금대기 상태의 주문건은 주문일 포함",
-      "days_suffix": "일 이후 자동 취소됩니다."
+      "days_suffix": "일 이후 자동 취소됩니다.",
+      "pending_minutes_prefix": "결제창까지 갔으나 결제가 끝나지 않은 주문은",
+      "pending_minutes_suffix": "분 이후 자동 취소됩니다.",
+      "pending_minutes_hint": "0 으로 두면 이 부류는 자동 취소하지 않습니다. 최대 20160분(14일)."
     },
     "cart_expiry": {
       "title": "장바구니 유효기간",

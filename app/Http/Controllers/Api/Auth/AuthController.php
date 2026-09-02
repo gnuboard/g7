@@ -60,17 +60,7 @@ class AuthController extends AuthBaseController
 
             return $this->success('auth.login_success', $data);
         } catch (AccountLockedException $e) {
-            // 영구 잠금(무한대 설정)은 해제 시각·잔여 시간이 없다 — null 그대로 노출.
-            return $this->error(
-                $e->isPermanent() ? 'auth.account_locked_permanently' : 'auth.account_locked',
-                423,
-                [
-                    'locked_until' => $e->lockedUntil?->toIso8601String(),
-                    'retry_after_seconds' => $e->remainingMinutes === null ? null : $e->remainingMinutes * 60,
-                    'permanent' => $e->isPermanent(),
-                ],
-                ['minutes' => $e->remainingMinutes]
-            );
+            return $this->lockedResponse($e);
         } catch (ValidationException $e) {
             return $this->unauthorized('auth.login_failed');
         }
@@ -98,9 +88,36 @@ class AuthController extends AuthBaseController
             $data['user'] = new UserResource($data['user']);
 
             return $this->success('auth.login_success', $data);
+        } catch (AccountLockedException $e) {
+            // 세션을 여는 지점이므로 `login` 과 같은 423 계약을 따른다 — 화면은 두 경로를
+            // 구분하지 않으므로 한쪽만 다른 모양이면 잠금 안내가 깨진다.
+            return $this->lockedResponse($e);
         } catch (ValidationException $e) {
             return $this->unauthorized('auth.two_factor_failed');
         }
+    }
+
+    /**
+     * 계정 잠금 응답(423)을 구성합니다.
+     *
+     * 세션을 발급하는 모든 엔드포인트가 같은 페이로드를 돌려주도록 단일 지점에서 만든다.
+     *
+     * @param  AccountLockedException  $e  잠금 예외
+     * @return JsonResponse 423 응답
+     */
+    private function lockedResponse(AccountLockedException $e): JsonResponse
+    {
+        // 영구 잠금(무한대 설정)은 해제 시각·잔여 시간이 없다 — null 그대로 노출.
+        return $this->error(
+            $e->isPermanent() ? 'auth.account_locked_permanently' : 'auth.account_locked',
+            423,
+            [
+                'locked_until' => $e->lockedUntil?->toIso8601String(),
+                'retry_after_seconds' => $e->remainingMinutes === null ? null : $e->remainingMinutes * 60,
+                'permanent' => $e->isPermanent(),
+            ],
+            ['minutes' => $e->remainingMinutes]
+        );
     }
 
     /**
@@ -178,7 +195,11 @@ class AuthController extends AuthBaseController
      */
     public function refresh(AuthenticatedRequest $request): JsonResponse
     {
-        $data = $this->authService->refreshToken($request->user());
+        try {
+            $data = $this->authService->refreshToken($request->user());
+        } catch (AccountLockedException $e) {
+            return $this->lockedResponse($e);
+        }
 
         // 사용자 정보는 Resource로, 토큰은 그대로
         if (isset($data['user'])) {

@@ -641,6 +641,17 @@ export class ActionDispatcher {
   private previewMode: boolean = false;
 
   /**
+   * `writeLocalState` 재진입 깊이.
+   *
+   * 미러 쓰기(`G7Core.state.setLocal`)가 다시 저장소 A writer 를 호출하는 구조라,
+   * 그 안에서 같은 헬퍼로 되돌아오면 무한 재귀가 된다. 0 보다 크면 미러를 붙이지 않고
+   * 원본 writer 만 호출한다.
+   *
+   * @since engine-v1.63.5
+   */
+  private localMirrorDepth = 0;
+
+  /**
    * startInterval 핸들러로 등록된 타이머 맵.
    *
    * key = 레이아웃이 지정한 interval id, value = setInterval 반환 timerId.
@@ -2350,6 +2361,12 @@ export class ActionDispatcher {
 
         // 기존 loadingActions 상태 유지하면서 새 액션 추가
         const currentLoadingActions = context.state?.loadingActions || {};
+        // loadingActions 는 apiCall 을 발화한 컴포넌트 자신의 일시적 표시 플래그다.
+        // 저장소 B 는 페이지 단위 공유 슬롯이라 미러하면 ① 한 컴포넌트의 로딩 플래그가
+        // 다른 컴포넌트로 새고 ② __g7ForcedLocalFields 가 그 값을 모든 컴포넌트에 강제하는데,
+        // 해제는 키 생략으로 하므로 깊은 병합에서 지워지지 않아 스피너가 영구히 남는다.
+        // 소비자는 자기 렌더 컨텍스트로만 읽는다.
+        // audit:allow local-store-write-must-mirror 컴포넌트별 일시 표시 플래그 (위 사유)
         context.setState({
           loadingActions: {
             ...currentLoadingActions,
@@ -2565,7 +2582,7 @@ export class ActionDispatcher {
           const updateWithMode = resultToMergeMode !== 'deep'
             ? { ...update, __mergeMode: resultToMergeMode }
             : update;
-          context.setState(updateWithMode);
+          this.writeLocalState(context, updateWithMode);
           logger.log(`[resultTo] Saved to _local.${resolvedKey} (merge=${resultToMergeMode}):`, result);
         } else if (target === '_local' && this.globalStateUpdater) {
           // init_actions 등에서 componentContext가 없는 경우 globalStateUpdater를 통해 _local 업데이트
@@ -2807,6 +2824,12 @@ export class ActionDispatcher {
         const currentLoadingActions = context.state?.loadingActions || {};
         const { [actionId]: _, ...remainingLoadingActions } = currentLoadingActions;
 
+        // loadingActions 는 apiCall 을 발화한 컴포넌트 자신의 일시적 표시 플래그다.
+        // 저장소 B 는 페이지 단위 공유 슬롯이라 미러하면 ① 한 컴포넌트의 로딩 플래그가
+        // 다른 컴포넌트로 새고 ② __g7ForcedLocalFields 가 그 값을 모든 컴포넌트에 강제하는데,
+        // 해제는 키 생략으로 하므로 깊은 병합에서 지워지지 않아 스피너가 영구히 남는다.
+        // 소비자는 자기 렌더 컨텍스트로만 읽는다.
+        // audit:allow local-store-write-must-mirror 컴포넌트별 일시 표시 플래그 (위 사유)
         context.setState({
           loadingActions: remainingLoadingActions
         });
@@ -4025,7 +4048,7 @@ export class ActionDispatcher {
           const finalPayload = mergeMode === 'deep'
             ? this.deepMergeWithState(resolvedPayload, currentState)
             : resolvedPayload;  // replace, shallow: DynamicRenderer에서 처리
-          context.setState(finalPayload);
+          this.writeLocalState(context, finalPayload);
           if (setStateId && devTools) setTimeout(() => devTools.completeStateChange(setStateId), 0);
           return finalPayload;
         } else {
@@ -4060,6 +4083,10 @@ export class ActionDispatcher {
               : cleanPayload;  // replace, shallow: 병합 없이 payload 그대로
 
             logger.log(`[handleSetState] scope=${scope}: 타겟 컨텍스트에 상태 업데이트`, finalPayload);
+            // scope:'parent'|'root' 은 `_local` 정본이 아니라 레이아웃 컨텍스트 스택의
+            // 부모/루트 슬롯을 노린다. 여기서 저장소 B 를 함께 쓰면 모달의 setState 가
+            // 페이지 _local 을 오염시킨다(사례 29).
+            // audit:allow local-store-write-must-mirror 부모/루트 슬롯 전용 (위 사유)
             targetContext.setState(finalPayload);
 
             if (setStateId && devTools) setTimeout(() => devTools.completeStateChange(setStateId), 0);
@@ -4358,7 +4385,7 @@ export class ActionDispatcher {
       const finalPayload = mergeMode === 'deep'
         ? this.deepMergeWithState(resolvedPayload, currentState)
         : resolvedPayload;  // replace, shallow: DynamicRenderer에서 처리
-      context.setState(finalPayload);
+      this.writeLocalState(context, finalPayload, undefined, { scope });
       // DevTools: 상태 변경 완료
       if (setStateId && devTools) setTimeout(() => devTools.completeStateChange(setStateId), 0);
       return finalPayload;
@@ -4510,6 +4537,10 @@ export class ActionDispatcher {
         const update = this.createNestedUpdate(nestedPath, value, currentLocal);
         const mergedState = { ...currentLocal, ...update };
         logger.log(`[handleParentScopeSetState] ${target}: 로컬 상태 중첩 경로 업데이트`, update);
+        // $parent/$root 스코프는 `_local` 정본이 아니라 레이아웃 컨텍스트 스택의 부모/루트
+        // 슬롯을 대상으로 한다. 저장소 B 를 함께 쓰면 모달의 setState 가 페이지 _local 을
+        // 오염시킨다(사례 29). 스택 state·dataContext 동기화는 바로 아래에서 직접 수행한다.
+        // audit:allow local-store-write-must-mirror 부모/루트 슬롯 전용 (위 사유)
         targetContext.setState(update);
         // 스택의 state와 dataContext._local 모두 업데이트하여
         // 다음 setState 호출 시 currentLocal이 최신 값을 읽고,
@@ -4536,6 +4567,10 @@ export class ActionDispatcher {
             ? { ...currentLocal, ...cleanPayload }
             : this.deepMergeWithState(cleanPayload, currentLocal);
         logger.log(`[handleParentScopeSetState] ${target}: 로컬 상태 업데이트 (mergeMode=${mergeMode})`, expectedState);
+        // $parent/$root 스코프는 `_local` 정본이 아니라 레이아웃 컨텍스트 스택의 부모/루트
+        // 슬롯을 대상으로 한다. 저장소 B 를 함께 쓰면 모달의 setState 가 페이지 _local 을
+        // 오염시킨다(사례 29). 스택 state·dataContext 동기화는 바로 아래에서 직접 수행한다.
+        // audit:allow local-store-write-must-mirror 부모/루트 슬롯 전용 (위 사유)
         targetContext.setState(setStatePayload);
         // 스택의 state와 dataContext._local 모두 업데이트하여
         // 다음 setState 호출 시 currentLocal이 최신 값을 읽고,
@@ -4850,7 +4885,7 @@ export class ActionDispatcher {
       logger.log('[handleSetError] Error set to global state:', errorMessage);
     } else if (context.setState) {
       // 로컬 상태에 저장 (기본값)
-      context.setState({ apiError: errorMessage });
+      this.writeLocalState(context, { apiError: errorMessage });
       logger.log('[handleSetError] Error set to local state:', errorMessage);
     } else {
       logger.warn('[handleSetError] Cannot set error: no state updater available');
@@ -5981,10 +6016,10 @@ export class ActionDispatcher {
             // 깊은 병합 수행: 기존 상태의 다른 필드 유지
             const mergedValues = this.deepMergeWithState(mappedValues, context.state || {});
             logger.log(`callExternal: merged with existing state`, mergedValues);
-            context.setState(mergedValues);
+            this.writeLocalState(context, mergedValues);
           } else if (callbackEvent && context.setState) {
             // callbackSetState가 없으면 기존 방식으로 이벤트 결과 저장
-            context.setState({ [`${callbackEvent.replace(/:/g, '_')}_result`]: data });
+            this.writeLocalState(context, { [`${callbackEvent.replace(/:/g, '_')}_result`]: data });
           }
 
           // callbackAction 처리: 콜백 데이터를 $event로 전달하여 액션 실행 (engine-v1.9.0+)
@@ -6134,7 +6169,7 @@ export class ActionDispatcher {
             // 깊은 병합 수행: 기존 상태의 다른 필드 유지
             const mergedValues = this.deepMergeWithState(mappedValues, context.state || {});
             logger.log(`callExternalEmbed: merged with existing state`, mergedValues);
-            context.setState(mergedValues);
+            this.writeLocalState(context, mergedValues);
           }
 
           // callbackAction 처리: 콜백 데이터를 $event로 전달하여 액션 실행 (engine-v1.9.0+)
@@ -6381,7 +6416,7 @@ export class ActionDispatcher {
 
         // 기본값이 있고 상태에 설정해야 하는 경우
         if (stateKey && context.setState) {
-          context.setState({ [stateKey]: defaultValue });
+          this.writeLocalState(context, { [stateKey]: defaultValue });
         }
 
         return defaultValue;
@@ -6400,7 +6435,7 @@ export class ActionDispatcher {
 
       // 상태에 설정
       if (stateKey && context.setState) {
-        context.setState({ [stateKey]: parsedValue });
+        this.writeLocalState(context, { [stateKey]: parsedValue });
       }
 
       return parsedValue;
@@ -6408,6 +6443,180 @@ export class ActionDispatcher {
       logger.error('loadFromLocalStorage: failed to load', { key, error });
       return defaultValue;
     }
+  }
+
+  /**
+   * 저장소 A 전용 `_local` 쓰기를 저장소 B(canonical `_global._local`)에도 함께 반영한다.
+   *
+   * 엔진이 선언한 이중 저장소 불변조건(DynamicRenderer `performStateUpdate` 상단 주석)은
+   * "B 가 플러그인/핸들러가 읽는 정본이고, A 는 쓰는 시점에 강제로 일치시키는 미러" 다.
+   * 그런데 커스텀 핸들러·resultTo·외부 콜백 등 여러 쓰기 경로가 `context.setState`
+   * (= 저장소 A) 만 갱신해 왔다. engine-v1.63.3 이 sequence 후속 액션의 `_local` 을
+   * live B 기준으로 바꾼 뒤로, B 에 이미 키가 있으면 `addMissingLeafKeys` 보충 대상에서
+   * 빠져 A 의 값이 조용히 유실된다 (상품상세 「바로 구매」·「장바구니 담기」가 빈 배열을
+   * 전송해 422 — 예외도 콘솔 에러도 남지 않는다).
+   *
+   * 이 헬퍼는 그 쓰기를 `G7Core.state.setLocal({ render: false })` 로 승격해
+   * B · `__g7PendingLocalState` · `__g7ForcedLocalFields` · `__g7SetLocalOverrideKeys` ·
+   * `__g7SequenceLocalSync` 를 함께 갱신한다. 마지막 것이 핵심이다 — `handleSequence` 는
+   * 커스텀 핸들러 뒤에 **오직 그 변수로만** currentState 를 갱신하는데, `context.setState`
+   * 경로는 그 변수를 전혀 건드리지 않아 엔진이 마련한 전파 장치가 사문화돼 있었다.
+   *
+   * 아래 조건에서는 미러를 붙이지 않고 원본 writer 만 호출한다(종전 동작 유지):
+   *
+   *  1. writer 부재 — 갱신할 대상이 없다
+   *  2. 함수형 업데이터 — payload 를 추출할 수 없다 (`handleLocalSetState` 는 지원한다)
+   *  3. `scope: 'parent' | 'root'` — 대상 슬롯이 `_local` 정본이 아니다
+   *  4. 모달 컨텍스트 스택 > 0 — 모달의 쓰기가 페이지 B 를 흡수하는 것 방지(사례 29).
+   *     `setLocal` 의 모달 가드는 base 에서 A 를 뺄 뿐 **B 쓰기를 막지 않으므로** 여기서 막는다
+   *  5. 재진입 — 미러가 다시 이 헬퍼를 타는 것 방지
+   *  6. `merge: 'replace'` — `setLocal` 의 replace 는 forced·override 까지 리셋하므로(사례 17)
+   *     부분 replace 가 **B 전체 손실**로 확대된다. `handleSetState` 의 replace 제외와 동형
+   *  7. payload 에 `errors` 키 또는 non-plain 객체(File/Blob/Date/Map …) —
+   *     `deepMergeState` 는 `errors` 를 교체하는데 `deepMerge` 는 병합하고,
+   *     File 은 `{...file}` 전개로 손상된다
+   *  8. `__templateApp` 또는 `setLocal` 부재 — 테스트·프리뷰 폴백 (v1.50.4 정책 동형)
+   *
+   * @param context 액션 컨텍스트
+   * @param updates 상태 갱신 payload (`__mergeMode` / `__setStateId` 메타 포함 가능)
+   * @param originalSetState 원본 저장소 A writer (프록시에서 클로저로 잡은 원본). 미지정 시 `context.setState`
+   * @param opts 추가 옵션 — `scope` 는 게이트 3 판정에만 쓰인다
+   * @return 없음
+   * @since engine-v1.63.5
+   */
+  private writeLocalState(
+    context: ActionContext,
+    updates: any,
+    originalSetState?: (updates: any) => void,
+    opts?: { scope?: string }
+  ): void {
+    const setState = originalSetState || context.setState;
+    if (!setState) return;
+
+    // 게이트 2 — 함수형 업데이터는 payload 를 꺼낼 수 없다
+    if (typeof updates === 'function') {
+      logger.warn(
+        '[writeLocalState] 함수형 업데이터는 저장소 B 미러 대상이 아닙니다 (payload 추출 불가). 저장소 A 만 갱신합니다.'
+      );
+      setState(updates);
+      return;
+    }
+
+    // 게이트 3 — 부모/루트 스코프는 `_local` 정본이 아닌 다른 슬롯을 노린다
+    if (opts?.scope === 'parent' || opts?.scope === 'root') {
+      setState(updates);
+      return;
+    }
+
+    // 게이트 5 — 재진입 차단 (미러가 다시 이 경로를 타는 것 방지)
+    if (this.localMirrorDepth > 0 || (setState as any)?.__g7CanonicalWriter) {
+      setState(updates);
+      return;
+    }
+
+    const raw = (updates && typeof updates === 'object' ? updates : {}) as Record<string, any>;
+    const mergeMode = raw.__mergeMode as ('replace' | 'shallow' | 'deep' | undefined);
+
+    // 게이트 6 — replace 는 forced·override 까지 리셋하므로 부분 replace 가 B 전체 손실이 된다
+    if (mergeMode === 'replace') {
+      setState(updates);
+      return;
+    }
+
+    const { __mergeMode: _mm, __setStateId: _ssid, ...cleanPayload } = raw;
+
+    // 게이트 7 — 병합 의미가 다르거나 전개로 손상되는 payload
+    if ('errors' in cleanPayload || !ActionDispatcher.isMirrorSafePayload(cleanPayload)) {
+      setState(updates);
+      return;
+    }
+
+    const w = window as any;
+
+    // 게이트 4 — 모달 컨텍스트 스택
+    if (((w.__g7LayoutContextStack || []) as any[]).length > 0) {
+      setState(updates);
+      return;
+    }
+
+    // 게이트 8 — 저장소 B writer 부재 (테스트·프리뷰)
+    const setLocal = w.G7Core?.state?.setLocal;
+    if (!w.__templateApp || typeof setLocal !== 'function') {
+      setState(updates);
+      return;
+    }
+
+    // dot-notation 을 중첩으로 통일한다 (`handleSetState` COMPONENT path 선례).
+    // A 쪽은 원본 payload 를 그대로 넘기므로, 양쪽이 같은 leaf 를 가리키게 맞추는 단계다.
+    const payload = this.deepMergeWithState(cleanPayload, {});
+
+    this.localMirrorDepth++;
+    try {
+      setLocal(payload, { render: false, merge: mergeMode ?? 'deep' });
+
+      // `setLocal` 4단계는 `__g7ActionContext.setState` 로 저장소 A 를 갱신한다.
+      // 그 writer 가 지금의 원본과 **같은 참조**면 A 는 이미 갱신됐으므로 중복 호출하지 않는다.
+      // (`!__g7ActionContext` 조건으로 판정하면 컨텍스트가 다른 경우를 놓친다)
+      if (w.__g7ActionContext?.setState !== setState) {
+        setState(updates);
+      }
+
+      // `__mergeMode` 를 명시한 호출은 forced 필드를 **얕은 스프레드**로 재보정한다.
+      // `setLocal` 은 forced 를 깊게 병합하는데(:1932) 저장소 A 경로는 얕은 스프레드라(:1653),
+      // 사례 19 의 2차 수정(`currentSelection: {}` 리셋)이 깊은 병합에서는 무효화된다.
+      if (mergeMode) {
+        w.__g7ForcedLocalFields = { ...(w.__g7ForcedLocalFields || {}), ...payload };
+      }
+    } finally {
+      this.localMirrorDepth--;
+    }
+  }
+
+  /**
+   * 저장소 B 미러에 안전한 payload 인지 판정한다.
+   *
+   * `setLocal` 의 `deepMerge` 는 객체를 `{...obj}` 로 전개하므로 File/Blob/Date/Map 등
+   * 자체 내부 슬롯을 가진 값은 전개 시 손상된다. 순수 객체와 배열만 통과시킨다.
+   *
+   * @param value 검사 대상
+   * @param depth 재귀 깊이
+   * @return 미러해도 안전하면 true
+   * @since engine-v1.63.5
+   */
+  private static isMirrorSafePayload(value: any, depth = 0): boolean {
+    if (value === null || typeof value !== 'object') return true;
+    if (depth >= 8) return true;
+    if (Array.isArray(value)) {
+      return value.every((v) => ActionDispatcher.isMirrorSafePayload(v, depth + 1));
+    }
+    const proto = Object.getPrototypeOf(value);
+    if (proto !== Object.prototype && proto !== null) return false;
+    return Object.values(value).every((v) => ActionDispatcher.isMirrorSafePayload(v, depth + 1));
+  }
+
+  /**
+   * 커스텀 핸들러에게 넘길 `setState` 미러 프록시를 만든다.
+   *
+   * 래퍼를 `handleCustomAction` 한 곳에만 싣는 이유: 컨텍스트 생성 지점(`executeActions`)에서
+   * 감싸면 그 컨텍스트가 `handleOpenModal` 을 통해 `__g7LayoutContextStack` 으로 새고,
+   * 그 스택을 읽는 `setLocal({scope:'parent'})` · `handleSetState scope:'parent'` ·
+   * `handleParentScopeSetState` 가 래퍼를 호출해 **제외하기로 한 부모 스코프 경로가 오염된다.**
+   * onError 커스텀 핸들러도 `executeAction` 을 거쳐 같은 seam 을 지나므로 누락이 없다.
+   *
+   * @param context 액션 컨텍스트
+   * @return 미러 프록시 (원본 writer 가 없으면 undefined)
+   * @since engine-v1.63.5
+   */
+  private makeLocalSetStateProxy(context: ActionContext): ((updates: any) => void) | undefined {
+    const original = context.setState;
+    if (!original) return undefined;
+    if ((original as any).__g7CanonicalWriter) return original;
+
+    const proxy = (updates: any) => {
+      this.writeLocalState(context, updates, original);
+    };
+    (proxy as any).__g7CanonicalWriter = true;
+    return proxy;
   }
 
   /**
@@ -6448,7 +6657,16 @@ export class ActionDispatcher {
       throw unknownHandlerError;
     }
 
-    return await handler(action, context);
+    // engine-v1.63.5: 커스텀 핸들러에게는 저장소 A/B 를 함께 갱신하는 setState 를 넘긴다.
+    // 확장의 올바른 API 는 `G7Core.state.setLocal()` 이지만, 실제 확장 핸들러 다수가
+    // `context.setState` 를 쓰고 있고 그 경로는 저장소 B 를 갱신하지 않아 후속 액션의
+    // 요청 body 가 비어 나갔다. 래퍼를 이 한 곳(seam)에만 싣는 이유는 헬퍼 주석 참조.
+    const mirroredSetState = this.makeLocalSetStateProxy(context);
+    const handlerContext = mirroredSetState && mirroredSetState !== context.setState
+      ? { ...context, setState: mirroredSetState }
+      : context;
+
+    return await handler(action, handlerContext);
   }
 
   /**

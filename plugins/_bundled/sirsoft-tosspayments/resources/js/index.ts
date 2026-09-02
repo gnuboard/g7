@@ -7,6 +7,7 @@
 
 import { handlerMap } from './handlers';
 import { installAdminPaymentMethodBrandInjector } from './adminPaymentMethodBrandInjector';
+import { reportPaymentFailureOnReturn } from './paymentCloseReport';
 
 const PLUGIN_IDENTIFIER = 'sirsoft-tosspayments';
 
@@ -66,6 +67,11 @@ function initPlugin(): void {
     // 관리자 주문설정의 브랜드 마크 주입 — 핸들러 등록 성공 여부와 무관하게 설치한다
     // (관리자 화면은 결제 핸들러를 쓰지 않으므로 ActionDispatcher 준비를 기다릴 이유가 없다).
     installAdminPaymentMethodBrandInjector();
+
+    // 결제 실패로 돌아온 화면이면 서버에 보고한다. 브라우저 리턴 콜백은 인증이 없어 주문
+    // 상태를 바꾸지 않으므로, 소유권을 대조하는 close-report 가 정당한 실패를 기록하는
+    // 유일한 경로다. 저장해 둔 정보가 없으면 아무 일도 하지 않는다.
+    void reportPaymentFailureOnReturn();
 
     const doInit = () => {
         const count = registerHandlers();

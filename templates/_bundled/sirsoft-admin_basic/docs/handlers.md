@@ -127,7 +127,7 @@ ApiClient 경유로 토큰을 자동 첨부해야 다운로드 행위가 관리�
 
 | 핸들러 | 호출 시점 | 동작 |
 |---|---|---|
-| `detectAssetUrlMode` | 관리자가 "재감지" 버튼 클릭 | 프로브 쌍(확장자 있음/없음)을 던져 판정한 뒤 폼 상태(`general.asset_url_mode`)와 감지 상태 문구를 갱신 — **저장은 하지 않음**(관리자가 결과를 보고 직접 저장) |
+| `detectAssetUrlMode` | 관리자가 "재감지" 버튼 클릭 | 프로브 쌍(확장자 있음/없음)을 던져 판정한 뒤 폼 상태(`form.general.asset_url_mode`)와 감지 상태 문구를 갱신 — **저장은 하지 않음**(관리자가 결과를 보고 직접 저장). 값 경로에 `form.` 접두가 붙는 이유는 이 필드를 감싸는 Div 가 `dataKey: "form"` 이라 자동바인딩 경로와 저장 body 가 모두 `_local.form[tab]` 이기 때문이다 — 접두를 빠뜨리면 `_local.general.*` 에 떨어져 Select 표시에도 저장 body 에도 도달하지 않는다 |
 | `checkAssetUrlModeDrift` | 대시보드 진입 시 자동 | 저장된 설정값과 실제 감지 결과를 대조해 어긋나면 전역 상태(`assetUrlModeDrift`)에 실어 대시보드에 경고 노출 |
 
 봇은 JavaScript 를 실행하지 않으므로 클라이언트측 자가 복구가 있어도 저장값이 틀린 채로

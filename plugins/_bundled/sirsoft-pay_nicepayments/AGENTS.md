@@ -128,6 +128,8 @@ API 와 동기화하는 역할만 합니다. 등록은 훅 기반입니다
 | 가상계좌 입금통보(`vbank-notify`)에 IP 화이트리스트 미부착 | `VbankNotifyIpWhitelist` 미들웨어 유지 | 통보 엔드포인트는 나이스페이먼츠 서버만 호출해야 하며, 화이트리스트가 없으면 제3자가 위조 입금통보를 보내 결제 상태를 조작할 수 있다 |
 | 부분취소인데 가상계좌 입금 완료 건을 일반 취소 API로 처리 | 환불 계좌 정보가 필요한 가상계좌 건은 별도 어드민 환불 계좌 API 경로로 처리 | 가상계좌는 카드와 달리 PG가 자동으로 환불할 계좌를 모르므로 일반 취소 API를 호출하면 실패하거나 환불이 누락된다 |
 | 라이브 가맹점 키를 로그·에러 메시지에 노출 | 운영 키는 항상 마스킹하거나 로그 대상에서 제외 | 노출되면 제3자가 결제 요청을 위조할 수 있다 |
+| 콜백이 넘겨준 `NextAppURL`/`NetCancelURL` 의 도메인을 원문 host 로 대조 (`str_ends_with` 등) | `OutboundUrlValidator::normalizeHost()` 로 정규화한 뒤 대조 (사본 금지 — 코어가 SSoT) | UTS#46 정규화에서 전각 문자가 ASCII 구분자로 바뀐다. `evil.example／.nicepay.co.kr`(U+FF0F)은 접미사 검사를 통과하지만 실제 연결 host 는 `evil.example` 이 되어, 인증 토큰과 MID 가 실린 POST 가 외부로 나간다 |
+| 그 URL 에 userinfo(`user@host`)가 있어도 통과 | userinfo 존재만으로 거부 | `@` 앞부분이 신뢰 도메인처럼 보이게 위장할 수 있다 |
 <!-- @intent END -->
 
 ## 7. 테스트 실행

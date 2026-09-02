@@ -132,6 +132,12 @@ CBT 인증 URL 로 폼 POST → KG 이니시스가 `sid` 를 콜백으로 전달
 | 결제창 서명/모바일 해시/CBT 해시 요청에 타임스탬프 검증 생략 | 타임스탬프 신선도 검증 유지 | 오래된 서명 재사용(replay)으로 위조 결제 요청이 통과할 수 있다 |
 | 일본 결제 설정 미완료 시 한국 표준결제로 조용히 대체 | 설정 미완료면 결제 자체를 중단 | 통화·수수료·정산 구조가 다른 결제가 잘못된 흐름으로 승인될 수 있다 |
 | 라이브 키(사인키·INIAPI 키/IV·해시키)를 로그·에러 메시지에 노출 | 운영 키는 항상 마스킹하거나 로그 대상에서 제외 | 노출되면 제3자가 결제창 서명을 위조할 수 있다 |
+| 서버 승인 실패 분기(PC `authorizePayment` · 모바일 `P_STATUS` · CBT `approveCbtPayment`)에서 `failPayment()` 호출 | 로그 + `resolveFailUrl()` 만. 주문 상태는 건드리지 않는다 | 세 콜백 모두 PG 서명도 IP 증명도 없는 비인증 브라우저 요청이고 주문번호(`MOID`/`P_OID`/`oid`)도 요청자가 고른 값이다. 승인 실패는 위조 `authToken`/`P_TID`/`sid` 만으로 만들어낼 수 있으므로, 그것을 근거로 실패 처리하면 타인의 결제대기 주문이 취소된다 |
+| 정당한 결제 실패 기록을 콜백에서 처리 | 소유권을 검증하는 `close-report`(`requestMatchesOrderBuyer`) 경유 | 구매자 이메일·전화 대조를 통과한 요청만 주문 상태를 바꿔야 한다 |
+| PG 대상 `netCancel` 을 로컬 주문 실패 처리와 같은 것으로 취급 | `sendNetCancel()` 은 PG 잔존 승인 해제이므로 유지, 로컬 주문 mutation 은 별개 판단 | 두 동작을 묶으면 PG 정합성을 지키려다 주문 취소 통로를 다시 연다 |
+| 결제창 컨텍스트를 `window` 전역에만 보관 | `markStandardPaymentCloseReportContext()` 가 sessionStorage 에도 남기고, 부팅 시 `reportStandardPaymentFailureOnReturn()` 으로 보고 | 결제창은 전체 페이지 이동으로 열리고 돌아와 전역이 소실된다. 승인 거절은 fail URL 리다이렉트로 끝나므로, 남겨 둔 정보가 없으면 정당한 결제 실패가 어디에도 기록되지 않는다 |
+| 리턴 콜백 복귀 보고에 체크아웃 경로 검사를 강제 | `reportStandardPaymentWindowClosed($reason, requireCheckoutPage: false)` | 상점이 `redirect_fail_url` 을 바꿔 두면 경로 검사가 보고를 통째로 막는다. 닫힘 메시지 경로(체크아웃 화면 전용)와 리턴 복귀 경로는 판정 기준이 다르다 |
+| 실패 화면에서 보고가 닿지 못한 주문을 방치 | 이커머스 모듈의 만료 주문 자동 정리가 최종 안전망 | 브라우저를 바로 닫으면 보고가 나가지 않는다. 두 경로가 함께 있어야 선차감 마일리지가 무기한 묶이지 않는다 |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -141,7 +147,7 @@ CBT 인증 URL 로 폼 POST → KG 이니시스가 `sid` 를 콜백으로 전달
 |---|---|---|
 | PHPUnit | 35개 | `plugins/_bundled/sirsoft-pay_kginicis/tests` |
 | Vitest | 12개 | `vitest.config.ts` |
-| Playwright | 0개 | — |
+| Playwright | 1개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 2개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
@@ -152,6 +158,9 @@ php vendor/bin/phpunit plugins/_bundled/sirsoft-pay_kginicis/tests --filter='<�
 
 # Vitest (확장 디렉토리에서) (PowerShell)
 cd plugins/_bundled/sirsoft-pay_kginicis && powershell -Command "npm run test:run -- <대상>"
+
+# Playwright E2E (확장 디렉토리에서) (Bash)
+cd plugins/_bundled/sirsoft-pay_kginicis && npm run test:e2e -- specs/<대상>.spec.ts
 
 ```
 
