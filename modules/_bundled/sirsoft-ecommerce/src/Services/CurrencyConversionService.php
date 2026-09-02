@@ -2,7 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Services;
 
-use InvalidArgumentException;
+use Modules\Sirsoft\Ecommerce\Exceptions\CurrencyConversionException;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 
 /**
@@ -298,7 +298,7 @@ class CurrencyConversionService
      * @param  string  $targetCurrency  변환할 통화 코드
      * @return array{price: float|int, formatted: string, currency: string, exchange_rate?: float}
      *
-     * @throws InvalidArgumentException 미지원 통화인 경우
+     * @throws CurrencyConversionException 미지원 통화인 경우
      */
     public function convertToCurrency(int $basePrice, string $targetCurrency): array
     {
@@ -313,7 +313,10 @@ class CurrencyConversionService
         }
 
         if (! $currencyConfig) {
-            throw new InvalidArgumentException(__('sirsoft-ecommerce::exceptions.unknown_currency', ['currency' => $targetCurrency]));
+            throw new CurrencyConversionException(
+                'sirsoft-ecommerce::exceptions.unknown_currency',
+                ['currency' => $targetCurrency]
+            );
         }
 
         if ($currencyConfig['is_default'] ?? false) {
@@ -327,7 +330,10 @@ class CurrencyConversionService
         $exchangeRate = $currencyConfig['exchange_rate'] ?? 0;
 
         if ($exchangeRate <= 0) {
-            throw new InvalidArgumentException(__('sirsoft-ecommerce::exceptions.invalid_exchange_rate', ['currency' => $targetCurrency]));
+            throw new CurrencyConversionException(
+                'sirsoft-ecommerce::exceptions.invalid_exchange_rate',
+                ['currency' => $targetCurrency]
+            );
         }
 
         $convertedPrice = ($basePrice / $this->getDefaultBaseUnit()) * $exchangeRate;
@@ -360,7 +366,7 @@ class CurrencyConversionService
      * @param  array  $currencySnapshot  주문 시점 통화 스냅샷(buildCurrencySnapshot 형식)
      * @return array{currency: string, amount: float|int, minor_unit_amount: int, decimal_places: int, exchange_rate: float} 청구 통화/금액
      *
-     * @throws InvalidArgumentException 결제 통화의 환율이 없거나 0 이하인 경우(미지원 통화)
+     * @throws CurrencyConversionException 결제 통화의 환율이 없거나 0 이하인 경우(미지원 통화)
      */
     public function resolveSnapshotPaymentCharge(float|int $baseAmount, array $currencySnapshot): array
     {
@@ -392,8 +398,9 @@ class CurrencyConversionService
             $snapshotRate = 1.0;
         } else {
             if ($snapshotRate <= 0) {
-                throw new InvalidArgumentException(
-                    __('sirsoft-ecommerce::exceptions.invalid_exchange_rate', ['currency' => $orderCurrency])
+                throw new CurrencyConversionException(
+                    'sirsoft-ecommerce::exceptions.invalid_exchange_rate',
+                    ['currency' => $orderCurrency]
                 );
             }
 
@@ -427,7 +434,7 @@ class CurrencyConversionService
      * @param  Order  $order  주문(total_due_amount + currency_snapshot 보유)
      * @return int 결제 통화 기준 청구 금액(최소 화폐단위 정수)
      *
-     * @throws InvalidArgumentException 결제 통화의 환율이 없거나 0 이하인 경우(미지원 통화)
+     * @throws CurrencyConversionException 결제 통화의 환율이 없거나 0 이하인 경우(미지원 통화)
      */
     public function resolveOrderPaymentChargeAmount(Order $order): int
     {
@@ -460,7 +467,31 @@ class CurrencyConversionService
             default => round($divided),
         };
 
-        return $rounded * $unitValue;
+        // 단위를 도로 곱하는 마지막 단계에서 이진 부동소수 표현이 한 칸 어긋난다
+        // (4505 × 0.01 = 45.050000000000004). 절사 설정은 표시뿐 아니라 **저장되는 값**까지
+        // 지배하므로, 단위 자신이 가진 자릿수로 다듬어 결과가 실제로 그 단위의 배수가 되게 한다.
+        // 정수 단위(1·10·100)는 자릿수 0 이라 값이 그대로 통과한다.
+        return round($rounded * $unitValue, $this->roundingUnitScale($unitValue));
+    }
+
+    /**
+     * 절사 단위가 가진 소수 자릿수를 구합니다.
+     *
+     * 단위 문자열의 형태(`0.01` · `1e-2`)에 기대지 않고 값에서 직접 센다.
+     *
+     * @param  float  $unit  절사 단위 (양수)
+     * @return int 소수 자릿수 (정수 단위면 0)
+     */
+    protected function roundingUnitScale(float $unit): int
+    {
+        $scale = 0;
+
+        while ($scale < 10 && abs($unit - round($unit)) > 1e-9) {
+            $unit *= 10;
+            $scale++;
+        }
+
+        return $scale;
     }
 
     /**

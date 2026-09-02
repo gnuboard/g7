@@ -73,10 +73,10 @@ exclusions:
   - { fee_mode: fixed, charge_policy: [free, fixed, conditional_free_met, conditional_free_unmet, per_quantity, range_amount, api], reason: "고정액 모드는 부과정책을 읽지 않는다 — 정책 값을 바꿔도 결과가 같으므로 실제 정책 값과 곱하면 재지 않은 칸이 재어진 것으로 보인다. 자리표시 not_read 한 칸이 이 모드의 관측 전부다" }
   - { fee_mode: original_policy, charge_policy: not_read, reason: "원 정책 모드는 언제나 부과정책을 되살려 읽는다 — 읽지 않는 상태가 존재하지 않는다" }
   - { fault: [seller, carrier], charge_policy: [free, conditional_free_met, conditional_free_unmet, per_quantity, range_amount, api], reason: "판매자·배송사 귀책은 부과정책을 읽기 전에 0원으로 끝난다 — 정책 축이 결과를 가르지 않는다. 대표 정책(fixed) 한 값만 남기고, 6정책 전수는 DataProvider 가 대조군과 함께 따로 돌린다" }
-  # ↓ 아래 넷은 제외가 아니라 **이월**이다. 실재하는 조합이고 언젠가 재어야 하며, 그 담당 세션이
+  # ↓ 아래 둘은 제외가 아니라 **이월**이다. 실재하는 조합이고 언젠가 재어야 하며, 그 담당 세션이
   #   정해져 있다. 담당 세션은 자기 몫의 exclusion 을 지우고 그만큼의 셀을 마킹으로 채운다.
-  - { fee_mode: original_policy, charge_policy: [fixed, conditional_free_met, conditional_free_unmet], fault: customer, reason: "이월(S15a3) — 고정·조건부무료 정책 × 고객 귀책 72셀. 제외가 아니라 아직 재지 않은 칸이다" }
-  - { fee_mode: original_policy, fault: seller, reason: "이월(S15a3) — 원 정책 모드의 판매자 귀책 24셀(위 3번 exclusion 이 남긴 대표 정책 fixed 분). 제외가 아니라 아직 재지 않은 칸이다" }
+  #   S15a3 이 자기 두 줄(고정·조건부무료 × 고객 72셀 · 판매자 귀책 24셀)을 지우고 채웠으므로
+  #   남은 것은 S15a4 몫뿐이다.
   - { fee_mode: original_policy, charge_policy: [per_quantity, range_amount, api], fault: customer, reason: "이월(S15a4) — 수량당·구간(금액)·API 정책 × 고객 귀책 72셀. 제외가 아니라 아직 재지 않은 칸이다" }
   - { fee_mode: original_policy, fault: carrier, reason: "이월(S15a4) — 원 정책 모드의 배송사 귀책 24셀(위 3번 exclusion 이 남긴 대표 정책 fixed 분). 제외가 아니라 아직 재지 않은 칸이다" }
 
@@ -141,16 +141,24 @@ notes: |
   교환 2회). 그 칸은 어느 테스트도 재고 있지 않았다.
 
   **288셀은 세 세션에 나눠 채운다.** 한 세션의 신규 케이스 상한을 넘기 때문이다. S15a2 는
-  고정액 모드 전 조합(72셀)과 원 정책 × 무료 × 고객 귀책(24셀)을 맡아 96셀을 채웠다. 나머지
-  192셀은 지우지 않고 **이월 exclusion** 으로 남겼다 — 커버리지 게이트는 "제외" 와 "아직 재지
-  않음" 을 구분하지 못하므로, 그 둘을 가르는 것은 사유 문구뿐이다. 담당 세션(S15a3 · S15a4)은
-  자기 몫의 exclusion 두 줄을 지우고 그만큼의 셀을 마킹으로 채운다. 이월분이 남아 있는 동안
-  이 매니페스트의 선언 셀 수는 288 이 아니라 96 이다.
+  고정액 모드 전 조합(72셀)과 원 정책 × 무료 × 고객 귀책(24셀)을, S15a3 은 원 정책 ×
+  {고정, 조건부무료 충족·미달} × 고객 귀책(72셀)과 원 정책 × 판매자 귀책(24셀)을 맡아
+  각각 96셀을 채웠다. 남은 96셀은 지우지 않고 **이월 exclusion** 으로 남겼다 — 커버리지
+  게이트는 "제외" 와 "아직 재지 않음" 을 구분하지 못하므로, 그 둘을 가르는 것은 사유 문구뿐이다.
+  담당 세션(S15a4)은 자기 몫의 exclusion 두 줄을 지우고 그만큼의 셀을 마킹으로 채운다.
+  이월분이 남아 있는 동안 이 매니페스트의 선언 셀 수는 288 이 아니라 192 다.
 
-  **`multiplied` 는 이 세션의 몫에서 `flat` 과 같은 값을 낸다.** `extra_fee_multiply` 는 per_*
-  부과정책에서만 실제로 곱해지는데, S15a2 가 맡은 두 부과정책(고정액 모드의 `not_read` · 원 정책
-  모드의 `free`)은 둘 다 per_* 가 아니다. 같은 값이 나오는 것이 산출물이며, 플래그가 곱을 일으키는
-  칸은 S15a4 의 `per_quantity` 가 연다.
+  **`multiplied` 는 지금까지의 몫에서 `flat` 과 같은 값을 낸다.** `extra_fee_multiply` 는 per_*
+  부과정책에서만 실제로 곱해지는데, S15a2·S15a3 이 맡은 부과정책(고정액 모드의 `not_read` · 원
+  정책 모드의 `free` · `fixed` · `conditional_free_met` · `conditional_free_unmet`)은 어느 것도
+  per_* 가 아니다. 같은 값이 나오는 것이 산출물이며, 플래그가 곱을 일으키는 칸은 S15a4 의
+  `per_quantity` 가 연다.
+
+  **원 정책 모드는 고정액 모드와 달리 도서산간을 구간마다 실제로 얹는다.** S15a3 이 채운 96셀의
+  기대액은 `편도액 × 배수 + 구간별 추가액` 이며, S15a2 의 몫에서 성립하던 "추가액 0" 전제가
+  여기서는 성립하지 않는다. 조건부무료 충족(임계 10,000 · 그룹 40,000)은 기본액을 0으로 만들지만
+  추가액은 남으므로 무료 정책과 결과가 같아 보이는데, 같은 `base_fee` 2,500 을 쓰는 미달 24셀이
+  짝으로 붙어 있어 임계 판정이 죽으면 둘 중 하나가 반드시 깨진다.
 
   **`not_read` 는 값이 아니라 자리표시다.** YAML 상으로는 `charge_policy` 의 한 값이지만 실제
   설정에 그런 부과정책은 없다. `fixed` 모드가 부과정책을 **읽지 않는다**는 사실을 곱에 표현할

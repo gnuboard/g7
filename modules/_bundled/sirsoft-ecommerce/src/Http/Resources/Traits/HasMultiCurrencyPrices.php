@@ -4,6 +4,9 @@ namespace Modules\Sirsoft\Ecommerce\Http\Resources\Traits;
 
 use Modules\Sirsoft\Ecommerce\Support\CurrencySettingsCache;
 
+// audit:allow api-doc-coverage 절사 결과의 되곱하기 잔차만 제거한다 — 응답 필드·타입·구조가
+// 그대로라 갱신할 API 레퍼런스 서술이 없다 (금액 값의 표현만 설정 단위에 맞게 정규화).
+
 /**
  * 다중 통화 가격 변환 Trait
  *
@@ -235,7 +238,31 @@ trait HasMultiCurrencyPrices
             default => round($divided),
         };
 
-        return $rounded * $unitValue;
+        // 단위를 도로 곱하는 마지막 단계에서 이진 부동소수 표현이 한 칸 어긋난다
+        // (4505 × 0.01 = 45.050000000000004). 절사 설정은 표시뿐 아니라 **저장되는 값**까지
+        // 지배하므로, 단위 자신이 가진 자릿수로 다듬어 결과가 실제로 그 단위의 배수가 되게 한다.
+        // 정수 단위(1·10·100)는 자릿수 0 이라 값이 그대로 통과한다.
+        return round($rounded * $unitValue, $this->roundingUnitScale($unitValue));
+    }
+
+    /**
+     * 절사 단위가 가진 소수 자릿수를 구합니다.
+     *
+     * 단위 문자열의 형태(`0.01` · `1e-2`)에 기대지 않고 값에서 직접 센다.
+     *
+     * @param  float  $unit  절사 단위 (양수)
+     * @return int 소수 자릿수 (정수 단위면 0)
+     */
+    protected function roundingUnitScale(float $unit): int
+    {
+        $scale = 0;
+
+        while ($scale < 10 && abs($unit - round($unit)) > 1e-9) {
+            $unit *= 10;
+            $scale++;
+        }
+
+        return $scale;
     }
 
     /**
