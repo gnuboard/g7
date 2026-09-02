@@ -95,6 +95,9 @@ class ClaimStatusNotificationTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * @effects request_fires_only_the_requested_notification_hook
+     */
     public function test_requesting_an_exchange_fires_only_the_requested_notification_hook(): void
     {
         $this->requestedExchange();
@@ -106,6 +109,9 @@ class ClaimStatusNotificationTest extends ModuleTestCase
         );
     }
 
+    /**
+     * @effects transition_fires_only_the_mapped_notification_hook
+     */
     public function test_approving_a_return_fires_the_mapped_notification_hook(): void
     {
         $return = $this->requestedReturn();
@@ -119,6 +125,9 @@ class ClaimStatusNotificationTest extends ModuleTestCase
         );
     }
 
+    /**
+     * @effects withdrawal_fires_admin_hook_and_no_customer_hook
+     */
     public function test_withdrawing_a_claim_fires_the_admin_hook_and_no_customer_hook(): void
     {
         $return = $this->requestedReturn();
@@ -133,6 +142,9 @@ class ClaimStatusNotificationTest extends ModuleTestCase
         );
     }
 
+    /**
+     * @effects non_customer_visible_status_fires_nothing
+     */
     public function test_a_status_that_is_not_customer_visible_fires_nothing(): void
     {
         $listener = new ClaimStatusNotificationListener;
@@ -143,6 +155,9 @@ class ClaimStatusNotificationTest extends ModuleTestCase
         $this->assertSame([], $this->fired, '환불 `processing`(PG 요청 중)은 고객에게 알릴 사건이 아닙니다.');
     }
 
+    /**
+     * @effects unchanged_status_recall_fires_nothing
+     */
     public function test_a_recall_with_the_same_status_fires_nothing(): void
     {
         $listener = new ClaimStatusNotificationListener;
@@ -153,6 +168,9 @@ class ClaimStatusNotificationTest extends ModuleTestCase
         $this->assertSame([], $this->fired);
     }
 
+    /**
+     * @effects mapping_follows_captured_target_not_current_model_state
+     */
     public function test_mapping_follows_the_captured_target_not_the_current_model_state(): void
     {
         // 큐가 밀린 사이 신청서가 또 전이된 상황: 모델은 이미 `collected` 인데

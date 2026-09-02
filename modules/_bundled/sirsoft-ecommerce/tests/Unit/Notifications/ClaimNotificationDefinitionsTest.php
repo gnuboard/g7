@@ -28,6 +28,9 @@ class ClaimNotificationDefinitionsTest extends ModuleTestCase
         'refund' => 5,
     ];
 
+    /**
+     * @effects twenty_nine_claim_notification_definitions_exist
+     */
     public function test_module_declares_twenty_nine_claim_notification_definitions(): void
     {
         $claimDefinitions = $this->claimDefinitions();
@@ -47,6 +50,9 @@ class ClaimNotificationDefinitionsTest extends ModuleTestCase
         $this->assertContains('claim_withdrawn', $types, '철회(관리자 수신) 알림 정의가 없습니다.');
     }
 
+    /**
+     * @effects definition_hooks_match_listener_mapping_one_to_one
+     */
     public function test_definition_hooks_and_listener_mapping_are_one_to_one(): void
     {
         $definedHooks = [];
@@ -78,6 +84,9 @@ class ClaimNotificationDefinitionsTest extends ModuleTestCase
         );
     }
 
+    /**
+     * @effects every_claim_definition_has_mail_and_database_templates_in_ko_and_en
+     */
     public function test_every_claim_definition_has_both_channels_with_bilingual_templates(): void
     {
         foreach ($this->claimDefinitions() as $def) {
@@ -102,6 +111,9 @@ class ClaimNotificationDefinitionsTest extends ModuleTestCase
         }
     }
 
+    /**
+     * @effects every_template_placeholder_is_declared_as_a_variable
+     */
     public function test_every_placeholder_used_in_a_template_is_declared_as_a_variable(): void
     {
         foreach ($this->claimDefinitions() as $def) {
@@ -132,6 +144,9 @@ class ClaimNotificationDefinitionsTest extends ModuleTestCase
         }
     }
 
+    /**
+     * @effects customer_notifications_target_trigger_user_and_withdrawal_targets_admins
+     */
     public function test_customer_notifications_go_to_the_requester_and_withdrawal_goes_to_admins(): void
     {
         foreach ($this->claimDefinitions() as $def) {

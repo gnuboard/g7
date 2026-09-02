@@ -61,6 +61,9 @@ class ClaimActivityLogListenerTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * @effects request_writes_one_activity_row_with_the_claim_number
+     */
     public function test_requesting_a_return_writes_one_log_row_with_the_claim_number(): void
     {
         ActivityLog::query()->delete();
@@ -78,6 +81,9 @@ class ClaimActivityLogListenerTest extends ModuleTestCase
         $this->assertSame($return->id, $log->loggable_id);
     }
 
+    /**
+     * @effects service_transition_writes_exactly_one_status_change_row
+     */
     public function test_a_service_transition_writes_exactly_one_status_change_row(): void
     {
         $return = $this->requestedReturn();
@@ -96,6 +102,9 @@ class ClaimActivityLogListenerTest extends ModuleTestCase
         $this->assertSame(ReturnStatusEnum::APPROVED->value, $logs->first()->properties['new_status']);
     }
 
+    /**
+     * @effects status_change_records_the_captured_target
+     */
     public function test_status_change_records_the_captured_target_not_the_current_model_state(): void
     {
         $return = $this->requestedReturn();
@@ -114,6 +123,9 @@ class ClaimActivityLogListenerTest extends ModuleTestCase
         $this->assertSame(ReturnStatusEnum::APPROVED->value, $log->properties['new_status']);
     }
 
+    /**
+     * @effects amount_edits_are_recorded_in_the_core_changes_shape
+     */
     public function test_amount_edits_are_recorded_in_the_core_changes_shape(): void
     {
         $return = $this->requestedReturn();
@@ -142,6 +154,9 @@ class ClaimActivityLogListenerTest extends ModuleTestCase
         $this->assertArrayNotHasKey('charge_method', $changed->all(), '바뀌지 않은 항목은 이력에 남기지 않습니다.');
     }
 
+    /**
+     * @effects amount_edits_with_no_effective_change_record_no_changes
+     */
     public function test_amount_edits_with_no_effective_change_record_no_changes(): void
     {
         $return = $this->requestedReturn();
@@ -192,6 +207,9 @@ class ClaimActivityLogListenerTest extends ModuleTestCase
         return [$return, $idFor((int) $optionA->id), $idFor((int) $optionB->id)];
     }
 
+    /**
+     * @effects item_level_transition_is_recorded_even_when_the_header_does_not_move
+     */
     public function test_an_item_level_transition_is_recorded_even_when_the_header_does_not_move(): void
     {
         [$return, $itemA] = $this->twoItemReturn();
@@ -236,6 +254,9 @@ class ClaimActivityLogListenerTest extends ModuleTestCase
         $this->assertSame($return->id, $log->loggable_id);
     }
 
+    /**
+     * @effects item_level_transition_that_moves_the_header_records_both_facts
+     */
     public function test_an_item_level_transition_that_moves_the_header_records_both_facts(): void
     {
         [$return, $itemA, $itemB] = $this->twoItemReturn();
@@ -257,6 +278,9 @@ class ClaimActivityLogListenerTest extends ModuleTestCase
         );
     }
 
+    /**
+     * @effects item_level_call_that_moves_nothing_records_nothing
+     */
     public function test_an_item_level_call_that_moves_nothing_records_nothing(): void
     {
         [$return, $itemA] = $this->twoItemReturn();
@@ -290,6 +314,9 @@ class ClaimActivityLogListenerTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * @effects pending_claim_payment_cancellation_is_recorded_with_its_reason
+     */
     public function test_cancelling_a_pending_claim_payment_is_recorded_with_its_reason(): void
     {
         $return = $this->payOnRequestReturn();
@@ -315,6 +342,9 @@ class ClaimActivityLogListenerTest extends ModuleTestCase
         $this->assertSame($payment->id, $log->loggable_id);
     }
 
+    /**
+     * @effects pending_payment_cancelled_by_the_reaper_is_recorded_without_a_claim
+     */
     public function test_a_pending_payment_cancelled_by_the_reaper_is_recorded_without_a_claim(): void
     {
         $return = $this->payOnRequestReturn();

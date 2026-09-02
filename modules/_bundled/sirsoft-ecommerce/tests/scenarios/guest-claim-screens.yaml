@@ -93,6 +93,7 @@ test_files:
   - templates/_bundled/sirsoft-basic/__tests__/layouts/guestOrderClaimSection.test.tsx
   - templates/_bundled/sirsoft-basic/src/handlers/__tests__/storageHandlers.test.ts
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/claimListHandlers.test.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/guest-claim.spec.ts
 
 notes: |
   **§9-1 의 매니페스트 수가 11 → 12 가 된다.** §7 S15 DoD 가 그 숫자를 인용하므로 함께 정정한다.

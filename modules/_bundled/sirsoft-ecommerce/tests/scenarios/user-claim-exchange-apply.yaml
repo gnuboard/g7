@@ -107,6 +107,10 @@ effects:
   - user_claim_apply_invalid_type_shows_error_page
   - user_claim_apply_exchange_renders_per_item_change_button
   - user_claim_apply_preview_runs_once_after_reason_selected
+  # 교환 추가옵션 (§8-3 — S15b). 고른 이름이 그 상품 줄에 남고, **같은 선택**이 미리보기
+  # 요청에 실린다. 화면이 이름만 보여 주고 요청에 싣지 않으면 예고와 청구가 서로 다른 것을
+  # 계산하는데, 접수는 성공하므로 어긋난 사실이 어디에도 남지 않는다.
+  - claim_apply_additional_options_reach_the_preview_request
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/claimApplyHandlers.test.ts

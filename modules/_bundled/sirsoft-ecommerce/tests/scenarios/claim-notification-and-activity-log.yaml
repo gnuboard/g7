@@ -1,8 +1,16 @@
 # audit:allow test-scenario-coverage reason: |
-#   cross product 자동 전개는 audit 실행 환경에 js-yaml 이 없어 fallback YAML 파서가
-#   nested axes 를 null 로 읽어 expandCases 가 throw 한다(형제 시나리오
-#   order-status-notification.yaml 과 동일 한계). 아래 effects ↔ test_files 의
-#   테스트 메서드가 1:1 대응하며, 브라우저 축(E2E)은 S15 가 spec 을 얹을 때 채운다.
+#   이 기능의 커버리지 단위는 384 셀 곱이 아니라 **알림 정의 29종과 그 훅**이다. 축은 정의를
+#   낳는 재료(유형 x 이벤트 x 신청자 x 채널)이고, 한 셀이 곧 한 정의가 아니다 — 철회는 유형
+#   3종이 관리자 알림 1건으로 수렴하고 환불 processing 은 아무것도 발화하지 않는다. 그래서
+#   조합마다 테스트를 두면 서로 다른 셀이 같은 정의를 여러 번 재확인하게 된다.
+#   그 단위인 effects 는 test_files 의 테스트 메서드와 1:1 로 대응하며, 2026-09-02(S15b)에
+#   그 대응을 전건 @effects 마킹으로 코드에 적었다(정의 5 + 매핑 6 + 데이터 5 + 활동로그 10 +
+#   훅 순서 2 = 28). 남은 것은 이 면제가 cases 와 effects 를 함께 덮어 그 마킹을 게이트가
+#   검사하지 않는다는 점이며, 면제를 축별로 나누는 것은 룰 쪽 과제로 남긴다.
+#   (2026-09-02 정정: 종전 사유였던 "js-yaml 부재로 expandCases 가 throw 한다" 는 더 이상
+#   사실이 아니다 — 지금은 384 케이스로 정상 전개된다. 함께 적혀 있던 "브라우저 축(E2E)은
+#   S15 가 spec 을 얹을 때 채운다" 도 성립하지 않는다: 알림 발송과 활동 로그 행은 브라우저에서
+#   관측되는 값이 아니라 이 매니페스트에 브라우저 축 자체가 없다.)
 feature: 클레임 알림 29종 + 활동 로그 (S7 / §4-8)
 
 description: |

@@ -62,15 +62,29 @@ async function readSavedMethods(request: APIRequestContext, token: string): Prom
   return body?.data?.order_settings?.payment_methods ?? [];
 }
 
-/** 결제수단 배열을 저장한다 (런타임 전용 플래그는 서버가 제거한다). */
+/**
+ * 결제수단 배열을 저장한다 (런타임 전용 플래그는 서버가 제거한다).
+ *
+ * `order_settings` 는 **섹션 단위로 치환**된다 — `payment_methods` 만 실어 보내면 같은 섹션의
+ * 다른 키(무통장 입금계좌·현금영수증 발급사·자동취소 기한 …)가 전부 사라지고, 원복도 같은
+ * 부분 payload 라 되살아나지 않는다. 그 상태는 이 spec 을 통과시키면서 뒤따르는
+ * 무통장·현금영수증 spec 9케이스를 조용히 red 로 만든다(실측 2026-09-02). 그래서 현재 섹션을
+ * 통째로 읽어 이 키만 갈아끼운다.
+ */
 async function saveMethods(
   request: APIRequestContext,
   token: string,
   methods: CatalogMethod[],
 ): Promise<void> {
+  const current = await request.get(ADMIN_SETTINGS_API, {
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+  });
+  expect(current.ok(), '관리자 설정 조회 실패').toBeTruthy();
+  const orderSettings = (await current.json())?.data?.order_settings ?? {};
+
   const response = await request.put(ADMIN_SETTINGS_API, {
     headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
-    data: { _tab: 'order_settings', order_settings: { payment_methods: methods } },
+    data: { _tab: 'order_settings', order_settings: { ...orderSettings, payment_methods: methods } },
   });
   expect(response.ok(), `결제수단 저장 실패 (${response.status()})`).toBeTruthy();
 }

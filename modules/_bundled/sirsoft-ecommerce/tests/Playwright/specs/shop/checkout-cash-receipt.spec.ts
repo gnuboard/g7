@@ -268,7 +268,10 @@ test.describe('체크아웃 현금영수증 신청 폼 (무통장 슬롯 주입)
       return response.json();
     });
 
-    const provider = settings?.data?.cash_receipt_provider ?? null;
+    // 공개 응답은 `data.order_settings` 아래에 싣는다(OrderPaymentResource). 한 단 위에서 찾으면
+    // 발급사가 설정돼 있어도 늘 null 로 읽혀, 미설정 환경에서는 우연히 통과하고(0 === 0)
+    // 설정 환경에서만 실패한다 — 두 방향 모두 화면을 재지 않는다.
+    const provider = settings?.data?.order_settings?.cash_receipt_provider ?? null;
 
     // 화면 렌더와 공개 응답이 같은 판정을 공유해야 한다 — 한쪽만 살아 있으면 폼은 뜨는데
     // 신청은 실패하는 상태가 된다.

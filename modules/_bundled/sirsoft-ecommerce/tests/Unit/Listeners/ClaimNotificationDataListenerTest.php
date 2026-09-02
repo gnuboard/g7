@@ -82,6 +82,9 @@ class ClaimNotificationDataListenerTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * @effects member_claim_routes_to_trigger_user_and_links_to_mypage_detail
+     */
     public function test_a_member_claim_routes_to_the_requester_and_links_to_the_mypage_detail(): void
     {
         $return = $this->requestedReturn();
@@ -97,6 +100,9 @@ class ClaimNotificationDataListenerTest extends ModuleTestCase
         $this->assertNotSame('', $result['data']['reason_label']);
     }
 
+    /**
+     * @effects guest_claim_uses_core_guest_recipient_key_and_lookup_screen
+     */
     public function test_a_guest_claim_uses_the_core_guest_recipient_key_and_the_lookup_screen(): void
     {
         $order = $this->deliveredClaimOrder();
@@ -122,6 +128,9 @@ class ClaimNotificationDataListenerTest extends ModuleTestCase
         );
     }
 
+    /**
+     * @effects payment_request_data_carries_charge_and_outstanding_amounts
+     */
     public function test_payment_request_data_carries_the_charge_and_outstanding_amounts(): void
     {
         $exchange = $this->requestedExchange();
@@ -133,6 +142,9 @@ class ClaimNotificationDataListenerTest extends ModuleTestCase
         $this->assertStringContainsString('6,000', $result['data']['outstanding_amount']);
     }
 
+    /**
+     * @effects admin_withdrawal_data_links_to_admin_screen_and_defers_recipient_name
+     */
     public function test_admin_withdrawal_data_links_to_the_admin_screen_and_defers_the_recipient_name(): void
     {
         $return = $this->requestedReturn();
@@ -202,6 +214,9 @@ class ClaimNotificationDataListenerTest extends ModuleTestCase
         );
     }
 
+    /**
+     * @effects non_claim_notification_types_pass_through_untouched
+     */
     public function test_non_claim_types_pass_through_untouched(): void
     {
         $default = ['notifiable' => null, 'notifiables' => null, 'data' => ['name' => '주문 축'], 'context' => ['trigger_user_id' => 7]];

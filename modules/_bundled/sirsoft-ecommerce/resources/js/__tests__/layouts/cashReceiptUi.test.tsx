@@ -72,7 +72,20 @@ describe('W-1 체크아웃 현금영수증 신청 폼', () => {
         const fields = byId(checkoutExt, 'ext_checkout_cash_receipt_fields');
 
         expect(evalIf(fields.if, { _local: {} })).toBe(false);
-        expect(evalIf(fields.if, { _local: { cashReceiptRequested: true } })).toBe(true);
+        // 표시 게이트는 스크래치와 제출 payload 의 **합의**를 본다 — 한쪽만 보면
+        // "화면은 신청 켜짐, 제출 payload 는 비어 있음" 이 생긴다(결제수단 전환 경로).
+        expect(evalIf(fields.if, { _local: { cashReceiptRequested: true } })).toBe(false);
+        expect(
+            evalIf(fields.if, { _local: { checkoutExtraPayload: { cash_receipt_requested: true } } }),
+        ).toBe(false);
+        expect(
+            evalIf(fields.if, {
+                _local: {
+                    cashReceiptRequested: true,
+                    checkoutExtraPayload: { cash_receipt_requested: true },
+                },
+            }),
+        ).toBe(true);
     });
 
     it('신청 체크박스는 확장 병합 칸에 4키를 기입한다 (직접 _local 기입은 서버 미도달)', () => {
@@ -99,6 +112,59 @@ describe('W-1 체크아웃 현금영수증 신청 폼', () => {
             { $event: { target: { checked: false } }, _local: {} }
         );
         expect(off).toEqual({});
+    });
+
+    it('신청 토글의 켜짐 표시도 스크래치와 제출 payload 의 합의를 본다 (전환 후 잔류 금지)', () => {
+        const toggle = byId(checkoutExt, 'ext_checkout_cash_receipt_toggle');
+        const checkedExpr = String(toggle.props.checked).slice(2, -2);
+        const evalChecked = (_local: Record<string, unknown>) =>
+            engine.evaluateExpression(checkedExpr, { _local });
+
+        expect(evalChecked({})).toBe(false);
+
+        // 결제수단을 바꾸면 템플릿이 공유 계약 키(checkoutExtraPayload)를 통째로 치환한다.
+        // 모듈 스크래치(cashReceiptRequested)는 그 치환의 대상이 아니라 그대로 남는데,
+        // 표시가 스크래치만 보면 무통장으로 돌아왔을 때 "토글은 켜짐, 제출 payload 는 비어 있음"
+        // 이 된다 — 화면이 예고한 것과 실제 제출이 갈린다.
+        expect(evalChecked({ cashReceiptRequested: true })).toBe(false);
+        expect(evalChecked({ checkoutExtraPayload: { cash_receipt_requested: true } })).toBe(false);
+        expect(
+            evalChecked({
+                cashReceiptRequested: true,
+                checkoutExtraPayload: { cash_receipt_requested: true },
+            }),
+        ).toBe(true);
+
+        // 표시 게이트와 입력 영역 게이트는 같은 판정을 공유해야 한다 (한쪽만 열리면 빈 칸이 뜬다).
+        const fields = byId(checkoutExt, 'ext_checkout_cash_receipt_fields');
+        expect(String(fields.if)).toBe(String(toggle.props.checked));
+    });
+
+    it('전환 뒤 다시 신청하면 이전 수단에서 입력한 값이 아니라 기본값으로 시작한다', () => {
+        const toggle = byId(checkoutExt, 'ext_checkout_cash_receipt_toggle');
+        const params = toggle.actions[0].params;
+
+        // 전환이 비우는 것은 payload 뿐이고 스크래치 3키는 옛 입력을 그대로 들고 있다.
+        // 재체크의 기본값을 스크래치에서 읽으면 그 옛 값이 되살아난다.
+        const stale = {
+            cashReceiptType: 'expense',
+            cashReceiptIdentifierType: 'business',
+            cashReceiptIdentifier: '01012345678',
+            checkoutExtraPayload: {},
+        };
+        const ctx = { $event: { target: { checked: true } }, _local: stale };
+        const evalParam = (key: string) =>
+            engine.evaluateExpression(String(params[key]).slice(2, -2), ctx);
+
+        expect(evalParam('cashReceiptType')).toBe('income');
+        expect(evalParam('cashReceiptIdentifierType')).toBe('phone');
+        expect(evalParam('cashReceiptIdentifier')).toBe('');
+        expect(evalParam('checkoutExtraPayload')).toEqual({
+            cash_receipt_requested: true,
+            cash_receipt_type: 'income',
+            cash_receipt_identifier_type: 'phone',
+            cash_receipt_identifier: '',
+        });
     });
 
     it('소득공제로 전환하면 사업자등록번호 선택이 휴대폰번호로 리셋된다 (M5)', () => {

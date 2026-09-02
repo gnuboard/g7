@@ -117,6 +117,8 @@ test_files:
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/claimListHandlers.test.ts
   - templates/_bundled/sirsoft-basic/__tests__/layouts/userClaimApplyRender.test.tsx
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/RefundExecutionServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/user-claim-return.spec.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/user-claim-cancel-refund.spec.ts
 
 notes: |
   **철회 모달의 진입점은 S13 소유다.** 이 세션은 확인 절차(`_modal_withdraw.json`)와 실행
