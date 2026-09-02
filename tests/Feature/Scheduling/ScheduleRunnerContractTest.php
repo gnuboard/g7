@@ -147,4 +147,51 @@ class ScheduleRunnerContractTest extends TestCase
         $this->assertSame(7, $runner->maxRuntimeSeconds());
         $this->assertSame(11, $runner->catchUpWindowMinutes());
     }
+
+    /**
+     * 이력 화면에 쓰는 이름에 서버 경로·명령 원문이 실리지 않는다.
+     *
+     * `Event::getSummaryForDisplay()` 는 설명이 없으면 실행할 명령 원문을 돌려주는데, 그
+     * 원문에는 이 서버의 PHP 실행 파일 절대 경로가 들어간다. 확장 예약은 설명을 달아 두어
+     * 사람이 읽는 이름이 나오지만 코어 예약은 대부분 설명이 없어 그 갈래로 떨어졌고,
+     * 운영자 화면에 경로가 그대로 노출됐다 (G8 실측 2026-09-02 · 계획서 §9.11.3 F6).
+     *
+     * 모집단은 실제 등록분에서 도출한다 — 목록을 손으로 들지 않는다.
+     *
+     * @effects schedule_history_name_is_human_readable
+     */
+    public function test_history_display_name_never_carries_the_php_binary_path(): void
+    {
+        $runner = app(ScheduleRunner::class);
+        $events = $runner->registeredEvents($this->app);
+
+        $this->assertNotEmpty($events, '등록된 스케줄이 없으면 이 계약은 공허하게 통과한다.');
+
+        $method = (new \ReflectionClass($runner))->getMethod('displayNameOf');
+        $method->setAccessible(true);
+
+        $offenders = [];
+        $checked = 0;
+
+        foreach ($events as $event) {
+            if ($event instanceof CallbackEvent) {
+                continue;
+            }
+
+            $name = (string) $method->invoke($runner, $event);
+            $checked++;
+
+            // 명령 원문의 표지: 인용부호로 감싼 실행 파일 경로 또는 `artisan` 토큰.
+            if (preg_match('~["\']|\bartisan\b|(?:^|[\s"])(?:[A-Za-z]:[\\/]|/)~', $name) === 1) {
+                $offenders[] = $name;
+            }
+        }
+
+        $this->assertGreaterThan(0, $checked, 'shell 형태 예약이 하나도 없으면 이 계약이 공허하다.');
+        $this->assertSame(
+            [],
+            $offenders,
+            "이력 이름에 명령 원문·서버 경로가 실렸습니다:\n".implode("\n", $offenders)
+        );
+    }
 }

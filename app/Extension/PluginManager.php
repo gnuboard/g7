@@ -684,6 +684,13 @@ class PluginManager implements PluginManagerInterface
         $layoutsRegistered = 0;
 
         if ($result) {
+            // 활성화도 메뉴 동기화를 지난다 — 플러그인의 activate() 가 메뉴를 직접 심는 구현이면
+            // 그 경로에는 `plugin.{id}.admin_menus.translations` 필터가 없어 언어팩이 넣어 둔
+            // 번역이 원문으로 되돌아간다(실측: 활성화 직후 ja 라벨 소실). 필터를 아는 지점은
+            // createPluginMenus 한 곳이므로 그것을 지나게 하고, 각 플러그인이 훅 이름을 사본으로
+            // 갖지 않게 한다. helper 가 멱등이라 재호출은 무해하다.
+            $this->createPluginMenus($plugin);
+
             $this->pluginRepository->updateByIdentifier($plugin->getIdentifier(), [
                 'status' => ExtensionStatus::Active->value,
                 'deactivated_reason' => null,

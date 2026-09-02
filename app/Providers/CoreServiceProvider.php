@@ -56,6 +56,7 @@ use App\Extension\IdentityVerification\IdentityVerificationManager;
 use App\Extension\IdentityVerification\Providers\MailIdentityProvider;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
+use App\Extension\ScheduleCommandCacheManager;
 use App\Extension\Storage\CoreStorageDriver;
 use App\Extension\TemplateManager;
 use App\Listeners\ExtensionCompatibilityAlertListener;
@@ -100,11 +101,13 @@ use App\Services\UniqueIdService;
 use App\Support\ExecutionEnvironment;
 use App\Support\ExtensionSettingsMirror;
 use App\Support\PrivilegedDatabaseAccounts;
+use Illuminate\Console\Application as ArtisanApplication;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Sanctum\Console\Commands\PruneExpired;
 
 class CoreServiceProvider extends ServiceProvider
 {
@@ -364,6 +367,9 @@ class CoreServiceProvider extends ServiceProvider
     {
         // 코어 훅 리스너 자동 발견 및 등록 (환경 무관)
         $this->registerCoreHookListeners();
+
+        // 확장이 선언한 예약 커맨드를 실행 방식과 무관하게 등록 (D42)
+        $this->registerExtensionScheduleCommands();
 
         // 시스템 라우트 주입 (프리뷰 등 코어 전역 라우트)
         $this->registerSystemRouteFilters();
@@ -837,6 +843,79 @@ class CoreServiceProvider extends ServiceProvider
     }
 
     // registerActivityLogManager() 제거됨 — Monolog 채널(config/logging.php 'activity')로 대체
+
+    /**
+     * 확장이 선언한 예약 커맨드를 Artisan 부팅 시점에 등록합니다.
+     *
+     * 확장은 관례대로 `runningInConsole()` 안에서만 자기 커맨드를 등록하는데(Laravel 표준),
+     * 무CLI 호스팅의 웹 크론은 웹 요청 안에서 `Artisan::call()` 로 실행하므로 그 조건이 거짓이라
+     * 커맨드가 등록되지 않고 예약 작업이 매번 「그런 커맨드가 없다」로 실패한다
+     * (G8 실측 2026-09-02 · 계획서 §9.11.3 F4 · D42). 확장 소스는 고치지 않고 코어가 보장한다 —
+     * 그 게이트는 Laravel 관례라 제3자 확장은 관례대로 쓸 것이기 때문이다.
+     *
+     * 등록 범위는 확장이 `getSchedules()` 로 **선언한 것뿐**이다.
+     *
+     * 웹 요청 비용은 없다 — `Artisan::starting()` 은 콜백만 담아 두고, 그 콜백은 콘솔 커널이
+     * 실제로 뜰 때(= `Artisan::call` 또는 CLI)만 실행된다.
+     */
+    private function registerExtensionScheduleCommands(): void
+    {
+        ArtisanApplication::starting(function ($artisan): void {
+            foreach ($this->resolveExtensionScheduleCommandClasses() as $class) {
+                try {
+                    // 한 건씩 등록한다. `resolveCommands()` 로 묶어 넘기면 커맨드 하나가
+                    // 생성에 실패할 때 **Artisan 부팅 전체가 죽는다** — 확장의 바인딩이
+                    // 갖춰지지 않은 환경(부분 부팅·깨진 확장)에서 그 확장 하나 때문에
+                    // 모든 커맨드가 사라지는 것은 지금 고치는 결함보다 나쁘다.
+                    $artisan->resolve($class);
+                } catch (\Throwable $e) {
+                    Log::warning('확장 예약 커맨드를 등록하지 못했습니다 — 해당 커맨드만 제외', [
+                        'command_class' => $class,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+        });
+    }
+
+    /**
+     * 등록할 예약 커맨드 클래스 목록을 해석합니다.
+     *
+     * 캐시(bootstrap/cache/extension-schedule-commands.php)가 있으면 그것을 쓰고, 없으면
+     * 활성 확장에서 라이브로 해석한다(훅 캐시와 같은 폴백 규약).
+     *
+     * @return array<int, class-string> 등록할 커맨드 클래스 목록
+     */
+    private function resolveExtensionScheduleCommandClasses(): array
+    {
+        $classes = [];
+
+        try {
+            $manager = $this->app->make(ScheduleCommandCacheManager::class);
+            $cache = $manager->read();
+
+            if ($cache === null && File::exists(base_path('.env'))) {
+                $cache = $manager->resolveLive(
+                    $this->app->make(ModuleManager::class),
+                    $this->app->make(PluginManager::class)
+                );
+            }
+
+            $classes = $cache === null ? [] : array_values($cache['commands']);
+        } catch (\Throwable $e) {
+            // 등록 실패가 요청을 죽이면 안 된다 — 예약 작업만 종전처럼 실패한다.
+            Log::warning('확장 예약 커맨드 등록 실패', ['error' => $e->getMessage()]);
+        }
+
+        // Sanctum 은 확장이 아니라 외부 라이브러리라 위 경로에 잡히지 않는다. 코어가
+        // `routes/console.php` 에서 `sanctum:prune-expired` 를 예약하므로 그 커맨드의
+        // 등록도 코어가 진다 — 벤더 소스는 고칠 수 없다.
+        if (class_exists(PruneExpired::class)) {
+            $classes[] = PruneExpired::class;
+        }
+
+        return $classes;
+    }
 
     private function registerCoreHookListeners(): void
     {

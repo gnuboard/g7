@@ -927,6 +927,16 @@ Firewalls or proxies may be blocking long-lived HTTP connections.',
     'permission_guide_ftp_fallback' => 'If write access still is not granted, try :value. On hosting where the web server runs as a different account than the file owner, :primary grants write access to the owner only.',
     'permission_guide_ftp_note_windows' => '※ Windows servers do not use numeric permission values. If your FTP client has no permission dialog, the same setting is usually available in your hosting control panel file manager.',
 
+    // Shell-free procedure for creating a missing required file (`.env`). Unlike the sibling
+    // branches (permission / ownership) this case previously offered a shell copy command only,
+    // which cannot be run on hosting without a shell (measured in G8).
+    'required_files_guide_ftp_step_connect' => 'Connect over FTP and open the folder where Gnuboard7 was uploaded.',
+    'required_files_guide_ftp_step_download' => 'Download :source to your computer.',
+    'required_files_guide_ftp_step_rename' => 'Rename the downloaded file to :target.',
+    'required_files_guide_ftp_step_upload' => 'Upload the renamed file back into the same folder.',
+    'required_files_guide_ftp_step_recheck' => 'Press [Check again] below.',
+    'required_files_guide_ftp_note' => '※ The file name starts with a dot (.), so your FTP client may hide it. Turn on "Show hidden files".',
+
     // Directory names (Step 2)
     'dir_bootstrap_cache' => 'Bootstrap cache directory',
     'dir_vendor' => 'Packages directory',

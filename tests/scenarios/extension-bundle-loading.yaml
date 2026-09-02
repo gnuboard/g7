@@ -70,7 +70,8 @@ effects:
   - bundle_css_failure_banner_uses_user_vocabulary
   # 테스트 docblock 에는 있었으나 어느 매니페스트에도 없던 축 — 선언 = 마킹.
   - bundle_disk_write_failure_falls_back_to_memory
-  - bundle_empty_with_declared_assets_returns_503
+  - bundle_unreadable_declared_assets_return_503
+  - bundle_readable_but_empty_declared_assets_return_200
   - bundle_decision_is_shared_across_extension_types
   - asset_declaration_count_reads_manifest_not_built_files
   - clear_bundles_preserves_current_version

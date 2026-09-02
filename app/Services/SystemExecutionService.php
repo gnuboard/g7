@@ -6,11 +6,14 @@ use App\Contracts\Repositories\ScheduleHistoryRepositoryInterface;
 use App\Enums\ScheduleTriggerType;
 use App\Execution\CommandRunnerResolver;
 use App\Execution\ExecutionMode;
+use App\Helpers\TimezoneHelper;
 use App\Scheduling\ScheduleRunner;
 use App\Scheduling\ScheduleRunState;
 use App\Scheduling\WebCronPolicy;
 use App\Scheduling\WebCronTokenStore;
 use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
+use Illuminate\Support\Carbon;
 
 /**
  * 실행 방식·예약 작업(웹 크론) 화면의 서비스 계층 (W5).
@@ -66,9 +69,9 @@ class SystemExecutionService
                 'min_interval_minutes' => $this->policy->minIntervalMinutes(),
                 'visit_fallback_enabled' => $this->policy->visitFallbackEnabled(),
                 'token_issued' => $this->tokens->exists(),
-                'token_issued_at' => $this->tokens->issuedAt()?->toIso8601String(),
-                'last_run' => $this->state->lastRunSummary(),
-                'last_executed_at' => $this->state->lastExecutedAt()?->toIso8601String(),
+                'token_issued_at' => $this->toSiteTime($this->tokens->issuedAt()),
+                'last_run' => $this->localizeSummaryTimes($this->state->lastRunSummary()),
+                'last_executed_at' => $this->toSiteTime($this->state->lastExecutedAt()),
                 'stale' => $this->isStale(),
                 'stale_after_days' => $this->staleAfterDays(),
                 // 직전 1회 요약(`last_run`)은 다음 호출에 덮인다 — 지난 실행을 되짚으려면
@@ -172,6 +175,60 @@ class SystemExecutionService
     }
 
     /**
+     * 시각을 사이트 시간대 문자열로 옮깁니다.
+     *
+     * `TimezoneHelper::toUserTimezone()` 은 `Carbon\Carbon` 만 받는데 이 서비스가 다루는
+     * 값에는 `CarbonImmutable`(상태 파일·토큰 저장소)이 섞여 있다 — 불변형은 그 클래스의
+     * 하위형이 아니라 그대로 넘기면 형 오류로 500 이 된다. 흡수를 호출부마다 하지 않고
+     * 여기 한 곳에 둔다.
+     *
+     * @param  CarbonInterface|null  $at  변환할 시각
+     * @return string|null 사이트 시간대 ISO8601 문자열
+     */
+    private function toSiteTime(?CarbonInterface $at): ?string
+    {
+        if ($at === null) {
+            return null;
+        }
+
+        return TimezoneHelper::toUserTimezone(Carbon::instance($at));
+    }
+
+    /**
+     * 실행 요약의 시각을 사이트 시간대로 옮깁니다.
+     *
+     * 상태 파일에는 UTC ISO 문자열로 저장한다(기계가 비교하는 값이라 그래야 한다). 화면에
+     * 그대로 내보내면 같은 화면의 형제 목록(`ScheduleResource`)은 사이트 시간대인데 이쪽만
+     * 표준시라, 운영자가 9시간 차이를 「안 돌았다」로 읽는다
+     * (G8 실측 2026-09-02 · 계획서 §9.11.3 F5).
+     *
+     * @param  array<string, mixed>|null  $summary  실행 요약
+     * @return array<string, mixed>|null 시각을 옮긴 요약
+     */
+    private function localizeSummaryTimes(?array $summary): ?array
+    {
+        if ($summary === null) {
+            return null;
+        }
+
+        foreach (['started_at', 'finished_at'] as $field) {
+            $value = $summary[$field] ?? null;
+
+            if (! is_string($value) || $value === '') {
+                continue;
+            }
+
+            try {
+                $summary[$field] = $this->toSiteTime(Carbon::parse($value));
+            } catch (\Throwable) {
+                // 해석할 수 없는 값은 그대로 둔다 — 지우면 화면에서 그 사실이 사라진다.
+            }
+        }
+
+        return $summary;
+    }
+
+    /**
      * 코드 예약의 최근 실행 이력을 화면용 배열로 반환합니다.
      *
      * @return array<int, array<string, mixed>> 시각 역순 이력
@@ -180,13 +237,13 @@ class SystemExecutionService
     {
         return $this->histories
             ->getRecentBySource(ScheduleRunner::HISTORY_SOURCE, self::RECENT_HISTORY_LIMIT)
-            ->map(static fn ($history): array => [
+            ->map(fn ($history): array => [
                 'id' => $history->id,
                 'name' => $history->event_name,
                 'expression' => $history->event_expression,
                 'status' => $history->status?->value,
                 'trigger_type' => $history->trigger_type?->value,
-                'started_at' => $history->started_at?->toIso8601String(),
+                'started_at' => $this->toSiteTime($history->started_at),
                 'duration' => $history->duration,
                 'error_output' => $history->error_output,
             ])

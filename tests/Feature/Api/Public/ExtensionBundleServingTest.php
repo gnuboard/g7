@@ -158,9 +158,9 @@ class ExtensionBundleServingTest extends TestCase
      *
      * // @scenario ext_type=module, asset_kind=js, active_combo=multiple, file_state=one_missing
      *
-     * @effects bundle_empty_with_declared_assets_returns_503, empty_result_with_missing_declared_artifact_returns_503
+     * @effects bundle_empty_with_declared_assets_returns_503, empty_result_with_missing_declared_artifact_returns_503, bundle_unreadable_declared_assets_return_503
      */
-    public function test_empty_bundle_with_declared_assets_returns_503(): void
+    public function test_bundle_returns_503_when_declared_assets_cannot_be_read(): void
     {
         $this->bindBundleService('', memoryContent: '', declaredCount: 3, missing: ['/x/dist/js/a.js']);
 
@@ -178,7 +178,7 @@ class ExtensionBundleServingTest extends TestCase
      *
      * // @scenario ext_type=module, asset_kind=css, active_combo=one, file_state=present_empty
      *
-     * @effects empty_result_with_present_empty_artifacts_returns_200
+     * @effects empty_result_with_present_empty_artifacts_returns_200, bundle_readable_but_empty_declared_assets_return_200
      */
     public function test_empty_result_with_present_empty_artifacts_returns_200(): void
     {
@@ -236,7 +236,7 @@ class ExtensionBundleServingTest extends TestCase
      *
      * @effects bundle_decision_is_shared_across_extension_types
      */
-    public function test_plugin_bundle_returns_503_when_declared_but_empty(): void
+    public function test_plugin_bundle_returns_503_when_declared_assets_cannot_be_read(): void
     {
         $this->bindBundleService('', memoryContent: '', declaredCount: 1, missing: ['/x/dist/css/a.css']);
 

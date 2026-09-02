@@ -98,6 +98,11 @@ class AppServiceProvider extends ServiceProvider
         View::composer('admin', TemplateComposer::class);
         View::composer('app', UserTemplateComposer::class);
 
+        // 코어 훅 리스너 등록은 `CoreServiceProvider::registerCoreHookListeners()` 가 소유한다
+        // (훅 캐시 우선 + `app/Listeners/**` 재귀 스캔 폴백). 여기서 한 번 더 등록하면 같은
+        // 리스너가 두 경로로 들어가고, `HookManager::applyFilters()` 는 중복을 걸러 내지
+        // 않으므로 그 필터가 두 번 적용된다 — 대시보드에 같은 경고 카드가 두 번 떴다 (G8 실측).
+
         // SQL 쿼리 로그 설정
         $this->configureSqlQueryLogging();
 

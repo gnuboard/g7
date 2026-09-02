@@ -1547,6 +1547,11 @@
                     }
                 }
                 html += '<div class="permission-fix-guide">';
+                // 무쉘(FTP) 판본을 먼저 편 채로 둔다 — 형제 분기(권한·소유자)와 같은 규율이다.
+                // 이 갈래만 쉘 명령뿐이면, 쉘을 못 쓰는 호스팅의 운영자는 설치를 시작할 수단이
+                // 없다(배포 ZIP 을 갓 푼 상태의 정상 경로다).
+                html += renderFtpPermissionGuide(data.required_files && data.required_files.ftp_guide_create);
+                html += openShellPermissionGuide();
                 html += `<p class="fix-guide-label">${isWindows ? lang('required_files_fix_guide') : lang('required_files_fix_guide_combined')}</p>`;
                 html += '<div class="code-box">';
                 html += `<pre class="fix-command">${escapeHtml(fileFixCommand)}</pre>`;
@@ -1557,6 +1562,7 @@
                 html += `<pre class="fix-command">${escapeHtml(fileFixRelCommand)}</pre>`;
                 html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
                 html += '</div>';
+                html += '</details>';
                 html += '</div>';
             }
 

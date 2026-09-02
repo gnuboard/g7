@@ -12,7 +12,7 @@
         "en": "G7 module (gnuboard7-hello_module) Japanese language pack (bundled)",
         "ja": "G7 モジュール (gnuboard7-hello_module) 日本語 言語パック(バンドル)"
     },
-    "version": "1.0.0",
+    "version": "1.0.1",
     "license": "MIT",
     "scope": "module",
     "target_identifier": "gnuboard7-hello_module",

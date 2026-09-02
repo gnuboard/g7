@@ -2707,6 +2707,18 @@ class CoreUpdateService
     /**
      * .env 파일의 APP_VERSION을 갱신합니다.
      *
+     * 디스크만 고치면 **이 프로세스는 여전히 옛 값을 들고 있다.** Dotenv 의 immutable
+     * 로더는 이미 저장소에 실린 키를 덮지 않으므로, 같은 요청 안에서 `config:cache` 를
+     * 구우면(`ConfigCacheHelper::rebuild()` 가 그 커맨드를 새 애플리케이션에서 돌려도
+     * `Env::getRepository()` 는 프로세스 전역이다) **옛 버전이
+     * 새 캐시에 박제된다.** 그러면 업데이트가 성공했는데도 사이트가 옛 버전으로 동작하고,
+     * 그 상태는 다음 수명주기 이벤트가 캐시를 다시 구울 때까지 이어진다 — 버전 표시만이
+     * 아니라 새 코어가 추가한 config 값도 캐시에 없는 채로 남는다.
+     *
+     * 그래서 디스크와 **함께** 프로세스의 환경 저장소도 갱신한다. 채널은 `$_ENV`/`$_SERVER`
+     * 다 — `putenv` 는 프로세스 수명에 남아 같은 워커의 다음 요청까지 오염시킨다(형제
+     * `CoreUpdateOrchestrator::forceSpawnFallback()` 과 같은 규칙).
+     *
      * @param  string  $version  새 버전
      */
     public function updateVersionInEnv(string $version): void
@@ -2717,6 +2729,8 @@ class CoreUpdateService
             return;
         }
 
+        $this->syncVersionIntoProcessEnvironment($version);
+
         $content = File::get($envPath);
 
         if (preg_match('/^APP_VERSION=.*/m', $content)) {
@@ -2726,6 +2740,28 @@ class CoreUpdateService
         }
 
         File::put($envPath, $content);
+    }
+
+    /**
+     * 이 프로세스의 환경 저장소에 새 `APP_VERSION` 을 반영합니다.
+     *
+     * `env('APP_VERSION')` 은 `Env::getRepository()` 를 읽고, 그 저장소의 어댑터 사슬에는
+     * `$_ENV` · `$_SERVER` 가 들어 있다. 두 슈퍼전역을 함께 고쳐야 이후의 config 굽기와
+     * 서브프로세스 자식(`SubprocessCommandRunner::inheritedEnvironment()` 가 `$_ENV` 를
+     * 병합한다)이 같은 값을 본다.
+     *
+     * 런타임 config 미러(`app.version`)도 함께 맞춘다 — 이미 부팅된 config 저장소는
+     * `.env` 를 다시 읽지 않으므로, 이 값을 고치지 않으면 같은 요청의 나머지 구간이
+     * 옛 버전으로 동작한다.
+     *
+     * @param  string  $version  새 버전
+     */
+    private function syncVersionIntoProcessEnvironment(string $version): void
+    {
+        $_ENV['APP_VERSION'] = $version;
+        $_SERVER['APP_VERSION'] = $version;
+
+        config(['app.version' => $version]);
     }
 
     /**

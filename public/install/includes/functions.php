@@ -2014,6 +2014,39 @@ function installerFtpPermissionGuide(array $paths, bool $isDirectory, bool $isWi
 }
 
 /**
+ * 누락된 필수 파일을 **FTP 만으로** 만드는 절차를 돌려줍니다 (W7 무쉘 판본).
+ *
+ * 형제 분기(쓰기 권한 없음 · 소유자 불일치)는 이미 FTP 판본을 갖고 있는데 「파일이 아예
+ * 없음」 갈래만 쉘 복사 명령 하나뿐이었다. 그 갈래는 배포 ZIP 을 갓 푼 상태의 정상 경로이고
+ * (`g7-setup.php` 는 `.env` 를 만들지 않는다), 쉘이 없는 호스팅에서는 그 안내가 막다른
+ * 길이었다 — 설치를 시작조차 할 수 없다 (G8 실측 2026-09-02).
+ *
+ * 조작은 「받아서 → 이름 바꿔서 → 올린다」 세 걸음이다. 서버에서 파일을 복사할 수단이
+ * 없으므로 FTP 프로그램이 할 수 있는 것만으로 구성한다.
+ *
+ * @param  string  $source  원본 파일의 상대 경로 (예: `.env.example`)
+ * @param  string  $target  만들 파일의 상대 경로 (예: `.env`)
+ * @return array{steps: list<string>, note: string} 안내 절차
+ */
+function installerFtpCreateFileGuide(string $source, string $target): array
+{
+    $steps = [
+        lang('required_files_guide_ftp_step_connect'),
+        lang('required_files_guide_ftp_step_download', ['source' => $source]),
+        lang('required_files_guide_ftp_step_rename', ['target' => $target]),
+        lang('required_files_guide_ftp_step_upload'),
+        lang('required_files_guide_ftp_step_recheck'),
+    ];
+
+    return [
+        'steps' => $steps,
+        // 점으로 시작하는 이름은 FTP 프로그램이 기본으로 감춘다 — 이 한 줄이 없으면
+        // 운영자는 "올렸는데 안 보인다" 에서 막힌다.
+        'note' => str_starts_with(basename($target), '.') ? lang('required_files_guide_ftp_note') : '',
+    ];
+}
+
+/**
  * 권한 수정 명령어 판정 본체 — OS 를 **인자로** 받는다 (11차 #D16).
  *
  * `isWindows()` 를 함수 안에서 직접 부르면 그 프로세스의 OS 분기 하나만 평가된다 —

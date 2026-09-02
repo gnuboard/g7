@@ -3,6 +3,7 @@
 namespace Tests\Feature\Api\Admin;
 
 use App\CoreUpdate\CoreUpdateOptions;
+use App\CoreUpdate\CoreUpdatePreflight;
 use App\CoreUpdate\CoreUpdateRunState;
 use App\CoreUpdate\CoreUpdateStep;
 use App\Enums\ExtensionOwnerType;
@@ -10,6 +11,7 @@ use App\Enums\PermissionType;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\CoreUpdateService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
 use PHPUnit\Framework\Attributes\Test;
@@ -399,5 +401,148 @@ class CoreUpdateWebFlowTest extends TestCase
 
         $this->assertTrue((bool) ($abilities['can_update'] ?? false), '설정 수정 권한은 그대로여야 한다.');
         $this->assertFalse((bool) ($abilities['can_core_update'] ?? false));
+    }
+
+    /**
+     * 되돌리기까지 실패했을 때 수동 복구 안내의 근거가 화면에 도달하는지 확인합니다 (D10).
+     *
+     * 이 상태는 사이트가 점검 모드에 남는 유일한 갈래다. 화면이 「되돌리기도 실패했다」를
+     * 그리려면 백업 위치와 점검 모드가 켜진 채라는 사실이 응답에 실려야 하는데, 그 셋 중
+     * 하나만 빠져도 운영자는 무엇을 어디서 복구할지 알 수 없다 — 오류는 나지 않고 안내만
+     * 비어 나간다.
+     *
+     * 종전에는 「백업을 파괴해야 재현되므로 검증 환경을 잃는다」는 이유로 미커버 원장에
+     * 있었으나, 실측(§9.12.5 축 C)에서 측정 전용 패키지로 격리해 재현되는 것이 확인되어
+     * 자동 검사로 옮겼다.
+     *
+     * @scenario actor=with_permission, failing_step=apply, rollback_outcome=restore_failed
+     *
+     * @effects a_failed_rollback_opens_the_manual_recovery_guidance
+     */
+    #[Test]
+    public function test_a_failed_rollback_opens_the_manual_recovery_guidance(): void
+    {
+        [, $token] = $this->adminWith(['core.settings.read', 'core.system.update']);
+
+        $state = app(CoreUpdateRunState::class);
+        $state->start(new CoreUpdateOptions, '7.1.0', '7.1.1', 1);
+        $state->mergeContext(['maintenance_enabled' => true]);
+        $state->patch([
+            'status' => CoreUpdateRunState::STATUS_ROLLBACK_FAILED,
+            'next_step' => null,
+            'error' => ['message' => '마이그레이션 실패'],
+            'rollback' => [
+                'restored' => false,
+                'files_were_applied' => true,
+                'failed_targets' => ['app', 'config'],
+                'backup_path' => 'storage/app/core_backups/20260902_190000',
+                'maintenance_left_on' => true,
+            ],
+        ]);
+
+        $run = (array) $this->asAdmin($token)
+            ->getJson('/api/admin/core-update/status')
+            ->assertOk()
+            ->json('data.run');
+
+        $this->assertSame(
+            CoreUpdateRunState::STATUS_ROLLBACK_FAILED,
+            $run['status'] ?? null,
+            '화면은 이 상태값으로 수동 복구 영역을 연다.'
+        );
+
+        $rollback = (array) ($run['rollback'] ?? []);
+
+        $this->assertFalse($rollback['restored'] ?? true, '복원되지 않았다는 사실이 실려야 한다.');
+        $this->assertTrue($rollback['files_were_applied'] ?? false, '파일이 교체된 뒤의 실패라는 사실이 실려야 한다.');
+        $this->assertTrue(
+            $rollback['maintenance_left_on'] ?? false,
+            '사이트가 점검 모드에 남았다는 사실이 빠지면 운영자는 사이트가 멀쩡한 줄 안다.'
+        );
+        $this->assertNotSame(
+            '',
+            trim((string) ($rollback['backup_path'] ?? '')),
+            '백업 위치가 없으면 안내가 「어디서」 복구할지를 말하지 못한다.'
+        );
+        $this->assertNotEmpty($rollback['failed_targets'] ?? [], '되돌리지 못한 대상 목록이 실려야 한다.');
+    }
+
+    /**
+     * 쓸 수 없는 경로가 있으면 착수 단계가 막고 아무것도 바꾸지 않는지 확인합니다 (D26).
+     *
+     * 이 게이트가 없으면 쓰기 권한이 없는 호스팅의 운영자가 사이트를 점검 모드로 보낸
+     * 뒤에야 그 사실을 알게 되고, 그때는 되돌리기까지 부분 실패한다.
+     *
+     * 진단을 대역으로 갈아 끼운다 — 실제로 권한을 빼앗으면 검증 환경의 다른 축이
+     * 오염되고 OS 마다 권한 동작이 달라 재현되지 않는다.
+     *
+     * @scenario actor=with_permission, failing_step=preflight, rollback_outcome=not_needed
+     *
+     * @effects preflight_blocks_the_run_when_target_paths_are_not_writable
+     */
+    #[Test]
+    public function test_preflight_blocks_the_run_when_target_paths_are_not_writable(): void
+    {
+        [, $token] = $this->adminWith(['core.settings.read', 'core.system.update']);
+
+        $blockedPath = 'app/Services';
+
+        $this->app->instance(CoreUpdatePreflight::class, new class(app(CoreUpdateService::class), $blockedPath) extends CoreUpdatePreflight
+        {
+            public function __construct(CoreUpdateService $service, private readonly string $blocked)
+            {
+                parent::__construct($service);
+            }
+
+            public function run(bool $requiresArchiveExtraction = true, bool $deep = true): array
+            {
+                return [
+                    'ok' => false,
+                    'writable' => ['ok' => false, 'blocked' => [$this->blocked], 'checked' => 1],
+                    'disk' => ['ok' => true],
+                    'requirements' => ['available_methods' => []],
+                    'errors' => ['쓰기 권한 없음: '.$this->blocked],
+                ];
+            }
+        });
+
+        $state = app(CoreUpdateRunState::class);
+        $state->start(new CoreUpdateOptions, '7.1.0', '7.1.1', 1);
+
+        // 되돌리기는 요청 경계를 넘어 이어진다(한 요청 = 한 단계). 화면이 스스로 이어가는 것과
+        // 같은 방식으로 종착 상태까지 몰아 준다 — 상한을 두어 끝나지 않아도 무한 반복하지 않는다.
+        $terminal = [CoreUpdateRunState::STATUS_ROLLED_BACK, CoreUpdateRunState::STATUS_ROLLBACK_FAILED];
+        $run = [];
+
+        for ($i = 0; $i < 6; $i++) {
+            $this->asAdmin($token)->postJson('/api/admin/core-update/advance');
+
+            $run = (array) $this->asAdmin($token)
+                ->getJson('/api/admin/core-update/status')
+                ->assertOk()
+                ->json('data.run');
+
+            if (in_array($run['status'] ?? null, $terminal, true)) {
+                break;
+            }
+        }
+
+        $this->assertContains(
+            $run['status'] ?? null,
+            $terminal,
+            '진단이 막았는데 실행이 계속되거나 되돌리기가 끝나지 않으면 안 된다.'
+        );
+
+        // 핵심은 「막혔다」가 아니라 **아무것도 바꾸지 않은 채 막혔다**는 것이다.
+        $this->assertFalse(
+            ($run['rollback']['files_were_applied'] ?? true),
+            '진단 단계는 파일 적용 앞이므로 교체된 파일이 있으면 안 된다.'
+        );
+
+        $this->assertStringContainsString(
+            $blockedPath,
+            (string) ($run['error']['message'] ?? ''),
+            '막힌 경로가 실패 사유에 없으면 운영자는 무엇을 고쳐야 할지 알 수 없다.'
+        );
     }
 }

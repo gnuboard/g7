@@ -272,7 +272,10 @@ class PermissionGuidanceShellFreeTest extends TestCase
         $ftpCalls = substr_count($js, 'renderFtpPermissionGuide(') - 1;
         $shellCalls = substr_count($js, 'openShellPermissionGuide()') - 1;
 
-        $this->assertGreaterThanOrEqual(4, $ftpCalls, 'Step 2 의 권한 안내 지점 일부가 FTP 판본을 그리지 않는다');
+        // 하한 5 = 디렉토리 권한 · 디렉토리 소유자 · 파일 쓰기불가 · 파일 소유자 + **파일 누락**.
+        // 마지막 갈래는 종전에 쉘 명령뿐이었다 — 배포 ZIP 을 갓 푼 정상 경로인데도 쉘이 없는
+        // 호스팅에서는 설치를 시작할 수단이 없었다 (G8 실측 2026-09-02).
+        $this->assertGreaterThanOrEqual(5, $ftpCalls, 'Step 2 의 권한 안내 지점 일부가 FTP 판본을 그리지 않는다');
         $this->assertSame($shellCalls, $ftpCalls, 'FTP 판본과 쉘 판본의 배선 개수가 다르다 — 한쪽만 그리는 지점이 있다');
     }
 
@@ -301,11 +304,18 @@ class PermissionGuidanceShellFreeTest extends TestCase
             '소유 관계가 어긋난 축의 FTP 절차가 빠졌다'
         );
 
+        $this->assertSame(
+            1,
+            substr_count($api, "'ftp_guide_create' =>"),
+            '필수 파일이 아예 없는 갈래의 FTP 절차가 빠졌다 — 그 갈래는 쉘 명령만 남는다'
+        );
+
         foreach ([
             'directories.ftp_guide',
             'directories.ftp_guide_ownership',
             'required_files.ftp_guide',
             'required_files.ftp_guide_ownership',
+            'required_files.ftp_guide_create',
         ] as $key) {
             $this->assertStringContainsString(
                 $key,

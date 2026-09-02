@@ -77,6 +77,15 @@ effects:
   - runtime_limit_defers_remaining_work
   - deferred_work_runs_on_the_next_call
   - failed_task_does_not_stop_the_run
+  # 화면 표시 (D43 — G8 실측 F5·F6)
+  - schedule_history_name_is_human_readable
+  - schedule_status_times_use_the_site_timezone
+  # 확장 예약 커맨드 해석 (D42 — G8 실측 F4)
+  - only_declared_schedule_commands_are_registered
+  - declared_schedule_command_is_resolvable_in_web_context
+  - declared_command_class_skips_the_lookup
+  - unresolvable_schedule_declaration_is_recorded
+  - core_registers_the_vendor_command_it_schedules
   # 엔드포인트 접근·응답 계약
   - missing_token_is_rejected
   - invalid_token_is_rejected
@@ -181,15 +190,29 @@ pending_effects:
       시뮬레이션은 terminate 를 거치지 않아 그 시점을 재현할 수 없다. 설정 판정
       (visit_fallback_defaults_to_off · min_interval)은 정책 단위 테스트가 덮고,
       실제 발화는 P0 격리 환경 실측(G8)이 담당한다.
+
+      [G8 실측 2026-09-02] **미커버.** 브라우저에서 「응답 이후에 돌았는가」를 관측할
+      수단이 없다 — 그 실행은 응답을 이미 보낸 뒤라 화면에도 응답에도 흔적이 없고,
+      상태 파일의 변화는 같은 창의 다른 호출과 구분되지 않는다. 대신 같은 러너를 쓰는
+      주소 호출 경로는 전 축을 실측했다(§9.11.2 T3·T4·T10).
   - name: database_schedule_extension_point_requires_the_command_validator
     reason: |
       DB 스케줄 계통은 이 안에서 연결하지 않는다 (D8 — 별건). 붙일 때 보안 검증기를
       경유해야 한다는 조건은 러너 주석이 소유하며, 그 경로가 생기는 공정이 이 효과를
       재는 테스트를 함께 만든다 (R15).
+
+      [G8 실측 2026-09-02] 러너가 DB 스케줄을 집지 않는다는 전제는 그대로 성립했다.
+      다만 **기존 관리 화면의 검증기는 실측했다** — `shell` 타입은 생성 자체가 422 로
+      거부되고, 검증을 우회해 DB 에 직접 넣은 행을 실행하면 422 + 이력 `failed` 이며
+      차단 사유가 `error_output` 에 남는다(R15 회귀 축). 러너 경유 축은 여전히 미커버다.
   - name: queue_drain_extension_point
     reason: |
       큐 소진(모아 처리) 경로는 만들지 않는다 (D22). 확장 지점만 러너 설계에 남겼고,
       승계 조건(R22 컨텍스트 복원 · R23 전용 큐)은 A-6 문서가 소유한다.
+
+      [G8 실측 2026-09-02] **미커버 — 잴 대상이 없다.** 그 경로를 만들지 않기로 한
+      결정(D22)이 유지됐고, 실측 환경에서도 소진 경로가 존재하지 않는 것을 확인했다.
+      이 항목은 「아직 못 잰 효과」가 아니라 「그 경로가 생기는 공정이 함께 만들 효과」다.
 
 notes:
   - 인스톨러의 QUEUE_CONNECTION=sync 기록(A-6)은 이 매니페스트가 소유한다. 종전 서술은 no-cli-installer-stepwise.yaml 로 넘긴다고 적었으나 그 매니페스트에 해당 축도 effect 도 없어 아무 데도 없는 상태였고, 18줄을 통째로 지워도 red 가 하나도 나지 않았다. 그 값을 쓰는 코드와 같은 자리에서 지킨다.
@@ -208,6 +231,7 @@ test_files:
   - tests/Unit/Listeners/NotificationSendCountLogTest.php
   - tests/Unit/Scheduling/WebCronTokenStoreTest.php
   - tests/Unit/Scheduling/ScheduleRunStateTest.php
+  - tests/Feature/Extension/ExtensionScheduleCommandResolutionTest.php
   - tests/Unit/Installer/InstallerQueueConnectionSyncTest.php
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-system-tab.test.tsx
   - tests/Playwright/specs/admin/system-tab-cron-settings.spec.ts

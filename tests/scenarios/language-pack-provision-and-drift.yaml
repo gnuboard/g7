@@ -35,6 +35,8 @@ effects:
   - scope_filter_limits_provision_targets
   - drifted_pack_repaired_by_provision
   - active_row_with_missing_install_dir_flagged_files_missing
+  # 팩이 원본 키를 다 담았는가 (G8 실측 F10 · D46)
+  - bundled_language_pack_covers_every_source_key
   - virtual_builtin_rows_not_flagged
   - bundled_source_availability_flagged_independently_of_source_type
   - cli_list_surfaces_uninstalled_and_drift
@@ -43,6 +45,7 @@ effects:
 
 test_files:
   - tests/Feature/LanguagePack/ProvisionLanguagePackCommandTest.php
+  - tests/Unit/LanguagePack/BundledLanguagePackKeyParityTest.php
   - tests/Feature/LanguagePack/ListDriftDetectionTest.php
   - tests/Feature/LanguagePack/ListLanguagePackCommandTest.php
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-language-pack-drift.test.tsx

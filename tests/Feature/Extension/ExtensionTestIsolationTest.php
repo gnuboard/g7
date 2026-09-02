@@ -2,10 +2,15 @@
 
 namespace Tests\Feature\Extension;
 
+use App\Contracts\Extension\ExtensionMiddlewareRegistryInterface;
+use App\Enums\ExtensionStatus;
+use App\Extension\ExtensionMiddlewareRegistry;
+use App\Extension\PluginManager;
 use App\Extension\Testing\ExtensionTestAllowlist;
 use Illuminate\Contracts\Http\Kernel as HttpKernelContract;
 use Illuminate\Foundation\Http\Kernel as HttpKernel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Plugins\Sirsoft\Gdpr\Http\Middleware\CookieConsentMiddleware;
 use Plugins\Sirsoft\Gdpr\Providers\GdprServiceProvider;
 use Tests\TestCase;
@@ -136,5 +141,64 @@ class ExtensionTestIsolationTest extends TestCase
         // 본 테스트 클래스는 tests/Feature/ 하위 (코어 테스트) →
         // selfExtension() 의 modules/plugins 경로 패턴에 매칭되지 않아 null 반환
         $this->assertNull($this->selfExtension());
+    }
+
+    /**
+     * 확장 미들웨어 **레지스트리**(self-gate 경로)도 allowlist 를 따른다.
+     *
+     * 형제 검사는 커널 미들웨어 그룹을 보는데, 확장 미들웨어는 SP Kernel 직접 조작이 아니라
+     * `getMiddleware()` 선언 → `ExtensionMiddlewareRegistry` 로 간다. 그래서 그 검사는 더 이상
+     * 쓰이지 않는 경로를 재고 있었고, 실제 경로에는 allowlist 가드가 아예 없었다.
+     *
+     * DB 가 비어 있는 동안에는 드러나지 않는다 — 확장이 설치된 데이터베이스로 코어 테스트를
+     * 돌리는 순간 그 확장의 미들웨어가 코어 요청에 끼어들어 의존 바인딩 부재로 500 이 된다
+     * (G8 실측 2026-09-02 · 계획서 §9.12.5 F11).
+     *
+     * @effects core_only_test_does_not_register_gdpr_middleware_in_the_extension_registry
+     */
+    public function test_core_only_test_does_not_resolve_gdpr_middleware_from_the_registry(): void
+    {
+        // 조건을 **이 검사가 직접 만든다.** 비어 있는 데이터베이스에서는 활성 확장이 0이라
+        // 가드를 꺼도 레지스트리가 빈 배열을 돌려주고, 그러면 이 검사는 아무것도 재지 않는다
+        // (처음 작성했을 때 실제로 그 형태였다 — 되돌려도 초록이었다).
+        DB::table('plugins')->updateOrInsert(
+            ['identifier' => 'sirsoft-gdpr'],
+            [
+                'vendor' => 'sirsoft',
+                'name' => json_encode(['ko' => 'GDPR', 'en' => 'GDPR']),
+                'version' => '1.0.0',
+                'status' => ExtensionStatus::Active->value,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
+
+        $this->app->make(PluginManager::class)->loadPlugins();
+        ExtensionMiddlewareRegistry::flush();
+
+        $registry = $this->app->make(ExtensionMiddlewareRegistryInterface::class);
+
+        $this->assertNotEmpty(
+            $this->app->make(PluginManager::class)->getActivePlugins(),
+            '활성 플러그인이 하나도 없으면 이 검사는 공허하게 통과한다.'
+        );
+
+        $resolved = [];
+
+        foreach (['web', 'api'] as $group) {
+            foreach (['before_core', 'after_core'] as $timing) {
+                $resolved = array_merge(
+                    $resolved,
+                    $registry->resolveForRoute('home', '/', $group, $timing)
+                );
+            }
+        }
+
+        $this->assertNotContains(
+            CookieConsentMiddleware::class,
+            $resolved,
+            'core-only 테스트의 확장 미들웨어 레지스트리가 GDPR 미들웨어를 돌려줬습니다 — '
+            .'그 플러그인의 ServiceProvider 는 등록되지 않으므로 그 미들웨어는 해석 시점에 죽는다'
+        );
     }
 }

@@ -197,7 +197,7 @@ return [
 
             // 事前診断
             'preflight_failed' => '事前チェックで問題が見つかったため、アップデートを開始しませんでした: :reasons',
-            'preflight_not_writable' => '次のパスに書き込み権限がありません: :paths — Web からアップデートするには、これらのパスに Web サーバーアカウントが書き込める必要があります。権限を変更できない場合は、SSH で `php artisan core:update` を実行してください。',
+            'preflight_not_writable' => '次のパスに書き込み権限がありません: :paths — Web からアップデートするには、これらのパスに Web サーバーアカウントが書き込める必要があります。FTP ソフトでフォルダを 755、ファイルを 644 に、それでも書き込み権限が得られない場合は 707・606 に変更してください。SSH が使える場合は `php artisan core:update` を実行しても構いません。',
             'preflight_low_disk' => '空き容量が不足しています（空き :free / 必要見込み :required）。バックアップと新バージョンが同時に置かれる区間があるため、現在のサイズの数倍が必要です。',
 
             // 手動 ZIP
@@ -210,7 +210,7 @@ return [
             'handoff_exhausted' => 'アップグレードステップが新しいプロセスでの再実行を繰り返し要求したため中断しました（最後の完了地点 :after / 理由 :reason）。',
             'bundled_partial_failure' => 'バンドル拡張・言語パックのうち :failed 件が更新されませんでした。コア本体は正常に反映されています。失敗した拡張は拡張管理画面から個別に再試行できます。',
             'permission_warning' => '所有権・権限の復元で :target の :failed 件を正常化できませんでした — アップロードファイルやキャッシュの書き込みに問題が生じる可能性があるため確認してください。',
-            'maintenance_off_failed' => 'メンテナンスモードを解除できませんでした（:error）— サイトはメンテナンス画面のままです。SSH で `php artisan up` を実行してください。',
+            'maintenance_off_failed' => 'メンテナンスモードを解除できませんでした（:error）— サイトはメンテナンス画面のままです。FTP で `storage/framework/down` を削除すると解除されます。SSH が使える場合は `php artisan up` を実行しても構いません。',
             'ownership_restore_failed' => '巻き戻し後にファイルの所有権・権限を元に戻せませんでした（:error）— サイトがファイルを書き込めない可能性があるため権限を確認してください。',
 
             // 進行記録
@@ -260,13 +260,13 @@ return [
         'log_version_check_error' => 'コアアップデート: 最新バージョン確認時にエラーが発生',
         'unknown_error' => '不明なエラーが発生しました。',
         'system_requirements_failed' => 'システム要件が満たされていません:',
-        'no_extract_method_available' => '利用可能なアーカイブ抽出方法がありません。PHP zip 拡張 (ZipArchive) または unzip コマンド (Linux) のいずれかが必要です。または --source オプションで手動アップデートできます。',
+        'no_extract_method_available' => '利用可能なアーカイブ抽出方法がありません。PHP zip 拡張 (ZipArchive) または unzip コマンドのいずれかが必要です。ホスティング事業者に PHP zip 拡張 (ZipArchive) の有効化をご依頼ください。',
         'manual_update_guide' => '手動アップデート: GitHub からリリース ZIP をダウンロードして解凍後、php artisan core:update --source=/解凍/パス コマンドを実行してください。',
         'archive_url_not_found' => ':type アーカイブ URL が見つかりません。次の方法を試します。',
         'extracting_with' => ':method 方式で解凍中...',
         'extract_empty' => '解凍されたディレクトリが空です。',
         'extract_fallback' => ':method 方式失敗: :error — 次の方法を試します。',
-        'all_extract_methods_failed' => 'すべてのアーカイブ抽出方法が失敗しました。--source オプションで手動アップデートを試してください。',
+        'all_extract_methods_failed' => 'アーカイブを展開できませんでした。ファイルが完全にアップロードされたか確認してから、もう一度お試しください。',
         'unzip_command_failed' => 'unzip コマンド実行失敗 (終了コード: :code)。:output',
         'zip_file_not_found' => '指定された ZIP ファイルが見つかりません: :path',
         'source_vendor_missing' => 'ソースディレクトリに vendor がありません。composer install が実行されていない可能性があります。',

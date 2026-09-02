@@ -100,13 +100,35 @@ class ExtensionManager
             $pluginManager = app(PluginManager::class);
             $pluginManager->loadPlugins();
 
-            app(HookCacheManager::class)->generate($moduleManager, $pluginManager);
+            $this->regenerateExtensionStaticCaches($moduleManager, $pluginManager);
         } catch (\Throwable $e) {
             // 훅 캐시 생성 실패는 치명적이지 않다 — 부팅 시 스캔 폴백이 안전망.
             Log::warning('훅 매핑 캐시 재생성 실패 (스캔 폴백으로 동작)', [
                 'error' => $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * 확장 수명주기에 묶인 정적 캐시를 전부 재생성합니다.
+     *
+     * **어떤 정적 캐시가 있는지 아는 지점은 여기 하나다.** 재생성을 부르는 곳은 둘이고
+     * (이 클래스의 `regenerateHookCache()` 와 `extension:update-autoload` 커맨드), 각자
+     * 캐시 목록을 들고 있으면 새 캐시가 추가될 때 한쪽만 갱신된다 — 실제로 예약 커맨드
+     * 매핑을 도입할 때 그 상태가 됐고, 커맨드 경로로 돈 사이트에서만 매핑이 비었다.
+     *
+     * 예외를 삼키지 않는다 — 호출부마다 실패를 다르게 다루기 때문이다(이 클래스는 경고 후
+     * 폴백, 커맨드는 실패 종료).
+     *
+     * @param  ModuleManager  $moduleManager  로드된 모듈 매니저
+     * @param  PluginManager  $pluginManager  로드된 플러그인 매니저
+     */
+    public function regenerateExtensionStaticCaches(
+        ModuleManager $moduleManager,
+        PluginManager $pluginManager,
+    ): void {
+        app(HookCacheManager::class)->generate($moduleManager, $pluginManager);
+        app(ScheduleCommandCacheManager::class)->generate($moduleManager, $pluginManager);
     }
 
     /**

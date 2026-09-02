@@ -353,7 +353,7 @@ abstract class BaseApiController extends Controller
      *
      * @param  Response|BinaryFileResponse|StreamedResponse  $response  파일 서빙 응답 (200 또는 304)
      */
-    private function declareNoSniff(Response|BinaryFileResponse|StreamedResponse $response): void
+    protected function declareNoSniff(Response|BinaryFileResponse|StreamedResponse $response): void
     {
         $response->headers->set('X-Content-Type-Options', 'nosniff');
     }

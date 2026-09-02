@@ -4,6 +4,17 @@ All notable changes to this plugin will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.1.0] - 2026-09-02
+
+### Changed
+
+- 코어 최소 요구 버전을 7.1.0 로 상향했습니다. 하위 폴더에 설치한 사이트와 앞단 프록시를 두는 배치에서 복귀 주소를 올바르게 만드는 기능을 코어가 제공하기 때문입니다.
+
+### Fixed
+
+- 앞단 프록시를 두는 배치에서 본인인증을 마친 뒤 돌아오는 주소가 환경설정의 사이트 주소가 아니라 인증기관이 보낸 요청의 주소를 따르던 문제를 수정했습니다.
+- 사이트를 문서 루트 하위 폴더(예: `https://example.com/g7/`)에 설치한 경우, 본인인증을 마친 뒤 돌아오는 주소가 사이트 밖을 가리켜 인증이 완료되지 않던 문제를 수정했습니다.
+
 ## [1.0.5] - 2026-09-06
 
 ### Added
@@ -15,11 +26,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Changed
 
 - 확장 문서(README · AGENTS.md · docs/README.md)의 제목에 「그누보드7」과 확장 유형을 함께 표기했습니다. 제목만 보고도 그누보드7의 어떤 종류 확장인지 알 수 있습니다.
-
-### Fixed
-
-- 앞단 프록시를 두는 배치에서 본인인증을 마친 뒤 돌아오는 주소가 환경설정의 사이트 주소가 아니라 인증기관이 보낸 요청의 주소를 따르던 문제를 수정했습니다.
-- 사이트를 문서 루트 하위 폴더(예: `https://example.com/g7/`)에 설치한 경우, 본인인증을 마친 뒤 돌아오는 주소가 사이트 밖을 가리켜 인증이 완료되지 않던 문제를 수정했습니다.
 
 ## [1.0.4] - 2026-08-22
 

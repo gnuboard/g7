@@ -1,0 +1,35 @@
+{
+  "editor": {
+    "data_source": {
+      "memoData": "メモデータ",
+      "memos": "メモ一覧"
+    }
+  },
+  "admin": {
+    "memos": {
+      "index": {
+        "title": "Helloメモ",
+        "description": "学習用メモ一覧"
+      },
+      "form": {
+        "title_create": "メモ作成",
+        "title_edit": "メモ編集",
+        "fields": {
+          "title": "タイトル",
+          "content": "本文"
+        },
+        "actions": {
+          "save": "保存",
+          "cancel": "キャンセル"
+        }
+      }
+    }
+  },
+  "user": {
+    "memos": {
+      "index": {
+        "title": "メモ一覧"
+      }
+    }
+  }
+}

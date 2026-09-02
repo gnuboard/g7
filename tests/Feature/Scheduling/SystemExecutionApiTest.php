@@ -3,13 +3,19 @@
 namespace Tests\Feature\Scheduling;
 
 use App\Contracts\Repositories\ConfigRepositoryInterface;
+use App\Contracts\Repositories\ScheduleHistoryRepositoryInterface;
 use App\Enums\ExtensionOwnerType;
 use App\Enums\PermissionType;
+use App\Enums\ScheduleResultStatus;
+use App\Enums\ScheduleTriggerType;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
+use App\Scheduling\ScheduleRunner;
 use App\Scheduling\ScheduleRunState;
+use App\Scheduling\ScheduleRunSummary;
 use App\Scheduling\WebCronTokenStore;
+use Carbon\CarbonImmutable;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Console\Kernel as ConsoleKernelContract;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -408,5 +414,67 @@ class SystemExecutionApiTest extends TestCase
             'Authorization' => 'Bearer '.$token,
             'Accept' => 'application/json',
         ]);
+    }
+
+    /**
+     * 상태 응답의 시각은 사이트 시간대로 나간다.
+     *
+     * 상태 파일과 이력 행에는 표준시(UTC)로 저장한다 — 기계가 비교하는 값이라 그래야 한다.
+     * 그런데 화면에 그대로 내보내면 같은 화면의 형제 목록(`ScheduleResource`)은 사이트
+     * 시간대인데 이쪽만 표준시라, 운영자가 9시간 차이를 「안 돌았다」로 읽는다
+     * (G8 실측 2026-09-02 · 계획서 §9.11.3 F5).
+     *
+     * @effects schedule_status_times_use_the_site_timezone
+     */
+    public function test_status_times_are_returned_in_the_site_timezone(): void
+    {
+        config(['app.default_user_timezone' => 'Asia/Seoul']);
+
+        $startedAt = CarbonImmutable::parse('2026-09-02T00:10:00+00:00');
+
+        app(ScheduleRunState::class)->recordRun(new ScheduleRunSummary(
+            startedAt: $startedAt,
+            finishedAt: $startedAt->addSeconds(3),
+            due: 1,
+            executed: 1,
+            failed: 0,
+            skipped: 0,
+            truncated: false,
+            events: [],
+        ), advanceCheckpoint: true);
+
+        app(ScheduleHistoryRepositoryInterface::class)->create([
+            'source' => ScheduleRunner::HISTORY_SOURCE,
+            'schedule_id' => null,
+            'event_key' => 'fixture-key',
+            'event_name' => 'seo:prune-stats',
+            'event_expression' => '30 4 * * *',
+            'started_at' => $startedAt,
+            'ended_at' => $startedAt->addSeconds(3),
+            'duration' => 3,
+            'status' => ScheduleResultStatus::Success,
+            'exit_code' => 0,
+            'error_output' => null,
+            'trigger_type' => ScheduleTriggerType::Scheduled,
+        ]);
+
+        $response = $this->asAdmin(['core.settings.read'])->getJson('/api/admin/settings/system/status');
+
+        $response->assertOk();
+
+        $lastRun = $response->json('data.cron.last_run.started_at');
+        $history = $response->json('data.cron.recent_history.0.started_at');
+
+        $this->assertNotNull($lastRun, '마지막 실행 시각이 응답에 없다 — 이 검사가 공허해진다.');
+        $this->assertNotNull($history, '최근 이력이 응답에 없다 — 이 검사가 공허해진다.');
+
+        foreach (['last_run' => $lastRun, 'recent_history' => $history] as $label => $value) {
+            $this->assertStringEndsWith(
+                '+09:00',
+                (string) $value,
+                $label.' 시각이 사이트 시간대가 아니다: '.$value
+            );
+            $this->assertStringStartsWith('2026-09-02T09:10:00', (string) $value);
+        }
     }
 }

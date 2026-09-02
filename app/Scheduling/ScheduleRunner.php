@@ -569,7 +569,7 @@ class ScheduleRunner
                 'source' => self::HISTORY_SOURCE,
                 'schedule_id' => null,
                 'event_key' => $key,
-                'event_name' => $event->getSummaryForDisplay(),
+                'event_name' => $this->displayNameOf($event),
                 'event_expression' => $event->expression,
                 'started_at' => $startedAt,
                 'ended_at' => $endedAt,
@@ -581,9 +581,38 @@ class ScheduleRunner
             ]);
         } catch (\Throwable $e) {
             Log::error('예약 작업 실행 이력을 남기지 못했습니다.', [
-                'event' => $event->getSummaryForDisplay(),
+                'event' => $this->displayNameOf($event),
                 'error' => $e->getMessage(),
             ]);
+        }
+    }
+
+    /**
+     * 이력 화면에 쓸 예약 작업 이름을 만듭니다.
+     *
+     * `Event::getSummaryForDisplay()` 는 설명이 없으면 **실행할 명령 원문**을 돌려주는데,
+     * 그 원문에는 이 서버의 PHP 실행 파일 절대 경로가 들어간다
+     * (`"C:\laragon\bin\php\...\php.EXE" "artisan" seo:prune-stats`). 운영자 화면에
+     * 그대로 나가면 읽을 수 없을 뿐 아니라 서버 경로가 노출된다 — 확장 예약은 설명을 달아
+     * 두어 사람이 읽는 이름이 나오는데 코어 예약은 대부분 설명이 없어 이 갈래로 떨어졌다
+     * (G8 실측 2026-09-02 · 계획서 §9.11.3 F6).
+     *
+     * 우선순위는 ① 사람이 붙인 설명 ② 되뽑은 Artisan 커맨드 ③ 원문(되뽑기 불가) 이다.
+     *
+     * @param  Event  $event  스케줄 이벤트
+     * @return string 화면에 쓸 이름
+     */
+    private function displayNameOf(Event $event): string
+    {
+        if (is_string($event->description) && $event->description !== '') {
+            return $event->description;
+        }
+
+        try {
+            return $this->extractor->extract($event)->display();
+        } catch (\Throwable) {
+            // 되뽑을 수 없는 이벤트(클로저·쉘 명령)는 원문이 그대로 최선의 단서다.
+            return $event->getSummaryForDisplay();
         }
     }
 

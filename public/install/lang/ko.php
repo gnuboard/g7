@@ -928,6 +928,15 @@ ini_set(\'zlib.output_compression\', \'off\');
     'permission_guide_ftp_fallback' => '그래도 쓰기 권한이 생기지 않으면 :value 를 넣어 보세요. 웹 서버가 파일 소유자와 다른 계정으로 도는 호스팅에서는 :primary 로 소유자에게만 쓰기 권한이 생깁니다.',
     'permission_guide_ftp_note_windows' => '※ Windows 서버는 숫자 권한 값을 쓰지 않습니다. FTP 프로그램에 권한 항목이 없다면 호스팅 제어판의 파일 관리자에서 같은 설정을 찾을 수 있습니다.',
 
+    // 필수 파일 생성 무쉘 판본 — `.env` 가 아예 없을 때. 형제 분기(권한·소유자)와 달리 종전에는
+    // 쉘 복사 명령만 있었고, 그 명령은 쉘을 못 쓰는 호스팅에서 실행할 방법이 없었다 (G8 실측).
+    'required_files_guide_ftp_step_connect' => 'FTP 로 접속해 그누보드7을 올린 폴더를 엽니다.',
+    'required_files_guide_ftp_step_download' => ':source 파일을 내 컴퓨터로 내려받습니다.',
+    'required_files_guide_ftp_step_rename' => '내려받은 파일의 이름을 :target 으로 바꿉니다.',
+    'required_files_guide_ftp_step_upload' => '이름을 바꾼 파일을 같은 폴더에 올립니다.',
+    'required_files_guide_ftp_step_recheck' => '아래 [다시 검사] 를 누릅니다.',
+    'required_files_guide_ftp_note' => '※ 파일 이름이 점(.)으로 시작해 FTP 프로그램에서 보이지 않을 수 있습니다. "숨김 파일 보기" 를 켜 주세요.',
+
     // 디렉토리명 (Step 2)
     'dir_bootstrap_cache' => '부트스트랩 캐시 디렉토리',
     'dir_vendor' => '패키지 디렉토리',

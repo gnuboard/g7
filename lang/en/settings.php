@@ -288,7 +288,7 @@ return [
 
             // Preflight (D26)
             'preflight_failed' => 'Preflight checks found problems, so the update was not started: :reasons',
-            'preflight_not_writable' => 'The following paths are not writable: :paths - a web update requires the web server account to be able to write to them. If you cannot change the permissions, run `php artisan core:update` over SSH instead.',
+            'preflight_not_writable' => 'The following paths are not writable: :paths - a web update requires the web server account to be able to write to them. In your FTP client, set the permissions to 755 for folders and 644 for files, or 707/606 if that still does not grant write access. If you have SSH access, you can run `php artisan core:update` instead.',
             'preflight_low_disk' => 'Not enough free disk space (:free free, roughly :required required). The backup and the new version coexist for part of the run, so several times the current size is needed.',
 
             // Manual ZIP source (D18)
@@ -301,7 +301,7 @@ return [
             'handoff_exhausted' => 'The upgrade steps repeatedly requested a fresh process, so the run was stopped (last completed point :after / reason :reason).',
             'bundled_partial_failure' => ':failed bundled extensions or language packs were not updated. The core itself was applied successfully; you can retry the failed ones individually from the extension management screens.',
             'permission_warning' => 'Ownership/permission restore could not normalise :failed entries under :target - uploads or cache writes may fail, so please check them.',
-            'maintenance_off_failed' => 'Maintenance mode could not be disabled (:error) - the site is still showing the maintenance page. Run `php artisan up` over SSH.',
+            'maintenance_off_failed' => 'Maintenance mode could not be disabled (:error) - the site is still showing the maintenance page. Delete the file `storage/framework/down` over FTP to lift it. If you have SSH access, you can run `php artisan up` instead.',
             'ownership_restore_failed' => 'File ownership and permissions could not be restored after the rollback (:error) - the site may be unable to write files, so please check the permissions.',
 
             // Progress log
@@ -357,7 +357,10 @@ return [
 
         // System requirements
         'system_requirements_failed' => 'System requirements are not met:',
-        'no_extract_method_available' => 'No archive extraction method available. Requires one of: PHP zip extension (ZipArchive) or unzip command (Linux). You can also use the --source option for manual update.',
+        // Thrown from the same method as `all_extract_methods_failed` below and shown on the same
+        // screen — it must not name a command-line-only action. On a host without any extraction
+        // method, the only action the operator can take is to ask the provider to enable the extension.
+        'no_extract_method_available' => 'No archive extraction method is available. Either the PHP zip extension (ZipArchive) or the unzip command is required. Please ask your hosting provider to enable the PHP zip extension (ZipArchive).',
         'manual_update_guide' => 'Manual update: Download the release ZIP from GitHub, extract it, then run: php artisan core:update --source=/path/to/extracted',
 
         // Extraction fallback chain
@@ -365,7 +368,10 @@ return [
         'extracting_with' => 'Extracting with :method...',
         'extract_empty' => 'Extracted directory is empty.',
         'extract_fallback' => ':method failed: :error — Trying next method.',
-        'all_extract_methods_failed' => 'All archive extraction methods failed. Try manual update with --source option.',
+        // Shared by the CLI and the web screen — it must not name an action only one of them can
+        // perform (such as a command-line option). An operator on CLI-less hosting is already using
+        // the screen's "update from an uploaded ZIP" path and cannot follow such advice (G8).
+        'all_extract_methods_failed' => 'The archive could not be extracted. Check that the file uploaded completely, then try again.',
         'unzip_command_failed' => 'unzip command failed (exit code: :code). :output',
         'zip_file_not_found' => 'Specified ZIP file not found: :path',
         'source_vendor_missing' => 'No vendor directory in source. composer install may not have been executed.',

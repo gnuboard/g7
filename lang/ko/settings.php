@@ -288,7 +288,7 @@ return [
 
             // 사전 진단 (D26)
             'preflight_failed' => '사전 점검에서 문제가 발견되어 업데이트를 시작하지 않았습니다: :reasons',
-            'preflight_not_writable' => '다음 경로에 쓰기 권한이 없습니다: :paths — 웹에서 업데이트하려면 이 경로들을 웹 서버 계정이 쓸 수 있어야 합니다. 권한을 바꿀 수 없다면 SSH 에서 `php artisan core:update` 를 실행하세요.',
+            'preflight_not_writable' => '다음 경로에 쓰기 권한이 없습니다: :paths — 웹에서 업데이트하려면 이 경로들을 웹 서버 계정이 쓸 수 있어야 합니다. FTP 프로그램에서 해당 폴더의 권한을 755(폴더)·644(파일)로, 그래도 쓰기 권한이 생기지 않으면 707·606 으로 바꾸세요. SSH 를 쓸 수 있다면 `php artisan core:update` 로 업데이트해도 됩니다.',
             'preflight_low_disk' => '여유 공간이 부족합니다 (남은 공간 :free, 필요 추정 :required). 백업과 새 버전이 동시에 놓이는 구간이 있어 현재 크기의 몇 배가 필요합니다.',
 
             // 수동 ZIP (㉯ — D18)
@@ -301,7 +301,7 @@ return [
             'handoff_exhausted' => '업그레이드 스텝이 새 프로세스 재진입을 반복 요청해 중단했습니다 (마지막 완료 지점 :after / 사유 :reason).',
             'bundled_partial_failure' => '번들 확장·언어팩 중 :failed개가 업데이트되지 않았습니다. 코어는 정상 반영되었으며, 실패한 확장은 확장 관리 화면에서 개별로 다시 시도할 수 있습니다.',
             'permission_warning' => '소유권·권한 복원에서 :target 의 :failed개 항목을 정상화하지 못했습니다 — 업로드 파일이나 캐시 쓰기에 문제가 생길 수 있으니 확인하세요.',
-            'maintenance_off_failed' => '점검 모드를 해제하지 못했습니다 (:error) — 사이트가 점검 화면에 머물러 있습니다. SSH 에서 `php artisan up` 을 실행하세요.',
+            'maintenance_off_failed' => '점검 모드를 해제하지 못했습니다 (:error) — 사이트가 점검 화면에 머물러 있습니다. FTP 로 `storage/framework/down` 파일을 삭제하면 해제됩니다. SSH 를 쓸 수 있다면 `php artisan up` 을 실행해도 됩니다.',
             'ownership_restore_failed' => '되돌린 뒤 파일 소유권·권한을 원래대로 되돌리지 못했습니다 (:error) — 사이트가 파일을 쓰지 못할 수 있으니 권한을 확인하세요.',
 
             // 진행 기록
@@ -357,7 +357,10 @@ return [
 
         // 시스템 요구사항
         'system_requirements_failed' => '시스템 요구사항이 충족되지 않습니다:',
-        'no_extract_method_available' => '사용 가능한 아카이브 추출 방법이 없습니다. PHP zip 확장(ZipArchive) 또는 unzip 명령어(Linux) 중 하나가 필요합니다. 또는 --source 옵션으로 수동 업데이트할 수 있습니다.',
+        // 아래 `all_extract_methods_failed` 와 같은 함수에서 던져지고 같은 화면으로 나간다 —
+        // 명령줄 전용 조작(옵션·명령)을 담지 않는다. 추출 수단이 없는 호스팅의 운영자가 스스로
+        // 할 수 있는 조치는 호스팅 업체에 확장 활성화를 요청하는 것이다.
+        'no_extract_method_available' => '사용 가능한 아카이브 추출 방법이 없습니다. PHP zip 확장(ZipArchive) 또는 unzip 명령어 중 하나가 필요합니다. 호스팅 업체에 PHP zip 확장(ZipArchive) 활성화를 요청해 주세요.',
         'manual_update_guide' => '수동 업데이트: GitHub에서 릴리스 ZIP을 다운로드하여 압축 해제 후, php artisan core:update --source=/압축해제/경로 명령어를 실행하세요.',
 
         // 추출 폴백 체인
@@ -365,7 +368,10 @@ return [
         'extracting_with' => ':method 방식으로 압축 해제 중...',
         'extract_empty' => '압축 해제된 디렉토리가 비어 있습니다.',
         'extract_fallback' => ':method 방식 실패: :error — 다음 방법을 시도합니다.',
-        'all_extract_methods_failed' => '모든 아카이브 추출 방법이 실패했습니다. --source 옵션으로 수동 업데이트를 시도하세요.',
+        // 문구는 CLI 와 웹 화면이 함께 쓴다 — 한쪽에서만 실행할 수 있는 조작(예: 명령줄 옵션)을
+        // 담지 않는다. 무CLI 호스팅의 운영자는 이미 화면의 「직접 올린 ZIP 으로 업데이트」를
+        // 쓰고 있어, 그 자리에서 명령줄 옵션을 안내받으면 따를 방법이 없다 (G8 실측).
+        'all_extract_methods_failed' => '압축 파일을 풀지 못했습니다. 파일이 온전히 올라갔는지 확인한 뒤 다시 시도해 주세요.',
         'unzip_command_failed' => 'unzip 명령어 실행 실패 (종료 코드: :code). :output',
         'zip_file_not_found' => '지정된 ZIP 파일을 찾을 수 없습니다: :path',
         'source_vendor_missing' => '소스 디렉토리에 vendor가 없습니다. composer install이 실행되지 않았을 수 있습니다.',

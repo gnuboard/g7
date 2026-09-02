@@ -194,9 +194,13 @@ class LanguagePackServiceProvider extends ServiceProvider
                     continue;
                 }
                 if ($entity === 'menus') {
-                    // 모듈 admin_menus 동기화 시 ModuleManager 가 발행하는 필터에 결선 (모듈 전용).
-                    HookManager::addFilter("module.{$target}.admin_menus.translations", function ($menus) use ($injector, $target) {
-                        return $injector->injectExtensionMenus(is_array($menus) ? $menus : [], $target);
+                    // 모듈/플러그인 admin_menus 동기화 시 발행되는 필터에 결선.
+                    // 형제 항목(roles·permissions)과 같이 스코프로 구독한다 — `module.` 로 고정하면
+                    // PluginManager 가 발행하는 `plugin.{id}.admin_menus.translations` 를 아무도
+                    // 구독하지 않아 플러그인 메뉴는 어떤 언어팩으로도 번역될 수 없다.
+                    $scopeStr = $pack->scope;
+                    HookManager::addFilter("{$scopeStr}.{$target}.admin_menus.translations", function ($menus) use ($injector, $target, $scopeStr) {
+                        return $injector->injectExtensionMenus(is_array($menus) ? $menus : [], $target, $scopeStr);
                     });
 
                     continue;

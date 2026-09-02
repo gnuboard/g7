@@ -31,5 +31,8 @@
   },
   "sirsoft-ecommerce-reviews": {
     "name": "レビュー管理"
+  },
+  "sirsoft-ecommerce-mileage-transactions": {
+    "name": "マイレージ履歴"
   }
 }

@@ -638,6 +638,7 @@ class ValidationApi
         $hasNotWritable = false;
         $notWritableRelative = [];
         $ownershipRelative = [];
+        $missingNames = [];
 
         foreach ($filePaths as $name => $fullPath) {
             $exists = file_exists($fullPath);
@@ -666,6 +667,7 @@ class ValidationApi
             $errorType = null;
             if (! $exists) {
                 $errorType = 'not_exists';
+                $missingNames[] = $name;
             } elseif (! $writable) {
                 if ($permsOctal >= 0644 && $webServerUser && $owner && $owner !== $webServerUser) {
                     $errorType = 'ownership_mismatch';
@@ -714,6 +716,11 @@ class ValidationApi
             'ftp_guide_ownership' => $ownershipRelative === []
                 ? null
                 : installerFtpPermissionGuide($ownershipRelative, false, isWindows(), true),
+            // 파일이 **아예 없는** 갈래의 무쉘 판본 (W7). 형제 둘과 달리 종전에는 쉘 복사
+            // 명령뿐이라, 쉘을 못 쓰는 호스팅에서는 설치를 시작할 방법이 없었다.
+            'ftp_guide_create' => $missingNames === []
+                ? null
+                : installerFtpCreateFileGuide('.env.example', $missingNames[0]),
             'message' => $allPassed
                 ? lang('success_required_files')
                 : lang('error_required_files_missing'),

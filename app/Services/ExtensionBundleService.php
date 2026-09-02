@@ -465,7 +465,7 @@ class ExtensionBundleService
             // rename 사이에서 프로세스가 죽으면 남는다. 번들 이름 패턴만 보던 종전 정리기는 이
             // 파일을 영원히 거르지 않았다 (13차 G3 W1-5). 진행 중인 게시를 지우지 않도록
             // 나이 하한을 두고, mtime 을 읽지 못하면 보존한다(fail-closed).
-            if ($this->isStaleAtomicWriteTemp($name, $storage->getBasePath('').'/'.$name)) {
+            if ($this->isStaleTempBundleFile($name, $storage)) {
                 if ($storage->delete('', $name)) {
                     $deleted++;
                 }

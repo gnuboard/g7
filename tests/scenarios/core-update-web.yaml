@@ -128,18 +128,31 @@ effects:
   - interpolated_messages_render_their_values_on_screen
   - registered_core_update_handlers_perform_their_work
 
+  # 실패 갈래 (검증 라운드 3 — 실측으로 재현 가능함이 확인되어 원장에서 승격)
+  - a_failed_rollback_opens_the_manual_recovery_guidance
+  - preflight_blocks_the_run_when_target_paths_are_not_writable
+
 pending_effects:
   # 아래는 **아직 재는 테스트가 없다**. 무CLI(P0) 프로필에서만 재현되는 축이라 PHPUnit·
   # Playwright 어느 쪽으로도 자동화할 수 없다 — `disable_functions` 는 실행 프로세스의
   # 성질이고 테스트 프로세스가 그것을 바꿀 수 없기 때문이다(§8 자동화 한계).
   # G8(브라우저 실측 전수)이 P0 환경에서 수행하며, 그때까지 이 목록이 미커버 사실을 소유한다.
-  - a_failing_step_rolls_back_without_operator_action        # D10 종단 (P0 실측)
-  - a_failed_rollback_opens_the_manual_recovery_guidance     # D10 복원 실패 분기
-  - the_upgrade_steps_run_in_a_request_after_file_application  # R25 종단 확인
-  - spawn_failure_forces_inprocess_execution                 # R26 — 무CLI 프로필 전용
-  - bundled_extensions_and_language_packs_update_in_one_run  # §0.4 실측 (확장 3종 + 언어팩)
-  - the_admin_screen_stays_reachable_while_maintenance_is_on # 점검 모드 우회 쿠키 + 면제 경로
-  - preflight_blocks_the_run_when_target_paths_are_not_writable  # D26 — 권한 조작이 필요해 CI 재현 불가
+  #
+  # G8 실측 결과 (2026-09-02 · P0 무CLI 프로필 `http://localhost:8090`). 항목은 **지우지
+  # 않는다** — 사람이 한 번 재었다는 사실과 자동으로 재는 테스트가 생겼다는 사실은 다르고,
+  # 지우면 census 에서 빠져 다음 릴리즈에 다시 미커버로 남는다. 각 줄의 주석이 그 결과를
+  # 소유하며, 상세 근거는 계획서 §9.11.2 · §9.11.4 D군에 있다.
+  - a_failing_step_rolls_back_without_operator_action        # D10 — [G8 측정 완료] 손상 ZIP 으로 download 단계 실패 → 조작 없이 rolled_back, `restored=true`·`maintenance_left_on=false`, 홈 200 복귀
+  # (승격됨 — `a_failed_rollback_opens_the_manual_recovery_guidance` 는 이제 effects 에 있다.
+  #  실측으로 재현되는 것이 확인되어 `CoreUpdateWebFlowTest` 가 자동으로 잰다. 그 측정에서
+  #  F14(안내가 SSH 를 무조건으로 지시)를 발견해 고쳤고 `NoCliRecoveryGuidanceTest` 가 문구를 잠근다.)
+  - the_upgrade_steps_run_in_a_request_after_file_application  # R25 — [G8 측정 완료] 12단계 완주에서 apply(7)와 upgrade_steps(10) 사이에 vendor_copy·migrate 두 요청이 놓여 요청 경계 확보
+  - spawn_failure_forces_inprocess_execution                 # R26 — [G8 측정 완료] 프로필 자체가 `exec,proc_open,shell_exec` 차단이고 그 위에서 설치 62단계·업데이트 12단계 2회 완주
+  - bundled_extensions_and_language_packs_update_in_one_run  # §0.4 — [G8 부분] 한 실행 안에서는 「갱신할 것 없음」까지만 확인. 실제 갱신은 모듈 1.1.1→1.1.2 · 언어팩 1.0.2→1.0.3 을 각각 버튼/API 로 성립시켰다
+  - the_admin_screen_stays_reachable_while_maintenance_is_on # [G8 측정 완료] 공개 홈 503 인 동안 status·advance·dismiss 200 + 관리자 화면 200 — **우회 쿠키 없는 새 클라이언트**로 측정
+  # (승격됨 — `preflight_blocks_the_run_when_target_paths_are_not_writable` 는 이제 effects 에 있다.
+  #  권한을 인위로 뺏는 대신 진단을 대역으로 갈아 끼워 재며, 「막혔다」뿐 아니라
+  #  **아무것도 바꾸지 않은 채 막혔다**(`files_were_applied=false`)까지 단언한다.)
 
 test_files:
   - tests/Unit/CoreUpdate/CoreUpdateStepContractTest.php

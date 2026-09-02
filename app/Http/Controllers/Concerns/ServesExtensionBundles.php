@@ -27,6 +27,9 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
  *       0바이트 CSS 를 내보내는 확장은 정당한 상태다. 선언 축만으로 판정하면 그런 확장만
  *       설치된 기본 구성이 통째로 503 이 되어 사용자 화면마다 실패 안내가 뜬다.
  *     - 선언이 **0개**여도 정상 → 빈 200
+ *
+ * 세 갈래 모두 `nosniff` 를 싣는다 — 파일 응답만 그 헤더를 붙이면 같은 주소가 활성 확장
+ * 유무에 따라 다른 헤더를 공표한다 (G8 실측 2026-09-02 · 계획서 §9.11.3 F2).
  */
 trait ServesExtensionBundles
 {
@@ -59,9 +62,11 @@ trait ServesExtensionBundles
             // 디스크 캐시 실패 (2) — 메모리 결과로 서빙한다. 캐시 헤더는 붙이지 않는다:
             // 이 응답은 캐시에 실패한 상태의 산출물이라 다음 요청에서 정상 경로로
             // 돌아갈 수 있어야 한다.
-            return response($content, 200)
-                ->header('Content-Type', $mimeType)
-                ->header('Cache-Control', 'no-cache, private');
+            return $this->withNoSniff(
+                response($content, 200)
+                    ->header('Content-Type', $mimeType)
+                    ->header('Cache-Control', 'no-cache, private')
+            );
         }
 
         $missing = $bundleService->findMissingDeclaredAssets($type, $kind);
@@ -77,13 +82,34 @@ trait ServesExtensionBundles
                 'missing' => $missing,
             ]);
 
-            return response('', 503)
-                ->header('Content-Type', $mimeType)
-                ->header('Cache-Control', 'no-cache, private');
+            return $this->withNoSniff(
+                response('', 503)
+                    ->header('Content-Type', $mimeType)
+                    ->header('Cache-Control', 'no-cache, private')
+            );
         }
 
-        // (3) 정상 — 선언이 0 이거나, 선언된 산출물이 전부 존재하되 비어 있다
-        // (스타일이 비어 있는 확장). 빈 번들이 맞다.
-        return response('', 200)->header('Content-Type', $mimeType);
+        // (3) 정상 — 선언이 0 이거나, 선언한 산출물이 전부 존재하되 비어 있다
+        // (스타일이 비어 있는 확장). 후자를 장애로 보면 0바이트 산출물 하나가 사이트
+        // 전 화면에 실패 알림을 띄운다 (G8 실측 2026-09-02 · 계획서 §9.11.3 F2).
+        // 빈 번들은 빈 번들로 서빙한다.
+        return $this->withNoSniff(response('', 200)->header('Content-Type', $mimeType));
+    }
+
+    /**
+     * 파일이 아닌 번들 응답에도 `X-Content-Type-Options: nosniff` 를 싣습니다.
+     *
+     * 파일이 있는 응답은 `fileResponse()` 가 그 헤더를 붙인다. 손으로 조립하는 세 갈래
+     * (메모리 폴백·장애·빈 번들)만 빠지면 **같은 주소가 활성 확장 유무에 따라 다른 헤더를
+     * 공표한다** — 번들에는 확장이 올린 코드가 실리므로 그 차이는 무해하지 않다.
+     *
+     * @param  Response  $response  조립한 응답
+     * @return Response 헤더가 붙은 응답
+     */
+    private function withNoSniff(Response $response): Response
+    {
+        $this->declareNoSniff($response);
+
+        return $response;
     }
 }

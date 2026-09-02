@@ -47,6 +47,11 @@ class Plugin extends AbstractPlugin
             // 테마가 목록에서 빠져 있는 동안에는 테마를 바꿔도 새로고침하면 되돌아갔다 (dev-g7#640).
             'g7_locale',
             'g7_color_scheme',
+            // 사용자 명시 선택 (WP29 §3.6) — 표시 통화와 배송 국가. 테마·언어와 같은 부류이며,
+            // 빠져 있으면 방문자가 고른 통화·배송 국가가 매 방문 회수되어 기본값으로 되돌아간다
+            // (쓰기 면제만으로는 막히지 않는다 — 회수 경로는 이 목록만 본다).
+            'g7_preferred_currency',
+            'g7_preferred_shipping_country',
             // 코어 캐시 버전 — 운영자가 의도적 갱신 시 사용
             'g7_cache_version',
             // 자산 URL 형식 판정 캐시 — 사용자 정보가 아니라 서버 능력 판정 결과다.
@@ -70,6 +75,7 @@ class Plugin extends AbstractPlugin
             // `g7_filter_visibility_` 는 필터 '표시 여부' 라 접두사가 서로 덮지 않는다.
             'g7_admin_sidebar_collapsed',
             'g7_filter_visibility_*',
+            'g7_coupon_filter_*',
             'g7_dismissed_warnings',
             // 레이아웃 편집기 작업 상태 (라우트 트리 접힘) — 운영자 편집 동선 유지
             'g7le.*',
@@ -99,6 +105,7 @@ class Plugin extends AbstractPlugin
             'g7_columns_*',
             'g7_order_*',
             'g7_filter_visibility_*',
+            'g7_coupon_filter_*',
         ],
         // 쿠키 — 클라이언트 쓰기 + 서버 Set-Cookie 공통 목록
         'cookie' => [

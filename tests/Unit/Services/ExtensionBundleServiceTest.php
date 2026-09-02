@@ -607,8 +607,12 @@ class ExtensionBundleServiceTest extends TestCase
         $bundleDir = storage_path('app/ext-bundles');
         File::ensureDirectoryExists($bundleDir);
 
-        $fresh = $bundleDir.'/module.200.js.tmp.11111';
-        $stale = $bundleDir.'/module.200.js.tmp.22222';
+        // 접미사는 **생산자와 같은 형태**여야 한다 — `writeAtomically` 는
+        // `bin2hex(random_bytes(8))`(16진 16자)을 쓰고 판정식도 `[0-9a-f]{16,}` 이다.
+        // 종전 픽스처는 10진 5자라 판정식이 조여진 뒤로 이 케이스가 「지워지지 않는다」로
+        // 고정돼 있었다 — 실제 잔해를 하나도 재현하지 못하는 픽스처였다.
+        $fresh = $bundleDir.'/module.200.js.tmp.1111111111111111';
+        $stale = $bundleDir.'/module.200.js.tmp.2222222222222222';
         File::put($fresh, 'writing now');
         File::put($stale, 'orphan');
         touch($stale, time() - 3600);

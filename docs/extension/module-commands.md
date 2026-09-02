@@ -41,6 +41,45 @@
 - 권한/메뉴 등 연관 데이터 관리
 - 로그 기록
 
+### 확장이 만든 커맨드를 예약 작업으로 돌릴 때
+
+예약 작업은 확장이 `getSchedules()` 로 선언한다. 그 선언에 적힌 커맨드는 **서버 명령(SSH)을 쓸 수
+있는 환경인지와 무관하게** 실행된다 — 코어가 선언된 이름을 그 확장의 커맨드 클래스로 해석해 Artisan
+이 뜰 때 함께 등록하기 때문이다.
+
+```php
+public function getSchedules(): array
+{
+    return [
+        [
+            'command' => 'vendor-module:prune-temp',   // 이 이름만 등록 대상이 된다
+            'schedule' => 'daily',
+            'description' => '임시 파일 정리',
+        ],
+    ];
+}
+```
+
+확장 쪽에서 따로 할 일은 없다. ServiceProvider 에서 `$this->app->runningInConsole()` 안에 커맨드를
+등록하는 Laravel 관례를 그대로 써도 된다 — 그 관례만 따르면 웹 요청 안에서 도는 예약 실행(주소 호출
+방식)에서는 커맨드가 등록되지 않아 작업이 매번 실패하는데, 코어가 그 자리를 메운다.
+
+**등록 대상은 선언한 이름뿐이다.** 확장 소스에 있는 다른 커맨드는 등록되지 않는다. 선언하지 않은
+커맨드를 예약 실행에서 쓰려면 `getSchedules()` 에 적어야 한다.
+
+커맨드 클래스를 관례 밖 위치에 두었거나 조회를 건너뛰고 싶으면 선언에 클래스를 직접 적는다.
+
+```php
+[
+    'command' => 'vendor-module:prune-temp',
+    'schedule' => 'daily',
+    'command_class' => \Modules\Vendor\Module\Console\PruneTempCommand::class,
+]
+```
+
+선언한 이름을 코어가 찾지 못하면 그 사실이 기록으로 남는다(조용히 건너뛰지 않는다). 코어가 소유한
+커맨드를 확장이 예약하는 경우도 그 목록에 오르는데, 그 커맨드는 코어가 이미 등록하므로 정상이다.
+
 ---
 
 ## 사용 가능한 커맨드

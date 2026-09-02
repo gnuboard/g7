@@ -60,6 +60,8 @@ effects:
   - set_recall_replaces_previous_allowlist
   - reset_deactivates_guard
   - core_only_test_does_not_register_gdpr_service_provider
+  # self-gate 레지스트리 경로 (G8 실측 F11) — 형제 검사는 커널 미들웨어 그룹만 본다
+  - core_only_test_does_not_register_gdpr_middleware_in_the_extension_registry
   - core_only_test_does_not_register_gdpr_middleware_in_web_group
   - core_only_test_does_not_register_gdpr_middleware_in_api_group
   - core_only_test_does_not_register_gdpr_plugin_routes
