@@ -243,4 +243,91 @@ describe('useEditorTemplateAssets', () => {
     const langCall = fetchSpy.mock.calls.find((c) => /\/lang\/en\.json/.test(String(c[0])));
     expect(langCall).toBeDefined();
   });
+
+  /**
+   * 편집 자산 매니페스트가 지시하는 `js` 는 서버 응답이지만, 붙는 자리는 **관리자 document** 다.
+   * 확장 자산 재로드·프리뷰 캔버스와 같은 출처 게이트를 받아야 한다 — 이 경로만 게이트가
+   * 없으면 편집기 진입만으로 임의 원격 코드가 관리자 세션에서 실행된다.
+   */
+  describe('스크립트 주입 출처 게이트', () => {
+    /**
+     * 매니페스트가 주어진 js 목록을 돌려주도록 fetch 를 세운다.
+     *
+     * @param js 매니페스트 js 배열
+     * @return void
+     */
+    function mockManifest(js: string[]): void {
+      fetchSpy.mockImplementation(async (url: string) => {
+        if (url.includes('/editor-assets')) {
+          return {
+            ok: true,
+            json: async () => ({
+              data: { identifier: 'sirsoft-basic', js, css: [], manifest_present: true },
+            }),
+          };
+        }
+        if (url.includes('/config.json')) return { ok: true, json: async () => ({ cache_version: 1 }) };
+        if (url.includes('/components.json')) {
+          return {
+            ok: true,
+            json: async () => ({
+              version: '1.0.0',
+              templateId: 'sirsoft-basic',
+              components: { basic: [], composite: [], layout: [] },
+            }),
+          };
+        }
+        if (url.includes('/lang/')) return { ok: true, json: async () => ({}) };
+        return { ok: false, status: 404, json: async () => ({}) };
+      });
+    }
+
+    beforeEach(() => {
+      (window as any).G7Config = { trustedScriptHosts: [] };
+      // 주입된 태그가 영원히 pending 되지 않도록 즉시 load 를 발화시킨다
+      vi.spyOn(document.head, 'appendChild').mockImplementation(((node: any) => {
+        if (node.tagName === 'SCRIPT' || node.tagName === 'LINK') {
+          document.body.appendChild(node);
+          queueMicrotask(() => node.dispatchEvent(new Event('load')));
+          return node;
+        }
+        return HTMLHeadElement.prototype.appendChild.call(document.head, node);
+      }) as any);
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+      delete (window as any).G7Config;
+      document.querySelectorAll('[data-g7le-asset]').forEach((n) => n.remove());
+    });
+
+    it('미신뢰 외부 src 는 주입하지 않고 오류로 끝난다', async () => {
+      mockManifest(['https://cdn.evil.com/x.js']);
+
+      const { result } = renderHook(() => useEditorTemplateAssets('sirsoft-basic', 'en'));
+
+      await waitFor(() => expect(result.current.error).not.toBeNull(), { timeout: 3000 });
+      expect(
+        document.querySelectorAll('script[data-g7le-asset="https://cdn.evil.com/x.js"]').length,
+      ).toBe(0);
+    });
+
+    it('same-origin src 는 주입된다 (과차단 없음)', async () => {
+      mockManifest(['/api/templates/assets/sirsoft-basic/js/components.iife.js']);
+
+      renderHook(() => useEditorTemplateAssets('sirsoft-basic', 'en'));
+
+      // 게이트를 통과해 실제로 태그가 붙는지만 본다 — 그 뒤 부트스트랩(전역 확보 등)은
+      // 이 축의 관심사가 아니다.
+      await waitFor(
+        () =>
+          expect(
+            document.querySelectorAll(
+              'script[data-g7le-asset="/api/templates/assets/sirsoft-basic/js/components.iife.js"]',
+            ).length,
+          ).toBe(1),
+        { timeout: 3000 },
+      );
+    });
+  });
 });

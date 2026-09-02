@@ -75,6 +75,7 @@ flowchart LR
 | 그누보드7 코어 | `>=7.0.10` |
 | PHP | `^8.2` |
 | 의존 모듈 | `sirsoft-ecommerce` `>=1.1.0` |
+| 외부 스크립트 호스트 | `js.tosspayments.com` |
 <!-- @generated:requirements END -->
 
 ## 설치

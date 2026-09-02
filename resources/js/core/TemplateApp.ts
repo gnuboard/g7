@@ -39,6 +39,12 @@ import {
 import { notifyAssetFailure, clearAssetFailure } from './assets/AssetFailureNotice';
 import { suffixed, extStaticUrl, convertToCurrentMode } from './support/assetUrl';
 import { fetchStaticFirst } from './support/fetchStaticFirst';
+import {
+    normalizeScriptSrcForOriginCheck as normalizeScriptSrcForOriginCheckImpl,
+    extractScriptHost as extractScriptHostImpl,
+    getTrustedScriptHosts as getTrustedScriptHostsImpl,
+    isAllowedScriptSrc as isAllowedScriptSrcImpl,
+} from './support/scriptSrcPolicy';
 import { resetLocalInitTracking } from './template-engine/localInitSlot';
 /**
  * DevTools 추적 - G7DevToolsCore.getInstance() 직접 호출 대신 G7Core.devTools를 사용합니다.
@@ -2167,35 +2173,15 @@ export class TemplateApp {
      *     (cdn.ckeditor.com), Daum 우편번호(t1.daumcdn.net).
      * 차단: 그 외 `//`(protocol-relative)·scheme 포함 외부 origin(미선언 원격 코드 로드).
      *
+     * 판정식 자체는 `support/scriptSrcPolicy` 가 SSoT 다 — 같은 판정을 쓰는 주입 경로가
+     * 레이아웃 `scripts[]` 말고도 여럿(loadScript 액션·확장 핸들러 재로드·편집기 프리뷰·
+     * `G7Core.asset.loadScript`)이라, 사본이 생기면 그 차집합이 우회로가 된다.
+     *
      * @param src 스크립트 src 문자열
      * @returns 로드 허용이면 true
      */
     private isAllowedScriptSrc(src: string): boolean {
-        if (typeof src !== 'string') {
-            return false;
-        }
-
-        const trimmed = src.trim();
-
-        if (trimmed === '') {
-            return false;
-        }
-
-        // 접두 검사 전에 브라우저 URL 파서와 동일하게 정규화한다 (아래 메서드 주석 참조)
-        const normalized = TemplateApp.normalizeScriptSrcForOriginCheck(trimmed);
-
-        const isProtocolRelative = normalized.startsWith('//');
-        const hasScheme = /^[a-z][a-z0-9+.-]*:/i.test(normalized);
-
-        // same-origin path-only 절대 경로 (`/api/...`) — 항상 허용
-        if (!isProtocolRelative && !hasScheme && normalized.startsWith('/')) {
-            return true;
-        }
-
-        // 외부 origin — 확장이 선언한 신뢰 호스트만 허용
-        const host = this.extractScriptHost(normalized);
-
-        return host !== null && this.getTrustedScriptHosts().includes(host);
+        return isAllowedScriptSrcImpl(src);
     }
 
     /**
@@ -2211,22 +2197,15 @@ export class TemplateApp {
      * 않으므로 그대로 same-origin 으로 통과합니다(과차단 없음).
      *
      * 저장측 `SafeLayoutExpressions::normalizeForOriginCheck` · 정적 검사
-     * `layout-scripts-src-same-origin` 과 3층 동형이어야 합니다.
+     * `layout-scripts-src-same-origin` 과 3층 동형이어야 합니다. 구현은
+     * `support/scriptSrcPolicy` 가 SSoT 이며 이 메서드는 위임입니다.
      *
      * @since engine-v1.60.2
      * @param src 원본 src 문자열
      * @returns 정규화된 src
      */
     private static normalizeScriptSrcForOriginCheck(src: string): string {
-        // ASCII tab / LF / CR 제거 (브라우저 파서가 파싱 전에 제거하는 문자)
-        // → 백슬래시를 슬래시로 (special scheme 에서 등가)
-        const slashed = src.replace(/[\t\n\r]/g, '').replace(/\\/g, '/');
-
-        // 선행 슬래시가 3개 이상이어도 브라우저는 authority 시작으로 접는다
-        // (`///host/x` ≡ `//host/x`, `https:///host/x` ≡ `https://host/x`).
-        // 경로 중간의 연속 슬래시(`/js//a.js`)는 브라우저도 경로로 두므로 건드리지 않는다.
-        // @since engine-v1.60.3
-        return slashed.replace(/^([a-z][a-z0-9+.\-]*:)?\/{2,}/i, '$1//');
+        return normalizeScriptSrcForOriginCheckImpl(src);
     }
 
     /**
@@ -2239,20 +2218,7 @@ export class TemplateApp {
      * @returns 소문자 호스트명 (판정 불가 시 null)
      */
     private extractScriptHost(src: string): string | null {
-        try {
-            const normalized = src.startsWith('//')
-                ? `${window.location.protocol}${src}`
-                : src;
-            const url = new URL(normalized, window.location.origin);
-
-            if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-                return null;
-            }
-
-            return url.hostname.toLowerCase();
-        } catch {
-            return null;
-        }
+        return extractScriptHostImpl(src);
     }
 
     /**
@@ -2261,11 +2227,7 @@ export class TemplateApp {
      * @returns 소문자 호스트명 배열 (window.G7Config.trustedScriptHosts)
      */
     private getTrustedScriptHosts(): string[] {
-        const hosts = (window as any).G7Config?.trustedScriptHosts;
-
-        return Array.isArray(hosts)
-            ? hosts.map((host: unknown) => String(host).toLowerCase())
-            : [];
+        return getTrustedScriptHostsImpl();
     }
 
     /**

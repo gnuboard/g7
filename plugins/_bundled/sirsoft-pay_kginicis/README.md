@@ -88,6 +88,7 @@ CBT 결제창으로 진입하며, 설정이 부족하면 한국 표준결제로 
 | 그누보드7 코어 | `>=7.0.10` |
 | PHP | `^8.2` |
 | 의존 모듈 | `sirsoft-ecommerce` `>=1.1.0` |
+| 외부 스크립트 호스트 | `stgstdpay.inicis.com`, `stdpay.inicis.com` |
 <!-- @generated:requirements END -->
 
 <!-- @intent START -->

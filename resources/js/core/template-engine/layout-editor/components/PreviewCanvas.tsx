@@ -54,6 +54,7 @@ import {
 } from '../state/pageStateSimulator';
 import { trackPageState } from '../devtools/editorTrackers';
 import type { EditorStateItemSpec } from '../spec/specTypes';
+import { isAllowedScriptSrc, getTrustedScriptHosts } from '../../../support/scriptSrcPolicy';
 
 export interface PreviewCanvasProps {
   /** components.json 매니페스트 — Chrome 에서 fetch 해 주입 */
@@ -614,6 +615,15 @@ export function PreviewCanvas(props: PreviewCanvasProps = {}): React.ReactElemen
     const loaders: Promise<void>[] = [];
     for (const entry of scripts) {
       if (!entry?.src || typeof entry.src !== 'string') continue;
+      // 프리뷰는 런타임 렌더의 미리보기다 — 런타임(TemplateApp)이 거부할 src 를
+      // 관리자 document.head 에 주입하면 편집 중에만 임의 원격 코드가 실행된다.
+      // 같은 판정·같은 결과(skip + 경고).
+      if (!isAllowedScriptSrc(entry.src, getTrustedScriptHosts())) {
+        console.warn(
+          `[PreviewCanvas] Blocked untrusted script src (same-origin path or declared trusted host required): ${entry.src}`,
+        );
+        continue;
+      }
       const sel = entry.id
         ? `script#${CSS.escape(entry.id)}, script[data-g7le-canvas-script="${entry.src}"]`
         : `script[data-g7le-canvas-script="${entry.src}"], script[src="${entry.src}"]`;

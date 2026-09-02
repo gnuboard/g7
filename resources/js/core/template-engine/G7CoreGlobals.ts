@@ -64,6 +64,7 @@ import {
   pluginAsset,
   convertToCurrentMode,
 } from '../support/assetUrl';
+import { isAllowedScriptSrc, getTrustedScriptHosts } from '../support/scriptSrcPolicy';
 import {
   notifyAssetFailure,
   drainExternalAssetFailures,
@@ -919,12 +920,37 @@ function initAssetUrlAPI(G7Core: any): void {
      * 확장이 자기 자산을 런타임에 직접 로드할 때 쓴다. 확장 번들이 코어 모듈을
      * import 할 수 없어 각자 `document.createElement('script')` 를 쓰면, 코어가
      * 갖춘 재시도·실패 표면화 계층이 그 경로에만 없게 된다.
+     *
+     * `url` 은 레이아웃 `scripts[]` 와 **같은 출처 정책**을 받는다 — same-origin 절대
+     * 경로이거나 확장이 manifest(`trusted_script_hosts`)로 선언한 신뢰 호스트여야 한다.
+     * 이 seam 만 게이트가 없으면 저장측 검증을 우회한 원격 코드 로드 통로가 된다.
+     *
+     * @since engine-v1.64.0 출처 게이트 추가 (미신뢰 URL 은 reject)
      */
     loadScript: (
       url: string,
       attrs?: Record<string, string>,
       options?: Record<string, unknown>
-    ): Promise<void> => loadScriptWithRetry(url, attrs, options as any),
+    ): Promise<void> => {
+      if (!isAllowedScriptSrc(url, getTrustedScriptHosts())) {
+        return Promise.reject(
+          new Error(
+            `Blocked untrusted script src (same-origin path or declared trusted host required): ${url}`
+          )
+        );
+      }
+
+      return loadScriptWithRetry(url, attrs, options as any);
+    },
+    /**
+     * 스크립트 URL 이 주입 허용 대상인지 판정합니다.
+     *
+     * 로더를 쓸 수 없는 주입(iframe `document.write` 등)이 같은 판정을 재사용하는 통로다.
+     *
+     * @since engine-v1.64.0
+     */
+    isAllowedScriptSrc: (url: string): boolean =>
+      isAllowedScriptSrc(url, getTrustedScriptHosts()),
     /** 재시도 계층을 갖춘 스타일시트 로더 */
     loadStylesheet: (
       url: string,

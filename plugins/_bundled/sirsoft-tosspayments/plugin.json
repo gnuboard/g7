@@ -20,6 +20,12 @@
     },
     "github_url": "https://github.com/gnuboard/g7-plugin-sirsoft-tosspayments",
     "github_changelog_url": "https://github.com/gnuboard/g7-plugin-sirsoft-tosspayments/blob/main/CHANGELOG.md",
+    "trusted_script_hosts": [
+        "js.tosspayments.com"
+    ],
+    "trusted_script_hosts_reason": {
+        "js.tosspayments.com": "토스페이먼츠 결제위젯 SDK 다. 스크립트가 토스페이먼츠 서버와 통신하므로 자체 호스팅해도 결제가 성립하지 않는다."
+    },
     "assets": {
         "js": {
             "entry": "resources/js/index.ts",

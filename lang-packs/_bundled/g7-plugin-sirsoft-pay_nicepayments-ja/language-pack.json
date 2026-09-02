@@ -12,7 +12,7 @@
         "en": "G7 plugin (sirsoft-pay_nicepayments) Japanese language pack (bundled)",
         "ja": "G7 プラグイン (sirsoft-pay_nicepayments) 日本語 言語パック(バンドル)"
     },
-    "version": "1.0.3",
+    "version": "1.0.4",
     "license": "MIT",
     "scope": "plugin",
     "target_identifier": "sirsoft-pay_nicepayments",

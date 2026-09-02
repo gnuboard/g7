@@ -47,6 +47,64 @@ export function isSupportedKcpCurrency(currency?: string): boolean {
     return normalizeCurrency(currency) === 'KRW';
 }
 
+/**
+ * SDK 스크립트를 로드할 수 있는 호스트 (plugin.json `trusted_script_hosts` 미러).
+ *
+ * NHN KCP 결제창은 라이브러리가 아니라 그 회사 서버와 통신하는 서비스 SDK 라
+ * 자체 호스팅할 수 없다. 대신 **주입 직전에** 호스트를 확인해, 설정·응답이 어떤
+ * 경로로든 다른 주소를 지시하면 결제를 진행하지 않는다(fail-closed).
+ *
+ * PG사가 SDK 호스트를 바꾸면 이 상수와 plugin.json 을 **함께** 갱신한다 —
+ * 둘이 어긋나면 테스트가 실패한다.
+ */
+export const KNOWN_SDK_HOSTS: readonly string[] = ['testpay.kcp.co.kr', 'pay.kcp.co.kr'];
+
+/**
+ * 번역 문자열을 얻습니다.
+ *
+ * @param key 번역 키 (플러그인 네임스페이스 이하)
+ * @param fallback 번역 엔진 부재 시 사용할 문구
+ * @returns 번역된 문자열
+ */
+function t(key: string, fallback: string): string {
+    const translate = (window as any)?.G7Core?.t;
+
+    if (typeof translate !== 'function') {
+        return fallback;
+    }
+
+    const full = `sirsoft-pay_nhnkcp.${key}`;
+    const result = translate(full);
+
+    return typeof result === 'string' && result !== full ? result : fallback;
+}
+
+/**
+ * SDK URL 이 신뢰 호스트인지 확인하고, 아니면 예외를 던집니다.
+ *
+ * @param url 주입할 SDK URL
+ * @throws Error 미신뢰 호스트이거나 https 가 아닌 경우
+ */
+export function assertTrustedSdkUrl(url: string): void {
+    let parsed: URL | null = null;
+
+    try {
+        parsed = new URL(url);
+    } catch {
+        parsed = null;
+    }
+
+    if (
+        parsed === null
+        || parsed.protocol !== 'https:'
+        || !KNOWN_SDK_HOSTS.includes(parsed.hostname.toLowerCase())
+    ) {
+        throw new Error(
+            t('payment.error.sdk_url_untrusted', '결제 모듈 주소가 올바르지 않아 결제를 진행할 수 없습니다.')
+        );
+    }
+}
+
 function unsupportedCurrencyMessage(currency?: string): string {
     const normalized = normalizeCurrency(currency);
     const isKo = ((typeof document !== 'undefined' ? document.documentElement.lang : '') || '')
@@ -467,6 +525,11 @@ async function handlePcPayment(
     const hiddenInputs = Object.entries(fields)
         .map(([n, v]) => `<input type="hidden" name="${n}" value="${v.replace(/"/g, '&quot;')}">`)
         .join('');
+
+    // SDK 주입 직전 출처 확인 — 아래 iframe `document.write` 는 코어 로더를 쓸 수 없으므로
+    // (동기 실행 순서가 KCP_Pay_Execute 호출 계약이다) 검증만 선행한다. 실패 시 결제를
+    // 진행하지 않는다(fail-closed).
+    assertTrustedSdkUrl(config.sdk_url);
 
     await new Promise<void>((resolve, reject) => {
         // 기존 요소 정리

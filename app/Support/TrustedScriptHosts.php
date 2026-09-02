@@ -135,7 +135,7 @@ class TrustedScriptHosts
      *
      * 이 메서드가 origin 판정 정규화의 SSoT 입니다 — 저장측 규칙
      * (`App\Rules\SafeLayoutExpressions`)이 위임하고, 클라이언트
-     * (`TemplateApp.normalizeScriptSrcForOriginCheck`)·정적 검사
+     * (`resources/js/core/support/scriptSrcPolicy.ts::normalizeScriptSrcForOriginCheck`)·정적 검사
      * (`layout-scripts-src-same-origin`)가 동형 구현을 갖습니다. 한 계층만 바꾸면
      * 그 계층만 다른 출처를 보게 되며, 예외도 경고도 없이 판정만 갈립니다.
      *

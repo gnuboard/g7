@@ -138,7 +138,9 @@
 
 레이아웃 보안 정책은 `scripts[].src`·`data_sources[].endpoint` 를 기본적으로 same-origin
 경로(`/` 로 시작)만 허용하고, 외부 origin·protocol-relative(`//host`)·scheme 포함 URL 은
-저장 시점과 렌더 시점 양쪽에서 차단합니다. 확장이 정당하게 외부 CDN 스크립트를 써야 하면
+저장 시점과 렌더 시점 양쪽에서 차단합니다. 같은 판정은 레이아웃 파일뿐 아니라 **브라우저에
+새 `<script>` 를 붙이는 모든 경로**(`loadScript` 액션 · 확장 핸들러 재로드 · 편집기 프리뷰 ·
+`G7Core.asset.loadScript`)에 적용됩니다. 확장이 정당하게 외부 CDN 스크립트를 써야 하면
 그 호스트를 이 배열에 선언합니다. 활성 확장이 선언한 호스트만 집계되며(편집자는 추가 불가 —
 manifest 는 배포물), 코어가 활성 확장 전체의 선언을 모아 allowlist 를 구성합니다.
 
@@ -156,6 +158,14 @@ manifest 는 배포물), 코어가 활성 확장 전체의 선언을 모아 allo
   ```
 - 외부 의존이 남는 기능은 **그 자산을 못 불러왔을 때의 동작**을 함께 갖춰야 합니다. 예: 주소
   검색 SDK 가 없으면 우편번호·주소를 직접 입력할 수 있게 두고 안내를 띄웁니다.
+- 결제 플러그인의 PG SDK 도 같은 부류입니다(그 회사 서버와 통신하므로 자체 호스팅 불가).
+  선언 사례: KG 이니시스 `stgstdpay.inicis.com`·`stdpay.inicis.com` / 토스페이먼츠
+  `js.tosspayments.com` / 나이스페이먼츠 `web.nicepay.co.kr` / NHN KCP `testpay.kcp.co.kr`·
+  `pay.kcp.co.kr`. 이 플러그인들은 **코드에도 같은 호스트 목록을 두고 주입 직전에 확인**하며,
+  확인에 실패하면 결제를 진행하지 않습니다(fail-closed). SDK URL 이 확장자로 끝나지 않는
+  경우(예: `/v2/standard`)에는 그 런타임 확인이 유일한 게이트입니다. PG사가 호스트를 바꾸면
+  manifest 와 코드 상수를 **함께** 갱신해야 하며, 두 목록의 일치는 각 플러그인 테스트가
+  고정합니다.
 - 이 기능은 코어 7.0.7 에서 도입되었습니다. 선언하는 확장은 `g7_version` 을 `>=7.0.7` 로 두는
   것이 계약상 정확합니다(하위 코어에서는 필드가 무시되어 무해).
 - 관련 보안 정책 상세: [frontend/security.md](../frontend/security.md).

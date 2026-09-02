@@ -86,6 +86,7 @@ PC 결제 승인은 `NhnKcpApiService`가 OS 를 판별해 `pp_cli`/`pp_cli_x64`
 | 그누보드7 코어 | `>=7.0.10` |
 | PHP | `^8.2` |
 | 의존 모듈 | `sirsoft-ecommerce` `>=1.1.0` |
+| 외부 스크립트 호스트 | `testpay.kcp.co.kr`, `pay.kcp.co.kr` |
 <!-- @generated:requirements END -->
 
 <!-- @intent START -->

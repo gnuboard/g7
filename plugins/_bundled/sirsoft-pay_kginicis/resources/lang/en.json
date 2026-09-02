@@ -308,5 +308,10 @@
         "vbank_notify_hint": "Register this URL as the PC virtual account deposit notification URL in the KG Inicis merchant admin.",
         "vbank_notify_copied": "URL copied to clipboard.",
         "copy": "Copy"
+    },
+    "payment": {
+        "error": {
+            "sdk_url_untrusted": "The payment module address is not valid, so the payment cannot proceed. Please contact the administrator."
+        }
     }
 }

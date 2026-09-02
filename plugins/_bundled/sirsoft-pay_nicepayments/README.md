@@ -79,6 +79,7 @@ URL로 결과를 POST 하면 결제 완료 처리됩니다.
 | 그누보드7 코어 | `>=7.0.10` |
 | PHP | `^8.2` |
 | 의존 모듈 | `sirsoft-ecommerce` `>=1.1.0` |
+| 외부 스크립트 호스트 | `web.nicepay.co.kr` |
 <!-- @generated:requirements END -->
 
 <!-- @intent START -->

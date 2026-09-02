@@ -154,5 +154,10 @@
     },
     "easy_pay": {
         "section_title": "Easy Pay"
+    },
+    "payment": {
+        "error": {
+            "sdk_url_untrusted": "The payment module address is not valid, so the payment cannot proceed. Please contact the administrator."
+        }
     }
 }
