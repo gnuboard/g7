@@ -19,6 +19,8 @@ use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
  * 동작하는지 검증한다.
  *
  * @since 1.0.0
+ *
+ * @scenario plugin-settings
  */
 class TokenCheckEndpointTest extends PluginTestCase
 {

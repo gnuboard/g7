@@ -14,9 +14,6 @@ use Tests\TestCase;
  * 검증(SaveSettingsRequest), 저장(seo 카테고리 + 첨부 ID 정제), 관리자 재로드(첨부
  * 객체 변환), 해석(getOgDefaultImageUrl → SeoMetaResolver og:image 폴백). 어느 한
  * 지점이 빠지면 "저장은 되는데 og:image 는 비는" 상태가 되고 화면에 드러나지 않습니다.
- *
- * @effects og_default_image_persists_to_seo_category
- * @effects og_default_image_resolves_first_image_url
  */
 class OgDefaultImageSettingTest extends TestCase
 {

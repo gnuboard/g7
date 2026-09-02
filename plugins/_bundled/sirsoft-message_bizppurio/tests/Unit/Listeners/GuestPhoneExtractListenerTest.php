@@ -9,6 +9,8 @@ use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
 
 /**
  * GuestPhoneExtractListener — 비회원 주문 알림 data 에 수신 전화번호 주입 검증(D1).
+ *
+ * @scenario sms-channel-dispatch
  */
 class GuestPhoneExtractListenerTest extends PluginTestCase
 {

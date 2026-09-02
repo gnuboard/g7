@@ -18,6 +18,8 @@ use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
  * 관찰한다(관찰 가능한 상태 변화 = dispatch.notification_log_id).
  *
  * 매칭은 복합키가 아니라 DispatchLinkContext 의 발송 사이클 refkey 직접 표식(A안)이다.
+ *
+ * @scenario dispatch-result-injection
  */
 class NotificationLogLinkTest extends PluginTestCase
 {

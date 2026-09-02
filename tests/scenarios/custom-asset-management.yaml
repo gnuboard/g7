@@ -45,6 +45,8 @@ effects:
   - custom_assets_disabled_by_request_parameter
   - custom_asset_manage_all_extension_types_parity
   - custom_asset_published_for_all_extension_types
+  # 아래는 테스트가 이미 재고 있으나 선언이 빠져 있던 이름이다 (원장 축소).
+  - custom_asset_signature_is_scoped_per_render
 
 test_files:
   - tests/Feature/Api/Admin/AdminExtensionCustomAssetControllerTest.php

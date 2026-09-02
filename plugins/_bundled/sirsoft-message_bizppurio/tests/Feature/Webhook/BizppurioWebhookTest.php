@@ -61,7 +61,7 @@ class BizppurioWebhookTest extends PluginTestCase
     /**
      * 허용 IP 로 유효 리포트를 POST 하면 200 + 상태가 success 로 갱신.
      *
-     * @scenario source=webhook,ip=allowed,result=success
+     * @scenario webhook_ip=allowed, result_category=success
      *
      * @effects dispatch_status_updated_to_success,reported_at_set
      */
@@ -88,7 +88,7 @@ class BizppurioWebhookTest extends PluginTestCase
     /**
      * 실패 결과코드는 status=failed 로 갱신.
      *
-     * @scenario source=webhook,ip=allowed,result=failure
+     * @scenario webhook_ip=allowed, result_category=failure
      *
      * @effects dispatch_status_updated_to_failed
      */
@@ -108,7 +108,7 @@ class BizppurioWebhookTest extends PluginTestCase
     /**
      * 차단 IP 는 403 + 이력 미변경.
      *
-     * @scenario source=webhook,ip=blocked
+     * @scenario webhook_ip=blocked
      *
      * @effects webhook_blocked_ip_returns_403,dispatch_unchanged
      */
@@ -128,7 +128,7 @@ class BizppurioWebhookTest extends PluginTestCase
     /**
      * 미매칭 refkey(위조)는 200 흡수 + 아무 이력도 변경 안 됨.
      *
-     * @scenario source=webhook,ip=allowed,refkey=unknown
+     * @scenario webhook_ip=allowed
      *
      * @effects webhook_unknown_refkey_absorbed_200
      */
@@ -144,7 +144,7 @@ class BizppurioWebhookTest extends PluginTestCase
     /**
      * replay(이미 reported_at 있는 이력)는 멱등 — 상태를 다시 뒤집지 않음.
      *
-     * @scenario source=webhook,ip=allowed,replay=true
+     * @scenario webhook_ip=allowed
      *
      * @effects webhook_replay_is_idempotent
      */
@@ -172,7 +172,7 @@ class BizppurioWebhookTest extends PluginTestCase
     /**
      * 잔액부족(9070 문자)은 failed + 잔액부족 자체알림 훅 1회 발화.
      *
-     * @scenario source=webhook,ip=allowed,result=balance_low_sms
+     * @scenario channel=sms, webhook_ip=allowed, result_category=balance_low
      *
      * @effects webhook_balance_low_marks_failed,balance_low_hook_fired
      */
@@ -201,7 +201,7 @@ class BizppurioWebhookTest extends PluginTestCase
      * 서로 다른 발송건이 연속으로 9070(문자 잔액부족)을 받아도, 쿨다운 내에서는
      * 관리자 알림이 1회만 발화한다. 단, 발송 이력의 실패 기록은 두 건 모두 남는다.
      *
-     * @scenario source=webhook,ip=allowed,result=balance_low_sms,repeat=true
+     * @scenario channel=sms, webhook_ip=allowed, result_category=balance_low
      *
      * @effects balance_low_notification_deduplicated_within_cooldown,both_dispatches_marked_failed
      */
@@ -235,7 +235,7 @@ class BizppurioWebhookTest extends PluginTestCase
     /**
      * webhook 은 코어 토큰/IDV 미들웨어 제외 — 비인증 실 POST 가 401 이 아닌 200.
      *
-     * @scenario source=webhook,ip=allowed,auth=none
+     * @scenario webhook_ip=allowed
      *
      * @effects webhook_bypasses_auth_middleware_returns_200
      */
@@ -257,7 +257,7 @@ class BizppurioWebhookTest extends PluginTestCase
      * alimtalk 대체발송 OFF 인데 결과 화면에 SMS 대체발송 뱃지가 표시된 회귀), webhook 값
      * 존재 여부만으로 판단하면 안 되고 우리가 실제로 요청했는지(request_payload)를 봐야 한다.
      *
-     * @scenario source=webhook,ip=allowed,result=success,fallback_requested=false
+     * @scenario webhook_ip=allowed, result_category=success
      *
      * @effects fallback_status_remains_null_when_not_requested
      */
@@ -288,7 +288,7 @@ class BizppurioWebhookTest extends PluginTestCase
      * 대체발송을 실제로 요청한 발송건(request_payload 에 resend 있음)은 webhook TELRES 값을
      * fallback_status 에 정상 반영한다.
      *
-     * @scenario source=webhook,ip=allowed,result=balance_low,fallback_requested=true
+     * @scenario webhook_ip=allowed, result_category=balance_low
      *
      * @effects fallback_status_set_when_resend_was_requested
      */

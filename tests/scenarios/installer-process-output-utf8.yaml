@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: 인스톨러(설치 전 표면)는 설치 완료 사이트에 붙는 Playwright 인프라와 양립하지 않는다 (_guard 가 410). 브라우저 계층은 Chrome MCP 정밀 점검 매트릭스로 대체하며, 그 결과는 작업 이력 문서에 기재한다.
+# audit:allow test-scenario-coverage reason: issue:#627 인스톨러(설치 전 표면)는 설치 완료 사이트에 붙는 Playwright 인프라와 양립하지 않는다 (_guard 가 410). 브라우저 계층은 Chrome MCP 정밀 점검 매트릭스로 대체하며, 그 결과는 작업 이력 문서에 기재한다.
 
 feature: 인스톨러 프로세스 출력 인코딩 정규화와 JSON 응답 경계
 

@@ -25,6 +25,9 @@ use Tests\Concerns\CleansTemporaryBasePath;
  */
 #[RunClassInSeparateProcess]
 #[PreserveGlobalState(false)]
+/**
+ * @scenario installer-process-output-utf8
+ */
 class RequirementsResponseUtf8Test extends TestCase
 {
     use CleansTemporaryBasePath;

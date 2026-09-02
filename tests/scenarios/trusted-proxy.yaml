@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: 본 매니페스트는 신규 기능 시나리오 매트릭스 SSoT 로 기록. 축 곱(6×3×3×3×2×2 = 648)이 커 전 조합 docblock 매핑은 비현실적이며, 핵심 회귀 가드는 test_files 의 통과 테스트로 커버.
+# audit:allow test-scenario-coverage reason: issue:#622 본 매니페스트는 신규 기능 시나리오 매트릭스 SSoT 로 기록. 축 곱(6×3×3×3×2×2 = 648)이 커 전 조합 docblock 매핑은 비현실적이며, 핵심 회귀 가드는 test_files 의 통과 테스트로 커버.
 
 feature: 리버스 프록시 신뢰 설정 (Trusted Proxy)
 

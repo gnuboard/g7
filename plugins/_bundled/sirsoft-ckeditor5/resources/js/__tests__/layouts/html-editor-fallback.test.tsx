@@ -4,7 +4,7 @@
  * `html-editor.json` 이 `mode: "replace"` 라 코어 HtmlEditor 가 렌더되지 않는다.
  * 편집기를 못 세우면 사용자에게는 빈 div 만 남아 글을 쓸 방법이 없었다.
  *
- * @scenario custom_source=none
+ * @scenario asset_class=vendored, outcome=failed
  * @effects failed_asset_falls_back_to_plain_input, failed_asset_shows_retry_notice, retry_recovers_editor
  */
 

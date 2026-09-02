@@ -102,7 +102,7 @@ class BizppurioLiveModeSettingsValidationTest extends PluginTestCase
     }
 
     /**
-     * @scenario test_mode=off,credentials=empty
+     * @scenario test_mode=off, credential_state=empty
      *
      * @effects live_mode_with_empty_credentials_returns_422_with_bizppurio_id_password_sender_number_errors
      */
@@ -120,7 +120,7 @@ class BizppurioLiveModeSettingsValidationTest extends PluginTestCase
     }
 
     /**
-     * @scenario test_mode=off,credentials=empty
+     * @scenario test_mode=off, credential_state=empty
      *
      * @effects api_key_and_sender_key_are_not_required_in_live_mode
      */
@@ -140,7 +140,7 @@ class BizppurioLiveModeSettingsValidationTest extends PluginTestCase
     }
 
     /**
-     * @scenario test_mode=off,credentials=empty,locale=ko
+     * @scenario test_mode=off, credential_state=empty
      *
      * @effects validation_error_messages_use_korean_field_labels_not_english_keys
      */
@@ -163,7 +163,7 @@ class BizppurioLiveModeSettingsValidationTest extends PluginTestCase
     }
 
     /**
-     * @scenario test_mode=off,credentials=filled,locale=ko
+     * @scenario test_mode=off, credential_state=filled
      *
      * @effects live_mode_with_filled_credentials_returns_200
      */
@@ -180,7 +180,7 @@ class BizppurioLiveModeSettingsValidationTest extends PluginTestCase
     }
 
     /**
-     * @scenario test_mode=on,credentials=empty,locale=ko
+     * @scenario test_mode=on, credential_state=empty
      *
      * @effects dev_mode_with_empty_credentials_returns_200
      */
@@ -197,7 +197,7 @@ class BizppurioLiveModeSettingsValidationTest extends PluginTestCase
     }
 
     /**
-     * @scenario test_mode=off,credentials=filled
+     * @scenario test_mode=off, credential_state=filled
      *
      * @effects password_is_not_stored_as_plaintext_in_settings_file, password_decrypts_back_to_original_via_settings_service_get
      */

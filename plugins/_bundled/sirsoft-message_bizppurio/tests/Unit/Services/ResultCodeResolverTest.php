@@ -9,6 +9,8 @@ use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
 
 /**
  * ResultCodeResolver — 결과코드 분류·사유·라벨 검증 (계획서 D11).
+ *
+ * @scenario dispatch-history-webhook
  */
 class ResultCodeResolverTest extends PluginTestCase
 {

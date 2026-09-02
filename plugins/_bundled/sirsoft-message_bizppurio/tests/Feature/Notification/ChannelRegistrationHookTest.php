@@ -16,6 +16,8 @@ use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
  * 리스너 메서드를 직접 부르지 않고, HookManager 에 필터를 등록한 뒤 코어 서비스가
  * 발화하는 훅을 통해 sms/alimtalk 채널이 노출되고 readiness 가 해석되는지 관찰한다.
  * (Hook/Event 도메인 규정: 실제 훅 체인으로 관찰 가능한 상태 변화 검증)
+ *
+ * @scenario sms-channel-dispatch
  */
 class ChannelRegistrationHookTest extends PluginTestCase
 {

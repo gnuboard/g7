@@ -10,6 +10,8 @@ use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
 
 /**
  * 발송 관련 Enum 4종 검증.
+ *
+ * @scenario plugin-settings
  */
 class EnumTest extends PluginTestCase
 {

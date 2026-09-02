@@ -18,6 +18,8 @@ use PHPUnit\Framework\TestCase;
  *
  * 이 클래스는 그 출력을 "항상 유효한 UTF-8" 로 만드는 단일 출처다.
  * 인스톨러(프레임워크 없음)와 코어가 함께 쓴다.
+ *
+ * @scenario installer-process-output-utf8
  */
 class ProcessOutputEncodingTest extends TestCase
 {

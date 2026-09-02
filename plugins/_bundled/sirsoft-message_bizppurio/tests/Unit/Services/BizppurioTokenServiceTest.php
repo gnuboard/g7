@@ -12,6 +12,8 @@ use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
 
 /**
  * BizppurioTokenService — 토큰 발급·캐시 재사용·재발급 검증.
+ *
+ * @scenario plugin-settings
  */
 class BizppurioTokenServiceTest extends PluginTestCase
 {

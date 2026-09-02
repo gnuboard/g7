@@ -14,6 +14,8 @@
  * 빈 셀(-)인지 확인한다.
  *
  * @vitest-environment jsdom
+ *
+ * @scenario dispatch-result-injection
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';

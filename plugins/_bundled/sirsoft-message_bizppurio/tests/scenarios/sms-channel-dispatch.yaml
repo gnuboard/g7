@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: |
+# audit:allow test-scenario-coverage reason: issue:#597 |
 #   Phase 3 는 코어 알림 채널 등록 + 문자 발송 위임 배선(백엔드)이다. axes cross product 의
 #   런타임 효과(채널 노출/readiness/전화번호 해석/발송 Job 위임)는 PHPUnit 로 전수 가드된다:
 #   RegisterNotificationChannelsListenerTest(14) + SmsChannelDriverTest(7) +

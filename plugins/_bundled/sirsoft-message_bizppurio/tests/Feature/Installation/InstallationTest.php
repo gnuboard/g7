@@ -15,6 +15,8 @@ use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
  *
  * plugin.php 가 선언하는 권한/알림 정의/설정 스키마 구조와
  * 관리자 메뉴 미생성(⚑ 결정 3) 을 검증한다.
+ *
+ * @scenario dispatch-history-webhook
  */
 class InstallationTest extends PluginTestCase
 {

@@ -20,6 +20,8 @@ use PHPUnit\Framework\TestCase;
  *
  * `getCpuInfo()` 는 protected 이고 `shell_exec` 을 주입할 수 없으므로,
  * 이 테스트는 그 메서드가 의존하는 정규화 계약을 검사한다.
+ *
+ * @scenario installer-process-output-utf8
  */
 class SettingsServiceCpuInfoTest extends TestCase
 {

@@ -99,6 +99,8 @@ effects:
   - save_chain_click_actions_carry_reentrancy_guard
   - manage_row_actions_match_row_footer_visibility
   - sms_body_presence_and_preview_resolved_by_server
+  # 목록 행 하단의 상태 배지·수명주기 조작 축 (E2E 가 이미 잰다)
+  - row_footer_shows_status_badge_and_lifecycle_actions
 
 scenarios:
   - id: bizppurio_tab_integration_e2e

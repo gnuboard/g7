@@ -50,7 +50,7 @@ class ReportUrlEndpointTest extends PluginTestCase
     }
 
     /**
-     * @scenario auth=admin,app_url=set
+     * @scenario field_kind=readonly
      *
      * @effects report_url_returns_absolute_url_built_from_app_url
      */
@@ -71,7 +71,7 @@ class ReportUrlEndpointTest extends PluginTestCase
     }
 
     /**
-     * @scenario auth=guest
+     * @scenario field_kind=readonly
      *
      * @effects report_url_requires_authentication_returns_401
      */

@@ -22,6 +22,9 @@ use PHPUnit\Framework\TestCase;
  */
 #[RunClassInSeparateProcess]
 #[PreserveGlobalState(false)]
+/**
+ * @scenario installer-process-output-utf8
+ */
 class InstallerJsonOutputTest extends TestCase
 {
     private static string $sharedBase = '';

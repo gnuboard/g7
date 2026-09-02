@@ -12,6 +12,7 @@
 // @scenario content_kind=script_injection, mode=html
 // @scenario content_kind=event_handler, mode=html
 // @scenario content_kind=javascript_url, mode=html
+// @scenario content_kind=embedded_frame, mode=html
 // @scenario content_kind=safe_markup, mode=html
 // @scenario content_kind=script_injection, mode=text
 

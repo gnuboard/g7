@@ -11,6 +11,8 @@ use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
  *
  * filter_available_channels(채널 메타), channel_readiness(설정 충족 판정),
  * 3영역 .notification.channels(후보 확장) 각 필터 메서드의 동작을 검증한다.
+ *
+ * @scenario sms-channel-dispatch
  */
 class RegisterNotificationChannelsListenerTest extends PluginTestCase
 {

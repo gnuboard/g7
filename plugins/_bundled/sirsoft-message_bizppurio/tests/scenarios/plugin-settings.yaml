@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: |
+# audit:allow test-scenario-coverage reason: issue:#597 |
 #   환경설정 화면의 입력·저장은 코어 /api/admin/plugins/{id}/settings 에 위임되는 자동바인딩
 #   폼이라, axes cross product 의 UI 구조·검증·i18n effects 는 Vitest(plugin_settings.test.tsx)
 #   정적 검증으로 가드된다. 검수 모드 off(운영) 조건부 검증 왕복(422/200)과 리포트 수신 주소
@@ -99,6 +99,15 @@ effects:
   - activate_does_not_create_admin_menus  # ⚑ 결정 3: 플러그인 메뉴 폐기, 진입은 설정 페이지 하나로 통일
   - balance_low_notification_targets_admin
   - settings_defaults_load_with_test_mode_on
+  # 아래는 테스트가 이미 재고 있으나 선언이 빠져 있던 이름이다 (원장 축소).
+  - api_key_and_sender_key_are_not_required_in_live_mode
+  - dev_mode_with_empty_credentials_returns_200
+  - live_mode_with_empty_credentials_returns_422_with_bizppurio_id_password_sender_number_errors
+  - live_mode_with_filled_credentials_returns_200
+  - password_decrypts_back_to_original_via_settings_service_get
+  - password_is_not_stored_as_plaintext_in_settings_file
+  - report_url_requires_authentication_returns_401
+  - report_url_returns_absolute_url_built_from_app_url
 
 test_files:
   - plugins/_bundled/sirsoft-message_bizppurio/resources/js/__tests__/layouts/plugin_settings.test.tsx

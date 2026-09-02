@@ -28,6 +28,7 @@ test_files:
   # 잠그는 케이스가 이 spec 안에 있으므로 여기에 함께 건다. 자산 폴백 자체의 계약은
   # self-hosted-runtime-assets.yaml 이 소유한다.
   - plugins/_bundled/sirsoft-ckeditor5/tests/Playwright/specs/editor-fallback.spec.ts
+  - plugins/_bundled/sirsoft-ckeditor5/resources/js/__tests__/layouts/pluginSettingsPreviewNotSaved.test.tsx
 
 axes:
   save_flow: [create, edit]
@@ -48,6 +49,9 @@ effects:
   - pending_snapshot_carries_forced_overlay
   - typed_path_wins_over_forced_previous_value
   - fallback_body_survives_resize_on_save
+  # 저장 대상이 아닌 미리보기 편집기 축 (테스트가 이미 잰다)
+  - preview_editor_does_not_dirty_form
+  - preview_editor_excluded_from_save_body
 
 sub_flows:
   - id: control_no_resize

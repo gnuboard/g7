@@ -15,6 +15,8 @@ use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
  * 코어 "알림 발송 이력" 화면에 얹은 결과 컬럼이 현재 페이지의 코어 알림 로그 id 배열을 넘겨
  * 비즈뿌리오 결과(상태·사유·잔액부족·대체발송)를 한 번에 조회한다. 조회는 messaging.view 권한을
  * 요구하고, 매칭되지 않는 로그 id 는 결과 맵에서 빠진다(빈 셀).
+ *
+ * @scenario dispatch-result-injection
  */
 class DispatchResultEndpointTest extends PluginTestCase
 {

@@ -33,6 +33,9 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  */
 #[RunClassInSeparateProcess]
 #[PreserveGlobalState(false)]
+/**
+ * @scenario installer-process-output-utf8
+ */
 class AddLogUtf8ScrubTest extends TestCase
 {
     use ScansPhpSourceFunctions;

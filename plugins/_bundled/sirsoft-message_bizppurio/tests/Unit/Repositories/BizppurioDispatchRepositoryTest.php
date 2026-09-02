@@ -8,6 +8,8 @@ use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
 
 /**
  * BizppurioDispatchRepository — 생성·refkey 조회·갱신·필터 페이지네이션 검증.
+ *
+ * @scenario dispatch-history-webhook
  */
 class BizppurioDispatchRepositoryTest extends PluginTestCase
 {

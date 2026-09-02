@@ -13,6 +13,8 @@ use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
  *
  * ResultCodeResolver 재사용으로 상태·`사유 (코드)`·잔액부족·대체발송을 파생하고, 매칭되지 않는
  * 로그 id 는 맵에서 빠지는지(빈 셀) 확인한다. 전화번호 등 민감정보는 결과에 포함하지 않는다.
+ *
+ * @scenario dispatch-result-injection
  */
 class DispatchResultServiceTest extends PluginTestCase
 {

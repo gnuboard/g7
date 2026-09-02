@@ -10,6 +10,8 @@ use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
 
 /**
  * BizppurioDispatch 모델 — 캐스트·마스킹 접근자·회원 관계 검증.
+ *
+ * @scenario dispatch-history-webhook
  */
 class BizppurioDispatchTest extends PluginTestCase
 {

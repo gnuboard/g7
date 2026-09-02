@@ -48,6 +48,8 @@ effects:
   - text_mode_content_never_caches
   - backfill_idempotent_second_run
   - recompute_on_content_change
+  # 아래는 테스트가 이미 재고 있으나 선언이 빠져 있던 이름이다 (원장 축소).
+  - secret_post_thumbnail_hash_not_exposed
 
 test_files:
   - tests/Unit/Support/HtmlImageExtractorTest.php

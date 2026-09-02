@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: |
+# audit:allow test-scenario-coverage reason: issue:#597 |
 #   A-2 는 코어 알림 발송 이력 화면에 비즈뿌리오 결과(도달·실패사유·잔액부족·대체발송)를 얹는
 #   작업이다(코어 앱·코어 테이블 무수정). axes cross product 의 런타임 효과는 계층별로 전수 가드된다:
 #     - 연결고리(코어 로그↔dispatch): NotificationLogLinkTest — 실제 훅 체인(after_log_sent/

@@ -59,8 +59,6 @@ class PageContentThumbnailBackfillTest extends ModuleTestCase
     }
 
     /**
-     * @scenario backfill=legacy_row
-     *
      * @effects backfill_fills_legacy_pages
      */
     #[Test]
@@ -88,8 +86,6 @@ class PageContentThumbnailBackfillTest extends ModuleTestCase
     }
 
     /**
-     * @scenario backfill=idempotent
-     *
      * @effects backfill_idempotent_second_run
      */
     #[Test]
