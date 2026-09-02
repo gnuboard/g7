@@ -11,8 +11,6 @@ use Tests\TestCase;
  * 이 결함군은 오류를 남기지 않는다 — 매핑이 뒤처지거나 배선이 빠지면 잠금이 조용히
  * 미발동하고, 그 상태는 "그 키가 `.env` 에 없다"와 화면상 구분되지 않는다. 그래서
  * 판정을 행위가 아니라 **구조**(맵 패리티 · 캡처 일치 · 배선 실존)로 고정한다.
- *
- * @effects explicit_env_skips_injection, empty_string_env_not_explicit
  */
 class EnvPriorityContractTest extends TestCase
 {

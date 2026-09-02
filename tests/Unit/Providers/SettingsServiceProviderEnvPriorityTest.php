@@ -14,8 +14,6 @@ use Tests\TestCase;
  *
  * 잠긴 키는 Config::set 이 아예 발생하지 않아야 한다 — 그것이 `.env` 값이 살아남는
  * 유일한 조건이다. 스위치가 꺼진 축은 종전 주입이 그대로 일어나는지도 함께 고정한다.
- *
- * @effects switch_off_behaves_identically, explicit_env_skips_injection, false_env_is_explicit, websocket_enabled_lock_skips_off_branch, debug_mode_lock_corrects_outbound_gate
  */
 class SettingsServiceProviderEnvPriorityTest extends TestCase
 {
@@ -75,6 +73,8 @@ class SettingsServiceProviderEnvPriorityTest extends TestCase
      * 잠긴 general 키는 주입되지 않고 `.env` 유래 config 값이 살아남습니다.
      *
      * @scenario switch=on, key_state=unlocked, surface=inject
+     *
+     * @effects explicit_env_skips_injection
      */
     public function test_locked_general_key_is_not_injected(): void
     {
@@ -95,6 +95,8 @@ class SettingsServiceProviderEnvPriorityTest extends TestCase
      * 스위치가 꺼져 있으면 general 주입이 종전과 동일합니다.
      *
      * @scenario switch=off, key_state=unlocked, surface=inject
+     *
+     * @effects switch_off_behaves_identically
      */
     public function test_switch_off_injects_general_as_before(): void
     {
@@ -125,6 +127,8 @@ class SettingsServiceProviderEnvPriorityTest extends TestCase
 
     /**
      * 잠긴 mail 키만 주입에서 빠집니다.
+     *
+     * @effects explicit_env_skips_injection
      */
     public function test_locked_mail_keys_are_not_injected(): void
     {
@@ -167,6 +171,8 @@ class SettingsServiceProviderEnvPriorityTest extends TestCase
 
     /**
      * 스위치가 꺼져 있으면 mailgun_endpoint 의 기본값 강제가 종전대로 유지됩니다.
+     *
+     * @effects switch_off_behaves_identically
      */
     public function test_switch_off_keeps_mailgun_endpoint_default_forcing(): void
     {
@@ -261,6 +267,8 @@ class SettingsServiceProviderEnvPriorityTest extends TestCase
      *
      * 보정이 없으면 잠금으로 mode 키가 사라져 게이트가 항상 닫히고, 운영자가 저장한
      * 프록시가 오류·로그 없이 영구 미적용된다.
+     *
+     * @effects debug_mode_lock_corrects_outbound_gate
      */
     public function test_locked_debug_mode_corrects_outbound_proxy_gate(): void
     {
@@ -328,6 +336,8 @@ class SettingsServiceProviderEnvPriorityTest extends TestCase
      *
      * 잠금으로 키가 제거되면 `empty()` 가 참이 되어 OFF 강제 분기로 오진입한다.
      * 그러면 `.env` 로 웹소켓을 켠 운영자에게 강제 OFF 가 걸린다.
+     *
+     * @effects websocket_enabled_lock_skips_off_branch
      */
     public function test_locked_websocket_toggle_does_not_force_off(): void
     {
@@ -348,6 +358,8 @@ class SettingsServiceProviderEnvPriorityTest extends TestCase
 
     /**
      * 스위치가 꺼져 있으면 웹소켓 OFF 강제 3종이 종전대로 동작합니다.
+     *
+     * @effects switch_off_behaves_identically
      */
     public function test_switch_off_keeps_websocket_off_forcing(): void
     {
@@ -421,6 +433,8 @@ class SettingsServiceProviderEnvPriorityTest extends TestCase
 
     /**
      * 잠긴 geoip 불리언 키는 주입되지 않습니다 (falsy 명시 축).
+     *
+     * @effects false_env_is_explicit
      */
     public function test_locked_geoip_boolean_key_is_not_injected(): void
     {

@@ -50,6 +50,14 @@ class OutboundUrlValidatorTest extends TestCase
      * 공개 인터넷 URL 은 통과한다.
      *
      * @param  string  $url  검증 대상 URL
+     *
+     * @scenario host_form=ascii, target=public, entry_point=validator_unit
+     * @scenario host_form=ip_literal_v4, target=public, entry_point=validator_unit
+     * @scenario host_form=ip_literal_v6, target=public, entry_point=validator_unit
+     *
+     * @effects public_ascii_domain_still_allowed, non_standard_port_public_url_still_allowed,
+     *   public_ipv4_literal_still_allowed, public_ipv6_literal_still_allowed,
+     *   public_ipv6_literal_with_port_still_allowed
      */
     #[Test]
     #[DataProvider('publicUrlProvider')]
@@ -66,6 +74,12 @@ class OutboundUrlValidatorTest extends TestCase
      *
      * @param  string  $url  검증 대상 URL
      * @param  string  $reason  차단 사유 (실패 메시지용)
+     *
+     * @scenario host_form=ascii, target=loopback_or_private, entry_point=validator_unit
+     * @scenario host_form=ip_literal_v4, target=loopback_or_private, entry_point=validator_unit
+     * @scenario host_form=ip_literal_v6, target=loopback_or_private, entry_point=validator_unit
+     *
+     * @effects userinfo_disguised_host_is_rejected
      */
     #[Test]
     #[DataProvider('internalUrlProvider')]
@@ -119,6 +133,16 @@ class OutboundUrlValidatorTest extends TestCase
      *
      * @param  string  $url  검증 대상 URL
      * @param  string  $reason  차단 사유 (실패 메시지용)
+     *
+     * @scenario host_form=ideographic_dot_u3002, target=loopback_or_private, entry_point=validator_unit
+     * @scenario host_form=fullwidth_dot_uff0e, target=loopback_or_private, entry_point=validator_unit
+     * @scenario host_form=halfwidth_dot_uff61, target=loopback_or_private, entry_point=validator_unit
+     * @scenario host_form=trailing_dot, target=loopback_or_private, entry_point=validator_unit
+     *
+     * @effects ideographic_full_stop_u3002_maps_to_ascii_dot, fullwidth_full_stop_uff0e_maps_to_ascii_dot,
+     *   halfwidth_ideographic_stop_uff61_maps_to_ascii_dot, normalized_loopback_is_denied,
+     *   normalized_private_range_is_denied, mixed_case_variant_is_denied_after_lowercasing,
+     *   trailing_dot_is_stripped_before_comparison
      */
     #[Test]
     #[DataProvider('idnInternalUrlProvider')]
@@ -134,6 +158,12 @@ class OutboundUrlValidatorTest extends TestCase
      * 정규화가 정당한 국제화 도메인(IDN)까지 막지는 않는다.
      *
      * @param  string  $url  검증 대상 URL
+     *
+     * @scenario host_form=unicode_u_label, target=public, entry_point=validator_unit
+     * @scenario host_form=punycode_a_label, target=public, entry_point=validator_unit
+     * @scenario host_form=trailing_dot, target=public, entry_point=validator_unit
+     *
+     * @effects real_internationalized_domain_still_allowed, punycode_a_label_still_allowed
      */
     #[Test]
     #[DataProvider('legitimateIdnUrlProvider')]
@@ -170,6 +200,12 @@ class OutboundUrlValidatorTest extends TestCase
      *
      * 이 메서드가 정규화의 SSoT 다 — 검증기 밖 소비자(PG 콜백 URL 접미사 대조 등)가
      * 같은 규칙을 재사용해야 판정이 갈리지 않는다.
+     *
+     * @scenario host_form=ideographic_dot_u3002, target=loopback_or_private, entry_point=validator_unit
+     * @scenario host_form=punycode_a_label, target=public, entry_point=validator_unit
+     *
+     * @effects normalize_host_is_the_single_normalization_point,
+     *   idn_conversion_failure_denies_instead_of_passing_through
      */
     #[Test]
     public function it_exposes_host_normalization_as_a_reusable_primitive(): void

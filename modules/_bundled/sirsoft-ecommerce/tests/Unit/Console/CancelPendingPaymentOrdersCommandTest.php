@@ -88,6 +88,13 @@ class CancelPendingPaymentOrdersCommandTest extends ModuleTestCase
             ->assertSuccessful();
     }
 
+    /**
+     * 입금기한이 지난 가상계좌 주문은 정리 대상이다.
+     *
+     * @scenario order_class=deposit_due_vbank, elapsed=past_threshold, payment_status=ready_or_failed, run_mode=apply
+     *
+     * @effects expired_vbank_order_is_cancelled
+     */
     public function test_cancels_expired_vbank_order(): void
     {
         $user = User::factory()->create();
@@ -111,6 +118,13 @@ class CancelPendingPaymentOrdersCommandTest extends ModuleTestCase
         $this->assertEquals(OrderStatusEnum::CANCELLED, $order->order_status);
     }
 
+    /**
+     * 입금기한이 지난 무통장입금 주문도 같은 기준으로 정리된다.
+     *
+     * @scenario order_class=deposit_due_dbank, elapsed=past_threshold, payment_status=ready_or_failed, run_mode=apply
+     *
+     * @effects expired_dbank_order_is_cancelled
+     */
     public function test_cancels_expired_dbank_manual_deposit_order(): void
     {
         $user = User::factory()->create();
@@ -140,6 +154,26 @@ class CancelPendingPaymentOrdersCommandTest extends ModuleTestCase
      * 자동취소 대상은 가상계좌(VBANK)와 무통장입금(DBANK)뿐이다.
      * 과거 쿼리가 DBANK 대신 BANK 를 매칭해 무통장입금 주문이
      * 자동취소에서 누락되던 회귀를 차단한다 (주문 442).
+     *
+     * @scenario order_class=deposit_due_vbank, elapsed=within_threshold, payment_status=ready_or_failed, run_mode=apply
+     *
+     * @effects non_expired_order_is_left_alone
+     *
+     * @scenario order_class=deposit_due_vbank, elapsed=past_threshold, payment_status=paid, run_mode=apply
+     *
+     * @effects paid_pending_order_is_left_alone
+     *
+     * @scenario order_class=deposit_due_vbank, elapsed=past_threshold, payment_status=ready_or_failed, run_mode=dry_run
+     *
+     * @effects dry_run_mutates_nothing
+     *
+     * @scenario order_class=deposit_due_vbank, elapsed=past_threshold, payment_status=ready_or_failed, run_mode=apply
+     *
+     * @effects limit_option_is_respected
+     *
+     * @scenario order_class=deposit_due_vbank, elapsed=past_threshold, payment_status=ready_or_failed, run_mode=apply
+     *
+     * @effects disabled_toggle_skips_the_whole_run
      */
     public function test_does_not_cancel_expired_bank_transfer_order(): void
     {
@@ -295,6 +329,10 @@ class CancelPendingPaymentOrdersCommandTest extends ModuleTestCase
      * 이 부류는 입금 기한이라는 개념이 없어 종전에는 어떤 정리 주체도 없었다. 브라우저 리턴
      * 콜백이 주문 상태를 바꾸지 않게 되면서 승인 거절분도 여기에 머무르므로, 경과 기준으로
      * 정리해 선차감 마일리지가 무기한 묶이지 않게 한다.
+     *
+     * @scenario order_class=pending_order_never_paid, elapsed=past_threshold, payment_status=ready_or_failed, expire_minutes_setting=positive, run_mode=apply
+     *
+     * @effects stale_pending_order_is_cancelled
      */
     public function test_cancels_stale_pending_order_that_never_completed_payment(): void
     {
@@ -322,6 +360,10 @@ class CancelPendingPaymentOrdersCommandTest extends ModuleTestCase
     /**
      * 아직 기한이 지나지 않은 주문대기 주문은 건드리지 않는다 — 구매자가 결제창을 열어 둔
      * 상태일 수 있으므로, 진행 중인 결제를 취소해 버리면 안 된다.
+     *
+     * @scenario order_class=pending_order_never_paid, elapsed=within_threshold, payment_status=ready_or_failed, expire_minutes_setting=positive, run_mode=apply
+     *
+     * @effects recent_pending_order_is_left_alone
      */
     public function test_does_not_cancel_recent_pending_order(): void
     {
@@ -348,6 +390,10 @@ class CancelPendingPaymentOrdersCommandTest extends ModuleTestCase
 
     /**
      * 승인 콜백과 경쟁해 이미 결제가 성립한 주문은 정리 대상이 아니다.
+     *
+     * @scenario order_class=pending_order_never_paid, elapsed=past_threshold, payment_status=paid, expire_minutes_setting=positive, run_mode=apply
+     *
+     * @effects paid_pending_order_is_left_alone
      */
     public function test_does_not_cancel_stale_pending_order_whose_payment_is_paid(): void
     {
@@ -375,6 +421,10 @@ class CancelPendingPaymentOrdersCommandTest extends ModuleTestCase
 
     /**
      * 만료 기준을 0 으로 두면 주문대기 주문 정리를 끌 수 있다 (운영자 선택권).
+     *
+     * @scenario order_class=pending_order_never_paid, elapsed=past_threshold, payment_status=ready_or_failed, expire_minutes_setting=zero, run_mode=apply
+     *
+     * @effects zero_setting_disables_pending_class_only
      */
     public function test_pending_order_cleanup_can_be_disabled_by_setting(): void
     {
@@ -406,6 +456,10 @@ class CancelPendingPaymentOrdersCommandTest extends ModuleTestCase
      *
      * 마일리지 차감 시점을 '주문할 때'로 설정한 상점에서 카드 승인이 거절되면, 종전에는
      * 콜백의 실패 처리가 복원했다. 그 경로가 위조 가능해 막힌 뒤로는 이 정리가 복원을 맡는다.
+     *
+     * @scenario order_class=pending_order_never_paid, elapsed=past_threshold, payment_status=ready_or_failed, expire_minutes_setting=positive, run_mode=apply
+     *
+     * @effects deducted_mileage_is_restored_on_cleanup
      */
     public function test_cancelling_stale_pending_order_restores_deducted_mileage(): void
     {

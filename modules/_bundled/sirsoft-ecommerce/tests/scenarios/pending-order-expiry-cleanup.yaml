@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: |
+# audit:allow test-scenario-coverage reason: issue:#632 |
 #   조합·효과 마킹 면제. 룰은 이 매니페스트의 축을 정상 전개한다 — 파서 한계가 아니라
 #   커버 방식이 이유다. 정리 대상 판정은 주문 부류 × 경과 × 결제상태의 곱인데 테스트는
 #   그 곱을 메서드 하나당 한 점씩 찌르는 형태라 조합 단위 @scenario 마킹으로 표현되지

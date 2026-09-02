@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: 호스트 형태 축은 데이터 프로바이더 행으로 전개되어 메서드 단위 @scenario 마킹으로 표현할 수 없다. 조합 커버는 test_files 의 프로바이더 행이 담당하고, 본 매니페스트는 "무엇을 반드시 담아야 하는가" 의 SSoT 로 둔다.
+# audit:allow test-scenario-coverage reason: issue:#632 호스트 형태 축은 데이터 프로바이더 행으로 전개되어 메서드 단위 @scenario 마킹으로 표현할 수 없다. 조합 커버는 test_files 의 프로바이더 행이 담당하고, 본 매니페스트는 "무엇을 반드시 담아야 하는가" 의 SSoT 로 둔다.
 
 feature: 아웃바운드 URL 호스트 정규화 (검증 시점 ↔ 연결 시점 동형)
 

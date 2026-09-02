@@ -104,9 +104,15 @@ effects:
   - net_cancel_passes_full_amount
   - cbt_post_approve_failure_logs_for_manual_recon
 
+  # 브라우저 종단 회귀 가드 (E2E — 실패 화면 복귀 시 close-report 보고)
+  - close_report_posted_on_failure_return
+  - no_report_without_pending_context
+  - no_report_on_success_return
+
 test_files:
   - plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Concerns/ValidatesTimestampFreshnessTest.php
   - plugins/_bundled/sirsoft-pay_kginicis/tests/Feature/Controllers/PaymentCallbackControllerTest.php
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Playwright/specs/public/payment-failure-close-report.spec.ts
 
 manual_verification:
   - description: "Replay PoC — vbankNotify 두 번 전송"

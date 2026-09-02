@@ -101,6 +101,10 @@ class PaymentCloseReportControllerTest extends PluginTestCase
 
     /**
      * 구매자 정보가 일치하면 결제창 닫힘이 주문 취소로 기록된다.
+     *
+     * @scenario endpoint=close_report, caller=ownership_verified_buyer, order_owner=self, order_state=payable_pending
+     *
+     * @effects close_report_marks_pending_order_cancelled
      */
     public function test_close_report_marks_pending_order_cancelled(): void
     {
@@ -130,6 +134,10 @@ class PaymentCloseReportControllerTest extends PluginTestCase
 
     /**
      * 결제 거절(실패 코드 동반)은 원인을 구분할 수 있게 기록된다.
+     *
+     * @scenario endpoint=close_report, caller=ownership_verified_buyer, order_owner=self, order_state=payable_pending
+     *
+     * @effects close_report_records_declined_payment_with_its_code
      */
     public function test_close_report_records_declined_payment_with_its_code(): void
     {
@@ -157,6 +165,10 @@ class PaymentCloseReportControllerTest extends PluginTestCase
 
     /**
      * 구매자 정보가 다르면 주문을 건드리지 않는다 — 이 대조가 유일한 자격 근거다.
+     *
+     * @scenario endpoint=close_report, caller=ownership_verified_buyer, order_owner=another_user, order_state=payable_pending
+     *
+     * @effects close_report_rejects_buyer_mismatch
      */
     public function test_close_report_rejects_buyer_mismatch(): void
     {
@@ -178,6 +190,10 @@ class PaymentCloseReportControllerTest extends PluginTestCase
 
     /**
      * 구매자 정보를 아예 보내지 않아도 통과시키지 않는다.
+     *
+     * @scenario endpoint=close_report, caller=ownership_verified_buyer, order_owner=self, order_state=payable_pending
+     *
+     * @effects close_report_rejects_missing_buyer_information
      */
     public function test_close_report_rejects_missing_buyer_information(): void
     {
@@ -196,6 +212,10 @@ class PaymentCloseReportControllerTest extends PluginTestCase
 
     /**
      * 금액이 주문 청구액과 다르면 거부한다.
+     *
+     * @scenario endpoint=close_report, caller=ownership_verified_buyer, order_owner=self, order_state=payable_pending
+     *
+     * @effects close_report_rejects_amount_mismatch
      */
     public function test_close_report_rejects_amount_mismatch(): void
     {
@@ -216,6 +236,10 @@ class PaymentCloseReportControllerTest extends PluginTestCase
 
     /**
      * 존재하지 않는 주문번호는 404 로 응답한다.
+     *
+     * @scenario endpoint=close_report, caller=ownership_verified_buyer, order_owner=self, order_state=not_found
+     *
+     * @effects close_report_returns_not_found_for_unknown_order
      */
     public function test_close_report_returns_not_found_for_unknown_order(): void
     {
@@ -230,6 +254,10 @@ class PaymentCloseReportControllerTest extends PluginTestCase
 
     /**
      * 이미 결제가 성공한 주문은 무시한다 — 성공 콜백과의 경쟁에서 주문을 덮지 않는다.
+     *
+     * @scenario endpoint=close_report, caller=ownership_verified_buyer, order_owner=self, order_state=already_paid
+     *
+     * @effects close_report_ignores_order_whose_payment_already_paid
      */
     public function test_close_report_ignores_order_whose_payment_already_paid(): void
     {
@@ -256,6 +284,10 @@ class PaymentCloseReportControllerTest extends PluginTestCase
 
     /**
      * 이미 결제 가능 상태가 아닌 주문은 무시한다.
+     *
+     * @scenario endpoint=close_report, caller=ownership_verified_buyer, order_owner=self, order_state=no_longer_payable
+     *
+     * @effects close_report_ignores_order_that_is_no_longer_payable
      */
     public function test_close_report_ignores_order_that_is_no_longer_payable(): void
     {

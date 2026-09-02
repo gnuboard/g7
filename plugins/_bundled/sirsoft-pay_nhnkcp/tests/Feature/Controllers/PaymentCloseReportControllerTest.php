@@ -13,6 +13,13 @@ use Plugins\Sirsoft\PayNhnkcp\Tests\PluginTestCase;
 
 class PaymentCloseReportControllerTest extends PluginTestCase
 {
+    /**
+     * 구매자 정보가 대조된 정당한 결제 실패만 주문 실패로 기록된다.
+     *
+     * @scenario context=paymentCallback_card, caller=ownership_verified_buyer, callback_state=approval_not_yet_attempted
+     *
+     * @effects legitimate_failure_is_recorded_by_ownership_verified_close_report
+     */
     public function test_close_report_marks_pending_order_failed_and_payment_cancelled(): void
     {
         $order = $this->makeOrder('ORD-KCP-CLOSE-001', 10000);
@@ -99,6 +106,13 @@ class PaymentCloseReportControllerTest extends PluginTestCase
             ->assertJsonPath('errors.message.0', 'Payment currency is not chargeable.');
     }
 
+    /**
+     * 구매자 정보가 다르면 주문을 건드리지 않는다 — 이 대조가 유일한 자격 근거다.
+     *
+     * @scenario context=paymentCallback_card, caller=ownership_verified_buyer, callback_state=approval_not_yet_attempted
+     *
+     * @effects close_report_rejects_buyer_mismatch
+     */
     public function test_close_report_rejects_buyer_mismatch(): void
     {
         $order = $this->makeOrder('ORD-KCP-CLOSE-003', 10000);

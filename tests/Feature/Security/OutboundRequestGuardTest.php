@@ -37,6 +37,10 @@ class OutboundRequestGuardTest extends TestCase
      * 언어팩 설치는 내부 네트워크 주소에서 내려받지 않는다.
      *
      * @param  string  $url  내부망을 가리키는 다운로드 URL
+     *
+     * @scenario host_form=ideographic_dot_u3002, target=loopback_or_private, entry_point=language_pack_url
+     *
+     * @effects language_pack_install_from_url_rejects_normalized_internal_host
      */
     #[DataProvider('internalUrlProvider')]
     public function test_language_pack_install_from_url_blocks_internal_addresses(string $url): void
@@ -70,6 +74,10 @@ class OutboundRequestGuardTest extends TestCase
      * URL 호출 스케줄은 내부 네트워크 주소를 호출하지 않는다.
      *
      * @param  string  $url  내부망을 가리키는 스케줄 URL
+     *
+     * @scenario host_form=ideographic_dot_u3002, target=loopback_or_private, entry_point=schedule_url
+     *
+     * @effects schedule_url_rejects_normalized_internal_host
      */
     #[DataProvider('internalUrlProvider')]
     public function test_url_schedule_blocks_internal_addresses(string $url): void
@@ -79,6 +87,10 @@ class OutboundRequestGuardTest extends TestCase
 
     /**
      * 사내 엔드포인트 주기 호출은 내부 주소 허용 설정으로 가능하다 (운영 옵트인).
+     *
+     * @scenario host_form=ascii, target=loopback_or_private, entry_point=schedule_url
+     *
+     * @effects allow_internal_outbound_setting_keeps_structural_check_only
      */
     public function test_url_schedule_allows_internal_address_when_setting_is_enabled(): void
     {
@@ -92,6 +104,10 @@ class OutboundRequestGuardTest extends TestCase
 
     /**
      * 내부 주소를 허용해도 userinfo(@) 로 목적지를 위장한 URL 은 계속 차단한다.
+     *
+     * @scenario host_form=ascii, target=loopback_or_private, entry_point=schedule_url
+     *
+     * @effects userinfo_disguised_host_is_rejected
      */
     public function test_url_schedule_blocks_userinfo_disguise_even_when_internal_is_allowed(): void
     {
@@ -107,6 +123,10 @@ class OutboundRequestGuardTest extends TestCase
      * 여기가 열려 있으면 저장 자체는 성공해 위조 URL 이 설정에 남는다.
      *
      * @param  string  $url  내부망을 가리키는 URL
+     *
+     * @scenario host_form=ideographic_dot_u3002, target=loopback_or_private, entry_point=form_request_rule
+     *
+     * @effects form_request_rule_rejects_normalized_internal_host
      */
     #[DataProvider('internalUrlProvider')]
     public function test_public_outbound_url_rule_blocks_internal_addresses(string $url): void
@@ -124,6 +144,11 @@ class OutboundRequestGuardTest extends TestCase
 
     /**
      * 정규화가 정상 외부 URL 까지 막지는 않는다 (프론트도어 회귀 방지).
+     *
+     * @scenario host_form=ascii, target=public, entry_point=form_request_rule
+     * @scenario host_form=unicode_u_label, target=public, entry_point=form_request_rule
+     *
+     * @effects public_ascii_domain_still_allowed, real_internationalized_domain_still_allowed
      */
     public function test_public_outbound_url_rule_still_allows_public_urls(): void
     {

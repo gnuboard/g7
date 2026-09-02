@@ -263,6 +263,15 @@ class NicePaymentsApiServiceTest extends PluginTestCase
      *
      * @param  string  $url  차단되어야 하는 NextAppURL
      * @param  string  $reason  차단 사유 (실패 메시지용)
+     *
+     * @scenario host_form=ideographic_dot_u3002, target=public, entry_point=nicepay_approval_url
+     * @scenario host_form=fullwidth_dot_uff0e, target=public, entry_point=nicepay_approval_url
+     * @scenario host_form=ascii, target=public, entry_point=nicepay_approval_url
+     *
+     * @effects approval_url_host_check_reuses_core_normalize_host_not_a_copy,
+     *   host_that_only_looks_like_nicepay_is_rejected, dot_equivalent_characters_cannot_disguise_the_host,
+     *   url_carrying_userinfo_is_rejected, rejected_url_never_receives_the_auth_token_or_merchant_id,
+     *   nicepay_approval_url_rejects_host_that_only_looks_like_nicepay
      */
     #[DataProvider('forgedCallbackUrlProvider')]
     public function test_authorize_payment_rejects_urls_that_only_look_like_nicepay(string $url, string $reason): void
@@ -285,6 +294,10 @@ class NicePaymentsApiServiceTest extends PluginTestCase
      * 정규화 후 나이스페이먼츠 공식 도메인인 URL 은 그대로 통과한다.
      *
      * @param  string  $url  허용되어야 하는 NextAppURL
+     *
+     * @scenario host_form=ascii, target=public, entry_point=nicepay_approval_url
+     *
+     * @effects official_nicepay_hosts_are_still_accepted, nicepay_approval_url_still_accepts_official_hosts
      */
     #[DataProvider('legitimateCallbackUrlProvider')]
     public function test_authorize_payment_still_accepts_official_nicepay_urls(string $url): void
@@ -311,6 +324,10 @@ class NicePaymentsApiServiceTest extends PluginTestCase
             '전각 슬래시로 감춘 외부 호스트' => ["https://evil.example\u{FF0F}.nicepay.co.kr/v1/authorize", '정규화 시 host 는 evil.example'],
             '전각 슬래시로 감춘 루프백' => ["https://127.0.0.1\u{FF0F}.nicepay.co.kr/v1/authorize", '정규화 시 host 는 127.0.0.1'],
             '전각 슬래시로 감춘 메타데이터' => ["https://169.254.169.254\u{FF0F}.nicepay.co.kr/latest/meta-data/", '정규화 시 host 는 169.254.169.254'],
+            // 점 등가 문자(UTS#46 에서 ASCII `.` 로 매핑)로 공식 도메인을 꼬리처럼 보이게
+            // 만들 수 없다 — 정규화하면 라벨이 이어져 `.nicepay.co.kr` 로 끝나지 않는다.
+            '표의문자 마침표로 감춘 외부 호스트' => ["https://pay.nicepay.co.kr\u{3002}evil.example/v1/authorize", '정규화 시 host 는 pay.nicepay.co.kr.evil.example'],
+            '전각 마침표로 감춘 외부 호스트' => ["https://pay.nicepay.co.kr\u{FF0E}evil.example/v1/authorize", '동일 — U+FF0E'],
             'userinfo 위장' => ['https://pay.nicepay.co.kr@evil.example/v1/authorize', 'userinfo(@) 뒤가 실제 host'],
             '접미사 확장 도메인' => ['https://pay.nicepay.co.kr.evil.example/v1/authorize', '화이트리스트가 접두사일 뿐'],
             'http scheme' => ['http://pay.nicepay.co.kr/v1/authorize', 'https 아님'],

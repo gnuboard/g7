@@ -18,8 +18,6 @@ use Tests\TestCase;
  *
  * 화면의 `disabled` 는 게이트가 아니다 — 저장 API 를 직접 호출하면 그대로 통과한다.
  * 그래서 잠금은 응답 메타(표시)와 저장 필터(차단) 두 축으로 나뉘고, 둘 다 여기서 고정한다.
- *
- * @effects meta_env_locked_uses_frontend_keys, locked_plain_shows_effective_value, locked_sensitive_hides_effective_value, locked_key_filtered_on_save_including_advanced, switch_off_behaves_identically
  */
 class SettingsEnvLockedMetaTest extends TestCase
 {
