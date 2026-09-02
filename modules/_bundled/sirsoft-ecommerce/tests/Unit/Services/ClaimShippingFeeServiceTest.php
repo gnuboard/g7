@@ -495,7 +495,7 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
     }
 
     /**
-     * @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=seller
+     * @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=seller, currency=order_snapshot, apportionment=single_item, remote_area=none
      *
      * @effects claim_shipping_fee_zero_for_non_customer_fault
      */
@@ -511,7 +511,7 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
     }
 
     /**
-     * @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=carrier
+     * @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=carrier, currency=order_snapshot, apportionment=single_item, remote_area=none
      *
      * @effects claim_shipping_fee_zero_for_non_customer_fault
      */
@@ -535,7 +535,7 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
     }
 
     /**
-     * @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=seller
+     * @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=seller, currency=order_snapshot, apportionment=single_item, remote_area=none
      *
      * @effects claim_shipping_fee_zero_for_non_customer_fault
      */
@@ -549,7 +549,7 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
     }
 
     /**
-     * @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=carrier
+     * @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=carrier, currency=order_snapshot, apportionment=single_item, remote_area=none
      *
      * @effects claim_shipping_fee_zero_for_non_customer_fault
      */
@@ -572,7 +572,7 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
     }
 
     /**
-     * @scenario fee_mode=original_policy, charge_policy=fixed, claim_type=return, fault=seller
+     * @scenario fee_mode=original_policy, charge_policy=fixed, claim_type=return, fault=seller, currency=order_snapshot, apportionment=single_item, remote_area=none
      *
      * @effects claim_shipping_fee_records_declared_mode_even_when_not_charged
      */
@@ -587,7 +587,7 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
     }
 
     /**
-     * @scenario fee_mode=original_policy, charge_policy=fixed, claim_type=exchange, fault=carrier
+     * @scenario fee_mode=original_policy, charge_policy=fixed, claim_type=exchange, fault=carrier, currency=order_snapshot, apportionment=single_item, remote_area=none
      *
      * @effects claim_shipping_fee_zero_for_non_customer_fault
      */
@@ -601,7 +601,7 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
     }
 
     /**
-     * @scenario fee_mode=original_policy, charge_policy=fixed, claim_type=return, fault=carrier
+     * @scenario fee_mode=original_policy, charge_policy=fixed, claim_type=return, fault=carrier, currency=order_snapshot, apportionment=single_item, remote_area=none
      *
      * @effects claim_shipping_fee_records_declared_mode_even_when_not_charged
      */
@@ -616,7 +616,7 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
     }
 
     /**
-     * @scenario fee_mode=original_policy, charge_policy=fixed, claim_type=exchange, fault=seller
+     * @scenario fee_mode=original_policy, charge_policy=fixed, claim_type=exchange, fault=seller, currency=order_snapshot, apportionment=single_item, remote_area=none
      *
      * @effects claim_shipping_fee_records_declared_mode_even_when_not_charged
      */
@@ -733,7 +733,7 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
     // ================================================================
 
     /**
-     * @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=customer
+     * @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=customer, currency=order_snapshot, apportionment=single_item, remote_area=none
      *
      * @effects claim_shipping_fee_fixed_mode_uses_the_declared_amount
      */
@@ -747,7 +747,7 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
     }
 
     /**
-     * @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=customer
+     * @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=customer, currency=order_snapshot, apportionment=single_item, remote_area=none
      *
      * @effects claim_shipping_fee_fixed_mode_does_not_double_for_an_exchange
      */
@@ -874,7 +874,7 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
     // ================================================================
 
     /**
-     * @scenario fee_mode=original_policy, charge_policy=free, claim_type=return, fault=customer
+     * @scenario fee_mode=original_policy, charge_policy=free, claim_type=return, fault=customer, currency=order_snapshot, apportionment=single_item, remote_area=none
      *
      * @effects claim_shipping_fee_original_policy_return_is_one_way
      */
@@ -888,7 +888,7 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
     }
 
     /**
-     * @scenario fee_mode=original_policy, charge_policy=free, claim_type=exchange, fault=customer
+     * @scenario fee_mode=original_policy, charge_policy=free, claim_type=exchange, fault=customer, currency=order_snapshot, apportionment=single_item, remote_area=none
      *
      * @effects claim_shipping_fee_original_policy_exchange_is_round_trip
      */
@@ -902,7 +902,7 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
     }
 
     /**
-     * @scenario fee_mode=original_policy, charge_policy=fixed, claim_type=return, fault=customer
+     * @scenario fee_mode=original_policy, charge_policy=fixed, claim_type=return, fault=customer, currency=order_snapshot, apportionment=single_item, remote_area=none
      *
      * @effects claim_shipping_fee_original_policy_return_is_one_way
      */
@@ -916,7 +916,7 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
     }
 
     /**
-     * @scenario fee_mode=original_policy, charge_policy=fixed, claim_type=exchange, fault=customer
+     * @scenario fee_mode=original_policy, charge_policy=fixed, claim_type=exchange, fault=customer, currency=order_snapshot, apportionment=single_item, remote_area=none
      *
      * @effects claim_shipping_fee_original_policy_exchange_is_round_trip
      */
@@ -930,7 +930,7 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
     }
 
     /**
-     * @scenario fee_mode=original_policy, charge_policy=conditional_free_unmet, claim_type=return, fault=customer
+     * @scenario fee_mode=original_policy, charge_policy=conditional_free_unmet, claim_type=return, fault=customer, currency=order_snapshot, apportionment=single_item, remote_area=none
      *
      * @effects claim_shipping_fee_conditional_free_threshold_decides_the_charge
      */
@@ -947,7 +947,7 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
     }
 
     /**
-     * @scenario fee_mode=original_policy, charge_policy=conditional_free_unmet, claim_type=exchange, fault=customer
+     * @scenario fee_mode=original_policy, charge_policy=conditional_free_unmet, claim_type=exchange, fault=customer, currency=order_snapshot, apportionment=single_item, remote_area=none
      *
      * @effects claim_shipping_fee_conditional_free_threshold_decides_the_charge
      */
@@ -964,7 +964,7 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
     }
 
     /**
-     * @scenario fee_mode=original_policy, charge_policy=conditional_free_met, claim_type=return, fault=customer
+     * @scenario fee_mode=original_policy, charge_policy=conditional_free_met, claim_type=return, fault=customer, currency=order_snapshot, apportionment=single_item, remote_area=none
      *
      * @effects claim_shipping_fee_conditional_free_threshold_decides_the_charge
      */
@@ -981,7 +981,7 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
     }
 
     /**
-     * @scenario fee_mode=original_policy, charge_policy=conditional_free_met, claim_type=exchange, fault=customer
+     * @scenario fee_mode=original_policy, charge_policy=conditional_free_met, claim_type=exchange, fault=customer, currency=order_snapshot, apportionment=single_item, remote_area=none
      *
      * @effects claim_shipping_fee_conditional_free_threshold_decides_the_charge
      */
@@ -998,7 +998,7 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
     }
 
     /**
-     * @scenario fee_mode=original_policy, charge_policy=per_quantity, claim_type=return, fault=customer
+     * @scenario fee_mode=original_policy, charge_policy=per_quantity, claim_type=return, fault=customer, currency=order_snapshot, apportionment=single_item, remote_area=none
      *
      * @effects claim_shipping_fee_per_quantity_scales_with_the_claim_quantity
      */
@@ -1015,7 +1015,7 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
     }
 
     /**
-     * @scenario fee_mode=original_policy, charge_policy=per_quantity, claim_type=exchange, fault=customer
+     * @scenario fee_mode=original_policy, charge_policy=per_quantity, claim_type=exchange, fault=customer, currency=order_snapshot, apportionment=single_item, remote_area=none
      *
      * @effects claim_shipping_fee_per_quantity_scales_with_the_claim_quantity
      */
@@ -1032,7 +1032,7 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
     }
 
     /**
-     * @scenario fee_mode=original_policy, charge_policy=range_amount, claim_type=return, fault=customer
+     * @scenario fee_mode=original_policy, charge_policy=range_amount, claim_type=return, fault=customer, currency=order_snapshot, apportionment=single_item, remote_area=none
      *
      * @effects claim_shipping_fee_range_tier_matches_the_claim_subtotal
      */
@@ -1051,7 +1051,7 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
     }
 
     /**
-     * @scenario fee_mode=original_policy, charge_policy=range_amount, claim_type=exchange, fault=customer
+     * @scenario fee_mode=original_policy, charge_policy=range_amount, claim_type=exchange, fault=customer, currency=order_snapshot, apportionment=single_item, remote_area=none
      *
      * @effects claim_shipping_fee_range_tier_matches_the_claim_subtotal
      */
@@ -2922,7 +2922,7 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
     // ================================================================
 
     /**
-     * @scenario fee_mode=original_policy, charge_policy=api, claim_type=return, fault=customer
+     * @scenario fee_mode=original_policy, charge_policy=api, claim_type=return, fault=customer, currency=order_snapshot, apportionment=single_item, remote_area=none
      *
      * @effects claim_shipping_fee_api_policy_falls_back_to_the_base_fee
      */
@@ -3008,7 +3008,7 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
     }
 
     /**
-     * @scenario fee_mode=original_policy, charge_policy=api, claim_type=exchange, fault=customer
+     * @scenario fee_mode=original_policy, charge_policy=api, claim_type=exchange, fault=customer, currency=order_snapshot, apportionment=single_item, remote_area=none
      *
      * @effects claim_shipping_fee_api_policy_falls_back_to_the_base_fee
      */
@@ -3317,5 +3317,403 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
         ]);
 
         $this->assertFalse($result->redeliveryChanged);
+    }
+
+    // ================================================================
+    // 19. 결과 3축 (통화 · 수량 안분 · 도서산간) — S15a2 승격분
+    //
+    // 이 셋은 S15a 까지 "결과에 얹히는 항" 이었다. 2026-09-02 PO 확정으로 곱의 축이 되면서
+    // 배송비 매니페스트가 24셀에서 288셀이 됐고, 그중 96셀 — 고정액 모드 전 조합(72) + 원 정책
+    // × 무료 × 고객 귀책(24) — 이 이 세션의 몫이다. 나머지 192셀은 매니페스트의 이월 exclusion
+    // 이 담당 세션(S15a3 · S15a4)을 적어 두고 있다.
+    //
+    // 세 축은 서로 다른 곳에서 값을 얻는다: 통화는 주문 스냅샷, 안분은 그룹에 담긴 대상 수,
+    // 도서산간은 배송지 우편번호다. 그래서 픽스처도 그 셋만 갈아 끼운다 —
+    // resultAxisScenario() 가 도서산간 설정은 언제나 켜 두고 우편번호만 바꾸는 이유가 이것이다.
+    // ================================================================
+
+    /**
+     * 결과 3축(통화 · 수량 안분 · 도서산간)을 지정한 픽스처를 만듭니다.
+     *
+     * 도서산간 설정(`extra_fee_enabled`)은 세 값 모두에서 켜 둔다 — 축을 가르는 것은 배송지
+     * 우편번호이지 설정이 아니다. 설정을 껐다 켜면 "구간 밖이라 0원" 과 "기능이 꺼져 0원" 이
+     * 한 칸에서 뭉개져, 구간 판정이 죽어도 그 행이 계속 초록으로 남는다.
+     *
+     * @param  array  $country  국가별 설정 override (클레임 약관 · 부과정책)
+     * @param  string  $currency  `order_snapshot` | `no_snapshot`
+     * @param  string  $apportionment  `single_item` | `multi_item`
+     * @param  string  $remoteArea  `none` | `flat` | `multiplied`
+     * @return array{0: Order, 1: array} 주문과 클레임 대상 아이템
+     */
+    protected function resultAxisScenario(
+        array $country,
+        string $currency,
+        string $apportionment,
+        string $remoteArea,
+    ): array {
+        $order = $this->makeOrder([
+            'currency_snapshot' => $currency === 'order_snapshot' ? $this->currencySnapshot() : null,
+        ]);
+
+        $policy = $this->makePolicy(array_merge(
+            $this->remoteArea(3000, '63000-63999', $remoteArea === 'multiplied'),
+            $country,
+        ));
+
+        $this->withDeliveryAddress($order, $remoteArea === 'none' ? '11111' : '63001');
+
+        if ($apportionment === 'single_item') {
+            $option = $this->makeOption($order, $policy, ['quantity' => 2, 'subtotal_price' => 40000]);
+
+            return [$order, $this->items($option, 2)];
+        }
+
+        // 1 : 3 금액비라 그룹액이 1/4 · 3/4 로 갈린다. 두 옵션이 같은 정책·같은 국가라
+        // 한 그룹으로 묶이므로, 그룹액 자체는 대상 수에 비례해 늘지 않는다.
+        $cheap = $this->makeOption($order, $policy, ['quantity' => 1, 'subtotal_price' => 10000]);
+        $pricey = $this->makeOption($order, $policy, ['quantity' => 1, 'subtotal_price' => 30000]);
+
+        return [$order, [
+            ['order_option_id' => $cheap->id, 'cancel_quantity' => 1],
+            ['order_option_id' => $pricey->id, 'cancel_quantity' => 1],
+        ]];
+    }
+
+    /**
+     * 산정액이 통화·안분 두 축에 어떻게 실리는지 단언합니다.
+     *
+     * 환산 분모 1,000 · USD 환율 0.75 는 `currencySnapshot()` 이 정한 값이다.
+     *
+     * @param  ClaimShippingFee  $result  산정 결과
+     * @param  int  $expectedFee  기대 청구액 (주문 기본 통화)
+     * @param  string  $currency  `order_snapshot` | `no_snapshot`
+     * @param  string  $apportionment  `single_item` | `multi_item`
+     */
+    protected function assertResultAxes(
+        ClaimShippingFee $result,
+        int $expectedFee,
+        string $currency,
+        string $apportionment,
+    ): void {
+        $this->assertSame($expectedFee, $result->fee);
+
+        if ($currency === 'order_snapshot') {
+            $this->assertSame(['KRW', 'USD'], array_keys($result->mcFee));
+            $this->assertSame($expectedFee, $result->mcFee['KRW']);
+            $this->assertSame(round($expectedFee / 1000 * 0.75, 2), $result->mcFee['USD']);
+        } else {
+            $this->assertSame([], $result->mcFee);
+        }
+
+        $shares = array_column($result->groups[0]['items'], 'fee');
+
+        $this->assertCount($apportionment === 'single_item' ? 1 : 2, $shares);
+        $this->assertSame($expectedFee, array_sum($shares));
+
+        if ($apportionment === 'multi_item') {
+            // 금액 비례 1 : 3 — 잔여는 마지막 항목에 실린다.
+            $this->assertSame((int) round($expectedFee * 0.25), $shares[0]);
+        }
+    }
+
+    /**
+     * 결과 3축 × 클레임 유형 2 × 귀책 목록의 곱을 데이터 행으로 만듭니다.
+     *
+     * @param  array<int, string>  $faults  귀책 목록
+     * @return array<string, array{0: string, 1: string, 2: string, 3: string, 4: string}> 데이터 행
+     */
+    protected static function resultAxisRows(array $faults): array
+    {
+        $rows = [];
+
+        foreach (['return', 'exchange'] as $claimType) {
+            foreach ($faults as $fault) {
+                foreach (['order_snapshot', 'no_snapshot'] as $currency) {
+                    foreach (['single_item', 'multi_item'] as $apportionment) {
+                        foreach (['none', 'flat', 'multiplied'] as $remoteArea) {
+                            $key = implode('/', [$claimType, $fault, $currency, $apportionment, $remoteArea]);
+                            $rows[$key] = [$claimType, $fault, $currency, $apportionment, $remoteArea];
+                        }
+                    }
+                }
+            }
+        }
+
+        return $rows;
+    }
+
+    /**
+     * 고정액 모드 × 고객 귀책의 결과 3축 24행.
+     *
+     * @return array<string, array> 데이터 행
+     */
+    public static function fixedModeCustomerAxisProvider(): array
+    {
+        return self::resultAxisRows(['customer']);
+    }
+
+    /**
+     * 고정액 모드 × 비-고객 귀책 2종의 결과 3축 48행.
+     *
+     * @return array<string, array> 데이터 행
+     */
+    public static function fixedModeNonCustomerAxisProvider(): array
+    {
+        return self::resultAxisRows(['seller', 'carrier']);
+    }
+
+    /**
+     * 원 정책 모드 × 무료 부과정책 × 고객 귀책의 결과 3축 24행.
+     *
+     * @return array<string, array> 데이터 행
+     */
+    public static function freePolicyCustomerAxisProvider(): array
+    {
+        return self::resultAxisRows(['customer']);
+    }
+
+    // 이 DataProvider 가 함께 검증하는 24조합 (docblock 은 @scenario 를 1건만 인식하므로 라인 주석으로 병기).
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=customer, currency=order_snapshot, apportionment=single_item, remote_area=none
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=customer, currency=order_snapshot, apportionment=single_item, remote_area=flat
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=customer, currency=order_snapshot, apportionment=single_item, remote_area=multiplied
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=customer, currency=order_snapshot, apportionment=multi_item, remote_area=none
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=customer, currency=order_snapshot, apportionment=multi_item, remote_area=flat
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=customer, currency=order_snapshot, apportionment=multi_item, remote_area=multiplied
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=customer, currency=no_snapshot, apportionment=single_item, remote_area=none
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=customer, currency=no_snapshot, apportionment=single_item, remote_area=flat
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=customer, currency=no_snapshot, apportionment=single_item, remote_area=multiplied
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=customer, currency=no_snapshot, apportionment=multi_item, remote_area=none
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=customer, currency=no_snapshot, apportionment=multi_item, remote_area=flat
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=customer, currency=no_snapshot, apportionment=multi_item, remote_area=multiplied
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=customer, currency=order_snapshot, apportionment=single_item, remote_area=none
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=customer, currency=order_snapshot, apportionment=single_item, remote_area=flat
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=customer, currency=order_snapshot, apportionment=single_item, remote_area=multiplied
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=customer, currency=order_snapshot, apportionment=multi_item, remote_area=none
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=customer, currency=order_snapshot, apportionment=multi_item, remote_area=flat
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=customer, currency=order_snapshot, apportionment=multi_item, remote_area=multiplied
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=customer, currency=no_snapshot, apportionment=single_item, remote_area=none
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=customer, currency=no_snapshot, apportionment=single_item, remote_area=flat
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=customer, currency=no_snapshot, apportionment=single_item, remote_area=multiplied
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=customer, currency=no_snapshot, apportionment=multi_item, remote_area=none
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=customer, currency=no_snapshot, apportionment=multi_item, remote_area=flat
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=customer, currency=no_snapshot, apportionment=multi_item, remote_area=multiplied
+
+    /**
+     * 고정액 모드는 결과 3축이 무엇이든 선언액을 그대로 청구한다.
+     *
+     * 고정액은 배송 구간이 아니라 "이 클레임의 배송비" 를 통째로 선언한 값이다. 그래서 도서산간을
+     * 얹지 않고(구간 판정 자체를 건너뛴다), 그룹에 담긴 대상이 둘이어도 두 번 물리지 않는다 —
+     * 대상 수에 비례하는 것은 안분된 몫이지 그룹액이 아니다. 통화는 그 위에서 표기만 더한다.
+     *
+     * @effects claim_shipping_fee_fixed_mode_uses_the_declared_amount,
+     *          claim_shipping_fee_fixed_mode_does_not_double_for_an_exchange,
+     *          claim_shipping_fee_fixed_mode_charges_once_per_policy_group,
+     *          claim_shipping_fee_remote_area_is_skipped_in_fixed_mode,
+     *          claim_shipping_fee_remote_area_multiply_is_inert_for_a_non_per_unit_policy,
+     *          claim_shipping_fee_multi_currency_uses_the_order_snapshot_rate,
+     *          claim_shipping_fee_multi_currency_is_empty_without_a_snapshot,
+     *          claim_shipping_fee_group_fee_is_apportioned_across_items,
+     *          claim_shipping_fee_apportioned_shares_sum_to_the_group_fee
+     */
+    #[DataProvider('fixedModeCustomerAxisProvider')]
+    public function test_fixed_mode_charges_the_declared_amount_across_the_result_axes(
+        string $claimType,
+        string $fault,
+        string $currency,
+        string $apportionment,
+        string $remoteArea,
+    ): void {
+        [$order, $items] = $this->resultAxisScenario(
+            ['return_fixed_fee' => 4000, 'exchange_fixed_fee' => 8000],
+            $currency,
+            $apportionment,
+            $remoteArea,
+        );
+
+        $result = $this->calc(
+            $order,
+            ClaimTypeEnum::from($claimType),
+            $items,
+            ClaimReasonFaultTypeEnum::from($fault),
+        );
+
+        $this->assertTrue($result->charged);
+        $this->assertSame(ClaimShippingFeeModeEnum::FIXED, $result->mode);
+        $this->assertSame(0, $result->extraFee);
+        $this->assertResultAxes(
+            $result,
+            $claimType === 'exchange' ? 8000 : 4000,
+            $currency,
+            $apportionment,
+        );
+    }
+
+    // 이 DataProvider 가 함께 검증하는 48조합 (docblock 은 @scenario 를 1건만 인식하므로 라인 주석으로 병기).
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=seller, currency=order_snapshot, apportionment=single_item, remote_area=none
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=seller, currency=order_snapshot, apportionment=single_item, remote_area=flat
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=seller, currency=order_snapshot, apportionment=single_item, remote_area=multiplied
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=seller, currency=order_snapshot, apportionment=multi_item, remote_area=none
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=seller, currency=order_snapshot, apportionment=multi_item, remote_area=flat
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=seller, currency=order_snapshot, apportionment=multi_item, remote_area=multiplied
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=seller, currency=no_snapshot, apportionment=single_item, remote_area=none
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=seller, currency=no_snapshot, apportionment=single_item, remote_area=flat
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=seller, currency=no_snapshot, apportionment=single_item, remote_area=multiplied
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=seller, currency=no_snapshot, apportionment=multi_item, remote_area=none
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=seller, currency=no_snapshot, apportionment=multi_item, remote_area=flat
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=seller, currency=no_snapshot, apportionment=multi_item, remote_area=multiplied
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=carrier, currency=order_snapshot, apportionment=single_item, remote_area=none
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=carrier, currency=order_snapshot, apportionment=single_item, remote_area=flat
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=carrier, currency=order_snapshot, apportionment=single_item, remote_area=multiplied
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=carrier, currency=order_snapshot, apportionment=multi_item, remote_area=none
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=carrier, currency=order_snapshot, apportionment=multi_item, remote_area=flat
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=carrier, currency=order_snapshot, apportionment=multi_item, remote_area=multiplied
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=carrier, currency=no_snapshot, apportionment=single_item, remote_area=none
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=carrier, currency=no_snapshot, apportionment=single_item, remote_area=flat
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=carrier, currency=no_snapshot, apportionment=single_item, remote_area=multiplied
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=carrier, currency=no_snapshot, apportionment=multi_item, remote_area=none
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=carrier, currency=no_snapshot, apportionment=multi_item, remote_area=flat
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=carrier, currency=no_snapshot, apportionment=multi_item, remote_area=multiplied
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=seller, currency=order_snapshot, apportionment=single_item, remote_area=none
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=seller, currency=order_snapshot, apportionment=single_item, remote_area=flat
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=seller, currency=order_snapshot, apportionment=single_item, remote_area=multiplied
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=seller, currency=order_snapshot, apportionment=multi_item, remote_area=none
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=seller, currency=order_snapshot, apportionment=multi_item, remote_area=flat
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=seller, currency=order_snapshot, apportionment=multi_item, remote_area=multiplied
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=seller, currency=no_snapshot, apportionment=single_item, remote_area=none
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=seller, currency=no_snapshot, apportionment=single_item, remote_area=flat
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=seller, currency=no_snapshot, apportionment=single_item, remote_area=multiplied
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=seller, currency=no_snapshot, apportionment=multi_item, remote_area=none
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=seller, currency=no_snapshot, apportionment=multi_item, remote_area=flat
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=seller, currency=no_snapshot, apportionment=multi_item, remote_area=multiplied
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=carrier, currency=order_snapshot, apportionment=single_item, remote_area=none
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=carrier, currency=order_snapshot, apportionment=single_item, remote_area=flat
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=carrier, currency=order_snapshot, apportionment=single_item, remote_area=multiplied
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=carrier, currency=order_snapshot, apportionment=multi_item, remote_area=none
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=carrier, currency=order_snapshot, apportionment=multi_item, remote_area=flat
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=carrier, currency=order_snapshot, apportionment=multi_item, remote_area=multiplied
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=carrier, currency=no_snapshot, apportionment=single_item, remote_area=none
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=carrier, currency=no_snapshot, apportionment=single_item, remote_area=flat
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=carrier, currency=no_snapshot, apportionment=single_item, remote_area=multiplied
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=carrier, currency=no_snapshot, apportionment=multi_item, remote_area=none
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=carrier, currency=no_snapshot, apportionment=multi_item, remote_area=flat
+    // @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=carrier, currency=no_snapshot, apportionment=multi_item, remote_area=multiplied
+
+    /**
+     * 고정액 모드의 판매자·배송사 귀책은 결과 3축이 무엇이든 0원이다.
+     *
+     * 귀책 게이트는 산정보다 먼저 발화하므로 도서산간이 붙을 자리도, 안분할 그룹액도 생기지
+     * 않는다. 그런데 이 조합은 정책 자신이 0원인 칸과 겉보기 결과가 같아서, 0원만 보면 게이트가
+     * 죽어도 초록으로 남는다. 그래서 같은 픽스처를 고객 귀책으로 한 번 더 태워 그 정책이 실제로
+     * 금액을 만들 수 있었음을 대조군으로 함께 본다.
+     *
+     * @effects claim_shipping_fee_zero_for_non_customer_fault,
+     *          claim_shipping_fee_records_declared_mode_even_when_not_charged,
+     *          claim_shipping_fee_remote_area_is_skipped_in_fixed_mode
+     */
+    #[DataProvider('fixedModeNonCustomerAxisProvider')]
+    public function test_fixed_mode_is_zero_for_a_non_customer_fault_across_the_result_axes(
+        string $claimType,
+        string $fault,
+        string $currency,
+        string $apportionment,
+        string $remoteArea,
+    ): void {
+        [$order, $items] = $this->resultAxisScenario(
+            ['return_fixed_fee' => 4000, 'exchange_fixed_fee' => 8000],
+            $currency,
+            $apportionment,
+            $remoteArea,
+        );
+
+        $type = ClaimTypeEnum::from($claimType);
+
+        $result = $this->calc($order, $type, $items, ClaimReasonFaultTypeEnum::from($fault));
+
+        $this->assertFalse($result->charged);
+        $this->assertSame(ClaimShippingFee::REASON_FAULT_NOT_CUSTOMER, $result->reason);
+        // 청구가 없어도 모드는 선언 그대로 기록된다 (헤더 컬럼이 NOT NULL).
+        $this->assertSame(ClaimShippingFeeModeEnum::FIXED, $result->mode);
+        $this->assertSame(0, $result->extraFee);
+        $this->assertResultAxes($result, 0, $currency, $apportionment);
+
+        // 대조군 — 같은 픽스처가 고객 귀책이면 선언액이 실제로 나온다.
+        $control = $this->calc($order, $type, $items, ClaimReasonFaultTypeEnum::CUSTOMER);
+
+        $this->assertSame($claimType === 'exchange' ? 8000 : 4000, $control->fee);
+    }
+
+    // 이 DataProvider 가 함께 검증하는 24조합 (docblock 은 @scenario 를 1건만 인식하므로 라인 주석으로 병기).
+    // @scenario fee_mode=original_policy, charge_policy=free, claim_type=return, fault=customer, currency=order_snapshot, apportionment=single_item, remote_area=none
+    // @scenario fee_mode=original_policy, charge_policy=free, claim_type=return, fault=customer, currency=order_snapshot, apportionment=single_item, remote_area=flat
+    // @scenario fee_mode=original_policy, charge_policy=free, claim_type=return, fault=customer, currency=order_snapshot, apportionment=single_item, remote_area=multiplied
+    // @scenario fee_mode=original_policy, charge_policy=free, claim_type=return, fault=customer, currency=order_snapshot, apportionment=multi_item, remote_area=none
+    // @scenario fee_mode=original_policy, charge_policy=free, claim_type=return, fault=customer, currency=order_snapshot, apportionment=multi_item, remote_area=flat
+    // @scenario fee_mode=original_policy, charge_policy=free, claim_type=return, fault=customer, currency=order_snapshot, apportionment=multi_item, remote_area=multiplied
+    // @scenario fee_mode=original_policy, charge_policy=free, claim_type=return, fault=customer, currency=no_snapshot, apportionment=single_item, remote_area=none
+    // @scenario fee_mode=original_policy, charge_policy=free, claim_type=return, fault=customer, currency=no_snapshot, apportionment=single_item, remote_area=flat
+    // @scenario fee_mode=original_policy, charge_policy=free, claim_type=return, fault=customer, currency=no_snapshot, apportionment=single_item, remote_area=multiplied
+    // @scenario fee_mode=original_policy, charge_policy=free, claim_type=return, fault=customer, currency=no_snapshot, apportionment=multi_item, remote_area=none
+    // @scenario fee_mode=original_policy, charge_policy=free, claim_type=return, fault=customer, currency=no_snapshot, apportionment=multi_item, remote_area=flat
+    // @scenario fee_mode=original_policy, charge_policy=free, claim_type=return, fault=customer, currency=no_snapshot, apportionment=multi_item, remote_area=multiplied
+    // @scenario fee_mode=original_policy, charge_policy=free, claim_type=exchange, fault=customer, currency=order_snapshot, apportionment=single_item, remote_area=none
+    // @scenario fee_mode=original_policy, charge_policy=free, claim_type=exchange, fault=customer, currency=order_snapshot, apportionment=single_item, remote_area=flat
+    // @scenario fee_mode=original_policy, charge_policy=free, claim_type=exchange, fault=customer, currency=order_snapshot, apportionment=single_item, remote_area=multiplied
+    // @scenario fee_mode=original_policy, charge_policy=free, claim_type=exchange, fault=customer, currency=order_snapshot, apportionment=multi_item, remote_area=none
+    // @scenario fee_mode=original_policy, charge_policy=free, claim_type=exchange, fault=customer, currency=order_snapshot, apportionment=multi_item, remote_area=flat
+    // @scenario fee_mode=original_policy, charge_policy=free, claim_type=exchange, fault=customer, currency=order_snapshot, apportionment=multi_item, remote_area=multiplied
+    // @scenario fee_mode=original_policy, charge_policy=free, claim_type=exchange, fault=customer, currency=no_snapshot, apportionment=single_item, remote_area=none
+    // @scenario fee_mode=original_policy, charge_policy=free, claim_type=exchange, fault=customer, currency=no_snapshot, apportionment=single_item, remote_area=flat
+    // @scenario fee_mode=original_policy, charge_policy=free, claim_type=exchange, fault=customer, currency=no_snapshot, apportionment=single_item, remote_area=multiplied
+    // @scenario fee_mode=original_policy, charge_policy=free, claim_type=exchange, fault=customer, currency=no_snapshot, apportionment=multi_item, remote_area=none
+    // @scenario fee_mode=original_policy, charge_policy=free, claim_type=exchange, fault=customer, currency=no_snapshot, apportionment=multi_item, remote_area=flat
+    // @scenario fee_mode=original_policy, charge_policy=free, claim_type=exchange, fault=customer, currency=no_snapshot, apportionment=multi_item, remote_area=multiplied
+
+    /**
+     * 무료 부과정책은 기본 배송비가 0이어도 도서산간 추가액은 구간마다 청구한다.
+     *
+     * 이 칸은 세 축을 나란히 놓기 전에는 보이지 않았다 — 무료 정책 테스트는 도서산간이 없는
+     * 배송지를, 도서산간 테스트는 유료 정책을 쓰고 있었다. 실제로는 기본액과 추가액이 서로 다른
+     * 계산이고 무료는 앞의 것만 0으로 만든다. 반품은 회수 1구간, 교환은 회수·재발송 2구간이므로
+     * 같은 도서산간이 교환에서 두 번 붙는다. `extra_fee_multiply` 는 per_* 부과정책에서만
+     * 곱해지므로 무료 정책에서는 켜 두어도 `flat` 과 같은 값이 나온다.
+     *
+     * @effects claim_shipping_fee_free_policy_still_charges_the_remote_area_surcharge,
+     *          claim_shipping_fee_remote_area_fee_is_added_per_leg,
+     *          claim_shipping_fee_remote_area_multiply_is_inert_for_a_non_per_unit_policy,
+     *          claim_shipping_fee_original_policy_return_is_one_way,
+     *          claim_shipping_fee_original_policy_exchange_is_round_trip
+     */
+    #[DataProvider('freePolicyCustomerAxisProvider')]
+    public function test_free_policy_charges_only_the_remote_area_surcharge_across_the_result_axes(
+        string $claimType,
+        string $fault,
+        string $currency,
+        string $apportionment,
+        string $remoteArea,
+    ): void {
+        [$order, $items] = $this->resultAxisScenario(
+            $this->originalPolicy(ChargePolicyEnum::FREE, ['base_fee' => 0]),
+            $currency,
+            $apportionment,
+            $remoteArea,
+        );
+
+        $result = $this->calc(
+            $order,
+            ClaimTypeEnum::from($claimType),
+            $items,
+            ClaimReasonFaultTypeEnum::from($fault),
+        );
+
+        $legs = $claimType === 'exchange' ? 2 : 1;
+        $expected = $remoteArea === 'none' ? 0 : 3000 * $legs;
+
+        $this->assertTrue($result->charged);
+        $this->assertSame(ClaimShippingFeeModeEnum::ORIGINAL_POLICY, $result->mode);
+        $this->assertSame(ClaimShippingFee::REASON_CHARGED, $result->reason);
+        $this->assertSame($expected, $result->extraFee);
+        // 기본 배송비분은 fee - extraFee 다. 무료 정책이므로 언제나 0이어야 한다.
+        $this->assertSame(0, $result->fee - $result->extraFee);
+        $this->assertResultAxes($result, $expected, $currency, $apportionment);
     }
 }

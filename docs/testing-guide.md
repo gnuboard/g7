@@ -363,6 +363,32 @@ TypeScript 테스트는 `// @scenario` / `// @effects` 주석 동일 사용.
 
 구분자 형식은 정적 검사가 강제한다 (자동 차단).
 
+#### 한 docblock 은 조합 하나를 덮는다
+
+마커 추출기는 docblock 하나에서 `@scenario` 를 **한 건만** 읽는다. 같은 docblock 에 두 번째 줄을
+더하면 그 조합은 등록되지 않고, cross product 대조가 그 칸을 미커버로 낸다.
+
+DataProvider 로 한 메서드가 여러 조합을 실제로 돌리는 경우는 그래서 다르게 적는다 — 나머지
+조합은 메서드 **바깥의 라인 주석** `// @scenario …` 로 병기한다. 라인 주석 경로의 추출기는
+파일 전체를 훑으므로 PHP 에서도 동작한다.
+
+```php
+// 이 DataProvider 가 함께 검증하는 24조합 (docblock 은 @scenario 를 1건만 인식하므로 라인 주석으로 병기).
+// @scenario fee_mode=fixed, claim_type=return, currency=order_snapshot
+// @scenario fee_mode=fixed, claim_type=return, currency=no_snapshot
+// ... (행렬 전건)
+
+/**
+ * @effects claim_shipping_fee_fixed_mode_uses_the_declared_amount
+ */
+#[DataProvider('fixedModeCustomerAxisProvider')]
+public function test_fixed_mode_charges_the_declared_amount(...): void { ... }
+```
+
+병기한 조합은 **그 DataProvider 가 실제로 도는 행**이어야 한다. 행렬과 주석이 어긋나면 커버리지는
+초록인데 그 칸을 아무도 재지 않는 상태가 된다 — 라인 주석은 마커일 뿐 실행되지 않으므로, 주석을
+먼저 늘리고 행을 나중에 채우는 순서는 쓰지 않는다.
+
 #### 마커와 매니페스트는 양방향으로 맞춘다
 
 cross product·effects 대조는 **매니페스트 → 마커** 한 방향이다. 반대 방향 — 테스트가 `@effects X` 로 회귀 핀을 걸었는데 매니페스트의 `effects` 에 `X` 가 없는 경우 — 는 어떤 검사도 잡지 않고 초록으로 남는다.
@@ -378,6 +404,32 @@ cross product·effects 대조는 **매니페스트 → 마커** 한 방향이다
 1. `exclusions` 로 의미 없는 조합 제외 (이유 명시 필수)
 2. **Pairwise (all-pairs)** 전략 허용: 매니페스트에 `coverage_strategy: pairwise` 명시 시 모든 axis 쌍의 모든 조합만 커버 (n축 → O(n²) 케이스). 단순 분기형 axis(true/false) 가 많을 때 유효
 3. 그래도 폭발하면 **상위 axis 분리**: 매니페스트를 도메인별로 분할 (예: `order_payment_pg_toss_member.yaml`, `order_payment_pg_toss_guest.yaml`)
+
+#### 여러 세션에 나눠 채우는 매니페스트
+
+축을 늘리면 선언 셀이 곱으로 커져 한 세션에 다 채우지 못할 때가 있다. 이때 축을 **아직 선언하지
+않는** 선택지는 두지 않는다 — 선언하지 않은 축은 모집단에서 빠질 뿐 검사가 울리지 않으므로,
+"재지 않았다" 가 코드 어디에도 남지 않는다.
+
+축은 전부 선언하고, 아직 차례가 오지 않은 몫을 `exclusions` 로 남긴다. 커버리지 검사에는 "미커버"
+를 선언하는 필드가 없어 그것이 유일한 표현 수단이다.
+
+```yaml
+exclusions:
+  # ↓ 제외가 아니라 이월이다. 실재하는 조합이고 언젠가 재어야 하며, 담당이 정해져 있다.
+  - { fee_mode: original_policy, fault: seller, reason: "이월(2단계) — 원 정책 모드의 판매자 귀책 24셀. 제외가 아니라 아직 재지 않은 칸이다" }
+```
+
+검사는 **제외와 이월을 구분하지 못한다.** 둘을 가르는 것은 사유 문구뿐이므로 세 가지를 반드시 적는다 —
+이월이라는 사실 · 셀 수 · 담당(후속 세션/이슈). 셋 중 하나라도 빠지면 다음 사람이 그것을 영구 제외로
+읽고, 그 칸은 다시 열리지 않는다.
+
+담당 세션은 자기 몫의 `exclusions` 줄을 지우는 것으로 착수한다. 지우는 즉시 검사가 미커버 셀을
+열거하므로 몫을 따로 셀 필요가 없다. 마지막 몫까지 지워져 `exclusions` 에 이월 줄이 남지 않는 것이
+그 축이 다 채워졌다는 신호다.
+
+이월이 남아 있는 동안 그 매니페스트의 **선언 셀 수는 전체 곱이 아니라 개방된 수**다. 진척을 적을
+때 둘을 섞지 않는다.
 
 ### 대규모 시나리오 축(scale)
 
