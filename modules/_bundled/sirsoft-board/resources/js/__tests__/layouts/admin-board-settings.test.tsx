@@ -7,6 +7,9 @@
  * - 신고 정책 탭: 6개 필드 (자동 숨김, 신고 기한, 일일 제한, 반려 제한, 정지 기간)
  * - 스팸/보안 탭: 쿨다운, 조회수, 캐시 초기화
  * - 일괄 적용 모달: 확인/취소, API 호출, 로딩 상태
+ *
+ * @effects aborted_notice_box_shown_and_modal_stays_open,
+ *   successful_bulk_apply_closes_modal_with_success_toast
  */
 
 import { describe, it, expect } from 'vitest';

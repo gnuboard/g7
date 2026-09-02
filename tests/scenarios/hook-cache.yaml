@@ -64,4 +64,3 @@ test_files:
   - tests/Unit/Extension/HookListenerRegistrarTest.php
   - tests/Feature/Console/HooksCacheCommandTest.php
   - tests/Unit/Services/NotificationDefinitionServiceTest.php
-  - tests/Unit/Extension/InstallerCompletedGuardTest.php

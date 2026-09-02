@@ -417,6 +417,9 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
     // 1. 청구 대상 유형 게이트 — 환불·취소는 회수 배송이 없다
     // ================================================================
 
+    /**
+     * @effects claim_shipping_fee_not_charged_for_refund_and_cancel
+     */
     public function test_refund_claim_type_is_not_charged(): void
     {
         [$order, $option] = $this->scenario();
@@ -428,6 +431,9 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
         $this->assertSame(ClaimShippingFee::REASON_CLAIM_TYPE_NOT_CHARGEABLE, $result->reason);
     }
 
+    /**
+     * @effects claim_shipping_fee_not_charged_for_refund_and_cancel
+     */
     public function test_cancel_claim_type_is_not_charged(): void
     {
         [$order, $option] = $this->scenario();
@@ -488,6 +494,11 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
         $this->assertTrue($result->charged);
     }
 
+    /**
+     * @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=seller
+     *
+     * @effects claim_shipping_fee_zero_for_non_customer_fault
+     */
     public function test_return_with_seller_fault_is_zero(): void
     {
         [$order, $option] = $this->scenario();
@@ -499,6 +510,11 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
         $this->assertSame(ClaimShippingFee::REASON_FAULT_NOT_CUSTOMER, $result->reason);
     }
 
+    /**
+     * @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=carrier
+     *
+     * @effects claim_shipping_fee_zero_for_non_customer_fault
+     */
     public function test_return_with_carrier_fault_is_zero(): void
     {
         [$order, $option] = $this->scenario();
@@ -518,6 +534,11 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
         $this->assertSame(5000, $result->fee);
     }
 
+    /**
+     * @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=seller
+     *
+     * @effects claim_shipping_fee_zero_for_non_customer_fault
+     */
     public function test_exchange_with_seller_fault_is_zero(): void
     {
         [$order, $option] = $this->scenario();
@@ -527,6 +548,11 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
         $this->assertSame(0, $result->fee);
     }
 
+    /**
+     * @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=carrier
+     *
+     * @effects claim_shipping_fee_zero_for_non_customer_fault
+     */
     public function test_exchange_with_carrier_fault_is_zero(): void
     {
         [$order, $option] = $this->scenario();
@@ -545,6 +571,11 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
         $this->assertSame(ClaimShippingFeeModeEnum::FIXED, $result->mode);
     }
 
+    /**
+     * @scenario fee_mode=original_policy, charge_policy=fixed, claim_type=return, fault=seller
+     *
+     * @effects claim_shipping_fee_records_declared_mode_even_when_not_charged
+     */
     public function test_seller_fault_still_records_the_declared_original_policy_mode(): void
     {
         [$order, $option] = $this->scenario($this->originalPolicy(ChargePolicyEnum::FIXED));
@@ -555,6 +586,11 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
         $this->assertSame(0, $result->fee);
     }
 
+    /**
+     * @scenario fee_mode=original_policy, charge_policy=fixed, claim_type=exchange, fault=carrier
+     *
+     * @effects claim_shipping_fee_zero_for_non_customer_fault
+     */
     public function test_carrier_fault_with_original_policy_is_zero(): void
     {
         [$order, $option] = $this->scenario($this->originalPolicy(ChargePolicyEnum::FIXED, ['base_fee' => 9000]));
@@ -562,6 +598,36 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
         $result = $this->calc($order, ClaimTypeEnum::EXCHANGE, $this->items($option), ClaimReasonFaultTypeEnum::CARRIER);
 
         $this->assertSame(0, $result->fee);
+    }
+
+    /**
+     * @scenario fee_mode=original_policy, charge_policy=fixed, claim_type=return, fault=carrier
+     *
+     * @effects claim_shipping_fee_records_declared_mode_even_when_not_charged
+     */
+    public function test_original_policy_return_with_carrier_fault_is_zero(): void
+    {
+        [$order, $option] = $this->scenario($this->originalPolicy(ChargePolicyEnum::FIXED, ['base_fee' => 9000]));
+
+        $result = $this->calc($order, ClaimTypeEnum::RETURN, $this->items($option), ClaimReasonFaultTypeEnum::CARRIER);
+
+        $this->assertSame(0, $result->fee);
+        $this->assertSame(ClaimShippingFeeModeEnum::ORIGINAL_POLICY, $result->mode);
+    }
+
+    /**
+     * @scenario fee_mode=original_policy, charge_policy=fixed, claim_type=exchange, fault=seller
+     *
+     * @effects claim_shipping_fee_records_declared_mode_even_when_not_charged
+     */
+    public function test_original_policy_exchange_with_seller_fault_is_zero(): void
+    {
+        [$order, $option] = $this->scenario($this->originalPolicy(ChargePolicyEnum::FIXED, ['base_fee' => 9000]));
+
+        $result = $this->calc($order, ClaimTypeEnum::EXCHANGE, $this->items($option), ClaimReasonFaultTypeEnum::SELLER);
+
+        $this->assertSame(0, $result->fee);
+        $this->assertSame(ClaimShippingFeeModeEnum::ORIGINAL_POLICY, $result->mode);
     }
 
     public function test_seller_fault_group_basis_carries_the_reason(): void
@@ -597,6 +663,8 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
      * @param  string  $policyKey  부과정책 픽스처 키
      * @param  ClaimTypeEnum  $claimType  클레임 유형
      * @param  ClaimReasonFaultTypeEnum  $fault  청구하지 않는 귀책
+     *
+     * @effects claim_shipping_fee_zero_for_non_customer_fault
      */
     #[DataProvider('faultByChargePolicyMatrixProvider')]
     public function test_non_customer_fault_is_zero_for_every_charge_policy(
@@ -664,6 +732,11 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
     // 3. fixed 모드 — 정책에 입력된 금액을 그대로 쓴다 (D11)
     // ================================================================
 
+    /**
+     * @scenario fee_mode=fixed, charge_policy=not_read, claim_type=return, fault=customer
+     *
+     * @effects claim_shipping_fee_fixed_mode_uses_the_declared_amount
+     */
     public function test_fixed_mode_return_uses_return_fixed_fee(): void
     {
         [$order, $option] = $this->scenario(['return_fixed_fee' => 2500, 'exchange_fixed_fee' => 7000]);
@@ -673,6 +746,11 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
         $this->assertSame(2500, $result->fee);
     }
 
+    /**
+     * @scenario fee_mode=fixed, charge_policy=not_read, claim_type=exchange, fault=customer
+     *
+     * @effects claim_shipping_fee_fixed_mode_does_not_double_for_an_exchange
+     */
     public function test_fixed_mode_exchange_uses_exchange_fixed_fee(): void
     {
         [$order, $option] = $this->scenario(['return_fixed_fee' => 2500, 'exchange_fixed_fee' => 7000]);
@@ -729,6 +807,8 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
      * @param  string  $policyKey  부과정책 픽스처 키
      * @param  ClaimTypeEnum  $claimType  클레임 유형
      * @param  int  $expected  기대 청구액
+     *
+     * @effects claim_shipping_fee_fixed_mode_ignores_the_charge_policy
      */
     #[DataProvider('fixedModePolicyIndependenceProvider')]
     public function test_fixed_mode_fee_is_independent_of_the_charge_policy(
@@ -793,6 +873,11 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
     // 4. original_policy 모드 × 부과정책 6종 × 유형 2
     // ================================================================
 
+    /**
+     * @scenario fee_mode=original_policy, charge_policy=free, claim_type=return, fault=customer
+     *
+     * @effects claim_shipping_fee_original_policy_return_is_one_way
+     */
     public function test_original_policy_free_return_is_zero(): void
     {
         [$order, $option] = $this->scenario($this->originalPolicy(ChargePolicyEnum::FREE, ['base_fee' => 0]));
@@ -802,6 +887,11 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
         $this->assertSame(0, $result->fee);
     }
 
+    /**
+     * @scenario fee_mode=original_policy, charge_policy=free, claim_type=exchange, fault=customer
+     *
+     * @effects claim_shipping_fee_original_policy_exchange_is_round_trip
+     */
     public function test_original_policy_free_exchange_is_zero(): void
     {
         [$order, $option] = $this->scenario($this->originalPolicy(ChargePolicyEnum::FREE, ['base_fee' => 0]));
@@ -811,6 +901,11 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
         $this->assertSame(0, $result->fee);
     }
 
+    /**
+     * @scenario fee_mode=original_policy, charge_policy=fixed, claim_type=return, fault=customer
+     *
+     * @effects claim_shipping_fee_original_policy_return_is_one_way
+     */
     public function test_original_policy_fixed_return_is_one_way(): void
     {
         [$order, $option] = $this->scenario($this->originalPolicy(ChargePolicyEnum::FIXED, ['base_fee' => 3000]));
@@ -820,6 +915,11 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
         $this->assertSame(3000, $result->fee);
     }
 
+    /**
+     * @scenario fee_mode=original_policy, charge_policy=fixed, claim_type=exchange, fault=customer
+     *
+     * @effects claim_shipping_fee_original_policy_exchange_is_round_trip
+     */
     public function test_original_policy_fixed_exchange_is_round_trip(): void
     {
         [$order, $option] = $this->scenario($this->originalPolicy(ChargePolicyEnum::FIXED, ['base_fee' => 3000]));
@@ -829,6 +929,11 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
         $this->assertSame(6000, $result->fee);
     }
 
+    /**
+     * @scenario fee_mode=original_policy, charge_policy=conditional_free_unmet, claim_type=return, fault=customer
+     *
+     * @effects claim_shipping_fee_conditional_free_threshold_decides_the_charge
+     */
     public function test_original_policy_conditional_free_unmet_return_charges_base_fee(): void
     {
         [$order, $option] = $this->scenario(
@@ -841,6 +946,11 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
         $this->assertSame(2500, $result->fee);
     }
 
+    /**
+     * @scenario fee_mode=original_policy, charge_policy=conditional_free_unmet, claim_type=exchange, fault=customer
+     *
+     * @effects claim_shipping_fee_conditional_free_threshold_decides_the_charge
+     */
     public function test_original_policy_conditional_free_unmet_exchange_doubles_base_fee(): void
     {
         [$order, $option] = $this->scenario(
@@ -853,6 +963,11 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
         $this->assertSame(5000, $result->fee);
     }
 
+    /**
+     * @scenario fee_mode=original_policy, charge_policy=conditional_free_met, claim_type=return, fault=customer
+     *
+     * @effects claim_shipping_fee_conditional_free_threshold_decides_the_charge
+     */
     public function test_original_policy_conditional_free_met_return_is_zero(): void
     {
         [$order, $option] = $this->scenario(
@@ -865,6 +980,11 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
         $this->assertSame(0, $result->fee);
     }
 
+    /**
+     * @scenario fee_mode=original_policy, charge_policy=conditional_free_met, claim_type=exchange, fault=customer
+     *
+     * @effects claim_shipping_fee_conditional_free_threshold_decides_the_charge
+     */
     public function test_original_policy_conditional_free_met_exchange_is_zero(): void
     {
         [$order, $option] = $this->scenario(
@@ -877,6 +997,11 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
         $this->assertSame(0, $result->fee);
     }
 
+    /**
+     * @scenario fee_mode=original_policy, charge_policy=per_quantity, claim_type=return, fault=customer
+     *
+     * @effects claim_shipping_fee_per_quantity_scales_with_the_claim_quantity
+     */
     public function test_original_policy_per_quantity_return_scales_with_claim_quantity(): void
     {
         [$order, $option] = $this->scenario(
@@ -889,6 +1014,11 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
         $this->assertSame(3000, $result->fee);
     }
 
+    /**
+     * @scenario fee_mode=original_policy, charge_policy=per_quantity, claim_type=exchange, fault=customer
+     *
+     * @effects claim_shipping_fee_per_quantity_scales_with_the_claim_quantity
+     */
     public function test_original_policy_per_quantity_exchange_doubles(): void
     {
         [$order, $option] = $this->scenario(
@@ -901,6 +1031,11 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
         $this->assertSame(6000, $result->fee);
     }
 
+    /**
+     * @scenario fee_mode=original_policy, charge_policy=range_amount, claim_type=return, fault=customer
+     *
+     * @effects claim_shipping_fee_range_tier_matches_the_claim_subtotal
+     */
     public function test_original_policy_range_amount_return_uses_matching_tier(): void
     {
         [$order, $option] = $this->scenario(
@@ -915,6 +1050,11 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
         $this->assertSame(4000, $result->fee);
     }
 
+    /**
+     * @scenario fee_mode=original_policy, charge_policy=range_amount, claim_type=exchange, fault=customer
+     *
+     * @effects claim_shipping_fee_range_tier_matches_the_claim_subtotal
+     */
     public function test_original_policy_range_amount_exchange_doubles_matching_tier(): void
     {
         [$order, $option] = $this->scenario(
@@ -1224,6 +1364,9 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
         $this->assertSame(ClaimShippingFeeModeEnum::ORIGINAL_POLICY, $result->mode);
     }
 
+    /**
+     * @effects claim_shipping_fee_header_mode_falls_back_to_original_policy_when_mixed
+     */
     public function test_header_mode_is_original_policy_when_modes_are_mixed(): void
     {
         $order = $this->makeOrder();
@@ -1288,6 +1431,9 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
         $this->assertSame(6000, $result->fee);
     }
 
+    /**
+     * @effects claim_shipping_fee_groups_are_summed_across_policies
+     */
     public function test_mixed_mode_groups_are_summed(): void
     {
         $order = $this->makeOrder();
@@ -1444,6 +1590,9 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
         $this->assertSame(ClaimShippingFee::REASON_NO_ITEMS, $result->reason);
     }
 
+    /**
+     * @effects claim_shipping_fee_quantity_is_clamped_to_the_ordered_amount
+     */
     public function test_quantity_above_the_ordered_amount_is_clamped(): void
     {
         [$order, $option] = $this->scenario(
@@ -1541,6 +1690,9 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
         $this->assertSame(ClaimShippingFee::REASON_NO_SHIPPING_POLICY, $result->reason);
     }
 
+    /**
+     * @effects claim_shipping_fee_unresolvable_policy_is_not_charged
+     */
     public function test_unresolvable_policy_is_not_a_charged_result(): void
     {
         $order = $this->makeOrder();
@@ -1647,6 +1799,9 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
     // 11. 배송비 플러그인 훅 — 원 정책 기준 모드는 주문 배송비와 같은 훅을 탄다
     // ================================================================
 
+    /**
+     * @effects claim_shipping_fee_hook_can_override_the_original_policy_fee
+     */
     public function test_original_policy_mode_lets_the_shipping_plugin_hook_override_the_fee(): void
     {
         HookManager::addFilter('sirsoft-ecommerce.shipping.calculate_fee', fn () => 1234);
@@ -1775,6 +1930,9 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
     // 12. 부과정책 파라미터의 출처 — 주문 시점 스냅샷 우선
     // ================================================================
 
+    /**
+     * @effects claim_shipping_fee_charge_policy_comes_from_the_order_snapshot
+     */
     public function test_original_policy_reads_the_charge_policy_from_the_order_snapshot(): void
     {
         $order = $this->makeOrder();
@@ -1830,6 +1988,9 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
         $this->assertSame(4500, $result->fee);
     }
 
+    /**
+     * @effects claim_shipping_fee_claim_terms_come_from_the_live_policy_row
+     */
     public function test_claim_fee_mode_is_always_read_from_the_live_policy_row(): void
     {
         $order = $this->makeOrder();
@@ -1977,6 +2138,9 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
         $this->assertSame(3000, $result->extraFee);
     }
 
+    /**
+     * @effects claim_shipping_fee_remote_area_fee_is_added_per_leg
+     */
     public function test_remote_area_fee_is_charged_on_both_legs_of_an_exchange(): void
     {
         $order = $this->makeOrder();
@@ -2072,6 +2236,9 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
         $this->assertSame(6000, $result->extraFee);
     }
 
+    /**
+     * @effects claim_shipping_fee_remote_area_multiply_follows_the_claim_quantity
+     */
     public function test_remote_area_multiply_follows_the_claim_quantity_not_the_order_quantity(): void
     {
         $order = $this->makeOrder();
@@ -2102,6 +2269,9 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
         $this->assertSame(3000, $result->extraFee);
     }
 
+    /**
+     * @effects claim_shipping_fee_remote_area_is_skipped_in_fixed_mode
+     */
     public function test_fixed_mode_does_not_add_the_remote_area_fee(): void
     {
         $order = $this->makeOrder();
@@ -2271,6 +2441,9 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
         $this->assertSame(9000, $result->fee);
     }
 
+    /**
+     * @effects claim_shipping_fee_redelivery_address_change_reprices_the_second_leg
+     */
     public function test_moving_the_redelivery_into_a_remote_area_adds_the_second_leg(): void
     {
         $order = $this->makeOrder();
@@ -2451,6 +2624,9 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
         $this->assertSame(3000, $result->groups[0]['items'][0]['fee']);
     }
 
+    /**
+     * @effects claim_shipping_fee_group_fee_is_apportioned_across_items
+     */
     public function test_group_fee_is_apportioned_by_amount(): void
     {
         $order = $this->makeOrder();
@@ -2467,6 +2643,9 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
         $this->assertSame(2250, $result->groups[0]['items'][1]['fee']);
     }
 
+    /**
+     * @effects claim_shipping_fee_apportioned_shares_sum_to_the_group_fee
+     */
     public function test_apportioned_shares_sum_to_the_group_fee(): void
     {
         $order = $this->makeOrder();
@@ -2601,6 +2780,9 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
     // 16. 다통화 청구액 (mc_claim_shipping_fee)
     // ================================================================
 
+    /**
+     * @effects claim_shipping_fee_multi_currency_uses_the_order_snapshot_rate
+     */
     public function test_multi_currency_fee_uses_the_order_snapshot_rate(): void
     {
         $order = $this->makeOrder(['currency_snapshot' => $this->currencySnapshot()]);
@@ -2672,6 +2854,9 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
         $this->assertSame(['KRW', 'USD'], array_keys($result->mcFee));
     }
 
+    /**
+     * @effects claim_shipping_fee_multi_currency_is_empty_without_a_snapshot
+     */
     public function test_multi_currency_fee_is_empty_without_a_currency_snapshot(): void
     {
         $order = $this->makeOrder(['currency_snapshot' => null]);
@@ -2736,6 +2921,11 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
     // 17. 외부 요금 API 부과정책 — 클레임 문맥에서는 호출하지 않는다
     // ================================================================
 
+    /**
+     * @scenario fee_mode=original_policy, charge_policy=api, claim_type=return, fault=customer
+     *
+     * @effects claim_shipping_fee_api_policy_falls_back_to_the_base_fee
+     */
     public function test_api_charge_policy_falls_back_to_the_base_fee(): void
     {
         Http::fake();
@@ -2752,6 +2942,9 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
         $this->assertSame(2800, $result->fee);
     }
 
+    /**
+     * @effects claim_shipping_fee_api_policy_makes_no_external_request
+     */
     public function test_api_charge_policy_does_not_dispatch_an_external_request(): void
     {
         Http::fake();
@@ -2814,6 +3007,11 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
         $this->assertFalse($result->groups[0]['api_fallback']);
     }
 
+    /**
+     * @scenario fee_mode=original_policy, charge_policy=api, claim_type=exchange, fault=customer
+     *
+     * @effects claim_shipping_fee_api_policy_falls_back_to_the_base_fee
+     */
     public function test_api_charge_policy_doubles_for_an_exchange(): void
     {
         Http::fake();
@@ -2868,6 +3066,9 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
         $this->assertSame(['collection' => 0, 'redelivery' => 0], $result->groups[0]['extra_fee_legs']);
     }
 
+    /**
+     * @effects claim_shipping_fee_basis_records_the_policy_source
+     */
     public function test_policy_source_is_recorded_per_group(): void
     {
         $order = $this->makeOrder();
@@ -2960,6 +3161,9 @@ class ClaimShippingFeeServiceTest extends ModuleTestCase
     // 19. 사후 비활성화된 국가 설정 (PO 확정 2026-08-21)
     // ================================================================
 
+    /**
+     * @effects claim_shipping_fee_deactivated_country_row_still_charges
+     */
     public function test_deactivated_live_country_row_still_charges_the_fixed_claim_fee(): void
     {
         [$order, $option] = $this->scenario(['return_fixed_fee' => 3000, 'is_active' => false]);

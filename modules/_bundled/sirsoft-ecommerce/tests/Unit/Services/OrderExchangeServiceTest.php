@@ -637,6 +637,9 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame(OrderStatusEnum::DELIVERED, $order->fresh()->order_status);
     }
 
+    /**
+     * @effects exchange_guest_request_has_no_requester
+     */
     public function test_guest_request_has_no_requester(): void
     {
         $order = $this->deliveredOrder();
@@ -708,6 +711,9 @@ class OrderExchangeServiceTest extends ModuleTestCase
         ));
     }
 
+    /**
+     * @effects exchange_request_period_is_measured_from_delivery
+     */
     public function test_request_rejects_after_request_period(): void
     {
         $order = $this->deliveredOrder();
@@ -759,6 +765,11 @@ class OrderExchangeServiceTest extends ModuleTestCase
     // 신청 — 옵션 변경 / 차액 3분기 (저가·동가·고가)
     // ================================================================
 
+    /**
+     * @scenario price_delta=equal, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_same_product_request_has_zero_difference
+     */
     public function test_request_defaults_to_same_product_exchange_with_zero_difference(): void
     {
         $order = $this->deliveredOrder();
@@ -789,6 +800,11 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame(0.0, (float) $exchange->exchangeOptions->first()->price_difference);
     }
 
+    /**
+     * @scenario price_delta=higher, charge_method=pay_on_request, additional_options=unchanged
+     *
+     * @effects exchange_higher_priced_option_charges_the_difference
+     */
     public function test_request_with_higher_priced_option_charges_the_difference(): void
     {
         $order = $this->deliveredOrder(29000, 2);
@@ -814,6 +830,11 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertTrue($exchange->requiresAdditionalPayment());
     }
 
+    /**
+     * @scenario price_delta=lower, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_lower_priced_option_freezes_a_refundable_difference
+     */
     public function test_request_with_lower_priced_option_records_a_refundable_difference(): void
     {
         $order = $this->deliveredOrder(29000, 1);
@@ -829,6 +850,11 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame(0.0, (float) $exchange->total_charge_amount);
     }
 
+    /**
+     * @scenario price_delta=mixed, charge_method=pay_on_request, additional_options=unchanged
+     *
+     * @effects exchange_mixed_items_are_netted_into_one_charge
+     */
     public function test_request_nets_mixed_differences_across_items(): void
     {
         $policy = $this->createClaimShippingPolicy();
@@ -867,6 +893,9 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame(3000.0, (float) $exchange->total_charge_amount);
     }
 
+    /**
+     * @effects exchange_new_option_must_belong_to_the_same_product
+     */
     public function test_request_rejects_an_option_of_another_product(): void
     {
         $order = $this->deliveredOrder();
@@ -888,6 +917,9 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertClaimException('claim_new_option_invalid', fn () => $this->service->requestExchange($order, $this->payload($order, newProductOptionId: 999999)));
     }
 
+    /**
+     * @effects exchange_new_option_without_stock_is_rejected
+     */
     public function test_request_rejects_when_the_new_option_has_no_stock(): void
     {
         $order = $this->deliveredOrder(29000, 2);
@@ -915,6 +947,9 @@ class OrderExchangeServiceTest extends ModuleTestCase
     // 신청 — 배송비 / 청구 방식
     // ================================================================
 
+    /**
+     * @effects exchange_round_trip_fee_and_total_charge_are_frozen
+     */
     public function test_request_freezes_round_trip_fee_and_total_charge(): void
     {
         $policy = $this->createClaimShippingPolicy();
@@ -936,6 +971,9 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame(6000, $exchange->shipping_fee_snapshot['fee']);
     }
 
+    /**
+     * @effects exchange_seller_fault_charges_only_the_difference
+     */
     public function test_request_charges_only_the_difference_for_seller_fault(): void
     {
         $policy = $this->createClaimShippingPolicy();
@@ -954,6 +992,9 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame(3000.0, (float) $exchange->total_charge_amount);
     }
 
+    /**
+     * @effects exchange_charge_method_is_required_when_a_charge_remains
+     */
     public function test_request_requires_charge_method_when_total_charge_is_positive(): void
     {
         $order = $this->deliveredOrder();
@@ -965,6 +1006,9 @@ class OrderExchangeServiceTest extends ModuleTestCase
         ));
     }
 
+    /**
+     * @effects exchange_charge_method_is_cleared_when_nothing_is_charged
+     */
     public function test_request_nulls_charge_method_when_total_charge_is_zero(): void
     {
         $order = $this->deliveredOrder();
@@ -975,6 +1019,9 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertFalse($exchange->requiresAdditionalPayment());
     }
 
+    /**
+     * @effects exchange_charge_method_outside_the_allowed_list_is_rejected
+     */
     public function test_request_rejects_charge_method_not_allowed_by_settings(): void
     {
         $order = $this->deliveredOrder();
@@ -987,6 +1034,11 @@ class OrderExchangeServiceTest extends ModuleTestCase
         ));
     }
 
+    /**
+     * @scenario price_delta=higher, charge_method=deduct_from_refund, additional_options=unchanged
+     *
+     * @effects exchange_deduct_from_refund_requires_a_covering_refundable_difference
+     */
     public function test_request_rejects_deduct_from_refund_for_a_higher_priced_exchange(): void
     {
         $order = $this->deliveredOrder();
@@ -999,6 +1051,11 @@ class OrderExchangeServiceTest extends ModuleTestCase
         ));
     }
 
+    /**
+     * @scenario price_delta=lower, charge_method=deduct_from_refund, additional_options=unchanged
+     *
+     * @effects exchange_deduct_from_refund_requires_a_covering_refundable_difference
+     */
     public function test_request_accepts_deduct_from_refund_when_the_refundable_difference_covers_the_fee(): void
     {
         $policy = $this->createClaimShippingPolicy();
@@ -1029,6 +1086,180 @@ class OrderExchangeServiceTest extends ModuleTestCase
             $order,
             $this->payload($order, chargeMethod: ClaimChargeMethodEnum::DEDUCT_FROM_REFUND, newProductOptionId: $newOption->id)
         ));
+    }
+
+    /**
+     * @scenario price_delta=equal, charge_method=pay_on_request, additional_options=unchanged
+     *
+     * @effects exchange_round_trip_fee_and_total_charge_are_frozen
+     */
+    public function test_request_with_an_equal_priced_option_still_charges_the_round_trip_fee(): void
+    {
+        // 옵션 차액이 0 이어도 왕복 배송비가 남으면 청구는 성립한다 — 청구 방식을 고르는 축은
+        // 차액이 아니라 총 청구액이다.
+        $policy = $this->createClaimShippingPolicy();
+        $order = $this->deliveredOrder(29000, 1, $policy);
+        $this->setExchangeFixedFee($policy, 6000);
+
+        $exchange = $this->service->requestExchange($order, $this->payload(
+            $order,
+            chargeMethod: ClaimChargeMethodEnum::PAY_ON_REQUEST,
+        ));
+
+        $this->assertSame(0.0, (float) $exchange->exchangeOptions->first()->price_difference);
+        $this->assertSame(6000.0, (float) $exchange->total_charge_amount);
+        $this->assertSame(ClaimChargeMethodEnum::PAY_ON_REQUEST, $exchange->charge_method);
+        $this->assertTrue($exchange->requiresAdditionalPayment());
+    }
+
+    /**
+     * @scenario price_delta=equal, charge_method=deduct_from_refund, additional_options=unchanged
+     *
+     * @effects exchange_deduct_from_refund_requires_a_covering_refundable_difference
+     */
+    public function test_request_rejects_deduct_from_refund_for_an_equal_priced_exchange(): void
+    {
+        // 동가 교환은 돌려줄 차액이 0 이라 왕복 배송비를 뺄 곳이 없다.
+        $policy = $this->createClaimShippingPolicy();
+        $order = $this->deliveredOrder(29000, 1, $policy);
+        $this->setExchangeFixedFee($policy, 6000);
+
+        $this->assertClaimException('claim_charge_method_not_allowed', fn () => $this->service->requestExchange(
+            $order,
+            $this->payload($order, chargeMethod: ClaimChargeMethodEnum::DEDUCT_FROM_REFUND)
+        ));
+    }
+
+    /**
+     * @scenario price_delta=lower, charge_method=pay_on_request, additional_options=unchanged
+     *
+     * @effects exchange_lower_priced_option_freezes_a_refundable_difference
+     */
+    public function test_request_can_charge_the_fee_separately_for_a_lower_priced_exchange(): void
+    {
+        // 저가 교환이라도 환불금 차감을 고르지 않으면 배송비는 별도 결제로 남고, 차액은 그대로
+        // 환불 대상에 머문다 — 두 금액이 서로를 상계하지 않는다.
+        $policy = $this->createClaimShippingPolicy();
+        $order = $this->deliveredOrder(29000, 1, $policy);
+        $this->setExchangeFixedFee($policy, 6000);
+        $newOption = $this->siblingOption($order, -4000);
+
+        $exchange = $this->service->requestExchange($order, $this->payload(
+            $order,
+            chargeMethod: ClaimChargeMethodEnum::PAY_ON_REQUEST,
+            newProductOptionId: $newOption->id,
+        ));
+
+        $this->assertSame(6000.0, (float) $exchange->total_charge_amount);
+        $this->assertSame(4000.0, (float) $exchange->refund_product_amount);
+        $this->assertSame(ClaimChargeMethodEnum::PAY_ON_REQUEST, $exchange->charge_method);
+        $this->assertTrue($exchange->requiresAdditionalPayment());
+    }
+
+    /**
+     * @scenario price_delta=mixed, charge_method=deduct_from_refund, additional_options=unchanged
+     *
+     * @effects exchange_mixed_net_refund_is_frozen_at_request_time
+     */
+    public function test_request_deducts_the_fee_from_the_frozen_net_refund_of_a_mixed_exchange(): void
+    {
+        // 고가·저가가 섞인 신청서의 환불금 차감은 상계 **후** 순액을 기준으로 판정한다 —
+        // 음수 차액 합(5,000)이 아니라 동결 순액(3,000)이 배송비 3,000 을 덮는지 본다.
+        [$exchange] = $this->twoItemOptionChangeExchange(2000, -5000, ClaimChargeMethodEnum::DEDUCT_FROM_REFUND, 3000);
+
+        $this->assertSame(3000.0, (float) $exchange->refund_product_amount, '동결 순액 = −5,000 + 2,000.');
+        $this->assertSame(ClaimChargeMethodEnum::DEDUCT_FROM_REFUND, $exchange->charge_method);
+        $this->assertSame(3000.0, (float) $exchange->total_charge_amount);
+        $this->assertFalse($exchange->requiresAdditionalPayment(), '환불금 차감은 별도 결제 대상이 아니다.');
+    }
+
+    /**
+     * @effects exchange_multi_currency_amounts_come_from_the_order_snapshot
+     */
+    /**
+     * @scenario price_delta=equal, charge_method=pay_on_approval, additional_options=unchanged
+     *
+     * @effects exchange_pay_on_approval_does_not_ask_for_payment_at_request_time
+     */
+    public function test_request_accepts_pay_on_approval_for_an_equal_priced_exchange(): void
+    {
+        // 승인 시점 결제는 접수 시점에 결제를 요구하지 않는다 — 금액 구성은 신청 시점 결제와
+        // 같고, 결제 행이 만들어지는 순간만 뒤로 밀린다.
+        $policy = $this->createClaimShippingPolicy();
+        $order = $this->deliveredOrder(29000, 1, $policy);
+        $this->setExchangeFixedFee($policy, 6000);
+
+        $exchange = $this->service->requestExchange($order, $this->payload(
+            $order,
+            chargeMethod: ClaimChargeMethodEnum::PAY_ON_APPROVAL,
+        ));
+
+        $this->assertSame(ClaimChargeMethodEnum::PAY_ON_APPROVAL, $exchange->charge_method);
+        $this->assertSame(6000.0, (float) $exchange->total_charge_amount);
+        $this->assertSame(ExchangeStatusEnum::REQUESTED, $exchange->exchange_status);
+    }
+
+    /**
+     * @scenario price_delta=higher, charge_method=pay_on_approval, additional_options=unchanged
+     *
+     * @effects exchange_pay_on_approval_does_not_ask_for_payment_at_request_time
+     */
+    public function test_request_accepts_pay_on_approval_for_a_higher_priced_exchange(): void
+    {
+        $policy = $this->createClaimShippingPolicy();
+        $order = $this->deliveredOrder(29000, 1, $policy);
+        $this->setExchangeFixedFee($policy, 6000);
+        $newOption = $this->siblingOption($order, 3000);
+
+        $exchange = $this->service->requestExchange($order, $this->payload(
+            $order,
+            chargeMethod: ClaimChargeMethodEnum::PAY_ON_APPROVAL,
+            newProductOptionId: $newOption->id,
+        ));
+
+        $this->assertSame(ClaimChargeMethodEnum::PAY_ON_APPROVAL, $exchange->charge_method);
+        $this->assertSame(9000.0, (float) $exchange->total_charge_amount, '왕복배송비 6,000 + 차액 3,000.');
+        $this->assertSame(ExchangeStatusEnum::REQUESTED, $exchange->exchange_status);
+    }
+
+    /**
+     * @scenario price_delta=lower, charge_method=pay_on_approval, additional_options=unchanged
+     *
+     * @effects exchange_pay_on_approval_does_not_ask_for_payment_at_request_time
+     */
+    public function test_request_accepts_pay_on_approval_for_a_lower_priced_exchange(): void
+    {
+        // 저가 교환에서도 승인 시점 결제를 고르면 배송비는 별도 청구로 남고 차액은 환불 대상에
+        // 머문다 — 두 금액이 서로를 상계하지 않는다(환불금 차감과 갈리는 지점).
+        $policy = $this->createClaimShippingPolicy();
+        $order = $this->deliveredOrder(29000, 1, $policy);
+        $this->setExchangeFixedFee($policy, 6000);
+        $newOption = $this->siblingOption($order, -4000);
+
+        $exchange = $this->service->requestExchange($order, $this->payload(
+            $order,
+            chargeMethod: ClaimChargeMethodEnum::PAY_ON_APPROVAL,
+            newProductOptionId: $newOption->id,
+        ));
+
+        $this->assertSame(ClaimChargeMethodEnum::PAY_ON_APPROVAL, $exchange->charge_method);
+        $this->assertSame(6000.0, (float) $exchange->total_charge_amount);
+        $this->assertSame(4000.0, (float) $exchange->refund_product_amount);
+    }
+
+    /**
+     * @scenario price_delta=mixed, charge_method=pay_on_approval, additional_options=unchanged
+     *
+     * @effects exchange_pay_on_approval_does_not_ask_for_payment_at_request_time
+     */
+    public function test_request_accepts_pay_on_approval_for_a_mixed_exchange(): void
+    {
+        [$exchange] = $this->twoItemOptionChangeExchange(2000, -5000, ClaimChargeMethodEnum::PAY_ON_APPROVAL, 3000);
+
+        $this->assertSame(ClaimChargeMethodEnum::PAY_ON_APPROVAL, $exchange->charge_method);
+        $this->assertSame(3000.0, (float) $exchange->refund_product_amount, '동결 순액 = −5,000 + 2,000.');
+        $this->assertSame(3000.0, (float) $exchange->claim_shipping_fee);
+        $this->assertSame(3000.0, (float) $exchange->total_charge_amount, '상계 순액이 환불이라 청구는 배송비뿐이다.');
     }
 
     public function test_request_records_multi_currency_amounts_from_the_order_snapshot(): void
@@ -1090,6 +1321,9 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame($policy->id, $exchange->return_address_snapshot['shipping_policy_id']);
     }
 
+    /**
+     * @effects exchange_redelivery_address_defaults_to_the_order_shipping_address
+     */
     public function test_request_defaults_redelivery_address_to_the_order_shipping_address(): void
     {
         $order = $this->deliveredOrder();
@@ -1144,6 +1378,8 @@ class OrderExchangeServiceTest extends ModuleTestCase
 
     /**
      * D14 ⓒ — 국가 변경은 서비스도 막는다 (교환 해외배송 미지원).
+     *
+     * @effects exchange_redelivery_address_must_stay_in_the_same_country
      */
     public function test_request_rejects_a_redelivery_address_in_another_country(): void
     {
@@ -1182,6 +1418,9 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame(1, $fired);
     }
 
+    /**
+     * @effects exchange_auto_approval_needs_a_zero_charge
+     */
     public function test_request_auto_approves_zero_charge_and_deducts_new_stock_when_the_setting_is_on(): void
     {
         app(EcommerceSettingsService::class)->setSetting('claim.auto_approve_zero_charge', true);
@@ -1198,6 +1437,9 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertTrue((bool) $exchange->exchangeOptions->first()->is_new_stock_deducted);
     }
 
+    /**
+     * @effects exchange_auto_approval_needs_a_zero_charge
+     */
     public function test_request_stays_requested_when_auto_approve_is_off_or_a_charge_remains(): void
     {
         app(EcommerceSettingsService::class)->setSetting('claim.auto_approve_zero_charge', true);
@@ -1243,6 +1485,9 @@ class OrderExchangeServiceTest extends ModuleTestCase
     // 미리보기
     // ================================================================
 
+    /**
+     * @effects exchange_preview_matches_the_requested_amounts
+     */
     public function test_preview_matches_requested_amounts(): void
     {
         $policy = $this->createClaimShippingPolicy();
@@ -1370,6 +1615,9 @@ class OrderExchangeServiceTest extends ModuleTestCase
     // 철회 / 반려 / 복귀
     // ================================================================
 
+    /**
+     * @effects exchange_withdraw_reverts_the_order_option
+     */
     public function test_withdraw_reverts_order_option_to_original_status(): void
     {
         $order = $this->deliveredOrder();
@@ -1382,6 +1630,9 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame(OrderStatusEnum::DELIVERED, $order->options->first()->fresh()->option_status);
     }
 
+    /**
+     * @effects exchange_withdraw_is_blocked_after_approval
+     */
     public function test_withdraw_is_blocked_after_approval(): void
     {
         $order = $this->deliveredOrder();
@@ -1403,6 +1654,9 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame(ExchangeStatusEnum::REJECTED, $rejected->exchangeOptions->first()->option_status);
     }
 
+    /**
+     * @effects exchange_reject_reverts_each_item_to_its_own_original_status
+     */
     public function test_revert_restores_each_item_to_its_own_original_status(): void
     {
         $policy = $this->createClaimShippingPolicy();
@@ -1449,6 +1703,9 @@ class OrderExchangeServiceTest extends ModuleTestCase
     // 전이 — 게이트 / 시각 / 재고
     // ================================================================
 
+    /**
+     * @effects exchange_transition_follows_the_status_gate
+     */
     public function test_transition_follows_the_gate_through_the_whole_lifecycle(): void
     {
         $order = $this->deliveredOrder();
@@ -1480,6 +1737,9 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertClaimException('claim_transition_not_allowed', fn () => $this->service->transition($exchange, ExchangeStatusEnum::REDELIVERING));
     }
 
+    /**
+     * @effects exchange_completion_is_not_reachable_by_a_plain_transition
+     */
     public function test_transition_to_completed_is_blocked(): void
     {
         $order = $this->deliveredOrder();
@@ -1488,6 +1748,9 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertClaimException('claim_completion_flow_required', fn () => $this->service->transition($exchange, ExchangeStatusEnum::COMPLETED));
     }
 
+    /**
+     * @effects exchange_on_hold_is_stamped_and_released_through_the_gate
+     */
     public function test_transition_stamps_on_hold_time(): void
     {
         $order = $this->deliveredOrder();
@@ -1497,6 +1760,9 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame(ExchangeStatusEnum::ON_HOLD, $exchange->exchangeOptions->first()->option_status);
     }
 
+    /**
+     * @effects exchange_approval_deducts_the_new_option_stock
+     */
     public function test_approve_deducts_stock_of_the_new_option(): void
     {
         $order = $this->deliveredOrder(29000, 2);
@@ -1513,6 +1779,9 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertTrue((bool) $exchange->exchangeOptions->first()->is_new_stock_deducted);
     }
 
+    /**
+     * @effects exchange_approval_fails_when_the_new_option_ran_out
+     */
     public function test_approve_fails_when_the_new_option_ran_out_of_stock_after_the_request(): void
     {
         $order = $this->deliveredOrder();
@@ -1566,6 +1835,9 @@ class OrderExchangeServiceTest extends ModuleTestCase
     // 상품 단위 전이
     // ================================================================
 
+    /**
+     * @effects exchange_item_level_transition_moves_the_header_only_when_items_agree
+     */
     public function test_transition_option_moves_only_selected_items_and_header_when_all_agree(): void
     {
         [$exchange, $itemA, $itemB] = $this->twoItemExchange();
@@ -1752,6 +2024,9 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertClaimException('claim_tracking_incomplete', fn () => $this->service->registerRedeliveryTracking($exchange, 1, ''));
     }
 
+    /**
+     * @effects exchange_redelivery_tracking_creates_the_successor_option
+     */
     public function test_register_redelivery_tracking_moves_to_redelivering_and_creates_the_successor_option(): void
     {
         $order = $this->deliveredOrder();
@@ -1936,6 +2211,9 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertClaimException('claim_completion_items_invalid', fn () => $this->service->completeExchange($exchange, [], $this->completionOptions($exchange, false, false)));
     }
 
+    /**
+     * @effects exchange_completion_restores_original_stock_only_for_checked_items
+     */
     public function test_complete_restores_original_stock_only_for_checked_items(): void
     {
         [$exchange, $order] = $this->redeliveredExchange();
@@ -1974,6 +2252,9 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame(0, OrderRefund::where('order_id', $order->id)->count());
     }
 
+    /**
+     * @effects exchange_completion_refund_is_filed_only_when_asked
+     */
     public function test_complete_without_refund_request_creates_no_refund(): void
     {
         [$exchange, $order] = $this->redeliveredExchange(-4000);
@@ -2047,6 +2328,9 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame(4000.0, (float) OrderRefundOption::where('order_refund_id', $refund->id)->sum('refund_amount'), '상품 행 합계는 수단과 무관하게 차액 전액이다.');
     }
 
+    /**
+     * @effects exchange_refund_request_splits_by_what_the_order_paid
+     */
     public function test_refund_request_splits_the_difference_pg_first_by_what_the_order_paid(): void
     {
         // PG 3,000 + 마일리지 26,000 으로 낸 주문 — 차액 4,000 은 PG 잔여 3,000 을 먼저 채우고 나머지 1,000 이 마일리지다.
@@ -2138,6 +2422,8 @@ class OrderExchangeServiceTest extends ModuleTestCase
 
     /**
      * '환불금 차감' 의 왕복 배송비는 신청서 전체에서 한 번만 뺀다.
+     *
+     * @effects exchange_round_trip_fee_is_deducted_once_across_refund_rounds
      */
     public function test_the_round_trip_fee_is_deducted_only_once_across_refund_requests(): void
     {
@@ -2201,6 +2487,10 @@ class OrderExchangeServiceTest extends ModuleTestCase
 
     /**
      * 순환불 혼합 건은 **동결된 순액**까지만 접수한다 (음수 차액 합이 아니다).
+     *
+     * @scenario price_delta=mixed, charge_method=none, additional_options=unchanged
+     *
+     * @effects exchange_mixed_net_refund_is_frozen_at_request_time
      */
     public function test_a_mixed_exchange_files_only_the_frozen_net_refund(): void
     {
@@ -2465,6 +2755,9 @@ class OrderExchangeServiceTest extends ModuleTestCase
         ));
     }
 
+    /**
+     * @effects exchange_update_request_recalculates_the_fee_when_the_reason_changes
+     */
     public function test_update_request_recalculates_the_fee_when_the_reason_changes(): void
     {
         $policy = $this->createClaimShippingPolicy();
@@ -2538,6 +2831,9 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame(ClaimChargeMethodEnum::PAY_ON_REQUEST, $updated->charge_method);
     }
 
+    /**
+     * @effects exchange_update_request_is_blocked_after_approval
+     */
     public function test_update_request_is_blocked_after_approval(): void
     {
         $order = $this->deliveredOrder();
@@ -2595,6 +2891,11 @@ class OrderExchangeServiceTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * @scenario price_delta=equal, charge_method=pay_on_request, additional_options=picked
+     *
+     * @effects exchange_additional_options_picked_are_charged
+     */
     public function test_request_charges_the_additional_options_the_buyer_picked(): void
     {
         // 주문의 소계 규칙(D6)은 `(옵션가 + 추가옵션 단위합계) × 수량` 이다. 교환 차액이 추가옵션
@@ -2611,6 +2912,11 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame(3000.0, (float) $item->price_difference, '동일상품 교환이라도 새로 고른 추가옵션은 청구된다.');
     }
 
+    /**
+     * @scenario price_delta=equal, charge_method=none, additional_options=dropped
+     *
+     * @effects exchange_additional_options_dropped_are_returned
+     */
     public function test_request_returns_the_original_additional_options_when_the_exchange_drops_them(): void
     {
         // 원 주문에 유료 추가옵션이 있었는데 교환에서 고르지 않으면 그 상품은 그 추가옵션 없이
@@ -2622,6 +2928,31 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $exchange = $this->service->requestExchange($order, $this->payload($order));
 
         $this->assertSame(-3000.0, (float) $exchange->exchangeOptions->first()->price_difference);
+    }
+
+    /**
+     * @effects exchange_additional_option_names_and_prices_are_frozen
+     */
+    /**
+     * @scenario price_delta=equal, charge_method=pay_on_approval, additional_options=picked
+     *
+     * @effects exchange_additional_options_picked_are_charged
+     */
+    public function test_request_charges_picked_additional_options_on_approval_too(): void
+    {
+        // 추가옵션이 만든 청구도 승인 시점 결제로 받을 수 있다 — 청구를 만드는 축(추가옵션)과
+        // 그것을 언제 받는가(청구 시점)는 서로를 제한하지 않는다.
+        $order = $this->deliveredOrder();
+        $value = $this->additionalOptionValue($order, 3000);
+
+        $payload = $this->payload($order, chargeMethod: ClaimChargeMethodEnum::PAY_ON_APPROVAL);
+        $payload['items'][0]['custom_options'] = ['selections' => [(string) $value->additional_option_id => $value->id]];
+
+        $exchange = $this->service->requestExchange($order, $payload);
+
+        $this->assertSame(3000.0, (float) $exchange->exchangeOptions->first()->price_difference);
+        $this->assertSame(ClaimChargeMethodEnum::PAY_ON_APPROVAL, $exchange->charge_method);
+        $this->assertSame(ExchangeStatusEnum::REQUESTED, $exchange->exchange_status);
     }
 
     public function test_request_freezes_additional_option_names_and_prices_in_the_snapshot(): void
@@ -2644,6 +2975,11 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertSame(3000, $snapshot['additional_options_snapshot'][0]['price_adjustment']);
     }
 
+    /**
+     * @scenario price_delta=equal, charge_method=none, additional_options=foreign
+     *
+     * @effects exchange_additional_options_of_another_product_are_ignored
+     */
     public function test_request_ignores_additional_options_that_belong_to_another_product(): void
     {
         // 다른 상품의 선택지 ID 로 금액이나 표기를 만들 수 없어야 한다(D12).
@@ -2661,6 +2997,9 @@ class OrderExchangeServiceTest extends ModuleTestCase
         $this->assertArrayNotHasKey('additional_options_snapshot', $item->new_option_snapshot ?? []);
     }
 
+    /**
+     * @effects exchange_preview_and_request_charge_the_same_additional_options
+     */
     public function test_preview_and_request_charge_the_same_additional_options(): void
     {
         // 화면이 예고하는 것과 실행하는 것이 같아야 한다 — 미리보기와 접수가 같은 경로를 탄다.

@@ -14,6 +14,9 @@
  *       → user 선삭제분만 마스킹, cascade 는 제외
  *   - normal_comment_content (원문):   status!=='blinded' && (!deleted_at || is_cascade_deleted)
  *       → cascade 댓글은 일반 댓글처럼 원문 노출
+ *
+ * @effects cascade_comment_content_visible,
+ *   cascade_comment_flag_exposed
  */
 
 import { describe, it, expect } from 'vitest';

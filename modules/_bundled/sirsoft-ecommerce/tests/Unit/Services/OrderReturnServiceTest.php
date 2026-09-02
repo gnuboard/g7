@@ -332,6 +332,9 @@ class OrderReturnServiceTest extends ModuleTestCase
         );
     }
 
+    /**
+     * @effects return_request_records_the_original_option_status_for_revert
+     */
     public function test_request_records_original_option_status_for_revert(): void
     {
         $order = $this->deliveredOrder();
@@ -344,6 +347,9 @@ class OrderReturnServiceTest extends ModuleTestCase
         );
     }
 
+    /**
+     * @effects return_request_splits_the_order_option_for_a_partial_quantity
+     */
     public function test_request_splits_order_option_for_partial_quantity(): void
     {
         $order = $this->deliveredOrder(29000, 3);
@@ -365,6 +371,9 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertSame($inProgress->id, $return->returnOptions->first()->order_option_id);
     }
 
+    /**
+     * @effects return_request_keeps_the_original_quantity_for_audit
+     */
     public function test_request_keeps_original_quantity_for_audit(): void
     {
         $order = $this->deliveredOrder(29000, 3);
@@ -512,6 +521,9 @@ class OrderReturnServiceTest extends ModuleTestCase
         ]));
     }
 
+    /**
+     * @effects return_pay_on_approval_does_not_ask_for_payment_at_request_time
+     */
     public function test_request_accepts_pay_on_approval_charge_method(): void
     {
         $policy = $this->createClaimShippingPolicy();
@@ -530,6 +542,9 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertSame(ReturnStatusEnum::REQUESTED, $return->return_status);
     }
 
+    /**
+     * @effects return_multi_currency_amounts_come_from_the_order_snapshot
+     */
     public function test_request_records_multi_currency_amounts_from_the_order_snapshot(): void
     {
         $policy = $this->createClaimShippingPolicy();
@@ -561,6 +576,9 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertSame($return->mc_claim_shipping_fee, $return->mc_total_charge_amount);
     }
 
+    /**
+     * @effects return_shipping_fee_and_charge_amount_are_frozen
+     */
     public function test_request_freezes_shipping_fee_and_charge_amount(): void
     {
         $policy = $this->createClaimShippingPolicy(ChargePolicyEnum::FREE, 0);
@@ -578,6 +596,9 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertTrue($return->requiresAdditionalPayment());
     }
 
+    /**
+     * @effects return_seller_fault_charges_nothing
+     */
     public function test_request_charges_nothing_for_seller_fault(): void
     {
         $policy = $this->createClaimShippingPolicy(ChargePolicyEnum::FREE, 0);
@@ -590,6 +611,9 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertNull($return->charge_method);
     }
 
+    /**
+     * @effects return_charge_method_is_required_when_a_fee_remains
+     */
     public function test_request_requires_charge_method_when_fee_is_positive(): void
     {
         $policy = $this->createClaimShippingPolicy(ChargePolicyEnum::FREE, 0);
@@ -599,6 +623,9 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertClaimException('claim_charge_method_required', fn () => $this->service->requestReturn($order, $this->payload($order)));
     }
 
+    /**
+     * @effects return_charge_method_is_cleared_when_the_fee_is_zero
+     */
     public function test_request_nulls_charge_method_when_fee_is_zero(): void
     {
         $order = $this->deliveredOrder();
@@ -612,6 +639,9 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertFalse($return->requiresAdditionalPayment());
     }
 
+    /**
+     * @effects return_charge_method_outside_the_allowed_list_is_rejected
+     */
     public function test_request_rejects_charge_method_not_allowed_by_settings(): void
     {
         app(EcommerceSettingsService::class)->setSetting(
@@ -629,6 +659,9 @@ class OrderReturnServiceTest extends ModuleTestCase
         ));
     }
 
+    /**
+     * @effects return_deduct_from_refund_requires_a_covering_refund
+     */
     public function test_request_rejects_deduct_from_refund_when_refund_cannot_cover_fee(): void
     {
         $policy = $this->createClaimShippingPolicy(ChargePolicyEnum::FREE, 0);
@@ -641,6 +674,9 @@ class OrderReturnServiceTest extends ModuleTestCase
         ));
     }
 
+    /**
+     * @effects return_deduct_from_refund_requires_a_covering_refund
+     */
     public function test_request_accepts_deduct_from_refund_when_refund_covers_fee(): void
     {
         $policy = $this->createClaimShippingPolicy(ChargePolicyEnum::FREE, 0);
@@ -655,6 +691,35 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertSame(ClaimChargeMethodEnum::DEDUCT_FROM_REFUND, $return->charge_method);
     }
 
+    /**
+     * @effects return_request_splits_the_order_option_for_a_partial_quantity
+     */
+    public function test_request_can_charge_a_partial_quantity_separately(): void
+    {
+        // 부분 수량은 회수 대상 행을 나누는 축이고 청구 방식은 그 위에서 정해진 금액을 받는
+        // 방법이다 — 나뉜 행이 청구를 그대로 지고 가는지 본다.
+        $policy = $this->createClaimShippingPolicy(ChargePolicyEnum::FREE, 0);
+        $this->setReturnFixedFee($policy, 3000);
+        $order = $this->deliveredOrder(29000, 3, $policy);
+
+        $return = $this->service->requestReturn(
+            $order,
+            $this->payload($order, quantity: 1, chargeMethod: ClaimChargeMethodEnum::PAY_ON_REQUEST)
+        );
+
+        $order = $order->fresh(['options']);
+        $inProgress = $order->options->firstWhere('option_status', OrderStatusEnum::RETURN_IN_PROGRESS);
+
+        $this->assertSame(1, (int) $inProgress->quantity);
+        $this->assertSame($inProgress->id, $return->returnOptions->first()->order_option_id);
+        $this->assertSame(ClaimChargeMethodEnum::PAY_ON_REQUEST, $return->charge_method);
+        $this->assertSame(3000.0, (float) $return->total_charge_amount, '고정액 회수비는 신청 수량으로 나뉘지 않는다.');
+        $this->assertTrue($return->requiresAdditionalPayment());
+    }
+
+    /**
+     * @effects return_address_comes_from_the_shipping_policy
+     */
     public function test_request_snapshots_return_address_from_policy(): void
     {
         $policy = $this->createClaimShippingPolicy();
@@ -686,6 +751,9 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertNull($return->return_address_snapshot);
     }
 
+    /**
+     * @effects return_request_period_is_measured_from_delivery
+     */
     public function test_request_rejects_after_request_period(): void
     {
         app(EcommerceSettingsService::class)->setSetting('claim.request_period_days', 1);
@@ -767,6 +835,9 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertNull($return->approved_at);
     }
 
+    /**
+     * @effects return_auto_approval_needs_a_zero_charge
+     */
     public function test_request_auto_approves_when_charge_is_zero_and_setting_is_on(): void
     {
         app(EcommerceSettingsService::class)->setSetting('claim.auto_approve_zero_charge', true);
@@ -780,6 +851,9 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertNotNull($return->approved_at);
     }
 
+    /**
+     * @effects return_auto_approval_needs_a_zero_charge
+     */
     public function test_request_does_not_auto_approve_when_a_charge_remains(): void
     {
         // 받을 돈이 남아 있으면 결제가 선행되어야 하므로 설정이 켜져 있어도 승인하지 않는다.
@@ -818,6 +892,9 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertSame(['requested', 'approved'], $sequence);
     }
 
+    /**
+     * @effects return_guest_request_has_no_requester
+     */
     public function test_guest_request_has_no_requester(): void
     {
         $order = $this->deliveredOrder();
@@ -835,6 +912,9 @@ class OrderReturnServiceTest extends ModuleTestCase
     // 미리보기
     // ================================================================
 
+    /**
+     * @effects return_preview_matches_the_requested_amounts
+     */
     public function test_preview_matches_requested_amounts(): void
     {
         $policy = $this->createClaimShippingPolicy(ChargePolicyEnum::FREE, 0);
@@ -921,6 +1001,9 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertSame($order->user_id, $withdrawn->requested_by);
     }
 
+    /**
+     * @effects return_withdraw_is_blocked_after_approval
+     */
     public function test_withdraw_is_blocked_after_approval(): void
     {
         $order = $this->deliveredOrder();
@@ -932,6 +1015,9 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertClaimException('claim_not_withdrawable', fn () => $this->service->withdraw($return));
     }
 
+    /**
+     * @effects return_withdraw_reverts_the_order_option
+     */
     public function test_withdraw_reverts_order_option_to_original_status(): void
     {
         $order = $this->deliveredOrder();
@@ -956,6 +1042,9 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertSame(OrderStatusEnum::DELIVERED, $order->options->first()->fresh()->option_status);
     }
 
+    /**
+     * @effects return_reject_reverts_each_item_to_its_own_original_status
+     */
     public function test_revert_restores_each_item_to_its_own_original_status(): void
     {
         $policy = $this->createClaimShippingPolicy();
@@ -1037,6 +1126,9 @@ class OrderReturnServiceTest extends ModuleTestCase
     // 상태 전이
     // ================================================================
 
+    /**
+     * @effects return_transition_follows_the_status_gate
+     */
     public function test_transition_follows_the_gate_forward(): void
     {
         $order = $this->deliveredOrder();
@@ -1061,6 +1153,9 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertClaimException('claim_transition_not_allowed', fn () => $this->service->transition($return, ReturnStatusEnum::COLLECTED));
     }
 
+    /**
+     * @effects return_completion_is_not_reachable_by_a_plain_transition
+     */
     public function test_transition_to_completed_is_blocked(): void
     {
         $order = $this->deliveredOrder();
@@ -1072,6 +1167,9 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertClaimException('claim_completion_flow_required', fn () => $this->service->transition($return, ReturnStatusEnum::COMPLETED));
     }
 
+    /**
+     * @effects return_on_hold_and_approval_times_are_stamped
+     */
     public function test_transition_stamps_approved_and_on_hold_times(): void
     {
         $order = $this->deliveredOrder();
@@ -1216,6 +1314,9 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertClaimException('claim_completion_flow_required', fn () => $this->service->transitionOption($return, [], ReturnStatusEnum::COMPLETED));
     }
 
+    /**
+     * @effects return_item_level_transition_moves_the_header_only_when_items_agree
+     */
     public function test_transition_option_moves_header_when_all_items_agree(): void
     {
         $order = $this->deliveredOrder();
@@ -1310,6 +1411,9 @@ class OrderReturnServiceTest extends ModuleTestCase
     // 금액 수정
     // ================================================================
 
+    /**
+     * @effects return_update_amounts_moves_the_total_charge_with_the_fee
+     */
     public function test_update_amounts_moves_total_charge_with_the_fee(): void
     {
         $policy = $this->createClaimShippingPolicy(ChargePolicyEnum::FREE, 0);
@@ -1393,6 +1497,8 @@ class OrderReturnServiceTest extends ModuleTestCase
     /**
      * 완료 시 반품 상품의 적립예정 마일리지를 회수한다 — 상품이 주문에서 빠졌으므로 그 적립도
      * 남으면 안 된다. (교환 축 `OrderExchangeServiceTest` 의 같은 이름 단언과 한 벌)
+     *
+     * @effects return_completion_cancels_the_pending_earn
      */
     public function test_complete_cancels_the_pending_earn_of_the_returned_option(): void
     {
@@ -1425,6 +1531,11 @@ class OrderReturnServiceTest extends ModuleTestCase
         );
     }
 
+    /**
+     * @scenario quantity=full, charge_method=none, refund_chain=none
+     *
+     * @effects return_completion_refund_is_filed_only_when_asked
+     */
     public function test_complete_without_refund_request_creates_no_refund(): void
     {
         $order = $this->deliveredOrder();
@@ -1443,6 +1554,11 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertNull($completed->refund_id);
     }
 
+    /**
+     * @scenario quantity=full, charge_method=none, refund_chain=at_completion
+     *
+     * @effects return_completion_refund_is_filed_exactly_once
+     */
     public function test_complete_with_refund_request_creates_exactly_one_refund(): void
     {
         $order = $this->deliveredOrder();
@@ -1520,6 +1636,9 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertSame(29000.0, (float) $refund->refund_amount);
     }
 
+    /**
+     * @effects return_completion_restores_stock_only_for_checked_items
+     */
     public function test_complete_restores_stock_only_for_checked_items(): void
     {
         $order = $this->deliveredOrder();
@@ -1615,6 +1734,8 @@ class OrderReturnServiceTest extends ModuleTestCase
      * 아무 값이나 돌려줘도 둘 다 통과한다. 한 라운드에서 A 만 복구하고 B 는 두는 형태로
      * 두 상품의 재고를 각각 단언해 그 사각을 닫는다. 헤더 `is_stock_restored` 가
      * "하나라도 복구되면 true" 임도 같은 케이스가 고정한다.
+     *
+     * @effects return_completion_stock_choice_can_differ_per_item
      */
     public function test_complete_restores_stock_per_item_when_the_choice_differs(): void
     {
@@ -1662,6 +1783,9 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertTrue((bool) $completed->is_stock_restored);
     }
 
+    /**
+     * @effects return_completion_ignores_the_settings_default
+     */
     public function test_complete_ignores_settings_defaults(): void
     {
         // 설정은 모달의 초기 선택값일 뿐이다 — 같은 요청은 설정과 무관하게 같은 결과여야 한다.
@@ -1713,6 +1837,9 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertSame(1, $partial->returnOptions->where('option_status', ReturnStatusEnum::COMPLETED)->count());
     }
 
+    /**
+     * @effects return_later_round_refund_covers_every_completed_item
+     */
     public function test_refund_created_in_a_later_round_covers_every_completed_item(): void
     {
         $policy = $this->createClaimShippingPolicy();
@@ -1753,6 +1880,9 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertClaimException('claim_completion_items_invalid', fn () => $this->service->completeReturn($return, [], $this->completionOptions($return, false, false)));
     }
 
+    /**
+     * @effects return_second_refund_request_is_rejected
+     */
     public function test_complete_rejects_a_second_refund_request(): void
     {
         $policy = $this->createClaimShippingPolicy();
@@ -1810,6 +1940,11 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertSame(1, OrderRefund::where('order_id', $order->id)->count());
     }
 
+    /**
+     * @scenario quantity=full, charge_method=none, refund_chain=after_completion
+     *
+     * @effects return_refund_can_be_filed_after_completion
+     */
     public function test_refund_request_can_be_created_after_completion(): void
     {
         $order = $this->deliveredOrder();
@@ -1828,6 +1963,286 @@ class OrderReturnServiceTest extends ModuleTestCase
 
         $this->assertSame(RefundSourceTypeEnum::RETURN, $refund->refund_source_type);
         $this->assertSame($refund->id, $completed->fresh()->refund_id);
+    }
+
+    /**
+     * @scenario quantity=full, charge_method=deduct_from_refund, refund_chain=none
+     *
+     * @effects return_deducted_fee_is_carried_into_a_later_refund_request
+     */
+    public function test_deducted_collection_fee_survives_a_completion_without_a_refund_request(): void
+    {
+        // '환불금 차감' 은 결제 행을 만들지 않는다 — 회수비는 오직 환불액에서 빠지는 형태로만
+        // 걷힌다. 그래서 완료 처리에서 '접수하지 않음' 을 고르면 그 시점에는 걷히는 곳이 없고,
+        // 회수비가 사라졌는지 미뤄졌는지는 **나중 접수**를 이어 봐야 갈린다(D26).
+        $policy = $this->createClaimShippingPolicy(ChargePolicyEnum::FREE, 0);
+        $this->setReturnFixedFee($policy, 3000);
+        $order = $this->deliveredOrder(29000, 1, $policy);
+
+        $return = $this->advanceTo(
+            $this->service->requestReturn(
+                $order,
+                $this->payload($order, chargeMethod: ClaimChargeMethodEnum::DEDUCT_FROM_REFUND)
+            ),
+            ReturnStatusEnum::COLLECTED
+        );
+
+        $completed = $this->service->completeReturn($return, [], $this->completionOptions($return, false, false));
+
+        $this->assertSame(0, OrderRefund::where('order_id', $order->id)->count());
+        $this->assertSame(3000.0, (float) $completed->claim_shipping_fee, '동결된 회수비는 남아 있다.');
+
+        // 나중 접수가 그 회수비를 실제로 뺀다 — 미뤄진 것이지 사라진 것이 아니다.
+        // 반품의 회수비는 배송비 재판정 차(`refund_shipping_amount`)가 아니라 환불 원금에서
+        // 빠진다(`OrderAdjustmentService` 의 `additionalCharges`) — 두 값을 헷갈리면 회수비가
+        // 두 번 빠지거나 한 번도 안 빠진다.
+        $refund = $this->service->createRefundRequestForCompleted($completed);
+
+        $this->assertSame(26000.0, (float) $refund->refund_amount, '29,000 − 회수비 3,000.');
+        $this->assertSame(0.0, (float) $refund->refund_shipping_amount, '주문 배송비가 무료라 재판정 차는 없다.');
+    }
+
+    /**
+     * 회수비 3,000 원이 청구되는 반품을 접수 → 회수도착 → 완료까지 진행합니다.
+     *
+     * 환불 접수 시점(`refund_chain`) 축은 신청 단계만으로는 잴 수 없다 — 접수 여부는 완료
+     * 처리에서 정해지고, '완료 뒤 접수' 는 그보다 한 단계 더 뒤다. 그래서 이 축의 칸은
+     * 전부 신청부터 완료까지 관통한 뒤에 판정한다.
+     *
+     * @param  ClaimChargeMethodEnum|null  $method  청구 방식 (null 이면 판매자 귀책이라 청구가 0)
+     * @param  bool  $createRefundRequest  완료 시 환불 접수 여부
+     * @param  int|null  $quantity  신청 수량 (null 이면 전량)
+     * @return array{0: Order, 1: OrderReturn} [주문, 완료된 반품]
+     */
+    private function completedReturn(
+        ?ClaimChargeMethodEnum $method,
+        bool $createRefundRequest,
+        ?int $quantity = null,
+    ): array {
+        $policy = $this->createClaimShippingPolicy(ChargePolicyEnum::FREE, 0);
+        $this->setReturnFixedFee($policy, 3000);
+        $order = $this->deliveredOrder(29000, $quantity === null ? 1 : 3, $policy);
+
+        $return = $this->advanceTo(
+            $this->service->requestReturn($order, $this->payload(
+                $order,
+                $method === null ? 'defective_product' : 'changed_mind',
+                quantity: $quantity,
+                chargeMethod: $method,
+            )),
+            ReturnStatusEnum::COLLECTED
+        );
+
+        return [
+            $order,
+            $this->service->completeReturn($return, [], $this->completionOptions($return, false, $createRefundRequest)),
+        ];
+    }
+
+    /**
+     * @scenario quantity=full, charge_method=pay_on_request, refund_chain=none
+     *
+     * @effects return_completion_refund_is_filed_only_when_asked
+     */
+    public function test_full_return_charged_on_request_can_complete_without_filing_a_refund(): void
+    {
+        [$order, $completed] = $this->completedReturn(ClaimChargeMethodEnum::PAY_ON_REQUEST, false);
+
+        $this->assertSame(0, OrderRefund::where('order_id', $order->id)->count());
+        $this->assertNull($completed->refund_id);
+    }
+
+    /**
+     * @scenario quantity=full, charge_method=pay_on_request, refund_chain=at_completion
+     *
+     * @effects return_completion_refund_is_filed_exactly_once
+     */
+    public function test_full_return_charged_on_request_files_the_refund_at_completion(): void
+    {
+        [$order, $completed] = $this->completedReturn(ClaimChargeMethodEnum::PAY_ON_REQUEST, true);
+
+        $this->assertSame(1, OrderRefund::where('order_id', $order->id)->count());
+        $this->assertNotNull($completed->refund_id);
+    }
+
+    /**
+     * @scenario quantity=full, charge_method=pay_on_request, refund_chain=after_completion
+     *
+     * @effects return_refund_can_be_filed_after_completion
+     */
+    public function test_full_return_charged_on_request_files_the_refund_after_completion(): void
+    {
+        [$order, $completed] = $this->completedReturn(ClaimChargeMethodEnum::PAY_ON_REQUEST, false);
+
+        $this->assertSame(0, OrderRefund::where('order_id', $order->id)->count());
+
+        $refund = $this->service->createRefundRequestForCompleted($completed);
+
+        $this->assertSame($refund->id, $completed->fresh()->refund_id);
+        $this->assertSame(1, OrderRefund::where('order_id', $order->id)->count());
+    }
+
+    /**
+     * @scenario quantity=full, charge_method=pay_on_approval, refund_chain=none
+     *
+     * @effects return_completion_refund_is_filed_only_when_asked
+     */
+    public function test_full_return_charged_on_approval_can_complete_without_filing_a_refund(): void
+    {
+        [$order, $completed] = $this->completedReturn(ClaimChargeMethodEnum::PAY_ON_APPROVAL, false);
+
+        $this->assertSame(0, OrderRefund::where('order_id', $order->id)->count());
+        $this->assertNull($completed->refund_id);
+    }
+
+    /**
+     * @scenario quantity=full, charge_method=pay_on_approval, refund_chain=at_completion
+     *
+     * @effects return_completion_refund_is_filed_exactly_once
+     */
+    public function test_full_return_charged_on_approval_files_the_refund_at_completion(): void
+    {
+        [$order, $completed] = $this->completedReturn(ClaimChargeMethodEnum::PAY_ON_APPROVAL, true);
+
+        $this->assertSame(1, OrderRefund::where('order_id', $order->id)->count());
+        $this->assertNotNull($completed->refund_id);
+    }
+
+    /**
+     * @scenario quantity=full, charge_method=pay_on_approval, refund_chain=after_completion
+     *
+     * @effects return_refund_can_be_filed_after_completion
+     */
+    public function test_full_return_charged_on_approval_files_the_refund_after_completion(): void
+    {
+        [$order, $completed] = $this->completedReturn(ClaimChargeMethodEnum::PAY_ON_APPROVAL, false);
+
+        $this->assertSame(0, OrderRefund::where('order_id', $order->id)->count());
+
+        $refund = $this->service->createRefundRequestForCompleted($completed);
+
+        $this->assertSame($refund->id, $completed->fresh()->refund_id);
+        $this->assertSame(1, OrderRefund::where('order_id', $order->id)->count());
+    }
+
+    /**
+     * @scenario quantity=full, charge_method=deduct_from_refund, refund_chain=at_completion
+     *
+     * @effects return_deducted_fee_is_carried_into_a_later_refund_request
+     */
+    public function test_full_return_deducting_the_fee_files_the_refund_at_completion(): void
+    {
+        [$order, $completed] = $this->completedReturn(ClaimChargeMethodEnum::DEDUCT_FROM_REFUND, true);
+
+        $refund = OrderRefund::findOrFail($completed->refund_id);
+
+        $this->assertSame(26000.0, (float) $refund->refund_amount, '29,000 − 회수비 3,000.');
+    }
+
+    /**
+     * @scenario quantity=full, charge_method=deduct_from_refund, refund_chain=after_completion
+     *
+     * @effects return_deducted_fee_is_carried_into_a_later_refund_request
+     */
+    public function test_full_return_deducting_the_fee_files_the_refund_after_completion(): void
+    {
+        [$order, $completed] = $this->completedReturn(ClaimChargeMethodEnum::DEDUCT_FROM_REFUND, false);
+
+        $this->assertSame(0, OrderRefund::where('order_id', $order->id)->count());
+
+        $refund = $this->service->createRefundRequestForCompleted($completed);
+
+        $this->assertSame(26000.0, (float) $refund->refund_amount, '미룬 접수도 회수비를 뺀다.');
+    }
+
+    /**
+     * @scenario quantity=partial, charge_method=pay_on_request, refund_chain=none
+     *
+     * @effects return_completion_refund_is_filed_only_when_asked
+     */
+    public function test_partial_return_charged_on_request_can_complete_without_filing_a_refund(): void
+    {
+        [$order, $completed] = $this->completedReturn(ClaimChargeMethodEnum::PAY_ON_REQUEST, false, 1);
+
+        $this->assertSame(0, OrderRefund::where('order_id', $order->id)->count());
+        $this->assertNull($completed->refund_id);
+    }
+
+    /**
+     * @scenario quantity=partial, charge_method=pay_on_request, refund_chain=at_completion
+     *
+     * @effects return_completion_refund_is_filed_exactly_once
+     */
+    public function test_partial_return_charged_on_request_files_a_refund_for_the_returned_quantity(): void
+    {
+        [$order, $completed] = $this->completedReturn(ClaimChargeMethodEnum::PAY_ON_REQUEST, true, 1);
+
+        $this->assertSame(1, OrderRefund::where('order_id', $order->id)->count());
+
+        $refund = OrderRefund::findOrFail($completed->refund_id);
+
+        $this->assertCount(1, $refund->refundOptions, '나뉜 행 하나만 환불에 실린다.');
+    }
+
+    /**
+     * @scenario quantity=partial, charge_method=pay_on_request, refund_chain=after_completion
+     *
+     * @effects return_refund_can_be_filed_after_completion
+     */
+    public function test_partial_return_charged_on_request_files_the_refund_after_completion(): void
+    {
+        [$order, $completed] = $this->completedReturn(ClaimChargeMethodEnum::PAY_ON_REQUEST, false, 1);
+
+        $this->assertSame(0, OrderRefund::where('order_id', $order->id)->count());
+
+        $refund = $this->service->createRefundRequestForCompleted($completed);
+
+        $this->assertCount(1, $refund->refundOptions, '나뉜 행 하나만 환불에 실린다.');
+    }
+
+    /**
+     * @scenario quantity=partial, charge_method=none, refund_chain=none
+     *
+     * @effects return_completion_refund_is_filed_only_when_asked
+     */
+    public function test_partial_return_without_a_charge_can_complete_without_filing_a_refund(): void
+    {
+        [$order, $completed] = $this->completedReturn(null, false, 1);
+
+        $this->assertSame(0, OrderRefund::where('order_id', $order->id)->count());
+        $this->assertNull($completed->refund_id);
+    }
+
+    /**
+     * @scenario quantity=partial, charge_method=none, refund_chain=at_completion
+     *
+     * @effects return_completion_refund_is_filed_exactly_once
+     */
+    public function test_partial_return_without_a_charge_files_a_refund_for_the_returned_quantity(): void
+    {
+        [$order, $completed] = $this->completedReturn(null, true, 1);
+
+        $this->assertSame(1, OrderRefund::where('order_id', $order->id)->count());
+
+        $refund = OrderRefund::findOrFail($completed->refund_id);
+
+        $this->assertCount(1, $refund->refundOptions, '나뉜 행 하나만 환불에 실린다.');
+    }
+
+    /**
+     * @scenario quantity=partial, charge_method=none, refund_chain=after_completion
+     *
+     * @effects return_refund_can_be_filed_after_completion
+     */
+    public function test_partial_return_without_a_charge_files_the_refund_after_completion(): void
+    {
+        [$order, $completed] = $this->completedReturn(null, false, 1);
+
+        $this->assertSame(0, OrderRefund::where('order_id', $order->id)->count());
+
+        $refund = $this->service->createRefundRequestForCompleted($completed);
+
+        $this->assertCount(1, $refund->refundOptions, '나뉜 행 하나만 환불에 실린다.');
     }
 
     public function test_late_refund_request_is_blocked_when_one_exists(): void
@@ -2033,7 +2448,7 @@ class OrderReturnServiceTest extends ModuleTestCase
      *
      * @scenario claim_type=return, charge_method=deduct_from_refund, refund_branch=none
      *
-     * @effects claim_return_preview_reports_refund_before_deduction
+     * @effects claim_return_preview_reports_refund_before_deduction, return_preview_reports_the_refund_before_the_fee_is_deducted
      */
     public function test_preview_reports_the_refund_before_the_collection_fee_is_deducted(): void
     {
@@ -2389,6 +2804,9 @@ class OrderReturnServiceTest extends ModuleTestCase
         ));
     }
 
+    /**
+     * @effects return_request_rejects_a_quantity_locked_by_another_claim
+     */
     public function test_preview_rejects_a_quantity_locked_by_a_live_refund_request(): void
     {
         $order = $this->deliveredOrder(29000, 2);
@@ -2431,6 +2849,9 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertSame(29000.0, (float) $preview['adjustment']->getTotalRefundAmount());
     }
 
+    /**
+     * @effects return_update_request_recalculates_the_fee_when_the_reason_changes
+     */
     public function test_update_request_recalculates_the_fee_when_the_reason_changes(): void
     {
         $policy = $this->createClaimShippingPolicy();
@@ -2461,6 +2882,9 @@ class OrderReturnServiceTest extends ModuleTestCase
         $this->assertSame(ClaimChargeMethodEnum::PAY_ON_APPROVAL, $updated->charge_method);
     }
 
+    /**
+     * @effects return_update_request_is_blocked_after_approval
+     */
     public function test_update_request_is_blocked_after_approval(): void
     {
         $order = $this->deliveredOrder();

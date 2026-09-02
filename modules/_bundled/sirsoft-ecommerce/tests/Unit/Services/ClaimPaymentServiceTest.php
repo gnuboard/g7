@@ -123,6 +123,9 @@ class ClaimPaymentServiceTest extends ModuleTestCase
         $this->assertSame(ReturnStatusEnum::PAYMENT_PENDING, $return->fresh()->return_status);
     }
 
+    /**
+     * @effects claim_payment_is_not_created_for_deduct_from_refund
+     */
     public function test_initiate_does_nothing_for_deduct_from_refund(): void
     {
         $return = $this->requestedReturn(ClaimChargeMethodEnum::DEDUCT_FROM_REFUND);
@@ -132,6 +135,9 @@ class ClaimPaymentServiceTest extends ModuleTestCase
         $this->assertSame(0, ClaimPayment::count());
     }
 
+    /**
+     * @effects claim_payment_on_approval_waits_for_the_admin
+     */
     public function test_initiate_does_nothing_for_pay_on_approval_until_the_admin_approves(): void
     {
         $return = $this->requestedReturn(ClaimChargeMethodEnum::PAY_ON_APPROVAL);
@@ -140,6 +146,9 @@ class ClaimPaymentServiceTest extends ModuleTestCase
         $this->assertSame(ReturnStatusEnum::REQUESTED, $return->fresh()->return_status);
     }
 
+    /**
+     * @effects claim_payment_row_is_created_only_when_the_charge_is_positive
+     */
     public function test_initiate_does_nothing_when_the_charge_is_zero(): void
     {
         $order = $this->deliveredClaimOrder(returnFee: 0);
@@ -152,6 +161,9 @@ class ClaimPaymentServiceTest extends ModuleTestCase
         $this->assertNull($this->service->initiateForRequest($return, PaymentMethodEnum::CARD->value));
     }
 
+    /**
+     * @effects claim_payment_method_outside_the_allowed_list_is_rejected
+     */
     public function test_initiate_rejects_a_payment_method_outside_the_allowed_list(): void
     {
         app(EcommerceSettingsService::class)->setSetting('claim.charge_payment_methods', [PaymentMethodEnum::CARD->value]);
@@ -161,6 +173,9 @@ class ClaimPaymentServiceTest extends ModuleTestCase
         $this->assertSame(ReturnStatusEnum::REQUESTED, $return->fresh()->return_status);
     }
 
+    /**
+     * @effects claim_payment_on_approval_is_idempotent
+     */
     public function test_request_payment_on_approval_creates_the_pending_payment_at_approval_time(): void
     {
         $return = $this->requestedReturn(ClaimChargeMethodEnum::PAY_ON_APPROVAL);
@@ -176,6 +191,9 @@ class ClaimPaymentServiceTest extends ModuleTestCase
         $this->assertSame(1, ClaimPayment::count());
     }
 
+    /**
+     * @effects claim_payment_guest_never_gets_a_mileage_payment_row
+     */
     public function test_request_payment_on_approval_never_creates_a_mileage_row_for_a_guest(): void
     {
         // 승인 시점 결제도 결제행을 만드는 경로다. 허용 목록의 첫 수단을 그대로 쓰면 마일리지를 앞에 둔
@@ -204,6 +222,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     // 마일리지 결제
     // ================================================================
 
+    /**
+     * @scenario method=point, timing=on_request, outcome=approved
+     *
+     * @effects claim_payment_mileage_is_deducted_fifo_once_per_payment
+     */
     public function test_pay_with_mileage_deducts_fifo_and_marks_the_payment_paid(): void
     {
         $return = $this->requestedReturn();
@@ -232,6 +255,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
         $this->assertSame([[$return->id, $paid->payment_number]], $fired);
     }
 
+    /**
+     * @scenario method=point, timing=on_request, outcome=failed
+     *
+     * @effects claim_payment_mileage_insufficient_balance_leaves_the_payment_pending
+     */
     public function test_pay_with_mileage_rejects_an_insufficient_balance_without_marking_paid(): void
     {
         $return = $this->requestedReturn();
@@ -243,6 +271,9 @@ class ClaimPaymentServiceTest extends ModuleTestCase
         $this->assertSame(0, MileageTransaction::where('claim_payment_id', $payment->id)->count());
     }
 
+    /**
+     * @effects claim_payment_mileage_requires_a_member
+     */
     public function test_pay_with_mileage_requires_a_member(): void
     {
         $return = $this->requestedReturn();
@@ -265,6 +296,9 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     // PG 결제창 파라미터 / 승인
     // ================================================================
 
+    /**
+     * @effects claim_payment_number_is_the_merchant_order_id
+     */
     public function test_pay_with_card_returns_the_pg_entry_with_the_cp_number_as_merchant_order_id(): void
     {
         $this->registerTestPgProvider();
@@ -289,6 +323,9 @@ class ClaimPaymentServiceTest extends ModuleTestCase
         $this->assertSame(ClaimPaymentStatusEnum::PENDING, $payment->fresh()->payment_status);
     }
 
+    /**
+     * @effects claim_payment_requires_a_readable_currency_snapshot
+     */
     public function test_pay_with_card_is_rejected_when_the_order_has_no_currency_snapshot(): void
     {
         // 진입 금액과 승인 대조 금액은 같은 해석기(`resolvePaymentCharge`)를 써야 한다 — 스냅샷을
@@ -392,6 +429,9 @@ class ClaimPaymentServiceTest extends ModuleTestCase
         $this->assertNull($payload['pg_payment_data']);
     }
 
+    /**
+     * @effects claim_payment_switching_the_method_moves_the_amount_between_columns
+     */
     public function test_pay_switching_the_method_moves_the_amount_between_pg_and_points_columns(): void
     {
         $return = $this->requestedReturn();
@@ -405,6 +445,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
         $this->assertSame(0.0, (float) $result['payment']->amount);
     }
 
+    /**
+     * @scenario method=card, timing=on_request, outcome=approved
+     *
+     * @effects claim_payment_pg_approval_goes_through_the_plugin_hook
+     */
     public function test_approve_confirms_the_payment_through_the_plugin_hook(): void
     {
         $this->registerTestPgProvider();
@@ -423,6 +468,9 @@ class ClaimPaymentServiceTest extends ModuleTestCase
         $this->assertSame('pk_1', $captured['callback']['paymentKey']);
     }
 
+    /**
+     * @effects claim_payment_pg_failure_message_is_not_leaked_to_the_response
+     */
     public function test_pg_failure_message_does_not_leak_the_provider_text_to_the_response(): void
     {
         // 이 예외는 비회원(비인증) 경로로도 나간다 — PG 원문은 상점 MID·내부 상태를 담을 수 있으므로
@@ -447,6 +495,9 @@ class ClaimPaymentServiceTest extends ModuleTestCase
         }
     }
 
+    /**
+     * @effects claim_payment_point_refund_without_an_owner_is_not_marked_refunded
+     */
     public function test_a_point_refund_without_a_resolvable_owner_is_not_marked_refunded(): void
     {
         // 환급 대상을 못 찾았는데 상태만 환급 완료로 옮기면 낸 돈이 사라진 채 장부만 정산된다.
@@ -465,6 +516,9 @@ class ClaimPaymentServiceTest extends ModuleTestCase
         $this->assertSame(0.0, (float) $paid->fresh()->refunded_amount, '환급하지 못했는데 누적액이 올라가면 안 됩니다.');
     }
 
+    /**
+     * @effects claim_payment_pg_approval_is_idempotent_for_a_replayed_callback
+     */
     public function test_approve_is_idempotent_for_a_replayed_callback(): void
     {
         $this->registerTestPgProvider();
@@ -485,6 +539,9 @@ class ClaimPaymentServiceTest extends ModuleTestCase
         $this->assertSame(1, ClaimPayment::count());
     }
 
+    /**
+     * @effects claim_payment_pg_approval_without_a_listener_is_rejected
+     */
     public function test_approve_without_a_plugin_listener_is_rejected_and_leaves_the_payment_pending(): void
     {
         $this->registerTestPgProvider();
@@ -495,6 +552,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
         $this->assertSame(ClaimPaymentStatusEnum::PENDING, $payment->fresh()->payment_status);
     }
 
+    /**
+     * @scenario method=card, timing=on_request, outcome=failed
+     *
+     * @effects claim_payment_pg_failure_keeps_the_payment_pending_and_records_the_error
+     */
     public function test_approve_failure_records_the_pg_error_and_keeps_the_payment_pending(): void
     {
         $this->registerTestPgProvider();
@@ -511,6 +573,9 @@ class ClaimPaymentServiceTest extends ModuleTestCase
         $this->assertSame(ReturnStatusEnum::PAYMENT_PENDING, $return->fresh()->return_status);
     }
 
+    /**
+     * @effects claim_payment_amount_must_match_the_frozen_charge
+     */
     public function test_approve_rejects_an_amount_that_differs_from_the_charge(): void
     {
         $this->registerTestPgProvider();
@@ -527,6 +592,9 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     // 결제 확정 뒤 전이
     // ================================================================
 
+    /**
+     * @effects claim_payment_completion_moves_the_claim_to_paid
+     */
     public function test_pay_on_request_lands_in_paid_after_payment_unless_auto_approve_is_on(): void
     {
         // §4-2 paid 규약 — 자동 승인이 꺼져 있어도 수납이 끝난 건은 결제대기에 남지 않는다.
@@ -556,6 +624,9 @@ class ClaimPaymentServiceTest extends ModuleTestCase
         $this->assertTrue($paid->return_status->canTransitionTo(ReturnStatusEnum::WITHDRAWN));
     }
 
+    /**
+     * @effects claim_payment_on_request_auto_approves_only_when_the_setting_is_on
+     */
     public function test_pay_on_request_auto_approves_after_payment_when_the_setting_is_on(): void
     {
         app(EcommerceSettingsService::class)->setSetting('claim.auto_approve_after_payment', true);
@@ -569,6 +640,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
         $this->assertSame(ReturnStatusEnum::APPROVED, $return->fresh()->return_status);
     }
 
+    /**
+     * @scenario method=point, timing=on_approval, outcome=approved
+     *
+     * @effects claim_payment_on_approval_always_approves_after_payment
+     */
     public function test_pay_on_approval_always_approves_after_payment(): void
     {
         $return = $this->requestedReturn(ClaimChargeMethodEnum::PAY_ON_APPROVAL);
@@ -580,6 +656,40 @@ class ClaimPaymentServiceTest extends ModuleTestCase
         $this->assertSame(ReturnStatusEnum::APPROVED, $return->fresh()->return_status);
     }
 
+    /**
+     * @scenario method=card, timing=on_approval, outcome=approved
+     *
+     * @effects claim_payment_on_approval_always_approves_after_payment
+     */
+    public function test_pay_on_approval_confirms_a_card_payment_through_the_plugin_hook(): void
+    {
+        // 승인 시점 청구도 결제창을 거친다 — 청구가 언제 발행됐는지는 결제 행이 만들어지는
+        // 순간만 바꾸고, 그 뒤의 PG 승인 경로는 신청 시점 결제와 같은 코드다.
+        $this->registerTestPgProvider();
+        $captured = null;
+        $this->fakeClaimPaymentApprove(true, ['paid_amount' => 3000, 'raw_response' => ['ok' => true]], $captured);
+        $return = $this->requestedReturn(ClaimChargeMethodEnum::PAY_ON_APPROVAL);
+        $payment = $this->service->requestPaymentOnApproval($return, $this->createAdminUser()->id);
+
+        $this->assertSame(PaymentMethodEnum::CARD->value, $payment->payment_method);
+
+        $paid = $this->service->approvePgPayment($payment, [
+            'paymentKey' => 'pk_1',
+            'orderId' => $payment->payment_number,
+            'amount' => 3000,
+        ]);
+
+        $this->assertSame(ClaimPaymentStatusEnum::PAID, $paid->payment_status);
+        $this->assertSame(
+            ReturnStatusEnum::APPROVED,
+            $return->fresh()->return_status,
+            '승인 시점 결제는 설정과 무관하게 결제 확정 뒤 승인으로 간다.'
+        );
+    }
+
+    /**
+     * @effects claim_payment_completion_fires_the_claim_type_specific_hook
+     */
     public function test_exchange_payment_completion_fires_the_exchange_hook_and_can_auto_approve(): void
     {
         app(EcommerceSettingsService::class)->setSetting('claim.auto_approve_after_payment', true);
@@ -606,6 +716,8 @@ class ClaimPaymentServiceTest extends ModuleTestCase
      * 훅이 전이보다 앞서면 정상 경로에서도 리스너가 보는 상태가 언제나 `payment_pending`
      * 이라 '결제완료' 를 통지하면서 결제대기라고 적게 된다. `docs/api/claim-payments.md`
      * 도 "옮겨지고 … 훅이 발행됩니다" 로 이 순서를 계약으로 공표한다.
+     *
+     * @effects claim_payment_completion_hook_sees_the_claim_already_paid
      */
     public function test_payment_completion_hook_sees_the_claim_already_moved_to_paid(): void
     {
@@ -623,6 +735,9 @@ class ClaimPaymentServiceTest extends ModuleTestCase
         $this->assertSame([ReturnStatusEnum::PAID->value], $observed);
     }
 
+    /**
+     * @effects claim_payment_partial_payment_stays_in_payment_pending
+     */
     public function test_partial_payment_leaves_the_claim_in_payment_pending_without_firing_the_completion_hook(): void
     {
         $return = $this->requestedReturn();
@@ -650,6 +765,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     // 환급
     // ================================================================
 
+    /**
+     * @scenario method=point, timing=on_request, outcome=refunded
+     *
+     * @effects claim_payment_refund_restores_mileage_once
+     */
     public function test_refund_for_claim_restores_mileage_once_and_marks_the_payment_refunded(): void
     {
         $return = $this->requestedReturn();
@@ -668,6 +788,9 @@ class ClaimPaymentServiceTest extends ModuleTestCase
         $this->assertSame(10000.0, (float) MileageTransaction::where('user_id', $userId)->sum('remaining_amount'));
     }
 
+    /**
+     * @effects claim_payment_refund_cancels_a_pending_payment_without_refunding
+     */
     public function test_refund_for_claim_cancels_a_pending_payment_without_refunding(): void
     {
         $return = $this->requestedReturn();
@@ -679,6 +802,11 @@ class ClaimPaymentServiceTest extends ModuleTestCase
         $this->assertSame(ClaimPaymentStatusEnum::CANCELLED, $payment->fresh()->payment_status);
     }
 
+    /**
+     * @scenario method=card, timing=on_request, outcome=refunded
+     *
+     * @effects claim_payment_refund_calls_the_pg_hook_with_an_idempotency_key
+     */
     public function test_refund_for_claim_calls_the_pg_refund_hook_with_an_idempotency_key(): void
     {
         $this->registerTestPgProvider();
@@ -698,6 +826,9 @@ class ClaimPaymentServiceTest extends ModuleTestCase
         $this->assertSame(ClaimPaymentStatusEnum::REFUNDED, $payment->fresh()->payment_status);
     }
 
+    /**
+     * @effects claim_payment_refund_idempotency_key_changes_when_the_amount_changes
+     */
     public function test_pg_refund_idempotency_key_changes_when_a_failed_refund_is_retried_with_another_amount(): void
     {
         $this->registerTestPgProvider();
@@ -722,6 +853,9 @@ class ClaimPaymentServiceTest extends ModuleTestCase
         $this->assertSame(sprintf('g7-claimpay-%d-0-200000', $payment->id), $calls[1]['key']);
     }
 
+    /**
+     * @effects claim_payment_refund_failure_keeps_the_payment_paid
+     */
     public function test_pg_refund_failure_is_raised_and_keeps_the_payment_paid(): void
     {
         $this->registerTestPgProvider();
@@ -737,6 +871,9 @@ class ClaimPaymentServiceTest extends ModuleTestCase
         $this->assertSame('REFUND_DECLINED', $payment->fresh()->pg_error_code);
     }
 
+    /**
+     * @effects claim_payment_refund_without_a_listener_is_rejected
+     */
     public function test_pg_refund_without_a_plugin_listener_is_rejected(): void
     {
         $this->registerTestPgProvider();
@@ -752,6 +889,9 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     // 차액 정산 (D14)
     // ================================================================
 
+    /**
+     * @effects claim_payment_settle_difference_refunds_a_decrease
+     */
     public function test_settle_difference_refunds_the_decrease_partially_and_keeps_the_payment_paid(): void
     {
         $return = $this->requestedReturn();
@@ -774,6 +914,9 @@ class ClaimPaymentServiceTest extends ModuleTestCase
         $this->assertSame(0.0, $this->service->outstandingAmount($return->fresh()));
     }
 
+    /**
+     * @effects claim_payment_settle_difference_charges_an_increase
+     */
     public function test_settle_difference_creates_a_pending_payment_for_the_increase(): void
     {
         $return = $this->requestedReturn();
@@ -807,6 +950,9 @@ class ClaimPaymentServiceTest extends ModuleTestCase
         $this->assertSame(1, ClaimPayment::count());
     }
 
+    /**
+     * @effects claim_payment_settle_difference_cancels_the_pending_row_at_zero
+     */
     public function test_settle_difference_cancels_the_pending_payment_when_the_charge_drops_to_zero(): void
     {
         $return = $this->requestedReturn();
@@ -822,6 +968,9 @@ class ClaimPaymentServiceTest extends ModuleTestCase
     // 주문 합계
     // ================================================================
 
+    /**
+     * @effects claim_payment_order_paid_total_excludes_refunded_amounts
+     */
     public function test_order_paid_total_sums_net_paid_amounts_across_claims(): void
     {
         $order = $this->deliveredClaimOrder(quantity: 2);

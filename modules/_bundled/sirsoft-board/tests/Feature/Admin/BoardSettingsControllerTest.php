@@ -17,6 +17,11 @@ use Modules\Sirsoft\Board\Tests\ModuleTestCase;
  * 게시판 환경설정 API 테스트
  *
  * BoardSettingsController의 CRUD + bulkApply + clearCache를 검증합니다.
+ *
+ * @effects permission_failure_rolls_back_all_boards,
+ *   permission_failure_response_has_rolled_back_and_board_name,
+ *   column_failure_rolls_back_all_changes,
+ *   column_failure_response_has_rolled_back_and_null_board
  */
 class BoardSettingsControllerTest extends ModuleTestCase
 {

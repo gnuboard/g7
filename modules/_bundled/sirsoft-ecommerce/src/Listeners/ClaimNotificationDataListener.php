@@ -204,9 +204,14 @@ class ClaimNotificationDataListener implements HookListenerInterface
     private function buildAmountData(OrderExchange|OrderReturn|OrderRefund $claim, ?Order $order): array
     {
         if ($claim instanceof OrderRefund) {
+            // 화면(`ClaimResource::refund_total`)과 같은 식이다 — 현금 + 마일리지.
+            // `refund_shipping_amount` 는 가산 항목이 아니라 `refund_amount` 안에 이미 든 값의
+            // **내역**이다: 배송비 재판정 차는 재계산 결제액에 포함돼 있고
+            // (`OrderAdjustmentService`), 교환의 회수비는 음수로 기록되지만 그 몫 역시
+            // 환불액에서 이미 빠졌다(`OrderExchangeService`). 더하면 유형마다 반대 방향으로
+            // 어긋난다 — 교환은 실제보다 적게, 반품·취소는 많게 알리며 오류는 남지 않는다.
             $refundTotal = (float) $claim->refund_amount
-                + (float) $claim->refund_points_amount
-                + (float) $claim->refund_shipping_amount;
+                + (float) $claim->refund_points_amount;
 
             return [
                 'charge_amount' => '',

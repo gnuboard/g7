@@ -5,10 +5,14 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Listeners;
 use Illuminate\Support\Facades\Hash;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimChargeMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Listeners\ClaimNotificationDataListener;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderAddress;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
+use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
 use Modules\Sirsoft\Ecommerce\Services\ClaimPaymentService;
 use Modules\Sirsoft\Ecommerce\Services\OrderExchangeService;
@@ -139,6 +143,63 @@ class ClaimNotificationDataListenerTest extends ModuleTestCase
         $this->assertStringEndsWith('/admin/ecommerce/claims/'.$return->return_number, $result['data']['claim_url']);
         $this->assertNotSame('', $result['data']['requester_name']);
         $this->assertArrayNotHasKey('guest_recipient', $result['context']);
+    }
+
+    /**
+     * 환불 알림의 금액은 화면이 말하는 환불액과 같아야 한다.
+     *
+     * `refund_shipping_amount` 는 가산 항목이 아니라 `refund_amount` 안에 이미 든 값의
+     * **내역**이다 — 배송비 재판정 차는 재계산 결제액에 포함돼 있고(`OrderAdjustmentService`),
+     * 교환의 회수비는 음수로 기록되지만 그 몫 역시 `refund_amount` 에서 이미 빠졌다
+     * (`OrderExchangeService`). 그래서 이 컬럼을 더하면 유형마다 반대 방향으로 어긋난다 —
+     * 교환은 실제보다 적게, 반품·취소는 많게 알린다. 화면(`ClaimResource::refund_total`)은
+     * 현금 + 마일리지만 더하므로 같은 신청서를 두 곳이 다른 금액으로 말한다.
+     */
+    public function test_refund_notification_amount_matches_what_the_screen_reports(): void
+    {
+        $order = $this->deliveredClaimOrder();
+
+        $fromExchange = OrderRefund::create([
+            'order_id' => $order->id,
+            'refund_source_type' => RefundSourceTypeEnum::EXCHANGE,
+            'refund_source_id' => 1,
+            'refund_number' => 'RF-EXCHANGE-1',
+            'refund_status' => RefundStatusEnum::COMPLETED,
+            'refund_method' => RefundMethodEnum::PG,
+            'refund_amount' => 7000,
+            'refund_points_amount' => 0,
+            // 저가 교환의 왕복 배송비 차감분 — 7,000 은 이미 이 몫을 뺀 순액이다.
+            'refund_shipping_amount' => -3000,
+        ]);
+
+        $result = $this->listener->extractData($this->emptyResult(), 'refund_completed', [$fromExchange->fresh()]);
+
+        $this->assertStringContainsString(
+            '7,000',
+            $result['data']['refund_amount'],
+            '교환 출처 환불은 실제 입금액을 알려야 한다 — 회수비를 한 번 더 빼면 4,000 이 된다.'
+        );
+
+        $fromReturn = OrderRefund::create([
+            'order_id' => $order->id,
+            'refund_source_type' => RefundSourceTypeEnum::RETURN,
+            'refund_source_id' => 1,
+            'refund_number' => 'RF-RETURN-1',
+            'refund_status' => RefundStatusEnum::COMPLETED,
+            'refund_method' => RefundMethodEnum::PG,
+            'refund_amount' => 26000,
+            'refund_points_amount' => 0,
+            // 반품으로 되돌아가는 주문 배송비 — 26,000 에 이미 포함된 값의 내역이다.
+            'refund_shipping_amount' => 3000,
+        ]);
+
+        $result = $this->listener->extractData($this->emptyResult(), 'refund_completed', [$fromReturn->fresh()]);
+
+        $this->assertStringContainsString(
+            '26,000',
+            $result['data']['refund_amount'],
+            '반품 출처 환불은 배송비를 두 번 세면 29,000 이 된다.'
+        );
     }
 
     public function test_non_claim_types_pass_through_untouched(): void
