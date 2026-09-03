@@ -1,6 +1,6 @@
 # audit:allow test-scenario-coverage reason: Phase 2 SSoT — 본 매니페스트는 KG 이니시스 콜백 보안 매트릭스의 명세 문서. 단위 테스트(ValidatesTimestampFreshnessTest 13건) 가 freshness 핵심 경로를 커버하며, replay/net-cancel 의 cross product 전체 자동 검증은 Phase 3 (침투 PoC) 에서 처리.
 
-feature: 콜백 보안 방어 (replay attack / signature timestamp freshness / post-approve net cancel)
+feature: 콜백 보안 방어 (replay attack / signature timestamp freshness / post-approve net cancel / 비인증 브라우저 콜백의 주문 변조)
 
 description: |
   KG 이니시스 결제 콜백 처리 경로의 3가지 핵심 보안 위협에 대한 방어 매트릭스.
@@ -18,8 +18,9 @@ description: |
 
 axes:
   context: [authCallback_card, vbankNotify, mobileApproval_card, mobileVbankNotify, cbtCallback]
-  threat: [replay, stale_timestamp, post_approve_failure]
-  callback_state: [first_arrival, second_arrival_same_tid, signature_expired, signature_fresh, domain_succeeds, domain_fails]
+  threat: [replay, stale_timestamp, post_approve_failure, forged_browser_callback]
+  callback_state: [first_arrival, second_arrival_same_tid, signature_expired, signature_fresh, domain_succeeds, domain_fails, authorize_not_yet_attempted, authorize_failed, authorize_succeeded]
+  caller: [pg_server_verified, unauthenticated_browser, ownership_verified_buyer]
 
 exclusions:
   - { threat: replay, callback_state: signature_expired, reason: "replay 시나리오는 timestamp 와 무관" }
@@ -38,6 +39,26 @@ exclusions:
   - { threat: post_approve_failure, context: vbankNotify, reason: "vbank 입금통보는 post-approve 단계 없음 (PG 측 비동기 입금)" }
   - { threat: post_approve_failure, context: mobileVbankNotify, reason: "vbank 입금통보는 post-approve 단계 없음" }
   - { threat: post_approve_failure, context: cbtCallback, reason: "CBT 는 별도 일본 결제 API — net cancel 로직 동일 아님 (수동 정산 분기)" }
+  - { threat: forged_browser_callback, callback_state: first_arrival, reason: "위조 콜백은 도착 차수가 아니라 승인 성립 여부로 갈린다" }
+  - { threat: forged_browser_callback, callback_state: second_arrival_same_tid, reason: "동일" }
+  - { threat: forged_browser_callback, callback_state: signature_expired, reason: "위조 축은 timestamp 신선도 단계가 아니다" }
+  - { threat: forged_browser_callback, callback_state: signature_fresh, reason: "동일" }
+  - { threat: forged_browser_callback, callback_state: domain_succeeds, reason: "도메인 처리 이전에 승인 성립 여부로 판정한다" }
+  - { threat: forged_browser_callback, callback_state: domain_fails, reason: "동일" }
+  - { threat: replay, callback_state: authorize_not_yet_attempted, reason: "승인 성립 축은 위조 콜백 전용 — replay 는 도착 차수 분기" }
+  - { threat: replay, callback_state: authorize_failed, reason: "동일" }
+  - { threat: replay, callback_state: authorize_succeeded, reason: "동일" }
+  - { threat: stale_timestamp, callback_state: authorize_not_yet_attempted, reason: "timestamp 는 승인 이전 별개 게이트" }
+  - { threat: stale_timestamp, callback_state: authorize_failed, reason: "동일" }
+  - { threat: stale_timestamp, callback_state: authorize_succeeded, reason: "동일" }
+  - { threat: post_approve_failure, callback_state: authorize_not_yet_attempted, reason: "정의상 승인 이후 분기" }
+  - { threat: post_approve_failure, callback_state: authorize_failed, reason: "동일" }
+  - { threat: post_approve_failure, callback_state: authorize_succeeded, reason: "post-approve 실패는 domain_fails 로 표현한다" }
+  - { caller: ownership_verified_buyer, threat: replay, reason: "close-report 는 결제창 콜백이 아니라 별도 소유권 검증 엔드포인트" }
+  - { caller: ownership_verified_buyer, threat: stale_timestamp, reason: "동일 — PG 서명 타임스탬프를 받지 않는다" }
+  - { caller: ownership_verified_buyer, threat: post_approve_failure, reason: "동일 — 승인 단계가 없다" }
+  - { caller: pg_server_verified, threat: forged_browser_callback, reason: "위조 축의 전제가 비인증 브라우저 입력이다" }
+  - { caller: unauthenticated_browser, threat: stale_timestamp, reason: "타임스탬프 신선도는 PG 서명 페이로드 축" }
 
 effects:
   # Replay defense — PreventsReplayCallback trait
@@ -63,6 +84,17 @@ effects:
   - timestamp_long_length_rejected
   - signature_endpoint_returns_422_on_stale
 
+  # 비인증 브라우저 콜백의 주문 변조 차단 (KVE-2026-2018 형제)
+  - unauthenticated_callback_cannot_cancel_another_users_order
+  - browser_result_code_alone_never_transitions_order_state
+  - pc_auth_callback_failure_branch_does_not_call_fail_payment
+  - mobile_callback_failure_branch_does_not_call_fail_payment
+  - cbt_callback_server_authorize_failure_does_not_call_fail_payment
+  - pg_side_net_cancel_is_kept_because_it_targets_the_pg_not_the_order
+  - legitimate_failure_is_recorded_by_ownership_verified_close_report
+  - close_report_rejects_buyer_mismatch
+  - normal_approval_still_completes_the_order
+
   # Post-approve net cancel
   - post_approve_failure_triggers_auto_cancel
   - net_cancel_sends_pg_cancel_api_call
@@ -71,6 +103,7 @@ effects:
 
 test_files:
   - plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Concerns/ValidatesTimestampFreshnessTest.php
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Feature/Controllers/PaymentCallbackControllerTest.php
 
 manual_verification:
   - description: "Replay PoC — vbankNotify 두 번 전송"

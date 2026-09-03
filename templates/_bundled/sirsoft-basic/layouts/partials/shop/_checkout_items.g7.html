@@ -39,7 +39,7 @@
             </p>
             <!-- 선택된 추가옵션 (옵션 라인 바로 아래) -->
             <div data-if="{{item.additional_options?.length > 0}}" data-each="addOpt in {{item.additional_options ?? []}}" class="mt-1 space-y-0.5">
-              <p class="text-xs text-gray-500 dark:text-gray-400">{{addOpt.group_name ? addOpt.group_name + ': ' : ''}}{{addOpt.name}}{{(addOpt.custom_text ?? '') !== '' ? ' (' + addOpt.custom_text + ')' : ''}}{{(addOpt.price_adjustment ?? 0) > 0 ? ' (' + (addOpt.multi_currency_price_adjustment?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? addOpt.price_adjustment_formatted ?? ('+' + addOpt.price_adjustment.toLocaleString())) + ')' : ''}}</p>
+              <p data-testid="checkout-item-additional-option" class="text-xs text-gray-500 dark:text-gray-400">{{addOpt.group_name ? addOpt.group_name + ': ' : ''}}{{addOpt.name}}{{(addOpt.custom_text ?? '') !== '' ? ' (' + addOpt.custom_text + ')' : ''}}{{(addOpt.price_adjustment ?? 0) > 0 ? ' (' + (addOpt.multi_currency_price_adjustment?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? addOpt.price_adjustment_formatted ?? ('+' + addOpt.price_adjustment.toLocaleString())) + ')' : ''}}</p>
             </div>
             <!-- 배송정책 및 배송비 -->
             <div data-if="{{checkoutData.data.calculation?.items?.find(ci => ci.product_option_id === item.product_option_id)?.applied_shipping_policy}}" class="flex items-center gap-2 mt-1">

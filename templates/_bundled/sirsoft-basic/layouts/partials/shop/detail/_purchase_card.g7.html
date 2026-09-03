@@ -17,7 +17,7 @@
       <div data-each="group, groupIndex in {{product.data?.option_groups ?? []}}">
         <div class="mb-3">
           <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{group.name_localized}}</label>
-          <select name="option_{{groupIndex}}" class="w-full" value="{{_local.currentSelection?.[group.name_localized] ?? ''}}" placeholder="{{groupIndex === 0 || _local.currentSelection?.[product.data?.option_groups[groupIndex - 1]?.name_localized] ? group.name_localized + '$t:shop.product.select_option_suffix' : '$t:shop.product.select_upper_option_first'}}" disabled="{{groupIndex > 0 &amp;&amp; !_local.currentSelection?.[product.data?.option_groups[groupIndex - 1]?.name_localized]}}" options="{{[{ value: '', label: groupIndex === 0 || _local.currentSelection?.[product.data?.option_groups[groupIndex - 1]?.name_localized] ? group.name_localized + $t('shop.product.select_option_suffix') : $t('shop.product.select_upper_option_first') }, ...($computed.optionChoices?.[groupIndex] ?? (group.values_localized ?? []).map(v => ({ value: v, label: v })))] ?? []}}">
+          <select name="option_{{groupIndex}}" data-testid="option-group-{{groupIndex}}" class="w-full" value="{{_local.currentSelection?.[group.name_localized] ?? ''}}" placeholder="{{groupIndex === 0 || _local.currentSelection?.[product.data?.option_groups[groupIndex - 1]?.name_localized] ? group.name_localized + '$t:shop.product.select_option_suffix' : '$t:shop.product.select_upper_option_first'}}" disabled="{{groupIndex > 0 &amp;&amp; !_local.currentSelection?.[product.data?.option_groups[groupIndex - 1]?.name_localized]}}" options="{{[{ value: '', label: groupIndex === 0 || _local.currentSelection?.[product.data?.option_groups[groupIndex - 1]?.name_localized] ? group.name_localized + $t('shop.product.select_option_suffix') : $t('shop.product.select_upper_option_first') }, ...($computed.optionChoices?.[groupIndex] ?? (group.values_localized ?? []).map(v => ({ value: v, label: v })))] ?? []}}">
             <on type="change">
               <!-- 옵션을 한 칸 고를 때마다 «다 골랐는지» 를 판정해, 마지막 칸이 채워지는 순간 한 줄을 추가한다.
                    방금 고른 값을 핸들러에 따로 넘기는 이유는 위 `set-state` 가 아직 반영되기 전이기 때문이다 -->
@@ -73,7 +73,7 @@
                 <span>{{addGroup.name}}</span>
                 <span data-if="{{addGroup.is_required}}" class="text-red-500 dark:text-red-400 ml-0.5">*</span>
               </label>
-              <select name="add_option_{{itemIndex}}_{{addGroup.id}}" class="w-full" value="{{item.additionalOptionSelections?.[addGroup.id] ?? ''}}" placeholder="$t:shop.additional_option_placeholder" options="{{[{ value: '', label: $t('shop.additional_option_placeholder') }, ...(addGroup.values ?? []).map(v => ({ value: v.id, label: v.price_adjustment > 0 ? v.name + ' (' + (v.multi_currency_price_adjustment?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? v.price_adjustment_formatted ?? ('+' + v.price_adjustment.toLocaleString())) + ')' : v.name }))]}}">
+              <select name="add_option_{{itemIndex}}_{{addGroup.id}}" data-testid="add-option-{{itemIndex}}-{{addGroup.id}}" class="w-full" value="{{item.additionalOptionSelections?.[addGroup.id] ?? ''}}" placeholder="$t:shop.additional_option_placeholder" options="{{[{ value: '', label: $t('shop.additional_option_placeholder') }, ...(addGroup.values ?? []).map(v => ({ value: v.id, label: v.price_adjustment > 0 ? v.name + ' (' + (v.multi_currency_price_adjustment?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? v.price_adjustment_formatted ?? ('+' + v.price_adjustment.toLocaleString())) + ')' : v.name }))]}}">
                 <on type="change">
                   <!-- 추가옵션은 상품 전체가 아니라 **그 줄에** 붙는다 — 같은 상품을 두 줄 담아도 각각 다른
                        추가옵션을 고를 수 있어야 하므로 `itemIndex` 를 함께 넘긴다 -->
@@ -93,7 +93,7 @@
             </div>
           </div>
           <!-- 추가옵션 추가금 합계 표기 (선택된 추가금이 있을 때) -->
-          <div data-if="{{(item.additionalOptionsTotal ?? 0) > 0}}" class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
+          <div data-if="{{(item.additionalOptionsTotal ?? 0) > 0}}" data-testid="additional-options-amount" class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
             <span>$t:shop.additional_options_amount</span>
             <!-- 추가금은 기본통화 기준으로 저장되므로 표시통화 환산값(핸들러가 서버 맵에서 계산)을 우선 사용한다. 없으면 기본통화 표기로 폴백 -->
             <span>{{(() => { const code = _global.preferredCurrency ?? _global.defaultCurrency; const cur = (_global.availableCurrencies ?? []).find(x => x.code === code) ?? (_global.availableCurrencies ?? []).find(x => x.is_default); const converted = item.additionalOptionsMultiCurrencyTotal?.[code]?.value; const amount = converted ?? (item.additionalOptionsTotal ?? 0); const dp = cur?.decimal_places ?? 0; const n = amount.toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp }); const s = cur?.symbol ?? '₩'; return '+' + ((cur?.code === 'KRW' || s === '₩' || s === '원') ? (n + '원') : (s + n)); })()}}</span>
@@ -116,17 +116,17 @@
       <!-- 총 금액 (옵션 선택형 상품 - 2개 이상) -->
       <div data-if="{{product.data?.has_options &amp;&amp; (product.data?.options?.length ?? 0) > 1}}" class="flex justify-between items-center mb-4">
         <span class="text-sm text-gray-600 dark:text-gray-400">$t:shop.total_amount ({{(_local.selectedOptionItems ?? []).reduce((sum, item) => sum + item.quantity, 0)}}$t:shop.count_unit)</span>
-        <span class="text-xl font-bold text-gray-900 dark:text-white">{{(_local.selectedOptionItems ?? []).length === 0 ? '-' : (_local.selectedTotalMultiCurrency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? _local.selectedOptionItems[0]?.multiCurrencyTotalPrice?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? _local.selectedOptionItems[0]?.totalPriceFormatted ?? '')}}</span>
+        <span data-testid="purchase-total" class="text-xl font-bold text-gray-900 dark:text-white">{{(_local.selectedOptionItems ?? []).length === 0 ? '-' : (_local.selectedTotalMultiCurrency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? _local.selectedOptionItems[0]?.multiCurrencyTotalPrice?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? _local.selectedOptionItems[0]?.totalPriceFormatted ?? '')}}</span>
       </div>
       <!-- 총 금액 (옵션 없거나 기본 옵션 1개뿐인 상품) -->
       <div data-if="{{!product.data?.has_options || (product.data?.options?.length ?? 0) <= 1}}" class="flex justify-between items-center mb-4">
         <span class="text-sm text-gray-600 dark:text-gray-400">$t:shop.product.total_amount ({{_local.noOptionQuantity ?? 1}}$t:shop.product.count_unit)</span>
-        <span class="text-xl font-bold text-gray-900 dark:text-white">{{_local.noOptionTotalMultiCurrency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.selling_price_formatted ?? ''}}</span>
+        <span data-testid="purchase-total" class="text-xl font-bold text-gray-900 dark:text-white">{{_local.noOptionTotalMultiCurrency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.selling_price_formatted ?? ''}}</span>
       </div>
       <!-- === 바로구매 + 장바구니 버튼 (PC 2단, 모바일 1단) === -->
       <div class="grid md:grid-cols-2 gap-2">
         <!-- 바로구매 버튼 — 옵션 상품은 선택한 옵션 라인 수량의 **합계**로 구매 한도를 판정한다. 라인별 max 만으로는 여러 라인을 합쳐 한도를 넘길 수 있다. 옵션 없는 상품은 QuantitySelector 의 min/max 가 이미 막으므로 조건을 걸지 않는다. -->
-        <button class="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.isOrdering || product.data?.is_shippable_to_selected_country === false || ((product.data?.option_groups ?? []).length > 0 &amp;&amp; ((_local.selectedOptionItems ?? []).reduce((s, i) => s + i.quantity, 0) < (product.data?.min_purchase_qty ?? 1) || (product.data?.max_purchase_qty > 0 &amp;&amp; (_local.selectedOptionItems ?? []).reduce((s, i) => s + i.quantity, 0) > product.data.max_purchase_qty)))}}">
+        <button data-testid="buy-now" class="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.isOrdering || product.data?.is_shippable_to_selected_country === false || ((product.data?.option_groups ?? []).length > 0 &amp;&amp; ((_local.selectedOptionItems ?? []).reduce((s, i) => s + i.quantity, 0) < (product.data?.min_purchase_qty ?? 1) || (product.data?.max_purchase_qty > 0 &amp;&amp; (_local.selectedOptionItems ?? []).reduce((s, i) => s + i.quantity, 0) > product.data.max_purchase_qty)))}}">
           <on type="click">
             <conditions>
               <!-- 배송 불가 차단 (B8 클라 가드 — 선택 배송국가로 배송 불가, 서버도 422 재검증) -->
@@ -182,7 +182,7 @@
           </div>
         </button>
         <!-- 장바구니 버튼 — 구매 한도 판정은 바로구매 버튼과 동일. 옵션 상품만 합계로 본다. -->
-        <button class="w-full py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.isAddingToCart || _local.isOrdering || product.data?.is_shippable_to_selected_country === false || ((product.data?.option_groups ?? []).length > 0 &amp;&amp; ((_local.selectedOptionItems ?? []).reduce((s, i) => s + i.quantity, 0) < (product.data?.min_purchase_qty ?? 1) || (product.data?.max_purchase_qty > 0 &amp;&amp; (_local.selectedOptionItems ?? []).reduce((s, i) => s + i.quantity, 0) > product.data.max_purchase_qty)))}}">
+        <button data-testid="add-to-cart" class="w-full py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.isAddingToCart || _local.isOrdering || product.data?.is_shippable_to_selected_country === false || ((product.data?.option_groups ?? []).length > 0 &amp;&amp; ((_local.selectedOptionItems ?? []).reduce((s, i) => s + i.quantity, 0) < (product.data?.min_purchase_qty ?? 1) || (product.data?.max_purchase_qty > 0 &amp;&amp; (_local.selectedOptionItems ?? []).reduce((s, i) => s + i.quantity, 0) > product.data.max_purchase_qty)))}}">
           <on type="click">
             <conditions>
               <!-- 배송 불가 차단 (B8 클라 가드 — 선택 배송국가로 배송 불가, 서버도 422 재검증) -->

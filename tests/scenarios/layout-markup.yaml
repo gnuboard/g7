@@ -157,6 +157,9 @@ effects:
   # --- S2 레지스트리
   - component_name_maps_to_kebab_tag
   - bundled_template_manifests_resolve_without_tag_collision
+  # 6차 병합(develop) — 컴포넌트 매니페스트(components.json) 생성기의 개행·재현성 (GeneratesComponentManifestNewlineTest)
+  - component_manifest_ends_with_lf_regardless_of_platform
+  - component_manifest_rebuild_is_byte_identical
   - entry_type_field_wins_over_category_array
   - skip_binding_keys_merge_defaults_with_manifest_declarations
   - manifest_violating_runtime_schema_is_rejected
@@ -216,6 +219,10 @@ effects:
   # green 이므로 **두 축이 각각 독립으로** 덮는다(상속원이 자식과 같은 공개 진입점으로 불려 온다).
   # 그래서 이 경로는 확장 조각과 달리 공개 릴리스에서 샌 적이 없다.
   - injected_comments_in_base_layouts_never_reach_the_child_serving_response
+  # 6차 병합 — LayoutServingTest 는 이 트랙과 ext-static-cache.yaml(develop #122 정적 게시)이 공유하는 파일이다.
+  # 그 매니페스트가 소유하는 두 효과를 여기서도 선언한다 — 이 게이트는 자기 test_files 의 마킹 전량이 자기 effects 에 있어야 하기 때문(38차 축).
+  - fallback_api_serves_etag_304
+  - fallback_api_no_cache_in_dev
   # S21.5 — **새 효과를 더하지 않는다**. 이 단락이 넣은 216건은 전부 `layouts/partials/` 조각인데,
   # 그 종류는 앞 단락들이 이미 밟았고(S21.1 이커머스 조각 · S21.4 admin_settings 등 58파일) 무엇보다
   # **서빙 경로의 모양이 확장 조각과 결정적으로 다르다** — 조각은 설치 시점에
@@ -994,6 +1001,8 @@ test_files:
   - tests/Unit/Extension/PluginPartialResolutionParityTest.php
   - tests/Unit/Extension/LayoutPartialBaseDirectoryTest.php
   - tests/Unit/Extension/GeneratesComponentManifestTest.php
+  # 6차 병합(develop #601 계열) — 형제 GeneratesComponentManifestTest 와 같은 게이트 네임스페이스(tests/Unit/Extension)에 상주
+  - tests/Unit/Extension/GeneratesComponentManifestNewlineTest.php
   # 39차 — fixture 생성 커맨드의 소스 선택 (문서 루트만 `.json` 전용이던 자리를 규약으로 편입)
   - tests/Feature/LayoutMarkup/LayoutFixtureCommandSourceTest.php
   # S18.5 축 A — `layout:decompile --sync`/`--check` 굽기 계약 + 설치·서빙 경로 미호출(D38) 여집합

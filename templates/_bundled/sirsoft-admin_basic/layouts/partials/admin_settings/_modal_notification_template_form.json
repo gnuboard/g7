@@ -535,9 +535,25 @@
                             ]
                         },
                         {
+                            "comment": "알림 템플릿 편집 모달 본문 확장 슬롯(범용). 채널을 소유한 확장이 그 채널 전용 편집 UI(예: 외부 발송 채널의 템플릿 작성·발송 설정)를 이 자리에 주입한다. 채널 메타 hidden_template_editor=true 인 채널은 아래 코어 제목/본문 입력이 숨겨지고 이 슬롯이 본문 편집을 대신한다. 특정 확장을 알지 못하며, 미주입 시 빈 자리로 남는다.",
+                            "id": "template_form_sections_ext",
+                            "type": "extension_point",
+                            "name": "notification_template_form_sections",
+                            "props": {
+                                "definition": "{{_global.notification_template_form_modal?.definition}}",
+                                "template": "{{_global.notification_template_form_modal?.template}}",
+                                "channel": "{{_global.notification_template_form_modal?.template?.channel ?? ''}}",
+                                "modalId": "modal_notification_template_form",
+                                "stateKey": "notification_template_form_modal",
+                                "saveEndpoint": "{{'/api/admin/notification-templates/' + _global.notification_template_form_modal?.template?.id}}",
+                                "refetchDataSourceId": "notificationDefinitions"
+                            }
+                        },
+                        {
                             "id": "template_lang_tabs",
                             "type": "basic",
                             "name": "Div",
+                            "if": "{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.notification_template_form_modal?.template?.channel)?.hidden_template_editor === true)}}",
                             "props": {
                                 "className": "flex border-b border-gray-200 dark:border-gray-700"
                             },
@@ -572,6 +588,7 @@
                             "id": "template_subject_input",
                             "type": "basic",
                             "name": "Div",
+                            "if": "{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.notification_template_form_modal?.template?.channel)?.hidden_template_editor === true)}}",
                             "props": {
                                 "className": "row-stack"
                             },
@@ -630,6 +647,7 @@
                             "id": "template_body_input",
                             "type": "basic",
                             "name": "Div",
+                            "if": "{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.notification_template_form_modal?.template?.channel)?.hidden_template_editor === true)}}",
                             "props": {
                                 "className": "row-stack"
                             },
@@ -689,7 +707,7 @@
                             "id": "template_click_url_input",
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{_global.notification_template_form_modal?.template?.channel === 'database'}}",
+                            "if": "{{(_global.notification_template_form_modal?.template?.channel === 'database') && !((availableChannels?.data?.channels ?? []).find(c => c.id === _global.notification_template_form_modal?.template?.channel)?.hidden_template_editor === true)}}",
                             "props": {
                                 "className": "row-stack"
                             },
@@ -743,7 +761,7 @@
                             "id": "template_variables_info",
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{(_global.notification_template_form_modal?.definition?.variables ?? []).length > 0}}",
+                            "if": "{{((_global.notification_template_form_modal?.definition?.variables ?? []).length > 0) && !((availableChannels?.data?.channels ?? []).find(c => c.id === _global.notification_template_form_modal?.template?.channel)?.hidden_template_editor === true)}}",
                             "props": {
                                 "className": "bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md p-4"
                             },
@@ -827,6 +845,7 @@
                                     "comment": "닫기. 저장 중에는 잠긴다 — 요청이 도는 도중 창이 사라지면 성공·실패 안내가 갈 곳을 잃는다",
                                     "type": "basic",
                                     "name": "Button",
+                                    "if": "{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.notification_template_form_modal?.template?.channel)?.hidden_template_editor === true)}}",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -898,8 +917,24 @@
                                     "text": "$t:common.cancel"
                                 },
                                 {
+                                    "comment": "편집 모달 푸터 확장 슬롯(범용). hidden_template_editor 채널에서는 코어 [저장]/[미리보기]가 숨겨지므로, 그 채널을 소유한 확장이 자기 저장 버튼(코어 수신자 규칙 저장 포함)을 여기에 주입한다. [취소]는 코어가 유지한다.",
+                                    "id": "template_form_footer_ext",
+                                    "type": "extension_point",
+                                    "name": "notification_template_form_footer_actions",
+                                    "props": {
+                                        "definition": "{{_global.notification_template_form_modal?.definition}}",
+                                        "template": "{{_global.notification_template_form_modal?.template}}",
+                                        "channel": "{{_global.notification_template_form_modal?.template?.channel ?? ''}}",
+                                        "modalId": "modal_notification_template_form",
+                                        "stateKey": "notification_template_form_modal",
+                                        "saveEndpoint": "{{'/api/admin/notification-templates/' + _global.notification_template_form_modal?.template?.id}}",
+                                        "refetchDataSourceId": "notificationDefinitions"
+                                    }
+                                },
+                                {
                                     "type": "basic",
                                     "name": "Button",
+                                    "if": "{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.notification_template_form_modal?.template?.channel)?.hidden_template_editor === true)}}",
                                     "actions": [
                                         {
                                             "comment": "저장 — 제목·본문 언어별 객체와 수신자 규칙 배열을 함께 보낸다.\n                   성공하면 정의 목록을 다시 받고 창 상태를 통째로 비운다.",

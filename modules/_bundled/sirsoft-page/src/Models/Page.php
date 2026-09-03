@@ -2,10 +2,12 @@
 
 namespace Modules\Sirsoft\Page\Models;
 
+use App\Casts\AsUnicodeJson;
 use App\Extension\HookManager;
 use App\Models\User;
-use App\Casts\AsUnicodeJson;
 use App\Search\Contracts\FulltextSearchable;
+use App\Support\HtmlImageExtractor;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -52,6 +54,7 @@ class Page extends Model implements FulltextSearchable
         'title',
         'content',
         'content_mode',
+        'content_thumbnail_url',
         'published',
         'published_at',
         'seo_meta',
@@ -75,6 +78,65 @@ class Page extends Model implements FulltextSearchable
             'published_at' => 'datetime',
             'current_version' => 'integer',
         ];
+    }
+
+    /**
+     * 모델 이벤트 등록
+     *
+     * 본문 첫 내부 이미지 URL 캐시(content_thumbnail_url)는 저장 시점에만 계산한다.
+     * 모델 saving 이벤트에 두는 이유: PageService::restoreVersion() 이 서비스
+     * create/update 를 우회해 Repository 를 직접 호출하므로, 버전 롤백 시에도 캐시가
+     * 자동 재계산되는 유일 지점이 모델 이벤트다 (공개 이슈 #22 동종 — board 와 동형).
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (Page $page) {
+            if ($page->exists && ! $page->isDirty('content') && ! $page->isDirty('content_mode')) {
+                return;
+            }
+
+            // text 모드 본문은 이스케이프 렌더(이미지 미표시) — 캐시하지 않는다
+            if ($page->content_mode !== 'html') {
+                $page->content_thumbnail_url = null;
+
+                return;
+            }
+
+            // content 는 다국어 JSON — 기본 로케일 우선, 없으면 배열 순서대로
+            // 첫 내부 이미지가 나올 때까지 시도 (레거시 평문 문자열도 수용)
+            $extracted = null;
+            $candidates = [];
+            $content = $page->content;
+            $htmls = is_array($content)
+                ? array_values(array_filter(
+                    [$content[config('app.locale')] ?? null, ...array_values($content)],
+                    fn ($html) => is_string($html) && $html !== ''
+                ))
+                : (is_string($content) && $content !== '' ? [$content] : []);
+
+            foreach ($htmls as $html) {
+                $candidates = array_merge($candidates, HtmlImageExtractor::candidates($html));
+                $extracted ??= HtmlImageExtractor::firstInternal($html);
+
+                if ($extracted !== null) {
+                    break;
+                }
+            }
+
+            // 확장이 후보를 대체(CDN prefix 승격 등)하거나 차단(null)할 수 있는 필터 훅.
+            // 특정 에디터 확장에 의존하지 않는다 — 페이로드는 일반 HTML 파싱 결과뿐이다.
+            $value = HookManager::applyFilters(
+                'sirsoft-page.page.filter_content_thumbnail',
+                $extracted,
+                $page,
+                $candidates
+            );
+
+            // 필터 반환값 방어 — 비문자열/빈 값/컬럼 상한 초과는 null(후보 없음)로 강등
+            $page->content_thumbnail_url = is_string($value) && $value !== '' && mb_strlen($value) <= 1000
+                ? $value
+                : null;
+        });
     }
 
     /**
@@ -120,8 +182,8 @@ class Page extends Model implements FulltextSearchable
     /**
      * 발행된 페이지만 조회하는 스코프
      *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @return \Illuminate\Database\Eloquent\Builder
+     * @param  Builder  $query
+     * @return Builder
      */
     public function scopePublished($query)
     {

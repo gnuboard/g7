@@ -179,7 +179,7 @@
                           </navigate>
                         </case>
                         <case when="uninstall">
-                          <set-state target="global" selectedTemplate="{{row}}" :templateUninstallInfo="null"/>
+                          <set-state target="global" selectedTemplate="{{row}}" :templateUninstallInfo="null" :templateUninstallBackups="null"/>
                           <open-modal target="template_uninstall_modal"/>
                           <api-call :auth_required="true" target="/api/admin/templates/{{row.identifier}}/uninstall-info" method="GET">
                             <success>

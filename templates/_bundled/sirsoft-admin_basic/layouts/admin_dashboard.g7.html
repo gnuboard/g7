@@ -151,6 +151,52 @@
           </button>
         </div>
       </div>
+      <div data-ref="dashboard_alert_banners" data-if="{{((dashboard_alerts?.data?.data ? dashboard_alerts.data.data : (dashboard_alerts?.data ?? [])).filter(a => a.type === 'warning').length) > 0}}" class="space-y-3 mb-6">
+        <permissions>
+          <permission>core.dashboard.alerts</permission>
+        </permissions>
+        <div data-ref="top_alert_item_{{$idx}}" data-each="alert, $idx in {{(dashboard_alerts?.data?.data ? dashboard_alerts.data.data : (dashboard_alerts?.data ?? [])).filter(a => a.type === 'warning')}}" class="{{alert.type === 'warning' ? 'flex items-start gap-3 p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800' : (alert.type === 'info' ? 'flex items-start gap-3 p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800' : 'flex items-start gap-3 p-4 rounded-lg bg-gray-50 dark:bg-gray-700')}}">
+          <icon data-ref="top_alert_icon_{{$idx}}" name="{{alert.icon ?? 'info-circle'}}" class="{{alert.type === 'warning' ? 'text-amber-600 dark:text-amber-400 mt-0.5 shrink-0' : (alert.type === 'info' ? 'text-blue-600 dark:text-blue-400 mt-0.5 shrink-0' : 'text-gray-500 dark:text-gray-400 mt-0.5 shrink-0')}}"/>
+          <div data-ref="top_alert_content_{{$idx}}" class="flex-1 min-w-0">
+            <p data-ref="top_alert_title_{{$idx}}" class="text-heading">{{alert.title ?? ''}}</p>
+            <p data-ref="top_alert_message_{{$idx}}" data-if="{{alert.message}}" class="text-secondary text-xs mt-0.5">{{alert.message ?? ''}}</p>
+            <p data-ref="top_alert_time_{{$idx}}" data-if="{{alert.time}}" class="form-hint">{{alert.time ?? ''}}</p>
+            <div data-ref="top_alert_actions_{{$idx}}" class="flex-center gap-2 mt-2">
+              <button data-ref="top_alert_recover_button_{{$idx}}" data-if="{{alert.subtype === 'recovery_available'}}" type="button" class="inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded">
+                <on type="click">
+                  <!-- 복구 주소는 알림 자체가 싣고 온다(alert.recover_endpoint) — 확장 종류마다 복구 경로가 달라 화면이 주소를 조립하지 않는다. 끝나면 알림 목록을 다시 받아 처리된 알림이 사라지게 한다. -->
+                  <api-call :auth_required="true" target="{{alert.recover_endpoint}}" method="POST">
+                    <success>
+                      <toast type="success" message="$t:extensions.alerts.recovered_success"/>
+                      <refetch-data-source dataSourceId="dashboard_alerts"/>
+                    </success>
+                    <fail>
+                      <toast type="error" message="{{error.message}}"/>
+                    </fail>
+                  </api-call>
+                </on>
+                <icon name="check-circle" size="xs"/>
+                <span>$t:extensions.alerts.recover_action</span>
+              </button>
+              <button data-ref="top_alert_dismiss_button_{{$idx}}" data-if="{{alert.extension_type &amp;&amp; alert.identifier}}" type="button" class="inline-flex items-center gap-1 px-3 py-1 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded" aria-label="$t:extensions.alerts.dismiss_action">
+                <on type="click">
+                  <!-- 닫기는 조치가 아니라 「이 확장의 이 알림을 더 보지 않겠다」는 기록이다 — 서버에 남겨야 새로고침마다 되살아나지 않는다. 그래서 토스트 없이 목록만 다시 받는다. -->
+                  <api-call :auth_required="true" target="/api/admin/extensions/{{alert.extension_type}}/{{alert.identifier}}/dismiss" method="POST">
+                    <success>
+                      <refetch-data-source dataSourceId="dashboard_alerts"/>
+                    </success>
+                    <fail>
+                      <toast type="error" message="{{error.message}}"/>
+                    </fail>
+                  </api-call>
+                </on>
+                <icon name="times" size="xs"/>
+                <span>$t:extensions.alerts.dismiss_action</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
       <div data-ref="quick_menu" class="flex flex-wrap gap-2 md:gap-3 mb-4 md:mb-6 lg:mb-8">
         <a data-ref="qm_users" href="/admin/users" class="flex-center flex-col justify-center gap-1 w-16 h-16 md:w-20 md:h-20 text-[10px] md:text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200">
           <icon name="users" class="text-lg md:text-xl"/>
@@ -370,7 +416,7 @@
         </div>
       </div>
       <div data-ref="bottom_section_grid" class="mt-4 sm:mt-6">
-        <div data-ref="system_alerts_card" data-if="{{(dashboard_alerts?.data?.data ? dashboard_alerts.data.data.length : (dashboard_alerts?.data?.length ?? 0)) > 0}}" class="bg-slate-100 dark:bg-slate-800 rounded-xl md:rounded-2xl p-4 md:p-6">
+        <div data-ref="system_alerts_card" data-if="{{((dashboard_alerts?.data?.data ? dashboard_alerts.data.data : (dashboard_alerts?.data ?? [])).filter(a => a.type !== 'warning').length) > 0}}" class="bg-slate-100 dark:bg-slate-800 rounded-xl md:rounded-2xl p-4 md:p-6">
           <blur-until-loaded sources="dashboard_alerts"/>
           <permissions>
             <permission>core.dashboard.alerts</permission>
@@ -379,9 +425,9 @@
             <h2 data-ref="system_alerts_title" class="section-heading">$t:admin.dashboard.system_alerts.title</h2>
             <p data-ref="system_alerts_subtitle" class="text-label-subtle">$t:admin.dashboard.system_alerts.subtitle</p>
           </div>
-          <div data-ref="alerts_list">
-            <div data-ref="alert_item_{{$idx}}" data-each="alert, $idx in {{dashboard_alerts?.data?.data ? dashboard_alerts.data.data : (dashboard_alerts?.data ?? [])}}" class="{{alert.subtype === 'incompatible_core' ? 'flex items-start gap-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800' : (alert.subtype === 'recovery_available' ? 'flex items-start gap-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800' : 'flex items-start gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-700')}}">
-              <icon data-ref="alert_icon_{{$idx}}" name="{{alert.icon ?? 'info-circle'}}" class="{{alert.subtype === 'incompatible_core' ? 'text-amber-600 dark:text-amber-400 mt-0.5 shrink-0' : (alert.subtype === 'recovery_available' ? 'text-blue-600 dark:text-blue-400 mt-0.5 shrink-0' : 'text-gray-500 dark:text-gray-400 mt-0.5 shrink-0')}}"/>
+          <div data-ref="alerts_list" class="space-y-3">
+            <div data-ref="alert_item_{{$idx}}" data-each="alert, $idx in {{(dashboard_alerts?.data?.data ? dashboard_alerts.data.data : (dashboard_alerts?.data ?? [])).filter(a => a.type !== 'warning')}}" class="{{alert.type === 'warning' ? 'flex items-start gap-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800' : (alert.type === 'info' ? 'flex items-start gap-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800' : 'flex items-start gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-700')}}">
+              <icon data-ref="alert_icon_{{$idx}}" name="{{alert.icon ?? 'info-circle'}}" class="{{alert.type === 'warning' ? 'text-amber-600 dark:text-amber-400 mt-0.5 shrink-0' : (alert.type === 'info' ? 'text-blue-600 dark:text-blue-400 mt-0.5 shrink-0' : 'text-gray-500 dark:text-gray-400 mt-0.5 shrink-0')}}"/>
               <div data-ref="alert_content_{{$idx}}" class="flex-1 min-w-0">
                 <p data-ref="alert_title_{{$idx}}" class="text-heading">{{alert.title ?? ''}}</p>
                 <p data-ref="alert_message_{{$idx}}" data-if="{{alert.message}}" class="text-secondary text-xs mt-0.5">{{alert.message ?? ''}}</p>

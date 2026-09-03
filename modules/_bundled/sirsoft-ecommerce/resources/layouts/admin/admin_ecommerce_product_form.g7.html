@@ -292,7 +292,7 @@
             </on>
             $t:sirsoft-ecommerce.common.delete
           </button>
-          <button data-ref="footer_save_button" type="button" disabled="{{_local.isSaving || (route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true)}}" class="flex-center btn btn-primary gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed">
+          <button data-ref="footer_save_button" type="button" disabled="{{_local.isSaving || (route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true)}}" class="flex-center btn btn-primary gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed" data-testid="product-save">
             <on type="click">
               <!-- 저장 — 보내기 전에 이미지 업로드부터 끝낸다. 업로드 구획이 아직 서버에 올리지 않은
                 파일을 들고 있을 수 있고, 그 결과 목록으로 폼의 이미지 항목을 갈아 끼운 뒤에야

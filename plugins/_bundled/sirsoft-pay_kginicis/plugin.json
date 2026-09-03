@@ -20,6 +20,14 @@
         },
         "plugins": {}
     },
+    "trusted_script_hosts": [
+        "stgstdpay.inicis.com",
+        "stdpay.inicis.com"
+    ],
+    "trusted_script_hosts_reason": {
+        "stgstdpay.inicis.com": "KG 이니시스 테스트 표준결제창 SDK 다. 결제창 스크립트가 KG 이니시스 서버와 통신하므로 자체 호스팅해도 결제가 성립하지 않는다.",
+        "stdpay.inicis.com": "KG 이니시스 운영 표준결제창 SDK 다. 결제창 스크립트가 KG 이니시스 서버와 통신하므로 자체 호스팅해도 결제가 성립하지 않는다."
+    },
     "assets": {
         "js": {
             "entry": "resources/js/index.ts",

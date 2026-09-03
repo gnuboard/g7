@@ -12,8 +12,8 @@
 
 import React, { type ComponentType } from 'react';
 import { createLogger } from '../utils/Logger';
-import { fetchWithRetry } from './networkResilience';
-import { suffixed } from '../support/assetUrl';
+import { suffixed, extStaticUrl } from '../support/assetUrl';
+import { fetchStaticFirst } from '../support/fetchStaticFirst';
 
 const logger = createLogger('ComponentRegistry');
 
@@ -61,7 +61,7 @@ export interface ComponentMetadata {
   bindingType?: 'checked' | 'checkable';
 
   /**
-   * Form 자동 바인딩 대상에서 제외 (engine-v1.62.1+)
+   * Form 자동 바인딩 대상에서 제외 (engine-v1.66.1+)
    *
    * 자동 바인딩의 활성 조건은 "`name` prop 존재 + 부모 FormContext" 뿐이라,
    * `name` 이 **폼 필드명이 아닌** 컴포넌트까지 대상이 된다 — Icon 의 `name` 은
@@ -109,7 +109,7 @@ export interface ComponentManifest {
    *
    * 대체 권한은 템플릿에만 있다. 확장 매니페스트가 이 키를 선언하면 컴파일러가 거부한다.
    *
-   * @since engine-v1.61.0
+   * @since engine-v1.65.0
    */
   overrides?: ComponentOverrideDeclaration[];
 }
@@ -117,7 +117,7 @@ export interface ComponentManifest {
 /**
  * 템플릿이 확장 컴포넌트를 대체한다는 선언 하나
  *
- * @since engine-v1.61.0
+ * @since engine-v1.65.0
  */
 export interface ComponentOverrideDeclaration extends ComponentMetadata {
   /** 대체 대상 확장 식별자 (예: `sirsoft-ecommerce`) */
@@ -144,7 +144,7 @@ export interface ComponentOverrideDeclaration extends ComponentMetadata {
 /**
  * 확장이 선언한 컴포넌트 판본 하나
  *
- * @since engine-v1.61.0
+ * @since engine-v1.65.0
  */
 export interface ExtensionComponentDeclaration {
   /** 컴포넌트 구현체 */
@@ -199,6 +199,9 @@ export class ComponentRegistry {
   /** 컴포넌트 매니페스트 */
   private manifest: ComponentManifest | null = null;
 
+  /** 확장 캐시 버전 (0 = 무버전 URL — 편집기 경로) */
+  private cacheVersion = 0;
+
   /** 로딩 상태 */
   private loadingState: LoadingState = 'idle';
 
@@ -218,7 +221,7 @@ export class ComponentRegistry {
    * 없으면 확장의 원본이 템플릿의 대체본을 되덮는다. 대체 권한은 템플릿 전용이라는 규약의
    * 런타임 쪽 절반이다.
    *
-   * @since engine-v1.61.0
+   * @since engine-v1.65.0
    */
   private overriddenByTemplate: Set<string> = new Set();
 
@@ -235,14 +238,14 @@ export class ComponentRegistry {
    * 골라야 한다. 그래서 "고른 결과" 가 아니라 **"선언 전체"** 를 보관하고 각 인스턴스가
    * 자기 `templateId` 로 고른다.
    *
-   * @since engine-v1.61.0
+   * @since engine-v1.65.0
    */
   private static extensionDeclarations = new Map<string, ExtensionComponentDeclaration[]>();
 
   /**
    * 이 인스턴스가 확장 컴포넌트별로 실제 채택한 구현체 — 중복 등록(덮어쓰기 warn) 방지용.
    *
-   * @since engine-v1.61.0
+   * @since engine-v1.65.0
    */
   private appliedExtensionChoice: Map<string, ComponentType<any>> = new Map();
 
@@ -293,8 +296,11 @@ export class ComponentRegistry {
    *
    * @param templateId 템플릿 식별자
    * @param templateType 템플릿 타입 (admin 또는 user)
+   * @param cacheVersion 확장 캐시 버전 — 0(기본)이면 무버전 URL(편집기 경로,
+   *   서버는 `?v` 생략 시 현재 버전 폴백 #588). 매니페스트 캐시 키에도 포함되어
+   *   버전 간 교차 오염을 막는다 (#122, @since engine-v1.61.0)
    */
-  public async loadComponents(templateId: string, templateType: string): Promise<void> {
+  public async loadComponents(templateId: string, templateType: string, cacheVersion: number = 0): Promise<void> {
     if (this.loadingState === 'loading') {
       throw new ComponentRegistryError(
         'Components are already being loaded',
@@ -310,6 +316,7 @@ export class ComponentRegistry {
     this.loadingState = 'loading';
     this.templateId = templateId;
     this.templateType = templateType;
+    this.cacheVersion = cacheVersion;
     this.error = null;
 
     try {
@@ -346,8 +353,8 @@ export class ComponentRegistry {
         );
       }
 
-      // 캐시 키 생성
-      const cacheKey = `${this.templateId}:${this.templateType}`;
+      // 캐시 키 생성 (버전 포함 — 확장 라이프사이클 후 stale 매니페스트 교차 오염 방지)
+      const cacheKey = `${this.templateId}:${this.templateType}:v${this.cacheVersion || 0}`;
 
       // 캐시 확인
       if (ComponentRegistry.manifestCache.has(cacheKey)) {
@@ -359,8 +366,20 @@ export class ComponentRegistry {
       // 캐시 미스 - API에서 로드
       // 네트워크 일시 실패(응답 없음)에만 재시도. HTTP 에러는 아래 !ok 분기가 종전대로 처리.
       // @since engine-v1.53.0
-      const manifestUrl = suffixed(`/api/templates/${this.templateId}/components`, 'json');
-      const response = await fetchWithRetry(manifestUrl, { label: 'components.json' });
+      const manifestUrl = suffixed(
+        `/api/templates/${this.templateId}/components`,
+        'json',
+        this.cacheVersion > 0 ? this.cacheVersion : null,
+      );
+      // 정적 게시본(bake) 우선 (#122) — 편집기 경로(v0)는 legacy 직행 유지.
+      // miss 는 fetchStaticFirst 가 legacy 로 폴백하고, legacy 측이 fetchWithRetry 를 재사용한다.
+      const response = await fetchStaticFirst(
+        this.cacheVersion > 0
+          ? extStaticUrl(`templates/${this.templateId}/components.json`, this.cacheVersion)
+          : null,
+        manifestUrl,
+        { label: 'components.json' }
+      );
 
       if (!response.ok) {
         throw new ComponentRegistryError(
@@ -567,7 +586,7 @@ export class ComponentRegistry {
    *
    * @param module 템플릿 번들 전역 객체
    *
-   * @since engine-v1.61.0
+   * @since engine-v1.65.0
    */
   private registerTemplateOverrides(module: any): void {
     const overrides = this.manifest?.overrides ?? [];
@@ -655,7 +674,7 @@ export class ComponentRegistry {
    * @param options 등록 옵션 — `forTemplate` 은 이 판본이 전용으로 쓰일 템플릿 id
    * @returns **이 판본이 채택되었으면** true, 규칙에 따라 물러났으면 false (다른 판본이 이겼거나 템플릿이 대체했거나 접두어가 없는 경우)
    *
-   * @since engine-v1.61.0
+   * @since engine-v1.65.0
    */
   public registerExtensionComponent(
     name: string,
@@ -701,7 +720,7 @@ export class ComponentRegistry {
    *
    * @returns 이 인스턴스에 반영된 컴포넌트 수
    *
-   * @since engine-v1.61.0
+   * @since engine-v1.65.0
    */
   public applyExtensionComponents(): number {
     let applied = 0;
@@ -764,7 +783,7 @@ export class ComponentRegistry {
    *
    * @param names 템플릿이 대체한 컴포넌트 이름 목록 (`{확장식별자}.{컴포넌트명}`)
    *
-   * @since engine-v1.61.0
+   * @since engine-v1.65.0
    */
   public markOverriddenByTemplate(names: string[]): void {
     names.forEach(name => this.overriddenByTemplate.add(name));
@@ -779,7 +798,7 @@ export class ComponentRegistry {
    * @param usedNames 레이아웃이 참조하는 컴포넌트 이름 목록
    * @returns 등록되지 않은 확장 컴포넌트 이름 목록
    *
-   * @since engine-v1.61.0
+   * @since engine-v1.65.0
    */
   public getMissingExtensionComponents(usedNames: string[]): string[] {
     return usedNames.filter(name => name.includes('.') && !this.registry[name]);

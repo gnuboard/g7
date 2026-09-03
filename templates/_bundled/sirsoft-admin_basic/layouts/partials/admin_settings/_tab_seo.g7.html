@@ -62,6 +62,40 @@
         </div>
         <p class="text-tertiary">$t:admin.settings.seo.og_image_default_size_hint</p>
         <div>
+          <label class="form-label">$t:admin.settings.seo.og_image_default</label>
+          <p class="text-tertiary mb-2">$t:admin.settings.seo.og_image_default_desc</p>
+          <file-uploader data-ref="og_image_default_uploader" collection="og_image_default" disabled="{{_computed.isReadOnly}}" :maxFiles="1" maxSize="{{_global.settings?.upload?.max_file_size ?? _global.uploadSettings?.max_file_size ?? 10}}" accept="{{_global.settings?.upload?.allowed_extensions_formatted ?? _global.uploadSettings?.allowed_extensions_formatted ?? '.jpg,.jpeg,.png,.gif,.svg,.webp'}}" initialFiles="{{settings?.data?.seo?.og_image_default ?? []}}" :autoUpload="false" uploadTriggerEvent="upload:og_image_default" :confirmBeforeRemove="true">
+            <prop name="imageCompression">
+              <field name="maxSizeMB" :value="1"/>
+              <field name="maxWidthOrHeight" value="{{_global.settings?.upload?.image_max_width ?? _global.uploadSettings?.image_max_width ?? 1200}}"/>
+            </prop>
+            <on type="change" event="onFilesChange">
+              <!-- 파일을 고르는 순간 변경됨으로 표시한다 — 업로드 완료만 기다리면 그 사이 저장 버튼이 잠겨 있어 방금 고른 이미지를 저장하지 못한다. -->
+              <set-state if="{{$args[0] &amp;&amp; $args[0].length > 0}}" target="local" :hasChanges="true"/>
+            </on>
+            <on type="change" event="onUploadComplete">
+              <!-- 업로드된 파일을 기본 OG 이미지 목록(form.seo.og_image_default)에 덧붙인다 — 저장은 설정 폼에 실려 나가므로 폼 상태에 넣어야 반영된다. -->
+              <set-state target="local" :hasChanges="true" form.seo.og_image_default="{{[...(_local.form?.seo?.og_image_default ?? []), ...$args[0]]}}"/>
+            </on>
+            <on type="custom" event="onUploadComplete">
+              <!-- 업로드 완료를 알리기만 한다 — 목록 갱신은 위 change 블록이 맡는다. -->
+              <toast type="success" message="$t:attachment.upload_success"/>
+            </on>
+            <on type="custom" event="onUploadError">
+              <!-- 업로드 실패 사유는 첫 인자로 온다 — 서버가 준 문구를 그대로 보여 준다. -->
+              <toast type="error" message="{{$args[0]}}"/>
+            </on>
+            <on type="change" event="onRemove">
+              <!-- 목록에서 그 파일을 빼고 변경됨으로 표시한다 — 식별자는 hash 가 있으면 hash, 없으면 id 다(저장 전 임시 파일과 저장된 파일이 한 목록에 섞인다). -->
+              <set-state target="local" :hasChanges="true" form.seo.og_image_default="{{(_local.form?.seo?.og_image_default ?? []).filter(item => (item.hash || item.id) !== $args[0])}}"/>
+            </on>
+            <on type="custom" event="onRemove">
+              <!-- 제거를 알리기만 한다 — 목록 갱신은 위 change 블록이 맡는다. -->
+              <toast type="info" message="$t:attachment.deleted"/>
+            </on>
+          </file-uploader>
+        </div>
+        <div>
           <label class="form-label">$t:admin.settings.seo.twitter_default_card</label>
           <select name="seo.twitter_default_card" disabled="{{_computed.isReadOnly}}" class="">
             <options>
@@ -207,7 +241,7 @@
           <div class="flex flex-col gap-2 md:flex-row md:items-center md:">
             <input type="text" :disabled="true" value="{{sitemap_status?.data?.last_updated_at ?? _local.form?.seo?.sitemap_last_updated_at ?? '-'}}" class="md:flex-1 dark:bg-gray-900 text-gray-700 dark:text-gray-300"/>
             <!-- 사이트맵 생성 요청. 대기·진행·기록 중인 동안에는 잠겨 있어 같은 작업이 겹쳐 돌지 않는다 -->
-            <button type="button" disabled="{{_computed.isReadOnly || ['queued','running','writing'].includes(sitemap_status?.data?.progress?.status ?? '')}}" class="w-full md:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap">
+            <button type="button" disabled="{{_computed.isReadOnly || ['queued','running','writing'].includes(sitemap_status?.data?.progress?.status ?? '')}}" class="w-full md:w-auto px-4 py-2 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap">
               <on type="click">
                 <api-call :auth_required="true" target="/api/admin/seo/sitemap/regenerate" method="POST">
                   <success>

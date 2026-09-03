@@ -9,7 +9,7 @@
  * `handler: "stopPropagation"` 형태도 코퍼스에 있었으나 그런 핸들러는 등록된 적이 없어 무동작이었다.
  * 표면을 하나로 모으기 위해 키 형태만 지원한다.
  *
- * @since engine-v1.62.0
+ * @since engine-v1.66.0
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';

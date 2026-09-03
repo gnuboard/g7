@@ -184,6 +184,7 @@ return [
             'confirm_question' => '本当に削除してもよろしいですか?',
             'aborted' => 'プラグイン削除がキャンセルされました。',
             'not_installed' => 'プラグイン ":plugin" はインストールされていません。',
+            'custom_preserved' => '運営者ファイル(:directory)を:archiveに保管しました。',
         ],
         'cache_clear' => [
             'clearing_all' => 'すべてのプラグインキャッシュを削除します...',

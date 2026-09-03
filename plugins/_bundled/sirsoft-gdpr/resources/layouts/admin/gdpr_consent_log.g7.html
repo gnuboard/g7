@@ -319,6 +319,18 @@
                 </input>
                 <span class="text-label">$t:sirsoft-gdpr.admin.consent_log.source.mypage_renew_all</span>
               </label>
+              <label class="inline-clickable">
+                <input type="checkbox" class="checkbox" checked="{{(_local.filter.sources || []).includes('withdraw')}}">
+                  <on type="change">
+                    <!-- 회원탈퇴로 자동 철회된 기록만 추린다. 사람이 누른 철회와 시스템이 남긴 철회를 갈라 봐야 탈퇴 정리가 실제로 돌았는지 확인할 수 있다 — 이 출처가 필터에 없으면 그 기록은 어떤 조합으로도 골라낼 수 없었다. -->
+                    <sequence>
+                      <set-state target="local" filter.sources="{{$event.target.checked ? [...(_local.filter.sources || []).filter(s => s !== 'withdraw'), 'withdraw'] : (_local.filter.sources || []).filter(s => s !== 'withdraw')}}"/>
+                      <action-ref name="searchConsentLogs"/>
+                    </sequence>
+                  </on>
+                </input>
+                <span class="text-label">$t:sirsoft-gdpr.admin.consent_log.source.withdraw</span>
+              </label>
             </div>
           </div>
           <div data-ref="clear_filters_row" data-if="{{!!(query.email || query.session_id || query['consent_keys[]'] || query['actions[]'] || query['sources[]'])}}" class="flex justify-end mt-2">

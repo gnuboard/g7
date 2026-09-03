@@ -235,6 +235,7 @@ return [
     // HTTPS Messages
     'https_enabled' => 'HTTPS is enabled (recommended)',
     'https_disabled' => 'HTTPS is disabled. We recommend using HTTPS for security.',
+    'https_behind_proxy' => 'This site appears to be running behind a reverse proxy. Unless TRUSTED_PROXIES is set in .env after installation, the site address and visitor IP will be recognized from the proxy instead of the real visitor. (https://github.com/gnuboard/g7/blob/main/docs/backend/reverse-proxy.md)',
 
     // OPcache Messages
     'opcache_enabled' => 'OPcache is enabled (recommended)',
@@ -280,6 +281,7 @@ return [
     'task_create_settings_json' => 'Creating Settings Files',
     'task_complete_flag' => 'Finalizing Installation',
     'task_config_cache' => 'Building Configuration Cache',
+    'task_static_publish' => 'Publishing Static Bootstrap Resources',
     'task_unknown' => 'Unknown Task',
 
     // Task Group Names
@@ -382,10 +384,12 @@ return [
     // Error Messages - Worker (Cache)
     'error_cache_clear_failed' => 'Cache clearing failed',
     'error_config_cache_failed' => 'Configuration cache build failed',
+    'error_static_publish_failed' => 'Static bootstrap resource publishing failed (site still works via API fallback)',
 
     // Log Messages - Worker (Cache)
     'log_cache_clear_success' => 'Cache clearing completed',
     'log_config_cache_success' => 'Configuration cache built',
+    'log_static_publish_success' => 'Static bootstrap resources published',
 
     // Error Messages - Worker (Settings JSON)
     'error_settings_json_failed' => 'Settings file creation failed',
@@ -688,6 +692,10 @@ Firewalls or proxies may be blocking long-lived HTTP connections.',
 
     // Installation stuck detection
     'error_installation_stuck' => 'Installation has stopped responding. The server worker may be stuck running a command. Please refresh and retry. If the problem persists, check storage/logs/installation.log.',
+    // Server returned a response with no body (gnuboard/g7#62)
+    'error_empty_server_response' => 'The server returned an empty response. The response may have failed to build because of the server configuration or characters used in the account name or path. Please check storage/logs/installation.log.',
+    'error_invalid_server_response' => 'The server response could not be parsed. It may contain an error message or warning mixed into the output. Please check storage/logs/installation.log.',
+    'error_polling_response_invalid' => 'Could not read the installation progress. The server is not returning a correctly formatted response. Please check storage/logs/installation.log and try again.',
     'extension_load_failed' => 'Failed to load extension list.',
     'no_admin_template_error' => 'Admin template is required but not found. Please ensure at least one admin template exists in the templates directory.',
     'selection_summary' => 'Selection Summary',

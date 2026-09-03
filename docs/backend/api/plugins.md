@@ -1166,7 +1166,14 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-_이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지만)._
+| 이름 | 타입 | 예시 | 용도 |
+| --- | --- | --- | --- |
+| preserved_backups | array | `[{"directory":"custom","archive":"…/extension-custom-backups/…"}]` | 삭제 전에 보관한 운영자 소유 디렉토리의 사본 목록. 보관 대상이 없으면 빈 배열 |
+| preserved_backups[].directory | string | `custom` | 보관된 디렉토리 이름 |
+| preserved_backups[].archive | string | `storage/app/extension-custom-backups/{identifier}-{Ymd_His}/custom` | 사본이 놓인 절대 경로 |
+
+> 운영자가 `custom/` 에 넣은 파일은 확장 삭제와 함께 사라지지만, 삭제 직전에 사본이
+> 보관됩니다. 이 필드가 그 경로를 알리는 유일한 통로이므로 화면에 노출해야 합니다.
 
 **응답 예시**
 
@@ -1174,7 +1181,14 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지�
 {
     "success": true,
     "message": "플러그인이 성공적으로 제거되었습니다.",
-    "data": null
+    "data": {
+        "preserved_backups": [
+            {
+                "directory": "custom",
+                "archive": "/var/www/g7/storage/app/extension-custom-backups/sirsoft-gdpr-20260825_231500/custom"
+            }
+        ]
+    }
 }
 ```
 
@@ -2660,7 +2674,7 @@ Cache-Control: public, max-age=3600
 
 <!-- @generated:end -->
 
-**설명** 플러그인의 컴포넌트 정의 파일(components.json)을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않으며, 구버전 플러그인처럼 파일이 없으면 빈 components 로 폴백합니다. 응답은 1시간 캐시됩니다. 플러그인 미존재 시 404. 코어 프론트엔드에는 이 엔드포인트의 호출자가 없습니다 — 런타임 ComponentRegistry 와 레이아웃 편집기는 `/api/templates/{identifier}/components.json` 만 조회하고, 확장 UI 는 매니페스트가 아니라 레이아웃 확장(`extension_point`)으로 주입됩니다. 확장이 자체적으로 소비하거나 제3자 도구가 읽는 공개 표면으로 제공됩니다.
+**설명** 플러그인의 컴포넌트 정의 파일(components.json)을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않으며, 구버전 플러그인처럼 파일이 없으면 빈 components 로 폴백합니다. 조건부 캐시가 적용됩니다 — 응답에 ETag 가 부착되며 `If-None-Match` 일치 시 본문 없는 `304` 를 반환하고, Cache-Control 은 프로덕션 `public, max-age=3600` / 그 외 환경 `no-cache` 로 분기합니다. 플러그인 미존재 시 404. 코어 프론트엔드에는 이 엔드포인트의 호출자가 없습니다 — 런타임 ComponentRegistry 와 레이아웃 편집기는 `/api/templates/{identifier}/components.json` 만 조회하고, 확장 UI 는 매니페스트가 아니라 레이아웃 확장(`extension_point`)으로 주입됩니다. 확장이 자체적으로 소비하거나 제3자 도구가 읽는 공개 표면으로 제공됩니다.
 
 
 ### GET /api/plugins/{identifier}/editor-spec

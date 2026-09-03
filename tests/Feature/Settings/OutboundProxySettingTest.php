@@ -101,6 +101,37 @@ class OutboundProxySettingTest extends TestCase
     }
 
     /**
+     * 비문자열 값 거부 시에도 오류 문구의 :schemes 치환 자리가 채워집니다.
+     *
+     * 비문자열 분기가 치환 파라미터 없이 번역을 호출하면 번역기가 자리표시자를 그대로 둔
+     * 문장을 돌려줘 관리자 화면에 `:schemes` 리터럴이 노출됩니다 — 실패했을 때만 드러나는
+     * 결함이라 정상 흐름 테스트로는 잡히지 않습니다.
+     *
+     * @scenario debug_mode=on, proxy_value=invalid, bypass_list=empty
+     *
+     * @effects proxy_setting_rejects_invalid_url
+     */
+    public function test_non_string_proxy_value_error_message_has_schemes_substituted(): void
+    {
+        $validator = $this->validatorForAdvanced([
+            'outbound_proxy' => ['not', 'a', 'string'],
+        ]);
+
+        $this->assertTrue($validator->fails(), '비문자열 프록시 값이 검증을 통과했습니다.');
+
+        $messages = $validator->errors()->get('advanced.outbound_proxy');
+        $this->assertNotEmpty($messages);
+
+        foreach ($messages as $message) {
+            $this->assertStringNotContainsString(
+                ':schemes',
+                $message,
+                '치환 자리가 채워지지 않아 :schemes 리터럴이 관리자 화면에 노출됩니다.'
+            );
+        }
+    }
+
+    /**
      * 유효한 주소와 빈 값은 검증을 통과합니다.
      *
      * @scenario debug_mode=on, proxy_value=valid, bypass_list=empty

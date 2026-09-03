@@ -7,6 +7,7 @@ namespace App\Upgrades\Data\Ext\Plugins\SirsoftPayKginicis\V1_0_1\Migrations;
 use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\Upgrade\DataMigration;
 use App\Extension\UpgradeContext;
+use App\Support\ExtensionStoragePath;
 use Illuminate\Support\Facades\File;
 
 /**
@@ -30,11 +31,6 @@ use Illuminate\Support\Facades\File;
  */
 final class BackfillEasyPayPgProvider implements DataMigration
 {
-    /**
-     * 이커머스 모듈의 주문설정 저장 경로.
-     */
-    private const SETTINGS_PATH = 'app/modules/sirsoft-ecommerce/settings/order_settings.json';
-
     /**
      * 이 플러그인이 등록하는 간편결제 수단의 ID 접두사.
      */
@@ -62,7 +58,9 @@ final class BackfillEasyPayPgProvider implements DataMigration
      */
     public function run(UpgradeContext $context): void
     {
-        $path = storage_path(self::SETTINGS_PATH);
+        // 이커머스 모듈의 주문설정 저장 경로. 절대 경로는 코어 해석기가 디스크 root 를 기준으로 조립한다 — 확장마다
+        // 경로를 직접 조립하면 테스트 환경에서 운영 설정 파일을 그대로 건드리게 된다.
+        $path = ExtensionStoragePath::module('sirsoft-ecommerce', 'settings').'/order_settings.json';
 
         if (! File::exists($path)) {
             $context->logger->info('[kginicis] 이커머스 주문설정 파일 없음 — 기본값으로 동작하므로 skip');

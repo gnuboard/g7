@@ -6,6 +6,7 @@ use App\Extension\PluginManager;
 use App\Extension\TemplateManager;
 use App\Services\LayoutService;
 use App\Services\PluginSettingsService;
+use App\Support\ExtensionStoragePath;
 use Illuminate\Support\Facades\Crypt;
 use Mockery;
 use Tests\Helpers\MocksExtensions;
@@ -46,7 +47,7 @@ class PluginSettingsServiceTest extends TestCase
         );
 
         // 테스트용 설정 디렉토리 경로
-        $this->testSettingsDir = storage_path('app/plugins');
+        $this->testSettingsDir = dirname(ExtensionStoragePath::plugin('placeholder'));
     }
 
     // ========================================================================

@@ -4,6 +4,7 @@ namespace App\Extension\Traits;
 
 use App\Contracts\Extension\CacheInterface;
 use App\Extension\Cache\CoreCacheDriver;
+use App\Services\ExtensionStaticCacheService;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -48,6 +49,12 @@ trait ClearsTemplateCaches
                 'error' => $e->getMessage(),
             ]);
         }
+
+        // 부트스트랩 리소스 정적 게시(bake) 예약 — 모든 bump 호출부(수명주기 전체)가
+        // 이 단일 지점을 경유하므로 재게시 트리거 누락이 구조적으로 불가능하다 (#122).
+        // terminating 시점에 프로세스당 1회, 실행 시점의 최종 버전으로 게시된다
+        // (연속 bump 자연 병합). 실패해도 사이트는 API 폴백으로 정상.
+        ExtensionStaticCacheService::schedulePublishOnTerminate();
     }
 
     /**
@@ -101,6 +108,17 @@ trait ClearsTemplateCaches
                 'error' => $e->getMessage(),
             ]);
         }
+
+        // 재생성도 bump 다 — 게시를 예약한다. `incrementExtensionCacheVersion()` 과
+        // 동형화해 "캐시 버전 갱신 → 게시" 가 **모든 경로**에서 성립하게 한다 (#122).
+        //
+        // 이 경로가 빠져 있던 동안 `cache:clear` 후 첫 호출자가 CLI 면 포인터만 새 버전으로
+        // 점프하고 산출물은 옛 버전에 남았다. 스케줄 GC(`ext-static:cleanup`)가 바로 그
+        // 첫 호출자라, cleanup 첫 줄의 `getExtensionCacheVersion()` 이 실존하지 않는 새
+        // 버전을 만들어 내고 보존 대상이 `[없는 새 버전, 실존 최신 1개]` 가 되어 **진짜
+        // 직전 버전이 삭제**됐다 (매일 04:28 재현). CLI 는 terminating 예약이 그대로
+        // 유효하므로 커맨드 종료 시점에 게시가 수행된다.
+        ExtensionStaticCacheService::schedulePublishOnTerminate();
 
         return $newVersion;
     }

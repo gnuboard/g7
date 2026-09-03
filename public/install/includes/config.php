@@ -11,6 +11,9 @@ if (! defined('BASE_PATH')) {
     define('BASE_PATH', realpath(dirname(__DIR__, 3)) ?: dirname(__DIR__, 3));
 }
 
+// UTF-8 정규화 / JSON 출력 헬퍼 (의존성 0 — 가장 먼저 로드)
+require_once __DIR__.'/utf8.php';
+
 // 인스톨러 기본 URL
 $installerPath = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME']));
 

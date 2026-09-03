@@ -480,6 +480,7 @@ HTTP/1.1 200
 | order_settings.bank_accounts | body | array | 아니오 | — | 무통장 입금 계좌 목록. 항목별 `bank_code`·`account_number`·`account_holder`(모두 필수)·`is_active`·`is_default`. 계좌가 있으면 최소 1건은 사용+기본 상태여야 함 |
 | order_settings.auto_cancel_expired | body | boolean | 아니오 | — | 입금대기 상태 주문의 자동취소 사용 여부 |
 | order_settings.auto_cancel_days | body | integer | 아니오 | min 0, max 30 | 자동취소 기한(일). 주문일 포함 이 일수 경과 시 입금대기 주문을 자동 취소 |
+| order_settings.pending_order_expire_minutes | body | integer | 아니오 | min 0, max 20160 | 결제 미완료 주문 만료 기준(분). 결제창까지 갔으나 결제가 성립하지 않은 주문을 이 시간 경과 후 자동 취소. `0` 이면 그 부류를 정리하지 않음 |
 | order_settings.cart_expiry_days | body | integer | 아니오 | min 1, max 365 | 장바구니 보관기간(일). 경과 시 담긴 상품 자동 삭제 |
 | order_settings.stock_restore_on_cancel | body | boolean | 아니오 | — | 주문 취소 시 차감된 재고 자동 복구 여부 (반품/교환에도 적용) |
 | order_settings.confirmable_statuses | body | array | 아니오 | — | 사용자가 구매확정할 수 있는 주문 옵션 상태 목록 (`payment_complete`, `shipping_hold`, `preparing`, `shipping_ready`, `shipping`, `delivered` 중 선택) |
@@ -599,6 +600,7 @@ Content-Type: application/json
     ],
     "order_settings.auto_cancel_expired": true,
     "order_settings.auto_cancel_days": 1,
+    "order_settings.pending_order_expire_minutes": 1440,
     "order_settings.cart_expiry_days": 1,
     "order_settings.stock_restore_on_cancel": true,
     "order_settings.confirmable_statuses": [

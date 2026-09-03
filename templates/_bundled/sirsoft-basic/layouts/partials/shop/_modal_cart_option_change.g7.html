@@ -68,7 +68,7 @@
               <span>{{addGroup.name}}</span>
               <span data-if="{{addGroup.is_required}}" class="text-red-500 dark:text-red-400 ml-0.5">*</span>
             </label>
-            <select class="w-full" value="{{$parent._local.additionalSelections?.[addGroup.id] ?? ''}}" placeholder="$t:shop.additional_option_placeholder" options="{{[{ value: '', label: $t('shop.additional_option_placeholder') }, ...(addGroup.values ?? []).map(v => ({ value: v.id, label: v.price_adjustment > 0 ? v.name + ' (' + (v.multi_currency_price_adjustment?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? v.price_adjustment_formatted ?? ('+' + v.price_adjustment.toLocaleString())) + ')' : v.name }))]}}">
+            <select data-testid="modal-add-option-{{addGroup.id}}" class="w-full" value="{{$parent._local.additionalSelections?.[addGroup.id] ?? ''}}" placeholder="$t:shop.additional_option_placeholder" options="{{[{ value: '', label: $t('shop.additional_option_placeholder') }, ...(addGroup.values ?? []).map(v => ({ value: v.id, label: v.price_adjustment > 0 ? v.name + ' (' + (v.multi_currency_price_adjustment?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? v.price_adjustment_formatted ?? ('+' + v.price_adjustment.toLocaleString())) + ')' : v.name }))]}}">
               <on type="change">
                 <!-- 추가옵션을 비우면 그 그룹의 선택과 직접입력 글자를 함께 지운다 — 선택을 지웠는데 딸린
                      문구만 남아 주문에 실려 가는 것을 막는다 -->
@@ -139,7 +139,7 @@
         </on>
         $t:common.cancel
       </button>
-      <button type="button" class="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled="{{_global.isUpdatingOption || ($parent._local.optionProduct?.has_options &amp;&amp; !$parent._local.matchedOption)}}">
+      <button type="button" data-testid="modal-apply" class="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled="{{_global.isUpdatingOption || ($parent._local.optionProduct?.has_options &amp;&amp; !$parent._local.matchedOption)}}">
         <on type="click">
           <!-- 옵션 교체 확정. 진행 표시를 `_global` 에 두는 이유는 이 창과 뒤 장바구니 목록이 함께 잠겨야
                하기 때문이다(창 안 `_local` 로는 뒤 화면이 그 사실을 모른다) -->

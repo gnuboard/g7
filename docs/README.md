@@ -9,9 +9,9 @@
 
 | 카테고리 | 문서 수 | 링크 상태 |
 |----------|---------|----------|
-| [백엔드](backend/) | 35개 | 정상 |
-| [프론트엔드](frontend/) | 52개 | 정상 |
-| [확장 시스템](extension/) | 32개 | 정상 |
+| [백엔드](backend/) | 37개 | 정상 |
+| [프론트엔드](frontend/) | 47개 | 정상 |
+| [확장 시스템](extension/) | 33개 | 정상 |
 | 공통 | 20개 | 정상 |
 | [AI 도구](ai-tools/) | - | 정상 |
 
@@ -44,15 +44,16 @@ G7 이 제공하는 REST API 의 엔드포인트별 요청 파라미터·응답 
 | 5 | [레이아웃 JSON - 상속](frontend/layout-json-inheritance.md) | extends: 베이스 레이아웃 상속 (type: "slot" 위치에 삽입) |
 | 6 | [컴포넌트 개발 규칙](frontend/components.md) | HTML 태그 직접 사용 금지 |
 | 7 | [컴포넌트 Props 레퍼런스](frontend/component-props.md) | - |
-| 8 | [sirsoft-admin_basic 컴포넌트](frontend/templates/sirsoft-admin_basic/components.md) | Basic (37개), Composite (66개), Layout (8개) |
-| 9 | [sirsoft-basic 컴포넌트](frontend/templates/sirsoft-basic/components.md) | Basic 26개: HTML 래핑 (Div, Button, Input, Select, Form, A 등) |
-| 10 | [데이터 바인딩 및 표현식](frontend/data-binding.md) | API 데이터: {{user.name}}, URL 파라미터: {{route.id}} |
-| 11 | [데이터 바인딩 - 다국어 처리](frontend/data-binding-i18n.md) | - |
-| 12 | [액션 핸들러 가이드](frontend/actions.md) | 구조: type 또는 event(이벤트), handler(핸들러명), params(옵션) |
-| 13 | [액션 핸들러 - 핸들러별 상세 사용법](frontend/actions-handlers.md) | navigate: 페이지 이동 (path, query, mergeQuery 옵션) |
-| 14 | [전역 상태 관리](frontend/state-management.md) | 전역 상태: _global.속성명 (앱 전체 공유, 페이지 이동 시 유지) |
-| 15 | [데이터 소스](frontend/data-sources.md) | data_sources 배열에 API 정의: id, endpoint, method |
-| 16 | [다크 모드 지원](frontend/dark-mode.md) | Tailwind dark: variant 사용 |
+| 8 | [sirsoft-basic 컴포넌트](../templates/_bundled/sirsoft-basic/docs/components.md) | 확장 소유 문서 (basic / composite / layout) |
+| 9 | [데이터 바인딩 및 표현식](frontend/data-binding.md) | API 데이터: {{user.name}}, URL 파라미터: {{route.id}} |
+| 10 | [데이터 바인딩 - 다국어 처리](frontend/data-binding-i18n.md) | - |
+| 11 | [액션 핸들러 가이드](frontend/actions.md) | 구조: type 또는 event(이벤트), handler(핸들러명), params(옵션) |
+| 12 | [액션 핸들러 - 핸들러별 상세 사용법](frontend/actions-handlers.md) | navigate: 페이지 이동 (path, query, mergeQuery 옵션) |
+| 13 | [전역 상태 관리](frontend/state-management.md) | 전역 상태: _global.속성명 (앱 전체 공유, 페이지 이동 시 유지) |
+| 14 | [데이터 소스](frontend/data-sources.md) | data_sources 배열에 API 정의: id, endpoint, method |
+| 15 | [다크 모드 지원](frontend/dark-mode.md) | Tailwind dark: variant 사용 |
+
+sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templates/_bundled/sirsoft-admin_basic/docs/components.md](../templates/_bundled/sirsoft-admin_basic/docs/components.md) 를 참고하세요.
 
 ### 컨트롤러 작성
 
@@ -127,7 +128,7 @@ G7 이 제공하는 REST API 의 엔드포인트별 요청 파라미터·응답 
 <!-- AUTO-GENERATED-START: docs-readme-full-list -->
 ## 카테고리별 전체 문서 목록
 
-### 백엔드 (35개)
+### 백엔드 (37개)
 
 | 문서 | 제목 |
 |------|------|
@@ -157,17 +158,19 @@ G7 이 제공하는 REST API 의 엔드포인트별 요청 파라미터·응답 
 | [pagination.md](backend/pagination.md) | 대용량 목록 페이지네이션 (Pagination) |
 | [README.md](backend/README.md) | 백엔드 개발 가이드 |
 | [response-helper.md](backend/response-helper.md) | API 응답 규칙 (ResponseHelper) |
+| [reverse-proxy.md](backend/reverse-proxy.md) | 리버스 프록시 환경 (Reverse Proxy) |
 | [routing.md](backend/routing.md) | 라우트 네이밍 및 경로 |
 | [search-system.md](backend/search-system.md) | Scout 검색 엔진 시스템 (Search System) |
 | [seo-system.md](backend/seo-system.md) | SEO 페이지 생성기 시스템 (SEO Page Generator) |
 | [service-provider.md](backend/service-provider.md) | 서비스 프로바이더 안전성 |
 | [service-repository.md](backend/service-repository.md) | Service-Repository 패턴 |
 | [settings-multilingual-enrichment.md](backend/settings-multilingual-enrichment.md) | Settings 카탈로그 다국어 자동 보강 |
+| [static-asset-publishing.md](backend/static-asset-publishing.md) | 부트스트랩 리소스 정적 게시 (Static Asset Publishing) |
 | [translatable-seeders.md](backend/translatable-seeders.md) | 다국어 시더 인터페이스 (Translatable Seeders) |
 | [user-overrides.md](backend/user-overrides.md) | 사용자 수정 보존 (HasUserOverrides Trait) |
 | [validation.md](backend/validation.md) | 검증 (Validation) |
 
-### 프론트엔드 (52개)
+### 프론트엔드 (47개)
 
 | 문서 | 제목 |
 |------|------|
@@ -217,14 +220,9 @@ G7 이 제공하는 REST API 의 엔드포인트별 요청 파라미터·응답 
 | [tailwind-safelist.md](frontend/tailwind-safelist.md) | Tailwind Safelist 가이드 |
 | [template-development.md](frontend/template-development.md) | 템플릿 개발 가이드라인 |
 | [template-handlers.md](frontend/template-handlers.md) | 템플릿 전용 핸들러 |
-| [components.md](frontend/templates/sirsoft-admin_basic/components.md) | sirsoft-admin_basic 컴포넌트 |
-| [handlers.md](frontend/templates/sirsoft-admin_basic/handlers.md) | sirsoft-admin_basic 핸들러 |
-| [layouts.md](frontend/templates/sirsoft-admin_basic/layouts.md) | sirsoft-admin_basic 레이아웃 |
-| [components.md](frontend/templates/sirsoft-basic/components.md) | sirsoft-basic 컴포넌트 |
-| [handlers.md](frontend/templates/sirsoft-basic/handlers.md) | sirsoft-basic 핸들러 |
-| [layouts.md](frontend/templates/sirsoft-basic/layouts.md) | sirsoft-basic 레이아웃 |
+| [README.md](frontend/templates/README.md) | 템플릿별 컴포넌트·핸들러·레이아웃 문서 |
 
-### 확장 시스템 (32개)
+### 확장 시스템 (33개)
 
 | 문서 | 제목 |
 |------|------|
@@ -232,6 +230,7 @@ G7 이 제공하는 REST API 의 엔드포인트별 요청 파라미터·응답 
 | [changelog-rules.md](extension/changelog-rules.md) | Changelog 규칙 (Changelog Rules) |
 | [editor-spec.md](extension/editor-spec.md) | 편집기 스펙 (editor-spec.json) |
 | [extension-components.md](extension/extension-components.md) | 확장 컴포넌트 (Extension Components) |
+| [extension-documentation.md](extension/extension-documentation.md) | 확장 개발자 문서 (Extension Documentation) |
 | [extension-manager.md](extension/extension-manager.md) | ExtensionManager (확장 관리자) |
 | [extension-update-system.md](extension/extension-update-system.md) | 확장 업데이트 시스템 (Extension Update System) |
 | [hooks.md](extension/hooks.md) | 훅 시스템 (Hook System) |

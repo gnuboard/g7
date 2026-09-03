@@ -66,6 +66,7 @@ return [
             'confirm_question' => '本当に削除してもよろしいですか?',
             'aborted' => 'モジュールの削除がキャンセルされました。',
             'not_installed' => 'モジュール ":module" がインストールされていません。',
+            'custom_preserved' => '運営者ファイル(:directory)を :archive に保管しました。',
         ],
         'cache_clear' => [
             'clearing_all' => 'すべてのモジュールキャッシュを削除します...',

@@ -109,6 +109,28 @@
             "comment": "서버·프레임워크 정보 — 정보 탭에서만 받는다(읽기 전용이라 저장 대상이 아니다)."
         },
         {
+            "id": "trustedProxy",
+            "label_key": "$t:editor.data_source.trustedProxy",
+            "type": "api",
+            "endpoint": "/api/admin/settings/trusted-proxy",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'advanced'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": {
+                    "forwarded_headers": [],
+                    "trusted_configured": false,
+                    "configured_proxies": null,
+                    "is_secure": null,
+                    "client_ip": null,
+                    "remote_addr": null,
+                    "status": "not_applicable"
+                }
+            },
+            "comment": "리버스 프록시 진단 — 고급 탭에서만 받는다. 신뢰 프록시 설정 여부와 이 요청이 지나온 전달 헤더·클라이언트 IP 를 서버가 판정해 돌려주고, 응답이 없으면 fallback 의 status=not_applicable 로 「진단 불가」를 그린다."
+        },
+        {
             "id": "appKey",
             "label_key": "$t:editor.data_source.appKey",
             "type": "api",
@@ -350,7 +372,8 @@
             "adminIdentityPolicies",
             "policies",
             "language_packs",
-            "sitemap_status"
+            "sitemap_status",
+            "trustedProxy"
         ]
     },
     "init_actions": [

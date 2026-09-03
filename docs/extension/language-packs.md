@@ -280,12 +280,54 @@ foreach ($config['categories'] as $cat) { ... }
 **확장 시드 필터 자동 결선** (`LanguagePackServiceProvider::registerExtensionSeedFilters`): 활성 모듈/플러그인 언어팩의 `seed/*.json` 마다 위 패턴의 필터에 listener 가 자동 등록됩니다. 매칭 키는 entry 의 컬럼을 우선순위(`code` > `slug` > `key` > `identifier` > `id`) 로 자동 감지합니다.
 
 엔티티별 결선 정책:
-- `notifications.json` → `seed.{target}.notifications.translations` 필터 (Definition × Template 3-tier 구조)
+- `notifications.g7.html` → `seed.{target}.notifications.translations` 필터 (Definition × Template 3-tier 구조)
 - `identity_messages.json` → `seed.{target}.identity_messages.translations` 필터 (Definition × Template × Channel — provider/scope_type/scope_value 복합 키 매칭)
 - `menus.json` → `module.{target}.admin_menus.translations` 필터 (모듈 전용)
 - `roles.json` → `{scope}.{target}.roles.translations` 필터 (module/plugin)
 - `permissions.json` → `{scope}.{target}.permissions.translations` 필터 (3-레벨 트리: module/categories/permissions)
 - 기타 → `seed.{target}.{entity}.translations` 필터 (단순 entity 시드)
+
+### 복원 경로의 언어팩 병합
+
+[기본값 복원](알림 템플릿·본인인증 메시지)은 위 시딩 필터가 아니라 자체 기본값 필터
+(`core.notification.filter_default_definitions` / `core.identity.filter_default_message_definitions`)를
+탄다. 복원 기본값에는 **활성 언어팩 seed 로케일이 반드시 병합**되어야 한다 — 병합하지 않으면
+복원이 팩이 주입해 둔 로케일(ja 등)을 config 의 ko/en 만으로 대체해 영구 소실시키며,
+오류도 로그도 남지 않는다. 코어 서비스(NotificationTemplateService·IdentityMessageTemplateService)가
+필터 적용 후 시딩과 같은 주입기(SSoT)로 병합하며, 정적 검사(테스트)가 이 계약을 고정한다.
+
+시딩 필터의 페이로드는 **발화 주체의 원형 키를 보존**해야 한다 — 코어 알림 시더는 config
+원형(연관 배열, 키가 곧 type), 본인인증은 복합 키(`mail.purpose.signup` 등)가 매칭 키다.
+키를 버리고 리스트로 만들면 주입기가 전 항목을 스킵해 팩 로케일이 오류 없이 주입되지 않는다.
+알림 주입기는 두 형태(문자열 키 우선, 없으면 type 필드)를 수용한다.
+
+### 사용자 수정 보존 판정과 시딩 컨텍스트
+
+언어팩 병합·제거의 사용자 수정 보존 판정은 운영자 수정의 실제 기록 형식인 **dot-path 항목**
+(`user_overrides` 의 `"{컬럼}.{로케일}"`)을 기준으로 한다. 컬럼 전체 항목(`"subject"`)은 시더
+재실행의 컬럼 보호 선언이며 팩 병합을 막지 않는다 — 막으면 팩 업데이트가 자기 로케일 번역을
+갱신하지 못한다.
+
+이를 위해 두 가지가 함께 지켜져야 한다:
+
+- 다국어 JSON 컬럼을 추적하는 모델은 `translatableTrackableFields` 를 선언한다 — 미선언 시
+  운영자 수정이 컬럼 전체 항목으로 기록되어 로케일 단위 보존이 불가능해진다.
+- 언어팩 주입·제거처럼 시스템이 수행하는 저장은 시딩 컨텍스트(`user_overrides.seeding` 바인딩)
+  안에서 실행한다 — 바인딩 없이 저장하면 주입 자체가 "사용자 수정"으로 오인 기록되어 이후
+  시더 재실행의 컬럼 갱신이 영구히 얼어붙는다.
+
+### 실패한 업데이트의 상태 복원
+
+`language-pack:update` 가 설치 트랜잭션 이후(활성화 단계)에 실패하면 팩 상태를 이전 상태로
+복원한다. 복원하지 않으면 active 였던 팩이 installed 로 방치되어 해당 로케일의 백엔드 번역이
+안내 없이 기본 로케일로 폴백된다.
+
+### 같은 프로세스 활성화와 필터 인스턴스
+
+시더 번역 필터 클로저는 boot 시점의 injector→registry **인스턴스**를 캡처한다. 활성 팩 목록
+캐시를 갱신할 때는 싱글톤을 유지한 채 `LanguagePackRegistry::invalidate()` 로 내부 캐시만
+비운다 — `forgetInstance` 로 바인딩을 교체하면 캡처된 구 인스턴스의 stale 캐시가 남아, 같은
+프로세스에서 활성화된 신규 팩이 시더 필터에 보이지 않는다(오류 없이 해당 로케일만 미주입).
 
 ### IDV 도메인 lang pack 커버리지
 
@@ -293,7 +335,7 @@ foreach ($config['categories'] as $cat) { ... }
 
 | SSoT 블록 | lang pack seed | 사유 |
 |---|---|---|
-| `notification_definitions` | ✓ `seed/notifications.json` | 정의/템플릿이 다국어 데이터 직접 보유 |
+| `notification_definitions` | ✓ `seed/notifications.g7.html` | 정의/템플릿이 다국어 데이터 직접 보유 |
 | `identity_messages` | ✓ `seed/identity_messages.json` | 메일 본문/제목이 다국어 데이터 직접 보유 |
 | `identity_policies` | ❌ | `IdentityPolicy` 모델에 다국어 필드 부재 — 관리자 UI 라벨은 `lang/{locale}/identity.php` 또는 `frontend/partial/admin.json` 의 i18n 키로 처리 |
 | `identity_purposes` | ❌ | `label_key`/`description_key` 참조 패턴 — 실제 ja 라벨은 `frontend/partial/admin.json::identity.purposes.*` 키로 처리 |
@@ -450,7 +492,20 @@ G7 는 일본어 번들 언어팩 12종을 공식 제공합니다. ko 원본을 
 - 통화/숫자 단위 변환 금지 (런타임 처리)
 - 공식체(です·ます) 강제, 친근체 금지
 - 한글 미포함 value(영문/숫자/기호만) 는 번역 스킵 → 원문 유지
-- 고정 용어집 50항목으로 일관성 강제 (예: `관리자 → 管理者`, `장바구니 → カート`)
+- 고정 용어집으로 일관성 강제 (예: `관리자 → 管理者`, `장바구니 → カート`)
+
+### 용어집 등록 의무
+
+번역 결과의 표기는 고정 용어집이 정한다. 용어집에 없는 도메인 용어는 어간만 번역되어
+**원본 로케일 문자가 값에 그대로 남는다** — 예외도 오류도 나지 않고, 키 대칭 검사도 값은 보지 않으므로
+그 로케일로 화면을 열기 전까지 드러나지 않는다.
+
+- 새 도메인 용어를 도입하면 번역 빌드 **전에** 용어집에 등록한다
+- 이미 생성된 값을 손으로 고쳤다면 용어집도 함께 고친다 — 용어집을 두면 다음 키에서 같은 오역이 되풀이된다
+- 같은 용어는 팩 전체에서 한 표기로 통일한다 (용어집이 단일 출처)
+
+정적 검사가 번역 값의 원본 로케일 문자 잔존을 검출한다. 매니페스트와 CHANGELOG,
+그리고 한국어 주석은 대상이 아니다.
 
 ### 설치 및 활성화
 

@@ -67,6 +67,20 @@
       </field>
     </fallback>
   </data-source>
+  <!-- 리버스 프록시 진단 — 고급 탭에서만 받는다. 신뢰 프록시 설정 여부와 이 요청이 지나온 전달 헤더·클라이언트 IP 를 서버가 판정해 돌려주고, 응답이 없으면 fallback 의 status=not_applicable 로 「진단 불가」를 그린다. -->
+  <data-source id="trustedProxy" label_key="$t:editor.data_source.trustedProxy" type="api" endpoint="/api/admin/settings/trusted-proxy" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'advanced'}}" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data">
+        <field name="forwarded_headers" :value="[]"/>
+        <field name="trusted_configured" :value="false"/>
+        <field name="configured_proxies" :value="null"/>
+        <field name="is_secure" :value="null"/>
+        <field name="client_ip" :value="null"/>
+        <field name="remote_addr" :value="null"/>
+        <field name="status" value="not_applicable"/>
+      </field>
+    </fallback>
+  </data-source>
   <!-- 애플리케이션 키 — 보안 탭에서만 받는다. 값이 민감해 그 탭을 실제로 열기 전에는 부르지 않는다. -->
   <data-source id="appKey" label_key="$t:editor.data_source.appKey" type="api" endpoint="/api/admin/settings/app-key" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'security'}}" :auto_fetch="true" :auth_required="true">
     <fallback>
@@ -190,6 +204,7 @@
     <wait-for>policies</wait-for>
     <wait-for>language_packs</wait-for>
     <wait-for>sitemap_status</wait-for>
+    <wait-for>trustedProxy</wait-for>
   </transition-overlay>
   <init>
     <set-state target="local" filterScope="{{query.scope || ''}}" filterStatus="{{query.status || ''}}" filterLocale="{{query.locale || ''}}" filterSearch="{{query.search || ''}}" filterTarget="" :scopeLocked="false">

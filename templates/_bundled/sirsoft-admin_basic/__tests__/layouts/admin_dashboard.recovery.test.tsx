@@ -216,6 +216,7 @@ describe('어드민 대시보드 - 재호환 알림 (recovery_available)', () =>
       response: {
         data: [
           {
+            type: 'info',
             subtype: 'recovery_available',
             extension_type: 'plugin',
             identifier: 'sirsoft-payment',
@@ -289,6 +290,7 @@ describe('어드민 대시보드 - 재호환 알림 (recovery_available)', () =>
       response: {
         data: [
           {
+            type: 'info',
             subtype: 'recovery_available',
             extension_type: 'plugin',
             identifier: 'sirsoft-payment',

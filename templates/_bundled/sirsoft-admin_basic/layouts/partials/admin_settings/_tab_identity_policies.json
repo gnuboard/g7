@@ -290,9 +290,19 @@
                             }
                         },
                         {
+                            "comment": "검색 필터는 설정 폼의 일부가 아니다 — 자동바인딩되면 검색어가 설정 폼 상태(filter.search)에 남아 초기화 후에도 입력창에 되살아나고, 설정 dirty 판정까지 오염시킨다.",
                             "type": "basic",
                             "name": "Input",
                             "actions": [
+                                {
+                                    "comment": "검색어는 로컬 상태에만 담아 둔다(자동바인딩을 끈 대신 직접 받는다) — 실제 조회는 아래 Enter 블록이 이 값을 쿼리로 실을 때 일어난다.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "identityPolicySearch": "{{$event.target.value}}"
+                                    }
+                                },
                                 {
                                     "comment": "검색은 Enter 로만 낸다(옆 검색 버튼은 조회를 다시 부를 뿐 검색어를 URL 에 넣지 않는다).\n                 그래서 검색어를 바꾸고 버튼만 누르면 조건이 반영되지 않는다 — 지금 그렇게 돼 있다.",
                                     "type": "keypress",
@@ -320,7 +330,8 @@
                             "props": {
                                 "type": "text",
                                 "name": "filter.search",
-                                "value": "{{query.search ?? ''}}",
+                                "autoBinding": false,
+                                "value": "{{_local.identityPolicySearch ?? query.search ?? ''}}",
                                 "placeholder": "$t:admin.identity.policies.search_placeholder",
                                 "className": "md:flex-1"
                             }
@@ -330,11 +341,25 @@
                             "name": "Button",
                             "actions": [
                                 {
-                                    "comment": "목록을 다시 부른다 — **URL 은 건드리지 않으므로 지금 걸린 조건 그대로** 새로 받는 동작이다\n                 (검색어 반영은 위 입력창의 Enter 가 한다).",
+                                    "comment": "Enter 키와 동일하게 입력값을 쿼리로 실어 이동한다 — refetch 만 하면 입력 중인 검색어가 반영되지 않는다.",
                                     "type": "click",
-                                    "handler": "refetchDataSource",
+                                    "handler": "navigate",
                                     "params": {
-                                        "dataSourceId": "policies"
+                                        "path": "/admin/settings",
+                                        "replace": true,
+                                        "mergeQuery": true,
+                                        "transition_overlay_target": "policy_table_card",
+                                        "query": {
+                                            "tab": "identity",
+                                            "search": "{{(_local.identityPolicySearch ?? query.search) || undefined}}",
+                                            "page": 1
+                                        },
+                                        "scroll": {
+                                            "container": "#right_content_area",
+                                            "to": "#identity_section_policies",
+                                            "offset": 180,
+                                            "block": "start"
+                                        }
                                     }
                                 }
                             ],
@@ -355,6 +380,15 @@
                             "name": "Button",
                             "if": "{{(query.scope ?? '') !== '' || (query.source_type ?? '') !== '' || (query.search ?? '') !== ''}}",
                             "actions": [
+                                {
+                                    "comment": "입력창의 미제출 검색어도 함께 비운다 — 상태만 남으면 초기화가 안 된 것으로 보인다.",
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "identityPolicySearch": ""
+                                    }
+                                },
                                 {
                                     "comment": "audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다.",
                                     "type": "click",

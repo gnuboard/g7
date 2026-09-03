@@ -121,6 +121,7 @@
                                     ],
                                     "props": {
                                         "name": "option_{{groupIndex}}",
+                                        "data-testid": "option-group-{{groupIndex}}",
                                         "className": "w-full",
                                         "value": "{{_local.currentSelection?.[group.name_localized] ?? ''}}",
                                         "placeholder": "{{groupIndex === 0 || _local.currentSelection?.[product.data?.option_groups[groupIndex - 1]?.name_localized] ? group.name_localized + '$t:shop.product.select_option_suffix' : '$t:shop.product.select_upper_option_first'}}",
@@ -356,6 +357,7 @@
                                                     ],
                                                     "props": {
                                                         "name": "add_option_{{itemIndex}}_{{addGroup.id}}",
+                                                        "data-testid": "add-option-{{itemIndex}}-{{addGroup.id}}",
                                                         "className": "w-full",
                                                         "value": "{{item.additionalOptionSelections?.[addGroup.id] ?? ''}}",
                                                         "placeholder": "$t:shop.additional_option_placeholder",
@@ -419,6 +421,7 @@
                                     "name": "Div",
                                     "if": "{{(item.additionalOptionsTotal ?? 0) > 0}}",
                                     "props": {
+                                        "data-testid": "additional-options-amount",
                                         "className": "flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-2"
                                     },
                                     "children": [
@@ -512,6 +515,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
+                                "data-testid": "purchase-total",
                                 "className": "text-xl font-bold text-gray-900 dark:text-white"
                             },
                             "text": "{{(_local.selectedOptionItems ?? []).length === 0 ? '-' : (_local.selectedTotalMultiCurrency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? _local.selectedOptionItems[0]?.multiCurrencyTotalPrice?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? _local.selectedOptionItems[0]?.totalPriceFormatted ?? '')}}"
@@ -539,6 +543,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
+                                "data-testid": "purchase-total",
                                 "className": "text-xl font-bold text-gray-900 dark:text-white"
                             },
                             "text": "{{_local.noOptionTotalMultiCurrency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.selling_price_formatted ?? ''}}"
@@ -679,6 +684,7 @@
                                 }
                             ],
                             "props": {
+                                "data-testid": "buy-now",
                                 "className": "w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
                                 "disabled": "{{_local.isOrdering || product.data?.is_shippable_to_selected_country === false || ((product.data?.option_groups ?? []).length > 0 && ((_local.selectedOptionItems ?? []).reduce((s, i) => s + i.quantity, 0) < (product.data?.min_purchase_qty ?? 1) || (product.data?.max_purchase_qty > 0 && (_local.selectedOptionItems ?? []).reduce((s, i) => s + i.quantity, 0) > product.data.max_purchase_qty)))}}"
                             },
@@ -838,6 +844,7 @@
                                 }
                             ],
                             "props": {
+                                "data-testid": "add-to-cart",
                                 "className": "w-full py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
                                 "disabled": "{{_local.isAddingToCart || _local.isOrdering || product.data?.is_shippable_to_selected_country === false || ((product.data?.option_groups ?? []).length > 0 && ((_local.selectedOptionItems ?? []).reduce((s, i) => s + i.quantity, 0) < (product.data?.min_purchase_qty ?? 1) || (product.data?.max_purchase_qty > 0 && (_local.selectedOptionItems ?? []).reduce((s, i) => s + i.quantity, 0) > product.data.max_purchase_qty)))}}"
                             },

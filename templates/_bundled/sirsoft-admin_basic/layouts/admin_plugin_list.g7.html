@@ -341,7 +341,7 @@
                             </api-call>
                           </case>
                           <case when="uninstall">
-                            <set-state target="global" selectedPlugin="{{row}}" :deletePluginData="false" :pluginUninstallInfo="null"/>
+                            <set-state target="global" selectedPlugin="{{row}}" :deletePluginData="false" :pluginUninstallInfo="null" :pluginUninstallBackups="null"/>
                             <open-modal target="plugin_uninstall_modal"/>
                             <api-call :auth_required="true" target="/api/admin/plugins/{{row.identifier}}/uninstall-info" method="GET">
                               <success>

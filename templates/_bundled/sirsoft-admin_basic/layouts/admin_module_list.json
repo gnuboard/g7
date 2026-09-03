@@ -1329,7 +1329,8 @@
                                                                                                                 "target": "global",
                                                                                                                 "selectedModule": "{{row}}",
                                                                                                                 "deleteModuleData": false,
-                                                                                                                "moduleUninstallInfo": null
+                                                                                                                "moduleUninstallInfo": null,
+                                                                                                                "moduleUninstallBackups": null
                                                                                                             }
                                                                                                         },
                                                                                                         {

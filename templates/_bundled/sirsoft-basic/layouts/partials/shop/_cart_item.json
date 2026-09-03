@@ -7,6 +7,7 @@
     "type": "basic",
     "name": "Div",
     "props": {
+        "data-testid": "cart-item",
         "className": "flex gap-4 p-4"
     },
     "children": [
@@ -125,6 +126,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
+                                "data-testid": "cart-item-additional-option",
                                 "className": "text-xs text-gray-500 dark:text-gray-400"
                             },
                             "text": "{{addOpt.group_name}}: {{addOpt.name}}{{(addOpt.custom_text ?? '') !== '' ? ' (' + addOpt.custom_text + ')' : ''}}{{(addOpt.price_adjustment ?? 0) > 0 ? ' (' + (addOpt.multi_currency_price_adjustment?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? addOpt.price_adjustment_formatted ?? ('+' + addOpt.price_adjustment.toLocaleString())) + ')' : ''}}"
@@ -441,6 +443,7 @@
                                 }
                             ],
                             "props": {
+                                "data-testid": "cart-change-option",
                                 "className": "p-1 text-gray-400 dark:text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 transition-colors cursor-pointer",
                                 "title": "$t:shop.cart.change_option"
                             },

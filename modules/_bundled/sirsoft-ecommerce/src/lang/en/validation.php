@@ -1451,6 +1451,7 @@ return [
         'order_settings.bank_accounts.*.is_default' => 'Default Account',
         'order_settings.auto_cancel_expired' => 'Auto Cancel Unpaid Orders',
         'order_settings.auto_cancel_days' => 'Auto Cancel Days',
+        'order_settings.pending_order_expire_minutes' => 'Pending Payment Order Expiry (minutes)',
         'order_settings.cart_expiry_days' => 'Cart Expiry Days',
         'order_settings.default_pg_provider' => 'Default PG Provider',
         'order_settings.payment_methods.*.pg_provider' => 'PG Provider',
@@ -1780,6 +1781,12 @@ return [
                 'integer' => 'Auto cancel days must be an integer.',
                 'min' => 'Auto cancel days must be at least 1.',
                 'max' => 'Auto cancel days cannot exceed 30.',
+            ],
+            'pending_order_expire_minutes' => [
+                'required' => 'Please enter the pending payment order expiry.',
+                'integer' => 'Pending payment order expiry must be an integer.',
+                'min' => 'Pending payment order expiry must be at least 0 (0 disables cleanup).',
+                'max' => 'Pending payment order expiry cannot exceed 20160 minutes (14 days).',
             ],
             'cart_expiry_days' => [
                 'integer' => 'Cart expiry days must be an integer.',

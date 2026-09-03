@@ -368,6 +368,28 @@ http://도메인/install
 
 ---
 
+## 설치 트러블슈팅
+
+### 2단계에서 "Unexpected end of JSON input" 오류가 표시되는 경우
+
+**증상**: 설치 마법사 2단계(설치 환경 확인)에서 요구사항 카드가 표시되지 않고
+`요구사항 검증 실패: ... Unexpected end of JSON input` 이 표시됩니다.
+서버 로그에는 아무 오류도 남지 않습니다.
+
+**원인**: Windows 사용자 계정 이름에 한글(또는 서버가 쓰는 문자 인코딩 밖의 문자)이
+포함되어 있으면, 설치 마법사가 계정 이름을 조회하는 과정에서 응답을 만들지 못합니다.
+
+**해결**:
+
+- **7.0.10 이상**: 수정되었습니다. 별도 조치가 필요하지 않습니다.
+- **7.0.9 이하**: 계정 이름이 영문인 Windows 계정으로 웹 서버를 실행하거나,
+  코어를 7.0.10 이상으로 올린 뒤 설치를 진행하세요.
+
+설치 과정에서 문자 인코딩 관련 조치가 있었다면 `storage/logs/installation.log` 에
+`[env] whoami output was not UTF-8 — normalized` 형태로 기록됩니다.
+
+---
+
 ## 설치 후 확인
 
 설치가 완료되면 아래 페이지에 접근할 수 있습니다.
@@ -378,6 +400,23 @@ http://도메인/install
 | **사용자 페이지** | `http://도메인/` | 사용자 템플릿 설치 필수 |
 
 > 사용자 페이지는 사용자 템플릿이 설치되어 있어야 접근할 수 있습니다. 인스톨러에서 사용자 템플릿을 함께 설치하거나, 관리자 페이지에서 템플릿을 먼저 설치해 주세요.
+
+### 파일 권한 (설치 후 확인)
+
+POSIX 권한 모델 (Linux/macOS/BSD) 환경에서 웹 서버 실행 계정이 쓸 수 있어야 하는 위치는 다음과 같습니다. Windows 환경에서는 해당하지 않습니다.
+
+| 위치 | 필요한 이유 |
+|------|------------|
+| `storage/` · `bootstrap/cache` | 애플리케이션 동작에 항상 필요 (로그·캐시·세션·업로드·런타임 캐시) |
+| `modules/` · `plugins/` · `templates/` · `public/build` | 관리자 화면에서 확장(모듈/플러그인/템플릿)을 설치·업데이트·삭제할 때 필요 |
+
+```bash
+sudo chown -R www-data:www-data storage bootstrap/cache modules plugins templates public/build
+```
+
+**`vendor/` 에는 쓰기 권한이 필요하지 않습니다.** 확장의 `vendor/` 는 설치·업데이트 시점에만 기록되며, 애플리케이션이 동작하면서 만드는 런타임 캐시는 모두 `storage/` 아래에 기록됩니다. 명령줄로 설치·업데이트를 수행한다면 그 계정만 쓸 수 있으면 됩니다.
+
+전체 권한 모델(그룹 공유 방식 A / 소유자 통일 방식 B / ACL 방식 C 와 umask 운영)은 [docs/requirements.md](docs/requirements.md) "파일 권한 및 umask 운영 방식" 절을 참고하세요.
 
 ---
 
@@ -539,6 +578,24 @@ sudo php artisan hotfix:rollback-stale-files --prune
 ### HTTPS 설정
 
 프로덕션 환경에서는 HTTPS를 사용해야 합니다. `.env` 파일에서 `APP_URL`을 `https://`로 설정하세요.
+
+`APP_URL` 은 명령줄 실행·큐 워커·메일 발송처럼 **요청이 없는 맥락**에서 절대 URL 을 만들 때의
+기준입니다. 웹 요청에서 만들어지는 절대 URL(화면 자산, 콜백 주소 등)은 `APP_URL` 이 아니라
+**요청 자체의 스킴과 호스트**를 따릅니다.
+
+따라서 TLS 를 앞단에서 처리하고 사이트에는 HTTP 로 전달하는 구성(AWS ALB, CloudFront,
+Cloudflare, nginx 리버스 프록시, ngrok)에서는 `APP_URL` 만 `https://` 로 두어서는 부족합니다.
+사이트가 접속 주소와 방문자 IP 를 올바르게 인식하려면 `.env` 에 `TRUSTED_PROXIES` 를 함께
+지정해야 합니다.
+
+```dotenv
+# 프록시 뒤에서 구동하는 경우에만 지정합니다 (미설정이 기본값).
+TRUSTED_PROXIES=*
+```
+
+지정하지 않으면 화면이 표시되지 않거나(혼합 콘텐츠 차단), 결제 통보가 수신되지 않고, 모든
+방문자가 같은 IP 로 기록됩니다. 값 선택 기준과 도입 시 후속 조치는
+[docs/backend/reverse-proxy.md](docs/backend/reverse-proxy.md) 를 참고하세요.
 
 ### `.env` 권한 강화 (선택)
 

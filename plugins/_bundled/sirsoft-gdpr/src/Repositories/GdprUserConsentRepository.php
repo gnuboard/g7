@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\Gdpr\Repositories;
 
 use Illuminate\Support\Collection;
+use Plugins\Sirsoft\Gdpr\Enums\ConsentSource;
 use Plugins\Sirsoft\Gdpr\Models\GdprUserConsent;
 use Plugins\Sirsoft\Gdpr\Repositories\Contracts\GdprUserConsentRepositoryInterface;
 
@@ -109,7 +110,7 @@ class GdprUserConsentRepository implements GdprUserConsentRepositoryInterface
             ->update([
                 'is_consented' => false,
                 'revoked_at' => now(),
-                'last_source' => 'withdraw',
+                'last_source' => ConsentSource::Withdraw->value,
             ]);
     }
 

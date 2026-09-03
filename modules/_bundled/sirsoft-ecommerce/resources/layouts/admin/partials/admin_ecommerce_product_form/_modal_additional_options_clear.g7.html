@@ -6,13 +6,13 @@
       <p class="text-secondary">$t:sirsoft-ecommerce.admin.product.options.additional_clear_confirm</p>
     </div>
     <div class="flex justify-end gap-3 mt-6">
-      <button type="button" variant="secondary" class="btn btn-outline">
+      <button type="button" variant="secondary" class="btn btn-outline" data-testid="additional-clear-cancel">
         <on type="click">
           <close-modal/>
         </on>
         $t:sirsoft-ecommerce.common.cancel
       </button>
-      <button type="button" variant="danger" class="btn btn-danger">
+      <button type="button" variant="danger" class="btn btn-danger" data-testid="additional-clear-confirm">
         <on type="click">
           <action handler="sirsoft-ecommerce.clearAdditionalOptions"/>
         </on>

@@ -344,7 +344,7 @@
                             </navigate>
                           </case>
                           <case when="uninstall">
-                            <set-state target="global" selectedModule="{{row}}" :deleteModuleData="false" :moduleUninstallInfo="null"/>
+                            <set-state target="global" selectedModule="{{row}}" :deleteModuleData="false" :moduleUninstallInfo="null" :moduleUninstallBackups="null"/>
                             <open-modal target="module_uninstall_modal"/>
                             <api-call :auth_required="true" target="/api/admin/modules/{{row.identifier}}/uninstall-info" method="GET">
                               <success>

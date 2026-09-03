@@ -100,20 +100,7 @@ class AuthService
         // 사전 잠금 체크 — 잠긴 계정은 Auth::attempt 자체를 시도하지 않는다.
         // (실패 카운트가 0 으로 리셋된 잠금 상태에서 Failed 이벤트가 다시
         //  카운트를 올려 재잠금 시각을 갱신하는 부작용 방지)
-        if ((bool) g7_core_settings('security.login_attempt_enabled', true)) {
-            $candidate = $this->userRepository->findByEmail($email);
-            if ($candidate !== null && $this->userRepository->isLocked($candidate)) {
-                // 영구 잠금은 해제 시각이 없다 — diffInSeconds(null) 로 폭발하지 않도록 분기.
-                $remaining = $candidate->locked_until === null
-                    ? null
-                    : max(1, (int) ceil(now()->diffInSeconds($candidate->locked_until, false) / 60));
-
-                throw new AccountLockedException(
-                    lockedUntil: $candidate->locked_until,
-                    remainingMinutes: $remaining,
-                );
-            }
-        }
+        $this->assertNotLocked($this->userRepository->findByEmail($email));
 
         if (! Auth::attempt(['email' => $email, 'password' => $password])) {
             // 실패 카운트 증가/잠금 처리는 HandleFailedLoginListener 에서 담당
@@ -156,6 +143,40 @@ class AuthService
         }
 
         return $this->issueLoginSession($user, $email);
+    }
+
+    /**
+     * 계정이 잠겨 있으면 예외를 던집니다.
+     *
+     * 세션(토큰)을 발급하는 지점은 전부 이 검사를 거쳐야 합니다. 2단계 인증이 켜져 있으면
+     * 비밀번호 확인(`login`)은 challenge 만 돌려주고 실제 세션은 `completeTwoFactor()` 가
+     * 발급하므로, 한쪽에만 검사가 있으면 잠기기 전에 받아 둔 challenge 를 잠긴 뒤 완료하는
+     * 것만으로 잠금이 통째로 우회됩니다. 그 뒤 로그인 완료 훅이 실패 횟수·잠금 시각까지
+     * 초기화해 흔적도 남지 않습니다.
+     *
+     * @param  User|null  $user  검사 대상 사용자 (없으면 검사 대상 아님)
+     *
+     * @throws AccountLockedException 계정이 잠겨 있을 때
+     */
+    private function assertNotLocked(?User $user): void
+    {
+        if (! (bool) g7_core_settings('security.login_attempt_enabled', true)) {
+            return;
+        }
+
+        if ($user === null || ! $this->userRepository->isLocked($user)) {
+            return;
+        }
+
+        // 영구 잠금은 해제 시각이 없다 — diffInSeconds(null) 로 폭발하지 않도록 분기.
+        $remaining = $user->locked_until === null
+            ? null
+            : max(1, (int) ceil(now()->diffInSeconds($user->locked_until, false) / 60));
+
+        throw new AccountLockedException(
+            lockedUntil: $user->locked_until,
+            remainingMinutes: $remaining,
+        );
     }
 
     /**
@@ -267,6 +288,10 @@ class AuthService
                 'challenge_id' => [__('auth.two_factor_invalid_challenge')],
             ]);
         }
+
+        // 세션을 여는 것은 이 지점이다 — challenge 발급 이후에 잠겼을 수 있으므로 재검사한다.
+        // Auth::login() 앞에 두어야 로그인 완료 훅이 잠금 필드를 초기화하지 못한다.
+        $this->assertNotLocked($user);
 
         Auth::login($user);
 
@@ -446,9 +471,15 @@ class AuthService
      *
      * @param  User  $user  토큰을 갱신할 사용자
      * @return array 새로운 토큰 정보
+     *
+     * @throws AccountLockedException 계정이 잠겨 있을 때
      */
     public function refreshToken(User $user): array
     {
+        // 재발급도 세션을 여는 지점이다. 유효한 기존 세션이 전제라 신규 로그인 우회는
+        // 아니지만, 관리자가 계정을 잠근 뒤에도 그 세션이 무기한 연장되면 잠금이 실효를 잃는다.
+        $this->assertNotLocked($user);
+
         // 현재 토큰 삭제 (다른 디바이스는 유지)
         $currentToken = $user->currentAccessToken();
 

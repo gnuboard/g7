@@ -364,14 +364,14 @@
           </div>
           <div class="btn-group">
             <!-- 추가옵션 사용. 이미 한 줄이라도 있으면 아무 일도 하지 않는다 — 다시 눌러 빈 줄이 늘어나는 것을 막는다 -->
-            <button type="button" class="btn-group-item {{(_local.form.additional_options ?? []).length > 0 ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+            <button type="button" class="btn-group-item {{(_local.form.additional_options ?? []).length > 0 ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}" data-testid="additional-option-use">
               <on type="click">
                 <action handler="sirsoft-ecommerce.addAdditionalOption" if="{{(_local.form.additional_options ?? []).length === 0}}"/>
               </on>
               $t:sirsoft-ecommerce.common.use
             </button>
             <!-- 추가옵션 사용 안 함. 이미 입력한 줄이 있을 때만 확인 창을 띄운다 — 비어 있으면 지울 것이 없어 그냥 꺼진 상태가 된다 -->
-            <button type="button" class="btn-group-item {{(_local.form.additional_options ?? []).length === 0 ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+            <button type="button" class="btn-group-item {{(_local.form.additional_options ?? []).length === 0 ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}" data-testid="additional-option-not-use">
               <on type="click">
                 <open-modal if="{{(_local.form.additional_options ?? []).length > 0}}" target="additional_options_clear_modal"/>
               </on>
@@ -420,7 +420,7 @@
                 </div>
                 <!-- 선택지(values) 리스트 — 선택지명(다국어) + 추가금 + 다통화 환산(읽기전용) + 기본/활성/삭제 -->
                 <div class="pl-7 space-y-2">
-                  <div data-each="addVal, addValIdx in {{addOpt.values ?? []}}" class="flex flex-col gap-2 sm:flex-row sm:items-start p-3 bg-white dark:bg-gray-900/40 border border-gray-200 dark:border-gray-700 rounded">
+                  <div data-each="addVal, addValIdx in {{addOpt.values ?? []}}" class="flex flex-col gap-2 sm:flex-row sm:items-start p-3 bg-white dark:bg-gray-900/40 border border-gray-200 dark:border-gray-700 rounded" data-testid="additional-value-{{addIdx}}-{{addValIdx}}">
                     <!-- 선택지명 (다국어) -->
                     <div class="flex-1">
                       <div class="flex-center gap-1 mb-1">

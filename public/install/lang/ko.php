@@ -235,6 +235,7 @@ return [
     // HTTPS 메시지
     'https_enabled' => 'HTTPS가 활성화되어 있습니다. (권장)',
     'https_disabled' => 'HTTPS가 비활성화되어 있습니다. 보안을 위해 HTTPS 사용을 권장합니다.',
+    'https_behind_proxy' => '리버스 프록시 뒤에서 구동 중인 것으로 보입니다. 설치 후 .env 에 TRUSTED_PROXIES 를 지정하지 않으면 접속 주소와 방문자 IP 가 프록시 기준으로 인식됩니다. (https://github.com/gnuboard/g7/blob/main/docs/backend/reverse-proxy.md)',
 
     // OPcache 메시지
     'opcache_enabled' => 'OPcache가 활성화되어 있습니다. (권장)',
@@ -280,6 +281,7 @@ return [
     'task_create_settings_json' => '설정 파일 생성',
     'task_complete_flag' => '설치 완료 처리',
     'task_config_cache' => '설정 캐시 생성',
+    'task_static_publish' => '부트스트랩 리소스 정적 게시',
     'task_unknown' => '알 수 없는 작업',
 
     // 작업 그룹명
@@ -382,10 +384,12 @@ return [
     // 에러 메시지 - Worker (Cache)
     'error_cache_clear_failed' => '캐시 클리어에 실패했습니다',
     'error_config_cache_failed' => '설정 캐시 생성에 실패했습니다',
+    'error_static_publish_failed' => '부트스트랩 리소스 정적 게시에 실패했습니다 (사이트는 API 경로로 정상 동작합니다)',
 
     // 로그 메시지 - Worker (Cache)
     'log_cache_clear_success' => '캐시 클리어 완료',
     'log_config_cache_success' => '설정 캐시 생성 완료',
+    'log_static_publish_success' => '부트스트랩 리소스 정적 게시 완료',
 
     // 에러 메시지 - Worker (Settings JSON)
     'error_settings_json_failed' => '설정 파일 생성에 실패했습니다',
@@ -688,6 +692,10 @@ ini_set(\'zlib.output_compression\', \'off\');
 
     // 설치 진행 중단 감지
     'error_installation_stuck' => '설치가 응답하지 않습니다. 서버 워커가 명령 실행 중 멈췄을 수 있습니다. 새로고침하거나 재시도하세요. 문제가 반복되면 storage/logs/installation.log 를 확인해주세요.',
+    // 서버가 본문 없는 응답을 돌려준 경우 (gnuboard/g7#62)
+    'error_empty_server_response' => '서버가 빈 응답을 반환했습니다. 서버 설정이나 계정 이름·경로에 사용된 문자로 인해 응답이 만들어지지 못했을 수 있습니다. storage/logs/installation.log 를 확인해주세요.',
+    'error_invalid_server_response' => '서버 응답을 해석할 수 없습니다. 응답에 오류 메시지나 경고문이 섞였을 수 있습니다. storage/logs/installation.log 를 확인해주세요.',
+    'error_polling_response_invalid' => '설치 진행 상황을 읽어오지 못했습니다. 서버가 올바른 형식의 응답을 반환하지 않고 있습니다. storage/logs/installation.log 를 확인한 뒤 다시 시도해주세요.',
     'extension_load_failed' => '확장 기능 목록을 불러오는데 실패했습니다.',
     'no_admin_template_error' => '관리자 템플릿이 필요하지만 찾을 수 없습니다. templates 디렉토리에 최소 1개 이상의 관리자 템플릿이 있는지 확인해주세요.',
     'selection_summary' => '선택 요약',

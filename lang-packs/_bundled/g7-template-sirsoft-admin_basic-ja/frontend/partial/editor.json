@@ -1573,6 +1573,7 @@
     "template_info": "テンプレート情報",
     "templates": "テンプレートリスト",
     "tokenValidation": "トークン検証",
+    "trustedProxy": "信頼するプロキシ診断",
     "user": "ユーザー",
     "users": "ユーザーリスト",
     "dashboard_recent_notifications": "ダッシュボード最近の通知",

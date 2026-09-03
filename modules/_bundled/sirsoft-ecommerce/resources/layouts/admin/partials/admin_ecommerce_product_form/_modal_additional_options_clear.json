@@ -56,7 +56,8 @@
                     "props": {
                         "type": "button",
                         "variant": "secondary",
-                        "className": "btn btn-outline"
+                        "className": "btn btn-outline",
+                        "data-testid": "additional-clear-cancel"
                     },
                     "text": "$t:sirsoft-ecommerce.common.cancel"
                 },
@@ -76,7 +77,8 @@
                     "props": {
                         "type": "button",
                         "variant": "danger",
-                        "className": "btn btn-danger"
+                        "className": "btn btn-danger",
+                        "data-testid": "additional-clear-confirm"
                     },
                     "text": "$t:sirsoft-ecommerce.common.confirm"
                 }

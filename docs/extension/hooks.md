@@ -133,6 +133,14 @@ core.activity_log.before_prune          core.activity_log.after_prune
 core.notification_log.before_prune      core.notification_log.after_prune
 core.schedule.before_prune_history      core.schedule.after_prune_history
 
+# 본문 첫 내부 이미지 썸네일 캐시 (Filter, 공개#22) — 각 모델 saving 이벤트가 발행.
+# 값 = 추출된 첫 내부 이미지 URL(없으면 null), 인자 = (값, 모델, 전체 후보 src 배열).
+# 확장이 후보를 대체(CDN prefix 승격 등)하거나 차단(null 반환)할 수 있다.
+# 특정 에디터 확장에 의존하지 않는다 — 페이로드는 일반 HTML 파싱 결과뿐이다.
+sirsoft-board.post.filter_content_thumbnail
+sirsoft-ecommerce.product.filter_content_thumbnail
+sirsoft-page.page.filter_content_thumbnail
+
 # 업로드 트라이어드 — 사용자 첨부 업로드 지점의 표준 3훅 패턴
 # before_upload(액션) → filter_upload_file(필터: UploadedFile 을 받아 변형본을 반환.
 # 저장 파일명·MIME·크기가 모두 반환 파일 기준이 된다) → after_upload(액션)
@@ -193,6 +201,17 @@ core.settings.available_mail_drivers
 
 # 드라이버 확장 훅 (Action) — 플러그인 드라이버 선택 시 Config 적용
 core.settings.apply_driver_config
+
+# 사용자 추가 에셋 훅 (Filter) — 운영자가 확장에 덧붙인 CSS·JS 목록을 보정/추가
+core.assets.custom_assets   # applyFilters($assets, $extensionType, $identifier)
+
+# 사용자 추가 에셋 관리 훅 (Action) — 화면에서 파일을 저장/업로드/삭제한 직후
+core.custom_assets.after_change   # doAction($extensionType, $identifier, $operation, $path)
+
+# 사용자 추가 에셋 관리 검증 훅 (Filter) — 관리 API 의 FormRequest 규칙 확장
+core.extension_custom_asset.read_validation_rules
+core.extension_custom_asset.save_validation_rules
+core.extension_custom_asset.upload_validation_rules
 
 # SEO 렌더링 훅 (Filter)
 core.seo.filter_context        # DataSource 결합 후 컨텍스트 보강 ($context 배열)
@@ -455,6 +474,19 @@ public static function getSubscribedHooks(): array
     ];
 }
 ```
+
+#### 호출자 트랜잭션 안에서 끝나야 하는 처리는 `sync` 가 필수다
+
+기본값(큐 래핑)은 `DispatchHookListenerJob` 의 `afterCommit` 정책을 탄다. 즉 **호출자 트랜잭션이 커밋된 뒤에** 실행된다 — 큐 드라이버가 `sync` 여도 마찬가지다(같은 요청 안에서, 커밋 이후에 실행된다).
+
+따라서 훅 안에서 실패했을 때 **호출자의 작업을 되돌려야 하는 처리**는 기본값으로 두면 안 된다. 되돌릴 대상이 이미 커밋된 뒤라 예외를 던져도 롤백되지 않고, 호출자는 오류 응답을 받는데 데이터는 남는다.
+
+| 판정 | 예 |
+|------|-----|
+| `sync` 필수 | 쿠폰 차감·복원, 적립금 차감·복원 등 실패 시 호출자 트랜잭션을 되돌려야 하는 처리 |
+| 기본값(큐) 유지 | 활동 로그, 알림 발송, 통계 갱신 등 실패해도 호출자를 되돌리지 않는 후속 처리 |
+
+선언만으로는 검증되지 않는다 — 회귀 테스트는 리스너를 손으로 `addAction` 하지 말고 실제 등록 경로(`HookListenerRegistrar::register()`)를 태운 뒤, **호출자 트랜잭션 안에서 반영되는지**와 **예외가 호출자를 롤백시키는지**를 단언한다. 손으로 등록하면 프로덕션이 쓰지 않는 경로를 검증하게 되어, 커밋 이후 실행 문제를 그대로 통과시킨다.
 
 ### getSubscribedHooks() 옵션 요약
 

@@ -135,7 +135,9 @@
             $t:admin.settings.notification_definitions.recipients.add_rule
           </button>
         </div>
-        <div data-ref="ecommerce_template_lang_tabs" class="flex border-b border-gray-200 dark:border-gray-700">
+        <!-- 알림 템플릿 편집 모달 본문 확장 슬롯(범용). 채널을 소유한 확장이 그 채널 전용 편집 UI(예: 외부 발송 채널의 템플릿 작성·발송 설정)를 이 자리에 주입한다. 채널 메타 hidden_template_editor=true 인 채널은 아래 코어 제목/본문 입력이 숨겨지고 이 슬롯이 본문 편집을 대신한다. 특정 확장을 알지 못하며, 미주입 시 빈 자리로 남는다. -->
+        <extension-point name="notification_template_form_sections" data-ref="ecommerce_template_form_sections_ext" definition="{{_global.ecommerce_notification_template_form_modal?.definition}}" template="{{_global.ecommerce_notification_template_form_modal?.template}}" channel="{{_global.ecommerce_notification_template_form_modal?.template?.channel ?? ''}}" modalId="modal_ecommerce_notification_template_edit" stateKey="ecommerce_notification_template_form_modal" saveEndpoint="{{'/api/admin/notification-templates/' + _global.ecommerce_notification_template_form_modal?.template?.id}}" refetchDataSourceId="ecommerceNotificationDefinitions"/>
+        <div data-ref="ecommerce_template_lang_tabs" data-if="{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.ecommerce_notification_template_form_modal?.template?.channel)?.hidden_template_editor === true)}}" class="flex border-b border-gray-200 dark:border-gray-700">
           <button data-each="loc in {{$locales}}" type="button" class="{{(_global.ecommerce_notification_template_form_modal?.editLang ?? $locale) === loc ? 'border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2 text-sm font-medium focus:outline-none">
             <on type="click">
               <!-- 언어 탭. 설치된 언어 수만큼 만들어지므로 언어를 늘리면 탭도 늘어난다 — 보이는 언어만 바꾸고 값은 건드리지 않는다. -->
@@ -144,7 +146,7 @@
             {{_global.appConfig?.localeNames?.[loc] ?? loc}}
           </button>
         </div>
-        <div data-ref="ecommerce_template_subject_input">
+        <div data-ref="ecommerce_template_subject_input" data-if="{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.ecommerce_notification_template_form_modal?.template?.channel)?.hidden_template_editor === true)}}">
           <div>
             <label class="form-label">
               <span>$t:sirsoft-ecommerce.admin.settings.notification_definitions.edit_modal.subject</span>
@@ -158,7 +160,7 @@
             </input>
           </div>
         </div>
-        <div data-ref="ecommerce_template_body_input">
+        <div data-ref="ecommerce_template_body_input" data-if="{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.ecommerce_notification_template_form_modal?.template?.channel)?.hidden_template_editor === true)}}">
           <div>
             <label class="form-label">
               <span>$t:sirsoft-ecommerce.admin.settings.notification_definitions.edit_modal.body</span>
@@ -172,7 +174,7 @@
             </html-editor>
           </div>
         </div>
-        <div data-ref="ecommerce_template_click_url_input" data-if="{{_global.ecommerce_notification_template_form_modal?.template?.channel === 'database'}}">
+        <div data-ref="ecommerce_template_click_url_input" data-if="{{(_global.ecommerce_notification_template_form_modal?.template?.channel === 'database') &amp;&amp; !((availableChannels?.data?.channels ?? []).find(c => c.id === _global.ecommerce_notification_template_form_modal?.template?.channel)?.hidden_template_editor === true)}}">
           <div>
             <label class="form-label">$t:admin.settings.notification_definitions.edit_modal.click_url</label>
             <input type="text" value="{{_global.ecommerce_notification_template_form_modal?.template?.click_url ?? ''}}" placeholder="/mypage/orders/{order_number}" class="font-mono">
@@ -184,7 +186,7 @@
             <p class="form-hint">$t:admin.settings.notification_definitions.edit_modal.click_url_hint</p>
           </div>
         </div>
-        <div data-ref="ecommerce_template_variables_info" data-if="{{(_global.ecommerce_notification_template_form_modal?.definition?.variables ?? []).length > 0}}" class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md p-4">
+        <div data-ref="ecommerce_template_variables_info" data-if="{{((_global.ecommerce_notification_template_form_modal?.definition?.variables ?? []).length > 0) &amp;&amp; !((availableChannels?.data?.channels ?? []).find(c => c.id === _global.ecommerce_notification_template_form_modal?.template?.channel)?.hidden_template_editor === true)}}" class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md p-4">
           <h4 class="text-body font-medium mb-2">$t:sirsoft-ecommerce.admin.settings.notification_definitions.edit_modal.variables_title</h4>
           <div class="flex flex-wrap gap-2">
             <span data-each="v in {{_global.ecommerce_notification_template_form_modal?.definition?.variables ?? []}}" class="inline-flex items-center gap-1 text-xs px-2 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300">
@@ -199,7 +201,7 @@
       <div data-ref="ecommerce_template_modal_footer" class="flex-between pt-4 pb-4 border-t border-gray-200 dark:border-gray-700 mt-4 flex-shrink-0">
         <div>
           <!-- 닫기. 저장 중에는 잠긴다 — 요청이 도는 도중에 창이 사라지면 성공·실패 안내가 갈 곳을 잃는다 -->
-          <button type="button" class="text-body px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" disabled="{{_global.ecommerce_notification_template_form_modal?.isSaving ?? false}}">
+          <button data-if="{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.ecommerce_notification_template_form_modal?.template?.channel)?.hidden_template_editor === true)}}" type="button" class="text-body px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" disabled="{{_global.ecommerce_notification_template_form_modal?.isSaving ?? false}}">
             <on type="click">
               <api-call :auth_required="true" target="/api/admin/notification-templates/preview" method="POST">
                 <success>
@@ -222,7 +224,9 @@
             </on>
             $t:common.cancel
           </button>
-          <button type="button" class="flex-center gap-2 text-sm px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.ecommerce_notification_template_form_modal?.isSaving ?? false}}">
+          <!-- 편집 모달 푸터 확장 슬롯(범용). hidden_template_editor 채널에서는 코어 [저장]/[미리보기]가 숨겨지므로, 그 채널을 소유한 확장이 자기 저장 버튼(코어 수신자 규칙 저장 포함)을 여기에 주입한다. [취소]는 코어가 유지한다. -->
+          <extension-point name="notification_template_form_footer_actions" data-ref="ecommerce_template_form_footer_ext" definition="{{_global.ecommerce_notification_template_form_modal?.definition}}" template="{{_global.ecommerce_notification_template_form_modal?.template}}" channel="{{_global.ecommerce_notification_template_form_modal?.template?.channel ?? ''}}" modalId="modal_ecommerce_notification_template_edit" stateKey="ecommerce_notification_template_form_modal" saveEndpoint="{{'/api/admin/notification-templates/' + _global.ecommerce_notification_template_form_modal?.template?.id}}" refetchDataSourceId="ecommerceNotificationDefinitions"/>
+          <button data-if="{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.ecommerce_notification_template_form_modal?.template?.channel)?.hidden_template_editor === true)}}" type="button" class="flex-center gap-2 text-sm px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.ecommerce_notification_template_form_modal?.isSaving ?? false}}">
             <on type="click">
               <!-- 저장. 성공하면 알림 목록을 다시 부른다 — 목록이 제목·사용 여부를 그대로 보여 주므로 갱신하지 않으면 방금 고친 값이 낡은 채로 남는다. -->
               <sequence>

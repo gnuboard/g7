@@ -130,20 +130,17 @@
         {
             "id": "fontawesome",
             "type": "style",
-            "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css",
-            "preconnect": "https://cdnjs.cloudflare.com"
+            "asset": "vendor/font-awesome/6.4.0/css/all.inlined.css"
         },
         {
             "id": "pretendard",
             "type": "webfont",
-            "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css",
-            "preconnect": "https://cdn.jsdelivr.net",
-            "crossorigin": "anonymous"
+            "asset": "vendor/pretendard/1.3.9/pretendard-variable.css"
         },
         {
             "id": "flag-icons",
             "type": "style",
-            "url": "https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css"
+            "asset": "vendor/flag-icons/7.2.3/css/flag-icons.min.css"
         }
     ]
 }

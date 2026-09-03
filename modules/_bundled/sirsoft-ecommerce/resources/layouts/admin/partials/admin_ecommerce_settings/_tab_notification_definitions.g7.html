@@ -29,7 +29,7 @@
       </div>
     </div>
     <div data-ref="ecommerce_channel_sub_tabs" class="flex border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
-      <button data-each="ch, chIdx in {{(availableChannels?.data?.channels ?? []).filter(c => c.source === 'core' ? (_local.form?.notifications?.channels ?? []).find(nc => nc.id === c.id)?.is_active !== false : (_local.form?.notifications?.channels ?? []).find(nc => nc.id === c.id)?.is_active === true)}}" type="button" class="{{(query.channel ?? 'mail') === ch.id ? 'border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2.5 text-sm font-medium whitespace-nowrap flex-center gap-2">
+      <button data-each="ch, chIdx in {{(availableChannels?.data?.channels ?? []).filter(c => c.hidden_tab !== true &amp;&amp; (c.source === 'core' ? (_local.form?.notifications?.channels ?? []).find(nc => nc.id === c.id)?.is_active !== false : (c.tab_channels ?? [c.id]).filter(tc => (_local.form?.notifications?.channels ?? []).find(nc => nc.id === tc)?.is_active === true).length > 0))}}" type="button" class="{{(query.channel ?? 'mail') === ch.id ? 'border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2.5 text-sm font-medium whitespace-nowrap flex-center gap-2">
         <on type="click">
           <!-- 알림 정의 초기화. 되돌리면 손으로 고친 값이 사라지므로 확인 창을 연다. -->
           <sequence>
@@ -39,7 +39,7 @@
           </sequence>
         </on>
         <icon name="{{ch.icon ?? 'fas fa-bell'}}" class="text-sm"/>
-        <span>{{ch.name ?? ch.id}}</span>
+        <span>{{ch.tab_label_key ? $t(ch.tab_label_key) : (ch.name ?? ch.id)}}</span>
       </button>
     </div>
     <div data-ref="ecommerce_notif_channel_content">

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Enums\LanguagePackScope;
+use App\Exceptions\ModuleOperationException;
 use App\Extension\Vendor\VendorMode;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Controllers\Concerns\InjectsExtensionLanguagePacks;
@@ -199,7 +200,7 @@ class ModuleController extends AdminBaseController
             // cascade 1단계: 사용자가 선택한 의존 확장 사전 설치 (실패 시 abort)
             $this->installSelectedDependencies($validated['dependencies'] ?? []);
 
-            $module = $this->moduleService->installModule($moduleName, $vendorMode);
+            $module = $this->moduleService->installModule($moduleName, $vendorMode, false, $installFailureReason);
 
             if ($module) {
                 // cascade 2단계: 동반 번들 언어팩 best-effort 설치
@@ -210,7 +211,9 @@ class ModuleController extends AdminBaseController
 
                 return $this->success('module.install_success', $payload, 201);
             } else {
-                return $this->error('module.install_failed');
+                return $this->error('module.install_failed', 400, null, [
+                    'error' => $installFailureReason ?? __('modules.errors.unknown_error'),
+                ]);
             }
         } catch (ValidationException $e) {
             // Service에서 이미 번역된 메시지를 errors에 포함하므로
@@ -271,10 +274,12 @@ class ModuleController extends AdminBaseController
                     'pending_language_packs' => $pendingLanguagePacks,
                 ]));
             } else {
-                return $this->error('module.activate_failed');
+                return $this->error('module.activate_failed', 400, null, [
+                    'error' => $result['reason'] ?? __('modules.errors.unknown_error'),
+                ]);
             }
         } catch (ValidationException $e) {
-            return $this->error('module.activate_failed', 422, $e->errors());
+            return $this->error('module.activate_failed', 422, $e->errors(), ['error' => $e->getMessage()]);
         } catch (\Exception $e) {
             return $this->error('module.activate_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
@@ -320,10 +325,12 @@ class ModuleController extends AdminBaseController
 
                 return $this->success('module.deactivate_success', $result);
             } else {
-                return $this->error('module.deactivate_failed');
+                return $this->error('module.deactivate_failed', 400, null, [
+                    'error' => $result['reason'] ?? __('modules.errors.unknown_error'),
+                ]);
             }
         } catch (ValidationException $e) {
-            return $this->error('module.deactivate_failed', 422, $e->errors());
+            return $this->error('module.deactivate_failed', 422, $e->errors(), ['error' => $e->getMessage()]);
         } catch (\Exception $e) {
             return $this->error('module.deactivate_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
@@ -383,15 +390,26 @@ class ModuleController extends AdminBaseController
             $moduleName = $validated['module_name'];
             $deleteData = $validated['delete_data'] ?? false;
 
-            $result = $this->moduleService->uninstallModule($moduleName, $deleteData);
+            $result = $this->moduleService->uninstallModule(
+                $moduleName,
+                $deleteData,
+                $uninstallFailureReason,
+                $preservedBackups
+            );
 
             if ($result) {
-                return $this->success('module.uninstall_success');
+                // 운영자가 넣은 `custom/` 은 삭제 전에 사본을 남긴다 — 그 경로를 응답에 실어
+                // 알리지 않으면 로그를 뒤지지 않는 한 사본의 존재를 알 수 없다.
+                return $this->success('module.uninstall_success', [
+                    'preserved_backups' => $preservedBackups ?? [],
+                ]);
             } else {
-                return $this->error('module.uninstall_failed');
+                return $this->error('module.uninstall_failed', 400, null, [
+                    'error' => $uninstallFailureReason ?? __('modules.errors.unknown_error'),
+                ]);
             }
         } catch (ValidationException $e) {
-            return $this->error('module.uninstall_failed', 422, $e->errors());
+            return $this->error('module.uninstall_failed', 422, $e->errors(), ['error' => $e->getMessage()]);
         } catch (\Exception $e) {
             return $this->error('module.uninstall_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
@@ -433,8 +451,10 @@ class ModuleController extends AdminBaseController
                 new ModuleResource($module),
                 201
             );
-        } catch (\RuntimeException $e) {
-            return $this->error($e->getMessage(), 422);
+        } catch (ModuleOperationException $e) {
+            // 원본 키와 파라미터를 보존해 넘긴다 — 이미 번역된 getMessage() 를 키 자리에
+            // 넘기면 키 해석에 실패해 그 문장이 그대로 나간다 (상태코드는 기존 계약 유지).
+            return $this->error($e->errorKey, 422, null, $e->params);
         } catch (\Exception $e) {
             return $this->error('module.install_failed', 500, null, ['error' => $e->getMessage()]);
         }
@@ -457,8 +477,10 @@ class ModuleController extends AdminBaseController
                 new ModuleResource($module),
                 201
             );
-        } catch (\RuntimeException $e) {
-            return $this->error($e->getMessage(), 422);
+        } catch (ModuleOperationException $e) {
+            // 원본 키와 파라미터를 보존해 넘긴다 — 이미 번역된 getMessage() 를 키 자리에
+            // 넘기면 키 해석에 실패해 그 문장이 그대로 나간다 (상태코드는 기존 계약 유지).
+            return $this->error($e->errorKey, 422, null, $e->params);
         } catch (\Exception $e) {
             return $this->error('module.install_failed', 500, null, ['error' => $e->getMessage()]);
         }
@@ -476,7 +498,7 @@ class ModuleController extends AdminBaseController
 
             return $this->success('modules.check_updates_success', $result);
         } catch (ValidationException $e) {
-            return $this->error('modules.check_updates_failed', 422, $e->errors());
+            return $this->error('modules.check_updates_failed', 422, $e->errors(), ['error' => $e->getMessage()]);
         } catch (\Exception $e) {
             return $this->error('modules.check_updates_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
@@ -505,7 +527,7 @@ class ModuleController extends AdminBaseController
 
             return $this->success('modules.check_modified_layouts_success', $result);
         } catch (ValidationException $e) {
-            return $this->error('modules.check_modified_layouts_failed', 422, $e->errors());
+            return $this->error('modules.check_modified_layouts_failed', 422, $e->errors(), ['error' => $e->getMessage()]);
         } catch (\Exception $e) {
             return $this->error('modules.check_modified_layouts_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
@@ -596,10 +618,12 @@ class ModuleController extends AdminBaseController
                     new ModuleResource($module)
                 );
             } else {
-                return $this->error('module.refresh_layouts_failed');
+                return $this->error('module.refresh_layouts_failed', 400, null, [
+                    'error' => __('modules.errors.unknown_error'),
+                ]);
             }
         } catch (ValidationException $e) {
-            return $this->error('module.refresh_layouts_failed', 422, $e->errors());
+            return $this->error('module.refresh_layouts_failed', 422, $e->errors(), ['error' => $e->getMessage()]);
         } catch (\Exception $e) {
             return $this->error('module.refresh_layouts_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }

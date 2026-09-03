@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Extension\ExtensionManager;
 use App\Extension\Testing\ExtensionTestAllowlist;
+use App\Extension\Traits\CachesPluginStatus;
 use App\Support\InstallerContext;
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\File;
@@ -12,6 +13,8 @@ use Illuminate\Support\Facades\Schema;
 
 class PluginRouteServiceProvider extends ServiceProvider
 {
+    use CachesPluginStatus;
+
     /**
      * The path to the "home" route for your application.
      *
@@ -33,6 +36,8 @@ class PluginRouteServiceProvider extends ServiceProvider
 
     /**
      * 플러그인의 라우트 파일들을 로드합니다.
+     *
+     * 활성화된 플러그인만 라우트를 등록합니다.
      */
     protected function loadPluginRoutes(): void
     {
@@ -65,6 +70,11 @@ class PluginRouteServiceProvider extends ServiceProvider
             }
         }
 
+        // 활성화된 플러그인 identifier 목록 가져오기.
+        // 같은 목록을 PluginManager·PluginServiceProvider 가 이미 캐시(TTL 기본 하루)해 두므로
+        // 여기서 다시 조회하지 않고 그 캐시를 공유한다. 상태 변경 시 무효화도 같이 따라온다.
+        $activePluginIdentifiers = self::getActivePluginIdentifiers();
+
         $plugins = File::directories($pluginsPath);
         $allowlistActive = ExtensionTestAllowlist::isActive();
 
@@ -74,6 +84,13 @@ class PluginRouteServiceProvider extends ServiceProvider
 
             // 테스트 환경 확장 격리: allowlist 밖 플러그인의 라우트 등록 차단
             if ($allowlistActive && ! ExtensionTestAllowlist::isAllowed('plugin', $pluginName)) {
+                continue;
+            }
+
+            // 활성화된 플러그인만 라우트 로드 (모듈과 동일 기준).
+            // 이 게이트가 없으면 비활성 플러그인의 API 가 계속 호출 가능해, 화면·메뉴만
+            // 사라지고 기능은 살아 있는 상태가 된다.
+            if (! in_array($pluginName, $activePluginIdentifiers)) {
                 continue;
             }
 

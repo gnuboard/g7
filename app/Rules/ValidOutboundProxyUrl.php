@@ -33,7 +33,9 @@ class ValidOutboundProxyUrl implements ValidationRule
         }
 
         if (! is_string($value)) {
-            $fail(__('validation.settings.outbound_proxy_invalid'));
+            $fail(__('validation.settings.outbound_proxy_invalid', [
+                'schemes' => implode(', ', OutboundProxy::ALLOWED_SCHEMES),
+            ]));
 
             return;
         }

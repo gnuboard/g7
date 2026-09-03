@@ -28,7 +28,7 @@ const EMPTY_DIRTY_SET: ReadonlySet<string> = new Set();
  * 경로를 보여 주면 따라간 개발자가 산출물을 손으로 고치게 되고, 그 수정은 다음 굽기에서
  * 지워진다. 표기는 정본을 가리켜야 한다 (S19 ⑦ · R1).
  *
- * @since engine-v1.63.0
+ * @since engine-v1.67.0
  */
 const AUTHORING_EXTENSION = '.g7.html';
 

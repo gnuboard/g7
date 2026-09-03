@@ -13,7 +13,10 @@
     },
     "type": "admin",
     "hidden": true,
-    "locales": ["ko", "en"],
+    "locales": [
+        "ko",
+        "en"
+    ],
     "author": {
         "name": "gnuboard7",
         "email": "contact@gnuboard.com",
@@ -26,11 +29,20 @@
         "plugins": {}
     },
     "assets": {
-        "js": ["dist/components.js"]
+        "js": [
+            "dist/components.js"
+        ]
     },
     "components": {
         "basic": [
-            "a", "button", "div", "h1", "h2", "h3", "img", "span"
+            "a",
+            "button",
+            "div",
+            "h1",
+            "h2",
+            "h3",
+            "img",
+            "span"
         ],
         "composite": [],
         "layout": []
@@ -49,8 +61,7 @@
         {
             "id": "fontawesome",
             "type": "style",
-            "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css",
-            "preconnect": "https://cdnjs.cloudflare.com"
+            "asset": "vendor/font-awesome/6.4.0/css/all.inlined.css"
         }
     ]
 }

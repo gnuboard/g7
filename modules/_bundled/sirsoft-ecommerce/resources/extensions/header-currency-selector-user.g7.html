@@ -15,7 +15,7 @@
       <!-- portable 에서는 이 조각이 사용자 템플릿 모바일 드로어(세로 블록) 안에 렌더된다. 펼친 목록이 컨테이너 폭을 채우도록 w-full. hidden 게이트 표현식은 그대로 유지(props 얕은 머지가 아니라 className 통째 교체이므로 표현식을 복제해야 함). -->
       <responsive on="portable" class="relative w-full {{(_global.availableCurrencies ?? []).length > 0 || ((_global.availableShippingCountries ?? []).length > 1 &amp;&amp; _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true) ? '' : 'hidden'}}"/>
       <!-- 트리거 버튼 — 데스크톱은 absolute 드롭다운의 토글, portable(드로어 안)에서는 접기/펼치기 아코디언의 트리거. 두 경우 모두 같은 플래그(_local.showCurrencyDropdown)를 토글하므로 기본은 접힘이다. portable 에서는 드로어 폭을 꽉 채우는 행 형태(좌: '통화' 라벨, 우: 현재 통화·배송국가 요약 + chevron)로 바뀐다. -->
-      <button class="flex items-center gap-1.5 px-2.5 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer transition-colors" aria-haspopup="listbox" aria-expanded="{{_local.showCurrencyDropdown ?? false}}" aria-label="$t:sirsoft-ecommerce.common.currency_label">
+      <button class="flex items-center gap-1.5 px-2.5 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer transition-colors" data-testid="currency-switcher" aria-haspopup="listbox" aria-expanded="{{_local.showCurrencyDropdown ?? false}}" aria-label="$t:sirsoft-ecommerce.common.currency_label">
         <!-- 드로어 안에서는 언어 아코디언 트리거와 동일한 형태 — children 을 통째 교체해 '통화' 라벨 + 현재값 요약 + chevron 으로 구성한다(엔진은 responsive.children 을 완전 교체한다). -->
         <responsive on="portable" class="w-full flex items-center justify-between py-1 cursor-pointer" aria-haspopup="listbox" aria-expanded="{{_local.showCurrencyDropdown ?? false}}" aria-label="$t:sirsoft-ecommerce.common.currency_label">
           <span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">$t:sirsoft-ecommerce.common.currency_label</span>
@@ -50,7 +50,7 @@
           <div>
             <responsive on="portable" class="flex flex-wrap gap-2 px-3 pb-2"/>
             <div data-each="currency in {{_global.availableCurrencies ?? []}}">
-              <button class="w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 cursor-pointer transition-colors {{_global.preferredCurrency === currency.code ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}}" role="option" aria-selected="{{_global.preferredCurrency === currency.code}}">
+              <button class="w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 cursor-pointer transition-colors {{_global.preferredCurrency === currency.code ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}}" data-testid="currency-option-{{currency.code}}" role="option" aria-selected="{{_global.preferredCurrency === currency.code}}">
                 <responsive on="portable" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-full cursor-pointer whitespace-nowrap transition-colors {{_global.preferredCurrency === currency.code ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800' : 'text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'}}" role="option" aria-selected="{{_global.preferredCurrency === currency.code}}"/>
                 <on type="click">
                   <!-- 통화 선택 — 화면 상태 · 브라우저 저장소 · (로그인 회원이면) 계정까지 세 자리에

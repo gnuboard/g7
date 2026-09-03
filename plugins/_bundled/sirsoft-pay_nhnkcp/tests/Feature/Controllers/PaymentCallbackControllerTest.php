@@ -3,6 +3,8 @@
 namespace Plugins\Sirsoft\PayNhnkcp\Tests\Feature\Controllers;
 
 use App\Models\User;
+use App\Services\PluginSettingsService;
+use Illuminate\Testing\TestResponse;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderPaymentFactory;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
@@ -23,22 +25,22 @@ class PaymentCallbackControllerTest extends PluginTestCase
     private function makeCliResponse(string $tno, string $ordrIdxx, int $amount, string $resCd = '0000'): array
     {
         return [
-            'res_cd'          => $resCd,
-            'res_msg'         => $resCd === '0000' ? '정상처리' : '승인실패',
-            'tno'             => $tno,
-            'ordr_idxx'       => $ordrIdxx,
-            'good_mny'        => $amount,
-            'app_no'          => 'APP12345',
-            'card_no'         => '4330****1234',
-            'card_name'       => '신한카드',
-            'quota'           => '00',
-            'use_pay_method'  => 'CARD',
-            'app_time'        => now()->format('YmdHis'),
+            'res_cd' => $resCd,
+            'res_msg' => $resCd === '0000' ? '정상처리' : '승인실패',
+            'tno' => $tno,
+            'ordr_idxx' => $ordrIdxx,
+            'good_mny' => $amount,
+            'app_no' => 'APP12345',
+            'card_no' => '4330****1234',
+            'card_name' => '신한카드',
+            'quota' => '00',
+            'use_pay_method' => 'CARD',
+            'app_time' => now()->format('YmdHis'),
         ];
     }
 
     /**
-     * @param array{taxable?: int, vat?: int, taxFree?: int} $tax
+     * @param  array{taxable?: int, vat?: int, taxFree?: int}  $tax
      */
     private function createTestOrder(
         int $totalAmount = 50000,
@@ -46,45 +48,45 @@ class PaymentCallbackControllerTest extends PluginTestCase
         PaymentMethodEnum $paymentMethod = PaymentMethodEnum::CARD,
     ): Order {
         $taxable = $tax['taxable'] ?? $totalAmount;
-        $vat     = $tax['vat']     ?? (int) round($taxable * 10 / 110);
+        $vat = $tax['vat'] ?? (int) round($taxable * 10 / 110);
         $taxFree = $tax['taxFree'] ?? 0;
 
         $user = User::factory()->create();
 
         $order = OrderFactory::new()->create([
-            'user_id'                            => $user->id,
-            'order_number'                       => 'ORD-TEST-' . random_int(10000, 99999),
-            'order_status'                       => OrderStatusEnum::PENDING_ORDER,
-            'subtotal_amount'                    => $totalAmount,
-            'total_discount_amount'              => 0,
-            'total_coupon_discount_amount'       => 0,
+            'user_id' => $user->id,
+            'order_number' => 'ORD-TEST-'.random_int(10000, 99999),
+            'order_status' => OrderStatusEnum::PENDING_ORDER,
+            'subtotal_amount' => $totalAmount,
+            'total_discount_amount' => 0,
+            'total_coupon_discount_amount' => 0,
             'total_product_coupon_discount_amount' => 0,
             'total_order_coupon_discount_amount' => 0,
-            'total_code_discount_amount'         => 0,
-            'base_shipping_amount'               => 0,
-            'extra_shipping_amount'              => 0,
-            'shipping_discount_amount'           => 0,
-            'total_shipping_amount'              => 0,
-            'total_amount'                       => $totalAmount,
-            'total_due_amount'                   => $totalAmount,
-            'total_points_used_amount'           => 0,
-            'total_deposit_used_amount'          => 0,
-            'total_paid_amount'                  => 0,
-            'total_tax_amount'                   => $taxable,
-            'total_vat_amount'                   => $vat,
-            'total_tax_free_amount'              => $taxFree,
-            'currency'                           => 'KRW',
-            'currency_snapshot'                  => self::krwCurrencySnapshot(),
+            'total_code_discount_amount' => 0,
+            'base_shipping_amount' => 0,
+            'extra_shipping_amount' => 0,
+            'shipping_discount_amount' => 0,
+            'total_shipping_amount' => 0,
+            'total_amount' => $totalAmount,
+            'total_due_amount' => $totalAmount,
+            'total_points_used_amount' => 0,
+            'total_deposit_used_amount' => 0,
+            'total_paid_amount' => 0,
+            'total_tax_amount' => $taxable,
+            'total_vat_amount' => $vat,
+            'total_tax_free_amount' => $taxFree,
+            'currency' => 'KRW',
+            'currency_snapshot' => self::krwCurrencySnapshot(),
         ]);
 
         OrderPaymentFactory::new()->create([
-            'order_id'             => $order->id,
-            'payment_status'       => PaymentStatusEnum::READY,
-            'payment_method'       => $paymentMethod,
-            'pg_provider'          => 'nhnkcp',
-            'paid_amount_local'    => 0,
-            'paid_at'              => null,
-            'transaction_id'       => null,
+            'order_id' => $order->id,
+            'payment_status' => PaymentStatusEnum::READY,
+            'payment_method' => $paymentMethod,
+            'pg_provider' => 'nhnkcp',
+            'paid_amount_local' => 0,
+            'paid_at' => null,
+            'transaction_id' => null,
             'card_approval_number' => null,
         ]);
 
@@ -137,18 +139,18 @@ class PaymentCallbackControllerTest extends PluginTestCase
     private function mockPluginSettings(array $overrides = []): void
     {
         $defaults = [
-            'is_test_mode'         => true,
-            'test_site_cd'         => self::TEST_SITE_CD,
-            'test_site_key'        => self::TEST_SITE_KEY,
-            'live_site_cd'         => '',
-            'live_site_key'        => '',
+            'is_test_mode' => true,
+            'test_site_cd' => self::TEST_SITE_CD,
+            'test_site_key' => self::TEST_SITE_KEY,
+            'live_site_cd' => '',
+            'live_site_key' => '',
             'redirect_success_url' => '/shop/orders/{orderId}/complete',
-            'redirect_fail_url'    => '/shop/checkout',
+            'redirect_fail_url' => '/shop/checkout',
         ];
 
-        $mock = $this->createMock(\App\Services\PluginSettingsService::class);
+        $mock = $this->createMock(PluginSettingsService::class);
         $mock->method('get')->willReturn(array_merge($defaults, $overrides));
-        $this->app->instance(\App\Services\PluginSettingsService::class, $mock);
+        $this->app->instance(PluginSettingsService::class, $mock);
     }
 
     /**
@@ -168,14 +170,14 @@ class PaymentCallbackControllerTest extends PluginTestCase
     private function makeCallbackParams(string $ordrIdxx, int $goodMny, array $overrides = []): array
     {
         return array_merge([
-            'res_cd'          => '0000',
-            'res_msg'         => '정상처리',
-            'tno'             => 'KCP_TNO_' . uniqid(),
-            'ordr_idxx'       => $ordrIdxx,
-            'good_mny'        => $goodMny,
-            'enc_data'        => base64_encode('encrypted_payment_data'),
-            'enc_info'        => base64_encode('encrypted_info'),
-            'use_pay_method'  => 'CARD',
+            'res_cd' => '0000',
+            'res_msg' => '정상처리',
+            'tno' => 'KCP_TNO_'.uniqid(),
+            'ordr_idxx' => $ordrIdxx,
+            'good_mny' => $goodMny,
+            'enc_data' => base64_encode('encrypted_payment_data'),
+            'enc_info' => base64_encode('encrypted_info'),
+            'use_pay_method' => 'CARD',
         ], $overrides);
     }
 
@@ -211,7 +213,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $order = $this->createTestOrder(50000);
         $this->mockPluginSettings();
 
-        $tno = 'KCP_TNO_' . uniqid();
+        $tno = 'KCP_TNO_'.uniqid();
         $this->mockApiService($this->makeCliResponse($tno, $order->order_number, 50000));
 
         $response = $this->post(
@@ -410,8 +412,8 @@ class PaymentCallbackControllerTest extends PluginTestCase
     {
         // 11,000원 = 공급가 10,000 + 부가세 1,000 (전액 과세)
         $amount = 11000;
-        $vat    = (int) round($amount * 10 / 110); // 1,000
-        $order  = $this->createTestOrder($amount, ['taxable' => $amount, 'vat' => $vat, 'taxFree' => 0]);
+        $vat = (int) round($amount * 10 / 110); // 1,000
+        $order = $this->createTestOrder($amount, ['taxable' => $amount, 'vat' => $vat, 'taxFree' => 0]);
         $this->mockPluginSettings();
 
         $tno = 'KCP_TNO_TAXABLE';
@@ -435,7 +437,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
     {
         // 10,000원 전액 비과세 (도서, 농산물, 의료 등 면세 상품)
         $amount = 10000;
-        $order  = $this->createTestOrder($amount, ['taxable' => 0, 'vat' => 0, 'taxFree' => $amount]);
+        $order = $this->createTestOrder($amount, ['taxable' => 0, 'vat' => 0, 'taxFree' => $amount]);
         $this->mockPluginSettings();
 
         $tno = 'KCP_TNO_TAXFREE';
@@ -461,9 +463,9 @@ class PaymentCallbackControllerTest extends PluginTestCase
         // 21,000원 = 과세 11,000(공급가 10,000 + 부가세 1,000) + 비과세 10,000
         $taxable = 11000;
         $taxFree = 10000;
-        $total   = $taxable + $taxFree;
-        $vat     = (int) round($taxable * 10 / 110); // 1,000
-        $order   = $this->createTestOrder($total, ['taxable' => $taxable, 'vat' => $vat, 'taxFree' => $taxFree]);
+        $total = $taxable + $taxFree;
+        $vat = (int) round($taxable * 10 / 110); // 1,000
+        $order = $this->createTestOrder($total, ['taxable' => $taxable, 'vat' => $vat, 'taxFree' => $taxFree]);
         $this->mockPluginSettings();
 
         $tno = 'KCP_TNO_MIXED';
@@ -486,7 +488,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $this->mockPluginSettings();
 
         $response = $this->post('/plugins/sirsoft-pay_nhnkcp/payment/callback', $this->makeCallbackParams('ORD-TEST-99999', 50000, [
-            'res_cd'  => '8001',
+            'res_cd' => '8001',
             'res_msg' => '사용자 취소',
         ]));
 
@@ -499,8 +501,8 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $this->mockPluginSettings();
 
         $response = $this->post('/plugins/sirsoft-pay_nhnkcp/payment/callback', [
-            'res_cd'   => '3001',
-            'res_msg'  => '사용자취소',
+            'res_cd' => '3001',
+            'res_msg' => '사용자취소',
             'ordr_idxx' => 'ORD-TEST-CANCEL',
         ]);
 
@@ -539,7 +541,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $this->mockPluginSettings();
 
         $response = $this->post('/plugins/sirsoft-pay_nhnkcp/payment/callback', [
-            'res_cd'    => '',
+            'res_cd' => '',
             'ordr_idxx' => 'ORD-TEST-EMPTY',
         ]);
 
@@ -561,11 +563,22 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $this->assertStringContainsString('error=order_not_found', $response->headers->get('Location'));
     }
 
-    public function test_auth_callback_redirects_to_fail_when_cli_approval_fails(): void
+    /**
+     * 서버 승인이 실패하면 실패 URL 로 돌아가되 주문 상태는 건드리지 않는다.
+     *
+     * 계약 변경(KVE-2026-2018): `authCallback` 은 PG 서명도 IP 증명도 없는 비인증 브라우저
+     * POST 다. 주문번호는 요청자가 고른 값이라, 승인 실패를 근거로 주문을 취소하면 남의
+     * 주문번호와 아무 암호문이나 실어 보내는 것만으로 그 주문을 취소시킬 수 있다.
+     * 승인이 성공하지 않은 이상 이 엔드포인트는 상태를 바꾸지 않는다.
+     */
+    public function test_auth_callback_does_not_mutate_the_order_when_cli_approval_fails(): void
     {
         $order = $this->createTestOrder(50000);
         $this->mockPluginSettings();
         $this->mockApiService($this->makeCliResponse('TNO_FAIL', $order->order_number, 50000, '9999'));
+
+        $statusBefore = $order->order_status;
+        $paymentStatusBefore = $order->payment->payment_status;
 
         $response = $this->post(
             '/plugins/sirsoft-pay_nhnkcp/payment/callback',
@@ -579,20 +592,25 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $payment = $order->payment;
         $payment->refresh();
 
-        $this->assertEquals(OrderStatusEnum::CANCELLED, $order->order_status);
-        $this->assertEquals(PaymentStatusEnum::FAILED, $payment->payment_status);
-        $this->assertSame('nhnkcp', $payment->payment_meta['failure_source'] ?? null);
-        $this->assertSame('9999', $payment->payment_meta['failure_code'] ?? null);
-        $this->assertSame('approval_failed', $payment->payment_meta['failure_stage'] ?? null);
+        $this->assertEquals($statusBefore, $order->order_status, '비인증 콜백이 주문 상태를 바꿨습니다.');
+        $this->assertEquals($paymentStatusBefore, $payment->payment_status, '비인증 콜백이 결제 상태를 바꿨습니다.');
+        $this->assertNotEquals(OrderStatusEnum::CANCELLED, $order->order_status);
+        $this->assertArrayNotHasKey('failure_stage', $payment->payment_meta ?? []);
     }
 
-    public function test_auth_callback_records_amount_mismatch_as_non_retryable_kcp_failure(): void
+    /**
+     * 브라우저가 보낸 금액이 주문 금액과 다르면 승인 자체를 하지 않고, 주문도 건드리지 않는다.
+     */
+    public function test_auth_callback_does_not_mutate_the_order_on_browser_amount_mismatch(): void
     {
         $order = $this->createTestOrder(50000);
         $this->mockPluginSettings();
 
         $tno = 'KCP_TNO_AMOUNT_MISMATCH';
         $this->mockApiService($this->makeCliResponse($tno, $order->order_number, 60000));
+
+        $statusBefore = $order->order_status;
+        $paymentStatusBefore = $order->payment->payment_status;
 
         $response = $this->post(
             '/plugins/sirsoft-pay_nhnkcp/payment/callback',
@@ -606,11 +624,120 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $payment = $order->payment;
         $payment->refresh();
 
-        $this->assertEquals(OrderStatusEnum::CANCELLED, $order->order_status);
-        $this->assertEquals(PaymentStatusEnum::FAILED, $payment->payment_status);
-        $this->assertSame('nhnkcp', $payment->payment_meta['failure_source'] ?? null);
-        $this->assertSame('AMOUNT_MISMATCH', $payment->payment_meta['failure_code'] ?? null);
-        $this->assertSame('amount_mismatch', $payment->payment_meta['failure_stage'] ?? null);
+        $this->assertEquals($statusBefore, $order->order_status, '비인증 콜백이 주문 상태를 바꿨습니다.');
+        $this->assertEquals($paymentStatusBefore, $payment->payment_status, '비인증 콜백이 결제 상태를 바꿨습니다.');
+        $this->assertNotEquals(OrderStatusEnum::CANCELLED, $order->order_status);
+    }
+
+    /**
+     * 무인증 위조 콜백으로 타인의 결제대기 주문을 취소할 수 없다 (KVE-2026-2018 회귀).
+     *
+     * 공격자는 로그인하지 않고, 피해자의 주문번호와 아무 암호문만으로 이 엔드포인트를 친다.
+     * 서버 승인은 당연히 실패하는데, 그 실패를 피해 주문의 결제 실패로 오인 처리하면
+     * 남의 주문이 취소된다.
+     */
+    public function test_forged_unauthenticated_callback_cannot_cancel_another_users_order(): void
+    {
+        $victimOrder = $this->createTestOrder(50000);
+        $this->mockPluginSettings();
+        $this->mockApiService($this->makeCliResponse('', $victimOrder->order_number, 0, '6003'));
+
+        $response = $this->post(
+            '/plugins/sirsoft-pay_nhnkcp/payment/callback',
+            $this->makeCallbackParams($victimOrder->order_number, 0, [
+                'enc_data' => 'FORGED_CIPHERTEXT',
+                'enc_info' => 'FORGED_INFO',
+            ])
+        );
+
+        $response->assertRedirect();
+
+        $victimOrder->refresh();
+        $payment = $victimOrder->payment;
+        $payment->refresh();
+
+        $this->assertEquals(
+            OrderStatusEnum::PENDING_ORDER,
+            $victimOrder->order_status,
+            '무인증 위조 콜백이 피해자의 주문을 취소시켰습니다.'
+        );
+        $this->assertNotEquals(PaymentStatusEnum::FAILED, $payment->payment_status);
+        $this->assertArrayNotHasKey('payment_failure_code', $victimOrder->order_meta ?? []);
+    }
+
+    /**
+     * 카드 주문에 use_pay_method=VCNT 를 실어 가상계좌 분기로 우회하는 통로 차단.
+     *
+     * 가상계좌 모바일 분기는 enc_data/enc_info 가 비면 PG 서버를 호출하지 않고 콜백 평문을
+     * 그대로 승인 응답으로 취급한다. 분기 판정이 요청값을 보면 공격자가 카드 주문을 그 경로로
+     * 몰아, 은행명·계좌번호를 비운 것만으로 "발급 실패" 를 만들어 남의 주문을 취소시킬 수 있다.
+     */
+    public function test_forged_vbank_routed_callback_cannot_cancel_a_card_order(): void
+    {
+        $victimOrder = $this->createTestOrder(50000);
+        $this->mockPluginSettings();
+
+        $response = $this->post(
+            '/plugins/sirsoft-pay_nhnkcp/payment/callback',
+            [
+                'res_cd' => '0000',
+                'ordr_idxx' => $victimOrder->order_number,
+                'tno' => 'FORGED',
+                // 금액을 비워 승인 전 금액 검증을 건너뛴다
+                // enc_data/enc_info 를 비워 CLI 호출 자체를 우회한다
+                // bankname/account 를 비워 "발급 실패" 판정을 유도한다
+                'use_pay_method' => 'VCNT',
+            ]
+        );
+
+        $response->assertRedirect();
+
+        $victimOrder->refresh();
+        $payment = $victimOrder->payment;
+        $payment->refresh();
+
+        $this->assertEquals(
+            OrderStatusEnum::PENDING_ORDER,
+            $victimOrder->order_status,
+            '위조 콜백이 use_pay_method=VCNT 우회로 피해자의 카드 주문을 취소시켰습니다.'
+        );
+        $this->assertNotEquals(PaymentStatusEnum::FAILED, $payment->payment_status);
+        $this->assertArrayNotHasKey('payment_failure_code', $victimOrder->order_meta ?? []);
+    }
+
+    /**
+     * 분기 판정이 주문의 결제수단만 본다는 계약 (요청값으로 경로를 고를 수 없다).
+     *
+     * 카드 주문에 VCNT + 위조 발급정보를 실어도 가상계좌 발급으로 기록되지 않아야 한다.
+     * 요청값으로 분기가 갈리면 공격자가 피해자 카드 주문에 임의 계좌번호를 심을 수 있다.
+     */
+    public function test_request_pay_method_cannot_route_a_card_order_into_the_vbank_branch(): void
+    {
+        $victimOrder = $this->createTestOrder(50000);
+        $this->mockPluginSettings();
+        $this->mockApiService($this->makeCliResponse('', $victimOrder->order_number, 0, '6003'));
+
+        $this->post(
+            '/plugins/sirsoft-pay_nhnkcp/payment/callback',
+            [
+                'res_cd' => '0000',
+                'ordr_idxx' => $victimOrder->order_number,
+                'tno' => 'FORGED',
+                'use_pay_method' => 'VCNT',
+                'bankname' => '공격자은행',
+                'account' => '110-000-999999',
+                'depositor' => '공격자',
+            ]
+        );
+
+        $payment = $victimOrder->payment;
+        $payment->refresh();
+
+        $this->assertNull(
+            $payment->vbank_number,
+            '요청의 use_pay_method 로 카드 주문이 가상계좌 분기로 흘러 위조 계좌가 기록됐습니다.'
+        );
+        $this->assertNull($payment->vbank_name);
     }
 
     public function test_auth_callback_redirects_to_fail_url_on_missing_params(): void
@@ -671,14 +798,14 @@ class PaymentCallbackControllerTest extends PluginTestCase
     //   - result=0000 → KCP 가 통보 성공으로 인정 (재시도 차단)
     //   - 그 외 → KCP 재통보 (최대 10회)
 
-    private function assertKcpNotifyOk(\Illuminate\Testing\TestResponse $response): void
+    private function assertKcpNotifyOk(TestResponse $response): void
     {
         $response->assertOk();
         $this->assertStringContainsString('name="result"', $response->getContent());
         $this->assertStringContainsString('value="0000"', $response->getContent());
     }
 
-    private function assertKcpNotifyRetry(\Illuminate\Testing\TestResponse $response): void
+    private function assertKcpNotifyRetry(TestResponse $response): void
     {
         $response->assertOk();
         $this->assertStringContainsString('name="result"', $response->getContent());
@@ -688,18 +815,18 @@ class PaymentCallbackControllerTest extends PluginTestCase
     private function makeVbankNotifyPayload(string $orderNo, int $amount, array $overrides = []): array
     {
         return array_merge([
-            'site_cd'    => 'T0000',
-            'tno'        => 'KCP_VBANK_TNO_' . uniqid(),
-            'order_no'   => $orderNo,
-            'tx_cd'      => 'TX00',
-            'tx_tm'      => now()->format('YmdHis'),
-            'op_cd'      => '50',
-            'ipgm_mnyx'  => $amount,
-            'ipgm_name'  => '홍길동',
-            'remitter'   => '홍길동',
-            'bank_code'  => 'BK04',
-            'account'    => 'T1234567890',
-            'noti_id'    => uniqid('NOTI_'),
+            'site_cd' => 'T0000',
+            'tno' => 'KCP_VBANK_TNO_'.uniqid(),
+            'order_no' => $orderNo,
+            'tx_cd' => 'TX00',
+            'tx_tm' => now()->format('YmdHis'),
+            'op_cd' => '50',
+            'ipgm_mnyx' => $amount,
+            'ipgm_name' => '홍길동',
+            'remitter' => '홍길동',
+            'bank_code' => 'BK04',
+            'account' => 'T1234567890',
+            'noti_id' => uniqid('NOTI_'),
         ], $overrides);
     }
 
@@ -707,7 +834,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
      * KCP 공식 발신 IP 로 vbank-notify POST.
      * RestrictKcpIp 미들웨어가 항상 IP 검증하므로 화이트리스트 IP 필수.
      */
-    private function postVbankNotify(array $payload, string $kcpIp = '203.238.36.58'): \Illuminate\Testing\TestResponse
+    private function postVbankNotify(array $payload, string $kcpIp = '203.238.36.58'): TestResponse
     {
         return $this->withServerVariables(['REMOTE_ADDR' => $kcpIp])
             ->post('/plugins/sirsoft-pay_nhnkcp/payment/vbank-notify', $payload);
@@ -840,18 +967,18 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $this->markVbankIssued($order, 'KCP_TNO_REAL', 'T9876543210');
 
         $response = $this->postVbankNotify([
-            'site_cd'   => 'T0000',
-            'tno'       => 'KCP_TNO_REAL',
-            'order_no'  => $order->order_number,
-            'tx_cd'     => 'TX00',
-            'tx_tm'     => '20260514120000',
-            'op_cd'     => '50',
+            'site_cd' => 'T0000',
+            'tno' => 'KCP_TNO_REAL',
+            'order_no' => $order->order_number,
+            'tx_cd' => 'TX00',
+            'tx_tm' => '20260514120000',
+            'op_cd' => '50',
             'ipgm_mnyx' => 50000,
             'ipgm_name' => '홍길동',
-            'remitter'  => '실입금자',
+            'remitter' => '실입금자',
             'bank_code' => '04',
-            'account'   => 'T9876543210',
-            'noti_id'   => '26051412000018046532',
+            'account' => 'T9876543210',
+            'noti_id' => '26051412000018046532',
         ]);
 
         $this->assertKcpNotifyOk($response);
@@ -1012,21 +1139,21 @@ class PaymentCallbackControllerTest extends PluginTestCase
 
         $tno = 'KCP_VBANK_V000';
         $this->mockApiService([
-            'res_cd'    => 'V000',
-            'res_msg'   => '가상계좌가 발급되었습니다.',
-            'tno'       => $tno,
-            'bankname'  => 'NH농협',
-            'account'   => 'T1109260001455',
+            'res_cd' => 'V000',
+            'res_msg' => '가상계좌가 발급되었습니다.',
+            'tno' => $tno,
+            'bankname' => 'NH농협',
+            'account' => 'T1109260001455',
             'depositor' => 'NHN KCP',
-            'va_date'   => '20260516235959',
-            'bankcode'  => 'BK11',
-            'app_time'  => '20260513174624',
+            'va_date' => '20260516235959',
+            'bankcode' => 'BK11',
+            'app_time' => '20260513174624',
         ]);
 
         $response = $this->post(
             '/plugins/sirsoft-pay_nhnkcp/payment/callback',
             $this->makeCallbackParams($order->order_number, 30000, [
-                'tno'            => $tno,
+                'tno' => $tno,
                 'use_pay_method' => 'VCNT',
             ])
         );
@@ -1119,10 +1246,20 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $order->refresh();
         $this->assertNotEquals(OrderStatusEnum::PAYMENT_COMPLETE, $order->order_status);
 
+        // "완료되지 않았다" 만으로는 부족하다 — 이 콜백은 비인증 브라우저 경로이므로,
+        // 발급 실패를 근거로 주문을 취소하면 주문번호만 아는 제3자가 남의 주문을
+        // 취소시킬 수 있다 (KVE-2026-2018 동일 계열). 취소되지 않았음까지 단언한다.
+        $this->assertNotEquals(
+            OrderStatusEnum::CANCELLED,
+            $order->order_status,
+            '승인 증거 없는 가상계좌 콜백이 주문을 취소시켰습니다.'
+        );
+
         $payment = $order->payment;
         $payment->refresh();
         $this->assertNull($payment->vbank_name);
         $this->assertNull($payment->vbank_number);
+        $this->assertNotEquals(PaymentStatusEnum::FAILED, $payment->payment_status);
     }
 
     /**
@@ -1148,10 +1285,20 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $order->refresh();
         $this->assertNotEquals(OrderStatusEnum::PAYMENT_COMPLETE, $order->order_status);
 
+        // "완료되지 않았다" 만으로는 부족하다 — 이 콜백은 비인증 브라우저 경로이므로,
+        // 발급 실패를 근거로 주문을 취소하면 주문번호만 아는 제3자가 남의 주문을
+        // 취소시킬 수 있다 (KVE-2026-2018 동일 계열). 취소되지 않았음까지 단언한다.
+        $this->assertNotEquals(
+            OrderStatusEnum::CANCELLED,
+            $order->order_status,
+            '승인 증거 없는 가상계좌 콜백이 주문을 취소시켰습니다.'
+        );
+
         $payment = $order->payment;
         $payment->refresh();
         $this->assertNull($payment->vbank_name);
         $this->assertNull($payment->vbank_number);
+        $this->assertNotEquals(PaymentStatusEnum::FAILED, $payment->payment_status);
     }
 
     /**
@@ -1173,10 +1320,10 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $response = $this->post(
             '/plugins/sirsoft-pay_nhnkcp/payment/callback',
             [
-                'res_cd'         => '0000',
-                'ordr_idxx'      => $order->order_number,
-                'good_mny'       => 30000,
-                'tno'            => 'KCP_VBANK_MOBILE_FAIL',
+                'res_cd' => '0000',
+                'ordr_idxx' => $order->order_number,
+                'good_mny' => 30000,
+                'tno' => 'KCP_VBANK_MOBILE_FAIL',
                 'use_pay_method' => 'VCNT',
                 // bankname / account / depositor / va_date 모두 누락 → 발급 정보 없음
             ]
@@ -1188,9 +1335,19 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $order->refresh();
         $this->assertNotEquals(OrderStatusEnum::PAYMENT_COMPLETE, $order->order_status);
 
+        // "완료되지 않았다" 만으로는 부족하다 — 이 콜백은 비인증 브라우저 경로이므로,
+        // 발급 실패를 근거로 주문을 취소하면 주문번호만 아는 제3자가 남의 주문을
+        // 취소시킬 수 있다 (KVE-2026-2018 동일 계열). 취소되지 않았음까지 단언한다.
+        $this->assertNotEquals(
+            OrderStatusEnum::CANCELLED,
+            $order->order_status,
+            '승인 증거 없는 가상계좌 콜백이 주문을 취소시켰습니다.'
+        );
+
         $payment = $order->payment;
         $payment->refresh();
         $this->assertNull($payment->vbank_name);
         $this->assertNull($payment->vbank_number);
+        $this->assertNotEquals(PaymentStatusEnum::FAILED, $payment->payment_status);
     }
 }

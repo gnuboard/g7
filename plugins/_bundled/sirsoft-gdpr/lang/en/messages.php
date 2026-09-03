@@ -201,6 +201,7 @@ return [
                 'register' => 'Sign-up',
                 'mypage' => 'MyPage',
                 'mypage_renew_all' => 'MyPage bulk re-consent',
+                'withdraw' => 'Account withdrawal',
             ],
             'col' => [
                 'created_at' => 'Time',

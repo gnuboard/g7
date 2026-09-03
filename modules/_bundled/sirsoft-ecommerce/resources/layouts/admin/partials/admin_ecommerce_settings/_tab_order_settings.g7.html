@@ -131,6 +131,14 @@
           <span class="text-body">$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.days_suffix</span>
           <span data-if="{{_local.errors?.['order_settings.auto_cancel_days']}}" class="form-error-xs w-full mt-1">{{_local.errors?.['order_settings.auto_cancel_days']?.[0] ?? ''}}</span>
         </div>
+        <!-- 결제 미완료 주문 만료 기준(분) — 결제창까지 갔으나 결제가 성립하지 않은 주문을 정리하는 스케줄러가 읽는다. 자동취소 토글과 독립이므로 토글 하위에 두지 않는다. -->
+        <div data-ref="pending_order_expire_minutes_row" class="flex-center gap-2 flex-wrap">
+          <span class="text-body">$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.pending_minutes_prefix</span>
+          <input type="number" name="order_settings.pending_order_expire_minutes" value="{{_local.form?.order_settings?.pending_order_expire_minutes ?? 1440}}" min="{{_local?.form?._meta?.limits?.pending_order_expire_minutes_min ?? 0}}" max="{{_local?.form?._meta?.limits?.pending_order_expire_minutes_max ?? 20160}}" step="1" class="{{_local.errors?.['order_settings.pending_order_expire_minutes'] ? 'input input-error w-24' : 'input w-24'}}" disabled="{{_computed.isReadOnly}}"/>
+          <span class="text-body">$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.pending_minutes_suffix</span>
+          <p class="form-hint w-full">$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.pending_minutes_hint</p>
+          <span data-if="{{_local.errors?.['order_settings.pending_order_expire_minutes']}}" class="form-error-xs w-full mt-1">{{_local.errors?.['order_settings.pending_order_expire_minutes']?.[0] ?? ''}}</span>
+        </div>
       </div>
     </div>
     <div data-ref="cancellable_statuses_card" class="admin-card">

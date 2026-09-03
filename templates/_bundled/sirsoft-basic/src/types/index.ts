@@ -26,43 +26,65 @@ export interface EditorAttrs {
 }
 
 /**
- * 핸들러 컨텍스트 타입 정의 (테스트 호환용)
+ * 액션 정의 (엔진 `ActionDefinition` 의 템플릿측 최소 표현)
  *
- * @deprecated 실제 핸들러는 ActionDispatcher의 (action, context) 시그니처를 따릅니다.
- * 이 타입은 테스트 목적으로만 유지됩니다.
- *
- * 실제 핸들러에서는 다음 API를 사용합니다:
- * - G7Core.state.set() - 전역 상태 설정
- * - G7Core.state.get() - 전역 상태 조회
- * - AuthManager.getInstance().getUser() - 현재 사용자 확인
+ * 엔진은 핸들러를 `handler(action, context)` 로 호출하며, 레이아웃이 선언한 값은
+ * `action.params` 에 해석되어 들어온다. 첫 인자를 params 로 받는 형태로 작성하면
+ * 레이아웃이 넘긴 값이 전부 `undefined` 가 된다.
  */
-export interface HandlerContext {
-  /** 상태 설정 함수 */
-  setState: (scope: 'local' | 'global' | '_global', data: Record<string, any>) => void;
-  /** 상태 조회 함수 */
-  getState: (path: string) => any;
-  /** 통화 포맷팅 함수 */
-  formatCurrency: (amount: number, currency?: string) => string;
-  /** 다중 통화 계산 함수 */
-  calculateMultiCurrency: (amount: number) => Record<string, { value: number; formatted: string }>;
-  /** 라우터 네비게이션 함수 */
-  navigate: (path: string) => void;
-  /** 토스트 메시지 표시 함수 */
-  toast: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
-  /** API 호출 함수 */
-  apiCall: (url: string, options?: RequestInit) => Promise<any>;
-  /** 번역 함수 */
-  t: (key: string, params?: Record<string, string | number>) => string;
-  /** 전역 설정 */
-  settings: Record<string, any>;
-  /** 현재 사용자 */
-  currentUser: any;
+export interface TemplateActionDefinition {
+  /** 핸들러 이름 */
+  handler: string;
+  /** 해석된 파라미터 (레이아웃 `params` 의 바인딩 해석 결과) */
+  params?: Record<string, any>;
+  /** 해석된 타겟 */
+  target?: string;
+  [key: string]: unknown;
 }
 
 /**
- * 핸들러 함수 타입 (테스트 호환용)
+ * 핸들러 컨텍스트 — 엔진 `ActionContext` 와 같은 모양이다.
  *
- * @deprecated 실제 핸들러는 ActionDispatcher의 ActionHandler 타입을 따릅니다:
- * (action: ActionDefinition, context: ActionContext) => void | Promise<void>
+ * 상태 조회/설정 API 는 컨텍스트가 아니라 전역 `G7Core` 가 제공한다:
+ * - `G7Core.state.get()` / `G7Core.state.set()` — 전역 상태
+ * - `G7Core.state.getLocal()` / `G7Core.state.setLocal()` — 로컬(`_local`) 상태
+ * - `AuthManager.getInstance().getUser()` — 현재 사용자
+ *
+ * `context.setState(updates)` 는 **객체 하나**를 받는다. 스코프 인자를 앞에 두는
+ * `setState('global', {...})` 형태로 호출하면 문자열 `'global'` 이 로컬 상태에
+ * 전개되어, 오류 없이 상태만 오염된다.
  */
-export type HandlerFunction = (params: any, context: HandlerContext) => void | Promise<void>;
+export interface HandlerContext {
+  /** 데이터 컨텍스트 (`_global`, `_local`, `_computed` 등) */
+  data?: Record<string, any>;
+  /** 이벤트 객체 */
+  event?: Event;
+  /** 컴포넌트 props */
+  props?: Record<string, any>;
+  /** 현재 컴포넌트 로컬 상태 (저장소 A 스냅샷) */
+  state?: Record<string, any>;
+  /**
+   * 로컬 상태 갱신 함수.
+   *
+   * 엔진은 커스텀 핸들러에게 저장소 A/B 를 함께 갱신하는 writer 를 넘긴다
+   * (engine-v1.63.5). 그 이전 엔진에서도 동작하도록 하려면
+   * `G7Core.state.setLocal()` 을 쓰는 것이 가장 안전하다.
+   */
+  setState?: (updates: Record<string, any>) => void;
+  /** 라우터 네비게이션 함수 */
+  navigate?: (path: string, options?: { replace?: boolean; state?: any }) => void;
+  /** 격리 상태 컨텍스트 (isolatedState 속성이 있는 컴포넌트에서 주입) */
+  isolatedContext?: {
+    state: Record<string, any>;
+    mergeState: (updates: Record<string, any>, mergeMode?: 'replace' | 'shallow' | 'deep') => void;
+  };
+  [key: string]: unknown;
+}
+
+/**
+ * 핸들러 함수 타입 — 엔진 `ActionHandler` 와 같은 시그니처다.
+ */
+export type HandlerFunction = (
+  action: TemplateActionDefinition,
+  context: HandlerContext
+) => any | Promise<any>;

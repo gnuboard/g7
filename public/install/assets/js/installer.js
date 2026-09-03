@@ -136,7 +136,22 @@
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
 
-            const data = await response.json();
+            // 빈 본문(HTTP 200 + Content-Length 0)을 response.json() 에 넘기면
+            // "Unexpected end of JSON input" 이라는, 원인도 조치도 알 수 없는 문구가 화면에 뜬다.
+            // (gnuboard/g7#62 — 한글 계정명 환경에서 실제로 발생했다)
+            // 사람이 읽고 조치할 수 있는 안내로 바꾼다.
+            const text = await response.text();
+
+            if (text.trim() === '') {
+                throw new Error(lang('error_empty_server_response'));
+            }
+
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (parseError) {
+                throw new Error(lang('error_invalid_server_response'));
+            }
 
             const resultHtml = renderRequirements(data);
             document.getElementById('requirements-result').innerHTML = resultHtml;

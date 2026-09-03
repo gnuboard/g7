@@ -4,6 +4,7 @@ namespace App\Upgrades\Data\Ext\Modules\SirsoftEcommerce\V1_0_0\Migrations;
 
 use App\Extension\Upgrade\DataMigration;
 use App\Extension\UpgradeContext;
+use App\Support\ExtensionStoragePath;
 use Illuminate\Support\Facades\File;
 
 /**
@@ -60,6 +61,6 @@ class RemoveLegacyDefaultLanguage implements DataMigration
      */
     private function settingsFilePath(): string
     {
-        return storage_path('app/modules/'.self::MODULE_IDENTIFIER.'/settings/language_currency.json');
+        return ExtensionStoragePath::module(self::MODULE_IDENTIFIER, 'settings').'/language_currency.json';
     }
 }

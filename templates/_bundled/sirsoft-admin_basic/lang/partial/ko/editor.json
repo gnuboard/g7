@@ -1654,6 +1654,7 @@
     "template_info": "템플릿 정보",
     "templates": "템플릿 목록",
     "tokenValidation": "토큰 검증",
+    "trustedProxy": "신뢰 프록시 진단",
     "user": "사용자",
     "users": "사용자 목록"
   }

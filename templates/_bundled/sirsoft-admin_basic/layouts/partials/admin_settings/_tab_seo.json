@@ -405,6 +405,113 @@
                                     "props": {
                                         "className": "form-label"
                                     },
+                                    "text": "$t:admin.settings.seo.og_image_default"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-tertiary mb-2"
+                                    },
+                                    "text": "$t:admin.settings.seo.og_image_default_desc"
+                                },
+                                {
+                                    "id": "og_image_default_uploader",
+                                    "type": "composite",
+                                    "name": "FileUploader",
+                                    "actions": [
+                                        {
+                                            "comment": "파일을 고르는 순간 변경됨으로 표시한다 — 업로드 완료만 기다리면 그 사이 저장 버튼이 잠겨 있어 방금 고른 이미지를 저장하지 못한다.",
+                                            "type": "change",
+                                            "event": "onFilesChange",
+                                            "handler": "setState",
+                                            "if": "{{$args[0] && $args[0].length > 0}}",
+                                            "params": {
+                                                "target": "local",
+                                                "hasChanges": true
+                                            }
+                                        },
+                                        {
+                                            "comment": "업로드된 파일을 기본 OG 이미지 목록(form.seo.og_image_default)에 덧붙인다 — 저장은 설정 폼에 실려 나가므로 폼 상태에 넣어야 반영된다.",
+                                            "type": "change",
+                                            "event": "onUploadComplete",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "hasChanges": true,
+                                                "form.seo.og_image_default": "{{[...(_local.form?.seo?.og_image_default ?? []), ...$args[0]]}}"
+                                            }
+                                        },
+                                        {
+                                            "comment": "업로드 완료를 알리기만 한다 — 목록 갱신은 위 change 블록이 맡는다.",
+                                            "type": "custom",
+                                            "event": "onUploadComplete",
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "$t:attachment.upload_success"
+                                            }
+                                        },
+                                        {
+                                            "comment": "업로드 실패 사유는 첫 인자로 온다 — 서버가 준 문구를 그대로 보여 준다.",
+                                            "type": "custom",
+                                            "event": "onUploadError",
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{$args[0]}}"
+                                            }
+                                        },
+                                        {
+                                            "comment": "목록에서 그 파일을 빼고 변경됨으로 표시한다 — 식별자는 hash 가 있으면 hash, 없으면 id 다(저장 전 임시 파일과 저장된 파일이 한 목록에 섞인다).",
+                                            "type": "change",
+                                            "event": "onRemove",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "hasChanges": true,
+                                                "form.seo.og_image_default": "{{(_local.form?.seo?.og_image_default ?? []).filter(item => (item.hash || item.id) !== $args[0])}}"
+                                            }
+                                        },
+                                        {
+                                            "comment": "제거를 알리기만 한다 — 목록 갱신은 위 change 블록이 맡는다.",
+                                            "type": "custom",
+                                            "event": "onRemove",
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "info",
+                                                "message": "$t:attachment.deleted"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "collection": "og_image_default",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "maxFiles": 1,
+                                        "maxSize": "{{_global.settings?.upload?.max_file_size ?? _global.uploadSettings?.max_file_size ?? 10}}",
+                                        "accept": "{{_global.settings?.upload?.allowed_extensions_formatted ?? _global.uploadSettings?.allowed_extensions_formatted ?? '.jpg,.jpeg,.png,.gif,.svg,.webp'}}",
+                                        "initialFiles": "{{settings?.data?.seo?.og_image_default ?? []}}",
+                                        "autoUpload": false,
+                                        "uploadTriggerEvent": "upload:og_image_default",
+                                        "confirmBeforeRemove": true,
+                                        "imageCompression": {
+                                            "maxSizeMB": 1,
+                                            "maxWidthOrHeight": "{{_global.settings?.upload?.image_max_width ?? _global.uploadSettings?.image_max_width ?? 1200}}"
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
                                     "text": "$t:admin.settings.seo.twitter_default_card"
                                 },
                                 {
@@ -1231,7 +1338,7 @@
                                             "props": {
                                                 "type": "button",
                                                 "disabled": "{{_computed.isReadOnly || ['queued','running','writing'].includes(sitemap_status?.data?.progress?.status ?? '')}}",
-                                                "className": "w-full md:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
+                                                "className": "w-full md:w-auto px-4 py-2 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
                                             },
                                             "text": "{{['queued','running','writing'].includes(sitemap_status?.data?.progress?.status ?? '') ? $t('admin.settings.seo.sitemap_regenerating') : $t('admin.settings.seo.sitemap_manual_update')}}"
                                         }

@@ -203,6 +203,7 @@ return [
                 'register' => '会員登録',
                 'mypage' => 'マイページ',
                 'mypage_renew_all' => 'マイページ一括再同意',
+                'withdraw' => '会員退会',
             ],
             'col' => [
                 'created_at' => '時点',

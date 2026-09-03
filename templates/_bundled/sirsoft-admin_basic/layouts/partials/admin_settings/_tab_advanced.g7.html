@@ -309,5 +309,40 @@
         </div>
       </div>
     </div>
+    <div data-ref="card_trusted_proxy" class="card-stack-item">
+      <h3 class="card-title">$t:admin.settings.advanced.trusted_proxy</h3>
+      <div class="card-description">$t:admin.settings.advanced.trusted_proxy_desc</div>
+      <div class="row-stack">
+        <div data-ref="trusted_proxy_status_row" class="flex-between">
+          <span class="text-label">$t:admin.settings.advanced.trusted_proxy_status</span>
+          <span data-ref="trusted_proxy_status_badge" class="{{trustedProxy?.data?.status === 'warning' ? 'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' : (trustedProxy?.data?.status === 'ok' ? 'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300')}}">{{trustedProxy?.data?.status === 'warning' ? $t('admin.settings.advanced.trusted_proxy_status_warning') : (trustedProxy?.data?.status === 'ok' ? $t('admin.settings.advanced.trusted_proxy_status_ok') : $t('admin.settings.advanced.trusted_proxy_status_not_applicable'))}}</span>
+        </div>
+        <div class="flex-between">
+          <span class="text-label">$t:admin.settings.advanced.trusted_proxy_configured</span>
+          <span class="text-heading">{{trustedProxy?.data?.trusted_configured ? (trustedProxy?.data?.configured_proxies ?? '-') : $t('admin.settings.advanced.trusted_proxy_not_configured')}}</span>
+        </div>
+        <div class="flex-between">
+          <span class="text-label">$t:admin.settings.advanced.trusted_proxy_forwarded_headers</span>
+          <span class="text-heading">{{(trustedProxy?.data?.forwarded_headers ?? []).length > 0 ? trustedProxy?.data.forwarded_headers.join(', ') : $t('admin.settings.advanced.trusted_proxy_forwarded_headers_none')}}</span>
+        </div>
+        <div class="flex-between">
+          <span class="text-label">$t:admin.settings.advanced.trusted_proxy_is_secure</span>
+          <span class="text-heading">{{trustedProxy?.data?.is_secure === true ? $t('admin.settings.advanced.trusted_proxy_is_secure_yes') : (trustedProxy?.data?.is_secure === false ? $t('admin.settings.advanced.trusted_proxy_is_secure_no') : '-')}}</span>
+        </div>
+        <div class="flex-between">
+          <span class="text-label">$t:admin.settings.advanced.trusted_proxy_client_ip</span>
+          <span class="text-heading">{{trustedProxy?.data?.client_ip ?? '-'}}</span>
+        </div>
+        <div class="flex-between">
+          <span class="text-label">$t:admin.settings.advanced.trusted_proxy_remote_addr</span>
+          <span class="text-heading">{{trustedProxy?.data?.remote_addr ?? '-'}}</span>
+        </div>
+        <div data-ref="trusted_proxy_same_ip_hint" data-if="{{trustedProxy?.data?.status === 'warning' &amp;&amp; trustedProxy?.data?.client_ip &amp;&amp; trustedProxy?.data?.client_ip === trustedProxy?.data?.remote_addr}}" class="form-hint text-amber-600 dark:text-amber-400">$t:admin.settings.advanced.trusted_proxy_same_ip_hint</div>
+        <div data-ref="trusted_proxy_doc_hint" class="form-hint">
+          <span>$t:admin.settings.advanced.trusted_proxy_doc_hint</span>
+          <a data-ref="trusted_proxy_doc_link" href="https://github.com/gnuboard/g7/blob/main/docs/backend/reverse-proxy.md" target="_blank" rel="noopener noreferrer" class="ml-1 underline hover:no-underline">docs/backend/reverse-proxy.md</a>
+        </div>
+      </div>
+    </div>
   </div>
 </partial>

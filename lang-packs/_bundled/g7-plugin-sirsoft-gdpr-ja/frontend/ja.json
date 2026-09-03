@@ -238,7 +238,8 @@
         "preference_center": "環境設定",
         "mypage": "マイページ",
         "register": "会員登録",
-        "mypage_renew_all": "マイページ一括再同意"
+        "mypage_renew_all": "マイページ一括再同意",
+        "withdraw": "会員退会"
       },
       "col": {
         "created_at": "時点",

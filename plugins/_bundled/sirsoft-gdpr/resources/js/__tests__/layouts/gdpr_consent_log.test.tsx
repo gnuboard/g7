@@ -140,14 +140,14 @@ describe('layouts/admin/gdpr_consent_log.json — #27 체크박스 즉시 적용
             expect(layoutJson).toContain('sirsoft-gdpr.admin.consent_log.action.rejected');
         });
 
-        it('source 필터의 체크박스 6개 모두 옵션 C 패턴', () => {
+        it('source 필터의 체크박스 7개 모두 옵션 C 패턴', () => {
             const checkboxes = findCheckboxesIn('source_filter');
-            // 허용 어휘의 SSoT 는 ConsentSource enum 5종 — 화면 필터가 그 부분집합이면
-            // 일부 이력이 어떤 필터로도 도달 불가해진다 (#492).
+            // 허용 어휘의 SSoT 는 ConsentSource enum 6종 — 화면 필터가 그 부분집합이면
+            // 일부 이력이 어떤 필터로도 도달 불가해진다 (#492, 회원탈퇴 철회 `withdraw` 는 1.0.4).
             expect(
                 checkboxes.length,
-                '체크박스 6개 (전체 / banner / preference_center / register / mypage / mypage_renew_all)'
-            ).toBe(6);
+                '체크박스 7개 (전체 / banner / preference_center / register / mypage / mypage_renew_all / withdraw)'
+            ).toBe(7);
             checkboxes.forEach((cb, idx) => expectSequencePattern(cb, `source[${idx}]`));
         });
     });

@@ -357,3 +357,110 @@ function loadScriptOnce(url: string, attrs: Record<string, string>): Promise<voi
         document.head.appendChild(script);
     });
 }
+
+/**
+ * `<link rel="stylesheet">` 로드를 재시도하는 로더입니다.
+ *
+ * `loadScriptWithRetry` 와 동형이다 — 3시도(기본) · 지수 백오프 · **최종 실패 시 reject**.
+ * CSS 경로만 이 계층이 없어 실패가 통째로 무음이었다: `onerror` 를 아예 걸지 않거나
+ * `resolve()` 로 삼켜, 스타일이 붙지 않은 화면(아이콘 소실·본문 서식 붕괴)이 오류 없이
+ * 남았다. 아이콘만으로 조작하는 버튼이 있는 화면에서는 그것이 곧 조작 불능이다.
+ *
+ * `<link>` 의 `onerror` 도 사유를 주지 않으므로 모든 실패를 재시도 대상으로 본다.
+ * 재시도 전 기존 element 를 제거한다 — 남겨두면 실패한 `<link>` 가 누적되고, id 를
+ * 지정한 경우 다음 시도와 충돌한다.
+ *
+ * @param url 스타일시트 URL
+ * @param attrs link element 에 부여할 속성 (id, media, crossorigin 등)
+ * @param options 재시도 옵션
+ * @return Promise<void> 로드 성공 시 resolve
+ * @throws Error 모든 시도가 실패한 경우
+ * @since engine-v1.62.0
+ */
+export async function loadStylesheetWithRetry(
+    url: string,
+    attrs: Record<string, string> = {},
+    options: RetryOptions = {}
+): Promise<void> {
+    const {
+        retries = DEFAULT_RETRIES,
+        baseDelayMs = DEFAULT_BASE_DELAY_MS,
+        maxDelayMs = DEFAULT_MAX_DELAY_MS,
+        label = url,
+    } = options;
+
+    const maxAttempts = retries + 1;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        let link: HTMLLinkElement | null = null;
+
+        try {
+            link = createStylesheetElement(url, attrs);
+            await loadStylesheetOnce(link);
+            return;
+        } catch (error) {
+            // 실패한 element 를 제거한다 (누적 방지 + 다음 시도의 id 충돌 방지)
+            link?.remove();
+            if (attrs.id) {
+                document.getElementById(attrs.id)?.remove();
+            }
+
+            if (isDocumentUnloading()) {
+                logger.warn(`Document unloading, aborting stylesheet retries: ${label}`);
+                throw error;
+            }
+
+            const isLastAttempt = attempt === maxAttempts - 1;
+            if (isLastAttempt) {
+                logger.warn(`All ${maxAttempts} stylesheet attempts failed: ${label}`);
+                throw error;
+            }
+
+            const waitMs = computeBackoffDelay(attempt, baseDelayMs, maxDelayMs);
+            logger.warn(
+                `Stylesheet load failed (attempt ${attempt + 1}/${maxAttempts}), retrying in ${waitMs}ms: ${label}`
+            );
+            await delay(waitMs);
+        }
+    }
+}
+
+/**
+ * `<link rel="stylesheet">` element 를 생성해 head 에 추가합니다.
+ *
+ * @param url 스타일시트 URL
+ * @param attrs link element 속성
+ * @return HTMLLinkElement 생성된 element
+ * @since engine-v1.62.0
+ */
+function createStylesheetElement(url: string, attrs: Record<string, string>): HTMLLinkElement {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = url;
+
+    for (const [key, value] of Object.entries(attrs)) {
+        if (key === 'id') {
+            link.id = value;
+        } else {
+            link.setAttribute(key, value);
+        }
+    }
+
+    document.head.appendChild(link);
+
+    return link;
+}
+
+/**
+ * `<link>` 1회 로드를 시도합니다 (재시도 없음).
+ *
+ * @param link head 에 이미 추가된 link element
+ * @return Promise<void> 로드 성공 시 resolve, 실패 시 reject
+ * @since engine-v1.62.0
+ */
+function loadStylesheetOnce(link: HTMLLinkElement): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+        link.onload = () => resolve();
+        link.onerror = () => reject(new Error(`Failed to load stylesheet: ${link.href}`));
+    });
+}

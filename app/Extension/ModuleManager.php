@@ -21,6 +21,7 @@ use App\Enums\PermissionType;
 use App\Extension\Concerns\ResolvesExtensionSharedRecords;
 use App\Extension\Helpers\DependencyEnricher;
 use App\Extension\Helpers\ExtensionBackupHelper;
+use App\Extension\Helpers\ExtensionInstallRollbackHelper;
 use App\Extension\Helpers\ExtensionMenuSyncHelper;
 use App\Extension\Helpers\ExtensionPendingHelper;
 use App\Extension\Helpers\ExtensionRoleSyncHelper;
@@ -44,6 +45,7 @@ use App\Models\Template;
 use App\Providers\CoreServiceProvider;
 use App\Services\LayoutExtensionService;
 use App\Support\AssetUrl;
+use App\Support\ExtensionStoragePath;
 use App\Support\RouteCacheHelper;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Artisan;
@@ -312,6 +314,7 @@ class ModuleManager implements ModuleManagerInterface
      * @param  \Closure|null  $onProgress  진행 콜백 (?string $step, string $message)
      * @param  VendorMode  $vendorMode  vendor 디렉토리 처리 모드
      * @param  bool  $force  강제 설치 여부
+     * @param  string|null  $failureReason  실패 시 사유가 담기는 out 파라미터 (성공 시 null)
      * @return bool 설치 성공 여부
      *
      * @throws \Exception 모듈을 찾을 수 없거나 의존성 문제 시
@@ -321,7 +324,10 @@ class ModuleManager implements ModuleManagerInterface
         ?\Closure $onProgress = null,
         VendorMode $vendorMode = VendorMode::Auto,
         bool $force = false,
+        ?string &$failureReason = null,
     ): bool {
+        $failureReason = null;
+
         // identifier 형식 검증 (내부 호출 방어)
         ExtensionManager::validateIdentifierFormat($moduleName);
 
@@ -369,165 +375,186 @@ class ModuleManager implements ModuleManagerInterface
 
         // _pending 또는 _bundled에서 활성 디렉토리로 복사 (미설치 모듈 설치 시)
         // force=true 시 활성 디렉토리가 있어도 원본으로 덮어씀 (불완전 설치 복구)
+        $rollbackActivePath = $this->modulesPath.DIRECTORY_SEPARATOR.$moduleName;
+        // 검증은 로드된 확장 인스턴스를 요구해 복사보다 뒤에 온다. 그래서 검증이 실패하면
+        // 방금 만든 활성 디렉토리가 고아로 남는다 — DB 행이 없어 목록에도 뜨지 않고 오류도
+        // 남지 않은 채 디스크만 점유한다. 이번 호출이 만든 것이면 되돌린다.
+        $rollbackDirExisted = File::isDirectory($rollbackActivePath);
+
         $onProgress?->__invoke('copy', '파일 복사 중...');
         $this->copyFromPendingOrBundled($moduleName, $onProgress, $force);
 
-        // 모듈이 활성 디렉토리에 있지 않으면 로드 시도
-        $module = $this->getModule($moduleName);
-        if (! $module) {
-            // 복사 후 재로드 시도
-            $this->reloadModule($moduleName);
-            $module = $this->getModule($moduleName);
-        }
-
-        if (! $module) {
-            throw new \Exception(__('modules.not_found', ['module' => $moduleName]));
-        }
-
-        // 그누보드7 코어 버전 호환성 검증
-        CoreVersionChecker::validateExtension(
-            $module->getRequiredCoreVersion(),
-            $module->getIdentifier(),
-            'module'
-        );
-
-        // 의존성 확인 (트랜잭션 외부에서 먼저 검증)
-        $onProgress?->__invoke('validate', '검증 중...');
-        $this->checkDependencies($module);
-
-        // 권한 구조 검증 (계층형 구조 필수)
-        $this->validatePermissionStructure($module, 'module');
-
-        // 언어 파일 경로 검증 (src/lang 경로 필수)
-        $this->validateTranslationPath($module, 'module');
-
-        // SEO 변수명 중복 검증
-        $this->validateSeoVariables($module, 'module');
-
-        // 모듈 설치 실행
-        $result = $module->install();
-
-        if (! $result) {
-            return false;
-        }
-
-        // Phase 1: 마이그레이션 실행 (DDL - 트랜잭션 외부)
-        // MySQL에서 CREATE TABLE 등 DDL 문은 암시적 커밋을 유발하므로 트랜잭션 외부에서 실행
-        $onProgress?->__invoke('migration', '마이그레이션 실행 중...');
-        $this->runMigrations($module);
-
-        // Phase 2: 데이터 작업 (DML - 트랜잭션 내부)
-        $onProgress?->__invoke('db', 'DB 등록 중...');
         try {
-            DB::beginTransaction();
+            // 모듈이 활성 디렉토리에 있지 않으면 로드 시도
+            $module = $this->getModule($moduleName);
+            if (! $module) {
+                // 복사 후 재로드 시도
+                $this->reloadModule($moduleName);
+                $module = $this->getModule($moduleName);
+            }
 
-            // GitHub에서 최신 버전 정보 가져오기
-            $latestVersion = $this->fetchLatestVersion($module);
-            $updateAvailable = $latestVersion ? version_compare($latestVersion, $module->getVersion(), '>') : false;
+            if (! $module) {
+                throw new \Exception(__('modules.not_found', ['module' => $moduleName]));
+            }
 
-            // 다국어 name, description 처리 (역호환성 지원)
-            $name = $this->convertToMultilingual($module->getName());
-            $description = $this->convertToMultilingual($module->getDescription());
-
-            // 활성 언어팩의 manifest seed(ja 등)를 name/description 다국어 필드에 주입
-            $manifest = HookManager::applyFilters(
-                "module.{$module->getIdentifier()}.manifest.translations",
-                ['name' => $name, 'description' => $description]
-            );
-            $name = $manifest['name'] ?? $name;
-            $description = $manifest['description'] ?? $description;
-
-            // 데이터베이스에 모듈 정보 저장
-            $this->moduleRepository->updateOrCreate(
-                ['identifier' => $module->getIdentifier()],
-                [
-                    'vendor' => $module->getVendor(),
-                    'name' => $name,
-                    'version' => $module->getVersion(),
-                    'latest_version' => $latestVersion,
-                    'description' => $description,
-                    'github_url' => $module->getGithubUrl(),
-                    'github_changelog_url' => $this->buildChangelogUrl($module->getGithubUrl()),
-                    'update_available' => $updateAvailable,
-                    'metadata' => $module->getMetadata(),
-                    'status' => ExtensionStatus::Inactive->value,
-                    'vendor_mode' => $resolvedVendorMode->value,
-                    'config' => $module->getConfig(),
-                    'created_by' => Auth::id(),
-                    'updated_by' => Auth::id(),
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]
+            // 그누보드7 코어 버전 호환성 검증
+            CoreVersionChecker::validateExtension(
+                $module->getRequiredCoreVersion(),
+                $module->getIdentifier(),
+                'module'
             );
 
-            // Role 자동 생성
-            $this->createModuleRoles($module);
+            // 의존성 확인 (트랜잭션 외부에서 먼저 검증)
+            $onProgress?->__invoke('validate', '검증 중...');
+            $this->checkDependencies($module);
 
-            // 권한 자동 생성
-            $this->createModulePermissions($module);
+            // 권한 구조 검증 (계층형 구조 필수)
+            $this->validatePermissionStructure($module, 'module');
 
-            // 권한-Role 연결
-            $this->assignPermissionsToRoles($module);
+            // 언어 파일 경로 검증 (src/lang 경로 필수)
+            $this->validateTranslationPath($module, 'module');
 
-            // 관리자 메뉴 자동 생성
-            $this->createModuleMenus($module);
+            // SEO 변수명 중복 검증
+            $this->validateSeoVariables($module, 'module');
 
-            // IDV 정책 자동 동기화 (identity_policies 테이블)
-            $this->syncModuleIdentityPolicies($module);
+            // 모듈 설치 실행
+            $module->clearLifecycleFailureReason();
+            $result = $module->install();
 
-            // IDV 메시지 정의/템플릿 자동 동기화 (identity_message_definitions / identity_message_templates)
-            $this->syncModuleIdentityMessages($module);
+            if (! $result) {
+                $failureReason = $module->getLifecycleFailureReason() ?? __('modules.errors.unknown_error');
 
-            // 알림 정의/템플릿 자동 동기화 (notification_definitions / notification_templates)
-            $this->syncModuleNotificationDefinitions($module);
+                return false;
+            }
 
-            DB::commit();
+            // Phase 1: 마이그레이션 실행 (DDL - 트랜잭션 외부)
+            // MySQL에서 CREATE TABLE 등 DDL 문은 암시적 커밋을 유발하므로 트랜잭션 외부에서 실행
+            $onProgress?->__invoke('migration', '마이그레이션 실행 중...');
+            $this->runMigrations($module);
 
-        } catch (\Exception $e) {
-            DB::rollBack();
+            // Phase 2: 데이터 작업 (DML - 트랜잭션 내부)
+            $onProgress?->__invoke('db', 'DB 등록 중...');
+            try {
+                DB::beginTransaction();
+
+                // GitHub에서 최신 버전 정보 가져오기
+                $latestVersion = $this->fetchLatestVersion($module);
+                $updateAvailable = $latestVersion ? version_compare($latestVersion, $module->getVersion(), '>') : false;
+
+                // 다국어 name, description 처리 (역호환성 지원)
+                $name = $this->convertToMultilingual($module->getName());
+                $description = $this->convertToMultilingual($module->getDescription());
+
+                // 활성 언어팩의 manifest seed(ja 등)를 name/description 다국어 필드에 주입
+                $manifest = HookManager::applyFilters(
+                    "module.{$module->getIdentifier()}.manifest.translations",
+                    ['name' => $name, 'description' => $description]
+                );
+                $name = $manifest['name'] ?? $name;
+                $description = $manifest['description'] ?? $description;
+
+                // 데이터베이스에 모듈 정보 저장
+                $this->moduleRepository->updateOrCreate(
+                    ['identifier' => $module->getIdentifier()],
+                    [
+                        'vendor' => $module->getVendor(),
+                        'name' => $name,
+                        'version' => $module->getVersion(),
+                        'latest_version' => $latestVersion,
+                        'description' => $description,
+                        'github_url' => $module->getGithubUrl(),
+                        'github_changelog_url' => $this->buildChangelogUrl($module->getGithubUrl()),
+                        'update_available' => $updateAvailable,
+                        'metadata' => $module->getMetadata(),
+                        'status' => ExtensionStatus::Inactive->value,
+                        'vendor_mode' => $resolvedVendorMode->value,
+                        'config' => $module->getConfig(),
+                        'created_by' => Auth::id(),
+                        'updated_by' => Auth::id(),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]
+                );
+
+                // Role 자동 생성
+                $this->createModuleRoles($module);
+
+                // 권한 자동 생성
+                $this->createModulePermissions($module);
+
+                // 권한-Role 연결
+                $this->assignPermissionsToRoles($module);
+
+                // 관리자 메뉴 자동 생성
+                $this->createModuleMenus($module);
+
+                // IDV 정책 자동 동기화 (identity_policies 테이블)
+                $this->syncModuleIdentityPolicies($module);
+
+                // IDV 메시지 정의/템플릿 자동 동기화 (identity_message_definitions / identity_message_templates)
+                $this->syncModuleIdentityMessages($module);
+
+                // 알림 정의/템플릿 자동 동기화 (notification_definitions / notification_templates)
+                $this->syncModuleNotificationDefinitions($module);
+
+                DB::commit();
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                throw $e;
+            }
+
+            // Phase 3: 시더 실행 (트랜잭션 외부)
+            // 시더 내부에서 별도 트랜잭션을 사용할 수 있으므로 외부에서 실행
+            $onProgress?->__invoke('seed', '시더 실행 중...');
+            $this->runModuleSeeders($module);
+
+            // Phase 4: 기본 설정 파일 생성
+            $onProgress?->__invoke('settings', '환경설정 초기화 중...');
+            $this->initializeModuleSettings($module);
+
+            // Phase 4.5: Composer 의존성 설치 (외부 패키지가 있는 경우에만)
+            // _pending에서 이미 설치한 경우 스킵 (vendor/가 활성 디렉토리에 복사됨)
+            if (! $composerDoneInPending) {
+                $onProgress?->__invoke('composer', 'Composer 의존성 설치 중...');
+                if (! app()->environment('testing')
+                    && $this->extensionManager->hasComposerDependencies('modules', $moduleName)) {
+                    $composerResult = $this->extensionManager->runComposerInstall('modules', $moduleName);
+                    if (! $composerResult) {
+                        Log::warning('모듈 Composer 의존성 설치 실패', ['module' => $moduleName]);
+                    }
+                }
+            }
+
+            // Phase 5: 오토로드 병합 실행 (트랜잭션 외부)
+            $onProgress?->__invoke('autoload', '오토로드 갱신 중...');
+            $this->extensionManager->updateComposerAutoload();
+
+            // 모듈 상태 캐시 무효화
+            self::invalidateModuleStatusCache();
+
+            // 확장 캐시 버전 증가 (프론트엔드가 새로운 캐시로 요청하도록)
+            $this->incrementExtensionCacheVersion();
+            RouteCacheHelper::rebuild();
+
+            // 확장 미들웨어 인덱스 무효화 — 새 모듈의 미들웨어 선언이 즉시 게이트에 반영.
+            ExtensionMiddlewareRegistry::flush();
+
+            // 훅 발행: 모듈 설치 완료
+            HookManager::doAction('core.modules.installed', $moduleName);
+
+            return true;
+        } catch (\Throwable $e) {
+            ExtensionInstallRollbackHelper::removeIfCreatedByThisInstall(
+                $rollbackActivePath,
+                $rollbackDirExisted,
+                $moduleName,
+                'module',
+            );
+
             throw $e;
         }
 
-        // Phase 3: 시더 실행 (트랜잭션 외부)
-        // 시더 내부에서 별도 트랜잭션을 사용할 수 있으므로 외부에서 실행
-        $onProgress?->__invoke('seed', '시더 실행 중...');
-        $this->runModuleSeeders($module);
-
-        // Phase 4: 기본 설정 파일 생성
-        $onProgress?->__invoke('settings', '환경설정 초기화 중...');
-        $this->initializeModuleSettings($module);
-
-        // Phase 4.5: Composer 의존성 설치 (외부 패키지가 있는 경우에만)
-        // _pending에서 이미 설치한 경우 스킵 (vendor/가 활성 디렉토리에 복사됨)
-        if (! $composerDoneInPending) {
-            $onProgress?->__invoke('composer', 'Composer 의존성 설치 중...');
-            if (! app()->environment('testing')
-                && $this->extensionManager->hasComposerDependencies('modules', $moduleName)) {
-                $composerResult = $this->extensionManager->runComposerInstall('modules', $moduleName);
-                if (! $composerResult) {
-                    Log::warning('모듈 Composer 의존성 설치 실패', ['module' => $moduleName]);
-                }
-            }
-        }
-
-        // Phase 5: 오토로드 병합 실행 (트랜잭션 외부)
-        $onProgress?->__invoke('autoload', '오토로드 갱신 중...');
-        $this->extensionManager->updateComposerAutoload();
-
-        // 모듈 상태 캐시 무효화
-        self::invalidateModuleStatusCache();
-
-        // 확장 캐시 버전 증가 (프론트엔드가 새로운 캐시로 요청하도록)
-        $this->incrementExtensionCacheVersion();
-        RouteCacheHelper::rebuild();
-
-        // 확장 미들웨어 인덱스 무효화 — 새 모듈의 미들웨어 선언이 즉시 게이트에 반영.
-        ExtensionMiddlewareRegistry::flush();
-
-        // 훅 발행: 모듈 설치 완료
-        HookManager::doAction('core.modules.installed', $moduleName);
-
-        return true;
     }
 
     /**
@@ -541,8 +568,14 @@ class ModuleManager implements ModuleManagerInterface
     {
         $module = $this->getModule($moduleName);
         if (! $module) {
-            return ['success' => false, 'layouts_registered' => 0];
+            return [
+                'success' => false,
+                'layouts_registered' => 0,
+                'reason' => __('modules.errors.not_found', ['module' => $moduleName]),
+            ];
         }
+
+        $module->clearLifecycleFailureReason();
 
         // 상태 가드: 진행 중 상태 체크
         $record = $this->moduleRepository->findByIdentifier($module->getIdentifier());
@@ -629,6 +662,13 @@ class ModuleManager implements ModuleManagerInterface
                 'updated_at' => now(),
             ]);
 
+            // 모듈 상태 캐시 무효화 — DB 상태 쓰기 직후에 둔다.
+            // 뒤따르는 굽기(RouteCacheHelper::rebuild() 의 route:cache, 훅 캐시 재생성)는
+            // 새 애플리케이션을 부팅해 "캐시된" 활성 모듈 목록을 읽는다. 여기서 비우지 않으면
+            // 방금 활성으로 바뀐 이 모듈이 목록에서 빠진 채 라우트가 박제되고,
+            // 라우트 캐시에는 스캔 폴백이 없어 오류·경고 없이 그 엔드포인트만 404 가 된다.
+            self::invalidateModuleStatusCache();
+
             // soft deleted된 모듈 레이아웃 복원 (재활성화 시)
             $this->restoreModuleLayouts($module->getIdentifier());
 
@@ -651,9 +691,6 @@ class ModuleManager implements ModuleManagerInterface
             $this->incrementExtensionCacheVersion();
             RouteCacheHelper::rebuild();
 
-            // 모듈 상태 캐시 무효화
-            self::invalidateModuleStatusCache();
-
             // 본인인증 route scope 캐시 무효화 — 재활성화 시 이 모듈이 선언한 정책이
             // 다시 enforce 대상에 포함되도록 한다 (applyActiveExtensionScope 재평가).
             IdentityPolicy::flushRouteScopeCache();
@@ -668,7 +705,18 @@ class ModuleManager implements ModuleManagerInterface
             HookManager::doAction('core.modules.activated', $moduleName);
         }
 
-        return ['success' => $result, 'layouts_registered' => $layoutsRegistered];
+        if (! $result) {
+            // 모듈이 스스로 활성화를 거부했다. 사유를 남겼으면 그대로 싣고,
+            // 남기지 않았으면 일반 문구로 대체한다 — 원인 자리를 비워 두면
+            // 관리자 화면에 치환되지 않은 자리표시자가 그대로 노출된다.
+            return [
+                'success' => false,
+                'layouts_registered' => $layoutsRegistered,
+                'reason' => $module->getLifecycleFailureReason() ?? __('modules.errors.unknown_error'),
+            ];
+        }
+
+        return ['success' => true, 'layouts_registered' => $layoutsRegistered];
     }
 
     /**
@@ -715,8 +763,14 @@ class ModuleManager implements ModuleManagerInterface
     ): array {
         $module = $this->getModule($moduleName);
         if (! $module) {
-            return ['success' => false, 'layouts_deleted' => 0];
+            return [
+                'success' => false,
+                'layouts_deleted' => 0,
+                'reason' => __('modules.errors.not_found', ['module' => $moduleName]),
+            ];
         }
+
+        $module->clearLifecycleFailureReason();
 
         // 상태 가드: 진행 중 상태 체크
         $record = $this->moduleRepository->findByIdentifier($module->getIdentifier());
@@ -778,6 +832,12 @@ class ModuleManager implements ModuleManagerInterface
                 'updated_at' => now(),
             ]);
 
+            // 모듈 상태 캐시 무효화 — DB 상태 쓰기 직후에 둔다.
+            // 뒤따르는 RouteCacheHelper::rebuild() 가 캐시된 활성 모듈 목록을 읽으므로,
+            // 여기서 비우지 않으면 방금 비활성으로 바꾼 모듈의 라우트가 그대로 박제되어
+            // 비활성 상태에서도 그 API 가 계속 호출 가능한 상태로 남는다.
+            self::invalidateModuleStatusCache();
+
             // 모듈 레이아웃 soft delete
             $layoutsDeleted = $this->softDeleteModuleLayouts($module->getIdentifier());
 
@@ -797,9 +857,6 @@ class ModuleManager implements ModuleManagerInterface
             // 모듈 자체 캐시 전체 정리
             $this->flushModuleCache($module);
 
-            // 모듈 상태 캐시 무효화
-            self::invalidateModuleStatusCache();
-
             // 본인인증 route scope 캐시 무효화 — 비활성 모듈이 선언한 정책이 enforce 대상에서
             // 즉시 제외되도록 한다. 정책 행 자체는 변경하지 않으므로(enabled 운영자 설정 보존)
             // IdentityPolicy 모델 이벤트가 발화하지 않아, 라이프사이클에서 명시적으로 호출한다.
@@ -812,7 +869,15 @@ class ModuleManager implements ModuleManagerInterface
             HookManager::doAction('core.modules.after_deactivate', $module->getIdentifier());
         }
 
-        return ['success' => $result, 'layouts_deleted' => $layoutsDeleted];
+        if (! $result) {
+            return [
+                'success' => false,
+                'layouts_deleted' => $layoutsDeleted,
+                'reason' => $module->getLifecycleFailureReason() ?? __('modules.errors.unknown_error'),
+            ];
+        }
+
+        return ['success' => true, 'layouts_deleted' => $layoutsDeleted];
     }
 
     /**
@@ -860,12 +925,24 @@ class ModuleManager implements ModuleManagerInterface
      * @param  string  $moduleName  제거할 모듈명
      * @param  bool  $deleteData  모듈 데이터(테이블) 삭제 여부
      * @param  \Closure|null  $onProgress  진행 콜백 (?string $step, string $message)
+     * @param  string|null  $failureReason  실패 시 사유가 담기는 out 파라미터 (성공 시 null)
+     * @param  array<int, array{directory: string, archive: string}>|null  $preservedBackups
+     *                                                                                        삭제 전에 보관한 운영자 소유 디렉토리(`custom/`)의 사본 경로가 담기는 out 파라미터.
+     *                                                                                        운영자에게 "지웠지만 사본은 여기 있다" 를 알리기 위한 것이므로 호출부가 노출해야 한다.
      * @return bool 제거 성공 여부
      *
      * @throws \Exception 모듈을 찾을 수 없을 때
      */
-    public function uninstallModule(string $moduleName, bool $deleteData = false, ?\Closure $onProgress = null): bool
-    {
+    public function uninstallModule(
+        string $moduleName,
+        bool $deleteData = false,
+        ?\Closure $onProgress = null,
+        ?string &$failureReason = null,
+        ?array &$preservedBackups = null,
+    ): bool {
+        $failureReason = null;
+        $preservedBackups = [];
+
         // 상태 가드: 진행 중 상태 체크
         $existingRecord = $this->moduleRepository->findByIdentifier($moduleName);
         if ($existingRecord) {
@@ -898,7 +975,12 @@ class ModuleManager implements ModuleManagerInterface
             DB::beginTransaction();
 
             // 모듈 제거 실행
+            $module->clearLifecycleFailureReason();
             $result = $module->uninstall();
+
+            if (! $result) {
+                $failureReason = $module->getLifecycleFailureReason() ?? __('modules.errors.unknown_error');
+            }
 
             if ($result) {
                 // 권한·메뉴·역할은 $deleteData=true 시에만 삭제.
@@ -961,6 +1043,12 @@ class ModuleManager implements ModuleManagerInterface
 
             // 오토로드 병합 실행 (트랜잭션 외부에서 실행)
             if ($result) {
+                // 모듈 상태 캐시 무효화 — DB 에서 모듈 행을 지운 직후(커밋 직후)에 둔다.
+                // 뒤따르는 굽기(오토로드 갱신 내 훅 캐시 재생성, RouteCacheHelper::rebuild())가
+                // 캐시된 활성 모듈 목록을 읽으므로, 여기서 비우지 않으면 이미 제거된 모듈이
+                // 목록에 남은 채로 라우트·훅이 박제된다.
+                self::invalidateModuleStatusCache();
+
                 $onProgress?->__invoke('autoload', '오토로드 갱신 중...');
                 $this->extensionManager->updateComposerAutoload();
 
@@ -978,15 +1066,15 @@ class ModuleManager implements ModuleManagerInterface
                 // 모듈 자체 캐시 전체 정리
                 $this->flushModuleCache($module);
 
-                // 모듈 상태 캐시 무효화
-                self::invalidateModuleStatusCache();
-
                 // 확장 미들웨어 인덱스 무효화 — 제거된 모듈의 미들웨어가 게이트 매칭에서 즉시 제외.
                 ExtensionMiddlewareRegistry::flush();
 
                 // 활성 모듈 디렉토리 전체 삭제 (_pending/_bundled에 원본 보존되므로 재설치 가능)
                 $onProgress?->__invoke('files', '파일 삭제 중...');
-                ExtensionPendingHelper::deleteExtensionDirectory($this->modulesPath, $module->getIdentifier());
+                $preservedBackups = ExtensionPendingHelper::deleteExtensionDirectory(
+                    $this->modulesPath,
+                    $module->getIdentifier()
+                );
 
                 // 메모리에서 모듈 제거
                 unset($this->modules[$module->getIdentifier()]);
@@ -1705,7 +1793,7 @@ class ModuleManager implements ModuleManagerInterface
         }
 
         $identifier = $module->getIdentifier();
-        $settingsDir = storage_path('app/modules/'.$identifier.'/settings');
+        $settingsDir = ExtensionStoragePath::module($identifier, 'settings');
 
         // 이미 환경설정 디렉토리가 있고 파일이 있으면 스킵 (재설치 시 덮어쓰기 방지)
         if (File::isDirectory($settingsDir) && count(File::files($settingsDir)) > 0) {
@@ -1829,7 +1917,7 @@ class ModuleManager implements ModuleManagerInterface
      */
     protected function deleteModuleStorage(ModuleInterface $module): void
     {
-        $moduleStoragePath = storage_path('app/modules/'.$module->getIdentifier());
+        $moduleStoragePath = ExtensionStoragePath::module($module->getIdentifier());
 
         if (! File::isDirectory($moduleStoragePath)) {
             Log::info('삭제할 모듈 스토리지 디렉토리가 없습니다.', [
@@ -1914,7 +2002,7 @@ class ModuleManager implements ModuleManagerInterface
 
         // 5. 스토리지 디렉토리 1-depth 용량 조회
         $storageInfo = $this->getStorageDirectoriesInfo(
-            storage_path('app/modules/'.$identifier)
+            ExtensionStoragePath::module($identifier)
         );
 
         // 6. Composer vendor 디렉토리 정보 조회
@@ -4467,6 +4555,13 @@ class ModuleManager implements ModuleManagerInterface
                 'updated_at' => now(),
             ]);
 
+            // 모듈 상태 캐시 무효화 — 상태 복원 쓰기 직후에 둔다.
+            // Updating 전이 직후에는 비우지 않는다: 그러면 Updating 창 안의
+            // updateComposerAutoload() 가 DB 를 재조회해 이 모듈을 비활성으로 판정하고
+            // 훅 캐시에서 리스너를 떨군다(지금 없는 결함을 새로 만든다).
+            // 복원 직후에 비워야 뒤따르는 굽기(라우트·훅)가 복원된 상태를 읽는다.
+            self::invalidateModuleStatusCache();
+
             // 9. 레이아웃 갱신 (이전 상태가 active였으면)
             // refreshModuleLayouts()는 캐시 무효화 + 캐시 버전 증가를 포함
             $onProgress?->__invoke('layout', '레이아웃 갱신 중...');
@@ -4490,7 +4585,13 @@ class ModuleManager implements ModuleManagerInterface
             $this->clearAllTemplateRoutesCaches();
             $this->incrementExtensionCacheVersion();
             RouteCacheHelper::rebuild();
-            self::invalidateModuleStatusCache();
+
+            // 훅 캐시 재생성 — Updating 창 안의 updateComposerAutoload() 가 구운 훅 캐시에는
+            // 그 시점 이 모듈이 Updating(=비활성)으로 판정되어 리스너가 통째로 빠져 있을 수 있다.
+            // 훅 캐시 폴백은 파일 부재/손상에만 작동하므로 내용이 stale 한 경우는 조용히 통과한다.
+            // 상태를 복원하고 상태 캐시를 비운 지금 다시 구워야 그 누락이 교정된다.
+            // updateComposerAutoload() 전체를 재호출하지 않는다 — composer autoload 병합은 이미 끝났고 비싸다.
+            $this->extensionManager->regenerateHookCache();
 
             // 훅 발행: 모듈 업데이트 완료 (Artisan 직접 호출 시에도 리스너 트리거)
             HookManager::doAction('core.modules.updated', $identifier);

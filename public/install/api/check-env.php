@@ -5,14 +5,12 @@
  *
  * Step 5 진입 시 JavaScript에서 호출하여 .env 파일의
  * 존재 여부 및 쓰기 가능 여부를 확인합니다.
- *
- * @package G7\Installer
  */
 
 // 필수 파일 include
-require_once __DIR__ . '/../includes/config.php';
-require_once __DIR__ . '/../includes/functions.php';
-require_once __DIR__ . '/_guard.php';
+require_once __DIR__.'/../includes/config.php';
+require_once __DIR__.'/../includes/functions.php';
+require_once __DIR__.'/_guard.php';
 installer_guard_or_410();
 
 // JSON 응답 헤더
@@ -21,14 +19,14 @@ header('Content-Type: application/json; charset=utf-8');
 // GET 요청만 허용
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     http_response_code(405);
-    echo json_encode([
+    echo installer_json_encode([
         'success' => false,
         'message' => 'Only GET requests are allowed.',
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
-$envPath = BASE_PATH . '/.env';
+$envPath = BASE_PATH.'/.env';
 
 // 소유자 === 웹 서버 사용자 여부 판별 (chgrp/sudo 생략 기준)
 $webUser = getWebServerUser();
@@ -37,7 +35,7 @@ $baseOwner = function_exists('posix_getpwuid') && function_exists('posix_getuid'
     : null;
 $ownerIsWebUser = $webUser && $baseOwner && $webUser === $baseOwner;
 
-echo json_encode([
+echo installer_json_encode([
     'env_exists' => file_exists($envPath),
     'env_writable' => file_exists($envPath) && is_writable($envPath),
     'path' => BASE_PATH,
