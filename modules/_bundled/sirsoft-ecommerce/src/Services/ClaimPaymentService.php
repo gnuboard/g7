@@ -23,6 +23,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderExchangeRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderReturnRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Services\Concerns\MasksSensitiveResponse;
 
 /**
  * 클레임 추가결제 서비스 (S5)
@@ -67,6 +68,8 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderReturnRepositoryInterf
  */
 class ClaimPaymentService
 {
+    use MasksSensitiveResponse;
+
     /** 결제 대기 건 취소 사유 — 신청서가 종결되어 함께 정리 */
     public const CANCEL_REASON_CLAIM_FINALIZED = 'claim_finalized';
 
@@ -381,7 +384,7 @@ class ClaimPaymentService
             $this->paymentRepository->update($locked, [
                 'pg_error_code' => $result['error_code'] ?? null,
                 'pg_error_message' => $result['error_message'] ?? null,
-                'raw_response' => $result['raw_response'] ?? null,
+                'raw_response' => $this->sanitizeResponse($result['raw_response'] ?? null),
             ]);
 
             Log::warning('[claim.payment] PG 승인 실패', [
@@ -400,7 +403,7 @@ class ClaimPaymentService
                 'pg_error_code' => 'AMOUNT_MISMATCH',
                 // 금액은 에러 사유가 아니다 — 대사에 쓴 값은 raw_response 와 아래 로그에 남기고
                 // 이 컬럼에는 사유만 둔다(컬럼 의미를 흐리면 운영자 화면이 금액을 사유로 읽는다).
-                'raw_response' => $result['raw_response'] ?? null,
+                'raw_response' => $this->sanitizeResponse($result['raw_response'] ?? null),
             ]);
 
             Log::warning('[claim.payment] PG 승인 금액 불일치', [
@@ -415,7 +418,7 @@ class ClaimPaymentService
         $paid = $this->paymentRepository->update($locked, [
             'payment_status' => ClaimPaymentStatusEnum::PAID,
             'transaction_id' => $result['transaction_id'] ?? null,
-            'raw_response' => $result['raw_response'] ?? null,
+            'raw_response' => $this->sanitizeResponse($result['raw_response'] ?? null),
             'pg_error_code' => null,
             'pg_error_message' => null,
             'paid_at' => Carbon::now(),

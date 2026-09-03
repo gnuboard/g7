@@ -40,7 +40,7 @@
 **요청 예시**
 
 ```http
-POST /api/modules/sirsoft-ecommerce/user/claim-payments/CP20260823000001/pay HTTP/1.1
+POST /api/modules/sirsoft-ecommerce/user/claim-payments/CP20260823-1435226549/pay HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -70,7 +70,7 @@ Content-Type: application/json
     "data": {
         "payment": {
             "id": 12,
-            "payment_number": "CP20260823000001",
+            "payment_number": "CP20260823-1435226549",
             "payable_type": "return",
             "payable_id": 31,
             "payment_method": "card",
@@ -87,13 +87,13 @@ Content-Type: application/json
         "pg_provider": "sirsoft-kginicis",
         "pg_payment_handler": "sirsoft-pay_kginicis.requestPayment",
         "pg_payment_data": {
-            "order_number": "CP20260823000001",
-            "order_name": "반품 추가결제 (RT20260823000007)",
+            "order_number": "CP20260823-1435226549",
+            "order_name": "반품 추가결제 (RT20260823-1402331875)",
             "amount": 3000,
             "currency": "KRW",
-            "claim_payment_number": "CP20260823000001",
+            "claim_payment_number": "CP20260823-1435226549",
             "claim_type": "return",
-            "claim_number": "RT20260823000007",
+            "claim_number": "RT20260823-1402331875",
             "customer_name": "홍길동",
             "customer_email": "user@example.com",
             "customer_phone": "01012345678",
@@ -137,7 +137,7 @@ Content-Type: application/json
 **요청 예시**
 
 ```http
-POST /api/modules/sirsoft-ecommerce/user/claim-payments/CP20260823000001/approve HTTP/1.1
+POST /api/modules/sirsoft-ecommerce/user/claim-payments/CP20260823-1435226549/approve HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -146,7 +146,7 @@ Content-Type: application/json
 {
     "callback": {
         "paymentKey": "tviva2026...",
-        "orderId": "CP20260823000001",
+        "orderId": "CP20260823-1435226549",
         "amount": 3000
     }
 }
@@ -167,13 +167,13 @@ Content-Type: application/json
     "data": {
         "payment": {
             "id": 12,
-            "payment_number": "CP20260823000001",
+            "payment_number": "CP20260823-1435226549",
             "payment_method": "card",
             "pg_provider": "kginicis",
             "payment_status": "paid",
             "amount": 3000,
             "amount_formatted": "3,000원",
-            "transaction_id": "TXN-20260823-0001",
+            "transaction_id": "StdpayCARDSIRSOFT001202608231435226549",
             "is_paid": true,
             "paid_at_formatted": "2026-08-23 14:02"
         }
@@ -257,6 +257,7 @@ Content-Type: application/json
 
 1. **판별** — 주문번호 자리의 값이 클레임 결제인지는 `ClaimPayment::isClaimPaymentNumber($number)`
    로 판별하고, `ClaimPaymentRepositoryInterface::findByPaymentNumber()` 로 되찾습니다.
+
 2. **승인 위임** — 콜백 컨트롤러는 PG 승인을 직접 수행하지 말고
    `ClaimPaymentService::approvePgPayment($payment, $callbackParams)` 에 위임합니다. 그 안에서 위
    `claim_payment.approve` 필터가 발화하므로, 플러그인의 승인 구현은 필터 리스너 **한 곳**이면
@@ -269,6 +270,13 @@ Content-Type: application/json
    `guest/claims/{번호}`)을 구분해 주소를 만듭니다. 쿼리 계약은 성공 `?claim_payment=success`,
    실패 `?claim_payment=failed&error={code}`, 사용자가 결제창을 스스로 닫은 중단은
    `?claim_payment=cancelled`(`::cancelled($payment)` — 오류 안내 없이 재시도만 열어 둡니다) 입니다.
+
+> **결제 통화가 여러 갈래인 PG 는 그 갈래마다 확장해야 합니다.** 플러그인이 결제 통화로 결제창
+> 경로를 가르면(예: KG 이니시스는 KRW=국내 표준결제 / JPY=일본 CBT), 클레임 결제도 같은 기준으로
+> 갈립니다 — 주문 결제만 그 갈래를 갖추고 클레임 결제는 한쪽만 갖추면, 다른 통화 기준 상점에서
+> 클레임 결제창이 열리지도 않은 채 대상 미존재로 끝납니다. 그 실패는 결제 전 단계라 결제행도
+> 로그도 남지 않아 원인이 드러나지 않습니다. **환급 경로도 같은 기준으로 갈라야 합니다** — 승인은
+> 한 갈래로 갔는데 환급이 다른 갈래로 가면 그 거래를 찾지 못해 구매자가 환급을 받지 못합니다.
 
 결제창 진입 **전** 검증 지점(서명 발급·승인키 발급처럼 주문을 조회해 금액을 대조하는 엔드포인트)도
 같은 판별로 분기해야 결제창 자체가 열립니다. 클레임 결제 건의 기대 청구액은

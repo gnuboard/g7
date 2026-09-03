@@ -4,6 +4,8 @@ namespace Modules\Sirsoft\Ecommerce\Repositories;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Models\ClaimImage;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimImageRepositoryInterface;
 
@@ -20,11 +22,43 @@ class ClaimImageRepository implements ClaimImageRepositoryInterface
     ) {}
 
     /**
+     * 해시 충돌 재시도 횟수 — 채번(`SequenceService`)과 같은 방어 형태다.
+     */
+    private const HASH_COLLISION_RETRIES = 3;
+
+    /**
      * {@inheritDoc}
+     *
+     * `hash` 는 `ClaimImage::generateHash()` 가 "조회 후 삽입" 으로 만든다. 그 사이에 다른
+     * 요청이 같은 값을 넣으면 UNIQUE 제약이 걸리는데, 그대로 두면 업로드가 500 이 된다 —
+     * 사용자에게는 원인 없는 실패이고 방금 올린 파일도 되돌려진다. 제약 위반(SQLSTATE 23000)
+     * 이면 해시를 비워 다시 채번하고 재시도한다(모델의 `creating` 훅이 새 값을 만든다).
+     *
+     * 이 테이블의 UNIQUE 는 `hash` 하나뿐이라 23000 은 곧 해시 충돌이다. 호출부가 해시를
+     * 직접 넘긴 경우에는 그 값이 의도이므로 재채번하지 않고 그대로 올려보낸다.
      */
     public function create(array $data): ClaimImage
     {
-        return $this->model->create($data);
+        $callerSuppliedHash = array_key_exists('hash', $data) && ! empty($data['hash']);
+
+        for ($attempt = 0; ; $attempt++) {
+            try {
+                return $this->model->create($data);
+            } catch (QueryException $e) {
+                // getCode() 가 int/string 을 오가므로 느슨한 비교를 쓴다 (SequenceService 와 동일).
+                if ($callerSuppliedHash || $e->getCode() != 23000 || $attempt >= self::HASH_COLLISION_RETRIES) {
+                    throw $e;
+                }
+
+                Log::warning('[claim.image] 첨부 해시 충돌 — 재채번 후 재시도', [
+                    'attempt' => $attempt + 1,
+                    'claimable_type' => $data['claimable_type'] ?? null,
+                    'claimable_id' => $data['claimable_id'] ?? null,
+                ]);
+
+                unset($data['hash']);
+            }
+        }
     }
 
     /**

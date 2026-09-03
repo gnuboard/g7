@@ -2217,7 +2217,7 @@ _단건 응답: `data` 객체의 필드._
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | id | integer | `4` | 기본 키 (내부 식별자) |
-| order_number | string | `APIDOC-20260708-000001` | 주문번호 |
+| order_number | string | `APIDOC-20260708-1005224318` | 주문번호 |
 | base_currency | string | `KRW` | 금액 표기 기준 통화 (모든 *_formatted 필드의 통화, 주문 시점 base_currency 고정) |
 | payment_currency | string | `KRW` | 결제 통화 (유저가 선택·결제한 통화, base_currency 와 다르면 병기 표시) |
 | is_cross_currency | boolean | `false` | cross currency 여부 |
@@ -3053,7 +3053,7 @@ _단건 응답: `data` 객체의 필드._
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | id | integer | `4` | 기본 키 (내부 식별자) |
-| order_number | string | `APIDOC-20260708-000001` | 주문번호 |
+| order_number | string | `APIDOC-20260708-1005224318` | 주문번호 |
 | base_currency | string | `KRW` | 금액 표기 기준 통화 (모든 *_formatted 필드의 통화, 주문 시점 base_currency 고정) |
 | payment_currency | string | `KRW` | 결제 통화 (유저가 선택·결제한 통화, base_currency 와 다르면 병기 표시) |
 | is_cross_currency | boolean | `false` | cross currency 여부 |
@@ -3321,7 +3321,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | 필드 | 타입 | 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | order_id | integer | `120` | 주문 ID |
-| order_number | string | `20260823-0012` | 주문번호 |
+| order_number | string | `20260823-1130558472` | 주문번호 |
 | resolved_type | string\|null | `null` | 취소·환불 신청이 열리는 상품들의 분기 — 전부 즉시취소면 `cancel`, 전부 환불신청이면 `refund`, 섞여 있으면 `mixed`, 열린 상품이 없으면 `null` |
 | options[].option | object | — | 주문 옵션 (`OrderOptionResource`, 취소된 옵션은 제외) |
 | options[].available_quantity | integer | `1` | 지금 신청할 수 있는 잔여 수량 (옵션 수량 − 진행 중 클레임 점유 수량) |
@@ -3353,7 +3353,7 @@ Authorization: Bearer {YOUR_TOKEN}
     "message": "신청 가능 상품을 조회했습니다.",
     "data": {
         "order_id": 120,
-        "order_number": "20260823-0012",
+        "order_number": "20260823-1130558472",
         "resolved_type": null,
         "options": [
             {
@@ -3577,7 +3577,7 @@ Content-Type: application/json
     "message": "신청이 접수되었습니다.",
     "data": {
         "claim": {
-            "claim_number": "EX20260823000003",
+            "claim_number": "EX20260823-1349207731",
             "claim_type": "exchange",
             "status": "payment_pending",
             "total_charge_amount": 8000,
@@ -3585,13 +3585,13 @@ Content-Type: application/json
             "items": [ { "order_option_id": 310, "quantity": 1, "is_option_change": true, "new_option_label": "화이트 / L", "price_difference": 2000 } ],
             "images": [ { "id": 9, "claimable_type": "exchange", "claimable_id": 17 } ],
             "outstanding_amount": 8000,
-            "pending_payment": { "payment_number": "CP20260823000002" }
+            "pending_payment": { "payment_number": "CP20260823-1512087213" }
         },
-        "payment": { "payment_number": "CP20260823000002", "payment_status": "pending", "total_amount": 8000 },
+        "payment": { "payment_number": "CP20260823-1512087213", "payment_status": "pending", "total_amount": 8000 },
         "requires_pg_payment": true,
         "pg_provider": "sirsoft-kginicis",
         "pg_payment_handler": "sirsoft-pay_kginicis.requestPayment",
-        "pg_payment_data": { "order_number": "CP20260823000002", "amount": 8000, "currency": "KRW", "claim_type": "exchange", "claim_number": "EX20260823000003" }
+        "pg_payment_data": { "order_number": "CP20260823-1512087213", "amount": 8000, "currency": "KRW", "claim_type": "exchange", "claim_number": "EX20260823-1349207731" }
     }
 }
 ```
@@ -3660,7 +3660,7 @@ Content-Type: application/json
     "message": "신청이 접수되었습니다.",
     "data": {
         "claim": {
-            "claim_number": "RT20260823000007",
+            "claim_number": "RT20260823-1402331875",
             "claim_type": "return",
             "status": "requested",
             "charge_method": "deduct_from_refund",
@@ -3739,7 +3739,7 @@ Content-Type: application/json
     "data": {
         "branch": "cancel",
         "claim": {
-            "claim_number": "CN20260823000004",
+            "claim_number": "CN20260823-1421669305",
             "claim_type": "cancel",
             "status": "completed",
             "cancel_type": "full",

@@ -17,7 +17,11 @@ use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
  * 클레임 결제 건을 환급합니다. 계약은 이커머스 모듈 `docs/api/claim-payments.md`
  * "결제 플러그인 연동 계약 (필터 훅)" 절이 단일 출처입니다.
  *
- * 클레임 결제는 표준결제(KRW)로만 만들어지므로 주문 환불의 CBT(해외결제) 분기는 없다.
+ * 승인 경로가 둘이므로 환급도 둘이다 — 국내 표준결제(KRW)는 INIAPI 취소, 일본 CBT(JPY)는
+ * CBT 환불 API 를 쓴다. 승인 통화로 갈라며(`resolvePaymentCharge`), 그 판정은 결제창을
+ * 어느 경로로 열었는지를 정한 값과 같은 출처다 — 한쪽만 보면 엔화로 받은 돈을 국내 API 로
+ * 되돌리려다 실패해 구매자가 환급을 못 받는다.
+ *
  * INIAPI 취소에는 멱등키 헤더가 없어 `$idempotencyKey` 는 로그로만 남긴다 — 중복 방어는
  * 모듈의 잔액 재계산(누적 환급액)과 PG 쪽 중복 취소 거절이 맡는다.
  */
@@ -84,14 +88,23 @@ class ClaimPaymentRefundListener implements HookListenerInterface
             $previousCancelled = (int) round($this->refundedLocalTotal($payment));
             $totalAmount = max($cancelAmt, $paidLocal - $previousCancelled);
             $isPartial = $previousCancelled > 0 || $cancelAmt < $paidLocal;
+            $refundReason = $reason ?? __('sirsoft-pay_kginicis::messages.refund.default_reason');
 
-            $response = $apiService->cancelPayment(
-                $tid,
-                (string) ($payment->raw_response['payMethod'] ?? 'Card'),
-                $isPartial ? $cancelAmt : null,
-                $reason ?? __('sirsoft-pay_kginicis::messages.refund.default_reason'),
-                $isPartial ? $totalAmount : null,
-            );
+            // 엔화로 받은 건은 CBT 환불 API 로 되돌린다 — 국내 취소 API 는 그 거래를 모른다.
+            $response = $this->isCbtPayment($payment)
+                ? $apiService->refundCbtPayment(
+                    $tid,
+                    $isPartial ? $cancelAmt : null,
+                    $refundReason,
+                    $isPartial ? $totalAmount : null,
+                )
+                : $apiService->cancelPayment(
+                    $tid,
+                    (string) ($payment->raw_response['payMethod'] ?? 'Card'),
+                    $isPartial ? $cancelAmt : null,
+                    $refundReason,
+                    $isPartial ? $totalAmount : null,
+                );
 
             Log::info('KG Inicis: claim payment refund success', [
                 'payment_number' => $payment->payment_number,
@@ -155,6 +168,23 @@ class ClaimPaymentRefundListener implements HookListenerInterface
         }
 
         $apiService->useStoredCredentials(! str_starts_with($mid, 'SIR'), $mid);
+    }
+
+    /**
+     * 이 결제 건이 CBT(일본 엔화) 경로로 승인됐는지 판정합니다.
+     *
+     * 결제창을 어느 경로로 열지 정한 값과 **같은 출처**(승인 통화)로 판정한다 — 승인은
+     * CBT 로 갔는데 환급만 국내 API 로 가면 그 거래를 찾지 못해 실패한다. 통화를 읽지
+     * 못하면 국내 경로로 떨어진다(종전 동작 보존).
+     *
+     * @param  ClaimPayment  $payment  결제 건
+     * @return bool CBT 결제 여부
+     */
+    private function isCbtPayment(ClaimPayment $payment): bool
+    {
+        $charge = app(ClaimPaymentService::class)->resolvePaymentCharge($payment);
+
+        return $charge !== null && strtoupper((string) $charge['currency']) === 'JPY';
     }
 
     /**

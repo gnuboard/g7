@@ -92,7 +92,14 @@ trait HandlesClaimPaymentCallbacks
 
         $payment->loadMissing('order');
 
-        if ((int) ($payment->order?->user_id ?? 0) !== (int) ($request->user()?->id ?? 0)) {
+        // 부모를 못 읽으면(soft-delete 등) 통과가 아니라 차단이다 — `?->user_id ?? 0` 은
+        // 주문이 사라진 결제 건에서 열람자 판정을 0 == 0 으로 접어 통과시킨다. 지금은 라우트가
+        // `auth:sanctum` 이라 오른쪽이 0 이 될 수 없어 실질은 닫혀 있지만, 그 방어가 이 함수
+        // 밖의 조건에 얹혀 있는 형태다. 형제 플러그인(kginicis·nicepayments)과 같은 형태로
+        // 이 자리에서 닫는다.
+        $viewerId = (int) ($request->user()?->id ?? 0);
+
+        if (! $payment->order || $viewerId === 0 || (int) $payment->order->user_id !== $viewerId) {
             return response()->json([
                 'success' => false,
                 'error' => 'You cannot request a NHN KCP approval key for this claim payment.',

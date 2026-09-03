@@ -67,6 +67,33 @@ class ClaimPaymentApproveListener implements HookListenerInterface
     ];
 
     /**
+     * CBT(일본 엔화) 승인 응답 보관 화이트리스트
+     */
+    private const CLAIM_CBT_RESPONSE_KEYS = [
+        'resultCode',
+        'resultMsg',
+        'code',
+        'message',
+        'tid',
+        'transactionId',
+        'paymethod',
+        'payMethod',
+        'currency',
+        'currencyCd',
+        'currencyCode',
+        'approve',
+        'applDate',
+        'applTime',
+        'cardCode',
+        'cardName',
+        'mid',
+        'MID',
+        'oid',
+        'orderId',
+        'orderID',
+    ];
+
+    /**
      * 구독할 훅 매핑을 반환합니다.
      *
      * @return array 훅 구독 설정
@@ -103,11 +130,119 @@ class ClaimPaymentApproveListener implements HookListenerInterface
             return $result;
         }
 
+        // CBT(일본 엔화)는 승인 재료가 sid 하나다 — 컨트롤러가 그 값을 `cbt_sid` 로 실어 보낸다.
+        if (! empty($callback['cbt_sid'])) {
+            return $this->approveCbt($payment, $callback);
+        }
+
         if (isset($callback['P_TID'], $callback['P_REQ_URL'])) {
             return $this->approveMobile($payment, $callback);
         }
 
         return $this->approvePc($payment, $callback);
+    }
+
+    /**
+     * CBT(일본 엔화) 승인을 처리합니다. (/cbtapprove — mid + sid)
+     *
+     * 승인 응답에는 신뢰할 금액 필드가 없다(매뉴얼상 미사용). 그래서 `paid_amount` 를 싣지
+     * 않고 모듈의 금액 대조를 건너뛴다 — 금액의 권위는 인증요청 시 보낸 값이고, 그 값은
+     * 컨트롤러가 결제 건의 청구액과 이미 대조했다(주문 CBT 경로와 같은 판정).
+     *
+     * @param  ClaimPayment  $payment  결제 건
+     * @param  array  $callback  CBT 콜백 파라미터 (cbt_sid 필수)
+     * @return array 승인 결과
+     */
+    private function approveCbt(ClaimPayment $payment, array $callback): array
+    {
+        $sid = (string) ($callback['cbt_sid'] ?? '');
+
+        if ($sid === '') {
+            return $this->failure('INVALID_CALLBACK', __('sirsoft-pay_kginicis::messages.claim.invalid_callback'));
+        }
+
+        $apiService = $this->getApiService();
+
+        try {
+            $pgResponse = $apiService->approveCbtPayment($sid);
+            $resultCode = (string) ($pgResponse['resultCode'] ?? ($pgResponse['code'] ?? ''));
+
+            if (! in_array($resultCode, ['OK', '00', '0000'], true)) {
+                return $this->failure(
+                    $resultCode !== '' ? $resultCode : 'AUTHORIZE_FAILED',
+                    (string) ($pgResponse['resultMsg'] ?? ($pgResponse['message'] ?? '')),
+                    $this->sanitizePgResponse($pgResponse, self::CLAIM_CBT_RESPONSE_KEYS),
+                );
+            }
+
+            $tid = (string) ($pgResponse['tid'] ?? ($pgResponse['transactionId'] ?? ''));
+
+            if ($tid === '') {
+                return $this->failure(
+                    'AUTHORIZE_FAILED',
+                    'KG Inicis CBT approve response missing tid.',
+                    $this->sanitizePgResponse($pgResponse, self::CLAIM_CBT_RESPONSE_KEYS),
+                );
+            }
+
+            $payMethod = strtoupper(trim((string) ($pgResponse['paymethod'] ?? $callback['paymethod'] ?? '')));
+
+            // 편의점(CVS)은 입금 대기 수단이다 — 클레임 결제 상태 모델에 대기 상태가 없어
+            // 발급을 그대로 두면 입금해도 확정할 경로가 없다. 국내 가상계좌와 같은 판정으로
+            // 거절하고, 발급된 건은 환불 API 로 되돌린다.
+            if ($payMethod === 'CVS') {
+                $this->refundCbtQuietly($apiService, $tid, $payment);
+
+                return $this->failure(
+                    'CLAIM_DEPOSIT_METHOD_NOT_SUPPORTED',
+                    __('sirsoft-pay_kginicis::messages.claim.deposit_not_supported'),
+                    $this->sanitizePgResponse($pgResponse, self::CLAIM_CBT_RESPONSE_KEYS),
+                );
+            }
+
+            Log::info('KG Inicis: claim payment approved (cbt)', [
+                'payment_number' => $payment->payment_number,
+                'tid' => $tid,
+            ]);
+
+            return [
+                'handled' => true,
+                'success' => true,
+                'transaction_id' => $tid,
+                // CBT 승인 응답에 금액이 없다 — null 이면 모듈이 금액 대조를 건너뛴다.
+                'paid_amount' => null,
+                'raw_response' => $this->sanitizePgResponse($pgResponse, self::CLAIM_CBT_RESPONSE_KEYS),
+                'error_code' => null,
+                'error_message' => null,
+            ];
+        } catch (\Exception $e) {
+            Log::error('KG Inicis: claim payment authorize exception (cbt)', [
+                'payment_number' => $payment->payment_number,
+                'error' => $e->getMessage(),
+            ]);
+
+            return $this->failure('PG_API_ERROR', $e->getMessage());
+        }
+    }
+
+    /**
+     * CBT 승인 건을 환불 API 로 조용히 되돌립니다. (보상 — 실패해도 흐름은 지속)
+     *
+     * @param  KgInicisApiService  $apiService  API 서비스
+     * @param  string  $tid  거래번호
+     * @param  ClaimPayment  $payment  결제 건 (로그 문맥)
+     */
+    private function refundCbtQuietly(KgInicisApiService $apiService, string $tid, ClaimPayment $payment): void
+    {
+        try {
+            $apiService->refundCbtPayment($tid, null, __('sirsoft-pay_kginicis::messages.claim.compensation_cancel_reason'));
+        } catch (\Exception $e) {
+            Log::error('KG Inicis: claim cbt compensation refund failed', [
+                'payment_number' => $payment->payment_number,
+                'tid' => $tid,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

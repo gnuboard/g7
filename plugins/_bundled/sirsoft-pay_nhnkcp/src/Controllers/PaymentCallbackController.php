@@ -214,11 +214,19 @@ class PaymentCallbackController
                 return redirect($this->resolveFailUrl(['error' => 'claim_payment_not_found', 'orderId' => $ordrIdxx]));
             }
 
-            return ClaimPaymentCallback::approveAndRedirect(
-                $claimPayment,
-                $validated + ['cust_ip' => $custIp],
-                fn () => $this->cancelClaimApprovalQuietly($claimPayment, $goodMny),
-            );
+            // 주문 경로와 같은 직렬화 락을 건다 — 같은 콜백이 겹쳐 들어오는 것을 PG 의 중복
+            // 승인 거절에만 맡기면 방어 층이 주문 경로와 달라진다. 키는 결제번호(CP)다.
+            $claimLock = $this->acquireOrderCallbackLock('authCallback', $ordrIdxx);
+
+            try {
+                return ClaimPaymentCallback::approveAndRedirect(
+                    $claimPayment,
+                    $validated + ['cust_ip' => $custIp],
+                    fn () => $this->cancelClaimApprovalQuietly($claimPayment, $goodMny),
+                );
+            } finally {
+                $this->releaseOrderCallbackLock($claimLock);
+            }
         }
 
         try {

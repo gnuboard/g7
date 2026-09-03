@@ -36,8 +36,10 @@ return new class extends Migration
                 ->constrained('users')->nullOnDelete();
             $table->timestamps();
 
-            $table->index(['claimable_type', 'claimable_id'], 'ecommerce_claim_images_claimable_index');
-            $table->index('sort_order', 'ecommerce_claim_images_sort_order_index');
+            // 첨부는 언제나 귀속 대상으로 먼저 좁힌 뒤 sort_order 로 정렬한다
+            // (`ClaimImageRepository` 의 조회 전건). sort_order 단독 인덱스는 그 순서에서
+            // 선두가 될 수 없어 쓰이지 않으므로 두지 않고, 정렬까지 복합 인덱스가 받는다.
+            $table->index(['claimable_type', 'claimable_id', 'sort_order'], 'ecommerce_claim_images_claimable_index');
         });
 
         if (DB::getDriverName() === 'mysql') {

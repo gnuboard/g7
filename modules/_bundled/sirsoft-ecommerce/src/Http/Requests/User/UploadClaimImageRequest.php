@@ -37,9 +37,13 @@ class UploadClaimImageRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // `image` 룰만으로는 SVG 가 통과한다 — 저장된 파일은 운영자가 열람하고 서빙은
-            // inline 이라 스크립트를 담은 SVG 가 동일 오리진에서 실행된다. 확장자는 클라이언트가
-            // 준 값이 그대로 저장 경로에 쓰이므로 허용 목록을 명시한다(상품 이미지 축과 동일).
+            // 허용 목록은 **내용**을 좁힌다 — `mimes` 의 통과 판정은 `guessExtension()` 기반이라
+            // 클라이언트가 준 확장자를 보지 않는다(그 값을 보는 것은 내부의 `shouldBlockPhpUpload()`
+            // 뿐이며 대상도 php 계열에 한정된다). `image` 룰도 Laravel 11 이후 SVG 를 기본 제외하고
+            // 같은 php 차단을 경유하므로, 여기서 `mimes` 가 더하는 것은 bmp 를 받지 않는 것이다.
+            //
+            // 저장 경로의 확장자 방어는 이 룰이 아니라 저장 지점이 맡는다
+            // (`ClaimAttachmentService` 의 `storedExtension()` — 내용 기준으로 정한다).
             'image' => ['required', 'file', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:'.$this->maxSizeKb()],
         ];
     }

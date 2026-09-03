@@ -199,11 +199,19 @@ class MobileCallbackController
                 return redirect($this->resolveFailUrl(['error' => 'claim_payment_not_found', 'orderId' => $moid]));
             }
 
-            return ClaimPaymentCallback::approveAndRedirect(
-                $payment,
-                $validated,
-                fn () => $this->cancelClaimApprovalQuietly($payment),
-            );
+            // 주문 경로와 같은 직렬화 락을 건다 — 같은 콜백이 겹쳐 들어오는 것을 PG 의 중복
+            // 승인 거절에만 맡기면 방어 층이 주문 경로와 달라진다. 키는 결제번호(CP)다.
+            $claimLock = $this->acquireOrderCallbackLock('mobileAuthCallback', $moid);
+
+            try {
+                return ClaimPaymentCallback::approveAndRedirect(
+                    $payment,
+                    $validated,
+                    fn () => $this->cancelClaimApprovalQuietly($payment),
+                );
+            } finally {
+                $this->releaseOrderCallbackLock($claimLock);
+            }
         }
 
         // Approve 성공 후 후속 처리 실패 시 PG 측 자동 cancel 을 위한 추적 변수.

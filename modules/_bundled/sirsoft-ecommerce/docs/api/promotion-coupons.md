@@ -981,7 +981,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 (`CouponIssueResource`) + 
 | expired_at | string\|null | `2026-07-31 23:59:59` | 만료 일시 (사용자 타임존 포맷, 없으면 null) |
 | used_at | string\|null | `null` | 사용 일시 (미사용 시 null) |
 | order_id | integer\|null | `null` | 쿠폰이 사용된 주문 ID (미사용 시 null) |
-| order_number | string\|null | `20260708-0001` | 사용된 주문의 주문번호 (order 관계 로드 시) |
+| order_number | string\|null | `20260708-1017395602` | 사용된 주문의 주문번호 (order 관계 로드 시) |
 | discount_amount | number\|null | `null` | 실제 적용된 할인 금액 (기본 통화 자릿수로 반올림, 미사용 시 null) |
 | is_used | boolean | `false` | 사용 완료 여부 (`status === 'used'`) |
 | is_expired | boolean | `false` | 만료 여부 |

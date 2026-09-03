@@ -13,6 +13,7 @@ use Illuminate\Support\Str;
 use Modules\Sirsoft\Ecommerce\Models\CategoryImage;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CategoryImageRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesRowStorage;
+use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesStoredExtension;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -23,6 +24,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class CategoryImageService
 {
     use ResolvesRowStorage;
+    use ResolvesStoredExtension;
 
     /**
      * CategoryImageService 생성자
@@ -67,7 +69,7 @@ class CategoryImageService
         $file = HookManager::applyFilters('sirsoft-ecommerce.category-image.filter_upload_file', $file);
 
         // 저장 경로 생성 (category + 날짜별 디렉토리)
-        $storedFilename = Str::uuid().'.'.$file->getClientOriginalExtension();
+        $storedFilename = Str::uuid().'.'.$this->storedExtension($file);
         $datePath = date('Y/m/d');
         $path = "category/{$datePath}/{$storedFilename}";
 

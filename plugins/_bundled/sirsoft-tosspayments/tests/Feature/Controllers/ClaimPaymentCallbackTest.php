@@ -126,7 +126,7 @@ class ClaimPaymentCallbackTest extends PluginTestCase
         ]));
 
         // 주문 완료 페이지가 아니라 회원 신청서 상세로 돌아간다 — order_not_found 분기를 타지 않는다.
-        $response->assertRedirect("/mypage/claims/{$return->return_number}?claim_payment=success");
+        $response->assertRedirect("/mypage/claims/{$return->return_number}?claim_payment=success&claim_number={$return->return_number}");
 
         $fresh = $payment->fresh();
         $this->assertSame(ClaimPaymentStatusEnum::PAID, $fresh->payment_status);
@@ -145,7 +145,7 @@ class ClaimPaymentCallbackTest extends PluginTestCase
             'amount' => 3000,
         ]));
 
-        $response->assertRedirect("/shop/guest/claims/{$return->return_number}?claim_payment=success");
+        $response->assertRedirect("/shop/guest/orders?claim_payment=success&claim_number={$return->return_number}");
         $this->assertSame(ClaimPaymentStatusEnum::PAID, $payment->fresh()->payment_status);
     }
 
@@ -166,7 +166,7 @@ class ClaimPaymentCallbackTest extends PluginTestCase
             'amount' => 3000,
         ]));
 
-        $response->assertRedirect("/mypage/claims/{$return->return_number}?claim_payment=failed&error=failed");
+        $response->assertRedirect("/mypage/claims/{$return->return_number}?claim_payment=failed&error=failed&claim_number={$return->return_number}");
         $this->assertSame(ClaimPaymentStatusEnum::PENDING, $payment->fresh()->payment_status);
     }
 
@@ -182,7 +182,7 @@ class ClaimPaymentCallbackTest extends PluginTestCase
         ]));
 
         // 사용자 취소는 실패가 아니다 — 오류 파라미터 없이 신청서 상세로 복귀한다.
-        $response->assertRedirect("/mypage/claims/{$return->return_number}?claim_payment=cancelled");
+        $response->assertRedirect("/mypage/claims/{$return->return_number}?claim_payment=cancelled&claim_number={$return->return_number}");
         $this->assertSame(ClaimPaymentStatusEnum::PENDING, $payment->fresh()->payment_status);
     }
 }

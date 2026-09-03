@@ -55,7 +55,7 @@ _단건 응답: `data` 객체의 필드._
 | guest_order_token | string | `eyJpdiI6...` | 비회원 주문 조회 토큰 (30분 유효). 이후 비회원 주문 상세/취소/환불예상 호출 시 `X-Guest-Order-Token` 헤더로 전달 |
 | expires_at | string | `2026-07-14T15:02:11+09:00` | 토큰 만료 일시 (ISO 8601) |
 | order | object | — | 최소 주문 요약 (상세는 토큰 보호 엔드포인트에서 제공) |
-| order.order_number | string | `20260714000012` | 인증된 주문의 주문번호 |
+| order.order_number | string | `20260714-1032557148` | 인증된 주문의 주문번호 |
 | order.order_status | string | `payment_complete` | 주문 상태 (`pending_order`, `pending_payment`, `payment_complete`, `shipping_hold`, `preparing`, `shipping_ready`, `shipping`, `delivered`, `confirmed`, `cancelled`, `exchange_in_progress`, `return_in_progress`, `exchanged`, `returned`) |
 
 **응답 예시**
@@ -68,7 +68,7 @@ _단건 응답: `data` 객체의 필드._
         "guest_order_token": "eyJpdiI6...",
         "expires_at": "2026-07-14T15:02:11+09:00",
         "order": {
-            "order_number": "20260714000012",
+            "order_number": "20260714-1032557148",
             "order_status": "payment_complete"
         }
     }
@@ -129,7 +129,7 @@ _단건 응답: `data` 객체의 필드 (`GuestOrderResource` — 취소 후 갱
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| order_number | string | `20260714000012` | 주문번호 |
+| order_number | string | `20260714-1032557148` | 주문번호 |
 | order_status | string | `cancelled` | 주문 상태 (`pending_order`, `pending_payment`, `payment_complete`, `shipping_hold`, `preparing`, `shipping_ready`, `shipping`, `delivered`, `confirmed`, `cancelled`, `exchange_in_progress`, `return_in_progress`, `exchanged`, `returned`) |
 | order_status_label | string\|null | `주문취소` | 주문 상태의 다국어 라벨 |
 | order_status_variant | string\|null | `danger` | 주문 상태 뱃지 표시용 variant |
@@ -202,7 +202,7 @@ _단건 응답: `data` 객체의 필드 (`GuestOrderResource` — 취소 후 갱
     "success": true,
     "message": "주문이 취소되었습니다.",
     "data": {
-        "order_number": "20260714000012",
+        "order_number": "20260714-1032557148",
         "order_status": "cancelled",
         "order_status_label": "주문취소",
         "order_status_variant": "danger",
@@ -602,7 +602,7 @@ _단건 응답: `data` 객체의 필드 (`GuestOrderResource` — 구매확정 �
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| order_number | string | `20260714000012` | 주문번호 |
+| order_number | string | `20260714-1032557148` | 주문번호 |
 | order_status | string | `confirmed` | 구매확정 반영된 주문 상태 |
 | order_status_label | string\|null | `구매확정` | 주문 상태의 다국어 라벨 |
 | confirmed_at | string\|null | `2026-07-14T16:10:03+09:00` | 구매확정 일시 (ISO 8601) |
@@ -617,7 +617,7 @@ _단건 응답: `data` 객체의 필드 (`GuestOrderResource` — 구매확정 �
     "success": true,
     "message": "구매확정이 완료되었습니다.",
     "data": {
-        "order_number": "20260714000012",
+        "order_number": "20260714-1032557148",
         "order_status": "confirmed",
         "order_status_label": "구매확정",
         "order_status_variant": "success",
@@ -705,7 +705,7 @@ _단건 응답: `data` 객체의 필드 (`GuestOrderResource` — 배송지 수�
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| order_number | string | `20260714000012` | 주문번호 |
+| order_number | string | `20260714-1032557148` | 주문번호 |
 | recipient_name | string\|null | `홍길동` | 수정 반영된 수령인 이름 |
 | recipient_phone | string\|null | `010-1234-5678` | 수정 반영된 수령인 연락처 |
 | recipient_zipcode | string\|null | `06234` | 수정 반영된 우편번호 |
@@ -722,7 +722,7 @@ _단건 응답: `data` 객체의 필드 (`GuestOrderResource` — 배송지 수�
     "success": true,
     "message": "배송지가 변경되었습니다.",
     "data": {
-        "order_number": "20260714000012",
+        "order_number": "20260714-1032557148",
         "order_status": "payment_complete",
         "order_status_label": "결제완료",
         "recipient_name": "홍길동",
@@ -818,7 +818,7 @@ _단건 응답: `data` 객체의 필드 (`GuestOrderResource` — 배송지 수�
 **요청 예시**
 
 ```http
-GET /api/modules/sirsoft-ecommerce/guest/orders/20260823-0012/claimable-options HTTP/1.1
+GET /api/modules/sirsoft-ecommerce/guest/orders/20260823-1130558472/claimable-options HTTP/1.1
 Host: api.example.com
 Accept: application/json
 X-Guest-Order-Token: {GUEST_ORDER_TOKEN}
@@ -854,7 +854,7 @@ X-Guest-Order-Token: {GUEST_ORDER_TOKEN}
 **요청 예시**
 
 ```http
-POST /api/modules/sirsoft-ecommerce/guest/orders/20260823-0012/claims/preview HTTP/1.1
+POST /api/modules/sirsoft-ecommerce/guest/orders/20260823-1130558472/claims/preview HTTP/1.1
 Host: api.example.com
 Accept: application/json
 X-Guest-Order-Token: {GUEST_ORDER_TOKEN}
@@ -899,7 +899,7 @@ Content-Type: application/json
 **요청 예시**
 
 ```http
-POST /api/modules/sirsoft-ecommerce/guest/orders/20260823-0012/exchanges HTTP/1.1
+POST /api/modules/sirsoft-ecommerce/guest/orders/20260823-1130558472/exchanges HTTP/1.1
 Host: api.example.com
 Accept: application/json
 X-Guest-Order-Token: {GUEST_ORDER_TOKEN}
@@ -940,7 +940,7 @@ Content-Type: application/json
 **요청 예시**
 
 ```http
-POST /api/modules/sirsoft-ecommerce/guest/orders/20260823-0012/returns HTTP/1.1
+POST /api/modules/sirsoft-ecommerce/guest/orders/20260823-1130558472/returns HTTP/1.1
 Host: api.example.com
 Accept: application/json
 X-Guest-Order-Token: {GUEST_ORDER_TOKEN}
@@ -976,7 +976,7 @@ Content-Type: application/json
 **요청 예시**
 
 ```http
-POST /api/modules/sirsoft-ecommerce/guest/orders/20260823-0012/refund-requests HTTP/1.1
+POST /api/modules/sirsoft-ecommerce/guest/orders/20260823-1130558472/refund-requests HTTP/1.1
 Host: api.example.com
 Accept: application/json
 X-Guest-Order-Token: {GUEST_ORDER_TOKEN}
@@ -1020,7 +1020,7 @@ Content-Type: application/json
 **요청 예시**
 
 ```http
-GET /api/modules/sirsoft-ecommerce/guest/orders/20260823-0012/claims?type=return&page=1&per_page=20 HTTP/1.1
+GET /api/modules/sirsoft-ecommerce/guest/orders/20260823-1130558472/claims?type=return&page=1&per_page=20 HTTP/1.1
 Host: api.example.com
 Accept: application/json
 X-Guest-Order-Token: {GUEST_ORDER_TOKEN}
@@ -1041,7 +1041,7 @@ X-Guest-Order-Token: {GUEST_ORDER_TOKEN}
     "message": "신청 내역을 조회했습니다.",
     "data": {
         "data": [
-            { "claim_number": "RT20260823000003", "claim_type": "return", "status": "requested" }
+            { "claim_number": "RT20260823-1358024460", "claim_type": "return", "status": "requested" }
         ],
         "pagination": {
             "current_page": 1,
@@ -1082,7 +1082,7 @@ X-Guest-Order-Token: {GUEST_ORDER_TOKEN}
 **요청 예시**
 
 ```http
-GET /api/modules/sirsoft-ecommerce/guest/orders/20260823-0012/claims/RT20260823000007 HTTP/1.1
+GET /api/modules/sirsoft-ecommerce/guest/orders/20260823-1130558472/claims/RT20260823-1402331875 HTTP/1.1
 Host: api.example.com
 Accept: application/json
 X-Guest-Order-Token: {GUEST_ORDER_TOKEN}
@@ -1115,7 +1115,7 @@ X-Guest-Order-Token: {GUEST_ORDER_TOKEN}
 **요청 예시**
 
 ```http
-PATCH /api/modules/sirsoft-ecommerce/guest/orders/20260823-0012/claims/RT20260823000007 HTTP/1.1
+PATCH /api/modules/sirsoft-ecommerce/guest/orders/20260823-1130558472/claims/RT20260823-1402331875 HTTP/1.1
 Host: api.example.com
 Accept: application/json
 X-Guest-Order-Token: {GUEST_ORDER_TOKEN}
@@ -1146,7 +1146,7 @@ Content-Type: application/json
 **요청 예시**
 
 ```http
-POST /api/modules/sirsoft-ecommerce/guest/orders/20260823-0012/claims/RT20260823000007/withdraw HTTP/1.1
+POST /api/modules/sirsoft-ecommerce/guest/orders/20260823-1130558472/claims/RT20260823-1402331875/withdraw HTTP/1.1
 Host: api.example.com
 Accept: application/json
 X-Guest-Order-Token: {GUEST_ORDER_TOKEN}
@@ -1182,7 +1182,7 @@ X-Guest-Order-Token: {GUEST_ORDER_TOKEN}
 **요청 예시**
 
 ```http
-POST /api/modules/sirsoft-ecommerce/guest/orders/20260823-0012/claims/images HTTP/1.1
+POST /api/modules/sirsoft-ecommerce/guest/orders/20260823-1130558472/claims/images HTTP/1.1
 Host: api.example.com
 Accept: application/json
 X-Guest-Order-Token: {GUEST_ORDER_TOKEN}
@@ -1219,7 +1219,7 @@ Content-Type: image/jpeg
 **요청 예시**
 
 ```http
-DELETE /api/modules/sirsoft-ecommerce/guest/orders/20260823-0012/claims/images/9 HTTP/1.1
+DELETE /api/modules/sirsoft-ecommerce/guest/orders/20260823-1130558472/claims/images/9 HTTP/1.1
 Host: api.example.com
 Accept: application/json
 X-Guest-Order-Token: {GUEST_ORDER_TOKEN}
@@ -1252,7 +1252,7 @@ X-Guest-Order-Token: {GUEST_ORDER_TOKEN}
 **요청 예시**
 
 ```http
-POST /api/modules/sirsoft-ecommerce/guest/orders/20260823-0012/claim-payments/CP20260823000001/pay HTTP/1.1
+POST /api/modules/sirsoft-ecommerce/guest/orders/20260823-1130558472/claim-payments/CP20260823-1435226549/pay HTTP/1.1
 Host: api.example.com
 Accept: application/json
 X-Guest-Order-Token: {GUEST_ORDER_TOKEN}
@@ -1286,14 +1286,14 @@ Content-Type: application/json
 **요청 예시**
 
 ```http
-POST /api/modules/sirsoft-ecommerce/guest/orders/20260823-0012/claim-payments/CP20260823000001/approve HTTP/1.1
+POST /api/modules/sirsoft-ecommerce/guest/orders/20260823-1130558472/claim-payments/CP20260823-1435226549/approve HTTP/1.1
 Host: api.example.com
 Accept: application/json
 X-Guest-Order-Token: {GUEST_ORDER_TOKEN}
 Content-Type: application/json
 
 {
-    "callback": { "paymentKey": "tviva2026...", "orderId": "CP20260823000001", "amount": 3000 }
+    "callback": { "paymentKey": "tviva2026...", "orderId": "CP20260823-1435226549", "amount": 3000 }
 }
 ```
 

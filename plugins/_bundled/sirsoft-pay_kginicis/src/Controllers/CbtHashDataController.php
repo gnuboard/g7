@@ -7,7 +7,10 @@ namespace Plugins\Sirsoft\PayKginicis\Controllers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
+use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
+use Plugins\Sirsoft\PayKginicis\Concerns\HandlesCbtClaimPayments;
+use Plugins\Sirsoft\PayKginicis\Concerns\HandlesClaimPaymentCallbacks;
 use Plugins\Sirsoft\PayKginicis\Concerns\ValidatesCbtOrderContext;
 use Plugins\Sirsoft\PayKginicis\Concerns\ValidatesTimestampFreshness;
 use Plugins\Sirsoft\PayKginicis\Http\Requests\CbtHashDataRequest;
@@ -16,6 +19,8 @@ use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
 
 class CbtHashDataController
 {
+    use HandlesCbtClaimPayments;
+    use HandlesClaimPaymentCallbacks;
     use ValidatesCbtOrderContext;
     use ValidatesTimestampFreshness;
 
@@ -69,6 +74,42 @@ class CbtHashDataController
                 'success' => false,
                 'message' => 'Japan CBT payment is not configured.',
             ], 422);
+        }
+
+        // 클레임 추가결제(CP 채번)는 주문이 아니다 — 주문 분기를 태우면 Order not found 로 끝난다.
+        // 검증 축은 토큰 발급 단계와 같고, 체크아웃 토큰 검증도 주문과 같은 경로를 그대로 쓴다.
+        if (ClaimPayment::isClaimPaymentNumber($oid)) {
+            $claimError = $this->validateCbtClaimPaymentContext($request, $oid, $price);
+
+            if ($claimError !== null) {
+                return $claimError;
+            }
+
+            if (! $this->checkoutTokenService->verify(
+                $checkoutToken,
+                $oid,
+                $price,
+                (string) $request->input('buyer_email', ''),
+                (string) $request->input('buyer_phone', ''),
+                $request,
+            )) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'CBT checkout token verification failed.',
+                ], 403);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'hash_data' => $this->apiService->generateCbtHashData(
+                        $this->apiService->getJapanMid(),
+                        $timestamp,
+                        $price,
+                        $oid,
+                    ),
+                ],
+            ]);
         }
 
         $order = $this->orderService->findByOrderNumber($oid);

@@ -33,7 +33,7 @@
 최근 6개월 나이스페이 결제 건 중 **테스트 모드 자격증명으로 결제된 주문**의 맵을 반환한다. 주문 목록의 "테스트" 배지 표시용.
 
 ```json
-{ "success": true, "data": { "ORD-20260817-000001": true } }
+{ "success": true, "data": { "20260817-1043226571": true } }
 ```
 
 ### GET /api/plugins/sirsoft-pay_nicepayments/admin/orders/easy-pay-display-map

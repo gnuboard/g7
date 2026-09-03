@@ -67,7 +67,7 @@
 ### 요청 예시
 
 ```http
-GET /api/plugins/sirsoft-pay_nhnkcp/admin/orders/20260807-0001/transaction-status
+GET /api/plugins/sirsoft-pay_nhnkcp/admin/orders/20260807-1529487361/transaction-status
 Authorization: Bearer {token}
 ```
 
@@ -93,7 +93,7 @@ Authorization: Bearer {token}
     "cancelled_amount_formatted": "1,100원",
     "cancelled_at": "2026-08-07 15:40:22",
     "cancel_history": [],
-    "refund_number": "RF-20260807-0001",
+    "refund_number": "RF20260807-1540229154",
     "refund_status": "completed",
     "refund_status_label": "환불완료",
     "refund_status_variant": "success",

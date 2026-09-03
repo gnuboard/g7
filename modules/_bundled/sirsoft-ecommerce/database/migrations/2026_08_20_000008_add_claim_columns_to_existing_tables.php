@@ -22,6 +22,11 @@ use Illuminate\Support\Facades\Schema;
  * 앞부분은 커밋된 채 남고 마이그레이션 기록은 남지 않아 다음 실행이 같은 up() 을 처음부터
  * 다시 돈다. 그래서 컬럼뿐 아니라 **인덱스·외래키까지** 존재 여부를 확인한 뒤 추가한다.
  * 컬럼만 막아 두면 그 다음 단계에서 "Duplicate key name" 으로 영구 실패한다.
+ *
+ * down() 도 같은 3축(컬럼·인덱스·외래키)을 **각각** 확인한다. 컬럼 존재만으로 인덱스·외래키
+ * 드롭까지 묶으면, up() 이 컬럼 생성 뒤 인덱스 단계에서 죽은 설치본에서 down() 이 없는
+ * 인덱스를 지우려다 죽어 되돌리기 자체가 막힌다 — up() 이 못 만든 것을 down() 이 있다고
+ * 전제하는 셈이라 두 방향의 가드 강도가 어긋나서는 안 된다.
  */
 return new class extends Migration
 {
@@ -206,16 +211,26 @@ return new class extends Migration
     public function down(): void
     {
         if (Schema::hasTable('ecommerce_mileage_transactions')) {
-            Schema::table('ecommerce_mileage_transactions', function (Blueprint $table) {
-                if (Schema::hasColumn('ecommerce_mileage_transactions', 'claim_payment_id')) {
-                    $table->dropForeign('fk_mt_claim_payment_id');
-                    $table->dropIndex('ecommerce_mileage_trx_claim_payment_index');
-                    $table->dropColumn('claim_payment_id');
+            $table = 'ecommerce_mileage_transactions';
+
+            Schema::table($table, function (Blueprint $blueprint) use ($table) {
+                if ($this->hasForeignKey($table, 'fk_mt_claim_payment_id')) {
+                    $blueprint->dropForeign('fk_mt_claim_payment_id');
                 }
-                if (Schema::hasColumn('ecommerce_mileage_transactions', 'order_refund_id')) {
-                    $table->dropForeign('fk_mt_order_refund_id');
-                    $table->dropIndex('ecommerce_mileage_trx_order_refund_index');
-                    $table->dropColumn('order_refund_id');
+                if (Schema::hasIndex($table, 'ecommerce_mileage_trx_claim_payment_index')) {
+                    $blueprint->dropIndex('ecommerce_mileage_trx_claim_payment_index');
+                }
+                if (Schema::hasColumn($table, 'claim_payment_id')) {
+                    $blueprint->dropColumn('claim_payment_id');
+                }
+                if ($this->hasForeignKey($table, 'fk_mt_order_refund_id')) {
+                    $blueprint->dropForeign('fk_mt_order_refund_id');
+                }
+                if (Schema::hasIndex($table, 'ecommerce_mileage_trx_order_refund_index')) {
+                    $blueprint->dropIndex('ecommerce_mileage_trx_order_refund_index');
+                }
+                if (Schema::hasColumn($table, 'order_refund_id')) {
+                    $blueprint->dropColumn('order_refund_id');
                 }
             });
         }
@@ -243,11 +258,13 @@ return new class extends Migration
                 if (Schema::hasIndex('ecommerce_order_refunds', 'ecommerce_order_refunds_created_at_index')) {
                     $table->dropIndex('ecommerce_order_refunds_created_at_index');
                 }
-                if (Schema::hasColumn('ecommerce_order_refunds', 'requested_by')) {
+                if ($this->hasForeignKey('ecommerce_order_refunds', 'fk_rf_requested_by')) {
                     $table->dropForeign('fk_rf_requested_by');
+                }
+                if (Schema::hasIndex('ecommerce_order_refunds', 'ecommerce_order_refunds_requested_by_index')) {
                     $table->dropIndex('ecommerce_order_refunds_requested_by_index');
                 }
-                if (Schema::hasColumn('ecommerce_order_refunds', 'refund_source_type')) {
+                if (Schema::hasIndex('ecommerce_order_refunds', 'ecommerce_order_refunds_source_index')) {
                     $table->dropIndex('ecommerce_order_refunds_source_index');
                 }
 

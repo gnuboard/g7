@@ -14,6 +14,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderCashReceipt;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderCashReceiptRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderPaymentRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Services\Concerns\MasksSensitiveResponse;
 
 /**
  * 현금영수증 발급/취소 오케스트레이션 서비스
@@ -27,26 +28,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderPaymentRepositoryInter
  */
 class CashReceiptService
 {
-    /**
-     * 원응답에서 마스킹할 민감 키 목록 (대소문자 무시, 부분 일치)
-     *
-     * @var array<int, string>
-     */
-    private const SENSITIVE_RESPONSE_KEYS = [
-        'customeridentitynumber',
-        'identitynumber',
-        'identifier',
-        'customermobilephone',
-        'mobilephone',
-        'phone',
-        'businessnumber',
-        'customername',
-        'customeremail',
-        'email',
-        'secret',
-        'secretkey',
-        'password',
-    ];
+    use MasksSensitiveResponse;
 
     public function __construct(
         private OrderCashReceiptRepositoryInterface $repository,
@@ -700,65 +682,6 @@ class CashReceiptService
     {
         return $order->payment?->payment_name
             ?? (string) $order->order_number;
-    }
-
-    /**
-     * 프로바이더 원응답에서 민감 키를 마스킹합니다.
-     *
-     * 프로젝트 결정: 전체 응답을 보관하되 알려진 민감 키를 재귀적으로 가린다.
-     *
-     * @param  mixed  $response  원응답
-     * @return array<string, mixed>|null 마스킹된 응답 (배열이 아니면 null)
-     */
-    private function sanitizeResponse(mixed $response): ?array
-    {
-        if (! is_array($response)) {
-            return null;
-        }
-
-        return $this->maskSensitiveKeys($response);
-    }
-
-    /**
-     * 배열을 재귀 순회하며 민감 키의 값을 마스킹합니다.
-     *
-     * @param  array<mixed, mixed>  $data  원본 배열
-     * @return array<mixed, mixed> 마스킹된 배열
-     */
-    private function maskSensitiveKeys(array $data): array
-    {
-        $masked = [];
-
-        foreach ($data as $key => $value) {
-            if (is_array($value)) {
-                $masked[$key] = $this->maskSensitiveKeys($value);
-
-                continue;
-            }
-
-            $masked[$key] = $this->isSensitiveKey((string) $key) ? '***' : $value;
-        }
-
-        return $masked;
-    }
-
-    /**
-     * 민감 키인지 확인합니다.
-     *
-     * @param  string  $key  키 이름
-     * @return bool 민감 키 여부
-     */
-    private function isSensitiveKey(string $key): bool
-    {
-        $normalized = strtolower(str_replace(['_', '-'], '', $key));
-
-        foreach (self::SENSITIVE_RESPONSE_KEYS as $sensitive) {
-            if (str_contains($normalized, $sensitive)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**

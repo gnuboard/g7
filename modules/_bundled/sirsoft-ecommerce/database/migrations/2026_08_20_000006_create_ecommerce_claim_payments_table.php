@@ -45,6 +45,9 @@ return new class extends Migration
 
             $table->index(['payable_type', 'payable_id'], 'ecommerce_claim_payments_payable_index');
             $table->index('order_id', 'ecommerce_claim_payments_order_id_index');
+            // 상태 단독 인덱스는 고아 결제 대기 건 정리 배치가 선두로 쓴다
+            // (`ClaimPaymentRepository::listPendingOlderThan()` — 상태 등치 + created_at 범위).
+            // 나머지 상태 조회는 전부 payable_* 또는 order_id 가 선두라 이 인덱스를 타지 않는다.
             $table->index('payment_status', 'ecommerce_claim_payments_status_index');
         });
 

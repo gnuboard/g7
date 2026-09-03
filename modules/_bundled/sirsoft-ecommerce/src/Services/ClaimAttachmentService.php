@@ -20,6 +20,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderExchangeRepositoryInte
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderReturnRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesRowStorage;
+use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesStoredExtension;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 
@@ -49,6 +50,7 @@ use Throwable;
 class ClaimAttachmentService
 {
     use ResolvesRowStorage;
+    use ResolvesStoredExtension;
 
     /**
      * @param  StorageInterface  $storage  스토리지 (images 카테고리 디스크 주입)
@@ -506,7 +508,9 @@ class ClaimAttachmentService
     {
         $file = HookManager::applyFilters('sirsoft-ecommerce.claim-image.filter_upload_file', $file);
 
-        $storedFilename = Str::uuid().'.'.($file->getClientOriginalExtension() ?: 'jpg');
+        // 확장자는 클라이언트가 준 값이 아니라 검증이 실제로 본 값(내용)에서 정한다 — 상세는
+        // `ResolvesStoredExtension` 주석 참조.
+        $storedFilename = Str::uuid().'.'.$this->storedExtension($file);
         $path = "claims/{$claimableType}/{$claimableId}/{$storedFilename}";
 
         // 환경설정 > 업로드의 최대 가로/세로·품질 적용 (코어 설정이 모든 업로드 경로에 동일 적용)

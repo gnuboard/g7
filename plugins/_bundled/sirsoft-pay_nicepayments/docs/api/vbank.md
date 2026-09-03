@@ -65,7 +65,7 @@ Content-Type: application/json
 
 {
     "tid": "nictest00m02012104191651325596",
-    "moid": "ORD-20260817-000001",
+    "moid": "20260817-1043226571",
     "cancel_amt": 30000,
     "cancel_msg": "구매자 요청 환불",
     "refund_acct_no": "1234567890123",

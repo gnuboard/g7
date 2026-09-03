@@ -147,6 +147,12 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
      */
     protected array $storageServices = [
         ProductReviewService::class,
+        // 클레임 첨부는 신청자 본인과 운영자만 볼 수 있는 권한 게이트 대상이라 공개 자산
+        // 디스크(CDN)에 올리지 않는다 — 직접 URL 은 서버 서빙 경로의 권한 검사를 우회한다
+        // (`storage-driver.md` "보안 전제": 완전 공개 자산 카테고리에만 공개 디스크 적용).
+        // 그래서 카테고리 배선이 아니라 기본 디스크를 주입한다. 저장 경로 접두사는 종전대로
+        // 서비스가 `put('images', …)` 로 넘기는 값이 정하므로 기존 행의 경로는 바뀌지 않는다.
+        ClaimAttachmentService::class,
     ];
 
     /**
@@ -155,13 +161,14 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
      * 이미지 서비스는 getStorageDiskFor('images') 가 결정한 디스크(공개 자산 디스크
      * 설정 반영)를 주입받아, put/getDisk() 행 기록이 자동으로 카테고리 디스크를 따릅니다.
      *
+     * 권한 검사가 걸린 첨부는 여기에 등록하지 않습니다 (위 `$storageServices` 주석 참조).
+     *
      * @var array<class-string, string>
      */
     protected array $storageCategoryServices = [
         CategoryImageService::class => 'images',
         ProductImageService::class => 'images',
         ProductReviewImageService::class => 'images',
-        ClaimAttachmentService::class => 'images',
     ];
 
     /**

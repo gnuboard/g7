@@ -9,8 +9,12 @@ use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
+use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
+use Modules\Sirsoft\Ecommerce\Support\ClaimPaymentCallback;
+use Plugins\Sirsoft\PayKginicis\Concerns\HandlesCbtClaimPayments;
+use Plugins\Sirsoft\PayKginicis\Concerns\HandlesClaimPaymentCallbacks;
 use Plugins\Sirsoft\PayKginicis\Concerns\IssuesReceiptCookie;
 use Plugins\Sirsoft\PayKginicis\Concerns\PreventsReplayCallback;
 use Plugins\Sirsoft\PayKginicis\Concerns\SerializesPaymentCallbacks;
@@ -31,6 +35,8 @@ use Plugins\Sirsoft\PayKginicis\Support\ShopRedirectUrl;
  */
 class CbtCallbackController
 {
+    use HandlesCbtClaimPayments;
+    use HandlesClaimPaymentCallbacks;
     use IssuesReceiptCookie;
     use PreventsReplayCallback;
     use SerializesPaymentCallbacks;
@@ -133,6 +139,15 @@ class CbtCallbackController
                 'result_msg' => $authResultMsg,
             ]);
 
+            // 클레임 추가결제는 체크아웃이 아니라 신청서 상세로 돌려보낸다 (국내 경로와 동일).
+            if (ClaimPayment::isClaimPaymentNumber($oid)) {
+                $claimRedirect = $this->redirectClaimWindowFailure($oid, null);
+
+                if ($claimRedirect !== null) {
+                    return $claimRedirect;
+                }
+            }
+
             return redirect($this->resolveFailUrl());
         }
 
@@ -149,6 +164,19 @@ class CbtCallbackController
                 'result_code' => $authResultCode,
                 'result_msg' => $authResultMsg,
             ]);
+
+            // 결제창 단계 실패도 클레임은 신청서 상세로 돌려보낸다 — PG 원문 메시지는 싣지 않고
+            // 코드만 전달한다(이 경로는 비인증 브라우저 리다이렉트다).
+            if (ClaimPayment::isClaimPaymentNumber($oid)) {
+                $claimRedirect = $this->redirectClaimWindowFailure(
+                    $oid,
+                    $authResultCode !== '' ? $authResultCode : 'cbt_auth_failed',
+                );
+
+                if ($claimRedirect !== null) {
+                    return $claimRedirect;
+                }
+            }
 
             return redirect($this->resolveFailUrl($this->buildCbtFailureRedirectParams(
                 $authResultCode !== '' ? $authResultCode : 'cbt_auth_failed',
@@ -172,6 +200,36 @@ class CbtCallbackController
         $approvedTid = null;
         $approvedAmount = 0;
         $callbackLock = null;
+
+        // 클레임 추가결제(CP 채번)는 주문이 아니다 — 주문 분기를 태우면 order_not_found 로 끝난다.
+        // 승인은 모듈 위임(필터 발화 → 이 플러그인의 승인 리스너)이고, 승인 뒤의 거절은
+        // 승인이 확정된 다음이므로 CBT 환불 API 로 보상한다. 주문 경로와 같은 직렬화 락을 건다.
+        if (ClaimPayment::isClaimPaymentNumber($oid)) {
+            $claimPayment = $this->resolveApprovableCbtClaimPayment($oid);
+
+            if (! $claimPayment) {
+                Log::error('KG Inicis CBT: claim payment not approvable', ['oid' => $oid]);
+
+                $claimRedirect = $this->redirectClaimWindowFailure($oid, 'claim_payment_not_approvable');
+
+                return $claimRedirect ?? redirect($this->resolveFailUrl([
+                    'error' => 'claim_payment_not_found',
+                    'orderId' => $oid,
+                ]));
+            }
+
+            $claimLock = $this->acquireOrderCallbackLock('cbtAuthCallback', $oid);
+
+            try {
+                return ClaimPaymentCallback::approveAndRedirect(
+                    $claimPayment,
+                    $request->except(['_token']) + ['cbt_sid' => $sid],
+                    fn () => $this->refundApprovedCbtClaimPaymentQuietly($claimPayment),
+                );
+            } finally {
+                $this->releaseOrderCallbackLock($claimLock);
+            }
+        }
 
         try {
             $order = $this->orderService->findByOrderNumber($oid);
@@ -299,6 +357,44 @@ class CbtCallbackController
             return redirect($this->resolveFailUrl(['error' => 'cbt_failed', 'orderId' => $oid]));
         } finally {
             $this->releaseOrderCallbackLock($callbackLock);
+        }
+    }
+
+    /**
+     * 모듈 거절로 실패 처리된 CBT 클레임 승인 건을 환불 API 로 조용히 되돌립니다. (보상)
+     *
+     * CBT 에는 국내 표준결제의 망취소 URL 이 없다 — 승인 응답의 거래번호로 환불한다.
+     * 승인 응답은 모듈이 결제행 `raw_response` 에 저장한 뒤 거절하므로 거기서 되읽는다.
+     *
+     * @param  ClaimPayment  $payment  결제 건
+     */
+    private function refundApprovedCbtClaimPaymentQuietly(ClaimPayment $payment): void
+    {
+        $raw = $payment->fresh()?->raw_response;
+        $raw = is_array($raw) ? $raw : [];
+        $tid = (string) ($raw['tid'] ?? $raw['transactionId'] ?? '');
+
+        if ($tid === '') {
+            Log::error('KG Inicis CBT: claim compensation refund skipped — no tid in raw response', [
+                'payment_number' => $payment->payment_number,
+            ]);
+
+            return;
+        }
+
+        try {
+            $this->apiService->refundCbtPayment(
+                $tid,
+                null,
+                __('sirsoft-pay_kginicis::messages.claim.compensation_cancel_reason'),
+            );
+        } catch (\Throwable $e) {
+            // 환불이 실패하면 PG 쪽 승인이 남는다 — 운영자가 손으로 취소해야 하므로 크게 남긴다.
+            Log::error('KG Inicis CBT: claim compensation refund failed — MANUAL CANCEL REQUIRED', [
+                'payment_number' => $payment->payment_number,
+                'tid' => $tid,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 

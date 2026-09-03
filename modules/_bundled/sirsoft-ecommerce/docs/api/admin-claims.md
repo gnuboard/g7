@@ -88,9 +88,9 @@
 | 필드 | 타입 | 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | id | integer | `31` | 신청서 기본 키 |
-| claim_number | string | `RT20260825000007` | 클레임 번호 |
+| claim_number | string | `RT20260825-0931447182` | 클레임 번호 |
 | claim_type / claim_type_label | string | `return` / `반품` | 유형과 라벨 |
-| order_id / order_number | integer / string\|null | `120` / `20260825-0012` | 주문 |
+| order_id / order_number | integer / string\|null | `120` / `20260825-1121449057` | 주문 |
 | requester_name | string\|null | `홍길동` | 신청자 표기 (주문자명 — 비회원 신청도 값이 있다) |
 | requested_by | integer\|null | `7` | 신청 회원 ID (비회원 `null`, 취소는 `cancelled_by`) |
 | is_guest_request | boolean | `false` | 비회원 신청 여부 |
@@ -120,11 +120,11 @@
     "data": [
       {
         "id": 31,
-        "claim_number": "RT20260825000007",
+        "claim_number": "RT20260825-0931447182",
         "claim_type": "return",
         "claim_type_label": "반품",
         "order_id": 120,
-        "order_number": "20260825-0012",
+        "order_number": "20260825-1121449057",
         "requester_name": "홍길동",
         "requested_by": 7,
         "is_guest_request": false,
@@ -335,7 +335,7 @@
   "success": true,
   "message": "신청 상태가 변경되었습니다.",
   "data": {
-    "claim": { "id": 31, "claim_number": "RT20260825000007", "status": "approved", "...": "ClaimResource 전체" },
+    "claim": { "id": 31, "claim_number": "RT20260825-0931447182", "status": "approved", "...": "ClaimResource 전체" },
     "payment_requested": false
   }
 }
@@ -375,7 +375,7 @@
     "succeeded": [31],
     "payment_requested": [34],
     "skipped": [
-      {"id": 35, "claim_number": "RT20260825000009", "message": "반품반려 에서 반품승인 로는 상태를 변경할 수 없습니다."},
+      {"id": 35, "claim_number": "RT20260825-0947115036", "message": "반품반려 에서 반품승인 로는 상태를 변경할 수 없습니다."},
       {"id": 999999, "claim_number": null, "message": "해당 신청서를 찾을 수 없습니다."}
     ]
   }
@@ -528,7 +528,7 @@
     "claim": {
       "id": 12,
       "claim_type": "refund",
-      "claim_number": "RF-20260825-0007",
+      "claim_number": "RF20260825-0918336241",
       "refund_amount": 15000,
       "refund_points_amount": 3000,
       "refund_method": "pg",
@@ -604,7 +604,7 @@ amount = max(0, min(domain_refundable, payment_capacity) − reserved)
         {"type": "payment", "payment_id": 88, "method": "card", "method_label": "신용카드", "currency": "KRW", "remaining_local": 29000, "remaining_base": 29000, "remaining_local_formatted": "29,000원", "remaining_base_formatted": "29,000원"}
       ],
       "reserved_claims": [
-        {"type": "refund", "type_label": "환불", "id": 12, "number": "RF20260825000003", "amount": 5000, "amount_formatted": "5,000원"}
+        {"type": "refund", "type_label": "환불", "id": 12, "number": "RF20260825-1006538924", "amount": 5000, "amount_formatted": "5,000원"}
       ],
       "currency": "KRW",
       "mc_amount": {"KRW": 24000}
@@ -683,7 +683,7 @@ Authorization: Bearer {YOUR_TOKEN}
     "claims": [
       {
         "id": 4,
-        "claim_number": "EX20260825-000004",
+        "claim_number": "EX20260825-1012238374",
         "claim_type": "exchange",
         "status": "collecting",
         "status_label": "교환회수중",
@@ -692,7 +692,7 @@ Authorization: Bearer {YOUR_TOKEN}
         "reason_label": "단순 변심",
         "fault_type": "customer",
         "reject_reason": null,
-        "detail_url": "/admin/ecommerce/claims/EX20260825-000004",
+        "detail_url": "/admin/ecommerce/claims/EX20260825-1012238374",
         "claim_shipping_fee": 6000,
         "total_charge_amount": 9000,
         "items": [
@@ -715,7 +715,7 @@ Authorization: Bearer {YOUR_TOKEN}
       },
       {
         "id": 2,
-        "claim_number": "CL20260825-000002",
+        "claim_number": "CN20260825-0938517265",
         "claim_type": "cancel",
         "status": "completed",
         "status_label": "취소완료",
@@ -768,7 +768,7 @@ Authorization: Bearer {YOUR_TOKEN}
   "success": true,
   "message": "환불을 실행했습니다.",
   "data": {
-    "claim": { "id": 12, "claim_number": "RF20260825000003", "status": "completed", "refunded_at": "2026-08-25T14:02:11+09:00", "...": "ClaimResource 전체" }
+    "claim": { "id": 12, "claim_number": "RF20260825-1006538924", "status": "completed", "refunded_at": "2026-08-25T14:02:11+09:00", "...": "ClaimResource 전체" }
   }
 }
 ```
@@ -812,7 +812,7 @@ Authorization: Bearer {YOUR_TOKEN}
     "claims": [
       {
         "id": 31,
-        "claim_number": "RT20260825000007",
+        "claim_number": "RT20260825-0931447182",
         "currency_code": "KRW",
         "completable_item_ids": [55],
         "completable_item_count": 1,
@@ -912,7 +912,7 @@ Authorization: Bearer {YOUR_TOKEN}
   "success": true,
   "message": "환불신청서를 접수했습니다.",
   "data": {
-    "refund": { "id": 12, "claim_number": "RF20260825000003", "claim_type": "refund", "status": "requested", "...": "ClaimResource 전체" }
+    "refund": { "id": 12, "claim_number": "RF20260825-1006538924", "claim_type": "refund", "status": "requested", "...": "ClaimResource 전체" }
   }
 }
 ```

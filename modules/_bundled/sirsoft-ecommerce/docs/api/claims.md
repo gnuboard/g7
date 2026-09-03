@@ -52,11 +52,11 @@
 | 필드 | 타입 | 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | id | integer | `31` | 신청서 기본 키 |
-| claim_number | string | `RT20260823000007` | 클레임 번호 (교환 `EX…`, 반품 `RT…`, 환불신청 `RF…`, 취소 `CN…`) |
+| claim_number | string | `RT20260823-1402331875` | 클레임 번호 (교환 `EX…`, 반품 `RT…`, 환불신청 `RF…`, 취소 `CN…`) |
 | claim_type | string | `return` | 클레임 유형 (`exchange`, `return`, `refund`, `cancel`) |
 | claim_type_label | string | `반품` | 유형 라벨 |
 | order_id | integer | `120` | 주문 ID |
-| order_number | string\|null | `20260823-0012` | 주문번호 (`order` 관계 로드 시) |
+| order_number | string\|null | `20260823-1130558472` | 주문번호 (`order` 관계 로드 시) |
 | status | string | `requested` | 유형별 상태 값 (교환 `ExchangeStatusEnum`, 반품 `ReturnStatusEnum`, 환불신청 `RefundStatusEnum`, 취소 `CancelStatusEnum`) |
 | status_label | string\|null | `반품신청` | 상태 라벨 (유형 접두가 붙는다 — 교환 `교환신청`, 반품 `반품신청`, 환불 `환불신청`) |
 | status_variant | string\|null | `info` | 상태 뱃지 variant |
@@ -218,7 +218,7 @@
 | 필드 | 타입 | 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | id | integer | `12` | 결제 건 기본 키 |
-| payment_number | string | `CP20260823000001` | 결제번호 (`CP` 접두사 — PG 결제창의 주문번호 자리에 쓰인다) |
+| payment_number | string | `CP20260823-1435226549` | 결제번호 (`CP` 접두사 — PG 결제창의 주문번호 자리에 쓰인다) |
 | payable_type | string | `return` | 결제 대상 클레임 유형 (`exchange`, `return`) |
 | payable_id | integer | `31` | 결제 대상 클레임 ID |
 | payment_method | string\|null | `card` | 결제 수단 (`card`, `point`, … 환경설정 `claim.charge_payment_methods`) |
@@ -332,7 +332,7 @@ _목록 응답: `data` 배열의 각 항목은 [ClaimResource](#claim-resource)(
         "data": [
             {
                 "id": 31,
-                "claim_number": "RT20260823000007",
+                "claim_number": "RT20260823-1402331875",
                 "claim_type": "return",
                 "status": "requested",
                 "status_label": "반품신청",
@@ -388,7 +388,7 @@ _목록 응답: `data` 배열의 각 항목은 [ClaimResource](#claim-resource)(
 **요청 예시**
 
 ```http
-GET /api/modules/sirsoft-ecommerce/user/claims/RT20260823000007 HTTP/1.1
+GET /api/modules/sirsoft-ecommerce/user/claims/RT20260823-1402331875 HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -409,9 +409,9 @@ Authorization: Bearer {YOUR_TOKEN}
     "data": {
         "claim": {
             "id": 31,
-            "claim_number": "RT20260823000007",
+            "claim_number": "RT20260823-1402331875",
             "claim_type": "return",
-            "order_number": "20260823-0012",
+            "order_number": "20260823-1130558472",
             "status": "payment_pending",
             "status_label": "반품결제대기",
             "is_editable": true,
@@ -420,15 +420,15 @@ Authorization: Bearer {YOUR_TOKEN}
             "requires_additional_payment": true,
             "items": [ { "order_option_id": 310, "quantity": 1 } ],
             "images": [ { "id": 9, "hash": "a1B2c3D4e5F6", "download_url": "/api/modules/sirsoft-ecommerce/claim-image/a1B2c3D4e5F6?expires=1787000000&signature=0f3c" } ],
-            "payments": [ { "payment_number": "CP20260823000001", "payment_status": "pending", "total_amount": 3000 } ],
+            "payments": [ { "payment_number": "CP20260823-1435226549", "payment_status": "pending", "total_amount": 3000 } ],
             "outstanding_amount": 3000,
             "outstanding_amount_formatted": "3,000원",
-            "pending_payment": { "payment_number": "CP20260823000001", "payment_status": "pending" },
+            "pending_payment": { "payment_number": "CP20260823-1435226549", "payment_status": "pending" },
             "payment_entry": {
                 "requires_pg_payment": true,
                 "pg_provider": "sirsoft-kginicis",
                 "pg_payment_handler": "sirsoft-pay_kginicis.requestPayment",
-                "pg_payment_data": { "order_number": "CP20260823000001", "amount": 3000, "currency": "KRW" }
+                "pg_payment_data": { "order_number": "CP20260823-1435226549", "amount": 3000, "currency": "KRW" }
             }
         }
     }
@@ -474,7 +474,7 @@ Authorization: Bearer {YOUR_TOKEN}
 **요청 예시**
 
 ```http
-PATCH /api/modules/sirsoft-ecommerce/user/claims/RT20260823000007 HTTP/1.1
+PATCH /api/modules/sirsoft-ecommerce/user/claims/RT20260823-1402331875 HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -507,7 +507,7 @@ Content-Type: application/json
     "message": "신청 내용이 수정되었습니다.",
     "data": {
         "claim": {
-            "claim_number": "RT20260823000007",
+            "claim_number": "RT20260823-1402331875",
             "reason_code": "defective_product",
             "fault_type": "seller",
             "charge_method": null,
@@ -552,7 +552,7 @@ Content-Type: application/json
 **요청 예시**
 
 ```http
-POST /api/modules/sirsoft-ecommerce/user/claims/RT20260823000007/withdraw HTTP/1.1
+POST /api/modules/sirsoft-ecommerce/user/claims/RT20260823-1402331875/withdraw HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -572,14 +572,14 @@ Authorization: Bearer {YOUR_TOKEN}
     "message": "신청이 철회되었습니다.",
     "data": {
         "claim": {
-            "claim_number": "RT20260823000007",
+            "claim_number": "RT20260823-1402331875",
             "status": "withdrawn",
             "status_label": "반품철회",
             "is_final": true,
             "is_withdrawable": false,
             "is_editable": false,
             "withdrawn_at_formatted": "2026-08-23 14:10",
-            "payments": [ { "payment_number": "CP20260823000001", "payment_status": "cancelled" } ],
+            "payments": [ { "payment_number": "CP20260823-1435226549", "payment_status": "cancelled" } ],
             "outstanding_amount": 0
         }
     }
