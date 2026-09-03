@@ -7,7 +7,12 @@
         <div class="text-6xl font-bold text-gray-200 mb-4">401</div>
         <h1 class="text-2xl font-bold text-gray-900 mb-2">$t:error.401.title</h1>
         <span class="block text-gray-600 mb-6">$t:error.401.description</span>
-        <button class="px-5 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 cursor-pointer"><on type="click"><navigate path="/"/></on>$t:error.back_to_home</button>
+        <button class="px-5 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 cursor-pointer">
+          <on type="click">
+            <navigate path="/"/>
+          </on>
+          $t:error.back_to_home
+        </button>
       </div>
     </div>
   </slot>

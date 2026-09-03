@@ -1,12 +1,10 @@
-<!--
-  본인인증 탭의 **정책** 하위 구획 — 목록·필터·페이지가 모두 여기 있고, 등록·수정·삭제 창은 별도 조각이다.
+<!-- 본인인증 탭의 **정책** 하위 구획 — 목록·필터·페이지가 모두 여기 있고, 등록·수정·삭제 창은 별도 조각이다.
   목록을 **두 벌로 그린다** — 넓은 화면은 표, 좁은 화면은 카드. 같은 배선이 두 번 나오므로
   한쪽을 고치면 다른 쪽도 같이 본다(토글·수정·삭제 세 자리씩).
   이 구획의 이동은 하나같이 `tab="identity"` 를 함께 실어 나른다 — 설정 화면 안의 한 구획이라
   탭을 잃으면 다른 탭으로 튄다. 그리고 이동마다 **스크롤을 이 구획 머리로 되돌린다**(위쪽 고정 탭
   높이만큼 비켜서) — 안 그러면 페이지를 넘겨도 화면이 표 중간에 머문다.
-  확장이 선언한 정책은 삭제 버튼이 나오지 않는다(운영자 정책만 지울 수 있다).
--->
+  확장이 선언한 정책은 삭제 버튼이 나오지 않는다(운영자 정책만 지울 수 있다). -->
 <partial description="환경설정 > 인증 탭 내 S1d 정책 관리 서브섹션 (DataGrid + 편집 모달 포함 X — 모달은 별도 partial)">
   <div data-ref="tab_content_identity_policies" data-if="{{(_global.activeSettingsTab || query.tab) === 'identity'}}">
     <div data-ref="page_root" class="admin-card">
@@ -193,14 +191,45 @@
                   <span class="{{policy.source_type === 'admin' ? 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-info-soft' : 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-warning-soft'}}">$t:admin.identity.policies.source.{{policy.source_type ?? 'core'}}</span>
                 </td>
                 <td class="px-3 py-2 text-right whitespace-nowrap">
-                  <button type="button" class="text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600" disabled="{{policy.abilities?.can_update !== true}}"><on type="click"><!-- 수정 창 열기 — 등록과 같은 창을 쓰되 `isNew=false` 로 넣고 행의 값을 그대로 채운다.
-     `source_type` 을 함께 담는 것이 중요하다 — 창이 그 값으로 키·범위·대상을 잠글지 정한다. --><sequence><set-state target="global"><field name="identity_policy_form_modal"><field name="form"><field name="id" value="{{policy.id}}"/><field name="key" value="{{policy.key ?? ''}}"/><field name="scope" value="{{policy.scope ?? 'route'}}"/><field name="target" value="{{policy.target ?? ''}}"/><field name="purpose" value="{{policy.purpose ?? 'sensitive_action'}}"/><field name="provider_id" value="{{policy.provider_id ?? ''}}"/><field name="grace_minutes" value="{{policy.grace_minutes ?? 0}}"/><field name="applies_to" value="{{policy.applies_to ?? 'both'}}"/><field name="fail_mode" value="{{policy.fail_mode ?? 'block'}}"/><field name="enabled" value="{{Boolean(policy.enabled)}}"/><field name="priority" value="{{policy.priority ?? 100}}"/><field name="conditions" value="{{(policy.conditions ?? {})}}"/><field name="source_type" value="{{policy.source_type ?? 'admin'}}"/><field name="user_overrides" value="{{policy.user_overrides ?? []}}"/></field><field name="isNew" :value="false"/><field name="errors" :value="null"/><field name="isSaving" :value="false"/></field></set-state><open-modal target="identity_policy_form_modal"/></sequence></on>$t:common.edit</button>
+                  <button type="button" class="text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600" disabled="{{policy.abilities?.can_update !== true}}">
+                    <on type="click">
+                      <!-- 수정 창 열기 — 등록과 같은 창을 쓰되 `isNew=false` 로 넣고 행의 값을 그대로 채운다.
+     `source_type` 을 함께 담는 것이 중요하다 — 창이 그 값으로 키·범위·대상을 잠글지 정한다. -->
+                      <sequence>
+                        <set-state target="global">
+                          <field name="identity_policy_form_modal">
+                            <field name="form">
+                              <field name="id" value="{{policy.id}}"/>
+                              <field name="key" value="{{policy.key ?? ''}}"/>
+                              <field name="scope" value="{{policy.scope ?? 'route'}}"/>
+                              <field name="target" value="{{policy.target ?? ''}}"/>
+                              <field name="purpose" value="{{policy.purpose ?? 'sensitive_action'}}"/>
+                              <field name="provider_id" value="{{policy.provider_id ?? ''}}"/>
+                              <field name="grace_minutes" value="{{policy.grace_minutes ?? 0}}"/>
+                              <field name="applies_to" value="{{policy.applies_to ?? 'both'}}"/>
+                              <field name="fail_mode" value="{{policy.fail_mode ?? 'block'}}"/>
+                              <field name="enabled" value="{{Boolean(policy.enabled)}}"/>
+                              <field name="priority" value="{{policy.priority ?? 100}}"/>
+                              <field name="conditions" value="{{(policy.conditions ?? {})}}"/>
+                              <field name="source_type" value="{{policy.source_type ?? 'admin'}}"/>
+                              <field name="user_overrides" value="{{policy.user_overrides ?? []}}"/>
+                            </field>
+                            <field name="isNew" :value="false"/>
+                            <field name="errors" :value="null"/>
+                            <field name="isSaving" :value="false"/>
+                          </field>
+                        </set-state>
+                        <open-modal target="identity_policy_form_modal"/>
+                      </sequence>
+                    </on>
+                    $t:common.edit
+                  </button>
                   <button data-if="{{policy.source_type === 'admin' &amp;&amp; policy.abilities?.can_delete === true}}" type="button" class="ml-2 text-sm px-3 py-1.5 rounded-md border border-red-300 dark:border-red-600 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors">
                     <on type="click">
                       <!-- 삭제 창 열기 — 운영자 정책에서만 이 버튼이 나온다(확장 선언 정책은 지울 수 없다). -->
                       <sequence>
-                      <set-state target="global" identityPolicyDeleteId="{{policy.id}}"/>
-                      <open-modal target="identity_policy_delete_modal"/>
+                        <set-state target="global" identityPolicyDeleteId="{{policy.id}}"/>
+                        <open-modal target="identity_policy_delete_modal"/>
                       </sequence>
                     </on>
                     <span>$t:common.delete</span>
@@ -256,14 +285,44 @@
               </toggle>
             </div>
             <div class="flex-center justify-end gap-2">
-              <button type="button" class="text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600" disabled="{{policy.abilities?.can_update !== true}}"><on type="click"><!-- 수정 창 열기 — 등록과 같은 창을 쓰되 `isNew=false` 로 넣고 행의 값을 그대로 채운다.
-     `source_type` 을 함께 담는 것이 중요하다 — 창이 그 값으로 키·범위·대상을 잠글지 정한다. --><sequence><set-state target="global"><field name="identity_policy_form_modal"><field name="form"><field name="id" value="{{policy.id}}"/><field name="key" value="{{policy.key ?? ''}}"/><field name="scope" value="{{policy.scope ?? 'route'}}"/><field name="target" value="{{policy.target ?? ''}}"/><field name="purpose" value="{{policy.purpose ?? 'sensitive_action'}}"/><field name="provider_id" value="{{policy.provider_id ?? ''}}"/><field name="grace_minutes" value="{{policy.grace_minutes ?? 0}}"/><field name="applies_to" value="{{policy.applies_to ?? 'both'}}"/><field name="fail_mode" value="{{policy.fail_mode ?? 'block'}}"/><field name="enabled" value="{{Boolean(policy.enabled)}}"/><field name="priority" value="{{policy.priority ?? 100}}"/><field name="source_type" value="{{policy.source_type ?? 'admin'}}"/><field name="user_overrides" value="{{policy.user_overrides ?? []}}"/></field><field name="isNew" :value="false"/><field name="errors" :value="null"/><field name="isSaving" :value="false"/></field></set-state><open-modal target="identity_policy_form_modal"/></sequence></on>$t:common.edit</button>
+              <button type="button" class="text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600" disabled="{{policy.abilities?.can_update !== true}}">
+                <on type="click">
+                  <!-- 수정 창 열기 — 등록과 같은 창을 쓰되 `isNew=false` 로 넣고 행의 값을 그대로 채운다.
+     `source_type` 을 함께 담는 것이 중요하다 — 창이 그 값으로 키·범위·대상을 잠글지 정한다. -->
+                  <sequence>
+                    <set-state target="global">
+                      <field name="identity_policy_form_modal">
+                        <field name="form">
+                          <field name="id" value="{{policy.id}}"/>
+                          <field name="key" value="{{policy.key ?? ''}}"/>
+                          <field name="scope" value="{{policy.scope ?? 'route'}}"/>
+                          <field name="target" value="{{policy.target ?? ''}}"/>
+                          <field name="purpose" value="{{policy.purpose ?? 'sensitive_action'}}"/>
+                          <field name="provider_id" value="{{policy.provider_id ?? ''}}"/>
+                          <field name="grace_minutes" value="{{policy.grace_minutes ?? 0}}"/>
+                          <field name="applies_to" value="{{policy.applies_to ?? 'both'}}"/>
+                          <field name="fail_mode" value="{{policy.fail_mode ?? 'block'}}"/>
+                          <field name="enabled" value="{{Boolean(policy.enabled)}}"/>
+                          <field name="priority" value="{{policy.priority ?? 100}}"/>
+                          <field name="source_type" value="{{policy.source_type ?? 'admin'}}"/>
+                          <field name="user_overrides" value="{{policy.user_overrides ?? []}}"/>
+                        </field>
+                        <field name="isNew" :value="false"/>
+                        <field name="errors" :value="null"/>
+                        <field name="isSaving" :value="false"/>
+                      </field>
+                    </set-state>
+                    <open-modal target="identity_policy_form_modal"/>
+                  </sequence>
+                </on>
+                $t:common.edit
+              </button>
               <button data-if="{{policy.source_type === 'admin' &amp;&amp; policy.abilities?.can_delete === true}}" type="button" class="text-sm px-3 py-1.5 rounded-md border border-red-300 dark:border-red-600 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors">
                 <on type="click">
                   <!-- 삭제 창 열기(좁은 화면 카드 판) — 표 판과 같은 배선이다. -->
                   <sequence>
-                  <set-state target="global" identityPolicyDeleteId="{{policy.id}}"/>
-                  <open-modal target="identity_policy_delete_modal"/>
+                    <set-state target="global" identityPolicyDeleteId="{{policy.id}}"/>
+                    <open-modal target="identity_policy_delete_modal"/>
                   </sequence>
                 </on>
                 <span>$t:common.delete</span>

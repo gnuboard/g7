@@ -1,17 +1,16 @@
-<!--
-  주문 목록 — 결과 표. 표에 관한 선택은 두 종류로 갈려 저장 자리가 다르다. 정렬·페이지·페이지당
+<!-- 주문 목록 — 결과 표. 표에 관한 선택은 두 종류로 갈려 저장 자리가 다르다. 정렬·페이지·페이지당
   개수처럼 **무엇을 보여줄지**는 URL query 로 나가고(재진입·뒤로가기·주소 공유에서 같은 화면이
   서야 한다), 어떤 열을 볼지처럼 **어떻게 보여줄지**는 운영자 취향이라 브라우저에 남긴다.
 
   정렬 select 의 값이 `ordered_at_desc` 처럼 한 덩어리인데 서버로는 `sort_by`·`sort_order` 둘로
-  갈라 보내는 이유는 select 가 값을 하나만 가질 수 있어서다 — 마지막 밑줄 뒤가 방향이다.
--->
+  갈라 보내는 이유는 select 가 값을 하나만 가질 수 있어서다 — 마지막 밑줄 뒤가 방향이다. -->
 <partial description="Order List - DataGrid Section">
   <div>
     <div data-ref="table_header_bar" class="flex-between flex-wrap gap-3 mb-4">
       <!-- 좌측: 총 항목 개수 -->
       <div class="flex-center gap-3">
-        <!-- 총 항목 개수 --><span class="text-label">$t:sirsoft-ecommerce.admin.order.datagrid.total_count|count={{orders?.data?.pagination?.total || 0}}</span>
+        <!-- 총 항목 개수 -->
+        <span class="text-label">$t:sirsoft-ecommerce.admin.order.datagrid.total_count|count={{orders?.data?.pagination?.total || 0}}</span>
       </div>
       <!-- 우측: 정렬, 페이지당 개수, 엑셀 다운로드 -->
       <div class="flex-center gap-2">
@@ -74,7 +73,14 @@
         <column field="order_number" header="$t:sirsoft-ecommerce.admin.order.column.order_number" width="140px" :sortable="true" :required="true">
           <cell>
             <!-- 주문번호를 눌러 상세로. 보던 목록 상태를 이고 가므로 상세에서 돌아오면 같은 자리가 열린다 -->
-            <span class="font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline"><on type="click"><navigate path="/admin/ecommerce/orders/{{row.order_number}}" :mergeQuery="true"><query/></navigate></on>{{row.order_number}}</span>
+            <span class="font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline">
+              <on type="click">
+                <navigate path="/admin/ecommerce/orders/{{row.order_number}}" :mergeQuery="true">
+                  <query/>
+                </navigate>
+              </on>
+              {{row.order_number}}
+            </span>
           </cell>
         </column>
         <column field="product" header="$t:sirsoft-ecommerce.admin.order.column.product" width="auto" :sortable="false" :required="false">
@@ -88,7 +94,8 @@
                   <span data-if="{{row.options_count > 1}}" class="text-gray-500 dark:text-gray-400 font-normal ml-1">$t:defer:sirsoft-ecommerce.admin.order.product.more|count={{row.options_count - 1}}</span>
                 </div>
                 <div data-if="{{row.first_option?.product_option_name}}" class="text-tertiary">{{row.first_option?.product_option_name}}</div>
-                <!-- 추가옵션 요약 — 첫 1건(직접입력 병기) + 외 N건 (Q-E2) --><div data-if="{{row.first_option?.additional_options_summary}}" class="text-tertiary text-xs">{{row.first_option?.additional_options_summary?.label}}{{(row.first_option?.additional_options_summary?.extra_count ?? 0) > 0 ? ' 외 ' + row.first_option.additional_options_summary.extra_count + '건' : ''}}</div>
+                <!-- 추가옵션 요약 — 첫 1건(직접입력 병기) + 외 N건 (Q-E2) -->
+                <div data-if="{{row.first_option?.additional_options_summary}}" class="text-tertiary text-xs">{{row.first_option?.additional_options_summary?.label}}{{(row.first_option?.additional_options_summary?.extra_count ?? 0) > 0 ? ' 외 ' + row.first_option.additional_options_summary.extra_count + '건' : ''}}</div>
               </div>
             </div>
           </cell>
@@ -110,7 +117,8 @@
             <!-- 주문상태 배지 묶음 — 상태 배지 아래에 부분취소 보조 배지를 세로로 배치(두 줄) -->
             <div class="flex flex-col items-start gap-1">
               <status-badge status="{{row.order_status_variant || 'default'}}" label="{{row.order_status_label}}" :showIcon="false"/>
-              <!-- 부분취소 보조 배지 — 일부 옵션만 취소된 주문(별도 주문상태 아님, 파생 플래그) --><span data-if="{{row.is_partially_cancelled}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400">$t:sirsoft-ecommerce.admin.order.detail.partial_cancelled_badge</span>
+              <!-- 부분취소 보조 배지 — 일부 옵션만 취소된 주문(별도 주문상태 아님, 파생 플래그) -->
+              <span data-if="{{row.is_partially_cancelled}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400">$t:sirsoft-ecommerce.admin.order.detail.partial_cancelled_badge</span>
             </div>
           </cell>
         </column>
@@ -124,15 +132,13 @@
                 <item id="search_by_orderer_guest" label="$t:sirsoft-ecommerce.admin.order.action.search_by_orderer" iconName="magnifying-glass" if="{{!row.user?.uuid}}"/>
               </prop>
               <on event="onItemClick">
-                <!--
-                  주문자 이름을 눌렀을 때의 갈래. 회원과 비회원을 가르는 것은 `user.uuid` 의 유무이고,
+                <!-- 주문자 이름을 눌렀을 때의 갈래. 회원과 비회원을 가르는 것은 `user.uuid` 의 유무이고,
                   같은 "이 주문자로 검색" 이라도 회원은 uuid 로(동명이인·개명에도 같은 사람이 잡힌다),
                   비회원은 이름 문자열로 찾는다 — 비회원 주문에는 사람을 특정할 키가 없다.
                   두 갈래 다 `_local.filter` 를 채우는 것과 URL query 를 가는 것을 함께 한다(둘 중
                   하나만 하면 입력칸과 결과가 어긋난다). 회원 갈래가 `ordererSearchResults` 까지
                   손수 채우는 이유는, 필터의 주문자 드롭다운이 그 목록에서 라벨을 찾기 때문이다 —
-                  비워 두면 이름 대신 uuid 가 그대로 보인다.
-                -->
+                  비워 두면 이름 대신 uuid 가 그대로 보인다. -->
                 <switch>
                   <case when="view_member">
                     <open-window path="/admin/users/{{row.user?.uuid}}"/>
@@ -158,7 +164,8 @@
                 <div class="min-w-0 flex-1">
                   <span data-if="{{!!row.user?.uuid}}" class="font-medium text-gray-900 dark:text-gray-100 truncate block">{{row.address?.orderer_name || row.user?.name}}</span>
                   <span data-if="{{!row.user?.uuid}}" class="text-gray-600 dark:text-gray-400 truncate block">{{row.address?.orderer_name || row.user?.name}}</span>
-                  <!-- 첫구매 표시 --><span data-if="{{row.is_first_order}}" class="text-xs text-emerald-500 dark:text-emerald-400">$t:sirsoft-ecommerce.admin.order.column.first_order</span>
+                  <!-- 첫구매 표시 -->
+                  <span data-if="{{row.is_first_order}}" class="text-xs text-emerald-500 dark:text-emerald-400">$t:sirsoft-ecommerce.admin.order.column.first_order</span>
                 </div>
               </div>
             </action-menu>

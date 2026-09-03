@@ -75,8 +75,10 @@
                 <span data-if="{{post?.row_type === 'notice'}}" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-xs font-bold bg-blue-600 text-white dark:bg-blue-500">
                   <span>{{post?.number ?? '-'}}</span>
                 </span>
-                <!-- 답글 배지 --><span data-if="{{post?.row_type === 'reply'}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 flex-shrink-0">$t:board.post.reply</span>
-                <!-- 일반 게시글 순번 --><span data-if="{{post?.row_type === 'normal'}}" class="text-sm text-gray-500 dark:text-gray-400">{{post?.number ?? '-'}}</span>
+                <!-- 답글 배지 -->
+                <span data-if="{{post?.row_type === 'reply'}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 flex-shrink-0">$t:board.post.reply</span>
+                <!-- 일반 게시글 순번 -->
+                <span data-if="{{post?.row_type === 'normal'}}" class="text-sm text-gray-500 dark:text-gray-400">{{post?.number ?? '-'}}</span>
               </div>
               <!-- 제목 영역 -->
               <div class="flex items-center gap-2 min-w-0">
@@ -85,7 +87,8 @@
                 </prop>
                 <!-- 답글 화살표 아이콘 -->
                 <icon data-if="{{post?.row_type === 'reply'}}" name="turn-up" size="sm" class="fa-rotate-90 text-gray-400 dark:text-gray-500 flex-shrink-0"/>
-                <!-- 카테고리 배지 --><span data-if="{{post?.category}}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 flex-shrink-0">{{post?.category}}</span>
+                <!-- 카테고리 배지 -->
+                <span data-if="{{post?.category}}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 flex-shrink-0">{{post?.category}}</span>
                 <!-- 비밀글 아이콘 -->
                 <icon data-if="{{post?.is_secret}}" name="lock" size="sm" class="text-gray-500 dark:text-gray-400 flex-shrink-0"/>
                 <!-- 블라인드 아이콘 -->
@@ -94,7 +97,8 @@
                 <!-- 첨부파일 아이콘 -->
                 <icon data-if="{{post?.has_attachment}}" name="paperclip" size="sm" class="text-gray-500 dark:text-gray-400 flex-shrink-0"/>
                 <span data-if="{{posts?.data?.board?.settings?.use_comment &amp;&amp; post?.comment_count > 0}}" class="text-blue-600 dark:text-blue-400 text-sm font-medium flex-shrink-0">[{{post?.comment_count}}]</span>
-                <!-- 삭제됨 배지 --><span data-if="{{post?.deleted_at}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 flex-shrink-0">$t:board.post.deleted_badge</span>
+                <!-- 삭제됨 배지 -->
+                <span data-if="{{post?.deleted_at}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 flex-shrink-0">$t:board.post.deleted_badge</span>
                 <span data-if="{{post?.is_new}}" class="px-1.5 py-0.5 text-xs bg-red-500 dark:bg-red-500 text-white rounded flex-shrink-0">N</span>
               </div>
               <!-- 작성자 -->
@@ -102,8 +106,10 @@
                 <avatar author="{{post?.author}}" size="xs" class="{{(post?.status === 'blinded' || post?.deleted_at) ? 'opacity-40' : ''}}"/>
                 <user-info author="{{post?.author}}" :showDropdown="true" :stopPropagation="true" class="text-sm {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'}}"/>
               </div>
-              <!-- 작성일 --><span class="text-sm text-center whitespace-nowrap {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'}}" title="{{post?.created_at ?? ''}}">{{post?.created_at_formatted ?? ''}}</span>
-              <!-- 조회수 --><span data-if="{{posts?.data?.board?.settings?.show_view_count !== false}}" class="text-sm text-center {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'}}">{{post?.view_count}}</span>
+              <!-- 작성일 -->
+              <span class="text-sm text-center whitespace-nowrap {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'}}" title="{{post?.created_at ?? ''}}">{{post?.created_at_formatted ?? ''}}</span>
+              <!-- 조회수 -->
+              <span data-if="{{posts?.data?.board?.settings?.show_view_count !== false}}" class="text-sm text-center {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'}}">{{post?.view_count}}</span>
             </div>
             <!-- 모바일: 카드 형태 -->
             <div class="flex flex-col gap-2 px-4 py-3 lg:hidden">
@@ -113,8 +119,10 @@
                 <span data-if="{{post?.row_type === 'notice'}}" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-blue-600 text-white dark:bg-blue-500 flex-shrink-0">
                   <span>{{post?.number ?? '-'}}</span>
                 </span>
-                <!-- 답글 배지 --><span data-if="{{post?.row_type === 'reply'}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 flex-shrink-0 mt-0.5">$t:board.post.reply</span>
-                <!-- 일반 순번 --><span data-if="{{post?.row_type === 'normal'}}" class="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 mt-0.5">#{{post?.number}}</span>
+                <!-- 답글 배지 -->
+                <span data-if="{{post?.row_type === 'reply'}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 flex-shrink-0 mt-0.5">$t:board.post.reply</span>
+                <!-- 일반 순번 -->
+                <span data-if="{{post?.row_type === 'normal'}}" class="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 mt-0.5">#{{post?.number}}</span>
                 <!-- 제목 영역 -->
                 <div class="flex-1 min-w-0">
                   <prop name="style">
@@ -123,7 +131,8 @@
                   <div class="flex items-center gap-2">
                     <!-- 답글 화살표 아이콘 -->
                     <icon data-if="{{post?.row_type === 'reply'}}" name="turn-up" size="sm" class="fa-rotate-90 text-gray-400 dark:text-gray-500 flex-shrink-0"/>
-                    <!-- 카테고리 배지 --><span data-if="{{post?.category}}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 flex-shrink-0">{{post?.category}}</span>
+                    <!-- 카테고리 배지 -->
+                    <span data-if="{{post?.category}}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 flex-shrink-0">{{post?.category}}</span>
                     <!-- 비밀글 아이콘 -->
                     <icon data-if="{{post?.is_secret}}" name="lock" size="sm" class="text-gray-500 dark:text-gray-400 flex-shrink-0"/>
                     <!-- 블라인드 아이콘 -->
@@ -132,7 +141,8 @@
                     <!-- 첨부파일 아이콘 -->
                     <icon data-if="{{post?.has_attachment}}" name="paperclip" size="sm" class="text-gray-500 dark:text-gray-400 flex-shrink-0"/>
                     <span data-if="{{posts?.data?.board?.settings?.use_comment &amp;&amp; post?.comment_count > 0}}" class="text-blue-600 dark:text-blue-400 text-sm font-medium flex-shrink-0">[{{post?.comment_count}}]</span>
-                    <!-- 삭제됨 배지 --><span data-if="{{post?.deleted_at}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 flex-shrink-0">$t:board.post.deleted_badge</span>
+                    <!-- 삭제됨 배지 -->
+                    <span data-if="{{post?.deleted_at}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 flex-shrink-0">$t:board.post.deleted_badge</span>
                     <span data-if="{{post?.is_new}}" class="px-1.5 py-0.5 text-xs bg-red-500 dark:bg-red-500 text-white rounded flex-shrink-0">N</span>
                   </div>
                 </div>

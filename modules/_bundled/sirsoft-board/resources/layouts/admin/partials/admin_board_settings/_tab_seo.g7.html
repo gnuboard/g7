@@ -85,32 +85,32 @@
                 <sequence>
                   <set-state target="local" :clearingCache="true"/>
                   <api-call :auth_required="true" target="/api/admin/seo/clear-cache" method="POST">
-                  <success>
-                    <api-call :auth_required="true" target="/api/admin/seo/clear-cache" method="POST">
-                      <success>
-                        <api-call :auth_required="true" target="/api/admin/seo/clear-cache" method="POST">
-                          <success>
-                            <set-state target="local" :clearingCache="false"/>
-                            <toast type="success" message="$t:sirsoft-board.admin.settings.seo.seo_friendly.clear_cache_success"/>
-                          </success>
-                          <fail>
-                            <set-state target="local" :clearingCache="false"/>
-                            <toast type="error" message="{{error.message ?? '$t:sirsoft-board.admin.settings.seo.seo_friendly.clear_cache_error'}}"/>
-                          </fail>
-                          <body layout="board/show"/>
-                        </api-call>
-                      </success>
-                      <fail>
-                        <set-state target="local" :clearingCache="false"/>
-                        <toast type="error" message="{{error.message ?? '$t:sirsoft-board.admin.settings.seo.seo_friendly.clear_cache_error'}}"/>
-                      </fail>
-                      <body layout="board/index"/>
-                    </api-call>
-                  </success>
-                  <fail>
-                    <set-state target="local" :clearingCache="false"/>
-                    <toast type="error" message="{{error.message ?? '$t:sirsoft-board.admin.settings.seo.seo_friendly.clear_cache_error'}}"/>
-                  </fail>
+                    <success>
+                      <api-call :auth_required="true" target="/api/admin/seo/clear-cache" method="POST">
+                        <success>
+                          <api-call :auth_required="true" target="/api/admin/seo/clear-cache" method="POST">
+                            <success>
+                              <set-state target="local" :clearingCache="false"/>
+                              <toast type="success" message="$t:sirsoft-board.admin.settings.seo.seo_friendly.clear_cache_success"/>
+                            </success>
+                            <fail>
+                              <set-state target="local" :clearingCache="false"/>
+                              <toast type="error" message="{{error.message ?? '$t:sirsoft-board.admin.settings.seo.seo_friendly.clear_cache_error'}}"/>
+                            </fail>
+                            <body layout="board/show"/>
+                          </api-call>
+                        </success>
+                        <fail>
+                          <set-state target="local" :clearingCache="false"/>
+                          <toast type="error" message="{{error.message ?? '$t:sirsoft-board.admin.settings.seo.seo_friendly.clear_cache_error'}}"/>
+                        </fail>
+                        <body layout="board/index"/>
+                      </api-call>
+                    </success>
+                    <fail>
+                      <set-state target="local" :clearingCache="false"/>
+                      <toast type="error" message="{{error.message ?? '$t:sirsoft-board.admin.settings.seo.seo_friendly.clear_cache_error'}}"/>
+                    </fail>
                     <body layout="board/boards"/>
                   </api-call>
                 </sequence>

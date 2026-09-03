@@ -8,24 +8,45 @@
     <div class="flex items-center gap-2 mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
       <responsive on="portable" class="flex items-center gap-2 mb-3 pb-3 border-b border-gray-200 dark:border-gray-700"/>
       <icon name="user" class="text-xl text-gray-700 dark:text-gray-300"/>
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white"><responsive on="portable" class="text-base font-semibold text-gray-900 dark:text-white"/>$t:mypage.order_detail.orderer_title</h3>
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+        <responsive on="portable" class="text-base font-semibold text-gray-900 dark:text-white"/>
+        $t:mypage.order_detail.orderer_title
+      </h3>
     </div>
     <!-- 주문자 정보 목록 -->
     <div class="space-y-3">
       <!-- 주문자 -->
       <div class="flex items-start">
-        <span class="w-28 flex-shrink-0 text-gray-500 dark:text-gray-400"><responsive on="portable" class="w-20 flex-shrink-0 text-gray-500 dark:text-gray-400 text-sm"/>$t:mypage.order_detail.orderer_name</span>
-        <span class="text-gray-900 dark:text-white"><responsive on="portable" class="text-gray-900 dark:text-white text-sm"/>{{order.data.orderer_name ?? ''}}</span>
+        <span class="w-28 flex-shrink-0 text-gray-500 dark:text-gray-400">
+          <responsive on="portable" class="w-20 flex-shrink-0 text-gray-500 dark:text-gray-400 text-sm"/>
+          $t:mypage.order_detail.orderer_name
+        </span>
+        <span class="text-gray-900 dark:text-white">
+          <responsive on="portable" class="text-gray-900 dark:text-white text-sm"/>
+          {{order.data.orderer_name ?? ''}}
+        </span>
       </div>
       <!-- 연락처 -->
       <div class="flex items-start">
-        <span class="w-28 flex-shrink-0 text-gray-500 dark:text-gray-400"><responsive on="portable" class="w-20 flex-shrink-0 text-gray-500 dark:text-gray-400 text-sm"/>$t:mypage.order_detail.orderer_phone</span>
-        <span class="text-gray-900 dark:text-white"><responsive on="portable" class="text-gray-900 dark:text-white text-sm"/>{{order.data.orderer_phone ?? ''}}</span>
+        <span class="w-28 flex-shrink-0 text-gray-500 dark:text-gray-400">
+          <responsive on="portable" class="w-20 flex-shrink-0 text-gray-500 dark:text-gray-400 text-sm"/>
+          $t:mypage.order_detail.orderer_phone
+        </span>
+        <span class="text-gray-900 dark:text-white">
+          <responsive on="portable" class="text-gray-900 dark:text-white text-sm"/>
+          {{order.data.orderer_phone ?? ''}}
+        </span>
       </div>
       <!-- 이메일 (있는 경우만 표시) -->
       <div data-if="{{order.data.orderer_email}}" class="flex items-start">
-        <span class="w-28 flex-shrink-0 text-gray-500 dark:text-gray-400"><responsive on="portable" class="w-20 flex-shrink-0 text-gray-500 dark:text-gray-400 text-sm"/>$t:mypage.order_detail.orderer_email</span>
-        <span class="text-gray-900 dark:text-white"><responsive on="portable" class="text-gray-900 dark:text-white text-sm"/>{{order.data.orderer_email ?? ''}}</span>
+        <span class="w-28 flex-shrink-0 text-gray-500 dark:text-gray-400">
+          <responsive on="portable" class="w-20 flex-shrink-0 text-gray-500 dark:text-gray-400 text-sm"/>
+          $t:mypage.order_detail.orderer_email
+        </span>
+        <span class="text-gray-900 dark:text-white">
+          <responsive on="portable" class="text-gray-900 dark:text-white text-sm"/>
+          {{order.data.orderer_email ?? ''}}
+        </span>
       </div>
     </div>
   </div>

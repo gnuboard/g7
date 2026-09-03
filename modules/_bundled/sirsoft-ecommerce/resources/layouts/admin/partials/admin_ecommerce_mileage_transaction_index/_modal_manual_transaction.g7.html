@@ -1,5 +1,4 @@
-<!--
-  관리자가 회원 마일리지를 손으로 지급하거나 차감하는 창. 이 화면의 유일한 잔액 변경 경로다.
+<!-- 관리자가 회원 마일리지를 손으로 지급하거나 차감하는 창. 이 화면의 유일한 잔액 변경 경로다.
   회원은 이름·이메일로 찾아 고른다 — 고르고 나면 검색칸이 사라지고 선택된 회원 카드로 바뀌며,
   거기 현재 잔액이 함께 뜬다. 그 잔액이 아래 차감 초과 경고의 근거다.
   지급과 차감이 라디오 하나로 갈리고, 그에 따라 화면이 둘 달라진다 — 지급일 때만 유효기간 칸이
@@ -7,8 +6,7 @@
   실행 버튼의 잠금 조건이 다섯이다(저장 중·회원 미선택·금액 0 이하·사유 공백·차감액이 잔액 초과).
   잔액을 모르는 회원(`balance` 가 `null`)은 마지막 조건을 건너뛴다 — 모르는 값으로 막지 않는다.
   회원 식별은 **uuid** 다. 코어가 회원 응답에 숫자 id 를 내리지 않기 때문이고, 이 화면의 다른
-  창들도 같은 규약을 쓴다.
--->
+  창들도 같은 규약을 쓴다. -->
 <partial description="마일리지 수동 지급/차감 모달 (회원 검색 부유 자동완성 + 지급/차감 분기 + G7 표준 검증 피드백 3종 + 로딩 상태). user_id 는 uuid 전송 (코어 UserResource 가 id 미노출).">
   <modal data-ref="modal_manual_transaction" title="$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.title" size="md" :closeOnOverlayClick="false">
     <div class="space-y-4">
@@ -28,12 +26,10 @@
         <input type="text" value="{{_global.mileageManual?.memberSearchKeyword ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.member_search_placeholder" class="{{_global.mileageManual?.errors?.errors?.user_id ? 'input w-full input-error focus:ring-2 focus:ring-red-500 focus:border-red-500' : 'input w-full'}}">
           <prop name="debounce">250</prop>
           <on type="input">
-            <!--
-              회원 자동완성. 글자마다 요청이 나가지 않도록 입력칸에 대기시간(`debounce` 250ms)이
+            <!-- 회원 자동완성. 글자마다 요청이 나가지 않도록 입력칸에 대기시간(`debounce` 250ms)이
               걸려 있고, 검색어가 비면 조회 자체를 건너뛴다(`if`) — 빈 검색으로 회원 전체를 긁어
               오는 것을 막는 자리다.
-              찾기는 코어의 회원 검색을 그대로 쓴다(이커머스 전용 검색이 따로 없다).
-            -->
+              찾기는 코어의 회원 검색을 그대로 쓴다(이커머스 전용 검색이 따로 없다). -->
             <sequence>
               <set-state target="global" mileageManual.memberSearchKeyword="{{$event.target.value}}"/>
               <api-call :auth_required="true" if="{{($event.target.value ?? '').length > 0}}" target="/api/admin/users/search" method="GET">
@@ -160,13 +156,11 @@
       </button>
       <button data-ref="manual_submit_button" type="button" disabled="{{_global.mileageManual?.isSaving || !_global.mileageManual?.selectedMember || !(Number(_global.mileageManual?.amount ?? 0) > 0) || !(_global.mileageManual?.reason ?? '').trim() || (_global.mileageManual?.action === 'deduct' &amp;&amp; _global.mileageManual?.selectedMember?.balance !== null &amp;&amp; Number(_global.mileageManual?.amount ?? 0) > Number(_global.mileageManual?.selectedMember?.balance ?? 0))}}" class="flex items-center gap-2 btn text-sm bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed">
         <on type="click">
-          <!--
-            지급·차감 실행. 화면에 흩어져 있던 값들을 여기서 서버 형태로 맞춘다 — 금액은 숫자로,
+          <!-- 지급·차감 실행. 화면에 흩어져 있던 값들을 여기서 서버 형태로 맞춘다 — 금액은 숫자로,
             사유는 `memo` 로, 만료일은 '직접 지정' 일 때만 실어 보내고 아니면 비운다.
             성공 갈래에서 `mileageManual` 을 통째로 비우므로 다음에 창을 열면 처음 상태다.
             실패 갈래는 창을 닫지 않고 서버 응답을 담아 둔다 — 위 배너와 각 칸 아래 문구가 그 안의
-            필드별 오류(`user_id`·`amount`·`memo`)를 나눠 읽는다.
-          -->
+            필드별 오류(`user_id`·`amount`·`memo`)를 나눠 읽는다. -->
           <sequence>
             <set-state target="global" :mileageManual.isSaving="true" :mileageManual.errors="null"/>
             <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/mileage-transactions" method="POST" body="{{({ user_id: _global.mileageManual?.selectedMember?.uuid, action: _global.mileageManual?.action ?? 'earn', amount: Number(_global.mileageManual?.amount ?? 0), currency: _global.mileageManual?.currency ?? 'KRW', memo: _global.mileageManual?.reason, use_default_expiry: _global.mileageManual?.useDefaultExpiry ?? true, expires_at: (_global.mileageManual?.useDefaultExpiry === false ? _global.mileageManual?.expiresAt : null) })}}">

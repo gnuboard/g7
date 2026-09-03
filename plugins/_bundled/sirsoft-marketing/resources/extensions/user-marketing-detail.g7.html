@@ -74,7 +74,8 @@
         <!-- 동의 이력 테이블 -->
         <div class="mt-6 pt-4">
           <h3 class="text-primary text-sm font-semibold mb-3">$t:admin.users.detail.consent_history</h3>
-          <!-- 이력이 없는 경우 --><div data-if="{{!user?.data?.consent_histories || user?.data?.consent_histories?.length === 0}}" class="text-label-subtle py-4 text-center">$t:sirsoft-marketing.no_consent_history</div>
+          <!-- 이력이 없는 경우 -->
+          <div data-if="{{!user?.data?.consent_histories || user?.data?.consent_histories?.length === 0}}" class="text-label-subtle py-4 text-center">$t:sirsoft-marketing.no_consent_history</div>
           <!-- 이력 테이블 -->
           <div data-if="{{user?.data?.consent_histories?.length > 0}}" class="max-h-60 overflow-y-auto overflow-x-auto">
             <table class="divider-list min-w-full">

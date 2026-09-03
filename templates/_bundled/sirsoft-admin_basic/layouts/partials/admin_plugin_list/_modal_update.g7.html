@@ -1,12 +1,10 @@
-<!--
-  플러그인을 새 판본으로 올리기 전 묻는 창. 두 가지를 정하고 넘어간다.
+<!-- 플러그인을 새 판본으로 올리기 전 묻는 창. 두 가지를 정하고 넘어간다.
 
   ⑴ **코어 버전이 맞지 않으면** 위에 경고 띠가 뜨고 「알면서 진행」에 체크하기 전까지 버튼이 잠긴다.
      맞을 때는 그 띠 자체가 안 보인다.
   ⑵ **화면 정의를 어떻게 할지** — 새 것으로 덮을지, 지금 것을 그대로 둘지. 손댄 화면이 있으면
      몇 개인지 먼저 알려 주고, 「그대로 두기」를 고르면 어느 화면이 남는지 목록으로 편다.
-  실패해도 창은 열린 채이고 사유가 창 안에 남는다.
--->
+  실패해도 창은 열린 채이고 사유가 창 안에 남는다. -->
 <partial description="플러그인 업데이트 확인 모달" editor_label="$t:admin.modal_label.admin_plugin_list.plugin_update_modal">
   <modal data-ref="plugin_update_modal" title="$t:admin.plugins.modals.update_title" size="medium">
     <div data-if="{{_global.selectedPlugin?.is_compatible === false}}" class="mb-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg" role="alert">
@@ -155,21 +153,21 @@
         <on type="click">
           <!-- 화면 정의 처리 방식과 강행 여부 둘을 실어 보낸다. 성공하면 고른 플러그인과 화면 정의 관련 값들을 처음으로 되돌린다 — 전역이라 다음에 다른 플러그인을 열 때 지난 선택이 따라붙는다. -->
           <sequence>
-          <set-state target="global" :isPluginUpdating="true" :pluginUpdateError="null"/>
-          <api-call :auth_required="true" target="/api/admin/plugins/{{_global.selectedPlugin.identifier}}/update" method="POST">
-            <success>
-              <set-state target="global" :isPluginUpdating="false"/>
-              <set-state target="global" :selectedPlugin="null" pluginLayoutStrategy="overwrite" :hasModifiedPluginLayouts="false" :modifiedPluginLayoutsCount="0" :modifiedPluginLayouts="[]" :pluginRebuildSearchIndex="false"/>
-              <toast type="success" message="$t:admin.plugins.update_success"/>
-              <refetch-data-source dataSourceId="plugins"/>
-              <close-modal/>
-            </success>
-            <fail>
-              <set-state target="global" :isPluginUpdating="false" pluginUpdateError="{{error.message}}"/>
-              <toast type="error" message="{{error.message}}"/>
-            </fail>
-            <body layout_strategy="{{_global.pluginLayoutStrategy ?? 'overwrite'}}" force="{{_global.pluginForceUpdate === true}}" rebuild_search_index="{{_global.pluginRebuildSearchIndex === true}}"/>
-          </api-call>
+            <set-state target="global" :isPluginUpdating="true" :pluginUpdateError="null"/>
+            <api-call :auth_required="true" target="/api/admin/plugins/{{_global.selectedPlugin.identifier}}/update" method="POST">
+              <success>
+                <set-state target="global" :isPluginUpdating="false"/>
+                <set-state target="global" :selectedPlugin="null" pluginLayoutStrategy="overwrite" :hasModifiedPluginLayouts="false" :modifiedPluginLayoutsCount="0" :modifiedPluginLayouts="[]" :pluginRebuildSearchIndex="false"/>
+                <toast type="success" message="$t:admin.plugins.update_success"/>
+                <refetch-data-source dataSourceId="plugins"/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="global" :isPluginUpdating="false" pluginUpdateError="{{error.message}}"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+              <body layout_strategy="{{_global.pluginLayoutStrategy ?? 'overwrite'}}" force="{{_global.pluginForceUpdate === true}}" rebuild_search_index="{{_global.pluginRebuildSearchIndex === true}}"/>
+            </api-call>
           </sequence>
         </on>
         <icon data-if="{{_global.isPluginUpdating}}" name="spinner" class="spinner-sm"/>

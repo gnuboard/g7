@@ -7,11 +7,22 @@
       <div class="inline-flex items-center justify-center w-14 h-14 bg-blue-100 dark:bg-blue-900/40 rounded-full">
         <icon name="mobile-screen" class="text-2xl text-blue-600 dark:text-blue-400"/>
       </div>
-      <!-- 성인인증 purpose 전용 제목 --><h3 data-if="{{_global.identityChallenge?.purpose === 'nhnkcp.adult_verification'}}" class="section-heading-md">$t:sirsoft-verification_nhnkcp.modal.adult_title</h3>
-      <!-- 기본 본인확인 제목 (signup/password_reset/self_update/sensitive_action 등) --><h3 data-if="{{_global.identityChallenge?.purpose !== 'nhnkcp.adult_verification'}}" class="section-heading-md">$t:sirsoft-verification_nhnkcp.modal.title</h3>
-      <!-- 성인인증 purpose 전용 설명 --><p data-if="{{_global.identityChallenge?.purpose === 'nhnkcp.adult_verification'}}" class="text-label">$t:sirsoft-verification_nhnkcp.modal.adult_description</p>
-      <!-- 기본 본인확인 설명 (데스크톱) --><p data-if="{{_global.identityChallenge?.purpose !== 'nhnkcp.adult_verification'}}" class="text-label"><responsive on="portable" class="text-label hidden"/>$t:sirsoft-verification_nhnkcp.modal.description</p>
-      <!-- 모바일 전용 안내 — 페이지가 인증 화면으로 이동함을 알린다 --><p class="text-label hidden"><responsive on="portable" class="text-label"/>$t:sirsoft-verification_nhnkcp.modal.mobile_description</p>
+      <!-- 성인인증 purpose 전용 제목 -->
+      <h3 data-if="{{_global.identityChallenge?.purpose === 'nhnkcp.adult_verification'}}" class="section-heading-md">$t:sirsoft-verification_nhnkcp.modal.adult_title</h3>
+      <!-- 기본 본인확인 제목 (signup/password_reset/self_update/sensitive_action 등) -->
+      <h3 data-if="{{_global.identityChallenge?.purpose !== 'nhnkcp.adult_verification'}}" class="section-heading-md">$t:sirsoft-verification_nhnkcp.modal.title</h3>
+      <!-- 성인인증 purpose 전용 설명 -->
+      <p data-if="{{_global.identityChallenge?.purpose === 'nhnkcp.adult_verification'}}" class="text-label">$t:sirsoft-verification_nhnkcp.modal.adult_description</p>
+      <!-- 기본 본인확인 설명 (데스크톱) -->
+      <p data-if="{{_global.identityChallenge?.purpose !== 'nhnkcp.adult_verification'}}" class="text-label">
+        <responsive on="portable" class="text-label hidden"/>
+        $t:sirsoft-verification_nhnkcp.modal.description
+      </p>
+      <!-- 모바일 전용 안내 — 페이지가 인증 화면으로 이동함을 알린다 -->
+      <p class="text-label hidden">
+        <responsive on="portable" class="text-label"/>
+        $t:sirsoft-verification_nhnkcp.modal.mobile_description
+      </p>
     </div>
     <!-- 본인확인 시작 버튼 — 사용자 제스처 컨텍스트에서 window.open 호출 (팝업 차단 회피) -->
     <button type="button" class="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-semibold transition-colors">

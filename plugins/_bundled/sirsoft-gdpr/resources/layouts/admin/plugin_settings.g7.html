@@ -71,7 +71,8 @@
               </div>
               <div class="lg:col-span-2">
                 <input type="text" name="legal_entity_name" placeholder="$t:sirsoft-gdpr.settings.fields.legal_entity_name.placeholder" class="{{_local.errors?.['legal_entity_name'] ? 'input-error dark:focus:ring-red-400 dark:focus:border-red-400' : 'dark:focus:ring-blue-400 dark:focus:border-blue-400'}}"/>
-                <!-- 필드별 422 검증 에러 메시지 (검토 #10 옵션 X — 코어 admin _tab_general 패턴 채택). --><span data-if="{{_local.errors?.['legal_entity_name']}}" class="form-error">{{_local.errors?.['legal_entity_name']?.[0] ?? ''}}</span>
+                <!-- 필드별 422 검증 에러 메시지 (검토 #10 옵션 X — 코어 admin _tab_general 패턴 채택). -->
+                <span data-if="{{_local.errors?.['legal_entity_name']}}" class="form-error">{{_local.errors?.['legal_entity_name']?.[0] ?? ''}}</span>
               </div>
             </div>
             <div data-ref="field_data_storage_location" class="grid-3col-responsive">
@@ -81,7 +82,8 @@
               </div>
               <div class="lg:col-span-2">
                 <input type="text" name="data_storage_location" placeholder="$t:sirsoft-gdpr.settings.fields.data_storage_location.placeholder" class="{{_local.errors?.['data_storage_location'] ? 'input-error dark:focus:ring-red-400 dark:focus:border-red-400' : 'dark:focus:ring-blue-400 dark:focus:border-blue-400'}}"/>
-                <!-- 필드별 422 검증 에러 메시지 (검토 #10 옵션 X — 코어 admin _tab_general 패턴 채택). --><span data-if="{{_local.errors?.['data_storage_location']}}" class="form-error">{{_local.errors?.['data_storage_location']?.[0] ?? ''}}</span>
+                <!-- 필드별 422 검증 에러 메시지 (검토 #10 옵션 X — 코어 admin _tab_general 패턴 채택). -->
+                <span data-if="{{_local.errors?.['data_storage_location']}}" class="form-error">{{_local.errors?.['data_storage_location']?.[0] ?? ''}}</span>
               </div>
             </div>
             <div data-ref="field_privacy_policy_slug" class="grid-3col-responsive pt-6 border-t border-gray-200 dark:border-gray-700">
@@ -91,7 +93,8 @@
               </div>
               <div class="lg:col-span-2">
                 <input type="text" name="privacy_policy_slug" placeholder="$t:sirsoft-gdpr.settings.fields.privacy_policy_slug.placeholder" class="{{_local.errors?.['privacy_policy_slug'] ? 'input-error dark:focus:ring-red-400 dark:focus:border-red-400' : 'dark:focus:ring-blue-400 dark:focus:border-blue-400'}}"/>
-                <!-- 필드별 422 검증 에러 메시지 (검토 #10 옵션 X — 코어 admin _tab_general 패턴 채택). --><span data-if="{{_local.errors?.['privacy_policy_slug']}}" class="form-error">{{_local.errors?.['privacy_policy_slug']?.[0] ?? ''}}</span>
+                <!-- 필드별 422 검증 에러 메시지 (검토 #10 옵션 X — 코어 admin _tab_general 패턴 채택). -->
+                <span data-if="{{_local.errors?.['privacy_policy_slug']}}" class="form-error">{{_local.errors?.['privacy_policy_slug']?.[0] ?? ''}}</span>
               </div>
             </div>
           </div>
@@ -369,7 +372,8 @@
                       <set-state target="local" form.blocked_domains="{{({...(_local.form?.blocked_domains ?? {}), [category.key]: ($event?.target?.value ?? [])})}}" :hasChanges="true"/>
                     </on>
                   </tag-input>
-                  <!-- 카테고리 내 첫 잘못된 도메인의 에러 메시지 (인덱스 무관). 운영자가 첫 에러를 정정하면 다음 에러가 자연스럽게 노출됨. --><span data-if="{{Object.keys(_local.errors ?? {}).some(k => k.startsWith('blocked_domains.' + category.key + '.'))}}" class="form-error">{{(Object.entries(_local.errors ?? {}).find(([k]) => k.startsWith('blocked_domains.' + category.key + '.'))?.[1]?.[0]) ?? ''}}</span>
+                  <!-- 카테고리 내 첫 잘못된 도메인의 에러 메시지 (인덱스 무관). 운영자가 첫 에러를 정정하면 다음 에러가 자연스럽게 노출됨. -->
+                  <span data-if="{{Object.keys(_local.errors ?? {}).some(k => k.startsWith('blocked_domains.' + category.key + '.'))}}" class="form-error">{{(Object.entries(_local.errors ?? {}).find(([k]) => k.startsWith('blocked_domains.' + category.key + '.'))?.[1]?.[0]) ?? ''}}</span>
                 </div>
               </div>
             </div>

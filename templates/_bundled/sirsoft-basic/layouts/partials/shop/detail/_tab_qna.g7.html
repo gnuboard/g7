@@ -62,15 +62,19 @@
             </on>
             <!-- 내용 셀 -->
             <div class="flex items-center gap-2 flex-1 min-w-0">
-              <!-- Q 배지 --><span class="shrink-0 inline-flex items-center justify-center w-5 h-5 rounded text-xs font-bold bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400">Q</span>
+              <!-- Q 배지 -->
+              <span class="shrink-0 inline-flex items-center justify-center w-5 h-5 rounded text-xs font-bold bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400">Q</span>
               <div class="flex-1 min-w-0">
                 <!-- 비밀글 아이콘 (앞) + 내 문의 배지 + 카테고리 배지 + 제목 -->
                 <div class="flex items-center gap-1 flex-wrap">
                   <!-- 비밀글 아이콘 -->
                   <icon data-if="{{!!item.is_secret}}" name="lock" class="text-xs text-gray-400 dark:text-gray-500 shrink-0"/>
-                  <!-- 내 문의 배지 (본인 글일 때만) --><span data-if="{{!!item.is_owner}}" class="shrink-0 inline-flex items-center px-1.5 py-0.5 text-xs font-medium bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-400 rounded">$t:shop.qna.my_inquiry</span>
-                  <!-- 카테고리 배지 --><span data-if="{{!!item.category}}" class="inline-block px-1.5 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded shrink-0">{{item.category ?? ''}}</span>
-                  <!-- 제목 또는 내용 미리보기 (비밀글: can_update 또는 소유자만 노출) --><span class="text-sm text-gray-900 dark:text-white truncate">{{(item.is_secret &amp;&amp; !item.is_owner &amp;&amp; !(qna.data.meta.abilities.can_update)) ? $t('shop.qna.secret_content') : (item.title ?? item.content ?? '')}}</span>
+                  <!-- 내 문의 배지 (본인 글일 때만) -->
+                  <span data-if="{{!!item.is_owner}}" class="shrink-0 inline-flex items-center px-1.5 py-0.5 text-xs font-medium bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-400 rounded">$t:shop.qna.my_inquiry</span>
+                  <!-- 카테고리 배지 -->
+                  <span data-if="{{!!item.category}}" class="inline-block px-1.5 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded shrink-0">{{item.category ?? ''}}</span>
+                  <!-- 제목 또는 내용 미리보기 (비밀글: can_update 또는 소유자만 노출) -->
+                  <span class="text-sm text-gray-900 dark:text-white truncate">{{(item.is_secret &amp;&amp; !item.is_owner &amp;&amp; !(qna.data.meta.abilities.can_update)) ? $t('shop.qna.secret_content') : (item.title ?? item.content ?? '')}}</span>
                 </div>
               </div>
             </div>
@@ -93,7 +97,8 @@
             <!-- 모바일 전용: 작성자·날짜 + 상태 배지 한 줄 -->
             <div class="hidden">
               <responsive on="portable" class="flex items-center gap-2"/>
-              <!-- 모바일 작성자: 본인이면 '나', 아니면 마스킹된 이름 --><span class="text-xs text-gray-500 dark:text-gray-400">{{item.is_owner ? $t('shop.qna.me') : (item.author_name ?? $t('shop.qna.member'))}}</span>
+              <!-- 모바일 작성자: 본인이면 '나', 아니면 마스킹된 이름 -->
+              <span class="text-xs text-gray-500 dark:text-gray-400">{{item.is_owner ? $t('shop.qna.me') : (item.author_name ?? $t('shop.qna.member'))}}</span>
               <span class="text-xs text-gray-400 dark:text-gray-500">{{item.created_at | date}}</span>
               <span data-if="{{!!item.updated_at &amp;&amp; item.updated_at !== item.created_at}}" class="text-xs text-gray-400 dark:text-gray-500">$t:shop.qna.updated_label</span>
               <span class="{{item.is_answered ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-400' : 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}}">{{item.is_answered ? $t('shop.qna.answered') : $t('shop.qna.pending')}}</span>
@@ -117,15 +122,15 @@
                       <!-- 문의 수정 — 창은 자기 데이터를 받아 오지 않으므로 여는 쪽이 대상 상품·게시판 설정·
                            지금 값까지 전부 `_global` 에 세워 준 뒤 연다 -->
                       <sequence>
-                      <set-state target="global" qnaEditId="{{item.id}}" qnaProductId="{{product.data.id}}" qnaProductName="{{product.data.name_localized ?? ''}}" qnaProductImage="{{product.data.thumbnail_url ?? null}}" qnaModalBoardSettings="{{qna.data.meta.board_settings ?? null}}" qnaBoardSlug="{{_global.modules?.['sirsoft-ecommerce']?.inquiry?.board_slug ?? ''}}" qnaCreatedAt="{{item.created_at}}" :qnaSubmitting="false">
-                        <field name="qnaForm">
-                          <field name="title" value="{{item.title ?? ''}}"/>
-                          <field name="category" value="{{item.category ?? ''}}"/>
-                          <field name="content" value="{{item.content ?? ''}}"/>
-                          <field name="is_secret" value="{{item.is_secret ?? true}}"/>
-                        </field>
-                      </set-state>
-                      <open-modal target="qna_write_modal"/>
+                        <set-state target="global" qnaEditId="{{item.id}}" qnaProductId="{{product.data.id}}" qnaProductName="{{product.data.name_localized ?? ''}}" qnaProductImage="{{product.data.thumbnail_url ?? null}}" qnaModalBoardSettings="{{qna.data.meta.board_settings ?? null}}" qnaBoardSlug="{{_global.modules?.['sirsoft-ecommerce']?.inquiry?.board_slug ?? ''}}" qnaCreatedAt="{{item.created_at}}" :qnaSubmitting="false">
+                          <field name="qnaForm">
+                            <field name="title" value="{{item.title ?? ''}}"/>
+                            <field name="category" value="{{item.category ?? ''}}"/>
+                            <field name="content" value="{{item.content ?? ''}}"/>
+                            <field name="is_secret" value="{{item.is_secret ?? true}}"/>
+                          </field>
+                        </set-state>
+                        <open-modal target="qna_write_modal"/>
                       </sequence>
                     </on>
                     <icon name="pen" class="text-xs"/>
@@ -224,24 +229,30 @@
                   </on>
                 </textarea>
                 <div class="flex justify-end gap-2">
-                  <button type="button" class="px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50" disabled="{{_local.qnaReplySubmitting ?? false}}"><on type="click"><!-- 인라인 폼 접기 — 대상 id 를 비우는 것이 곧 닫는 것이다 --><set-state target="local" :qnaReplyEditId="null" qnaReplyContent="" :qnaReplySubmitting="false"/></on>$t:common.cancel</button>
+                  <button type="button" class="px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50" disabled="{{_local.qnaReplySubmitting ?? false}}">
+                    <on type="click">
+                      <!-- 인라인 폼 접기 — 대상 id 를 비우는 것이 곧 닫는 것이다 -->
+                      <set-state target="local" :qnaReplyEditId="null" qnaReplyContent="" :qnaReplySubmitting="false"/>
+                    </on>
+                    $t:common.cancel
+                  </button>
                   <button type="button" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 dark:bg-blue-500 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50" disabled="{{_local.qnaReplySubmitting ?? false}}">
                     <on type="click">
                       <!-- 답변 수정 저장 — 성공하면 폼을 접고 목록을 다시 받는다(응답이 목록 전체가 아니라서 refetch) -->
                       <sequence>
-                      <set-state target="local" :qnaReplySubmitting="true"/>
-                      <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/user/inquiries/{{item.id}}/reply" method="PUT">
-                        <success>
-                          <set-state target="local" :qnaReplyEditId="null" qnaReplyContent="" :qnaReplySubmitting="false"/>
-                          <toast message="$t:shop.qna.reply_updated" type="success"/>
-                          <refetch-data-source dataSourceId="qna"/>
-                        </success>
-                        <fail>
-                          <set-state target="local" :qnaReplySubmitting="false"/>
-                          <toast message="{{error.message ?? '$t:shop.qna.reply_update_failed'}}" type="error"/>
-                        </fail>
-                        <body content="{{_local.qnaReplyContent ?? ''}}"/>
-                      </api-call>
+                        <set-state target="local" :qnaReplySubmitting="true"/>
+                        <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/user/inquiries/{{item.id}}/reply" method="PUT">
+                          <success>
+                            <set-state target="local" :qnaReplyEditId="null" qnaReplyContent="" :qnaReplySubmitting="false"/>
+                            <toast message="$t:shop.qna.reply_updated" type="success"/>
+                            <refetch-data-source dataSourceId="qna"/>
+                          </success>
+                          <fail>
+                            <set-state target="local" :qnaReplySubmitting="false"/>
+                            <toast message="{{error.message ?? '$t:shop.qna.reply_update_failed'}}" type="error"/>
+                          </fail>
+                          <body content="{{_local.qnaReplyContent ?? ''}}"/>
+                        </api-call>
                       </sequence>
                     </on>
                     <icon data-if="{{_local.qnaReplySubmitting ?? false}}" name="spinner" class="text-xs animate-spin"/>
@@ -267,7 +278,8 @@
                   <span>$t:shop.qna.reply_submit</span>
                 </button>
               </div>
-              <!-- 답변 없음 안내 (입력 폼 닫혀있을 때) --><span data-if="{{_local.qnaReplyInputId !== item.id}}" class="text-sm text-gray-400 dark:text-gray-500">$t:shop.qna.no_reply_yet</span>
+              <!-- 답변 없음 안내 (입력 폼 닫혀있을 때) -->
+              <span data-if="{{_local.qnaReplyInputId !== item.id}}" class="text-sm text-gray-400 dark:text-gray-500">$t:shop.qna.no_reply_yet</span>
               <!-- 답변 인라인 작성 폼 (can_update + 등록 버튼 클릭 후) -->
               <div data-if="{{!!(qna.data.meta.abilities.can_update) &amp;&amp; _local.qnaReplyInputId === item.id}}" class="space-y-2">
                 <textarea class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" :rows="4" placeholder="$t:shop.qna.reply_inline_placeholder" value="{{_local.qnaNewReplyContent ?? ''}}" disabled="{{_local.qnaNewReplySubmitting ?? false}}">
@@ -277,24 +289,30 @@
                   </on>
                 </textarea>
                 <div class="flex justify-end gap-2">
-                  <button type="button" class="px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50" disabled="{{_local.qnaNewReplySubmitting ?? false}}"><on type="click"><!-- 작성 폼 접기 — 대상 id 를 비우는 것이 곧 닫는 것이다 --><set-state target="local" :qnaReplyInputId="null" qnaNewReplyContent="" :qnaNewReplySubmitting="false"/></on>$t:common.cancel</button>
+                  <button type="button" class="px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50" disabled="{{_local.qnaNewReplySubmitting ?? false}}">
+                    <on type="click">
+                      <!-- 작성 폼 접기 — 대상 id 를 비우는 것이 곧 닫는 것이다 -->
+                      <set-state target="local" :qnaReplyInputId="null" qnaNewReplyContent="" :qnaNewReplySubmitting="false"/>
+                    </on>
+                    $t:common.cancel
+                  </button>
                   <button type="button" class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-white bg-blue-600 dark:bg-blue-500 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50" disabled="{{_local.qnaNewReplySubmitting ?? false}}">
                     <on type="click">
                       <!-- 새 답변 등록 — 수정과 달리 **관리자 엔드포인트**로 나간다(답변을 처음 다는 것은 판매자 행위다) -->
                       <sequence>
-                      <set-state target="local" :qnaNewReplySubmitting="true"/>
-                      <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/inquiries/{{item.id}}/reply" method="POST">
-                        <success>
-                          <set-state target="local" qnaNewReplyContent="" :qnaNewReplySubmitting="false" :qnaReplyInputId="null"/>
-                          <toast message="$t:shop.qna.reply_submitted" type="success"/>
-                          <refetch-data-source dataSourceId="qna"/>
-                        </success>
-                        <fail>
-                          <set-state target="local" :qnaNewReplySubmitting="false"/>
-                          <toast message="{{error.message ?? '$t:shop.qna.reply_submit_failed'}}" type="error"/>
-                        </fail>
-                        <body content="{{_local.qnaNewReplyContent ?? ''}}"/>
-                      </api-call>
+                        <set-state target="local" :qnaNewReplySubmitting="true"/>
+                        <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/inquiries/{{item.id}}/reply" method="POST">
+                          <success>
+                            <set-state target="local" qnaNewReplyContent="" :qnaNewReplySubmitting="false" :qnaReplyInputId="null"/>
+                            <toast message="$t:shop.qna.reply_submitted" type="success"/>
+                            <refetch-data-source dataSourceId="qna"/>
+                          </success>
+                          <fail>
+                            <set-state target="local" :qnaNewReplySubmitting="false"/>
+                            <toast message="{{error.message ?? '$t:shop.qna.reply_submit_failed'}}" type="error"/>
+                          </fail>
+                          <body content="{{_local.qnaNewReplyContent ?? ''}}"/>
+                        </api-call>
                       </sequence>
                     </on>
                     <icon data-if="{{_local.qnaNewReplySubmitting ?? false}}" name="spinner" class="text-xs animate-spin"/>

@@ -1,7 +1,5 @@
-<!--
-  정보 탭 — **저장할 것이 없는 유일한 탭**이다(그래서 화면 하단 공용 저장 버튼도 이 탭에서는 숨는다).
-  서버·프레임워크 정보를 보여 주고, 코어 새 버전 확인과 변경 이력 보기 두 동작이 있다.
--->
+<!-- 정보 탭 — **저장할 것이 없는 유일한 탭**이다(그래서 화면 하단 공용 저장 버튼도 이 탭에서는 숨는다).
+  서버·프레임워크 정보를 보여 주고, 코어 새 버전 확인과 변경 이력 보기 두 동작이 있다. -->
 <partial description="환경설정 정보 탭 콘텐츠">
   <div data-ref="tab_content_info" data-if="{{(_global.activeSettingsTab || query.tab) === 'info'}}">
     <div data-ref="opcache_warning" data-if="{{systemInfo?.data?.opcache?.enabled === false}}" class="alert-warning">
@@ -42,17 +40,17 @@
                        받은 값을 **부모 화면 상태**에 담아 두는 것이 중요하다. 결과 창과 이력 창이
                        그 값을 `$parent` 로 읽으므로, 여기서 담지 않으면 창이 빈 채로 뜬다. -->
                   <sequence>
-                  <set-state target="local" :checkingCoreUpdate="true"/>
-                  <api-call :auth_required="true" target="/api/admin/core-update/check" method="POST">
-                    <success>
-                      <set-state target="local" :checkingCoreUpdate="false" coreUpdateInfo="{{result.data}}"/>
-                      <open-modal target="core_update_result_modal"/>
-                    </success>
-                    <fail>
-                      <set-state target="local" :checkingCoreUpdate="false" coreUpdateError="{{error.errors?.reason ?? ''}}"/>
-                      <toast type="error" message="{{error.errors?.reason ?? $t('admin.settings.info.update_check_failed')}}"/>
-                    </fail>
-                  </api-call>
+                    <set-state target="local" :checkingCoreUpdate="true"/>
+                    <api-call :auth_required="true" target="/api/admin/core-update/check" method="POST">
+                      <success>
+                        <set-state target="local" :checkingCoreUpdate="false" coreUpdateInfo="{{result.data}}"/>
+                        <open-modal target="core_update_result_modal"/>
+                      </success>
+                      <fail>
+                        <set-state target="local" :checkingCoreUpdate="false" coreUpdateError="{{error.errors?.reason ?? ''}}"/>
+                        <toast type="error" message="{{error.errors?.reason ?? $t('admin.settings.info.update_check_failed')}}"/>
+                      </fail>
+                    </api-call>
                   </sequence>
                 </on>
                 <icon data-if="{{_local.checkingCoreUpdate}}" name="spinner" class="text-xs animate-spin"/>
@@ -63,17 +61,17 @@
                   <!-- 변경 이력 보기 — 버전 확인과 달리 **범위를 지정하지 않아** 전체 이력을 받는다
                        (결과 창 안의 이력 버튼은 현재↔최신 구간만 받는다). -->
                   <sequence>
-                  <set-state target="local" :loadingChangelog="true"/>
-                  <api-call :auth_required="true" target="/api/admin/core-update/changelog" method="GET">
-                    <success>
-                      <set-state target="local" :loadingChangelog="false" coreChangelog="{{result.data.changelog ?? []}}"/>
-                      <open-modal target="core_changelog_modal"/>
-                    </success>
-                    <fail>
-                      <set-state target="local" :loadingChangelog="false"/>
-                      <toast type="error" message="{{error.message ?? '$t:admin.settings.info.changelog_load_failed'}}"/>
-                    </fail>
-                  </api-call>
+                    <set-state target="local" :loadingChangelog="true"/>
+                    <api-call :auth_required="true" target="/api/admin/core-update/changelog" method="GET">
+                      <success>
+                        <set-state target="local" :loadingChangelog="false" coreChangelog="{{result.data.changelog ?? []}}"/>
+                        <open-modal target="core_changelog_modal"/>
+                      </success>
+                      <fail>
+                        <set-state target="local" :loadingChangelog="false"/>
+                        <toast type="error" message="{{error.message ?? '$t:admin.settings.info.changelog_load_failed'}}"/>
+                      </fail>
+                    </api-call>
                   </sequence>
                 </on>
                 <icon data-if="{{_local.loadingChangelog}}" name="spinner" class="text-xs animate-spin"/>

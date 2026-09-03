@@ -1,8 +1,6 @@
-<!--
-  모듈 삭제 확인 창. 지우는 범위를 여기서 한 번 더 고른다 — **파일만 지울지, 그 모듈이 쌓은 데이터까지
+<!-- 모듈 삭제 확인 창. 지우는 범위를 여기서 한 번 더 고른다 — **파일만 지울지, 그 모듈이 쌓은 데이터까지
   지울지**. 데이터 삭제를 켤 때에만 무엇이 함께 지워지는지 서버에 물어 보여 준다(끄면 필요 없다).
-  여는 쪽(목록 더보기 메뉴)도 같은 정보를 미리 받아 두므로, 처음부터 켜 둔 상태로 열릴 수 있다.
--->
+  여는 쪽(목록 더보기 메뉴)도 같은 정보를 미리 받아 두므로, 처음부터 켜 둔 상태로 열릴 수 있다. -->
 <partial description="모듈 삭제 확인 모달" editor_label="$t:admin.modal_label.admin_module_list.module_uninstall_modal">
   <modal data-ref="module_uninstall_modal" title="$t:admin.modules.modals.uninstall_title" size="medium">
     <div class="py-2">
@@ -132,23 +130,23 @@
                성공 갈래가 대상과 선택을 모두 비우므로 **요청 본문은 그 전에 조립된 값을 쓴다**.
                사이드바 메뉴와 프론트 확장 번들도 함께 갱신한다 — 안 하면 죽은 모듈의 메뉴가 남는다. -->
           <sequence>
-          <set-state target="global" :isModuleUninstalling="true"/>
-          <api-call :auth_required="true" target="/api/admin/modules/uninstall" method="DELETE">
-            <success>
-              <set-state target="global" :isModuleUninstalling="false"/>
-              <set-state target="global" :selectedModule="null" :deleteModuleData="false" :moduleUninstallInfo="null"/>
-              <toast type="success" message="$t:admin.modules.uninstall_success"/>
-              <refetch-data-source dataSourceId="modules"/>
-              <refetch-data-source dataSourceId="admin_menu"/>
-              <reload-extensions moduleInfo="{{result}}" action="remove"/>
-              <close-modal/>
-            </success>
-            <fail>
-              <set-state target="global" :isModuleUninstalling="false"/>
-              <toast type="error" message="{{error.message}}"/>
-            </fail>
-            <body module_name="{{_global.selectedModule.identifier}}" delete_data="{{_global.deleteModuleData || false}}"/>
-          </api-call>
+            <set-state target="global" :isModuleUninstalling="true"/>
+            <api-call :auth_required="true" target="/api/admin/modules/uninstall" method="DELETE">
+              <success>
+                <set-state target="global" :isModuleUninstalling="false"/>
+                <set-state target="global" :selectedModule="null" :deleteModuleData="false" :moduleUninstallInfo="null"/>
+                <toast type="success" message="$t:admin.modules.uninstall_success"/>
+                <refetch-data-source dataSourceId="modules"/>
+                <refetch-data-source dataSourceId="admin_menu"/>
+                <reload-extensions moduleInfo="{{result}}" action="remove"/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="global" :isModuleUninstalling="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+              <body module_name="{{_global.selectedModule.identifier}}" delete_data="{{_global.deleteModuleData || false}}"/>
+            </api-call>
           </sequence>
         </on>
         <icon data-if="{{_global.isModuleUninstalling}}" name="spinner" class="spinner-sm"/>

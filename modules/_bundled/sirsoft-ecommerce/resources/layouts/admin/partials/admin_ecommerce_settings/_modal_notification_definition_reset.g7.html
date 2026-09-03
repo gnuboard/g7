@@ -1,7 +1,5 @@
-<!--
-  쇼핑몰 설정 — 알림 정의 초기화 확인 창. 손으로 고친 알림 설정을 모듈이 제공하는 기본값으로
-  되돌린다. 되돌리면 그동안의 수정이 사라지므로 되묻는다.
--->
+<!-- 쇼핑몰 설정 — 알림 정의 초기화 확인 창. 손으로 고친 알림 설정을 모듈이 제공하는 기본값으로
+  되돌린다. 되돌리면 그동안의 수정이 사라지므로 되묻는다. -->
 <partial description="이커머스 알림 정의 기본값 복원 확인 모달 (스피너 포함)">
   <modal data-ref="modal_ecommerce_notification_definition_reset" title="$t:sirsoft-ecommerce.admin.settings.notification_definitions.reset_modal.title" size="sm">
     <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-ecommerce.admin.settings.notification_definitions.reset_modal.confirm_message</p>
@@ -13,7 +11,12 @@
       <p class="text-error-soft">$t:sirsoft-ecommerce.admin.settings.notification_definitions.reset_modal.warning_message</p>
     </div>
     <div class="modal-footer-buttons">
-      <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isResettingNotification}}"><on type="click"><close-modal target="modal_ecommerce_notification_definition_reset"/></on>$t:common.cancel</button>
+      <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isResettingNotification}}">
+        <on type="click">
+          <close-modal target="modal_ecommerce_notification_definition_reset"/>
+        </on>
+        $t:common.cancel
+      </button>
       <button type="button" class="flex-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isResettingNotification}}">
         <on type="click">
           <!-- 초기화. 성공하면 알림 목록을 다시 불러 되돌아간 값을 보여 준다. -->

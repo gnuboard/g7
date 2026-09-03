@@ -1,5 +1,4 @@
-<!--
-  주문 상세의 주문 정보 구역 — 상품 목록과 일괄 변경, 주문자·수령인 정보, 관리자 메모까지 한 화면에
+<!-- 주문 상세의 주문 정보 구역 — 상품 목록과 일괄 변경, 주문자·수령인 정보, 관리자 메모까지 한 화면에
   담는 이 화면의 본체다.
   **위쪽 일괄 변경 줄이 조건에 따라 자란다** — 배송 관련 상태를 고르면 택배사·송장 칸이 나타나고,
   취소를 고르면 PG 취소 여부 칸이 나타난다(PG 결제가 섞인 주문일 때만). 그래서 상태 선택 하나가
@@ -9,8 +8,7 @@
   주문자 이름은 작은 메뉴이고, 회원 상세를 새 창으로 열거나 그 회원의 주문만 걸러 볼 수 있다.
   메일 보내기는 받는 주소를 지역 상태에 담고 창을 연다 — **그 창이 값을 `$parent._local` 에서
   읽으므로** 여기서 담는 자리가 그 창의 입력이 된다.
-  수정 가능한 칸은 전부 서버 권한(`abilities.can_update`)으로 잠긴다.
--->
+  수정 가능한 칸은 전부 서버 권한(`abilities.can_update`)으로 잠긴다. -->
 <partial description="Order Detail - Order Info Tab">
   <div data-ref="section_order_info" data-section-id="order_info">
     <div data-ref="order_info_card" data-key="form" data-debounce="300" class="admin-card">
@@ -65,7 +63,12 @@
           </div>
           <div class="flex-1"/>
           <!-- 고른 상품만 부분 취소·환불한다. 대상 선택이 표 안에 있고 그 표는 페이지를 나누지 않으므로 선택 범위를 free 로 둔다 -->
-          <button type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_local.selectedProducts || _local.selectedProducts.length === 0 || order?.data?.abilities?.can_update !== true}}"><on type="click"><action handler="sirsoft-ecommerce.buildOrderDetailBulkConfirmData" selectedProducts="{{_local.selectedProducts ?? []}}" batchOrderStatus="{{_local.batchOrderStatus ?? ''}}" batchCarrierId="{{_local.batchCarrierId ?? ''}}" batchTrackingNumber="{{_local.batchTrackingNumber ?? ''}}" cancelPg="{{_local.cancelPg ?? true}}"/></on>$t:sirsoft-ecommerce.admin.order.detail.order_info.batch_change</button>
+          <button type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_local.selectedProducts || _local.selectedProducts.length === 0 || order?.data?.abilities?.can_update !== true}}">
+            <on type="click">
+              <action handler="sirsoft-ecommerce.buildOrderDetailBulkConfirmData" selectedProducts="{{_local.selectedProducts ?? []}}" batchOrderStatus="{{_local.batchOrderStatus ?? ''}}" batchCarrierId="{{_local.batchCarrierId ?? ''}}" batchTrackingNumber="{{_local.batchTrackingNumber ?? ''}}" cancelPg="{{_local.cancelPg ?? true}}"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.order.detail.order_info.batch_change
+          </button>
         </div>
         <data-grid data-ref="order_product_datagrid" data="{{order.data?.options ?? []}}" idField="id" :selectable="true" selectionScope="free" selectedIds="{{_local.selectedProducts || []}}" :pagination="false" :showColumnSelector="false" selectedCountText="" emptyMessage="$t:sirsoft-ecommerce.admin.order.detail.order_info.no_products" footerClassName="bg-gray-50 dark:bg-gray-800/50 font-medium">
           <column field="product_info" header="$t:sirsoft-ecommerce.admin.order.detail.order_info.columns.product_info" width="auto" :sortable="false" :required="true">
@@ -102,7 +105,8 @@
             <cell>
               <div class="flex flex-col items-end gap-1 whitespace-nowrap">
                 <span class="text-sm text-gray-900 dark:text-gray-100">{{row.quantity}} 개</span>
-                <!-- 재고 적용 여부 배지 --><badge data-if="{{row.is_stock_deducted}}" size="sm" color="green">$t:sirsoft-ecommerce.admin.order.detail.order_info.stock_status.deducted</badge>
+                <!-- 재고 적용 여부 배지 -->
+                <badge data-if="{{row.is_stock_deducted}}" size="sm" color="green">$t:sirsoft-ecommerce.admin.order.detail.order_info.stock_status.deducted</badge>
                 <badge data-if="{{!row.is_stock_deducted}}" size="sm" color="gray">$t:sirsoft-ecommerce.admin.order.detail.order_info.stock_status.not_deducted</badge>
               </div>
             </cell>
@@ -151,7 +155,8 @@
             <cell>
               <div class="flex flex-col items-end gap-1 whitespace-nowrap">
                 <span class="text-sm text-blue-600 dark:text-blue-400 font-medium">{{row.subtotal_earned_points_amount | number}}P</span>
-                <!-- 실제 적립 여부 배지 (적립예정액이 있을 때만 노출) --><badge data-if="{{row.subtotal_earned_points_amount > 0 &amp;&amp; row.is_points_earned}}" size="sm" color="green">$t:sirsoft-ecommerce.admin.order.detail.order_info.earn_status.earned</badge>
+                <!-- 실제 적립 여부 배지 (적립예정액이 있을 때만 노출) -->
+                <badge data-if="{{row.subtotal_earned_points_amount > 0 &amp;&amp; row.is_points_earned}}" size="sm" color="green">$t:sirsoft-ecommerce.admin.order.detail.order_info.earn_status.earned</badge>
                 <badge data-if="{{row.subtotal_earned_points_amount > 0 &amp;&amp; !row.is_points_earned}}" size="sm" color="gray">$t:sirsoft-ecommerce.admin.order.detail.order_info.earn_status.pending</badge>
               </div>
             </cell>
@@ -171,8 +176,10 @@
                 <span class="text-tertiary block">{{Number(row.shipping_amount) > 0 ? $t('sirsoft-ecommerce.admin.order.detail.order_info.delivery_info.paid_shipping') : $t('sirsoft-ecommerce.admin.order.detail.order_info.delivery_info.free_shipping')}}</span>
                 <span class="text-xs text-gray-600 dark:text-gray-300 block">$t:sirsoft-ecommerce.admin.order.detail.order_info.delivery_info.shipping_fee: {{row.shipping_amount_formatted ?? ''}}</span>
                 <span data-if="{{row.carrier_name}}" class="text-xs text-gray-600 dark:text-gray-300 block">{{row.carrier_name}}</span>
-                <!-- 운송장 번호 — tracking_url 있으면 택배사 배송조회 링크 --><a data-if="{{row.tracking_url}}" href="{{row.tracking_url}}" target="_blank" rel="noopener noreferrer" class="text-xs text-blue-600 dark:text-blue-400 underline hover:text-blue-800 dark:hover:text-blue-300 block">{{row.tracking_number ?? ''}}</a>
-                <!-- 운송장 번호 폴백 — tracking_url 없을 때 텍스트만 --><span data-if="{{!row.tracking_url &amp;&amp; row.tracking_number}}" class="text-xs text-blue-600 dark:text-blue-400 block">{{row.tracking_number}}</span>
+                <!-- 운송장 번호 — tracking_url 있으면 택배사 배송조회 링크 -->
+                <a data-if="{{row.tracking_url}}" href="{{row.tracking_url}}" target="_blank" rel="noopener noreferrer" class="text-xs text-blue-600 dark:text-blue-400 underline hover:text-blue-800 dark:hover:text-blue-300 block">{{row.tracking_number ?? ''}}</a>
+                <!-- 운송장 번호 폴백 — tracking_url 없을 때 텍스트만 -->
+                <span data-if="{{!row.tracking_url &amp;&amp; row.tracking_number}}" class="text-xs text-blue-600 dark:text-blue-400 block">{{row.tracking_number}}</span>
               </div>
             </cell>
           </column>
@@ -312,7 +319,16 @@
               <span class="text-label-subtle block mb-1">$t:sirsoft-ecommerce.admin.order.detail.order_info.orderer_info.email</span>
               <div class="flex-center gap-2">
                 <div class="flex-1 bg-gray-100 dark:bg-gray-800 rounded px-3 py-2 text-sm text-gray-900 dark:text-gray-100">{{order.data?.orderer_email}}</div>
-                <button type="button" class="btn btn-primary btn-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{order?.data?.abilities?.can_update !== true}}"><on type="click"><!-- 메일 보내기 — 받는 주소를 먼저 담고 창을 연다. 그 창은 자기 `_local` 이 아니라 `$parent._local` 에서 주소를 읽으므로 이 자리가 그 창의 입력이다(순서를 뒤집으면 빈 주소로 열린다). --><sequence><set-state target="local" emailAddress="{{order.data?.orderer_email}}"/><open-modal target="modal_send_email"/></sequence></on>$t:sirsoft-ecommerce.admin.order.detail.order_info.orderer_info.send</button>
+                <button type="button" class="btn btn-primary btn-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{order?.data?.abilities?.can_update !== true}}">
+                  <on type="click">
+                    <!-- 메일 보내기 — 받는 주소를 먼저 담고 창을 연다. 그 창은 자기 `_local` 이 아니라 `$parent._local` 에서 주소를 읽으므로 이 자리가 그 창의 입력이다(순서를 뒤집으면 빈 주소로 열린다). -->
+                    <sequence>
+                      <set-state target="local" emailAddress="{{order.data?.orderer_email}}"/>
+                      <open-modal target="modal_send_email"/>
+                    </sequence>
+                  </on>
+                  $t:sirsoft-ecommerce.admin.order.detail.order_info.orderer_info.send
+                </button>
               </div>
             </div>
           </div>
@@ -429,7 +445,8 @@
           </div>
           <div>
             <span class="text-label-subtle block mb-1">$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.delivery_message</span>
-            <!-- 주문시점 배송 메모 라벨 (프리셋 선택 시 표시, read-only) --><span data-if="{{order?.data?.shipping_address?.delivery_memo_label}}" class="block mb-1 text-sm text-gray-900 dark:text-white">{{order?.data?.shipping_address?.delivery_memo_label ?? ''}}</span>
+            <!-- 주문시점 배송 메모 라벨 (프리셋 선택 시 표시, read-only) -->
+            <span data-if="{{order?.data?.shipping_address?.delivery_memo_label}}" class="block mb-1 text-sm text-gray-900 dark:text-white">{{order?.data?.shipping_address?.delivery_memo_label ?? ''}}</span>
             <textarea class="input w-full textarea-sm disabled:opacity-50 disabled:cursor-not-allowed {{_local.errors?.delivery_memo ? 'border border-red-500 dark:border-red-500' : ''}}" value="{{_local.form.delivery_memo}}" name="delivery_memo" disabled="{{order?.data?.abilities?.can_update !== true}}"/>
             <span data-if="{{_local.errors?.delivery_memo}}" class="form-error-xs mt-1 block">{{_local.errors?.delivery_memo?.[0] ?? ''}}</span>
           </div>
@@ -442,11 +459,9 @@
         <div class="flex justify-end mt-3">
           <button type="button" class="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{order?.data?.abilities?.can_update !== true || _local.isSaving}}">
             <on type="click">
-              <!--
-                주문 정보 저장 — 수령인·메모 등 이 화면에서 고친 값들을 한 번에 보낸다.
+              <!-- 주문 정보 저장 — 수령인·메모 등 이 화면에서 고친 값들을 한 번에 보낸다.
                 성공해도 주문을 다시 불러오지 않는다. 화면이 이미 고친 값을 들고 있고, 서버가 파생
-                시키는 값(상태·금액)은 여기서 바뀌지 않기 때문이다.
-              -->
+                시키는 값(상태·금액)은 여기서 바뀌지 않기 때문이다. -->
               <sequence>
                 <set-state target="local" :isSaving="true" :errors="null"/>
                 <api-call auth_mode="required" target="/api/modules/sirsoft-ecommerce/admin/orders/{{_local.order_number}}" method="PATCH">

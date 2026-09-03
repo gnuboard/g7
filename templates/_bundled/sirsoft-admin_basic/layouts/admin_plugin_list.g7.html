@@ -1,10 +1,8 @@
-<!--
-  플러그인 관리 화면. `admin_module_list` 와 **같은 구조의 쌍둥이**다 — 주소(`/api/admin/plugins`),
+<!-- 플러그인 관리 화면. `admin_module_list` 와 **같은 구조의 쌍둥이**다 — 주소(`/api/admin/plugins`),
   문구, 전역 키(`selectedPlugin` 등)만 다르고 상태 갈래·409 처리·확인 창 구성은 그대로다.
   한쪽 배선을 고치면 다른 쪽도 같이 봐야 한다.
   모듈에 없는 항목이 하나 있다 — 더보기 메뉴의 **설정 화면 이동**. 플러그인은 자기 설정 레이아웃을
-  가질 수 있어서, 그 경로를 서버가 `settings_route` 로 실어 준다.
--->
+  가질 수 있어서, 그 경로를 서버가 `settings_route` 로 실어 준다. -->
 <layout name="admin_plugin_list" version="1.0.0" extends="_admin_base">
   <meta title="$t:admin.plugins.page_title" description="$t:admin.plugins.page_description"/>
   <!-- 플러그인 목록. 모듈 화면과 같이 검색·페이지는 URL, 숨김 포함 여부만 화면 상태다. -->
@@ -68,18 +66,18 @@
             <!-- 업데이트 확인 — 서버가 저장소를 훑어 최신 버전을 갱신하므로 끝나면 목록을 다시 받는다.
                  발견 건수에 따라 문구가 갈린다(모듈 화면과 같은 형태). -->
             <sequence>
-            <set-state target="global" :isCheckingUpdates="true"/>
-            <api-call :auth_required="true" target="/api/admin/plugins/check-updates" method="POST">
-              <success>
-                <set-state target="global" :isCheckingUpdates="false"/>
-                <refetch-data-source dataSourceId="plugins"/>
-                <toast type="success" message="{{response.data?.updated_count > 0 ? '$t:admin.plugins.check_updates_success|count=' + response.data.updated_count : '$t:admin.plugins.check_updates_no_updates'}}"/>
-              </success>
-              <fail>
-                <set-state target="global" :isCheckingUpdates="false"/>
-                <toast type="error" message="{{error.message}}"/>
-              </fail>
-            </api-call>
+              <set-state target="global" :isCheckingUpdates="true"/>
+              <api-call :auth_required="true" target="/api/admin/plugins/check-updates" method="POST">
+                <success>
+                  <set-state target="global" :isCheckingUpdates="false"/>
+                  <refetch-data-source dataSourceId="plugins"/>
+                  <toast type="success" message="{{response.data?.updated_count > 0 ? '$t:admin.plugins.check_updates_success|count=' + response.data.updated_count : '$t:admin.plugins.check_updates_no_updates'}}"/>
+                </success>
+                <fail>
+                  <set-state target="global" :isCheckingUpdates="false"/>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+              </api-call>
             </sequence>
           </on>
           <icon data-if="{{!_global.isCheckingUpdates}}" name="refresh" size="sm"/>
@@ -230,8 +228,8 @@
                     <on type="click">
                       <!-- 설치 창 열기. 대상 카드를 전역에 먼저 담고 연다 — 창은 그 전역만 본다. -->
                       <sequence>
-                      <set-state target="global" selectedPlugin="{{row}}"/>
-                      <open-modal target="plugin_install_modal"/>
+                        <set-state target="global" selectedPlugin="{{row}}"/>
+                        <open-modal target="plugin_install_modal"/>
                       </sequence>
                     </on>
                     <icon name="download" class="text-base"/>

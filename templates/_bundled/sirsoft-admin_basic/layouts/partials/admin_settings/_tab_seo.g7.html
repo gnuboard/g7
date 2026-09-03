@@ -1,7 +1,5 @@
-<!--
-  SEO 탭 — 기본 메타 정보와 사이트맵 관련 값을 고친다.
-  저장은 화면 하단의 공용 버튼이 이 탭 몫만 잘라 보낸다(다른 탭 값은 건드리지 않는다).
--->
+<!-- SEO 탭 — 기본 메타 정보와 사이트맵 관련 값을 고친다.
+  저장은 화면 하단의 공용 버튼이 이 탭 몫만 잘라 보낸다(다른 탭 값은 건드리지 않는다). -->
 <partial description="환경설정 SEO 탭 콘텐츠">
   <div data-ref="tab_content_seo" data-if="{{(_global.activeSettingsTab || query.tab || 'general') === 'seo'}}">
     <div data-ref="card_meta_settings" class="admin-card">
@@ -185,7 +183,19 @@
         <div data-ref="sitemap_progress_block" data-if="{{['queued','running','writing','completed','failed'].includes(sitemap_status?.data?.progress?.status ?? '')}}" class="space-y-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-3">
           <div class="flex items-center gap-2">
             <span class="text-heading">$t:admin.settings.seo.sitemap_progress</span>
-            <span class="px-2 py-0.5 rounded text-xs font-medium"><prop name="classMap"><field name="key" value="{{sitemap_status?.data?.progress?.status ?? ''}}"/><field name="variants"><field name="queued" value="bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200"/><field name="running" value="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"/><field name="writing" value="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"/><field name="completed" value="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200"/><field name="failed" value="bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200"/></field></prop>{{(sitemap_status?.data?.progress?.status === 'queued' &amp;&amp; $t('admin.settings.seo.sitemap_status_queued')) || (sitemap_status?.data?.progress?.status === 'running' &amp;&amp; $t('admin.settings.seo.sitemap_status_running')) || (sitemap_status?.data?.progress?.status === 'writing' &amp;&amp; $t('admin.settings.seo.sitemap_status_writing')) || (sitemap_status?.data?.progress?.status === 'completed' &amp;&amp; $t('admin.settings.seo.sitemap_status_completed')) || (sitemap_status?.data?.progress?.status === 'failed' &amp;&amp; $t('admin.settings.seo.sitemap_status_failed')) || ''}}</span>
+            <span class="px-2 py-0.5 rounded text-xs font-medium">
+              <prop name="classMap">
+                <field name="key" value="{{sitemap_status?.data?.progress?.status ?? ''}}"/>
+                <field name="variants">
+                  <field name="queued" value="bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200"/>
+                  <field name="running" value="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"/>
+                  <field name="writing" value="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"/>
+                  <field name="completed" value="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200"/>
+                  <field name="failed" value="bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200"/>
+                </field>
+              </prop>
+              {{(sitemap_status?.data?.progress?.status === 'queued' &amp;&amp; $t('admin.settings.seo.sitemap_status_queued')) || (sitemap_status?.data?.progress?.status === 'running' &amp;&amp; $t('admin.settings.seo.sitemap_status_running')) || (sitemap_status?.data?.progress?.status === 'writing' &amp;&amp; $t('admin.settings.seo.sitemap_status_writing')) || (sitemap_status?.data?.progress?.status === 'completed' &amp;&amp; $t('admin.settings.seo.sitemap_status_completed')) || (sitemap_status?.data?.progress?.status === 'failed' &amp;&amp; $t('admin.settings.seo.sitemap_status_failed')) || ''}}
+            </span>
           </div>
           <p data-if="{{sitemap_status?.data?.progress?.status === 'running' &amp;&amp; (sitemap_status?.data?.progress?.phase ?? '') !== ''}}" class="text-label-subtle text-sm">$t:admin.settings.seo.sitemap_progress_phase|phase={{sitemap_status?.data?.progress?.phase ?? ''}}</p>
           <p data-if="{{Number(sitemap_status?.data?.progress?.urls ?? 0) > 0}}" class="text-label-subtle text-sm">$t:admin.settings.seo.sitemap_progress_urls|count={{sitemap_status?.data?.progress?.urls ?? 0}}</p>
@@ -197,7 +207,20 @@
           <div class="flex flex-col gap-2 md:flex-row md:items-center md:">
             <input type="text" :disabled="true" value="{{sitemap_status?.data?.last_updated_at ?? _local.form?.seo?.sitemap_last_updated_at ?? '-'}}" class="md:flex-1 dark:bg-gray-900 text-gray-700 dark:text-gray-300"/>
             <!-- 사이트맵 생성 요청. 대기·진행·기록 중인 동안에는 잠겨 있어 같은 작업이 겹쳐 돌지 않는다 -->
-            <button type="button" disabled="{{_computed.isReadOnly || ['queued','running','writing'].includes(sitemap_status?.data?.progress?.status ?? '')}}" class="w-full md:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"><on type="click"><api-call :auth_required="true" target="/api/admin/seo/sitemap/regenerate" method="POST"><success><refetch-data-source dataSourceId="sitemap_status"/><toast type="success" message="{{$t('admin.settings.seo.sitemap_update_success')}}"/></success><fail><toast type="error" message="{{error.message ?? $t('admin.settings.seo.sitemap_update_failed')}}"/></fail></api-call></on>{{['queued','running','writing'].includes(sitemap_status?.data?.progress?.status ?? '') ? $t('admin.settings.seo.sitemap_regenerating') : $t('admin.settings.seo.sitemap_manual_update')}}</button>
+            <button type="button" disabled="{{_computed.isReadOnly || ['queued','running','writing'].includes(sitemap_status?.data?.progress?.status ?? '')}}" class="w-full md:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap">
+              <on type="click">
+                <api-call :auth_required="true" target="/api/admin/seo/sitemap/regenerate" method="POST">
+                  <success>
+                    <refetch-data-source dataSourceId="sitemap_status"/>
+                    <toast type="success" message="{{$t('admin.settings.seo.sitemap_update_success')}}"/>
+                  </success>
+                  <fail>
+                    <toast type="error" message="{{error.message ?? $t('admin.settings.seo.sitemap_update_failed')}}"/>
+                  </fail>
+                </api-call>
+              </on>
+              {{['queued','running','writing'].includes(sitemap_status?.data?.progress?.status ?? '') ? $t('admin.settings.seo.sitemap_regenerating') : $t('admin.settings.seo.sitemap_manual_update')}}
+            </button>
           </div>
         </div>
       </div>

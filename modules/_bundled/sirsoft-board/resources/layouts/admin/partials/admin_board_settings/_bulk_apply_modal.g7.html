@@ -40,7 +40,8 @@
         <div class="px-4 py-2.5 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 flex-center gap-2">
           <icon name="table-columns" size="sm" class="text-gray-500 dark:text-gray-400"/>
           <span class="text-body font-medium">$t:sirsoft-board.admin.settings.bulk_apply_modal.selected_boards</span>
-          <!-- 선택 게시판 개수 배지 --><span data-if="{{_global.bulkApplySnapshot?.applyAll === false}}" class="inline-flex items-center justify-center min-w-5 h-5 px-1.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs font-bold rounded-full">{{(_global.bulkApplySnapshot?.boardIds ?? []).length}}</span>
+          <!-- 선택 게시판 개수 배지 -->
+          <span data-if="{{_global.bulkApplySnapshot?.applyAll === false}}" class="inline-flex items-center justify-center min-w-5 h-5 px-1.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs font-bold rounded-full">{{(_global.bulkApplySnapshot?.boardIds ?? []).length}}</span>
         </div>
         <div class="p-3 flex flex-wrap gap-1.5 min-h-12">
           <span data-if="{{_global.bulkApplySnapshot?.applyAll !== false}}" class="text-label-subtle italic">$t:sirsoft-board.admin.settings.bulk_apply_modal.all_boards</span>
@@ -63,7 +64,8 @@
           <span class="font-bold">{{$parent._local.bulkApplyAbortedBoard}}</span>
           <span>$t:sirsoft-board.admin.settings.bulk_apply_modal.aborted_message_suffix</span>
         </span>
-        <!-- 컬럼 등 기타 실패(board null) — generic 문구 --><span data-if="{{!$parent._local.bulkApplyAbortedBoard}}" class="text-red-700 dark:text-red-300">$t:sirsoft-board.admin.settings.bulk_apply_modal.aborted_message_generic</span>
+        <!-- 컬럼 등 기타 실패(board null) — generic 문구 -->
+        <span data-if="{{!$parent._local.bulkApplyAbortedBoard}}" class="text-red-700 dark:text-red-300">$t:sirsoft-board.admin.settings.bulk_apply_modal.aborted_message_generic</span>
       </div>
       <div class="flex justify-end gap-3">
         <button type="button" disabled="{{$parent._local.isBulkApplying}}" class="btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed">
@@ -78,33 +80,33 @@
             <sequence>
               <!-- 스냅샷은 모달 열기 전(탭 버튼 클릭 시) 이미 _global에 저장됨 - 여기서는 진행 상태 변경 + 직전 롤백 안내 초기화(재시도 대비) -->
               <set-state target="$parent._local" :isBulkApplying="true" :bulkApplySaveError="false" :bulkApplyAborted="false" :bulkApplyAbortedBoard="null"/>
-            <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/settings" method="PUT" body="{{(function() { const snap = _global.bulkApplySnapshot || {}; const tab = snap.tab || 'basic_defaults'; const form = snap.form || {}; if (tab === 'report_policy') { return { _tab: 'report_policy', report_policy: form.report_policy || {} }; } if (tab === 'spam_security') { return { _tab: 'spam_security', spam_security: form.spam_security || {} }; } return { _tab: 'basic_defaults', basic_defaults: form.basic_defaults || {}, notifications: form.notifications || {} }; })()}}">
-              <success>
-                <set-state target="$parent._local" :hasChanges="false"/>
-                <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/settings/bulk-apply" method="POST" body="{{(function() { const snap = _global.bulkApplySnapshot || {}; return { fields: snap.fields ?? [], apply_all: snap.applyAll !== false, board_ids: snap.applyAll !== false ? [] : (snap.boardIds ?? []) }; })()}}">
-                  <success>
-                    <!-- 성공/롤백 공통 — 진행 상태 해제 -->
-                    <set-state target="$parent._local" :isBulkApplying="false"/>
-                    <!-- 성공(rolled_back=false): 적용 완료 → 상태 초기화 + 스냅샷 정리 + 모달 닫고 success 토스트 -->
-                    <set-state if="{{!response?.data?.rolled_back}}" target="$parent._local" :bulkApplyFields="[]" :bulkApplyAll="true" :bulkApplyAborted="false" :bulkApplyAbortedBoard="null"/>
-                    <set-state if="{{!response?.data?.rolled_back}}" target="global" :bulkApplySnapshot="null"/>
-                    <close-modal if="{{!response?.data?.rolled_back}}"/>
-                    <toast if="{{!response?.data?.rolled_back}}" type="success" message="$t:sirsoft-board.admin.settings.bulk_apply_modal.success|count={{response?.data?.updated_count ?? 0}}"/>
-                    <!-- 롤백(rolled_back=true): 전체 취소됨 → 모달 유지 + 안내 박스 표시(board 유무로 문구 분기) + warning 토스트 -->
-                    <set-state if="{{response?.data?.rolled_back}}" target="$parent._local" :bulkApplyAborted="true" bulkApplyAbortedBoard="{{response?.data?.board?.name ?? null}}"/>
-                    <toast if="{{response?.data?.rolled_back}}" type="error" message="$t:sirsoft-board.admin.settings.bulk_apply_modal.aborted_toast"/>
-                  </success>
-                  <fail>
-                    <set-state target="$parent._local" :isBulkApplying="false"/>
-                    <set-state target="global" :bulkApplySnapshot="null"/>
-                    <toast type="error" message="{{error.message ?? '$t:sirsoft-board.admin.settings.bulk_apply_modal.error'}}"/>
-                  </fail>
-                </api-call>
-              </success>
-              <fail>
-                <set-state target="$parent._local" :isBulkApplying="false" :bulkApplySaveError="true"/>
-                <set-state target="global" :bulkApplySnapshot="null"/>
-              </fail>
+              <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/settings" method="PUT" body="{{(function() { const snap = _global.bulkApplySnapshot || {}; const tab = snap.tab || 'basic_defaults'; const form = snap.form || {}; if (tab === 'report_policy') { return { _tab: 'report_policy', report_policy: form.report_policy || {} }; } if (tab === 'spam_security') { return { _tab: 'spam_security', spam_security: form.spam_security || {} }; } return { _tab: 'basic_defaults', basic_defaults: form.basic_defaults || {}, notifications: form.notifications || {} }; })()}}">
+                <success>
+                  <set-state target="$parent._local" :hasChanges="false"/>
+                  <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/settings/bulk-apply" method="POST" body="{{(function() { const snap = _global.bulkApplySnapshot || {}; return { fields: snap.fields ?? [], apply_all: snap.applyAll !== false, board_ids: snap.applyAll !== false ? [] : (snap.boardIds ?? []) }; })()}}">
+                    <success>
+                      <!-- 성공/롤백 공통 — 진행 상태 해제 -->
+                      <set-state target="$parent._local" :isBulkApplying="false"/>
+                      <!-- 성공(rolled_back=false): 적용 완료 → 상태 초기화 + 스냅샷 정리 + 모달 닫고 success 토스트 -->
+                      <set-state if="{{!response?.data?.rolled_back}}" target="$parent._local" :bulkApplyFields="[]" :bulkApplyAll="true" :bulkApplyAborted="false" :bulkApplyAbortedBoard="null"/>
+                      <set-state if="{{!response?.data?.rolled_back}}" target="global" :bulkApplySnapshot="null"/>
+                      <close-modal if="{{!response?.data?.rolled_back}}"/>
+                      <toast if="{{!response?.data?.rolled_back}}" type="success" message="$t:sirsoft-board.admin.settings.bulk_apply_modal.success|count={{response?.data?.updated_count ?? 0}}"/>
+                      <!-- 롤백(rolled_back=true): 전체 취소됨 → 모달 유지 + 안내 박스 표시(board 유무로 문구 분기) + warning 토스트 -->
+                      <set-state if="{{response?.data?.rolled_back}}" target="$parent._local" :bulkApplyAborted="true" bulkApplyAbortedBoard="{{response?.data?.board?.name ?? null}}"/>
+                      <toast if="{{response?.data?.rolled_back}}" type="error" message="$t:sirsoft-board.admin.settings.bulk_apply_modal.aborted_toast"/>
+                    </success>
+                    <fail>
+                      <set-state target="$parent._local" :isBulkApplying="false"/>
+                      <set-state target="global" :bulkApplySnapshot="null"/>
+                      <toast type="error" message="{{error.message ?? '$t:sirsoft-board.admin.settings.bulk_apply_modal.error'}}"/>
+                    </fail>
+                  </api-call>
+                </success>
+                <fail>
+                  <set-state target="$parent._local" :isBulkApplying="false" :bulkApplySaveError="true"/>
+                  <set-state target="global" :bulkApplySnapshot="null"/>
+                </fail>
               </api-call>
             </sequence>
           </on>

@@ -32,8 +32,10 @@
       <flex justify="center" align="start">
         <div class="w-full max-w-md p-8 bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
           <responsive on="portable" class="w-full max-w-md p-6 bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700"/>
-          <!-- 제목 --><h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">$t:shop.guest_order_form.title</h1>
-          <!-- 안내 문구 --><p class="text-sm text-gray-600 dark:text-gray-400 mb-6">$t:shop.guest_order_form.subtitle</p>
+          <!-- 제목 -->
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">$t:shop.guest_order_form.title</h1>
+          <!-- 안내 문구 -->
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">$t:shop.guest_order_form.subtitle</p>
           <!-- 조회 폼 -->
           <form class="space-y-4">
             <on type="submit">
@@ -101,7 +103,8 @@
               </password-input>
               <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">$t:shop.guest_order_form.password_hint</p>
             </div>
-            <!-- 조회 버튼 --><button type="submit" class="w-full py-3 mt-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.isSubmitting || !_local.form?.order_number || !_local.form?.orderer_phone || !_local.form?.guest_lookup_password}}">{{_local.isSubmitting ? '$t:shop.guest_order_form.submitting' : '$t:shop.guest_order_form.submit'}}</button>
+            <!-- 조회 버튼 -->
+            <button type="submit" class="w-full py-3 mt-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.isSubmitting || !_local.form?.order_number || !_local.form?.orderer_phone || !_local.form?.guest_lookup_password}}">{{_local.isSubmitting ? '$t:shop.guest_order_form.submitting' : '$t:shop.guest_order_form.submit'}}</button>
           </form>
           <!-- 안내 — 조회 후 가능한 일(취소/배송지 변경) + 보안(주문마다 별도 인증, 30분 자동 표시) -->
           <div class="mt-6 p-4 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700 space-y-2">

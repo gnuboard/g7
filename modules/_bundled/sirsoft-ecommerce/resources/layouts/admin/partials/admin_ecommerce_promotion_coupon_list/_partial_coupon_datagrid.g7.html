@@ -1,13 +1,11 @@
-<!--
-  쿠폰 목록 — 결과 표. 넓은 화면은 표, 좁은 화면은 카드로 **같은 목록을 두 벌** 그린다 —
+<!-- 쿠폰 목록 — 결과 표. 넓은 화면은 표, 좁은 화면은 카드로 **같은 목록을 두 벌** 그린다 —
   행 액션 갈래가 양쪽에 각각 있으므로 한쪽을 고치면 다른 쪽도 함께 고쳐야 한다.
   
   정렬·페이지·페이지당 개수는 전부 URL query 로 나간다(재진입·뒤로가기·주소 공유에서 같은
   화면이 서야 한다). 정렬 select 의 값이 `created_at_desc` 처럼 한 덩어리인데 서버로는
   `sort_by`·`sort_order` 둘로 갈라 보내는 이유는 select 가 값을 하나만 가질 수 있어서다.
   
-  행마다 무엇을 할 수 있는지는 서버가 준 `abilities` 가 정한다 — 화면이 임의로 판단하지 않는다.
--->
+  행마다 무엇을 할 수 있는지는 서버가 준 `abilities` 가 정한다 — 화면이 임의로 판단하지 않는다. -->
 <partial description="Coupon List - DataGrid Section with Bulk Actions">
   <div data-ref="coupon_datagrid_section" class="mt-6">
     <div data-ref="bulk_action_bar" class="flex-center bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex-wrap gap-3">
@@ -24,7 +22,16 @@
         </on>
       </select>
       <div class="flex-1"/>
-      <button type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50" disabled="{{!(_local.selectedItems || []).length || !_local.bulkIssueStatus || coupons?.data?.abilities?.can_update !== true}}"><on type="click"><!-- 일괄변경 확인 창 열기. 고른 쿠폰과 바꿀 방향을 _global 로 옮겨 담고 연다 — 창은 별도 컨텍스트라 이 목록의 _local 을 보지 못한다. --><sequence><set-state target="global" bulkIssueStatus="{{_local.bulkIssueStatus}}" bulkSelectedItems="{{_local.selectedItems}}"/><open-modal target="modal_status_change_confirm"/></sequence></on>$t:sirsoft-ecommerce.admin.promotion_coupon.bulk.apply</button>
+      <button type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50" disabled="{{!(_local.selectedItems || []).length || !_local.bulkIssueStatus || coupons?.data?.abilities?.can_update !== true}}">
+        <on type="click">
+          <!-- 일괄변경 확인 창 열기. 고른 쿠폰과 바꿀 방향을 _global 로 옮겨 담고 연다 — 창은 별도 컨텍스트라 이 목록의 _local 을 보지 못한다. -->
+          <sequence>
+            <set-state target="global" bulkIssueStatus="{{_local.bulkIssueStatus}}" bulkSelectedItems="{{_local.selectedItems}}"/>
+            <open-modal target="modal_status_change_confirm"/>
+          </sequence>
+        </on>
+        $t:sirsoft-ecommerce.admin.promotion_coupon.bulk.apply
+      </button>
     </div>
     <div data-ref="table_header_bar" class="flex-between flex-wrap gap-3 mb-4">
       <span class="text-label">$t:sirsoft-ecommerce.admin.promotion_coupon.table.total_count|count={{coupons?.data?.pagination?.total || 0}}</span>
@@ -78,7 +85,14 @@
       <column field="name" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.name" width="200px">
         <cell>
           <!-- 쿠폰 이름을 눌러 수정 화면으로. 보던 목록 상태를 이고 가므로 수정을 마치고 돌아오면 같은 자리가 열린다 -->
-          <a href="#" class="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer font-medium"><on type="click"><navigate path="/admin/ecommerce/promotion-coupons/{{row.id}}/edit" :mergeQuery="true"><query/></navigate></on>{{row.localized_name}}</a>
+          <a href="#" class="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer font-medium">
+            <on type="click">
+              <navigate path="/admin/ecommerce/promotion-coupons/{{row.id}}/edit" :mergeQuery="true">
+                <query/>
+              </navigate>
+            </on>
+            {{row.localized_name}}
+          </a>
         </cell>
       </column>
       <column field="benefit_formatted" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.benefit_amount" width="150px">
@@ -93,7 +107,20 @@
       <column field="issue_period_formatted" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_period" width="170px"/>
       <column field="issue_count_formatted" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_count" width="100px" align="center">
         <cell>
-          <!-- 발급수량 숫자 클릭 → 발급내역 모달 (링크 외형: 파란색 + hover 밑줄) --><button type="button" class="text-blue-600 dark:text-blue-400 font-medium hover:underline cursor-pointer"><on type="click"><set-state target="global" :issueHistoryPage="1" :issueHistoryPerPage="10" :issueHistoryFilterUser="null"><field name="issueHistoryCoupon"><field name="id" value="{{row.id}}"/><field name="name" value="{{row.localized_name}}"/></field></set-state><refetch-data-source dataSourceId="couponIssues"/><open-modal target="modal_issue_history"/></on>{{row.issue_count_formatted}}</button>
+          <!-- 발급수량 숫자 클릭 → 발급내역 모달 (링크 외형: 파란색 + hover 밑줄) -->
+          <button type="button" class="text-blue-600 dark:text-blue-400 font-medium hover:underline cursor-pointer">
+            <on type="click">
+              <set-state target="global" :issueHistoryPage="1" :issueHistoryPerPage="10" :issueHistoryFilterUser="null">
+                <field name="issueHistoryCoupon">
+                  <field name="id" value="{{row.id}}"/>
+                  <field name="name" value="{{row.localized_name}}"/>
+                </field>
+              </set-state>
+              <refetch-data-source dataSourceId="couponIssues"/>
+              <open-modal target="modal_issue_history"/>
+            </on>
+            {{row.issue_count_formatted}}
+          </button>
         </cell>
       </column>
       <column field="issue_method_label" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_method" width="80px">
@@ -158,7 +185,9 @@
         <!-- 행 액션(넓은 화면 표). 수정은 이동, 발급내역·즉시발급·삭제는 창을 연다 — 창을 여는 갈래는 대상 쿠폰을 `_global` 에 먼저 담는다(창은 부모 `_local` 을 못 본다). -->
         <switch>
           <case when="edit">
-            <navigate path="/admin/ecommerce/promotion-coupons/{{$args[1].id}}/edit" :mergeQuery="true"><query/></navigate>
+            <navigate path="/admin/ecommerce/promotion-coupons/{{$args[1].id}}/edit" :mergeQuery="true">
+              <query/>
+            </navigate>
           </case>
           <case when="issue_history">
             <set-state target="global" :issueHistoryPage="1" :issueHistoryPerPage="10" :issueHistoryFilterUser="null">
@@ -221,7 +250,9 @@
                   <!-- 행 액션(좁은 화면 카드). 위 표 판본과 같은 갈래를 반복 변수 이름만 바꿔 적은 것이다 — 한쪽만 고치면 화면 폭에 따라 동작이 갈린다. -->
                   <switch>
                     <case when="edit">
-                      <navigate path="/admin/ecommerce/promotion-coupons/{{coupon.id}}/edit" :mergeQuery="true"><query/></navigate>
+                      <navigate path="/admin/ecommerce/promotion-coupons/{{coupon.id}}/edit" :mergeQuery="true">
+                        <query/>
+                      </navigate>
                     </case>
                     <case when="issue_history">
                       <set-state target="global" :issueHistoryPage="1" :issueHistoryPerPage="10" :issueHistoryFilterUser="null">

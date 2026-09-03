@@ -5,7 +5,10 @@
     <responsive on="portable" class="space-y-4"/>
     <!-- 섹션 헤더 - 찜목록 + 총 개수 (카드 외부, profile 패턴) -->
     <div class="flex items-center justify-between">
-      <h2 class="text-xl font-semibold text-gray-900 dark:text-white"><responsive on="portable" class="text-lg font-semibold text-gray-900 dark:text-white"/>$t:mypage.wishlist.title</h2>
+      <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+        <responsive on="portable" class="text-lg font-semibold text-gray-900 dark:text-white"/>
+        $t:mypage.wishlist.title
+      </h2>
       <span class="text-sm text-gray-500 dark:text-gray-400">$t:mypage.wishlist.count|count={{wishlist.data.pagination.total ?? 0}}</span>
     </div>
     <!-- 찜 목록 카드 -->
@@ -37,7 +40,13 @@
         <responsive on="portable" class="p-6 text-center"/>
         <icon name="heart" size="3x" class="mx-auto text-gray-300 dark:text-gray-600 mb-3"/>
         <p class="text-gray-500 dark:text-gray-400">$t:mypage.wishlist.empty</p>
-        <button class="inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg cursor-pointer"><on type="click"><!-- audit:allow layout-list-context-navigate-merge-query 쇼핑하러 가기 — 찜 목록이 비었을 때 상품 목록으로 내보내는 이동이다. --><navigate path="{{_global.shopBase}}/products"/></on>$t:mypage.wishlist.go_shopping</button>
+        <button class="inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg cursor-pointer">
+          <on type="click">
+            <!-- audit:allow layout-list-context-navigate-merge-query 쇼핑하러 가기 — 찜 목록이 비었을 때 상품 목록으로 내보내는 이동이다. -->
+            <navigate path="{{_global.shopBase}}/products"/>
+          </on>
+          $t:mypage.wishlist.go_shopping
+        </button>
       </div>
       <!-- 페이지네이션 -->
       <pagination data-if="{{((wishlist.data.pagination.last_page ?? 0) > 1) || (wishlist.data.pagination.has_more_pages === true) || ((wishlist.data.pagination.current_page ?? 1) > 1)}}" currentPage="{{wishlist.data.pagination.current_page}}" totalPages="{{wishlist.data.pagination.last_page ?? null}}" hasMorePages="{{wishlist.data.pagination.has_more_pages ?? false}}" class="pt-4 flex justify-center">

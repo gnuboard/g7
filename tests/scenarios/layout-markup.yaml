@@ -859,6 +859,14 @@ effects:
   - empty_map_stays_object_and_empty_list_stays_array
   - extension_badge_injection_is_idempotent_and_scoped
   - overlay_extensions_are_restored_after_plugin_update
+  # 저작본 정형 — 직렬화기의 inline 규칙을 「텍스트 앞뒤 공백이 의미를 가질 때」로 좁혔다.
+  # 종전에는 글자가 있으면 서브트리 전체를 한 줄로 찍어 액션을 실은 버튼 하나가 1,800자를 넘었다.
+  # 무손실 근거는 `normalizeText` 가 텍스트 앞뒤의 개행+공백만 걷어낸다는 것이고, 코퍼스 실측으로
+  # 그 예외(앞뒤 공백이 의미를 갖는 text)는 10,907 중 선행 9·후행 9 뿐임을 확인했다.
+  - text_bearing_element_indents_children_when_whitespace_is_not_meaningful
+  - meaningful_edge_whitespace_keeps_the_element_inline
+  - text_only_element_stays_on_a_single_line
+  - comment_takes_its_own_line_regardless_of_element_shape
 
 # S18.5 축 B — 설치/업데이트/삭제 × 소스 매트릭스.
 #

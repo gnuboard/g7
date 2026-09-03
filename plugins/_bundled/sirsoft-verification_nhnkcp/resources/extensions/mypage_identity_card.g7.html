@@ -24,7 +24,8 @@
         <div class="flex-between gap-3">
           <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-verification_nhnkcp.card.birthday</span>
           <span data-if="{{nhnkcpRecord?.data?.is_adult_known}}" class="text-primary font-medium">{{nhnkcpRecord?.data?.birthday_masked ?? ''}}</span>
-          <!-- 생년월일 미제공 — 인증기관이 값을 내려주지 않은 경우 (빈칸으로 두면 오류로 오해된다) --><span data-if="{{!nhnkcpRecord?.data?.is_adult_known}}" class="text-gray-400 dark:text-gray-500">$t:sirsoft-verification_nhnkcp.card.not_provided</span>
+          <!-- 생년월일 미제공 — 인증기관이 값을 내려주지 않은 경우 (빈칸으로 두면 오류로 오해된다) -->
+          <span data-if="{{!nhnkcpRecord?.data?.is_adult_known}}" class="text-gray-400 dark:text-gray-500">$t:sirsoft-verification_nhnkcp.card.not_provided</span>
         </div>
         <div class="flex-between gap-3">
           <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-verification_nhnkcp.card.phone</span>
@@ -37,8 +38,10 @@
             <icon name="circle-check" class="text-sm text-green-600 dark:text-green-400"/>
             <span>$t:sirsoft-verification_nhnkcp.card.is_adult.true</span>
           </span>
-          <!-- 성인 미확인 (만 19세 미만) — 생년월일을 받은 경우에만 이 판정이 성립한다 --><span data-if="{{!nhnkcpRecord?.data?.is_adult &amp;&amp; nhnkcpRecord?.data?.is_adult_known}}" class="text-primary font-medium">$t:sirsoft-verification_nhnkcp.card.is_adult.false</span>
-          <!-- 생년월일 미제공 — 성인 여부를 계산할 수 없다. '미성년'과 반드시 구분해 표시한다 --><span data-if="{{!nhnkcpRecord?.data?.is_adult_known}}" class="text-gray-400 dark:text-gray-500">$t:sirsoft-verification_nhnkcp.card.is_adult.unknown</span>
+          <!-- 성인 미확인 (만 19세 미만) — 생년월일을 받은 경우에만 이 판정이 성립한다 -->
+          <span data-if="{{!nhnkcpRecord?.data?.is_adult &amp;&amp; nhnkcpRecord?.data?.is_adult_known}}" class="text-primary font-medium">$t:sirsoft-verification_nhnkcp.card.is_adult.false</span>
+          <!-- 생년월일 미제공 — 성인 여부를 계산할 수 없다. '미성년'과 반드시 구분해 표시한다 -->
+          <span data-if="{{!nhnkcpRecord?.data?.is_adult_known}}" class="text-gray-400 dark:text-gray-500">$t:sirsoft-verification_nhnkcp.card.is_adult.unknown</span>
         </div>
       </div>
     </div>

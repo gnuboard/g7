@@ -1,9 +1,7 @@
-<!--
-  템플릿 목록의 **사용자용 탭** 본문(카드 목록). `_tab_admin` 과 짝이고 구조가 같다 —
+<!-- 템플릿 목록의 **사용자용 탭** 본문(카드 목록). `_tab_admin` 과 짝이고 구조가 같다 —
   둘 다 부모가 함께 심어 두면 자기 종류일 때만(`route.type`) 그려진다.
   관리자 탭과 다른 점 둘 — ⑴ 코드 편집으로 나가는 버튼이 있다 ⑵ 활성해도 지금 보고 있는 관리자
-  화면은 그대로이므로, 활성 창이 화면을 다시 읽지 않는다(그 분기는 활성 창 안에 있다).
--->
+  화면은 그대로이므로, 활성 창이 화면을 다시 읽지 않는다(그 분기는 활성 창 안에 있다). -->
 <partial name="tab_user">
   <div data-ref="tab_user" data-if="{{route.type === 'user'}}">
     <div data-ref="section_header" class="flex-start justify-between gap-4 mb-6">
@@ -98,8 +96,8 @@
                   <on type="click">
                     <!-- 설치 창 열기 — 대상 카드를 전역에 먼저 담고 연다(창은 그 전역만 본다). -->
                     <sequence>
-                    <set-state target="global" selectedTemplate="{{row}}"/>
-                    <open-modal target="template_install_modal"/>
+                      <set-state target="global" selectedTemplate="{{row}}"/>
+                      <open-modal target="template_install_modal"/>
                     </sequence>
                   </on>
                   <icon name="download" class="text-base"/>
@@ -110,8 +108,8 @@
                     <!-- 스위치는 뒤집지 않고 창만 연다 — 현재 상태에 따라 활성/비활성 창이 갈린다.
                          실제 전환은 그 창이 하고, 취소하면 창이 스위치 모양을 되돌린다. -->
                     <sequence>
-                    <set-state target="global" selectedTemplate="{{row}}"/>
-                    <open-modal target="{{row.status === 'active' ? 'template_deactivate_modal' : 'template_activate_modal'}}"/>
+                      <set-state target="global" selectedTemplate="{{row}}"/>
+                      <open-modal target="{{row.status === 'active' ? 'template_deactivate_modal' : 'template_activate_modal'}}"/>
                     </sequence>
                   </on>
                 </toggle>

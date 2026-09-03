@@ -1,13 +1,11 @@
-<!--
-  무통장 입금이 들어왔음을 관리자가 확인해 기록하는 창.
+<!-- 무통장 입금이 들어왔음을 관리자가 확인해 기록하는 창.
   **입금 기록과 주문 결제완료 처리가 갈라져 있다** — 아래 체크를 켜야 주문 상태가 결제완료로
   넘어가고 그에 딸린 마일리지·재고·알림이 함께 움직인다. 켜지 않으면 입금 사실만 남는다. 금액이
   모자라 부분 입금만 기록해야 하는 경우가 있어 둘을 나눈 것이다.
   입금액의 기본값은 결제예정금액이고 위 요약이 그 값을 함께 보여 준다 — 관리자가 대조할 근거다.
   실제 검사는 서버가 하고, 그 오류를 `_local.depositConfirmErrors` 로 받아 입력칸 아래에 보인다.
   바깥 클릭과 ESC 로 닫히지 않게 막아 두었다 — 금액을 다루는 창이라 실수로 사라지면 안 된다.
-  누르는 순간의 처리는 전부 모듈 핸들러 몫이다(이 창에는 API 호출이 없다).
--->
+  누르는 순간의 처리는 전부 모듈 핸들러 몫이다(이 창에는 API 호출이 없다). -->
 <partial description="Order Detail - Confirm Bank Deposit Modal (무통장 입금확인)">
   <modal data-ref="modal_confirm_deposit" title="$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.title" size="md" :closeOnOverlayClick="false" :closeOnEscape="false">
     <div class="space-y-4">
@@ -15,7 +13,8 @@
       <!-- 결제예정금액 요약 (참고용) -->
       <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-3 flex-between text-sm">
         <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.due_amount</span>
-        <!-- 결제 통화 기준 실청구액 — 입금액 입력·서버 검증과 같은 SSoT. base 금액(total_due_amount_formatted)을 쓰면 base≠결제 통화 주문에서 운영자가 보는 금액과 저장 가능한 금액이 어긋난다. --><span class="font-semibold text-gray-900 dark:text-gray-100">{{order.data?.total_due_charge_amount_formatted ?? order.data?.total_due_amount_formatted ?? ''}}</span>
+        <!-- 결제 통화 기준 실청구액 — 입금액 입력·서버 검증과 같은 SSoT. base 금액(total_due_amount_formatted)을 쓰면 base≠결제 통화 주문에서 운영자가 보는 금액과 저장 가능한 금액이 어긋난다. -->
+        <span class="font-semibold text-gray-900 dark:text-gray-100">{{order.data?.total_due_charge_amount_formatted ?? order.data?.total_due_amount_formatted ?? ''}}</span>
       </div>
       <!-- 입금자명 (선택) -->
       <div>

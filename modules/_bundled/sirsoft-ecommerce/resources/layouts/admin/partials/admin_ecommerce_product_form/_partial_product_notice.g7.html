@@ -1,8 +1,6 @@
-<!--
-  상품 폼 — 상품정보제공고시 구획. 전자상거래법이 요구하는 항목 표라 상품마다 채워야 하고,
+<!-- 상품 폼 — 상품정보제공고시 구획. 전자상거래법이 요구하는 항목 표라 상품마다 채워야 하고,
   같은 항목 묶음을 되풀이하지 않도록 템플릿에서 불러 쓴다. 항목은 이름·내용 모두 다국어이며
-  줄 수가 정해져 있지 않아 추가·삭제·순서 바꾸기가 되는 목록 편집기로 다룬다.
--->
+  줄 수가 정해져 있지 않아 추가·삭제·순서 바꾸기가 되는 목록 편집기로 다룬다. -->
 <partial description="Product Form - Product Information Notice Section">
   <div data-ref="notice" class="admin-card-accordion">
     <div class="card-header">
@@ -50,7 +48,17 @@
             </div>
             <div class="flex-center gap-2">
               <responsive on="portable" class="row-stack w-full"/>
-              <button type="button" class="px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><responsive on="portable" class="flex-center justify-center w-full px-4 py-2 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"/><on type="click"><!-- 「상세설명 참조」로 일괄 채우기 — 확인 창이 미리보기를 보여 줘야 해서 지금 폼을 통째로 전역에 옮겨 담고 연다 --><sequence><set-state target="global" tempFormForBulkChange="{{_local.form}}"/><open-modal target="notice_bulk_change_modal"/></sequence></on>$t:sirsoft-ecommerce.admin.product.notice.fill_detail_ref</button>
+              <button type="button" class="px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+                <responsive on="portable" class="flex-center justify-center w-full px-4 py-2 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"/>
+                <on type="click">
+                  <!-- 「상세설명 참조」로 일괄 채우기 — 확인 창이 미리보기를 보여 줘야 해서 지금 폼을 통째로 전역에 옮겨 담고 연다 -->
+                  <sequence>
+                    <set-state target="global" tempFormForBulkChange="{{_local.form}}"/>
+                    <open-modal target="notice_bulk_change_modal"/>
+                  </sequence>
+                </on>
+                $t:sirsoft-ecommerce.admin.product.notice.fill_detail_ref
+              </button>
             </div>
           </div>
           <multilingual-tab-panel data-ref="notice_locale_panel" variant="underline" class="">

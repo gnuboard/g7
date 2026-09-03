@@ -1,9 +1,7 @@
-<!--
-  압축 파일을 **설치하지 않고 검사만 해 보는** 서랍. 수동 설치 전에 매니페스트가 성한지,
+<!-- 압축 파일을 **설치하지 않고 검사만 해 보는** 서랍. 수동 설치 전에 매니페스트가 성한지,
   이미 깔린 것인지 먼저 보라고 둔 자리다.
   결과는 셋으로 갈려 보인다 — 정상 / 오류 목록 / 이미 설치됨(그 버전까지).
-  판정은 전부 서버가 하고 여기서는 응답을 그대로 늘어놓는다.
--->
+  판정은 전부 서버가 하고 여기서는 응답을 그대로 늘어놓는다. -->
 <partial description="모듈 manifest 미리보기 드로어 — ZIP 업로드 후 설치 전 module.json 검증 결과 조회 (POST /manifest-preview)" editor_label="$t:admin.modal_label.admin_module_list.module_manifest_preview_drawer">
   <modal data-ref="module_manifest_preview_drawer" title="$t:admin.modules.modal.preview.title" size="large">
     <p class="text-label mb-4">$t:admin.modules.modal.preview.description</p>
@@ -20,16 +18,16 @@
         <!-- 검사 실행. **직전 결과를 먼저 지운다** — 안 지우면 새 파일을 검사하는 동안 옛 결과가
              화면에 남아 이번 파일의 판정으로 읽힌다. 설치는 하지 않는다(이 서랍의 요점). -->
         <sequence>
-        <set-state target="global" :isModulePreviewLoading="true" :modulePreviewResult="null"/>
-        <api-call :auth_required="true" target="/api/admin/modules/manifest-preview" method="POST" contentType="multipart/form-data" body="{{ ({ file: _global.modulePreviewFile }) }}">
-          <success>
-            <set-state target="global" :isModulePreviewLoading="false" modulePreviewResult="{{response.data}}"/>
-          </success>
-          <fail>
-            <set-state target="global" :isModulePreviewLoading="false"/>
-            <toast type="error" message="{{error.message ?? '$t:admin.modules.modal.preview.failed'}}"/>
-          </fail>
-        </api-call>
+          <set-state target="global" :isModulePreviewLoading="true" :modulePreviewResult="null"/>
+          <api-call :auth_required="true" target="/api/admin/modules/manifest-preview" method="POST" contentType="multipart/form-data" body="{{ ({ file: _global.modulePreviewFile }) }}">
+            <success>
+              <set-state target="global" :isModulePreviewLoading="false" modulePreviewResult="{{response.data}}"/>
+            </success>
+            <fail>
+              <set-state target="global" :isModulePreviewLoading="false"/>
+              <toast type="error" message="{{error.message ?? '$t:admin.modules.modal.preview.failed'}}"/>
+            </fail>
+          </api-call>
         </sequence>
       </on>
       <icon data-if="{{_global.isModulePreviewLoading}}" name="fas fa-spinner" class="animate-spin" size="sm"/>
@@ -47,7 +45,12 @@
       <div data-if="{{_global.modulePreviewResult?.validation?.already_installed === true}}" class="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded text-warning-soft">$t:admin.modules.modal.preview.already_installed|version={{_global.modulePreviewResult?.validation?.existing_version}}</div>
     </div>
     <div class="flex justify-end gap-2 mt-6">
-      <button type="button" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 text-sm font-medium rounded-md"><on event="onClick"><close-modal target="module_manifest_preview_drawer"/></on>$t:common.close</button>
+      <button type="button" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 text-sm font-medium rounded-md">
+        <on event="onClick">
+          <close-modal target="module_manifest_preview_drawer"/>
+        </on>
+        $t:common.close
+      </button>
     </div>
   </modal>
 </partial>

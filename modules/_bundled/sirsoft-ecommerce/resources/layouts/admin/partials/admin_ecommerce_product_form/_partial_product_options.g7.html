@@ -1,9 +1,7 @@
-<!--
-  상품 폼 — 옵션 구획. 두 가지를 다룬다. 하나는 **판매 옵션**으로, 색·크기 같은 축을 넣으면 그
+<!-- 상품 폼 — 옵션 구획. 두 가지를 다룬다. 하나는 **판매 옵션**으로, 색·크기 같은 축을 넣으면 그
   곱집합이 옵션표가 되고 줄마다 재고·가격·SKU 를 갖는다(상품 재고는 이 줄들의 합이라 여기서만
   고칠 수 있다). 다른 하나는 **추가옵션**으로, 재고 없이 값만 더 받는 자리다(각인 문구·포장 등).
-  값 변경은 전부 핸들러를 거치는데, 옵션표가 중첩 배열이라 자리(index)를 함께 넘겨야 하기 때문이다.
--->
+  값 변경은 전부 핸들러를 거치는데, 옵션표가 중첩 배열이라 자리(index)를 함께 넘겨야 하기 때문이다. -->
 <partial description="Product Form - Product Options Section">
   <div data-ref="options" class="admin-card-accordion">
     <div class="card-header">
@@ -63,7 +61,13 @@
             </button>
           </div>
         </div>
-        <button type="button" class="btn btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><on type="click"><!-- 입력한 축들의 곱집합으로 옵션표를 만든다. 이미 만들어 둔 표가 있으면 핸들러가 확인 창을 거친다(재생성은 넣어 둔 재고·추가금을 지운다) --><action handler="sirsoft-ecommerce.generateOptions" isCreate="{{!route.itemCode}}"/></on>$t:sirsoft-ecommerce.admin.product.options.generate_options</button>
+        <button type="button" class="btn btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+          <on type="click">
+            <!-- 입력한 축들의 곱집합으로 옵션표를 만든다. 이미 만들어 둔 표가 있으면 핸들러가 확인 창을 거친다(재생성은 넣어 둔 재고·추가금을 지운다) -->
+            <action handler="sirsoft-ecommerce.generateOptions" isCreate="{{!route.itemCode}}"/>
+          </on>
+          $t:sirsoft-ecommerce.admin.product.options.generate_options
+        </button>
       </div>
       <div data-ref="option_table_section" data-if="{{((_local.form.options ?? []).length) > 0}}">
         <div class="flex-between">
@@ -72,7 +76,8 @@
             <span class="text-label-subtle ml-2">$t:sirsoft-ecommerce.admin.product.options.option_count|count={{(_local.form.options ?? []).length}}</span>
           </div>
           <div class="flex-center gap-2">
-            <!-- 다통화 가격은 base 판매가에서 환율로 항상 자동 계산되어 읽기전용으로 표시된다(별도 입력·토글 없음) --><span class="text-tertiary text-xs">$t:sirsoft-ecommerce.admin.product.options.auto_currency_hint</span>
+            <!-- 다통화 가격은 base 판매가에서 환율로 항상 자동 계산되어 읽기전용으로 표시된다(별도 입력·토글 없음) -->
+            <span class="text-tertiary text-xs">$t:sirsoft-ecommerce.admin.product.options.auto_currency_hint</span>
           </div>
         </div>
         <div data-if="{{_local.errors?.options}}" class="alert-danger">
@@ -359,9 +364,19 @@
           </div>
           <div class="btn-group">
             <!-- 추가옵션 사용. 이미 한 줄이라도 있으면 아무 일도 하지 않는다 — 다시 눌러 빈 줄이 늘어나는 것을 막는다 -->
-            <button type="button" class="btn-group-item {{(_local.form.additional_options ?? []).length > 0 ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><on type="click"><action handler="sirsoft-ecommerce.addAdditionalOption" if="{{(_local.form.additional_options ?? []).length === 0}}"/></on>$t:sirsoft-ecommerce.common.use</button>
+            <button type="button" class="btn-group-item {{(_local.form.additional_options ?? []).length > 0 ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+              <on type="click">
+                <action handler="sirsoft-ecommerce.addAdditionalOption" if="{{(_local.form.additional_options ?? []).length === 0}}"/>
+              </on>
+              $t:sirsoft-ecommerce.common.use
+            </button>
             <!-- 추가옵션 사용 안 함. 이미 입력한 줄이 있을 때만 확인 창을 띄운다 — 비어 있으면 지울 것이 없어 그냥 꺼진 상태가 된다 -->
-            <button type="button" class="btn-group-item {{(_local.form.additional_options ?? []).length === 0 ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><on type="click"><open-modal if="{{(_local.form.additional_options ?? []).length > 0}}" target="additional_options_clear_modal"/></on>$t:sirsoft-ecommerce.common.not_use</button>
+            <button type="button" class="btn-group-item {{(_local.form.additional_options ?? []).length === 0 ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+              <on type="click">
+                <open-modal if="{{(_local.form.additional_options ?? []).length > 0}}" target="additional_options_clear_modal"/>
+              </on>
+              $t:sirsoft-ecommerce.common.not_use
+            </button>
           </div>
         </div>
         <div data-ref="additional_options_content" data-if="{{(_local.form.additional_options ?? []).length > 0}}">
@@ -476,8 +491,16 @@
                       <icon name="trash" size="sm"/>
                     </button>
                   </div>
-                  <!-- 선택지 추가 (그룹당 max 20) --><button data-if="{{(addOpt.values ?? []).length < 20 &amp;&amp; (!route.itemCode || product?.data?.abilities?.can_update === true)}}" type="button" class="btn btn-outline btn-xs"><on type="click"><!-- 선택지 더하기(그룹당 최대 20) --><action handler="sirsoft-ecommerce.addAdditionalOptionValue" groupIndex="{{addIdx}}"/></on>+ $t:sirsoft-ecommerce.admin.product.options.add_additional_value</button>
-                  <!-- 선택지 누락(빈 그룹) 에러 — 영역 하단 인라인 메시지 (값이 0개일 때 그룹당 1개 이상 등록 안내) --><p data-if="{{_local.errors?.['additional_options.' + addIdx + '.values']}}" class="form-error-xs mt-1">{{_local.errors?.['additional_options.' + addIdx + '.values']?.[0]}}</p>
+                  <!-- 선택지 추가 (그룹당 max 20) -->
+                  <button data-if="{{(addOpt.values ?? []).length < 20 &amp;&amp; (!route.itemCode || product?.data?.abilities?.can_update === true)}}" type="button" class="btn btn-outline btn-xs">
+                    <on type="click">
+                      <!-- 선택지 더하기(그룹당 최대 20) -->
+                      <action handler="sirsoft-ecommerce.addAdditionalOptionValue" groupIndex="{{addIdx}}"/>
+                    </on>
+                    + $t:sirsoft-ecommerce.admin.product.options.add_additional_value
+                  </button>
+                  <!-- 선택지 누락(빈 그룹) 에러 — 영역 하단 인라인 메시지 (값이 0개일 때 그룹당 1개 이상 등록 안내) -->
+                  <p data-if="{{_local.errors?.['additional_options.' + addIdx + '.values']}}" class="form-error-xs mt-1">{{_local.errors?.['additional_options.' + addIdx + '.values']?.[0]}}</p>
                 </div>
               </div>
             </item-template>
@@ -486,7 +509,13 @@
               <set-state target="local" form.additional_options="{{$sortedItems}}"/>
             </on>
           </div>
-          <button data-if="{{(_local.form.additional_options ?? []).length < 5 &amp;&amp; (!route.itemCode || product?.data?.abilities?.can_update === true)}}" type="button" class="btn btn-outline btn-sm"><on type="click"><!-- 추가옵션 그룹 더하기(최대 5) --><action handler="sirsoft-ecommerce.addAdditionalOption"/></on>+ $t:sirsoft-ecommerce.admin.product.options.add_additional</button>
+          <button data-if="{{(_local.form.additional_options ?? []).length < 5 &amp;&amp; (!route.itemCode || product?.data?.abilities?.can_update === true)}}" type="button" class="btn btn-outline btn-sm">
+            <on type="click">
+              <!-- 추가옵션 그룹 더하기(최대 5) -->
+              <action handler="sirsoft-ecommerce.addAdditionalOption"/>
+            </on>
+            + $t:sirsoft-ecommerce.admin.product.options.add_additional
+          </button>
         </div>
       </div>
     </div>

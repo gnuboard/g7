@@ -1,5 +1,4 @@
-<!--
-  마일리지 내역 검색 조건. 입력하는 동안에는 아무것도 조회하지 않고 값을 `_local.filter` 에만
+<!-- 마일리지 내역 검색 조건. 입력하는 동안에는 아무것도 조회하지 않고 값을 `_local.filter` 에만
   모아 두었다가, [검색]을 눌러야 그 묶음이 한꺼번에 URL 로 나간다 — 그래서 조건을 여럿 바꿔도
   요청은 한 번이고, 주소를 붙여넣으면 같은 결과가 나온다.
   URL 이 정본이라 화면 상태와 두 벌이 되지만, 되돌리는 방향은 없다(주소로 들어오면 입력칸이
@@ -8,8 +7,7 @@
   선택 표시가 풀리고, 빠른 선택을 누르면 두 날짜가 덮인다. 그래서 한쪽을 고칠 때 반드시 다른
   쪽도 함께 쓴다.
   이동은 `replace` 라 검색을 반복해도 뒤로가기 이력이 쌓이지 않고, 표 본문에만 전환 효과가 걸려
-  검색 중에도 필터 영역은 그대로 남는다.
--->
+  검색 중에도 필터 영역은 그대로 남는다. -->
 <partial description="마일리지 내역 필터 (검색/유형/통화/기간) — 리뷰/쿠폰/배송정책 공통 규약(card·input·btn-date) 1:1">
   <div data-ref="mileage_filter_card" class="admin-card mb-6">
     <div data-ref="search_row" class="flex flex-wrap items-center gap-3 mb-4">
@@ -93,10 +91,43 @@
         </input>
       </div>
       <div class="flex flex-wrap items-center gap-1">
-        <div class="{{_local.filter.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}"><on type="click"><!-- 빠른 기간 — 날짜 계산은 화면이 하지 않고 모듈 핸들러가 한다. 그 핸들러가 돌려준 값을 바로 다음 액션이 `$prev` 로 받아 세 칸에 옮겨 담는 구조라, 둘의 순서를 바꾸면 빈 값이 들어간다. --><sequence><action handler="sirsoft-ecommerce.setDateRange" preset="week"/><set-state target="local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/></sequence></on>$t:sirsoft-ecommerce.admin.mileage_transactions.filter.period_week</div>
-        <div class="{{_local.filter.dateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}"><on type="click"><!-- 최근 1개월 — 위 '최근 1주' 와 같은 두 단계이고 넘기는 이름만 다르다. --><sequence><action handler="sirsoft-ecommerce.setDateRange" preset="month"/><set-state target="local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/></sequence></on>$t:sirsoft-ecommerce.admin.mileage_transactions.filter.period_month</div>
-        <div class="{{_local.filter.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"><on type="click"><!-- 최근 3개월 — 같은 두 단계. --><sequence><action handler="sirsoft-ecommerce.setDateRange" preset="3months"/><set-state target="local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/></sequence></on>$t:sirsoft-ecommerce.admin.mileage_transactions.filter.period_3months</div>
-        <div class="{{_local.filter.dateQuick === 'all' ? 'btn-date active' : 'btn-date cursor-pointer'}}"><on type="click"><!-- 전체 기간 — 이것만 핸들러를 거치지 않는다. 계산할 날짜가 없고 두 칸을 비우는 것이 곧 '기간 제한 없음' 이기 때문이다. --><set-state target="local" filter.dateQuick="all" filter.startDate="" filter.endDate=""/></on>$t:sirsoft-ecommerce.admin.mileage_transactions.filter.period_all</div>
+        <div class="{{_local.filter.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+          <on type="click">
+            <!-- 빠른 기간 — 날짜 계산은 화면이 하지 않고 모듈 핸들러가 한다. 그 핸들러가 돌려준 값을 바로 다음 액션이 `$prev` 로 받아 세 칸에 옮겨 담는 구조라, 둘의 순서를 바꾸면 빈 값이 들어간다. -->
+            <sequence>
+              <action handler="sirsoft-ecommerce.setDateRange" preset="week"/>
+              <set-state target="local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/>
+            </sequence>
+          </on>
+          $t:sirsoft-ecommerce.admin.mileage_transactions.filter.period_week
+        </div>
+        <div class="{{_local.filter.dateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+          <on type="click">
+            <!-- 최근 1개월 — 위 '최근 1주' 와 같은 두 단계이고 넘기는 이름만 다르다. -->
+            <sequence>
+              <action handler="sirsoft-ecommerce.setDateRange" preset="month"/>
+              <set-state target="local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/>
+            </sequence>
+          </on>
+          $t:sirsoft-ecommerce.admin.mileage_transactions.filter.period_month
+        </div>
+        <div class="{{_local.filter.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+          <on type="click">
+            <!-- 최근 3개월 — 같은 두 단계. -->
+            <sequence>
+              <action handler="sirsoft-ecommerce.setDateRange" preset="3months"/>
+              <set-state target="local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/>
+            </sequence>
+          </on>
+          $t:sirsoft-ecommerce.admin.mileage_transactions.filter.period_3months
+        </div>
+        <div class="{{_local.filter.dateQuick === 'all' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+          <on type="click">
+            <!-- 전체 기간 — 이것만 핸들러를 거치지 않는다. 계산할 날짜가 없고 두 칸을 비우는 것이 곧 '기간 제한 없음' 이기 때문이다. -->
+            <set-state target="local" filter.dateQuick="all" filter.startDate="" filter.endDate=""/>
+          </on>
+          $t:sirsoft-ecommerce.admin.mileage_transactions.filter.period_all
+        </div>
       </div>
     </div>
     <div data-ref="filter_actions" class="flex items-center border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
@@ -106,9 +137,36 @@
       </div>
       <div class="flex items-center justify-center gap-2 flex-1">
         <responsive on="portable" class="flex gap-2 w-full"/>
-        <button data-ref="search_submit_button" type="button" class="btn btn-primary text-sm"><responsive on="portable" class="btn btn-primary text-sm flex-1"/><on type="click"><!-- 검색 실행 — 열거한 검색 조건만 덮어쓰고 나머지 목록 상태는 유지한다 (#75). --><navigate path="/admin/ecommerce/mileage-transactions" :replace="true" :mergeQuery="true" transition_overlay_target="mileage_transactions_datagrid__body"><query search_field="{{_local.filter.searchField ?? 'member'}}" search_keyword="{{_local.filter.searchKeyword ?? ''}}" type="{{_local.filter.type ?? ''}}" currency="{{_local.filter.currency ?? ''}}" start_date="{{_local.filter.startDate ?? ''}}" end_date="{{_local.filter.endDate ?? ''}}" sort="{{query.sort ?? 'created_at_desc'}}" per_page="{{query.per_page ?? 20}}" :page="1"/></navigate></on>$t:sirsoft-ecommerce.admin.mileage_transactions.search.submit</button>
+        <button data-ref="search_submit_button" type="button" class="btn btn-primary text-sm">
+          <responsive on="portable" class="btn btn-primary text-sm flex-1"/>
+          <on type="click">
+            <!-- 검색 실행 — 열거한 검색 조건만 덮어쓰고 나머지 목록 상태는 유지한다 (#75). -->
+            <navigate path="/admin/ecommerce/mileage-transactions" :replace="true" :mergeQuery="true" transition_overlay_target="mileage_transactions_datagrid__body">
+              <query search_field="{{_local.filter.searchField ?? 'member'}}" search_keyword="{{_local.filter.searchKeyword ?? ''}}" type="{{_local.filter.type ?? ''}}" currency="{{_local.filter.currency ?? ''}}" start_date="{{_local.filter.startDate ?? ''}}" end_date="{{_local.filter.endDate ?? ''}}" sort="{{query.sort ?? 'created_at_desc'}}" per_page="{{query.per_page ?? 20}}" :page="1"/>
+            </navigate>
+          </on>
+          $t:sirsoft-ecommerce.admin.mileage_transactions.search.submit
+        </button>
         <!-- 검색 조건 초기화. 폼 상태를 비우고 주소도 함께 비운다 — 초기화는 걸린 조건을 없애는 것이므로 지금 조건과 병합하지 않는다 -->
-        <button data-ref="search_reset_button" type="button" class="btn btn-outline text-sm"><responsive on="portable" class="btn btn-outline text-sm flex-1"/><on type="click"><set-state target="local"><field name="filter"><field name="searchField" value="member"/><field name="searchKeyword" value=""/><field name="type" value=""/><field name="currency" value=""/><field name="startDate" value=""/><field name="endDate" value=""/><field name="dateQuick" value=""/></field></set-state><!-- audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. --><navigate path="/admin/ecommerce/mileage-transactions" :replace="true" :mergeQuery="false" transition_overlay_target="mileage_transactions_datagrid__body"/></on>$t:sirsoft-ecommerce.admin.mileage_transactions.search.reset</button>
+        <button data-ref="search_reset_button" type="button" class="btn btn-outline text-sm">
+          <responsive on="portable" class="btn btn-outline text-sm flex-1"/>
+          <on type="click">
+            <set-state target="local">
+              <field name="filter">
+                <field name="searchField" value="member"/>
+                <field name="searchKeyword" value=""/>
+                <field name="type" value=""/>
+                <field name="currency" value=""/>
+                <field name="startDate" value=""/>
+                <field name="endDate" value=""/>
+                <field name="dateQuick" value=""/>
+              </field>
+            </set-state>
+            <!-- audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. -->
+            <navigate path="/admin/ecommerce/mileage-transactions" :replace="true" :mergeQuery="false" transition_overlay_target="mileage_transactions_datagrid__body"/>
+          </on>
+          $t:sirsoft-ecommerce.admin.mileage_transactions.search.reset
+        </button>
       </div>
       <div class="flex-1">
         <responsive on="portable" class="hidden"/>

@@ -1,5 +1,4 @@
-<!--
-  상품 목록 — 엑셀 내려받기 창. **아직 동작하지 않는다.** 주문 목록의 같은 창과 나란히 두고 보면
+<!-- 상품 목록 — 엑셀 내려받기 창. **아직 동작하지 않는다.** 주문 목록의 같은 창과 나란히 두고 보면
   빠진 것이 분명하다:
 
   ⓐ 내려받기 버튼에 `<on>` 이 없다 — 눌러도 아무 일도 일어나지 않는다.
@@ -9,8 +8,7 @@
      `<set-state target="_local" …>` 로 담고 그 값을 요청 본문이 읽는데, 여기에는 그 소비처도 없다.
 
   정본은 주문 목록의 `_modal_excel_download` 다(검색조건 전체 vs 선택분, blob 응답 처리까지).
-  세 가지 다 산출 값이 달라지는 수정이라 주석 주입 단락에서는 손대지 않았다.
--->
+  세 가지 다 산출 값이 달라지는 수정이라 주석 주입 단락에서는 손대지 않았다. -->
 <partial description="Product Index - Excel Download Modal">
   <modal data-ref="modal_excel_download" title="$t:sirsoft-ecommerce.admin.product.modal.excel_download.title" description="$t:sirsoft-ecommerce.admin.product.modal.excel_download.description" size="md">
     <div data-ref="excel_download_options">
@@ -42,7 +40,12 @@
       </div>
     </div>
     <div data-ref="excel_download_footer" class="flex justify-end gap-2 mt-6">
-      <button type="button" class="btn btn-outline"><on type="click"><close-modal/></on>$t:sirsoft-ecommerce.admin.product.modal.common.cancel</button>
+      <button type="button" class="btn btn-outline">
+        <on type="click">
+          <close-modal/>
+        </on>
+        $t:sirsoft-ecommerce.admin.product.modal.common.cancel
+      </button>
       <button type="button" class="btn btn-primary">
         <icon name="download" class="text-base mr-2"/>
         <span>$t:sirsoft-ecommerce.admin.product.modal.excel_download.download</span>

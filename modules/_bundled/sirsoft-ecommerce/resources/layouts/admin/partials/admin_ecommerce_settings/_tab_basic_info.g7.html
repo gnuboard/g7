@@ -1,7 +1,5 @@
-<!--
-  쇼핑몰 설정 — 기본정보 탭. 상호·연락처처럼 폼 자동 바인딩만으로 충분한 항목이라 별도
-  액션이 없다(입력값은 이름 규약으로 `_local.form` 에 담기고 저장은 화면의 저장 버튼이 한다).
--->
+<!-- 쇼핑몰 설정 — 기본정보 탭. 상호·연락처처럼 폼 자동 바인딩만으로 충분한 항목이라 별도
+  액션이 없다(입력값은 이름 규약으로 `_local.form` 에 담기고 저장은 화면의 저장 버튼이 한다). -->
 <partial description="쇼핑몰 설정 기본 정보 탭 콘텐츠">
   <div data-ref="tab_content_basic_info" data-if="{{(_global.activeEcommerceSettingsTab || query.tab || 'basic_info') === 'basic_info'}}">
     <div data-ref="shop_info_card" class="admin-card">

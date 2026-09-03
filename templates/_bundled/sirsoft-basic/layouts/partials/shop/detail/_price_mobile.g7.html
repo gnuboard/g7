@@ -11,7 +11,8 @@
       <span class="text-lg font-bold text-red-500">{{product.data?.discount_rate}}%</span>
       <span class="text-xl font-bold text-gray-900 dark:text-white">{{product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.selling_price_formatted}}</span>
     </div>
-    <!-- 판매가 (할인 없을 때) --><div data-if="{{!product.data?.discount_rate || product.data?.discount_rate <= 0}}" class="text-xl font-bold text-gray-900 dark:text-white">{{product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.selling_price_formatted}}</div>
+    <!-- 판매가 (할인 없을 때) -->
+    <div data-if="{{!product.data?.discount_rate || product.data?.discount_rate <= 0}}" class="text-xl font-bold text-gray-900 dark:text-white">{{product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.selling_price_formatted}}</div>
     <!-- 배송 불가 사전 경고 (B8 — 선택 배송국가로 배송 불가, 모바일 가격 영역) -->
     <div data-if="{{product.data?.is_shippable_to_selected_country === false}}" class="flex items-center gap-1.5 mt-1.5">
       <icon name="triangle-exclamation" size="sm" class="text-red-500 dark:text-red-400 shrink-0"/>

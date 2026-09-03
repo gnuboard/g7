@@ -34,7 +34,12 @@
         <div data-if="{{userPosts.data &amp;&amp; !userPosts.error}}" class="space-y-6">
           <!-- 브레드크럼 (1행) -->
           <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-2">
-            <button class="hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer transition-colors"><on type="click"><navigate path="/users/{{route.userId}}"/></on>{{userProfile.data?.name ?? ''}} $t:user.profile.back_to_profile</button>
+            <button class="hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer transition-colors">
+              <on type="click">
+                <navigate path="/users/{{route.userId}}"/>
+              </on>
+              {{userProfile.data?.name ?? ''}} $t:user.profile.back_to_profile
+            </button>
             <span>></span>
             <span class="text-gray-900 dark:text-white font-medium">$t:user.profile.posts_page_title</span>
           </div>
@@ -45,7 +50,8 @@
               <icon name="file-lines" size="xl" class="text-gray-900 dark:text-white"/>
               <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{userProfile.data?.name ?? ''}}$t:user.profile.posts_suffix</h1>
             </div>
-            <!-- 3행: 총 게시글 수 --><span class="text-sm text-gray-500 dark:text-gray-400 mt-1 block text-right">$t:user.profile.total_posts|count={{userPosts.data?.total ?? 0}}</span>
+            <!-- 3행: 총 게시글 수 -->
+            <span class="text-sm text-gray-500 dark:text-gray-400 mt-1 block text-right">$t:user.profile.total_posts|count={{userPosts.data?.total ?? 0}}</span>
           </div>
           <!-- 게시글 테이블 -->
           <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -67,19 +73,24 @@
                 <on type="click">
                   <navigate path="/board/{{post.board_slug}}/{{post.id}}"/>
                 </on>
-                <!-- 게시판명 컬럼 --><div class="hidden md:block col-span-2 text-sm text-gray-600 dark:text-gray-400 truncate">{{post.board_name}}</div>
+                <!-- 게시판명 컬럼 -->
+                <div class="hidden md:block col-span-2 text-sm text-gray-600 dark:text-gray-400 truncate">{{post.board_name}}</div>
                 <!-- 제목 영역 (배지 + 제목 + 댓글수) -->
                 <div class="col-span-1 md:col-span-6 flex items-center gap-2 min-w-0 overflow-hidden">
-                  <!-- 게시판명 배지 (모바일용) --><span class="md:hidden flex-shrink-0 text-xs px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded whitespace-nowrap">{{post.board_name}}</span>
-                  <!-- 카테고리 배지 --><span data-if="{{post.category}}" class="flex-shrink-0 text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded whitespace-nowrap">{{post.category}}</span>
+                  <!-- 게시판명 배지 (모바일용) -->
+                  <span class="md:hidden flex-shrink-0 text-xs px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded whitespace-nowrap">{{post.board_name}}</span>
+                  <!-- 카테고리 배지 -->
+                  <span data-if="{{post.category}}" class="flex-shrink-0 text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded whitespace-nowrap">{{post.category}}</span>
                   <!-- 비밀글 아이콘 -->
                   <icon data-if="{{post.is_secret}}" name="lock" size="xs" class="flex-shrink-0 text-yellow-500 dark:text-yellow-400"/>
                   <!-- 블라인드 아이콘 -->
                   <icon data-if="{{post.status === 'blinded'}}" name="eye-slash" size="xs" class="flex-shrink-0 text-orange-500 dark:text-orange-400"/>
                   <!-- 제목 + 댓글수 컨테이너 -->
                   <div class="flex-1 min-w-0 flex items-center gap-1">
-                    <!-- 제목 --><span class="truncate font-medium text-gray-900 dark:text-white">{{post.title}}</span>
-                    <!-- 댓글 수 --><span data-if="{{post.comment_count > 0}}" class="flex-shrink-0 text-xs text-blue-600 dark:text-blue-400 font-medium">[{{post.comment_count}}]</span>
+                    <!-- 제목 -->
+                    <span class="truncate font-medium text-gray-900 dark:text-white">{{post.title}}</span>
+                    <!-- 댓글 수 -->
+                    <span data-if="{{post.comment_count > 0}}" class="flex-shrink-0 text-xs text-blue-600 dark:text-blue-400 font-medium">[{{post.comment_count}}]</span>
                   </div>
                 </div>
                 <!-- 조회수 -->
@@ -87,7 +98,8 @@
                   <icon name="eye" size="xs"/>
                   <span>{{post.view_count ?? 0}}</span>
                 </div>
-                <!-- 작성일 --><span class="hidden md:block col-span-3 text-right text-sm text-gray-500 dark:text-gray-400" title="{{post.created_at ?? ''}}">{{post.created_at_formatted ?? ''}}</span>
+                <!-- 작성일 -->
+                <span class="hidden md:block col-span-3 text-right text-sm text-gray-500 dark:text-gray-400" title="{{post.created_at ?? ''}}">{{post.created_at_formatted ?? ''}}</span>
                 <!-- 모바일용 하단 정보 -->
                 <div class="md:hidden flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-1">
                   <span class="flex items-center gap-1">

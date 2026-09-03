@@ -1,8 +1,6 @@
-<!--
-  주문 목록 — 검색조건 프리셋 관리 창. 저장해 둔 조건 묶음의 이름을 바꾸거나 지운다. 이름 바꾸기·
+<!-- 주문 목록 — 검색조건 프리셋 관리 창. 저장해 둔 조건 묶음의 이름을 바꾸거나 지운다. 이름 바꾸기·
   삭제·새로 저장은 각각 **다른 창**을 열고 이 창은 닫히지 않은 채 그 위에 겹친다 — 그래서 대상
-  프리셋을 `_global` 에 먼저 담고 연다(창끼리는 서로의 `_local` 을 보지 못한다).
--->
+  프리셋을 `_global` 에 먼저 담고 연다(창끼리는 서로의 `_local` 을 보지 못한다). -->
 <partial description="Order List - Preset Management Modal">
   <modal data-ref="modal_preset_manage" title="$t:sirsoft-ecommerce.admin.order.modal.preset_manage.title" description="$t:sirsoft-ecommerce.admin.order.modal.preset_manage.description" size="md">
     <div data-if="{{!presets.data || presets.data.length === 0}}" class="text-center py-8 text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.modal.preset_manage.empty</div>
@@ -34,7 +32,12 @@
       </div>
     </div>
     <div class="mt-6">
-      <button type="button" class="w-full px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"><on type="click"><open-modal target="modal_preset_save"/></on>$t:sirsoft-ecommerce.admin.order.modal.preset_manage.add_new</button>
+      <button type="button" class="w-full px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+        <on type="click">
+          <open-modal target="modal_preset_save"/>
+        </on>
+        $t:sirsoft-ecommerce.admin.order.modal.preset_manage.add_new
+      </button>
     </div>
   </modal>
 </partial>

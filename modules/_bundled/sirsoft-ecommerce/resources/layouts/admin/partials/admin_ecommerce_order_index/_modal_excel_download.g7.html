@@ -1,14 +1,17 @@
-<!--
-  주문 목록을 엑셀로 내려받기 전 범위를 고르는 창(검색 결과 전체 / 선택한 행).
+<!-- 주문 목록을 엑셀로 내려받기 전 범위를 고르는 창(검색 결과 전체 / 선택한 행).
   **아직 시안이다** — 내려받기 버튼이 창을 닫기만 하고 요청을 보내지 않으며, 안내에 적힌 건수도
   마크업에 박힌 숫자다.
   같은 이름의 창이 주문 목록 화면(`admin_ecommerce_order_list`)에도 있고 **그쪽이 배선된 정본**이다.
-  배선할 때는 그 조각의 형태를 따르면 된다.
--->
+  배선할 때는 그 조각의 형태를 따르면 된다. -->
 <partial description="Order Excel Download Modal">
   <modal data-ref="modal_excel_download" title="$t:sirsoft-ecommerce.admin.order.modal.excel_download.title" size="sm">
     <footer>
-      <button type="button" class="btn btn-outline"><on type="click"><close-modal/></on>$t:sirsoft-ecommerce.admin.order.modal.excel_download.cancel</button>
+      <button type="button" class="btn btn-outline">
+        <on type="click">
+          <close-modal/>
+        </on>
+        $t:sirsoft-ecommerce.admin.order.modal.excel_download.cancel
+      </button>
       <button type="button" class="btn btn-primary">
         <on type="click">
           <close-modal/>

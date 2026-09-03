@@ -1,8 +1,6 @@
-<!--
-  템플릿 업데이트 창 — 모듈 업데이트 창과 같이 셋을 함께 다룬다.
+<!-- 템플릿 업데이트 창 — 모듈 업데이트 창과 같이 셋을 함께 다룬다.
   ⑴ 코어 비호환 경고(강행 체크 전까지 실행 버튼 잠금) ⑵ 변경 이력 ⑶ 고친 레이아웃을 덮어쓸지 남길지.
-  ⑵⑶ 의 값은 이 창이 묻지 않고 **여는 쪽이 미리 받아 전역에 담아 준다**.
--->
+  ⑵⑶ 의 값은 이 창이 묻지 않고 **여는 쪽이 미리 받아 전역에 담아 준다**. -->
 <partial description="템플릿 업데이트 확인 모달" editor_label="$t:admin.modal_label.admin_template_list.template_update_modal">
   <modal data-ref="template_update_modal" title="$t:admin.templates.modals.update_title" size="medium">
     <div data-if="{{_global.selectedTemplate?.is_compatible === false}}" class="mb-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg" role="alert">
@@ -138,21 +136,21 @@
           <!-- 업데이트 실행 — 레이아웃 처리 방식과 강행 여부를 함께 보낸다.
                성공 갈래가 대상·선택을 기본값으로 되돌리므로 다음 템플릿에 옛 값이 새지 않는다. -->
           <sequence>
-          <set-state target="global" :isTemplateUpdating="true" :templateUpdateError="null"/>
-          <api-call :auth_required="true" target="/api/admin/templates/{{_global.selectedTemplate.identifier}}/update" method="POST">
-            <success>
-              <set-state target="global" :isTemplateUpdating="false"/>
-              <set-state target="global" :selectedTemplate="null" templateLayoutStrategy="overwrite" :hasModifiedTemplateLayouts="false" :modifiedTemplateLayoutsCount="0" :modifiedTemplateLayouts="[]"/>
-              <toast type="success" message="$t:admin.templates.update_success"/>
-              <refetch-data-source dataSourceId="templates"/>
-              <close-modal/>
-            </success>
-            <fail>
-              <set-state target="global" :isTemplateUpdating="false" templateUpdateError="{{error.message}}"/>
-              <toast type="error" message="{{error.message}}"/>
-            </fail>
-            <body layout_strategy="{{_global.templateLayoutStrategy ?? 'overwrite'}}" force="{{_global.templateForceUpdate === true}}"/>
-          </api-call>
+            <set-state target="global" :isTemplateUpdating="true" :templateUpdateError="null"/>
+            <api-call :auth_required="true" target="/api/admin/templates/{{_global.selectedTemplate.identifier}}/update" method="POST">
+              <success>
+                <set-state target="global" :isTemplateUpdating="false"/>
+                <set-state target="global" :selectedTemplate="null" templateLayoutStrategy="overwrite" :hasModifiedTemplateLayouts="false" :modifiedTemplateLayoutsCount="0" :modifiedTemplateLayouts="[]"/>
+                <toast type="success" message="$t:admin.templates.update_success"/>
+                <refetch-data-source dataSourceId="templates"/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="global" :isTemplateUpdating="false" templateUpdateError="{{error.message}}"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+              <body layout_strategy="{{_global.templateLayoutStrategy ?? 'overwrite'}}" force="{{_global.templateForceUpdate === true}}"/>
+            </api-call>
           </sequence>
         </on>
         <icon data-if="{{_global.isTemplateUpdating}}" name="spinner" class="spinner-sm"/>

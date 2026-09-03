@@ -1,13 +1,11 @@
-<!--
-  분류 삭제 확인 창. 브랜드 쪽 같은 이름의 창은 여는 쪽이 `_global.modal_data` 에 실어 준 값을
+<!-- 분류 삭제 확인 창. 브랜드 쪽 같은 이름의 창은 여는 쪽이 `_global.modal_data` 에 실어 준 값을
   읽지만, 이 창은 선택된 분류(`_global.selectedCategory`)를 직접 본다 — 여는 자리가 한 곳뿐이고
   그 시점에 이미 선택이 잡혀 있어서다. 잠금 판단도 그 안의 `children_count`/`products_count` 를
   쓴다(관계 배열 길이를 세는 것보다 정확하다 — 응답이 관계를 안 실어도 수는 온다).
   막는 사유가 둘이다: 하위 분류가 있거나 연결된 상품이 있으면 삭제 버튼이 잠기고, 두 사유가
   겹치면 안내 목록에 두 줄이 함께 뜬다.
   삭제 후 트리와 **활성 분류 목록을 둘 다** 다시 부른다 — 뒤엣것은 상품 폼 같은 다른 화면의
-  선택지라, 지운 분류가 그 목록에 남으면 없는 분류로 저장이 나간다.
--->
+  선택지라, 지운 분류가 그 목록에 남으면 없는 분류로 저장이 나간다. -->
 <partial description="Category Delete Confirm Modal">
   <modal data-ref="modal_delete_confirm" title="$t:sirsoft-ecommerce.admin.category.delete_modal.title" size="medium">
     <div>
@@ -40,27 +38,25 @@
       </button>
       <button class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.isDeleting || (_global.selectedCategory?.children_count ?? 0) > 0 || (_global.selectedCategory?.products_count ?? 0) > 0}}">
         <on type="click">
-          <!--
-            삭제 실행. `isDeleting` 이 버튼 잠금과 라벨을 함께 쥐고 있어 성공·실패 양쪽에서 모두
+          <!-- 삭제 실행. `isDeleting` 이 버튼 잠금과 라벨을 함께 쥐고 있어 성공·실패 양쪽에서 모두
             풀어야 한다 — 한쪽만 풀면 실패 후 버튼이 "처리 중" 인 채 잠긴다.
-            성공 갈래 순서가 화면 복구 순서다: 트리·활성목록 갱신 → 패널 비우기 → 알림 → 창 닫기.
-          -->
+            성공 갈래 순서가 화면 복구 순서다: 트리·활성목록 갱신 → 패널 비우기 → 알림 → 창 닫기. -->
           <sequence>
-          <set-state target="local" :isDeleting="true"/>
-          <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/categories/{{_global.selectedCategoryId}}" method="DELETE">
-            <success>
-              <set-state target="local" :isDeleting="false"/>
-              <refetch-data-source dataSourceId="categories"/>
-              <refetch-data-source dataSourceId="activeCategories"/>
-              <set-state target="global" panelMode="empty" :selectedCategoryId="null" :selectedCategory="null"/>
-              <toast type="success" message="$t:sirsoft-ecommerce.admin.category.messages.deleted"/>
-              <close-modal/>
-            </success>
-            <fail>
-              <set-state target="local" :isDeleting="false"/>
-              <toast type="error" message="{{error.message}}"/>
-            </fail>
-          </api-call>
+            <set-state target="local" :isDeleting="true"/>
+            <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/categories/{{_global.selectedCategoryId}}" method="DELETE">
+              <success>
+                <set-state target="local" :isDeleting="false"/>
+                <refetch-data-source dataSourceId="categories"/>
+                <refetch-data-source dataSourceId="activeCategories"/>
+                <set-state target="global" panelMode="empty" :selectedCategoryId="null" :selectedCategory="null"/>
+                <toast type="success" message="$t:sirsoft-ecommerce.admin.category.messages.deleted"/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="local" :isDeleting="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+            </api-call>
           </sequence>
         </on>
         <span data-if="{{!_local.isDeleting}}">$t:common.delete</span>

@@ -56,7 +56,14 @@
           <refetch-data-source dataSourceId="reviews"/>
         </on>
       </select>
-      <!-- 초기화 버튼 --><button type="button" class="ml-auto text-sm px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"><on type="click"><set-state target="local" :reviewOptionFilters="{}" reviewRating="" :reviewPhotoOnly="false" :reviewsPage="1"/><refetch-data-source dataSourceId="reviews"/></on>$t:shop.product.filter_reset</button>
+      <!-- 초기화 버튼 -->
+      <button type="button" class="ml-auto text-sm px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+        <on type="click">
+          <set-state target="local" :reviewOptionFilters="{}" reviewRating="" :reviewPhotoOnly="false" :reviewsPage="1"/>
+          <refetch-data-source dataSourceId="reviews"/>
+        </on>
+        $t:shop.product.filter_reset
+      </button>
     </div>
     <!-- 정렬 + 포토리뷰 필터 행 -->
     <div class="flex items-center justify-between mb-4 gap-3">

@@ -30,7 +30,8 @@
     <div>
       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">$t:auth.email</label>
       <input type="email" name="email" placeholder="$t:auth.email_placeholder" class="{{_global.loginErrors?.email ? 'w-full px-4 py-2 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200'}}" :required="true" disabled="{{_global.isLoggingIn}}"/>
-      <!-- 이메일 필드 에러 메시지 --><p data-if="{{_global.loginErrors?.email}}" class="mt-1 text-sm text-red-600 dark:text-red-400">{{Array.isArray(_global.loginErrors?.email) ? _global.loginErrors.email[0] : _global.loginErrors?.email}}</p>
+      <!-- 이메일 필드 에러 메시지 -->
+      <p data-if="{{_global.loginErrors?.email}}" class="mt-1 text-sm text-red-600 dark:text-red-400">{{Array.isArray(_global.loginErrors?.email) ? _global.loginErrors.email[0] : _global.loginErrors?.email}}</p>
     </div>
     <!-- 비밀번호 입력 필드 -->
     <div>

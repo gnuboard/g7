@@ -4,7 +4,13 @@
     <div data-ref="form_header" class="flex-between mb-6">
       <h3 class="card-title">{{_local.viewMode === 'edit' ? '$t:sirsoft-ecommerce.admin.main_banner.form.edit_title' : '$t:sirsoft-ecommerce.admin.main_banner.form.add_title'}}</h3>
       <div class="flex-center gap-2">
-        <button type="button" class="btn btn-outline"><on type="click"><!-- 편집 취소 — 상세로 돌아가며 선택을 비운다. 이탈 확인 창(`modal_edit_cancel`)을 거치지 않으므로 입력이 있어도 곧바로 나간다. --><set-state target="_local" viewMode="detail" :selectedBannerId="null"/></on>$t:sirsoft-ecommerce.admin.main_banner.form.cancel</button>
+        <button type="button" class="btn btn-outline">
+          <on type="click">
+            <!-- 편집 취소 — 상세로 돌아가며 선택을 비운다. 이탈 확인 창(`modal_edit_cancel`)을 거치지 않으므로 입력이 있어도 곧바로 나간다. -->
+            <set-state target="_local" viewMode="detail" :selectedBannerId="null"/>
+          </on>
+          $t:sirsoft-ecommerce.admin.main_banner.form.cancel
+        </button>
         <button type="button" class="btn btn-primary">$t:sirsoft-ecommerce.admin.main_banner.form.save</button>
       </div>
     </div>
@@ -20,7 +26,13 @@
     <div data-ref="language_tabs_form" class="mb-6">
       <div class="flex-center gap-2 mb-4">
         <icon name="globe" class="text-base text-gray-400 dark:text-gray-500"/>
-        <button data-each="loc in $locales" type="button" class="{{(_local.activeLanguageTab ?? $locale) === loc ? 'btn btn-primary text-sm' : 'btn btn-secondary text-sm'}}"><on type="click"><!-- 폼의 언어 탭 — 상세 쪽과 같은 지역 키를 쓰므로 상세에서 고른 언어가 편집으로 넘어온다. 다만 아래 입력들이 언어별로 갈려 있지 않아 탭을 바꿔도 같은 칸을 편집한다(시안). --><set-state target="_local" activeLanguageTab="{{loc}}"/></on>{{_global.appConfig?.localeNames?.[loc] ?? loc}}</button>
+        <button data-each="loc in $locales" type="button" class="{{(_local.activeLanguageTab ?? $locale) === loc ? 'btn btn-primary text-sm' : 'btn btn-secondary text-sm'}}">
+          <on type="click">
+            <!-- 폼의 언어 탭 — 상세 쪽과 같은 지역 키를 쓰므로 상세에서 고른 언어가 편집으로 넘어온다. 다만 아래 입력들이 언어별로 갈려 있지 않아 탭을 바꿔도 같은 칸을 편집한다(시안). -->
+            <set-state target="_local" activeLanguageTab="{{loc}}"/>
+          </on>
+          {{_global.appConfig?.localeNames?.[loc] ?? loc}}
+        </button>
       </div>
       <div>
         <div class="form-group">

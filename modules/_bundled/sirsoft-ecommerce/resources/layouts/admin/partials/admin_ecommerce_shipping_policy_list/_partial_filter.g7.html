@@ -1,13 +1,11 @@
-<!--
-  배송정책 목록의 검색 조건. 마일리지 내역 필터와 같은 규약이다 — 입력하는 동안에는 아무것도
+<!-- 배송정책 목록의 검색 조건. 마일리지 내역 필터와 같은 규약이다 — 입력하는 동안에는 아무것도
   조회하지 않고 `_local.filter` 에 모아 두었다가 [검색]에서 한 번에 내보낸다.
   조건이 네 갈래다: 검색어 · 배송 방법(복수 선택) · 부과 방식(복수 선택) · 사용 여부(택일).
   복수 선택은 모두 같은 형태로 움직인다 — '전체' 칸은 목록을 **비우는 것**이고(비었으면 곧 전체),
   낱개 칸은 같은 코드를 먼저 걸러 낸 뒤 넣거나 뺀다. 그래서 두 번 눌러도 중복이 쌓이지 않는다.
   배송 방법과 나라 선택지는 하드코딩이 아니라 **이커머스 설정의 활성 항목**에서 온다 — 설정에서
   끈 방법·나라는 여기 나오지 않는다. 부과 방식만 코드가 마크업에 박혀 있다.
-  검색 실행은 명명 액션(`searchShippingPolicies`)이라 엔터와 버튼이 같은 것을 가리킨다.
--->
+  검색 실행은 명명 액션(`searchShippingPolicies`)이라 엔터와 버튼이 같은 것을 가리킨다. -->
 <partial description="Shipping Policy List Filter Section">
   <div data-ref="filter_section" class="admin-card">
     <div data-ref="search_row" class="mb-4">
@@ -258,9 +256,32 @@
     </div>
     <div data-ref="filter_buttons" class="flex justify-center gap-3 mt-6">
       <responsive on="portable" class="flex gap-3 mt-6"/>
-      <button type="button" class="btn btn-primary px-6"><responsive on="portable" class="btn btn-primary flex-1"/><on type="click"><action-ref name="searchShippingPolicies"/></on>$t:sirsoft-ecommerce.admin.shipping_policy.action.search</button>
+      <button type="button" class="btn btn-primary px-6">
+        <responsive on="portable" class="btn btn-primary flex-1"/>
+        <on type="click">
+          <action-ref name="searchShippingPolicies"/>
+        </on>
+        $t:sirsoft-ecommerce.admin.shipping_policy.action.search
+      </button>
       <!-- 검색 조건 초기화. 폼 상태를 비우고 목록을 조건 없는 상태로 다시 세운다 -->
-      <button type="button" class="btn btn-secondary px-6"><responsive on="portable" class="btn btn-secondary flex-1"/><on type="click"><set-state target="_local"><field name="filter"><field name="searchType" value="name"/><field name="search" value=""/><field name="shipping_methods" :value="[]"/><field name="charge_policies" :value="[]"/><field name="countries" :value="[]"/><field name="is_active" value=""/></field></set-state><!-- audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. --><navigate path="/admin/ecommerce/shipping-policies" :mergeQuery="false"/></on>$t:sirsoft-ecommerce.admin.shipping_policy.action.reset</button>
+      <button type="button" class="btn btn-secondary px-6">
+        <responsive on="portable" class="btn btn-secondary flex-1"/>
+        <on type="click">
+          <set-state target="_local">
+            <field name="filter">
+              <field name="searchType" value="name"/>
+              <field name="search" value=""/>
+              <field name="shipping_methods" :value="[]"/>
+              <field name="charge_policies" :value="[]"/>
+              <field name="countries" :value="[]"/>
+              <field name="is_active" value=""/>
+            </field>
+          </set-state>
+          <!-- audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. -->
+          <navigate path="/admin/ecommerce/shipping-policies" :mergeQuery="false"/>
+        </on>
+        $t:sirsoft-ecommerce.admin.shipping_policy.action.reset
+      </button>
     </div>
   </div>
 </partial>

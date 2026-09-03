@@ -1,5 +1,4 @@
-<!--
-  상품 목록 — 검색 필터 영역. 주문 목록의 같은 영역과 구조가 같다(슬롯 등록 + 편집모드 +
+<!-- 상품 목록 — 검색 필터 영역. 주문 목록의 같은 영역과 구조가 같다(슬롯 등록 + 편집모드 +
   프리셋), 다만 필터 항목이 상품 도메인이다.
   
   ⓐ 필터 행은 전부 화면 밖 등록 영역(`slot_registration_area`)에 한 번만 정의하고, 각 행의
@@ -10,8 +9,7 @@
   ⓒ 입력 중인 값은 `_local.filter` 에 모이지만 **검색은 URL 로 나간다**(재진입·뒤로가기·주소
      공유에서 같은 목록이 서야 한다).
   
-  숫자 범위 필터가 둘인데 타입이 갈린다 — 가격은 `type="number"`, 재고는 `type="text"` 다.
--->
+  숫자 범위 필터가 둘인데 타입이 갈린다 — 가격은 `type="number"`, 재고는 `type="text"` 다. -->
 <partial description="Product Index - Filter Section with Slot System">
   <div data-ref="filter_card" data-key="filter" class="admin-card">
     <div data-ref="slot_registration_area" class="hidden filter-grid" aria-hidden="true">
@@ -107,12 +105,66 @@
             </input>
           </div>
           <div class="flex-center flex-wrap gap-1">
-            <div class="{{_local.filter.dateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}"><on type="click"><!-- 빠른 기간 버튼 여섯. 핸들러가 시작·종료일을 계산해 돌려주고 그 결과를 `$prev` 로 받아 담는다 — 날짜 계산을 레이아웃 표현식에 두지 않으려는 것이다. --><sequence><action handler="sirsoft-ecommerce.setDateRange" preset="today"/><set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/></sequence></on>$t:sirsoft-ecommerce.admin.product.filter.date_quick.today</div>
-            <div class="{{_local.filter.dateQuick === '3days' ? 'btn-date active' : 'btn-date cursor-pointer'}}"><on type="click"><!-- 3일. 주문 목록에는 없는 구간으로, 상품은 최근 등록분을 훑는 일이 잦아 짧은 구간을 더 뒀다. --><sequence><action handler="sirsoft-ecommerce.setDateRange" preset="3days"/><set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/></sequence></on>$t:sirsoft-ecommerce.admin.product.filter.date_quick.3days</div>
-            <div class="{{_local.filter.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}"><on type="click"><!-- 1주일. 눌린 버튼 표시는 `dateQuick` 이 정하고, 날짜 칸을 직접 고치면 그 표시가 지워진다. --><sequence><action handler="sirsoft-ecommerce.setDateRange" preset="week"/><set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/></sequence></on>$t:sirsoft-ecommerce.admin.product.filter.date_quick.week</div>
-            <div class="{{_local.filter.dateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}"><on type="click"><!-- 1개월. 기준 날짜는 위 "등록일/수정일" 선택을 따른다. --><sequence><action handler="sirsoft-ecommerce.setDateRange" preset="month"/><set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/></sequence></on>$t:sirsoft-ecommerce.admin.product.filter.date_quick.month</div>
-            <div class="{{_local.filter.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"><on type="click"><!-- 3개월. 상품은 주문과 달리 오래된 것도 계속 유효하므로 6개월 구간 대신 "전체" 를 뒀다. --><sequence><action handler="sirsoft-ecommerce.setDateRange" preset="3months"/><set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/></sequence></on>$t:sirsoft-ecommerce.admin.product.filter.date_quick.3months</div>
-            <div class="{{_local.filter.dateQuick === 'all' ? 'btn-date active' : 'btn-date cursor-pointer'}}"><on type="click"><!-- 전체. 날짜 조건을 비우는 자리라 다른 다섯과 달리 범위를 넓히는 것이 아니라 없앤다. --><sequence><action handler="sirsoft-ecommerce.setDateRange" preset="all"/><set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/></sequence></on>$t:sirsoft-ecommerce.admin.product.filter.date_quick.all</div>
+            <div class="{{_local.filter.dateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <!-- 빠른 기간 버튼 여섯. 핸들러가 시작·종료일을 계산해 돌려주고 그 결과를 `$prev` 로 받아 담는다 — 날짜 계산을 레이아웃 표현식에 두지 않으려는 것이다. -->
+                <sequence>
+                  <action handler="sirsoft-ecommerce.setDateRange" preset="today"/>
+                  <set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/>
+                </sequence>
+              </on>
+              $t:sirsoft-ecommerce.admin.product.filter.date_quick.today
+            </div>
+            <div class="{{_local.filter.dateQuick === '3days' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <!-- 3일. 주문 목록에는 없는 구간으로, 상품은 최근 등록분을 훑는 일이 잦아 짧은 구간을 더 뒀다. -->
+                <sequence>
+                  <action handler="sirsoft-ecommerce.setDateRange" preset="3days"/>
+                  <set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/>
+                </sequence>
+              </on>
+              $t:sirsoft-ecommerce.admin.product.filter.date_quick.3days
+            </div>
+            <div class="{{_local.filter.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <!-- 1주일. 눌린 버튼 표시는 `dateQuick` 이 정하고, 날짜 칸을 직접 고치면 그 표시가 지워진다. -->
+                <sequence>
+                  <action handler="sirsoft-ecommerce.setDateRange" preset="week"/>
+                  <set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/>
+                </sequence>
+              </on>
+              $t:sirsoft-ecommerce.admin.product.filter.date_quick.week
+            </div>
+            <div class="{{_local.filter.dateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <!-- 1개월. 기준 날짜는 위 "등록일/수정일" 선택을 따른다. -->
+                <sequence>
+                  <action handler="sirsoft-ecommerce.setDateRange" preset="month"/>
+                  <set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/>
+                </sequence>
+              </on>
+              $t:sirsoft-ecommerce.admin.product.filter.date_quick.month
+            </div>
+            <div class="{{_local.filter.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <!-- 3개월. 상품은 주문과 달리 오래된 것도 계속 유효하므로 6개월 구간 대신 "전체" 를 뒀다. -->
+                <sequence>
+                  <action handler="sirsoft-ecommerce.setDateRange" preset="3months"/>
+                  <set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/>
+                </sequence>
+              </on>
+              $t:sirsoft-ecommerce.admin.product.filter.date_quick.3months
+            </div>
+            <div class="{{_local.filter.dateQuick === 'all' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <!-- 전체. 날짜 조건을 비우는 자리라 다른 다섯과 달리 범위를 넓히는 것이 아니라 없앤다. -->
+                <sequence>
+                  <action handler="sirsoft-ecommerce.setDateRange" preset="all"/>
+                  <set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/>
+                </sequence>
+              </on>
+              $t:sirsoft-ecommerce.admin.product.filter.date_quick.all
+            </div>
           </div>
         </div>
       </div>
@@ -383,7 +435,44 @@
         <span class="text-sm font-medium">$t:sirsoft-ecommerce.admin.product.preset.label</span>
       </div>
       <!-- 프리셋 버튼. 저장된 조건 세트를 통째로 갈아끼우고 펼침 상태를 비운 뒤 주소를 바꾼다 — 지금 걸린 조건과 섞지 않는 것이 프리셋의 뜻이다 -->
-      <div data-ref="preset_buttons_dynamic_{{presetIdx}}" data-each="preset, presetIdx in presets.data || []" class="{{query.preset_id === String(preset.id) ? 'btn-preset ring-1 ring-gray-400 dark:ring-gray-500 bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'btn-preset cursor-pointer'}}"><on type="click"><set-state target="_local" merge="shallow"><field name="filter"><field name="selectedPreset" value="{{preset.id}}"/><field name="searchField" value="{{preset.conditions?.searchField || 'all'}}"/><field name="searchKeyword" value="{{preset.conditions?.searchKeyword || ''}}"/><field name="category1" value="{{preset.conditions?.category1 || ''}}"/><field name="category2" value="{{preset.conditions?.category2 || ''}}"/><field name="category3" value="{{preset.conditions?.category3 || ''}}"/><field name="category4" value="{{preset.conditions?.category4 || ''}}"/><field name="noCategoryRegistered" value="{{preset.conditions?.noCategoryRegistered || false}}"/><field name="dateType" value="{{preset.conditions?.dateType || 'created_at'}}"/><field name="startDate" value="{{preset.conditions?.startDate || ''}}"/><field name="endDate" value="{{preset.conditions?.endDate || ''}}"/><field name="dateQuick" value="{{preset.conditions?.dateQuick || ''}}"/><field name="salesStatus" value="{{preset.conditions?.salesStatus || []}}"/><field name="displayStatus" value="{{preset.conditions?.displayStatus || 'all'}}"/><field name="brandId" value="{{preset.conditions?.brandId || ''}}"/><field name="noBrandRegistered" value="{{preset.conditions?.noBrandRegistered || false}}"/><field name="taxStatus" value="{{preset.conditions?.taxStatus || 'all'}}"/><field name="priceType" value="{{preset.conditions?.priceType || 'selling_price'}}"/><field name="minPrice" value="{{preset.conditions?.minPrice || ''}}"/><field name="maxPrice" value="{{preset.conditions?.maxPrice || ''}}"/><field name="minStock" value="{{preset.conditions?.minStock || ''}}"/><field name="maxStock" value="{{preset.conditions?.maxStock || ''}}"/><field name="shippingPolicy" value="{{preset.conditions?.shippingPolicy || ''}}"/></field></set-state><action-ref name="resetExpandedOptionState"/><!-- audit:allow layout-list-context-navigate-merge-query 프리셋 적용 — 프리셋은 조건 세트를 통째로 갈아끼우는 것이므로 병합하면 직전 조건이 섞인다. 주문 목록의 프리셋 규약과 동일. --><navigate path="/admin/ecommerce/products" :replace="true" :mergeQuery="false"><query :page="1" preset_id="{{preset.id}}" search_field="{{(preset.conditions?.searchField || 'all') !== 'all' ? preset.conditions?.searchField : null}}" search_keyword="{{preset.conditions?.searchKeyword || null}}" category_id1="{{preset.conditions?.category1 || null}}" category_id2="{{preset.conditions?.category2 || null}}" category_id3="{{preset.conditions?.category3 || null}}" category_id4="{{preset.conditions?.category4 || null}}" category_id="{{preset.conditions?.category4 || preset.conditions?.category3 || preset.conditions?.category2 || preset.conditions?.category1 || null}}" no_category="{{preset.conditions?.noCategoryRegistered ? 'true' : null}}" sales_status="{{(preset.conditions?.salesStatus || []).length > 0 ? preset.conditions?.salesStatus : null}}" display_status="{{(preset.conditions?.displayStatus || 'all') !== 'all' ? preset.conditions?.displayStatus : null}}" brand_id="{{preset.conditions?.brandId || null}}" no_brand="{{preset.conditions?.noBrandRegistered ? 'true' : null}}" tax_status="{{(preset.conditions?.taxStatus || 'all') !== 'all' ? preset.conditions?.taxStatus : null}}" date_type="{{(preset.conditions?.dateType || 'created_at') !== 'created_at' ? preset.conditions?.dateType : null}}" start_date="{{preset.conditions?.startDate || null}}" end_date="{{preset.conditions?.endDate || null}}" price_type="{{(preset.conditions?.priceType || 'selling_price') !== 'selling_price' ? preset.conditions?.priceType : null}}" min_price="{{preset.conditions?.minPrice || null}}" max_price="{{preset.conditions?.maxPrice || null}}" min_stock="{{preset.conditions?.minStock || null}}" max_stock="{{preset.conditions?.maxStock || null}}" shipping_policy_id="{{preset.conditions?.shippingPolicy || null}}"/></navigate><toast type="info" message="$t:sirsoft-ecommerce.admin.product.preset.applied|name={{preset.name}}"/></on>{{preset.name}}</div>
+      <div data-ref="preset_buttons_dynamic_{{presetIdx}}" data-each="preset, presetIdx in presets.data || []" class="{{query.preset_id === String(preset.id) ? 'btn-preset ring-1 ring-gray-400 dark:ring-gray-500 bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'btn-preset cursor-pointer'}}">
+        <on type="click">
+          <set-state target="_local" merge="shallow">
+            <field name="filter">
+              <field name="selectedPreset" value="{{preset.id}}"/>
+              <field name="searchField" value="{{preset.conditions?.searchField || 'all'}}"/>
+              <field name="searchKeyword" value="{{preset.conditions?.searchKeyword || ''}}"/>
+              <field name="category1" value="{{preset.conditions?.category1 || ''}}"/>
+              <field name="category2" value="{{preset.conditions?.category2 || ''}}"/>
+              <field name="category3" value="{{preset.conditions?.category3 || ''}}"/>
+              <field name="category4" value="{{preset.conditions?.category4 || ''}}"/>
+              <field name="noCategoryRegistered" value="{{preset.conditions?.noCategoryRegistered || false}}"/>
+              <field name="dateType" value="{{preset.conditions?.dateType || 'created_at'}}"/>
+              <field name="startDate" value="{{preset.conditions?.startDate || ''}}"/>
+              <field name="endDate" value="{{preset.conditions?.endDate || ''}}"/>
+              <field name="dateQuick" value="{{preset.conditions?.dateQuick || ''}}"/>
+              <field name="salesStatus" value="{{preset.conditions?.salesStatus || []}}"/>
+              <field name="displayStatus" value="{{preset.conditions?.displayStatus || 'all'}}"/>
+              <field name="brandId" value="{{preset.conditions?.brandId || ''}}"/>
+              <field name="noBrandRegistered" value="{{preset.conditions?.noBrandRegistered || false}}"/>
+              <field name="taxStatus" value="{{preset.conditions?.taxStatus || 'all'}}"/>
+              <field name="priceType" value="{{preset.conditions?.priceType || 'selling_price'}}"/>
+              <field name="minPrice" value="{{preset.conditions?.minPrice || ''}}"/>
+              <field name="maxPrice" value="{{preset.conditions?.maxPrice || ''}}"/>
+              <field name="minStock" value="{{preset.conditions?.minStock || ''}}"/>
+              <field name="maxStock" value="{{preset.conditions?.maxStock || ''}}"/>
+              <field name="shippingPolicy" value="{{preset.conditions?.shippingPolicy || ''}}"/>
+            </field>
+          </set-state>
+          <action-ref name="resetExpandedOptionState"/>
+          <!-- audit:allow layout-list-context-navigate-merge-query 프리셋 적용 — 프리셋은 조건 세트를 통째로 갈아끼우는 것이므로 병합하면 직전 조건이 섞인다. 주문 목록의 프리셋 규약과 동일. -->
+          <navigate path="/admin/ecommerce/products" :replace="true" :mergeQuery="false">
+            <query :page="1" preset_id="{{preset.id}}" search_field="{{(preset.conditions?.searchField || 'all') !== 'all' ? preset.conditions?.searchField : null}}" search_keyword="{{preset.conditions?.searchKeyword || null}}" category_id1="{{preset.conditions?.category1 || null}}" category_id2="{{preset.conditions?.category2 || null}}" category_id3="{{preset.conditions?.category3 || null}}" category_id4="{{preset.conditions?.category4 || null}}" category_id="{{preset.conditions?.category4 || preset.conditions?.category3 || preset.conditions?.category2 || preset.conditions?.category1 || null}}" no_category="{{preset.conditions?.noCategoryRegistered ? 'true' : null}}" sales_status="{{(preset.conditions?.salesStatus || []).length > 0 ? preset.conditions?.salesStatus : null}}" display_status="{{(preset.conditions?.displayStatus || 'all') !== 'all' ? preset.conditions?.displayStatus : null}}" brand_id="{{preset.conditions?.brandId || null}}" no_brand="{{preset.conditions?.noBrandRegistered ? 'true' : null}}" tax_status="{{(preset.conditions?.taxStatus || 'all') !== 'all' ? preset.conditions?.taxStatus : null}}" date_type="{{(preset.conditions?.dateType || 'created_at') !== 'created_at' ? preset.conditions?.dateType : null}}" start_date="{{preset.conditions?.startDate || null}}" end_date="{{preset.conditions?.endDate || null}}" price_type="{{(preset.conditions?.priceType || 'selling_price') !== 'selling_price' ? preset.conditions?.priceType : null}}" min_price="{{preset.conditions?.minPrice || null}}" max_price="{{preset.conditions?.maxPrice || null}}" min_stock="{{preset.conditions?.minStock || null}}" max_stock="{{preset.conditions?.maxStock || null}}" shipping_policy_id="{{preset.conditions?.shippingPolicy || null}}"/>
+          </navigate>
+          <toast type="info" message="$t:sirsoft-ecommerce.admin.product.preset.applied|name={{preset.name}}"/>
+        </on>
+        {{preset.name}}
+      </div>
     </div>
     <div data-ref="search_row" class="flex-center flex-wrap gap-3">
       <responsive on="portable" class="row-stack"/>
@@ -496,11 +585,59 @@
         </div>
         <div class="flex-center justify-center gap-2 flex-1">
           <responsive on="portable" class="contents"/>
-          <button type="button" class="btn btn-primary"><responsive on="portable" class="btn btn-primary flex-1"/><on type="click"><action-ref name="searchProducts"/></on>$t:sirsoft-ecommerce.admin.product.action.search</button>
+          <button type="button" class="btn btn-primary">
+            <responsive on="portable" class="btn btn-primary flex-1"/>
+            <on type="click">
+              <action-ref name="searchProducts"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.product.action.search
+          </button>
           <!-- 필터 초기화. 폼 상태·펼침 상태·주소를 모두 비운다 — 한 곳만 비우면 남은 값이 다음 검색에 되살아난다 -->
-          <button type="button" class="btn btn-outline"><responsive on="portable" class="btn btn-outline flex-1"/><on type="click"><set-state target="_local" merge="shallow"><field name="filter"><field name="selectedPreset" value=""/><field name="searchField" value="all"/><field name="searchKeyword" value=""/><field name="category1" value=""/><field name="category2" value=""/><field name="category3" value=""/><field name="category4" value=""/><field name="noCategoryRegistered" :value="false"/><field name="dateType" value="created_at"/><field name="startDate" value=""/><field name="endDate" value=""/><field name="dateQuick" value=""/><field name="salesStatus" :value="[]"/><field name="displayStatus" value="all"/><field name="brandId" value=""/><field name="noBrandRegistered" :value="false"/><field name="taxStatus" value="all"/><field name="priceType" value="selling_price"/><field name="minPrice" value=""/><field name="maxPrice" value=""/><field name="minStock" value=""/><field name="maxStock" value=""/><field name="shippingPolicy" value=""/></field></set-state><action-ref name="resetExpandedOptionState"/><!-- audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. --><navigate path="/admin/ecommerce/products" :mergeQuery="false"/></on>$t:sirsoft-ecommerce.admin.product.action.reset</button>
+          <button type="button" class="btn btn-outline">
+            <responsive on="portable" class="btn btn-outline flex-1"/>
+            <on type="click">
+              <set-state target="_local" merge="shallow">
+                <field name="filter">
+                  <field name="selectedPreset" value=""/>
+                  <field name="searchField" value="all"/>
+                  <field name="searchKeyword" value=""/>
+                  <field name="category1" value=""/>
+                  <field name="category2" value=""/>
+                  <field name="category3" value=""/>
+                  <field name="category4" value=""/>
+                  <field name="noCategoryRegistered" :value="false"/>
+                  <field name="dateType" value="created_at"/>
+                  <field name="startDate" value=""/>
+                  <field name="endDate" value=""/>
+                  <field name="dateQuick" value=""/>
+                  <field name="salesStatus" :value="[]"/>
+                  <field name="displayStatus" value="all"/>
+                  <field name="brandId" value=""/>
+                  <field name="noBrandRegistered" :value="false"/>
+                  <field name="taxStatus" value="all"/>
+                  <field name="priceType" value="selling_price"/>
+                  <field name="minPrice" value=""/>
+                  <field name="maxPrice" value=""/>
+                  <field name="minStock" value=""/>
+                  <field name="maxStock" value=""/>
+                  <field name="shippingPolicy" value=""/>
+                </field>
+              </set-state>
+              <action-ref name="resetExpandedOptionState"/>
+              <!-- audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. -->
+              <navigate path="/admin/ecommerce/products" :mergeQuery="false"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.product.action.reset
+          </button>
           <!-- 지금 조건을 프리셋으로 저장. 조건을 전역으로 옮겨 담은 뒤 이름 입력 창을 연다 — 창은 별도 컨텍스트라 이 화면의 필터를 읽지 못한다 -->
-          <button data-ref="preset_save_button_desktop" type="button" class="btn btn-outline"><responsive on="portable" class="hidden"/><on type="click"><set-state target="global" savingPresetConditions="{{_local.filter}}"/><open-modal target="modal_preset_save"/></on>$t:sirsoft-ecommerce.admin.product.action.save_preset</button>
+          <button data-ref="preset_save_button_desktop" type="button" class="btn btn-outline">
+            <responsive on="portable" class="hidden"/>
+            <on type="click">
+              <set-state target="global" savingPresetConditions="{{_local.filter}}"/>
+              <open-modal target="modal_preset_save"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.product.action.save_preset
+          </button>
         </div>
         <div class="flex-1">
           <responsive on="portable" class="hidden"/>
@@ -518,7 +655,16 @@
           <icon name="sliders" class="text-base"/>
           <span>$t:sirsoft-ecommerce.admin.product.action.edit_search</span>
         </button>
-        <button data-ref="preset_save_button_mobile" type="button" class="btn btn-outline flex-1"><on type="click"><!-- 좁은 화면용 짝 버튼(위 넓은 화면 버튼은 여기서 숨는다). 담는 값과 여는 창은 같다. --><sequence><set-state target="global" savingPresetConditions="{{_local.filter}}"/><open-modal target="modal_preset_save"/></sequence></on>$t:sirsoft-ecommerce.admin.product.action.save_preset</button>
+        <button data-ref="preset_save_button_mobile" type="button" class="btn btn-outline flex-1">
+          <on type="click">
+            <!-- 좁은 화면용 짝 버튼(위 넓은 화면 버튼은 여기서 숨는다). 담는 값과 여는 창은 같다. -->
+            <sequence>
+              <set-state target="global" savingPresetConditions="{{_local.filter}}"/>
+              <open-modal target="modal_preset_save"/>
+            </sequence>
+          </on>
+          $t:sirsoft-ecommerce.admin.product.action.save_preset
+        </button>
       </div>
     </div>
   </div>

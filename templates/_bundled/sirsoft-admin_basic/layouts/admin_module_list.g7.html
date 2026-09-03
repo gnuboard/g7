@@ -1,12 +1,10 @@
-<!--
-  모듈 관리 화면. **설치된 것과 아직 설치하지 않은 것을 한 목록에 섞어** 보여 주는 것이 이 화면의
+<!-- 모듈 관리 화면. **설치된 것과 아직 설치하지 않은 것을 한 목록에 섞어** 보여 주는 것이 이 화면의
   성격이다 — 카드마다 `status` 로 무엇을 할 수 있는지가 갈린다(미설치는 설치 버튼, 설치본은 토글).
   모든 동작은 확인 창을 거친다. 되돌리기 어렵고 다른 확장까지 끌고 가기 때문이다.
   의존 충돌은 서버가 **409 로 알려 오고** 그때만 강제 활성/비활성 창을 연다 — 프론트에서 의존을
   미리 계산하지 않는다.
   `admin_plugin_list` 가 이 화면과 같은 구조의 쌍둥이다(주소·문구·상태 전역 키만 다르다).
-  한쪽 배선을 고치면 다른 쪽도 같이 본다.
--->
+  한쪽 배선을 고치면 다른 쪽도 같이 본다. -->
 <layout name="admin_module_list" version="1.0.0" extends="_admin_base">
   <meta title="$t:admin.modules.page_title" description="$t:admin.modules.page_description"/>
   <!-- 모듈 목록. 검색·페이지는 URL 에서 읽지만 **숨김 포함 여부만 화면 상태**(`_local.showHidden`)라,
@@ -71,18 +69,18 @@
             <!-- 업데이트 확인 — 서버가 저장소를 조회해 각 모듈의 최신 버전을 갱신하므로, 끝나면 목록을
                  다시 받아야 "업데이트 있음" 배지가 반영된다. 몇 건 있었는지에 따라 문구가 갈린다. -->
             <sequence>
-            <set-state target="global" :isCheckingUpdates="true"/>
-            <api-call :auth_required="true" target="/api/admin/modules/check-updates" method="POST">
-              <success>
-                <set-state target="global" :isCheckingUpdates="false"/>
-                <refetch-data-source dataSourceId="modules"/>
-                <toast type="success" message="{{response.data?.updated_count > 0 ? '$t:admin.modules.check_updates_success|count=' + response.data.updated_count : '$t:admin.modules.check_updates_no_updates'}}"/>
-              </success>
-              <fail>
-                <set-state target="global" :isCheckingUpdates="false"/>
-                <toast type="error" message="{{error.message}}"/>
-              </fail>
-            </api-call>
+              <set-state target="global" :isCheckingUpdates="true"/>
+              <api-call :auth_required="true" target="/api/admin/modules/check-updates" method="POST">
+                <success>
+                  <set-state target="global" :isCheckingUpdates="false"/>
+                  <refetch-data-source dataSourceId="modules"/>
+                  <toast type="success" message="{{response.data?.updated_count > 0 ? '$t:admin.modules.check_updates_success|count=' + response.data.updated_count : '$t:admin.modules.check_updates_no_updates'}}"/>
+                </success>
+                <fail>
+                  <set-state target="global" :isCheckingUpdates="false"/>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+              </api-call>
             </sequence>
           </on>
           <icon data-if="{{!_global.isCheckingUpdates}}" name="refresh" size="sm"/>
@@ -233,8 +231,8 @@
                       <!-- 설치 창 열기. 대상 카드를 전역에 **먼저 담고** 창을 연다 — 창은 그 전역만
                            보므로 순서가 뒤바뀌면 직전에 다루던 모듈을 가리킨다. -->
                       <sequence>
-                      <set-state target="global" selectedModule="{{row}}"/>
-                      <open-modal target="module_install_modal"/>
+                        <set-state target="global" selectedModule="{{row}}"/>
+                        <open-modal target="module_install_modal"/>
                       </sequence>
                     </on>
                     <icon name="download" class="text-base"/>

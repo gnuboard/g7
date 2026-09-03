@@ -1,10 +1,8 @@
-<!--
-  쇼핑몰 설정 — 택배사 목록, 좁은 화면용 카드. 넓은 화면용 표(`_shipping_carrier_section`)와
+<!-- 쇼핑몰 설정 — 택배사 목록, 좁은 화면용 카드. 넓은 화면용 표(`_shipping_carrier_section`)와
   같은 배열을 편집한다(한쪽만 고치면 화면 폭에 따라 동작이 갈린다).
   
   택배사는 주문의 송장 입력에서 고르는 선택지이자 배송조회 링크를 만드는 근거다 —
-  그래서 코드가 조회 주소 규칙과 이어져 있고 아무 값이나 넣으면 조회가 서지 않는다.
--->
+  그래서 코드가 조회 주소 규칙과 이어져 있고 아무 값이나 넣으면 조회가 서지 않는다. -->
 <partial description="배송사 관리 - Mobile 카드 뷰">
   <div data-ref="carrier_cards_container">
     <div data-ref="carrier_card_{{$cIdx}}" data-each="$carrier, $cIdx in (_local.form?.shipping?.carriers ?? []).map((c, i) => ({...c, _idx: i}))" class="excel-card mb-3">

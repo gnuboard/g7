@@ -1,13 +1,11 @@
-<!--
-  본인인증을 요구하는 응답(428)이 오면 인터셉터가 대신 띄우는 공통 창이다. 어느 화면에서
+<!-- 본인인증을 요구하는 응답(428)이 오면 인터셉터가 대신 띄우는 공통 창이다. 어느 화면에서
   걸렸든 이 창 하나를 쓰고, 상태는 전부 `_global.identityChallenge` 한 네임스페이스에 모아
   두어 인증을 건 쪽 → 이 창 → 결과 반환이 한 줄기로 이어진다.
 
   화면은 인증 수단으로 갈린다 — 코어 메일이면 아래 코드 입력/링크 안내 UI 가 뜨고, 외부
   인증 플러그인이면 확장 지점이 자기 UI 를 얹으면서 코어의 재전송·확인 버튼은 감춘다
   (그쪽은 검증까지 플러그인이 책임진다). 닫기 버튼·ESC·바깥 클릭을 모두 막아 두었으므로
-  빠져나가는 길은 취소 버튼뿐이고, 그 길에서만 대기 중인 요청이 취소로 정리된다.
--->
+  빠져나가는 길은 취소 버튼뿐이고, 그 길에서만 대기 중인 요청이 취소로 정리된다. -->
 <partial editor_label="$t:admin.modal_label.identity_challenge_modal" description="본인인증 공통 모달 (admin) — 428 응답을 가로채는 IdentityGuardInterceptor launcher 가 사용. _global.identityChallenge 네임스페이스로 모든 상태를 관리하여 launcher → 모달 → resolveIdentityChallenge 핸들러 한 줄기로 흐름 통일.">
   <modal data-ref="identity-challenge-modal" title="$t:admin.identity.challenge.title" size="sm" :showCloseButton="false" :closeOnBackdropClick="false" :closeOnEscape="false">
     <!-- 코어 기본 OTP UI (text_code) — 코어 mail provider 또는 provider_id 미지정 케이스. 외부 provider 인 경우 아래 identity_provider_ui:provider 슬롯이 자기 UI 를 주입한다. -->
@@ -42,7 +40,22 @@
     </extension-point>
     <!-- 공통 액션 영역 — 취소 / 재전송 / 확인 -->
     <div class="flex-between gap-2 mt-6 pt-4">
-      <button type="button" class="px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"><on type="click"><!-- 인증을 포기하고 나가는 유일한 길 — 창을 닫기 전에 서버 쪽 진행분을 정리하고, 인증을 기다리던 요청에는 「취소됨」을 돌려준다. --><sequence><!-- 서버 audit trail 정합 — challenge 발급된 경우에만 cancel API 호출, 실패해도 모달 닫기는 진행 --><api-call target="/api/identity/challenges/{{_global.identityChallenge.challenge_id}}/cancel" if="{{_global.identityChallenge?.challenge_id}}" method="POST"><fail><suppress/></fail></api-call><resolve-identity-challenge result="cancelled"/><close-modal target="identity-challenge-modal"/></sequence></on>$t:common.cancel</button>
+      <button type="button" class="px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
+        <on type="click">
+          <!-- 인증을 포기하고 나가는 유일한 길 — 창을 닫기 전에 서버 쪽 진행분을 정리하고, 인증을 기다리던 요청에는 「취소됨」을 돌려준다. -->
+          <sequence>
+            <!-- 서버 audit trail 정합 — challenge 발급된 경우에만 cancel API 호출, 실패해도 모달 닫기는 진행 -->
+            <api-call target="/api/identity/challenges/{{_global.identityChallenge.challenge_id}}/cancel" if="{{_global.identityChallenge?.challenge_id}}" method="POST">
+              <fail>
+                <suppress/>
+              </fail>
+            </api-call>
+            <resolve-identity-challenge result="cancelled"/>
+            <close-modal target="identity-challenge-modal"/>
+          </sequence>
+        </on>
+        $t:common.cancel
+      </button>
       <div class="flex-center gap-2">
         <!-- 재전송 — 코어 mail/SMS 등 코드/링크 발송형 provider 에서만 노출. 외부 plugin (팝업/SDK 호출형) 은 재전송 개념 없음. 가드 패턴: provider_id 미지정 또는 코어 mail 인 경우만 노출. -->
         <button data-if="{{!_global.identityChallenge?.provider_id || _global.identityChallenge?.provider_id === 'g7:core.mail'}}" type="button" disabled="{{(_global.identityChallenge?.resendCooldown ?? 0) > 0 || (_global.identityChallenge?.resending ?? false) || (_global.identityChallenge?.verifying ?? false)}}" class="inline-flex items-center gap-1.5 px-3 py-2 text-sm text-indigo-600 dark:text-indigo-400 hover:underline disabled:text-gray-400 dark:disabled:text-gray-600 disabled:no-underline disabled:cursor-not-allowed">

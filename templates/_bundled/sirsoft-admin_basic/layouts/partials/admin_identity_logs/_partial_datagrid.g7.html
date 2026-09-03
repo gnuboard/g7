@@ -1,9 +1,7 @@
-<!--
-  본인인증 기록 표. **줄을 고를 수 없다** — 이 기록은 감사 자료라 한 건씩 골라 지우는 길을
+<!-- 본인인증 기록 표. **줄을 고를 수 없다** — 이 기록은 감사 자료라 한 건씩 골라 지우는 길을
   두지 않았고, 정리는 화면 머리의 보존기간 삭제 하나로만 한다.
   줄을 펼치면 목록에 못 싣는 것들이 나온다(대상 해시 전문, 인증을 건 자리, 제공자가 남긴
-  부가 정보). 부가 정보 두 덩이는 정해진 모양이 없어 원문 그대로 펼쳐 보여 준다.
--->
+  부가 정보). 부가 정보 두 덩이는 정해진 모양이 없어 원문 그대로 펼쳐 보여 준다. -->
 <partial description="Identity Logs DataGrid">
   <data-grid data-ref="identity_log_datagrid" data="{{identityLogs?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{identityLogs?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{identityLogs?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{identityLogs?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" :selectable="false" loading="{{identityLogs?.loading}}" :expandable="true">
     <expand>
@@ -31,7 +29,16 @@
           <pre class="admin-card">{{JSON.stringify(row.metadata ?? {}, null, 2)}}</pre>
         </div>
         <div class="flex justify-end">
-          <button type="button" class="px-3 py-1.5 text-body font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"><on type="click"><!-- 펼친 줄을 통째로 전역에 옮겨 담고 상세 창을 연다 — 창은 이 값만 읽으므로 서버를 다시 부르지 않는다(펼친 자리와 같은 내용에 시각·시도 횟수 등이 더 붙는다). --><sequence><set-state target="global" identity_log_modal_data="{{row}}"/><open-modal target="identity_log_detail_modal"/></sequence></on>$t:admin.identity.logs.detail_title</button>
+          <button type="button" class="px-3 py-1.5 text-body font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
+            <on type="click">
+              <!-- 펼친 줄을 통째로 전역에 옮겨 담고 상세 창을 연다 — 창은 이 값만 읽으므로 서버를 다시 부르지 않는다(펼친 자리와 같은 내용에 시각·시도 횟수 등이 더 붙는다). -->
+              <sequence>
+                <set-state target="global" identity_log_modal_data="{{row}}"/>
+                <open-modal target="identity_log_detail_modal"/>
+              </sequence>
+            </on>
+            $t:admin.identity.logs.detail_title
+          </button>
         </div>
       </div>
     </expand>

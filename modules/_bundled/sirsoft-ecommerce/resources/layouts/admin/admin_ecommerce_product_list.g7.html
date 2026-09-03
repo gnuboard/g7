@@ -1,8 +1,6 @@
-<!--
-  상품 목록 (운영자) — 조회 조건을 전부 URL 쿼리에 싣고, 자주 쓰는 조합은 「검색 프리셋」으로
+<!-- 상품 목록 (운영자) — 조회 조건을 전부 URL 쿼리에 싣고, 자주 쓰는 조합은 「검색 프리셋」으로
   저장해 불러 쓴다. 목록 위 일괄처리 줄에서 판매·진열 상태와 가격·재고를 선택 건에 한꺼번에
-  적용하는데, 상품 단위와 옵션 단위 선택이 따로라 둘을 함께 들고 다닌다.
--->
+  적용하는데, 상품 단위와 옵션 단위 선택이 따로라 둘을 함께 들고 다닌다. -->
 <layout name="admin_ecommerce_product_list" version="1.0.0" extends="_admin_base">
   <meta title="$t:sirsoft-ecommerce.admin.product.title"/>
   <!-- 목록 본체. 조회 조건을 전부 URL 쿼리에서 읽으므로 주소가 바뀌는 것이 곧 재조회다. 분류는 4단계 중 가장 깊이 고른 것 하나만 넘기고, 「미등록」 필터는 값이 없다는 뜻이라 별도 참거짓으로 보낸다 -->
@@ -294,7 +292,14 @@
           </div>
           <div class="flex-1"/>
           <!-- 일괄 적용. 고른 값과 대상(상품·옵션 양쪽)을 전역으로 옮긴 뒤 확인 데이터를 만들고 창을 연다 — 창은 별도 컨텍스트라 이 화면의 폼 상태를 읽지 못한다 -->
-          <button type="button" data-testid="product-bulk-apply" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white dark:text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{((!_local.selectedItems || _local.selectedItems.length === 0) &amp;&amp; (!_local.selectedOptionIds || _local.selectedOptionIds.length === 0)) || products?.data?.abilities?.can_update !== true}}"><on type="click"><set-state target="global" bulkSalesStatus="{{_local.bulkSalesStatus}}" bulkDisplayStatus="{{_local.bulkDisplayStatus}}" bulkSelectedItems="{{_local.selectedItems}}" bulkSelectedOptionIds="{{_local.selectedOptionIds}}"/><action handler="sirsoft-ecommerce.buildConfirmData"/><open-modal target="modal_bulk_confirm"/></on>$t:sirsoft-ecommerce.admin.product.bulk_apply</button>
+          <button type="button" data-testid="product-bulk-apply" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white dark:text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{((!_local.selectedItems || _local.selectedItems.length === 0) &amp;&amp; (!_local.selectedOptionIds || _local.selectedOptionIds.length === 0)) || products?.data?.abilities?.can_update !== true}}">
+            <on type="click">
+              <set-state target="global" bulkSalesStatus="{{_local.bulkSalesStatus}}" bulkDisplayStatus="{{_local.bulkDisplayStatus}}" bulkSelectedItems="{{_local.selectedItems}}" bulkSelectedOptionIds="{{_local.selectedOptionIds}}"/>
+              <action handler="sirsoft-ecommerce.buildConfirmData"/>
+              <open-modal target="modal_bulk_confirm"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.product.bulk_apply
+          </button>
         </div>
         <div data-ref="table_header_bar" class="flex-between flex-wrap gap-3 mb-4">
           <span class="text-label">$t:sirsoft-ecommerce.admin.product.total_count|count={{products?.data?.pagination?.total || 0}}</span>

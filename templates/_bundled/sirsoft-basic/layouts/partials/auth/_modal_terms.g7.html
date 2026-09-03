@@ -19,10 +19,16 @@
           </default>
         </extension-point>
       </div>
-      <!-- 내용 없음 --><div data-if="{{!termsContent?.loading &amp;&amp; !termsContent?.data}}" class="py-8 text-center text-gray-500 dark:text-gray-400">$t:policy.no_content</div>
+      <!-- 내용 없음 -->
+      <div data-if="{{!termsContent?.loading &amp;&amp; !termsContent?.data}}" class="py-8 text-center text-gray-500 dark:text-gray-400">$t:policy.no_content</div>
       <!-- 푸터 버튼 (고정) -->
       <div class="flex-shrink-0 flex justify-end gap-3 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-        <button class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100"><on type="click"><close-modal/></on>$t:common.close</button>
+        <button class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100">
+          <on type="click">
+            <close-modal/>
+          </on>
+          $t:common.close
+        </button>
       </div>
     </div>
   </modal>

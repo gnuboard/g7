@@ -22,7 +22,12 @@
         <span>$t:home.go_to_mypage</span>
         <icon name="arrow-right" class="text-base"/>
       </button>
-      <button class="px-4 py-2 bg-white/20 text-white rounded-lg font-medium text-sm hover:bg-white/30 transition-colors cursor-pointer"><on type="click"><navigate path="/page/about"/></on>$t:home.learn_more</button>
+      <button class="px-4 py-2 bg-white/20 text-white rounded-lg font-medium text-sm hover:bg-white/30 transition-colors cursor-pointer">
+        <on type="click">
+          <navigate path="/page/about"/>
+        </on>
+        $t:home.learn_more
+      </button>
     </div>
   </div>
 </partial>

@@ -24,7 +24,8 @@
         <div class="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-800 rounded-full px-3 py-1">
           <icon name="user" size="xs" class="text-gray-500 dark:text-gray-400"/>
           <span class="text-gray-700 dark:text-gray-300 font-medium">{{form_meta?.data?.author?.name}}</span>
-          <!-- 비회원 표시 배지 --><span data-if="{{form_meta?.data?.is_guest_post}}" class="ml-1 text-xs text-gray-500 dark:text-gray-400">($t:userinfo.guest_badge)</span>
+          <!-- 비회원 표시 배지 -->
+          <span data-if="{{form_meta?.data?.is_guest_post}}" class="ml-1 text-xs text-gray-500 dark:text-gray-400">($t:userinfo.guest_badge)</span>
         </div>
         <div class="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-800 rounded-full px-3 py-1">
           <icon name="clock" size="xs" class="text-gray-500 dark:text-gray-400"/>

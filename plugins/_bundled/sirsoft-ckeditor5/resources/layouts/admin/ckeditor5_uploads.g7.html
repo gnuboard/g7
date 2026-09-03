@@ -151,7 +151,12 @@
           </button>
         </div>
         <div data-ref="clear_filters_row" data-if="{{!!(query.search || query.referenced || query.date_from || query.date_to)}}" class="flex justify-end mt-2">
-          <button type="button" class="text-tertiary hover:text-gray-700 dark:hover:text-gray-200 underline"><on type="click"><action-ref name="clearFilters"/></on>$t:sirsoft-ckeditor5.admin.uploads.filter.clear</button>
+          <button type="button" class="text-tertiary hover:text-gray-700 dark:hover:text-gray-200 underline">
+            <on type="click">
+              <action-ref name="clearFilters"/>
+            </on>
+            $t:sirsoft-ckeditor5.admin.uploads.filter.clear
+          </button>
         </div>
       </div>
       <div data-ref="bulk_action_bar" data-if="{{(_global.selectedIds_ckeditor5_uploads?.length ?? 0) > 0}}" class="flex-between mb-4 p-3 rounded-xl bg-gray-100 dark:bg-gray-800">

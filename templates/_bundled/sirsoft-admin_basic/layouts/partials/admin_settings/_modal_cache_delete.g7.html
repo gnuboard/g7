@@ -1,7 +1,5 @@
-<!--
-  캐시 비우기 확인 창(고급 탭). 값이 지워지는 것이 아니라 다시 만들어지는 것이지만, 큰 사이트에서는
-  잠시 느려질 수 있어 확인을 받는다.
--->
+<!-- 캐시 비우기 확인 창(고급 탭). 값이 지워지는 것이 아니라 다시 만들어지는 것이지만, 큰 사이트에서는
+  잠시 느려질 수 있어 확인을 받는다. -->
 <partial editor_label="$t:admin.modal_label.admin_settings.settings_cache_delete_modal" description="캐시 삭제 확인 모달">
   <modal data-ref="settings_cache_delete_modal" title="$t:admin.settings.modals.cache_delete_title" size="sm">
     <div class="py-2">
@@ -20,18 +18,18 @@
           <!-- 캐시 비우기 실행. 화면에 보이는 값이 바뀌지 않으므로 어떤 소스도 다시 부르지 않는다 —
                결과는 토스트 하나뿐이다. -->
           <sequence>
-          <set-state target="global" :isDeletingCache="true"/>
-          <api-call :auth_required="true" target="/api/admin/settings/clear-cache" method="POST">
-            <success>
-              <set-state target="global" :isDeletingCache="false"/>
-              <close-modal/>
-              <toast type="success" message="$t:admin.settings.cache_cleared"/>
-            </success>
-            <fail>
-              <set-state target="global" :isDeletingCache="false"/>
-              <toast type="error" message="{{error.message}}"/>
-            </fail>
-          </api-call>
+            <set-state target="global" :isDeletingCache="true"/>
+            <api-call :auth_required="true" target="/api/admin/settings/clear-cache" method="POST">
+              <success>
+                <set-state target="global" :isDeletingCache="false"/>
+                <close-modal/>
+                <toast type="success" message="$t:admin.settings.cache_cleared"/>
+              </success>
+              <fail>
+                <set-state target="global" :isDeletingCache="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+            </api-call>
           </sequence>
         </on>
         <icon data-if="{{_global.isDeletingCache}}" name="spinner" class="spinner-sm"/>

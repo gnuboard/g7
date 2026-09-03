@@ -11,7 +11,12 @@
         <html-content content="{{_global.board_notification_template_form_modal?.preview?.body ?? ''}}" :isHtml="true" class="prose dark:prose-invert prose-sm max-w-none border border-gray-200 dark:border-gray-700 rounded-md p-4 max-h-[400px] overflow-y-auto bg-white dark:bg-gray-900"/>
       </div>
       <div class="flex justify-end border-t border-gray-200 dark:border-gray-700">
-        <button data-ref="board_btn_close_preview" type="button" class="text-body px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"><on type="click"><close-modal target="modal_board_notification_template_preview"/></on>$t:common.close</button>
+        <button data-ref="board_btn_close_preview" type="button" class="text-body px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors">
+          <on type="click">
+            <close-modal target="modal_board_notification_template_preview"/>
+          </on>
+          $t:common.close
+        </button>
       </div>
     </div>
   </modal>

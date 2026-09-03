@@ -17,8 +17,8 @@
               <on type="change">
                 <!-- «안 읽음만» 토글 — 조건이 전역이 아니라 로컬이라 스스로 다시 받아야 한다 -->
                 <sequence>
-                <set-state target="local" userNotificationsUnreadOnly="{{$event.target.checked}}" :notificationsPage="1"/>
-                <refetch-data-source dataSourceId="userNotifications"/>
+                  <set-state target="local" userNotificationsUnreadOnly="{{$event.target.checked}}" :notificationsPage="1"/>
+                  <refetch-data-source dataSourceId="userNotifications"/>
                 </sequence>
               </on>
             </input>
@@ -29,8 +29,27 @@
         <div class="flex items-center gap-3">
           <responsive on="portable" class="flex items-center justify-end gap-3"/>
           <!-- 읽지 않은 알림을 모두 읽음으로 표시한다. 목록이 비어 있으면 버튼 자체가 뜨지 않는다 -->
-          <button data-if="{{userNotifications.data.data &amp;&amp; userNotifications.data.data.length > 0}}" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors" type="button"><on type="click"><api-call :auth_required="true" target="/api/user/notifications/read-all" method="POST"><success><refetch-data-source dataSourceId="userNotifications"/><refetch-data-source dataSourceId="notification_unread_count"/><set-state target="global" :notificationCount="0"/></success><fail><toast type="error" message="{{error.message}}"/></fail></api-call></on>$t:mypage.notifications.mark_all_read</button>
-          <button data-if="{{userNotifications.data.data &amp;&amp; userNotifications.data.data.length > 0}}" class="text-sm text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 transition-colors" type="button"><on type="click"><open-modal target="notification_delete_all_confirm_modal"/></on>$t:mypage.notifications.delete_all</button>
+          <button data-if="{{userNotifications.data.data &amp;&amp; userNotifications.data.data.length > 0}}" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors" type="button">
+            <on type="click">
+              <api-call :auth_required="true" target="/api/user/notifications/read-all" method="POST">
+                <success>
+                  <refetch-data-source dataSourceId="userNotifications"/>
+                  <refetch-data-source dataSourceId="notification_unread_count"/>
+                  <set-state target="global" :notificationCount="0"/>
+                </success>
+                <fail>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+              </api-call>
+            </on>
+            $t:mypage.notifications.mark_all_read
+          </button>
+          <button data-if="{{userNotifications.data.data &amp;&amp; userNotifications.data.data.length > 0}}" class="text-sm text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 transition-colors" type="button">
+            <on type="click">
+              <open-modal target="notification_delete_all_confirm_modal"/>
+            </on>
+            $t:mypage.notifications.delete_all
+          </button>
         </div>
       </div>
       <!-- 알림 목록 -->
@@ -70,7 +89,8 @@
               <div class="flex items-center justify-between gap-2 mb-1">
                 <div class="flex items-center gap-2 min-w-0">
                   <span class="text-sm text-gray-900 dark:text-white truncate {{notification.read_at ? '' : 'font-semibold'}}">{{notification.subject ?? ''}}</span>
-                  <!-- 타입 태그 — type_label은 BE의 NotificationDefinition.name(다국어)에서 해석된 값. 미정의 type은 식별자 fallback --><span data-if="{{notification.type_label}}" class="flex-shrink-0 px-2 py-0.5 text-xs rounded {{notification.type === 'order' ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300' : notification.type === 'comment' ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' : notification.type === 'shipping' ? 'bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300' : notification.type === 'promotion' ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}}">{{notification.type_label}}</span>
+                  <!-- 타입 태그 — type_label은 BE의 NotificationDefinition.name(다국어)에서 해석된 값. 미정의 type은 식별자 fallback -->
+                  <span data-if="{{notification.type_label}}" class="flex-shrink-0 px-2 py-0.5 text-xs rounded {{notification.type === 'order' ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300' : notification.type === 'comment' ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' : notification.type === 'shipping' ? 'bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300' : notification.type === 'promotion' ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}}">{{notification.type_label}}</span>
                 </div>
                 <!-- 삭제 버튼 -->
                 <button class="flex-shrink-0 p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" type="button">
@@ -89,8 +109,10 @@
                   <icon name="trash-can" class="text-base"/>
                 </button>
               </div>
-              <!-- 알림 메시지 --><p class="text-sm text-gray-600 dark:text-gray-400 mb-1">{{notification.body ?? ''}}</p>
-              <!-- 날짜 --><span class="text-xs text-gray-400 dark:text-gray-500">{{notification.created_at | datetime}}</span>
+              <!-- 알림 메시지 -->
+              <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">{{notification.body ?? ''}}</p>
+              <!-- 날짜 -->
+              <span class="text-xs text-gray-400 dark:text-gray-500">{{notification.created_at | datetime}}</span>
             </div>
           </div>
         </div>

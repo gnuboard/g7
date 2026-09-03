@@ -1,5 +1,4 @@
-<!--
-  쇼핑몰 헤더의 통화·배송국가 셀렉터. 사용자 템플릿은 통화를 모르고 `header_currency` 슬롯만 열어
+<!-- 쇼핑몰 헤더의 통화·배송국가 셀렉터. 사용자 템플릿은 통화를 모르고 `header_currency` 슬롯만 열어
   두었으며, 이커머스가 그 자리를 채운다(PC 헤더와 모바일 드로어가 같은 조각 하나를 나눠 쓴다).
   관리자 헤더의 같은 이름 조각과 갈리는 지점이 셋이다 — ⑴ 로그인 회원이면 선택을 계정에 저장한다
   ⑵ 배송국가를 바꾸면 장바구니·체크아웃·상품상세를 다시 불러온다(배송 가능 여부와 배송비가
@@ -8,8 +7,7 @@
   숨김을 `if` 가 아니라 `hidden` 클래스로 하는 이유는 관리자 쪽과 같다 — `init` 이 채우는 파생
   목록이 준비되기 전 첫 그림에서 떴다 사라지는 것을 막는다. 다만 그 파생 상태를 채우는 쪽이
   다르다 — 관리자에서는 같은 이름의 조각이 `<init>` 을 함께 들고 오지만, 여기서는 사용자 템플릿의
-  `_user_base` 가 이미 채워 두고 이 조각은 읽기만 한다.
--->
+  `_user_base` 가 이미 채워 두고 이 조각은 읽기만 한다. -->
 <extension target-layout="_user_base" priority="320">
   <inject target-id="header_currency_inject_anchor" position="append_child">
     <!-- 헤더 통화+배송국가 공용 셀렉터 (이커머스 주입, D4). slot='header_currency' 로 SlotContext 에 등록 → 템플릿 헤더(PC·모바일 SlotContainer)가 떙겨 렌더. 헤더는 이 조각을 모름(모듈 무지). 두 섹션: ① 통화(availableCurrencies) ② 배송국가(availableShippingCountries, 해외배송 활성+2개↑ 시). 선택 시 로그인 회원=영속 PUT+localStorage, 비회원=localStorage. 배송국가 변경 시 장바구니/체크아웃 데이터소스 refetch. 표시 제어: 기본 hidden(display:none) → init_actions 가 채운 파생 상태(availableCurrencies/availableShippingCountries)가 표시 조건을 만족할 때만 hidden 해제. if(마운트 게이트) 대신 className 토글이라 첫 페인트부터 무조건 숨김 → 깜빡임(떴다 사라짐) 원천 차단. -->
@@ -22,15 +20,18 @@
         <responsive on="portable" class="w-full flex items-center justify-between py-1 cursor-pointer" aria-haspopup="listbox" aria-expanded="{{_local.showCurrencyDropdown ?? false}}" aria-label="$t:sirsoft-ecommerce.common.currency_label">
           <span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">$t:sirsoft-ecommerce.common.currency_label</span>
           <span class="flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-300">
-            <!-- 접힘 상태 요약 ① 현재 통화 코드 --><span class="font-medium">{{_global.preferredCurrency ?? _global.defaultCurrency}}</span>
-            <!-- 접힘 상태 요약 ② 현재 배송국가명 (해외배송 활성 + 국가 2개 이상일 때만). 통화와 시각적으로 구분되도록 옅은 색. --><span data-if="{{(_global.availableShippingCountries ?? []).length > 1 &amp;&amp; _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}" class="text-gray-500 dark:text-gray-400">· {{(_global.availableShippingCountries ?? []).find(c => c.code === (_global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'))?.name ?? (_global.preferredShippingCountry ?? 'KR')}}</span>
+            <!-- 접힘 상태 요약 ① 현재 통화 코드 -->
+            <span class="font-medium">{{_global.preferredCurrency ?? _global.defaultCurrency}}</span>
+            <!-- 접힘 상태 요약 ② 현재 배송국가명 (해외배송 활성 + 국가 2개 이상일 때만). 통화와 시각적으로 구분되도록 옅은 색. -->
+            <span data-if="{{(_global.availableShippingCountries ?? []).length > 1 &amp;&amp; _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}" class="text-gray-500 dark:text-gray-400">· {{(_global.availableShippingCountries ?? []).find(c => c.code === (_global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'))?.name ?? (_global.preferredShippingCountry ?? 'KR')}}</span>
             <icon name="chevron-down" class="{{_local.showCurrencyDropdown ? 'rotate-180' : ''}} text-xs text-gray-400 dark:text-gray-500 transition-transform duration-200"/>
           </span>
         </responsive>
         <on type="click">
           <set-state target="local" showCurrencyDropdown="{{!_local.showCurrencyDropdown}}"/>
         </on>
-        <!-- 트리거 라벨: 해외배송 활성이면 선택 배송국가 코드 병기 (관리자 헤더와 동일하게 코드 텍스트로 표기 — flag-icons 의존 제거). --><span data-if="{{(_global.availableShippingCountries ?? []).length > 1 &amp;&amp; _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}" class="text-xs text-gray-500 dark:text-gray-400">{{_global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}</span>
+        <!-- 트리거 라벨: 해외배송 활성이면 선택 배송국가 코드 병기 (관리자 헤더와 동일하게 코드 텍스트로 표기 — flag-icons 의존 제거). -->
+        <span data-if="{{(_global.availableShippingCountries ?? []).length > 1 &amp;&amp; _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}" class="text-xs text-gray-500 dark:text-gray-400">{{_global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}</span>
         <icon name="coins" class="text-base"/>
         <span class="font-medium">{{_global.preferredCurrency ?? _global.defaultCurrency}}</span>
         <icon name="chevron-down" class="text-xs"/>
@@ -40,7 +41,11 @@
         <responsive on="portable" class="static w-full mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg py-1" role="listbox"/>
         <!-- ── 통화 섹션 ── -->
         <div data-if="{{(_global.availableCurrencies ?? []).length > 0}}">
-          <!-- 섹션 라벨 '통화'. portable 에서는 아코디언 트리거 행이 이미 '통화' 라벨을 달고 있어 중복이므로 숨긴다(배송국가 라벨은 두 번째 섹션을 구분해야 하므로 유지). --><div class="px-4 py-1.5 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide"><responsive on="portable" data-if="{{false}}"/>$t:sirsoft-ecommerce.common.currency_label</div>
+          <!-- 섹션 라벨 '통화'. portable 에서는 아코디언 트리거 행이 이미 '통화' 라벨을 달고 있어 중복이므로 숨긴다(배송국가 라벨은 두 번째 섹션을 구분해야 하므로 유지). -->
+          <div class="px-4 py-1.5 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">
+            <responsive on="portable" data-if="{{false}}"/>
+            $t:sirsoft-ecommerce.common.currency_label
+          </div>
           <!-- 옵션 래퍼. portable 에서만 가로 칩 나열(flex-wrap). 데스크톱은 무클래스 블록이라 기존 세로 목록 그대로. iteration 은 아래 Div 자신에 걸려 있어 항목 수만큼 복제되므로, 복제본들이 이 래퍼의 flex item 이 된다. -->
           <div>
             <responsive on="portable" class="flex flex-wrap gap-2 px-3 pb-2"/>
@@ -48,28 +53,26 @@
               <button class="w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 cursor-pointer transition-colors {{_global.preferredCurrency === currency.code ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}}" role="option" aria-selected="{{_global.preferredCurrency === currency.code}}">
                 <responsive on="portable" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-full cursor-pointer whitespace-nowrap transition-colors {{_global.preferredCurrency === currency.code ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800' : 'text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'}}" role="option" aria-selected="{{_global.preferredCurrency === currency.code}}"/>
                 <on type="click">
-                  <!--
-                    통화 선택 — 화면 상태 · 브라우저 저장소 · (로그인 회원이면) 계정까지 세 자리에
+                  <!-- 통화 선택 — 화면 상태 · 브라우저 저장소 · (로그인 회원이면) 계정까지 세 자리에
                     쓴다. 저장소 쓰기가 회원 저장 앞에 있는 것은 서버 호출이 실패해도 이번 방문의
                     표기는 유지되어야 하기 때문이다.
                     회원 저장은 `<conditions>` 로 감싸 로그인 상태에서만 나간다 — 비회원이 이 PUT 을
-                    때리면 401 이 뜬다.
-                  -->
+                    때리면 401 이 뜬다. -->
                   <sequence>
-                  <set-state target="global" preferredCurrency="{{currency.code}}"/>
-                  <save-to-local-storage key="g7_preferred_currency" value="{{currency.code}}"/>
-                  <set-state target="local" :showCurrencyDropdown="false"/>
-                  <!-- 로그인 회원이면 계정에 영속 저장(비회원은 localStorage 만). PUT 은 auth:sanctum 필요. -->
-                  <conditions>
-                    <when if="{{_global.currentUser?.uuid}}">
-                      <api-call target="/api/modules/sirsoft-ecommerce/user/currency" auth_mode="required" method="PUT">
-                        <fail>
-                          <toast type="error" message="{{error.message}}"/>
-                        </fail>
-                        <body currency="{{currency.code}}"/>
-                      </api-call>
-                    </when>
-                  </conditions>
+                    <set-state target="global" preferredCurrency="{{currency.code}}"/>
+                    <save-to-local-storage key="g7_preferred_currency" value="{{currency.code}}"/>
+                    <set-state target="local" :showCurrencyDropdown="false"/>
+                    <!-- 로그인 회원이면 계정에 영속 저장(비회원은 localStorage 만). PUT 은 auth:sanctum 필요. -->
+                    <conditions>
+                      <when if="{{_global.currentUser?.uuid}}">
+                        <api-call target="/api/modules/sirsoft-ecommerce/user/currency" auth_mode="required" method="PUT">
+                          <fail>
+                            <toast type="error" message="{{error.message}}"/>
+                          </fail>
+                          <body currency="{{currency.code}}"/>
+                        </api-call>
+                      </when>
+                    </conditions>
                   </sequence>
                 </on>
                 <span class="text-base">{{currency.flag}}</span>
@@ -90,7 +93,10 @@
         <div data-if="{{(_global.availableCurrencies ?? []).length > 0 &amp;&amp; (_global.availableShippingCountries ?? []).length > 1 &amp;&amp; _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}" class="my-1 border-t border-gray-200 dark:border-gray-700"/>
         <!-- ── 배송국가 섹션 ── (해외배송 활성 + 활성 국가 2개 이상) -->
         <div data-if="{{(_global.availableShippingCountries ?? []).length > 1 &amp;&amp; _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}">
-          <div class="px-4 py-1.5 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide"><responsive on="portable" class="px-3 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"/>$t:sirsoft-ecommerce.common.shipping_country_label</div>
+          <div class="px-4 py-1.5 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">
+            <responsive on="portable" class="px-3 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"/>
+            $t:sirsoft-ecommerce.common.shipping_country_label
+          </div>
           <!-- 옵션 래퍼. portable 에서만 가로 칩 나열(flex-wrap). 데스크톱은 무클래스 블록. -->
           <div>
             <responsive on="portable" class="flex flex-wrap gap-2 px-3 pb-2"/>
@@ -98,36 +104,37 @@
               <button class="w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 cursor-pointer transition-colors {{(_global.preferredShippingCountry ?? 'KR') === shipCountry.code ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}}" role="option" aria-selected="{{(_global.preferredShippingCountry ?? 'KR') === shipCountry.code}}">
                 <responsive on="portable" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-full cursor-pointer whitespace-nowrap transition-colors {{(_global.preferredShippingCountry ?? 'KR') === shipCountry.code ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800' : 'text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'}}" role="option" aria-selected="{{(_global.preferredShippingCountry ?? 'KR') === shipCountry.code}}"/>
                 <on type="click">
-                  <!--
-                    배송국가 선택 — 통화와 달리 **값을 바꾸는 것만으로 끝나지 않는다.** 나라가 바뀌면
+                  <!-- 배송국가 선택 — 통화와 달리 **값을 바꾸는 것만으로 끝나지 않는다.** 나라가 바뀌면
                     배송 가능 여부와 배송비가 달라지므로 장바구니·체크아웃·상품상세를 다시 불러와야
                     화면 숫자가 맞는다. 그 세 데이터소스가 없는 페이지에서는 각 호출이 그냥 무시된다.
                     회원 저장은 로그인 상태에서만 나가고, 비회원의 선택은 브라우저 저장소에 남아
-                    이후 요청 헤더로 서버에 전달된다.
-                  -->
+                    이후 요청 헤더로 서버에 전달된다. -->
                   <sequence>
-                  <set-state target="global" preferredShippingCountry="{{shipCountry.code}}"/>
-                  <save-to-local-storage key="g7_preferred_shipping_country" value="{{shipCountry.code}}"/>
-                  <set-state target="local" :showCurrencyDropdown="false"/>
-                  <!-- 로그인 회원이면 계정에 영속 저장(비회원은 localStorage+X-Shipping-Country 헤더로 반영). -->
-                  <conditions>
-                    <when if="{{_global.currentUser?.uuid}}">
-                      <api-call target="/api/modules/sirsoft-ecommerce/user/shipping-country" auth_mode="required" method="PUT">
-                        <fail>
-                          <toast type="error" message="{{error.message}}"/>
-                        </fail>
-                        <body shipping_country="{{shipCountry.code}}"/>
-                      </api-call>
-                    </when>
-                  </conditions>
-                  <!-- 현재 장바구니/체크아웃/상품상세이면 해당 데이터소스 refetch (국가 변경 → 배송가능/배송비 재계산). 없는 페이지에선 no-op. -->
-                  <refetch-data-source dataSourceId="cartItems"/>
-                  <refetch-data-source dataSourceId="checkoutData"/>
-                  <!-- 상품 상세 페이지 — 국가 변경 시 배송가능 경고/구매버튼 disable 즉시 재계산 (B8). 상품 목록은 productList no-op. -->
-                  <refetch-data-source dataSourceId="product"/>
+                    <set-state target="global" preferredShippingCountry="{{shipCountry.code}}"/>
+                    <save-to-local-storage key="g7_preferred_shipping_country" value="{{shipCountry.code}}"/>
+                    <set-state target="local" :showCurrencyDropdown="false"/>
+                    <!-- 로그인 회원이면 계정에 영속 저장(비회원은 localStorage+X-Shipping-Country 헤더로 반영). -->
+                    <conditions>
+                      <when if="{{_global.currentUser?.uuid}}">
+                        <api-call target="/api/modules/sirsoft-ecommerce/user/shipping-country" auth_mode="required" method="PUT">
+                          <fail>
+                            <toast type="error" message="{{error.message}}"/>
+                          </fail>
+                          <body shipping_country="{{shipCountry.code}}"/>
+                        </api-call>
+                      </when>
+                    </conditions>
+                    <!-- 현재 장바구니/체크아웃/상품상세이면 해당 데이터소스 refetch (국가 변경 → 배송가능/배송비 재계산). 없는 페이지에선 no-op. -->
+                    <refetch-data-source dataSourceId="cartItems"/>
+                    <refetch-data-source dataSourceId="checkoutData"/>
+                    <!-- 상품 상세 페이지 — 국가 변경 시 배송가능 경고/구매버튼 disable 즉시 재계산 (B8). 상품 목록은 productList no-op. -->
+                    <refetch-data-source dataSourceId="product"/>
                   </sequence>
                 </on>
-                <span class="flex-1 font-medium"><responsive on="portable" class="font-medium"/>{{shipCountry.name}}</span>
+                <span class="flex-1 font-medium">
+                  <responsive on="portable" class="font-medium"/>
+                  {{shipCountry.name}}
+                </span>
                 <!-- portable(칩 나열)에서는 선택 상태를 배경/테두리 색 + aria-selected 로 전달하므로 체크 아이콘을 숨긴다. -->
                 <icon data-if="{{(_global.preferredShippingCountry ?? 'KR') === shipCountry.code}}" name="check" class="text-base">
                   <responsive on="portable" data-if="{{false}}"/>

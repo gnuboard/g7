@@ -1,8 +1,6 @@
-<!--
-  상품 폼 — 라벨 삭제 확인. 이 상품에서 떼는 것이 아니라 라벨 자체를 지우는 것이라, 같은 라벨을
+<!-- 상품 폼 — 라벨 삭제 확인. 이 상품에서 떼는 것이 아니라 라벨 자체를 지우는 것이라, 같은 라벨을
   쓰는 다른 상품에서도 함께 떨어진다. 지울 라벨은 전역에 담긴 id 로 라벨 목록에서 되찾아 보여 준다
-  (창은 별도 컨텍스트라 폼의 선택 상태를 못 본다).
--->
+  (창은 별도 컨텍스트라 폼의 선택 상태를 못 본다). -->
 <partial description="Product Form - Label Delete Confirmation Modal">
   <modal data-ref="modal_label_delete_confirm" title="$t:sirsoft-ecommerce.admin.product.labels.delete_modal.title" size="sm">
     <div data-ref="delete_confirm_content">
@@ -19,7 +17,12 @@
         </div>
       </div>
       <div data-ref="delete_modal_footer" class="flex justify-end gap-3 border-t border-gray-200 dark:border-gray-700">
-        <button type="button" class="btn btn-outline" disabled="{{_global.isDeletingLabel}}"><on type="click"><close-modal/></on>$t:sirsoft-ecommerce.common.cancel</button>
+        <button type="button" class="btn btn-outline" disabled="{{_global.isDeletingLabel}}">
+          <on type="click">
+            <close-modal/>
+          </on>
+          $t:sirsoft-ecommerce.common.cancel
+        </button>
         <button type="button" class="btn btn-danger" disabled="{{_global.isDeletingLabel}}">
           <on type="click">
             <action handler="sirsoft-ecommerce.deleteLabel"/>

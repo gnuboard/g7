@@ -302,7 +302,8 @@
             </on>
             <span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">$t:common.language</span>
             <span class="flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-300">
-              <!-- 접힘 상태 요약 = 현재 언어명 --><span class="font-medium">{{_global.appConfig?.localeNames?.[$locale] ?? $locale}}</span>
+              <!-- 접힘 상태 요약 = 현재 언어명 -->
+              <span class="font-medium">{{_global.appConfig?.localeNames?.[$locale] ?? $locale}}</span>
               <icon name="chevron-down" class="{{_global.mobileLanguageOpen ? 'rotate-180' : ''}} text-xs text-gray-400 dark:text-gray-500 transition-transform duration-200"/>
             </span>
           </button>
@@ -391,10 +392,36 @@
       <!-- 비로그인 상태 - 로그인/회원가입 버튼 -->
       <div data-if="{{!_global.currentUser?.uuid}}" class="px-4 pb-4 border-b border-gray-200 dark:border-gray-700">
         <div class="flex gap-2">
-          <button class="flex-1 py-2.5 text-center bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium text-sm cursor-pointer"><on type="click"><!-- 로그인으로 — 드로어는 라우트가 바뀌어도 살아 있으므로 이동 전에 직접 닫는다. --><sequence><set-state target="global" :mobileMenuOpen="false"/><navigate path="/login"/></sequence></on>$t:auth.login</button>
-          <button class="flex-1 py-2.5 text-center border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium text-sm cursor-pointer"><on type="click"><!-- 회원가입으로 — 드로어를 닫고 이동한다. --><sequence><set-state target="global" :mobileMenuOpen="false"/><navigate path="/register"/></sequence></on>$t:auth.register_link</button>
+          <button class="flex-1 py-2.5 text-center bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium text-sm cursor-pointer">
+            <on type="click">
+              <!-- 로그인으로 — 드로어는 라우트가 바뀌어도 살아 있으므로 이동 전에 직접 닫는다. -->
+              <sequence>
+                <set-state target="global" :mobileMenuOpen="false"/>
+                <navigate path="/login"/>
+              </sequence>
+            </on>
+            $t:auth.login
+          </button>
+          <button class="flex-1 py-2.5 text-center border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium text-sm cursor-pointer">
+            <on type="click">
+              <!-- 회원가입으로 — 드로어를 닫고 이동한다. -->
+              <sequence>
+                <set-state target="global" :mobileMenuOpen="false"/>
+                <navigate path="/register"/>
+              </sequence>
+            </on>
+            $t:auth.register_link
+          </button>
         </div>
-        <!-- 비회원 주문 조회 진입 — 비로그인일 때만 노출 (모바일 nav) --><button class="block w-full mt-3 py-2 text-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer"><on type="click"><set-state target="global" :mobileMenuOpen="false"/><!-- 주문조회 — 로그인 페이지로 진입 후 redirect 분기. 헤더와 동일 흐름. --><navigate path="/login?redirect=/mypage/orders"/></on>$t:shop.guest_order_form.nav_link</button>
+        <!-- 비회원 주문 조회 진입 — 비로그인일 때만 노출 (모바일 nav) -->
+        <button class="block w-full mt-3 py-2 text-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer">
+          <on type="click">
+            <set-state target="global" :mobileMenuOpen="false"/>
+            <!-- 주문조회 — 로그인 페이지로 진입 후 redirect 분기. 헤더와 동일 흐름. -->
+            <navigate path="/login?redirect=/mypage/orders"/>
+          </on>
+          $t:shop.guest_order_form.nav_link
+        </button>
       </div>
       <!-- 메뉴 섹션 - 홈 -->
       <div class="p-4">
@@ -472,15 +499,69 @@
         <div class="grid grid-cols-2 gap-x-4">
           <div>
             <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">$t:user.footer.info</div>
-            <button class="block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer"><on type="click"><!-- 소개 문서로 — /page/* 는 페이지 모듈이 슬러그로 서빙하므로 관리자가 그 슬러그의 문서를 만들지 않았으면 빈 화면이 된다. --><sequence><set-state target="global" :mobileMenuOpen="false"/><navigate path="/page/about"/></sequence></on>$t:user.footer.about</button>
-            <button class="block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer"><on type="click"><!-- 자주 묻는 질문 문서로. --><sequence><set-state target="global" :mobileMenuOpen="false"/><navigate path="/page/faq"/></sequence></on>$t:user.footer.faq</button>
-            <button class="block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer"><on type="click"><!-- 문의 안내 문서로 — 문의 폼이 아니라 페이지 모듈 문서다. --><sequence><set-state target="global" :mobileMenuOpen="false"/><navigate path="/page/contact"/></sequence></on>$t:user.footer.contact</button>
+            <button class="block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer">
+              <on type="click">
+                <!-- 소개 문서로 — /page/* 는 페이지 모듈이 슬러그로 서빙하므로 관리자가 그 슬러그의 문서를 만들지 않았으면 빈 화면이 된다. -->
+                <sequence>
+                  <set-state target="global" :mobileMenuOpen="false"/>
+                  <navigate path="/page/about"/>
+                </sequence>
+              </on>
+              $t:user.footer.about
+            </button>
+            <button class="block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer">
+              <on type="click">
+                <!-- 자주 묻는 질문 문서로. -->
+                <sequence>
+                  <set-state target="global" :mobileMenuOpen="false"/>
+                  <navigate path="/page/faq"/>
+                </sequence>
+              </on>
+              $t:user.footer.faq
+            </button>
+            <button class="block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer">
+              <on type="click">
+                <!-- 문의 안내 문서로 — 문의 폼이 아니라 페이지 모듈 문서다. -->
+                <sequence>
+                  <set-state target="global" :mobileMenuOpen="false"/>
+                  <navigate path="/page/contact"/>
+                </sequence>
+              </on>
+              $t:user.footer.contact
+            </button>
           </div>
           <div>
             <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">$t:user.footer.policy</div>
-            <button class="block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer"><on type="click"><!-- 이용약관 문서로 — 회원가입 폼의 약관 모달과 다른 경로다(그쪽은 가입 화면 안에서 띄우는 조각). --><sequence><set-state target="global" :mobileMenuOpen="false"/><navigate path="/page/terms"/></sequence></on>$t:user.footer.terms</button>
-            <button class="block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer"><on type="click"><!-- 개인정보처리방침 문서로. --><sequence><set-state target="global" :mobileMenuOpen="false"/><navigate path="/page/privacy"/></sequence></on>$t:user.footer.privacy</button>
-            <button class="block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer"><on type="click"><!-- 환불·교환 정책 문서로 — 주문 화면의 실제 취소/환불 흐름과는 무관한 안내 문서다. --><sequence><set-state target="global" :mobileMenuOpen="false"/><navigate path="/page/refund"/></sequence></on>$t:user.footer.refund</button>
+            <button class="block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer">
+              <on type="click">
+                <!-- 이용약관 문서로 — 회원가입 폼의 약관 모달과 다른 경로다(그쪽은 가입 화면 안에서 띄우는 조각). -->
+                <sequence>
+                  <set-state target="global" :mobileMenuOpen="false"/>
+                  <navigate path="/page/terms"/>
+                </sequence>
+              </on>
+              $t:user.footer.terms
+            </button>
+            <button class="block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer">
+              <on type="click">
+                <!-- 개인정보처리방침 문서로. -->
+                <sequence>
+                  <set-state target="global" :mobileMenuOpen="false"/>
+                  <navigate path="/page/privacy"/>
+                </sequence>
+              </on>
+              $t:user.footer.privacy
+            </button>
+            <button class="block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer">
+              <on type="click">
+                <!-- 환불·교환 정책 문서로 — 주문 화면의 실제 취소/환불 흐름과는 무관한 안내 문서다. -->
+                <sequence>
+                  <set-state target="global" :mobileMenuOpen="false"/>
+                  <navigate path="/page/refund"/>
+                </sequence>
+              </on>
+              $t:user.footer.refund
+            </button>
           </div>
         </div>
       </div>

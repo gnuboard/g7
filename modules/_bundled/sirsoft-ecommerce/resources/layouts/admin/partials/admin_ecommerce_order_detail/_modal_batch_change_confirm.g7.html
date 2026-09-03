@@ -1,5 +1,4 @@
-<!--
-  주문 상세에서 고른 상품 여러 건의 상태·택배사·송장을 한꺼번에 바꾸기 전, 무엇이 어떻게 바뀌는지
+<!-- 주문 상세에서 고른 상품 여러 건의 상태·택배사·송장을 한꺼번에 바꾸기 전, 무엇이 어떻게 바뀌는지
   확인받는 창.
   **값의 주인은 이 창이 아니라 뒤에 있는 화면이다** — 고른 항목·바꿀 상태·택배사·송장이 전부
   `$parent._local` 에 있고 여기서는 읽기만 한다. 이 창이 스스로 갖는 것은 수량 조정뿐이고, 그것도
@@ -8,8 +7,7 @@
   사이로 제한되고, 그 값을 모듈 핸들러가 검사해 갱신한다.
   실행 버튼의 잠금이 두 겹이다: 바꿀 것이 하나도 없으면 잠기고, **배송 관련 상태로 옮길 때는
   택배사와 송장이 둘 다 있어야** 열린다 — 송장 없이 '배송중' 으로 넘겨 고객에게 추적 불가한 상태가
-  나가는 것을 막는다.
--->
+  나가는 것을 막는다. -->
 <partial description="Order Detail - Batch Change Confirm Modal">
   <modal data-ref="modal_batch_change_confirm" title="$t:sirsoft-ecommerce.admin.order.detail.modal.batch_change.title" width="750px">
     <div>
@@ -18,10 +16,22 @@
         <div class="toggle-group">
           <div class="text-tertiary grid grid-cols-12 gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-800 font-medium uppercase">
             <responsive on="portable" data-if="{{false}}"/>
-            <span class="col-span-5"><responsive on="portable" class=""/>$t:sirsoft-ecommerce.admin.order.detail.modal.batch_change.product_col</span>
-            <span class="col-span-2 text-right"><responsive on="portable" class="text-left"/>$t:sirsoft-ecommerce.admin.order.detail.modal.batch_change.price_col</span>
-            <span class="col-span-2 text-center"><responsive on="portable" class="text-left"/>$t:sirsoft-ecommerce.admin.order.detail.modal.batch_change.change_quantity_col</span>
-            <span class="col-span-3 text-center"><responsive on="portable" class="text-left"/>$t:sirsoft-ecommerce.admin.order.detail.modal.batch_change.current_status_col</span>
+            <span class="col-span-5">
+              <responsive on="portable" class=""/>
+              $t:sirsoft-ecommerce.admin.order.detail.modal.batch_change.product_col
+            </span>
+            <span class="col-span-2 text-right">
+              <responsive on="portable" class="text-left"/>
+              $t:sirsoft-ecommerce.admin.order.detail.modal.batch_change.price_col
+            </span>
+            <span class="col-span-2 text-center">
+              <responsive on="portable" class="text-left"/>
+              $t:sirsoft-ecommerce.admin.order.detail.modal.batch_change.change_quantity_col
+            </span>
+            <span class="col-span-3 text-center">
+              <responsive on="portable" class="text-left"/>
+              $t:sirsoft-ecommerce.admin.order.detail.modal.batch_change.current_status_col
+            </span>
           </div>
           <div class="divider-list">
             <div data-each="confirmItem, confirmIdx in $parent._local.bulkConfirmItems" class="grid grid-cols-12 gap-2 px-3 py-2 items-center">
@@ -40,7 +50,8 @@
               </div>
               <div class="col-span-2 text-right">
                 <responsive on="portable" class="text-left"/>
-                <!-- whitespace-nowrap — 금액은 순수 숫자 토큰이라 숫자 내부에서 절대 줄바꿈되지 않아야 한다(`1,249,000` → `1,249` / `,000`). portable 세로 스택으로 셀이 전폭이라 현재는 절단이 없으나, 셀이 다시 좁아지면 즉시 재발하므로 의도를 코드에 고정한다. --><p data-if="{{confirmItem.original_price &amp;&amp; Number(confirmItem.original_price) !== Number(confirmItem.unit_price)}}" class="text-hint line-through whitespace-nowrap">{{Number(confirmItem.original_price).toLocaleString()}}</p>
+                <!-- whitespace-nowrap — 금액은 순수 숫자 토큰이라 숫자 내부에서 절대 줄바꿈되지 않아야 한다(`1,249,000` → `1,249` / `,000`). portable 세로 스택으로 셀이 전폭이라 현재는 절단이 없으나, 셀이 다시 좁아지면 즉시 재발하므로 의도를 코드에 고정한다. -->
+                <p data-if="{{confirmItem.original_price &amp;&amp; Number(confirmItem.original_price) !== Number(confirmItem.unit_price)}}" class="text-hint line-through whitespace-nowrap">{{Number(confirmItem.original_price).toLocaleString()}}</p>
                 <p class="text-sm font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap">{{Number(confirmItem.unit_price).toLocaleString()}}</p>
               </div>
               <div class="col-span-2 flex justify-center">
@@ -86,25 +97,23 @@
       </button>
       <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{(!$parent._local.batchOrderStatus &amp;&amp; !$parent._local.batchCarrierId &amp;&amp; !$parent._local.batchTrackingNumber) || (($parent._local.batchOrderStatus === 'shipping_ready' || $parent._local.batchOrderStatus === 'shipping' || $parent._local.batchOrderStatus === 'delivered') &amp;&amp; (!$parent._local.batchCarrierId || !$parent._local.batchTrackingNumber)) || _global.isProcessing}}">
         <on type="click">
-          <!--
-            일괄 변경 실행. 부모가 들고 있던 값들을 여기서 한 번에 모아 핸들러로 넘긴다 — 재고·
+          <!-- 일괄 변경 실행. 부모가 들고 있던 값들을 여기서 한 번에 모아 핸들러로 넘긴다 — 재고·
             마일리지·알림까지 얽히는 처리라 화면에서 조립하지 않는다.
             처리 중 깃발은 전역이다. 이 창과 뒤 화면의 버튼이 함께 잠겨야 같은 변경이 두 번 나가지
             않는다. 성공하면 창을 닫고, 실패하면 사유만 알리고 **창을 열어 둔다**(고른 항목이
-            살아 있어 곧바로 다시 시도할 수 있다).
-          -->
+            살아 있어 곧바로 다시 시도할 수 있다). -->
           <sequence>
-          <set-state target="global" :isProcessing="true"/>
-          <action handler="sirsoft-ecommerce.processOrderDetailBulkChange" orderId="{{route.orderNumber}}" selectedProducts="{{$parent._local.selectedProducts ?? []}}" batchOrderStatus="{{$parent._local.batchOrderStatus ?? ''}}" batchCarrierId="{{$parent._local.batchCarrierId ?? ''}}" batchTrackingNumber="{{$parent._local.batchTrackingNumber ?? ''}}" changeQuantities="{{_local.changeQuantities ?? $parent._local.changeQuantities ?? {}}}">
-            <success>
-              <set-state target="global" :isProcessing="false"/>
-              <close-modal/>
-            </success>
-            <fail>
-              <set-state target="global" :isProcessing="false"/>
-              <toast type="error" message="{{error.message}}"/>
-            </fail>
-          </action>
+            <set-state target="global" :isProcessing="true"/>
+            <action handler="sirsoft-ecommerce.processOrderDetailBulkChange" orderId="{{route.orderNumber}}" selectedProducts="{{$parent._local.selectedProducts ?? []}}" batchOrderStatus="{{$parent._local.batchOrderStatus ?? ''}}" batchCarrierId="{{$parent._local.batchCarrierId ?? ''}}" batchTrackingNumber="{{$parent._local.batchTrackingNumber ?? ''}}" changeQuantities="{{_local.changeQuantities ?? $parent._local.changeQuantities ?? {}}}">
+              <success>
+                <set-state target="global" :isProcessing="false"/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="global" :isProcessing="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+            </action>
           </sequence>
         </on>
         <icon data-if="{{_global.isProcessing}}" name="spinner" class="spinner-sm"/>

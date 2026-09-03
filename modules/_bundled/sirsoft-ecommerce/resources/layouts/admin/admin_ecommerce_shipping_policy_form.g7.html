@@ -1,9 +1,7 @@
-<!--
-  배송정책 등록·수정 (운영자) — 한 레이아웃이 세 진입을 겸한다: 신규(`route.id` 없음) · 수정
+<!-- 배송정책 등록·수정 (운영자) — 한 레이아웃이 세 진입을 겸한다: 신규(`route.id` 없음) · 수정
   (`route.id`) · 복사(`query.copy_id`). 셋의 차이는 폼을 무엇으로 채우느냐뿐이라 `<init>` 의
   초기화 액션 한 곳에서 갈라지고, 그 아래 입력 구획은 진입 종류를 모른 채 `_local.form` 만 본다.
-  정책은 국가별 설정 배열을 품으므로 화면도 국가 탭 하나를 골라 그 항목만 편집한다.
--->
+  정책은 국가별 설정 배열을 품으므로 화면도 국가 탭 하나를 골라 그 항목만 편집한다. -->
 <layout name="admin_ecommerce_shipping_policy_form" version="1.0.0" extends="_admin_base">
   <meta title="{{route.id ? '$t:sirsoft-ecommerce.admin.shipping_policy.title_edit' : '$t:sirsoft-ecommerce.admin.shipping_policy.title_create'}}"/>
   <!-- 수정 진입일 때만 원본을 받아 폼에 심는다. 수정 권한이 없으면 응답을 받고도 403 화면으로 돌리는데, 목록 진입 없이 주소만으로 들어오는 경로가 있어 이 자리에서 막아야 한다 -->

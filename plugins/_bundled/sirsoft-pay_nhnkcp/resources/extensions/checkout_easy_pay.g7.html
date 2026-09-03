@@ -11,7 +11,16 @@
         <p data-if="{{_local.paymentErrorMessage}}" class="text-sm text-red-600 dark:text-red-400 mt-2">{{_local.paymentErrorMessage}}</p>
       </div>
       <div class="flex justify-center mt-6">
-        <button type="button" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"><on type="click"><!-- 확인 — 남아 있던 실패 사유를 지우고 창을 닫는다(지우지 않으면 다음에 열 때 옛 사유가 그대로 보인다) --><sequence><set-state target="local" :paymentErrorMessage="null"/><close-modal/></sequence></on>$t:common.confirm</button>
+        <button type="button" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors">
+          <on type="click">
+            <!-- 확인 — 남아 있던 실패 사유를 지우고 창을 닫는다(지우지 않으면 다음에 열 때 옛 사유가 그대로 보인다) -->
+            <sequence>
+              <set-state target="local" :paymentErrorMessage="null"/>
+              <close-modal/>
+            </sequence>
+          </on>
+          $t:common.confirm
+        </button>
       </div>
     </modal>
   </modal>

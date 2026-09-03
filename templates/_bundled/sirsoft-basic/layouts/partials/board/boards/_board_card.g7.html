@@ -11,9 +11,11 @@
         <icon name="file-text" size="lg" class="text-gray-600 dark:text-gray-400 flex-shrink-0"/>
         <h3 class="font-semibold text-gray-900 dark:text-white">{{board.name}}</h3>
       </div>
-      <!-- 게시글 수 배지 --><span class="px-2 py-0.5 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded">{{board.posts_count ?? 0}}개</span>
+      <!-- 게시글 수 배지 -->
+      <span class="px-2 py-0.5 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded">{{board.posts_count ?? 0}}개</span>
     </div>
-    <!-- 설명 --><p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-3">{{board.description ?? ''}}</p>
+    <!-- 설명 -->
+    <p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-3">{{board.description ?? ''}}</p>
     <!-- 게시판으로 이동 버튼 -->
     <div class="flex items-center justify-end gap-2 text-sm font-medium text-blue-600 dark:text-blue-400">
       <span>$t:board.view_board</span>

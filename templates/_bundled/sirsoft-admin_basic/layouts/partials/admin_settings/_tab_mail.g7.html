@@ -1,7 +1,5 @@
-<!--
-  메일 탭 — 발송 방식과 접속 정보를 정하고, **시험 발송** 버튼이 하나 있다.
-  메일 본문 템플릿은 이 탭이 아니라 별도 탭(`_tab_mail_templates`)이 다룬다.
--->
+<!-- 메일 탭 — 발송 방식과 접속 정보를 정하고, **시험 발송** 버튼이 하나 있다.
+  메일 본문 템플릿은 이 탭이 아니라 별도 탭(`_tab_mail_templates`)이 다룬다. -->
 <partial description="환경설정 메일 탭 콘텐츠">
   <div data-ref="tab_content_mail" data-if="{{(_global.activeSettingsTab || query.tab || 'general') === 'mail'}}">
     <div data-ref="card_mail_settings" class="admin-card">
@@ -159,18 +157,18 @@
                  `undefined` 로 빼 서버가 엉뚱한 조합으로 시도하지 않게 한다.
                  결과는 토스트와 함께 화면 아래 상자에도 남긴다(성공 시 실제 제목·본문까지 보여 준다). -->
             <sequence>
-            <set-state target="local" :isSendingTest="true" :testMailResult="null" :testMailResultMessage="null"/>
-            <api-call :auth_required="true" target="/api/admin/settings/test-mail" method="POST">
-              <success>
-                <set-state target="local" :isSendingTest="false" testMailResult="success" testMailResultMessage="$t:admin.settings.mail.test_mail_success" testMailSubject="{{response.data?.subject ?? ''}}" testMailBody="{{response.data?.body ?? ''}}" :testMailError="null"/>
-                <toast type="success" message="$t:admin.settings.mail.test_mail_success"/>
-              </success>
-              <fail>
-                <set-state target="local" :isSendingTest="false" testMailResult="error" testMailResultMessage="{{error.message || '$t:admin.settings.mail.test_mail_failed'}}" :testMailSubject="null" :testMailBody="null" testMailError="{{typeof error.errors === 'object' ? Object.values(error.errors).flat().join(', ') : (error.errors ?? '')}}"/>
-                <toast type="error" message="{{error.message || '$t:admin.settings.mail.test_mail_failed'}}"/>
-              </fail>
-              <body to_email="{{_local.form?.mail?.test_email || ''}}" mailer="{{_local.form?.mail?.mailer || 'smtp'}}" from_address="{{_local.form?.mail?.from_address || ''}}" from_name="{{_local.form?.mail?.from_name || ''}}" host="{{!_local.form?.mail?.mailer || _local.form?.mail?.mailer === 'smtp' ? (_local.form?.mail?.host ?? '') : undefined}}" port="{{!_local.form?.mail?.mailer || _local.form?.mail?.mailer === 'smtp' ? (_local.form?.mail?.port ?? 587) : undefined}}" username="{{!_local.form?.mail?.mailer || _local.form?.mail?.mailer === 'smtp' ? (_local.form?.mail?.username ?? '') : undefined}}" password="{{!_local.form?.mail?.mailer || _local.form?.mail?.mailer === 'smtp' ? (_local.form?.mail?.password ?? '') : undefined}}" encryption="{{!_local.form?.mail?.mailer || _local.form?.mail?.mailer === 'smtp' ? (_local.form?.mail?.encryption ?? 'tls') : undefined}}" mailgun_domain="{{_local.form?.mail?.mailer === 'mailgun' ? (_local.form?.mail?.mailgun_domain ?? '') : undefined}}" mailgun_secret="{{_local.form?.mail?.mailer === 'mailgun' ? (_local.form?.mail?.mailgun_secret ?? '') : undefined}}" mailgun_endpoint="{{_local.form?.mail?.mailer === 'mailgun' ? (_local.form?.mail?.mailgun_endpoint ?? '') : undefined}}" ses_key="{{_local.form?.mail?.mailer === 'ses' ? (_local.form?.mail?.ses_key ?? '') : undefined}}" ses_secret="{{_local.form?.mail?.mailer === 'ses' ? (_local.form?.mail?.ses_secret ?? '') : undefined}}" ses_region="{{_local.form?.mail?.mailer === 'ses' ? (_local.form?.mail?.ses_region ?? '') : undefined}}"/>
-            </api-call>
+              <set-state target="local" :isSendingTest="true" :testMailResult="null" :testMailResultMessage="null"/>
+              <api-call :auth_required="true" target="/api/admin/settings/test-mail" method="POST">
+                <success>
+                  <set-state target="local" :isSendingTest="false" testMailResult="success" testMailResultMessage="$t:admin.settings.mail.test_mail_success" testMailSubject="{{response.data?.subject ?? ''}}" testMailBody="{{response.data?.body ?? ''}}" :testMailError="null"/>
+                  <toast type="success" message="$t:admin.settings.mail.test_mail_success"/>
+                </success>
+                <fail>
+                  <set-state target="local" :isSendingTest="false" testMailResult="error" testMailResultMessage="{{error.message || '$t:admin.settings.mail.test_mail_failed'}}" :testMailSubject="null" :testMailBody="null" testMailError="{{typeof error.errors === 'object' ? Object.values(error.errors).flat().join(', ') : (error.errors ?? '')}}"/>
+                  <toast type="error" message="{{error.message || '$t:admin.settings.mail.test_mail_failed'}}"/>
+                </fail>
+                <body to_email="{{_local.form?.mail?.test_email || ''}}" mailer="{{_local.form?.mail?.mailer || 'smtp'}}" from_address="{{_local.form?.mail?.from_address || ''}}" from_name="{{_local.form?.mail?.from_name || ''}}" host="{{!_local.form?.mail?.mailer || _local.form?.mail?.mailer === 'smtp' ? (_local.form?.mail?.host ?? '') : undefined}}" port="{{!_local.form?.mail?.mailer || _local.form?.mail?.mailer === 'smtp' ? (_local.form?.mail?.port ?? 587) : undefined}}" username="{{!_local.form?.mail?.mailer || _local.form?.mail?.mailer === 'smtp' ? (_local.form?.mail?.username ?? '') : undefined}}" password="{{!_local.form?.mail?.mailer || _local.form?.mail?.mailer === 'smtp' ? (_local.form?.mail?.password ?? '') : undefined}}" encryption="{{!_local.form?.mail?.mailer || _local.form?.mail?.mailer === 'smtp' ? (_local.form?.mail?.encryption ?? 'tls') : undefined}}" mailgun_domain="{{_local.form?.mail?.mailer === 'mailgun' ? (_local.form?.mail?.mailgun_domain ?? '') : undefined}}" mailgun_secret="{{_local.form?.mail?.mailer === 'mailgun' ? (_local.form?.mail?.mailgun_secret ?? '') : undefined}}" mailgun_endpoint="{{_local.form?.mail?.mailer === 'mailgun' ? (_local.form?.mail?.mailgun_endpoint ?? '') : undefined}}" ses_key="{{_local.form?.mail?.mailer === 'ses' ? (_local.form?.mail?.ses_key ?? '') : undefined}}" ses_secret="{{_local.form?.mail?.mailer === 'ses' ? (_local.form?.mail?.ses_secret ?? '') : undefined}}" ses_region="{{_local.form?.mail?.mailer === 'ses' ? (_local.form?.mail?.ses_region ?? '') : undefined}}"/>
+              </api-call>
             </sequence>
           </on>
           <icon data-if="{{_local.isSendingTest}}" name="spinner" class="spinner-sm"/>

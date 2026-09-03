@@ -15,8 +15,8 @@
           <on type="click">
             <!-- 이전 — 자리를 옮긴 뒤 그 카드로 굴린다 -->
             <sequence>
-            <set-state target="isolated" scrollIdx="{{_isolated.scrollIdx - 1}}"/>
-            <scroll-into-view selector="#recent-product-{{_isolated.scrollIdx}}" behavior="smooth" inline="start" :waitForElement="true" :timeout="1000"/>
+              <set-state target="isolated" scrollIdx="{{_isolated.scrollIdx - 1}}"/>
+              <scroll-into-view selector="#recent-product-{{_isolated.scrollIdx}}" behavior="smooth" inline="start" :waitForElement="true" :timeout="1000"/>
             </sequence>
           </on>
           <icon name="chevron-left" class="text-base"/>
@@ -27,8 +27,8 @@
           <on type="click">
             <!-- 다음 — 한 번에 몇 칸이 보이는지가 화면 폭마다 달라 버튼이 꺼지는 조건을 `responsive` 로 따로 잡는다 -->
             <sequence>
-            <set-state target="isolated" scrollIdx="{{_isolated.scrollIdx + 1}}"/>
-            <scroll-into-view selector="#recent-product-{{_isolated.scrollIdx}}" behavior="smooth" inline="start" :waitForElement="true" :timeout="1000"/>
+              <set-state target="isolated" scrollIdx="{{_isolated.scrollIdx + 1}}"/>
+              <scroll-into-view selector="#recent-product-{{_isolated.scrollIdx}}" behavior="smooth" inline="start" :waitForElement="true" :timeout="1000"/>
             </sequence>
           </on>
           <icon name="chevron-right" class="text-base"/>

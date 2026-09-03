@@ -1,10 +1,8 @@
-<!--
-  템플릿 관리 화면. 모듈·플러그인 화면과 형태는 같지만 **한 갈래 더 있다** — 사용자용/관리자용
+<!-- 템플릿 관리 화면. 모듈·플러그인 화면과 형태는 같지만 **한 갈래 더 있다** — 사용자용/관리자용
   두 종류를 탭으로 가르고, 종류가 URL 경로(`/admin/templates/{type}`)에 들어간다.
   카드 목록은 이 파일에 없다 — 종류별 조각(`_tab_user`·`_tab_admin`)이 갖고 있고 여기는 뼈대와
   공용 창만 둔다. 두 조각이 **같은 창들을 공유**하므로 창은 이 자리에 한 벌만 있다.
-  템플릿은 종류마다 하나만 활성이라 활성/비활성이 토글이 아니라 각각 확인 창이다.
--->
+  템플릿은 종류마다 하나만 활성이라 활성/비활성이 토글이 아니라 각각 확인 창이다. -->
 <layout name="admin_template_list" version="1.0.0" extends="_admin_base">
   <meta title="$t:admin.templates.page_title" description="$t:admin.templates.page_description"/>
   <!-- 템플릿 목록. 종류(`route.type`)가 파라미터로 들어가므로 탭을 바꾸면 다른 목록이 된다.
@@ -70,18 +68,18 @@
                  진행 표시 전역 키가 모듈·플러그인 화면과 다르다(`isCheckingTemplateUpdates`) —
                  세 화면이 같은 키를 쓰면 한쪽에서 확인하는 동안 다른 쪽 버튼까지 잠긴다. -->
             <sequence>
-            <set-state target="global" :isCheckingTemplateUpdates="true"/>
-            <api-call :auth_required="true" target="/api/admin/templates/check-updates" method="POST">
-              <success>
-                <set-state target="global" :isCheckingTemplateUpdates="false"/>
-                <refetch-data-source dataSourceId="templates"/>
-                <toast type="success" message="{{response.data?.updated_count > 0 ? '$t:admin.templates.check_updates_success|count=' + response.data.updated_count : '$t:admin.templates.check_updates_no_updates'}}"/>
-              </success>
-              <fail>
-                <set-state target="global" :isCheckingTemplateUpdates="false"/>
-                <toast type="error" message="{{error.message}}"/>
-              </fail>
-            </api-call>
+              <set-state target="global" :isCheckingTemplateUpdates="true"/>
+              <api-call :auth_required="true" target="/api/admin/templates/check-updates" method="POST">
+                <success>
+                  <set-state target="global" :isCheckingTemplateUpdates="false"/>
+                  <refetch-data-source dataSourceId="templates"/>
+                  <toast type="success" message="{{response.data?.updated_count > 0 ? '$t:admin.templates.check_updates_success|count=' + response.data.updated_count : '$t:admin.templates.check_updates_no_updates'}}"/>
+                </success>
+                <fail>
+                  <set-state target="global" :isCheckingTemplateUpdates="false"/>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+              </api-call>
             </sequence>
           </on>
           <icon data-if="{{!_global.isCheckingTemplateUpdates}}" name="refresh" size="sm"/>
@@ -176,10 +174,10 @@
                  전역값을 먼저 두는 것은 이동이 끝나기 전에도 탭 표시가 따라오게 하기 위함이고,
                  마지막 스크롤은 목록이 길 때 아래쪽에 머문 화면을 위로 되돌린다. -->
             <sequence>
-            <set-state target="global" activeTemplateTab="{{$args[0]}}"/>
-            <!-- audit:allow layout-list-context-navigate-merge-query 탭 전환 — 사용자 템플릿과 관리자 템플릿은 각자 검색어·페이지를 갖는 서로 다른 목록이므로, 이전 탭의 목록 상태를 물려받으면 남의 검색 결과로 걸러진 화면이 열린다. -->
-            <navigate path="/admin/templates/{{$args[0]}}"/>
-            <scroll-into-view selector="#main_content" behavior="instant" block="start" :waitForElement="true" :timeout="1000"/>
+              <set-state target="global" activeTemplateTab="{{$args[0]}}"/>
+              <!-- audit:allow layout-list-context-navigate-merge-query 탭 전환 — 사용자 템플릿과 관리자 템플릿은 각자 검색어·페이지를 갖는 서로 다른 목록이므로, 이전 탭의 목록 상태를 물려받으면 남의 검색 결과로 걸러진 화면이 열린다. -->
+              <navigate path="/admin/templates/{{$args[0]}}"/>
+              <scroll-into-view selector="#main_content" behavior="instant" block="start" :waitForElement="true" :timeout="1000"/>
             </sequence>
           </on>
         </tab-navigation>

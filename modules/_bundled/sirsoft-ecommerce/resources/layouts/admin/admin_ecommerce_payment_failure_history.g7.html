@@ -1,8 +1,6 @@
-<!--
-  결제 실패 이력 (운영자) — 결제창까지 갔다가 실패한 시도를 모아 본다. 실패는 카드사 거절·한도
+<!-- 결제 실패 이력 (운영자) — 결제창까지 갔다가 실패한 시도를 모아 본다. 실패는 카드사 거절·한도
   초과·본인인증 이탈처럼 사유가 제각각이고 그 원문이 PG 마다 달라, 행을 펼쳐야 응답 코드와 원문을
-  볼 수 있게 했다. 아직 데이터소스가 없어 표가 예시 행으로 박혀 있는 골격 단계다.
--->
+  볼 수 있게 했다. 아직 데이터소스가 없어 표가 예시 행으로 박혀 있는 골격 단계다. -->
 <layout name="admin_ecommerce_payment_failure_history" version="1.0.0" extends="_admin_base">
   <meta title="$t:sirsoft-ecommerce.admin.payment_failure_history.title" description="$t:sirsoft-ecommerce.admin.payment_failure_history.description"/>
   <init-local>
@@ -119,11 +117,26 @@
           <span class="filter-label">$t:sirsoft-ecommerce.admin.payment_failure_history.filter.device</span>
           <div class="filter-buttons">
             <!-- 기기를 가리지 않고 모두 -->
-            <div class="{{_local.deviceFilter === '' ? 'btn-badge btn-badge-blue cursor-pointer ring-1 ring-blue-400' : 'btn-badge cursor-pointer'}}"><on type="click"><set-state target="_local" deviceFilter=""/></on>$t:sirsoft-ecommerce.admin.payment_failure_history.filter.all</div>
+            <div class="{{_local.deviceFilter === '' ? 'btn-badge btn-badge-blue cursor-pointer ring-1 ring-blue-400' : 'btn-badge cursor-pointer'}}">
+              <on type="click">
+                <set-state target="_local" deviceFilter=""/>
+              </on>
+              $t:sirsoft-ecommerce.admin.payment_failure_history.filter.all
+            </div>
             <!-- PC — 기기별로 결제창 동작이 달라 실패 원인 추적의 한 축이다 -->
-            <div class="{{_local.deviceFilter === 'desktop' ? 'btn-badge cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:bg-gray-700 dark:text-gray-300' : 'btn-badge cursor-pointer'}}"><on type="click"><set-state target="_local" deviceFilter="desktop"/></on>$t:sirsoft-ecommerce.admin.payment_failure_history.filter.desktop</div>
+            <div class="{{_local.deviceFilter === 'desktop' ? 'btn-badge cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:bg-gray-700 dark:text-gray-300' : 'btn-badge cursor-pointer'}}">
+              <on type="click">
+                <set-state target="_local" deviceFilter="desktop"/>
+              </on>
+              $t:sirsoft-ecommerce.admin.payment_failure_history.filter.desktop
+            </div>
             <!-- 모바일 — 앱 전환이 끼어 이탈이 잦은 쪽이다 -->
-            <div class="{{_local.deviceFilter === 'mobile' ? 'btn-badge cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:bg-gray-700 dark:text-gray-300' : 'btn-badge cursor-pointer'}}"><on type="click"><set-state target="_local" deviceFilter="mobile"/></on>$t:sirsoft-ecommerce.admin.payment_failure_history.filter.mobile</div>
+            <div class="{{_local.deviceFilter === 'mobile' ? 'btn-badge cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:bg-gray-700 dark:text-gray-300' : 'btn-badge cursor-pointer'}}">
+              <on type="click">
+                <set-state target="_local" deviceFilter="mobile"/>
+              </on>
+              $t:sirsoft-ecommerce.admin.payment_failure_history.filter.mobile
+            </div>
           </div>
         </div>
         <div data-ref="date_filter_row" class="filter-row">

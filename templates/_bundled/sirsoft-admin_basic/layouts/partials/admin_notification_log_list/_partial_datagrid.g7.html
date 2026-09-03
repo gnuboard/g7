@@ -1,10 +1,8 @@
-<!--
-  알림 발송 기록 표. 줄 고르기는 **삭제 권한이 있을 때만 켜진다** — 권한이 없으면 체크칸 자체가
+<!-- 알림 발송 기록 표. 줄 고르기는 **삭제 권한이 있을 때만 켜진다** — 권한이 없으면 체크칸 자체가
   나오지 않아 지울 수 없는 버튼을 눌러 보는 일이 없다.
   받는 사람과 보낸 사람 칸은 회원으로 이어질 때만 메뉴가 되고, 아니면 남아 있는 이름·주소를
   글자로만 보여 준다(비회원 발송과 시스템 발송이 그렇다). 줄을 펼치면 실패 사유와 본문이 나오는데,
-  본문은 채널이 만든 HTML 그대로다.
--->
+  본문은 채널이 만든 HTML 그대로다. -->
 <partial description="Notification Log List DataGrid">
   <data-grid data-ref="notification_log_datagrid" data="{{notificationLogs?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{notificationLogs?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{notificationLogs?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{notificationLogs?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" selectable="{{notificationLogs?.data?.abilities?.can_delete === true}}" selectionScope="page" selectedIds="{{_global.selectedIds_admin_notification_logs || []}}" selectedCountText="" loading="{{notificationLogs?.loading}}" :expandable="true" actionsColumnHeader="$t:common.actions">
     <expand>

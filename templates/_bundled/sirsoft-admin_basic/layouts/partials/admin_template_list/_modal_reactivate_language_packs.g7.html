@@ -1,8 +1,6 @@
-<!--
-  템플릿을 다시 켰을 때 **함께 꺼졌던 언어팩**을 되살릴지 묻는 창.
+<!-- 템플릿을 다시 켰을 때 **함께 꺼졌던 언어팩**을 되살릴지 묻는 창.
   거절하는 쪽이 "취소" 가 아니라 "건너뛰기" 인 것이 성격을 말해 준다 — 템플릿 활성은 이미 끝났고
-  여기서 무엇을 하든 되돌아가지 않는다. 모듈 쪽 같은 이름 조각과 짝이다.
--->
+  여기서 무엇을 하든 되돌아가지 않는다. 모듈 쪽 같은 이름 조각과 짝이다. -->
 <partial description="템플릿 재활성화 후 cascade 비활성화됐던 언어팩 일괄 활성화 확인 모달 (요구사항 #7)" editor_label="$t:admin.modal_label.admin_template_list.template_reactivate_language_packs_modal">
   <modal data-ref="template_reactivate_language_packs_modal" title="$t:admin.templates.modals.reactivate_language_packs_title" size="sm">
     <div class="py-2">
@@ -20,8 +18,8 @@
         <on type="click">
           <!-- 건너뛰기 — 대상 목록만 비우고 닫는다(언어팩은 꺼진 채로 남는다). -->
           <sequence>
-          <set-state target="global" :reactivateLanguagePacksData="null"/>
-          <close-modal/>
+            <set-state target="global" :reactivateLanguagePacksData="null"/>
+            <close-modal/>
           </sequence>
         </on>
         <span>$t:common.skip</span>
@@ -31,19 +29,19 @@
           <!-- 일괄 활성 실행 — 보여 준 목록의 id 를 그대로 보낸다. 성공해도 이 화면(템플릿 목록)에는
                언어팩 상태가 보이지 않으므로 목록을 다시 받지 않는다. -->
           <sequence>
-          <set-state target="global" :isBulkActivatingLanguagePacks="true"/>
-          <api-call :auth_required="true" target="/api/admin/language-packs/bulk-activate" method="POST">
-            <success>
-              <set-state target="global" :isBulkActivatingLanguagePacks="false" :reactivateLanguagePacksData="null"/>
-              <toast message="$t:admin.templates.modals.reactivate_language_packs_success" type="success"/>
-              <close-modal/>
-            </success>
-            <fail>
-              <set-state target="global" :isBulkActivatingLanguagePacks="false"/>
-              <toast message="{{error.message ?? '$t:admin.templates.modals.reactivate_language_packs_failed'}}" type="error"/>
-            </fail>
-            <body ids="{{_global.reactivateLanguagePacksData?.map(p => p.id) ?? []}}"/>
-          </api-call>
+            <set-state target="global" :isBulkActivatingLanguagePacks="true"/>
+            <api-call :auth_required="true" target="/api/admin/language-packs/bulk-activate" method="POST">
+              <success>
+                <set-state target="global" :isBulkActivatingLanguagePacks="false" :reactivateLanguagePacksData="null"/>
+                <toast message="$t:admin.templates.modals.reactivate_language_packs_success" type="success"/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="global" :isBulkActivatingLanguagePacks="false"/>
+                <toast message="{{error.message ?? '$t:admin.templates.modals.reactivate_language_packs_failed'}}" type="error"/>
+              </fail>
+              <body ids="{{_global.reactivateLanguagePacksData?.map(p => p.id) ?? []}}"/>
+            </api-call>
           </sequence>
         </on>
         <span>$t:common.activate</span>

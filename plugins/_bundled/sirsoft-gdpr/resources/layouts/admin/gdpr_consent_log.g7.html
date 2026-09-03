@@ -322,7 +322,12 @@
             </div>
           </div>
           <div data-ref="clear_filters_row" data-if="{{!!(query.email || query.session_id || query['consent_keys[]'] || query['actions[]'] || query['sources[]'])}}" class="flex justify-end mt-2">
-            <button type="button" class="text-tertiary hover:text-gray-700 dark:hover:text-gray-200 underline"><on type="click"><action-ref name="clearFilters"/></on>$t:sirsoft-gdpr.admin.consent_log.clear_filters</button>
+            <button type="button" class="text-tertiary hover:text-gray-700 dark:hover:text-gray-200 underline">
+              <on type="click">
+                <action-ref name="clearFilters"/>
+              </on>
+              $t:sirsoft-gdpr.admin.consent_log.clear_filters
+            </button>
           </div>
         </div>
       </div>

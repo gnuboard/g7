@@ -16,6 +16,14 @@
         </on>
       </input>
     </div>
-    <button class="px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 active:scale-95 active:bg-gray-700 dark:active:bg-gray-200 transition-all cursor-pointer"><on type="click"><!-- audit:allow layout-list-context-navigate-merge-query 새 검색 실행 — 검색어를 바꾸면 결과 집합 자체가 달라지므로 이전 탭·정렬·페이지·커서를 물려받지 않는다. mergeQuery 가 없으므로 q 만 남고 나머지 키는 주소에서 사라진다. --><navigate path="/search"><query q="{{_local.q ?? ''}}"/></navigate></on>$t:search.button</button>
+    <button class="px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 active:scale-95 active:bg-gray-700 dark:active:bg-gray-200 transition-all cursor-pointer">
+      <on type="click">
+        <!-- audit:allow layout-list-context-navigate-merge-query 새 검색 실행 — 검색어를 바꾸면 결과 집합 자체가 달라지므로 이전 탭·정렬·페이지·커서를 물려받지 않는다. mergeQuery 가 없으므로 q 만 남고 나머지 키는 주소에서 사라진다. -->
+        <navigate path="/search">
+          <query q="{{_local.q ?? ''}}"/>
+        </navigate>
+      </on>
+      $t:search.button
+    </button>
   </div>
 </partial>

@@ -8,7 +8,10 @@
     <div class="flex items-center gap-2 mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
       <responsive on="portable" class="flex items-center gap-2 mb-3 pb-3 border-b border-gray-200 dark:border-gray-700"/>
       <icon name="credit-card" class="text-xl text-gray-700 dark:text-gray-300"/>
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-white"><responsive on="portable" class="text-base font-semibold text-gray-900 dark:text-white"/>$t:shop.checkout.payment_method</h2>
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+        <responsive on="portable" class="text-base font-semibold text-gray-900 dark:text-white"/>
+        $t:shop.checkout.payment_method
+      </h2>
     </div>
     <!-- 결제 방법 선택 카드 (활성화된 결제수단 동적 렌더링) -->
     <grid :cols="3" :gap="4" class="mb-4">
@@ -36,8 +39,14 @@
             <responsive on="portable" name="{{method._cached_icon ?? 'circle-question'}}" class="text-3xl text-gray-700 dark:text-gray-300"/>
           </icon>
           <div>
-            <p class="font-medium text-gray-900 dark:text-white"><responsive on="portable" class="font-medium text-sm text-gray-900 dark:text-white"/>{{$localized(method._cached_name) ?? method.id}}</p>
-            <p data-if="{{$localized(method._cached_description)}}" class="text-sm text-gray-500 dark:text-gray-400"><responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400"/>{{$localized(method._cached_description)}}</p>
+            <p class="font-medium text-gray-900 dark:text-white">
+              <responsive on="portable" class="font-medium text-sm text-gray-900 dark:text-white"/>
+              {{$localized(method._cached_name) ?? method.id}}
+            </p>
+            <p data-if="{{$localized(method._cached_description)}}" class="text-sm text-gray-500 dark:text-gray-400">
+              <responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400"/>
+              {{$localized(method._cached_description)}}
+            </p>
           </div>
         </div>
       </button>
@@ -45,13 +54,17 @@
     <!-- 카드결제 선택 시 안내 -->
     <div data-if="{{_computed.selectedPaymentMethod === 'card'}}" class="p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
       <responsive on="portable" class="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg"/>
-      <p class="text-sm text-gray-500 dark:text-gray-400"><responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400"/>$t:shop.checkout.card_payment_info</p>
+      <p class="text-sm text-gray-500 dark:text-gray-400">
+        <responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400"/>
+        $t:shop.checkout.card_payment_info
+      </p>
     </div>
     <!-- 가상계좌 선택 시 안내 -->
     <div data-if="{{_computed.selectedPaymentMethod === 'vbank'}}" class="p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
       <responsive on="portable" class="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg"/>
       <p class="text-sm text-blue-700 dark:text-blue-300 mb-2">$t:shop.checkout.vbank_info</p>
-      <!-- 입금 기한 — 서버(OrderProcessingService::resolveAutoCancelDays)와 같은 규칙으로 폴백한다. ?? 는 null/undefined 만 막아 빈 문자열('')이 통과하면 days 가 비어 치환이 스킵되고 '{{days}}' 원문이 그대로 노출된다(실측 2026-08-01). 0/음수/비숫자도 서버가 기본치 3 으로 되돌리므로 화면도 동일 판정을 쓴다. --><p class="text-xs text-blue-600 dark:text-blue-400">$t:shop.checkout.vbank_due_notice|days={{Number(paymentSettings.data?.order_settings?.auto_cancel_days) > 0 ? Number(paymentSettings.data?.order_settings?.auto_cancel_days) : 3}}</p>
+      <!-- 입금 기한 — 서버(OrderProcessingService::resolveAutoCancelDays)와 같은 규칙으로 폴백한다. ?? 는 null/undefined 만 막아 빈 문자열('')이 통과하면 days 가 비어 치환이 스킵되고 '{{days}}' 원문이 그대로 노출된다(실측 2026-08-01). 0/음수/비숫자도 서버가 기본치 3 으로 되돌리므로 화면도 동일 판정을 쓴다. -->
+      <p class="text-xs text-blue-600 dark:text-blue-400">$t:shop.checkout.vbank_due_notice|days={{Number(paymentSettings.data?.order_settings?.auto_cancel_days) > 0 ? Number(paymentSettings.data?.order_settings?.auto_cancel_days) : 3}}</p>
       <!-- 입금자명 입력 -->
       <div class="mt-4">
         <responsive on="portable" class="mt-3"/>
@@ -99,7 +112,10 @@
     <!-- 무통장입금 선택 시 계좌 선택 및 입금자명 -->
     <div data-if="{{_computed.selectedPaymentMethod === 'dbank'}}" class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
       <responsive on="portable" class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg"/>
-      <p class="text-sm text-gray-600 dark:text-gray-400 mb-3"><responsive on="portable" class="text-xs text-gray-600 dark:text-gray-400 mb-2"/>$t:shop.checkout.dbank_info</p>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
+        <responsive on="portable" class="text-xs text-gray-600 dark:text-gray-400 mb-2"/>
+        $t:shop.checkout.dbank_info
+      </p>
       <!-- 계좌 선택 -->
       <div class="mb-4">
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -178,7 +194,8 @@
       <extension-point name="shop_checkout_cash_receipt_slot">
         <default/>
       </extension-point>
-      <!-- 입금 기한 안내 — 가상계좌 안내와 동일 규칙(서버 resolveAutoCancelDays 일치). 빈 문자열/0/음수/비숫자는 기본치 3 으로 되돌린다. --><p class="text-xs text-amber-600 dark:text-amber-400 mt-3">$t:shop.checkout.dbank_due_notice|days={{Number(paymentSettings.data?.order_settings?.auto_cancel_days) > 0 ? Number(paymentSettings.data?.order_settings?.auto_cancel_days) : 3}}</p>
+      <!-- 입금 기한 안내 — 가상계좌 안내와 동일 규칙(서버 resolveAutoCancelDays 일치). 빈 문자열/0/음수/비숫자는 기본치 3 으로 되돌린다. -->
+      <p class="text-xs text-amber-600 dark:text-amber-400 mt-3">$t:shop.checkout.dbank_due_notice|days={{Number(paymentSettings.data?.order_settings?.auto_cancel_days) > 0 ? Number(paymentSettings.data?.order_settings?.auto_cancel_days) : 3}}</p>
     </div>
   </div>
 </partial>

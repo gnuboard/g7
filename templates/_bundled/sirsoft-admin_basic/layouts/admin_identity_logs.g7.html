@@ -1,10 +1,8 @@
-<!--
-  본인인증(IDV) 시도 이력. 활동 로그 화면과 같은 방식이다 — 조건은 `_local.filter` 에 모았다가 검색할
+<!-- 본인인증(IDV) 시도 이력. 활동 로그 화면과 같은 방식이다 — 조건은 `_local.filter` 에 모았다가 검색할
   때 URL 로 옮기고, 이동은 전부 `replace` 로 이력에 쌓지 않는다.
   다른 점 하나는 **제공자 탭**이다. 탭 목록을 서버가 준 제공자 목록으로 만들므로 플러그인이 새 제공자를
   들이면 탭이 저절로 늘어난다(맨 앞 "전체" 만 이 파일이 붙인다).
-  목록 표는 조각(`_partial_datagrid`)이 갖고 있고 여기에는 뼈대와 창 둘만 있다.
--->
+  목록 표는 조각(`_partial_datagrid`)이 갖고 있고 여기에는 뼈대와 창 둘만 있다. -->
 <layout name="admin_identity_logs" version="1.0.0" extends="_admin_base">
   <meta title="$t:admin.identity.logs.page_title"/>
   <!-- 등록된 인증 제공자 목록 — 위쪽 탭을 만드는 값이다. 실패하면 탭이 "전체" 하나만 남는다. -->

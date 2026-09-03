@@ -1,10 +1,8 @@
-<!--
-  관리자 첫 화면. 8개 소스를 한꺼번에 받아 요약 카드 · 최근 활동 · 확장 3종 요약 · 경고 · 최근 알림을 깐다.
+<!-- 관리자 첫 화면. 8개 소스를 한꺼번에 받아 요약 카드 · 최근 활동 · 확장 3종 요약 · 경고 · 최근 알림을 깐다.
   소스마다 `fallback` 을 붙인 것이 이 화면의 성격이다 — 한 API 가 실패해도 그 칸만 0/빈 목록으로
   내려앉고 나머지는 그대로 뜬다. 대시보드가 통째로 하얗게 되는 것이 가장 나쁜 실패이기 때문이다.
   경고(`dashboard_alerts`)만 `background` 로 받는다 — 첫 그림에 필수가 아니라 진입을 늦추지 않는다.
-  화면 전환 대기(`transition-overlay`)도 그래서 경고를 기다리는 목록에서 빼 두었다.
--->
+  화면 전환 대기(`transition-overlay`)도 그래서 경고를 기다리는 목록에서 빼 두었다. -->
 <layout name="admin_dashboard" version="1.0.0" extends="_admin_base">
   <meta title="$t:admin.dashboard.title" description="$t:admin.dashboard.description" :auth_required="true"/>
   <!-- 상단 요약 카드용 집계(회원 수·확장 3종·언어팩·시스템 상태). 실패 시 폴백이 0 과 '-' 를 채워
@@ -143,7 +141,14 @@
           <div data-ref="asset_url_mode_drift_title" class="text-sm font-semibold text-amber-900 dark:text-amber-200">$t:admin.dashboard.asset_url_mode_drift_title</div>
           <p data-ref="asset_url_mode_drift_desc" class="mt-1 text-sm text-amber-800 dark:text-amber-300">$t:admin.dashboard.asset_url_mode_drift_description</p>
           <!-- 자산 주소 방식이 어긋났다는 경고에서 설정 화면으로 바로 보낸다 — 대시보드에서 문제를 알리고 고칠 자리까지 데려가는 것이 이 링크의 몫이다 -->
-          <button data-ref="asset_url_mode_drift_link" type="button" class="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-amber-900 dark:text-amber-200 underline hover:no-underline cursor-pointer"><on type="click"><navigate path="/admin/settings"><query tab="general"/></navigate></on>$t:admin.dashboard.asset_url_mode_drift_action</button>
+          <button data-ref="asset_url_mode_drift_link" type="button" class="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-amber-900 dark:text-amber-200 underline hover:no-underline cursor-pointer">
+            <on type="click">
+              <navigate path="/admin/settings">
+                <query tab="general"/>
+              </navigate>
+            </on>
+            $t:admin.dashboard.asset_url_mode_drift_action
+          </button>
         </div>
       </div>
       <div data-ref="quick_menu" class="flex flex-wrap gap-2 md:gap-3 mb-4 md:mb-6 lg:mb-8">
@@ -227,7 +232,12 @@
               <h2 data-ref="recent_notifications_title" class="section-heading">$t:admin.dashboard.recent_notifications.title</h2>
               <p data-ref="recent_notifications_subtitle" class="text-label-subtle">$t:admin.dashboard.recent_notifications.subtitle</p>
             </div>
-            <button data-ref="recent_notifications_more_btn" type="button" class="text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"><on type="click"><navigate path="/admin/notification-logs"/></on>$t:admin.dashboard.extension_status.more</button>
+            <button data-ref="recent_notifications_more_btn" type="button" class="text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer">
+              <on type="click">
+                <navigate path="/admin/notification-logs"/>
+              </on>
+              $t:admin.dashboard.extension_status.more
+            </button>
           </div>
           <p data-ref="recent_notifications_empty" data-if="{{(dashboard_recent_notifications?.data ?? []).length === 0}}" class="text-sm text-slate-500 dark:text-slate-400 text-center py-6">$t:admin.dashboard.recent_notifications.empty</p>
           <div data-ref="recent_notifications_list" data-if="{{(dashboard_recent_notifications?.data ?? []).length > 0}}" class="mb-4">
@@ -251,7 +261,12 @@
               <h2 data-ref="recent_activity_title" class="section-heading">$t:admin.dashboard.recent_activity.title</h2>
               <p data-ref="recent_activity_subtitle" class="text-label-subtle">$t:admin.dashboard.recent_activity.subtitle</p>
             </div>
-            <button data-ref="activity_more_btn" type="button" class="text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"><on type="click"><navigate path="/admin/activity-logs"/></on>$t:admin.dashboard.extension_status.more</button>
+            <button data-ref="activity_more_btn" type="button" class="text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer">
+              <on type="click">
+                <navigate path="/admin/activity-logs"/>
+              </on>
+              $t:admin.dashboard.extension_status.more
+            </button>
           </div>
           <div data-ref="activity_list">
             <div data-ref="activity_item_{{$idx}}" data-each="activity, $idx in dashboard_activities?.data" class="flex-start gap-3">
@@ -278,7 +293,12 @@
                 <p data-ref="module_status_subtitle" class="text-label-subtle">$t:admin.dashboard.module_status.subtitle</p>
               </div>
             </div>
-            <button data-ref="module_more_btn" type="button" class="text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"><on type="click"><navigate path="/admin/modules"/></on>$t:admin.dashboard.extension_status.more</button>
+            <button data-ref="module_more_btn" type="button" class="text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer">
+              <on type="click">
+                <navigate path="/admin/modules"/>
+              </on>
+              $t:admin.dashboard.extension_status.more
+            </button>
           </div>
           <div data-ref="module_list">
             <div data-ref="module_item_{{$idx}}" data-each="module, $idx in dashboard_modules?.data?.data" class="flex-between py-2">
@@ -302,7 +322,12 @@
                 <p data-ref="plugin_status_subtitle" class="text-label-subtle">$t:admin.dashboard.plugin_status.subtitle</p>
               </div>
             </div>
-            <button data-ref="plugin_more_btn" type="button" class="text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"><on type="click"><navigate path="/admin/plugins"/></on>$t:admin.dashboard.extension_status.more</button>
+            <button data-ref="plugin_more_btn" type="button" class="text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer">
+              <on type="click">
+                <navigate path="/admin/plugins"/>
+              </on>
+              $t:admin.dashboard.extension_status.more
+            </button>
           </div>
           <div data-ref="plugin_list">
             <div data-ref="plugin_item_{{$idx}}" data-each="plugin, $idx in dashboard_plugins?.data?.data" class="flex-between py-2">
@@ -326,7 +351,12 @@
                 <p data-ref="template_status_subtitle" class="text-label-subtle">$t:admin.dashboard.template_status.subtitle</p>
               </div>
             </div>
-            <button data-ref="template_more_btn" type="button" class="text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"><on type="click"><navigate path="/admin/templates/admin"/></on>$t:admin.dashboard.extension_status.more</button>
+            <button data-ref="template_more_btn" type="button" class="text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer">
+              <on type="click">
+                <navigate path="/admin/templates/admin"/>
+              </on>
+              $t:admin.dashboard.extension_status.more
+            </button>
           </div>
           <div data-ref="template_list">
             <div data-ref="template_item_{{$idx}}" data-each="template, $idx in dashboard_templates?.data?.data" class="flex-between py-2">

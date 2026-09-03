@@ -39,7 +39,7 @@
         <span>{{ch.name ?? ch.id}}</span>
       </button>
     </div>
-                  <!-- 알림 정의 행 하단 확장 슬롯(범용). 각 소유 확장이 알림별 부가 UI(예: 채널 연동)를 이 자리에 주입한다. 특정 확장을 알지 못하며, 확장 미설치 시 빈 자리로 남는다. def·현재 채널을 extensionPointProps 로 전달한다. -->
+    <!-- 알림 정의 행 하단 확장 슬롯(범용). 각 소유 확장이 알림별 부가 UI(예: 채널 연동)를 이 자리에 주입한다. 특정 확장을 알지 못하며, 확장 미설치 시 빈 자리로 남는다. def·현재 채널을 extensionPointProps 로 전달한다. -->
     <div data-ref="board_notif_channel_content">
       <div data-ref="board_notif_list_info" class="flex-between py-3">
         <span class="text-label-subtle">$t:sirsoft-board.admin.settings.notification_definitions.total_count|count={{boardNotificationDefinitions?.data?.pagination?.total ?? 0}}</span>
@@ -115,12 +115,37 @@
                     </on>
                   </toggle>
                   <!-- 알림 문안 편집. 편집기는 모달이라 이 화면의 상태를 읽지 못하므로 대상을 전역으로 옮겨 담은 뒤 연다 -->
-                  <button type="button" disabled="{{_computed.isNotificationReadOnly}}" class="text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"><on type="click"><sequence><set-state target="global"><field name="board_notification_template_form_modal"><field name="template" value="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}"/><field name="definition" value="{{def}}"/><field name="recipients" value="{{JSON.parse(JSON.stringify((def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.recipients ?? []))}}"/><field name="editLang" value="{{$locale}}"/><field name="errors" :value="null"/><field name="isSaving" :value="false"/><field name="roleSearchResults" :value="[]"/><field name="userSearchResults" :value="[]"/></field></set-state><open-modal target="modal_board_notification_template_edit"/></sequence></on>$t:sirsoft-board.admin.settings.notification_definitions.btn_edit</button>
+                  <button type="button" disabled="{{_computed.isNotificationReadOnly}}" class="text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    <on type="click">
+                      <sequence>
+                        <set-state target="global">
+                          <field name="board_notification_template_form_modal">
+                            <field name="template" value="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}"/>
+                            <field name="definition" value="{{def}}"/>
+                            <field name="recipients" value="{{JSON.parse(JSON.stringify((def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.recipients ?? []))}}"/>
+                            <field name="editLang" value="{{$locale}}"/>
+                            <field name="errors" :value="null"/>
+                            <field name="isSaving" :value="false"/>
+                            <field name="roleSearchResults" :value="[]"/>
+                            <field name="userSearchResults" :value="[]"/>
+                          </field>
+                        </set-state>
+                        <open-modal target="modal_board_notification_template_edit"/>
+                      </sequence>
+                    </on>
+                    $t:sirsoft-board.admin.settings.notification_definitions.btn_edit
+                  </button>
                   <!-- 기본 문안으로 되돌리기 -->
-                  <button data-if="{{!def.is_default || def.has_customized_templates === true}}" type="button" disabled="{{_computed.isNotificationReadOnly}}" class="text-sm px-3 py-1.5 rounded-md border border-orange-300 dark:border-orange-600 text-orange-700 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"><on type="click"><set-state target="global" resetTargetId="{{def.id}}" resetTargetName="{{$localized(def.name)}}"/><open-modal target="modal_board_notification_definition_reset"/></on>$t:sirsoft-board.admin.settings.notification_definitions.btn_reset</button>
+                  <button data-if="{{!def.is_default || def.has_customized_templates === true}}" type="button" disabled="{{_computed.isNotificationReadOnly}}" class="text-sm px-3 py-1.5 rounded-md border border-orange-300 dark:border-orange-600 text-orange-700 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    <on type="click">
+                      <set-state target="global" resetTargetId="{{def.id}}" resetTargetName="{{$localized(def.name)}}"/>
+                      <open-modal target="modal_board_notification_definition_reset"/>
+                    </on>
+                    $t:sirsoft-board.admin.settings.notification_definitions.btn_reset
+                  </button>
                 </div>
               </div>
-                    <!-- 지금 채널의 문안 하나를 켜고 끈다 — 위 채널 토글과 달리 저장 버튼을 거치지 않고 바로 서버에 간다. 이 토글 자체가 그 채널에 문안이 있을 때만 뜬다 -->
+              <!-- 지금 채널의 문안 하나를 켜고 끈다 — 위 채널 토글과 달리 저장 버튼을 거치지 않고 바로 서버에 간다. 이 토글 자체가 그 채널에 문안이 있을 때만 뜬다 -->
               <div data-if="{{(_local.expandedNotifications ?? {})[def.id]}}" class="mt-3 pt-3">
                 <span class="text-tertiary font-medium mb-2 block">$t:sirsoft-board.admin.settings.notification_definitions.body_preview</span>
                 <html-content content="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.body?.[$locale] ?? ''}}" :isHtml="true" class="prose dark:prose-invert prose-sm max-w-none bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 max-h-48 overflow-y-auto dark:text-white"/>

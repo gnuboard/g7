@@ -1,8 +1,6 @@
-<!--
-  개인결제 목록 (운영자) — 전화·메신저로 받은 주문처럼 장바구니를 거치지 않는 건에 대해 만든
+<!-- 개인결제 목록 (운영자) — 전화·메신저로 받은 주문처럼 장바구니를 거치지 않는 건에 대해 만든
   결제 링크가 여기에 쌓인다. 링크에는 기한이 있어 대기·완료·만료의 흐름을 갖는다.
-  아직 데이터소스가 없어 표가 예시 값으로 박혀 있는 골격 단계이고, 필터 입력만 _local 에 살아 있다.
--->
+  아직 데이터소스가 없어 표가 예시 값으로 박혀 있는 골격 단계이고, 필터 입력만 _local 에 살아 있다. -->
 <layout name="admin_ecommerce_personal_payment" version="1.0.0" extends="_admin_base">
   <meta title="$t:sirsoft-ecommerce.admin.personal_payment.title" description="$t:sirsoft-ecommerce.admin.personal_payment.description"/>
   <init-local>
@@ -72,13 +70,33 @@
           <span class="filter-label">$t:sirsoft-ecommerce.admin.personal_payment.filter.status</span>
           <div class="filter-buttons">
             <!-- 진행 상태를 가리지 않고 모두 -->
-            <div class="{{_local.statusFilter === '' ? 'btn-badge cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:bg-gray-700 dark:text-gray-300' : 'btn-badge cursor-pointer'}}"><on type="click"><set-state target="_local" statusFilter=""/></on>$t:sirsoft-ecommerce.admin.personal_payment.filter.all</div>
+            <div class="{{_local.statusFilter === '' ? 'btn-badge cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:bg-gray-700 dark:text-gray-300' : 'btn-badge cursor-pointer'}}">
+              <on type="click">
+                <set-state target="_local" statusFilter=""/>
+              </on>
+              $t:sirsoft-ecommerce.admin.personal_payment.filter.all
+            </div>
             <!-- 결제대기 — 링크는 보냈고 아직 안 낸 건. 기한이 지나면 만료로 넘어간다 -->
-            <div class="{{_local.statusFilter === 'pending' ? 'btn-badge btn-badge-yellow cursor-pointer ring-1 ring-yellow-400' : 'btn-badge cursor-pointer'}}"><on type="click"><set-state target="_local" statusFilter="pending"/></on>$t:sirsoft-ecommerce.admin.personal_payment.filter.pending</div>
+            <div class="{{_local.statusFilter === 'pending' ? 'btn-badge btn-badge-yellow cursor-pointer ring-1 ring-yellow-400' : 'btn-badge cursor-pointer'}}">
+              <on type="click">
+                <set-state target="_local" statusFilter="pending"/>
+              </on>
+              $t:sirsoft-ecommerce.admin.personal_payment.filter.pending
+            </div>
             <!-- 결제완료 -->
-            <div class="{{_local.statusFilter === 'completed' ? 'btn-badge btn-badge-green cursor-pointer ring-1 ring-green-400' : 'btn-badge cursor-pointer'}}"><on type="click"><set-state target="_local" statusFilter="completed"/></on>$t:sirsoft-ecommerce.admin.personal_payment.filter.completed</div>
+            <div class="{{_local.statusFilter === 'completed' ? 'btn-badge btn-badge-green cursor-pointer ring-1 ring-green-400' : 'btn-badge cursor-pointer'}}">
+              <on type="click">
+                <set-state target="_local" statusFilter="completed"/>
+              </on>
+              $t:sirsoft-ecommerce.admin.personal_payment.filter.completed
+            </div>
             <!-- 만료 — 기한이 지나 링크가 죽은 건. 다시 보내려면 새로 만들어야 한다 -->
-            <div class="{{_local.statusFilter === 'expired' ? 'btn-badge btn-badge-gray cursor-pointer ring-1 ring-gray-400' : 'btn-badge cursor-pointer'}}"><on type="click"><set-state target="_local" statusFilter="expired"/></on>$t:sirsoft-ecommerce.admin.personal_payment.filter.expired</div>
+            <div class="{{_local.statusFilter === 'expired' ? 'btn-badge btn-badge-gray cursor-pointer ring-1 ring-gray-400' : 'btn-badge cursor-pointer'}}">
+              <on type="click">
+                <set-state target="_local" statusFilter="expired"/>
+              </on>
+              $t:sirsoft-ecommerce.admin.personal_payment.filter.expired
+            </div>
           </div>
         </div>
         <div data-ref="payment_method_filter_row" class="filter-row">

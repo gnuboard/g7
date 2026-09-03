@@ -1,8 +1,6 @@
-<!--
-  상품 폼 — 라벨 등록·수정 창. 라벨 관리 화면으로 나가지 않고 상품을 편집하던 자리에서 바로 만든다.
+<!-- 상품 폼 — 라벨 등록·수정 창. 라벨 관리 화면으로 나가지 않고 상품을 편집하던 자리에서 바로 만든다.
   등록/수정 구분은 편집 대상 id(`_global.editingLabelId`)의 유무이고, 입력값은 전역에 둔다
-  (창은 별도 컨텍스트라 폼의 _local 을 못 쓴다).
--->
+  (창은 별도 컨텍스트라 폼의 _local 을 못 쓴다). -->
 <partial description="Product Form - Label Registration/Edit Modal" editor_label="$t:sirsoft-ecommerce.admin.product.labels.modal_title_create">
   <modal data-ref="modal_label_form" title="{{_global.editingLabelId ? $t('sirsoft-ecommerce.admin.product.labels.modal_title_edit') : $t('sirsoft-ecommerce.admin.product.labels.modal_title_create')}}" description="$t:sirsoft-ecommerce.admin.product.labels.modal_description" size="md">
     <div data-ref="label_form_content">
@@ -42,12 +40,22 @@
               </on>
             </input>
             <!-- 색 지우기 — 색이 없으면 기본 회색으로 그려진다 -->
-            <button data-if="{{_global.labelFormData?.color}}" type="button" class="btn btn-ghost btn-sm text-gray-500 dark:text-gray-400"><on type="click"><set-state target="global" :labelFormData.color="null"/></on>$t:sirsoft-ecommerce.admin.product.labels.color_reset</button>
+            <button data-if="{{_global.labelFormData?.color}}" type="button" class="btn btn-ghost btn-sm text-gray-500 dark:text-gray-400">
+              <on type="click">
+                <set-state target="global" :labelFormData.color="null"/>
+              </on>
+              $t:sirsoft-ecommerce.admin.product.labels.color_reset
+            </button>
           </div>
         </div>
       </div>
       <div data-ref="modal_footer" class="flex justify-end gap-3 border-t border-gray-200 dark:border-gray-700">
-        <button type="button" class="btn btn-outline" disabled="{{_global.isSavingLabel}}"><on type="click"><close-modal/></on>$t:sirsoft-ecommerce.common.cancel</button>
+        <button type="button" class="btn btn-outline" disabled="{{_global.isSavingLabel}}">
+          <on type="click">
+            <close-modal/>
+          </on>
+          $t:sirsoft-ecommerce.common.cancel
+        </button>
         <button type="button" class="btn btn-primary" disabled="{{_global.isSavingLabel || !_global.labelFormData?.name?.ko}}">
           <on type="click">
             <action handler="sirsoft-ecommerce.saveLabelSettings"/>

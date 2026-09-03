@@ -1,7 +1,5 @@
-<!--
-  고급 탭 — 디버그·로그 같은 운영 값과 **캐시 비우기** 버튼이 있다.
-  캐시 비우기만 설정값이 아니라 즉시 실행되는 동작이라 확인 창을 거친다.
--->
+<!-- 고급 탭 — 디버그·로그 같은 운영 값과 **캐시 비우기** 버튼이 있다.
+  캐시 비우기만 설정값이 아니라 즉시 실행되는 동작이라 확인 창을 거친다. -->
 <partial description="환경설정 고급 탭 콘텐츠">
   <div data-ref="tab_content_advanced" data-if="{{(_global.activeSettingsTab || query.tab) === 'advanced'}}" class="card-stack">
     <div data-ref="card_cache_settings" class="card-stack-item">
@@ -154,11 +152,9 @@
           </div>
           <toggle name="advanced.sql_query_log" size="md" disabled="{{_computed.isReadOnly}}"/>
         </div>
-        <!--
-          아웃바운드 프록시 — 디버그 모드일 때만 노출한다. 서버가 프록시를 실제로 적용하는 조건도 디버그 모드라,
+        <!-- 아웃바운드 프록시 — 디버그 모드일 때만 노출한다. 서버가 프록시를 실제로 적용하는 조건도 디버그 모드라,
           꺼 두면 값이 남아 있어도 적용되지 않는다. 「연결 테스트」는 저장 전에 입력값 그대로 서버에 보내
-          연결 여부와 외부에 보이는 IP 를 돌려받는다(결제사에 등록할 IP 확인용).
-        -->
+          연결 여부와 외부에 보이는 IP 를 돌려받는다(결제사에 등록할 IP 확인용). -->
         <div data-ref="outbound_proxy_settings" data-if="{{_local.form?.advanced?.debug_mode}}" class="ml-4 pl-4 border-l-2 border-blue-200 dark:border-blue-800 space-y-4">
           <div data-ref="input_outbound_proxy" class="row-stack">
             <div class="flex-center">
@@ -168,7 +164,27 @@
             <input type="text" name="advanced.outbound_proxy" placeholder="$t:admin.settings.advanced.outbound_proxy_placeholder" autoComplete="off" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['advanced.outbound_proxy'] ? 'input-error' : ''}}"/>
             <span data-if="{{_local.errors?.['advanced.outbound_proxy']}}" class="form-error">{{_local.errors?.['advanced.outbound_proxy']?.[0] ?? ''}}</span>
             <div data-ref="outbound_proxy_test_row" class="flex items-center gap-3 mt-2">
-              <button data-ref="btn_test_outbound_proxy" type="button" class="px-3 py-1.5 bg-gray-700 dark:bg-gray-600 text-white dark:text-white text-xs font-medium rounded-md hover:bg-gray-800 dark:hover:bg-gray-500 transition-colors whitespace-nowrap disabled:opacity-50" disabled="{{_computed.isReadOnly || !_local.form?.advanced?.outbound_proxy || _local.outboundProxyTesting}}"><on event="click"><!-- 누르는 즉시 진행 중 표시 — 버튼의 `disabled` 가 이 값을 보므로 연타로 요청이 겹치지 않는다. 아래 요청 블록과 형제로 나란히 두는 이유는 요청 성패와 무관하게 이 잠금이 먼저 걸려야 하기 때문이다. --><set-state target="local" :outboundProxyTesting="true"/></on><on event="click"><!-- 저장하지 않은 입력값을 그대로 서버에 보내 프록시로 실제 연결이 되는지, 그때 외부에 보이는 IP 가 무엇인지 돌려받는다(결제사에 등록할 IP 확인용). 성패 어느 쪽이든 진행 중 표시를 풀고 결과 문구를 남기며, 실패면 직전 결과를 지워 낡은 성공 표시가 남지 않게 한다. --><api-call target="/api/admin/settings/test-outbound-proxy" :auth_required="true" method="POST"><success><set-state target="local" :outboundProxyTesting="false" outboundProxyTest="{{response.data}}" outboundProxyTestMessage="{{response.message}}"/><toast type="{{response.data?.success ? 'success' : 'error'}}" message="{{response.message}}"/></success><fail><set-state target="local" :outboundProxyTesting="false" :outboundProxyTest="null" outboundProxyTestMessage="{{error.message}}"/><toast type="error" message="{{error.message}}"/></fail><body outbound_proxy="{{_local.form?.advanced?.outbound_proxy}}" outbound_proxy_bypass="{{_local.form?.advanced?.outbound_proxy_bypass ?? []}}"/></api-call></on>$t:admin.settings.advanced.outbound_proxy_test</button>
+              <button data-ref="btn_test_outbound_proxy" type="button" class="px-3 py-1.5 bg-gray-700 dark:bg-gray-600 text-white dark:text-white text-xs font-medium rounded-md hover:bg-gray-800 dark:hover:bg-gray-500 transition-colors whitespace-nowrap disabled:opacity-50" disabled="{{_computed.isReadOnly || !_local.form?.advanced?.outbound_proxy || _local.outboundProxyTesting}}">
+                <on event="click">
+                  <!-- 누르는 즉시 진행 중 표시 — 버튼의 `disabled` 가 이 값을 보므로 연타로 요청이 겹치지 않는다. 아래 요청 블록과 형제로 나란히 두는 이유는 요청 성패와 무관하게 이 잠금이 먼저 걸려야 하기 때문이다. -->
+                  <set-state target="local" :outboundProxyTesting="true"/>
+                </on>
+                <on event="click">
+                  <!-- 저장하지 않은 입력값을 그대로 서버에 보내 프록시로 실제 연결이 되는지, 그때 외부에 보이는 IP 가 무엇인지 돌려받는다(결제사에 등록할 IP 확인용). 성패 어느 쪽이든 진행 중 표시를 풀고 결과 문구를 남기며, 실패면 직전 결과를 지워 낡은 성공 표시가 남지 않게 한다. -->
+                  <api-call target="/api/admin/settings/test-outbound-proxy" :auth_required="true" method="POST">
+                    <success>
+                      <set-state target="local" :outboundProxyTesting="false" outboundProxyTest="{{response.data}}" outboundProxyTestMessage="{{response.message}}"/>
+                      <toast type="{{response.data?.success ? 'success' : 'error'}}" message="{{response.message}}"/>
+                    </success>
+                    <fail>
+                      <set-state target="local" :outboundProxyTesting="false" :outboundProxyTest="null" outboundProxyTestMessage="{{error.message}}"/>
+                      <toast type="error" message="{{error.message}}"/>
+                    </fail>
+                    <body outbound_proxy="{{_local.form?.advanced?.outbound_proxy}}" outbound_proxy_bypass="{{_local.form?.advanced?.outbound_proxy_bypass ?? []}}"/>
+                  </api-call>
+                </on>
+                $t:admin.settings.advanced.outbound_proxy_test
+              </button>
               <span data-ref="outbound_proxy_test_result" data-if="{{!!_local.outboundProxyTestMessage &amp;&amp; !_local.outboundProxyTesting}}" class="{{_local.outboundProxyTest?.success ? 'text-xs text-green-600 dark:text-green-400' : 'text-xs text-red-600 dark:text-red-400'}}">{{_local.outboundProxyTest?.egress_ip ? (_local.outboundProxyTestMessage + ' (' + _local.outboundProxyTest.egress_ip + ')') : _local.outboundProxyTestMessage}}</span>
             </div>
           </div>
@@ -259,7 +275,35 @@
             <div class="flex flex-col md:flex-row md:items-center gap-2 md:gap-2 md:space-y-0">
               <input type="text" :disabled="true" value="{{_local.form?.advanced?.geoip_last_updated_at ?? '-'}}" class="md:flex-1 dark:bg-gray-900 text-gray-700 dark:text-gray-300"/>
               <!-- GeoIP 데이터베이스를 내려받아 갱신한다. 파일이 커서 시간이 걸리므로 진행 중에는 버튼을 잠근다 -->
-              <button type="button" disabled="{{_computed.isReadOnly || _local.geoipUpdating === true}}" class="w-full md:w-auto px-4 py-2 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"><on type="click"><set-state target="local" :geoipUpdating="true" :errors="[]"><success><api-call :auth_required="true" target="/api/admin/settings/geoip/update" method="POST"><success><set-state target="local" :geoipUpdating="false"><field name="form"><field name="advanced"><field name="geoip_last_updated_at" value="{{response.data?.last_updated_at ?? ''}}"/></field></field></set-state></success><fail><set-state target="local" :geoipUpdating="false"><field name="errors"><field name="advanced.geoip_license_key"><item>{{error.message ?? $t('admin.settings.advanced.geoip_update_failed')}}</item></field></field></set-state></fail></api-call></success></set-state></on>{{_local.geoipUpdating === true ? $t('admin.settings.advanced.geoip_updating') : $t('admin.settings.advanced.geoip_manual_update')}}</button>
+              <button type="button" disabled="{{_computed.isReadOnly || _local.geoipUpdating === true}}" class="w-full md:w-auto px-4 py-2 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap">
+                <on type="click">
+                  <set-state target="local" :geoipUpdating="true" :errors="[]">
+                    <success>
+                      <api-call :auth_required="true" target="/api/admin/settings/geoip/update" method="POST">
+                        <success>
+                          <set-state target="local" :geoipUpdating="false">
+                            <field name="form">
+                              <field name="advanced">
+                                <field name="geoip_last_updated_at" value="{{response.data?.last_updated_at ?? ''}}"/>
+                              </field>
+                            </field>
+                          </set-state>
+                        </success>
+                        <fail>
+                          <set-state target="local" :geoipUpdating="false">
+                            <field name="errors">
+                              <field name="advanced.geoip_license_key">
+                                <item>{{error.message ?? $t('admin.settings.advanced.geoip_update_failed')}}</item>
+                              </field>
+                            </field>
+                          </set-state>
+                        </fail>
+                      </api-call>
+                    </success>
+                  </set-state>
+                </on>
+                {{_local.geoipUpdating === true ? $t('admin.settings.advanced.geoip_updating') : $t('admin.settings.advanced.geoip_manual_update')}}
+              </button>
             </div>
           </div>
         </div>

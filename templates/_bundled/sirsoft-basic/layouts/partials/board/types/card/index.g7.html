@@ -82,9 +82,11 @@
                 <icon name="bell" size="xs"/>
                 <span>$t:board.notice</span>
               </span>
-              <!-- 카테고리 배지 --><span data-if="{{post?.category}}" class="inline-flex items-center px-2 py-0.5 rounded-md text-sm font-medium bg-black/40 text-white backdrop-blur-sm">{{post?.category}}</span>
+              <!-- 카테고리 배지 -->
+              <span data-if="{{post?.category}}" class="inline-flex items-center px-2 py-0.5 rounded-md text-sm font-medium bg-black/40 text-white backdrop-blur-sm">{{post?.category}}</span>
             </div>
-            <!-- 우상단: N 신규 배지 --><span data-if="{{post?.is_new}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold bg-red-500 dark:bg-red-500 text-white flex-shrink-0">N</span>
+            <!-- 우상단: N 신규 배지 -->
+            <span data-if="{{post?.is_new}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold bg-red-500 dark:bg-red-500 text-white flex-shrink-0">N</span>
           </div>
         </div>
         <!-- 카드 본문 영역 - 제목+요약 (flex-grow로 늘어나 메타를 하단 고정) -->
@@ -92,13 +94,15 @@
           <div class="flex items-center gap-1.5 min-w-0">
             <!-- 블라인드 아이콘 (제목 앞) -->
             <icon data-if="{{post?.status === 'blinded'}}" name="eye-slash" size="sm" class="text-orange-500 dark:text-orange-400 flex-shrink-0"/>
-            <!-- 답글 배지 (제목 앞) --><span data-if="{{post?.is_reply}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 flex-shrink-0">RE</span>
+            <!-- 답글 배지 (제목 앞) -->
+            <span data-if="{{post?.is_reply}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 flex-shrink-0">RE</span>
             <!-- 비밀글 아이콘 (제목 앞) -->
             <icon data-if="{{post?.is_secret}}" name="lock" size="sm" class="text-gray-400 dark:text-gray-500 flex-shrink-0"/>
             <h3 class="text-lg font-bold truncate min-w-0 transition-colors {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400'}}">{{post?.title ?? ''}}</h3>
             <!-- 첨부파일 아이콘 (제목 뒤) -->
             <icon data-if="{{post?.has_attachment}}" name="paperclip" size="sm" class="text-gray-400 dark:text-gray-500 flex-shrink-0"/>
-            <!-- 삭제됨 배지 (제목 뒤) --><span data-if="{{post?.deleted_at}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 flex-shrink-0">$t:board.post.deleted_badge</span>
+            <!-- 삭제됨 배지 (제목 뒤) -->
+            <span data-if="{{post?.deleted_at}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 flex-shrink-0">$t:board.post.deleted_badge</span>
           </div>
           <!-- 본문 요약 (비밀글 미열람/블라인드/삭제됨 제외) -->
           <html-content data-if="{{post?.content_preview &amp;&amp; !(post?.is_secret &amp;&amp; !post?.abilities?.can_view)}}" content="{{post?.content_preview ?? ''}}" :isHtml="false" class="text-sm mt-1.5 line-clamp-2 overflow-hidden !whitespace-normal {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-600' : 'text-gray-500 dark:text-gray-400'}}"/>

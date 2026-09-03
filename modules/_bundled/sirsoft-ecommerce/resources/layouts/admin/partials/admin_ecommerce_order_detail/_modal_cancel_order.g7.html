@@ -1,5 +1,4 @@
-<!--
-  주문 취소 창 — 이 화면에서 가장 무거운 자리다. 상품별로 취소 수량을 정하고, 사유를 고르고,
+<!-- 주문 취소 창 — 이 화면에서 가장 무거운 자리다. 상품별로 취소 수량을 정하고, 사유를 고르고,
   환불이 어떻게 나뉘는지 미리 본 뒤 실행한다.
   **취소 수량을 줄여 부분 취소할 수 있다.** 수량을 바꿀 때마다 서버에 환불 예상액을 다시 물어
   아래 비교 영역이 갱신되므로, 화면이 스스로 금액을 계산하는 자리는 없다.
@@ -11,12 +10,12 @@
   PG 취소가 함께 걸려 되돌릴 수 없기 때문이다.
   닫기 버튼이 그냥 닫지 않고 **먼저 타이머를 정리한다** — 수량 입력에 걸린 지연 재조회가 창이
   사라진 뒤 늦게 도착하면 없는 화면의 상태를 건드린다.
-  실행 버튼은 서버가 "취소 불가"(`cancel_blocked`)로 판정하면 잠긴다 — 이미 배송된 건 등이다.
--->
+  실행 버튼은 서버가 "취소 불가"(`cancel_blocked`)로 판정하면 잠긴다 — 이미 배송된 건 등이다. -->
 <partial description="Order Detail - Cancel Order Modal">
   <modal data-ref="modal_cancel_order" title="$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.title" width="1125px">
     <div class="space-y-4 pb-16">
-      <!-- 안내 메시지 --><p class="text-label-subtle">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.description</p>
+      <!-- 안내 메시지 -->
+      <p class="text-label-subtle">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.description</p>
       <!-- PG 에러 알림 영역 -->
       <div data-if="{{_local.cancelError}}" class="alert-danger">
         <div class="flex-center gap-2 text-red-700 dark:text-red-400 font-medium text-sm mb-1">
@@ -41,10 +40,22 @@
         <!-- 테이블 헤더 -->
         <div class="text-tertiary grid grid-cols-12 gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-800 font-medium">
           <responsive on="portable" data-if="{{false}}"/>
-          <span class="col-span-5"><responsive on="portable" class=""/>$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.product_col</span>
-          <span class="col-span-2 text-right"><responsive on="portable" class="text-left"/>$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.unit_price_col</span>
-          <span class="col-span-3 text-center"><responsive on="portable" class="text-left"/>$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.cancel_quantity_col</span>
-          <span class="col-span-2 text-center"><responsive on="portable" class="text-left"/>$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.status_col</span>
+          <span class="col-span-5">
+            <responsive on="portable" class=""/>
+            $t:sirsoft-ecommerce.admin.order.detail.modal.cancel.product_col
+          </span>
+          <span class="col-span-2 text-right">
+            <responsive on="portable" class="text-left"/>
+            $t:sirsoft-ecommerce.admin.order.detail.modal.cancel.unit_price_col
+          </span>
+          <span class="col-span-3 text-center">
+            <responsive on="portable" class="text-left"/>
+            $t:sirsoft-ecommerce.admin.order.detail.modal.cancel.cancel_quantity_col
+          </span>
+          <span class="col-span-2 text-center">
+            <responsive on="portable" class="text-left"/>
+            $t:sirsoft-ecommerce.admin.order.detail.modal.cancel.status_col
+          </span>
         </div>
         <!-- 취소 항목 반복 -->
         <div data-each="cancelItem, cancelIdx in _local.cancelItems ?? []" class="grid grid-cols-12 gap-2 px-3 py-2 border-t border-gray-100 dark:border-gray-700 items-center">
@@ -61,8 +72,10 @@
           <!-- 단가 + 소계 -->
           <div class="col-span-2 text-right">
             <responsive on="portable" class="text-left"/>
-            <!-- whitespace-nowrap — 금액 토큰은 숫자 내부에서 절대 줄바꿈되지 않아야 한다(`249,000원` → `249,000` / `원`). portable 세로 스택으로 셀이 전폭이라 현재는 절단이 없으나, 셀이 다시 좁아지면 즉시 재발하므로 의도를 코드에 고정한다. --><span class="text-body whitespace-nowrap">{{cancelItem.unit_price_formatted ?? ''}} × {{cancelItem.quantity ?? 1}}</span>
-            <!-- break-keep + whitespace-nowrap 조합 대신 break-keep 만 — `소계`(한글 라벨) + 금액이 한 문자열이라 nowrap 을 주면 좁은 셀에서 넘친다. break-keep 은 어절 경계에서만 줄바꿈해 `소계` / `249,000원` 으로 끊고 숫자 내부는 보존한다. --><p class="text-tertiary break-keep">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.product_subtotal {{cancelItem.subtotal_formatted ?? ''}}</p>
+            <!-- whitespace-nowrap — 금액 토큰은 숫자 내부에서 절대 줄바꿈되지 않아야 한다(`249,000원` → `249,000` / `원`). portable 세로 스택으로 셀이 전폭이라 현재는 절단이 없으나, 셀이 다시 좁아지면 즉시 재발하므로 의도를 코드에 고정한다. -->
+            <span class="text-body whitespace-nowrap">{{cancelItem.unit_price_formatted ?? ''}} × {{cancelItem.quantity ?? 1}}</span>
+            <!-- break-keep + whitespace-nowrap 조합 대신 break-keep 만 — `소계`(한글 라벨) + 금액이 한 문자열이라 nowrap 을 주면 좁은 셀에서 넘친다. break-keep 은 어절 경계에서만 줄바꿈해 `소계` / `249,000원` 으로 끊고 숫자 내부는 보존한다. -->
+            <p class="text-tertiary break-keep">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.product_subtotal {{cancelItem.subtotal_formatted ?? ''}}</p>
           </div>
           <!-- 취소수량 입력 -->
           <div class="col-span-3 flex justify-center">
@@ -77,7 +90,8 @@
           <!-- 현재상태 Badge -->
           <badge class="col-span-2 justify-self-center" variant="secondary" size="sm">
             <responsive on="portable" class=""/>
-            <!-- break-keep — 한글 상태명(`결제완료`)이 음절 경계에서 `결제완`/`료` 로 쪼개지지 않게 어절 단위 줄바꿈을 강제한다. 현재 Badge 는 inline-flex 라 콘텐츠 폭으로 자라 줄바꿈이 없지만, 배지 폭이 제한되면 즉시 재발한다. --><span class="break-keep">{{cancelItem.option_status_label ?? cancelItem.option_status ?? ''}}</span>
+            <!-- break-keep — 한글 상태명(`결제완료`)이 음절 경계에서 `결제완`/`료` 로 쪼개지지 않게 어절 단위 줄바꿈을 강제한다. 현재 Badge 는 inline-flex 라 콘텐츠 폭으로 자라 줄바꿈이 없지만, 배지 폭이 제한되면 즉시 재발한다. -->
+            <span class="break-keep">{{cancelItem.option_status_label ?? cancelItem.option_status ?? ''}}</span>
           </badge>
         </div>
       </div>
@@ -92,7 +106,8 @@
           <option value="">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.reason_placeholder</option>
           <option data-each="reason in refundReasons?.data?.data ?? refundReasons?.data ?? []" value="{{reason.code}}">{{reason.localized_name}}</option>
         </select>
-        <!-- 취소 사유 필드 에러 --><span data-if="{{_local.cancelValidationErrors?.reason}}" class="form-error-xs mt-1 block">{{Array.isArray(_local.cancelValidationErrors?.reason) ? _local.cancelValidationErrors.reason[0] : _local.cancelValidationErrors?.reason}}</span>
+        <!-- 취소 사유 필드 에러 -->
+        <span data-if="{{_local.cancelValidationErrors?.reason}}" class="form-error-xs mt-1 block">{{Array.isArray(_local.cancelValidationErrors?.reason) ? _local.cancelValidationErrors.reason[0] : _local.cancelValidationErrors?.reason}}</span>
         <!-- 기타 선택 시 상세 사유 입력 -->
         <textarea data-if="{{_local.cancelReason === 'etc'}}" class="{{_local.cancelValidationErrors?.reason_detail ? 'input w-full min-h-20 mt-2 border-2 border-red-500 dark:border-red-500' : 'input w-full min-h-20 mt-2'}}" placeholder="$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.cancel_reason_detail_placeholder" value="{{_local.cancelReasonDetail ?? ''}}">
           <on type="input">
@@ -100,12 +115,14 @@
             <set-state target="local" cancelReasonDetail="{{$event.target.value}}" :cancelValidationErrors="null" :cancelError="null"/>
           </on>
         </textarea>
-        <!-- 상세 사유 필드 에러 --><span data-if="{{_local.cancelValidationErrors?.reason_detail}}" class="form-error-xs mt-1 block">{{Array.isArray(_local.cancelValidationErrors?.reason_detail) ? _local.cancelValidationErrors.reason_detail[0] : _local.cancelValidationErrors?.reason_detail}}</span>
+        <!-- 상세 사유 필드 에러 -->
+        <span data-if="{{_local.cancelValidationErrors?.reason_detail}}" class="form-error-xs mt-1 block">{{Array.isArray(_local.cancelValidationErrors?.reason_detail) ? _local.cancelValidationErrors.reason_detail[0] : _local.cancelValidationErrors?.reason_detail}}</span>
       </div>
       <!-- 환불 계좌 (W-4 / #454). 가상계좌·무통장에서만 노출한다 — 카드·간편결제는 원 결제수단으로 환불되므로 계좌가 불필요하다. 가상계좌 입금완료 건은 서버(CancelOrderRequest)가 필수로 강제한다. 주문 시 입력값은 레이아웃 initLocal 이 프리필하며, cancelOrderHandlers 가 _local.refundBank* 를 읽어 전송한다. 신설 블록이므로 responsive.portable 로 작성한다(§6-0). -->
       <div data-ref="cancel_refund_bank_section" data-if="{{['vbank', 'dbank'].includes(order.data?.payment?.payment_method)}}">
         <span class="text-body font-medium block mb-2">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_label</span>
-        <!-- 가상계좌 입금완료 건은 필수임을 미리 안내한다 (서버가 422 로 막기 전에) --><p data-if="{{order.data?.payment?.payment_method === 'vbank' &amp;&amp; order.data?.payment?.payment_status === 'paid'}}" class="text-xs text-amber-600 dark:text-amber-400 mb-2">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_required_hint</p>
+        <!-- 가상계좌 입금완료 건은 필수임을 미리 안내한다 (서버가 422 로 막기 전에) -->
+        <p data-if="{{order.data?.payment?.payment_method === 'vbank' &amp;&amp; order.data?.payment?.payment_status === 'paid'}}" class="text-xs text-amber-600 dark:text-amber-400 mb-2">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_required_hint</p>
         <!-- 은행 / 계좌번호 / 예금주 — 기본 3열, portable 1열 (마크업 구조 변경이므로 responsive 속성 사용) -->
         <div class="grid grid-cols-3 gap-3">
           <responsive on="portable" class="grid grid-cols-1 gap-3"/>
@@ -139,7 +156,8 @@
       <!-- 환불 우선순위 라디오 — PG 환불 가능(requires_pg_cancellation)일 때 노출한다. 포인트 사용분이 없으면(total_points_used_amount=0) PG↔포인트 배분 순서가 무의미하므로 노출은 하되 선택 불가(disabled)로 둔다 (A28, 2026-06-22). -->
       <div data-if="{{order.data?.payment?.requires_pg_cancellation === true}}">
         <span class="text-body font-medium block mb-2">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_priority_label</span>
-        <!-- 포인트 미사용 안내 (선택 불가 사유) --><span data-if="{{(order.data?.total_points_used_amount ?? 0) <= 0}}" class="text-caption text-gray-500 dark:text-gray-400 block mb-2">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_priority_no_points_hint</span>
+        <!-- 포인트 미사용 안내 (선택 불가 사유) -->
+        <span data-if="{{(order.data?.total_points_used_amount ?? 0) <= 0}}" class="text-caption text-gray-500 dark:text-gray-400 block mb-2">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_priority_no_points_hint</span>
         <div class="flex gap-3">
           <label class="flex-center gap-2 p-2 rounded-lg border {{(order.data?.total_points_used_amount ?? 0) <= 0 ? 'cursor-not-allowed opacity-50 border-gray-200 dark:border-gray-700' : (_local.refundPriority === 'pg_first' ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 border-gray-200 dark:border-gray-700')}}">
             <input type="radio" name="refundPriority" value="pg_first" checked="{{_local.refundPriority === 'pg_first'}}" disabled="{{(order.data?.total_points_used_amount ?? 0) <= 0}}" class="radio">
@@ -337,7 +355,8 @@
             <span class="text-gray-900 dark:text-gray-100">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_total</span>
             <div class="text-right">
               <span class="text-blue-600 dark:text-blue-400 text-base block">{{_local.refundEstimate?.refund_formatted?.base?.refund_total ?? (_local.refundEstimate?.refund_total ?? 0).toLocaleString()}}</span>
-              <!-- 결제 통화 환산 환불 예정액(base≠결제 통화일 때 병기) --><span data-if="{{_local.refundEstimate?.refund_formatted?.mc?.refund_total}}" data-each="mc in {{Object.entries(_local.refundEstimate?.refund_formatted?.mc?.refund_total ?? {})}}" class="text-hint block font-normal">{{mc[1]}}</span>
+              <!-- 결제 통화 환산 환불 예정액(base≠결제 통화일 때 병기) -->
+              <span data-if="{{_local.refundEstimate?.refund_formatted?.mc?.refund_total}}" data-each="mc in {{Object.entries(_local.refundEstimate?.refund_formatted?.mc?.refund_total ?? {})}}" class="text-hint block font-normal">{{mc[1]}}</span>
             </div>
           </div>
           <!-- 환불 후 잔액 정보 -->

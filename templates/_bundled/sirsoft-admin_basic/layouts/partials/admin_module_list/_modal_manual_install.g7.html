@@ -1,10 +1,8 @@
-<!--
-  목록에 없는 모듈을 들이는 창 — 압축 파일 업로드와 GitHub 주소 두 갈래를 탭으로 가른다.
+<!-- 목록에 없는 모듈을 들이는 창 — 압축 파일 업로드와 GitHub 주소 두 갈래를 탭으로 가른다.
   **탭 하나가 주소·전송 형식·요청 본문 셋을 함께 정한다**(아래 설치 버튼) — 갈래마다 API 가 다르다.
   오류를 두 단으로 보여 준다. 위쪽 붉은 상자는 전체 메시지, 각 입력칸 아래는 그 필드 오류다.
   탭을 옮기거나 값을 고치면 오류를 지운다 — 다른 갈래의 실패가 남아 있으면 이번 입력의 문제로 읽힌다.
-  설치 창(`_modal_install`)과 달리 의존·언어팩을 고르는 자리가 없다(무엇이 들었는지 아직 모른다).
--->
+  설치 창(`_modal_install`)과 달리 의존·언어팩을 고르는 자리가 없다(무엇이 들었는지 아직 모른다). -->
 <partial description="모듈 수동 설치 모달" editor_label="$t:admin.modal_label.admin_module_list.module_manual_install_modal">
   <modal data-ref="module_manual_install_modal" title="$t:admin.modules.modals.manual_install_title" size="medium">
     <p class="text-secondary mb-4">$t:admin.modules.modals.manual_install_description</p>
@@ -89,8 +87,8 @@
           <!-- 취소 — 입력·오류·탭을 처음 상태로 되돌린다. 창을 다시 열었을 때 지난번 파일이
                남아 있으면 실수로 그것을 설치하게 된다. -->
           <sequence>
-          <set-state target="global" :moduleUploadFile="null" :moduleUploadFileName="null" :moduleGithubUrl="null" :moduleInstallError="null" :moduleInstallErrors="null" moduleInstallTab="file_upload"/>
-          <close-modal/>
+            <set-state target="global" :moduleUploadFile="null" :moduleUploadFileName="null" :moduleGithubUrl="null" :moduleInstallError="null" :moduleInstallErrors="null" moduleInstallTab="file_upload"/>
+            <close-modal/>
           </sequence>
         </on>
         <span>$t:common.cancel</span>
@@ -102,20 +100,20 @@
                실패는 토스트가 아니라 **창 안에 남긴다** — 입력을 고쳐 바로 다시 시도하는 자리라
                창을 닫아 버리면 처음부터 다시 채워야 한다. -->
           <sequence>
-          <set-state target="global" :isModuleManualInstalling="true" :moduleInstallError="null" :moduleInstallErrors="null"/>
-          <api-call :auth_required="true" target="{{(!_global.moduleInstallTab || _global.moduleInstallTab === 'file_upload') ? '/api/admin/modules/install-from-file' : '/api/admin/modules/install-from-github'}}" method="POST" contentType="{{(!_global.moduleInstallTab || _global.moduleInstallTab === 'file_upload') ? 'multipart/form-data' : 'application/json'}}" body="{{(!_global.moduleInstallTab || _global.moduleInstallTab === 'file_upload') ? { file: _global.moduleUploadFile } : { github_url: _global.moduleGithubUrl }}}">
-            <success>
-              <set-state target="global" :isModuleManualInstalling="false" :moduleUploadFile="null" :moduleUploadFileName="null" :moduleGithubUrl="null" :moduleInstallError="null" :moduleInstallErrors="null" moduleInstallTab="file_upload"/>
-              <toast type="success" message="$t:admin.modules.install_success"/>
-              <refetch-data-source dataSourceId="modules"/>
-              <refetch-data-source dataSourceId="admin_menu"/>
-              <reload-extensions/>
-              <close-modal/>
-            </success>
-            <fail>
-              <set-state target="global" :isModuleManualInstalling="false" moduleInstallError="{{error.message}}" moduleInstallErrors="{{error.errors}}"/>
-            </fail>
-          </api-call>
+            <set-state target="global" :isModuleManualInstalling="true" :moduleInstallError="null" :moduleInstallErrors="null"/>
+            <api-call :auth_required="true" target="{{(!_global.moduleInstallTab || _global.moduleInstallTab === 'file_upload') ? '/api/admin/modules/install-from-file' : '/api/admin/modules/install-from-github'}}" method="POST" contentType="{{(!_global.moduleInstallTab || _global.moduleInstallTab === 'file_upload') ? 'multipart/form-data' : 'application/json'}}" body="{{(!_global.moduleInstallTab || _global.moduleInstallTab === 'file_upload') ? { file: _global.moduleUploadFile } : { github_url: _global.moduleGithubUrl }}}">
+              <success>
+                <set-state target="global" :isModuleManualInstalling="false" :moduleUploadFile="null" :moduleUploadFileName="null" :moduleGithubUrl="null" :moduleInstallError="null" :moduleInstallErrors="null" moduleInstallTab="file_upload"/>
+                <toast type="success" message="$t:admin.modules.install_success"/>
+                <refetch-data-source dataSourceId="modules"/>
+                <refetch-data-source dataSourceId="admin_menu"/>
+                <reload-extensions/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="global" :isModuleManualInstalling="false" moduleInstallError="{{error.message}}" moduleInstallErrors="{{error.errors}}"/>
+              </fail>
+            </api-call>
           </sequence>
         </on>
         <icon data-if="{{!_global.isModuleManualInstalling}}" name="download" size="sm"/>

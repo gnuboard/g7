@@ -1,7 +1,5 @@
-<!--
-  쇼핑몰 설정 — 마일리지 탭. 기본·소멸·알림 카드와 통화별 적립 설정을 담는 껍데기이고,
-  각 항목의 입력은 그 조각들이 맡는다.
--->
+<!-- 쇼핑몰 설정 — 마일리지 탭. 기본·소멸·알림 카드와 통화별 적립 설정을 담는 껍데기이고,
+  각 항목의 입력은 그 조각들이 맡는다. -->
 <partial description="쇼핑몰 설정 마일리지 탭 콘텐츠">
   <div data-ref="tab_content_mileage" data-if="{{(_global.activeEcommerceSettingsTab || query.tab || 'basic_info') === 'mileage'}}" class="mt-6 space-y-6">
     <include src="_tab_mileage_basic_card.g7.html"/>

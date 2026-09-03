@@ -1,11 +1,9 @@
-<!--
-  회원 등록·수정 폼. **한 레이아웃이 두 모드를 겸한다** — `route.id` 유무로 제목·요청 메서드·주소가
+<!-- 회원 등록·수정 폼. **한 레이아웃이 두 모드를 겸한다** — `route.id` 유무로 제목·요청 메서드·주소가
   갈리고, 등록 모드에서는 아래 회원 조회 자체가 돌지 않는다(`if="{{route?.id}}"`).
   입력값은 `_local.form` 한 덩어리로 모아 두었다가 저장 때 통째로 보낸다.
   탭 5개는 화면을 나눌 뿐 저장은 한 번이다 — 어느 탭에 있든 하단 저장 버튼이 전부를 낸다.
   이커머스가 설치돼 있으면 통화·배송국가 두 값만 저장 뒤에 모듈 엔드포인트로 따로 보낸다
-  (코어 회원 API 가 자기 것이 아닌 키를 버리기 때문이다 — 아래 성공 갈래 참조).
--->
+  (코어 회원 API 가 자기 것이 아닌 키를 버리기 때문이다 — 아래 성공 갈래 참조). -->
 <layout name="admin_user_form" version="1.0.0" extends="_admin_base">
   <meta title="{{route?.id ? '$t:admin.users.form.page_title_edit' : '$t:admin.users.form.page_title_create'}}" description="{{route?.id ? '$t:admin.users.form.page_description_edit' : '$t:admin.users.form.page_description_create'}}"/>
   <!-- 수정할 회원. 응답을 `_local.form` 으로 바로 풀어 폼 초기값을 만든다(`initLocal`).

@@ -35,7 +35,8 @@
             </set-state>
           </on>
           <option value="" :selected="true">$t:board.post.select_reason</option>
-          <!-- API에서 받은 report_types 배열을 iteration으로 Option 생성 --><option data-each="type, idx in {{post?.data?.board?.report_types ?? []}}" value="{{type.value}}">{{type.label}}</option>
+          <!-- API에서 받은 report_types 배열을 iteration으로 Option 생성 -->
+          <option data-each="type, idx in {{post?.data?.board?.report_types ?? []}}" value="{{type.value}}">{{type.label}}</option>
         </select>
       </div>
       <!-- 상세 내용 입력 (Label + Textarea) -->
@@ -54,7 +55,21 @@
       </div>
       <!-- 버튼 영역 -->
       <div class="flex justify-end gap-2 mt-6">
-        <button class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"><on type="click"><!-- 취소 — 적던 사유를 비우고 닫는다. 전역에 남겨 두면 다음에 다른 글을 신고하려 열 때 앞의 내용이 그대로 보인다. --><sequence><set-state target="global"><field name="reportForm"><field name="reason_type" value=""/><field name="reason_detail" value=""/></field></set-state><close-modal/></sequence></on>$t:common.cancel</button>
+        <button class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+          <on type="click">
+            <!-- 취소 — 적던 사유를 비우고 닫는다. 전역에 남겨 두면 다음에 다른 글을 신고하려 열 때 앞의 내용이 그대로 보인다. -->
+            <sequence>
+              <set-state target="global">
+                <field name="reportForm">
+                  <field name="reason_type" value=""/>
+                  <field name="reason_detail" value=""/>
+                </field>
+              </set-state>
+              <close-modal/>
+            </sequence>
+          </on>
+          $t:common.cancel
+        </button>
         <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.reportSubmitting === true}}">
           <on type="click">
             <!-- 신고 보내기 — 사유와 상세를 차례로 확인해 비어 있으면 그 자리에서 알리고 멈춘다. 성공하면 창을 닫고 글을 다시 받아 «신고됨» 표시가 새로고침 없이 바뀌게 하고, 실패(이미 신고함·권한 없음 등)해도 창을 닫아 오류 안내만 남긴다 — 열린 채로 두면 무엇이 막혔는지 모른 채 다시 누르게 된다. -->

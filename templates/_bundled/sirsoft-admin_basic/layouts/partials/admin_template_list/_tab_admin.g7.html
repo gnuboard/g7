@@ -1,10 +1,8 @@
-<!--
-  템플릿 목록의 **관리자용 탭** 본문(카드 목록). `_tab_user` 와 짝이고, 둘 다 부모 화면
+<!-- 템플릿 목록의 **관리자용 탭** 본문(카드 목록). `_tab_user` 와 짝이고, 둘 다 부모 화면
   (`admin_template_list`)이 함께 심어 두면 자기 종류일 때만(`route.type`) 그려진다 —
   탭을 옮기면 URL 경로가 바뀌므로 이 조건 하나로 갈린다.
   창은 모두 부모가 갖고 있고 여기서는 전역에 대상을 담아 열기만 한다.
-  이 탭에만 있는 것이 하나 있다 — **레이아웃 편집기로 나가는 버튼**(활성 관리자 템플릿 전용).
--->
+  이 탭에만 있는 것이 하나 있다 — **레이아웃 편집기로 나가는 버튼**(활성 관리자 템플릿 전용). -->
 <partial name="tab_admin">
   <div data-ref="tab_admin" data-if="{{route.type === 'admin'}}">
     <div data-ref="section_header" class="flex-start justify-between gap-4 mb-6">
@@ -99,8 +97,8 @@
                   <on type="click">
                     <!-- 설치 창 열기 — 대상 카드를 전역에 먼저 담고 연다(창은 그 전역만 본다). -->
                     <sequence>
-                    <set-state target="global" selectedTemplate="{{row}}"/>
-                    <open-modal target="template_install_modal"/>
+                      <set-state target="global" selectedTemplate="{{row}}"/>
+                      <open-modal target="template_install_modal"/>
                     </sequence>
                   </on>
                   <icon name="download" class="text-base"/>
@@ -145,8 +143,8 @@
                          실제 전환은 그 창이 하고, 취소하면 창이 스위치 모양을 되돌린다.
                          이미 활성인 템플릿의 스위치는 잠겨 있다(끄는 것은 더보기가 아닌 다른 경로다). -->
                     <sequence>
-                    <set-state target="global" selectedTemplate="{{row}}"/>
-                    <open-modal target="{{row.status === 'active' ? 'template_deactivate_modal' : 'template_activate_modal'}}"/>
+                      <set-state target="global" selectedTemplate="{{row}}"/>
+                      <open-modal target="{{row.status === 'active' ? 'template_deactivate_modal' : 'template_activate_modal'}}"/>
                     </sequence>
                   </on>
                 </toggle>

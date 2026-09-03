@@ -72,7 +72,10 @@
             <span>{{_global.appConfig?.localeNames?.[loc] ?? loc}}</span>
           </button>
         </div>
-        <span class="text-hint ml-auto italic"><responsive on="portable" class="text-hint w-full italic"/>$t:sirsoft-page.admin.page.detail.display_language_hint</span>
+        <span class="text-hint ml-auto italic">
+          <responsive on="portable" class="text-hint w-full italic"/>
+          $t:sirsoft-page.admin.page.detail.display_language_hint
+        </span>
       </div>
       <div data-ref="page_info_section" data-if="{{page?.data}}" class="admin-card">
         <div data-ref="info_header" class="flex flex-col gap-3 pb-4">

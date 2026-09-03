@@ -1,10 +1,8 @@
-<!--
-  관리자 로그인 화면. `_admin_base` 를 **상속하지 않는다** — 사이드바·헤더가 없어야 하고, 베이스가
+<!-- 관리자 로그인 화면. `_admin_base` 를 **상속하지 않는다** — 사이드바·헤더가 없어야 하고, 베이스가
   거는 인증 데이터소스도 여기서는 부를 수 없기 때문이다. 그 대가로 베이스가 주던 전역 호스트가
   없으므로 `toast` 를 이 파일이 직접 심는다(빠뜨리면 토스트 액션이 성공으로 기록되면서 화면에는
   아무것도 안 뜬다). 테마 토글도 같은 이유로 헤더 컴포넌트 대신 여기에 3버튼으로 둔다.
-  로그인 뒤 갈 곳은 `query.redirect` 로 받는다 — 세션이 끊겨 튕겨 온 사람을 원래 화면으로 돌려보낸다.
--->
+  로그인 뒤 갈 곳은 `query.redirect` 로 받는다 — 세션이 끊겨 튕겨 온 사람을 원래 화면으로 돌려보낸다. -->
 <layout name="admin_login" version="1.0.0">
   <meta title="$t:auth.login.title" description="그누보드7 관리자 로그인 페이지" :auth_required="false"/>
   <init>
@@ -39,17 +37,17 @@
                실패 문구가 붙어 있다. 실패는 문구(`loginError`)와 필드별 오류(`loginErrors`)를 나눠 받는다.
                성공하면 원래 가려던 곳으로, 없으면 대시보드로 보낸다. -->
           <sequence>
-          <set-state target="local" :isLoggingIn="true" :loginError="null" :loginErrors="null"/>
-          <login target="admin">
-            <success>
-              <set-state target="local" :isLoggingIn="false"/>
-              <navigate path="{{query.redirect ?? '/admin'}}"/>
-            </success>
-            <fail>
-              <set-state target="local" :isLoggingIn="false" loginError="{{error.message}}" loginErrors="{{error.errors}}"/>
-            </fail>
-            <body email="{{_local.loginForm.email}}" password="{{_local.loginForm.password}}"/>
-          </login>
+            <set-state target="local" :isLoggingIn="true" :loginError="null" :loginErrors="null"/>
+            <login target="admin">
+              <success>
+                <set-state target="local" :isLoggingIn="false"/>
+                <navigate path="{{query.redirect ?? '/admin'}}"/>
+              </success>
+              <fail>
+                <set-state target="local" :isLoggingIn="false" loginError="{{error.message}}" loginErrors="{{error.errors}}"/>
+              </fail>
+              <body email="{{_local.loginForm.email}}" password="{{_local.loginForm.password}}"/>
+            </login>
           </sequence>
         </on>
         <!-- API 에러 메시지 표시 -->
@@ -60,17 +58,24 @@
         <div data-ref="login_email_field">
           <label data-ref="login_email_label" for="email" class="form-label">$t:auth.login.email</label>
           <input data-ref="login_email_input" id="email" type="email" name="email" placeholder="$t:auth.login.email" class="input py-3 {{_local.loginErrors?.email ? 'input-error' : ''}}" :required="true" disabled="{{_local.isLoggingIn}}"/>
-          <!-- 이메일 필드 에러 메시지 --><p data-ref="login_email_error" data-if="{{_local.loginErrors?.email}}" class="mt-2 text-sm text-red-600 dark:text-red-400">{{Array.isArray(_local.loginErrors?.email) ? _local.loginErrors.email[0] : _local.loginErrors?.email}}</p>
+          <!-- 이메일 필드 에러 메시지 -->
+          <p data-ref="login_email_error" data-if="{{_local.loginErrors?.email}}" class="mt-2 text-sm text-red-600 dark:text-red-400">{{Array.isArray(_local.loginErrors?.email) ? _local.loginErrors.email[0] : _local.loginErrors?.email}}</p>
         </div>
         <!-- 비밀번호 입력 필드 -->
         <div data-ref="login_password_field">
           <label data-ref="login_password_label" for="password" class="form-label">$t:auth.login.password</label>
           <input data-ref="login_password_input" id="password" type="password" name="password" placeholder="$t:auth.login.password" class="input py-3 {{_local.loginErrors?.password ? 'input-error' : ''}}" :required="true" disabled="{{_local.isLoggingIn}}"/>
-          <!-- 비밀번호 필드 에러 메시지 --><p data-ref="login_password_error" data-if="{{_local.loginErrors?.password}}" class="mt-2 text-sm text-red-600 dark:text-red-400">{{Array.isArray(_local.loginErrors?.password) ? _local.loginErrors.password[0] : _local.loginErrors?.password}}</p>
+          <!-- 비밀번호 필드 에러 메시지 -->
+          <p data-ref="login_password_error" data-if="{{_local.loginErrors?.password}}" class="mt-2 text-sm text-red-600 dark:text-red-400">{{Array.isArray(_local.loginErrors?.password) ? _local.loginErrors.password[0] : _local.loginErrors?.password}}</p>
         </div>
         <!-- 비밀번호 찾기 링크 -->
         <div data-ref="login_forgot_password" class="flex-center justify-end">
-          <button data-ref="login_forgot_link" type="button" class="text-sm text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors duration-200 cursor-pointer"><on type="click"><navigate path="/admin/forgot-password"/></on>$t:auth.login.forgot</button>
+          <button data-ref="login_forgot_link" type="button" class="text-sm text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors duration-200 cursor-pointer">
+            <on type="click">
+              <navigate path="/admin/forgot-password"/>
+            </on>
+            $t:auth.login.forgot
+          </button>
         </div>
         <!-- 로그인 버튼 -->
         <button data-ref="login_submit_button" type="submit" class="flex-center w-full px-4 py-3 rounded-lg font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 justify-center gap-2" disabled="{{_local.isLoggingIn}}">

@@ -2,7 +2,8 @@
   <!-- 정책 버전 snapshot 모달 — admin 권한자가 v배지/이력 표 행 클릭 시 노출. 부모 layout 의 gdprPolicyVersionSnapshot data_source 가 _global.viewingPolicyVersion 정수를 endpoint path 에 보간하여 그 시점 settings snapshot (cookie_categories / privacy_policy_slug / blocked_domains) 을 표시. DPO 가 회원 분쟁 시 입증 자료로 활용 (GDPR Art.7(1)). Partial 파일에 data_sources 정의 금지 규정 — 부모 layout 에서 정의하고 본 partial 은 컴포넌트만 참조. -->
   <modal data-ref="policy_version_snapshot_modal" title="$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.title|version={{_global.viewingPolicyVersion ?? '?'}}" width="min(720px, 95vw)" :closeOnBackdropClick="true">
     <div class="row-stack">
-      <!-- 안내문 — DPO 입증 자료 활용 안내 --><p class="text-secondary text-xs leading-relaxed">$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.description</p>
+      <!-- 안내문 — DPO 입증 자료 활용 안내 -->
+      <p class="text-secondary text-xs leading-relaxed">$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.description</p>
       <!-- 메타 — 발행일시 + 발행자 + 변경사유 + 변경 종류 (4개를 grid 2열). -->
       <div data-if="{{gdprPolicyVersionSnapshot?.data?.data}}" class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs border border-gray-200 dark:border-gray-700 rounded-md p-3 bg-gray-50 dark:bg-gray-900">
         <div class="flex items-baseline gap-2">
@@ -42,10 +43,12 @@
           <div class="px-3 py-2 text-xs space-y-1">
             <div class="flex items-baseline gap-2">
               <span class="font-mono text-gray-900 dark:text-gray-100 font-semibold">{{category?.key ?? '?'}}</span>
-              <!-- 라벨 — 다국어 객체 또는 plain 문자열 양쪽 호환. 객체일 때 현재 로케일 우선 추출(없으면 ko→en), 아니면 그대로. --><span class="text-gray-500 dark:text-gray-400">{{(category?.label &amp;&amp; typeof category.label === 'object') ? (category.label[$locale] ?? category.label.ko ?? category.label.en ?? '-') : (category?.label ?? '-')}}</span>
+              <!-- 라벨 — 다국어 객체 또는 plain 문자열 양쪽 호환. 객체일 때 현재 로케일 우선 추출(없으면 ko→en), 아니면 그대로. -->
+              <span class="text-gray-500 dark:text-gray-400">{{(category?.label &amp;&amp; typeof category.label === 'object') ? (category.label[$locale] ?? category.label.ko ?? category.label.en ?? '-') : (category?.label ?? '-')}}</span>
               <span data-if="{{category?.required === true}}" class="ml-auto px-2 py-0.5 text-[10px] font-medium bg-amber-100 dark:bg-amber-900/40 text-warning-soft rounded">$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.category_required_badge</span>
             </div>
-            <!-- 설명 — 다국어 객체 (ko/en) 또는 plain 문자열 양쪽 호환. --><p data-if="{{category?.description}}" class="text-gray-600 dark:text-gray-300 leading-relaxed">{{(category?.description &amp;&amp; typeof category.description === 'object') ? (category.description.ko ?? category.description.en ?? '') : (category?.description ?? '')}}</p>
+            <!-- 설명 — 다국어 객체 (ko/en) 또는 plain 문자열 양쪽 호환. -->
+            <p data-if="{{category?.description}}" class="text-gray-600 dark:text-gray-300 leading-relaxed">{{(category?.description &amp;&amp; typeof category.description === 'object') ? (category.description.ko ?? category.description.en ?? '') : (category?.description ?? '')}}</p>
           </div>
         </div>
       </div>

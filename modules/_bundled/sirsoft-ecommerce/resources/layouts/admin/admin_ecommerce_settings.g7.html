@@ -1,8 +1,6 @@
-<!--
-  쇼핑몰 환경설정 (운영자) — 열 개 탭을 한 레이아웃에 싣고 탭 이름을 URL 쿼리에 남긴다. 탭마다
+<!-- 쇼핑몰 환경설정 (운영자) — 열 개 탭을 한 레이아웃에 싣고 탭 이름을 URL 쿼리에 남긴다. 탭마다
   필요한 자료가 달라 각 데이터소스에 `if` 로 자기 탭 조건을 걸어 두었고(안 보는 탭 것은 부르지
-  않는다), 저장은 아래 버튼 하나가 현재 탭 몫만 골라 보낸다.
--->
+  않는다), 저장은 아래 버튼 하나가 현재 탭 몫만 골라 보낸다. -->
 <layout name="admin_ecommerce_settings" version="1.0.0" extends="_admin_base">
   <meta title="$t:sirsoft-ecommerce.admin.settings.title" description="$t:sirsoft-ecommerce.admin.settings.description"/>
   <!-- 전 탭의 설정값을 한 덩어리로 받아 폼에 심는다 — 탭을 옮겨도 다시 부르지 않는 것은 이 한 응답이 열 탭을 모두 덮기 때문이고, 저장 뒤에는 서버가 정규화한 값으로 되맞추려고 다시 받는다 -->
@@ -189,12 +187,10 @@
         </button>
         <button data-ref="save_button" data-testid="ecommerce-settings-save" disabled="{{_computed.isReadOnly || !_local.hasChanges || _local.isSaving}}" class="btn btn-primary flex-center gap-1.5">
           <on type="click">
-            <!--
-              저장 — 보낼 몸통을 현재 탭 몫으로 좁힌다. 전 탭을 한꺼번에 보내면 보고 있지도 않은 탭의
+            <!-- 저장 — 보낼 몸통을 현재 탭 몫으로 좁힌다. 전 탭을 한꺼번에 보내면 보고 있지도 않은 탭의
               값까지 덮어쓰기 때문이고, 서버도 `_tab` 으로 검증 범위를 가른다(문의 설정은 여러 탭에
               걸쳐 있어 함께 실린다). 통화 추가가 확정되지 않은 상태면 저장을 막고 안내만 띄운다 —
-              그대로 보내면 입력 중이던 통화가 소리 없이 사라진다.
-            -->
+              그대로 보내면 입력 중이던 통화가 소리 없이 사라진다. -->
             <sequence>
               <toast if="{{_local.isAddingMileageCurrency === true || _local.isAddingCurrency === true}}" type="error" message="$t:sirsoft-ecommerce.admin.settings.save_pending_currency"/>
               <set-state if="{{!(_local.isAddingMileageCurrency === true || _local.isAddingCurrency === true)}}" target="local" :isSaving="true" :errors="null"/>

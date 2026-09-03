@@ -88,12 +88,26 @@
             </navigate>
           </on>
         </input>
-        <button class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium"><on type="click"><!-- 검색 버튼. 입력칸을 건드리지 않고 눌렀을 때를 대비해 로컬이 비면 URL 의 검색어를 그대로 다시 건다 --><navigate path="{{route.path}}" :mergeQuery="true"><query keyword="{{_local.keyword ?? query.keyword ?? ''}}" page="1"/></navigate></on>$t:shop.search</button>
+        <button class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium">
+          <on type="click">
+            <!-- 검색 버튼. 입력칸을 건드리지 않고 눌렀을 때를 대비해 로컬이 비면 URL 의 검색어를 그대로 다시 건다 -->
+            <navigate path="{{route.path}}" :mergeQuery="true">
+              <query keyword="{{_local.keyword ?? query.keyword ?? ''}}" page="1"/>
+            </navigate>
+          </on>
+          $t:shop.search
+        </button>
       </div>
       <!-- 하위 카테고리 칩 (자식 카테고리가 있을 때만 표시) -->
       <div data-if="{{(category?.data?.children ?? []).length > 0}}" class="flex flex-wrap gap-2 mb-4">
         <div data-each="sub in {{category?.data?.children ?? []}}">
-          <button class="px-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-gray-100 dark:hover:bg-gray-600"><on type="click"><!-- audit:allow layout-list-context-navigate-merge-query 하위 카테고리 이동 — 다른 목록으로의 이동이라 상위 카테고리의 검색·정렬·페이지를 승계하지 않는다 --><navigate path="{{_global.shopBase}}/category/{{sub?.slug}}"/></on>{{sub?.name_localized}}</button>
+          <button class="px-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-gray-100 dark:hover:bg-gray-600">
+            <on type="click">
+              <!-- audit:allow layout-list-context-navigate-merge-query 하위 카테고리 이동 — 다른 목록으로의 이동이라 상위 카테고리의 검색·정렬·페이지를 승계하지 않는다 -->
+              <navigate path="{{_global.shopBase}}/category/{{sub?.slug}}"/>
+            </on>
+            {{sub?.name_localized}}
+          </button>
         </div>
       </div>
       <!-- 정렬 바 -->

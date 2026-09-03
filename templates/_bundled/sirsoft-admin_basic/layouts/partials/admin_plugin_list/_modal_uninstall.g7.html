@@ -1,9 +1,7 @@
-<!--
-  플러그인을 지우기 전 되묻는 창. 파일을 지우는 것과 **그 플러그인이 쌓아 둔 자료를 지우는 것**은
+<!-- 플러그인을 지우기 전 되묻는 창. 파일을 지우는 것과 **그 플러그인이 쌓아 둔 자료를 지우는 것**은
   별개라, 자료 삭제는 따로 체크해야 한다(기본은 끔 — 지웠다 다시 깔면 자료가 이어진다).
   체크를 켜면 그때 「무엇이 얼마나 지워지는지」를 서버에 물어 아래에 펼친다. 끄면 그 조회는 하지
-  않으므로, 목록이 안 보이는 것은 못 받아 온 것이 아니라 물어보지 않은 상태다.
--->
+  않으므로, 목록이 안 보이는 것은 못 받아 온 것이 아니라 물어보지 않은 상태다. -->
 <partial description="플러그인 삭제 확인 모달" editor_label="$t:admin.modal_label.admin_plugin_list.plugin_uninstall_modal">
   <modal data-ref="plugin_uninstall_modal" title="$t:admin.plugins.modals.uninstall_title" size="medium">
     <div class="py-2">
@@ -129,23 +127,23 @@
         <on type="click">
           <!-- 자료까지 지울지를 본문에 실어 보낸다(체크를 건드린 적 없으면 끔으로 친다). 끝난 뒤 목록·관리자 메뉴를 함께 다시 받아, 사라진 플러그인의 메뉴가 남지 않게 한다. -->
           <sequence>
-          <set-state target="global" :isPluginUninstalling="true"/>
-          <api-call :auth_required="true" target="/api/admin/plugins/uninstall" method="DELETE">
-            <success>
-              <set-state target="global" :isPluginUninstalling="false"/>
-              <set-state target="global" :selectedPlugin="null" :deletePluginData="false" :pluginUninstallInfo="null"/>
-              <toast type="success" message="$t:admin.plugins.uninstall_success"/>
-              <refetch-data-source dataSourceId="plugins"/>
-              <refetch-data-source dataSourceId="admin_menu"/>
-              <reload-extensions pluginInfo="{{result}}" action="remove"/>
-              <close-modal/>
-            </success>
-            <fail>
-              <set-state target="global" :isPluginUninstalling="false"/>
-              <toast type="error" message="{{error.message}}"/>
-            </fail>
-            <body plugin_name="{{_global.selectedPlugin.identifier}}" delete_data="{{_global.deletePluginData || false}}"/>
-          </api-call>
+            <set-state target="global" :isPluginUninstalling="true"/>
+            <api-call :auth_required="true" target="/api/admin/plugins/uninstall" method="DELETE">
+              <success>
+                <set-state target="global" :isPluginUninstalling="false"/>
+                <set-state target="global" :selectedPlugin="null" :deletePluginData="false" :pluginUninstallInfo="null"/>
+                <toast type="success" message="$t:admin.plugins.uninstall_success"/>
+                <refetch-data-source dataSourceId="plugins"/>
+                <refetch-data-source dataSourceId="admin_menu"/>
+                <reload-extensions pluginInfo="{{result}}" action="remove"/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="global" :isPluginUninstalling="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+              <body plugin_name="{{_global.selectedPlugin.identifier}}" delete_data="{{_global.deletePluginData || false}}"/>
+            </api-call>
           </sequence>
         </on>
         <icon data-if="{{_global.isPluginUninstalling}}" name="spinner" class="spinner-sm"/>

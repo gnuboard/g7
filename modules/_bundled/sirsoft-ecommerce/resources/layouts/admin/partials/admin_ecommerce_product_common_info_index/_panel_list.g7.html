@@ -1,12 +1,10 @@
-<!--
-  공통정보 화면 왼쪽 목록. 브랜드·분류와 달리 **쪽 넘김이 아니라 무한 스크롤**이다 — 목록 끝에
+<!-- 공통정보 화면 왼쪽 목록. 브랜드·분류와 달리 **쪽 넘김이 아니라 무한 스크롤**이다 — 목록 끝에
   닿으면 다음 쪽을 받아 기존 배열 뒤에 이어 붙인다.
   그 진행 상태(현재 쪽·더 있는지·불러오는 중)는 `_global.infiniteScroll` 이 쥐고 있고, 검색어는
   URL 에 남는다. 검색이 바뀌면 주소가 바뀌어 화면이 다시 뜨므로 스크롤 상태도 함께 초기화된다.
   항목을 고를 때 **편집 중이면 곧바로 넘어가지 않는다** — 고른 항목을 `_global.pendingItem*` 에
   잡아 두고 이탈 확인 창을 연다. 이동을 완결하는 것은 그 창이다.
-  행의 노출 스위치는 클릭이 행 선택으로 번지지 않도록 전파를 끊는다.
--->
+  행의 노출 스위치는 클릭이 행 선택으로 번지지 않도록 전파를 끊는다. -->
 <partial description="Common Info List Panel - Left Sidebar">
   <div data-ref="common_info_list_panel" class="admin-card col-span-1-lg flex flex-col">
     <on event="mount">
@@ -31,13 +29,11 @@
     </div>
     <div data-ref="common_info_list" data-if="{{(commonInfos?.data?.data?.length ?? 0) > 0}}" class="p-2 max-h-[calc(90vh-140px)] overflow-y-auto">
       <on type="scroll">
-        <!--
-          무한 스크롤. 스크롤 이벤트는 초당 수십 번 오므로 대기시간(200ms)을 두고, 그 뒤에도 세 조건이
+        <!-- 무한 스크롤. 스크롤 이벤트는 초당 수십 번 오므로 대기시간(200ms)을 두고, 그 뒤에도 세 조건이
           모두 참일 때만 요청한다 — 바닥 100px 안에 닿았고 · 더 받을 것이 남았고 · 지금 받는 중이 아님.
           받은 쪽은 갈아끼우지 않고 **뒤에 이어 붙인다**(`append-data-source`). 갈아끼우면 위로 스크롤
           했을 때 앞 쪽이 사라진다.
-          실패해도 '받는 중' 깃발은 반드시 푼다 — 안 풀면 위 조건이 영영 거짓이라 스크롤이 죽는다.
-        -->
+          실패해도 '받는 중' 깃발은 반드시 푼다 — 안 풀면 위 조건이 영영 거짓이라 스크롤이 죽는다. -->
         <sequence :debounce="200">
           <switch on="{{$event.target.scrollHeight - $event.target.scrollTop <= $event.target.clientHeight + 100 &amp;&amp; _global.infiniteScroll.hasMore &amp;&amp; !_global.infiniteScroll.isLoadingMore}}">
             <case when="true">

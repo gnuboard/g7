@@ -1,29 +1,27 @@
-<!--
-  예약 작업을 새로 만들거나 고치는 창. **한 창이 두 몫을 한다** — 목록이 「수정 중인가」를 먼저
+<!-- 예약 작업을 새로 만들거나 고치는 창. **한 창이 두 몫을 한다** — 목록이 「수정 중인가」를 먼저
   정해 주면 제목·보낼 곳·방식이 그 값 하나로 갈린다.
   각 칸의 처음 값은 고른 작업에서 가져오고(새로 만들 때는 비어 있어 뒤의 기본값이 쓰인다),
-  주기를 「직접 지정」으로 골랐을 때만 식을 적는 칸이 나타난다.
--->
+  주기를 「직접 지정」으로 골랐을 때만 식을 적는 칸이 나타난다. -->
 <partial description="스케줄 생성/수정 폼 모달" editor_label="$t:admin.modal_label.admin_schedule_list.schedule_form_modal">
   <modal data-ref="schedule_form_modal" title="{{_global.isEditMode ? '$t:admin.schedules.modals.edit_title' : '$t:admin.schedules.modals.create_title'}}" size="large">
     <form id="schedule_form_modal" class="row-stack">
       <on type="submit">
         <!-- 만들기와 고치기가 같은 자리에서 갈린다 — 보낼 곳도 방식도 「수정 중인가」 하나로 정하고, 성공 문구까지 같은 값으로 고른다. 실패하면 창을 닫지 않아 적어 둔 내용이 남는다. -->
         <sequence>
-        <set-state target="global" :isSubmitting="true"/>
-        <api-call :auth_required="true" target="{{_global.isEditMode ? '/api/admin/schedules/' + _global.selectedSchedule.id : '/api/admin/schedules'}}" method="{{_global.isEditMode ? 'PUT' : 'POST'}}">
-          <success>
-            <set-state target="global" :isSubmitting="false"/>
-            <toast type="success" message="{{_global.isEditMode ? '$t:admin.schedules.messages.update_success' : '$t:admin.schedules.messages.create_success'}}"/>
-            <refetch-data-source dataSourceId="schedules"/>
-            <close-modal target="schedule_form_modal"/>
-          </success>
-          <fail>
-            <set-state target="global" :isSubmitting="false"/>
-            <toast type="error" message="{{error.message ?? '$t:admin.schedules.errors.save_failed'}}"/>
-          </fail>
-          <body name="{{form.name}}" description="{{form.description}}" type="{{_global.scheduleForm?.type ?? 'artisan'}}" command="{{form.command}}" frequency="{{_global.scheduleForm?.frequency ?? 'daily'}}" expression="{{(_global.scheduleForm?.frequency ?? 'daily') === 'custom' ? form.expression : ((_global.scheduleForm?.frequency ?? 'daily') === 'everyMinute' ? '* * * * *' : ((_global.scheduleForm?.frequency ?? 'daily') === 'hourly' ? '0 * * * *' : ((_global.scheduleForm?.frequency ?? 'daily') === 'weekly' ? '0 0 * * 0' : ((_global.scheduleForm?.frequency ?? 'daily') === 'monthly' ? '0 0 1 * *' : '0 0 * * *'))))}}" timeout="{{form.timeout}}" without_overlapping="{{_global.scheduleForm?.without_overlapping ?? true}}" run_in_maintenance="{{_global.scheduleForm?.run_in_maintenance ?? false}}" is_active="{{_global.scheduleForm?.is_active ?? true}}"/>
-        </api-call>
+          <set-state target="global" :isSubmitting="true"/>
+          <api-call :auth_required="true" target="{{_global.isEditMode ? '/api/admin/schedules/' + _global.selectedSchedule.id : '/api/admin/schedules'}}" method="{{_global.isEditMode ? 'PUT' : 'POST'}}">
+            <success>
+              <set-state target="global" :isSubmitting="false"/>
+              <toast type="success" message="{{_global.isEditMode ? '$t:admin.schedules.messages.update_success' : '$t:admin.schedules.messages.create_success'}}"/>
+              <refetch-data-source dataSourceId="schedules"/>
+              <close-modal target="schedule_form_modal"/>
+            </success>
+            <fail>
+              <set-state target="global" :isSubmitting="false"/>
+              <toast type="error" message="{{error.message ?? '$t:admin.schedules.errors.save_failed'}}"/>
+            </fail>
+            <body name="{{form.name}}" description="{{form.description}}" type="{{_global.scheduleForm?.type ?? 'artisan'}}" command="{{form.command}}" frequency="{{_global.scheduleForm?.frequency ?? 'daily'}}" expression="{{(_global.scheduleForm?.frequency ?? 'daily') === 'custom' ? form.expression : ((_global.scheduleForm?.frequency ?? 'daily') === 'everyMinute' ? '* * * * *' : ((_global.scheduleForm?.frequency ?? 'daily') === 'hourly' ? '0 * * * *' : ((_global.scheduleForm?.frequency ?? 'daily') === 'weekly' ? '0 0 * * 0' : ((_global.scheduleForm?.frequency ?? 'daily') === 'monthly' ? '0 0 1 * *' : '0 0 * * *'))))}}" timeout="{{form.timeout}}" without_overlapping="{{_global.scheduleForm?.without_overlapping ?? true}}" run_in_maintenance="{{_global.scheduleForm?.run_in_maintenance ?? false}}" is_active="{{_global.scheduleForm?.is_active ?? true}}"/>
+          </api-call>
         </sequence>
       </on>
       <div class="grid-2col-responsive">
@@ -141,7 +139,12 @@
       </div>
     </form>
     <div class="modal-footer-buttons pt-4 border-t border-gray-200 dark:border-gray-700">
-      <button type="button" class="btn btn-secondary" disabled="{{_global.isSubmitting}}"><on type="click"><close-modal target="schedule_form_modal"/></on>$t:common.cancel</button>
+      <button type="button" class="btn btn-secondary" disabled="{{_global.isSubmitting}}">
+        <on type="click">
+          <close-modal target="schedule_form_modal"/>
+        </on>
+        $t:common.cancel
+      </button>
       <button type="submit" form="schedule_form_modal" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isSubmitting}}">
         <icon data-if="{{_global.isSubmitting}}" name="spinner" class="spinner-sm"/>
         <span>{{_global.isSubmitting ? '$t:common.saving' : '$t:common.save'}}</span>

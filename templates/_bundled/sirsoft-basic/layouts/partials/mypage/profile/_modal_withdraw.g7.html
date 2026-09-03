@@ -36,24 +36,29 @@
         <label class="text-sm text-gray-700 dark:text-gray-300">$t:mypage.withdraw.confirm_checkbox</label>
       </div>
       <div class="flex justify-end gap-2 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-        <button class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"><on type="click"><close-modal/></on>$t:common.cancel</button>
+        <button class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+          <on type="click">
+            <close-modal/>
+          </on>
+          $t:common.cancel
+        </button>
         <button class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_local.form?.confirmWithdraw || _local.isWithdrawing}}">
           <on type="click">
             <!-- 탈퇴 실행 — 먼저 버튼을 잠그고, 성공하면 알린 뒤 로그아웃까지 이어 간다 -->
             <sequence>
-            <set-state target="local" :isWithdrawing="true"/>
-            <api-call :auth_required="true" target="/api/me" method="DELETE">
-              <success>
-                <set-state target="local" :isWithdrawing="false"/>
-                <close-modal/>
-                <toast type="success" message="$t:mypage.withdraw.success"/>
-                <logout/>
-              </success>
-              <fail>
-                <set-state target="local" :isWithdrawing="false"/>
-                <toast type="error" message="{{error.message}}"/>
-              </fail>
-            </api-call>
+              <set-state target="local" :isWithdrawing="true"/>
+              <api-call :auth_required="true" target="/api/me" method="DELETE">
+                <success>
+                  <set-state target="local" :isWithdrawing="false"/>
+                  <close-modal/>
+                  <toast type="success" message="$t:mypage.withdraw.success"/>
+                  <logout/>
+                </success>
+                <fail>
+                  <set-state target="local" :isWithdrawing="false"/>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+              </api-call>
             </sequence>
           </on>
           <icon data-if="{{_local.isWithdrawing}}" name="spinner" size="sm" class="animate-spin"/>

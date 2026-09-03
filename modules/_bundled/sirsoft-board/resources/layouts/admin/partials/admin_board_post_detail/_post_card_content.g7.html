@@ -7,14 +7,20 @@
         <div data-ref="title_with_badges" class="flex-1 min-w-0">
           <h2 data-ref="title_with_prefix" class="text-primary text-xl font-semibold flex-center gap-2 flex-wrap">
             <responsive on="portable" class="section-heading flex-center gap-2 flex-wrap"/>
-            <!-- 공지 배지 --><span data-ref="notice_prefix" data-if="{{post?.data?.is_notice}}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-blue-600 text-white dark:bg-blue-500">$t:sirsoft-board.admin.posts.detail.notice</span>
-            <!-- 카테고리 배지 --><span data-ref="category_badge_prefix" data-if="{{post?.data?.category}}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">{{post?.data?.category}}</span>
+            <!-- 공지 배지 -->
+            <span data-ref="notice_prefix" data-if="{{post?.data?.is_notice}}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-blue-600 text-white dark:bg-blue-500">$t:sirsoft-board.admin.posts.detail.notice</span>
+            <!-- 카테고리 배지 -->
+            <span data-ref="category_badge_prefix" data-if="{{post?.data?.category}}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">{{post?.data?.category}}</span>
             <!-- 비밀글 아이콘 -->
             <icon data-ref="secret_icon" data-if="{{post?.data?.is_secret}}" name="lock" class="text-xl text-gray-500 dark:text-gray-400 flex-shrink-0"/>
-            <!-- 블라인드 배지 --><span data-ref="status_badge_blinded" data-if="{{post?.data?.status === 'blinded'}}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">$t:sirsoft-board.admin.posts.detail.status_blinded</span>
-            <!-- 제목 --><span data-ref="title_text">{{post?.data?.title}}</span>
-            <!-- 신규 배지 --><span data-ref="new_badge" data-if="{{post?.data?.is_new}}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-500 text-white">N</span>
-            <!-- 삭제됨 배지 --><span data-ref="status_badge_deleted" data-if="{{post?.data?.deleted_at}}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-800 text-white dark:bg-gray-600 dark:text-gray-100">$t:sirsoft-board.admin.posts.detail.status_deleted</span>
+            <!-- 블라인드 배지 -->
+            <span data-ref="status_badge_blinded" data-if="{{post?.data?.status === 'blinded'}}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">$t:sirsoft-board.admin.posts.detail.status_blinded</span>
+            <!-- 제목 -->
+            <span data-ref="title_text">{{post?.data?.title}}</span>
+            <!-- 신규 배지 -->
+            <span data-ref="new_badge" data-if="{{post?.data?.is_new}}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-500 text-white">N</span>
+            <!-- 삭제됨 배지 -->
+            <span data-ref="status_badge_deleted" data-if="{{post?.data?.deleted_at}}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-800 text-white dark:bg-gray-600 dark:text-gray-100">$t:sirsoft-board.admin.posts.detail.status_deleted</span>
           </h2>
         </div>
         <div data-ref="card_actions" class="flex-center gap-2">
@@ -192,19 +198,24 @@
       <div class="flex-center gap-2 mb-2">
         <!-- 비밀글 아이콘 -->
         <icon data-if="{{post?.data?.parent?.is_secret}}" name="lock" size="sm" class="text-gray-500 dark:text-gray-400"/>
-        <!-- 카테고리 배지 --><span data-if="{{post?.data?.parent?.category}}" class="px-2 py-0.5 text-xs rounded bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">{{post?.data?.parent?.category ?? ''}}</span>
-        <!-- 공지 배지 --><span data-if="{{post?.data?.parent?.is_notice}}" class="px-2 py-0.5 text-xs rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">$t:sirsoft-board.admin.posts.badge.notice</span>
+        <!-- 카테고리 배지 -->
+        <span data-if="{{post?.data?.parent?.category}}" class="px-2 py-0.5 text-xs rounded bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">{{post?.data?.parent?.category ?? ''}}</span>
+        <!-- 공지 배지 -->
+        <span data-if="{{post?.data?.parent?.is_notice}}" class="px-2 py-0.5 text-xs rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">$t:sirsoft-board.admin.posts.badge.notice</span>
         <!-- 제목 + 링크 아이콘 (클릭 가능, 굵게) -->
         <a href="/admin/board/{{route.slug}}/post/{{post?.data?.parent?.id ?? ''}}" class="flex-center text-primary font-bold hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-400 transition-colors gap-1">
           <span>{{post?.data?.parent?.title ?? ''}}</span>
           <icon name="arrow-up-right-from-square" size="xs" class="text-blue-500 dark:text-blue-400 ml-2"/>
         </a>
-        <!-- 블라인드 배지 --><span data-if="{{post?.data?.parent?.status === 'blinded'}}" class="px-2 py-0.5 text-xs rounded bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">$t:sirsoft-board.admin.posts.status.blinded</span>
-        <!-- 삭제됨 배지 --><span data-if="{{post?.data?.parent?.status === 'deleted'}}" class="px-2 py-0.5 text-xs rounded bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">$t:sirsoft-board.admin.posts.detail.status_deleted</span>
+        <!-- 블라인드 배지 -->
+        <span data-if="{{post?.data?.parent?.status === 'blinded'}}" class="px-2 py-0.5 text-xs rounded bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">$t:sirsoft-board.admin.posts.status.blinded</span>
+        <!-- 삭제됨 배지 -->
+        <span data-if="{{post?.data?.parent?.status === 'deleted'}}" class="px-2 py-0.5 text-xs rounded bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">$t:sirsoft-board.admin.posts.detail.status_deleted</span>
       </div>
       <!-- 3줄: 내용 (토글로 접기/펼치기) -->
       <div class="text-label mb-3 {{_local?.parentPostExpanded ? '' : 'line-clamp-2'}}">
-        <!-- 비밀글인 경우 --><span data-if="{{post?.data?.parent?.is_secret &amp;&amp; post?.data?.parent?.content === null}}" class="text-gray-500 dark:text-gray-400 italic">$t:sirsoft-board.admin.posts.detail.reply_secret_content</span>
+        <!-- 비밀글인 경우 -->
+        <span data-if="{{post?.data?.parent?.is_secret &amp;&amp; post?.data?.parent?.content === null}}" class="text-gray-500 dark:text-gray-400 italic">$t:sirsoft-board.admin.posts.detail.reply_secret_content</span>
         <!-- 일반 글인 경우 - 내용 -->
         <extension-point name="html_content" data-if="{{!(post?.data?.parent?.is_secret &amp;&amp; post?.data?.parent?.content === null)}}" content="{{post?.data?.parent?.content ?? ''}}" isHtml="{{(post?.data?.parent?.content_mode ?? 'text') === 'html'}}" class="{{_local?.parentPostExpanded ? 'prose dark:prose-invert max-w-none' : '[&amp;_img]:hidden [&amp;_table]:hidden'}}">
           <default>
@@ -237,7 +248,13 @@
             <span class="font-medium">$t:sirsoft-board.admin.posts.detail.blind_reason_label</span>
             <span>{{(post?.data?.action_logs ?? []).filter(log => log.action === 'blind').slice(-1)[0]?.reason ?? '-'}}</span>
           </div>
-          <button class="px-4 py-2 text-body font-medium bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{post?.data?.abilities?.can_manage !== true}}"><on type="click"><!-- 가려진 글의 원문을 폈다 접었다 한다 — 버튼 자체가 관리 권한이 없으면 잠기므로, 가려진 글은 관리자에게만 원문이 열린다 --><set-state target="local" showBlindedContent="{{!_local.showBlindedContent}}"/></on>{{_local.showBlindedContent ? '$t:sirsoft-board.admin.posts.detail.hide_original_content' : '$t:sirsoft-board.admin.posts.detail.view_original_content'}}</button>
+          <button class="px-4 py-2 text-body font-medium bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{post?.data?.abilities?.can_manage !== true}}">
+            <on type="click">
+              <!-- 가려진 글의 원문을 폈다 접었다 한다 — 버튼 자체가 관리 권한이 없으면 잠기므로, 가려진 글은 관리자에게만 원문이 열린다 -->
+              <set-state target="local" showBlindedContent="{{!_local.showBlindedContent}}"/>
+            </on>
+            {{_local.showBlindedContent ? '$t:sirsoft-board.admin.posts.detail.hide_original_content' : '$t:sirsoft-board.admin.posts.detail.view_original_content'}}
+          </button>
         </div>
         <div data-if="{{_local.showBlindedContent}}" class="pt-4">
           <div class="flex-center gap-2 text-label-subtle mb-3 pb-2 border-b border-gray-200 dark:border-gray-700">

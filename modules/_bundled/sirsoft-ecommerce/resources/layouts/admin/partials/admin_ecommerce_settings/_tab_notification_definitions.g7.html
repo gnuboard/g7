@@ -1,9 +1,7 @@
-<!--
-  쇼핑몰 설정 — 알림 정의 탭. 어떤 사건에 어떤 알림을 보낼지 목록으로 보고 켜고 끈다.
+<!-- 쇼핑몰 설정 — 알림 정의 탭. 어떤 사건에 어떤 알림을 보낼지 목록으로 보고 켜고 끈다.
   
   본인인증 정책 탭과 같이 **그 자리에서 서버로 나가는** 화면이라 저장 버튼이 없다.
-  쪽 이동도 URL query 로 하고 `tab` 을 함께 실어 새로고침 후 같은 탭이 서게 한다.
--->
+  쪽 이동도 URL query 로 하고 `tab` 을 함께 실어 새로고침 후 같은 탭이 서게 한다. -->
 <partial description="이커머스 알림 설정 탭 — 채널 토글 + 2단 탭 + 채널별 템플릿 목록">
   <div data-ref="tab_content_ecommerce_notification_definitions" data-if="{{(_global.activeEcommerceSettingsTab || query.tab || 'basic_info') === 'notification_definitions'}}">
     <div data-ref="ecommerce_notif_header" class="section-header">
@@ -120,9 +118,34 @@
                     </on>
                   </toggle>
                   <!-- 알림 문안 편집. 편집기는 모달이라 이 화면의 상태를 읽지 못하므로 대상 정의를 전역으로 옮겨 담은 뒤 연다 -->
-                  <button type="button" disabled="{{_computed.isNotificationReadOnly}}" class="text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"><on type="click"><sequence><set-state target="global"><field name="ecommerce_notification_template_form_modal"><field name="template" value="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}"/><field name="definition" value="{{def}}"/><field name="recipients" value="{{JSON.parse(JSON.stringify((def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.recipients ?? []))}}"/><field name="editLang" value="{{$locale}}"/><field name="errors" :value="null"/><field name="isSaving" :value="false"/><field name="roleSearchResults" :value="[]"/><field name="userSearchResults" :value="[]"/></field></set-state><open-modal target="modal_ecommerce_notification_template_edit"/></sequence></on>$t:sirsoft-ecommerce.admin.settings.notification_definitions.btn_edit</button>
+                  <button type="button" disabled="{{_computed.isNotificationReadOnly}}" class="text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    <on type="click">
+                      <sequence>
+                        <set-state target="global">
+                          <field name="ecommerce_notification_template_form_modal">
+                            <field name="template" value="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}"/>
+                            <field name="definition" value="{{def}}"/>
+                            <field name="recipients" value="{{JSON.parse(JSON.stringify((def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.recipients ?? []))}}"/>
+                            <field name="editLang" value="{{$locale}}"/>
+                            <field name="errors" :value="null"/>
+                            <field name="isSaving" :value="false"/>
+                            <field name="roleSearchResults" :value="[]"/>
+                            <field name="userSearchResults" :value="[]"/>
+                          </field>
+                        </set-state>
+                        <open-modal target="modal_ecommerce_notification_template_edit"/>
+                      </sequence>
+                    </on>
+                    $t:sirsoft-ecommerce.admin.settings.notification_definitions.btn_edit
+                  </button>
                   <!-- 기본 문안으로 되돌리기. 기본 정의가 아니거나 손댄 문안이 있을 때만 보인다 — 되돌릴 것이 없으면 버튼 자체가 뜨지 않는다 -->
-                  <button data-if="{{!def.is_default || def.has_customized_templates === true}}" type="button" disabled="{{_computed.isNotificationReadOnly}}" class="text-sm px-3 py-1.5 rounded-md border border-orange-300 dark:border-orange-600 text-orange-700 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"><on type="click"><set-state target="global" resetTargetId="{{def.id}}" resetTargetName="$t:sirsoft-ecommerce.admin.settings.notification_definitions.types.{{def.type}}"/><open-modal target="modal_ecommerce_notification_definition_reset"/></on>$t:sirsoft-ecommerce.admin.settings.notification_definitions.btn_reset</button>
+                  <button data-if="{{!def.is_default || def.has_customized_templates === true}}" type="button" disabled="{{_computed.isNotificationReadOnly}}" class="text-sm px-3 py-1.5 rounded-md border border-orange-300 dark:border-orange-600 text-orange-700 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    <on type="click">
+                      <set-state target="global" resetTargetId="{{def.id}}" resetTargetName="$t:sirsoft-ecommerce.admin.settings.notification_definitions.types.{{def.type}}"/>
+                      <open-modal target="modal_ecommerce_notification_definition_reset"/>
+                    </on>
+                    $t:sirsoft-ecommerce.admin.settings.notification_definitions.btn_reset
+                  </button>
                 </div>
               </div>
               <div data-if="{{(_local.expandedNotifications ?? {})[def.id]}}" class="mt-3 pt-3">

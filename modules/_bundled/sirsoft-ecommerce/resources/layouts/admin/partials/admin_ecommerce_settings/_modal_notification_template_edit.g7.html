@@ -1,5 +1,4 @@
-<!--
-  쇼핑몰 설정 — 알림 템플릿 편집 창. **누구에게 · 무엇을 · 어느 언어로** 보낼지를 한 창에서 정한다.
+<!-- 쇼핑몰 설정 — 알림 템플릿 편집 창. **누구에게 · 무엇을 · 어느 언어로** 보낼지를 한 창에서 정한다.
   
   수신자는 종류가 여럿이라(주문자·역할·특정 회원 …) 배열로 다루고, 종류에 따라 값 칸이
   달라진다 — 역할이면 역할 검색, 회원이면 회원 다중 선택이다. 둘 다 목록이 클 수 있어
@@ -10,8 +9,7 @@
   변경이 감지되지 않기 때문이다.
   
   폼이 전부 `_global.ecommerce_notification_template_form_modal` 아래 있는 것은 창이 별도
-  컨텍스트라 목록의 `_local` 을 보지 못하기 때문이다.
--->
+  컨텍스트라 목록의 `_local` 을 보지 못하기 때문이다. -->
 <partial description="이커머스 알림 템플릿 편집 모달 — _global.ecommerce_ecommerce_notification_template_form_modal 단일 진실 패턴. list 가 매 진입마다 객체 통째 set, 모달 표시/입력 모두 _global 참조 (사례 13 회피 + modals 섹션 isolated 스코프 회피). 미리보기 데이터도 같은 namespace 의 preview 키에 저장.">
   <modal data-ref="modal_ecommerce_notification_template_edit" title="$t:sirsoft-ecommerce.admin.settings.notification_definitions.edit_modal.title" size="xl" :closeOnOverlayClick="false">
     <div data-ref="ecommerce_template_form_container" data-blur-until-loaded="{{_global.ecommerce_notification_template_form_modal?.isSaving}}" class="flex flex-col max-h-[calc(90vh-140px)] -my-4">
@@ -129,10 +127,22 @@
               </div>
             </div>
           </div>
-          <button type="button" class="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 font-medium"><on type="click"><!-- 수신자 줄 추가. 빈 줄을 붙이고 종류는 그 줄에서 고른다. --><set-state target="global" ecommerce_notification_template_form_modal.recipients="{{[...(_global.ecommerce_notification_template_form_modal?.recipients ?? []), {type: 'trigger_user'}]}}"/></on>$t:admin.settings.notification_definitions.recipients.add_rule</button>
+          <button type="button" class="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 font-medium">
+            <on type="click">
+              <!-- 수신자 줄 추가. 빈 줄을 붙이고 종류는 그 줄에서 고른다. -->
+              <set-state target="global" ecommerce_notification_template_form_modal.recipients="{{[...(_global.ecommerce_notification_template_form_modal?.recipients ?? []), {type: 'trigger_user'}]}}"/>
+            </on>
+            $t:admin.settings.notification_definitions.recipients.add_rule
+          </button>
         </div>
         <div data-ref="ecommerce_template_lang_tabs" class="flex border-b border-gray-200 dark:border-gray-700">
-          <button data-each="loc in {{$locales}}" type="button" class="{{(_global.ecommerce_notification_template_form_modal?.editLang ?? $locale) === loc ? 'border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2 text-sm font-medium focus:outline-none"><on type="click"><!-- 언어 탭. 설치된 언어 수만큼 만들어지므로 언어를 늘리면 탭도 늘어난다 — 보이는 언어만 바꾸고 값은 건드리지 않는다. --><set-state target="global" ecommerce_notification_template_form_modal.editLang="{{loc}}"/></on>{{_global.appConfig?.localeNames?.[loc] ?? loc}}</button>
+          <button data-each="loc in {{$locales}}" type="button" class="{{(_global.ecommerce_notification_template_form_modal?.editLang ?? $locale) === loc ? 'border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2 text-sm font-medium focus:outline-none">
+            <on type="click">
+              <!-- 언어 탭. 설치된 언어 수만큼 만들어지므로 언어를 늘리면 탭도 늘어난다 — 보이는 언어만 바꾸고 값은 건드리지 않는다. -->
+              <set-state target="global" ecommerce_notification_template_form_modal.editLang="{{loc}}"/>
+            </on>
+            {{_global.appConfig?.localeNames?.[loc] ?? loc}}
+          </button>
         </div>
         <div data-ref="ecommerce_template_subject_input">
           <div>
@@ -189,10 +199,29 @@
       <div data-ref="ecommerce_template_modal_footer" class="flex-between pt-4 pb-4 border-t border-gray-200 dark:border-gray-700 mt-4 flex-shrink-0">
         <div>
           <!-- 닫기. 저장 중에는 잠긴다 — 요청이 도는 도중에 창이 사라지면 성공·실패 안내가 갈 곳을 잃는다 -->
-          <button type="button" class="text-body px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" disabled="{{_global.ecommerce_notification_template_form_modal?.isSaving ?? false}}"><on type="click"><api-call :auth_required="true" target="/api/admin/notification-templates/preview" method="POST"><success><set-state target="global" ecommerce_notification_template_form_modal.preview="{{response.data}}"/><open-modal target="modal_ecommerce_notification_definition_preview"/></success><fail><toast type="error" message="{{error.message}}"/></fail><body definition_id="{{_global.ecommerce_notification_template_form_modal?.definition?.id}}" subject="{{_global.ecommerce_notification_template_form_modal?.template?.subject}}" body="{{_global.ecommerce_notification_template_form_modal?.template?.body}}" locale="{{_global.ecommerce_notification_template_form_modal?.editLang ?? $locale}}"/></api-call></on>$t:sirsoft-ecommerce.admin.settings.notification_definitions.edit_modal.btn_preview</button>
+          <button type="button" class="text-body px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" disabled="{{_global.ecommerce_notification_template_form_modal?.isSaving ?? false}}">
+            <on type="click">
+              <api-call :auth_required="true" target="/api/admin/notification-templates/preview" method="POST">
+                <success>
+                  <set-state target="global" ecommerce_notification_template_form_modal.preview="{{response.data}}"/>
+                  <open-modal target="modal_ecommerce_notification_definition_preview"/>
+                </success>
+                <fail>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+                <body definition_id="{{_global.ecommerce_notification_template_form_modal?.definition?.id}}" subject="{{_global.ecommerce_notification_template_form_modal?.template?.subject}}" body="{{_global.ecommerce_notification_template_form_modal?.template?.body}}" locale="{{_global.ecommerce_notification_template_form_modal?.editLang ?? $locale}}"/>
+              </api-call>
+            </on>
+            $t:sirsoft-ecommerce.admin.settings.notification_definitions.edit_modal.btn_preview
+          </button>
         </div>
         <div class="flex gap-2">
-          <button type="button" class="text-body px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.ecommerce_notification_template_form_modal?.isSaving ?? false}}"><on type="click"><close-modal target="modal_ecommerce_notification_template_edit"/></on>$t:common.cancel</button>
+          <button type="button" class="text-body px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.ecommerce_notification_template_form_modal?.isSaving ?? false}}">
+            <on type="click">
+              <close-modal target="modal_ecommerce_notification_template_edit"/>
+            </on>
+            $t:common.cancel
+          </button>
           <button type="button" class="flex-center gap-2 text-sm px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.ecommerce_notification_template_form_modal?.isSaving ?? false}}">
             <on type="click">
               <!-- 저장. 성공하면 알림 목록을 다시 부른다 — 목록이 제목·사용 여부를 그대로 보여 주므로 갱신하지 않으면 방금 고친 값이 낡은 채로 남는다. -->

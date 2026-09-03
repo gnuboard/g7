@@ -9,7 +9,8 @@
       <div class="flex items-center gap-2">
         <icon name="paperclip" size="lg" class="text-gray-600 dark:text-gray-400"/>
         <h3 class="text-sm font-semibold text-gray-900 dark:text-white">$t:board.attachments.title</h3>
-        <!-- 첨부파일 개수 --><span class="ml-1 px-1.5 py-0.5 text-xs font-medium bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded">{{post?.data?.attachment_count ?? 0}}</span>
+        <!-- 첨부파일 개수 -->
+        <span class="ml-1 px-1.5 py-0.5 text-xs font-medium bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded">{{post?.data?.attachment_count ?? 0}}</span>
       </div>
       <icon name="{{_local.showAttachments === false ? 'chevron-down' : 'chevron-up'}}" size="lg" class="text-gray-500 dark:text-gray-400"/>
     </div>

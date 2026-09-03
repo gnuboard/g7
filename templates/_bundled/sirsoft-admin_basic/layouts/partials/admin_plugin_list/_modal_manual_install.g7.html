@@ -1,10 +1,8 @@
-<!--
-  목록에 없는 플러그인을 **밖에서 들여오는** 창. 목록에 이미 있는 것을 깔 때 쓰는 설치 창과는
+<!-- 목록에 없는 플러그인을 **밖에서 들여오는** 창. 목록에 이미 있는 것을 깔 때 쓰는 설치 창과는
   다른 자리다 — 이쪽은 파일(ZIP)이나 GitHub 주소를 직접 준다.
   둘은 보내는 방식까지 갈라져(파일은 폼 전송, 주소는 JSON) 아래 설치 버튼이 지금 탭에 맞춰
   주소·형식·본문을 통째로 바꿔 보낸다.
-  실패는 토스트가 아니라 창 안 붉은 띠와 각 칸 아래 문구로 남긴다 — 고칠 자리가 이 창 안이기 때문이다.
--->
+  실패는 토스트가 아니라 창 안 붉은 띠와 각 칸 아래 문구로 남긴다 — 고칠 자리가 이 창 안이기 때문이다. -->
 <partial description="플러그인 수동 설치 모달" editor_label="$t:admin.modal_label.admin_plugin_list.plugin_manual_install_modal">
   <modal data-ref="plugin_manual_install_modal" title="$t:admin.plugins.modals.manual_install_title" size="medium">
     <p class="text-secondary mb-4">$t:admin.plugins.modals.manual_install_description</p>
@@ -86,8 +84,8 @@
         <on type="click">
           <!-- 닫기만 해서는 안 된다 — 여섯 값이 모두 전역이라 비우지 않으면 다음에 열 때 지난 파일과 오류가 그대로 남는다. -->
           <sequence>
-          <set-state target="global" :pluginUploadFile="null" :pluginUploadFileName="null" :pluginGithubUrl="null" :pluginInstallError="null" :pluginInstallErrors="null" pluginInstallTab="file_upload"/>
-          <close-modal/>
+            <set-state target="global" :pluginUploadFile="null" :pluginUploadFileName="null" :pluginGithubUrl="null" :pluginInstallError="null" :pluginInstallErrors="null" pluginInstallTab="file_upload"/>
+            <close-modal/>
           </sequence>
         </on>
         <span>$t:common.cancel</span>
@@ -96,19 +94,19 @@
         <on type="click">
           <!-- 성공 갈래에서만 입력값을 비운다 — 실패하면 고쳐서 다시 누를 수 있어야 한다. 목록 설치와 달리 관리자 메뉴는 다시 받지 않는데, 여기서 들여온 플러그인은 깔리기만 하고 아직 켜지지 않기 때문이다. -->
           <sequence>
-          <set-state target="global" :isPluginManualInstalling="true" :pluginInstallError="null" :pluginInstallErrors="null"/>
-          <api-call :auth_required="true" target="{{(!_global.pluginInstallTab || _global.pluginInstallTab === 'file_upload') ? '/api/admin/plugins/install-from-file' : '/api/admin/plugins/install-from-github'}}" method="POST" contentType="{{(!_global.pluginInstallTab || _global.pluginInstallTab === 'file_upload') ? 'multipart/form-data' : 'application/json'}}" body="{{(!_global.pluginInstallTab || _global.pluginInstallTab === 'file_upload') ? { file: _global.pluginUploadFile } : { github_url: _global.pluginGithubUrl }}}">
-            <success>
-              <set-state target="global" :isPluginManualInstalling="false" :pluginUploadFile="null" :pluginUploadFileName="null" :pluginGithubUrl="null" :pluginInstallError="null" :pluginInstallErrors="null" pluginInstallTab="file_upload"/>
-              <toast type="success" message="$t:admin.plugins.install_success"/>
-              <refetch-data-source dataSourceId="plugins"/>
-              <reload-extensions/>
-              <close-modal/>
-            </success>
-            <fail>
-              <set-state target="global" :isPluginManualInstalling="false" pluginInstallError="{{error.message}}" pluginInstallErrors="{{error.errors}}"/>
-            </fail>
-          </api-call>
+            <set-state target="global" :isPluginManualInstalling="true" :pluginInstallError="null" :pluginInstallErrors="null"/>
+            <api-call :auth_required="true" target="{{(!_global.pluginInstallTab || _global.pluginInstallTab === 'file_upload') ? '/api/admin/plugins/install-from-file' : '/api/admin/plugins/install-from-github'}}" method="POST" contentType="{{(!_global.pluginInstallTab || _global.pluginInstallTab === 'file_upload') ? 'multipart/form-data' : 'application/json'}}" body="{{(!_global.pluginInstallTab || _global.pluginInstallTab === 'file_upload') ? { file: _global.pluginUploadFile } : { github_url: _global.pluginGithubUrl }}}">
+              <success>
+                <set-state target="global" :isPluginManualInstalling="false" :pluginUploadFile="null" :pluginUploadFileName="null" :pluginGithubUrl="null" :pluginInstallError="null" :pluginInstallErrors="null" pluginInstallTab="file_upload"/>
+                <toast type="success" message="$t:admin.plugins.install_success"/>
+                <refetch-data-source dataSourceId="plugins"/>
+                <reload-extensions/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="global" :isPluginManualInstalling="false" pluginInstallError="{{error.message}}" pluginInstallErrors="{{error.errors}}"/>
+              </fail>
+            </api-call>
           </sequence>
         </on>
         <icon data-if="{{!_global.isPluginManualInstalling}}" name="download" size="sm"/>

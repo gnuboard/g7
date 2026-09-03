@@ -34,7 +34,22 @@
     </extension-point>
     <!-- 공통 액션 영역 — 취소 / 재전송 / 확인 -->
     <div class="flex items-center justify-between gap-2 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-      <button type="button" class="px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"><on type="click"><!-- 취소 — 기다리던 쪽에 «사용자가 그만두었다»를 알려 그 요청이 매달려 있지 않게 하는 것이 요점이다. 서버 취소 통보는 부수이고 실패해도 창은 닫는다. --><sequence><!-- 서버 audit trail 정합 — challenge 발급된 경우에만 cancel API 호출, 실패해도 모달 닫기는 진행 --><api-call target="/api/identity/challenges/{{_global.identityChallenge.challenge_id}}/cancel" if="{{_global.identityChallenge?.challenge_id}}" method="POST"><fail><suppress/></fail></api-call><resolve-identity-challenge result="cancelled"/><close-modal target="identity-challenge-modal"/></sequence></on>$t:common.cancel</button>
+      <button type="button" class="px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
+        <on type="click">
+          <!-- 취소 — 기다리던 쪽에 «사용자가 그만두었다»를 알려 그 요청이 매달려 있지 않게 하는 것이 요점이다. 서버 취소 통보는 부수이고 실패해도 창은 닫는다. -->
+          <sequence>
+            <!-- 서버 audit trail 정합 — challenge 발급된 경우에만 cancel API 호출, 실패해도 모달 닫기는 진행 -->
+            <api-call target="/api/identity/challenges/{{_global.identityChallenge.challenge_id}}/cancel" if="{{_global.identityChallenge?.challenge_id}}" method="POST">
+              <fail>
+                <suppress/>
+              </fail>
+            </api-call>
+            <resolve-identity-challenge result="cancelled"/>
+            <close-modal target="identity-challenge-modal"/>
+          </sequence>
+        </on>
+        $t:common.cancel
+      </button>
       <div class="flex items-center gap-2">
         <!-- 재전송 — 코어 mail/SMS 등 코드/링크 발송형 provider 에서만 노출. 외부 plugin (inicis 등 팝업/SDK 호출형) 은 재전송 개념 없음. 가드 패턴: provider_id 미지정 또는 코어 mail 인 경우만 노출. -->
         <button data-if="{{!_global.identityChallenge?.provider_id || _global.identityChallenge?.provider_id === 'g7:core.mail'}}" type="button" disabled="{{(_global.identityChallenge?.resendCooldown ?? 0) > 0 || (_global.identityChallenge?.resending ?? false) || (_global.identityChallenge?.verifying ?? false)}}" class="inline-flex items-center gap-1.5 px-3 py-2 text-sm text-indigo-600 dark:text-indigo-400 hover:underline disabled:text-gray-400 dark:disabled:text-gray-600 disabled:no-underline disabled:cursor-not-allowed">

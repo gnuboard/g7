@@ -1,9 +1,7 @@
-<!--
-  알림 발송 기록의 검색 조건 영역. 다른 목록 화면과 같은 흐름이다 — 고른 값은 로컬 `filter` 에
+<!-- 알림 발송 기록의 검색 조건 영역. 다른 목록 화면과 같은 흐름이다 — 고른 값은 로컬 `filter` 에
   쌓였다가 검색 버튼이나 Enter 가 주소 질의로 옮길 때 조회된다.
   조건은 둘뿐이고 둘 다 코드에 박힌 고정 목록이다: 발송 결과(보냄·실패·건너뜀)와 그 알림을
-  낸 쪽(코어·모듈·플러그인). 어느 모듈·플러그인인지까지는 여기서 못 좁히고 표에서 읽는다.
--->
+  낸 쪽(코어·모듈·플러그인). 어느 모듈·플러그인인지까지는 여기서 못 좁히고 표에서 읽는다. -->
 <partial description="Notification Log List Filter Section">
   <div data-ref="filter_section" class="admin-card">
     <div data-ref="search_row" class="mb-4">
@@ -67,12 +65,10 @@
           <label class="inline-clickable">
             <input type="checkbox" class="checkbox" checked="{{(_local.filter.statuses || []).includes('skipped')}}">
               <on type="change">
-                <!--
-                  **보내려는 시도조차 없었던** 갈래다. 발송 직전 걸러진 것으로, 사유는 넷 중 하나다 —
+                <!-- **보내려는 시도조차 없었던** 갈래다. 발송 직전 걸러진 것으로, 사유는 넷 중 하나다 —
                   비회원에게 열어 두지 않은 채널 · 그 확장이 채널을 꺼 둠 · 채널 설정이 덜 됨 ·
                   그 알림 종류에 쓸 활성 템플릿 없음. 「보낸 적 없는데 기록만 있다」로 보이는 줄이
-                  대개 여기라, 알림이 안 온다는 문의는 이 갈래부터 본다.
-                -->
+                  대개 여기라, 알림이 안 온다는 문의는 이 갈래부터 본다. -->
                 <set-state target="local" filter.statuses="{{$event.target.checked ? [...(_local.filter.statuses || []).filter(s => s !== 'skipped'), 'skipped'] : (_local.filter.statuses || []).filter(s => s !== 'skipped')}}"/>
               </on>
             </input>
@@ -124,9 +120,32 @@
     </div>
     <div data-ref="filter_actions" class="flex justify-center gap-3 mt-6">
       <responsive on="portable" class="flex gap-3 mt-6"/>
-      <button type="button" class="btn btn-primary px-6"><responsive on="portable" class="btn btn-primary flex-1"/><on type="click"><action-ref name="searchNotificationLogs"/></on>$t:admin.notification_log.filter.search_button</button>
+      <button type="button" class="btn btn-primary px-6">
+        <responsive on="portable" class="btn btn-primary flex-1"/>
+        <on type="click">
+          <action-ref name="searchNotificationLogs"/>
+        </on>
+        $t:admin.notification_log.filter.search_button
+      </button>
       <!-- 검색 실행. 폼에 담아 둔 조건을 주소로 옮겨 목록을 다시 세운다 -->
-      <button type="button" class="btn btn-secondary px-6"><responsive on="portable" class="btn btn-secondary flex-1"/><on type="click"><sequence><set-state target="local"><field name="filter"><field name="searchType" value="all"/><field name="search" value=""/><field name="extensionTypes" :value="[]"/><field name="statuses" :value="[]"/></field></set-state><!-- audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. --><navigate path="/admin/notification-logs" :mergeQuery="false"/></sequence></on>$t:admin.notification_log.filter.reset_button</button>
+      <button type="button" class="btn btn-secondary px-6">
+        <responsive on="portable" class="btn btn-secondary flex-1"/>
+        <on type="click">
+          <sequence>
+            <set-state target="local">
+              <field name="filter">
+                <field name="searchType" value="all"/>
+                <field name="search" value=""/>
+                <field name="extensionTypes" :value="[]"/>
+                <field name="statuses" :value="[]"/>
+              </field>
+            </set-state>
+            <!-- audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. -->
+            <navigate path="/admin/notification-logs" :mergeQuery="false"/>
+          </sequence>
+        </on>
+        $t:admin.notification_log.filter.reset_button
+      </button>
     </div>
   </div>
 </partial>

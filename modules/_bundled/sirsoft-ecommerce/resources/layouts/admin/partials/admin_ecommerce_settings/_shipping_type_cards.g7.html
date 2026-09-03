@@ -1,9 +1,7 @@
-<!--
-  쇼핑몰 설정 — 배송유형 목록, 좁은 화면용 카드. 넓은 화면용 표(`_shipping_type_section`)와
+<!-- 쇼핑몰 설정 — 배송유형 목록, 좁은 화면용 카드. 넓은 화면용 표(`_shipping_type_section`)와
   같은 배열을 편집한다.
   배송유형은 상품·주문이 참조하는 분류라(택배·방문수령 등) 지우면 그것을 쓰던 상품의 배송
-  조건이 바뀐다.
--->
+  조건이 바뀐다. -->
 <partial description="배송유형 관리 - Mobile 카드 뷰">
   <div data-ref="shipping_type_cards_container">
     <div data-ref="shipping_type_card_{{tIdx}}" data-each="type, tIdx in (_local.form?.shipping?.types ?? []).map((t, i) => ({...t, _idx: i}))" class="excel-card">

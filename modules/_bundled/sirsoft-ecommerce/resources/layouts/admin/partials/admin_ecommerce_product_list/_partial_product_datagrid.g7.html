@@ -1,5 +1,4 @@
-<!--
-  상품 목록 — 결과 표. **표 안에서 바로 고치는 화면**이라 다른 목록 표와 성격이 다르다.
+<!-- 상품 목록 — 결과 표. **표 안에서 바로 고치는 화면**이라 다른 목록 표와 성격이 다르다.
   칸을 고치면 그 자리에서 서버로 나가고(저장 버튼이 없다), 상품 단위는
   `updateProductField`, 옵션 단위는 `updateOptionField` 가 받는다.
   
@@ -8,8 +7,7 @@
   
   행을 펼치면 옵션 편집이 나오는데 **같은 편집기가 두 벌 있다** — 좁은 화면용 카드와
   넓은 화면용 표다. 둘은 보이는 형태만 다르고 부르는 핸들러·필드가 같으므로, 한쪽을 고치면
-  다른 쪽도 함께 고쳐야 한다(한쪽만 고치면 화면 폭에 따라 동작이 갈린다).
--->
+  다른 쪽도 함께 고쳐야 한다(한쪽만 고치면 화면 폭에 따라 동작이 갈린다). -->
 <partial>
   <div data-ref="table_card" class="p-0 md:p-0">
     <data-grid data-ref="product_datagrid" data="{{products?.data?.data}}" idField="id" :sortable="true" :selectable="true" selectionScope="page" selectedIds="{{_local.selectedItems || []}}" :expandable="true" expandedRowIds="{{_local.expandedRows || []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{products?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{products?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{products?.data?.pagination?.has_more_pages ?? false}}" :pageSize="20" :alwaysShowPagination="true" :showColumnSelector="false" visibleColumns="{{_local.visibleColumns}}" columnSelectorId="admin_product_list_columns" emptyMessage="$t:sirsoft-ecommerce.admin.product.table.no_data" actionsColumnHeader="$t:sirsoft-ecommerce.admin.product.table.column.actions" columnSelectorText="$t:common.column_selector" selectedCountText="" :responsiveBreakpoint="768">
@@ -134,7 +132,18 @@
       </column>
       <column field="shipping_policy_name" header="$t:sirsoft-ecommerce.admin.product.table.column.shipping_policy" width="130px" :sortable="false">
         <cell>
-          <a data-if="{{row.shipping_policy_id}}" href="#" class="text-sm text-blue-600 dark:text-blue-400 hover:underline"><on type="click"><!-- 배송정책 이름을 누르면 그 정책으로 목록을 거른다 — 화면의 필터 입력값과 URL query 를 함께 갈아 끼운다(둘 중 하나만 하면 입력칸과 결과가 어긋난다). --><sequence><set-state target="_local" filter.shippingPolicy="{{String(row.shipping_policy_id)}}"/><navigate path="/admin/ecommerce/products" :replace="true" :mergeQuery="true" transition_overlay_target="product_datagrid__body"><query shipping_policy_id="{{row.shipping_policy_id}}" :page="1"/></navigate></sequence></on>{{row.shipping_policy_name}}</a>
+          <a data-if="{{row.shipping_policy_id}}" href="#" class="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+            <on type="click">
+              <!-- 배송정책 이름을 누르면 그 정책으로 목록을 거른다 — 화면의 필터 입력값과 URL query 를 함께 갈아 끼운다(둘 중 하나만 하면 입력칸과 결과가 어긋난다). -->
+              <sequence>
+                <set-state target="_local" filter.shippingPolicy="{{String(row.shipping_policy_id)}}"/>
+                <navigate path="/admin/ecommerce/products" :replace="true" :mergeQuery="true" transition_overlay_target="product_datagrid__body">
+                  <query shipping_policy_id="{{row.shipping_policy_id}}" :page="1"/>
+                </navigate>
+              </sequence>
+            </on>
+            {{row.shipping_policy_name}}
+          </a>
           <span data-if="{{!row.shipping_policy_id}}" class="text-sm text-gray-400 dark:text-gray-500">-</span>
         </cell>
       </column>
@@ -168,7 +177,12 @@
           <div data-ref="options_error_{{row.id}}" data-if="{{(optionsErrorIds || []).some(id => id + '' === row.id + '')}}" class="flex items-center justify-center gap-3 py-4">
             <span class="text-red-500 dark:text-red-400">$t:sirsoft-ecommerce.admin.product.table.options.load_failed</span>
             <!-- 옵션 목록을 다시 불러온다. 실패한 행만 다시 시도하므로 나머지 행의 펼침 상태는 건드리지 않는다 -->
-            <button type="button" class="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"><on type="click" event="onClick"><action handler="sirsoft-ecommerce.retryExpandedOptions" productId="{{row.id}}"/></on>$t:sirsoft-ecommerce.admin.product.table.options.retry</button>
+            <button type="button" class="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+              <on type="click" event="onClick">
+                <action handler="sirsoft-ecommerce.retryExpandedOptions" productId="{{row.id}}"/>
+              </on>
+              $t:sirsoft-ecommerce.admin.product.table.options.retry
+            </button>
           </div>
           <div data-if="{{!(optionsLoadingIds || []).some(id => id + '' === row.id + '') &amp;&amp; !(optionsErrorIds || []).some(id => id + '' === row.id + '')}}" class="overflow-x-auto">
             <responsive on="portable" class="row-stack">

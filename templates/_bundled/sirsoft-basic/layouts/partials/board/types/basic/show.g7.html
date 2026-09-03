@@ -22,8 +22,10 @@
         <div class="mb-3 flex items-center flex-wrap">
           <!-- 배지 그룹 (비밀글 아이콘 > 카테고리 > 공지) - 배지가 있을 때만 표시 -->
           <div data-if="{{post?.data?.category || post?.data?.is_notice || post?.data?.is_secret || post?.data?.status === 'blinded'}}" class="flex items-center gap-3 flex-shrink-0 mr-3">
-            <!-- 공지 배지 --><span data-if="{{post?.data?.is_notice}}" class="px-2 py-1 text-xs font-bold bg-blue-600 text-white dark:bg-blue-500 rounded">$t:board.notice</span>
-            <!-- 카테고리 배지 --><span data-if="{{post?.data?.category}}" class="px-2 py-1 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">{{post.data.category}}</span>
+            <!-- 공지 배지 -->
+            <span data-if="{{post?.data?.is_notice}}" class="px-2 py-1 text-xs font-bold bg-blue-600 text-white dark:bg-blue-500 rounded">$t:board.notice</span>
+            <!-- 카테고리 배지 -->
+            <span data-if="{{post?.data?.category}}" class="px-2 py-1 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">{{post.data.category}}</span>
             <!-- 비밀글 아이콘 -->
             <icon data-if="{{post?.data?.is_secret}}" name="lock" size="sm" class="text-gray-500 dark:text-gray-400 flex-shrink-0"/>
             <!-- 블라인드 아이콘 -->
@@ -31,9 +33,12 @@
           </div>
           <!-- 제목 + NEW 배지 (붙여서 표시) -->
           <div class="flex items-center gap-2 flex-1 min-w-0">
-            <!-- 제목 --><h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{post?.data?.title ?? ''}}</h1>
-            <!-- 삭제됨 배지 --><span data-if="{{post?.data?.deleted_at}}" class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 flex-shrink-0">$t:board.post.deleted_badge</span>
-            <!-- 새글 배지 (제목 바로 옆) --><span data-if="{{post?.data?.is_new}}" class="px-2 py-1 text-xs font-bold bg-red-500 dark:bg-red-600 text-white rounded flex-shrink-0">N</span>
+            <!-- 제목 -->
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{post?.data?.title ?? ''}}</h1>
+            <!-- 삭제됨 배지 -->
+            <span data-if="{{post?.data?.deleted_at}}" class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 flex-shrink-0">$t:board.post.deleted_badge</span>
+            <!-- 새글 배지 (제목 바로 옆) -->
+            <span data-if="{{post?.data?.is_new}}" class="px-2 py-1 text-xs font-bold bg-red-500 dark:bg-red-600 text-white rounded flex-shrink-0">N</span>
           </div>
         </div>
         <!-- 작성자 정보 + 조회수/댓글수 -->
@@ -45,7 +50,8 @@
           </div>
           <!-- 날짜/조회수/댓글수 -->
           <div class="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-            <!-- 작성일 --><span title="{{post?.data?.created_at ?? ''}}">{{post?.data?.created_at_formatted ?? ''}}</span>
+            <!-- 작성일 -->
+            <span title="{{post?.data?.created_at ?? ''}}">{{post?.data?.created_at_formatted ?? ''}}</span>
             <span data-if="{{post?.data?.board?.show_view_count !== false &amp;&amp; post?.data?.view_count !== undefined}}" class="flex items-center gap-1">
               <icon name="eye" size="sm"/>
               <span>{{post.data.view_count}}</span>
@@ -78,14 +84,19 @@
         <div class="flex items-center gap-2 mb-2">
           <!-- 비밀글 아이콘 -->
           <icon data-if="{{post?.data?.parent?.is_secret}}" name="lock" size="sm" class="text-gray-500 dark:text-gray-400"/>
-          <!-- 카테고리 배지 --><span data-if="{{post?.data?.parent?.category}}" class="px-2 py-0.5 text-xs rounded bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">{{post?.data?.parent?.category ?? ''}}</span>
-          <!-- 제목 (클릭 가능, 굵게) --><a href="/board/{{route.slug}}/{{post?.data?.parent?.id ?? ''}}" class="font-bold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">{{post?.data?.parent?.title ?? ''}}</a>
-          <!-- 삭제됨 배지 --><span data-if="{{post?.data?.parent?.deleted_at}}" class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 flex-shrink-0">$t:board.post.deleted_badge</span>
+          <!-- 카테고리 배지 -->
+          <span data-if="{{post?.data?.parent?.category}}" class="px-2 py-0.5 text-xs rounded bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">{{post?.data?.parent?.category ?? ''}}</span>
+          <!-- 제목 (클릭 가능, 굵게) -->
+          <a href="/board/{{route.slug}}/{{post?.data?.parent?.id ?? ''}}" class="font-bold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">{{post?.data?.parent?.title ?? ''}}</a>
+          <!-- 삭제됨 배지 -->
+          <span data-if="{{post?.data?.parent?.deleted_at}}" class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 flex-shrink-0">$t:board.post.deleted_badge</span>
         </div>
         <!-- 3줄: 내용 (토글로 접기/펼치기) -->
         <div class="text-sm text-gray-600 dark:text-gray-400 mb-3 {{_local?.parentContentExpanded ? '' : 'line-clamp-2'}}">
-          <!-- 블라인드 처리된 경우 --><span data-if="{{post?.data?.parent?.status === 'blinded'}}" class="italic text-orange-500 dark:text-orange-400">$t:board.blinded_post</span>
-          <!-- 비밀글인 경우 --><span data-if="{{post?.data?.parent?.status !== 'blinded' &amp;&amp; post?.data?.parent?.is_secret &amp;&amp; post?.data?.parent?.content === null}}" class="text-gray-500 dark:text-gray-400 italic">$t:board.posts.detail.reply_secret_content</span>
+          <!-- 블라인드 처리된 경우 -->
+          <span data-if="{{post?.data?.parent?.status === 'blinded'}}" class="italic text-orange-500 dark:text-orange-400">$t:board.blinded_post</span>
+          <!-- 비밀글인 경우 -->
+          <span data-if="{{post?.data?.parent?.status !== 'blinded' &amp;&amp; post?.data?.parent?.is_secret &amp;&amp; post?.data?.parent?.content === null}}" class="text-gray-500 dark:text-gray-400 italic">$t:board.posts.detail.reply_secret_content</span>
           <!-- 일반 글인 경우 - 내용 -->
           <extension-point name="html_content" data-ref="parent_post_html_content" data-if="{{post?.data?.parent?.status !== 'blinded' &amp;&amp; !(post?.data?.parent?.is_secret &amp;&amp; post?.data?.parent?.content === null)}}" content="{{post?.data?.parent?.content ?? ''}}" isHtml="{{(post?.data?.parent?.content_mode ?? 'text') === 'html'}}" class="{{_local?.parentContentExpanded ? 'prose dark:prose-invert max-w-none' : '[&amp;_img]:hidden [&amp;_table]:hidden'}}">
             <default>
@@ -140,7 +151,12 @@
         <div data-if="{{post?.data?.content === null &amp;&amp; !post?.data?.is_guest_post &amp;&amp; !_global.currentUser?.uuid &amp;&amp; post?.data?.status !== 'blinded'}}" class="text-center py-12">
           <icon name="lock" size="3x" class="mx-auto text-gray-400 dark:text-gray-500 mb-4"/>
           <p class="text-gray-600 dark:text-gray-400 mb-6">$t:board.secret_post_login_required</p>
-          <button type="button" class="px-6 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 cursor-pointer"><on type="click"><action handler="redirectToLoginWithReturn"/></on>$t:common.login</button>
+          <button type="button" class="px-6 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 cursor-pointer">
+            <on type="click">
+              <action handler="redirectToLoginWithReturn"/>
+            </on>
+            $t:common.login
+          </button>
         </div>
         <!-- 회원 비밀글 - 로그인했으나 권한 없음 -->
         <div data-if="{{post?.data?.content === null &amp;&amp; !post?.data?.is_guest_post &amp;&amp; _global.currentUser?.uuid &amp;&amp; post?.data?.status !== 'blinded'}}" class="text-center py-12">

@@ -1,8 +1,6 @@
-<!--
-  목록에 없는 템플릿을 들이는 창 — 압축 파일과 GitHub 주소 두 갈래를 탭으로 가른다.
+<!-- 목록에 없는 템플릿을 들이는 창 — 압축 파일과 GitHub 주소 두 갈래를 탭으로 가른다.
   탭 하나가 주소·전송 형식·요청 본문 셋을 함께 정하고, 오류는 전체 메시지와 필드별로 나눠 보여 준다.
-  탭을 옮기거나 값을 고치면 오류를 지운다. 모듈 수동 설치 창과 같은 형태다.
--->
+  탭을 옮기거나 값을 고치면 오류를 지운다. 모듈 수동 설치 창과 같은 형태다. -->
 <partial description="템플릿 수동 설치 모달" editor_label="$t:admin.modal_label.admin_template_list.template_manual_install_modal">
   <modal data-ref="template_manual_install_modal" title="$t:admin.templates.modals.manual_install_title" size="medium">
     <p class="text-secondary mb-4">$t:admin.templates.modals.manual_install_description</p>
@@ -62,7 +60,6 @@
         <input type="url" placeholder="https://github.com/username/template-name" value="{{_global.templateGithubUrl ?? ''}}" class="input {{_global.templateInstallErrors?.github_url ? 'input-error' : ''}}">
           <on type="change">
             <!-- 템플릿 저장소 주소 입력 — 파일 선택과 같이 지난 오류를 함께 지운다. -->
-
             <set-state target="global" templateGithubUrl="{{$event.target.value}}" :templateInstallError="null" :templateInstallErrors="null"/>
           </on>
         </input>
@@ -85,8 +82,8 @@
         <on type="click">
           <!-- 취소 — 입력·오류·탭을 처음 상태로 되돌린다(다시 열었을 때 지난 파일이 남지 않게). -->
           <sequence>
-          <set-state target="global" :templateUploadFile="null" :templateUploadFileName="null" :templateGithubUrl="null" :templateInstallError="null" :templateInstallErrors="null" templateInstallTab="file_upload"/>
-          <close-modal/>
+            <set-state target="global" :templateUploadFile="null" :templateUploadFileName="null" :templateGithubUrl="null" :templateInstallError="null" :templateInstallErrors="null" templateInstallTab="file_upload"/>
+            <close-modal/>
           </sequence>
         </on>
         <span>$t:common.cancel</span>
@@ -96,19 +93,19 @@
           <!-- 설치 실행 — 갈래에 따라 주소·전송 형식·본문이 함께 갈린다.
                실패는 토스트가 아니라 창 안에 남긴다(입력을 고쳐 바로 다시 시도하는 자리다). -->
           <sequence>
-          <set-state target="global" :isTemplateManualInstalling="true" :templateInstallError="null" :templateInstallErrors="null"/>
-          <api-call :auth_required="true" target="{{(!_global.templateInstallTab || _global.templateInstallTab === 'file_upload') ? '/api/admin/templates/install-from-file' : '/api/admin/templates/install-from-github'}}" method="POST" contentType="{{(!_global.templateInstallTab || _global.templateInstallTab === 'file_upload') ? 'multipart/form-data' : 'application/json'}}" body="{{(!_global.templateInstallTab || _global.templateInstallTab === 'file_upload') ? { file: _global.templateUploadFile } : { github_url: _global.templateGithubUrl }}}">
-            <success>
-              <set-state target="global" :isTemplateManualInstalling="false" :templateUploadFile="null" :templateUploadFileName="null" :templateGithubUrl="null" :templateInstallError="null" :templateInstallErrors="null" templateInstallTab="file_upload"/>
-              <toast type="success" message="$t:admin.templates.install_success"/>
-              <refetch-data-source dataSourceId="templates"/>
-              <reload-extensions/>
-              <close-modal/>
-            </success>
-            <fail>
-              <set-state target="global" :isTemplateManualInstalling="false" templateInstallError="{{error.message}}" templateInstallErrors="{{error.errors}}"/>
-            </fail>
-          </api-call>
+            <set-state target="global" :isTemplateManualInstalling="true" :templateInstallError="null" :templateInstallErrors="null"/>
+            <api-call :auth_required="true" target="{{(!_global.templateInstallTab || _global.templateInstallTab === 'file_upload') ? '/api/admin/templates/install-from-file' : '/api/admin/templates/install-from-github'}}" method="POST" contentType="{{(!_global.templateInstallTab || _global.templateInstallTab === 'file_upload') ? 'multipart/form-data' : 'application/json'}}" body="{{(!_global.templateInstallTab || _global.templateInstallTab === 'file_upload') ? { file: _global.templateUploadFile } : { github_url: _global.templateGithubUrl }}}">
+              <success>
+                <set-state target="global" :isTemplateManualInstalling="false" :templateUploadFile="null" :templateUploadFileName="null" :templateGithubUrl="null" :templateInstallError="null" :templateInstallErrors="null" templateInstallTab="file_upload"/>
+                <toast type="success" message="$t:admin.templates.install_success"/>
+                <refetch-data-source dataSourceId="templates"/>
+                <reload-extensions/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="global" :isTemplateManualInstalling="false" templateInstallError="{{error.message}}" templateInstallErrors="{{error.errors}}"/>
+              </fail>
+            </api-call>
           </sequence>
         </on>
         <icon data-if="{{!_global.isTemplateManualInstalling}}" name="download" size="sm"/>

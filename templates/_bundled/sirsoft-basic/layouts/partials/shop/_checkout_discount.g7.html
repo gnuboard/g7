@@ -9,7 +9,10 @@
       <!-- 좌측: 아이콘 + 타이틀 -->
       <div class="flex items-center gap-2">
         <icon name="tag" class="text-gray-700 dark:text-gray-300" size="md"/>
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white"><responsive on="portable" class="text-base font-semibold text-gray-900 dark:text-white"/>$t:shop.checkout.discount_section_title</h2>
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+          <responsive on="portable" class="text-base font-semibold text-gray-900 dark:text-white"/>
+          $t:shop.checkout.discount_section_title
+        </h2>
       </div>
       <!-- 우측: 쿠폰 다운로드 버튼 (로그인 사용자만) -->
       <button data-if="{{_global.currentUser?.uuid}}" type="button" class="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">
@@ -105,7 +108,21 @@
           </on>
         </input>
         <!-- 할인코드 적용. 서버가 코드의 유효성과 이 주문에 쓸 수 있는지를 함께 판정하므로 화면에서 미리 거르지 않는다 -->
-        <button type="button" class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50" disabled="{{!_local.checkout?.discount_code}}"><responsive on="portable" class="px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium text-sm hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50"/><on type="click"><api-call target="/api/modules/sirsoft-ecommerce/checkout" auth_mode="optional" method="PUT" body="{{_local.checkout}}"><success><update-data-source dataSourceId="checkoutData" data="{{response}}"/><toast type="success" message="$t:shop.checkout.discount_code_applied"/></success><fail><toast type="error" message="{{error.message ?? '$t:shop.checkout.discount_code_invalid'}}"/></fail></api-call></on>$t:shop.checkout.discount_code_apply</button>
+        <button type="button" class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50" disabled="{{!_local.checkout?.discount_code}}">
+          <responsive on="portable" class="px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium text-sm hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50"/>
+          <on type="click">
+            <api-call target="/api/modules/sirsoft-ecommerce/checkout" auth_mode="optional" method="PUT" body="{{_local.checkout}}">
+              <success>
+                <update-data-source dataSourceId="checkoutData" data="{{response}}"/>
+                <toast type="success" message="$t:shop.checkout.discount_code_applied"/>
+              </success>
+              <fail>
+                <toast type="error" message="{{error.message ?? '$t:shop.checkout.discount_code_invalid'}}"/>
+              </fail>
+            </api-call>
+          </on>
+          $t:shop.checkout.discount_code_apply
+        </button>
       </div>
       <!-- 적용된 할인코드 정보 -->
       <div data-if="{{(checkoutData.data.calculation?.summary?.code_discount ?? 0) > 0}}" class="mt-2 text-sm text-green-600 dark:text-green-400 flex items-center gap-1">

@@ -1,12 +1,10 @@
-<!--
-  회원 목록. 이 화면의 성격은 **상태를 URL 에 둔다**는 것이다 — 검색·정렬·페이지·항목수를 전부
+<!-- 회원 목록. 이 화면의 성격은 **상태를 URL 에 둔다**는 것이다 — 검색·정렬·페이지·항목수를 전부
   쿼리스트링으로 옮기고 데이터소스가 그 값을 파라미터로 읽으므로, 목록을 다시 부르는 대신 `navigate`
   로 URL 만 바꾸면 갱신된다. 새로고침·뒤로가기·링크 공유가 그대로 되는 것이 그 대가로 얻는 것이다.
   예외는 삭제 뒤 한 자리다(URL 이 안 바뀌므로 `refetch-data-source` 를 쓴다).
 
   권한은 서버가 응답에 실어 준 `abilities` 로만 판정한다 — 역할 이름을 프론트에서 보지 않는다.
-  일괄 처리는 모바일(드롭다운)과 데스크톱(버튼 4개) 두 벌이 같은 확인 창을 연다.
--->
+  일괄 처리는 모바일(드롭다운)과 데스크톱(버튼 4개) 두 벌이 같은 확인 창을 연다. -->
 <layout name="admin_user_list" version="1.0.0" extends="_admin_base">
   <meta title="$t:admin.users.page_title" description="$t:admin.users.page_description"/>
   <!-- 회원 목록. 파라미터가 전부 `query.*` 를 읽는 것이 이 화면의 뼈대다(위 설명 참조).
@@ -395,22 +393,22 @@
                  다시 보낸다) 빈 쿼리로 같은 URL 을 다시 밟아 목록을 새로 받는다 — 조건은 유지된다.
                  실패는 토스트가 아니라 오류 창으로 띄운다(일괄은 몇 건이 왜 실패했는지가 길다). -->
             <sequence>
-            <set-state target="global" :isProcessing="true"/>
-            <api-call :auth_required="true" target="/api/admin/users/bulk-status" method="PATCH">
-              <success>
-                <set-state target="global" :isProcessing="false" :selectedIds_admin_users="[]"/>
-                <close-modal/>
-                <navigate path="/admin/users" :mergeQuery="true">
-                  <query/>
-                </navigate>
-                <toast type="success" message="$t:admin.users.modals.bulk_activate_success"/>
-              </success>
-              <fail>
-                <set-state target="global" :isProcessing="false" errorMessage="{{error.message}}"/>
-                <open-modal target="error_modal"/>
-              </fail>
-              <body ids="{{_global.selectedIds_admin_users}}" status="active"/>
-            </api-call>
+              <set-state target="global" :isProcessing="true"/>
+              <api-call :auth_required="true" target="/api/admin/users/bulk-status" method="PATCH">
+                <success>
+                  <set-state target="global" :isProcessing="false" :selectedIds_admin_users="[]"/>
+                  <close-modal/>
+                  <navigate path="/admin/users" :mergeQuery="true">
+                    <query/>
+                  </navigate>
+                  <toast type="success" message="$t:admin.users.modals.bulk_activate_success"/>
+                </success>
+                <fail>
+                  <set-state target="global" :isProcessing="false" errorMessage="{{error.message}}"/>
+                  <open-modal target="error_modal"/>
+                </fail>
+                <body ids="{{_global.selectedIds_admin_users}}" status="active"/>
+              </api-call>
             </sequence>
           </on>
           <icon data-if="{{_global.isProcessing}}" name="spinner" size="sm" :spin="true"/>
@@ -437,22 +435,22 @@
           <on type="click">
             <!-- 일괄 비활성 실행 — 활성 창과 갈래 구조가 같고 보내는 상태값(`inactive`)만 다르다. -->
             <sequence>
-            <set-state target="global" :isProcessing="true"/>
-            <api-call :auth_required="true" target="/api/admin/users/bulk-status" method="PATCH">
-              <success>
-                <set-state target="global" :isProcessing="false" :selectedIds_admin_users="[]"/>
-                <close-modal/>
-                <navigate path="/admin/users" :mergeQuery="true">
-                  <query/>
-                </navigate>
-                <toast type="success" message="$t:admin.users.modals.bulk_deactivate_success"/>
-              </success>
-              <fail>
-                <set-state target="global" :isProcessing="false" errorMessage="{{error.message}}"/>
-                <open-modal target="error_modal"/>
-              </fail>
-              <body ids="{{_global.selectedIds_admin_users}}" status="inactive"/>
-            </api-call>
+              <set-state target="global" :isProcessing="true"/>
+              <api-call :auth_required="true" target="/api/admin/users/bulk-status" method="PATCH">
+                <success>
+                  <set-state target="global" :isProcessing="false" :selectedIds_admin_users="[]"/>
+                  <close-modal/>
+                  <navigate path="/admin/users" :mergeQuery="true">
+                    <query/>
+                  </navigate>
+                  <toast type="success" message="$t:admin.users.modals.bulk_deactivate_success"/>
+                </success>
+                <fail>
+                  <set-state target="global" :isProcessing="false" errorMessage="{{error.message}}"/>
+                  <open-modal target="error_modal"/>
+                </fail>
+                <body ids="{{_global.selectedIds_admin_users}}" status="inactive"/>
+              </api-call>
             </sequence>
           </on>
           <icon data-if="{{_global.isProcessing}}" name="spinner" size="sm" :spin="true"/>
@@ -481,19 +479,19 @@
             <!-- 삭제 실행. 이 화면에서 **유일하게 URL 을 바꾸지 않는 갱신**이라 목록을 직접 다시 부른다
                  (일괄 처리 쪽은 같은 URL 을 다시 밟는 방식이다). 실패는 창을 연 채 토스트만 띄운다. -->
             <sequence>
-            <set-state target="global" :isDeleting="true"/>
-            <api-call :auth_required="true" target="/api/admin/users/{{_global.modal_data.uuid}}" method="DELETE">
-              <success>
-                <set-state target="global" :isDeleting="false"/>
-                <refetch-data-source dataSourceId="users"/>
-                <toast type="success" message="$t:admin.users.modals.delete_success"/>
-                <close-modal/>
-              </success>
-              <fail>
-                <set-state target="global" :isDeleting="false"/>
-                <toast type="error" message="{{error.message}}"/>
-              </fail>
-            </api-call>
+              <set-state target="global" :isDeleting="true"/>
+              <api-call :auth_required="true" target="/api/admin/users/{{_global.modal_data.uuid}}" method="DELETE">
+                <success>
+                  <set-state target="global" :isDeleting="false"/>
+                  <refetch-data-source dataSourceId="users"/>
+                  <toast type="success" message="$t:admin.users.modals.delete_success"/>
+                  <close-modal/>
+                </success>
+                <fail>
+                  <set-state target="global" :isDeleting="false"/>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+              </api-call>
             </sequence>
           </on>
           <icon data-if="{{_global.isDeleting}}" name="spinner" class="spinner-sm"/>
@@ -538,22 +536,22 @@
           <on type="click">
             <!-- 일괄 차단 실행 — 활성 창과 갈래 구조가 같고 보내는 상태값(`blocked`)만 다르다. -->
             <sequence>
-            <set-state target="global" :isProcessing="true"/>
-            <api-call :auth_required="true" target="/api/admin/users/bulk-status" method="PATCH">
-              <success>
-                <set-state target="global" :isProcessing="false" :selectedIds_admin_users="[]"/>
-                <close-modal/>
-                <navigate path="/admin/users" :mergeQuery="true">
-                  <query/>
-                </navigate>
-                <toast type="success" message="$t:admin.users.modals.bulk_block_success"/>
-              </success>
-              <fail>
-                <set-state target="global" :isProcessing="false" errorMessage="{{error.message}}"/>
-                <open-modal target="error_modal"/>
-              </fail>
-              <body ids="{{_global.selectedIds_admin_users}}" status="blocked"/>
-            </api-call>
+              <set-state target="global" :isProcessing="true"/>
+              <api-call :auth_required="true" target="/api/admin/users/bulk-status" method="PATCH">
+                <success>
+                  <set-state target="global" :isProcessing="false" :selectedIds_admin_users="[]"/>
+                  <close-modal/>
+                  <navigate path="/admin/users" :mergeQuery="true">
+                    <query/>
+                  </navigate>
+                  <toast type="success" message="$t:admin.users.modals.bulk_block_success"/>
+                </success>
+                <fail>
+                  <set-state target="global" :isProcessing="false" errorMessage="{{error.message}}"/>
+                  <open-modal target="error_modal"/>
+                </fail>
+                <body ids="{{_global.selectedIds_admin_users}}" status="blocked"/>
+              </api-call>
             </sequence>
           </on>
           <icon data-if="{{_global.isProcessing}}" name="spinner" size="sm" :spin="true"/>
@@ -580,23 +578,23 @@
           <on type="click">
             <!-- 일괄 탈퇴 실행 — 활성 창과 갈래 구조가 같고 보내는 상태값(`withdrawn`)만 다르다. -->
             <sequence>
-            <set-state target="global" :isProcessing="true"/>
-            <api-call :auth_required="true" target="/api/admin/users/bulk-status" method="PATCH">
-              <success>
-                <set-state target="global" :isProcessing="false" :selectedIds_admin_users="[]"/>
-                <close-modal/>
-                <navigate path="/admin/users" :mergeQuery="true">
-                  <query/>
-                </navigate>
-                <!-- 탈퇴 불가 대상(관리자 계정 등)은 200 응답 안에서 건별로 실패한다 — failed_count 를 읽지 않으면 아무 일도 없었는데 성공으로 안내된다. -->
-                <toast type="{{(response.data?.failed_count ?? 0) === 0 ? 'success' : ((response.data?.updated_count ?? 0) === 0 ? 'error' : 'warning')}}" message="{{(response.data?.failed_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_withdraw_success' : ((response.data?.updated_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_withdraw_all_failed|reason=' + (response.data?.failed_reasons ?? []).join(' / ') : '$t:admin.users.modals.bulk_withdraw_partial|updated=' + (response.data?.updated_count ?? 0) + '|failed=' + (response.data?.failed_count ?? 0) + '|reason=' + (response.data?.failed_reasons ?? []).join(' / '))}}"/>
-              </success>
-              <fail>
-                <set-state target="global" :isProcessing="false" errorMessage="{{error.message}}"/>
-                <open-modal target="error_modal"/>
-              </fail>
-              <body ids="{{_global.selectedIds_admin_users}}" status="withdrawn"/>
-            </api-call>
+              <set-state target="global" :isProcessing="true"/>
+              <api-call :auth_required="true" target="/api/admin/users/bulk-status" method="PATCH">
+                <success>
+                  <set-state target="global" :isProcessing="false" :selectedIds_admin_users="[]"/>
+                  <close-modal/>
+                  <navigate path="/admin/users" :mergeQuery="true">
+                    <query/>
+                  </navigate>
+                  <!-- 탈퇴 불가 대상(관리자 계정 등)은 200 응답 안에서 건별로 실패한다 — failed_count 를 읽지 않으면 아무 일도 없었는데 성공으로 안내된다. -->
+                  <toast type="{{(response.data?.failed_count ?? 0) === 0 ? 'success' : ((response.data?.updated_count ?? 0) === 0 ? 'error' : 'warning')}}" message="{{(response.data?.failed_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_withdraw_success' : ((response.data?.updated_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_withdraw_all_failed|reason=' + (response.data?.failed_reasons ?? []).join(' / ') : '$t:admin.users.modals.bulk_withdraw_partial|updated=' + (response.data?.updated_count ?? 0) + '|failed=' + (response.data?.failed_count ?? 0) + '|reason=' + (response.data?.failed_reasons ?? []).join(' / '))}}"/>
+                </success>
+                <fail>
+                  <set-state target="global" :isProcessing="false" errorMessage="{{error.message}}"/>
+                  <open-modal target="error_modal"/>
+                </fail>
+                <body ids="{{_global.selectedIds_admin_users}}" status="withdrawn"/>
+              </api-call>
             </sequence>
           </on>
           <icon data-if="{{_global.isProcessing}}" name="spinner" size="sm" :spin="true"/>

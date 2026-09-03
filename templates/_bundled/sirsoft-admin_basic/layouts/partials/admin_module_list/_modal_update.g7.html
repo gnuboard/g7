@@ -1,12 +1,10 @@
-<!--
-  모듈 업데이트 창. 세 가지를 함께 다룬다 —
+<!-- 모듈 업데이트 창. 세 가지를 함께 다룬다 —
   ⑴ **코어 비호환 경고**: 새 버전이 지금 코어보다 높은 코어를 요구하면 경고를 띄우고, 실행 버튼을
      `force` 체크 전까지 잠근다(경고를 읽었다는 표시 없이는 진행할 수 없다).
   ⑵ **변경 이력**: 여는 쪽이 미리 받아 전역에 담아 준 것을 보여 준다.
   ⑶ **레이아웃 처리 방식**: 편집기로 고친 레이아웃이 있으면 덮어쓸지 남길지 고른다. 그 유무도
      여는 쪽이 미리 물어 전역에 담아 준다.
-  실패 문구는 토스트와 **창 안에 함께** 남긴다 — 방식을 바꿔 다시 시도하는 자리라 창이 닫히면 안 된다.
--->
+  실패 문구는 토스트와 **창 안에 함께** 남긴다 — 방식을 바꿔 다시 시도하는 자리라 창이 닫히면 안 된다. -->
 <partial description="모듈 업데이트 확인 모달" editor_label="$t:admin.modal_label.admin_module_list.module_update_modal">
   <modal data-ref="module_update_modal" title="$t:admin.modules.modals.update_title" size="medium">
     <div data-if="{{_global.selectedModule?.is_compatible === false}}" class="mb-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg" role="alert">
@@ -157,21 +155,21 @@
           <!-- 업데이트 실행. 레이아웃 처리 방식과 강행 여부를 함께 보낸다.
                성공 갈래가 대상·선택을 기본값으로 되돌리므로 다음 모듈에 옛 값이 새지 않는다. -->
           <sequence>
-          <set-state target="global" :isModuleUpdating="true" :moduleUpdateError="null"/>
-          <api-call :auth_required="true" target="/api/admin/modules/{{_global.selectedModule.identifier}}/update" method="POST">
-            <success>
-              <set-state target="global" :isModuleUpdating="false"/>
-              <set-state target="global" :selectedModule="null" moduleLayoutStrategy="overwrite" :hasModifiedModuleLayouts="false" :modifiedModuleLayoutsCount="0" :modifiedModuleLayouts="[]" :moduleRebuildSearchIndex="false"/>
-              <toast type="success" message="$t:admin.modules.update_success"/>
-              <refetch-data-source dataSourceId="modules"/>
-              <close-modal/>
-            </success>
-            <fail>
-              <set-state target="global" :isModuleUpdating="false" moduleUpdateError="{{error.message}}"/>
-              <toast type="error" message="{{error.message}}"/>
-            </fail>
-            <body layout_strategy="{{_global.moduleLayoutStrategy ?? 'overwrite'}}" force="{{_global.moduleForceUpdate === true}}" rebuild_search_index="{{_global.moduleRebuildSearchIndex === true}}"/>
-          </api-call>
+            <set-state target="global" :isModuleUpdating="true" :moduleUpdateError="null"/>
+            <api-call :auth_required="true" target="/api/admin/modules/{{_global.selectedModule.identifier}}/update" method="POST">
+              <success>
+                <set-state target="global" :isModuleUpdating="false"/>
+                <set-state target="global" :selectedModule="null" moduleLayoutStrategy="overwrite" :hasModifiedModuleLayouts="false" :modifiedModuleLayoutsCount="0" :modifiedModuleLayouts="[]" :moduleRebuildSearchIndex="false"/>
+                <toast type="success" message="$t:admin.modules.update_success"/>
+                <refetch-data-source dataSourceId="modules"/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="global" :isModuleUpdating="false" moduleUpdateError="{{error.message}}"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+              <body layout_strategy="{{_global.moduleLayoutStrategy ?? 'overwrite'}}" force="{{_global.moduleForceUpdate === true}}" rebuild_search_index="{{_global.moduleRebuildSearchIndex === true}}"/>
+            </api-call>
           </sequence>
         </on>
         <icon data-if="{{_global.isModuleUpdating}}" name="spinner" class="spinner-sm"/>

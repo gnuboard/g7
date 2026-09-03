@@ -1,8 +1,6 @@
-<!--
-  상품 공통정보 관리 (운영자) — 여러 상품이 함께 쓰는 안내문을 만들어 두고 상품 등록 시 불러 쓴다.
+<!-- 상품 공통정보 관리 (운영자) — 여러 상품이 함께 쓰는 안내문을 만들어 두고 상품 등록 시 불러 쓴다.
   왼쪽 목록(무한 스크롤)과 오른쪽 패널(조회·수정·등록·복사)로 나뉘며, 기본값 지정은 한 건만
-  가질 수 있어 확인 창을 거친다.
--->
+  가질 수 있어 확인 창을 거친다. -->
 <layout name="admin_ecommerce_product_common_info_index" version="1.0.0" extends="_admin_base">
   <meta title="$t:sirsoft-ecommerce.admin.common_info.title" description="$t:sirsoft-ecommerce.admin.common_info.description"/>
   <!-- 첫 20건만 받고 나머지는 목록 패널의 무한 스크롤이 이어 붙인다. 저장·삭제·기본값 변경 뒤에는 이 소스를 다시 태워 목록과 상세를 서버 값으로 맞춘다 -->

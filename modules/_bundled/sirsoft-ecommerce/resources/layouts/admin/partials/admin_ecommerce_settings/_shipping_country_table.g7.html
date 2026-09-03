@@ -1,7 +1,5 @@
-<!--
-  쇼핑몰 설정 — 배송 국가 목록, 넓은 화면용 표. 좁은 화면용 카드(`_shipping_country_cards`)와
-  같은 배열을 편집한다. 해외배송을 껐다면 이 목록은 남되 쓰이지 않는다.
--->
+<!-- 쇼핑몰 설정 — 배송 국가 목록, 넓은 화면용 표. 좁은 화면용 카드(`_shipping_country_cards`)와
+  같은 배열을 편집한다. 해외배송을 껐다면 이 목록은 남되 쓰이지 않는다. -->
 <partial description="배송설정 - 배송가능국가 테이블">
   <div data-ref="shipping_country_table_container" class="table-container">
     <div data-if="{{(_local.form?.shipping?.available_countries ?? []).length === 0}}" class="p-8 text-center text-label-subtle">

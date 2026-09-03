@@ -1,16 +1,24 @@
-<!--
-  무통장 입금 내역을 주문에 한꺼번에 이어 붙이는 창.
+<!-- 무통장 입금 내역을 주문에 한꺼번에 이어 붙이는 창.
   **아직 시안이다** — 이 파일에는 데이터소스도 API 호출도 없고, 표에 보이는 이름·은행·금액·주문번호는
   전부 마크업에 박힌 글자다. 저장 버튼도 창을 닫기만 한다(입금 관리 화면 전체가 같은 상태이고,
   모듈에 대응 라우트가 아직 없다).
   그래도 화면 구조는 정본이다 — 좁은 화면에서는 표가 카드 목록으로 바뀌고, 입금액과 주문금액이
-  어긋나면 그 행에 경고가 붙는다는 규칙을 여기서 정해 두었다. 배선할 때 이 형태를 채우면 된다.
--->
+  어긋나면 그 행에 경고가 붙는다는 규칙을 여기서 정해 두었다. 배선할 때 이 형태를 채우면 된다. -->
 <partial description="입금 일괄 매칭 모달">
   <modal data-ref="modal_bulk_match" title="$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.title" description="$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.description" size="xl">
     <footer>
-      <button type="button" class="btn btn-outline"><on type="click"><close-modal/></on>$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.cancel</button>
-      <button type="button" class="btn btn-primary"><on type="click"><close-modal/></on>$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.save</button>
+      <button type="button" class="btn btn-outline">
+        <on type="click">
+          <close-modal/>
+        </on>
+        $t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.cancel
+      </button>
+      <button type="button" class="btn btn-primary">
+        <on type="click">
+          <close-modal/>
+        </on>
+        $t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.save
+      </button>
     </footer>
     <div data-ref="bulk_match_instructions" class="text-secondary text-sm mb-4 space-y-1">
       <div>$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.instruction_1</div>

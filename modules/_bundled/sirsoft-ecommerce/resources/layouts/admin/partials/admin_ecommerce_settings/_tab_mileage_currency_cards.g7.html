@@ -1,10 +1,8 @@
-<!--
-  쇼핑몰 설정 — 통화별 마일리지 적립 설정, 좁은 화면용 카드. 넓은 화면용 표
+<!-- 쇼핑몰 설정 — 통화별 마일리지 적립 설정, 좁은 화면용 카드. 넓은 화면용 표
   (`_tab_mileage_currency_table`)와 같은 배열을 편집한다.
   
   통화마다 적립 기준이 다를 수 있어(1000원당 10원 / 1달러당 0.1달러) 통화별로 한 줄씩 둔다.
-  줄 단위 인라인 편집이라 편집 중인 값은 임시 자리에 두고, 저장을 눌러야 배열에 반영된다.
--->
+  줄 단위 인라인 편집이라 편집 중인 값은 임시 자리에 두고, 저장을 눌러야 배열에 반영된다. -->
 <partial description="마일리지 통화별 사용 규칙 - Mobile 카드 뷰">
   <div data-ref="currency_rules_cards_container" class="space-y-4">
     <div data-ref="currency_rule_card_{{ruleIndex}}" data-each="rule, ruleIndex in (Array.isArray(_local.form?.mileage?.currency_rules) ? _local.form.mileage.currency_rules : []).map((c, i) => ({ ...c, _idx: i }))" class="relative border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-3">

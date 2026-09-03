@@ -1,9 +1,7 @@
-<!--
-  화면 정의 편집기에서 지금 고친 화면의 지난 판본을 보고 되돌리는 창. 맨 위가 지금 쓰는 판본이라
+<!-- 화면 정의 편집기에서 지금 고친 화면의 지난 판본을 보고 되돌리는 창. 맨 위가 지금 쓰는 판본이라
   되돌리기 버튼이 붙지 않는다.
   각 판본은 몇 줄이 늘고 줄었는지, 글자 수가 얼마나 달라졌는지, 누가 저장했는지를 함께 보여 준다
-  — 판본 이름이 없으므로 그 수치가 어느 시점인지 가려내는 단서다.
--->
+  — 판본 이름이 없으므로 그 수치가 어느 시점인지 가려내는 단서다. -->
 <partial name="modal_version_history" editor_label="$t:admin.modal_label.admin_template_layout_edit.version_history_modal">
   <modal data-ref="version_history_modal" size="medium" title="$t:admin.templates.modals.version_history.title">
     <p class="text-label mb-4">$t:admin.templates.modals.version_history.description|layout_name={{_global.selectedLayoutName}}</p>
@@ -61,7 +59,8 @@
         <span>$t:admin.templates.modals.version_history.load_more</span>
       </button>
     </div>
-    <!-- 서버 상한까지 넓혔는데도 묶음이 꽉 차 있으면 더 오래된 버전이 남아 있지만 이 화면에서는 도달할 수 없다. '더 보기' 만 조용히 사라지면 목록이 끝난 것으로 읽히므로 도달 한계를 명시한다. --><div data-if="{{(layout_versions?.data?.length ?? 0) >= (_global.layoutVersionLimit ?? 100) &amp;&amp; (_global.layoutVersionLimit ?? 100) >= 500}}" class="text-xs text-secondary text-center mt-3" data-testid="layout-version-history-limit-reached">$t:admin.templates.modals.version_history.limit_reached</div>
+    <!-- 서버 상한까지 넓혔는데도 묶음이 꽉 차 있으면 더 오래된 버전이 남아 있지만 이 화면에서는 도달할 수 없다. '더 보기' 만 조용히 사라지면 목록이 끝난 것으로 읽히므로 도달 한계를 명시한다. -->
+    <div data-if="{{(layout_versions?.data?.length ?? 0) >= (_global.layoutVersionLimit ?? 100) &amp;&amp; (_global.layoutVersionLimit ?? 100) >= 500}}" class="text-xs text-secondary text-center mt-3" data-testid="layout-version-history-limit-reached">$t:admin.templates.modals.version_history.limit_reached</div>
     <div class="alert-info">
       <div class="flex-center gap-2">
         <icon name="info-circle" class="text-base text-blue-600 dark:text-blue-400"/>

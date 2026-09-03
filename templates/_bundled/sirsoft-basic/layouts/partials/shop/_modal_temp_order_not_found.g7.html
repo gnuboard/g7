@@ -7,7 +7,16 @@
       <p class="text-gray-700 dark:text-gray-300">$t:shop.checkout.temp_order_not_found_message</p>
     </div>
     <div class="flex justify-center mt-6">
-      <button type="button" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"><on type="click"><!-- 확인이 곧 유일한 출구다 — 임시 주문이 없으면 주문서에 머물 이유가 없어 장바구니로 되돌린다 --><sequence><close-modal/><navigate path="{{_global.shopBase}}/cart"/></sequence></on>$t:common.confirm</button>
+      <button type="button" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors">
+        <on type="click">
+          <!-- 확인이 곧 유일한 출구다 — 임시 주문이 없으면 주문서에 머물 이유가 없어 장바구니로 되돌린다 -->
+          <sequence>
+            <close-modal/>
+            <navigate path="{{_global.shopBase}}/cart"/>
+          </sequence>
+        </on>
+        $t:common.confirm
+      </button>
     </div>
   </modal>
 </partial>

@@ -15,7 +15,7 @@
                 <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('use_reply')}}">
                   <on type="change">
                     <!-- 「답변글 사용 여부」를 일괄 적용 대상에 넣었다 뺐다 한다 -->
-                  <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('use_reply') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'use_reply') : [...(_local.bulkApplyFields ?? []), 'use_reply']}}"/>
+                    <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('use_reply') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'use_reply') : [...(_local.bulkApplyFields ?? []), 'use_reply']}}"/>
                   </on>
                 </input>
                 <div>
@@ -32,7 +32,7 @@
                 <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('max_reply_depth')}}">
                   <on type="change">
                     <!-- 「답변글을 몇 단까지 이어 붙일지」를 일괄 적용 대상에 넣었다 뺐다 한다 -->
-                  <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('max_reply_depth') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'max_reply_depth') : [...(_local.bulkApplyFields ?? []), 'max_reply_depth']}}"/>
+                    <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('max_reply_depth') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'max_reply_depth') : [...(_local.bulkApplyFields ?? []), 'max_reply_depth']}}"/>
                   </on>
                 </input>
                 <div>

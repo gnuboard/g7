@@ -1,13 +1,11 @@
-<!--
-  쇼핑몰 설정 — 무통장 입금계좌, 좁은 화면용 카드. 넓은 화면용 표(`_bank_accounts_table`)와
+<!-- 쇼핑몰 설정 — 무통장 입금계좌, 좁은 화면용 카드. 넓은 화면용 표(`_bank_accounts_table`)와
   **같은 배열을 같은 방식으로 편집한다** — 보이는 형태만 다르므로 한쪽을 고치면 다른 쪽도
   함께 고쳐야 한다.
   
   계좌는 폼 상태(`_local.form.order_settings.bank_accounts`) 안의 배열이고 저장은 설정 화면의
   저장 버튼이 한꺼번에 한다 — 이 조각에는 서버 호출이 없다.
   반복 항목에 `_idx`(원본 위치)를 미리 붙여 두는데, 입력칸 이름과 오류 키가 그 번호로 만들어지기
-  때문이다. 눈에 보이는 순서가 아니라 배열의 실제 위치여야 서버 오류가 맞는 칸에 붙는다.
--->
+  때문이다. 눈에 보이는 순서가 아니라 배열의 실제 위치여야 서버 오류가 맞는 칸에 붙는다. -->
 <partial description="무통장 계좌번호 설정 - Mobile 카드 뷰">
   <div data-ref="bank_accounts_cards">
     <div data-if="{{!_local.form?.order_settings?.bank_accounts || _local.form.order_settings.bank_accounts.length === 0}}" class="text-center text-tertiary">$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.empty</div>

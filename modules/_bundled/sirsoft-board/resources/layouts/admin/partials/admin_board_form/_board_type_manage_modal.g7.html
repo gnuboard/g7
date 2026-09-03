@@ -79,7 +79,18 @@
         </class-map>
         <div data-ref="bt_form_header" class="flex-between mb-3">
           <h3 data-ref="bt_form_title" class="text-primary text-sm font-semibold">{{_global.btFormMode === 'edit' ? '$t:sirsoft-board.admin.board_types.edit_title' : '$t:sirsoft-board.admin.board_types.add_title'}}</h3>
-          <button data-ref="bt_form_cancel_btn" data-if="{{_global.btFormMode === 'edit'}}" type="button" class="px-2.5 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600"><on type="click"><!-- 수정을 그만두고 폼을 빈 「추가」 상태로 되돌린다 — 창은 닫지 않는다 --><set-state target="global" btFormMode="add" :btEditingItem="null" btFormSlug="" :btFormErrors="null"><field name="btFormName"><field name="ko" value=""/><field name="en" value=""/></field></set-state></on>$t:common.cancel</button>
+          <button data-ref="bt_form_cancel_btn" data-if="{{_global.btFormMode === 'edit'}}" type="button" class="px-2.5 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600">
+            <on type="click">
+              <!-- 수정을 그만두고 폼을 빈 「추가」 상태로 되돌린다 — 창은 닫지 않는다 -->
+              <set-state target="global" btFormMode="add" :btEditingItem="null" btFormSlug="" :btFormErrors="null">
+                <field name="btFormName">
+                  <field name="ko" value=""/>
+                  <field name="en" value=""/>
+                </field>
+              </set-state>
+            </on>
+            $t:common.cancel
+          </button>
         </div>
         <div data-ref="bt_form_fields">
           <div data-ref="bt_field_slug">

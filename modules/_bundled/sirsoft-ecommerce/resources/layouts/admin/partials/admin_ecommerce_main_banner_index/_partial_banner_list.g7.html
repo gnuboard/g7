@@ -1,12 +1,10 @@
-<!--
-  메인 배너 목록 — 탭(전체·노출·중지)과 배너 행들.
+<!-- 메인 배너 목록 — 탭(전체·노출·중지)과 배너 행들.
   **아직 시안이다** — 데이터소스도 API 호출도 없고, 탭 옆 숫자(7·4·3)와 두 배너의 제목·기간은
   마크업에 박힌 글자다. 그래서 탭을 눌러도 목록이 걸러지지 않는다(탭 상태만 바뀐다).
   다만 상호작용 뼈대는 정본이다 — 행을 누르면 오른쪽이 상세로 바뀌고(`viewMode`), 오른쪽 스위치는
   배너별 상태 맵(`_local.bannerStatus.배너키`)을 뒤집는다. 배선할 때 이 형태를 반복 렌더로 바꾸고
   하드코딩된 배너 키를 실제 id 로 갈면 된다.
-  드래그 손잡이는 모양만 있고 정렬 이벤트가 붙어 있지 않다.
--->
+  드래그 손잡이는 모양만 있고 정렬 이벤트가 붙어 있지 않다. -->
 <partial description="Main Banner List Partial">
   <div data-ref="banner_list_section" class="admin-card">
     <div data-ref="list_header" class="flex-center gap-2 mb-4">

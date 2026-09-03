@@ -1,13 +1,11 @@
-<!--
-  플러그인 설치 창. 예/아니오만 묻는 창이 아니라 **함께 깔 것을 고르는 창**이다 — 열리면서
+<!-- 플러그인 설치 창. 예/아니오만 묻는 창이 아니라 **함께 깔 것을 고르는 창**이다 — 열리면서
   설치 미리보기를 받아 의존 확장과 딸린 언어팩을 체크리스트로 편다.
 
   체크 상태를 읽는 규칙이 까다로운데, 이유가 있다.
   ⑴ 고른 적이 없으면(`null`) 서버가 정해 준 기본 선택을 그대로 따르고, 한 번이라도 건드리면
      그때부터 사람이 고른 목록이 정본이 된다 — 그래서 표현마다 「없으면 기본값에서 시작」이 붙는다.
   ⑵ 언어팩은 자기가 기대는 확장이 선택 목록에 있어야만 켤 수 있다. 그 확장을 빼면 언어팩 체크도
-     함께 풀리고 칸이 잠긴다(깔 수 없는 것을 요청 본문에 실어 보내지 않으려는 것이다).
--->
+     함께 풀리고 칸이 잠긴다(깔 수 없는 것을 요청 본문에 실어 보내지 않으려는 것이다). -->
 <partial description="플러그인 설치 확인 모달 — install-preview API 응답 기반 cascade(의존 확장 + 동반 언어팩) 체크리스트 포함" editor_label="$t:admin.modal_label.admin_plugin_list.plugin_install_modal">
   <modal data-ref="plugin_install_modal" title="$t:admin.plugins.modals.install_title" size="medium">
     <!-- 무엇이 함께 깔릴지와 각 항목의 기본 선택 여부를 서버가 정해 준다. 응답을 확장 공용 자리에 올려 두어 아래 체크리스트와 요청 본문이 같은 값을 읽게 한다. -->
@@ -80,30 +78,28 @@
       </button>
       <button type="button" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isPluginInstalling}}">
         <on type="click">
-          <!--
-            보낼 때 화면의 체크 상태를 그대로 싣지 않고 **미리보기 목록을 그 선택으로 다시 걸러** 만든다 —
+          <!-- 보낼 때 화면의 체크 상태를 그대로 싣지 않고 **미리보기 목록을 그 선택으로 다시 걸러** 만든다 —
             사이에 미리보기가 바뀌었더라도 지금 목록에 없는 것은 요청에 실리지 않는다.
             언어팩 쪽은 기대는 확장이 함께 깔리는지까지 한 번 더 본다(화면의 잠금과 같은 조건).
-            깐 뒤 목록·관리자 메뉴를 다시 받고 확장을 새로 읽는다 — 플러그인이 메뉴와 화면 조각을 더할 수 있다.
-          -->
+            깐 뒤 목록·관리자 메뉴를 다시 받고 확장을 새로 읽는다 — 플러그인이 메뉴와 화면 조각을 더할 수 있다. -->
           <sequence>
-          <set-state target="global" :isPluginInstalling="true"/>
-          <api-call :auth_required="true" target="/api/admin/plugins/install" method="POST">
-            <success>
-              <set-state target="global" :isPluginInstalling="false" :installSelectedDeps="null" :installSelectedLPs="null"/>
-              <set-state target="global" :selectedPlugin="null"/>
-              <toast type="success" message="$t:admin.plugins.install_success"/>
-              <refetch-data-source dataSourceId="plugins"/>
-              <refetch-data-source dataSourceId="admin_menu"/>
-              <reload-extensions/>
-              <close-modal/>
-            </success>
-            <fail>
-              <set-state target="global" :isPluginInstalling="false"/>
-              <toast type="error" message="{{error.message}}"/>
-            </fail>
-            <body plugin_name="{{_global.selectedPlugin.identifier}}" vendor_mode="{{_global.pluginInstallVendorMode ?? 'auto'}}" dependencies="{{ ((_global.installPreview?.dependencies ?? []).filter(d => (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(d.identifier)).map(d => ({ type: d.type, identifier: d.identifier }))) }}" language_packs="{{ ((_global.installPreview?.language_packs ?? []).filter(lp => (_global.installSelectedLPs ?? (_global.installPreview?.language_packs ?? []).filter(x => x.default_selected).map(x => x.bundled_identifier)).includes(lp.bundled_identifier) &amp;&amp; (!lp.depends_on_extension || (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension))).map(lp => lp.bundled_identifier)) }}"/>
-          </api-call>
+            <set-state target="global" :isPluginInstalling="true"/>
+            <api-call :auth_required="true" target="/api/admin/plugins/install" method="POST">
+              <success>
+                <set-state target="global" :isPluginInstalling="false" :installSelectedDeps="null" :installSelectedLPs="null"/>
+                <set-state target="global" :selectedPlugin="null"/>
+                <toast type="success" message="$t:admin.plugins.install_success"/>
+                <refetch-data-source dataSourceId="plugins"/>
+                <refetch-data-source dataSourceId="admin_menu"/>
+                <reload-extensions/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="global" :isPluginInstalling="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+              <body plugin_name="{{_global.selectedPlugin.identifier}}" vendor_mode="{{_global.pluginInstallVendorMode ?? 'auto'}}" dependencies="{{ ((_global.installPreview?.dependencies ?? []).filter(d => (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(d.identifier)).map(d => ({ type: d.type, identifier: d.identifier }))) }}" language_packs="{{ ((_global.installPreview?.language_packs ?? []).filter(lp => (_global.installSelectedLPs ?? (_global.installPreview?.language_packs ?? []).filter(x => x.default_selected).map(x => x.bundled_identifier)).includes(lp.bundled_identifier) &amp;&amp; (!lp.depends_on_extension || (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension))).map(lp => lp.bundled_identifier)) }}"/>
+            </api-call>
           </sequence>
         </on>
         <icon data-if="{{!_global.isPluginInstalling}}" name="download" class="text-base"/>

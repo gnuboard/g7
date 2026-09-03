@@ -1,11 +1,9 @@
-<!--
-  쇼핑몰 설정 — 배송 탭. 배송유형·택배사·국가 목록은 각각 별도 조각이 맡고, 이 탭은 그것을
+<!-- 쇼핑몰 설정 — 배송 탭. 배송유형·택배사·국가 목록은 각각 별도 조각이 맡고, 이 탭은 그것을
   담으면서 해외배송 사용 여부 같은 상위 스위치를 둔다.
   
   해외배송 스위치는 방향에 따라 갈린다. 켜는 쪽은 잃는 것이 없어 바로 반영한다. 끄는 쪽은
   기본 국가 말고 활성 국가가 더 있을 때만 확인 창을 거친다 — 그 경우에만 이미 설정해 둔 값이
-  의미를 잃기 때문이다. 남은 활성 국가가 없으면 잃을 것이 없어 바로 반영한다.
--->
+  의미를 잃기 때문이다. 남은 활성 국가가 없으면 잃을 것이 없어 바로 반영한다. -->
 <partial description="쇼핑몰 설정 배송설정 탭 콘텐츠">
   <div data-ref="tab_content_shipping" data-if="{{(_global.activeEcommerceSettingsTab || query.tab || 'basic_info') === 'shipping'}}">
     <div data-ref="shipping_basic_card" class="admin-card">
@@ -78,7 +76,8 @@
           </div>
           <!-- 국가명 입력칸은 활성 언어팩($locales) 마다 하나씩 생성된다. iteration 은 이 Div 자신을 로케일 수만큼 복제하므로, 부모(flex flex-wrap)가 입력칸들을 가로로 흘린다. 언어팩이 추가되면 입력칸도 자동으로 늘어난다 — 로케일 리터럴 열거 금지. -->
           <div data-each="loc in {{$locales ?? []}}">
-            <!-- 라벨 = 로케일 표시명(예: 한국어 / English / 日本語). appConfig.localeNames 부재 시 로케일 코드로 폴백. --><label class="text-tertiary block font-medium mb-1">{{_global.appConfig?.localeNames?.[loc] ?? loc}}</label>
+            <!-- 라벨 = 로케일 표시명(예: 한국어 / English / 日本語). appConfig.localeNames 부재 시 로케일 코드로 폴백. -->
+            <label class="text-tertiary block font-medium mb-1">{{_global.appConfig?.localeNames?.[loc] ?? loc}}</label>
             <!-- setState 는 params 키의 표현식을 해석하지 않는다(엔진 제약). 따라서 `newCountry.name.<loc>` 같은 동적 키 대신 name 객체를 통째로 재구성해 넣는다. -->
             <input value="{{_local.newCountry?.name?.[loc] ?? ''}}" class="w-40" placeholder="{{$t('sirsoft-ecommerce.admin.settings.shipping.countries.country_name') + ' (' + (_global.appConfig?.localeNames?.[loc] ?? loc) + ')'}}" disabled="{{_computed.isReadOnly}}">
               <on type="change">

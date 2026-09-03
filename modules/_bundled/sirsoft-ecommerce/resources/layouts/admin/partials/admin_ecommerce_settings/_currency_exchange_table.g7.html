@@ -1,8 +1,6 @@
-<!--
-  쇼핑몰 설정 — 통화 목록, 넓은 화면용 표. 좁은 화면용 카드(`_currency_exchange_cards`)와
+<!-- 쇼핑몰 설정 — 통화 목록, 넓은 화면용 표. 좁은 화면용 카드(`_currency_exchange_cards`)와
   같은 배열·같은 인라인 편집 규약을 쓴다(`editingCurrencyIdx` + 임시 `editingCurrency`).
-  한쪽을 고치면 다른 쪽도 함께 고쳐야 한다.
--->
+  한쪽을 고치면 다른 쪽도 함께 고쳐야 한다. -->
 <partial description="환율 설정 - Desktop 테이블 뷰">
   <div data-ref="exchange_table_container" class="table-container">
     <table data-ref="exchange_table" class="table">
@@ -73,7 +71,8 @@
           <!-- 통화별 사용 언어 (가입 시 통화 추정 매핑, A4) -->
           <td>
             <tag-input name="{{'language_currency.currencies.' + currency._idx + '.locales'}}" value="{{currency.locales ?? []}}" options="{{(_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}" placeholder="$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.locales_placeholder" class="{{Object.keys(_local.errors ?? {}).some(k => k.startsWith('language_currency.currencies.' + currency._idx + '.locales')) ? 'min-w-40 input-error' : 'min-w-40'}}" disabled="{{_computed.isReadOnly}}"/>
-            <!-- 통화별 사용 언어 검증 에러 (지원 언어 외 선택 시) --><span data-if="{{Object.keys(_local.errors ?? {}).some(k => k.startsWith('language_currency.currencies.' + currency._idx + '.locales'))}}" class="form-error">{{_local.errors?.[Object.keys(_local.errors ?? {}).find(k => k.startsWith('language_currency.currencies.' + currency._idx + '.locales'))]?.[0] ?? ''}}</span>
+            <!-- 통화별 사용 언어 검증 에러 (지원 언어 외 선택 시) -->
+            <span data-if="{{Object.keys(_local.errors ?? {}).some(k => k.startsWith('language_currency.currencies.' + currency._idx + '.locales'))}}" class="form-error">{{_local.errors?.[Object.keys(_local.errors ?? {}).find(k => k.startsWith('language_currency.currencies.' + currency._idx + '.locales'))]?.[0] ?? ''}}</span>
           </td>
           <td>
             <div data-if="{{_local.editingCurrencyIdx !== currency._idx}}" class="flex-center gap-1">

@@ -34,7 +34,8 @@
           <html-content content="{{product.data?.common_info?.content ?? ''}}" :isHtml="true" class="prose prose-sm dark:prose-invert max-w-none"/>
         </default>
       </extension-point>
-      <!-- 공통정보 - Text 모드 (줄바꿈 유지) --><div data-if="{{product.data?.common_info?.content_mode !== 'html'}}" class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">{{product.data?.common_info?.content ?? ''}}</div>
+      <!-- 공통정보 - Text 모드 (줄바꿈 유지) -->
+      <div data-if="{{product.data?.common_info?.content_mode !== 'html'}}" class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">{{product.data?.common_info?.content ?? ''}}</div>
     </div>
   </div>
 </partial>

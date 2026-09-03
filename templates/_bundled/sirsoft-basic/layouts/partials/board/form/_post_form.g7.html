@@ -127,7 +127,8 @@
         </default>
       </extension-point>
     </div>
-    <!-- 내용 필드 에러 메시지 --><p data-if="{{_local.errors?.content}}" class="mt-1 text-sm text-red-600 dark:text-red-400">{{_local.errors?.content?.[0] ?? _local.errors?.content}}</p>
+    <!-- 내용 필드 에러 메시지 -->
+    <p data-if="{{_local.errors?.content}}" class="mt-1 text-sm text-red-600 dark:text-red-400">{{_local.errors?.content?.[0] ?? _local.errors?.content}}</p>
     <!-- 파일 첨부 (게시판 설정 + 권한 체크) -->
     <div data-if="{{form_meta?.data?.board?.use_file_upload === true &amp;&amp; form_meta?.data?.board?.user_abilities?.can_upload}}">
       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -159,7 +160,15 @@
     </div>
     <!-- 버튼 영역 -->
     <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-      <!-- 취소 버튼 (등록: 목록, 수정: 상세) --><button type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"><on type="click"><navigate path="{{route.id ? '/board/' + route.slug + '/' + route.id : '/board/' + route.slug}}" :mergeQuery="true"><query/></navigate></on>$t:common.cancel</button>
+      <!-- 취소 버튼 (등록: 목록, 수정: 상세) -->
+      <button type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+        <on type="click">
+          <navigate path="{{route.id ? '/board/' + route.slug + '/' + route.id : '/board/' + route.slug}}" :mergeQuery="true">
+            <query/>
+          </navigate>
+        </on>
+        $t:common.cancel
+      </button>
       <button type="button" disabled="{{_local?.isSaving}}" class="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed">
         <on type="click">
           <!-- 저장. 아직 올라가지 않은 첨부를 먼저 올리라고 알린 뒤 글을 보낸다 — 둘을 잇는 것이 임시 키이고, 주소와 방식은 글 번호 유무로 갈린다 -->

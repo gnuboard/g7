@@ -1,5 +1,4 @@
-<!--
-  쇼핑몰 설정 — 통화 목록, 좁은 화면용 카드. 넓은 화면용 표(`_currency_exchange_table`)와
+<!-- 쇼핑몰 설정 — 통화 목록, 좁은 화면용 카드. 넓은 화면용 표(`_currency_exchange_table`)와
   **같은 배열을 같은 방식으로 편집한다**(한쪽만 고치면 화면 폭에 따라 동작이 갈린다).
   
   이 화면은 **줄 단위 인라인 편집**이다 — 어느 줄이 편집 중인지를 `editingCurrencyIdx` 가
@@ -10,8 +9,7 @@
   아니면 배열 반영. 액션 하나에 조건을 걸어 두 갈래를 만든 형태라 조건식이 서로 배타적이어야
   한다(둘 다 참이면 토스트와 반영이 함께 일어난다).
   
-  기본 통화는 지울 수 없다 — 버튼이 잠기는 것이 아니라 클래스만 바뀌므로 판정은 그 식에 있다.
--->
+  기본 통화는 지울 수 없다 — 버튼이 잠기는 것이 아니라 클래스만 바뀌므로 판정은 그 식에 있다. -->
 <partial description="환율 설정 - Mobile 카드 뷰">
   <div data-ref="exchange_cards_container">
     <div data-ref="currency_card_{{currencyIndex}}" data-each="currency, currencyIndex in (Array.isArray(_local.form?.language_currency?.currencies) ? _local.form.language_currency.currencies : []).map((c, i) => ({...c, _idx: i})).sort((a, b) => { const defaultCurrency = _local.form?.language_currency?.default_currency; if (a.code === defaultCurrency) return -1; if (b.code === defaultCurrency) return 1; return 0; })" class="excel-card">
@@ -124,7 +122,8 @@
         <div class="form-group">
           <label class="form-label">$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.locales</label>
           <tag-input name="{{'language_currency.currencies.' + currency._idx + '.locales'}}" value="{{currency.locales ?? []}}" options="{{(_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}" placeholder="$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.locales_placeholder" class="{{Object.keys(_local.errors ?? {}).some(k => k.startsWith('language_currency.currencies.' + currency._idx + '.locales')) ? 'w-full input-error' : 'w-full'}}" disabled="{{_computed.isReadOnly}}"/>
-          <!-- 통화별 사용 언어 검증 에러 (지원 언어 외 선택 시) --><p data-if="{{Object.keys(_local.errors ?? {}).some(k => k.startsWith('language_currency.currencies.' + currency._idx + '.locales'))}}" class="form-error">{{_local.errors?.[Object.keys(_local.errors ?? {}).find(k => k.startsWith('language_currency.currencies.' + currency._idx + '.locales'))]?.[0] ?? ''}}</p>
+          <!-- 통화별 사용 언어 검증 에러 (지원 언어 외 선택 시) -->
+          <p data-if="{{Object.keys(_local.errors ?? {}).some(k => k.startsWith('language_currency.currencies.' + currency._idx + '.locales'))}}" class="form-error">{{_local.errors?.[Object.keys(_local.errors ?? {}).find(k => k.startsWith('language_currency.currencies.' + currency._idx + '.locales'))]?.[0] ?? ''}}</p>
           <p class="form-hint">$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.locales_hint</p>
         </div>
       </div>

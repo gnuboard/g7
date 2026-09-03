@@ -1,11 +1,9 @@
-<!--
-  상품 목록 — 일괄변경 확인 창. 주문 쪽 확인 창과 달리 **상품과 옵션 두 층**을 따로 보여 준다.
+<!-- 상품 목록 — 일괄변경 확인 창. 주문 쪽 확인 창과 달리 **상품과 옵션 두 층**을 따로 보여 준다.
   판매상태·전시상태는 상품에 걸리지만 가격·재고는 옵션마다 걸리므로, 상품 3건을 골라도 실제로
   바뀌는 줄은 옵션 수만큼 늘어난다 — 그 차이를 미리 보지 못하면 운영자가 규모를 오해한다.
   바꿀 값과 대상 목록은 목록 화면이 `_global` 에 담아 둔 것을 읽는다(창은 부모 `_local` 을 못 본다).
   실패 목록(`bulkUpdateErrors`)도 이 창 안에 남는다 — 일부만 실패했을 때 무엇이 남았는지
-  창을 닫지 않고 읽을 수 있어야 하기 때문이다.
--->
+  창을 닫지 않고 읽을 수 있어야 하기 때문이다. -->
 <partial description="Product Index - Bulk Action Confirm Modal">
   <modal data-ref="modal_bulk_confirm" title="$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.title" size="md">
     <div class="space-y-4 max-h-96 overflow-y-auto">
@@ -48,7 +46,12 @@
       </ul>
     </div>
     <div class="flex justify-end gap-2 mt-6">
-      <button type="button" class="btn btn-outline" disabled="{{_global.isProcessing}}"><on type="click"><close-modal/></on>$t:sirsoft-ecommerce.admin.product.modal.common.cancel</button>
+      <button type="button" class="btn btn-outline" disabled="{{_global.isProcessing}}">
+        <on type="click">
+          <close-modal/>
+        </on>
+        $t:sirsoft-ecommerce.admin.product.modal.common.cancel
+      </button>
       <button type="button" class="btn btn-primary" data-testid="bulk-confirm-submit" disabled="{{_global.isProcessing || ((!_global.bulkConfirmData?.products || _global.bulkConfirmData.products.length === 0) &amp;&amp; (!_global.bulkConfirmData?.options || _global.bulkConfirmData.options.length === 0))}}">
         <on type="click">
           <action handler="sirsoft-ecommerce.bulkUpdate"/>

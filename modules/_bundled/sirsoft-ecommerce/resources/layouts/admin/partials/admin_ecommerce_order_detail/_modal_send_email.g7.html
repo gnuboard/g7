@@ -1,13 +1,11 @@
-<!--
-  주문자에게 메일을 보내는 창. 받는 주소는 고칠 수 없고(주문에 적힌 주소를 읽기 전용으로 보여준다)
+<!-- 주문자에게 메일을 보내는 창. 받는 주소는 고칠 수 없고(주문에 적힌 주소를 읽기 전용으로 보여준다)
   본문만 입력한다.
   **입력과 상태를 자기 `_local` 이 아니라 `$parent._local` 에 둔다** — 모달은 부모와 다른 컨텍스트라
   자기 지역 상태에 담으면 이 창을 여는 쪽(주문 상세 화면)이 받는 주소를 미리 채워 넣을 수 없다.
   그래서 받는 주소·본문·발송 중 깃발·오류가 전부 부모 자리에 있다.
   열릴 때마다 발송 깃발과 오류를 비운다 — 지난번 실패한 오류가 새 창에 남아 있지 않게 하는 자리다.
   실패 알림에 서버가 준 상세 사유를 괄호로 덧붙인다. 메일은 실패 원인이 밖(SMTP·수신 거부)에 있는
-  경우가 많아 한 줄 요약만으로는 손쓸 수가 없기 때문이다.
--->
+  경우가 많아 한 줄 요약만으로는 손쓸 수가 없기 때문이다. -->
 <partial description="Order Detail - Send Email Modal">
   <modal data-ref="modal_send_email" title="$t:sirsoft-ecommerce.admin.order.detail.modal.send_email.title" size="md">
     <div>
@@ -56,25 +54,23 @@
       </button>
       <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{$parent._local.isSending || !$parent._local.emailMessage}}">
         <on type="click">
-          <!--
-            발송. 성공하면 본문을 비우고 창을 닫는다 — 같은 주문에 같은 글이 두 번 나가는 것을 막는다.
+          <!-- 발송. 성공하면 본문을 비우고 창을 닫는다 — 같은 주문에 같은 글이 두 번 나가는 것을 막는다.
             실패하면 본문을 그대로 두고 창도 닫지 않는다(고쳐서 다시 보낼 수 있게).
-            발송 중 깃발을 성공·실패 양쪽에서 푸는 것이 필수다 — 한쪽만 풀면 버튼이 영영 잠긴다.
-          -->
+            발송 중 깃발을 성공·실패 양쪽에서 푸는 것이 필수다 — 한쪽만 풀면 버튼이 영영 잠긴다. -->
           <sequence>
-          <set-state target="$parent._local" :isSending="true" :emailErrors="null"/>
-          <api-call auth_mode="required" target="/api/modules/sirsoft-ecommerce/admin/orders/{{route.orderNumber}}/send-email" method="POST">
-            <success>
-              <set-state target="$parent._local" :isSending="false" emailMessage="" :emailErrors="null"/>
-              <toast message="$t:sirsoft-ecommerce.admin.order.detail.modal.send_email.sent_success" type="success"/>
-              <close-modal/>
-            </success>
-            <fail>
-              <set-state target="$parent._local" :isSending="false" emailErrors="{{error.errors}}"/>
-              <toast message="{{error.message + (error.errors?.detail ? ' (' + error.errors.detail + ')' : '')}}" type="error"/>
-            </fail>
-            <body email="{{$parent._local.emailAddress}}" message="{{$parent._local.emailMessage}}"/>
-          </api-call>
+            <set-state target="$parent._local" :isSending="true" :emailErrors="null"/>
+            <api-call auth_mode="required" target="/api/modules/sirsoft-ecommerce/admin/orders/{{route.orderNumber}}/send-email" method="POST">
+              <success>
+                <set-state target="$parent._local" :isSending="false" emailMessage="" :emailErrors="null"/>
+                <toast message="$t:sirsoft-ecommerce.admin.order.detail.modal.send_email.sent_success" type="success"/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="$parent._local" :isSending="false" emailErrors="{{error.errors}}"/>
+                <toast message="{{error.message + (error.errors?.detail ? ' (' + error.errors.detail + ')' : '')}}" type="error"/>
+              </fail>
+              <body email="{{$parent._local.emailAddress}}" message="{{$parent._local.emailMessage}}"/>
+            </api-call>
           </sequence>
         </on>
         <icon data-if="{{$parent._local.isSending}}" name="spinner" class="animate-spin" size="sm"/>

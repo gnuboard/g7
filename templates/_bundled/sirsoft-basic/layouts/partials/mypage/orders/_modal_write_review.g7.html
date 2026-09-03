@@ -86,7 +86,12 @@
       </div>
       <!-- 버튼 영역 -->
       <div class="flex gap-3 pt-2">
-        <button type="button" class="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer"><on type="click"><close-modal/></on>$t:common.cancel</button>
+        <button type="button" class="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer">
+          <on type="click">
+            <close-modal/>
+          </on>
+          $t:common.cancel
+        </button>
         <!-- 등록 버튼 — 데이터를 params로 핸들러에 직접 전달 (취소 모달 패턴과 동일) -->
         <button type="button" class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled="{{_local.isSubmittingReview === true}}">
           <on type="click">

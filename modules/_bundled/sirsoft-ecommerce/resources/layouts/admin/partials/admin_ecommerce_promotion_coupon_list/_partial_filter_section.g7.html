@@ -1,5 +1,4 @@
-<!--
-  쿠폰 목록 — 검색 필터 영역. 주문·상품 목록의 같은 영역과 구조가 같다(슬롯 등록 + 편집모드),
+<!-- 쿠폰 목록 — 검색 필터 영역. 주문·상품 목록의 같은 영역과 구조가 같다(슬롯 등록 + 편집모드),
   다만 항목이 쿠폰 도메인이고 **프리셋이 없다**.
   
   ⓐ 필터 행은 화면 밖 등록 영역에 한 번만 정의하고 `data-slot` 이 기본/상세 중 어디로 갈지를
@@ -9,8 +8,7 @@
   ⓒ 입력 중인 값은 `_local.filter` 에 모이지만 검색은 URL 로 나간다.
   
   날짜 구간이 **셋**이라 헷갈리기 쉽다 — 만든 날(`created*`), 쿠폰을 쓸 수 있는 기간
-  (`valid*`), 발급이 열려 있는 기간(`issue*`). 빠른 기간 버튼은 만든 날에만 붙어 있다.
--->
+  (`valid*`), 발급이 열려 있는 기간(`issue*`). 빠른 기간 버튼은 만든 날에만 붙어 있다. -->
 <partial description="Coupon List - Filter Section with Slot System">
   <div data-ref="filter_card" data-key="filter" class="admin-card">
     <div data-ref="slot_registration_area" class="hidden filter-grid" aria-hidden="true">
@@ -135,11 +133,56 @@
             </input>
           </div>
           <div class="flex-center flex-wrap gap-1">
-            <div class="{{_local.filter.createdDateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}"><on type="click"><!-- 만든 날 빠른 기간 여섯. 핸들러가 시작·종료일을 계산해 돌려주고 그 결과를 $prev 로 받아 담는다 — 날짜 계산을 레이아웃 표현식에 두지 않으려는 것이다. 오늘. --><sequence><action handler="sirsoft-ecommerce.setDateRange" preset="today"/><set-state target="_local" filter.createdDateQuick="{{$prev.preset}}" filter.createdStartDate="{{$prev.startDate}}" filter.createdEndDate="{{$prev.endDate}}"/></sequence></on>$t:sirsoft-ecommerce.common.date.today</div>
-            <div class="{{_local.filter.createdDateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}"><on type="click"><!-- 1주일. 눌린 버튼 표시는 createdDateQuick 이 정하고, 날짜 칸을 직접 고치면 그 표시가 지워진다. --><sequence><action handler="sirsoft-ecommerce.setDateRange" preset="week"/><set-state target="_local" filter.createdDateQuick="{{$prev.preset}}" filter.createdStartDate="{{$prev.startDate}}" filter.createdEndDate="{{$prev.endDate}}"/></sequence></on>$t:sirsoft-ecommerce.common.date.week</div>
-            <div class="{{_local.filter.createdDateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"><on type="click"><!-- 3개월. --><sequence><action handler="sirsoft-ecommerce.setDateRange" preset="3months"/><set-state target="_local" filter.createdDateQuick="{{$prev.preset}}" filter.createdStartDate="{{$prev.startDate}}" filter.createdEndDate="{{$prev.endDate}}"/></sequence></on>$t:sirsoft-ecommerce.common.date.3months</div>
-            <div class="{{_local.filter.createdDateQuick === '6months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"><on type="click"><!-- 6개월. 쿠폰은 만든 뒤 오래 살아 있는 일이 많아 주문 목록보다 긴 구간을 둔다. --><sequence><action handler="sirsoft-ecommerce.setDateRange" preset="6months"/><set-state target="_local" filter.createdDateQuick="{{$prev.preset}}" filter.createdStartDate="{{$prev.startDate}}" filter.createdEndDate="{{$prev.endDate}}"/></sequence></on>$t:sirsoft-ecommerce.common.date.6months</div>
-            <div class="{{_local.filter.createdDateQuick === '1year' ? 'btn-date active' : 'btn-date cursor-pointer'}}"><on type="click"><!-- 1년. 이 구간은 주문·상품 목록에는 없다. --><sequence><action handler="sirsoft-ecommerce.setDateRange" preset="1year"/><set-state target="_local" filter.createdDateQuick="{{$prev.preset}}" filter.createdStartDate="{{$prev.startDate}}" filter.createdEndDate="{{$prev.endDate}}"/></sequence></on>$t:sirsoft-ecommerce.common.date.1year</div>
+            <div class="{{_local.filter.createdDateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <!-- 만든 날 빠른 기간 여섯. 핸들러가 시작·종료일을 계산해 돌려주고 그 결과를 $prev 로 받아 담는다 — 날짜 계산을 레이아웃 표현식에 두지 않으려는 것이다. 오늘. -->
+                <sequence>
+                  <action handler="sirsoft-ecommerce.setDateRange" preset="today"/>
+                  <set-state target="_local" filter.createdDateQuick="{{$prev.preset}}" filter.createdStartDate="{{$prev.startDate}}" filter.createdEndDate="{{$prev.endDate}}"/>
+                </sequence>
+              </on>
+              $t:sirsoft-ecommerce.common.date.today
+            </div>
+            <div class="{{_local.filter.createdDateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <!-- 1주일. 눌린 버튼 표시는 createdDateQuick 이 정하고, 날짜 칸을 직접 고치면 그 표시가 지워진다. -->
+                <sequence>
+                  <action handler="sirsoft-ecommerce.setDateRange" preset="week"/>
+                  <set-state target="_local" filter.createdDateQuick="{{$prev.preset}}" filter.createdStartDate="{{$prev.startDate}}" filter.createdEndDate="{{$prev.endDate}}"/>
+                </sequence>
+              </on>
+              $t:sirsoft-ecommerce.common.date.week
+            </div>
+            <div class="{{_local.filter.createdDateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <!-- 3개월. -->
+                <sequence>
+                  <action handler="sirsoft-ecommerce.setDateRange" preset="3months"/>
+                  <set-state target="_local" filter.createdDateQuick="{{$prev.preset}}" filter.createdStartDate="{{$prev.startDate}}" filter.createdEndDate="{{$prev.endDate}}"/>
+                </sequence>
+              </on>
+              $t:sirsoft-ecommerce.common.date.3months
+            </div>
+            <div class="{{_local.filter.createdDateQuick === '6months' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <!-- 6개월. 쿠폰은 만든 뒤 오래 살아 있는 일이 많아 주문 목록보다 긴 구간을 둔다. -->
+                <sequence>
+                  <action handler="sirsoft-ecommerce.setDateRange" preset="6months"/>
+                  <set-state target="_local" filter.createdDateQuick="{{$prev.preset}}" filter.createdStartDate="{{$prev.startDate}}" filter.createdEndDate="{{$prev.endDate}}"/>
+                </sequence>
+              </on>
+              $t:sirsoft-ecommerce.common.date.6months
+            </div>
+            <div class="{{_local.filter.createdDateQuick === '1year' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <!-- 1년. 이 구간은 주문·상품 목록에는 없다. -->
+                <sequence>
+                  <action handler="sirsoft-ecommerce.setDateRange" preset="1year"/>
+                  <set-state target="_local" filter.createdDateQuick="{{$prev.preset}}" filter.createdStartDate="{{$prev.startDate}}" filter.createdEndDate="{{$prev.endDate}}"/>
+                </sequence>
+              </on>
+              $t:sirsoft-ecommerce.common.date.1year
+            </div>
           </div>
         </div>
       </div>
@@ -503,9 +546,44 @@
         </div>
         <div class="flex-center justify-center gap-2 flex-1">
           <responsive on="portable" class="contents"/>
-          <button data-ref="search_button" type="button" class="btn btn-primary"><responsive on="portable" class="btn btn-primary flex-1"/><on type="click"><action-ref name="searchCoupons"/></on>$t:sirsoft-ecommerce.admin.promotion_coupon.action.search</button>
+          <button data-ref="search_button" type="button" class="btn btn-primary">
+            <responsive on="portable" class="btn btn-primary flex-1"/>
+            <on type="click">
+              <action-ref name="searchCoupons"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.promotion_coupon.action.search
+          </button>
           <!-- 필터 초기화(넓은 화면). 검색 조건과 함께 발급자 검색 결과 목록까지 비운다 — 남겨 두면 초기화한 뒤에도 지난 검색의 후보가 떠 있다 -->
-          <button data-ref="reset_button_pc" type="button" class="btn btn-outline"><responsive on="portable" class="hidden"/><on type="click"><set-state target="_local" :creatorSearchResults="[]"><field name="filter"><field name="searchField" value="all"/><field name="searchKeyword" value=""/><field name="targetType" value="all"/><field name="discountType" value="all"/><field name="issueStatus" value="all"/><field name="issueMethod" value="all"/><field name="issueCondition" value="all"/><field name="minBenefitAmount" value=""/><field name="maxBenefitAmount" value=""/><field name="minOrderAmount" value=""/><field name="createdStartDate" value=""/><field name="createdEndDate" value=""/><field name="createdDateQuick" value=""/><field name="validStartDate" value=""/><field name="validEndDate" value=""/><field name="issueStartDate" value=""/><field name="issueEndDate" value=""/><field name="createdBy" value=""/></field></set-state><!-- audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. --><navigate path="/admin/ecommerce/promotion-coupons" :mergeQuery="false" :replace="true"/></on>$t:sirsoft-ecommerce.admin.promotion_coupon.action.reset</button>
+          <button data-ref="reset_button_pc" type="button" class="btn btn-outline">
+            <responsive on="portable" class="hidden"/>
+            <on type="click">
+              <set-state target="_local" :creatorSearchResults="[]">
+                <field name="filter">
+                  <field name="searchField" value="all"/>
+                  <field name="searchKeyword" value=""/>
+                  <field name="targetType" value="all"/>
+                  <field name="discountType" value="all"/>
+                  <field name="issueStatus" value="all"/>
+                  <field name="issueMethod" value="all"/>
+                  <field name="issueCondition" value="all"/>
+                  <field name="minBenefitAmount" value=""/>
+                  <field name="maxBenefitAmount" value=""/>
+                  <field name="minOrderAmount" value=""/>
+                  <field name="createdStartDate" value=""/>
+                  <field name="createdEndDate" value=""/>
+                  <field name="createdDateQuick" value=""/>
+                  <field name="validStartDate" value=""/>
+                  <field name="validEndDate" value=""/>
+                  <field name="issueStartDate" value=""/>
+                  <field name="issueEndDate" value=""/>
+                  <field name="createdBy" value=""/>
+                </field>
+              </set-state>
+              <!-- audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. -->
+              <navigate path="/admin/ecommerce/promotion-coupons" :mergeQuery="false" :replace="true"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.promotion_coupon.action.reset
+          </button>
         </div>
         <div class="flex-1">
           <responsive on="portable" class="hidden"/>
@@ -524,7 +602,35 @@
           <span>$t:sirsoft-ecommerce.admin.promotion_coupon.action.edit_search</span>
         </button>
         <!-- 필터 초기화(좁은 화면). 넓은 화면 버튼과 같은 일을 하며, 두 벌을 두는 것은 반응형에서 버튼 배치가 달라지기 때문이다 -->
-        <button data-ref="reset_button_mobile" type="button" class="btn btn-outline flex-1"><on type="click"><set-state target="_local" :creatorSearchResults="[]"><field name="filter"><field name="searchField" value="all"/><field name="searchKeyword" value=""/><field name="targetType" value="all"/><field name="discountType" value="all"/><field name="issueStatus" value="all"/><field name="issueMethod" value="all"/><field name="issueCondition" value="all"/><field name="minBenefitAmount" value=""/><field name="maxBenefitAmount" value=""/><field name="minOrderAmount" value=""/><field name="createdStartDate" value=""/><field name="createdEndDate" value=""/><field name="createdDateQuick" value=""/><field name="validStartDate" value=""/><field name="validEndDate" value=""/><field name="issueStartDate" value=""/><field name="issueEndDate" value=""/><field name="createdBy" value=""/></field></set-state><!-- audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. --><navigate path="/admin/ecommerce/promotion-coupons" :mergeQuery="false" :replace="true"/></on>$t:sirsoft-ecommerce.admin.promotion_coupon.action.reset</button>
+        <button data-ref="reset_button_mobile" type="button" class="btn btn-outline flex-1">
+          <on type="click">
+            <set-state target="_local" :creatorSearchResults="[]">
+              <field name="filter">
+                <field name="searchField" value="all"/>
+                <field name="searchKeyword" value=""/>
+                <field name="targetType" value="all"/>
+                <field name="discountType" value="all"/>
+                <field name="issueStatus" value="all"/>
+                <field name="issueMethod" value="all"/>
+                <field name="issueCondition" value="all"/>
+                <field name="minBenefitAmount" value=""/>
+                <field name="maxBenefitAmount" value=""/>
+                <field name="minOrderAmount" value=""/>
+                <field name="createdStartDate" value=""/>
+                <field name="createdEndDate" value=""/>
+                <field name="createdDateQuick" value=""/>
+                <field name="validStartDate" value=""/>
+                <field name="validEndDate" value=""/>
+                <field name="issueStartDate" value=""/>
+                <field name="issueEndDate" value=""/>
+                <field name="createdBy" value=""/>
+              </field>
+            </set-state>
+            <!-- audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. -->
+            <navigate path="/admin/ecommerce/promotion-coupons" :mergeQuery="false" :replace="true"/>
+          </on>
+          $t:sirsoft-ecommerce.admin.promotion_coupon.action.reset
+        </button>
       </div>
     </div>
   </div>

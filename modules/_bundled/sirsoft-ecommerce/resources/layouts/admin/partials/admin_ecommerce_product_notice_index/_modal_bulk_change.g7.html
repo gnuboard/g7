@@ -1,10 +1,8 @@
-<!--
-  상품 공지 템플릿을 고칠 때, 그 템플릿을 이미 쓰고 있는 상품들에도 함께 반영할지 확인받는 창.
+<!-- 상품 공지 템플릿을 고칠 때, 그 템플릿을 이미 쓰고 있는 상품들에도 함께 반영할지 확인받는 창.
   템플릿은 여러 상품이 참조하므로 한 번의 수정이 넓게 번진다 — 그래서 저장 전에 한 번 묻는다.
   이 창은 저장하지 않는다. 확인을 누르면 폼이 잡아 둔 값(`_global.tempFormForBulkChange`)을
   **이벤트로 되돌려 보내고**(`notice:bulkChangeConfirmed`), 실제 저장은 그 이벤트를 받은 폼이 한다
-  — 폼은 다른 조각이라 이 창의 지역 상태에 손이 닿지 않는다.
--->
+  — 폼은 다른 조각이라 이 창의 지역 상태에 손이 닿지 않는다. -->
 <partial description="Product Notice Template Bulk Change Confirmation Modal">
   <modal data-ref="bulk_change_modal" title="$t:sirsoft-ecommerce.admin.product_notice_template.modals.bulk_change.title" size="medium">
     <div>
@@ -33,12 +31,12 @@
         <on type="click">
           <!-- 확인 — 잡아 둔 폼 값을 폼 쪽으로 되돌려 보내고 창을 닫는다. 저장은 그 이벤트를 받은 폼이 하므로 여기에는 API 호출이 없다. -->
           <sequence>
-          <emit-event event="notice:bulkChangeConfirmed">
-            <field name="data">
-              <field name="form" value="{{_global.tempFormForBulkChange}}"/>
-            </field>
-          </emit-event>
-          <close-modal/>
+            <emit-event event="notice:bulkChangeConfirmed">
+              <field name="data">
+                <field name="form" value="{{_global.tempFormForBulkChange}}"/>
+              </field>
+            </emit-event>
+            <close-modal/>
           </sequence>
         </on>
         <span>$t:sirsoft-ecommerce.admin.product_notice_template.modals.bulk_change.confirm</span>

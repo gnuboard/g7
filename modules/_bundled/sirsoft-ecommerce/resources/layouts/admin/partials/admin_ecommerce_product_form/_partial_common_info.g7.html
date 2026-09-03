@@ -1,8 +1,6 @@
-<!--
-  상품 폼 — 공통정보 구획. 여러 상품이 함께 쓰는 안내문을 골라 붙인다. 「기본값 따라가기」를 켜면
+<!-- 상품 폼 — 공통정보 구획. 여러 상품이 함께 쓰는 안내문을 골라 붙인다. 「기본값 따라가기」를 켜면
   기본으로 지정된 안내문이 자동으로 걸리고 목록 선택은 잠긴다 — 나중에 기본값을 바꾸면 이 상품도
-  따라가게 하려는 것이다. 고른 안내문의 본문은 아래 접이식 카드에서 읽기 전용으로 보여 준다.
--->
+  따라가게 하려는 것이다. 고른 안내문의 본문은 아래 접이식 카드에서 읽기 전용으로 보여 준다. -->
 <partial description="Product Form - Common Info Section (시안 반영)">
   <div data-ref="common_info" class="admin-card-accordion">
     <div class="card-header">
@@ -43,7 +41,17 @@
         <span class="text-label">$t:sirsoft-ecommerce.admin.product.common_info.use_default</span>
       </div>
       <div data-ref="common_info_buttons_container" data-if="{{(common_infos?.data?.data ?? []).length > 0}}" class="{{_local.errors?.common_info_id ? 'flex flex-wrap gap-2 p-2 border border-red-500 dark:border-red-500 rounded-lg' : 'flex flex-wrap gap-2'}}">
-        <button data-ref="common_info_none_button" type="button" class="{{!_local.form.common_info_id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}} px-4 py-2 border rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.form.use_default_common_info || (route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true)}}"><on type="click"><!-- 「사용 안 함」 — 선택을 비우면서 아래 상세 카드도 함께 접는다(가리킬 안내문이 없어진 카드가 펼쳐진 채 남지 않도록) --><sequence><set-state target="local" :form.common_info_id="null"/><set-state target="local" :ui.commonInfoDetailExpanded="false"/><set-state target="local" hasChanges="{{!!route?.itemCode}}"/></sequence></on>$t:sirsoft-ecommerce.admin.product.common_info.none</button>
+        <button data-ref="common_info_none_button" type="button" class="{{!_local.form.common_info_id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}} px-4 py-2 border rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.form.use_default_common_info || (route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true)}}">
+          <on type="click">
+            <!-- 「사용 안 함」 — 선택을 비우면서 아래 상세 카드도 함께 접는다(가리킬 안내문이 없어진 카드가 펼쳐진 채 남지 않도록) -->
+            <sequence>
+              <set-state target="local" :form.common_info_id="null"/>
+              <set-state target="local" :ui.commonInfoDetailExpanded="false"/>
+              <set-state target="local" hasChanges="{{!!route?.itemCode}}"/>
+            </sequence>
+          </on>
+          $t:sirsoft-ecommerce.admin.product.common_info.none
+        </button>
         <button data-ref="common_info_default_button" data-if="{{(common_infos?.data?.data ?? []).some(c => c.is_default)}}" type="button" class="{{_local.form.common_info_id === (common_infos?.data?.data ?? []).find(c => c.is_default)?.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}} px-4 py-2 border rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.form.use_default_common_info || (route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true)}}">
           <on type="click">
             <!-- 기본 안내문 고르기 — 「따라가기」와 달리 지금 값만 붙이므로, 나중에 기본값이 바뀌어도 이 상품은 따라가지 않는다 -->
@@ -56,7 +64,16 @@
           <span>{{$localized((common_infos?.data?.data ?? []).find(c => c.is_default)?.name)}}</span>
         </button>
         <div data-ref="common_info_other_buttons_wrapper_{{idx}}" data-each="commonInfo, idx in {{(common_infos?.data?.data ?? []).filter(c => !c.is_default)}}" class="contents">
-          <button data-ref="common_info_btn_{{commonInfo.id}}" type="button" class="{{_local.form.common_info_id === commonInfo.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}} px-4 py-2 border rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.form.use_default_common_info || (route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true)}}"><on type="click"><!-- 기본값이 아닌 안내문 고르기 --><sequence><set-state target="local" form.common_info_id="{{commonInfo.id}}"/><set-state target="local" hasChanges="{{!!route?.itemCode}}"/></sequence></on>{{$localized(commonInfo.name)}}</button>
+          <button data-ref="common_info_btn_{{commonInfo.id}}" type="button" class="{{_local.form.common_info_id === commonInfo.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}} px-4 py-2 border rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.form.use_default_common_info || (route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true)}}">
+            <on type="click">
+              <!-- 기본값이 아닌 안내문 고르기 -->
+              <sequence>
+                <set-state target="local" form.common_info_id="{{commonInfo.id}}"/>
+                <set-state target="local" hasChanges="{{!!route?.itemCode}}"/>
+              </sequence>
+            </on>
+            {{$localized(commonInfo.name)}}
+          </button>
         </div>
       </div>
       <span data-if="{{_local.errors?.common_info_id}}" class="form-error-xs mt-1">{{_local.errors?.common_info_id?.[0]}}</span>

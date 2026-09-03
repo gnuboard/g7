@@ -1,5 +1,4 @@
-<!--
-  언어팩 관리 화면의 본문이자 **정본 하나**다. 확장 상세에서 들어오는 화면은 이 조각을 그대로
+<!-- 언어팩 관리 화면의 본문이자 **정본 하나**다. 확장 상세에서 들어오는 화면은 이 조각을 그대로
   두르고 되돌아가기 버튼과 안내 띠만 얹으므로, 목록·필터·카드를 고칠 자리는 여기 한 곳이다.
 
   세 가지가 다른 목록 화면과 다르다.
@@ -7,32 +6,29 @@
   · 「보호됨」으로 표시되는 팩은 코어·번들이 늘 켜 둔 것이라 끄지도 지우지도 못하고, 기본적으로
     목록에서 빠져 있다(체크를 풀면 함께 보인다).
   · 아직 안 깔린 번들 팩도 한 목록에 섞여 나온다 — 그쪽은 상태가 「미설치」이고 설치 버튼이 붙는다.
-    설치가 막힌 팩은 왜 막혔는지(대상 미설치·비활성·버전 낮음 등)를 카드 안에 적어 준다.
--->
+    설치가 막힌 팩은 왜 막혔는지(대상 미설치·비활성·버전 낮음 등)를 카드 안에 적어 준다. -->
 <partial description="언어팩 관리 본문 SSoT — 카드형 UI (모듈/플러그인/템플릿 관리와 일관 수준). PageHeader + 모바일 액션 영역 + 검색/필터 + CardGrid + 페이지네이션. 확장 컨텍스트 wrapper(partials/admin_extension_language_packs/_content.json) 가 back 버튼/배너만 추가하여 재사용.">
   <div data-ref="lang_pack_content">
     <page-header data-ref="lp_page_header" title="$t:admin.language_packs.title" description="$t:admin.language_packs.description">
       <button data-ref="lp_btn_check_updates" data-if="{{language_packs?.data?.abilities?.can_check_updates}}" type="button" disabled="{{_global.isLanguagePackCheckingUpdates}}" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
         <responsive on="portable" class="hidden"/>
         <on type="click">
-          <!--
-            등록된 팩들의 새 판본을 원격에서 확인해 표시만 갱신한다 — 받거나 깔지는 않는다.
+          <!-- 등록된 팩들의 새 판본을 원격에서 확인해 표시만 갱신한다 — 받거나 깔지는 않는다.
             누르는 동안 잠그는 값이 전역인 이유는 아래 좁은 화면용 버튼과 **같은 버튼 하나**로
-            보여야 하기 때문이다(두 버튼이 같은 값을 보고 함께 잠긴다).
-          -->
+            보여야 하기 때문이다(두 버튼이 같은 값을 보고 함께 잠긴다). -->
           <sequence>
-          <set-state target="global" :isLanguagePackCheckingUpdates="true"/>
-          <api-call :auth_required="true" target="/api/admin/language-packs/check-updates" method="POST">
-            <success>
-              <set-state target="global" :isLanguagePackCheckingUpdates="false"/>
-              <toast type="success" message="{{response.data?.updates > 0 ? '$t:admin.language_packs.messages.check_updates_done|count=' + response.data.updates : '$t:admin.language_packs.messages.check_updates_none'}}"/>
-              <refetch-data-source dataSourceId="language_packs"/>
-            </success>
-            <fail>
-              <set-state target="global" :isLanguagePackCheckingUpdates="false"/>
-              <toast type="error" message="{{error.message ?? '$t:admin.language_packs.messages.check_updates_failed'}}"/>
-            </fail>
-          </api-call>
+            <set-state target="global" :isLanguagePackCheckingUpdates="true"/>
+            <api-call :auth_required="true" target="/api/admin/language-packs/check-updates" method="POST">
+              <success>
+                <set-state target="global" :isLanguagePackCheckingUpdates="false"/>
+                <toast type="success" message="{{response.data?.updates > 0 ? '$t:admin.language_packs.messages.check_updates_done|count=' + response.data.updates : '$t:admin.language_packs.messages.check_updates_none'}}"/>
+                <refetch-data-source dataSourceId="language_packs"/>
+              </success>
+              <fail>
+                <set-state target="global" :isLanguagePackCheckingUpdates="false"/>
+                <toast type="error" message="{{error.message ?? '$t:admin.language_packs.messages.check_updates_failed'}}"/>
+              </fail>
+            </api-call>
           </sequence>
         </on>
         <icon data-if="{{!_global.isLanguagePackCheckingUpdates}}" name="fas fa-sync-alt" size="sm"/>
@@ -62,18 +58,18 @@
         <on type="click">
           <!-- 좁은 화면용 같은 버튼 — 위 것과 한 벌이라 동작이 같아야 한다. 한쪽만 고치면 화면 폭에 따라 다르게 동작한다. -->
           <sequence>
-          <set-state target="global" :isLanguagePackCheckingUpdates="true"/>
-          <api-call :auth_required="true" target="/api/admin/language-packs/check-updates" method="POST">
-            <success>
-              <set-state target="global" :isLanguagePackCheckingUpdates="false"/>
-              <toast type="success" message="{{response.data?.updates > 0 ? '$t:admin.language_packs.messages.check_updates_done|count=' + response.data.updates : '$t:admin.language_packs.messages.check_updates_none'}}"/>
-              <refetch-data-source dataSourceId="language_packs"/>
-            </success>
-            <fail>
-              <set-state target="global" :isLanguagePackCheckingUpdates="false"/>
-              <toast type="error" message="{{error.message ?? '$t:admin.language_packs.messages.check_updates_failed'}}"/>
-            </fail>
-          </api-call>
+            <set-state target="global" :isLanguagePackCheckingUpdates="true"/>
+            <api-call :auth_required="true" target="/api/admin/language-packs/check-updates" method="POST">
+              <success>
+                <set-state target="global" :isLanguagePackCheckingUpdates="false"/>
+                <toast type="success" message="{{response.data?.updates > 0 ? '$t:admin.language_packs.messages.check_updates_done|count=' + response.data.updates : '$t:admin.language_packs.messages.check_updates_none'}}"/>
+                <refetch-data-source dataSourceId="language_packs"/>
+              </success>
+              <fail>
+                <set-state target="global" :isLanguagePackCheckingUpdates="false"/>
+                <toast type="error" message="{{error.message ?? '$t:admin.language_packs.messages.check_updates_failed'}}"/>
+              </fail>
+            </api-call>
           </sequence>
         </on>
         <icon data-if="{{!_global.isLanguagePackCheckingUpdates}}" name="fas fa-sync-alt" size="sm"/>
@@ -259,13 +255,11 @@
                 <toggle data-if="{{row.status !== 'uninstalled'}}" checked="{{row.status === 'active'}}" disabled="{{row.is_protected === true || (row.abilities?.can_activate !== true &amp;&amp; row.abilities?.can_deactivate !== true)}}" title="{{row.is_protected === true ? '$t:admin.language_packs.messages.protected_badge' : ''}}" size="sm">
                   <responsive on="portable" class="absolute right-4 top-4"/>
                   <on event="onChange">
-                    <!--
-                      켜고 끄기를 한 스위치로 처리하려고 **주소 자체를 갈아 끼운다**(켜면 활성, 끄면 비활성).
+                    <!-- 켜고 끄기를 한 스위치로 처리하려고 **주소 자체를 갈아 끼운다**(켜면 활성, 끄면 비활성).
                       성공하면 목록을 다시 받고 확장들을 새로 읽는다 — 새 언어 자원이 실제로 화면에
                       적용되려면 다시 읽는 쪽이 필요하다.
                       한 언어 자리를 두 팩이 다툴 때는 서버가 409 로 알리는데, 그건 실패가 아니라
-                      **선택을 물어야 하는 상황**이라 오류 알림 대신 어느 쪽을 쓸지 고르는 창을 연다.
-                    -->
+                      **선택을 물어야 하는 상황**이라 오류 알림 대신 어느 쪽을 쓸지 고르는 창을 연다. -->
                     <api-call :auth_required="true" target="{{$event.target.checked ? '/api/admin/language-packs/' + row.id + '/activate' : '/api/admin/language-packs/' + row.id + '/deactivate'}}" method="POST">
                       <success>
                         <toast type="success" message="{{$event.target.checked ? '$t:admin.language_packs.messages.activate_success' : '$t:admin.language_packs.messages.deactivate_success'}}"/>
@@ -292,12 +286,10 @@
                       <item id="uninstall" label="$t:admin.language_packs.actions.uninstall" iconName="trash" variant="danger" disabled="{{row.is_protected === true || row.status === 'uninstalled' || row.abilities?.can_uninstall !== true}}"/>
                     </prop>
                     <on type="action" event="onItemClick">
-                      <!--
-                        상세는 **서버를 다시 부른다** — 목록 응답에는 매니페스트 전문이나 번역 통계가
+                      <!-- 상세는 **서버를 다시 부른다** — 목록 응답에는 매니페스트 전문이나 번역 통계가
                         실리지 않는다. 그래서 볼 팩을 먼저 정해 두고 상세 데이터소스를 다시 받은 뒤 연다.
                         삭제는 반대로 목록이 이미 아는 값 넷만 담아 확인 창을 연다(그 창은 지울 대상만
-                        보여 주면 된다).
-                      -->
+                        보여 주면 된다). -->
                       <switch>
                         <case when="view_detail">
                           <set-state target="local" detailId="{{row.id ?? row.bundled_identifier ?? row.identifier}}"/>

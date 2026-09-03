@@ -1,5 +1,4 @@
-<!--
-  관리자 전 화면의 베이스 레이아웃. 자식 화면은 `extends="_admin_base"` 로 이것을 상속하고
+<!-- 관리자 전 화면의 베이스 레이아웃. 자식 화면은 `extends="_admin_base"` 로 이것을 상속하고
   `content` 슬롯에만 자기 본문을 넣는다 — 사이드바·헤더·알림·전역 호스트는 전부 여기 몫이다.
   그래서 여기에 둔 데이터소스 7개는 **화면마다 다시 부르지 않는다**. 자식 화면에서 같은 id 를
   또 선언하면 부모와 충돌한다(레이아웃 간 data_sources id 는 고유해야 한다).
@@ -13,8 +12,7 @@
 
   알림 센터는 데스크톱·모바일 두 벌이 **같은 동작을 그대로 반복한다**(`notification_center_desktop`
   ↔ `_mobile`). 한쪽 이벤트 배선을 고치면 반드시 다른 쪽도 같이 고친다 — 뷰포트에 따라 한쪽만
-  렌더되므로 갈라져도 화면에서는 조용하다.
--->
+  렌더되므로 갈라져도 화면에서는 조용하다. -->
 <layout name="_admin_base" version="1.0.0">
   <meta title="$t:admin.base_layout_title" description="$t:admin.base_layout_description" :is_base="true"/>
   <!-- 사이드바 메뉴 — 현재 사용자의 역할이 접근 가능한 메뉴만 서버가 걸러 준다(프론트에서 다시 거르지 않는다). -->
@@ -97,7 +95,8 @@
             </on>
             <span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">$t:admin.language</span>
             <span class="flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-300">
-              <!-- 접힘 상태 요약 = 현재 언어명 --><span class="font-medium">{{_global.appConfig?.localeNames?.[$locale] ?? $locale}}</span>
+              <!-- 접힘 상태 요약 = 현재 언어명 -->
+              <span class="font-medium">{{_global.appConfig?.localeNames?.[$locale] ?? $locale}}</span>
               <icon name="chevron-down" class="{{_global.mobileLanguageOpen ? 'rotate-180' : ''}} text-xs text-gray-400 dark:text-gray-500 transition-transform duration-200"/>
             </span>
           </button>

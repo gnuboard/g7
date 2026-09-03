@@ -1,8 +1,6 @@
-<!--
-  상품 폼 — 판매정보 구획. 정가·판매가·과세·판매상태·진열상태를 정한다. 재고는 여기서 못 고친다 —
+<!-- 상품 폼 — 판매정보 구획. 정가·판매가·과세·판매상태·진열상태를 정한다. 재고는 여기서 못 고친다 —
   옵션별 재고의 합이라 옵션 구획이 정한다. 좁은 화면은 배치가 달라 같은 항목을 두 벌 세우고
-  `responsive` 로 한쪽만 남긴다.
--->
+  `responsive` 로 한쪽만 남긴다. -->
 <partial description="Product Form - Sales Information Section">
   <div data-ref="sales" class="admin-card-accordion">
     <div class="card-header">
@@ -100,9 +98,19 @@
         <label class="form-label w-28 shrink-0 mb-0">$t:sirsoft-ecommerce.admin.product.fields.tax_status</label>
         <div class="btn-group">
           <!-- 과세 상품 (넓은 화면) -->
-          <button type="button" class="btn-group-item {{_local.form.tax_status === 'taxable' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><on type="click"><set-state target="local" form.tax_status="taxable"/></on>$t:sirsoft-ecommerce.admin.product.tax.taxable</button>
+          <button type="button" class="btn-group-item {{_local.form.tax_status === 'taxable' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+            <on type="click">
+              <set-state target="local" form.tax_status="taxable"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.product.tax.taxable
+          </button>
           <!-- 면세 상품 — 부가세 계산과 세금계산서 발행이 갈린다 (넓은 화면) -->
-          <button type="button" class="btn-group-item {{_local.form.tax_status === 'tax_free' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><on type="click"><set-state target="local" form.tax_status="tax_free"/></on>$t:sirsoft-ecommerce.admin.product.tax.tax_free</button>
+          <button type="button" class="btn-group-item {{_local.form.tax_status === 'tax_free' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+            <on type="click">
+              <set-state target="local" form.tax_status="tax_free"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.product.tax.tax_free
+          </button>
         </div>
       </div>
       <div data-ref="tax_status_row_mobile" class="form-group">
@@ -110,9 +118,19 @@
         <label class="form-label">$t:sirsoft-ecommerce.admin.product.fields.tax_status</label>
         <div class="btn-group">
           <!-- 과세 상품 (좁은 화면) -->
-          <button type="button" class="btn-group-item {{_local.form.tax_status === 'taxable' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><on type="click"><set-state target="local" form.tax_status="taxable"/></on>$t:sirsoft-ecommerce.admin.product.tax.taxable</button>
+          <button type="button" class="btn-group-item {{_local.form.tax_status === 'taxable' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+            <on type="click">
+              <set-state target="local" form.tax_status="taxable"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.product.tax.taxable
+          </button>
           <!-- 면세 상품 — 부가세 계산과 세금계산서 발행이 갈린다 (좁은 화면) -->
-          <button type="button" class="btn-group-item {{_local.form.tax_status === 'tax_free' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><on type="click"><set-state target="local" form.tax_status="tax_free"/></on>$t:sirsoft-ecommerce.admin.product.tax.tax_free</button>
+          <button type="button" class="btn-group-item {{_local.form.tax_status === 'tax_free' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+            <on type="click">
+              <set-state target="local" form.tax_status="tax_free"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.product.tax.tax_free
+          </button>
         </div>
       </div>
       <div data-ref="sales_status_row_desktop" class="flex-center form-group gap-4">
@@ -120,13 +138,33 @@
         <label class="form-label w-28 shrink-0 mb-0">$t:sirsoft-ecommerce.admin.product.fields.sales_status</label>
         <div class="btn-group">
           <!-- 판매중 (넓은 화면) -->
-          <button type="button" class="btn-group-item {{_local.form.sales_status === 'on_sale' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><on type="click"><set-state target="local" form.sales_status="on_sale"/></on>$t:sirsoft-ecommerce.admin.product.sales_status.on_sale</button>
+          <button type="button" class="btn-group-item {{_local.form.sales_status === 'on_sale' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+            <on type="click">
+              <set-state target="local" form.sales_status="on_sale"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.product.sales_status.on_sale
+          </button>
           <!-- 품절 — 재고와 별개로 운영자가 직접 세우는 표시다 (넓은 화면) -->
-          <button type="button" class="btn-group-item {{_local.form.sales_status === 'sold_out' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><on type="click"><set-state target="local" form.sales_status="sold_out"/></on>$t:sirsoft-ecommerce.admin.product.sales_status.sold_out</button>
+          <button type="button" class="btn-group-item {{_local.form.sales_status === 'sold_out' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+            <on type="click">
+              <set-state target="local" form.sales_status="sold_out"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.product.sales_status.sold_out
+          </button>
           <!-- 판매중지 — 상품 화면은 열리되 살 수 없다 (넓은 화면) -->
-          <button type="button" class="btn-group-item {{_local.form.sales_status === 'suspended' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><on type="click"><set-state target="local" form.sales_status="suspended"/></on>$t:sirsoft-ecommerce.admin.product.sales_status.suspended</button>
+          <button type="button" class="btn-group-item {{_local.form.sales_status === 'suspended' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+            <on type="click">
+              <set-state target="local" form.sales_status="suspended"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.product.sales_status.suspended
+          </button>
           <!-- 판매예정 (넓은 화면) -->
-          <button type="button" class="btn-group-item {{_local.form.sales_status === 'coming_soon' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><on type="click"><set-state target="local" form.sales_status="coming_soon"/></on>$t:sirsoft-ecommerce.admin.product.sales_status.coming_soon</button>
+          <button type="button" class="btn-group-item {{_local.form.sales_status === 'coming_soon' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+            <on type="click">
+              <set-state target="local" form.sales_status="coming_soon"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.product.sales_status.coming_soon
+          </button>
         </div>
       </div>
       <div data-ref="sales_status_row_mobile" class="form-group">
@@ -134,13 +172,33 @@
         <label class="form-label">$t:sirsoft-ecommerce.admin.product.fields.sales_status</label>
         <div class="btn-group flex-wrap">
           <!-- 판매중 (좁은 화면) -->
-          <button type="button" class="btn-group-item {{_local.form.sales_status === 'on_sale' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><on type="click"><set-state target="local" form.sales_status="on_sale"/></on>$t:sirsoft-ecommerce.admin.product.sales_status.on_sale</button>
+          <button type="button" class="btn-group-item {{_local.form.sales_status === 'on_sale' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+            <on type="click">
+              <set-state target="local" form.sales_status="on_sale"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.product.sales_status.on_sale
+          </button>
           <!-- 품절 — 재고와 별개로 운영자가 직접 세우는 표시다 (좁은 화면) -->
-          <button type="button" class="btn-group-item {{_local.form.sales_status === 'sold_out' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><on type="click"><set-state target="local" form.sales_status="sold_out"/></on>$t:sirsoft-ecommerce.admin.product.sales_status.sold_out</button>
+          <button type="button" class="btn-group-item {{_local.form.sales_status === 'sold_out' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+            <on type="click">
+              <set-state target="local" form.sales_status="sold_out"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.product.sales_status.sold_out
+          </button>
           <!-- 판매중지 — 상품 화면은 열리되 살 수 없다 (좁은 화면) -->
-          <button type="button" class="btn-group-item {{_local.form.sales_status === 'suspended' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><on type="click"><set-state target="local" form.sales_status="suspended"/></on>$t:sirsoft-ecommerce.admin.product.sales_status.suspended</button>
+          <button type="button" class="btn-group-item {{_local.form.sales_status === 'suspended' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+            <on type="click">
+              <set-state target="local" form.sales_status="suspended"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.product.sales_status.suspended
+          </button>
           <!-- 판매예정 (좁은 화면) -->
-          <button type="button" class="btn-group-item {{_local.form.sales_status === 'coming_soon' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><on type="click"><set-state target="local" form.sales_status="coming_soon"/></on>$t:sirsoft-ecommerce.admin.product.sales_status.coming_soon</button>
+          <button type="button" class="btn-group-item {{_local.form.sales_status === 'coming_soon' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+            <on type="click">
+              <set-state target="local" form.sales_status="coming_soon"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.product.sales_status.coming_soon
+          </button>
         </div>
       </div>
       <div data-ref="display_status_row_desktop" class="flex-center form-group gap-4">
@@ -148,9 +206,19 @@
         <label class="form-label w-28 shrink-0 mb-0">$t:sirsoft-ecommerce.admin.product.fields.display_status</label>
         <div class="btn-group">
           <!-- 진열 — 목록·검색에 노출된다 (넓은 화면) -->
-          <button type="button" class="btn-group-item {{_local.form.display_status === 'visible' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><on type="click"><set-state target="local" form.display_status="visible"/></on>$t:sirsoft-ecommerce.admin.product.display_status.visible</button>
+          <button type="button" class="btn-group-item {{_local.form.display_status === 'visible' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+            <on type="click">
+              <set-state target="local" form.display_status="visible"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.product.display_status.visible
+          </button>
           <!-- 미진열 — 목록에서 빠지지만 주소를 알면 열린다 (넓은 화면) -->
-          <button type="button" class="btn-group-item {{_local.form.display_status === 'hidden' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><on type="click"><set-state target="local" form.display_status="hidden"/></on>$t:sirsoft-ecommerce.admin.product.display_status.hidden</button>
+          <button type="button" class="btn-group-item {{_local.form.display_status === 'hidden' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+            <on type="click">
+              <set-state target="local" form.display_status="hidden"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.product.display_status.hidden
+          </button>
         </div>
       </div>
       <div data-ref="display_status_row_mobile" class="form-group">
@@ -158,9 +226,19 @@
         <label class="form-label">$t:sirsoft-ecommerce.admin.product.fields.display_status</label>
         <div class="btn-group">
           <!-- 진열 — 목록·검색에 노출된다 (좁은 화면) -->
-          <button type="button" class="btn-group-item {{_local.form.display_status === 'visible' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><on type="click"><set-state target="local" form.display_status="visible"/></on>$t:sirsoft-ecommerce.admin.product.display_status.visible</button>
+          <button type="button" class="btn-group-item {{_local.form.display_status === 'visible' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+            <on type="click">
+              <set-state target="local" form.display_status="visible"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.product.display_status.visible
+          </button>
           <!-- 미진열 — 목록에서 빠지지만 주소를 알면 열린다 (좁은 화면) -->
-          <button type="button" class="btn-group-item {{_local.form.display_status === 'hidden' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><on type="click"><set-state target="local" form.display_status="hidden"/></on>$t:sirsoft-ecommerce.admin.product.display_status.hidden</button>
+          <button type="button" class="btn-group-item {{_local.form.display_status === 'hidden' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+            <on type="click">
+              <set-state target="local" form.display_status="hidden"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.product.display_status.hidden
+          </button>
         </div>
       </div>
     </div>

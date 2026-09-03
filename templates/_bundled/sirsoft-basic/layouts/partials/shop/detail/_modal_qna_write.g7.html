@@ -15,7 +15,8 @@
       </div>
       <div class="flex-1 min-w-0">
         <span class="block text-sm font-medium text-gray-700 dark:text-gray-200 truncate">{{_global.qnaProductName ?? ''}}</span>
-        <!-- 작성일 (수정 모드일 때만) --><span data-if="{{!!_global.qnaEditId &amp;&amp; !!_global.qnaCreatedAt}}" class="block text-xs text-gray-400 dark:text-gray-500 mt-0.5">$t:shop.qna.written_at|value={{_global.qnaCreatedAt | datetime}}</span>
+        <!-- 작성일 (수정 모드일 때만) -->
+        <span data-if="{{!!_global.qnaEditId &amp;&amp; !!_global.qnaCreatedAt}}" class="block text-xs text-gray-400 dark:text-gray-500 mt-0.5">$t:shop.qna.written_at|value={{_global.qnaCreatedAt | datetime}}</span>
       </div>
     </div>
     <!-- 폼 본문 -->
@@ -85,48 +86,57 @@
     </div>
     <!-- 모달 푸터 - 취소 / 등록 -->
     <div class="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
-      <button type="button" class="flex-1 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.qnaSubmitting}}"><on type="click"><!-- 취소 — 진행 표시와 오류를 걷어 낸 뒤 닫는다. 폼 값은 `_global` 에 남지만 여는 쪽이 열 때마다 다시 세운다 --><sequence><set-state target="global" :qnaSubmitting="false" :qnaErrors="null"/><close-modal/></sequence></on>$t:common.cancel</button>
+      <button type="button" class="flex-1 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.qnaSubmitting}}">
+        <on type="click">
+          <!-- 취소 — 진행 표시와 오류를 걷어 낸 뒤 닫는다. 폼 값은 `_global` 에 남지만 여는 쪽이 열 때마다 다시 세운다 -->
+          <sequence>
+            <set-state target="global" :qnaSubmitting="false" :qnaErrors="null"/>
+            <close-modal/>
+          </sequence>
+        </on>
+        $t:common.cancel
+      </button>
       <button type="button" class="flex-1 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.qnaSubmitting}}">
         <on type="click">
           <!-- 등록/수정 확정 — `qnaEditId` 유무로 보낼 곳과 메서드가 갈린다. 먼저 버튼을 잠가 두 번 눌러
                같은 문의가 둘 생기는 것을 막는다 -->
           <sequence>
-          <set-state target="global" :qnaSubmitting="true"/>
-          <conditions>
-            <!-- 수정 모드: PUT /user/inquiries/{id} -->
-            <when if="{{!!_global.qnaEditId}}">
-              <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/user/inquiries/{{_global.qnaEditId}}" method="PUT">
-                <success>
-                  <set-state target="global" :qnaSubmitting="false" :qnaErrors="null" :qnaEditId="null" :qnaProductImage="null" :qnaProductName="null" :qnaModalBoardSettings="null"/>
-                  <close-modal/>
-                  <refetch-data-source dataSourceId="qna"/>
-                  <refetch-data-source dataSourceId="myInquiries"/>
-                  <toast type="success" message="$t:shop.qna.updated"/>
-                </success>
-                <fail>
-                  <set-state target="global" :qnaSubmitting="false" qnaErrors="{{error.errors ?? null}}"/>
-                  <toast type="error" message="{{error.message ?? $t('shop.qna.update_failed')}}"/>
-                </fail>
-                <body title="{{_global.qnaForm.title ?? ''}}" category="{{_global.qnaForm.category ?? ''}}" content="{{_global.qnaForm.content ?? ''}}" is_secret="{{_global.qnaForm.is_secret ?? true}}"/>
-              </api-call>
-            </when>
-            <!-- 등록 모드: POST /products/{id}/inquiries -->
-            <else>
-              <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/products/{{_global.qnaProductId}}/inquiries" method="POST">
-                <success>
-                  <set-state target="global" :qnaSubmitting="false" :qnaErrors="null"/>
-                  <close-modal/>
-                  <refetch-data-source dataSourceId="qna"/>
-                  <toast type="success" message="$t:shop.qna.submitted"/>
-                </success>
-                <fail>
-                  <set-state target="global" :qnaSubmitting="false" qnaErrors="{{error.errors ?? null}}"/>
-                  <toast type="error" message="{{error.message ?? $t('shop.qna.submit_failed')}}"/>
-                </fail>
-                <body title="{{_global.qnaForm.title ?? ''}}" category="{{_global.qnaForm.category ?? ''}}" content="{{_global.qnaForm.content ?? ''}}" is_secret="{{_global.qnaForm.is_secret ?? true}}"/>
-              </api-call>
-            </else>
-          </conditions>
+            <set-state target="global" :qnaSubmitting="true"/>
+            <conditions>
+              <!-- 수정 모드: PUT /user/inquiries/{id} -->
+              <when if="{{!!_global.qnaEditId}}">
+                <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/user/inquiries/{{_global.qnaEditId}}" method="PUT">
+                  <success>
+                    <set-state target="global" :qnaSubmitting="false" :qnaErrors="null" :qnaEditId="null" :qnaProductImage="null" :qnaProductName="null" :qnaModalBoardSettings="null"/>
+                    <close-modal/>
+                    <refetch-data-source dataSourceId="qna"/>
+                    <refetch-data-source dataSourceId="myInquiries"/>
+                    <toast type="success" message="$t:shop.qna.updated"/>
+                  </success>
+                  <fail>
+                    <set-state target="global" :qnaSubmitting="false" qnaErrors="{{error.errors ?? null}}"/>
+                    <toast type="error" message="{{error.message ?? $t('shop.qna.update_failed')}}"/>
+                  </fail>
+                  <body title="{{_global.qnaForm.title ?? ''}}" category="{{_global.qnaForm.category ?? ''}}" content="{{_global.qnaForm.content ?? ''}}" is_secret="{{_global.qnaForm.is_secret ?? true}}"/>
+                </api-call>
+              </when>
+              <!-- 등록 모드: POST /products/{id}/inquiries -->
+              <else>
+                <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/products/{{_global.qnaProductId}}/inquiries" method="POST">
+                  <success>
+                    <set-state target="global" :qnaSubmitting="false" :qnaErrors="null"/>
+                    <close-modal/>
+                    <refetch-data-source dataSourceId="qna"/>
+                    <toast type="success" message="$t:shop.qna.submitted"/>
+                  </success>
+                  <fail>
+                    <set-state target="global" :qnaSubmitting="false" qnaErrors="{{error.errors ?? null}}"/>
+                    <toast type="error" message="{{error.message ?? $t('shop.qna.submit_failed')}}"/>
+                  </fail>
+                  <body title="{{_global.qnaForm.title ?? ''}}" category="{{_global.qnaForm.category ?? ''}}" content="{{_global.qnaForm.content ?? ''}}" is_secret="{{_global.qnaForm.is_secret ?? true}}"/>
+                </api-call>
+              </else>
+            </conditions>
           </sequence>
         </on>
         <icon data-if="{{_global.qnaSubmitting}}" name="spinner" class="text-sm animate-spin"/>

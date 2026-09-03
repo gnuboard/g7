@@ -1,5 +1,4 @@
-<!--
-  예약 작업 목록 탭의 본문 전체 — 통계 카드 · 검색/조건 · 일괄 작업 · 표.
+<!-- 예약 작업 목록 탭의 본문 전체 — 통계 카드 · 검색/조건 · 일괄 작업 · 표.
 
   조건을 다루는 방식이 다른 관리자 목록과 **반대**다. 여기서는 라디오·날짜·정렬을 건드리는
   즉시 주소가 바뀌고 목록이 다시 온다(로컬에 쌓았다 검색 버튼으로 내보내지 않는다). 그래서
@@ -7,8 +6,7 @@
   예외가 검색어와 검색 대상 둘인데, 이 둘만 로컬에 담겼다가 Enter 나 검색 버튼에서 나간다.
 
   자주 안 쓰는 조건 넷(마지막 결과·중복 실행·점검 중 실행·모듈)은 접힌 영역에 두었고, 그
-  펼침 상태는 전역이라 초기화 버튼이 함께 접는다.
--->
+  펼침 상태는 전역이라 초기화 버튼이 함께 접는다. -->
 <partial name="tab_schedules">
   <div data-ref="tab_schedules" data-if="{{(_global.activeScheduleTab || 'schedules') === 'schedules'}}">
     <div data-ref="statistics_cards" class="grid-2col md:grid-cols-4 mb-6">
@@ -134,17 +132,59 @@
           </div>
           <div data-ref="date_presets" class="flex gap-1">
             <!-- 오늘. 기간 프리셋은 두 날짜를 한 번에 바꾸고 페이지를 1로 되돌린다 — 좁아진 기간에서 보던 페이지 번호는 결과 범위를 벗어난다 -->
-            <button class="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"><on type="click"><navigate path="/admin/schedules" :mergeQuery="true" :replace="true" transition_overlay_target="schedules_data_grid__body"><query created_from="{{new Date().toISOString().split('T')[0]}}" created_to="{{new Date().toISOString().split('T')[0]}}" :page="1"/></navigate></on>$t:admin.schedules.filters.preset.today</button>
+            <button class="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+              <on type="click">
+                <navigate path="/admin/schedules" :mergeQuery="true" :replace="true" transition_overlay_target="schedules_data_grid__body">
+                  <query created_from="{{new Date().toISOString().split('T')[0]}}" created_to="{{new Date().toISOString().split('T')[0]}}" :page="1"/>
+                </navigate>
+              </on>
+              $t:admin.schedules.filters.preset.today
+            </button>
             <!-- 최근 7일 -->
-            <button class="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"><on type="click"><navigate path="/admin/schedules" :mergeQuery="true" :replace="true" transition_overlay_target="schedules_data_grid__body"><query created_from="{{new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}}" created_to="{{new Date().toISOString().split('T')[0]}}" :page="1"/></navigate></on>$t:admin.schedules.filters.preset.week</button>
+            <button class="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+              <on type="click">
+                <navigate path="/admin/schedules" :mergeQuery="true" :replace="true" transition_overlay_target="schedules_data_grid__body">
+                  <query created_from="{{new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}}" created_to="{{new Date().toISOString().split('T')[0]}}" :page="1"/>
+                </navigate>
+              </on>
+              $t:admin.schedules.filters.preset.week
+            </button>
             <!-- 최근 30일 -->
-            <button class="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"><on type="click"><navigate path="/admin/schedules" :mergeQuery="true" :replace="true" transition_overlay_target="schedules_data_grid__body"><query created_from="{{new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}}" created_to="{{new Date().toISOString().split('T')[0]}}" :page="1"/></navigate></on>$t:admin.schedules.filters.preset.month</button>
+            <button class="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+              <on type="click">
+                <navigate path="/admin/schedules" :mergeQuery="true" :replace="true" transition_overlay_target="schedules_data_grid__body">
+                  <query created_from="{{new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}}" created_to="{{new Date().toISOString().split('T')[0]}}" :page="1"/>
+                </navigate>
+              </on>
+              $t:admin.schedules.filters.preset.month
+            </button>
             <!-- 최근 90일 -->
-            <button class="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"><on type="click"><navigate path="/admin/schedules" :mergeQuery="true" :replace="true" transition_overlay_target="schedules_data_grid__body"><query created_from="{{new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}}" created_to="{{new Date().toISOString().split('T')[0]}}" :page="1"/></navigate></on>$t:admin.schedules.filters.preset.3months</button>
+            <button class="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+              <on type="click">
+                <navigate path="/admin/schedules" :mergeQuery="true" :replace="true" transition_overlay_target="schedules_data_grid__body">
+                  <query created_from="{{new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}}" created_to="{{new Date().toISOString().split('T')[0]}}" :page="1"/>
+                </navigate>
+              </on>
+              $t:admin.schedules.filters.preset.3months
+            </button>
             <!-- 최근 180일 -->
-            <button class="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"><on type="click"><navigate path="/admin/schedules" :mergeQuery="true" :replace="true" transition_overlay_target="schedules_data_grid__body"><query created_from="{{new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}}" created_to="{{new Date().toISOString().split('T')[0]}}" :page="1"/></navigate></on>$t:admin.schedules.filters.preset.6months</button>
+            <button class="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+              <on type="click">
+                <navigate path="/admin/schedules" :mergeQuery="true" :replace="true" transition_overlay_target="schedules_data_grid__body">
+                  <query created_from="{{new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}}" created_to="{{new Date().toISOString().split('T')[0]}}" :page="1"/>
+                </navigate>
+              </on>
+              $t:admin.schedules.filters.preset.6months
+            </button>
             <!-- 최근 1년 -->
-            <button class="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"><on type="click"><navigate path="/admin/schedules" :mergeQuery="true" :replace="true" transition_overlay_target="schedules_data_grid__body"><query created_from="{{new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}}" created_to="{{new Date().toISOString().split('T')[0]}}" :page="1"/></navigate></on>$t:admin.schedules.filters.preset.year</button>
+            <button class="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+              <on type="click">
+                <navigate path="/admin/schedules" :mergeQuery="true" :replace="true" transition_overlay_target="schedules_data_grid__body">
+                  <query created_from="{{new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}}" created_to="{{new Date().toISOString().split('T')[0]}}" :page="1"/>
+                </navigate>
+              </on>
+              $t:admin.schedules.filters.preset.year
+            </button>
           </div>
         </div>
         <div data-ref="status_filter_row" class="flex-center flex-wrap gap-3">
@@ -246,18 +286,16 @@
         </button>
         <button data-ref="reset_button" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 font-medium transition-colors">
           <on type="click">
-            <!--
-              조건을 전부 털고 질의 없는 주소로 간다(다른 조건들과 달리 여기만 합치지 않는다 —
+            <!-- 조건을 전부 털고 질의 없는 주소로 간다(다른 조건들과 달리 여기만 합치지 않는다 —
               합치면 지우려던 조건이 그대로 남는다). 접어 둔 영역도 함께 닫는다.
               **검색어를 전역에 비우는데 화면이 읽는 값은 로컬이다** — 그래서 목록은 초기화돼도
-              검색어 칸의 글자는 그대로 남는다.
-            -->
+              검색어 칸의 글자는 그대로 남는다. -->
             <sequence>
-            <set-state target="global" searchQuery="" searchType="" :showAdvancedSearch="false"/>
-            <!-- audit:allow layout-list-context-navigate-merge-query 초기화 버튼 — type/frequency/status/검색어가 모두 URL 쿼리로 구동되므로(=이 화면의 필터 SSoT), 병합하면 초기화가 아무 일도 하지 않게 된다. -->
-            <navigate path="/admin/schedules" :replace="true" transition_overlay_target="schedules_data_grid__body">
-              <query/>
-            </navigate>
+              <set-state target="global" searchQuery="" searchType="" :showAdvancedSearch="false"/>
+              <!-- audit:allow layout-list-context-navigate-merge-query 초기화 버튼 — type/frequency/status/검색어가 모두 URL 쿼리로 구동되므로(=이 화면의 필터 SSoT), 병합하면 초기화가 아무 일도 하지 않게 된다. -->
+              <navigate path="/admin/schedules" :replace="true" transition_overlay_target="schedules_data_grid__body">
+                <query/>
+              </navigate>
             </sequence>
           </on>
           <span>$t:admin.schedules.reset_filters</span>
@@ -286,7 +324,27 @@
             <set-state target="global" bulkAction="{{$event.target.value}}"/>
           </on>
         </select>
-        <button class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_global.selectedScheduleIds?.length}}"><on type="click"><!-- handler:'if' 는 미등록 핸들러이고 액션 레벨 'condition' 도 엔진이 무시한다. 등록된 conditions 핸들러 형태로 표기. --><conditions><when if="{{_global.bulkStatusAction}}"><api-call :auth_required="true" target="/api/admin/schedules/bulk-status" method="PATCH"><success><toast type="success" message="$t:admin.schedules.messages.bulk_status_updated"/><set-state target="global" :selectedScheduleIds="[]" bulkStatusAction=""/><refetch-data-source dataSourceId="schedules"/></success><fail><toast type="error" message="{{error.message ?? '$t:admin.schedules.errors.bulk_status_failed'}}"/></fail><body ids="{{_global.selectedScheduleIds}}" is_active="{{_global.bulkStatusAction === 'active'}}"/></api-call></when></conditions></on>$t:admin.schedules.bulk.apply</button>
+        <button class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_global.selectedScheduleIds?.length}}">
+          <on type="click">
+            <!-- handler:'if' 는 미등록 핸들러이고 액션 레벨 'condition' 도 엔진이 무시한다. 등록된 conditions 핸들러 형태로 표기. -->
+            <conditions>
+              <when if="{{_global.bulkStatusAction}}">
+                <api-call :auth_required="true" target="/api/admin/schedules/bulk-status" method="PATCH">
+                  <success>
+                    <toast type="success" message="$t:admin.schedules.messages.bulk_status_updated"/>
+                    <set-state target="global" :selectedScheduleIds="[]" bulkStatusAction=""/>
+                    <refetch-data-source dataSourceId="schedules"/>
+                  </success>
+                  <fail>
+                    <toast type="error" message="{{error.message ?? '$t:admin.schedules.errors.bulk_status_failed'}}"/>
+                  </fail>
+                  <body ids="{{_global.selectedScheduleIds}}" is_active="{{_global.bulkStatusAction === 'active'}}"/>
+                </api-call>
+              </when>
+            </conditions>
+          </on>
+          $t:admin.schedules.bulk.apply
+        </button>
       </div>
       <div data-ref="list_info_right" class="flex-center gap-3 py-3">
         <span class="text-body font-medium">$t:admin.schedules.total_count|count={{schedules?.data?.total ?? 0}}</span>
@@ -411,12 +469,10 @@
         <set-state target="global" selectedScheduleIds="{{$args[0]}}"/>
       </on>
       <on type="action" event="onRowAction">
-        <!--
-          다섯 갈래가 모두 「고른 줄을 담고 창을 연다」는 같은 모양이다 — 창들이 서버를 다시 부르지
+        <!-- 다섯 갈래가 모두 「고른 줄을 담고 창을 연다」는 같은 모양이다 — 창들이 서버를 다시 부르지
           않고 이 값만 읽기 때문이다. 둘만 다르다: 수정은 「고치는 중」 표시를 함께 켜서 한 창이
           만들기·고치기 두 몫을 하게 하고, 삭제는 줄 전체가 아니라 번호와 이름만 담는다
-          (그 창이 그 둘만 쓴다).
-        -->
+          (그 창이 그 둘만 쓴다). -->
         <switch>
           <case when="run">
             <set-state target="global" selectedSchedule="{{$args[1]}}"/>

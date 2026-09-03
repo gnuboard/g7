@@ -1,8 +1,6 @@
-<!--
-  주문 목록 — 검색조건 프리셋 이름 바꾸기 창. 바꾸는 것은 **이름뿐**이고 저장된 검색조건 자체는
+<!-- 주문 목록 — 검색조건 프리셋 이름 바꾸기 창. 바꾸는 것은 **이름뿐**이고 저장된 검색조건 자체는
   건드리지 않는다(조건을 바꾸려면 새로 저장한다). 대상 프리셋과 편집 중인 이름은 관리 창이
-  `_global` 에 담아 둔 값을 읽는다 — 창은 별도 컨텍스트라 관리 창의 `_local` 을 보지 못한다.
--->
+  `_global` 에 담아 둔 값을 읽는다 — 창은 별도 컨텍스트라 관리 창의 `_local` 을 보지 못한다. -->
 <partial description="Order List - Preset Edit Modal">
   <modal data-ref="modal_preset_edit" title="$t:sirsoft-ecommerce.admin.order.modal.preset_edit.title" size="sm">
     <input type="text" placeholder="$t:sirsoft-ecommerce.admin.order.modal.preset_save.placeholder" class="input" value="{{_global.editingPresetName}}">

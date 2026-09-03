@@ -1,8 +1,6 @@
-<!--
-  주문 목록 — 화면 시안. 실제로 쓰이는 주문 목록은 `admin_ecommerce_order_list` 이고(라우트도
+<!-- 주문 목록 — 화면 시안. 실제로 쓰이는 주문 목록은 `admin_ecommerce_order_list` 이고(라우트도
   그쪽에 걸려 있다), 이 레이아웃은 필터 구성과 표 얼개를 잡아 둔 시안이라 표·집계가 예시 값이다.
-  살아 있는 배선은 일괄 운송장 입력에 쓰는 택배사 목록 하나뿐이다.
--->
+  살아 있는 배선은 일괄 운송장 입력에 쓰는 택배사 목록 하나뿐이다. -->
 <layout name="admin_ecommerce_order_index" version="1.0.0" extends="_admin_base">
   <meta title="$t:sirsoft-ecommerce.admin.order.title" description="$t:sirsoft-ecommerce.admin.order.description"/>
   <!-- 일괄 운송장 입력에서 고를 택배사 — 사용 중인 것만 받는다 -->
@@ -500,7 +498,12 @@
         <div data-ref="search_action_buttons" class="flex justify-center gap-2 pt-6 border-t border-gray-200 dark:border-gray-700">
           <button type="button" class="btn btn-primary px-10">$t:sirsoft-ecommerce.admin.order.action.search</button>
           <button type="button" class="btn btn-outline px-6">$t:sirsoft-ecommerce.admin.order.action.reset</button>
-          <button type="button" class="btn btn-outline px-6"><on type="click"><open-modal target="modal_preset_save"/></on>$t:sirsoft-ecommerce.admin.order.action.save_preset</button>
+          <button type="button" class="btn btn-outline px-6">
+            <on type="click">
+              <open-modal target="modal_preset_save"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.order.action.save_preset
+          </button>
         </div>
       </div>
       <div data-ref="batch_bar" class="bg-slate-100 dark:bg-slate-800 p-4 rounded-xl mb-6 flex-between flex-wrap gap-4">

@@ -13,7 +13,12 @@
       <icon name="list" size="sm"/>
       <span>$t:board.back_to_list</span>
     </button>
-    <!-- 게시판 이름 (가운데) --><span class="text-lg font-semibold text-gray-900 dark:text-white"><!-- order-first + w-full 로 첫 줄 전체를 차지. 이 노드가 형제를 압착하던 원인이므로 폭 경쟁에서 아예 빼낸다. --><responsive on="mobile" class="order-first w-full text-center text-lg font-semibold text-gray-900 dark:text-white"/>{{post?.data?.board?.name ?? ''}}</span>
+    <!-- 게시판 이름 (가운데) -->
+    <span class="text-lg font-semibold text-gray-900 dark:text-white">
+      <!-- order-first + w-full 로 첫 줄 전체를 차지. 이 노드가 형제를 압착하던 원인이므로 폭 경쟁에서 아예 빼낸다. -->
+      <responsive on="mobile" class="order-first w-full text-center text-lg font-semibold text-gray-900 dark:text-white"/>
+      {{post?.data?.board?.name ?? ''}}
+    </span>
     <!-- 이전글/다음글 그룹. shrink-0: 게시판명이 길어도 눌리지 않는다. -->
     <div class="shrink-0 flex items-center gap-2">
       <!-- 이전글 버튼 - 아이콘 + 텍스트. 목록 상태(page/search/category/del/filters)를 형제 상세로 그대로 승계한다 (#75). -->

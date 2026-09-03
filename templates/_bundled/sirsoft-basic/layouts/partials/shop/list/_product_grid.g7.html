@@ -27,7 +27,8 @@
         </on>
         <icon name="chevron-left" class="text-base"/>
       </button>
-      <!-- 페이지 번호 표시 — 마지막 페이지를 모를 때(총 건수 상한 초과) 1 로 채우면 '1 / 1' 로 굳어 끝난 것처럼 보인다. 그때는 현재 페이지만 표기한다 --><span class="px-3 py-1 text-sm text-gray-700 dark:text-gray-300">{{products?.data?.pagination?.last_page ? ((products?.data?.pagination?.current_page ?? 1) + ' / ' + products.data.pagination.last_page) : (products?.data?.pagination?.current_page ?? 1)}}</span>
+      <!-- 페이지 번호 표시 — 마지막 페이지를 모를 때(총 건수 상한 초과) 1 로 채우면 '1 / 1' 로 굳어 끝난 것처럼 보인다. 그때는 현재 페이지만 표기한다 -->
+      <span class="px-3 py-1 text-sm text-gray-700 dark:text-gray-300">{{products?.data?.pagination?.last_page ? ((products?.data?.pagination?.current_page ?? 1) + ' / ' + products.data.pagination.last_page) : (products?.data?.pagination?.current_page ?? 1)}}</span>
       <!-- 다음 페이지 버튼 — 이동 가능 여부는 총 건수와 무관하게 has_more_pages 가 정확히 말해 준다. last_page 로 판정하면 그 값이 null 인 목록에서 첫 페이지부터 비활성이 된다 -->
       <button class="p-2 border border-gray-300 dark:border-gray-600 rounded-lg {{(products?.data?.pagination?.has_more_pages ?? false) ? 'hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer' : 'opacity-50 cursor-not-allowed'}}" disabled="{{!(products?.data?.pagination?.has_more_pages ?? false)}}">
         <on type="click">

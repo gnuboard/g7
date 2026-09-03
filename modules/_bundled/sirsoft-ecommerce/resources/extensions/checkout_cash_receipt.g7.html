@@ -64,7 +64,8 @@
           </on>
         </input>
       </div>
-      <!-- 서버 검증 오류 인라인 노출 (M6 — 사업자번호 체크섬 오류 등) --><span data-if="{{!!_local.errors?.cash_receipt_identifier}}" class="block text-red-500 text-xs">{{_local.errors?.cash_receipt_identifier?.[0] ?? ''}}</span>
+      <!-- 서버 검증 오류 인라인 노출 (M6 — 사업자번호 체크섬 오류 등) -->
+      <span data-if="{{!!_local.errors?.cash_receipt_identifier}}" class="block text-red-500 text-xs">{{_local.errors?.cash_receipt_identifier?.[0] ?? ''}}</span>
       <p class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.checkout.cash_receipt.purpose_help</p>
       <p class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.checkout.cash_receipt.immutable_help</p>
     </div>

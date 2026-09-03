@@ -1,7 +1,5 @@
-<!--
-  템플릿이 들고 온 레이아웃을 **다시 심는** 확인 창. 레이아웃 편집기로 고친 것이 원본으로 덮이므로
-  경고를 앞세운다 — 이 템플릿에서는 그 편집기가 바로 옆 화면이라 되돌릴 것이 있을 가능성이 높다.
--->
+<!-- 템플릿이 들고 온 레이아웃을 **다시 심는** 확인 창. 레이아웃 편집기로 고친 것이 원본으로 덮이므로
+  경고를 앞세운다 — 이 템플릿에서는 그 편집기가 바로 옆 화면이라 되돌릴 것이 있을 가능성이 높다. -->
 <partial description="템플릿 레이아웃 갱신 확인 모달" editor_label="$t:admin.modal_label.admin_template_list.template_refresh_layouts_modal">
   <modal data-ref="template_refresh_layouts_modal" title="$t:admin.templates.modals.refresh_layouts_title" size="sm">
     <div class="py-2">
@@ -23,21 +21,21 @@
         <on type="click">
           <!-- 다시 심기 실행 — 편집기로 고친 레이아웃이 원본으로 덮인다. -->
           <sequence>
-          <set-state target="global" :isTemplateRefreshingLayouts="true"/>
-          <api-call :auth_required="true" target="/api/admin/templates/refresh-layouts" method="POST">
-            <success>
-              <set-state target="global" :isTemplateRefreshingLayouts="false"/>
-              <set-state target="global" :selectedTemplate="null"/>
-              <toast type="success" message="$t:admin.templates.refresh_layouts_success"/>
-              <refetch-data-source dataSourceId="templates"/>
-              <close-modal/>
-            </success>
-            <fail>
-              <set-state target="global" :isTemplateRefreshingLayouts="false"/>
-              <toast type="error" message="{{error.message}}"/>
-            </fail>
-            <body template_name="{{_global.selectedTemplate.identifier}}"/>
-          </api-call>
+            <set-state target="global" :isTemplateRefreshingLayouts="true"/>
+            <api-call :auth_required="true" target="/api/admin/templates/refresh-layouts" method="POST">
+              <success>
+                <set-state target="global" :isTemplateRefreshingLayouts="false"/>
+                <set-state target="global" :selectedTemplate="null"/>
+                <toast type="success" message="$t:admin.templates.refresh_layouts_success"/>
+                <refetch-data-source dataSourceId="templates"/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="global" :isTemplateRefreshingLayouts="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+              <body template_name="{{_global.selectedTemplate.identifier}}"/>
+            </api-call>
           </sequence>
         </on>
         <icon data-if="{{_global.isTemplateRefreshingLayouts}}" name="spinner" class="spinner-sm"/>

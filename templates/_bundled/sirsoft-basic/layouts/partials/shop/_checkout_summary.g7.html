@@ -5,7 +5,11 @@
     <responsive on="portable" class=""/>
     <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
       <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"/>
-      <!-- 섹션 헤더 --><h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-4 border-b border-gray-200 dark:border-gray-700"><responsive on="portable" class="text-base font-semibold text-gray-900 dark:text-white mb-3 pb-3 border-b border-gray-200 dark:border-gray-700"/>$t:shop.checkout.payment_amount</h2>
+      <!-- 섹션 헤더 -->
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+        <responsive on="portable" class="text-base font-semibold text-gray-900 dark:text-white mb-3 pb-3 border-b border-gray-200 dark:border-gray-700"/>
+        $t:shop.checkout.payment_amount
+      </h2>
       <!-- 금액 상세 -->
       <div class="space-y-3 pb-4 border-b border-gray-200 dark:border-gray-700">
         <responsive on="portable" class="space-y-2 pb-3 border-b border-gray-200 dark:border-gray-700"/>
@@ -126,18 +130,82 @@
       <div class="py-4">
         <responsive on="portable" class="py-3"/>
         <div class="flex justify-between items-center">
-          <span class="text-lg font-semibold text-gray-900 dark:text-white"><responsive on="portable" class="font-semibold text-gray-900 dark:text-white"/>$t:shop.checkout.total</span>
-          <span class="text-xl font-bold text-gray-900 dark:text-white"><responsive on="portable" class="text-lg font-bold text-gray-900 dark:text-white"/>{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.final_amount_formatted ?? checkoutData.data.calculation?.summary?.final_amount_formatted ?? '-'}}</span>
+          <span class="text-lg font-semibold text-gray-900 dark:text-white">
+            <responsive on="portable" class="font-semibold text-gray-900 dark:text-white"/>
+            $t:shop.checkout.total
+          </span>
+          <span class="text-xl font-bold text-gray-900 dark:text-white">
+            <responsive on="portable" class="text-lg font-bold text-gray-900 dark:text-white"/>
+            {{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.final_amount_formatted ?? checkoutData.data.calculation?.summary?.final_amount_formatted ?? '-'}}
+          </span>
         </div>
         <!-- 보조 통화들 -->
         <div data-each="currency in {{Object.entries(checkoutData.data.calculation?.summary?.multi_currency ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 justify-end mt-1">
           <span class="text-xs text-gray-500 dark:text-gray-400">{{currency[1]?.final_amount_formatted}}</span>
         </div>
       </div>
-      <!-- 배송 불가 안내 (D1 — 혼재 시 전체 차단) --><div data-if="{{checkoutData.data.has_unshippable_items === true}}" class="mb-3 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-400">$t:shop.shippability.blocks_order</div>
-      <!-- 결제 버튼 --><button type="button" class="w-full py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-bold text-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{((_local.shipping?.country_code ?? 'KR') === 'KR' ? !_local.shipping?.zipcode : !_local.shipping?.intl_postal_code) || !_local.shipping?.recipient_name || !_local.shipping?.recipient_phone || _local.isSubmittingOrder || checkoutData.data.has_unshippable_items === true}}"><responsive on="portable" class="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-bold text-base hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"/><on type="click"><sequence><!-- 로딩 상태 시작 --><set-state target="_local.isSubmittingOrder" :value="true"/><!-- 결제 엔드포인트 — 회원/비회원 공유 단일 endpoint (optional.sanctum). PG 플러그인 fetch 인터셉터가 /user/orders 한 경로만 매칭하므로 비회원도 같은 endpoint 로 호출해 PG 결제창이 정상 노출되도록 한다. 회원/비회원 분기는 백엔드 컨트롤러가 처리.
-           params.body 는 통짜 표현식이다. 말미의 ...(_local.checkoutExtraPayload ?? {}) 는 슬롯에 주입된 모듈/플러그인 폼이 자기 필드를 주문 생성 payload 에 실어 보내기 위한 확장 병합 칸이다. 주입분은 이 body 리터럴을 수정할 수단이 없으므로(결제 버튼에 id 부재 → overlay target 불가, inject_props 는 컴포넌트 props 전용이라 actions[].params.body 미도달) 이 칸이 유일한 경로다. 확장은 자기 도메인 키만 쓴다 — spread 가 뒤에 오므로 기존 키를 덮어쓸 수 있다. 확장 미주입 시 {} 이므로 payload 는 전환 전과 키·값 모두 동일하다. refund_bank 는 템플릿 소유 필드라 확장 칸을 경유하지 않고 직접 기재한다. 회귀 pin: __tests__/layouts/checkoutSummaryBodyPayload.test.tsx --><api-call target="/api/modules/sirsoft-ecommerce/user/orders" auth_mode="optional" method="POST" body="{{ ({ temp_order_id: checkoutData.data.temp_order_id, orderer: _computed.ordererDefaults, shipping: _local.shipping, payment_method: _computed.selectedCorePaymentMethod, shipping_memo: _local.shippingMemo === 'custom' ? _local.shippingMemoCustom : _local.shippingMemo, depositor_name: _local.depositorName ?? _computed.ordererDefaults?.name ?? '', dbank: _computed.selectedCorePaymentMethod === 'dbank' ? { bank_code: _local.selectedDbank?.bank_code, account_number: _local.selectedDbank?.account_number, account_holder: _local.selectedDbank?.account_holder } : null, expected_total_amount: checkoutData.data.calculation?.summary?.final_amount ?? 0, save_shipping_address: _local.saveShippingAddress ?? false, guest_lookup_password: _global.currentUser?.uuid ? null : (_local.guestLookupPassword ?? ''), guest_lookup_password_confirmation: _global.currentUser?.uuid ? null : (_local.guestLookupPasswordConfirmation ?? ''), refund_bank: _local.refundBankCode ? { bank_code: _local.refundBankCode, account_number: _local.refundBankAccount ?? null, holder: _local.refundBankHolder ?? null } : null, ...(_local.checkoutExtraPayload ?? {}) }) }}"><success><!-- 결제 방법 분기 — PG provider 가 응답으로 결제 진입 핸들러명(pg_payment_handler)을 내려준 경우 그 핸들러를 그대로 dispatch (provider-agnostic, 특정 PG 하드코딩 없음). 핸들러명 미선언 PG 는 이 분기 미발화 → non-PG fallback(비회원 verify 후 완료 페이지 navigate)으로 안전 강하. --><conditions><when if="{{response.data.requires_pg_payment &amp;&amp; response.data.pg_payment_handler}}"><action handler="{{response.data.pg_payment_handler}}" pgPaymentData="{{response.data.pg_payment_data}}"/></when><else><sequence><!-- 비회원만 자동 verify — non-PG 결제 흐름에서만 수행. PG 결제는 결제 완료 콜백 이후 verify 수행 필요 (별도 처리). --><conditions><when if="{{!_global.currentUser?.uuid}}"><api-call target="/api/modules/sirsoft-ecommerce/guest/orders/verify" auth_mode="optional" method="POST"><success><!-- 토큰 + 주문번호 + 만료시각 sessionStorage 저장 + _global.guestOrderToken 동기 set (모듈 커스텀 핸들러). --><action handler="saveGuestOrderToken" token="{{response.data.guest_order_token}}" orderNumber="{{response.data.order.order_number}}" expiresAt="{{response.data.expires_at}}"/></success><fail><!-- verify 실패는 결제 자체를 막지 않음 — 주문은 이미 생성되었으므로 사용자가 나중에 lookup 폼으로 재인증 가능. 토스트로만 안내. --><toast type="warning" message="{{error.message ?? '$t:shop.checkout.guest_token_issue_failed'}}"/></fail><body order_number="{{response.data.order.order_number}}" orderer_phone="{{_local.orderer?.phone ?? ''}}" guest_lookup_password="{{_local.guestLookupPassword ?? ''}}"/></api-call></when></conditions><navigate path="{{$results[0]?.redirect_url ?? response.data.redirect_url ?? _global.shopBase + '/orders/' + response.data.order.order_number + '/complete'}}"/></sequence></else></conditions></success><fail><set-state target="local" :isSubmittingOrder="false" errors="{{error.response?.errors ?? error.errors ?? null}}" orderError="{{error.response?.message ?? error.message ?? $t:shop.checkout.order_failed}}"/><toast type="error" message="{{error.response?.message ?? error.message ?? $t:shop.checkout.order_failed}}"/></fail><field name="headers"><field name="X-Cart-Key" value="{{_global.cartKey}}"/></field><field name="identity_target"><field name="email" value="{{_computed.ordererDefaults?.email || _local.orderer?.email || ''}}"/><field name="phone" value="{{_local.orderer?.phone || _global.currentUser?.phone || _local.shipping?.recipient_phone || ''}}"/></field></api-call></sequence></on>{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.final_amount_formatted ?? checkoutData.data.calculation?.summary?.final_amount_formatted ?? '-'}} $t:shop.checkout.pay_button</button>
-      <!-- 결제 동의 문구 --><p class="text-xs text-gray-500 dark:text-gray-400 text-center mt-3"><responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400 text-center mt-2"/>$t:shop.checkout.payment_agreement</p>
+      <!-- 배송 불가 안내 (D1 — 혼재 시 전체 차단) -->
+      <div data-if="{{checkoutData.data.has_unshippable_items === true}}" class="mb-3 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-400">$t:shop.shippability.blocks_order</div>
+      <!-- 결제 버튼 -->
+      <button type="button" class="w-full py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-bold text-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{((_local.shipping?.country_code ?? 'KR') === 'KR' ? !_local.shipping?.zipcode : !_local.shipping?.intl_postal_code) || !_local.shipping?.recipient_name || !_local.shipping?.recipient_phone || _local.isSubmittingOrder || checkoutData.data.has_unshippable_items === true}}">
+        <responsive on="portable" class="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-bold text-base hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"/>
+        <on type="click">
+          <sequence>
+            <!-- 로딩 상태 시작 -->
+            <set-state target="_local.isSubmittingOrder" :value="true"/>
+            <!-- 결제 엔드포인트 — 회원/비회원 공유 단일 endpoint (optional.sanctum). PG 플러그인 fetch 인터셉터가 /user/orders 한 경로만 매칭하므로 비회원도 같은 endpoint 로 호출해 PG 결제창이 정상 노출되도록 한다. 회원/비회원 분기는 백엔드 컨트롤러가 처리.
+           params.body 는 통짜 표현식이다. 말미의 ...(_local.checkoutExtraPayload ?? {}) 는 슬롯에 주입된 모듈/플러그인 폼이 자기 필드를 주문 생성 payload 에 실어 보내기 위한 확장 병합 칸이다. 주입분은 이 body 리터럴을 수정할 수단이 없으므로(결제 버튼에 id 부재 → overlay target 불가, inject_props 는 컴포넌트 props 전용이라 actions[].params.body 미도달) 이 칸이 유일한 경로다. 확장은 자기 도메인 키만 쓴다 — spread 가 뒤에 오므로 기존 키를 덮어쓸 수 있다. 확장 미주입 시 {} 이므로 payload 는 전환 전과 키·값 모두 동일하다. refund_bank 는 템플릿 소유 필드라 확장 칸을 경유하지 않고 직접 기재한다. 회귀 pin: __tests__/layouts/checkoutSummaryBodyPayload.test.tsx -->
+            <api-call target="/api/modules/sirsoft-ecommerce/user/orders" auth_mode="optional" method="POST" body="{{ ({ temp_order_id: checkoutData.data.temp_order_id, orderer: _computed.ordererDefaults, shipping: _local.shipping, payment_method: _computed.selectedCorePaymentMethod, shipping_memo: _local.shippingMemo === 'custom' ? _local.shippingMemoCustom : _local.shippingMemo, depositor_name: _local.depositorName ?? _computed.ordererDefaults?.name ?? '', dbank: _computed.selectedCorePaymentMethod === 'dbank' ? { bank_code: _local.selectedDbank?.bank_code, account_number: _local.selectedDbank?.account_number, account_holder: _local.selectedDbank?.account_holder } : null, expected_total_amount: checkoutData.data.calculation?.summary?.final_amount ?? 0, save_shipping_address: _local.saveShippingAddress ?? false, guest_lookup_password: _global.currentUser?.uuid ? null : (_local.guestLookupPassword ?? ''), guest_lookup_password_confirmation: _global.currentUser?.uuid ? null : (_local.guestLookupPasswordConfirmation ?? ''), refund_bank: _local.refundBankCode ? { bank_code: _local.refundBankCode, account_number: _local.refundBankAccount ?? null, holder: _local.refundBankHolder ?? null } : null, ...(_local.checkoutExtraPayload ?? {}) }) }}">
+              <success>
+                <!-- 결제 방법 분기 — PG provider 가 응답으로 결제 진입 핸들러명(pg_payment_handler)을 내려준 경우 그 핸들러를 그대로 dispatch (provider-agnostic, 특정 PG 하드코딩 없음). 핸들러명 미선언 PG 는 이 분기 미발화 → non-PG fallback(비회원 verify 후 완료 페이지 navigate)으로 안전 강하. -->
+                <conditions>
+                  <when if="{{response.data.requires_pg_payment &amp;&amp; response.data.pg_payment_handler}}">
+                    <action handler="{{response.data.pg_payment_handler}}" pgPaymentData="{{response.data.pg_payment_data}}"/>
+                  </when>
+                  <else>
+                    <sequence>
+                      <!-- 비회원만 자동 verify — non-PG 결제 흐름에서만 수행. PG 결제는 결제 완료 콜백 이후 verify 수행 필요 (별도 처리). -->
+                      <conditions>
+                        <when if="{{!_global.currentUser?.uuid}}">
+                          <api-call target="/api/modules/sirsoft-ecommerce/guest/orders/verify" auth_mode="optional" method="POST">
+                            <success>
+                              <!-- 토큰 + 주문번호 + 만료시각 sessionStorage 저장 + _global.guestOrderToken 동기 set (모듈 커스텀 핸들러). -->
+                              <action handler="saveGuestOrderToken" token="{{response.data.guest_order_token}}" orderNumber="{{response.data.order.order_number}}" expiresAt="{{response.data.expires_at}}"/>
+                            </success>
+                            <fail>
+                              <!-- verify 실패는 결제 자체를 막지 않음 — 주문은 이미 생성되었으므로 사용자가 나중에 lookup 폼으로 재인증 가능. 토스트로만 안내. -->
+                              <toast type="warning" message="{{error.message ?? '$t:shop.checkout.guest_token_issue_failed'}}"/>
+                            </fail>
+                            <body order_number="{{response.data.order.order_number}}" orderer_phone="{{_local.orderer?.phone ?? ''}}" guest_lookup_password="{{_local.guestLookupPassword ?? ''}}"/>
+                          </api-call>
+                        </when>
+                      </conditions>
+                      <navigate path="{{$results[0]?.redirect_url ?? response.data.redirect_url ?? _global.shopBase + '/orders/' + response.data.order.order_number + '/complete'}}"/>
+                    </sequence>
+                  </else>
+                </conditions>
+              </success>
+              <fail>
+                <set-state target="local" :isSubmittingOrder="false" errors="{{error.response?.errors ?? error.errors ?? null}}" orderError="{{error.response?.message ?? error.message ?? $t:shop.checkout.order_failed}}"/>
+                <toast type="error" message="{{error.response?.message ?? error.message ?? $t:shop.checkout.order_failed}}"/>
+              </fail>
+              <field name="headers">
+                <field name="X-Cart-Key" value="{{_global.cartKey}}"/>
+              </field>
+              <field name="identity_target">
+                <field name="email" value="{{_computed.ordererDefaults?.email || _local.orderer?.email || ''}}"/>
+                <field name="phone" value="{{_local.orderer?.phone || _global.currentUser?.phone || _local.shipping?.recipient_phone || ''}}"/>
+              </field>
+            </api-call>
+          </sequence>
+        </on>
+        {{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.final_amount_formatted ?? checkoutData.data.calculation?.summary?.final_amount_formatted ?? '-'}} $t:shop.checkout.pay_button
+      </button>
+      <!-- 결제 동의 문구 -->
+      <p class="text-xs text-gray-500 dark:text-gray-400 text-center mt-3">
+        <responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400 text-center mt-2"/>
+        $t:shop.checkout.payment_agreement
+      </p>
     </div>
   </div>
 </partial>

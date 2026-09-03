@@ -34,7 +34,12 @@
     </div>
     <!-- === 홈 복귀 버튼 (액션 시연) === -->
     <div data-ref="home_action" class="flex justify-center">
-      <button class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 cursor-pointer" data-testid="home-button"><on type="click"><navigate path="/"/></on>$t:user.home.back_to_home</button>
+      <button class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 cursor-pointer" data-testid="home-button">
+        <on type="click">
+          <navigate path="/"/>
+        </on>
+        $t:user.home.back_to_home
+      </button>
     </div>
   </slot>
 </layout>

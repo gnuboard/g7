@@ -9,7 +9,8 @@
       <icon name="triangle-exclamation" size="sm" class="text-red-500 dark:text-red-400 mt-0.5 shrink-0"/>
       <span class="text-sm font-medium text-red-700 dark:text-red-300">$t:shop.shippability.not_shippable</span>
     </div>
-    <!-- === 옵션 선택 안내 텍스트 (2개 이상 옵션 있고, 아직 선택 안 했을 때만, 판매중일 때만) === --><div data-if="{{product.data?.sales_status === 'on_sale' &amp;&amp; product.data?.has_options &amp;&amp; product.data?.option_groups?.length > 0 &amp;&amp; (product.data?.options?.length ?? 0) > 1 &amp;&amp; (!_local.selectedOptionItems || _local.selectedOptionItems.length === 0)}}" class="border-b border-gray-200 dark:border-gray-700 pb-4 text-green-600 dark:text-green-400 text-sm font-medium mb-4">$t:shop.product.select_options_guide</div>
+    <!-- === 옵션 선택 안내 텍스트 (2개 이상 옵션 있고, 아직 선택 안 했을 때만, 판매중일 때만) === -->
+    <div data-if="{{product.data?.sales_status === 'on_sale' &amp;&amp; product.data?.has_options &amp;&amp; product.data?.option_groups?.length > 0 &amp;&amp; (product.data?.options?.length ?? 0) > 1 &amp;&amp; (!_local.selectedOptionItems || _local.selectedOptionItems.length === 0)}}" class="border-b border-gray-200 dark:border-gray-700 pb-4 text-green-600 dark:text-green-400 text-sm font-medium mb-4">$t:shop.product.select_options_guide</div>
     <!-- === 옵션 선택 섹션 (옵션 그룹이 있고 선택할 옵션이 2개 이상일 때만, 판매중일 때만) === -->
     <div data-ref="option-select" data-if="{{product.data?.sales_status === 'on_sale' &amp;&amp; product.data?.has_options &amp;&amp; product.data?.option_groups?.length > 0 &amp;&amp; (product.data?.options?.length ?? 0) > 1}}" class="mb-4 space-y-3">
       <!-- 옵션 그룹별 Select -->
@@ -21,10 +22,10 @@
               <!-- 옵션을 한 칸 고를 때마다 «다 골랐는지» 를 판정해, 마지막 칸이 채워지는 순간 한 줄을 추가한다.
                    방금 고른 값을 핸들러에 따로 넘기는 이유는 위 `set-state` 가 아직 반영되기 전이기 때문이다 -->
               <sequence>
-              <!-- 현재 선택 상태 업데이트 -->
-              <set-state target="local" currentSelection="{{Object.assign({}, _local.currentSelection ?? {}, { [group.name_localized]: $event.target.value })}}"/>
-              <!-- 마지막 옵션 선택 시 자동으로 selectedOptionItems에 추가 (newGroupName/newValue로 sequence 상태 동기화 우회) -->
-              <action handler="sirsoft-basic.addSelectedItemIfComplete" productId="{{product.data?.id}}" optionGroups="{{product.data?.option_groups}}" options="{{product.data?.options}}" currentSelection="{{_local.currentSelection ?? {}}}" selectedOptionItems="{{_local.selectedOptionItems ?? []}}" preferredCurrency="{{_global.preferredCurrency ?? _global.defaultCurrency}}" additionalOptionGroups="{{product.data?.additional_options ?? []}}" newGroupName="{{group.name_localized}}" newValue="{{$event.target.value}}"/>
+                <!-- 현재 선택 상태 업데이트 -->
+                <set-state target="local" currentSelection="{{Object.assign({}, _local.currentSelection ?? {}, { [group.name_localized]: $event.target.value })}}"/>
+                <!-- 마지막 옵션 선택 시 자동으로 selectedOptionItems에 추가 (newGroupName/newValue로 sequence 상태 동기화 우회) -->
+                <action handler="sirsoft-basic.addSelectedItemIfComplete" productId="{{product.data?.id}}" optionGroups="{{product.data?.option_groups}}" options="{{product.data?.options}}" currentSelection="{{_local.currentSelection ?? {}}}" selectedOptionItems="{{_local.selectedOptionItems ?? []}}" preferredCurrency="{{_global.preferredCurrency ?? _global.defaultCurrency}}" additionalOptionGroups="{{product.data?.additional_options ?? []}}" newGroupName="{{group.name_localized}}" newValue="{{$event.target.value}}"/>
               </sequence>
             </on>
           </select>
@@ -94,7 +95,8 @@
           <!-- 추가옵션 추가금 합계 표기 (선택된 추가금이 있을 때) -->
           <div data-if="{{(item.additionalOptionsTotal ?? 0) > 0}}" class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
             <span>$t:shop.additional_options_amount</span>
-            <!-- 추가금은 기본통화 기준으로 저장되므로 표시통화 환산값(핸들러가 서버 맵에서 계산)을 우선 사용한다. 없으면 기본통화 표기로 폴백 --><span>{{(() => { const code = _global.preferredCurrency ?? _global.defaultCurrency; const cur = (_global.availableCurrencies ?? []).find(x => x.code === code) ?? (_global.availableCurrencies ?? []).find(x => x.is_default); const converted = item.additionalOptionsMultiCurrencyTotal?.[code]?.value; const amount = converted ?? (item.additionalOptionsTotal ?? 0); const dp = cur?.decimal_places ?? 0; const n = amount.toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp }); const s = cur?.symbol ?? '₩'; return '+' + ((cur?.code === 'KRW' || s === '₩' || s === '원') ? (n + '원') : (s + n)); })()}}</span>
+            <!-- 추가금은 기본통화 기준으로 저장되므로 표시통화 환산값(핸들러가 서버 맵에서 계산)을 우선 사용한다. 없으면 기본통화 표기로 폴백 -->
+            <span>{{(() => { const code = _global.preferredCurrency ?? _global.defaultCurrency; const cur = (_global.availableCurrencies ?? []).find(x => x.code === code) ?? (_global.availableCurrencies ?? []).find(x => x.is_default); const converted = item.additionalOptionsMultiCurrencyTotal?.[code]?.value; const amount = converted ?? (item.additionalOptionsTotal ?? 0); const dp = cur?.decimal_places ?? 0; const n = amount.toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp }); const s = cur?.symbol ?? '₩'; return '+' + ((cur?.code === 'KRW' || s === '₩' || s === '원') ? (n + '원') : (s + n)); })()}}</span>
           </div>
           <!-- 수량 조절 + 가격 -->
           <div class="flex items-center justify-between">

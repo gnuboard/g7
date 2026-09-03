@@ -16,7 +16,17 @@
     <div data-ref="ext_mypage_cash_receipt_issuable" data-if="{{!!order.data.payment?.cash_receipt_provider &amp;&amp; order.data.payment?.payment_status === 'paid' &amp;&amp; !order.data.cash_receipt &amp;&amp; String((order.data.cash_receipts ?? [])[0]?.issue_status ?? '').toLowerCase() !== 'failed'}}" class="flex flex-row items-center justify-between gap-2">
       <responsive on="portable" class="flex flex-col items-start gap-2 w-full"/>
       <p class="text-sm text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.order.cash_receipt.none</p>
-      <button data-ref="ext_mypage_cash_receipt_issue_button" type="button" class="px-3 py-1.5 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 text-white"><responsive on="portable" type="button" class="w-full px-3 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 text-white"/><on type="click"><!-- 모달을 열기 전에 신청내역으로 폼을 시드한다 (미신청이면 기본값) --><sequence><set-state target="global" cashReceiptForm="{{ { receipt_type: (order.data.payment?.cash_receipt_type ?? 'income'), identifier_type: (order.data.payment?.cash_receipt_identifier_type ?? 'phone'), identifier: '', error: null } }}"/><open-modal target="ext_cash_receipt_issue_modal"/></sequence></on>$t:sirsoft-ecommerce.order.cash_receipt.issue</button>
+      <button data-ref="ext_mypage_cash_receipt_issue_button" type="button" class="px-3 py-1.5 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 text-white">
+        <responsive on="portable" type="button" class="w-full px-3 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 text-white"/>
+        <on type="click">
+          <!-- 모달을 열기 전에 신청내역으로 폼을 시드한다 (미신청이면 기본값) -->
+          <sequence>
+            <set-state target="global" cashReceiptForm="{{ { receipt_type: (order.data.payment?.cash_receipt_type ?? 'income'), identifier_type: (order.data.payment?.cash_receipt_identifier_type ?? 'phone'), identifier: '', error: null } }}"/>
+            <open-modal target="ext_cash_receipt_issue_modal"/>
+          </sequence>
+        </on>
+        $t:sirsoft-ecommerce.order.cash_receipt.issue
+      </button>
     </div>
     <!-- 상태 ④ 발급완료 — 발급일시/용도/식별번호 + 영수증 링크 -->
     <div data-ref="ext_mypage_cash_receipt_issued" data-if="{{!!order.data.cash_receipt}}" class="space-y-1">
@@ -35,7 +45,10 @@
       <!-- 영수증 링크 — 이력 테이블 소유(payment.pg_receipt_url 은 카드 매출전표라 별개) -->
       <div data-if="{{!!order.data.cash_receipt?.receipt_url}}" class="flex flex-row justify-end pt-2">
         <responsive on="portable" class="flex flex-col w-full pt-2"/>
-        <a data-ref="ext_mypage_cash_receipt_link" href="{{order.data.cash_receipt?.receipt_url}}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-1 px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"><responsive on="portable" href="{{order.data.cash_receipt?.receipt_url}}" target="_blank" rel="noopener noreferrer" class="inline-flex w-full items-center justify-center gap-1 px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"/>$t:sirsoft-ecommerce.order.cash_receipt.view_receipt</a>
+        <a data-ref="ext_mypage_cash_receipt_link" href="{{order.data.cash_receipt?.receipt_url}}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-1 px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+          <responsive on="portable" href="{{order.data.cash_receipt?.receipt_url}}" target="_blank" rel="noopener noreferrer" class="inline-flex w-full items-center justify-center gap-1 px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"/>
+          $t:sirsoft-ecommerce.order.cash_receipt.view_receipt
+        </a>
       </div>
     </div>
     <!-- 상태 ⑤ 취소 성공 + 재발급 실패 — 유저에게는 경고만 노출한다(수동 재발급은 관리자 전용). issue_status backing value 는 대문자(FAILED)라 대소문자 무관 비교한다. -->
@@ -101,8 +114,34 @@
         <!-- 액션 — 데스크톱 가로 우측정렬, portable 세로 full-width -->
         <div class="flex flex-row justify-end gap-2 pt-2">
           <responsive on="portable" class="flex flex-col gap-2 w-full pt-2"/>
-          <button type="button" class="px-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"><on type="click"><close-modal/></on>$t:sirsoft-ecommerce.order.cash_receipt.cancel</button>
-          <button data-ref="ext_cash_receipt_issue_submit" type="button" class="px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!(_global.cashReceiptForm?.identifier ?? '')}}"><on type="click"><!-- 회원은 user/orders/{id}, 비회원은 guest/orders/{orderNumber} + X-Guest-Order-Token. 주문 응답의 실제 id 를 쓴다(라우트 파라미터가 주문번호일 수 있으므로). --><api-call target="{{_global.currentUser?.uuid ? ('/api/modules/sirsoft-ecommerce/user/orders/' + order.data.id + '/cash-receipt') : ('/api/modules/sirsoft-ecommerce/guest/orders/' + order.data.order_number + '/cash-receipt')}}" auth_mode="optional" method="POST"><success><set-state target="global" :cashReceiptForm="null"/><close-modal/><refetch-data-source dataSourceId="order"/><toast type="success" message="$t:sirsoft-ecommerce.order.cash_receipt.issue_success"/></success><fail><!-- 서버 검증 메시지를 그대로 노출한다 (사업자번호 체크섬·용도×수단 조합 등) --><set-state target="global" cashReceiptForm.error="{{error.errors?.identifier?.[0] ?? error.message ?? $t('sirsoft-ecommerce.order.cash_receipt.issue_failed')}}"/></fail><body receipt_type="{{_global.cashReceiptForm?.receipt_type ?? 'income'}}" identifier_type="{{_global.cashReceiptForm?.identifier_type ?? 'phone'}}" identifier="{{_global.cashReceiptForm?.identifier ?? ''}}"/><field name="headers"><field name="X-Guest-Order-Token" value="{{_global.guestOrderToken ?? ''}}"/></field></api-call></on>$t:sirsoft-ecommerce.order.cash_receipt.issue</button>
+          <button type="button" class="px-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+            <on type="click">
+              <close-modal/>
+            </on>
+            $t:sirsoft-ecommerce.order.cash_receipt.cancel
+          </button>
+          <button data-ref="ext_cash_receipt_issue_submit" type="button" class="px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!(_global.cashReceiptForm?.identifier ?? '')}}">
+            <on type="click">
+              <!-- 회원은 user/orders/{id}, 비회원은 guest/orders/{orderNumber} + X-Guest-Order-Token. 주문 응답의 실제 id 를 쓴다(라우트 파라미터가 주문번호일 수 있으므로). -->
+              <api-call target="{{_global.currentUser?.uuid ? ('/api/modules/sirsoft-ecommerce/user/orders/' + order.data.id + '/cash-receipt') : ('/api/modules/sirsoft-ecommerce/guest/orders/' + order.data.order_number + '/cash-receipt')}}" auth_mode="optional" method="POST">
+                <success>
+                  <set-state target="global" :cashReceiptForm="null"/>
+                  <close-modal/>
+                  <refetch-data-source dataSourceId="order"/>
+                  <toast type="success" message="$t:sirsoft-ecommerce.order.cash_receipt.issue_success"/>
+                </success>
+                <fail>
+                  <!-- 서버 검증 메시지를 그대로 노출한다 (사업자번호 체크섬·용도×수단 조합 등) -->
+                  <set-state target="global" cashReceiptForm.error="{{error.errors?.identifier?.[0] ?? error.message ?? $t('sirsoft-ecommerce.order.cash_receipt.issue_failed')}}"/>
+                </fail>
+                <body receipt_type="{{_global.cashReceiptForm?.receipt_type ?? 'income'}}" identifier_type="{{_global.cashReceiptForm?.identifier_type ?? 'phone'}}" identifier="{{_global.cashReceiptForm?.identifier ?? ''}}"/>
+                <field name="headers">
+                  <field name="X-Guest-Order-Token" value="{{_global.guestOrderToken ?? ''}}"/>
+                </field>
+              </api-call>
+            </on>
+            $t:sirsoft-ecommerce.order.cash_receipt.issue
+          </button>
         </div>
       </div>
     </modal>

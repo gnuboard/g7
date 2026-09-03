@@ -135,7 +135,10 @@
           <icon name="chevron-left" class="text-base"/>
           <span>$t:shop.checkout.back</span>
         </button>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white"><responsive on="portable" class="text-xl font-bold text-gray-900 dark:text-white"/>$t:shop.checkout.title</h1>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+          <responsive on="portable" class="text-xl font-bold text-gray-900 dark:text-white"/>
+          $t:shop.checkout.title
+        </h1>
       </div>
       <!-- PC: 3컬럼 그리드 (좌측 폼 2칸, 우측 결제금액 1칸) -->
       <grid :cols="3" :gap="6">

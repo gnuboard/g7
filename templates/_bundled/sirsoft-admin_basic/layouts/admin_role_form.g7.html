@@ -1,9 +1,7 @@
-<!--
-  역할 등록·수정 폼. 회원 폼과 마찬가지로 한 레이아웃이 두 모드를 겸하되, **소스가 모드마다 갈린다** —
+<!-- 역할 등록·수정 폼. 회원 폼과 마찬가지로 한 레이아웃이 두 모드를 겸하되, **소스가 모드마다 갈린다** —
   수정이면 대상 역할을, 등록이면 권한 확인용 목록을, 복제 진입이면 원본 역할을 각각 부른다
   (셋 다 `if` 로 서로 배타적이라 한 화면에서 둘이 동시에 돌지 않는다).
-  권한 선택은 종류별 탭 + 트리 한 벌이고, 고른 값은 `_local.form.permission_values` 한 배열에 모인다.
--->
+  권한 선택은 종류별 탭 + 트리 한 벌이고, 고른 값은 `_local.form.permission_values` 한 배열에 모인다. -->
 <layout name="admin_role_form" version="1.0.0" extends="_admin_base">
   <meta title="{{route?.id ? '$t:admin.roles.form.edit_title' : '$t:admin.roles.form.create_title'}}" description="{{route?.id ? '$t:admin.roles.form.edit_description' : '$t:admin.roles.form.create_description'}}"/>
   <!-- 수정 모드에서만 도는 대상 역할 조회. 응답을 폼 초기값으로 풀고(`initLocal`), 조회는 되지만
@@ -93,37 +91,37 @@
                검증 실패는 필드 오류를 전역 `formErrors` 에 담아 각 칸이 읽게 하고, 403·500 은 문구만
                다르게 낸다. 어느 갈래든 진행 표시를 끈다(빠뜨리면 저장 버튼이 잠긴 채 남는다). -->
           <sequence>
-          <set-state target="global" :isSaving="true" :formErrors="null"/>
-          <api-call auth_mode="required" target="{{route?.id ? '/api/admin/roles/' + route.id : '/api/admin/roles'}}" method="{{route?.id ? 'PUT' : 'POST'}}">
-            <success>
-              <sequence>
-                <set-state target="global" :isSaving="false"/>
-                <toast type="success" message="{{route?.id ? $t:admin.roles.modals.update_success : $t:admin.roles.modals.create_success}}"/>
-                <navigate path="/admin/roles" :mergeQuery="true">
-                  <query/>
-                </navigate>
-              </sequence>
-            </success>
-            <fail>
-              <set-state target="global" :isSaving="false" formErrors="{{error.errors}}"/>
-              <toast type="error" message="{{error.message ?? '$t:common.validation_error'}}"/>
-            </fail>
-            <error-handling>
-              <on-code code="403">
+            <set-state target="global" :isSaving="true" :formErrors="null"/>
+            <api-call auth_mode="required" target="{{route?.id ? '/api/admin/roles/' + route.id : '/api/admin/roles'}}" method="{{route?.id ? 'PUT' : 'POST'}}">
+              <success>
                 <sequence>
                   <set-state target="global" :isSaving="false"/>
-                  <toast type="error" message="$t:auth.permission_denied"/>
+                  <toast type="success" message="{{route?.id ? $t:admin.roles.modals.update_success : $t:admin.roles.modals.create_success}}"/>
+                  <navigate path="/admin/roles" :mergeQuery="true">
+                    <query/>
+                  </navigate>
                 </sequence>
-              </on-code>
-              <on-code code="500">
-                <sequence>
-                  <set-state target="global" :isSaving="false"/>
-                  <toast type="error" message="$t:errors.server_error"/>
-                </sequence>
-              </on-code>
-            </error-handling>
-            <body identifier="{{!route?.id ? (_local.form.identifier ?? '') : undefined}}" name="{{_local.form.name_raw ?? form.name}}" description="{{_local.form.description_raw ?? form.description}}" is_active="{{_local.form.is_active === true}}" permissions="{{_local.form.permission_values ?? []}}"/>
-          </api-call>
+              </success>
+              <fail>
+                <set-state target="global" :isSaving="false" formErrors="{{error.errors}}"/>
+                <toast type="error" message="{{error.message ?? '$t:common.validation_error'}}"/>
+              </fail>
+              <error-handling>
+                <on-code code="403">
+                  <sequence>
+                    <set-state target="global" :isSaving="false"/>
+                    <toast type="error" message="$t:auth.permission_denied"/>
+                  </sequence>
+                </on-code>
+                <on-code code="500">
+                  <sequence>
+                    <set-state target="global" :isSaving="false"/>
+                    <toast type="error" message="$t:errors.server_error"/>
+                  </sequence>
+                </on-code>
+              </error-handling>
+              <body identifier="{{!route?.id ? (_local.form.identifier ?? '') : undefined}}" name="{{_local.form.name_raw ?? form.name}}" description="{{_local.form.description_raw ?? form.description}}" is_active="{{_local.form.is_active === true}}" permissions="{{_local.form.permission_values ?? []}}"/>
+            </api-call>
           </sequence>
         </on>
         <div data-ref="basic_info_section" class="admin-card">
@@ -200,7 +198,14 @@
       <div data-ref="footer_buttons" class="sticky-footer-buttons">
         <responsive on="portable" class="hidden"/>
         <!-- 취소하고 역할 목록으로. 보던 목록 상태를 이고 간다 -->
-        <button data-ref="footer_cancel_button" type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"><on type="click"><navigate path="/admin/roles" :mergeQuery="true"><query/></navigate></on>$t:common.cancel</button>
+        <button data-ref="footer_cancel_button" type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+          <on type="click">
+            <navigate path="/admin/roles" :mergeQuery="true">
+              <query/>
+            </navigate>
+          </on>
+          $t:common.cancel
+        </button>
         <button data-ref="footer_save_button" type="submit" form="role_form" disabled="{{_global.isSaving}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50">
           <icon data-if="{{!_global.isSaving}}" name="save" size="sm"/>
           <icon data-if="{{_global.isSaving}}" name="spinner" size="sm" :spin="true"/>
@@ -210,7 +215,14 @@
       <div data-ref="mobile_bottom_buttons" class="hidden">
         <responsive on="portable" class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4 flex gap-3 z-50"/>
         <!-- 저장. 폼 밖에 있는 버튼이라 form 속성으로 위쪽 역할 폼에 연결한다 — 그 폼에 같은 id 가 있어야 눌리므로 둘은 짝이다 -->
-        <button type="button" class="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg"><on type="click"><navigate path="/admin/roles" :mergeQuery="true"><query/></navigate></on>$t:common.cancel</button>
+        <button type="button" class="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg">
+          <on type="click">
+            <navigate path="/admin/roles" :mergeQuery="true">
+              <query/>
+            </navigate>
+          </on>
+          $t:common.cancel
+        </button>
         <button type="submit" form="role_form" disabled="{{_global.isSaving}}" class="flex-center flex-1 justify-center gap-2 px-4 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg disabled:opacity-50">
           <icon data-if="{{_global.isSaving}}" name="spinner" size="sm" :spin="true"/>
           <span>{{_global.isSaving ? $t:common.saving : $t:common.save}}</span>

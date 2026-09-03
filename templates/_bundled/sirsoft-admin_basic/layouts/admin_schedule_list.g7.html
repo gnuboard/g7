@@ -1,8 +1,6 @@
-<!--
-  예약 작업(스케줄) 관리. 목록 표는 조각(`_tab_schedules`)이 갖고 있고 여기에는 뼈대와 창 다섯이 있다.
+<!-- 예약 작업(스케줄) 관리. 목록 표는 조각(`_tab_schedules`)이 갖고 있고 여기에는 뼈대와 창 다섯이 있다.
   등록·수정이 별도 화면이 아니라 **한 폼 창**이다 — 대상과 편집 여부를 전역에 담아 그 창이 겸한다.
-  탭이 둘이지만 큐 탭은 아직 잠겨 있다(`:disabled`) — 자리만 잡아 둔 상태다.
--->
+  탭이 둘이지만 큐 탭은 아직 잠겨 있다(`:disabled`) — 자리만 잡아 둔 상태다. -->
 <layout name="admin_schedule_list" version="1.0.0" extends="_admin_base">
   <meta title="$t:admin.schedules.page_title" description="$t:admin.schedules.page_description"/>
   <!-- 예약 작업 목록. 조건 열둘을 전부 `query.*` 에서 읽는다(필터는 표 조각이 갖고 있다). -->
@@ -61,16 +59,16 @@
             <!-- 새 예약 — 폼 창을 등록 모드로 연다. 대상을 **비우고** 여는 것이 핵심이다.
                  그 창은 수정과 겸용이라, 안 비우면 직전에 고친 예약의 값이 새 등록에 실린다. -->
             <sequence>
-            <set-state target="global" :selectedSchedule="null" :isEditMode="false">
-              <field name="scheduleForm">
-                <field name="type" value="artisan"/>
-                <field name="frequency" value="daily"/>
-                <field name="without_overlapping" :value="true"/>
-                <field name="run_in_maintenance" :value="false"/>
-                <field name="is_active" :value="true"/>
-              </field>
-            </set-state>
-            <open-modal target="schedule_form_modal"/>
+              <set-state target="global" :selectedSchedule="null" :isEditMode="false">
+                <field name="scheduleForm">
+                  <field name="type" value="artisan"/>
+                  <field name="frequency" value="daily"/>
+                  <field name="without_overlapping" :value="true"/>
+                  <field name="run_in_maintenance" :value="false"/>
+                  <field name="is_active" :value="true"/>
+                </field>
+              </set-state>
+              <open-modal target="schedule_form_modal"/>
             </sequence>
           </on>
           <icon name="plus" size="md"/>
@@ -87,8 +85,8 @@
             <!-- 탭 전환 — 탭이 **URL 경로**라 이동이다. 기본 탭만 경로 뒤가 비고 나머지는 이름이 붙는다.
                  마지막 스크롤은 목록 아래쪽에 머문 화면을 위로 되돌린다. -->
             <sequence>
-            <navigate path="/admin/schedules{{$args[0] === 'schedules' ? '' : '/' + $args[0]}}"/>
-            <scroll-into-view selector="#main_content" behavior="instant" block="start" :waitForElement="true" :timeout="1000"/>
+              <navigate path="/admin/schedules{{$args[0] === 'schedules' ? '' : '/' + $args[0]}}"/>
+              <scroll-into-view selector="#main_content" behavior="instant" block="start" :waitForElement="true" :timeout="1000"/>
             </sequence>
           </on>
         </tab-navigation>

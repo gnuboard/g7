@@ -1,5 +1,4 @@
-<!--
-  본인인증 정책 등록·수정 겸용 창. 어느 쪽인지는 전역 `identity_policy_form_modal.isNew` 로 갈린다.
+<!-- 본인인증 정책 등록·수정 겸용 창. 어느 쪽인지는 전역 `identity_policy_form_modal.isNew` 로 갈린다.
 
   **확장이 선언한 정책은 뼈대를 못 고친다** — 키·범위·대상 세 칸이 잠기고 아래 안내 문구가 뜬다.
   운영자가 만든 정책(`source_type === 'admin'`)만 그 셋까지 열린다. 대신 목적·유예·적용대상·우선순위·
@@ -7,8 +6,7 @@
 
   목적·제공자 선택지는 서버 목록에서 만들고, 제공자는 첫 항목이 "기본 제공자 사용"(빈 값)이다.
   가입 목적일 때만 나오는 단계 선택이 하나 더 있다(`conditions` 아래로 들어간다).
-  상태는 전역 한 객체에 모으고, 성공하면 그 객체를 통째로 비운다.
--->
+  상태는 전역 한 객체에 모으고, 성공하면 그 객체를 통째로 비운다. -->
 <partial description="S1d identity_policy_form_modal — 환경설정 > 인증 탭 내 정책 추가/편집 모달. _global.identity_policy_form_modal 단일 진실 패턴 — list 가 매 진입마다 객체 통째 set, 모달 표시/입력 모두 _global 참조 (사례 13 회피 + modals 섹션 isolated 스코프 회피)" editor_label="$t:admin.modal_label.admin_settings.identity_policy_form_modal">
   <modal data-ref="identity_policy_form_modal" title="{{_global.identity_policy_form_modal?.isNew ? '$t:admin.identity.policies.create_title' : '$t:admin.identity.policies.edit_title'}}" size="lg" :closeOnOverlayClick="false">
     <div class="flex flex-col max-h-[calc(90vh-140px)] -my-4">

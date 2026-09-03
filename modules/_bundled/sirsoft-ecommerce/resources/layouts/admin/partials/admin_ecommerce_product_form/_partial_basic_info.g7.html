@@ -1,8 +1,6 @@
-<!--
-  상품 폼 — 기본정보 구획. 분류·브랜드·상품코드·상품명을 받는다. 분류는 4단 계층에서 한 줄기를
+<!-- 상품 폼 — 기본정보 구획. 분류·브랜드·상품코드·상품명을 받는다. 분류는 4단 계층에서 한 줄기를
   골라 「추가」로 담는 방식이고 상품 하나가 최대 5개까지 가진다 — 고르는 중인 값과 담긴 값이 다르므로
-  전자는 이 구획만의 격리 상태에, 후자는 폼에 둔다. 좁은 화면은 4단을 나란히 못 세워 단계 탭으로 바뀐다.
--->
+  전자는 이 구획만의 격리 상태에, 후자는 폼에 둔다. 좁은 화면은 4단을 나란히 못 세워 단계 탭으로 바뀐다. -->
 <partial description="Product Form - Basic Information Section">
   <div data-ref="basic" class="admin-card-accordion">
     <div class="card-header">
@@ -138,23 +136,43 @@
           <div class="{{_local.errors?.category_ids ? 'border border-red-500 dark:border-red-500' : 'border border-gray-200 dark:border-gray-700'}} rounded-lg h-[150px] overflow-y-auto">
             <div data-if="{{(_isolated.categoryStep ?? 1) === 1}}" data-each="cat in categories?.data?.data ?? []">
               <!-- 좁은 화면 1단 고르기 — 고른 뒤 다음 단계 탭으로 넘겨 주는 것이 넓은 화면과 다르다 -->
-              <div class="category-item-mobile" data-selected="{{_isolated.selectedCategories[0]?.id === cat.id}}"><on type="click"><action handler="sirsoft-ecommerce.selectCategoryMobile" :depth="0" category="{{cat}}"/></on>{{$localized(cat.name)}}</div>
+              <div class="category-item-mobile" data-selected="{{_isolated.selectedCategories[0]?.id === cat.id}}">
+                <on type="click">
+                  <action handler="sirsoft-ecommerce.selectCategoryMobile" :depth="0" category="{{cat}}"/>
+                </on>
+                {{$localized(cat.name)}}
+              </div>
             </div>
             <div data-if="{{(_isolated.categoryStep ?? 1) === 2 &amp;&amp; _isolated.selectedCategories[0]?.children?.length > 0}}" data-each="cat in _isolated.selectedCategories[0]?.children ?? []">
               <!-- 좁은 화면 2단 고르기 -->
-              <div class="category-item-mobile" data-selected="{{_isolated.selectedCategories[1]?.id === cat.id}}"><on type="click"><action handler="sirsoft-ecommerce.selectCategoryMobile" :depth="1" category="{{cat}}"/></on>{{$localized(cat.name)}}</div>
+              <div class="category-item-mobile" data-selected="{{_isolated.selectedCategories[1]?.id === cat.id}}">
+                <on type="click">
+                  <action handler="sirsoft-ecommerce.selectCategoryMobile" :depth="1" category="{{cat}}"/>
+                </on>
+                {{$localized(cat.name)}}
+              </div>
             </div>
             <div data-if="{{(_isolated.categoryStep ?? 1) === 2 &amp;&amp; !_isolated.selectedCategories[0]}}" class="p-4 text-sm text-gray-400 dark:text-gray-500 text-center">$t:sirsoft-ecommerce.admin.product.category.select_prev</div>
             <div data-if="{{(_isolated.categoryStep ?? 1) === 2 &amp;&amp; _isolated.selectedCategories[0] &amp;&amp; !(_isolated.selectedCategories[0]?.children?.length > 0)}}" class="p-4 text-sm text-gray-400 dark:text-gray-500 text-center">$t:sirsoft-ecommerce.admin.product.category.no_subcategory</div>
             <div data-if="{{(_isolated.categoryStep ?? 1) === 3 &amp;&amp; _isolated.selectedCategories[1]?.children?.length > 0}}" data-each="cat in _isolated.selectedCategories[1]?.children ?? []">
               <!-- 좁은 화면 3단 고르기 -->
-              <div class="category-item-mobile" data-selected="{{_isolated.selectedCategories[2]?.id === cat.id}}"><on type="click"><action handler="sirsoft-ecommerce.selectCategoryMobile" :depth="2" category="{{cat}}"/></on>{{$localized(cat.name)}}</div>
+              <div class="category-item-mobile" data-selected="{{_isolated.selectedCategories[2]?.id === cat.id}}">
+                <on type="click">
+                  <action handler="sirsoft-ecommerce.selectCategoryMobile" :depth="2" category="{{cat}}"/>
+                </on>
+                {{$localized(cat.name)}}
+              </div>
             </div>
             <div data-if="{{(_isolated.categoryStep ?? 1) === 3 &amp;&amp; !_isolated.selectedCategories[1]}}" class="p-4 text-sm text-gray-400 dark:text-gray-500 text-center">$t:sirsoft-ecommerce.admin.product.category.select_prev</div>
             <div data-if="{{(_isolated.categoryStep ?? 1) === 3 &amp;&amp; _isolated.selectedCategories[1] &amp;&amp; !(_isolated.selectedCategories[1]?.children?.length > 0)}}" class="p-4 text-sm text-gray-400 dark:text-gray-500 text-center">$t:sirsoft-ecommerce.admin.product.category.no_subcategory</div>
             <div data-if="{{(_isolated.categoryStep ?? 1) === 4 &amp;&amp; _isolated.selectedCategories[2]?.children?.length > 0}}" data-each="cat in _isolated.selectedCategories[2]?.children ?? []">
               <!-- 좁은 화면 4단 고르기 -->
-              <div class="category-item-mobile" data-selected="{{_isolated.selectedCategories[3]?.id === cat.id}}"><on type="click"><action handler="sirsoft-ecommerce.selectCategoryMobile" :depth="3" category="{{cat}}"/></on>{{$localized(cat.name)}}</div>
+              <div class="category-item-mobile" data-selected="{{_isolated.selectedCategories[3]?.id === cat.id}}">
+                <on type="click">
+                  <action handler="sirsoft-ecommerce.selectCategoryMobile" :depth="3" category="{{cat}}"/>
+                </on>
+                {{$localized(cat.name)}}
+              </div>
             </div>
             <div data-if="{{(_isolated.categoryStep ?? 1) === 4 &amp;&amp; !_isolated.selectedCategories[2]}}" class="p-4 text-sm text-gray-400 dark:text-gray-500 text-center">$t:sirsoft-ecommerce.admin.product.category.select_prev</div>
             <div data-if="{{(_isolated.categoryStep ?? 1) === 4 &amp;&amp; _isolated.selectedCategories[2] &amp;&amp; !(_isolated.selectedCategories[2]?.children?.length > 0)}}" class="p-4 text-sm text-gray-400 dark:text-gray-500 text-center">$t:sirsoft-ecommerce.admin.product.category.no_subcategory</div>
@@ -225,7 +243,12 @@
         </div>
         <div class="flex gap-2">
           <input type="text" name="product_code" class="{{_local.errors?.product_code ? 'input input-error flex-1' : 'input flex-1'}}" placeholder="$t:sirsoft-ecommerce.admin.product.placeholders.product_code" disabled="{{!!route.itemCode || (route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true)}}"/>
-          <button data-if="{{!route.itemCode}}" type="button" class="btn btn-outline whitespace-nowrap"><on type="click"><action handler="sirsoft-ecommerce.generateProductCode"/></on>$t:sirsoft-ecommerce.admin.product.buttons.generate_code</button>
+          <button data-if="{{!route.itemCode}}" type="button" class="btn btn-outline whitespace-nowrap">
+            <on type="click">
+              <action handler="sirsoft-ecommerce.generateProductCode"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.product.buttons.generate_code
+          </button>
         </div>
         <span data-if="{{_local.errors?.product_code}}" class="form-error-xs">{{_local.errors?.product_code?.[0]}}</span>
       </div>

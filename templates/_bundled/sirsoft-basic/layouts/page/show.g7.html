@@ -27,7 +27,10 @@
           <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
             <responsive on="portable" class="flex flex-wrap items-center justify-between gap-2 mb-3"/>
             <div class="flex flex-wrap items-center gap-2">
-              <h1 class="text-2xl font-bold text-gray-900 dark:text-white"><responsive on="portable" class="text-xl font-bold text-gray-900 dark:text-white"/>{{page?.data?.title ?? ''}}</h1>
+              <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+                <responsive on="portable" class="text-xl font-bold text-gray-900 dark:text-white"/>
+                {{page?.data?.title ?? ''}}
+              </h1>
               <span data-if="{{_global.currentUser?.is_admin}}" class="px-2 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded">v{{page?.data?.current_version ?? 1}}</span>
             </div>
             <a data-ref="page_admin_edit_button" data-if="{{_global.currentUser?.is_admin}}" href="/admin/pages/{{page?.data?.id}}/edit" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors no-underline">
@@ -35,7 +38,10 @@
               <span>$t:user.page.admin_edit</span>
             </a>
           </div>
-          <p data-if="{{page?.data?.published_at}}" class="text-sm text-gray-500 dark:text-gray-400 mb-6"><responsive on="portable" class="text-sm text-gray-500 dark:text-gray-400 mb-4"/>$t:user.page.published_at: {{page?.data?.published_at | date}}</p>
+          <p data-if="{{page?.data?.published_at}}" class="text-sm text-gray-500 dark:text-gray-400 mb-6">
+            <responsive on="portable" class="text-sm text-gray-500 dark:text-gray-400 mb-4"/>
+            $t:user.page.published_at: {{page?.data?.published_at | date}}
+          </p>
           <extension-point name="html_content" data-ref="page_html_content" content="{{page?.data?.content ?? ''}}" isHtml="{{(page?.data?.content_mode ?? 'html') === 'html'}}" class="text-gray-700 dark:text-gray-300">
             <default>
               <html-content content="{{page?.data?.content ?? ''}}" isHtml="{{(page?.data?.content_mode ?? 'html') === 'html'}}" class="text-gray-700 dark:text-gray-300"/>

@@ -1,12 +1,10 @@
-<!--
-  언어팩 관리의 **본체**. 이 파일이 화면 하나가 아니라 여러 진입점의 구현이다 —
+<!-- 언어팩 관리의 **본체**. 이 파일이 화면 하나가 아니라 여러 진입점의 구현이다 —
   `admin_{,module_,plugin_,template_}language_packs` 넷이 이것을 상속해 `scopeContext` 만 바꾸고,
   확장 목록에서 "언어팩 관리" 로 들어오면 확장 종류와 식별자가 경로에 박힌 주소로 온다
   (템플릿 `routes.json` 이 그 네 갈래를 정의한다).
   그래서 범위(모듈/플러그인/템플릿/전체)를 **경로에서 읽고, 경로가 말해 주지 않을 때만 쿼리를 본다** —
   같은 판정식이 데이터소스 파라미터와 초기화 두 곳에 있는 것이 그 때문이다.
-  본문은 조각(`admin_extension_language_packs/_content`)이 갖고 있고 여기에는 소스·창만 있다.
--->
+  본문은 조각(`admin_extension_language_packs/_content`)이 갖고 있고 여기에는 소스·창만 있다. -->
 <layout name="admin_language_pack_list" version="1.1.0" extends="_admin_base">
   <meta title="$t:admin.language_packs.page_title" description="$t:admin.language_packs.page_description"/>
   <!-- 언어팩 목록. 범위는 위 설명대로 경로 우선으로 정하고, 대상 확장 식별자도 경로가 없으면 쿼리를 쓴다.

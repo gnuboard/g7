@@ -1,12 +1,10 @@
-<!--
-  본인인증 기록의 검색 조건 영역. 고른 값은 로컬 `filter` 에 쌓였다가 검색 버튼(또는 입력창
+<!-- 본인인증 기록의 검색 조건 영역. 고른 값은 로컬 `filter` 에 쌓였다가 검색 버튼(또는 입력창
   Enter)이 주소 질의로 옮겨 줄 때 서버에 나간다.
 
   조건 항목이 **고정 목록과 받아 온 목록으로 갈린다** — 상태·출처 종류는 코드에 박힌 값이고,
   용도와 수단은 설치된 인증 제공자가 무엇을 지원하느냐에 따라 달라져 데이터소스에서 온다.
   그래서 수단 줄은 채널을 하나도 안 쓰는 구성에서는 통째로 감춰진다.
-  자주 안 쓰는 셋(출처 종류·출처 구분·출처 식별자)은 접힌 영역에 두었다.
--->
+  자주 안 쓰는 셋(출처 종류·출처 구분·출처 식별자)은 접힌 영역에 두었다. -->
 <partial description="Identity Logs Filter Section">
   <div data-ref="filter_section" class="admin-card filter-grid">
     <div data-ref="search_row" class="mb-4">
@@ -54,13 +52,11 @@
           <label data-each="st in {{['requested','sent','verified','failed','expired','cancelled','policy_violation_logged']}}" class="inline-clickable">
             <input type="checkbox" class="checkbox" checked="{{(_local.filter.statuses || []).includes(st)}}">
               <on type="change">
-                <!--
-                  상태 목록은 여기 박아 둔 일곱 개이고 라벨만 상태 이름으로 언어팩에서 찾아 붙인다.
+                <!-- 상태 목록은 여기 박아 둔 일곱 개이고 라벨만 상태 이름으로 언어팩에서 찾아 붙인다.
                   앞의 여섯은 인증 한 건이 지나는 단계(요청·발송·성공·실패·만료·취소)이고,
                   마지막 「정책 위반 기록」만 성격이 다르다 — 어기면 막는 대신 남기기만 하도록 둔
                   정책이 걸렸을 때 **요청은 통과시키고** 남긴 줄이라, 인증을 시도한 기록이 아니다.
-                  (수단 칸이 늘 「policy」로 찍히는 것도 그 때문이다.)
-                -->
+                  (수단 칸이 늘 「policy」로 찍히는 것도 그 때문이다.) -->
                 <set-state target="local" filter.statuses="{{$event.target.checked ? [...(_local.filter.statuses || []).filter(s => s !== st), st] : (_local.filter.statuses || []).filter(s => s !== st)}}"/>
               </on>
             </input>
@@ -177,9 +173,39 @@
     </div>
     <div data-ref="filter_actions" class="flex justify-center gap-3 mt-6">
       <responsive on="portable" class="flex gap-3 mt-6"/>
-      <button type="button" class="btn btn-primary px-6"><responsive on="portable" class="btn btn-primary flex-1"/><on type="click"><action-ref name="searchIdentityLogs"/></on>$t:admin.identity.logs.filter.search_button</button>
+      <button type="button" class="btn btn-primary px-6">
+        <responsive on="portable" class="btn btn-primary flex-1"/>
+        <on type="click">
+          <action-ref name="searchIdentityLogs"/>
+        </on>
+        $t:admin.identity.logs.filter.search_button
+      </button>
       <!-- 검색 실행. 폼에 담아 둔 조건을 주소로 옮겨 목록을 다시 세운다 -->
-      <button type="button" class="btn btn-secondary px-6"><responsive on="portable" class="btn btn-secondary flex-1"/><on type="click"><sequence><set-state target="local"><field name="filter"><field name="searchType" value="auto"/><field name="search" value=""/><field name="statuses" :value="[]"/><field name="purposes" :value="[]"/><field name="channels" :value="[]"/><field name="originTypes" :value="[]"/><field name="dateFrom" value=""/><field name="dateTo" value=""/><field name="sourceType" value=""/><field name="sourceIdentifier" value=""/><field name="advancedOpen" :value="false"/></field></set-state><!-- audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. --><navigate path="/admin/identity/logs" :mergeQuery="false"/></sequence></on>$t:admin.identity.logs.filter.reset_button</button>
+      <button type="button" class="btn btn-secondary px-6">
+        <responsive on="portable" class="btn btn-secondary flex-1"/>
+        <on type="click">
+          <sequence>
+            <set-state target="local">
+              <field name="filter">
+                <field name="searchType" value="auto"/>
+                <field name="search" value=""/>
+                <field name="statuses" :value="[]"/>
+                <field name="purposes" :value="[]"/>
+                <field name="channels" :value="[]"/>
+                <field name="originTypes" :value="[]"/>
+                <field name="dateFrom" value=""/>
+                <field name="dateTo" value=""/>
+                <field name="sourceType" value=""/>
+                <field name="sourceIdentifier" value=""/>
+                <field name="advancedOpen" :value="false"/>
+              </field>
+            </set-state>
+            <!-- audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. -->
+            <navigate path="/admin/identity/logs" :mergeQuery="false"/>
+          </sequence>
+        </on>
+        $t:admin.identity.logs.filter.reset_button
+      </button>
     </div>
   </div>
 </partial>

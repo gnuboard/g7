@@ -217,16 +217,29 @@
               <icon data-if="{{row.is_reply}}" name="level-up-alt" class="text-sm fa-rotate-90 mt-1 text-gray-400 dark:text-gray-500"/>
               <div class="flex-1">
                 <div class="flex-center gap-2 flex-wrap">
-                  <!-- 카테고리 배지 --><span data-if="{{row.category}}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">{{row.category}}</span>
+                  <!-- 카테고리 배지 -->
+                  <span data-if="{{row.category}}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">{{row.category}}</span>
                   <!-- 비밀글 아이콘 -->
                   <icon data-if="{{row.is_secret}}" name="lock" class="text-sm text-gray-500 dark:text-gray-400"/>
-                  <!-- 블라인드 배지 --><span data-if="{{row?.status === 'blinded'}}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">$t:sirsoft-board.admin.posts.status.blinded</span>
-                  <!-- 제목 --><span class="font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"><on type="click"><navigate path="/admin/board/{{row.slug}}/post/{{row.id}}" :mergeQuery="true"><query/></navigate></on>{{row.title}}</span>
+                  <!-- 블라인드 배지 -->
+                  <span data-if="{{row?.status === 'blinded'}}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">$t:sirsoft-board.admin.posts.status.blinded</span>
+                  <!-- 제목 -->
+                  <span class="font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
+                    <on type="click">
+                      <navigate path="/admin/board/{{row.slug}}/post/{{row.id}}" :mergeQuery="true">
+                        <query/>
+                      </navigate>
+                    </on>
+                    {{row.title}}
+                  </span>
                   <!-- 첨부파일 아이콘 -->
                   <icon data-if="{{row.has_attachment}}" name="paperclip" class="text-sm text-gray-400 dark:text-gray-500"/>
-                  <!-- 댓글 수 --><span data-if="{{row?.comment_count &amp;&amp; row?.comment_count > 0}}" class="text-xs text-blue-600 dark:text-blue-400 font-medium">[{{row?.comment_count}}]</span>
-                  <!-- 신규 배지 --><span data-if="{{row?.is_new}}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-500 dark:bg-red-600 text-white">N</span>
-                  <!-- 삭제됨 배지 --><span data-if="{{row?.status === 'deleted'}}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-800 text-white dark:bg-gray-600 dark:text-gray-100">$t:sirsoft-board.admin.posts.detail.status_deleted</span>
+                  <!-- 댓글 수 -->
+                  <span data-if="{{row?.comment_count &amp;&amp; row?.comment_count > 0}}" class="text-xs text-blue-600 dark:text-blue-400 font-medium">[{{row?.comment_count}}]</span>
+                  <!-- 신규 배지 -->
+                  <span data-if="{{row?.is_new}}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-500 dark:bg-red-600 text-white">N</span>
+                  <!-- 삭제됨 배지 -->
+                  <span data-if="{{row?.status === 'deleted'}}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-800 text-white dark:bg-gray-600 dark:text-gray-100">$t:sirsoft-board.admin.posts.detail.status_deleted</span>
                 </div>
               </div>
             </div>
@@ -236,7 +249,12 @@
           <cell>
             <div class="row-stack">
               <div class="flex-center gap-2">
-                <span data-if="{{!row.author.is_guest}}" class="font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"><on type="click"><navigate path="/admin/users/{{row.author.uuid}}"/></on>{{row.author.name}}</span>
+                <span data-if="{{!row.author.is_guest}}" class="font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
+                  <on type="click">
+                    <navigate path="/admin/users/{{row.author.uuid}}"/>
+                  </on>
+                  {{row.author.name}}
+                </span>
                 <span data-if="{{row.author.is_guest}}" class="font-medium text-gray-900 dark:text-white">{{row.author.name}}</span>
                 <span data-if="{{row.author.is_guest}}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">$t:sirsoft-board.admin.posts.guest</span>
               </div>

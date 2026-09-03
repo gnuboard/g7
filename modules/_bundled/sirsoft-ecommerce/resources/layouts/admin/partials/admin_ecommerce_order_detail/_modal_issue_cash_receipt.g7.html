@@ -47,14 +47,38 @@
             <set-state target="global" adminCashReceiptForm.identifier="{{$event.target.value}}"/>
           </on>
         </input>
-        <!-- 서버 검증 메시지 인라인 노출 (사업자번호 체크섬 · 용도×수단 조합 위반 등) --><span data-if="{{!!_global.adminCashReceiptForm?.error}}" class="block text-red-500 text-xs mt-1">{{_global.adminCashReceiptForm?.error ?? ''}}</span>
+        <!-- 서버 검증 메시지 인라인 노출 (사업자번호 체크섬 · 용도×수단 조합 위반 등) -->
+        <span data-if="{{!!_global.adminCashReceiptForm?.error}}" class="block text-red-500 text-xs mt-1">{{_global.adminCashReceiptForm?.error ?? ''}}</span>
       </div>
       <p class="text-xs text-secondary">$t:sirsoft-ecommerce.admin.order.detail.cash_receipt.immutable_help</p>
       <!-- 액션 — 데스크톱 가로 우측정렬 → portable full-width 세로 스택 -->
       <div class="flex flex-row justify-end gap-2 pt-2">
         <responsive on="portable" class="flex flex-col gap-2 w-full pt-2"/>
-        <button type="button" class="px-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"><on type="click"><close-modal/></on>$t:sirsoft-ecommerce.admin.order.detail.cash_receipt.cancel</button>
-        <button data-ref="modal_cash_receipt_submit" type="button" class="px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!(_global.adminCashReceiptForm?.identifier ?? '')}}"><on type="click"><!-- 관리자 API 는 auth_required 를 선언해야 Bearer 토큰이 부착된다 — 미선언 시 401. --><api-call target="/api/modules/sirsoft-ecommerce/admin/orders/{{order.data?.id}}/cash-receipt" :auth_required="true" method="POST"><success><!-- setState 를 먼저 하고 closeModal 을 나중에 한다 (순서 역전 시 상태가 남는다) --><set-state target="global" :adminCashReceiptForm="null"/><close-modal/><refetch-data-source dataSourceId="order"/><toast type="success" message="$t:sirsoft-ecommerce.admin.order.detail.cash_receipt.issue_success"/></success><fail><set-state target="global" adminCashReceiptForm.error="{{error.errors?.identifier?.[0] ?? error.message ?? $t('sirsoft-ecommerce.admin.order.detail.cash_receipt.issue_failed')}}"/></fail><body receipt_type="{{_global.adminCashReceiptForm?.receipt_type ?? 'income'}}" identifier_type="{{_global.adminCashReceiptForm?.identifier_type ?? 'phone'}}" identifier="{{_global.adminCashReceiptForm?.identifier ?? ''}}"/></api-call></on>$t:sirsoft-ecommerce.admin.order.detail.cash_receipt.issue</button>
+        <button type="button" class="px-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+          <on type="click">
+            <close-modal/>
+          </on>
+          $t:sirsoft-ecommerce.admin.order.detail.cash_receipt.cancel
+        </button>
+        <button data-ref="modal_cash_receipt_submit" type="button" class="px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!(_global.adminCashReceiptForm?.identifier ?? '')}}">
+          <on type="click">
+            <!-- 관리자 API 는 auth_required 를 선언해야 Bearer 토큰이 부착된다 — 미선언 시 401. -->
+            <api-call target="/api/modules/sirsoft-ecommerce/admin/orders/{{order.data?.id}}/cash-receipt" :auth_required="true" method="POST">
+              <success>
+                <!-- setState 를 먼저 하고 closeModal 을 나중에 한다 (순서 역전 시 상태가 남는다) -->
+                <set-state target="global" :adminCashReceiptForm="null"/>
+                <close-modal/>
+                <refetch-data-source dataSourceId="order"/>
+                <toast type="success" message="$t:sirsoft-ecommerce.admin.order.detail.cash_receipt.issue_success"/>
+              </success>
+              <fail>
+                <set-state target="global" adminCashReceiptForm.error="{{error.errors?.identifier?.[0] ?? error.message ?? $t('sirsoft-ecommerce.admin.order.detail.cash_receipt.issue_failed')}}"/>
+              </fail>
+              <body receipt_type="{{_global.adminCashReceiptForm?.receipt_type ?? 'income'}}" identifier_type="{{_global.adminCashReceiptForm?.identifier_type ?? 'phone'}}" identifier="{{_global.adminCashReceiptForm?.identifier ?? ''}}"/>
+            </api-call>
+          </on>
+          $t:sirsoft-ecommerce.admin.order.detail.cash_receipt.issue
+        </button>
       </div>
     </div>
   </modal>

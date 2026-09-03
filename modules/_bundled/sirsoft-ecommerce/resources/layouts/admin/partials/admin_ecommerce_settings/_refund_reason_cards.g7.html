@@ -1,10 +1,8 @@
-<!--
-  쇼핑몰 설정 — 환불 사유 목록, 좁은 화면용 카드. 넓은 화면용 표(`_refund_reason_section`)와
+<!-- 쇼핑몰 설정 — 환불 사유 목록, 좁은 화면용 카드. 넓은 화면용 표(`_refund_reason_section`)와
   같은 배열을 편집한다.
   
   사유는 고객이 환불을 신청할 때 고르는 항목이고, **누가 부담하는가**(사유 종류)가 함께 붙어
-  있어 배송비 정산이 달라진다.
--->
+  있어 배송비 정산이 달라진다. -->
 <partial description="환불 사유 관리 - Mobile 카드 뷰">
   <div data-ref="refund_reason_cards_container">
     <div data-ref="refund_reason_card_{{rIdx}}" data-each="reason, rIdx in (_local.form?.claim?.refund_reasons ?? []).map((r, i) => ({...r, _idx: i}))" class="excel-card">

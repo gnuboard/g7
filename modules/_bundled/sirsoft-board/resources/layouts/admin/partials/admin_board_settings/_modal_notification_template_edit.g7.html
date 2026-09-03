@@ -116,10 +116,22 @@
               </div>
             </div>
           </div>
-          <button type="button" class="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 font-medium"><on type="click"><!-- 수신 규칙 한 줄 더하기 — 「발생시킨 사람」을 기본 종류로 붙인다(추가 입력이 필요 없는 유일한 종류라 그대로 두어도 완결된 규칙이 된다) --><set-state target="global" board_notification_template_form_modal.recipients="{{[...(_global.board_notification_template_form_modal?.recipients ?? []), {type: 'trigger_user'}]}}"/></on>$t:admin.settings.notification_definitions.recipients.add_rule</button>
+          <button type="button" class="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 font-medium">
+            <on type="click">
+              <!-- 수신 규칙 한 줄 더하기 — 「발생시킨 사람」을 기본 종류로 붙인다(추가 입력이 필요 없는 유일한 종류라 그대로 두어도 완결된 규칙이 된다) -->
+              <set-state target="global" board_notification_template_form_modal.recipients="{{[...(_global.board_notification_template_form_modal?.recipients ?? []), {type: 'trigger_user'}]}}"/>
+            </on>
+            $t:admin.settings.notification_definitions.recipients.add_rule
+          </button>
         </div>
         <div data-ref="board_template_lang_tabs" class="flex border-b border-gray-200 dark:border-gray-700">
-          <button data-each="loc in {{$locales}}" type="button" class="{{(_global.board_notification_template_form_modal?.editLang ?? $locale) === loc ? 'border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2 text-sm font-medium focus:outline-none"><on type="click"><!-- 언어 탭 — 설치된 언어만큼 버튼이 생긴다. 값을 나르지 않고 아래 제목·본문 칸이 어느 언어를 보여줄지만 가른다 --><set-state target="global" board_notification_template_form_modal.editLang="{{loc}}"/></on>{{_global.appConfig?.localeNames?.[loc] ?? loc}}</button>
+          <button data-each="loc in {{$locales}}" type="button" class="{{(_global.board_notification_template_form_modal?.editLang ?? $locale) === loc ? 'border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2 text-sm font-medium focus:outline-none">
+            <on type="click">
+              <!-- 언어 탭 — 설치된 언어만큼 버튼이 생긴다. 값을 나르지 않고 아래 제목·본문 칸이 어느 언어를 보여줄지만 가른다 -->
+              <set-state target="global" board_notification_template_form_modal.editLang="{{loc}}"/>
+            </on>
+            {{_global.appConfig?.localeNames?.[loc] ?? loc}}
+          </button>
         </div>
         <div data-ref="board_template_subject_input">
           <div>
@@ -176,10 +188,29 @@
       <div data-ref="board_template_modal_footer" class="flex-between pt-4 pb-4 border-t border-gray-200 dark:border-gray-700 mt-4 flex-shrink-0">
         <div>
           <!-- 기본 문안으로 되돌린다. 손댄 내용을 버리고 코어가 제공하는 원문을 다시 싣는다 -->
-          <button type="button" class="text-body px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" disabled="{{_global.board_notification_template_form_modal?.isSaving ?? false}}"><on type="click"><api-call :auth_required="true" target="/api/admin/notification-templates/preview" method="POST"><success><set-state target="global" board_notification_template_form_modal.preview="{{response.data}}"/><open-modal target="modal_board_notification_template_preview"/></success><fail><toast type="error" message="{{error.message}}"/></fail><body definition_id="{{_global.board_notification_template_form_modal?.definition?.id}}" subject="{{_global.board_notification_template_form_modal?.template?.subject}}" body="{{_global.board_notification_template_form_modal?.template?.body}}" locale="{{_global.board_notification_template_form_modal?.editLang ?? $locale}}"/></api-call></on>$t:sirsoft-board.admin.settings.notification_definitions.edit_modal.btn_preview</button>
+          <button type="button" class="text-body px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" disabled="{{_global.board_notification_template_form_modal?.isSaving ?? false}}">
+            <on type="click">
+              <api-call :auth_required="true" target="/api/admin/notification-templates/preview" method="POST">
+                <success>
+                  <set-state target="global" board_notification_template_form_modal.preview="{{response.data}}"/>
+                  <open-modal target="modal_board_notification_template_preview"/>
+                </success>
+                <fail>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+                <body definition_id="{{_global.board_notification_template_form_modal?.definition?.id}}" subject="{{_global.board_notification_template_form_modal?.template?.subject}}" body="{{_global.board_notification_template_form_modal?.template?.body}}" locale="{{_global.board_notification_template_form_modal?.editLang ?? $locale}}"/>
+              </api-call>
+            </on>
+            $t:sirsoft-board.admin.settings.notification_definitions.edit_modal.btn_preview
+          </button>
         </div>
         <div class="flex gap-2">
-          <button type="button" class="text-body px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.board_notification_template_form_modal?.isSaving ?? false}}"><on type="click"><close-modal target="modal_board_notification_template_edit"/></on>$t:common.cancel</button>
+          <button type="button" class="text-body px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.board_notification_template_form_modal?.isSaving ?? false}}">
+            <on type="click">
+              <close-modal target="modal_board_notification_template_edit"/>
+            </on>
+            $t:common.cancel
+          </button>
           <button type="button" class="flex-center gap-2 text-sm px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.board_notification_template_form_modal?.isSaving ?? false}}">
             <on type="click">
               <!-- 저장 — 문안과 수신 규칙을 함께 보낸다. 성공하면 폼 객체를 통째로 비우고 목록을 다시 읽어, 고친 제목이 목록 요약에도 반영되게 한다 -->

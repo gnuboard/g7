@@ -1,9 +1,7 @@
-<!--
-  앞 창과 방향이 반대다 — **이 플러그인에 기대는 쪽이 있는데도** 끄겠다는 확인 창.
+<!-- 앞 창과 방향이 반대다 — **이 플러그인에 기대는 쪽이 있는데도** 끄겠다는 확인 창.
   기대는 쪽은 셋으로 갈라 보여 준다(템플릿·모듈·플러그인). 셋 다 서버가 막으면서 알려 준 것을
   목록이 담아 둔 값이라, 여기서 다시 조회하지 않는다.
-  밀어붙이면 저쪽들이 없는 기능을 부르게 되므로, 끄기 전에 그 목록을 먼저 정리하는 편이 낫다.
--->
+  밀어붙이면 저쪽들이 없는 기능을 부르게 되므로, 끄기 전에 그 목록을 먼저 정리하는 편이 낫다. -->
 <partial description="플러그인 강제 비활성화 확인 모달" editor_label="$t:admin.modal_label.admin_plugin_list.plugin_force_deactivate_modal">
   <modal data-ref="plugin_force_deactivate_modal" title="$t:admin.plugins.modals.deactivate_warning_title" size="sm">
     <div class="py-2">
@@ -50,9 +48,9 @@
         <on type="click">
           <!-- 앞 창의 취소와 같은 이유로 목록을 다시 받는다 — 이쪽은 스위치가 **꺼진 모양**으로 남아 있어 그것을 서버 값으로 되돌린다. -->
           <sequence>
-          <set-state target="global" :deactivateWarningData="null"/>
-          <refetch-data-source dataSourceId="plugins"/>
-          <close-modal/>
+            <set-state target="global" :deactivateWarningData="null"/>
+            <refetch-data-source dataSourceId="plugins"/>
+            <close-modal/>
           </sequence>
         </on>
         <span>$t:common.cancel</span>
@@ -61,24 +59,24 @@
         <on type="click">
           <!-- 끌 때도 관리자 메뉴를 함께 다시 받는다 — 이 플러그인이 더해 둔 메뉴 항목을 걷어내야 사라진 화면으로 가는 길이 남지 않는다. -->
           <sequence>
-          <set-state target="global" :isForceDeactivating="true"/>
-          <api-call :auth_required="true" target="/api/admin/plugins/deactivate" method="POST">
-            <success>
-              <set-state target="global" :isForceDeactivating="false" :deactivateWarningData="null"/>
-              <parallel>
-                <refetch-data-source dataSourceId="plugins"/>
-                <refetch-data-source dataSourceId="admin_menu"/>
-                <reload-extensions pluginInfo="{{result}}" action="remove"/>
-              </parallel>
-              <toast type="success" message="$t:admin.plugins.deactivate_success"/>
-              <close-modal/>
-            </success>
-            <fail>
-              <set-state target="global" :isForceDeactivating="false"/>
-              <toast type="error" message="{{error.message}}"/>
-            </fail>
-            <body plugin_name="{{_global.selectedPlugin.identifier}}" :force="true"/>
-          </api-call>
+            <set-state target="global" :isForceDeactivating="true"/>
+            <api-call :auth_required="true" target="/api/admin/plugins/deactivate" method="POST">
+              <success>
+                <set-state target="global" :isForceDeactivating="false" :deactivateWarningData="null"/>
+                <parallel>
+                  <refetch-data-source dataSourceId="plugins"/>
+                  <refetch-data-source dataSourceId="admin_menu"/>
+                  <reload-extensions pluginInfo="{{result}}" action="remove"/>
+                </parallel>
+                <toast type="success" message="$t:admin.plugins.deactivate_success"/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="global" :isForceDeactivating="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+              <body plugin_name="{{_global.selectedPlugin.identifier}}" :force="true"/>
+            </api-call>
           </sequence>
         </on>
         <icon data-if="{{_global.isForceDeactivating}}" name="spinner" class="spinner-sm"/>

@@ -1,5 +1,4 @@
-<!--
-  모듈 설치 창. 확인만 받는 창이 아니라 **함께 설치할 것을 고르는 창**이다 —
+<!-- 모듈 설치 창. 확인만 받는 창이 아니라 **함께 설치할 것을 고르는 창**이다 —
   열리면서 설치 미리보기를 받아 의존 확장과 동반 언어팩을 체크리스트로 편다.
 
   선택 상태를 다루는 방식이 이 창의 까다로운 부분이고, 세 규칙이 파일 전체에 반복된다.
@@ -9,8 +8,7 @@
      함께 꺼진 것으로 계산된다.
   ⑶ 그래서 요청 본문도 화면 값을 그대로 보내지 않고 같은 규칙으로 다시 걸러 담는다.
 
-  vendor 설치 방식(자동/컴포저/번들)은 이 창에서만 고른다.
--->
+  vendor 설치 방식(자동/컴포저/번들)은 이 창에서만 고른다. -->
 <partial description="모듈 설치 확인 모달 — install-preview API 응답 기반 cascade(의존 확장 + 동반 언어팩) 체크리스트 포함" editor_label="$t:admin.modal_label.admin_module_list.module_install_modal">
   <modal data-ref="module_install_modal" title="$t:admin.modules.modals.install_title" size="medium">
     <!-- 설치 미리보기 — 함께 깔릴 의존 확장·언어팩과 각각의 기본 선택 여부를 서버가 정해 준다.
@@ -90,23 +88,23 @@
                다시 계산**한 결과다(위 규칙 ⑶) — 언어팩은 딸린 확장이 빠졌으면 여기서도 빠진다.
                성공하면 선택과 대상을 비우고 목록·메뉴·확장 번들을 함께 갱신한다. -->
           <sequence>
-          <set-state target="global" :isModuleInstalling="true"/>
-          <api-call :auth_required="true" target="/api/admin/modules/install" method="POST">
-            <success>
-              <set-state target="global" :isModuleInstalling="false" :installSelectedDeps="null" :installSelectedLPs="null"/>
-              <set-state target="global" :selectedModule="null"/>
-              <toast type="success" message="$t:admin.modules.install_success"/>
-              <refetch-data-source dataSourceId="modules"/>
-              <refetch-data-source dataSourceId="admin_menu"/>
-              <reload-extensions/>
-              <close-modal/>
-            </success>
-            <fail>
-              <set-state target="global" :isModuleInstalling="false"/>
-              <toast type="error" message="{{error.message}}"/>
-            </fail>
-            <body module_name="{{_global.selectedModule.identifier}}" vendor_mode="{{_global.moduleInstallVendorMode ?? 'auto'}}" dependencies="{{ ((_global.installPreview?.dependencies ?? []).filter(d => (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(d.identifier)).map(d => ({ type: d.type, identifier: d.identifier }))) }}" language_packs="{{ ((_global.installPreview?.language_packs ?? []).filter(lp => (_global.installSelectedLPs ?? (_global.installPreview?.language_packs ?? []).filter(x => x.default_selected).map(x => x.bundled_identifier)).includes(lp.bundled_identifier) &amp;&amp; (!lp.depends_on_extension || (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension))).map(lp => lp.bundled_identifier)) }}"/>
-          </api-call>
+            <set-state target="global" :isModuleInstalling="true"/>
+            <api-call :auth_required="true" target="/api/admin/modules/install" method="POST">
+              <success>
+                <set-state target="global" :isModuleInstalling="false" :installSelectedDeps="null" :installSelectedLPs="null"/>
+                <set-state target="global" :selectedModule="null"/>
+                <toast type="success" message="$t:admin.modules.install_success"/>
+                <refetch-data-source dataSourceId="modules"/>
+                <refetch-data-source dataSourceId="admin_menu"/>
+                <reload-extensions/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="global" :isModuleInstalling="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+              <body module_name="{{_global.selectedModule.identifier}}" vendor_mode="{{_global.moduleInstallVendorMode ?? 'auto'}}" dependencies="{{ ((_global.installPreview?.dependencies ?? []).filter(d => (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(d.identifier)).map(d => ({ type: d.type, identifier: d.identifier }))) }}" language_packs="{{ ((_global.installPreview?.language_packs ?? []).filter(lp => (_global.installSelectedLPs ?? (_global.installPreview?.language_packs ?? []).filter(x => x.default_selected).map(x => x.bundled_identifier)).includes(lp.bundled_identifier) &amp;&amp; (!lp.depends_on_extension || (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension))).map(lp => lp.bundled_identifier)) }}"/>
+            </api-call>
           </sequence>
         </on>
         <icon data-if="{{!_global.isModuleInstalling}}" name="download" class="text-base"/>

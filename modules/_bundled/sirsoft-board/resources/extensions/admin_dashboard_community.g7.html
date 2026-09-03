@@ -5,8 +5,18 @@
       <div data-ref="post_graph_today_summary" class="flex-center flex-wrap gap-2 md:col-span-2 lg:col-span-4">
         <blur-until-loaded sources="board_overview"/>
         <span data-ref="post_graph_today_label" class="text-sm font-semibold text-slate-500 dark:text-slate-400">$t:admin.dashboard.stats.today</span>
-        <span data-ref="today_new_posts_badge" class="px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"><on type="click"><navigate path="/admin/boards"/></on>$t:sirsoft-board.admin.dashboard.today_badges.new_posts|count={{board_overview?.data?.today_posts ?? 0}}</span>
-        <span data-ref="today_new_comments_badge" class="px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"><on type="click"><navigate path="/admin/boards"/></on>$t:sirsoft-board.admin.dashboard.today_badges.new_comments|count={{board_overview?.data?.today_comments ?? 0}}</span>
+        <span data-ref="today_new_posts_badge" class="px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
+          <on type="click">
+            <navigate path="/admin/boards"/>
+          </on>
+          $t:sirsoft-board.admin.dashboard.today_badges.new_posts|count={{board_overview?.data?.today_posts ?? 0}}
+        </span>
+        <span data-ref="today_new_comments_badge" class="px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
+          <on type="click">
+            <navigate path="/admin/boards"/>
+          </on>
+          $t:sirsoft-board.admin.dashboard.today_badges.new_comments|count={{board_overview?.data?.today_comments ?? 0}}
+        </span>
         <extension-badge data-ref="community_section_badge" class="ml-auto" type="module" identifier="sirsoft-board" installedModules="{{_global.installedModules}}"/>
       </div>
       <div data-ref="post_graph_card" class="bg-slate-100 dark:bg-slate-800 p-4 md:p-6 rounded-xl md:rounded-2xl md:col-span-2 h-full flex flex-col">

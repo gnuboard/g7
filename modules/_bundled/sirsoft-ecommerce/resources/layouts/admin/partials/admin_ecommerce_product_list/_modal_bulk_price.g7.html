@@ -1,12 +1,10 @@
-<!--
-  상품 목록 — 일괄 가격변경 **조건 입력** 창. 여기서는 아무것도 바꾸지 않는다. 고른 방식(증액·
+<!-- 상품 목록 — 일괄 가격변경 **조건 입력** 창. 여기서는 아무것도 바꾸지 않는다. 고른 방식(증액·
   감액·정액)과 값·단위를 `_global` 에 담아 두기만 하고, 실제 적용은 확인 창(`modal_bulk_confirm`)
   이 한 번 더 물은 뒤에 일어난다 — 되돌리기 어려운 변경이라 입력과 실행을 갈라 두었다.
 
   통화 기호는 고정값이 아니라 쇼핑몰 설정의 기본 통화에서 읽는다(설정이 비어 있을 때만 KRW).
   미리보기 문구는 `_local` 값을 그대로 읽고, 확정 시 사람이 읽을 한 줄(`bulkPriceCondition`)로
-  접어 `_global` 에 함께 담는다 — 확인 창이 그 문구를 그대로 보여 주기 때문이다.
--->
+  접어 `_global` 에 함께 담는다 — 확인 창이 그 문구를 그대로 보여 주기 때문이다. -->
 <partial description="Product Index - Bulk Price Change Modal">
   <modal data-ref="modal_bulk_price" title="$t:sirsoft-ecommerce.admin.product.modal.bulk_price.title" description="$t:sirsoft-ecommerce.admin.product.modal.bulk_price.description" size="md">
     <div data-ref="bulk_price_form">
@@ -48,7 +46,12 @@
       </div>
     </div>
     <div data-ref="bulk_price_footer" class="flex justify-end gap-2 mt-6">
-      <button type="button" class="btn btn-outline"><on type="click"><close-modal/></on>$t:sirsoft-ecommerce.admin.product.modal.common.cancel</button>
+      <button type="button" class="btn btn-outline">
+        <on type="click">
+          <close-modal/>
+        </on>
+        $t:sirsoft-ecommerce.admin.product.modal.common.cancel
+      </button>
       <button type="button" class="btn btn-primary">
         <on type="click">
           <!-- 적용. 확인 창에 보여 줄 조건 문구를 여기서 만든다 — 창은 별도 컨텍스트라 이 창의 입력값을 다시 계산할 수 없다. 단위 기호는 기본 통화 설정에서 끌어오므로 원화가 아닌 상점에서도 맞는 기호가 붙는다 -->

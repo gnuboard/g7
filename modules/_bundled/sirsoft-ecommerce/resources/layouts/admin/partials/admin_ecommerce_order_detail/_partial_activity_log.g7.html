@@ -1,12 +1,10 @@
-<!--
-  주문 상세의 활동 로그 구역 — 이 주문에 누가 언제 무엇을 했는지 시간순으로 보여 준다.
+<!-- 주문 상세의 활동 로그 구역 — 이 주문에 누가 언제 무엇을 했는지 시간순으로 보여 준다.
   정렬·쪽당 건수·쪽 번호가 **URL 이 아니라 지역 상태**에 남는다. 주문 상세는 이미 자기 주소를 쓰는
   화면이고, 로그는 그 안의 한 구역일 뿐이라 주소를 다투지 않는 쪽을 골랐다.
   그래서 세 조작이 모두 같은 형태다 — 값을 지역 상태에 쓰고 **데이터소스를 직접 다시 부른다**.
   이 재조회가 빠지면 값만 바뀌고 목록은 그대로다.
   정렬과 쪽당 건수는 쪽 번호를 1 로 되돌리고, 쪽 이동만 그러지 않는다.
-  로그를 남긴 사람 이름은 작은 메뉴이고, 회원 상세를 **새 창**으로 연다 — 보던 주문을 잃지 않기 위해서다.
--->
+  로그를 남긴 사람 이름은 작은 메뉴이고, 회원 상세를 **새 창**으로 연다 — 보던 주문을 잃지 않기 위해서다. -->
 <partial description="Order Detail - Activity Log Tab">
   <div data-ref="section_activity_log" data-section-id="activity_log">
     <div data-ref="activity_log_card" class="admin-card">
@@ -126,7 +124,6 @@
                 </prop>
                 <on event="onItemClick">
                   <!-- 좁은 화면 카드의 행위자 이름 메뉴 — 위 표 안의 것과 같은 동작이다. -->
-
                   <switch>
                     <case when="view_member">
                       <open-window path="/admin/users/{{log.user.uuid}}"/>

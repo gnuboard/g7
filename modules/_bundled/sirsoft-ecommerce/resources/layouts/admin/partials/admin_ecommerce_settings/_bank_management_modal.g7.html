@@ -1,13 +1,11 @@
-<!--
-  쇼핑몰 설정 — 은행 목록 관리 창. 입금계좌에서 고를 수 있는 **은행 자체**를 늘리고 줄인다
+<!-- 쇼핑몰 설정 — 은행 목록 관리 창. 입금계좌에서 고를 수 있는 **은행 자체**를 늘리고 줄인다
   (계좌를 다루는 창이 아니다).
   
   이 창은 `_global` 이 아니라 `$parent._local` 을 읽고 쓴다 — 은행 목록이 설정 화면의 폼
   상태(`form.order_settings.banks`) 안에 있고 저장도 그 화면의 저장 버튼이 하기 때문이다.
   여기서 `_global` 로 옮겨 담으면 저장 대상과 갈린다.
   
-  저장중 오버레이와 오류 배너도 같은 자리(`bankModalSaving`·`bankModalErrors`)를 읽는다.
--->
+  저장중 오버레이와 오류 배너도 같은 자리(`bankModalSaving`·`bankModalErrors`)를 읽는다. -->
 <partial description="은행 관리 모달">
   <modal data-ref="bank_management_modal" title="$t:sirsoft-ecommerce.admin.settings.order_settings.bank_management.modal_title" size="2xl">
     <div class="flex flex-col relative">

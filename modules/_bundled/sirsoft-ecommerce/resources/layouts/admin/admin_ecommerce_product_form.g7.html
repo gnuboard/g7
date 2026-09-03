@@ -1,10 +1,8 @@
-<!--
-  상품 등록·수정 (운영자) — 이 모듈에서 가장 큰 폼이다. 한 레이아웃이 세 진입을 겸한다:
+<!-- 상품 등록·수정 (운영자) — 이 모듈에서 가장 큰 폼이다. 한 레이아웃이 세 진입을 겸한다:
   신규(`route.itemCode` 없음) · 수정(`route.itemCode`) · 복사(`query.copy_id`).
   기본정보부터 활동로그까지 열두 구획을 한 페이지에 이어 붙이고 탭은 스크롤 위치를 따라가며,
   구획은 전부 `_local.form` 하나를 나눠 쓴다. 신규 진입은 아직 상품 id 가 없어 이미지 업로드를
-  임시키(`ui.imageTempKey`)로 묶어 두었다가 저장할 때 서버에서 상품에 붙인다.
--->
+  임시키(`ui.imageTempKey`)로 묶어 두었다가 저장할 때 서버에서 상품에 붙인다. -->
 <layout name="admin_ecommerce_product_form" version="1.0.0" extends="_admin_base">
   <meta title="{{route.itemCode ? '$t:sirsoft-ecommerce.admin.product.title_edit' : '$t:sirsoft-ecommerce.admin.product.title_create'}}" description="{{route.itemCode ? '$t:sirsoft-ecommerce.admin.product.description_edit' : '$t:sirsoft-ecommerce.admin.product.description_create'}}"/>
   <!-- 수정 진입일 때만 원본을 받아 폼에 심는다. 수정 권한이 없으면 응답을 받고도 403 화면으로 돌린다 — 목록을 거치지 않고 주소만으로 들어오는 경로가 있어 이 자리에서 막아야 한다 -->
@@ -255,17 +253,51 @@
         <include src="partials/admin_ecommerce_product_form/_partial_activity_log.g7.html"/>
         <div data-ref="footer_buttons" class="sticky-footer-buttons">
           <!-- 목록으로. 보던 목록 상태를 이고 간다 -->
-          <button data-ref="footer_list_button" type="button" class="btn btn-outline"><on type="click"><navigate path="/admin/ecommerce/products" :mergeQuery="true"><query/></navigate></on>$t:sirsoft-ecommerce.common.list</button>
-          <button data-ref="footer_copy_button" data-if="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update === true}}" type="button" class="btn btn-outline"><on type="click"><open-modal target="modal_copy_product"/></on>$t:sirsoft-ecommerce.common.copy</button>
-          <button data-ref="footer_delete_button" data-if="{{!!route.itemCode}}" type="button" class="btn btn-danger disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{product?.data?.abilities?.can_delete !== true}}"><on type="click"><!-- 삭제 — 곧바로 지우지 않고 먼저 서버에 삭제 가능 여부를 묻는다. 주문·장바구니에 걸린 상품은 지울 수 없고 그 사유와 걸린 자료를 확인 창에서 보여 줘야 하므로, 응답을 전역에 담아 둔 뒤 창을 연다(창은 별도 컨텍스트라 _local 을 못 본다) --><sequence><set-state target="global"><field name="deleteProduct"><field name="target" value="{{product?.data}}"/><field name="canDelete" :value="null"/><field name="reason" :value="null"/><field name="relatedData" :value="null"/></field></set-state><api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/products/{{route.itemCode}}/can-delete" method="GET"><success><set-state target="global" deleteProduct.canDelete="{{result.data.canDelete}}" deleteProduct.reason="{{result.data.reason}}" deleteProduct.relatedData="{{result.data.relatedData}}"/><open-modal target="modal_delete_confirm"/></success><fail><toast type="error" message="$t:sirsoft-ecommerce.admin.product.messages.delete_check_error"/></fail></api-call></sequence></on>$t:sirsoft-ecommerce.common.delete</button>
+          <button data-ref="footer_list_button" type="button" class="btn btn-outline">
+            <on type="click">
+              <navigate path="/admin/ecommerce/products" :mergeQuery="true">
+                <query/>
+              </navigate>
+            </on>
+            $t:sirsoft-ecommerce.common.list
+          </button>
+          <button data-ref="footer_copy_button" data-if="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update === true}}" type="button" class="btn btn-outline">
+            <on type="click">
+              <open-modal target="modal_copy_product"/>
+            </on>
+            $t:sirsoft-ecommerce.common.copy
+          </button>
+          <button data-ref="footer_delete_button" data-if="{{!!route.itemCode}}" type="button" class="btn btn-danger disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{product?.data?.abilities?.can_delete !== true}}">
+            <on type="click">
+              <!-- 삭제 — 곧바로 지우지 않고 먼저 서버에 삭제 가능 여부를 묻는다. 주문·장바구니에 걸린 상품은 지울 수 없고 그 사유와 걸린 자료를 확인 창에서 보여 줘야 하므로, 응답을 전역에 담아 둔 뒤 창을 연다(창은 별도 컨텍스트라 _local 을 못 본다) -->
+              <sequence>
+                <set-state target="global">
+                  <field name="deleteProduct">
+                    <field name="target" value="{{product?.data}}"/>
+                    <field name="canDelete" :value="null"/>
+                    <field name="reason" :value="null"/>
+                    <field name="relatedData" :value="null"/>
+                  </field>
+                </set-state>
+                <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/products/{{route.itemCode}}/can-delete" method="GET">
+                  <success>
+                    <set-state target="global" deleteProduct.canDelete="{{result.data.canDelete}}" deleteProduct.reason="{{result.data.reason}}" deleteProduct.relatedData="{{result.data.relatedData}}"/>
+                    <open-modal target="modal_delete_confirm"/>
+                  </success>
+                  <fail>
+                    <toast type="error" message="$t:sirsoft-ecommerce.admin.product.messages.delete_check_error"/>
+                  </fail>
+                </api-call>
+              </sequence>
+            </on>
+            $t:sirsoft-ecommerce.common.delete
+          </button>
           <button data-ref="footer_save_button" type="button" disabled="{{_local.isSaving || (route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true)}}" class="flex-center btn btn-primary gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed">
             <on type="click">
-              <!--
-                저장 — 보내기 전에 이미지 업로드부터 끝낸다. 업로드 구획이 아직 서버에 올리지 않은
+              <!-- 저장 — 보내기 전에 이미지 업로드부터 끝낸다. 업로드 구획이 아직 서버에 올리지 않은
                 파일을 들고 있을 수 있고, 그 결과 목록으로 폼의 이미지 항목을 갈아 끼운 뒤에야
                 상품 본문이 올바른 이미지를 가리키기 때문이다. 신규 저장은 방금 받은 id 로 수정
-                화면에 갈아타므로(이미지 임시키가 그때 상품에 묶인다) 목록으로 돌아가지 않는다.
-              -->
+                화면에 갈아타므로(이미지 임시키가 그때 상품에 묶인다) 목록으로 돌아가지 않는다. -->
               <sequence>
                 <set-state target="local" :isSaving="true" :errors="null"/>
                 <emit-event event="upload:product_images"/>
