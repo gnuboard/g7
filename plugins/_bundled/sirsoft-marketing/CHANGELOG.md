@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [미발행]
+
+### Fixed
+
+- 마케팅 수신 동의 채널의 이름이 화면 언어를 바꿔도 늘 같은 언어로 표시되던 문제를 바로잡았습니다. 회원가입·마이페이지 프로필·수신 동의 화면 세 곳이 대상이며, 이제 보고 있는 언어로 등록해 둔 채널 이름이 표시됩니다.
+
 ## [1.0.2] - 2026-08-19
 
 ### Fixed
