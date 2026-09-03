@@ -71,6 +71,32 @@
               "connect.facebook.net",
               "www.googleadservices.com"
             ]
+          },
+          "default_necessary_allowlist_preview": {
+            "localStorage": [
+              "g7_locale",
+              "g7_color_scheme",
+              "g7_filters_*"
+            ],
+            "sessionStorage": [
+              "g7:sirsoft-pay_kginicis:pendingClose"
+            ],
+            "cookie": [
+              "laravel_maintenance"
+            ]
+          },
+          "settings": {
+            "necessary_storage_locked": {
+              "localStorage": [
+                "auth_token"
+              ],
+              "sessionStorage": [],
+              "cookie": [
+                "XSRF-TOKEN",
+                "laravel_session",
+                "gdpr_session"
+              ]
+            }
           }
         }
       },
@@ -222,8 +248,8 @@
                 "en": "Strictly Necessary"
               },
               "description": {
-                "ko": "세션·CSRF·로그인 토큰, 장바구니 식별자, 사용자가 가입 시 선택한 언어 설정, 쿠키 동의 기록 등 사이트 운영에 반드시 필요한 항목입니다. 비활성화할 수 없습니다.",
-                "en": "Strictly necessary for site operation: session/CSRF/auth tokens, shopping basket identifier, user-selected language preference at registration, cookie consent record. Cannot be disabled."
+                "ko": "세션·CSRF·로그인 토큰, 장바구니 식별자, 사용자가 직접 고른 언어 설정과 화면 테마, 쿠키 동의 기록 등 사이트 운영에 반드시 필요한 항목입니다. 비활성화할 수 없습니다.",
+                "en": "Strictly necessary for site operation: session/CSRF/auth tokens, shopping basket identifier, user-selected language preference and display theme, cookie consent record. Cannot be disabled."
               }
             },
             {
@@ -234,8 +260,8 @@
                 "en": "Functional"
               },
               "description": {
-                "ko": "사용자 선호도(다크모드, 표시 통화 등)를 기억하는 쿠키입니다. 거부 시 매 방문마다 기본값으로 표시됩니다.",
-                "en": "Cookies that remember user preferences such as dark mode and display currency. If declined, defaults are used on every visit."
+                "ko": "사용자 선호도(표시 통화 등)를 기억하는 쿠키입니다. 거부 시 매 방문마다 기본값으로 표시됩니다.",
+                "en": "Cookies that remember user preferences such as display currency. If declined, defaults are used on every visit."
               }
             },
             {
@@ -397,7 +423,7 @@
               "id": 1,
               "consent_key": "cookie_necessary",
               "consent_label": "필수 쿠키",
-              "consent_description": "세션·CSRF·로그인 토큰, 장바구니 식별자, 사용자가 가입 시 선택한 언어 설정, 쿠키 동의 기록 등 사이트 운영에 반드시 필요한 항목입니다. 비활성화할 수 없습니다.",
+              "consent_description": "세션·CSRF·로그인 토큰, 장바구니 식별자, 사용자가 직접 고른 언어 설정과 화면 테마, 쿠키 동의 기록 등 사이트 운영에 반드시 필요한 항목입니다. 비활성화할 수 없습니다.",
               "consent_category": "cookie",
               "is_required": true,
               "is_consented": true,
@@ -416,7 +442,7 @@
               "id": 2,
               "consent_key": "cookie_functional",
               "consent_label": "기능 쿠키",
-              "consent_description": "사용자 선호도(다크모드, 표시 통화 등)를 기억하는 쿠키입니다. 거부 시 매 방문마다 기본값으로 표시됩니다.",
+              "consent_description": "사용자 선호도(표시 통화 등)를 기억하는 쿠키입니다. 거부 시 매 방문마다 기본값으로 표시됩니다.",
               "consent_category": "cookie",
               "is_required": false,
               "is_consented": true,
@@ -478,7 +504,7 @@
             "id": 1,
             "consent_key": "cookie_necessary",
             "consent_label": "필수 쿠키",
-            "consent_description": "세션·CSRF·로그인 토큰, 장바구니 식별자, 사용자가 가입 시 선택한 언어 설정, 쿠키 동의 기록 등 사이트 운영에 반드시 필요한 항목입니다. 비활성화할 수 없습니다.",
+            "consent_description": "세션·CSRF·로그인 토큰, 장바구니 식별자, 사용자가 직접 고른 언어 설정과 화면 테마, 쿠키 동의 기록 등 사이트 운영에 반드시 필요한 항목입니다. 비활성화할 수 없습니다.",
             "consent_category": "cookie",
             "is_required": true,
             "is_consented": true,
@@ -497,7 +523,7 @@
             "id": 2,
             "consent_key": "cookie_functional",
             "consent_label": "기능 쿠키",
-            "consent_description": "사용자 선호도(다크모드, 표시 통화 등)를 기억하는 쿠키입니다. 거부 시 매 방문마다 기본값으로 표시됩니다.",
+            "consent_description": "사용자 선호도(표시 통화 등)를 기억하는 쿠키입니다. 거부 시 매 방문마다 기본값으로 표시됩니다.",
             "consent_category": "cookie",
             "is_required": false,
             "is_consented": true,

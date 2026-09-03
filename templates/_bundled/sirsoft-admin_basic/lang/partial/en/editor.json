@@ -1261,7 +1261,7 @@
     },
     "scroll_to_section": {
       "label": "Scroll to a section",
-      "param_section_id": "Section ID"
+      "param_target_id": "Section ID"
     },
     "set_date_range": {
       "label": "Quick date range",
@@ -1269,15 +1269,15 @@
       "preset_today": "Today",
       "preset_week": "This week",
       "preset_month": "This month",
-      "preset_year": "This year"
+      "preset_1year": "Last 1 year"
     },
     "toggle_filter_visibility": {
       "label": "Show/hide filter",
-      "param_filter_key": "Filter key"
+      "param_storage_key": "Storage key",
+      "param_filter_id": "Filter ID"
     },
     "save_multilingual_tag": {
-      "label": "Save multilingual tag",
-      "param_tag": "Tag"
+      "label": "Save multilingual tag"
     },
     "init_theme": {
       "label": "Initialize screen theme",
@@ -1290,7 +1290,8 @@
       "label": "Initialize menu from URL"
     },
     "init_filter_visibility": {
-      "label": "Initialize filter visibility"
+      "label": "Initialize filter visibility",
+      "param_storage_key": "Storage key"
     }
   },
   "computed": {

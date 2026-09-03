@@ -169,23 +169,25 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 
 #### setTheme
 
+테마 값은 액션 **top-level `target`** 으로 넘깁니다. 핸들러는 `params` 를 읽지 않으므로
+`params.theme` 으로 넘기면 콘솔 경고 한 줄만 남기고 아무 것도 하지 않습니다 (dev-g7#640).
+
 ```json
 {
   "type": "click",
   "handler": "setTheme",
-  "params": {
-    "theme": "dark"
-  }
+  "target": "dark"
 }
 ```
 
-| 필드 | 타입 | 필수 | 설명 |
+| 위치 | 타입 | 필수 | 설명 |
 |------|------|------|------|
-| `theme` | string | ✅ | `"light"`, `"dark"`, `"auto"` (시스템 설정 따름) |
+| `target` | string | ✅ | `"light"`, `"dark"`, `"auto"` (시스템 설정 따름) |
 
 #### initTheme
 
-앱 시작 시 `init_actions`에서 호출. params 없음.
+앱 시작 시 `init_actions`에서 호출합니다. `target` 은 선택이며, 유효한 테마 값이면 그 값을,
+없거나 유효하지 않으면 localStorage 저장값(없으면 `auto`)을 적용합니다.
 
 ```json
 {
