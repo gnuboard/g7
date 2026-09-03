@@ -408,22 +408,22 @@ class Plugin extends AbstractPlugin
                     'required' => true,
                     'label' => ['ko' => '필수 쿠키', 'en' => 'Strictly Necessary'],
                     'description' => [
-                        // g7_locale 은 ePrivacy Art.5(3) + WP29 Opinion 04/2012 §3.6 의 user-initiated preference
-                        // 예외 (사용자 가입 시 명시 선택) 로 strictly necessary 분류. 사용자 안내에 명시.
-                        'ko' => '세션·CSRF·로그인 토큰, 장바구니 식별자, 사용자가 가입 시 선택한 언어 설정, 쿠키 동의 기록 등 사이트 운영에 반드시 필요한 항목입니다. 비활성화할 수 없습니다.',
-                        'en' => 'Strictly necessary for site operation: session/CSRF/auth tokens, shopping basket identifier, user-selected language preference at registration, cookie consent record. Cannot be disabled.',
+                        // g7_locale·g7_color_scheme 은 ePrivacy Art.5(3) + WP29 Opinion 04/2012 §3.6 의 user-initiated preference
+                        // 예외 (사용자가 화면에서 직접 고른 표시 환경) 로 strictly necessary 분류. 사용자 안내에 명시.
+                        'ko' => '세션·CSRF·로그인 토큰, 장바구니 식별자, 사용자가 직접 고른 언어 설정과 화면 테마, 쿠키 동의 기록 등 사이트 운영에 반드시 필요한 항목입니다. 비활성화할 수 없습니다.',
+                        'en' => 'Strictly necessary for site operation: session/CSRF/auth tokens, shopping basket identifier, user-selected language preference and display theme, cookie consent record. Cannot be disabled.',
                     ],
                 ],
                 [
                     // Phase 1: functional 카테고리 신설 — ICO/CNIL 4분류 체계 부합.
-                    // 자체 functional 키 (다크모드/통화) + 외부 functional 도구 (Crisp, Intercom 등) 분류 영역.
+                    // 자체 functional 키 (표시 통화 등) + 외부 functional 도구 (Crisp, Intercom 등) 분류 영역.
                     // Phase 2 에서 실제 게이팅 (Storage.prototype 가로채기 + cookie 가로채기 + Set-Cookie 미들웨어) 구현 예정.
                     'key' => 'functional',
                     'required' => false,
                     'label' => ['ko' => '기능 쿠키', 'en' => 'Functional'],
                     'description' => [
-                        'ko' => '사용자 선호도(다크모드, 표시 통화 등)를 기억하는 쿠키입니다. 거부 시 매 방문마다 기본값으로 표시됩니다.',
-                        'en' => 'Cookies that remember user preferences such as dark mode and display currency. If declined, defaults are used on every visit.',
+                        'ko' => '사용자 선호도(표시 통화 등)를 기억하는 쿠키입니다. 거부 시 매 방문마다 기본값으로 표시됩니다.',
+                        'en' => 'Cookies that remember user preferences such as display currency. If declined, defaults are used on every visit.',
                     ],
                 ],
                 [

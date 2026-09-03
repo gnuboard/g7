@@ -43,6 +43,18 @@ describe('storageInterceptor', () => {
         expect(window.localStorage.getItem('g7_locale')).toBe('ko');
     });
 
+    // dev-g7#640: 화면 테마가 목록에서 빠져 있어, 동의 전에는 테마를 바꿔도 저장이
+    // 조용히 버려졌다 (새로고침하면 원래대로). 미인증 화면뿐 아니라 관리자 화면 전체가 같았다.
+    it('strictly necessary 키 (g7_color_scheme) → 항상 통과 (미동의여도)', () => {
+        installStorageInterceptor({
+            functionalConsented: false,
+            necessaryAllowlist: DEFAULT_NECESSARY_ALLOWLIST,
+        });
+
+        window.localStorage.setItem('g7_color_scheme', 'dark');
+        expect(window.localStorage.getItem('g7_color_scheme')).toBe('dark');
+    });
+
     it('prefix 매칭 (g7_devtools_*) → 통과', () => {
         installStorageInterceptor({
             functionalConsented: false,
@@ -139,11 +151,13 @@ describe('storageInterceptor', () => {
         __setLastInteractionForTest(Date.now());
         expect(isStorageAllowed('app_pref', 'localStorage')).toBe(true);       // user-initiated 면제
         expect(isStorageAllowed('g7_locale', 'localStorage')).toBe(true);      // necessary
+        expect(isStorageAllowed('g7_color_scheme', 'localStorage')).toBe(true); // necessary
 
         // user-initiated 가 만료된 시점엔 차단
         __setLastInteractionForTest(0);
         expect(isStorageAllowed('app_pref', 'localStorage')).toBe(false);
         expect(isStorageAllowed('g7_locale', 'localStorage')).toBe(true);      // necessary 는 항상 통과
+        expect(isStorageAllowed('g7_color_scheme', 'localStorage')).toBe(true); // necessary 는 항상 통과
 
         // 함수 호출만으로 storage 변경 X
         expect(window.localStorage.getItem('app_pref')).toBeNull();

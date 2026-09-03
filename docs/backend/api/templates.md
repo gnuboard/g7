@@ -77650,8 +77650,8 @@ HTTP/1.1 200
                     ],
                     "build": {
                         "handler": "setState",
-                        "target": "local",
                         "params": {
+                            "target": "local",
                             "{{key}}": "{{value}}"
                         }
                     }
@@ -77723,9 +77723,7 @@ HTTP/1.1 200
                     ],
                     "build": {
                         "handler": "setLocale",
-                        "params": {
-                            "target": "{{target}}"
-                        }
+                        "target": "{{target}}"
                     }
                 },
                 "setTheme": {
@@ -77753,24 +77751,22 @@ HTTP/1.1 200
                     ],
                     "build": {
                         "handler": "setTheme",
-                        "params": {
-                            "target": "{{target}}"
-                        }
+                        "target": "{{target}}"
                     }
                 },
                 "scrollToSection": {
                     "label": "$t:editor.action.scroll_to_section.label",
                     "params": [
                         {
-                            "key": "sectionId",
-                            "label": "$t:editor.action.scroll_to_section.param_section_id",
+                            "key": "targetId",
+                            "label": "$t:editor.action.scroll_to_section.param_target_id",
                             "widget": "text"
                         }
                     ],
                     "build": {
                         "handler": "scrollToSection",
                         "params": {
-                            "sectionId": "{{sectionId}}"
+                            "targetId": "{{targetId}}"
                         }
                     }
                 },
@@ -77795,8 +77791,8 @@ HTTP/1.1 200
                                     "label": "$t:editor.action.set_date_range.preset_month"
                                 },
                                 {
-                                    "value": "year",
-                                    "label": "$t:editor.action.set_date_range.preset_year"
+                                    "value": "1year",
+                                    "label": "$t:editor.action.set_date_range.preset_1year"
                                 }
                             ]
                         }
@@ -77812,32 +77808,29 @@ HTTP/1.1 200
                     "label": "$t:editor.action.toggle_filter_visibility.label",
                     "params": [
                         {
-                            "key": "filterKey",
-                            "label": "$t:editor.action.toggle_filter_visibility.param_filter_key",
+                            "key": "storageKey",
+                            "label": "$t:editor.action.toggle_filter_visibility.param_storage_key",
+                            "widget": "text"
+                        },
+                        {
+                            "key": "filterId",
+                            "label": "$t:editor.action.toggle_filter_visibility.param_filter_id",
                             "widget": "text"
                         }
                     ],
                     "build": {
                         "handler": "toggleFilterVisibility",
                         "params": {
-                            "filterKey": "{{filterKey}}"
+                            "storageKey": "{{storageKey}}",
+                            "filterId": "{{filterId}}"
                         }
                     }
                 },
                 "saveMultilingualTag": {
                     "label": "$t:editor.action.save_multilingual_tag.label",
-                    "params": [
-                        {
-                            "key": "tag",
-                            "label": "$t:editor.action.save_multilingual_tag.param_tag",
-                            "widget": "i18n-text"
-                        }
-                    ],
+                    "params": [],
                     "build": {
-                        "handler": "saveMultilingualTag",
-                        "params": {
-                            "tag": "{{tag}}"
-                        }
+                        "handler": "saveMultilingualTag"
                     }
                 },
                 "initTheme": {
@@ -77865,9 +77858,7 @@ HTTP/1.1 200
                     ],
                     "build": {
                         "handler": "initTheme",
-                        "params": {
-                            "target": "{{target}}"
-                        }
+                        "target": "{{target}}"
                     }
                 },
                 "initMenuFromUrl": {
@@ -77879,9 +77870,18 @@ HTTP/1.1 200
                 },
                 "initFilterVisibility": {
                     "label": "$t:editor.action.init_filter_visibility.label",
-                    "params": [],
+                    "params": [
+                        {
+                            "key": "storageKey",
+                            "label": "$t:editor.action.init_filter_visibility.param_storage_key",
+                            "widget": "text"
+                        }
+                    ],
                     "build": {
-                        "handler": "initFilterVisibility"
+                        "handler": "initFilterVisibility",
+                        "params": {
+                            "storageKey": "{{storageKey}}"
+                        }
                     }
                 }
             },
@@ -173497,8 +173497,8 @@ HTTP/1.1 200
                     ],
                     "build": {
                         "handler": "setState",
-                        "target": "local",
                         "params": {
+                            "target": "local",
                             "{{key}}": "{{value}}"
                         }
                     }
@@ -173570,9 +173570,7 @@ HTTP/1.1 200
                     ],
                     "build": {
                         "handler": "setLocale",
-                        "params": {
-                            "target": "{{target}}"
-                        }
+                        "target": "{{target}}"
                     }
                 },
                 "setTheme": {
@@ -173600,24 +173598,22 @@ HTTP/1.1 200
                     ],
                     "build": {
                         "handler": "setTheme",
-                        "params": {
-                            "target": "{{target}}"
-                        }
+                        "target": "{{target}}"
                     }
                 },
                 "scrollToSection": {
                     "label": "$t:editor.action.scroll_to_section.label",
                     "params": [
                         {
-                            "key": "sectionId",
-                            "label": "$t:editor.action.scroll_to_section.param_section_id",
+                            "key": "targetId",
+                            "label": "$t:editor.action.scroll_to_section.param_target_id",
                             "widget": "text"
                         }
                     ],
                     "build": {
                         "handler": "scrollToSection",
                         "params": {
-                            "sectionId": "{{sectionId}}"
+                            "targetId": "{{targetId}}"
                         }
                     }
                 },
@@ -173642,8 +173638,8 @@ HTTP/1.1 200
                                     "label": "$t:editor.action.set_date_range.preset_month"
                                 },
                                 {
-                                    "value": "year",
-                                    "label": "$t:editor.action.set_date_range.preset_year"
+                                    "value": "1year",
+                                    "label": "$t:editor.action.set_date_range.preset_1year"
                                 }
                             ]
                         }
@@ -173659,32 +173655,29 @@ HTTP/1.1 200
                     "label": "$t:editor.action.toggle_filter_visibility.label",
                     "params": [
                         {
-                            "key": "filterKey",
-                            "label": "$t:editor.action.toggle_filter_visibility.param_filter_key",
+                            "key": "storageKey",
+                            "label": "$t:editor.action.toggle_filter_visibility.param_storage_key",
+                            "widget": "text"
+                        },
+                        {
+                            "key": "filterId",
+                            "label": "$t:editor.action.toggle_filter_visibility.param_filter_id",
                             "widget": "text"
                         }
                     ],
                     "build": {
                         "handler": "toggleFilterVisibility",
                         "params": {
-                            "filterKey": "{{filterKey}}"
+                            "storageKey": "{{storageKey}}",
+                            "filterId": "{{filterId}}"
                         }
                     }
                 },
                 "saveMultilingualTag": {
                     "label": "$t:editor.action.save_multilingual_tag.label",
-                    "params": [
-                        {
-                            "key": "tag",
-                            "label": "$t:editor.action.save_multilingual_tag.param_tag",
-                            "widget": "i18n-text"
-                        }
-                    ],
+                    "params": [],
                     "build": {
-                        "handler": "saveMultilingualTag",
-                        "params": {
-                            "tag": "{{tag}}"
-                        }
+                        "handler": "saveMultilingualTag"
                     }
                 },
                 "initTheme": {
@@ -173712,9 +173705,7 @@ HTTP/1.1 200
                     ],
                     "build": {
                         "handler": "initTheme",
-                        "params": {
-                            "target": "{{target}}"
-                        }
+                        "target": "{{target}}"
                     }
                 },
                 "initMenuFromUrl": {
@@ -173726,9 +173717,18 @@ HTTP/1.1 200
                 },
                 "initFilterVisibility": {
                     "label": "$t:editor.action.init_filter_visibility.label",
-                    "params": [],
+                    "params": [
+                        {
+                            "key": "storageKey",
+                            "label": "$t:editor.action.init_filter_visibility.param_storage_key",
+                            "widget": "text"
+                        }
+                    ],
                     "build": {
-                        "handler": "initFilterVisibility"
+                        "handler": "initFilterVisibility",
+                        "params": {
+                            "storageKey": "{{storageKey}}"
+                        }
                     }
                 }
             },

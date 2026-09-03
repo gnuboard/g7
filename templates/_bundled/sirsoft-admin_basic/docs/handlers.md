@@ -43,46 +43,63 @@
 
 다크/라이트/자동(`auto`, 시스템 설정 따름) 테마를 전환·복원합니다. `setTheme` 은 localStorage
 저장 + `document.documentElement` 클래스 적용(Tailwind `dark:` variant 활성화)을,
-`initTheme` 은 params 없이 `init_actions` 에서 호출해 저장된 테마를 앱 시작 시 복원합니다.
+`initTheme` 은 `init_actions` 에서 호출해 저장된 테마를 앱 시작 시 복원합니다.
+
+두 핸들러 모두 테마 값을 액션 **top-level `target`** 으로 받습니다. `params.theme` 으로 넘기면
+엔진에 상호 폴백이 없어 조용히 no-op 이 됩니다 — 콘솔 경고 한 줄 외에는 아무 흔적이 없습니다.
 
 ```json
-{ "type": "click", "handler": "setTheme", "params": { "theme": "{{_global.theme === 'dark' ? 'light' : 'dark'}}" } }
+{ "type": "click", "handler": "setTheme", "target": "{{_global.theme === 'dark' ? 'light' : 'dark'}}" }
 ```
+
+`initTheme` 의 `target` 은 선택입니다 — 유효한 테마 값이면 그것을 적용하고, 없거나 유효하지
+않으면 localStorage 저장값(없으면 `auto`)으로 복원합니다.
 
 ### scrollToSection
 
-`params.selector`(CSS 선택자, 필수) 로 지정한 요소로 부드럽게 스크롤합니다. `params.offset`
-(기본 `0`, 음수면 위로)은 고정 헤더 높이를 보상할 때 씁니다.
+`params.targetId`(엘리먼트 **ID**, 필수) 로 지정한 요소로 부드럽게 스크롤합니다 — CSS 선택자가
+아니라 `getElementById` 대상이므로 `#` 이나 클래스 선택자를 넣지 않습니다. `params.offset`
+(기본 `120`)은 고정 헤더 높이를 보상하는 여백이고, `params.delay`(기본 `100`)는 조건부 렌더링
+요소를 기다리는 재시도 간격, `params.scrollContainerId` 는 스크롤 컨테이너를 명시할 때 씁니다.
 
 ```json
-{ "type": "click", "handler": "scrollToSection", "params": { "selector": "#features", "offset": -80 } }
+{ "type": "click", "handler": "scrollToSection", "params": { "targetId": "features", "offset": 80 } }
 ```
 
 ### initMenuFromUrl
 
-현재 URL 경로를 사이드바 메뉴 항목과 매칭해 활성 메뉴(및 부모 메뉴의 펼침 상태)를 자동
-설정합니다. params 없이 `_admin_base.json` 의 `init_actions` 에서 호출합니다.
+URL **쿼리스트링**(`?menu=<slug>&mode=<모드>`)을 읽어 메뉴 관리 화면의 선택 메뉴와 편집 모드를
+초기화합니다. `window.location.pathname` 을 사이드바 메뉴와 매칭하는 핸들러가 아닙니다 —
+메뉴 관리 화면에 URL 로 직접 들어왔을 때 해당 메뉴를 선택 상태로 여는 용도입니다.
+params 없이 그 화면의 `init_actions` 에서 호출합니다.
 
 ### 필터 가시성 핸들러 4종
 
 목록 화면 필터 패널의 표시/숨김을 localStorage 에 저장해 새로고침 후에도 유지합니다.
 
+`storageKey` 는 네 핸들러 모두 **필수**입니다 — 빠지면 경고 한 줄을 남기고 조기 반환하므로
+필터 상태가 복원도 저장도 되지 않습니다. localStorage 키는 `g7_filter_visibility_{storageKey}`
+이고, 복원 대상 로컬 상태 경로는 `params.stateKey`(기본 `visibleFilters`)입니다.
+
 | 핸들러 | params | 설명 |
 |---|---|---|
-| `initFilterVisibility` | 없음 | localStorage → `_local` 복원 (`init_actions`에서 호출) |
-| `saveFilterVisibility` | `{ filters }` | `_local` → localStorage 저장 |
-| `toggleFilterVisibility` | `{ key }` | 특정 필터 키 가시성 토글 |
-| `resetFilterVisibility` | 없음 | 전체 초기화 |
+| `initFilterVisibility` | `{ storageKey, defaultFilters?, stateKey? }` | localStorage → `_local` 복원 (`init_actions`에서 호출) |
+| `saveFilterVisibility` | `{ storageKey, filters }` | `_local` → localStorage 저장 |
+| `toggleFilterVisibility` | `{ storageKey, filterId, stateKey? }` | 특정 필터 가시성 토글 + 즉시 저장 |
+| `resetFilterVisibility` | `{ storageKey, defaultFilters?, stateKey? }` | 기본값으로 초기화 |
 
 ### 다국어 태그 핸들러 3종
 
 `MultilingualInput` 컴포넌트가 쓰는 태그 편집 핸들러입니다.
 
+편집 중인 값은 전역 상태 `_global.multilingualTagEdit` 에 있습니다 — 저장·취소 핸들러는 그
+상태만 읽으므로 액션 인자를 받지 않습니다.
+
 | 핸들러 | params | 설명 |
 |---|---|---|
-| `saveMultilingualTag` | `{ field, locale }` | 태그 저장 |
+| `saveMultilingualTag` | 없음 | `_global.multilingualTagEdit` 을 부모 태그 배열에 반영 |
 | `cancelMultilingualTag` | 없음 | 편집 취소 |
-| `updateMultilingualTagValue` | `{ field, locale, value }` | 값 업데이트 |
+| `updateMultilingualTagValue` | `{ locale }` | 그 로케일 값 갱신 (값은 `context.event` 에서 읽음) |
 
 ### setDateRange
 
@@ -105,7 +122,7 @@ JSON 이 `sequence` + `setState` 로 반환값(`$prev.startDate` 등)을 원하�
 
 | 핸들러 | params | 설명 |
 |---|---|---|
-| `initSidebar` | 없음 | 저장된 접힘 상태 복원 (`init_actions`에서 호출) |
+| `initSidebar` | 없음 | 저장된 접힘 상태 복원 (레이아웃 `init_actions` 가 아니라 `src/index.ts` 부트스트랩이 1회 호출) |
 | `toggleSidebar` | 없음 | 접힘 상태 반전 + 저장 |
 
 ### downloadAttachment
@@ -168,28 +185,29 @@ ApiClient 경유로 토큰을 자동 첨부해야 다운로드 행위가 관리�
 ### setLocale
 
 > **정정(#601)**: `setLocale` 은 더 이상 이 템플릿이 등록하는 핸들러가 아닙니다 — 엔진(ActionDispatcher)
-> 빌트인으로 승격되어 모든 템플릿에서 동작합니다. 아래 서술은 이관 시점 기록이며, 동작·파라미터는
-> 같지만 **소유 주체가 템플릿이 아니라 엔진**입니다.
+> 빌트인으로 승격되어 모든 템플릿에서 동작합니다. 아래 서술은 이관 시점 기록이며, **소유 주체가
+> 템플릿이 아니라 엔진**입니다.
+>
+> **정정(#640)**: 엔진 빌트인은 로케일을 액션 **top-level `target`** 으로만 읽습니다.
+> `params.locale` 로 넘기면 무시되어 언어 전환이 조용히 죽습니다.
 
 앱 언어를 변경합니다. 번역 파일을 다시 로드하고 UI를 갱신합니다.
 
-**소스**: `src/handlers/setLocaleHandler.ts`
+**소스**: 엔진 빌트인 (`resources/js/core/template-engine/ActionDispatcher.ts`) — 이 템플릿에는 소스 파일이 없습니다.
 
 ```json
 {
   "type": "click",
   "handler": "setLocale",
-  "params": {
-    "locale": "en"
-  }
+  "target": "en"
 }
 ```
 
-#### params
+#### 파라미터
 
-| 필드 | 타입 | 필수 | 설명 |
+| 위치 | 타입 | 필수 | 설명 |
 |------|------|------|------|
-| `locale` | string | ✅ | 변경할 로케일 코드 (예: `"ko"`, `"en"`, `"ja"`) |
+| `target` | string | ✅ | 변경할 로케일 코드 (예: `"ko"`, `"en"`, `"ja"`) |
 
 #### 동작
 
@@ -213,9 +231,7 @@ ApiClient 경유로 토큰을 자동 첨부해야 다운로드 행위가 관리�
     {
       "type": "click",
       "handler": "setLocale",
-      "params": {
-        "locale": "en"
-      }
+      "target": "en"
     }
   ]
 }
@@ -235,17 +251,18 @@ ApiClient 경유로 토큰을 자동 첨부해야 다운로드 행위가 관리�
 {
   "type": "click",
   "handler": "setTheme",
-  "params": {
-    "theme": "dark"
-  }
+  "target": "dark"
 }
 ```
 
-#### setTheme params
+#### setTheme 파라미터
 
-| 필드 | 타입 | 필수 | 설명 |
+| 위치 | 타입 | 필수 | 설명 |
 |------|------|------|------|
-| `theme` | string | ✅ | `"light"`, `"dark"`, `"auto"` (시스템 설정 따름) |
+| `target` | string | ✅ | `"light"`, `"dark"`, `"auto"` (시스템 설정 따름) |
+
+핸들러는 `action.target` 만 읽습니다. `params.theme` 으로 넘기면 콘솔에 `Invalid theme:
+undefined` 경고만 남기고 아무 것도 하지 않습니다 (dev-g7#640).
 
 #### 동작
 
@@ -269,7 +286,16 @@ ApiClient 경유로 토큰을 자동 첨부해야 다운로드 행위가 관리�
 }
 ```
 
-params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원합니다.
+`target` 은 선택입니다. 유효한 테마 값(`light`/`dark`/`auto`)이면 그 값을 적용하고, 없거나
+유효하지 않으면 localStorage 저장값(없으면 `auto`)으로 복원합니다.
+
+```json
+{
+  "init_actions": [
+    { "handler": "initTheme", "target": "{{query.theme}}" }
+  ]
+}
+```
 
 #### 사용 예시
 
@@ -282,9 +308,7 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
     {
       "type": "click",
       "handler": "setTheme",
-      "params": {
-        "theme": "{{_global.theme === 'dark' ? 'light' : 'dark'}}"
-      }
+      "target": "{{_global.theme === 'dark' ? 'light' : 'dark'}}"
     }
   ]
 }
@@ -294,7 +318,7 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
 
 ### scrollToSection
 
-특정 섹션으로 스크롤합니다. 오프셋 지원에 특화되어 있습니다.
+특정 섹션으로 스크롤합니다. 고정 헤더 보상 오프셋과 조건부 렌더링 대기에 특화되어 있습니다.
 
 **소스**: `src/handlers/scrollToSectionHandler.ts`
 
@@ -303,8 +327,8 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
   "type": "click",
   "handler": "scrollToSection",
   "params": {
-    "selector": "#features",
-    "offset": -80
+    "targetId": "features",
+    "offset": 80
   }
 }
 ```
@@ -313,15 +337,18 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
 
 | 필드 | 타입 | 필수 | 기본값 | 설명 |
 |------|------|------|--------|------|
-| `selector` | string | ✅ | - | CSS 선택자 (예: `"#section-id"`, `".class-name"`) |
-| `offset` | number | ❌ | `0` | 스크롤 오프셋 (음수: 위로, 양수: 아래로). 고정 헤더 높이 보상에 사용 |
+| `targetId` | string | ✅ | - | 대상 엘리먼트의 **ID** (`getElementById` 대상 — `#` 없이, CSS 선택자 아님) |
+| `offset` | number | ❌ | `120` | 고정 헤더 높이 보상 여백 |
+| `delay` | number | ❌ | `100` | 요소가 아직 렌더되지 않았을 때의 재시도 간격(ms) |
+| `scrollContainerId` | string | ❌ | - | 스크롤 컨테이너를 명시할 때 (미지정 시 자동 탐색 → window) |
 
 #### 동작
 
 ```text
-1. document.querySelector(selector)로 대상 요소 검색
-2. 요소의 위치 계산 + offset 적용
-3. window.scrollTo({ top, behavior: 'smooth' })로 부드러운 스크롤
+1. document.getElementById(targetId)로 대상 요소 검색 (미발견 시 delay 간격으로 재시도)
+2. 스크롤 컨테이너 결정 (scrollContainerId → 자동 탐색 → window)
+3. 요소의 위치 계산 + offset 보상
+4. 부드러운 스크롤 실행
 ```
 
 #### 사용 예시
@@ -340,8 +367,8 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
       "type": "click",
       "handler": "scrollToSection",
       "params": {
-        "selector": "#features",
-        "offset": -80
+        "targetId": "features",
+        "offset": 80
       }
     }
   ]
@@ -352,7 +379,7 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
 
 ### initMenuFromUrl
 
-현재 URL을 기반으로 사이드바/네비게이션 메뉴의 활성 상태를 초기화합니다. 주로 관리자 템플릿의 `init_actions`에서 사용합니다.
+URL 쿼리스트링(`?menu=<slug>&mode=<모드>`)을 읽어 메뉴 관리 화면의 선택 메뉴와 편집 모드를 초기화합니다. 그 화면의 `init_actions`에서 사용합니다.
 
 **소스**: `src/handlers/initMenuFromUrlHandler.ts`
 
@@ -368,23 +395,23 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
 
 #### params
 
-없음. 현재 URL 경로를 메뉴 항목과 매칭하여 활성 메뉴를 자동 설정합니다.
+없음. 읽는 값은 액션 인자가 아니라 URL 쿼리 파라미터입니다.
 
 #### 동작
 
 ```text
-1. 현재 URL 경로 (window.location.pathname) 추출
-2. 사이드바 메뉴 데이터에서 URL 매칭
-3. 매칭된 메뉴 항목의 is_active 상태 설정
-4. 부모 메뉴도 자동으로 펼침 상태 설정
+1. URLSearchParams 로 ?menu= (메뉴 slug) 와 ?mode= 추출
+2. 메뉴 데이터 소스에서 slug 로 해당 메뉴 검색 (자식 메뉴까지 재귀)
+3. 찾은 메뉴를 선택 상태로, mode 를 편집 모드로 설정
 ```
 
-#### 사용 예시 (_admin_base.json)
+`window.location.pathname` 을 사이드바 메뉴와 매칭하는 핸들러가 아닙니다.
+
+#### 사용 예시 (메뉴 관리 화면)
 
 ```json
 {
   "init_actions": [
-    { "handler": "initTheme" },
     { "handler": "initMenuFromUrl" }
   ]
 }
@@ -400,13 +427,18 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
 
 #### initFilterVisibility
 
-저장된 필터 가시성 상태를 `_local`에 복원합니다.
+저장된 필터 가시성 상태를 `_local`에 복원합니다. `storageKey` 가 없으면 경고 후 조기 반환합니다.
 
 ```json
 {
   "init_actions": [
     {
-      "handler": "initFilterVisibility"
+      "handler": "initFilterVisibility",
+      "params": {
+        "storageKey": "product_index_filters",
+        "defaultFilters": ["category", "date"],
+        "stateKey": "visibleFilters"
+      }
     }
   ]
 }
@@ -420,51 +452,65 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
 {
   "handler": "saveFilterVisibility",
   "params": {
-    "filters": "{{_local.filterVisibility}}"
+    "storageKey": "product_index_filters",
+    "filters": "{{_local.visibleFilters}}"
   }
 }
 ```
 
 #### toggleFilterVisibility
 
-특정 필터 키의 가시성을 토글합니다.
+특정 필터의 가시성을 토글하고 즉시 localStorage 에 저장합니다. `storageKey` 와 `filterId` 가
+모두 있어야 하며, 하나라도 없으면 경고 후 조기 반환합니다.
 
 ```json
 {
   "type": "click",
   "handler": "toggleFilterVisibility",
   "params": {
-    "key": "advancedFilters"
+    "storageKey": "product_index_filters",
+    "filterId": "category"
   }
 }
 ```
 
 #### resetFilterVisibility
 
-모든 필터 가시성을 초기 상태로 리셋합니다.
+모든 필터 가시성을 `defaultFilters` 로 되돌립니다.
 
 ```json
 {
   "type": "click",
-  "handler": "resetFilterVisibility"
+  "handler": "resetFilterVisibility",
+  "params": {
+    "storageKey": "product_index_filters",
+    "defaultFilters": ["category", "date"]
+  }
 }
 ```
 
 #### 핸들러 params 요약
 
+`storageKey` 는 네 핸들러 모두 필수입니다. 실제 localStorage 키는
+`g7_filter_visibility_{storageKey}` 이고, 복원 대상 로컬 상태 경로는 `stateKey`(기본
+`visibleFilters`)입니다.
+
 | 핸들러 | params | 설명 |
 |--------|--------|------|
-| `initFilterVisibility` | 없음 | localStorage → `_local` 복원 |
-| `saveFilterVisibility` | `{ filters }` | `_local` → localStorage 저장 |
-| `toggleFilterVisibility` | `{ key }` | 특정 키 토글 |
-| `resetFilterVisibility` | 없음 | 전체 초기화 |
+| `initFilterVisibility` | `{ storageKey, defaultFilters?, stateKey? }` | localStorage → `_local` 복원 |
+| `saveFilterVisibility` | `{ storageKey, filters }` | `_local` → localStorage 저장 |
+| `toggleFilterVisibility` | `{ storageKey, filterId, stateKey? }` | 특정 필터 토글 + 즉시 저장 |
+| `resetFilterVisibility` | `{ storageKey, defaultFilters?, stateKey? }` | 기본값으로 초기화 |
 
 #### 사용 예시 (목록 페이지)
 
 ```json
 {
   "init_actions": [
-    { "handler": "initFilterVisibility" }
+    {
+      "handler": "initFilterVisibility",
+      "params": { "storageKey": "product_index_filters", "defaultFilters": ["advancedFilters"] }
+    }
   ],
   "components": [
     {
@@ -478,7 +524,7 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
         {
           "type": "click",
           "handler": "toggleFilterVisibility",
-          "params": { "key": "advancedFilters" }
+          "params": { "storageKey": "product_index_filters", "filterId": "advancedFilters" }
         }
       ]
     },
@@ -486,7 +532,7 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
       "id": "filter_section",
       "type": "basic",
       "name": "Div",
-      "if": "{{_local.filterVisibility?.advancedFilters}}",
+      "if": "{{_local.visibleFilters?.includes('advancedFilters')}}",
       "children": [
         { "comment": "필터 컴포넌트들" }
       ]
@@ -505,15 +551,13 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
 
 #### saveMultilingualTag
 
-다국어 태그를 저장합니다.
+편집 중인 다국어 태그를 부모 태그 배열에 반영하고 모달을 닫습니다. 액션 인자를 받지 않으며,
+읽는 값은 전역 상태 `_global.multilingualTagEdit`(필드명·편집 인덱스·로케일별 값·상태 경로)
+뿐입니다.
 
 ```json
 {
-  "handler": "saveMultilingualTag",
-  "params": {
-    "field": "tags",
-    "locale": "{{_global.locale}}"
-  }
+  "handler": "saveMultilingualTag"
 }
 ```
 
@@ -529,15 +573,15 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
 
 #### updateMultilingualTagValue
 
-다국어 태그 값을 업데이트합니다.
+편집 중인 다국어 태그의 특정 로케일 값을 갱신합니다. 값은 액션 인자가 아니라
+`context.event`(입력 이벤트)에서 읽으므로 `params` 에는 `locale` 만 넘깁니다.
 
 ```json
 {
+  "type": "change",
   "handler": "updateMultilingualTagValue",
   "params": {
-    "field": "tags",
-    "locale": "ko",
-    "value": "{{$event.target.value}}"
+    "locale": "ko"
   }
 }
 ```
@@ -546,9 +590,9 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
 
 | 핸들러 | params | 설명 |
 |--------|--------|------|
-| `saveMultilingualTag` | `{ field, locale }` | 태그 저장 |
+| `saveMultilingualTag` | 없음 | `_global.multilingualTagEdit` 을 부모 태그 배열에 반영 |
 | `cancelMultilingualTag` | 없음 | 편집 취소 |
-| `updateMultilingualTagValue` | `{ field, locale, value }` | 값 업데이트 |
+| `updateMultilingualTagValue` | `{ locale }` | 그 로케일 값 갱신 (값은 `context.event` 에서 읽음) |
 
 ---
 
@@ -556,7 +600,7 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
 
 | 핸들러명 | 소스 파일 | 등록 함수 |
 |---------|----------|----------|
-| `setLocale` | `src/handlers/setLocaleHandler.ts` | `setLocaleHandler` |
+| `setLocale` | 엔진 빌트인 (이 템플릿에 소스 없음) | — |
 | `setTheme`, `initTheme` | `src/handlers/setThemeHandler.ts` | `initTheme` |
 | `scrollToSection` | `src/handlers/scrollToSectionHandler.ts` | `scrollToSectionHandler` |
 | `initMenuFromUrl` | `src/handlers/initMenuFromUrlHandler.ts` | `initMenuFromUrlHandler` |

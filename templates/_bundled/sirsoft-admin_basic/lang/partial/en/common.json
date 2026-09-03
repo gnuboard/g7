@@ -49,6 +49,8 @@
   "logout": "Logout",
   "expand_sidebar": "Expand sidebar",
   "collapse_sidebar": "Collapse sidebar",
+  "expand": "Expand",
+  "collapse": "Collapse",
   "module": "Module",
   "plugin": "Plugin",
   "status_active": "Active",

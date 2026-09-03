@@ -124,11 +124,11 @@
                     "scope_label": "Auto-blocking scope",
                     "tools_label": "Common tools",
                     "necessary": {
-                        "scope": "Not auto-blocked. Session/auth tokens, shopping basket identifier, user-selected language preference at registration, and cookie consent records are essential to site operation and always allowed.",
-                        "tools": "Session IDs, authentication tokens, CSRF tokens, shopping basket identifier, language preference, etc. (no configuration required)"
+                        "scope": "Not auto-blocked. Session/auth tokens, shopping basket identifier, user-selected language preference and display theme, and cookie consent records are essential to site operation and always allowed.",
+                        "tools": "Session IDs, authentication tokens, CSRF tokens, shopping basket identifier, language preference, display theme, etc. (no configuration required)"
                     },
                     "functional": {
-                        "scope": "External resources matching the functional blocked-domain list (in the Auto-blocking Policy tab) are auto-blocked until the user consents. User preferences such as dark mode and currency selection are also persisted only after consent.",
+                        "scope": "External resources matching the functional blocked-domain list (in the Auto-blocking Policy tab) are auto-blocked until the user consents. User preferences such as currency selection are also persisted only after consent.",
                         "tools": "Customer support chatbots (Crisp, Intercom, Tawk.to), translation widgets, user-preference synchronization services, etc."
                     },
                     "analytics": {

@@ -33,6 +33,12 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 necessary 4종(`XSRF-TOKEN`/세션/`laravel_maintenance`/`gdpr_session`)을 제외한 **모든** 쿠키를
 차단합니다. EDPB Guidelines 2/2023 §16 원칙이 "비필수는 동의 전 전면 차단"이지 "등록된 것만
 차단"이 아니기 때문입니다.
+
+**허용목록은 둘입니다** — 쿠키(`cookieInterceptor.ts` · `CookieConsentMiddleware`)와 저장소
+(`storageInterceptor.ts` 의 `DEFAULT_NECESSARY_ALLOWLIST`)는 서로 다른 목록이고 항목 수도
+다릅니다. 위 "4종" 은 쿠키 쪽 이야기이며, 저장소 쪽은 코어가 동작에 필요로 하는 키와 WP29
+Opinion 04/2012 §3.6 의 user-initiated preference 예외 항목(`g7_locale` 언어 설정,
+`g7_color_scheme` 화면 테마)을 담습니다. 둘을 같은 목록으로 착각하면 한쪽만 고치게 됩니다.
 <!-- @intent END -->
 
 ## 2. 디렉토리 지도
@@ -129,6 +135,8 @@ necessary 4종(`XSRF-TOKEN`/세션/`laravel_maintenance`/`gdpr_session`)을 제�
 - [ ] `gdpr_user_consent_histories` 는 append-only — UPDATE/DELETE 로 기존 행을 고치지 않는다 (완전삭제 시 익명화 UPDATE 예외는 `GdprUserDeleteListener` 단일 지점에서만 수행)
 - [ ] 새 자동 차단 카테고리(기능/분석/마케팅 외)를 추가하면 배너 UI·`blocked_domains` 스키마·차단 스크립트 3곳 동기화
 - [ ] `CookieConsentMiddleware` 의 strictly-necessary allowlist(4종)를 확장할 때는 ePrivacy Art.5(3) 면제 항목인지 먼저 검토 — 임의로 늘리면 동의 전 차단 원칙이 무력화된다
+- [ ] `storageInterceptor.ts` 의 `DEFAULT_NECESSARY_ALLOWLIST`(저장소 쪽, 쿠키 목록과 별개)를 고치면 **동의 안내 문구도 함께** 고친다 — 항목이 어느 카테고리에 속하는지 사용자에게 말하는 자리가 `plugin.php`(설치 시드) · `src/Services/CookieCategoryService.php`(런타임 폴백) · `resources/lang/{ko,en}.json`(관리자 안내) · `editor-spec.json`(편집기 샘플) 넷이다. 한 곳만 고치면 동의 고지가 실제 동작과 어긋난 채 남는다
+- [ ] 그 문구를 고쳤으면 기설치본의 **저장된** 안내도 정정하는 업그레이드 스텝을 동반한다 — 카테고리 정의는 설치 시점에 시드되고 이후 갱신되지 않는다 (선례: `upgrades/data/1.0.4/migrations/01_RetagThemeAsStrictlyNecessary.php`)
 - [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 의 동반 의무 표를 따라 `editor-spec.json` 을 함께 갱신 — 샘플이 없는 `data_source` 는 편집기 캔버스에서만 빈 화면이 되고 실제 화면은 정상이라 오류도 경고도 남지 않는다. 반영은 `php artisan plugin:update sirsoft-gdpr --force`
 
 ## 6. 금지 패턴
@@ -140,6 +148,7 @@ necessary 4종(`XSRF-TOKEN`/세션/`laravel_maintenance`/`gdpr_session`)을 제�
 | 회원탈퇴(`after_withdraw`)에서 신원 정보(user_id 등)를 제거 | 활성 동의만 철회 처리, 신원은 완전삭제(`before_delete`) 시점에만 익명화 | 두 이벤트를 섞으면 탈퇴 회원의 재가입·이력 조회가 깨진다 |
 | 운영자가 등록하지 않은 functional 쿠키를 화이트리스트에 추가 | strictly necessary 4종 고정 목록만 예외 | GDPR 은 "동의 전 전면 차단"이 원칙이지 "등록된 것만 차단"이 아니다 |
 | 정책 버전 발행을 코드/배치로 자동화 | 운영자가 매번 명시적으로 "+ 새 버전 발행" 클릭 | 자동화하면 사소한 문구 수정에도 전 회원이 재동의 화면을 보게 된다 |
+| 저장소 허용목록만 고치고 동의 안내 문구는 그대로 두기 | 목록·문구 4곳·업그레이드 스텝을 한 작업 단위로 | 안내가 "이 항목은 기능 쿠키이고 거부하면 저장되지 않는다" 라고 말하는데 실제로는 항상 저장되면, 고지 자체가 사실과 달라진다 |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -148,7 +157,7 @@ necessary 4종(`XSRF-TOKEN`/세션/`laravel_maintenance`/`gdpr_session`)을 제�
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 24개 | `plugins/_bundled/sirsoft-gdpr/tests` |
-| Vitest | 12개 | `vitest.config.ts` |
+| Vitest | 13개 | `vitest.config.ts` |
 | Playwright | 3개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 5개 | `tests/scenarios` |
 
