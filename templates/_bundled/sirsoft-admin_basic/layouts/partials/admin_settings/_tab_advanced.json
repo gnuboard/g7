@@ -988,6 +988,7 @@
                                                     "name": "Button",
                                                     "actions": [
                                                         {
+                                                            "comment": "누르는 즉시 진행 중 표시 — 버튼의 `disabled` 가 이 값을 보므로 연타로 요청이 겹치지 않는다. 아래 요청 블록과 형제로 나란히 두는 이유는 요청 성패와 무관하게 이 잠금이 먼저 걸려야 하기 때문이다.",
                                                             "event": "click",
                                                             "handler": "setState",
                                                             "params": {
@@ -996,6 +997,7 @@
                                                             }
                                                         },
                                                         {
+                                                            "comment": "저장하지 않은 입력값을 그대로 서버에 보내 프록시로 실제 연결이 되는지, 그때 외부에 보이는 IP 가 무엇인지 돌려받는다(결제사에 등록할 IP 확인용). 성패 어느 쪽이든 진행 중 표시를 풀고 결과 문구를 남기며, 실패면 직전 결과를 지워 낡은 성공 표시가 남지 않게 한다.",
                                                             "event": "click",
                                                             "handler": "apiCall",
                                                             "target": "/api/admin/settings/test-outbound-proxy",

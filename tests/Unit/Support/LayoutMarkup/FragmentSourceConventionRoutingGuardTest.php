@@ -76,6 +76,13 @@ class FragmentSourceConventionRoutingGuardTest extends LayoutMarkupTestCase
         // 이행했다: 모집단을 `LayoutCorpus`(번들 트리)로 옮기고 소스 선택을
         // `mergeLayoutSourcesByPriority()` 에 위임해, 이긴 소스가 저작본이면 `<permissions>` 를
         // 고친다({@see \App\Support\LayoutMarkup\MarkupPermissionsEditor}).
+        'app/Console/Commands/PlaywrightSeedLayout.php' => 'Playwright E2E 전용 시드 화면 '
+            .'(`e2e_sandbox`)을 활성 템플릿에 깔고 지우는 커맨드. 원본은 `tests/Playwright/fixtures/'
+            .'seed-layouts/*.json` 이고 **저작본 짝이 없으며, 저작본 코퍼스 스캔 대상도 아니다** '
+            .'(`LayoutCorpus` 는 번들 확장·템플릿 트리만 훑는다). 커맨드는 그 파일을 디코드해 '
+            .'시드 DB 행 `content` 에 그대로 싣는 것이 전부라, 저작본으로 옮겨도 곧바로 같은 배열로 '
+            .'되돌려야 한다 — 규약 위반이 아니라 **테스트 자료의 의도된 예외**이며, 등재 목적은 '
+            .'"다음 사람이 이것을 사본으로 오인해 고치지 않게" 다 (PO 판정, 5차 병합 후속).',
         'app/Extension/AbstractPlugin.php' => '`getSettingsLayout()` 의 `plugin_settings.json` 경로 '
             .'하드코딩. AGENTS.md "확장 시스템 빠른 참조" 이 명문화한 **설계**다 — 플러그인 설정 UI 는 DB 설치 레이아웃과 '
             .'달리 파일에서 직접 읽으므로 짝 `.json` 이 디스크에 있어야 한다. 규약 위반이 아니라 '

@@ -92,13 +92,40 @@ class GateMembershipGuardTest extends LayoutMarkupTestCase
      * @var array<string, string>
      */
     private const FOREIGN_MARKED_TEST_DEBT = [
+        // ── develop 병합 유입분 (3·4·5차). 아래 22행은 이 트랙이 만든 것이 아니라 develop 라인이
+        //    자기 트랙 테스트에 마킹을 달고 시나리오 매니페스트는 두지 않은 채 넘어온 것이다.
+        //    귀속 실측: 전부 develop 계보 커밋(`2b38e15aa`·`03b48f76a`·`6217f4d78` 등)이 도입했고
+        //    5차 병합이 새로 들인 마킹 테스트는 0건이다. 소유 트랙이 매니페스트를 세우면 그 즉시
+        //    "여기서도 빼라" 가 red 이므로, 이 목록은 늘지 않게만 잠그는 자리다.
+        'modules/_bundled/sirsoft-board/tests/Feature/CommentPostStateTest.php' => '게시판 트랙 소유 (블라인드 게시글의 댓글 작성 거부).',
+        'modules/_bundled/sirsoft-board/tests/Feature/NoticeResultCapTest.php' => '게시판 트랙 소유 (공지 조회의 결과 상한 준수).',
+        'modules/_bundled/sirsoft-board/tests/Feature/PostNumberBoundedTotalRegressionTest.php' => '게시판 트랙 소유 (총 건수 절사 시 글번호 표기).',
+        'modules/_bundled/sirsoft-board/tests/Feature/PostSearchKeywordSanitizationTest.php' => '게시판 트랙 소유 (전문검색 연산자 입력의 500 방지).',
+        'modules/_bundled/sirsoft-board/tests/Feature/Upgrade/PostListViewCountIndexUpgradeTest.php' => '게시판 트랙 소유 (기설치 사이트의 목록 인덱스 백필).',
+        'modules/_bundled/sirsoft-board/tests/Unit/Benchmark/ListIndexCoverageTest.php' => '성능 계측 트랙 소유 (목록 프로파일 ↔ 인덱스 선언 대조).',
+        'modules/_bundled/sirsoft-board/tests/Unit/Repositories/UserCommentedActivityDeferredJoinTest.php' => '목록 지연 조인 트랙 소유 (그룹 쿼리 총 건수·컬럼 프루닝).',
+        'modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/ProductListPayloadSizeBenchmarkTest.php' => '목록 응답 축소 트랙 소유 (페이로드 바이트·쿼리 수).',
         'modules/_bundled/sirsoft-ecommerce/tests/Feature/Identity/CheckoutVerificationGuardTest.php' => '이커머스 IDV 트랙 소유 (체크아웃 본인인증 게이트).',
+        'modules/_bundled/sirsoft-ecommerce/tests/Feature/Performance/OrderOptionBulkQueryCountRegressionTest.php' => '이커머스 성능 트랙 소유 (일괄 상태변경의 배치 조회).',
+        'modules/_bundled/sirsoft-ecommerce/tests/Unit/Benchmark/ListIndexCoverageTest.php' => '성능 계측 트랙 소유 (목록 프로파일 ↔ 인덱스 선언 대조).',
+        'modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/PgProviderSupportedMethodsVocabularyTest.php' => 'PG 트랙 소유 (결제수단 어휘 일치).',
+        'modules/_bundled/sirsoft-page/tests/Unit/Benchmark/ListIndexCoverageTest.php' => '성능 계측 트랙 소유 (목록 프로파일 ↔ 인덱스 선언 대조).',
+        'plugins/_bundled/sirsoft-gdpr/tests/Feature/GdprConsentAtomicityTest.php' => 'GDPR 트랙 소유 (동의 철회·삭제의 원자성).',
         'plugins/_bundled/sirsoft-pay_kginicis/tests/Feature/Controllers/VbankNotifyReplayTest.php' => 'PG 트랙 소유 (가상계좌 통보 재생 방어).',
+        'plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Support/BackendMessageKeyResolutionTest.php' => 'PG 트랙 소유 (백엔드 메시지 키의 로케일 해석).',
         'plugins/_bundled/sirsoft-pay_nhnkcp/tests/Feature/Concerns/PreventsReplayCallbackTest.php' => 'PG 트랙 소유 (콜백 재생 방어).',
         'plugins/_bundled/sirsoft-pay_nhnkcp/tests/Unit/Services/CliInjectionDefenseTest.php' => 'PG 트랙 소유 (CLI 인자 주입 방어).',
         'plugins/_bundled/sirsoft-pay_nicepayments/tests/Feature/Concerns/PreventsReplayCallbackTest.php' => 'PG 트랙 소유 (콜백 재생 방어).',
         'plugins/_bundled/sirsoft-pay_nicepayments/tests/Unit/Controllers/AuthTokenDedupeKeyTest.php' => 'PG 트랙 소유 (인증 토큰 중복 제거 키).',
+        'plugins/_bundled/sirsoft-verification_kginicis/tests/Feature/Listeners/CleanInicisRecordAtomicityTest.php' => '본인인증 트랙 소유 (인증 기록 정리의 원자성).',
         'plugins/_bundled/sirsoft-verification_kginicis/tests/Feature/PluginCacheContextualBindingTest.php' => '확장 캐시 바인딩 트랙 소유 (플러그인 컨텍스추얼 바인딩).',
+        'plugins/_bundled/sirsoft-verification_nhnkcp/tests/Feature/Listeners/CleanKcpRecordAtomicityTest.php' => '본인인증 트랙 소유 (인증 기록 정리의 원자성).',
+        'tests/Unit/Benchmark/ListIndexCoverageTest.php' => '성능 계측 트랙 소유 (목록 프로파일 ↔ 인덱스 선언 대조).',
+        'tests/Unit/Http/Resources/HasRowNumberBoundedTotalTest.php' => '대용량 목록 상한 트랙 소유 (총 건수 절사 시 행번호 표기).',
+        'tests/Unit/Repositories/Concerns/SortableColumnsGateContractTest.php' => '정렬 화이트리스트 트랙 소유 (저장소 ↔ 게이트 포함관계).',
+        'tests/Unit/Search/KeywordSearchTest.php' => '검색 트랙 소유 (키워드 술어의 활성 엔진 위임).',
+        'tests/Unit/Services/LanguagePackServiceUpdateCheckScopeTest.php' => '언어팩 트랙 소유 (업데이트 확인 범위).',
+        'tests/Unit/Services/UserServiceWithdrawTest.php' => '회원 트랙 소유 (탈퇴 처리의 멱등성·컬럼 한계).',
     ];
 
     /**

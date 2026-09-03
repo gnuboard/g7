@@ -35,6 +35,13 @@ class EnsureAdminOrderListTestBadgeLayoutListenerTest extends PluginTestCase
         );
     }
 
+    /**
+     * 주문 목록 레이아웃에 테스트모드 데이터소스와 배지를 주입한다 (대상 레이아웃 한정).
+     *
+     * @scenario compile_unit=install,source_health=valid
+     *
+     * @effects extension_badge_injection_is_idempotent_and_scoped
+     */
     public function test_ensures_kginicis_test_mode_data_source_and_badge_on_order_list(): void
     {
         $listener = new EnsureAdminOrderListTestBadgeLayoutListener;

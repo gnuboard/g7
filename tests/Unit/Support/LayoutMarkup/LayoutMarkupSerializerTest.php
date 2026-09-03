@@ -26,6 +26,13 @@ class LayoutMarkupSerializerTest extends TestCase
         $this->serializer = new LayoutMarkupSerializer;
     }
 
+    /**
+     * 직렬화가 저작 표기를 그대로 되돌린다 — 이스케이프·불리언 속성·따옴표 선택·void 처리.
+     *
+     * @scenario compile_unit=tokenize,source_health=valid
+     *
+     * @effects serializer_emits_authoring_notation_verbatim
+     */
     public function test_escapes_ampersand_and_lt_in_text(): void
     {
         $element = $this->el('span', [], [], '{{a && b < c}}');

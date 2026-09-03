@@ -41,6 +41,10 @@ class MarkupEmptyMapSerializationTest extends TestCase
 
     /**
      * 축 ① 직렬화 계약 — 빈 map 은 `{}`, 빈 list 는 `[]`.
+     *
+     * @scenario compile_unit=install,source_health=valid
+     *
+     * @effects empty_map_stays_object_and_empty_list_stays_array
      */
     public function test_empty_map_serializes_as_object_and_empty_list_as_array(): void
     {
