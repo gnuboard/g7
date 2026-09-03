@@ -139,6 +139,17 @@ HTTP/1.1 200
 
 **설명** GDPR 플러그인의 관리자 설정 전체를 반환해 관리자 설정 화면 폼에 바인딩합니다. `auth:sanctum`과 `sirsoft-gdpr.privacy.view` 권한이 필요합니다. `cookie_categories` 같은 JSON 필드는 디코드하여 객체/배열로 노출합니다. 조회 전용이며 정책 버전 발행 등 부수 효과는 없습니다.
 
+**추가 응답 필드**
+
+| 필드 | 타입 | 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| settings.necessary_storage_allowlist | object | `{"localStorage":["g7_locale","g7_filters_*"],"sessionStorage":[],"cookie":["laravel_maintenance"]}` | 기능 쿠키 미동의 상태에서도 저장이 허용되는 항목(운영자 편집 대상). 저장소 구분(`localStorage`/`sessionStorage`/`cookie`)별 문자열 배열이며, 끝의 `*` 는 앞부분 매칭입니다 |
+| settings.necessary_storage_locked | object | `{"localStorage":["auth_token"],"sessionStorage":[],"cookie":["XSRF-TOKEN","laravel_session","gdpr_session"]}` | 지울 수 없는 잠금 항목. 설정이 아니라 코드가 정하므로 저장 요청에 담아 보내도 반영되지 않으며, 판정에는 언제나 운영자 목록과 합쳐 적용됩니다. 세션 쿠키 이름은 `session.cookie` 설정에서 런타임 해석됩니다 |
+| default_blocked_domains_preview | object | `{"functional":["*.crisp.chat"],"analytics":["google-analytics.com"],"marketing":[]}` | 출하 기본 차단 도메인 카탈로그. 관리자 화면 TagInput 의 자동완성 추천 출처입니다 |
+| default_necessary_allowlist_preview | object | `{"localStorage":["g7_locale","g7_color_scheme"],"sessionStorage":[],"cookie":["laravel_maintenance"]}` | 출하 기본 허용목록 카탈로그. 위와 같이 추천 출처이며 잠금 항목은 담기지 않습니다 |
+
+두 `*_preview` 는 `settings` 바깥, `data` 최상위에 실립니다.
+
 
 ### PUT /api/plugins/sirsoft-gdpr/admin/settings
 <!-- @generated:start:api.plugins.sirsoft-gdpr.admin.settings.update -->
@@ -260,7 +271,19 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 검증된 GDPR 관리자 설정을 저장합니다. `auth:sanctum`과 `sirsoft-gdpr.privacy.update` 권한이 필요합니다. 설정만 저장할 뿐 정책 버전은 자동 발행되지 않으며, 재동의가 필요한 변경이라면 운영자가 「+ 새 버전 발행」을 별도로 눌러야 합니다. 배너 문구·위치, 쿠키 카테고리, 차단 도메인 등을 갱신하는 쓰기 엔드포인트입니다.
+**설명** 검증된 GDPR 관리자 설정을 저장합니다. `auth:sanctum`과 `sirsoft-gdpr.privacy.update` 권한이 필요합니다. 설정만 저장할 뿐 정책 버전은 자동 발행되지 않으며, 재동의가 필요한 변경이라면 운영자가 「+ 새 버전 발행」을 별도로 눌러야 합니다. 배너 문구·위치, 쿠키 카테고리, 차단 도메인, 필수 저장 항목 허용목록 등을 갱신하는 쓰기 엔드포인트입니다.
+
+**추가 요청 파라미터**
+
+| 파라미터 | 위치 | 타입 | 필수 | 기본값 | 설명 |
+| --- | --- | --- | --- | --- | --- |
+| necessary_storage_allowlist | body | object | 아니오 | — | 저장소 구분별 허용 항목 목록. 키는 `localStorage` / `sessionStorage` / `cookie` 셋만 허용되며(그 외는 422), 값은 문자열 배열입니다. 항목은 영문·숫자와 `_ . : @ + -` 로 이루어지고 최대 128자이며, 끝에 `*` 를 하나 붙이면 앞부분 매칭이 됩니다(`*` 를 앞이나 중간에 두면 422). textarea 줄바꿈 문자열로 보내도 배열로 정규화됩니다 |
+
+키를 **보내지 않으면** 기존 저장값을 그대로 둡니다. 빈 객체(`{}`)를 보내면 세 구분이 모두 빈 배열로 저장되어 잠금 항목만 남습니다.
+
+검증 실패 시 에러 키는 `necessary_storage_allowlist.{구분}.{인덱스}` 형태이고, 알 수 없는 구분은 `necessary_storage_allowlist.{구분}` 으로 보고됩니다.
+
+`necessary_storage_locked` 는 요청에 담아도 저장되지 않습니다 — 잠금 항목은 코드가 정하며 API 로 지울 수 없습니다.
 
 
 ### GET /api/plugins/sirsoft-gdpr/settings

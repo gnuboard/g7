@@ -29,6 +29,16 @@ return [
         'too_long_marketing' => 'Marketing — Domain cannot exceed 253 characters.',
         'must_be_array' => 'Each category must be an array of domain strings.',
     ],
+    'necessary_storage_allowlist' => [
+        'invalid_format_local_storage' => 'Local storage — invalid item format. (Letters, digits and _ . : @ + - ; a single trailing * is allowed)',
+        'invalid_format_session_storage' => 'Session storage — invalid item format. (Letters, digits and _ . : @ + - ; a single trailing * is allowed)',
+        'invalid_format_cookie' => 'Cookie — invalid item format. (Letters, digits and _ . : @ + - ; a single trailing * is allowed)',
+        'too_long_local_storage' => 'Local storage — item cannot exceed 128 characters.',
+        'too_long_session_storage' => 'Session storage — item cannot exceed 128 characters.',
+        'too_long_cookie' => 'Cookie — item cannot exceed 128 characters.',
+        'must_be_array' => 'Each storage scope must be an array of item names.',
+        'invalid_scope' => 'Unknown storage scope: :scope (only local storage, session storage and cookies are allowed)',
+    ],
     'settings' => [
         'saved' => 'Settings have been saved.',
         'title' => 'GDPR Settings',
@@ -42,6 +52,7 @@ return [
             'cookie_categories' => 'Cookie Categories',
             'cookie_policy_version' => 'Cookie Policy Version',
             'auto_blocking' => 'Auto-blocking Policy',
+            'necessary_storage' => 'Strictly Necessary Storage',
             'auto_blocking_desc' => 'When the Cookie Banner is ON, external tracking resources matching the blocked-domain lists below are auto-blocked until the user consents. (No separate toggle — runs automatically with the banner.)',
         ],
         'nav' => [
@@ -101,6 +112,9 @@ return [
                     'analytics' => 'Analytics — Blocked Domains',
                     'marketing' => 'Marketing — Blocked Domains',
                 ],
+            ],
+            'necessary_storage_allowlist' => [
+                'label' => 'Strictly Necessary Storage Allowlist',
             ],
             'cookie_categories' => [
                 'description' => 'Open each card\'s [Show details] to see the purpose of the four cookie categories and the blocked-tool examples.',

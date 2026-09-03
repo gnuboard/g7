@@ -1,24 +1,48 @@
 /**
- * strictly necessary allowlist 모집단 커버리지 테스트
+ * strictly necessary 허용목록 커버리지·정합성 테스트
  *
- * functionalCleaner 는 functional 미동의(기본 상태)에서 **부팅마다** allowlist 밖의
+ * functionalCleaner 는 functional 미동의(기본 상태)에서 **부팅마다** 허용목록 밖의
  * localStorage / sessionStorage 를 전량 파기한다. 그래서 코어·확장이 새로 저장 키를
- * 도입하면서 allowlist 등재를 잊으면, 그 설정은 "저장은 되는데 새로고침하면 사라지는"
- * 상태가 된다 — 예외도 콘솔 오류도 남지 않아 증상만으로는 원인을 특정할 수 없다.
+ * 도입했는데 출하 카탈로그에도 없고 운영자도 등재하지 않으면, 그 설정은 "저장은 되는데
+ * 새로고침하면 사라지는" 상태가 된다 — 예외도 콘솔 오류도 남지 않아 증상만으로는 원인을
+ * 특정할 수 없다.
  *
- * 이 테스트는 allowlist 를 **손으로 열거하지 않는다.** 저장소의 소스를 훑어
- * `.setItem()` 이 쓰는 키를 기계 도출하고, 그 전량이 allowlist 에 등재되었거나
- * 의도적 비필수(INTENTIONALLY_NON_NECESSARY)로 선언되었는지 검사한다.
- * 새 저장 키가 추가되면 그 시점에 붉어진다.
+ * 이 테스트는 목록을 **손으로 열거하지 않는다.** 저장소의 소스를 훑어 `.setItem()` 이 쓰는
+ * 키를 기계 도출하고, 그 전량이 출하 카탈로그(`plugin.php`)에 등재되었거나 의도적 비필수
+ * (INTENTIONALLY_NON_NECESSARY)로 선언되었는지 검사한다.
+ *
+ * 허용목록이 코드 상수에서 운영자 설정으로 옮겨진 뒤로 대조 대상이 **PHP 출하 카탈로그**다.
+ * TS 상수를 계속 대조하면, 그 상수가 잠금 폴백만 남았으므로 모집단 대부분이 붉어지거나
+ * (반대로) 판정 대상이 사라져 아무것도 재지 않는 초록이 된다.
+ *
+ * 검사 축:
+ *   1. 모집단 하한 — 스캐너가 죽으면 붉어진다
+ *   2. 정적 해석 불가 지점이 선언 목록과 정확히 일치 (부분 누락 방지)
+ *   3. 도출된 키 전량이 카탈로그 등재 또는 의도적 비필수 선언
+ *   4. 의도적 비필수 선언 사문화 방지
+ *   5. 서버 쿠키 게이트가 하드코딩 목록이 아니라 설정을 읽는다 (발견 ①)
+ *   6. TS 폴백이 PHP 잠금 집합과 정확히 일치 (발견 ①)
+ *   7. TS 폴백이 카탈로그 전체 사본이 아니다 (드리프트 재발 차단)
+ *   8. 카탈로그가 잠금 항목을 담지 않는다 (담기면 API 로 지울 수 있게 된다)
+ *   9. 카탈로그 항목이 저장 검증 규칙을 통과한다 (통과 못 하면 시드값을 다시 저장할 수 없다)
+ *  10. 와일드카드 매칭 규칙이 PHP·TS 에서 동형이다 (발견 ②)
  *
  * @module sirsoft-gdpr/__tests__/necessaryAllowlistCoverage
+ *
+ * @scenario scope=cookie, notation=wildcard, locked=locked_item, settings_state=unreachable, request=valid_item
+ * @effects ts_fallback_matches_php_locked_set, ts_fallback_is_not_a_catalog_copy, wildcard_rule_is_isomorphic_across_php_and_ts, scope_vocabulary_matches_across_php_and_ts, server_cookie_gate_reads_settings_not_hardcoded_list, locked_set_absent_from_shipped_catalog, shipped_catalog_items_pass_save_validation
  */
 
 import { describe, it, expect } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 
-import { DEFAULT_NECESSARY_ALLOWLIST } from '../storageInterceptor';
+import {
+    ALLOWLIST_SCOPES,
+    LOCKED_FALLBACK,
+    matchesAllowlistPattern,
+    type AllowlistScope,
+} from '../necessaryAllowlist';
 
 /**
  * 저장소 루트를 탐색합니다. (artisan + composer.json 동시 보유 디렉토리)
@@ -40,6 +64,7 @@ function findRepoRoot(): string {
 }
 
 const REPO_ROOT = findRepoRoot();
+const PLUGIN_ROOT = path.join(REPO_ROOT, 'plugins', '_bundled', 'sirsoft-gdpr');
 
 /**
  * 스캔 대상 디렉토리 (glob 없이 실제 디렉토리 열거로 확장 전량 포함).
@@ -201,6 +226,7 @@ interface DiscoveredKey {
  *
  * @param  keyExpr  키 표현식 원문
  * @param  source   파일 원문 (식별자 해석용)
+ * @param  file     호출이 있는 파일 절대경로
  * @return 해석 결과 또는 null (해석 불가)
  */
 function resolveKeyExpression(
@@ -277,7 +303,7 @@ function resolveKeyExpression(
 /**
  * 저장소 전체에서 storage 저장 키를 도출합니다.
  *
- * @return 도출된 키 목록
+ * @return 도출된 키 목록과 해석 실패 지점
  */
 function discoverStorageKeys(): { keys: DiscoveredKey[]; unresolved: string[] } {
     const files: string[] = [];
@@ -318,11 +344,86 @@ function discoverStorageKeys(): { keys: DiscoveredKey[]; unresolved: string[] } 
 }
 
 /**
- * 필수(strictly necessary) 가 **아니라고 의도적으로 판단한** 키.
+ * PHP 원문에서 `이름 => [ ... ]` 형태의 스코프 그룹을 문자열 배열로 파싱합니다.
  *
- * 여기 적힌 키는 functional 동의가 없으면 파기되는 것이 설계 의도다.
- * 새 키를 여기 넣을 때는 사용자에게 그 상실이 수용 가능한지 근거를 함께 남긴다.
+ * 대상은 `plugin.php` 의 출하 카탈로그와 `Support/NecessaryAllowlist.php` 의 잠금 집합.
+ * PHP 를 실행하지 않고 원문을 읽는 이유는, 이 대조가 **두 언어의 목록이 어긋났는지** 를
+ * 보는 것이라 한쪽 런타임에 의존하면 안 되기 때문이다.
+ *
+ * @param  source  PHP 원문 (블록만 잘라낸 것)
+ * @return 스코프 => 문자열 배열
  */
+function parsePhpScopeMap(source: string): Record<string, string[]> {
+    const stripped = source
+        .replace(/\/\/[^\n]*/g, '')
+        // 런타임 해석 항목(`(string) config('session.cookie', 'laravel_session')`)은 항목 이름이
+        // 아니라 조회식이다. 벗겨내지 않으면 설정 키와 폴백 문자열이 목록 항목으로 섞인다.
+        .replace(/(?:\(string\)\s*)?config\([^)]*\)/g, 'RUNTIME_RESOLVED');
+    const result: Record<string, string[]> = {};
+
+    const scopeRe = /'([A-Za-z]+)'\s*=>\s*\[/g;
+    let m: RegExpExecArray | null = scopeRe.exec(stripped);
+    while (m !== null) {
+        const scope = m[1];
+        let depth = 1;
+        let i = scopeRe.lastIndex;
+        while (i < stripped.length && depth > 0) {
+            if (stripped[i] === '[') depth += 1;
+            else if (stripped[i] === ']') depth -= 1;
+            i += 1;
+        }
+        const body = stripped.slice(scopeRe.lastIndex, i - 1);
+        result[scope] = [...body.matchAll(/'((?:[^'\\]|\\.)*)'/g)].map((x) => x[1]);
+        m = scopeRe.exec(stripped);
+    }
+
+    return result;
+}
+
+/**
+ * PHP 원문에서 `const X = [ ... ];` 또는 `return [ ... ];` 블록을 잘라냅니다.
+ *
+ * @param  source  PHP 파일 원문
+ * @param  anchor  블록 시작 앵커 (그 뒤 첫 `[` 부터 대응 `]` 까지)
+ * @return 블록 본문
+ */
+function sliceBracketBlock(source: string, anchor: string): string {
+    const at = source.indexOf(anchor);
+    if (at === -1) {
+        throw new Error(`PHP 앵커를 찾지 못했습니다: ${anchor}`);
+    }
+    const open = source.indexOf('[', at);
+    let depth = 1;
+    let i = open + 1;
+    while (i < source.length && depth > 0) {
+        if (source[i] === '[') depth += 1;
+        else if (source[i] === ']') depth -= 1;
+        i += 1;
+    }
+    return source.slice(open + 1, i - 1);
+}
+
+const PLUGIN_PHP = fs.readFileSync(path.join(PLUGIN_ROOT, 'plugin.php'), 'utf-8');
+const ALLOWLIST_PHP = fs.readFileSync(
+    path.join(PLUGIN_ROOT, 'src', 'Support', 'NecessaryAllowlist.php'),
+    'utf-8',
+);
+const MIDDLEWARE_PHP = fs.readFileSync(
+    path.join(PLUGIN_ROOT, 'src', 'Http', 'Middleware', 'CookieConsentMiddleware.php'),
+    'utf-8',
+);
+const REQUEST_PHP = fs.readFileSync(
+    path.join(PLUGIN_ROOT, 'src', 'Http', 'Requests', 'UpdateAdminSettingsRequest.php'),
+    'utf-8',
+);
+
+const SHIPPED_CATALOG = parsePhpScopeMap(
+    sliceBracketBlock(PLUGIN_PHP, 'DEFAULT_NECESSARY_ALLOWLIST_CATALOG ='),
+);
+const PHP_LOCKED = parsePhpScopeMap(
+    sliceBracketBlock(ALLOWLIST_PHP, 'public static function locked(): array'),
+);
+
 /**
  * 키가 실행 시점에 정해져 **정적으로 해석할 수 없는** 쓰기 지점.
  *
@@ -340,6 +441,12 @@ const DECLARED_DYNAMIC_CALL_SITES: ReadonlyArray<{ site: string; reason: string 
     },
 ];
 
+/**
+ * 필수(strictly necessary) 가 **아니라고 의도적으로 판단한** 키.
+ *
+ * 여기 적힌 키는 functional 동의가 없으면 파기되는 것이 설계 의도다.
+ * 새 키를 여기 넣을 때는 사용자에게 그 상실이 수용 가능한지 근거를 함께 남긴다.
+ */
 const INTENTIONALLY_NON_NECESSARY: ReadonlyArray<{ key: string; reason: string }> = [
     {
         key: 'g7_preferred_currency',
@@ -348,26 +455,24 @@ const INTENTIONALLY_NON_NECESSARY: ReadonlyArray<{ key: string; reason: string }
 ];
 
 /**
- * 도출된 키가 allowlist 에 등재되어 있는지 검사합니다.
+ * 출하 카탈로그(전 스코프 합집합)가 도출된 키를 덮는지 검사합니다.
  *
- * 저장소 종류(localStorage/sessionStorage)는 개별 테스트가 잠그며, 여기서는
- * "필수 목록이 이 키를 알고 있는가" 만 본다.
+ * 저장소 종류는 개별 테스트가 잠그며, 여기서는 "출하 목록이 이 키를 알고 있는가" 만 본다.
  *
  * @param  discovered  도출된 키
  * @return 등재 여부
  */
-function isDeclared(discovered: DiscoveredKey): boolean {
-    return DEFAULT_NECESSARY_ALLOWLIST.some((entry) => {
-        const entryMatch = entry.matchType ?? 'exact';
-        if (entryMatch === 'exact') {
-            return entry.key === discovered.key;
-        }
-        // prefix 항목은 그 접두사로 시작하는 키(정확형·접두형 모두)를 덮는다.
-        return discovered.key.startsWith(entry.key);
-    });
+function isInShippedCatalog(discovered: DiscoveredKey): boolean {
+    return Object.values(SHIPPED_CATALOG).some((patterns) =>
+        patterns.some((pattern) => (
+            // 도출된 키가 접두형이면 카탈로그의 접두 패턴과 같은 계열인지도 본다.
+            matchesAllowlistPattern(discovered.key, pattern)
+            || (pattern.endsWith('*') && pattern.slice(0, -1) === discovered.key)
+        )),
+    );
 }
 
-describe('strictly necessary allowlist 모집단 커버리지', () => {
+describe('strictly necessary 허용목록 모집단 커버리지', () => {
     const { keys: discovered, unresolved } = discoverStorageKeys();
 
     it('저장 키 도출이 비어 있지 않다 (모집단 하한 — 스캐너가 죽으면 붉어진다)', () => {
@@ -382,11 +487,19 @@ describe('strictly necessary allowlist 모집단 커버리지', () => {
         expect(unresolved).toEqual(DECLARED_DYNAMIC_CALL_SITES.map((s) => s.site));
     });
 
-    it('도출된 모든 저장 키가 allowlist 등재 또는 의도적 비필수 선언 중 하나에 해당한다', () => {
+    it('출하 카탈로그 파싱이 비어 있지 않다 (파서가 죽으면 3번 축이 공허 통과한다)', () => {
+        expect(Object.keys(SHIPPED_CATALOG).sort()).toEqual([...ALLOWLIST_SCOPES].sort());
+        expect(SHIPPED_CATALOG.localStorage.length).toBeGreaterThanOrEqual(10);
+    });
+
+    it('도출된 모든 저장 키가 출하 카탈로그 등재 또는 의도적 비필수 선언 중 하나에 해당한다', () => {
         const exempt = new Set(INTENTIONALLY_NON_NECESSARY.map((e) => e.key));
+        const lockedKeys = new Set([...PHP_LOCKED.localStorage, ...PHP_LOCKED.sessionStorage]);
+
         const uncovered = discovered
             .filter((d) => !exempt.has(d.key))
-            .filter((d) => !isDeclared(d))
+            .filter((d) => !lockedKeys.has(d.key))
+            .filter((d) => !isInShippedCatalog(d))
             .map((d) => `${d.key} (${d.matchType}) ← ${d.origin}`);
 
         expect(uncovered).toEqual([]);
@@ -399,5 +512,111 @@ describe('strictly necessary allowlist 모집단 커버리지', () => {
             .map((e) => e.key);
 
         expect(stale).toEqual([]);
+    });
+});
+
+describe('서버·클라이언트 허용목록 출처 정합성', () => {
+    // 발견 ①: 서버는 `config('session.cookie')` 를 런타임 해석하는데 클라이언트는
+    // 'laravel_session' 을 하드코딩하고 있었다. SESSION_COOKIE 를 지정한 사이트에서는
+    // 클라이언트 목록의 그 항목이 죽어 있었고, 두 목록을 대조하는 테스트가 없었다.
+    it('서버 쿠키 게이트가 하드코딩 목록이 아니라 공용 해석기를 경유한다', () => {
+        const body = MIDDLEWARE_PHP.slice(MIDDLEWARE_PHP.indexOf('function isStrictlyNecessary'));
+
+        expect(body).toContain("NecessaryAllowlist::matches($name, 'cookie')");
+        expect(body).not.toContain('in_array(');
+        expect(body).not.toContain("'XSRF-TOKEN'");
+        expect(body).not.toContain("'gdpr_session'");
+    });
+
+    it('공용 해석기가 운영자 설정을 읽는다 (잠금 집합만 보고 끝내지 않는다)', () => {
+        expect(ALLOWLIST_PHP).toContain("g7_plugin_settings(self::PLUGIN_ID, 'necessary_storage_allowlist.'");
+    });
+
+    it('세션 쿠키 이름은 런타임 해석 값이다 (하드코딩 금지)', () => {
+        const locked = sliceBracketBlock(ALLOWLIST_PHP, 'public static function locked(): array');
+
+        expect(locked).toContain("config('session.cookie'");
+        // 폴백 인자로서의 등장 1회만 허용 — 목록에 직접 적힌 항목으로 남아서는 안 된다.
+        expect(locked.match(/'laravel_session'/g)?.length ?? 0).toBe(1);
+    });
+
+    it('TS 폴백이 PHP 잠금 집합과 정확히 일치한다 (런타임 세션 쿠키 제외)', () => {
+        // 세션 쿠키 이름은 파서가 이미 걷어냈다 — TS 폴백에 담을 수 없는 런타임 값이라
+        // 이 축의 대조 대상이 아니다 (그 항목의 존재는 바로 위 테스트가 잠근다).
+        expect([...LOCKED_FALLBACK.localStorage].sort()).toEqual([...PHP_LOCKED.localStorage].sort());
+        expect([...LOCKED_FALLBACK.sessionStorage].sort()).toEqual([...PHP_LOCKED.sessionStorage].sort());
+        expect([...LOCKED_FALLBACK.cookie].sort()).toEqual([...PHP_LOCKED.cookie].sort());
+    });
+
+    it('TS 폴백은 카탈로그 전체 사본이 아니다 (드리프트 재발 차단)', () => {
+        for (const scope of ALLOWLIST_SCOPES) {
+            const shipped = SHIPPED_CATALOG[scope] ?? [];
+            const overlap = LOCKED_FALLBACK[scope].filter((k) => shipped.includes(k));
+            expect(overlap).toEqual([]);
+        }
+
+        const fallbackTotal = ALLOWLIST_SCOPES
+            .reduce((n, scope) => n + LOCKED_FALLBACK[scope].length, 0);
+        expect(fallbackTotal).toBeLessThan(5);
+    });
+
+    it('출하 카탈로그는 잠금 항목을 담지 않는다 (담기면 API 로 지울 수 있게 된다)', () => {
+        const leaked: string[] = [];
+        for (const scope of ALLOWLIST_SCOPES) {
+            const locked = PHP_LOCKED[scope] ?? [];
+            for (const item of SHIPPED_CATALOG[scope] ?? []) {
+                if (locked.includes(item)) {
+                    leaked.push(`${scope}:${item}`);
+                }
+            }
+        }
+
+        expect(leaked).toEqual([]);
+    });
+
+    it('출하 카탈로그 항목이 저장 검증 규칙을 통과한다 (통과 못 하면 시드값을 다시 저장할 수 없다)', () => {
+        const m = /STORAGE_KEY_REGEX = '(.+)';/.exec(REQUEST_PHP);
+        expect(m).not.toBeNull();
+
+        // PHP 구분자(/.../)를 벗겨 JS 정규식으로 옮긴다.
+        const body = (m as RegExpExecArray)[1].replace(/^\//, '').replace(/\/$/, '');
+        const re = new RegExp(body);
+
+        const rejected: string[] = [];
+        for (const scope of ALLOWLIST_SCOPES) {
+            for (const item of SHIPPED_CATALOG[scope] ?? []) {
+                if (!re.test(item) || item.length > 128) {
+                    rejected.push(`${scope}:${item}`);
+                }
+            }
+        }
+
+        expect(rejected).toEqual([]);
+    });
+
+    // 발견 ②: 저장소 목록은 접두사 매칭을 지원했는데 쿠키 목록은 `includes()` 정확 일치
+    // 전용이었다. 규칙이 갈라지면 운영자가 쿠키 카드에 적은 와일드카드가 조용히 무시된다.
+    it('와일드카드 매칭 규칙이 PHP·TS 에서 동형이다', () => {
+        // PHP 는 원문으로 규칙 3요소를 확인한다 (테스트에서 PHP 를 실행할 수 없으므로).
+        const phpBody = ALLOWLIST_PHP.slice(ALLOWLIST_PHP.indexOf('function matchesPattern'));
+        expect(phpBody).toContain("str_ends_with($pattern, '*')");
+        expect(phpBody).toContain("$prefix !== ''");
+        expect(phpBody).toContain('str_starts_with($name, $prefix)');
+
+        // TS 는 구현을 직접 호출해 규칙을 확인한다 (원문 검사보다 강한 증거).
+        expect(matchesAllowlistPattern('g7_filters_orders_1', 'g7_filters_*')).toBe(true);
+        expect(matchesAllowlistPattern('other_g7_filters_1', 'g7_filters_*')).toBe(false);
+        expect(matchesAllowlistPattern('g7_locale', 'g7_locale')).toBe(true);
+        expect(matchesAllowlistPattern('g7_locale_extra', 'g7_locale')).toBe(false);
+        // `*` 단독은 전체 개방이므로 매칭하지 않는다.
+        expect(matchesAllowlistPattern('anything', '*')).toBe(false);
+    });
+
+    it('스코프 어휘가 PHP·TS 에서 같다', () => {
+        const phpScopes = /public const SCOPES = \[([^\]]+)\]/.exec(ALLOWLIST_PHP);
+        expect(phpScopes).not.toBeNull();
+        const parsed = [...(phpScopes as RegExpExecArray)[1].matchAll(/'([^']+)'/g)].map((x) => x[1]);
+
+        expect(parsed).toEqual([...ALLOWLIST_SCOPES] as AllowlistScope[]);
     });
 });

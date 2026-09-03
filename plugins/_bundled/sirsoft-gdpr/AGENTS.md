@@ -7,7 +7,7 @@
 ```text
 1. 유형: 플러그인 (sirsoft-gdpr) — 쿠키 동의 배너·동의 이력·GDPR/개인정보보호법 대응을 소유
 2. 확장 방식: `sirsoft-gdpr.consent.granted`/`revoked` 훅 구독, `data-gdpr-category` HTML 속성으로 자체 호스팅 자원 등록
-3. 건드리면 안 되는 것: `CookieConsentMiddleware`(functional 미동의 시 Set-Cookie 게이팅)의 strictly-necessary allowlist, 동의 이력(immutable append-only) 직접 수정
+3. 건드리면 안 되는 것: 필수 허용목록의 **잠금 항목**(`Support\NecessaryAllowlist::locked()`), 동의 이력(immutable append-only) 직접 수정
 4. 작업 위치: `plugins/_bundled/sirsoft-gdpr` — 활성 디렉토리 직접 수정 금지
 5. 반영: `php artisan plugin:update sirsoft-gdpr --force`
 ```
@@ -29,16 +29,24 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 재동의 화면을 보게 되어 UX 를 해칩니다.
 
 **의도적으로 하지 않는 것**: 게스트 → 회원 동의 자동 승계(§README 소개 참고), 그리고 운영자가
-등록한 "허용" functional 쿠키 화이트리스트도 두지 않습니다 — functional 미동의 시 strictly
-necessary 4종(`XSRF-TOKEN`/세션/`laravel_maintenance`/`gdpr_session`)을 제외한 **모든** 쿠키를
-차단합니다. EDPB Guidelines 2/2023 §16 원칙이 "비필수는 동의 전 전면 차단"이지 "등록된 것만
-차단"이 아니기 때문입니다.
+등록한 "허용" functional 쿠키 화이트리스트도 두지 않습니다 — functional 미동의 시 필수 허용목록
+밖의 **모든** 쿠키를 차단합니다. EDPB Guidelines 2/2023 §16 원칙이 "비필수는 동의 전 전면
+차단"이지 "등록된 것만 차단"이 아니기 때문입니다.
 
-**허용목록은 둘입니다** — 쿠키(`cookieInterceptor.ts` · `CookieConsentMiddleware`)와 저장소
-(`storageInterceptor.ts` 의 `DEFAULT_NECESSARY_ALLOWLIST`)는 서로 다른 목록이고 항목 수도
-다릅니다. 위 "4종" 은 쿠키 쪽 이야기이며, 저장소 쪽은 코어가 동작에 필요로 하는 키와 WP29
-Opinion 04/2012 §3.6 의 user-initiated preference 예외 항목(`g7_locale` 언어 설정,
-`g7_color_scheme` 화면 테마)을 담습니다. 둘을 같은 목록으로 착각하면 한쪽만 고치게 됩니다.
+**필수 허용목록은 코드 상수가 아니라 운영자 설정입니다**(`necessary_storage_allowlist`).
+관리자 환경설정의 「필수 저장 항목」 카드에서 저장소 구분(브라우저 저장소 / 세션 저장소 / 쿠키)
+셋을 각각 편집하며, 끝의 `*` 는 앞부분 매칭입니다. `plugin.php` 의
+`DEFAULT_NECESSARY_ALLOWLIST_CATALOG` 는 **신규 설치 시드용 출하 기본값이자 화면 추천 목록**일
+뿐 판정 목록이 아닙니다 — 새 확장이 저장 키를 도입해도 이 플러그인을 고칠 필요가 없습니다.
+
+그래서 **판정 목록은 하나**입니다. 서버(`CookieConsentMiddleware`)와 클라이언트 셋
+(`storageInterceptor` · `cookieInterceptor` · `functionalCleaner`)이 같은 설정을 같은 매칭 규칙
+(`Support\NecessaryAllowlist` ↔ `resources/js/necessaryAllowlist.ts`)으로 읽습니다. 예전에는
+쿠키 목록과 저장소 목록이 따로 있었고, 그 둘이 어긋나도 아무 신호가 없었습니다.
+
+**잠금 항목만 설정 밖입니다** — `auth_token` · `XSRF-TOKEN` · 세션 쿠키(런타임 해석) ·
+`gdpr_session` 넷은 없으면 사이트가 서지 못하므로 코드가 정하고, 판정에는 언제나 운영자 목록과
+합집합으로 얹힙니다. 설정에 담으면 저장 요청 한 번으로 지워져 잠금이 아니게 됩니다.
 <!-- @intent END -->
 
 ## 2. 디렉토리 지도
@@ -134,8 +142,11 @@ Opinion 04/2012 §3.6 의 user-initiated preference 예외 항목(`g7_locale` �
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
 - [ ] `gdpr_user_consent_histories` 는 append-only — UPDATE/DELETE 로 기존 행을 고치지 않는다 (완전삭제 시 익명화 UPDATE 예외는 `GdprUserDeleteListener` 단일 지점에서만 수행)
 - [ ] 새 자동 차단 카테고리(기능/분석/마케팅 외)를 추가하면 배너 UI·`blocked_domains` 스키마·차단 스크립트 3곳 동기화
-- [ ] `CookieConsentMiddleware` 의 strictly-necessary allowlist(4종)를 확장할 때는 ePrivacy Art.5(3) 면제 항목인지 먼저 검토 — 임의로 늘리면 동의 전 차단 원칙이 무력화된다
-- [ ] `storageInterceptor.ts` 의 `DEFAULT_NECESSARY_ALLOWLIST`(저장소 쪽, 쿠키 목록과 별개)를 고치면 **동의 안내 문구도 함께** 고친다 — 항목이 어느 카테고리에 속하는지 사용자에게 말하는 자리가 `plugin.php`(설치 시드) · `src/Services/CookieCategoryService.php`(런타임 폴백) · `resources/lang/{ko,en}.json`(관리자 안내) · `editor-spec.json`(편집기 샘플) 넷이다. 한 곳만 고치면 동의 고지가 실제 동작과 어긋난 채 남는다
+- [ ] 잠금 집합(`NecessaryAllowlist::locked()`)이나 출하 카탈로그에 항목을 늘릴 때는 ePrivacy Art.5(3) 면제 항목인지 먼저 검토 — 임의로 늘리면 동의 전 차단 원칙이 무력화된다
+- [ ] **필수 허용목록에 항목이 필요하면 코드가 아니라 관리자 화면에서 추가한다** — 운영자 설정(`necessary_storage_allowlist`)이 판정 목록이다. `plugin.php` 의 `DEFAULT_NECESSARY_ALLOWLIST_CATALOG` 를 고치는 것은 **신규 설치 기본값과 화면 추천 목록**을 바꾸는 일이며, 이미 설치된 사이트에는 반영되지 않는다
+- [ ] 그 카탈로그를 고쳤다면 **동의 안내 문구도 함께** 고친다 — 항목이 어느 카테고리에 속하는지 사용자에게 말하는 자리가 `plugin.php`(설치 시드) · `src/Services/CookieCategoryService.php`(런타임 폴백) · `resources/lang/{ko,en}.json`(관리자 안내) · `editor-spec.json`(편집기 샘플) 넷이다. 한 곳만 고치면 동의 고지가 실제 동작과 어긋난 채 남는다
+- [ ] 판정 규칙(매칭·잠금 집합·스코프 어휘)을 고치면 PHP(`src/Support/NecessaryAllowlist.php`)와 TS(`resources/js/necessaryAllowlist.ts`)를 **함께** 고친다 — 한쪽만 고치면 그 항목이 서버에서만(또는 브라우저에서만) 살아 있고, 그 어긋남은 예외도 로그도 남기지 않는다 (`__tests__/necessaryAllowlistCoverage.test.ts` 가 대조한다)
+- [ ] 설정 키를 새로 노출할 때는 `config/settings/defaults.json` 의 `frontend_schema` 에 `expose: true` 를 **함께** 넣는다 — 빠지면 저장도 화면도 정상인데 브라우저 인라인 페이로드에만 값이 오지 않아 인터셉터가 빈 목록으로 선다
 - [ ] 그 문구를 고쳤으면 기설치본의 **저장된** 안내도 정정하는 업그레이드 스텝을 동반한다 — 카테고리 정의는 설치 시점에 시드되고 이후 갱신되지 않는다 (선례: `upgrades/data/1.0.4/migrations/01_RetagThemeAsStrictlyNecessary.php`)
 - [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 의 동반 의무 표를 따라 `editor-spec.json` 을 함께 갱신 — 샘플이 없는 `data_source` 는 편집기 캔버스에서만 빈 화면이 되고 실제 화면은 정상이라 오류도 경고도 남지 않는다. 반영은 `php artisan plugin:update sirsoft-gdpr --force`
 
@@ -146,7 +157,11 @@ Opinion 04/2012 §3.6 의 user-initiated preference 예외 항목(`g7_locale` �
 |---|---|---|
 | `gdpr_user_consent_histories` 행을 UPDATE/DELETE 로 직접 정정 | 정정이 필요하면 새 이력 행을 INSERT | 이력은 시점별 스냅샷이 생명 — 과거 행을 고치면 Art.7(1) 입증 자료로서 효력을 잃는다 |
 | 회원탈퇴(`after_withdraw`)에서 신원 정보(user_id 등)를 제거 | 활성 동의만 철회 처리, 신원은 완전삭제(`before_delete`) 시점에만 익명화 | 두 이벤트를 섞으면 탈퇴 회원의 재가입·이력 조회가 깨진다 |
-| 운영자가 등록하지 않은 functional 쿠키를 화이트리스트에 추가 | strictly necessary 4종 고정 목록만 예외 | GDPR 은 "동의 전 전면 차단"이 원칙이지 "등록된 것만 차단"이 아니다 |
+| 운영자가 등록하지 않은 functional 쿠키를 화이트리스트에 추가 | 필수 허용목록(운영자 설정) ∪ 잠금 집합만 예외 | GDPR 은 "동의 전 전면 차단"이 원칙이지 "등록된 것만 차단"이 아니다 |
+| 소비자(인터셉터·정리기·미들웨어)가 자기 목록 사본을 들고 판정 | 넷 다 같은 설정을 같은 함수로 읽는다 | 사본은 갈라지는데 그 어긋남은 "그 항목만 안 되는" 상태로만 나타난다 |
+| 잠금 항목을 설정(`necessary_storage_allowlist`)에 넣기 | 코드(`NecessaryAllowlist::locked()`)가 정하고 판정에서 합집합 | 설정에 있으면 저장 요청 한 번으로 지워져 잠금이 아니게 된다 |
+| 세션 쿠키 이름을 `'laravel_session'` 으로 하드코딩 | `config('session.cookie')` 런타임 해석 | `SESSION_COOKIE` 를 지정한 사이트에서 그 항목이 죽고, 그 사실이 어디에도 드러나지 않는다 |
+| 새 확장의 저장 키를 플러그인이 관측·수집해 자동 등재 | 운영자가 화면에서 직접 추가 | 저장 키 관측은 그 자체가 추적이다 — 동의 없이 하는 관측을 이 플러그인이 할 수는 없다 |
 | 정책 버전 발행을 코드/배치로 자동화 | 운영자가 매번 명시적으로 "+ 새 버전 발행" 클릭 | 자동화하면 사소한 문구 수정에도 전 회원이 재동의 화면을 보게 된다 |
 | 저장소 허용목록만 고치고 동의 안내 문구는 그대로 두기 | 목록·문구 4곳·업그레이드 스텝을 한 작업 단위로 | 안내가 "이 항목은 기능 쿠키이고 거부하면 저장되지 않는다" 라고 말하는데 실제로는 항상 저장되면, 고지 자체가 사실과 달라진다 |
 <!-- @intent END -->
@@ -156,10 +171,10 @@ Opinion 04/2012 §3.6 의 user-initiated preference 예외 항목(`g7_locale` �
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 24개 | `plugins/_bundled/sirsoft-gdpr/tests` |
+| PHPUnit | 25개 | `plugins/_bundled/sirsoft-gdpr/tests` |
 | Vitest | 13개 | `vitest.config.ts` |
-| Playwright | 3개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 5개 | `tests/scenarios` |
+| Playwright | 4개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 6개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

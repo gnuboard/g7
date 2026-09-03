@@ -104,6 +104,7 @@ php artisan plugin:update sirsoft-gdpr --force
 | `banner_enabled` | 쿠키 배너 노출 | `true` |
 | `banner_position` | 배너 위치 | `bottom_bar` |
 | `blocked_domains` | 추적 도메인 차단 목록 | `{"functional":["*.crisp.chat","client.crisp.chat","*.intercom.io","widget.intercom.io","*.tawk.to","embed.tawk.to","cdn.weglot.com","*.weglot.com","*.usercentrics.eu"],"analytics":["google-analytics.com","*.google-analytics.com","googletagmanager.com","*.googletagmanager.com","ssl.google-analytics.com","*.hotjar.com","static.hotjar.com","*.mixpanel.com","cdn.mxpnl.com","*.amplitude.com","cdn.amplitude.com","*.segment.io","*.segment.com","wcs.naver.net","wcs.naver.com","*.beusable.net"],"marketing":["facebook.net","connect.facebook.net","facebook.com","*.facebook.com","doubleclick.net","*.doubleclick.net","googleadservices.com","googlesyndication.com","ads.google.com","*.criteo.com","static.criteo.net","*.adnxs.com","*.taboola.com","cdn.taboola.com","*.outbrain.com","*.kakao.com","analytics.ad.daum.net","platform.twitter.com","*.twitter.com","platform.linkedin.com","*.linkedin.com"]}` |
+| `necessary_storage_allowlist` | 필수 저장 항목 허용목록 | `{"localStorage":["g7_locale","g7_color_scheme","g7_cache_version","g7_asset_url_mode*","g7_cart_key","g7-devtools-panel","g7_guest_order_token","g7_guest_order_number","g7_guest_order_expires_at","g7_devtools_*","g7_filters_*","g7_columns_*","g7_order_*","g7_admin_sidebar_collapsed","g7_filter_visibility_*","g7_dismissed_warnings","g7le.*","__sirsoftKginicisMobilePaymentReturnPending","g7.identity.redirectStash","sirsoft-verification_nhnkcp.formStash"],"sessionStorage":["g7:sirsoft-pay_kginicis:pendingClose","g7:sirsoft-pay_nhnkcp:pendingClose","g7:sirsoft-tosspayments:pendingClose","g7.identity.redirectStash","sirsoft-verification_nhnkcp.formStash","__sirsoftKginicisMobilePaymentReturnPending","g7le.*","g7_devtools_*","g7_filters_*","g7_columns_*","g7_order_*","g7_filter_visibility_*"],"cookie":["laravel_maintenance"]}` |
 | `cookie_categories` | 쿠키 카테고리 정의 | `[]` |
 
 개발자용 상세(타입·검증·저장 위치)는 [설정 스키마](docs/settings.md#설정-스키마) 를 보세요.
@@ -124,6 +125,22 @@ Art.6 "동의 전 처리 금지"를 강제하는 메커니즘인 자동 차단�
 Google Analytics, Facebook Pixel, Kakao Pixel 등)가 시드되어 있고 운영자가 추가·삭제할 수
 있습니다. 도메인 형식은 `example.com` 또는 와일드카드 `*.example.com` 만 지원하며, `localhost`
 같은 단일 라벨과 한글 도메인(xn-- 변환)은 지원하지 않습니다.
+
+`필수 저장 항목`(`necessary_storage_allowlist`)은 **기능 쿠키에 동의하지 않은 방문자에게도
+저장이 허용되는 항목** 목록입니다. 이 목록 밖의 항목은 방문할 때마다 지워지므로, 새로 설치한
+확장의 설정이 "저장했는데 새로고침하면 사라진다"면 그 확장이 쓰는 항목 이름을 여기에
+추가하면 됩니다 — 이 플러그인을 고칠 필요가 없습니다. 항목 이름은 그 확장의 문서나 브라우저
+개발자 도구(Application → Storage)에서 확인할 수 있습니다.
+
+목록은 저장소 구분(브라우저 저장소 / 세션 저장소 / 쿠키) 셋으로 나뉘고, 이름 끝에 `*` 를
+붙이면 앞부분이 같은 항목을 모두 포함합니다(`g7_filters_*` → `g7_filters_orders_1`). `*` 는
+끝에만 쓸 수 있습니다 — 앞에 두면 모든 항목이 열려 동의 전 차단이 무의미해지기 때문입니다.
+
+로그인 토큰·CSRF 토큰·세션 쿠키·쿠키 동의 기록은 `잠금 항목`으로 카드 위쪽에 따로 표시되며
+삭제할 수 없습니다. 이 넷이 없으면 사이트가 동작하지 않습니다.
+
+사이트 운영에 반드시 필요한 항목만 등록하세요. 추적·분석 목적의 항목을 여기 넣으면 동의 전
+차단 원칙이 무너집니다.
 <!-- @intent END -->
 
 ## 사용 방법

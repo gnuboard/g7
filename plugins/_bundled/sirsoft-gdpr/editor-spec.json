@@ -71,6 +71,32 @@
               "connect.facebook.net",
               "www.googleadservices.com"
             ]
+          },
+          "default_necessary_allowlist_preview": {
+            "localStorage": [
+              "g7_locale",
+              "g7_color_scheme",
+              "g7_filters_*"
+            ],
+            "sessionStorage": [
+              "g7:sirsoft-pay_kginicis:pendingClose"
+            ],
+            "cookie": [
+              "laravel_maintenance"
+            ]
+          },
+          "settings": {
+            "necessary_storage_locked": {
+              "localStorage": [
+                "auth_token"
+              ],
+              "sessionStorage": [],
+              "cookie": [
+                "XSRF-TOKEN",
+                "laravel_session",
+                "gdpr_session"
+              ]
+            }
           }
         }
       },

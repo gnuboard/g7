@@ -10,6 +10,8 @@
         "banner_enabled": { "type": "boolean", "expose": true },
         "banner_position": { "type": "string", "expose": true },
         "cookie_categories": { "type": "string", "expose": true },
-        "blocked_domains": { "type": "object", "expose": true }
+        "blocked_domains": { "type": "object", "expose": true },
+        "necessary_storage_allowlist": { "type": "object", "expose": true },
+        "necessary_storage_locked": { "type": "object", "expose": true }
     }
 }
