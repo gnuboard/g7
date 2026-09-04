@@ -123,6 +123,11 @@ Repository 인터페이스 주입으로만 하며, `Model::query()` · `DB::tabl
 
 마이페이지 조각은 **동의 이력이 있는 회원에게 항상 노출**되어야 합니다. 동의를 받은 경로와
 철회 경로가 대칭이 아니면 그 동의는 법적 근거로 쓸 수 없습니다.
+
+조각 안의 채널 라벨은 `$localized(channel.label_i18n) || channel.label` 로 읽습니다. 예전의
+`$get(channel.label_i18n, _global.locale, channel.label)` 은 `_global.locale` 이 어디서도 세워지지 않아 어떤
+언어에서도 폴백 라벨만 냈습니다 — 오류도 로그도 없이 번역이 빠지는 형태라, 다국어 값은 엔진의 `$localized()`
+로만 읽습니다.
 <!-- @intent END -->
 
 ## 미들웨어

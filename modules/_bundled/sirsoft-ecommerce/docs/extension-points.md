@@ -833,64 +833,9 @@ FormRequest 쪽 `{동작}_validation_rules`(filter). `brand.*` 19종을 한 번 
 리스너에서 `Model::query()` · `DB::table()` · `$row->save()` 를 직접 부르지 않습니다 — 데이터
 접근은 Repository 인터페이스 주입으로만 합니다.
 
-**`ClaimActivityLogListener` 의 훅 ↔ action 매핑** (구독 표는 위 생성 블록이 실측하며, 여기서는 훅별 action 키·행위자·loggable 을 남깁니다):
-
-
-
-교환·반품·환불 신청서와 클레임 추가결제·첨부의 전 상태 변경을 기록한다. 행위자(`user_id`)는 코어 `ActivityLogProcessor` 가 자동 주입하므로 신청서 테이블에 `*_by` 컬럼을 새로 만들지 않는다.
-
-**전이는 `status_changed` 한 축으로만 기록한다.** 승인·반려·철회·완료는 `claim.{type}.approved` 같은 구체 훅도 함께 발화하는데, 양쪽을 구독하면 한 번의 전이가 두 줄로 남는다. 목표 상태는 `properties.new_status` 로 싣는다.
-
-**신청 접수 (3훅)**
-
-| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
-|---------|----------------|-------------|---------|----------|
-| `sirsoft-ecommerce.claim.exchange.requested` | `handleExchangeRequested` | `claim_exchange.request` | User | OrderExchange |
-| `sirsoft-ecommerce.claim.return.requested` | `handleReturnRequested` | `claim_return.request` | User | OrderReturn |
-| `sirsoft-ecommerce.claim.refund.requested` | `handleRefundRequested` | `claim_refund.request` | User | OrderRefund |
-
-**상태 전이 (3훅 — 전 상태 전수)**
-
-| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
-|---------|----------------|-------------|---------|----------|
-| `sirsoft-ecommerce.claim.exchange.status_changed` | `handleStatusChanged` | `claim_exchange.status_change` | Admin | OrderExchange |
-| `sirsoft-ecommerce.claim.return.status_changed` | `handleStatusChanged` | `claim_return.status_change` | Admin | OrderReturn |
-| `sirsoft-ecommerce.claim.refund.status_changed` | `handleStatusChanged` | `claim_refund.status_change` | Admin | OrderRefund |
-
-**상품 단위 전이 (2훅 — D25)**
-
-헤더 전이와 **층이 다른 사실**이라 따로 남긴다. `syncHeaderFromOptions` 는 살아 있는 상품이 한 상태로 모일 때만 헤더를 옮기므로, 상품 상태가 갈리는 조합에서는 헤더 줄이 아예 생기지 않는다 — 이 훅이 없으면 운영자가 한 상태 변경의 흔적이 전혀 남지 않는다. 헤더가 따라 움직인 회차는 두 줄이 함께 남으며 그것은 이중 기록이 아니다.
-
-| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
-|---------|----------------|-------------|---------|----------|
-| `sirsoft-ecommerce.claim.exchange.option_status_changed` | `handleOptionStatusChanged` | `claim_exchange.option_status_change` | Admin | OrderExchange |
-| `sirsoft-ecommerce.claim.return.option_status_changed` | `handleOptionStatusChanged` | `claim_return.option_status_change` | Admin | OrderReturn |
-
-**금액 수정 / 환불 실행 (4훅)**
-
-| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
-|---------|----------------|-------------|---------|----------|
-| `sirsoft-ecommerce.claim.exchange.amounts_updated` | `handleAmountsUpdated` | `claim_exchange.update_amounts` | Admin | OrderExchange |
-| `sirsoft-ecommerce.claim.return.amounts_updated` | `handleAmountsUpdated` | `claim_return.update_amounts` | Admin | OrderReturn |
-| `sirsoft-ecommerce.claim.refund.amounts_updated` | `handleAmountsUpdated` | `claim_refund.update_amounts` | Admin | OrderRefund |
-| `sirsoft-ecommerce.claim.refund.completed` | `handleRefundExecuted` | `claim_refund.execute` | Admin | OrderRefund |
-
-**클레임 추가결제 (5훅)**
-
-| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
-|---------|----------------|-------------|---------|----------|
-| `sirsoft-ecommerce.claim.exchange.payment_completed` | `handlePaymentCompleted` | `claim_payment.complete` | User | ClaimPayment |
-| `sirsoft-ecommerce.claim.return.payment_completed` | `handlePaymentCompleted` | `claim_payment.complete` | User | ClaimPayment |
-| `sirsoft-ecommerce.claim.exchange.payment_refunded` | `handlePaymentRefunded` | `claim_payment.refund` | Admin | ClaimPayment |
-| `sirsoft-ecommerce.claim.return.payment_refunded` | `handlePaymentRefunded` | `claim_payment.refund` | Admin | ClaimPayment |
-| `sirsoft-ecommerce.claim.payment_cancelled` | `handlePaymentCancelled` | `claim_payment.cancel` | Admin | ClaimPayment (유형 세그먼트 없음 — 신청서가 사라진 고아 건도 취소 대상이라 유형을 항상 알 수 없다) |
-
-**첨부 (2훅)**
-
-| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
-|---------|----------------|-------------|---------|----------|
-| `sirsoft-ecommerce.claim-image.after_upload` | `handleImageUploaded` | `claim_image.upload` | User | ClaimImage |
-| `sirsoft-ecommerce.claim-image.after_delete` | `handleImageDeleted` | `claim_image.delete` | User | ClaimImage (`loggable_type`/`loggable_id` 직접 지정 — 행이 이미 삭제됨) |
+`ClaimActivityLogListener` 의 훅 ↔ action 매핑(훅별 action 키·행위자·loggable)은 아래 「활동 로그 훅」 절의
+`ClaimActivityLogListener (19훅)` 소절에 있습니다 — 그 절의 표가 리스너의 실제 구독과 일치하는지를 코어
+계약 테스트가 고정하므로, 클레임 훅을 더하거나 뺄 때는 그 표를 함께 고칩니다.
 
 **클레임 훅 페이로드 스키마**
 
@@ -1121,8 +1066,8 @@ _등록하는 브로드캐스트 채널이 없습니다._
 
 ## 활동 로그 훅
 
-> 이 확장이 코어 활동 로그(`activity_logs`)에 기록을 남기기 위해 구독하는 훅 **92종**입니다
-> (등록 건수는 94건 — `order.after_create` 와 `order-option.after_confirm` 은 관리자 관점과
+> 이 확장이 코어 활동 로그(`activity_logs`)에 기록을 남기기 위해 구독하는 훅 **111종**입니다
+> (등록 건수는 113건 — `order.after_create` 와 `order-option.after_confirm` 은 관리자 관점과
 > 구매자 관점 두 리스너가 각각 구독합니다).
 > 코어 `docs/backend/activity-log-hooks.md` 에 있던 목록을 이 확장 소유로 옮긴 것입니다(#601) —
 > 확장이 훅을 더할 때 코어 문서를 고쳐야 하던 역방향 의존을 없애기 위해서입니다. 코어 문서에는
@@ -1135,7 +1080,7 @@ _등록하는 브로드캐스트 채널이 없습니다._
 ### 이커머스 모듈 훅
 
 **모듈**: `sirsoft-ecommerce`
-**등록 94건 / 훅 92종** (7개 Listener)
+**등록 113건 / 훅 111종** (8개 Listener)
 
 #### OrderActivityLogListener (21훅)
 
@@ -1376,3 +1321,62 @@ _등록하는 브로드캐스트 채널이 없습니다._
 |---------|----------------|-------------|---------|----------|
 | `sirsoft-ecommerce.order.after_create` | `handleOrderAfterCreate` | `order.create` | **User** | Order |
 | `sirsoft-ecommerce.order-option.after_confirm` | `handleOrderOptionAfterConfirm` | `order_option.confirm` | **User** | OrderOption |
+
+#### ClaimActivityLogListener (19훅)
+
+**파일**: `modules/_bundled/sirsoft-ecommerce/src/Listeners/ClaimActivityLogListener.php`
+
+교환·반품·환불 신청서와 클레임 추가결제·첨부의 전 상태 변경을 기록한다. 행위자(`user_id`)는 코어 `ActivityLogProcessor` 가 자동 주입하므로 신청서 테이블에 `*_by` 컬럼을 새로 만들지 않는다.
+
+**전이는 `status_changed` 한 축으로만 기록한다.** 승인·반려·철회·완료는 `claim.{type}.approved` 같은 구체 훅도 함께 발화하는데, 양쪽을 구독하면 한 번의 전이가 두 줄로 남는다. 목표 상태는 `properties.new_status` 로 싣는다.
+
+##### 신청 접수 (3훅)
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-ecommerce.claim.exchange.requested` | `handleExchangeRequested` | `claim_exchange.request` | User | OrderExchange |
+| `sirsoft-ecommerce.claim.return.requested` | `handleReturnRequested` | `claim_return.request` | User | OrderReturn |
+| `sirsoft-ecommerce.claim.refund.requested` | `handleRefundRequested` | `claim_refund.request` | User | OrderRefund |
+
+**상태 전이 (3훅 — 전 상태 전수)**
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-ecommerce.claim.exchange.status_changed` | `handleStatusChanged` | `claim_exchange.status_change` | Admin | OrderExchange |
+| `sirsoft-ecommerce.claim.return.status_changed` | `handleStatusChanged` | `claim_return.status_change` | Admin | OrderReturn |
+| `sirsoft-ecommerce.claim.refund.status_changed` | `handleStatusChanged` | `claim_refund.status_change` | Admin | OrderRefund |
+
+**상품 단위 전이 (2훅 — D25)**
+
+헤더 전이와 **층이 다른 사실**이라 따로 남긴다. `syncHeaderFromOptions` 는 살아 있는 상품이 한 상태로 모일 때만 헤더를 옮기므로, 상품 상태가 갈리는 조합에서는 헤더 줄이 아예 생기지 않는다 — 이 훅이 없으면 운영자가 한 상태 변경의 흔적이 전혀 남지 않는다. 헤더가 따라 움직인 회차는 두 줄이 함께 남으며 그것은 이중 기록이 아니다.
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-ecommerce.claim.exchange.option_status_changed` | `handleOptionStatusChanged` | `claim_exchange.option_status_change` | Admin | OrderExchange |
+| `sirsoft-ecommerce.claim.return.option_status_changed` | `handleOptionStatusChanged` | `claim_return.option_status_change` | Admin | OrderReturn |
+
+##### 금액 수정 / 환불 실행 (4훅)
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-ecommerce.claim.exchange.amounts_updated` | `handleAmountsUpdated` | `claim_exchange.update_amounts` | Admin | OrderExchange |
+| `sirsoft-ecommerce.claim.return.amounts_updated` | `handleAmountsUpdated` | `claim_return.update_amounts` | Admin | OrderReturn |
+| `sirsoft-ecommerce.claim.refund.amounts_updated` | `handleAmountsUpdated` | `claim_refund.update_amounts` | Admin | OrderRefund |
+| `sirsoft-ecommerce.claim.refund.completed` | `handleRefundExecuted` | `claim_refund.execute` | Admin | OrderRefund |
+
+##### 클레임 추가결제 (5훅)
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-ecommerce.claim.exchange.payment_completed` | `handlePaymentCompleted` | `claim_payment.complete` | User | ClaimPayment |
+| `sirsoft-ecommerce.claim.return.payment_completed` | `handlePaymentCompleted` | `claim_payment.complete` | User | ClaimPayment |
+| `sirsoft-ecommerce.claim.exchange.payment_refunded` | `handlePaymentRefunded` | `claim_payment.refund` | Admin | ClaimPayment |
+| `sirsoft-ecommerce.claim.return.payment_refunded` | `handlePaymentRefunded` | `claim_payment.refund` | Admin | ClaimPayment |
+| `sirsoft-ecommerce.claim.payment_cancelled` | `handlePaymentCancelled` | `claim_payment.cancel` | Admin | ClaimPayment (유형 세그먼트 없음 — 신청서가 사라진 고아 건도 취소 대상이라 유형을 항상 알 수 없다) |
+
+##### 첨부 (2훅)
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-ecommerce.claim-image.after_upload` | `handleImageUploaded` | `claim_image.upload` | User | ClaimImage |
+| `sirsoft-ecommerce.claim-image.after_delete` | `handleImageDeleted` | `claim_image.delete` | User | ClaimImage (`loggable_type`/`loggable_id` 직접 지정 — 행이 이미 삭제됨) |

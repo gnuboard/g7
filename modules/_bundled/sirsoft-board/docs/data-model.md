@@ -101,6 +101,12 @@
 `board_attachments` 3개 테이블에 적용했던 파티셔닝을 되돌린 이력입니다 — 그 마이그레이션의
 `down()` 은 "파티션 복원은 데이터 재배치가 필요해 자동 롤백 불가"라고 명시하므로, 파티셔닝을
 다시 도입할 때는 이 파일을 그대로 재실행하는 방식이 아니라 새 마이그레이션으로 설계해야 합니다.
+
+인덱스만 더하는 마이그레이션 2건(`add_recent_across_boards_index_to_board_posts` ·
+`add_trigger_type_to_board_attachments_table` 의 인덱스 단계)은 `Schema::hasIndex()` 가드 뒤에서 실행됩니다.
+MySQL 은 DDL 을 롤백하지 않으므로 한 파일이 컬럼 → 인덱스 순으로 진행하다 인덱스 단계에서 죽으면 컬럼만 남고,
+재실행 시 컬럼 가드는 통과하지만 인덱스가 `Duplicate key name` 으로 다시 죽어 그 설치본은 재실행으로 복구되지
+않습니다. 새 DDL 단계를 더할 때는 컬럼뿐 아니라 인덱스·외래키 단계에도 각각 가드를 겁니다.
 <!-- @intent END -->
 
 ## Enum
