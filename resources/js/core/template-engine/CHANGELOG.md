@@ -5,6 +5,14 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.64.7] - 2026-09-04
+
+### Fixed
+
+#### 확장 번들 스타일 실패 안내에 내부 구분 이름이 노출되던 문제
+
+- 병합 CSS 번들 로드에 끝내 실패했을 때 안내 배너의 항목명이 번들 구분 키(`module`/`plugin`)였다. 사용자 어휘(`core.assets.module_styles` · `core.assets.plugin_styles`, 번역 미적재 시 폴백 문구)로 바꾼다 (ModuleAssetLoader.ts, AssetFailureNotice.ts)
+
 ## [engine-v1.64.0] - 2026-09-02
 
 ### Security

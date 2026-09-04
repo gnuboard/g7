@@ -185,6 +185,13 @@ manifest 는 배포물), 코어가 활성 확장 전체의 선언을 모아 allo
 | `loading.strategy` | 로딩 전략 (global, layout, lazy) |
 | `loading.priority` | 로드 우선순위 (낮을수록 먼저) |
 
+`assets.js` · `assets.css` 는 **객체**이며 `output` 을 가져야 합니다. 목록형(`"js": ["dist/js/module.iife.js"]`)은
+어느 소비자도 읽지 않아 **그 자산이 영영 로드되지 않는데, 오류도 경고도 남지 않습니다.**
+
+선언한 `output` 이 가리키는 파일은 디스크에 실재해야 합니다. 내용이 비어 있는 것(0바이트)은
+정상입니다 — 스타일 규칙이 아직 없는 확장이 CSS 를 선언하는 것은 어긋남이 아닙니다. 정적 검사가
+번들 확장 전수를 대상으로 두 조건(객체 형식 · 산출물 실재)을 확인합니다.
+
 ---
 
 ## 모듈 프론트엔드 구조
@@ -508,11 +515,11 @@ GET /api/plugins/bundle.css?v={version}
 | `\n;\n` 구분자 | IIFE 사이는 `\n;\n`(JS)/`\n`(CSS). 미사용 시 ASI 붕괴 → 전체 파싱 에러 | `extension-bundle-concat-separator` |
 | 소스맵 | prod strip, dev 는 개별 에셋 서빙 절대 URL 로 rewrite | - |
 | same-origin | 번들 URL 은 `/api/...` 만 (CDN 금지 — gdpr preblocker 자기차단 방지) | `extension-bundle-url-same-origin` |
-| 절대경로 게터 | `getBuiltAssetAbsolutePaths()` 사용. `base_path("modules"\|"plugins")` 직접 조립 금지 | `extension-bundle-asset-path-getter` |
+| 절대경로 게터 | `getBuiltAssetAbsolutePaths()` 사용. `base_path("modules"\|"plugins")` 직접 조립 금지. 소실 판정만 선언 축 게터 `getDeclaredAssetAbsolutePaths()` | `extension-bundle-asset-path-getter` |
 | 확장별 try/catch | 파일 읽기 실패 시 해당 확장만 skip, 나머지 병합 지속 | (메모리+회귀테스트) |
 | CSS url() | 상대 `url()`·`@import` 참조는 그 확장의 절대 자산 URL 로 **치환**해 병합. 병합본의 주소는 어느 확장의 dist 디렉토리도 아니라 상대 해석이 반드시 어긋난다 | (계약 테스트) |
 | 디스크 캐시 fail-soft | 캐시 쓰기 실패는 **500 이 아니다** — 메모리 병합 결과를 그대로 200 으로 서빙 | (계약 테스트) |
-| 빈 번들 판정 | 선언 0개면 빈 200, 선언은 있는데 결과가 0이면 **503** | (계약 테스트) |
+| 빈 번들 판정 | 선언한 산출물이 소실·판독 불가면 **503**, 존재하되 비었으면 빈 200 (선언 0 도 빈 200) | (계약 테스트) |
 
 ### 병합 CSS 의 상대 참조
 
@@ -531,11 +538,19 @@ GET /api/plugins/bundle.css?v={version}
 | 상태 | 판정 | 응답 |
 |---|---|---|
 | 에셋을 선언한 활성 확장이 0개 | 정상 | 빈 200 |
-| 선언은 있는데 병합 결과가 0 | 장애 (배포 중 `dist` 가 잠깐 빔, 경로 어긋남) | **503** + `Log::error` |
+| 선언은 있고 그 산출물이 **전부 존재**하되 비어 있음 | 정상 (스타일이 비어 있는 확장) | 빈 200 |
+| 선언한 산출물이 **소실·판독 불가** | 장애 (배포 중 `dist` 가 잠깐 빔, 경로 어긋남) | **503** + `Log::error`(소실 경로 목록) |
 
-구분하지 않으면 후자가 빈 200 으로 나가고, 프론트는 404 도 오류도 받지 못한 채 한참 뒤 "Unknown action handler" 로 죽는다 — 그 시점에는 원인이 번들이라는 사실이 화면에도 로그에도 남아 있지 않다. 판정은 **kind 별**이다(js 만 선언한 확장이 있는 상태에서 css 번들이 비는 것은 정상).
+장애를 정상으로 흘리면 프론트는 404 도 오류도 받지 못한 채 한참 뒤 "Unknown action handler" 로 죽는다 — 그 시점에는 원인이 번들이라는 사실이 화면에도 로그에도 남아 있지 않다. 반대로 정상을 장애로 잡으면 스타일 소스가 자리표시 주석뿐인 확장만 설치된 기본 구성이 통째로 503 이 되어 **사용자 화면마다 실패 안내가 뜬다.** 판정은 **kind 별**이다(js 만 선언한 확장이 있는 상태에서 css 번들이 비는 것은 정상).
 
-"선언" 의 근거는 manifest 의 `assets.{kind}.output` 이며 **산출물 파일의 존재를 보지 않는다.** 병합 경로가 쓰는 게터들(`getOrderedGlobalAssetPaths()` · `hasAssets()` · `getBuiltAssetPaths()`)은 모두 `file_exists()` 로 거르므로, 그 경로로 선언 수를 세면 "`dist` 가 잠깐 빔" 이 곧 "선언 0" 이 되어 **막으려던 상태가 정상(빈 200)으로 판정된다.** 선언과 산출은 다른 축이고, 이 판정이 재는 것은 선언 축이다.
+두 축이 다르다는 점이 핵심이다.
+
+- **선언 축**의 근거는 manifest 의 `assets.{kind}.output` 이며 **산출물 파일의 존재를 보지 않는다.** 병합 경로가 쓰는 게터들(`getOrderedGlobalAssetPaths()` · `hasAssets()` · `getBuiltAssetPaths()`)은 모두 `file_exists()` 로 거르므로, 그 경로로 선언 수를 세면 "`dist` 가 잠깐 빔" 이 곧 "선언 0" 이 된다. 이 축은 로그 컨텍스트와 진단이 근거로 삼는다.
+- **소실 축**은 선언된 산출물 중 실제로 없거나 읽을 수 없는 것을 센다. 경로는 `getDeclaredAssetAbsolutePaths()` 로 얻는다 — 존재 게이트가 없어야 부재를 셀 수 있다. **503 의 판정은 이 축이 한다.**
+
+0바이트 산출물은 정당한 상태다. 스타일 규칙이 아직 없는 확장이 CSS 를 선언하는 것은 어긋남이 아니며, 그 상태를 배포 장애로 등치하면 정상 사이트가 서비스 불능으로 보고된다.
+
+빈 번들은 정적 게시 대상이 아니다(게시할 사본이 없다). 그 결과 `AssetUrl::extensionBundle()` 이 정적 URL 대신 API URL 을 방출하므로 브라우저에는 정적 404 폴백이 생기지 않고, 그 API 가 위 표대로 빈 200 을 낸다.
 
 두 판정은 모듈·플러그인 컨트롤러가 **공유하는 단일 지점**(`ServesExtensionBundles::bundleResponse()`)에 둔다. 각자 구현하면 한쪽만 고쳐진 채 다른 쪽이 옛 동작으로 남는다.
 
