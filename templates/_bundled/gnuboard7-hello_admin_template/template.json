@@ -30,7 +30,7 @@
     },
     "assets": {
         "js": [
-            "dist/components.js"
+            "dist/js/components.iife.js"
         ]
     },
     "components": {

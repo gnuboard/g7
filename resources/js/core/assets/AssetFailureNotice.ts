@@ -175,6 +175,22 @@ export function getAssetFailures(): AssetFailure[] {
 }
 
 /**
+ * 자산 실패 안내에 쓰는 사용자 어휘를 번역합니다 (배너 밖 호출자용).
+ *
+ * 항목명(label)은 사용자 어휘여야 한다 — 내부 구분 키·식별자를 그대로 넘기면 배너에
+ * "module을(를) 불러오지 못했습니다" 처럼 내부 이름이 노출된다.
+ *
+ * @param key 번역 키
+ * @param fallback 번역 엔진 부재 시 사용할 문구
+ * @param params 치환 파라미터
+ * @return string 번역된 문자열
+ * @since engine-v1.64.7
+ */
+export function assetText(key: string, fallback: string, params?: Record<string, string | number>): string {
+    return t(key, fallback, params);
+}
+
+/**
  * 등록된 실패 중 재시도 가능한 것을 모두 재시도합니다.
  *
  * @return Promise<void>

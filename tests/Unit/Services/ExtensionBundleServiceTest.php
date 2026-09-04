@@ -110,16 +110,26 @@ class ExtensionBundleServiceTest extends TestCase
     /**
      * 에셋 **매니페스트 선언**(`getAssets()`)을 노출하는 가짜 확장 인스턴스를 만든다.
      *
-     * 산출물 경로(`getBuiltAssetAbsolutePaths`)는 존재하지 않는 파일을 가리킨다 —
+     * 산출물 경로(`getBuiltAssetAbsolutePaths`)는 기본적으로 존재하지 않는 파일을 가리킨다 —
      * "선언은 있는데 산출물이 없다"(dist 소실) 상태를 그대로 재현하기 위해서다.
+     *
+     * 선언 축 게터(`getDeclaredAssetAbsolutePaths`)는 파일 존재와 무관하게 선언된 kind 마다
+     * 경로를 돌려준다. `$declaredPaths` 로 그 경로를 지정하면 실제로 만들어 둔 fixture 파일을
+     * 가리키게 해 "존재하되 비어 있음" 상태를 만들 수 있다.
      *
      * @param  string  $identifier  확장 식별자
      * @param  int  $priority  로딩 우선순위
      * @param  array<string, mixed>  $assets  매니페스트 assets 선언
      * @param  string  $strategy  로딩 전략
+     * @param  array<string, string>|null  $declaredPaths  kind => 절대 경로 (미지정 시 fixtureDir 의 부재 경로)
      */
-    private function fakeExtensionWithAssets(string $identifier, int $priority, array $assets, string $strategy = 'global'): object
-    {
+    private function fakeExtensionWithAssets(
+        string $identifier,
+        int $priority,
+        array $assets,
+        string $strategy = 'global',
+        ?array $declaredPaths = null
+    ): object {
         $ext = Mockery::mock();
         $ext->shouldReceive('hasAssets')->andReturn($assets !== []);
         $ext->shouldReceive('getIdentifier')->andReturn($identifier);
@@ -135,6 +145,12 @@ class ExtensionBundleServiceTest extends TestCase
         $ext->shouldReceive('getBuiltAssetPaths')->andReturn(
             array_map(fn () => 'dist/css/module.css', $assets)
         );
+
+        $declared = $declaredPaths ?? array_combine(
+            array_keys($assets),
+            array_map(fn ($kind) => $this->fixtureDir.'/declared-'.$identifier.'.'.$kind, array_keys($assets))
+        );
+        $ext->shouldReceive('getDeclaredAssetAbsolutePaths')->andReturn($declared);
 
         return $ext;
     }
@@ -174,10 +190,17 @@ class ExtensionBundleServiceTest extends TestCase
         $this->assertSame(1, $service->countAssetDeclaringExtensions('module', 'css'));
 
         // 산출물은 하나도 존재하지 않는다 → 병합 결과는 빈 문자열.
-        // "선언 > 0 && 결과 0" 이 곧 컨트롤러의 503 조건이다.
+        // 이 값은 **선언 축**이다 — 컨트롤러의 503 판정은 소실 축(findMissingDeclaredAssets)이
+        // 한다. 선언 > 0 그 자체는 장애 조건이 아니다(존재하되 비어 있으면 정상 빈 200).
         $this->assertSame('', $service->getBundleFilePath('module', 'js', 12345));
     }
 
+    /**
+     * 실행 순서는 오직 manifest `loading.priority` 오름차순이다 — 확장 이름을 지목하는
+     * 분기를 두지 않는다.
+     *
+     * @effects ordered_by_priority_ascending_only_no_name_hardcode
+     */
     public function test_orders_global_assets_by_priority_ascending(): void
     {
         $a = $this->writeFixture('a.js', '(function(){})()');
@@ -195,6 +218,11 @@ class ExtensionBundleServiceTest extends TestCase
         $this->assertSame(['ext-a', 'ext-b', 'ext-c'], array_keys($ordered));
     }
 
+    /**
+     * global 전략이 아닌 확장은 번들 모집단이 아니다 (레이아웃/지연 로딩이 따로 처리한다).
+     *
+     * @effects non_global_strategy_excluded_from_bundle
+     */
     public function test_skips_non_global_strategy(): void
     {
         $g = $this->writeFixture('g.js', '(function(){})()');
@@ -211,6 +239,11 @@ class ExtensionBundleServiceTest extends TestCase
         $this->assertArrayNotHasKey('ext-layout', $ordered);
     }
 
+    /**
+     * IIFE 사이는 `\n;\n` 로 잇는다 — 구분자가 없으면 ASI 경계가 깨져 번들 전체가 죽는다.
+     *
+     * @effects js_iife_joined_with_semicolon_newline_separator
+     */
     public function test_js_bundle_joins_iife_with_semicolon_newline_separator(): void
     {
         // 세미콜론 없이 끝나는 IIFE 2개 (ecommerce 형태)
@@ -232,6 +265,9 @@ class ExtensionBundleServiceTest extends TestCase
         $this->assertLessThan(strpos($js, 'window.B=2'), strpos($js, 'window.A=1'));
     }
 
+    /**
+     * @effects prod_strips_source_mapping_url
+     */
     public function test_prod_strips_source_mapping_url(): void
     {
         $this->app['env'] = 'production';
@@ -248,6 +284,9 @@ class ExtensionBundleServiceTest extends TestCase
         $this->assertStringNotContainsString('sourceMappingURL', $js);
     }
 
+    /**
+     * @effects dev_rewrites_source_mapping_url_to_asset_serving_path
+     */
     public function test_dev_rewrites_source_mapping_url_to_asset_serving_path(): void
     {
         // 자산 URL 표기(경로형 vs `?file=` 쿼리형)는 사이트 설정이 정한다. 이 테스트가 보려는
@@ -300,6 +339,11 @@ class ExtensionBundleServiceTest extends TestCase
         $this->assertStringContainsString('sourceMappingURL', $bundle);
     }
 
+    /**
+     * 한 확장의 읽기 실패가 번들 전체를 소실시키지 않는다 — 그 확장만 빠지고 나머지는 병합된다.
+     *
+     * @effects per_extension_fault_tolerance_skips_missing_file_keeps_rest
+     */
     public function test_per_extension_fault_tolerance_skips_missing_file(): void
     {
         $good = $this->writeFixture('good.js', '(function(){window.GOOD=1})()');
@@ -323,6 +367,8 @@ class ExtensionBundleServiceTest extends TestCase
      * 적었지만, 번들 URL 이 내려오면 프론트는 개별 로딩을 아예 타지 않는다
      * (TemplateApp.loadExtensionAssets). 즉 제외 = 그 확장 스타일이 하나도 적용되지 않음
      * 이었고, 오류도 로그 흔적도 화면 경고도 남지 않았다.
+     *
+     * @effects css_with_relative_url_rewritten_not_excluded
      */
     public function test_css_with_relative_url_is_rewritten_not_excluded(): void
     {
@@ -370,6 +416,9 @@ class ExtensionBundleServiceTest extends TestCase
         $this->assertStringContainsString('url(data:image/gif;base64,AA==)', $css);
     }
 
+    /**
+     * @effects empty_bundle_returns_empty_path_and_empty_ok_response
+     */
     public function test_empty_bundle_returns_empty_path(): void
     {
         $this->moduleManager->shouldReceive('getActiveModules')->andReturn([]);
@@ -379,6 +428,9 @@ class ExtensionBundleServiceTest extends TestCase
         $this->assertSame('', $path);
     }
 
+    /**
+     * @effects prod_writes_versioned_cache_file_and_reuses_on_same_version
+     */
     public function test_prod_writes_versioned_cache_file_and_reuses_it(): void
     {
         $this->app['env'] = 'production';
@@ -402,6 +454,42 @@ class ExtensionBundleServiceTest extends TestCase
         $this->assertSame($path1, $path2);
     }
 
+    /**
+     * 비프로덕션은 같은 version 이어도 매 요청 다시 병합한다 (캐시 재사용 없음).
+     *
+     * 프로덕션은 같은 version 캐시가 있으면 그대로 재사용하지만, 비프로덕션에서 그러면
+     * 개발 중 rebuild 가 반영되지 않는다. 소스를 바꿨는데 화면이 그대로인 상태는 오류도
+     * 로그도 남지 않아 원인을 짚을 수 없다.
+     *
+     * @effects non_production_rebuilds_every_request_no_disk_cache
+     */
+    public function test_non_production_rebuilds_every_request_without_cache_reuse(): void
+    {
+        $this->assertFalse(app()->environment('production'));
+
+        $a = $this->writeFixture('nonprod.js', '(function(){window.A=1})()');
+        $this->moduleManager->shouldReceive('getActiveModules')->andReturn([
+            'ext-a' => $this->fakeExtension('ext-a', 10, $a, null),
+        ]);
+
+        $svc = $this->service();
+
+        $path1 = $svc->getBundleFilePath('module', 'js', 4242);
+        $this->assertStringContainsString('window.A=1', (string) file_get_contents($path1));
+
+        // 소스를 바꾸고 **같은 version** 으로 다시 요청 → 재병합되어야 한다
+        File::put($a, '(function(){window.A=2})()');
+        $path2 = $svc->getBundleFilePath('module', 'js', 4242);
+
+        $this->assertSame($path1, $path2);
+        $this->assertStringContainsString('window.A=2', (string) file_get_contents($path2));
+
+        @unlink($path1);
+    }
+
+    /**
+     * @effects cleanup_removes_stale_version_bundles_only
+     */
     public function test_cleanup_removes_stale_version_bundles_only(): void
     {
         $bundleDir = storage_path('app/ext-bundles');
@@ -421,6 +509,9 @@ class ExtensionBundleServiceTest extends TestCase
         $this->assertFileDoesNotExist($bundleDir.'/plugin.100.css');
     }
 
+    /**
+     * @effects clear_bundles_by_type_scopes_to_prefix
+     */
     public function test_clear_bundles_by_type(): void
     {
         $bundleDir = storage_path('app/ext-bundles');
@@ -498,6 +589,9 @@ class ExtensionBundleServiceTest extends TestCase
         }
     }
 
+    /**
+     * @effects plugin_bundle_gdpr_first_when_priority_lowest
+     */
     public function test_plugin_bundle_orders_by_priority_gdpr_first_when_lowest(): void
     {
         // gdpr 가 priority 50 으로 최상단(제약 1 회귀 가드) — 이름 하드코딩 아닌 선언 결과
@@ -515,5 +609,106 @@ class ExtensionBundleServiceTest extends TestCase
 
         $js = $this->service()->buildJsBundle('plugin');
         $this->assertLessThan(strpos($js, 'window.OTHER=1'), strpos($js, 'window.GDPR=1'));
+    }
+
+    /**
+     * 선언한 산출물이 **존재하되 0바이트**면 소실 목록에 넣지 않는다.
+     *
+     * 스타일 소스가 자리표시 주석뿐인 확장은 0바이트 CSS 를 내보내는 정당한 상태다.
+     * 이것을 소실로 세면 그 확장만 설치된 기본 구성이 통째로 503 이 된다.
+     *
+     * @effects empty_result_with_present_empty_artifacts_returns_200
+     */
+    public function test_find_missing_declared_assets_ignores_present_zero_byte_files(): void
+    {
+        $cssPath = $this->writeFixture('present-empty.css', '');
+
+        $this->moduleManager->shouldReceive('getActiveModules')->andReturn([
+            'ext-empty-css' => $this->fakeExtensionWithAssets(
+                'ext-empty-css',
+                100,
+                ['css' => ['output' => 'dist/css/module.css']],
+                'global',
+                ['css' => $cssPath]
+            ),
+        ]);
+
+        $service = $this->service();
+
+        $this->assertSame(0, filesize($cssPath));
+        $this->assertSame([], $service->findMissingDeclaredAssets('module', 'css'));
+        // 선언 축은 그대로 1 — 두 축이 다른 것을 잰다
+        $this->assertSame(1, $service->countAssetDeclaringExtensions('module', 'css'));
+        // 병합 결과는 빈 문자열이지만 장애가 아니다
+        $this->assertSame('', $service->buildCssBundle('module'));
+    }
+
+    /**
+     * 선언한 산출물이 **없으면** 그 절대 경로를 소실 목록으로 돌려준다.
+     *
+     * non-global 전략 확장은 병합 모집단이 아니므로 소실 판정에서도 제외된다 —
+     * 두 판정이 같은 모집단을 써야 한쪽만 장애로 보는 어긋남이 생기지 않는다.
+     *
+     * @effects empty_result_with_missing_declared_artifact_returns_503
+     */
+    public function test_find_missing_declared_assets_lists_absent_files(): void
+    {
+        $absent = $this->fixtureDir.'/absent-module.css';
+        $absentLayout = $this->fixtureDir.'/absent-layout.css';
+        @unlink($absent);
+        @unlink($absentLayout);
+
+        $this->moduleManager->shouldReceive('getActiveModules')->andReturn([
+            'ext-gone' => $this->fakeExtensionWithAssets(
+                'ext-gone',
+                100,
+                ['css' => ['output' => 'dist/css/module.css']],
+                'global',
+                ['css' => $absent]
+            ),
+            'ext-layout' => $this->fakeExtensionWithAssets(
+                'ext-layout',
+                100,
+                ['css' => ['output' => 'dist/css/module.css']],
+                'layout',
+                ['css' => $absentLayout]
+            ),
+        ]);
+
+        $missing = $this->service()->findMissingDeclaredAssets('module', 'css');
+
+        $this->assertSame([$absent], $missing);
+        $this->assertNotContains($absentLayout, $missing);
+    }
+
+    /**
+     * 플러그인 축도 같은 판정을 쓴다 — 모집단만 다르다.
+     *
+     * @effects bundle_decision_is_shared_across_extension_types
+     */
+    public function test_find_missing_declared_assets_covers_plugins(): void
+    {
+        $absent = $this->fixtureDir.'/absent-plugin.js';
+        @unlink($absent);
+        $present = $this->writeFixture('present-plugin.js', '');
+
+        $this->pluginManager->shouldReceive('getActivePlugins')->andReturn([
+            'plg-gone' => $this->fakeExtensionWithAssets(
+                'plg-gone',
+                100,
+                ['js' => ['output' => 'dist/js/plugin.iife.js']],
+                'global',
+                ['js' => $absent]
+            ),
+            'plg-empty' => $this->fakeExtensionWithAssets(
+                'plg-empty',
+                100,
+                ['js' => ['output' => 'dist/js/plugin.iife.js']],
+                'global',
+                ['js' => $present]
+            ),
+        ]);
+
+        $this->assertSame([$absent], $this->service()->findMissingDeclaredAssets('plugin', 'js'));
     }
 }

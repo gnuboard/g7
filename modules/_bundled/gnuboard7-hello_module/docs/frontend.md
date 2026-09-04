@@ -79,7 +79,10 @@ _프론트 에셋이 없습니다._
 
 그래서 반영이 `php artisan module:update gnuboard7-hello_module --force` 하나로 끝납니다.
 JS 를 더하면 그때 빌드(`module:build --production`)·`dist/` 커밋·전역 진입점 셋이 함께
-필요해집니다.
+필요해집니다. 그때 `module.json` 에는 `assets.js.output` **객체 형식**으로 선언합니다
+(`"assets": { "js": { "entry": "resources/js/index.ts", "output": "dist/js/....iife.js" } }`).
+목록형(`"js": ["..."]`)은 어느 소비자도 읽지 않아 그 스크립트가 영영 로드되지 않는데,
+오류도 경고도 남지 않습니다.
 
 구동에 필요한 제3자 자산은 외부 CDN 에서 받지 않고 확장이 동봉합니다 — CDN 도달 실패는 예외도
 서버 로그도 남기지 않고 화면 기능만 조용히 사라지기 때문입니다.

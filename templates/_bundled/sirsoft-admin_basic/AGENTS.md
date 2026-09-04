@@ -96,6 +96,7 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 
 - [ ] `_bundled` 에서만 수정하고 `php artisan template:update sirsoft-admin_basic --force` 로 반영
 - [ ] manifest version 상향 시 `package.json` · `package-lock.json` 동기화 + CHANGELOG 기재
+- [ ] `template.json` 의 `assets` 경로는 실제 산출물을 가리켜야 한다 — 없는 경로를 선언하면 검색엔진용(봇) 화면이 404 를 가리키는 `<link>` 를 싣고, 일반 화면에는 흔적이 남지 않는다
 - [ ] 레이아웃 JSON 변경 시 빌드 없이 update 만 — 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
