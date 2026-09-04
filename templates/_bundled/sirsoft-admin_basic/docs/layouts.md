@@ -184,7 +184,7 @@
 `FilterGroup`(선택) → `DataGrid`/`CardGrid`(목록) → `Pagination`. data_sources 는
 `auto_fetch: true` + `params`에 `_local.page`/`per_page` 바인딩. 삭제·상태변경은 `apiCall`,
 상세/수정 이동은 `navigate`, 필터·페이지네이션은 `setState`. 목록 컨텍스트 왕복 규약
-(`mergeQuery`)을 지킵니다(§CLAUDE.md).
+(`mergeQuery`)을 지킵니다(§코어 AGENTS.md).
 
 **상세 화면**: `extends: _admin_base`, `data_sources`에 `route.id` 기반 상세 API,
 `slots.content`에 `PageHeader` + `Card` 여러 개(기본 정보/활동 내역/권한 정보 등 섹션별 분리).
@@ -203,7 +203,7 @@
 
 **에러 화면**(`errors/*.json`): `extends` 없는 독립 레이아웃. `Div`(중앙 정렬) 안에
 `Icon`+`H1`(코드)+`P`(메시지)+`Button`(홈 이동). 독립 레이아웃이므로 `Toast`/`Modal` 같은
-전역 호스트 컴포넌트가 필요하면 직접 마운트해야 합니다(§CLAUDE.md "독립 레이아웃의 글로벌
+전역 호스트 컴포넌트가 필요하면 직접 마운트해야 합니다(§코어 AGENTS.md "독립 레이아웃의 글로벌
 호스트 컴포넌트").
 
 ### `_admin_base.json` 에 대한 정정

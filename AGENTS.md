@@ -981,6 +981,20 @@ Added/Changed/Fixed 내 항목이 10개를 초과하면 `####` 서브 헤딩으�
 필수: data_sources ID 고유성 유지, 조건부 렌더링은 if 속성만 사용 (type: "conditional" 미지원)
 ```
 
+### 독립 레이아웃(extends 없음)의 글로벌 호스트 컴포넌트
+
+`toast`, `openModal` 등 글로벌 상태 기반 핸들러(`_global.toasts`, `_global.modal`)는 호스트 컴포넌트(`Toast`, `ModalRoot` 등)가 마운트되어야 화면에 렌더된다. 베이스 레이아웃(`_user_base`, `_admin_base`)은 일반적으로 이들을 마운트하므로 자식 레이아웃은 별도 작업이 필요 없지만, `extends` 없이 정의된 독립 레이아웃(예: `admin_login.json`)은 호스트 컴포넌트가 자동 주입되지 않는다.
+
+```text
+필수: 독립 레이아웃에서 toast/modal 사용 시 components 최상단에 호스트 컴포넌트를 직접 추가
+  - Toast: { type: "composite", name: "Toast", props: { toasts: "{{_global.toasts}}", ... } }
+  - 누락 시 핸들러는 success 로 기록되나 화면에는 미노출 (조용한 실패)
+
+필수: 의심 시 베이스 레이아웃의 호스트 컴포넌트 정의를 그대로 복사
+  - sirsoft-admin_basic: layouts/_admin_base.json 의 #global_toast 블록
+  - sirsoft-basic: layouts/_user_base.json 의 토스트 컴포넌트 블록
+```
+
 ---
 
 ## 테스트 프로토콜

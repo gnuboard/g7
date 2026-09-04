@@ -75,7 +75,7 @@ PII 레코드를 흡수하거나 정리하는 대칭 구조입니다 — 하나�
 <!-- @generated:layout-extensions END -->
 
 <!-- @intent START -->
-`identity_provider_inicis.json`은 코어 IDV 팝업(§CLAUDE.md "본인인증(IDV) 공통 UI 가이드")이
+`identity_provider_inicis.json`은 코어 IDV 팝업(§코어 AGENTS.md "본인인증(IDV) 공통 UI 가이드")이
 provider 별로 다른 안내 문구·로고를 보여줘야 할 때 이 플러그인이 자기 몫을 주입하는
 조각입니다. `mypage_identity_card.json`은 마이페이지에 "본인확인 완료" 상태 카드를
 보여주는 조각으로, `sirsoft-verification_nhnkcp`도 동일한 명명 규칙의 자기 조각을 갖습니다

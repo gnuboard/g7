@@ -47,7 +47,7 @@
 <!-- @intent START -->
 `sirsoft-verification_kginicis`가 세 번째 마이그레이션으로 부가 필드를 nullable 완화한
 것과 달리, 이 플러그인은 두 테이블 생성만으로 끝났습니다 — 아직 같은 종류의 스키마 보정이
-필요했던 적이 없습니다. 향후 유사한 nullable 완화가 필요해지면 kginicis 의 사례(§CLAUDE.md
+필요했던 적이 없습니다. 향후 유사한 nullable 완화가 필요해지면 kginicis 의 사례(§코어 AGENTS.md
 "소스 교정만으로는 기설치본이 낫지 않는다")를 참고합니다.
 <!-- @intent END -->
 

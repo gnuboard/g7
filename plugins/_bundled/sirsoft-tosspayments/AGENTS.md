@@ -109,7 +109,7 @@
 토스 호출이 일어나지 않습니다. `core.plugin_settings.before_save`를 `ValidateTossSettingsListener`
 가 구독하는 것은 다른 PG 플러그인에는 없는 패턴입니다 — 이 훅은 코어 `PluginSettingsService`
 가 발행하며, `sync: true`가 없으면 큐로 비동기 디스패치되어 `ValidationException`이 워커
-안에서 죽고 저장은 그대로 진행됩니다(§CLAUDE.md "Listener 데이터 접근 규정" 의 sync 훅
+안에서 죽고 저장은 그대로 진행됩니다(§코어 AGENTS.md "Listener 데이터 접근 규정" 의 sync 훅
 규칙과 동일한 이유).
 <!-- @intent END -->
 

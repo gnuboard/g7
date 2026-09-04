@@ -70,7 +70,7 @@ iframe·1st-party 저장소 게이팅)은 이 액션 핸들러가 아니라 `dis
 <!-- @generated:frontend-entry END -->
 
 <!-- @intent START -->
-`initPlugin()` 이 "핸들러 재등록만" 하도록 좁혀 둔 것은 코어 규정(§CLAUDE.md "확장 미들웨어는
+`initPlugin()` 이 "핸들러 재등록만" 하도록 좁혀 둔 것은 코어 규정(§코어 AGENTS.md "확장 미들웨어는
 ...")을 그대로 따른 결과입니다 — 자동 차단 스크립트의 부팅(도메인 카탈로그 로드, DOM 스캔
 시작)을 여기 넣으면 로케일 전환마다 그 부팅이 중복 실행됩니다. 자동 차단 부팅은 `blocker.ts`/
 `preblocker.ts` 가 페이지 최초 로드 시 1회만 수행합니다.

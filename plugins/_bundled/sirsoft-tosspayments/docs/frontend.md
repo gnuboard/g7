@@ -55,7 +55,7 @@
 
 <!-- @intent START -->
 `window.__SirsoftTosspayments`로 노출되는 이유는 코어가 로케일 전환 시 이 이름으로 재등록
-진입점을 찾기 때문입니다(§CLAUDE.md "재등록 진입점"). 토스 SDK(`js.tosspayments.com/v2/standard`)
+진입점을 찾기 때문입니다(§코어 AGENTS.md "재등록 진입점"). 토스 SDK(`js.tosspayments.com/v2/standard`)
 자체는 이 진입점이 미리 로드하지 않습니다 — `requestPayment` 핸들러가 결제 시도 시점에
 동적으로 로드합니다.
 <!-- @intent END -->

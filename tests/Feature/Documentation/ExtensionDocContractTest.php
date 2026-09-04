@@ -378,59 +378,44 @@ class ExtensionDocContractTest extends TestCase
     }
 
     /**
-     * 미채움 마커 목록이 PHP · 검사 스크립트 · audit 룰 세 곳에서 일치해야 합니다.
+     * 미채움 마커 목록이 5종으로 고정되고 서로 겹치지 않아야 합니다.
      *
-     * 세 곳이 갈라지면 한쪽이 세지 않는 마커가 생기고, 그 자리는 영영 집계되지 않습니다.
+     * 이 목록은 자동 생성 블록이 채우지 못하는 사람 서술 자리를 가리킵니다. 항목이
+     * 늘거나 줄면 문서 완비 판정의 모집단이 조용히 바뀝니다.
+     *
+     * 내부 검사 도구(`check-extension-docs.cjs` · 미채움 audit 룰)가 같은 목록을
+     * 쓰는지는 그 도구들과 함께 있는 하네스 테스트가 대조합니다.
      */
-    public function test_todo_marker_list_is_consistent_across_tooling(): void
+    public function test_todo_marker_list_is_fixed_and_distinct(): void
     {
         $markers = ExtensionDocScaffolder::todoMarkers();
 
         $this->assertCount(5, $markers, '미채움 마커는 5종으로 고정입니다.');
-
-        $script = (string) file_get_contents(base_path('.claude/scripts/check-extension-docs.cjs'));
-        $rule = (string) file_get_contents(base_path('.claude/scripts/audit/rules/extension-doc-unfilled-markers.cjs'));
+        $this->assertSame(
+            $markers,
+            array_values(array_unique($markers)),
+            '미채움 마커가 중복되면 그 자리는 두 번 세어집니다.',
+        );
 
         foreach ($markers as $marker) {
-            $this->assertStringContainsString(
-                "'{$marker}'",
-                $script,
-                "check-extension-docs.cjs 에 마커 '{$marker}' 가 없습니다.",
-            );
-            $this->assertStringContainsString(
-                "'{$marker}'",
-                $rule,
-                "extension-doc-unfilled-markers.cjs 에 마커 '{$marker}' 가 없습니다.",
-            );
-        }
-
-        // 포함만 단언하면 방향이 하나뿐이라 JS 쪽 **초과** 항목(6번째 마커·오탈자 잔여)이
-        // 그대로 살아 있다. 두 도구가 세는 모집단이 갈라지면 잔량 집계가 서로 다른 답을
-        // 내는데, 그 차이는 어느 쪽 출력에도 드러나지 않는다.
-        foreach ([$script, $rule] as $i => $source) {
-            preg_match_all("/'(TODO: [^']+)'/u", $source, $m);
-            $found = array_values(array_unique($m[1]));
-            sort($found);
-            $expected = $markers;
-            sort($expected);
-
-            $this->assertSame(
-                $expected,
-                $found,
-                ($i === 0 ? 'check-extension-docs.cjs' : 'extension-doc-unfilled-markers.cjs')
-                .' 의 마커 목록이 PHP SSoT 와 다릅니다 (초과 또는 누락).',
+            $this->assertStringStartsWith(
+                'TODO: ',
+                $marker,
+                "마커 '{$marker}' 가 공통 접두를 잃으면 잔량 검사가 그 자리를 놓칩니다.",
             );
         }
     }
 
     /**
-     * 빈 서술 축이 PHP 와 검사 스크립트 양쪽에 존재하고 같은 판정을 내려야 합니다.
+     * 빈 서술 축이 마커 잔량과 별개로 세어져야 합니다.
      *
      * 미채움은 두 축입니다 — `TODO:` 마커 잔량과, 마커를 지우고 서술을 쓰지 않은 빈
-     * `@intent` 블록. 후자가 한쪽에만 있으면 그 도구만 통과시키는데, 결과가 "다 채웠다"
-     * 와 구분되지 않아 비어 있는 문서가 완비로 집계됩니다.
+     * `@intent` 블록. 후자를 세지 않으면 스캐폴딩 직후 마커만 지운 문서가 골격·블록
+     * 검사를 전부 통과해, 비어 있는 문서가 완비로 집계됩니다.
+     *
+     * 내부 검사 도구가 같은 수를 세는지는 그 도구와 함께 있는 하네스 테스트가 대조합니다.
      */
-    public function test_empty_intent_axis_agrees_across_tooling(): void
+    public function test_empty_intent_blocks_are_counted(): void
     {
         $filled = '<!-- @intent START -->
 서술이 있다.
@@ -445,19 +430,6 @@ class ExtensionDocContractTest extends TestCase
 '.$empty));
         $this->assertSame(1, ExtensionDocScaffolder::emptyIntentBlocks($filled.'
 '.$empty));
-
-        $script = (string) file_get_contents(base_path('.claude/scripts/check-extension-docs.cjs'));
-
-        $this->assertStringContainsString(
-            'countEmptyIntentBlocks',
-            $script,
-            'check-extension-docs.cjs 에 빈 서술 축이 없습니다 — PHP 만 세면 하네스가 통과시킵니다.',
-        );
-        $this->assertStringContainsString(
-            "id: 'emptyIntent'",
-            $script,
-            'check-extension-docs.cjs 의 빈 서술 축 식별자가 없습니다.',
-        );
     }
 
     /**
@@ -614,50 +586,25 @@ class ExtensionDocContractTest extends TestCase
     }
 
     /**
-     * 프로세스 경계를 넘는 리터럴 2종이 PHP·JS 양쪽에서 일치하는지 단언합니다.
+     * 수집 실패 통지가 실제로 방출되는 블록마다 실려야 합니다.
      *
-     * 코어 인덱스 스캐너는 `@generated:stats` 마커와 "확인하지 못했습니다" 문장을 **문자열로**
-     * 다시 적어 두고 파싱합니다. 생성기 쪽 문구가 바뀌면 스캐너가 조용히 실패해 인덱스가
-     * 다시 `훅 0 · 라우트 0` 을 사실로 싣습니다 — 미채움 마커 5종에는 이미 양방향 집합
-     * 단언이 있는데 같은 성질의 이 두 리터럴만 그 취급을 받지 못했습니다.
+     * 수집 실패는 수치가 아니라 문장으로 옵니다. 통지는 둘(표면 전체 실패 · 개별 getter
+     * 실패)이고, 어느 한쪽이 다른 어구로 시작하면 그 문서는 "발행 훅 N종 …" 같은 거짓
+     * 문장을 경고 없이 싣습니다.
+     *
+     * 그 어구와 집계 블록 마커를 내부 인덱스 스캐너가 그대로 알고 있는지는 그 스캐너와
+     * 함께 있는 하네스 테스트가 대조합니다.
      */
-    public function test_cross_process_literals_match_the_index_scanner(): void
+    public function test_surface_notice_reaches_every_measured_block(): void
     {
-        $scanner = base_path('.claude/scripts/generate-docs-index.cjs');
-
-        if (! is_file($scanner)) {
-            $this->markTestSkipped('내부 스캐너가 없는 배포본입니다.');
-        }
-
-        $js = (string) file_get_contents($scanner);
-
-        // 생성기가 실제로 방출하는 마커에서 키 부분을 뽑아 스캐너 소스와 대조한다.
-        // (스캐너는 정규식으로 공백을 흡수하므로 마커 전문이 리터럴로 있지는 않다.)
+        // 집계 블록은 마커로 감싸여 방출된다 — 스캐너가 그 구간을 잘라 수치를 읽는다.
         $wrapped = ExtensionDocScaffolder::wrap('stats', '**훅 수**: 1');
 
         $this->assertStringContainsString('@generated:stats START', $wrapped);
         $this->assertStringContainsString('@generated:stats END', $wrapped);
 
-        $this->assertStringContainsString(
-            '@generated:stats',
-            $js,
-            '인덱스 스캐너가 집계 블록 마커를 그대로 알고 있어야 합니다.',
-        );
-
-        // 수집 실패 문구 — 통지는 둘(표면 전체 실패 · 개별 getter 실패)이고 스캐너는 그
-        // 둘이 공유하는 어구를 찾는다. 소스에 리터럴이 있는지만 보면 "어딘가에 그 문자열이
-        // 있다" 만 확인할 뿐, **실제로 방출되는 문장**이 그것을 담는지는 보지 않는다 —
-        // 개별 getter 실패 통지가 다른 어구로 시작해 스캐너에 통째로 새던 것이 그 사각이다.
         $marker = ExtensionDocScaffolder::SURFACE_NOTICE_MARKER;
 
-        $this->assertStringContainsString(
-            // 스캐너 정규식은 `**` 를 이스케이프하므로 그 형태로 대조한다.
-            str_replace('**', '\*\*', $marker),
-            $js,
-            '인덱스 스캐너가 표면 실패 판정 어구를 읽지 못하면 점검 불가가 0 으로 굳습니다.',
-        );
-
-        // 두 통지가 실제로 그 어구를 담고 방출되는지 렌더 결과로 단언한다.
         $inventory = new ExtensionInventory;
         $record = $inventory->find('module', 'sirsoft-board');
 
